@@ -13,7 +13,7 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-03"
+last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 sources:
@@ -39,13 +39,14 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 last_task9_at: "2026-04-21T12:29:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-21
+task2b_result: fixed
 ---
 
 
@@ -94,70 +95,61 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 ### power_profile.xml 的结构
 
-文件的根元素是 `<device name="Android">`，内部通过 `<item>` 和 `<array>` 两种标签来定义功耗参数。`<item>` 用于单个值（如屏幕开启时的电流），`<array>` 用于一组值（如不同 CPU 频率对应的电流）。下面是一个简化过的结构示例：
+文件的根元素是 `<device name="Android">`，内部通过 `<item>` 和 `<array>` 两种标签定义功耗参数。Android 16 公共示例里更常见的是带 `display` 和 `cluster` 后缀的现代命名，例如 `screen.on.display0`、`screen.full.display0`、`cpu.speeds.cluster0`。下面放一个简化过的现代结构示意，数值只用于说明字段形态，不代表真实设备参数：
 
 ```xml
 <device name="Android">
-    <!-- 屏幕：开启状态（不含背光） -->
-    <item name="screen.on">83 mA</item>
-    <!-- 屏幕：最高亮度下的背光 -->
-    <item name="screen.full">260 mA</item>
+    <!-- Display 0：亮屏基础电流，单位 mA -->
+    <item name="screen.on.display0">83</item>
+    <!-- Display 0：满亮度附加电流，单位 mA -->
+    <item name="screen.full.display0">260</item>
 
-    <!-- CPU：各频率点对应的电流 -->
-    <array name="cpu.speeds">
-        <value>300000</value>  <!-- 300 MHz -->
+    <!-- CPU cluster0：频点表 -->
+    <array name="cpu.speeds.cluster0">
+        <value>300000</value>
         <value>600000</value>
         <value>800000</value>
         <value>1200000</value>
-        <value>1500000</value>  <!-- 1.5 GHz -->
+        <value>1500000</value>
     </array>
-    <array name="cpu.active">
-        <value>52</value>   <!-- 300MHz 时的电流 mA -->
+    <array name="cpu.active.cluster0">
+        <value>52</value>
         <value>78</value>
         <value>105</value>
         <value>145</value>
-        <value>210</value>  <!-- 1.5GHz 时的电流 mA -->
+        <value>210</value>
     </array>
-    <!-- CPU 空闲时的电流 -->
-    <item name="cpu.idle">3.5 mA</item>
 
-    <!-- WiFi -->
-    <item name="wifi.on">3 mA</item>
-    <item name="wifi.scan">70 mA</item>
-    <item name="wifi.active">120 mA</item>
+    <!-- CPU 公共基础项 -->
+    <item name="cpu.active">52</item>
+    <item name="cpu.idle">3.5</item>
 
-    <!-- 蜂窝网络 Radio -->
-    <item name="radio.active">180 mA</item>
-    <item name="radio.scanning">65 mA</item>
+    <item name="wifi.on">3</item>
+    <item name="wifi.scan">70</item>
+    <item name="wifi.active">120</item>
+
+    <item name="radio.active">180</item>
+    <item name="radio.scanning">65</item>
     <array name="radio.on">
-        <value>3 mA</value>   <!-- 信号强 -->
-        <value>5 mA</value>   <!-- 信号中 -->
-        <value>8 mA</value>   <!-- 信号弱 -->
+        <value>3</value>
+        <value>5</value>
+        <value>8</value>
     </array>
 
-    <!-- GPS -->
-    <item name="gps.on">50 mA</item>
-
-    <!-- 蓝牙 -->
-    <item name="bluetooth.active">20 mA</item>
-    <item name="bluetooth.on">1 mA</item>
-
-    <!-- Camera -->
-    <item name="camera.avg">550 mA</item>
-
-    <!-- 音频 -->
-    <item name="audio">60 mA</item>
-
-    <!-- 视频 -->
-    <item name="video">50 mA</item>
+    <item name="gps.on">50</item>
+    <item name="bluetooth.active">20</item>
+    <item name="bluetooth.on">1</item>
+    <item name="camera.avg">550</item>
+    <item name="audio">60</item>
+    <item name="video">50</item>
 </device>
 ```
 
-[待验证: 以上数值为示意性占位，非真实设备数据。AOSP 默认文件中的值为 0.1mA 占位值]
+[待验证: 以上数值为示意性占位，字段名按 Android 16 公共 profile 的现代命名整理。OEM 文件可能继续扩展 display / cluster 项，AOSP 默认文件中的数值也可能仍是占位值]
 
 这个结构中有几个关键细节。
 
-第一，CPU 的功耗被拆分为"各频率点对应电流"和"空闲电流"两部分。这是因为现代 SoC 的 CPU 功耗随频率呈非线性增长——1.5GHz 时的电流可能是 300MHz 时的四倍。对于异构 CPU（大小核架构），文件中会有 `cpu.speeds.cluster0`、`cpu.speeds.cluster1` 这样的独立数组，分别对应小核和大核集群。这和我们在 §5.3 中讨论的大小核架构直接对应。
+第一，CPU 的功耗被拆成“基础项 + 各 cluster 频点项”两层。这是因为现代 SoC 的 CPU 功耗随频率呈非线性增长，1.5GHz 时的电流可能是 300MHz 时的数倍。对于异构 CPU，文件中常见 `cpu.speeds.cluster0`、`cpu.active.cluster0`、`cpu.speeds.cluster1` 这样的独立数组，分别对应不同 cluster。旧资料里也能看到不带后缀的 legacy 名称，但对照 Android 16 公共文件时，优先看带 `display` / `cluster` 后缀的写法。
 
 第二，蜂窝网络 Radio 的功耗按信号强度区分了多个等级。信号弱时，Radio 需要更大的发射功率来维持连接，电流消耗可能比信号强时高出两三倍。这就是在地铁里刷手机特别费电的原因之一。
 
@@ -169,21 +161,23 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 ### CPU：功耗的大头
 
-CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经不是一句“频率时间 × 电流”能讲清的。`CpuPowerCalculator` 在 power-profile 模式下把 CPU 功耗拆成三层：`PowerProfile.POWER_CPU_ACTIVE` 表示 CPU 只要处于 active 状态就会产生的基础电量；`getAveragePowerForCpuScalingPolicy()` 表示某个 cluster 被点亮时的附加电量；`getAveragePowerForCpuScalingStep()` 表示具体频点带来的增量。对应的时间来源也分成 `getCpuActiveTime()`、cluster running time 和 `getCpuFreqTimes()`。源码注释直接写着这是“CPU active + per cluster + per frequency”三层模型。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/CpuPowerCalculator.java]
+CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经不是一句“频率时间 × 电流”能讲清的。`CpuPowerCalculator` 在 power-profile 模式下把 CPU 功耗拆成三层：`PowerProfile.POWER_CPU_ACTIVE` 表示 CPU 进入 active 状态后的基础电量；`getAveragePowerForCpuScalingPolicy()` 表示某个 scaling policy 被点亮时的附加电量；`getAveragePowerForCpuScalingStep()` 表示具体频点带来的增量。对应的时间来源也分成 `getCpuActiveTime()`、policy running time 和 `getCpuFreqTimes()`。很多设备上 scaling policy 和 cluster 接近，但 Android 16 的源码口径已经按 policy 组织。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/CpuPowerCalculator.java]
 
-如果设备接了 `EnergyConsumer` 硬件计量，`CpuPowerCalculator` 会优先读取 `u.getCpuEnergyConsumptionUC()`，直接走 `POWER_MODEL_ENERGY_CONSUMPTION`。只有没有硬件能量数据时，才回退到 power-profile 估算。我们看设置页里 CPU 百分比时，先要分清设备落在哪种模式。
+如果设备接了 `EnergyConsumer` 硬件计量，`CpuPowerCalculator` 会优先读取 `u.getCpuEnergyConsumptionUC()`，直接走 `POWER_MODEL_ENERGY_CONSUMPTION`。只有没有硬件能量数据时，才回退到 power-profile 估算。设置页里的 CPU 百分比也是沿着这套归属流程产出的，不能一概当成 `power_profile.xml` 查表结果。
+
+组件是否走 measured energy path，取决于 HAL 和统计能力。CPU、Screen 这类组件在支持的设备上更容易拿到 hardware energy data；WiFi、Radio、蓝牙等组件则要看 HAL 是否提供对应的 measured energy 或 controller activity 统计。`BatteryUsageStats` 会优先消费硬件能量数据，缺失时才回退到 power-profile 或 controller-based 估算。
 
 把这套模型写成近似公式，会更接近源码：
 
 ```
 CPU charge ≈ cpu.active × activeTime
-          + Σ(clusterPower × clusterRunningTime)
+          + Σ(policyPower × policyRunningTime)
           + Σ(freqStepPower × freqStepTime)
 ```
 
 这里故意写成 charge，而不是 mWh。`power_profile.xml` 里没有 `cpu.voltage` 数组，当前 AOSP 也不是靠一个 `cpu.voltage` 表把 CPU 时间换成能量。HAL 侧如果提供实测值，常见原始单位是 uWs；Framework 在 `BatteryStatsImpl` 和 `BatteryConsumer` 侧再转换成 uC、mAh 等更适合归属和展示的单位。把 HAL 原始单位、Framework 内部统计单位、设置页展示单位混在一层，公式就容易写错。
 
-这套三层模型解释了一个常见现象：两个进程的 CPU 总时长接近，耗电量仍然可能差很多。差异不只来自“跑了多久”，还来自跑在哪个 cluster、跑在哪些频点、有没有直接拿到硬件能量数据。
+这套三层模型解释了一个常见现象：两个进程的 CPU 总时长接近，耗电量仍然可能差很多。差异不只来自“跑了多久”，还来自跑在哪个 scaling policy / cluster、跑在哪些频点、有没有直接拿到硬件能量数据。
 
 ### Display：最直观的耗电源
 
@@ -312,11 +306,11 @@ Perfetto Power rails 和 Android Studio Power Profiler 更靠近硬件计量层�
 
 假设某台没有 CPU `EnergyConsumer` 数据的设备，在 5 分钟窗口内记录到：
 
-- CPU active 30 秒，其中大核 cluster 运行 12 秒，1.2GHz scaling step 占 18 秒
+- CPU active 30 秒，其中某个大核 scaling policy 运行 12 秒，1.2GHz scaling step 占 18 秒
 - WiFi 活跃传输 60 秒
 - GPS 定位 120 秒
 
-Framework 会把 CPU 的 active 基础功耗、cluster 附加功耗、freq step 附加功耗分别累加，再和 WiFi、GPS 的组件结果合并。真正落到设置页时，数值还会继续受共享资源分摊、UID 前后台状态、是否拿到硬件能量数据影响。这里看重点就够了：现代 CPU 归属不是单独抓一段“1.2GHz × 30 秒”就结束。
+Framework 会把 CPU 的 active 基础功耗、policy 附加功耗、freq step 附加功耗分别累加，再和 WiFi、GPS 的组件结果合并。真正落到设置页时，数值还会继续受共享资源分摊、UID 前后台状态、是否拿到硬件能量数据影响。这里看重点就够了，现代 CPU 归属不是单独抓一段“1.2GHz × 30 秒”就结束。
 
 ### 归属的精度问题
 
@@ -332,7 +326,7 @@ Android 10 把 PowerStats 放进独立 HAL 之后，功耗分析开始同时依�
 
 ### ODPM 的工作原理
 
-ODPM 利用 PMIC 上的电量计或 vendor power meter，从硬件侧读取模块或 rail 的累积能量。它看到的是“某条供电通道从开机到现在消耗了多少能量”，不是“某个 App 精确消耗了多少电”。所以它天然更接近校准层和模块层，不是 Settings 那种 App 归属层。
+ODPM 利用 PMIC 上的电量计或 vendor power meter，从硬件侧读取模块或 rail 的累积能量。它看到的是“某条供电通道从开机到现在消耗了多少能量”，不是“某个 App 精确消耗了多少电”。所以它更接近模块级计量层，不是 Settings 那种 App 归属层。
 
 ### IPowerStats HAL：HIDL 和 AIDL 是两套接口族
 
@@ -347,7 +341,7 @@ Android 10 和 Android 11 常见的是 HIDL `android.hardware.power.stats@1.0::I
 - `getEnergyConsumerInfo()` 和 `getEnergyConsumed()` 面向 `EnergyConsumer`，结果是 `EnergyConsumerResult.energyUWs`，可选带 `attribution[]` 按 UID 归属
 - `getEnergyMeterInfo()` 和 `readEnergyMeter()` 面向 `Channel` / `EnergyMeasurement`，看的是 meter 读数，`EnergyMeasurement.energyUWs` 也是 uWs
 
-这里最容易写错的地方有两个。第一，AIDL 不再用 HIDL 的 `getRailInfo()` 和 `getEnergyData()` 命名；第二，HAL 原始返回单位是 uWs，不是 mAh。mAh 通常是 Framework 或工具为了展示再换算出来的值。[已验证: AOSP android-10.0.0_r1, hardware/interfaces/power/stats/1.0/IPowerStats.hal; AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl; EnergyConsumerResult.aidl; EnergyMeasurement.aidl]
+这里最容易写错的地方有两个。第一，AIDL 不再用 HIDL 的 `getRailInfo()` 和 `getEnergyData()` 命名；第二，HAL 原始返回单位是 uWs，不是 mAh。mAh 通常是 Framework 或工具为了展示再换算出来的值。Framework 在拿到 `EnergyConsumerResult` 时，可以直接把 measured energy 合进 `BatteryUsageStats`；只有缺失这些读数时，`power_profile.xml` 才继续兜底。[已验证: AOSP android-10.0.0_r1, hardware/interfaces/power/stats/1.0/IPowerStats.hal; AOSP android-16.0.0_r1, hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl; EnergyConsumerResult.aidl; EnergyMeasurement.aidl]
 
 ### EnergyConsumer 和 rail / Channel 的区别
 
@@ -474,7 +468,7 @@ Android 功耗模型不是一个孤立的系统，它与本书多个章节讨论
 
 ### 误区一："电池设置里的 App 耗电百分比是精确的"
 
-这个数字是基于 power_profile.xml 的估算值，不是硬件实测值。如果 power_profile 中的参数不准确（这在非 Pixel 设备上很常见），这个百分比的误差可能达到 20-30%。不要把这个数字当作绝对精确的度量，而是当作一个排序参考——排名靠前的 App 确实大概率是耗电最多的，但具体百分比的数值需要审慎看待。
+这个数字不是固定等于 `power_profile.xml` 的估算值。设置页展示的是 `BatteryUsageStats` 归属结果，某个组件如果拿到了 hardware energy data，Framework 会优先使用实测能量；缺失时才回退到 power-profile 或 controller/activity 估算。CPU、Screen、WiFi、Radio 等组件能否走哪条路，取决于设备 HAL 和统计能力。所以这个百分比更适合做排序和定位，不适合当实验室级绝对值。
 
 ### 误区二："Coulomb Counter 能精确测量每个 App 的耗电"
 
@@ -490,7 +484,7 @@ CPU 使用率高不等于功耗高。关键在于 CPU 在哪个频率上运行�
 
 ### 误区五："ODPM 是万能的功耗分析方案"
 
-ODPM 提供了模块级的实测功耗数据，但它不解决 App 级归属问题。即使在 ODPM 支持的 Pixel 设备上，"这个 App 消耗了多少电"的答案仍然依赖 BatteryStats 的软件估算。ODPM 做的是让这个估算更准确——它用实测数据校准 power_profile 中的参数，而不是替代整个归属算法。
+ODPM 提供的是 meter / rail / energy consumer 读数，不是自动给 `power_profile.xml` 做校准的开关。在支持的设备上，Framework 可以直接消费这些硬件能量数据，再生成 `BatteryUsageStats` 和 `UidBatteryConsumer`；缺少硬件数据时才回退到 power-profile 估算。ODPM 解决的是“有没有实测能量入口”，App 级别归属仍然要靠 BatteryStats / BatteryUsageStats 把共享资源和 UID 活动折算成结果。
 
 ## 参考资料
 

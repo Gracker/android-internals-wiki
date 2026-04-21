@@ -4,48 +4,57 @@ chapter: "16.5"
 status: ready-for-review
 drafted_date: "2026-04-08"
 applicable_versions: "Android 17 (API 37)"
-last_verified: "2026-04-15"
+last_verified: "2026-04-21"
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/features"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/job/JobScheduler"
+  - type: official
+    path: "https://developer.android.com/privacy-and-security/security-config"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: blog
+    path: "https://android-developers.googleblog.com/"
   - type: blog
     path: "https://juejin.cn/post/7612812060795093002"
   - type: blog
     path: "https://juejin.cn/post/7610233341305389099"
-  - type: blog
-    path: "https://android-developers.googleblog.com/"
-  - type: web
-    path: "AOSP android-17-beta3 source code analysis"
 tags: [android17, api37, behavior-changes, performance, deliqueue, generational-gc, profiling-manager, cloud-compilation]
 related_chapters: ["1.6", "1.13", "4.8", "5.7", "8.2", "14.7", "16.2", "16.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-20"
-task2b_rework_date: "2026-04-15"
-task2b_fixed_at: "2026-04-15"
+task2b_rework_date: "2026-04-21"
+task2b_fixed_at: "2026-04-21T13:17:26+08:00"
 task9_result: needs-rework
 last_task9_at: "2026-04-21T12:29:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-21
+task2b_result: fixed
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
 
 ## 为什么要了解 Android 17 的性能行为变更
 
-如果你是一名 Android 工程师，正在或将要把 App 的 `targetSdkVersion` 升级到 37，这一节的内容直接决定了你的适配工作量——不是"可能遇到问题"，而是"一定会遇到问题"。Android 17 在底层做了几件大事：重写了从 Android 1.0 存在至今的 `MessageQueue`、让 ART 的垃圾回收进入分代模式、强制 `static final` 字段不可变、默认阻断明文网络流量。其中任何一项都可能让你的 App 在升级后行为异常甚至崩溃。
+如果你是一名 Android 工程师，正在或将要把 App 的 `targetSdkVersion` 升级到 37，这一节的内容直接决定了你的适配工作量——不是"可能遇到问题"，而是"一定会遇到问题"。Android 17 在底层做了几件大事：重写了从 Android 1.0 存在至今的 `MessageQueue`、让 ART 的垃圾回收进入分代模式、强制 `static final` 字段不可变，并把明文流量配置继续往 Network Security Configuration 收口。其中任何一项都可能让你的 App 在升级后行为异常甚至崩溃。
 
-从 Perfetto 的角度看，这些变更会在 Trace 中留下清晰的痕迹。DeliQueue 的无锁队列改变了主线程的锁等待模式；分代 GC 让你在 Memory Track 中看到的 GC 切片特征发生变化；ProfilingManager 的新触发器让你无需手动埋点就能抓取冷启动和 OOM 时刻的 Trace。了解这些变更，意味着你在面对 Android 17 设备上的性能问题时，知道去哪里找线索。
+从 Perfetto 的角度看，这些变更会在 Trace 中留下清晰的痕迹。DeliQueue 的无锁队列改变了主线程的锁等待模式；分代 GC 让你在 Memory Track 中看到的 GC 切片特征发生变化；ProfilingManager 的新触发器则把冷启动、OOM、异常 CPU kill 这类系统事件接到统一的采样流程里。了解这些变更，意味着你在面对 Android 17 设备上的性能问题时，知道去哪里找线索。
 
 这一节覆盖的范围是：**与性能直接相关的行为变更**（不是全部 API 37 变更的罗列）。我们按影响范围和适配紧迫程度排序。
 
@@ -152,53 +161,43 @@ RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中，`on
 
 ### 从手动埋点到系统自动触发
 
-Android 16 引入了 ProfilingManager，允许 App 在运行时请求系统进行性能分析（heap dump、stack sampling、system trace 等）。但这个 API 有一个使用门槛：开发者需要手动在代码中调用 `registerProfilingListener()` 并设置触发条件。
+Android 16 引入了 ProfilingManager，允许 App 在运行时请求 heap dump、stack sampling、system trace 等分析产物。Android 17 的新增点，是可以把采集条件交给系统触发器判断，但这仍是一套 trigger-based capture API，不是默认全局开启的自动抓取。
 
-Android 17 新增了三个**系统自动触发器**，开发者不需要写任何代码就能获得关键性能时刻的分析数据。这些触发器常量定义在 `android.os.ProfilingTrigger` 类中，而非 `ProfilingManager` 中：
+要用这套能力，App 仍要完成两步：先通过 `ProfilingManager.registerForAllProfilingResults()` 注册结果回调，再调用 `ProfilingManager.addProfilingTriggers()` 添加触发器。触发器常量定义在 `android.os.ProfilingTrigger`，真正的产物交付仍由 ProfilingManager 完成。[已验证: Android 17 features 页和 `android.os.ProfilingTrigger` reference 都把 trigger 描述成 ProfilingManager 的注册式能力，而不是无需代码的默认抓取]
 
-| 触发器 | 触发时机 | 采集数据 | 典型用途 |
+### 触发器类型与产物
+
+| 触发器 | 触发时机 | 产物类型 | 典型用途 |
 |--------|---------|---------|---------|
-| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App 冷启动的最早时刻 | call stack sample + system trace | 定位冷启动瓶颈 |
-| `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java Heap Dump | 诊断内存泄漏和内存过度使用 |
-| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因 CPU 过度使用被系统杀死 | system trace | 定位后台 CPU 剥夺问题 |
+| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | stack sampling profile + newly started system trace | 定位冷启动瓶颈 |
+| `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
+| `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample | 定位后台 CPU 异常占用 |
 
-[已验证: 上述三个触发器常量名称与 AOSP android-17-beta3 `android.os.ProfilingTrigger` 类定义一致。API 37 还新增了 TRIGGER_TYPE_APP_FULLY_DRAWN、TRIGGER_TYPE_ANOMALY、TRIGGER_TYPE_APP_COMPAT 等触发器，本节仅覆盖与性能分析直接相关的三个。验证来源：developer.android.com/reference/android/os/ProfilingTrigger]
+[已验证: 上述三个触发器常量名称与 Android 17 API reference 一致。API 37 还新增了 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器，本节只保留和性能排障直接相关的几项。]
 
-### 冷启动触发器的工作细节
+### 注册流程和适配建议
 
-`ProfilingTrigger.TRIGGER_TYPE_COLD_START` 的设计特别值得注意。它在 App 进程启动的最早阶段激活——比 `Application.onCreate()` 还要早。系统会采集一个 call stack sample 和一段 system trace，持续到 `Activity.reportFullyDrawn()` 被调用或默认的 5 秒超时。
+冷启动触发器的文档口径是“app cold start 时尽早触发”，它适合补到比 `Application.onCreate()` 更早的启动证据，但仍要靠 ProfilingManager 的注册和回调流程接收产物，不能写成“系统默认替所有 App 抓 trace”。
 
-为了让这个触发器能够捕获到启动早期的信息，系统使用了一个 **discard buffer**：环形缓冲区不断记录最近的 tracepoints，当触发条件满足时，缓冲区中的内容被保留下来。这解决了"触发时已经开始记录，但启动最早期的事件已经丢失"的问题。
-
-从 Perfetto 的角度看，这意味着在 Android 17 设备上，你可以通过 ProfilingManager API 获取到从进程 fork 到首帧绘制的完整 Trace，无需在 `Application.onCreate()` 中手动调用 `Debug.startMethodTracing()`。
-
-### 适配建议
-
-这些触发器默认开启，无需代码修改即可使用。获取采集到的数据有两种方式：
-
-1. 通过 `ProfilingManager` 注册回调接收 `ProfilingResult`
-2. 通过 `adb profcollect` 命令行工具手动获取
-
-如果你已经在项目中使用了手动 Trace（如 `Debug.startMethodTracing()`），可以考虑在 Android 17+ 设备上迁移到系统触发器，减少手动埋点的维护成本。
+`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应的是异常 CPU 占用导致的杀进程，结果更接近 call stack sample，不应写成 system trace。排障时，可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture，再在 Perfetto、heap dump 或采样结果上继续分析。
 
 详见 **14.7 ProfilingManager**。
 
 ---
 
-## JobDebugInfo API
+## JobScheduler pending reasons 诊断 API
 
-### 为什么需要这个 API
+### 为什么需要这组 API
 
-`JobScheduler` 是 Android 后台任务调度的核心机制。但长期以来，开发者面临一个问题：**Job 不执行了，但不知道为什么。** 系统可能因为电量低、设备空闲条件不满足、网络不可用、App 处于待机模式（App Standby）等原因跳过 Job 执行。这些信息分散在 `dumpsys jobscheduler` 的输出中，不容易在运行时程序化地获取。
+`JobScheduler` 是 Android 后台任务调度的核心机制。过去排查“job 为什么没跑”时，很多信息只能从 `dumpsys jobscheduler` 里翻。Android 17 扩了 pending reasons 相关查询接口，但重点不是一个独立的 `JobDebugInfo` 类，而是 `JobScheduler` 上多了几组更细的诊断方法。
 
-### 新增 API
+### API 边界
 
-Android 17 在 `JobScheduler` 中新增了 `JobDebugInfo` 相关 API：
+- `JobScheduler.getPendingJobReasonStats(int jobId)`：返回指定 job 在 pending 状态期间，各原因聚合后的 `Map<Integer, Duration>`
+- `JobScheduler.getPendingJobReasons(int jobId)`：返回当前可能导致该 job pending 的 reason code 数组
+- `JobScheduler.getPendingJobReasonsHistory(int jobId)`：返回有限历史视图，元素是 `PendingJobReasonsInfo`
 
-- `getPendingJobReasonStats()`：返回 Job 未执行的聚合统计信息，包括各种原因的计数
-- 每条记录包含：Job ID、未执行原因分类、累计等待时间
-
-这个 API 对**后台任务调度失败的诊断**非常有价值。如果你的 App 依赖 `WorkManager` 或 `JobScheduler` 执行关键后台任务（如数据同步、日志上传），现在可以在运行时获取到 Job 未执行的具体原因，而不需要用户手动抓取 `dumpsys` 输出。
+这三组接口连起来，才能回答“某个 job 现在为什么没跑”“过去一段时间主要卡在哪类约束上”。如果你的项目通过 WorkManager 间接落到 JobScheduler，调试时最好先拿到对应的 jobId，再对照这三组 API 看 current reason、history 和聚合时长。
 
 与 **5.10 JobScheduler/WorkManager 性能** 章节交叉引用。
 
@@ -279,34 +278,34 @@ field.set(null, newValue); // Android 17 上抛 IllegalAccessException
 
 ## 网络与安全性能变更
 
-### 明文流量默认阻断
+### 明文流量迁移到 Network Security Configuration
 
-Android 17 中，`android:usesCleartextTraffic` Manifest 属性被弃用。对于 `targetSdkVersion` ≥ 37 的 App，系统默认阻断所有 HTTP（非加密）流量。如果需要使用明文连接（例如开发环境连接本地服务器），必须在 Network Security Configuration 中显式声明：
+Android 17 对 `android:usesCleartextTraffic` 发出了弃用信号，迁移方向是 Network Security Configuration。当前 API 37 不宜写成“所有 HTTP 已经被系统一刀切阻断”；更稳妥的理解是，不要再把 manifest 里的 `usesCleartextTraffic` 当成未来稳定入口，明文白名单应尽快收敛到 `network_security_config.xml`。
 
 ```xml
 <!-- res/xml/network_security_config.xml -->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.0.0.1</domain> <!-- 本地开发服务器 -->
+        <domain includeSubdomains="true">10.0.0.1</domain>
     </domain-config>
 </network-security-config>
 ```
 
-对性能的影响：如果你的 App 当前仍在使用 HTTP 连接，升级后这些请求会静默失败（不是报错提示，而是连接被拒绝）。排查时可以从网络请求的响应时间和错误码入手。
+如果项目还留着 HTTP 端点，当前更实际的动作是两件事：先确认哪些域名必须保留明文访问，再把例外放到按域名配置的白名单里。这样即使未来 target SDK gate 继续收紧，迁移成本也更可控。
 
 ### Encrypted Client Hello（ECH）
 
 Android 17 引入了 ECH（Encrypted Client Hello）的平台级支持。ECH 是 TLS 1.3 的扩展，它在 TLS 握手阶段加密 SNI（Server Name Indication），防止网络观察者通过 SNI 知道 App 正在连接哪个域名。
 
-ECH 对 App 透明，前提是你使用的网络库支持。`HttpEngine`（Android 内置）和 `WebView` 已支持；`OkHttp` 需要等待上游库更新。
+这一版平台先补了 ECH 所需 API，包括 DnsResolver 查询带 ECH 配置的 HTTPS 记录，以及 Conscrypt 侧 `SSLEngine` / `SSLSocket` 的相关能力。具体到 HttpEngine、WebView、OkHttp 等库，要看各自版本何时接入这些平台 API。平台支持和库已经可用，是两回事。
 
-从性能角度看，ECH 在握手阶段增加了极少量的额外开销（一次额外的 DNS 查询和几字节的握手数据），对实际请求延迟的影响极小。
+从性能角度看，ECH 的额外成本取决于 DNS / HTTPS 记录查询、库实现和服务端部署方式。连接协商失败时会回退到普通 TLS 握手，不适合给一个固定的延迟数字。
 
 ### Certificate Transparency 默认启用
 
-对于 `targetSdkVersion` ≥ 37 的 App，Certificate Transparency（CT）默认启用。这意味着系统会验证服务器的 SSL 证书是否被记录在公开的 CT Log 中。如果证书不在 CT Log 中，连接会被拒绝。
+对于 `targetSdkVersion` ≥ 37 的 App，Certificate Transparency（CT）默认启用。系统会增加证书和 SCT（Signed Certificate Timestamp）校验约束。如果证书链或服务器提供的 SCT 不满足要求，连接会被拒绝。
 
-对性能的影响：CT 验证涉及一次额外的网络请求（查询 CT Log 服务器），可能增加 HTTPS 连接建立时间。如果服务器的证书链配置正确且已提交到 CT Log，这个开销通常在 50ms 以内。
+排障时不要把 CT 理解成“每次 HTTPS 建连都会额外请求一次 CT Log 服务器”。更常见的路径是校验证书里内嵌或握手携带的 SCT；是否出现额外网络往返，取决于证书链和服务器交付方式。
 
 ### HPKE 混合加密 SPI
 
@@ -314,47 +313,17 @@ Android 17 新增了 HPKE（Hybrid Public Key Encryption）的加密服务提供
 
 ---
 
-## Cloud Compilation 与编译链整合
+## 编译链背景：与 API 37 同期演进，但不属于强制行为变更
 
-### 云端编译在 Android 17 的增强
+Baseline Profiles、Startup Profiles、Cloud Profiles、JIT 和系统侧 AutoFDO，会影响安装后首启、热点代码编译和整体运行时表现，但它们不属于“targetSdk 升到 37 就会立刻切换”的兼容行为。把这部分和前面的 DeliQueue、ProfilingTrigger、JobScheduler 诊断 API 放在同一层，容易把适配优先级看错。
 
-Android 16 引入了 Cloud Compilation：App 安装时不再需要在设备上运行 `dex2oat` 编译，而是从云端下载预编译的 `.vdex`、`.odex` 和 `.art` 文件。这对低端设备的安装速度提升尤其显著。
+做排障时，优先分清三件事：
 
-Android 17 在此基础上增强了以下几个方面：
+- App 自带了什么 Baseline / Startup Profiles
+- 分发路径是否提供 cloud profile 或预编译产物
+- 系统镜像 / 内核是否带平台级编译优化
 
-1. **Cloud Profiles 的更新频率**：从用户设备上聚合的运行时 profile 数据更频繁地上传到云端，使得云端编译的代码优化更贴近真实使用模式
-2. **与 Baseline Profiles 的协同**：开发者定义的 Baseline Profiles 在安装时提供基础优化，Cloud Profiles 在后续使用中逐步补充优化。两者叠加，部分 App 的启动时间平均提升达到 **15%**，最高提升可达 **30%**
-3. **与 Startup Profiles 的整合**：Startup Profiles（Baseline Profiles 的子集，专注于冷启动路径）与 Cloud Profiles 合并，影响 DEX 文件布局优化
-
-### AutoFDO 的内核级优化
-
-AutoFDO（Automatic Feedback-Directed Optimization）是一种基于运行时 profile 数据指导编译优化的技术。Android 17 将 AutoFDO 扩展到了内核级别：
-
-- 使用 Top 100 热门 App 的真实运行负载作为代表性工作负载
-- 基于这些 profile 数据优化内核编译
-- 内核在 Android 设备上约占 **40%** 的 CPU 时间
-
-Google 公布的数据：
-
-- 几何平均性能提升 **10.5%**
-- 内核启动时间加快 **2.1%**
-- 冷启动时间加快 **4.3%**
-- Binder IPC 性能提升高达 **21%**
-
-这些优化不需要 App 开发者做任何适配，是系统层面的改进。但了解这些优化有助于你在 Perfetto 中观察到性能提升时理解其来源。
-
-### 端到端编译优化一览
-
-```
-[图：Android 17 编译优化端到端]
-App 安装 → Baseline Profiles (AOT编译关键路径)
-         → Startup Profiles (DEX布局优化)
-         → Cloud Profiles (持续优化热门路径)
-运行时   → JIT 编译 (热点代码实时编译)
-         → AutoFDO (运行时profile指导内核优化)
-```
-
-与 **1.7 ART 编译机制**、**1.12 AutoFDO 优化**、**8.7 Baseline Profiles** 章节交叉引用。
+如果观察到同一 APK 在不同设备、不同安装方式上的启动差异，这一层值得继续往下查。更完整的背景放到 **1.7 ART 编译机制**、**1.12 AutoFDO 优化**、**8.7 Baseline Profiles** 里看会更合适。
 
 ---
 
@@ -401,7 +370,7 @@ DCL（Dynamic Code Loading）保护从 DEX/JAR 文件扩展到原生库。通过
 
 - [ ] 搜索代码中所有 `MessageQueue` 的反射访问，确认是否有依赖 `mMessages` 等私有字段的逻辑
 - [ ] 搜索 `Field.setAccessible(true)` + `static final` 的组合，确认测试代码是否需要重构
-- [ ] 检查 `usesCleartextTraffic` 配置，确认所有 HTTP 端点已迁移到 HTTPS
+- [ ] 检查所有明文 HTTP 端点，尽量迁移到 HTTPS，并把必须保留的例外迁到 Network Security Configuration
 - [ ] 在 600dp+ 设备上测试 App 的方向和多窗口行为
 - [ ] 检查 JNI 代码中是否有直接操作 `MessageQueue` native 层的逻辑
 - [ ] 确认 NDK 原生库在 16KB 页面大小设备上的兼容性
@@ -414,9 +383,13 @@ DCL（Dynamic Code Loading）保护从 DEX/JAR 文件扩展到原生库。通过
 
 - [Android 17 Behavior Changes (官方)](https://developer.android.com/about/versions/17/behavior-changes-17)
 - [Android 17 Features and Changes (官方)](https://developer.android.com/about/versions/17/features)
+- [ProfilingTrigger API Reference (官方)](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [JobScheduler API Reference (官方)](https://developer.android.com/reference/android/app/job/JobScheduler)
+- [Network Security Configuration / ECH (官方)](https://developer.android.com/privacy-and-security/security-config)
+- [16 KB Page Size Guide (官方)](https://developer.android.com/guide/practices/page-sizes)
+- [Google Blog: Android 17 Developer Preview](https://android-developers.googleblog.com/)
 - [Android 17 DeliQueue 解读（掘金）](https://juejin.cn/post/7612812060795093002)
 - [Android 17 适配要点（掘金）](https://juejin.cn/post/7610233341305389099)
-- [Google Blog: Android 17 Developer Preview](https://android-developers.googleblog.com/)
 - AOSP: `frameworks/base/core/java/android/os/MessageQueue.java`（android-17 分支）
 - AOSP: `art/runtime/gc/collector/` 目录下的分代 GC 实现
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现

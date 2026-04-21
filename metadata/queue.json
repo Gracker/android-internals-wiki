@@ -1432,7 +1432,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T12:29:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T13:17:26+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已把 power_profile 示例改成 Android 16 现代命名，补清 BatteryUsageStats / EnergyConsumer 的回退条件，并改写 ODPM 与设置页归属关系。"
     },
     {
       "section": "16.5",
@@ -1476,7 +1479,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-21T12:29:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-21T13:17:26+08:00",
+      "completed_by": "task2b-content-processing-rework",
+      "resolution": "已改写 ProfilingTrigger 的注册式触发流程，修正 JobScheduler pending reasons API 签名，收窄 cleartext/ECH/CT 的 API 37 边界，并把编译链内容降格为平台背景。"
     }
   ]
 }
