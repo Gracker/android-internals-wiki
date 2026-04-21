@@ -34,10 +34,10 @@ drafted_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
 last_task2b_at: "2026-04-21T03:10:05+08:00"
 task2b_result: fixed
-reviewed_date: "2026-04-14"
-task6_result: "needs-rework"
-pipeline_stage: task6_pending
-task6_state: revisiting
+reviewed_date: "2026-04-21"
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 ---
