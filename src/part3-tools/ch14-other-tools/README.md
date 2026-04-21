@@ -11,3 +11,5 @@
 - 三方性能库
 - 自动化测试工具
 - ProfilingManager
+- APM / 可观测性平台与 SDK 选型
+- Hook 基础设施与性能工具实现原理

@@ -25,13 +25,13 @@ tags:
   - code-review
   - performance-patterns
   - empirical-study
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-04-21"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-18"
@@ -57,7 +57,7 @@ last_task9_at: "2026-04-18T16:41:43+08:00"
 
 论文的统计口径是 raw crawl → keyword filter → manual checking。四组数据分别是 60,684 → 165 → 114，749,067 → 2,158 → 1,484，16,977 → 149 → 69，344,922 → 558 → 222。表里的百分比都以后一步人工核查后的有效样本为分母。
 
-四组数据放在一起，呈现了一个令人不安的错位：
+四组数据放在一起，呈现了一个值得关注的差异：
 
 | 视角 | 最关注的问题 | 占比 |
 |------|------------|------|

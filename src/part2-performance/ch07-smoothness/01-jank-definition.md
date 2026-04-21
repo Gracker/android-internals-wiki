@@ -37,14 +37,16 @@ sources:
   - type: blog
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
-related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
+repaired_date: "2026-04-21"
+repaired_by: "codex"
 review_round: 3
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: '2026-04-21'
@@ -58,6 +60,7 @@ last_task9_at: "2026-04-20T13:38:00+08:00"
 
 ### 锚点（必须覆盖）
 
+- 🔹 广义流畅性：卡顿、响应慢、ANR 是同一条体验链上的不同失效形式
 - 🔹 Jank 的标准定义：帧未在预期 VSync 周期内完成（60Hz=16.67ms / 90Hz=11.11ms / 120Hz=8.33ms）
 - 🔹 Google 的 Jank 分类：App Jank vs SF Jank vs Display Jank
 - 🔹 FrameTimeline 与 JankType 的对应关系（Android 12+）
@@ -83,6 +86,18 @@ last_task9_at: "2026-04-20T13:38:00+08:00"
 在 Perfetto 中打开一段 Trace，我们会在 Expected Timeline 和 Actual Timeline 之间看到时间错位的帧——有些帧的实际渲染时间比预期的长，系统把这些帧标记成了红色或黄色。这些颜色不是装饰，而是系统在告诉你：这一帧出了问题。但"出了问题"具体是什么问题？是 App 渲染太慢？是 SurfaceFlinger 合成太慢？还是屏幕显示出了延迟？
 
 如果我们对"卡顿"只有一个模糊的感觉——"滑动不够流畅"、"动画有卡顿感"——那优化就只能靠试。明确卡顿的定义和分类，是系统性优化流畅性的起点。它决定了我们用什么指标衡量问题、用什么工具定位问题、以及优化后怎么验证效果。读完本节，我们应该能在 Perfetto 中准确识别每一帧的状态（正常/卡顿/掉帧），并知道该去哪个 Track 找原因。
+
+## 先把“广义流畅性”和“狭义 jank”分开
+
+在工程实践里，用户说“卡”的时候，往往并不是在区分掉帧、点击响应慢和 ANR。对用户来说，这三件事都属于“界面没有像预期那样及时反馈”。所以从体验治理角度，可以先建立一个**广义流畅性**的概念：它包含了狭义的渲染卡顿，也包含了响应速度问题和 ANR。
+
+但进入技术分析后，三者又必须拆开：
+
+- **狭义 jank / 掉帧**：核心是帧没有按预期 VSync 节奏完成。
+- **响应慢**：核心是输入到可见反馈、启动到可交互之间的时间过长。
+- **ANR**：核心是主线程或关键线程长时间没有对系统要求做出响应，超过了系统 watchdog 的阈值。
+
+这层统一视角很重要，因为它决定了团队面对“卡”的时候，不会先陷入命名争论，而是先确认用户到底遇到了哪一类失效，再去用对应工具分析。后面 `7.15` 的作战手册，会把这套统一入口进一步展开。
 
 ## Jank 的标准定义：帧没有如期到达
 
