@@ -5,7 +5,7 @@ chapter: "7.1"
 status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
-reviewed_date: '2026-04-21'
+reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-04-20"
@@ -39,7 +39,7 @@ sources:
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -47,9 +47,9 @@ task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-21"
 repaired_by: "codex"
-review_round: 3
+review_round: 4
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: '2026-04-21'
+task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-20T13:38:00+08:00"
 ---
 
@@ -126,7 +126,7 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 
 ### 一个关键区分：FPS ≠ 流畅度
 
-很多人用 FPS（Frames Per Second，每秒帧数）来衡量流畅度，但这其实是一个容易误导的指标。FPS 衡量的是一秒内总共渲染了多少帧，但它**不反映帧的时间分布是否均匀**。
+很多人用 FPS（Frames Per Second，每秒帧数）来衡量流畅度，但这本身是一个容易误导的指标。FPS 衡量的是一秒内总共渲染了多少帧，但它**不反映帧的时间分布是否均匀**。
 
 举个极端的例子：一秒内渲染了 50 帧。如果这 50 帧是均匀分布的（每 20ms 一帧），用户看到的是稳定的 50fps 体验，虽然不是最流畅，但不会觉得"卡"。但如果前 200ms 只渲染了 1 帧，后 800ms 突然渲染了 49 帧，FPS 同样是 50，但用户会感受到明显的卡顿——因为那 200ms 的空白期打破了视觉惯性。
 

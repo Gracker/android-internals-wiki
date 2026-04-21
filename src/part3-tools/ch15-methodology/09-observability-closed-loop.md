@@ -22,8 +22,11 @@ sources:
     path: "https://github.com/measure-sh/measure"
 tags: [observability, apm, pipeline, governance, monitoring]
 related_chapters: ["14.12", "15.3", "15.5", "15.6", "15.10"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
 task9_state: pending
 ---
 
@@ -53,9 +56,9 @@ task9_state: pending
 - 数据越来越多，但真正能闭环的问题很少。
 - 线上图表很好看，可一到具体 case，仍然要靠人工复现。
 
-根因通常不是“没有数据”，而是缺了一整条后续链路。
+根因通常是缺了一整条后续环节。
 
-换句话说，**闭环的目标不是让平台更热闹，而是让一个线上性能问题最终变成一条可修、可验、可回归追踪的工程任务。**
+**闭环的目标是把一个线上性能问题变成可修、可验、可回归追踪的工程任务。**
 
 ## 一条完整闭环至少有八步
 
@@ -95,13 +98,13 @@ task9_state: pending
 
 ### 4. 归因
 
-归因回答的是：问题最可能落在哪条链路上。
+归因回答的是：问题最可能落在哪个环节上。
 
 一个有效的归因最少要能分出：
 
 - App MainThread
 - RenderThread / GPU
-- SurfaceFlinger / 显示链路
+- SurfaceFlinger / 显示末端
 - Binder / 系统服务
 - IO / 内存 / 调度 / thermal
 
@@ -126,14 +129,14 @@ task9_state: pending
 - 最近代码变更
 
 平台如果不能从聚合图表直接跳到这些证据，回查成本会很高。  
-很多系统之所以最后失效，不是采不到，而是“看到了问题但取不到现场”。
+很多系统之所以最后失效，往往是“看到了问题但取不到现场”。
 
 ### 7. 修复
 
 真正进入治理，问题就必须变成工程语言：
 
 - 影响面
-- 责任链路
+- 责任方向
 - 复现条件
 - 建议优先级
 - 验收指标
@@ -165,7 +168,7 @@ task9_state: pending
 这些字段的价值，不在于多，而在于稳定和可 join。  
 如果不同数据源之间的键对不上，平台再丰富也很难真正闭环。
 
-## 平台视角和工程视角要打通
+## 平台视角和工程视角要衔接好
 
 平台关心的是趋势和分布，工程关心的是具体根因。闭环里最容易断开的，就是这两个视角：
 
@@ -184,7 +187,7 @@ task9_state: pending
 4. 周期性把异常榜单转进 backlog。
 5. 用 Macrobenchmark 和线上指标做修复验收。
 
-这个最小闭环的重点，不是功能全，而是责任明确。  
+这个最小闭环的重点是责任明确，不需要功能全。  
 能稳定运转的小闭环，远比一次性搭一个“看起来很全”的大平台更有价值。
 
 ## 结论

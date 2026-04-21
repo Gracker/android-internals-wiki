@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-04-21T21:14:01+08:00",
+  "generated_at": "2026-04-21T21:43:02.755559",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total": 209,
     "unknown": 31,
-    "last_updated": "2026-04-21T21:14:01+08:00",
+    "last_updated": "2026-04-21T21:45:20.869363",
     "task2b_state_counts": {
       "unknown": 31,
       "fixed": 139,
@@ -23,7 +23,7 @@
       "task6_pending": 72,
       "task2b_pending": 22,
       "ready-to-publish": 33,
-      "task9_pending": 52
+      "task9_pending": 54
     },
     "pipeline_task9_pending": 52,
     "pipeline_task2b_pending": 22,
@@ -33,10 +33,11 @@
     "ready-for-review": 145,
     "task6_state_counts": {
       "unknown": 30,
-      "reviewed": 112,
+      "reviewed": 114,
       "revisiting": 66,
       "pending": 1
-    }
+    },
+    "total_sections": 175
   },
   "pipeline": {
     "pipeline_stage_counts": {
@@ -1391,7 +1392,8 @@
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T13:38:00+08:00",
-      "section": "7.1"
+      "section": "7.1",
+      "review_round": 4
     },
     "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
       "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
@@ -3307,6 +3309,34 @@
       "task2b_state": "idle",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-21"
+    },
+    "src/part3-tools/ch15-methodology/09-observability-closed-loop.md": {
+      "path": "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
+      "title": "从采集到治理的闭环",
+      "chapter": "15.9",
+      "section": "15.9",
+      "status": "ready-for-review",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task2b_state": "idle",
+      "pipeline_stage": "task9_pending",
+      "reviewed_date": "2026-04-21",
+      "reviewed_by": "openclaw-task6"
+    },
+    "src/part3-tools/ch15-methodology/10-performance-governance.md": {
+      "path": "src/part3-tools/ch15-methodology/10-performance-governance.md",
+      "title": "性能治理工程化",
+      "chapter": "15.10",
+      "section": "15.10",
+      "status": "ready-for-review",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task2b_state": "idle",
+      "pipeline_stage": "task9_pending",
+      "reviewed_date": "2026-04-21",
+      "reviewed_by": "openclaw-task6"
     }
   }
 }
