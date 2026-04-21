@@ -1,10 +1,6 @@
 ---
 title: "App 内存分析"
 chapter: "10.1"
-section: "10
-
-.1"
-status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -29,11 +25,17 @@ sources:
     path: "https://source.android.com/docs/core/debug/interpreting-cpu"
 tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
-pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
 task6_result: pass-light-edit
+section: "10.1"
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-21"
+last_task9_at: "2026-04-21T13:57:22+08:00"
 ---
 
 # App 内存分析

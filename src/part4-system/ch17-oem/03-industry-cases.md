@@ -1,7 +1,6 @@
 ---
 title: "行业案例"
 chapter: "17.3"
-status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-04"
 last_verified_against: "Google 官方文档, ByteDance 技术博客, Samsung Developer, ADPF 官方文档"
@@ -29,15 +28,19 @@ tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industr
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: idle
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
-task9_state: pending
+section: "17.3"
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-21"
+last_task9_at: "2026-04-21T13:57:22+08:00"
 ---
 
 # 行业案例
