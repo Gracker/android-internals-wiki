@@ -1,68 +1,60 @@
 {
-  "generated_at": "2026-04-21T22:42:29+08:00",
+  "generated_at": "2026-04-22T07:35:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total": 211,
     "unknown": 31,
-    "last_updated": "2026-04-22T07:22:53+08:00",
+    "last_updated": "2026-04-22T07:35:00+08:00",
     "task2b_state_counts": {
-      "unknown": 31,
       "fixed": 137,
       "pending": 30,
-      "idle": 13
+      "idle": 9,
+      "unknown": 1
     },
     "task9_state_counts": {
-      "unknown": 30,
-      "reviewed": 72,
-      "pending": 108,
+      "reviewed": 75,
+      "pending": 101,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "unknown": 30,
-      "task6_pending": 72,
+      "task6_pending": 67,
       "task2b_pending": 26,
-      "ready-to-publish": 34,
-      "task9_pending": 49
+      "ready-to-publish": 37,
+      "task9_pending": 47
     },
-    "pipeline_task9_pending": 49,
+    "pipeline_task9_pending": 47,
     "pipeline_task2b_pending": 26,
-    "pipeline_ready_to_publish": 34,
+    "pipeline_ready_to_publish": 37,
     "ready-to-publish": 0,
-    "finalized": 34,
-    "ready-for-review": 146,
+    "finalized": 37,
+    "ready-for-review": 140,
     "task6_state_counts": {
-      "unknown": 30,
       "reviewed": 113,
-      "revisiting": 67,
-      "pending": 1
+      "revisiting": 64
     },
     "total_sections": 211
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 30,
-      "task6_pending": 72,
+      "task6_pending": 67,
       "task2b_pending": 26,
-      "ready-to-publish": 34,
-      "task9_pending": 49
+      "ready-to-publish": 37,
+      "task9_pending": 47
     },
     "task2b_state_counts": {
-      "unknown": 31,
       "fixed": 137,
       "pending": 30,
-      "idle": 13
+      "idle": 9,
+      "unknown": 1
     },
     "task6_state_counts": {
-      "unknown": 30,
       "reviewed": 113,
-      "revisiting": 67,
-      "pending": 1
+      "revisiting": 64
     },
     "task9_state_counts": {
-      "unknown": 30,
-      "reviewed": 72,
-      "pending": 108,
+      "reviewed": 75,
+      "pending": 101,
       "fixed": 1
     }
   },
@@ -1292,17 +1284,20 @@
       "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
       "title": "Android 存储架构",
       "chapter": "6.1",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "section": "6.1"
+      "section": "6.1",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T07:35:00+08:00"
     },
     "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
       "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
@@ -3342,28 +3337,36 @@
       "title": "从采集到治理的闭环",
       "chapter": "15.9",
       "section": "15.9",
-      "status": "ready-for-review",
+      "status": "finalized",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "idle",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "reviewed_date": "2026-04-21",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T07:35:00+08:00"
     },
     "src/part3-tools/ch15-methodology/10-performance-governance.md": {
       "path": "src/part3-tools/ch15-methodology/10-performance-governance.md",
       "title": "性能治理工程化",
       "chapter": "15.10",
       "section": "15.10",
-      "status": "ready-for-review",
+      "status": "finalized",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "idle",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "reviewed_date": "2026-04-21",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T07:35:00+08:00"
     }
   }
 }

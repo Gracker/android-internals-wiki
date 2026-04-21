@@ -2,7 +2,7 @@
 title: "Android 存储架构"
 chapter: "6.1"
 section: "6.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 9 - Android 15"
 last_verified: "2026-04-14"
 last_verified_against: "Android 15, AOSP dynamic partitions / metadata encryption / system-as-root docs, Android 11 shared storage docs, SQLite compile & WAL docs"
@@ -32,12 +32,15 @@ reviewed_date: 2026-04-21
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 reviewers: []
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_result: fixed
 task2b_state: fixed
+task9_reviewed_date: "2026-04-22"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-22T07:35:00+08:00"
 ---
 
 <!-- outline-start -->
