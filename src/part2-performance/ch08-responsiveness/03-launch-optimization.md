@@ -2,7 +2,7 @@
 title: "启动优化策略"
 chapter: "8.3"
 status: ready-for-review
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-22"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 1
@@ -34,8 +34,8 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed

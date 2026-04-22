@@ -922,14 +922,15 @@
       "chapter": "8.3",
       "section": "8.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task6_last_review": "2026-04-22"
     },
     "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
       "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
@@ -1415,8 +1416,8 @@
       "chapter": "9.5",
       "section": "9.5",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-16",
@@ -1426,7 +1427,8 @@
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T09:26:24+08:00"
+      "last_task9_at": "2026-04-21T09:26:24+08:00",
+      "task6_last_review": "2026-04-22"
     },
     "src/part2-performance/ch09-anr/02-anr-types.md": {
       "path": "src/part2-performance/ch09-anr/02-anr-types.md",
@@ -1509,8 +1511,8 @@
       "chapter": "9.1",
       "section": "9.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-16",
@@ -1518,7 +1520,8 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "last_task9_at": "2026-04-16T17:25:51.813647"
+      "last_task9_at": "2026-04-16T17:25:51.813647",
+      "task6_last_review": "2026-04-22"
     },
     "src/part2-performance/ch09-anr/04-special-anr.md": {
       "path": "src/part2-performance/ch09-anr/04-special-anr.md",
