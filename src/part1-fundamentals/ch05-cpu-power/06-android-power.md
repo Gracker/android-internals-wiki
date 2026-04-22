@@ -10,6 +10,8 @@ confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-04-15"
+task2b_result: fixed
+last_task2b_at: "2026-04-22T13:58:00+08:00"
 reviewed_by: openclaw-task6
 related_chapters:
   - "5.1"
@@ -44,11 +46,11 @@ tags:
   - suspend
   - jobscheduler
   - powermanager
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: 'reviewed'
-task2b_state: 'pending'
+task9_state: pending
+task2b_state: fixed
 task9_result: 'needs-rework'
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: 'openclaw-task9'
@@ -110,7 +112,7 @@ PMS 的职责可以概括为三个：
 
 **第二，决定设备的电源状态。** PMS 根据当前有效的 WakeLock、屏幕超时设置、Doze 状态等因素，计算出系统应该处于什么电源状态——屏幕亮还是灭、CPU 运行还是可以休眠。
 
-**第三，与内核交互。** 当所有 WakeLock 都被释放、屏幕关闭、没有其他需要保持运行的条件时，PMS 会通过写 `/sys/power/state` 节点通知内核进入 Suspend。
+**第三，协调 autosuspend、suspend blocker 和 Power HAL。** PMS 不再把"进入 Suspend"简化成直接写 `/sys/power/state`。在 android-16 的实现里，Java 层通过 JNI 调 `nativeSetAutoSuspend()`、`nativeAcquireSuspendBlocker()` / `nativeReleaseSuspendBlocker()` 和 `nativeSetPowerMode()`；对应的 native 层再调用 autosuspend 接口、维护本地 suspend blocker，并把 `Mode::INTERACTIVE` 这类模式透传给 Power HAL。[已验证: AOSP android-16.0.0_r1, services/core/jni/com_android_server_power_PowerManagerService.cpp; hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl]
 
 ### WakeLock 的种类：不是所有锁都一样
 
@@ -131,18 +133,20 @@ public static final int FULL_WAKE_LOCK            = 0x0000001a; // [已废弃] �
 
 从 Android 8.0（API 26）开始，后台服务持有 PARTIAL_WAKE_LOCK 的行为受到了限制——如果 App 进入了缓存状态（cached），其持有的 WakeLock 可能会被系统回收。这是 Android 逐步收紧后台功耗控制的一部分。
 
-### 从 WakeLock 到 Suspend：系统休眠的触发条件
+### 从 WakeLock 到 Suspend：要分清四层边界
 
-系统进入 Suspend 需要满足一系列前提条件：没有有效的 WakeLock（或者只有允许 Suspend 的锁）、屏幕关闭、设备未被使用。当这些条件都满足时，PMS 会执行 Suspend 流程：
+WakeLock、suspend blocker、autosuspend 和 Power HAL 处理的是同一套机制里的不同层次：
 
-1. 通知各个服务准备进入低功耗状态（如通知 WindowManager、ActivityManager）
-2. 关闭屏幕和相关显示设备
-3. 通过 native 层调用 `autosuspend` 进入内核 Suspend
-4. 内核依次 Suspend 各个设备驱动，最后 CPU 停止执行
+- **WakeLock**：框架层输入。App 通过 `PowerManager.WakeLock` 表达"这段时间 CPU 不要睡"，PMS 把这些请求汇总成电源策略。
+- **Suspend blocker**：system_server / native 层的本地保持唤醒机制。PMS 在更新电源状态、处理唤醒原因、切换显示状态时会短暂持有它，避免系统在关键路径中间睡下去。
+- **Auto-suspend**：允许内核在没有 blocker、没有待处理唤醒源时自动进入 suspend。PMS 通过 `nativeSetAutoSuspend()` 开关这一能力。
+- **Power HAL mode**：把交互态等高层状态通知到底层电源策略，例如 `Mode::INTERACTIVE`。它影响 SoC / 设备侧的功耗档位，不等同于 App 持有 WakeLock。
 
-唤醒则是一个反向过程：硬件中断（如电源键、RTC Alarm、网络包）触发 CPU 恢复执行，内核 Resume 各设备驱动，然后通知上层 PMS 恢复正常工作。
+系统准备进入 suspend 时，常见顺序是：显示配置进入 all-off / inactive，PMS 关闭 interactive mode，再打开 autosuspend。此后只要没有新的 WakeLock、native suspend blocker 或硬件唤醒事件，内核就会在合适时机真正 suspend。这个时点不是 PMS"直接写一个节点就睡下去"，而是内核根据 autosuspend 条件自行落到 suspend。
 
-[图：PowerManagerService → WakeLock → Suspend 的完整流程示意]
+唤醒路径也要反过来看：电源键、RTC、调制解调器、中断控制器等硬件事件先把 SoC 拉回运行态；内核恢复驱动；system_server 里的 suspend blocker 保证恢复流程走完；PMS 再更新显示、电源模式和上层服务状态。
+
+[图：PowerManagerService → WakeLock / suspend blocker / autosuspend / Power HAL 的分层示意]
 
 ### 在 Perfetto 中的表现
 
@@ -172,20 +176,20 @@ Doze 分为两个级别：
 
 **Light Doze（Android 7.0 引入）** 在设备灭屏后（不要求静止）就会激活。系统会推迟非紧急的网络访问和 Job 执行，但仍然允许高优先级的通知和前台服务运行。Light Doze 的维护窗口间隔较短，App 有更多机会执行后台任务。
 
-**Deep Doze** 要求设备灭屏、静止且未充电（至少 30 分钟后开始进入）。在这个状态下，系统进入近乎休眠的状态：Wi-Fi 关闭、GPS 停止、甚至白名单中的 App 也失去网络访问权限。系统只在短暂的"维护窗口"内放开限制，让 App 完成必要的同步和任务。
+**Deep Doze** 要求设备灭屏、静止且未充电（至少 30 分钟后开始进入）。在这个状态下，系统会暂停普通应用的网络、Job、Sync 和大多数 Alarm，只在短暂的"维护窗口"里放开这些限制。加入电池优化豁免名单的应用是部分豁免：它们在 Doze / App Standby 中仍可使用网络并持有 partial wakelock，但常规 Alarm、Job、Sync 仍会继续受限。[已验证: Android Developers, Optimize for Doze and App Standby]
 
 维护窗口的时间间隔会逐渐变长。刚开始可能是几分钟一个窗口，随着灭屏时间延长，窗口间隔可能扩展到几十分钟甚至更长。这种设计确保了灭屏时间越长，系统越安静，电池消耗越低。[已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
 
 ### Doze 对 App 行为的限制
 
-进入 Doze 后，App 会面临以下限制：
+进入 Doze 后，普通应用会面临这些限制：
 
-- **网络访问被禁止**：App 无法建立新的网络连接（FCM 高优先级消息例外）
-- **Alarm 被推迟**：通过 `AlarmManager` 设置的标准 Alarm 不会在 Doze 期间触发，只有 `setAndAllowWhileIdle()` 和 `setExactAndAllowWhileIdle()` 设置的 Alarm 可以触发，但每个 App 每 9 分钟最多触发一次
-- **JobScheduler 和 SyncAdapter 被推迟**：后台任务调度暂停，直到维护窗口
-- **GPS 和传感器被限制**：高精度位置服务停止，只保留低功率的状态监测
+- **网络访问暂停**：新的网络传输通常要等维护窗口；高优先级 FCM 和电池优化豁免应用属于例外路径
+- **Alarm 被推迟**：常规 `AlarmManager` 任务不会按原计划触发；`setAndAllowWhileIdle()` 与 `setExactAndAllowWhileIdle()` 仍可用，但调用频率受限
+- **JobScheduler / WorkManager / Sync 延后**：后台调度会推迟到维护窗口或更合适的系统时机
+- **WakeLock 不能单独绕过 Doze**：普通应用即使持有 partial wakelock，也不能把 Doze 的网络和调度限制全部取消
 
-对于音乐播放、导航等需要灭屏持续工作的场景，App 应该使用前台服务（Foreground Service），因为前台服务绑定的 App 在 Doze 中仍然可以正常运行。
+音乐播放、导航等持续后台场景通常要组合前台服务、媒体/位置 API，以及系统允许的豁免能力来设计。是否能持续联网，仍取决于 Doze 状态、维护窗口和电池优化豁免，而不是"开了前台服务就完全不受限制"。
 
 ### App Standby Buckets：根据使用频率分配资源
 
@@ -338,7 +342,7 @@ adb shell dumpsys power | grep "Wake Locks" -A 20
 adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 ```
 
-行业通行的功耗标准要求灭屏下每小时累计持锁不超过 5 分钟。[存疑: 原素材引述'绿盟（Unified Android Alliance）'，该组织名称及标准出处待确认] 从实际经验上看，持 PARTIAL_WAKE_LOCK 超过 1 分钟就会被系统标记为 Long Wakelock；如果 App 在后台无可感知业务且频繁持锁导致系统无法休眠，系统会触发 force-stop 清理。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md]
+公开可复核的风险口径更适合看 Android vitals、batterystats 和 Battery Historian，而不是某个"1 分钟系统阈值"。Android vitals 把 excessive partial wake lock 定义为：应用在后台或前台服务场景下，24 小时内累计 partial wakelock 达到 2 小时以上；Google Play 进一步看它在 28 天内影响的会话占比。线下定位时，可以先用 `dumpsys power` 看当前活跃锁，再用 `dumpsys batterystats --charged` 或 Battery Historian 看长时间累计行为，确认这些行为是否发生在灭屏、后台、非充电这些真实高风险场景。[已验证: Android vitals 官方说明, Battery Historian 官方文档]
 
 [图：Battery Historian 中 WakeLock 持有时长的可视化示例]
 
@@ -433,7 +437,7 @@ Adaptive Battery 从系统侧智能调整资源分配，而 Android 也为用户
 
 用户侧的限制手段有三个层级，严格程度递增：
 
-**电池优化白名单**：在 Settings > Battery > Battery optimization 中，用户可以指定哪些 App 不受 Doze 限制。但进入白名单并不意味着完全不受限制——Deep Doze 状态下，白名单 App 仍然会失去网络访问权限。
+**电池优化白名单**：在 Settings > Battery > Battery optimization 中，用户可以指定哪些 App 进入电池优化豁免名单。它提供的是部分豁免，不是完全放开：这类 App 在 Doze / App Standby 中仍可使用网络并持有 partial wakelock，但常规 Alarm、Job、Sync 等后台调度限制并没有完全消失。
 
 **后台限制开关**：Android 提供了 "Background restricted" 开关，用户可以为特定 App 禁止所有后台活动。这比 Doze 更严格——被限制的 App 不能运行 Job、不能触发 Alarm、不能访问网络（除非在前台）。
 
@@ -472,14 +476,11 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 | 5.0 (API 21) | JobScheduler 引入 | 首次提供系统级后台任务调度 |
 | 6.0 (API 23) | Doze 模式 + App Standby | 灭屏后台活动首次被系统性限制 |
 | 7.0 (API 24) | Light Doze | 不要求静止，灭屏即可触发轻度限制 |
-| 8.0 (API 26) | 后台服务限制 + WakeLock 回收 | 后台 cached 进程的 WakeLock 可被系统回收 |
+| 8.0 (API 26) | 后台服务限制 + 后台执行收紧 | 后台组件更难长期维持活跃状态 |
 | 9.0 (API 28) | App Standby Buckets + Adaptive Battery | 五级分桶 + ML 预测资源分配 |
 | 12 (API 31) | Restricted Bucket + 自动限制通知 | 最严格 Standby 等级 + 用户参与共治 |
 | 14 (API 34) | 前台服务类型强制化 | 后台启动前台服务需声明具体类型 |
-| 16 (API 36) | JobScheduler 配额优化 | Active Bucket 更宽裕配额 |
-| 17 (API 37) | DeliQueue 无锁优化（关联 §1.13） | 主线程消息队列锁竞争减少，间接降低持锁期间的 CPU 尾迹功耗 |
-
-[待验证：Android 17 中 PowerManagerService 是否有额外的功耗管理变更]
+| 16 (API 36) | JobScheduler 配额优化 | Active Bucket 配额更宽裕，可见时发起的 Job 更容易保留高配额 |
 
 从这张表可以看出，Android 的功耗管理策略越来越依赖系统侧的主动管控，而非依赖 App 开发者的自觉行为。对于 App 开发者来说，趋势很明确：尽量少用直接 WakeLock，更多依赖 JobScheduler / WorkManager 的系统调度。对于系统开发者来说，理解 PMS 的决策逻辑和各版本的行为差异，是分析功耗问题的关键基础。
 
@@ -495,7 +496,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 
 ### 误区 3："App 进入 Doze 白名单就不用担心功耗了"
 
-错误。进入白名单只意味着 App 在 Doze 期间仍然可以访问网络和接收 Alarm，但它仍然需要遵守 App Standby Bucket 的限制。更重要的是，如果 App 因为在白名单中而肆无忌惮地进行后台活动，用户可能会手动开启"后台限制"，这对 App 的影响更大。
+错误。进入白名单只意味着 App 获得了部分豁免，例如网络和 partial wakelock 能力；常规 Alarm、Job、Sync 仍可能继续受 Doze / App Standby 限制。它也不等于可以无限制地在后台运行。如果 App 在豁免状态下仍持续消耗资源，用户仍然可能手动开启"后台限制"。
 
 ### 误区 4："CPU 空闲时就不耗电了"
 

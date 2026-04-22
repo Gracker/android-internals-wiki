@@ -7,6 +7,7 @@ last_verified: '2026-04-01'
 last_verified_against: Android 16 Developer Preview
 confidence: medium
 reviewed_date: '2026-04-21'
+last_task2b_at: "2026-04-22T13:58:00+08:00"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -50,10 +51,10 @@ related_chapters:
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 section: '7.7'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-04-22'
@@ -89,11 +90,11 @@ last_task9_at: '2026-04-22T13:35:00+08:00'
 
 ## 为什么要关注 Compose 的性能
 
-如果我们在 Perfetto 中看到一个 Compose 应用的主线程出现了异常的长帧——比如一帧花了 30ms 而预期的 16.6ms——我们打开那一帧的 slice，看到的不是传统 View 体系里熟悉的 measure/layout/draw，而是一堆以 "CM"（Compose Manager）开头的标记。这代表什么？这一帧的开销来自 Compose 的重组（Recomposition），而不是传统的布局计算。
+默认的 system trace 里，看不到单个 composable function。Perfetto 更常见的是 Choreographer、主线程、RenderThread、FrameTimeline 这些线程级或帧级轨道；只有在打开 composition tracing 之后，system trace 才会把 composable functions 写进 trace。把不存在的 “CM / Compose Manager” 当成 Compose 的固定观察入口，会把排查方向直接带偏。
 
-这就是我们需要理解 Compose 性能模型的原因。Compose 不是"换了种写 UI 的语法"那么简单，它的渲染管线、状态管理、重组机制都和传统 View 体系有着根本性的差异。如果我们用分析传统 View 那套思路来分析 Compose，很容易走偏——比如看到掉帧就怀疑是布局层级太深，但实际原因可能是某个参数不稳定导致整个页面被无意义地重组了一遍。
+Compose 需要单独建立一套分析视角。它的渲染管线、状态管理和重组机制都不同于传统 View。卡顿可能不是布局层级太深，而是某个状态读取范围过大，导致页面在短时间内重复重组。
 
-了解 Compose 的性能模型之后，我们能做之前做不到的事：在 Perfetto 中准确识别 Compose 相关的性能瓶颈，通过 Layout Inspector 定位过度重组的组件，利用 Compose Compiler Metrics 在编译阶段就发现潜在的性能问题。
+理解 Compose 的性能模型之后，才能把 Perfetto、Layout Inspector 和 Compiler Metrics 串成一条可复现的排查路径：先确认帧在哪个阶段超时，再判断有没有不必要的重组，再回到具体 Composable 或状态设计上收敛问题。
 
 ## Compose 的渲染模型：Composition → Layout → Drawing
 
@@ -339,6 +340,18 @@ fun ProductList(products: List<Product>) {
 ## Compose 性能检测工具
 
 优化之前，先要能发现问题。Compose 提供了几个层次的检测工具。
+
+### Perfetto / System Trace：先打开 composition tracing
+
+Perfetto 能看到的内容，取决于 trace 是否启用了 composition tracing。官方文档给出的前提条件是：Android Studio Flamingo 或更高版本、Compose UI 1.3.0+、Compose Compiler 1.3.0+、API 30+ 设备或模拟器，以及工程里加入 `androidx.compose.runtime:runtime-tracing` 依赖。
+
+```gradle
+dependencies {
+    implementation("androidx.compose.runtime:runtime-tracing")
+}
+```
+
+如果项目使用 Compose BOM，`runtime-tracing` 使用同一组 BOM 版本即可。满足这些条件后，system trace 里会出现 composable function 的切片，可以直接把长帧回连到具体组合函数。没有满足时，Perfetto 仍然能看 FrameTimeline、`Choreographer#doFrame`、主线程和 RenderThread，但看不到细粒度的 composable 名称。这时要回退到 Layout Inspector 的 recomposition count、Compose Compiler Metrics，以及 FrameTimeline / Choreographer 的帧级观察。
 
 ### Layout Inspector：实时查看重组次数
 

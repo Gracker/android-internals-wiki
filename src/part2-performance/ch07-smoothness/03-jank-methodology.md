@@ -3,6 +3,7 @@ title: "卡顿分析方法论"
 chapter: "7.3"
 status: ready-for-review
 reviewed_date: "2026-04-21"
+last_task2b_at: "2026-04-22T13:58:00+08:00"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
@@ -33,12 +34,12 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "1.5", "13.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-04-22'
@@ -378,24 +379,32 @@ Perfetto UI 右侧面板中有一个 Query 入口，可以直接编写 SQL 查�
 ### 查询掉帧统计
 
 ```sql
--- 查询 App 进程中所有掉帧帧的信息
+-- 60Hz 场景的主线程长帧粗筛
+-- 16.6ms / 33.3ms 只适用于单帧 budget≈16.6ms 的 trace。
+WITH params AS (
+    SELECT 16666667 AS frame_budget_ns,
+           33333334 AS severe_budget_ns
+)
 SELECT
     slice.name,
     slice.ts,
-    slice.dur,
-    CASE 
-        WHEN slice.dur > 16600000 THEN 'Jank (>16.6ms)'
-        WHEN slice.dur > 8300000 THEN 'Possible Jank (>8.3ms)'
-        ELSE 'OK'
-    END as jank_status
+    slice.dur / 1000000.0 AS frame_ms,
+    CASE
+        WHEN slice.dur > params.severe_budget_ns THEN 'Missed 2 budgets on 60Hz'
+        WHEN slice.dur > params.frame_budget_ns THEN 'Missed 1 budget on 60Hz'
+        ELSE 'Within 60Hz budget'
+    END AS frame_status
 FROM slice
 JOIN thread_track ON slice.track_id = thread_track.id
 JOIN thread ON thread_track.utid = thread.utid
+CROSS JOIN params
 WHERE thread.name = 'main'
-    AND slice.name LIKE 'Choreographer#doFrame%'
+  AND slice.name LIKE 'Choreographer#doFrame%'
 ORDER BY slice.dur DESC
 LIMIT 50;
 ```
+
+这条查询只适合 60Hz trace 的快速粗筛，不等同于最终呈现掉帧。90Hz、120Hz 或自适应刷新率场景要把 budget 改成对应显示模式的 frame deadline。Android 12+ 更适合直接对照 FrameTimeline 的 Expected / Actual timeline，API 31+ 线上侧再结合 `FrameMetrics.DEADLINE`。
 
 ### 查询各线程 CPU 时间占比
 
@@ -431,34 +440,44 @@ LIMIT 20;
 
 注意这个查询和调度延迟的区别。`sched.end_state = 'R+'` 找的是线程正在 CPU 上执行、随后被更高优先级任务或中断打断的片段；`sched.end_state = 'R'` 只说明线程被切出 CPU 时仍然 runnable，不等同于明确抢占。这个值越多，说明主线程更容易在关键路径上被打断。
 
-如果我们真正想测量的是**调度延迟**（从线程被唤醒到它真正上 CPU 开始执行的时间差），需要结合 `sched_wakeup` 事件来计算：
+如果真正想测量的是**调度延迟**，更稳妥的做法是直接用 Perfetto 官方公开的 `thread_state` 和 `sched` 表。Runnable 片段的起点就是线程进入就绪队列的时刻，片段结束点就是它真正开始 Running 的时刻；两者之间的 `dur` 就是等待 CPU 的时间。
 
 ```sql
--- [已确认: 结合 sched_wakeup 计算真正的调度延迟（wakeup latency）]
--- 找出主线程唤醒后等待 CPU 时间最长的时刻
+-- 基于官方 thread_state / sched 表统计主线程的 wakeup latency
+WITH target_thread AS (
+    SELECT utid
+    FROM thread
+    WHERE name = 'main'
+),
+runnable AS (
+    SELECT
+        ts,
+        dur,
+        utid,
+        waker_id
+    FROM thread_state
+    WHERE utid IN (SELECT utid FROM target_thread)
+      AND state = 'R'
+      AND dur > 0
+)
 SELECT
-    wakeup.ts as wakeup_ts,
-    sched.ts as run_ts,
-    (sched.ts - wakeup.ts) / 1000000.0 as wakeup_latency_ms,
-    wakeup.waker_tid as waker_tid
-FROM (
-    -- 主线程被唤醒的事件
-    SELECT ts, track_id, wakee_tid AS tid
-    FROM sched_wakeup
-    WHERE wakee_tid IN (SELECT tid FROM thread WHERE name = 'main')
-) wakeup
-JOIN (
-    -- 主线程被调度上 CPU 的事件
-    SELECT ts, track_id, tid
-    FROM sched
-    WHERE tid IN (SELECT tid FROM thread WHERE name = 'main')
-      AND end_state != 'R'  -- 只看实际执行的片段
-) sched ON wakeup.tid = sched.tid AND sched.ts > wakeup.ts
+    runnable.ts AS runnable_ts,
+    (runnable.ts + runnable.dur) AS running_ts,
+    runnable.dur / 1000000.0 AS wakeup_latency_ms,
+    waker_thread.name AS waker_thread
+FROM runnable
+JOIN sched
+  ON sched.utid = runnable.utid
+ AND sched.ts = runnable.ts + runnable.dur
+LEFT JOIN thread_state waker_state
+  ON runnable.waker_id = waker_state.id
+LEFT JOIN thread waker_thread
+  ON waker_state.utid = waker_thread.utid
 ORDER BY wakeup_latency_ms DESC
 LIMIT 20;
 ```
 
-这个查询的逻辑是：先找出主线程被唤醒的时刻（sched_wakeup），再找到它随后第一次上 CPU 执行的时刻（sched），两者之差就是调度延迟。如果调度延迟超过 2-3ms，特别是在 120fps 设备上（一个 VSync 周期才 8.3ms），就值得深入排查是什么在抢占 CPU 资源。
+这条查询统计的是线程进入 Runnable 后到真正 Running 之间的等待时长。`waker_id` 可以把当前 Runnable 片段回连到唤醒它的线程状态，再还原出唤醒源。如果要直接查询 raw `sched_wakeup` / `sched_waking` 事件，需要先展开 `ftrace_event` 表；不要把 `sched_wakeup` 当成 Trace Processor 默认就存在的 SQL 表。
 
 SQL 分析的好处是能快速处理整份 Trace 的数据，给出统计级别的结论。比如，可以用第一个查询快速统计出"这次 10 秒的滑动操作中，总共出现了 23 次卡顿帧，其中 5 次超过 32ms"——这种宏观信息是手动点击很难得到的。
 
