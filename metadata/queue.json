@@ -2833,6 +2833,206 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-23T04:05:49+08:00",
       "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "待分配",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "kswapd 工作原理：Linux 后台内存回收线程解析 — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:43:21.185883",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "待分配",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "2026-04-22-power-manager-service-power-chain — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:43:21.186131",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "待分配",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "2026-04-22-rendereffect-gpu-rendering-pipeline — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:43:21.186364",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "待分配",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "2026-04-23-bionic-linker-16kb-compat-mode — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:43:21.186587",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "待分配",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "2026-04-22-app-standby-bucket-wakelock-restrictions — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:43:21.186807",
+      "status": "pending"
+    },
+    {
+      "section": "ch04",
+      "section_title": "内存管理",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "kswapd 工作原理：Linux 后台内存回收线程解析 — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:44:11.240277",
+      "status": "pending"
+    },
+    {
+      "section": "ch04",
+      "section_title": "内存管理",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "2026-04-23-bionic-linker-16kb-compat-mode — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:44:11.240552",
+      "status": "pending"
+    },
+    {
+      "section": "ch11",
+      "section_title": "功耗管理",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "2026-04-22-power-manager-service-power-chain — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:44:11.240911",
+      "status": "pending"
+    },
+    {
+      "section": "ch11",
+      "section_title": "功耗管理",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "2026-04-22-app-standby-bucket-wakelock-restrictions — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:44:11.241159",
+      "status": "pending"
+    },
+    {
+      "section": "ch02",
+      "section_title": "渲染系统",
+      "priority": 70,
+      "reason": "[素材注入] 新增参考文章，章节不存在",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "章节不存在",
+          "detail": "2026-04-22-rendereffect-gpu-rendering-pipeline — ...",
+          "suggestion": "需要创建章节并补充内容"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-23T05:44:11.241524",
+      "status": "pending"
     }
   ]
 }

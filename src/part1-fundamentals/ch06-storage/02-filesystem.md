@@ -2,7 +2,7 @@
 title: "文件系统"
 chapter: "6.2"
 section: "6.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10+"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP EROFS docs, source.android 16KB page size docs, kernel/common android15-6.6 include/linux/f2fs_fs.h, developer.android.com"
@@ -12,10 +12,10 @@ drafted_by: "openclaw-task2a"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-23"
 reviewed_by: "openclaw-task6"
 review_type: "scheduled-review"
-review_round: 3
+review_round: 4
 review_notes: "2026-04-15 task6 review (round 3): pass-light-edit。修复frontmatter格式（outline-start误入YAML块）。全文无禁用词命中，无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。"
 sources:
   - type: blog
@@ -33,11 +33,11 @@ tags:
   - android
   - research
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: pending
 task9_result: pass-tech-review-with-notes
-task9_reviewed_date: "2026-04-15"
+task9_reviewed_date: "2026-04-23"
 task9_reviewed_by: "openclaw-task9"
 task2b_state: fixed
 task2b_result: fixed
@@ -201,7 +201,7 @@ f2fs 的 GC 分为前台和后台两种。后台 GC 由内核线程在存储负�
 
 在 Perfetto 中，f2fs 的 GC 活动可以通过 `f2fs_gc_*` 相关的 trace event 观察到。如果我们看到 App 线程在写入时出现长时间的 D 状态等待，同时有 `f2fs_gc` 相关的活动，那大概率是前台 GC 在阻塞写入。[待补充：Trace截图展示f2fs前台GC期间的I/O延迟]
 
-### [AIW-源码调研-2026-04-15] f2fs Adaptive Logging 深入机制
+### f2fs Adaptive Logging 深入机制
 
 #### 核心概念
 f2fs 的 Adaptive Logging 机制是其应对存储空间不足的核心策略，通过在 normal logging（普通日志）和 threaded logging（线程日志）之间动态切换，在空间紧张时显著降低清理开销和写放大因子。
@@ -275,7 +275,7 @@ f2fs 的 Main Area 支持 Hot/Warm/Cold 数据分离，每种类型都有独立�
 
 1. **block I/O slice 的延迟**：正常情况下 4KB 随机写在 UFS 4.0 上应该在 0.1ms 以下。如果看到超过 1ms 的延迟，需要排查是 GC、调度器还是存储器件本身的问题。
 
-2. **f2fs 相关的 trace event**：如果内核编译时启用了 f2fs 的 tracepoint，可以看到 GC 活动、segment 分配等信息。
+2. **f2fs 相关的 trace event**：如果内核编译时启用了 f2fs 的 tracepoint，就能观察到 GC 活动、segment 分配等信息。
 
 3. **主线程的 D 状态等待**：配合 syscall 信息，可以确认是否是 `fsync`/`fdatasync` 导致的阻塞。
 
@@ -331,7 +331,7 @@ EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。
 
 ### dm-verity 与 EROFS 的协同工作机制
 
-在第 6.1 节中我们提到 dm-verity，但未深入展开它与 EROFS 的协作机制。两者实际上是**互补关系**，而非耦合关系：
+在第 6.1 节中我们提到 dm-verity，但未深入展开它与 EROFS 的协作机制。两者是**互补关系**，而非耦合关系：
 
 **dm-verity 的职责**（完整性校验）：
 - 在运行时**按需逐块**验证 system/vendor 分区的数据完整性（每个 4KB block 的 SHA256 hash）

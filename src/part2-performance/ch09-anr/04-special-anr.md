@@ -27,7 +27,7 @@ sources:
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
 pipeline_stage: "task6_pending"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: "pending"
 task9_result: "needs-rework"
@@ -35,7 +35,7 @@ task2b_state: "fixed"
 task2b_result: "fixed"
 last_task2b_at: "2026-04-23T01:13:23+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-23"
 rework_date: "2026-04-16"
 rework_by: "task2b-rework"
 task9_reviewed_date: "2026-04-22"
@@ -331,7 +331,7 @@ public void beginTransactionNonExclusive() {
 }
 ```
 
-从这段代码可以看到，`beginTransaction()` 默认获取的是 `TRANSACTION_MODE_EXCLUSIVE`，会阻塞其他所有读写。而 `beginTransactionNonExclusive()` 使用 `TRANSACTION_MODE_IMMEDIATE`，在 WAL 模式下允许其他连接继续读取数据库。
+这段代码说明，`beginTransaction()` 默认获取的是 `TRANSACTION_MODE_EXCLUSIVE`，会阻塞其他所有读写。而 `beginTransactionNonExclusive()` 使用 `TRANSACTION_MODE_IMMEDIATE`，在 WAL 模式下允许其他连接继续读取数据库。
 
 最根本的防御是避免在主线程执行任何数据库写事务——将写操作移到后台线程或使用 Room 的异步 API，从源头上消除主线程被锁阻塞的可能。
 
@@ -353,7 +353,7 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ### Binder 死锁 ANR
 
-在 Perfetto 的 Binder track 中，可以看到调用方的线程在等待对端的 Binder 线程响应。如果形成环形依赖，会看到 A 等 B、B 等 A 的环形箭头。
+在 Perfetto 的 Binder track 中，调用方的线程在等待对端的 Binder 线程响应。如果形成环形依赖，会看到 A 等 B、B 等 A 的环形箭头。
 
 ### Broadcast 风暴 ANR
 
@@ -361,15 +361,15 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ### ContentProvider 冷启动 ANR
 
-在 Perfetto 中，可以看到 App A 的主线程发起 `ContentProviderClient.query()` 后进入 WAITING 状态（紫色），等待 App B 的 Binder 回复。同时 App B 进程处于冷启动阶段——在 `ActivityThread.handleBindApplication()` 中初始化 ContentProvider。如果 App B 的 ContentProvider `onCreate()` 耗时过长，App A 的主线程就会一直等待。对应的 Track 表现是：App A 主线程的长段 WAITING 与 App B 进程的启动序列在时间线上对齐。
+在 Perfetto 中，App A 的主线程发起 `ContentProviderClient.query()` 后进入 WAITING 状态（紫色），等待 App B 的 Binder 回复。同时 App B 进程处于冷启动阶段——在 `ActivityThread.handleBindApplication()` 中初始化 ContentProvider。如果 App B 的 ContentProvider `onCreate()` 耗时过长，App A 的主线程就会一直等待。对应的 Track 表现是：App A 主线程的长段 WAITING 与 App B 进程的启动序列在时间线上对齐。
 
 ### 低内存 / 频繁 GC ANR
 
-在 Perfetto 的 ART 内部 track 中搜索 `A.RT` 或 `GC` 相关的 slice，可以看到 GC 事件的频率和持续时间。正常情况下 Young GC 的 slice 间隔在 500ms 以上；如果间隔缩短到几十毫秒，且每次 GC 的持续时间增加（从 1-3ms 升高到 10ms+），就是 GC 风暴的信号。同时可以在 CPU track 中看到 `HeapTaskDaemon` 线程的 CPU 占用异常升高。如果是系统级内存压力，`kswapd` 内核线程的 CPU 占用也会显著增加。
+在 Perfetto 的 ART 内部 track 中搜索 `A.RT` 或 `GC` 相关的 slice，能观察到 GC 事件的频率和持续时间。正常情况下 Young GC 的 slice 间隔在 500ms 以上；如果间隔缩短到几十毫秒，且每次 GC 的持续时间增加（从 1-3ms 升高到 10ms+），就是 GC 风暴的信号。同时可以在 CPU track 中看到 `HeapTaskDaemon` 线程的 CPU 占用异常升高。如果是系统级内存压力，`kswapd` 内核线程的 CPU 占用也会显著增加。
 
 ### 文件锁竞争 ANR
 
-主线程进入 D 状态（深红色），调用栈包含 `__futex_wait`、`fcntl(F_SETLKW)` 或 `ioctl` 等系统调用。在同一个数据库文件的访问场景中，可以看到另一个线程或进程持有锁的信号——通常表现为另一个线程长时间处于 Running 状态执行 SQLite 写事务。如果使用 Perfetto 的 ftrace track，可以观察到 `contention_begin` / `contention_end` 事件来精确确认锁等待的时长。
+主线程进入 D 状态（深红色），调用栈包含 `__futex_wait`、`fcntl(F_SETLKW)` 或 `ioctl` 等系统调用。在同一个数据库文件的访问场景中，另一个线程或进程持有锁的信号会出现——通常表现为另一个线程长时间处于 Running 状态执行 SQLite 写事务。如果使用 Perfetto 的 ftrace track，可以观察到 `contention_begin` / `contention_end` 事件来精确确认锁等待的时长。
 
 ## 与其他机制的关系
 

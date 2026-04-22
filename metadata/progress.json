@@ -38,15 +38,15 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 45,
+      "ready-to-publish": 46,
       "task2b_pending": 38,
-      "task6_pending": 47,
+      "task6_pending": 46,
       "task9_pending": 52
     },
     "task6_state_counts": {
       "pending": 1,
-      "reviewed": 137,
-      "revisiting": 44
+      "reviewed": 140,
+      "revisiting": 41
     },
     "task9_state_counts": {
       "fixed": 1,
