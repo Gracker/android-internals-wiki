@@ -99,7 +99,11 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-22T21:50:17",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part2-performance/ch07-smoothness/11-webview-performance",
@@ -676,7 +680,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T19:48:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-22T21:50:17",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
@@ -774,7 +782,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T20:50:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-22T21:50:17",
+      "fixed_by": "openclaw-task2b"
     }
   ]
 }

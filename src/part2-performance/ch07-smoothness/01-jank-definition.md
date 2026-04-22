@@ -38,16 +38,16 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-22T16:53:00+08:00"
-repaired_date: "2026-04-22"
-repaired_by: "openclaw-task2b"
+last_task2b_at: '2026-04-22T21:50:17+08:00'
+repaired_date: '2026-04-22'
+repaired_by: openclaw-task2b
 review_round: 4
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-22"
@@ -211,7 +211,7 @@ Perfetto 的颜色是 UI 层面的归因提示，不是 `JankType` 到颜色的�
 Perfetto 给每个出现在屏幕上的应用加两条 track。
 
 - `Expected Timeline` 表示系统给这帧分配的时间窗口。它的起点是 `Choreographer` 回调计划开始执行的时刻。
-- `Actual Timeline` 表示 App 真正花掉的时间。它从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 `max(gpu time, post time)`。
+- `Actual Timeline` 表示 App 真正花掉的时间。它从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 `max(actualQueueBufferTime, actualGpuCompletionTime)`：前者对应 App 调用 `queueBuffer` 把 Buffer 交给 BufferQueue 的时刻，后者对应 GPU 完成这帧内容的 fence signal 时刻。
 
 两条线贴得住，说明 App 这一段按时完成。`Actual Timeline` 晚于 `Expected Timeline`，再结合 `Jank Type` 才能知道迟到是 App、SurfaceFlinger 还是显示末端造成的。
 
