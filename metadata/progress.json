@@ -1,61 +1,61 @@
 {
-  "generated_at": "2026-04-23T02:33:00+08:00",
+  "generated_at": "2026-04-23T03:22:43+08:00",
   "state_machine_version": "v2",
   "total_sections": 181,
   "metrics": {
     "finalized": 45,
-    "last_updated": "2026-04-23T02:33:00+08:00",
+    "last_updated": "2026-04-23T03:22:43+08:00",
     "pipeline_ready_to_publish": 45,
     "pipeline_stage_counts": {
       "ready-to-publish": 45,
-      "task6_pending": 50,
-      "task9_pending": 46,
-      "task2b_pending": 40
+      "task6_pending": 52,
+      "task9_pending": 45,
+      "task2b_pending": 39
     },
-    "pipeline_task2b_pending": 40,
-    "pipeline_task9_pending": 46,
+    "pipeline_task2b_pending": 39,
+    "pipeline_task9_pending": 45,
     "ready-for-review": 136,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 128,
+      "fixed": 129,
       "idle": 6,
-      "pending": 44,
+      "pending": 43,
       "unknown": 3
     },
     "task6_state_counts": {
-      "reviewed": 126,
-      "revisiting": 55
+      "reviewed": 124,
+      "revisiting": 57
     },
     "task9_state_counts": {
-      "reviewed": 99,
-      "pending": 81,
+      "reviewed": 97,
+      "pending": 83,
       "fixed": 1
     },
     "total": 181,
     "total_sections": 181,
     "unknown": 0,
-    "task6_reviewed": 126
+    "task6_reviewed": 124
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "ready-to-publish": 45,
-      "task6_pending": 50,
-      "task9_pending": 46,
-      "task2b_pending": 40
+      "task6_pending": 52,
+      "task9_pending": 45,
+      "task2b_pending": 39
     },
     "task6_state_counts": {
-      "reviewed": 126,
-      "revisiting": 55
+      "reviewed": 124,
+      "revisiting": 57
     },
     "task9_state_counts": {
-      "reviewed": 99,
-      "pending": 81,
+      "reviewed": 97,
+      "pending": 83,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 128,
+      "fixed": 129,
       "idle": 6,
-      "pending": 44,
+      "pending": 43,
       "unknown": 3
     }
   },
@@ -2256,17 +2256,19 @@
       "chapter": "2.10",
       "section": "2.10",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "reviewed_date": "2026-04-22",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "task9_reviewed_date": "2026-04-17",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T22:55:00+08:00",
+      "last_task2b_at": "2026-04-23T03:20:18+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
       "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
@@ -2309,16 +2311,17 @@
       "title": "Android 渲染架构全景",
       "chapter": "2.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework-v2",
       "task2b_result": "fixed",
-      "task9_reviewed_date": "2026-04-16"
+      "task9_reviewed_date": "2026-04-16",
+      "last_task2b_at": "2026-04-23T03:20:18+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md": {
       "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",

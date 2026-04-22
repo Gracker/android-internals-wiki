@@ -25,15 +25,16 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 review_round: 2
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework-v2
 task9_reviewed_date: "2026-04-16"
 task2b_result: fixed
 task2b_state: fixed
+last_task2b_at: "2026-04-23T03:20:18+08:00"
 ---
 
 # Android 渲染架构全景
@@ -256,7 +257,7 @@ void SurfaceFlinger::handleMessageRefresh() {
 }
 ```
 
-在 BufferQueue 的实现中，三缓冲通过 `maxBufferCount` 参数控制（通常设为 3），并依赖同步栅栏（Fence）确保缓冲区按顺序使用。Android 16 中引入了 AsyncBufferQueue，进一步优化了缓冲区队列的管理效率。
+在 BufferQueue 的实现中，三缓冲依赖 buffer slot 数量和 Fence 协同工作：生产者只有拿到空闲 slot 才能继续写入，消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST/SurfaceControl 事务路径后，系统还要把 buffer 提交和窗口几何变更放到同一时序里。文中提到的 AsyncBufferQueue 可以放在这组流程里理解：它解决的是持续入队场景里的排队抖动；Android 16 对 64 位新设备同时抬高了 Vulkan 基线，要求支持 Vulkan 1.4，其中的 Host Image Copy 允许 CPU 侧上传更直接地进入 GPU 可用 image memory，减少 staging buffer 和一次额外 copy。前者管排队，后者管上传，两类改动叠在一起时，流式纹理和视频帧这类场景更容易保持稳定。
 
 [待补充：Trace 中三缓冲的监控方法]
 
@@ -410,7 +411,7 @@ void SkiaVulkanPipeline::draw(RenderNode* root) {
 | 复杂图形 | 较慢 | 较快（GPU 并行计算） |
 | 简单图形 | 可能更快（避免 API 开销） | 较快 |
 | 调试难度 | 简单 | 复杂（需要 GPU 调试工具） |
-| 电耗 | 较高 | 较低（GPU 优化） |
+| 电耗 | 复杂 UI 下通常更高（CPU 满载光栅化） | 复杂 UI 下通常更低；极简单场景未必占优 |
 
 ### 检测当前渲染模式
 
@@ -428,7 +429,7 @@ setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 
 ### HWUI 概述
 
-HWUI（Hardware Accelerated UI）是 Android 的硬件加速渲染引擎，从 Android 3.0（API 11）开始引入，用于替代传统的软件渲染模式。它通过将绘制操作卸载到 GPU，通过 GPU 硬件加速，复杂 2D 图形渲染性能相比纯 CPU 软件渲染提升 5-10 倍，特别是在大量 Path 操作和复杂变换场景中。
+HWUI（Hardware Accelerated UI）是 Android 的硬件加速渲染引擎，从 Android 3.0（API 11）开始引入，用于替代传统的软件渲染模式。它把绘制指令交给 GPU 并行执行。在复杂 Path、多层 Overdraw、频繁几何变换这类 2D 场景里，吞吐通常明显高于纯 CPU 光栅化；但提升幅度取决于 SoC、驱动、分辨率和绘制负载，不能脱离测试条件写成固定倍数。
 
 HWUI 的核心设计思想是把 UI 渲染拆分为"录制"和"回放"两个阶段。主线程负责录制——遍历 View 树，把每个 View 的 drawXXX 调用记录为一条条绘制指令；RenderThread 负责回放——将这些指令交给 GPU 执行。这两个阶段之间通过 DisplayList（绘制指令的容器）和 RenderNode（View 对应的渲染节点）来传递数据。HardwareRenderer 则是整个流程的协调者，它管理 RenderThread 的生命周期和帧调度。
 
@@ -443,12 +444,12 @@ SkiaPipeline (RenderThread 使用 — 回放指令)
 └── SkiaVulkanPipeline
 ```
 
-#### RecordingCanvas：UI 线程的画布
+#### android.graphics.RecordingCanvas：UI 线程的画布
 
-RecordingCanvas 是一个"空壳"画布——它不执行任何实际的像素绘制，而是将 View 的 drawXXX 调用逐条记录为 DisplayList 中的指令序列。大部分绘制方法都是空实现，开销极低。
+`android.graphics.RecordingCanvas` 是一个"空壳"画布——它不执行任何实际的像素绘制，而是将 View 的 drawXXX 调用逐条记录为 DisplayList 中的指令序列。大部分绘制方法都是空实现，开销极低。
 
 ```java
-// frameworks/base/core/java/android/view/RecordingCanvas.java
+// frameworks/base/graphics/java/android/graphics/RecordingCanvas.java
 // @ AOSP android-16.0.0_r1
 @Override
 public void drawRect(float left, float top, float right, float bottom, Paint paint) {
@@ -692,11 +693,11 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 **Android 10（Q，2019）** 引入了 Skia 渲染后端统一，HWUI 的渲染管线完全基于 Skia，同时支持 OpenGL 和 Vulkan 后端。
 
-**Android 12（S，2021）** 引入了 BlastBufferQueue，替代了之前的 BufferQueue 通信方式，减少了 App 进程和 SurfaceFlinger 之间的 Binder IPC 开销。多窗口场景和游戏渲染因为涉及更频繁的跨进程缓冲区传递，受益最大。
+**Android 12（S，2021）** 引入了 BLASTBufferQueue，把 buffer 提交和 SurfaceControl transaction 放到同一事务节奏里，减少了 App 进程与 SurfaceFlinger 之间的时序错位。多窗口和频繁 resize 的场景受益更明显；后续版本里，这组事务流程又继续向 ASurfaceControl 侧的接口收敛。
 
 **Android 13（T，2022）** 进一步优化了 Vulkan 后端的支持，更多设备默认使用 Vulkan 进行 UI 渲染。
 
-**Android 16（2025）** 在渲染架构上引入了多项改进：AsyncBufferQueue 优化了缓冲区队列管理效率、HWUI 渲染管线进行了内部重构，同时面向开发者新增了基于 AGSL（Android Graphics Shading Language）的 RuntimeColorFilter 和 RuntimeXfermode，支持通过 GPU 着色器实现阈值、褐色调、色相饱和度等自定义图形效果，减少了自定义 View 的开发复杂度。
+**Android 16（2025）** 把图形栈的设备基线继续抬高：64 位新设备要求支持 Vulkan 1.4，Host Image Copy 让持续上传纹理和图像数据时少一次 staging copy；缓冲区排队和窗口事务侧继续沿着 BLAST / ASurfaceControl 路径演进，AsyncBufferQueue 这类优化让持续入队场景更稳定。面向应用层，AGSL 继续扩展 RuntimeColorFilter、RuntimeXfermode 这类可编程图形能力。
 
 ## 常见问题与误区
 

@@ -9,7 +9,7 @@ last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium-high
 sources:
   - type: aosp
-    path: "frameworks/base/core/java/android/graphics/"
+    path: "frameworks/base/graphics/java/android/graphics/"
   - type: official
     path: "https://developer.android.com/guide/topics/graphics/"
   - type: blog
@@ -31,16 +31,17 @@ last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、A
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: "pending"
+task2b_state: fixed
 last_task9_at: "2026-04-22T22:55:00+08:00"
 task2b_result: fixed
+last_task2b_at: "2026-04-23T03:20:18+08:00"
 ---
 
 # GPU 渲染深入
@@ -97,7 +98,7 @@ Vertex Shader 是 GPU 渲染管线的第一个可编程阶段，它负责处理�
 当我们调用 `Canvas.drawRect()` 时，这个调用最终会触发 GPU 执行 Vertex Shader。其核心工作是三件事：首先，将模型的顶点从本地坐标转换到屏幕坐标，这个过程涉及矩阵变换（模型矩阵、视图矩阵、投影矩阵的组合）；其次，计算每个顶点的颜色、纹理坐标等插值属性，这些属性会在后续的 Fragment Shader 阶段被插值使用；最后，判断顶点是否在视口范围内，剔除不可见的图元，避免 GPU 在后续阶段做无用功。
 
 ```java
-// frameworks/base/core/java/android/graphics/Canvas.java
+// frameworks/base/graphics/java/android/graphics/Canvas.java
 // @ AOSP android-16.0.0_r1
 public void drawRect(float left, float top, float right, float bottom, Paint paint) {
     if (paint != null) {
@@ -130,7 +131,7 @@ void main() {
 
 这个着色器展示了 Fragment Shader 的基本工作模式：从纹理中采样颜色，然后应用统一的颜色调制，最终输出像素颜色。在真实的 Android UI 渲染中，Fragment Shader 还需要处理透明度混合、渐变效果、阴影计算、模糊效果等——每增加一个效果，就意味着每像素的计算量又增加了一层。而纹理采样是一个特别需要注意的操作，因为每次采样都需要从显存中读取数据，在移动 GPU 的统一内存架构下，这些读取会与其他组件（如 CPU、显示控制器）竞争内存带宽。
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/graphics/Shader.java]
+> [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/Shader.java]
 
 在分析 Fragment Shader 性能时，纹理采样次数是最关键的关注点。一个常见的性能陷阱是在 Fragment Shader 中使用多个纹理采样（例如实现圆角+阴影+渐变背景），每增加一次采样，每像素的内存访问量就增加一个数量级。在 1080p 屏幕上，一次全屏渲染就需要处理约 200 万个像素——如果每个像素采样 4 次纹理，那就是 800 万次显存访问。
 
@@ -144,7 +145,7 @@ Android 中的 Framebuffer 管理涉及多个层面。最底层是 Gralloc 模�
 
 ```cpp
 // 示意性伪代码：ANativeWindowBuffer 的概念结构
-// 注意：AOSP 中 ANativeWindowBuffer 的实际定义在 system/core/libsystem/include/android/native_window.h
+// 注意：AOSP 中 ANativeWindowBuffer 的实际定义在 frameworks/native/libs/nativewindow/include/android/native_window.h
 // GraphicBuffer 的定义在 frameworks/native/libs/ui/include/ui/GraphicBuffer.h
 // 以下代码仅为说明 Framebuffer 相关概念，非 AOSP 实际源码
 struct ANativeWindowBuffer {
@@ -155,6 +156,8 @@ struct ANativeWindowBuffer {
     int usage;       // 使用标志（如 GPU 渲染、相机预览等）
 };
 ```
+
+这层对象关系很容易混在一起。App 或 NDK 代码日常直接接触的通常是 `Surface`、`SurfaceTexture`、`ANativeWindow`、`HardwareBuffer` 这类公开对象；缓冲区一旦进入 BufferQueue，底层 native handle 会被 `GraphicBuffer` 包装，并附带 format、usage、stride、fence 等元数据，再继续流向 SurfaceFlinger、HWC 或 GPU 驱动。也就是说，`ANativeWindowBuffer` 更接近生产者视角的窗口缓冲区抽象，`GraphicBuffer` 更常出现在 framework/native 图形栈里，两者描述的是同一批底层图形内存，可以视为同一份底层 buffer 在不同层的表示。
 
 Framebuffer 的管理采用双缓冲（或多缓冲）机制：前缓冲区用于显示，后缓冲区用于渲染，两者在 VSync 信号到来时交换。这个机制避免了画面撕裂——如果没有双缓冲，GPU 正在写入的缓冲区同时被显示控制器读取，画面就会出现上下半帧不一致的情况。在高分辨率屏幕上，Framebuffer 的内存占用不容忽视：以 1080p 屏幕、RGBA8888 格式为例，单个 Framebuffer 就需要约 8MB 内存（1920×1080×4 字节），而三缓冲机制下就需要 24MB。在 2K 甚至 4K 屏幕上，这个数字会成倍增长。
 
@@ -217,9 +220,11 @@ Android 16 将 Vulkan 定为默认图形 API 的一个重要动机，就是利�
 
 ### Android 16 的重大转变：Vulkan 成为默认
 
-Android 16 标志着一个重要里程碑：Vulkan 成为官方默认图形 API。新开发的应用将直接使用 Vulkan 后端，而仍然使用 OpenGL ES 的应用则会通过 ANGLE 层转换为 Vulkan 调用。理解这两种 API 的差异以及 ANGLE 层的影响，已经成为 Android 性能分析的必备知识。
+Android 16 把 Vulkan 推到更靠前的位置，但要把这句话拆开看。对应用开发者，系统默认优先按 Vulkan-first 的图形栈走；对仍使用 OpenGL ES 的应用，很多设备会通过 ANGLE 把 GL 调用翻译到 Vulkan；对设备厂商，新出货的 64 位设备还需要满足 Vulkan 1.4 / VPA16 这一层硬件基线。几个层次叠在一起，才构成“Android 16 默认走 Vulkan”的完整含义。
 
-这个转变背后的根本原因是 OpenGL ES 的驱动实现质量参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异很大。Google 通过 ANGLE 将所有 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，减少了碎片化问题。
+VPA16 里与性能关系最直接的一项是 Host Image Copy。它允许 CPU 侧把图像数据直接拷入 GPU image，省掉 staging buffer 和一次额外 copy。对滚动列表里的大图、视频帧上传、纹理流式加载这类持续上传场景，收益通常体现在峰值内存更低、提交抖动更小，而不只是 API 名字变化。
+
+这个转变背后的一个直接原因是 OpenGL ES 驱动实现质量长期参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异都不小。Google 通过 ANGLE 将大量 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，碎片化问题也随之收敛。
 
 ### CPU 开销：一个数量级的差距
 
@@ -261,7 +266,7 @@ vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 
 ### ANGLE 层的性能影响
 
-对于仍然使用 OpenGL ES 的应用，ANGLE 转换层引入的性能开销是需要关注的。[社区数据: ANGLE 性能开销数据来自 Google I/O 演讲与社区基准测试，非官方系统性基准数据] 根据 Google I/O 技术演讲及社区的测试数据，对于优化良好的 2D UI 应用，ANGLE 的性能开销在 2-5% 以内，几乎可以忽略；对于使用复杂着色器的 3D 游戏应用，开销在 5-10% 范围内；而在极端的合成基准测试中，开销可能达到 10-20%。
+对于仍然使用 OpenGL ES 的应用，ANGLE 转换层引入的性能开销需要单独看测试条件。[社区数据: ANGLE 性能开销数据来自 Google I/O 演讲与社区基准测试，非官方系统性基准数据] 社区里经常能看到 2-5%、5-10%、10-20% 这类数字，但这些数字只有在设备、GPU、驱动版本、分辨率、shader 复杂度和测试方法都写清楚时才有比较价值。放回工程语境后，可以把它理解成一个量级参考：2D UI workload 往往只是几个百分点，复杂 3D workload 会更高，合成型压力测试还会继续放大。正文把它当经验区间，只能做量级参考。
 
 这个开销的来源主要有两方面：一是 GLSL 到 SPIR-V 的翻译过程，二是 OpenGL ES 的状态机模型到 Vulkan 的命令缓冲区模型的转换。对于大多数日常应用来说，ANGLE 的性能损耗在可接受范围内，而且 ANGLE 带来的驱动一致性和 bug 修复的收益通常远大于性能开销。
 
@@ -269,22 +274,18 @@ vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 
 ### Vulkan 与 OpenGL ES 的版本演进
 
-从 Android 7.0 引入 Vulkan 到 Android 16 将其定为默认 API，这条演进线跨越了近十年。下表梳理了关键节点：
+从 Android 7.0 引入 Vulkan 到 Android 16 把图形栈推向 Vulkan-first，这条演进线跨越了近十年。把 `API 可用性`、`设备 launch requirement` 和 `ANGLE rollout` 拆开看，边界会更准确：
 
-| Android 版本 | API Level | GPU 图形栈变化 |
+| Android 版本 | API Level | Vulkan / ANGLE 边界 |
 |:---|:---|:---|
-| 7.0 | 24 | Vulkan 1.0 可选支持。应用可使用 Vulkan API，但 OpenGL ES 仍为默认 |
-| 7.0+ | 24+ | NDK 引入 Vulkan 支持，游戏引擎开始实验性接入 |
-| 8.0 | 26 | Vulkan 驱动成为 CTS 必测项，设备必须提供合规的 Vulkan 实现 |
-| 9.0 | 28 | 引入 Baseline Profiles 机制（与 Vulkan 无直接关系，但影响渲染性能基线） |
-| 10 | 29 | ANGLE 开始作为可选的 OpenGL ES 兼容层提供，仍需手动启用 |
-| 12 | 31 | ANGLE 扩展到更多设备。引入 Game Mode API，可针对游戏调整 GPU 调度策略 |
-| 13 | 33 | ANGLE 覆盖更多 OpenGL ES 场景。Vulkan 1.1 成为设备要求 |
-| 14 | 34 | 引入图形内存优化（缓冲区缓存清除）。Vulkan 1.3 支持更广泛 |
-| 15 | 35 | ANGLE 正式作为部分设备的默认 OpenGL ES 后端。Vulkan 1.3 要求进入 Preview |
-| 16 | 36 | **Vulkan 成为默认图形 API**。OpenGL ES 应用默认通过 ANGLE 转换到 Vulkan 后端 |
+| 7.0 | 24 | Vulkan 1.0 API 与 NDK 支持进入 Android；是否可用取决于设备，OpenGL ES 仍是主路径 |
+| 8.0 | 26 | Vulkan 生态开始稳定，更多设备通过 CTS/VTS 提供合规实现，仍未形成统一硬件门槛 |
+| 10 | 29 | **新出货的 64 位设备** 需要支持 Vulkan 1.1；ANGLE 可以作为可选的 OpenGL ES 系统驱动用于兼容与调试 |
+| 12-14 | 31-34 | ANGLE 覆盖范围继续扩大，Game Mode 与图形兼容性策略增多；是否由 ANGLE 接管仍取决于设备 launch policy 和厂商配置 |
+| 15 | 35 | Vulkan-first 路线继续推进，更多设备把 ANGLE 用在默认 GL 路径上，不能只按 OS 版本划线 |
+| 16 | 36 | **新设备默认按 Vulkan-first 图形栈设计**；新出货的 64 位设备基线提升到 Vulkan 1.4 / VPA16，包含 Host Image Copy；OpenGL ES 应用通常通过 ANGLE-on-Vulkan 运行 |
 
-> [待验证: Android 15/16 的具体 ANGLE 覆盖范围可能因设备厂商配置而异]
+把这张表拆开后就不会把几件事混成一件事：Vulkan API 早在 Android 7.0 就出现；设备硬件门槛从 Android 10 的 Vulkan 1.1 一直推进到 Android 16 的 Vulkan 1.4 / VPA16；ANGLE 是否成为默认 GL 后端则是设备配置问题，不能直接写成单一 OS 版本边界。
 
 ## GPU 性能瓶颈分析：fillrate bound vs vertex bound vs bandwidth bound
 
@@ -316,7 +317,7 @@ Vertex bound 在 Android UI 渲染中相对少见，但在某些场景下会出�
 
 优化的方向包括：使用更简单的几何形状替代复杂 Path（用矩形近似圆角矩形在视觉可接受的情况下）；减少 Canvas 的 save/restore 和矩阵变换层数；对于静态的复杂图形，考虑预渲染为 Bitmap 缓存。
 
-> [待验证: frameworks/native/opengl/ 在 AOSP android-16 中不存在，OpenGL ES 系统头文件位于 system/core/libsystem/include/。TBR 架构描述的准确来源需重新确认。]
+> [说明: TBR 架构这一段依赖 ARM / Qualcomm 公开优化资料与渲染行为观察，本段不建立在某个单一 AOSP 目录上。]
 
 在瓦片式渲染（TBR）架构的移动 GPU 上，通过高效管理加载和存储操作以及附件，可以显著提高性能。TBR 架构的 GPU（如 ARM Mali）会将一帧的渲染任务划分为多个瓦片，每个瓦片独立处理，这减少了对主显存的访问频率。
 
@@ -354,14 +355,14 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 ### Android GPU 内存管理架构
 
-[图：Android GPU 内存管理层次图——Application (GraphicBuffer) → HAL (Gralloc) → Hardware (GPU Memory)]
+[图：Android GPU 内存管理层次图——App 可见对象（Surface / SurfaceTexture / HardwareBuffer / ANativeWindow）→ BufferQueue → GraphicBuffer / Gralloc / Mapper → GPU / HWC]
 
-Android 的 GPU 内存管理涉及多个层次。从上往下看：应用层通过 `GraphicBuffer` 类来引用和管理图形缓冲区；系统框架层通过 BufferQueue 机制协调生产者（应用）和消费者（SurfaceFlinger）对缓冲区的使用；HAL 层通过 Gralloc 模块负责实际的物理内存分配；硬件层的 GPU 则直接访问这些物理内存来执行渲染和合成操作。
+Android 的 GPU 内存管理分成几层。App 平时直接接触的是 `Surface`、`SurfaceTexture`、`ANativeWindow`、`HardwareBuffer` 这类公开对象，用它们申请、提交或共享缓冲区；BufferQueue 负责在生产者和消费者之间周转 slot；系统的 framework/native 图形栈再用 `GraphicBuffer` 包装底层 handle，把 format、usage、stride、fence 等信息带给 SurfaceFlinger、RenderThread 和 HWC；真正的物理页分配与映射由 Gralloc / Mapper 完成。
 
 理解这个层次结构有一个关键前提：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。GPU 的内存使用会直接影响系统的可用内存总量。在分析应用内存占用时，不能只看 Java heap——GPU 占用的内存同样重要。
 
 ```java
-// frameworks/base/core/java/android/graphics/GraphicBuffer.java
+// frameworks/base/graphics/java/android/graphics/GraphicBuffer.java
 // @ AOSP android-16.0.0_r1
 // [简化示意] 实际类通过 long mNativeObject 持有 native 侧的完整缓冲区描述
 public class GraphicBuffer implements Parcelable {
@@ -377,7 +378,8 @@ public class GraphicBuffer implements Parcelable {
     // ...
 }
 ```
-```
+
+这段类定义主要用来说明 `GraphicBuffer` 在 framework 层的包装位置，不代表普通应用应该直接持有它。排查 GPU 内存问题时，更常见的观察点是 Perfetto 里的 `gpu_memory` track、`dumpsys meminfo` 中的 Graphics / EGL mtrack，以及 `dumpsys SurfaceFlinger` 里能看到的 BufferQueue slot 与 layer 缓冲区占用。
 
 ### Gralloc：图形内存分配器
 
@@ -386,15 +388,15 @@ Gralloc（Graphics Memory Allocator）是 Android HAL 层中专门负责图形�
 Gralloc 分配内存时，调用者需要通过 `usage` 标志位来声明这块内存的用途——比如 `USAGE_HW_TEXTURE` 表示这块缓冲区将被 GPU 作为纹理读取，`USAGE_HW_RENDER` 表示 GPU 会向这块缓冲区写入渲染结果，`USAGE_SW_READ_OFTEN` 表示 CPU 会频繁读取这块内存。Gralloc 根据 usage 标志来决定内存的物理布局：应该分配在哪个内存区域、是否需要 cache 策略、对齐要求是什么。这些决策直接影响 GPU 访问这块内存的效率。
 
 ```cpp
-// hardware/interfaces/graphics/allocator/4.0/IAllocator.hal
-// @ AOSP android-16.0.0_r1
-interface IAllocator {
-    allocate(BufferDesc descriptor) generates (Error error, Buffer buffer);
-    dump() generates (string result);
-};
+// allocator / mapper 的职责示意
+// Android 16 主线设备以 AIDL Gralloc 为主，旧设备也可能保留 HIDL 4.x vendor 实现
+allocate(BufferDescriptor descriptor) -> native_handle_t
+importBuffer(native_handle_t) -> BufferHandle
+lock(BufferHandle, usage, region) -> mapped_ptr
+unlock(BufferHandle) -> release_fence
 ```
 
-> [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/]
+> [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/]
 
 ### GPU 内存追踪和分析
 
@@ -575,10 +577,10 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 ### AOSP 源码路径
 - `frameworks/native/libs/ui/include/ui/GraphicBuffer.h` — GraphicBuffer C++ 定义（AOSP）
-- `system/core/libsystem/include/android/native_window.h` — ANativeWindowBuffer 定义
+- `frameworks/native/libs/nativewindow/include/android/native_window.h` — ANativeWindowBuffer 定义
 - [ANGLE 源码（Google Git）](https://android.googlesource.com/platform/external/angle/) — ANGLE OpenGL ES on Vulkan
 - `frameworks/native/vulkan/` — Vulkan API 支持
-- `hardware/interfaces/graphics/allocator/` — Gralloc HAL 定义
+- `hardware/interfaces/graphics/allocator/aidl/` — Gralloc / Mapper AIDL 定义
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 合成服务
 
 ### 官方文档
