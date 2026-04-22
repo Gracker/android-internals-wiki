@@ -2,7 +2,7 @@
 title: "GPU 图形调试与分析工具"
 chapter: "14.8"
 section: "14.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI/Sokatoa 要求 Android 11+)"
 last_verified: "2026-04-22"
 last_verified_against: "developer.android.com/agi, developer.android.com/guide/topics/manifest/profileable-element, perfetto.dev, AOSP gpu_counter_config.proto"
@@ -36,10 +36,14 @@ last_task2b_at: "2026-04-22T08:06:44+08:00"
 task2b_result: fixed
 reviewed_date: "2026-04-21"
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
+task9_result: pass-tech-review
+task9_reviewed_date: '2026-04-22'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-22T14:30:00+08:00'
 ---
 
 # 14.8 GPU 图形调试与分析工具

@@ -1016,5 +1016,73 @@
     "status": "completed",
     "completed_at": "2026-04-22T13:58:00+08:00",
     "completed_by": "task2b-content-processing-rework"
+  },
+  {
+    "section": "8.2",
+    "section_title": "App 启动全流程",
+    "priority": 95,
+    "reason": "[Deep Tech Review] TTID 终点口径写错；遗漏 Android 15 ApplicationStartInfo 结构化启动诊断",
+    "material_paths": [
+      "logs/external-review/archive/2026-04-19-10-8.2-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误/原理错误",
+        "location": "### 第四阶段：首帧绘制 / ## TTID 与 TTFD",
+        "detail": "正文把 `queueBuffer` 返回写成 TTID 的计时终点，并写成 ViewRootImpl 直接通知 ActivityMetricsLogger。AOSP android-15.0.0_r1 中，启动完成口径走 `ActivityRecord.onWindowsDrawn()` → `ActivityMetricsLogger.notifyWindowsDrawn()`，WaitResult 和 `Displayed` 也都使用 `windowsDrawnDelayMs`。`queueBuffer` 只是更早的应用侧提交点，不等于系统认定的 launch complete。",
+        "suggestion": "把 TTID 终点改写为 WMS/ActivityRecord 的 windows drawn 回调，并补一段 `queueBuffer`、`windowsDrawn`、SurfaceFlinger 合成完成三者的关系。",
+        "evidence": [
+          "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java",
+          "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+        ]
+      },
+      {
+        "type": "版本差异/知识盲区",
+        "location": "## 启动耗时的度量方法",
+        "detail": "章节覆盖到 Android 16，但没有补 Android 15(API 35) 的 `ApplicationStartInfo`。官方 API 已提供 `ActivityManager.getHistoricalProcessStartReasons()`、`addApplicationStartInfoCompletionListener()`，并暴露 `START_TIMESTAMP_FIRST_FRAME`、`START_TIMESTAMP_FULLY_DRAWN` 等结构化时间戳。当前章节仍停留在 `am start -W` / logcat / Perfetto 三件套，版本覆盖不完整。",
+        "suggestion": "增加“Android 15+ 结构化启动诊断”小节，说明 `ApplicationStartInfo` 的获取入口、冷热温启动枚举，以及它与 TTID/TTFD 的对应关系。",
+        "evidence": [
+          "https://developer.android.com/reference/android/app/ApplicationStartInfo"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T14:30:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "8.4",
+    "section_title": "其他响应速度场景",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 把 InputDispatcher 事件投递写成 Binder；将 ViewPager2 误写成 Android 9 平台能力",
+    "material_paths": [
+      "logs/external-review/archive/2026-04-19-10-8.4-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/原理错误",
+        "location": "## 点击响应速度：从 onClick 到视觉反馈的完整路径 -> 2. InputDispatcher 分发延迟",
+        "detail": "正文写成“InputDispatcher 通过 Binder 将事件发送给目标窗口所在进程”。AOSP 当前实现里，逐事件投递走的是 `InputChannel` / `InputPublisher` / `InputConsumer`，底层由 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)` 建立输入通道；Binder 不是应用窗口接收触摸事件的主数据通路。把 IPC 机制写成 Binder，会把输入分发、ack/finish 和 ANR 判断链路都带偏。",
+        "suggestion": "把这段改成“InputReader → InputDispatcher → InputChannel(InputPublisher/InputConsumer) → App Looper”，并补一句 InputDispatcher 依赖 finish 信号做超时/ANR 判断。",
+        "evidence": [
+          "frameworks/native/include/input/InputTransport.h",
+          "frameworks/native/libs/input/InputTransport.cpp",
+          "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "location": "## 版本演进",
+        "detail": "章节把 `ViewPager2` 写成“Android 9.0(API 28) 引入”。但 `ViewPager2` 是 Jetpack / AndroidX 组件，官方参考页标注的是 `androidx.viewpager2:viewpager2` Added in 1.0.0，它不是 API 28 的平台能力。把它绑到 Android 9 会误导读者用系统版本判断可用性。",
+        "suggestion": "把版本线改成 AndroidX/Jetpack 演进：`ViewPager2` Added in 1.0.0，并单独说明它可运行在更低 Android 版本，受限的是依赖库版本而不是平台 API 28。",
+        "evidence": [
+          "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2",
+          "https://developer.android.com/jetpack/androidx/releases/viewpager2"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T14:30:00+08:00",
+    "status": "pending"
   }
 ]
