@@ -186,7 +186,7 @@ public static long currentAnimationTimeMillis() {
 }
 ```
 
-这说明 `AnimationUtils.currentAnimationTimeMillis()` 读到的并不是另一套独立时钟，而是跟当前 VSync 同步过的线程本地动画时钟。精度损失发生在 `frameTimeNanos / NANOS_PER_MS` 这一步。这里更准确的结论是，时间源和 VSync 同步，但只有毫秒精度。
+这说明 `AnimationUtils.currentAnimationTimeMillis()` 读到的并不是另一套独立时钟，而是跟当前 VSync 同步过的线程本地动画时钟。Choreographer 内部维护的 `mLastFrameTimeNanos` 仍然是纳秒值，但传给 `AnimationUtils.lockAnimationClock()` 时已经执行了 `frameTimeNanos / NANOS_PER_MS` 这一步 long 整数除法。这里的行为是直接向下截断，不是四舍五入：`8_999_999ns / 1_000_000 = 8ms`，`9_000_001ns / 1_000_000 = 9ms`。两次 VSync 只差 2ns，动画时钟却会跨过完整的 1ms 档位。120Hz 面板上一帧只有 8.33ms，这种跳变会把样条进度和位移量一起放大。
 
 ## 帧率稳定性与步幅均匀性的关系
 
@@ -233,7 +233,7 @@ class StepJitterProbe(
 }
 ```
 
-目标对象可以换成 `translationX`、`RecyclerView.computeVerticalScrollOffset()`、自定义动画值或 layer bounds。真正要算的是同一段轨迹上的 `displacement variance`、`velocity variance` 和 `dt variance`。其中 `dt variance` 只是辅助指标，不能替代位移采样。
+目标对象可以换成 `translationX`、`RecyclerView.computeVerticalScrollOffset()`、自定义动画值或 layer bounds。真正要算的是同一段轨迹上的 `displacement variance`、`velocity variance` 和 `dt variance`。其中 `dt variance` 只是辅助指标，不能替代位移采样。做对照实验时，可以保留同一条插值曲线，只把时间源切成 `frameTimeNanos`：`deltaSeconds = (frameTimeNanos - startNanos) / 1_000_000_000.0`，再用浮点时间推进位移。如果 FrameTimeline 形态不变、位移采样明显收敛，根因就更接近毫秒量化。
 
 ### 路径二：用 FrameTimeline 判断呈现节奏是不是根因
 
