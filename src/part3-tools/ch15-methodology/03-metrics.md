@@ -19,15 +19,15 @@ sources:
 tags:
   - android
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-17"
+task9_reviewed_date: "2026-04-22"
 task2b_state: fixed
 task2b_result: partial-fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-17
+reviewed_date: "2026-04-22"
 task6_result: pass-light-edit
 repaired_date: "2026-04-21"
 repaired_by: "codex"
@@ -94,7 +94,7 @@ FPS 是最直觉的流畅性指标：一秒钟内屏幕上成功渲染了多少�
 
 这就是为什么我们做性能分析时，很少只用 FPS。
 
-更准确地说，FPS 更像展示指标，不太适合做治理主指标。治理时更有价值的，通常是帧时间分位数、jank rate 和 frozen frame rate 这类更能反映尾部体验的指标。
+FPS 更像展示指标，不太适合做治理主指标。治理时更有价值的，通常是帧时间分位数、jank rate 和 frozen frame rate 这类更能反映尾部体验的指标。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals]
 
@@ -293,7 +293,7 @@ Java Heap Usage 在 Perfetto 中可以通过 `Memory` track 观察。在 Android
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory]
 
-真正落地时，Java Heap 更适合做趋势观察，而不是做绝对门禁。因为它太容易受场景、设备和采样点影响。
+实际使用时，Java Heap 更适合做趋势观察，而不是做绝对门禁。因为它太容易受场景、设备和采样点影响。
 
 ### OOM Rate
 
