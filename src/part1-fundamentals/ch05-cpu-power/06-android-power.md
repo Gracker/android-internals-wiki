@@ -9,7 +9,7 @@ last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-22"
 task2b_result: fixed
 last_task2b_at: "2026-04-22T13:58:00+08:00"
 reviewed_by: openclaw-task6
@@ -47,7 +47,7 @@ tags:
   - jobscheduler
   - powermanager
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -55,6 +55,7 @@ task9_result: 'needs-rework'
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-04-22T12:36:00+08:00'
+review_round: 2
 ---
 
 
@@ -92,7 +93,7 @@ last_task9_at: '2026-04-22T12:36:00+08:00'
 
 功耗管理不只是"省电"这么简单。它是一套覆盖硬件到软件的分层机制：从 Linux 内核的 Suspend/Resume（我们在 5.4 节讨论过 DVFS，5.5 节讨论过 Thermal），到 Android 框架层的 PowerManagerService，再到 Google 引入的 Doze 模式和 App Standby 分桶策略。理解这套机制，意味着我们在分析功耗问题时能准确定位：到底是 App 持了不该持的 WakeLock，还是后台任务调度不合理导致系统无法休眠，又或者是某个硬件器件被异常唤醒。
 
-更重要的是，功耗和性能往往是一枚硬币的两面。我们在前面章节讨论的 CPU 调度（5.1）、大小核（5.3）、DVFS（5.4）、Thermal（5.5）都是从"怎么让系统跑得更快"的角度出发的。而这一节，我们从"怎么让系统在不该跑的时候停下来"的角度来看同一套硬件。
+功耗和性能是一枚硬币的两面。我们在前面章节讨论的 CPU 调度（5.1）、大小核（5.3）、DVFS（5.4）、Thermal（5.5）都是从"怎么让系统跑得更快"的角度出发的。而这一节，我们从"怎么让系统在不该跑的时候停下来"的角度来看同一套硬件。
 
 ## Android 功耗管理框架：PowerManagerService → WakeLock → Suspend
 
@@ -221,7 +222,7 @@ Doze 关注的是"设备层面的状态"——灭屏、静止、未充电。App 
 
 ### Battery Historian 解决什么问题
 
-当收到一条用户反馈说"App 耗电太厉害了"时，我们需要的不是猜测，而是一个能看到"过去几个小时系统到底发生了什么"的工具。Battery Historian 就是这个工具。
+当收到一条用户反馈说"App 耗电太厉害了"时，我们需要一个能看到"过去几个小时系统到底发生了什么"的工具。Battery Historian 就是这个工具。
 
 Battery Historian 是 Google 推出的开源工具，用于分析 Android 设备的电池使用历史。它不是一个实时监控工具，而是一个"事后分析"工具——我们先让设备正常运行一段时间，然后导出 bugreport，再用 Battery Historian 可视化分析。[已验证: 来源见 obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md]
 

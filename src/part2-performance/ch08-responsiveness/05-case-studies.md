@@ -4,7 +4,7 @@ chapter: "8.5"
 section: "8.5"
 status: ready-for-review
 drafted_date: "2026-04-02"
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-22"
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
 reviewed_by: openclaw-task6
@@ -33,7 +33,7 @@ sources:
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -42,6 +42,7 @@ task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T05:29:00+08:00"
+review_round: 4
 ---
 
 # 案例集
