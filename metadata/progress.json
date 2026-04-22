@@ -7185,5 +7185,23 @@
     "src/preface/version-conventions.md": {
       "path": "src/preface/version-conventions.md"
     }
+  },
+  "section_18_7": {
+    "task6_reviewed": "2026-04-23",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "status": "ready-for-review"
+  },
+  "section_18_8": {
+    "task6_reviewed": "2026-04-23",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "status": "ready-for-review"
+  },
+  "section_18_9": {
+    "task6_reviewed": "2026-04-23",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "status": "ready-for-review"
   }
 }

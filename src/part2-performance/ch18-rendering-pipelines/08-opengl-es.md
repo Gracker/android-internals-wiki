@@ -20,13 +20,13 @@ related_chapters:
 - '18.9'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-17
+reviewed_date: 2026-04-23
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-22'
@@ -186,7 +186,7 @@ glDrawArrays(GL_TRIANGLES, 0, vertexCount);
 
 #### 步骤 4：eglSwapBuffers（关键提交点）
 
-这是 GLES 渲染链路中最重要的函数调用，没有之一。它在 Perfetto 中通常占据了单帧最大时间片，但**大部分时间不是它在做事，而是它在等待 Buffer**。具体做了两件事：
+这是 GLES 渲染链路中最重要的函数调用，没有之一。它在 Perfetto 中通常占据了单帧最大时间片，**大部分时间花在等待空闲 Buffer 上**。具体做了两件事：
 
 1. **Flush**：强制将所有 GL 指令发送给 GPU（`glFlush` 的等价操作）
 2. **Buffer 交换**：将画好的帧（Back Buffer）提交给 SurfaceFlinger，同时获取一个新的空闲 Buffer
@@ -211,7 +211,7 @@ GLES 的 BufferQueue 通常配置为 3 个 Slot（Triple Buffering）。理解 B
 
 ### 在 Trace 中的表现
 
-在 Perfetto 中，`eglSwapBuffers` 占据大部分时间条，**通常不是它慢，而是它在等空闲 Buffer**：
+在 Perfetto 中，`eglSwapBuffers` 占据大部分时间条，**等的基本都是空闲 Buffer 的释放**：
 
 - 如果 `dequeueBuffer` 耗时短 → Buffer 充足，流水线顺畅
 - 如果 `dequeueBuffer` 耗时长 → Buffer 压力大，可能是 Display 消费太慢或 GPU 负载过高导致 release fence 迟迟不 signal

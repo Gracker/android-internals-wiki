@@ -7,12 +7,12 @@ tags: ["TextureView", "SurfaceTexture", "App 侧合成", "纹理采样", "OES", 
 related_chapters: ["2.1", "2.6", "2.13", "18.6", "18.8"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-17
+reviewed_date: 2026-04-23
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -163,7 +163,7 @@ SurfaceView 的帧率独立于 App UI。TextureView 的帧率被绑定到 App �
 - 如果 App 主线程卡顿 → `Choreographer#doFrame` 延迟 → `updateTexImage` 延迟 → TextureView 内容卡顿
 - 即使 Producer 在正常生产帧，如果 App 的 VSync 回调被延迟，TextureView 的内容也会跟着延迟
 
-这就是为什么在低端设备上，TextureView 播放视频比 SurfaceView 更容易卡——不是视频解码慢了，而是 App 主线程拖了后腿。
+低端设备上 TextureView 播放视频比 SurfaceView 更容易卡——瓶颈在 App 主线程拖了后腿。
 
 ### 3. 内存翻倍
 
