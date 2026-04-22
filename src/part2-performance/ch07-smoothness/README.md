@@ -1,6 +1,11 @@
 # 第 7 章：流畅性
 
-> 本章节正在建设中。
+这一章是整本书里最容易被反复翻回来的部分。
+
+因为用户最常抱怨的，就是“卡”。  
+而这个“卡”背后，既可能是典型的掉帧，也可能是输入延迟、渲染链路卡住、系统负载高，甚至是一些已经接近 ANR 的问题。要把这些情况分清，不能只靠“看起来像卡”，而要建立一套更稳的判断路径。
+
+这一章的任务，就是先把流畅性问题本身讲透：什么叫 jank，常见根因有哪些，分析时应该先看哪里，优化时该从哪些方向落手。
 
 ## 本章内容
 
@@ -12,11 +17,8 @@
 - 案例集
 - 场景化性能作战手册
 
-## 延伸阅读
+## 阅读建议
 
-### Android 12+ FrameTimeline 架构与 Jank 责任归因矩阵深度报告
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 12+ FrameTimeline 架构与 Jank 责任归因矩阵深度报告  .md
-- 类型：DeepResearch 调研结果
-- 摘要：从 TokenManager、DisplayFrame/SurfaceFrame、present fence 到 Perfetto 表结构系统梳理 Android 12+ FrameTimeline，给出 jank 位掩码归因、默认阈值和数据流全景，是做卡顿责任定位、版本边界判断与 SQL 分析的高密度参考。
-- 注入时间：2026-04-20
-- 价值：兼顾源码结构和可观测性，适合作为 Jank 归因与 FrameTimeline 读图的统一入口。
+- 如果你是第一次系统学流畅性，建议按 `7.1 → 7.2 → 7.3` 顺着读，先建立问题框架。
+- 如果你已经在线上排查卡顿，`7.3`、`7.4`、`7.15` 最有用。
+- 如果你更关心优化动作而不是分析过程，可以先看 `7.5`，再回头补前面的机制和判断。

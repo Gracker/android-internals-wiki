@@ -20,14 +20,19 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [playbook, smoothness, startup, jank, anr, troubleshooting]
 related_chapters: ["7.1", "7.3", "8.2", "9.3", "13.3", "15.2", "15.5", "15.6"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 repaired_date: "2026-04-21"
 repaired_by: "codex"
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-22"
+last_task9_at: "2026-04-22T10:14:00+08:00"
 ---
 
 # 场景化性能作战手册
