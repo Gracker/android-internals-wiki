@@ -28,11 +28,11 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-22"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed

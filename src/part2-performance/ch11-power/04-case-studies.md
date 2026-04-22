@@ -12,7 +12,7 @@ confidence: medium-high
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-22"
 reviewed_by: "openclaw-task6"
 sources:
   - type: aosp
@@ -31,8 +31,8 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: fixed
 task2b_result: fixed
@@ -68,7 +68,7 @@ task2b_state: fixed
 
 前面的 11.1 讲了功耗模型，11.2 讲了 App 端的优化策略，11.3 讲了系统级的省电机制。道理都懂了，但真正拿到一个"用户反馈手机发烫、半天就没电"的问题时，从哪里下手？该看什么工具？怎么从一堆数据中找到耗电的元凶？
 
-这正是案例集存在的意义。我们不讲抽象的原则，而是带读者走完几个真实的分析过程——从发现问题、定位根因，到验证修复效果。每个案例都对应一个常见的功耗陷阱，走完一遍之后，下次遇到类似现象心里就有谱了。
+这也是案例集的目的：带读者走完几个真实的分析过程——从发现问题、定位根因，到验证修复效果。每个案例都对应一个常见的功耗陷阱，走完一遍之后，下次遇到类似现象心里就有谱了。
 
 在开始之前，我们假设读者已经了解以下内容（如果还不熟悉，可以先回去看对应章节）：
 
@@ -199,7 +199,7 @@ public class SyncService extends Service {
 }
 ```
 
-第二层保护——`wakeLock.acquire(timeout)` ——特别值得一提。`PowerManager.WakeLock` 的带超时版本的 `acquire` 方法会在指定时间后自动释放 WakeLock，即使代码因为某个未预料的路径忘记调用 `release()`。这是一个非常值得养成习惯的防御性编程手段。
+第二层保护是 `wakeLock.acquire(timeout)`。`PowerManager.WakeLock` 的带超时版本的 `acquire` 方法会在指定时间后自动释放 WakeLock，即使代码因为某个未预料的路径忘记调用 `release()`。建议在所有 WakeLock 使用中默认加上超时保护。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/PowerManager.java — acquire(long timeout) 方法]
 
