@@ -7,7 +7,7 @@ polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 drafted_date: '2026-04-01'
-reviewed_date: 2026-04-21
+reviewed_date: 2026-04-22
 reviewed_by: openclaw-task6
 rework_date: '2026-04-04'
 rework_by: openclaw-task2b
@@ -45,8 +45,8 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed

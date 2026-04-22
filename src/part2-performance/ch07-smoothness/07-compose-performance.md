@@ -6,7 +6,7 @@ applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-01'
 last_verified_against: Android 16 Developer Preview
 confidence: medium
-reviewed_date: '2026-04-21'
+reviewed_date: '2026-04-22'
 last_task2b_at: "2026-04-22T13:58:00+08:00"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -51,8 +51,8 @@ related_chapters:
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 section: '7.7'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
