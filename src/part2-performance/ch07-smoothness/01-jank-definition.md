@@ -38,8 +38,8 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -48,7 +48,7 @@ task2b_result: fixed
 last_task2b_at: '2026-04-22T21:50:17+08:00'
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
-review_round: 4
+review_round: 5
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-20T13:38:00+08:00"
@@ -86,7 +86,7 @@ last_task9_at: "2026-04-20T13:38:00+08:00"
 
 很多性能问题，一开始就输在定义上。
 
-用户说“这页面有点卡”，开发说“我这里能跑到 60fps”，测试说“偶发掉帧”，平台说“这个版本 jank rate 没超阈值”。四个人都在说卡，但说的其实不是一件事。如果这一层不先对齐，后面再看 trace、看指标、定责任方，结论很容易各说各话。
+用户说“这页面有点卡”，开发说“我这里能跑到 60fps”，测试说“偶发掉帧”，平台说“这个版本 jank rate 没超阈值”。四个人都在说卡，但说的不是同一件事。如果这一层不先统一口径，后面再看 trace、看指标、定责任方，结论很容易各说各话。
 
 所以本节先把“卡”拆开，讲清楚哪些属于渲染问题，哪些属于响应问题，哪些已经进入 ANR。只有定义清楚，后面的分析路径才会稳定。
 
@@ -98,11 +98,11 @@ last_task9_at: "2026-04-20T13:38:00+08:00"
 
 但进入技术分析后，三者又必须拆开：
 
-- **狭义 jank / 掉帧**：核心是帧没有按预期 VSync 节奏完成。
-- **响应慢**：核心是输入到可见反馈、启动到可交互之间的时间过长。
-- **ANR**：核心是主线程或关键线程长时间没有对系统要求做出响应，超过了系统 watchdog 的阈值。
+- **狭义 jank / 掉帧**：帧没有按预期 VSync 节奏完成。
+- **响应慢**：输入到可见反馈、启动到可交互之间的时间过长。
+- **ANR**：主线程或关键线程长时间没有对系统要求做出响应，超过了系统 watchdog 的阈值。
 
-这层统一视角的价值，不在概念本身，而在排障顺序。先把问题归到哪一类失效，再决定去看 `FrameTimeline`、启动链路还是 ANR 栈，效率会高很多。后面的 `7.15` 会把这套入口继续落成更具体的现场手册。
+这层统一视角的价值，不在概念本身，而在排障顺序。先把问题归到哪一类失效，再决定去看 `FrameTimeline`、启动过程还是 ANR 栈，效率会高很多。后面的 `7.15` 会把这套入口继续落成更具体的现场手册。
 
 ## Jank 的标准定义：帧没有按时到达
 
@@ -157,7 +157,7 @@ Trace 里先点 App 的 `Actual Timeline` slice，再顺 token 回到 `Choreogra
 
 `SurfaceFlingerCpuDeadlineMissed` 表示 SurfaceFlinger 主线程的 CPU 工作超了自己的 deadline。device composition 走硬件合成时，主线程会把合成相关工作算在这段 CPU time 里；如果主线程本身就没收住，这类 jank 会直接落到 CPU deadline miss。
 
-这种情况的入口不是 App `doFrame`，而是 SurfaceFlinger 侧的 `Actual Timeline` 与 `onMessageReceived`。App 侧通常只会显示“这帧 janky，但责任不在 App”。
+排查入口在 SurfaceFlinger 侧的 `Actual Timeline` 与 `onMessageReceived`，而不是 App `doFrame`。App 侧通常只会显示“这帧 janky，但责任不在 App”。
 
 ### SurfaceFlingerGpuDeadlineMissed
 
@@ -179,7 +179,7 @@ Trace 里先点 App 的 `Actual Timeline` slice，再顺 token 回到 `Choreogra
 
 ### BufferStuffing
 
-`BufferStuffing` 在 Perfetto 文档里被写成“more of a state than a jank”。它指的是 App 在上一帧还没 present 时，又继续往 SurfaceFlinger 塞新 buffer，队列里堆了多帧待显示内容。结果不是帧率立刻掉光，而是画面还能持续刷新，但输入反馈越来越晚，严重时 App 还会卡在 dequeue 等待 buffer 归还。
+`BufferStuffing` 在 Perfetto 文档里被写成“more of a state than a jank”。它指的是 App 在上一帧还没 present 时，又继续往 SurfaceFlinger 塞新 buffer，队列里堆了多帧待显示内容。结果是画面还能持续刷新，但输入反馈越来越晚，严重时 App 还会卡在 dequeue 等待 buffer 归还。
 
 这类问题先看 FrameTimeline 的 `Jank Type` 和 high latency state，再用 BufferQueue 轨道、dequeue blocking、SurfaceFlinger 侧 flow event 做佐证。不要把 `queued > 1` 这类经验信号写成唯一判据。
 
@@ -309,7 +309,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 JankStats 适合在测试环境或线上埋点里回答“哪一段 UI 状态更容易出 jank”。它基于 `FrameMetrics` / 平台帧信息收集每帧数据，能够把 Activity、页面状态、交互上下文一起带出来。FrameTimeline 更适合离线 trace 里做单帧归因，两者分工不同。
 
-JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直接：阈值等于 `current refresh period × multiplier`，默认 multiplier 是 `2`。所以默认口径不是“超过 1 个 VSync 就算 jank”，而是“超过当前刷新周期的 2 倍才报告为 jank”。
+JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直接：阈值等于 `current refresh period × multiplier`，默认 multiplier 是 `2`。默认阈值是当前刷新周期的 2 倍，超过才报告 jank。注意这和"超过 1 个 VSync 就算 jank"不同”。
 
 在 Android 12+ 上，`frameOverrunNanos` 可以补“超了多少时间”；在旧版本上，JankStats 仍然能给出较粗的运行时 jank 统计，但归因粒度不如 FrameTimeline。用法上，JankStats 用来找“哪里经常卡”；Perfetto / FrameTimeline 用来查“这一帧为什么卡”。
 
