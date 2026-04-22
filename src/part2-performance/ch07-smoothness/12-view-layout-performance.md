@@ -8,8 +8,8 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-22"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 confidence: high
 sources:
@@ -30,14 +30,14 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-20"
+task9_reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-20T14:50:48+08:00"
 ---
 
@@ -231,7 +231,7 @@ void scheduleTraversals() {
 
 [已验证: AOSP ViewRootImpl.java, scheduleTraversals()]
 
-这里有一个容易被忽略的细节：`requestLayout()` 会在消息队列中插入一个同步屏障（`sync barrier`），确保 `TraversalRunnable`（即 `doFrame`）在下一个 VSync 到来时优先执行，不会被其他同步消息阻塞。
+`requestLayout()` 会在消息队列中插入一个同步屏障（`sync barrier`），确保 `TraversalRunnable`（即 `doFrame`）在下一个 VSync 到来时优先执行，不会被其他同步消息阻塞。
 
 ### requestLayout() vs invalidate()：性能差异的本质
 
