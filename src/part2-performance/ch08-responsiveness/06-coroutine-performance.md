@@ -4,7 +4,7 @@ chapter: "8.6"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-22"
 reviewed_by: "openclaw-task6"
 reworked_date: "2026-04-06"
 reworked_by: "openclaw-task2b"
@@ -13,7 +13,7 @@ polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 polish_review_date: "2026-04-09"
 polish_review_by: "openclaw-task6"
-review_cycle: 3
+review_cycle: 4
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "kotlinx.coroutines 1.9.x / Kotlin 2.1.x / Kotlin 2.2"
@@ -27,8 +27,8 @@ sources:
     path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
 tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
 related_chapters: ["1.5", "7.7", "8.1", "8.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-19"
@@ -116,7 +116,7 @@ suspend fun loadData() = withContext(Dispatchers.Default) {
 
 `Dispatchers.IO` 使用一个弹性线程池，默认上限 64 个线程（或 CPU 核心数，取较大值），可通过 `kotlinx.coroutines.io.parallelism` 系统属性调整。它专门为阻塞式 I/O 操作设计——网络请求、数据库访问、文件读写等。
 
-这里有一个很多人不知道的优化细节：`Dispatchers.Default` 和 `Dispatchers.IO` 在底层共享同一组线程。这意味着 `withContext(Dispatchers.IO) { ... }` 如果之前已经在 `Dispatchers.Default` 上，并不一定会发生真正的线程切换——运行时会尽量让任务留在同一个线程上。这个优化在 Kotlin 协程库内部通过共享调度器实现，对开发者透明。
+`Dispatchers.Default` 和 `Dispatchers.IO` 在底层共享同一组线程。这意味着 `withContext(Dispatchers.IO) { ... }` 如果之前已经在 `Dispatchers.Default` 上，并不一定会发生真正的线程切换——运行时会尽量让任务留在同一个线程上。这个优化在 Kotlin 协程库内部通过共享调度器实现，对开发者透明。
 
 ```kotlin
 // 这段代码的 withContext 切换开销比直觉上要小
@@ -175,7 +175,7 @@ Dispatcher 的选择逻辑如下：
 
 ### withContext 的实际开销
 
-一个好消息是，`withContext` 在 Kotlin 协程库中被高度优化了。在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，很多情况下不会发生真正的线程切换。Kotlin 2.2 进一步优化了 coroutine 调度，减少了上下文切换的额外成本。根据社区的基准测试，在多个并发网络请求场景（5-10 个），Kotlin 2.2 的改进可以将响应聚合时间缩短约 15%。
+`withContext` 在 Kotlin 协程库中经过了高度优化。在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，很多情况下不会发生真正的线程切换。Kotlin 2.2 进一步优化了 coroutine 调度，减少了上下文切换的额外成本。根据社区的基准测试，在多个并发网络请求场景（5-10 个），Kotlin 2.2 的改进可以将响应聚合时间缩短约 15%。
 
 [已验证: 官方博客, Kotlin 2.2 release notes / kotlinx.coroutines changelog]
 
