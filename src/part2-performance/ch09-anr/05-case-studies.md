@@ -5,7 +5,7 @@ section: "9.5"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-22"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-21"
@@ -30,10 +30,10 @@ sources:
     path: "frameworks/native/libs/binder/ProcessState.cpp"
 tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
 related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework

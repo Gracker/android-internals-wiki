@@ -11,7 +11,7 @@ polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-16"
 last_verified_against: "AOSP android-14.0.0_r1"
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-22"
 reviewed_by: openclaw-task6
 confidence: medium
 sources:
@@ -29,11 +29,11 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 
 task9_result: needs-rework
@@ -183,8 +183,6 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 **ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`，定义在 `ActivityManagerService.java` 中），与 Service/Activity ANR 一样是系统级强制约束。`getProviderMimeType()` 调用有独立的 1 秒超时（API 31+，可通过 `getProviderMimeTypeAsync()` 异步处理），但这个 1 秒超时仅适用于 MIME 类型查询，不是通用的 ContentProvider ANR 阈值。
 
 [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT = 10 * 1000]
-
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/]
 
 
 **startForeground() 超时**：Android 12 引入了 `startForeground()` 调用的独立超时检测。当 Service 通过 `startForegroundService()` 启动后，必须在 5 秒内（Android 12+；之前为 10 秒）调用 `startForeground()` 并发出通知。如果超时未调用，系统会抛出 `ForegroundServiceDidNotStartInTimeException` 并杀掉应用进程。这是现代 Android 开发中最高频的 Service ANR 类型之一——很多开发者以为只要调用了 `startForegroundService()` 就够了，但如果没有及时跟上 `startForeground()` 调用，就会触发这个超时。
