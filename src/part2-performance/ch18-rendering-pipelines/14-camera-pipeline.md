@@ -1,21 +1,25 @@
 ---
 title: "Camera 渲染管线"
-chapter: "18.14"
+chapter: 18.14
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-18"
 task6_result: "needs-rework"
 task2b_result: fixed
+task9_reviewed_date: 2026-04-23
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-23T00:30:00+08:00"
+
 ---
 
 <!-- outline-start -->

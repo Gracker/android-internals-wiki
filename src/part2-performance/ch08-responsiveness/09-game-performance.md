@@ -43,13 +43,13 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
@@ -467,7 +467,7 @@ ART 的 GC 暂停是游戏卡顿的常见来源之一。游戏通常在每帧的
 
 ### 热节流导致的渐进式降帧
 
-热降频导致的帧率下降有一个典型模式：不是突然从 60fps 跳到 30fps（那是调度问题），而是缓慢地、渐进式地下降——55fps → 50fps → 45fps → 40fps → 35fps。
+热降频导致的帧率下降有一个典型模式：表现为缓慢地、渐进式地下降——55fps → 50fps → 45fps → 40fps → 35fps（突然从 60fps 跳到 30fps 更可能是调度问题）。
 
 在 Trace 中看到这种模式时，需要：
 1. 检查 Thermal Status Track，确认温度变化与帧率下降的对应关系

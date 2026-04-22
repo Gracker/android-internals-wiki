@@ -1,6 +1,6 @@
 ---
 title: "Android 多媒体管线性能"
-chapter: "8.8"
+chapter: 8.8
 section: "8.8"
 status: ready-for-review
 drafted_date: "2026-04-06"
@@ -36,10 +36,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: "16/20"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
+task9_reviewed_date: 2026-04-23
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-23T00:30:00+08:00"
+
 ---
 
 # 8.8 Android 多媒体管线性能
