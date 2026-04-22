@@ -18304,6 +18304,113 @@
       "processed_at": "2026-04-21T06:33:20+08:00",
       "processed_by": "task-deepresearch-injector",
       "source_type": "DeepResearch 调研结果"
+    },
+    {
+      "title": "kswapd 工作原理：Linux 后台内存回收线程解析-2026-04-22",
+      "path": "Cubox/kswapd 工作原理：Linux 后台内存回收线程解析-2026-04-22.md",
+      "score": 19,
+      "mapping": "ch04",
+      "source": "增量扫描",
+      "type": "素材扫描",
+      "tags": [
+        "#Android",
+        "#Linux",
+        "#内存管理"
+      ],
+      "scored_at": "2026-04-23T05:34:30.551577"
+    },
+    {
+      "title": "2026-04-22-power-manager-service-power-chain",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-22-power-manager-service-power-chain.md",
+      "score": 20,
+      "mapping": "ch11",
+      "source": "增量扫描",
+      "type": "素材扫描",
+      "tags": [
+        "#Android",
+        "#功耗管理",
+        "#PowerManager"
+      ],
+      "scored_at": "2026-04-23T05:34:30.551588"
+    },
+    {
+      "title": "2026-04-22-rendereffect-gpu-rendering-pipeline",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-22-rendereffect-gpu-rendering-pipeline.md",
+      "score": 20,
+      "mapping": "ch02",
+      "source": "增量扫描",
+      "type": "素材扫描",
+      "tags": [
+        "#Android",
+        "#渲染",
+        "#GPU",
+        "#SurfaceFlinger"
+      ],
+      "scored_at": "2026-04-23T05:34:30.551590"
+    },
+    {
+      "title": "2026-04-23-bionic-linker-16kb-compat-mode",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-23-bionic-linker-16kb-compat-mode.md",
+      "score": 20,
+      "mapping": "ch04",
+      "source": "增量扫描",
+      "type": "素材扫描",
+      "tags": [
+        "#Android",
+        "#内存管理",
+        "#Bionic"
+      ],
+      "scored_at": "2026-04-23T05:34:30.551592"
+    },
+    {
+      "title": "2026-04-22-app-standby-bucket-wakelock-restrictions",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-22-app-standby-bucket-wakelock-restrictions.md",
+      "score": 20,
+      "mapping": "ch11",
+      "source": "增量扫描",
+      "type": "素材扫描",
+      "tags": [
+        "#Android",
+        "#功耗管理",
+        "#Wakelock",
+        "#AppStandby"
+      ],
+      "scored_at": "2026-04-23T05:34:42.724437"
+    },
+    {
+      "path": "",
+      "title": "kswapd 工作原理：Linux 后台内存回收线程解析",
+      "section": "ch04",
+      "added_at": "2026-04-23",
+      "score": 14
+    },
+    {
+      "path": "",
+      "title": "2026-04-22-power-manager-service-power-chain",
+      "section": "ch11",
+      "added_at": "2026-04-23",
+      "score": 15
+    },
+    {
+      "path": "",
+      "title": "2026-04-22-rendereffect-gpu-rendering-pipeline",
+      "section": "ch02",
+      "added_at": "2026-04-23",
+      "score": 15
+    },
+    {
+      "path": "",
+      "title": "2026-04-23-bionic-linker-16kb-compat-mode",
+      "section": "ch04",
+      "added_at": "2026-04-23",
+      "score": 15
+    },
+    {
+      "path": "",
+      "title": "2026-04-22-app-standby-bucket-wakelock-restrictions",
+      "section": "ch11",
+      "added_at": "2026-04-23",
+      "score": 15
     }
   ]
 }
