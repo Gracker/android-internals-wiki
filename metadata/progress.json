@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-22T17:08:00+08:00",
+  "generated_at": "2026-04-22T17:33:21+08:00",
   "state_machine_version": "v2",
   "total_sections": 180,
   "metrics": {
     "finalized": 40,
-    "last_updated": "2026-04-22T17:08:00+08:00",
+    "last_updated": "2026-04-22T17:33:21+08:00",
     "pipeline_ready_to_publish": 40,
     "pipeline_stage_counts": {
       "ready-to-publish": 40,

@@ -218,7 +218,11 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-22T17:33:05",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part2-performance/ch07-smoothness/04-typical-scenarios",
@@ -252,7 +256,11 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-22T17:33:05",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part3-tools/ch14-other-tools/03-memory-tools",

@@ -23,6 +23,10 @@ sources:
     path: "https://developer.android.com/topic/performance/graphics/manage-memory"
   - type: official
     path: "https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE"
+  - type: aosp
+    path: "libcore/luni/src/main/java/libcore/util/NativeAllocationRegistry.java"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/Bitmap.java"
   - type: blog
     path: "万字长文 Android Bitmap相关的一切（鸿洋/杨充，2023-04-10）"
   - type: blog
@@ -153,6 +157,8 @@ Bitmap 的 Java 对象一直在 Java 堆里，但像素数据放在哪里，Andr
 
 **Android 8.0（API 26）及之后**：像素数据再次回到 Native heap。Java 堆压力会下降，但这些像素页仍然计入进程 PSS，所以图片解码过多，进程一样会因为总体内存压力被 `lmkd` 回收。[已验证：官方文档 `Managing Bitmap Memory` + AOSP `frameworks/base/libs/hwui/jni/Bitmap.cpp`]
 
+这套模型能成立，靠的不是“GC 直接扫描 Native heap”，而是 `Bitmap.java` 通过 `NativeAllocationRegistry` 把底层像素内存登记给 ART。Bitmap 的 Java 壳对象仍留在 Java 堆；当这个 Java 对象不可达时，registry 会调用注册好的 native free 函数释放底层像素内存。同时，ART 会把这部分 registered native size 纳入内存压力判断，所以大批量图片解码仍然可能把并发 GC 提前拉起来。也因为这层绑定已经存在，绝大多数常规场景不需要手动追着 `recycle()`。
+
 ### 各 Bitmap.Config 的内存开销对比
 
 | Config | 每像素字节 | 透明通道 | 色彩质量 | 适用场景 |
@@ -257,7 +263,7 @@ Android 12（API 31）引入了对 AVIF 的基础支持，Android 14 对新设�
 
 AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下文件体积减少约 50%。对于带宽敏感的场景（图片 CDN、社交信息流），这是一个巨大的成本优势。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。[来源：抖音 Android 端图片优化实践]
 
-但 AVIF 的软件解码比较慢，在低端设备上可能成为瓶颈。如果应用的 minSdk 低于 31，还需要考虑软件解码兜底。
+但 AVIF 的软件解码比较慢，在低端设备上可能成为瓶颈。如果应用的 minSdk 低于 31，还需要考虑软件解码兜底。常见工程做法是把 `libavif` 一类 JNI 解码库随 App 打包，在 Android 12 以下走软件解码，再按系统版本和 ABI 做能力分流。代价是包体、CPU 开销和 Native 维护成本都会上升。
 
 ### 大图解码的 OOM 风险
 
