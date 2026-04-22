@@ -14,11 +14,16 @@ sources:
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Perfetto 2026 架构级深度技术分析  .md"
   - type: research
     path: "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md"
-pipeline_stage: task6_pending
+tags: ['perfetto', 'tracing', 'overview', 'chapter-intro']
+related_chapters: ["13.1", "13.2", "13.3", "13.4", "13.5", "13.6", "13.7", "13.8", "13.9", "13.10"]
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
+reviewed_date: "2026-04-23"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 ---
 
 # 第 13 章：Perfetto
@@ -28,14 +33,14 @@ task9_state: pending
 原因很简单：Perfetto 不是一个“看图工具”，而是一整套观察 Android 运行时的方式。  
 渲染、输入、启动、ANR、调度、锁竞争、Binder、I/O，只要问题开始跨线程、跨进程、跨系统层级，最后几乎都会回到同一根时间线上来。
 
-这一章的目标，不是把每个 Perfetto 特性都列一遍，而是带着读者建立三层能力：
+这一章的目标是带着读者建立三层能力：
 
 - 先知道 Perfetto 到底是什么
 - 再知道怎样把 trace 抓对
 - 最后知道怎样从图、从 SQL、从专题分析里拿到真正能落手的判断
 
 到 2026 年，这套体系还有两个明显扩展方向。系统侧，`traced` / `traced_probes`、Mainline APEX 和标准 SQL 模块让采集、存储、分析拆成了可以独立演进的层；应用侧，AndroidX Tracing 2.0 又把进程内 TracePacket、协程上下文传播和 host JVM trace 拉进了同一个 Perfetto 数据模型。  
-但对大多数读者来说，第一步仍然不是追新特性，而是先学会把一份 trace 看明白。
+但对大多数读者来说，第一步仍然是先学会把一份 trace 看明白。
 
 ## 本章内容
 
@@ -57,7 +62,7 @@ task9_state: pending
 - 需要把问题量化到 SQL，重点看 13.8、13.10。
 - 需要理解采集路径和扩展 tracing 能力，重点看 13.9，再回看 13.7 里的高级用法。
 
-如果你是在真实排障中第一次翻到这一章，最实用的方式通常不是“从头全读完”，而是：
+如果你是在真实排障中第一次翻到这一章，最实用的方式通常是：
 
 1. 先看 `13.3`，知道界面里到底在看什么。
 2. 再看 `13.2`，把 trace 抓对。

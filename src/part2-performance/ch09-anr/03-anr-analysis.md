@@ -7,7 +7,7 @@ drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: 2026-04-16
+reviewed_date: "2026-04-23"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
@@ -33,14 +33,16 @@ sources:
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-21"
+task9_reviewed_date: "2026-04-23"
 last_task9_at: "2026-04-21T05:29:00+08:00"
 task2b_result: fixed
+task6_result: pass-light-edit
+review_round: 2
 ---
 
 # ANR 分析方法
@@ -215,7 +217,7 @@ ANR 的根因本质上可以归为三类：主线程被阻塞（等着拿不到�
 
 主线程做 I/O 是最常见的 ANR 原因之一。在 trace 中，主线程堆栈会显示 `FileOutputStream.write`、`FileInputStream.read`、`SharedPreferencesImpl.writeToDisk` 等文件操作。
 
-需要特别注意的是 SharedPreferences——它在 `apply()` 时虽然看起来是异步的，但在 Activity 的 `onPause/onStop` 生命周期回调中，系统会等待 `apply()` 的写入完成（通过 `waitToFinish` 机制）。如果在 `onPause` 之前积攒了大量 `apply()` 调用，在生命周期切换时就会一次性等待所有写入完成，导致 ANR。
+SharedPreferences 容易踩一个坑：`apply()` 看起来是异步的，但在 Activity 的 `onPause/onStop` 生命周期回调中，系统会等待 `apply()` 的写入完成（通过 `waitToFinish` 机制）。如果在 `onPause` 之前积攒了大量 `apply()` 调用，在生命周期切换时就会一次性等待所有写入完成，导致 ANR。
 
 ### Binder 调用超时
 
@@ -404,7 +406,7 @@ if (Build.VERSION.SDK_INT >= 36) {
 
 **"主线程 trace 显示 `nativePollOnce`，所以 ANR 不是我的问题。"** `nativePollOnce` 只表示 dump 的那一瞬间主线程在等消息。不排除真正耗时的 Message 刚好在 dump 之前执行完了。
 
-**"CPU 使用率里我的应用占比最高，所以一定是我的问题。"** 不一定。前台应用占用高 CPU 本身并不异常。关键是看应用在做什么。
+**"CPU 使用率里我的应用占比最高，所以一定是我的问题。"** 不一定。前台应用占用高 CPU 本身并不异常，要看应用在做什么。
 
 **"ANR trace 中 D 状态就是死锁。"** 不是。D 状态通常意味着线程在等 I/O 操作或被系统冻结。Java 层面的死锁在 trace 中显示为 `Blocked` 状态。
 
