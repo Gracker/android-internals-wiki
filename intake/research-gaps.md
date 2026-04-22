@@ -1232,3 +1232,21 @@ GPU 内存管理一节缺少 App 可见对象与系统内部图形缓冲对象�
 ### 关联章节
 2.6、18.6
 
+
+
+## [2026-04-23] External Review 知识盲区批量整合
+
+### 2.5 Vulkan 路径下的 Sync
+
+- **重要程度**：高
+- **建议研究方向**：ANGLE 开启后，同步逻辑是否从 EGL Sync 切换到 Vulkan Semaphore 及其对 Trace 切片名称的影响。
+- **来源**：External AI Review
+
+### 2.5 RenderThread CPU Affinity
+
+- **重要程度**：中
+- **建议研究方向**：Android 15+ 是否通过进程组（cgroup）对 RenderThread 进行了更激进的 CPU 大核绑定。
+- **来源**：External AI Review
+
+
+

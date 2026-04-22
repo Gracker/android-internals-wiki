@@ -744,3 +744,159 @@
 - **问题**：两个小节覆盖相同的采样/聚合/报警三个维度，前者是详细版（~600字，含代码示例和分层策略），后者是精简版（~300字，bullet points），约 60% 内容重叠。违反 writing-guide.md "同一内容不在两处各写一遍"原则。
 - **建议**：合并为一个小节，保留详细版的分析深度，在末尾加一个精简 checklist；或者拆成"策略原理"和"实战 checklist"两个互补但不重叠的部分。
 - **review 日志**：logs/review/2026-04-22-23-review.md
+
+
+## [2026-04-23] External Review 建议批量整合
+
+### [External Review] 2.5 — 版本差异覆盖
+
+- 问题**：[版本差异覆盖][ANGLE Mandatory Status]
+- **来源**：External AI Review
+
+### [External Review] 2.5 — 原理链完整性
+
+- 问题**：[原理链完整性][Triple Buffering 复用]
+- **来源**：External AI Review
+
+### [External Review] 2.0 — 交叉引用一致性
+
+- **问题**：- [P2][交叉引用一致性][## 阅读建议]
+- **来源**：External AI Review
+
+### [External Review] 2.11 — 版本差异
+
+- **问题**：### 1. [P2][版本差异][Android 14 兼容性]
+- **来源**：External AI Review
+
+### [External Review] 2.12 — 知识盲区
+
+- **问题**：### 1. [P2][知识盲区][2.12 扩展] 缺少 Android 17 反射禁令警告
+- **来源**：External AI Review
+
+### [External Review] 2.13 — 知识盲区
+
+- **问题**：### [P2][知识盲区][配置细节] `setMaxDequeuedBufferCount(2)` 的灵活度
+- **来源**：External AI Review
+
+### [External Review] 2.14 — 工具
+
+- **问题**：- [P2][工具][§ 7.2 AGI 与不同 API 的兼容性]
+- **来源**：External AI Review
+
+### [External Review] 2.15 — 知识盲区
+
+- 问题**：[知识盲区][16KB 页面模式章节]
+- **来源**：External AI Review
+
+### [External Review] 2.16 — 维度
+
+- **问题**：- [P2][维度][在 Perfetto 里怎么读 Fence]
+- **来源**：External AI Review
+
+### [External Review] 2.17 — 原理链
+
+- **问题**：### 1. [P2][原理链][calculateSwapInterval 的 Hysteresis]
+- **来源**：External AI Review
+
+### [External Review] 2.18 — 知识盲区
+
+- **问题**：- [P2][知识盲区][版本演进]
+- **来源**：External AI Review
+
+### [External Review] 2.18 — 源码准确性
+
+- **问题**：- [P2][源码准确性][Surface.setFrameRate()]
+- **来源**：External AI Review
+
+### [External Review] 2.19 — P2
+
+- **来源**：External AI Review
+
+### [External Review] 2.20 — 数据/案例支撑
+
+- **问题**：- [P2][数据/案例支撑][SurfaceFlinger 压力部分]
+- **来源**：External AI Review
+
+### [External Review] 2.20 — 知识盲区
+
+- **问题**：- [P2][知识盲区][Perfetto 观察面]
+- **来源**：External AI Review
+
+### [External Review] 2.21 — 数据支撑
+
+- **问题**：- [P2][数据支撑][Minikin 与文字测量性能]
+- **来源**：External AI Review
+
+### [External Review] 2.7 — 知识盲区
+
+- **问题**：- [P2][知识盲区][Compose graphicsLayer]
+- **来源**：External AI Review
+
+### [External Review] 2.9 — 原理链完整性
+
+- **问题**：- [P2][原理链完整性][Project Butter]
+- **来源**：External AI Review
+
+### [External Review] 3.2 — 数据/案例支撑
+
+- 问题**：[数据/案例支撑][延迟全景图]
+- **来源**：External AI Review
+
+### [External Review] 3.3 — 知识盲区
+
+- **问题**：- [P2][知识盲区][Exclusion Limit]
+- **来源**：External AI Review
+
+### [External Review] 3.3 — 源码准确性
+
+- **问题**：- [P2][源码准确性][Gesture Blocking Activity]
+- **来源**：External AI Review
+
+### [External Review] 3.4 — 知识盲区
+
+- 问题**：[知识盲区][Predictive Back]
+- **来源**：External AI Review
+
+### [External Review] 3.5 — 源码准确性
+
+- **问题**：- [P2][源码准确性][KeyEventDispatcher 超时]
+- **来源**：External AI Review
+
+### [External Review] 3.6 — 原理链完整性
+
+- **问题**：- [P2][原理链完整性][onSingleTapConfirmed 的触发时机]
+- **来源**：External AI Review
+
+### [External Review] 3.6 — 源码准确性
+
+- **问题**：- [P2][源码准确性][TouchSlop 单位歧义]
+- **来源**：External AI Review
+
+### [External Review] 3.0 — P2
+
+- **来源**：External AI Review
+
+
+
+## [2026-04-23] External Review 建议批量整合
+
+### [External Review] 4.1 — 原理链完整性
+
+- 问题**：[原理链完整性][LMKD]
+- **来源**：External AI Review
+
+### [External Review] 4.2 — 数据支撑
+
+- 问题**：[数据支撑][16K Page Size]
+- **来源**：External AI Review
+
+### [External Review] 4.2 — 源码准确性
+
+- 问题**：[源码准确性][DMA-BUF Heaps]
+- **来源**：External AI Review
+
+### [External Review] 4.3 — 版本差异
+
+- 问题**：[版本差异][§8.2]
+- **来源**：External AI Review
+

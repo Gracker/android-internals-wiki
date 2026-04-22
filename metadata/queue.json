@@ -1312,6 +1312,571 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T22:55:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
+      "section_title": "主线程与渲染线程",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 1 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "原理链完整性/知识盲区",
+          "location": "",
+          "detail": "- **[P1][原理链完整性/知识盲区][RenderThread Singleton]**",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/README.md",
+      "section_title": "渲染系统总纲",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异覆盖",
+          "location": "",
+          "detail": "- [P0][版本差异覆盖][全文]",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- [P1][原理链完整性][## 本章内容]",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- [P1][知识盲区][## 阅读建议]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "section_title": "Flutter 渲染管线与性能",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 1 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "源码准确性",
+          "location": "",
+          "detail": "### 1. [P1][源码准确性][Vsync 机制描述]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
+      "section_title": "窗口管理器 (WMS)",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 1 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "",
+          "detail": "### 1. [P1][版本差异][2.12 版本演进] Android 17 `recreateOnConfigChanges` 逻辑描述不准",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
+      "section_title": "图形缓冲区管理 (BufferQueue)",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 1 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异覆盖",
+          "location": "",
+          "detail": "### [P1][版本差异覆盖][版本演进] 缺失 Android 15/16 的关键演进",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "section_title": "图形 API 演进",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异/工具",
+          "location": "",
+          "detail": "- [P0][版本差异/工具][§ 7.3 Frame Timeline 中的表现差异]",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异/性能",
+          "location": "",
+          "detail": "- [P1][版本差异/性能][§ 1.2 第二代：Vulkan——显式控制的现代 API]",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- [P1][知识盲区][§ 1.2 Android Vulkan Profile 2025]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "section_title": "DMA-BUF 与 Gralloc",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 1 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "源码准确性/原理链完整性",
+          "location": "",
+          "detail": "- **[P1][源码准确性/原理链完整性][Gralloc HAL 演进章节]**",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
+      "section_title": "同步栅栏 (Sync Fence)",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 2 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- [P1][原理链完整性][渲染管线里的三类 Fence]",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- [P1][知识盲区][渲染管线里的三类 Fence]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
+      "section_title": "帧节奏 (Frame Pacing)",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 1 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "",
+          "detail": "### 1. [P1][版本差异][Android 15 ADPF 联合报告]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+      "section_title": "自适应刷新率 (ARR)",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 2 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- [P1][知识盲区][App 侧可以用的 ARR API]",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- [P1][原理链完整性][Display 查询 API]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "section_title": "刷新率切换",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- [P1][知识盲区][Display API]",
+          "suggestion": ""
+        },
+        {
+          "type": "数据支撑",
+          "location": "",
+          "detail": "- [P1][数据支撑][硬件延迟]",
+          "suggestion": ""
+        },
+        {
+          "type": "原理说明",
+          "location": "",
+          "detail": "- [P2][原理说明][VsyncModulator]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+      "section_title": "文字渲染性能",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "源码准确性",
+          "location": "",
+          "detail": "- [P0][源码准确性][Android 文字渲染管线全景]",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- [P1][原理链完整性][PrecomputedText]",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- [P1][知识盲区][版本演进]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "section_title": "硬件层 (Hardware Layer)",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 2 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- [P1][原理链完整性][Perfetto 识别部分]",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- [P1][知识盲区][与 RenderEffect 的关系]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "section_title": "渲染演进",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 4 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "源码准确性",
+          "location": "",
+          "detail": "- [P0][源码准确性][FrameTimeline：系统级 Jank 检测框架]",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- [P1][原理链完整性][RenderThread 的工作方式]",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- [P1][知识盲区][Android 16：AGSL 图形着色能力增强]",
+          "suggestion": ""
+        },
+        {
+          "type": "数据/案例支撑",
+          "location": "",
+          "detail": "- [P1][数据/案例支撑][自适应刷新率（ARR）]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
+      "section_title": "触摸响应性能分析",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- **[P0][原理链完整性][输入事件 Batching 与 Choreographer 的配合]**",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- **[P1][知识盲区][InputDispatcher 派发]**",
+          "suggestion": ""
+        },
+        {
+          "type": "源码准确性",
+          "location": "",
+          "detail": "- **[P1][源码准确性][WaitQueue 移除时机]**",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "section_title": "手势导航与系统交互",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 2 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异覆盖",
+          "location": "",
+          "detail": "- [P1][版本差异覆盖][Predictive Back 回调模型]",
+          "suggestion": ""
+        },
+        {
+          "type": "源码准确性",
+          "location": "",
+          "detail": "- [P1][源码准确性][triggerBack 触发路径]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
+      "section_title": "输入延迟与预测",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异覆盖",
+          "location": "",
+          "detail": "- **[P0][版本差异覆盖][全文]**",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- **[P1][原理链完整性][预测输入小节]**",
+          "suggestion": ""
+        },
+        {
+          "type": "源码准确性",
+          "location": "",
+          "detail": "- **[P1][源码准确性][Perfetto 分析小节]**",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
+      "section_title": "输入拦截与安全",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 2 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异覆盖",
+          "location": "",
+          "detail": "- [P1][版本差异覆盖][Android 14 安全边界]",
+          "suggestion": ""
+        },
+        {
+          "type": "数据/案例支撑",
+          "location": "",
+          "detail": "- [P1][数据/案例支撑][Perfetto 分析]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
+      "section_title": "手势识别性能",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 2 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "源码准确性",
+          "location": "",
+          "detail": "- [P1][源码准确性][GestureDetector 双击判定]",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "",
+          "detail": "- [P1][版本差异覆盖][Android 10+ Input Classification]",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch03-input/README.md",
+      "section_title": "输入系统总纲",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 4 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "",
+          "detail": "- **[P1][版本差异][导言] 缺失 Android 15/16 架构重构描述**",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- **[P1][知识盲区][3.4 关联说明] 缺失 ARR（自适应刷新率）与输入的协同关系**",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链",
+          "location": "",
+          "detail": "- **[P2][原理链][导言] 建议提及 InputClassifier 的角色**",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- **[P2][知识盲区][3.3/3.5 关联] 建议明确“预测性返回”作为 P0 级 UX 变更**",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:09:26+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "section_title": "内存架构总览",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 3 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- **[P1][原理链完整性][内核管理-cgroup 约束]**",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- **[P1][知识盲区][16 KB Page Size]**",
+          "suggestion": ""
+        },
+        {
+          "type": "数据/案例支撑",
+          "location": "",
+          "detail": "- **[P1][数据/案例支撑][procfs 接口]**",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:10:37+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "section_title": "Linux 内存管理",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 发现 2 处 P1 级问题",
+      "review_issues": [
+        {
+          "type": "原理链完整性",
+          "location": "",
+          "detail": "- **[P1][原理链完整性][Page Reclaim / PSI]**",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- **[P1][知识盲区][ZRAM 性能优化]**",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:10:37+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "section_title": "ART 内存管理",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "",
+          "detail": "- **[P0][版本差异][§3.5]**",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链",
+          "location": "",
+          "detail": "- **[P1][原理链][§2.4]**",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "",
+          "detail": "- **[P1][知识盲区][§2.6]**",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T00:10:37+08:00",
+      "status": "pending"
     }
   ]
 }

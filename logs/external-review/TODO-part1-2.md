@@ -20,37 +20,37 @@
 - [x] src/part1-fundamentals/ch01-architecture/README.md
 - [x] src/part1-fundamentals/ch02-rendering/01-rendering-overview.md
 - [x] src/part1-fundamentals/ch02-rendering/02-framerate.md
-- [ ] src/part1-fundamentals/ch02-rendering/03-vsync.md
-- [ ] src/part1-fundamentals/ch02-rendering/04-choreographer.md
-- [ ] src/part1-fundamentals/ch02-rendering/05-main-render-thread.md
-- [ ] src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md
-- [ ] src/part1-fundamentals/ch02-rendering/07-hardware-layer.md
-- [ ] src/part1-fundamentals/ch02-rendering/08-overdraw.md
-- [ ] src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md
-- [ ] src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md
-- [ ] src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md
-- [ ] src/part1-fundamentals/ch02-rendering/12-window-manager.md
-- [ ] src/part1-fundamentals/ch02-rendering/13-buffer-queue.md
-- [ ] src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md
-- [ ] src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md
-- [ ] src/part1-fundamentals/ch02-rendering/16-sync-fence.md
-- [ ] src/part1-fundamentals/ch02-rendering/17-frame-pacing.md
-- [ ] src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md
-- [ ] src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md
-- [ ] src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md
-- [ ] src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md
-- [ ] src/part1-fundamentals/ch02-rendering/README.md
-- [ ] src/part1-fundamentals/ch03-input/01-input-dispatch.md
-- [ ] src/part1-fundamentals/ch03-input/02-touch-performance.md
-- [ ] src/part1-fundamentals/ch03-input/03-gesture-navigation.md
-- [ ] src/part1-fundamentals/ch03-input/04-input-latency-prediction.md
-- [ ] src/part1-fundamentals/ch03-input/05-input-interception-security.md
-- [ ] src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md
-- [ ] src/part1-fundamentals/ch03-input/README.md
-- [ ] src/part1-fundamentals/ch04-memory/01-memory-overview.md
-- [ ] src/part1-fundamentals/ch04-memory/02-linux-memory.md
-- [ ] src/part1-fundamentals/ch04-memory/03-art-memory.md
-- [ ] src/part1-fundamentals/ch04-memory/04-lmk.md
+- [x] src/part1-fundamentals/ch02-rendering/03-vsync.md
+- [x] src/part1-fundamentals/ch02-rendering/04-choreographer.md
+- [x] src/part1-fundamentals/ch02-rendering/05-main-render-thread.md
+- [x] src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md
+- [x] src/part1-fundamentals/ch02-rendering/07-hardware-layer.md
+- [x] src/part1-fundamentals/ch02-rendering/08-overdraw.md
+- [x] src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md
+- [x] src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md
+- [x] src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md
+- [x] src/part1-fundamentals/ch02-rendering/12-window-manager.md
+- [x] src/part1-fundamentals/ch02-rendering/13-buffer-queue.md
+- [x] src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md
+- [x] src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md
+- [x] src/part1-fundamentals/ch02-rendering/16-sync-fence.md
+- [x] src/part1-fundamentals/ch02-rendering/17-frame-pacing.md
+- [x] src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md
+- [x] src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md
+- [x] src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md
+- [x] src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md
+- [x] src/part1-fundamentals/ch02-rendering/README.md
+- [x] src/part1-fundamentals/ch03-input/01-input-dispatch.md
+- [x] src/part1-fundamentals/ch03-input/02-touch-performance.md
+- [x] src/part1-fundamentals/ch03-input/03-gesture-navigation.md
+- [x] src/part1-fundamentals/ch03-input/04-input-latency-prediction.md
+- [x] src/part1-fundamentals/ch03-input/05-input-interception-security.md
+- [x] src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md
+- [x] src/part1-fundamentals/ch03-input/README.md
+- [x] src/part1-fundamentals/ch04-memory/01-memory-overview.md
+- [x] src/part1-fundamentals/ch04-memory/02-linux-memory.md
+- [x] src/part1-fundamentals/ch04-memory/03-art-memory.md
+- [x] src/part1-fundamentals/ch04-memory/04-lmk.md
 - [ ] src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md
 - [ ] src/part1-fundamentals/ch04-memory/06-memory-evolution.md
 - [ ] src/part1-fundamentals/ch04-memory/07-16kb-page-size.md
