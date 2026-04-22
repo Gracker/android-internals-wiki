@@ -29,12 +29,15 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 task2b_result: fixed
+task9_reviewed_date: '2026-04-22'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-22T20:50:00+08:00'
 ---
 
 # APK 体积优化

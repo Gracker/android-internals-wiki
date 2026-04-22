@@ -1,34 +1,34 @@
 {
-  "generated_at": "2026-04-22T19:48:00+08:00",
+  "generated_at": "2026-04-22T20:50:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 180,
   "metrics": {
-    "finalized": 40,
-    "last_updated": "2026-04-22T19:46:07+08:00",
-    "pipeline_ready_to_publish": 40,
+    "finalized": 41,
+    "last_updated": "2026-04-22T20:50:00+08:00",
+    "pipeline_ready_to_publish": 41,
     "pipeline_stage_counts": {
-      "ready-to-publish": 40,
-      "task6_pending": 66,
-      "task9_pending": 40,
-      "task2b_pending": 34
+      "ready-to-publish": 41,
+      "task6_pending": 55,
+      "task9_pending": 46,
+      "task2b_pending": 38
     },
-    "pipeline_task2b_pending": 34,
-    "pipeline_task9_pending": 40,
-    "ready-for-review": 140,
+    "pipeline_task2b_pending": 38,
+    "pipeline_task9_pending": 46,
+    "ready-for-review": 139,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 133,
-      "unknown": 4,
+      "fixed": 128,
       "idle": 6,
-      "pending": 37
+      "pending": 42,
+      "unknown": 4
     },
     "task6_state_counts": {
-      "reviewed": 116,
-      "revisiting": 64
+      "reviewed": 120,
+      "revisiting": 60
     },
     "task9_state_counts": {
-      "reviewed": 88,
-      "pending": 91,
+      "reviewed": 93,
+      "pending": 86,
       "fixed": 1
     },
     "total": 180,
@@ -37,25 +37,25 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 40,
-      "task6_pending": 66,
-      "task9_pending": 40,
-      "task2b_pending": 34
+      "ready-to-publish": 41,
+      "task6_pending": 55,
+      "task9_pending": 46,
+      "task2b_pending": 38
     },
     "task6_state_counts": {
-      "reviewed": 116,
-      "revisiting": 64
+      "reviewed": 120,
+      "revisiting": 60
     },
     "task9_state_counts": {
-      "reviewed": 88,
-      "pending": 91,
+      "reviewed": 93,
+      "pending": 86,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 133,
-      "unknown": 4,
+      "fixed": 128,
       "idle": 6,
-      "pending": 37
+      "pending": 42,
+      "unknown": 4
     }
   },
   "issues": {
@@ -587,15 +587,18 @@
       "chapter": "13.4",
       "section": "13.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T20:50:00+08:00"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
@@ -728,15 +731,18 @@
       "chapter": "12.1",
       "section": "12.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T20:50:00+08:00"
     },
     "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
@@ -1725,16 +1731,19 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
       "title": "游戏引擎渲染链路",
       "chapter": "18.16",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task9_result": "pass-tech-review",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T20:50:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
