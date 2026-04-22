@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-22T19:46:07.883873+08:00",
+  "generated_at": "2026-04-22T19:48:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 180,
   "metrics": {
@@ -1602,15 +1602,18 @@
       "title": "视频叠加与 HWC",
       "chapter": "18.15",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "pending",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-22",
+      "last_task9_at": "2026-04-22T19:48:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
@@ -1806,15 +1809,18 @@
       "chapter": "18.12",
       "section": "18.12",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "pending",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-22",
+      "last_task9_at": "2026-04-22T19:48:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
@@ -1906,13 +1912,18 @@
       "title": "OpenGL ES 渲染链路",
       "chapter": "18.8",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-22",
+      "task2b_result": "pending",
+      "last_task9_at": "2026-04-22T19:48:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",

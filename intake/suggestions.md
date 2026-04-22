@@ -466,3 +466,31 @@
 - **建议**：明确指出 `frameTimeNanos / NANOS_PER_MS` 为截断行为，解释 2ns 的 VSync 微小抖动为何能引发 1ms 的大跳变。
 - **来源**：Gemini 外部 review
 
+
+
+## [Task9 Deep Review] 18.8 OpenGL ES 渲染链路 — 2026-04-22
+- **类型**：交叉引用错误
+- **位置**：L323-L327 / 交叉引用
+- **问题**：末尾 [2.14 图形 API 演进] 与 [2.1 BufferQueue] 都链接到了目录 ../../part1-fundamentals/ch02-rendering/，不是实际章节文件。
+- **建议**：分别改到 14-graphics-api-evolution.md 与 13-buffer-queue.md 的具体文件路径。
+
+
+## [Task9 Deep Review] 18.12 Flutter 渲染链路 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：L200-L213 / Perfetto 观察
+- **问题**：Perfetto 章节仍保留两处 [待补充] 截图占位，缺少实际 Trace 轨道样例，导致 “Main/Dart Runner / Raster / SurfaceFlinger” 的识别方法没有实证落点。
+- **建议**：补一组 SurfaceView mode 与 TextureView mode 的真实 Perfetto 截图或轨道观察清单，并写明采样条件。
+
+
+## [Task9 Deep Review] 18.12 Flutter 渲染链路 — 2026-04-22
+- **类型**：交叉引用错误
+- **位置**：L220-L224 / 与其他章节的关系
+- **问题**：“13.8 WebView 渲染性能” 在当前仓库里不存在；现有可对应章节是 7.11 WebView 性能优化或 18.13 WebView 渲染链路。
+- **建议**：把交叉引用改到实际存在的章节，并明确是“性能优化”还是“渲染链路”视角。
+
+
+## [Task9 Deep Review] 18.15 视频叠加与 HWC — 2026-04-22
+- **类型**：数据缺失
+- **位置**：L39-L41 / 开头功耗结论
+- **问题**：“2-3x 内存带宽”“10-20% 功耗差异”没有给出设备、分辨率、codec、刷新率或测量工具，AOSP 源码本身也不能支撑这两个百分比。
+- **建议**：补充实测条件与数据来源；如果没有稳定复现数据，应去掉定量数字，只保留方向性结论。

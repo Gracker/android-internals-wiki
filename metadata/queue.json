@@ -651,6 +651,78 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T17:08:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
+      "section_title": "OpenGL ES 渲染链路",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L81 / GLThread 生命周期",
+          "detail": "正文把 GLThread 的启动时机写成 GLSurfaceView.onAttachedToWindow()。AOSP GLSurfaceView 的常规路径是在 setRenderer() 中创建并 start() GLThread；onAttachedToWindow() 只处理重新 attach 后的重启分支。",
+          "suggestion": "把 GLThread 生命周期改成“setRenderer() 启动；detach/reattach 时可能重建”，避免把首次启动入口写错。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L257-L260 / ANGLE 切换命令",
+          "detail": "正文给出的 adb shell setprop debug.angle.enable <package> 不是官方按包切换 ANGLE 的常用入口。官方文档使用 settings put global angle_gl_driver_selection_pkgs / angle_gl_driver_selection_values，且有 debuggable / root 前提。",
+          "suggestion": "将切换示例改为官方 per-app driver selection 命令，并补充适用前提与恢复命令。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T19:48:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+      "section_title": "Flutter 渲染链路",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L226-L232 / 参考资料",
+          "detail": "参考资料把 Flutter engine 源码写成 “AOSP engine/src/flutter/”。Flutter engine 不在 AOSP 内，这个路径不存在，读者无法按该锚点核验实现。",
+          "suggestion": "把源码参考改成 Flutter engine 官方仓库中的 engine/shell / shell/platform/android / flow 等真实路径，并区分 Flutter 文档与 Android 文档。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L136-L173 / SurfaceView vs TextureView 选型",
+          "detail": "正文把“需要半透明/圆角”直接归到 TextureView，并写成 “SurfaceView 不支持”。Flutter embedding 官方文档明确存在 RenderMode.surface + TransparencyMode.transparent 的透明路径；真正稳定受限的是 Z 轴交错、普通 View 变换与圆角裁剪，而不是“透明一律不支持”。",
+          "suggestion": "把“透明背景”与“View 级变换/圆角裁剪”拆开说明：透明可走 transparent surface，但与 Android View 交错、动画变换、裁剪边界仍是 TextureView 的主要优势。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T19:48:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+      "section_title": "视频叠加与 HWC",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L221-L223 / 常见性能问题",
+          "detail": "正文把“给 SurfaceView 设置 setAlpha(0.5) 或圆角，触发 GPU 回退”写成固定结论，但同文前面已承认 plane alpha 能力因平台而异，且 Android 14 官方已支持 SurfaceView arbitrary alpha。这里缺少系统版本与硬件能力边界，容易把“高概率触发点”误写成“必然回退”。",
+          "suggestion": "改成“会显著提高回退概率，需用 dumpsys / Perfetto 在目标设备上验证 DEVICE/CLIENT”；并单列 Android 14+ / plane-alpha capable 平台的例外。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T19:48:00+08:00",
+      "status": "pending"
     }
   ]
 }
