@@ -2,7 +2,7 @@
 title: "卡顿分析方法论"
 chapter: "7.3"
 status: ready-for-review
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-04-22"
 last_task2b_at: "2026-04-22T13:58:00+08:00"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
@@ -34,8 +34,8 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "1.5", "13.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
