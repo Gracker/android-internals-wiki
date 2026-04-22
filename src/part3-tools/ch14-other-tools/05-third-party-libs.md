@@ -41,21 +41,21 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-21T23:18:40+08:00"
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-21"
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-21T19:51:48+08:00"
-repaired_date: "2026-04-21"
-repaired_by: "codex"
+last_task2b_at: "2026-04-22T11:25:07+08:00"
+repaired_date: "2026-04-22"
+repaired_by: "openclaw-task2b"
 ---
 
 
@@ -127,13 +127,13 @@ Matrix 的设计目标是低侵入接入，覆盖从采集到上报的完整监�
 
 Trace Canary 的核心能力是检测卡顿、慢函数、ANR、启动耗时和帧率异常。它的工作原理可以分两层来看。
 
-第一层是**编译期插桩**。Trace Canary 会在编译阶段对应用字节码做方法级改写，在每个方法的入口和出口插入计时逻辑。这种插桩是选择性的，可以按包名、类名或白名单限制范围，控制运行时开销。插桩后的代码会在方法执行时记录起止时间戳和调用堆栈。早期版本主要依赖 Transform API，AGP 8.0+ 已经转到基于 Instrumentation API 的 `AsmClassVisitorFactory` 方案，插桩本质仍然是编译期字节码修改。
+第一层是**编译期插桩**。Trace Canary 会在编译阶段对应用字节码做方法级改写，在每个方法的入口和出口插入计时逻辑。这种插桩是选择性的，可以按包名、类名或白名单限制范围，控制运行时开销。插桩后的代码会在方法执行时记录起止时间戳和调用堆栈。公开上游长期保留的是 Transform 路径。到 AGP 8.x，`android.registerTransform` 已被移除，接入方要结合具体 Matrix 版本、社区 fork 或自研改造，确认是否已经迁到 Instrumentation API / Artifacts API。正文只保留到这个边界。
 
 第二层是**运行时检测**。Trace Canary 监听主线程的 Looper 消息分发和 Choreographer 的 doFrame 回调。当一个 Message 的执行耗时超过阈值（比如默认 700ms），或者一帧的渲染超过 16.6ms 导致连续掉帧，它就会触发上报逻辑。对于 ANR 检测，Trace Canary 提供两种方式：LooperAnrTracer 在主线程 Message 开始执行时设置一个 5 秒超时（类似"埋炸弹"），如果超时触发则判定为 ANR；SignalAnrTracer 则通过捕捉系统发出的 SIGQUIT 信号来检测。
 
 在实际分析中，我们可以通过 Trace Canary 的上报数据看到：触发卡顿的具体方法、完整的调用堆栈、该方法的执行耗时以及执行次数。这比在 Perfetto 中逐帧查看 Trace 要高效得多，特别是在线上环境中。
 
-[已验证: 新版 Matrix Trace Canary 在 AGP 8.0+ 下使用基于 Instrumentation API 的 ASM visitor 方案，插桩本质仍然是编译期字节码改写]
+[已验证: Matrix 上游仍可见 `MatrixTraceLegacyTransform` 等 Transform 路径；公开 issue #888 明确记录 AGP 8.x 下 `android.registerTransform` 已移除]
 
 ### Resource Canary：内存泄漏与冗余 Bitmap
 
@@ -316,7 +316,7 @@ Rhea 的一个关键优化是将直接写入内核态 trace_marker 文件的 Tra
 
 PLT Hook 的工作对象是 ELF 文件中的 .got（Global Offset Table）。当我们的代码调用外部函数时（比如调用 libc.so 的 open），实际是通过 .plt → .got 的间接跳转。.got 中存储了目标函数的实际地址。PLT Hook 就是修改 .got 中的函数指针，将其指向我们的 Hook 函数。
 
-这种方案的优势是：不修改目标函数的机器码，只修改一个指针，兼容性和稳定性较好。xHook 经过爱奇艺在多个产品中的验证，支持 armeabi、armeabi-v7a 和 arm64-v8a，支持 Android 4.0+。劣势是：只能 Hook 通过 .got 进行的间接调用，无法 Hook 同一 ELF 内部函数之间的直接调用。
+这种方案的优势是：不修改目标函数的机器码，只修改一个指针，兼容性和稳定性较好。xHook 的 upstream README 明确标注支持 Android 4.0 - 10（API 14 - 29），ABI 覆盖 armeabi、armeabi-v7a、arm64-v8a、x86 和 x86_64。Android 11+ 能否直接使用，要按目标系统和符号回归验证。劣势是：只能 Hook 通过 .got 进行的间接调用，无法 Hook 同一 ELF 内部函数之间的直接调用。
 
 Matrix 的 IO Canary、KOOM 的内存分配 Hook 都使用了 PLT Hook 方案。
 
