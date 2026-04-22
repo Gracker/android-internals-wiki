@@ -1,18 +1,19 @@
 ---
 title: "Android View 标准链路（BLAST 深入）"
 chapter: "18.2"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 tags: ["BLAST", "RenderThread", "HWUI", "DisplayList", "FrameTimeline", "Triple-Buffering"]
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "18.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-20"
+last_task9_at: "2026-04-23T01:48:42+08:00"
+task9_reviewed_date: "2026-04-23"
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6

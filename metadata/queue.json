@@ -1931,6 +1931,58 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-23T00:30:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch15-methodology/03-metrics.md",
+      "section_title": "性能指标体系",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Janky Frame Rate（约 130-136 行）",
+          "detail": "把 Android Vitals 的慢帧定义写成“随刷新率变化”，并额外引入“严重慢帧 >50ms / 50% 会话触发 bad behavior”。官方 slow rendering 定义是 16ms-700ms，frozen frames 是 >700ms；当前写法把高刷帧预算、游戏 slow sessions 和普通 Android Vitals 指标混在了一起。",
+          "suggestion": "按官方口径重写 Android Vitals 渲染指标：slow rendering 用 16ms-700ms，frozen frames 用 >700ms；如果要讨论 90/120Hz 帧预算或游戏 slow sessions，单独拆一段说明，不要并入 Vitals 定义。"
+        },
+        {
+          "type": "版本差异",
+          "location": "FrameMetricsAggregator（约 109 行）",
+          "detail": "文中写成 “FrameMetricsAggregator（Android 9.0+, API 28）”，与官方 API 能力不符。该聚合器建立在 FrameMetrics 之上，实际支持范围是 API 24+。",
+          "suggestion": "把 API 范围修正为 API 24+，并说明这是 AndroidX 聚合封装；如果要给出平台差异，补充不同 API 级别上可用指标与开销边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T01:48:42+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+      "section_title": "SurfaceView 直出链路",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "frontmatter applicable_versions + 完整渲染链路（约 6 行、116-131 行）",
+          "detail": "章节宣称适用 Android 1.0-16，但正文主链路只展开了 Android 11+ 的 BLAST 路径。缺少 Android 10 及以下 SurfaceView 旧 BufferQueue / 几何同步模型，读者会把 BLAST 链路误投射到全版本。",
+          "suggestion": "补一节明确拆分 pre-BLAST（Android 10 及以下）与 Android 11+ BLAST 两条链路，至少交代 consumer 所在进程、几何更新同步方式、常见闪烁/黑边成因和迁移后的变化。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "Buffer 状态流转（约 169-171 行）",
+          "detail": "这里把 Triple Buffering 解释成 “Slot B 被 SurfaceFlinger 持有等待 VSync-SF 合成”，与前文 Android 11+ BLASTBufferQueue 在 App 进程侧先 acquire buffer 的描述冲突。BLAST 模式下，槽位释放依赖 App 侧 consumer 与 TransactionCompleted 回调，不应直接用 legacy 的 “SF 持有槽位” 叙述替代。",
+          "suggestion": "把这段改成版本化说明：legacy BufferQueue 可以用 producer / SF / display 的三方直觉图；BLAST 章节则应改成 FREE / DEQUEUED / QUEUED / ACQUIRED(+release callback) 的槽位视角，并点明 dequeueBuffer 饥饿要同时看 App 侧 release 回路。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T01:48:42+08:00",
+      "status": "pending"
     }
   ]
 }
