@@ -30,13 +30,13 @@ tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industr
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
 section: "17.3"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed

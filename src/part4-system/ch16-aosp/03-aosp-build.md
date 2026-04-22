@@ -4,10 +4,10 @@ chapter: "16.3"
 status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-04-23"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: "needs-rework"
 last_task9_at: "2026-04-21T04:38:00+08:00"
@@ -15,7 +15,7 @@ task9_reviewed_date: "2026-04-21"
 task9_reviewed_by: "openclaw-task9"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 + source.android.com"
@@ -65,7 +65,7 @@ related_chapters: ["16.1", "16.2", "15.7", "14.7"]
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-要理解 Android 系统的深层行为——比如 Zygote fork 后主线程的 200ms 卡顿、SurfaceFlinger 选择 GPU 合成的条件——仅阅读源码不够，需要实际修改代码、编译模块、验证效果。本章构建完整的「修改 Framework 代码并验证假设」工作流：从环境搭建、源码下载到编译、模拟器运行、修改验证。
+要理解 Android 系统的深层行为——比如 Zygote fork 后主线程的 200ms 卡顿、SurfaceFlinger 选择 GPU 合成的条件——仅阅读源码不够，需要实际修改代码、编译模块、验证效果。本节构建完整的「修改 Framework 代码并验证假设」工作流：从环境搭建、源码下载到编译、模拟器运行、修改验证。
 
 ## 环境准备与源码下载
 
@@ -411,7 +411,7 @@ fastboot flashall -w
 
 [已验证: 官方文档, https://developers.google.com/android/drivers]
 
-设备树公开策略、kernel history、driver binaries 是三条不同的线，不能混写。当前至少可以确认 driver binaries 页面还在更新新款 Pixel 条目，但这不等于每个机型都保留了同等完整的公开设备树。做真机计划前，先核对目标机型在当前 AOSP branch 里是否还有可用 target，再核对 factory image 和 driver binaries 页面是否具备对应资源。
+设备树公开策略、kernel history、driver binaries 是三条不同的线，不应混淆。当前至少可以确认 driver binaries 页面还在更新新款 Pixel 条目，但这不等于每个机型都保留了同等完整的公开设备树。做真机计划前，先核对目标机型在当前 AOSP branch 里是否还有可用 target，再核对 factory image 和 driver binaries 页面是否具备对应资源。
 
 ## 常见问题与误区
 
