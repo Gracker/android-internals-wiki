@@ -299,6 +299,19 @@ Box(
 
 `rememberGraphicsLayer()` 是 Compose 1.7.0-alpha07+ 提供的另一组 API，主要用来显式创建 `GraphicsLayer`、录制内容并导出 `ImageBitmap`。它更接近 capture / advanced drawing 的能力，不是一个“共享 graphics layer 配置”的通用性能开关。
 
+## 与 RenderEffect 的关系 [AIW-源码调研-2026-04-22]
+
+RenderEffect（API 31, Android 12+）与 Hardware Layer 本质上是 **同一套 offscreen rendering 机制的两套 API**。
+
+- **Hardware Layer**（`View.setLayerType(LAYER_TYPE_HARDWARE)`）：手动强制建立 offscreen GPU texture
+- **RenderEffect**（`View.setRenderEffect(createBlurEffect(...))`）：自动建立 offscreen texture 并施加特效
+
+二者底层都依赖 FBO（Framebuffer Object）在 GPU 显存中分配离屏渲染目标。当 RenderNode 有非 null 的 RenderEffect 时，HWUI 的 SkiaPipeline 会自动为其创建 offscreen FBO，渲染节点内容，执行 blur/color filter/AGSL shader 等特效，最后将结果合成到主帧缓冲区。这个过程在 `SkiaOpenGLPipeline::drawFrames()` 中实现。
+
+关键区别在于语义：Hardware Layer 解决的场景是"同一批绘制结果要被连续复用（动画/变换）"，RenderEffect 解决的场景是"要对绘制结果施加视觉特效"。当 RenderEffect 作用在一个内容不变的 View 上时，二者的性能收益类似——offscreen texture 建立一次，后续每帧只需要对纹理做操作。
+
+详见 [7.5 优化策略](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/05-optimization.md)。
+
 ## 与其他章节的关系
 
 Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下章节密切相关：

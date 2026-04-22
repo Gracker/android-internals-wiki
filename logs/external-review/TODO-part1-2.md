@@ -51,7 +51,7 @@
 - [x] src/part1-fundamentals/ch04-memory/02-linux-memory.md
 - [x] src/part1-fundamentals/ch04-memory/03-art-memory.md
 - [x] src/part1-fundamentals/ch04-memory/04-lmk.md
-- [ ] src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md
+- [x] src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md
 - [ ] src/part1-fundamentals/ch04-memory/06-memory-evolution.md
 - [ ] src/part1-fundamentals/ch04-memory/07-16kb-page-size.md
 - [ ] src/part1-fundamentals/ch04-memory/08-art-generational-gc.md
