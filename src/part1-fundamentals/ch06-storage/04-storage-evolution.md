@@ -1,46 +1,62 @@
 ---
-title: "存储相关的版本演进"
-chapter: "6.4"
-section: "6.4"
+title: 存储相关的版本演进
+chapter: '6.4'
+section: '6.4'
 status: ready-for-review
-applicable_versions: "Android 4.4 (API 19) - Android 15 (API 35)"
-last_verified: "2026-04-14"
-last_verified_against: "Android storage docs / Photo Picker docs / Android 14 partial photo access docs / UFS 4.0 spec"
+applicable_versions: Android 4.4 (API 19) - Android 15 (API 35)
+last_verified: '2026-04-14'
+last_verified_against: Android storage docs / Photo Picker docs / Android 14 partial
+  photo access docs / UFS 4.0 spec
 confidence: medium
 polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
+polish_date: '2026-04-05'
+polish_by: task2b-polish
 sources:
-  - type: official
-    path: "https://source.android.com/docs/core/storage"
-  - type: blog
-    path: "https://developer.android.com/about/versions/11/privacy/storage"
-  - type: blog
-    path: "https://developer.android.com/training/data-storage/shared/media"
-  - type: official
-    path: "https://developer.android.com/training/data-storage/shared/photopicker"
-  - type: official
-    path: "https://developer.android.com/about/versions/14/changes/partial-photo-video-access"
-  - type: aosp
-    path: "fs/f2fs/ in kernel"
-  - type: blog
-    path: "OPPO内核工匠: 手机主流存储器件的分析与发展"
-  - type: blog
-    path: "Linux阅码场: 手机Android存储性能优化架构分析"
-tags: [storage, FUSE, SDCardFS, Scoped-Storage, EROFS, UFS, f2fs, MediaStore]
-related_chapters: ["6.1", "6.2", "6.3", "1.6"]
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2a"
+- type: official
+  path: https://source.android.com/docs/core/storage
+- type: blog
+  path: https://developer.android.com/about/versions/11/privacy/storage
+- type: blog
+  path: https://developer.android.com/training/data-storage/shared/media
+- type: official
+  path: https://developer.android.com/training/data-storage/shared/photopicker
+- type: official
+  path: https://developer.android.com/about/versions/14/changes/partial-photo-video-access
+- type: aosp
+  path: fs/f2fs/ in kernel
+- type: blog
+  path: 'OPPO内核工匠: 手机主流存储器件的分析与发展'
+- type: blog
+  path: 'Linux阅码场: 手机Android存储性能优化架构分析'
+tags:
+- storage
+- FUSE
+- SDCardFS
+- Scoped-Storage
+- EROFS
+- UFS
+- f2fs
+- MediaStore
+related_chapters:
+- '6.1'
+- '6.2'
+- '6.3'
+- '1.6'
+drafted_date: '2026-04-01'
+drafted_by: openclaw-task2a
 reviewed_date: 2026-04-21
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task2b_result: fixed
-last_task2b_at: "2026-04-21T08:24:09+08:00"
-task2b_state: fixed
+last_task2b_at: '2026-04-21T08:24:09+08:00'
+task2b_state: pending
+task9_reviewed_date: '2026-04-22'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-22T08:40:18+08:00'
 ---
 
 

@@ -250,3 +250,21 @@
 - **位置**：`性能差距有多大？` 表格（eMMC 5.1 / UFS 3.1 / UFS 4.0）
 - **问题**：顺序吞吐和随机 IOPS 对比没有标出 queue depth、块大小、测试端或厂商口径，容易把 JEDEC / 器件公开值、样片测试和整机实测混成同一层结论。
 - **建议**：在表下注明“为协议/器件公开口径，非统一整机 benchmark”，并补测试条件或来源链接，避免读者把表中的数值直接当成 Perfetto 分析基线。
+
+## [Task9 Deep Review] 6.4 存储相关的版本演进 — 2026-04-22
+- **类型**：源码准确性
+- **位置**：参考资料 / EROFS 段（约 L221, L386）
+- **问题**：`source.android.com/docs/core/storage/erofs` 当前 404，读者按文中锚点无法打开官方页面。
+- **建议**：把官方链接改到 `source.android.com/docs/core/architecture/kernel/erofs`，并区分 AOSP 存储总览页与 EROFS 专页。
+
+## [Task9 Deep Review] 6.4 存储相关的版本演进 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：EROFS 的核心技术优势（L205-L211）
+- **问题**：“24%-45% 空间收益”和“最高 22.9% 启动提升”缺少机型、镜像大小、压缩级别和 workload 条件，容易被读者误当成统一 benchmark。
+- **建议**：在表述里加“LPC 2019 / 厂商测试口径”与测试条件，或降级成“公开案例显示可获得 XX 量级收益”。
+
+## [Task9 Deep Review] 7.4 典型场景分析 — 2026-04-22
+- **类型**：源码准确性
+- **位置**：桌面滑动（L311）
+- **问题**：Launcher 桌面容器写成 `Workspace/BrowseLayout`，与 AOSP Launcher3 主线类名不一致。
+- **建议**：改成 `Workspace / CellLayout`，或直接写“Launcher 自定义页面容器”，避免给出查不到的类名。

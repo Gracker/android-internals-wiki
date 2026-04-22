@@ -1,46 +1,60 @@
 ---
-title: "典型场景分析"
-chapter: "7.4"
-section: "7.4"
+title: 典型场景分析
+chapter: '7.4'
+section: '7.4'
 status: ready-for-review
 polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
-drafted_date: "2026-04-01"
+polish_date: '2026-04-06'
+polish_by: task2b-polish
+drafted_date: '2026-04-01'
 reviewed_date: 2026-04-21
 reviewed_by: openclaw-task6
-rework_date: "2026-04-04"
+rework_date: '2026-04-04'
 rework_by: openclaw-task2b
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-01"
-last_verified_against: "AOSP android-16.0.0_r1, Perfetto 官方文档"
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-01'
+last_verified_against: AOSP android-16.0.0_r1, Perfetto 官方文档
 confidence: high
 sources:
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md"
-  - type: official
-    path: "developer.android.com/topic/performance/recycler-view"
-  - type: official
-    path: "perfetto.dev/docs/analysis/trace-processor"
-tags: ['scrolling', 'animation', 'RecyclerView', 'transition', 'jank', 'Perfetto']
-related_chapters: ["7.1", "7.2", "7.3", "2.4", "2.5"]
-pipeline_stage: task6_pending
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md
+- type: official
+  path: developer.android.com/topic/performance/recycler-view
+- type: official
+  path: perfetto.dev/docs/analysis/trace-processor
+tags:
+- scrolling
+- animation
+- RecyclerView
+- transition
+- jank
+- Perfetto
+related_chapters:
+- '7.1'
+- '7.2'
+- '7.3'
+- '2.4'
+- '2.5'
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
+task9_reviewed_date: '2026-04-22'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-22T08:40:18+08:00'
 ---
 
 # 典型场景分析
