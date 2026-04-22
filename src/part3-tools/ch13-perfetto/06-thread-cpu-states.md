@@ -5,7 +5,7 @@ chapter: "13.6"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-04-22"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-03"
@@ -24,8 +24,8 @@ sources:
     path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
 tags: ['perfetto', 'thread-state', 'sched-switch', 'running', 'runnable', 'sleep', 'uninterruptible-sleep', 'cpu-scheduling']
 related_chapters: ["5.1", "13.1", "13.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
@@ -174,7 +174,7 @@ Running 是最"健康"的状态——线程正在 CPU 上执行代码。对于 U
 - **Wall** 是这个切片从开始到结束的真实世界时间。
 - **CPU** 是线程真正在 CPU 上运行的时间。
 
-更稳妥的理解是：`Wall = CPU + 该时间窗内全部 off-CPU 状态的总和`。这里的 off-CPU 不只包含 Runnable 和 Sleeping，也包含 Uninterruptible Sleep、Stopped 等没有占到 CPU 的时间。
+`Wall = CPU + 该时间窗内全部 off-CPU 状态的总和`。这里的 off-CPU 不只包含 Runnable 和 Sleeping，也包含 Uninterruptible Sleep、Stopped 等没有占到 CPU 的时间。
 
 这个对比在定位瓶颈时很好用。选中一个关键切片（比如 `Choreographer#doFrame`），比较 Wall 和 CPU：
 

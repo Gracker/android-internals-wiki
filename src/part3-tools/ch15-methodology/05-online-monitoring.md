@@ -23,10 +23,10 @@ sources:
     path: "perfetto.dev/docs/instrumentation/tracing-sdk"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-04-22"
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -494,8 +494,8 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 - `7/8/9` 定义了用户到底在抱怨什么
 - `15.3` 定义了我们该看哪些数字
 - 本节负责把这些数字稳定地从线上拿回来
-- `15.9` 负责把拿回来的数据送进闭环
-- `15.10` 负责把闭环变成团队机制
+- `15.9` 负责构建从数据到修复的完整流程
+- `15.10` 负责把这套流程变成团队机制
 
 ## 常见问题与误区
 
