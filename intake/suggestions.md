@@ -494,3 +494,28 @@
 - **位置**：L39-L41 / 开头功耗结论
 - **问题**：“2-3x 内存带宽”“10-20% 功耗差异”没有给出设备、分辨率、codec、刷新率或测量工具，AOSP 源码本身也不能支撑这两个百分比。
 - **建议**：补充实测条件与数据来源；如果没有稳定复现数据，应去掉定量数字，只保留方向性结论。
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-04-22
+- **类型**：原理边界
+- **位置**：L46
+- **问题**：开头把 native libraries 一律写成“被解压到磁盘”，与后文 direct loading / `useLegacyPackaging=false` 的说明不一致，会把现代 Android 6.0+ 的 direct load 路径抹平。
+- **建议**：在开头补出 direct loading 的例外条件，明确“解压到磁盘”只适用于 legacy packaging 或旧系统路径。
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：L291
+- **问题**：`15%-40%` 的 AAB 下载体积收益区间没有给出官方来源、样本结构或设备分布边界。
+- **建议**：补充官方出处 / 实测样本前提，或改成不带百分比的定性表述。
+
+## [Task9 Deep Review] 18.16 游戏引擎渲染链路 — 2026-04-22
+- **类型**：数据支撑
+- **位置**：L177-L194 / 最小 trace case
+- **问题**：三组 Swappy 场景只有“期望表现”，没有真实 Trace 截图、轨道名组合或 SQL/指标锚点，读者难以用同一方法验证接入前后差异。
+- **建议**：补一组 60Hz 或 120Hz 的实 trace 样例，至少给出 FrameTimeline、游戏 render 线程、SurfaceFlinger 的对应观察点。
+
+## [Task9 Deep Review] 18.16 游戏引擎渲染链路 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：L198-L204 / DrawCall 合批
+- **问题**：章节直接写“在 Perfetto 中，如果 RenderThread 的 DrawCall 数量过多…”，但没有说明 per-drawcall slice 通常需要 AGI、额外 graphics tracing 或引擎自定义埋点，默认 system trace 不一定直接可见。
+- **建议**：补出默认 Perfetto、AGI/graphics tracing、自定义埋点三种可见性边界，避免把观测前提写成默认能力。
+

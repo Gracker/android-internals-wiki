@@ -723,6 +723,58 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T19:48:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch12-apk-network/01-apk-size.md",
+      "section_title": "APK 体积优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1 处 P1 技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L206-L219 / 按密度过滤和按语言过滤",
+          "detail": "章节以 AGP 8.12.0 为校验基线，却仍把 `resConfigs`（含 density qualifiers）写成当前通用做法。AGP 8.8 DSL 已将 `resConfigs` / `resourceConfigurations` 标为 deprecated，而 App Bundle 分发本身也会按 density / ABI 生成 split。缺少版本边界会把旧构建路径误写成现行最佳实践。",
+          "suggestion": "补充 AGP 版本边界：AGP 8.8+ 不再把 `resConfigs` 作为主路径推荐；语言过滤与 sideload / 非 Play 场景分开写，说明 Play/AAB 已覆盖 density / ABI split。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T20:50:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch13-perfetto/04-large-traces.md",
+      "section_title": "命令行打开超大 Trace",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2 处 P0 + 1 处 P1 技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "工具用法错误",
+          "location": "L295-L315 / analyze_trace.sql 示例",
+          "detail": "示例 SQL 文件连续返回 3 个 SELECT 结果，但当前 `trace_processor -q/--query-file` 只允许最后一个语句产出结果。按文中示例执行会直接报错，无法完成批处理。",
+          "suggestion": "把多个指标改写成 `UNION ALL` 的单个最终 SELECT，或改用 Python API / metrics 输出路径。"
+        },
+        {
+          "type": "工具用法错误",
+          "location": "L328-L333 / shell 批处理脚本",
+          "detail": "脚本用 `IFS=\"|\"` 解析 trace_processor 输出，但当前非交互式输出是 CSV 风格的逗号分隔文本并带表头，不是 `|` 分隔。照抄后 `metric` / `value` 会错列或为空。",
+          "suggestion": "改用真正的 CSV 解析方式（Python/csv、mlr、xsv 等），或直接走 `-e` 导出 SQLite / Python DataFrame。"
+        },
+        {
+          "type": "数据与工具说明过时",
+          "location": "L343-L359 / 查询结果格式控制",
+          "detail": "章节把默认输出写成“制表符分隔的文本”，但当前批处理模式的默认行为并非如此，也没有区分交互 shell 与 `-q/-Q` 模式。后续 `awk/sed` 建议建立在错误前提上。",
+          "suggestion": "明确区分交互 shell 与批处理输出格式，并用当前 trace_processor 版本重新给出可运行的后处理示例。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T20:50:00+08:00",
+      "status": "pending"
     }
   ]
 }

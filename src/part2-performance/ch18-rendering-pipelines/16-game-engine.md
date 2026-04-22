@@ -1,21 +1,24 @@
 ---
 title: "游戏引擎渲染链路"
 chapter: "18.16"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 tags: ["Unity", "Unreal", "Game-Engine", "Swappy", "Frame-Pacing", "Vulkan", "GLES", "渲染链路"]
 related_chapters: ["2.5", "8.9", "18.6", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
 task2b_result: fixed
+task9_reviewed_date: '2026-04-22'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-22T20:50:00+08:00'
 ---
 
 <!-- outline-start -->
