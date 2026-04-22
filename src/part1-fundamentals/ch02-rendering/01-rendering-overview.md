@@ -1,6 +1,7 @@
 ---
 title: "Android 渲染架构全景"
 chapter: "2.1"
+section: "2.1"
 status: ready-for-review
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"  # 版本演进从 3.0 开始，核心内容覆盖 API 11-36
 last_verified: "2026-04-09"
@@ -10,7 +11,7 @@ drafted_date: "2026-03-30"
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-04-23"
 reviewed_by: "openclaw-task6"
 sources:
   - type: official
@@ -25,8 +26,8 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 review_round: 2
 task9_state: pending
@@ -409,7 +410,7 @@ void SkiaVulkanPipeline::draw(RenderNode* root) {
 | 使用资源 | CPU 内存 | GPU 显存 |
 | 并发性 | 单线程 | 多线程并行 |
 | 复杂图形 | 较慢 | 较快（GPU 并行计算） |
-| 简单图形 | 可能更快（避免 API 开销） | 较快 |
+| 简单图形 | 可能更快（避免 API 开销） | 视场景可能较慢（API 固定开销） |
 | 调试难度 | 简单 | 复杂（需要 GPU 调试工具） |
 | 电耗 | 复杂 UI 下通常更高（CPU 满载光栅化） | 复杂 UI 下通常更低；极简单场景未必占优 |
 

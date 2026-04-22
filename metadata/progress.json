@@ -3521,5 +3521,23 @@
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-23T02:15:00+08:00"
     }
+  },
+  "2.1": {
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_last_review": "2026-04-23",
+    "pipeline_stage": "task9_pending"
+  },
+  "16.3": {
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_last_review": "2026-04-23",
+    "pipeline_stage": "task9_pending"
+  },
+  "17.3": {
+    "status": "ready-for-review",
+    "task6_state": "reviewed",
+    "task6_last_review": "2026-04-23",
+    "pipeline_stage": "task9_pending"
   }
 }
