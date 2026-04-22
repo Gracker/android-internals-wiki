@@ -268,3 +268,27 @@
 - **位置**：桌面滑动（L311）
 - **问题**：Launcher 桌面容器写成 `Workspace/BrowseLayout`，与 AOSP Launcher3 主线类名不一致。
 - **建议**：改成 `Workspace / CellLayout`，或直接写“Launcher 自定义页面容器”，避免给出查不到的类名。
+
+## [Task9 Deep Review] 10.4 低内存对系统性能的影响 — 2026-04-22
+- **类型**：交叉引用
+- **位置**：`与 [4.5 App 内存优化](../ch04-memory/05-app-memory-optimization.md)`
+- **问题**：当前相对路径从 `part2-performance/ch10-memory-perf/` 解析后会落到不存在的 `src/part2-performance/ch04-memory/05-app-memory-optimization.md`，读者无法跳到真正的 §4.5。
+- **建议**：把链接改成指向 `src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md` 的正确相对路径，或统一改用章节号引用避免跨 part 相对路径漂移。
+
+## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-04-22
+- **类型**：版本边界/工具链条件
+- **位置**：L124-L127
+- **问题**：AGP 8.5.1 段只写“自动处理对齐”，漏掉 uncompressed shared libraries、bundletool zip alignment，以及 AGP 8.3-8.5 默认对齐但 Play 打包仍可能失配的条件。
+- **建议**：把 AGP 8.5.1+、bundletool `PAGE_ALIGNMENT_16K`、以及 AGP 8.3-8.5 的 caveat 放到同一段，避免读者误判“升级 AGP 即自动合规”。
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-04-22
+- **类型**：调度提示边界
+- **位置**：L411-L414
+- **问题**：`Process.setThreadPriority()` 被直接写成“会更积极地把高优先级线程放到大核上”，容易把 CFS 权重和异构选核混为一谈。
+- **建议**：把这段改成“priority 主要影响调度竞争；真正更直接的放核路径通常是 uclamp / task profile / cpuset / affinity”，并补版本与权限边界。
+
+## [Task9 Deep Review] 9.2 ANR 类型与触发条件 — 2026-04-22
+- **类型**：Broadcast 边界表达
+- **位置**：L140-L157 / L327
+- **问题**：正文把 Broadcast ANR 讨论收敛到“有序广播 + 动态注册 Receiver”，而官方 ANR 诊断文档当前更强调同步/异步 receiver、`goAsync()` 与 app startup 是否落入同一超时窗口。
+- **建议**：按 modern broadcast timeout model 重写边界说明；若要保留 ordered/parallel 细分，补对应 AOSP 实现路径或标 `[待验证]`。

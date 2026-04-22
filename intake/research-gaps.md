@@ -270,3 +270,23 @@ App Standby Bucket 与 wakelock 的直接限制边界没有官方 / AOSP 证据�
 
 ### 关联章节
 11.1, 11.2, 11.5, 5.6
+
+
+## [2026-04-22] 5.3 大小核架构 — 知识盲区
+
+### 盲区描述
+公开 AOSP/GKI 调度机制（EAS / schedutil / uclamp / cpuset）与 OEM 私有扩展（RTG / WALT / 各类 boost 标记）的边界没有梳理，正文把厂商扩展和通用机制混写。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对公开 GKI/AOSP 中真正可引用的异构调度入口、sysfs 节点和 trace 观察点
+- 梳理 Qualcomm / OEM 常见 RTG/WALT 术语与 uclamp、task profile、cpuset 的映射关系
+- 补一份“公开机制 vs 厂商扩展”的对照表，明确哪些结论只能在特定内核分支成立
+
+### 关联章节
+- 5.1
+- 5.2
+- 5.4
+- 15.5
