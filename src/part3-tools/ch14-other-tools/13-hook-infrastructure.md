@@ -7,9 +7,13 @@ drafted_date: "2026-04-21"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-22"
-last_verified_against: "GitHub upstream READMEs"
+last_verified_against: "Android 16KB page size docs + ART TI + GitHub upstream READMEs"
 confidence: medium
 sources:
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: official
+    path: "https://source.android.com/docs/core/runtime/art-ti"
   - type: blog
     path: "https://github.com/bytedance/bhook"
   - type: blog
@@ -36,6 +40,9 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-21T23:18:40+08:00"
 repaired_date: "2026-04-22"
 repaired_by: "codex"
+task2b_result: fixed
+task2b_state: fixed
+last_task2b_at: "2026-04-22T19:39:59+08:00"
 ---
 
 # Hook 基础设施与性能工具实现原理
@@ -91,6 +98,7 @@ repaired_by: "codex"
 - `JankStats`
 - `ApplicationExitInfo`
 - `Choreographer.FrameCallback`
+- `JVMTI`（Android 8+，仅 debuggable 进程）
 
 这条路线的优点很直接：
 
@@ -102,6 +110,8 @@ repaired_by: "codex"
 系统愿意给你的，你才能拿到；系统没暴露的，你就拿不到。
 
 所以它非常适合作为第一层信号源，却不适合解决“平台没给，但团队非常想看”的那部分需求。
+
+`JVMTI` 要单独拎出来看。它是 Android 8.0 起提供给 debuggable 进程的官方工具接口，Android Studio Profiler 的很多深层能力都建立在这层之上。它能拿到方法、对象和 heap 级别的运行时信号，但默认不适合线上常驻，更适合线下诊断、实验室复现和短时 attach 的问题取证。
 
 ## 第二条路线：字节码插桩
 
@@ -142,6 +152,10 @@ PLT Hook 更像是“在动态库边界拦一手”。
 - `Matrix IO Canary` / `KOOM` 用到的部分 native 拦截能力
 
 这条路线的优点在于相对稳。因为它不去改目标函数的机器码，而是改动态链接层的指针引用，所以很多指令级兼容问题会轻一些。
+
+这层“相对稳”只在动态链接边界里成立。Android 7.0 之后，linker namespace 把很多系统 so 隔离开了，App 进程不能再假设自己能随意 `dlopen()` 任意系统库、拿到任意导出符号。成熟的 PLT Hook 框架通常要先从 `/proc/self/maps` 枚举已经映射进进程的 so，再按内存基址去解析 ELF 的动态段、符号表和重定位表，随后才谈得上改 GOT/PLT 引用。
+
+这也是 `ByteHook` 这类现代框架比早期通用实现更重的一层工程成本：难点已经不只是“改指针”，还包括“先在受限装载环境里可靠找到符号”。
 
 但它的边界也必须先记住：  
 **不是所有调用都经过 PLT / GOT。**  
@@ -184,7 +198,7 @@ Inline Hook 更激进。它直接改目标函数入口处的机器码，把执�
 
 | 工具 | 天然短板 |
 |---|---|
-| `ByteHook` / `xHook` | 不是所有调用都走 PLT |
+| `ByteHook` / `xHook` | 不是所有调用都走 PLT；系统库还受 linker namespace 约束 |
 | `ShadowHook` | 维护成本和兼容风险更高 |
 | `Booster` | 强依赖构建链和 AGP 版本 |
 
@@ -256,8 +270,22 @@ Hook 真正的价值，在于补上系统没直接暴露、但业务又确实需
 
 ### 兼容性风险
 
+#### Android 15 的 16KB Page Size 会直接改变 Hook 成败
+
+Native Hook 无论是改 GOT/PLT 还是改函数入口，收束到实现层时都绕不开 `mprotect()` 这类页权限修改。这里最容易被忽略的一条硬约束是：地址和长度都必须按系统页大小落在同一页边界。4KB 时代很多老框架把页大小硬编码成 `4096`；到了 Android 15 的 16KB 设备上，这类代码会在 `mprotect()` 时直接返回 `EINVAL`，表现成 Hook 失败，重则直接把进程带崩。
+
+工程上至少要补三件事：
+
+- 用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)` 在运行时读取真实页大小，不要写死 `4096`
+- 重新检查地址和长度的页边界计算，确保所有权限修改都按 16KB 边界展开
+- 重新构建 native 库时确认 ELF 满足 16KB 页边界要求；旧构建链通常还需要显式补 `-Wl,-z,max-page-size=16384`
+
+如果某个 Hook 库几年没维护，又默认假设 4KB 页，这在 Android 15/16 设备上就是上线前必须先排掉的兼容性红线。
+
 - Android API 版本变化
+- Android 14+ 对可写可执行内存的限制更严，Inline Hook 的写回窗口更窄
 - linker / namespace 行为差异
+- Android 15+ 的 16KB Page Size 与构建链约束
 - ABI 与指令集差异
 - ROM 对 so 装载和安全策略的定制
 
