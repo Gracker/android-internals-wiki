@@ -701,5 +701,66 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-22T08:40:18+08:00",
     "status": "pending"
+  },
+  {
+    "section": "10.4",
+    "section_title": "低内存对系统性能的影响",
+    "priority": 95,
+    "reason": "[Deep Tech Review] lmkd 用户态化版本线写错",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-22-10-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/事实错误",
+        "location": "cgroup 内存限制（L237）",
+        "detail": "正文写成“Android 5.0+ 上，lmkd 使用用户空间的 cgroup 接口来管理进程，替代了早期内核空间的 lowmemorykiller 驱动”。AOSP lmkd 文档给出的实际分界是：Android 9+ 在未检测到内核 LMK 驱动时可启用 userspace lmkd，Android 10+ 才支持基于 PSI 的主路径。把 5.0+ 写成统一分界线会混淆内核 LMK、userspace lmkd 和 PSI 三个阶段。",
+        "suggestion": "把版本线改成“历史上先有内核 lowmemorykiller；Android 9+ 可启用 userspace lmkd；Android 10+ PSI 模式成为主路径”，并把 cgroup 依赖与 PSI 依赖拆开写。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T10:14:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "15.1",
+    "section_title": "性能优化的术、道、器",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 工具演进时间线存在明显版本错配",
+    "material_paths": [
+      "logs/deep-review/2026-04-22-10-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/事实错误",
+        "location": "工具演进时间线（L146）",
+        "detail": "正文写成“Android 8 引入 ProfilingManager”，并把 FrameMetrics、Baseline Profiles 一并归到 Android 11-13 阶段。官方 API 文档显示 ProfilingManager 是 API 35 才加入，FrameMetrics 是 API 24 就已提供；Baseline Profiles 也不是 Android 11-13 才出现的单一平台特性。当前写法会把 Android 性能工具链的时间轴整体带偏。",
+        "suggestion": "把时间线拆成明确里程碑：API 24 FrameMetrics、Android 9/10 Perfetto 成熟替代 systrace、Android 11 BLAST/FrameTimeline 相关演进、API 35 ProfilingManager；Baseline Profiles 单列为 Jetpack/ART 能力，不要塞进单一 Android 版本段。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T10:14:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.15",
+    "section_title": "场景化性能作战手册",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Android 8-16 的诊断入口没有拆开版本边界",
+    "material_paths": [
+      "logs/deep-review/2026-04-22-10-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "投诉映射表 / 列表卡顿 / 输入延迟 / ANR 排障段（L96-L103, L138-L195, L311-L353）",
+        "detail": "章节 frontmatter 覆盖 Android 8-16，但关键入口直接使用 FrameTimeline、AppDeadlineMissed、BufferStuffing 和 ApplicationExitInfo。Perfetto 文档明确 FrameTimeline 需要 Android 12+，ApplicationExitInfo 是 API 30+。正文没有给 Android 8-11、尤其 8-10 的 fallback 观察点，低版本读者会拿不到对应证据。",
+        "suggestion": "按版本补两条排障入口：Android 12+ 用 FrameTimeline / Jank Type；Android 8-11 回退到 Choreographer#doFrame、FrameMetrics / gfxinfo、SurfaceFlinger / BufferQueue 轨道。ANR 章节再补 API 30 以下以 traces.txt、dropbox、logcat / tombstone 为主的替代路径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T10:14:00+08:00",
+    "status": "pending"
   }
 ]

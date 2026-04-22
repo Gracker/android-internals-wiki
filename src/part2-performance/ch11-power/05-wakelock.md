@@ -218,7 +218,15 @@ Android 9（API 28）引入了 App Standby Bucket，根据 App 的使用频率�
 - **Rare**：极少使用，严格限制（包括 wakelock 配额）
 - **Restricted**：行为异常的 App，极端限制
 
-从 Rare 桶开始，系统会对 App 的 wakelock 行为施加配额限制。到了 Restricted 桶，App 持有 wakelock 的能力可能被大幅削减。这是 Android 功耗治理体系从"被动监控"到"主动配额"转变的关键一环。
+从 Rare 桶开始，App 的后台执行受到严格限制，但 **wakelock 本身没有直接配额限制**。关键机制：
+
+- **Jobs / Alarms**：有 `QuotaController` / `AlarmManagerService` 的明确配额系统（RESTRICTED bucket 约 10 分钟/天 Jobs，1 次/天 Alarm）
+- **Wakelock**：**无等效配额机制**，RESTRICTED bucket 的限制主要通过：
+  1. `enforceWakeLockTimeout()` 强制超时（单次持锁最长约 1 分钟，不是累计配额）
+  2. Doze 模式下非白名单 App 的 partial wakelock 会被完全忽略
+  3. Jobs 配额受限 → 后台工作量减少 → 持锁场景间接减少
+
+> ⚠️ **重要修正**（2026-04-22 源码调研）：AIW 正文原描述"从 Rare 桶开始对 wakelock 施加配额限制"不准确。Wakelock 的 bucket 限制是间接的，不存在类似 Jobs 的 QuotaController 那样的直接配额系统。`RESTRICTED_WAKELOCK_MAX_TIMEOUT` 是超时限制，不是配额限制。详见调研报告 `2026-04-22-app-standby-bucket-wakelock-restrictions.md`。<!-- AIW-源码调研-2026-04-22 -->
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby]
 

@@ -1,6 +1,12 @@
 # 第 4 章：内存管理
 
-> 本章节正在建设中。
+内存问题很容易被狭义理解成“会不会 OOM”，但在 Android 上，真正影响体验的内存问题远不止崩溃。
+
+页面切换越来越慢、后台回来像重启了一次、列表偶发卡一下、系统整体开始发飘，这些现象很多时候都和内存压力有关。  
+如果只在 OOM 时才想起看内存，通常已经太晚了。
+
+这一章会把 Android 内存问题拆成两个层次：  
+一个是系统到底怎样分配、回收和压缩内存；另一个是这些系统行为最后如何反映到 App 的卡顿、重启、GC、LMK 和图形内存问题上。
 
 ## 本章内容
 
@@ -11,11 +17,8 @@
 - App 内存优化
 - 内存相关的版本演进
 
-## 延伸阅读
+## 阅读建议
 
-### Android GPU/Graphics 内存归属矩阵与工具链统一语义
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android GPU:Graphics 内存归属矩阵与工具链统一语义.md
-- 类型：DeepResearch 调研结果
-- 摘要：以 AOSP、libmemtrack、DMA-BUF 和 gpu_mem_total 为主线，解释 smaps、memtrack HAL、DMA-BUF sysfs 与 ftrace 四套 GPU/Graphics 内存口径如何交叉与去重，可直接指导 dumpsys meminfo、Lost RAM 和图形内存统计不一致问题排查。
-- 注入时间：2026-04-20
-- 价值：把最容易混淆的图形内存统计口径统一了，对内存排障非常实用。
+- 如果你主要做 App 端内存优化，优先看 `4.1`、`4.3`、`4.4`、`4.5`。
+- 如果你经常遇到“回前台像冷启动”“低内存设备特别差”这类问题，建议把 `4.2`、`4.4` 和第 10 章一起看。
+- 如果你对 GPU/Graphics 内存、DMA-BUF、图形内存口径很关心，读本章时最好和渲染相关章节一起对照。

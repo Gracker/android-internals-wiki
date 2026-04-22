@@ -1,12 +1,20 @@
 # 第 18 章：渲染链路全景
 
-> 本章系统梳理 Android 系统中的主流出图路径，从 Android View 标准路径一路走到游戏引擎、Flutter、WebView、Camera 等复杂场景。
+这一章的存在，是因为“渲染系统”这四个字在真实工程里其实包含了很多完全不同的路径。
+
+同样是把内容画到屏幕上，普通 View、SurfaceView、TextureView、Flutter、WebView、OpenGL ES、Vulkan、Camera、视频叠加，背后的生产者、消费者、同步方式和瓶颈都不一样。  
+如果把这些场景全都压成一条统一的“渲染管线”，分析时就会非常容易看错责任链。
+
+所以这一章更像是一张“路径地图”。它想做的，不是把所有图形 API 都讲成百科，而是让读者先知道：**这次问题到底走的是哪条出图路径。**
 
 ## 阅读前的底层索引
 
 - **BufferQueue、BLASTBufferQueue 与 Vsync**：后续 SurfaceView、TextureView、Flutter、WebView、Camera 等渲染路径都绕不开这套生产者、消费者和事务同步模型。
 - **Frame Timeline 与 JankTracker**：Android 12+ 分析 jank 时，Expected Timeline / Actual Timeline 已经是主要观察入口，不能只盯旧式 Vsync slice。
 - **RenderEffect、AGSL、可更新 GPU 驱动、Game Mode API**：这些能力决定现代 UI 特效、驱动更新和游戏渲染调优该从哪里入手。
+
+这三组索引并不是附带知识点，而是这一章反复会回来的地基。  
+如果读者后面在某条具体路径里迷路，通常回到这三组索引，重新把生产者、同步点和观测入口对齐，问题就会清楚很多。
 
 ## 本章内容
 
@@ -37,3 +45,9 @@
 - **新手入门**：先看上面的底层索引，再读 `18.1` 了解全貌，然后进入 `18.2` 到 `18.7`
 - **性能分析实战**：先读 `18.20`，遇到具体问题时再回到对应章节，并把 BufferQueue / Vsync 放回同一条时序线
 - **深度理解**：按 `18.2` → `18.7` → `18.10` → `18.20` 的顺序，把 BLAST、SurfaceControl 和 Frame Timeline 串到一起看
+
+如果你现在已经带着一个具体问题来读，例如“视频层偶发不稳”“Flutter 页面卡顿”“TextureView 感觉比 SurfaceView 更吃力”，最好的方式通常不是顺序读完整章，而是：
+
+1. 先确定问题属于哪条路径。
+2. 再回到对应章节。
+3. 最后把 `18.20` 的分析方法拿出来复核。

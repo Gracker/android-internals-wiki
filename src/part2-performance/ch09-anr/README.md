@@ -1,6 +1,11 @@
 # 第 9 章：ANR
 
-> 本章节正在建设中。
+ANR 是 Android 性能问题里最“不留情面”的一种表现。
+
+掉帧和响应慢还可能让用户勉强忍一忍，ANR 则意味着系统已经判断：这个应用长时间没有给出应有的响应，必须介入。  
+所以 ANR 分析从来不只是“看一份 traces.txt”，而是要把超时设计、主线程状态、Binder、锁、系统负载和用户可感知体验一起放回来看。
+
+这一章会把 ANR 从设计思想、触发类型、分析方法和特殊场景几条线拆开，帮助读者建立一种更稳的判断方式：不是只盯住最终堆栈，而是回到超时发生前的整条时间线。
 
 ## 本章内容
 
@@ -12,11 +17,8 @@
 - Notification 性能与 ANR
 - ANR 非技术故障诊断
 
-## 延伸阅读
+## 阅读建议
 
-### AnrController 与 BroadcastQueueImpl 在现代 ANR 判责中的作用
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AnrController 与 BroadcastQueueImpl 在现代 ANR 判责中的作用.md
-- 类型：DeepResearch 调研结果
-- 摘要：基于 AOSP main 梳理 Input ANR 与 Broadcast ANR 两条判责链，澄清 AnrController 已成为 WMS 侧归因与 pre-dump 取证枢纽，BroadcastQueueModernImpl 也以软硬超时替代旧式“一超时即 ANR”模型，适合用于现代 ANR 自动化判责与 trace 解读。
-- 注入时间：2026-04-20
-- 价值：把现代 ANR 判责入口、归因边界和广播超时语义讲透了，能直接减少误判。
+- 如果你刚开始系统学 ANR，先读 `9.1`、`9.2`、`9.3`。
+- 如果你已经在线上看过不少 ANR 堆栈，但总觉得“堆栈像替罪羊”，重点回看 `9.1` 和 `9.3`。
+- 如果你经常踩 Notification、前台服务、多进程这些边界问题，后面的专项章节更值得优先看。

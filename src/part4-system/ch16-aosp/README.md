@@ -1,6 +1,10 @@
 # 第 16 章：AOSP 性能优化
 
-> 本章节正在建设中。
+前面的大部分章节，更多在解释 Android 系统已经是什么样子。  
+这一章开始换一个视角：如果你站在 AOSP、系统服务、ROM 或平台的角度，性能问题还能怎样被直接改。
+
+这时候思考方式会变得不一样。应用开发者更关心“怎么绕开瓶颈”，而系统侧更关心“瓶颈为什么会这样设计、能不能从系统层把它改掉”。  
+所以这一章更适合那些已经不满足于只在 App 侧做局部优化的读者。
 
 ## 本章内容
 
@@ -8,19 +12,7 @@
 - 各 Android 版本性能变更追踪
 - AOSP 源码编译与调试环境
 
-## 延伸阅读
+## 阅读建议
 
-### AOSP App 冻结策略深度调研与 AOSP 原生改造方案
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AOSP App 冻结策略深度调研与 AOSP 原生改造方案.md
-- 类型：DeepResearch 调研结果
-- 摘要：拉通 Android 14-17 App freezer 从 OomAdjuster、CachedAppOptimizer/Freezer、Binder 冻结到 cgroup.freeze 的完整路径，并提出多信号冻结决策、进程依赖图级联解冻等 AOSP 原生改造方案，适合作为系统冻结策略设计与 OEM 调优参考。
-- 注入时间：2026-04-20
-- 价值：既有源码链路又有改造方案，能支撑系统级冻结策略设计和回炉扩展。
-
-### AIOS 架构深度解析与 Android Agent OS 演进全景
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AIOS 架构深度解析与 Android Agent OS 演进全景.md
-- 类型：DeepResearch 调研结果
-- 摘要：从学术原型 AIOS 的 LLM Core、Scheduler、Memory/Storage/Tool/Access Manager 出发，对照 Android 的 AICore、AppFunctions、PCC、Binder/SystemService 架构，梳理移动端 Agent OS 已有能力、缺口与 A2A/AppFunctions 的分工边界。
-- 注入时间：2026-04-21
-- 价值：适合作为 AI × 手机体系化参考，帮助 AIW 把 Agent OS 讨论落到 Android 分层与系统服务上。
-
+- 如果你主要做 App 侧优化，这一章不用一开始就全读，但读懂其中的系统改动思路会很有帮助。
+- 如果你做的是系统、ROM 或平台方向，这一章应该和前面的调度、渲染、内存、功耗章节反复对照着看。

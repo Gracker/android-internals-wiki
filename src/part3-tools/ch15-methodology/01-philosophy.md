@@ -35,14 +35,18 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-22'
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-22"
+last_task9_at: "2026-04-22T10:14:00+08:00"
 ---
 
 # 性能优化的术、道、器
