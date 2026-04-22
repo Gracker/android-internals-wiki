@@ -31,15 +31,15 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-22T23:53:44+08:00"
-task9_reviewed_date: "2026-04-20"
+task9_reviewed_date: '2026-04-23'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-20T07:50:52+08:00"
+last_task9_at: '2026-04-23T04:05:49+08:00'
 section: "1.16"
 ---
 

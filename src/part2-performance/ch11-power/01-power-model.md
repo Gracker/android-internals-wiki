@@ -39,13 +39,13 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
-last_task9_at: "2026-04-21T12:29:00+08:00"
+task9_state: reviewed
+task2b_state: pending
+last_task9_at: '2026-04-23T04:05:49+08:00'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-21
+task9_reviewed_date: '2026-04-23'
 task2b_result: fixed
 ---
 
