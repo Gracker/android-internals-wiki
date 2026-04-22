@@ -1,35 +1,52 @@
 ---
-title: "Perfetto 简介与演进"
-chapter: "13.1"
-section: "13.1"
+title: Perfetto 简介与演进
+chapter: '13.1'
+section: '13.1'
 status: ready-for-review
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-21"
-reviewed_by: "openclaw-task6"
-task6_result: "needs-rework"
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+reviewed_date: '2026-04-21'
+reviewed_by: openclaw-task6
+task6_result: needs-rework
 polish_count: 2
-polish_date: "2026-04-10"
-polish_by: "task2b-polish"
-applicable_versions: "Android 9 (API 28) - Android 17 (API 37, Beta)"
-last_verified: "2026-04-14"
-last_verified_against: "perfetto.dev docs, source.android.com/docs/core/debug/perfetto, developer.android.com/profileable"
+polish_date: '2026-04-10'
+polish_by: task2b-polish
+applicable_versions: Android 9 (API 28) - Android 17 (API 37, Beta)
+last_verified: '2026-04-14'
+last_verified_against: perfetto.dev docs, source.android.com/docs/core/debug/perfetto,
+  developer.android.com/profileable
 confidence: high
 sources:
-  - type: official
-    path: "https://perfetto.dev/docs/"
-  - type: official
-    path: "https://source.android.com/docs/core/debug/perfetto"
-  - type: blog
-    path: "https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/"
-tags: ['perfetto', 'systrace', 'tracing', 'trace-processor', 'traced', 'ftrace', 'atrace', 'heapprofd', 'performance-analysis']
-related_chapters: ["13.2", "13.3", "2.1", "7.1"]
-pipeline_stage: task9_pending
+- type: official
+  path: https://perfetto.dev/docs/
+- type: official
+  path: https://source.android.com/docs/core/debug/perfetto
+- type: blog
+  path: https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/
+tags:
+- perfetto
+- systrace
+- tracing
+- trace-processor
+- traced
+- ftrace
+- atrace
+- heapprofd
+- performance-analysis
+related_chapters:
+- '13.2'
+- '13.3'
+- '2.1'
+- '7.1'
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
+task9_reviewed_date: '2026-04-22'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-22T08:40:18+08:00'
 ---
 
 # Perfetto 简介与演进

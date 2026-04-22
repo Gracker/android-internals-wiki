@@ -2,10 +2,11 @@
   {
     "section": "13.1",
     "section_title": "Perfetto 简介与演进",
-    "priority": 90,
-    "reason": "[review回炉] External review P0: AOSP源码路径错误(system/tracing/不存在)；P1: 遗漏heapprofd/traced_perf架构组件",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Perfetto AOSP 路径错误；架构段遗漏 heapprofd / java_hprof / traced_perf producer",
     "material_paths": [
-      "logs/external-review/2026-04-21-22-13.1-external-review.md"
+      "logs/external-review/2026-04-21-22-13.1-external-review.md",
+      "logs/deep-review/2026-04-22-08-deep-review.md"
     ],
     "review_issues": [
       {
@@ -19,12 +20,26 @@
         "location": "Perfetto 的架构 > traced_probes 之后",
         "detail": "遗漏核心架构组件 heapprofd（Native内存分配追踪）和 traced_perf（CPU采样分析）",
         "suggestion": "在 traced_probes 之后补充这两个组件的角色说明"
+      },
+      {
+        "type": "源码错误",
+        "location": "参考资料（L400-L401）",
+        "detail": "正文把 `traced` / `traced_probes` 的 AOSP 路径写成 `system/tracing/...`。当前代码树在 `external/perfetto/src/traced/service/` 与 `external/perfetto/src/traced/probes/`，旧路径会让读者直接找不到源码。",
+        "suggestion": "把源码锚点改到 `external/perfetto/src/traced/service/`、`external/perfetto/src/traced/probes/`，并在需要时补 upstream GitHub 对应目录。"
+      },
+      {
+        "type": "原理断裂/知识盲区",
+        "location": "Perfetto 的架构 -> traced / traced_probes（L120-L156）",
+        "detail": "章节后文已经讨论 heapprofd、java_hprof 与 CPU profiling，但架构段没有交代 `heapprofd` / `java_hprof_producer` / `traced_perf` 的角色，会把“普通 tracing service”和“专用 profiler producer”混成一层。",
+        "suggestion": "在 traced_probes 之后补一段 profiling 组件：`external/perfetto/src/profiling/memory/*`（heapprofd、java_hprof）与 `external/perfetto/src/profiling/perf/*`（traced_perf / perf_producer），说明它们与 traced 的关系。"
       }
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-21T18:36:56",
     "status": "pending",
-    "original_review_log": "logs/review/2026-04-21-18-review.md"
+    "original_review_log": "logs/review/2026-04-21-18-review.md",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-22T08:40:18+08:00"
   },
   {
     "section": "14.4",
@@ -623,6 +638,60 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-22T07:21:28+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "6.4",
+    "section_title": "存储相关的版本演进",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Photo Picker 回推范围写宽；Android 13/14 存储版本线需收窄到官方口径",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-22-08-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "Scoped Storage：从 10 到 15 / Android 13 段（L148）",
+        "detail": "正文写成“Android 11/12 设备可以通过模块更新拿到系统 Photo Picker”。官方文档限定为 Android 4.4-10 设备，以及支持 Google Play services 的 Android Go 11/12 设备。把“普通 11/12 全量回推”写死，会误导版本判断。",
+        "suggestion": "把版本说明改成“Android 13 正式提供；较老设备可通过回推模块获得，范围以官方文档列出的 Android 4.4-10 与 Android Go 11/12 为准”，并补 Google Play services / 模块依赖条件。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T08:40:18+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.4",
+    "section_title": "典型场景分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] PopupWindow 窗口流程写错；FrameTimeline 术语与 Android 12+ 边界未标清",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-22-08-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "窗口动画 -> PopupWindow（L263）",
+        "detail": "正文说 PopupWindow 不经过 WindowManagerService 的窗口创建流程。AOSP `PopupWindow.showAsDropDown()` 会取 anchor 的 application window token，创建 `WindowManager.LayoutParams`，并通过 `mWindowManager.addView()` 注册独立窗口。",
+        "suggestion": "改成“PopupWindow 仍是由 WindowManager 管理的独立窗口，只是复用了宿主 window token，路径比 Activity 新建 window 轻，但不等于绕过 WMS”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "页面切换动画在 Perfetto 中的表现 + 总结（L225-L231, L418）",
+        "detail": "章节适用版本标到 Android 8-16，但把 `FrameTimeline`、`AppDeadlineMissed`、`BufferStuffing` 当成通用入口，没有交代它们是 Android 12+ 才有的观测能力。低版本读者会直接找不到这些轨道和字段。",
+        "suggestion": "按版本拆成两套入口：Android 12+ 看 FrameTimeline；Android 8-11 回到 `Choreographer#doFrame`、`thread_state`、BufferQueue / SurfaceFlinger 轨道。"
+      },
+      {
+        "type": "术语错误",
+        "location": "常见问题与误区（L418）",
+        "detail": "FrameTimeline 文档里没有单一 `SFDeadlineMissed` 这个官方 jank type。SurfaceFlinger 侧至少要区分 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 与 `DisplayHAL`。",
+        "suggestion": "把“看 `SFDeadlineMissed`”改成“看 SurfaceFlinger 相关 jank type，并按 CPU / GPU / HAL 分流”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T08:40:18+08:00",
     "status": "pending"
   }
 ]
