@@ -1,60 +1,60 @@
 {
-  "generated_at": "2026-04-22T11:30:00+08:00",
+  "generated_at": "2026-04-22T12:08:42+08:00",
   "state_machine_version": "v2",
   "total_sections": 179,
   "metrics": {
     "total": 179,
     "unknown": 0,
-    "last_updated": "2026-04-22T11:30:00+08:00",
+    "last_updated": "2026-04-22T12:08:42+08:00",
     "task2b_state_counts": {
-      "fixed": 134,
+      "fixed": 135,
       "unknown": 6,
       "idle": 7,
-      "pending": 32
+      "pending": 31
     },
     "task9_state_counts": {
-      "reviewed": 78,
-      "pending": 100,
+      "reviewed": 77,
+      "pending": 101,
       "fixed": 1
     },
     "pipeline_stage_counts": {
-      "task6_pending": 68,
+      "task6_pending": 69,
       "ready-to-publish": 37,
       "task9_pending": 45,
-      "task2b_pending": 29
+      "task2b_pending": 28
     },
     "pipeline_task9_pending": 45,
-    "pipeline_task2b_pending": 29,
+    "pipeline_task2b_pending": 28,
     "pipeline_ready_to_publish": 37,
     "ready-to-publish": 0,
     "finalized": 37,
     "ready-for-review": 142,
     "task6_state_counts": {
-      "revisiting": 63,
-      "reviewed": 116
+      "revisiting": 66,
+      "reviewed": 113
     },
     "total_sections": 179
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 68,
+      "task6_pending": 69,
       "ready-to-publish": 37,
       "task9_pending": 45,
-      "task2b_pending": 29
+      "task2b_pending": 28
     },
     "task2b_state_counts": {
-      "fixed": 134,
+      "fixed": 135,
       "unknown": 6,
       "idle": 7,
-      "pending": 32
+      "pending": 31
     },
     "task6_state_counts": {
-      "revisiting": 63,
-      "reviewed": 116
+      "revisiting": 66,
+      "reviewed": 113
     },
     "task9_state_counts": {
-      "reviewed": 78,
-      "pending": 100,
+      "reviewed": 77,
+      "pending": 101,
       "fixed": 1
     }
   },
@@ -431,13 +431,18 @@
       "section": "15.1",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed"
+      "task9_result": "needs-rework",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T10:14:00+08:00",
+      "last_task2b_at": "2026-04-22T12:08:42+08:00"
     },
     "src/part3-tools/ch15-methodology/04-competitive-analysis.md": {
       "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
@@ -1049,14 +1054,18 @@
       "section": "10.4",
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T10:14:00+08:00",
+      "last_task2b_at": "2026-04-22T12:08:42+08:00"
     },
     "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md": {
       "path": "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
@@ -2922,18 +2931,19 @@
       "chapter": "4.7",
       "section": "4.7",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed",
       "task9_result": "needs-rework",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T11:30:00+08:00"
+      "last_task9_at": "2026-04-22T11:30:00+08:00",
+      "last_task2b_at": "2026-04-22T12:08:42+08:00"
     },
     "src/part1-fundamentals/ch04-memory/01-memory-overview.md": {
       "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",

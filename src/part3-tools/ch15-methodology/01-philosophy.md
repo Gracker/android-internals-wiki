@@ -35,11 +35,11 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-22'
@@ -47,6 +47,7 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-22T10:14:00+08:00"
+last_task2b_at: "2026-04-22T12:08:42+08:00"
 ---
 
 # 性能优化的术、道、器
@@ -147,7 +148,17 @@ Android 系统在持续演进，每一代新版本都可能引入新的性能特
 **定期巡检**是更主动的做法。即使没有新功能发布，也应该定期（比如每周或每两周）用 Perfetto 抓取一次 Trace，检查关键路径上有没有新增的耗时操作。就像身体健康需要定期体检一样，App 的性能也需要定期「体检」。
 
 **版本跟进**是长期投入。每当 Android 发布新版本，都应该评估新版本对既有优化策略的影响。比如 Android 12 引入了 BlastBufferQueue 替代 BufferQueue，这改变了渲染管线的行为（详见第 2 章和第 2.6 节）。如果我们的优化策略依赖于旧的行为模型，就需要及时调整。
-从工具演进看，Android 性能分析方法在不同阶段有明显的代际差异。Android 4.x - 7.x 时代，systrace 是主力，只能抓取系统预定义的 trace point，App 侧需要手动插入 `Trace.beginSection()`。Android 8 引入 ProfilingManager 并开始支持更多动态 trace point。Android 9-10 期间 Perfetto 逐步取代 systrace，提供了更丰富的数据源和 SQL 查询能力。Android 11-13 引入了 BlastBufferQueue 替代 BufferQueue、FrameMetrics API 暴露逐帧渲染耗时、以及 Baseline Profiles 等新机制——分析方法也需随之更新，比如 BlastBufferQueue 改变了 buffer 流转时序，基于旧 BufferQueue 模型的分析就不再准确。Android 14-16 继续扩展 Perfetto 的 Track 覆盖（Jobscheduler Track、App Startup Track），并强化了后台执行限制，后台任务的分析需要额外关注系统级的调度约束。
+
+从工具演进看，这条时间线可以拆成几处明确的里程碑：
+
+- **API 24 / Android 7.0**：`FrameMetrics` 已经提供逐帧耗时观测能力。
+- **Android 9-10**：Perfetto 逐步成为系统级 trace 主线，systrace 更多退到兼容入口。
+- **Android 11**：BLAST 改变了 buffer 交接模型，渲染路径的观测口径开始和旧 BufferQueue 时代分开。
+- **Android 12**：FrameTimeline 和更细的 jank 证据链让帧级诊断更直接。
+- **Baseline Profiles**：这是 Jetpack / ART 能力，不属于某一个 Android 大版本。按官方文档，它能让关键路径从第一次启动起就通过 AOT 获得收益，适用面覆盖 Android 7+。
+- **API 35 / Android 15**：`ProfilingManager` 正式进入平台 API；**API 36** 再补 system-triggered profiling triggers。
+
+Android 14-16 继续扩展 Perfetto 的 Track 覆盖（Jobscheduler Track、App Startup Track），并强化了后台执行限制，后台任务的分析需要额外关注系统级的调度约束。
 
 了解这些代际变化，有助于在阅读旧版技术文章或分析老版本设备的 Trace 时，正确理解工具和数据含义的差异。
 

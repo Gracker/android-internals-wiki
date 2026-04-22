@@ -27,16 +27,17 @@ reviewed_by: openclaw-task6
 polish_count: 4
 polish_date: "2026-04-22"
 polish_by: "task6-review"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-22T10:14:00+08:00"
+last_task2b_at: "2026-04-22T12:08:42+08:00"
 ---
 
 # 低内存对系统性能的影响
@@ -157,7 +158,7 @@ ART 的垃圾回收会直接受到系统内存压力影响。就 Perfetto 的常
 
 在 Perfetto 中，这个恶性循环表现为：GC Event（橙色的块）密度明显增加，帧渲染时间变长，帧之间的间隔中 GC 占比显著升高。在 120Hz 设备上（每帧只有 8.33ms），频繁的 GC 块占据 2-3ms 就足以造成卡顿，低内存导致的 GC 频繁触发很可能是根因。
 
-与 [4.5 App 内存优化](../ch04-memory/05-app-memory-optimization.md) 和 [10.6 内存抖动与频繁 GC](06-memory-churn.md) 的交叉要点：低内存放大了 App 自身的内存管理问题。一个在 8GB 设备上可以容忍的内存抖动模式，在 4GB 设备上可能导致频繁 GC 和严重卡顿。
+与 [4.5 App 内存优化](../../part1-fundamentals/ch04-memory/05-app-memory-optimization.md) 和 [10.6 内存抖动与频繁 GC](06-memory-churn.md) 的交叉要点：低内存放大了 App 自身的内存管理问题。一个在 8GB 设备上可以容忍的内存抖动模式，在 4GB 设备上可能导致频繁 GC 和严重卡顿。
 
 ## 在 Perfetto 中识别内存压力的信号
 
@@ -235,9 +236,11 @@ Android 15 支持 16KB Page Size。页变大后，TLB miss 和 page table walk �
 
 Android 使用 cgroup（Control Group）来对进程组施加资源限制，其中内存 cgroup 是低内存管理的核心工具之一。
 
-Android 10+ 引入了 cgroup 抽象层和 Task Profiles 机制。厂商可以在 `cgroups.json` 中定义 cgroup 配置，在 `task_profiles.json` 中将特定类型的任务映射到对应的 cgroup。这使得系统可以为不同优先级的进程设置不同的内存限制——前台进程几乎没有限制，而后台进程在内存紧张时会被优先限制甚至终止。
+Android 10+ 引入了 cgroup 抽象层和 Task Profiles 机制。厂商可以在 `cgroups.json` 中定义 cgroup 配置，在 `task_profiles.json` 中把不同类型的任务映射到对应的 cgroup。这让系统可以按进程优先级做记账、隔离和资源约束：前台路径尽量宽松，后台进程更容易在压力下被收缩。
 
-cgroup 与 lmkd 配合工作：lmkd 通过 cgroup 来监控进程的内存使用，并基于 `oom_score_adj` 选择要杀的进程。在 Android 5.0+ 上，lmkd 使用用户空间的 cgroup 接口来管理进程，替代了早期内核空间的 `lowmemorykiller` 驱动。[已验证: 官方文档, source.android.com]
+这里的版本线要拆开看。早期 Android 主要依赖内核态 `lowmemorykiller` 驱动。Android 9 起，如果设备没有检测到 in-kernel LMK，且内核满足 memcg 等前提，可以启用 userspace `lmkd`。Android 10 起，内核提供 PSI monitor 时，lmkd 默认优先用 PSI 做内存压力检测；缺少 PSI 时再回退到 `vmpressure` 或 `minfree` 路径。
+
+cgroup 和 PSI 不是同一层。cgroup 负责进程分组、内存记账和 task profile 约束；PSI 负责把 stall 时间暴露给 lmkd，帮助它决定什么时候该杀后台进程。把这几条线分开看，才不会把“userspace lmkd”“memcg 依赖”和“PSI 模式”写成同一个版本开关。[已验证: 官方文档, source.android.com]
 
 ### Compact Daemon（用户空间内存规整）
 
