@@ -766,5 +766,86 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-22T10:14:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "4.7",
+    "section_title": "16KB Page Size 与 Android 性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 16KB 章节把 sysconf(_SC_PAGESIZE) 误写为“硬编码值”，并把 Android 16/17 与 Google Play 16KB 时间线写成确定政策",
+    "material_paths": [
+      "logs/deep-review/2026-04-22-11-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L129-L136",
+        "detail": "正文把 `PAGE_SIZE` 和 `sysconf(_SC_PAGESIZE)` 一起写成“硬编码值”，与后面的代码示例自相矛盾；`sysconf(_SC_PAGESIZE)` 本身就是运行时查询页大小的正确做法。",
+        "suggestion": "把问题收敛为“不要把页大小写死成 4096”，保留 `sysconf(_SC_PAGESIZE)` / `getpagesize()` 作为正确示例。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L45 / L143-L146 / L241-L250",
+        "detail": "章节把 16KB 路线写成“Android 16 新设备强制 + Android 17 全面强制 + 2026-05-01 全量更新”，但当前官方主文档明确口径是 Android 15 AOSP 支持 16KB 设备、Google Play 从 2025-11-01 对 target Android 15+ 的新 app/更新提出兼容要求。文中把平台支持、Play 政策和后续路线图混写成既定事实。",
+        "suggestion": "按“Android 15 开始支持 16KB 设备 + Google Play 兼容要求”重写时间线；对 Android 16/17 的设备强制策略改成有据可查的 CDD/公告口径，查不到就标 `[待验证]`。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T11:30:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.3",
+    "section_title": "大小核架构",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 大小核章节把 RTG 当作 Android 通用调度机制，且对 DynamIQ / DVFS 域的描述前后冲突",
+    "material_paths": [
+      "logs/deep-review/2026-04-22-11-deep-review.md",
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性/边界错误",
+        "location": "L186-L192",
+        "detail": "正文把 RTG、`preferred_cluster`、`SCHED_BOOST_ON_BIG` 写成 Android 通用内核机制，并标注“已验证: AOSP/Android kernel 源码”，但没有给出公开 GKI/AOSP 路径；公开文档也不把 RTG 作为通用 Android 调度接口。",
+        "suggestion": "把 RTG 降级为厂商/私有调度扩展，补“并非所有 GKI/AOSP 设备都有这套接口”的边界；正文主线应回到 EAS / schedutil / uclamp / cpuset 这些公开机制。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L84 / L204",
+        "detail": "前文写“每个核心可以独立控制频率、电压”，后文又写“同一集群内核心通常共享电压/频率域”，没有交代 DynamIQ 只是让 per-core clock domain 成为可配置能力，实际 performance domain 仍取决于 SoC 实现。",
+        "suggestion": "补清“DSU 允许配置 per-core clock domain，但并不等于所有量产 SoC 都是 per-core DVFS”的条件，再解释迁移与频率爬坡。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T11:30:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "9.2",
+    "section_title": "ANR 类型与触发条件",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ANR 章节把 JobService 写成“不直接触发 ANR”，且遗漏 Android 14+ BroadcastReceiver 的 CPU-starved 超时口径",
+    "material_paths": [
+      "logs/deep-review/2026-04-22-11-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "L288-L295",
+        "detail": "正文写“JobService 本身不直接触发 ANR”，但 Android 14 行为变更明确规定：targetSdk 34+ 时，`onStartJob()` / `onStopJob()` 在主线程超时会直接触发 “No response to onStartJob/onStopJob” ANR。",
+        "suggestion": "把 JobService 一节改成“Android 14+ 上 JobScheduler callback 可直接触发 ANR”，并拆清 callback 超时、job 超时和普通 Service ANR 三条线。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L138-L149 / L252-L258",
+        "detail": "Broadcast timeout 仍写成前台 10s / 后台 60s 固定值，但 Android 14+ 官方口径已变为前台 10-20s、后台 60-120s，取决于进程是否 CPU-starved。当前 frontmatter 覆盖到 Android 17，版本边界缺失。",
+        "suggestion": "把 BroadcastReceiver 超时阈值按 Android 13 及以下 vs Android 14+ 分开写，并补 CPU-starved 条件与 app startup 计时口径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T11:30:00+08:00",
+    "status": "pending"
   }
 ]
