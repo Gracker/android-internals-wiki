@@ -310,3 +310,16 @@
 - **位置**：将 Perfetto 集成到 CI/CD / 降低误报率的几个实践
 - **问题**：经验阈值（5-10% 波动、3-5 次、中位数、5%/15% 告警线）没有与设备条件、Trace 规模、Benchmark 方式绑定。
 - **建议**：补一组 Macrobenchmark / 物理机样本的噪声分布，说明这些阈值适用的环境和失效边界。
+
+
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：### 4.3 使用频率统计（AOSP 系统进程）
+- **问题**：正文给出 Binder / Unix Socket / 共享内存 / Pipe / Signal 约 90% / 5% / 3% / 1% / 1% 的占比，但没有样本范围、统计方法、Trace/脚本来源或设备边界，当前更像经验数字而不是可复核统计。
+- **建议**：补充统计口径（哪些进程、怎样计 Binder 事务/Socket/共享内存事件）和数据来源；如果暂时没有可复核样本，改成定性描述，避免伪精确百分比。
+
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-22
+- **类型**：交叉引用
+- **位置**：交叉参考 §1.13
+- **问题**：交叉参考写成“Pipe + epoll 在 Looper 中的应用”，但本章正文与 `1.13 MessageQueue 机制与 DeliQueue 无锁优化` 都已明确 Android 8-17 的 Looper/MessageQueue 唤醒路径应理解为 `eventfd + epoll`，pipe 只适合作为历史背景。
+- **建议**：把交叉参考改成“Looper / MessageQueue 的 eventfd + epoll 唤醒路径（含 pipe 历史背景）”或同等准确表述。

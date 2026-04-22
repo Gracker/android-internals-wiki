@@ -2,7 +2,7 @@
 title: "IPC 全景：Android 进程间通信机制对比与性能选型"
 chapter: "1.17"
 section: "1.17"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP main（ProcessState.cpp、Looper.cpp、InputTransport.cpp、InputChannel.java）, source.android.com"
@@ -32,13 +32,16 @@ reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 review_log: "logs/review/2026-04-11-09-review.md"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_result: needs-rework
-task9_state: pending
+task9_result: pass-tech-review
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-04-19T07:09:38+08:00"
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-04-22'
+last_task9_at: '2026-04-22T13:35:00+08:00'
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型

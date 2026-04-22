@@ -1,38 +1,34 @@
 {
-  "generated_at": "2026-04-22T13:27:00+08:00",
+  "generated_at": "2026-04-22T13:35:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 180,
   "metrics": {
-    "finalized": 38,
-    "last_updated": "2026-04-22T13:27:00+08:00",
-    "pipeline_ready_to_publish": 38,
+    "finalized": 39,
+    "last_updated": "2026-04-22T13:35:00+08:00",
+    "pipeline_ready_to_publish": 39,
     "pipeline_stage_counts": {
-      "unknown": 1,
+      "ready-to-publish": 39,
       "task6_pending": 64,
-      "ready-to-publish": 38,
-      "task9_pending": 50,
-      "task2b_pending": 28
+      "task9_pending": 47,
+      "task2b_pending": 30
     },
-    "pipeline_task2b_pending": 28,
-    "pipeline_task9_pending": 48,
-    "ready-for-review": 143,
-    "ready-to-publish": 38,
+    "pipeline_task2b_pending": 30,
+    "pipeline_task9_pending": 47,
+    "ready-for-review": 141,
+    "ready-to-publish": 39,
     "task2b_state_counts": {
-      "unknown": 6,
-      "fixed": 138,
-      "idle": 7,
-      "pending": 31
+      "fixed": 136,
+      "unknown": 5,
+      "idle": 6,
+      "pending": 33
     },
     "task6_state_counts": {
-      "unknown": 1,
-      "revisiting": 62,
-      "reviewed": 118,
-      "pending": 1
+      "reviewed": 120,
+      "revisiting": 60
     },
     "task9_state_counts": {
-      "unknown": 1,
-      "reviewed": 80,
-      "pending": 100,
+      "reviewed": 83,
+      "pending": 96,
       "fixed": 1
     },
     "total": 180,
@@ -41,28 +37,24 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 1,
-      "task6_pending": 68,
-      "ready-to-publish": 37,
-      "task9_pending": 48,
-      "task2b_pending": 28
+      "ready-to-publish": 39,
+      "task6_pending": 64,
+      "task9_pending": 47,
+      "task2b_pending": 30
     },
     "task2b_state_counts": {
-      "unknown": 6,
-      "fixed": 138,
-      "idle": 7,
-      "pending": 31
+      "fixed": 136,
+      "unknown": 5,
+      "idle": 6,
+      "pending": 33
     },
     "task6_state_counts": {
-      "unknown": 1,
-      "revisiting": 63,
-      "reviewed": 117,
-      "pending": 1
+      "reviewed": 120,
+      "revisiting": 60
     },
     "task9_state_counts": {
-      "unknown": 1,
-      "reviewed": 80,
-      "pending": 100,
+      "reviewed": 83,
+      "pending": 96,
       "fixed": 1
     }
   },
@@ -1203,15 +1195,18 @@
       "chapter": "7.7",
       "section": "7.7",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T13:35:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md": {
       "path": "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
@@ -1366,15 +1361,18 @@
       "title": "卡顿分析方法论",
       "chapter": "7.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T13:35:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
@@ -2479,17 +2477,20 @@
       "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
       "chapter": "1.17",
       "section": "1.17",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-19T07:09:38+08:00"
+      "last_task2b_at": "2026-04-19T07:09:38+08:00",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T13:35:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md": {
       "path": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
