@@ -1983,6 +1983,764 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-23T01:48:42+08:00",
       "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch04-memory/README.md",
+      "section_title": "4.0 内存章节导读",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (4.0)",
+      "review_issues": [
+        {
+          "type": "交叉引用缺失",
+          "location": "本章内容列表",
+          "detail": "列表仅包含 4.1-4.6，遗漏 4.7(16KB Page Size) 和 4.8(ART 分代 GC)",
+          "suggestion": "补齐 4.7、4.8 索引，确保与目录文件一致",
+          "evidence": [
+            "磁盘文件存在 07-16kb-page-size.md 和 08-art-generational-gc.md"
+          ]
+        },
+        {
+          "type": "版本差异缺失",
+          "location": "导言段落",
+          "detail": "导言未提及 MGLRU 和 16KB Page Size 等架构级演进",
+          "suggestion": "在导言中点出底层架构演进对系统表现的重塑",
+          "evidence": [
+            "Android 14+ 默认启用 MGLRU (/sys/kernel/mm/lru_gen/)",
+            "Android 15+ 强制 16KB Page Size 兼容性"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "section_title": "4.5 App 内存优化",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (4.5)",
+      "review_issues": [
+        {
+          "type": "原理描述不准",
+          "location": "Hardware Bitmap 节",
+          "detail": "称硬件 Bitmap 不计入 App PSS，但实际计入 Gfx dev/EGL mtrack 栏目",
+          "suggestion": "明确 Hardware Bitmap 在 meminfo 中归属栏目 Gfx dev/EGL mtrack",
+          "evidence": [
+            "Hardware Bitmap 仍占进程 PSS 总量"
+          ]
+        },
+        {
+          "type": "版本错误",
+          "location": "heapprofd 节",
+          "detail": "heapprofd --java 应为 Android 11+ 而非 Android 12+",
+          "suggestion": "修正版本要求为 Android 11+",
+          "evidence": [
+            "Perfetto 官方文档和 AOSP 提交记录确认"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "16KB 迁移小节",
+          "detail": "缺少底层开发者核验手段 readelf 命令",
+          "suggestion": "补充 readelf -l <so_file> | grep ALIGN 验证 0x4000 对齐",
+          "evidence": []
+        },
+        {
+          "type": "原理缺失",
+          "location": "onTrimMemory 节",
+          "detail": "缺失 App 主动查询内存压力的 ActivityManager.getMyMemoryState 机制",
+          "suggestion": "补充 getMyMemoryState 作为主动防御手段",
+          "evidence": [
+            "ActivityManager.getMyMemoryState(RunningAppProcessInfo)"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
+      "section_title": "4.7 16KB Page Size",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (4.7)",
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "Native 代码小节",
+          "detail": "只提及 C/C++ sysconf，未提及 Java 层 Os.sysconf 获取 Page Size",
+          "suggestion": "补充 Java/Kotlin 层 Os.sysconf(OsConstants._SC_PAGESIZE) API 范例",
+          "evidence": [
+            "libcore/luni/src/main/native/libcore_io_Linux.cpp"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "核心机制",
+          "detail": "未提及 Bionic Linker 兼容模式 (Compat Mode)",
+          "suggestion": "增加 Bionic 如何处理旧应用的短段落",
+          "evidence": [
+            "bionic/linker/linker.cpp 中 bionic.linker.16kb.app_compat.enabled"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch04-memory/08-art-generational-gc.md",
+      "section_title": "4.8 ART 分代 GC",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (4.8)",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "版本演进表格",
+          "detail": "分代 CMC 起始版本应为 Android 14 而非 15",
+          "suggestion": "修正表格：Android 14 引入框架，Android 17 工程化增强",
+          "evidence": [
+            "art/runtime/gc/collector/mark_compact.h (Android 14 tag)"
+          ]
+        },
+        {
+          "type": "原理缺失",
+          "location": "Android 17 分代 GC 内部实现",
+          "detail": "缺少 Sticky-bit 标记机制解释",
+          "suggestion": "补充 CMC 如何利用对象头标志位实现 Sticky-bit 收集",
+          "evidence": [
+            "art/runtime/gc/collector/mark_compact.cc minor_gc 逻辑"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/README.md",
+      "section_title": "5.0 CPU 与功耗章节导读",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (5.0)",
+      "review_issues": [
+        {
+          "type": "交叉引用缺失",
+          "location": "本章内容",
+          "detail": "目录列表仅包含 5.1-5.7，遗漏 5.8-5.12 近 40% 章节",
+          "suggestion": "按 SUMMARY.md 补全目录，重写阅读建议覆盖全章",
+          "evidence": [
+            "核对 SUMMARY.md 和 ls 结果确认缺失 5.8-5.12"
+          ]
+        },
+        {
+          "type": "原理断裂",
+          "location": "引言部分",
+          "detail": "缺乏对 Kernel 与 Framework 交互机制（EAS/PowerHAL/ADPF）的顶层概括",
+          "suggestion": "增加从 Kernel EAS 到 Framework Power/Thermal 到 App ADPF 的全链路导引",
+          "evidence": [
+            "kernel/sched/fair.c",
+            "PowerManagerService",
+            "hardware/interfaces/power/"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "section_title": "5.1 Linux 进程调度基础",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (5.1)",
+      "review_issues": [
+        {
+          "type": "源码逻辑不准",
+          "location": "红黑树调度队列描述",
+          "detail": "混淆 CFS(取最左节点) 与 EEVDF(基于 deadline 树搜索) 选人机制",
+          "suggestion": "补充 EEVDF 增强红黑树的搜索逻辑，说明 entity_eligible 和 deadline 机制",
+          "evidence": [
+            "kernel/sched/fair.c pick_eevdf() (Linux 6.6+)"
+          ]
+        },
+        {
+          "type": "版本差异缺失",
+          "location": "Bionic API 37 变更",
+          "detail": "未明确 sched_setattr 包装器在 API 37 引入",
+          "suggestion": "标注 API 37 版本分界点，区分系统调用、EEVDF、Bionic 包装函数",
+          "evidence": [
+            "Bionic libc/include/sched.h __INTRODUCED_IN(37)"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "section_title": "5.2 EAS 能量感知调度",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (5.2)",
+      "review_issues": [
+        {
+          "type": "原理缺失",
+          "location": "EAS 的前提条件",
+          "detail": "未明确 EAS 仅作用于 CFS 调度类任务，RT/DL 不受节能逻辑约束",
+          "suggestion": "补充说明 EAS 管辖范围限于 Fair 任务，RT 任务会干扰 EAS 能效预测",
+          "evidence": [
+            "kernel/sched/fair.c find_energy_efficient_cpu 仅在 select_task_rq_fair 中调用"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "section_title": "5.3 大小核架构",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (5.3)",
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "schedutil 工作流程源码片段",
+          "detail": "effective_cpu_util 签名与 Linux 6.6 不符，使用的是 6.1 旧签名",
+          "suggestion": "更新源码至 6.6 版本，说明参数从 type/p 变为 min/max 的变化",
+          "evidence": [
+            "kernel/sched/fair.c (Linux 6.6.89+)"
+          ]
+        },
+        {
+          "type": "原理描述偏差",
+          "location": "RTG (Related Thread Group) 机制描述",
+          "detail": "RTG 实为高通 WALT 私有实现，描述为 Android 通用机制易误导",
+          "suggestion": "明确标注 RTG 为高通平台定制机制，简述 GKI 时代 Vendor Hook 存在形式",
+          "evidence": [
+            "RTG 在 Pixel(Tensor) 设备上不存在"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "section_title": "5.4 DVFS 动态调频",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合 (5.4)",
+      "review_issues": [
+        {
+          "type": "源码错误(P0)",
+          "location": "schedutil 频率计算",
+          "detail": "公式忽略 uclamp 钳位和 iowait boost，实际有效利用率由三者竞争产生",
+          "suggestion": "更新为有效利用率概念：PELT + uclamp + iowait_boost",
+          "evidence": [
+            "kernel/sched/cpufreq_schedutil.c sugov_get_util()"
+          ]
+        },
+        {
+          "type": "版本差异缺失",
+          "location": "ADPF 介绍",
+          "detail": "仅覆盖 Android 12 CPU，遗漏 Android 15/16 GPU 支持",
+          "suggestion": "补充 GPU WorkDuration 和 GpuHeadroom API",
+          "evidence": [
+            "Android 15 WorkDuration 类",
+            "Android 16 GpuHeadroom API"
+          ]
+        },
+        {
+          "type": "架构缺失",
+          "location": "OPP Table 章节",
+          "detail": "缺失 SCMI/CPPC 现代架构说明，OS 不再直接请求频率而是请求性能等级",
+          "suggestion": "增加抽象性能等级概念，说明 OPP 正从 OS 下沉到固件",
+          "evidence": [
+            "ARMv8.4+ SCMI Fastchannels 实现"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+      "section_title": "5.8 后台执行限制",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合 (5.8)",
+      "review_issues": [
+        {
+          "type": "源码错误(P0)",
+          "location": "参考资料/正文",
+          "detail": "DeviceIdleController、AppStandbyController、JobSchedulerService 路径错误",
+          "suggestion": "修正为 services/core 和 services/usage 下的准确路径",
+          "evidence": [
+            "frameworks/base/services/core/java/com/android/server/DeviceIdleController.java"
+          ]
+        },
+        {
+          "type": "API 存疑(P0)",
+          "location": "11.2 节",
+          "detail": "getPendingJobReasonStats(int) 未在 AOSP 中发现，实际应为 getPendingJobReasons",
+          "suggestion": "确认 API 存在性，若无则删除",
+          "evidence": [
+            "Android 16 API 实际为 getPendingJobReasons 和 getPendingJobReasonsHistory"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "Android 16 机制",
+          "detail": "Freezer 10s Debounce 和 FrozenStateChangeCallback 缺失",
+          "suggestion": "补齐系统层冻结逻辑",
+          "evidence": [
+            "CachedAppOptimizer 10 秒去抖动",
+            "Binder FrozenStateChangeCallback"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "section_title": "5.9 ADPF 自适应性能框架",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (5.9)",
+      "review_issues": [
+        {
+          "type": "代码示例缺失",
+          "location": "Android 15 WorkDuration",
+          "detail": "提到 GPU 时长上报但代码示例仍使用旧 reportActualWorkDuration(long) 接口",
+          "suggestion": "增加 WorkDuration 类 Java 代码示范",
+          "evidence": [
+            "frameworks/base/core/java/android/os/WorkDuration.java (API 35)"
+          ]
+        },
+        {
+          "type": "API 文档缺失",
+          "location": "SystemHealthManager",
+          "detail": "getCpuHeadroom 返回值 [0,100] 刻度未说明",
+          "suggestion": "明确标注 [0, 100] 取值范围及 Float.NaN 处理",
+          "evidence": [
+            "android.os.health.SystemHealthManager#getCpuHeadroom"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+      "section_title": "5.10 JobScheduler/WorkManager 性能",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (5.10)",
+      "review_issues": [
+        {
+          "type": "原理缺失",
+          "location": "UIDT Job 描述",
+          "detail": "未强调不调用 setNotification 会导致 Job 被系统强杀",
+          "suggestion": "增加警告：不调用 setNotification 的运行时崩溃风险",
+          "evidence": [
+            "JobServiceContext.java 中 setNotification 状态检查"
+          ]
+        },
+        {
+          "type": "版本差异缺失",
+          "location": "合规方案/版本差异",
+          "detail": "未提及 Android 15 FGS dataSync/mediaProcessing 6h/24h 配额",
+          "suggestion": "补充 FGS 时长配额对长任务选型的决定性影响",
+          "evidence": [
+            "Android 15 FGS Hardening"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+      "section_title": "5.11 端侧 AI 推理性能",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (5.11)",
+      "review_issues": [
+        {
+          "type": "架构缺失",
+          "location": "LiteRT 管线",
+          "detail": "仅描述 Interpreter+Delegate V1 架构，遗漏 CompiledModel V2 API",
+          "suggestion": "补充 CompiledModel API，对比与传统 Interpreter+Delegate 的区别",
+          "evidence": [
+            "com.google.ai.edge.litert.CompiledModel"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "模型优化技术",
+          "detail": "未提 AOT 编译机制，NPU 加载成本常达 500ms+",
+          "suggestion": "增加推理冷启动优化：从 JIT 到 AOT 小节",
+          "evidence": [
+            "CompiledModel 支持安装时预编译为 Vendor-specific Binary"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md",
+      "section_title": "5.12 热管理深度分析",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (5.12)",
+      "review_issues": [
+        {
+          "type": "API 文档补强",
+          "location": "ADPF Headroom",
+          "detail": "getCpuHeadroom 返回值量纲需明确说明受 Throttling 影响",
+          "suggestion": "补充 Headroom 计算公式说明",
+          "evidence": [
+            "Android 16 API 36 预览版文档"
+          ]
+        },
+        {
+          "type": "Perfetto 实战",
+          "location": "Perfetto SQL",
+          "detail": "部分 OEM 平台 thermal_zone track_id 可能因传感器离线偏移",
+          "suggestion": "增加先确认轨道 ID 的 SQL 说明",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch06-storage/README.md",
+      "section_title": "6.0 存储章节导读",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (6.0)",
+      "review_issues": [
+        {
+          "type": "交叉引用缺失",
+          "location": "本章内容",
+          "detail": "遗漏 6.4(版本演进) 和 6.5(SP/DataStore) 章节索引",
+          "suggestion": "补齐清单，特别是 6.5 是解决 SP ANR 最实用章节",
+          "evidence": [
+            "核对 src/part1-fundamentals/ch06-storage/ 目录确认文件存在"
+          ]
+        },
+        {
+          "type": "引导缺失",
+          "location": "阅读建议",
+          "detail": "未针对主线程卡顿场景指引至 6.5",
+          "suggestion": "增加 SP 引起 ANR/启动卡顿请参考 6.5 的导引",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "section_title": "6.1 存储架构",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (6.1)",
+      "review_issues": [
+        {
+          "type": "原理缺失",
+          "location": "Virtual A/B snapuserd",
+          "detail": "仅提到写入放大，遗漏最重要的上下文切换延迟",
+          "suggestion": "明确 snapuserd 内核/用户态通信开销，对比 io_uring 优化效果",
+          "evidence": [
+            "system/core/fs_mgr/libsnapshot/snapuserd 实现"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
+      "section_title": "6.2 文件系统",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合 (6.2)",
+      "review_issues": [
+        {
+          "type": "事实错误(P0)",
+          "location": "EROFS 段落",
+          "detail": "称 Android 13 强制所有只读分区使用 EROFS，实为 CDD 强制内核支持",
+          "suggestion": "修正为内核强制支持 EROFS，GMS/VTS 推动为事实标准",
+          "evidence": [
+            "Android 13 CDD 7.6.1 要求内核支持 EROFS"
+          ]
+        },
+        {
+          "type": "版本差异(P0)",
+          "location": "Android 15 部分",
+          "detail": "16KB 页下 f2fs 无法挂载 4KB 镜像，必须重新格式化 /data",
+          "suggestion": "增加 16KB 页面下文件系统约束专项说明",
+          "evidence": [
+            "f2fs block_size 必须等于 Page Size"
+          ]
+        },
+        {
+          "type": "架构缺失",
+          "location": "全文",
+          "detail": "完全缺失 Project Quota、Casefolding、fscrypt/Inline Encryption 三大特性",
+          "suggestion": "补充存储配额、大小写折叠、内联加密章节",
+          "evidence": [
+            "kernel/common/fs/f2fs/node.c",
+            "f2fs/dir.c",
+            "fs/crypto/"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",
+      "section_title": "6.4 存储版本演进",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (6.4)",
+      "review_issues": [
+        {
+          "type": "源码缺失",
+          "location": "FUSE 回归部分",
+          "detail": "未点出 MediaProvider 进程中 FuseDaemon.cpp 的核心角色",
+          "suggestion": "明确 MediaProvider 即 FUSE 进程，实现文件操作与媒体数据库原子同步",
+          "evidence": [
+            "packages/providers/MediaProvider/jni/FuseDaemon.cpp"
+          ]
+        },
+        {
+          "type": "版本差异缺失",
+          "location": "版本演进表格",
+          "detail": "仅覆盖到 Android 14，遗漏 15 的 16KB Page Size 和 Storage Health API",
+          "suggestion": "增加 Android 15 行，强调 16KB 对齐对 NDK 和底层驱动影响",
+          "evidence": [
+            "StorageManager 扩展 API"
+          ]
+        },
+        {
+          "type": "实战缺失",
+          "location": "UFS 4.0 MCQ",
+          "detail": "未给出确认 MCQ 激活状态的 sysfs 方法",
+          "suggestion": "增加 /sys/devices/platform/soc/*.ufshc/mcq_active 检查命令",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
+      "section_title": "6.5 SP/DataStore 优化",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (6.5)",
+      "review_issues": [
+        {
+          "type": "知识补强",
+          "location": "sLoadExecutor 描述",
+          "detail": "未强调全进程唯一单线程池导致的级联效应",
+          "suggestion": "明确多 SP 文件全局串行化，小文件被大文件卡住的风险",
+          "evidence": [
+            "AOSP Android 15+ sLoadExecutor 为静态单线程池"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+      "section_title": "7.2 卡顿原因体系",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (7.2)",
+      "review_issues": [
+        {
+          "type": "源码准确性",
+          "location": "Binder 线程池描述",
+          "detail": "默认线程数描述模糊，应为 15 worker + 1 main = 16",
+          "suggestion": "明确 15+1 结构，补充 system_server 可调至 31+",
+          "evidence": [
+            "DEFAULT_MAX_BINDER_THREADS = 15"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "分析树 JankType",
+          "detail": "缺失 SurfaceFlingerGpuDeadlineMissed 归因",
+          "suggestion": "补充该 JankType：SF CPU 任务完成但 GPU 合成超时",
+          "evidence": [
+            "Android 12+ FrameTimeline 核心归因之一"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
+      "section_title": "7.3 卡顿分析方法论",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (7.3)",
+      "review_issues": [
+        {
+          "type": "版本差异缺失",
+          "location": "FrameTimeline SurfaceView",
+          "detail": "称 FrameTimeline 不覆盖 SurfaceView，但 Android 15 已引入支持",
+          "suggestion": "说明 12-14 局限性并给出 15+ 的 SurfaceControl.Transaction.setFrameTimelineVsyncId 方案",
+          "evidence": [
+            "Android 15 API 35 SurfaceControl.Transaction"
+          ]
+        },
+        {
+          "type": "版本差异缺失",
+          "location": "SF Trace Marker",
+          "detail": "引用 onMessageReceived，但 Android 11+ 已拆分为 onMessageInvalidate/onMessageRefresh",
+          "suggestion": "增加版本说明，提示读者在 11+ Trace 中寻找 onMessageInvalidate",
+          "evidence": [
+            "SurfaceFlinger MessageQueue 分发 INVALIDATE/REFRESH"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
+      "section_title": "7.4 典型场景卡顿根因",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (7.4)",
+      "review_issues": [
+        {
+          "type": "架构演进",
+          "location": "3.1 App 启动窗口",
+          "detail": "Android 12+ SplashScreen 绘制已从 SystemServer 移至 Shell 进程",
+          "suggestion": "区分决策层(ATMS)与绘制层(Shell)，解释 SystemUI 负载影响",
+          "evidence": [
+            "StartingWindowController.java in WindowManager/Shell"
+          ]
+        },
+        {
+          "type": "知识闭环",
+          "location": "setHasFixedSize",
+          "detail": "核心作用是跳过容器 requestLayout 而非阻止子 View 内部刷新",
+          "suggestion": "明确解决的是列表内容增减导致的容器重测开销",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "section_title": "7.6 案例实战分析",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (7.6)",
+      "review_issues": [
+        {
+          "type": "原理缺失",
+          "location": "Case 4 RenderThread sync",
+          "detail": "遗漏 DrawFrameTask syncFrameState 后的提前唤醒 unblockUiThread 机制",
+          "suggestion": "区分同步等待与渲染等待，说明哪些操作会延长阻塞",
+          "evidence": [
+            "DrawFrameTask.cpp syncFrameState -> unblockUiThread"
+          ]
+        },
+        {
+          "type": "版本差异缺失",
+          "location": "Case 5 内存回调",
+          "detail": "Android 14 缓存应用冻结导致 onTrimMemory 失效未解释原因",
+          "suggestion": "补充 Cached App Freezer 背景，强调向降低常驻内存转型",
+          "evidence": [
+            "Android 14 Cached App Freezer 机制"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "Case 5 低内存",
+          "detail": "缺失 MGLRU (CONFIG_LRU_GEN) 内核级优化方案",
+          "suggestion": "将 MGLRU 作为系统开发者视角首选推荐",
+          "evidence": [
+            "Android 13+ MGLRU 降低 kswapd CPU ~40%"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
+      "section_title": "7.7 Compose 性能优化",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (7.7)",
+      "review_issues": [
+        {
+          "type": "原理缺失",
+          "location": "Strong Skipping 章节",
+          "detail": "未指明不稳定参数使用 === 引用相等性比较",
+          "suggestion": "对比稳定参数 equals() 与不稳定参数 === 的差异",
+          "evidence": [
+            "Strong Skipping Mode - developer.android.com"
+          ]
+        },
+        {
+          "type": "实战缺失",
+          "location": "Perfetto 章节",
+          "detail": "缺少手动激活 Trace 的 adb broadcast 指令",
+          "suggestion": "添加 am broadcast -a androidx.tracing.perfetto.action.ENABLE_TRACING 激活命令",
+          "evidence": [
+            "androidx.tracing.perfetto.TracingReceiver"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "重组机制",
+          "detail": "未提及 inline Composable 不产生独立重组范围(startReplaceableGroup)",
+          "suggestion": "补充 Row/Column/Box 寄生在调用者重组作用域中的机制",
+          "evidence": [
+            "inline 函数生成 startReplaceableGroup 而非 startRestartGroup"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
+      "section_title": "7.8 RecyclerView 深度优化",
+      "priority": 85,
+      "reason": "[External Review] 外部 review 结果整合 (7.8)",
+      "review_issues": [
+        {
+          "type": "API 差异",
+          "location": "嵌套滑动章节",
+          "detail": "setRecycleChildrenOnDetach(true) 不适用于 StaggeredGridLayoutManager",
+          "suggestion": "明确标注仅适用于 LinearLayoutManager 系，瀑布流需手动处理",
+          "evidence": [
+            "StaggeredGridLayoutManager 不继承 LinearLayoutManager"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T02:07:07",
+      "status": "pending"
     }
   ]
 }
