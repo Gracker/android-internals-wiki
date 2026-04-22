@@ -855,3 +855,364 @@ CameraX 最新版本的底层延迟优化和 HAL 对接变化
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-22-15.9-external-review.md)
 
+## [2026-04-22] 1.0 架构全景导读 — 知识盲区
+
+### 盲区描述
+Cloud Compilation（云端编译）对 Android 16 OOBE 性能的影响；16KB Page Size 兼容层的性能损耗。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP art 模块如何处理云端下载的编译产物及其与本地 dex2oat 的优先级关系
+- 16KB Page Size 兼容模式下 4KB 应用的性能损耗量化
+
+### 关联章节
+1.0, 1.6, 1.12
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.0-external-review.md)
+
+
+## [2026-04-22] 1.2 系统启动全流程 — 知识盲区
+
+### 盲区描述
+16KB Page Size 对系统启动期内存分页的影响；GBL Rust 实现对启动性能的影响。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 对比 4KB 与 16KB 下 mmap 系统分区的性能表现
+- 调研 GBL 如何通过 Rust 实现跨架构引导标准化
+
+### 关联章节
+1.2, 1.6
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-20-1.2-external-review.md)
+
+
+## [2026-04-22] 1.3 进程模型 — 知识盲区
+
+### 盲区描述
+SDK Sandbox 在 Android 16 中的实际采用率；Modern OomAdjuster 大规模 Service 绑定的性能压测数据。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 调研主流广告 SDK 在 Android 16 上的沙箱迁移进度
+- 验证 Modern 算法在进程数 > 200 时的计算耗时与 Legacy 算法的量化对比
+
+### 关联章节
+1.3
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-20-1.3-external-review.md)
+
+
+## [2026-04-22] 1.4 Binder IPC — 知识盲区
+
+### 盲区描述
+Binder 解冻风暴对系统整体调度的瞬时冲击量化；Binder 吞吐量瓶颈。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 结合 Android 14 的 binder-freezer 统计指标进行实验
+- 研究高频率小包下的中断压力
+
+### 关联章节
+1.4, 1.17
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-20-1.4-external-review.md)
+
+
+## [2026-04-22] 1.5 线程模型 — 知识盲区
+
+### 盲区描述
+Android 16 并发队列对反射的破坏；Java 虚拟线程在 ART 中的实现障碍；16KB Page Size 对线程栈内存的影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- ConcurrentMessageQueue.mMessages 字段行为变更
+- ART Continuations 现状与 Kotlin 协程的差异
+- PTHREAD_STACK_MIN 变化对线程开销的量化影响
+
+### 关联章节
+1.5, 1.13, 1.14
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-20-1.5-external-review.md)
+
+
+## [2026-04-22] 1.6 版本演进 — 知识盲区
+
+### 盲区描述
+Android 15 前台服务 onTimeout 回调的精确生命周期；GBL Rust 实现安全性。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 在 Service 类中搜索 onTimeout 的调用链
+- Android 16 GBL 采用 Rust 对引导阶段内存安全性的提升
+
+### 关联章节
+1.6, 1.2
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-20-1.6-external-review.md)
+
+
+## [2026-04-22] 1.7 ART 编译管线 — 知识盲区
+
+### 盲区描述
+Instrumentation 导致的去优化机制；Secondary Dex 优化策略；Cloud Compilation 分发细节。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 ClassFileLoadHook 或 RedefineClasses 如何触发全量去优化
+- ART Service 如何处理插件化框架动态加载的 DEX
+
+### 关联章节
+1.7, 1.9, 1.12
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-20-1.7-external-review.md)
+
+
+## [2026-04-22] 1.8 AMS — 知识盲区
+
+### 盲区描述
+Phantom Process Killer 对复杂工具类应用的影响；mService 全局锁竞争在 Perfetto 中的识别。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 12+ 对 Runtime.exec() 子进程数量限制（32 个）的影响
+- AMS 内部 mService 锁的竞争深度如何通过 Perfetto 识别
+
+### 关联章节
+1.8
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-20-1.8-external-review.md)
+
+
+## [2026-04-22] 1.9 PMS — 知识盲区
+
+### 盲区描述
+App Archiving 对 ActivityStarter 的拦截逻辑；SDM 签名校验流程；Archiving 对 LMK 的影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- PackageArchiver.java 及其对 ActivityStarter 的拦截逻辑
+- Android 16 模拟器或源码中对 .sdm 文件的 verify 流程
+
+### 关联章节
+1.9
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.9-external-review.md)
+
+
+## [2026-04-22] 1.10 ContentProvider — 知识盲区
+
+### 盲区描述
+Android 15 引入的 ApplicationStartInfo 如何量化 installContentProviders 对冷启动的贡献；AttributionSource 调用链审计原理。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 调研 API 35 的新启动分析接口
+- 研究 AttributionSource.Builder.setNext() 的多进程传递
+
+### 关联章节
+1.10
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.10-external-review.md)
+
+
+## [2026-04-22] 1.11 Zygote — 知识盲区
+
+### 盲区描述
+Android 16 新增的 PreloadAppProcessHALs 预加载了哪些具体 HAL 接口；Updatable GPU Driver 的 Preload 策略。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 阅读 ZygoteInit.java 中 preloadAppProcessHALs() 内部实现
+- Zygote 如何根据 com.android.graphics.driver 动态选择驱动并执行 PreloadGraphicsDriver
+
+### 关联章节
+1.11
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.11-external-review.md)
+
+
+## [2026-04-22] 1.12 AutoFDO — 知识盲区
+
+### 盲区描述
+ETM/ETE 硬件过滤机制对采样精度的影响；GKI Module AutoFDO。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 阅读 drivers/hwtracing/coresight 下地址范围过滤实现
+- 关注 Android 17 如何对 vendor module 独立分发 profile
+
+### 关联章节
+1.12, 1.7
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.12-external-review.md)
+
+
+## [2026-04-22] 1.13 MessageQueue/DeliQueue — 知识盲区
+
+### 盲区描述
+SemiConcurrentMessageQueue 与 Concurrent 版本的具体差异；Trebier Stack 在多核体系下消息的内存可见性保证。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究两种变体在生产者/消费者端锁策略的差异
+- Treiber Stack CAS 操作隐含的 Store-Store/Load-Load barrier 分析
+
+### 关联章节
+1.13, 1.5, 1.14
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.13-external-review.md)
+
+
+## [2026-04-22] 1.14 锁竞争 — 知识盲区
+
+### 盲区描述
+DeliQueue 反射失效后的主线程 Idle 判断替代方案；PI-Mutex 在 32 位架构下的 ID 映射机制与上限。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 API 37 后如何正确判断主线程 Idle 状态（isIdle() 接口或监听器）
+- Bionic PIMutex 结构体分配与回收策略
+
+### 关联章节
+1.14, 1.5, 1.13
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.14-external-review.md)
+
+
+## [2026-04-22] 1.15 JNI/NDK — 知识盲区
+
+### 盲区描述
+Linker 与 16KB Page Size 下 PT_LOAD 段偏移对齐对磁盘占用的影响；Project Mainline 带来的 ART 动态更新对 JNI 性能的影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 16KB 模式下 binary size 增长
+- Android 12+ 后 JNI 性能随 ART 模块热更新变化
+
+### 关联章节
+1.15, 1.6
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.15-external-review.md)
+
+
+## [2026-04-22] 1.16 Audio Pipeline — 知识盲区
+
+### 盲区描述
+FAST Mixer 槽位竞争（多 App 同时请求低延迟流时的优先级分配）；LE Audio 延迟实测数据；Audio Hardening 豁免规则。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 多 App 同时请求低延迟流的优先级分配策略
+- 2026 年主流设备 LC3 编码的真实链路延迟
+- 除了 FGS WIU，哪些系统级 App 或特定权限可豁免限制
+
+### 关联章节
+1.16
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.16-external-review.md)
+
+
+## [2026-04-22] 1.17 IPC 全景 — 知识盲区
+
+### 盲区描述
+memfd Sealing 机制（F_SEAL_FUTURE_WRITE 在零拷贝场景下的安全保障）；Stable AIDL HAL 的线程模型。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 F_SEAL_FUTURE_WRITE 在零拷贝场景下的安全保障
+- 对比 HIDL 在 /dev/hwbinder 和 AIDL 在 /dev/binder 的实时调度差异
+
+### 关联章节
+1.17, 1.4
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-1.17-external-review.md)
+
+
+## [2026-04-22] 2.1 渲染架构全景 — 知识盲区
+
+### 盲区描述
+AGSL RuntimeShader 对低端 GPU 的填充率影响；硬件合成器中哪些混合模式会强制回退到 GPU Composition。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复杂 RuntimeShader 对低端 GPU 的填充率影响
+- HWC 中 Blend Mode 对 Composition 类型的影响
+
+### 关联章节
+2.1, 2.6
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-2.1-external-review.md)
+
+
+## [2026-04-22] 2.2 帧率与刷新率 — 知识盲区
+
+### 盲区描述
+View 投票冲突解决机制（多个 View 请求不同 Category 时 SF 的合并算法）；ARR 对 WebView 渲染节奏的影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- SurfaceFlinger 在多 View 不同帧率请求时的合并算法
+- WebView 内部渲染节奏与系统 ARR 的同步机制
+
+### 关联章节
+2.2, 2.3
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-21-2.2-external-review.md)

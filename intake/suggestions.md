@@ -519,3 +519,209 @@
 - **问题**：章节直接写“在 Perfetto 中，如果 RenderThread 的 DrawCall 数量过多…”，但没有说明 per-drawcall slice 通常需要 AGI、额外 graphics tracing 或引擎自定义埋点，默认 system trace 不一定直接可见。
 - **建议**：补出默认 Perfetto、AGI/graphics tracing、自定义埋点三种可见性边界，避免把观测前提写成默认能力。
 
+## [External Review] 1.0 架构全景导读 — 2026-04-22
+- **类型**：数据/案例支撑
+- **位置**：阅读建议
+- **问题**：建议过于笼统，缺乏量化或具体实战目标
+- **建议**：补充具体的"性能勋章"目标，例如"读完 1.4 后应能通过 Perfetto 识别 Binder 优先级继承导致的启动卡顿"
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.2 系统启动全流程 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：内存管理
+- **问题**：预加载类增至 18k+，未解释 16KB Page Size 如何支撑而不会导致 RSS 崩溃
+- **建议**：补充 16KB Page Size 提升内存共享效率和对齐性能的逻辑
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.3 进程模型 — 2026-04-22
+- **类型**：原理完善
+- **位置**：输入系统 SocketPair
+- **问题**：量化逻辑忽略了 epoll 唤醒路径对上下文切换的节省
+- **建议**：补充 SocketPair 配合 Looper/epoll 实现事件直达 UI 线程的特性
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.3 进程模型 — 2026-04-22
+- **类型**：实战建议
+- **位置**：DeathRecipient Perfetto 观测
+- **问题**：binderDied() 不会在 ftrace 中自动产生 slice
+- **建议**：建议开发者在 DeathRecipient 回调中手动添加 Trace.beginSection
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.4 Binder IPC — 2026-04-22
+- **类型**：源码严谨性
+- **位置**：mmap 描述
+- **问题**：提到"默认约 1MB"但未说明 BINDER_VM_SIZE 实际减去了 2 个 Page Size 的 Guard Page
+- **建议**：补充 ProcessState.cpp 中的具体公式定义
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.5 线程模型 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：ThreadLocal 章节
+- **问题**：只讲 ThreadLocal 好处，未讲协程 Dispatcher 切换时数据丢失陷阱
+- **建议**：补充 ThreadContextElement 知识点
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.5 线程模型 — 2026-04-22
+- **类型**：数据支撑
+- **位置**：Perfetto 状态标识符
+- **问题**：futex_wait_queue_me 是内核函数名，Perfetto 界面显示不同
+- **建议**：优先使用 Perfetto 界面显示的文字状态
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.6 版本演进 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：Android 15 配额限制
+- **问题**：提到 6 小时配额限制，未明确开发者如何感知
+- **建议**：补充 Service.onTimeout(int, int) 回调机制
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.6 版本演进 — 2026-04-22
+- **类型**：源码准确性
+- **位置**：ART 编译策略
+- **问题**：提到 Profile-Guided 编译但缺乏源码级入口
+- **建议**：补充 art/compiler/driver/compiler_driver.cc 或 art/dex2oat/dex2oat.cc 锚点
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.7 ART 编译管线 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：JIT Code Cache
+- **问题**：未提及 Data 与 Code 1:1 分配比例
+- **建议**：补充说明 64MB Max Size 中各占一半
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.7 ART 编译管线 — 2026-04-22
+- **类型**：实战建议
+- **位置**：profman 验证
+- **问题**：profman 实战说明较少
+- **建议**：增加 profman --dump-only 快速核验 Profile 覆盖率的示例
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.8 AMS — 2026-04-22
+- **类型**：数据/案例支撑
+- **位置**：Input ANR
+- **问题**：notifyNoFocusedWindowAnr 出现时通常意味着 WMS 正在进行窗口焦点切换
+- **建议**：补充实战细节：冷启动期间点击无响应的排查思路
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.9 PMS — 2026-04-22
+- **类型**：原理链完整性
+- **位置**：PMS 启动优化
+- **问题**：未提及 SystemServerInitThreadPool 和 ParallelPackageParser
+- **建议**：补充 PMS 如何利用多核并行解析 Manifest 以优化开机时间
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.10 ContentProvider — 2026-04-22
+- **类型**：版本差异
+- **位置**：ContentProvider 版本演进
+- **问题**：遗漏 Android 15 的 16KB 页面支持和 SQLite 只读事务
+- **建议**：补充 16KB 页面如何减少分页开销提升大数据量查询效率
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.10 ContentProvider — 2026-04-22
+- **类型**：知识盲区
+- **位置**：Perfetto 表现
+- **问题**：未提及 Android 16 AnrHelper + ProfilingManager 联动
+- **建议**：补充 Android 16 下系统自动生成 ContentProvider 超时采样报告
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.11 Zygote — 2026-04-22
+- **类型**：原理完善
+- **位置**：PostFork Trace
+- **问题**：建议补充 USAP 路径下 specializeAppProcess 触发 PostFork 的完整特化逻辑
+- **建议**：补充 UID/GID 切换和 SELinux 上下文设置在 PostFork Slice 中的占比
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.12 AutoFDO — 2026-04-22
+- **类型**：交叉引用
+- **位置**：与 Baseline Profiles 的关系
+- **问题**：提到了与 1.7 章节关联但未给出具体 Perfetto 观测点
+- **建议**：补充 AutoFDO 收益体现在 syscall 耗时缩减和 Binder Transaction 处理周期下降
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.13 MessageQueue/DeliQueue — 2026-04-22
+- **类型**：知识盲区
+- **位置**：Perfetto 具体 Trace 事件
+- **问题**：提到 monitor contention 但未具体说明对应的 Java 对象
+- **建议**：明确指出 Android 17 前主线程常出现的 monitor_contention 对应 android.os.MessageQueue
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.14 锁竞争 — 2026-04-22
+- **类型**：原理链完整性
+- **位置**：优先级反转
+- **问题**：对 Binder 优先级继承的实现描述较笼统
+- **建议**：补充 binder_select_thread_ilocked 与 binder_transaction_priority 的协作逻辑
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.14 锁竞争 — 2026-04-22
+- **类型**：数据/案例支撑
+- **位置**：版本演进
+- **问题**：DeliQueue 性能提升数据仅给出总体结论
+- **建议**：引用 Google 官方测试中高并发插入下 5000 倍提升的量化数据
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.15 JNI/NDK — 2026-04-22
+- **类型**：原理链完整性
+- **位置**：@CriticalNative 为什么快
+- **问题**：缺少底层解释
+- **建议**：补充不检查 GC 挂起请求、直接生成汇编级 BL/CALL 指令、无 Trampoline 的说明
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.16 Audio Pipeline — 2026-04-22
+- **类型**：实战建议
+- **位置**：后台音频强化
+- **问题**：未提及 adb 强报错模式
+- **建议**：补充 adb shell cmd audio set-enable-hardening throw 用于调试
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 1.17 IPC 全景 — 2026-04-22
+- **类型**：数据/案例支撑
+- **位置**：§6.1 Binder 追踪
+- **问题**：Perfetto SQL 依赖 android.binder 数据源，非 userdebug/eng 或未配置 ftrace 环境下可能无法跑通
+- **建议**：补充 trace 捕获时必须开启 android.binder ftrace 分类的说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.17 IPC 全景 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：§3.6 Signal
+- **问题**：提到 BIONIC_SIGNAL_DEBUGGER 但未明确信号编号
+- **建议**：补充 DEBUGGER_SIGNAL 通常是 35 (__SIGRTMIN + 3)，便于 shell 下 kill -35 <pid> 手动触发堆栈导出
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 2.1 渲染架构全景 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：BufferQueue
+- **问题**：对 BlastBufferQueue 描述略显陈旧
+- **建议**：补充 Android 16 中 BlastBufferQueue 与 ASurfaceControl 的深层整合
+- **来源**：Gemini 外部 review
+
+## [External Review] 2.1 渲染架构全景 — 2026-04-22
+- **类型**：性能断言
+- **位置**：硬件加速性能提升
+- **问题**：5-10 倍描述缺乏基准测试环境说明
+- **建议**：补充'在复杂 Path 和多层 Overdraw 场景下'的限定语
+- **来源**：Gemini 外部 review
+
+
+## [External Review] 2.2 帧率与刷新率 — 2026-04-22
+- **类型**：知识盲区
+- **位置**：Game Mode / Frame Rate 策略
+- **问题**：未提及 Android 15 开发者选项的 Disable default frame rate for games 开关
+- **建议**：补充 persist.graphics.game_default_frame_rate.enabled 属性控制的说明
+- **来源**：Gemini 外部 review

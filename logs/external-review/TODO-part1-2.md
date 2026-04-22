@@ -1,25 +1,25 @@
 # 批量 Review Todo List
 
 - [x] src/part1-fundamentals/ch01-architecture/01-layered-architecture.md
-- [ ] src/part1-fundamentals/ch01-architecture/02-boot-process.md
-- [ ] src/part1-fundamentals/ch01-architecture/03-process-model.md
-- [ ] src/part1-fundamentals/ch01-architecture/04-binder.md
-- [ ] src/part1-fundamentals/ch01-architecture/05-threading-model.md
-- [ ] src/part1-fundamentals/ch01-architecture/06-version-evolution.md
-- [ ] src/part1-fundamentals/ch01-architecture/07-art-compilation.md
-- [ ] src/part1-fundamentals/ch01-architecture/08-activity-manager.md
-- [ ] src/part1-fundamentals/ch01-architecture/09-package-manager.md
-- [ ] src/part1-fundamentals/ch01-architecture/10-content-provider.md
-- [ ] src/part1-fundamentals/ch01-architecture/11-zygote-startup.md
-- [ ] src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md
-- [ ] src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md
-- [ ] src/part1-fundamentals/ch01-architecture/14-lock-contention.md
-- [ ] src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md
-- [ ] src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md
-- [ ] src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md
-- [ ] src/part1-fundamentals/ch01-architecture/README.md
-- [ ] src/part1-fundamentals/ch02-rendering/01-rendering-overview.md
-- [ ] src/part1-fundamentals/ch02-rendering/02-framerate.md
+- [x] src/part1-fundamentals/ch01-architecture/02-boot-process.md
+- [x] src/part1-fundamentals/ch01-architecture/03-process-model.md
+- [x] src/part1-fundamentals/ch01-architecture/04-binder.md
+- [x] src/part1-fundamentals/ch01-architecture/05-threading-model.md
+- [x] src/part1-fundamentals/ch01-architecture/06-version-evolution.md
+- [x] src/part1-fundamentals/ch01-architecture/07-art-compilation.md
+- [x] src/part1-fundamentals/ch01-architecture/08-activity-manager.md
+- [x] src/part1-fundamentals/ch01-architecture/09-package-manager.md
+- [x] src/part1-fundamentals/ch01-architecture/10-content-provider.md
+- [x] src/part1-fundamentals/ch01-architecture/11-zygote-startup.md
+- [x] src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md
+- [x] src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md
+- [x] src/part1-fundamentals/ch01-architecture/14-lock-contention.md
+- [x] src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md
+- [x] src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md
+- [x] src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md
+- [x] src/part1-fundamentals/ch01-architecture/README.md
+- [x] src/part1-fundamentals/ch02-rendering/01-rendering-overview.md
+- [x] src/part1-fundamentals/ch02-rendering/02-framerate.md
 - [ ] src/part1-fundamentals/ch02-rendering/03-vsync.md
 - [ ] src/part1-fundamentals/ch02-rendering/04-choreographer.md
 - [ ] src/part1-fundamentals/ch02-rendering/05-main-render-thread.md
