@@ -670,7 +670,7 @@ for trace in "$TRACE_DIR"/*.perfetto-trace; do
 INCLUDE PERFETTO MODULE android.input;
 
 SELECT
-  '${filename}' AS trace_file,
+  '${filename}' AS trace_name,
   COUNT(*) AS event_count,
   PERCENTILE(CAST(total_latency_dur / 1000000.0), 50) AS p50_ms,
   PERCENTILE(CAST(total_latency_dur / 1000000.0), 90) AS p90_ms,

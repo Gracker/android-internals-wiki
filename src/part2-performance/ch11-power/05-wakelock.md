@@ -293,6 +293,158 @@ Android 10 引入 `SystemSuspend` 服务（`system_suspend` HIDL/AIDL 服务）�
 
 虽然 PowerManagerService 注册了 `DeathRecipient` 来在进程死亡时自动释放 wakelock，但如果进程还活着（只是逻辑上泄漏），系统不会自动干预。这就是为什么 Play Store 的惩罚政策关注的是"24 小时内累计超过 2 小时"这个指标，而不是单次持有时间——系统需要给合法使用留出空间，但累计时间过长几乎一定意味着问题。
 
+### PowerManagerService 功耗链路：WakeLock / Suspend Blocker / Power HAL 的边界
+
+Android 功耗管理是一条跨 Java → JNI → Native Library → Kernel HAL 的四层链路。Java WakeLock 不是一个单一的"开关"，它被 PMS 翻译成两类独立的内核机制：**suspend blocker**（阻止 deep suspend）和 **Power HAL hint**（调整 CPU/GPU 性能参数）。此外 `nativeSetAutoSuspend` / `nativeSetInteractive` 控制系统级的 suspend 行为和交互状态，与 WakeLock 并行工作。理解这四条独立链路，是分析功耗问题的前提。
+
+#### Java WakeLock → Suspend Blocker 的映射
+
+**源码位置**：`frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java`
+
+PowerManagerService 维护两个核心 SuspendBlocker 实例：
+
+```java
+// PowerManagerService.java (Android 14)
+private final SuspendBlocker mWakeLockSuspendBlocker;   // "PowerManagerService.WakeLocks"
+private final SuspendBlocker mDisplaySuspendBlocker;     // "PowerManagerService.Display"
+```
+
+当应用调用 `PowerManager.newWakeLock()` 并 `acquire()` 时，PMS 内部的 `mWakeLockSummary` bitfield 记录所有活跃 WakeLock 的状态摘要。每次状态变更时，PMS 调用：
+
+```java
+// PowerManagerService.java
+private void acquireSuspendBlockerLocked(String name) {
+    nativeAcquireSuspendBlocker(name);
+}
+```
+
+该 native 方法对应 JNI 层 `com_android_server_power_PowerManagerService.cpp`。
+
+**关键结论**：一个 App 的 partial WakeLock → 持有 `mWakeLockSuspendBlocker` → 内核 CPU 无法进入 suspend。Screen On/Off 本身由 `mDisplaySuspendBlocker` 独立管理。
+
+#### JNI 层：SuspendBlocker 的实现
+
+**源码位置**：`frameworks/base/services/core/jni/com_android_server_power_PowerManagerService.cpp`
+
+```cpp
+// com_android_server_power_PowerManagerService.cpp
+static void nativeAcquireSuspendBlocker(JNIEnv* env, jobject /* clazz */, jstring nameStr) {
+    acquire_wake_lock(AUTO_SUSPEND, name2string(env, nameStr));
+}
+
+static void nativeReleaseSuspendBlocker(JNIEnv* env, jobject /* clazz */, jstring nameStr) {
+    release_wake_lock(name2string(env, nameStr));
+}
+```
+
+JNI 层通过 `acquire_wake_lock(AUTO_SUSPEND, ...)` / `release_wake_lock(...)` 调用 `libsuspend` 库。
+
+#### libsuspend：autosuspend 线程
+
+**源码位置**：`system/core/libsuspend/autosuspend.c`
+
+```c
+// autosuspend.c
+int autosuspend_enable(void) {
+    // 创建 suspend_thread_func 线程
+}
+
+static void* suspend_thread_func(void* arg) {
+    while (1) {
+        // 每 100ms 检查一次
+        usleep(100 * 1000);
+        // 所有 wake locks 释放后，写入 "mem" 触发 suspend
+        write("/sys/power/state", "mem");
+    }
+}
+```
+
+**关键结论**：`autosuspend_enable()` 创建后台线程，该线程在所有 suspend blocker 释放后（无 wake lock 持有），向 `/sys/power/state` 写入 `"mem"`，触发 Linux kernel 的 suspend-to-RAM (deep sleep)。
+
+#### nativeSetAutoSuspend / nativeSetInteractive 的独立链路
+
+**源码位置**：`com_android_server_power_PowerManagerService.cpp`
+
+```cpp
+// nativeSetAutoSuspend 控制 autosuspend 线程的启停
+static void nativeSetAutoSuspend(JNIEnv* env, jobject /* clazz */, jboolean enable) {
+    if (enable) {
+        autosuspend_enable();   // 允许系统进入自动 suspend
+    } else {
+        autosuspend_disable();  // 阻止系统 suspend
+    }
+}
+
+// nativeSetInteractive 通过 Power HAL 控制交互状态
+static void nativeSetInteractive(JNIEnv* env, jobject clazz, jboolean enable) {
+    if (gPowerModule) {
+        gPowerModule->setInteractive(!enable);  // 注意：逻辑是反的
+        // 可能调用 power_hint(INTERACTION, ...) 通知 HAL
+    }
+}
+```
+
+**设计意图**：
+- `nativeSetAutoSuspend(false)` 在 init 时调用，确保开机阶段系统不会意外进入 suspend
+- `nativeSetInteractive(false)` 在灭屏时调用，通知 HAL 设备进入非交互状态
+- 两条链路**独立于 WakeLock 体系**，各自有不同职责
+
+#### Power HAL 与 PowerHint 系统
+
+**源码位置**：`hardware/interfaces/power/1.0/IPower.hal`
+
+```hal
+// IPower.hal (API 24-28 广泛使用，Android 9 及之前)
+interface IPower {
+    setInteractive(bool enable);
+    powerHint(PowerHint hint, int32_t data);
+};
+```
+
+`PowerHint` 枚举定义于 `power/1.0/types.hal`：
+
+| PowerHint | 含义 | 触发时机 |
+|-----------|------|---------|
+| `VSYNC` | 帧同步即将开始 | SurfaceFlinger 请求 VSYNC 时 |
+| `INTERACTION` | 用户正在交互 | 触摸/按键事件时 |
+| `LOW_POWER` | 进入低功耗模式 | Battery Saver 启用时 |
+| `POWER_HINT_SUSTAINED_PERFORMANCE` | 持续性能模式 | 游戏/长时计算任务 |
+
+**注意**：Android 10+ 后，Power HAL 职责分化：`IPower.hal` 继续提供 `powerHint()` 和 `setInteractive()`，而功耗统计功能迁移到 `IPowerStats.hal`。
+
+#### 完整调用链总结
+
+```
+App: PowerManager.newWakeLock(PARTIAL_WAKE_LOCK).acquire()
+  ↓ Java API
+PowerManagerService: updateWakeLockSummary() → mWakeLockSummary |= xxx
+  ↓ 状态变更时
+acquireSuspendBlockerLocked("PowerManagerService.WakeLocks")
+  ↓ JNI
+nativeAcquireSuspendBlocker("PowerManagerService.WakeLocks")
+  ↓ libsuspend
+acquire_wake_lock(AUTO_SUSPEND, "PowerManagerService.WakeLocks")
+  ↓ kernel
+mWakeLockSuspendBlocker active → /sys/power/wake_lock 写入
+  ↓ 内核层面
+CPU 禁止进入 suspend-to-RAM
+
+---
+
+Screen Off 场景：
+PowerManagerService.updateDisplayState()
+  ↓
+nativeSetAutoSuspend(true)   →  autosuspend_enable() 启动 autosuspend 线程
+  ↓
+nativeSetInteractive(false) →  gPowerModule->setInteractive(false) → PowerHint(INTERACTION, 0)
+  ↓
+autosuspend 线程检测到 mWakeLockSuspendBlocker 仍 active → 不写入 "mem" → CPU 保持 awake
+```
+
+[自动发现: 源码调研 2026-04-22，详见 `OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-22-power-manager-service-power-chain.md`]
+
+
+
 ## Wakelock 泄漏的常见模式与诊断
 
 ### 四种常见泄漏模式

@@ -195,7 +195,7 @@ duration_ms: 10000    # 10 秒
 - `linux.process_stats`：进程和线程信息
 - `linux.sys_stats`：系统级统计（CPU、内存、I/O）
 - `android.log`：logcat 日志
-- `android.surfaceflinger.frametimeline`：帧时间线数据
+- `android.surfaceflinger.frametimeline`：帧时间线数据（仅 Android 12+，API 31+）
 - `android.gpu.memory`：GPU 内存使用
 
 我们可以同时启用多个数据源，只需要在 TraceConfig 中添加多个 `data_sources` 块即可。
@@ -262,9 +262,13 @@ data_sources {
   }
 }
 
-data_sources {
-  config {
-    name: "android.surfaceflinger.frametimeline"
+// android.surfaceflinger.frametimeline 仅支持 Android 12+ (API 31+)
+// 需要根据目标版本动态启用，避免低版本设备上报错
+if (device_api_level >= 31) {
+  data_sources {
+    config {
+      name: "android.surfaceflinger.frametimeline"
+    }
   }
 }
 

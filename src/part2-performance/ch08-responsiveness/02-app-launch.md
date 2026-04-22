@@ -224,7 +224,7 @@ Activity.onResume() 执行完后，并不是立刻就能看到界面。真正的
 
 **performDraw**：在硬件加速开启的情况下（Android 4.4+ 默认开启），View 的 onDraw() 并不真正执行绘制命令，而是将绘制指令记录到 DisplayList 中。然后 ViewRootImpl 向 RenderThread post 一个 DrawFrameTask，由 RenderThread 统一执行 OpenGL 绘制命令。
 
-RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将帧提交给 SurfaceFlinger。queueBuffer 返回后，ViewRootImpl 通知 system_server 的 ActivityMetricsLogger 记录 "首帧绘制完成" 的时间戳——这就是 TTID 的终点。
+RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将帧提交给 SurfaceFlinger。queueBuffer 返回并不等同于 TTID 终点——真正的 TTID 终点是 WMS/ActivityRecord 的 windows drawn 回调。当 SurfaceFlinger 完成合成后，通过 WindowManagerService 通知 ActivityRecord 记录界面完全就绪的时间戳，这才是系统统计的 TTID 终点。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
@@ -240,7 +240,7 @@ RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将�
 
 ### TTID（Time To Initial Display）
 
-TTID 是从用户触发启动（点击图标）到应用首帧绘制完成的时间。它涵盖了冷启动的完整路径：进程创建、Application 初始化、Activity 创建和首帧绘制。系统通过 ActivityMetricsLogger 自动统计这个时间，我们可以在 logcat 中通过过滤 "Displayed" 关键字看到：
+TTID 是从用户触发启动（点击图标）到应用界面完全显示完成的时间。它涵盖了冷启动的完整路径：进程创建、Application 初始化、Activity 创建和首帧绘制到 SurfaceFlinger 合成完成。系统通过 ActivityMetricsLogger 自动统计这个时间，我们可以在 logcat 中通过过滤 "Displayed" 关键字看到：
 
 ```
 ActivityTaskManager: Displayed com.example.app/.MainActivity: +1s234ms
@@ -249,6 +249,8 @@ ActivityTaskManager: Displayed com.example.app/.MainActivity: +1s234ms
 或者通过 `adb shell am start -W` 命令的 TotalTime 字段获取。
 
 TTID 是 Android Vitals 等平台监控的核心指标。Google 建议 TTID 不应超过 5 秒（冷启动），否则被视为性能过差。
+
+[已验证: AOSP android-15.0.0_r1, frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java]
 
 ### TTFD（Time To Full Display）
 
@@ -291,6 +293,29 @@ override fun onResume() {
 FullyDrawnReporter 内部维护一个计数器（reporterCount），每次 addReporter 加 1，每次 removeReporter 减 1。当计数器归零时，自动调用 reportFullyDrawn()。这比手动在多个回调中协调 reportFullyDrawn() 的调用时机更可靠，避免了多异步任务间的时序竞争。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/launch/ttfd]
+
+## Android 15+ 启动诊断：ApplicationStartInfo
+
+Android 15 引入了 ApplicationStartInfo 结构化启动诊断能力，为启动性能分析提供了更细粒度的数据支撑。[已验证: AOSP android-15.0.0_r1, android.app.ApplicationStartInfo]
+
+ApplicationStartInfo 提供了以下关键信息：
+- 启动类型（冷启动/温启动/热启动）
+- Application 初始化耗时
+- 各个 Activity 生命周期阶段的耗时分解
+- 首次绘制与完全绘制的时间差
+- 启动过程中的关键事件时间戳
+
+开发者可以通过以下方式获取 ApplicationStartInfo：
+```java
+ApplicationStartInfo startInfo = ActivityTaskManager.getInstance().getApplicationStartInfo();
+if (startInfo != null) {
+    Log.d("Startup", "Launch type: " + startInfo.getLaunchType());
+    Log.d("Startup", "App init duration: " + startInfo.getApplicationInitializationDurationMillis());
+    Log.d("Startup", "First draw duration: " + startInfo.getFirstDrawDurationMillis());
+}
+```
+
+这些数据对于定位启动瓶颈非常有价值，可以精确区分是 Application 初始化慢还是 Activity 绘制慢。
 
 ## 启动耗时的度量方法
 

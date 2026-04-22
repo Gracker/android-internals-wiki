@@ -162,7 +162,7 @@ Tab 切换是移动端最常见的交互模式之一。新闻 App 的频道切�
 
 ### ViewPager2 的工作机制
 
-ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量。它的默认值为 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)`，即不显式保留屏幕外页面，而是依赖 RecyclerView 自身的缓存和预取策略。这与直觉不同——默认行为并非"左右各保留 1 页"，而是让 RecyclerView 按 ViewHolder 缓存等级（CachedView、RecycledViewPool）自动管理。
+ViewPager2 是 Jetpack/AndroidX 中的一个组件，不是 Android 平台原生能力。它最早出现在 AndroidX Fragment 1.0.0 中，为传统的 ViewPager 添加了现代化特性，如 RTL 支持、垂直滚动等。ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量。它的默认值为 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)`，即不显式保留屏幕外页面，而是依赖 RecyclerView 自身的缓存和预取策略。这与直觉不同——默认行为并非"左右各保留 1 页"，而是让 RecyclerView 按 ViewHolder 缓存等级（CachedView、RecycledViewPool）自动管理。
 
 当设为 1 时，ViewPager2 会在当前页左右各保留 1 个页面的 Fragment。设为 0 时，每次切换 Tab 都要从零开始创建 Fragment（慢）。设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级（内存压力）。对于 3-4 个 Tab 的常见场景，设为 1 通常就够了，但要注意这不是默认值——需要开发者显式调用 `setOffscreenPageLimit(1)`。
 
@@ -257,7 +257,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 **1. 硬件输入延迟（~5-15ms）**：触摸屏控制器扫描到触摸事件 → 触摸 IC 通过 I2C/SPI 上报给驱动 → 驱动通过 `/dev/input/eventX` 暴露给用户空间。这段延迟取决于硬件和驱动，App 开发者无法控制。
 
-**2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件 → `InputDispatcher` 通过 Binder 将事件发送给目标窗口所在进程。如果系统负载高（大量后台进程、GC 暂停等），这个延迟会增加。我们在 §3.1 中详细分析了 Input 事件分发全流程。
+**2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件 → `InputDispatcher` 将事件通过 InputChannel 发送到目标窗口所在进程的 InputThread。InputDispatcher 和 InputThread 之间通过共享内存（InputChannel）进行事件传递，而非 Binder IPC。如果系统负载高（大量后台进程、GC 暂停等），这个延迟会增加。我们在 §3.1 中详细分析了 Input 事件分发全流程。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; Java 侧入口: frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
 

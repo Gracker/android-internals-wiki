@@ -54,7 +54,7 @@ task2b_result: fixed
 
 `targetSdkVersion` 升级到 37 的 App 必须适配 Android 17 的几项底层变更:重写 `MessageQueue`、ART 分代垃圾回收、`static final` 字段不可强制、网络配置迁移。任何一项未适配都可能导致性能下降或崩溃。
 
-这些变更在 Perfetto 中留下明确特征:DeliQueue 减少主线程锁竞争;分代 GC 改变 Memory Track 中的 GC 切片模式;ProfilingManager 新触发器统一系统事件采样。掌握这些特征,是解决 Android 17 性能问题的关键。
+这些变更在 Perfetto 中留下明确特征：DeliQueue 减少主线程锁竞争；分代 GC 改变 Memory Track 中的 GC 切片模式；ProfilingManager 新触发器统一系统事件采样。掌握这些特征，是解决 Android 17 性能问题的关键。
 
 本章聚焦性能相关的核心变更,按影响程度和适配优先级排序。
 
@@ -97,7 +97,7 @@ Thread C ──CAS push──▶      │                         │
 
 ### 性能收益
 
-Google 在内部测试中给出的数据:
+Google 在内部测试中给出的数据：
 
 - App 掉帧减少 **4%**
 - System UI 和 Launcher 交互掉帧减少 **7.7%**

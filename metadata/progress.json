@@ -634,16 +634,17 @@
       "chapter": "13.8",
       "section": "13.8",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-22T10:03:36+08:00"
+      "last_task2b_at": "2026-04-22T10:03:36+08:00",
+      "last_task9_at": "2026-04-22T16:10:00.243926"
     },
     "src/part3-tools/ch13-perfetto/03-perfetto-view.md": {
       "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
@@ -667,15 +668,16 @@
       "chapter": "13.2",
       "section": "13.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task9_at": "2026-04-22T16:10:00.243924"
     },
     "src/part2-performance/ch12-apk-network/03-network-performance-deep.md": {
       "path": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
@@ -914,14 +916,16 @@
       "chapter": "8.3",
       "section": "8.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-22T16:10:00.243916"
     },
     "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
       "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
