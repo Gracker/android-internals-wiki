@@ -624,7 +624,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T17:08:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T06:14:15+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part2-performance/ch09-anr/04-special-anr.md",
@@ -2527,7 +2531,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T02:07:07",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T06:14:15+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch06-storage/04-storage-evolution.md",

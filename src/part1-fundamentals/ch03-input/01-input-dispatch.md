@@ -3,9 +3,9 @@ title:"Input 事件分发全流程"
 chapter:"3.1"
 status:ready-for-review
 applicable_versions:"Android 12 (API 31) - Android 16 (API 36)"
-last_verified:"2026-04-15"
-last_verified_against:"AOSP android-14.0.0_r1"
-version_note:"正文以 android-14 验证为主；Android 12 InputFlinger 分离和 Android 13 ANR Tracker 变更基于官方文档和社区素材，标注 [待验证]。建议后续补充 android-12/13 源码级验证"
+last_verified:"2026-04-23"
+last_verified_against:"AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1"
+version_note:"已补核 android-12/13/14/15/16 的 InputDispatcher.cpp：Android 12 使用静态 isStaleEvent()，Android 13/14 使用 mStaleEventTimeout，Android 15/16 改为 mPolicy.isStaleEvent(...)。独立进程化和 Predictive Back 影响范围仍保留 [待验证]。"
 confidence:high
 reviewed_date: "2026-04-18"
 reviewed_by: openclaw-task6
@@ -27,12 +27,12 @@ sources:
 tags:['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
 related_chapters:["3.2", "3.3", "2.5", "9.1", "9.2"]
 task6_result: needs-rework
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-22T17:08:00+08:00"
@@ -349,84 +349,55 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 
 ## Stale Event 丢弃机制（Android 12+）
 
-在 Android 12 中引入的 `InputDispatcher` stale event 丢弃机制是一个重要的系统级优化，用于处理后台应用恢复时的事件积压问题。当 App 长时间未处理输入事件时，系统会主动丢弃超过 10 秒未处理的事件，避免性能问题和 ANR。
+这一段需要按版本拆开看。Android 12 到 16 都有 stale event 判定，但实现边界并不是一套固定代码。
 
-### 核心机制
+### 已核验的源码路径
 
-**STALE_EVENT_TIMEOUT 常量定义**
-- **源码位置**：`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
-- **关键函数**：`isStale()` 检查逻辑
-- **调用链**：事件入队 → `dispatchOnce()` 检查 → `isStale()` 判断 → 丢弃处理
+- `android-12.0.0_r1`：`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` 使用 `static bool isStaleEvent(nsecs_t currentTime, const EventEntry& entry)`，`STALE_EVENT_TIMEOUT` 是固定的 10 秒。
+- `android-13.0.0_r1`、`android-14.0.0_r1`：入口变成 `bool InputDispatcher::isStaleEvent(...)`，比较对象改成成员 `mStaleEventTimeout`，默认值来自 `std::chrono::seconds(10) * HwTimeoutMultiplier()`。
+- `android-15.0.0_r1`、`android-16.0.0_r1`：`InputDispatcher::isStaleEvent(...)` 仍在 dispatcher 中定义，但判断已经委托给 `mPolicy.isStaleEvent(currentTime, entry.eventTime)`。
 
 ```cpp
-// [存疑: 以下 Stale Event 代码段中 mInboundQueue.hasEvent()/peekEvent()/removeEvent()/dropInboundConnection() 等方法名需与 AOSP 源码核实，可能为简化重写版本]
-// 常量定义
-constexpr std::chrono::nanoseconds STALE_EVENT_TIMEOUT = std::chrono::seconds(10) * HwTimeoutMultiplier();
+// android-12.0.0_r1
+constexpr nsecs_t STALE_EVENT_TIMEOUT = 10000 * 1000000LL; // 10sec
 
-// isStale() 检查逻辑
-bool InputDispatcher::isStale(nsecs_t currentTime, const DispatchEntry* entry) {
-    return currentTime - entry->eventTime >= STALE_EVENT_TIMEOUT;
-}
-
-// dispatchOnce() 中的事件丢弃处理
-void InputDispatcher::dispatchOnce() {
-    nsecs_t currentTime = systemTime(SYSTEM_TIME_MONOTONIC);
-    
-    while (mInboundQueue.hasEvent()) {
-        DispatchEntry* entry = mInboundQueue.peekEvent();
-        
-        // 检查事件是否为 stale
-        if (isStale(currentTime, entry)) {
-            ALOGW("Dropped event because it is stale");
-            dropInboundConnection(currentTime, entry->connection);
-            mInboundQueue.removeEvent();
-            continue;
-        }
-        // ... 正常事件分发逻辑
-    }
+static bool isStaleEvent(nsecs_t currentTime, const EventEntry& entry) {
+    return currentTime - entry.eventTime >= STALE_EVENT_TIMEOUT;
 }
 ```
 
-### 与 ANR 检测的协同工作
+```cpp
+// android-15.0.0_r1
+bool InputDispatcher::isStaleEvent(nsecs_t currentTime, const EventEntry& entry) {
+    return mPolicy.isStaleEvent(currentTime, entry.eventTime);
+}
+```
 
-Stale event 丢弃机制与传统的 ANR 检测机制并行运行：
+这组差异说明三件事：
 
-- **Stale event 丢弃**：事件时间超过 10 秒（`STALE_EVENT_TIMEOUT`），直接丢弃不触发 ANR
-- **ANR 检测**：事件超时时间（`timeoutTime`）到达，通常基于 5 秒 ANR 超时，触发 ANR
+- Android 12 的 stale 判定是 dispatcher 内的固定超时逻辑。
+- Android 13/14 把阈值收口到 `mStaleEventTimeout`。
+- Android 15/16 又把判定下沉到 policy，dispatcher 只保留入口。
 
-### Perfetto 中的表现
+### 与 ANR 的关系
 
-在 Perfetto 的 `android.input` Track 中，stale event 丢弃表现为：
-- `waitQueue` 计数突然归零（事件被批量移除）
-- 不会出现传统的 ANR Slice
-- 适合与 ANR 检测的 Track 对比分析
+stale event 和 Input ANR 处理的是两类问题：
 
-### 性能影响
+- stale event：事件在队列里停留过久，被系统直接丢弃。
+- Input ANR：事件已经发给目标连接，但在超时窗口内没有拿到 `FINISHED`。
 
-**正面效果**：
-- 防止后台应用恢复时的事件积压
-- 减少系统负载和 ANR 风险
-- 提高整体系统响应性
+两条路径都可能出现在同一次输入异常中，但触发点不同，日志和 trace 信号也不同。
 
-**用户感知**：
-- 可能导致后台切换后某些触摸事件丢失
-- 特别影响"切换后台后立即操作"的用户体验
+### 在 Perfetto 和 logcat 里怎么找
 
-### 版本差异
+排查时更稳的证据有两类：
 
-- **Android 12+**：首次引入 `isStale()` 机制
-- **Android 14+**：引入硬件超时乘数 `HwTimeoutMultiplier()`
-- **Android 16+**：增强 `AnrTracker` 性能，优化超时检测效率
+- `InputDispatcher` 的 drop reason 或 warning 日志。
+- `iq / oq / wq` 计数在事件被丢弃后回落。
 
-### 调试技巧
+`wq` 是否出现“突然归零”取决于积压发生在什么队列，不能把它当成所有版本都成立的固定现象。
 
-在 Perfetto 中识别 stale event 丢弃：
-1. 观察 `wq:{windowName}` 计数突然归零
-2. 检查 `iq` 计数是否同时减少
-3. 确认没有 ANR Slice 出现
-4. 查看 logcat 中的 "Dropped event because it is stale" 消息
-
-这个机制解释了"为什么后台切换回来时有些触摸事件丢失"的现象，是理解现代 Android 输入系统行为的重要补充。
+这节后面的版本判断，统一以 `android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1` 的 `InputDispatcher.cpp` 为准。
 
 <!-- AIW-源码调研-2026-04-17 -->
 
@@ -520,8 +491,7 @@ void InputDispatcher::onWindowInfosChanged(
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/]
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.h — eInputInfoUpdateNeeded 标志]
-> [一手: Commit c307313163ac — isStaleEvent delegates to policy]
-> [一手: Commit 3605a85663c9 — isStaleEvent original implementation]
+> [版本补核: android-12.0.0_r1 / android-13.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 的 `InputDispatcher.cpp`]
 
 <!-- AIW-源码调研-2026-04-19 -->
 
@@ -613,21 +583,27 @@ Android 的 Input 系统区分两种基本的指针类事件：
 
 > [来源: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/MotionEvent.java]
 
-## InputFlinger 的角色与演进
+## InputFlinger 的角色与版本边界
 
-在 Android 12 之前，`InputReader` 和 `InputDispatcher` 直接运行在 `system_server` 进程中。从 Android 12 开始，Google 将它们抽取到独立的 `InputFlinger` 服务中（虽然仍然运行在 `system_server` 进程），代码路径也重新组织为 `frameworks/native/services/inputflinger/`。
+按已复核的源码目录，Android 12 到 Android 16 的 `InputReader` 和 `InputDispatcher` 都位于 `frameworks/native/services/inputflinger/`。这能确认“实现以 inputflinger 目录组织”，但还不能只靠目录形态推出“Android 14+ 再次模块化”或“Android 16 的 Predictive Back 已改写 InputDispatcher 主分发路径”。
 
-这个重构的主要目的是将 Input 系统的代码与 `system_server` 的其他模块解耦，使得 Input 系统可以独立演进和测试。[待验证：Android 15+ 中 InputFlinger 是否已支持独立进程隔离模式]
+### 本节已经核验的点
 
-[待验证：InputFlinger 在 Android 12 的具体拆分粒度（reader/dispatcher 分目录结构是否从 12 开始就是当前形式）、Android 13 mAnrTracker 的源码级行为——以上基于社区素材和官方文档，未在 android-12/13 源码中逐一验证]在 Android 12+ 的代码中，`InputFlinger` 的目录结构为：
+| 版本 | 已核验事实 |
+|------|------------|
+| Android 12 | `dispatcher/InputDispatcher.cpp` 中的 stale 判定是静态 `isStaleEvent(...)`，目录已经是 `services/inputflinger/` |
+| Android 13 | stale 判定改成 `InputDispatcher::isStaleEvent(...)`，`mAnrTracker` 已在 dispatcher 中参与超时管理 |
+| Android 14 | stale 判定路径延续 Android 13：`InputDispatcher::isStaleEvent(...)` + `mStaleEventTimeout` |
+| Android 15 | stale 判定改为 `mPolicy.isStaleEvent(...)` |
+| Android 16 | stale 判定路径延续 Android 15，源码目录仍是 `services/inputflinger/` |
 
-```
-frameworks/native/services/inputflinger/
-├── reader/          # InputReader 和 InputMapper
-├── dispatcher/      # InputDispatcher
-├── InputManager.cpp # 管理类
-└── EventHub.cpp     # 事件入口
-```
+### 仍然保留 [待验证] 的点
+
+- InputFlinger 是否在某些产品形态下独立成单独进程。
+- 文中“Android 14+ 进一步模块化”对应的具体行为变化。
+- Predictive Back 对 InputDispatcher 主路径的影响范围。
+
+如果后续补源码，优先查 `InputDispatcher.cpp`、`InputManager.cpp`、init/service 配置和输入策略接口，不要只看目录名字下结论。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/]
 
@@ -651,15 +627,17 @@ Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中
 
 ## 版本演进
 
-| 版本 | 变化 |
-|------|------|
-| Android 4.1 (API 16) | 引入 InputFlinger 框架 |
-| Android 12 (API 31) | InputFlinger 代码重构，拆分 reader/ 和 dispatcher/ 子目录 |
-| Android 12 (API 31) | Input ANR 增加 "no focused window" 类型 |
-| Android 13 (API 33) | InputDispatcher 使用 `mAnrTracker` 替代之前的超时检测方式 |
-| Android 14+ | InputFlinger 进一步模块化，增加对折叠屏、多显示器的支持 |
-| Android 15 (API 35) | 输入法与 Input 系统交互优化，改善 IME 切换时的输入延迟 |
-| Android 16 (API 36) | [待验证：预测性返回手势（Predictive Back）对 Input 分发路径的影响] |
+这一节只保留已经补过源码的版本差异。没有补核到源码的推断，不再直接写进表里。
+
+| 版本 | 已核验变化 |
+|------|------------|
+| Android 12 (API 31) | `InputDispatcher.cpp` 中的 stale 判定是静态 `isStaleEvent(...)`，超时常量是固定 10 秒 |
+| Android 13 (API 33) | stale 判定改成 `InputDispatcher::isStaleEvent(...)`，`mAnrTracker` 已进入 dispatcher 超时管理 |
+| Android 14 (API 34) | stale 判定路径延续 Android 13，默认超时由 `mStaleEventTimeout` 管理 |
+| Android 15 (API 35) | stale 判定改为 `mPolicy.isStaleEvent(currentTime, entry.eventTime)` |
+| Android 16 (API 36) | stale 判定路径延续 Android 15，源码目录仍位于 `services/inputflinger/` |
+
+[待验证：Predictive Back 对 InputDispatcher 主分发路径的具体影响、IME 交互优化的代码落点、目录层面的“进一步模块化”是否对应可见行为变化]
 
 ## 调试技巧
 
