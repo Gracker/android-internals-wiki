@@ -13,7 +13,9 @@ sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
   - type: official
-    path: "https://developer.android.com/reference/android/net/ssl/HPKE"
+    path: "https://developer.android.com/privacy-and-security/security-config#ech"
+  - type: official
+    path: "https://developer.android.com/reference/android/crypto/hpke/HpkeSpi"
   - type: official
     path: "https://developer.android.com/training/articles/security-gms-provider"
 tags: [network-security, tls, ech, hpke, certificate-transparency, cleartext, performance]
@@ -22,15 +24,15 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-21"
 task6_result: "pass-light-edit"
-task2b_result: pending
+task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-22T07:21:28+08:00"
@@ -38,7 +40,7 @@ last_task9_at: "2026-04-22T07:21:28+08:00"
 
 # 12.4 Android 网络安全与 TLS 性能优化
 
-一次 API 请求只有几 KB，首包却要多等上百毫秒，瓶颈往往不在业务代码，而在连接建立阶段的 TLS 握手。Android 近几代把 TLS 1.3、Certificate Transparency、Encrypted Client Hello、HPKE 这些安全机制逐步推到默认路径里，网络延迟和安全策略也越来越耦合。
+一次 API 请求只有几 KB，首包却要多等上百毫秒，瓶颈往往不在业务代码，而在连接建立阶段的 TLS 握手。Android 近几代持续收紧网络安全默认值：TLS 1.3 成为常态，Certificate Transparency 与 Encrypted Client Hello 开始进入平台配置面，明文流量也被逐步收紧。平台还单独公开了 HPKE 这类加密能力 API，用来覆盖端到端加密等场景。网络延迟和安全策略需要放在一起评估。
 
 这一节关注两个问题：Android 平台上的安全机制会怎样影响网络性能，我们又该怎样在安全和连接成本之间做判断。
 
@@ -99,25 +101,25 @@ Android 的 TLS 实现由 Conscrypt 安全提供者（基于 BoringSSL）负责�
 
 TLS 握手中有一个长期隐私缺陷：ClientHello 中的 SNI（Server Name Indication）字段是明文传输的。即使 TLS 加密了后续所有通信，网络中间人（ISP、企业网关）仍然可以知道你在访问哪个域名。
 
-Encrypted Client Hello（ECH，RFC 9180 相关扩展）的目的是加密整个 ClientHello，包括 SNI。
+Encrypted Client Hello（ECH，RFC 9849）的目的是加密 TLS ClientHello 中的敏感字段，SNI 是最常见的一项。ECH 的握手内部会用到 HPKE，但协议本身和 HPKE 不是同一个规范。
 
 ### Android 17 的 ECH 支持
 
-Android 17（API 37）在平台级别引入了 ECH 支持，默认以 "opportunistic" 模式启用。当 DNS 查询返回 ECH 配置（HTTPS/SVCB 记录类型）时，平台会自动尝试使用 ECH。如果服务器不支持 ECH，连接会降级到普通 TLS，不会导致连接失败。
+Android 17（API 37）在平台级别加入了 ECH 支持，并通过 Network Security Configuration 的 `<domainEncryption>` 元素提供 `opportunistic`、`enabled`、`disabled` 等模式。ECH 是否真正生效，还要同时满足两件事：应用使用的网络库已经接入 ECH，服务端也支持 ECH。协商失败时，连接会回退到普通 TLS 握手。
 
-ECH 的工作流程依赖 DNS-over-HTTPS（DoH）或 DNS-over-TLS（DoT）：客户端先通过加密 DNS 查询获取目标域名的 ECH 公钥配置，然后用这个公钥加密 ClientHello 中的 SNI 和其他敏感信息。
+ECH 配置通常通过 DNS 的 HTTPS/SVCB 记录分发。解析过程可以走传统 DNS，也可以走 DoH/DoT；DoH/DoT 只是 DNS 传输层的实现方式，不是 ECH 协商本身的前提。做性能分析时，要把“拿到 ECH 配置的 DNS 成本”和“TLS 握手里执行 ECH 的成本”拆开看。
 
 ### 性能开销
 
 ECH 的额外开销来自两部分：
 
-1. **DNS 查询增加**：客户端需要先获取 ECH 配置。如果使用 DoH，这是一次额外的 HTTPS 请求。不过这个查询通常会被 DNS 缓存命中，实际只在首次连接时有额外延迟。
+1. **DNS 查询增加**：客户端要先拿到 ECH 配置。这个动作通常体现在一次 DNS HTTPS/SVCB 查询或缓存命中判断里，不一定意味着额外发起一次 DoH HTTPS 请求。首次解析未命中缓存时，额外延迟主要还是 RTT；命中缓存后，这部分成本接近零。
 
 2. **ClientHello 加密**：ECH 使用 HPKE（Hybrid Public Key Encryption）对 ClientHello 进行加密，加密操作本身的计算开销很小。Chrome 的 ECH 试用数据显示对通用指标的影响"可以忽略"。
 
 在现代 Android 设备上，加密操作通常由硬件加速器（ARM CE 指令集）处理，TLS 相关的 CPU 开销在整体请求延迟中占比很小。真正影响延迟的始终是 RTT，而不是计算。
 
-[图：ECH 在 TLS 握手中的位置。标出正常 TLS（SNI 明文）vs ECH 模式（SNI 加密，依赖 DoH 获取 ECH 公钥）的流程差异，重点展示额外 DNS 查询的插入点]
+[图：ECH 在 TLS 握手中的位置。标出正常 TLS（SNI 明文）vs ECH 模式（SNI 加密，经 DNS HTTPS/SVCB 获取 ECH 配置）的流程差异，重点展示 DNS 解析阶段与 TLS 握手阶段的分界]
 
 [已验证: 官方文档, developer.android.com/about/versions/17/behavior-changes-17]
 [待验证: Android 17 平台级 ECH 实现对 OkHttp / Cronet 等上层 HTTP 客户端的透明性——平台负责在 TLS 层处理 ECH 协商，理论上上层无感，但具体客户端行为（如 OkHttp 的 TLS 配置覆盖）需对照 Android 17 正式版验证]
@@ -207,7 +209,7 @@ Network Security Configuration 是 Android 推荐的网络安全管理方式（�
 
 ## HPKE 混合加密 SPI
 
-Android 17 引入了 Hybrid Public Key Encryption（HPKE，RFC 9180）的公开 Service Provider Interface（SPI）。HPKE 是一种标准的混合加密方案，结合了公钥加密和对称加密（AEAD），为端到端加密通信提供了一套标准化的 API。
+Android 平台在 API 35 起公开了 Hybrid Public Key Encryption（HPKE，RFC 9180）的 Service Provider Interface（SPI）。它是一组独立的加密能力 API，适合端到端加密、密钥封装和安全配置分发等场景，不等同于普通 HTTPS 连接默认会走的 TLS 路径。
 
 ### 为什么要关注
 
@@ -221,10 +223,10 @@ HPKE 适合以下需要公钥加密的场景：
 - **安全配置分发**：设备注册时加密敏感配置数据
 - **跨进程安全通信**：App 内部不同组件间的加密数据传递
 
-Android 17 的 HPKE 实现目前只支持 base mode（最基本的加密解密模式），不支持 PSK 或 auth mode。`HpkeSpi` 作为 JCA（Java Cryptography Architecture）的一部分，允许第三方安全提供者提供自己的 HPKE 实现。
+`HpkeSpi` 以 JCA provider SPI 的形式公开，文档显示它在 API 35 引入，面向安全提供者或上层框架接入 HPKE 套件。它属于独立的加密能力扩展点，不会把普通 HTTPS 连接自动切到 HPKE 路径。
 
-[已验证: 官方文档, developer.android.com/reference/android/net/ssl/HPKE]
-[待验证: Android 17 HPKE 的性能基准数据——Beta 阶段尚无公开 benchmark；已知限制包括仅支持 base mode，HpkeSpi 作为 JCA SPI 面向安全提供者，普通 App 直接使用的场景有限]
+[已验证: 官方文档, developer.android.com/reference/android/crypto/hpke/HpkeSpi]
+[待验证: Android 平台公开文档仍缺少 HPKE 端到端性能基准；如要把它引入生产环境，需要结合具体 provider、suite 和消息体大小自行压测]
 
 ## 优化实践：从观测到行动
 
@@ -284,7 +286,9 @@ Android 9（API 28）引入了 Private DNS（DoT）设置，Android 11 扩展支
 ## 参考资料
 
 - [Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-17)，官方行为变更文档
-- [Network Security Configuration](https://developer.android.com/training/articles/security-config)，网络安全配置指南
+- [Encrypted Client Hello / Network Security Configuration](https://developer.android.com/privacy-and-security/security-config#ech)，ECH 模式与 `<domainEncryption>` 配置说明
+- [HpkeSpi API Reference](https://developer.android.com/reference/android/crypto/hpke/HpkeSpi)，Android 平台公开的 HPKE SPI 参考
+- [ECH RFC 9849](https://www.rfc-editor.org/rfc/rfc9849)，ECH 标准规范
 - [HPKE RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)，HPKE 标准规范
 - [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)，TLS 1.3 标准规范
 - [Certificate Transparency RFC 6962](https://www.rfc-editor.org/rfc/rfc6962)，CT 标准规范

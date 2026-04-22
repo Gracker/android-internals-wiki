@@ -5,7 +5,7 @@
     "priority": 95,
     "reason": "[Deep Tech Review] Perfetto AOSP 路径错误；架构段遗漏 heapprofd / java_hprof / traced_perf producer",
     "material_paths": [
-      "logs/external-review/2026-04-21-22-13.1-external-review.md",
+      "logs/external-review/archive/2026-04-21-22-13.1-external-review.md",
       "logs/deep-review/2026-04-22-08-deep-review.md"
     ],
     "review_issues": [
@@ -36,10 +36,12 @@
     ],
     "added_by": "task6-review",
     "added_at": "2026-04-21T18:36:56",
-    "status": "pending",
+    "status": "completed",
     "original_review_log": "logs/review/2026-04-21-18-review.md",
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-22T08:40:18+08:00"
+    "updated_at": "2026-04-22T08:40:18+08:00",
+    "completed_at": "2026-04-22T08:56:29+08:00",
+    "completed_by": "task2b-content-processing-rework"
   },
   {
     "section": "14.4",
@@ -638,7 +640,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-22T07:21:28+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-22T08:56:29+08:00",
+    "completed_by": "task2b-content-processing-rework"
   },
   {
     "section": "6.4",
