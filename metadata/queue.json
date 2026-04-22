@@ -853,5 +853,106 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-22T11:30:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.3",
+    "section_title": "VSync 机制",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Android 17 消息队列演进章节与 android-16.0.0_r1 证据错位",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-22-12-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "9.6 Android 17:消息队列演进对 VSync 的影响",
+        "detail": "正文把 Combined/Concurrent/Legacy MessageQueue 拆分作为 Android 17 变化来写，但当前公开源码锚点实际来自 android-16.0.0_r1；android-15 仍是单个 MessageQueue.java。章节标题、applicable_versions 与源码证据不在同一版本线上。",
+        "suggestion": "要么改写为 Android 16 的消息队列实现变化，要么等待 Android 17 正式 tag 后再补真实 delta，并同步调整 applicable_versions 与 sources。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "五、VSync Phase Offset 的作用与调优 / 六、VSync 在 Perfetto 中的观察",
+        "detail": "章节多次给出“3 帧延迟压到 1~2 帧”“phase 配置示例”这类判断，但缺少与具体设备、刷新率、Perfetto 轨道或 dumpsys 输出绑定的实证样例。",
+        "suggestion": "补一组 60Hz/120Hz 的对照样例：`dumpsys SurfaceFlinger | grep phase` 输出 + VSYNC-app/VSYNC-sf 时间差或截图，说明调优前后观察点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T12:36:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.6",
+    "section_title": "Android 功耗管理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Doze 白名单网络权限写反；Suspend/Power HAL 机制链缺失",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-22-12-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "事实错误",
+        "location": "Doze 模式与 App Standby 的工作原理与影响 / Deep Doze",
+        "detail": "正文写“甚至白名单中的 App 也失去网络访问权限”。官方 Doze 文档明确说明，部分 exempt 应用在 Doze / App Standby 中仍可使用网络并持有 partial wake locks。",
+        "suggestion": "重写白名单边界：普通应用网络受限；部分 exempt 应用保留网络与 partial wakelock 能力，但 alarms / jobs / sync 仍有限制。"
+      },
+      {
+        "type": "原理断裂/知识盲区",
+        "location": "Android 功耗管理框架：PowerManagerService → WakeLock → Suspend",
+        "detail": "正文仍把 Suspend 写成 PMS 直接写 `/sys/power/state`，并把 WakeLock 等同于内核 suspend blocker。AOSP android-16 的真实链路包含 `nativeSetAutoSuspend()`、`nativeAcquireSuspendBlocker()` / `nativeReleaseSuspendBlocker()`、`nativeSetPowerMode()` 等边界，WakeLock 只是上层输入之一。",
+        "suggestion": "补齐 PMS → native autosuspend / suspend blocker → Power HAL 的真实链路，说明 WakeLock、interactive state 和 HAL power mode 各自负责什么。"
+      },
+      {
+        "type": "数据支撑不足/版本表失焦",
+        "location": "WakeLock 的种类与滥用检测 / 版本演进",
+        "detail": "“1 分钟 Long Wakelock / force-stop 清理”和 Android 17 DeliQueue 行都缺少公开可复核依据。当前官方可复核口径更接近 Android vitals 的 excessive partial wake lock 指标，而不是 1 分钟系统阈值。",
+        "suggestion": "把 WakeLock 风险判断收敛到 Android vitals、batterystats、Battery Historian 这些可公开复核的指标；删除或降级 DeliQueue 对整机功耗的推断。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T12:36:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.7",
+    "section_title": "Perfetto 的高级用法",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Perfetto custom metric / trace_summary API 用法错误；Native trace point 缺口未补",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-22-12-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "API 错误",
+        "location": "编写自定义 Metric 的流程 / 第三步：运行 Metric",
+        "detail": "前文定义的是本地 `cold_start_metric.sql` / `.proto`，但命令示例使用 `./trace_processor --run-metrics cold_start_metric ...`。官方 metrics 文档对自定义 metric 的示例是传 SQL 文件路径，或配合 `--metric-extension` 加载扩展目录；裸 metric id 对应的是已注册/内置 metric。",
+        "suggestion": "改成基于文件路径或显式 `--metric-extension` 的完整用法，并交代目录布局，否则读者按步骤无法跑通。"
+      },
+      {
+        "type": "API 错误",
+        "location": "Trace Summarization：结构化指标提取",
+        "detail": "正文把 `tp.trace_summary()` 当成 `tp.metric()` 的无参替代，并直接读取 `summary.android_cpu`。当前 perfetto Python API 的 `trace_summary` 签名要求传 `specs`（以及可选 `metric_ids`），官方文档也以 summary spec + metric_ids 为标准用法。",
+        "suggestion": "改成 `tp.trace_summary(specs=[spec_text], metric_ids=[...])` 的可运行示例，并说明返回对象是 TraceSummary 而不是内置 TraceMetrics 的全量镜像。"
+      },
+      {
+        "type": "知识盲区/原理断裂",
+        "location": "自定义 Trace Point 的最佳实践",
+        "detail": "大纲承诺覆盖 `atrace_begin / TRACE_EVENT` 与 Perfetto SDK Native 层，但正文只有 Java `Trace.beginSection()` / `Trace.endSection()`，Native/异步 trace point 和 Perfetto SDK 没有真正落到正文。",
+        "suggestion": "补一段 Native `ATrace_beginSection` / `ATrace_endSection` 与 Perfetto SDK `TRACE_EVENT` 的适用边界、最小代码骨架和典型场景。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "将 Perfetto 集成到 CI/CD / 降低误报率的几个实践",
+        "detail": "“5-10% 波动”“跑 3-5 次”“5%/15% 阈值”都没有绑定设备、测试框架或 Trace 样本规模，经验值缺少可迁移的边界说明。",
+        "suggestion": "补一组 Macrobenchmark 或真实 CI 样本的噪声分布，说明这些阈值分别适用于什么测试环境。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T12:36:00+08:00",
+    "status": "pending"
   }
 ]

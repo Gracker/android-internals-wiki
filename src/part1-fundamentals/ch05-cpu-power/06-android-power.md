@@ -44,11 +44,15 @@ tags:
   - suspend
   - jobscheduler
   - powermanager
-pipeline_stage: task9_pending
+pipeline_stage: 'task2b_pending'
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: idle
+task9_state: 'reviewed'
+task2b_state: 'pending'
+task9_result: 'needs-rework'
+task9_reviewed_date: '2026-04-22'
+task9_reviewed_by: 'openclaw-task9'
+last_task9_at: '2026-04-22T12:36:00+08:00'
 ---
 
 
