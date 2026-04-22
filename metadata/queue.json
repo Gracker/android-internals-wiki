@@ -787,6 +787,484 @@
       "task2b_state": "fixed",
       "fixed_at": "2026-04-22T21:50:17",
       "fixed_by": "openclaw-task2b"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/README.md",
+      "section_title": "1.0 架构全景导读 (README)",
+      "priority": 95,
+      "reason": "[External Review] P0: 章节目录严重残缺（漏掉 1.7-1.16 共 10 个章节）；P1: 缺乏 Android 14/15/16 关键架构特性概括",
+      "review_issues": [
+        {
+          "type": "交叉引用/目录残缺",
+          "location": "## 本章内容",
+          "detail": "章节列表仅列出至 1.6 和 1.17，遗漏 1.7-1.16 全部深度性能专题（ART 编译、AMS/PMS、AutoFDO、锁竞争等）",
+          "suggestion": "根据 SUMMARY.md 全量更新章节列表",
+          "evidence": [
+            "src/SUMMARY.md vs ls src/part1-fundamentals/ch01-architecture/"
+          ]
+        },
+        {
+          "type": "版本差异/技术过时",
+          "location": "全文综述",
+          "detail": "缺乏 16KB Page Size、ADPF、Project Mainline 50+ 模块等当代 Android 性能架构核心支柱的概括",
+          "suggestion": "在引导语中点出模块化与底层硬件加速（16KB页）的双重演进"
+        },
+        {
+          "type": "原理链缺失",
+          "location": "全文综述",
+          "detail": "架构描述停留在五层静态视图，缺乏从 Treble 到 Mainline 的模块化演进视角",
+          "suggestion": "加入 Parallel Module Loading 和 GBL 的定性描述"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "section_title": "1.2 系统启动全流程",
+      "priority": 85,
+      "reason": "[External Review] P1: 缺少 Android 16 Generic Bootloader (GBL) 描述",
+      "review_issues": [
+        {
+          "type": "原理链缺失",
+          "location": "Bootloader 章节",
+          "detail": "仅提到'完成板级初始化'，未体现 Android 16 引入的 Generic Bootloader (GBL) 项目",
+          "suggestion": "增加 1-2 段描述 GBL 的背景和作用，GBL 通过 Rust 实现跨架构引导标准化",
+          "evidence": [
+            "Android 16 GBL 官方介绍"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "section_title": "1.4 Binder IPC 机制与性能影响",
+      "priority": 85,
+      "reason": "[External Review] P1: HeavyHitterWatcher 版本号错误(12→11)；P1: Binder Freezer 解冻风暴未描述",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "版本演进部分",
+          "detail": "BinderCallHeavyHitterWatcher 引入时间描述为 Android 12，实为 Android 11 (API 30)",
+          "suggestion": "统一修正为 Android 11",
+          "evidence": [
+            "AOSP BinderCallsStats Android 11 引入"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "Binder Freezer 部分",
+          "detail": "未明确描述 Binder 解冻风暴（Unfreezing Storm）对系统整体调度的瞬时冲击",
+          "suggestion": "补充解冻瞬间 CPU 尖峰及内核对缓冲区满的直接处理逻辑"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "section_title": "1.5 线程模型与调度策略",
+      "priority": 85,
+      "reason": "[External Review] P1: ConcurrentMessageQueue 反射破坏风险；P1: Android 16 虚拟线程支持现状缺失",
+      "review_issues": [
+        {
+          "type": "知识盲区 / API 限制",
+          "location": "§1.5.2 Looper→MessageQueue→Handler",
+          "detail": "ConcurrentMessageQueue 导致 mMessages 字段始终为 null，破坏旧版测试框架（Espresso/Robolectric）",
+          "suggestion": "补充反射破坏风险警告及测试框架升级建议",
+          "evidence": [
+            "frameworks/base/core/java/android/os/ConcurrentMessageQueue.java"
+          ]
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "§1.5.6 异步编程演进",
+          "detail": "未明确说明 Android 16 暂不支持 Java 21 虚拟线程（Thread.isVirtual() 始终返回 false）",
+          "suggestion": "增加小节说明虚拟线程尚未落地，Kotlin 协程仍是唯一轻量级调度方案"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
+      "section_title": "1.7 ART 编译管线与 dex2oat 优化",
+      "priority": 85,
+      "reason": "[External Review] P1: JIT 热度计数权重逻辑缺失；P1: Android 17 static final Target SDK 约束缺失",
+      "review_issues": [
+        {
+          "type": "原理链缺失",
+          "location": "JIT 编译器 → 方法热度追踪",
+          "detail": "未说明 UI 线程调用通过 jitprithreadweight（默认 500）获得更高权重",
+          "suggestion": "补充 jitprithreadweight 对热度累计的加速作用说明",
+          "evidence": [
+            "art/runtime/jit/jit.cc"
+          ]
+        },
+        {
+          "type": "版本差异",
+          "location": "版本演进 → Android 17 static final",
+          "detail": "未明确该约束主要针对 Target SDK 37+，反射修改将抛 IllegalAccessException",
+          "suggestion": "明确 Target SDK 37 分界线，提醒旧版 Mock/插件化方案风险"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
+      "section_title": "1.8 Activity Manager Service",
+      "priority": 85,
+      "reason": "[External Review] P1: 广播分发实现类应更新为 BroadcastQueueModernImpl；P1: Android 17 后台音频加固静默失败",
+      "review_issues": [
+        {
+          "type": "源码描述过时",
+          "location": "广播分发机制",
+          "detail": "描述为 BroadcastQueueImpl 执行分发，但 Android 14+ 默认使用 BroadcastQueueModernImpl",
+          "suggestion": "提及'现代广播队列 (Modern Broadcast Queue)'概念及 BroadcastQueueModernImpl",
+          "evidence": [
+            "frameworks/base/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "FGS 演进 - Android 17",
+          "detail": "后台音频加固 API 调用不抛异常但播放无效或音量调整无响应（静默失败）",
+          "suggestion": "明确指出静默失败行为及音频焦点返回 AUDIOFOCUS_REQUEST_FAILED"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+      "section_title": "1.9 Package Manager Service",
+      "priority": 85,
+      "reason": "[External Review] P1: 缺失 App Archiving 机制；P1: SDM 术语错误(Shared Data Metadata→Secure Dex Metadata)；P1: artd 职责边界不清",
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "全文 / 版本演进",
+          "detail": "未提及 Android 14+ 的应用归档（App Archiving）机制",
+          "suggestion": "在安装流程之后增加'应用归档与状态恢复'小节",
+          "evidence": [
+            "com.android.server.pm.PackageArchiver",
+            "IPackageManager.archiveApp()"
+          ]
+        },
+        {
+          "type": "源码错误",
+          "location": "Android 16 云端编译与 SDM",
+          "detail": "SDM 全称为 Secure Dex Metadata（非 Shared Data Metadata），且必须通过 APK 相同开发者签名校验",
+          "suggestion": "更正术语，强调签名一致性是 Cloud Compilation 生效的前提"
+        },
+        {
+          "type": "原理链缺失",
+          "location": "PMS 与 installd 的协作关系",
+          "detail": "未强调 installd 在编译路径上的彻底退出（Android 14+ 不再执行 dex2oat）",
+          "suggestion": "明确 artd 承接了 installd 中编译产物管理的所有底层操作"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
+      "section_title": "1.10 ContentProvider 性能与优化",
+      "priority": 85,
+      "reason": "[External Review] P1: getProviderMimeTypeAsync 版本号错(31→30)；P1: setDetectNotResponding 版本号错(11→18)；P1: Attribution Tags 缺失",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "ContentProvider 版本演进",
+          "detail": "getProviderMimeTypeAsync 实为 Android 11 (API 30) 引入，非 Android 12",
+          "suggestion": "更正版本号为 Android 11",
+          "evidence": [
+            "AOSP ContentResolver.java, IActivityManager.aidl (API 30)"
+          ]
+        },
+        {
+          "type": "版本差异",
+          "location": "ContentProvider 版本演进",
+          "detail": "setDetectNotResponding 自 Android 4.3 (API 18) 便存在于 AOSP，非 Android 11 新引入",
+          "suggestion": "明确其历史渊源，说明在 Android 11 左右变得更公开/重要"
+        },
+        {
+          "type": "知识盲区",
+          "location": "版本演进 / 安全机制",
+          "detail": "未提及 Attribution Tags 对 ContentProvider 审计的影响，Target API 31+ 必须声明 <attribution>",
+          "suggestion": "新增安全与审计：归因标签（Attribution Tags）段落"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
+      "section_title": "1.11 Zygote 启动与优化",
+      "priority": 85,
+      "reason": "[External Review] P1: DeliQueue 版本标注不清晰，该特性属于 Android 17",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "版本演进部分",
+          "detail": "DeliQueue 是 Android 17 (SDK 37) 的核心特性，在 Android 16 基线文档中出现且未明确标注版本归属",
+          "suggestion": "修正为'DeliQueue (Android 17+ 预览特性)'",
+          "evidence": [
+            "Android 17 Beta 文档",
+            "android.os.MessageQueue 重构记录"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
+      "section_title": "1.12 AutoFDO 优化",
+      "priority": 85,
+      "reason": "[External Review] P1: Binder addints 拼写不规范；P1: 10.5% 收益数据来源模糊",
+      "review_issues": [
+        {
+          "type": "术语风险",
+          "location": "实测性能数据部分",
+          "detail": "Binder addints 应为 binderAddInts（对应 BinderBenchmark 测试项）",
+          "suggestion": "修正为 binderAddInts 或明确标注其对应 BinderBenchmark"
+        },
+        {
+          "type": "数据缺失",
+          "location": "实测性能数据部分",
+          "detail": "10.5% 几何平均数字缺乏最新官方背书，实际 Google Blog 强调 App 启动 4.3% 和 Boot 2.1%",
+          "suggestion": "明确该数字来源（早期 AutoFDO 论文或 Pixel 实验数据），避免读者误认为 Android 16 官方综合收益"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
+      "section_title": "1.13 MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 85,
+      "reason": "[External Review] P1: 遗漏 SemiConcurrentMessageQueue 中间态；P1: 性能数据过于保守，未引用官方博客数据",
+      "review_issues": [
+        {
+          "type": "原理链缺失",
+          "location": "Android 16 变体",
+          "detail": "提到 ConcurrentMessageQueue 但漏掉 AOSP 16 中共存的 SemiConcurrentMessageQueue（生产者端无锁化、消费者端轻量级锁）",
+          "suggestion": "补充说明 AOSP 提供多种策略实现，系统根据进程类型和配置选择不同变体",
+          "evidence": [
+            "frameworks/base/core/java/android/os/SemiConcurrentMessageQueue/MessageQueue.java"
+          ]
+        },
+        {
+          "type": "数据缺失",
+          "location": "性能量化数据",
+          "detail": "官方博客数据：15% 主线程锁竞争减少，5000x 高并发插入提升，4%-7.7% 掉帧率改善",
+          "suggestion": "以'官方博客数据参考'形式引入并标注实验场景"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
+      "section_title": "1.14 锁竞争与同步优化",
+      "priority": 85,
+      "reason": "[External Review] P1: Debug 版 kLongWaitMs 阈值不同(1000ms vs 100ms)；P1: DeliQueue 反射兼容性断崖；P1: PI-Mutex 32 位 ID 映射上限",
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "锚点 2: Monitor Lock 性能特征",
+          "detail": "kLongWaitMs 在 Debug 构建中被放大到 1000ms（kDebugThresholdFudgeFactor=10），导致开发者误判无长锁竞争",
+          "suggestion": "明确区分 Release (100ms) 和 Debug (1000ms) 的日志触发阈值",
+          "evidence": [
+            "art/runtime/monitor.cc"
+          ]
+        },
+        {
+          "type": "版本差异/破坏性变更",
+          "location": "锚点 8: 版本演进",
+          "detail": "DeliQueue 弃用 mMessages 链表，反射访问 MessageQueue.mMessages 始终返回 null，旧版 Espresso < 3.7.0 失效",
+          "suggestion": "强制提醒 Android 17+ 严禁反射 MessageQueue 私有字段"
+        },
+        {
+          "type": "版本差异",
+          "location": "锚点 3: Futex",
+          "detail": "32 位系统 pthread_mutex_t 空间不足，PI-Mutex 需全局 ID 映射表，上限 65536",
+          "suggestion": "补充 32 位系统的 ID 映射限制"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
+      "section_title": "1.15 JNI/NDK 性能优化",
+      "priority": 95,
+      "reason": "[External Review] P0: @CriticalNative 对基本类型数组的描述完全错误",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "@FastNative 和 @CriticalNative 边界",
+          "detail": "原文错误宣称 @CriticalNative 不支持基本类型数组。实际它会自动将基本类型数组拆解为 (jsize length, T* data)，但不支持 String 或对象数组",
+          "suggestion": "修正为正确描述：@CriticalNative 对基本类型数组提供特殊支持，自动拆箱为长度+原始指针",
+          "evidence": [
+            "developer.android.com/reference/dalvik/annotation/optimization/CriticalNative",
+            "art/runtime/entrypoints/quick/quick_jni_entrypoints.cc"
+          ]
+        },
+        {
+          "type": "数据陈旧",
+          "location": "JNI transition 代价",
+          "detail": "引用 2016 年 Nexus 6P 数据，现代设备 (Pixel 8/9) 标准 JNI 约 35ns, Fast 约 10ns, Critical 约 5ns",
+          "suggestion": "保留老数据作为历史参考，补充 2024-2025 年旗舰设备基准值"
+        },
+        {
+          "type": "知识盲区",
+          "location": "Trace API",
+          "detail": "未说明 NDK 稳定 API trace.h 与系统内部 libcutils/trace.h 的核心差异",
+          "suggestion": "明确告知系统级/HAL 级开发优先利用 ATRACE_CALL() 宏"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+      "section_title": "1.16 Audio Pipeline 延迟与性能",
+      "priority": 95,
+      "reason": "[External Review] P0: flushWrittenFramesFromPosition 适用范围描述完全相反；P0: getCodecProvenance 描述不准确",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "Android 17 音频变更 → AudioTrack 精确 Flush",
+          "detail": "原文称 flushWrittenFramesFromPosition '只适用于 offloaded AudioTrack'，实际完全相反——该方法明确不支持 Offload 模式，是为 PCM 轨道设计的",
+          "suggestion": "更正为 PCM 专用，补充 getFlushWrittenFramesFromPositionSupport 探测方法",
+          "evidence": [
+            "Android 15/17 API 文档"
+          ]
+        },
+        {
+          "type": "事实错误",
+          "location": "Android 17 音频变更 → 编解码器来源查询",
+          "detail": "getCodecProvenance() 返回的是编解码器的溯源/出处（如 c2.android.aac.decoder），而非'codec media type string'",
+          "suggestion": "修正为返回编解码器的原始实现名称或出处，用于区分软硬解"
+        },
+        {
+          "type": "原理链缺失",
+          "location": "FAST Mixer → 进入条件",
+          "detail": "未提及 FAST Mixer 的 8 个槽位限制（7 Client + 1 PatchTrack），槽位满则降级",
+          "suggestion": "补充 mFastTrackAvailMask 的硬限制说明",
+          "evidence": [
+            "frameworks/av/services/audioflinger/Threads.cpp"
+          ]
+        },
+        {
+          "type": "原理链缺失",
+          "location": "AAudio MMAP 模式",
+          "detail": "未提及 MMAP EXCLUSIVE 模式下的时钟同步模型（Timing Model），audioserver 必须通过原子消息队列传递硬件时间戳",
+          "suggestion": "补充 audioserver 在 MMAP 中的控制面角色",
+          "evidence": [
+            "frameworks/av/media/libaaudio/service/AAudioServiceEndpoint.cpp"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
+      "section_title": "1.17 IPC 全景",
+      "priority": 85,
+      "reason": "[External Review] P1: 遗漏 ashmem 向 memfd 切换的关键节点（Android 12+）",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "§3.4 共享内存、DMA-BUF 与 FMQ",
+          "detail": "未充分交代 Android 12 后系统强制将 ashmem 迁移至 memfd 的演进，memfd 的 F_ADD_SEALS 解决了 ashmem 无法防止对端动态调整共享区域大小的隐患",
+          "suggestion": "明确标注 Android 12 是 ashmem 到 memfd 的分水岭",
+          "evidence": [
+            "android.os.SharedMemory Android 12+ 优先调用 memfd_create"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
+      "section_title": "2.1 Android 渲染架构全景",
+      "priority": 95,
+      "reason": "[External Review] P0: RecordingCanvas 包名错误(android.view→android.graphics)；P1: 遗漏 Vulkan 1.4 强制要求",
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "HWUI 章节",
+          "detail": "RecordingCanvas 被放在 android.view 包下，实际属于 android.graphics 包",
+          "suggestion": "更新全书代码引用，统一为 android.graphics.RecordingCanvas",
+          "evidence": [
+            "frameworks/base/graphics/java/android/graphics/RecordingCanvas.java"
+          ]
+        },
+        {
+          "type": "版本差异缺失",
+          "location": "Android 16 特性",
+          "detail": "提到 AsyncBufferQueue 但未解释其底座——Android 16 强制 64 位设备支持 Vulkan 1.4 的 Host Image Copy",
+          "suggestion": "补充 Vulkan 1.4 强制性要求及其与 AsyncBufferQueue 的关系"
+        },
+        {
+          "type": "原理链缺失",
+          "location": "渲染模式对比",
+          "detail": "软件渲染 vs 硬件加速渲染对比中缺少功耗维度分析",
+          "suggestion": "增加 GPU 大规模并行在单位像素功耗上低于 CPU 满载的定性分析"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "section_title": "2.2 帧率与刷新率",
+      "priority": 85,
+      "reason": "[External Review] P1: 缺失 Android 15 核心 API View.setRequestedFrameRate；P1: 缺失 Window.setFrameRatePowerSavingsBalanced",
+      "review_issues": [
+        {
+          "type": "版本差异/API 缺失",
+          "location": "App 如何参与刷新率选择",
+          "detail": "仅提到 Surface.setFrameRate 和 preferredDisplayModeId，遗漏 Android 15 引入的 View 级帧率请求 API",
+          "suggestion": "补充 View.setRequestedFrameRate(float) 和 setRequestedFrameRateCategory(int) 的介绍",
+          "evidence": [
+            "developer.android.com/reference/android/view/View#setRequestedFrameRate"
+          ]
+        },
+        {
+          "type": "版本差异",
+          "location": "功耗权衡",
+          "detail": "未提及 Android 15 引入的 Window.setFrameRatePowerSavingsBalanced(true)，允许功耗压力大时优先降频",
+          "suggestion": "补充此 API 作为开发者主动参与系统功耗治理的手段"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-22T22:35:29",
+      "status": "pending"
     }
   ]
 }
