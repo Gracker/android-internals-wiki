@@ -290,3 +290,39 @@ App Standby Bucket 与 wakelock 的直接限制边界没有官方 / AOSP 证据�
 - 5.2
 - 5.4
 - 15.5
+
+## [2026-04-22] 5.6 Android 功耗管理 — 知识盲区
+
+### 盲区描述
+Power HAL、autosuspend、suspend blocker 与 Java WakeLock 的边界没有展开。当前正文把功耗链路压成 “PMS → WakeLock → Suspend”，会让读者误以为 WakeLock 就等于全部 suspend blocker，也看不到 `nativeSetPowerMode()` / `nativeSetPowerBoost()` 这类 HAL 交互入口。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补 PowerManagerService → nativeSetAutoSuspend / nativeAcquireSuspendBlocker / nativeSetPowerMode 的代码级链路
+- 区分 Java WakeLock、kernel suspend blocker、interactive state、Power HAL hint/mode 的职责边界
+- 补一个 Perfetto / dumpsys power / batterystats 联查功耗问题的最小证据链
+
+### 关联章节
+- 5.5
+- 11.1
+- 14.11
+
+## [2026-04-22] 13.7 Perfetto 的高级用法 — 知识盲区
+
+### 盲区描述
+Native 自定义 trace point 仍是空白。正文只覆盖了 Java `Trace.beginSection()`，但大纲里承诺的 `atrace_begin / TRACE_EVENT`、Perfetto SDK Native API、异步 trace point 和多线程/协程场景都没有落到正文。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补 `ATrace_beginSection` / `ATrace_endSection`、异步 trace point、Native 层分类与开销边界
+- 补 Perfetto SDK `TRACE_EVENT` / counter / async event 的最小可运行样例
+- 补 Java Tracing 与 Native Perfetto SDK 在 App / engine / system 侧的选型边界
+
+### 关联章节
+- 13.1
+- 13.8
+- 13.10

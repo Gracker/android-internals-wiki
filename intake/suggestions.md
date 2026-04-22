@@ -292,3 +292,21 @@
 - **位置**：L140-L157 / L327
 - **问题**：正文把 Broadcast ANR 讨论收敛到“有序广播 + 动态注册 Receiver”，而官方 ANR 诊断文档当前更强调同步/异步 receiver、`goAsync()` 与 app startup 是否落入同一超时窗口。
 - **建议**：按 modern broadcast timeout model 重写边界说明；若要保留 ordered/parallel 细分，补对应 AOSP 实现路径或标 `[待验证]`。
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：五、VSync Phase Offset 的作用与调优 / 六、VSync 在 Perfetto 中的观察
+- **问题**：阶段结论和相位配置示例没有和具体设备/刷新率/Trace 观察绑定，读者难以复核“1~2 帧”延迟收益。
+- **建议**：补一组 60Hz/120Hz 实例，至少包含 `dumpsys SurfaceFlinger | grep phase` 输出、VSYNC-app/VSYNC-sf 轨道时间差，说明 phase 调优怎么落到证据链。
+
+## [Task9 Deep Review] 5.6 Android 功耗管理 — 2026-04-22
+- **类型**：数据支撑/版本差异
+- **位置**：WakeLock 的种类与滥用检测 / 版本演进
+- **问题**：“1 分钟 Long Wakelock / force-stop 清理”和 Android 17 DeliQueue 行没有公开证据链，容易把 Play vitals 指标、系统行为和消息队列演进混为一谈。
+- **建议**：改用 Android vitals 的 excessive partial wake lock 口径（后台或 FGS 场景 24h 累计 2h+，再看会话占比）以及 Batterystats/Historian 证据链；把 DeliQueue 从功耗版本表移走或注明只是间接假设。
+
+## [Task9 Deep Review] 13.7 Perfetto 的高级用法 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：将 Perfetto 集成到 CI/CD / 降低误报率的几个实践
+- **问题**：经验阈值（5-10% 波动、3-5 次、中位数、5%/15% 告警线）没有与设备条件、Trace 规模、Benchmark 方式绑定。
+- **建议**：补一组 Macrobenchmark / 物理机样本的噪声分布，说明这些阈值适用的环境和失效边界。
