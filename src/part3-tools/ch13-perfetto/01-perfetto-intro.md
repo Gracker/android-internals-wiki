@@ -38,11 +38,11 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
@@ -58,7 +58,7 @@ last_task9_at: '2026-04-22T08:40:18+08:00'
 
 - 🔹 Perfetto 是什么：Google 的下一代系统级 tracing 工具，Systrace 的继任者
 - 🔹 Perfetto 与 Systrace 的关系与区别
-- 🔹 Perfetto 的架构：traced（守护进程）、traced_probes（数据源）、Perfetto UI
+- 🔹 Perfetto 的架构：traced、traced_probes、heapprofd / traced_perf 等 profiling 组件、Perfetto UI
 - 🔹 核心概念：TraceConfig、Data Source、Track、Slice、Counter
 - 🔹 为什么性能分析离不开 Perfetto
 
@@ -171,6 +171,16 @@ Android 9 和 Android 10 的非 Pixel 设备上，Perfetto services 常常还需
 [已验证: 官方文档, perfetto.dev/docs/data-sources]
 
 这些数据源默认处于空闲状态，只有在显式启动一次 trace 采集时才会激活。这和一直开着日志系统不同，Perfetto 不会在不需要的时候产生任何开销。
+
+### heapprofd / java_hprof_producer / traced_perf：专用 profiling 组件
+
+`traced_probes` 负责通用系统数据源，但 Perfetto 的 profiling 能力还有一组独立组件：
+
+- `heapprofd`：负责 Native heap sampling，抓 `malloc` / `free` 相关分配栈，源码位于 `external/perfetto/src/profiling/memory/`。
+- `java_hprof_producer`：负责 Java heap dump 和 retained graph 这类对象图数据，也在 `external/perfetto/src/profiling/memory/` 目录下。
+- `traced_perf` / `perf_producer`：负责通过 Linux `perf_event_open` 做 CPU sampling 和调用栈采集，源码位于 `external/perfetto/src/profiling/perf/`。
+
+这些组件仍然通过 `traced` 管理的会话 buffer 汇聚数据，只是各自负责不同的 profiling 路径。后面看到 Native heap、Java heap 或 CPU profiling data source 时，先判断它属于哪类 producer 组件，再决定该查权限、配置还是设备支持。
 
 ### Perfetto UI：可视化界面
 
@@ -414,8 +424,10 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 - Android 官方 Perfetto 指南：https://source.android.com/docs/core/debug/perfetto
 - Perfetto GitHub 仓库：https://github.com/google/perfetto
 - Perfetto UI：https://ui.perfetto.dev
-- AOSP `traced` 服务源码路径：`system/tracing/traced/`
-- AOSP `traced_probes` 服务源码路径：`system/tracing/traced_probes/`
+- AOSP `traced` 服务源码路径：`external/perfetto/src/traced/service/`
+- AOSP `traced_probes` 服务源码路径：`external/perfetto/src/traced/probes/`
+- AOSP `heapprofd` / `java_hprof_producer` 源码路径：`external/perfetto/src/profiling/memory/`
+- AOSP `traced_perf` / `perf_producer` 源码路径：`external/perfetto/src/profiling/perf/`
 - 高爷 Systrace / Perfetto 系列教程：https://www.androidperformance.com/2019/12/01/Android-Systrace(Perfetto)-Basic/
 
 
