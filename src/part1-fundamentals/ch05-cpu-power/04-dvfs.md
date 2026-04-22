@@ -30,7 +30,9 @@ polish_by: "task2b-polish"
 task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-15"
-task2b_state: idle
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-23T04:32:00+08:00"
 task6_state: reviewed
 task6_result: pass-light-edit
 pipeline_stage: ready-to-publish
@@ -82,7 +84,7 @@ CPU 的功耗来自两部分：静态功耗（漏电流）和动态功耗（充�
 
 **P_dynamic ∝ C × V² × f**
 
-其中 C 是电容（由芯片工艺和电路设计决定），V 是工作电压，f 是时钟频率。注意这里电压是平方关系——这意味着，如果我们将电压从 1.2V 降到 0.8V，仅电压变化就能将功耗降低到原来的 (0.8/1.2)² ≈ 44%，降幅超过一半。
+其中 C 是电容（由芯片工艺和电路设计决定），V 是工作电压，f 是时钟频率。注意这里电压是平方关系——如果电压从 1.2V 降到 0.8V，仅电压变化就能将功耗降低到原来的 (0.8/1.2)² ≈ 44%，降幅超过一半。
 
 [已验证: 官方文档, developer.android.com/games/optimize/adpf/performance-hint-api — 功耗与电压平方成正比]
 
@@ -155,7 +157,15 @@ cpu0_opp_table: opp-table-0 {
 
 [已验证: AOSP android16-6.6, drivers/opp/, OPP 框架核心代码]
 
-OPP 框架为上层子系统（如 cpufreq、devfreq）提供了统一的接口来查询可用的频率-电压对。当 cpufreq governor 决定将 CPU 调到某个频率时，它实际上是从 OPP 表中选择了对应的条目，然后由底层驱动（clock framework + regulator framework）去设置实际的频率和电压。
+OPP 框架为上层子系统（如 cpufreq、devfreq）提供了统一的接口来查询可用的频率-电压对。当 cpufreq governor 决定将 CPU 调到某个频率时，它会从 OPP 表中选择对应的条目，再由底层驱动（clock framework + regulator framework）去设置实际的频率和电压。
+
+### 现代 SoC 中的 OPP 映射：SCMI / CPPC
+
+上面的模型适合解释“平台有哪些可用档位”，但在 Android 15/16 常见的 ARMv8.4+ 平台上，OS 并不总是直接点名某个 MHz。很多 SoC 会通过 SCMI（System Control and Management Interface）或 CPPC（Collaborative Processor Performance Control）把请求表达成抽象的性能等级，再由固件把这个等级映射到具体的电压/频率档位。
+
+这会带来两个变化。其一，OPP 仍然存在，但它更多是固件和电源管理逻辑内部的映射表，Linux 看到的接口逐步从“请求某个频点”扩展到“请求更高或更低的 performance level”。其二，切换路径可以缩短。带 Fastchannels 的 SCMI 实现会把一部分控制路径做成内存映射通道，请求不必每次都走高开销的 mailbox 往返。
+
+对性能分析有两点影响。Perfetto 里看到的频率跳变依旧是真实结果，最终落点仍受 OPP、热约束和 governor 策略共同限制。端到端升频偏慢时，排查重点通常落在负载估计、uclamp、rate limit 和固件协商过程，单次 PLL 或 regulator 动作往往不是主要耗时项。
 
 ### OPP 与 Perfetto
 
@@ -187,13 +197,28 @@ schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪�
 
 #### schedutil 的频率计算
 
-对于 CFS 调度类管理的普通任务，schedutil 的频率计算公式大致为：
+对于 CFS 调度类管理的普通任务，schedutil 仍然沿着 `1.25 × f_max × util / max_capacity` 这一类比例关系换算目标频率，但这里的 `util` 已经不是“裸 PELT 值”。在 Android 16-6.6 内核里，真正参与计算的是 `sugov_get_util()` 整理过的有效利用率，可以写成下面这个简化关系：
 
-**f_target = 1.25 × f_max × util / max_capacity**
+**util_eff = apply_iowait_boost(uclamp(PELT_util))**
 
-其中 util 是 PELT 计算出的 CPU 利用率，max_capacity 是 CPU 的最大算力。1.25 这个系数提供了一个 25% 的 headroom——当 CPU 利用率达到 80% 时，schedutil 就会将频率拉到最高。这个设计是合理的：如果等到 100% 再拉满，就已经晚了。
+这里叠在一起的有三类信息：
 
-[已验证: 官方文档, kernel.org — schedutil 频率计算公式，1.25 headroom 系数]
+- **PELT 利用率**：调度器看到的近期负载
+- **uclamp 钳位**：框架或内核给线程组施加的性能下限 / 上限
+- **iowait boost**：I/O 唤醒后的短时提频
+
+下面这段节选展示了 `sugov_get_util()` 的处理顺序：
+
+```c
+// kernel/sched/cpufreq_schedutil.c, sugov_get_util() 节选
+util = cpu_util_cfs(sg_cpu->cpu);
+util = uclamp_rq_util_with(rq, util, NULL);
+util = sugov_apply_iowait_boost(sg_cpu, util);
+```
+
+于是会出现一个在 Trace 里很常见的现象：即使 PELT 利用率还不高，只要 top-app 或关键线程被设置了较高的 `uclamp_min`，频率也会提早拉升；I/O 密集路径刚被唤醒时，也可能先吃到一段 iowait boost。
+
+[已验证: AOSP android16-6.6, kernel/sched/cpufreq_schedutil.c — `sugov_get_util()` / 官方文档, kernel.org — schedutil 1.25 headroom]
 
 对于实时（RT）和 Deadline 调度类的任务，schedutil 的策略更简单粗暴：直接将频率拉到最高，确保实时任务的执行不受影响。
 
@@ -209,7 +234,7 @@ schedutil 有一个 `rate_limit_us` 参数（通过 sysfs 可配置），控制�
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md]
 
-我们在 [5.3 大小核架构](03-big-little.md) 中提到过，Android 前台应用通常有多个线程协同工作（如 MainThread + RenderThread）。如果这些线程被分散到不同的 CPU 上运行，每个 CPU 的单独利用率可能都不高（比如只有 50%），schedutil 就不会积极升频。但实际上这些线程的**总负载**已经很高了。
+我们在 [5.3 大小核架构](03-big-little.md) 中提到过，Android 前台应用通常有多个线程协同工作（如 MainThread + RenderThread）。如果这些线程被分散到不同的 CPU 上运行，每个 CPU 的单独利用率可能都不高（比如只有 50%），schedutil 就不会积极升频。但这些线程的**总负载**已经很高了。
 
 RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 top-app cgroup 中的线程被标记为同一组后，RTG 会将这组线程在同一个 cluster 上的负载**累加计算**，再将累加后的负载反馈给 schedutil。这样即使线程分散在多个核上，调频决策也能反映真实的总需求。
 
@@ -230,7 +255,7 @@ RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 
 5. regulator framework 调整电压（如果需要）
 6. 等待电压稳定后切换到新频率
 
-整个过程的延迟，从几十微秒到几毫秒不等，取决于硬件实现。Google 的官方文档指出，在没有 ADPF 辅助的情况下，governor 从检测到负载变化到频率提升到位，可能需要约 **200ms**。这个数据看起来惊人，但考虑了 PELT 的响应时间（EWMA 的惯性）、rate_limit 限制以及硬件切换延迟的叠加。
+整个过程的端到端延迟，从几十微秒到数百毫秒都有可能。单次 PLL / regulator 切换通常只占微秒到毫秒级，Google 官方文档里提到的约 **200ms** 主要来自上游信号建立：PELT 的指数平滑需要时间积累，`rate_limit_us` 会压住过密的切频，请求到固件或驱动后才轮到真正的硬件切换。Trace 里看到“频率升得晚”时，排查顺序通常先看负载估计和 governor 节流，再看底层时钟路径。
 
 [已验证: 官方文档, developer.android.com/games/optimize/adpf/performance-hint-api — governor 升频可能需要约 200ms]
 
@@ -275,6 +300,12 @@ APerformanceHint_reportActualWorkDuration(session, actual_duration_ns);
 
 [已验证: 官方文档, developer.android.com/ndk/guides/performance-hint — ADPF API 自 Android 12 引入]
 
+Android 15 开始，ADPF 不再只接收一个 CPU 总时长。`PerformanceHintManager.WorkDuration` 可以同时上报 work period 起点、CPU 实际时长、GPU 实际时长和总时长，`reportActualWorkDuration(WorkDuration)` 更适合游戏、相机预览和重 GPU 渲染路径，因为系统终于能分清“CPU 已经做完，GPU 还在忙”这一类负载。
+
+Android 16 又补了 GPU 余量查询能力。应用可以通过 `SystemHealthManager.getGpuHeadroom()` 一类接口估算当前 GPU 余量，再结合 ADPF 的工作时长上报决定是该降分辨率、减 shader 负载，还是继续维持当前目标帧率。CPU hint session 负责把工作周期交给系统，headroom API 负责把当前余量交回应用，ADPF 在这一代已经接近 CPU/GPU 协同调优框架。
+
+[已验证: 官方文档, developer.android.com — `PerformanceHintManager.WorkDuration` (API 35) / `SystemHealthManager.getGpuHeadroom()` (API 36)]
+
 Google 在官方文档中还特别强调了一点：**不要通过忙循环（busy loop）来人为拉高 CPU 频率**。这是一种在游戏开发中曾经流行的 hack 手段——在后台线程中跑一个死循环，让 governor 以为 CPU 负载很高从而持续高频运行。这种做法浪费电量、加剧发热，而且不同 SoC 平台效果不可控。ADPF 正是为了提供一种规范的替代方案。
 
 ## 在 Perfetto 中观察 DVFS 行为
@@ -289,13 +320,13 @@ Google 在官方文档中还特别强调了一点：**不要通过忙循环（bu
 
 - **频率跳变的阶梯状**：由于 OPP 表是离散的，频率变化是跳跃式的，不是平滑渐变的。我们可以数出 CPU 有几个频率档位。
 - **大小核的频率差异**：在 Perfetto 中同时展开 CPU 0-3（小核）和 CPU 4-7（大核）的频率 track，我们会发现它们的频率范围完全不同。小核通常运行在 300MHz-1.8GHz，大核在 300MHz-3.0GHz（具体数值因 SoC 而异）。
-- **频率与任务的对应关系**：将 CPU Frequency track 和 CPU Scheduling track 对齐看，我们会看到当一个重负载任务被调度到某个 CPU 时，该 CPU 的频率通常会随之升高。但如果升频延迟较大，频率升高会滞后于任务调度。
+- **频率与任务的对应关系**：把 CPU Frequency track 和 CPU Scheduling track 放在同一时间轴上看，通常会发现当一个重负载任务被调度到某个 CPU 时，该 CPU 的频率会随之升高。但如果升频延迟较大，频率升高会滞后于任务调度。
 
 ### CPU Idle State Track
 
 与频率 track 配合观察的还有 CPU Idle State track（来自 `power/cpu_idle` 事件）。Idle state 0 表示 CPU 在运行任务，数值越大表示睡眠越深。
 
-一个常见的性能问题是 CPU 频繁进出深度睡眠。虽然深度睡眠能省电，但从深度睡眠唤醒需要时间——退出延迟可达数百微秒甚至超过 1ms。如果某个线程组需要频繁唤醒 CPU，而 CPU 每次短暂空闲都进入深度睡眠又被唤醒，反复的进出不仅浪费时间，进出低功耗模式本身也消耗能量。RTG 的 Busy Hysteresis 功能就是为了解决这个问题——当 RTG 组中的线程活跃时，即使 CPU 短暂空闲，也延迟进入深度睡眠。
+CPU 频繁进出深度睡眠也会带来额外开销。虽然深度睡眠能省电，但从深度睡眠唤醒需要时间——退出延迟可达数百微秒甚至超过 1ms。如果某个线程组需要频繁唤醒 CPU，而 CPU 每次短暂空闲都进入深度睡眠又被唤醒，反复的进出不仅浪费时间，进出低功耗模式本身也消耗能量。RTG 的 Busy Hysteresis 功能用来缓解这种情况：当 RTG 组中的线程活跃时，即使 CPU 短暂空闲，也延迟进入深度睡眠。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — Busy Hysteresis 机制]
 
@@ -366,7 +397,7 @@ DVFS 不是独立运行的，它和本书中讨论的多个机制密切相关：
 - **[5.2 EAS 能量感知调度](02-eas.md)**：EAS 在选核时需要考虑不同 CPU 的能效比，而能效比本身取决于当前的频率/电压（即 DVFS 状态）
 - **[5.3 大小核架构](03-big-little.md)**：大小核的迁移策略和 DVFS 互相影响——迁核后频率可能需要重新调整，频率变化又可能影响迁核决策
 - **[5.5 Thermal 管控](05-thermal.md)**：当温度过高时，thermal 机制会限制 DVFS 的最高频率（即降频限频），这是功耗管理与热管理的交汇点
-- **[7.3 卡顿分析方法论](03-jank-methodology.md)**：在分析卡顿时，CPU 频率是需要首先排查的因素之一
+- **[7.3 卡顿分析方法论](03-jank-methodology.md)**：在分析卡顿时，CPU 频率是需要优先排查的因素之一
 
 ## 常见问题与误区
 
@@ -380,7 +411,7 @@ DVFS 不是独立运行的，它和本书中讨论的多个机制密切相关：
 
 ### 误区 3：「调频延迟只有几十微秒，对性能没影响」
 
-从硬件角度看，单次频率切换可能只需要几十微秒。但从端到端的角度看——PELT 的响应时间 + rate_limit + 硬件切换延迟——整个链路可能达到数十甚至上百毫秒。在 60fps 的场景下，这意味着可能错过 1-6 帧。所以调频延迟是一个真实的性能因素。
+从硬件角度看，单次频率切换可能只需要几十微秒。但从端到端的角度看——PELT 的响应时间 + rate_limit + 硬件切换延迟——整个过程可能达到数十甚至上百毫秒。在 60fps 的场景下，可能错过 1-6 帧。所以调频延迟是一个真实的性能因素。
 
 ### 误区 4：「schedutil 的调频策略对所有场景都合适」
 

@@ -41,9 +41,15 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/Service.java"
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
+    path: "frameworks/base/services/usage/java/com/android/server/usage/AppStandbyController.java"
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
+    path: "frameworks/base/services/core/java/com/android/server/DeviceIdleController.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/IBinder.java"
   - type: aosp
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [后台限制, Doze, App Standby, 前台服务, WorkManager, JobScheduler, AlarmManager, 省电, 后台启动, BAL]
@@ -58,6 +64,7 @@ last_task9_at: "2026-04-20T10:22:00+08:00"
 task2b_state: fixed
 task6_result: pass-light-edit
 task2b_result: fixed
+last_task2b_at: "2026-04-23T04:32:00+08:00"
 reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
 ---
@@ -293,7 +300,7 @@ JobScheduler 是系统原生调度 API。和 WorkManager 相比，它需要你�
 - `getPendingJobReasons(int jobId)`，返回可能的原因集合 `int[]`
 - `getPendingJobReasonsHistory(int jobId)`，返回 `List<PendingJobReasonsInfo>`，也就是“有限历史视图”，不是 `List<String>`，更不是不存在的 `JobDebugInfo`
 
-官方 reference 还列出了 `getPendingJobReasonStats(int jobId)` 聚合统计接口，但本节先聚焦排查最常用的前三个。对应的 AOSP public API 路径是 `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java`。
+按当前 public API 和 AOSP framework 代码能稳定核验到的就是上面这三项，对应路径是 `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java`。未在当前 API 面里核验到的接口名称，这一节不继续保留。
 
 对性能排查，`getPendingJobReasonsHistory()` 的价值在于：它把“最近一段时间为什么一直没跑”这件事变成可读数据，不必只靠 `dumpsys jobscheduler` 和零散日志猜。
 
@@ -330,6 +337,14 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 4. 任务可以延迟，但希望条件满足后最终执行，默认选 WorkManager
 5. 需要 JobScheduler 的底层能力或细粒度调试接口，再直接用 JobScheduler
 6. 任务需要持续运行且必须让用户清楚知道它在干什么，才用 FGS
+
+## Android 16 的进程冻结流程：CachedAppOptimizer 与 Binder 协同
+
+后台限制不只体现在 job、alarm 和 FGS 门禁上。应用退到 cached 之后，系统还会通过 CachedAppOptimizer 决定它何时进入 freezer。这套机制处理的是缓存进程何时暂停执行，Doze 和 Standby bucket 处理的是后台任务何时允许运行。
+
+Android 16 在这里补了一层约 10 秒的 debounce。进程刚进入 cached 状态时，系统不会立刻冻结，而是先留出一个短窗口，避开用户来回切任务时的频繁 freeze / unfreeze。对体验的影响很直接：最近刚离开前台的应用，回切时更少撞上“刚被冻结又马上解冻”的额外开销。
+
+Binder 侧也补了配套能力。`IBinder.FrozenStateChangeCallback` 允许系统服务感知远端进程已经 frozen 或恢复运行。对高频 callback 分发器，这个信号的作用是暂停发送非必要回调，或者改用丢弃策略，避免事务堆积在 frozen 进程前面。排查后台任务时，如果 Job、Alarm 和配额都正常，但进程长时间停在 cached + frozen 状态，就要把 CachedAppOptimizer 和 Binder 回调一起看。
 
 ## 后台执行对前台性能的影响
 
@@ -380,7 +395,7 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 | Android 13 (API 33) | Restricted bucket 的长期未交互阈值从 45 天降到 8 天 | 很久不用的 App 更快进入重限流状态 |
 | Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型 | FGS 类型、权限和运行时前提都要写完整 |
 | Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
-| Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 等调试接口进入 public API | Job 为何 pending 更容易直接定位 |
+| Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；CachedAppOptimizer 增加约 10 秒 freeze debounce，Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，cached 进程的 freeze / unfreeze 抖动也更容易解释 |
 
 ## 常见问题与误区
 
@@ -407,13 +422,15 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 ## 参考资料
 
 ### AOSP 源码路径
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze / device idle 状态机
+- `frameworks/base/services/core/java/com/android/server/DeviceIdleController.java` — Doze / device idle 状态机
 - `frameworks/base/core/java/android/app/usage/UsageStatsManager.java` — App Standby bucket 常量定义
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby bucket 管理逻辑
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — JobScheduler 服务端实现
+- `frameworks/base/services/usage/java/com/android/server/usage/AppStandbyController.java` — App Standby bucket 管理逻辑
+- `frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java` — JobScheduler 服务端实现
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java` — Job quota 与 bucket 约束控制
 - `frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java` — JobScheduler public API
-- `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java` — AlarmManager public API
+- `frameworks/base/core/java/android/app/AlarmManager.java` — AlarmManager public API
+- `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` — cached 进程 freeze 调度入口
+- `frameworks/base/core/java/android/os/IBinder.java` — `FrozenStateChangeCallback` 定义
 - `frameworks/base/core/java/android/app/Service.java` — Service 生命周期；FGS timeout 签名以 `Service` API reference 为准
 
 ### 官方文档

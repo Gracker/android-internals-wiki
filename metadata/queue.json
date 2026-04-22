@@ -2279,7 +2279,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T02:07:07",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T04:32:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
@@ -2318,7 +2322,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T02:07:07",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T04:32:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
