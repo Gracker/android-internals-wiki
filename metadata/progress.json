@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-04-22T22:55:00+08:00",
+  "generated_at": "2026-04-22T23:53:44+08:00",
   "state_machine_version": "v2",
   "total_sections": 180,
   "metrics": {
     "finalized": 43,
-    "last_updated": "2026-04-22T23:21:00+08:00",
+    "last_updated": "2026-04-22T23:53:44+08:00",
     "pipeline_ready_to_publish": 43,
     "pipeline_stage_counts": {
       "ready-to-publish": 43,
-      "task2b_pending": 37,
-      "task6_pending": 55,
-      "task9_pending": 45
+      "task6_pending": 54,
+      "task9_pending": 47,
+      "task2b_pending": 36
     },
-    "pipeline_task2b_pending": 37,
-    "pipeline_task9_pending": 45,
+    "pipeline_task2b_pending": 36,
+    "pipeline_task9_pending": 47,
     "ready-for-review": 137,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 129,
+      "fixed": 130,
       "idle": 6,
-      "pending": 41,
+      "pending": 40,
       "unknown": 4
     },
     "task6_state_counts": {
-      "reviewed": 122,
-      "revisiting": 58
+      "reviewed": 123,
+      "revisiting": 57
     },
     "task9_state_counts": {
-      "fixed": 1,
-      "pending": 85,
-      "reviewed": 94
+      "reviewed": 93,
+      "pending": 86,
+      "fixed": 1
     },
     "total": 180,
     "total_sections": 180,
@@ -38,23 +38,23 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "ready-to-publish": 43,
-      "task2b_pending": 37,
-      "task6_pending": 55,
-      "task9_pending": 45
+      "task6_pending": 54,
+      "task9_pending": 47,
+      "task2b_pending": 36
     },
     "task6_state_counts": {
-      "reviewed": 122,
-      "revisiting": 58
+      "reviewed": 123,
+      "revisiting": 57
     },
     "task9_state_counts": {
-      "fixed": 1,
-      "pending": 85,
-      "reviewed": 94
+      "reviewed": 93,
+      "pending": 86,
+      "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 129,
+      "fixed": 130,
       "idle": 6,
-      "pending": 41,
+      "pending": 40,
       "unknown": 4
     }
   },
@@ -2574,10 +2574,10 @@
       "title": "Audio Pipeline 延迟与性能",
       "chapter": "1.16",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -2586,7 +2586,9 @@
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T07:50:52+08:00",
-      "last_task2b_at": "2026-04-18T19:04:25+08:00"
+      "last_task2b_at": "2026-04-22T23:53:44+08:00",
+      "last_verified": "2026-04-22",
+      "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com"
     },
     "src/part1-fundamentals/ch01-architecture/02-boot-process.md": {
       "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
@@ -2704,8 +2706,8 @@
       "chapter": "1.15",
       "section": "1.15",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-20",
@@ -2716,7 +2718,9 @@
       "task9_reviewed_date": "2026-04-19",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-19T04:18:34+08:00",
-      "last_task2b_at": "2026-04-19T04:47:00+08:00"
+      "last_task2b_at": "2026-04-22T23:53:44+08:00",
+      "last_verified": "2026-04-22",
+      "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com"
     },
     "src/part1-fundamentals/ch01-architecture/09-package-manager.md": {
       "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",

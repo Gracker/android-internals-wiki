@@ -5,7 +5,7 @@ chapter: "1.15"
 status: ready-for-review
 drafted_date: "2026-04-06"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-11"
+last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 sources:
@@ -23,6 +23,8 @@ sources:
     path: "https://developer.android.com/reference/java/nio/ByteBuffer"
   - type: spec
     path: "https://docs.oracle.com/javase/8/docs/technotes/guides/jni/"
+  - type: research
+    path: "intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md"
   - type: aosp
     path: "frameworks/base/core/java/android/os/Binder.java (android-16.0.0_r1)"
   - type: aosp
@@ -44,8 +46,8 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -56,7 +58,7 @@ task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-20
-last_task2b_at: "2026-04-19T04:47:00+08:00"
+last_task2b_at: "2026-04-22T23:53:44+08:00"
 ---
 
 # 1.15 JNI/NDK 性能优化
@@ -82,7 +84,7 @@ last_task2b_at: "2026-04-19T04:47:00+08:00"
   `FindClass()` / `GetMethodID()` / `GetFieldID()` 应该在初始化阶段缓存；热路径优先做批量传输和粗粒度 API 设计，而不是每个元素一次 JNI 调用。
 
 - 🔹 **`@FastNative` 和 `@CriticalNative` 的边界完全不同**：[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative, frameworks/base/core/java/android/os/Parcel.java, frameworks/base/core/java/android/os/Binder.java]
-  `@FastNative` 可以处理托管对象，`@CriticalNative` 不能携带托管对象，也没有 `JNIEnv*` / `jclass` 参数；错误地把数组当成 `@CriticalNative` 可用参数，会直接把 ABI 讲错。
+  `@FastNative` 可以处理托管对象；`@CriticalNative` 不能携带 `String`、对象引用或隐式 `this`，也没有 `JNIEnv*` / `jclass` 参数。primitive array 在 Java 声明里仍然可用，但 native 侧 ABI 会把它展开成 `jsize` 加原始指针；`String` 和对象数组仍然不行。
 
 - 🔹 **线程和引用生命周期比单次 transition 更常见地出问题**：[已验证: https://developer.android.com/training/articles/perf-jni]
   `JNIEnv*` 线程私有，不能跨线程共享；`AttachCurrentThread()` 创建的是可调用 JNI 的线程上下文，不该放在每次任务里反复做；attached native 线程创建的 local reference 不会像普通 JNI 调用那样自动清理。
@@ -107,7 +109,7 @@ last_task2b_at: "2026-04-19T04:47:00+08:00"
 
 很多章节一上来就说“在 Perfetto 里看 JNI slice”，这句话本身就不完整。默认 system trace 并不会自动替我们生成统一名字的“JNI transition”切片。要在 Perfetto 里真正看见 JNI，我们通常走三条路，而且每条路回答的问题都不一样。
 
-第一条路是**手工插桩**。如果代码在我们控制之下，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。AOSP android-16.0.0_r1 中，公开 NDK 头文件在 `frameworks/native/include/android/trace.h`，`ATrace_beginSection()` 和 `ATrace_endSection()` 也在这个头里声明。系统内部如果用 `ATRACE_BEGIN` / `ATRACE_END` 宏，走的是 `system/core/libcutils/include/cutils/trace.h` 这套包装层，它不是声明 `ATrace_beginSection()` 的那个头文件。[已验证: frameworks/native/include/android/trace.h, system/core/libcutils/include/cutils/trace.h]
+第一条路是**手工插桩**。如果代码在我们控制之下，Java 侧可以用 `android.os.Trace`，NDK 侧可以直接包含 `<android/trace.h>`，调用 `ATrace_beginSection()` / `ATrace_endSection()`。这时 Perfetto 线程轨上出现的 slice 名字，就是我们自己写进去的 section name。AOSP android-16.0.0_r1 中，公开 NDK 头文件在 `frameworks/native/include/android/trace.h`，`ATrace_beginSection()` 和 `ATrace_endSection()` 也在这个头里声明。系统内部的 `ATRACE_BEGIN` / `ATRACE_END` 宏来自 `system/core/libcutils/include/cutils/trace.h` 这套包装层；声明 `ATrace_beginSection()` 的则是公开 NDK 接口。系统级服务或 HAL 的 C++ 代码通常更适合直接用 `ATRACE_CALL()` / `ATRACE_NAME()`，因为这套宏会把 begin/end 自动配对；给第三方 App 或 SDK 交付的 NDK 代码仍应以 `<android/trace.h>` 这组稳定 API 为准。[已验证: frameworks/native/include/android/trace.h, system/core/libcutils/include/cutils/trace.h]
 
 第二条路是**采样**。Perfetto 的 callstack / native symbol 采样，或者 simpleperf 采样，能告诉我们 CPU 时间主要烧在什么 native 符号上，也能看到 `art_jni_trampoline` 这一类运行时桥接符号是否频繁出现。但采样给的是“这里经常被采到”，不是“这一次 JNI 调用精确耗时多少微秒”。如果我们要回答“哪个 native 算法最热”，采样很好用；如果我们要回答“Java 调用 native 的边界本身耗了多久”，还是得靠插桩或更细的实验。
 
@@ -127,6 +129,8 @@ last_task2b_at: "2026-04-19T04:47:00+08:00"
 | 普通 JNI | 115ns | 过边界本身不是“零成本”，但单次也没有慢到值得恐慌 |
 | `@FastNative` | 35ns | 运行时少做一部分状态切换后，开销能明显下降 |
 | `@CriticalNative` | 25ns | 把 ABI 收紧到只有 primitive 参数/返回值时，过边界还能再快一点 |
+
+官方公开表仍停在 2016 年的 `angler-userdebug`。近两年的旗舰机实测通常已经明显低于这组数值，常规 JNI 往往落在几十纳秒级，`@FastNative` 和 `@CriticalNative` 还会继续往下压；但芯片、ART 版本、调用点是否已经 AOT/JIT 编译，都会把结果拉开，所以这些数字只能用来建立量级感。
 
 这组数字最容易被误用的地方有两个。第一，把它当成今天 Pixel 8、骁龙 8 Gen 4 或某台车机上的绝对值。第二，只盯着单次调用的纳秒数，却不算调用次数。假设一帧里做 1000 次普通 JNI，光 transition 的参考量级就是 `1000 × 115ns ≈ 115μs`。它仍然不是 16.67ms 帧预算里的大头，但已经不再是可以完全无视的噪声，何况真实业务里往往还夹着字符串、数组、对象和锁。
 
@@ -173,7 +177,9 @@ private static native void nativeWriteString16(long nativePtr, String val);
 
 这里的 `String val` 已经说明了问题，`@FastNative` 并不是“不能碰托管对象”，它只是要求这条调用链足够短、足够可控。`frameworks/base/core/java/android/os/SystemProperties.java` 里还有一个反例：源码直接注释了 `native_set` **不能**标成 `@FastNative`，因为它会做 IPC，可能阻塞。这个反例比空泛地说“不要乱用”更有说服力。[已验证: frameworks/base/core/java/android/os/Parcel.java, frameworks/base/core/java/android/os/SystemProperties.java]
 
-再看 `@CriticalNative`。官方文档写得很直接，它只能用于**不使用托管对象**的方法，既不能把对象放进参数和返回值，也不能依赖隐式 `this`，所以只适合 `static` native 方法。native 侧函数签名里也没有 `JNIEnv*` 和 `jclass` 参数，因为 ABI 已经变了。如果把 primitive array 也算进去，就会把这条边界讲错，因为数组仍然是 managed object。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
+再看 `@CriticalNative`。官方文档给出的硬约束是：方法不能使用托管对象，也不能依赖隐式 `this`，所以 Java 侧通常必须写成 `static native`。native 侧函数签名里也没有 `JNIEnv*` 和 `jclass` 参数，因为 JNI transition 的 ABI 已经换成更短的一套。
+
+primitive array 是一个常见误写点。Java 声明里仍然可以出现 `byte[]`、`int[]` 这类参数；native 侧会把它们展开成 `jsize` 长度加原始数据指针。`String`、对象、对象数组和隐式 `this` 仍然不在支持范围内。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative, intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md]
 
 AOSP 里真正符合这条规则的例子很多，`frameworks/base/core/java/android/os/Binder.java` 里的 `getCallingUid()` 就很典型：
 
@@ -183,6 +189,8 @@ public static final native int getCallingUid();
 ```
 
 `Parcel.java` 里的 `nativeWriteInt(long nativePtr, int val)`、`nativeReadInt(long nativePtr)` 也是同一路子。参数全是 primitive 或 native 句柄，没有对象参与，所以运行时才能把过渡路径压到最短。[已验证: frameworks/base/core/java/android/os/Binder.java, frameworks/base/core/java/android/os/Parcel.java]
+
+`@CriticalNative` 的加速来源包括更短的 critical ABI、被省掉的常规 JNI trampoline，以及入口侧不再准备 `JNIEnv*` / `jclass` 这层桥接参数；运行期间还不会做常规的线程挂起检查。只要方法里出现 I/O、锁等待或其他不可预期的阻塞，这点过渡收益就会很快被吞掉。
 
 这两个注解还有一条共同约束，官方文档专门强调过：**执行期间，GC 不能把当前线程挂起做关键工作，因此长时间运行、I/O、长时间持有 native 锁都不合适。** 文档没有给 1ms、10ms 这类阈值，也不鼓励我们自己编阈值。更稳的写法是，把它们理解为“只给很短、很确定、很少阻塞的 native 路径使用”。如果方法里会等锁、等 Binder、等磁盘、等网络，那就不该指望 `@FastNative` / `@CriticalNative` 帮我们省时间。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 

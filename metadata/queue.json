@@ -1142,7 +1142,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-22T22:35:29",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-22T23:53:44",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
@@ -1186,7 +1190,12 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-22T22:35:29",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-22T23:53:44",
+      "fixed_by": "openclaw-task2b",
+      "resolution_note": "已按 API 37 官方文档复核 flushWrittenFramesFromPosition 与 getFlushWrittenFramesFromPositionSupport 的 offload 语义，并据此纠正文稿。"
     },
     {
       "section": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
