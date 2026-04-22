@@ -8,8 +8,8 @@ reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
-last_verified: '2026-04-20'
-last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs
+last_verified: '2026-04-22'
+last_verified_against: NDK r29 simpleperf docs + Perfetto external format docs + Android profileable docs
 confidence: high
 sources:
 - type: official
@@ -41,6 +41,7 @@ task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T03:17:47+08:00"
+last_task2b_at: "2026-04-22T08:06:44+08:00"
 ---
 # Simpleperf
 
@@ -213,6 +214,8 @@ Simpleperf 的一大优势在于它不仅能采样 CPU 时间，还能利用 ARM
 
 `task-clock` 和 `cpu-clock` 都是时间型事件。它们单独使用时只能描述 on-CPU 样本，阻塞、等待 I/O、等锁、被别的线程抢占出去的那段时间，要靠 `--trace-offcpu` 追加的 `sched_switch` 样本和 context switch 记录来分析。
 
+`--trace-offcpu` 的计算基础是调度切换。simpleperf 订阅 `sched_switch` 后，拿线程被换出 CPU 到下一次被换回来的时间差，折算成 off-CPU 样本并写进 profile。火焰图里看到的等待热点，就是这样补出来的。
+
 只想找 CPU 热点时，默认的 `cpu-cycles` 就够用。要按时间观察线程执行，或需要把 on-CPU / off-CPU 一起看时，再切到 `task-clock` 或 `cpu-clock`。
 
 ### 硬件 PMU 事件
@@ -237,7 +240,9 @@ python <ndk-path>/simpleperf/app_profiler.py \
     -r "-g --duration 10 -e cpu-cycles,cache-misses,cache-references"
 ```
 
-在分析结果时，如果我们发现某个函数的 cache-misses 占比异常高，即使它的 cpu-cycles 占比不高，也值得关注——因为缓存未命中意味着 CPU 在等内存，这部分时间在 cpu-cycles 采样中可能被分散到调用者的样本中，不容易发现。
+在分析结果时，如果某个函数的 cache-misses 占比异常高，即使它的 cpu-cycles 占比不高，也值得关注——因为缓存未命中意味着 CPU 在等内存，这部分时间在 cpu-cycles 采样中可能被分散到调用者的样本中，不容易发现。
+
+这组事件有权限边界。user build 设备通常把 `kernel.perf_event_paranoid` 设得很高，非 Root shell 很难直接访问 `cache-misses`、`branch-misses` 这类硬件 PMU 事件。`profileable` 和 `debuggable` 解决的是 App 侧采样入口，不会放开 PMU。遇到 `EACCES` 或 `Permission denied` 时，先回到 `cpu-clock` / `task-clock`；要看真实 PMU，再换 Root、userdebug 或 eng 设备。
 
 可以用以下命令查看设备上支持的所有事件：
 
@@ -425,13 +430,13 @@ profileable 模式下，Simpleperf 只能采集 CPU 采样数据，无法录制 
 
 ## 在 Perfetto 中的表现
 
-虽然 Simpleperf 自成体系，但有些场景需要把 CPU 采样放到 Perfetto 里一起看。这里要把"采样数据"和"导入格式"分开理解：
+虽然 Simpleperf 自成体系，但有些场景需要把 CPU 采样接到别的查看器里。这里把“导出格式”和“原生消费端”分开看：
 
-- **Perfetto UI 的时间顺序视图**：用 `gecko_profile_generator.py` 把 `perf.data` 转成 Gecko JSON，再拖到 `ui.perfetto.dev`。
-- **Perfetto / FlameGraph / Speedscope 共用的 perf script 入口**：用 `report_sample.py` 导出文本格式。
-- **Perfetto Trace Processor 直接解析 simpleperf proto**：用 `simpleperf report-sample --protobuf -i perf.data -o report_sample.trace` 导出。
+- **Firefox Profiler 路径**：用 `gecko_profile_generator.py` 把 `perf.data` 转成 Gecko JSON，交给 `profiler.firefox.com`。这是 Gecko Profile 的原生入口，火焰图和多线程时间轴体验更完整。
+- **Perfetto 直接导入路径**：用 `simpleperf report-sample --protobuf -i perf.data -o report_sample.trace` 导出 simpleperf proto，再拖到 `ui.perfetto.dev`。要和 system trace、Perfetto SQL 放在一起看时，优先选这条。
+- **perf script / folded stack 路径**：用 `report_sample.py` 导出文本格式，再接 FlameGraph、Speedscope 或 Perfetto 支持的 perf script importer。
 
-`perf.data` 自己也能被部分工具直接打开，但符号化、反混淆和线程聚合通常没有前两条路径稳定。日常分析优先选 `gecko_profile_generator.py` 或 `report_sample.py`；要给 Perfetto 的 profiling importer / Trace Processor 读，再用 `report-sample --protobuf`。
+Perfetto 的 external format importer 也能读取 Firefox Profiler JSON，但支持点集中在 CPU samples。要避开格式兼容差异，Gecko JSON 直接给 Firefox Profiler；要在 Perfetto 里做 SQL 查询或和系统 trace 联查时，用 simpleperf proto 更稳妥。
 
 [已验证: Perfetto `other-formats` 文档 + NDK simpleperf `view_the_profile.md` / `scripts_reference.md`]
 
@@ -443,5 +448,6 @@ profileable 模式下，Simpleperf 只能采集 CPU 采样数据，无法录制 
 - AOSP Simpleperf 源码与 README：[android.googlesource.com/platform/system/extras/+/master/simpleperf/](https://android.googlesource.com/platform/system/extras/+/master/simpleperf/)
 - Brendan Gregg 火焰图原始论文与工具：[www.brendangregg.com/flamegraphs.html](http://www.brendangregg.com/flamegraphs.html)
 - Speedscope 在线工具：[www.speedscope.app](https://www.speedscope.app)
+- Firefox Profiler：[profiler.firefox.com](https://profiler.firefox.com/)
 - Perfetto CPU Profiler 文档：[perfetto.dev/docs/data-sources/cpu-profiler](https://perfetto.dev/docs/data-sources/cpu-profiler)
 - profileable 清单配置：[developer.android.com/topic/performance/profileable](https://developer.android.com/topic/performance/profileable)

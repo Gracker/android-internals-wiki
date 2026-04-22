@@ -4,8 +4,8 @@ chapter: "14.8"
 section: "14.8"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37) (AGI/Sokatoa 要求 Android 11+)"
-last_verified: "2026-04-05"
-last_verified_against: "developer.android.com/agi, perfetto.dev, renderdoc.org"
+last_verified: "2026-04-22"
+last_verified_against: "developer.android.com/agi, developer.android.com/guide/topics/manifest/profileable-element, perfetto.dev, AOSP gpu_counter_config.proto"
 confidence: medium
 sources:
   - type: official
@@ -32,7 +32,7 @@ gap_source: "AOSP结构+官方文档+研究素材"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-05"
 reviewed_by: "openclaw-task6"
-last_task2b_at: "2026-04-21T03:10:05+08:00"
+last_task2b_at: "2026-04-22T08:06:44+08:00"
 task2b_result: fixed
 reviewed_date: "2026-04-21"
 task6_result: pass-light-edit
@@ -172,7 +172,14 @@ Frame Profiler 更强大也更复杂。
 
 3. **Vulkan 应用无需额外配置**。AGI 通过 Vulkan Layer 拦截 API 调用，Vulkan 应用开箱即用。
 
-4. **GLES 应用会通过 ANGLE 翻译为 Vulkan**。AGI 使用自定义 ANGLE 构建处理 GLES 命令。在 Android 17+ 上（ANGLE denylist 生效后），GLES 应用本就走 ANGLE 路径，AGI 的行为和系统一致；在更早版本上，AGI 的 ANGLE 翻译可能和系统原生的 GLES 实现有差异，分析时需要注意。
+4. **GLES 应用会通过 ANGLE 翻译为 Vulkan**。AGI 使用自定义 ANGLE 构建处理 GLES 命令。在 Android 17+ 上（ANGLE denylist 生效后），这条路径更接近系统默认值；更早版本要先确认应用是不是已经被切到 ANGLE。开发阶段常见的固定方法是先把目标包锁到 ANGLE：
+
+```bash
+adb shell settings put global angle_gl_driver_selection_pkgs <pkg>
+adb shell settings put global angle_gl_driver_selection_values angle
+```
+
+部分新系统镜像还会把同样的动作封成 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时，改从 Settings / Graphics Driver Preferences 进入。
 
 5. **对于 Vulkan 应用，建议关闭 Vulkan Validation Layer**。Validation Layer 会改变 GPU 命令的执行时序，影响性能数据的准确性。调试阶段开 Validation Layer 确保正确性，性能分析阶段关掉它。
 
@@ -209,9 +216,9 @@ Frame Profiler 的核心视图：
 
 [已验证：AGI 官方文档，developer.android.com/agi]
 
-Android 15 开始，ANGLE 已经提供了更明确的系统级开关和每应用切换路径，排查 GLES 应用时不能只把它当成实验功能。到 Android 16 的新设备，ANGLE 覆盖范围继续扩大；Android 17 的新设备再转到 denylist 策略，默认大多数应用经由 ANGLE，只有兼容性例外回退到原生 GLES 驱动。AGI 的帧分析沿着这条迁移线工作：它会用自定义 ANGLE 构建把 GLES 命令翻译为 Vulkan 再做追踪。
+Android 15 开始，ANGLE 已经有了更明确的系统开关和每应用切换入口。到 Android 16 的新设备，ANGLE 覆盖范围继续扩大；Android 17 的新设备再转到 denylist 策略，默认大多数应用经由 ANGLE，兼容性例外回退到原生 GLES 驱动。AGI 的帧分析沿着这条迁移线工作：它会用自定义 ANGLE 构建把 GLES 命令翻译为 Vulkan 再做追踪。
 
-在 Android 15-16 这段过渡期，同一款应用是否真的走 ANGLE，仍要结合设备配置、开发者选项和厂商策略确认。到 Android 17 新设备上，这条路径更接近系统默认值。如果分析中发现某个 GLES Draw Call 的 GPU 时间异常，要区分是应用层问题、ANGLE 翻译层问题，还是设备仍在走原生 GLES 驱动。
+排查时先确认设备当前走的是哪条 driver 路径，再决定怎么解读 Draw Call 和 Shader 时间。开发阶段常用的固定方法有两类：用前面的 `settings put global angle_gl_driver_selection_*`，或在带 gpu shell 封装的系统镜像上用 `adb shell cmd gpu set-graphics-driver --package <pkg> --driver angle`。命令缺失时，改从 Settings / Graphics Driver Preferences 进入。
 
 ## Perfetto 中的 GPU 分析能力
 
@@ -226,8 +233,8 @@ data_sources {
   config {
     name: "gpu.counters"
     gpu_counter_config {
-      counter_ids: [1, 2, 3, ...]  # 需要知道具体设备的 counter ID
-      sampling_period_ns: 1000000   # 1ms 采样间隔
+      counter_ids: [1, 2, 3, ...]   # 先用设备暴露的 counter 列表确认具体 ID
+      counter_period_ns: 1000000    # 1 ms 采样间隔
     }
   }
 }
@@ -235,7 +242,7 @@ data_sources {
 
 [已验证：Perfetto 官方文档，perfetto.dev/docs/data-sources/gpu]
 
-实际使用中，更方便的做法是通过 Perfetto UI 的 "Trace Config" 界面勾选 GPU counters。Perfetto 会自动查询设备支持的计数器列表。
+`gpu_counter_config` 的字段定义在 AOSP `external/perfetto/protos/perfetto/config/gpu/gpu_counter_config.proto`。`counter_ids` 对应设备 producer 返回的 `GpuCounterSpec`。自己手写 Trace Config 时，先用 Perfetto UI 的 Trace Config 页面把设备支持的 counter 列出来，再回填这些 ID；不同 GPU 的编号和含义都不通用。
 
 ### 关键 GPU 指标
 
@@ -481,7 +488,15 @@ AGI 专为移动 GPU 优化，支持移动端特有的 GPU 计数器和渲染路
 
 ### 误区 4："profileable 和 debuggable 对 GPU 工具没有影响"
 
-`profileable` 属性从 Android 10 (API 29) 引入，允许标记后的应用被 Perfetto 等工具采集性能数据而无需 debuggable。Android 11 (API 30) 增加了 `android:profileable enabled="true"` 写法，Android 14 进一步增强了 profileable 应用的 Perfetto GPU counter 采集能力。标记为 profileable 的应用可以用 Perfetto 采集 GPU counter，但不能用 AGI 做帧捕获，帧捕获仍然需要 `debuggable`。Release 包想做 GPU 帧级分析，往往需要临时改成 debuggable。
+`<profileable>` 是 `<application>` 下的子标签，不是属性。Android 10 (API 29) 引入这个标签，Android 11 (API 30) 才补 `android:enabled` 字段。常见写法是：
+
+```xml
+<application ...>
+    <profileable android:shell="true" android:enabled="true" />
+</application>
+```
+
+这个标签能让 Perfetto、simpleperf 这类 shell / system profiling 工具采集 release 包的性能数据，但 AGI Frame Profiler 和 RenderDoc 的帧捕获入口仍然要求 `android:debuggable="true"`。
 
 ### 误区 5："GPU 分析工具本身不会影响性能"
 
@@ -548,13 +563,13 @@ MediaTek 没有独立的 GPU 分析工具，但 AGI 对 Mali GPU（MediaTek SoC 
 [已验证：官方文档，developer.android.com/topic/performance/reasonable-profiling]
 
 - **debuggable**：AGI 帧捕获、RenderDoc 都需要。但 debuggable 应用会有性能损失（JIT 不做某些优化、运行时检查更多）
-- **profileable**：从 Android 10 (API 29) 引入。Perfetto 可以采集（包括 GPU counter），但 AGI 帧捕获不可用。Android 14 增强了 GPU counter 采集能力。性能损失比 debuggable 小得多
+- **`<profileable>`**：从 Android 10 (API 29) 引入。Perfetto 可以采集（包括 GPU counter），但 AGI 帧捕获不可用。Android 14 增强了 GPU counter 采集能力。性能损失比 debuggable 小得多
 - 建议：日常性能测试用 profileable 包 + Perfetto，深入 GPU 分析时临时切换到 debuggable
 
 ### GPU 工具在不同 Android 版本上的可用性
 
 - Android 11+：AGI 完整支持
-- Android 10+ (API 29)：profileable 属性引入，支持基本 Perfetto 采集
+- Android 10+ (API 29)：`<profileable android:shell="true" />` 进入 Manifest，支持基本 Perfetto 采集
 - Android 14+：profileable 应用的 Perfetto GPU counter 采集能力增强
 - Android 17+：ANGLE denylist 可能影响 GLES 应用的帧分析路径
 
@@ -574,8 +589,8 @@ GAPID（Graphics API Debugger）是 Google 早期的图形调试工具，定位�
 
 ### profileable 的版本增强
 
-- **Android 10 (API 29)**：引入 `profileable` 属性，允许非 debuggable 应用被 Perfetto 采集 CPU 性能数据
-- **Android 11 (API 30)**：增加 `android:profileable enabled="true"` 写法，AGI 从此版本开始完整支持
+- **Android 10 (API 29)**：引入 `<profileable>` 子标签，允许非 debuggable 应用被 Perfetto 采集 CPU 性能数据
+- **Android 11 (API 30)**：给 `<profileable>` 补 `android:enabled` 字段，AGI 从此版本开始完整支持
 - **Android 14**：增强 profileable 应用的 Perfetto GPU counter 采集能力，不再需要 debuggable 即可获取 GPU 计数器数据
 - **实际影响**：Android 14 之前，采集 GPU counter 通常需要 debuggable 应用或 root 权限；Android 14 之后，profileable 应用配合 Perfetto 就能采集 GPU 计数器，降低了 Release 包 GPU 分析的门槛
 
