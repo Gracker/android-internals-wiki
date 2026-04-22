@@ -49,3 +49,20 @@
 **external. 二、总体结论**
 - 搜索关键词：`Android 15 BatteryStats STATS_SINCE_UNPLUGGED deprecated`
 - 建议查 AOSP / 官方文档 / Perfetto / blog / issue tracker 哪类来源：`developer.android.com` API Reference。
+
+## [2026-04-22] 3.1 Input 事件分发全流程 — 知识盲区
+
+### 盲区描述
+Android 12-16 之间 stale-event 判定、WindowInfosListener 协作和 InputFlinger 目录/线程模型的逐版本源码证据不足，正文把多版行为合并成了单一路径。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 android-12/13/14/15/16 的 InputDispatcher stale-event 实现，确认何时改为 policy 决策
+- 核验 WindowInfosListener / WindowInfosUpdate / AnrTracker 的关键提交与 API 变更
+- 补齐 InputFlinger 线程/进程边界在各版本中的源码锚点
+
+### 关联章节
+3.1, 9.1, 9.2
+
