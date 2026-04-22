@@ -432,30 +432,28 @@
     },
     {
       "section": "src/part3-tools/ch14-other-tools/12-apm-observability",
-      "section_title": "15.12 APM 可观测性平台",
+      "section_title": "14.12 APM / 可观测性平台与 SDK 选型",
       "priority": 85,
-      "reason": "[External Review] 3 处 P0/P1 问题",
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
       "review_issues": [
         {
-          "type": "源码缺失 / 版本差异缺失",
-          "location": "第一层：官方基线能力",
-          "detail": "缺少 `ApplicationExitInfo` (API 30) 的版本限制及 AMS 中 `AppExitInfoTracker` 的原理解释；缺少 `JankStats` 对 `FrameMetrics` 底层依赖的说明及 Android 14/15 演进。",
-          "suggestion": "补充 Android 11+ 版本要求和持久化路径 `/data/system/exitinfo/`；明确 JankStats 与 FrameMetrics 的调用关系。"
+          "type": "源码准确性 / 版本差异",
+          "location": "第一层：官方基线能力 -> ApplicationExitInfo",
+          "detail": "正文只把 `ApplicationExitInfo` 当成一个“退出原因 API”来点名，没有写清 Android 11 / API 30 的版本门槛，也没有交代 AMS 内部由 `AppExitInfoTracker` 持久化退出记录。AOSP `AppExitInfoTracker` 实际把记录写到 system 目录下的 `procexitstore/procexitinfo`。",
+          "suggestion": "补充 API 30 门槛、`ActivityManager.getHistoricalProcessExitReasons()` 入口，以及 `AppExitInfoTracker` / `procexitstore` 这条 system_server 侧数据来源。"
         },
         {
-          "type": "源码准确性 / 版本差异覆盖",
-          "location": "ApplicationExitInfo 的底层来源与限制",
-          "detail": "仅提到 `ApplicationExitInfo` 解决退出原因问题，但完全没有提它的底层实现、AOSP 路径和版本门槛。",
-          "suggestion": "补充方向：补充 API 30 限制，并简单介绍 AMS 是如何通过 `AppExitInfoTracker` 收集这些信息的。"
-        },
-        {
-          "type": "原理链完整性",
-          "location": "JankStats 与 FrameMetrics 的关系及 Android 14/15 演进",
-          "detail": "将 `JankStats` 和 `FrameMetrics` 描述为“官方基线能力”，但没有讲透两者的关系及高版本演进。",
-          "suggestion": "补充方向：明确指出 `JankStats` 的底层数据源（API 24+ 依赖 FrameMetrics），并补充 Android 14/15 对“预期 Vsync 时间”计算的修正。"
+          "type": "原理断裂",
+          "location": "第一层：官方基线能力 -> JankStats / FrameMetrics",
+          "detail": "文章把 `JankStats`、`FrameMetrics` 并排列成“官方基线能力”，但没有说明二者的上下游关系。AndroidX `JankStats` 源码明确写明：API 24+ 走平台 `FrameMetrics`，更低版本才退回其他帧时长推导机制。当前写法会让读者误以为它们是两套互不相干的信号源。",
+          "suggestion": "补一句实现边界：`FrameMetrics` 提供底层帧阶段数据，`JankStats` 在 API 24+ 复用它并叠加 jank 判定与 UI state 上下文。"
         }
       ],
-      "added_by": "external-ai-review",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T02:33:00+08:00",
       "status": "pending"
     },
     {
@@ -492,24 +490,22 @@
     },
     {
       "section": "src/part3-tools/ch14-other-tools/04-dumpsys",
-      "section_title": "15.4 dumpsys 系列命令",
+      "section_title": "14.4 dumpsys 系列命令",
       "priority": 85,
-      "reason": "[External Review] 2 处 P0/P1 问题",
+      "reason": "[Deep Tech Review] 1 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
       "review_issues": [
         {
           "type": "版本差异",
           "location": "dumpsys SurfaceFlinger：Layer 信息与合成状态 -> Android 15+ 的输出变化",
-          "detail": "未指出 Android 15 FrontEnd 架构造成的图层名称被 `RequestedLayerState{...}` 包裹，导致经典 `--list` + `--latency` 自动化测帧率脚本大规模失效的问题。",
-          "suggestion": "明确警示这一破坏性变更，指导读者如何更新正则匹配逻辑来获取 `--latency` 所需的正确图层参数，同时提及传统 HWC/GLES 标记的弃用。"
-        },
-        {
-          "type": "版本差异覆盖",
-          "location": "dumpsys SurfaceFlinger：Layer 信息与合成状态",
-          "detail": "虽然提到了 Android 15 引入 FrontEnd 架构和输出变化，但未能指出对实战工具链最致命的破坏：图层名称的包装和合成标签的弃用。",
-          "suggestion": "补充方向：明确指出自动化脚本必须更新正则解析逻辑以提取被 `RequestedLayerState` 包裹的真实图层名，并指出 HWC/GLES 标签的弃用趋势。"
+          "detail": "Android 15 的 FrontEnd dump 会把 layer 名包装进 `RequestedLayerState{...}` 等结构，旧脚本若直接把 `--list` 输出喂给 `--latency`，往往拿不到有效数据；正文也没有把旧式 `HWC/GLES` 标签退场、转向结构化 composition 信息这件事讲透。",
+          "suggestion": "补一段 Android 15+ 实战排查路径：说明 `--latency` 需要完整 layer 名，交代 `RequestedLayerState` 包装会让旧脚本失效，并补充 `--frontend` / Winscope 与 CompositionType 的新观察入口。"
         }
       ],
-      "added_by": "external-ai-review",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T02:33:00+08:00",
       "status": "pending"
     },
     {
@@ -530,24 +526,28 @@
     },
     {
       "section": "src/part3-tools/ch14-other-tools/11-battery-historian",
-      "section_title": "15.11 Battery Historian",
+      "section_title": "14.11 Battery Historian 与功耗分析工具",
       "priority": 85,
-      "reason": "[External Review] 2 处 P0/P1 问题",
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
       "review_issues": [
         {
-          "type": "版本差异 / 知识盲区缺失",
-          "location": "`PowerMonitor API（API 35 应用层接口）` 及最佳实践",
-          "detail": "遗漏了 Android 15 中 `BatteryStats` 的废弃常量（如 `STATS_SINCE_UNPLUGGED`），以及未提及 Android 15 ADPF 的“能效模式”（Power Efficiency Mode）作为配套的优化抓手。",
-          "suggestion": "补充 API 35 中 `BatteryStats` 的废弃项，提醒读者切换到 `STATS_SINCE_CHARGED`；并在优化方向中简要引出 ADPF 能效模式。"
+          "type": "源码错误 / 版本差异",
+          "location": "PowerMonitor API（API 35 应用层接口）",
+          "detail": "正文写成“Macrobenchmark `PowerMetric` 在 API 34+ 就能用”，但 AndroidX `PowerMetric` 源码带 `@RequiresApi(29)`，文档也明确写着 “This measurement is not available prior to API 29.”。这里把 `PowerMetric` 和 API 35 的 `PowerMonitor` 混成了一条时间线。",
+          "suggestion": "把版本门槛拆开写：`PowerMetric` 的最低系统要求是 API 29，API 35 新增的是应用层 `PowerMonitor` / `SystemHealthManager` 直接读数能力。"
         },
         {
-          "type": "版本差异覆盖",
-          "location": "PowerMonitor API 与 Android 15 更新",
-          "detail": "提到了 API 35 `PowerMonitor`，但遗漏了与之紧密相关的 ADPF 功耗优化接口及 `BatteryStats` 的重要 API 废弃。",
-          "suggestion": "补充方向：在“PowerMonitor API（API 35 应用层接口）”小节或最佳实践中，补充 Android 15 ADPF 能效模式作为功耗优化的下半场手段，以及 `BatteryStats` 的历史 API 废弃提醒。"
+          "type": "原理断裂 / 源码准确性",
+          "location": "PowerMonitor API（API 35 应用层接口） -> 与 Perfetto 的数据通路关系",
+          "detail": "图示和结论把 `batterystats / bugreport` 直接挂到 `IPowerStats HAL` 下面，并写成“底层都走 IPowerStats HAL”。这会把 Battery Historian 的 UID / wakelock / network 统计和 power rail 硬件测量混成同一条链。前者的主体来自 `BatteryStatsService`，后者才是 `PowerMonitor` / Perfetto rail 路径。",
+          "suggestion": "把数据来源拆成两条：① `BatteryStatsService -> batterystats / bugreport / Historian`；② `PowerStats HAL -> PowerMonitor / Perfetto power rails / Power Profiler`，避免把统计口径混为一谈。"
         }
       ],
-      "added_by": "external-ai-review",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T02:33:00+08:00",
       "status": "pending"
     },
     {
