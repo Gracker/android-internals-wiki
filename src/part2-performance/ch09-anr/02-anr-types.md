@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP android-14.0.0_r1, Android Developers foreground service docs"
+last_verified: "2026-04-22"
+last_verified_against: "AOSP android-14.0.0_r1, Android Developers ANR vitals / JobService / foreground service docs"
 confidence: high
 sources:
   - type: aosp
@@ -27,6 +27,8 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals/anr"
   - type: official
+    path: "https://developer.android.com/reference/android/app/job/JobService"
+  - type: official
     path: "https://developer.android.com/develop/background-work/services/fgs/troubleshooting"
   - type: blog
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
@@ -42,13 +44,13 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
-task9_state: 'reviewed'
+pipeline_stage: 'task6_pending'
+task6_state: revisiting
+task9_state: 'pending'
 task9_result: 'needs-rework'
-task2b_state: 'pending'
+task2b_state: 'fixed'
 task2b_result: fixed
-last_task2b_at: "2026-04-20T18:33:00+08:00"
+last_task2b_at: "2026-04-22T13:06:00+08:00"
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-04-22T11:30:00+08:00'
@@ -62,7 +64,7 @@ last_task9_at: '2026-04-22T11:30:00+08:00'
 ### 锚点（必须覆盖）
 
 - 🔹 Input Dispatching Timeout：5s，触摸/按键事件无响应
-- 🔹 BroadcastReceiver Timeout：前台 10s / 后台 60s
+- 🔹 BroadcastReceiver Timeout：Android 13 及以下前台 10s / 后台 60s；Android 14+ 前台 10-20s / 后台 60-120s
 - 🔹 Service Timeout：前台 20s / 后台 200s
 - 🔹 ContentProvider Timeout：10s（publish timeout）
 - 🔹 各类型 ANR 在 Logcat 中的标识特征
@@ -70,7 +72,7 @@ last_task9_at: '2026-04-22T11:30:00+08:00'
 ### 扩展（可选深入）
 
 - 🔸 执行 Service startForeground 的 ANR（FGS 超时）
-- 🔸 JobService 超时机制与 ANR 的关系
+- 🔸 Android 14+ JobService callback ANR 与 job 超时边界
 
 ### OpenClaw 加工指引
 
@@ -138,28 +140,25 @@ Reason: Input dispatching timed out (Waiting to send non-key event because the
 
 与 Input ANR 不同，Broadcast ANR 的触发并不依赖用户交互——它可能在一个完全没有用户操作的静默时段发生。理解它的超时机制，有助于排查那些“明明没有用户操作却发生了 ANR”的问题。
 
-### 超时阈值：前台 10 秒 / 后台 60 秒
+### 超时阈值：Android 13 及以下前台 10 秒 / 后台 60 秒；Android 14+ 前台 10-20 秒 / 后台 60-120 秒
 
-当系统通过 BroadcastQueue 将一个有序广播（ordered broadcast）分发给 BroadcastReceiver 时，会在分发的同时启动一个超时计时器。如果 Receiver 的 `onReceive()` 方法在超时时间内没有执行完毕（对于使用了 `goAsync()` 的情况，是 `PendingResult.finish()` 没有被调用），就会触发 ANR。
+Broadcast ANR 的判断要同时看前后台优先级、同步还是异步 receiver，以及应用启动时间有没有落进同一段窗口。Android 13 及以下通常按前台 **10 秒**、后台 **60 秒** 排查；Android 14+ 官方诊断口径改成前台 **10-20 秒**、后台 **60-120 秒**。进程处于 CPU-starved 状态时，系统会把窗口拉到上限；没有 CPU starvation 时，排查起点仍接近 10 秒 / 60 秒。
 
-前台广播（FLAG_RECEIVER_FOREGROUND）的超时是 **10 秒**，后台广播的超时是 **60 秒**：
+`goAsync()` 不会重置这段窗口。同步 receiver 要在 `onReceive()` 内返回；异步 receiver 要在同一窗口内调用 `PendingResult.finish()`。如果广播拉起了冷启动进程，进程启动和 `Application` 初始化时间也会算进这次超时。
 
-```java
-// frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
-// @ AOSP android-14.0.0_r1
-static final int BROADCAST_FG_TIMEOUT = 10 * 1000;  // 10 seconds
-static final int BROADCAST_BG_TIMEOUT = 60 * 1000;  // 60 seconds
-```
-
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java]
+[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr — Broadcast receiver timeout]
 
 ### 检测机制：BroadcastQueue 的超时 Handler
 
-Broadcast ANR 的检测逻辑仍然从 `BroadcastQueue.broadcastTimeoutLocked()` 这条抽象接口进入。**只有有序广播（ordered broadcast）才会触发超时检测。** 普通的无序广播是并行分发给所有 Receiver 的，不会等待单个 Receiver 完成，因此不会产生 ANR。
+Broadcast ANR 的入口仍然是 `BroadcastQueue.broadcastTimeoutLocked()` 这一层。沿 AOSP 继续往下追时，要同时看 `BroadcastQueueImpl` 和 `BroadcastQueueModernImpl`：前者保留传统广播队列实现，后者承接新的分发状态机，设备具体走哪条路径取决于系统配置和场景。
 
-Android 14 上继续往下追时，需要同时看 `BroadcastQueueImpl` 和 `BroadcastQueueModernImpl`。前者保留传统广播队列实现，后者承接新的分发状态机；设备具体走哪条路径，取决于系统开启的广播实现和场景。排查超时路径时，`BroadcastQueue.java` 只是入口，真正的调度细节在这两个实现类里展开。
+做 App 侧排障时，判断边界比“ordered / parallel”更直接：
 
-`goAsync()` 的引入让这个问题更复杂了。调用 `goAsync()` 将广播处理移到后台线程时，超时计时器并不会停止，仍然需要在原始超时时间内调用 `PendingResult.finish()`。如果后台线程执行时间超过 10 秒（前台广播）或 60 秒（后台广播），仍然会触发 ANR，即使主线程完全空闲。
+- **同步 receiver**：`onReceive()` 必须在当前广播窗口内返回。
+- **异步 receiver**：调用 `goAsync()` 后，`PendingResult.finish()` 也必须在同一窗口内完成。
+- **冷启动 receiver**：如果广播唤起了进程，进程启动、`Application` 初始化和 receiver 执行共享同一段超时预算。
+
+`ordered / parallel` 仍然有价值，但它更适合解释分发路径和是否会拖住后续 receiver；单看这一条已经不够覆盖 Android 14+ 的超时诊断口径。
 
 ### 在 Logcat 中的特征
 
@@ -173,11 +172,11 @@ Reason: Broadcast of Intent { act=android.intent.action.BOOT_COMPLETED
 
 ### 常见触发场景
 
-**系统广播处理过重。** 比如 `BOOT_COMPLETED`、`CONNECTIVITY_CHANGE` 等系统广播的 Receiver 中执行了数据库操作、网络请求或文件 I/O。
+**冷启动流程过长。** 广播拉起进程后，Zygote fork、`Application` 初始化、`ContentProvider` 初始化和 receiver 业务代码都在同一窗口里，启动阶段慢会先把预算吃掉。
 
-**`goAsync()` 忘记 finish。** 开发者使用 `goAsync()` 将处理移到后台线程，但忘记在完成后调用 `PendingResult.finish()`，或者后台任务执行时间超过了超时阈值。
+**`goAsync()` 后台线程没有及时 finish。** `goAsync()` 只把工作移出 `onReceive()`，没有获得新的超时预算。后台线程被共享线程池、网络等待或 Binder 阻塞拖住时，仍会触发 ANR。
 
-**有序广播分发路径中的慢 Receiver。** 有序广播按优先级依次分发给各个 Receiver，一个 Receiver 的延迟会阻塞整个链路。
+**慢 Receiver 拖住广播分发。** 有序广播里，一个 Receiver 的延迟会顺着队列传递给后续 Receiver；并行分发场景里，单个进程仍可能因为自己的处理超时而报 ANR。
 
 ## Service Timeout（服务超时）
 
@@ -257,12 +256,13 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 | 类型 | 超时阈值 | 检测位置 | 触发条件 | 用户感知 |
 |------|---------|---------|---------|---------|
 | Input Dispatching | 5s | InputDispatcher (Native) | 主线程未消费输入事件 | 直接感知，界面冻结 |
-| Broadcast (前台) | 10s | BroadcastQueue (AMS) | Receiver.onReceive() 未完成 | 可能无感知 |
-| Broadcast (后台) | 60s | BroadcastQueue (AMS) | Receiver.onReceive() 或 goAsync 未完成 | 无感知 |
-| Service (前台) | 20s | ActiveServices (AMS) | onCreate/onStartCommand/onBind 未完成 | 可能无感知 |
-| Service (后台) | 200s | ActiveServices (AMS) | onCreate/onStartCommand/onBind 未完成 | 无感知 |
+| Broadcast (前台) | Android 13 及以下 10s；Android 14+ 10-20s | BroadcastQueue (AMS) | `onReceive()` 未返回，或 `goAsync()` 后未 `finish()` | 可能无感知 |
+| Broadcast (后台) | Android 13 及以下 60s；Android 14+ 60-120s | BroadcastQueue (AMS) | 同上；冷启动时间也可能计入窗口 | 无感知 |
+| Service (前台) | 20s | ActiveServices (AMS) | `onCreate()` / `onStartCommand()` / `onBind()` 未完成 | 可能无感知 |
+| Service (后台) | 200s | ActiveServices (AMS) | `onCreate()` / `onStartCommand()` / `onBind()` 未完成 | 无感知 |
 | ContentProvider | 10s | AMS | Provider 未在时间内 publish | 间接感知（阻塞启动） |
 | startForeground | Android 8.0 5s / 9-12 10s / 13-14+ 默认 30s | AMS | `startForeground()` 未在宽限期内调用 | Android 12+ 常见直接崩溃 |
+| JobService callback (14+) | 几秒级 | JobScheduler / AMS | `onStartJob()` 或 `onStopJob()` 主线程未及时返回 | 多为后台无感知 |
 
 ## 在 Perfetto 中的表现
 
@@ -282,20 +282,27 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 
 **Android 9-12（API 28-32）：** AOSP 把 `startForegroundService()` 到 `startForeground()` 的宽限期提升到 10 秒；Android 12 同时把超时结果收紧为 `ForegroundServiceDidNotStartInTimeException`。
 
-**Android 13-14（API 33-34）：** 默认宽限期迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS`，默认值提升到 30 秒。普通 Service 的执行超时仍然是前台 20 秒、后台 200 秒这一组口径。
+**Android 13（API 33）：** `startForegroundService()` 到 `startForeground()` 的默认宽限期仍是 30 秒；Broadcast 超时排障口径通常仍按前台 10 秒、后台 60 秒。
+
+**Android 14（API 34）：** BroadcastReceiver 的官方诊断口径更新为前台 10-20 秒、后台 60-120 秒，并把 CPU starvation 与 app startup 纳入超时窗口解释。targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 超时也会以显式 ANR 上报。
 
 **Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 的累计运行时间限制（后台 24 小时内 6 小时），以及 `shortService` 类型约 3 分钟的超时直接触发机制 [待验证: shortService 具体超时阈值因 OEM 实现可能不同]。
 
 [来源: intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md]
 
-## JobService 超时机制与 ANR 的关系 [扩展]
+## JobService callback ANR 与 job 超时的边界 [扩展]
 
-JobService 本身不直接触发 ANR，它有自己的超时机制。当 JobScheduler 调度一个 Job 后，如果 `JobService.onStartJob()` 返回 `true`，系统会等待 `jobFinished()` 被调用。如果等待时间过长（通常是几分钟级别），系统会强制停止该 Job 并调用 `onStopJob()`。
+Android 14 起，JobScheduler 不再只是长任务调度器。对 targetSdk 34+ 的应用，`JobService.onStartJob()` 和 `JobService.onStopJob()` 都运行在主线程；如果这两个 callback 在几秒内不返回，系统会直接报 ANR，Reason 常见为 `No response to onStartJob` 或 `No response to onStopJob`。Android 13 及以下这类 ANR 多为 silent ANR，不会显式回传给应用。
 
-虽然不是传统 ANR，但从行为上看它与 Service ANR 类似——都是系统对"任务执行时间过长"的干预机制。区别在于 ANR 是面向用户体验的紧急干预（超时短，用户直接感知），而 JobScheduler 超时是面向资源管理的调度干预（超时长，用户不感知）。
+这里要把三条超时链分开看：
 
-[来源: intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md]
-[待验证: JobService onStopJob 的具体超时阈值在不同 Android 版本中的变化]
+- **JobService callback ANR**：`onStartJob()` / `onStopJob()` 主线程卡住，几秒内不返回，直接触发 ANR。
+- **Job 运行超时**：`onStartJob()` 已返回且返回 `true`，系统开始等待 `jobFinished()`。这条线通常是分钟级调度超时，超时后系统会停止 job 并回调 `onStopJob()`；它不等同于 ANR。
+- **普通 Service ANR**：`JobService` 作为 `Service` 子类，仍受 Service 生命周期与前台服务规则影响；但这条线针对的是 `onCreate()` / `onStartCommand()` / `onBind()` 或 `startForeground()` 宽限期，不等于 JobScheduler callback ANR。
+
+另一条独立规则是 user-initiated job：`onStartJob()` 返回后，应用还要在几秒内调用 `JobService.setNotification()`；这条要求超时也会落进 JobScheduler 的 ANR 诊断。
+
+[已验证: 官方文档, developer.android.com/topic/performance/vitals/anr; developer.android.com/reference/android/app/job/JobService]
 
 ## 各类型 ANR 在 Logcat 中的标识特征汇总
 
@@ -306,6 +313,7 @@ JobService 本身不直接触发 ANR，它有自己的超时机制。当 JobSche
 | Service | `executing service` |
 | ContentProvider | `ContentProvider` + `not responding` |
 | startForeground (12+) | `startForegroundService() did not then call Service.startForeground()` |
+| JobService callback (14+) | `No response to onStartJob` / `No response to onStopJob` |
 
 掌握这些模式后，我们可以在拿到 ANR 报告的几秒钟内判断类型，进而选择正确的分析路径。
 
@@ -327,7 +335,7 @@ adb shell cat /data/anr/anr_* | tail -200
 
 **误区二："只有主线程阻塞才会导致 ANR。"** Broadcast ANR 可能发生在 `goAsync()` 的后台线程中；ContentProvider publish 超时发生在进程启动阶段。
 
-**误区三："所有广播都可能导致 ANR。"** 只有有序广播（ordered broadcast）和动态注册的 Receiver 才会触发超时检测。普通无序广播不会。
+**误区三："Broadcast ANR 只要看 ordered / 动态注册 就够了。"** App 侧排查还要同时看前后台优先级、同步还是 `goAsync()`、以及广播是否把冷启动时间带进同一窗口。`ordered / parallel` 更适合用来解释 AOSP 分发路径。
 
 **误区四："Service ANR 只发生在前台 Service。"** 后台 Service 超时是 200 秒，长时间操作仍可能触发。
 
