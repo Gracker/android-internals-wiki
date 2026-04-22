@@ -29,16 +29,17 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
-task9_state: 'reviewed'
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: 'pending'
+task2b_state: fixed
 task6_result: pass-light-edit
 task9_result: 'needs-rework'
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-04-22T11:30:00+08:00'
+last_task2b_at: "2026-04-22T12:08:42+08:00"
 ---
 # 4.7 16KB Page Size 与 Android 性能
 
@@ -46,7 +47,7 @@ last_task9_at: '2026-04-22T11:30:00+08:00'
 
 当我们在 Perfetto 中对比同一台设备上 4KB 和 16KB page size 的启动 trace 时，会发现一个明显的差异：冷启动阶段主线程的 page fault 次数大幅减少，CPU 在内核态的时间占比明显下降。这不是魔法——是内存管理粒度变化带来的直接效果。
 
-从 Android 15 开始，Google 正式支持 16KB 内存页大小，并在 Android 16 中将其作为新设备的硬性要求。对于 Android 性能工程师来说，理解这个变化的机制和影响，不仅有助于解释 Trace 中的性能差异，更直接关系到 App 在新设备上的兼容性和性能表现。
+从 Android 15 开始，AOSP 支持使用 16KB page size 的设备。Google Play 当前公开的兼容要求也围绕 Android 15 展开：从 2025 年 11 月 1 日起，target Android 15+ 的 64 位新 App 和现有 App 更新需要支持 16KB。对 Android 16、Android 17 的设备侧强制策略，要以当年的 CDD 或官方公告为准。
 
 为什么是现在？手机 RAM 从 2015 年的 2-3GB 增长到 2025 年的 8-16GB，但 Linux 的默认内存页大小一直停留在 4KB——这个值是 1980 年代为 VAX 架构设计的。现代 ARM CPU 的 TLB 容量虽然在增长，但 4KB 页粒度下 TLB 覆盖的内存总量（TLB Reach）已经远远不够用了。Google 的测试数据表明，切换到 16KB 后平均冷启动速度提升 3.16%，部分 App 甚至提升 30%——这不是微优化，是值得系统级投入的性能收益。
 
@@ -128,28 +129,32 @@ Google 的测试表明，16KB 页大小下系统平均内存使用量增加约 5
 **构建工具链要求：**
 - NDK r28+：默认输出 16KB 对齐的 `.so` 文件
 - NDK r27：需要在链接时添加 `-Wl,-z,max-page-size=16384`
-- AGP 8.5.1+：构建系统会自动处理对齐
+- AGP 8.5.1+：对使用 uncompressed shared libraries 的 App，可以正确请求 16KB zip 布局
+- AAB 产物要再用 `bundletool dump config --bundle <your.aab> | grep alignment` 检查是否为 `PAGE_ALIGNMENT_16K`
+- AGP 8.3-8.5 虽然默认会生成 16KB 页边界 ELF，但 `bundletool` 默认不会替你补齐 APK zip alignment；只升级到这几个版本，Play 产物仍可能安装失败
 
-**代码中的硬编码问题：** 如果 Native 代码中使用了 `PAGE_SIZE` 或 `sysconf(_SC_PAGESIZE)` 的硬编码值（如 `#define PAGE_SIZE 4096`），在 16KB 系统上会导致错误。必须改为运行时查询：
+**代码中的页大小假设：** 真正会出错的是把页大小写死成 `4096`，例如 `#define PAGE_SIZE 4096`。`sysconf(_SC_PAGESIZE)` 和 `getpagesize()` 都属于运行时查询，应该保留：
 
 ```c
-// 错误：硬编码页大小
+// 错误：把页大小写死成 4096
 #define PAGE_SIZE 4096
 
 // 正确：运行时查询
 long page_size = sysconf(_SC_PAGESIZE);
+int page_size2 = getpagesize();
 ```
 
 这类 bug 通常不会在 4KB 设备上暴露，只在 16KB 设备上才崩溃。Google Play 已经在 Play Console 中增加了检测机制，会警告使用了 4KB 对齐 `.so` 的 App。
 
-### Google Play 强制时间线
+### Google Play 兼容要求
 
-- **2025 年 11 月 1 日**：新 App 和现有 App 更新，targetSdk ≥ 35（Android 15），必须支持 16KB
-- **2026 年 5 月 1 日**：所有现有 App 的更新必须支持 16KB
+公开文档当前明确的一条时间线是：
 
-这意味着 2026 年 5 月之后，如果 App 还有 4KB 对齐的 `.so` 文件，将无法在 Google Play 上发布更新。
+- **2025 年 11 月 1 日**：提交到 Google Play、且 target Android 15+ 的新 App 与现有 App 更新，需要在 64 位设备上支持 16KB page size
 
-[已验证: 来源见 Google Play Console 公告及 developer.android.com]
+公开文档里没有给出“2026 年 5 月 1 日所有更新一刀切”的统一口径，本章不把它写成既定政策。
+
+[已验证: 来源见 Google Play 16 KB 要求页面及 developer.android.com]
 
 ## 迁移与测试方法
 
@@ -235,24 +240,14 @@ TLB Miss 减少后，CPU 在内核态处理 Page Table Walk 的时间也相应�
 
 ## 版本演进与 OEM 适配
 
-### Android 15（API 35，2024）
+### 已公开确认的里程碑
 
-- 引入 16KB 页大小的**兼容模式**
-- 模拟器支持 16KB 页大小
-- Pixel 8/9 系列提供开发者选项
-- Google Play 开始提示开发者适配
+- **Android 15（API 35，2024）**：AOSP 开始支持 16KB page size 设备；模拟器与部分 Pixel 设备提供测试入口
+- **Google Play（2025-11-01）**：target Android 15+ 的新 App 与现有 App 更新，需要在 64 位设备上支持 16KB
 
-### Android 16（API 36，2025）
+### Android 16 / 17 的设备策略
 
-- **新设备**必须支持 16KB 页大小（新上市设备的 CDD 要求）
-- 已有设备可以 OTA 升级，但不强制
-- Google Play 强制要求新 App / 更新支持 16KB 对齐（2025.11.1 起）
-
-### Android 17（API 37，2026）
-
-- 进一步强化 16KB 要求
-- Google Play 全面强制（2026.5.1 起所有更新必须合规）
-- 预期更多 OEM 设备出厂即使用 16KB 内核
+Android 16、Android 17 会不会把 16KB 写成更强的设备侧要求，要看对应版本的 CDD、兼容性公告或 OEM 发布说明。当前没有查到可直接引用的公开条文时，更适合把它当成待确认信息，而不是既定政策。
 
 ### OEM 适配进展
 
