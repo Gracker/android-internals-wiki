@@ -2,13 +2,11 @@
 title: "VSync 机制"
 chapter: "2.3"
 status: ready-for-review
-reviewed_date: 2026-04-16
+reviewed_date: 2026-04-22
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-task6_result: pass-light-edit
-task6_state: reviewed
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -42,11 +40,11 @@ sources:
     path: "https://cloud.tencent.com/developer/article/1905184 (Vsync Phase 详解)"
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
-pipeline_stage: 'task2b_pending'
-task6_state: revisiting
-task6_result: needs-rework
+pipeline_stage: 'task9_pending'
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_result: 'needs-rework'
-task9_state: 'reviewed'
+task9_state: pending
 task2b_state: 'pending'
 task2b_result: fixed
 task9_reviewed_date: '2026-04-22'
@@ -105,7 +103,7 @@ VSync 决定了渲染延迟的基准线。不理解 VSync,你无法解释为什�
 
 解决画面撕裂的方案很直接:**在屏幕完成一帧扫描、准备开始下一帧扫描的间隙,才允许更新帧缓冲的数据**。这个间隙就是垂直同步(Vertical Synchronization,简称 VSync)信号。
 
-VSync 信号也叫 VBlank 信号或 TE(Tearing Effect)信号。从硬件角度看,它是显示屏上的一个引脚产生的电平变化(通常是上升沿中断);从软件角度看,它是一个 GPIO 中断,系统根据这个中断来安排渲染和合成的时序。
+VSync 信号也叫 VBlank 信号或 TE (Tearing Effect) 信号。从硬件角度看,它是显示屏上的一个引脚产生的电平变化(通常是上升沿中断);从软件角度看,它是一个 GPIO 中断,系统根据这个中断来安排渲染和合成的时序。
 
 [图:VSync on vs VSync off 对比--开启 VSync 后画面不再撕裂]
 
@@ -140,7 +138,7 @@ Android 4.1(Jelly Bean,2012 年)引入了 Project Butter(黄油计划),这是 An
 
 ### 2.2 三级信号:HW-VSync / VSYNC-app / VSYNC-sf
 
-Android 的 VSync 架构不是简单地把硬件 VSync 信号转发给所有人。它将 VSync 分成了三级,周期相同但相位不同:
+Android 的 VSync 架构将硬件 VSync 分成了三级,周期相同但相位不同:
 
 ```
 HW_VSYNC_0(硬件 VSync)
@@ -149,7 +147,7 @@ HW_VSYNC_0(硬件 VSync)
     └→ VSYNC-sf(SF VSync)  → 驱动 SurfaceFlinger → 合成
 ```
 
-- **HW_VSYNC_0**:硬件产生的原始 VSync 信号,标识显示器开始显示下一帧的瞬间。以 60Hz 屏幕为例,每 16.66ms 产生一次;120Hz 则是每 8.33ms。由 HWC(Hardware Composer)产生。
+- **HW_VSYNC_0**:硬件产生的原始 VSync 信号,标识显示器开始显示下一帧的瞬间。以 60Hz 屏幕为例,每 16.66ms 产生一次;120Hz 则是每 8.33ms。由 HWC (Hardware Composer) 产生。
 - **VSYNC-app**:触发 App 读取输入事件并开始渲染。收到这个信号后,Choreographer 开始执行 doFrame,依次处理 Input → Animation → Traversal(measure/layout/draw)。
 - **VSYNC-sf**:触发 SurfaceFlinger 开始合成。收到这个信号后,SurfaceFlinger 从各 App 的 BufferQueue 中取出已渲染好的 GraphicBuffer,合成最终画面交给 HWC。
 
@@ -246,7 +244,7 @@ Present Fence 也走同一套入口。`VSyncReactor::addPresentFence()` 在 fenc
 
 ### 3.3 现代架构:Scheduler 子目录承担 DispSync 的旧职责
 
-如果把 Android 4.x 的资料和 Android 16 的公开源码对照着看,最容易误解的一点是:名字变了,看起来像换了一套系统;其实变的是职责拆分,不是基本思路。
+如果把 Android 4.x 的资料和 Android 16 的公开源码对照着看,最容易误解的一点是:名字变了,看起来像换了一套系统;变的是职责拆分,不是基本思路。
 
 - `VSyncPredictor`:根据历史样本预测未来 VSync 时间点
 - `VSyncReactor`:处理 HW_VSYNC / Present Fence,决定何时重新学习
@@ -255,6 +253,8 @@ Present Fence 也走同一套入口。`VSyncReactor::addPresentFence()` 在 fenc
 - `MessageQueue`:服务 VSYNC-sf,把合成消息送回 SurfaceFlinger
 
 所以当我们说"DispSync 在校正模型""DispSync 在分发 VSYNC-app"时,更准确的现代说法其实是:Scheduler 里的预测、校正和分发组件一起完成了旧版 DispSync 时代的那套工作。
+
+## 四、VSync 信号的传递路径
 
 ### 4.1 SurfaceFlinger 侧:VSYNC-sf
 
