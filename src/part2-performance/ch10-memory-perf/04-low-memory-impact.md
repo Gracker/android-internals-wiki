@@ -22,14 +22,14 @@ sources:
     path: "source.android.com - mm_events, PSI, lmkd"
 tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto', 'MGLRU', 'cgroup', 'mm-events', 'vmscan', 'oom-score-adj']
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-22"
 reviewed_by: openclaw-task6
-polish_count: 3
-polish_date: "2026-04-19"
+polish_count: 4
+polish_date: "2026-04-22"
 polish_by: "task6-review"
 pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: needs-rework
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
 task2b_result: fixed
