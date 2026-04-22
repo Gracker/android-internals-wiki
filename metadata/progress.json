@@ -33,7 +33,8 @@
     },
     "total": 180,
     "total_sections": 180,
-    "unknown": 0
+    "unknown": 0,
+    "task6_reviewed": 126
   },
   "pipeline": {
     "pipeline_stage_counts": {
@@ -1601,7 +1602,7 @@
       "chapter": "18.3",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
@@ -1635,12 +1636,12 @@
       "chapter": "18.5",
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9"
@@ -1877,8 +1878,8 @@
       "title": "Android View 标准链路（BLAST 深入）",
       "chapter": "18.2",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-17",
