@@ -1,34 +1,34 @@
 {
-  "generated_at": "2026-04-22T13:35:00+08:00",
+  "generated_at": "2026-04-22T13:58:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 180,
   "metrics": {
     "finalized": 39,
-    "last_updated": "2026-04-22T13:35:00+08:00",
+    "last_updated": "2026-04-22T13:58:00+08:00",
     "pipeline_ready_to_publish": 39,
     "pipeline_stage_counts": {
       "ready-to-publish": 39,
-      "task6_pending": 64,
+      "task6_pending": 67,
       "task9_pending": 47,
-      "task2b_pending": 30
+      "task2b_pending": 27
     },
-    "pipeline_task2b_pending": 30,
+    "pipeline_task2b_pending": 27,
     "pipeline_task9_pending": 47,
     "ready-for-review": 141,
     "ready-to-publish": 39,
     "task2b_state_counts": {
-      "fixed": 136,
+      "fixed": 139,
       "unknown": 5,
       "idle": 6,
-      "pending": 33
+      "pending": 30
     },
     "task6_state_counts": {
-      "reviewed": 120,
-      "revisiting": 60
+      "reviewed": 117,
+      "revisiting": 63
     },
     "task9_state_counts": {
-      "reviewed": 83,
-      "pending": 96,
+      "reviewed": 80,
+      "pending": 99,
       "fixed": 1
     },
     "total": 180,
@@ -38,23 +38,23 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "ready-to-publish": 39,
-      "task6_pending": 64,
+      "task6_pending": 67,
       "task9_pending": 47,
-      "task2b_pending": 30
+      "task2b_pending": 27
     },
     "task2b_state_counts": {
-      "fixed": 136,
+      "fixed": 139,
       "unknown": 5,
       "idle": 6,
-      "pending": 33
+      "pending": 30
     },
     "task6_state_counts": {
-      "reviewed": 120,
-      "revisiting": 60
+      "reviewed": 117,
+      "revisiting": 63
     },
     "task9_state_counts": {
-      "reviewed": 83,
-      "pending": 96,
+      "reviewed": 80,
+      "pending": 99,
       "fixed": 1
     }
   },
@@ -1195,10 +1195,10 @@
       "chapter": "7.7",
       "section": "7.7",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -1206,7 +1206,8 @@
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T13:35:00+08:00"
+      "last_task9_at": "2026-04-22T13:35:00+08:00",
+      "last_task2b_at": "2026-04-22T13:58:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md": {
       "path": "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
@@ -1361,10 +1362,10 @@
       "title": "卡顿分析方法论",
       "chapter": "7.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
@@ -1372,7 +1373,8 @@
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T13:35:00+08:00"
+      "last_task9_at": "2026-04-22T13:35:00+08:00",
+      "last_task2b_at": "2026-04-22T13:58:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
@@ -2444,17 +2446,19 @@
       "chapter": "5.6",
       "section": "5.6",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T12:36:00+08:00"
+      "last_task9_at": "2026-04-22T12:36:00+08:00",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-22T13:58:00+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/05-thermal.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
