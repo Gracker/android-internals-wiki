@@ -1,62 +1,62 @@
 {
-  "generated_at": "2026-04-23T04:32:00+08:00",
+  "generated_at": "2026-04-23T06:16:15+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "finalized": 45,
-    "last_updated": "2026-04-23T04:32:00+08:00",
+    "last_updated": "2026-04-23T06:16:15+08:00",
     "pipeline_ready_to_publish": 45,
     "pipeline_stage_counts": {
       "ready-to-publish": 45,
-      "task2b_pending": 39,
-      "task6_pending": 45,
-      "task9_pending": 53
+      "task2b_pending": 38,
+      "task6_pending": 47,
+      "task9_pending": 52
     },
-    "pipeline_task2b_pending": 39,
-    "pipeline_task9_pending": 53,
+    "pipeline_task2b_pending": 38,
+    "pipeline_task9_pending": 52,
     "ready-for-review": 136,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 130,
-      "idle": 6,
-      "pending": 43
+      "fixed": 132,
+      "idle": 5,
+      "pending": 42
     },
     "task6_state_counts": {
       "pending": 1,
-      "reviewed": 139,
-      "revisiting": 42
+      "reviewed": 137,
+      "revisiting": 44
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 84,
-      "reviewed": 97
+      "pending": 86,
+      "reviewed": 95
     },
     "total": 211,
     "total_sections": 211,
     "unknown": 0,
-    "task6_reviewed": 139
+    "task6_reviewed": 137
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "ready-to-publish": 45,
-      "task2b_pending": 39,
-      "task6_pending": 45,
-      "task9_pending": 53
+      "task2b_pending": 38,
+      "task6_pending": 47,
+      "task9_pending": 52
     },
     "task6_state_counts": {
       "pending": 1,
-      "reviewed": 139,
-      "revisiting": 42
+      "reviewed": 137,
+      "revisiting": 44
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 84,
-      "reviewed": 97
+      "pending": 86,
+      "reviewed": 95
     },
     "task2b_state_counts": {
-      "fixed": 130,
-      "idle": 6,
-      "pending": 43
+      "fixed": 132,
+      "idle": 5,
+      "pending": 42
     }
   },
   "issues": {
@@ -1672,9 +1672,9 @@
       "chapter": "3.1",
       "status": "ready-for-review",
       "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
-      "last_verified": "2026-04-15",
-      "last_verified_against": "AOSP android-14.0.0_r1",
-      "version_note": "正文以 android-14 验证为主；Android 12 InputFlinger 分离和 Android 13 ANR Tracker 变更基于官方文档和社区素材，标注 [待验证]。建议后续补充 android-12/13 源码级验证",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1",
+      "version_note": "已补核 android-12/13/14/15/16 的 InputDispatcher.cpp：Android 12 使用静态 isStaleEvent()，Android 13/14 使用 mStaleEventTimeout，Android 15/16 改为 mPolicy.isStaleEvent(...)。独立进程化和 Predictive Back 影响范围仍保留 [待验证]。",
       "confidence": "high",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
@@ -1704,12 +1704,12 @@
         "9.2"
       ],
       "task6_result": "needs-rework",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-22T17:08:00+08:00"
@@ -2775,8 +2775,8 @@
       "section": "6.2",
       "status": "ready-for-review",
       "applicable_versions": "Android 10+",
-      "last_verified": "2026-04-01",
-      "last_verified_against": "AOSP android-15, kernel 6.6, source.android.com, developer.android.com",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "AOSP EROFS docs, source.android 16KB page size docs, kernel/common android15-6.6 include/linux/f2fs_fs.h, developer.android.com",
       "confidence": "medium",
       "drafted_date": "2026-04-01",
       "drafted_by": "openclaw-task2a",
@@ -2788,13 +2788,15 @@
       "review_type": "scheduled-review",
       "review_round": 3,
       "review_notes": "2026-04-15 task6 review (round 3): pass-light-edit。修复frontmatter格式（outline-start误入YAML块）。全文无禁用词命中，无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
       "task9_result": "pass-tech-review-with-notes",
       "task9_reviewed_date": "2026-04-15",
       "task9_reviewed_by": "openclaw-task9",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch06-storage/03-io-scheduling.md": {
       "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",

@@ -4,8 +4,8 @@ chapter: "6.2"
 section: "6.2"
 status: ready-for-review
 applicable_versions: "Android 10+"
-last_verified: "2026-04-01"
-last_verified_against: "AOSP android-15, kernel 6.6, source.android.com, developer.android.com"
+last_verified: "2026-04-23"
+last_verified_against: "AOSP EROFS docs, source.android 16KB page size docs, kernel/common android15-6.6 include/linux/f2fs_fs.h, developer.android.com"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
@@ -32,13 +32,15 @@ tags:
   - linux
   - android
   - research
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
+task6_result: pass-light-edit
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review-with-notes
 task9_reviewed_date: "2026-04-15"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: idle
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -277,13 +279,42 @@ f2fs 的 Main Area 支持 Hot/Warm/Cold 数据分离，每种类型都有独立�
 
 3. **主线程的 D 状态等待**：配合 syscall 信息，可以确认是否是 `fsync`/`fdatasync` 导致的阻塞。
 
+## 现代 Android /data 分区还依赖三类文件系统能力
+
+只讲 ext4 / f2fs / EROFS 还不够。日常性能分析里，经常直接撞到的还有配额、目录匹配和加密三组能力。
+
+### Project Quota：把“存储统计”从全盘遍历变成计数读取
+
+系统设置页、`StorageStatsManager` 和很多空间分析工具都要回答一个问题：某个用户、某个 UID、某个包到底占了多少空间。没有 quota 时，只能递归扫目录，耗时和 I/O 压力都很高。
+
+Android 在 ext4 / f2fs 打开 project quota 后，可以把目录树映射到 project id，再由内核维护计数器。这样系统查询存储占用时，不需要每次都对 `/data` 做一轮 `du` 式遍历。对性能分析来说，“查看占用”本身通常不是一次重 I/O 扫描。
+
+### Casefolding：让大小写无关匹配留在文件系统层
+
+Android 需要兼顾 Linux 的大小写敏感语义和移动设备上常见的大小写无关文件名习惯。ext4 / f2fs 的 casefold 机制会在目录查找阶段做 Unicode case-insensitive 匹配，目录比较逻辑直接落在文件系统层。
+
+这类能力常见于共享存储相关目录。它减少了把名字匹配逻辑放在用户态适配层的压力，也让目录查找路径更短。
+
+### fscrypt 与 Inline Encryption：加密在 I/O 路径里的真实位置
+
+Android 的文件级加密建立在 fscrypt 上，真正落到 ext4 / f2fs 的读写路径时，还会继续和块层的 inline encryption 能力配合。
+
+设备具备 Inline Crypto Engine 时，文件系统可以把数据加解密工作交给存储硬件，CPU 主要负责密钥和请求编排。对 trace 分析来说，加密不再等同于“每次写入都多跑一段 CPU 密集计算”。
+
+16KB page size 设备上，这里还会出现 data unit size 约束；块大小、页大小和 inline crypto 能力需要一起看，单看文件系统名字不够。
+
+> [源码锚点: frameworks/base/services/usage/java/com/android/server/usage/StorageStatsService.java]
+> [源码锚点: frameworks/base/core/java/android/app/usage/StorageStatsManager.java]
+> [源码锚点: kernel/common/fs/f2fs/dir.c — `f2fs_match_name`]
+> [源码锚点: kernel/common/fs/crypto/inline_crypt.c]
+
 ## EROFS：为只读分区设计的极致压缩
 
 ### 从 ext4 到 EROFS 的切换
 
 在 6.1 节中我们讨论过，`system`、`vendor` 等分区是只读的，受 dm-verity 保护。既然只读，使用 ext4 这种读写文件系统就存在开销浪费——日志系统、块分配器、空闲空间管理等模块在只读场景下全部多余。
 
-EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。它由华为工程师高翔（Xiang Gao）开发，2019 年合并入 Linux 5.4 主线。华为在 EMUI 9.0.1 中首次大规模部署 EROFS，随后 Samsung、OPPO、小米等厂商也陆续跟进。从 Android 13 开始，对于搭载 GMS 的设备，EROFS 成为只读分区的强制要求。[已验证: 官方文档, source.android.com/docs/core/storage and kernel.org]
+EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。它由华为工程师高翔（Xiang Gao）开发，2019 年合并入 Linux 5.4 主线。华为在 EMUI 9.0.1 中首次大规模部署 EROFS，随后 Samsung、OPPO、小米等厂商也陆续跟进。Android 13 之后，AOSP 已经给出完整的 EROFS BoardConfig / fstab 配置，Virtual A/B 也正式支持 EROFS。这里需要收窄表述：官方要求的是设备侧具备 EROFS 支持，GMS/VTS 生态把它推成了只读分区的主流方案；这不等于“所有只读分区都被 CDD 强制格式化成 EROFS”。[已验证: 官方文档, source.android.com/docs/core/architecture/kernel/erofs and kernel.org]
 
 ### EROFS 的核心优势
 
@@ -345,7 +376,7 @@ EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。
 1. EROFS 只读设计满足 dm-verity 对保护分区的只读要求，无需额外 flag 检查
 2. EROFS 的 in-place decompression（LZ4 在同一 page 内解压）减少了 dm-verity 按需校验时的内存分配开销
 3. EROFS 压缩使相同数据量的 dm-verity 校验绝对字节数减少 30-45%
-4. Android 13 launch devices 全面采用 EROFS，使 dm-verity 保护的系统分区更小、更快
+4. Android 13 之后 EROFS 在 launch device 上快速普及，使 dm-verity 保护的系统分区更小、更快
 
 **Perfetto 中的可观测性**：
 dm-verity 的 block-level 验证目前没有独立的 Trace slice。在 Perfetto 中，dm-verity 校验的延迟会体现在 storage I/O 延迟中（通过 `disk Greenland` 或 `mmc` trace），但无法直接区分「数据读取」和「hash 验证」两个子步骤。dm-verity hash prefetch 机制（`DM_VERITY_HASH_PREFETCH_MIN_SIZE`，默认 128 blocks）通过预取哈希块来隐藏验证延迟。
@@ -417,7 +448,7 @@ EROFS 在 Android 上的布局通常是：
 
 Android 设备上的文件系统选型并非完全统一，各厂商有不同的策略：
 
-**Google Pixel**：从 Pixel 3 开始，`data` 分区使用 f2fs，`system` 分区从 Android 13 起使用 EROFS。Google 在 AOSP 中积极推动 EROFS 的标准化。
+**Google Pixel**：从 Pixel 3 开始，`data` 分区使用 f2fs。Google 在 AOSP 中积极推动 EROFS 的标准化，近几代 Pixel 机型的只读分区也广泛采用 EROFS。
 
 **Samsung**：f2fs 的创始者，`data` 分区长期使用 f2fs。Samsung 也是 EROFS 的早期采用者之一。
 
@@ -453,15 +484,15 @@ Android 自诞生以来就使用 ext4 作为所有分区的默认文件系统。
 
 ### f2fs：从 Samsung 自研到行业标配
 
-f2fs 的演进路径比较独特——它不是 Google 主导的项目，而是 Samsung 的 Jaegeuk Kim 在 2012 年开发的，2013 年合并入 Linux 3.8 主线。Samsung 自然是最早的采用者，在 Galaxy S 系列的 `data` 分区上率先部署 f2fs。
+f2fs 的演进路径比较独特，项目起点来自 Samsung 的 Jaegeuk Kim：2012 年启动开发，2013 年合并入 Linux 3.8 主线。Samsung 自然是最早的采用者，在 Galaxy S 系列的 `data` 分区上率先部署 f2fs。
 
 其他厂商的跟进速度不一。OPPO 在 2016 年前后开始在部分机型上使用 f2fs，并组建了专门的内核团队做深度优化。一加在较新机型上全面采用。小米的跟进稍晚，但在 2019 年后的机型上 `data` 分区基本都用了 f2fs。
 
 Google 自己的 Pixel 系列从 Pixel 3（2018 年）开始在 `data` 分区使用 f2fs。从 Android 10 开始，AOSP 的推荐配置明确建议 `data` 分区使用 f2fs。一个关键的里程碑是 Android 8.1——这一版本引入了对 SQLite batch atomic write 的支持（编译选项 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`），当 SQLite 检测到文件系统是 f2fs 时，自动使用 `F2FS_IOC_START_ATOMIC_WRITE` 接口替代传统的 journal + fsync 流程，事务提交性能提升了约 3 倍。
 
-Android 15 引入了对 16KB 页面大小（Page Size）的支持，f2fs 也相应做了适配。16KB 页面大小改变了 NAND 闪存的写入粒度，对 f2fs 的 segment 管理和 GC 策略都有影响——这也是为什么我们在分析基于 Android 15+ 设备的 I/O Trace 时，需要注意页大小对性能特征的影响。[待验证: f2fs 在 16KB 页面大小下的 GC 行为变化细节]
+Android 15 把 16KB 页面大小（Page Size）带进正式适配范围，f2fs 的边界也随之收紧。内核头文件 `include/linux/f2fs_fs.h` 直接把 `F2FS_BLKSIZE` 定义为 `PAGE_SIZE`，也就是块大小必须和页大小一致。结果是：4KB 时代创建的 4KB f2fs 镜像，不能直接搬到 16KB kernel 上继续挂载为 `/data`；设备切到 16KB 方案时，通常要重建文件系统并完成数据迁移。这一项是格式兼容约束，不是普通的 GC 调优。
 
-### EROFS：从华为自研到 Android 强制标准
+### EROFS：从华为自研到事实标准
 
 EROFS 的演进是 Android 文件系统历史上推进最快的案例之一。
 
@@ -469,7 +500,7 @@ EROFS 的演进是 Android 文件系统历史上推进最快的案例之一。
 
 Samsung、OPPO、小米等厂商在 2020-2021 年间陆续跟进，在各自的高端机型上启用 EROFS。但由于缺乏统一标准，各厂商的实现细节（压缩算法选择、分区布局）存在差异。
 
-转折点在 Android 13。Google 在 Android 13 的 CDD（Compatibility Definition Document）中明确规定：对于搭载 GMS 的设备，只读分区（`system`、`vendor` 等）必须使用 EROFS。这意味着从 Android 13 开始，EROFS 不再是厂商的可选优化项，而是合规的硬性要求。对于不搭载 GMS的设备（如中国大陆市场的部分机型），EROFS 不是强制要求，但绝大多数主流厂商也主动采用了。
+转折点在 Android 13。AOSP 的 EROFS 文档已经补齐 BoardConfig、fstab 和 Virtual A/B OTA 支持，GMS 设备也在这一代开始大规模把只读分区迁移到 EROFS。这里更稳的说法是：Android 13 以后，EROFS 成为只读分区的事实标准；是否所有只读分区都一刀切使用 EROFS，仍取决于设备分区方案和内核支持。
 
 到 Android 16（2025 年），EROFS 在 Android 生态中的渗透率已经非常高。新增加的改进包括对更大压缩单元的支持和去重能力的增强，进一步提升了存储空间利用率。
 
@@ -483,10 +514,10 @@ Samsung、OPPO、小米等厂商在 2020-2021 年间陆续跟进，在各自的�
 | 9 | 2018 | data 仍为 ext4 | Pixel 3 开始使用 f2fs | 华为 EMUI 9.0.1 首次部署 |
 | 10 | 2019 | 退守小分区 | AOSP 推荐配置 | 多厂商跟进 |
 | 11–12 | 2020–2021 | 小分区 | 主流设备普及 | 高端机型采用 |
-| 13 | 2022 | 小分区 | data 分区标配 | **GMS 设备强制要求** |
+| 13 | 2022 | 小分区 | data 分区标配 | 只读分区大规模转向 EROFS |
 | 14 | 2023 | 小分区 | data 分区标配 | 全面普及 |
-| 15 | 2024 | 小分区 | 适配 16KB Page Size | 全面普及 |
-| 16 | 2025 | 小分区 | 持续优化 | 全面普及 + 增强去重 |
+| 15 | 2024 | 小分区 | 适配 16KB Page Size，4KB `/data` 不能原样迁移 | 全面普及 |
+| 16 | 2025 | 小分区 | 持续优化 | 持续优化 |
 
 [已验证: 时间线基于 AOSP 官方文档、CDD 要求、kernel.org changelog 和厂商公开技术分享综合整理]
 
@@ -532,15 +563,21 @@ f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大�
 
 - f2fs 核心实现：`kernel/linux/fs/f2fs/`（内核源码树）
 - f2fs ioctl 接口定义：`kernel/linux/fs/f2fs/f2fs.h`（`F2FS_IOC_START_ATOMIC_WRITE` 等常量定义）
+- f2fs 块大小定义：`kernel/common/include/linux/f2fs_fs.h`（`F2FS_BLKSIZE == PAGE_SIZE`）
 - f2fs 磁盘布局结构：`kernel/linux/fs/f2fs/f2fs_format.h`（Superblock、Checkpoint、SIT、NAT、SSA、Main Area 数据结构）
+- f2fs 目录匹配：`kernel/common/fs/f2fs/dir.c`（`f2fs_match_name` / casefold 路径）
 - ext4 / jbd2 实现：`kernel/linux/fs/ext4/`、`kernel/linux/fs/jbd2/`
 - EROFS 实现：`kernel/linux/fs/erofs/`
+- fscrypt / inline encryption：`kernel/common/fs/crypto/`
+- Storage Stats 服务：`frameworks/base/services/usage/java/com/android/server/usage/StorageStatsService.java`
 - SQLite batch atomic write 适配：`external/sqlite/dist/Android.mk`（`SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 编译选项）
 - VFS 层：`kernel/linux/fs/vfs.c`、`kernel/linux/include/linux/fs.h`
 
 ### 官方文档
 
 - Android Storage 文档：<https://source.android.com/docs/core/storage>
+- AOSP EROFS 文档：<https://source.android.com/docs/core/architecture/kernel/erofs>
+- 16 KB page size 概览：<https://source.android.com/docs/core/architecture/16kb-page-size/16kb>
 - Android Data Storage 指南：<https://developer.android.com/training/data-storage>
 - f2fs 内核文档：<https://www.kernel.org/doc/html/latest/filesystems/f2fs.html>
 - ext4 内核文档：<https://www.kernel.org/doc/html/latest/filesystems/ext4.html>
