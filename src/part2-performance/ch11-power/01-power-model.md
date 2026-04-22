@@ -3,7 +3,7 @@ title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
 status: ready-for-review
-reviewed_date: "2026-04-20"
+reviewed_date: 2026-04-23
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -39,8 +39,8 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 last_task9_at: "2026-04-21T12:29:00+08:00"

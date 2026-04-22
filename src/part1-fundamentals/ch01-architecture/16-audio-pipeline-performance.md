@@ -13,7 +13,7 @@ last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-19"
+reviewed_date: 2026-04-23
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 sources:
@@ -31,8 +31,8 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -40,6 +40,7 @@ last_task2b_at: "2026-04-22T23:53:44+08:00"
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-20T07:50:52+08:00"
+section: "1.16"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
@@ -161,7 +162,7 @@ Android 4.1（Project Butter）引入了 FAST Mixer，这是 Android 音频低�
 
 普通应用默认走 Normal Mixer 路径。多个音频流在这里完成混音、重采样、音量曲线和效果处理，然后再写入 HAL。它的处理周期通常在 20ms 左右，因为每个周期里要做的事情很多。
 
-FAST Mixer 不是“只服务单一音频流”，也不是“完全不混音”。它是绑定在某个 output 上的低延迟混音线程。AudioFlinger 会先把普通 tracks 交给 Normal Mixer 混成一路 sub-mix，再由 FAST Mixer 把这路 sub-mix 和最多 7 条 client fast tracks 一起送进 HAL 缓冲区。
+FAST Mixer 是绑定在某个 output 上的低延迟混音线程。AudioFlinger 会先把普通 tracks 交给 Normal Mixer 混成一路 sub-mix，再由 FAST Mixer 把这路 sub-mix 和最多 7 条 client fast tracks 一起送进 HAL 缓冲区。
 
 FAST Mixer 真正省掉的是每条 fast track 的 sample rate conversion、per-track effects 和其他高开销处理，而不是把 mixing 这件事完全删掉。它保留最小必要的混音和音量衰减，把周期压到更短的 2-3ms 左右，所以低延迟播放听起来会更跟手。
 

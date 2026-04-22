@@ -46,8 +46,8 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -57,7 +57,7 @@ last_task9_at: "2026-04-19T04:18:34+08:00"
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-20
+reviewed_date: 2026-04-23
 last_task2b_at: "2026-04-22T23:53:44+08:00"
 ---
 
@@ -65,7 +65,7 @@ last_task2b_at: "2026-04-22T23:53:44+08:00"
 
 只要一段调用路径跨过 Java/Kotlin 和 C/C++ 的边界，JNI（Java Native Interface）就是性能模型的一部分。音视频编解码、图像处理、游戏引擎、端侧 AI 推理，这些场景里的热路径的瓶颈往往在于跨了多少次边界、每次跨边界时做了什么、在 Trace 里又能看到多少证据。
 
-如果我们只记住“native 比 Java 快”这种口号，真正排查问题时很容易看错方向。很多卡顿不是 native 算法慢，而是 JNI 调用过碎、字符串和数组在两侧来回拷贝、native 线程 attach/detach 用错位置，或者 16KB page size 下第三方 `.so` 根本没有对齐，应用连加载都过不了。
+如果我们只记住“native 比 Java 快”这种口号，真正排查问题时很容易看错方向。很多卡顿来自 JNI 调用过碎、字符串和数组在两侧来回拷贝、native 线程 attach/detach 用错位置，或者 16KB page size 下第三方 `.so` 根本没有对齐，应用连加载都过不了。
 
 这一节不想把 JNI 写成 API 词典。我们关心三件事：第一，JNI 开销到底来自哪里；第二，哪些优化是真的，哪些只是把问题换了个地方；第三，当我们打开 Perfetto 或 simpleperf 时，应该沿着什么线索把问题定位出来。
 
@@ -103,7 +103,7 @@ last_task2b_at: "2026-04-22T23:53:44+08:00"
 
 一次 JNI 调用的成本，不只是从 Java 栈跳到 native 栈那一下。我们至少要付出几类开销：运行时状态切换、参数编组、对象或数组的引用处理、必要时的字符串编码转换，以及调用结束后的返回路径。如果调用很少，这些成本几乎可以忽略；如果调用发生在每帧、每包音频、每个像素块、每个 Binder transaction 上，问题就会从“一个函数快不快”变成“边界设计得碎不碎”。
 
-这也是为什么分析 JNI 时，我们不应该先盯着某个 C++ 函数，而要先看接口形状。一个粗粒度 JNI 接口，一次把 1MB 数据交给 native 批处理，即使 native 侧算法并不极限，通常也比“循环 10 万次，每次过一次 JNI”更稳。前者把成本集中在一次调用里，后者把 transition、局部引用、异常检查、字符串/数组处理全部放大了。
+分析 JNI 时，先看接口形状，再下钻具体函数。一个粗粒度 JNI 接口，一次把 1MB 数据交给 native 批处理，即使 native 侧算法并不极限，通常也比“循环 10 万次，每次过一次 JNI”更稳。前者把成本集中在一次调用里，后者把 transition、局部引用、异常检查、字符串/数组处理全部放大了。
 
 ## 先把证据链搭好：Perfetto 里到底怎么看 JNI
 
