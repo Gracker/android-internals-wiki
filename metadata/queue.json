@@ -1259,7 +1259,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-22T22:35:29",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T03:22:43+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
@@ -1323,7 +1327,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T22:55:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T03:22:43+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
