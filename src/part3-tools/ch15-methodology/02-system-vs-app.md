@@ -27,9 +27,9 @@ sources:
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-22"
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: "needs-rework"
@@ -38,6 +38,7 @@ task9_reviewed_date: "2026-04-21"
 task9_reviewed_by: "openclaw-task9"
 task2b_state: fixed
 task2b_result: fixed
+review_round: 2
 ---
 
 # 如何区分系统问题和 App 问题
@@ -274,7 +275,7 @@ LIMIT 15;
 
 在 Perfetto 的 CPU 区域点击一个被延迟的线程 Task，Perfetto 会自动绘制唤醒箭头，显示是谁唤醒了这个线程。沿着唤醒链往回追溯，往往能找到问题的源头。
 
-举个例子：你的主线程在等一个 Binder 调用返回。通过唤醒链分析，你发现服务端（system_server）的 Binder 线程在处理你的请求之前，先花了 30ms 处理了另一个进程的请求。这说明不是你的请求本身慢，而是排队等了——如果那个"插队"的进程一直在发密集的 Binder 调用，它就是问题间接制造者。
+举个例子：你的主线程在等一个 Binder 调用返回。通过唤醒链分析，你发现服务端（system_server）的 Binder 线程在处理你的请求之前，先花了 30ms 处理了另一个进程的请求。这说明你的请求本身不慢，只是排队等了——如果那个"插队"的进程一直在发密集的 Binder 调用，它就是问题间接制造者。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
