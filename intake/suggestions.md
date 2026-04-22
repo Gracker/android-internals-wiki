@@ -1268,3 +1268,27 @@
 - **建议**：补充 120Hz 1ms 误差在 2000px/s 下对应 2 像素偏移
 - **来源**：Gemini 外部 review (7.8)
 
+---
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-23
+- **类型**：版本差异 / 观察路径
+- **位置**：`dumpsys SurfaceFlinger：Layer 信息与合成状态`
+- **问题**：正文提醒了 Android 15 FrontEnd 变化，但没有给出 `dumpsys SurfaceFlinger --frontend` 这个新的文本入口，也没有把它和 Winscope 的使用边界分开。
+- **建议**：补一段最小排查路径：Android 15+ 先看 `--frontend` 或 Winscope，再决定是否继续用 `--latency` 做逐层采样。
+
+---
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-04-23
+- **类型**：知识盲区 / 交叉引用
+- **位置**：`PowerMonitor API` 与最佳实践
+- **问题**：本章已经讲到“怎么测”，但没有把 Android 15 的 ADPF power-efficiency mode 与 §5.9 串起来，读者拿到功耗数据后看不到官方的“怎么控”入口。
+- **建议**：补一个交叉引用到 §5.9，说明 `PowerMonitor` 负责观测，ADPF / `PerformanceHintManager.Session` 负责在支持设备上做能效取舍。
+
+---
+
+## [Task9 Deep Review] 14.12 APM / 可观测性平台与 SDK 选型 — 2026-04-23
+- **类型**：实现原理 / 案例支撑
+- **位置**：第二层：客户端增强层
+- **问题**：Matrix、KOOM、btrace 只写到了产品定位，没有交代最能体现技术差异的实现切口，例如 KOOM 的 fork-dump、btrace 的插桩式采样。
+- **建议**：每个工具补 1 句实现抓手，至少让读者知道它们为什么能拿到那类现场。
+
