@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-07"
-last_verified_against: "AOSP android-16.0.0_r1 + kernel.org sched-ext docs"
+last_verified: "2026-04-22"
+last_verified_against: "AOSP android-16.0.0_r1 + Perfetto/BPF upstream docs + Android GKI release builds"
 confidence: medium
 sources:
   - type: aosp
@@ -46,8 +46,8 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
@@ -58,6 +58,7 @@ task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-20T21:48:59+08:00"
 task2b_result: fixed
+last_task2b_at: "2026-04-22T10:03:36+08:00"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
@@ -106,23 +107,27 @@ eBPF（extended Berkeley Packet Filter）改变了这类分析方式。它让我
 <!-- outline-end -->
 
 
+
 ## eBPF 是什么，为什么 Android 性能分析需要它
 
-eBPF 是 Linux 内核中的一个轻量级虚拟机。它的核心思想很简单：在内核中运行一段经过验证的安全小程序，这段程序可以挂载到内核的各种事件点（系统调用、内核函数、网络包、硬件事件等），在事件触发时执行自定义的逻辑——比如记录时间戳、统计计数、收集调用栈。
+eBPF 是 Linux 内核中的一个轻量级虚拟机。它允许把一段经过验证的程序挂到 tracepoint、kprobe、uprobe、cgroup hook、socket hook 等事件点，在事件发生时执行过滤、计数、聚合、栈采样或少量上下文提取。
 
-eBPF 与传统的性能分析工具（perf、strace、ftrace）工作机制完全不同：
+它和传统性能工具最大的差别，在于数据在哪里先被处理。细粒度 tracing 场景里，ftrace 或 perf 往往会先把大量事件写进 ring buffer，再由用户态读取并聚合；eBPF 可以先在内核里的 BPF map 中做计数、直方图、top-N 或过滤，只把汇总结果或少量命中事件写出来。eBPF 常见的低开销，主要来自这层 in-kernel aggregation。
 
-**strace** 基于 ptrace，会在每次系统调用时暂停目标进程、收集信息、再恢复执行。这种"断点式"的追踪方式开销很高——开启 strace 后，程序性能可能下降数倍甚至一个数量级，而且很多应用会检测 ptrace 环境并拒绝运行。
+**strace** 基于 ptrace，会在系统调用边界暂停目标进程、抓取参数、再恢复执行。事件一密，停顿和上下文切换成本会迅速抬高。
 
-**perf** 基于 `perf_event_open` 系统调用，通过硬件 PMU 采样来统计 CPU 热点。它的优势是开销较低（通常 <5% [待验证: 来源为 perf 社区经验数据，实际取决于采样频率和事件类型]），但只能看到"采样到"的函数，无法追踪特定事件的发生次数和精确时间。
+**perf** 基于 `perf_event_open`，非常适合 CPU 热点采样；采样频率合适时，开销通常可控。它的短板在于“精确事件级追踪”并不是默认强项：如果目标是看某个函数每次调用的耗时分布、精确次数或参数过滤，仍然需要额外的事件记录和后处理。
 
-**ftrace** 是内核的内置追踪框架，功能强大但需要 root 权限和 debugfs 访问，在用户设备上基本不可用。
+**ftrace** 是内核自带的 tracing 框架，观测面很广，但 raw event 流一旦拉得太细，输出体积和用户态消费成本会很快上升。
 
-eBPF 的工作方式完全不同。它的事件处理程序运行在内核态，由 JIT 编译为本机指令，执行效率接近原生代码。同时，eBPF 程序在加载时会经过内核验证器的严格安全检查——确保不会死循环、不会越界访问内存、不会导致内核 panic。这种"安全 + 高效"的组合，在 eBPF 出现之前是不存在的。
+eBPF 还有两个系统级前提：
+
+- **安全边界**：程序加载前会经过 verifier 检查，限制循环、内存访问和 helper 使用方式。
+- **执行效率**：通过 JIT 编译后，热点 BPF 程序会变成原生机器码执行。
+
+对 Android 来说，GKI（General Kernel Image）把核心内核 ABI、配置和 BTF 能力收拢到了更统一的基线上，eBPF 才开始具备跨设备复用的现实基础。
 
 [图：eBPF 与传统性能分析工具的对比——从开销、精度、安全性、适用场景四个维度]
-
-对 Android 来说，GKI（General Kernel Image）的出现让 eBPF 真正可用。在 GKI 之前，不同设备的内核编译选项千差万别，eBPF 的核心功能（如 BTF 类型信息）在很多设备上根本不可用。Android 12 开始强制要求设备使用 GKI 内核，而 GKI 内核完整支持 eBPF 的几乎所有功能。这样一来，在一台 GKI 设备上编写的 eBPF 程序，可以在任何其他 GKI 设备上运行。
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/kernel/bpf]
 
@@ -144,13 +149,14 @@ Android 已经在系统级使用 eBPF 的场景包括：
 
 [已验证: AOSP, system/bpf/ + source.android.com]
 
+
 ### BPF CO-RE：一次编译，到处运行
 
-eBPF 程序的一个传统难题是内核版本兼容性。不同内核版本的结构体布局可能不同，直接硬编码偏移量会导致程序在新内核上崩溃。BPF CO-RE（Compile Once, Run Everywhere）通过 BTF（BPF Type Format）解决了这个问题：编译时记录"需要访问哪些字段"，运行时根据当前内核的 BTF 信息自动重定位。
+eBPF 程序长期受内核版本兼容性影响。结构体布局一变，硬编码偏移就会失效。BPF CO-RE（Compile Once, Run Everywhere）通过 BTF（BPF Type Format）记录“程序要访问哪些类型和字段”，加载时再按当前内核的 BTF 做重定位。
 
-对 Android 来说，CO-RE 的意义特别重大：GKI 统一了核心内核，所以 CO-RE 程序可以在所有 GKI 设备上无缝运行，不需要为每个内核版本单独编译。不过目前 Android 上直接从 App 加载自定义 eBPF 程序仍然受限，通常需要通过 adb shell 或编译自定义的可执行文件来运行。
+放到 Android 上，CO-RE 的收益主要体现在 GKI 公共内核面：核心 ABI 更稳定，BTF 也更可预期，跨设备复用难度明显下降。边界同样要写清楚——厂商私有驱动、额外模块或缺失 BTF 的路径，仍然可能需要按设备单独处理。CO-RE 不能替代所有兼容性验证。
 
-[待验证: Android 17 是否开放了 App 级 eBPF 程序加载 API]
+目前 Android 上直接从普通 App 加载自定义 eBPF 程序仍然受 SELinux 和权限限制，常见做法还是通过系统组件、root / userdebug 设备，或 AOSP 构建出来的专用工具去加载。
 
 ### AOSP 中 eBPF 程序的位置
 
@@ -170,46 +176,45 @@ eBPF 程序的一个传统难题是内核版本兼容性。不同内核版本的
 
 我们在 14.2 节已经介绍过 Simpleperf 作为 Android 原生 CPU profiling 工具的基础用法。这里聚焦 Simpleperf 与 eBPF 相关的能力——uprobe 和 kprobe 动态追踪。
 
+
 ### uprobe：追踪用户态函数
 
-Google 在 Simpleperf 中增加了 `--uprobe` 选项，允许在不修改目标代码的情况下追踪指定函数的调用。这在分析闭源库（如 GPU 驱动、系统 .so）的行为时特别有用。
-
-使用步骤分两步：先找到目标函数在 .so 中的偏移地址，然后用 Simpleperf 设置 uprobe 事件。
+Simpleperf 记录 uprobe 时，事件选择更稳的写法是 `-e probe:<event_name>`，探针定义仍通过 `--uprobe` 传入。示例：
 
 ```bash
 # 第一步：获取函数符号地址
 unwind_info /system/lib64/libc.so | grep "kill"
 # PC 0xbfea0-0xbfeb8 <kill>
 
-# 第二步：设置 uprobe 追踪
+# 第二步：定义 uprobe 并录制它
 simpleperf record --app com.example.app -g \
-  -e "uprobes:myret" \
-  --uprobe 'p:myret /system/lib64/libc.so:0xbfea0' \
-  -o /data/perf.data
+  -e probe:libc_kill \
+  --uprobe 'p:libc_kill /system/lib64/libc.so:0xbfea0' \
+  -o /data/local/tmp/perf.data
 ```
 
-这段命令在 `libc.so` 的 `kill` 函数入口处设置了一个 uprobe 探针。每当 App 调用 `kill` 时，Simpleperf 就会记录一次采样，包含完整的调用栈。
+这里 `probe:libc_kill` 是录制事件名，`--uprobe` 里的 `p:libc_kill ...` 负责把探针挂到目标 ELF 和偏移上。若要记录返回点，可以把定义改成 `r:<event_name>` 或 `%return` 形式。
+
+这类探针适合追踪 JNI 边界、闭源 `.so` 的关键函数、低频控制路径调用次数等场景。若目标函数本身已经很热，再叠加栈回溯、参数抓取或 ring buffer 写出，探针成本会很快放大。
 
 [图：Simpleperf uprobe 追踪 libc.so:kill 的输出示例——展示调用栈和采样热点分布]
-
-实际应用场景：追踪 App 的线程创建（pthread_create）、追踪 Binder 调用（binder 相关函数）、追踪特定 JNI 函数的调用频率和耗时。
 
 [来源: Cubox/simpleperf的使用技巧-2025-11-18.md]
 
 ### kprobe：追踪内核函数
 
-Simpleperf 也支持 `--kprobe` 选项，追踪内核函数：
+Simpleperf 也支持 `--kprobe`，事件名同样建议用 `probe:` 前缀：
 
 ```bash
 # 追踪文件打开操作
 simpleperf record -a -g --duration 30 \
-  -e "kprobes:myprobe" \
-  --kprobe "p:myprobe do_sys_open" \
+  -e probe:open_entry \
+  --kprobe "p:open_entry do_sys_open" \
   -o /data/local/tmp/perf.data
 
 # 追踪特定大小的内存分配
-simpleperf record -e "kprobes:myprobe" \
-  --kprobe "p:myprobe system_heap_do_allocate len=%x1" \
+simpleperf record -e probe:system_heap_alloc \
+  --kprobe "p:system_heap_alloc system_heap_do_allocate len=%x1" \
   --tp-filter "len == 49942528" \
   --call-graph dwarf -a \
   -o /data/cam5.data
@@ -223,7 +228,7 @@ simpleperf record -e "kprobes:myprobe" \
 
 一个典型的 Android 性能分析场景：我们想知道 RenderThread 每一帧的 `eglSwapBuffers` 调用耗时。使用 bpftrace（eBPF 的高层前端）可以这样做：
 
-> ⚠️ bpftrace 不是 Android 标准工具链的一部分，需要在设备上单独编译安装（或使用 userdebug/eng 版本中预装的版本）。在生产环境分析中，更推荐使用 Simpleperf 的 `--uprobe` 方案。
+> ⚠️ bpftrace 不是 Android 标准工具链的一部分，需要在设备上单独编译安装（或使用 userdebug/eng 版本中预装的版本）。在生产环境分析中，更推荐使用 Simpleperf 的 `probe:` 事件配合 `--uprobe` 定义探针。
 
 ```bash
 # 找到 eglSwapBuffers 在 libEGL.so 中的符号
@@ -238,9 +243,10 @@ bpftrace 的 `stats()` 函数会自动计算均值、方差、最大值、最小
 
 [来源: Cubox/ebpf在 Android 上的玩法示例-2025-12-22.md]
 
+
 ## UprobeStats 与动态埋点
 
-Android 15 引入的 UprobeStats 是 eBPF 在 Android 上的一个代表性使用场景。它利用 eBPF 的 uprobe 机制实现了"零代码侵入"的动态埋点——不需要在 Framework 代码中插入统计逻辑，只需编写一个配置文件指定要监控的 Java 方法，系统就会自动采集执行数据并上报给 StatsD。
+Android 15 引入的 UprobeStats 是 eBPF 在 Android 上的一个代表性使用场景。它利用 uprobe 机制做“无需改业务代码”的动态埋点：系统按配置 attach 到目标方法，把命中事件写进 BPF map / ring buffer，再汇总给 StatsD。
 
 ### UprobeStats 的工作原理
 
@@ -256,10 +262,10 @@ UprobeStats 以 APEX 模块形式集成（`/system/apex/com.android.uprobestats.
 1. StatsD 检测到特定订阅触发，调用 `StartUprobeStats()`
 2. 配置写入 `/data/misc/uprobestats-configs/config`
 3. 通过系统属性 `uprobestats.start_with_config` 触发启动
-4. `uprobestats` 进程启动后读取配置，通过 `oatdump` 或 `DynamicInstrumentationManagerService` 解析目标方法在 OAT/ODEX 文件中的偏移地址
+4. `uprobestats` 进程启动后读取配置，通过 `oatdump` 或 `DynamicInstrumentationManagerService` 解析目标方法在 OAT / ODEX 文件中的偏移地址
 5. 对每个目标方法调用 `bpfPerfEventOpen()` attach BPF 程序并启用 uprobe
-6. 启动 collector 线程，在 RINGBUF map 上 poll，读取 BPF 程序写入的数据
-7. 将采集到的数据组装成 `AStatsEvent` 原子埋点上报给 StatsD
+6. collector 线程在 RINGBUF map 上 poll，读取 BPF 程序写入的数据
+7. 采集结果组装成 `AStatsEvent` 原子埋点上报给 StatsD
 
 [图：UprobeStats 端到端数据流——StatsD 订阅触发 → 配置解析 → BPF attach → RingBuf 读取 → StatsD 上报]
 
@@ -270,11 +276,17 @@ UprobeStats 以 APEX 模块形式集成（`/system/apex/com.android.uprobestats.
 
 AOSP 中 UprobeStats 预置了三类 BPF 程序模板：
 
-**GenericInstrumentation.c** 是最通用的模板，包含两个 BPF 程序。`call_detail` 程序捕获调用线程上下文的所有寄存器数据（包括 PC），通过配置中指定的寄存器位置提取 Java 方法参数；`call_timestamp` 程序获取当前系统时间（mono clock），用于精确测量方法执行时间。
+**GenericInstrumentation.c** 是通用模板，负责提取寄存器上下文、拿时间戳、把采集结果写到 ring buffer。
 
-**BitmapAllocation.c** 用于追踪 Bitmap 分配行为。当 attach 的 Java 方法被调用时触发，RINGBUF map 保存一个固定标记（123），主要用于统计调用次数。
+**BitmapAllocation.c** 用于追踪 Bitmap 分配相关调用，偏向计数和事件采样。
 
-**ProcessManagement.c** 是专用程序，仅适用于 `OomAdjuster#setUidTempAllowlistStateLSP` 方法。BPF 程序通过 ART Native 调用约定的寄存器（x2 = uid，x3 = onAllowlist）直接读取方法参数。
+**ProcessManagement.c** 面向特定系统方法，直接按 ART / ABI 约定读取参数。
+
+### 频率边界与性能陷阱
+
+uprobe 命中一次，至少会经历用户态 → 内核态 → 用户态这条路径；如果还要做 map 更新、ring buffer 写出、参数提取或栈回溯，成本会继续往上叠。社区基准里，简单 uprobe 常见就已经到微秒级。对冷路径和低频控制流，这个代价通常可接受；对每帧、每次分配、锁热路径或高频 JNI 边界，探针本身就可能改写工作负载。
+
+UprobeStats 更适合低频关键路径、系统服务里的诊断点、临时排障窗口。要挂到热点路径时，先估调用频率，再决定是否改成采样、加过滤，或缩小探针覆盖范围。
 
 ### 安全限制
 
@@ -288,9 +300,7 @@ constexpr std::array kAllowedMethodPrefixes = {
 };
 ```
 
-非 user 版本（userdebug/eng）没有此限制。这种设计保证了 UprobeStats 不会被滥用于监控任意用户应用。
-
-[来源: Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md]
+非 user 版本（userdebug / eng）没有这组限制。这套白名单把动态埋点约束在系统自管范围内，避免被滥用到任意用户应用。
 
 ## sched_ext 与可扩展调度器
 
@@ -325,24 +335,23 @@ sched_ext 在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间。�
 [已验证: kernel.org Documentation, scheduler/sched-ext]
 [来源: intake/research-feeds/2026-04-02-15-ch05-sched-ext-bpf-android.md]
 
+
 ### 对 Android 的意义
 
-Meta 和 Google 都在持续投入 sched_ext。Meta 的 Oculus 团队已经在 Android 移植版上实验 sched_ext，Google 也计划把 ghOSt 调度框架迁移到 sched_ext。
+Meta 和 Google 都在持续投入 sched_ext。Meta 的 Oculus 团队已经在 Android 移植版上实验 sched_ext，Google 也在把 ghOSt 这类调度实验往 sched_ext 方向收拢。
 
-一些已有的实验性调度器展示了 sched_ext 的潜力：
+一些已有的实验性调度器展示了它的空间：
 
-- **scx_lavd**（Latency-criticality Aware Virtual Deadline）：专为游戏工作负载设计，通过感知 waker/wakee 关系和任务 runtime 来调整延迟需求，在游戏中展示了 FPS 提升。
+- **scx_bpfland**：把大部分调度策略写在 BPF 用户态组件里，便于快速迭代。
+- **scx_flash**：面向低延迟交互负载，强调 wakeup latency 和交互稳定性。
+- **scx_rustland**：在游戏等持续负载场景里验证帧稳定性收益。
+- **scx_chaos**：故意注入调度抖动，用来暴露竞态和时序依赖问题。
 
-- **scx_rustland**：在游戏中（如 Terraria）展示了即使有其他重负载（如内核编译）运行也能保持 FPS 稳定。
+放到 Android 平台上，先要看 GKI 版本时间线。官方 release builds 已经给出比较清楚的映射：Android 14 对应 `android14-6.1`，Android 15 对应 `android15-6.6`，Android 16 对应 `android16-6.12`。因此，`sched_ext` 真正开始具备平台侧评估条件，是 Android 16 / GKI 6.12 这一代，不是 Android 17 才第一次出现。
 
-- **scx_chaos**：故意引入延迟和性能下降，帮助暴露应用中的竞态条件和时序依赖错误。
+这只解决了“底层内核版本够不够”的问题。设备上能不能真正启用，还要继续看内核配置、CTS / VTS、OEM 适配、功耗与稳定性回归，以及是否允许在 shipping build 中开放相应能力。
 
-对 Android 性能工程师来说，如果 sched_ext 在 Android 上可用（需要 GKI 内核 6.12+），就可以针对特定场景编写定制调度器，例如 UI 主线程的调度延迟优化、后台任务的 CPU 放置策略、游戏场景的帧率稳定性保障。而且这一切不需要修改内核源码，只需要编写和加载 BPF 程序。
-
-不过，Android 上的大规模部署还需要时间，需要等待平台内核升级到 6.12，通过 Android 兼容性测试，再由 OEM 完成适配。
-
-[来源: intake/research-feeds/2026-04-03-07-sched-ext-bpf-scheduler.md]
-[待验证: Android 17 GKI 是否正式包含 Kernel 6.12]
+[来源: intake/research-feeds/2026-04-03-07-sched-ext-bpf-scheduler.md + Android GKI release builds]
 
 ## eBPF 在 Android 性能分析中的实战场景
 
@@ -401,19 +410,20 @@ simpleperf record -a -g --exclude-perf \
 
 [来源: Cubox/simpleperf的使用技巧-2025-11-18.md]
 
+
 ## 常见问题与误区
 
 **误区：eBPF 可以在任何 Android 设备上使用。**
-实际情况：非 GKI 设备上 eBPF 功能严重受限（缺少 BTF、内核版本过低）。即使是 GKI 设备，在 user 版本上加载自定义 eBPF 程序也受 SELinux 策略限制。自定义 eBPF 追踪通常需要 userdebug/eng 版本或 root 权限。
+实际情况：非 GKI 设备上，BTF、helper、内核版本和配置都可能不满足；即使是 GKI 设备，user build 上的自定义 eBPF 加载仍然受 SELinux 和权限限制。自定义 tracing 通常还是需要 userdebug / eng 或 root。
 
 **误区：eBPF 对性能完全没有影响。**
-实际情况：eBPF 回调通常很轻，但开销没有一个跨设备通用常数。probe 类型、helper 调用次数、map 访问、ringbuf 写入、栈回溯和内核版本都会把成本拉开。事件频率一高，哪怕单次开销不大，累计代价也会很快显现。使用前先估目标事件频率，再决定是全量追踪、采样，还是加过滤条件。
+实际情况：eBPF 程序可以很轻，但开销没有固定常数。helper 调用、map 类型、ring buffer 写出、栈回溯和 probe 频率都会改变结果。尤其是 uprobe / uretprobe，每次命中都要跨一次用户态和内核态边界；方法一热，累计代价就会非常明显。
 
 **误区：bpftrace 可以直接在 Android 上使用。**
-实际情况：bpftrace 不是 Android 标准工具链的一部分，需要从源码编译或使用第三方构建。Android 上更实际的做法是使用 Simpleperf 的 `--uprobe`/`--kprobe` 选项，或者通过 AOSP 构建系统编译自定义 eBPF 程序。
+实际情况：bpftrace 不是 Android 标准工具链的一部分，通常需要单独构建。Android 上更实用的路径，是用 Simpleperf 的 `probe:` 事件配合 `--uprobe` / `--kprobe` 定义探针，或者直接走 AOSP 自带的 BPF loader / 系统模块能力。
 
-**误区：sched_ext 已经在 Android 上可用了。**
-实际情况：sched_ext 需要 Linux Kernel 6.12+，而截至 Android 17，GKI 内核版本为 6.6（Android 16）/ 6.12（Android 17 部分设备）。sched_ext 在 Android 上的大规模部署仍在早期阶段，需要等待平台内核升级和兼容性验证。
+**误区：sched_ext 已经在 Android 上普遍可用了。**
+实际情况：`sched_ext` 需要 Linux 6.12+。平台基线已经走到 Android 16 的 GKI 6.12，但这不等于所有 Android 16 设备都会启用它，更不等于所有 OEM 都会把它开放给日常性能分析。
 
 ## 限制与注意事项
 
@@ -421,11 +431,12 @@ simpleperf record -a -g --exclude-perf \
 
 在 user 版本的 Android 设备上，加载自定义 eBPF 程序受到 SELinux 策略的严格限制。普通 App 无法加载 eBPF 程序——只有系统服务（通过 BPF loader）和特定模块（如 UprobeStats）才能加载。要进行自定义 eBPF 追踪，通常需要 userdebug/eng 版本的设备，或者通过 adb root 获取 root 权限。
 
+
 ### 性能开销
 
-虽然 eBPF 程序经过 JIT 编译后通常只做很短的工作，常见 probe 回调往往落在纳秒到亚微秒量级，但这里没有固定的“100ns 标准答案”。helper 调用、map 类型、ringbuf 写入、符号解析、栈回溯和设备内核配置都会改变成本。如果事件频率极高，比如内存分配、调度切换或热点函数入口，累计开销仍然可能不可忽略。在 Perfetto 中，过密的 eBPF 事件也会让 trace 文件快速膨胀。
+虽然 eBPF 程序经过 JIT 后通常只做很短的工作，但开销仍然要按 probe 类型拆开看。tracepoint 和 kprobe 常见是“回调很短、频率决定总代价”；uprobe / uretprobe 额外多一层用户态与内核态切换，若再叠加参数抓取、map 更新、ring buffer 写出或栈回溯，单次成本很快就会从亚微秒抬到微秒级。
 
-经验做法是先测频率，再决定追踪粒度。万次每秒以下的 uprobe/kprobe 往往更容易控制；到十万次、百万次每秒这个量级时，过滤条件、采样率和写出路径都要先压住。
+经验做法是先估频率，再定粒度。万次每秒以下的 probe 更容易控住；到了十万次、百万次每秒，过滤条件、采样率、写出路径和 trace 时长都要先压住。热点路径上，探针本身就可能把吞吐、尾延迟或 trace 体积推到不可接受的区间。
 
 ### 与 SELinux 的交互
 

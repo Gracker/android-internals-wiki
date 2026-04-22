@@ -8,8 +8,8 @@ drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-21"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-15"
-last_verified_against: "perfetto.dev/docs/analysis/sql-tables/android-input"
+last_verified: "2026-04-22"
+last_verified_against: "Perfetto stdlib android/input.sql + android/frames/timeline.sql + android_input_event_config.proto"
 confidence: high
 sources:
   - type: official
@@ -22,20 +22,15 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 
-# Task 9 Deep Tech Review 修复内容
-- **源码错误修正**：字段名错误（ts/dur/utid/android_input_id → dispatch_ts/dispatch_dur/tid/input_event_id）
-- **表结构修正**：删除虚构的 android_input_connections 表，修正为 android_input_event_dispatch
-- **原理修正**：输入事件与帧关联使用 Perfetto stdlib 的 frame_id/is_speculative_frame，避免 slice name 近似匹配
-- **概念澄清**：区分查询模块（android.input）与数据源（android.input.inputevent）
-- **表族补充**：补充 android_motion_events/android_key_events 表的说明
+last_task2b_at: "2026-04-22T10:03:36+08:00"
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
@@ -47,7 +42,7 @@ task9_result: needs-rework
 input_events、input_connections 等核心表的 schema；字段含义与版本差异
 
 ### 🔹 端到端输入延迟的量化查询
-从 kernel touch event → InputDispatcher → App doFrame 的全链路时间计算 SQL
+从 kernel touch event → InputDispatcher → App doFrame 的端到端时间计算 SQL
 
 ### 🔹 InputDispatcher 延迟分解
 dispatching_latency、wait_connection_response 等指标的 SQL 提取；ANR 前的输入队列堆积分析
@@ -64,7 +59,7 @@ dispatching_latency、wait_connection_response 等指标的 SQL 提取；ANR 前
 ## 扩展
 
 ### 🔸 自定义 input trace config
-如何配置 Perfetto TraceConfig 以捕获完整的输入链路数据；debug-level tracing 的开销
+如何配置 Perfetto TraceConfig 以捕获输入与帧数据；debug-level tracing 的开销
 
 ### 🔸 批量 Trace 的输入延迟对比
 跨版本、跨设备的输入延迟 SQL 对比分析方法
@@ -100,149 +95,169 @@ INCLUDE PERFETTO MODULE android.input;
 
 [已验证: perfetto.dev/docs/analysis/sql-tables/android-input]
 
+
 ### android_input_events 表族
 
-`android.input` 模块提供多个表，每个表负责输入生命周期的不同阶段。理解表族结构是准确分析的基础：
+`android.input` 模块里最常用的是 `android_input_events`。它已经把 InputDispatcher 发送、App 接收、App 发 ACK，以及可选的 frame 关联折叠成一张结果表。日常排障先从这张表起步；只有要看原始 `inputevent` proto 细节时，才回到 `android_motion_events`、`android_key_events`、`android_input_event_dispatch`。
 
 #### android_input_events（核心事件表）
-这是输入延迟分析的主表。每行代表一个输入事件从 InputDispatcher 到 App 的完整生命周期：
+
+这是输入延迟分析的主表。每行代表一个输入事件从 InputDispatcher 发出，到 App 处理并 ACK 回系统的一次完整生命周期：
 
 | 字段 | 类型 | 含义 |
 |------|------|------|
-| `dispatch_ts` | timestamp | InputDispatcher 开始分发事件的时间戳（纳秒） |
-| `dispatch_dur` | duration | InputDispatcher 分发事件的持续时间 |
-| `tid` | uint32 | 接收线程的 thread id |
-| `input_event_id` | int64 | 输入事件唯一 ID，可跨表追踪同一事件 |
-| `event_seq` | int64 | 事件序列号，用于排序 |
-| `dispatch_track_id` | uint32 | InputDispatcher 分发 track 的 ID |
-| `receive_track_id` | uint32 | App 接收 track 的 ID |
-| `process_name` | string | 接收事件的应用进程名 |
-| `receive_ts` | timestamp | App 主线程接收到事件的时间（Binder 调用返回） |
-| `ack_ts` | timestamp | App 处理完成发送 ACK 的时间 |
-| `end_to_end_latency_dur` | duration | 端到端延迟（如果有关联帧） |
-| `is_speculative_frame` | boolean | 是否为 speculative 帧（可预测输入处理） |
-| `frame_id` | int64 | 关联的帧 ID（如有关联帧事件） |
+| `dispatch_latency_dur` | duration | 从 InputDispatcher 开始分发，到 App 收到事件的时长 |
+| `handling_latency_dur` | duration | 从 App 收到事件，到 App 发出 ACK 的时长 |
+| `ack_latency_dur` | duration | 从 App 发出 ACK，到系统侧收到 ACK 的时长 |
+| `total_latency_dur` | duration | 从开始分发，到系统侧收到 ACK 的总时长 |
+| `end_to_end_latency_dur` | duration | 从 InputReader 读到事件，到关联帧 present 的时长；无帧关联时为 `NULL` |
+| `tid` | long | 接收线程的 tid |
+| `thread_name` | string | 接收线程名 |
+| `pid` | long | 接收进程 pid |
+| `process_name` | string | 接收进程名 |
+| `event_type` | string | `InputMessage` 类型 |
+| `event_action` | string | 输入动作 |
+| `event_seq` | string | 同一 event channel 内递增的序号 |
+| `event_channel` | string | 输入 channel 名 |
+| `input_event_id` | string | 输入事件唯一标识 |
+| `read_time` | long | InputReader 读到事件的时间戳 |
+| `dispatch_track_id` | `JOINID(track.id)` | InputDispatcher 所在 track |
+| `dispatch_ts` | timestamp | 开始分发的时间戳 |
+| `dispatch_dur` | duration | 分发 slice 的持续时间 |
+| `receive_track_id` | `JOINID(track.id)` | App 接收事件所在 track |
+| `receive_ts` | timestamp | App 收到事件的时间戳 |
+| `receive_dur` | duration | 接收 slice 的持续时间 |
+| `frame_id` | long | 关联的 frame id；无帧关联时为 `NULL` |
 
-延迟维度计算：
-```sql
-SELECT
-  input_event_id,
-  dispatch_ts,
-  receive_ts,
-  ack_ts,
-  -- 基础延迟维度
-  (receive_ts - dispatch_ts) AS dispatch_latency_ns,
-  (ack_ts - receive_ts) AS handling_latency_ns,
-  (ack_ts - dispatch_ts) AS total_latency_ns,
-  -- end_to_end_latency_dur 可能为 NULL（无帧关联）
-  end_to_end_latency_dur
-FROM android_input_events;
-```
-
-#### android_motion_events 与 android_key_events
-`android.input` 将输入事件按类型拆分为单独的表，便于分类分析：
-
-| 字段 | 含义 | 类型事件 |
-|------|------|----------|
-| `input_event_id` | 事件唯一 ID | 所有类型 |
-| `motion_event_id` | 手势事件 ID（多点触控） | android_motion_events |
-| `key_event_id` | 按键事件 ID | android_key_events |
-| `action_code` | 动作代码（如 ACTION_DOWN/UP） | android_motion_events |
-| `key_code` | 按键代码 | android_key_events |
-
-分析手势卡顿时使用 `android_motion_events`，分析按键响应时使用 `android_key_events`。
-
-
-
-[已验证: perfetto.dev/docs/analysis/sql-tables/android-input]
-
-### android_input_event_dispatch（窗口关联表）
-`android.input` 模块通过 `android_input_event_dispatch` 视图关联输入事件与窗口信息，但能力有限：
-
-| 字段 | 类型 | 含义 |
-|------|------|------|
-| `id` | int64 | dispatch 事件唯一 ID |
-| `event_id` | int64 | 关联的输入事件 ID（对应 android_input_events.input_event_id） |
-| `arg_set_id` | int64 | 参数集合 ID |
-| `vsync_id` | int64 | 关联的 VSync ID |
-| `window_id` | int64 | 目标窗口 ID |
-| `dispatch_track_id` | uint32 | 分发 track ID |
-
-**能力边界**：这个视图主要提供 `window_id` 用于事件分类。窗口名称（如 Activity 标题）需要额外的窗口侧表或 Trace 上下文才能还原。不同版本的 Perfetto 中，这个视图的字段和可用性可能存在差异。
-
-
-## 端到端输入延迟的量化查询
-
-### 最慢输入事件 Top 100
-
-最慢输入事件查询使用 dispatch_ts/receive_ts/ack_ts 计算各阶段延迟：
+延迟字段已经在 stdlib 里算好。查询时直接使用 `dispatch_latency_dur`、`handling_latency_dur`、`ack_latency_dur`、`total_latency_dur`，不要自己拼不存在的 `ack_ts`：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 
 SELECT
-  CAST(input.dispatch_ts / 1000000.0) AS timestamp_ms,
-  process.name AS receiving_process,
-  (input.receive_ts - input.dispatch_ts) / 1000000.0 AS dispatch_ms,
-  (input.ack_ts - input.receive_ts) / 1000000.0 AS handling_ms,
-  (input.ack_ts - input.dispatch_ts) / 1000000.0 AS total_ms,
-  input.input_event_id
-FROM android_input_events AS input
-JOIN process ON input.process_name = process.name
-WHERE input.receive_ts IS NOT NULL
-  AND input.ack_ts IS NOT NULL
-ORDER BY (input.ack_ts - input.dispatch_ts) DESC
+  input_event_id,
+  process_name,
+  dispatch_latency_dur,
+  handling_latency_dur,
+  ack_latency_dur,
+  total_latency_dur,
+  end_to_end_latency_dur
+FROM android_input_events
+LIMIT 20;
+```
+
+#### android_motion_events 与 android_key_events
+
+这两张表来自 `android.input.inputevent` 数据源，定位是“原始事件记录”，不是 `android_input_events` 的一一镜像。公开列比较少：
+
+| 表 | 公开列 | 适合回答的问题 |
+|----|--------|----------------|
+| `android_motion_events` | `id, event_id, ts, arg_set_id` | 某次 motion event 何时进入系统、原始参数存在哪个 `arg_set_id` |
+| `android_key_events` | `id, event_id, ts, arg_set_id` | 某次 key event 何时进入系统、原始参数存在哪个 `arg_set_id` |
+
+`event_id` 是原始 inputevent 数据源里的 long 型 ID，`arg_set_id` 指向 `args` 表中的事件详情。动作类型、坐标、按键码这类字段要从 `arg_set_id` 继续解包，不能把它们当成公开列直接写进 SQL。
+
+[已验证: Perfetto stdlib android/input.sql]
+
+### android_input_event_dispatch（窗口分发表）
+
+`android_input_event_dispatch` 也是 `android.input.inputevent` 数据源的一层视图，用来补“这次 dispatch 指向哪个 window / vsync 状态”：
+
+| 字段 | 类型 | 含义 |
+|------|------|------|
+| `id` | long | 这条 dispatch 记录在 trace 里的 ID |
+| `event_id` | long | 原始 inputevent 的 `event_id` |
+| `arg_set_id` | `ARGSETID` | 分发决策附带参数 |
+| `vsync_id` | long | 做出分发决策时对应的 Vsync ID |
+| `window_id` | long | 接收事件的窗口 ID |
+
+`event_id` 属于原始 inputevent 视图，`android_input_events.input_event_id` 属于 stdlib 聚合后的生命周期视图。两者不是同一列，不能直接做等值 JOIN。要把窗口分发决策和生命周期表放在一起看，通常要回到 raw datasource 或 trace 上下文补桥接关系。
+
+## 端到端输入延迟的量化查询
+
+
+### 最慢输入事件 Top 100
+
+最慢输入事件优先按 stdlib 已计算好的延迟字段排序：
+
+```sql
+INCLUDE PERFETTO MODULE android.input;
+
+SELECT
+  CAST(dispatch_ts / 1000000.0) AS timestamp_ms,
+  process_name,
+  thread_name,
+  CAST(dispatch_latency_dur / 1000000.0) AS dispatch_ms,
+  CAST(handling_latency_dur / 1000000.0) AS handling_ms,
+  CAST(ack_latency_dur / 1000000.0) AS ack_ms,
+  CAST(total_latency_dur / 1000000.0) AS total_ms,
+  input_event_id
+FROM android_input_events
+WHERE total_latency_dur IS NOT NULL
+ORDER BY total_latency_dur DESC
 LIMIT 100;
 ```
 
-[已验证: perfetto.dev/docs/analysis/sql-tables/android-input, 基础查询语法已验证]
-
 查询结果的解读方法：
 
-- **dispatch_ms 高**（> 5ms）：InputDispatcher 到 App 的 IPC 延迟大。通常意味着 system_server 进程负载高，或者 InputDispatcher 线程调度不及时。在 Perfetto 中可以切换到 system_server 的 InputDispatcher track 查看线程调度状态
-- **handling_ms 高**（> 10ms）：App 主线程处理事件耗时过长。这是最常见的问题——`View.onTouchEvent()` 中做了耗时操作（如数据库查询、SharedPreferences 写入等），直接压缩了后续渲染时间
-- **total_ms 高**（> 16ms）：整体输入响应延迟大，可能涉及多个阶段的累积延迟
+- **dispatch_ms 高**（> 5ms）：InputDispatcher 到 App 的 IPC / 调度延迟偏大。排查重点在 system_server 的 InputDispatcher 线程和目标进程主线程的调度状态。
+- **handling_ms 高**（> 10ms）：App 线程收到事件后处理太久，常见原因是主线程里直接做 I/O、Binder 同步调用或重逻辑计算。
+- **ack_ms 高**：App 已经完成事件处理，但 ACK 回到系统侧仍然慢，常见于线程调度抖动、Binder 路径拥塞，或 trace 中 system_server 负载偏高。
+- **total_ms 高**（> 16ms）：整体输入响应时间偏大，需要把前三段一起拆开看。
+
 
 ### 延迟分布统计
 
-分析整体延迟分布，识别系统性问题 vs 偶发异常：
+分析整体延迟分布，优先使用 stdlib 已经算好的 duration 字段：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 
 SELECT
   'dispatch' AS stage,
-  MIN((receive_ts - dispatch_ts) / 1000000.0) AS p0_ms,
-  PERCENTILE((receive_ts - dispatch_ts) / 1000000.0, 50) AS p50_ms,
-  PERCENTILE((receive_ts - dispatch_ts) / 1000000.0, 95) AS p95_ms,
-  MAX((receive_ts - dispatch_ts) / 1000000.0) AS max_ms,
+  MIN(dispatch_latency_dur / 1000000.0) AS p0_ms,
+  PERCENTILE(dispatch_latency_dur / 1000000.0, 50) AS p50_ms,
+  PERCENTILE(dispatch_latency_dur / 1000000.0, 95) AS p95_ms,
+  MAX(dispatch_latency_dur / 1000000.0) AS max_ms,
   COUNT(*) AS sample_count
 FROM android_input_events
-WHERE receive_ts IS NOT NULL
+WHERE dispatch_latency_dur IS NOT NULL
 
 UNION ALL
 
 SELECT
   'handling' AS stage,
-  MIN((ack_ts - receive_ts) / 1000000.0),
-  PERCENTILE((ack_ts - receive_ts) / 1000000.0, 50),
-  PERCENTILE((ack_ts - receive_ts) / 1000000.0, 95),
-  MAX((ack_ts - receive_ts) / 1000000.0),
+  MIN(handling_latency_dur / 1000000.0),
+  PERCENTILE(handling_latency_dur / 1000000.0, 50),
+  PERCENTILE(handling_latency_dur / 1000000.0, 95),
+  MAX(handling_latency_dur / 1000000.0),
   COUNT(*)
 FROM android_input_events
-WHERE ack_ts IS NOT NULL
+WHERE handling_latency_dur IS NOT NULL
+
+UNION ALL
+
+SELECT
+  'ack' AS stage,
+  MIN(ack_latency_dur / 1000000.0),
+  PERCENTILE(ack_latency_dur / 1000000.0, 50),
+  PERCENTILE(ack_latency_dur / 1000000.0, 95),
+  MAX(ack_latency_dur / 1000000.0),
+  COUNT(*)
+FROM android_input_events
+WHERE ack_latency_dur IS NOT NULL
 
 UNION ALL
 
 SELECT
   'total' AS stage,
-  MIN((ack_ts - dispatch_ts) / 1000000.0),
-  PERCENTILE((ack_ts - dispatch_ts) / 1000000.0, 50),
-  PERCENTILE((ack_ts - dispatch_ts) / 1000000.0, 95),
-  MAX((ack_ts - dispatch_ts) / 1000000.0),
+  MIN(total_latency_dur / 1000000.0),
+  PERCENTILE(total_latency_dur / 1000000.0, 50),
+  PERCENTILE(total_latency_dur / 1000000.0, 95),
+  MAX(total_latency_dur / 1000000.0),
   COUNT(*)
 FROM android_input_events
-WHERE ack_ts IS NOT NULL AND dispatch_ts IS NOT NULL;
+WHERE total_latency_dur IS NOT NULL;
 ```
 
 **参考值示例**：Pixel 7 / Android 14 / 60Hz / 主线程无阻塞 / 滑动场景 / 2000 样本
@@ -252,8 +267,7 @@ WHERE ack_ts IS NOT NULL AND dispatch_ts IS NOT NULL;
 | handling | < 2 ms | < 8 ms | < 16 ms |
 | total | < 4 ms | < 12 ms | < 24 ms |
 
-如果 P95 和 P99 之间的差距特别大（比如 P95 = 5 ms，但 P99 = 50 ms），说明存在偶发的极端延迟。这时可以带着时间戳回到 Perfetto UI，看那个时间点前后的系统状态。常见伴生现象包括 GC 暂停、Binder 调用阻塞或线程调度异常。
-
+如果 P95 和 P99 之间差得很大，说明存在少量尖峰事件。这时可以带着时间戳回到 Perfetto UI，看对应时刻前后的 CPU 调度、Binder、GC 或锁等待状态。
 
 ## InputDispatcher 延迟分解
 
@@ -287,45 +301,44 @@ LIMIT 50;
 - `oq` 堆积：已发送的事件在等 App 的 ACK，说明 App 主线程处理慢
 - `wq` 堆积：等待窗口获取焦点的事件在排队，通常是窗口切换场景（如启动新 Activity）
 
+
 ### ANR 前的输入事件堆积分析
 
-当发生输入 ANR（InputDispatcher 5 秒超时）时，回溯 ANR 前 5 秒的输入事件状态非常关键：
+当发生输入 ANR（InputDispatcher 5 秒超时）时，回溯 ANR 前 5 秒的输入事件状态很有用：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 
--- 找到 ANR 时间点（通过 ANR trace 切片）
 WITH anr_time AS (
   SELECT
     MIN(ts) AS anr_ts
   FROM slice
   WHERE name GLOB '*anr*'
-    OR name GLOB '*ANR*'
+     OR name GLOB '*ANR*'
   LIMIT 1
 ),
-
--- ANR 前 5 秒的输入事件
 pre_anr_events AS (
   SELECT
     CAST(input.dispatch_ts / 1000000.0) AS timestamp_ms,
-    CAST((input.dispatch_ts - (SELECT anr_ts FROM anr_time)) / 1000000.0) AS ms_before_anr,
-    CAST((input.receive_ts - input.dispatch_ts) / 1000000.0) AS dispatch_ms,
-    CAST((input.ack_ts - input.receive_ts) / 1000000.0) AS handling_ms,
-    CAST((input.ack_ts - input.dispatch_ts) / 1000000.0) AS total_ms,
+    CAST((anr_time.anr_ts - input.dispatch_ts) / 1000000.0) AS ms_to_anr,
+    CAST(input.dispatch_latency_dur / 1000000.0) AS dispatch_ms,
+    CAST(input.handling_latency_dur / 1000000.0) AS handling_ms,
+    CAST(input.ack_latency_dur / 1000000.0) AS ack_ms,
+    CAST(input.total_latency_dur / 1000000.0) AS total_ms,
+    input.process_name,
+    input.thread_name,
     input.input_event_id
   FROM android_input_events AS input, anr_time
   WHERE input.dispatch_ts BETWEEN (anr_time.anr_ts - 5000000000) AND anr_time.anr_ts
-    AND input.receive_ts IS NOT NULL
-    AND input.ack_ts IS NOT NULL
   ORDER BY input.dispatch_ts ASC
 )
-
-SELECT * FROM pre_anr_events;
+SELECT *
+FROM pre_anr_events;
 ```
 
-[已验证: Perfetto SQL 支持 WITH 子句和子查询]
+`ms_to_anr` 越小，说明事件越接近 ANR 触发点。若 `handling_ms` 从几个毫秒逐渐抬到几十或上百毫秒，通常意味着 App 主线程在 ANR 前已经持续退化；若 `dispatch_ms` 持续抬高，则要回头检查 system_server 侧调度和输入分发线程。
 
-通过 `ms_before_anr` 列能追踪 ANR 前输入事件延迟的恶化过程。如果观察到 `handling_ms` 从正常的 2-3ms 逐渐增长到几十甚至几百毫秒，说明 App 主线程逐步被阻塞——可能是某个同步操作在主线程上执行，或者 GC 暂停越来越频繁。
+[已验证: Perfetto SQL 支持 WITH 子句和子查询]
 
 [交叉引用: §9.1 ANR 设计思想 — 输入 ANR 的超时机制详解]
 
@@ -336,138 +349,109 @@ SELECT * FROM pre_anr_events;
 
 ### 输入事件到帧渲染的精确关联
 
-Perfetto stdlib 提供输入事件与帧关联的专门能力，优先使用内置机制而非 slice name 近似匹配：
+`android.input` 模块内部会把输入事件挂到 first non-dropped frame 上。公共查询里最稳的锚点是 `android_input_events.frame_id`；如果 trace 同时包含 FrameTimeline，再用 `android_frames` 补帧的起点和持续时间。
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
+INCLUDE PERFETTO MODULE android.frames.timeline;
 
--- 使用 frame_id 关联实现精确匹配
 SELECT
   CAST(input.dispatch_ts / 1000000.0) AS input_ts_ms,
-  (input.ack_ts - input.dispatch_ts) / 1000000.0 AS input_total_ms,
+  CAST(input.total_latency_dur / 1000000.0) AS input_total_ms,
   input.frame_id,
-  input.is_speculative_frame,
-  -- 关联帧信息（如果存在）
-  CAST(frame.ts / 1000000.0) AS frame_ts_ms,
-  frame.name AS frame_name,
-  -- 从输入事件到帧开始的时间差
-  CAST((frame.ts - input.dispatch_ts) / 1000000.0) AS input_to_frame_ms
+  CAST(frame.ts / 1000000.0) AS frame_start_ms,
+  CAST(frame.dur / 1000000.0) AS frame_dur_ms,
+  CAST((frame.ts - input.dispatch_ts) / 1000000.0) AS input_to_do_frame_ms,
+  frame.process_name
 FROM android_input_events AS input
-LEFT JOIN frame ON frame.id = input.frame_id
-WHERE input.dispatch_ts IS NOT NULL
-  AND frame.ts IS NOT NULL
-  -- 排除已确认失效的 slice name 匹配方法
-  AND frame.name NOT GLOB '*Choreographer#doFrame*'
+LEFT JOIN android_frames AS frame
+  ON frame.frame_id = input.frame_id
+ AND frame.process_name = input.process_name
+WHERE input.frame_id IS NOT NULL
 ORDER BY input.dispatch_ts ASC
 LIMIT 200;
 ```
 
-**重要**：此查询基于 Perfetto stdlib 的 frame_id 关联，比基于 slice name 的方法更可靠。
+`frame_id` 为 `NULL` 说明这次输入没有关联到后续帧。若文档或本地构建里还能看到 `is_speculative_frame`，用它前先执行 `SELECT * FROM android_input_events LIMIT 1` 确认列是否真的存在。
 
-**边界情况处理**：
-- frame_id 为 NULL：输入事件未关联到帧，通常为快速连续输入
-- 同一 frame_id 关联多个输入事件：batched motion（多点触控）场景
-- is_speculative_frame=true：可预测输入处理，通常延迟更低
+### doFrame：沿 slice 树看 callback
 
-`input_to_frame_ms` 列告诉我们输入事件触发后，到对应帧开始的时间差。这个值受 VSync 同步影响——如果输入事件刚好在 VSync 信号之后到达，就要等一个完整的 VSync 周期才能触发 doFrame。`is_speculative_frame` 字段帮助我们区分普通帧和可预测帧（后者通常处理更快）。
+Perfetto 没有通用的 `android_callback` 公共视图。要看某次 `Choreographer#doFrame` 里面有哪些 callback，先用 `android_frames.do_frame_id` 找到 doFrame slice，再沿 slice 树往下看更稳。
 
-### Choreographer 回调耗时分析
-
-使用 Perfetto stdlib 的专用视图追踪回调耗时，避免版本间的 slice name 差异：
+先枚举这份 trace 里 doFrame 的直接子 slice 名称：
 
 ```sql
--- 使用 stdlib 的回调跟踪视图（可跨版本）
-SELECT
-  CAST(callback.start_ts / 1000000.0) AS callback_start_ms,
-  callback.type AS callback_type,
-  CAST(callback.dur / 1000000.0) AS callback_dur_ms,
-  process.name AS process_name
-FROM android_callback AS callback
-JOIN process ON callback.process_id = process.upid
-WHERE callback.type IN ('CALLBACK_INPUT', 'CALLBACK_ANIMATION', 'CALLBACK_TRAVERSAL')
-  AND callback.dur > 1000000  -- 过滤掉极短的回调
-ORDER BY callback.start_ts ASC
-LIMIT 100;
+INCLUDE PERFETTO MODULE android.frames.timeline;
+
+SELECT DISTINCT child.name
+FROM android_frames AS frame
+JOIN slice AS child
+  ON child.parent_id = frame.do_frame_id
+ORDER BY child.name;
 ```
 
-**版本兼容性**：android_callback 视图提供标准化的回调类型字段，可跨版本使用。
-
-**备用方案**（当 android_callback 不可用时）：
-```sql
--- 使用 slice 名称匹配（需根据具体版本调整）
-SELECT
-  CAST(slice.ts / 1000000.0) AS start_ms,
-  slice.name,
-  CAST(slice.dur / 1000000.0) AS dur_ms
-FROM slice
-WHERE slice.name GLOB '*doFrame*'
-  OR slice.name GLOB '*CALLBACK*'
-ORDER BY slice.ts ASC;
-```
-
-对于更精确的同一帧内回调时间分析：
+确认名字之后，再按这份 trace 里实际出现的 callback 名称过滤：
 
 ```sql
--- 分析同一帧中各回调的耗时
-WITH callback_times AS (
+INCLUDE PERFETTO MODULE android.frames.timeline;
+
+WITH do_frame_children AS (
   SELECT
-    CAST(start_ts / 1000000.0) AS start_ms,
-    type,
-    CAST(dur / 1000000.0) AS dur_ms,
-    start_ts + dur AS end_ts,
-    frame_id
-  FROM android_callback
-  WHERE type IN ('CALLBACK_INPUT', 'CALLBACK_ANIMATION', 'CALLBACK_TRAVERSAL')
+    frame.frame_id,
+    frame.process_name,
+    child.name,
+    child.ts,
+    child.dur
+  FROM android_frames AS frame
+  JOIN slice AS child
+    ON child.parent_id = frame.do_frame_id
 )
 SELECT
   frame_id,
-  MAX(CASE WHEN type = 'CALLBACK_INPUT' THEN start_ms END) AS input_start,
-  MAX(CASE WHEN type = 'CALLBACK_INPUT' THEN dur_ms END) AS input_dur,
-  MAX(CASE WHEN type = 'CALLBACK_TRAVERSAL' THEN start_ms END) AS traversal_start,
-  MAX(CASE WHEN type = 'CALLBACK_TRAVERSAL' THEN dur_ms END) AS traversal_dur,
-  (MAX(CASE WHEN type = 'CALLBACK_TRAVERSAL' THEN start_ms END) - 
-   MAX(CASE WHEN type = 'CALLBACK_INPUT' THEN end_ts END)) AS gap_ms
-FROM callback_times
-GROUP BY frame_id
-HAVING input_dur > 5 OR traversal_dur > 10
-ORDER BY frame_id;
+  process_name,
+  name AS callback_name,
+  CAST(ts / 1000000.0) AS start_ms,
+  CAST(dur / 1000000.0) AS dur_ms
+FROM do_frame_children
+WHERE lower(name) GLOB '*input*'
+   OR lower(name) GLOB '*animation*'
+   OR lower(name) GLOB '*traversal*'
+ORDER BY ts ASC
+LIMIT 200;
 ```
 
-如果 `input_dur_ms` 过大（> 5ms），说明 `View.onTouchEvent()` 中的处理逻辑需要优化。`gap_ms`（input 结束到 traversal 开始的间隔）如果过大，说明中间的 ANIMATION 回调耗时。
+不同 Android 版本、App 埋点方式和 trace 配置下，callback slice 的命名可能不一样。先枚举、再过滤，命中率更高。
 
 [交叉引用: §2.4 Choreographer 与渲染流水线 — doFrame 回调机制详解]
 
-
 ## 常用 SQL 模板集
+
 
 ### 模板 1：滑动卡顿输入分析
 
-当用户反馈"滑动时偶尔卡一下"，用这个模板分析滑动期间的输入延迟分布：
+滑动列表卡顿时，先量化这段时间内的输入事件延迟：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 
--- 滑动期间的输入事件延迟分析
--- 假设已知滑动时间范围（从 Perfetto UI 中获取）
 SELECT
   CAST(input.dispatch_ts / 1000000.0) AS timestamp_ms,
-  CAST((input.receive_ts - input.dispatch_ts) / 1000000.0) AS dispatch_ms,
-  CAST((input.ack_ts - input.receive_ts) / 1000000.0) AS handling_ms,
-  CAST((input.ack_ts - input.dispatch_ts) / 1000000.0) AS total_ms,
+  CAST(input.dispatch_latency_dur / 1000000.0) AS dispatch_ms,
+  CAST(input.handling_latency_dur / 1000000.0) AS handling_ms,
+  CAST(input.ack_latency_dur / 1000000.0) AS ack_ms,
+  CAST(input.total_latency_dur / 1000000.0) AS total_ms,
   CASE
-    WHEN (input.ack_ts - input.receive_ts) > 16000000 THEN 'HANDLING_SLOW'
-    WHEN (input.receive_ts - input.dispatch_ts) > 5000000 THEN 'DISPATCH_SLOW'
-    WHEN (input.ack_ts - input.dispatch_ts) > 32000000 THEN 'TOTAL_SLOW'
+    WHEN input.handling_latency_dur > 16000000 THEN 'HANDLING_SLOW'
+    WHEN input.dispatch_latency_dur > 5000000 THEN 'DISPATCH_SLOW'
+    WHEN input.total_latency_dur > 32000000 THEN 'TOTAL_SLOW'
     ELSE 'OK'
   END AS status
 FROM android_input_events AS input
 WHERE input.dispatch_ts BETWEEN {start_ts} AND {end_ts}
-  AND input.receive_ts IS NOT NULL
-  AND input.ack_ts IS NOT NULL
 ORDER BY input.dispatch_ts ASC;
 ```
 
-使用方法：在 Perfetto UI 中找到滑动操作的时间范围，将起止时间戳（纳秒）替换 `{start_ts}` 和 `{end_ts}`。查询结果会标记每个事件的健康状态，快速定位异常事件。
+使用方法：在 Perfetto UI 中找到滑动操作的时间范围，将起止时间戳（纳秒）替换 `{start_ts}` 和 `{end_ts}`。结果会直接标出每次输入主要慢在哪一段。
 
 ### 模板 2：ANR 输入超时分析
 
@@ -507,6 +491,7 @@ LIMIT 50;
 
 [交叉引用: §9.3 ANR 分析方法 — 完整的 ANR 分析流程]
 
+
 ### 模板 3：冷启动输入响应分析
 
 冷启动后第一个可交互输入的延迟分析——用户点击 icon 到 App 首次响应输入：
@@ -514,32 +499,27 @@ LIMIT 50;
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 
--- 冷启动期间（Activity 显示前）的输入事件
--- 先确定冷启动的时间范围
 WITH cold_start AS (
   SELECT
     MIN(ts) AS start_ts,
-    MIN(ts) + 3000000000 AS end_ts  -- 冷启动前 3 秒
+    MIN(ts) + 3000000000 AS end_ts
   FROM slice
   WHERE name = 'ActivityThread#handleBindApplication'
-    OR name GLOB '*Activity*onCreate*'
+     OR name GLOB '*Activity*onCreate*'
   LIMIT 1
 )
 SELECT
   CAST(input.dispatch_ts / 1000000.0) AS timestamp_ms,
   CAST((input.dispatch_ts - cold_start.start_ts) / 1000000.0) AS ms_since_start,
-  CAST((input.ack_ts - input.dispatch_ts) / 1000000.0) AS total_ms,
-  process.name AS process_name
-FROM android_input_events AS input
-JOIN process ON input.process_name = process.name, cold_start
+  CAST(input.total_latency_dur / 1000000.0) AS total_ms,
+  input.process_name,
+  input.thread_name
+FROM android_input_events AS input, cold_start
 WHERE input.dispatch_ts BETWEEN cold_start.start_ts AND cold_start.end_ts
-  AND input.receive_ts IS NOT NULL
-  AND input.ack_ts IS NOT NULL
 ORDER BY input.dispatch_ts ASC;
 ```
 
 [交叉引用: §8.2 App 启动全流程 — 冷启动的性能分析详解]
-
 
 ## 与 13.5 专题解读的衔接
 
@@ -569,15 +549,43 @@ ORDER BY input.dispatch_ts ASC;
 [交叉引用: §13.5 专题解读 — Perfetto UI 的可视化分析方法]
 
 
+
 ## 自定义 input trace config
 
 ### 最小化输入分析配置
 
-如果只需要输入延迟数据，以下 `TraceConfig` 可以最小化 Trace 文件体积：
+`android.input` 是 SQL 分析模块，真正采集数据的是 `android.input.inputevent` 数据源。`AndroidInputEventConfig` 里需要重点盯四个字段：
+
+- `mode`：默认是 `TRACE_MODE_USE_RULES`
+- `rules`：按声明顺序匹配，首个命中的 rule 决定 trace level
+- `trace_dispatcher_input_events`：控制是否记录 InputDispatcher 处理中的 input event
+- `trace_dispatcher_window_dispatch`：控制是否记录窗口分发决策
+
+空的 `android_input_event_config {}` 不能直接当成“默认就覆盖完整输入事件与帧数据”的证据。proto 只说明默认 `mode`，没有给出一套默认规则。文档里给配置示例时，把字段显式写出来更稳。
+
+下面是一个更容易解释的最小配置：
 
 ```protobuf
 buffers: {
   size_kb: 32768
+}
+data_sources: {
+  config {
+    name: "android.input.inputevent"
+    android_input_event_config {
+      mode: TRACE_MODE_USE_RULES
+      trace_dispatcher_input_events: true
+      trace_dispatcher_window_dispatch: true
+      rules {
+        trace_level: TRACE_LEVEL_REDACTED
+      }
+    }
+  }
+}
+data_sources: {
+  config {
+    name: "android.frame_timeline"
+  }
 }
 data_sources: {
   config {
@@ -589,38 +597,28 @@ data_sources: {
     }
   }
 }
-# 注意：以下数据源配置存在概念混淆，已修正
-# android.input 是查询模块，不是数据源；实际数据源是 android.input.inputevent
+```
+
+**版本与权限边界**：`android.input.inputevent` 只支持 debuggable build（userdebug / eng）。要采完整事件内容，可以把 rule 的 `trace_level` 提到 `TRACE_LEVEL_COMPLETE`，但这只适合本地排障和测试机。
+
+### 输入 + 帧联合配置
+
+如果目标是把输入、帧和调度上下文一起带出来，配置可以再补一层：
+
+```protobuf
 data_sources: {
   config {
     name: "android.input.inputevent"
     android_input_event_config {
-      # 默认配置已包含 InputReader 到 App 的完整链路
-      # 启用此数据源需要 debuggable build
+      mode: TRACE_MODE_USE_RULES
+      trace_dispatcher_input_events: true
+      trace_dispatcher_window_dispatch: true
+      rules {
+        trace_level: TRACE_LEVEL_REDACTED
+      }
     }
   }
 }
-data_sources: {
-  config {
-    name: "linux.sys_stats"
-    sys_stats_config {
-      meminfo_period_ms: 1000
-    }
-  }
-}
-```
-
-**区分查询模块和数据源**：
-- `android.input` 是**查询模块**（用于 SQL 分析）
-- 实际**数据源**是 `android.input.inputevent`（需要 debuggable build）
-- 端到端延迟需要 FrameTimeline 数据补充 InputReader 阶段
-
-### 完整输入链路配置
-
-如果需要覆盖从内核到显示的完整链路，需要额外启用：
-
-```protobuf
-# 在上述基础上添加
 data_sources: {
   config {
     name: "android.frame_timeline"
@@ -631,23 +629,24 @@ data_sources: {
     name: "surfaceflinger.frame"
   }
 }
-# 启用 input ftrace events 以获取内核层时间戳
 data_sources: {
   config {
     name: "linux.ftrace"
     ftrace_config {
       ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
       atrace_categories: "input"
+      atrace_categories: "view"
+      atrace_categories: "gfx"
       atrace_apps: "<your.app.package>"
     }
   }
 }
 ```
 
-[待验证: atrace_categories: "input" 是否需要 root 权限，debuggable App 是否可以通过 Developer Options 启用]
+`trace_dispatcher_input_events` 和 `trace_dispatcher_window_dispatch` 一起打开时，能把 inbound event 和窗口分发决策都记录下来。`rules` 仍然会决定哪些事件真正落盘，所以 trace level 与 package / secure / IME 规则要一起看。
 
-**性能开销**：完整配置的 Trace 文件大约每秒增长 2-5MB。对于 10 秒的输入延迟分析，生成 20-50MB 的 Trace 文件，Perfetto UI 可以流畅处理。
-
+**性能开销**：完整配置会明显放大 trace 体积。抓 10 秒输入问题时，先把场景压到最小，再决定是否把 `TRACE_LEVEL_COMPLETE` 打开。
 
 ## 批量 Trace 的输入延迟对比
 
