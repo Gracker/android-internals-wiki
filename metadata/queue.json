@@ -2757,6 +2757,66 @@
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T02:07:07",
       "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
+      "section_title": "1.15 JNI/NDK 性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] P0: @CriticalNative 数组边界规则自相矛盾",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "@CriticalNative 数组参数边界（L87 / L182 / L255）",
+          "detail": "正文前后给出了两套互相冲突的规则：前文写 primitive array 可用于 @CriticalNative，误区段又写只要签名里有数组就不适用；而官方 CriticalNative 文档当前只给出“不能使用 managed objects”的总规则。",
+          "suggestion": "统一成单一边界，并在复核当前 ART 源码/测试前，不要继续给出“primitive array 一定可用”的绝对结论。",
+          "evidence": [
+            "https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T04:05:49+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+      "section_title": "1.16 Audio Pipeline 延迟与性能",
+      "priority": 85,
+      "reason": "[Deep Tech Review] P1: Android 16 AAudio offloaded playback 边界仍写成待验证",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "AAudio offloaded playback（L362 / L368-L370 / L408）",
+          "detail": "正文仍把 AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED 的 API 入口、最小版本写成 [待验证]。但 android-16.0.0_r1 的 frameworks/av/media/libaaudio/include/aaudio/AAudio.h 已定义该常量，并说明它走 offloaded audio path、且不支持 input stream。",
+          "suggestion": "把 Android 16 作为已验证版本边界写实，再把设备覆盖范围、payload 约束、是否走 compressed offload 单独写成条件项。",
+          "evidence": [
+            "frameworks/av/media/libaaudio/include/aaudio/AAudio.h (android-16.0.0_r1)"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T04:05:49+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch11-power/01-power-model.md",
+      "section_title": "11.1 Android 功耗模型",
+      "priority": 95,
+      "reason": "[Deep Tech Review] P0: BatteryStats reset 条件被写成每次充满/拔电都会触发",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "BatteryStats 数据存储与持久化（L228）",
+          "detail": "正文把 stats reset 写成“每次设备充电完成或拔掉充电器都会重置”。但 BatteryStatsImpl.shouldResetOnUnplugLocked() 实际按 full/高电量、显著充电、超长 session 等条件决定，不是每次 unplug 都会重置。",
+          "suggestion": "改成条件触发逻辑，并把 Battery Historian 的“手动 reset 获取干净窗口”与系统自动 reset 区分开。",
+          "evidence": [
+            "services/core/java/com/android/server/power/stats/BatteryStatsImpl.java (android-16.0.0_r1)"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T04:05:49+08:00",
+      "status": "pending"
     }
   ]
 }
