@@ -491,6 +491,92 @@
       ],
       "added_by": "external-ai-review",
       "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+      "section_title": "Perfetto SQL 性能分析实战手册",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3 处技术问题",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L59-L66 Monitor Contention 模块加载",
+          "detail": "正文使用 `INCLUDE PERFETTO MODULE android.monitor;`，但 Perfetto 官方标准库模块名是 `android.monitor_contention`。示例按现稿执行会直接失败，且正文末尾的“已验证”口径与模块名不一致。",
+          "suggestion": "把模块名、示例 SQL 与对应派生表统一到 `android.monitor_contention`，再补一条可直接运行的最小查询。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L167-L183 Frame Timeline 查询",
+          "detail": "示例把 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 用 `track_id + 时间接近` 关联，并以 `actual.dur > expected.dur` 判定 jank。Frame Timeline 的真实关联键应基于 frame token（如 `surface_frame_token` / `display_frame_token`）或官方 stdlib 视图，当前写法会把同轨相邻帧错配。",
+          "suggestion": "改成基于 frame token/stdlib 视图的关联，并直接使用官方暴露的 jank / overrun 字段说明判定口径。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L259-L267 与 L489-L514 sched/end_state 解释",
+          "detail": "章节把 `sched.end_state` 当成线程当前状态来解读，甚至把 `Running` 写成 end_state，并在 ANR SQL 中使用 `sched.end_state != \"Running\"`。Perfetto 中 Running 区间由 `sched`/`thread_state` 行本身表示，`end_state` 只表示线程离开 CPU 后转入的状态。",
+          "suggestion": "把线程“当前状态”与 `end_state` 分开讲，改用 `thread_state.state` 或官方 runnable-state 视图重写状态分布与阻塞分类 SQL。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T17:08:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "section_title": "Input 事件分发全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L352-L390 Stale Event 丢弃机制",
+          "detail": "这一节把 `STALE_EVENT_TIMEOUT` + `InputDispatcher::isStale()` 作为 Android 12-16 的统一实现，但代码块已经自注“[存疑]”，且后文 L519 又引用提交 `c307313163ac` 说明 `isStaleEvent` 已委托给 policy。当前叙述把不同版本实现揉成一套固定代码路径，读者会被误导。",
+          "suggestion": "拆开 Android 12/13、14、15/16 的实现差异；删掉伪代码，改成真实符号名 + 提交号 + 版本边界。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L614-L656 InputFlinger 角色与演进 / 版本表",
+          "detail": "章节在正文和版本表中直接下结论“Android 12 代码重构”“Android 14+ 进一步模块化”“Android 16 Predictive Back 影响分发路径”，但 frontmatter 与正文同时承认 Android 12/13/15/16 行为未做源码级核验。当前版本演进口径缺少逐版源码锚点。",
+          "suggestion": "把已核验版本与未核验版本拆开，补 android-12/13/15/16 的源码或提交锚点；未核验部分统一降级为 [待验证]。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T17:08:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch09-anr/04-special-anr.md",
+      "section_title": "特殊场景的 ANR",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3 处技术问题",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L151-L168 SharedPreferences apply() ANR",
+          "detail": "正文把 `QueuedWork.waitToFinish()` 解释成“主线程逐个执行写入任务”，并用 `toFinish.run()` 说明主线程在跑磁盘写入。真实链路是 `SharedPreferencesImpl.apply()` 先通过 `enqueueDiskWrite()` 把磁盘写入放到后台线程，`QueuedWork` 中的 finisher 主要等待 `awaitCommit()` 完成。现稿把“等待后台刷盘”写成了“主线程亲自刷盘”。",
+          "suggestion": "沿 `SharedPreferencesImpl.apply() -> enqueueDiskWrite() -> postWriteRunnable/awaitCommit -> QueuedWork.waitToFinish()` 重写这一节，明确主线程阻塞点是等待而不是直接执行 XML 写盘。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L251-L269 与 L361 前台服务超时 ANR",
+          "detail": "章节把“未在时限内调用 `startForeground()`”与 `ForegroundServiceStartNotAllowedException` 混为一谈，还写成 Android 12 新增 5 秒规则、Android 11 及以前 10 秒。前者对应的是 `ForegroundServiceDidNotStartInTimeException`/RemoteServiceException 路径；`ForegroundServiceStartNotAllowedException` 是 Android 12 的后台启动限制，语义完全不同。",
+          "suggestion": "把“后台启动被拒绝”和“已启动但未及时晋升前台”拆成两个独立小节，并按 Android 8+ / 12+ / 14+ 标清异常类型与时限。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L49、L103、L361 Broadcast 超时与版本演进",
+          "detail": "正文把广播超时固定写成前台 10 秒 / 后台 60 秒，还在版本表里写成“Android 14 缩短后台 Broadcast 超时”。Android 14 的官方口径是 CPU starvation 时允许前台 10-20 秒、后台 60-120 秒浮动，而不是简单“缩短”。",
+          "suggestion": "补 Android 14 的 CPU-starvation 扩展区间与 `FLAG_RECEIVER_FOREGROUND` 边界，避免把 10/60 写成跨版本常量。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T17:08:00+08:00",
+      "status": "pending"
     }
   ]
 }

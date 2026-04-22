@@ -1,61 +1,61 @@
 {
-  "generated_at": "2026-04-22T14:30:00+08:00",
+  "generated_at": "2026-04-22T17:08:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 180,
   "metrics": {
     "finalized": 40,
-    "last_updated": "2026-04-22T14:30:00+08:00",
+    "last_updated": "2026-04-22T17:08:00+08:00",
     "pipeline_ready_to_publish": 40,
     "pipeline_stage_counts": {
       "ready-to-publish": 40,
-      "task6_pending": 67,
-      "task9_pending": 44,
-      "task2b_pending": 29
+      "task6_pending": 65,
+      "task9_pending": 40,
+      "task2b_pending": 35
     },
-    "pipeline_task2b_pending": 29,
-    "pipeline_task9_pending": 44,
+    "pipeline_task2b_pending": 35,
+    "pipeline_task9_pending": 40,
     "ready-for-review": 140,
-    "ready-to-publish": 40,
+    "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 137,
+      "fixed": 131,
       "unknown": 5,
       "idle": 6,
-      "pending": 32
+      "pending": 38
     },
     "task6_state_counts": {
       "reviewed": 117,
       "revisiting": 63
     },
     "task9_state_counts": {
-      "reviewed": 83,
-      "pending": 96,
+      "reviewed": 89,
+      "pending": 90,
       "fixed": 1
     },
     "total": 180,
     "total_sections": 180,
-    "unknown": 2
+    "unknown": 0
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "ready-to-publish": 40,
-      "task6_pending": 67,
-      "task9_pending": 44,
-      "task2b_pending": 29
-    },
-    "task2b_state_counts": {
-      "fixed": 137,
-      "unknown": 5,
-      "idle": 6,
-      "pending": 32
+      "task6_pending": 65,
+      "task9_pending": 40,
+      "task2b_pending": 35
     },
     "task6_state_counts": {
       "reviewed": 117,
       "revisiting": 63
     },
     "task9_state_counts": {
-      "reviewed": 83,
-      "pending": 96,
+      "reviewed": 89,
+      "pending": 90,
       "fixed": 1
+    },
+    "task2b_state_counts": {
+      "fixed": 131,
+      "unknown": 5,
+      "idle": 6,
+      "pending": 38
     }
   },
   "issues": {
@@ -600,14 +600,18 @@
       "chapter": "13.10",
       "section": "13.10",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task2b_result": "fixed"
+      "task2b_result": "pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T17:08:00+08:00"
     },
     "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
       "path": "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
@@ -1543,15 +1547,18 @@
       "chapter": "9.4",
       "section": "9.4",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed"
+      "task2b_result": "pending",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T17:08:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/07-textureview.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
@@ -3099,14 +3106,18 @@
       "title": "Input 事件分发全流程",
       "chapter": "3.1",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "task9_result": "pass-tech-review"
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-22T17:08:00+08:00",
+      "task2b_result": "pending"
     },
     "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
       "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",

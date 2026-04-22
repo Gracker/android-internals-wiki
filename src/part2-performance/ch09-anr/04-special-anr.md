@@ -26,17 +26,20 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task2b_state: "pending"
+task2b_result: "pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-19"
 rework_date: "2026-04-16"
 rework_by: "task2b-rework"
+task9_reviewed_date: "2026-04-22"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-22T17:08:00+08:00"
 ---
 
 # 特殊场景的 ANR
