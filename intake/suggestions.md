@@ -900,3 +900,21 @@
 - 问题**：[版本差异][§8.2]
 - **来源**：External AI Review
 
+## [Task9 Deep Review] 15.3 性能指标体系 — 2026-04-23
+- **类型**：数据支撑
+- **位置**：TTFD / system-triggered profiling（约 186-190 行）
+- **问题**：当前把 Android 16 的 system-triggered profiling 结论标成“已验证”，但挂靠的 `developer.android.com/topic/performance/launch-time` 只覆盖 TTID/TTFD 与 `reportFullyDrawn()`，并不支撑 ProfilingManager 触发机制本身。
+- **建议**：补一条 Android 16 ProfilingManager / system-triggered profiling 的官方来源，再把启动指标与 profiling 触发机制分开标注，避免证据链错位。
+
+## [Task9 Deep Review] 18.2 Android View 标准链路（BLAST 深入） — 2026-04-23
+- **类型**：原理准确性
+- **位置**：一帧的完整旅程 / Draw（记录）（约 51 行）
+- **问题**：把 `DisplayList` 直接写成“也称为 `RenderNode`”，会把命令列表和承载它的节点对象混成一个概念。
+- **建议**：改成“RenderNode 持有/封装 DisplayList”，后文 `syncFrameState` 同步 RenderNode 树时也更容易和对象边界对齐。
+
+## [Task9 Deep Review] 18.2 Android View 标准链路（BLAST 深入） — 2026-04-23
+- **类型**：交叉引用
+- **位置**：文末交叉引用（约 248-250 行）
+- **问题**：`[2.1 BufferQueue 机制](13-buffer-queue.md)`、`[2.5 SurfaceFlinger](06-surfaceflinger.md)`、`[2.6 同步机制](16-sync-fence.md)` 在当前目录下都是失效链接。
+- **建议**：改成指向 `../../part1-fundamentals/ch02-rendering/` 下的真实文件，保证章节内跳转和出版链路一致。
+
