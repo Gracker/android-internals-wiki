@@ -24,11 +24,11 @@ tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure'
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
 reviewed_date: "2026-04-22"
 reviewed_by: openclaw-task6
-polish_count: 4
+polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
@@ -240,7 +240,7 @@ Android 10+ 引入了 cgroup 抽象层和 Task Profiles 机制。厂商可以在
 
 这里的版本线要拆开看。早期 Android 主要依赖内核态 `lowmemorykiller` 驱动。Android 9 起，如果设备没有检测到 in-kernel LMK，且内核满足 memcg 等前提，可以启用 userspace `lmkd`。Android 10 起，内核提供 PSI monitor 时，lmkd 默认优先用 PSI 做内存压力检测；缺少 PSI 时再回退到 `vmpressure` 或 `minfree` 路径。
 
-cgroup 和 PSI 不是同一层。cgroup 负责进程分组、内存记账和 task profile 约束；PSI 负责把 stall 时间暴露给 lmkd，帮助它决定什么时候该杀后台进程。把这几条线分开看，才不会把“userspace lmkd”“memcg 依赖”和“PSI 模式”写成同一个版本开关。[已验证: 官方文档, source.android.com]
+cgroup 和 PSI 不是同一层。cgroup 负责进程分组、内存记账和 task profile 约束；PSI 负责把 stall 时间暴露给 lmkd，帮助它决定什么时候该杀后台进程。把这几条线分开看，才不会把“userspace lmkd”、“memcg 依赖”和“PSI 模式”写成同一个版本开关。[已验证: 官方文档, source.android.com]
 
 ### Compact Daemon（用户空间内存规整）
 
