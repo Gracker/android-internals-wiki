@@ -31,14 +31,15 @@ last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、A
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-17"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: fixed
+task2b_state: "pending"
+last_task9_at: "2026-04-22T22:55:00+08:00"
 task2b_result: fixed
 ---
 

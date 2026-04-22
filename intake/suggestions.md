@@ -725,3 +725,15 @@
 - **问题**：未提及 Android 15 开发者选项的 Disable default frame rate for games 开关
 - **建议**：补充 persist.graphics.game_default_frame_rate.enabled 属性控制的说明
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 2.4 Choreographer 与渲染流水线 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：高级分析方法 / 长帧 SQL 示例
+- **问题**：示例查询把长帧阈值写死为 `dur > 16666700`，只适用于 60Hz。正文前面已经讨论 90Hz / 120Hz 帧预算，读者如果直接复用 SQL，容易漏掉高刷新率设备上的长帧。
+- **建议**：把这段 SQL 明确标成“60Hz 示例”，或补成可参数化的 frame budget 查询。
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-04-22
+- **类型**：数据缺失
+- **位置**：ANGLE 层的性能影响
+- **问题**：`2-5% / 5-10% / 10-20%` 的开销区间没有给出设备、GPU、驱动版本、工作负载和测试方法，正文只写“Google I/O + 社区数据”，读者无法复核。
+- **建议**：补至少一组可复现实验条件，或改成 `[待验证]` / 经验值描述并说明适用边界。

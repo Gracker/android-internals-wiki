@@ -1216,3 +1216,19 @@ View 投票冲突解决机制（多个 View 请求不同 Category 时 SF 的合�
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-22-21-2.2-external-review.md)
+
+## [2026-04-22] 2.10 GPU 渲染深入 — 知识盲区
+
+### 盲区描述
+GPU 内存管理一节缺少 App 可见对象与系统内部图形缓冲对象之间的边界：Surface / SurfaceTexture / HardwareBuffer / ANativeWindow 如何进入 BufferQueue，再映射到 GraphicBuffer / GraphicBufferMapper / Gralloc / HWC。缺少这层后，读者很难把源码路径、内存占用、Perfetto / dumpsys 观测点连成一条可验证链。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 Surface / SurfaceTexture / HardwareBuffer / ANativeWindow 与 BufferQueue 的对象边界和所有权流转
+- 补齐 GraphicBuffer / Mapper / Gralloc / HWC 的内部角色分工，以及 meminfo / Perfetto / dumpsys 各自能看到什么
+
+### 关联章节
+2.6、18.6
+

@@ -1265,6 +1265,44 @@
       "added_by": "external-ai-review",
       "added_at": "2026-04-22T22:35:29",
       "status": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "section_title": "GPU 渲染深入",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 4 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Vertex/Fragment/GPU 内存管理段的 Canvas.java、Shader.java、GraphicBuffer.java 源码锚点",
+          "detail": "文中把 Canvas.java、Shader.java、GraphicBuffer.java 写成 frameworks/base/core/java/android/graphics/...；android-16.0.0_r1 实际位于 frameworks/base/graphics/java/android/graphics/...。",
+          "suggestion": "统一修正 graphics/java 路径，并逐一核对代码摘录对应的真实类文件。"
+        },
+        {
+          "type": "源码错误",
+          "location": "Framebuffer 伪代码注释中的 ANativeWindowBuffer 头文件路径",
+          "detail": "文中写成 system/core/libsystem/include/android/native_window.h；android-16.0.0_r1 实际路径是 frameworks/native/libs/nativewindow/include/android/native_window.h。",
+          "suggestion": "修正 native_window.h 路径，并在同段补明 ANativeWindowBuffer 与 BufferQueue/GraphicBuffer 的关系。"
+        },
+        {
+          "type": "版本差异",
+          "location": "Vulkan 与 OpenGL ES 的版本演进表",
+          "detail": "表中写“Android 13：Vulkan 1.1 成为设备要求”，与 Android 文档中“Android 10 起新 64 位设备要求 Vulkan 1.1”不一致；ANGLE rollout 也被写成了纯 OS 版本边界。",
+          "suggestion": "重写版本表：把 Vulkan 1.1 requirement 前移到 Android 10 / new 64-bit devices，并把 ANGLE 默认化拆成 API 可用性、设备 launch policy、Android 16 默认图形 API 三层。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "GPU 内存管理：GraphicBuffer / Gralloc / GPU Memory 归属与追踪",
+          "detail": "正文把“应用层”直接写成 GraphicBuffer，遗漏 Surface/SurfaceTexture/HardwareBuffer/ANativeWindow 到 BufferQueue 再到 GraphicBuffer/Gralloc 的公开 API 边界与所有权转移，容易误导读者认为 App 直接持有 hidden GraphicBuffer。",
+          "suggestion": "补一张对象边界图和文字说明：App 可见对象、BufferQueue 生产者/消费者、GraphicBuffer/Mapper/Gralloc 的内部层次，以及 Perfetto/meminfo 的可观察点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-22T22:55:00+08:00",
+      "status": "pending"
     }
   ]
 }
