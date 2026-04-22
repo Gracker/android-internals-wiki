@@ -900,6 +900,32 @@
 - 问题**：[版本差异][§8.2]
 - **来源**：External AI Review
 
+
+## [Task9 Deep Review] 8.8 Android 多媒体管线性能 — 2026-04-23
+- **类型**：数据缺失
+- **位置**：L213-L215 / ABR 小节
+- **问题**：`更主动的预测模型`、`亚 100ms adaptation decision` 没有给出可回查的官方 release note、实验条件或 trace 基线，当前 `[已验证]` 标注不足以支撑这个量化结论。
+- **建议**：如果没有一手 benchmark 或官方变更说明，改成不带定量承诺的表述；若保留，补具体版本、测试网络条件和直接来源链接。
+
+## [Task9 Deep Review] 12.2 网络性能优化 — 2026-04-23
+- **类型**：交叉引用
+- **位置**：L101 / 已验证标注
+- **问题**：`developer.android.com/reference/okhttp3/EventListener` 不是有效的官方文档路径；OkHttp EventListener 的官方文档在 Square 站点。
+- **建议**：把验证来源改为 `square.github.io/okhttp/features/events/` 或对应 API reference，避免把不存在的 Android Developers 路径写成已验证来源。
+
+## [Task9 Deep Review] 12.2 网络性能优化 — 2026-04-23
+- **类型**：数据缺失
+- **位置**：L133 / HTTP/3 实际性能数据
+- **问题**：YouTube `15%`、Uber `10-30%`、Meta `6% / 20%` 这些数字没有测试场景、终端范围、网络条件和直接链接，读者无法判断它们能否迁移到 Android 客户端业务。
+- **建议**：补直接出处与实验边界；至少说明是移动端还是服务端、尾延迟口径、弱网条件和样本规模，否则改成不带百分比的趋势性描述。
+
+## [Task9 Deep Review] 18.14 Camera 渲染管线 — 2026-04-23
+- **类型**：原理链完整性
+- **位置**：L137-L140 / sequenceDiagram Recording 分支
+- **问题**：图里写成 `FW ->> MC: queueBuffer(Video)`，会把录像路径误读成直接调用 `MediaCodec.queueInputBuffer()`；实际 input surface 方案隔着 `Surface` / ANativeWindow / BufferQueue 边界，编码器只是 consumer。
+- **建议**：把录像分支改成 `Camera3OutputStream -> encoder input Surface/ANativeWindow -> MediaCodec`，并显式标出这是 surface-input 零拷贝路径，不是 ByteBuffer 输入模式。
+
+
 ## [Task9 Deep Review] 15.3 性能指标体系 — 2026-04-23
 - **类型**：数据支撑
 - **位置**：TTFD / system-triggered profiling（约 186-190 行）
@@ -917,4 +943,328 @@
 - **位置**：文末交叉引用（约 248-250 行）
 - **问题**：`[2.1 BufferQueue 机制](13-buffer-queue.md)`、`[2.5 SurfaceFlinger](06-surfaceflinger.md)`、`[2.6 同步机制](16-sync-fence.md)` 在当前目录下都是失效链接。
 - **建议**：改成指向 `../../part1-fundamentals/ch02-rendering/` 下的真实文件，保证章节内跳转和出版链路一致。
+
+---
+
+## [External Review] 4.0 4.0 内存章节导读 — 2026-04-23
+- **类型**：阅读建议
+- **位置**：阅读建议段落
+- **问题**：未提及 Native 内存安全
+- **建议**：增加对 MTE 和 16KB 适配的推荐链接
+- **来源**：Gemini 外部 review (4.0)
+
+---
+
+## [External Review] 4.5 4.5 App 内存优化 — 2026-04-23
+- **类型**：数据支撑
+- **位置**：120Hz 掉帧计算
+- **问题**：描述精彩但可更量化
+- **建议**：给出公式示例: Vsync(8.33ms) < UI Work(4ms) + GC Pause(5ms) = Frame Drop
+- **来源**：Gemini 外部 review (4.5)
+
+---
+
+## [External Review] 4.5 4.5 App 内存优化 — 2026-04-23
+- **类型**：源码准确性
+- **位置**：Bitmap.java 路径
+- **问题**：路径对应旧分支
+- **建议**：标注此路径对应 AOSP 现代版本 android-15.0.0_r1+
+- **来源**：Gemini 外部 review (4.5)
+
+---
+
+## [External Review] 4.7 4.7 16KB Page Size — 2026-04-23
+- **类型**：内容优化
+- **位置**：构建工具链要求
+- **问题**：AGP 8.5 描述冗长
+- **建议**：直接强调 AGP 8.5.1+ 是修复 bundletool 16KB 对齐 Bug 的关键版本
+- **来源**：Gemini 外部 review (4.7)
+
+---
+
+## [External Review] 4.8 4.8 ART 分代 GC — 2026-04-23
+- **类型**：Perfetto 优化
+- **位置**：SQL 示例
+- **问题**：使用 process_name 较慢
+- **建议**：推荐使用 upid 替代 process_name 以利用索引
+- **来源**：Gemini 外部 review (4.8)
+
+---
+
+## [External Review] 5.0 5.0 CPU 与功耗章节导读 — 2026-04-23
+- **类型**：阅读建议
+- **位置**：阅读建议
+- **问题**：未区分内核开发与应用优化
+- **建议**：App 开发者关注 5.8/5.9/5.10，系统工程师关注 5.1-5.5
+- **来源**：Gemini 外部 review (5.0)
+
+---
+
+## [External Review] 5.1 5.1 Linux 进程调度基础 — 2026-04-23
+- **类型**：Perfetto SQL
+- **位置**：EEVDF 排队
+- **问题**：缺少前瞻性 SQL
+- **建议**：增加识别 EEVDF Lag 限制导致排队的示例 SQL
+- **来源**：Gemini 外部 review (5.1)
+
+---
+
+## [External Review] 5.2 5.2 EAS 能量感知调度 — 2026-04-23
+- **类型**：源码更新
+- **位置**：能量模型函数名
+- **问题**：em_pd_energy 为旧名
+- **建议**：补充 v5.10+ 更名为 em_cpu_energy
+- **来源**：Gemini 外部 review (5.2)
+
+---
+
+## [External Review] 5.2 5.2 EAS 能量感知调度 — 2026-04-23
+- **类型**：版本差异
+- **位置**：Cgroup V2 状态
+- **问题**：CPU 控制器状态未说明
+- **建议**：补充 Android 12 CPU 控制器仍保留在 Cgroup V1
+- **来源**：Gemini 外部 review (5.2)
+
+---
+
+## [External Review] 5.3 5.3 大小核架构 — 2026-04-23
+- **类型**：数学描述
+- **位置**：PELT 32ms
+- **问题**：32ms = 1024us × 32 不严谨
+- **建议**：修正为半衰期约 32ms，负载每 1024us 更新一次
+- **来源**：Gemini 外部 review (5.3)
+
+---
+
+## [External Review] 5.3 5.3 大小核架构 — 2026-04-23
+- **类型**：公式优化
+- **位置**：schedutil 公式
+- **问题**：过于理想化
+- **建议**：体现 1.25 SCHED_CAPACITY_SCALE 裕量概念
+- **来源**：Gemini 外部 review (5.3)
+
+---
+
+## [External Review] 5.4 5.4 DVFS 动态调频 — 2026-04-23
+- **类型**：延迟构成
+- **位置**：升频延迟
+- **问题**：200ms 延迟未拆解
+- **建议**：区分硬件物理切换(us 级)与 PELT 衰减惯性(32-64ms)
+- **来源**：Gemini 外部 review (5.4)
+
+---
+
+## [External Review] 5.8 5.8 后台执行限制 — 2026-04-23
+- **类型**：数据支撑
+- **位置**：App Standby
+- **问题**：Active 桶限额背景缺失
+- **建议**：补充 Android 16 Active 桶引入限额背景
+- **来源**：Gemini 外部 review (5.8)
+
+---
+
+## [External Review] 5.8 5.8 后台执行限制 — 2026-04-23
+- **类型**：交叉引用
+- **位置**：后台执行对前台性能
+- **问题**：未引用 LMK
+- **建议**：显式引用 4.4 节关于 LMK 的描述
+- **来源**：Gemini 外部 review (5.8)
+
+---
+
+## [External Review] 5.9 5.9 ADPF 自适应性能框架 — 2026-04-23
+- **类型**：版本差异
+- **位置**：Thermal API
+- **问题**：仅描述 NDK 监听器
+- **建议**：补充 Android 16 Java 层预测回调 forecastHeadroom
+- **来源**：Gemini 外部 review (5.9)
+
+---
+
+## [External Review] 5.9 5.9 ADPF 自适应性能框架 — 2026-04-23
+- **类型**：版本差异
+- **位置**：版本演进表
+- **问题**：Android 17 为[待验证]
+- **建议**：填充 ADPF 扩展至非游戏场景内容
+- **来源**：Gemini 外部 review (5.9)
+
+---
+
+## [External Review] 5.10 5.10 JobScheduler/WorkManager 性能 — 2026-04-23
+- **类型**：源码准确性
+- **位置**：JobScheduler 内部架构
+- **问题**：assignJobToContext 应为 assignJobsToContextsLocked
+- **建议**：修正方法名
+- **来源**：Gemini 外部 review (5.10)
+
+---
+
+## [External Review] 5.10 5.10 JobScheduler/WorkManager 性能 — 2026-04-23
+- **类型**：边界说明
+- **位置**：WorkManager 持久化
+- **问题**：未提强制停止后的行为
+- **建议**：补充 Force Stop 后 WorkManager 也不执行
+- **来源**：Gemini 外部 review (5.10)
+
+---
+
+## [External Review] 5.11 5.11 端侧 AI 推理性能 — 2026-04-23
+- **类型**：版本差异
+- **位置**：GPU Delegate
+- **问题**：未提 Android 15 优化
+- **建议**：标注 LiteRT GPU Delegate 在 Android 15 通过 OpenCL 优化实现 1.4x 提速
+- **来源**：Gemini 外部 review (5.11)
+
+---
+
+## [External Review] 5.12 5.12 热管理深度分析 — 2026-04-23
+- **类型**：最佳实践
+- **位置**：getThermalHeadroom
+- **问题**：调用频率无建议
+- **建议**：建议每秒调用不超过 1 次，避免 Binder 开销
+- **来源**：Gemini 外部 review (5.12)
+
+---
+
+## [External Review] 6.0 6.0 存储章节导读 — 2026-04-23
+- **类型**：引导优化
+- **位置**：阅读建议
+- **问题**：弱化了 6.1 硬件基线重要性
+- **建议**：平衡 6.1 与 6.2/6.3 阅读推荐权重
+- **来源**：Gemini 外部 review (6.0)
+
+---
+
+## [External Review] 6.1 6.1 存储架构 — 2026-04-23
+- **类型**：边界说明
+- **位置**：FUSE Passthrough
+- **问题**：未强调元数据操作无效
+- **建议**：补充 open/create/readdir 仍由 MediaProvider 处理
+- **来源**：Gemini 外部 review (6.1)
+
+---
+
+## [External Review] 6.2 6.2 文件系统 — 2026-04-23
+- **类型**：源码补强
+- **位置**：SQLite 原子写
+- **问题**：只提 START ioctl
+- **建议**：补充 COMMIT 和 ABORT ioctl 完整闭环
+- **来源**：Gemini 外部 review (6.2)
+
+---
+
+## [External Review] 6.4 6.4 存储版本演进 — 2026-04-23
+- **类型**：版本门槛
+- **位置**：FUSE Passthrough
+- **问题**：未标注内核门槛
+- **建议**：补充需要 Kernel 5.4+ 且 CONFIG_FUSE_PASSTHROUGH=y
+- **来源**：Gemini 外部 review (6.4)
+
+---
+
+## [External Review] 6.5 6.5 SP/DataStore 优化 — 2026-04-23
+- **类型**：实战建议
+- **位置**：sLoadExecutor
+- **问题**：级联效应警示不足
+- **建议**：明确多 SP 文件全局串行化风险
+- **来源**：Gemini 外部 review (6.5)
+
+---
+
+## [External Review] 6.5 6.5 SP/DataStore 优化 — 2026-04-23
+- **类型**：版本差异
+- **位置**：MMKV vs DataStore
+- **问题**：未提 16KB 适配差异
+- **建议**：MMKV mmap 在 16KB 页设备需 native 适配
+- **来源**：Gemini 外部 review (6.5)
+
+---
+
+## [External Review] 7.2 7.2 卡顿原因体系 — 2026-04-23
+- **类型**：背景说明
+- **位置**：华为 VSync 异常
+- **问题**：描述为错误注入
+- **建议**：补充 OEM 功耗平衡 Smart Refresh Rate 策略背景
+- **来源**：Gemini 外部 review (7.2)
+
+---
+
+## [External Review] 7.3 7.3 卡顿分析方法论 — 2026-04-23
+- **类型**：实战价值
+- **位置**：doFrame 回调
+- **问题**：未说明 CALLBACK_INSETS_ANIMATION
+- **建议**：补充 IME 弹出分析价值
+- **来源**：Gemini 外部 review (7.3)
+
+---
+
+## [External Review] 7.3 7.3 卡顿分析方法论 — 2026-04-23
+- **类型**：SQL 精度
+- **位置**：抢占分析
+- **问题**：未区分 R+ 和 R
+- **建议**：区分 Preempted (R+) 和 Runnable (R)
+- **来源**：Gemini 外部 review (7.3)
+
+---
+
+## [External Review] 7.4 7.4 典型场景卡顿根因 — 2026-04-23
+- **类型**：源码准确性
+- **位置**：TaskSnapshot
+- **问题**：未提及 HardwareBuffer
+- **建议**：明确 Android 8.0+ 使用 GraphicBuffer FD 零拷贝传递
+- **来源**：Gemini 外部 review (7.4)
+
+---
+
+## [External Review] 7.6 7.6 案例实战分析 — 2026-04-23
+- **类型**：数学解释
+- **位置**：嵌套布局
+- **问题**：层级嵌套导致多次 measure 未量化
+- **建议**：补充指数级增长（乘法关系）说明
+- **来源**：Gemini 外部 review (7.6)
+
+---
+
+## [External Review] 7.6 7.6 案例实战分析 — 2026-04-23
+- **类型**：Binder 差异
+- **位置**：onBindViewHolder
+- **问题**：未区分冷/热调用
+- **建议**：补充首次系统服务调用的权限校验开销
+- **来源**：Gemini 外部 review (7.6)
+
+---
+
+## [External Review] 7.7 7.7 Compose 性能优化 — 2026-04-23
+- **类型**：版本更新
+- **位置**：ReuseComposeView
+- **问题**：标注为待验证
+- **建议**：Compose 1.8.0 稳定版已正式发布，直接更新
+- **来源**：Gemini 外部 review (7.7)
+
+---
+
+## [External Review] 7.7 7.7 Compose 性能优化 — 2026-04-23
+- **类型**：实现细节
+- **位置**：ScopeUpdateScope
+- **问题**：未说明实际实现类
+- **建议**：明确实际实现类是 RecomposeScopeImpl
+- **来源**：Gemini 外部 review (7.7)
+
+---
+
+## [External Review] 7.8 7.8 RecyclerView 深度优化 — 2026-04-23
+- **类型**：实战建议
+- **位置**：hasTransientState
+- **问题**：未提及对回收影响
+- **建议**：补充非框架属性动画导致 hasTransientState=true 阻断回收
+- **来源**：Gemini 外部 review (7.8)
+
+---
+
+## [External Review] 7.8 7.8 RecyclerView 深度优化 — 2026-04-23
+- **类型**：可视化
+- **位置**：VSync 精度
+- **问题**：缺少像素偏移示例
+- **建议**：补充 120Hz 1ms 误差在 2000px/s 下对应 2 像素偏移
+- **来源**：Gemini 外部 review (7.8)
 

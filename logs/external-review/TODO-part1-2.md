@@ -52,39 +52,39 @@
 - [x] src/part1-fundamentals/ch04-memory/03-art-memory.md
 - [x] src/part1-fundamentals/ch04-memory/04-lmk.md
 - [x] src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md
-- [ ] src/part1-fundamentals/ch04-memory/06-memory-evolution.md
-- [ ] src/part1-fundamentals/ch04-memory/07-16kb-page-size.md
-- [ ] src/part1-fundamentals/ch04-memory/08-art-generational-gc.md
-- [ ] src/part1-fundamentals/ch04-memory/README.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/02-eas.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/03-big-little.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/04-dvfs.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/05-thermal.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/06-android-power.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/08-background-execution.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/09-adpf.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md
-- [ ] src/part1-fundamentals/ch05-cpu-power/README.md
-- [ ] src/part1-fundamentals/ch06-storage/01-storage-architecture.md
-- [ ] src/part1-fundamentals/ch06-storage/02-filesystem.md
-- [ ] src/part1-fundamentals/ch06-storage/03-io-scheduling.md
-- [ ] src/part1-fundamentals/ch06-storage/04-storage-evolution.md
-- [ ] src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md
-- [ ] src/part1-fundamentals/ch06-storage/README.md
-- [ ] src/part2-performance/ch07-smoothness/01-jank-definition.md
-- [ ] src/part2-performance/ch07-smoothness/02-jank-causes.md
-- [ ] src/part2-performance/ch07-smoothness/03-jank-methodology.md
-- [ ] src/part2-performance/ch07-smoothness/04-typical-scenarios.md
-- [ ] src/part2-performance/ch07-smoothness/05-optimization.md
-- [ ] src/part2-performance/ch07-smoothness/06-case-studies.md
-- [ ] src/part2-performance/ch07-smoothness/07-compose-performance.md
-- [ ] src/part2-performance/ch07-smoothness/08-recyclerview-performance.md
-- [ ] src/part2-performance/ch07-smoothness/09-perceived-smoothness.md
-- [ ] src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md
+- [x] src/part1-fundamentals/ch04-memory/06-memory-evolution.md
+- [x] src/part1-fundamentals/ch04-memory/07-16kb-page-size.md
+- [x] src/part1-fundamentals/ch04-memory/08-art-generational-gc.md
+- [x] src/part1-fundamentals/ch04-memory/README.md
+- [x] src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md
+- [x] src/part1-fundamentals/ch05-cpu-power/02-eas.md
+- [x] src/part1-fundamentals/ch05-cpu-power/03-big-little.md
+- [x] src/part1-fundamentals/ch05-cpu-power/04-dvfs.md
+- [x] src/part1-fundamentals/ch05-cpu-power/05-thermal.md
+- [x] src/part1-fundamentals/ch05-cpu-power/06-android-power.md
+- [x] src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md
+- [x] src/part1-fundamentals/ch05-cpu-power/08-background-execution.md
+- [x] src/part1-fundamentals/ch05-cpu-power/09-adpf.md
+- [x] src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md
+- [x] src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md
+- [x] src/part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md
+- [x] src/part1-fundamentals/ch05-cpu-power/README.md
+- [x] src/part1-fundamentals/ch06-storage/01-storage-architecture.md
+- [x] src/part1-fundamentals/ch06-storage/02-filesystem.md
+- [x] src/part1-fundamentals/ch06-storage/03-io-scheduling.md
+- [x] src/part1-fundamentals/ch06-storage/04-storage-evolution.md
+- [x] src/part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md
+- [x] src/part1-fundamentals/ch06-storage/README.md
+- [x] src/part2-performance/ch07-smoothness/01-jank-definition.md
+- [x] src/part2-performance/ch07-smoothness/02-jank-causes.md
+- [x] src/part2-performance/ch07-smoothness/03-jank-methodology.md
+- [x] src/part2-performance/ch07-smoothness/04-typical-scenarios.md
+- [x] src/part2-performance/ch07-smoothness/05-optimization.md
+- [x] src/part2-performance/ch07-smoothness/06-case-studies.md
+- [x] src/part2-performance/ch07-smoothness/07-compose-performance.md
+- [x] src/part2-performance/ch07-smoothness/08-recyclerview-performance.md
+- [x] src/part2-performance/ch07-smoothness/09-perceived-smoothness.md
+- [x] src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md
 - [ ] src/part2-performance/ch07-smoothness/11-webview-performance.md
 - [ ] src/part2-performance/ch07-smoothness/12-view-layout-performance.md
 - [ ] src/part2-performance/ch07-smoothness/13-systemui-performance.md

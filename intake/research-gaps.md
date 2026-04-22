@@ -1250,3 +1250,989 @@ GPU 内存管理一节缺少 App 可见对象与系统内部图形缓冲对象�
 
 
 
+
+## [2026-04-23] 18.14 Camera 渲染管线 — 知识盲区
+
+### 盲区描述
+配置流与版本演进没有纳入 Android 13+ 的 stream use case（`OutputConfiguration.setStreamUseCase` / `SCALER_AVAILABLE_STREAM_USE_CASES`）。这会漏掉一个直接影响 HAL sensor mode、ISP pipeline、多流 guaranteed combinations 和 low-latency snapshot 行为的关键调优入口。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 stream use case 与 capture intent 的职责边界，以及 `MandatoryStreamCombination` 的官方保证矩阵
+- 梳理 `PREVIEW` / `VIDEO_RECORD` / `STILL_CAPTURE` / `PREVIEW_VIDEO_STILL` / `LOW_LATENCY_SNAPSHOT` 对多流组合、功耗和时延的影响
+- 补 Android 13-16 在 OEM HAL 中常见的忽略、降级与回退行为，以及 Perfetto / cameraserver 的观测点
+
+### 关联章节
+18.14, 14.9, 18.6
+
+---
+
+## [2026-04-23] 4.0 4.0 内存章节导读 — 知识盲区
+
+### 盲区描述
+16KB Page Size 对现有三方库的破坏性影响评估
+
+### 重要程度
+高
+
+### 建议研究方向
+整理受影响常见三方库清单
+
+### 关联章节
+4.7
+
+### 外部 review 来源
+Gemini 外部 review (4.0)
+
+---
+
+## [2026-04-23] 4.0 4.0 内存章节导读 — 知识盲区
+
+### 盲区描述
+MGLRU 运行时监控方法
+
+### 重要程度
+中
+
+### 建议研究方向
+通过 sysfs 接口观察多代 LRU 实际回收效率
+
+### 关联章节
+4.0
+
+### 外部 review 来源
+Gemini 外部 review (4.0)
+
+---
+
+## [2026-04-23] 4.0 4.0 内存章节导读 — 知识盲区
+
+### 盲区描述
+MTE 硬件级防御机制细节
+
+### 重要程度
+中
+
+### 建议研究方向
+硬件 Tag 与物理内存 1/32 映射关系及性能代价
+
+### 关联章节
+4.6
+
+### 外部 review 来源
+Gemini 外部 review (4.0)
+
+---
+
+## [2026-04-23] 4.5 4.5 App 内存优化 — 知识盲区
+
+### 盲区描述
+dmabuf 追踪
+
+### 重要程度
+中
+
+### 建议研究方向
+Perfetto 中 dmabuf track 如何反映 GPU 内存分配
+
+### 关联章节
+4.5
+
+### 外部 review 来源
+Gemini 外部 review (4.5)
+
+---
+
+## [2026-04-23] 4.5 4.5 App 内存优化 — 知识盲区
+
+### 盲区描述
+ActivityManager.getMyMemoryState 性能开销
+
+### 重要程度
+中
+
+### 建议研究方向
+主动获取 trimLevel 的性能开销与适用场景
+
+### 关联章节
+4.5
+
+### 外部 review 来源
+Gemini 外部 review (4.5)
+
+---
+
+## [2026-04-23] 4.5 4.5 App 内存优化 — 知识盲区
+
+### 盲区描述
+16KB 对齐下内存浪费量化
+
+### 重要程度
+低
+
+### 建议研究方向
+大量小图场景内部碎片增量估算
+
+### 关联章节
+4.5, 4.7
+
+### 外部 review 来源
+Gemini 外部 review (4.5)
+
+---
+
+## [2026-04-23] 4.7 4.7 16KB Page Size — 知识盲区
+
+### 盲区描述
+Bionic Linker 16KB Compat Mode 内存重映射逻辑
+
+### 重要程度
+高
+
+### 建议研究方向
+阅读 bionic/linker/linker.cpp 中 Linker 类对页大小对齐失败的处理
+
+### 关联章节
+4.7
+
+### 外部 review 来源
+Gemini 外部 review (4.7)
+
+---
+
+## [2026-04-23] 4.7 4.7 16KB Page Size — 知识盲区
+
+### 盲区描述
+RELRO 填充 Bug 对 16KB 系统的影响
+
+### 重要程度
+中
+
+### 建议研究方向
+研究旧版 lld 链接器产生的 RELRO 对齐错误
+
+### 关联章节
+4.7
+
+### 外部 review 来源
+Gemini 外部 review (4.7)
+
+---
+
+## [2026-04-23] 4.8 4.8 ART 分代 GC — 知识盲区
+
+### 盲区描述
+userfaultfd 在 CMC 中的页错误开销
+
+### 重要程度
+中
+
+### 建议研究方向
+深入研究 SIGBUS 处理器在 CMC 中的性能损耗
+
+### 关联章节
+4.8
+
+### 外部 review 来源
+Gemini 外部 review (4.8)
+
+---
+
+## [2026-04-23] 4.8 4.8 ART 分代 GC — 知识盲区
+
+### 盲区描述
+mid_generation 具体晋升阈值
+
+### 重要程度
+高
+
+### 建议研究方向
+确认是否硬编码为 1 次或存在动态调整逻辑
+
+### 关联章节
+4.8
+
+### 外部 review 来源
+Gemini 外部 review (4.8)
+
+---
+
+## [2026-04-23] 4.8 4.8 ART 分代 GC — 知识盲区
+
+### 盲区描述
+Android 17 DeliQueue 与 GC 优化协同
+
+### 重要程度
+中
+
+### 建议研究方向
+ART 调度器如何利用 DeliQueue 规避 GC 高峰
+
+### 关联章节
+4.8
+
+### 外部 review 来源
+Gemini 外部 review (4.8)
+
+---
+
+## [2026-04-23] 5.0 5.0 CPU 与功耗章节导读 — 知识盲区
+
+### 盲区描述
+ADPF (Adaptive Performance Framework) 架构
+
+### 重要程度
+高
+
+### 建议研究方向
+PerformanceHintManager 如何通过 PowerHAL 影响 CPU 频率
+
+### 关联章节
+5.9
+
+### 外部 review 来源
+Gemini 外部 review (5.0)
+
+---
+
+## [2026-04-23] 5.0 5.0 CPU 与功耗章节导读 — 知识盲区
+
+### 盲区描述
+UClamp (Utilization Clamping) 应用逻辑
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 12+ 如何使用 uclamp 替代 SchedTune
+
+### 关联章节
+5.2
+
+### 外部 review 来源
+Gemini 外部 review (5.0)
+
+---
+
+## [2026-04-23] 5.0 5.0 CPU 与功耗章节导读 — 知识盲区
+
+### 盲区描述
+WALT vs PELT 负载追踪差异
+
+### 重要程度
+中
+
+### 建议研究方向
+高通平台 WALT 与 AOSP 标准 PELT 的差异
+
+### 关联章节
+5.1
+
+### 外部 review 来源
+Gemini 外部 review (5.0)
+
+---
+
+## [2026-04-23] 5.1 5.1 Linux 进程调度基础 — 知识盲区
+
+### 盲区描述
+EEVDF lag 衰减细节
+
+### 重要程度
+中
+
+### 建议研究方向
+reweight_entity 逻辑如何防止任务通过睡眠重置 lag
+
+### 关联章节
+5.1
+
+### 外部 review 来源
+Gemini 外部 review (5.1)
+
+---
+
+## [2026-04-23] 5.1 5.1 Linux 进程调度基础 — 知识盲区
+
+### 盲区描述
+Android 16 调度新特性
+
+### 重要程度
+高
+
+### 建议研究方向
+API 36/37 是否引入针对 EEVDF 的专门 NDK 接口
+
+### 关联章节
+5.1
+
+### 外部 review 来源
+Gemini 外部 review (5.1)
+
+---
+
+## [2026-04-23] 5.2 5.2 EAS 能量感知调度 — 知识盲区
+
+### 盲区描述
+CPU 唤醒成本 (Waking vs Using already awake CPU)
+
+### 重要程度
+中
+
+### 建议研究方向
+find_energy_efficient_cpu 是否考虑唤醒 Deep Idle CPU 的静态能量开销
+
+### 关联章节
+5.2
+
+### 外部 review 来源
+Gemini 外部 review (5.2)
+
+---
+
+## [2026-04-23] 5.2 5.2 EAS 能量感知调度 — 知识盲区
+
+### 盲区描述
+厂商自定义 Boost Hook
+
+### 重要程度
+高
+
+### 建议研究方向
+高通 sched_boost 标志位如何强制绕过 EAS 逻辑
+
+### 关联章节
+5.2, 5.3
+
+### 外部 review 来源
+Gemini 外部 review (5.2)
+
+---
+
+## [2026-04-23] 5.3 5.3 大小核架构 — 知识盲区
+
+### 盲区描述
+EEVDF 调度器对调频的影响
+
+### 重要程度
+中
+
+### 建议研究方向
+Linux 6.6 EEVDF 后 util 信号平滑处理变化
+
+### 关联章节
+5.3
+
+### 外部 review 来源
+Gemini 外部 review (5.3)
+
+---
+
+## [2026-04-23] 5.3 5.3 大小核架构 — 知识盲区
+
+### 盲区描述
+ADPF 与大小核联动
+
+### 重要程度
+高
+
+### 建议研究方向
+ADPF 如何影响任务在超大核上的停留时间
+
+### 关联章节
+5.3, 5.9
+
+### 外部 review 来源
+Gemini 外部 review (5.3)
+
+---
+
+## [2026-04-23] 5.4 5.4 DVFS 动态调频 — 知识盲区
+
+### 盲区描述
+uclamp_min 对启动耗时的影响
+
+### 重要程度
+高
+
+### 建议研究方向
+Android Framework 如何通过 CPUSet/CGroup 设置 uclamp_min
+
+### 关联章节
+5.4
+
+### 外部 review 来源
+Gemini 外部 review (5.4)
+
+---
+
+## [2026-04-23] 5.4 5.4 DVFS 动态调频 — 知识盲区
+
+### 盲区描述
+SCMI Fastchannels
+
+### 重要程度
+中
+
+### 建议研究方向
+ARM 官方 SCMI 规范 MMIO 调频通道
+
+### 关联章节
+5.4
+
+### 外部 review 来源
+Gemini 外部 review (5.4)
+
+---
+
+## [2026-04-23] 5.8 5.8 后台执行限制 — 知识盲区
+
+### 盲区描述
+Binder Freezer Driver 协同机制
+
+### 重要程度
+高
+
+### 建议研究方向
+FrozenStateChangeCallback 在 AOSP 中的具体应用场景
+
+### 关联章节
+5.8
+
+### 外部 review 来源
+Gemini 外部 review (5.8)
+
+---
+
+## [2026-04-23] 5.8 5.8 后台执行限制 — 知识盲区
+
+### 盲区描述
+Android 16 UIDT 额度详情
+
+### 重要程度
+中
+
+### 建议研究方向
+UIDT 是否受 App Standby Bucket 进一步限制
+
+### 关联章节
+5.8, 5.10
+
+### 外部 review 来源
+Gemini 外部 review (5.8)
+
+---
+
+## [2026-04-23] 5.9 5.9 ADPF 自适应性能框架 — 知识盲区
+
+### 盲区描述
+GPU 目标设定的 WorkDuration 分拆版本
+
+### 重要程度
+中
+
+### 建议研究方向
+updateTargetWorkDuration 是否也有类似 WorkDuration 的分拆
+
+### 关联章节
+5.9
+
+### 外部 review 来源
+Gemini 外部 review (5.9)
+
+---
+
+## [2026-04-23] 5.9 5.9 ADPF 自适应性能框架 — 知识盲区
+
+### 盲区描述
+ADPF 非游戏场景策略
+
+### 重要程度
+高
+
+### 建议研究方向
+ProfilingManager TRIGGER_TYPE_ANOMALY 如何利用 ADPF 信号
+
+### 关联章节
+5.9, 5.11
+
+### 外部 review 来源
+Gemini 外部 review (5.9)
+
+---
+
+## [2026-04-23] 5.10 5.10 JobScheduler/WorkManager 性能 — 知识盲区
+
+### 盲区描述
+updateEstimatedNetworkBytes API
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 14+ 估算带宽 API 对调度优先级的影响
+
+### 关联章节
+5.10
+
+### 外部 review 来源
+Gemini 外部 review (5.10)
+
+---
+
+## [2026-04-23] 5.10 5.10 JobScheduler/WorkManager 性能 — 知识盲区
+
+### 盲区描述
+TRANSFER_THROUGHPUT_UTILIZATION
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 16+ 对大文件传输 job 的吞吐量监测逻辑
+
+### 关联章节
+5.10
+
+### 外部 review 来源
+Gemini 外部 review (5.10)
+
+---
+
+## [2026-04-23] 5.11 5.11 端侧 AI 推理性能 — 知识盲区
+
+### 盲区描述
+PODAI (Play for On-device AI) 动态分发
+
+### 重要程度
+高
+
+### 建议研究方向
+通过 Play Services 动态分发 NPU 加速库解决 APK 体积
+
+### 关联章节
+5.11
+
+### 外部 review 来源
+Gemini 外部 review (5.11)
+
+---
+
+## [2026-04-23] 5.11 5.11 端侧 AI 推理性能 — 知识盲区
+
+### 盲区描述
+零拷贝 TensorBuffer
+
+### 重要程度
+中
+
+### 建议研究方向
+HardwareBuffer 与 LiteRT NPU 直接内存共享
+
+### 关联章节
+5.11
+
+### 外部 review 来源
+Gemini 外部 review (5.11)
+
+---
+
+## [2026-04-23] 5.12 5.12 热管理深度分析 — 知识盲区
+
+### 盲区描述
+皮肤温度估算模型 (Thermal Model)
+
+### 重要程度
+中
+
+### 建议研究方向
+OEM 如何利用 power_allocator tzp 在 sysfs 中暴露物理参数
+
+### 关联章节
+5.12
+
+### 外部 review 来源
+Gemini 外部 review (5.12)
+
+---
+
+## [2026-04-23] 5.12 5.12 热管理深度分析 — 知识盲区
+
+### 盲区描述
+Android 16 NDK AThermal_getThermalHeadroomThresholds
+
+### 重要程度
+高
+
+### 建议研究方向
+原生代码直接获取 Throttling 状态切换精确数值
+
+### 关联章节
+5.12
+
+### 外部 review 来源
+Gemini 外部 review (5.12)
+
+---
+
+## [2026-04-23] 6.0 6.0 存储章节导读 — 知识盲区
+
+### 盲区描述
+16KB Page Size 对底层存储性能的变革
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 Android 15 行为变更，评估对 I/O 吞吐量的影响
+
+### 关联章节
+6.0, 4.7
+
+### 外部 review 来源
+Gemini 外部 review (6.0)
+
+---
+
+## [2026-04-23] 6.1 6.1 存储架构 — 知识盲区
+
+### 盲区描述
+F2FS 前台 GC 触发水位线
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 f2fs/segment.c 中 has_not_enough_free_secs 逻辑
+
+### 关联章节
+6.1
+
+### 外部 review 来源
+Gemini 外部 review (6.1)
+
+---
+
+## [2026-04-23] 6.1 6.1 存储架构 — 知识盲区
+
+### 盲区描述
+Metadata Encryption Inline Crypto 映射
+
+### 重要程度
+中
+
+### 建议研究方向
+blk-crypto 如何在不同 SoC 上落地
+
+### 关联章节
+6.1
+
+### 外部 review 来源
+Gemini 外部 review (6.1)
+
+---
+
+## [2026-04-23] 6.2 6.2 文件系统 — 知识盲区
+
+### 盲区描述
+Project Quota (存储配额) 工作原理
+
+### 重要程度
+高
+
+### 建议研究方向
+内核 PRID 映射与 StorageStatsService 交互
+
+### 关联章节
+6.2
+
+### 外部 review 来源
+Gemini 外部 review (6.2)
+
+---
+
+## [2026-04-23] 6.2 6.2 文件系统 — 知识盲区
+
+### 盲区描述
+Casefolding (大小写折叠) 性能影响
+
+### 重要程度
+高
+
+### 建议研究方向
+Unicode 折叠算法在内核层的性能影响
+
+### 关联章节
+6.2
+
+### 外部 review 来源
+Gemini 外部 review (6.2)
+
+---
+
+## [2026-04-23] 6.2 6.2 文件系统 — 知识盲区
+
+### 盲区描述
+Inline Encryption (fscrypt) 与 UFS Keyslot
+
+### 重要程度
+高
+
+### 建议研究方向
+blk-crypto 与 UFS Keyslot 管理
+
+### 关联章节
+6.2
+
+### 外部 review 来源
+Gemini 外部 review (6.2)
+
+---
+
+## [2026-04-23] 6.4 6.4 存储版本演进 — 知识盲区
+
+### 盲区描述
+16KB 页对 F2FS 挂载参数的影响
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 15 16KB 模式下 F2FS block_size 限制
+
+### 关联章节
+6.4, 4.7
+
+### 外部 review 来源
+Gemini 外部 review (6.4)
+
+---
+
+## [2026-04-23] 6.4 6.4 存储版本演进 — 知识盲区
+
+### 盲区描述
+MediaProvider 位置脱敏 (Redaction) 对 FUSE 读延迟的量化影响
+
+### 重要程度
+中
+
+### 建议研究方向
+对比有/无位置信息照片的 CPU 周期消耗
+
+### 关联章节
+6.4
+
+### 外部 review 来源
+Gemini 外部 review (6.4)
+
+---
+
+## [2026-04-23] 6.5 6.5 SP/DataStore 优化 — 知识盲区
+
+### 盲区描述
+16KB Page Size 对 I/O 密集型存储的影响
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 15 强制 16KB 页对 XML 解析和文件落盘的性能提升
+
+### 关联章节
+6.5, 4.7
+
+### 外部 review 来源
+Gemini 外部 review (6.5)
+
+---
+
+## [2026-04-23] 6.5 6.5 SP/DataStore 优化 — 知识盲区
+
+### 盲区描述
+MultiProcessDataStoreFactory 锁机制
+
+### 重要程度
+中
+
+### 建议研究方向
+核实基于 FileLock 的实现及极端竞争下性能
+
+### 关联章节
+6.5
+
+### 外部 review 来源
+Gemini 外部 review (6.5)
+
+---
+
+## [2026-04-23] 7.2 7.2 卡顿原因体系 — 知识盲区
+
+### 盲区描述
+Android 17 Generational GC STW 表现
+
+### 重要程度
+高
+
+### 建议研究方向
+验证 ART Mainline 演进对 UI 线程暂停时间的实际压制效果
+
+### 关联章节
+7.2, 4.8
+
+### 外部 review 来源
+Gemini 外部 review (7.2)
+
+---
+
+## [2026-04-23] 7.2 7.2 卡顿原因体系 — 知识盲区
+
+### 盲区描述
+SkiaVulkan 在 RenderThread 的 Trace 表现
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 15 默认 SkiaVulkan 的 drawOp 细分 Slice 差异
+
+### 关联章节
+7.2
+
+### 外部 review 来源
+Gemini 外部 review (7.2)
+
+---
+
+## [2026-04-23] 7.3 7.3 卡顿分析方法论 — 知识盲区
+
+### 盲区描述
+Android 16 AppJankStats 监控新范式
+
+### 重要程度
+中
+
+### 建议研究方向
+调研 android.app.jank 软件包
+
+### 关联章节
+7.3
+
+### 外部 review 来源
+Gemini 外部 review (7.3)
+
+---
+
+## [2026-04-23] 7.3 7.3 卡顿分析方法论 — 知识盲区
+
+### 盲区描述
+ADPF 与 FrameTimeline 反馈闭环
+
+### 重要程度
+高
+
+### 建议研究方向
+ADPF 如何根据 FrameTimeline Expected Deadline 动态调整 CPU 频率
+
+### 关联章节
+7.3, 5.9
+
+### 外部 review 来源
+Gemini 外部 review (7.3)
+
+---
+
+## [2026-04-23] 7.6 7.6 案例实战分析 — 知识盲区
+
+### 盲区描述
+Cached App Freezer 完整机制
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 14+ 后台进程管理策略详解
+
+### 关联章节
+7.6, 5.8
+
+### 外部 review 来源
+Gemini 外部 review (7.6)
+
+---
+
+## [2026-04-23] 7.6 7.6 案例实战分析 — 知识盲区
+
+### 盲区描述
+MGLRU vs 传统双级 LRU 锁竞争差异
+
+### 重要程度
+中
+
+### 建议研究方向
+对比 pgdat->lru_lock 竞争解决效果
+
+### 关联章节
+7.6, 4.0
+
+### 外部 review 来源
+Gemini 外部 review (7.6)
+
+---
+
+## [2026-04-23] 7.7 7.7 Compose 性能优化 — 知识盲区
+
+### 盲区描述
+Inline Composable 重组穿透机制
+
+### 重要程度
+高
+
+### 建议研究方向
+startReplaceableGroup vs startRestartGroup IR 转换差异
+
+### 关联章节
+7.7
+
+### 外部 review 来源
+Gemini 外部 review (7.7)
+
+---
+
+## [2026-04-23] 7.7 7.7 Compose 性能优化 — 知识盲区
+
+### 盲区描述
+SlotTable Gap Buffer 机制
+
+### 重要程度
+中
+
+### 建议研究方向
+SlotTable.kt insert/move 操作对性能的实际影响
+
+### 关联章节
+7.7
+
+### 外部 review 来源
+Gemini 外部 review (7.7)
+
+---
+
+## [2026-04-23] 7.8 7.8 RecyclerView 深度优化 — 知识盲区
+
+### 盲区描述
+hasTransientState 导致的 ViewHolder 回收阻断
+
+### 重要程度
+中
+
+### 建议研究方向
+哪些三方动画库会意外触发该状态导致 RV 缓存失效
+
+### 关联章节
+7.8
+
+### 外部 review 来源
+Gemini 外部 review (7.8)
+
