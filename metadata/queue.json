@@ -654,7 +654,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T17:08:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T01:18:42+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
@@ -710,7 +714,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-22T19:48:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T01:18:42+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
@@ -1876,6 +1884,52 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:10:37+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 2 处 P1 问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L446-L455 / 版本演进",
+          "detail": "将 Android 11 的 low-latency decoding 与 tunneled playback via Codec2 写成同一版本节点，抹平了 Android 5 起就存在的 tunneled playback 能力，读者会误判功能边界与演进顺序。",
+          "suggestion": "拆开写：tunneled playback 单列为更早期能力；Android 11 只保留 KEY_LOW_LATENCY / 低延迟解码相关变更，并注明仍依赖 codec/SoC 支持。"
+        },
+        {
+          "type": "版本差异 / API 映射",
+          "location": "L232-L239 / Media3 1.6-1.10",
+          "detail": "把 1.8.0 的 dynamic scheduling 与 1.10.0 的 MediaCodecVideoRenderer dynamic scheduling 混成同一能力，读者会拿错版本和开关。1.10.0 release notes 对应的是 renderer 级开关，不是文中这一句所指的单一 Builder 开关。",
+          "suggestion": "按 release 拆开说明：1.8.0 仅描述 scrubbing / 实验性调度相关变更；1.10.0 单列 renderer 级 dynamic scheduling 的 API 与适用场景。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T00:30:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
+      "section_title": "Camera 渲染管线",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1 处 P1 问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "知识盲区 / 版本差异",
+          "location": "L65-L77 / 配置流（Configure）",
+          "detail": "章节覆盖到 Android 16，但配置流没有纳入 Android 13+ 的 stream use case（OutputConfiguration.setStreamUseCase / SCALER_AVAILABLE_STREAM_USE_CASES）。这会漏掉一个直接影响多路输出、sensor mode 选择和低时延快照的关键调优入口。",
+          "suggestion": "在配置阶段补 stream use case 与 MandatoryStreamCombination，说明 preview / video / still / low-latency snapshot 的 use case 组合如何影响 HAL 管线选择与兼容性。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-23T00:30:00+08:00",
       "status": "pending"
     }
   ]

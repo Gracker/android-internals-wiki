@@ -26,13 +26,14 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_at: "2026-04-23T01:13:23+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-19"
 rework_date: "2026-04-16"
@@ -49,7 +50,7 @@ last_task9_at: "2026-04-22T17:08:00+08:00"
 
 ## 为什么要了解"特殊场景的 ANR"
 
-在 §9.2 中，我们梳理了 ANR 的标准触发条件——Input 事件 5 秒超时、Service 20 秒超时、Broadcast 10 秒（前台）/60 秒（后台）超时。这些都是框架明确定义的规则，对应的 ANR traces 文件通常能给出清晰的线索。
+在 §9.2 中，我们梳理了 ANR 的标准触发条件——Input 事件 5 秒超时、Service 20 秒超时。Broadcast 的窗口要再细分一步：Android 13 及以下通常按前台 10 秒、后台 60 秒计时；Android 14 及以上如果接收进程处于 CPU starvation，`FLAG_RECEIVER_FOREGROUND` 广播会放宽到 10-20 秒，后台广播会放宽到 60-120 秒。把这些窗口看成固定常量，后面的 trace 很容易读偏。
 
 但在实际分析工作中，有一类 ANR 让人头疼：**traces 文件里主线程的堆栈看起来"没干什么坏事"**——可能只是在等一个 Binder 回复、在等一个 SharedPreferences 写入完成、或者干脆处在 RUNNABLE 状态但 CPU 已经被其他进程占满。这类 ANR 的根因不在App 代码本身，而在系统层面的资源竞争、跨进程依赖或者一些容易被忽视的框架行为。
 
@@ -103,11 +104,11 @@ Android 的广播机制中，AMS 是**串行分发**有序广播的——必须�
 
 ### 连锁 ANR 的形成过程
 
-AOSP 的 `BroadcastQueue` 对每个 receiver 独立设置超时（`setBroadcastTimeoutLocked`），前台广播 10 秒、后台广播 60 秒。不存在"累计超时"机制——每个 receiver 有自己的超时窗口。[待验证: Android 16 中后台广播超时是否进一步调整]
+AOSP 会对每个 receiver 单独计时，不存在“前面排队太久，后面自动继承超时”的累计模型。`FLAG_RECEIVER_FOREGROUND` 广播在 Android 13 及以下通常按 10 秒算，后台广播按 60 秒算；Android 14 及以上如果进程明显拿不到 CPU，这两个窗口会放宽到 10-20 秒和 60-120 秒。判断边界别只看业务语义，直接看 ANR subject 里的 `flg=` 字段；带 `0x10000000` 就是 `FLAG_RECEIVER_FOREGROUND`。
 
-那为什么广播风暴还会导致连锁 ANR？关键在于系统级资源争抢。当一个广播风暴发生时，AMS 串行分发有序广播。如果某个 App 在 `onReceive()` 中做了耗时操作（比如数据库写入、网络请求），它会阻塞后续分发，让排在后面的 App 的分发开始时间推迟。同时，大量 App 几乎同时被唤醒处理广播，引发 CPU、I/O、Binder 线程池等系统资源的激烈竞争。
+广播风暴仍然会打出一串 ANR，因为 system_server 串行分发有序广播时，大量 receiver 会一起争抢 CPU、I/O 和 Binder 线程池。某个 receiver 如果在 `onReceive()` 里做数据库写入、网络等待或跨进程同步调用，会把后面的分发起点整体往后推；等这些 App 真正拿到执行机会时，各自的超时窗口已经被系统负载吃掉了一大截。
 
-这种竞争会导致原本轻量的 receiver 也因调度延迟或 Binder 调用排队而无法在各自的 10 秒窗口内完成。结果就是多个 App 几乎同时触发 ANR——不是累计超时，而是系统资源被耗尽后，各 receiver 各自超时。
+因此，这里的因果链要写成“每个 receiver 仍然按自己的窗口超时，但广播风暴把整机拖慢了”，不要写成“广播队列自己累计超时”。
 
 ### Trace 特征
 
@@ -139,45 +140,61 @@ Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvi
 
 ## SharedPreferences apply() 导致的 ANR
 
-### apply() 不是真正异步的
+### apply() 的危险点在组件边界等待
 
-这是 Android 性能优化中最经典的"坑"之一。`SharedPreferences.apply()` 的文档说它是异步写入，但在 Activity 生命周期切换时，`ActivityThread.handlePauseActivity()` 会调用 `QueuedWork.waitToFinish()`——**在主线程上同步等待所有待处理的写入任务完成。**
+`SharedPreferencesImpl.apply()` 会先把修改提交到内存，再通过 `enqueueDiskWrite()` 把真正的 XML 写盘放进 `QueuedWork`。单看调用点，它确实比 `commit()` 更像异步接口。
 
-### 从 apply() 到 ANR 的完整链路
+问题出在另一头：框架会在 BroadcastReceiver、Service，以及部分组件收尾路径上调用 `QueuedWork.waitToFinish()`，要求进程里尚未收口的 `QueuedWork` 先处理完。旧应用的 Activity pause 也会走这条路径，但 Android 8-16 的日常排查里，更常见的是 receiver 和 service 边界被慢刷盘拖住。
 
-一个页面里频繁调用了 `apply()` 保存用户操作状态。这些写入任务被排到了 `QueuedWork` 的队列里。
+### 从 apply() 到阻塞的过程
 
-然后用户按了返回键。系统调用 `Activity.onPause()` → `handlePauseActivity()` → `QueuedWork.waitToFinish()`。这时主线程开始等待那十几个 `apply()` 的磁盘写入全部完成。
+一个页面或 receiver 里频繁调用了 `apply()` 保存状态。修改先进入内存，磁盘写入随后排进 `QueuedWork`。如果这时整机 I/O 压力很高，`writeToFile()` 里的 XML 落盘和 `fsync()` 会明显变慢。
 
-如果存储性能正常，每个 `apply()` 的实际写入可能只要几毫秒。但如果当时整机 I/O 压力大（比如后台正在安装 App），每次 `fsync()` 可能需要几百毫秒甚至更久。十几个 `apply()` 累计下来，主线程就被阻塞了好几秒。
+等到组件离开当前边界，框架调用 `QueuedWork.waitToFinish()`，主线程就会被迫等这些未完成的写盘收尾。这里看到的是组件边界上的等待，真正耗时通常落在尚未完成的 XML 落盘和 `fsync()`。
 
-### 关键源码路径
+### 源码里真正注册的是什么
 
 ```java
-// frameworks/base/core/java/android/app/QueuedWork.java
+// frameworks/base/core/java/android/app/SharedPreferencesImpl.java
 // @ AOSP android-14.0.0_r1
-private static final LinkedList<Runnable> sFinishers = new LinkedList<>();
+@Override
+public void apply() {
+    final MemoryCommitResult mcr = commitToMemory();
+    final Runnable awaitCommit = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                mcr.writtenToDiskLatch.await();
+            } catch (InterruptedException ignored) {
+            }
+        }
+    };
 
-public static void waitToFinish() {
-    Runnable toFinish;
-    // 主线程同步遍历队列，逐个执行写入任务
-    while ((toFinish = sFinishers.poll()) != null) {
-        toFinish.run();
-    }
+    QueuedWork.addFinisher(awaitCommit);
+
+    Runnable postWriteRunnable = new Runnable() {
+        @Override
+        public void run() {
+            awaitCommit.run();
+            QueuedWork.removeFinisher(awaitCommit);
+        }
+    };
+
+    SharedPreferencesImpl.this.enqueueDiskWrite(mcr, postWriteRunnable);
 }
 ```
 
-[待验证: Android 14+ 是否已将 waitToFinish 优化为带超时的等待]
+这里塞进 `sFinishers` 的是 `awaitCommit()`。`QueuedWork.waitToFinish()` 在 apply 场景里跑到的 `toFinish.run()`，对应的是等待 `writtenToDiskLatch`；`writeToFile()` 则在 `enqueueDiskWrite()` 安排的 `writeToDiskRunnable` 里执行。
 
-注意：`toFinish.run()` 是在主线程上同步执行的。`sFinishers` 是一个 `LinkedList<Runnable>`，每次 `apply()` 调用都会向其中追加一个写入任务。如果队列里积累了大量任务，主线程就要逐个执行完。
+`QueuedWork.waitToFinish()` 还会先尽快清空 pending work，所以 trace 里经常会同时看到等待和慢 I/O 叠在一起。分析时把视线放在慢 `fsync()`、存储拥塞、批量 `apply()` 调用即可；如果把 `sFinishers` 写成“主线程亲自逐条刷盘队列”，整段解释就会偏掉。
 
 ### 解决方案
 
-最佳方案是迁移到 Jetpack DataStore（Preferences DataStore），它基于 Kotlin Coroutines 和 Flow 实现，真正异步且类型安全。
+最佳方案是迁移到 Jetpack DataStore（Preferences DataStore），它把持久化调度和类型约束放到了更清晰的异步模型里。
 
-短期缓解方案：减少 `apply()` 调用频率，把多次修改合并为一次；或在关键路径上用 `commit()` 控制写入时机，避免在 Activity 切换时被 `waitToFinish()` 批量触发。
+短期缓解方案：减少 `apply()` 调用频率，把多次修改合并成一次；对必须立刻落盘的状态单独安排时机；避开广播、服务收尾和其他容易触发 `QueuedWork.waitToFinish()` 的边界。
 
-[已验证: 来源见 AOSP SharedPreferencesImpl.java + ActivityThread.java] [已验证: AOSP android-14.0.0_r1]
+[已验证: 来源见 AOSP SharedPreferencesImpl.java + QueuedWork.java + ActivityThread.java] [已验证: AOSP android-14.0.0_r1]
 
 ## 多进程场景的 Binder 死锁 ANR
 
@@ -247,29 +264,34 @@ void Heap::CollectGarbageInternal(gc::collector::GcType gc_type,
 
 [已验证: 来源见 ART GC 机制分析 + AOSP art/runtime/gc/heap.cc] [已验证: AOSP android-14.0.0_r1 + android-15.0.0_r1] [待验证: Android 17 CMC GC 在极端内存压力下的暂停时间是否有进一步优化]
 
-## startForeground() 超时导致的 ANR
+## 前台服务的启动超时与后台启动限制
 
-### 从 Android 12 开始的新约束
+### 两条路径不要写混
 
-Android 12 引入了一项严格约束：如果 App 调用了 `startForegroundService()`，必须在 **5 秒内** 调用 `startForeground()`（Android 11 及之前为 10 秒）。超时后系统会抛出 `ForegroundServiceStartNotAllowedException` 并触发 ANR。
+`startForegroundService()` 之后迟迟不调用 `startForeground()`，走的是 `RemoteServiceException$ForegroundServiceDidNotStartInTimeException` 这条“已启动但没有及时晋升前台”的路径。Android 12 之后在后台直接启动前台服务被拒绝，走的是 `ForegroundServiceStartNotAllowedException` 这条“当前时机不允许启动”的路径。两者都会出现在 logcat 里，但语义完全不同。
 
-这个 ANR 的特殊性在于：它有别于 Service 本身的 20 秒超时——是一个独立的、更短的超时窗口。很多开发者把两者混为一谈，导致优化方向错误——以为改 `onStartCommand()` 的执行时间就行，问题出在 `startForeground()` 调用不及时。
+| 版本 / 场景 | 规则 | 常见表现 |
+|:---|:---|:---|
+| Android 8 / 9 | `startForegroundService()` 后要在很短的宽限期内调用 `startForeground()`；AOSP O 分支常见值是 5 秒 | `RemoteServiceException` / 服务启动超时 |
+| Android 10-13 | AOSP 常见宽限期提升到 10 秒 | `ForegroundServiceDidNotStartInTimeException` |
+| Android 12+ | 后台启动前台服务必须满足豁免条件 | `ForegroundServiceStartNotAllowedException` |
+| Android 14+ | `short service`、`data sync`、`media processing` 还各自带有独立 timeout 规则 | `Service.onTimeout()`、ANR 或内部 timeout exception |
 
-### 典型触发场景
+### 已启动，但没有及时晋升前台
 
-最常见的原因是 `onCreate()` 或 `onStartCommand()` 中做了耗时操作（数据库查询、文件 I/O、等待网络响应），导致 `startForeground()` 的调用被推迟。有些 App 的 `startForeground()` 调用被放在了异步回调里（比如等一个网络请求完成后再通知），如果网络请求本身耗时超过 5 秒，ANR 就不可避免。
+这一路最常见的触发方式是：`onCreate()` 或 `onStartCommand()` 里先做数据库查询、文件 I/O、远端请求，再去调 `ServiceCompat.startForeground()`。服务已经起来了，但前台通知迟迟没挂上去，系统就会按“did not start in time”处理。
 
-另一个隐蔽场景：Android 12+ 对后台启动 Service 有严格限制。如果 App 不在前台，调用 `startForegroundService()` 本身就可能失败。开发者为了绕过限制，在各种生命周期回调里调用，但时机不当导致 5 秒窗口不够用。
+排查时先看 logcat。若出现 `Context.startForegroundService() did not then call Service.startForeground()` 或 `ForegroundServiceDidNotStartInTimeException`，就该把问题定性为“晋升前台太晚”，不要再去搜 `ForegroundServiceStartNotAllowedException`。
 
-### 在 Perfetto 中怎么识别
+在 Perfetto 里，这类问题通常表现为 Service 初始化开始后，主线程还卡在 `Application` 初始化、Provider 初始化或某段同步 I/O 上，前台通知对应的 `notify()` 没有在宽限期内出现。
 
-ANR traces 中主线程堆栈不在 `onStartCommand()` 里，而在更早的位置——比如 `Application.onCreate()` 或者某个 ContentProvider 的初始化中。系统日志（logcat）中搜索 `ForegroundServiceStartNotAllowedException` 可以快速确认这个类型。
+### Android 12+ 后台启动被拒绝
 
-在 Perfetto 中，能看到 Service 的 `onCreate()` 或 `onStartCommand()` 开始执行后，5 秒内没有 `startForeground()` 对应的 `NotificationManager.notify()` 调用。
+`ForegroundServiceStartNotAllowedException` 讲的是另一件事：App 已经退到后台，而且当前调用点不满足豁免条件，系统从入口处就不允许启动这个前台服务。这里没有“5 秒内补一个 `startForeground()` 就能救回来”的补救空间，因为服务压根不该从这个时机启动。
 
 ### 预防方案
 
-`startForeground()` 必须放在 `onCreate()` 或 `onStartCommand()` 的最前面，在任何耗时操作之前。如果确实需要在 `onStartCommand()` 中做异步工作，先调用 `startForeground()` 建立前台通知，再开始异步处理。
+把 `ServiceCompat.startForeground()` 放到 `onCreate()` 或 `onStartCommand()` 的最前面，通知先挂上，再做任何耗时工作。若业务发生在后台，先确认自己是否满足 Android 12+ 的前台服务豁免；若日志里出现 `short service` 或 `Service.onTimeout()`，就转去看 Android 14+ 的类型化前台服务超时规则，不要和启动宽限期混成一类问题。
 
 ## 文件锁竞争导致的 ANR
 
@@ -327,7 +349,7 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ### SharedPreferences apply() ANR
 
-主线程堆栈顶部是 `ActivityThread.handlePauseActivity()` → `QueuedWork.waitToFinish()`。如果看到这个模式，几乎可以确认是 SP apply 导致的问题。
+主线程堆栈如果落在 `QueuedWork.waitToFinish()`，再叠看 `SharedPreferencesImpl.apply()`、`awaitCommit()`、慢 `fsync()` 或 receiver / service 收尾路径，通常就能把问题收敛到 pending 的 SP 刷盘。旧应用可能出现在 `ActivityThread.handlePauseActivity()`，更常见的是 receiver / service 边界。
 
 ### Binder 死锁 ANR
 
@@ -358,15 +380,15 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ## 版本演进
 
-- **Android 8.0**：引入后台 Service 200 秒超时
-- **Android 10**：限制后台 Activity 启动，间接减少了 SP apply ANR
-- **Android 12**：`ExactAlarmPermission` 限制，减少了 Broadcast 风暴
-- **Android 14**：后台 Broadcast 超时缩短，引入 `ForegroundServiceStartNotAllowedException`
-- **Android 15/16**：[待验证: 是否对 SharedPreferences waitToFinish 做了优化]
+- **Android 8 / 9**：`startForegroundService()` 的前台化宽限期在 AOSP O 分支常见为 5 秒；后台 service 限制开始明显收紧。
+- **Android 10 / 11**：AOSP 常见前台化宽限期提升到 10 秒；广播超时仍以前台 10 秒、后台 60 秒为主。
+- **Android 12**：新增 `ForegroundServiceStartNotAllowedException`，把“后台启动被拒绝”和“已启动但未及时前台化”拆成两条路径。
+- **Android 14**：Broadcast 在 CPU starvation 条件下会出现前台 10-20 秒、后台 60-120 秒的浮动窗口；类型化前台服务开始有更明确的 timeout 规则。
+- **Android 15 / 16**：本章涉及的 `QueuedWork` / `SharedPreferences.apply()` 机制没有看到公开文档级别的根本改写，排查方法仍沿用前面的分析过程。
 
 ## 常见问题与误区
 
-**"apply() 是异步的，不会导致 ANR"** — `apply()` 的写入确实是异步的，但在 Activity 生命周期切换时，系统会同步等待所有 pending 的 apply 操作完成。
+**"apply() 是异步的，不会导致 ANR"** — `apply()` 会把写盘排进后台队列，但在 BroadcastReceiver、Service 和其他组件边界上，`QueuedWork.waitToFinish()` 仍可能把主线程拖住。
 
 **"ANR 一定是 App 代码的问题"** — 不完全是。系统负载高、I/O 阻塞、Broadcast 风暴等原因导致的 ANR，根因在系统层面。
 
@@ -380,7 +402,7 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ### AOSP 源码
 
-- `frameworks/base/core/java/android/app/ActivityThread.java` — `handlePauseActivity()`、`handleBindApplication()`
+- `frameworks/base/core/java/android/app/ActivityThread.java` — `handlePauseActivity()`、`handleBindApplication()`、receiver / service 边界上的 `QueuedWork.waitToFinish()` 调用点
 - `frameworks/base/core/java/android/app/SharedPreferencesImpl.java` — `apply()`、`awaitCommit()`
 - `frameworks/base/core/java/android/app/QueuedWork.java` — `waitToFinish()`
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `broadcastIntentLocked()`

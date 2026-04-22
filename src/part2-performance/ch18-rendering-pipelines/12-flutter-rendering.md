@@ -21,14 +21,15 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 section: '18.12'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-18'
 task6_result: pass-light-edit
-task2b_result: pending
+task2b_result: fixed
+last_task2b_at: "2026-04-23T01:13:23+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-22'
@@ -120,6 +121,8 @@ Flutter 的渲染流程分为四个阶段，每个阶段对应不同的线程和
 
 这是 Flutter 在 Android 上最重要的链路选择，直接决定了性能特征。
 
+Android 侧的入口可以直接对照 Flutter engine 仓库里的 `shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java`、`FlutterTextureView.java` 和 `io/flutter/view/VsyncWaiter.java`。Render mode 决定 Embedding 层创建哪种宿主 View，`VsyncWaiter` 决定 Flutter 怎样接上 Android `Choreographer` 的节拍。
+
 ### SurfaceView Render Mode（推荐默认）
 
 Flutter 的独立 Surface 直接与 SurfaceFlinger 交互，**不经过宿主 App 的 RenderThread**。
@@ -148,7 +151,7 @@ sequenceDiagram
 
 **优势**：主要绕开宿主 RenderThread 的纹理采样与窗口合成路径。全屏 Flutter 页面、视频、游戏场景更容易拿到更低的合成开销。宿主主线程一旦阻塞，Dart 的 Build/Layout/Paint 和平台回调仍会一起变慢。
 
-**限制**：Flutter SurfaceView 与宿主原生 View 是两个独立 Layer，无法交错（Z-Order 冲突）；不支持 View 级别的动画变换（透明度、旋转、圆角）。
+**限制**：Flutter SurfaceView 与宿主原生 View 仍是两个独立 Layer，普通 View 很难和它做稳定的 Z 轴交错、View 级 transform 和圆角裁剪。透明背景是另一回事：`RenderMode.surface` 可以配合 `TransparencyMode.transparent` 输出透明 Surface，但这不会消掉独立 Layer 的边界。
 
 ### TextureView Render Mode（兼容路径）
 
@@ -175,18 +178,21 @@ sequenceDiagram
     RT->>SF: queueBuffer(App Window)
 ```
 
-**优势**：可以当普通 View 使用，支持动画、透明度、裁剪。
+宿主侧的上屏过程是：`SurfaceTexture.setOnFrameAvailableListener()` 先把新帧消息抛回宿主主线程，主线程触发 `invalidate()`，再等下一次 VSync 由宿主 `RenderThread` 执行 `updateTexImage()`，把 Flutter 的离屏结果采样进应用窗口。Flutter Raster Thread 只负责把帧写进 `SurfaceTexture`；真正能不能按时上屏，还要看宿主主线程和 `RenderThread` 是否空闲。
 
-**代价**：多一次宿主侧纹理采样和同步；受宿主主线程/RenderThread 卡顿影响；内存占用更高。
+**优势**：可以当普通 View 使用，支持 alpha、rotation、scale、clip 等 View 级变换。
+
+**代价**：多一次宿主侧纹理采样和同步；帧率上限受宿主窗口渲染节奏约束；宿主主线程或 `RenderThread` 一忙，Flutter 帧就会卡在 `updateTexImage()` 之前。
 
 ### 选型建议
 
 | 场景 | 推荐 Mode | 理由 |
 |:---|:---|:---|
-| 全屏 Flutter App | SurfaceView | 性能最优 |
-| Flutter 嵌入复杂 View 层级 | TextureView | 需要交错和变换 |
-| 需要半透明/圆角 | TextureView | SurfaceView 不支持 |
-| 视频/游戏 | SurfaceView | 延迟最低 |
+| 全屏 Flutter App | SurfaceView | 直接走独立 Surface，合成链更短 |
+| Flutter 嵌入复杂 View 层级 | TextureView | 需要和宿主普通 View 交错、一起参与 View 级变换 |
+| 需要透明背景，但不要求和宿主 View 做复杂交错 | SurfaceView + `TransparencyMode.transparent` | 透明可以保留 Surface 路径，不必为了“透明”直接切到 TextureView |
+| 需要圆角、旋转、alpha 动画 | TextureView | 这类效果依赖普通 View 变换与裁剪 |
+| 视频 / 游戏 | SurfaceView | 延迟更低，宿主 RenderThread 负担更小 |
 
 ## Platform Views 嵌入
 
@@ -195,11 +201,11 @@ sequenceDiagram
 1. **Flutter 根视图 render mode**：SurfaceView 或 TextureView，决定 Flutter 内容怎么出图
 2. **Platform Views composition mode**：Hybrid Composition 或 Texture Layer Hybrid Composition，决定原生 View 怎么和 Flutter 内容组合
 
-这两套配置会叠加出不同的性能边界，不能混成一句“某种模式更快”。
+这两套配置会叠加出不同的性能边界，不能混成一句“某种模式更快”。Android 10 是一个明显分水岭：Hybrid Composition 在 Android 10+ 可以借助 `SurfaceControl` 把 Platform View 和 Flutter 内容交给 SurfaceFlinger 做 Layer 级合成，Z-order、输入和 a11y 路径都更稳；Android 10 之前没有这条路，拷贝和同步成本会高不少。
 
 | Composition mode | 适合场景 | 优点 | 主要代价 |
 |:---|:---|:---|:---|
-| **Hybrid Composition** | WebView、MapView、输入与无障碍要求高的控件 | 原生 View 更接近 Android 自身行为，输入、焦点和 a11y 路径更稳 | Flutter 自身渲染更容易掉帧，Android 10 之前拷贝成本更高 |
+| **Hybrid Composition** | WebView、MapView、输入与无障碍要求高的控件 | 原生 View 更接近 Android 自身行为；Android 10+ 走 `SurfaceControl` 合成后，Layer 组织更稳定 | Flutter 自身渲染更容易掉帧；Android 10 之前拷贝和同步成本更高 |
 | **Texture Layer Hybrid Composition** | 需要变换、裁剪、透明度、和 Flutter 内容一起动画的控件 | Flutter 侧变换能力更完整，宿主布局融合更灵活 | WebView 快速滚动更容易 janky；若嵌入树里出现 SurfaceView，可能被挪进 virtual display，a11y 也会受影响；文本放大镜依赖 Flutter 以 TextureView 渲染 |
 
 再按控件类型看，差异会更直观：
@@ -214,29 +220,32 @@ sequenceDiagram
 
 ## 在 Perfetto 中识别 Flutter 链路
 
-| 位置 | 可能的 Slice/Track | 说明 |
+先把采样条件固定下来：优先用 profile / release 构建，打开 `gfx`、`view`、`sched`、`surfaceflinger` 相关数据源，录制一段能稳定复现卡顿的交互。没有截图时，直接在 Perfetto UI 里搜 `Engine::BeginFrame`、`Rasterizer::DrawToSurfaces`、`updateTexImage`、`DrawFrame`，定位会更快。
+
+| 场景 | 轨道 / 关键词 | 该看什么 |
 |:---|:---|:---|
-| Main/Dart Runner | `Engine::BeginFrame`, `Build`, `Layout`, `Paint` | Dart UI 阶段 |
-| Raster Thread | `Rasterizer::DrawToSurfaces`, `EntityPass::*` | 光栅化阶段 |
-| IO Thread | `ImageDecoder` | 图片解码 |
-| SurfaceFlinger | Flutter 独立 Layer | SurfaceView mode |
+| Flutter UI 阶段 | `Engine::BeginFrame`、`Build`、`Layout`、`Paint` | Dart Runner 有没有在 VSync 后很快进入 Build/Layout/Paint |
+| Flutter 光栅化 | `Rasterizer::DrawToSurfaces`、`EntityPass::*` | Raster Thread 是否把一帧及时光栅化完成 |
+| SurfaceView mode | App 进程里的 Flutter 轨道 + SurfaceFlinger 独立 Flutter Layer | Flutter 独立 Layer 是否按节拍提交；若宿主页面平稳、Flutter Layer 自己断节拍，问题多半在 Flutter 侧 |
+| TextureView mode | 宿主主线程 `invalidate()`、宿主 `RenderThread` 的 `DrawFrame` / `updateTexImage()` | Flutter 帧是否已经准备好，但卡在宿主 `RenderThread` 的采样和合成上 |
+| 图片 / 资源加载 | `ImageDecoder`、IO Thread | 先判断卡顿是否来自解码和资源准备，再决定要不要回到渲染链 |
 
-**Trace 截图参考**：
+**轨道观察清单**：
 
-[待补充：Flutter SurfaceView mode 下 Perfetto 截图 — 标注 Dart Runner、Raster Thread、SurfaceFlinger 的对应轨道]
-
-[待补充：Flutter TextureView mode 下 Perfetto 截图 — 标注 Raster Thread、宿主 RenderThread、SurfaceTexture 的交互时序]
+- **SurfaceView mode**：能看到 Dart Runner 与 Raster Thread 正常推进，同时 SurfaceFlinger 里有独立 Flutter Layer 跟着提交；这类 trace 往往先查 Flutter 自身的 Dart / Raster 阶段。
+- **TextureView mode**：先确认 Raster Thread 已经产出新帧，再看宿主主线程有没有及时 `invalidate()`，以及宿主 `RenderThread` 的 `updateTexImage()` / `DrawFrame` 有没有被拖长。
+- **Platform Views**：如果页面里同时有 WebView 或 MapView，再叠看 SurfaceFlinger Layer 和宿主窗口轨道，判断卡顿落在 Flutter 自身、Platform View，还是宿主合成。
 
 **诊断思路**：
 - Dart 阶段慢 → 优化 Widget 树、减少 rebuild
 - Raster 阶段慢 → 减少 DrawCall、优化 Shader
-- 宿主合成慢 → 检查 TextureView mode 下的 RenderThread 负载
+- 宿主合成慢 → 检查 TextureView mode 下的 `updateTexImage()`、`DrawFrame` 和宿主 RenderThread 负载
 
 ## 与其他章节的关系
 
 - **2.11 Flutter 渲染管线与性能**：Flutter 渲染机制的原理视角
 - **18.6 SurfaceView / 18.7 TextureView**：Android 原生组件的链路对比
-- **13.8 WebView 渲染性能**：Flutter WebView 的性能特征
+- **18.13 WebView 章节 / 7.11 WebView 性能优化**：分别对应嵌入式渲染过程和性能治理视角
 
 ## 参考资料
 
@@ -244,4 +253,7 @@ sequenceDiagram
 - Flutter 官方文档：Hosting native Android views in your Flutter app with Platform Views
 - Flutter 官方文档：Impeller rendering engine
 - Flutter Android embedding Javadoc：RenderMode
-- AOSP `engine/src/flutter/`
+- Flutter engine 仓库：`shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java`
+- Flutter engine 仓库：`shell/platform/android/io/flutter/embedding/android/FlutterTextureView.java`
+- Flutter engine 仓库：`shell/platform/android/io/flutter/view/VsyncWaiter.java`
+- Flutter engine 仓库：`shell/platform/android/`、`shell/`、`flow/`
