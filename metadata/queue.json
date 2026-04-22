@@ -417,7 +417,7 @@
     "priority": 95,
     "reason": "[External Review] P0: GKI 内核版本映射错误（Android 16 GKI 为 6.12 非 6.6）；P1: eBPF 内核态聚合原理解释断裂；P1: uprobe 性能陷阱缺失；P1: Simpleperf uprobe 语法过旧",
     "material_paths": [
-      "logs/external-review/2026-04-21-14-10-ebpf-performance-analysis-external-review.md"
+      "logs/external-review/archive/2026-04-21-14-10-ebpf-performance-analysis-external-review.md"
     ],
     "review_issues": [
       {
@@ -451,7 +451,9 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-21T19:25:48.814496+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-22T10:03:36+08:00",
+    "completed_by": "task2b-content-processing-rework"
   },
   {
     "section": "13.2",
@@ -539,7 +541,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-21T19:59:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-22T10:03:36+08:00",
+    "completed_by": "task2b-content-processing-rework"
   },
   {
     "section": "14.5",
