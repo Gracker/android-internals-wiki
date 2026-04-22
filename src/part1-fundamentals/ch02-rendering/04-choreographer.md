@@ -43,17 +43,19 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: ready-for-review
-pipeline_stage: task9_pending
+status: "finalized"
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
-task9_result: needs-rework
-task9_state: pending
+task9_result: "pass-tech-review"
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-04-19T02:20:00+08:00"
+last_task9_at: "2026-04-22T22:55:00+08:00"
+task9_reviewed_date: "2026-04-22"
+task9_reviewed_by: "openclaw-task9"
 ---
 
 # Choreographer 与渲染流水线

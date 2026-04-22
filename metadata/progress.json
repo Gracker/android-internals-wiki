@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-04-22T21:53:01+08:00",
+  "generated_at": "2026-04-22T22:55:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 180,
   "metrics": {
-    "finalized": 41,
-    "last_updated": "2026-04-22T21:53:01+08:00",
-    "pipeline_ready_to_publish": 41,
+    "finalized": 43,
+    "last_updated": "2026-04-22T22:55:00+08:00",
+    "pipeline_ready_to_publish": 43,
     "pipeline_stage_counts": {
-      "ready-to-publish": 41,
-      "task2b_pending": 36,
+      "ready-to-publish": 43,
+      "task2b_pending": 37,
       "task6_pending": 55,
-      "task9_pending": 48
+      "task9_pending": 45
     },
-    "pipeline_task2b_pending": 36,
-    "pipeline_task9_pending": 48,
-    "ready-for-review": 139,
+    "pipeline_task2b_pending": 37,
+    "pipeline_task9_pending": 45,
+    "ready-for-review": 137,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 130,
+      "fixed": 129,
       "idle": 6,
-      "pending": 40,
+      "pending": 41,
       "unknown": 4
     },
     "task6_state_counts": {
@@ -28,8 +28,8 @@
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 88,
-      "reviewed": 91
+      "pending": 85,
+      "reviewed": 94
     },
     "total": 180,
     "total_sections": 180,
@@ -37,10 +37,10 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 41,
-      "task2b_pending": 36,
+      "ready-to-publish": 43,
+      "task2b_pending": 37,
       "task6_pending": 55,
-      "task9_pending": 48
+      "task9_pending": 45
     },
     "task6_state_counts": {
       "reviewed": 122,
@@ -48,13 +48,13 @@
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 88,
-      "reviewed": 91
+      "pending": 85,
+      "reviewed": 94
     },
     "task2b_state_counts": {
-      "fixed": 130,
+      "fixed": 129,
       "idle": 6,
-      "pending": 40,
+      "pending": 41,
       "unknown": 4
     }
   },
@@ -2018,15 +2018,15 @@
       "title": "Choreographer 与渲染流水线",
       "chapter": "2.4",
       "section": "2.4",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-21",
+      "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "last_task9_at": "2026-04-19T02:20:00+08:00"
     },
@@ -2082,11 +2082,11 @@
       "chapter": "2.10",
       "section": "2.10",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "reviewed_date": "2026-04-21",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
@@ -3101,15 +3101,15 @@
       "title": "手势导航与系统交互",
       "chapter": "3.3",
       "section": "3.3",
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "reviewed_date": "2026-04-21",
+      "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
