@@ -9,8 +9,8 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-09"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-22"
+last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
@@ -29,12 +29,14 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-background-audio-hardening-audio-focus.md"
   - type: research
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+  - type: aosp
+    path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-18T19:04:25+08:00"
+last_task2b_at: "2026-04-22T23:53:44+08:00"
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-20T07:50:52+08:00"
@@ -173,6 +175,8 @@ FAST Mixer 真正省掉的是每条 fast track 的 sample rate conversion、per-
 
 第二步是 AudioFlinger 在创建 track 时做最后筛选。常见的硬条件包括：这个 output 上确实存在 fast mixer thread；请求的 sample rate、format、channel mask 和设备 mix port 匹配；client 侧能用 callback 线程按时供数；track 的 frame count 落在 fast track 可接受的范围；fast track slot 还有空位。任何一个条件不满足，都会退回 Normal Mixer。
 
+这里的 slot 是硬约束。android-16.0.0_r1 的 `PlaybackThread` 构造里把 `mFastTrackAvailMask` 初始化为 `((1 << FastMixerState::sMaxFastTracks) - 1) & ~1`，源码注释直接写明 index 0 预留给 normal mixer 的 submix。也就是说 FastMixer 的槽位数是固定的，应用侧实际最多同时占用 7 个 fast track；槽位打满时，新流会直接降回 normal track，即使 sample rate 和 buffer 配置都匹配。
+
 这就是为什么同样都写着“LOW_LATENCY”，有的流能进 fast track，有的流还是普通 track。最常见的失败原因就是 44100Hz 请求落在 48000Hz 输出设备上，或者 buffer/frame count 配得太保守。
 
 ### FAST Mixer 的线程调度
@@ -220,6 +224,8 @@ MMAP 打开后，App 仍然要先通过 AAudio / Oboe 向 audioserver 内的 AAu
 ```
 
 SHARED 模式仍然保留 audioserver 侧的 timing model 和混音管理，只是把传统的多级拷贝换成 MMAP buffer。EXCLUSIVE 模式会绕过普通 mixer，让单个 App 独占 endpoint，但 stream 的打开、状态切换、设备路由和错误恢复仍然经过 service / HAL 控制通道。
+
+EXCLUSIVE 模式下，App 仍然要持续根据 timing model 校正硬件读写位置。NOIRQ MMAP 没有共享读写计数器，audioserver 会持续把 timestamp 和 xrun 状态送回流端，App 再据此修正 `AAudioStream_getTimestamp()` 看到的硬件位置。少了这层同步，exclusive stream 很容易在 callback 节奏上漂掉，进而出现 underrun 或 overrun。
 
 所以 `App → 驱动` 只适合描述 EXCLUSIVE 模式下的数据面，不能拿来概括整个 MMAP 机制。MMAP 的收益也不是无条件成立，设备不支持、format 不匹配、endpoint 被占用时，AAudio / Oboe 仍会回退到 FAST 或 Normal 输出。
 
@@ -301,11 +307,14 @@ Android 17 对后台音频播放实施了严格管控。这是 Android 持续收
 **调试方法**：
 
 ```bash
-# Android 16 上主动打开强制，提前测试兼容性
-adb shell cmd audio set-enable-hardening 1
+# 对所有 app 打开约束，提前做兼容性测试
+adb shell cmd audio set-enable-hardening enable
 
-# Android 17 上临时关闭强制，做 A/B 对比
-adb shell cmd audio set-enable-hardening 0
+# 打开 loud failure：volume/focus 直接抛 IllegalStateException，播放 write 持续报错
+adb shell cmd audio set-enable-hardening throw
+
+# 临时关闭约束，做 A/B 对比
+adb shell cmd audio set-enable-hardening disable
 
 # 查看违规日志
 adb logcat -s AudioHardening
@@ -318,7 +327,7 @@ adb dumpsys audio
 
 ### AudioTrack 新增精确 Flush 控制
 
-Android 17 新增 `flushWrittenFramesFromPosition(long, int)`，但这个 API 只适用于 offloaded `AudioTrack`，也就是创建时显式调用 `Builder.setOffloadedPlayback(true)` 的那类压缩音频播放流。调用前还要先用 `getFlushWrittenFramesFromPositionSupport(AudioFormat, AudioAttributes)` 查询设备支持度；如果返回 0，这条能力就不能用。`accuracy` 参数仍然只有 `FLUSH_FROM_ACCURACY_BEST_EFFORT` 和 `FLUSH_FROM_ACCURACY_EXACT` 两档。
+Android 17 新增 `flushWrittenFramesFromPosition(long, int)`。官方 API 文档在方法详情里直接写的是“only allowed in offload mode”，所以它只适用于显式调用 `Builder.setOffloadedPlayback(true)` 创建的 offload `AudioTrack`。调用前还要先用 `getFlushWrittenFramesFromPositionSupport(AudioFormat, AudioAttributes)` 查询设备支持度；这个静态探测接口查的也是“给定 format / attributes 创建的 offload track”是否支持该能力，返回 0 就不能用。`accuracy` 参数仍然只有 `FLUSH_FROM_ACCURACY_BEST_EFFORT` 和 `FLUSH_FROM_ACCURACY_EXACT` 两档。
 
 它适合的场景是 offload 播放中的 seek 或章节跳转：App 需要丢弃已经写进 DSP 或硬件队列、但还没真正播出的那部分数据，并尽量从指定 frame 重新开始。普通 PCM `AudioTrack` 不在这套语义里，不能把这个 API 当成通用 seek 工具直接套用。
 
@@ -326,7 +335,7 @@ Android 17 新增 `flushWrittenFramesFromPosition(long, int)`，但这个 API �
 
 ### 编解码器来源查询
 
-`getCodecProvenance()` 返回的是创建 `AudioTrack` 时配置的 codec media type string；如果没有设置，返回空字符串。它表达的是“这条播放流原本来自什么 codec”，方便 framework 或 HAL 在空间音频、渲染策略这类场景里保留来源信息，不等于“当前一定走硬解 / 软解 / offload”三选一。
+`getCodecProvenance()` 返回的是配置阶段确定的 codec provenance，也就是编解码器实现来源字符串，例如系统组件名或厂商 codec 名。它表达的是“这条播放流最终绑定了哪套编解码器实现”，方便 framework 或 HAL 在空间音频、渲染策略这类场景里保留来源信息；它本身不直接给出“当前一定走硬解 / 软解 / offload”这类执行路径结论。
 
 如果我们真正想判断执行路径，是不是 offload、是不是 hardware decoder、DSP 有没有接管，应该另外看 offload 配置、`dumpsys audio`、播放器管线和设备能力。不能把 `getCodecProvenance()` 直接当成执行路径探针。
 
