@@ -1,61 +1,61 @@
 {
-  "generated_at": "2026-04-23T02:14:24.712260",
+  "generated_at": "2026-04-23T02:15:00+08:00",
   "state_machine_version": "v2",
-  "total_sections": 180,
+  "total_sections": 181,
   "metrics": {
     "finalized": 45,
-    "last_updated": "2026-04-23T01:48:42+08:00",
+    "last_updated": "2026-04-23T02:15:00+08:00",
     "pipeline_ready_to_publish": 45,
     "pipeline_stage_counts": {
       "ready-to-publish": 45,
-      "task2b_pending": 38,
-      "task6_pending": 50,
+      "task2b_pending": 37,
+      "task6_pending": 52,
       "task9_pending": 47
     },
-    "pipeline_task2b_pending": 38,
+    "pipeline_task2b_pending": 37,
     "pipeline_task9_pending": 47,
-    "ready-for-review": 135,
+    "ready-for-review": 136,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 128,
+      "fixed": 130,
       "idle": 6,
-      "pending": 42,
+      "pending": 41,
       "unknown": 4
     },
     "task6_state_counts": {
-      "reviewed": 127,
-      "revisiting": 53
+      "reviewed": 126,
+      "revisiting": 55
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 82,
-      "reviewed": 97
+      "pending": 84,
+      "reviewed": 96
     },
-    "total": 180,
-    "total_sections": 180,
+    "total": 181,
+    "total_sections": 181,
     "unknown": 0,
-    "task6_reviewed": 179
+    "task6_reviewed": 126
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "ready-to-publish": 45,
-      "task2b_pending": 38,
-      "task6_pending": 50,
+      "task2b_pending": 37,
+      "task6_pending": 52,
       "task9_pending": 47
     },
     "task6_state_counts": {
-      "reviewed": 127,
-      "revisiting": 53
+      "reviewed": 126,
+      "revisiting": 55
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 82,
-      "reviewed": 97
+      "pending": 84,
+      "reviewed": 96
     },
     "task2b_state_counts": {
-      "fixed": 128,
+      "fixed": 130,
       "idle": 6,
-      "pending": 42,
+      "pending": 41,
       "unknown": 4
     }
   },
@@ -321,19 +321,19 @@
       "chapter": "15.3",
       "section": "15.3",
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "reviewed_date": "2026-04-22",
-      "reviewed_by": "openclaw-task6",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "partial-fixed",
+      "task2b_result": "fixed",
+      "reviewed_date": "2026-04-22",
+      "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-23",
-      "review_round": 2,
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-23T01:48:42+08:00"
+      "last_task9_at": "2026-04-23T01:48:42+08:00",
+      "last_task2b_at": "2026-04-23T02:15:00+08:00"
     },
     "src/part3-tools/ch15-methodology/05-online-monitoring.md": {
       "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
@@ -3354,6 +3354,19 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-21"
+    },
+    "src/part1-fundamentals/ch01-architecture/README.md": {
+      "path": "src/part1-fundamentals/ch01-architecture/README.md",
+      "title": "第 1 章：系统架构全景",
+      "chapter": "1.0",
+      "section": "1.0",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-23T02:15:00+08:00"
     }
   }
 }

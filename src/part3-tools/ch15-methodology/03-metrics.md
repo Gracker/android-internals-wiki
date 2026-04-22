@@ -4,35 +4,42 @@ chapter: "15.3"
 status: ready-for-review
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "developer.android.com, Google Play Console Help"
+last_verified: "2026-04-23"
+last_verified_against: "developer.android.com/topic/performance/vitals/render, launch-time, FrameMetrics / FrameMetricsAggregator / ProfilingManager 官方文档"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/vitals"
+  - type: official
+    path: "https://developer.android.com/topic/performance/vitals/render"
   - type: official
     path: "https://developer.android.com/topic/performance/launch-time"
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
   - type: official
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
+  - type: official
+    path: "https://developer.android.com/reference/androidx/core/app/FrameMetricsAggregator"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
 tags:
   - android
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-23"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-23T01:48:42+08:00"
-task2b_state: pending
-task2b_result: partial-fixed
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
 task6_result: pass-light-edit
 repaired_date: "2026-04-21"
 repaired_by: "codex"
+last_task2b_at: "2026-04-23T02:15:00+08:00"
 section: "15.3"
 related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1', '15.5', '15.9', '15.10']
 ---
@@ -98,7 +105,7 @@ FPS 是最直觉的流畅性指标：一秒钟内屏幕上成功渲染了多少�
 
 FPS 更像展示指标，不太适合做治理主指标。治理时更有价值的，通常是帧时间分位数、jank rate 和 frozen frame rate 这类更能反映尾部体验的指标。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
 ### Frame Time 与分位数（P90 / P99）
 
@@ -108,7 +115,7 @@ Frame Time 是单帧渲染耗时。它比 FPS 更有分析价值，因为它保�
 
 为什么 P90 和 P99 这么重要？因为在高刷设备上，用户对偶发卡顿的敏感度反而更高。120Hz 屏幕的帧预算只有 8.33ms，一个 20ms 的长帧就会造成肉眼可见的跳帧。如果 P99 超过了帧预算的 2 倍（约 16ms@120Hz），说明每 100 帧里就有一帧会让用户感到顿挫。这个频率在快速滑动列表时会被明显感知到。
 
-采集方式上，线下可以通过 `dumpsys gfxinfo` 获取逐帧耗时，线上则推荐使用 `FrameMetrics` API（Android 7.0+, API 24）或 `FrameMetricsAggregator`（Android 9.0+, API 28）。后者专门为批量帧时间统计设计，可以按回调阶段（Input、Animation、Layout、Draw）拆分耗时。
+采集方式上，线下可以通过 `dumpsys gfxinfo` 获取逐帧耗时，线上则推荐使用 `FrameMetrics` API（Android 7.0+, API 24）或 AndroidX 的 `FrameMetricsAggregator`。后者底层仍然依赖 `FrameMetrics`，可用范围同样是 API 24+，但更适合做批量聚合，可以按 Input、Animation、Layout、Draw 等阶段拆分耗时。
 
 ```java
 // FrameMetrics 基本用法
@@ -123,17 +130,17 @@ window.addOnFrameMetricsAvailableListener(listener, handler);
 
 这段代码注册了帧时间监听器，每帧回调一次。`TOTAL_DURATION` 给出从 VSync-app 到帧提交的完整耗时，你可以把它收集起来计算分位数。
 
-[已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics]
+[已验证: 官方文档, developer.android.com/reference/android/view/FrameMetrics; developer.android.com/reference/androidx/core/app/FrameMetricsAggregator]
 
 这里有一个常见误区：直接把所有帧混在一起算全局 P90。更稳的做法是至少按页面 / 场景分桶，再计算分位数。否则首页、详情页、播放页、后台恢复全混在一起，结论很容易失真。
 
 ### Janky Frame Rate（慢帧率）
 
-Google 在 Android Vitals 中定义了"慢帧"（Slow / Janky Frame）的标准：渲染耗时超过帧预算的帧。具体阈值因设备刷新率而异——60Hz 设备是 16ms，120Hz 设备是 8ms。Janky Frame Rate 是指用户会话中出现慢帧的比例。
+Google 在 Android Vitals 中把 slow rendering 定义为单帧渲染时间落在 16ms 到 700ms 之间，700ms 以上则单独记为 frozen frame。这里的 16ms 是 Vitals 的统一口径，不会因为设备是 90Hz 或 120Hz 就改成 11ms / 8ms。`Janky Frame Rate` 更适合描述“超过当前刷新率预算的帧比例”，但在看 Play Console 时，最好直接按 slow rendering 和 frozen frames 两套指标理解。
 
-Google Play Console 的 Android Vitals 看板中，有两个层级的慢帧指标：一般慢帧（>16ms）和严重慢帧（>50ms）。如果超过 50% 的用户会话中出现严重慢帧，Google Play 会认为你的 App 存在"不良行为"（Bad Behavior），这会直接影响 Play Store 中的曝光和推荐。
+高刷设备的帧预算仍然要单独看。90Hz 的预算约 11.1ms，120Hz 约 8.3ms，这些阈值适合做线下 trace 和机型专项诊断；如果讨论的是游戏 slow sessions 或高刷机型掉帧，就单列一段，不要把它和 Android Vitals 的定义混在一起。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+[已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
 从治理角度看，`Janky Frame Rate` 更像平台监控指标，`Frame Time P90/P99` 更像工程诊断指标。前者便于横向比较版本和机型，后者更适合回到具体页面或 trace 做深入分析。
 
@@ -183,11 +190,11 @@ public void onDataLoaded(List<Item> items) {
 }
 ```
 
-这个调用时机需要斟酌：太早则 TTFD 失去意义（内容还没加载完），太晚则会干扰系统的启动优化策略（Android 16 的 system-triggered profiling 会根据 `reportFullyDrawn` 调用时机来决定何时停止 trace）。
+这个调用时机需要斟酌：太早则 TTFD 失去意义（内容还没加载完），太晚则会把真正的首屏问题掩盖掉。TTFD 本身是启动指标，和是否抓 trace 是两回事。
 
-Android 16 引入了 system-triggered profiling，可以在 `reportFullyDrawn` 被调用时自动启动和停止 Perfetto trace，这让 TTFD 的调试变得更容易——开发者不需要手动抓 trace，系统会自动捕获启动过程。
+Android 16 的 system-triggered profiling 建立在 `ProfilingManager` 之上。应用可以注册 `TRIGGER_TYPE_APP_FULLY_DRAWN` 这类触发器，让系统在 `reportFullyDrawn()` 发生时自动收集一段 Perfetto profile。它适合调试启动问题，但不改变 TTID / TTFD 的定义，也不应该拿来充当启动指标的证据来源。
 
-[已验证: 官方文档, developer.android.com/topic/performance/launch-time]
+[已验证: 官方文档, developer.android.com/topic/performance/launch-time; developer.android.com/reference/android/os/ProfilingManager]
 
 TTID 和 TTFD 的治理分工也应分开：
 
@@ -461,6 +468,8 @@ Android Vitals 的核心指标（Core Vitals）包括：
 - [Android Vitals | developer.android.com](https://developer.android.com/topic/performance/vitals)
 - [App startup time | developer.android.com](https://developer.android.com/topic/performance/launch-time)
 - [FrameMetrics API | developer.android.com](https://developer.android.com/reference/android/view/FrameMetrics)
+- [FrameMetricsAggregator | developer.android.com](https://developer.android.com/reference/androidx/core/app/FrameMetricsAggregator)
+- [ProfilingManager | developer.android.com](https://developer.android.com/reference/android/os/ProfilingManager)
 - [Android Vitals bad behavior thresholds | support.google.com](https://support.google.com/googleplay/android-developer/answer/9844476)
 - [Investigate RAM usage | developer.android.com](https://developer.android.com/studio/profile/memory)
 - [Manage your app's memory | developer.android.com](https://developer.android.com/topic/performance/memory)
