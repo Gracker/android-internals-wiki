@@ -45,16 +45,17 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T08:40:18+08:00'
+last_task2b_at: "2026-04-22T11:26:25+08:00"
 ---
 
 # 典型场景分析
@@ -234,15 +235,15 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 [图：Activity 切换动画期间两个进程的 Perfetto 时序，标注源 Activity 退出动画和目标 Activity 进入动画]
 
-页面切换期间的 Perfetto Trace 有几个特征性的观察点：
+页面切换期间的 Perfetto Trace 有几组稳定的观察点，入口要按版本拆开。
 
-**FrameTimeline 中的 BufferStuffing**：切换期间 App 可能连续提交多个帧到 SurfaceFlinger，但前一帧还没被消费，形成 Buffer 堆积。在 FrameTimeline track 中表现为多个 Actual Timeline slice 紧密排列但呈现时间依次推迟。
+**Android 12+：先看 FrameTimeline。** `BufferStuffing` 表示 App 连续提交了多帧，但前一帧还没被 SurfaceFlinger 消费；`AppDeadlineMissed` 表示 App 侧渲染超时，动画帧没赶上预期 deadline。这一组信号适合先判断是 App 侧掉帧，还是后续合成链路继续放大了延迟。
 
-**AppDeadlineMissed**：如果 App 侧渲染超时，FrameTimeline 中对应帧会标记为 `AppDeadlineMissed`。这是最常见的页面切换动画卡顿类型——新页面的布局渲染吃掉了动画帧的时间。
+**Android 8-11：回到 App / RenderThread / BufferQueue 轨道。** 低版本没有完整的 FrameTimeline 诊断面板，优先看 `Choreographer#doFrame`、主线程与 RenderThread 的 `thread_state`、以及 BufferQueue / SurfaceFlinger 轨道上的 buffer 堆积和合成延迟。页面切换的常见模式仍然是目标页面 inflate 或绘制过慢，带着前 2-3 帧一起超时。
 
-**跨进程的动画协调**：Activity 切换涉及两个进程，两边的帧需要同步。如果源进程的退出动画和目标进程的进入动画在时间上不匹配（比如一边快一边慢），视觉上会感觉"撕裂"。
+**跨进程的动画协调**：Activity 切换涉及两个进程，两边的帧需要同步。如果源进程的退出动画和目标进程的进入动画在时间上不匹配，视觉上会感觉撕裂或顿挫。
 
-[已验证: Perfetto 官方文档, perfetto.dev/docs/analysis/trace-processor — FrameTimeline jank 类型定义]
+[已验证: Perfetto 官方文档, perfetto.dev/docs/analysis/trace-processor — FrameTimeline 适用于 Android 12+；低版本需回到线程与 BufferQueue 轨道]
 
 ---
 
@@ -274,7 +275,7 @@ Dialog 的弹出过程涉及：
 
 如果 Dialog 的布局很复杂（比如包含大量表单、图片、嵌套 RecyclerView），首次 inflate 和 measure 的耗时会直接影响动画的前几帧。用户感知到的就是"弹窗出现的时候卡了一下"。
 
-PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 Window Token，不经过 WindowManagerService 的 Window 创建流程，所以相对轻量一些。但如果 PopupWindow 的 anchor View 正在进行动画，两者可能争抢主线程时间。
+PopupWindow 的情况类似。`showAsDropDown()` 会基于 anchor 构造 `WindowManager.LayoutParams`，复用宿主的 application window token，再通过 `WindowManager.addView()` 把内容视图挂到窗口层级里。它仍然是 WindowManager 管理的独立窗口，只是复用了宿主 token 和现成上下文，创建成本比 Activity 新开一个 window 更低。但如果 PopupWindow 的 anchor View 正在进行动画，两者仍可能争抢主线程时间。
 
 在 Perfetto 中的分析方法：
 - 在 Dialog 的 `show()` 方法前后添加 Trace event
@@ -322,7 +323,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 
 桌面滑动的分析和普通列表滑动类似（见第一节），但有几个特殊之处：
 
-**Workspace 的特殊性**：Launcher 的桌面不是标准的 RecyclerView，而是自定义的 Workspace/BrowseLayout。每个"页面"可能包含复杂的 App Widget、快捷方式网格、文件夹等。滑动时需要渲染多个半页面（当前页 + 下一页的部分内容），GPU 负载比普通列表高。
+**Workspace 的特殊性**：Launcher 的桌面不是标准的 RecyclerView，而是基于 `Workspace` / `CellLayout` 的自定义容器。每个"页面"可能包含复杂的 App Widget、快捷方式网格、文件夹等。滑动时需要渲染多个半页面（当前页 + 下一页的部分内容），GPU 负载比普通列表高。
 
 **App Widget 的更新**：如果桌面有 App Widget（如天气、时钟、日历），Widget 的 RemoteViews 更新会通过 BroadcastReceiver 在 Launcher 主线程上执行。如果 Widget 更新频率高或者布局复杂，会挤占滑动帧的时间。
 
@@ -429,7 +430,7 @@ PopupWindow 的情况类似，但 PopupWindow 使用的是 App 进程自己的 W
 
 **"黄帧就是掉帧"**
 
-不一定。黄帧表示这一帧的渲染时间超过了 VSync 周期但被 Triple Buffer 吸收了——用户可能感知不到。真正需要关注的是 SurfaceFlinger 侧的 `SFDeadlineMissed`（SurfaceFlinger 合成超时导致的那帧确实没有被显示出来）。分析时以 FrameTimeline track 的 jank type 为准，而不是 App 侧的帧颜色。
+不一定。黄帧表示这一帧的渲染时间超过了 VSync 周期但被 Triple Buffer 吸收了，用户未必能直接感知。Android 12+ 更直接的入口是 FrameTimeline 里的 `SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed` 和 `DisplayHAL`。它们分别对应 SurfaceFlinger CPU 合成、GPU 合成和 Display HAL 侧的超时。Android 8-11 没有这组统一 jank type 时，要回到 SurfaceFlinger 合成耗时、BufferQueue 状态和实际 present 延迟来判断。
 
 **"卡顿一定是主线程的问题"**
 

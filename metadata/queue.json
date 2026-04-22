@@ -577,7 +577,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-21T23:18:40+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-22T11:25:07+08:00",
+    "completed_by": "task2b-content-processing-rework"
   },
   {
     "section": "11.5",
@@ -700,7 +702,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-22T08:40:18+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-22T11:25:07+08:00",
+    "completed_by": "task2b-content-processing-rework"
   },
   {
     "section": "10.4",
