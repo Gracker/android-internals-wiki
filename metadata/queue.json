@@ -103,16 +103,21 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/11-webview-performance",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/11-webview-performance",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "7.11 WebView 渲染性能",
+      "priority": 85,
+      "reason": "[External Review] 2 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "知识盲区 / API 限制缺失",
+          "location": "未调用 destroy()",
+          "detail": "漏掉了 `WebView.destroy()` 必须在 MainThread 执行的关键限制，容易导致误导。",
+          "suggestion": "在代码示例及正文处补充必须在主线程执行 `destroy()` 的红线要求，提及 `checkThread()` 崩溃现象。"
+        },
+        {
+          "type": "知识盲区",
+          "location": "内存泄漏的常见原因",
+          "detail": "缺少对 `CookieManager` / 缓存模块导致全局引用泄漏的描述。",
+          "suggestion": "补充全局单例缓存服务的清理方法。"
         }
       ],
       "added_by": "external-ai-review",
@@ -120,16 +125,27 @@
     },
     {
       "section": "src/part3-tools/ch14-other-tools/05-third-party-libs",
-      "section_title": "Chapter src/part3-tools/ch14-other-tools/05-third-party-libs",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "15.5 三方性能库",
+      "priority": 85,
+      "reason": "[External Review] 3 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "版本差异",
+          "location": "文章中间部分或末尾补充",
+          "detail": "标称适用 Android 16，但漏掉了对 Native 库影响最大的 Android 15 16KB 内存页兼容性问题，这导致 KOOM 和 Matrix 在不重新编译对齐的情况下会引发崩溃。",
+          "suggestion": "补充 16KB Page Size 适配说明及其对 Native Hook 库（PLT/Inline Hook）内存权限修改（mprotect）的影响。"
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "第三节 & 第四节",
+          "detail": "文章标称适用到 Android 16 (API 36)，但在讲解 KOOM Native 泄漏检测和 Matrix IO Canary 时，完全没有提及 Android 15 最重大的 Native 变更——16KB Page Size 适配。",
+          "suggestion": "补充方向：单独增加一段“Android 15/16 时代下的兼容性挑战”，说明 16KB Page Size 对 Native Hook 工具的影响，并强调在集成时必须更新相关 NDK 编译参数 `-Wl,-z,max-page-size=16384`。"
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "第七节",
+          "detail": "在讲解 Hook 机制对比时，未提及 Android 15 针对 ART 虚拟机和 Hidden API 的进一步收紧。",
+          "suggestion": "补充方向：说明随着 Android 14/15/16 持续收紧系统 API，很多基于底层的 Hook 必须更新社区版适配（如结合 LSPosed 等思想）或者转向官方 ProfilingManager。"
         }
       ],
       "added_by": "external-ai-review",
@@ -137,20 +153,19 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/15-scenario-playbooks",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/15-scenario-playbooks",
+      "section_title": "7.15 场景化性能作战手册",
       "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "reason": "[External Review] 无回炉必要，2 条 P2 建议",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "外部 review 评分",
+          "location": "整章",
+          "detail": "外部 review 评分 4.5/5，无 P0/P1 问题",
+          "suggestion": "可参考 P2 建议进行改善"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "reviewed-no-rework"
     },
     {
       "section": "Unknown",
@@ -171,16 +186,33 @@
     },
     {
       "section": "src/part3-tools/ch14-other-tools/13-hook-infrastructure",
-      "section_title": "Chapter src/part3-tools/ch14-other-tools/13-hook-infrastructure",
+      "section_title": "15.13 Hook 基础设施",
       "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "reason": "[External Review] 4 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "版本差异 / 重大架构演进缺失",
+          "location": "兼容性风险段落",
+          "detail": "严重遗漏了 Android 15 引入的 16KB Page Size 变更，这会导致硬编码 4KB (`4096`) 对齐的旧 Hook 框架在调用 `mprotect` 时大面积崩溃 (`EINVAL`)。",
+          "suggestion": "在“兼容性风险”下新增小节，重点解析 16KB 页大小对 Native Hook 的影响，并指出动态调用 `getpagesize()` 重新计算对齐的重要性。"
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "Android 15 16KB 页大小对 Native Hook 的毁灭性影响",
+          "detail": "文章在讨论 PLT Hook 和 Inline Hook 的兼容性风险时，完全遗漏了 Android 15 带来的 16KB 页大小变更。",
+          "suggestion": "修正方向：在兼容性风险一节中，单独开一个高亮警告，专门讲解 Android 15 的 16KB Page Size 问题对 `mprotect` 和 ELF 对齐的约束。"
+        },
+        {
+          "type": "原理链完整性 / 源码准确性",
+          "location": "Linker Namespace 对 PLT Hook 的系统级限制",
+          "detail": "介绍 PLT Hook 时，只说“去改目标函数的机器码，把执行流跳到代理函数”。",
+          "suggestion": "补充方向：补充说明 Android 7.0+ 之后为什么不能随便 hook 系统库，以及通过 `/proc/self/maps` 手动解析 ELF 绕过限制的基础原理。"
+        },
+        {
+          "type": "知识盲区",
+          "location": "JVMTI 的缺席",
+          "detail": "在第一层“官方接口”中遗漏了 Android 8.0 引入的重要官方机制：JVMTI（Java VM Tool Interface）。",
+          "suggestion": "补充方向：作为“官方路线”的一部分，必须提一句 JVMTI 是 Android 8+ 上最强大的官方黑科技，尽管它主要用于线下。"
         }
       ],
       "added_by": "external-ai-review",
@@ -188,37 +220,35 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/03-jank-methodology",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/03-jank-methodology",
+      "section_title": "7.3 卡顿分析方法论",
       "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "reason": "[External Review] 无回炉必要，2 条 P2 建议",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "外部 review 评分",
+          "location": "整章",
+          "detail": "外部 review 评分 4.5/5，无 P0/P1 问题",
+          "suggestion": "可参考 P2 建议进行改善"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "reviewed-no-rework"
     },
     {
       "section": "src/part2-performance/ch07-smoothness/09-perceived-smoothness",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/09-perceived-smoothness",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "7.9 感知流畅性",
+      "priority": 85,
+      "reason": "[External Review] 1 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "原理链完整性",
+          "location": "Choreographer 到动画框架的时间精度损失",
+          "detail": "指出了 `AnimationUtils.currentAnimationTimeMillis()` 精度损失发生在 `frameTimeNanos / TimeUtils.NANOS_PER_MS` 这一步，但未指出这是一种截断还是四舍五入。",
+          "suggestion": "补充方向：补充一句时间戳转换在 Java 中是直接截断处理的，这极度放大了边缘 VSync 抖动对最终毫秒值的影响。"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "completed",
+      "status": "pending",
       "task2b_result": "fixed",
       "task2b_state": "fixed",
       "fixed_at": "2026-04-22T17:33:05",
@@ -226,16 +256,21 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/04-typical-scenarios",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/04-typical-scenarios",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "7.4 典型场景卡顿根因",
+      "priority": 85,
+      "reason": "[External Review] 2 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "原理断裂 / 源码缺失",
+          "location": "2.2 Fragment 切换的卡顿模式",
+          "detail": "`commit()` 导致动画卡顿的根本原因是其基于 Handler.post 异步执行，容易在 Choreographer 动画帧之间穿插执行大量 View 树重建工作。原文缺少这一关键源码原理。",
+          "suggestion": "补充 FragmentManager 的异步机制，对比 `commit()` 和 `commitNow()`。"
+        },
+        {
+          "type": "源码准确性",
+          "location": "1.2 RecyclerView 的性能瓶颈",
+          "detail": "",
+          "suggestion": "补充方向**：补充对 `RecyclerView.java` 中 `mHasFixedSize` 判断逻辑的描述，指出其屏蔽了向上递归的 `requestLayout`。"
         }
       ],
       "added_by": "external-ai-review",
@@ -243,20 +278,19 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/10-image-bitmap-performance",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "7.10 图片与 Bitmap 性能优化",
+      "priority": 85,
+      "reason": "[External Review] 1 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "原理断裂",
+          "location": "Bitmap 像素内存分配的版本差异",
+          "detail": "Android 8.0+ 的 Native 像素内存回收机制未提及 `NativeAllocationRegistry`。",
+          "suggestion": "补充 `NativeAllocationRegistry` 将 Java 对象与 Native 内存绑定的机制，并解释这使得 ART GC 能够感知并管理底层 Native 内存压力。"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "completed",
+      "status": "pending",
       "task2b_result": "fixed",
       "task2b_state": "fixed",
       "fixed_at": "2026-04-22T17:33:05",
@@ -264,16 +298,21 @@
     },
     {
       "section": "src/part3-tools/ch14-other-tools/03-memory-tools",
-      "section_title": "Chapter src/part3-tools/ch14-other-tools/03-memory-tools",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "15.3 内存分析工具",
+      "priority": 85,
+      "reason": "[External Review] 2 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "版本差异",
+          "location": "dumpsys meminfo / 命令行工具集",
+          "detail": "缺失 Android 15 16KB Page Size 对内存统计（PSS/RSS）造成的底层核算影响及数值膨胀现象。",
+          "suggestion": "补充说明在 16KB 设备上，由于内部碎片增加和共享库 PSS 分摊粒度变粗，`meminfo` 和 `procrank` 报告的 PSS 值会天然比 4KB 设备大，提醒读者更新基准线，不要误判为泄漏。"
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "dumpsys meminfo / showmap / procrank",
+          "detail": "没有提及 Android 15 的 16KB Page Size 变化对这些命令行工具输出结果和 PSS 核心指标的巨大影响。",
+          "suggestion": "补充方向：在 dumpsys meminfo 和命令行工具部分，重点增加 16KB Page Size 带来的指标膨胀现象说明，并提醒开发者重构那些依赖 4KB 硬编码的自定义脚本。"
         }
       ],
       "added_by": "external-ai-review",
@@ -281,67 +320,75 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/01-jank-definition",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/01-jank-definition",
+      "section_title": "7.1 卡顿的定义与分类",
       "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "reason": "[External Review] 无回炉必要，3 条 P2 建议",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "外部 review 评分",
+          "location": "整章",
+          "detail": "外部 review 评分 4.5/5，无 P0/P1 问题",
+          "suggestion": "可参考 P2 建议进行改善"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "reviewed-no-rework"
     },
     {
       "section": "src/part2-performance/ch07-smoothness/02-jank-causes",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/02-jank-causes",
+      "section_title": "7.2 卡顿原因体系",
       "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "reason": "[External Review] 无回炉必要，2 条 P2 建议",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "外部 review 评分",
+          "location": "整章",
+          "detail": "外部 review 评分 4.5/5，无 P0/P1 问题",
+          "suggestion": "可参考 P2 建议进行改善"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "reviewed-no-rework"
     },
     {
       "section": "src/part2-performance/ch07-smoothness/13-systemui-performance",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/13-systemui-performance",
+      "section_title": "7.13 SystemUI 性能分析",
       "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "reason": "[External Review] 无回炉必要，3 条 P2 建议",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "外部 review 评分",
+          "location": "整章",
+          "detail": "外部 review 评分 4.5/5，无 P0/P1 问题",
+          "suggestion": "可参考 P2 建议进行改善"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "reviewed-no-rework"
     },
     {
       "section": "src/part2-performance/ch07-smoothness/07-compose-performance",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/07-compose-performance",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "7.7 Compose 性能优化",
+      "priority": 85,
+      "reason": "[External Review] 3 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "原理偏差",
+          "location": "Compose 动画性能",
+          "detail": "误指 `animate*AsState` 必然导致重组。实际上是否重组取决于该 State 被解包（读取）的作用域。",
+          "suggestion": "引入“延迟状态读取阶段”概念，解释在 `drawBehind` 或 `Modifier.graphicsLayer` 内部读取动画 State 可完美跳过重组。"
+        },
+        {
+          "type": "缺失",
+          "location": "derivedStateOf",
+          "detail": "缺失对 `derivedStateOf` 滥用陷阱的说明。",
+          "suggestion": "补充使用条件：必须是高频变动映射为低频变动。"
+        },
+        {
+          "type": "原理链完整性",
+          "location": "derivedStateOf：只在结果真正变化时才触发重组",
+          "detail": "",
+          "suggestion": "补充方向**：明确一条铁律——仅当“输入状态高频变化，而派生结果低频变化（如连续的 offset 映射为 true/false 的 boolean）”时，才使用 `derivedStateOf`。"
         }
       ],
       "added_by": "external-ai-review",
@@ -349,16 +396,27 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/05-optimization",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/05-optimization",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "7.5 流畅性优化策略",
+      "priority": 85,
+      "reason": "[External Review] 3 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "原理断裂",
+          "location": "渲染优化：RenderEffect / Blur 等特效的性能考量",
+          "detail": "对 `RenderEffect.createBlurEffect()` 的性能开销描述过浅。未说明其底层依赖 offscreen buffer（FBO），会产生巨大的 GPU 带宽开销和内存分配。",
+          "suggestion": "补充 FBO 和带宽开销原理，明确给出“降采样后模糊”或“缓存静态模糊结果”的强力建议。"
+        },
+        {
+          "type": "原理链完整性",
+          "location": "渲染优化：RenderEffect / Blur",
+          "detail": "",
+          "suggestion": "补充方向**：强调 FBO 带来的显存和带宽开销，并建议使用降采样（down-sampling）配合模糊，或者仅对静态背景进行模糊并缓存 Bitmap。"
+        },
+        {
+          "type": "原理链完整性",
+          "location": "线程优化：Binder 调用优化",
+          "detail": "",
+          "suggestion": "在生命周期边界更新缓存...”"
         }
       ],
       "added_by": "external-ai-review",
@@ -366,16 +424,27 @@
     },
     {
       "section": "src/part3-tools/ch14-other-tools/12-apm-observability",
-      "section_title": "Chapter src/part3-tools/ch14-other-tools/12-apm-observability",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "15.12 APM 可观测性平台",
+      "priority": 85,
+      "reason": "[External Review] 3 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "源码缺失 / 版本差异缺失",
+          "location": "第一层：官方基线能力",
+          "detail": "缺少 `ApplicationExitInfo` (API 30) 的版本限制及 AMS 中 `AppExitInfoTracker` 的原理解释；缺少 `JankStats` 对 `FrameMetrics` 底层依赖的说明及 Android 14/15 演进。",
+          "suggestion": "补充 Android 11+ 版本要求和持久化路径 `/data/system/exitinfo/`；明确 JankStats 与 FrameMetrics 的调用关系。"
+        },
+        {
+          "type": "源码准确性 / 版本差异覆盖",
+          "location": "ApplicationExitInfo 的底层来源与限制",
+          "detail": "仅提到 `ApplicationExitInfo` 解决退出原因问题，但完全没有提它的底层实现、AOSP 路径和版本门槛。",
+          "suggestion": "补充方向：补充 API 30 限制，并简单介绍 AMS 是如何通过 `AppExitInfoTracker` 收集这些信息的。"
+        },
+        {
+          "type": "原理链完整性",
+          "location": "JankStats 与 FrameMetrics 的关系及 Android 14/15 演进",
+          "detail": "将 `JankStats` 和 `FrameMetrics` 描述为“官方基线能力”，但没有讲透两者的关系及高版本演进。",
+          "suggestion": "补充方向：明确指出 `JankStats` 的底层数据源（API 24+ 依赖 FrameMetrics），并补充 Android 14/15 对“预期 Vsync 时间”计算的修正。"
         }
       ],
       "added_by": "external-ai-review",
@@ -383,33 +452,15 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/08-recyclerview-performance",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/08-recyclerview-performance",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "7.8 RecyclerView 深度优化",
+      "priority": 85,
+      "reason": "[External Review] 1 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
-        }
-      ],
-      "added_by": "external-ai-review",
-      "status": "pending"
-    },
-    {
-      "section": "Unknown",
-      "section_title": "Chapter Unknown",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
-      "review_issues": [
-        {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "原理链完整性",
+          "location": "GapWorker 预取机制",
+          "detail": "提到 `willCreateInTime()` 和 `willBindInTime()` 判断读取的是按 viewType 维护的运行平均耗时，但未说明“冷启动/首次滑动”时没有历史数据如何处理。",
+          "suggestion": "补充方向：补充说明首次预取时因为无均值数据导致的兜底放行策略，以及首次滑动更容易发生超时的必然性。"
         }
       ],
       "added_by": "external-ai-review",
@@ -417,16 +468,15 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/06-case-studies",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/06-case-studies",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "7.6 案例实战分析",
+      "priority": 85,
+      "reason": "[External Review] 1 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "原理偏差",
+          "location": "案例四：RenderThread sync 阻塞主线程",
+          "detail": "对 AnimatedVectorDrawable 导致 sync 阻塞的解释不准确。AVD 默认在 RT 执行，只有退化到 UI 线程时才会引起频繁的 `syncAndDrawFrame` 和 DisplayList 重录制。",
+          "suggestion": "说明 AVD 的线程退化（fallback）机制，以及这是如何导致主线程被迫每帧录制复杂 DisplayList 从而被 sync 阻塞的。"
         }
       ],
       "added_by": "external-ai-review",
@@ -434,16 +484,21 @@
     },
     {
       "section": "src/part3-tools/ch14-other-tools/04-dumpsys",
-      "section_title": "Chapter src/part3-tools/ch14-other-tools/04-dumpsys",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "15.4 dumpsys 系列命令",
+      "priority": 85,
+      "reason": "[External Review] 2 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "版本差异",
+          "location": "dumpsys SurfaceFlinger：Layer 信息与合成状态 -> Android 15+ 的输出变化",
+          "detail": "未指出 Android 15 FrontEnd 架构造成的图层名称被 `RequestedLayerState{...}` 包裹，导致经典 `--list` + `--latency` 自动化测帧率脚本大规模失效的问题。",
+          "suggestion": "明确警示这一破坏性变更，指导读者如何更新正则匹配逻辑来获取 `--latency` 所需的正确图层参数，同时提及传统 HWC/GLES 标记的弃用。"
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "dumpsys SurfaceFlinger：Layer 信息与合成状态",
+          "detail": "虽然提到了 Android 15 引入 FrontEnd 架构和输出变化，但未能指出对实战工具链最致命的破坏：图层名称的包装和合成标签的弃用。",
+          "suggestion": "补充方向：明确指出自动化脚本必须更新正则解析逻辑以提取被 `RequestedLayerState` 包裹的真实图层名，并指出 HWC/GLES 标签的弃用趋势。"
         }
       ],
       "added_by": "external-ai-review",
@@ -451,33 +506,37 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis",
+      "section_title": "7.14 GAPS 动态分析",
       "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "reason": "[External Review] 无回炉必要，2 条 P2 建议",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "外部 review 评分",
+          "location": "整章",
+          "detail": "外部 review 评分 4.0/5，无 P0/P1 问题",
+          "suggestion": "可参考 P2 建议进行改善"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "reviewed-no-rework"
     },
     {
       "section": "src/part3-tools/ch14-other-tools/11-battery-historian",
-      "section_title": "Chapter src/part3-tools/ch14-other-tools/11-battery-historian",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "section_title": "15.11 Battery Historian",
+      "priority": 85,
+      "reason": "[External Review] 2 处 P0/P1 问题",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "版本差异 / 知识盲区缺失",
+          "location": "`PowerMonitor API（API 35 应用层接口）` 及最佳实践",
+          "detail": "遗漏了 Android 15 中 `BatteryStats` 的废弃常量（如 `STATS_SINCE_UNPLUGGED`），以及未提及 Android 15 ADPF 的“能效模式”（Power Efficiency Mode）作为配套的优化抓手。",
+          "suggestion": "补充 API 35 中 `BatteryStats` 的废弃项，提醒读者切换到 `STATS_SINCE_CHARGED`；并在优化方向中简要引出 ADPF 能效模式。"
+        },
+        {
+          "type": "版本差异覆盖",
+          "location": "PowerMonitor API 与 Android 15 更新",
+          "detail": "提到了 API 35 `PowerMonitor`，但遗漏了与之紧密相关的 ADPF 功耗优化接口及 `BatteryStats` 的重要 API 废弃。",
+          "suggestion": "补充方向：在“PowerMonitor API（API 35 应用层接口）”小节或最佳实践中，补充 Android 15 ADPF 能效模式作为功耗优化的下半场手段，以及 `BatteryStats` 的历史 API 废弃提醒。"
         }
       ],
       "added_by": "external-ai-review",
@@ -485,20 +544,19 @@
     },
     {
       "section": "src/part2-performance/ch07-smoothness/12-view-layout-performance",
-      "section_title": "Chapter src/part2-performance/ch07-smoothness/12-view-layout-performance",
+      "section_title": "7.12 View 体系性能优化",
       "priority": 95,
-      "reason": "[External Review] 外部 review 结果整合",
+      "reason": "[External Review] 无回炉必要，3 条 P2 建议",
       "review_issues": [
         {
-          "type": "回炉问题单",
-          "location": "外部 review 结果",
-          "detail": "需要根据外部 review 结果进行修正",
-          "suggestion": "核实并修正相关内容",
-          "evidence": []
+          "type": "外部 review 评分",
+          "location": "整章",
+          "detail": "外部 review 评分 4.5/5，无 P0/P1 问题",
+          "suggestion": "可参考 P2 建议进行改善"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "reviewed-no-rework"
     },
     {
       "section": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",

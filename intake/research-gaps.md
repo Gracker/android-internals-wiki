@@ -66,3 +66,792 @@ Android 12-16 之间 stale-event 判定、WindowInfosListener 协作和 InputFli
 ### 关联章节
 3.1, 9.1, 9.2
 
+## [2026-04-22] 7.1 卡顿的定义与分类 — 知识盲区
+
+### 盲区描述
+VSync Offset 机制细节
+
+### 重要程度
+中
+
+### 建议研究方向
+- 梳理 Android 10+ 之后 DispSync 到 VSyncPredictor 的演进，以及厂商如何调整 appPhase / sfPhase 来优化延迟
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.1-01-jank-definition-external-review.md)
+
+
+## [2026-04-22] 7.10 图片与 Bitmap 性能优化 — 知识盲区
+
+### 盲区描述
+Hardware Bitmap 对 RenderNode 和 SurfaceFlinger composition 的具体影响
+
+### 重要程度
+中
+
+### 建议研究方向
+- 探讨 Hardware Bitmap 是否可以绕过 RenderThread 的某些流程，直接作为单独图层交给 SurfaceFlinger 合成，从而进一步省去 GPU 拷贝。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.10-10-image-bitmap-performance-external-review.md)
+
+
+## [2026-04-22] 7.11 WebView 渲染性能 — 知识盲区
+
+### 盲区描述
+WebView 独立进程崩溃（Render Process Gone）的优雅恢复
+
+### 重要程度
+高
+
+### 建议研究方向
+- 当 Renderer 进程因为 OOM 被杀时，App 进程虽然不崩溃，但 WebView 会显示白屏。如何通过 `onRenderProcessGone()` 正确销毁旧 WebView 并重建是实战盲区。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.11-11-webview-performance-external-review.md)
+
+
+## [2026-04-22] 7.12 View 体系性能优化 — 知识盲区
+
+### 盲区描述
+`ViewDebug` 与系统级 Layout Trace
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 AOSP 中 `ViewDebug.java` 的 trace 机制及 `debug.layout` / `debug.view` 等系统属性的使用，补充至 Perfetto 观测手段中。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.12-12-view-layout-performance-external-review.md)
+
+
+## [2026-04-22] 7.13 SystemUI 性能分析 — 知识盲区
+
+### 盲区描述
+SystemUI SceneContainer (Flexiglass) 架构
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 AOSP 中 `com.android.systemui.scene` 下的代码，了解 Compose 如何接管原本属于 `NotificationShadeWindowView` 的动画和状态路由。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.13-13-systemui-performance-external-review.md)
+
+
+## [2026-04-22] 7.13 SystemUI 性能分析 — 知识盲区
+
+### 盲区描述
+Foldable 设备下的 SystemUI 渲染模型
+
+### 重要程度
+中
+
+### 建议研究方向
+- 多 Display 状态下 StatusBar 与 NavigationBar 的多实例管理机制。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.13-13-systemui-performance-external-review.md)
+
+
+## [2026-04-22] 7.14 GAPS 动态分析 — 知识盲区
+
+### 盲区描述
+GAPS 在高混淆及加壳 App 中的有效性
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究静态路径重建工具如何应对真实市场中经过 ProGuard / R8 高度混淆或 VMP 加壳的应用。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.14-14-gaps-dynamic-analysis-external-review.md)
+
+
+## [2026-04-22] 7.15 场景化性能作战手册 — 知识盲区
+
+### 盲区描述
+BufferQueue 堵塞在 Perfetto 中的直观特征识别
+
+### 重要程度
+中
+
+### 建议研究方向
+- 针对“视频列表、SurfaceView场景卡”场景，提炼出 BufferQueue / dequeueBuffer / queueBuffer 超时的典型可视化特征。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.15-15-scenario-playbooks-external-review.md)
+
+
+## [2026-04-22] 7.2 卡顿原因体系 — 知识盲区
+
+### 盲区描述
+Hardware Composer 厂商差异
+
+### 重要程度
+中
+
+### 建议研究方向
+- 分析高通与联发科 HWC 策略及 dumpsys SurfaceFlinger 中 DEVICE / CLIENT 分配规则的具体厂商实现限制
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.2-02-jank-causes-external-review.md)
+
+
+## [2026-04-22] 7.3 卡顿分析方法论 — 知识盲区
+
+### 盲区描述
+Binder Transaction Trace 分析
+
+### 重要程度
+低
+
+### 建议研究方向
+- 深入总结 Perfetto 中 `binder_transaction` flow events 的各种表现形式及异常情况
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.3-03-jank-methodology-external-review.md)
+
+
+## [2026-04-22] 7.4 典型场景的卡顿根因分析 — 知识盲区
+
+### 盲区描述
+FragmentTransaction commit 源码链路
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析 FragmentManager 的 `execPendingActions()` 及其与 Choreographer 回调的先后顺序
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.4-04-typical-scenarios-external-review.md)
+
+
+## [2026-04-22] 7.4 典型场景的卡顿根因分析 — 知识盲区
+
+### 盲区描述
+WebView / Chromium 渲染管线与 Perfetto 的结合
+
+### 重要程度
+中
+
+### 建议研究方向
+- 梳理 Chromium IPC、GPU 进程与 Android SurfaceFlinger 的合成关系
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.4-04-typical-scenarios-external-review.md)
+
+
+## [2026-04-22] 7.5 流畅性优化策略 — 知识盲区
+
+### 盲区描述
+RenderEffect 的底层 GPU 渲染管线
+
+### 重要程度
+高
+
+### 建议研究方向
+- 结合 RenderNode 和 OpenGL/Vulkan，分析 RenderEffect 触发 offscreen buffer 的代价
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.5-05-optimization-external-review.md)
+
+
+## [2026-04-22] 7.5 流畅性优化策略 — 知识盲区
+
+### 盲区描述
+AMS 锁竞争对 Binder 耗时的影响
+
+### 重要程度
+中
+
+### 建议研究方向
+- 分析常见系统服务在并发调用时的锁粒度和阻塞现象
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.5-05-optimization-external-review.md)
+
+
+## [2026-04-22] 7.6 案例实战分析 — 知识盲区
+
+### 盲区描述
+AnimatedVectorDrawable 的线程退化机制
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 AOSP 中 AVD 何时会被判定为不支持 RenderThread 而回退到主线程（`VectorDrawableAnimatorRT` vs 软件动画引擎）
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.6-06-case-studies-external-review.md)
+
+
+## [2026-04-22] 7.7 Compose 性能优化 — 知识盲区
+
+### 盲区描述
+Compose State 的 Snapshot 阶段订阅机制
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析 `SnapshotStateObserver` 是如何区分 Composition、Layout 和 Draw 三个阶段的
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.7-07-compose-performance-external-review.md)
+
+
+## [2026-04-22] 7.8 RecyclerView 深度优化 — 知识盲区
+
+### 盲区描述
+复杂 ConstraintLayout 对预取时间估算的影响
+
+### 重要程度
+高
+
+### 建议研究方向
+- ConstraintLayout 在 RecyclerView 中因为多次 measure（尤其带 match_constraint），会导致 bind 后的首帧 measure 极长，这部分时间可能未被 GapWorker 的 bindTime 均值涵盖。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.8-08-recyclerview-performance-external-review.md)
+
+
+## [2026-04-22] 7.9 感知流畅性 — 知识盲区
+
+### 盲区描述
+输入重采样（Motion Resampling）对跟手滑动的影响机制
+
+### 重要程度
+中
+
+### 建议研究方向
+- 探讨 Android Input 系统的 resampling 算法如何平滑 touch 事件点，结合本章的位移波动，形成更完整的触控-动画闭环。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.9-09-perceived-smoothness-external-review.md)
+
+## [2026-04-22] 15.10 eBPF 性能分析 — 知识盲区
+
+### 盲区描述
+sched_ext 在手机端 OEM 的落地实况
+
+### 重要程度
+高
+
+### 建议研究方向
+- 哪些 OEM 正在生产环境中实际应用 sched_ext 自定义 BPF 调度器，以及其采取的具体调度策略。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.10-external-review.md)
+
+
+## [2026-04-22] 15.11 Battery Historian — 知识盲区
+
+### 盲区描述
+ADPF 能效模式与功耗测量闭环
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 API 35 `PerformanceHintManager.Session` 增加的 power efficiency 提示，如何与 PowerMonitor 数据变化结合评估。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.11-external-review.md)
+
+
+## [2026-04-22] 15.11 Battery Historian — 知识盲区
+
+### 盲区描述
+Doze 模式 / App Standby 极低功耗状态的 Profiler 表现
+
+### 重要程度
+中
+
+### 建议研究方向
+- 验证当设备强行进入 Doze (`adb shell dumpsys deviceidle force-idle`) 时，Power Profiler 记录的系统基础底噪。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.11-external-review.md)
+
+
+## [2026-04-22] 15.12 APM 可观测性平台 — 知识盲区
+
+### 盲区描述
+ApplicationExitInfo 在 Android 11 以下的替代方案
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究大厂如何通过读取 `/data/anr/`、监听 LMKd 甚至自身设置 Signal Handler 来弥补低版本能力的。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.12-external-review.md)
+
+
+## [2026-04-22] 15.12 APM 可观测性平台 — 知识盲区
+
+### 盲区描述
+Android 14/15 下的 FrameTimeline
+
+### 重要程度
+中
+
+### 建议研究方向
+- Perfetto 的 FrameTimeline 如何与线上 JankStats 数据对齐。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.12-external-review.md)
+
+
+## [2026-04-22] 15.13 Hook 基础设施 — 知识盲区
+
+### 盲区描述
+Android 14 W^X (Write XOR Execute) 与 Inline Hook
+
+### 重要程度
+高
+
+### 建议研究方向
+- 现代 Android 系统对 JIT 和 AOT 代码内存区域实施严格的 W^X 保护，Inline Hook 在刷新 I-Cache 时如何安全规避。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.13-external-review.md)
+
+
+## [2026-04-22] 15.3 内存分析工具 — 知识盲区
+
+### 盲区描述
+16KB Page Size 带来的内存碎片及 PSS 增量核算
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究在 16KB 设备上，各个分区的内存自然增长率，以及如何在性能基准测试中消除 16KB 带来的干扰。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.3-external-review.md)
+
+
+## [2026-04-22] 15.3 内存分析工具 — 知识盲区
+
+### 盲区描述
+MTE ASYMM (Asymmetric) 模式
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 ASYMM 的工作原理及其在最新 SoC 上的表现。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.3-external-review.md)
+
+
+## [2026-04-22] 15.4 dumpsys 系列命令 — 知识盲区
+
+### 盲区描述
+Android 15 SurfaceFlinger FrontEnd 架构细节
+
+### 重要程度
+中
+
+### 建议研究方向
+- 深入研究 `RequestedLayerState` 引入的原因，以及它是如何优化主合成线程锁争用的。
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.4-external-review.md)
+
+
+## [2026-04-22] 15.5 三方性能库 — 知识盲区
+
+### 盲区描述
+Android 15 16KB 内存页对 Hook 的影响
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 `mprotect` 和 PLT Hook 库（如 xHook/bhook）在 16KB 页面的调整
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.5-external-review.md)
+
+
+## [2026-04-22] 15.9 Camera 性能分析 — 知识盲区
+
+### 盲区描述
+CameraX 在 Android 16/17 下的深度优化
+
+### 重要程度
+中
+
+### 建议研究方向
+- CameraX 库中是否利用了系统新的 HAL 特性来进一步降低多流并发延迟
+
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.9-external-review.md)
+
+## [2026-04-22] 7.1 卡顿的定义与分类 — 知识盲区
+
+### 盲区描述
+VSync Offset (appPhase / sfPhase) 在高刷屏下的动态调整策略
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP VSyncPredictor 源码及 `dumpsys SurfaceFlinger` 中的 offset 配置
+- 关联章节: 2.3 VSync 机制
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.1-01-jank-definition-external-review.md)
+
+
+## [2026-04-22] 7.10 图片与 Bitmap 性能优化 — 知识盲区
+
+### 盲区描述
+图片加载库如何计算最优并发线程数，并在不同设备配置下避免 CPU 饥饿。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 结合 `Glide` 的 `GlideExecutor` 的核心数评估算法。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.10-10-image-bitmap-performance-external-review.md)
+
+
+## [2026-04-22] 15.10 eBPF 性能分析 — 知识盲区
+
+### 盲区描述
+sched_ext 在各大 Android OEM 上的实际落地策略和 BPF 调度代码。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 关注高通、联发科和 Google Pixel 在 GKI 6.12 及以上版本设备中的定制 BPF 调度代码实践。
+- 关联章节: 无
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.10-external-review.md)
+
+
+## [2026-04-22] 7.11 WebView 渲染性能 — 知识盲区
+
+### 盲区描述
+WebView Renderer 进程 OOM 被杀后的白屏恢复策略（`onRenderProcessGone`）。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查阅 `WebViewClient.onRenderProcessGone` 的正确处理方式，如何避免 App 也随之崩溃或永远处于白屏状态。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.11-11-webview-performance-external-review.md)
+
+
+## [2026-04-22] 15.11 Battery Historian — 知识盲区
+
+### 盲区描述
+ADPF 的能效模式与 PowerMonitor 闭环。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 串联第 11 章或性能框架篇的 ADPF 内容。
+- 关联章节: 性能优化相关章节。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.11-external-review.md)
+
+
+## [2026-04-22] 15.12 APM 可观测性平台 — 知识盲区
+
+### 盲区描述
+各大 APM 客户端 SDK 的底层“黑科技”（例如 KOOM 的 fork 子进程 dump）。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 提炼开源 APM 库中的核心 hook/hack 原理。
+- 关联章节: 15.13 Hook 基础设施。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.12-external-review.md)
+
+
+## [2026-04-22] 7.13 SystemUI 性能分析 — 知识盲区
+
+### 盲区描述
+Android 15+ SystemUI 正在进行的 SceneContainer (Flexiglass) 重构，基于 Compose 的全局状态机如何改变现有的 View 层级追踪。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP 最新主线 SystemUI Scene 架构的代码走读与 Trace 抓取比对。
+- 关联章节: 无，需补充未来架构展望。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.13-13-systemui-performance-external-review.md)
+
+
+## [2026-04-22] 15.13 Hook 基础设施 — 知识盲区
+
+### 盲区描述
+Android Linker Namespace (Android 7+) 对 `dlopen` 的限制，以及各大 Hook 库通过解析 `/proc/self/maps` 和内存态 ELF 的绕过手段。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 `bhook` 或 `ShadowHook` 的代码中关于 linker 限制规避的部分。
+- 关联章节: 无。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.13-external-review.md)
+
+
+## [2026-04-22] 7.14 GAPS 动态分析 — 知识盲区
+
+### 盲区描述
+静态反向调用图构建在面对反射 (Reflection)、依赖注入 (DI / Dagger / Hilt) 及动态代理时的穿透能力。
+
+### 重要程度
+低
+
+### 建议研究方向
+- 调研 DroidReach 与 GAPS 在处理非显式方法调用时的静态分析补偿策略。
+- 关联章节: 无特定章节，属于通用静态分析范畴。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.14-14-gaps-dynamic-analysis-external-review.md)
+
+
+## [2026-04-22] 7.15 场景化性能作战手册 — 知识盲区
+
+### 盲区描述
+在复杂的 SurfaceView / 多窗口场景中，如何准确通过 Perfetto 中的 HWC (Hardware Composer) layer 判断双重合成 (Double Composition) 的发生及其性能消耗。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 深入分析 SurfaceFlinger 中的 composition type (Device / Client) 及其在 Trace 上的映射。
+- 关联章节: 18.4, 18.6
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.15-15-scenario-playbooks-external-review.md)
+
+
+## [2026-04-22] 7.2 卡顿原因体系 — 知识盲区
+
+### 盲区描述
+BufferQueue 内部的锁竞争机制
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP `BufferQueueProducer` / `BufferQueueConsumer` 源码
+- 关联章节: 2.6 SurfaceFlinger 与合成
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.2-02-jank-causes-external-review.md)
+
+
+## [2026-04-22] 7.3 卡顿分析方法论 — 知识盲区
+
+### 盲区描述
+Perfetto 中的 Binder 调用链路分析技巧
+
+### 重要程度
+低
+
+### 建议研究方向
+- Perfetto UI Flow events 操作及 Trace Processor 的 binder_transaction 表
+- 关联章节: 1.4 进程间通信
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.3-03-jank-methodology-external-review.md)
+
+
+## [2026-04-22] 15.3 内存分析工具 — 知识盲区
+
+### 盲区描述
+MTE 在 Android 15 上的默认应用范围及 ASYMM 硬件升级特性。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 进一步查阅 Android 15 的 MTE 安全特性。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.3-external-review.md)
+
+
+## [2026-04-22] 7.4 典型场景卡顿根因 — 知识盲区
+
+### 盲区描述
+MediaCodec 视频播放帧率分析，SurfaceFlinger VSync 同步。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 MediaCodec 直接输出到 Surface 时的 BufferQueue 工作机制，结合 FrameTimeline 进行说明。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.4-04-typical-scenarios-external-review.md)
+
+
+## [2026-04-22] 7.5 流畅性优化策略 — 知识盲区
+
+### 盲区描述
+System_server 中系统服务方法调用引发的内部锁竞争，如 AMS。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 分析常见跨进程 API（如获取包信息、内存信息）在 system_server 中的耗时痛点。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.5-05-optimization-external-review.md)
+
+
+## [2026-04-22] 15.5 三方性能库 — 知识盲区
+
+### 盲区描述
+Android 15 ART 机制及 16KB 页对 APM SDK 兼容性的深层拦截机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP 官方文档对于 16KB Page Size 的介绍及 NDK 工具链调整。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.5-external-review.md)
+
+
+## [2026-04-22] 7.6 案例实战分析 — 知识盲区
+
+### 盲区描述
+RenderThread 对各类动画（属性动画、AVD、Lottie）的支持与退化机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 RenderThread 动画支持的边界条件。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.6-06-case-studies-external-review.md)
+
+
+## [2026-04-22] 7.7 Compose 性能优化 — 知识盲区
+
+### 盲区描述
+Compose 互操作中 `ViewCompositionStrategy` 对性能的巨大影响。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 分析在复杂 RecyclerView 嵌套 ComposeView 时，生命周期解绑导致的对象重建开销。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.7-07-compose-performance-external-review.md)
+
+
+## [2026-04-22] 7.8 RecyclerView 深度优化 — 知识盲区
+
+### 盲区描述
+GapWorker 均值收集未覆盖的 measure 耗时（如 ConstraintLayout 多次测量引发的突变）。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 通过 Trace 分析 bindTime 均值与实际完整帧绘制耗时（包含 onMeasure）的差异。
+- 关联章节: 7.4 布局与测量性能。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.8-08-recyclerview-performance-external-review.md)
+
+
+## [2026-04-22] 7.9 感知流畅性 — 知识盲区
+
+### 盲区描述
+Input Resampling 在触摸跟手阶段是如何与 VSync 节奏协同工作的。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 结合 `InputDispatcher` 源码研究。
+- 关联章节: 3.2 触摸响应的性能分析。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.9-09-perceived-smoothness-external-review.md)
+
+
+## [2026-04-22] 15.9 Camera 性能分析 — 知识盲区
+
+### 盲区描述
+CameraX 最新版本的底层延迟优化和 HAL 对接变化
+
+### 重要程度
+中
+
+### 建议研究方向
+- 关注 Jetpack CameraX 的官方文档更新。
+- 关联章节: 无
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-22-15.9-external-review.md)
+
