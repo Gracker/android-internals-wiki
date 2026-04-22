@@ -22,7 +22,7 @@ tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory'
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-04-23"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-21"
 rework_by: openclaw-task2b
@@ -31,8 +31,8 @@ last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、A
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: "needs-rework"
@@ -291,7 +291,7 @@ vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 
 ### 瓶颈分析的基本方法
 
-GPU 性能分析的第一步不是直接跳到优化，而是先搞清楚瓶颈在哪里。GPU 渲染的瓶颈大致可以分为三类：fillrate bound（像素处理能力不足）、vertex bound（顶点处理能力不足）和 bandwidth bound（内存带宽不足）。不同类型的瓶颈需要完全不同的优化方向，如果判断错了方向，优化努力就会白费。
+GPU 性能分析的第一步是搞清楚瓶颈在哪里。GPU 渲染的瓶颈大致可以分为三类：fillrate bound（像素处理能力不足）、vertex bound（顶点处理能力不足）和 bandwidth bound（内存带宽不足）。不同类型的瓶颈需要完全不同的优化方向，如果判断错了方向，优化努力就会白费。
 
 判断瓶颈类型需要结合 Perfetto 和 AGI 两层分析。第一步，在 Perfetto 的 GPU track 上确认 GPU 渲染时间是否超过帧预算。第二步，用 Android GPU Inspector (AGI) 对具体帧做深度分析：如果 Fragment Shader 执行时间占 GPU 总时间超过 60%，且帧的渲染时间与界面可见像素数量正相关，是 fillrate bound；如果 Vertex Shader 时间占比异常高，且帧时间与界面几何复杂度（Path 数量、三角形数量）正相关，是 vertex bound；如果着色器执行时间不长但整体帧时间仍超标，同时 Perfetto 的内存带宽计数器显示高负载，是 bandwidth bound。
 
@@ -423,7 +423,7 @@ ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉�
 
 在 Android 16 中，ANGLE 的角色从"可选兼容层"升级为"默认渲染路径"。对于仍然使用 OpenGL ES 的应用，系统自动通过 ANGLE 将渲染调用转发到 Vulkan 后端；对于直接使用 Vulkan 的应用，则绕过 ANGLE 直接与 Vulkan 驱动交互；对于不支持 Vulkan 的极老旧设备，才会回退到原生的 OpenGL ES 驱动。
 
-这个分层策略意味着 Android 16 上的绝大多数应用最终都运行在 Vulkan 上——要么是原生 Vulkan 应用直接使用，要么是 OpenGL ES 应用通过 ANGLE 间接使用。理解 Vulkan 的性能特征因此变得比以往任何时候都重要。
+这个分层策略意味着 Android 16 上的绝大多数应用最终都运行在 Vulkan 上——要么是原生 Vulkan 应用直接使用，要么是 OpenGL ES 应用通过 ANGLE 间接使用。理解 Vulkan 的性能特征因此更加重要。
 
 ## GPU Profiling 工具：Snapdragon Profiler、ARM Streamline、AGI
 

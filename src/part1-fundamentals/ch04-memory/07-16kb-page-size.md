@@ -146,6 +146,60 @@ int page_size2 = getpagesize();
 
 这类 bug 通常不会在 4KB 设备上暴露，只在 16KB 设备上才崩溃。Google Play 已经在 Play Console 中增加了检测机制，会警告使用了 4KB 对齐 `.so` 的 App。
 
+
+<!-- AIW-源码调研-2026-04-23 -->
+## 源码调研补充：Bionic Linker 16KB 兼容模式内部机制
+
+> 以下内容来自 2026-04-23 源码调研，补充正文未覆盖的 Linker 层实现细节。
+
+### 核心检测逻辑（linker_phdr.cpp）
+
+Bionic Linker 在加载 ELF 文件时，通过 `linker_phdr.cpp` 中的 `min_palign` 检测判断是否需要启用兼容模式。关键触发条件：
+
+```cpp
+// bionic/linker/linker_phdr.cpp (AOSP main)
+// 当系统页大小为 16KB 且 ELF 的 min_palign 为 4KB 时触发
+if (kPageSize == 16*1024 && min_align_ == 4096) {
+    // 读取 bionic.linker.16kb.app_compat.enabled 属性
+    // 该值不能缓存，因为开发者可能动态开关
+    // 此检查为临时措施，16KB 兼容成为默认后将移除
+}
+```
+
+**`kPageSize`** 是系统级常量，在 16KB 设备上等于 `16*1024`；**`min_align_`**（对应 ELF 程序头的 `min_palign`）来自 ELF 文件本身的段对齐声明。
+
+### 错误消息改进（commit fc89c8ae，2024-08-05）
+
+在此次提交之前，ELF 对齐不符合系统页大小时 Linker 报错模糊（通用 segfault）。提交后改为明确报错：
+
+```
+program alignment (4096) cannot be smaller than system page size (16384)
+```
+
+- **提交**：`fc89c8ae1dfc3b091b03f56c3e3cec30a36c76ba`
+- **作者**：Steven Moreland
+- **文件**：`linker/linker_phdr.cpp` + `linker/linker_phdr.h`
+
+### 兼容模式的代价
+
+当 `bionic.linker.16kb.app_compat.enabled=true` 时，Linker 绕过严格的 16KB 对齐要求，允许加载 4KB 对齐的 ELF。但**代价是禁用 RELRO 段保护**——RELRO 段在运行时变为可写，削弱 ASLR/RELRO 安全防护。
+
+这是因为旧版 lld 链接器产生的 RELRO 段结尾未能 16KB 对齐，Compat Mode 通过牺牲这部分安全性换取加载成功。
+
+### 控制接口矩阵
+
+| 控制方式 | 属性/API | 作用域 |
+|----------|---------|--------|
+| 系统级 | `bionic.linker.16kb.app_compat.enabled` | 全局所有 App |
+| 应用级 | `AndroidManifest.xml android:pageSizeCompat` | 单个 App |
+| 用户级 | 设置 → App Info → Advanced → "Run app with page size compat mode" | 单个 App |
+| 包管理器 | `pm.16kb.app_compat.disabled` | 安装时预检 |
+
+### 对开发者的实际含义
+
+正文中"需要在链接时添加 `-Wl,-z,max-page-size=16384`"的底层原理是：此 flag 告诉链接器将 ELF 的 `p_align` 设为 16384，使 `min_palign` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
+
+<!-- AIW-源码调研-2026-04-23 -->
 ### Google Play 兼容要求
 
 公开文档当前明确的一条时间线是：
