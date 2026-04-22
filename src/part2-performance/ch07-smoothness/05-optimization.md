@@ -215,9 +215,54 @@ view.setLayerType(View.LAYER_TYPE_NONE, null);
 
 ### RenderEffect / Blur 等特效的性能考量 🔸
 
-`RenderEffect.createBlurEffect()` 从 Android 12（API 31）开始可用。模糊半径越大、参与模糊的像素越多，RenderThread 和 GPU 的负载越高。实战里更稳妥的做法是控制模糊区域、降低输入分辨率，并缓存可复用的模糊结果。
+`RenderEffect.createBlurEffect()` 从 Android 12（API 31）开始可用，是 HWUI 硬件加速渲染管线中施加视觉特效的官方 API。
 
-[已验证: Android Developers reference，`RenderEffect#createBlurEffect(...)` 标注 Added in API level 31]
+#### RenderEffect 底层实现：Offscreen Texture / FBO 机制
+
+RenderEffect 的本质是 **offscreen rendering**——当特效被设置到 View 或 RenderNode 上时，HWUI 先将节点内容渲染进一块 GPU 离屏纹理（FBO, Framebuffer Object），然后在该纹理上应用 blur/color filter/shader 等特效，最后将结果合成到主帧缓冲区。这个过程完全发生在 GPU 侧，通过 Skia/SkiaOpenGLPipeline 编排。
+
+**调用链**：
+```
+View.setRenderEffect(effect)
+  └─> RenderNode.setRenderEffect(effect)        [frameworks/base/core/java/android/view/View.java]
+        └─> JNI: android_view_RenderNode_setRenderEffect()
+              └─> RenderEffect::applyToTree(RenderNode&, clipBounds)  [frameworks/base/libs/hwui/RenderEffect.cpp]
+                    └─> SkiaPipeline: draw with offscreen FBO
+```
+
+Java 层 `RenderEffect`（`frameworks/base/core/java/android/graphics/RenderEffect.java`）是轻量 wrapper，持有 `long mNativeEffect` 指针指向 native C++ `RenderEffect` 对象。核心实现在 `frameworks/base/libs/hwui/RenderEffect.h/cpp`，其中 `applyToTree()` 方法将特效注入 RenderNode 树。
+
+**Blur 特效的具体 GPU 操作**：separable blur（分水平+垂直两次 pass 的 Gaussian blur 优化），复杂度 O(radius)。高 radius blur（>25px）需要多层 downsampling 来维持性能。
+
+**关键结论**：RenderEffect 依赖的 offscreen texture 机制与 Hardware Layer（§2.7）本质上是同一套 GPU 离屏缓冲的两套 API。`View.setLayerType(LAYER_TYPE_HARDWARE)` 是手动强制建层；`View.setRenderEffect(blurEffect)` 则是自动建层+特效施加，二者在 HWUI 底层都创建 FBO。
+
+#### AGSL RuntimeShader（Android 13+, API 33）
+
+Android 13 引入 AGSL（Android Graphics Shading Language），底层是 SkSL（Skia Shading Language）。`RenderEffect.createRuntimeShaderEffect(shader, uniformName)` 允许用 AGSL shader 在 offscreen texture 上做自定义像素操作。shader 代码通过 JNI 编译为 GPU 程序，在 RenderNode 内容对应的 offscreen texture 上执行 `main(float2 fragCoord)` 函数。
+
+```java
+// AGSL shader 示例
+RuntimeShader shader = new RuntimeShader(
+    "uniform shader inputNode;"
+    "half4 main(float2 fragCoord) {"
+    "    float2 uv = fragCoord / resolution;"
+    "    return inputNode.eval(uv * resolution);"
+    "}"
+);
+RenderEffect effect = RenderEffect.createRuntimeShaderEffect(shader, "inputNode");
+view.setRenderEffect(effect);
+```
+
+#### 性能优化原则
+
+- **模糊区域越小越好**：大 View 上的 blur 需要分配巨大的 offscreen texture，显存消耗显著
+- **缓存可复用结果**：特效参数不变时，offscreen texture 可以复用；内容 invalidate 时才重建
+- **避免动态参数**：每帧修改 blur radius 会触发 offscreen texture 重建，性能反而劣化
+- **优先于软件滤镜**：RenderEffect 完全在 GPU 执行，比 CPU 侧 RenderScript blur 快；但 Hardware Layer 的缓存建立本身有开销
+
+[已验证: Android Developers reference，`RenderEffect#createBlurEffect(...)` Added in API level 31; `RuntimeShader` Added in API level 33]
+[已验证: AOSP frameworks/base/libs/hwui/RenderEffect.h/cpp — C++ 层实现; frameworks/base/core/java/android/graphics/RenderEffect.java — Java API]
+[AIW-源码调研-2026-04-22]
 
 ## 线程优化：耗时操作异步化、Binder 调用、线程池
 
