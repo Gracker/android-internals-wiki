@@ -20,17 +20,18 @@ related_chapters:
 - '18.9'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-22'
-task2b_result: pending
+task2b_result: fixed
+last_task2b_at: '2026-04-22T21:50:17+08:00'
 ---
 
 <!-- outline-start -->
@@ -93,13 +94,13 @@ graph LR
 
 `GLSurfaceView` 内部维护一个 `GLThread`，它负责渲染循环的全生命周期管理。这个线程完全独立于 UI Thread 和 RenderThread——它不受 Choreographer 调度，不参与 View 树的 Traversal，不受 UI 线程卡顿影响。[已验证: AOSP GLSurfaceView]
 
-GLThread 的生命周期：
+GLThread 的常规生命周期：
 
-1. **创建**：`GLSurfaceView.onAttachedToWindow()` 时启动
-2. **Surface 创建**：调用 `eglCreateWindowSurface`，将 EGLSurface 绑定到 SurfaceView 的 Surface
-3. **渲染循环**：持续运行，等待 VSync 或 `requestRender()` 信号
-4. **Surface 销毁**：`onDetachedFromWindow()` 或 Surface 变化时触发
-5. **GLThread 终止**：清理 EGL 资源
+1. **首次创建**：`GLSurfaceView.setRenderer()` 内部会执行 `mGLThread = new GLThread(...)` 和 `mGLThread.start()`
+2. **Surface 创建**：渲染线程拿到 `Surface` 后调用 `eglCreateWindowSurface`，把 EGLSurface 绑定到 `SurfaceView`
+3. **渲染循环**：持续运行，等待 Continuous 模式的紧凑循环或 `requestRender()` 信号
+4. **暂离与销毁**：`onDetachedFromWindow()` 会调用 `requestExitAndWait()`，Surface 变化时也可能触发 EGLSurface 重建
+5. **重新 attach**：只有 View 先 detach 再 attach 时，`onAttachedToWindow()` 才会按旧 renderMode 重建并启动新的 GLThread
 
 `GLSurfaceView` 基于 `SurfaceView`。所以 GLES 链路在底层走的是 SurfaceView 的独立 Surface 直出路径——GLThread 向 SurfaceView 的 BufferQueue 提交 Buffer，SurfaceFlinger 直接消费。GLES 链路因此拥有 SurfaceView 的所有性能优势。
 
@@ -273,7 +274,20 @@ GLES 链路最大的挑战是**驱动碎片化**。不同 GPU 厂商（Qualcomm 
 
 如果你的 App 依赖 GLES，建议：
 1. 在 Android 15+ 设备上同时验证 native GLES 和 ANGLE 两条路径
-2. 使用 `adb shell setprop debug.angle.enable <package>` 手动切换 ANGLE 进行对比测试
+2. 按包切换时直接用 AOSP `Settings.Global` 里的 `angle_gl_driver_selection_pkgs` 和 `angle_gl_driver_selection_values`：
+
+```bash
+adb shell settings put global angle_gl_driver_selection_pkgs com.example.app
+adb shell settings put global angle_gl_driver_selection_values angle
+```
+
+这组设置面向 debuggable 应用；普通量产应用通常只有 root 或开发者选项介入时才方便强制切换。回退时把第二条改成 `native` 或 `default`，测试结束后再执行：
+
+```bash
+adb shell settings delete global angle_gl_driver_selection_pkgs
+adb shell settings delete global angle_gl_driver_selection_values
+```
+
 3. 关注 Google 的 ANGLE 推进时间表，提前准备迁移计划
 
 ## Trace 视角
@@ -340,5 +354,5 @@ eglSwapBuffers(display, surface);
 > **交叉引用**：
 > - Vulkan 原生链路详见 [18.9 Vulkan 原生渲染链路](09-vulkan-native.md)
 > - SurfaceView 直出链路详见 [18.6 SurfaceView 直出链路](06-surfaceview.md)
-> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/)
-> - BufferQueue 与 Fence 机制详见 [2.1 BufferQueue](../../part1-fundamentals/ch02-rendering/)
+> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
+> - BufferQueue 与 Fence 机制详见 [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)

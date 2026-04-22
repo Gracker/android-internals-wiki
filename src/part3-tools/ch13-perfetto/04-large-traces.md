@@ -20,18 +20,19 @@ sources:
     path: "external/perfetto/src/trace_processor/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T20:50:00+08:00'
+last_task2b_at: '2026-04-22T21:50:17+08:00'
 ---
 
 # 命令行打开超大 Trace
@@ -287,30 +288,28 @@ LIMIT 10;
 ./trace_processor -q my_analysis.sql trace.perfetto-trace
 ```
 
-`-q` 模式下，`trace_processor` 不会进入交互式 shell，而是执行完 SQL 文件后直接退出，结果输出到 stdout。这使得它可以方便地集成到 shell pipeline 中。
+`-q` 模式下，`trace_processor` 不会进入交互式 shell，而是执行完 SQL 文件后直接退出，结果输出到 stdout。`trace_processor --help` 也明确写了 `-q/--query-file` 只是“从文件读取并执行 SQL 查询”。这里只需要记一条规则：SQL 文件里可以有多个语句，但允许返回结果的只能是末尾那条语句；如果前面已经有 `SELECT` 产出行，CLI 会直接报错。
 
 ### 一个完整的批量分析脚本示例
 
-假设我们需要对每个 Trace 统计：主线程总运行时长、GC 次数、ANR 数量。我们可以这样组织：
-
-SQL 文件 `analyze_trace.sql` 如下：
+假设需要对每个 Trace 统计：主线程总运行时长、GC 次数、ANR 数量。`analyze_trace.sql` 可以写成一个最终 `SELECT`：
 
 ```sql
--- 主线程 CPU 占用
 SELECT 'main_thread_cpu_ms' AS metric,
-       SUM(sched.dur) / 1e6 AS value
+       COALESCE(SUM(sched.dur) / 1e6, 0) AS value
 FROM sched
 JOIN thread USING (utid)
-WHERE thread.name LIKE '%main%'
-  AND thread.is_main_thread = 1;
+WHERE thread.is_main_thread = 1
 
--- GC 次数
+UNION ALL
+
 SELECT 'gc_count' AS metric,
        COUNT(*) AS value
 FROM slice
-WHERE name LIKE '%GC%';
+WHERE name LIKE '%GC%'
 
--- ANR 数量（如果有的话）
+UNION ALL
+
 SELECT 'anr_count' AS metric,
        COUNT(*) AS value
 FROM slice
@@ -328,22 +327,27 @@ SQL_FILE="analyze_trace.sql"
 echo "trace_file,metric,value"
 for trace in "$TRACE_DIR"/*.perfetto-trace; do
   filename=$(basename "$trace")
-  "$TRACE_PROCESSOR" -q "$SQL_FILE" "$trace" \
-    | grep -v '^$' \
-    | tail -n +2 \
-    | while IFS='|' read -r metric value; do
-        echo "$filename,$metric,$value"
-      done
+  tmp_csv=$(mktemp)
+  "$TRACE_PROCESSOR" -q "$SQL_FILE" "$trace" > "$tmp_csv"
+  python3 - "$filename" "$tmp_csv" <<'PY'
+import csv
+import sys
+
+trace_name, csv_path = sys.argv[1], sys.argv[2]
+with open(csv_path, newline='') as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        print(f"{trace_name},{row['metric']},{row['value']}")
+PY
+  rm -f "$tmp_csv"
 done
 ```
 
-这里 trace 文件要作为位置参数传给 `trace_processor`，`-q` 只负责指定 SQL 文件。
-
-这个脚本会输出 CSV 格式的结果，可以直接导入 Excel 或进一步处理。
+这里 trace 文件要作为位置参数传给 `trace_processor`，`-q` 只负责指定 SQL 文件。非交互模式下的查询结果是带表头的 CSV。用 `trace_processor -Q "select 1 as a, 2 as b" /dev/null` 做最小验证，输出就是 `"a","b"` 和 `1,2` 两行，分隔符走标准 CSV 规则，不会出现 `|` 或制表符。
 
 ### 查询结果的格式控制
 
-`trace_processor` 默认用制表符分隔的文本格式输出。如果需要结构化输出，有三种方案：
+批处理时先把输出理解成 CSV。交互式 shell 里看到的是排版后的表格，两者不要混用。如果需要更稳定的结构化结果，有三种方案：
 
 **方案一：Python API**（推荐，灵活性最高）
 
@@ -359,7 +363,7 @@ done
 
 **方案三：shell 脚本后处理**
 
-默认的文本输出格式本身是制表符分隔的，可以直接用 `awk`/`sed` 转换为 CSV。
+如果只想留在 shell，按 CSV 解析就够了。可以用 Python `csv`、`xsv`、`mlr --icsv --ocsv` 这一类工具，不要假设分隔符是 `|` 或制表符。
 
 ### trace_processor 的高级参数
 
@@ -371,7 +375,7 @@ done
 
 `-e <path>` 将内存中的数据库导出为 SQLite 文件。分析完成后可以把整个 Trace 数据库持久化，后续用 `sqlite3` 命令行或其他工具继续分析，不用重新加载原始 Trace。
 
-[已验证: 官方文档, perfetto.dev v48.x]
+[已验证: perfetto.dev docs + trace_processor shell v52.0 --help / 最小查询, 2026-04-22]
 
 ## 用 Python 的 perfetto.trace_processor 库做自动化分析
 
