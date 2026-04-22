@@ -958,5 +958,57 @@
     "status": "completed",
     "completed_at": "2026-04-22T13:06:00+08:00",
     "completed_by": "task2b-content-processing-rework"
+  },
+  {
+    "section": "7.3",
+    "section_title": "卡顿分析方法论",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Perfetto 调度延迟 SQL 示例使用了非标准表/列，且掉帧阈值把 60/120Hz 固定值写成通用规则",
+    "material_paths": [
+      "logs/deep-review/2026-04-22-13-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "SQL错误",
+        "location": "## 使用 SQL 查询 Perfetto Trace 进行批量分析 / 调度延迟查询（L433-L455）",
+        "detail": "正文把 wakeup latency 查询写成直接 `FROM sched_wakeup` 并读取 `wakee_tid` / `waker_tid`。Perfetto 官方 SQL 表主要暴露的是 `sched` / `thread_state` / `spurious_sched_wakeup`，当前示例在标准 Trace Processor 中没有给出可直接成立的表结构前提，读者照抄很容易直接报错。",
+        "suggestion": "把调度延迟示例改成基于官方公开表的写法，优先使用 `thread_state` 的 `waker_utid` / `waker_id` 与 `sched` 联查；如果需要 raw ftrace 事件，必须显式说明依赖 `ftrace_event` 展开方式，而不是把 `sched_wakeup` 当成通用 SQL 表。"
+      },
+      {
+        "type": "方法论错误/版本边界缺失",
+        "location": "## 使用 SQL 查询 Perfetto Trace 进行批量分析 / 查询掉帧统计（L378-L386）",
+        "detail": "示例把 `16.6ms` 和 `8.3ms` 直接写成通用 jank 阈值，但本章前文已经说明帧 deadline 取决于刷新率、VSync offset 和系统帧率策略。当前写法会把 90Hz、120Hz 以及自适应刷新率 trace 的判定规则讲错。",
+        "suggestion": "把示例改成“60Hz 示例”并明确边界，或者改为按显示模式 / FrameTimeline / FrameMetrics deadline 参数化阈值，避免把固定值当成跨设备通用判定规则。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T13:35:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.7",
+    "section_title": "Jetpack Compose 性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Compose/Perfetto 观察入口写成不存在的 “CM / Compose Manager” 标记，且遗漏 composition tracing 的官方前提条件",
+    "material_paths": [
+      "logs/deep-review/2026-04-22-13-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "工具事实错误",
+        "location": "## 为什么要关注 Compose 的性能（L89-L93）",
+        "detail": "正文把 Perfetto 里的 Compose 观察入口写成一组以 “CM（Compose Manager）” 开头的标记，但官方 Compose tracing 文档的口径是：默认 system trace 不包含单个 composable function；开启 composition tracing 后看到的是 composable functions 本身，而不是 “CM/Compose Manager” 这一套公开命名。当前表述会把读者引到错误的 Trace 识别信号。",
+        "suggestion": "删除 “CM / Compose Manager” 的说法，改成官方 composition tracing 口径：默认 system trace 看不到单个 composable，启用 tracing 后才能在系统 trace 中看到 composable functions。"
+      },
+      {
+        "type": "版本差异/知识盲区",
+        "location": "## 为什么要关注 Compose 的性能 / ## Compose 性能检测工具",
+        "detail": "章节多次强调“在 Perfetto 中准确识别 Compose 性能瓶颈”，但没有补 composition tracing 的前提条件：Compose UI 1.3.0+、Compose Compiler 1.3.0+、API 30+ 设备，以及 `androidx.compose.runtime:runtime-tracing` 依赖。缺少这组前提，读者很难复现实操路径。",
+        "suggestion": "在 Perfetto 相关段落补一小节，明确 runtime-tracing 依赖、最低版本和未开启 tracing 时的 fallback（Layout Inspector、Compiler Metrics、FrameTimeline / Choreographer slice 级观察）。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-22T13:35:00+08:00",
+    "status": "pending"
   }
 ]
