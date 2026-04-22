@@ -5,10 +5,12 @@ status: ready-for-review
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-09"
-last_verified_against: "Perfetto v54.0 documentation"
+last_verified: "2026-04-22"
+last_verified_against: "Perfetto stdlib docs (android.frames.timeline / android.monitor_contention)"
 confidence: medium
 sources:
+  - type: official
+    path: "https://perfetto.dev/docs/analysis/stdlib-docs"
   - type: official
     path: "https://perfetto.dev/docs/analysis/trace-processor"
   - type: official
@@ -30,19 +32,20 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "pending"
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-22T17:08:00+08:00"
+last_task2b_at: "2026-04-22T19:39:59+08:00"
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册
@@ -61,18 +64,18 @@ Trace Processor 的 SQL 方言叫 PerfettoSQL，基于 SQLite 但做了扩展。
 
 ```sql
 -- 加载帧分析标准模块
-INCLUDE PERFETTO MODULE android.frames;
+INCLUDE PERFETTO MODULE android.frames.timeline;
 
 -- 加载输入延迟分析模块
 INCLUDE PERFETTO MODULE android.input;
 
 -- 加载锁竞争分析模块
-INCLUDE PERFETTO MODULE android.monitor;
+INCLUDE PERFETTO MODULE android.monitor_contention;
 ```
 
-使用标准库模块有两个好处：第一，模块内部已经处理好了复杂的 JOIN 逻辑，我们不用手动拼接底层表；第二，模块会随 Perfetto 版本更新而改进，保持查询的兼容性。在实际分析中，优先使用标准库模块而不是直接查底层表。
+使用标准库模块有两个好处：第一，模块内部已经处理好了复杂的 JOIN 逻辑，我们不用手动拼接底层表；第二，模块会随 Perfetto 版本更新而改进，保持查询的兼容性。在实际分析中，优先使用标准库模块而不是直接查底层表。`android.frames.timeline`、`android.input`、`android.monitor_contention` 都属于这一层。
 
-[已验证: Perfetto v54.0 文档, perfetto.dev/docs/analysis/trace-processor]
+[已验证: Perfetto stdlib docs, perfetto.dev/docs/analysis/stdlib-docs]
 
 ### 核心表结构
 
@@ -80,7 +83,7 @@ Perfetto 有几十张底层表，但性能分析中最常用的只有五张：
 
 **slice** 表是性能分析的核心。它记录了所有"有时间跨度的事件"——从 Choreographer#doFrame 到 Binder 事务，从 GC 暂停到锁竞争，都以 slice 的形式存储。每条 slice 有 `ts`（开始时间，纳秒）、`dur`（持续时间，纳秒）、`name`（事件名）、`track_id`（所在的 track）。通过 `track_id` 关联到 `thread_track`，再关联到 `thread` 和 `process`，就能知道这个事件发生在哪个线程、哪个进程。
 
-**sched** 表记录内核的线程调度信息——哪个线程在什么时候跑在哪个 CPU 上，跑了多久，最后因为什么原因离开 CPU（end_state）。它是 CPU 使用率、调度延迟、线程状态分析的基础数据源。
+**sched** 表记录内核的线程调度切片——哪个线程在什么时候跑在哪个 CPU 上，跑了多久，以及这次 CPU slice 结束时线程处于什么内核状态（`end_state`）。`end_state` 只描述“离开 CPU 的那一刻”，不能把它当成线程整段时间里的当前状态；如果要统计 Running / R / S / D 等状态分布，应该查 `thread_state` 表。
 
 **counter** 表存储随时间变化的数值，比如 CPU 频率、内存使用量、Java Heap 大小。counter 的数据点是离散的（每次值变化记录一次），做分析时通常需要和时间窗口 JOIN。
 
@@ -162,28 +165,32 @@ ORDER BY MIN(dur);
 
 ### Frame Timeline：系统视角的帧分析
 
-`Choreographer#doFrame` 只反映主线程视角。Android 12（API 31）引入的 Frame Timeline 提供了系统视角：它同时记录"期望上屏时间"和"真实上屏时间"，两者之差直接反映帧是否准时到达。
+`Choreographer#doFrame` 只反映主线程视角。Android 12（API 31）引入的 Frame Timeline 提供了系统视角：它同时记录期望时间线和实际时间线，能直接回答“这一帧有没有按时 present”。
 
-在 Perfetto 中，Frame Timeline 数据存储在 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 两张表中。Perfetto 标准库提供了 `android.frames` 模块，封装了这些表的查询逻辑：
+在 Perfetto 中，Frame Timeline 数据存储在 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 两张表中。这里要单独记一条：配对同一帧时不能拿 `track_id` 当主键；`track_id` 只表示 slice 落在哪条轨道上，真正稳定的帧标识是 `display_frame_token`，surface frame 还要再带上 `surface_frame_token`。如果要用标准库高层视图，可以先加载 `android.frames.timeline`：
 
 ```sql
-INCLUDE PERFETTO MODULE android.frames;
+INCLUDE PERFETTO MODULE android.frames.timeline;
 
--- 查询所有 jank 帧（actual_dur 超过 expected_dur）
+-- 查询未按时完成的 frame
 SELECT
   CAST((actual.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
+  actual.layer_name,
   CAST(actual.dur / 1e6 AS FLOAT) AS actual_dur_ms,
   CAST(expected.dur / 1e6 AS FLOAT) AS expected_dur_ms,
-  actual.name
+  actual.present_type,
+  actual.jank_type
 FROM actual_frame_timeline_slice AS actual
 JOIN expected_frame_timeline_slice AS expected
-  ON actual.track_id = expected.track_id
-  AND ABS(actual.ts - expected.ts) < 1e6
-WHERE actual.dur > expected.dur
-ORDER BY actual.dur DESC;
+  ON actual.display_frame_token = expected.display_frame_token
+ AND IFNULL(actual.surface_frame_token, -1) = IFNULL(expected.surface_frame_token, -1)
+WHERE actual.on_time_finish = 0
+ORDER BY actual.ts;
 ```
 
-[待验证: android.frames 模块的精确 JOIN 语法可能因 Perfetto 版本而异，建议在 UI 中先验证]
+这条查询更接近 Perfetto 的表结构本身：`actual` 负责给出真实结果，`expected` 负责给出同一帧的目标时间线，`on_time_finish = 0` 直接表示这帧没有按时完成。
+
+[已验证: Perfetto stdlib docs 中的 Frame Timeline 表结构, perfetto.dev/docs/analysis/stdlib-docs]
 
 Frame Timeline 还能检测一种更隐蔽的流畅性问题：步幅波动（cadence discrepancy）。即使所有帧都在 VSync 预算内完成，帧与帧之间的时间波动如果过大（比如 8ms、15ms、8ms、15ms 交替），用户仍然会感知到不流畅。关于这方面的深度分析，参见 §7.9 感知流畅性章节。
 
@@ -205,7 +212,8 @@ SELECT
 FROM sched
 JOIN thread USING (utid)
 WHERE thread.name = 'main'
-  AND sched.cpu IS NOT NULL;
+  AND sched.cpu IS NOT NULL
+GROUP BY thread.name;
 ```
 
 `cpu_pct` 是整个 Trace 期间的 CPU 利用率。如果主线程的 CPU 利用率超过 80%，说明主线程大部分时间都在做计算——measure/layout/draw 太重了。如果 CPU 利用率很低但帧时间很长，说明主线程在等什么东西，需要进一步分析线程状态。
@@ -243,29 +251,32 @@ LIMIT 20;
 
 ### 线程状态分布
 
-综合 `sched` 表的 `end_state` 字段，我们可以统计线程在不同状态的时间占比：
+如果要看线程在 Running / R / S / D 这些状态上各花了多少时间，应该直接查 `thread_state` 表，而不是把 `sched.end_state` 当成“当前状态”。`sched.end_state` 更适合回答“这次 CPU slice 结束时，线程以什么状态离开 CPU”。
 
 ```sql
 -- 主线程状态分布
 SELECT
-  end_state,
+  state,
   SUM(dur) / 1e6 AS total_ms,
-  ROUND(SUM(dur) * 100.0 / (SELECT SUM(dur) FROM sched JOIN thread USING (utid) WHERE thread.name = 'main'), 1) AS pct
-FROM sched
-JOIN thread USING (utid)
-WHERE thread.name = 'main'
-GROUP BY end_state
+  ROUND(SUM(dur) * 100.0 / (
+    SELECT SUM(dur)
+    FROM thread_state
+    WHERE utid IN (SELECT utid FROM thread WHERE name = 'main')
+  ), 1) AS pct
+FROM thread_state
+WHERE utid IN (SELECT utid FROM thread WHERE name = 'main')
+GROUP BY state
 ORDER BY total_ms DESC;
 ```
 
-常见的 `end_state` 值：
+常见的 `thread_state.state` 值：
 
-- **Running**：在 CPU 上执行
-- **Runnable**（R+）：等待 CPU 调度
-- **Sleeping**（S）：可中断睡眠，通常在等锁/等 Binder/等 IO
-- **Uninterruptible**（D）：不可中断睡眠，通常在等磁盘 IO
+- **Running**：线程当前正在 CPU 上执行
+- **R / R+**：线程已经可运行，但还在等 CPU
+- **S**：可中断睡眠，常见于等锁、等 Binder、等条件变量
+- **D**：不可中断睡眠，常见于内核态 IO 等待
 
-如果主线程的 Sleeping 占比异常高，结合时间线可以定位到具体在等什么——这就是下一节 Binder 分析和锁竞争分析要解决的问题。
+如果主线程的 `S` 或 `D` 占比异常高，结合时间线可以定位到具体在等什么——这就是下一节 Binder 分析和锁竞争分析要解决的问题。
 
 ## Binder 事务分析
 
@@ -492,7 +503,7 @@ ORDER BY slice.ts;
 
 ### 主线程阻塞原因分类
 
-结合 sched 表的 `end_state` 和 slice 的 `name`，我们可以对主线程阻塞的原因做分类统计：
+这里要以 `thread_state` 为主表，因为 ANR / 卡顿排查关心的是主线程在一段时间里处于什么状态，而不是它某个 CPU slice 结束时留下了什么 `end_state`。
 
 ```sql
 -- 主线程阻塞原因分类
@@ -500,26 +511,26 @@ SELECT
   CASE
     WHEN slice.name GLOB '*monitor*' THEN 'Lock Contention'
     WHEN slice.name GLOB '*binder*' THEN 'Binder Call'
-    WHEN slice.name GLOB '*I/O*' OR slice.name GLOB '*futex*' THEN 'IO/Futex Wait'
-    WHEN sched.end_state = 'D' THEN 'Uninterruptible IO'
-    WHEN sched.end_state = 'S' THEN 'Sleeping (generic)'
-    ELSE 'Other: ' || COALESCE(slice.name, sched.end_state, 'unknown')
+    WHEN thread_state.state = 'D' THEN 'Uninterruptible IO'
+    WHEN thread_state.state = 'S' THEN 'Sleeping (generic)'
+    WHEN thread_state.state IN ('R', 'R+') THEN 'Runnable but waiting for CPU'
+    ELSE 'Other: ' || COALESCE(slice.name, thread_state.state, 'unknown')
   END AS block_reason,
   COUNT(*) AS count,
-  CAST(SUM(COALESCE(slice.dur, sched.dur)) / 1e6 AS FLOAT) AS total_ms
-FROM sched
+  CAST(SUM(thread_state.dur) / 1e6 AS FLOAT) AS total_ms
+FROM thread_state
 JOIN thread USING (utid)
 LEFT JOIN slice ON
-  slice.track_id IN (SELECT id FROM thread_track WHERE utid = sched.utid)
-  AND slice.ts <= sched.ts
-  AND slice.ts + slice.dur > sched.ts
+  slice.track_id IN (SELECT id FROM thread_track WHERE utid = thread_state.utid)
+  AND slice.ts <= thread_state.ts
+  AND slice.ts + slice.dur > thread_state.ts
 WHERE thread.name = 'main'
-  AND sched.end_state != 'Running'
+  AND thread_state.state != 'Running'
 GROUP BY block_reason
 ORDER BY total_ms DESC;
 ```
 
-这个查询的结果直接告诉我们在 ANR 的时间窗口内，主线程分别在等锁、等 Binder、等 IO 上花了多少时间。`total_ms` 最大的那个原因就是 ANR 的根因。结合 §9.1 ANR 设计思想和 §9.3 ANR 分析方法章节，可以制定针对性的修复方案。
+这个查询的结果直接告诉我们在选定时间窗口内，主线程分别在等锁、等 Binder、等 IO 或等 CPU 上花了多少时间。实际排 ANR 时，再叠加 ANR 前后 5 秒的时间范围约束，`total_ms` 最大的那一类通常就是最先该继续查的方向。
 
 ## 锁竞争与同步分析
 
@@ -528,51 +539,54 @@ ORDER BY total_ms DESC;
 ### Monitor Contention Top N
 
 ```sql
-INCLUDE PERFETTO MODULE android.monitor;
+INCLUDE PERFETTO MODULE android.monitor_contention;
 
 -- 主线程锁竞争 Top 10（等待时间最长）
 SELECT
-  slice.name AS lock_name,
-  CAST(slice.dur / 1e6 AS FLOAT) AS wait_ms,
-  thread.name AS waiter_thread
-FROM slice
-JOIN thread_track ON slice.track_id = thread_track.id
-JOIN thread USING (utid)
-WHERE thread.name = 'main'
-  AND slice.name GLOB '*monitor*'
-ORDER BY slice.dur DESC
+  lock_name,
+  CAST(dur / 1e6 AS FLOAT) AS wait_ms,
+  blocked_thread_name AS waiter_thread,
+  blocking_thread_name AS owner_thread,
+  short_blocked_method,
+  short_blocking_method
+FROM android_monitor_contention
+WHERE is_blocked_thread_main = 1
+ORDER BY dur DESC
 LIMIT 10;
 ```
 
-这个查询的结果中，`lock_name` 包含被竞争锁的类名信息（如 `monitor contention with owner Binder:1234`），直接告诉你是哪个线程持有了锁。结合 Perfetto UI 的 Thread / Lock contention track（显示 Owner → Waiter 的连线关系），可以快速定位锁竞争的全貌。
+`android_monitor_contention` 已经把锁名、owner 线程、blocked 线程和相关方法都解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。结合 Perfetto UI 的 Lock contention track，可以快速定位锁竞争的全貌。
 
 ### 锁竞争与帧时间关联
 
-锁竞争本身并不直接等于卡顿。只有它落在帧渲染期间，才会拉长这一帧的耗时。下面的查询找出所有发生在 `doFrame` 期间的锁等待：
+锁竞争本身并不直接等于卡顿。只有它落在帧渲染期间，才会拉长这一帧的耗时。下面的查询把 `android_monitor_contention` 放进主线程 `doFrame` 的同一时间窗口：
 
 ```sql
+INCLUDE PERFETTO MODULE android.monitor_contention;
+
 -- 帧期间的锁竞争
 SELECT
   frame.dur / 1e6 AS frame_ms,
-  lock.dur / 1e6 AS lock_wait_ms,
-  ROUND(lock.dur * 100.0 / frame.dur, 1) AS lock_pct,
-  lock.name AS lock_detail
+  contention.dur / 1e6 AS lock_wait_ms,
+  ROUND(contention.dur * 100.0 / frame.dur, 1) AS lock_pct,
+  contention.lock_name,
+  contention.blocking_thread_name AS owner_thread
 FROM slice AS frame
 JOIN thread_track AS ft ON frame.track_id = ft.id
 JOIN thread AS ft_thread ON ft.utid = ft_thread.utid
-JOIN slice AS lock ON
-  lock.track_id = frame.track_id
-  AND lock.ts >= frame.ts
-  AND lock.ts + lock.dur <= frame.ts + frame.dur
+JOIN android_monitor_contention AS contention
+  ON contention.blocked_utid = ft_thread.utid
+ AND contention.ts >= frame.ts
+ AND contention.ts + contention.dur <= frame.ts + frame.dur
 WHERE frame.name = 'Choreographer#doFrame'
-  AND lock.name GLOB '*monitor*'
-  AND lock.dur > 500000  -- 过滤 < 0.5ms 的短暂等待
-ORDER BY lock.dur DESC;
+  AND ft_thread.name = 'main'
+  AND contention.dur > 500000  -- 过滤 < 0.5ms 的短暂等待
+ORDER BY contention.dur DESC;
 ```
 
-如果 `lock_pct` 超过 30%，说明这一帧卡顿的主要原因是锁等待。根因分析方法：从 `lock_detail` 中提取 owner 线程信息，找到持有锁的线程，分析它为什么持锁时间过长。参见 §1.14 锁竞争与同步性能分析章节。
+如果 `lock_pct` 超过 30%，说明这一帧卡顿的主要原因是锁等待。根因分析方法：从 `owner_thread` 和 `lock_name` 继续沿着持锁线程的时间线往后查，分析它为什么持锁时间过长。参见 §1.14 锁竞争与同步性能分析章节。
 
-[已验证: Perfetto android.monitor_contention 模块, intake/research-feeds/2026-04-06-15]
+[已验证: Perfetto stdlib android.monitor_contention 表结构, perfetto.dev/docs/analysis/stdlib-docs]
 
 ## 交叉引用与分析路径
 
