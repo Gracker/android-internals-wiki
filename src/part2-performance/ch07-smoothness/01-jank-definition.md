@@ -5,11 +5,11 @@ chapter: "7.1"
 status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-04-22"
 reviewed_by: openclaw-task6
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP android-16.0.0_r1 + Perfetto docs / Android Developers docs"
+last_verified: "2026-04-22"
+last_verified_against: "AOSP android-16.0.0_r1 FrameTimeline.cpp + Perfetto docs / Android Developers docs"
 polish_count: 2
 review_type: "post-polish-quality-gate"
 polish_date: "2026-04-05"
@@ -38,18 +38,19 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-repaired_date: "2026-04-21"
-repaired_by: "codex"
+last_task2b_at: "2026-04-22T16:53:00+08:00"
+repaired_date: "2026-04-22"
+repaired_by: "openclaw-task2b"
 review_round: 4
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-21"
+task9_reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-20T13:38:00+08:00"
 ---
 
@@ -87,7 +88,7 @@ last_task9_at: "2026-04-20T13:38:00+08:00"
 
 用户说“这页面有点卡”，开发说“我这里能跑到 60fps”，测试说“偶发掉帧”，平台说“这个版本 jank rate 没超阈值”。四个人都在说卡，但说的其实不是一件事。如果这一层不先对齐，后面再看 trace、看指标、定责任方，结论很容易各说各话。
 
-所以本节先不急着进工具。先把“卡”拆开，讲清楚哪些属于渲染问题，哪些属于响应问题，哪些已经进入 ANR。只有定义清楚，后面的分析路径才会稳定。
+所以本节先把“卡”拆开，讲清楚哪些属于渲染问题，哪些属于响应问题，哪些已经进入 ANR。只有定义清楚，后面的分析路径才会稳定。
 
 ## 先把“广义流畅性”和“狭义 jank”分开
 
@@ -121,7 +122,7 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 | 90Hz | 11.11ms |
 | 120Hz | 8.33ms |
 
-这个周期表示相邻两次硬件刷新之间的间隔，不等于“MainThread、RenderThread、SurfaceFlinger 的全部工作都要串行塞进同一个窗口”。Android 的显示栈是流水线化的。App 侧围绕 VSync-app 准备下一帧，SurfaceFlinger 围绕随后到来的 VSync-sf 做合成，两边靠 offset 错峰推进。
+这个周期表示相邻两次硬件刷新之间的间隔，不等于“MainThread、RenderThread、SurfaceFlinger 的全部工作都要串行塞进同一个窗口”。Android 的显示栈是流水线化的。App 侧围绕 VSync-app 准备下一帧，SurfaceFlinger 围绕随后到来的 VSync-sf 做合成，两边靠 offset 错峰推进。这里的 offset 对应两套 VSync phase：App 侧通常记成 `appPhase` / `VSYNC_EVENT_PHASE_OFFSET_NS`，SurfaceFlinger 侧对应 `sfPhase` / `SF_VSYNC_EVENT_PHASE_OFFSET_NS`。系统会在硬件 VSync 到来前按这两个 phase 分别唤醒 App 和 SurfaceFlinger，渲染与合成因此能够错开推进。
 
 到了 120Hz，变紧的是每个阶段各自的 deadline。App 侧如果晚于自己的 expected timeline，FrameTimeline 会记成 App jank；SurfaceFlinger 或显示末端晚了，则会落到 SurfaceFlinger 或 DisplayHAL 一侧。分析高刷 trace 时，先分清“谁错过了谁的 deadline”，再去看具体线程，不要把整条流程粗暴压成一个 8.33ms 总包预算。
 
@@ -146,7 +147,9 @@ Android 12 之后，FrameTimeline 会给每一帧写下责任归因。我们在 
 
 ### AppDeadlineMissed
 
-`AppDeadlineMissed` 表示 App 一侧没有按时交帧。Perfetto 文档把 App frame 的时间范围定义为：起点是 `Choreographer` 回调计划运行后的 App 开工时刻，终点取 `max(gpu time, post time)`。`post time` 是 App 把 frame 交给 SurfaceFlinger 的时间，所以这类 jank 既可能来自 MainThread，也可能来自 RenderThread 或 GPU 工作未及时结束。
+`AppDeadlineMissed` 表示 App 一侧没有按时交帧。Perfetto 文档把 App frame 的时间范围定义为：起点是 `Choreographer` 回调计划运行后的 App 开工时刻，终点落在 App 实际 `queueBuffer` 的时间与 fence signal time 中较晚的那个时间点。AOSP `FrameTimeline.cpp` 里的 `SurfaceFrame::setActualQueueTime()` 与 `setAcquireFenceTime()` 分别写入这两个时间点；对 GPU 渲染来说，后者通常落在 GPU 完成之后。`queueBuffer` 对应 App 把 buffer 交给 BufferQueue，所以这类 jank 既可能来自 MainThread，也可能来自 RenderThread 或 GPU 工作未及时结束。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.cpp]
 
 Trace 里先点 App 的 `Actual Timeline` slice，再顺 token 回到 `Choreographer#doFrame` 和 `RenderThread`。如果 `On time finish` 为 `false`，而 `Jank Type` 是 `AppDeadlineMissed`，说明问题就在 App 自己这一段。
 
