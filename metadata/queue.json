@@ -83,6 +83,414 @@
       "task2b_state": "fixed",
       "fixed_at": "2026-04-22T16:19:00",
       "fixed_by": "openclaw-task2b"
+    },
+    {
+      "section": "01-jank-definition",
+      "section_title": "Chapter 01-jank-definition",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/11-webview-performance",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/11-webview-performance",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch14-other-tools/05-third-party-libs",
+      "section_title": "Chapter src/part3-tools/ch14-other-tools/05-third-party-libs",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/15-scenario-playbooks",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/15-scenario-playbooks",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "Unknown",
+      "section_title": "Chapter Unknown",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch14-other-tools/13-hook-infrastructure",
+      "section_title": "Chapter src/part3-tools/ch14-other-tools/13-hook-infrastructure",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/03-jank-methodology",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/03-jank-methodology",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/09-perceived-smoothness",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/09-perceived-smoothness",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/04-typical-scenarios",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/04-typical-scenarios",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/10-image-bitmap-performance",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch14-other-tools/03-memory-tools",
+      "section_title": "Chapter src/part3-tools/ch14-other-tools/03-memory-tools",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/01-jank-definition",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/01-jank-definition",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/02-jank-causes",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/02-jank-causes",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/13-systemui-performance",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/13-systemui-performance",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/07-compose-performance",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/07-compose-performance",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/05-optimization",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/05-optimization",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch14-other-tools/12-apm-observability",
+      "section_title": "Chapter src/part3-tools/ch14-other-tools/12-apm-observability",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/08-recyclerview-performance",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/08-recyclerview-performance",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "Unknown",
+      "section_title": "Chapter Unknown",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/06-case-studies",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/06-case-studies",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch14-other-tools/04-dumpsys",
+      "section_title": "Chapter src/part3-tools/ch14-other-tools/04-dumpsys",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch14-other-tools/11-battery-historian",
+      "section_title": "Chapter src/part3-tools/ch14-other-tools/11-battery-historian",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch07-smoothness/12-view-layout-performance",
+      "section_title": "Chapter src/part2-performance/ch07-smoothness/12-view-layout-performance",
+      "priority": 95,
+      "reason": "[External Review] 外部 review 结果整合",
+      "review_issues": [
+        {
+          "type": "回炉问题单",
+          "location": "外部 review 结果",
+          "detail": "需要根据外部 review 结果进行修正",
+          "suggestion": "核实并修正相关内容",
+          "evidence": []
+        }
+      ],
+      "added_by": "external-ai-review",
+      "status": "pending"
     }
   ]
 }
