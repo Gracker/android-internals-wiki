@@ -8,12 +8,12 @@ related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-17"
-task6_result: needs-rework
+reviewed_date: "2026-04-23"
+task6_result: pass-light-edit
 sources:
   - "AOSP frameworks/base/core/java/android/view/Choreographer.java"
   - "AOSP frameworks/base/core/java/android/view/ViewRootImpl.java"
@@ -69,11 +69,11 @@ doFrame() {
 
 如果 Window A（比如一个复杂的 Activity）耗时过长，Window B（比如一个 Dialog）的更新就会被直接推迟，甚至导致掉帧。
 
-**Trace 中的表现**：在 `doFrame` 内部，你会看到连续出现两个 `performTraversals`——第一个对应 Activity，第二个对应 Dialog。如果第一个耗时超过 10ms，第二个几乎必然导致掉帧。
+**Trace 中的表现**：在 `doFrame` 内部，你会看到连续出现两个 `performTraversals`——第一个对应 Activity，第二个对应 Dialog。如果第一个耗时超过 10ms，第二个大概率会掉帧。
 
 ### RenderThread 争抢
 
-更致命的瓶颈在 RenderThread。一个 App 进程只有**一个** RenderThread，它需要串行处理所有窗口的 GPU 命令生成：
+更严重的瓶颈在 RenderThread。一个 App 进程只有**一个** RenderThread，它需要串行处理所有窗口的 GPU 命令生成：
 
 1. **Sync Window A**：同步 Window A 的 DisplayList
 2. **Draw Window A**：生成 GPU 指令 → `queueBuffer` (Surface A)
