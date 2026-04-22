@@ -36,8 +36,8 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: "16/20"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 ---
