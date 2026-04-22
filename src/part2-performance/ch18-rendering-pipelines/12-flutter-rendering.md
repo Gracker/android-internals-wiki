@@ -1,22 +1,37 @@
 ---
-title: "Flutter 渲染链路"
-chapter: "18.12"
+title: Flutter 渲染链路
+chapter: '18.12'
 status: ready-for-review
-applicable_versions: "Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android API 29+ 默认 Impeller） / Android 10 (API 29) - Android 16 (API 36)"
-tags: ["Flutter", "Impeller", "Skia", "SurfaceView", "TextureView", "Merged-Thread", "PlatformView", "渲染链路"]
-related_chapters: ["2.5", "2.11", "18.6", "18.7"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
-section: "18.12"
-pipeline_stage: task6_pending
+applicable_versions: Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android
+  API 29+ 默认 Impeller） / Android 10 (API 29) - Android 16 (API 36)
+tags:
+- Flutter
+- Impeller
+- Skia
+- SurfaceView
+- TextureView
+- Merged-Thread
+- PlatformView
+- 渲染链路
+related_chapters:
+- '2.5'
+- '2.11'
+- '18.6'
+- '18.7'
+created_by: rendering-pipelines-merge
+created_date: '2026-04-09'
+section: '18.12'
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-18"
+reviewed_date: '2026-04-18'
 task6_result: pass-light-edit
-task2b_result: fixed
+task2b_result: pending
 task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-22'
 ---
 
 <!-- outline-start -->

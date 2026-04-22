@@ -1,19 +1,36 @@
 ---
-title: "OpenGL ES 渲染链路"
-chapter: "18.8"
+title: OpenGL ES 渲染链路
+chapter: '18.8'
 status: ready-for-review
-applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
-tags: ["OpenGL-ES", "EGL", "GLThread", "GLSurfaceView", "eglSwapBuffers", "fence", "ANGLE", "Triple-Buffering"]
-related_chapters: ["2.1", "2.6", "2.14", "18.6", "18.9"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
-pipeline_stage: task6_pending
+applicable_versions: Android 9 (API 28) - Android 16 (API 36)
+tags:
+- OpenGL-ES
+- EGL
+- GLThread
+- GLSurfaceView
+- eglSwapBuffers
+- fence
+- ANGLE
+- Triple-Buffering
+related_chapters:
+- '2.1'
+- '2.6'
+- '2.14'
+- '18.6'
+- '18.9'
+created_by: rendering-pipelines-merge
+created_date: '2026-04-09'
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-22'
+task2b_result: pending
 ---
 
 <!-- outline-start -->
