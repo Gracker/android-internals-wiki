@@ -235,6 +235,73 @@ val shouldShowButton by remember {
 
 前者的状态读取发生在 MainLayout 的 Scope 中，所以每滑过一个 item，整个 MainLayout 都会重组。后者把读取包装在 `derivedStateOf` 里，只有当 `firstVisibleItemIndex == 0` 的布尔结果发生变化时才会通知——也就是从 0 变成 1 和从 1 变成 0 的那两次。其余的滑动完全不会触发重组。
 
+
+
+### SnapshotStateObserver：三阶段失效的底层机制 [自动发现]
+
+[来源: AOSP androidx-main compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateObserver.kt]
+
+前面讲到"状态读取发生在哪个 Scope，状态更新时哪个 Scope 就发生重组"，但没有深入到运行时实现。`SnapshotStateObserver`（SSO）是这一机制的核心组件，理解它有助于精准判断 Compose 性能瓶颈的来源。
+
+**核心数据结构**：
+
+SSO 通过 `registerApplyObserver()` 在 snapshot apply 时被调用。当任何 mutable snapshot apply 时，SSO 收到通知。`observeReads(scope, onValueChangedForScope, block)` 在代码执行期间记录状态读取，构建"状态对象→失效作用域"的倒排索引（`ObservedScopeMap.valueToScopes`）。
+
+```kotlin
+// SnapshotStateObserver.kt 核心结构
+public class SnapshotStateObserver(
+    private val onChangedExecutor: (callback: () -> Unit) -> Unit
+) {
+    // pendingChanges 是 AtomicReference 实现的无锁队列
+    private val pendingChanges = AtomicReference<Any?>(null)
+    
+    // 注册到 Snapshot.apply 时触发的 observer
+    private val applyObserver: (Set<Any>, Snapshot) -> Unit = { applied, _ ->
+        addChanges(applied)
+        if (drainChanges()) sendNotifications()
+    }
+    
+    // 读Observer：每次状态读取时调用
+    private val readObserver: (Any) -> Unit = { state ->
+        if (!isPaused) {
+            synchronized(observedScopeMapsLock) { currentMap!!.recordRead(state) }
+        }
+    }
+}
+```
+
+**三阶段失效的精确划分**：
+
+| 阶段 | 观察机制 | 失效粒度 | 典型场景 |
+|------|---------|---------|---------|
+| Composition | `onValueChangedForScope` 回调 | restartable scope 重组 | 普通状态变化 |
+| Layout | `LayoutResultObserver` | 仅 measure/layout 重新执行 | 尺寸相关状态 |
+| Drawing | `Modifier.drawWithContent {}` / `drawBehind` 中的 layer-level callback | 仅图形层重绘 | `Animatable` 在 draw 阶段读取 |
+
+关键设计：Drawing 阶段的 invalidation 最精细——当状态读取发生在 `Modifier.drawWithContent {}` 内时，状态变更只 invalidate 图形层，完全跳过 Composition 和 Layout。这是 `Animatable` 在 `drawWithContent` 中使用不触发重组的原因。
+
+**DerivedState 去重**：
+
+SSO 实现了 DerivedState 的智能去重：当依赖状态变更时，SSO 先检查 `DerivedState.currentRecord.currentValue` 是否等于 `recordedDerivedStateValues[derived]`。值未变则跳过去重，下游 Composable 不重组。这是 `derivedStateOf` 高效的根本原因。
+
+**典型调用链**：
+
+```
+状态写入 → snapshot.apply() 
+         ↓
+    registerApplyObserver 回调触发
+         ↓
+    SnapshotStateObserver.applyObserver(changes, snapshot)
+         ↓
+    addChanges(changes) → drainChanges() → sendNotifications()
+         ↓
+    onValueChangedForScope(scope) → Composable 被标记为需要重组
+```
+
+**withoutReadObservation()**：
+
+`Snapshot.withoutReadObservation()` 在特定场景（如更新滚动位置、检查 ComposeView context）时临时暂停读观察，避免不必要的订阅。实现方式是通过 `isPaused` 标志使 `readObserver` 跳过记录。
+
 ### 延迟状态读取：缩小重组范围
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-08_wechat_沉思录_如何优化_Compose_的性能_通过_底层原理_寻找答案.md]
