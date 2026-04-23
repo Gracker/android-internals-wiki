@@ -3,8 +3,8 @@ title: 内存分析工具
 chapter: '14.3'
 section: '14.3'
 status: ready-for-review
-reviewed_date: '2026-04-17'
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-23"
+reviewed_by: "openclaw-task6"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
@@ -43,8 +43,8 @@ related_chapters:
 - '14.1'
 - '13.1'
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework
@@ -89,7 +89,7 @@ last_task9_at: '2026-04-21T22:00:33.103917+08:00'
 
 没有哪一个工具能覆盖所有场景。`LeakCanary` 擅长自动发现 Activity/Fragment 级别的 Java 泄漏，但它对 Native 堆和系统级内存占用无能为力。`MAT` 可以深入分析 hprof 文件中的引用链，找出"谁持有了不该持有的引用"，但它需要你先抓到堆转储，而且是离线分析。`heapprofd` 能实时采样 Native 堆的分配行为，但它给出的不是"谁泄漏了"，而是"谁在分配"。`dumpsys meminfo` 则是全局视角的入口——告诉你这个进程总共占了多少内存、各分多少，但它不会告诉你为什么。
 
-所以我们把这几类工具放在一起讲，目的是帮读者建立一条从"发现内存异常"到"定位根因"的完整工具链路。
+所以我们把这几类工具放在一起讲，目的是帮读者建立一条从"发现内存异常"到"定位根因"的完整排查路径。
 
 ## LeakCanary：Java 内存泄漏的自动哨兵
 
@@ -97,7 +97,7 @@ last_task9_at: '2026-04-21T22:00:33.103917+08:00'
 
 在所有内存分析工具中，LeakCanary 的定位最明确：它是一个开发阶段的自动泄漏检测器。我们不需要手动抓堆转储、不需要打开 MAT 分析引用链——LeakCanary 会在 Activity、Fragment、ViewModel、Service 等组件被销毁后，自动检查它们是否还被 GC 回收。如果没有被回收，它会抓取堆转储、分析引用链，并通过系统通知把泄漏路径展示给开发者。
 
-这个工具解决的主要问题是"泄漏的早期发现"。很多内存泄漏在开发阶段根本不会触发 OOM——设备内存够大，测试时间不够长。但 LeakCanary 能在泄漏还很小的时候就抓住它，让开发者在代码提交前就修复问题，而不是等到线上用户反馈"应用卡死了"才去排查。
+这个工具的核心定位是"泄漏的早期发现"。很多内存泄漏在开发阶段根本不会触发 OOM——设备内存够大，测试时间不够长。但 LeakCanary 能在泄漏还很小的时候就抓住它，让开发者在代码提交前就修复问题，而不是等到线上用户反馈"应用卡死了"才去排查。
 
 ### 工作原理
 

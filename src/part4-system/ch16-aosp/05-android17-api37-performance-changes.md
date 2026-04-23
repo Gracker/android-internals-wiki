@@ -393,3 +393,10 @@ DCL(Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `Sy
 - AOSP: `frameworks/base/core/java/android/os/MessageQueue.java`(android-17 分支)
 - AOSP: `art/runtime/gc/collector/` 目录下的分代 GC 实现
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现
+
+### Android AppFunctions:从 API 36 到 Agent OS —— 深度技术与战略参考
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android AppFunctions-从 API 36 到 Agent OS —— 深度技术与战略.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 AOSP、Jetpack 与 OEM 落地三层分析 `android.app.appfunctions`：它以 AppSearch 元数据、`AppFunctionManagerService` 与 `AppFunctionService` 组成跨包函数编排底座，是 Android 16/17 向 Agent OS 演进的核心平台原语；同时梳理角色权限、绑定超时、GMS 与非 GMS OEM 的战略分叉。
+- 注入时间：2026-04-23
+- 价值：这是 AI × 手机方向少见的源码级平台综述，能补足 AIW 对 Agent OS 原语的系统认知。

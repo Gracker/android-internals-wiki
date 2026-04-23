@@ -16,12 +16,15 @@ sources:
     path: "https://developer.android.com/about/versions/16/release-cycle"
 tags: ['architecture', 'overview', 'chapter-intro']
 related_chapters: ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14", "1.15", "1.16", "1.17"]
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: pending
 last_task2b_at: "2026-04-23T02:15:00+08:00"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-23"
+task6_result: "pass-light-edit"
 ---
 
 # 第 1 章：系统架构全景

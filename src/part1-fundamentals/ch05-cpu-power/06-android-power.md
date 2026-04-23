@@ -533,3 +533,10 @@ CPU 空闲（idle）和系统休眠（suspend）是完全不同的状态。CPU i
 - [抖音功耗优化实践](https://mp.weixin.qq.com/s/抖音功耗优化实践)
 - [BatteryHistorian Android手机耗电分析神器](https://mp.weixin.qq.com/s/BatteryHistorian)
 - [SoC低功耗问题定位及优化的10个思路](https://mp.weixin.qq.com/s/SoC低功耗问题定位)
+
+### Android 16 Headroom API 的真相：一条走 Power HAL 而非 PSI 的 CPU/GPU 前瞻信号通道
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 Headroom API 的真相：一条走 Power HAL 而非 PSI 的 CPU:GPU 前瞻信号通道.md
+- 类型：DeepResearch 调研结果
+- 摘要：基于 AOSP 16 逐层拆解 `getCpuHeadroom()/getGpuHeadroom()` 调用链，澄清它经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量，不走 PSI/lmkd，也不存在公开 memory headroom；适合做相机、游戏等重负载场景的前瞻降级信号。
+- 注入时间：2026-04-23
+- 价值：把 Headroom API 与 PSI/lmkd 边界说清楚，能避免把产能信号误当成内存压力接口。
