@@ -20,13 +20,17 @@ related_chapters:
 - '18.7'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
+sources:
+  - Flutter 官方文档：Flutter rendering pipeline
+  - Flutter 官方文档：Impeller rendering engine
+  - Flutter engine 仓库：shell/platform/android/
 section: '18.12'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-18'
+reviewed_date: '2026-04-23'
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-23T01:13:23+08:00"
