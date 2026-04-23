@@ -3,30 +3,22 @@
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
+    "total_sections": 211,
     "finalized": 45,
-    "last_updated": "2026-04-23T17:25:41+08:00",
-    "pipeline_ready_to_publish": 45,
-    "pipeline_stage_counts": {
-      "unknown": 28,
-      "task6_pending": 45,
-      "task2b_pending": 35,
-      "ready-to-publish": 45,
-      "task9_pending": 58
-    },
-    "pipeline_task2b_pending": 35,
-    "pipeline_task9_pending": 58,
     "ready-for-review": 138,
     "ready-to-publish": 0,
-    "task2b_state_counts": {
-      "unknown": 31,
-      "fixed": 138,
-      "pending": 39,
-      "idle": 3
+    "last_updated": "2026-04-23T18:48:00+08:00",
+    "pipeline_stage_counts": {
+      "unknown": 28,
+      "task6_pending": 44,
+      "task2b_pending": 35,
+      "ready-to-publish": 45,
+      "task9_pending": 59
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 143,
-      "revisiting": 40
+      "reviewed": 146,
+      "revisiting": 37
     },
     "task9_state_counts": {
       "unknown": 28,
@@ -34,10 +26,12 @@
       "pending": 91,
       "fixed": 1
     },
-    "total": 211,
-    "total_sections": 211,
-    "unknown": 28,
-    "task6_reviewed": 143
+    "task2b_state_counts": {
+      "unknown": 31,
+      "fixed": 138,
+      "pending": 39,
+      "idle": 3
+    }
   },
   "pipeline": {
     "pipeline_stage_counts": {
@@ -1218,7 +1212,7 @@
       "status": "ready-for-review",
       "drafted_date": "2026-03-30",
       "drafted_by": "openclaw-task2a",
-      "reviewed_date": "2026-04-15",
+      "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
       "applicable_versions": "Android 3.0 (API 11) ~ Android 16 (API 36)",
       "last_verified": "2026-04-23",
@@ -1246,7 +1240,7 @@
         "8.2"
       ],
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -1862,12 +1856,15 @@
         "FrameTimeline",
         "ARR"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "path": "src/part1-fundamentals/ch02-rendering/README.md"
+      "path": "src/part1-fundamentals/ch02-rendering/README.md",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-04-23",
+      "reviewed_by": "openclaw-task6"
     },
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md": {
       "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
@@ -5726,7 +5723,7 @@
     },
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
-      "title": "Flutter 渲染链路",
+      "title": "Flutter 渲染管线",
       "chapter": "18.12",
       "status": "ready-for-review",
       "applicable_versions": "Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android",
@@ -5734,11 +5731,11 @@
       "created_date": "2026-04-09",
       "section": "18.12",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-18",
+      "reviewed_date": "2026-04-23",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-23T01:13:23+08:00",

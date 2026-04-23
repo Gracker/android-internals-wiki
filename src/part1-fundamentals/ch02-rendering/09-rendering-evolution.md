@@ -44,10 +44,11 @@ task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-17"
+task9_reviewed_date: 2026-04-23
 task9_reviewed_by: "openclaw-task9"
 repaired_date: "2026-04-23"
 repaired_by: "openclaw-task2b"
+review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 1 L1 fix (否定-纠正结构: 不是X而是Y → 直接陈述). 无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-04-23T12:48:00+08:00"
@@ -57,7 +58,7 @@ last_task2b_at: "2026-04-23T12:48:00+08:00"
 
 当我们打开 Perfetto 抓一份 Trace，看到 `RenderThread` 在主线程旁边有条不紊地执行 GPU 命令，看到 `VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列——这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线，并非一蹴而就。它经历了十多个 Android 大版本的持续重构。
 
-理解这段演进历史，对于性能分析来说不是"课外阅读"，而是刚需：我们在 Perfetto 中看到的每一个 Track 名称、每一项 API 行为，都带着版本烙印。当我们面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
+理解这段演进历史，对于性能分析来说对于性能分析来说是日常工作的前置知识：我们在 Perfetto 中看到的每一个 Track 名称、每一项 API 行为，都带着版本烙印。当我们面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
 
 下面的梳理从硬件加速的引入开始，到 Vulkan 统一渲染堆栈为止，覆盖了我们在 Perfetto 中会遇到的每一个关键版本的渲染变化。
 

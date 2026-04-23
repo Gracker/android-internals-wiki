@@ -1,5 +1,5 @@
 ---
-title: Flutter 渲染链路
+title: Flutter 渲染管线
 chapter: '18.12'
 status: ready-for-review
 applicable_versions: Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android
@@ -12,7 +12,7 @@ tags:
 - TextureView
 - Merged-Thread
 - PlatformView
-- 渲染链路
+- 渲染管线
 related_chapters:
 - '2.5'
 - '2.11'
@@ -25,18 +25,19 @@ sources:
   - Flutter 官方文档：Impeller rendering engine
   - Flutter engine 仓库：shell/platform/android/
 section: '18.12'
+review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 10 L1 fixes (禁用词「链路」→「管线」全量替换: 标题/tags/大纲/正文). 无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
 pipeline_stage: task9_pending
 task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-23'
+reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-23T01:13:23+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-22'
+task9_reviewed_date: "2026-04-23"
 ---
 
 <!-- outline-start -->
@@ -47,7 +48,7 @@ task9_reviewed_date: '2026-04-22'
 - Impeller vs Skia 渲染后端
 - SurfaceView render mode vs TextureView render mode
 - Platform Views 的 Hybrid Composition 模式
-- 在 Perfetto 中识别 Flutter 渲染链路的方法
+- 在 Perfetto 中识别 Flutter 渲染管线的方法
 
 **扩展（可选深入）：**
 - Flutter 3.29+ Merged Model 的线程优化
@@ -56,11 +57,11 @@ task9_reviewed_date: '2026-04-22'
 
 <!-- outline-end -->
 
-## 为什么 Flutter 的渲染链路值得单独一章
+## 为什么 Flutter 的渲染管线值得单独一章
 
-Flutter 在 Android 上的渲染链路与原生 App 有本质区别：**Flutter 不走 Android View 体系的 Measure/Layout/Draw 流程**。它有一套完全独立的渲染管线，Dart 代码生成 LayerTree，C++ Raster Thread 将 LayerTree 光栅化为像素，最终通过独立 Surface 或 SurfaceTexture 提交给 SurfaceFlinger。
+Flutter 在 Android 上的渲染管线与原生 App 有本质区别：**Flutter 不走 Android View 体系的 Measure/Layout/Draw 流程**。它有一套完全独立的渲染管线，Dart 代码生成 LayerTree，C++ Raster Thread 将 LayerTree 光栅化为像素，最终通过独立 Surface 或 SurfaceTexture 提交给 SurfaceFlinger。
 
-理解这条链路，你才能在 Perfetto 中区分"Flutter Dart 代码慢了"、"Raster Thread GPU 光栅化慢了"和"宿主 App 侧的合成慢了"，这三类问题的优化方向完全不同。[已验证: Flutter 官方文档]
+理解这条管线，你才能在 Perfetto 中区分"Flutter Dart 代码慢了"、"Raster Thread GPU 光栅化慢了"和"宿主 App 侧的合成慢了"，这三类问题的优化方向完全不同。[已验证: Flutter 官方文档]
 
 ## 版本边界
 
@@ -123,7 +124,7 @@ Flutter 的渲染流程分为四个阶段，每个阶段对应不同的线程和
 
 ## SurfaceView vs TextureView Render Mode
 
-这是 Flutter 在 Android 上最重要的链路选择，直接决定了性能特征。
+这是 Flutter 在 Android 上最重要的管线选择，直接决定了性能特征。
 
 Android 侧的入口可以直接对照 Flutter engine 仓库里的 `shell/platform/android/io/flutter/embedding/android/FlutterSurfaceView.java`、`FlutterTextureView.java` 和 `io/flutter/view/VsyncWaiter.java`。Render mode 决定 Embedding 层创建哪种宿主 View，`VsyncWaiter` 决定 Flutter 怎样接上 Android `Choreographer` 的节拍。
 
@@ -222,7 +223,7 @@ sequenceDiagram
 
 因此，Platform Views 这部分不能只写“Hybrid Composition 性能较好”或“Texture Layer 更灵活”。真正要看的，是目标控件类型、滚动模式、是否依赖 a11y，以及是否需要跟 Flutter 内容一起做动画。
 
-## 在 Perfetto 中识别 Flutter 链路
+## 在 Perfetto 中识别 Flutter 管线
 
 先把采样条件固定下来：优先用 profile / release 构建，打开 `gfx`、`view`、`sched`、`surfaceflinger` 相关数据源，录制一段能稳定复现卡顿的交互。没有截图时，直接在 Perfetto UI 里搜 `Engine::BeginFrame`、`Rasterizer::DrawToSurfaces`、`updateTexImage`、`DrawFrame`，定位会更快。
 
@@ -248,7 +249,7 @@ sequenceDiagram
 ## 与其他章节的关系
 
 - **2.11 Flutter 渲染管线与性能**：Flutter 渲染机制的原理视角
-- **18.6 SurfaceView / 18.7 TextureView**：Android 原生组件的链路对比
+- **18.6 SurfaceView / 18.7 TextureView**：Android 原生组件的管线对比
 - **18.13 WebView 章节 / 7.11 WebView 性能优化**：分别对应嵌入式渲染过程和性能治理视角
 
 ## 参考资料
