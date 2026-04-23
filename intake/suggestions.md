@@ -247,3 +247,21 @@
 - **问题**：Perfetto 观察面已经说清了默认 trace 与 atrace 类别边界，但还缺一条最小可复用的实测样例。
 - **建议**：补设备 / 刷新率 / 文本长度 / Span 数量 / `TextView.onMeasure()` 观测区间，增强实操可信度。
 
+
+## [Task9 Deep Review] 18.17 Hardware Buffer Renderer — 2026-04-24
+- **类型**：数据与案例支撑
+- **位置**：L182-L197 / L287-L304
+- **问题**：正文已经把定量结论回退成定性判断，但仍缺同设备、同尺寸、同格式 workload 的 benchmark 和最小 Perfetto 对照，读者还拿不到可复核的基线。
+- **建议**：补 1 组 `lockCanvas()` vs `HardwareBufferRenderer` 的同机型 A/B 数据，并给出至少一条 `draw()`→RenderThread/GPU→`setBuffer()`→SF `latch` 的 trace 对照。
+
+## [Task9 Deep Review] 18.18 PIP 与自由窗口渲染 — 2026-04-24
+- **类型**：数据与案例支撑
+- **位置**：L91 / L149
+- **问题**：PiP 进入和 Freeform resize 两处仍停在“待补 Trace 截图”占位，缺少能直接复核的时间线样例。
+- **建议**：各补 1 组最小 Perfetto 样例，至少同屏标出 WindowManager/Shell transition、`QueuedBuffer - ...BLAST#...`、`latchBuffer` 和 actual present。
+
+## [Task9 Deep Review] 18.18 PIP 与自由窗口渲染 — 2026-04-24
+- **类型**：交叉引用一致性
+- **位置**：frontmatter related_chapters / 正文对 §2.13 的引用
+- **问题**：正文主要依赖 §18.5、§18.10、§2.13，但 `related_chapters` 仍写 `2.6/2.12/18.10`；同时 §2.13 L222/L269 还保留“BLAST=Android 12+”旧口径，书内 BLAST 版本边界尚未完全对齐。
+- **建议**：补齐 `related_chapters`，并同步清理 §2.13 中残留的“Android 12+ 才有 BLAST”表述。
