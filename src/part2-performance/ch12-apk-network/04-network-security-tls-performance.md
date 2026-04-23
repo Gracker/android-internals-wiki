@@ -24,23 +24,24 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-04-24"
 task6_result: "pass-light-edit"
+review_round: 2
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-22"
+task9_reviewed_date: "2026-04-24"
 last_task9_at: "2026-04-22T07:21:28+08:00"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
 
-一次 API 请求只有几 KB，首包却要多等上百毫秒，瓶颈往往不在业务代码，而在连接建立阶段的 TLS 握手。Android 近几代持续收紧网络安全默认值：TLS 1.3 成为常态，Certificate Transparency 与 Encrypted Client Hello 开始进入平台配置面，明文流量也被逐步收紧。平台还单独公开了 HPKE 这类加密能力 API，用来覆盖端到端加密等场景。网络延迟和安全策略需要放在一起评估。
+一次 API 请求只有几 KB，首包却要多等上百毫秒，瓶颈通常在连接建立阶段的 TLS 握手。Android 近几代持续收紧网络安全默认值：TLS 1.3 成为常态，Certificate Transparency 与 Encrypted Client Hello 开始进入平台配置面，明文流量也被逐步收紧。平台还单独公开了 HPKE 这类加密能力 API，用来覆盖端到端加密等场景。网络延迟和安全策略需要放在一起评估。
 
 这一节关注两个问题：Android 平台上的安全机制会怎样影响网络性能，我们又该怎样在安全和连接成本之间做判断。
 
