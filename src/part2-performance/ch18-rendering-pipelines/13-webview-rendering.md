@@ -1,6 +1,7 @@
 ---
 title: "WebView 渲染管线"
 chapter: "18.13"
+section: "18.13"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 tags: ["WebView", "Chromium", "GL-Functor", "SurfaceControl", "SurfaceTexture", "X5内核", "渲染管线"]
@@ -15,17 +16,18 @@ sources:
   - Chromium android_webview/browser/gfx/hardware_renderer.cc
   - Chromium android_webview/browser/gfx/overlay_processor_webview.cc
   - Chromium Viz Compositor architecture docs
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-24T00:00:53+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-23'
+reviewed_date: "2026-04-24"
 task9_result: needs-rework
 last_task9_at: "2026-04-18T23:32:00+08:00"
 task6_result: pass-light-edit
+review_round: 2
 ---
 
 <!-- outline-start -->
@@ -131,7 +133,7 @@ sequenceDiagram
 
 ## 模式三：SurfaceControl 独立子 Surface（现代 provider 可用）
 
-这条路径在 Chromium / WebView 代码里有明确实现，并不是纯推测。`HardwareRenderer::DrawAndSwap()` 会先和 `OverlayProcessorWebView` 协商 `SurfaceControl` 可用性；`OverlayProcessorWebView::Manager` 负责创建和维护 `ASurfaceControl`，并在 RenderThread / GPU Main 上更新几何信息和 buffer。源码里至少有四层门槛：HWUI 先通过 `SetOverlaysEnabledByHWUI()` 放行，Viz 侧的 `GpuServiceImpl` 已就绪，candidate 通过 `OverlayProcessorSurfaceControl::CheckOverlaySupportImpl()` 检查，对应 frame sink 也没有进入 `blocked_frame_sink_ids_`。运行时是否真的命中，仍取决于这些门槛是否同时满足。
+这条路径在 Chromium / WebView 代码里有明确实现。`HardwareRenderer::DrawAndSwap()` 会先和 `OverlayProcessorWebView` 协商 `SurfaceControl` 可用性；`OverlayProcessorWebView::Manager` 负责创建和维护 `ASurfaceControl`，并在 RenderThread / GPU Main 上更新几何信息和 buffer。源码里至少有四层门槛：HWUI 先通过 `SetOverlaysEnabledByHWUI()` 放行，Viz 侧的 `GpuServiceImpl` 已就绪，candidate 通过 `OverlayProcessorSurfaceControl::CheckOverlaySupportImpl()` 检查，对应 frame sink 也没有进入 `blocked_frame_sink_ids_`。运行时是否真的命中，仍取决于这些门槛是否同时满足。
 
 ### 提交过程
 
@@ -147,7 +149,7 @@ sequenceDiagram
 
 ## 模式四：Custom TextureView / Texture-like 路径（第三方内核）
 
-部分第三方 WebView SDK 会为了圆角、动画、浮层叠加或视频兼容性，引入 TextureView / SurfaceTexture 类似路径。问题在于这不是所有 X5/UC 版本的固定实现，同一家 SDK 也可能随版本切换。没有 SDK 版本、view tree 和 trace 证据时，只能把它当作候选路径。
+部分第三方 WebView SDK 会为了圆角、动画、浮层叠加或视频兼容性，引入 TextureView / SurfaceTexture 类似路径。问题在于同一 SDK 在不同 X5/UC 版本之间实现有差异，同一家 SDK 也可能随版本切换。没有 SDK 版本、view tree 和 trace 证据时，只能把它当作候选路径。
 
 ### 提交过程
 
@@ -158,7 +160,7 @@ sequenceDiagram
 
 **性能特征**：这条路径对动画和复杂层级更友好，但宿主侧多一次纹理采样，开销是否可接受取决于 SDK 实现和页面负载。
 
-## 四种模式对比矩阵
+## 四种模式对比
 
 | 维度 | GL Functor | Custom View 托管 | SurfaceControl 独立子 Surface | Texture-like 路径 |
 |:---|:---|:---|:---|:---|

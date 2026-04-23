@@ -49,10 +49,11 @@ gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: 14
 drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
-task6_state: revisiting
-pipeline_stage: task6_pending
+review_round: 2
+task6_state: reviewed
+pipeline_stage: task9_pending
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
