@@ -1,11 +1,12 @@
 ---
 title: "文字渲染性能"
 chapter: "2.21"
+section: "2.21"
 status: ready-for-review
 drafted_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-12"
-last_verified_against: "AOSP android-16.0.0_r1 + androidx-main"
+last_verified: "2026-04-23"
+last_verified_against: "AOSP android-16.0.0_r1 + androidx-main + developer.android.com page sizes"
 confidence: medium
 sources:
   - type: aosp
@@ -17,21 +18,31 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/text/PrecomputedText.java"
   - type: aosp
+    path: "frameworks/base/core/java/android/text/MeasuredParagraph.java"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/text/MeasuredText.java"
+  - type: aosp
     path: "frameworks/minikin/"
   - type: aosp
     path: "frameworks/base/libs/hwui/SkiaCanvas.cpp"
   - type: official
     path: "developer.android.com/reference/android/text/PrecomputedText"
+  - type: official
+    path: "developer.android.com/guide/practices/page-sizes"
 tags: [text, rendering, minikin, skia, emoji, layout, performance, textview, staticlayout]
 related_chapters: ["2.1", "2.4", "2.5", "7.8", "7.12"]
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-19"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+repaired_date: "2026-04-23"
+repaired_by: "openclaw-task2b"
+task2b_result: fixed
+task2b_state: fixed
+last_task2b_at: "2026-04-23T12:48:00+08:00"
 
 ---
 
@@ -71,7 +82,7 @@ task2b_state: pending
 
 - **DynamicLayout**：用于可编辑文本（EditText）。它在 StaticLayout 的基础上增加了文本变化时的增量更新逻辑。
 
-选好 Layout 之后，主线程已经拿到了每个 run 的测量结果、行分布和 glyph 位置信息。接下来进入 draw 阶段。这里要避开一个旧资料里很常见的坑：当前 Android 并不是沿着 `SkPaint::textToGlyphs()` → `SkDraw::drawPosText()` 这条旧调用往下走。以 `android-16.0.0_r1` 的 `frameworks/base/libs/hwui/SkiaCanvas.cpp` 为例，HWUI 的文字入口是 `SkiaCanvas::drawGlyphs()`，它先把 glyph 和坐标写进 `SkTextBlobBuilder`，再调用 `mCanvas->drawTextBlob()` 交给 Skia。
+选好 Layout 之后，主线程已经拿到了每个 run 的测量结果、行分布和 glyph 位置信息。接下来进入 draw 阶段。public API 和 HWUI 内部提交层要分开看。API 31 起，`Canvas.drawGlyphs()` 已经提供了“按 glyph id + 坐标绘制”的公开入口；但在 `android-16.0.0_r1` 的 `frameworks/base/libs/hwui/SkiaCanvas.cpp` 里，HWUI 这一层的 `SkiaCanvas::drawGlyphs()` 仍然是先把 glyph 和坐标写进 `SkTextBlobBuilder`，再调用 `mCanvas->drawTextBlob()` 交给 Skia。
 
 ```cpp
 // frameworks/base/libs/hwui/SkiaCanvas.cpp @ android-16.0.0_r1
@@ -83,7 +94,7 @@ void SkiaCanvas::drawGlyphs(...) {
 }
 ```
 
-这段代码说明两件事。第一，Unicode 到 glyph 的整形主要发生在更早的 `Layout` / Minikin 阶段，HWUI 这一层负责把已经算好的 glyph run 组装后提交给 Skia。第二，当前更稳的描述层级应该是“Java Canvas / TextLine / Layout → HWUI `drawGlyphs()` → Skia `drawTextBlob()`”，不要把已经退场的内部函数名写成今天的真实实现。
+这个区别直接影响我们怎么描述调用链。公开 API 层可以说是 `Canvas.drawGlyphs()`；HWUI 提交层在当前 tag 上仍然是 `SkiaCanvas::drawGlyphs()` → `SkTextBlobBuilder` → `SkCanvas::drawTextBlob()`。把两层合成一句“直接下沉到 SkCanvas.drawGlyphs”会把 API 名称和 HWUI 内部实现写混。
 
 Glyph atlas 仍然存在，首次出现的字形也仍可能触发 atlas miss、CPU 光栅化和纹理上传。但这些属于 Skia / HWUI 的内部实现细节，具体函数名会随版本变化；写到书里时保留到可直接核对的层级更稳。
 [图：文字渲染管线架构图 — 展示 TextView.setText() → Layout 选择（BoringLayout / StaticLayout / DynamicLayout）→ Minikin 整形 + LineBreaker 换行 → HWUI drawGlyphs() → Skia drawTextBlob() → GPU glyph atlas 的完整路径，标注 measure 和 draw 两个瓶颈区间]
@@ -211,11 +222,11 @@ canvas.drawText(mMetadataRepo.getEmojiCharArray(), charArrayStartIndex, 2, x, y,
 
 ## 文字渲染优化实践
 
-### PrecomputedText：提前做字符测量，不替代最终布局
+### PrecomputedText：提前生成段落测量结果
 
-`PrecomputedText` 是 Android 9.0 (API 28) 引入的 API，用来把“可以脱离 `TextView` 独立完成”的文字测量工作提前做掉。AOSP 在 `PrecomputedText.Params` 注释里把边界写得很直接：这些参数用于在 **final layout constraints are not known** 时预计算测量元数据。这里提前完成的是字符度量、段落边界、`breakStrategy` / `hyphenationFrequency` 相关准备，不是把最终宽度已经确定的 `StaticLayout` 整体缓存下来。
+`PrecomputedText` 的价值，可以直接从 `android-16.0.0_r1` 的数据结构看出来。它内部持有 `ParagraphInfo[]`；每个段落都带一个 `MeasuredParagraph`。`MeasuredParagraph` 在 `buildForStaticLayout()` 路径下还会继续持有 native `MeasuredText`，也就是已经完成 shaping / measurement 的那份结果。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/text/PrecomputedText.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/text/PrecomputedText.java; MeasuredParagraph.java; MeasuredText.java]
 
 ```java
 PrecomputedText.Params params = textView.getTextMetricsParams();
@@ -223,9 +234,9 @@ PrecomputedText precomputed = PrecomputedText.create(text, params);
 textView.setText(precomputed);
 ```
 
-这个模式能省掉一大块主线程上的 shaping / measurement 开销，但最终布局仍然要看 `TextView` 当时的宽度、`maxLines`、`ellipsize`、行距等条件。如果 `TextView` 当前参数和创建 `PrecomputedText` 时不一致，框架会直接丢弃预计算结果，按当前参数重新计算。
+`StaticLayout` 收到 `PrecomputedText` 后，会先调用 `checkResultUsable()` 校验 `TextPaint`、text direction、break strategy、hyphenation frequency 和 `LineBreakConfig`。命中时直接取 `precomputed.getParagraphInfo()` 复用段落测量结果；参数不匹配时，再 `PrecomputedText.create(...)` 重新生成。
 
-所以，PrecomputedText 更准确的理解是“提前做 `MeasuredText` / 段落测量准备”，不是“主线程完全跳过 `StaticLayout`”。
+这就是它的性能边界：最贵的 shaping / measurement 可以提前做掉，最终 line breaking 和 layout 仍然要看 `TextView` 当时的宽度、`maxLines`、`ellipsize`、行距等约束。把 `PrecomputedText` 写成“完全替代 StaticLayout”会把这条边界说过头。
 
 ### AppCompatTextView 的异步接入方式
 
@@ -346,8 +357,15 @@ RenderThread / HWUI 侧当然也可能有文字相关成本，但要分清“能
 | Android 5.0 (API 21) | AOSP 已有独立 `frameworks/minikin/` 仓库，文字整形与换行能力集中到 Minikin | `platform/frameworks/minikin` @ `android-5.0.0_r1` |
 | Android 6.0.1 (API 23) | `StaticLayout.Builder` 已存在；`TextView` 构造默认 `mHyphenationFrequency = HYPHENATION_FREQUENCY_NONE` | `StaticLayout.java` / `TextView.java` @ `android-6.0.1_r1` |
 | Android 9.0 (API 28) | framework 引入 `PrecomputedText` | Android Developers `PrecomputedText` reference（Added in API 28） |
+| Android 15 (API 35) | 16 KB page size 进入兼容面；自带 native 文字 / 字体库不能再写死 4 KB 页大小 | Android Developers page size guide |
 | AndroidX core / appcompat | `PrecomputedTextCompat.getTextFuture()` 配合 `AppCompatTextView.setTextFuture()` 提供异步预计算接入 | androidx-main `PrecomputedTextCompat.java` / `AppCompatTextView.java` |
 | AndroidX emoji / emoji2 | `EmojiCompat` 通过 `EmojiSpan` / `TypefaceEmojiSpan` 兼容新 emoji，字体来源可选 bundled 或 downloadable font provider | Android Developers EmojiCompat 文档；androidx-main `TypefaceEmojiSpan.java` |
+
+### Android 15 的 16 KB page size 影响范围
+
+16 KB page size 改的是 native 内存页粒度，不是 `TextView`、`StaticLayout`、`PrecomputedText` 的 Java API 语义。对文字渲染这条线，直接受影响的通常是自带 native 库、自研 glyph cache、mmap / ashmem 管理和把 4096 写死的页大小假设。
+
+如果工程里只有 framework `TextView` 和 AndroidX 文字组件，风险更多落在依赖库兼容性；如果有自研字体引擎、native atlas 或 text cache，就要按 16 KB 设备重新核对页大小、映射和内存保护逻辑。把这件事写成“TextView API 发生版本分叉”会偏题，完全不提又会漏掉 Android 15 之后的 native 兼容边界。
 
 ## 常见问题与误区
 
@@ -385,7 +403,9 @@ Minikin 的缓存是进程级的，跨 TextView 共享。但缓存的 key 包含
 - [AOSP TextView.java](https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/widget/TextView.java) — TextView 源码
 - [AOSP StaticLayout.java](https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/text/StaticLayout.java) — StaticLayout 源码
 - [AOSP PrecomputedText.java](https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/text/PrecomputedText.java) — PrecomputedText API
+- [AOSP MeasuredParagraph.java](https://android.googlesource.com/platform/frameworks/base/+/master/core/java/android/text/MeasuredParagraph.java) — StaticLayout 复用的段落测量结构
 - [Android Developers - PrecomputedText](https://developer.android.com/reference/android/text/PrecomputedText) — 官方文档
+- [Android Developers - Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes) — 16 KB page size 兼容说明
 - [Android Developers - AppCompatTextView](https://developer.android.com/reference/androidx/appcompat/widget/AppCompatTextView) — AndroidX 文档
 - [Android Developers - EmojiCompat](https://developer.android.com/develop/ui/views/text-and-emoji/emoji-compat) — Emoji 兼容与字体配置文档
 - [Medium - PrecomputedText: Improving Text Rendering](https://medium.com/androiddevelopers/precomputedtext-improving-text-rendering-6f04345b079c) — Android Developers Blog

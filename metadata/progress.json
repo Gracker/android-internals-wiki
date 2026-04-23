@@ -1,62 +1,62 @@
 {
-  "generated_at": "2026-04-23T11:54:09+08:00",
+  "generated_at": "2026-04-23T12:48:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "finalized": 45,
-    "last_updated": "2026-04-23T11:54:09+08:00",
+    "last_updated": "2026-04-23T12:48:00+08:00",
     "pipeline_ready_to_publish": 45,
     "pipeline_stage_counts": {
-      "task6_pending": 46,
-      "task2b_pending": 36,
+      "task6_pending": 48,
+      "task2b_pending": 35,
       "ready-to-publish": 45,
-      "task9_pending": 56
+      "task9_pending": 55
     },
-    "pipeline_task2b_pending": 36,
-    "pipeline_task9_pending": 56,
+    "pipeline_task2b_pending": 35,
+    "pipeline_task9_pending": 55,
     "ready-for-review": 137,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 135,
-      "pending": 40,
-      "idle": 5
+      "fixed": 137,
+      "pending": 39,
+      "idle": 4
     },
     "task6_state_counts": {
-      "reviewed": 141,
-      "revisiting": 41,
+      "reviewed": 139,
+      "revisiting": 43,
       "pending": 1
     },
     "task9_state_counts": {
-      "reviewed": 93,
-      "pending": 89,
+      "reviewed": 91,
+      "pending": 91,
       "fixed": 1
     },
     "total": 211,
     "total_sections": 211,
     "unknown": 29,
-    "task6_reviewed": 141
+    "task6_reviewed": 139
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 46,
-      "task2b_pending": 36,
+      "task6_pending": 48,
+      "task2b_pending": 35,
       "ready-to-publish": 45,
-      "task9_pending": 56
+      "task9_pending": 55
     },
     "task6_state_counts": {
-      "reviewed": 141,
-      "revisiting": 41,
+      "reviewed": 139,
+      "revisiting": 43,
       "pending": 1
     },
     "task9_state_counts": {
-      "reviewed": 93,
-      "pending": 89,
+      "reviewed": 91,
+      "pending": 91,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 135,
-      "pending": 40,
-      "idle": 5
+      "fixed": 137,
+      "pending": 39,
+      "idle": 4
     }
   },
   "issues": {
@@ -1217,8 +1217,8 @@
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
       "applicable_versions": "Android 3.0 (API 11) ~ Android 16 (API 36)",
-      "last_verified": "2026-03-30",
-      "last_verified_against": "developer.android.com + source.android.com",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "AOSP android-16.0.0_r1 + external/perfetto + developer.android.com",
       "confidence": "medium",
       "polish_count": 1,
       "polish_date": "2026-04-05",
@@ -1241,14 +1241,18 @@
         "3.1",
         "8.2"
       ],
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-17",
       "task9_reviewed_by": "openclaw-task9",
-      "task2b_state": "idle"
+      "task2b_state": "fixed",
+      "repaired_date": "2026-04-23",
+      "repaired_by": "openclaw-task2b",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-23T12:48:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
       "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
@@ -1799,8 +1803,8 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-09",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-12",
-      "last_verified_against": "AOSP android-16.0.0_r1 + androidx-main",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "AOSP android-16.0.0_r1 + androidx-main + developer.android.com page sizes",
       "confidence": "medium",
       "tags": [
         "text",
@@ -1823,11 +1827,16 @@
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-19",
       "task6_result": "pass-light-edit",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending"
+      "task2b_state": "fixed",
+      "section": "2.21",
+      "repaired_date": "2026-04-23",
+      "repaired_by": "openclaw-task2b",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-23T12:48:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/README.md": {
       "title": "渲染系统总纲",
