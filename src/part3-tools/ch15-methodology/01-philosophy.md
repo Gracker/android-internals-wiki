@@ -35,14 +35,14 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-22'
+reviewed_date: '2026-04-23'
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-22"
@@ -82,7 +82,7 @@ last_task2b_at: "2026-04-22T12:08:42+08:00"
 性能问题最容易把人拖进细节里。  
 App 启动慢、列表滑动卡顿、ANR、功耗高，这些问题当然都重要，后面也都有专门章节。但如果一上来只学“怎么抓 trace、怎么改代码、怎么调参数”，很容易出现一种很熟悉的状态：问题看过很多，方法也学了不少，换个场景还是像第一次遇到。
 
-所以第 15 章不再继续补系统细节，而是把前面那些知识重新收成一套思维框架：遇到性能问题时，先怎么想，怎么判断轻重缓急，怎么选工具，怎么验证结果。它讲的不是空泛哲学，而是工程师在现场真正会用到的判断顺序。
+所以第 15 章不再继续补系统细节，而是把前面那些知识重新收成一套思维框架：遇到性能问题时，先怎么想，怎么判断轻重缓急，怎么选工具，怎么验证结果。它讲的是工程师在现场真正会用到的判断顺序。
 
 Brendan Gregg 在《Systems Performance（性能之巅）》中对性能工程的本质有过一段精准的描述：**性能是主观的、系统是复杂的、通常有多个问题并存** [已验证: Brendan Gregg, Systems Performance, Chapter 2]。这三句话听起来简单，但它们构成了性能分析方法论的地基。性能是主观的——被一个用户认为「不好」的体验，另一个用户可能觉得「还行」，所以我们不能用「感觉变快了」来衡量优化效果，而需要量化的指标。系统是复杂的——性能问题往往不是出在单个组件上，而是出在组件之间的交互上，修复一个问题可能只是把瓶颈推到了系统的另一个地方。多个问题并存——在复杂软件中通常不止一个性能问题，真正的挑战不是「找到问题」，而是「辨别哪些问题最重要」。
 
@@ -118,7 +118,7 @@ Brendan Gregg 把性能问题描述为「主观的」，正因如此，我们更
 
 第二步，**量化问题**。有了基线之后，用工具（Perfetto、Android Studio Profiler、benchmark 等）定位具体的性能瓶颈，并量化它的影响范围和严重程度。第 13 章详细介绍了 Perfetto 的使用方法，第 14 章介绍了其他工具的使用场景。
 
-第三步，**量化收益**。优化完成后，用相同的方法和条件重新测量，与基线对比。Jeff Dean 在他的 Performance Hints 文档中反复强调这一点：性能优化不是靠直觉判断的，而是靠数据说话 [已验证: 来源见 abseil.io/fast/hints.html, Jeff Dean & Sanjay Ghemawat, 2025]。如果一个优化在数据上看不到改善，那它就不是有效的优化，无论代码看起来多么「巧妙」。
+第三步，**量化收益**。优化完成后，用相同的方法和条件重新测量，与基线对比。Jeff Dean 在他的 Performance Hints 文档中反复强调这一点：性能优化必须有数据支撑 [已验证: 来源见 abseil.io/fast/hints.html, Jeff Dean & Sanjay Ghemawat, 2025]。如果一个优化在数据上看不到改善，那它就不是有效的优化，无论代码看起来多么「巧妙」。
 
 ### 测量本身会影响被测系统
 
@@ -228,7 +228,7 @@ Android 性能分析工具很多，但它们各有定位。选择工具的关键
 
 典型的流畅性分析流程：先用 Perfetto 抓取一次滑动场景的 Trace，定位到哪一帧超时了、超时发生在哪个阶段（measure/layout/draw/GPU）；如果瓶颈在主线程的某个方法，再用 Android Studio Profiler 的 CPU 分析器或者代码插桩来确定具体是哪一行代码导致的；如果瓶颈在 GPU，用 GPU 渲染分析工具或 Perfetto 的 gpu_render_stages Track 来深入分析。
 
-典型的启动速度分析流程：先用 Macrobenchmark 建立冷启动时间的基线；然后用 Perfetto 抓取启动过程的 Trace，从 Application.onCreate() 开始，沿着初始化链路逐步检查每个阶段的耗时；如果发现某个 SDK 初始化特别慢，再针对性地优化或延迟加载。
+典型的启动速度分析流程：先用 Macrobenchmark 建立冷启动时间的基线；然后用 Perfetto 抓取启动过程的 Trace，从 Application.onCreate() 开始，沿着初始化路径逐步检查每个阶段的耗时；如果发现某个 SDK 初始化特别慢，再针对性地优化或延迟加载。
 
 这种「Perfetto 定位 → 专项工具深入 → 优化 → 验证」的模式，是 Android 性能分析的标准工作流。本书第 13 章到第 14 章介绍的所有工具，都可以嵌入到这条工作流中使用。
 

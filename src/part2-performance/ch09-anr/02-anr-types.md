@@ -44,7 +44,7 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: 'task6_pending'
+pipeline_stage: 'task9_pending'
 task6_state: reviewed
 task9_state: 'pending'
 task9_result: 'needs-rework'
