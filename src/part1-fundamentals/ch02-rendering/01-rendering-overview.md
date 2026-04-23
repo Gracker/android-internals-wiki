@@ -11,7 +11,7 @@ drafted_date: "2026-03-30"
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-04-24"
 reviewed_by: "openclaw-task6"
 sources:
   - type: official
@@ -26,10 +26,10 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-review_round: 2
+review_round: 3
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-24
@@ -269,7 +269,7 @@ void SurfaceFlinger::handleMessageRefresh() {
 }
 ```
 
-在 BufferQueue 的实现中，三缓冲依赖 buffer slot 数量和 Fence 协同工作：生产者只有拿到空闲 slot 才能继续写入，消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后，buffer 提交和窗口几何变更会放进同一事务节奏，减少 resize 与内容更新错拍。Android 16 对 64 位新设备要求支持 Vulkan 1.4，Host Image Copy 影响的是纹理上传和 image memory 路径；它和 BufferQueue / BLAST 属于不同层，不能直接并到同一段“三缓冲增强”描述里。本文先不把 `AsyncBufferQueue` 写成 Android 16 已公开落地的固定接口，后续拿到 AOSP commit 再单列展开。
+在 BufferQueue 的实现中，三缓冲依赖 buffer slot 数量和 Fence 协同工作：生产者只有拿到空闲 slot 才能继续写入，消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后，buffer 提交和窗口几何变更会放进同一事务节奏，减少 resize 与内容更新错拍。Android 16 对 64 位新设备要求支持 Vulkan 1.4，Host Image Copy 影响的是纹理上传和 image memory 路径；它和 BufferQueue / BLAST 属于不同层，不能直接并到同一段“三缓冲增强”描述里。本文先不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口，后续拿到 AOSP commit 再单列展开。
 
 [待补充：Trace 中三缓冲的监控方法]
 
@@ -345,7 +345,7 @@ return releaseFence;
 
 ## 软件渲染（Skia CPU）vs 硬件加速渲染（Skia OpenGL/Vulkan）
 
-上面我们看完了渲染管线的完整流程和 BufferQueue 的数据流转机制。接下来的核心问题是：App 进程内把 DisplayList 指令转化为像素的这一步，到底是怎么执行的？答案取决于渲染模式——软件渲染由 CPU 逐像素计算，硬件加速渲染则将指令提交给 GPU 并行处理。两种模式在性能特征、调试难度和适用场景上差异很大，理解这些差异是做渲染优化的前提。
+上面我们看完了渲染管线的完整流程和 BufferQueue 的数据流转机制。接下来拆解 App 进程内把 DisplayList 指令转化为像素的这一步，到底是怎么执行的？答案取决于渲染模式——软件渲染由 CPU 逐像素计算，硬件加速渲染则将指令提交给 GPU 并行处理。两种模式在性能特征、调试难度和适用场景上差异很大，理解这些差异是做渲染优化的前提。
 
 ### 软件渲染（Software Rendering）
 
@@ -366,7 +366,7 @@ canvas.drawRect(rect, paint);
 // 在 CPU 上完成所有像素计算
 ```
 
-软件渲染的优势在于调试简单和兼容性好——所有的绘制操作都在 CPU 上执行，耗时可以直接在 Trace 的主线程 CPU slice 中看到，不依赖 GPU 驱动的行为。但性能是它的硬伤：现代 GPU 拥有数千个并行计算核心，处理大规模像素填充和图形变换的效率远超 CPU。对于复杂的 2D 图形操作（比如包含大量 Path 操作的自定义 View），软件渲染尤其吃力，因为 Skia 的 CPU 光栅化是逐像素串行计算的。另一个常被忽视的问题是电耗——CPU 满负荷处理图形计算的功耗通常比 GPU 处理同一任务更高，因为 GPU 在设计上就是为图形运算优化的。
+软件渲染的优势在于调试简单和兼容性好——所有的绘制操作都在 CPU 上执行，耗时可以直接在 Trace 的主线程 CPU slice 中看到，不依赖 GPU 驱动的行为。但性能是它的硬伤：现代 GPU 拥有数千个并行计算核心，处理大规模像素填充和图形变换的效率远超 CPU。对于复杂的 2D 图形操作（比如包含大量 Path 操作的自定义 View），软件渲染尤其吃力，因为 Skia 的 CPU 光栅化是逐像素串行计算的。还有一个经常被忽视的维度：电耗——CPU 满负荷处理图形计算的功耗通常比 GPU 处理同一任务更高，因为 GPU 在设计上就是为图形运算优化的。
 
 不过在简单场景下，软件渲染偶尔可能更快——如果绘制内容极其简单（比如一个纯色矩形），避免了 OpenGL/Vulkan API 调用的固定开销，CPU 直接写内存反而更直接。这也是为什么在某些低端设备上关闭硬件加速后特定页面反而感觉更流畅的原因。
 
@@ -591,11 +591,11 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 ## 在 Perfetto 中的表现
 
-了解了渲染架构的各环节之后，最实际的问题是：这些东西在 Perfetto Trace 中长什么样？渲染管线的每一个阶段在 Trace 中都有明确的 Track 对应，这是我们定位渲染问题的关键入口。
+了解了渲染架构的各环节之后，从实操角度看：这些东西在 Perfetto Trace 中长什么样？渲染管线的每一个阶段在 Trace 中都有明确的 Track 对应，这是我们定位渲染问题的关键入口。
 
 **主线程 Track**（进程名下的主线程条）：Measure、Layout、Draw 三个阶段的执行时间在这里可见。正常情况下一次 performTraversals 应该在一个 VSync 周期内完成（60Hz 设备上不超过 16.67ms）。如果看到 performTraversals 的执行时间超过了 VSync 周期，或者 Measure 阶段出现了两次耗时尖峰，就需要关注 View 树的复杂度了。
 
-**Choreographer Track**：在主线程中可以看到 `Choreographer#doFrame` 的 slice，它标记了一个 VSync 周期内主线程开始处理渲染工作的时刻。如果 doFrame 的触发时间与 VSync 信号之间的间隔变大，说明 VSync 调度出了问题或主线程被其他操作阻塞了。
+**Choreographer Track**：主线程上会出现 `Choreographer#doFrame` 的 slice，它标记了一个 VSync 周期内主线程开始处理渲染工作的时刻。如果 doFrame 的触发时间与 VSync 信号之间的间隔变大，说明 VSync 调度出了问题或主线程被其他操作阻塞了。
 
 **RenderThread Track**（紧邻主线程的独立线程条）：drawFrame 的执行时间在这里体现。主线程完成 Draw 阶段后，会将 DisplayList 同步给 RenderThread，RenderThread 负责将绘制指令交给 GPU 执行。如果 RenderThread 的 drawFrame 耗时异常增长，通常意味着 GPU 成了瓶颈，或者绘制指令过于复杂。
 
@@ -635,7 +635,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 **Android 13（T，2022）** 进一步优化了 Vulkan 后端的支持，更多设备默认使用 Vulkan 进行 UI 渲染。
 
-**Android 16（2025）** 把图形栈的设备基线继续抬高：64 位新设备要求支持 Vulkan 1.4，Host Image Copy 让持续上传纹理和图像数据时少一次 staging copy；缓冲区排队和窗口事务侧继续沿着 BLASTBufferQueue / ASurfaceControl 路径演进，重点是把 buffer 与 transaction 的提交节奏继续拉齐。这里不把 `AsyncBufferQueue` 写成 Android 16 已公开落地的固定接口；如果后续拿到明确的 AOSP commit，再单独展开。面向应用层，AGSL 继续扩展 RuntimeColorFilter、RuntimeXfermode 这类可编程图形能力。
+**Android 16（2025）** 把图形栈的设备基线继续抬高：64 位新设备要求支持 Vulkan 1.4，Host Image Copy 让持续上传纹理和图像数据时少一次 staging copy；缓冲区排队和窗口事务侧继续沿着 BLASTBufferQueue / ASurfaceControl 路径演进，重点是把 buffer 与 transaction 的提交节奏继续同步。这里不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口；如果后续拿到明确的 AOSP commit，再单独展开。面向应用层，AGSL 继续扩展 RuntimeColorFilter、RuntimeXfermode 这类可编程图形能力。
 
 ## 常见问题与误区
 
