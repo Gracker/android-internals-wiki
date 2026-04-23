@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-23T08:27:03.420384+08:00",
+  "generated_at": "2026-04-23T09:22:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "finalized": 45,
-    "last_updated": "2026-04-23T09:15:00+08:00",
+    "last_updated": "2026-04-23T09:22:00+08:00",
     "pipeline_ready_to_publish": 45,
     "pipeline_stage_counts": {
       "task6_pending": 45,
@@ -13,13 +13,13 @@
       "task9_pending": 56
     },
     "pipeline_task2b_pending": 36,
-    "pipeline_task9_pending": 53,
+    "pipeline_task9_pending": 56,
     "ready-for-review": 136,
     "ready-to-publish": 0,
     "task2b_state_counts": {
       "fixed": 134,
-      "idle": 5,
-      "pending": 40
+      "pending": 40,
+      "idle": 5
     },
     "task6_state_counts": {
       "reviewed": 141,
@@ -27,14 +27,14 @@
       "pending": 1
     },
     "task9_state_counts": {
-      "fixed": 1,
+      "reviewed": 93,
       "pending": 88,
-      "reviewed": 93
+      "fixed": 1
     },
     "total": 211,
     "total_sections": 211,
-    "unknown": 0,
-    "task6_reviewed": 138
+    "unknown": 30,
+    "task6_reviewed": 141
   },
   "pipeline": {
     "pipeline_stage_counts": {
@@ -49,14 +49,14 @@
       "pending": 1
     },
     "task9_state_counts": {
-      "fixed": 1,
+      "reviewed": 93,
       "pending": 88,
-      "reviewed": 93
+      "fixed": 1
     },
     "task2b_state_counts": {
       "fixed": 134,
-      "idle": 5,
-      "pending": 40
+      "pending": 40,
+      "idle": 5
     }
   },
   "issues": {
@@ -1418,16 +1418,69 @@
       "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md": {
-      "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
       "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
       "chapter": "2.14",
       "status": "finalized",
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 4.0 (API 14) - Android 17 (API 37)",
-      "last_verified": "2026-04-19",
-      "last_verified_against": "source.android.com + developer.android.com + perfetto.dev + AOSP main + AndroidX WebGPU docs",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "source.android.com implement-vulkan + developer.android.com AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX WebGPU docs",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "official",
+          "path": "https://developer.android.com/ndk/guides/graphics"
+        },
+        {
+          "type": "official",
+          "path": "https://source.android.com/docs/core/graphics/implement-vulkan"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/ndk/guides/graphics/android-vulkan-profile"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/about/versions/15/features#graphics"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/GraphicsEnvironment.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/opengl/libs/EGL/Loader.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/libs/graphicsenv/GraphicsEnv.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "external/angle/"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/ndk/guides/graphics/validation-layer"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/games/optimize/adpf"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/develop/ui/views/graphics/webgpu"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/jetpack/androidx/releases/webgpu"
+        },
+        {
+          "type": "official",
+          "path": "https://perfetto.dev/docs/data-sources/frametimeline"
+        }
+      ],
       "tags": [
         "opengl-es",
         "vulkan",
@@ -1455,8 +1508,10 @@
       "task9_result": "pass-tech-review",
       "task9_reviewed_date": "2026-04-21",
       "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-23T09:22:00+08:00",
       "last_task9_at": "2026-04-21T00:05:03+08:00",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_by": "openclaw-task9",
+      "path": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md"
     },
     "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
@@ -2842,34 +2897,62 @@
       "last_task9_at": "2026-04-22T07:35:00+08:00"
     },
     "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
-      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
       "title": "文件系统",
       "chapter": "6.2",
       "section": "6.2",
       "status": "ready-for-review",
       "applicable_versions": "Android 10+",
       "last_verified": "2026-04-23",
-      "last_verified_against": "AOSP EROFS docs, source.android 16KB page size docs, kernel/common android15-6.6 include/linux/f2fs_fs.h, developer.android.com",
+      "last_verified_against": "AOSP EROFS docs + source.android 16KB page size docs + kernel/common android15-6.6 ext4 journal / f2fs segment,gc,uapi/linux/f2fs.h,include/linux/f2fs_fs.h + developer.android.com",
       "confidence": "medium",
       "drafted_date": "2026-04-01",
       "drafted_by": "openclaw-task2a",
       "polish_count": 1,
       "polish_date": "2026-04-07",
       "polish_by": "task2b-polish",
-      "reviewed_date": "2026-04-15",
+      "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
       "review_type": "scheduled-review",
-      "review_round": 3,
+      "review_round": 4,
       "review_notes": "2026-04-15 task6 review (round 3): pass-light-edit。修复frontmatter格式（outline-start误入YAML块）。全文无禁用词命中，无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。",
+      "sources": [
+        {
+          "type": "blog",
+          "path": "Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md"
+        },
+        {
+          "type": "blog",
+          "path": "Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md"
+        },
+        {
+          "type": "blog",
+          "path": "Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md"
+        },
+        {
+          "type": "official",
+          "path": "source.android.com/docs/core/storage"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/training/data-storage"
+        }
+      ],
+      "tags": [
+        "linux",
+        "android",
+        "research"
+      ],
       "task6_result": "pass-light-edit",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task9_result": "pass-tech-review-with-notes",
-      "task9_reviewed_date": "2026-04-15",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-23",
       "task9_reviewed_by": "openclaw-task9",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-23T09:22:00+08:00",
+      "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md"
     },
     "src/part1-fundamentals/ch06-storage/03-io-scheduling.md": {
       "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",

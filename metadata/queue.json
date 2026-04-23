@@ -1461,7 +1461,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T09:22:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
@@ -3092,7 +3096,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-23T08:45:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T09:22:00+08:00",
+      "fixed_by": "openclaw-task2b"
     }
   ],
   "pending": [
@@ -3874,35 +3882,6 @@
           "type": "版本差异覆盖",
           "location": "",
           "detail": "### [P1][版本差异覆盖][版本演进] 缺失 Android 15/16 的关键演进",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
-      "section_title": "图形 API 演进",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "版本差异/工具",
-          "location": "",
-          "detail": "- [P0][版本差异/工具][§ 7.3 Frame Timeline 中的表现差异]",
-          "suggestion": ""
-        },
-        {
-          "type": "版本差异/性能",
-          "location": "",
-          "detail": "- [P1][版本差异/性能][§ 1.2 第二代：Vulkan——显式控制的现代 API]",
-          "suggestion": ""
-        },
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- [P1][知识盲区][§ 1.2 Android Vulkan Profile 2025]",
           "suggestion": ""
         }
       ],
@@ -5299,38 +5278,6 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-04-23T07:24:46+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
-      "section_title": "文件系统",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 3 处技术问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L192 / ext4 vs f2fs 的 fsync 优化",
-          "detail": "正文把 ext4 默认 ordered mode 写成 jbd2 会记录“被修改的数据块完整内容”。Linux ext4 journal 文档明确说明默认 data=ordered 只把 metadata 写入 journal，只有 data=journal 才会连数据一起 journal。当前写法会把 ext4 的默认一致性模型与 data=journal 模式混成一条。",
-          "suggestion": "重写 ext4 / f2fs 的 fsync 对比：区分 data=ordered、data=journal 和 fast commit，再说明 f2fs 追加写 / NAT 映射为何降低同步写开销。"
-        },
-        {
-          "type": "源码错误",
-          "location": "L214-L216 / L564-L570 / F2FS 与 ext4 源码锚点",
-          "detail": "多处源码路径写成 kernel/linux/...，并把 `F2FS_IOC_START_ATOMIC_WRITE` 指到 `fs/f2fs/f2fs.h`、把结构定义指到不存在的 `f2fs_format.h`。android15-6.6 当前可核验路径是 `kernel/common/fs/f2fs/segment.c`、`kernel/common/fs/f2fs/gc.c`、`kernel/common/include/uapi/linux/f2fs.h`、`kernel/common/include/linux/f2fs_fs.h` 等。",
-          "suggestion": "统一成 AOSP checkout 路径（kernel/common/...）或上游 kernel 相对路径（fs/f2fs/...）；删除不存在的 `f2fs_format.h`，把 ioctl 常量改锚到 `include/uapi/linux/f2fs.h`。"
-        },
-        {
-          "type": "原理断裂 / 版本差异",
-          "location": "L207-L227 / Adaptive Logging",
-          "detail": "章节把 adaptive logging 写成“可用 segment 少于 5% 时，在 f2fs_balance_fs() 切到 threaded logging”。android15-6.6 当前源码的 SSR 决策入口是 `f2fs_need_SSR()`，条件依赖 dirty node/dentry/imeta、`min_ssr_sections`、`reserved_sections` 等，不是固定 5% 常量；正文还把 LFS/SSR 术语简化成“normal/threaded logging”，容易遮蔽当前实现边界。",
-          "suggestion": "按当前内核源码改写为 LFS / SSR 机制：说明 `f2fs_need_SSR()` 的判定条件、SSR 与 GC 的关系，并把 Android 5/8/12 的版本演进表降级为有源码/提交锚点的描述。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-23T08:45:00+08:00",
       "status": "pending"
     }
   ]

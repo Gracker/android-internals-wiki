@@ -5,8 +5,8 @@ status: finalized
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
-last_verified: "2026-04-19"
-last_verified_against: "source.android.com + developer.android.com + perfetto.dev + AOSP main + AndroidX WebGPU docs"
+last_verified: "2026-04-23"
+last_verified_against: "source.android.com implement-vulkan + developer.android.com AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX WebGPU docs"
 confidence: medium
 sources:
   - type: official
@@ -49,6 +49,7 @@ review_log: "logs/review/2026-04-11-13-review.md"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-21"
 task2b_result: fixed
+last_task2b_at: "2026-04-23T09:22:00+08:00"
 last_task9_at: "2026-04-21T00:05:03+08:00"
 task9_reviewed_by: openclaw-task9
 ---
@@ -106,9 +107,9 @@ Vulkan 1.0 就已经提供了 OpenGL ES 不具备的核心能力：Command Buffe
 
 上表说的是平台 / OEM 侧的 Vulkan 版本基线，我们可以把它理解为“这一代 Android 对新设备希望具备什么 Vulkan 能力”；它不等于“所有升级到该版本的旧设备都会自动获得同样的 Vulkan 版本”。
 
-**Android Vulkan Profile 2025（AVP 2025）** 不是平台最低门槛，而是面向活跃设备生态的兼容 profile。官方 AVP 页面把它定义为一组“在绝大多数活跃 Android 设备上都能找到”的 Vulkan 扩展、特性、格式和 limits，用来帮助游戏和引擎选择一条更稳定的跨设备能力集合。
+**Android Vulkan Profile 2025（AVP 2025）** 面向活跃设备生态定义了一组兼容能力集合，适合拿来描述更稳定的跨设备能力面。官方页面已经说明，早期资料里的 **Android Baseline Profiles（ABP）** 正在统一更名为 **Android Vulkan Profiles（AVP）**；如果你在旧分享或旧 JSON 里还看到 ABP，可以把它理解为同一条能力线的旧称。
 
-AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展 profile 能力集合，官方点名的是额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。它更适合拿来做 capability audit 和 feature gating：先看目标设备是否满足这组 profile，再决定默认开启哪些渲染路径。像 `VK_EXT_host_image_copy` 这类具体扩展，需要单独按 Vulkan 版本、扩展支持和设备实现核实，不宜直接写成“AVP 2025 必带项”。
+AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展 profile 能力集合，官方点名的是额外内存特性、浮点控制、host query reset，以及更多标准化像素格式。它更适合拿来做 capability audit 和 feature gating：先看目标设备是否满足这组 profile，再决定默认开启哪些渲染路径。到了 Android 16，新发设备的 Vulkan 平台基线已经抬到 1.4，这时像 `VK_EXT_host_image_copy` / Host Image Copy 这样的上传路径能力就值得单独核对：它允许 CPU 直接把数据拷到 image，减少 staging buffer 和额外 copy，纹理流式加载、首帧资源上传和后台资源预热都更容易压住卡顿。是否真的可用，仍要以目标设备暴露的 Vulkan version、feature 和 extension 为准。
 
 [已验证: 官方文档, developer.android.com/ndk/guides/graphics/android-vulkan-profile]
 
@@ -356,19 +357,19 @@ data_sources {
 
 ### AGI 与不同 API 的兼容性
 
-Android GPU Inspector（AGI）是 Google 官方的 GPU 分析工具（详见 §14.8）。AGI 的 API 支持情况：
+Android GPU Inspector（AGI）是 Google 官方的 GPU 分析工具（详见 §14.8）。AGI 的支持边界要按具体版本和 capture mode 看，正文里只保留稳定结论：
 
-- **Vulkan 应用**：AGI 直接捕获和分析 Vulkan 调用，支持逐 draw call 的 GPU 时间分析
-- **OpenGL ES 应用**：AGI 通过自定义的 ANGLE build 将 GLES 命令翻译为 Vulkan 进行追踪。这意味着即使是 GLES 应用，AGI 也是通过 Vulkan 路径来分析
-- **AGI 2026 路线图**：[待验证: 公开路线图链接待补] 改进版 System Profiler（2026 H1，支持超大 trace、帧截图、开源）和高级 Frame Profiler Alpha（2026 H2，基于 GFXReconstruct，支持 frame looping 和 render pass graph 分析）
+- **Vulkan 应用**：AGI 可以直接捕获和分析 Vulkan 调用，适合做 draw call、render pass 和 GPU 时间分布分析
+- **OpenGL ES 应用**：常见做法是借助 ANGLE 或图形重放路径把 GLES 工作映射到 Vulkan 视角，因此可见内容会受设备、驱动和 capture 模式限制
+- **工具能力更新**：长时 system trace、帧截图、Frame Profiler 这类能力更新很快，实战时直接对照当期 AGI release notes，不要把某一年的路线图当成稳定事实
 
 [已验证: AGI 官方文档, developer.android.com/agi]
 
 ### Frame Timeline 中的表现差异
 
-Frame Timeline（帧时间线）要求 Android 12(S) 及以上。Perfetto 文档还明确写着 `SurfaceViews are currently not supported`，所以它更适合用来看普通应用窗口的帧结果，以及回答“哪一帧晚了、晚在 App 还是晚在 SurfaceFlinger”。如果你在 Android 10-11 上排查，UI 里不会看到 `Expected Timeline` / `Actual Timeline`，对应的 FrameTimeline 表也不存在。
+Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timeline` / `Actual Timeline` 这组轨道适合回答“哪一帧晚了、晚在 App 还是晚在 SurfaceFlinger”。如果你在 Android 10-11 上排查，UI 里不会看到这组轨道，对应的 FrameTimeline 表也不存在。
 
-对游戏和 `SurfaceView` 场景，更可靠的入口仍是 `SurfaceView` buffered frames、`gpu.renderstages`、Swappy stats，以及应用自己的 driver / backend 自检日志。Frame Timeline 关注的是 frame result，不直接告诉我们这一帧背后走的是 native Vulkan、native GLES 还是 ANGLE；具体的 Swappy 验证路径见 §2.17。
+截至 2026-04，Perfetto 公开文档仍把 `SurfaceView` 标成 `SurfaceViews are currently not supported`。Android 15 引入的 `ProfilingManager`，以及 Android 16 新增的 system-triggered profiling，解决的是 trace 更容易抓、关键事件更容易关联；它们不等于 Frame Timeline 已经补齐 `SurfaceView` 的 `Actual Timeline`。所以在游戏、相机预览、播放器这类 `SurfaceView` 场景里，更稳的入口仍是 `SurfaceView` buffered frames、`gpu.renderstages`、Swappy stats，以及应用自己的 driver / backend 自检日志。Frame Timeline 关注的是 frame result，不直接告诉我们这一帧背后走的是 native Vulkan、native GLES 还是 ANGLE；具体的 Swappy 验证路径见 §2.17。
 
 [已验证: Perfetto 官方文档, https://perfetto.dev/docs/data-sources/frametimeline]
 
@@ -416,7 +417,7 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。Perfetto 文档
 |---|---|---|
 | 现有 GLES 应用 | 该包在目标设备上究竟走 native GLES 还是 ANGLE | 用 developer option、app 日志、进程 maps 做一次确认 |
 | 游戏 / 重负载渲染 | ANGLE 是否带来额外 shader / pipeline 抖动，或绕开原生 driver bug | 分别测首帧、稳态帧、shader warm-up |
-| Vulkan 应用 | 是否满足 Android 13 / 16 的 Vulkan 1.3 / 1.4 基线，以及目标 AVP profile | 对照 `implement-vulkan` 和 AVP 页面做 capability audit |
+| Vulkan 应用 | 是否满足 Android 13 / 16 的 Vulkan 1.3 / 1.4 基线，以及目标 AVP profile（旧资料常写 ABP） | 对照 `implement-vulkan` 和 AVP 页面做 capability audit |
 | WebView / WebGL / WebGPU | Chromium / Dawn backend 与系统 GLES driver 是否一致，浏览器侧是否单独限制某条能力 | 单独看 Chromium / WebView / Dawn 的构建与运行时配置 |
 | NDK 图形代码 | 代码是否把“GLES == 厂商原生驱动”当成硬编码假设 | 清理这些假设，改成运行时检测 |
 
@@ -445,7 +446,7 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。Perfetto 文档
 
 - [Android NDK Graphics Guide](https://developer.android.com/ndk/guides/graphics) — GLES / Vulkan 官方入口
 - [Implement Vulkan](https://source.android.com/docs/core/graphics/implement-vulkan) — Android 版本与 Vulkan 能力基线
-- [Android Vulkan Profile](https://developer.android.com/ndk/guides/graphics/android-vulkan-profile) — AVP 2025 与 profile 说明
+- [Android Vulkan Profile](https://developer.android.com/ndk/guides/graphics/android-vulkan-profile) — AVP 2025（旧称 ABP）与 profile 说明
 - [Android 15 Features: Graphics](https://developer.android.com/about/versions/15/features#graphics) — ANGLE as optional layer 与官方 roadmap
 - [Android Dynamic Performance Framework](https://developer.android.com/games/optimize/adpf) — 热 / 功耗信号与 hint session 能力
 - [Vulkan validation layers on Android](https://developer.android.com/ndk/guides/graphics/validation-layer) — Validation Layer 的使用边界
