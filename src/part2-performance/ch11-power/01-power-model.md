@@ -13,8 +13,8 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-21"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-23"
+last_verified_against: "AOSP android-16.0.0_r1 + BatteryStatsImpl.shouldResetOnUnplugLocked()"
 confidence: medium
 sources:
   - type: aosp
@@ -39,14 +39,15 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 last_task9_at: '2026-04-23T04:05:49+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-23'
 task2b_result: fixed
+last_task2b_at: "2026-04-23T08:16:00+08:00"
 ---
 
 
@@ -225,7 +226,9 @@ BatteryStats 的数据采集采用两种机制：
 
 ### 数据存储与持久化
 
-BatteryStats 的数据以二进制格式存储在 `/data/system/batterystats.bin` 文件中。每次设备充电完成（从充电状态变为满电或拔掉充电器），BatteryStats 会记录一个"充电周期"（charge cycle），并在新一轮周期开始时重置统计计数器。这就是为什么 Battery Historian 分析时建议先重置再采集数据的原因——重置操作清空的是上一个周期的累积数据，开始一个干净的采集窗口。
+BatteryStats 的数据以二进制格式存储在 `/data/system/batterystats.bin` 文件中。自动 reset 不是每次充满或每次拔掉充电器都会发生。`android-16.0.0_r1` 的 `BatteryStatsImpl.shouldResetOnUnplugLocked()` 只在几类条件下触发 reset：设备处于满电或高电量区间、从很低电量充到较高电量的显著充电，或者统计 session 因反复部分充放电拖得过长。没有满足这些条件时，拔掉充电器只会继续沿用当前统计窗口，不会重置计数器。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/BatteryStatsImpl.java]
+
+Battery Historian 常说的“先 reset 再采集”，指的是手动执行 `adb shell dumpsys batterystats --reset` 来切出一个干净窗口。这和系统在 unplug 时按条件自动 reset，是两套不同机制。
 
 ### dumpsys batterystats：查看原始数据
 
@@ -404,7 +407,7 @@ ODPM 目前也有几个比较明确的局限：
 **dumpsys batterystats**：命令行工具，输出 BatteryStats 的原始统计数据。适合脚本化分析和自动化测试场景。常用命令组合：
 
 ```bash
-# 重置统计（开始新的采集周期）
+# 手动重置统计（切出新的采集窗口）
 adb shell dumpsys batterystats --reset
 
 # 导出完整统计

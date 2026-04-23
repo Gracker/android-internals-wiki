@@ -5,8 +5,8 @@ chapter: "1.15"
 status: ready-for-review
 drafted_date: "2026-04-06"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-22"
-last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
+last_verified: "2026-04-23"
+last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com @CriticalNative"
 confidence: medium
 sources:
   - type: official
@@ -46,19 +46,19 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-23'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-23T04:05:49+08:00'
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
-last_task2b_at: "2026-04-22T23:53:44+08:00"
+last_task2b_at: "2026-04-23T08:16:00+08:00"
 ---
 
 # 1.15 JNI/NDK 性能优化
@@ -84,7 +84,7 @@ last_task2b_at: "2026-04-22T23:53:44+08:00"
   `FindClass()` / `GetMethodID()` / `GetFieldID()` 应该在初始化阶段缓存；热路径优先做批量传输和粗粒度 API 设计，而不是每个元素一次 JNI 调用。
 
 - 🔹 **`@FastNative` 和 `@CriticalNative` 的边界完全不同**：[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/FastNative, https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative, frameworks/base/core/java/android/os/Parcel.java, frameworks/base/core/java/android/os/Binder.java]
-  `@FastNative` 可以处理托管对象；`@CriticalNative` 不能携带 `String`、对象引用或隐式 `this`，也没有 `JNIEnv*` / `jclass` 参数。primitive array 在 Java 声明里仍然可用，但 native 侧 ABI 会把它展开成 `jsize` 加原始指针；`String` 和对象数组仍然不行。
+  `@FastNative` 可以处理托管对象；`@CriticalNative` 的公开约束是方法不能使用托管对象，也不能依赖隐式 `this`，native 侧函数签名里没有 `JNIEnv*` / `jclass`。面向应用的兼容性建议应收敛到 `static native` + primitive 标量参数/返回值；数组不要写成稳定承诺。
 
 - 🔹 **线程和引用生命周期比单次 transition 更常见地出问题**：[已验证: https://developer.android.com/training/articles/perf-jni]
   `JNIEnv*` 线程私有，不能跨线程共享；`AttachCurrentThread()` 创建的是可调用 JNI 的线程上下文，不该放在每次任务里反复做；attached native 线程创建的 local reference 不会像普通 JNI 调用那样自动清理。
@@ -130,7 +130,7 @@ last_task2b_at: "2026-04-22T23:53:44+08:00"
 | `@FastNative` | 35ns | 运行时少做一部分状态切换后，开销能明显下降 |
 | `@CriticalNative` | 25ns | 把 ABI 收紧到只有 primitive 参数/返回值时，过边界还能再快一点 |
 
-官方公开表仍停在 2016 年的 `angler-userdebug`。近两年的旗舰机实测通常已经明显低于这组数值，常规 JNI 往往落在几十纳秒级，`@FastNative` 和 `@CriticalNative` 还会继续往下压；但芯片、ART 版本、调用点是否已经 AOT/JIT 编译，都会把结果拉开，所以这些数字只能用来建立量级感。
+官方公开表仍停在 2016 年的 `angler-userdebug`。这组数字只能用来建立量级感，不能外推到今天任何设备；芯片、ART 版本、调用点是否已经 AOT/JIT 编译，都会把结果拉开。需要当前设备结论时，应该在目标机型上单独测。
 
 这组数字最容易被误用的地方有两个。第一，把它当成今天 Pixel 8、骁龙 8 Gen 4 或某台车机上的绝对值。第二，只盯着单次调用的纳秒数，却不算调用次数。假设一帧里做 1000 次普通 JNI，光 transition 的参考量级就是 `1000 × 115ns ≈ 115μs`。它仍然不是 16.67ms 帧预算里的大头，但已经不再是可以完全无视的噪声，何况真实业务里往往还夹着字符串、数组、对象和锁。
 
@@ -179,7 +179,7 @@ private static native void nativeWriteString16(long nativePtr, String val);
 
 再看 `@CriticalNative`。官方文档给出的硬约束是：方法不能使用托管对象，也不能依赖隐式 `this`，所以 Java 侧通常必须写成 `static native`。native 侧函数签名里也没有 `JNIEnv*` 和 `jclass` 参数，因为 JNI transition 的 ABI 已经换成更短的一套。
 
-primitive array 是一个常见误写点。Java 声明里仍然可以出现 `byte[]`、`int[]` 这类参数；native 侧会把它们展开成 `jsize` 长度加原始数据指针。`String`、对象、对象数组和隐式 `this` 仍然不在支持范围内。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative, intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md]
+数组边界是这一节最容易写错的地方。Java 数组本身也是托管对象，而当前公开文档没有把 `byte[]`、`int[]` 这类参数列成稳定承诺，因此正文不再写成“primitive array 一定可用”。面向应用侧的安全边界，收敛到 primitive 标量参数/返回值更稳；如果确实要依赖数组语义，应先核对当前 ART 源码与测试，再决定是否采用。[已验证: https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative]
 
 AOSP 里真正符合这条规则的例子很多，`frameworks/base/core/java/android/os/Binder.java` 里的 `getCallingUid()` 就很典型：
 
