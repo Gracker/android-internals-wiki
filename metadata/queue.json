@@ -3674,6 +3674,96 @@
       "added_at": "2026-04-24T03:39:00+08:00",
       "status": "pending",
       "task2b_state": "pending"
+    },
+    {
+      "section": "2.9",
+      "section_title": "渲染机制的版本演进",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.9 仍含 EGL 阻塞语义和 ARR 公共 API 归属错误",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-04-24-05-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L125「RenderThread：主线程与 GPU 命令的分离」",
+          "detail": "`eglSwapBuffers()` 被写成“本身非阻塞、真正阻塞的是 `glFinish()`”。EGL/Android 实际上常在 `eglSwapBuffers()` 处因为 back-pressure、fence 或 swap interval 节流阻塞调用线程，把它写成天然非阻塞会误导对 swap stall 的 Perfetto 归因。",
+          "suggestion": "改成“`eglSwapBuffers()` 可能阻塞，`glFinish()` 是更强的显式同步”，并把 buffer availability / fence / vsync 节流三类等待来源区分开。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L237「Android 16 ARR 公共 API」",
+          "detail": "把 `setRequestedFrameRate(float)` 和 `setFrameRatePowerSavingsBalanced(boolean)` 并列写成“View / Window 侧”的同类 API，但公开 SDK 中前者属于 `View`，后者属于 `Window`。当前写法会把 API 归属和调用位置混淆。",
+          "suggestion": "分别标注 `View#setRequestedFrameRate(float)` 与 `Window#setFrameRatePowerSavingsBalanced(boolean)`，并补 `Display#hasArrSupport()` / `Display#getSuggestedFrameRate(int)` 的调用边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-24T05:21:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
+      "section": "13.2",
+      "section_title": "Trace 抓取",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.2 的 TraceConfig 示例包含不可解析的 pbtxt 条件分支",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-04-24-05-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L267-L275「通用配置」示例",
+          "detail": "示例把 `if (device_api_level >= 31) { ... }` 直接写进 Perfetto `TraceConfig` 的 `.pbtxt`。TraceConfig 是 protobuf text format，不支持运行时条件分支；照抄这段配置会直接解析失败。",
+          "suggestion": "删除内联 `if`，改成“Android 12+ 单独配置样例”或明确由 host 侧脚本生成不同 pbtxt。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L267-L275「通用配置」示例",
+          "detail": "正文想表达 FrameTimeline 只在 Android 12+ 可用，但没有给出低版本可执行的替代配置，读者拿到的是一份不可直接落地的跨版本模板。",
+          "suggestion": "补两份最小配置：Android 12+ 含 `android.surfaceflinger.frametimeline`，Android 10/11 只保留 ftrace / process_stats / sys_stats。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-24T05:21:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
+      "section": "13.8",
+      "section_title": "Perfetto 输入延迟 SQL 深度分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.8 仍含 android.input schema 与 FrameTimeline 数据源名称错误",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-04-24-05-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L151-L160「android_motion_events 与 android_key_events」",
+          "detail": "正文把 `android_motion_events` / `android_key_events` 描述成只公开 `id, event_id, ts, arg_set_id`，并说动作类型等字段必须从 `arg_set_id` 继续解包。但 Perfetto stdlib 当前 schema 还公开了 `source`、`action`、`device_id`、`display_id`，`android_key_events` 还公开 `key_code`。",
+          "suggestion": "按当前 stdlib schema 重写表结构说明，并把“需要去 `arg_set_id` 解包”的范围收窄到坐标等 proto 细节字段。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L587-L605「自定义 input trace config / 输入 + 帧联合配置」",
+          "detail": "示例把 FrameTimeline 数据源写成 `android.frame_timeline`。公开 Perfetto 录制配置里使用的是 `android.surfaceflinger.frametimeline`；按文中名字写配置，无法按预期采到 FrameTimeline。",
+          "suggestion": "改成 `android.surfaceflinger.frametimeline`，并明确 Android 12+ 版本边界。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L665-L679「批量 Trace 的输入延迟对比 / shell 脚本」",
+          "detail": "Here-doc 使用 `<< 'SQL'` 会关闭 shell 变量展开，结果 `${filename}` 会作为字面量写进 SQL，而不是当前 trace 文件名。示例脚本与“按文件名输出 trace_name”描述不一致。",
+          "suggestion": "改成未加引号的 heredoc，或把 `trace_name` 作为外层 shell 变量拼进 SQL。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-24T05:21:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
     }
   ]
 }
