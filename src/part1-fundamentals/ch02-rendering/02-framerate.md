@@ -13,8 +13,8 @@ polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 applicable_versions: Android 4.1 (API 16) - Android 16 (API 36)
-last_verified: '2026-03-30'
-last_verified_against: AOSP android-16.0.0_r1, 官方文档最新版本
+last_verified: '2026-04-24'
+last_verified_against: AOSP android-16.0.0_r1, 官方文档最新版本, Android 35 SDK sources
 confidence: high
 sources:
 - type: official
@@ -25,6 +25,10 @@ sources:
   path: https://developer.android.com/develop/ui/views/layout/swinging-area
 - type: official
   path: https://developer.android.com/reference/android/view/FrameMetrics
+- type: official
+  path: https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float)
+- type: official
+  path: https://developer.android.com/reference/android/view/Window#setFrameRatePowerSavingsBalanced(boolean)
 - type: official
   path: https://developer.android.com/reference/android/os/FrameRateOverride
 - type: research
@@ -244,6 +248,23 @@ surface.setFrameRate(24f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,
 `CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS` 参数表示只有在不产生视觉中断（无缝切换）的情况下才切换刷新率。如果从 60Hz 切换到 120Hz 需要 mode switch（有黑屏风险），那系统可能就不会切换。
 
 **WindowManager.LayoutParams.preferredDisplayModeId**：直接指定一个显示模式（包含分辨率和刷新率的组合）。这比 `setFrameRate()` 更强力，但需要 App 知道具体的 mode ID，且切换时可能有视觉中断。
+
+### Android 15：View 和 Window 级帧率提示
+
+Android 15（API 35）把帧率提示从 Surface 扩到了 View / Window 层，适合 UI 驱动的高刷场景。
+
+- `View.setRequestedFrameRate(float)`：可以直接传 90f、120f 这类目标值，也可以传 `REQUESTED_FRAME_RATE_CATEGORY_NO_PREFERENCE`、`LOW`、`NORMAL`、`HIGH` 这四个类别常量。请求只作用在当前 View，不会从 ViewGroup 自动下传到子 View；View 持续 invalidation、持续出帧时，系统才会把它纳入后续决策。
+- `Window.setFrameRatePowerSavingsBalanced(true)`：告诉系统这个窗口接受“流畅度和功耗一起平衡”。在高温、低电量或系统有功耗压力时，系统可以更积极地把窗口拉回较低刷新率。
+
+```java
+recyclerView.setRequestedFrameRate(View.REQUESTED_FRAME_RATE_CATEGORY_HIGH);
+heroCard.setRequestedFrameRate(90f);
+window.setFrameRatePowerSavingsBalanced(true);
+```
+
+这几层接口要分开用。视频、Camera 预览、游戏 Surface 这类直接 producer 继续优先用 `Surface.setFrameRate()`；普通 View 树里某一块区域需要更高跟手性时，再用 `View.setRequestedFrameRate()`；整窗愿意换续航时，再补 `Window.setFrameRatePowerSavingsBalanced(true)`。Android 15 没有单独的 `setRequestedFrameRateCategory()` 方法，类别常量就是传给 `setRequestedFrameRate(float)` 的特殊取值。
+
+[已验证: Android 35 SDK sources, android/view/View.java、android/view/Window.java、api-versions.xml]
 
 ### Config Group：让切换无缝
 
@@ -709,7 +730,7 @@ SurfaceFlinger 会根据前台 App 的类型自动决定是否使用高刷新率
 ### 对 App 开发者的建议
 
 1. **不要盲目追求 120Hz**：如果 App 的 `doFrame` 耗时在 10-15ms，在 120Hz 下会频繁掉帧。不如稳定运行在 60Hz。
-2. **使用 `setFrameRate()` 告知系统渲染需求**：如果是视频播放器，明确设置 24/30/60 FPS，让系统选择最佳刷新率。
+2. **按内容层级声明帧率需求**：视频、Camera 预览、游戏 Surface 用 `Surface.setFrameRate()`；View 树里的局部高刷区域用 `View.setRequestedFrameRate()`；窗口允许续航优先时，再打开 `Window.setFrameRatePowerSavingsBalanced(true)`。
 3. **关注帧间隔一致性**：在 120Hz 设备上，即使 FPS 显示 120，如果帧间隔波动大（比如 6ms、8ms、10ms、5ms 交替），用户感知到的流畅度可能还不如稳定的 60Hz。
 
 [自动发现: 来源 web research on SurfaceFlinger refresh rate selection]
@@ -771,6 +792,8 @@ FPS 是一个统计指标，60 FPS 只说明"一秒钟内渲染了 60 帧"，但
 1. **官方文档**：
    - [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
    - [Surface.setFrameRate()](https://developer.android.com/reference/android/view/Surface#setFrameRate)
+   - [View.setRequestedFrameRate()](https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float))
+   - [Window.setFrameRatePowerSavingsBalanced()](https://developer.android.com/reference/android/view/Window#setFrameRatePowerSavingsBalanced(boolean))
    - [Android Frame Pacing Library](https://developer.android.com/games/sdk/frame-pacing)
    - [Game Mode API](https://developer.android.com/games/sdk/game-mode)
    - [JankStats 库](https://developer.android.com/reference/androidx/metrics/performance/JankStats)
