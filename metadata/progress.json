@@ -1,60 +1,60 @@
 {
-  "generated_at": "2026-04-23T09:22:00+08:00",
+  "generated_at": "2026-04-23T11:54:09+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "finalized": 45,
-    "last_updated": "2026-04-23T09:22:00+08:00",
+    "last_updated": "2026-04-23T11:54:09+08:00",
     "pipeline_ready_to_publish": 45,
     "pipeline_stage_counts": {
-      "task6_pending": 45,
+      "task6_pending": 46,
       "task2b_pending": 36,
       "ready-to-publish": 45,
       "task9_pending": 56
     },
     "pipeline_task2b_pending": 36,
     "pipeline_task9_pending": 56,
-    "ready-for-review": 136,
+    "ready-for-review": 137,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 134,
+      "fixed": 135,
       "pending": 40,
       "idle": 5
     },
     "task6_state_counts": {
       "reviewed": 141,
-      "revisiting": 40,
+      "revisiting": 41,
       "pending": 1
     },
     "task9_state_counts": {
       "reviewed": 93,
-      "pending": 88,
+      "pending": 89,
       "fixed": 1
     },
     "total": 211,
     "total_sections": 211,
-    "unknown": 30,
+    "unknown": 29,
     "task6_reviewed": 141
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 45,
+      "task6_pending": 46,
       "task2b_pending": 36,
       "ready-to-publish": 45,
       "task9_pending": 56
     },
     "task6_state_counts": {
       "reviewed": 141,
-      "revisiting": 40,
+      "revisiting": 41,
       "pending": 1
     },
     "task9_state_counts": {
       "reviewed": 93,
-      "pending": 88,
+      "pending": 89,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 134,
+      "fixed": 135,
       "pending": 40,
       "idle": 5
     }
@@ -1674,7 +1674,6 @@
       "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md": {
-      "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
       "title": "刷新率切换与帧率适配性能",
       "chapter": "2.19",
       "section": "2.19",
@@ -1682,9 +1681,47 @@
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 11 (API 30) - Android 17 (API 37)",
-      "last_verified": "2026-04-11",
-      "last_verified_against": "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "expert-insight",
+          "path": "intake/research-feeds/2026-04-06-gracker-jank-insights.md"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/android/view/Surface#setFrameRate"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/android/view/Display#getSuggestedFrameRate(int)"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float)"
+        },
+        {
+          "type": "research",
+          "path": "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
+        }
+      ],
       "tags": [
         "refresh-rate",
         "frame-rate",
@@ -1711,7 +1748,8 @@
       "reviewed_date": "2026-04-19",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md"
     },
     "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md": {
       "path": "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
@@ -1792,6 +1830,30 @@
       "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch02-rendering/README.md": {
+      "title": "渲染系统总纲",
+      "chapter": "2.0",
+      "section": "2.0",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-23",
+      "drafted_by": "openclaw-task2b",
+      "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "ch02-rendering 目录结构、AOSP android-16.0.0_r1 渲染流程说明、external review 资产",
+      "confidence": "medium",
+      "tags": [
+        "rendering",
+        "SurfaceFlinger",
+        "BufferQueue",
+        "BLAST",
+        "sync-fence",
+        "FrameTimeline",
+        "ARR"
+      ],
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "path": "src/part1-fundamentals/ch02-rendering/README.md"
     },
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md": {
