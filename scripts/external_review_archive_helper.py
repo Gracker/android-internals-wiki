@@ -21,6 +21,13 @@ def load_text(path: Path) -> str:
 
 
 def infer_section(path: Path) -> str | None:
+    # Simple section-slug pattern: 9.1-anr-design.md → 9.1, 18.21-eyedropper.md → 18.21
+    m_simple = re.fullmatch(r"(\d+\.\d+)-.+\.md$", path.name)
+    if m_simple:
+        return m_simple.group(1)
+    # Batch-summary / README: 10.batch-summary.md → skip (no section)
+    if path.name.endswith(".batch-summary.md") or path.name.endswith(".README.md"):
+        return None
     # New pattern: 15.XX-YY-slug.md or 15.XX-YY.md → XX.YY
     m_new = re.fullmatch(r"(\d+)\.(\d{2})-(\d{2})(?:-.+)?\.md$", path.name)
     if m_new:

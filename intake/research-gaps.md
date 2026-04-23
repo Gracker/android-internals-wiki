@@ -2748,3 +2748,243 @@ BufferStuffing 在 Perfetto 中的精确定位
 
 ### 外部 review 来源
 - 外部 AI review (Gemini)
+
+
+## [2026-04-23] 9.1 ANR 设计思想 — 知识盲区
+
+### 盲区描述
+ANR 过程中的 Dump 卡顿阻塞：当目标进程极其卡顿或遭遇长时间锁等待时，SIGQUIT 触发的虚拟机 dump 过程本身是否会因为超时而被截断，从而留下不完整的 traces.txt。
+
+### 重要程度
+中
+
+### 建议研究方向
+- art/runtime/signal_catcher.cc 中 SIGQUIT 后的线程暂停与挂起等待超时机制
+- traces.txt 不完整场景的系统侧证据
+
+### 关联章节
+- 9.1, 9.3
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 9.2 ANR 类型与触发条件 — 知识盲区
+
+### 盲区描述
+ContentProvider 客户端查询超时机制：官方引入了 CancellationSignal 和 API 31+ 的 getProviderMimeTypeAsync()，但系统侧是否有主动的 Watchdog 机制干预客户端长时阻塞。
+
+### 重要程度
+中
+
+### 建议研究方向
+- ContentProviderNative.java 和 ContentResolver.java 中的客户端超时处理
+- Binder 枯竭之外是否有系统侧主动干预
+
+### 关联章节
+- 9.2, 9.4
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 9.3 ANR 分析方法 — 知识盲区
+
+### 盲区描述
+GWP-ASan 与 Native 层 ANR 排查：当 traces.txt 长期卡在 Native 层某个库调用时，如何结合 GWP-ASan 或 HWASan 确认是否因内存踩踏或死锁导致不可恢复阻塞。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Android 11+ GWP-ASan 生产环境 Native 内存错误采样
+- ApplicationExitInfo.getTraceInputStream 在多进程共享场景下的读取限制
+
+### 关联章节
+- 9.3, 10.1
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 9.4 特殊场景的 ANR — 知识盲区
+
+### 盲区描述
+FileObserver 与隐性 I/O ANR：部分第三方 SDK 过度使用 FileObserver 监听文件变化，是否会在高频 I/O 时引发内核层面的 inotify 锁竞争并导致主线程 ANR。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Linux kernel fsnotify 机制在极高并发下的表现
+- AOSP bug tracker 中 inotify 相关 ANR issue
+
+### 关联章节
+- 9.4
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 9.5 案例集 — 知识盲区
+
+### 盲区描述
+Looper.Observer 在 Android 16+ 的合规性：文章使用 Hidden API 实现 LooperMonitor，在 Android 16+ 收紧 Non-SDK 接口后，是否有官方 Looper Profiling API 替代。
+
+### 重要程度
+低
+
+### 建议研究方向
+- Android 16+ 非 SDK 接口灰/黑名单更新
+- APM 厂商是否有特权接口
+
+### 关联章节
+- 9.5
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 9.6 Notification 性能与 ANR — 知识盲区
+
+### 盲区描述
+大量图片通知导致 SystemUI 崩溃：应用滥用大图且频繁更新时，是否会引发 TransactionTooLargeException 或导致 SystemUI 进程 OOM。
+
+### 重要程度
+中
+
+### 建议研究方向
+- NotificationManager.java 中 Parcel 序列化大小限制
+- RemoteViews 跨进程膨胀的内存边界
+
+### 关联章节
+- 9.6
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 9.7 ANR 非技术故障诊断 — 知识盲区
+
+### 盲区描述
+厂商定制的 App 冻结策略黑盒：国产 ROM 的"神仙秒杀"、"墓碑机制"通常绕过标准 am_freeze 日志，如何在 Perfetto 或内核日志中识别这些私有冻结行为引发的"伪 ANR"。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Linux kernel cgroup v1/v2 freezer 状态在 Perfetto ftrace 中的特征
+- 各大厂商 ROM 冻结机制的逆向分析
+
+### 关联章节
+- 9.7, 17.1
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 10.1 App 内存分析 — 知识盲区
+
+### 盲区描述
+GWP-ASan 在生产环境的应用：Android 11+ 引入的 GWP-ASan 专为线上生产环境 Native 内存错误采样设计，开销极低，可作为 ASan/HWASan 的线上补充。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Android 官方 GWP-ASan 集成与崩溃日志上报指南
+- 与 ASan/HWASan 的定位差异
+
+### 关联章节
+- 10.1, 10.2
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 10.2 内存泄漏 — 知识盲区
+
+### 盲区描述
+fork 子进程 Dump 的底层限制：线上 OOM 监控常使用 fork 子进程抓取 Hprof（如 Koom），但在 Android 10+ 部分厂商魔改系统上，fork 可能受 SELinux 或 cgroup 限制而失败。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Koom 官方 GitHub Issue 中各种定制 ROM 兼容性填坑经验
+- SELinux / cgroup 对 fork 子进程的约束边界
+
+### 关联章节
+- 10.2
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 10.3 内存持续增长 — 知识盲区
+
+### 盲区描述
+GKI 2.0 对 Native 内存碎片的透明整合：Android 12+ 引入的 GKI 及 MGLRU 等内核特性是否在系统底层进一步缓解了 App 视角的物理碎片化感知。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Linux 内核 MGLRU 与 Android GKI 的协同
+- App 视角下物理碎片化的可观测性变化
+
+### 关联章节
+- 10.3, 10.4
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 10.4 低内存对系统性能的影响 — 知识盲区
+
+### 盲区描述
+eBPF 在内存压力精准归因中的应用：现代 Android 性能团队是否开始使用 eBPF 来精确统计哪行代码触发了最多的 Direct Reclaim 耗时。
+
+### 重要程度
+中
+
+### 建议研究方向
+- AOSP system/bpf 目录中 BPF 工具
+- Linux BPF 社区针对 Android 内存延迟监控的实践
+
+### 关联章节
+- 10.4
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 10.5 案例集 — 知识盲区
+
+### 盲区描述
+GWP-ASan 对闭源 GPU 驱动内部泄漏的可见性：类似 renderD128 驱动层缓存池导致的虚拟内存爆掉，在开启 GWP-ASan 或 hwasan 时能否在内核崩溃日志中提供更多线索。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Linux kernel DRM 驱动子系统的缓冲分配
+- GKI 对闭源 GPU 驱动的约束
+
+### 关联章节
+- 10.5
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 10.6 内存抖动与频繁 GC — 知识盲区
+
+### 盲区描述
+userfaultfd 在 ART CMC GC 中的具体应用：Android 15 引入 CMC GC 的核心依赖是 Linux 内核的 userfaultfd 机制，该机制如何在对像搬移（compaction）阶段实现对应用线程的零停顿缺页陷入接管。
+
+### 重要程度
+高
+
+### 建议研究方向
+- art/runtime/gc/collector/mark_compact.cc 源码
+- Linux 内核 userfaultfd 特性文档
+
+### 关联章节
+- 10.6, 4.8
+
+### 外部 review 来源
+- Gemini 外部 review
+## [2026-04-23] 10.7 SQLite/Room 数据库性能优化 — 知识盲区
+
+### 盲区描述
+io_uring 在 SQLite I/O 路径上的应用：近期 Linux 和 Android 内核对 io_uring 异步 I/O 的支持逐渐成熟，SQLite 未来是否可能利用 io_uring 进一步降低 WAL 写入和 fsync() 阻塞。
+
+### 重要程度
+低
+
+### 建议研究方向
+- SQLite 官方邮件列表关于 io_uring 的讨论
+- Android Bionic C 库对 io_uring 接口的开放情况
+
+### 关联章节
+- 10.7
+
+### 外部 review 来源
+- Gemini 外部 review

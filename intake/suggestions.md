@@ -194,3 +194,19 @@
 - **问题**：排查路线稍显理论化，缺少工具层面的直接抓手。
 - **建议**：在排查步骤中以括号形式标注关键的 Trace Event 名称或命令，提升手册的“傻瓜化”执行度。
 - **来源**：外部 AI review
+
+
+## [External Review] 10.1 App 内存分析 — 2026-04-23
+- **类型**：文字排版 / 概念严谨性
+- **位置**：dumpsys meminfo 全景地图 和 常见问题与误区
+- **问题**：存在异常换行（如 MEMINFO 中 com.example
+
+.app）；32位与64位系统对 Native OOM 表现的差异未明确
+- **建议**：修复 Markdown 换行；补充 64 位环境下 Native 内存耗尽多导致 LMK 的结论
+- **来源**：Gemini 外部 review
+## [External Review] 10.5 案例集 — 2026-04-23
+- **类型**：交叉引用一致性
+- **位置**：案例一：低内存引发整机卡顿与冷启动退化 - 修复方案与效果
+- **问题**：利用 onTrimMemory 的 TRIM_MEMORY_RUNNING_MODERATE 级别释放，但 §10.3 已指出 Android 14+ 不再投递这些级别
+- **建议**：补充说明 Android 14+ 系统中这些级别不再投递，建议读者参考 §10.3 的新版适配方案
+- **来源**：Gemini 外部 review

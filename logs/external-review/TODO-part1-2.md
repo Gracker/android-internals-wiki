@@ -102,52 +102,62 @@
 - [x] src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md
 - [x] src/part2-performance/ch08-responsiveness/09-game-performance.md
 - [x] src/part2-performance/ch08-responsiveness/README.md
-- [ ] src/part2-performance/ch09-anr/01-anr-design.md
-- [ ] src/part2-performance/ch09-anr/02-anr-types.md
-- [ ] src/part2-performance/ch09-anr/03-anr-analysis.md
-- [ ] src/part2-performance/ch09-anr/04-special-anr.md
-- [ ] src/part2-performance/ch09-anr/05-case-studies.md
-- [ ] src/part2-performance/ch09-anr/06-notification-performance-anr.md
-- [ ] src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
-- [ ] src/part2-performance/ch09-anr/README.md
-- [ ] src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md
-- [ ] src/part2-performance/ch10-memory-perf/02-memory-leak.md
-- [ ] src/part2-performance/ch10-memory-perf/03-memory-growth.md
-- [ ] src/part2-performance/ch10-memory-perf/04-low-memory-impact.md
-- [ ] src/part2-performance/ch10-memory-perf/05-case-studies.md
-- [ ] src/part2-performance/ch10-memory-perf/06-memory-churn.md
-- [ ] src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md
-- [ ] src/part2-performance/ch10-memory-perf/README.md
-- [ ] src/part2-performance/ch11-power/01-power-model.md
-- [ ] src/part2-performance/ch11-power/02-app-power-optimization.md
-- [ ] src/part2-performance/ch11-power/03-system-power-optimization.md
-- [ ] src/part2-performance/ch11-power/04-case-studies.md
-- [ ] src/part2-performance/ch11-power/05-wakelock.md
-- [ ] src/part2-performance/ch11-power/README.md
-- [ ] src/part2-performance/ch12-apk-network/01-apk-size.md
-- [ ] src/part2-performance/ch12-apk-network/02-network-performance.md
-- [ ] src/part2-performance/ch12-apk-network/03-network-performance-deep.md
-- [ ] src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md
-- [ ] src/part2-performance/ch12-apk-network/README.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/07-textureview.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/16-game-engine.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md
-- [ ] src/part2-performance/ch18-rendering-pipelines/README.md
+- [x] src/part2-performance/ch09-anr/01-anr-design.md
+- [x] src/part2-performance/ch09-anr/02-anr-types.md
+- [x] src/part2-performance/ch09-anr/03-anr-analysis.md
+- [x] src/part2-performance/ch09-anr/04-special-anr.md
+- [x] src/part2-performance/ch09-anr/05-case-studies.md
+- [x] src/part2-performance/ch09-anr/06-notification-performance-anr.md
+- [x] src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md
+- [x] src/part2-performance/ch09-anr/README.md
+- [x] src/part2-performance/ch10-memory-perf/01-app-memory-analysis.md
+- [x] src/part2-performance/ch10-memory-perf/02-memory-leak.md
+- [x] src/part2-performance/ch10-memory-perf/03-memory-growth.md
+- [x] src/part2-performance/ch10-memory-perf/04-low-memory-impact.md
+- [x] src/part2-performance/ch10-memory-perf/05-case-studies.md
+- [x] src/part2-performance/ch10-memory-perf/06-memory-churn.md
+- [x] src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md
+- [x] src/part2-performance/ch10-memory-perf/README.md
+- [x] src/part2-performance/ch11-power/01-power-model.md
+- [x] src/part2-performance/ch11-power/02-app-power-optimization.md
+- [x] src/part2-performance/ch11-power/03-system-power-optimization.md
+- [x] src/part2-performance/ch11-power/04-case-studies.md
+- [x] src/part2-performance/ch11-power/05-wakelock.md
+- [x] src/part2-performance/ch11-power/README.md
+- [x] src/part2-performance/ch12-apk-network/01-apk-size.md
+- [x] src/part2-performance/ch12-apk-network/02-network-performance.md
+- [x] src/part2-performance/ch12-apk-network/03-network-performance-deep.md
+- [x] src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md
+- [x] src/part2-performance/ch12-apk-network/README.md
+- [x] src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md
+- [x] src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md
+- [x] src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md
+- [x] src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md
+- [x] src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md
+- [x] src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md
+- [x] src/part2-performance/ch18-rendering-pipelines/07-textureview.md
+- [x] src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md
+- [x] src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md
+- [x] src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md
+- [x] src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md
+- [x] src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md
+- [x] src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md
+- [x] src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md
+- [x] src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md
+- [x] src/part2-performance/ch18-rendering-pipelines/16-game-engine.md
+- [x] src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md
+- [x] src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md
+- [x] src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md
+- [x] src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md
+- [x] src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md
+- [x] src/part2-performance/ch18-rendering-pipelines/README.md
+- [x] src/part4-system/ch16-aosp/01-google-optimization.md
+- [x] src/part4-system/ch16-aosp/02-version-changes.md
+- [x] src/part4-system/ch16-aosp/03-aosp-build.md
+- [x] src/part4-system/ch16-aosp/04-android17-kernel612-performance.md
+- [x] src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md
+- [x] src/part4-system/ch16-aosp/README.md
+- [x] src/part4-system/ch17-oem/01-oem-overview.md
+- [x] src/part4-system/ch17-oem/02-soc-differences.md
+- [x] src/part4-system/ch17-oem/03-industry-cases.md
+- [x] src/part4-system/ch17-oem/README.md
