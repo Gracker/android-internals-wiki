@@ -27,12 +27,12 @@ sources:
     title: "Get a result from an activity"
     date: "2026"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-18
-task6_result: needs-rework
+reviewed_date: 2026-04-24
+task6_result: pass-light-edit
 task2b_result: fixed
 ---
 

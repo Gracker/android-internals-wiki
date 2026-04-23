@@ -9,9 +9,9 @@ created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-18"
-task6_result: needs-rework
-task6_state: revisiting
+reviewed_date: 2026-04-24
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_result: needs-rework
 task9_state: pending
 task9_reviewed_date: "2026-04-19"
