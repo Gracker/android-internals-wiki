@@ -32,10 +32,10 @@ sources:
 tags: [text, rendering, minikin, skia, emoji, layout, performance, textview, staticlayout]
 related_chapters: ["2.1", "2.4", "2.5", "7.8", "7.12"]
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 repaired_date: "2026-04-23"
@@ -60,13 +60,13 @@ last_task2b_at: "2026-04-23T12:48:00+08:00"
 
 ## 为什么要了解文字渲染
 
-打开手机上任何一个 App--微信聊天、微博信息流、新闻客户端--占据屏幕面积最大的元素是什么?文字。
+打开手机上任何一个 App——微信聊天、微博信息流、新闻客户端——占据屏幕面积最大的元素是什么？文字。
 
-文字看起来简单,像是把几个字画到屏幕上。但在 Android 的渲染管线中,文字往往是 CPU 开销最高的绘制类型之一。原因很直接,文字渲染不是简单的像素拷贝,而是要经过"整形→测量→换行→光栅化→绘制"这一整套流程。其中"整形"(text shaping)和"测量"(measurement)尤其昂贵,需要根据字体、语言、上下文计算每个字符的精确位置,背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
+文字看起来简单，像是把几个字画到屏幕上。但在 Android 的渲染管线中,文字往往是 CPU 开销最高的绘制类型之一。原因很直接,文字渲染不是简单的像素拷贝，而是要经过"整形→测量→换行→光栅化→绘制"这一整套流程。其中"整形"(text shaping)和"测量"(measurement)尤其昂贵,需要根据字体、语言、上下文计算每个字符的精确位置,背后是 HarfBuzz 整形引擎和 ICU 换行算法的密集计算。
 
-对于列表类 App(聊天、社交、新闻),一屏可能同时存在几十个 TextView。在滑动过程中,每个 TextView 都需要在 8.33ms(120Hz)或 16.67ms(60Hz)的帧预算内完成 measure → layout → draw 全流程。如果某个 TextView 的文字测量耗时超标,帧就掉了。
+对于列表类 App（聊天、社交、新闻），一屏可能同时存在几十个 TextView。在滑动过程中，每个 TextView 都需要在 8.33ms (120Hz) 或 16.67ms (60Hz) 的帧预算内完成 measure → layout → draw 全流程。如果某个 TextView 的文字测量耗时超标,帧就掉了。
 
-我们在 Perfetto 中经常看到这样的场景:主线程上一大片 "measure" slice 占了大半个 VSync 周期,展开一看全是 TextView.onMeasure()。这种情况在列表类 App 里很常见。
+我们在 Perfetto 中经常看到这样的场景：主线程上一大片 "measure" slice 占了大半个 VSync 周期，展开一看全是 TextView.onMeasure()。这种情况在列表类 App 里很常见。
 
 了解文字渲染的性能特征,能让我们在分析这类 jank 时更快定位到根因,不必在 View 层级里盲目猜测。
 
@@ -76,11 +76,11 @@ last_task2b_at: "2026-04-23T12:48:00+08:00"
 
 当 App 调用 `TextView.setText()` 时,TextView 会根据文本内容选择一种 Layout 实现来管理文字的测量和布局。Android 提供了三种 Layout:
 
-- **BoringLayout**:用于单行、纯文字、无 Span 的简单场景。它的测量逻辑最简单--直接调用 `Paint.measureText()` 拿到宽度,基本不做额外计算。如果 TextView 设置了 `setSingleLine(true)` 或 `maxLines=1`,且文本中没有任何 Span,大概率走这条路径。
+- **BoringLayout**：用于单行、纯文字、无 Span 的简单场景。它的测量逻辑最简单——直接调用 `Paint.measureText()` 拿到宽度，基本不做额外计算。如果 TextView 设置了 `setSingleLine(true)` 或 `maxLines=1`,且文本中没有任何 Span,大概率走这条路径。
 
-- **StaticLayout**:用于多行文字。这是最常见的 Layout。StaticLayout 的构建过程包括:将文本按行切分(line breaking)、处理 Span 样式、计算每行的基线偏移、最终确定整体高度。这个过程涉及 Minikin 的文字整形和换行算法,CPU 开销显著高于 BoringLayout。
+- **StaticLayout**：用于多行文字。这是最常见的 Layout。StaticLayout 的构建过程包括:将文本按行切分(line breaking)、处理 Span 样式、计算每行的基线偏移、最终确定整体高度。这个过程涉及 Minikin 的文字整形和换行算法,CPU 开销显著高于 BoringLayout。
 
-- **DynamicLayout**:用于可编辑文本(EditText)。它在 StaticLayout 的基础上增加了文本变化时的增量更新逻辑。
+- **DynamicLayout**：用于可编辑文本(EditText)。它在 StaticLayout 的基础上增加了文本变化时的增量更新逻辑。
 
 选好 Layout 之后,主线程已经拿到了每个 run 的测量结果、行分布和 glyph 位置信息。接下来进入 draw 阶段。public API 和 HWUI 内部提交层要分开看。API 31 起，`Canvas.drawGlyphs()` 已经提供了"按 glyph id + 坐标绘制"的公开入口；但在 `android-16.0.0_r1` 的 `frameworks/base/libs/hwui/SkiaCanvas.cpp` 里，HWUI 这一层的 `SkiaCanvas::drawGlyphs()` 仍然是先把 glyph 和坐标写进 `SkTextBlobBuilder`，再调用 `mCanvas->drawTextBlob()` 交给 Skia。
 

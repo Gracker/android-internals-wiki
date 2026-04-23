@@ -463,6 +463,76 @@ Google 官方测试给出的量化结果包括：
 [来源: intake/research-feeds/2026-04-02-07-ch04-16kb-page-size-impact.md]
 
 
+
+
+<!-- AIW-源码调研-2026-04-23: 16KB Page Size PSS 与内存碎片深度补充 -->
+
+### [自动发现] 16KB Page Size 下的 PSS 计算与内部碎片量化
+
+上节的 16KB Page Size 概述缺少源码级的 PSS 计算机制说明和内部碎片的量化数据，以下是补充。
+
+#### PSS 计算机制：数据源头 `/proc/<pid>/smaps`
+
+PSS 的计算与页大小无关，它的本质是"按共享进程数分摊"：
+
+```
+PSS = Private_Clean + Private_Dirty
+    + (Shared_Clean / N_sharers) 
+    + (Shared_Dirty / N_sharers)
+```
+
+其中 `N_sharers` 是该页被多少个进程共享。这个数据由 Linux kernel 写入 `/proc/<pid>/smaps`。
+
+**关键源码路径**：
+- Java 层入口：`frameworks/base/core/java/android/os/Debug.java` — `getMemoryInfo()` / `getPss()`
+- JNI 实现：`frameworks/base/core/jni/android_os_Debug.cpp` — `android_os_Debug_getPssPid()` / `read_mapinfo()` 解析 smaps
+- 底层数据源：kernel 写入 `/proc/<pid>/smaps`（不可伪造，是进程内存的真实镜像）
+
+PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻辑**。但因为最小分配粒度从 4KB 跳到 16KB，所有小于 16KB 的 private 映射都会多浪费内存，这部分浪费会计入 `Private_Dirty`，直接增加进程的 PSS 计数。
+
+#### 内部碎片量化
+
+| 分配大小 | 4KB 系统使用量 | 4KB 碎片浪费 | 16KB 系统使用量 | 16KB 碎片浪费 | 增量 |
+|---------|-------------|------------|-------------|------------|------|
+| 5KB | 8KB (2 页) | 3KB | 16KB (1 页) | 11KB | **+8KB (+267%)** |
+| 17KB | 20KB (5 页) | 3KB | 32KB (2 页) | 15KB | **+12KB (+60%)** |
+| 65KB | 68KB (17 页) | 3KB | 80KB (5 页) | 15KB | **+12KB (+18%)** |
+
+**公式**：`碎片开销增量 = max(0, allocation_size - 16KB) - max(0, allocation_size - 4KB)`
+
+**结论**：小分配为主的 native workload（如 JNI 频繁分配小 buffer）在 16KB 系统下内存浪费显著增加。
+
+#### Bionic Linker 16KB Compat Mode
+
+`bionic/linker/linker_phdr.cpp` 中的 `phdr_table_load_segments()` 处理 4KB 对齐 ELF 在 16KB 系统上的兼容加载：
+
+```cpp
+// 条件：kPageSize == 16384 && min_palign == 4096
+// 触发 bionic.linker.16kb.app_compat.enabled 属性检查
+// Compat Mode 代价：绕过 RELRO 段保护，牺牲安全性换取加载成功
+// Commit fc89c8ae1dfc (2024-08-05) 改进错误提示
+```
+
+#### 页表内存节省
+
+| 映射大小 | 4KB 页表内存 | 16KB 页表内存 | 节省 |
+|---------|------------|------------|------|
+| 1GB | ~2MB | ~0.5MB | **75%** |
+| 8GB | ~16MB | ~4MB | **75%** |
+
+在高 RAM 设备上，页表节省可以完全抵消内部碎片开销，整体呈现内存"下降"而非"上升"。
+
+#### 源码文件索引（补充）
+
+| 文件路径 | 关键内容 | 版本 |
+|---------|---------|------|
+| `frameworks/base/core/jni/android_os_Debug.cpp` | PSS JNI 读取，read_mapinfo() 解析 smaps | android-14+ |
+| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode，min_palign 检测 | android-mainline |
+| `android.googlesource.com commit fc89c8ae1dfc` | 16KB 错误消息改进 | 2024-08-05 |
+| `kernel/common/arch/arm64/Kconfig` | CONFIG_ARM64_16K_PAGES=y | ACK 6.6+ |
+
+
+
 ## 版本演进速查表
 
 为了方便日常查阅，我们把本节覆盖的所有内存相关版本变化汇总成一张表：
