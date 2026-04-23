@@ -1712,7 +1712,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T15:08:50+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
@@ -1764,7 +1768,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T15:08:50+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
@@ -3150,6 +3158,38 @@
       "added_at": "2026-04-23T13:55:09",
       "status": "pending",
       "original_review_log": "logs/review/2026-04-23-13-review.md"
+    },
+    {
+      "section": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 90,
+      "reason": "[review回炉] 数据支撑不足，源码验证缺失",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充数据",
+          "location": "性能提升数据",
+          "detail": "4%掉帧减少缺乏具体测试环境和基线说明",
+          "suggestion": "需补充具体的设备配置、测试条件和性能对比基线"
+        },
+        {
+          "type": "需验证",
+          "location": "MessageQueue字段变更",
+          "detail": "AOSP android-17-beta3中字段变更描述不够精确",
+          "suggestion": "需要在实际代码中验证字段变更的具体影响"
+        },
+        {
+          "type": "需补充",
+          "location": "版本对比",
+          "detail": "缺乏API 37相比前版本的定量性能对比数据",
+          "suggestion": "补充分代CMC相比Android 16的具体性能提升数据"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-23T16:35:03.727009",
+      "status": "pending"
     }
   ],
   "pending": [

@@ -26,10 +26,12 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-motionprediction-low-latency-graphics.md"
   - type: blog
     path: "intake/research-feeds/2026-04-05-15-perfetto-input-latency-sql.md"
+  - type: blog
+    path: "intake/research-feeds/2026-04-02-11-ch02-android17-deltique-lockfree-messagequeue.md"
 tags: [input, latency, touch, prediction, motioneventpredictor, front-buffer, kalman-filter, perfetto, input-latency]
-related_chapters: ["3.1", "3.2", "2.3", "2.4", "2.5", "8.1", "13.3", "13.5"]
+related_chapters: ["1.13", "3.1", "3.2", "2.3", "2.4", "2.5", "8.1", "13.3", "13.5"]
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task6_result: pass-light-edit
@@ -288,6 +290,13 @@ Jetpack API 和 platform API 要分开讲。AndroidX 的 `MotionEventPredictor` 
 
 `android.view.MotionPredictor` 的接口也不同。它使用 `record(MotionEvent)` 累积真实事件，用 `predict(long)` 按目标时间预测，并可通过 `isPredictionAvailable(int, int)` 检查设备和输入源是否支持。
 
+把版本边界拆开写会更稳：
+
+- **Android 14 / API 34**：framework 首次公开 `android.view.MotionPredictor`
+- **Android 15 / API 35**：没有新增通用 public predictor API，开发者侧仍然使用 API 34 这组接口；这一代更多是 palm rejection、input metrics 和低延迟书写配套继续细化
+- **Android 16 / API 36**：公开预测接口仍是 `record()` / `predict(long)` / `isPredictionAvailable()`；系统内部会继续优化高刷、ARR 和 low-latency graphics 的协同，但不要把这些内部演进写成新的 predictor API
+- **Android 17 / API 37**：影响输入送达质量的更大变量转到主线程消息队列实现，见后文 DeliQueue 一节
+
 [已验证: developer.android.com/reference/android/view/MotionPredictor]
 
 Kalman Filter 适合这个场景，是因为一次预测只需要轻量的矩阵运算，能塞进每帧的输入处理预算里。它的局限也很明确。轨迹突然折返、急停或抬笔时，预测点会偏离真实路径，所以笔迹类应用通常只把它用在“笔尖前沿”的临时显示，不直接当最终结果。
@@ -329,19 +338,24 @@ Google 推荐在笔迹类应用中同时使用 MotionEventPredictor 和前缓冲
 
 ### Perfetto android.input 模块
 
-Perfetto stdlib 的 `android_input_events` 表把输入事件拆成五段 latency。官方文档还特别说明，input delivery 是 socket based，每个事件从系统发出后都要等待 App ACK，因此 `dispatch_latency_dur`、`handling_latency_dur`、`ack_latency_dur`、`total_latency_dur` 四段都能独立量化。
+`android.input` 模块里最常用的是 `android_input_events`。它把 InputDispatcher 发出事件、App 接收、App 发 ACK，以及可选的 frame 关联折叠成一张结果表。排障先看这张表；只有要追原始 inputevent proto 或窗口分发决策时，才回到 `android_motion_events`、`android_key_events`、`android_input_event_dispatch`。
 
 [已验证: perfetto.dev/docs/analysis/stdlib-docs#android_input_events]
 
 | 字段 | 含义 |
 |------|------|
-| `dispatch_latency_dur` | InputDispatcher 发送事件到 App 接收事件 |
-| `handling_latency_dur` | App 接收事件到 App 处理完毕并发送 ACK |
-| `ack_latency_dur` | App 发送 ACK 到 InputDispatcher 收到 ACK |
-| `total_latency_dur` | dispatch 到 ACK 的完整往返时间 |
-| `end_to_end_latency_dur` | InputReader 读取事件到帧真正 present 的端到端延迟 |
+| `dispatch_latency_dur` | 从 InputDispatcher 开始分发，到 App 收到事件的时长 |
+| `handling_latency_dur` | 从 App 收到事件，到 App 发出 ACK 的时长 |
+| `ack_latency_dur` | 从 App 发出 ACK，到系统侧收到 ACK 的时长 |
+| `total_latency_dur` | 从开始分发，到系统侧收到 ACK 的总时长 |
+| `end_to_end_latency_dur` | 从 InputReader 读到事件，到关联帧 present 的时长；无帧关联时为 `NULL` |
+| `input_event_id` | stdlib 聚合后的输入事件标识 |
+| `read_time` | InputReader 读到事件的时间戳 |
+| `dispatch_ts` | InputDispatcher 开始分发的时间戳 |
+| `receive_ts` | App 收到事件的时间戳 |
+| `frame_id` | 关联的 frame id；无帧关联时为 `NULL` |
 
-前四个维度覆盖了 InputDispatcher 和 App 之间的 socket 往返。`end_to_end_latency_dur` 再把视角往前拉到 InputReader，往后拉到帧上屏。官方文档已经写明，如果输入事件没有关联到 frame event，这个字段就是 `NULL`。
+前四个延迟字段覆盖了 socket 往返。`end_to_end_latency_dur` 再把视角往前拉到 InputReader，往后拉到帧上屏。排查时先按这几个现成字段看分段延迟，不要再自己拼一套 `input_event_id` + 自定义时间差。
 
 ### end_to_end_latency_dur 为什么会是 NULL
 
@@ -370,7 +384,7 @@ final class InputMetricsListener
 
 这段代码告诉我们，`end_to_end_latency_dur` 至少依赖四个条件：
 
-1. 这次输入事件拿到了有效的 `android_input_id` / `INPUT_EVENT_ID`
+1. 这次输入事件拿到了有效的 `input_event_id` / `INPUT_EVENT_ID`
 2. 这次输入最终关联到一帧真实渲染
 3. `DISPLAY_PRESENT_TIME` 可用，也就是系统拿到了 frame present 时间
 4. App 走的是带 `ThreadedRenderer` 的渲染路径，输入 metrics 能被上报
@@ -381,50 +395,49 @@ final class InputMetricsListener
 
 ### SQL 实战查询
 
-通过 `INCLUDE PERFETTO MODULE android.input` 引入模块，结合 `thread` 和 `process` 表可以定位到具体线程和进程：
+直接查 `android_input_events` 就够了，`process_name` 和 `thread_name` 已经在 stdlib 里展开好了，不必再额外 JOIN：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 
 SELECT
-  CAST(input.ts / 1000000.0) AS timestamp_ms,
-  input.thread_name AS receiving_thread,
-  process.name AS receiving_process,
-  CAST(input.dispatch_latency_dur / 1000000.0) AS dispatch_ms,
-  CAST(input.handling_latency_dur / 1000000.0) AS handling_ms,
-  CAST(input.ack_latency_dur / 1000000.0) AS ack_ms,
-  CAST(input.total_latency_dur / 1000000.0) AS total_ms,
-  CAST(input.end_to_end_latency_dur / 1000000.0) AS e2e_ms,
-  input.android_input_id
-FROM android_input_events AS input
-JOIN thread USING (utid)
-JOIN process USING (upid)
-WHERE input.total_latency_dur IS NOT NULL
-ORDER BY input.total_latency_dur DESC
+  CAST(dispatch_ts / 1000000.0) AS dispatch_ms,
+  process_name,
+  thread_name,
+  CAST(dispatch_latency_dur / 1000000.0) AS dispatch_latency_ms,
+  CAST(handling_latency_dur / 1000000.0) AS handling_latency_ms,
+  CAST(ack_latency_dur / 1000000.0) AS ack_latency_ms,
+  CAST(total_latency_dur / 1000000.0) AS total_latency_ms,
+  CAST(end_to_end_latency_dur / 1000000.0) AS e2e_latency_ms,
+  input_event_id,
+  frame_id
+FROM android_input_events
+WHERE total_latency_dur IS NOT NULL
+ORDER BY total_latency_dur DESC
 LIMIT 100;
 ```
 
 [来源: perfetto.dev/docs/analysis/stdlib-docs#android_input_events]
 
-这个查询按 `total_latency_dur` 降序排列，能先把最慢的事件抓出来。解读时建议把 `total_ms` 和 `e2e_ms` 分开看：
+这个查询先把最慢的事件拎出来。解读时把 `total_latency_ms` 和 `e2e_latency_ms` 分开看：
 
-- `dispatch_ms` 高，说明 system_server 到 App 的投递慢，优先看 InputDispatcher 线程调度和目标进程唤醒
-- `handling_ms` 高，说明 App 主线程或输入处理路径本身耗时长
-- `ack_ms` 高，说明 App 已经处理完事件，但 ACK 回传晚，常见于主线程回切、调度延迟或进程负载高
-- `e2e_ms` 为 `NULL`，先确认有没有 frame present 时间，不要直接把它当成 trace 异常
+- `dispatch_latency_ms` 高，优先看 InputDispatcher 线程调度、目标进程唤醒和 input channel 拥塞
+- `handling_latency_ms` 高，优先看 App 主线程、`deliverInputEvent` 和业务回调
+- `ack_latency_ms` 高，说明 App 已经处理完事件，但 ACK 回传又慢了一拍，常见于 Looper 回切或进程负载高
+- `e2e_latency_ms` 为 `NULL`，先确认有没有 `frame_id` 和 frame present 时间，不要直接把它当成 trace 异常
 
 ### 在 Perfetto UI 中怎么把证据对应起来
 
-如果想把同一条输入事件从 InputReader 一直追到屏幕，最稳妥的做法是拿 `android_input_id` 做主线，再去对照以下轨道：
+如果想把同一条输入事件从 InputReader 一直追到屏幕，最稳妥的做法是拿 `input_event_id` 做生命周期主线，再用 `frame_id` 去接最终那一帧：
 
 - `system_server` 中的 InputReader / InputDispatcher 线程调度状态
 - App 主线程上的 `DeliverInputEvent` 或输入相关 slice
 - `Choreographer#doFrame` 和 FrameTimeline
 - 最终帧的 present 时间
 
-这样我们就能把“事件进了 App”“App 开始画了”“帧真的上屏了”三件事拆开看，而不是把它们糊成一个大延迟数字。
+这样就能把“事件进了 App”“App 开始画了”“帧真的上屏了”三件事拆开看，而不是把它们糊成一个大延迟数字。
 
-[图：同一条 `android_input_id` 在 Perfetto 中的对照轨道，依次标出 InputReader、InputDispatcher、DeliverInputEvent、Choreographer#doFrame、FrameTimeline]
+[图：同一条 `input_event_id` 在 Perfetto 中的对照轨道，依次标出 InputReader、InputDispatcher、DeliverInputEvent、Choreographer#doFrame、FrameTimeline]
 
 [待补充：真实 Trace 截图]
 
@@ -483,6 +496,14 @@ Game Mode 和 Game Mode Interventions 更接近系统为游戏提供的性能、
 这里更稳妥的结论是，Game Mode 可能通过整体调度预算间接改善输入到显示延迟，但它不是 InputDispatcher 专用 low-latency API，也不能替代 App 自己做好主线程和渲染路径优化。
 
 [来源: developer.android.com/games/optimize/performance#adpf + Game Mode Interventions 文档]
+
+### Android 17：DeliQueue 对输入回调的间接收益
+
+如果章节覆盖到 Android 17，还要把 DeliQueue 纳入边界。它是 `MessageQueue` 的实现重写，不是 `InputDispatcher` 的新 API。旧实现里，其他线程 `Handler.post()`、主线程取消息、Choreographer 帧回调排队，都要争用同一把 monitor 锁。输入事件到达 App 进程后，无论是 `MSG_DISPATCH_INPUT_EVENT` 还是下一帧的 `CALLBACK_INPUT` / `doFrame`，都可能在这里被锁竞争拖慢。
+
+DeliQueue 把多线程入队改成基于 CAS 的 Treiber stack，再由 Looper 线程把暂存消息 drain 到自己独占的 min-heap。公共 `Handler` / `Looper` API 不变，但入队和取队不再围着同一把锁打转。Google 公布过一组 beta 数据：主线程 lock contention time 下降约 15%，应用掉帧下降约 4%，SystemUI / Launcher 交互掉帧下降约 7.7%。这组数字要连同测试场景一起看，不能直接拿来当所有设备的固定收益；它说明的是 DeliQueue 能缓解“消息队列锁竞争把输入回调和帧回调拖慢”的一类问题。
+
+对输入延迟分析最有用的结论有两条。第一，Android 17 上如果 `DeliverInputEvent`、`CALLBACK_INPUT`、`doFrame` 仍然晚到，不要再默认归因给旧式 `MessageQueue` 锁竞争。第二，依赖反射 `MessageQueue.mMessages` 的监控代码在 DeliQueue 下不再可靠，排查主线程积压要改看 Perfetto、Looper logging 或升级后的 APM 工具。更细的结构可以回看 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》。
 
 ## 与其他机制的关系
 
