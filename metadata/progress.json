@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T05:21:00+08:00",
+  "generated_at": "2026-04-24T06:24:16+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,55 +7,55 @@
     "finalized": 46,
     "ready-for-review": 137,
     "ready-to-publish": 46,
-    "last_updated": "2026-04-24T04:58:02+08:00",
+    "last_updated": "2026-04-24T06:24:16+08:00",
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 43,
-      "task2b_pending": 34,
+      "task6_pending": 45,
+      "task2b_pending": 32,
       "ready-to-publish": 46,
       "task9_pending": 60
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 147,
-      "revisiting": 36
+      "reviewed": 146,
+      "revisiting": 37
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 91,
-      "pending": 91,
+      "reviewed": 89,
+      "pending": 93,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 140,
-      "pending": 37,
+      "fixed": 142,
+      "pending": 35,
       "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 43,
-      "task2b_pending": 34,
+      "task6_pending": 45,
+      "task2b_pending": 32,
       "ready-to-publish": 46,
       "task9_pending": 60
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 147,
-      "revisiting": 36
+      "reviewed": 146,
+      "revisiting": 37
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 91,
-      "pending": 91,
+      "reviewed": 89,
+      "pending": 93,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 140,
-      "pending": 37,
+      "fixed": 142,
+      "pending": 35,
       "idle": 3
     }
   },
@@ -1244,18 +1244,18 @@
         "3.1",
         "8.2"
       ],
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "task2b_state": "pending",
-      "repaired_date": "2026-04-23",
+      "task2b_state": "fixed",
+      "repaired_date": "2026-04-24",
       "repaired_by": "openclaw-task2b",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-23T12:48:00+08:00",
+      "last_task2b_at": "2026-04-24T06:20:15+08:00",
       "last_task9_at": "2026-04-24T05:21:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
@@ -6131,15 +6131,18 @@
         "15.1"
       ],
       "re-review-result": "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T05:21:00+08:00"
+      "last_task9_at": "2026-04-24T05:21:00+08:00",
+      "repaired_date": "2026-04-24",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-24T06:20:15+08:00"
     },
     "src/part3-tools/ch13-perfetto/03-perfetto-view.md": {
       "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
