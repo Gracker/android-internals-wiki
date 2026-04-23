@@ -7,13 +7,13 @@ tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
-reviewed_date: "2026-04-18"
+reviewed_date: 2026-04-24
 reviewed_by: openclaw-task6
-task6_result: needs-rework
+task6_result: pass-light-edit
 last_task9_at: "2026-04-18T11:10:00+08:00"
 task9_reviewed_date: "2026-04-18"
 task9_reviewed_by: openclaw-task9
