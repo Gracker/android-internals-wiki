@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-23T06:16:15+08:00",
+  "generated_at": "2026-04-23T08:14:59.371859",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -775,12 +775,15 @@
         "1.16",
         "1.17"
       ],
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "task2b_result": "fixed",
       "task2b_state": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "last_task2b_at": "2026-04-23T02:15:00+08:00"
+      "last_task2b_at": "2026-04-23T02:15:00+08:00",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-04-23",
+      "reviewed_by": "openclaw-task6"
     },
     "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md": {
       "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
@@ -6106,7 +6109,7 @@
       "chapter": "14.3",
       "section": "14.3",
       "status": "ready-for-review",
-      "reviewed_date": "2026-04-17",
+      "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
@@ -6116,7 +6119,7 @@
       "confidence": "medium",
       "- type": "aosp",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -6142,15 +6145,15 @@
       "confidence": "medium",
       "- type": "blog",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-21T22:42:29+08:00",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-21",
-      "task6_result": "needs-rework",
+      "reviewed_date": "2026-04-23",
+      "task6_result": "pass-light-edit",
       "task9_reviewed_date": "2026-04-23",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-23T02:33:00+08:00"

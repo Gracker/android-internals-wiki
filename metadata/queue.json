@@ -3033,6 +3033,48 @@
       "added_by": "task8-classifier",
       "added_at": "2026-04-23T05:44:11.241524",
       "status": "pending"
+    },
+    {
+      "section": "4.8",
+      "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 Generational CMC 深度源码剖析-从 CC 到分代并发标记压缩的演进.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Generational CMC 深度源码剖析:从 CC 到分代并发标记压缩的演进 — 基于 `mark_compact` 与 `concurrent_copying` 源码，解释 Android 17 Generational CMC 如何用 userfaultfd + mremap ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-04-23T07:24:46+08:00",
+      "status": "pending"
+    }
+  ],
+  "pending": [
+    {
+      "section": "4.8",
+      "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 Generational CMC 深度源码剖析-从 CC 到分代并发标记压缩的演进.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Android 17 Generational CMC 深度源码剖析:从 CC 到分代并发标记压缩的演进 — 基于 `mark_compact` 与 `concurrent_copying` 源码，解释 Android 17 Generational CMC 如何用 userfaultfd + mremap ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-04-23T07:24:46+08:00",
+      "status": "pending"
     }
   ]
 }

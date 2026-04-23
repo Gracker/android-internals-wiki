@@ -15309,7 +15309,7 @@
       "injected_to": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part4-system/ch16-aosp/README.md"
     },
     {
-      "title": "ART 编译管线中的 Deoptimization 机制深度解析-触发路径、内部机制与可观测性",
+      "title": "ART 编译管线中的 Deoptimization 机制深度解析:触发路径、内部机制与可观测性",
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ART 编译管线中的 Deoptimization 机制深度解析-触发路径、内部机制与可观测性.md",
       "relative_path": "DeepResearch/ART 编译管线中的 Deoptimization 机制深度解析-触发路径、内部机制与可观测性.md",
       "score": 19,
@@ -15319,7 +15319,14 @@
       "verifiability": 4,
       "chapter": "ch02",
       "timestamp": "2026-04-19T21:19:11.039480+00:00",
-      "scored_at": "2026-04-20T05:19:17.586955"
+      "scored_at": "2026-04-20T05:19:17.586955",
+      "summary": "系统梳理 ART deoptimization 的触发路径与运行时实现：从 `QuickExceptionHandler`、`Instrumentation`、CHA 失效到 JVMTI/Hook/Apply Changes，解释编译代码如何回退解释器与 shadow frame，并给出 Perfetto/atrace 的可观测信号，适合定位 attach 调试、热更与 Hook 带来的 jank。",
+      "chapter_mapping": "ch01",
+      "matched_chapter": "1.7",
+      "section_title": "ART 编译管线与 dex2oat 优化",
+      "action_taken": "inject",
+      "processed_at": "2026-04-23T07:24:46+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
     },
     {
       "title": "Android 12+ FrameTimeline 架构与 Jank 责任归因矩阵深度报告",
@@ -18411,6 +18418,50 @@
       "section": "ch11",
       "added_at": "2026-04-23",
       "score": 15
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Swappy × Choreographer × Android 17 架构深研.md",
+      "title": "Swappy × Choreographer × Android 17 架构深研",
+      "summary": "围绕 Swappy、Choreographer、SurfaceFlinger 三层协作，指出 Android 17 的 DeliQueue 主要改善主线程 MessageQueue 锁竞争，从而提升 Vsync 回调到达质量；Swappy 本体仍依赖 ChoreographerFilter、AChoreographer deadline/expectedPresentationTime 与统计闭环做帧节奏控制。",
+      "chapter_mapping": "ch02",
+      "matched_chapter": "2.17",
+      "section_title": "Frame Pacing Library 与帧节奏控制",
+      "action_taken": "inject",
+      "processed_at": "2026-04-23T07:24:46+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 16 Headroom API 的真相：一条走 Power HAL 而非 PSI 的 CPU:GPU 前瞻信号通道.md",
+      "title": "Android 16 Headroom API 的真相：一条走 Power HAL 而非 PSI 的 CPU/GPU 前瞻信号通道",
+      "summary": "基于 AOSP 16 逐层拆解 `getCpuHeadroom()/getGpuHeadroom()` 调用链，澄清它经 `SystemHealthManager → IHintManager → HintManagerService → Power HAL v6` 获取 CPU/GPU 产能余量，不走 PSI/lmkd，也不存在公开 memory headroom；适合做相机、游戏等重负载场景的前瞻降级信号。",
+      "chapter_mapping": "ch05",
+      "matched_chapter": "5.6",
+      "section_title": "Android 功耗管理",
+      "action_taken": "inject",
+      "processed_at": "2026-04-23T07:24:46+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android AppFunctions-从 API 36 到 Agent OS —— 深度技术与战略.md",
+      "title": "Android AppFunctions:从 API 36 到 Agent OS —— 深度技术与战略参考",
+      "summary": "从 AOSP、Jetpack 与 OEM 落地三层分析 `android.app.appfunctions`：它以 AppSearch 元数据、`AppFunctionManagerService` 与 `AppFunctionService` 组成跨包函数编排底座，是 Android 16/17 向 Agent OS 演进的核心平台原语；同时梳理角色权限、绑定超时、GMS 与非 GMS OEM 的战略分叉。",
+      "chapter_mapping": "ch16",
+      "matched_chapter": "16.5",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "action_taken": "inject",
+      "processed_at": "2026-04-23T07:24:46+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 Generational CMC 深度源码剖析-从 CC 到分代并发标记压缩的演进.md",
+      "title": "Android 17 Generational CMC 深度源码剖析:从 CC 到分代并发标记压缩的演进",
+      "summary": "基于 `mark_compact` 与 `concurrent_copying` 源码，解释 Android 17 Generational CMC 如何用 userfaultfd + mremap 替代 CC 读屏障，并引入 young/mid/old 三代、live-words bitmap 与 page state FSM；有助于补强 ART 分代 GC 章节的版本边界与实现细节。",
+      "chapter_mapping": "ch04",
+      "matched_chapter": "4.8",
+      "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+      "action_taken": "queue",
+      "processed_at": "2026-04-23T07:24:46+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
     }
   ]
 }

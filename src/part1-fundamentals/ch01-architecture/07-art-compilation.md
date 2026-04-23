@@ -562,3 +562,10 @@ Baseline Profiles 只对其中标记的代码路径生效。如果冷启动路�
 - Google Blog: Android Performance Updates 2025（dex2oat 编译优化、AutoFDO）
 - Google Blog: AutoFDO for Android Kernel（内核级 PGO）
 - Android 17 Developer Features: static final field 不可变性行为变更
+
+### ART 编译管线中的 Deoptimization 机制深度解析:触发路径、内部机制与可观测性
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ART 编译管线中的 Deoptimization 机制深度解析-触发路径、内部机制与可观测性.md
+- 类型：DeepResearch 调研结果
+- 摘要：系统梳理 ART deoptimization 的触发路径与运行时实现：从 `QuickExceptionHandler`、`Instrumentation`、CHA 失效到 JVMTI/Hook/Apply Changes，解释编译代码如何回退解释器与 shadow frame，并给出 Perfetto/atrace 的可观测信号，适合定位 attach 调试、热更与 Hook 带来的 jank。
+- 注入时间：2026-04-23
+- 价值：把 deopt 机制、触发源与观测手段串到一起，适合补强 ART 编译章节的诊断深度。
