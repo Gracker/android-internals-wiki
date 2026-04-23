@@ -186,7 +186,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "blocked",
+      "blocked_at": "2026-04-23T19:25:33",
+      "blocked_by": "openclaw-task2b",
+      "blocked_reason": "section=Unknown，无法定位章节文件与对应 external-review 原文，需人工补齐映射后再处理"
     },
     {
       "section": "src/part3-tools/ch14-other-tools/13-hook-infrastructure",
@@ -3313,7 +3316,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T18:11:09.416403+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T19:25:33",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "8.9",
@@ -3400,7 +3407,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T18:11:09.416403+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T19:25:33",
+      "fixed_by": "openclaw-task2b"
     }
   ]
 }

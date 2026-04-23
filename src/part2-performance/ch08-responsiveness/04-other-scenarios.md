@@ -29,15 +29,17 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T14:30:00+08:00'
+task2b_result: fixed
+last_task2b_at: "2026-04-23T19:25:33+08:00"
 ---
 
 # 其他响应速度场景
@@ -164,7 +166,7 @@ Tab 切换是移动端最常见的交互模式之一。新闻 App 的频道切�
 
 ViewPager2 是 Jetpack/AndroidX 中的一个组件，不是 Android 平台原生能力。它最早出现在 AndroidX Fragment 1.0.0 中，为传统的 ViewPager 添加了现代化特性，如 RTL 支持、垂直滚动等。ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量。它的默认值为 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)`，即不显式保留屏幕外页面，而是依赖 RecyclerView 自身的缓存和预取策略。这与直觉不同——默认行为并非"左右各保留 1 页"，而是让 RecyclerView 按 ViewHolder 缓存等级（CachedView、RecycledViewPool）自动管理。
 
-当设为 1 时，ViewPager2 会在当前页左右各保留 1 个页面的 Fragment。设为 0 时，每次切换 Tab 都要从零开始创建 Fragment（慢）。设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级（内存压力）。对于 3-4 个 Tab 的常见场景，设为 1 通常就够了，但要注意这不是默认值——需要开发者显式调用 `setOffscreenPageLimit(1)`。
+当设为 1 时，ViewPager2 会在当前页左右各保留 1 个页面的 Fragment。`setOffscreenPageLimit()` 只接受默认值 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)` 或大于等于 1 的整数；传入 0 会直接抛出 `IllegalArgumentException`，不存在“设为 0 减少预加载”这种安全写法。设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级，内存压力也更高。对于 3-4 个 Tab 的常见场景，保持默认值 `-1` 或显式设为 `1` 是更常见的两种选择：前者交给 RecyclerView 的缓存与预取策略，后者换取更稳定的切换速度。
 
 ViewPager2 对 Fragment 生命周期管理的核心变化在于：它通过 `setMaxLifecycle()` 控制不可见 Fragment 的最高生命周期状态。当前可见的 Fragment 生命周期被设为 `RESUMED`，而 `offscreenPageLimit` 范围内但不可见的 Fragment 被设为 `STARTED`——这些 Fragment 的 `onResume()` 不会被调用，正是懒加载的切入点。
 
@@ -411,7 +413,7 @@ fun View.setOnSingleClickListener(delay: Long = 500L, onClick: (View) -> Unit) {
 
 **误区 2：「ViewPager2 的默认 offscreenPageLimit 就够用」**
 
-ViewPager2 的默认 `offscreenPageLimit` 是 -1（`OFFSCREEN_PAGE_LIMIT_DEFAULT`），不显式保留屏幕外页面，而是依赖 RecyclerView 的缓存机制。对于只有 3-4 个 Tab 且每个 Tab 布局不太复杂的场景，显式设为 `setOffscreenPageLimit(1)` 通常是更好的选择——虽然多占一点内存，但 Tab 切换会明显更流畅。
+ViewPager2 的默认 `offscreenPageLimit` 是 -1（`OFFSCREEN_PAGE_LIMIT_DEFAULT`），不显式保留屏幕外页面，而是依赖 RecyclerView 的缓存机制。对于只有 3-4 个 Tab 且每个 Tab 布局不太复杂的场景，显式设为 `setOffscreenPageLimit(1)` 常常能换来更稳定的切换速度；如果想回到默认策略，保持 `-1` 或不调用这个 API 即可，不能传 `0`。
 
 **误区 3：「debounce 时间设越短搜索越快」**
 

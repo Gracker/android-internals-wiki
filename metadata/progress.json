@@ -1,61 +1,61 @@
 {
-  "generated_at": "2026-04-23T17:25:41+08:00",
+  "generated_at": "2026-04-23T19:25:33+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 211,
     "finalized": 45,
     "ready-for-review": 138,
-    "ready-to-publish": 0,
-    "last_updated": "2026-04-23T18:48:00+08:00",
+    "ready-to-publish": 45,
+    "last_updated": "2026-04-23T19:25:33+08:00",
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 44,
-      "task2b_pending": 35,
+      "task6_pending": 46,
+      "task2b_pending": 34,
       "ready-to-publish": 45,
-      "task9_pending": 59
+      "task9_pending": 58
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 146,
-      "revisiting": 37
+      "reviewed": 144,
+      "revisiting": 39
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 91,
-      "pending": 91,
+      "reviewed": 90,
+      "pending": 92,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 138,
-      "pending": 39,
+      "fixed": 139,
+      "pending": 38,
       "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 45,
-      "task2b_pending": 35,
+      "task6_pending": 46,
+      "task2b_pending": 34,
       "ready-to-publish": 45,
       "task9_pending": 58
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 143,
-      "revisiting": 40
+      "reviewed": 144,
+      "revisiting": 39
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 91,
-      "pending": 91,
+      "reviewed": 90,
+      "pending": 92,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 138,
-      "pending": 39,
+      "fixed": 139,
+      "pending": 38,
       "idle": 3
     }
   },
@@ -3739,8 +3739,8 @@
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-04-08",
       "gap_source": "AOSP结构+官方文档+读者需求",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -4017,15 +4017,16 @@
         "3.2",
         "7.4"
       ],
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T14:30:00+08:00"
+      "last_task9_at": "2026-04-22T14:30:00+08:00",
+      "task2b_result": "fixed"
     },
     "src/part2-performance/ch08-responsiveness/05-case-studies.md": {
       "path": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
