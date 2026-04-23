@@ -5,8 +5,6 @@ status: ready-for-review
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
@@ -54,16 +52,18 @@ sources:
     path: "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
-task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-20T15:56:56+08:00"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-24"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
 ---
 
 # App 耗电优化
