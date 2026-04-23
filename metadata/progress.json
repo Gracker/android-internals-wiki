@@ -35,28 +35,25 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 28,
-      "task6_pending": 46,
+      "task6_pending": 43,
       "task2b_pending": 34,
       "ready-to-publish": 45,
-      "task9_pending": 58
+      "task9_pending": 61
     },
     "task6_state_counts": {
-      "unknown": 28,
-      "reviewed": 144,
-      "revisiting": 39
+      "reviewed": 147,
+      "revisiting": 36
     },
     "task9_state_counts": {
-      "unknown": 28,
       "reviewed": 90,
       "pending": 92,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 31,
       "fixed": 139,
       "pending": 38,
-      "idle": 3
+      "idle": 3,
+      "unknown": 3
     }
   },
   "issues": {
@@ -1823,10 +1820,10 @@
         "7.12"
       ],
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-19",
+      "reviewed_date": "2026-04-23",
       "task6_result": "pass-light-edit",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -1834,7 +1831,8 @@
       "repaired_date": "2026-04-23",
       "repaired_by": "openclaw-task2b",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-23T12:48:00+08:00"
+      "last_task2b_at": "2026-04-23T12:48:00+08:00",
+      "review_notes": "2026-04-23 task6 re-review (revisiting): pass-light-edit。14处L1修复（半角标点→全角/破折号/间距）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| "
     },
     "src/part1-fundamentals/ch02-rendering/README.md": {
       "title": "渲染系统总纲",
@@ -1876,7 +1874,7 @@
       "last_verified_against": "AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1",
       "version_note": "已补核 android-12/13/14/15/16 的 InputDispatcher.cpp：Android 12 使用静态 isStaleEvent()，Android 13/14 使用 mStaleEventTimeout，Android 15/16 改为 mPolicy.isStaleEvent(...)。独立进程化和 Predictive Back 影响范围仍保留 [待验证]。",
       "confidence": "high",
-      "reviewed_date": "2026-04-18",
+      "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
       "rework2_date": "2026-04-15",
       "rework2_by": "openclaw-task2b",
@@ -1903,16 +1901,17 @@
         "9.1",
         "9.2"
       ],
-      "task6_result": "needs-rework",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T17:08:00+08:00"
+      "last_task9_at": "2026-04-22T17:08:00+08:00",
+      "review_notes": "2026-04-23 task6 re-review (revisiting): pass-light-edit。无L1禁用词命中。Stale Event版本拆分已核实。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| "
     },
     "src/part1-fundamentals/ch03-input/02-touch-performance.md": {
       "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
@@ -3115,8 +3114,8 @@
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
       "review_type": "scheduled-review",
-      "review_round": 4,
-      "review_notes": "2026-04-15 task6 review (round 3): pass-light-edit。修复frontmatter格式（outline-start误入YAML块）。全文无禁用词命中，无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。",
+      "review_round": 5,
+      "review_notes": "2026-04-23 task6 re-review (revisiting, round 5): pass-light-edit。无L1禁用词命中，无格式问题。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-15 task6 review (round 3): pass-light-edit。修复frontmatter格式（outline-start误入YAML块）。全文无禁用词命中，无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。",
       "sources": [
         {
           "type": "blog",
@@ -3145,8 +3144,8 @@
         "research"
       ],
       "task6_result": "pass-light-edit",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-23",

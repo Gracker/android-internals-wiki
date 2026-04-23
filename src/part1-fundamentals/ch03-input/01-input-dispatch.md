@@ -7,7 +7,7 @@ last_verified:"2026-04-23"
 last_verified_against:"AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1"
 version_note:"已补核 android-12/13/14/15/16 的 InputDispatcher.cpp：Android 12 使用静态 isStaleEvent()，Android 13/14 使用 mStaleEventTimeout，Android 15/16 改为 mPolicy.isStaleEvent(...)。独立进程化和 Predictive Back 影响范围仍保留 [待验证]。"
 confidence:high
-reviewed_date: "2026-04-18"
+reviewed_date: "2026-04-23"
 reviewed_by: openclaw-task6
 rework2_date:"2026-04-15"
 rework2_by:"openclaw-task2b"
@@ -26,9 +26,9 @@ sources:
     path: "https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture"
 tags:['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
 related_chapters:["3.2", "3.3", "2.5", "9.1", "9.2"]
-task6_result: needs-rework
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: "pending"
 task9_result: "needs-rework"
 task2b_state: "fixed"
