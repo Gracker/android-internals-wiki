@@ -2,7 +2,7 @@
 section: "2.10"
 title: "GPU 渲染深入"
 chapter: "2.10"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 - Android 16 (API 21-36)"
 last_verified: "2026-04-17"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
@@ -31,15 +31,15 @@ last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、A
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: "task9_pending"
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-04-22"
-task9_reviewed_by: "openclaw-task9"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-04-24
+task9_reviewed_by: openclaw-task9
 task2b_state: fixed
-last_task9_at: "2026-04-22T22:55:00+08:00"
+last_task9_at: 2026-04-24T00:43:52+08:00
 task2b_result: fixed
 last_task2b_at: "2026-04-23T03:20:18+08:00"
 ---
