@@ -52,6 +52,9 @@ task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-04-20'
 task2b_state: fixed
 task2b_result: fixed
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-24T04:56:29+08:00"
 ---
 
 # 1.11 Zygote 机制与启动性能优化
@@ -305,7 +308,7 @@ ZygoteServer() {
 | Android 10-15 | 引入 USAP pool，以及 App Zygote / `ZygotePreload` | 普通 App 可能命中 USAP；isolated service 可能走 App Zygote | 先分清 primary / secondary 主线和 child zygote 支线 |
 | Android 16 | 本章验证过的 preload slice 名是 `PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs`、`PreloadGraphicsDriver` | USAP、App Zygote、WebViewZygote 仍然共存 | Perfetto 里按 android-16 命名查 slice，并把 `launching: <package>` 当作覆盖整段启动的 span |
 
-`DeliQueue` 属于 MessageQueue / Looper 的实现演进，不属于 Zygote 机制本身。它可能影响某些主线程消息分发场景，但不该放进 Zygote 版本线里。
+`DeliQueue` 属于 MessageQueue / Looper 的实现演进，应用侧默认生效的版本边界是 Android 17 / targetSdk 37，不属于本章验证的 Android 16 Zygote 机制本体。本章只在交叉引用里保留这个名词，具体实现和版本差异放到 §1.13 讨论。
 
 ## 常见误区
 

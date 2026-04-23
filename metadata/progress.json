@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T03:39:00+08:00",
+  "generated_at": "2026-04-24T04:58:02+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,18 +7,18 @@
     "finalized": 46,
     "ready-for-review": 137,
     "ready-to-publish": 46,
-    "last_updated": "2026-04-24T03:39:00+08:00",
+    "last_updated": "2026-04-24T04:58:02+08:00",
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 42,
+      "task6_pending": 43,
       "task2b_pending": 34,
       "ready-to-publish": 46,
-      "task9_pending": 61
+      "task9_pending": 60
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 148,
-      "revisiting": 35
+      "reviewed": 147,
+      "revisiting": 36
     },
     "task9_state_counts": {
       "unknown": 28,
@@ -28,23 +28,23 @@
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 139,
-      "pending": 38,
+      "fixed": 140,
+      "pending": 37,
       "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 42,
+      "task6_pending": 43,
       "task2b_pending": 34,
       "ready-to-publish": 46,
-      "task9_pending": 61
+      "task9_pending": 60
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 148,
-      "revisiting": 35
+      "reviewed": 147,
+      "revisiting": 36
     },
     "task9_state_counts": {
       "unknown": 28,
@@ -54,8 +54,8 @@
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 139,
-      "pending": 38,
+      "fixed": 140,
+      "pending": 37,
       "idle": 3
     }
   },
@@ -514,7 +514,10 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-20",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "repaired_date": "2026-04-24",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-24T04:58:02+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md": {
       "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
@@ -5195,8 +5198,8 @@
       "polish_date": "2026-04-10",
       "polish_by": "task2b-polish",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-04-20",
-      "last_verified_against": "AGP 8.7 / R8 default + AGP 8.12.0 release notes",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "AGP 8.8 DSL deprecation docs + AGP 8.12.0 release notes + Android App Bundle docs",
       "confidence": "medium",
       "tags": [
         "apk",
@@ -5217,15 +5220,18 @@
         "14.1",
         "15.6"
       ],
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T20:50:00+08:00"
+      "last_task9_at": "2026-04-22T20:50:00+08:00",
+      "repaired_date": "2026-04-24",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-24T04:58:02+08:00"
     },
     "src/part2-performance/ch12-apk-network/02-network-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
