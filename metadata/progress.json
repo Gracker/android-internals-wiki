@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T06:45:00+08:00",
+  "generated_at": "2026-04-24T06:54:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,13 +7,13 @@
     "finalized": 47,
     "ready-for-review": 139,
     "ready-to-publish": 47,
-    "last_updated": "2026-04-24T06:45:00+08:00",
+    "last_updated": "2026-04-24T06:54:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 39,
-      "task2b_pending": 35,
+      "task6_pending": 38,
+      "task2b_pending": 38,
       "ready-to-publish": 47,
-      "task9_pending": 62
+      "task9_pending": 60
     },
     "task6_state_counts": {
       "unknown": 31,
@@ -22,24 +22,24 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "reviewed": 92,
-      "pending": 90,
+      "reviewed": 95,
+      "pending": 87,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 34,
-      "fixed": 138,
-      "pending": 39,
+      "unknown": 33,
+      "fixed": 136,
+      "pending": 42,
       "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 45,
-      "task2b_pending": 32,
+      "task6_pending": 44,
+      "task2b_pending": 35,
       "ready-to-publish": 46,
-      "task9_pending": 60
+      "task9_pending": 58
     },
     "task6_state_counts": {
       "unknown": 28,
@@ -48,14 +48,14 @@
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 89,
-      "pending": 93,
+      "reviewed": 92,
+      "pending": 90,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 31,
-      "fixed": 142,
-      "pending": 35,
+      "unknown": 30,
+      "fixed": 140,
+      "pending": 38,
       "idle": 3
     }
   },
@@ -2789,11 +2789,13 @@
       "reviewed_by": "openclaw-task6",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "task9_result": "reworked",
-      "task9_reviewed_date": "2026-04-17",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "pipeline_stage": "task6_pending"
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-04-24T06:54:00+08:00",
+      "task2b_state": "pending"
     },
     "src/part1-fundamentals/ch05-cpu-power/06-android-power.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
@@ -3992,11 +3994,14 @@
       "section": "8.3",
       "drafted_by": "openclaw-task2a",
       "drafted_date": "2026-04-01",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_result": "fixed",
-      "task2b_state": "fixed"
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T06:54:00+08:00"
     },
     "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
       "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
@@ -7183,15 +7188,17 @@
         "2.5",
         "13.1"
       ],
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-17",
-      "task2b_state": "fixed",
+      "task9_reviewed_date": "2026-04-24",
+      "task2b_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-18",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T06:54:00+08:00"
     },
     "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md": {
       "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",

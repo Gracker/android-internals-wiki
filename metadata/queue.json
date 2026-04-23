@@ -3851,6 +3851,83 @@
       "added_at": "2026-04-24T06:50:17",
       "status": "pending",
       "original_review_log": "logs/review/2026-04-24-06-review.md"
+    },
+    {
+      "section": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
+      "section_title": "启动优化策略",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误 / 版本差异",
+          "location": "L84「TTFD / reportFullyDrawn / FrameMetrics」",
+          "detail": "`Activity.reportFullyDrawn()` 并不是 Android 12 才新增；该 API 早在 API 19 就存在，而 `FrameMetrics#TOTAL_DURATION` 来自 API 24。当前写法把两个不同时间线的能力合并成“Android 12 新增完整支持”，会误导版本判断。",
+          "suggestion": "拆开写版本边界：`reportFullyDrawn()` 标注为 API 19；`FrameMetrics` / `TOTAL_DURATION` 标注为 API 24；Android 12 单独讨论 SplashScreen 和启动指标体系。"
+        },
+        {
+          "type": "源码错误 / 原理断裂",
+          "location": "L384-L403「Jetpack App Startup Library」",
+          "detail": "正文写“没有依赖关系的 `Initializer` 会被并行执行”，这与 AndroidX App Startup 的实现不符。`InitializationProvider` / `AppInitializer` 在启动时仍在主线程内同步触发初始化，依赖图只决定调用顺序，不会自动把无依赖节点并行化。",
+          "suggestion": "改成“按依赖顺序串行初始化，且运行在主线程；如需并发只能在 `create()` 内自行切后台或使用自研调度框架”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-24T06:54:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
+      "section": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+      "section_title": "Thermal 管控",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误 / 版本差异",
+          "location": "L284-L298「getThermalHeadroom」",
+          "detail": "正文把 `getThermalHeadroom()` 写成“返回 0.0 到 1.0，首次调用返回 NaN 表示设备不支持”。官方语义不是这样：返回值可以大于 1.0（表示超出 `SEVERE` 阈值），首次调用通常返回当前 headroom，`NaN` 主要表示设备不支持或调用过于频繁。",
+          "suggestion": "改成“正常返回非负浮点值，1.0 对应 `SEVERE` 阈值，可大于 1.0；`NaN` 表示功能不可用或采样过密”。同时删除“首次调用=不支持”的判断。"
+        },
+        {
+          "type": "源码错误 / 原理断裂",
+          "location": "L453-L460「Fixed Performance Mode」",
+          "detail": "正文把 Fixed Performance Mode 说成 ADPF / `PerformanceHintManager` 可直接启用的应用层 API，并暗示它能固定 CPU / GPU 频率。公开 Android 文档中的 fixed-performance mode 是 benchmark / 调试场景下的特权能力，通常通过 `adb shell cmd power set-fixed-performance-mode-enabled true` 使用，并不是 `PerformanceHintManager` 的公开接口。",
+          "suggestion": "把这里改成“固定性能模式属于调试/基准测试开关，不是普通 app API”；同时补充它仍可能受温控影响，不能等同于关闭 thermal。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-24T06:54:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
+      "section": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+      "section_title": "AOSP 代码阅读",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2 处技术问题",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L109-L113「frameworks/base 关键目录」",
+          "detail": "这里把 `core/java/android/app/` 写成 “ActivityThread、ActivityManagerService 相关”。`ActivityThread` 的确在该目录，但 `ActivityManagerService` 实际位于 `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`。当前写法会把 Framework API 目录和 System Server 实现目录混在一起。",
+          "suggestion": "拆开写：`core/java/android/app/` 负责 `ActivityThread` 等应用进程侧入口；AMS 归到 `services/core/java/com/android/server/am/`。"
+        },
+        {
+          "type": "原理断裂 / 源码错误",
+          "location": "L137「init 目录的重要性」",
+          "detail": "“init 进程解析 init.rc、启动关键服务、触发 boot 完成 event 的全过程都在这里”这句把 boot completed 归因到了 `system/core/init/`。真正的 `BOOT_COMPLETED` / `LOCKED_BOOT_COMPLETED` 广播链路发生在 `system_server` 内，由 AMS 在系统启动阶段和 boot animation 完成后继续推进。",
+          "suggestion": "补一条完整路径：`init` 负责早期用户空间启动；`zygote` 拉起应用进程模板；`system_server` 启动 AMS/PMS/WMS；boot-completed 广播由 AMS 在后续阶段发出。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-24T06:54:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
     }
   ]
 }
