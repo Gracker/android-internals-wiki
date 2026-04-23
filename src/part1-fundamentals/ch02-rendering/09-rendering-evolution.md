@@ -1,65 +1,80 @@
 ---
-title: "渲染机制的版本演进"
-chapter: "2.9"
-section: "2.9"
+title: 渲染机制的版本演进
+chapter: '2.9'
+section: '2.9'
 status: ready-for-review
 drafted_date: 2026-03-30
-drafted_by: "openclaw-task2a"
+drafted_by: openclaw-task2a
 reviewed_date: 2026-04-23
 reviewed_by: openclaw-task6
-applicable_versions: "Android 3.0 (API 11) ~ Android 16 (API 36)"
-last_verified: "2026-04-23"
-last_verified_against: "AOSP android-16.0.0_r1 + external/perfetto + developer.android.com"
+applicable_versions: Android 3.0 (API 11) ~ Android 16 (API 36)
+last_verified: '2026-04-23'
+last_verified_against: AOSP android-16.0.0_r1 + external/perfetto + developer.android.com
 confidence: medium
 polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
+polish_date: '2026-04-05'
+polish_by: task2b-polish
 sources:
-  - type: official
-    path: "developer.android.com/about/versions"
-  - type: official
-    path: "developer.android.com/about/versions/16/features"
-  - type: official
-    path: "source.android.com"
-  - type: aosp
-    path: "external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto"
-  - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java"
-  - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/Display.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/Window.java"
-  - type: research
-    path: "intake/research-feeds/2026-03-30-ch02-gpu-optimization.md"
-  - type: research
-    path: "intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md"
-  - type: research
-    path: "intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md"
-tags: ['frametimeline', 'vulkan', 'rendering-evolution', 'blastBufferQueue', 'hwui', 'skia', 'choreographer', 'FrameMetrics']
-related_chapters: ["2.1", "2.3", "2.6", "2.10", "3.1", "8.2"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+- type: official
+  path: developer.android.com/about/versions
+- type: official
+  path: developer.android.com/about/versions/16/features
+- type: official
+  path: source.android.com
+- type: aosp
+  path: external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/Display.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/Window.java
+- type: research
+  path: intake/research-feeds/2026-03-30-ch02-gpu-optimization.md
+- type: research
+  path: intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md
+- type: research
+  path: intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md
+tags:
+- frametimeline
+- vulkan
+- rendering-evolution
+- blastBufferQueue
+- hwui
+- skia
+- choreographer
+- FrameMetrics
+related_chapters:
+- '2.1'
+- '2.3'
+- '2.6'
+- '2.10'
+- '3.1'
+- '8.2'
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-04-24"
-task9_reviewed_by: "openclaw-task9"
-repaired_date: "2026-04-23"
-repaired_by: "openclaw-task2b"
-review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 1 L1 fix (否定-纠正结构: 不是X而是Y → 直接陈述). 无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
+task9_state: pending
+task9_result: needs-rework
+task9_reviewed_date: '2026-04-24'
+task9_reviewed_by: openclaw-task9
+repaired_date: '2026-04-24'
+repaired_by: openclaw-task2b
+review_notes: '2026-04-23 task6 re-review (revisiting): pass-light-edit. 1 L1 fix
+  (否定-纠正结构: 不是X而是Y → 直接陈述). 无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。'
 task2b_result: fixed
-task2b_state: "pending"
-last_task2b_at: "2026-04-23T12:48:00+08:00"
-last_task9_at: "2026-04-24T05:21:00+08:00"
+task2b_state: fixed
+last_task2b_at: '2026-04-24T06:20:15+08:00'
+last_task9_at: '2026-04-24T05:21:00+08:00'
 ---
 
 # 渲染机制的版本演进
 
 当我们打开 Perfetto 抓一份 Trace，看到 `RenderThread` 在主线程旁边有条不紊地执行 GPU 命令，看到 `VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列——这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线，并非一蹴而就。它经历了十多个 Android 大版本的持续重构。
 
-理解这段演进历史，对于性能分析来说对于性能分析来说是日常工作的前置知识：我们在 Perfetto 中看到的每一个 Track 名称、每一项 API 行为，都带着版本烙印。当我们面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
+理解这段演进历史，是性能分析的前置知识：我们在 Perfetto 中看到的每一个 Track 名称、每一项 API 行为，都带着版本烙印。当我们面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
 
 下面的梳理从硬件加速的引入开始，到 Vulkan 统一渲染堆栈为止，覆盖了我们在 Perfetto 中会遇到的每一个关键版本的渲染变化。
 
@@ -123,7 +138,9 @@ Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流
 
 ### 为什么需要 RenderThread
 
-在 Android 4.x 中，虽然硬件加速已经默认开启，但 GPU 命令的提交仍然在主线程上执行。`draw` 阶段不仅要构建 DisplayList，还要将 GL 命令 flush 给 GPU。这里有一个关键的 API 行为差异：`eglSwapBuffers()` 本身是**非阻塞**的——它只是将待显示帧入队到 GPU 的命令队列，然后立即返回，主线程继续执行后续代码；真正会阻塞主线程的是 `glFinish()`——它强制等待 GPU 完成所有已提交的命令才会返回。在 Android 5.0 之前，`glFinish()` 是主线程卡顿的常见根因，而 Android 5.0 引入 RenderThread 之后，GL 命令的提交和等待都移到了独立线程，主线程得以解放。
+在 Android 4.x 中，硬件加速虽然已经默认开启，但 GPU 命令的提交和节流仍然发生在主线程。`draw` 阶段不仅要构建 DisplayList，还要把 GL 命令送进 EGL / GLES 管线。`eglSwapBuffers()` 不保证立即返回：当可用 back buffer 不足、前一帧的 release fence 还没就绪，或 swap interval / VSYNC 节流要求当前线程等待时，它会直接阻塞调用线程。`glFinish()` 则是更强的显式同步，调用点会一直等到此前提交的 GPU 工作全部完成。
+
+在 Android 5.0 之前，这两类等待都可能落在主线程上。排查里看到的 swap stall 往往对应显示管线的 back-pressure，`glFinish()` 只是其中一类显式同步点。Android 5.0 引入 RenderThread 之后，GL 命令提交和大部分 GPU 等待被挪到独立线程，主线程主要保留 UI 树遍历和 DisplayList 录制。
 
 ### RenderThread 的工作方式
 
@@ -235,7 +252,10 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 实现要求：
 - 硬件：支持离散或自适应步进的显示面板
 - 系统：HWC HAL v3（`android.hardware.graphics.composer3`）承接 ARR 管线
-- Android 16 公共 API：`Display.hasArrSupport()`、`Display.getSuggestedFrameRate(int)`；View / Window 侧可以通过 `setRequestedFrameRate(float)`、`setFrameRatePowerSavingsBalanced(boolean)` 表达偏好
+- 公共 API 分工：
+  - `Display.hasArrSupport()` 用于判断设备是否支持 ARR，`Display.getSuggestedFrameRate(int)` 用于按帧率类别查询系统建议值
+  - `View.setRequestedFrameRate(float)` 用于内容侧表达目标帧率偏好
+  - `Window.setFrameRatePowerSavingsBalanced(boolean)` 用于窗口级调整功耗与流畅度之间的平衡策略
 
 应用把目标帧率告诉系统之后，是否真的切到对应档位，仍由系统按电量、温度、面板能力和当前场景统一决策。
 

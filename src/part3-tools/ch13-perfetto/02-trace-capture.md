@@ -1,46 +1,58 @@
 ---
-title: "Trace 抓取"
-chapter: "13.2"
-section: "13.2"
+title: Trace 抓取
+chapter: '13.2'
+section: '13.2'
 status: ready-for-review
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-21"
-last_verified_against: "perfetto.dev docs, google/perfetto main perf_event_config.proto"
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+last_verified: '2026-04-21'
+last_verified_against: perfetto.dev docs, google/perfetto main perf_event_config.proto
 confidence: high
-reviewed_date: "2026-04-21"
-reviewed_by: "openclaw-task6"
+reviewed_date: '2026-04-21'
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
+polish_date: '2026-04-06'
+polish_by: task2b-polish
 review_type: post-polish-quality-gate
 review_round: 2
 sources:
-  - type: blog
-    path: "https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/"
-  - type: official
-    path: "https://perfetto.dev/docs/quickstart/android-tracing"
-  - type: blog
-    path: "Cubox/Perfetto 快速上手指南1 —— Trace 的抓取-2025-03-20.md"
-  - type: blog
-    path: "Cubox/Android Perfetto 系列 4：使用命令行在本地打开超大 Trace · Android Performance-2025-02-09.md"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
-tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
-related_chapters: ["13.1", "13.3", "13.4", "14.1", "15.1"]
-
-re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）"
-pipeline_stage: "task2b_pending"
+- type: blog
+  path: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
+- type: official
+  path: https://perfetto.dev/docs/quickstart/android-tracing
+- type: blog
+  path: Cubox/Perfetto 快速上手指南1 —— Trace 的抓取-2025-03-20.md
+- type: blog
+  path: Cubox/Android Perfetto 系列 4：使用命令行在本地打开超大 Trace · Android Performance-2025-02-09.md
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
+tags:
+- perfetto
+- trace
+- atrace
+- trace-capture
+- heapprofd
+related_chapters:
+- '13.1'
+- '13.3'
+- '13.4'
+- '14.1'
+- '15.1'
+re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: "reviewed"
-task9_result: "needs-rework"
-task2b_state: "pending"
+task9_state: pending
+task9_result: needs-rework
+task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: "2026-04-24"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-24T05:21:00+08:00"
+task9_reviewed_date: '2026-04-24'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-24T05:21:00+08:00'
+repaired_date: '2026-04-24'
+repaired_by: openclaw-task2b
+last_task2b_at: '2026-04-24T06:20:15+08:00'
 ---
 
 # Trace 抓取
@@ -205,7 +217,9 @@ duration_ms: 10000    # 10 秒
 
 ### 一个推荐的通用配置
 
-下面是一份适用于大多数性能分析场景的通用配置。我们在日常工作中可以把这份配置作为起点，按需增减 atrace category：
+下面把配置拆成两份可直接执行的版本。`.pbtxt` 是 protobuf text format，不能把版本判断写成运行时分支后直接塞进配置文件。跨版本抓取有两种做法：手工准备两份配置，或由 host 侧脚本按 API level 生成对应文件。
+
+#### Android 10 / 11 基线配置
 
 ```
 buffers {
@@ -225,7 +239,7 @@ data_sources {
       ftrace_events: "power/cpu_idle"
       ftrace_events: "power/gpu_frequency"
       ftrace_events: "power/suspend_resume"
-      
+
       atrace_categories: "am"
       atrace_categories: "wm"
       atrace_categories: "gfx"
@@ -238,7 +252,7 @@ data_sources {
       atrace_categories: "sched"
       atrace_categories: "freq"
       atrace_categories: "idle"
-      
+
       atrace_apps: "com.example.myapp"
     }
   }
@@ -265,18 +279,79 @@ data_sources {
   }
 }
 
-// android.surfaceflinger.frametimeline 仅支持 Android 12+ (API 31+)
-// 需要根据目标版本动态启用，避免低版本设备上报错
-if (device_api_level >= 31) {
-  data_sources {
-    config {
-      name: "android.surfaceflinger.frametimeline"
+duration_ms: 20000
+```
+
+#### Android 12+ 配置（追加 FrameTimeline）
+
+```
+buffers {
+  size_kb: 65536
+  fill_policy: DISCARD
+}
+
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "sched/sched_blocked_reason"
+      ftrace_events: "power/cpu_frequency"
+      ftrace_events: "power/cpu_idle"
+      ftrace_events: "power/gpu_frequency"
+      ftrace_events: "power/suspend_resume"
+
+      atrace_categories: "am"
+      atrace_categories: "wm"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_categories: "input"
+      atrace_categories: "binder_driver"
+      atrace_categories: "hal"
+      atrace_categories: "dalvik"
+      atrace_categories: "res"
+      atrace_categories: "sched"
+      atrace_categories: "freq"
+      atrace_categories: "idle"
+
+      atrace_apps: "com.example.myapp"
     }
+  }
+}
+
+data_sources {
+  config {
+    name: "linux.process_stats"
+    process_stats_config {
+      scan_all_processes_on_start: true
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "linux.sys_stats"
+    sys_stats_config {
+      meminfo_period_ms: 1000
+      stat_period_ms: 1000
+      stat_counters: STAT_CPU_TIMES
+      stat_counters: STAT_FORK_COUNT
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "android.surfaceflinger.frametimeline"
   }
 }
 
 duration_ms: 20000
 ```
+
+两份配置的差别只有一处：Android 12+ 多了 `android.surfaceflinger.frametimeline` 数据源。低版本设备保留 `linux.ftrace`、`linux.process_stats` 和 `linux.sys_stats`，就能正常抓取调度、atrace 和系统统计数据。
 
 [图：通用配置覆盖的数据维度——CPU 调度、渲染管线、系统统计、帧时间线]
 
