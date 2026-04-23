@@ -30,8 +30,8 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -39,6 +39,7 @@ task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-20T14:50:48+08:00"
+last_task2b_at: "2026-04-23T19:25:33+08:00"
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
@@ -176,15 +177,13 @@ public View createView(View parent, String name, Context context, AttributeSet a
 
 ### 量化关系：层级深度与帧耗时
 
-每个 View 的 `onMeasure()` 执行时间取决于它的实现复杂度。简单的 `TextView.onMeasure()` 大约 0.01-0.05ms，但一个包含多个子 View 的 `LinearLayout.onMeasure()`（特别是使用了 `layout_weight`）可能需要 0.1-0.3ms。把这些累加起来：
+实际耗时和设备性能、字体与图片复杂度、约束关系、是否命中缓存都有关系，很难给出跨设备稳定的毫秒表。更稳妥的判断方法，是在同一台设备上观察 `performMeasure()` / `performLayout()` 的占比、重复 pass 次数，以及它们是否已经挤占了当前帧预算。
 
-- 一个 3 层、20 个 View 的简单布局：measure 大约 0.5-1ms
-- 一个 8 层、80 个 View 的中等布局：measure 大约 3-8ms
-- 一个 12 层、200 个 View 的复杂布局：measure 可能超过 15ms，直接吃掉一整帧
+- 3 层、20 个 View 左右的简单布局，通常还不至于单独成为瓶颈；更该警惕的是高频触发的重复布局
+- 8 层、80 个 View 左右的中等布局，如果夹杂 `wrap_content` 链、`layout_weight` 或嵌套 `RelativeLayout`，Perfetto 里就更容易看到连续的 measure/layout slice
+- 12 层、200 个 View 左右的复杂布局，一旦和列表滚动、动画或首帧 inflate 叠在一起，布局阶段就可能吞掉大部分帧预算
 
-[待验证: 上述数值基于典型场景估算，不同设备和 View 类型差异较大]
-
-在 120Hz 屏幕上（帧预算 8.33ms），一个中等复杂度布局的 measure 阶段就可能占据帧预算的 40-100%。这就是为什么在高帧率设备上，布局优化变得更加紧迫。
+在 120Hz 设备上，帧预算只有 8.33ms。布局层级本身不是唯一问题，重复 measure、深层嵌套和不必要的 `requestLayout()` 更容易把预算挤空。
 
 ### RelativeLayout 的二次 measure 问题
 
@@ -237,7 +236,7 @@ void scheduleTraversals() {
 
 这两者的区别是 Android 面试的经典题，也是实际优化中必须搞清楚的问题：
 
-**`invalidate()`** 只标记 View 需要重绘（dirty），触发 **Draw 阶段**。它不会重新 measure 和 layout。适合的场景：文字内容变了、颜色变了、Drawable 状态变了——凡是**不影响 View 尺寸和位置**的变化。
+**`invalidate()`** 会给当前 View 打上 dirty 标记，并把脏区域沿父容器向上传到 `ViewRootImpl`，随后在下一次 traversal 中进入 Draw 阶段。它通常不会重新 measure 和 layout。开启硬件加速时，系统还会结合 RenderNode 的 damage 信息缩小重绘范围。适合的场景：文字内容变了、颜色变了、Drawable 状态变了——凡是**不影响 View 尺寸和位置**的变化。
 
 **`requestLayout()`** 标记 View 需要重新测量和布局，触发 **Measure + Layout + Draw 全流程**。而且它是**向上传播**的：一个子 View 调用 `requestLayout()`，它的父 View、祖父 View……一直到 `ViewRootImpl`，整条链路上的所有 View 都需要重新 measure/layout。
 
@@ -245,10 +244,10 @@ void scheduleTraversals() {
 
 | 维度 | invalidate() | requestLayout() |
 |------|-------------|-----------------|
-| 触发阶段 | Draw only | Measure + Layout + Draw |
-| 传播方向 | 自身及子 View | 向上传播至 ViewRootImpl |
-| 影响范围 | 仅 dirty 区域 | 整棵 View 树 |
-| 典型耗时 | 0.1-1ms | 1-15ms（取决于树复杂度） |
+| 触发方式 | 标记 dirty，下一轮 traversal 主要进入 Draw | 标记 layout request，下一轮 traversal 进入 Measure + Layout + Draw |
+| 传播方向 | dirty 区域向上传到 ViewRootImpl；真正的 Draw 再自顶向下执行 | layout request 向上传播至 ViewRootImpl |
+| 影响范围 | 以 dirty 区域和受影响的节点为主 | 常常从根节点重新走一轮 measure/layout，树越大代价越高 |
+| Perfetto 常见表现 | Draw 相关 slice 更显眼 | Measure/Layout 相关 slice 更显眼 |
 
 一个常见的性能错误：在 `RecyclerView.Adapter.onBindViewHolder()` 中调用 `requestLayout()` 而不是 `invalidate()`。这会导致每个 item bind 时都触发一次完整的 View 树遍历，在滑动场景下直接造成卡顿。
 
@@ -479,7 +478,7 @@ Android Studio 的 Layout Inspector 可以在运行时查看 View 树的结构�
 
 进阶回答：
 
-- `invalidate()` 向下传播（自身和子 View），`requestLayout()` 向上传播（至 ViewRootImpl）
+- `invalidate()` 会把 dirty 区域向上传到 `ViewRootImpl`，真正的向下遍历发生在随后那一轮 Draw；`requestLayout()` 则把 layout request 向上传到 `ViewRootImpl`
 - `requestLayout()` 会触发 `scheduleTraversals()` 并通过 `Choreographer` 等待下一个 VSync 执行
 - `invalidate()` 也是异步的，它通过 `ViewRootImpl.scheduleTraversals()` 等待下一个 VSync
 - 在同一帧内多次调用 `invalidate()` 或 `requestLayout()`，只会在下一个 VSync 执行一次 doFrame
