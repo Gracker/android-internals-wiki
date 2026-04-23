@@ -1853,7 +1853,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "fixed_at": "2026-04-23T17:25:41+08:00",
+      "fixed_by": "openclaw-task2b",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed"
     },
     {
       "section": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
@@ -1934,7 +1938,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:10:37+08:00",
-      "status": "pending"
+      "status": "completed",
+      "fixed_at": "2026-04-23T17:25:41+08:00",
+      "fixed_by": "openclaw-task2b",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed"
     },
     {
       "section": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
@@ -4030,39 +4038,6 @@
       "status": "pending"
     },
     {
-      "section": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
-      "section_title": "文字渲染性能",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "源码准确性",
-          "location": "",
-          "detail": "- [P0][源码准确性][Android 文字渲染管线全景]",
-          "suggestion": ""
-        },
-        {
-          "type": "原理链完整性",
-          "location": "",
-          "detail": "- [P1][原理链完整性][PrecomputedText]",
-          "suggestion": ""
-        },
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- [P1][知识盲区][版本演进]",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "completed",
-      "task2b_result": "fixed",
-      "task2b_state": "fixed",
-      "fixed_at": "2026-04-23T12:48:00+08:00",
-      "fixed_by": "openclaw-task2b"
-    },
-    {
       "section": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
       "section_title": "硬件层 (Hardware Layer)",
       "priority": 85,
@@ -4086,74 +4061,6 @@
       "status": "pending"
     },
     {
-      "section": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
-      "section_title": "渲染演进",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 4 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "源码准确性",
-          "location": "",
-          "detail": "- [P0][源码准确性][FrameTimeline：系统级 Jank 检测框架]",
-          "suggestion": ""
-        },
-        {
-          "type": "原理链完整性",
-          "location": "",
-          "detail": "- [P1][原理链完整性][RenderThread 的工作方式]",
-          "suggestion": ""
-        },
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- [P1][知识盲区][Android 16：AGSL 图形着色能力增强]",
-          "suggestion": ""
-        },
-        {
-          "type": "数据/案例支撑",
-          "location": "",
-          "detail": "- [P1][数据/案例支撑][自适应刷新率（ARR）]",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "completed",
-      "task2b_result": "fixed",
-      "task2b_state": "fixed",
-      "fixed_at": "2026-04-23T12:48:00+08:00",
-      "fixed_by": "openclaw-task2b"
-    },
-    {
-      "section": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
-      "section_title": "触摸响应性能分析",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "原理链完整性",
-          "location": "",
-          "detail": "- **[P0][原理链完整性][输入事件 Batching 与 Choreographer 的配合]**",
-          "suggestion": ""
-        },
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- **[P1][知识盲区][InputDispatcher 派发]**",
-          "suggestion": ""
-        },
-        {
-          "type": "源码准确性",
-          "location": "",
-          "detail": "- **[P1][源码准确性][WaitQueue 移除时机]**",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
-    },
-    {
       "section": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
       "section_title": "手势导航与系统交互",
       "priority": 85,
@@ -4169,35 +4076,6 @@
           "type": "源码准确性",
           "location": "",
           "detail": "- [P1][源码准确性][triggerBack 触发路径]",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
-      "section_title": "输入延迟与预测",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "版本差异覆盖",
-          "location": "",
-          "detail": "- **[P0][版本差异覆盖][全文]**",
-          "suggestion": ""
-        },
-        {
-          "type": "原理链完整性",
-          "location": "",
-          "detail": "- **[P1][原理链完整性][预测输入小节]**",
-          "suggestion": ""
-        },
-        {
-          "type": "源码准确性",
-          "location": "",
-          "detail": "- **[P1][源码准确性][Perfetto 分析小节]**",
           "suggestion": ""
         }
       ],
@@ -4252,41 +4130,6 @@
       "status": "pending"
     },
     {
-      "section": "src/part1-fundamentals/ch03-input/README.md",
-      "section_title": "输入系统总纲",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 4 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "location": "",
-          "detail": "- **[P1][版本差异][导言] 缺失 Android 15/16 架构重构描述**",
-          "suggestion": ""
-        },
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- **[P1][知识盲区][3.4 关联说明] 缺失 ARR（自适应刷新率）与输入的协同关系**",
-          "suggestion": ""
-        },
-        {
-          "type": "原理链",
-          "location": "",
-          "detail": "- **[P2][原理链][导言] 建议提及 InputClassifier 的角色**",
-          "suggestion": ""
-        },
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- **[P2][知识盲区][3.3/3.5 关联] 建议明确“预测性返回”作为 P0 级 UX 变更**",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
-    },
-    {
       "section": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
       "section_title": "内存架构总览",
       "priority": 85,
@@ -4331,35 +4174,6 @@
           "type": "知识盲区",
           "location": "",
           "detail": "- **[P1][知识盲区][ZRAM 性能优化]**",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:10:37+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-      "section_title": "ART 内存管理",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "location": "",
-          "detail": "- **[P0][版本差异][§3.5]**",
-          "suggestion": ""
-        },
-        {
-          "type": "原理链",
-          "location": "",
-          "detail": "- **[P1][原理链][§2.4]**",
-          "suggestion": ""
-        },
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- **[P1][知识盲区][§2.6]**",
           "suggestion": ""
         }
       ],
@@ -5317,6 +5131,65 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-04-23T07:24:46+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "section_title": "WebView 渲染链路 (18.13)",
+      "priority": 90,
+      "reason": "[Task6 Review回炉] 「链路」属 SKILL.md 禁用大厂黑话，全文出现 11 次含标题/大纲/frontmatter，需系统性替换",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文（标题、大纲锚点、frontmatter tags、正文、### 链路 小节标题）",
+          "detail": "「链路」出现 11 次，属 SKILL.md 明确禁用的大厂黑话。需全面替换为「管线」或「路径」",
+          "suggestion": "将「渲染链路」统一替换为「渲染管线」，标题改为「WebView 渲染管线」，大纲锚点中「链路」→「管线」，小节标题「### 链路」→「### 管线」或「### 数据流」。与 §18.12 同步修改保持一致"
+        },
+        {
+          "type": "需补充素材",
+          "location": "Mode 3 SurfaceControl 候选路径",
+          "detail": "整段内容为候选路径描述，缺少确定性技术信息。建议拿到实机验证数据后补充具体启用条件和 Perfetto 证据",
+          "suggestion": "在有条件时用 dumpsys SurfaceFlinger + Perfetto 验证 SurfaceControl child layer 路径的启用条件，补充到正文中"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-23T13:55:09",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-23-13-review.md"
+    },
+    {
+      "section": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 90,
+      "reason": "[review回炉] 数据支撑不足，源码验证缺失",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充数据",
+          "location": "性能提升数据",
+          "detail": "4%掉帧减少缺乏具体测试环境和基线说明",
+          "suggestion": "需补充具体的设备配置、测试条件和性能对比基线"
+        },
+        {
+          "type": "需验证",
+          "location": "MessageQueue字段变更",
+          "detail": "AOSP android-17-beta3中字段变更描述不够精确",
+          "suggestion": "需要在实际代码中验证字段变更的具体影响"
+        },
+        {
+          "type": "需补充",
+          "location": "版本对比",
+          "detail": "缺乏API 37相比前版本的定量性能对比数据",
+          "suggestion": "补充分代CMC相比Android 16的具体性能提升数据"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-23T16:35:03.727009",
       "status": "pending"
     }
   ]

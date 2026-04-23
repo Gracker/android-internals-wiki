@@ -8,14 +8,14 @@ section: "4.3"
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
 status: finalized
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 36)"
-last_verified: "2026-03-31"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
+last_verified: "2026-04-23"
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-last_verified_against: "AOSP android-15.0.0_r1"
+last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 + Android Developers Blog (Android 16 QPR2)"
 confidence: medium
 sources:
   - type: official
@@ -40,6 +40,7 @@ task9_state: reviewed
 task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-23T17:25:41+08:00"
 task9_result: pass-tech-review
 ---
 
@@ -118,15 +119,16 @@ Allocation Space 的具体实现取决于当前使用的 GC 策略：
 
 这两种策略在后续的 GC 策略演进部分会详细展开。
 
-Allocation Space 的实现和分代策略要按版本拆开看。Android 8.0-14 的主线是基于 `RegionSpace` 的 CC 路径，年轻对象优先在更小的工作集里回收。到了 Android 15，AOSP 源码里已经能看到 `BumpPointerSpace` 和 UFFD 驱动的 Mark Compact 路径，但这还不等于可以直接把整条路线写成 Generational CMC。公开发布材料把 Generational CMC 明确讲清楚，是 Android 16 QPR2 之后的事情。
+Allocation Space 的实现和分代策略要按平台版本拆开看。Android 8.0-13 的主线是基于 `RegionSpace` 的 CC 路径，年轻对象优先在更小的工作集里回收。到了 Android 14，AOSP 平台源码已经出现 `kCollectorTypeCMC` 和 `mark_compact.cc`，说明 UFFD 驱动的 Mark Compact / CMC 路径已经进入主线实现；Android 15 继续补齐 `kCollectorTypeCMCBackground`、`BumpPointerSpace` 等配套结构。公开发布材料把 Generational CMC 明确讲清楚，则是 Android 16 QPR2 之后的事情。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/region_space.cc]
+[已验证: AOSP android-14.0.0_r1, art/runtime/gc/collector_type.h]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/bump_pointer_space.cc]
 [已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
 ### Large Object Space：大对象的特殊处理
 
-如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-15.0.0_r1` 为例，`Heap::kMinLargeObjectThreshold` 的默认值是 `12 * KB`。`Heap::IsLargeObject(...)` 还明确要求对象类型是 primitive array 或 `String`。这里的 12KB 是 ART 的阈值常量，不应直接写成“3 页换算”。
+如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-15.0.0_r1` 为例，`Heap::kMinLargeObjectThreshold` 的默认值是 `12 * KB`。`Heap::IsLargeObject(...)` 还明确要求对象类型是 primitive array 或 `String`。旧资料常把这个阈值写成 `3 * kPageSize`，但在 Android 15 的平台源码里它已经固定成 12KB。结合 16KB page size 的适配背景，更合适的理解是：AOSP 主动把 LOS 入口从页大小解耦，避免不同页大小设备出现不同的大对象分配边界。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.h]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap-inl.h]
@@ -158,11 +160,12 @@ Android 15 上，Non-moving Space 的数据结构仍然是 `DlMallocSpace`，使
 
 来源: Cubox/【Android ART】Heap的内存布局-2024-07-23.md
 
-一个容易忽略的细节是，ART 的所有 Space 都位于 0–4GB 的虚拟地址空间范围内，即使是在 64 位进程中也是如此。这样做的目的是让所有 Java 对象的引用（reference）都可以用 32 位（4 字节）表示，而不是 64 位的指针，每个对象引用节省一半的内存。对于一个有大量对象引用的应用来说，这个优化可以节省可观的堆空间。
+一个容易忽略的细节是，ART 的主要托管堆和相关 card table 布局会尽量放在 low 4GB 区间。`heap.cc` 里能直接看到 `/* low_4gb= */ true` 的映射请求，以及“card table 覆盖 whole low_4gb”的注释。这样做，是为了让 `CompressedReference` / `HeapReference` 继续用 32 位压缩引用表示 Java 对象引用，在 64 位进程里减少引用字段的内存开销，并减轻缓存压力。
 
-这个设计在 Android 15 上仍然沿用。
+所以这里说的“4GB 限制”更准确地讲，是 ART 为托管堆保留的低地址窗口，而不是 64 位进程只能使用 4GB 虚拟地址空间。Native heap、Code Cache 和其他映射并不受这条约束。
 
-[待验证: 4GB 限制是否在 Android 16/17 中有所变化]
+[已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
+[已验证: AOSP android-15.0.0_r1, art/runtime/mirror/object_reference.h]
 
 ## GC 策略演进：从 CMS 到 CC 再到 CMC
 
@@ -217,25 +220,26 @@ AOSP 源码路径：`art/runtime/gc/collector/concurrent_copying.cc`
 [已验证: 官方文档, source.android.com/docs/core/perf/art-management]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 
-### Android 15：UFFD 驱动的 Mark Compact / CMC 路径
+### Android 14 / 15：UFFD 驱动的 Mark Compact / CMC 路径
 
 CC GC 解决了碎片问题，但代价也很具体。拷贝式回收需要同时保留 from-space 和 to-space，回收窗口里的物理内存压力更高。Read Barrier 还会插入到对象引用读取路径上，GC 不运行时这层开销也在。
 
-到了 `android-15.0.0_r1`，ART 源码里已经能看到基于 `userfaultfd` 的 Mark Compact 实现。对应文件是 `art/runtime/gc/collector/mark_compact.cc`，`heap.cc` 里也能看到 `kCollectorTypeCMC` 和 `MarkCompact::GetUffdAndMinorFault()` 相关逻辑。这个阶段更稳妥的写法是：Android 15 引入了 UFFD 驱动的 Mark Compact / CMC 路径，不要直接写成 Generational CMC。
+从 `android-14.0.0_r1` 开始，ART 平台源码已经有 `kCollectorTypeCMC` 和 `art/runtime/gc/collector/mark_compact.cc`。到 `android-15.0.0_r1`，`kCollectorTypeCMCBackground`、`BumpPointerSpace` 和 `MarkCompact::GetUffdAndMinorFault()` 这类配套实现更完整。这里更合适的版本线是：Android 14 / 15 已进入 UFFD 驱动的 Mark Compact / CMC 路径，但不要把这条路线直接写成 Generational CMC。
 
 UFFD 允许用户空间监听一段虚拟内存的缺页事件。GC 压缩对象时，如果应用线程访问到尚未整理完成的页，内核会把 fault 交给 ART 处理，ART 先把这一页整理到位，再把控制权交还给应用线程。这样做的目的，是把对象迁移和应用继续运行拆到页级别协调，而不是在每次引用读取时都依赖 Read Barrier。
 
-CMC 的另一处变化，是主分配路径可以配合 `BumpPointerSpace` 这类更简单的线性分配结构。对我们做性能分析来说，重点是知道 Android 15 这里的关键词已经从拷贝式 CC 扩展到 UFFD 加 Mark Compact。
+CMC 的另一处变化，是主分配路径可以配合 `BumpPointerSpace` 这类更简单的线性分配结构。对性能分析来说，重点是把 Android 8.0-13 的 CC、Android 14 / 15 的 CMC 路径、Android 16 QPR2 之后的 Generational CMC 分开看。
 
 [来源: Cubox/ART虚拟机CMC GC算法核心实现介绍-2023-06-24.md]
+[已验证: AOSP android-14.0.0_r1, art/runtime/gc/collector_type.h]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/mark_compact.cc]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc]
 
 ### Android 16 QPR2 / Android 17：官方对外明确 Generational CMC
 
-Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响我们怎么描述 GC 路线。写 Android 16 QPR2 和 Android 17 时，可以把 Generational CMC 当成正式能力来讨论；写 Android 15 时，表述应收在 Mark Compact / CMC 路径本身。
+Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响我们怎么描述 GC 路线。写 Android 16 QPR2 和 Android 17 时，可以把 Generational CMC 当成正式能力来讨论；写 Android 14 / 15 时，表述应收在 Mark Compact / CMC 路径本身。
 
-这也能避开两个常见误判。不要因为 `mark_compact.cc` 已经出现在 Android 15 源码里，就把 Android 15 写成已经正式对外明确的 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
+这条时间线更适合记成：Android 8.0-13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 / Android 17 再谈 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
 
 [已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
