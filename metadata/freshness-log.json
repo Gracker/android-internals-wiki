@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-04-17T02:00:00+08:00",
+  "last_check": "2026-04-24T02:10:00+08:00",
   "entries": [
     {
       "date": "2026-04-15",
@@ -391,6 +391,54 @@
             "Android 15"
           ]
         }
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "timestamp": "2026-04-24T02:10:00+08:00",
+      "android_version_changes": {
+        "android_17_status": "Beta 4 released (April 2026) - final beta, lighter memory footprint",
+        "android_16_status": "Most widely used version (released June 2025)",
+        "android_17_qpr1_beta": "Android 17 QPR1 Beta 1 released (April 2026)",
+        "recent_updates": [
+          "Android Security Bulletin April 2026 (CVE-2026-0049 critical)",
+          "Jetpack Compose 1.11 (April '26) - trackpad behavior, v2 testing API default",
+          "Android Studio Panda 3 (2025.3.3 Patch 1) - API 37 support, LeakCanary integration",
+          "App Memory Limiter introduced in Android 17",
+          "AutoFDO expanded to android17-6.18 kernel branch"
+        ],
+        "key_changes": {
+          "lock_free_messagequeue": "API 37 lock-free MessageQueue now stable",
+          "generational_gc": "ART Concurrent Mark-Compact collector now supports generational GC in Android 17",
+          "autofdo_kernel_618": "AutoFDO expanded to android17-6.18 kernel branch",
+          "profiling_triggers": "ProfilingManager new triggers: COLD_START, OOM, KILL_EXCESSIVE_CPU_USAGE",
+          "static_final_immutability": "Static final fields immutability enforced in API 37",
+          "app_memory_limiter": "Android 17 introduces per-app memory limits",
+          "minimal_mode_aod": "Android 17 introduces Minimal Mode AOD for power efficiency",
+          "post_quantum_crypto": "Android 17 introduces post-quantum cryptography"
+        }
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 211,
+        "files_with_metadata": 182,
+        "files_ending_at_api_36": 117,
+        "files_needing_api37_update": 117,
+        "files_verified_under_14_days": 120,
+        "files_verified_under_30_days": 160,
+        "files_verified_over_90_days": 0
+      },
+      "key_findings": [
+        "117 files still end at API 36 instead of including API 37",
+        "No files verified over 90 days ago - all content is relatively fresh",
+        "Android 17 Beta 4 information needs to be added to version changelog",
+        "App Memory Limiter is new Android 17 feature not yet covered",
+        "appendix/version-changelog.md needs Beta 4 update"
+      ],
+      "action_items": [
+        "Update applicable_versions for core chapters to include Android 17 (API 37)",
+        "Update appendix/version-changelog.md with Android 17 Beta 4 changes",
+        "Add App Memory Limiter coverage to memory management chapters",
+        "Update ch16-aosp/03-aosp-build.md for android-17 branches"
       ]
     }
   ]
