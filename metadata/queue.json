@@ -3770,6 +3770,87 @@
       "added_at": "2026-04-24T05:21:00+08:00",
       "status": "pending",
       "task2b_state": "pending"
+    },
+    {
+      "section": "ch09.anr",
+      "section_title": "",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "Task 11 增量扫描"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角) — /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 1",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-24T06:32:01.086676",
+      "status": "pending"
+    },
+    {
+      "section": "ch17.oem",
+      "section_title": "",
+      "priority": 63,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "Task 11 增量扫描"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync — /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android S",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-24T06:32:01.110863",
+      "status": "pending"
+    },
+    {
+      "section": "ch04.memory",
+      "section_title": "",
+      "priority": 63,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "Task 11 增量扫描"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研 — /Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 A",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-24T06:32:01.134982",
+      "status": "pending"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
+      "section_title": "18.20 链路分析方法论",
+      "priority": 90,
+      "reason": "[Task6 Review] 全文 '链路' 用语违反 SKILL.md 禁用词规范（SKILL.md §1 明确禁用 '链路'），需替换为 '路径' 或 '管线'",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "标题 / tags / outline / 全文",
+          "detail": "标题 '链路分析方法论'、tags 中 '渲染链路'、outline 中 '哪条链路'、以及正文中 ~30+ 处 '链路' 均违反 SKILL.md §1 禁用词。ch18 目录名为 rendering-pipelines，其余章节均用 '管线'/'路径'，本章节应统一对齐。建议：标题 → '渲染管线分析方法论'，tags '渲染链路' → '渲染管线'，正文 '链路' → '路径'/'管线'（按语境选择）",
+          "suggestion": "全文替换 '链路' 为 '路径' 或 '管线'，同步更新标题、frontmatter tags、outline 锚点"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-24T06:50:17",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-24-06-review.md"
     }
   ]
 }

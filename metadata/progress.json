@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-04-24T06:24:16+08:00",
+  "generated_at": "2026-04-24T06:45:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
-    "total_sections": 211,
-    "finalized": 46,
-    "ready-for-review": 137,
-    "ready-to-publish": 46,
-    "last_updated": "2026-04-24T06:24:16+08:00",
+    "total_sections": 214,
+    "finalized": 47,
+    "ready-for-review": 139,
+    "ready-to-publish": 47,
+    "last_updated": "2026-04-24T06:45:00+08:00",
     "pipeline_stage_counts": {
-      "unknown": 28,
-      "task6_pending": 45,
-      "task2b_pending": 32,
-      "ready-to-publish": 46,
-      "task9_pending": 60
+      "unknown": 31,
+      "task6_pending": 39,
+      "task2b_pending": 35,
+      "ready-to-publish": 47,
+      "task9_pending": 62
     },
     "task6_state_counts": {
-      "unknown": 28,
-      "reviewed": 146,
-      "revisiting": 37
+      "unknown": 31,
+      "reviewed": 150,
+      "revisiting": 33
     },
     "task9_state_counts": {
-      "unknown": 28,
-      "reviewed": 89,
-      "pending": 93,
+      "unknown": 31,
+      "reviewed": 92,
+      "pending": 90,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 31,
-      "fixed": 142,
-      "pending": 35,
+      "unknown": 34,
+      "fixed": 138,
+      "pending": 39,
       "idle": 3
     }
   },
@@ -5980,18 +5980,19 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-18",
-      "task6_result": "needs-rework",
-      "task6_state": "revisiting",
+      "reviewed_date": "2026-04-24",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
       "task9_result": "needs-rework",
       "task9_state": "pending",
       "task9_reviewed_date": "2026-04-19",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-19T05:37:44+08:00",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "review_notes": " | 2026-04-24 task6 re-review (revisiting): pass-light-edit. No L1/L2 issues. 评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
     },
     "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
@@ -6016,18 +6017,19 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-18",
-      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-04-24",
+      "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-18",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-18T14:30:00+08:00",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "review_notes": " | 2026-04-24 task6 re-review (revisiting): needs-rework. L1: 「链路」禁用词全文命中~30处。评分: 结构5/5·措辞3/5·一致性4/5·验证4/5·元数据4/5。"
     },
     "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
@@ -6055,14 +6057,15 @@
       "created_date": "2026-04-10",
       "gap_source": "官方文档+新特性",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-18",
-      "task6_result": "needs-rework",
-      "task2b_result": "fixed"
+      "reviewed_date": "2026-04-24",
+      "task6_result": "pass-light-edit",
+      "task2b_result": "fixed",
+      "review_notes": " | 2026-04-24 task6 re-review (revisiting): pass-light-edit. No L1/L2 issues. 评分: 结构4/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
     },
     "src/part2-performance/ch18-rendering-pipelines/README.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/README.md"
