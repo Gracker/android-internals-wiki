@@ -1611,7 +1611,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T12:48:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
@@ -1669,7 +1673,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T12:48:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
@@ -3975,7 +3983,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T12:48:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
@@ -4033,7 +4045,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T12:48:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch03-input/02-touch-performance.md",

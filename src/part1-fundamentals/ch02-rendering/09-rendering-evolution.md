@@ -8,8 +8,8 @@ drafted_by: "openclaw-task2a"
 reviewed_date: 2026-04-15
 reviewed_by: openclaw-task6
 applicable_versions: "Android 3.0 (API 11) ~ Android 16 (API 36)"
-last_verified: "2026-03-30"
-last_verified_against: "developer.android.com + source.android.com"
+last_verified: "2026-04-23"
+last_verified_against: "AOSP android-16.0.0_r1 + external/perfetto + developer.android.com"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-05"
@@ -21,6 +21,16 @@ sources:
     path: "developer.android.com/about/versions/16/features"
   - type: official
     path: "source.android.com"
+  - type: aosp
+    path: "external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/Display.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/Window.java"
   - type: research
     path: "intake/research-feeds/2026-03-30-ch02-gpu-optimization.md"
   - type: research
@@ -29,14 +39,18 @@ sources:
     path: "intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md"
 tags: ['frametimeline', 'vulkan', 'rendering-evolution', 'blastBufferQueue', 'hwui', 'skia', 'choreographer', 'FrameMetrics']
 related_chapters: ["2.1", "2.3", "2.6", "2.10", "3.1", "8.2"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-17"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: idle
+repaired_date: "2026-04-23"
+repaired_by: "openclaw-task2b"
+task2b_result: fixed
+task2b_state: fixed
+last_task2b_at: "2026-04-23T12:48:00+08:00"
 ---
 
 # 渲染机制的版本演进
@@ -89,11 +103,11 @@ Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流
 
 **三重缓冲（Triple Buffering）**：当一帧超过 16.67ms（60Hz）时，双缓冲会导致下一个 VSync 周期也被阻塞（因为 CPU 要等 GPU 释放 Buffer）。三重缓冲引入第三个 Buffer，允许 CPU 在 GPU 仍在渲染上一帧时就开始准备当前帧，减少连续丢帧。
 
-**VSync 信号分发模型**：SurfaceFlinger 从硬件 Composer（HWC）获取 VSync 周期信号后，通过 `DispSync` 模型生成两个偏移信号：
+**VSync 信号分发模型**：Project Butter 当年的实现以 `DispSync` 为核心。SurfaceFlinger 从硬件 Composer（HWC）接收硬件 VSync，再推导出两路带 offset 的软件节拍：
 - `VSYNC-app`：分发给应用进程的 Choreographer，触发 UI 线程的 measure/layout/draw
 - `VSYNC-sf`：分发给 SurfaceFlinger 自身，触发合成
 
-两者的时间偏移（在 Perfetto 中可以观察 `VSYNC-app` 和 `VSYNC-sf` 的间距）决定了 App 渲染和 SF 合成之间的流水线配合。
+两者的时间偏移（在 Perfetto 中可以观察 `VSYNC-app` 和 `VSYNC-sf` 的间距）决定了 App 渲染和 SF 合成之间的流水线配合。读现代 AOSP 源码时，`DispSync` 已经不是核心实现；Android 12 之后逐步换成 `VsyncPredictor` 一类预测器。Perfetto 上 app / sf 两路节拍仍然成立，变的是内部预测器。
 
 [图：VSync 信号分发时序图，展示 HWC → DispSync → VSYNC-app/VSYNC-sf 的分发流程与 offset 关系]
 
@@ -126,7 +140,7 @@ Android 5.0 Lollipop（API 21，2014 年）引入了 **RenderThread**——一�
 
 [待高爷补充：Android 5.0+ 设备的 Perfetto Trace 截图，清晰展示 UI Thread 与 RenderThread Track 分离]
 
-RenderThread 还带来一个额外好处：即使主线程正在处理耗时操作（如数据库读写），**属性动画（Property Animation）仍可由 RenderThread 独立驱动**。比如 `View.setTranslationX()` 只修改 `RenderNode` 的变换矩阵，不需要主线程重新 `draw`，RenderThread 直接在下一帧应用新变换并提交 GPU。Ripple 效果（水波纹）同理。
+RenderThread 能独立推进的，是 `RenderNodeAnimator` 和基于 `CanvasProperty` 的 RT animation。`RippleDrawable`、circular reveal 一类效果走这条路时，启动后可以继续在 RenderThread 上推进。普通 `ObjectAnimator`、`ValueAnimator`、`ViewPropertyAnimator` 仍由 UI 线程的 `Choreographer` 驱动；它们只是把结果写回 `RenderNode`，再由 RenderThread 去绘制。主线程一旦卡住，这类动画也会一起掉帧。
 
 > [已验证: L2 — developer.android.com/about/versions/android-5.0-changes, AOSP frameworks/base/libs/hwui/renderthread]
 
@@ -195,32 +209,33 @@ Android 16 带来一个实质性的转变：**Vulkan 正式成为 Android 的官
 
 ### AGSL 图形着色能力增强
 
-Android 16 扩展了 **AGSL**（Android Graphics Shading Language），新增 `RuntimeColorFilter` 和 `RuntimeXfermode`。开发者可以用类似 GLSL 的语法编写自定义图形效果（阈值、褐色调、色相饱和度等），直接应用于 `Canvas` 的绘制调用。
+Android 16 把 **AGSL**（Android Graphics Shading Language）从 `RuntimeShader` 继续扩展到 `RuntimeColorFilter` 和 `RuntimeXfermode`。这两个类分别对应颜色过滤阶段与 source/destination 混合阶段，适合写阈值、褐色调、自定义混合等效果。
 
 ```java
-// 示例：使用 AGSL RuntimeColorFilter
-RuntimeShader shader = new RuntimeShader(
-    "uniform half2 iResolution;\n" +
-    "half4 main(float2 fragCoord) {\n" +
-    "  return half4(1.0, 0.5, 0.0, 1.0);\n" +
+// 示例：使用 Android 16 的 RuntimeColorFilter
+RuntimeColorFilter filter = new RuntimeColorFilter(
+    "vec4 main(half4 inColor) {\n" +
+    "  return vec4(inColor.rgb * half3(1.0, 0.9, 0.8), inColor.a);\n" +
     "}"
 );
-paint.setColorFilter(shader.createColorFilter());
+paint.setColorFilter(filter);
 canvas.drawRect(rect, paint);
 ```
+
+`RuntimeShader` 仍用于生成着色结果；`RuntimeColorFilter` 处理的是上一阶段已经算出的颜色；`RuntimeXfermode` 处理 source / destination 的混合。三者在管线里的位置不同，代码示例也应分开写。
 
 ### 自适应刷新率（ARR）
 
 Android 15 引入、Android 16 进一步完善的 **自适应刷新率**（Adaptive Refresh Rate, ARR）是渲染管线的又一次重大变革。
 
-ARR 将**显示刷新率与内容帧率解耦**：当内容以 30 FPS 渲染时，屏幕刷新率可以同步降低到 30Hz（而非维持 120Hz），降低功耗（在低帧率场景下，屏幕刷新率从 120Hz 降到 30Hz，GPU 和显示驱动的功耗可下降约 40–60% [待验证：需补充实测来源]，具体取决于面板和 SoC）；当用户开始滑动时，刷新率可以无缝提升到 120Hz，消除卡顿。
+ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系统可以把刷新率压到相同或接近的档位；用户开始滚动时，再回到高刷新率。对支持 1Hz-120Hz 之类大范围降频的 LTPO 面板，静态阅读或停留场景把刷新率从高档降到 10Hz 以下时，显示侧功耗通常能降到原先的一半左右，具体幅度取决于面板、亮度、DDIC 和 SoC。
 
 实现要求：
-- 硬件：支持离散 VSync 步进的显示面板
-- 系统：HWC HAL v3（`android.hardware.graphics.composer3`）
-- API：`hasArrSupport()` 和 `getSuggestedFrameRate(int)` 帮助 App 集成
+- 硬件：支持离散或自适应步进的显示面板
+- 系统：HWC HAL v3（`android.hardware.graphics.composer3`）承接 ARR 管线
+- Android 16 公共 API：`Display.hasArrSupport()`、`Display.getSuggestedFrameRate(int)`；View / Window 侧可以通过 `setRequestedFrameRate(float)`、`setFrameRatePowerSavingsBalanced(boolean)` 表达偏好
 
-RecyclerView 1.4 已内置 ARR 支持，在 fling 和 smooth scroll 操作时自动请求合适的帧率。
+应用把目标帧率告诉系统之后，是否真的切到对应档位，仍由系统按电量、温度、面板能力和当前场景统一决策。
 
 在 Perfetto 中，ARR 的变化体现在 **`VSYNC-app` 信号不再固定间隔**。当 App 请求 30 FPS 时，`VSYNC-app` 的周期间隔会变为约 33.3ms 而非 8.33ms（120Hz）。这让 Perfetto 分析需要更仔细地识别帧率切换场景。
 
@@ -320,18 +335,21 @@ class TokenManager {
 - `PRESENT_EARLY` — 帧早于预期（可能过度渲染）
 - `PRESENT_UNKNOWN` — 状态未知
 
-Perfetto 中 JankType（定义于 `protos/perfetto/trace/android/frame_timeline_event.proto`）：
+Perfetto 中的 `JankType` 定义在 `protos/perfetto/trace/android/frame_timeline_event.proto`，它是一个 bitmask。`JANK_UNSPECIFIED = 0` 只是缺省值，真正的 `JANK_UNKNOWN` 是 256。
 
 | JankType | 值 | 含义 |
 |----------|---|------|
-| `JANK_UNKNOWN` | 0 | 未知原因 |
+| `JANK_NONE` | 1 | 无 jank |
 | `JANK_SF_SCHEDULING` | 2 | SurfaceFlinger 调度导致 |
+| `JANK_PREDICTION_ERROR` | 4 | 预测误差 |
+| `JANK_DISPLAY_HAL` | 8 | Display HAL / 显示子系统侧延迟 |
+| `JANK_SF_CPU_DEADLINE_MISSED` | 16 | SF CPU 侧超时 |
+| `JANK_SF_GPU_DEADLINE_MISSED` | 32 | SF GPU 侧超时 |
 | `JANK_APP_DEADLINE_MISSED` | 64 | App 错过渲染截止时间 |
-| `JANK_PREDICTION_ERROR` | 128 | 预测误差 |
-| `JANK_DROPPED` | 256 | 帧被丢弃 |
-| `JANK_BUFFER_STUFFING` | 512 | Buffer 填充导致 |
-| `JANK_SF_CPU_DEADLINE_MISSED` | 1024 | SF CPU 侧超时 |
-| `JANK_SF_GPU_DEADLINE_MISSED` | 2048 | SF GPU 侧超时 |
+| `JANK_BUFFER_STUFFING` | 128 | Buffer stuffing |
+| `JANK_UNKNOWN` | 256 | 原因未知 |
+| `JANK_SF_STUFFING` | 512 | SurfaceFlinger stuffing |
+| `JANK_DROPPED` | 1024 | 帧被丢弃 |
 
 Perfetto 中 Frame Timeline track 的 Actual Timeline 结束时间是 `max(GPU时间, postTime)`，postTime 是 App 帧发送到 SurfaceFlinger 的时间。
 
@@ -347,7 +365,7 @@ Android 13+ : vsync-sf → 仅唤醒 SF 合成
 
 #### App 侧 API
 
-`Choreographer.FrameTimeline`（API 33+，Android 12）：
+`Choreographer.FrameTimeline`（Android 13 / API 33）：
 
 ```java
 // android.view.Choreographer.FrameTimeline
@@ -356,7 +374,7 @@ public long getExpectedPresentationTimeNanos();  // 预期呈现时间
 public long getVsyncId();               // 关联 SF 侧时间线的 vsyncId
 ```
 
-Android 13（API 34）新增 NDK API：`AChoreographer_postVsyncCallback()` + `AChoreographerFrameCallbackData_*`，允许 App 从多条候选时间线中选择，然后通过 `ASurfaceTransaction_setFrameTimeline()` 通知 SurfaceFlinger。
+Android 13（API 33）同批新增 NDK API：`AChoreographer_postVsyncCallback()` + `AChoreographerFrameCallbackData_*`，允许 App 从多条候选时间线中选择，再通过 `ASurfaceTransaction_setFrameTimeline()` 通知 SurfaceFlinger。
 
 #### Android 14 对 FrameTimeline 的演进
 
@@ -434,6 +452,10 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 - `frameworks/base/core/java/android/view/Choreographer.java` — Choreographer 实现
 - `frameworks/base/core/java/android/view/FrameMetrics.java` — FrameMetrics API
 - `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现
+- `external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto` — FrameTimeline `JankType` bitmask 定义
+- `frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java` — Android 16 AGSL color filter API
+- `frameworks/base/core/java/android/view/Display.java` — ARR 公共 API（`hasArrSupport()` / `getSuggestedFrameRate()`）
+- `frameworks/base/core/java/android/view/Window.java` — Window 级 ARR 偏好设置
 - `frameworks/native/services/surfaceflinger/FrameTimeline/` — FrameTimeline 系统（Jank 检测框架）
   - `FrameTimeline.h/cpp` — FrameTimeline / DisplayFrame / SurfaceFrame 主实现
   - `TokenManager.h` — vsyncId 生成与预测数据（mPredictions map）管理
