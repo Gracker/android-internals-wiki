@@ -5,7 +5,7 @@ section: "8.4"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-21"
+reviewed_date: 2026-04-23
 reviewed_by: openclaw-task6
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -29,8 +29,8 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
@@ -84,7 +84,7 @@ last_task2b_at: "2026-04-23T19:25:33+08:00"
 
 ### Activity 跳转的完整路径
 
-当我们调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这不是一个简单的函数调用，而是跨进程的 Binder IPC 通信路径：
+当我们调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这是一条跨进程的 Binder IPC 通信路径：
 
 **调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → 向 **system_server** 发起 Binder 请求。在 Android 10（API 29）及以上版本，调用入口是 `ActivityTaskManager.getService().startActivity()`；Android 8-9（API 26-28）使用的是 `ActivityManager.getService().startActivity()`。ActivityTaskManager 从 Android 10 开始独立出来，专门负责 Activity 生命周期管理，此前这部分逻辑在 ActivityManagerService 中。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送 `scheduleLaunchActivity()`。目标进程的 `ActivityThread.handleLaunchActivity()` 收到消息后，执行 `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。
 
@@ -126,7 +126,7 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 对于 Fragment 切换的具体优化手段：
 
-**1. 利用 FragmentFactory 注入预加载数据。** `FragmentFactory` 的核心能力不是「提前创建 Fragment」，而是在系统创建 Fragment 实例时注入依赖。如果某个 Fragment 需要初始化数据（配置参数、预查询结果），可以在 `FragmentFactory.instantiate()` 中通过 `setArguments()` 注入，避免 Fragment 在 `onCreate()` 中再做同步数据获取。另外，在 `onCreate()` 阶段就 `commit()` 一个 `setReorderingAllowed(true)` 的事务，可以让系统并行处理多个 Fragment 操作，减少事务串行化带来的等待。
+**1. 利用 FragmentFactory 注入预加载数据。** `FragmentFactory` 的核心能力是在系统创建 Fragment 实例时注入依赖，而非提前创建 Fragment。如果某个 Fragment 需要初始化数据（配置参数、预查询结果），可以在 `FragmentFactory.instantiate()` 中通过 `setArguments()` 注入，避免 Fragment 在 `onCreate()` 中再做同步数据获取。另外，在 `onCreate()` 阶段就 `commit()` 一个 `setReorderingAllowed(true)` 的事务，可以让系统并行处理多个 Fragment 操作，减少事务串行化带来的等待。
 
 ```java
 // 自定义 FragmentFactory：在系统创建 Fragment 时注入预加载数据
@@ -164,7 +164,9 @@ Tab 切换是移动端最常见的交互模式之一。新闻 App 的频道切�
 
 ### ViewPager2 的工作机制
 
-ViewPager2 是 Jetpack/AndroidX 中的一个组件，不是 Android 平台原生能力。它最早出现在 AndroidX Fragment 1.0.0 中，为传统的 ViewPager 添加了现代化特性，如 RTL 支持、垂直滚动等。ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。`offscreenPageLimit` 参数控制着屏幕外保留的页面数量。它的默认值为 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)`，即不显式保留屏幕外页面，而是依赖 RecyclerView 自身的缓存和预取策略。这与直觉不同——默认行为并非"左右各保留 1 页"，而是让 RecyclerView 按 ViewHolder 缓存等级（CachedView、RecycledViewPool）自动管理。
+ViewPager2 是 Jetpack/AndroidX 中的一个组件，来自 Jetpack/AndroidX，不属 Android 平台原生能力。它最早出现在 AndroidX Fragment 1.0.0 中，为传统的 ViewPager 添加了 RTL 支持、垂直滚动等特性。ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。
+
+`offscreenPageLimit` 参数控制屏幕外保留的页面数量，默认值为 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)`，即不显式保留屏幕外页面，依赖 RecyclerView 自身的缓存和预取策略。这与直觉不同——默认行为不会"左右各保留 1 页"，而是让 RecyclerView 按 ViewHolder 缓存等级（CachedView、RecycledViewPool）自动管理。
 
 当设为 1 时，ViewPager2 会在当前页左右各保留 1 个页面的 Fragment。`setOffscreenPageLimit()` 只接受默认值 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)` 或大于等于 1 的整数；传入 0 会直接抛出 `IllegalArgumentException`，不存在“设为 0 减少预加载”这种安全写法。设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级，内存压力也更高。对于 3-4 个 Tab 的常见场景，保持默认值 `-1` 或显式设为 `1` 是更常见的两种选择：前者交给 RecyclerView 的缓存与预取策略，后者换取更稳定的切换速度。
 
@@ -172,7 +174,7 @@ ViewPager2 对 Fragment 生命周期管理的核心变化在于：它通过 `set
 
 ### 懒加载的正确实现
 
-在旧版 ViewPager 中，开发者通常通过重写 `setUserVisibleHint()` 来实现懒加载。这个方法已经被废弃。在 ViewPager2 + Fragment 的架构下，正确的做法是在 `onResume()` 中加载数据：
+旧版 ViewPager 中通过重写 `setUserVisibleHint()` 实现懒加载，这个方法已被废弃。ViewPager2 + Fragment 架构下的正确做法是在 `onResume()` 中加载数据：
 
 ```java
 @Override

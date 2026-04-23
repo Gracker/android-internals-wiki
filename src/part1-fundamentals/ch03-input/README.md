@@ -21,12 +21,15 @@ related_chapters:
   - "3.4"
   - "3.5"
   - "3.6"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-23T17:25:41+08:00"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-23
 ---
 
 # 第 3 章：输入系统

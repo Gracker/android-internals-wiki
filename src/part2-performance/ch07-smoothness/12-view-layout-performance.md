@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-22"
+reviewed_date: 2026-04-23
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 confidence: high
@@ -30,8 +30,8 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -238,7 +238,7 @@ void scheduleTraversals() {
 
 **`invalidate()`** 会给当前 View 打上 dirty 标记，并把脏区域沿父容器向上传到 `ViewRootImpl`，随后在下一次 traversal 中进入 Draw 阶段。它通常不会重新 measure 和 layout。开启硬件加速时，系统还会结合 RenderNode 的 damage 信息缩小重绘范围。适合的场景：文字内容变了、颜色变了、Drawable 状态变了——凡是**不影响 View 尺寸和位置**的变化。
 
-**`requestLayout()`** 标记 View 需要重新测量和布局，触发 **Measure + Layout + Draw 全流程**。而且它是**向上传播**的：一个子 View 调用 `requestLayout()`，它的父 View、祖父 View……一直到 `ViewRootImpl`，整条链路上的所有 View 都需要重新 measure/layout。
+**`requestLayout()`** 标记 View 需要重新测量和布局，触发 **Measure + Layout + Draw 全流程**。而且它是**向上传播**的：一个子 View 调用 `requestLayout()`，它的父 View、祖父 View……一直到 `ViewRootImpl`，整条传递路径上的所有 View 都需要重新 measure/layout。
 
 性能差异的根本原因：
 
@@ -396,7 +396,7 @@ new AsyncLayoutInflater(context).inflate(
 
 ### 在 Perfetto 中的表现
 
-使用 `AsyncLayoutInflater` 后，Perfetto 中可以看到：
+使用 `AsyncLayoutInflater` 后，Perfetto 中能看到：
 
 - 主线程在 `Activity.onCreate` 期间不再有 inflate 的耗时区间
 - 后台线程（通常是 `AsyncLayoutInflater` 的 `HandlerThread`）出现 inflate 活动
@@ -408,7 +408,7 @@ new AsyncLayoutInflater(context).inflate(
 
 ### Choreographer doFrame → traversal → performMeasure/performLayout/performDraw
 
-在 Perfetto 中，View 体系的性能开销集中体现在 `Choreographer#doFrame` 这个 slice 中。展开它可以看到三个子阶段：
+在 Perfetto 中，View 体系的性能开销集中体现在 `Choreographer#doFrame` 这个 slice 中。展开后会显示三个子阶段：
 
 ```
 Choreographer#doFrame

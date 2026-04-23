@@ -1,24 +1,24 @@
 {
-  "generated_at": "2026-04-23T19:25:33+08:00",
+  "generated_at": "2026-04-23T23:34:24+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 211,
     "finalized": 45,
     "ready-for-review": 138,
-    "ready-to-publish": 45,
-    "last_updated": "2026-04-23T19:25:33+08:00",
+    "ready-to-publish": 0,
+    "last_updated": "2026-04-23T23:34:24+08:00",
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 46,
+      "task6_pending": 40,
       "task2b_pending": 34,
       "ready-to-publish": 45,
-      "task9_pending": 58
+      "task9_pending": 64
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 144,
-      "revisiting": 39
+      "reviewed": 150,
+      "revisiting": 33
     },
     "task9_state_counts": {
       "unknown": 28,
@@ -35,25 +35,28 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 43,
+      "unknown": 28,
+      "task6_pending": 40,
       "task2b_pending": 34,
       "ready-to-publish": 45,
-      "task9_pending": 61
+      "task9_pending": 64
     },
     "task6_state_counts": {
-      "reviewed": 147,
-      "revisiting": 36
+      "unknown": 28,
+      "reviewed": 150,
+      "revisiting": 33
     },
     "task9_state_counts": {
+      "unknown": 28,
       "reviewed": 90,
       "pending": 92,
       "fixed": 1
     },
     "task2b_state_counts": {
+      "unknown": 31,
       "fixed": 139,
       "pending": 38,
-      "idle": 3,
-      "unknown": 3
+      "idle": 3
     }
   },
   "issues": {
@@ -2187,13 +2190,16 @@
         "3.5",
         "3.6"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-23T17:25:41+08:00",
-      "path": "src/part1-fundamentals/ch03-input/README.md"
+      "path": "src/part1-fundamentals/ch03-input/README.md",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-04-23",
+      "reviewed_by": "openclaw-task6"
     },
     "src/part1-fundamentals/ch04-memory/01-memory-overview.md": {
       "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
@@ -3711,7 +3717,7 @@
       "applicable_versions": "Android 5.0 (API 21) - Android 17 (API 37)",
       "last_verified": "2026-04-08",
       "last_verified_against": "AOSP android-16.0.0_r1",
-      "reviewed_date": "2026-04-22",
+      "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "confidence": "high",
@@ -3738,8 +3744,8 @@
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-04-08",
       "gap_source": "AOSP结构+官方文档+读者需求",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -3990,7 +3996,7 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-02",
       "drafted_by": "openclaw-task2a",
-      "reviewed_date": "2026-04-21",
+      "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-02",
@@ -4016,8 +4022,8 @@
         "3.2",
         "7.4"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task9_state": "pending",
