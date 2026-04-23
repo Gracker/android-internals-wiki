@@ -3412,6 +3412,36 @@
       "task2b_state": "fixed",
       "fixed_at": "2026-04-23T19:25:33",
       "fixed_by": "openclaw-task2b"
+    },
+    {
+      "section": "src/part2-performance/ch09-anr/01-anr-design.md",
+      "section_title": "9.1 ANR 设计思想",
+      "priority": 85,
+      "reason": "[External Review] 2 处 P1 事实错误需回炉修正",
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "startForeground() 超时机制说明",
+          "detail": "错误声称 startForeground 超时在 Android 12+ 变为 5 秒，实际为 10 秒（SERVICE_START_FOREGROUND_TIMEOUT）。Android 12 变化是引入更严格的后台启动限制和 ForegroundServiceDidNotStartInTimeException",
+          "suggestion": "修正回 10 秒，重申 Android 12 实际变化是严格化拦截和异常抛出",
+          "evidence": [
+            "Context.startForegroundService() API 文档",
+            "AOSP SERVICE_START_FOREGROUND_TIMEOUT 常量"
+          ]
+        },
+        {
+          "type": "数据错误",
+          "location": "ANR 在 Google Play Console 中的统计与影响",
+          "detail": "ANR 坏行为阈值错误标为 0.38%，Google Play Console Android Vitals 核心 ANR 率官方阈值为 0.47%",
+          "suggestion": "更新为官方最新的 Vitals 核心 ANR 阈值 0.47%",
+          "evidence": [
+            "Google Play Console Android Vitals Bad behavior threshold"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-23T14:40:21",
+      "status": "pending"
     }
   ]
 }
