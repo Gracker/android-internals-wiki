@@ -39,9 +39,9 @@ last_task9_at: '2026-04-22T20:50:00+08:00'
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "pending"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-24T04:56:29+08:00"
