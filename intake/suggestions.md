@@ -1304,3 +1304,20 @@
 - **位置**：L362 / L368-L370
 - **问题**：正文把已在 android-16.0.0_r1 AAudio.h 中公开的 offloaded playback 能力，与仍未核实的 offloaded PCM / 设备支持范围混写在一起。
 - **建议**：拆成“已验证的 Android 16 API 边界”和“仍需设备/格式验证的实现边界”两层，避免把官方 API 与未证实实现状态混成一条。
+
+
+---
+
+## [Task9 Deep Review] 6.2 文件系统 — 2026-04-23
+- **类型**：数据支撑
+- **位置**：L186 / L267-L276 / L471
+- **问题**：正文给出了“batch atomic write 约 3 倍提速”“UFS 4.0 4KB 随机写应低于 0.1ms”“使用一年后会到 1-5ms”等量化结论，但没有设备型号、存储介质、文件系统挂载参数、测试工具或样本范围，读者无法判断这些数字是 Pixel / UFS / 特定 workload 结果，还是通用基线。
+- **建议**：给每组数字补最小实验条件；如果拿不到稳定样本，就把这些数字降级为定性表述，只保留可复核的 trace 观察方法。
+
+---
+
+## [Task9 Deep Review] 6.2 文件系统 — 2026-04-23
+- **类型**：工具观察路径
+- **位置**：L382
+- **问题**：dm-verity 可观测性段落写成“通过 `disk Greenland` 或 `mmc` trace”观察，但 `disk Greenland` 不是当前 Perfetto / ftrace 的有效观察名称，会把读者带到不存在的轨道或脚本关键字上。
+- **建议**：改成具体可操作的观察路径：例如 block layer / mmc / dm tracepoint 与对应 Perfetto 数据源配置，并明确 dm-verity 没有独立 slice，只能从底层 I/O 延迟侧面观察。
