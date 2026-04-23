@@ -32,12 +32,15 @@ tags: ['perfetto', 'trace', 'atrace', 'trace-capture', 'heapprofd']
 related_chapters: ["13.1", "13.3", "13.4", "14.1", "15.1"]
 
 re-review-result: "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）"
-pipeline_stage: task6_pending
+pipeline_stage: "task2b_pending"
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
-task2b_state: fixed
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task2b_state: "pending"
 task2b_result: fixed
+task9_reviewed_date: "2026-04-24"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-24T05:21:00+08:00"
 ---
 
 # Trace 抓取

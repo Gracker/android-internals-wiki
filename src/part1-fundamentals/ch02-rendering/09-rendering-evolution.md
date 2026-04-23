@@ -39,19 +39,20 @@ sources:
     path: "intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md"
 tags: ['frametimeline', 'vulkan', 'rendering-evolution', 'blastBufferQueue', 'hwui', 'skia', 'choreographer', 'FrameMetrics']
 related_chapters: ["2.1", "2.3", "2.6", "2.10", "3.1", "8.2"]
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: 2026-04-23
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
 repaired_date: "2026-04-23"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 1 L1 fix (否定-纠正结构: 不是X而是Y → 直接陈述). 无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "pending"
 last_task2b_at: "2026-04-23T12:48:00+08:00"
+last_task9_at: "2026-04-24T05:21:00+08:00"
 ---
 
 # 渲染机制的版本演进
