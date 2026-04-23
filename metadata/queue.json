@@ -31,6 +31,135 @@
       "fixed_by": "openclaw-task2b"
     },
     {
+      "section": "src/appendix/version-changelog.md",
+      "section_title": "附录 A：Android 版本性能变更速查表",
+      "priority": 95,
+      "reason": "[Freshness Check] 高风险 - 缺少 AutoFDO 最新性能数据（26.4% benchmark 提升）",
+      "material_paths": [
+        "metadata/freshness-log.json"
+      ],
+      "review_issues": [
+        {
+          "type": "数据过期",
+          "location": "AutoFDO 性能数据",
+          "detail": "缺少 Android 17 中 AutoFDO 的最新性能数据，包括 26.4% benchmark 提升",
+          "suggestion": "立即补充 AutoFDO 最新性能数据，更新版本信息"
+        }
+      ],
+      "added_by": "openclaw-freshness-check",
+      "added_at": "2026-04-23T22:46:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
+      "section": "src/part4-system/ch16-aosp/02-version-changes.md",
+      "section_title": "各 Android 版本性能变更追踪",
+      "priority": 90,
+      "reason": "[Freshness Check] 高风险 - 缺少 Android 17 Beta 4 平台稳定性信息",
+      "material_paths": [
+        "metadata/freshness-log.json"
+      ],
+      "review_issues": [
+        {
+          "type": "信息缺失",
+          "location": "Android 17 Beta 4 平台稳定性",
+          "detail": "Android 17 Beta 4 于 2026-04-16 发布并达到平台稳定性，需要更新版本信息",
+          "suggestion": "补充 Android 17 Beta 4 平台稳定性行为变更信息"
+        }
+      ],
+      "added_by": "openclaw-freshness-check",
+      "added_at": "2026-04-23T22:46:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
+      "section": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 90,
+      "reason": "[Freshness Check] 高风险 - 缺少 ProfilingManager TRIGGER_TYPE_ANOMALY 新触发器",
+      "material_paths": [
+        "metadata/freshness-log.json"
+      ],
+      "review_issues": [
+        {
+          "type": "API 缺失",
+          "location": "ProfilingManager 新触发器",
+          "detail": "缺少 TRIGGER_TYPE_ANOMALY 用于检测异常 Binder 调用或内存使用的新触发器",
+          "suggestion": "补充 ProfilingManager 新增触发器信息，更新保守内存限制相关内容"
+        }
+      ],
+      "added_by": "openclaw-freshness-check",
+      "added_at": "2026-04-23T22:46:00+08:00",
+      "status": "completed",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "fixed_at": "2026-04-24T00:12:13+08:00",
+      "fixed_by": "openclaw-task2b"
+    },
+    {
+      "section": "src/part4-system/ch16-aosp/01-google-optimization.md",
+      "section_title": "Google 官方的性能优化思路",
+      "priority": 75,
+      "reason": "[Freshness Check] 中风险 - 缺少 AutoFDO 内核部署最新进展",
+      "material_paths": [
+        "metadata/freshness-log.json"
+      ],
+      "review_issues": [
+        {
+          "type": "信息过期",
+          "location": "AutoFDO 内核部署",
+          "detail": "缺少 AutoFDO 在 android17-6.18 内核分支的最新部署状态和性能数据",
+          "suggestion": "补充 AutoFDO 部署状态和实际性能数据"
+        }
+      ],
+      "added_by": "openclaw-freshness-check",
+      "added_at": "2026-04-23T22:46:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
+      "section": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "section_title": "Android 17 内核 6.12 性能",
+      "priority": 75,
+      "reason": "[Freshness Check] 中风险 - 缺少与 6.18 版本的对比信息",
+      "material_paths": [
+        "metadata/freshness-log.json"
+      ],
+      "review_issues": [
+        {
+          "type": "信息不完整",
+          "location": "内核版本对比",
+          "detail": "缺少 Android 17 6.18 与 6.12 内核版本的性能对比信息",
+          "suggestion": "更新内核版本对比，补充 AutoFDO 在 6.18 的表现"
+        }
+      ],
+      "added_by": "openclaw-freshness-check",
+      "added_at": "2026-04-23T22:46:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
+      "section": "src/part4-system/ch16-aosp/03-aosp-build.md",
+      "section_title": "AOSP 构建系统",
+      "priority": 70,
+      "reason": "[Freshness Check] 中风险 - 缺少新版本构建系统信息",
+      "material_paths": [
+        "metadata/freshness-log.json"
+      ],
+      "review_issues": [
+        {
+          "type": "信息缺失",
+          "location": "Q2/Q4 发布模式",
+          "detail": "缺少 2026 年 AOSP 改为 Q2/Q4 发布模式的信息",
+          "suggestion": "更新构建系统发布节奏信息"
+        }
+      ],
+      "added_by": "openclaw-freshness-check",
+      "added_at": "2026-04-23T22:46:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
+    },
+    {
       "section": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
       "section_title": "Trace 捕捉配置",
       "priority": 85,
@@ -3167,8 +3296,12 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-23T13:55:09",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-04-23-13-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-04-23-13-review.md",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-24T00:00:53+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -3200,7 +3333,11 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-23T16:35:03.727009",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-24T00:00:53+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "8.1",
