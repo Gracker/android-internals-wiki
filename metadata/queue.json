@@ -1381,7 +1381,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T11:52:07",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
@@ -1574,7 +1578,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-23T11:52:07",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
@@ -3810,35 +3818,6 @@
       "status": "pending"
     },
     {
-      "section": "src/part1-fundamentals/ch02-rendering/README.md",
-      "section_title": "渲染系统总纲",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "版本差异覆盖",
-          "location": "",
-          "detail": "- [P0][版本差异覆盖][全文]",
-          "suggestion": ""
-        },
-        {
-          "type": "原理链完整性",
-          "location": "",
-          "detail": "- [P1][原理链完整性][## 本章内容]",
-          "suggestion": ""
-        },
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- [P1][知识盲区][## 阅读建议]",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
-    },
-    {
       "section": "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
       "section_title": "Flutter 渲染管线与性能",
       "priority": 85,
@@ -3962,35 +3941,6 @@
           "type": "原理链完整性",
           "location": "",
           "detail": "- [P1][原理链完整性][Display 查询 API]",
-          "suggestion": ""
-        }
-      ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-23T00:09:26+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
-      "section_title": "刷新率切换",
-      "priority": 95,
-      "reason": "[External Review] 外部 review 发现 3 处 P0 级问题",
-      "review_issues": [
-        {
-          "type": "知识盲区",
-          "location": "",
-          "detail": "- [P1][知识盲区][Display API]",
-          "suggestion": ""
-        },
-        {
-          "type": "数据支撑",
-          "location": "",
-          "detail": "- [P1][数据支撑][硬件延迟]",
-          "suggestion": ""
-        },
-        {
-          "type": "原理说明",
-          "location": "",
-          "detail": "- [P2][原理说明][VsyncModulator]",
           "suggestion": ""
         }
       ],

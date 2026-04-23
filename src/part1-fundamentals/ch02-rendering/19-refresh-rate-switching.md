@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档"
+last_verified: "2026-04-23"
+last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
 confidence: medium
 sources:
   - type: expert-insight
@@ -164,15 +164,15 @@ surface.setFrameRate(24f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
 
 显示面板需要一个精确的像素时钟来驱动刷新。这个时钟由 SoC 内部的 PLL（Phase-Locked Loop）电路生成。当刷新率从 60Hz 变到 120Hz 时，PLL 需要从输出一个频率"跳"到另一个频率。
 
-PLL 重配置的过程是：先解除锁定 → 调整分频系数 → 重新锁定到目标频率。这个"重新锁定"的时间就是切换延迟的主要来源。在不同平台上：
+PLL 重配置的过程是：先解除锁定 → 调整分频系数 → 重新锁定到目标频率。这个"重新锁定"的时间就是切换延迟的主要来源。不同 SoC 的切换代价差异很大，不能把一台设备的结果直接套到所有平台。经验上，高通旗舰平台更常见 dual-PLL 或动态分频路径，联发科部分中端平台更容易落到完整重锁流程。
 
-- **高通 Snapdragon**：典型 PLL 重锁定时间在 5-15ms 范围
-- **联发科 Dimensity**：类似量级，部分平台可能更长
-- **三星 Exynos**：取决于具体的显示控制器实现
+- **支持 seamless / dual-PLL / 动态分频的高端平台**：同一 config group 内切换时，过渡常能压到 0-1 帧内
+- **仍依赖单 PLL 完整重锁的中端平台**：更容易出现 stop → relock → resume 的完整过程，常见代价是 1-2 帧
+- **跨 config group 的 non-seamless 切换**：通常最贵，除了重锁定，还可能伴随分辨率或时序重配，冻结时间会进一步拉长
 
-[待验证: 不同 SoC 平台的具体 PLL 重配置延迟数据]
+所以排查时要同时看设备支持的 display mode、是否属于 seamless switch，以及 Perfetto / SurfaceFlinger 日志里的实际切换结果，不要只记一个固定的“5-15ms”。
 
-ARR（Adaptive Refresh Rate）的离散步进变频之所以能做到"无缝"，核心原因是它在 LTPO 面板上不需要重新配置 PLL。面板通过调整像素电路的刷新时序实现变频，而不是改变像素时钟频率。这也是 ARR 比传统模式切换更有优势的硬件基础。
+ARR（Adaptive Refresh Rate）的离散步进变频之所以更平滑，是因为 LTPO 面板可以在同一组时序能力内调整 VSync 步进，很多场景不需要走完整的 mode switch。硬件切换成本降下来了，软件调度问题也更容易暴露出来。
 
 ### Display HAL 的状态机
 
@@ -278,7 +278,7 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 2. **Choreographer 的节奏调整**：当刷新率从 60Hz 变到 120Hz 时，Choreographer 的 VSync 回调间隔从 16.67ms 缩短到 8.33ms。如果 App 中的动画插值是基于固定 delta time 计算的（而不是基于实际 frameTimeNanos），可能会在过渡期出现位移不均匀。
 
-3. **VsyncModulator 的 offset 调整**：刷新率切换时，VSYNC-app 和 VSYNC-sf 之间的 offset 会动态调整（由 `VsyncModulator` 管理）。在 offset 变化的瞬间，App 和 SurfaceFlinger 的时间余量可能不匹配。
+3. **VsyncModulator 的 offset 调整**：刷新率切换时，`VsyncModulator` 会通过 `setVsyncConfigSet()` 切换当前的 vsync config set，把新的 `VSYNC-app` / `VSYNC-sf` phase offsets 应用到调度器里。这样 App 的唤醒时点和 SurfaceFlinger 的合成时点才能跟上新的刷新周期。若 config set 切换滞后，App 还按旧节奏产帧，SurfaceFlinger 已按新节奏消费，中间就会空出 1-2 帧的预算。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
@@ -294,7 +294,7 @@ Android 11-14 的主入口还是 `Surface.setFrameRate(float, int)`。到 Androi
 | 自定义滚动控件 | `View.setFrameContentVelocity(...)` | 刷新率应该跟着 fling / smooth scroll 速度变化 | 系统按速度决定是否升降刷新率 |
 | 底层 Surface 需要范围提示 | `Surface.setFrameRate(new Surface.FrameRateParams.Builder().setDesiredRateRange(min, max).setFixedSourceRate(fps).build())` | 渲染管线自己掌握 Surface，希望给出范围或固定片源的组合约束 | 更适合视频引擎、游戏引擎、自定义渲染 |
 
-`Display.getSuggestedFrameRate(int)` 只有 `FRAME_RATE_CATEGORY_NORMAL` 和 `FRAME_RATE_CATEGORY_HIGH` 两个有效入参。它返回的是系统给出的 normal / high 建议值，不负责回答“45fps 该映射到 60Hz 还是 90Hz”。45fps 这类映射仍然要交给 `RefreshRateSelector`、Display policy 和设备支持的刷新率集合去决定。
+Android 16（API 36）才公开 `Display.getSuggestedFrameRate(int category)`。调用时要传 `Display.FRAME_RATE_CATEGORY_NORMAL` 或 `Display.FRAME_RATE_CATEGORY_HIGH`，不要和 `View.REQUESTED_FRAME_RATE_CATEGORY_*` 混用，也不要在低版本直接调用。它返回的是系统给 normal / high 两类场景的建议刷新率，不负责回答“45fps 该映射到 60Hz 还是 90Hz”。45fps 这类具体映射仍然要交给 `RefreshRateSelector`、Display policy 和设备支持的刷新率集合去决定。
 
 RecyclerView 1.4 和 `NestedScrollView` 这类滚动容器，做法是把滚动速度交给系统；Compose 动画更适合用 `Modifier.preferredFrameRate(...)` 或 View category 请求，让 ARR 自己选 normal 还是 high。
 
