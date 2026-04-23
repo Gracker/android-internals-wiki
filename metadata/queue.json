@@ -3579,6 +3579,56 @@
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T14:40:21",
       "status": "pending"
+    },
+    {
+      "section": "2.1",
+      "section_title": "Android 渲染架构全景",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.1 仍含 Layout / Fence / Choreographer / SurfaceFlinger 关键技术错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L124-L129「Layout 过程」调用树",
+          "detail": "`ViewGroup.dispatchDraw()` 被放进 Layout 流程，但 `dispatchDraw()` 属于 Draw 阶段；当前调用树会把布局与绘制阶段混在一起。",
+          "suggestion": "改成 `View.layout()` → `View.onLayout()` / `ViewGroup.onLayout()` → 子 View `layout()` 的实际链路，并把 `dispatchDraw()` 留在 Draw 章节。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L323-L328「BufferQueue 同步机制」Fence 伪代码",
+          "detail": "示例写成 `consumerReleaseFence->signal();`，但 Fence 并不是由消费者手工 signal 的对象；release/acquire fence 的完成通知来自内核 / GPU / 显示硬件。",
+          "suggestion": "删除手工 `signal()` 伪代码，改写成“生产者/消费者携带 fence 句柄，完成后由内核或驱动 signal，另一侧只负责 wait / 传递”。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L157-L161「VSync 同步」调用树",
+          "detail": "`Choreographer.callInputCallbacks()` / `callAnimationCallbacks()` / `callTraversalCallbacks()` 不是 android-16.0.0_r1 的实际方法名；真实实现是 `doFrame()` 内部按 callback type 调 `doCallbacks(...)`。",
+          "suggestion": "改成 `doFrame()` → `doCallbacks(CALLBACK_INPUT / ANIMATION / TRAVERSAL, frameData)`，避免把伪方法名写成源码事实。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L190-L205「SurfaceFlinger 合成 / 显示输出」调用树",
+          "detail": "`DisplayHardware composerCallback()` / `DisplayHardware.vsync()` / `DisplayHardware.flip()` 这组类名与方法名不符合现代 SurfaceFlinger / HWC2 主链路，会把读者带回过时模型。",
+          "suggestion": "按当前版本改写为 `MessageQueue / Scheduler / HWComposer` 驱动的合成链路，至少明确这些名字不是 android-16 的源码锚点。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L261-L263「三缓冲机制」Android 16 扩展段",
+          "detail": "正文继续把 `AsyncBufferQueue` 当成 Android 16 已落地的既定事实，但没有给出可核对的一手锚点；这会把 BLAST / SurfaceControl 事务路径和未证实的新名词混写。",
+          "suggestion": "删除或改成 `[待验证]`+明确来源；如果要保留，需补 AOSP commit / 官方文档锚点，并讲清与 BLASTBufferQueue 的关系。"
+        },
+        {
+          "type": "知识盲区",
+          "location": "L489-L559「RenderNode / DisplayList」两段 `[待验证]`",
+          "detail": "HWUI 内部结构仍以“概念性伪代码”占位，`RenderNode` staging、`DisplayListData`、Skia Pipeline 的 android-16 实际锚点没有落到具体类与路径。",
+          "suggestion": "补齐 android-16.0.0_r1 下的真实类名 / 文件路径 / 调用关系，再决定正文保留到哪一层；否则这两节仍停在未闭环状态。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-24T00:43:52+08:00",
+      "status": "pending"
     }
   ]
 }

@@ -210,3 +210,40 @@
 - **问题**：利用 onTrimMemory 的 TRIM_MEMORY_RUNNING_MODERATE 级别释放，但 §10.3 已指出 Android 14+ 不再投递这些级别
 - **建议**：补充说明 Android 14+ 系统中这些级别不再投递，建议读者参考 §10.3 的新版适配方案
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-04-24
+- **类型**：源码准确性
+- **位置**：L233-L239「CPU 开销：一个数量级的差距」示例代码
+- **问题**：把 `glDrawArrays()` 与 `vkQueueSubmit()` 并排比较会把 draw call 和整批命令提交混成一层概念。
+- **建议**：改成 `glDrawArrays()` ↔ `vkCmdDraw()` 的指令级对照，再把 `vkQueueSubmit()` 放到“命令缓冲区提交”层单独解释。
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-04-24
+- **类型**：数据缺失
+- **位置**：L506-L510「效果验证」
+- **问题**：案例中的 GPU 时间、FPS 与 overdraw 改善区间缺少设备型号、刷新率、采集方式和 Trace / AGI 证据。
+- **建议**：补设备 / 分辨率 / 刷新率 / 录制方式 + 1 张 Perfetto 或 AGI 截图，给效果数字一个最小证据包。
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-04-24
+- **类型**：数据缺失
+- **位置**：L267-L271「ANGLE 层的性能影响」
+- **问题**：ANGLE 的 2-5% / 5-10% / 10-20% 只是经验区间，正文还缺 workload 与设备边界。
+- **建议**：补“这些区间来自哪类 workload / 设备 / 演讲场景”，或者进一步收敛成“量级参考，不直接套用”。
+
+## [Task9 Deep Review] 2.21 文字渲染性能 — 2026-04-24
+- **类型**：版本差异
+- **位置**：L351-L362「版本演进」
+- **问题**：版本表还缺 Android 12 的 FontManager / updatable fonts（`com.android.fonts`）节点，系统字体与 emoji 的更新链路仍不完整。
+- **建议**：补 Android 12 一行，说明 updatable font pipeline 影响的是系统字体 / emoji 版本覆盖边界，而不是 TextView API 语义。
+
+## [Task9 Deep Review] 2.21 文字渲染性能 — 2026-04-24
+- **类型**：知识盲区
+- **位置**：L223-L314「文字渲染优化实践」
+- **问题**：优化节还没有覆盖 variable font / font variation settings 对 relayout 与测量缓存 key 的影响。
+- **建议**：补一小段 variable font 边界：字体轴变化会触发重新测量，列表 / 动画场景不要把字体轴当成零成本样式切换。
+
+## [Task9 Deep Review] 2.21 文字渲染性能 — 2026-04-24
+- **类型**：数据缺失
+- **位置**：L322-L349「在 Perfetto 中识别文字渲染瓶颈」
+- **问题**：Perfetto 观察面已经说清了默认 trace 与 atrace 类别边界，但还缺一条最小可复用的实测样例。
+- **建议**：补设备 / 刷新率 / 文本长度 / Span 数量 / `TextView.onMeasure()` 观测区间，增强实操可信度。
+

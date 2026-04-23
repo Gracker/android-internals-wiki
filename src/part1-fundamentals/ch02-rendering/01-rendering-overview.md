@@ -26,16 +26,18 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 review_round: 2
-task9_state: pending
-task9_result: needs-rework-v2
-task9_reviewed_date: "2026-04-16"
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: 2026-04-24
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 last_task2b_at: "2026-04-23T03:20:18+08:00"
+task9_reviewed_by: openclaw-task9
+last_task9_at: 2026-04-24T00:43:52+08:00
 ---
 
 # Android 渲染架构全景
