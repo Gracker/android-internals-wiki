@@ -1,6 +1,7 @@
 ---
 title: "SurfaceControl API 深入"
 chapter: "18.10"
+section: "18.10"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer-hierarchy", "FrameTimeline", "atomicity", "AHardwareBuffer"]
@@ -8,14 +9,14 @@ related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-17
+reviewed_date: "2026-04-23"
 last_task9_at: "2026-04-18T03:45:00+08:00"
 task9_result: reworked
-task6_result: needs-rework
+task6_result: pass-light-edit
 task2b_result: fixed
 ---
 
@@ -487,6 +488,116 @@ adb shell dumpsys SurfaceFlinger | grep -A 20 "<package>"
 
 # 结合 Layer 数量、父子关系和 Composition Type 一起看
 ```
+
+
+<!-- AIW-源码调研-2026-04-23 -->
+## 附录：图形缓冲体系对象边界与 BufferQueue 流转链（源码级）
+
+> 本节补充 §2.10 盲区调研成果，建立 Surface / ANativeWindow / HardwareBuffer / GraphicBuffer / Gralloc / HWC 的完整对象边界与流转链。
+
+### 对象边界总览
+
+| 层级 | 典型类型 | 说明 |
+|:---|:---|:---|
+| **App API** | `android.view.Surface` / `AHardwareBuffer` | 应用直接操作的对象 |
+| **Native 绑定** | `ANativeWindow` / `ANativeWindowBuffer` | Surface 的 C/C++ 对应物 |
+| **生产者端** | `IGraphicBufferProducer` | 向 BufferQueue 申请 buffer |
+| **队列中枢** | `BufferQueue` (核心 + Producer + Consumer) | 生产/消费解耦的 buffer slot 管理器 |
+| **消费者端** | `IGraphicBufferConsumer` / `GLConsumer` | 从 BufferQueue 消费 buffer |
+| **Framework 对象** | `GraphicBuffer` | 持有 `buffer_handle_t` 的框架层封装 |
+| **内存映射层** | `GraphicBufferMapper` | 通过 Mapper HAL 把 buffer_handle_t 映射到 CPU 地址空间 |
+| **物理分配层** | Gralloc Allocator 3.x (HAL) | 分配物理页/dma-buf，返回 `buffer_handle_t` |
+| **合成决策层** | SurfaceFlinger + HWC | 决定 DEVICE(Overlay) vs CLIENT(GLES) 合成 |
+
+### 关键调用链
+
+```
+App (Surface.lockCanvas() / RenderNode.draw() / HBR.draw())
+  ↓
+ANativeWindow (Surface.cpp 持有 IGraphicBufferProducer)
+  ↓ dequeueBuffer()
+BufferQueueCore slot pool
+  ↓ queueBuffer()
+IGraphicBufferConsumer ← GLConsumer (SurfaceTexture)
+  ↓
+SurfaceFlinger latchBuffer() — HWC 决定合成类型
+  ├─ DEVICE: HWC overlay 直接合成
+  └─ CLIENT: GLES 合成到 client target buffer → HWC
+```
+
+### buffer_handle_t 本质
+
+`buffer_handle_t`（定义于 `system/core/include/system/graphics.h`）是 opaque handle，本质是 file descriptor（通常是 dmabuf fd，少数情况是 ashmem fd + sync fd）：
+
+```c
+typedef struct native_handle {
+    int version;
+    int numFds;   // 通常为 1（dmabuf）或 2（ashmem + sync）
+    int numInts;
+    int data[];    // [fd, fd, ...]
+} native_handle_t;
+typedef native_handle_t* buffer_handle_t;
+```
+
+Binder 跨进程传递时只复制 fd，接收进程通过 `GraphicBufferMapper::importBuffer()` 把 fd 映射到本地虚拟地址。
+
+### Gralloc Allocator / Mapper HAL 分工
+
+- **Allocator 3.x** (`IAllocator.hal`)：分配物理内存，返回 `buffer_handle_t`
+- **Mapper 4.x** (`IMapper.hal`)：把 `buffer_handle_t` 导入进程地址空间（`importBuffer`）、映射供 CPU 访问（`lock`）、失效缓存同步（`flush`/`invalidate`）、释放（`freeBuffer`）
+
+`GraphicBufferMapper`（`GrallocMapper.cpp`）是 Mapper 4.x 在 framework 层的 wrapper，App 层面操作 buffer 时不会直接调用它，但它是 CPU 访问 graphic buffer 的必经之路。
+
+### HWC 合成类型判断
+
+`HwcCompositionType`（`layers.proto`）定义：
+
+```protobuf
+enum HwcCompositionType {
+  INVALID = 0;
+  CLIENT = 1;    // SurfaceFlinger 用 GLES 合成
+  DEVICE = 2;    // HWC 用硬件 Overlay 直接合成
+  SOLID_COLOR = 3;
+  CURSOR = 4;    // 类似 DEVICE，但位置可异步设置
+  SIDEBAND = 5;   // HWC 通过 sideband stream 直接合成
+}
+```
+
+判断发生在 SurfaceFlinger 的 `validate()` 阶段：HWC 逐 layer 返回自己能不能处理，能处理则 DEVICE，不能则 CLIENT。Perfetto / `dumpsys SurfaceFlinger` 里的 CompositionType 列就是这个值。
+
+### BLAST 模式下的位置变化
+
+Legacy 模式：BufferQueue Consumer 在 SurfaceFlinger 进程，通过 `FramebufferSurface` 消费。  
+BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemConsumer` 持有 Consumer 端，`BBQBufferQueueProducer` 继承 `BufferQueueProducer`，通过异步 ProducerListener 回调同步。Buffer + Geometry 原子提交解决了帧内不一致问题。
+
+### Perfetto / dumpsys 观测点
+
+| 工具 | 可见对象 | 链路位置 |
+|:---|:---|:---|
+| `dumpsys SurfaceFlinger` | Layer name / CompositionType / frame 信息 | HWC 决策层 |
+| `dumpsys meminfo <pid>` | Graphics 项（GraphicBuffer / ashmem / dmabuf 占用） | buffer_handle_t 内存 |
+| `/sys/kernel/dmabuf/buffers` | dmabuf exporter / size / flags（Android 12+） | 物理内存层 |
+| Perfetto `ftrace` / `atrace` | `dequeueBuffer` / `queueBuffer` / `acquireBuffer` 时序 | BufferQueue 运行时 |
+| Perfetto `surfaceflinger_packet` | HWC composition type per frame | SurfaceFlinger 决策层 |
+| Perfetto `linux.dmabuf` | dmabuf buffer events | 物理内存层 |
+
+### 源码文件索引
+
+| 文件 | 关键内容 |
+|:---|:---|
+| `frameworks/native/libs/gui/Surface.cpp` | ANativeWindow 实现，`dequeueBuffer`/`queueBuffer` |
+| `frameworks/native/libs/gui/BufferQueue.cpp` | `createBufferQueue()` 工厂方法 |
+| `frameworks/native/libs/gui/BLASTBufferQueue.cpp` | App 进程内 BufferQueue（BLAST 模式） |
+| `frameworks/native/libs/gui/GLConsumer.cpp` | SurfaceTexture 消费者端实现 |
+| `frameworks/native/libs/gui/GraphicBuffer.cpp` | Framework 层 buffer 对象封装 |
+| `system/core/include/system/graphics.h` | `buffer_handle_t` / `native_handle_t` 定义 |
+| `hardware/interfaces/graphics/allocator/3.0/IAllocator.hal` | Gralloc Allocator HAL 3.0 |
+| `hardware/interfaces/graphics/mapper/4.0/IMapper.hal` | Gralloc Mapper HAL 4.0 |
+| `frameworks/native/libs/gui/GrallocMapper.cpp` | `GraphicBufferMapper` 实现 |
+| `frameworks/native/services/surfaceflinger/layers/layers.proto` | `HwcCompositionType` enum |
+
+---
+
 
 ---
 
