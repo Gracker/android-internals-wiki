@@ -1,6 +1,7 @@
 ---
 title: ANGLE（GLES-over-Vulkan 翻译层）
 chapter: '18.11'
+section: '18.11'
 status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 tags:
@@ -22,12 +23,12 @@ sources:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-18
+reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
 last_task9_at: '2026-04-18T12:20:00+08:00'
-task9_reviewed_date: 2026-04-18
+task9_reviewed_date: "2026-04-23"
 task9_reviewed_by: openclaw-task9
 task9_result: needs-rework
 review_round: 1

@@ -25,11 +25,17 @@ tags:
   - android
   - benchmark
   - research
+related_chapters:
+  - "14.6"
+  - "15.5"
+  - "8.3"
+  - "13.2"
+  - "5.5"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-17"
-task6_result: needs-rework
+reviewed_date: "2026-04-23"
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -69,10 +75,7 @@ last_task9_at: "2026-04-21T09:26:24+08:00"
 
 ## 为什么性能测试需要“最佳实践”
 
-Perfetto、Profiler、Benchmark 这些工具本身都没有问题。真正经常出问题的是测试方式。  
-同一台设备、同一段代码、同一个场景，今天测一次是 450ms，明天测一次变成 620ms。如果环境和方法不稳，工具越强，越容易把人带偏。
-
-遗憾的是，现实往往不是这样。我们经常遇到这样的情况：同一台设备上跑同一个测试，第一次冷启动 450ms，第二次就变成 620ms。今天测的帧率是 58fps，明天同样的代码就变成了 52fps。当你拿着这些数据去定位问题时，根本分不清到底是代码引入了回归，还是测试环境本身在捣乱。
+性能测试的工具链——Perfetto、Profiler、Benchmark——本身没有问题，真正经常出问题的是测试方式。同一台设备、同一段代码，第一次冷启动 450ms，第二次就变成 620ms；今天帧率 58fps，明天同样的代码变成 52fps。拿着这些数据去定位问题，根本分不清是代码引入了回归，还是测试环境本身在波动。
 
 性能测试和功能测试有一个根本性的区别：功能测试的结果是确定的——要么通过要么失败；而性能测试的结果是概率性的——它受到温度、后台进程、CPU 调频策略、GC 时机等大量不可控因素的影响。如果我们不主动控制这些变量，测试数据就没有参考价值。
 
