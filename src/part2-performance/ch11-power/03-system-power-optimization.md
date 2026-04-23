@@ -5,9 +5,6 @@ status: ready-for-review
 section: "11.3"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs"
@@ -51,15 +48,18 @@ sources:
     path: "https://dontkillmyapp.com/"
 tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
 related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-20T15:56:56+08:00"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-24"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
 ---
 
 # 系统级功耗优化
@@ -91,9 +91,9 @@ last_task9_at: "2026-04-20T15:56:56+08:00"
 
 ## 为什么要了解系统级功耗管理
 
-在 §11.2 中，我们讨论了 App 侧可以做的功耗优化：减少 WakeLock 持有时间、合理使用 WorkManager、优化网络请求频率等。这些都是在 App 主动配合的前提下完成的。但现实是，即便一个 App 自身做得很好，系统依然可能替它"省电"——在用户不知情的情况下限制它的后台行为、推迟它的任务执行、甚至直接杀掉它的进程。
+在 §11.2 中，我们讨论了 App 侧可以做的功耗优化：减少 WakeLock 持有时间、合理使用 WorkManager、优化网络请求频率等。这些都是在 App 主动配合的前提下完成的。即便一个 App 自身做得很好，系统依然可能替它"省电"——在用户不知情的情况下限制它的后台行为、推迟它的任务执行、甚至直接杀掉它的进程。
 
-这不是 Bug，而是 Android 系统在设计时就内置的功耗管理策略。从 Android 6.0 的 Doze 模式开始，到 Android 9 的 App Standby Buckets，再到 Android 12 的 Restricted 桶和各厂商自研的后台管控机制，系统级功耗管理的能力越来越强、粒度越来越细。
+Android 从 6.0 开始就内置了系统级功耗管理策略，经过 Android 9 的 App Standby Buckets、Android 12 的 Restricted 桶，到各厂商自研的后台管控机制，系统级功耗管理的能力越来越强、粒度越来越细。
 
 如果我们不了解这些机制，就会遇到一些令人困惑的现象：推送延迟到达、后台任务没有按预期执行、用户投诉 App "吃电" 但代码里找不到问题。这些问题的根因往往不在 App 内部，而在系统级功耗策略对外部行为的约束上。
 
@@ -115,7 +115,7 @@ Android 7.0（API 24）将 Doze 拆分为两个层级：
 
 ### 维护窗口：递增长度的呼吸机制
 
-Doze 不是把设备"冻住"就不管了。它会周期性地进入短暂的维护窗口（Maintenance Window），在这个窗口内临时解除大部分限制，让 App 有机会完成积压的工作。
+Doze 在限制后台活动的同时，会周期性地进入短暂的维护窗口（Maintenance Window），在这个窗口内临时解除大部分限制，让 App 有机会完成积压的工作。
 
 维护窗口的关键特征是**间隔递增**。设备刚进入 Doze 时，维护窗口相对更密；空闲时间继续拉长后，窗口之间的间隔会逐步变长，后期可能相隔数小时。具体数值受 Android 版本、设备配置和白名单状态影响，不适合把 1 小时、2 小时、4 小时写成固定常量。
 
@@ -366,7 +366,7 @@ OPPO 和 vivo 的策略类似：
 
 做功耗和后台行为分析时，厂商策略的影响主要体现在：
 
-1. **后台任务执行不稳定**——同一个 WorkManager 任务，在 Pixel 上能按时执行，在小米上可能被推迟数小时。这不是 WorkManager 的 Bug，而是厂商的进程冻结策略。
+1. **后台任务执行不稳定**——同一个 WorkManager 任务，在 Pixel 上能按时执行，在小米上可能被推迟数小时，根因通常是厂商的进程冻结策略。
 2. **推送延迟**——FCM 在国内不可用，App 通常使用厂商推送通道（小米推送、华为推送等）或第三方推送（如极光推送）。这些推送通道能否正常工作，取决于 App 是否被厂商系统"放行"。
 3. **功耗数据差异巨大**——同一 App 在不同厂商设备上的电池消耗报告可能差 3-5 倍，大部分差异来自厂商的后台管控策略，而非 App 本身的行为差异。
 

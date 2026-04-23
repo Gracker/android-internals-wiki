@@ -5,9 +5,6 @@ chapter: "12.1"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-10"
@@ -29,15 +26,18 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-pipeline_stage: task2b_pending
-task6_state: revisiting
-task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T20:50:00+08:00'
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-24"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
 ---
 
 # APK 体积优化
@@ -398,7 +398,7 @@ bundletool get-size total --apks=app.apks \
 
 **「应该支持所有屏幕密度」**——Android 的资源缩放机制可以在缺失某一密度资源时自动从最近的高密度资源缩放。对于大多数 App，提供 xxhdpi 资源即可覆盖主流设备，系统会自动处理其他密度的缩放。在 Gradle 中配置 `resConfigs` 过滤掉不需要的密度，可以减小资源体积。
 
-**「WebP 不如 PNG 清晰」**——这是过时的观念。对于照片类图片，WebP 有损压缩在 80% 质量以上时，人眼几乎无法察觉与 PNG 的差异；对于图标类图片，WebP 无损模式的压缩率也优于 PNG。唯一需要注意的是 alpha 通道——某些带半透明效果的复杂图标，WebP 有损可能产生 artifact，这种情况用 WebP 无损即可。
+**「WebP 不如 PNG 清晰」**——这是过时的观念。对于照片类图片，WebP 有损压缩在 80% 质量以上时，人眼几乎无法察觉与 PNG 的差异；对于图标类图片，WebP 无损模式的压缩率也优于 PNG。alpha 通道需要单独看——某些带半透明效果的复杂图标，WebP 有损可能产生 artifact，这种情况用 WebP 无损即可。
 
 **「App Bundle 是强制性的，国内市场没法用」**——国内应用市场确实不支持 AAB 格式。但 App Bundle 的技术价值不限于 Google Play。可以在本地用 `bundletool` 生成针对特定 ABI 和密度的 APK，然后分渠道上传。这比「一个 APK 适配所有设备」高效得多。此外，Dynamic Feature Module 的按需加载思想，也可以通过自研的插件化框架在非 Google Play 渠道实现。
 
