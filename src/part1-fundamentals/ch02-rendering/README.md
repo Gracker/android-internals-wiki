@@ -42,7 +42,7 @@ Android 里最常见的性能体感问题，很多都要回到渲染流程。列
 - `2.10` GPU 渲染深入：补上 Skia、RenderEngine、GPU 提交和常见瓶颈
 - `2.11` Flutter 渲染管线与性能：单独看 Flutter 的调度和工具链
 - `2.12` Window Manager Service 与窗口管理：理解窗口层级、动画和可见性变化
-- `2.13` 图形缓冲区管理（BufferQueue）：看 producer / consumer、槽位和背压
+- `2.13` 图形缓冲区管理（BufferQueue）：看 producer/consumer、槽位和背压
 - `2.14` 图形 API 演进与选择策略：梳理 OpenGL ES、Vulkan、ANGLE 的边界
 - `2.15` DMA-BUF、Gralloc 与跨进程图形内存共享：看 GraphicBuffer 在进程间如何流转
 - `2.16` Sync Fence 框架与帧同步机制：定位 GPU 等待、buffer release 和合成阻塞

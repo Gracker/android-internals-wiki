@@ -133,9 +133,13 @@ InputDispatcher 也是 `system_server` 中的 Native 线程，被 InputReader �
 
 1. **InboundQueue（"iq"）**：InputReader 交付的事件先进入这里。InputDispatcher 从队列头取出事件开始处理。
 2. **OutboundQueue（"oq"）**：每个目标窗口（Connection）都有一个 OutboundQueue。事件被包装成 `DispatchEntry` 后放入对应窗口的 OutboundQueue，等待通过 socketpair 发送。
-3. **WaitQueue（"wq"）**：事件通过 socket 发送给 App 后，从 OutboundQueue 移到 WaitQueue。直到 App 处理完事件并回调 `finishInputEvent()`，才从 WaitQueue 中移除。
+3. **WaitQueue（"wq"）**：事件通过 socket 发送给 App 后，会先从 OutboundQueue 挪到 WaitQueue，等待 App 侧把 `Finished` 信号写回 InputChannel。真正把条目从 WaitQueue 移走的时刻，是 `InputDispatcher` 在 `doDispatchCycleFinishedLockedInterruptible` 里收到这个 ACK 之后，而不是某个 View 回调刚 return 的瞬间。
+
+这条 ACK 回路要单独看。主线程已经跑完 `onTouchEvent()`，但如果 Looper 回切、线程调度或 socket 回写又慢了一拍，WaitQueue 仍然会继续堆积。Input ANR 计时看的就是这条“已分发但未完成 ACK”的路径。
 
 在 Perfetto 中，这三个队列以 Slice 的形式出现在 `system_server` 进程的 InputDispatcher 线程中。它们是分析触摸延迟的核心入口点。如果 InboundQueue 堆积，说明 InputDispatcher 处理不过来；如果 OutboundQueue 堆积，说明目标窗口的 socket 通道拥塞；如果 WaitQueue 堆积，说明 App 端处理太慢，主线程很可能被阻塞了。
+
+对手写笔、掌压误触和边缘触控更激进的设备，还要把 classification 一起纳入判断。系统在 dispatch 前后都可能附带分类结果；落到应用观察面时，常见信号是 `MotionEvent.CLASSIFICATION_AMBIGUOUS_GESTURE`、被放大的 touch slop / long-press timeout，以及 Android 13+ 上用 `ACTION_CANCEL` / `FLAG_CANCELED` 撤回误触输入。遇到“第一笔慢半拍”或“首个 MOVE 没生效”的问题时，别只盯 WaitQueue，也要把 classification 和 cancel 路径一起看。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
@@ -220,6 +224,12 @@ for (int h = 0; h < historySize; h++) {
 float latestX = event.getX();
 float latestY = event.getY();
 ```
+
+### Batching 之外还有重采样
+
+Batching 解决的是“一帧里来了太多点，怎么一起交给应用”；真正让轨迹贴着帧时间走的，还有重采样。系统把 batched input 贴到 `CALLBACK_INPUT` 附近之后，Native 层 `InputConsumer` 会按照目标 frame time，在最近几个真实采样点之间做插值，补出一个更接近这一帧显示时刻的坐标。这样 120Hz 采样配 60Hz 显示仍然有价值，系统拿到的不只是“最新一个点”，而是“更接近这一帧该显示的位置”。
+
+对应用来说，这个补点通常表现为带 `FLAG_RESAMPLED` 的当前坐标。历史样本还在，但当前 `getX()` / `getY()` 更贴近帧时序，指尖轨迹也更稳。也因为这个原因，`requestUnbufferedDispatch()` 只能在笔迹、绘图、签名这类场景慎用；一旦关闭 batching 和系统重采样，MOVE 事件虽然更早送达，轨迹也更容易抖。
 
 在 Perfetto 里常见的现象是：一个 VSync 周期内先积累多个 MOVE 采样，App 在输入阶段一次性消费，然后这一帧的布局和绘制以最新状态为准。
 
