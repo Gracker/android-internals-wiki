@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T00:43:52+08:00",
+  "generated_at": "2026-04-24T01:51:58+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,55 +7,55 @@
     "finalized": 45,
     "ready-for-review": 138,
     "ready-to-publish": 45,
-    "last_updated": "2026-04-24T00:12:13+08:00",
+    "last_updated": "2026-04-24T01:51:58+08:00",
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 40,
-      "task2b_pending": 34,
+      "task6_pending": 42,
+      "task2b_pending": 33,
       "ready-to-publish": 45,
-      "task9_pending": 64
+      "task9_pending": 63
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 150,
-      "revisiting": 33
+      "reviewed": 148,
+      "revisiting": 35
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 90,
-      "pending": 92,
+      "reviewed": 89,
+      "pending": 93,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 139,
-      "pending": 38,
+      "fixed": 140,
+      "pending": 37,
       "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 40,
-      "task2b_pending": 34,
+      "task6_pending": 42,
+      "task2b_pending": 33,
       "ready-to-publish": 45,
-      "task9_pending": 64
+      "task9_pending": 63
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 150,
-      "revisiting": 33
+      "reviewed": 148,
+      "revisiting": 35
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 90,
-      "pending": 92,
+      "reviewed": 89,
+      "pending": 93,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 139,
-      "pending": 38,
+      "fixed": 140,
+      "pending": 37,
       "idle": 3
     }
   },
@@ -890,16 +890,16 @@
         "2.6",
         "2.10"
       ],
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "review_round": 2,
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-24",
       "task2b_result": "fixed",
-      "task2b_state": "pending",
-      "last_task2b_at": "2026-04-23T03:20:18+08:00",
+      "task2b_state": "fixed",
+      "last_task2b_at": "2026-04-24T01:51:58+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-24T00:43:52+08:00"
     },
@@ -3701,15 +3701,16 @@
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_result": "needs-rework",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-20",
       "last_task9_at": "2026-04-20T14:50:48+08:00",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-24T01:51:58+08:00"
     },
     "src/part2-performance/ch07-smoothness/12-view-layout-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",

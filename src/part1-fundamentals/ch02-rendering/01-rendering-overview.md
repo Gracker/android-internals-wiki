@@ -26,16 +26,16 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 review_round: 2
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-24
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: "2026-04-23T03:20:18+08:00"
+task2b_state: fixed
+last_task2b_at: "2026-04-24T01:51:58+08:00"
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-04-24T00:43:52+08:00
 ---
@@ -123,14 +123,16 @@ public static int getDefaultSize(int size, int measureSpec) {
 
 ```
 ViewRootImpl.performTraversals()
-├── ViewRootImpl.layout()
-│   └── View.layout()
-│       ├── View.onLayout()
-│       └── ViewGroup.dispatchDraw()
-│           └── ViewGroup.onLayout()
+└── ViewRootImpl.performLayout()
+    └── host.layout(0, 0, host.getMeasuredWidth(), host.getMeasuredHeight())
+        ├── View.layout()
+        │   ├── setFrame(...)
+        │   └── View.onLayout()
+        └── ViewGroup.onLayout()
+            └── child.layout(...)
 ```
 
-Layout 过程的核心任务是把 Measure 阶段确定的大小落实到具体的屏幕坐标上。每个 View 通过四个整数（mLeft、mTop、mRight、mBottom）记录自己的位置，这些坐标是相对于父 View 的边界计算的——也就是说，一个 left=10 并不意味着它在屏幕左侧 10 像素，而是距离父 View 左侧 10 像素。这个相对坐标的设计让 View 树在整体平移时不需要递归更新所有子 View 的坐标，只需要修改父 View 的偏移即可。
+Layout 过程的核心任务是把 Measure 阶段确定的大小落实到具体的屏幕坐标上。每个 View 通过四个整数（mLeft、mTop、mRight、mBottom）记录自己的位置，这些坐标是相对于父 View 的边界计算的——也就是说，一个 left=10 并不意味着它在屏幕左侧 10 像素，而是距离父 View 左侧 10 像素。这个相对坐标的设计让 View 树在整体平移时不需要递归更新所有子 View 的坐标，只需要修改父 View 的偏移即可。`ViewGroup.dispatchDraw()` 不属于 Layout 阶段，它在后面的 Draw 阶段由 `View.draw()` 触发，用来遍历和绘制子 View。
 
 Layout 过程还会进行边界检查，确保子 View 不会意外地渲染到父 View 的范围之外。在 Trace 中，如果 Layout 阶段耗时异常，通常是因为 View 树层级过深（递归 layout 调用链太长）或 onLayout 实现中的计算过于复杂。
 
@@ -157,11 +159,14 @@ ViewRootImpl.performTraversals()
 #### 4. VSync 同步：等待屏幕刷新信号
 
 ```
-Choreographer.doFrame()
-├── Choreographer.callInputCallbacks()
-├── Choreographer.callAnimationCallbacks()
-└── Choreographer.callTraversalCallbacks() // 触发 performTraversals()
+Choreographer.doFrame(...)
+├── doCallbacks(CALLBACK_INPUT, frameIntervalNanos)
+├── doCallbacks(CALLBACK_ANIMATION, frameIntervalNanos)
+├── doCallbacks(CALLBACK_INSETS_ANIMATION, frameIntervalNanos)
+└── doCallbacks(CALLBACK_TRAVERSAL, frameIntervalNanos) // 触发 performTraversals()
 ```
+
+`Choreographer` 在源码里不会暴露 `callInputCallbacks()` 这类方法名；`doFrame()` 内部按 callback type 依次执行 input、animation、insets animation 和 traversal，Traversal 阶段才会把 `performTraversals()` 推进到 Measure / Layout / Draw。
 
 VSync 信号是整条渲染管线的节拍器。它的源头是显示硬件——以 60Hz 屏幕为例，硬件每 16.67ms 发出一次 VSync 中断。Android 系统不会把这个原始信号直接交给 App 和 SurfaceFlinger，而是通过 DispSync 将其分发为两个独立的信号：VSYNC_APP 和 VSYNC_SF，它们之间有一个精心计算的时间差（offset）。
 
@@ -191,11 +196,13 @@ GPU 渲染管线是一条高度并行的流水线。管线的起点是顶点着�
 #### 6. SurfaceFlinger 合成：合并多个表面
 
 ```
-SurfaceFlinger.threadLoop()
-├── SurfaceFlinger.handleMessageRefresh()
-├── SurfaceFlinger.composeSurfaces()
-├── HWC.set()
-└── DisplayHardware composerCallback()
+HWC / display HAL 发出硬件 VSync
+└── SurfaceFlinger::onComposerHalVsync()
+    └── Scheduler 选定本轮 frame
+        └── SurfaceFlinger::scheduleComposite()
+            ├── commit()      // latch buffer 与 transaction
+            ├── composite()   // 组装 CompositionRefreshArgs
+            └── mCompositionEngine->present() // 进入 HWComposer / present
 ```
 
 SurfaceFlinger 合成的核心逻辑是按 Z-Order（Z 轴顺序）从后到前逐层叠加各个 Layer 的内容。想象一摞透明玻璃板，每一块玻璃上画着不同 App 的界面：状态栏是一层、导航栏是一层、当前 App 是一层、如果有个悬浮窗又是一层。SurfaceFlinger 就像是在上方俯瞰这摞玻璃板，把它们叠在一起形成最终的画面。
@@ -205,8 +212,10 @@ SurfaceFlinger 合成的核心逻辑是按 Z-Order（Z 轴顺序）从后到前�
 #### 7. 显示输出：最终呈现到屏幕
 
 ```
-DisplayHardware.vsync()
-└── DisplayHardware.flip()
+CompositionEngine::present()
+└── HWComposer / display HAL 提交本帧
+    ├── 返回 present fence / release fences
+    └── display controller 在下一个刷新点扫描输出
 ```
 
 显示输出阶段负责将合成后的图像安全地送到屏幕上。这里的关键机制是双缓冲/三缓冲——屏幕正在显示的缓冲区（前台缓冲）不能被同时写入新数据，否则会出现画面撕裂（上半部分是旧帧、下半部分是新帧）。缓冲区的切换严格与 VSync 信号同步：每次 VSync 到来时，显示控制器切换到下一个已准备好的缓冲区，开始输出新的一帧。
@@ -260,7 +269,7 @@ void SurfaceFlinger::handleMessageRefresh() {
 }
 ```
 
-在 BufferQueue 的实现中，三缓冲依赖 buffer slot 数量和 Fence 协同工作：生产者只有拿到空闲 slot 才能继续写入，消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST/SurfaceControl 事务路径后，系统还要把 buffer 提交和窗口几何变更放到同一时序里。文中提到的 AsyncBufferQueue 可以放在这组流程里理解：它解决的是持续入队场景里的排队抖动；Android 16 对 64 位新设备同时抬高了 Vulkan 基线，要求支持 Vulkan 1.4，其中的 Host Image Copy 允许 CPU 侧上传更直接地进入 GPU 可用 image memory，减少 staging buffer 和一次额外 copy。前者管排队，后者管上传，两类改动叠在一起时，流式纹理和视频帧这类场景更容易保持稳定。
+在 BufferQueue 的实现中，三缓冲依赖 buffer slot 数量和 Fence 协同工作：生产者只有拿到空闲 slot 才能继续写入，消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后，buffer 提交和窗口几何变更会放进同一事务节奏，减少 resize 与内容更新错拍。Android 16 对 64 位新设备要求支持 Vulkan 1.4，Host Image Copy 影响的是纹理上传和 image memory 路径；它和 BufferQueue / BLAST 属于不同层，不能直接并到同一段“三缓冲增强”描述里。本文先不把 `AsyncBufferQueue` 写成 Android 16 已公开落地的固定接口，后续拿到 AOSP commit 再单列展开。
 
 [待补充：Trace 中三缓冲的监控方法]
 
@@ -288,7 +297,7 @@ App进程                 系统进程           SurfaceFlinger/HWC
 
 在 Android 中，最常见的生产者是 App 的 RenderThread，它通过 OpenGL ES 或 Vulkan 将 UI 绘制到 GraphicBuffer 中。除了 App 渲染之外，媒体解码器（生成视频帧）、相机预览（生成取景画面）也都是 BufferQueue 的生产者——它们都遵循同样的 dequeue → draw → queue 流程。
 
-[待验证: 以下 dequeueBuffer/queueBuffer 实现在 Android 16 BlastBufferQueue 重构后可能有变化]
+在 BLASTBufferQueue 路径里，生产者侧的基本接口仍然是 `dequeueBuffer()` → 绘制 / 填充 → `queueBuffer()`；变化主要在于 buffer 提交会和 SurfaceControl transaction 一起编排。
 
 #### 2. BufferQueue 核心
 
@@ -317,20 +326,22 @@ T6: 生产者 dequeueBuffer() → 获得缓冲区 A（重用）
 
 ### 同步机制
 
-**Fence 机制**（以下为示意性伪代码，展示 Fence 的使用模式）：
+**Fence 机制**（以下为示意性伪代码，展示“传递句柄 + 等待完成”的模式）：
 ```cpp
-// [示意性伪代码] Fence 的基本使用模式
-sp<Fence> producerAcquireFence; // 生产者完成绘制的栅栏
-sp<Fence> consumerReleaseFence; // 消费者完成使用的栅栏
+// acquire fence：生产者把 buffer 交给消费者时附带的完成信号
+sp<Fence> acquireFence;
 
-// 等待生产者完成绘制
-producerAcquireFence->waitForever();
+// 消费者在真正读取 / 合成前等待 fence 完成
+acquireFence->waitForever("BufferQueueConsumer::acquireBuffer");
 
-// 消费者完成后通知生产者
-consumerReleaseFence->signal();
+// release fence：消费者处理完 buffer 后再随 buffer 生命周期返回
+sp<Fence> releaseFence = frameResult.releaseFence;
+return releaseFence;
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/BufferQueue.cpp]
+这里的 `signal` 不由 BufferQueue、App 或 SurfaceFlinger 手工调用。Fence 完成事件来自内核同步框架以及 GPU / 显示硬件驱动；生产者和消费者做的是“随 buffer 传递 fence 句柄，并在需要时 wait”。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/BufferQueueProducer.cpp / BufferQueueConsumer.cpp]
 
 ## 软件渲染（Skia CPU）vs 硬件加速渲染（Skia OpenGL/Vulkan）
 
@@ -480,144 +491,68 @@ void SkiaPipeline::draw(RenderNode* root) {
 }
 ```
 
-[待验证: SkiaOpenGLPipeline / SkiaVulkanPipeline 的具体类名在 android-16.0.0_r1 中是否有进一步重构]
+[已验证：`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp`、`SkiaVulkanPipeline.cpp`]
 
 ### RenderNode 架构
 
-RenderNode 与 View 树保持严格的一一对应关系——每个 View 对象内部都持有一个 RenderNode 实例。这些 RenderNode 组成的树形结构与 View 树完全同构，父 ViewGroup 的 RenderNode 包含子 View 的 RenderNode 引用。RenderNode 内部采用了 staging 机制来实现线程安全：主线程在录制阶段将新的属性和 DisplayList 写入 staging 区，然后在 prepareTree 阶段原子性地合并到主区，确保 RenderThread 始终读取到一致的快照。
+RenderNode 与 View 树基本一一对应，但这里直接看源码时，最需要分清的是它的“生效区 / staging 区”分离。android-16.0.0_r1 的 `frameworks/base/libs/hwui/RenderNode.h` / `RenderNode.cpp` 里可以直接对上这几个成员：
 
-#### RenderNode 的数据结构
+- `RenderProperties mProperties`：当前生效的几何、alpha、裁剪、layer 等渲染属性
+- `DisplayList mDisplayList`：RenderThread 本帧实际回放的指令快照
+- `DisplayList mStagingDisplayList`：UI 线程刚录好的新指令，等待下一次同步
+- `bool mNeedsDisplayListSync`：标记本帧是否需要把 staging 数据切到生效区
 
-[待验证: RenderNode 内部结构在 AOSP android-16.0.0_r1 中可能有调整，以下为概念性描述]
+这套结构把“UI 线程继续录下一帧”和“RenderThread 回放当前帧”拆开。主线程不会直接改正在回放的 `mDisplayList`，而是先写 `mStagingDisplayList`，等 `prepareTree()` 阶段再切换。
+
+#### RenderNode 的实际同步路径
 
 ```cpp
-// [概念性伪代码] RenderNode 的核心职责：每个 View 对应一个 RenderNode
-// 实际实现见 frameworks/base/libs/hwui/RenderNode.h
-//
-// 关键设计思想：
-// 1. staging 机制实现线程安全（主线程写 staging，RenderThread 读主区）
-// 2. 持有 DisplayList（绘制指令）和子节点引用
-// 3. 与 View 树一一对应
-
-// RenderNode 的核心职责（简化）：
-// - 持有 View 的渲染属性（位置、透明度、裁剪等）
-// - 持有 DisplayList（绘制指令序列）
-// - 持有子 RenderNode 引用（与 View 树同构）
-// - staging 区实现线程安全的属性更新
-```
-
-上面的伪代码展示了 staging 的核心流程：属性和 DisplayList 在 prepareTree 阶段从 staging 区原子性地合并到主区，保证 RenderThread 读取到一致快照。
-
-#### RenderNode 的生命周期
-
-```
-创建 → 录制 → 准备 → 渲染 → 销毁
-```
-
-1. **创建阶段**：
-```java
-RenderNode renderNode = new RenderNode("MyView");
-```
-
-2. **录制阶段**：
-```java
-RecordingCanvas canvas = renderNode.beginRecording(width, height);
-// 执行绘制操作
-canvas.drawRect(rect, paint);
-renderNode.endRecording();
-```
-
-3. **准备阶段**（示意性伪代码，展示 staging 合并逻辑）：
-```cpp
-// [示意性伪代码] staging → 主区的合并逻辑（prepareTree 阶段）
-void RenderNode::prepareTreeImpl(TreeInfo info) {
-    mProperties = mStagingProperties;   // 属性快照
-    mDisplayList = mStagingDisplayList;  // 指令快照
-    for (auto& child : mChildNodes) {
-        child->prepareTreeImpl(info);    // 递归合并子节点
-    }
+// frameworks/base/libs/hwui/RenderNode.cpp
+void RenderNode::prepareTree(TreeInfo& info) {
+    MarkAndSweepRemoved observer(&info);
+    prepareTreeImpl(observer, info, false);
 }
-```
 
-4. **渲染阶段**（示意性伪代码，展示递归绘制逻辑）：
-```cpp
-// [示意性伪代码] RenderNode 递归绘制
-void RenderNode::draw(RenderProperties& props, RenderThread& renderThread) {
-    // 执行 DisplayList
+void RenderNode::syncDisplayList(TreeObserver& observer, TreeInfo* info) {
+    deleteDisplayList(observer, info);
+    mDisplayList = std::move(mStagingDisplayList);
     if (mDisplayList) {
-        mDisplayList->draw(renderThread);
-    }
-    // 递归绘制子节点
-    for (auto& child : mChildNodes) {
-        child->draw(props, renderThread);
+        mDisplayList.syncContents(syncData);
     }
 }
 ```
 
-### DisplayList 的结构
+`prepareTreeImpl()` 在 full 模式下会调用 `pushStagingDisplayListChanges()`，其中再进入 `syncDisplayList()`。这一步才把 UI 线程刚录制的 DisplayList、子节点引用和相关同步数据切到当前帧。
 
-DisplayList 是一个绘制指令的有序序列，记录了 View 在 onDraw 中发出的所有 drawXXX 调用。它支持分层嵌套——每个 ViewGroup 的 DisplayList 既包含自身的绘制指令，也持有子 View 的 RenderNode 引用，形成一棵与 View 树同构的 DisplayList 树。回放时，变换和裁剪等属性会沿着树形结构向下传递，子节点自动继承父节点的变换矩阵和裁剪区域。
+#### RecordingCanvas → DisplayListData
 
-[待验证: DisplayList / DisplayListData 在 AOSP android-16.0.0_r1 中可能有重构]
+`android.graphics.RenderNode.beginRecording()` 返回 `android.graphics.RecordingCanvas`。Java 层的 `drawRect()`、`drawText()` 等调用最终通过 native recorder 写进 `DisplayListData`。`DisplayListData` 定义在 `frameworks/base/libs/hwui/RecordingCanvas.h`，它负责存放有序绘制指令，并提供 `draw()`、`reset()`、`usedSize()` 这类方法给回放和复用流程使用。
 
 ```cpp
-// [概念性伪代码] DisplayList 的核心职责
-// 实际实现见 frameworks/base/libs/hwui/RecordingCanvas.h
-//
-// 关键设计思想：
-// 1. 有序的绘制指令序列（drawRect、drawText 等）
-// 2. 每个指令编码了操作类型和参数
-// 3. 支持子 RenderNode 嵌套（ViewGroup → 子 View）
-// 4. 回放时按顺序执行指令，应用变换和裁剪
-
-// DisplayList 的核心数据：
-// - 绘制指令序列（drawXXX 调用的有序列表）
-// - 变换矩阵（当前 View 的位移/缩放/旋转）
-// - 子 RenderNode 引用（支持树形嵌套）
+// frameworks/base/libs/hwui/RecordingCanvas.h
+class DisplayListData final {
+public:
+    void draw(SkCanvas* canvas) const;
+    void reset();
+    size_t usedSize() const { return fUsed; }
+};
 ```
 
-DisplayList 的分层嵌套结构与 View 树一一对应：每个 ViewGroup 的 DisplayList 包含自身的绘制指令和子 View 的 RenderNode 引用。回放时，RenderThread 递归遍历这棵 DisplayList 树，先应用父节点的变换和裁剪，再执行子节点的绘制指令。因此如果某个 View 调用了 invalidate()，只需要重新录制该 View 对应的 RenderNode 的 DisplayList，而不需要重录整棵树——这是硬件加速渲染比软件渲染高效的一个关键原因。
+DisplayList 在 native 层对应的是 `DisplayList` / `DisplayListData` 这组对象，里面既有绘制指令，也有对子 RenderNode 的引用和同步所需的元数据。
 
 ### UI 线程与 RenderThread 的协作
 
-```
-UI 线程：
-1. View.onDraw() → RecordingCanvas.drawRect()
-2. 指令存储到 DisplayList
-3. 调用 RenderNode.prepareTree()
+HWUI 的一帧主链如下：
 
-RenderThread：
-1. 创建 OpenGL 上下文
-2. 执行 DisplayList.playback()
-3. 通过 GPU 进行实际渲染
-```
+1. UI 线程在 `View.draw()` 期间把 `drawXXX()` 调用录进 `RecordingCanvas`
+2. `RenderNode.endRecording()` 之后，新内容先进入 `mStagingDisplayList`
+3. `RenderNode::prepareTree()` / `pushStagingDisplayListChanges()` 把 staging 数据同步到 `mDisplayList`
+4. Skia pipeline 在 RenderThread 回放 `mDisplayList`，底层走 `SkiaOpenGLPipeline` 或 `SkiaVulkanPipeline`
+5. 渲染结果进入 Surface / BufferQueue，再由 SurfaceFlinger / HWC 继续处理
 
-**同步机制**（以下为示意性伪代码，展示两线程的协作模式）：
-```cpp
-// [示意性伪代码] UI 线程与 RenderThread 的协作
-// UI 线程触发渲染
-void RenderThread::invokeDrawCallbacks() {
-    // 等待 RenderThread 准备好
-    mRenderThreadSem.wait();
-    
-    // 执行渲染
-    mRenderer->draw(mFrameInfo);
-}
+这也是 `invalidate()` 能只重录局部节点的原因：改动先落到对应 RenderNode 的 staging 数据，再在下一帧同步，不需要整棵树每次都从头复制。
 
-// RenderThread 执行渲染
-void OpenGLRenderer::draw(const Frame& frame) {
-    // 创建 OpenGL Surface
-    sk_sp<SkSurface> surface = createSurface();
-    
-    // 执行 DisplayList
-    surface->getCanvas()->drawDisplayList(displayList);
-    
-    // 提交到 GPU
-    surface->flushAndSubmit();
-}
-```
-
-[已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/]
+[已验证：AOSP android-16.0.0_r1，`RenderNode.h`、`RenderNode.cpp`、`RecordingCanvas.h`、`pipeline/skia/`]
 
 ## Vulkan 渲染后端在 Android 上的现状与性能优势
 
@@ -700,7 +635,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 **Android 13（T，2022）** 进一步优化了 Vulkan 后端的支持，更多设备默认使用 Vulkan 进行 UI 渲染。
 
-**Android 16（2025）** 把图形栈的设备基线继续抬高：64 位新设备要求支持 Vulkan 1.4，Host Image Copy 让持续上传纹理和图像数据时少一次 staging copy；缓冲区排队和窗口事务侧继续沿着 BLAST / ASurfaceControl 路径演进，AsyncBufferQueue 这类优化让持续入队场景更稳定。面向应用层，AGSL 继续扩展 RuntimeColorFilter、RuntimeXfermode 这类可编程图形能力。
+**Android 16（2025）** 把图形栈的设备基线继续抬高：64 位新设备要求支持 Vulkan 1.4，Host Image Copy 让持续上传纹理和图像数据时少一次 staging copy；缓冲区排队和窗口事务侧继续沿着 BLASTBufferQueue / ASurfaceControl 路径演进，重点是把 buffer 与 transaction 的提交节奏继续拉齐。这里不把 `AsyncBufferQueue` 写成 Android 16 已公开落地的固定接口；如果后续拿到明确的 AOSP commit，再单独展开。面向应用层，AGSL 继续扩展 RuntimeColorFilter、RuntimeXfermode 这类可编程图形能力。
 
 ## 常见问题与误区
 
