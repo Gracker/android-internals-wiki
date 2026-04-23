@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-04-24T02:41:00+08:00",
+  "generated_at": "2026-04-24T03:39:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 211,
-    "finalized": 45,
-    "ready-for-review": 138,
-    "ready-to-publish": 45,
-    "last_updated": "2026-04-24T02:41:00+08:00",
+    "finalized": 46,
+    "ready-for-review": 137,
+    "ready-to-publish": 46,
+    "last_updated": "2026-04-24T03:39:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 28,
       "task6_pending": 42,
-      "task2b_pending": 33,
-      "ready-to-publish": 45,
-      "task9_pending": 63
+      "task2b_pending": 34,
+      "ready-to-publish": 46,
+      "task9_pending": 61
     },
     "task6_state_counts": {
       "unknown": 28,
@@ -22,14 +22,14 @@
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 89,
-      "pending": 93,
+      "reviewed": 91,
+      "pending": 91,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 140,
-      "pending": 37,
+      "fixed": 139,
+      "pending": 38,
       "idle": 3
     }
   },
@@ -37,9 +37,9 @@
     "pipeline_stage_counts": {
       "unknown": 28,
       "task6_pending": 42,
-      "task2b_pending": 33,
-      "ready-to-publish": 45,
-      "task9_pending": 63
+      "task2b_pending": 34,
+      "ready-to-publish": 46,
+      "task9_pending": 61
     },
     "task6_state_counts": {
       "unknown": 28,
@@ -48,14 +48,14 @@
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 89,
-      "pending": 93,
+      "reviewed": 91,
+      "pending": 91,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 31,
-      "fixed": 140,
-      "pending": 37,
+      "fixed": 139,
+      "pending": 38,
       "idle": 3
     }
   },
@@ -7717,6 +7717,25 @@
           "issues": 1
         }
       ]
+    },
+    {
+      "date": "2026-04-24",
+      "task": "task9-deep-review",
+      "sections_reviewed": [
+        {
+          "section": "18.17",
+          "title": "Hardware Buffer Renderer",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "18.18",
+          "title": "PIP 与自由窗口渲染",
+          "result": "pass-tech-review",
+          "issues": 2,
+          "auto_promoted": true
+        }
+      ]
     }
   ],
   "progress": {
@@ -7743,6 +7762,22 @@
         "task6_result": "pass-light-edit",
         "task6_state": "reviewed",
         "pipeline_stage": "task9_pending",
+        "issues_found": "minor"
+      },
+      "18.17": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
+      },
+      "18.18": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
         "issues_found": "minor"
       }
     }
@@ -7806,24 +7841,25 @@
     ],
     "created_by": "rendering-pipelines-merge",
     "created_date": "2026-04-09",
-    "pipeline_stage": "task9_pending",
+    "pipeline_stage": "task2b_pending",
     "task6_state": "reviewed",
-    "task9_state": "pending",
-    "task2b_state": "fixed",
-    "task2b_result": "fixed",
+    "task9_state": "reviewed",
+    "task2b_state": "pending",
+    "task2b_result": "pending",
     "reviewed_by": "openclaw-task6",
     "reviewed_date": "2026-04-24",
     "task6_result": "pass-light-edit",
     "task9_result": "needs-rework",
-    "task9_reviewed_date": "2026-04-18",
+    "task9_reviewed_date": "2026-04-24",
     "task9_reviewed_by": "openclaw-task9",
     "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
-    "review_notes": "2026-04-24 task6 re-review (revisiting): pass-light-edit。L1修复1处（tags渲染链路→渲染管线）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| "
+    "review_notes": "2026-04-24 task6 re-review (revisiting): pass-light-edit。L1修复1处（tags渲染链路→渲染管线）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-24 task9 deep-review: needs-rework。P1 1（NDK 29-35 buffer release 链路缺失），P2 1。| ",
+    "last_task9_at": "2026-04-24T03:39:00+08:00"
   },
   "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
     "title": "PIP 与自由窗口渲染",
     "chapter": "18.18",
-    "status": "ready-for-review",
+    "status": "finalized",
     "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
     "tags": [
       "PIP",
@@ -7841,20 +7877,20 @@
     ],
     "created_by": "rendering-pipelines-merge",
     "created_date": "2026-04-09",
-    "pipeline_stage": "task9_pending",
+    "pipeline_stage": "ready-to-publish",
     "task6_state": "reviewed",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "task2b_state": "fixed",
     "reviewed_date": "2026-04-24",
     "reviewed_by": "openclaw-task6",
     "task6_result": "pass-light-edit",
-    "last_task9_at": "2026-04-18T11:10:00+08:00",
-    "task9_reviewed_date": "2026-04-18",
+    "last_task9_at": "2026-04-24T03:39:00+08:00",
+    "task9_reviewed_date": "2026-04-24",
     "task9_reviewed_by": "openclaw-task9",
-    "task9_result": "needs-rework",
+    "task9_result": "pass-tech-review",
     "review_round": 1,
     "task2b_result": "fixed",
     "path": "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
-    "review_notes": "2026-04-24 task6 re-review (revisiting): pass-light-edit。L1禁用词0命中。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证5/5·元数据5/5。| "
+    "review_notes": "2026-04-24 task6 re-review (revisiting): pass-light-edit。L1禁用词0命中。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证5/5·元数据5/5。| 2026-04-24 task9 deep-review: pass-tech-review。P2 2。自动晋升 finalized。| "
   }
 }

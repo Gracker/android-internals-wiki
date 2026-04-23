@@ -1,23 +1,23 @@
 ---
 title: "PIP 与自由窗口渲染"
 chapter: "18.18"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 tags: ["PIP", "画中画", "Freeform", "多窗口", "SurfaceControl", "BLAST", "渲染路径"]
 related_chapters: ["2.6", "2.12", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_date: 2026-04-24
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_task9_at: "2026-04-18T11:10:00+08:00"
-task9_reviewed_date: "2026-04-18"
+last_task9_at: "2026-04-24T03:39:00+08:00"
+task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
-task9_result: needs-rework
+task9_result: pass-tech-review
 review_round: 1
 task2b_result: fixed
 ---

@@ -3645,6 +3645,27 @@
       "task2b_state": "fixed",
       "fixed_at": "2026-04-24T01:51:58+08:00",
       "fixed_by": "openclaw-task2b"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "section_title": "Hardware Buffer Renderer",
+      "priority": 85,
+      "reason": "[Deep Tech Review] NDK buffer 复用链路仍缺 1 处关键版本差异",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/版本差异",
+          "location": "NDK API / L174-L180",
+          "detail": "Android 10-15 段只写了 `ASurfaceTransaction_setBuffer()` 和 “OnComplete 不能当 release 信号”，漏掉 `ASurfaceTransaction_setOnComplete()` + `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 这条 API 29+ 的官方回收链路。当前写法会把 29-35 的 buffer reuse 机制讲成近似黑盒。",
+          "suggestion": "补上 OnComplete 回调、previousReleaseFenceFd 和等待 release fence 的关系，并说明 API 36 的 `ASurfaceTransaction_setBufferWithRelease()` / `ASurfaceTransaction_OnBufferRelease` 只是更直接的回收回调。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-24T03:39:00+08:00",
+      "status": "pending",
+      "task2b_state": "pending"
     }
   ]
 }
