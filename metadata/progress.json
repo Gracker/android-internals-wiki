@@ -1,62 +1,62 @@
 {
-  "generated_at": "2026-04-23T08:14:59.371859",
+  "generated_at": "2026-04-23T08:27:03.420384+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "finalized": 45,
-    "last_updated": "2026-04-23T06:16:15+08:00",
+    "last_updated": "2026-04-23T08:16:00+08:00",
     "pipeline_ready_to_publish": 45,
     "pipeline_stage_counts": {
       "ready-to-publish": 45,
-      "task2b_pending": 38,
-      "task6_pending": 47,
-      "task9_pending": 52
+      "task2b_pending": 36,
+      "task6_pending": 48,
+      "task9_pending": 53
     },
-    "pipeline_task2b_pending": 38,
-    "pipeline_task9_pending": 52,
+    "pipeline_task2b_pending": 36,
+    "pipeline_task9_pending": 53,
     "ready-for-review": 136,
     "ready-to-publish": 0,
     "task2b_state_counts": {
-      "fixed": 132,
+      "fixed": 134,
       "idle": 5,
-      "pending": 42
+      "pending": 40
     },
     "task6_state_counts": {
       "pending": 1,
-      "reviewed": 137,
-      "revisiting": 44
+      "reviewed": 138,
+      "revisiting": 43
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 86,
-      "reviewed": 95
+      "pending": 88,
+      "reviewed": 93
     },
     "total": 211,
     "total_sections": 211,
     "unknown": 0,
-    "task6_reviewed": 137
+    "task6_reviewed": 138
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 46,
-      "task2b_pending": 38,
-      "task6_pending": 46,
-      "task9_pending": 52
+      "ready-to-publish": 45,
+      "task2b_pending": 36,
+      "task6_pending": 48,
+      "task9_pending": 53
     },
     "task6_state_counts": {
       "pending": 1,
-      "reviewed": 140,
-      "revisiting": 41
+      "reviewed": 138,
+      "revisiting": 43
     },
     "task9_state_counts": {
       "fixed": 1,
-      "pending": 86,
-      "reviewed": 95
+      "pending": 88,
+      "reviewed": 93
     },
     "task2b_state_counts": {
-      "fixed": 132,
+      "fixed": 134,
       "idle": 5,
-      "pending": 42
+      "pending": 40
     }
   },
   "issues": {
@@ -631,22 +631,91 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-06",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-04-22",
-      "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com @CriticalNative",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "sources": [
+        {
+          "type": "official",
+          "path": "https://developer.android.com/training/articles/perf-jni"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/dalvik/annotation/optimization/FastNative"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/dalvik/annotation/optimization/CriticalNative"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/guide/practices/page-sizes"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/ndk/guides/simpleperf"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/java/nio/ByteBuffer"
+        },
+        {
+          "type": "spec",
+          "path": "https://docs.oracle.com/javase/8/docs/technotes/guides/jni/"
+        },
+        {
+          "type": "research",
+          "path": "intake/research-feeds/2026-04-07-19-art-fastnative-criticalnative-jni-optimization.md"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/Binder.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/Parcel.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/SystemProperties.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/Trace.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/include/android/trace.h (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "system/core/libcutils/include/cutils/trace.h (android-16.0.0_r1)"
+        }
+      ],
+      "tags": [
+        "android",
+        "research",
+        "jni",
+        "ndk",
+        "performance"
+      ],
+      "related_chapters": [
+        "4.7",
+        "14.2"
+      ],
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-23",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-23T04:05:49+08:00",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-23",
-      "last_task2b_at": "2026-04-22T23:53:44+08:00"
+      "last_task2b_at": "2026-04-23T08:16:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md": {
       "path": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
@@ -4546,9 +4615,51 @@
       "polish_date": "2026-04-07",
       "polish_by": "task2b-polish",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
-      "last_verified": "2026-04-21",
-      "last_verified_against": "AOSP android-16.0.0_r1",
+      "last_verified": "2026-04-23",
+      "last_verified_against": "AOSP android-16.0.0_r1 + BatteryStatsImpl.shouldResetOnUnplugLocked()",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/res/res/xml/power_profile.xml"
+        },
+        {
+          "type": "aosp",
+          "path": "services/core/java/com/android/server/power/stats/BatteryStatsImpl.java"
+        },
+        {
+          "type": "aosp",
+          "path": "services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
+        },
+        {
+          "type": "aosp",
+          "path": "services/core/java/com/android/server/power/stats/CpuPowerCalculator.java"
+        },
+        {
+          "type": "aosp",
+          "path": "services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java"
+        },
+        {
+          "type": "aosp",
+          "path": "services/core/java/com/android/server/am/BatteryStatsService.java"
+        },
+        {
+          "type": "aosp",
+          "path": "hardware/interfaces/power/stats/1.0/IPowerStats.hal"
+        },
+        {
+          "type": "aosp",
+          "path": "hardware/interfaces/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
+        },
+        {
+          "type": "official",
+          "path": "https://source.android.com/docs/core/power"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/topic/performance/power"
+        }
+      ],
       "tags": [
         "power",
         "battery",
@@ -4568,14 +4679,15 @@
         "11.3",
         "13.1"
       ],
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "last_task9_at": "2026-04-23T04:05:49+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-23",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-23T08:16:00+08:00"
     },
     "src/part2-performance/ch11-power/02-app-power-optimization.md": {
       "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
