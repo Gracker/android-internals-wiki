@@ -10,8 +10,8 @@ polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-20"
-last_verified_against: "AGP 8.7 / R8 default + AGP 8.12.0 release notes"
+last_verified: "2026-04-24"
+last_verified_against: "AGP 8.8 DSL deprecation docs + AGP 8.12.0 release notes + Android App Bundle docs"
 confidence: medium
 sources:
   - type: official
@@ -21,12 +21,16 @@ sources:
   - type: official
     path: "https://developer.android.com/build/app-bundle"
   - type: official
+    path: "https://developer.android.com/reference/tools/gradle-api/8.8/com/android/build/api/dsl/ApplicationBaseFlavor#resourceConfigurations"
+  - type: official
+    path: "https://developer.android.com/reference/tools/gradle-api/8.8/com/android/build/api/dsl/ApplicationAndroidResources#localeFilters"
+  - type: official
     path: "https://developer.android.com/guide/playcore/feature-delivery"
   - type: blog
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: '2026-04-22'
@@ -35,9 +39,12 @@ last_task9_at: '2026-04-22T20:50:00+08:00'
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: revisiting
 task9_state: "pending"
-pipeline_stage: "task9_pending"
+pipeline_stage: task6_pending
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-24T04:56:29+08:00"
 ---
 
 # APK 体积优化
@@ -206,20 +213,40 @@ andResGuard {
 
 `whiteList` 是关键——有些资源不能混淆，比如桌面启动图标（launcher 会通过固定资源名查找）、Notification 的小图标等。
 
-### 按密度过滤和按语言过滤
+### 语言过滤和密度过滤要分开写
 
-如果 App 不需要支持所有屏幕密度，可以在 Gradle 中指定：
+AGP 8.8 的 DSL 文档已经把 `resourceConfigurations` / `resConfigs` 标成 deprecated。语言资源如果还需要在构建期裁剪，新项目直接用 `androidResources.localeFilters`：
 
 ```kotlin
 android {
-    defaultConfig {
-        resConfigs("zh", "en")           // 只保留中文和英文资源
-        resConfigs("hdpi", "xhdpi", "xxhdpi", "xxxhdpi")  // 只保留这几种密度
+    androidResources {
+        localeFilters += listOf("zh", "en")
     }
 }
 ```
 
-一个真实案例：某 App 的 `res/` 目录下有 6 种密度的图片资源（mdpi、hdpi、xhdpi、xxhdpi、xxxhdpi、tvdpi），通过过滤掉几乎无人使用的 mdpi 和 tvdpi，资源体积直接减半。对于语言资源也一样——很多第三方库（如 Google Play Services）自带了几十种语言的字符串，通过 `resConfigs` 过滤后可以大幅减小 `resources.arsc` 的大小。
+这条配置解决的是“项目实际支持哪些 locale”。它对非 Play 分发、CI 产物和本地 universal 包更直接，因为三方库经常顺手带进几十种语言资源。构建期先把不用的 locale 删掉，`resources.arsc` 和 split 之前的基线包都会更干净。
+
+密度资源要单独看。Google Play 上架 AAB 之后，density / ABI split 由 App Bundle 分发机制处理，用户下载的并不是把所有密度和 ABI 都塞进去的 universal APK。所以在 2026 这个基线下，`resConfigs("xhdpi", "xxhdpi")` 已经不该写成默认方案。
+
+手动过滤 density 只适合几类受控场景：
+
+- 仍然产出单 APK 的 sideload / 企业内部分发
+- 设备范围固定的 OEM 预装包或行业设备
+- 明确知道目标屏幕密度集合，且没有走 Google Play 动态分发
+
+如果项目还在维护旧 DSL，`resConfigs` 更适合当作兼容存量工程的过渡配置，不再是通用推荐路径。尤其不要把“语言过滤”和“密度过滤”写成同一条默认建议：前者在非 Play 构建里仍有现实价值，后者在 AAB 发布流程里通常已经由 split 覆盖。
+
+```kotlin
+android {
+    defaultConfig {
+        // 旧 DSL，只建议用于受控单 APK / 非 Play 分发场景
+        resConfigs("zh", "en", "xxhdpi", "xxxhdpi")
+    }
+}
+```
+
+如果项目已经切到 App Bundle，体积优化的顺序更稳一些：语言裁剪看 `localeFilters`，ABI / density 交给 Play split，剩下再回到图片、资源表和 native 库本身。
 
 ## Native 库瘦身：ABI 过滤与动态下发
 
