@@ -1,45 +1,47 @@
 ---
-title: "文件系统"
-chapter: "6.2"
-section: "6.2"
-status: finalized
-applicable_versions: "Android 10+"
-last_verified: "2026-04-23"
-last_verified_against: "AOSP EROFS docs, source.android 16KB page size docs, kernel/common android15-6.6 include/linux/f2fs_fs.h, developer.android.com"
+title: 文件系统
+chapter: '6.2'
+section: '6.2'
+status: ready-for-review
+applicable_versions: Android 10+
+last_verified: '2026-04-23'
+last_verified_against: AOSP EROFS docs, source.android 16KB page size docs, kernel/common
+  android15-6.6 include/linux/f2fs_fs.h, developer.android.com
 confidence: medium
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2a"
+drafted_date: '2026-04-01'
+drafted_by: openclaw-task2a
 polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
-reviewed_date: "2026-04-23"
-reviewed_by: "openclaw-task6"
-review_type: "scheduled-review"
+polish_date: '2026-04-07'
+polish_by: task2b-polish
+reviewed_date: '2026-04-23'
+reviewed_by: openclaw-task6
+review_type: scheduled-review
 review_round: 4
-review_notes: "2026-04-15 task6 review (round 3): pass-light-edit。修复frontmatter格式（outline-start误入YAML块）。全文无禁用词命中，无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。"
+review_notes: '2026-04-15 task6 review (round 3): pass-light-edit。修复frontmatter格式（outline-start误入YAML块）。全文无禁用词命中，无B类大问题。评分:
+  结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。'
 sources:
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md"
-  - type: official
-    path: "source.android.com/docs/core/storage"
-  - type: official
-    path: "developer.android.com/training/data-storage"
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_深入代码细节看f2fs在磁盘上的组织方式.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md
+- type: official
+  path: source.android.com/docs/core/storage
+- type: official
+  path: developer.android.com/training/data-storage
 tags:
-  - linux
-  - android
-  - research
+- linux
+- android
+- research
 task6_result: pass-light-edit
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task9_result: pass-tech-review-with-notes
-task9_reviewed_date: "2026-04-23"
-task9_reviewed_by: "openclaw-task9"
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: '2026-04-23'
+task9_reviewed_by: openclaw-task9
+task2b_state: pending
 task2b_result: fixed
 ---
 
