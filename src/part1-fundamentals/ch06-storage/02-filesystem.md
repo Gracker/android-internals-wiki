@@ -5,8 +5,7 @@ section: '6.2'
 status: ready-for-review
 applicable_versions: Android 10+
 last_verified: '2026-04-23'
-last_verified_against: AOSP EROFS docs, source.android 16KB page size docs, kernel/common
-  android15-6.6 include/linux/f2fs_fs.h, developer.android.com
+last_verified_against: AOSP EROFS docs + source.android 16KB page size docs + kernel/common android15-6.6 ext4 journal / f2fs segment,gc,uapi/linux/f2fs.h,include/linux/f2fs_fs.h + developer.android.com
 confidence: medium
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
@@ -35,14 +34,15 @@ tags:
 - android
 - research
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-23'
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-23T09:22:00+08:00"
 ---
 
 <!-- outline-start -->
@@ -176,24 +176,22 @@ f2fs 把整个分区划分为六个区域，每个区域有明确的职责：
 
 SQLite 在写入数据库时，传统流程是这样的（以 rollback journal 模式为例）：先创建 journal 文件记录原始数据 → 修改数据库文件 → 调用 `fsync` 确保 journal 写入 → 调用 `fsync` 确保数据库文件写入 → 删除 journal 文件。每次事务至少两次 `fsync`，每次 `fsync` 都要等数据真正落盘。
 
-f2fs 提供了一个 `F2FS_IOC_START_ATOMIC_WRITE` 的 ioctl 接口，允许 SQLite 把一系列对数据库文件的修改以原子方式提交。工作流程变成了：
+f2fs 在 `kernel/common/include/uapi/linux/f2fs.h` 里定义了 `F2FS_IOC_START_ATOMIC_WRITE`、`F2FS_IOC_COMMIT_ATOMIC_WRITE` 和 `F2FS_IOC_ABORT_ATOMIC_WRITE` 这组 ioctl，允许数据库把一批页修改包成一次原子提交。工作流程可以概括成：
 
-1. SQLite 调用 `ioctl(F2FS_IOC_START_ATOMIC_WRITE)` 告知 f2fs 接下来对某个 inode 的写入需要原子保护
-2. SQLite 直接修改数据库文件（f2fs 在内部把修改记录到 CoW 区域，不覆盖原数据）
-3. SQLite 调用 `ioctl(F2FS_IOC_COMMIT_ATOMIC_WRITE)` 提交修改
-4. f2fs 在一次原子操作中把所有修改生效（更新 NAT 映射）
+1. SQLite 调用 `ioctl(F2FS_IOC_START_ATOMIC_WRITE)` 告知内核，后续写入进入原子上下文
+2. 事务页写到新的物理位置，旧数据仍然保持可读
+3. 成功路径调用 `ioctl(F2FS_IOC_COMMIT_ATOMIC_WRITE)`，让 NAT / node 映射一次性切到新版本
+4. 失败或回滚路径调用 `ioctl(F2FS_IOC_ABORT_ATOMIC_WRITE)`，丢弃本轮改动
 
-整个过程中，**只需要一次 `fsync`**——提交时的那一次。journal 文件可以完全跳过，因为 f2fs 的文件系统层面保证了原子性：要么所有修改都生效，要么都不生效。从 Android 8.1 开始，SQLite 默认启用了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 编译选项，当检测到底层文件系统是 f2fs 时，自动使用这个原子写接口。[已验证: 官方文档, sqlite.org/src/info/5c5e4f6f6d and Android source code]
-
-实测数据显示，在 f2fs 上使用 batch atomic write 后，SQLite 的事务提交速度约为 ext4 上的 3 倍。这对于 Android 上几乎所有涉及数据库操作的 App 来说，都是一个巨大的性能提升。
+这条路径的收益，在于把 journal 文件和多次同步点压成一次提交边界。提交阶段通常只剩一轮主要的持久化边界，而不是 journal 文件和数据文件各做一轮同步。Android 8.1 之后，SQLite / AOSP 已经具备 batch atomic write 的接入点；但是否真正走到这条路径，还要看设备是否使用 f2fs，以及内核、挂载选项和 SQLite 构建配置是否同时满足条件。[已验证: sqlite.org/src/info/5c5e4f6f6d + kernel/common/include/uapi/linux/f2fs.h]
 
 ### f2fs 的 fsync 优化
 
 除了 SQLite 原子写，f2fs 在 `fsync` 本身的实现上也比 ext4 更高效。
 
-f2fs 使用逻辑日志（logical logging）而非 ext4 的物理日志（physical logging）。ext4 的 jbd2 在日志中记录被修改的数据块的完整内容（physical logging），而 f2fs 只需要记录哪些 node 被修改了以及它们的新位置（logical logging）。这意味着 f2fs 的日志写入量远小于 ext4——`fsync` 时不需要把所有脏数据都写一遍，只需要更新少量的元数据信息。
+默认 ext4 并不是把“被修改的数据块完整内容”都写进 jbd2。`data=ordered` 只把 metadata 写入 journal，同时要求相关 data blocks 先落到主文件系统；只有 `data=journal` 才会把 file data 连同 metadata 一起 journal。Android 常见的 ext4 `fsync` 成本，更多来自 ordered 模式下的数据先落盘约束、延迟分配触发的块分配，以及 jbd2 commit 等待。新一些内核里的 fast commit 也只是把受影响 metadata 的最小 delta 写进 fast commit 区，用来降低 commit latency，不等于默认双写整块数据。
 
-此外，f2fs 没有 ext4 的延迟分配问题。f2fs 在写入数据时就已经分配了物理块（因为使用 CoW，写入本身就是往新位置追加），`fsync` 时不需要再做块分配。这避免了 ext4 上 "flush 线程积攒了大量脏页 → fsync 需要等待全部块分配完成" 的恶性连锁反应。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
+f2fs 的路径不同。它用日志结构的追加写配合 NAT / node 映射更新，把数据写入和元数据切换拆成“新块落盘 + 映射翻转”两步。`fsync` 仍然要把这次修改涉及的数据块和必要的 node / NAT 元数据刷稳，必要时再带上 checkpoint 相关元数据，但不需要再走一遍 `data=journal` 式的数据全文 journal。这也是它在随机写和高频同步写场景里更容易把延迟压低的原因。
 
 ### f2fs 的代价：垃圾回收
 
@@ -203,83 +201,41 @@ f2fs 的 GC 分为前台和后台两种。后台 GC 由内核线程在存储负�
 
 在 Perfetto 中，f2fs 的 GC 活动可以通过 `f2fs_gc_*` 相关的 trace event 观察到。如果我们看到 App 线程在写入时出现长时间的 D 状态等待，同时有 `f2fs_gc` 相关的活动，那大概率是前台 GC 在阻塞写入。[待补充：Trace截图展示f2fs前台GC期间的I/O延迟]
 
-### f2fs Adaptive Logging 深入机制
+### f2fs 的 LFS / SSR 切换机制
 
-#### 核心概念
-f2fs 的 Adaptive Logging 机制是其应对存储空间不足的核心策略，通过在 normal logging（普通日志）和 threaded logging（线程日志）之间动态切换，在空间紧张时显著降低清理开销和写放大因子。
+#### 默认路径：LFS
+f2fs 默认按 log-structured 的方式把新写入追加到干净 segment。这对应资料里常说的 LFS / copy-and-compaction：先顺序写新数据，后续再靠 GC 回收旧 segment。对闪存来说，这条路径通常比原地更新更友好。
 
-**Normal Logging（普通日志）**：默认使用的 copy-and-compaction 模式，数据写入干净的 segment，提供高效的顺序写入性能。在此模式下，f2fs 通过 copy-and-compaction 机制在需要时清理 segment，可能会产生较高的清理开销。
+#### 什么时候切到 SSR
+Android 15-6.6 的决策入口在 `kernel/common/fs/f2fs/segment.c` 里的 `f2fs_need_SSR()`。它会同时看 dirty node sections、dirty dentry sections、dirty imeta sections、`min_ssr_sections`、`reserved_sections`，以及 `GC_URGENT_HIGH`、checkpoint disabled 这类强制条件；当前实现不是单一的固定 5% 阈值。源码里的核心判断可以概括成：
 
-**Threaded Logging（线程日志）**：当存储利用率高于阈值时（通常为可用 segment 少于总段的 5%），f2fs 动态切换到线程日志模式。在此模式下，新数据写入到 dirty segment 中的无效块（holes）内，避免了昂贵的 foreground 清理操作，减少了写放大。
-
-#### 源码实现位置
-- **主要实现文件**：`kernel/linux/fs/f2fs/segment.c` 和 `kernel/linux/fs/f2fs/gc.c`
-- **关键决策函数**：adaptive logging 的切换逻辑在 `f2fs_balance_fs()` 中实现
-- **垃圾回收核心函数**：`get_victim_by_default()`、`select_policy()`、`do_garbage_collect()`
-
-#### 切换机制详解
 ```c
-// 伪代码：Adaptive Logging 决策逻辑（基于 segment.c）
-if (free_segments > total_segments * 0.05) {
-    // 使用 Normal Logging (copy-and-compaction)
-    use_normal_logging();
-} else {
-    // 切换到 Threaded Logging
-    use_threaded_logging();
-}
+free_sections <= node_secs + 2 * dent_secs + imeta_secs
+                + min_ssr_sections + reserved_sections
 ```
 
-#### Victim 选择策略
-垃圾回收时的 victim segment 选择策略在 `get_victim_by_default()` 中实现，该函数：
-1. 初始化 `victim_sel_policy` 结构体，包含 alloc_mode、gc_mode、dirty_segmap、min_segno 等字段
-2. 调用 `select_policy()` 填充策略参数
-3. 通过 `get_victim_by_search()` 选择成本最低的 victim segment
+命中后，分配策略会更积极地复用 dirty segment 里的 invalid blocks，也就是 SSR（selective segment reuse）。旧文里把它叫成 threaded logging，只能算历史描述的近似说法；放到当前源码语境里，直接写 LFS / SSR 更贴近实现。
 
-选择算法考虑多个维度：段年龄、有效块数量、清理成本等，通过 `calc_cost()` 计算每个候选段的综合得分，选择得分最低的段作为 victim。
+#### SSR 与 GC 的关系
+SSR 不是 GC 的替代品。它的作用，是在 free section 紧张时先让写入路径继续向前推进，少等一次“先清理出干净 segment再写”的过程。真正的空间回收仍然由 `kernel/common/fs/f2fs/gc.c` 里的前台 / 后台 GC 完成，victim 选择和回收节奏也都在那套回收逻辑里。SSR 负责缓冲写入压力，GC 负责把空间拿回来。
 
-#### 性能影响分析
-基于源码分析，Adaptive Logging 机制对性能的影响：
+#### Perfetto 里怎么观察
+Perfetto 通常不会给出一个名为“SSR”的直接 slice。排查时更可操作的线索是：
+- block I/O 延迟是否在空间逼近上限时突然抬高；
+- 有没有 `f2fs_gc_*` 相关 trace event 或内核日志同步出现；
+- 主线程 / binder 线程是否在 `fsync`、`fdatasync`、`pwrite` 一类 syscall 上进入 D 状态。
 
-1. **写放大因子 (WAF) 控制**：
-   - 空间充足时：WAF ≈ 1.0（几乎无写放大）
-   - 空间紧张时（97.5%利用率）：WAF < 1.025（仍保持低写放大）
-   - 无 adaptive logging 时：高利用率下 WAF 可达 2.0+
-
-2. **延迟特性**：
-   - Normal logging：低延迟（顺序写入）
-   - Threaded logging：较高延迟（随机写入），但避免阻塞
-   - 切换开销：约 1-2 个 I/O 操作
-
-3. **用户体验影响**：
-   - 解决了"存储快满时变卡"的核心问题
-   - 在高利用率下仍能维持基本响应性
-   - 通过 procfs 接口可监控段状态：`/proc/fs/f2fs/[device]/segment_info`
-
-#### 多头日志机制
-f2fs 的 Main Area 支持 Hot/Warm/Cold 数据分离，每种类型都有独立的段管理策略，减少垃圾回收时的数据迁移成本。
-
-#### 版本演进
-- **Android 5.0+**：引入基础 adaptive logging 机制
-- **Android 8.0+**：优化 victim 选择策略，增加多维成本计算
-- **Android 12+**：改进 procfs 接口，增加 segment_info 调试支持
-- **Kernel 5.0+**：修复 CVE-2019-19449 段管理安全漏洞
-
-#### 实际观测要点
-在 Perfetto 中观测 f2fs 分区时，关注以下指标：
-- Block I/O slice 延迟：正常应低于 0.1ms（4KB 随机写在 UFS 4.0 上）
-- f2fs_gc 相关 trace event：确认是否存在前台 GC
-- 存储空间使用率：超过 90% 时需警惕 adaptive logging 频繁切换
-- 主线程 D 状态：配合 syscall 信息确认是否由 GC 引发阻塞
+如果这三类信号一起出现，更像是 free section 紧张后写路径开始复用旧 segment，并且 GC 跟不上了。
 
 ### 在 Perfetto 中的观察要点
 
 对于 f2fs 分区上的 I/O 分析，在 Perfetto 中我们应该关注：
 
-1. **block I/O slice 的延迟**：正常情况下 4KB 随机写在 UFS 4.0 上应该在 0.1ms 以下。如果看到超过 1ms 的延迟，需要排查是 GC、调度器还是存储器件本身的问题。
+1. **block I/O slice 的延迟**：先看同一台设备、同一 workload 下的相对变化，不要把某个 UFS 代际的经验值当成通用门槛。延迟突然抬高时，再分辨是 GC、I/O 调度还是存储器件本身的问题。
 
-2. **f2fs 相关的 trace event**：如果内核编译时启用了 f2fs 的 tracepoint，就能观察到 GC 活动、segment 分配等信息。
+2. **f2fs 相关的 trace event**：如果内核编译时启用了 f2fs 的 tracepoint，能看到 GC 活动、segment 分配等信息。
 
-3. **主线程的 D 状态等待**：配合 syscall 信息，可以确认是否是 `fsync`/`fdatasync` 导致的阻塞。
+3. **主线程的 D 状态等待**：配合 syscall 信息，确认是否是 `fsync` / `fdatasync` / `pwrite` 之类的同步写导致阻塞。
 
 ## 现代 Android /data 分区还依赖三类文件系统能力
 
@@ -381,7 +337,7 @@ EROFS（Enhanced Read-Only File System）就是为解决这个问题而生的。
 4. Android 13 之后 EROFS 在 launch device 上快速普及，使 dm-verity 保护的系统分区更小、更快
 
 **Perfetto 中的可观测性**：
-dm-verity 的 block-level 验证目前没有独立的 Trace slice。在 Perfetto 中，dm-verity 校验的延迟会体现在 storage I/O 延迟中（通过 `disk Greenland` 或 `mmc` trace），但无法直接区分「数据读取」和「hash 验证」两个子步骤。dm-verity hash prefetch 机制（`DM_VERITY_HASH_PREFETCH_MIN_SIZE`，默认 128 blocks）通过预取哈希块来隐藏验证延迟。
+dm-verity 的 block-level 验证目前没有独立的 Trace slice。在 Perfetto 中，它通常只会折叠进底层 storage I/O 延迟里。更可操作的观察路径，是先看 block layer 的 `block_rq_issue` / `block_rq_complete`，再按设备内核是否开放对应事件，补看 mmc / UFS host controller tracepoint；如果内核还打开了 dm 或 dm-verity 相关 ftrace 事件，再把映射层时延一起对照。公开默认配置里通常看不到一个单独名为 dm-verity 的轨道，因此很难把“读数据”和“验 hash”完全拆开。dm-verity hash prefetch 机制（`DM_VERITY_HASH_PREFETCH_MIN_SIZE`，默认 128 blocks）会进一步把一部分验证开销藏在预取里。
 
 <!-- AIW-源码调研-2026-04-20 -->
 
@@ -470,7 +426,7 @@ ext4 的碎片化问题尤为突出。随着使用时间增长，频繁的创建
 
 f2fs 的碎片化问题表现形式不同。f2fs 的 CoW 机制本身不会产生传统意义上的文件碎片（因为写入总是追加到新位置），但 CoW 会产生大量的"无效 segment"——被旧版本数据占据但已经不再被引用的 segment。当无效 segment 积累到一定程度，f2fs 必须执行 GC 来回收空间。GC 的效率取决于冷热分离的效果——如果冷热数据混合在一起，GC 需要搬运大量仍然有效的冷数据，增加了写放大。
 
-性能退化的实际表现是：新手机上 4KB 随机写延迟可能是 0.1ms，使用一年后在存储空间接近满的情况下，同样的操作可能需要 1-5ms——这就是用户感知到的"手机用久了变慢"在存储层面的体现。
+性能退化的直接表现，通常是同一台设备在存储空间充足时随机写延迟较低，空间逼近上限、GC 和磨损控制变重之后，尾延迟会明显拉长。这里不要把 0.1ms、1ms、5ms 这类数字当成通用基线；它们强依赖 UFS 代际、容量、挂载参数、温度和 workload。更稳的做法，是对比同机型、同测试条件下的基线与尾延迟分布。
 
 缓解碎片化的方法包括：保持足够的可用空间（至少 10%-15%）、避免频繁的小文件创建删除、使用 f2fs 的 `f2fs_io` 工具定期触发碎片整理（需要 root 权限）、以及在 App 层面做好数据缓存策略，减少不必要的磁盘写入。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md]
 
@@ -490,7 +446,7 @@ f2fs 的演进路径比较独特，项目起点来自 Samsung 的 Jaegeuk Kim：
 
 其他厂商的跟进速度不一。OPPO 在 2016 年前后开始在部分机型上使用 f2fs，并组建了专门的内核团队做深度优化。一加在较新机型上全面采用。小米的跟进稍晚，但在 2019 年后的机型上 `data` 分区基本都用了 f2fs。
 
-Google 自己的 Pixel 系列从 Pixel 3（2018 年）开始在 `data` 分区使用 f2fs。从 Android 10 开始，AOSP 的推荐配置明确建议 `data` 分区使用 f2fs。一个关键的里程碑是 Android 8.1——这一版本引入了对 SQLite batch atomic write 的支持（编译选项 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`），当 SQLite 检测到文件系统是 f2fs 时，自动使用 `F2FS_IOC_START_ATOMIC_WRITE` 接口替代传统的 journal + fsync 流程，事务提交性能提升了约 3 倍。
+Google 自己的 Pixel 系列从 Pixel 3（2018 年）开始在 `data` 分区使用 f2fs。从 Android 10 开始，AOSP 的推荐配置明确建议 `data` 分区使用 f2fs。一个关键的里程碑是 Android 8.1——这一版本引入了对 SQLite batch atomic write 的支持（编译选项 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`）。当 SQLite 检测到文件系统和内核能力都满足条件时，可以用原子写接口替代传统的 journal + 多次同步流程；收益主要体现在减少额外写放大和同步等待，具体幅度要看 workload。
 
 Android 15 把 16KB 页面大小（Page Size）带进正式适配范围，f2fs 的边界也随之收紧。内核头文件 `include/linux/f2fs_fs.h` 直接把 `F2FS_BLKSIZE` 定义为 `PAGE_SIZE`，也就是块大小必须和页大小一致。结果是：4KB 时代创建的 4KB f2fs 镜像，不能直接搬到 16KB kernel 上继续挂载为 `/data`；设备切到 16KB 方案时，通常要重建文件系统并完成数据迁移。这一项是格式兼容约束，不是普通的 GC 调优。
 
@@ -563,17 +519,18 @@ f2fs 通过逻辑日志和 CoW 机制大幅降低了 fsync 的开销，但"大�
 
 ### AOSP 源码路径
 
-- f2fs 核心实现：`kernel/linux/fs/f2fs/`（内核源码树）
-- f2fs ioctl 接口定义：`kernel/linux/fs/f2fs/f2fs.h`（`F2FS_IOC_START_ATOMIC_WRITE` 等常量定义）
-- f2fs 块大小定义：`kernel/common/include/linux/f2fs_fs.h`（`F2FS_BLKSIZE == PAGE_SIZE`）
-- f2fs 磁盘布局结构：`kernel/linux/fs/f2fs/f2fs_format.h`（Superblock、Checkpoint、SIT、NAT、SSA、Main Area 数据结构）
+- f2fs 核心实现：`kernel/common/fs/f2fs/`（内核源码树）
+- f2fs SSR / 分段分配：`kernel/common/fs/f2fs/segment.c`
+- f2fs GC：`kernel/common/fs/f2fs/gc.c`
+- f2fs ioctl 接口定义：`kernel/common/include/uapi/linux/f2fs.h`（`F2FS_IOC_START_ATOMIC_WRITE` / `COMMIT` / `ABORT`）
+- f2fs 块大小与磁盘布局结构：`kernel/common/include/linux/f2fs_fs.h`（`F2FS_BLKSIZE == PAGE_SIZE` 以及 Superblock / Checkpoint 等定义）
 - f2fs 目录匹配：`kernel/common/fs/f2fs/dir.c`（`f2fs_match_name` / casefold 路径）
-- ext4 / jbd2 实现：`kernel/linux/fs/ext4/`、`kernel/linux/fs/jbd2/`
-- EROFS 实现：`kernel/linux/fs/erofs/`
+- ext4 / jbd2 实现：`kernel/common/fs/ext4/`、`kernel/common/fs/jbd2/`
+- EROFS 实现：`kernel/common/fs/erofs/`
 - fscrypt / inline encryption：`kernel/common/fs/crypto/`
 - Storage Stats 服务：`frameworks/base/services/usage/java/com/android/server/usage/StorageStatsService.java`
-- SQLite batch atomic write 适配：`external/sqlite/dist/Android.mk`（`SQLITE_ENABLE_BATCH_ATOMIC_WRITE` 编译选项）
-- VFS 层：`kernel/linux/fs/vfs.c`、`kernel/linux/include/linux/fs.h`
+- SQLite batch atomic write 适配：AOSP SQLite dist sources（搜索 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`）
+- VFS 层：`kernel/common/fs/`、`kernel/common/include/linux/fs.h`
 
 ### 官方文档
 
