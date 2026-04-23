@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-04-23T23:34:24+08:00",
+  "generated_at": "2026-04-24T00:12:13+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 211,
     "finalized": 45,
     "ready-for-review": 138,
-    "ready-to-publish": 0,
-    "last_updated": "2026-04-23T23:34:24+08:00",
+    "ready-to-publish": 45,
+    "last_updated": "2026-04-24T00:12:13+08:00",
     "pipeline_stage_counts": {
       "unknown": 28,
       "task6_pending": 40,
@@ -5751,7 +5751,7 @@
     },
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
-      "title": "WebView 渲染链路",
+      "title": "WebView 渲染管线",
       "chapter": "18.13",
       "status": "ready-for-review",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
@@ -5762,7 +5762,7 @@
         "SurfaceControl",
         "SurfaceTexture",
         "X5内核",
-        "渲染链路"
+        "渲染管线"
       ],
       "related_chapters": [
         "2.5",
@@ -5778,12 +5778,21 @@
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-19T00:43:47+08:00",
+      "last_task2b_at": "2026-04-24T00:00:53+08:00",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-18",
+      "reviewed_date": "2026-04-23",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-04-18T23:32:00+08:00",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "sources": [
+        "AOSP frameworks/base/core/java/android/webkit/WebView.java",
+        "AOSP frameworks/base/core/java/android/webkit/WebChromeClient.java",
+        "AndroidX WebKit WebViewCompat.getCurrentWebViewPackage()",
+        "Chromium android_webview/browser/gfx/browser_view_renderer.cc",
+        "Chromium android_webview/browser/gfx/hardware_renderer.cc",
+        "Chromium android_webview/browser/gfx/overlay_processor_webview.cc",
+        "Chromium Viz Compositor architecture docs"
+      ]
     },
     "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
@@ -7404,8 +7413,8 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-08",
       "applicable_versions": "Android 17 (API 37)",
-      "last_verified": "2026-04-21",
-      "last_verified_against": "AOSP android-17-beta3",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "Android 17 behavior changes / MessageQueue guidance / ProfilingTrigger reference / AOSP CombinedMessageQueue + ConcurrentMessageQueue",
       "confidence": "medium",
       "tags": [
         "android17",
@@ -7438,13 +7447,59 @@
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-20",
-      "task2b_rework_date": "2026-04-21",
-      "task2b_fixed_at": "2026-04-21T13:17:26+08:00",
+      "task2b_rework_date": "2026-04-24",
+      "task2b_fixed_at": "2026-04-24T00:12:13+08:00",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-04-21T12:29:00+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-21",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "sources": [
+        {
+          "type": "official",
+          "path": "https://developer.android.com/about/versions/17/behavior-changes-17"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/about/versions/17/features"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/about/versions/17/changes/messagequeue"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/android/os/ProfilingTrigger"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/android/app/job/JobScheduler"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/privacy-and-security/security-config"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/guide/practices/page-sizes"
+        },
+        {
+          "type": "blog",
+          "path": "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+        },
+        {
+          "type": "blog",
+          "path": "https://android-developers.googleblog.com/"
+        },
+        {
+          "type": "blog",
+          "path": "https://juejin.cn/post/7612812060795093002"
+        },
+        {
+          "type": "blog",
+          "path": "https://juejin.cn/post/7610233341305389099"
+        }
+      ]
     },
     "src/part4-system/ch16-aosp/README.md": {
       "path": "src/part4-system/ch16-aosp/README.md"

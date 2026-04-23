@@ -4,14 +4,16 @@ chapter: "16.5"
 status: ready-for-review
 drafted_date: "2026-04-08"
 applicable_versions: "Android 17 (API 37)"
-last_verified: "2026-04-21"
-last_verified_against: "AOSP android-17-beta3"
+last_verified: "2026-04-24"
+last_verified_against: "Android 17 behavior changes / MessageQueue guidance / ProfilingTrigger reference / AOSP CombinedMessageQueue + ConcurrentMessageQueue"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
   - type: official
     path: "https://developer.android.com/about/versions/17/features"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/changes/messagequeue"
   - type: official
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
   - type: official
@@ -20,6 +22,8 @@ sources:
     path: "https://developer.android.com/privacy-and-security/security-config"
   - type: official
     path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: blog
+    path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
   - type: blog
     path: "https://android-developers.googleblog.com/"
   - type: blog
@@ -39,12 +43,12 @@ task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-20"
-task2b_rework_date: "2026-04-21"
-task2b_fixed_at: "2026-04-21T13:17:26+08:00"
+task2b_rework_date: "2026-04-24"
+task2b_fixed_at: "2026-04-24T00:12:13+08:00"
 task9_result: needs-rework
 last_task9_at: "2026-04-21T12:29:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-21
+task9_reviewed_date: "2026-04-21"
 task2b_result: fixed
 ---
 
@@ -52,11 +56,22 @@ task2b_result: fixed
 
 ## 为什么要了解 Android 17 的性能行为变更
 
-`targetSdkVersion` 升级到 37 的 App 必须适配 Android 17 的几项底层变更:重写 `MessageQueue`、ART 分代垃圾回收、`static final` 字段不可强制、网络配置迁移。任何一项未适配都可能导致性能下降或崩溃。
+`targetSdkVersion` 升级到 37 后，最先要核查的是几类会改变运行时行为的点：`MessageQueue`、`static final` 反射限制、网络安全配置迁移，以及大屏配置策略。分代 GC、ProfilingManager trigger、JobScheduler 诊断 API 更偏向“排障与观测方式变了”，它们通常不会直接把 App 改崩，但会改变我们解释 trace 和定位问题的方式。
 
-这些变更在 Perfetto 中留下明确特征：DeliQueue 减少主线程锁竞争；分代 GC 改变 Memory Track 中的 GC 切片模式；ProfilingManager 新触发器统一系统事件采样。掌握这些特征，是解决 Android 17 性能问题的关键。
+公开能拿到定量收益的，当前主要是 `MessageQueue` 的 lock-free 改造。公开来源一共有三层：Android Developers Blog 给出的 synthetic benchmark、internal beta testers 的 Perfetto traces，以及同一批测试设备上的用户体验指标。官方没有公开具体机型、工作负载脚本和 trace 附件，因此本文只把这些数字当成方向性对比，不把它们写成任意业务都能复现的保底收益。
 
-本章聚焦性能相关的核心变更,按影响程度和适配优先级排序。
+这些变更在 Perfetto 中留下明确特征：DeliQueue 减少主线程锁竞争；分代 GC 改变 Memory Track 中的 GC 切片模式；ProfilingManager 新触发器改变系统事件采样入口。掌握这些特征，才能把 Android 17 trace 里的新现象和旧经验区分开。
+
+本章聚焦性能相关的核心变更，按影响程度和适配优先级排序。
+
+### 和 Android 16 对比，哪些变化有公开量化数据
+
+| 项目 | Android 16 / API 36 | Android 17 / API 37 | 公开量化数据 |
+|:---|:---|:---|:---|
+| MessageQueue | 单锁 + 单链表 | DeliQueue：Treiber Stack + min-heap | 有，见下文的 5,000x synthetic benchmark、15% lock contention 下降、4% / 7.7% / 9.1% 体验指标 |
+| ProfilingManager triggers | 需要手动注册，触发器集合较小 | 新增 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器 | 官方未给统一 benchmark |
+| JobScheduler pending reasons | 更偏向当前状态排障 | 增加 current reason、history、聚合时长这三类查询 | 官方未给统一 benchmark |
+| 大屏 / 安全配置 / 16KB 页面 | 适配要求已在推进 | targetSdk 37 后约束更强、排障入口更明确 | 官方未给统一 benchmark |
 
 ---
 
@@ -74,11 +89,11 @@ task2b_result: fixed
 - 锁等待时间通常在 1-5ms 范围,但多次累积就会导致帧时间超过 16.6ms(60fps)
 - 特别出现在 `Choreographer.doFrame` 期间的消息投递操作中
 
-[待补充:Perfetto Trace 截图,展示旧 MessageQueue 实现下主线程 "monitor contention with MessageQueue" 锁等待切片,以及多线程并发投递时的阻塞特征]
+如果手头没有旧版 trace 截图，线下自查时可以直接在 Perfetto 搜索 `monitor contention`，再看它是否和 `Choreographer#doFrame`、`Handler.enqueueMessage()` 或主线程布局计算重叠。旧实现下，真正吃掉帧预算的通常就是这类重叠区间。
 
-### 新实现:DeliQueue 的混合数据结构
+### 新实现：DeliQueue 的混合数据结构
 
-Android 17 用一个名为 DeliQueue 的实现替换了旧的 `MessageQueue`。核心设计思路是将"多线程写入"和"单线程读取"分离开来:
+对外行为上，Android 17 为 targetSdk 37 的应用引入了新的 lock-free `MessageQueue`。Android Developers Blog 将这套实现称为 DeliQueue。核心设计思路是把“多线程写入”和“单线程读取”拆开:
 
 - **写入端**:使用 Treiber Stack(一种无锁栈),通过 CAS(Compare-And-Swap)操作实现多线程并发入队,不需要任何锁
 - **读取端**:使用 min-heap(最小堆),由 Looper 线程独占访问,按消息的 `when`(执行时间)排序,天然有序
@@ -97,28 +112,40 @@ Thread C ──CAS push──▶      │                         │
 
 ### 性能收益
 
-Google 在内部测试中给出的数据：
+Android Developers Blog 把公开数字分成三类，它们的测试前提并不相同：
 
-- App 掉帧减少 **4%**
-- System UI 和 Launcher 交互掉帧减少 **7.7%**
-- 主线程锁等待时间减少约 **15%**
-- App 启动速度有可测量的提升
+| 证据类型 | 公开口径 | 能回答什么 |
+|:---|:---|:---|
+| Synthetic benchmark | busy queue 上的 multi-threaded insertions 最多可比 legacy `MessageQueue` 快 **5,000x** | 说明 DeliQueue 在高竞争入队场景的上限收益 |
+| internal beta testers 的 Perfetto traces | App 主线程花在 lock contention 的时间减少 **15%** | 说明锁竞争本身确实下降 |
+| 同一批测试设备上的用户体验指标 | App missed frames **-4%**；System UI / Launcher missed frames **-7.7%**；启动到首帧 P95 **-9.1%** | 说明锁竞争下降已经传导到交互体验 |
 
-这些数据表明：**无需代码修改**，只要 `targetSdkVersion` 升级到 37，App 就自动获得这些性能提升。框架通过无锁队列设计解决了主线程锁争用问题。
+公开资料没有给出机型、脚本和 trace 附件，所以这组数字只能用来判断“Android 17 的新队列是否值得关注”。如果要回答“你的业务能拿到多少收益”，还是要在同一机型、同一 workload、同一 trace 配置下做 A/B。
 
 ### 适配要点
 
-DeliQueue 对绝大多数 App 完全透明。`Handler`、`Looper`、`Message` 的公共 API 没有任何变化。但有一个重要的破坏性变更:**通过反射访问 `MessageQueue` 的私有字段将不再工作。**
+DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化，但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
 
-旧实现中 `MessageQueue.mMessages` 字段指向链表头节点。一些框架和工具库(比如某些消息监控库、LeakCanary 的早期版本)通过反射读取这个字段来监控消息队列状态。在 DeliQueue 中,`mMessages` 为了保持二进制兼容性仍然存在,但**始终为 null**。消息数据存储在新的内部数据结构中。
+官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存：`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`，负责兼容层与实现选择；`ConcurrentMessageQueue/MessageQueue.java` 的核心结构已经换成 `mPriorityQueue` 和 `mAsyncPriorityQueue` 这两组并发有序集合，不再靠 `mMessages` 维护单链表。排障时不要把这次变化简化成“某个字段改名”。
 
-如果你的项目中有以下情况,需要检查:
+把源码层再拆开看，会更准确：
+
+- `CombinedMessageQueue/MessageQueue.java` 还保留 legacy 视角下可见的字段和选择逻辑。
+- `ConcurrentMessageQueue/MessageQueue.java` 真正承载 DeliQueue 的并发结构。
+- 因此这次变化的实质是“保留兼容字段 + 切换底层实现”，不是“把 `mMessages` 改名成别的字段”。
+
+如果你的项目中有以下情况，需要检查：
 
 1. 反射访问 `MessageQueue.mMessages` 或其他私有字段
 2. 通过 JNI 直接操作 `MessageQueue` 的 native 层结构
 3. 使用了依赖上述反射行为的第三方库
+4. 仍在用老版本测试框架观察主线程 idle 状态
 
-[待验证:AOSP android-17-beta3 中 MessageQueue.java 的具体字段变更]
+官方兼容指南给出的直接动作是：
+
+- Espresso 升级到 **3.7.0+**，改用 `TestLooperManager` 路径
+- Robolectric 升级到 **4.17+**，并把 `@LooperMode(LEGACY)` 迁到 `@LooperMode(PAUSED)`
+- 如果怀疑问题就是新的 `MessageQueue` 导致，可先在 Developer Options 的 App Compatibility Changes 里关闭该变更，或执行 `adb am compat disable USE_NEW_MESSAGEQUEUE <package>` 做 A/B 定位
 
 ---
 
@@ -149,7 +176,7 @@ RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中,`onBi
 
 在旧的非分代 GC 中,这些 young 对象会在 full GC 时才被回收。如果 full GC 恰好在 `doFrame()` 期间触发,就会造成帧延迟。在分代 GC 中,这些短命对象被 young GC 快速回收,full GC 的触发频率大幅降低。
 
-[待补充:分代 GC vs 非分代 GC 在 RecyclerView 滑动场景下的 Perfetto 对比截图]
+公开资料没有给出可直接复用的统一 RecyclerView 基准图，因此更稳妥的做法是在同一列表场景下自己对比 GC 事件频率、暂停分布和掉帧率，而不是套一个脱离设备前提的固定毫秒数。更完整的方法在 **4.8 ART 分代垃圾回收** 里展开。
 
 ### 与 4.8 ART 分代 GC 章节的关系
 
@@ -173,7 +200,7 @@ Android 16 引入了 ProfilingManager,允许 App 在运行时请求 heap dump、
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
 | `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample | 定位后台 CPU 异常占用 |
 
-[已验证: 上述三个触发器常量名称与 Android 17 API reference 一致。API 37 还新增了 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器,本节只保留和性能排障直接相关的几项。]
+[已验证: 上述三个触发器常量名称与 Android 17 API reference 一致。API 37 还新增了 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器；reference 对 anomaly 的公开口径是“system detects an anomalous behavior by the app”，排障时应把它理解为系统侧异常行为触发入口，不要自行收窄成某一类 Binder 或内存事件。]
 
 ### 注册流程和适配建议
 
@@ -382,15 +409,19 @@ DCL(Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `Sy
 ## 参考资料
 
 - [Android 17 Behavior Changes (官方)](https://developer.android.com/about/versions/17/behavior-changes-17)
+- [MessageQueue behavior change guidance (官方)](https://developer.android.com/about/versions/17/changes/messagequeue)
 - [Android 17 Features and Changes (官方)](https://developer.android.com/about/versions/17/features)
 - [ProfilingTrigger API Reference (官方)](https://developer.android.com/reference/android/os/ProfilingTrigger)
 - [JobScheduler API Reference (官方)](https://developer.android.com/reference/android/app/job/JobScheduler)
 - [Network Security Configuration / ECH (官方)](https://developer.android.com/privacy-and-security/security-config)
 - [16 KB Page Size Guide (官方)](https://developer.android.com/guide/practices/page-sizes)
+- [Android Developers Blog: Under the hood: Android 17's lock-free MessageQueue](https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html)
 - [Google Blog: Android 17 Developer Preview](https://android-developers.googleblog.com/)
 - [Android 17 DeliQueue 解读(掘金)](https://juejin.cn/post/7612812060795093002)
 - [Android 17 适配要点(掘金)](https://juejin.cn/post/7610233341305389099)
-- AOSP: `frameworks/base/core/java/android/os/MessageQueue.java`(android-17 分支)
+- AOSP: `frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java`
+- AOSP: `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
+- AOSP: `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java`
 - AOSP: `art/runtime/gc/collector/` 目录下的分代 GC 实现
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现
 
