@@ -8,7 +8,7 @@ chapter: '1.5'
 section: '1.5'
 status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
-last_verified: '2026-03-31'
+last_verified: '2026-04-24'
 reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
 review_round: 5
@@ -16,7 +16,7 @@ polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 drafted_by: openclaw-task2
-last_verified_against: AOSP android-16.0.0_r1
+last_verified_against: AOSP android-16.0.0_r1, Android SDK android-Baklava stubs
 drafted_date: '2026-03-31'
 confidence: high
 sources:
@@ -160,6 +160,10 @@ Android 主线程的运行模型可以用一句话概括：**一个线程，一�
 **Looper** 是线程的消息循环引擎。它的核心工作就是一个无限循环：不断从 MessageQueue 中取出下一条 Message，分发给对应的 Handler 去处理。每个线程最多只能有一个 Looper，它通过 `ThreadLocal` 存储在线程本地（后面我们会展开讲 ThreadLocal 的妙用）。
 
 **MessageQueue** 对外暴露的语义一直没变，仍然是“按到期时间取下一条消息，再交给对应 Handler 处理”。如果只看经典实现，它可以理解成一个按 `when` 排序的链式队列，很多 Handler / Looper 教程也是按这个模型展开的。这里要补一个版本边界：章节适用范围已经覆盖到 Android 16，而 android-16 源树里已经并存 `LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三套实现。经典链表这套理解方式仍然有用，但它只准确描述 legacy 路径；android-16 的队列实现演进和锁策略变化放到 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》展开。
+
+兼容性边界也要补上。android-16 公开源码已经把 `CombinedMessageQueue` 和 `ConcurrentMessageQueue` 放进源树，但普通应用默认仍走 legacy；面向应用的默认启用边界在 Android 17，细节放到 §1.13《MessageQueue 机制与 DeliQueue 无锁优化》展开。对工程实践更直接的影响，是不要再把 `MessageQueue.mMessages` 当成稳定观察点。旧版 Espresso、Robolectric 或自定义测试脚本如果靠反射读取这个私有字段判断队列是否空闲，后续迁移会出兼容性问题。测试代码优先改到公开接口，如 `TestLooperManager`、IdlingResource，或者升级到已经去掉私有字段依赖的测试库。
+
+[已验证: 版本边界见 §1.13；Android SDK android-Baklava stubs, android/os/TestLooperManager.java]
 
 **Handler** 是消息的发送者和处理者。任何一个 Handler 实例在创建时都会绑定到当前线程的 Looper（也可以指定 Looper）。调用 `handler.sendMessage()` 时，消息被插入到 Looper 的 MessageQueue 中；当 Looper 循环到这条消息时，回调到 `handler.dispatchMessage()` 进行处理。
 
@@ -370,6 +374,14 @@ viewModelScope.launch {
 
 在 Perfetto 中，Coroutine 的线程模型体现为：`Dispatchers.IO` 的协程会在线程池中的某个线程上执行（如 `DefaultDispatcher-worker-1`），而 `Dispatchers.Main` 的协程会在主线程上通过 Handler 分发执行。如果在 Perfetto 中看到主线程上有大量的 IO 操作，那很可能是有人在 `Dispatchers.Main` 上做了本应在 `Dispatchers.IO` 上做的工作。
 
+### Java 21 虚拟线程：SDK 露出，不代表已经可用
+
+Android 16 的 SDK stubs 已经带上 `Thread.isVirtual()`，但 `java/lang/Thread.java` 的注释写得很直白：`virtual thread isn't implemented on Android yet`。在 Android 上，这个方法只会返回 `false`。它的主要作用是给跨平台库补齐 API 面，让代码可以编译，不是 Android 侧已经提供了 Project Loom 运行时。当前 SDK 里也没有公开的 `Thread.startVirtualThread(...)` 入口，所以不要把 Android 16 视为“已经支持虚拟线程”。
+
+应用侧如果需要轻量级并发，Kotlin Coroutine 仍然是当前可用的主方案。多平台共享库可以把 `isVirtual()` 当能力探测点，但不要在 Android 上按虚拟线程的调度语义设计线程模型。
+
+[已验证: Android SDK android-Baklava stubs, java/lang/Thread.java]
+
 ## HandlerThread、IntentService 与 WorkManager
 
 上一节梳理了从 AsyncTask 到 Coroutine 的演进——这些方案解决的是「在哪个线程上执行异步任务」的问题。但 Android 还提供了一些专门的后台执行机制，定位更偏「任务调度」而非「线程切换」。这一节我们快速过一遍它们的适用场景。
@@ -533,9 +545,11 @@ Android Framework 对线程数量的控制体现在多个层面。Binder 这里�
   - [Kotlin Coroutines on Android](https://developer.android.com/kotlin/coroutines)
   - [WorkManager | Android Developers](https://developer.android.com/topic/libraries/architecture/workmanager)
   - [Process.setThreadPriority | Android Developers](https://developer.android.com/reference/android/os/Process#setThreadPriority(int,int))
+  - [TestLooperManager | Android Developers](https://developer.android.com/reference/android/os/TestLooperManager)
 - 高爷原创文章：
   - [Android Perfetto 系列 7 - MainThread 和 RenderThread 解读](https://www.androidperformance.com/2025/08/02/Android-Perfetto-07-MainThread-And-RenderThread/) — Perfetto 视角下的双线程渲染架构详解
   - [Android Systrace 基础知识 - MainThread 和 RenderThread 解读](https://www.androidperformance.com/2019/11/06/Android-Systrace-MainThread-And-RenderThread/) — Systrace 视角下的双线程分析
 - 其他参考：
   - [Looper到底在等什么？](https://mp.weixin.qq.com/s/Z3d8e48e3b17fc95113d46e50b95893) — Looper 的 epoll 机制详解（芦半山）
   - [Android性能优化之绑定RenderThread到大核CPU](https://www.yanzhenjie.com/post/20241221/1f3fc18c6801/) — sched_setaffinity 实践（严振杰）
+  - Android SDK `platforms/android-Baklava/android-stubs-src.jar` 中的 `java/lang/Thread.java` — `isVirtual()` 注释明确写明虚拟线程尚未在 Android 上实现
