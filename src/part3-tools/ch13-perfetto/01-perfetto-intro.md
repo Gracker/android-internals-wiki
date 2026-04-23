@@ -5,9 +5,9 @@ section: '13.1'
 status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-04-21'
+reviewed_date: '2026-04-24'
 reviewed_by: openclaw-task6
-task6_result: needs-rework
+task6_result: pass-light-edit
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
@@ -38,14 +38,15 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: '2026-04-22'
+task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
+review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2x 不是X而是Y→直接陈述, 1x 口水过渡词(更准确的版本线是)删除. 评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。'
 last_task9_at: '2026-04-22T08:40:18+08:00'
 ---
 
@@ -86,9 +87,9 @@ Perfetto 就是解决这类问题的工具。它提供的是整个系统的"上�
 
 ## Perfetto 是什么
 
-Perfetto 是 Google 开源的系统级 tracing 平台。它最初服务 Android，后来扩展到 Linux 和 Chrome。对 Android 来说，更准确的版本线是：Android 9 已把 `traced` / `traced_probes` 等基础设施放进 system image；Android 9 和 Android 10 的非 Pixel 设备常见还要手动 enable；Android 11 起，大多数设备默认启用，日常系统追踪也基本都转到 Perfetto 体系。[已验证: 官方文档, source.android.com/docs/core/debug/perfetto]
+Perfetto 是 Google 开源的系统级 tracing 平台。它最初服务 Android，后来扩展到 Linux 和 Chrome。在 Android 端，Android 9 已把 `traced` / `traced_probes` 等基础设施放进 system image；Android 9 和 Android 10 的非 Pixel 设备常见还要手动 enable；Android 11 起，大多数设备默认启用，日常系统追踪也基本都转到 Perfetto 体系。[已验证: 官方文档, source.android.com/docs/core/debug/perfetto]
 
-Perfetto 不是单一工具，而是一整套 tracing 基础设施，包含三个核心模块：
+Perfetto 是一整套 tracing 基础设施，包含三个核心模块：
 
 - **采集层**：负责从系统各处收集 trace 数据，包括内核的 ftrace 事件、用户空间的 atrace 标注、/proc 和 /sys 文件的轮询数据、以及 App 自定义的 trace 事件。
 - **分析层**：基于 SQL 的 trace 分析引擎（Trace Processor），可以用结构化查询语言对 trace 数据做任意维度的分析。
@@ -401,7 +402,7 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 | Android Studio Profiler | Android Studio | Studio 预置配置 | Profiler session / trace | App 局部定位、开发期快速查看 | 方便，但设备级观测面不如直接用 Perfetto UI 全 |
 | tracebox | Linux 主机 | CLI / config file | Linux trace | Linux 桌面 / 服务器 tracing | 不是 Android 设备抓取入口 |
 
-用哪个入口，看的不是“哪个更新”，而是这次要抓的是整机时序、单 App，还是 Linux 主机。把这件事说清楚，后面的命令、权限和结果文件格式就不会混成一团。
+用哪个入口，取决于这次要抓的是整机时序、单 App，还是 Linux 主机。搞清楚这件事，后面的命令、权限和结果文件格式就不会混。
 
 ## 常见问题与误区
 

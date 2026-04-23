@@ -5,7 +5,7 @@ section: '2.9'
 status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: 2026-04-23
+reviewed_date: '2026-04-24'
 reviewed_by: openclaw-task6
 applicable_versions: Android 3.0 (API 11) ~ Android 16 (API 36)
 last_verified: '2026-04-23'
@@ -53,8 +53,8 @@ related_chapters:
 - '2.10'
 - '3.1'
 - '8.2'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -62,7 +62,7 @@ task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 repaired_date: '2026-04-24'
 repaired_by: openclaw-task2b
-review_notes: '2026-04-23 task6 re-review (revisiting): pass-light-edit. 1 L1 fix
+review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1: 无新命中. 评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。'
   (否定-纠正结构: 不是X而是Y → 直接陈述). 无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。'
 task2b_result: fixed
 task2b_state: fixed
