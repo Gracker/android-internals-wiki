@@ -2236,3 +2236,515 @@ hasTransientState 导致的 ViewHolder 回收阻断
 ### 外部 review 来源
 Gemini 外部 review (7.8)
 
+
+## [2026-04-23] 8.1 响应速度原理 — 知识盲区
+
+### 盲区描述
+------
+
+### 重要程度
+---------
+
+### 建议研究方向
+-------------
+
+### 关联章节
+- 8.1
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.1 响应速度原理 — 知识盲区
+
+### 盲区描述
+Input 事件与 VSync 信号的处理优先级
+
+### 重要程度
+中
+
+### 建议研究方向
+在同一个 Looper 唤醒周期内，如果有 fd 事件（如 Input）和普通的 Message 同时就绪，底层的处理顺序是如何决定的。
+
+### 关联章节
+- 8.1
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.1 响应速度原理 — 知识盲区
+
+### 盲区描述
+Native 层 Looper 处理 Input socket fd 唤醒与 Java 层 MessageQueue 之间的精确调度关系。
+
+### 重要程度
+中
+
+### 建议研究方向
+阅读 `Looper.cpp` 了解 `epoll` 响应流程。
+
+### 关联章节
+- 8.1
+- 消息机制或事件分发章节。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.2 App 启动全流程 — 知识盲区
+
+### 盲区描述
+TTID 的终点回调 BLASTSync 机制
+
+### 重要程度
+中
+
+### 建议研究方向
+现代 Android 引入 BLASTBufferQueue 后，TTID 的终点是如何从 SurfaceFlinger 真正通过 transaction callback 回传给 WMS 以判定 `windowsDrawn` 的。
+
+### 关联章节
+- 8.2
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.2 App 启动全流程 — 知识盲区
+
+### 盲区描述
+Android 12/13+ 引入 BLAST 架构后，WMS 是如何通过 Transaction Callback 接收首帧绘制完成信号以结束 TTID 计时的。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 中 `BLASTBufferQueue` 的演进，分析 `windowsDrawn` 事件的具体触发链路。
+
+### 关联章节
+- 8.2
+- 渲染流水线章节。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.3 启动优化策略 — 知识盲区
+
+### 盲区描述
+ProfileInstaller 的强制同步编译 API
+
+### 重要程度
+中
+
+### 建议研究方向
+`profileinstaller` 库是否提供了强制同步编译的 API，以便在特定的业务场景（如首充、重要升级后）主动触发 AOT 编译。
+
+### 关联章节
+- 8.3
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.3 启动优化策略 — 知识盲区
+
+### 盲区描述
+ProfileInstaller 在各家国产 ROM 上的 `bg-dexopt-job` 触发时机是否存在被深度定制（魔改）导致不执行的情况。
+
+### 重要程度
+低
+
+### 建议研究方向
+收集国内头部 ROM 对 `bg-dexopt-job` 的调度策略差异。
+
+### 关联章节
+- 8.3
+- 无。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.4 其他响应速度场景 — 知识盲区
+
+### 盲区描述
+FragmentFactory 预加载数据的生命周期边界
+
+### 重要程度
+中
+
+### 建议研究方向
+在 `FragmentFactory.instantiate` 中直接注入耗时的预加载数据，是否会阻塞宿主 Activity/Fragment 的事务提交流程？
+
+### 关联章节
+- 8.4
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.4 其他响应速度场景 — 知识盲区
+
+### 盲区描述
+FragmentFactory 的实例化与 FragmentManager 的异步事务机制之间的执行时序关系。
+
+### 重要程度
+中
+
+### 建议研究方向
+深入研究 FragmentManager 的 `commit()` 到 `executePendingTransactions()` 的状态机流转。
+
+### 关联章节
+- 8.4
+- 无。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.6 Kotlin Coroutine 性能实践 — 知识盲区
+
+### 盲区描述
+Perfetto 中 Coroutine 挂起状态的精准还原
+
+### 重要程度
+低
+
+### 建议研究方向
+在缺乏 JVM Instrument API 支持的 Android 上，如何通过自定义 Trace 脚本或 BPF 技术，无缝对接 Kotlin 状态机以在 Perfetto 中精准可视化挂起时间。
+
+### 关联章节
+- 8.6
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.7 Baseline Profiles 与编译优化实践 — 知识盲区
+
+### 盲区描述
+dex2oat 编译失败的静默回退机制
+
+### 重要程度
+中
+
+### 建议研究方向
+当 Baseline Profile 规则文件中存在已经失效的类或方法签名时，ART 的 `dex2oat` 是如何处理的（容错机制），是否会导致整个 Profile 失效。
+
+### 关联章节
+- 8.7
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.7 Baseline Profiles 与编译优化实践 — 知识盲区
+
+### 盲区描述
+由于代码混淆（R8）或版本迭代导致 HRF 规则与实际 DEX 方法签名不匹配时，安装端的 `dex2oat` 编译表现。
+
+### 重要程度
+中
+
+### 建议研究方向
+梳理 R8 插件是如何自动将 HRF 中的人类可读签名重写为混淆后签名的，以及匹配失败时的 ART 日志。
+
+### 关联章节
+- 8.7
+- 构建优化相关章节。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.8 Android 多媒体管线性能 — 知识盲区
+
+### 盲区描述
+视频播放中的 A/V Sync 底层机制
+
+### 重要程度
+中
+
+### 建议研究方向
+详细梳理 ExoPlayer / Media3 是如何通过 `AudioTimestamp` 动态调整视频帧的 presentation time（PTS）以实现音画同步的。
+
+### 关联章节
+- 8.8
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.8 Android 多媒体管线性能 — 知识盲区
+
+### 盲区描述
+在存在蓝牙耳机等外部输出设备时，Audio HAL 报告的硬件延迟（Hardware Latency）如何影响 ExoPlayer 的音画同步策略。
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 `AudioTrack.getTimestamp()` 的返回值在通过蓝牙 A2DP 协议传输时的补偿机制。
+
+### 关联章节
+- 8.8
+- 无。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.10 ProfilingManager 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+ProfilingManager 在各家国产 ROM 的落地一致性
+
+### 重要程度
+高
+
+### 建议研究方向
+国内定制 ROM 对 `system_server` 和 `lmkd` 等底层组件魔改较多，这些改动是否会破坏 `KILL_EXCESSIVE_CPU_USAGE` 等系统触发器的感知与回调。
+
+### 关联章节
+- 8.10
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.10 ProfilingManager 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+由于系统级 Trace 会带有部分 Redaction（数据脱敏），`COLD_START` 收集到的 trace 在缺乏 root 权限时，其调用栈采样（stack sampling）的深度是否会被截断，导致业务侧排障信息不全。
+
+### 重要程度
+中
+
+### 建议研究方向
+测试 Android 16 非 root 手机上 System-triggered trace 的 Redaction 边界。
+
+### 关联章节
+- 8.10
+- 无。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 8.9 Android 游戏性能与 Game Mode/State API — 知识盲区
+
+### 盲区描述
+GameState 触发 GAME_LOADING boost 的内核态映射
+
+### 重要程度
+中
+
+### 建议研究方向
+`PowerManagerInternal.setPowerMode(Mode.GAME_LOADING, true)` 在底层是如何映射到 Power HAL 并最终影响 CPU cpufreq 调度策略的（是提频还是锁大核）。
+
+### 关联章节
+- 8.9
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.11 WebView 渲染性能与优化 — 知识盲区
+
+### 盲区描述
+Android 13 Samsung 设备 Chromium bug
+
+### 重要程度
+中
+
+### 建议研究方向
+验证该 `AwContents` native lambda 强引用 bug 在最新 Chromium WebView 版本（如 M120+）中是否已被彻底修复。
+
+### 关联章节
+- 7.11
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.11 WebView 渲染性能与优化 — 知识盲区
+
+### 盲区描述
+Android 13 部分设备上的 WebView 销毁延迟 Bug 的最新修复状态。
+
+### 重要程度
+中
+
+### 建议研究方向
+查阅 Chromium Issue Tracker 确认修复情况。
+
+### 关联章节
+- 7.11
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.12 View 体系性能优化 — 知识盲区
+
+### 盲区描述
+硬件加速下的 invalidate 机制
+
+### 重要程度
+高
+
+### 建议研究方向
+现代 Android (API 29+) 开启硬件加速时，`invalidate()` 是如何通过 RenderNode 传递 damage 信号而无需重绘整个 View 树的。
+
+### 关联章节
+- 7.12
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.12 View 体系性能优化 — 知识盲区
+
+### 盲区描述
+现代 Android 版本中，RenderNode 对 `invalidate()` 传播机制的改变及性能优化。
+
+### 重要程度
+高
+
+### 建议研究方向
+深入分析硬件加速下的 DisplayList 构建过程及 `damage` 分发。
+
+### 关联章节
+- 7.12
+- 渲染架构篇。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.13 SystemUI 性能分析 — 知识盲区
+
+### 盲区描述
+Perfetto SQL 在多进程转场分析中的应用
+
+### 重要程度
+低
+
+### 建议研究方向
+总结一套用于同时拉齐 SystemUI、Launcher3、WM Shell 和 SurfaceFlinger 关键 slice 的标准 SQL 查询脚本。
+
+### 关联章节
+- 7.13
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.13 SystemUI 性能分析 — 知识盲区
+
+### 盲区描述
+在复杂的跨进程转场（WM Shell + Launcher3 + SystemUI + App）中，如何利用 Perfetto SQL 快速清洗出导致卡顿的关键路径。
+
+### 重要程度
+低
+
+### 建议研究方向
+研究并沉淀一套针对 App 启动/退出动画卡顿的 Perfetto 分析模板或脚本。
+
+### 关联章节
+- 7.13
+- 13.7 Perfetto 高级用法。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.14 GAPS：Android 动态分析目标可达性路径重建 — 知识盲区
+
+### 盲区描述
+GAPS 等自动化测试工具对 Jetpack Compose 的支持进展
+
+### 重要程度
+中
+
+### 建议研究方向
+持续关注基于 UIAutomator 体系的最新学术工具如何解决 Compose 节点语义树重建的问题。
+
+### 关联章节
+- 7.14
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.14 GAPS：Android 动态分析目标可达性路径重建 — 知识盲区
+
+### 盲区描述
+学术界现有 GUI 动态遍历工具（如 GAPS、APE、Guardian 等）在处理 Jetpack Compose 应用时的技术瓶颈及突破方案。
+
+### 重要程度
+中
+
+### 建议研究方向
+梳理 Compose Semantics 树与传统 View 树在 Accessibility Service 解析上的差异，跟进最新解决方案。
+
+### 关联章节
+- 7.14
+- 7.7 Compose 性能优化。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.15 场景化性能作战手册 — 知识盲区
+
+### 盲区描述
+BufferStuffing 在 Perfetto 中的精确定位
+
+### 重要程度
+中
+
+### 建议研究方向
+详细总结如何在 Perfetto 中通过 SurfaceFlinger 的 Latch 行为和 App 侧的 `FrameTimeline` 确诊 BufferStuffing。
+
+### 关联章节
+- 7.15
+
+
+### 外部 review 来源
+- 外部 AI review (Gemini)
+
+
+## [2026-04-23] 7.15 场景化性能作战手册 — 知识盲区
+
+### 盲区描述
+排障手册中提到的现象（如 BufferStuffing、调度饥饿、LMKD 杀进程）对应的具体 Perfetto SQL 查询或 UI 视图特征。
+
+### 重要程度
+中
+
+### 建议研究方向
+沉淀一份《Perfetto 高频排障字典》，将现象映射到具体的 SQL 查询语句。
+
+### 关联章节
+- 7.15
+- 13.7 Perfetto 高级用法。
+
+### 外部 review 来源
+- 外部 AI review (Gemini)

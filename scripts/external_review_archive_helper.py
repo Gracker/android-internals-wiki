@@ -21,6 +21,27 @@ def load_text(path: Path) -> str:
 
 
 def infer_section(path: Path) -> str | None:
+    # New pattern: 15.XX-YY-slug.md or 15.XX-YY.md → XX.YY
+    m_new = re.fullmatch(r"(\d+)\.(\d{2})-(\d{2})(?:-.+)?\.md$", path.name)
+    if m_new:
+        return f"{int(m_new.group(2))}.{int(m_new.group(3))}"
+    # New pattern: 15.README-chXX.md → XX.README
+    m_rm = re.fullmatch(r"\d+\.README-ch(\d{2})\.md$", path.name)
+    if m_rm:
+        return f"{int(m_rm.group(1))}.README"
+    # Handle 15.XX-slug.md format (e.g. 15.11-webview-performance.md)
+    m_single = re.fullmatch(r"\d+\.(\d{2})-.+\.md$", path.name)
+    if m_single:
+        # Need to determine chapter from file content
+        ftext = load_text(path)
+        # Look for target path like ch07-smoothness/11- or ch08-responsiveness/01-
+        m_ch = re.search(r"ch(\d{2})-[\w-]+/(\d{2})-", ftext)
+        if m_ch:
+            return f"{int(m_ch.group(1))}.{int(m_ch.group(2))}"
+        # Try 章节 pattern
+        m_sec = re.search(r"章节[：:]\s*(\d+\.\d+)", ftext)
+        if m_sec:
+            return m_sec.group(1)
     # Capture everything after YYYY-MM-DD- (include HH in the value)
     m = re.search(r"\d{4}-\d{2}-\d{2}-(.+)-external-review\.md$", path.name)
     if not m:
@@ -41,8 +62,16 @@ def infer_section(path: Path) -> str | None:
     if m_dot:
         return m_dot.group(1)
 
+    # Handle 15.XX-YY-slug.md format (from batch review runs)
+    m_batch = re.search(r"(\d+)\.(\d{2})-(\d{2})-", path.name)
+    if m_batch:
+        return f"{int(m_batch.group(2))}.{int(m_batch.group(3))}"
     # Fallback: search file content for explicit section marker
     text = load_text(path)
+    # Try 章节： pattern in 9.1
+    m3 = re.search(r"章节[：:]\s*(\d+\.\d+)", text)
+    if m3:
+        return m3.group(1)
     m2 = re.search(r"\*\*章节号\*\*：\s*([^\n]+)", text)
     return m2.group(1).strip() if m2 else None
 
