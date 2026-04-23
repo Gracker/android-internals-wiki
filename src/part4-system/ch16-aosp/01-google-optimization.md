@@ -15,7 +15,7 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework

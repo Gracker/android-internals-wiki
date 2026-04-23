@@ -714,6 +714,12 @@
           "location": "L136-L173 / SurfaceView vs TextureView 选型",
           "detail": "正文把“需要半透明/圆角”直接归到 TextureView，并写成 “SurfaceView 不支持”。Flutter embedding 官方文档明确存在 RenderMode.surface + TransparencyMode.transparent 的透明路径；真正稳定受限的是 Z 轴交错、普通 View 变换与圆角裁剪，而不是“透明一律不支持”。",
           "suggestion": "把“透明背景”与“View 级变换/圆角裁剪”拆开说明：透明可走 transparent surface，但与 Android View 交错、动画变换、裁剪边界仍是 TextureView 的主要优势。"
+        },
+        {
+          "type": "需重写",
+          "location": "全文（标题、大纲锚点、frontmatter tags、正文）",
+          "detail": "「链路」出现 9 次，属 SKILL.md 明确禁用的大厂黑话。需全面替换为「管线」或「路径」，同时更新 outline 锚点、frontmatter tags 和章节标题",
+          "suggestion": "将「渲染链路」统一替换为「渲染管线」，标题改为「Flutter 渲染管线」，大纲锚点中「链路」→「管线」，frontmatter tags 中「渲染链路」→「渲染管线」。参考 ch18 同目录其他章节的命名规范"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -3117,6 +3123,33 @@
       "task2b_state": "fixed",
       "fixed_at": "2026-04-23T09:22:00+08:00",
       "fixed_by": "openclaw-task2b"
+    },
+    {
+      "section": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "section_title": "WebView 渲染链路 (18.13)",
+      "priority": 90,
+      "reason": "[Task6 Review回炉] 「链路」属 SKILL.md 禁用大厂黑话，全文出现 11 次含标题/大纲/frontmatter，需系统性替换",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "全文（标题、大纲锚点、frontmatter tags、正文、### 链路 小节标题）",
+          "detail": "「链路」出现 11 次，属 SKILL.md 明确禁用的大厂黑话。需全面替换为「管线」或「路径」",
+          "suggestion": "将「渲染链路」统一替换为「渲染管线」，标题改为「WebView 渲染管线」，大纲锚点中「链路」→「管线」，小节标题「### 链路」→「### 管线」或「### 数据流」。与 §18.12 同步修改保持一致"
+        },
+        {
+          "type": "需补充素材",
+          "location": "Mode 3 SurfaceControl 候选路径",
+          "detail": "整段内容为候选路径描述，缺少确定性技术信息。建议拿到实机验证数据后补充具体启用条件和 Perfetto 证据",
+          "suggestion": "在有条件时用 dumpsys SurfaceFlinger + Perfetto 验证 SurfaceControl child layer 路径的启用条件，补充到正文中"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-04-23T13:55:09",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-04-23-13-review.md"
     }
   ],
   "pending": [

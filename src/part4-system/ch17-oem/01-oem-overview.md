@@ -24,7 +24,7 @@ sources:
 tags: ['oem', 'performance', 'freezer', 'preloading', 'background-management']
 related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
 task6_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"

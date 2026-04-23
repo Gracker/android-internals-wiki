@@ -5,7 +5,7 @@ section: "2.9"
 status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: "openclaw-task2a"
-reviewed_date: 2026-04-15
+reviewed_date: 2026-04-23
 reviewed_by: openclaw-task6
 applicable_versions: "Android 3.0 (API 11) ~ Android 16 (API 36)"
 last_verified: "2026-04-23"
@@ -39,8 +39,8 @@ sources:
     path: "intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md"
 tags: ['frametimeline', 'vulkan', 'rendering-evolution', 'blastBufferQueue', 'hwui', 'skia', 'choreographer', 'FrameMetrics']
 related_chapters: ["2.1", "2.3", "2.6", "2.10", "3.1", "8.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -134,7 +134,7 @@ Android 5.0 Lollipop（API 21，2014 年）引入了 **RenderThread**——一�
 3. **RenderThread** 独立执行 GPU 命令：遍历 `RenderNode` 树，将 Skia draw 命令转为 GL/Vulkan 调用，提交给 GPU
 4. RenderThread 完成后通过 `FrameMetrics` 或 `FrameTimeline` 通知帧完成
 
-在 Perfetto 中，我们可以看到 `UI Thread` 和 `RenderThread` 两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。
+在 Perfetto 中，`UI Thread` 和 `RenderThread` 是两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。
 
 [图：Perfetto 中 UI Thread 与 RenderThread 的 Track 分离示意图，标注 performTraversals 和 DrawFrame 的时序关系]
 
@@ -257,7 +257,7 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 ### FrameMetrics API：量化每一帧的"慢"在哪里
 
-当我们分析卡顿时，最常面对的问题是"这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
+分析卡顿时，首先要回答的问题："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
 
 FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。开发者不需要在代码里手动打点，就能拿到完整的帧耗时分布。
 
@@ -282,7 +282,7 @@ FrameMetrics 将一帧的渲染拆解为以下阶段：
 
 第二是**整体帧率趋势**。通过持续收集 FrameMetrics 数据，我们可以建立帧耗时的时间线，发现哪些场景出现规律性 Jank。Android 12 的 `FrameTimeline` Track 在 Perfetto 中直观地展示了这一点——每一帧都有"预期完成时间"和"实际完成时间"的对比，绿色表示准时，红色表示 Jank。FrameMetrics 的阶段数据与 FrameTimeline 的视觉表现结合起来，就能精确定位 Jank 的根因。
 
-需要注意的是，FrameMetrics 只在 App 进程内可用（它是 per-window 的 API）。如果要分析系统级的帧率问题（如 SurfaceFlinger 合成延迟），需要结合 Perfetto Trace 中的 SurfaceFlinger Track 和 FrameTimeline 数据。
+FrameMetrics 只在 App 进程内可用（它是 per-window 的 API）。如果要分析系统级的帧率问题（如 SurfaceFlinger 合成延迟），需要结合 Perfetto Trace 中的 SurfaceFlinger Track 和 FrameTimeline 数据。
 
 <!-- AIW-源码调研-2026-04-18: FrameTimeline 机制补充 — 基于 AOSP android-14 源码调研 -->
 
@@ -474,7 +474,7 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 
 ## 总结
 
-回看这段从 Android 3.0 到 16 的渲染演进，可以看到一条清晰的线索：**把更多工作交给 GPU，把主线程解放出来**。
+回看这段从 Android 3.0 到 16 的渲染演进，有一条清晰的线索：**把更多工作交给 GPU，把主线程解放出来**。
 
 最初，CPU 包揽了从 Measure/Layout/Draw 到像素生成的全部工作。OpenGL ES 硬件加速把像素生成交给了 GPU；RenderThread 把 GPU 命令提交从主线程剥离出去；SkiaGL/SkiaVulkan 统一了 GPU 后端；BLASTBufferQueue 让 Buffer 提交变成异步操作。每一步都在减轻主线程的负担——这也是为什么在 Perfetto 中，现代 Android 的主线程 `performTraversals` 可以非常短：它只需要录制 RenderNode，GPU 工作全部在 `RenderThread` Track 上执行。
 

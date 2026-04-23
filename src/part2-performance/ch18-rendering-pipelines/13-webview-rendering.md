@@ -12,14 +12,14 @@ sources:
   - AOSP frameworks/base/core/java/android/webkit/WebChromeClient.java
   - AndroidX WebKit WebViewCompat.getCurrentWebViewPackage()
   - Chromium Viz Compositor architecture docs
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-19T00:43:47+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-18
+reviewed_date: '2026-04-23'
 task9_result: needs-rework
 last_task9_at: "2026-04-18T23:32:00+08:00"
 task6_result: pass-light-edit
@@ -138,7 +138,7 @@ sequenceDiagram
 4. **系统合成**：SurfaceFlinger 在同一轮合成里同时 latch 宿主窗口和网页 child layer。
 
 > [!note]
-> 启用条件依赖 WebView provider 版本、Chromium feature flag 和设备图形栈。公开的 AOSP `WebView.java` 无法单独证明设备一定会走这条路径。证据不完整时，这里应标成 `[待验证]`。
+> 启用条件依赖 WebView provider 版本、Chromium feature flag 和设备图形栈。公开的 AOSP `WebView.java` 无法单独证明设备一定会走这条路径。[待验证：SurfaceControl 独立 child layer 路径的启用条件依赖 WebView provider 版本、Chromium feature flag 和设备图形栈，需实机确认]
 
 **性能特征**：网页内容和宿主 UI 的预算可以分开观察，宿主 RenderThread 压力通常更小。能否换来更好的帧稳定性，仍取决于 provider 实现、HWC 能力和页面负载。
 

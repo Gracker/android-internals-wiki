@@ -7477,5 +7477,33 @@
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "status": "ready-for-review"
-  }
+  },
+  "review_history": [
+    {
+      "date": "2026-04-23",
+      "task": "task6-review",
+      "sections_reviewed": [
+        {
+          "section": "2.9",
+          "title": "渲染机制的版本演进",
+          "result": "pass-light-edit",
+          "fixes": 4
+        },
+        {
+          "section": "18.12",
+          "title": "Flutter 渲染链路",
+          "result": "pass-light-edit",
+          "fixes": 1,
+          "issues": 1
+        },
+        {
+          "section": "18.13",
+          "title": "WebView 渲染链路",
+          "result": "pass-light-edit",
+          "fixes": 2,
+          "issues": 1
+        }
+      ]
+    }
+  ]
 }

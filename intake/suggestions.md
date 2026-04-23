@@ -1321,3 +1321,17 @@
 - **位置**：L382
 - **问题**：dm-verity 可观测性段落写成“通过 `disk Greenland` 或 `mmc` trace”观察，但 `disk Greenland` 不是当前 Perfetto / ftrace 的有效观察名称，会把读者带到不存在的轨道或脚本关键字上。
 - **建议**：改成具体可操作的观察路径：例如 block layer / mmc / dm tracepoint 与对应 Perfetto 数据源配置，并明确 dm-verity 没有独立 slice，只能从底层 I/O 延迟侧面观察。
+
+## [Task6 Review] 18.12 Flutter 渲染链路 — 2026-04-23
+- **类型**：需重写
+- **位置**：全文（标题、大纲锚点、frontmatter tags、正文）
+- **问题**：「链路」出现 9 次，属 SKILL.md 明确禁用的大厂黑话。需系统性替换为「管线」或「路径」。
+- **建议**：将「渲染链路」统一替换为「渲染管线」，同步更新标题、大纲锚点、frontmatter tags。与 §18.13 同步修改保持一致。
+- **review 日志**：logs/review/2026-04-23-13-review.md
+
+## [Task6 Review] 18.13 WebView 渲染链路 — 2026-04-23
+- **类型**：需重写 + 需补充素材
+- **位置**：全文（标题、大纲锚点、frontmatter tags、正文）+ Mode 3 SurfaceControl 段
+- **问题**：「链路」出现 11 次，属 SKILL.md 禁用词。Mode 3 SurfaceControl 候选路径缺少确定性技术信息。
+- **建议**：将「渲染链路」统一替换为「渲染管线」。SurfaceControl 路径段需在拿到实机验证数据后补充。
+- **review 日志**：logs/review/2026-04-23-13-review.md
