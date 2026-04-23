@@ -10,21 +10,21 @@ tags:
   - RenderNode
   - HDR
   - BLAST
-  - 渲染链路
+  - 渲染管线
 related_chapters:
   - 2.5
   - 2.10
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-18
-task6_result: needs-rework
+reviewed_date: 2026-04-24
+task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-18
 task9_reviewed_by: openclaw-task9
