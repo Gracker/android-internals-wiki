@@ -19,12 +19,12 @@ related_chapters:
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-18'
+reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
 task2b_result: pending
 task9_reviewed_by: openclaw-task9

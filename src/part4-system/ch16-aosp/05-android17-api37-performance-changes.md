@@ -36,13 +36,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-24"
 task2b_rework_date: "2026-04-24"
 task2b_fixed_at: "2026-04-24T00:12:13+08:00"
 task9_result: needs-rework
@@ -100,7 +100,7 @@ task2b_result: fixed
 
 工作流程是这样的:当任何线程通过 `Handler` 投递一条消息时,消息被 push 到 Treiber Stack 中,这是一个 O(1) 的 CAS 操作,不需要获取锁。当 Looper 线程进入 `loop()` 的下一次迭代时,它会将 Treiber Stack 中积压的所有消息批量"搬"到 min-heap 中(drain 操作),然后从 min-heap 中按时间顺序取出下一条消息执行。
 
-这个设计的精妙之处在于:Treiber Stack 只负责"暂存",不需要维护顺序;min-heap 只负责"调度",只被 Looper 线程访问。两者各司其职,互不干扰。
+这个设计的关键分工是:Treiber Stack 只负责"暂存",不需要维护顺序;min-heap 只负责"调度",只被 Looper 线程访问。两者各司其职,互不干扰。
 
 ```
 [图:DeliQueue 数据流示意图]
