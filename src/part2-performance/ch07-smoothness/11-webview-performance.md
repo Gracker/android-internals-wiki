@@ -26,8 +26,8 @@ sources:
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -35,6 +35,7 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T14:50:48+08:00"
 task2b_result: fixed
+last_task2b_at: "2026-04-24T01:51:58+08:00"
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -315,21 +316,29 @@ WebView warmupWebView = new WebView(appContext);
 
 **原因二：未调用 destroy()**
 
-WebView 必须在不需要时调用 `destroy()` 释放 native 资源。而且 destroy() 之前要先从 View 树中移除。
+WebView 必须在不需要时调用 `destroy()` 释放 native 资源，而且 `destroy()` 之前要先从 View 树中移除。`frameworks/base/core/java/android/webkit/WebView.java` 里 `destroy()` 会先走 `checkThread()`，所以它必须在创建该实例的同一线程执行；展示态 WebView 通常就是主线程。
 
 ```java
 @Override
 protected void onDestroy() {
-    // 先从父容器中移除
     ViewGroup parent = (ViewGroup) webView.getParent();
     if (parent != null) {
         parent.removeView(webView);
     }
-    // 再销毁
-    webView.destroy();
+
+    webView.stopLoading();
+    webView.setWebChromeClient(null);
+    webView.setWebViewClient(null);
+    webView.removeJavascriptInterface("bridge"); // 如果注册过对应接口
+    webView.loadUrl("about:blank");
+    webView.clearHistory();
+
+    webView.destroy(); // 必须和创建它的线程一致，通常是 MainThread
     super.onDestroy();
 }
 ```
+
+如果跨线程调用 `destroy()`、`loadUrl()`、`evaluateJavascript()` 这类实例方法，`checkThread()` 会直接抛出 `RuntimeException`。这类崩溃看起来像“清理代码触发”，实际原因是线程使用方式不对。
 
 **原因三：JS 回调持有外部引用**
 
@@ -454,7 +463,7 @@ WebView 的 GPU 相关工作不应该再写成“独立 GPU 进程”这个固�
 当页面中的 JavaScript 执行复杂逻辑时，在 Perfetto 中可以观察到：
 
 - `CrRendererMain` 线程上出现持续的 CPU 占用
-- 如果 JS 通过 `evaluateJavascript()` 被 App 调用，MainThread 上会出现对应的等待 slice
+- 正常调用 `evaluateJavascript()` 时，MainThread 上通常只有很短的 API 调用 slice；只有用 `CountDownLatch`、`Future.get()` 之类方式阻塞等待结果时，才会出现长等待 slice
 - 如果 JS 通过 Bridge 调用 Native 方法，`WebViewChromium` 线程上会出现调用栈
 
 ### 网络请求的瀑布图
@@ -486,7 +495,7 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
 
 ### 「WebView destroy() 会释放所有内存」
 
-`destroy()` 会释放当前 WebView 的 Java 层资源和大部分与实例绑定的 native 资源，但 browser-side 的共享 provider 状态不会因为销毁单个实例就完全回到“未初始化”状态。App 中只要还有其他 WebView 实例或共享资源存活，宿主进程里的 WebView provider / service 状态就会继续保留。
+`destroy()` 会释放当前 WebView 的 Java 层资源和大部分与实例绑定的 native 资源，但 browser-side 的共享 provider 状态不会因为销毁单个实例就完全回到“未初始化”状态。App 中只要还有其他 WebView 实例或共享资源存活，宿主进程里的 WebView provider / service 状态就会继续保留；`CookieManager`、HTTP cache 这类 provider 级共享服务的生命周期也长于单个 WebView。
 
 ### 「evaluateJavascript() 是同步的」
 

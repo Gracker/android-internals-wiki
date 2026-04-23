@@ -3515,7 +3515,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-23T18:11:09.416403+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-24T01:51:58+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "7.12",
@@ -3628,7 +3632,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-24T00:43:52+08:00",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-24T01:51:58+08:00",
+      "fixed_by": "openclaw-task2b"
     }
   ]
 }
