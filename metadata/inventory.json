@@ -51516,6 +51516,2274 @@
       "total_score": 65,
       "category": "gaoye_notes",
       "freshness_days": 1
+    },
+    {
+      "path": "part4-system/ch16-aosp/02-version-changes.md",
+      "title": "各 Android 版本性能变更追踪",
+      "mtime": "2026-04-21T15:12:46",
+      "size_kb": 39.8,
+      "wc": 127,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "31126e9f9f4eaf7fa8aa2ca3134d6e8b"
+    },
+    {
+      "path": "part4-system/ch16-aosp/03-aosp-build.md",
+      "title": "AOSP 源码编译与调试环境",
+      "mtime": "2026-04-23T11:38:57",
+      "size_kb": 21.3,
+      "wc": 204,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch16"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "7cd8553a8f45322a7efffe4187fa45ca"
+    },
+    {
+      "path": "part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+      "title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "mtime": "2026-04-24T05:19:53",
+      "size_kb": 29.3,
+      "wc": 142,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "ff622028f47bf4173e439ead0d32bbef"
+    },
+    {
+      "path": "part4-system/ch16-aosp/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 0.9,
+      "wc": 36,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch16"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "c28bb161aefeb2c87cab32bcb6868f01"
+    },
+    {
+      "path": "part4-system/ch17-oem/01-oem-overview.md",
+      "title": "OEM 性能优化的通用思路",
+      "mtime": "2026-04-23T11:40:23",
+      "size_kb": 25.7,
+      "wc": 189,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch17"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "b2220c74082b3b5fcbbd1e2d774519ef"
+    },
+    {
+      "path": "part4-system/ch17-oem/02-soc-differences.md",
+      "title": "SoC 平台差异",
+      "mtime": "2026-04-21T11:44:14",
+      "size_kb": 27.6,
+      "wc": 219,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch17"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "55defaba5ef1488cc18752943b59609b"
+    },
+    {
+      "path": "part4-system/ch17-oem/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:24",
+      "size_kb": 1.0,
+      "wc": 35,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch17"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "20d6a5f6b5fd4a5dc0a6d693f0e9bb61"
+    },
+    {
+      "path": "appendix/analysis-checklist.md",
+      "title": "analysis-checklist.md",
+      "mtime": "2026-04-23T23:02:11",
+      "size_kb": 7.9,
+      "wc": 277,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "e8d0e223345d03dcca3c4172a79904c1"
+    },
+    {
+      "path": "appendix/commands-cheatsheet.md",
+      "title": "commands-cheatsheet.md",
+      "mtime": "2026-04-23T23:02:11",
+      "size_kb": 5.9,
+      "wc": 312,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "00087a9030fbc4f9730634558ac3e97d"
+    },
+    {
+      "path": "appendix/perfetto-templates.md",
+      "title": "perfetto-templates.md",
+      "mtime": "2026-04-23T23:02:11",
+      "size_kb": 5.5,
+      "wc": 160,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch13"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "f0e9afe9c77495489eac3fa3808dc0aa"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/02-framerate.md",
+      "title": "帧率与刷新率",
+      "mtime": "2026-04-24T03:03:46",
+      "size_kb": 48.8,
+      "wc": 171,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "f41f6a8e65bea94673678a02aa2f11cf"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/04-choreographer.md",
+      "title": "Choreographer 与渲染流水线",
+      "mtime": "2026-04-22T23:12:30",
+      "size_kb": 42.2,
+      "wc": 162,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "233ef6536100a9d4c55ea271ad8bc990"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "title": "SurfaceFlinger 与合成",
+      "mtime": "2026-04-20T19:46:53",
+      "size_kb": 34.9,
+      "wc": 208,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "73c777e2ea400075c2e7295c27127732"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/07-hardware-layer.md",
+      "title": "Hardware Layer",
+      "mtime": "2026-04-22T22:25:12",
+      "size_kb": 24.3,
+      "wc": 190,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "aa385627b77ae67e2bc9589d6c7074c6"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/08-overdraw.md",
+      "title": "过度绘制",
+      "mtime": "2026-04-21T07:53:46",
+      "size_kb": 25.0,
+      "wc": 178,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "d0d3cbed5d8cca6ae98b6d97924cc6d8"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/12-window-manager.md",
+      "title": "Window Manager Service 与窗口管理",
+      "mtime": "2026-04-21T16:04:27",
+      "size_kb": 34.9,
+      "wc": 141,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "7b979adf18db8b63490342eeb3e1486d"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "mtime": "2026-04-23T09:53:48",
+      "size_kb": 35.5,
+      "wc": 153,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "7a5505c5b0c97cc02985ca1b8a32e56d"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+      "title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "mtime": "2026-04-21T00:05:03",
+      "size_kb": 31.4,
+      "wc": 157,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "4df41ad78bca4f30e4d05fcb003bcec3"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/17-frame-pacing.md",
+      "title": "Frame Pacing Library 与帧节奏控制",
+      "mtime": "2026-04-23T07:24:46",
+      "size_kb": 30.0,
+      "wc": 123,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "9cf2d8b455a3bdf0d118b89c9c151f53"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
+      "title": "Adaptive Refresh Rate 与动态帧率控制",
+      "mtime": "2026-04-20T19:46:53",
+      "size_kb": 22.1,
+      "wc": 148,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "e9ef8c883fe7861b282f2a2ab5ed5660"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+      "title": "刷新率切换与帧率适配性能",
+      "mtime": "2026-04-23T11:53:43",
+      "size_kb": 32.6,
+      "wc": 152,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "844f8822240c3c0681cb95a120a8197d"
+    },
+    {
+      "path": "part1-fundamentals/ch02-rendering/README.md",
+      "title": "渲染系统总纲",
+      "mtime": "2026-04-23T18:58:26",
+      "size_kb": 4.0,
+      "wc": 207,
+      "tags": [
+        "rendering",
+        "SurfaceFlinger",
+        "BufferQueue",
+        "BLAST",
+        "sync-fence"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "0fa1294423a3fa0a8ec8c556f0585378"
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+      "title": "Linux 进程调度基础",
+      "mtime": "2026-04-21T17:36:13",
+      "size_kb": 41.0,
+      "wc": 167,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "0bde07257aa538d6a20bc4c806803ee6"
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/02-eas.md",
+      "title": "EAS 能量感知调度",
+      "mtime": "2026-04-22T07:21:28",
+      "size_kb": 32.6,
+      "wc": 190,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "21fdff1dc0894f383673621ca630bad6"
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/03-big-little.md",
+      "title": "大小核架构",
+      "mtime": "2026-04-22T11:51:42",
+      "size_kb": 34.4,
+      "wc": 161,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "b891814dcbd3622a2b3b7e0bba71f2e9"
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+      "title": "DVFS 与功耗管理",
+      "mtime": "2026-04-23T04:52:27",
+      "size_kb": 26.8,
+      "wc": 204,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "6c08974ad8ac7e5d94e2166048ee2d6d"
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/08-background-execution.md",
+      "title": "后台执行限制与优化",
+      "mtime": "2026-04-23T04:49:35",
+      "size_kb": 35.8,
+      "wc": 115,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "4be1516ebb3f8831cb2cb1535f0cfa59"
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+      "title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "mtime": "2026-04-21T05:26:30",
+      "size_kb": 37.3,
+      "wc": 128,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "25621255623d4babcc8e585fe630cf6c"
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/12-thermal-management-deep-dive.md",
+      "title": "Thermal 管控深度：从内核子系统到 ADPF 主动降频",
+      "mtime": "2026-04-21T05:26:30",
+      "size_kb": 43.1,
+      "wc": 183,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "1132b8be3aafe8e53d9a9023e6c42b33"
+    },
+    {
+      "path": "part1-fundamentals/ch05-cpu-power/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 1.0,
+      "wc": 50,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch05",
+        "ch11"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "6033f5ec815b53d534a2ed1ecad8e28a"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/04-binder.md",
+      "title": "Binder IPC 机制与性能影响",
+      "mtime": "2026-04-20T09:17:31",
+      "size_kb": 27.5,
+      "wc": 198,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "43a72d333239437d117ad2060e2d6daf"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/05-threading-model.md",
+      "title": "线程模型",
+      "mtime": "2026-04-24T03:09:40",
+      "size_kb": 40.4,
+      "wc": 140,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "63a769cd16d6beea651f4aad124bb216"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/06-version-evolution.md",
+      "title": "Android 版本演进中的架构变化",
+      "mtime": "2026-04-20T07:50:52",
+      "size_kb": 32.7,
+      "wc": 179,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "59a4c86ceb9b10de5f1bd4dbe700a8bc"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/11-zygote-startup.md",
+      "title": "Zygote 机制与启动性能优化",
+      "mtime": "2026-04-24T04:56:29",
+      "size_kb": 24.2,
+      "wc": 145,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "ec9aac4ff003abe40d16c3f39b04d1a4"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
+      "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "mtime": "2026-04-22T13:54:07",
+      "size_kb": 27.6,
+      "wc": 175,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "64467514844b285192bfa6977c2d0876"
+    },
+    {
+      "path": "part1-fundamentals/ch01-architecture/README.md",
+      "title": "第 1 章：系统架构全景",
+      "mtime": "2026-04-23T08:14:42",
+      "size_kb": 4.7,
+      "wc": 199,
+      "tags": [
+        "architecture",
+        "overview",
+        "chapter-intro"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch01",
+        "ch16"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "e06c98d361d9c8bb80794410138fbd4c"
+    },
+    {
+      "path": "part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "title": "Android 存储架构",
+      "mtime": "2026-04-22T07:43:20",
+      "size_kb": 39.4,
+      "wc": 236,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch06",
+        "ch01",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "c6d11b4a3cd1977e97de46657b614933"
+    },
+    {
+      "path": "part1-fundamentals/ch06-storage/04-storage-evolution.md",
+      "title": "存储相关的版本演进",
+      "mtime": "2026-04-22T08:40:18",
+      "size_kb": 29.8,
+      "wc": 222,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch06"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "9cd8b1ff84293ab288bd948ac62637d0"
+    },
+    {
+      "path": "part1-fundamentals/ch06-storage/05-sharedpreferences-datastore.md",
+      "title": "SharedPreferences/DataStore 性能与 ANR 优化",
+      "mtime": "2026-04-20T11:55:36",
+      "size_kb": 26.0,
+      "wc": 191,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch06"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "91d45b4e74a34e863f44b69657babe45"
+    },
+    {
+      "path": "part1-fundamentals/ch06-storage/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 0.9,
+      "wc": 42,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch06"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "16ee93aecba8e98df148c45687749367"
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/01-memory-overview.md",
+      "title": "Android 内存模型全景",
+      "mtime": "2026-04-21T12:21:56",
+      "size_kb": 33.6,
+      "wc": 165,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch04"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "b71a80c0ce13408e3f61611e917b2b72"
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "title": "Linux 内核内存管理",
+      "mtime": "2026-04-21T17:36:13",
+      "size_kb": 34.0,
+      "wc": 217,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch04"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "9861b6452e12c3b7cded40f71341edad"
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/03-art-memory.md",
+      "title": "ART 虚拟机内存管理",
+      "mtime": "2026-04-23T17:25:41",
+      "size_kb": 34.4,
+      "wc": 198,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch04"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "e1043ba42e11a8f9dc956f4847af0da0"
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/04-lmk.md",
+      "title": "Low Memory Killer",
+      "mtime": "2026-04-21T03:31:39",
+      "size_kb": 28.0,
+      "wc": 202,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch04"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "9c9905541db24835c22225cc32120b8f"
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "title": "内存相关的版本演进",
+      "mtime": "2026-04-23T17:58:55",
+      "size_kb": 42.1,
+      "wc": 149,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch04"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "c37d64f1ff6fd76bf81940db6177b597"
+    },
+    {
+      "path": "part1-fundamentals/ch04-memory/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 1.2,
+      "wc": 56,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch04"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "fbec633dce773ee500a250bf2da221c6"
+    },
+    {
+      "path": "part1-fundamentals/ch03-input/01-input-dispatch.md",
+      "title": "Input 事件分发全流程",
+      "mtime": "2026-04-23T20:59:24",
+      "size_kb": 40.2,
+      "wc": 158,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch03"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "abeecef21d904fd77988e669a75d6de5"
+    },
+    {
+      "path": "part1-fundamentals/ch03-input/02-touch-performance.md",
+      "title": "触摸响应的性能分析",
+      "mtime": "2026-04-23T15:08:50",
+      "size_kb": 35.0,
+      "wc": 179,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch03"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "22826e747035f849e3252dbfd41adac3"
+    },
+    {
+      "path": "part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "title": "手势导航与系统交互",
+      "mtime": "2026-04-22T23:12:30",
+      "size_kb": 30.4,
+      "wc": 139,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch03"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "aabe4a33f2379606aa956581f6562285"
+    },
+    {
+      "path": "part1-fundamentals/ch03-input/04-input-latency-prediction.md",
+      "title": "输入延迟与预测输入技术",
+      "mtime": "2026-04-23T15:08:50",
+      "size_kb": 34.6,
+      "wc": 179,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch03"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "ec7e4621a24730520b60007ff34644b6"
+    },
+    {
+      "path": "preface/how-to-use.md",
+      "title": "how-to-use.md",
+      "mtime": "2026-04-23T23:02:11",
+      "size_kb": 1.4,
+      "wc": 40,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "9a5620caa1d9541609b71af082a7d295"
+    },
+    {
+      "path": "preface/intro.md",
+      "title": "intro.md",
+      "mtime": "2026-04-22T06:53:48",
+      "size_kb": 1.5,
+      "wc": 31,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "6cfd10bfe281b223a59847fc96e67a36"
+    },
+    {
+      "path": "preface/reading-paths.md",
+      "title": "reading-paths.md",
+      "mtime": "2026-04-22T07:00:45",
+      "size_kb": 2.8,
+      "wc": 136,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "cd3d9573997c77f6b8ecdbfc054c185a"
+    },
+    {
+      "path": "preface/target-audience.md",
+      "title": "target-audience.md",
+      "mtime": "2026-04-22T06:53:48",
+      "size_kb": 1.7,
+      "wc": 35,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "d70f51899e57df44e65e42143a4e7386"
+    },
+    {
+      "path": "preface/verification-standards.md",
+      "title": "verification-standards.md",
+      "mtime": "2026-04-22T06:53:48",
+      "size_kb": 2.2,
+      "wc": 74,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [],
+      "total_score": 20,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "6ebf752dbe238737aea029649a66826f"
+    },
+    {
+      "path": "preface/version-conventions.md",
+      "title": "version-conventions.md",
+      "mtime": "2026-04-22T06:53:48",
+      "size_kb": 1.7,
+      "wc": 80,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "68ee601888a3c3100cbfe044e1a3719e"
+    },
+    {
+      "path": "part2-performance/ch12-apk-network/03-network-performance-deep.md",
+      "title": "网络性能深入：连接池、TLS 与传输优化",
+      "mtime": "2026-04-24T04:29:38",
+      "size_kb": 29.5,
+      "wc": 129,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch12"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "64e4f16a4b95995beef8abbac4a2df22"
+    },
+    {
+      "path": "part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
+      "title": "Android 网络安全与 TLS 性能优化",
+      "mtime": "2026-04-24T04:29:38",
+      "size_kb": 20.0,
+      "wc": 178,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch12"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "76eda7c32b4bb8a338da74b182417655"
+    },
+    {
+      "path": "part2-performance/ch12-apk-network/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 0.7,
+      "wc": 25,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch12"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "561227ec6ded0fc0b1216211646a0ac7"
+    },
+    {
+      "path": "part2-performance/ch11-power/01-power-model.md",
+      "title": "Android 功耗模型",
+      "mtime": "2026-04-24T03:25:54",
+      "size_kb": 36.4,
+      "wc": 148,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "49ff114e23cff8f5b62a88ae4b6228bf"
+    },
+    {
+      "path": "part2-performance/ch11-power/02-app-power-optimization.md",
+      "title": "App 耗电优化",
+      "mtime": "2026-04-24T01:23:43",
+      "size_kb": 34.6,
+      "wc": 156,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "11a9fd526d1970614f5882e3d5005162"
+    },
+    {
+      "path": "part2-performance/ch11-power/03-system-power-optimization.md",
+      "title": "系统级功耗优化",
+      "mtime": "2026-04-24T01:23:43",
+      "size_kb": 33.7,
+      "wc": 131,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "07d6421402c930eecde81a59ee677877"
+    },
+    {
+      "path": "part2-performance/ch11-power/05-wakelock.md",
+      "title": "Wakelock 机制与功耗分析",
+      "mtime": "2026-04-22T15:16:18",
+      "size_kb": 40.6,
+      "wc": 144,
+      "tags": [
+        "wakelock",
+        "power",
+        "battery",
+        "alarmmanager",
+        "doze"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch11"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "5c49e74681b72bd4801dde574d140d74"
+    },
+    {
+      "path": "part2-performance/ch11-power/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 0.8,
+      "wc": 30,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch11"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "6995bc39bece5558d9af60b49623c4a3"
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/05-case-studies.md",
+      "title": "案例集",
+      "mtime": "2026-04-22T18:22:53",
+      "size_kb": 29.4,
+      "wc": 189,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch08"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "90c9644894983c090fb1725cca106eb8"
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/08-media-pipeline.md",
+      "title": "Android 多媒体管线性能",
+      "mtime": "2026-04-23T00:47:18",
+      "size_kb": 30.8,
+      "wc": 176,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch08"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "77a9cad273ecd5bba125bd0ee21d7ecb"
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
+      "title": "ProfilingManager 系统触发式性能追踪",
+      "mtime": "2026-04-23T04:29:45",
+      "size_kb": 21.2,
+      "wc": 148,
+      "tags": [
+        "profiling-manager",
+        "system-triggered",
+        "cold-start",
+        "anr",
+        "tracing"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch08"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "07c594dd353a374e40934ddf6242754d"
+    },
+    {
+      "path": "part2-performance/ch08-responsiveness/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 1.2,
+      "wc": 53,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch08"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "d41ec62120be6966460fddaddee30da6"
+    },
+    {
+      "path": "part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
+      "title": "SQLite/Room 数据库性能优化",
+      "mtime": "2026-04-21T12:52:20",
+      "size_kb": 26.7,
+      "wc": 128,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch10",
+        "ch04"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "b6fcac00c7ffa1f37c5f94eef99db7c6"
+    },
+    {
+      "path": "part2-performance/ch10-memory-perf/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 0.9,
+      "wc": 38,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch10",
+        "ch04"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "26c12c23c3f991b54b3dc97d9fbe18cf"
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/01-jank-definition.md",
+      "title": "卡顿的定义与分类",
+      "mtime": "2026-04-22T22:50:03",
+      "size_kb": 26.1,
+      "wc": 146,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch07"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "0a72a49572eca4d7a201a28582ceb25d"
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/04-typical-scenarios.md",
+      "title": "典型场景分析",
+      "mtime": "2026-04-22T20:27:54",
+      "size_kb": 33.3,
+      "wc": 186,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch07"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "5ea524ad2e9576adaac66366d771de51"
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/07-compose-performance.md",
+      "title": "Jetpack Compose 性能优化",
+      "mtime": "2026-04-24T00:55:18",
+      "size_kb": 35.8,
+      "wc": 181,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch07"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "e78899f11084cd763267c4051de6e344"
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
+      "title": "图片加载与 Bitmap 性能优化",
+      "mtime": "2026-04-22T17:32:14",
+      "size_kb": 31.7,
+      "wc": 178,
+      "tags": [
+        "bitmap",
+        "image-decode",
+        "hardware-bitmap",
+        "glide",
+        "coil"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch07"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "3e21d23825ca9f2246d97501ea58c171"
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/12-view-layout-performance.md",
+      "title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
+      "mtime": "2026-04-23T23:33:56",
+      "size_kb": 32.4,
+      "wc": 176,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch07"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "ed95f41eb9d2e85986faefcf24307efb"
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/15-scenario-playbooks.md",
+      "title": "场景化性能作战手册",
+      "mtime": "2026-04-22T10:31:17",
+      "size_kb": 15.0,
+      "wc": 184,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch07"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "4518549c37a7dbc55dd7d7ddad159975"
+    },
+    {
+      "path": "part2-performance/ch07-smoothness/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 1.1,
+      "wc": 43,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch07"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "b3f89c189eb63881f0a2558bc43fb01a"
+    },
+    {
+      "path": "part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
+      "title": "ANR 非技术故障诊断",
+      "mtime": "2026-04-21T01:36:47",
+      "size_kb": 19.0,
+      "wc": 181,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch09"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "ef9e7676de6c2d42cac9f2146baada31"
+    },
+    {
+      "path": "part2-performance/ch09-anr/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 1.1,
+      "wc": 56,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch09"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "878218825b0feb1b825996fbb101deae"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
+      "title": "渲染链路分类与选择矩阵",
+      "mtime": "2026-04-20T03:28:54",
+      "size_kb": 11.2,
+      "wc": 211,
+      "tags": [
+        "rendering-pipeline",
+        "BLAST",
+        "SurfaceFlinger",
+        "HWUI",
+        "SurfaceView"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "2d62d559e307682ec20b8bc975abc1e6"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/03-android-view-software.md",
+      "title": "Android View 软件渲染链路",
+      "mtime": "2026-04-23T00:28:01",
+      "size_kb": 12.5,
+      "wc": 182,
+      "tags": [
+        "software-rendering",
+        "CPU-rasterization",
+        "Skia",
+        "Canvas",
+        "lockCanvas"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "a89f3d7a046111920694c825329941b7"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",
+      "title": "Android View 多窗口链路",
+      "mtime": "2026-04-23T00:28:01",
+      "size_kb": 11.9,
+      "wc": 186,
+      "tags": [
+        "multi-window",
+        "Dialog",
+        "RenderThread-contention",
+        "Choreographer",
+        "serial-rendering"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "fba34a47d93b0a4c8e5a99acfdf89be1"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+      "title": "SurfaceView 直出链路",
+      "mtime": "2026-04-23T01:48:42",
+      "size_kb": 19.5,
+      "wc": 198,
+      "tags": [
+        "SurfaceView",
+        "BLAST",
+        "SurfaceFlinger",
+        "HWC",
+        "Direct-Producer"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "a05f566a745554d97885ed12995ecfa4"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/07-textureview.md",
+      "title": "TextureView 合成链路",
+      "mtime": "2026-04-23T05:13:31",
+      "size_kb": 17.7,
+      "wc": 205,
+      "tags": [
+        "TextureView",
+        "SurfaceTexture",
+        "App 侧合成",
+        "纹理采样",
+        "OES"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "c95bb37d6c533a2c495ba386998dcdb3"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
+      "title": "OpenGL ES 渲染链路",
+      "mtime": "2026-04-23T05:13:31",
+      "size_kb": 17.3,
+      "wc": 240,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "2bdbf4942eb148c6503fa254e7be3e55"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
+      "title": "Vulkan 原生渲染链路",
+      "mtime": "2026-04-23T05:13:31",
+      "size_kb": 17.4,
+      "wc": 202,
+      "tags": [
+        "Vulkan",
+        "VkSwapchainKHR",
+        "explicit-control",
+        "AVP",
+        "Swappy"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "9304b9662b5abe66bb0a32493d9f3dea"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+      "title": "SurfaceControl API 深入",
+      "mtime": "2026-04-23T12:35:03",
+      "size_kb": 39.9,
+      "wc": 211,
+      "tags": [
+        "SurfaceControl",
+        "ASurfaceControl",
+        "ASurfaceTransaction",
+        "NDK",
+        "layer-hierarchy"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "926d23fab22aa2d9ebc3a049ea8bcd67"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
+      "title": "ANGLE（GLES-over-Vulkan 翻译层）",
+      "mtime": "2026-04-23T12:35:03",
+      "size_kb": 15.3,
+      "wc": 233,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "7983c90a2f3e95ffc2fcda94ee0aeea7"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
+      "title": "Flutter 渲染管线",
+      "mtime": "2026-04-23T18:58:26",
+      "size_kb": 14.9,
+      "wc": 240,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "30efd31b3dd3b82d2d26c5ab093065f0"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
+      "title": "WebView 渲染管线",
+      "mtime": "2026-04-24T04:29:38",
+      "size_kb": 14.0,
+      "wc": 190,
+      "tags": [
+        "WebView",
+        "Chromium",
+        "GL-Functor",
+        "SurfaceControl",
+        "SurfaceTexture"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "fc43e07721d5e24a193c56ed9bd8dfdc"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
+      "title": "Camera 渲染管线",
+      "mtime": "2026-04-24T02:20:55",
+      "size_kb": 22.6,
+      "wc": 179,
+      "tags": [
+        "Camera",
+        "Camera2",
+        "HAL3",
+        "ZSL",
+        "多流并发"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "746982bd691f9cb476b6e48fd5d00a32"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
+      "title": "视频叠加与 HWC",
+      "mtime": "2026-04-24T05:19:53",
+      "size_kb": 12.1,
+      "wc": 230,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "ac779251abea5fcc6919cf7ff912a1b4"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/16-game-engine.md",
+      "title": "游戏引擎渲染链路",
+      "mtime": "2026-04-22T21:17:55",
+      "size_kb": 13.3,
+      "wc": 216,
+      "tags": [
+        "Unity",
+        "Unreal",
+        "Game-Engine",
+        "Swappy",
+        "Frame-Pacing"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "e12eef0b1e58ee147d339be23d1d620f"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
+      "title": "Hardware Buffer Renderer",
+      "mtime": "2026-04-24T04:12:42",
+      "size_kb": 19.5,
+      "wc": 199,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "be3cffd2b8ff743c0bc0d2c99e8f3a42"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
+      "title": "PIP 与自由窗口渲染",
+      "mtime": "2026-04-24T04:12:42",
+      "size_kb": 13.9,
+      "wc": 208,
+      "tags": [
+        "PIP",
+        "画中画",
+        "Freeform",
+        "多窗口",
+        "SurfaceControl"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "ad70fdfa1d574b255cc6613697e539d9"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
+      "title": "EyeDropper API 与跨设备协作性能",
+      "mtime": "2026-04-20T13:19:12",
+      "size_kb": 7.9,
+      "wc": 154,
+      "tags": [
+        "eyedropper",
+        "activity-result",
+        "color-picking",
+        "system-ui",
+        "collaboration"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "e4323639451945c72cf8945c662edc54"
+    },
+    {
+      "path": "part2-performance/ch18-rendering-pipelines/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T07:00:45",
+      "size_kb": 3.0,
+      "wc": 186,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch18",
+        "ch02",
+        "ch16"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "7d54b65c3fe15d5a0db518ee56788242"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/02-simpleperf.md",
+      "title": "Simpleperf",
+      "mtime": "2026-04-22T08:06:44",
+      "size_kb": 27.6,
+      "wc": 217,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch14"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "b62fca43a84d4baebc595f2f29c189c2"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/04-dumpsys.md",
+      "title": "dumpsys 系列命令",
+      "mtime": "2026-04-23T08:14:42",
+      "size_kb": 25.5,
+      "wc": 207,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch14"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "3111f5a484dd0582d25609f397992f10"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
+      "title": "GPU 图形调试与分析工具",
+      "mtime": "2026-04-22T14:52:21",
+      "size_kb": 39.0,
+      "wc": 150,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch14"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "81f1c1c2cc20711f77d13746105027c9"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+      "title": "Android Camera 性能与 Perfetto 分析",
+      "mtime": "2026-04-23T10:58:57",
+      "size_kb": 29.1,
+      "wc": 206,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch14"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "c296f09395ad6e2b703848baa51df695"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/12-apm-observability.md",
+      "title": "APM / 可观测性平台与 SDK 选型",
+      "mtime": "2026-04-23T02:56:28",
+      "size_kb": 14.3,
+      "wc": 190,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch14"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "2726ae8094b007ae40b8f7bbd6a0ff3a"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "title": "Hook 基础设施与性能工具实现原理",
+      "mtime": "2026-04-22T19:44:53",
+      "size_kb": 13.6,
+      "wc": 193,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch14"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "6ea43d88f5ba457df0d8eaed8362636a"
+    },
+    {
+      "path": "part3-tools/ch14-other-tools/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 0.9,
+      "wc": 50,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch14"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "71efd7148164f87ef44797be390ab836"
+    },
+    {
+      "path": "part3-tools/ch15-methodology/01-philosophy.md",
+      "title": "性能优化的术、道、器",
+      "mtime": "2026-04-23T09:20:42",
+      "size_kb": 35.6,
+      "wc": 200,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch15"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "0347b1794ff8aff4e5608adb67aff24c"
+    },
+    {
+      "path": "part3-tools/ch15-methodology/05-online-monitoring.md",
+      "title": "线上性能监控",
+      "mtime": "2026-04-22T23:28:37",
+      "size_kb": 34.8,
+      "wc": 194,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch15"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "3dc9bb7d5dd393877593d4b6bda5979b"
+    },
+    {
+      "path": "part3-tools/ch15-methodology/07-aosp-reading.md",
+      "title": "AOSP 代码阅读",
+      "mtime": "2026-04-23T07:10:59",
+      "size_kb": 25.6,
+      "wc": 190,
+      "tags": [
+        "aosp",
+        "code-reading",
+        "cs.android.com",
+        "methodology"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch15",
+        "ch16"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "b9d61b98387b1920fca06e1f1b986751"
+    },
+    {
+      "path": "part3-tools/ch15-methodology/09-observability-closed-loop.md",
+      "title": "从采集到治理的闭环",
+      "mtime": "2026-04-22T07:43:20",
+      "size_kb": 10.1,
+      "wc": 163,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch15"
+      ],
+      "total_score": 45,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "9d80620191a1c2c3573afb93e1368f12"
+    },
+    {
+      "path": "part3-tools/ch15-methodology/10-performance-governance.md",
+      "title": "性能治理工程化",
+      "mtime": "2026-04-22T07:43:20",
+      "size_kb": 9.5,
+      "wc": 173,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch15"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "b5832e2bcae744d934cdbed542e2843a"
+    },
+    {
+      "path": "part3-tools/ch15-methodology/README.md",
+      "title": "README.md",
+      "mtime": "2026-04-22T06:59:23",
+      "size_kb": 1.1,
+      "wc": 43,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch15"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "538200fee8c11a060505f285d1fe4134"
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/01-perfetto-intro.md",
+      "title": "Perfetto 简介与演进",
+      "mtime": "2026-04-22T08:57:24",
+      "size_kb": 32.2,
+      "wc": 207,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch13"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "d64831539b78ac1579d6b9e5f08e6e02"
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/02-trace-capture.md",
+      "title": "Trace 抓取",
+      "mtime": "2026-04-24T05:53:47",
+      "size_kb": 38.3,
+      "wc": 198,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch13"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "4aec2a466e903afdb441dce0918b834d"
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/04-large-traces.md",
+      "title": "命令行打开超大 Trace",
+      "mtime": "2026-04-22T21:55:56",
+      "size_kb": 29.3,
+      "wc": 202,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": true,
+      "chapters": [
+        "ch13"
+      ],
+      "total_score": 40,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "9269f846391dd700bbeb50de4d494c01"
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/05-topic-analysis.md",
+      "title": "专题解读",
+      "mtime": "2026-04-21T07:53:46",
+      "size_kb": 40.0,
+      "wc": 199,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch13"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "c50e17176b2f5aae4e11cd19afb345af"
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/08-input-latency-sql.md",
+      "title": "Perfetto 输入延迟 SQL 深度分析",
+      "mtime": "2026-04-24T05:53:47",
+      "size_kb": 27.4,
+      "wc": 201,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch13",
+        "ch03"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "aef79276f87793ea2b62cc5bb4e4946e"
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+      "title": "Perfetto SQL 性能分析实战手册",
+      "mtime": "2026-04-22T19:44:11",
+      "size_kb": 27.8,
+      "wc": 153,
+      "tags": [],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch13"
+      ],
+      "total_score": 50,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "a52c50afee6d899185b73a647a424021"
+    },
+    {
+      "path": "part3-tools/ch13-perfetto/README.md",
+      "title": "第 13 章：Perfetto",
+      "mtime": "2026-04-23T02:13:46",
+      "size_kb": 4.4,
+      "wc": 220,
+      "tags": [
+        "perfetto",
+        "tracing",
+        "overview",
+        "chapter-intro"
+      ],
+      "is_original": false,
+      "is_quicknote": false,
+      "has_reprint": false,
+      "chapters": [
+        "ch13"
+      ],
+      "total_score": 30,
+      "status": "new",
+      "source_type": "mixed",
+      "content_hash": "274622a95edb2ad59aa08eeaf506f785"
     }
   ],
   "stats": {
@@ -51532,7 +53800,7 @@
     "total_chapters": 17,
     "last_scan": "2026-03-31"
   },
-  "last_scan_time": "2026-04-15T06:00:00",
+  "last_scan_time": "2026-04-24T06:07:31",
   "scan_summary": {
     "previous_count": 7564,
     "added": 38,
@@ -51540,7 +53808,7 @@
     "scan_time": "2026-04-09T14:03:53.463769"
   },
   "last_scan": "2026-04-17T06:05:46.547098",
-  "total_documents": 7602,
+  "total_documents": 7764,
   "scan_metadata": {
     "last_scan": "2026-04-12 06:00",
     "previous_scan": "2026-04-10 06:02",

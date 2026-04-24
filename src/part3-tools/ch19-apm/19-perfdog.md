@@ -2,7 +2,7 @@
 title: "PerfDog"
 chapter: "19"
 section: "19.19"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,52 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://perfdog.qq.com/"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # PerfDog
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 PerfDog 是非嵌入式性能测试工具，适合 QA、竞品对比和实验室回归，不替代端侧 APM。
+- 🔹 [指标范围] 列 FPS、frame time、jank、CPU、GPU、memory、power、temperature、network、battery 等指标和可用条件。
+- 🔹 [测试条件] 写设备型号、系统版本、刷新率、电量、温度、网络、亮度、后台进程、账号状态和操作脚本。
+- 🔹 [报告字段] 设计报告模板，至少包含 app version、device、scene、duration、metric median/p95、thermal state、notes。
+- 🔹 [帧时间] 说明为什么平均 FPS 不够，需要看 frame time 分布、长帧、稳定性和波动区间。
+- 🔹 [功耗温度] 写功耗、温度、频率降档对帧率和 CPU/GPU 指标的影响；要求记录起止温度。
+- 🔹 [工具关系] 和 Perfetto、Android Studio Profiler、Macrobenchmark 分工，说明 PerfDog 发现问题后如何深查。
+- 🔹 [自动化] 说明和 adb、UIAutomator、monkey、录制脚本结合时如何保证操作一致。
+- 🔹 [竞品边界] 写竞品对比必须统一设备、版本、场景、账号、网络和温度，不能只比较单次峰值。
+- 🔹 [使用建议] 给发版前回归、专项优化、竞品分析三种使用流程。
+
+### 扩展（可选深入）
+
+- 🔸 增加一份 PerfDog 测试报告 Markdown 模板。
+- 🔸 补一个 frame time 分布解读案例，区分稳定低 FPS 和偶发长帧。
+- 🔸 对 PerfDog 官方站点、指标解释和平台支持状态做核对。
+- 🔸 增加自动化脚本与 PerfDog 报告命名规范。
+- 🔸 补充隐私和账号数据处理要求，避免竞品测试报告泄漏内部信息。
+
+### 流水线加工要求
+
+- 所有指标解释必须绑定测试条件。
+- 竞品对比段落要写限制条件，不得直接从单次分数推出产品结论。
+- 报告模板要能直接用于 QA 发版记录。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## PerfDog 是非嵌入式性能测试工具
 

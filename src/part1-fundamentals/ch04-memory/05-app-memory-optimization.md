@@ -2,7 +2,7 @@
 title: "App 内存优化"
 section: "4.5"
 chapter: "4.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -37,7 +37,7 @@ review_round: 3
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed

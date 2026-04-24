@@ -2,7 +2,7 @@
 title: "androidx.tracing（Tracing SDK）"
 chapter: "19"
 section: "19.13"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -16,10 +16,52 @@ sources:
     path: "https://developer.android.com/topic/performance/tracing"
   - type: official
     path: "https://developer.android.com/reference/androidx/tracing/package-summary"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # androidx.tracing（Tracing SDK）
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 androidx.tracing 用来给代码区间命名，让 Perfetto / systrace 中出现业务 slice。
+- 🔹 [使用时机] 写清哪些阶段值得手动 trace：启动、首屏、列表 diff、图片解码、数据库查询、业务提交、跨线程任务。
+- 🔹 [基本用法] 覆盖 Kotlin `trace {}`、Java begin/end、异常安全、嵌套 trace、主线程与后台线程。
+- 🔹 [命名规范] 规定稳定名称、分层前缀、禁止动态 id / URL / 用户数据；给推荐和反例。
+- 🔹 [同步 / 异步] 区分同步 slice、async trace、跨线程任务和协程任务；给一个 async 伪代码或真实示例。
+- 🔹 [Native 标注] 说明 native 侧 ATrace / Perfetto 标注如何和 Java trace 一起阅读。
+- 🔹 [工具关系] 区分 androidx.tracing、Perfetto SDK、btrace、Macrobenchmark trace section 的使用边界。
+- 🔹 [线上关系] 说明 trace 名称如何和线上指标、JankStats context、APM custom trace 建立同名索引。
+- 🔹 [阅读方式] 写清在 Perfetto UI 中如何找到 slice、看线程、看嵌套、看 gap 和 scheduler。
+- 🔹 [常见错误] 覆盖名称过细、忘记 end、跨线程错配、热路径过度打标、把 trace 当统计系统。
+
+### 扩展（可选深入）
+
+- 🔸 增加一套 trace 命名表，覆盖启动、首页、详情页、支付、图片、数据库。
+- 🔸 补一个协程 / executor 跨线程 trace 示例。
+- 🔸 对 Android tracing docs、androidx.tracing reference 做版本核对。
+- 🔸 增加与自定义 APM trace 的字段映射表。
+- 🔸 补一个“trace 太多导致阅读困难”的反例和删减规则。
+
+### 流水线加工要求
+
+- 每个 trace 示例必须说明读者在 Perfetto 里应该看哪条线程和哪个 slice。
+- 命名规范要能被团队直接采用，避免只写原则。
+- 涉及异步区间时必须写开始、结束和 id 管理，不留伪概念。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## Tracing SDK 给代码区间命名
 

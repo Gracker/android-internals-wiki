@@ -2,7 +2,7 @@
 title: "Measure"
 chapter: "19"
 section: "19.09"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,52 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/measure-sh/measure"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # Measure
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 Measure 是开源移动监控平台，包含 SDK、后端和看板；和只提供端侧采集的 Matrix / KOOM 分开讲。
+- 🔹 [会话时间线] 展开 session、screen、event、trace、error、resource 的关系；补一个用户操作到 ANR 的时间线例子。
+- 🔹 [能力范围] 按 Crash、ANR、HTTP、启动、App size、CPU、内存、点击、页面导航列数据来源、字段和适用判断。
+- 🔹 [接入成本] 写 SDK 接入之外的工作：部署、存储、查询、符号化、权限、告警、采样、数据删除。
+- 🔹 [自定义 trace] 规定 trace 命名、属性、单位、动态值禁用规则；补登录、首屏、支付、图片解码示例。
+- 🔹 [自托管] 拆存储成本、索引设计、附件保留、mapping / native symbol 关联、备份和升级风险。
+- 🔹 [OpenTelemetry] 说明移动 session 与服务端 trace 的模型差异；设计 trace id / request id 关联方式。
+- 🔹 [平台对比] 和 Firebase、Sentry 做表格对比，维度包括开源/托管、错误监控、性能 trace、会话上下文、部署成本。
+- 🔹 [隐私策略] 覆盖 URL pattern、用户标识、日志、请求体、截图/附件、地区合规和删除请求。
+- 🔹 [试点评估] 给 2-4 周试点清单，验证崩溃定位、ANR 上下文、会话检索、告警噪声和团队使用成本。
+
+### 扩展（可选深入）
+
+- 🔸 增加 Measure 平台数据流图，标出端侧事件、批量上传、后端入库、查询和告警。
+- 🔸 补一份 session JSON 示例，要求字段能支持页面、网络、错误和性能 trace 关联。
+- 🔸 加一张自托管成本表，区分小团队试点、中型团队、私有化环境。
+- 🔸 对 measure-sh/measure README、部署文档、license、维护状态做核对。
+- 🔸 增加“什么时候选 Firebase / Sentry / Measure”的决策表。
+
+### 流水线加工要求
+
+- 平台能力必须和运维成本一起写，不能只列 SDK API。
+- 每个数据对象都要给字段例子，后续服务端章节可以直接复用。
+- 涉及 OpenTelemetry 时只写可验证的关联方式，不扩展成服务端 APM 教程。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## Measure 是开源移动监控平台
 

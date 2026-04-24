@@ -2,7 +2,7 @@
 title: "商业 APM 平台（Sentry、APMPlus、Bugly）"
 chapter: "19"
 section: "19.18"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -18,10 +18,52 @@ sources:
     path: "https://www.volcengine.com/docs/6431"
   - type: official
     path: "https://bugly.qq.com/docs/"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明商业 APM 购买的是维护、看板、告警、权限、SLA、合规和跨端分析能力，不只是 SDK 功能。
+- 🔹 [评审维度] 按 SDK 开销、数据所有权、私有化、采样、符号化、告警、移动专项、价格、迁移成本做选型表。
+- 🔹 [Sentry] 展开 error、transaction、span、profiling、session replay 的移动端模型和适用场景。
+- 🔹 [APMPlus] 说明国内移动 APM 常见能力：启动、卡顿、崩溃、ANR、网络、内存、页面、版本灰度、机型维度。
+- 🔹 [Bugly] 写稳定性治理入口的优势和边界，区分 crash / ANR 与完整性能监控。
+- 🔹 [接入策略] 给商业 SDK facade 设计，避免业务代码直接依赖某个 vendor API。
+- 🔹 [数据合同] 统一自定义 trace、用户标识、页面、版本、实验、网络请求的字段，降低未来迁移成本。
+- 🔹 [私有化] 展开部署、升级、存储、权限、审计、数据删除、成本和故障责任。
+- 🔹 [退出成本] 写从商业平台迁移时要保留的字段、历史数据、告警规则、mapping、dashboard。
+- 🔹 [PoC 验收] 给试用期验证清单：采样准确性、符号还原、慢帧定位、网络阶段、告警噪声、低端设备开销。
+
+### 扩展（可选深入）
+
+- 🔸 增加 Sentry Android transaction / span 示例和 profiling 采样配置。
+- 🔸 补一个商业 APM facade 接口示例，覆盖 startTrace、addMetric、captureException、setUser、setContext。
+- 🔸 对 Sentry、APMPlus、Bugly 官方文档做 L1 核对，标注移动端能力差异。
+- 🔸 增加采购评审表和 PoC 验收表。
+- 🔸 补充合规检查项：数据地域、脱敏、保留周期、访问审计、删除流程。
+
+### 流水线加工要求
+
+- 商业平台段落必须写“能力、成本、退出方式”三件事。
+- 不要把厂商宣传语改写成正文，需要转成工程可验证指标。
+- 涉及价格、版本或产品能力时必须标注核对日期和来源。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## 商业平台买的是服务能力和维护成本
 

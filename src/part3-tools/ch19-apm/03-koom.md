@@ -2,7 +2,7 @@
 title: "KOOM"
 chapter: "19"
 section: "19.03"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,55 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/KwaiAppTeam/KOOM"
-pipeline_stage: drafted
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
+reviewed_date: "2026-04-24"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 ---
 
 # KOOM
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 KOOM 处理 Java heap、native heap、thread 三类内存风险；写清它和普通内存指标、Profiler、LeakCanary 的差异。
+- 🔹 [模块拆分] 用表格列出 `koom-java-leak`、`koom-native-leak`、`koom-thread-leak` 的观察对象、触发条件、产物和开销。
+- 🔹 [Java heap] 展开 fork dump、Hprof 裁剪、引用摘要、对象保留路径；说明何时触发 dump、何时放弃 dump。
+- 🔹 [触发策略] 写清 heap 增长、PSS/RSS、前后台、页面、低内存信号、采样率如何组合，避免频繁 dump。
+- 🔹 [Native leak] 说明 malloc/free 追踪、可达性分析、符号化、so 归属和采样成本；补一个 native SDK 泄漏候选案例。
+- 🔹 [线程泄漏] 定义匿名线程、无界线程池、长时间 WAITING、常驻系统线程的判定口径；给白名单和误判处理方式。
+- 🔹 [线上 OOM] 写一条从 OOM / PSS 抬升到 KOOM report，再到 heap / native / thread 分类的分析路径。
+- 🔹 [系统信号] 补充 `onTrimMemory`、LMKD、ApplicationExitInfo、PSS / RSS / Java heap 的配合方式和版本边界。
+- 🔹 [端侧策略] 覆盖上传前裁剪、文件大小、磁盘配额、隐私、失败重试、低端机禁用和远程开关。
+- 🔹 [验证方式] 修复后要用 LeakCanary、Profiler、灰度内存指标或专项压测验证，不能只看单次 report。
+
+### 扩展（可选深入）
+
+- 🔸 增加一份 KOOM report schema，覆盖 object type、retained size、native stack、thread name、page、version、sample id。
+- 🔸 增加 Java、native、thread 三类问题的排查流程图。
+- 🔸 补充与 Android 14+ / 15+ / 16+ 内存诊断 API 的关系，新增内容必须标注来源。
+- 🔸 对 KOOM upstream 活跃度、模块可用性、AGP / NDK 适配风险做核对。
+- 🔸 增加“何时不该接入 KOOM”的反例，比如启动慢、网络慢、普通列表卡顿。
+
+### 流水线加工要求
+
+- 每个内存判断必须说明证据来源：系统指标、KOOM report、heap 摘要、native stack 或线程列表。
+- 不要把 Java 泄漏、native 泄漏、线程泄漏混成一个“大内存问题”。
+- 涉及线上 dump 的段落必须写停顿、磁盘、隐私和失败处理。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## KOOM 是内存专项工具
 

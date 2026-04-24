@@ -2,7 +2,7 @@
 title: "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）"
 chapter: "19"
 section: "19.10"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -18,10 +18,52 @@ sources:
     path: "https://github.com/happylishang/Collie"
   - type: blog
     path: "https://github.com/SusionSuc/rabbit-client"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # 其他开源 APM 库（AndroidGodEye、Collie、Rabbit）
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [章节定位] 说明 AndroidGodEye、Collie、Rabbit 更适合学习设计取舍和补充思路，不能直接等同于现代生产 APM 方案。
+- 🔹 [项目状态] 对每个项目补仓库地址、维护活跃度、最近版本、主要模块、依赖风险和适配边界。
+- 🔹 [AndroidGodEye] 展开浏览器看板、插件式采集、CPU / memory / network / FPS 等能力；说明适合 Debug 还是线上。
+- 🔹 [Collie] 提炼轻量采样、端侧缓存、远程开关和线上低开销思路；写清它能保留哪些现场。
+- 🔹 [Rabbit] 说明研发工具和 APM 混合形态，重点写慢函数、APK 分析、调试入口和工程使用场景。
+- 🔹 [横向对比] 用表格比较数据来源、接入成本、线上可用性、可视化、报告产物、维护风险。
+- 🔹 [最小 SDK] 从这些项目提炼一个最小 APM SDK 结构：collector、sampler、buffer、uploader、config、report schema。
+- 🔹 [线程模型] 写采集线程、上传线程、主线程监听、定时采样之间的关系，说明避免干扰业务线程的方法。
+- 🔹 [开关设计] 展开远程配置、本地兜底、采样率、按版本/机型/页面启用、失败降级。
+- 🔹 [使用建议] 明确哪些代码可以借鉴，哪些模块因版本、维护或系统限制不建议直接引入。
+
+### 扩展（可选深入）
+
+- 🔸 增加一张“轻量 APM SDK 最小架构图”。
+- 🔸 补充三个项目的 report 字段示例，统一到本章推荐的数据合同。
+- 🔸 对 GitHub README、issue、commit 活跃度做核对，并在正文中写出风险。
+- 🔸 增加与 Matrix、DoKit、BlockCanary 的关系说明。
+- 🔸 补一个从旧开源项目迁移到官方 SDK / 自研轻量 SDK 的步骤表。
+
+### 流水线加工要求
+
+- 对旧项目必须写维护状态和替代方案，不能只做功能介绍。
+- 每个设计取舍都要说明能带来什么数据、会付出什么成本。
+- 抽象成最小 SDK 时，字段和线程命名要和 01 节数据模型一致。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## 这些项目适合看设计取舍
 

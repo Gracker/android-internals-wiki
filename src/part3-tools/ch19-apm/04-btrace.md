@@ -2,7 +2,7 @@
 title: "btrace / RheaTrace"
 chapter: "19"
 section: "19.04"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -16,10 +16,55 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: official
     path: "https://ui.perfetto.dev/"
-pipeline_stage: drafted
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
+reviewed_date: "2026-04-24"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 ---
 
 # btrace / RheaTrace
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 btrace / RheaTrace 用来补方法级现场，解决 Perfetto 只有系统轨道时缺少业务函数名的问题。
+- 🔹 [采集流程] 展开构建插桩、设备端采集、buffer、导出、Perfetto UI 打开的完整路径；写清各阶段失败点。
+- 🔹 [模式对比] 比较 perfetto 模式和 simple 模式的输出、阅读方式、适用场景、数据丢失风险。
+- 🔹 [版本边界] 说明 3.0 版本、AGP、ART、Android 版本和 RheaTrace / btrace 名称关系；不确定处标注待核对来源。
+- 🔹 [采集参数] 解释采样间隔、buffer size、method include / exclude、trace 时长、目标进程、符号映射的影响。
+- 🔹 [Perfetto 读法] 写清线程轨道、slice、sched、CPU frequency、Binder、I/O、RenderThread 如何和业务方法一起看。
+- 🔹 [启动案例] 给启动慢分析模板，要求拆 Zygote、bindApplication、ContentProvider、Application、Activity、first draw。
+- 🔹 [滑动案例] 给列表滑动卡顿模板，要求结合 `doFrame`、RenderThread、onBind、diff、图片解码和后台线程。
+- 🔹 [误判边界] 说明采样 trace 看不到短函数、buffer 覆盖、插桩开销、CPU 争抢和 Binder 等待导致的误判。
+- 🔹 [工具关系] 区分 btrace、Perfetto SDK、androidx.tracing、simpleperf 和 Android Studio Profiler 的使用顺序。
+
+### 扩展（可选深入）
+
+- 🔸 增加一份采集命令或配置模板，标明哪些参数需要按设备性能调整。
+- 🔸 补一个 Perfetto UI 阅读清单，列出先看哪些轨道、再看哪些 slice。
+- 🔸 补一个“报告无法解释问题”的反例，引导读者回到系统调度、I/O 或 Binder 证据。
+- 🔸 对 bytedance/btrace upstream README、RheaTrace 文档和 AGP 适配状态做核对。
+- 🔸 增加与 Matrix Trace Canary 的差异表，避免两个章节内容重复。
+
+### 流水线加工要求
+
+- 所有案例必须包含“现象 -> 采集参数 -> trace 观察点 -> 判断边界 -> 下一步验证”。
+- 不要把方法耗时直接等同于根因，必须同时看调度和线程状态。
+- 代码或命令示例必须能说明字段含义，不能只展示空模板。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## btrace 用来补方法级现场
 

@@ -2,7 +2,7 @@
 title: "Jetpack Benchmark（Microbenchmark + Macrobenchmark）"
 chapter: "19"
 section: "19.14"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,52 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 Jetpack Benchmark 用来证明代码改动效果，承担可重复实验，不承担线上监控。
+- 🔹 [Microbenchmark] 展开适合测试的对象、JIT / warmup、measurement、Blackhole、state、避免测到日志或随机数。
+- 🔹 [Macrobenchmark] 展开端到端场景、启动、滚动、页面切换、UiAutomator、CompilationMode、StartupMode。
+- 🔹 [工程结构] 写 benchmark module、target app、instrumentation runner、Gradle 插件、依赖和构建变体。
+- 🔹 [最小示例] 提供 cold startup 和列表滑动两个 Macrobenchmark 示例，标注关键行。
+- 🔹 [指标解释] 说明 StartupTimingMetric、FrameTimingMetric、TraceSectionMetric、PowerMetric 等指标如何阅读。
+- 🔹 [测试条件] 写设备温度、电量、后台进程、网络、数据准备、编译模式、系统动画、重复次数。
+- 🔹 [CI 噪声] 给基线设备、阈值、历史趋势、重跑规则、失败判定和报告保存方式。
+- 🔹 [线上关系] 说明线上 APM 发现问题后如何转成 Benchmark 场景；Benchmark 结果如何反证修复。
+- 🔹 [Baseline Profiles] 写 Macrobenchmark 生成 / 验证 Baseline Profiles 的位置和注意事项。
+
+### 扩展（可选深入）
+
+- 🔸 增加 benchmark module 目录结构和 Gradle 配置示例。
+- 🔸 补一个 Microbenchmark 错误写法案例，说明为什么测错对象。
+- 🔸 补一份 CI 报告字段模板，包含设备、版本、metric、median、p95、variance。
+- 🔸 对 Android Developers Benchmark 文档、Gradle 插件版本和 API 状态做核对。
+- 🔸 增加与 Perfetto trace、JankStats、FrameMetrics 的结果互证方式。
+
+### 流水线加工要求
+
+- 每个 benchmark 示例都要写清被测对象、准备数据、循环方式、指标和失败条件。
+- 任何性能结论都必须绑定测试条件。
+- 不要把线上 P95 和实验室 median 混为同一种证据。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## Benchmark 用来证明改动效果
 

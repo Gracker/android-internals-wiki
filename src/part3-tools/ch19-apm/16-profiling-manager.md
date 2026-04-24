@@ -2,7 +2,7 @@
 title: "ProfilingManager"
 chapter: "19"
 section: "19.16"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -16,10 +16,52 @@ sources:
     path: "https://developer.android.com/reference/android/os/ProfilingManager"
   - type: official
     path: "https://developer.android.com/topic/performance/profiling-manager"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # ProfilingManager
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 ProfilingManager 把系统 profiling 能力以受控 API 暴露给 App，用于线上或灰度环境触发专项样本。
+- 🔹 [类型] 列出支持的 profiling 类型、输出文件、适用问题和系统版本要求；必须按官方 API 核对。
+- 🔹 [调用形态] 展开 request、parameters、callback、executor、result file、error code 的基本调用流程。
+- 🔹 [触发设计] 写 App-driven profiling 触发条件：慢启动、ANR 前兆、慢帧升高、内存异常、远程配置命中、用户反馈。
+- 🔹 [Android 16+] 核对系统触发能力和 API 变化；所有版本相关内容必须标注来源和适用 API level。
+- 🔹 [结果生命周期] 说明文件生成、可访问时间、复制、压缩、上传、删除、失败处理和磁盘配额。
+- 🔹 [四类边界] 按 CPU、heap、system trace、Java heap dump 等类型说明适用问题和不能回答的问题。
+- 🔹 [隐私] 覆盖 trace 文件、堆信息、线程名、路径、URL、符号、用户数据的裁剪和上传策略。
+- 🔹 [APM 集成] 设计 profiling sample 与 session、event、trace id、版本、页面、设备的关联字段。
+- 🔹 [工具关系] 和 Perfetto 手动采集、Android Studio Profiler、JankStats、FrameMetrics 的使用顺序做说明。
+
+### 扩展（可选深入）
+
+- 🔸 增加 ProfilingManager 调用代码示例，并标注权限、API level 和错误处理。
+- 🔸 补一张结果文件生命周期图。
+- 🔸 对 Android ProfilingManager API reference 做 L1 核对，特别是 Android 16+ 行为。
+- 🔸 补充线上触发的风控表：采样率、文件大小、Wi-Fi、充电、温度、低端机排除。
+- 🔸 增加与商业 APM profiling 能力的差异说明。
+
+### 流水线加工要求
+
+- ProfilingManager 章节必须以官方 API 为准，不确定的版本信息一律标注待核对。
+- 每种 profiling 类型都要写适用问题、输出物、开销和隐私风险。
+- 线上触发示例必须包含采样和上传限制。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## ProfilingManager 把系统 profiling 暴露给 App
 

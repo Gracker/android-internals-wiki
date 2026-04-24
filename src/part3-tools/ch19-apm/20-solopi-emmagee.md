@@ -2,7 +2,7 @@
 title: "SoloPi 与 Emmagee"
 chapter: "19"
 section: "19.20"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -16,10 +16,52 @@ sources:
     path: "https://github.com/alipay/SoloPi"
   - type: blog
     path: "https://github.com/NetEase/Emmagee"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # SoloPi 与 Emmagee
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 SoloPi 和 Emmagee 都偏测试现场，适合 QA 和实验室辅助，不适合作为线上 APM 主方案。
+- 🔹 [SoloPi] 展开自动化录制回放、性能采集、启动耗时、设备管理、报告导出和多人协作场景。
+- 🔹 [Emmagee] 说明它作为早期单 App 性能悬浮窗的历史价值，写清维护状态和现代替代方案。
+- 🔹 [对比] 用表格比较采集指标、自动化能力、可维护性、权限要求、报告产物和适用阶段。
+- 🔹 [启动测试] 写 SoloPi 测启动耗时的口径：冷启动、热启动、清数据、清进程、首帧或页面可交互。
+- 🔹 [录制回放] 说明脚本稳定性、控件变化、网络数据、账号状态、动画等待和设备差异带来的噪声。
+- 🔹 [权限检查] 列无障碍、悬浮窗、adb、录屏、存储、后台运行等权限及失败表现。
+- 🔹 [QA 工具组] 说明 SoloPi、PerfDog、Macrobenchmark、adb、日志平台各自负责什么。
+- 🔹 [使用建议] 给回归测试、专项测试、兼容性测试三种工作流。
+- 🔹 [边界] 写清这些工具只能帮助复现和记录，根因分析仍需 Perfetto、Profiler、APM 样本。
+
+### 扩展（可选深入）
+
+- 🔸 增加 SoloPi 启动测试步骤模板和报告字段。
+- 🔸 补一个录制回放不稳定的案例，说明如何改成更稳的等待条件。
+- 🔸 对 alipay/SoloPi、NetEase/Emmagee README、维护状态和系统适配做核对。
+- 🔸 增加 QA 工具组流程图，从复现、采集、报告到专项诊断。
+- 🔸 补充测试账号、隐私数据和录屏素材的管理要求。
+
+### 流水线加工要求
+
+- 任何测试结论都要写明操作脚本和设备条件。
+- 历史工具必须写维护风险和替代工具。
+- 自动化能力要和性能采集分开写，避免把脚本成功率当性能结论。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## SoloPi 和 Emmagee 都偏测试现场
 

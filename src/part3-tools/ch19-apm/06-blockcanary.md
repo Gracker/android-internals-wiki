@@ -2,7 +2,7 @@
 title: "BlockCanary"
 chapter: "19"
 section: "19.06"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,52 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # BlockCanary
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 BlockCanary 更适合作为 Looper 卡顿监控原理样本；新项目应优先考虑 JankStats、FrameMetrics 或自研轻量实现。
+- 🔹 [Looper 原理] 展开 `Printer`、message dispatch、阈值计时、卡顿回调；补一段最小伪代码。
+- 🔹 [抓栈线程] 说明采样线程与主线程的关系、采样间隔、栈深度、线程安全和漏采风险。
+- 🔹 [配置口径] 写清 block threshold、qualifier、log path、display activity、network type 等配置如何影响误报。
+- 🔹 [报告聚合] 设计 report 字段，包括 message、duration、thread stack、process、scene、foreground、device、version。
+- 🔹 [慢帧错位] 区分一次 Looper message 卡住和多帧小耗时累计；说明为什么它不能替代帧级指标。
+- 🔹 [对比工具] 和 JankStats、FrameMetrics、Perfetto、ANR traces 做分工表。
+- 🔹 [使用建议] 写清它适合 Debug / QA / 原理学习，不建议直接作为现代线上 APM 主方案。
+- 🔹 [自研改进] 覆盖远程开关、采样、report 裁剪、页面上下文、版本聚合、低端机开销和上传策略。
+- 🔹 [误判处理] 说明调试器暂停、GC、系统负载、Binder 等待、I/O 等因素怎样影响报告。
+
+### 扩展（可选深入）
+
+- 🔸 增加 Looper message 生命周期图，标出开始计时、抓栈、结束计时和上报时机。
+- 🔸 补一个“报告显示主线程慢但根因在后台线程争抢 CPU”的案例。
+- 🔸 对 BlockCanary / AndroidPerformanceMonitor upstream 状态做核对，明确维护风险。
+- 🔸 增加从 BlockCanary 迁移到 JankStats / FrameMetrics 的建议表。
+- 🔸 补充 ANR 与 block report 的关系，说明 5s 输入超时和自定义阈值的区别。
+
+### 流水线加工要求
+
+- 每个阈值都要说明适用场景，不要写成固定标准。
+- 所有报告字段必须说明用途，避免生成只有 stack 的报告样本。
+- 写到“卡顿原因”时必须区分主线程执行、等待、调度和渲染阶段。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## BlockCanary 更适合当原理样本
 

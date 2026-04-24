@@ -2,7 +2,7 @@
 title: "Tencent Matrix"
 chapter: "19"
 section: "19.02"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,55 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Tencent/matrix"
-pipeline_stage: drafted
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
+reviewed_date: "2026-04-24"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 ---
 
 # Tencent Matrix
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 Matrix 是客户端采集框架，不是完整 SaaS；写清它需要接入方补齐上传、聚合、告警和查询能力。
+- 🔹 [模块地图] 按 Trace Canary、IO Canary、Resource Canary、SQLite Lint、Battery Canary、MemGuard / Memory Hook 拆功能、数据来源和适用问题。
+- 🔹 [构建接入] 展开 Gradle 插件、初始化配置、进程过滤、远程开关、采样率；必须写 AGP 8.x 后 Transform 路径的兼容风险。
+- 🔹 [Trace Canary] 说明字节码插桩、方法 id、调用栈、Looper 消息、FPS / startup report 的关系；补一份最小配置或伪代码。
+- 🔹 [报告入库] 设计 Matrix report schema，包含 issue type、process、scene、thread、cost、stack、method map、sample id、version。
+- 🔹 [IO Canary] 解释 native I/O hook 能补哪些文件信息；至少覆盖主线程 I/O、小 buffer、重复读、Closeable 泄漏和 SQLite 访问。
+- 🔹 [Resource Canary] 区分 Activity 泄漏、Bitmap 重复和 LeakCanary 本地诊断；说明线上 dump 成本和误报过滤。
+- 🔹 [Battery / native] 给 Battery Canary、MemGuard、pthread hook 的使用前提和风险边界，避免写成默认打开的功能清单。
+- 🔹 [联合诊断] 给出 Matrix report 跳到 Perfetto / heap dump / 日志的操作路径，说明二者证据如何互相校验。
+- 🔹 [上线检查] 覆盖多进程、mapping、method map、磁盘配额、上传失败、隐私脱敏、开关回滚和低端机开销。
+
+### 扩展（可选深入）
+
+- 🔸 增加 Matrix 客户端到服务端的事件流图，标出 plugin、issue、report callback、uploader、backend。
+- 🔸 补一个 Trace Canary 启动慢或慢函数案例，要求有报告字段、判断过程和下一步 Perfetto 验证。
+- 🔸 补一个 IO Canary 案例，要求从文件路径、线程名、调用栈推导修复方向。
+- 🔸 对 Matrix upstream README、wiki、AGP 兼容资料做核对；不确定处标注版本范围。
+- 🔸 增加与 KOOM、JankStats、FrameMetrics、btrace 的分工表，避免章节之间重复。
+
+### 流水线加工要求
+
+- 所有 “Matrix 能做什么” 都要跟 “数据从哪里来、报告怎么读、什么情况下不可信” 放在一起写。
+- 涉及 hook、插桩、native 模块时必须写开销和回滚策略。
+- 示例里的字段名要稳定，便于后续服务端章节复用。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## Matrix 适合做客户端侧的监控框架
 
