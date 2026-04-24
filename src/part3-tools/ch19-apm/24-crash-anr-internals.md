@@ -10,17 +10,22 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
   - "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)"
   - "https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md"
   - "https://developer.android.com/ndk/guides/gwp-asan"
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-25T02:02:05+08:00"
+
 ---
 
 # 崩溃与 ANR 捕获机制

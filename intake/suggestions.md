@@ -936,3 +936,27 @@
 - **建议**: 在 2026 年的背景下，简要提及 `system/core` 和 `frameworks/native` 中开始出现 Rust 代码（`.rs` 文件），提醒读者遇到此类代码时的阅读预期。
 - **来源**: 外部AI review (2026-04-25-16-15.7-external-review.md)
 
+
+## [Task9 Deep Review] 15.8 Android 性能问题实证：真实世界的分类与代码模式 — 2026-04-25
+- **类型**：版本差异
+- **位置**：适用范围 Android 8-17 / 代码模式章节
+- **问题**：章节覆盖到 Android 17，但未提示 Android 14+ cached-app freezer 对后台进程执行、同步 Binder 事务和解冻后任务堆积的影响。该机制不一定属于论文原始 taxonomy，但会影响现代版本中“启动/切换慢”的归因。
+- **建议**：补一个版本边界小节：Android 14+ cached app freezer 对后台工作、同步 Binder 事务、解冻后响应性毛刺的影响；明确这是 Android 版本机制补充，不写成论文原始结论。
+
+## [Task9 Deep Review] 19.23 网络 APM 底层捕获原理 — 2026-04-25
+- **类型**：知识盲区
+- **位置**：L205-L249 ASM openConnection 示例
+- **问题**：示例只覆盖 URL.openConnection()，未提醒 openConnection(Proxy) 与 openStream() 入口。实战中代理、SDK 包装层和旧代码会使用这些重载/快捷方法。
+- **建议**：补充需要覆盖的调用点清单：openConnection()、openConnection(Proxy)、openStream()，并说明只替换调用点不等于能看到 Native 网络库内部请求。
+
+## [Task9 Deep Review] 19.23 网络 APM 底层捕获原理 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L326 HTTP/2 多路复用说明
+- **问题**：已说明 HTTP/2 阶段耗时不再与 socket 事件一一对应，但缺少 OkHttp 事件口径：复用连接时后续请求通常不再触发 dnsStart/connectStart，主要从 connectionAcquired 后进入请求发送阶段。
+- **建议**：补一个 EventListener 观察点表，解释“看板里大量请求 DNS/TCP 为空”是连接复用/HTTP2 multiplexing 的正常现象。
+
+## [Task9 Deep Review] 19.24 崩溃与 ANR 捕获机制 — 2026-04-25
+- **类型**：知识盲区
+- **位置**：L232 VMA 耗尽
+- **问题**：VMA/VmSize 被与 FD、线程并列为通用监控项，但未区分 32 位与 64 位。32 位进程地址空间紧张，VMA/映射碎片更容易变成真实故障；64 位进程地址空间大，监控重点更多是映射数量、RSS/PSS 与异常 mmap 泄漏。
+- **建议**：补充 32/64 位差异：32 位强调地址空间上限和碎片，64 位强调极端映射泄漏、maps 行数、RSS/PSS 与图形/ashmem 资源。

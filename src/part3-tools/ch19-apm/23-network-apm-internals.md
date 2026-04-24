@@ -10,17 +10,22 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 sources:
   - "https://square.github.io/okhttp/features/events/"
   - "https://square.github.io/okhttp/features/interceptors/"
   - "https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory"
   - "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback"
   - "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo"
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-25T02:02:05+08:00"
+
 ---
 
 # 网络 APM 底层捕获原理

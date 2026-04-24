@@ -4277,3 +4277,40 @@ Mmap 头部原子更新顺序
 - **重要程度**: 中
 - **建议研究方向**: Matrix 和 KOOM 都在用的存储层优化原理。
 - **来源**: 外部AI review (2026-04-25-00-ch19.README-external-review.md)
+
+
+## [2026-04-25] 15.8 Android 性能问题实证：真实世界的分类与代码模式 — 知识盲区
+
+### 盲区描述
+章节用论文 taxonomy 校准性能问题优先级，但没有单独覆盖主线程同步 Binder 调用。该问题会把 system_server 或远端进程的锁竞争、调度延迟直接传导到 App 主线程，是响应性问题和 ANR 排查中的高频根因。external-review 已命中该风险。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查 AOSP Binder 调用与 system_server 锁竞争在 Perfetto 中的观察点：binder transaction、binder reply、主线程 ioctl(BINDER_WRITE_READ)。
+- 整理 PackageManager/ActivityManager/ContentResolver 等常见主线程同步 Binder 调用案例。
+- 给出 Code Review 与 trace 双重确认方法，避免把所有 IPC 都泛化成同一类问题。
+
+### 关联章节
+- 15.8
+- 9.1
+- 13.8
+
+## [2026-04-25] 19.24 崩溃与 ANR 捕获机制 — 知识盲区
+
+### 盲区描述
+章节写到 SIGQUIT / Signal Catcher Hook，但没有展开 ART SignalCatcher 使用 sigwait 消费 SIGQUIT 的机制，也没有说明普通 sigaction handler 为什么不能稳定截获 ANR。external-review 已命中该风险。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 阅读 AOSP `art/runtime/signal_catcher.cc` 与 libsigchain 相关逻辑。
+- 梳理 sigwait、sigaction、线程信号掩码三者的分发关系。
+- 补一份量产 App、厂商 ROM、root/test 环境三类 ANR 捕获方案边界对照。
+
+### 关联章节
+- 19.24
+- 9.1
+- 9.3
