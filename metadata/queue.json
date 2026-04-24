@@ -170,55 +170,6 @@
     "resolution": "fixed-in-chapter"
   },
   {
-    "section": "19.05",
-    "priority": "P1",
-    "reason": "版本兼容性未明确说明，Android 14+ 需要AndroidX，AGP 8.0+ 兼容性未声明",
-    "type": "tech-review",
-    "status": "pending"
-  },
-  {
-    "section": "19.05",
-    "priority": "P1",
-    "reason": "文档过时，未提及 LeakCanary 2.13+ 基于 ObjectWatcher 的新架构",
-    "type": "tech-review",
-    "status": "pending"
-  },
-  {
-    "section": "19.06",
-    "priority": "P1",
-    "reason": "维护状态未充分告知，BlockCanary 已停止维护",
-    "type": "tech-review",
-    "status": "pending"
-  },
-  {
-    "section": "19.06",
-    "priority": "P1",
-    "reason": "AGP 兼容性过时，声称支持 Android 8-17 但 compileSdkVersion=28",
-    "type": "tech-review",
-    "status": "pending"
-  },
-  {
-    "section": "19.07",
-    "priority": "P1",
-    "reason": "AGP 兼容性未声明，未说明 AGP 8.0+ 的兼容性限制",
-    "type": "tech-review",
-    "status": "pending"
-  },
-  {
-    "section": "19.08",
-    "priority": "P1",
-    "reason": "版本兼容性未明确，需要 Gradle 8.2+ 与 Android 17 声明矛盾",
-    "type": "tech-review",
-    "status": "pending"
-  },
-  {
-    "section": "19.08",
-    "priority": "P1",
-    "reason": "免费服务终止未标注，仍声称提供免费性能监控服务",
-    "type": "tech-review",
-    "status": "pending"
-  },
-  {
     "section": "19.10",
     "section_title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）",
     "priority": 90,
@@ -663,6 +614,110 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-24T20:44:37+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.05",
+    "section_title": "LeakCanary",
+    "priority": 95,
+    "reason": "[Deep Tech Review] retained-object 判定链被写成“对象存活就立即 dump”，同时 debug/release artifact 边界缺失，会误导接入",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L75-L84（它怎样判断对象被保留）",
+        "detail": "正文把流程写成“对象持续存活 -> 触发 heap dump”。LeakCanary 官方文档的真实链路是：ObjectWatcher 用 weak reference 观察对象；5 秒后再次检查并触发 GC；对象仍存活时才算 retained；只有 retained object 数达到阈值时才 dump heap。默认阈值是 app 可见时 5 个、不可见时 1 个。当前写法会误导读者把 retained check 和 dump trigger 当成同一步。",
+        "suggestion": "把机制改成“生命周期回调 -> weak reference 观察 -> 5s + GC -> retained object -> 前后台阈值判断 -> heap dump -> Shark 分析”，并把前后台阈值写进正文。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L104-L132（Release 中使用要很克制 / 默认观察对象）",
+        "detail": "章节直接把 Release 使用、默认观察对象和本地完整分析写在同一层，但 LeakCanary 当前文档区分 debug 用的 full artifact、Release 可单独接入的 lightweight object watcher，以及实验性的 release analysis。若不补 artifact 边界，读者容易把 debug 版能力误搬到正式包。",
+        "suggestion": "补一张 artifact 矩阵：`leakcanary-android`（debug 完整分析）、`leakcanary-object-watcher-android`（release retained-object 观察）、实验性 release analysis；同时说明 Fragment / View / ViewModel 自动观察属于 2.x AppWatcher 体系。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T21:55:34+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.06",
+    "section_title": "BlockCanary",
+    "priority": 95,
+    "reason": "[Deep Tech Review] BlockCanary 被写成 Android 8-17 可用方案，但 upstream 构建基线停在 AGP 2.2.2 / compileSdk 23 / targetSdk 22",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter `applicable_versions`（L8）+ L67-L113",
+        "detail": "章节 frontmatter 把本节写成“Android 8 (API 26) - Android 17 (API 37)”通用方案，但 upstream `build.gradle` 仍使用 AGP 2.2.2，库模块 `compileSdkVersion` 23、`targetSdkVersion` 22，README 也还是 `compile` / `debugCompile` 依赖写法。这不是“文档没更新”这么轻，而是官方公开构建基线就停在早期 Android 工具链。",
+        "suggestion": "把本节定位改成“历史 Looper block 方案样本”，frontmatter 改成“历史项目 / 现代版本需单独验证”，并补一张“upstream 构建基线 vs 现代 AGP/targetSdk”对照表。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L75-L75 + L115-L141（setMessageLogging 机制）",
+        "detail": "README 明确提醒“as this library uses getMainLooper().setMessageLogging(), please check if you set it in your app”。章节解释了 `setMessageLogging()` 原理，却没有交代它是单槽位监听：如果应用或别的 SDK 也调用该 API，双方会互相覆盖，导致 BlockCanary 或现有 Looper logger 失效。",
+        "suggestion": "补“message logging 冲突”小节，说明单槽位风险、链式转发策略，以及接入前要先盘点主线程 Printer 的占用情况。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T21:55:34+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.07",
+    "section_title": "DoraemonKit / DoKit",
+    "priority": 85,
+    "reason": "[Deep Tech Review] DoKit 的版本矩阵和平台网络上报边界没写，Debug 工具的合规与兼容风险仍不清楚",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter `applicable_versions`（L8）",
+        "detail": "章节把 DoKit 统一写成“Android 8 - Android 17”，但官方 Android 接入文档只明确列出 3.5.0 / 3.5.0.1 的 artifact 方案、Gradle 6.8 分界和 AGP 最低 3.3.0。正文没有给 Gradle / AGP / AndroidX 的版本矩阵，也没有说明 AGP 8.x、targetSdk 35+ 是否已验证。",
+        "suggestion": "把元数据改成“版本需按 artifact + Gradle/AGP 单独验证”，并补“DoKit 版本 / groupId / AndroidX / Gradle / AGP / release no-op”矩阵。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L104-L169（接入建议 / Release 隔离清单）",
+        "detail": "章节强调 DoKit 只适合 Debug / QA，但没有纳入 upstream README 的“使用提醒”：SDK 会与 dokit.cn 平台协作，产生集成统计、kit 使用统计和健康体检等网络数据。当前 Release 隔离清单只写了权限、Mock、菜单入口，没有把默认网络出站和数据合规纳入治理面。",
+        "suggestion": "在安全边界里补一段“平台网络上报”说明，列清上报类型、默认行为、关闭/隔离策略，以及内部测试包上线前的网络审查项。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T21:55:34+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.08",
+    "section_title": "ArgusAPM",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ArgusAPM 被误标成 Android 8-17 可用方案，但公开 sample 构建仍停在 compileSdk/targetSdk 27 + Java 7",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter `applicable_versions`（L8）+ L98-L107",
+        "detail": "章节 frontmatter 把 ArgusAPM 写成“Android 8 (API 26) - Android 17 (API 37)”方案，但官方 sample `build.gradle` 仍是 `compileSdkVersion 27`、`targetSdkVersion 27`、`JavaVersion.VERSION_1_7`、`okhttp:3.10.0`。这说明公开接入基线停在早期 Android / AGP 工具链，不能把它当成现代 Android 8-17 通用方案。",
+        "suggestion": "把适用范围改成“历史 APM 架构参考 / 存量项目迁移对象”，并单列“公开 sample 工具链基线”说明现代 Android 12+/14+/16KB page size 需要单独验证。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L98-L107 + L172-L183（新项目使用要谨慎 / 存量项目迁移建议）",
+        "detail": "正文说“先替换构建链风险最高的 Gradle / AOP 插件”，判断方向对，但没有把 sample 的 compileSdk 27 / targetSdk 27 / Java 7 / 旧 OkHttp 这些证据落进迁移顺序。Task2b 看到“高风险”四个字，仍不知道该先收敛哪条依赖链。",
+        "suggestion": "在迁移建议前补一张“公开 sample 工具链 → 对应现代风险 → 建议替换顺序”表，例如先处理 Gradle 插件与字节码织入，再处理网络模块，再处理历史服务端字段兼容。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T21:55:34+08:00",
     "status": "pending"
   }
 ]

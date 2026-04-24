@@ -522,3 +522,9 @@
 - **位置**：frontmatter `sources`（L14-L18）与 L105-L111
 - **问题**：章节正文对安兔兔、PCMark、Vellamo 都给了方法论判断，但 frontmatter 只挂了 Geekbench 和 3DMark 两个来源。尤其 PCMark 的 Work 3.0 / Storage 2.0 与旧版本不可比这一边界，正文没有落到工具来源。
 - **建议**：补齐 PCMark、安兔兔、Vellamo 的一手来源或应用商店说明，并在 PCMark 段落明确写出 Work 3.0 / Storage 2.0 与旧版分数不可比。
+
+## [Task9 Deep Review] 19.07 DoraemonKit / DoKit — 2026-04-24
+- **类型**：数据缺失
+- **位置**：L132-L146（性能面板的数据可信度）
+- **问题**：正文提醒了 DoKit 只能做现场初筛，但没有把 FPS / CPU / 内存 / 启动 / 流量这些面板数据各自的采集入口、刷新频率和误差边界落成表格。读者仍可能把悬浮窗数值直接拿去做跨机型、跨构建比较。
+- **建议**：补一张“指标 → 采集入口 → 刷新频率 → 易受哪些干扰 → 必须用什么工具复核”的对照表，把 JankStats / Perfetto / Profiler / Macrobenchmark 的复核边界写清。
