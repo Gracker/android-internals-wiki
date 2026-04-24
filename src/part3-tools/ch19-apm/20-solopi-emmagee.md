@@ -5,9 +5,9 @@ section: '19.20'
 status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-15 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
 last_verified: '2026-04-24'
-last_verified_against: alipay/SoloPi and NetEase/Emmagee GitHub READMEs
+last_verified_against: SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1
 confidence: medium
 tags:
 - apm
@@ -19,17 +19,25 @@ tags:
 related_chapters:
 - '19.0'
 sources:
-- type: blog
+- type: official
   path: https://github.com/alipay/SoloPi
-- type: blog
+- type: official
+  path: https://github.com/alipay/SoloPi/releases/tag/v0.12.0
+- type: official
   path: https://github.com/NetEase/Emmagee
-pipeline_stage: task2b_pending
-task6_state: reviewed
+- type: official
+  path: https://github.com/NetEase/Emmagee/releases/tag/V2.5.1
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: '2026-04-24T21:14:45+08:00'
+repaired_date: '2026-04-24'
+repaired_by: openclaw-task2b
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
@@ -86,52 +94,79 @@ SoloPi 更新、更偏自动化测试工具；Emmagee 更老,重点是单 App �
 
 ## SoloPi：自动化加性能采集
 
-SoloPi 是支付宝开源的无线化、非侵入式 Android 自动化工具。README 中列出三项主要能力:录制回放、性能测试、一机多控,并提到新增鸿蒙分支。
+SoloPi 是支付宝开源的无线化、非侵入式 Android 自动化工具。README 公开的主能力是录制回放、性能测试、一机多控；同一页也写明开源部分当前只包含录制回放和性能测试，一机多控暂未完整开源。
 
-性能工具部分可以记录待测应用指标,支持悬浮窗实时观察,也可以录制性能数据后查看图表。它还支持 CPU、内存、网络环境限制,用来复现低性能或弱网场景。启动耗时计算工具可以通过两次点击获取更贴近用户感受的启动耗时,并支持广播调用,便于和 UI 自动化测试结合。
+它适合 QA 和实验室做三类事情：
 
-这类能力很适合 QA 流程:
+- 固定一条业务操作路径。
+- 在多台设备上复现同一套步骤。
+- 把启动耗时、资源指标和现场图表放在同一套工具里。
 
-- 录制一条关键业务路径。
-- 在不同机型上回放。
-- 同时记录性能指标。
-- 输出可对比的图表或报告。
+## SoloPi 的现代兼容性边界
 
-它的重点是把测试操作和性能数据一起放进设备侧工具里。
+SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2，README 写明 Android Studio 4.0、Gradle 6.1.1、TargetApi 29、MinimumApi 18；GitHub latest release 仍是 v0.12.0（2022-05）。这套基线直接影响 Android 12 之后的验收方式。
+
+| 项目 | 上游公开基线 | 对测试的影响 |
+|---|---|---|
+| AGP | 4.0.2 | 构建链停留在 Android Studio 4.0 时代，后续平台行为变化没有在仓库里公开成新基线 |
+| `compileSdkVersion` / `targetSdkVersion` | 29 | Android 12+ 的无障碍、悬浮窗、前台服务、后台弹窗、无线调试行为要逐机验证 |
+| `minSdkVersion` | 18 | 老设备仍可安装，现代兼容性不等于已验证 |
+| latest release | v0.12.0（2022-05） | 近年平台改动后的兼容结果表没有上游发布说明 |
+
+可以按下面的节奏判断：
+
+| 平台段 | 当前判断 | 使用方式 |
+|---|---|---|
+| Android 4.3 - 11 | 与公开构建基线更接近 | 可作为主要试用区间，仍要检查 ROM 权限差异 |
+| Android 12 - 15 | 需要专项兼容性回归 | 先验收录制、回放、悬浮窗、无障碍、无线 ADB，再决定是否纳入日常工具链 |
+
+性能工具部分可以记录待测应用指标，支持悬浮窗实时观察，也可以录制性能数据后看图表。启动耗时工具支持双点标记和广播调用，适合和 UI 自动化脚本配合。它的价值在于把操作路径和现场数据放到同一台设备上完成。
 
 ## Emmagee：早期单 App 性能悬浮窗
 
-Emmagee 是网易早期开源的 Android 性能测试工具。README 描述它可以监控指定 App 的 CPU、内存、网络流量、电池电流和状态、启动时间,并能在悬浮窗里显示实时进程状态,输出 CSV 报告。
+Emmagee 是网易早期开源的 Android 性能测试工具。README 写明它可监控指定 App 的 CPU、内存、流量、电池电流与状态、启动时间，并输出悬浮窗与 CSV 报告。
 
-它的局限也写在 README 里:Android 5.0 以上 `getRunningTasks()` 和 `getRunningAppProcesses()` 行为受限;Android 7.0 之后 `/proc` 访问被限制,目标进程 pid 获取也受影响。最新 release 停在 2017 年。
+版本边界要按 README 原文写：Android 5.0 以上 `getRunningTasks()` 和 `getRunningAppProcesses()` 行为受限，拿不到 TopActivity；Android 7.0 上 `/proc` 访问和 `TOP` 命令拿 pid 都受限，README 直接写出“7.0 can not be supported”。这一条比“精度下降”更强，含义就是官方已经把 Android 7.0 列为不支持平台。
 
-所以 Emmagee 更适合作为历史工具和思路参考。新 Android 版本上直接使用,很多指标可能失效或不准。
+所以 Emmagee 适合放在历史工具和旧流程兼容区，不适合写成 Android 8-17 的现代主方案。现代项目如果还保留它，先看目标 ROM 上哪些指标还能拿到，再决定是否只保留 CSV 导出或启动时间等少数字段。
 
 ## 两者对比
 
-| 工具 | 适合场景 | 主要边界 |
-|---|---|---|
-| SoloPi | UI 自动化、录制回放、性能测试、弱网和压力复现 | 依赖设备权限和 ADB 环境,指标仍需与 Perfetto 交叉验证 |
-| Emmagee | 老设备单 App 性能观察、CSV 报告、悬浮窗监控 | Android 7.0+ 受系统限制明显,维护状态较旧 |
+| 工具 | 维护状态 | 采集 / 自动化能力 | 报告产物 | 版本边界 | 适合阶段 |
+|---|---|---|---|---|---|
+| SoloPi | latest release v0.12.0（2022-05），仓库基线 targetSdk 29 | 录制回放、性能指标、启动耗时、弱网 / 压力场景；一机多控在 README 中展示，但开源部分暂未完整放出 | 设备侧图表、操作回放、测试记录 | minSdk 18；Android 12-15 需专项验证 | QA 回归、专项测试、兼容性测试 |
+| Emmagee | latest release V2.5.1（2017-08），历史维护状态 | 单 App CPU / 内存 / 流量 / 电流 / 启动时间悬浮窗与 CSV | 悬浮窗、CSV | README 声明 Android 7.0 起不支持 | 历史报告对照、旧设备存量流程 |
 
-测试现场工具的优势是操作成本低。它们的问题是指标来源常受系统限制,尤其是 CPU、进程、top activity、电流等数据,不同 Android 版本和厂商 ROM 下差异很大。
+测试现场工具的优势是操作成本低。它们的局限是指标来源常受系统限制，尤其是 CPU、进程、TopActivity、电流等数据，不同 Android 版本和厂商 ROM 下差异很大。
 
 ## 使用建议
 
-SoloPi 更适合放进测试团队工具链,尤其是需要录制回放、弱网、启动耗时和多机回归时。它产出的性能数据可以作为回归入口,但重大结论要用 Perfetto、Profiler 或专用 Benchmark 复核。
+按工作流分配更稳妥：
 
-Emmagee 不建议作为现代项目主工具。若存量流程仍在用,要先确认目标 Android 版本上每个指标是否仍然可信。对于 Android 8 及以上设备,很多老式进程采样方法已经不适合做严肃性能判断。
+- 回归测试：用 SoloPi 固定操作路径，产出设备侧报告；关键回归再用 PerfDog 或 Macrobenchmark 复核。
+- 专项测试：把启动、弱网、资源压力、录制回放拆开跑，性能采样以 Perfetto、PerfDog 或系统 trace 为准。
+- 兼容性测试：先做权限与脚本稳定性验收，再批量回放；Android 12-15 先跑一轮工具兼容性清单。
+
+Emmagee 只建议留在旧设备或历史报告对照流程里，不再承担现代 Android 主力测试入口。
 
 ## SoloPi 的启动耗时测试
 
-SoloPi 的启动耗时工具适合 QA 快速测"用户感知启动"。它通常通过人工或广播标记开始和结束点,得到一次操作路径下的启动耗时。
+SoloPi 的启动耗时工具适合 QA 快速测用户感知启动。要让数据能和 Macrobenchmark、`am start -W` 或线上启动指标对读，记录模板要固定。
 
-需要重点说明：
+| 必填字段 | 允许值 / 示例 | 说明 |
+|---|---|---|
+| 测试类型 | 冷启动 / 热启动 | 先区分是否走冷进程 |
+| 清数据 | 是 / 否 | 影响首启路径和缓存 |
+| 清进程 | 是 / 否 | 决定是否为真正冷启动 |
+| 起点 | 点击桌面图标 / `adb shell am start` / deeplink | 起点不同，不能横比 |
+| 终点 | 首帧 / 首屏数据可见 / 页面可交互 | 终点口径要固定 |
+| 触发方式 | 人工双点 / 广播触发 | 人工触发要写界面状态 |
+| 设备条件 | 机型、ROM、版本、电量、温度 | 这些条件会影响结果 |
+| 备注 | 登录态、弱网、预拉起、动画设置 | 用来解释异常值 |
 
-- 起点要固定:点击桌面图标、adb 启动、从其他 App 跳转,口径不同。
-- 终点要固定:首帧、首屏数据可见、可交互,口径不同。
+同一轮测试至少固定一组组合。例如“冷启动 + 清数据 + 清进程 + 点击桌面图标 + 页面可交互 + 广播触发”。组合变了，数字就要分组存档，不和上一组混算。
 
-如果终点由测试人员手动触发标记，报告里要写明"触发时看到的界面状态"。否则同一个数值无法和 Macrobenchmark、`am start -W` 或线上启动指标比较。
+人工双点适合现场排查；需要稳定回归时，优先使用广播或脚本触发，减少人工反应时间带来的波动。
 
 ## 录制回放的性能陷阱
 
@@ -171,11 +206,15 @@ SoloPi 负责把操作路径固定,PerfDog 负责外部指标,Perfetto 负责根
 
 ## 设备权限检查
 
-使用 SoloPi 前要检查设备权限:
+使用 SoloPi 前要把权限和失败表现一起验收：
 
-- USB 调试和无线调试是否稳定。
-- 厂商 ROM 是否限制后台弹窗、辅助功能、悬浮窗。
-- 输入法、安全键盘、金融保护模式是否影响录制回放。
-- 目标 App 是否禁止截图、录屏或辅助功能。
+| 权限 / 条件 | 失败表现 |
+|---|---|
+| USB 调试 / 无线 ADB | 设备断连，回放中断，启动按钮无法触发 |
+| 无障碍 | 录制能开始，回放点击落空，找不到控件 |
+| 悬浮窗 | 实时指标窗不显示，性能录制结果为空 |
+| 后台弹窗 / 后台运行 | 切后台后脚本被系统杀掉，长流程回放中断 |
+| 录屏 / 截图 | 报告缺少视频或截图证据 |
+| 安全输入法 / 金融保护模式 | 密码框无法输入，支付页步骤失败 |
 
-这些限制不解决,测试失败很容易被误判成 App 性能问题。
+这些前置条件没过时，测试失败很容易被误判成 App 性能问题。

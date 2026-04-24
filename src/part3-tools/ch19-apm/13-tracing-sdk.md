@@ -8,7 +8,7 @@
   "drafted_by": "codex",
   "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
   "last_verified": "2026-04-24",
-  "last_verified_against": "Android tracing docs / androidx.tracing reference",
+  "last_verified_against": "Android tracing docs / androidx.tracing Trace reference / custom events docs",
   "confidence": "medium",
   "tags": [
     "apm"
@@ -26,17 +26,21 @@
       "path": "https://developer.android.com/reference/androidx/tracing/package-summary"
     }
   ],
-  "pipeline_stage": "task2b_pending",
-  "task6_state": "reviewed",
-  "task9_state": "reviewed",
-  "task2b_state": "pending",
+  "pipeline_stage": "task6_pending",
+  "task6_state": "revisiting",
+  "task9_state": "pending",
+  "task2b_state": "fixed",
   "reviewed_by": "openclaw-task6",
   "reviewed_date": "2026-04-24",
   "task6_result": "pass-light-edit",
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-04-24",
   "task9_reviewed_by": "openclaw-task9",
-  "last_task9_at": "2026-04-24T19:59:52+08:00"
+  "last_task9_at": "2026-04-24T19:59:52+08:00",
+  "task2b_result": "fixed",
+  "last_task2b_at": "2026-04-24T21:14:45+08:00",
+  "repaired_date": "2026-04-24",
+  "repaired_by": "openclaw-task2b"
 }
 ---
 
@@ -145,14 +149,22 @@ trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词�
 
 ## 线上和线下的边界
 
-trace 标注代码可以留在 Release 包里，但是否被采集取决于系统 trace 会话。正常运行时，标注本身应尽量低成本；录制 Perfetto 时才会在文件里出现。
+trace 标注代码可以留在 Release 包里，但能不能在 Perfetto 里看到自定义 slice，要按平台版本判断。
 
-仍然要注意两点：
+| 平台 | 默认可见性 | 额外处理 |
+|---|---|---|
+| API 24-28 | 只有 debuggable 进程默认能记录 app trace | 非 debuggable 进程要在启动早期调用 `Trace.forceEnableAppTracing()` |
+| API 29-30 | debuggable 和 profileable 进程默认可见 | 非 debuggable 且未声明 `profileable` 的进程，仍要调用 `Trace.forceEnableAppTracing()` |
+| API 31+ | app tracing 在所有应用里默认开启 | `Trace.forceEnableAppTracing()` 在这一段没有实际效果 |
+
+AndroidX `Trace.forceEnableAppTracing()` 的文档说明了两点：它用于在 non-debuggable process 中启用 app tracing；从 Android 12 开始，应用代码写入的 custom trace 在所有应用里都默认开启。用正式包抓性能数据时，优先使用 profileable 或接近发布态的构建，避免把 debuggable 包的调试开销带进结论。
+
+还有两条约束：
 
 - 热路径上不要创建复杂字符串作为 trace 名称。
 - 不要在 trace 名称里写用户数据、业务密钥或完整请求信息。
 
-Tracing SDK 的收益来自长期积累。每个性能敏感模块都留下少量稳定 slice，后面任何人抓到 Perfetto，都能更快把系统事件和业务阶段对应起来。
+Tracing SDK 的收益来自长期积累。每个性能敏感模块保留少量稳定 slice，后面抓到 Perfetto 时，系统事件和业务阶段才容易对应。
 
 ## trace 名称就是书里的索引
 
@@ -170,7 +182,7 @@ Tracing SDK 的收益来自长期积累。每个性能敏感模块都留下少�
 
 ## 同步和异步区间要分开
 
-`trace {}` 只能覆盖当前线程上的同步区间。很多性能问题跨线程，单个 trace block 只包住发起点会误导读者。
+`trace {}` 只能覆盖当前线程上的同步区间。主线程发起请求、I/O 线程执行、主线程提交 UI 时，单个同步 slice 只会覆盖发起动作。
 
 错误示例：
 
@@ -180,23 +192,39 @@ trace("Home#loadFirstFeed") {
 }
 ```
 
-这段 trace 只记录异步任务提交耗时，不记录网络、解析、数据库和 UI 更新。更好的做法是在每个关键线程上标记自己的阶段：
+这段 trace 只记录异步任务提交耗时，不记录网络、解析、数据库和 UI 更新。跨线程任务要分两层标注：
+
+- 每个线程保留自己的同步 slice，用来读本线程的真实耗时。
+- 同一个业务 span 再补一组 async trace，用来串起跨线程阶段。
 
 ```kotlin
-trace("Home#requestFirstFeed") {
-    api.loadFirstFeed()
-}
+import androidx.tracing.Trace
+import androidx.tracing.trace
+import java.util.concurrent.atomic.AtomicInteger
 
-trace("Home#parseFirstFeed") {
-    parser.parse(response)
-}
+private val nextCookie = AtomicInteger(1)
 
-trace("Home#renderFirstFeed") {
-    adapter.submitList(items)
+fun loadFirstFeed() {
+    val cookie = nextCookie.getAndIncrement()
+    Trace.beginAsyncSection("Home#loadFirstFeed", cookie)
+    ioExecutor.execute {
+        trace("Home#requestFirstFeed") {
+            val response = api.loadFirstFeed()
+            val items = parser.parse(response)
+            mainHandler.post {
+                trace("Home#renderFirstFeed") {
+                    adapter.submitList(items)
+                }
+                Trace.endAsyncSection("Home#loadFirstFeed", cookie)
+            }
+        }
+    }
 }
 ```
 
-这样 Perfetto 里会出现多个 slice，读者能看到工作在哪些线程执行，以及线程之间是否存在空洞。
+在 Perfetto 里，`beginAsyncSection()` 和 `endAsyncSection()` 会按同名加同 cookie 配对。多个异步任务并发时，cookie 必须唯一；如果名称相同而 cookie 复用，几个任务会被合并成一条错误的 span。
+
+只想看线程内耗时分布时，分线程同步 slice 就够了。需要读一个完整的跨线程逻辑链时，再补 async trace。
 
 ## trace 与线上指标关联
 
