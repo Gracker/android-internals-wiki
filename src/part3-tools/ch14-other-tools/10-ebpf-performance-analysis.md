@@ -46,12 +46,12 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-20"

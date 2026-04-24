@@ -25,8 +25,8 @@ sources:
 tags:
   - android
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-23"
@@ -35,7 +35,7 @@ last_task9_at: "2026-04-23T01:48:42+08:00"
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-22"
+reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
 repaired_date: "2026-04-21"
 repaired_by: "codex"
@@ -83,7 +83,7 @@ related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1', '15
 
 ## 指标体系不是“多几个数字”，而是决策接口
 
-指标体系真正有价值，不是因为它看起来完整，而是因为它能支持决策。一个好的指标至少要回答下面三个问题中的一个：
+指标体系的价值在于它能不能支持决策。一个好的指标至少要回答下面三个问题中的一个：
 
 - 现在有没有问题？
 - 这个问题影响面多大？
@@ -156,7 +156,7 @@ Google 在 Android Vitals 中把 slow rendering 定义为单帧渲染时间落�
 
 ## 响应速度指标
 
-响应速度关注的是“从用户发出操作到看到结果”的延迟。它和流畅性的区别，不在于哪个更重要，而在于观察窗口不同：流畅性看的是持续渲染，响应速度看的是单次反馈。
+响应速度关注的是“从用户发出操作到看到结果”的延迟。它和流畅性的区别在于观察窗口不同：流畅性看的是持续渲染，响应速度看的是单次反馈。
 
 ### TTID（Time to Initial Display）
 
@@ -262,7 +262,7 @@ Crash rate 和 ANR rate 的治理方法也不同。Crash 更适合按错误簇�
 
 内存指标的重要性常常被低估。在 Android 上，内存问题不只是 OOM——一个 App 占用内存过多，会触发系统更频繁的 GC、增加 LMK（Low Memory Killer）杀进程的概率、影响其他 App 的可用内存，最终以卡顿或闪退的形式呈现给用户。
 
-所以内存指标最容易出现的误区，就是“只在 OOM 时才看”。实际上，很多性能差评在真正 OOM 之前很久就已经开始发生了。
+所以内存指标最容易出现的误区，就是“只在 OOM 时才看”。很多性能差评在真正 OOM 之前很久就已经开始发生了。
 
 ### PSS（Proportional Set Size）
 
