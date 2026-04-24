@@ -16,11 +16,11 @@ sources:
     path: "https://square.github.io/leakcanary/"
   - type: official
     path: "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-25"
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
@@ -145,7 +145,7 @@ LeakCanary 2.x 的自动观察对象主要是四类：
 - destroyed fragment `View`
 - cleared `ViewModel`
 
-这四类对象背后依赖的是 Android 生命周期和 AndroidX / Lifecycle 回调，而不是“扫一遍堆里所有对象”。Activity 由 `Application.ActivityLifecycleCallbacks` 兜住；Fragment 与 fragment view 依赖 AndroidX Fragment 生命周期；ViewModel 则依赖 `onCleared()` 这个明确的生命周期终点。
+这四类对象背后依赖的是 Android 生命周期和 AndroidX / Lifecycle 回调——不会扫描整个堆。Activity 由 `Application.ActivityLifecycleCallbacks` 兜住；Fragment 与 fragment view 依赖 AndroidX Fragment 生命周期；ViewModel 则依赖 `onCleared()` 这个明确的生命周期终点。
 
 `Service`、播放器容器、地图控制器、业务 presenter、手动创建的 detached view 这些对象，通常还要开发者自己调用 `AppWatcher.objectWatcher.watch()`。代码示例只保留关键调用：
 
@@ -164,7 +164,7 @@ class PlayerController {
 如果对象本来就应该常驻，加入 watch 只会制造噪声。LeakCanary 的前提一直是：这个对象在当前时间点应该已经可回收。
 ## leak trace 应该怎么读
 
-LeakCanary 报告里的 leak trace 不是普通调用栈，它是从 GC Root 到泄漏对象的引用路径。读的时候先抓四个点：
+LeakCanary 报告里的 leak trace 是从 GC Root 到泄漏对象的引用路径，和普通调用栈不同。读的时候先抓四个点：
 
 1. 末尾对象：确认被泄漏的是 `Activity`、`Fragment view`、`Dialog` 还是业务对象。
 2. suspect reference：这些引用是 LeakCanary 标红的可疑保留点。
@@ -193,7 +193,7 @@ v
 RecyclerView
 ```
 
-这里的 `this$0` 不是业务字段，而是匿名内部类或内部类对外部类实例的隐式引用。它把 `HomeFragment$callback` 和 `HomeFragment` 连在一起，所以真正的修复点不在 `RecyclerView`，而在 `AnalyticsDispatcher.callbacks` 里保存的 callback 没有移除。
+这里的 `this$0` 是编译器为匿名内部类生成的对外部类实例的隐式引用。它把 `HomeFragment$callback` 和 `HomeFragment` 连在一起，所以修复点是 `AnalyticsDispatcher.callbacks` 里保存的 callback 没有移除。
 
 如果同一条 leak trace 还带着较大的 retained size，优先级就要往前提。一个泄漏的 `Dialog` 只占几十 KB，和一个把整页 Bitmap、Adapter、缓存对象都拖住的链，处理顺序不会一样。
 ## 常见泄漏模式
@@ -235,7 +235,7 @@ LeakCanary 更适合本地修复，但它可以和线上样本组成一条修复
 
 ## 测试集成建议
 
-LeakCanary 放进 UI / instrumentation 测试时，门槛不在“能不能跑”，而在“怎样把噪声压住”。关键页面可以做一条最小门禁：进入页面、触发核心交互、退出页面，再检查 retained object 是否回到 0。下面这段示意代码只保留关键调用：
+LeakCanary 放进 UI / instrumentation 测试时，真正的门槛是“怎样把噪声压住”。关键页面可以做一条最小门禁：进入页面、触发核心交互、退出页面，再检查 retained object 是否回到 0。下面这段示意代码只保留关键调用：
 
 ```kotlin
 // Several unrelated imports are omitted.
