@@ -9,8 +9,8 @@ polish_by: "task2b-polish"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1"
+last_verified: "2026-04-24"
+last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 / Perfetto native-heap-profiler docs"
 confidence: medium
 sources:
   - type: official
@@ -31,13 +31,14 @@ word_count: "~7500"
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
-task2b_rework_date: "2026-04-20"
-task2b_fixed_at: "2026-04-20"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+task2b_rework_date: "2026-04-24"
+task2b_fixed_at: "2026-04-24T14:55:00+08:00"
+last_task2b_at: "2026-04-24T14:55:00+08:00"
 task9_result: needs-rework
 last_task9_at: "2026-04-24T14:40:03+08:00"
 task9_reviewed_date: 2026-04-24
@@ -235,18 +236,27 @@ Memory Profiler 是检测内存抖动最直接的工具。打开 Memory Profiler
 
 [已验证: 官方文档, perfetto.dev/docs/data-sources/native-heap-profiler]
 
-对于更精细的分析，Perfetto 的 heapprofd 可以追踪 Native 和 Java 堆的分配栈。它的优势在于可以在生产环境或更接近真实的场景中使用，不像 Memory Profiler 那样有显著的性能开销。
+heapprofd 用来回答“谁在持续分配对象”。它给出的是分配调用栈，不是 Java heap dump 那种存活对象引用图。所以它更适合定位 memory churn，较少直接用于分析 retained object。
 
-使用方法：
+| 场景 | Android 版本 | heapprofd 能力 | 推荐入口 | 额外条件 |
+|---|---|---|---|---|
+| Native heap profiling | Android 10-11 | ✅ 支持 | `tools/heap_profile --name <package>` 或等价 trace config | user build 上目标进程需要 `debuggable` 或 `profileable` |
+| Java heap sampling | Android 12+ | ✅ 支持 | `tools/heap_profile --name <package> --heaps com.android.art` | 目标进程需要 `debuggable` 或 `profileable`；结果是采样分配栈 |
+| Java 分配热点排查 | Android 8-11 | ❌ 不支持 Java heap sampling | 改用 Memory Profiler / HPROF | 不要把 native heap profile 当成 Java 分配栈 |
+
+文中原来的 `adb shell heapprofd --pid=<PID> --java` 不是 Perfetto 官方支持的稳定入口。排查时应改成 `tools/heap_profile` 或等价 trace-config 流程：
 
 ```bash
-# 追踪特定进程的 Java 堆分配
-adb shell heapprofd --pid=<PID> --java
+# Native heap profiling（Android 10+）
+tools/heap_profile --name <package>
 
-# 或者在 Perfetto 配置中启用 Java Heap Profiling
+# Java heap sampling（Android 12+）
+tools/heap_profile --name <package> --heaps com.android.art
 ```
 
-在 Perfetto UI 中，heapprofd 的结果会显示在 "Heap Profiles" 面板中。按分配次数排序、展开调用栈，就能精确定位是哪个函数在大量分配对象。
+如果走 trace config，data source 仍然是 `android.heapprofd`，目标进程写在 `HeapprofdConfig.process_cmdline`，Java heap sampling 通过 `heaps: "com.android.art"` 打开。
+
+在 Perfetto UI 中，结果会落在 Heap Profiles 相关视图。排查内存抖动时优先看 `Total allocation size` 和 `Total allocation count`，再把热点调用栈和 GC 频率、主线程帧耗时放到同一时间窗口里对照。
 
 ### Perfetto Trace 中的 GC 观察
 

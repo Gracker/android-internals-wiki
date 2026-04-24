@@ -7,20 +7,39 @@ drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
-last_verified_against: "measure-sh/measure GitHub README"
+last_verified_against: "measure-sh docs/README.md + sdk-integration-guide + feature-network-monitoring + configuration-options + feature-bug-report-android + feature-data-retention"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
 sources:
-  - type: blog
+  - type: official
     path: "https://github.com/measure-sh/measure"
-pipeline_stage: task9_pending
+  - type: official
+    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/README.md"
+  - type: official
+    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/sdk-integration-guide.md"
+  - type: official
+    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-network-monitoring.md"
+  - type: official
+    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-identify-users.md"
+  - type: official
+    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-bug-report-android.md"
+  - type: official
+    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/configuration-options.md"
+  - type: official
+    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-data-retention.md"
+  - type: official
+    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md"
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+task2b_fixed_at: "2026-04-24T14:55:00+08:00"
+last_task2b_at: "2026-04-24T14:55:00+08:00"
 ---
 
 # Measure
@@ -69,6 +88,8 @@ task2b_state: pending
 Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、错误率、App 大小、用户点击、页面导航、HTTP 调用、CPU、内存等信息组织成可回查的会话时间线。它和 Matrix、KOOM 这类“客户端采集组件”不同，更接近“SDK + 后端 + 看板”的平台方案。
 
 如果团队不想从零搭服务端，又希望数据可自托管，Measure 值得评估。它的边界也要先定清：平台能帮你接住很多监控数据，但专项性能诊断仍然要回到 Perfetto、Profiler、heap dump 和业务日志。
+
+[已验证: 官方文档, GitHub README；docs/README.md；docs/sdk-integration-guide.md]
 
 ## 它的优势在会话上下文
 
@@ -192,6 +213,8 @@ Measure 的开源形态意味着团队可以自托管，也意味着平台工作
 
 这些成本没有处理好，开源平台也会变成难维护的内部系统。试点时要从最小可用范围开始：Crash / ANR + 会话时间线 + 版本维度，跑通后再加性能 trace。
 
+服务端保留期在 dashboard 中可配，范围是 7-365 天，默认 90 天。这个值会直接影响存储成本、附件保留时间和删除策略。[已验证: 官方文档, docs/features/feature-data-retention.md]
+
 ## 和 OpenTelemetry 的关系
 
 很多团队会问移动 APM 是否要直接接入 OpenTelemetry。答案取决于目标。服务端 trace 和移动 session 的数据模型并不完全一致。移动端多了页面、前后台、设备、系统版本、冷启动、慢帧、ANR、用户操作等概念。
@@ -204,6 +227,24 @@ Measure 的开源形态意味着团队可以自托管，也意味着平台工作
 - 平台查询时能从移动 session 跳到服务端 trace。
 
 这样既保留移动端语义，也能让同一次请求从 App 查到服务端。
+
+## 隐私策略要在接入前定清
+
+[已验证: 官方文档, docs/features/feature-network-monitoring.md；docs/features/feature-identify-users.md；docs/features/feature-bug-report-android.md；docs/features/configuration-options.md；docs/features/feature-data-retention.md]
+
+Measure 已经提供了 URL pattern、HTTP body / header、用户标识、截图遮罩、数据保留期这些控制点，但默认策略仍要由接入团队自己定。试点阶段如果没有把规则写清，后面补救成本会很高。
+
+| 风险点 | 文档里的控制点 | 接入建议 |
+|---|---|---|
+| URL pattern | Dashboard 会把高流量 URL 归并成 endpoint pattern；HTTP 事件支持按 URL 精确匹配或 `*` 通配符启停 | 只保留排障必需的路径；登录、支付、上传、回调 URL 单独列 allowlist / denylist |
+| 用户标识 | `Measure.setUserId()` 会跨启动持久化；官方明确建议不要放 email、手机号这类 PII | 使用内部匿名 user id 或 hash；登出时调用 `Measure.clearUserId()` |
+| 请求体 / 响应体 | 默认不采集 body 和 header；只能对指定 URL 打开 | body 采集只给白名单接口，优先灰度环境；敏感字段先在业务层脱敏 |
+| 日志 / 诊断文件 | `enableDiagnosticMode` 只写 Measure SDK 自己的日志文件 | 只在 debug 或线下复现时打开，不把业务日志混进附件 |
+| 截图 / 附件 | bug report 默认可带截图，支持 screenshot mask level，单条 bug report 最多 5 个附件 | 默认开启文字或敏感输入遮罩；支付、实名认证、聊天页按场景禁用截图，必要时改成 layout snapshot |
+| 地区合规 | 自托管可以把数据留在自有区域；服务端 retention 可配 7-365 天 | EU、境内、海外环境分开部署，部署前确认存储区域、备份流程和访问审计 |
+| 删除请求 | SDK 提供 `clearUserId()` 处理后续会话标识；公开文档里明确的服务端控制项是 retention | 试点前就定义“按 user id 检索、导出、删除历史 session”的后台流程；没有这条流程时，不要把可识别用户数据放进自定义属性、请求体或附件 |
+
+执行隐私策略时，SDK 初始化参数、dashboard 远端配置、自托管存储策略要放在同一张表里审一次。这样排查事故时，团队才能知道哪些字段能看、哪些字段不能留。
 
 ## Measure 试点评估表
 
