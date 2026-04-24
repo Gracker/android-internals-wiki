@@ -1,63 +1,61 @@
 {
-  "generated_at": "2026-04-24T14:55:00+08:00",
+  "generated_at": "2026-04-24T16:19:18+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 214,
     "finalized": 53,
-    "ready-for-review": 133,
+    "ready-for-review": 138,
     "ready-to-publish": 53,
-    "last_updated": "2026-04-24T14:40:03+08:00",
+    "last_updated": "2026-04-24T16:19:18+08:00",
     "pipeline_stage_counts": {
-      "unknown": 31,
-      "task6_pending": 37,
-      "task2b_pending": 36,
+      "unknown": 35,
+      "task6_pending": 40,
+      "task2b_pending": 34,
       "ready-to-publish": 53,
       "task9_pending": 61
     },
     "task6_state_counts": {
-      "unknown": 31,
-      "reviewed": 156,
-      "revisiting": 31,
-      "pending": 0
+      "unknown": 35,
+      "reviewed": 154,
+      "revisiting": 34
     },
     "task9_state_counts": {
-      "unknown": 31,
-      "reviewed": 99,
-      "pending": 83,
+      "unknown": 35,
+      "reviewed": 97,
+      "pending": 90,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 33,
-      "fixed": 142,
-      "pending": 36,
+      "unknown": 37,
+      "fixed": 145,
+      "pending": 38,
       "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 31,
-      "task6_pending": 37,
-      "task2b_pending": 36,
+      "unknown": 35,
+      "task6_pending": 40,
+      "task2b_pending": 34,
       "ready-to-publish": 53,
       "task9_pending": 61
     },
     "task6_state_counts": {
-      "unknown": 31,
-      "reviewed": 156,
-      "revisiting": 31,
-      "pending": 0
+      "unknown": 35,
+      "reviewed": 154,
+      "revisiting": 34
     },
     "task9_state_counts": {
-      "unknown": 31,
-      "reviewed": 99,
-      "pending": 83,
+      "unknown": 35,
+      "reviewed": 97,
+      "pending": 90,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 33,
-      "fixed": 142,
-      "pending": 36,
+      "unknown": 37,
+      "fixed": 145,
+      "pending": 38,
       "idle": 3
     }
   },
@@ -5972,11 +5970,11 @@
       "task9_reviewed_date": "2026-04-22"
     },
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
-      "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
       "title": "WebView 渲染管线",
       "chapter": "18.13",
+      "section": "18.13",
       "status": "ready-for-review",
-      "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
+      "applicable_versions": "Android 5.0+（WebView provider 可独立更新；SurfaceControl 子 Surface 需结合 provider / Chromium milestone 判断）",
       "tags": [
         "WebView",
         "Chromium",
@@ -5991,32 +5989,37 @@
         "2.6",
         "7.11",
         "18.6",
-        "18.7"
+        "18.7",
+        "18.10"
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "last_task2b_at": "2026-04-24T00:00:53+08:00",
-      "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-24",
-      "task9_result": "needs-rework",
-      "last_task9_at": "2026-04-24T14:40:03+08:00",
-      "task6_result": "pass-light-edit",
       "sources": [
         "AOSP frameworks/base/core/java/android/webkit/WebView.java",
         "AOSP frameworks/base/core/java/android/webkit/WebChromeClient.java",
+        "AOSP frameworks/base/core/java/android/webkit/WebViewFactory.java",
+        "AOSP frameworks/base/services/core/java/com/android/server/webkit/WebViewUpdateServiceImpl.java",
         "AndroidX WebKit WebViewCompat.getCurrentWebViewPackage()",
         "Chromium android_webview/browser/gfx/browser_view_renderer.cc",
         "Chromium android_webview/browser/gfx/hardware_renderer.cc",
         "Chromium android_webview/browser/gfx/overlay_processor_webview.cc",
         "Chromium Viz Compositor architecture docs"
       ],
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-24T16:17:57+08:00",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-24",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-24T14:40:03+08:00",
+      "task6_result": "pass-light-edit",
+      "review_round": 2,
       "task9_reviewed_date": "2026-04-24",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_by": "openclaw-task9",
+      "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md"
     },
     "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
