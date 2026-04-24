@@ -2,7 +2,7 @@
 title: "启动优化策略"
 chapter: "8.3"
 status: ready-for-review
-reviewed_date: "2026-04-22"
+reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 1
@@ -34,8 +34,8 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -153,7 +153,7 @@ Executors.newSingleThreadExecutor().execute(() -> {
 
 ### 懒加载：最优雅的延迟
 
-懒加载（Lazy Initialization）是延迟初始化的一种特例——不是在启动时异步初始化，而是在第一次实际使用时才初始化。这是对启动时间贡献最大的优化手段之一，因为它把初始化开销从启动阶段完全移除了。
+懒加载（Lazy Initialization）是延迟初始化的一种特例——在第一次实际使用时才初始化（区别于启动时异步初始化）。这是对启动时间贡献最大的优化手段之一，因为它把初始化开销从启动阶段完全移除了。
 
 ```kotlin
 // Kotlin by lazy 实现懒加载
@@ -258,7 +258,7 @@ viewModel.loadHomeData.observe(this) { data ->
 
 ### 退出动画：从启动画面到应用内容的平滑过渡
 
-SplashScreen API 还支持自定义退出动画，让启动画面不是突然消失，而是平滑过渡到应用内容：
+SplashScreen API 还支持自定义退出动画，让启动画面平滑过渡到应用内容：
 
 ```kotlin
 splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
