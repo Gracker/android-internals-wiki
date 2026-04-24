@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T09:27:00+08:00",
+  "generated_at": "2026-04-24T09:54:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 49,
     "ready-for-review": 137,
     "ready-to-publish": 49,
-    "last_updated": "2026-04-24T09:27:00+08:00",
+    "last_updated": "2026-04-24T09:54:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 31,
       "task6_pending": 39,
@@ -545,7 +545,6 @@
       "task9_result": "needs-rework"
     },
     "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md": {
-      "path": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md",
       "title": "MessageQueue 机制与 DeliQueue 无锁优化",
       "chapter": "1.13",
       "section": "1.13",
@@ -554,9 +553,57 @@
       "drafted_date": "2026-04-04",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "last_verified": "2026-04-14",
-      "last_verified_against": "AOSP android-15.0.0_r1 + android-16.0.0_r1 + Android Developers 2026-03-30",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "AOSP android-15.0.0_r1 + android-16.0.0_r1 + Android Developers MessageQueue 行为变更页 + Android Developers Blog 2026-02-17",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "doc",
+          "path": "https://developer.android.com/about/versions/17/changes/messagequeue"
+        },
+        {
+          "type": "doc",
+          "path": "https://developer.android.com/reference/android/os/MessageQueue.IdleHandler"
+        },
+        {
+          "type": "blog",
+          "path": "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/Looper.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/MessageQueue.java (android-15.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/SemiConcurrentMessageQueue/MessageQueue.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java (android-16.0.0_r1)"
+        },
+        {
+          "type": "wiki",
+          "path": "https://en.wikipedia.org/wiki/Treiber_Stack"
+        }
+      ],
+      "tags": [
+        "android",
+        "looper",
+        "messagequeue",
+        "deliqueue"
+      ],
       "related_chapters": [
         "1.5",
         "1.14",
@@ -573,7 +620,9 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-20",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-24T09:54:00+08:00",
+      "path": "src/part1-fundamentals/ch01-architecture/13-messagequeue-deliqueue.md"
     },
     "src/part1-fundamentals/ch01-architecture/14-lock-contention.md": {
       "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
@@ -762,7 +811,6 @@
       "section": "1.16"
     },
     "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md": {
-      "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
       "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
       "chapter": "1.17",
       "section": "1.17",
@@ -771,6 +819,40 @@
       "last_verified": "2026-04-11",
       "last_verified_against": "AOSP main（ProcessState.cpp、Looper.cpp、InputTransport.cpp、InputChannel.java）, source.android.com",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "official",
+          "path": "https://developer.android.com/guide/components/aidl"
+        },
+        {
+          "type": "official",
+          "path": "https://source.android.com/docs/core/architecture/hals"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/android/os/SharedMemory"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/libs/binder/ProcessState.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "system/core/libutils/Looper.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/libs/input/InputTransport.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/view/InputChannel.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/os/MemoryFile.java"
+        }
+      ],
       "tags": [
         "ipc",
         "binder",
@@ -807,10 +889,11 @@
       "task9_state": "reviewed",
       "task2b_result": "fixed",
       "task2b_state": "fixed",
-      "last_task2b_at": "2026-04-19T07:09:38+08:00",
+      "last_task2b_at": "2026-04-24T09:54:00+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-22",
-      "last_task9_at": "2026-04-22T13:35:00+08:00"
+      "last_task9_at": "2026-04-22T13:35:00+08:00",
+      "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md"
     },
     "src/part1-fundamentals/ch01-architecture/README.md": {
       "path": "src/part1-fundamentals/ch01-architecture/README.md",
@@ -7878,6 +7961,27 @@
           "result": "pass-light-edit",
           "fixes": 2,
           "issues": 0
+        }
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "task": "task2b-rework",
+      "time": "09:54",
+      "sections_reviewed": [
+        {
+          "section": "1.13",
+          "title": "MessageQueue 机制与 DeliQueue 无锁优化",
+          "result": "fixed",
+          "issues": 2,
+          "auto_promoted": true
+        },
+        {
+          "section": "1.17",
+          "title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+          "result": "fixed",
+          "issues": 2,
+          "auto_promoted": true
         }
       ]
     }
