@@ -15,9 +15,11 @@ sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
 pipeline_stage: task6_pending
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: pending
+task2b_state: pendingreviewed_by: openclaw-task6
+reviewed_date: 2026-04-24
+
 ---
 
 # Baseline Profiles 与编译优化
@@ -63,7 +65,7 @@ task2b_state: pending
 
 ## Baseline Profiles 是发布前优化，不是监控
 
-Baseline Profiles 让应用或库随包发布一组常用代码路径，Android Runtime 可以据此提前做 AOT 编译。官方文档给出的目标很直接：优化启动、降低交互 jank，并让新用户和每次更新后的首次运行都受益。
+Baseline Profiles 使应用或库随包发布一组常用代码路径，Android Runtime 据此进行AOT编译优化。官方文档表明Baseline Profiles的目标是：优化启动、降低交互卡顿，让新用户和每次更新后的首次运行都受益。
 
 它不属于 APM 采集工具，但和性能监控关系很近。线上启动慢或交互慢被发现后，Baseline Profiles 常常是修复手段之一；修复是否生效，再用 Macrobenchmark 和线上指标验证。
 

@@ -19,13 +19,15 @@ sources:
   - type: official
     path: "https://bugly.qq.com/docs/"
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-24
-last_task9_at: 2026-04-24T16:40:21+08:00
+last_task9_at: 2026-04-24T16:40:21+08:00reviewed_by: openclaw-task6
+reviewed_date: 2026-04-24
+
 ---
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）
@@ -71,9 +73,9 @@ last_task9_at: 2026-04-24T16:40:21+08:00
 
 ## 商业平台买的是服务能力和维护成本
 
-Sentry、APMPlus、Bugly 这类平台和开源 SDK 的差别，不只在功能数量。商业平台提供的是 SDK、服务端、看板、告警、权限、符号表、数据保留、工单协作和技术支持的组合。团队要付费，但能少维护一大块后端和运营工作。
+Sentry、APMPlus、Bugly 这类平台与开源SDK的差异，不仅在于功能数量。商业平台提供的是 SDK、服务端、看板、告警、权限、符号表、数据保留、工单协作和技术支持的组合。团队要付费，但能少维护一大块后端和运营工作。
 
-选商业 APM 时，先看团队当前最缺什么：崩溃治理、性能指标、用户会话回查、跨端追踪、国内访问和合规、还是私有化部署。
+选择商业APM时，需要先看团队最缺什么：崩溃治理、性能指标、用户会话回查、跨端追踪、国内访问和合规，还是私有化部署。
 
 ## Sentry：错误监控起家，APM 能力持续扩展
 

@@ -334,6 +334,24 @@
         "location": "## 使用建议 / 接入成本相关段落缺失",
         "detail": "章节只写“接入 SDK 后”，没有把官方 get-started 要求的 com.google.gms.google-services、com.google.firebase.firebase-perf 两个插件，以及 firebase_performance_collection_enabled / firebase_performance_collection_deactivated 这两个 Manifest 开关写出来。当前内容不足以指导 release 开关和灰度污染控制。",
         "suggestion": "补一个“构建链 + 采集开关”小节，写清 Gradle plugin、google-services.json、Manifest 采集开关和 Debug/Release 策略。"
+      },
+      {
+        "type": "需技术核实",
+        "location": "Android 17 API变化",
+        "detail": "需要确认Firebase Performance SDK在Android 17中的API变化",
+        "suggestion": "核实最新版本Firebase SDK的API变化和兼容性"
+      },
+      {
+        "type": "需补充验证",
+        "location": "网络监控章节",
+        "detail": "需要验证网络监控在不同Android版本中的采集能力差异",
+        "suggestion": "补充网络监控的版本兼容性矩阵和限制说明"
+      },
+      {
+        "type": "需补充内容",
+        "location": "指标差异章节",
+        "detail": "需要明确Firebase与Android Vitals的指标定义和计算方法差异",
+        "suggestion": "补充指标对比表和口径统一建议"
       }
     ],
     "added_by": "task9-deep-tech-review",
@@ -366,10 +384,60 @@
         "location": "## 接入建议",
         "detail": "正文说要小流量验证，但没有把 PoC 验收项结构化。大纲要求的采样准确性、符号还原、慢帧定位、网络阶段、告警噪声、低端设备开销都没有形成 checklist。",
         "suggestion": "补一张 PoC 验收表，要求用已知 crash/ANR/慢帧/弱网/低端机场景做真机验证。"
+      },
+      {
+        "type": "需重写",
+        "location": "平台选型章节",
+        "detail": "当前选型维度过于简化，缺少深入的工程考量标准",
+        "suggestion": "重构选型维度，增加成本模型、ROI分析、长期维护成本评估"
+      },
+      {
+        "type": "需补充素材",
+        "location": "成本模型章节",
+        "detail": "缺少具体的成本计算模型和ROI分析",
+        "suggestion": "补充具体的成本计算表、TCO分析和ROI建议"
+      },
+      {
+        "type": "需补充案例",
+        "location": "迁移章节",
+        "detail": "缺少实际的迁移失败案例和教训总结",
+        "suggestion": "增加2-3个实际迁移案例，分析失败原因和规避建议"
       }
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-24T16:40:21+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "15.15",
+    "section_title": "Baseline Profiles 与编译优化",
+    "priority": 90,
+    "reason": "[Task6 Review] 技术核实缺失和内容深度不足",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需技术核实",
+        "location": "Android 17版本兼容性",
+        "detail": "文档覆盖Android 8-37版本，但需确认新版本中AOT编译机制是否仍然适用",
+        "suggestion": "核实Android 17中AOT编译行为是否有变化，确认Profile生成工具兼容性"
+      },
+      {
+        "type": "需技术核实",
+        "location": "R8规则影响",
+        "detail": "需要确认新版本R8是否影响Profile规则的有效性和命中率",
+        "suggestion": "核实R8版本变化对Profile的影响，添加版本适配建议"
+      },
+      {
+        "type": "需补充验证案例",
+        "location": "验证章节",
+        "detail": "缺少实际Profile生成失败的案例分析和规避建议",
+        "suggestion": "增加Profile生成失败的典型场景和排查指南"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-24T17:29:56.866862",
     "status": "pending"
   }
 ]

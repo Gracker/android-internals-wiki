@@ -321,6 +321,93 @@ Hook 到了,不代表结论就一定对。例如:
 
 这个顺序的价值,是把高风险能力尽量后置。
 
+## 补充：Android 14 W^X 与 Inline Hook iCache 失效机制
+
+<!-- AIW-源码调研-2026-04-24 -->
+
+Android 14 对 Inline Hook 的影响主要体现在两条线上：**W^X 内存保护策略限制了"同时可写可执行"的内存操作窗口**，以及 **16KB Page Size 改变了 `mprotect()` 的页边界假设**。
+
+### W^X 的真正来源：Bionic Linker 而非内核
+
+W^X 策略不是内核特性，而是 **Bionic Linker 在用户态实施的约束**。关键 commit 来自 2015 年（Nick Kralevich）：
+
+> "linker: never mark pages simultaneously writable / executable"
+
+该 commit 修改了动态链接器处理 text relocations 的方式：此前链接器为了修改代码段中的重定位条目，会临时将页面权限设为 `PROT_READ|PROT_WRITE|PROT_EXEC`。修改后遵循 **RX→RW→RX 两步过渡**：
+
+1. 先将页面从 RX 改为 RW（此时页面可写但不可执行），完成代码修改
+2. 再从 RW 改回 RX（可执行但不可写）
+
+这一设计导致的后果是：**任何试图通过 `mprotect()` 直接设置 `PROT_WRITE|PROT_EXEC` 的行为会触发 SELinux 的 `execmod` 而非 `execmem` 检查**。虽然 Android 允许 `execmod` 权限（因为它代表"修改文件支持的代码"），但 Linker 本身的实现已经封死了同时 W+X 的路径。
+
+### Inline Hook 在 W^X 约束下的标准执行流程
+
+Inline Hook 的完整执行流程在现代 Android 上被拆解为五个阶段：
+
+```
+1. 查询目标函数地址（从 /proc/self/maps 或 ELF 符号表）
+2. 用 mprotect(PROT_READ|PROT_WRITE) 使页面可写
+3. 覆盖目标函数入口机器码（通常为 12 字节的 BL/BLR 指令）
+4. 用 mprotect(PROT_READ|PROT_EXEC) 恢复页面为只读+可执行
+5. 调用 __builtin___clear_cache() 刷新 icache
+```
+
+**关键约束**：
+- 不能尝试 `mprotect(PROT_WRITE|PTECT_EXEC)`（违反 W^X，Linker 拒绝）
+- 不能跳过 icache flush（ARM64 icache 和 dcache 是非一致性的，CPU 可能继续取旧指令）
+- 每次 `mprotect()` 调用的地址和长度必须按页对齐（`getpagesize()` 返回值，非 4096 硬编码）
+
+### iCache 失效的 ARM64 实现
+
+`__builtin___clear_cache()` 是编译器提供的可移植接口，在 ARM64 架构上展开为以下指令序列：
+
+| 指令 | 作用 | 备注 |
+|------|------|------|
+| `dc cvau` | Clean Data Cache to point of Unification | 将 dcache 中的修改推送到一致点，确保内存中的新代码对 icache 可见 |
+| `dsb sy` | Data Synchronization Barrier | 等待所有前面的内存访问完成，确保 dcache clean 完成 |
+| `ic ivau` | Invalidate Instruction Cache to point of Unification | 失效 icache 中可能缓存的旧指令 |
+| `isb sy` | Instruction Synchronization Barrier | 刷新流水线，确保后续指令从内存/icache 获取 |
+
+这一序列可以在用户态（EL0）无需系统调用直接执行，是 Inline Hook 修改代码后必须执行的标准步骤。
+
+### Android 14 对动态代码加载的强制要求
+
+Android 14（API 34）针对 targeting SDK 34 的应用引入了"Safer dynamic code loading"行为变更：**所有动态加载的文件必须标记为只读，否则系统抛出异常**。这意味着应用通过 `dlopen()` 加载的 .so 如果没有设置 `RTLD_NOW | RTLD_NODELETE`，系统会拒绝。
+
+### 主流 Hook 库的 W^X 适配现状
+
+| 库 | 类型 | 支持版本 | W^X 适配 |
+|----|------|---------|---------|
+| ShadowHook（字节跳动） | Inline Hook | Android 4.1 - 16（API 16-36） | 严格遵循两步 mprotect 模式 |
+| ByteHook（字节跳动） | PLT Hook | Android 4.1 - 15（API 16-35） | PLT Hook 不修改代码段，无 W^X 问题 |
+| xHook（爱奇艺） | PLT Hook | Android 4.0 - 10（API 14-29） | **不支持 Android 14+** |
+
+### 16KB Page Size 对 mprotect 页边界的影响
+
+Android 15 引入的 16KB Page Size 对 Hook 框架有直接冲击：
+
+| 问题 | 4KB 时代 | 16KB 时代 |
+|------|----------|-----------|
+| `getpagesize()` 返回值 | 4096 | 16384 |
+| mprotect 地址/长度对齐 | 4KB 边界 | 16KB 边界 |
+| 老框架硬编码 4096 | 正常工作 | 返回 EINVAL |
+| 旧 .so（ELF p_align=4096）在 16KB 设备 | 正常加载 | 触发 Compat Mode 或加载失败 |
+
+Compat Mode 触发条件在 `linker_phdr.cpp`：`kPageSize == 16384 && min_align == 4096`。如果一个 Hook 库在 Android 14 时代硬编码了 4096 作为页大小，在 Android 15/16 的 16KB 设备上调用 `mprotect()` 会返回 `-1 (EINVAL)`，导致 Hook 失败或进程崩溃。
+
+### 版本差异总结
+
+| Android 版本 | W^X 严格程度 | 动态代码加载限制 | 页大小 |
+|--------------|-------------|-----------------|--------|
+| Android 7 (API 24) | PIE 强制，但无运行时 W^X 强制 | 无 | 4KB |
+| Android 8-13 (API 26-33) | Bionic Linker 强制 W^X | 无强制 | 4KB |
+| Android 14 (API 34) | 同上 + SELinux execmod 区分 | targeting 34+ 强制 read-only | 4KB |
+| Android 15 (API 35) | 同上 | 同上 | 4KB / 16KB（设备相关） |
+| Android 16 (API 36) | 同上 | 同上 | 4KB / 16KB（设备相关） |
+
+**核心教训**：Inline Hook 在 Android 14+ 下不是"能不能做"的问题，而是"必须拆成两步 mprotect + icache flush + 页边界用 `getpagesize()` 动态获取"的问题。任何一个步骤不遵守 W^X 约束或页边界要求，都会导致 Hook 失败或进程崩溃。
+
+
 ## 这一章在全书里的位置
 
 这一章不是孤立的底层技术补充,它和全书主线直接相连:
