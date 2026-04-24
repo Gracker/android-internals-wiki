@@ -86,5 +86,26 @@
     "completed_at": "2026-04-24T13:52:59+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "19.09",
+    "section_title": "Measure",
+    "priority": 90,
+    "reason": "[review回炉] 缺少 🔹[隐私策略] 锚点内容（URL pattern、用户标识、日志、请求体、截图/附件、地区合规和删除请求）",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充素材",
+        "location": "19.09 Measure 全文",
+        "detail": "outline 中定义了 🔹[隐私策略] 锚点（覆盖 URL pattern、用户标识、日志、请求体、截图/附件、地区合规和删除请求），但正文中完全缺失该节",
+        "suggestion": "参考 Measure 官方文档中 Privacy 部分补充隐私策略章节，覆盖数据脱敏、用户删除请求、URL pattern 过滤等"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-24T14:06:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-24-14-review.md"
   }
 ]

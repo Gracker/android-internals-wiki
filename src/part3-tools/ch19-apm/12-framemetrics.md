@@ -14,8 +14,11 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-24
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
 ---
