@@ -25,15 +25,16 @@ task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-24
+task9_reviewed_date: 2026-04-25
 last_task9_at: "2026-04-24T16:40:21+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: 2026-04-25
 
 review_notes: "2026-04-24 task6 review: pass-light-edit. L1 fix x1 (frontmatter YAML line merge). 写作质量良好，商业平台对比清晰，接入建议实用。B类问题已在queue.json由task9录入（私有化责任表/PoC验收表/成本模型/迁移案例），等task2b处理。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task2b_result: fixed
 last_task2b_at: "2026-04-25T05:47:52+08:00"
 task2b_fixed_by: openclaw-task2b
+review_notes_2: "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
 ---
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）

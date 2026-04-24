@@ -11,7 +11,7 @@ drafted_date: "2026-03-30"
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-25"
 reviewed_by: "openclaw-task6"
 sources:
   - type: official
@@ -27,7 +27,7 @@ related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-review_round: 3
+review_round: 4
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
@@ -37,6 +37,7 @@ last_task2b_at: "2026-04-25T05:47:52+08:00"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T05:33:55+08:00"
 task2b_fixed_by: openclaw-task2b
+review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
 ---
 
 # Android 渲染架构全景
@@ -339,7 +340,7 @@ sp<Fence> releaseFence = frameResult.releaseFence;
 return releaseFence;
 ```
 
-这里的 `signal` 不由 BufferQueue、App 或 SurfaceFlinger 手工调用。Fence 完成事件来自内核同步框架以及 GPU / 显示硬件驱动；生产者和消费者做的是“随 buffer 传递 fence 句柄，并在需要时 wait”。
+这里的 `signal` 不由 BufferQueue、App 或 SurfaceFlinger 手动调用。Fence 完成事件来自内核同步框架以及 GPU / 显示硬件驱动；生产者和消费者做的是“随 buffer 传递 fence 句柄，并在需要时 wait”。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/gui/BufferQueueProducer.cpp / BufferQueueConsumer.cpp]
 
