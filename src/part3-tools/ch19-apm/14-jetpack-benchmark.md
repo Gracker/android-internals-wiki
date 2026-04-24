@@ -1,23 +1,35 @@
 ---
-title: "Jetpack Benchmark（Microbenchmark + Macrobenchmark）"
-chapter: "19"
-section: "19.14"
-status: ready-for-review
-drafted_date: "2026-04-24"
-drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "Android Developers Benchmark docs"
-confidence: medium
-tags: [apm]
-related_chapters: ["19.0"]
-sources:
-  - type: official
-    path: "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
-task2b_state: pending
+{
+  "title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+  "chapter": "19",
+  "section": "19.14",
+  "status": "ready-for-review",
+  "drafted_date": "2026-04-24",
+  "drafted_by": "codex",
+  "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+  "last_verified": "2026-04-24",
+  "last_verified_against": "Android Developers Benchmark docs",
+  "confidence": "medium",
+  "tags": [
+    "apm"
+  ],
+  "related_chapters": [
+    "19.0"
+  ],
+  "sources": [
+    {
+      "type": "official",
+      "path": "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
+    }
+  ],
+  "pipeline_stage": "task9_pending",
+  "task6_state": "reviewed",
+  "task9_state": "pending",
+  "task2b_state": "pending",
+  "reviewed_by": "openclaw-task6",
+  "reviewed_date": "2026-04-24",
+  "task6_result": "pass-light-edit"
+}
 ---
 
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
