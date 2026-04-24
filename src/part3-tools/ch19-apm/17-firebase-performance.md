@@ -14,10 +14,14 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://firebase.google.com/docs/perf-mon"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-04-24
+last_task9_at: 2026-04-24T16:40:21+08:00
 ---
 
 # Firebase Performance

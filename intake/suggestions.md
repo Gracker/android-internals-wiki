@@ -405,3 +405,21 @@
 - **位置**：与其他章节的关系 / frontmatter `related_chapters`
 - **问题**：正文大段使用 SurfaceControl 子 Surface 机制，但没有直接关联 18.10，frontmatter 的 `related_chapters` 也缺失该章节。
 - **建议**：补上 18.10 的正文交叉引用和 frontmatter 关联，避免 WebView 专章与 SurfaceControl 专章割裂。
+
+## [Task9 Deep Review] 19.16 ProfilingManager — 2026-04-24
+- **类型**：工具关系
+- **位置**：## 和 Perfetto、APM SDK 的关系
+- **问题**：只写了 Perfetto 和抽象 APM SDK，没有把 JankStats、FrameMetrics、Android Studio Profiler 放进排查漏斗。
+- **建议**：补一条“JankStats/FrameMetrics 发现异常 → ProfilingManager 取样 → Perfetto / Android Studio Profiler 复盘”的工具顺序。
+
+## [Task9 Deep Review] 19.17 Firebase Performance — 2026-04-24
+- **类型**：示例覆盖
+- **位置**：## 自定义 trace 示例
+- **问题**：只有 home_first_feed 一个例子，没有把大纲要求的登录、图片解码、数据库查询的命名模式和低基数字段约束展开。
+- **建议**：补一个 trace naming 表，列出 trace 名、metric 名、attribute 名和禁止高基数字段示例。
+
+## [Task9 Deep Review] 19.18 商业 APM 平台（Sentry、APMPlus、Bugly） — 2026-04-24
+- **类型**：数据合同
+- **位置**：## 私有化和退出成本 / AppMonitor facade 代码块
+- **问题**：Facade 只有接口，没有标准字段合同；如果 page/user/version/experiment/request-stage/tag 仍由 vendor 自己命名，迁移时还是会被锁死。
+- **建议**：在 facade 旁补内部 schema 约束，先统一字段词典，再映射到 Sentry/APMPlus/Bugly。

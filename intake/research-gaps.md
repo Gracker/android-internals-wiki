@@ -3195,3 +3195,60 @@ SurfaceControl 独立子 Surface 在不同 WebView provider / Chromium milestone
 - **关联章节**: 19.10
 - **外部 review 来源**: 2026-04-24
 
+
+## [2026-04-24] 19.16 ProfilingManager — 知识盲区
+
+### 盲区描述
+Android 16+ trigger 式 profiling 的设备覆盖、API level 36 与 extension version 36.1 的落点，以及 trigger 自身的冷却/限流配置边界仍需继续核对。external-review 已命中这一点。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 核对 addProfilingTriggers / clearProfilingTriggers / removeProfilingTriggersByType 的 API 36 边界
+- 核对 addAllProfilingTriggers 的 extension version 36.1 条件与实际设备覆盖
+- 梳理 ProfilingTrigger 的 trigger 级 rate limiting 与系统级 rate limiting 的关系
+
+### 关联章节
+19.1, 19.16
+
+### 外部 review 来源
+- external-review 已命中（2026-04-24-15-19.16-external-review.md)
+
+## [2026-04-24] 19.17 Firebase Performance — 知识盲区
+
+### 盲区描述
+Firebase 自动网络采集对不同 Android 网络栈的覆盖边界没有在章节里展开，尤其是自研网络层、Cronet 或 JNI/C++ 网络库是否需要手工补 trace。external-review 已命中这一点。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 核对 Firebase Android SDK 对自动 network trace 的覆盖前提
+- 梳理自动采集失效时的手工 network trace 兜底方式
+- 补一张“自动采集 / 手工采集 / 无法采集”的网络栈边界表
+
+### 关联章节
+12.7, 19.17
+
+### 外部 review 来源
+- external-review 已命中（2026-04-24-15-19.17-external-review.md)
+
+## [2026-04-24] 19.18 商业 APM 平台 — 知识盲区
+
+### 盲区描述
+商业 APM 的 profiling / tracing 采样在真实设备上的稳定性折损还缺少一手实测，尤其是 Sentry Android profiling 对 Android runtime tracer 的已知 crash 风险与厂商设备差异。external-review 已命中这一点。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 收集 Sentry Android profiling 在真实机型上的已知问题与采样建议
+- 对比商业 APM SDK 在低端机上的线程数、启动耗时和电量开销
+- 把“可开功能清单”和“建议默认关闭功能清单”拆出来
+
+### 关联章节
+19.18
+
+### 外部 review 来源
+- external-review 已命中（2026-04-24-15-19.18-external-review.md)

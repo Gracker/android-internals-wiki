@@ -1,62 +1,64 @@
 {
-  "generated_at": "2026-04-24T16:19:18+08:00",
+  "generated_at": "2026-04-24T16:42:17+08:00",
   "state_machine_version": "v2",
-  "total_sections": 211,
+  "total_sections": 206,
   "metrics": {
-    "total_sections": 214,
-    "finalized": 53,
-    "ready-for-review": 138,
+    "total_sections": 206,
+    "finalized": 54,
+    "ready-for-review": 149,
     "ready-to-publish": 53,
-    "last_updated": "2026-04-24T16:19:18+08:00",
+    "last_updated": "2026-04-24T16:42:17+08:00",
     "pipeline_stage_counts": {
-      "unknown": 35,
-      "task6_pending": 40,
-      "task2b_pending": 34,
-      "ready-to-publish": 53,
-      "task9_pending": 61
+      "ready-to-publish": 54,
+      "task6_pending": 33,
+      "task9_pending": 80,
+      "task2b_pending": 36,
+      "unknown": 3
     },
     "task6_state_counts": {
-      "unknown": 35,
-      "reviewed": 154,
-      "revisiting": 34
+      "reviewed": 179,
+      "revisiting": 11,
+      "pending": 8,
+      "unknown": 8
     },
     "task9_state_counts": {
-      "unknown": 35,
-      "reviewed": 97,
-      "pending": 90,
+      "reviewed": 102,
+      "pending": 95,
+      "unknown": 8,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 37,
-      "fixed": 145,
-      "pending": 38,
-      "idle": 3
+      "fixed": 141,
+      "idle": 3,
+      "pending": 52,
+      "unknown": 10
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 35,
-      "task6_pending": 40,
-      "task2b_pending": 34,
-      "ready-to-publish": 53,
-      "task9_pending": 61
+      "ready-to-publish": 54,
+      "task6_pending": 33,
+      "task9_pending": 80,
+      "task2b_pending": 36,
+      "unknown": 3
     },
     "task6_state_counts": {
-      "unknown": 35,
-      "reviewed": 154,
-      "revisiting": 34
+      "reviewed": 179,
+      "revisiting": 11,
+      "pending": 8,
+      "unknown": 8
     },
     "task9_state_counts": {
-      "unknown": 35,
-      "reviewed": 97,
-      "pending": 90,
+      "reviewed": 102,
+      "pending": 95,
+      "unknown": 8,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 37,
-      "fixed": 145,
-      "pending": 38,
-      "idle": 3
+      "fixed": 141,
+      "idle": 3,
+      "pending": 52,
+      "unknown": 10
     }
   },
   "issues": {
@@ -976,8 +978,8 @@
         "2.6",
         "2.10"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "review_round": 2,
       "task9_state": "pending",
@@ -1327,8 +1329,8 @@
         "3.1",
         "8.2"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -2913,13 +2915,13 @@
       ],
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-04-24T06:54:00+08:00",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
@@ -3839,8 +3841,8 @@
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_result": "needs-rework",
       "task9_state": "pending",
       "task2b_state": "fixed",
@@ -4160,8 +4162,8 @@
       "section": "8.3",
       "drafted_by": "openclaw-task2a",
       "drafted_date": "2026-04-01",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
@@ -4347,7 +4349,7 @@
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
       "path": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
       "title": "Android 多媒体管线性能",
-      "chapter": 8.8,
+      "chapter": "8.8",
       "section": "8.8",
       "status": "ready-for-review",
       "drafted_date": "2026-04-06",
@@ -4650,7 +4652,7 @@
         "6.3"
       ],
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -5188,8 +5190,8 @@
         "11.3",
         "13.1"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "last_task9_at": "2026-04-23T04:05:49+08:00",
@@ -5242,8 +5244,8 @@
         "5.10",
         "11.5"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task9_result": "needs-rework",
@@ -5290,8 +5292,8 @@
         "1.3",
         "4.4"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -5427,8 +5429,8 @@
         "14.1",
         "15.6"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task9_result": "needs-rework",
@@ -5443,7 +5445,7 @@
     "src/part2-performance/ch12-apk-network/02-network-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
       "title": "网络性能优化",
-      "chapter": 12.2,
+      "chapter": "12.2",
       "section": "12.2",
       "status": "finalized",
       "drafted_date": "2026-04-03",
@@ -5508,8 +5510,8 @@
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-20",
       "task6_result": "pass-light-edit",
-      "task6_state": "revisiting",
-      "pipeline_stage": "task6_pending",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -5548,8 +5550,8 @@
       "created_date": "2026-04-08",
       "gap_source": "官方文档+AOSP结构",
       "gap_score": 14,
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -5558,7 +5560,7 @@
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-24",
       "last_task9_at": "2026-04-22T07:21:28+08:00"
     },
     "src/part2-performance/ch12-apk-network/README.md": {
@@ -5812,8 +5814,8 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
@@ -5834,8 +5836,8 @@
       "applicable_versions": "Android 9 (API 28) - Android 16 (API 36)",
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -5876,8 +5878,8 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-17",
       "task6_result": "pass-light-edit",
@@ -5923,7 +5925,8 @@
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-24",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_by": "openclaw-task9",
+      "section": "18.10"
     },
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
@@ -5945,7 +5948,8 @@
       "task9_result": "needs-rework",
       "review_round": 1,
       "task9_state": "reviewed",
-      "task2b_state": "pending"
+      "task2b_state": "pending",
+      "section": "18.11"
     },
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
@@ -5956,7 +5960,7 @@
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
       "section": "18.12",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
@@ -5967,7 +5971,7 @@
       "last_task2b_at": "2026-04-23T01:13:23+08:00",
       "task9_result": "needs-rework",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-22"
+      "task9_reviewed_date": "2026-04-23"
     },
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
       "title": "WebView 渲染管线",
@@ -6024,7 +6028,7 @@
     "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md",
       "title": "Camera 渲染管线",
-      "chapter": 18.14,
+      "chapter": "18.14",
       "status": "ready-for-review",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
       "tags": [
@@ -6045,11 +6049,11 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-18",
       "task6_result": "needs-rework",
@@ -6067,7 +6071,7 @@
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task2b_state": "pending",
@@ -6119,28 +6123,29 @@
     "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
       "title": "Hardware Buffer Renderer",
-      "chapter": 18.17,
+      "chapter": "18.17",
       "status": "ready-for-review",
       "applicable_versions": "Android 14 (API 34) - Android 16 (API 36)",
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task2b_result": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-18",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-18",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T03:39:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
       "title": "PIP 与自由窗口渲染",
       "chapter": "18.18",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
       "tags": [
         "PIP",
@@ -6158,17 +6163,17 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "needs-rework",
-      "last_task9_at": "2026-04-18T11:10:00+08:00",
-      "task9_reviewed_date": "2026-04-18",
+      "last_task9_at": "2026-04-24T03:39:00+08:00",
+      "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "review_round": 1,
       "task2b_result": "fixed"
     },
@@ -6291,13 +6296,13 @@
       "last_verified_against": "perfetto.dev docs, source.android.com/docs/core/debug/perfetto,",
       "confidence": "high",
       "- type": "blog",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-22T08:40:18+08:00"
     },
@@ -6336,8 +6341,8 @@
         "15.1"
       ],
       "re-review-result": "审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "task2b_state": "fixed",
@@ -6602,8 +6607,8 @@
         "14.10",
         "1.5"
       ],
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
@@ -6615,7 +6620,7 @@
       "task2b_result": "fixed",
       "last_task9_at": "2026-04-21T03:54:40+08:00",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-21"
+      "task9_reviewed_date": "2026-04-24"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
@@ -7370,7 +7375,7 @@
       "last_verified": "2026-04-21",
       "last_verified_against": "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-23",
@@ -7537,7 +7542,7 @@
       "last_verified": "2026-04-11",
       "last_verified_against": "Android 17 release notes + Android 17 behavior changes + Mainline docs + AOSP master MessageQueue/Binder/BLAST",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
@@ -7605,7 +7610,7 @@
       "task9_reviewed_by": "openclaw-task9",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task6_pending",
       "applicable_versions": "Android 11 (API 30) - Android 16 (API 36)",
       "last_verified": "2026-04-21",
       "last_verified_against": "AOSP android-16.0.0_r1 + source.android.com",
@@ -7683,8 +7688,8 @@
       "created_date": "2026-04-08",
       "gap_source": "官方文档+研究素材+AOSP结构+读者需求",
       "gap_score": 20,
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "task2b_state": "fixed",
@@ -7778,7 +7783,7 @@
         "17.2"
       ],
       "task6_state": "reviewed",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-21",
@@ -7912,7 +7917,7 @@
     "src/part3-tools/ch19-apm/01-apm-landscape.md": {
       "path": "src/part3-tools/ch19-apm/01-apm-landscape.md",
       "title": "APM 全景图与分类体系",
-      "chapter": "19.01",
+      "chapter": "19",
       "section": "19.01",
       "status": "ready-for-review",
       "task6_state": "revisiting",
@@ -7932,7 +7937,7 @@
     "src/part3-tools/ch19-apm/02-tencent-matrix.md": {
       "path": "src/part3-tools/ch19-apm/02-tencent-matrix.md",
       "title": "Tencent Matrix",
-      "chapter": "19.02",
+      "chapter": "19",
       "section": "19.02",
       "status": "ready-for-review",
       "task6_state": "revisiting",
@@ -7952,7 +7957,7 @@
     "src/part3-tools/ch19-apm/03-koom.md": {
       "path": "src/part3-tools/ch19-apm/03-koom.md",
       "title": "KOOM",
-      "chapter": "19.03",
+      "chapter": "19",
       "section": "19.03",
       "status": "finalized",
       "task6_state": "reviewed",
@@ -7971,7 +7976,7 @@
     "src/part3-tools/ch19-apm/04-btrace.md": {
       "path": "src/part3-tools/ch19-apm/04-btrace.md",
       "title": "btrace / RheaTrace",
-      "chapter": "19.04",
+      "chapter": "19",
       "section": "19.04",
       "status": "finalized",
       "task6_state": "reviewed",
@@ -8073,6 +8078,221 @@
       "task2b_fixed_at": "2026-04-24T14:55:00+08:00",
       "last_task2b_at": "2026-04-24T14:55:00+08:00",
       "path": "src/part3-tools/ch19-apm/09-measure.md"
+    },
+    "src/part3-tools/ch19-apm/16-profiling-manager.md": {
+      "path": "src/part3-tools/ch19-apm/16-profiling-manager.md",
+      "title": "ProfilingManager",
+      "section": "19.16",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-24",
+      "last_task9_at": "2026-04-24T16:40:21+08:00",
+      "chapter": "19",
+      "status": "ready-for-review",
+      "task6_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/17-firebase-performance.md": {
+      "path": "src/part3-tools/ch19-apm/17-firebase-performance.md",
+      "title": "Firebase Performance",
+      "section": "19.17",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-24",
+      "last_task9_at": "2026-04-24T16:40:21+08:00",
+      "chapter": "19",
+      "status": "ready-for-review",
+      "task6_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/18-commercial-apm.md": {
+      "path": "src/part3-tools/ch19-apm/18-commercial-apm.md",
+      "title": "商业 APM 平台（Sentry、APMPlus、Bugly）",
+      "section": "19.18",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-24",
+      "last_task9_at": "2026-04-24T16:40:21+08:00",
+      "chapter": "19",
+      "status": "ready-for-review",
+      "task6_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/22-storage-benchmark.md": {
+      "path": "src/part3-tools/ch19-apm/22-storage-benchmark.md",
+      "title": "存储 Benchmark（AndroBench、A1 SD Bench）",
+      "chapter": "19",
+      "section": "19.22",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md": {
+      "path": "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+    },
+    "src/part3-tools/ch19-apm/21-benchmark-apps.md": {
+      "path": "src/part3-tools/ch19-apm/21-benchmark-apps.md",
+      "title": "Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）",
+      "chapter": "19",
+      "section": "19.21",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/08-argusapm.md": {
+      "path": "src/part3-tools/ch19-apm/08-argusapm.md",
+      "title": "ArgusAPM",
+      "chapter": "19",
+      "section": "19.08",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/20-solopi-emmagee.md": {
+      "path": "src/part3-tools/ch19-apm/20-solopi-emmagee.md",
+      "title": "SoloPi 与 Emmagee",
+      "chapter": "19",
+      "section": "19.20",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/11-jankstats.md": {
+      "path": "src/part3-tools/ch19-apm/11-jankstats.md",
+      "title": "JankStats",
+      "chapter": "19",
+      "section": "19.11",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md": {
+      "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+      "title": "网络 APM 底层捕获原理",
+      "chapter": "19",
+      "section": "19.23",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending"
+    },
+    "src/part3-tools/ch19-apm/06-blockcanary.md": {
+      "path": "src/part3-tools/ch19-apm/06-blockcanary.md",
+      "title": "BlockCanary",
+      "chapter": "19",
+      "section": "19.06",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/26-hybrid-apm.md": {
+      "path": "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+      "title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "chapter": "19",
+      "section": "19.26",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending"
+    },
+    "src/part3-tools/ch19-apm/14-jetpack-benchmark.md": {
+      "path": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
+    },
+    "src/part3-tools/ch19-apm/25-battery-thermal-apm.md": {
+      "path": "src/part3-tools/ch19-apm/25-battery-thermal-apm.md",
+      "title": "耗电与发热监控 (Battery & Thermal)",
+      "chapter": "19",
+      "section": "19.25",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending"
+    },
+    "src/part3-tools/ch19-apm/12-framemetrics.md": {
+      "path": "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "title": "FrameMetrics",
+      "chapter": "19",
+      "section": "19.12",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/19-perfdog.md": {
+      "path": "src/part3-tools/ch19-apm/19-perfdog.md",
+      "title": "PerfDog",
+      "chapter": "19",
+      "section": "19.19",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/05-leakcanary.md": {
+      "path": "src/part3-tools/ch19-apm/05-leakcanary.md",
+      "title": "LeakCanary",
+      "chapter": "19",
+      "section": "19.05",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/10-other-opensource-apm.md": {
+      "path": "src/part3-tools/ch19-apm/10-other-opensource-apm.md"
+    },
+    "src/part3-tools/ch19-apm/15-baseline-profiles.md": {
+      "path": "src/part3-tools/ch19-apm/15-baseline-profiles.md",
+      "title": "Baseline Profiles 与编译优化",
+      "chapter": "19",
+      "section": "19.15",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/24-crash-anr-internals.md": {
+      "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+      "title": "崩溃与 ANR 捕获机制",
+      "chapter": "19",
+      "section": "19.24",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending"
+    },
+    "src/part3-tools/ch19-apm/07-dokit.md": {
+      "path": "src/part3-tools/ch19-apm/07-dokit.md",
+      "title": "DoraemonKit / DoKit",
+      "chapter": "19",
+      "section": "19.07",
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "task2b_state": "pending"
+    },
+    "src/part3-tools/ch19-apm/27-apm-client-architecture.md": {
+      "path": "src/part3-tools/ch19-apm/27-apm-client-architecture.md",
+      "title": "千万级 DAU 的 APM 端侧架构",
+      "chapter": "19",
+      "section": "19.27",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending"
     }
   },
   "section_18_7": {
