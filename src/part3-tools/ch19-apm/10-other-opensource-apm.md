@@ -1,43 +1,42 @@
 ---
-{
-  "title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）",
-  "chapter": "19",
-  "section": "19.10",
-  "status": "ready-for-review",
-  "drafted_date": "2026-04-24",
-  "drafted_by": "codex",
-  "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-  "last_verified": "2026-04-24",
-  "last_verified_against": "AndroidGodEye / Collie / Rabbit GitHub READMEs",
-  "confidence": "medium",
-  "tags": [
-    "apm"
-  ],
-  "related_chapters": [
-    "19.0"
-  ],
-  "sources": [
-    {
-      "type": "blog",
-      "path": "https://github.com/Kyson/AndroidGodEye"
-    },
-    {
-      "type": "blog",
-      "path": "https://github.com/happylishang/Collie"
-    },
-    {
-      "type": "blog",
-      "path": "https://github.com/SusionSuc/rabbit-client"
-    }
-  ],
-  "pipeline_stage": "task9_pending",
-  "task6_state": "reviewed",
-  "task9_state": "pending",
-  "task2b_state": "pending",
-  "reviewed_by": "openclaw-task6",
-  "reviewed_date": "2026-04-24",
-  "task6_result": "pass-light-edit"
-}
+title: "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）"
+chapter: "19"
+section: "19.10"
+status: ready-for-review
+drafted_date: "2026-04-24"
+drafted_by: "codex"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+last_verified: "2026-04-24"
+last_verified_against: "AndroidGodEye / Collie / Rabbit / Matrix GitHub READMEs + Android developers docs"
+confidence: medium
+tags: [apm]
+related_chapters: ["19.02", "19.09", "19.11", "19.12", "19.16", "19.17", "19.18"]
+sources:
+  - type: blog
+    path: "https://github.com/Kyson/AndroidGodEye"
+  - type: blog
+    path: "https://github.com/happylishang/Collie"
+  - type: blog
+    path: "https://github.com/SusionSuc/rabbit-client"
+  - type: blog
+    path: "https://github.com/Tencent/matrix"
+  - type: official
+    path: "https://developer.android.com/topic/performance/jankstats"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/Window.OnFrameMetricsAvailableListener"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-24"
+task6_result: pass-light-edit
+task2b_result: fixed
+last_task2b_at: "2026-04-24T16:50:00+08:00"
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
 ---
 
 # 其他开源 APM 库（AndroidGodEye、Collie、Rabbit）
@@ -47,157 +46,195 @@
 
 ### 锚点（必须覆盖）
 
-- 🔹 [章节定位] 说明 AndroidGodEye、Collie、Rabbit 更适合学习设计取舍和补充思路，不能直接等同于现代生产 APM 方案。
-- 🔹 [项目状态] 对每个项目补仓库地址、维护活跃度、最近版本、主要模块、依赖风险和适配边界。
-- 🔹 [AndroidGodEye] 展开浏览器看板、插件式采集、CPU / memory / network / FPS 等能力；说明适合 Debug 还是线上。
-- 🔹 [Collie] 提炼轻量采样、端侧缓存、远程开关和线上低开销思路；写清它能保留哪些现场。
-- 🔹 [Rabbit] 说明研发工具和 APM 混合形态，重点写慢函数、APK 分析、调试入口和工程使用场景。
-- 🔹 [横向对比] 用表格比较数据来源、接入成本、线上可用性、可视化、报告产物、维护风险。
-- 🔹 [最小 SDK] 从这些项目提炼一个最小 APM SDK 结构：collector、sampler、buffer、uploader、config、report schema。
-- 🔹 [线程模型] 写采集线程、上传线程、主线程监听、定时采样之间的关系，说明避免干扰业务线程的方法。
-- 🔹 [开关设计] 展开远程配置、本地兜底、采样率、按版本/机型/页面启用、失败降级。
-- 🔹 [使用建议] 明确哪些代码可以借鉴，哪些模块因版本、维护或系统限制不建议直接引入。
+- 🔹 AndroidGodEye、Collie、Rabbit 更适合拿来学习设计取舍或补齐存量项目，不适合直接当现代生产 APM 默认基线
+- 🔹 要把它们和 Matrix、官方 SDK、商业平台放在同一张决策表里看，不能只比功能名词
+- 🔹 Matrix 的官方定位要按 upstream README 表述：plugin style、non-invasive APM system developed by WeChat
+- 🔹 轻量方案、官方 SDK、商业平台的切换点要写清楚，包括接入成本、归因能力、治理成本和退出成本
+- 🔹 从旧开源库迁移到官方 SDK / 平台时，要先拆数据合同，再拆采集模块，再替换上报流程
 
 ### 扩展（可选深入）
 
-- 🔸 增加一张“轻量 APM SDK 最小架构图”。
-- 🔸 补充三个项目的 report 字段示例，统一到本章推荐的数据合同。
-- 🔸 对 GitHub README、issue、commit 活跃度做核对，并在正文中写出风险。
-- 🔸 增加与 Matrix、DoKit、BlockCanary 的关系说明。
-- 🔸 补一个从旧开源项目迁移到官方 SDK / 自研轻量 SDK 的步骤表。
-
-### 流水线加工要求
-
-- 对旧项目必须写维护状态和替代方案，不能只做功能介绍。
-- 每个设计取舍都要说明能带来什么数据、会付出什么成本。
-- 抽象成最小 SDK 时，字段和线程命名要和 01 节数据模型一致。
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+- 🔸 补一张最小 APM SDK 架构图
+- 🔸 给 Rabbit / AndroidGodEye / Collie 补 report schema 示例
+- 🔸 补一张“旧开源能力 -> 官方 SDK / 平台”的映射表
 <!-- outline-end -->
 
 ## 这些项目适合看设计取舍
 
-AndroidGodEye、Collie、Rabbit 都属于开源 Android APM 或研发监控工具。它们覆盖 CPU、内存、FPS、卡顿、启动、网络、Crash、线程、页面耗时、APK 分析等能力，但维护活跃度、现代 Android 适配和线上可用性差异很大。
+AndroidGodEye、Collie、Rabbit 都是开源 Android APM 或研发监控工具。它们覆盖 CPU、内存、FPS、卡顿、启动、网络、Crash、线程、页面耗时、APK 分析等能力，但维护活跃度、构建链兼容性和现代 Android 适配差异很大。
 
-这一组工具更适合作为设计参考或存量项目补充，不建议新项目在没有验证的情况下直接作为线上主方案。
+把它们放进今天的项目里，更合适的用法是两种：
 
-## AndroidGodEye：浏览器看板式性能监控
+- 当作设计样本，学习“轻量信号怎么采、怎么缓存、怎么上报”
+- 在存量项目里局部借用某个模块，补一段调试或诊断能力
 
-AndroidGodEye 的定位很像“端内性能数据 + PC 浏览器看板”。README 中把它描述为类似 Android Studio Profiler 的 App 性能监控工具，可以在 PC 浏览器里实时看应用性能数据，也提到可用于生产环境。
+如果新项目要做长期线上治理，不能只看它们能采什么，还要看合规、配置中心、告警、会话归因、版本治理和退出成本。
 
-它覆盖的模块很多：
+## AndroidGodEye：浏览器看板式调试平台
 
-- CPU、RAM、PSS、Heap、Battery、Traffic。
-- FPS、卡顿、启动、页面加载、线程 dump。
-- Crash、ANR、网络、方法耗时。
-- App size、复杂布局、过度绘制、不合理图片使用。
-- 基于 LeakCanary / Shark 的泄漏检测。
+AndroidGodEye 的 README 把它描述成类似 Android Studio Profiler 的性能监控工具，重点是端上采集加浏览器看板。它覆盖的模块很多：CPU、RAM、PSS、Heap、Battery、Traffic、FPS、卡顿、启动、页面加载、线程 dump、Crash、ANR、网络、方法耗时，以及基于 LeakCanary / Shark 的泄漏检测。
 
-这个覆盖面很适合做内部调试平台。风险也来自覆盖面：模块越多，越要确认每个模块在目标 Android 版本、目标机型、目标构建链上的开销和兼容性。
+这类方案适合内部调试平台，原因很直接：
+
+- 数据面广，接上后能很快看到曲线和现场
+- 浏览器看板适合研发和测试现场联调
+- 模块化做法适合拿来学习最小采集框架怎么拆
+
+它的代价也很直接：能力越多，越要逐项验证开销、权限、ROM 差异和 Release 包边界。内部调试看板能接受的信息密度和线上稳定 schema 不是一回事。
 
 ## Collie：轻量线上采样思路
 
-Collie 的 README 把它称为线上轻量级 Android 性能监测工具。它的实现思路比较直接：
+Collie 的切入点是轻量线上监测。它主要依赖 Android 公开能力把几类核心信号拼出来：
 
-- FPS 和卡顿基于 Looper 的打印回调。
-- 流量通过 `TrafficStats`。
-- 内存通过 `Debug`。
-- 泄漏通过 `WeakHashMap`。
-- 启动耗时通过 `ContentProvider` 和 window focus 等节点。
+- FPS / 卡顿：Looper message logging
+- 流量：`TrafficStats`
+- 内存：`Debug` 与 Runtime heap
+- 泄漏：`WeakHashMap`
+- 启动：`ContentProvider`、window focus 等关键节点
 
-这些实现路径足够轻，也很容易理解。它适合学习“一个最小可用 APM SDK 需要哪些信号”。但要进入现代线上包，还要补很多工程能力：远程开关、采样、页面归因、后台上报、隐私字段过滤、多进程、数据丢失保护和指标口径稳定性。
+这条路线的价值在于：接入成本低，概念简单，适合团队先把第一版线上看板跑起来。局限也很明显：数据深度有限，页面归因、多进程、远程开关、异常关联、后台补传、隐私过滤都要自己补。
 
 ## Rabbit：研发工具和 APM 混合形态
 
-Rabbit 的定位是 Android APM framework / tools，覆盖应用测速、FPS、慢函数、网络请求、内存、Crash、APK 分析、自定义 UI 和数据上报。
+Rabbit 把慢函数、网络测速、内存、Crash、APK 分析、自定义 UI 和数据上报放进同一套工具里。对内部测试包来说，这种一体化设计很顺手：研发能直接看慢函数现场，也能顺手看包体与资源问题。
 
-它的特点是把调试工具和性能监控放在一起：既能看网络 JSON、慢函数调用栈，也能分析 APK 大图和重复文件。对于内部测试包，这种一体化工具很方便；对于 Release 包，则要拆分哪些功能能上线、哪些只能在研发环境使用。
+Release 包接入时要把边界拆清：
+
+- 运行时诊断能力是否会增加包体、线程或 Hook 风险
+- APK 分析、大图检查、重复文件这类能力是否更适合放进 CI
+- 慢函数插桩是否还能适配当前 AGP、R8、混淆和 mapping 体系
 
 ## 横向对比
 
 | 工具 | 更适合 | 主要风险 |
 |---|---|---|
-| AndroidGodEye | 内部调试看板、性能数据可视化、模块化采样参考 | 模块多，线上开销和现代系统适配需要逐项验证 |
-| Collie | 学习轻量 APM 信号采集、快速自研最小方案 | 能力基础，平台、采样、归因和合规要自补 |
-| Rabbit | 研发工具集合、网络和慢函数现场、APK 分析 | Debug / Release 边界要拆清，旧构建链适配要验证 |
+| AndroidGodEye | 内部调试看板、性能数据可视化、模块化采样参考 | 模块多，线上开销和现代系统适配要逐项验证 |
+| Collie | 学习轻量 APM 信号采集、快速自研最小方案 | 能力基础，页面归因、配置中心、合规和补传要自补 |
+| Rabbit | 研发工具集合、网络和慢函数现场、APK 分析 | Debug / Release 边界要拆清，构建链适配要验证 |
 
-这三者和 Matrix、KOOM 的差别在于工程成熟方向不同。Matrix 更像大型客户端监控框架，KOOM 是内存专项，Measure 是平台型方案；AndroidGodEye、Collie、Rabbit 更偏轻量采集、研发面板或学习参考。
+## Matrix、轻量方案、官方 SDK、商业平台的分工
+
+这里最容易写歪的是 Matrix 的定位。Matrix upstream README 的原话是 **plugin style、non-invasive APM system developed by WeChat**。这是一条官方定位，书稿里应该按这个口径引用。
+
+落到工程使用层面，Matrix 承担的角色更接近**客户端采集框架**：Trace Canary、Resource Canary、IO Canary、SQLiteLint、Battery Canary 都挂在同一套插件体系下，方便统一接入、统一配置和统一上报。这是接入层面的角色判断，不是对 upstream 定位的改写。
+
+把四类方案放在一张表里看，分工会更清楚：
+
+| 方案 | 主要价值 | 短板 | 适合什么时候选 |
+|---|---|---|---|
+| 轻量开源方案（Collie、局部自研） | 成本低，能快速起步 | 归因深度、治理能力、稳定 schema 较弱 | 团队先把启动、慢帧、主线程 block、网络耗时跑通 |
+| 客户端监控框架（Matrix、KOOM） | 端侧采集能力更全，专项模块更成熟 | 接入、调参与兼容性验证成本更高 | 已经明确要做客户端专项治理 |
+| 官方 SDK / 系统能力（JankStats、FrameMetrics、ApplicationExitInfo、ProfilingManager） | 口径稳定，系统兼容性好，适合长期维护 | 功能面通常更窄，需要自己补治理流程 | 希望先建立稳定基础指标与诊断入口 |
+| 商业 / 平台型方案（Firebase Performance、Measure、Sentry、APMPlus、Bugly） | 会话、告警、看板、权限管理、协同流程完整 | 成本、数据所有权、私有化、迁移锁定要评估 | 团队已经需要跨端看板、告警治理和组织级协作 |
+
+决策时别只看“哪个工具功能多”。更关键的是：谁负责端侧采集，谁负责样本治理，谁负责看板与告警，谁负责数据合同。
+
+## 轻量方案和商业平台的切换点
+
+下面这张表更适合做实际决策：
+
+| 现状 | 更合适的方向 | 原因 |
+|---|---|---|
+| 只有少量研发同学要看本地现场 | AndroidGodEye / Rabbit / 内部 debug 面板 | 现场可视化比组织级治理更重要 |
+| 线上只缺启动、慢帧、主线程 block、Crash 基础指标 | Collie 类轻量方案 + 官方 SDK | 先把数据口径跑稳，避免一上来引入过重框架 |
+| 已经需要 session 视角、告警、版本回滚辅助、跨团队协同 | 平台型或商业方案 | 单纯端侧采集已经不够，问题在治理流程 |
+| 数据合规、私有化、退出成本是采购前提 | 先定内部 schema，再评估平台 | 没有数据合同，后面迁移成本会持续放大 |
 
 ## 使用建议
 
-如果是存量项目，先看当前库是否仍然能在目标 AGP、targetSdk、Android 版本和 64 位环境下稳定运行。只要涉及字节码插桩、Hook、线程抓栈、网络拦截，都要用灰度包跑一轮压力测试。
+存量项目接这类库之前，要先做四项检查：
 
-如果是新项目，更建议吸收这些项目的设计思路，而不是直接照搬。轻量 APM 的最低成本方案可以从 Collie 类思路开始：启动、慢帧、主线程 block、内存、Crash、网络耗时。等这些指标稳定后，再决定是否引入 Matrix、KOOM、Measure 或商业平台。
+- 目标 AGP、targetSdk、64 位、多进程环境是否能稳定跑
+- 采集线程、上传线程、Hook 点会不会和现有 SDK 冲突
+- 数据格式能不能并入现有 APM 事件模型
+- 关闭开关、降采样、灰度回滚是不是现成可用
+
+新项目更稳的路线通常是：基础指标先用官方 SDK 和公开系统能力补齐，再根据专项问题决定要不要引入 Matrix、KOOM 或平台型方案。
 
 ## 从这些项目提炼最小 APM SDK
 
-AndroidGodEye、Collie、Rabbit 虽然维护状态不同，但它们共同说明了一件事：一个最小 APM SDK 可以很小。基础版本只需要这些信号：
+AndroidGodEye、Collie、Rabbit 虽然形态不同，但它们共同说明了一件事：一个能上线的最小 APM SDK 不需要一开始就做得很重。
 
 | 信号 | 采集方式 | 最小输出 |
 |---|---|---|
 | 冷启动耗时 | `ContentProvider` / `Application` / 首帧节点 | `startup_ms`、启动类型、页面 |
-| 慢帧 | JankStats / Choreographer | 慢帧率、页面、交互状态 |
+| 慢帧 | `JankStats` / `Choreographer` / `FrameMetrics` | 慢帧率、页面、交互状态 |
 | 主线程 block | Looper message logging + 抓栈 | block 耗时、堆栈签名 |
 | 内存 | `Debug.getMemoryInfo()` / Runtime heap | PSS、Java heap、native heap |
 | 网络 | OkHttp interceptor / 统一网络层 | URL pattern、阶段耗时、错误类型 |
-| Crash / ANR | 崩溃处理、ApplicationExitInfo、ANR 监控 | 堆栈、退出原因、版本 |
+| Crash / ANR | 崩溃处理、`ApplicationExitInfo`、ANR 监控 | 堆栈、退出原因、版本 |
 | 页面 | Activity / Fragment lifecycle | 页面进入、退出、停留 |
 
-这些信号足够支撑第一版线上性能看板。不要一开始就做复杂 Hook、完整方法 trace 和大文件上传。基础指标稳定后，再补专项工具。
+这套最小信号已经足够支撑第一版线上看板。指标稳定后，再决定是否补重样本、端侧专项或平台化能力。
 
 ## 轻量 APM 的线程模型
 
-自研或改造这些开源项目时，线程模型要先定好：
+自研或改造这些开源项目时，线程模型要先定清楚：
 
 ```mermaid
 flowchart TD
-    A["主线程采集点\n帧 / Looper / 页面"] --> B["内存队列\n轻量对象"]
-    C["后台采样\nCPU / 内存 / 网络聚合"] --> B
-    B --> D["批量序列化\n限频 + 压缩"]
-    D --> E["本地缓存\n大小上限 + TTL"]
-    E --> F["上传任务\n网络条件 + 采样"]
+    A["主线程采集点
+帧 / Looper / 页面"] --> B["内存队列
+轻量对象"]
+    C["后台采样
+CPU / 内存 / 网络聚合"] --> B
+    B --> D["批量序列化
+限频 + 压缩"]
+    D --> E["本地缓存
+大小上限 + TTL"]
+    E --> F["上传任务
+网络条件 + 采样"]
 ```
 
-主线程只允许写入轻量事件，不能做 JSON 序列化、文件写入、网络请求或复杂堆栈处理。APM SDK 如果自己制造卡顿，后续数据都会失去可信度。
+主线程只允许写入轻量事件。JSON 序列化、文件写入、压缩、网络请求、复杂堆栈处理都要离开主线程。APM SDK 如果自己制造卡顿，后面的监控结果就不可信。
 
 ## 线上开关设计
 
 轻量 APM 至少要有三级开关：
 
-- **总开关**：紧急关闭 SDK 采集。
-- **模块开关**：启动、帧、网络、内存、Crash、trace 分别控制。
-- **采样开关**：按用户、设备、版本、页面、异常类型调整。
+- **总开关**：紧急关闭全部采集
+- **模块开关**：启动、帧、网络、内存、Crash、trace 分开控制
+- **采样开关**：按用户、设备、版本、页面、异常类型调节
 
-配置要带版本号和生效时间。客户端收到配置后要能回传当前配置版本，否则平台不知道某条样本是在什么采样条件下产生的。
+配置要带版本号和生效时间。客户端收到配置后还要回传配置版本，不然平台无法判断样本是在什么采样条件下产生的。
 
-## AndroidGodEye 的可视化思路
+## AndroidGodEye、Collie、Rabbit 各自更适合借什么
 
-AndroidGodEye 的浏览器看板思路适合内部工具：端上采集数据，通过本地服务或通信通道展示在 PC。它的优点是迭代快，开发人员能看到实时曲线；缺点是和线上平台的数据模型不同。
+- **AndroidGodEye**：借它的可视化面板思路，把本地调试看板和线上上报 schema 分开
+- **Collie**：借它的轻量信号采集路线，快速搭一版启动、慢帧、主线程 block、内存、网络基础指标
+- **Rabbit**：借它的研发工具组合方式，但把运行时诊断和构建期检查分开
 
-如果借鉴它，建议把“本地实时看板”和“线上上报 schema”拆开。实时看板可以显示更多调试字段，线上上报只保留稳定字段和脱敏后的样本。
+大图、重复资源、APK 组成、SO 体积这类问题更适合放进 CI。让运行时 SDK 承担这些职责，通常只会增加维护负担。
 
-## Collie 的轻量实现边界
+## 从旧开源工具迁移到官方 SDK / 平台的 checklist
 
-Collie 用 Looper、TrafficStats、Debug、WeakHashMap、ContentProvider 等系统能力拼出轻量 APM。这种路线适合快速起步，但每个信号都有边界：
+迁移时，顺序要稳，不要直接一把切。
 
-- `TrafficStats` 只能给进程或 UID 粒度流量，不能自动拆到接口。
-- `Debug` 内存数据适合趋势，不等于完整 heap 分析。
-- `WeakHashMap` 泄漏检测只能做粗略提示。
-- `ContentProvider` 启动节点很早，但会改变启动路径，数量多时本身有成本。
+1. 先列出现有事件与字段：页面、用户、版本、设备、异常类型、trace id、session id
+2. 定内部 schema，保证字段名和枚举先稳定下来
+3. 把采集模块按能力拆开：启动、帧、block、网络、Crash、内存、重样本
+4. 用官方 SDK 或公开系统能力替掉最基础的一层
+5. 保留旧库与新流程一段时间双写，对比口径差异
+6. 看板和告警迁完，再逐步下线旧上报流程
+7. 观察一到两个发布周期，再移除旧 SDK
 
-轻量实现的价值是低侵入，代价是诊断深度有限。不要让它承担超出能力范围的根因分析。
+下面这张映射表可以直接拿来做迁移盘点：
 
-## Rabbit 的慢函数和 APK 分析
+| 旧能力 | 优先迁移目标 | 说明 |
+|---|---|---|
+| 慢帧 / 卡顿 | `JankStats`、`FrameMetrics` | 先把系统口径稳定下来 |
+| 启动异常后的重样本 | `ProfilingManager` + Perfetto | 指标发现问题后再取证 |
+| Crash / ANR | Crash SDK + `ApplicationExitInfo` | 退出原因和堆栈分别治理 |
+| Java 泄漏本地复盘 | `LeakCanary` | 研发自查比线上常驻更合适 |
+| 线上内存专项 | `KOOM` 或内部专项模块 | 不和轻量基础指标混在一起 |
+| 看板、告警、权限、跨团队协作 | 平台型 / 商业方案 | 这部分不是轻量库擅长的事 |
 
-Rabbit 把慢函数、网络、测速、APK 分析放在一起，这对研发包很方便。书稿里更值得关注的是两个方向：
+## 参考资料
 
-- **慢函数**：如果靠插桩记录方法耗时，就要处理 AGP、R8、混淆、包名过滤、method id 映射。
-- **APK 分析**：大图、重复文件、包体组成适合放进 CI，不一定要进运行时 SDK。
-
-运行时 APM 和构建期检查要拆开。大图、重复资源、so 体积、asset 体积这些问题在发版前就能发现，没必要等线上用户触发。
+- AndroidGodEye GitHub: https://github.com/Kyson/AndroidGodEye
+- Collie GitHub: https://github.com/happylishang/Collie
+- Rabbit GitHub: https://github.com/SusionSuc/rabbit-client
+- Matrix GitHub: https://github.com/Tencent/matrix
+- JankStats: https://developer.android.com/topic/performance/jankstats
+- FrameMetrics: https://developer.android.com/reference/android/view/Window.OnFrameMetricsAvailableListener
+- ApplicationExitInfo: https://developer.android.com/reference/android/app/ApplicationExitInfo

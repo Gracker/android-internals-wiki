@@ -5,25 +5,37 @@ section: "19.16"
 status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+applicable_versions: "Android 15+（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
 last_verified: "2026-04-24"
-last_verified_against: "Android ProfilingManager API reference"
+last_verified_against: "developer.android ProfilingManager / ProfilingTrigger / ProfilingResult + AndroidX Profiling reference"
 confidence: medium
-tags: [apm]
-related_chapters: ["19.0"]
+tags: [apm, profiling, perfetto]
+related_chapters: ["19.11", "19.12", "19.13", "15.5", "13.1", "9.1", "8.2"]
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/os/ProfilingManager"
   - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingResult"
+  - type: official
     path: "https://developer.android.com/topic/performance/profiling-manager"
-pipeline_stage: task2b_pending
-task6_state: pending
-task9_state: reviewed
-task2b_state: pending
+  - type: official
+    path: "https://developer.android.com/reference/androidx/core/os/Profiling"
+  - type: official
+    path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-24
-last_task9_at: 2026-04-24T16:40:21+08:00
+task9_reviewed_date: "2026-04-24"
+last_task9_at: "2026-04-24T16:40:21+08:00"
+task2b_result: fixed
+last_task2b_at: "2026-04-24T16:50:00+08:00"
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
 ---
 
 # ProfilingManager
@@ -33,175 +45,173 @@ last_task9_at: 2026-04-24T16:40:21+08:00
 
 ### 锚点（必须覆盖）
 
-- 🔹 [定位] 说明 ProfilingManager 把系统 profiling 能力以受控 API 暴露给 App，用于线上或灰度环境触发专项样本。
-- 🔹 [类型] 列出支持的 profiling 类型、输出文件、适用问题和系统版本要求；必须按官方 API 核对。
-- 🔹 [调用形态] 展开 request、parameters、callback、executor、result file、error code 的基本调用流程。
-- 🔹 [触发设计] 写 App-driven profiling 触发条件：慢启动、ANR 前兆、慢帧升高、内存异常、远程配置命中、用户反馈。
-- 🔹 [Android 16+] 核对系统触发能力和 API 变化；所有版本相关内容必须标注来源和适用 API level。
-- 🔹 [结果生命周期] 说明文件生成、可访问时间、复制、压缩、上传、删除、失败处理和磁盘配额。
-- 🔹 [四类边界] 按 CPU、heap、system trace、Java heap dump 等类型说明适用问题和不能回答的问题。
-- 🔹 [隐私] 覆盖 trace 文件、堆信息、线程名、路径、URL、符号、用户数据的裁剪和上传策略。
-- 🔹 [APM 集成] 设计 profiling sample 与 session、event、trace id、版本、页面、设备的关联字段。
-- 🔹 [工具关系] 和 Perfetto 手动采集、Android Studio Profiler、JankStats、FrameMetrics 的使用顺序做说明。
+- 🔹 `ProfilingManager` 的公开平台 API 从 Android 15（API 35）开始可用，不能写成 Android 8-17 全覆盖
+- 🔹 app-driven profiling 和 system-triggered profiling 是两套能力，回调链也分 request listener 与 global listener 两层
+- 🔹 trigger 版本边界要拆开写：API 36、version 36.1、API 37 不是同一层能力
+- 🔹 `ProfilingResult` 的错误码、限流、并发冲突、磁盘不足要分别处理，不能只写成“失败原因”
+- 🔹 `ProfilingManager` 在排查流程里的位置是“指标发现异常后的重样本取证”，不是常驻指标 SDK
 
 ### 扩展（可选深入）
 
-- 🔸 增加 ProfilingManager 调用代码示例，并标注权限、API level 和错误处理。
-- 🔸 补一张结果文件生命周期图。
-- 🔸 对 Android ProfilingManager API reference 做 L1 核对，特别是 Android 16+ 行为。
-- 🔸 补充线上触发的风控表：采样率、文件大小、Wi-Fi、充电、温度、低端机排除。
-- 🔸 增加与商业 APM profiling 能力的差异说明。
-
-### 流水线加工要求
-
-- ProfilingManager 章节必须以官方 API 为准，不确定的版本信息一律标注待核对。
-- 每种 profiling 类型都要写适用问题、输出物、开销和隐私风险。
-- 线上触发示例必须包含采样和上传限制。
-
-### OpenClaw 加工指引
-
-> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
-> **扩展**视素材丰富程度选择性深入。
-> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
-> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
-> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+- 🔸 用 AndroidX `Profiling` / `ProfilingRequest` 包装请求构造
+- 🔸 补一张 request listener / global listener 的结果分发表
+- 🔸 给 trigger 场景补版本对照表和 artifact 对照表
 <!-- outline-end -->
 
-## ProfilingManager 把系统 profiling 暴露给 App
+## 适用范围按版本拆开
 
-`android.os.ProfilingManager` 是 Android 15（API 35）加入的平台 API，用于由 App 请求系统 profiling。官方 API 支持的类型包括 Java heap dump、heap profile、stack sampling 和 system trace。
+`android.os.ProfilingManager` 是 Android 15（API 35）加入的平台 API。它解决的是量产设备上“异常发生时没有提前开工具”的缺口：应用在受系统预算约束的前提下，请系统抓一份更重的样本，用来补充线上指标。
 
-它的意义在于：应用可以在真实用户设备上，在受系统约束的条件下请求性能资料，而不是只能依赖开发者手动 adb 抓 trace。它仍然不是传统常驻 APM SDK，采集频率、文件生成、权限和系统策略都要遵守平台限制。
+这里有两个边界要先拆清：
 
-## 支持哪些 profiling 类型
+- **app-driven profiling**：API 35 起可用。应用主动发起请求，抓 system trace、Java heap dump、heap profile、stack sampling
+- **system-triggered profiling**：从 API 36、version 36.1、API 37 逐步补齐。结果由系统事件触发，接收方式和 request callback 不同
 
-| 类型 | API 常量 | 适合的问题 |
-|---|---|---|
-| Java heap dump | `PROFILING_TYPE_JAVA_HEAP_DUMP` | Java 对象引用和内存泄漏分析 |
-| Heap profile | `PROFILING_TYPE_HEAP_PROFILE` | 分配行为和内存增长分析 |
-| Stack sampling | `PROFILING_TYPE_STACK_SAMPLING` | CPU 热点和线程执行采样 |
-| System trace | `PROFILING_TYPE_SYSTEM_TRACE` | 调度、渲染、I/O、Binder 等系统事件 |
+如果把这两类能力混写，版本判断、回调注册和结果归档都会写错。
 
-这些资料比普通指标重得多。一次 system trace 或 heap dump 不能当作帧级指标那样频繁采集，更适合异常触发、灰度诊断或用户反馈后的单点取证。
+## 按结果类型选请求
 
-## 基本调用形态
+应用侧真正要先决定的是“要回答什么问题”，再选 request 类型。
 
-下面代码展示 API 形态，重点看 profiling type、参数、tag 和异步回调。
+| 请求类型 | 结果形态 | 适合回答的问题 | 不适合 |
+|---|---|---|---|
+| `SystemTraceRequestBuilder` | `.perfetto-trace` | 启动慢、卡顿、ANR 前后线程时序、Binder / I/O / 调度问题 | 直接看对象引用链 |
+| `JavaHeapDumpRequestBuilder` | `.hprof` | 哪些对象还活着、谁把 Java heap 顶满了 | 观察一段时间里的分配波动 |
+| `HeapProfileRequestBuilder` | heap profile trace | 哪类分配一直涨、分配热点在哪 | 直接确认 GC root |
+| `StackSamplingRequestBuilder` | stack samples trace | CPU 时间主要花在哪段调用栈 | 看完整系统时间线 |
 
-```kotlin
-if (Build.VERSION.SDK_INT >= 35) {
-    val manager = context.getSystemService(ProfilingManager::class.java)
-    manager.requestProfiling(
-        ProfilingManager.PROFILING_TYPE_SYSTEM_TRACE,
-        Bundle(),
-        "startup_slow_sample",
-        null,
-        executor
-    ) { result ->
-        handleProfilingResult(result)
+线上接入时，system trace 和 heap dump 都属于重样本。它们更适合异常取证，不适合替代常驻指标。
+
+## app-driven request 的基本调用形态
+
+公开平台 API 是 `android.os.ProfilingManager`。应用接入时更常见的写法是 AndroidX `androidx.core.os.Profiling`，因为请求构造、参数约束和兼容封装更清楚。
+
+```java
+ProfilingRequest request = new SystemTraceRequestBuilder()
+        .setBufferSizeKb(10_240)
+        .setDurationMs(5_000)
+        .setBufferFillPolicy(BufferFillPolicy.RING_BUFFER)
+        .setTag("scroll-jank")
+        .build();
+
+Profiling.requestProfiling(context, request, executor, result -> {
+    if (result.getErrorCode() == ProfilingResult.ERROR_NONE) {
+        archiveResult(result.getTag(), result.getResultFilePath());
+        return;
     }
-}
+    recordProfilingFailure(result);
+});
 ```
 
-实际接入时，`handleProfilingResult()` 不能只把文件路径简单上传。还要处理失败原因、文件生命周期、Wi-Fi / 充电条件、用户同意策略、大小限制和重试。
+这段调用只说明一件事：**请求参数、执行过程、结果回传是异步拆开的**。应用线程负责提交 request，平台负责真正执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
 
-## Android 16 之后的触发能力
+## request listener 和 global listener 是两层结果通道
 
-API reference 中还列出 `addProfilingTriggers()`、`addAllProfilingTriggers()`、`clearProfilingTriggers()` 等触发式能力，部分标注为 version 36.1。它们让进程可以注册 profiling trigger，由系统按触发条件生成资料。
+`requestProfiling(..., executor, listener)` 这层 callback 只覆盖本次显式请求。system-triggered profiling 的结果要靠 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 这层 global listener 收。
 
-这类能力很适合未来线上诊断：比如 ANR、严重慢启动、内存异常后，由系统触发资料采集。工程上仍然要看目标设备覆盖率和平台策略，不能假设所有用户设备都支持。
+| 场景 | request listener | global listener | 说明 |
+|---|---|---|---|
+| 只发起一次显式 request，未注册 global listener | 会收到 | 收不到 | 最小可跑通接入 |
+| 显式 request + 已注册 global listener | 会收到 | 也会收到同一结果 | callback 适合关联 case；global listener 适合统一归档 |
+| `addProfilingTriggers(...)` 注册的 trigger 结果 | 收不到 | 会收到 | trigger 模式必须先注册 global listener |
 
-## 和 Perfetto、APM SDK 的关系
+如果应用同时注册两层 listener，去重主键优先用 `resultFilePath`。失败结果没有文件时，再退回 `triggerType + tag + errorCode + caseId` 组合键。
 
-ProfilingManager 不是 Perfetto 的替代品。它更像平台提供的受控入口，允许 App 请求系统帮它采某类资料。最终分析 system trace 时，仍然要用 Perfetto UI、Trace Processor 或批量分析脚本。
+## system-triggered profiling 的版本边界
 
-它和 APM SDK 的关系也很清楚：
+`ProfilingTrigger` 的能力是逐步加的，API level 和 extension version 不能混成一个判断分支。
 
-- APM SDK 负责常驻指标、异常识别、采样和用户上下文。
-- ProfilingManager 负责在少量关键样本上补系统级资料。
-- 服务端负责把指标样本、profiling 结果和版本上下文关联起来。
+| 版本 | trigger | 产物 | 场景 |
+|---|---|---|---|
+| API 36 | `TRIGGER_TYPE_APP_FULLY_DRAWN` | running system trace snapshot | 冷启动尾段复盘 |
+| API 36 | `TRIGGER_TYPE_ANR` | running system trace snapshot | ANR 取证 |
+| version 36.1 | `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE` | running system trace snapshot | 主动取当前正在运行的 trace |
+| version 36.1 | `TRIGGER_TYPE_KILL_FORCE_STOP` / `TRIGGER_TYPE_KILL_RECENTS` / `TRIGGER_TYPE_KILL_TASK_MANAGER` | running system trace snapshot | 用户手动结束进程后的现场 |
+| API 37 | `TRIGGER_TYPE_COLD_START` | newly started system trace + stack sampling | 冷启动全窗口取证 |
+| API 37 | `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | running system trace snapshot | 因资源占用异常被系统终止 |
+| API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java 层 OOM 根因定位 |
+| API 37 | `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT` | 依异常类型返回不同 artifact | 异常行为与兼容性问题采样 |
 
-没有 APM 的异常筛选，ProfilingManager 容易被滥用；没有 ProfilingManager，线上某些问题又只能停在粗指标。
+启动相关的两个 trigger 也要分开写：
 
-## 使用建议
+- `TRIGGER_TYPE_APP_FULLY_DRAWN` 是冷启动尾段的 snapshot，触发点在 `Activity.reportFullyDrawn()` 之后
+- `TRIGGER_TYPE_COLD_START` 从冷启动早期开始录制，到 `reportFullyDrawn()` 或默认超时结束，并附带 stack sampling
 
-接入时先从灰度诊断入口做起。比如某个用户反馈慢启动，App 在下次启动满足条件时请求一次 system trace；或者某个版本 OOM 抬升，只对少量设备请求 heap profile。
+## 在排查漏斗里的位置
 
-要给 profiling 结果设计独立的数据通道。它们体积大、隐私风险高、上传条件苛刻，不应该和普通埋点走同一条队列。ProfilingManager 的价值在“少量高质量样本”，不是“多采一点总有用”。
+`ProfilingManager` 不是拿来替代 `JankStats`、`FrameMetrics`、Perfetto 或 Android Studio Profiler 的。更稳的排查顺序是：
 
-## App-driven profiling 的触发设计
+1. `JankStats`、`FrameMetrics`、启动/ANR 指标、APM 事件先把异常样本筛出来
+2. 满足条件时用 `ProfilingManager` 抓一份重样本
+3. `System trace` 进 Perfetto，heap dump / heap profile 进 Android Studio Profiler、MAT 或内部解析流程
+4. 最终把 profiling artifact 和 session、版本、页面、实验分组重新关联回 APM 事件
 
-App 主动请求 profiling 时，触发条件要足够具体。适合的触发条件包括：
+这样分工之后，轻量指标负责发现问题，`ProfilingManager` 负责取证，Perfetto / Profiler 负责复盘。
 
-- 某次启动超过本地阈值，例如冷启动超过 5 秒。
-- 页面连续出现严重慢帧，且用户仍在前台。
-- Java heap 使用率连续超过阈值。
-- 用户主动反馈卡顿，并同意上传诊断资料。
-- 灰度实验中只对指定设备组启用。
+## 错误码、限流和重试策略
 
-不适合的触发条件：
+`ProfilingResult` 的错误分支要写进接入逻辑，不然线上只会留下“本次没拿到文件”的黑洞。
 
-- 每次启动都请求 system trace。
-- 所有 ANR 前兆都抓 heap dump。
-- 网络请求慢就抓系统 trace。
-- 没有用户状态和网络条件判断就上传大文件。
+| 错误码 | 含义 | 建议处理 |
+|---|---|---|
+| `ERROR_FAILED_RATE_LIMIT_PROCESS` | 当前进程自己的预算用完 | 不重试，拉长采样周期，记录到 APM 事件 |
+| `ERROR_FAILED_RATE_LIMIT_SYSTEM` | 系统级预算没给这次样本 | 不在前台循环重试，按下一次命中条件再试 |
+| `ERROR_FAILED_PROFILING_IN_PROGRESS` | 已有 profiling 正在执行 | 请求侧串行化，同类重样本只保留一个 |
+| `ERROR_FAILED_NO_DISK_SPACE` | 结果文件无法落盘 | 清理历史样本，给本地缓存设大小上限 |
+| `ERROR_FAILED_POST_PROCESSING` | 采集完成，但后处理失败，结果被丢弃 | 记录设备、版本、request 类型、errorCode，回看是否集中在某个系统版本 |
+| `ERROR_FAILED_EXECUTING` | 平台执行阶段失败 | 记失败事件，不做立即重试，等待下一次业务触发 |
+| `ERROR_FAILED_INVALID_REQUEST` | 参数不合法或 request 构造不满足要求 | 直接修接入代码，不走线上重试 |
+| `ERROR_UNKNOWN` | 未归类失败 | 只记日志与事件，避免自动重试放大成本 |
 
-ProfilingManager 的资料重，触发条件越粗，越容易伤害用户体验和数据成本。
+应用侧至少要把 `tag`、`triggerType`、`errorCode`、`requestType`、`app version`、`device` 一起记下来。只有整型错误码，没有上下文，后续很难聚合。
 
-## 结果文件的生命周期
+## 结果文件生命周期
 
-Profiling 结果不能按普通埋点处理。建议生命周期如下：
+结果文件不能按普通埋点处理。稳定做法是把它们当成独立 artifact 管理。
 
 ```mermaid
 sequenceDiagram
     participant App
-    participant System as ProfilingManager
+    participant PM as ProfilingManager
     participant Store as App 私有存储
     participant Upload as 上传任务
     participant Server as 诊断平台
 
-    App->>System: requestProfiling(type, tag)
-    System-->>App: ProfilingResult
-    App->>Store: 记录 metadata 和文件引用
-    Upload->>Store: 检查 Wi-Fi / 充电 / 文件大小
-    Upload->>Server: 上传文件 + metadata
+    App->>PM: requestProfiling(...) / trigger registration
+    PM-->>App: ProfilingResult
+    App->>Store: 落 metadata 与文件引用
+    Upload->>Store: 校验 Wi-Fi / 充电 / 文件大小 / 预算
+    Upload->>Server: 上传 artifact + metadata
     Server-->>Upload: 返回 sample id
-    Upload->>Store: 删除本地文件或标记已上传
+    Upload->>Store: 删除文件或标记已归档
 ```
 
-metadata 至少包含 profiling type、tag、触发原因、App 版本、设备、系统版本、页面、前后台状态、采样配置版本。否则服务端拿到文件后不知道为什么抓它。
+metadata 至少要带这些字段：
 
-## 四类 profiling 的使用边界
+- `case_id` / `session_id`
+- `request_type` / `trigger_type`
+- `app_version` / `build_id` / `device` / `sdk_int`
+- 页面、前后台状态、实验分组、触发原因
+- 上传状态、文件大小、压缩方式、清理时间
 
-| 类型 | 最适合 | 不适合 |
-|---|---|---|
-| Java heap dump | 泄漏、对象保留、Java heap 异常 | 高频采集、前台交互中采集 |
-| Heap profile | 分配热点、native / heap 增长趋势 | 替代完整 Hprof 引用链 |
-| Stack sampling | CPU 热点、长时间计算 | 精确方法耗时和短函数分析 |
-| System trace | ANR、启动慢、卡顿、系统调度 | 直接当线上指标 |
+## 上线前检查清单
 
-选择错误会浪费样本。比如启动慢更适合 system trace，Java heap dump 很难解释启动；内存泄漏更适合 heap dump 或 heap profile，stack sampling 只能看到 CPU 热点。
+- 版本门槛按 API 35、API 36、version 36.1、API 37 分开判断
+- trigger 模式先注册 global listener，再注册 trigger
+- request callback 只做轻量关联，真正归档走后台流程
+- 结果文件要有大小上限、过期时间和清理策略
+- 堆文件、trace 文件的采集说明要和隐私条款、内部合规口径一致
+- 线上预算默认保守，不要把 `ProfilingManager` 当高频指标 SDK
 
-## 隐私和上传策略
+## 参考资料
 
-System trace、heap dump、profile 都可能包含敏感信息。上传前要做策略约束：
-
-- 只在用户协议和隐私策略允许的范围内采集。
-- 文件大小超过阈值时放弃或等待 Wi-Fi。
-- 上传通道加密，服务端访问需要权限。
-- 保留周期短于普通指标。
-- heap dump 尽量只在内部、灰度或用户授权场景采集。
-
-这些资料比普通日志更敏感。尤其是 heap dump，可能包含业务对象、缓存内容和用户输入。
-
-## 与 APM 平台的联动
-
-ProfilingManager 最适合由 APM 平台远程控制：
-
-1. 平台发现某版本启动 P95 异常。
-2. 下发配置，只对目标版本、目标机型、1% 用户开启启动 trace 触发。
-3. App 本地满足阈值后请求 system trace。
-4. trace 上传后关联到启动异常事件。
-5. 平台停止采集，避免继续产生成本。
-
-这个流程让 profiling 从“开发者手动抓”变成“线上异常定向取证”。它也是 ProfilingManager 和传统 APM SDK 最有价值的结合点。
+1. **Android SDK Reference, `android.os.ProfilingManager`**  
+   https://developer.android.com/reference/android/os/ProfilingManager
+2. **Android SDK Reference, `android.os.ProfilingTrigger`**  
+   https://developer.android.com/reference/android/os/ProfilingTrigger
+3. **Android SDK Reference, `android.os.ProfilingResult`**  
+   https://developer.android.com/reference/android/os/ProfilingResult
+4. **Android Developers, ProfilingManager guide**  
+   https://developer.android.com/topic/performance/profiling-manager
+5. **AndroidX Reference, `androidx.core.os.Profiling` / `ProfilingRequest`**  
+   https://developer.android.com/reference/androidx/core/os/Profiling
