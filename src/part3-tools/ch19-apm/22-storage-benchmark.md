@@ -5,9 +5,9 @@ section: "19.22"
 status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+applicable_versions: "历史存储 Benchmark 参考；Android 10/11+ 路径权限需逐机验证；方法可用于 Android 8-17 的设备基线分析"
 last_verified: "2026-04-24"
-last_verified_against: "AndroBench paper / public app descriptions / A1 SD Bench public app descriptions"
+last_verified_against: "AndroBench paper / A1 SD Bench public materials / Android 11 scoped storage docs"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -18,17 +18,21 @@ sources:
     path: "https://apkpure.com/androbench-storage-benchmark/com.andromeda.androbench2"
   - type: blog
     path: "https://apkpure.com/a1-sd-bench/com.a1dev.sdbench"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-24T22:57:00+08:00"
+task2b_result: fixed
+last_task2b_at: "2026-04-25T02:45:50+08:00"
+repaired_date: "2026-04-25"
+repaired_by: openclaw-task2b
 ---
 
 # 存储 Benchmark（AndroBench、A1 SD Bench）
@@ -99,7 +103,21 @@ A1 SD Bench 公开说明中列出 Quick、Longer、Accurate、Random I/O 等模�
 - SD 卡或 USB 存储是否满足业务文件写入需求。
 - 简单读写测试是否受缓存影响。
 
-对 Android App 来说，外置存储测试现在没有早期那么常见，但在相机、离线地图、文件管理、车机、工业设备和大媒体文件场景里仍然有意义。
+对 Android App 来说，外置存储测试现在没有早期那么常见，但在相机、离线地图、文件管理、车机、工业设备和大媒体文件场景里仍然有意义。Android 10/11 之后，外部存储访问规则变化很大，A1 SD Bench 的 custom location、SD、USB、RAM 等结果不能直接当成现代 App 的默认读写口径。
+
+## 现代 Android 的路径权限表
+
+存储 Benchmark 要把“测了哪个路径”写清楚。Android 10/11+ 的 scoped storage 会改变共享存储和可移除介质的访问方式，同一工具在不同路径下测到的结果不一定可比。
+
+| 测试路径 | Android 10/11+ 边界 | 结果解释 |
+|---|---|---|
+| App 私有内部目录 | 不依赖共享存储权限，最接近 App 自己的数据库、缓存和配置文件读写。 | 适合作为 App I/O 基线。 |
+| App-specific external 目录 | App 只能稳定访问自己的外部专属目录，卸载后通常会被清理。 | 可用于媒体缓存、下载缓存等场景，但不要和根目录 SD 测试混用。 |
+| MediaStore / SAF 授权路径 | 访问受系统选择器、媒体类型和授权范围限制。Android 11 对 SAF 根目录、Download 等位置有额外限制。 | 测到的是“API + 授权路径 + 介质”的组合成本。 |
+| 可移除 SD / USB | 取决于设备、厂商 ROM、授权方式和是否具备文件管理类权限。 | 只适合对应业务场景，不能代表普通 App 默认存储性能。 |
+| RAM 测试 | 测的是内存读写或工具内部缓冲路径。 | 和 UFS / eMMC / SD 卡不是同一类指标。 |
+
+旧报告里的 AndroBench / A1 SD Bench 数据仍有参考价值，但现代 Android 版本要重新记录工具版本、目标路径、权限授权方式和设备系统版本。
 
 ## 顺序和随机不能混看
 
