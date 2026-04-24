@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T05:33:55+08:00",
+  "generated_at": "2026-04-25T05:48:54+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,11 +7,11 @@
     "finalized": 64,
     "ready-for-review": 153,
     "ready-to-publish": 64,
-    "last_updated": "2026-04-25T05:33:55+08:00",
+    "last_updated": "2026-04-25T05:48:54+08:00",
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 27,
-      "task2b_pending": 39,
+      "task6_pending": 29,
+      "task2b_pending": 37,
       "ready-to-publish": 63,
       "task9_pending": 82,
       "'task9_pending'": 2,
@@ -19,21 +19,21 @@
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 197,
-      "revisiting": 16
+      "reviewed": 195,
+      "revisiting": 18
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 115,
-      "pending": 90,
+      "reviewed": 113,
+      "pending": 92,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 156,
-      "pending": 43,
+      "fixed": 158,
+      "pending": 41,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -42,8 +42,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 27,
-      "task2b_pending": 39,
+      "task6_pending": 29,
+      "task2b_pending": 37,
       "ready-to-publish": 63,
       "task9_pending": 82,
       "'task9_pending'": 2,
@@ -51,21 +51,21 @@
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 197,
-      "revisiting": 16
+      "reviewed": 195,
+      "revisiting": 18
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 115,
-      "pending": 90,
+      "reviewed": 113,
+      "pending": 92,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 156,
-      "pending": 43,
+      "fixed": 158,
+      "pending": 41,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -574,10 +574,10 @@
       "last_verified": "2026-04-09",
       "last_verified_against": "AOSP android-16.0.0_r1, 官方文档最新版本",
       "confidence": "high",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -4681,17 +4681,18 @@
       "last_verified": "2026-04-24",
       "last_verified_against": "Sentry Android docs / Volcengine APMPlus docs / Bugly docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T16:40:21+08:00"
+      "last_task9_at": "2026-04-24T16:40:21+08:00",
+      "task2b_result": "fixed"
     },
     "src/part3-tools/ch19-apm/22-storage-benchmark.md": {
       "path": "src/part3-tools/ch19-apm/22-storage-benchmark.md",
