@@ -1,9 +1,10 @@
 ---
 
+
 title: "ProfilingManager"
 chapter: "19"
 section: "19.16"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 15+（app-driven API 35；system-triggered 触发器覆盖 API 36、version 36.1、API 37）"
@@ -25,8 +26,8 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/os/Profiling"
   - type: official
     path: "https://developer.android.com/reference/androidx/core/os/ProfilingRequest"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task9_result: pass-tech-review
@@ -37,7 +38,10 @@ task2b_result: fixed
 last_task2b_at: "2026-04-25T02:09:22+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
----
+
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-25"---
 
 # ProfilingManager
 

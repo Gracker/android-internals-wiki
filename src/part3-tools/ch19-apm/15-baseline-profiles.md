@@ -1,4 +1,5 @@
 ---
+
 title: "Baseline Profiles 与编译优化"
 chapter: "19"
 section: "19.15"
@@ -14,10 +15,10 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: "2026-04-25"
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
