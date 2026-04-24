@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "Firebase Performance get-started / troubleshooting / network-traces / screen-traces docs"
+last_verified: "2026-04-25"
+last_verified_against: "Firebase Performance custom-code-traces / screen-traces / troubleshooting docs, Firebase Android SDK 20.1.0+ Fragment screen rendering boundary, external review 2026-04-25"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0", "19.11"]
@@ -22,11 +22,11 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/network-traces"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -34,7 +34,9 @@ task9_reviewed_date: "2026-04-25"
 last_task9_at: "2026-04-25T07:20:23+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-last_task2b_at: "2026-04-24T19:38:05+08:00"
+last_task2b_at: "2026-04-25T07:48:00+08:00"
+repaired_date: "2026-04-25"
+repaired_by: openclaw-task2b
 ---
 # Firebase Performance
 
@@ -90,10 +92,12 @@ Firebase 的基本单位是 trace。自动 trace 和 custom trace 都会挂 metr
 | 对象 | 含义 | 例子 | 使用建议 |
 | --- | --- | --- | --- |
 | trace | 一段时间窗口 | `app_start`、`home_first_feed` | 名称稳定，不拼动态值 |
-| metric | 这个窗口里的数值 | duration、`item_count`、`payload_kb` | 只放低基数、可聚合数值 |
-| attribute | 过滤维度 | `entry=cold_start`、`result=success` | 只放枚举型上下文，不放 user id |
+| metric | 这个窗口里的数值 | duration、`item_count`、`payload_kb` | 只放数值计量，不拼动态维度 |
+| attribute | 过滤维度 | `entry=cold_start`、`result=success` | 只放低基数枚举上下文，不放 user id |
 
-这个模型擅长回答“哪个版本慢了”“哪类设备慢了”“哪条业务路径慢了”，不擅长还原某一次事故的完整调用链。
+metric 用来做累加、平均或分布统计；attribute 用来过滤和分组。把用户 id、订单号、完整搜索词这类高基数字段塞进 attribute，会让控制台聚合变散。
+
+这个模型擅长回答“哪个版本慢了”“哪类设备慢了”“哪条业务路径慢了”，不擅长还原某一次事故的完整调用路径。
 
 ## 构建链和采集开关
 
@@ -128,16 +132,20 @@ Firebase 的自动采集很多，但边界也很明确：
 
 | 能力 | 采集方式 | 稳妥边界 | 局限 |
 | --- | --- | --- | --- |
-| App start / foreground / background | 自动 | 跟随当前 Android SDK 接入 | 适合看版本趋势，不等于完整首屏 |
-| Screen rendering | 自动 | 按 API 24+ 的帧指标能力来写更稳妥 | 只有 screen 级聚合，没有页面上下文 |
+| App start / foreground / background | 自动 | 跟随当前 Android SDK 接入；API 24+ 可用系统进程启动时间作为冷启动起点 | 适合看版本趋势，不等于完整首屏 |
+| Screen rendering | 自动 | Activity 自动 screen trace；Firebase Performance Android SDK 20.1.0+ 支持 Fragment screen rendering trace | 能看 Activity / Fragment 聚合，不能替代 JankStats 的逐帧 UI state |
 | HTTP/S request | 自动 + 手工补点 | 官方只承诺“多数 network requests” | 不同网络库覆盖不一样，未完成请求可能漏掉 |
 | Custom trace | 手工 | 跟随 SDK 接入 | 适合登录、图片解码、数据库查询这类业务路径 |
+
+启动 trace 的起点要按版本看。API 24+ 设备可以用 `Process.getStartUptimeMillis()` 拿到进程启动时间；低版本或特殊启动路径仍会受 SDK 初始化时机影响。控制台里的 `_app_start` 还会做后台启动过滤，避免非用户触发的进程唤醒污染冷启动样本。
+
+Screen rendering 也要区分粒度。SDK 20.1.0+ 已经能自动记录 Fragment 级 screen rendering trace，这对单 Activity / Navigation 架构有用；它仍然是控制台聚合指标，缺少 JankStats 那种逐帧 UI state 和业务动作上下文。
 
 到 Android 17，官方 get-started 和 troubleshooting 文档没有列出单独的 API 37 变更。本章按“使用最新 Firebase Android BoM，能力边界沿当前文档执行”来写，不额外编造 Android 17 专属行为。
 
 ## 自定义 trace 的命名规则
 
-自定义 trace 要解决两个问题：名字能长期复用，字段不会把聚合盘打散。官方 troubleshooting 文档给了三条硬约束：名称不能有前后空格，不能以下划线开头，最大长度 32 个字符。
+自定义 trace 要解决两个问题：名字能长期复用，字段不会把聚合盘打散。官方限制要分对象看：trace 名和 metric 名最多 100 个字符，不能有前后空格，也不能以下划线开头；attribute key 最多 32 个字符，每个 custom trace 最多 5 个 attribute。attribute value 也按枚举写，避免高基数字段。
 
 | 场景 | trace 名 | metric 名 | attribute | 不要写 |
 | --- | --- | --- | --- | --- |
@@ -156,7 +164,7 @@ URL pattern 必须做归一化。像 `/api/item/10001/detail`、`/api/item/10002
 
 官方文档还给了两条实操边界：
 
-- 有些请求可能不会被自动捕获，遇到自研网络库、Cronet、native 网络栈或非常规封装时，要补 custom network trace
+- Gradle plugin 的自动网络插桩主要覆盖常见 HTTP/S 路径；自研网络库、Cronet、native 网络栈或非常规封装可能漏掉，要在统一网络封装层补 custom network trace 或等价埋点
 - 只完成了一半、长时间不结束的连接，控制台不一定会形成稳定样本；`Content-Type` 非法的请求也可能不展示
 
 线上要拆阶段时，还是要回到应用日志、服务端 trace 和 Perfetto。
@@ -180,7 +188,7 @@ Firebase Performance 的控制台时效必须单独写出来。官方 troublesho
 
 | 工具 | 主要样本 | 长处 | 不足 |
 | --- | --- | --- | --- |
-| Firebase Performance | screen 级聚合、network 聚合、自定义 trace | 接入快，控制台能直接看版本和设备分布 | 上下文弱，延迟高，原始样本少 |
+| Firebase Performance | Activity / Fragment screen 聚合、network 聚合、自定义 trace | 接入快，控制台能直接看版本和设备分布 | 逐帧上下文弱，延迟高，原始样本少 |
 | JankStats | 端侧逐帧数据 + UI state | 能把卡顿和页面状态、实验桶、业务动作关联起来 | 需要自己存储和上报 |
 | FrameMetrics | 端侧阶段耗时 | 适合做渲染阶段拆分和本地诊断 | 平台 API，字段更底层 |
 | Android Vitals | Play 分发真实用户质量数据 | 适合看发布质量门槛、慢帧和 ANR 风险 | 只覆盖 Play 分发用户，业务上下文少 |

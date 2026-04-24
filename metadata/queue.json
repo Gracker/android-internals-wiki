@@ -1137,7 +1137,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T07:48:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "fixed sched category explanation, rhea-inhouse 3.0.0 version marker, and Runnable/Running UI hint"
   },
   {
     "section": "19.05",
@@ -1628,7 +1632,7 @@
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/research-gaps.md",
       "intake/suggestions.md",
@@ -1637,7 +1641,11 @@
     "added_at": "2026-04-25T07:20:23+08:00",
     "validated_external_review_paths": [
       "logs/external-review/archive/2026-04-25-17-ch19.17-external-review.md"
-    ]
+    ],
+    "completed_at": "2026-04-25T07:48:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "fixed trace/metric/attribute limits and SDK 20.1.0+ Fragment screen rendering boundary"
   },
   {
     "section": "19.18",

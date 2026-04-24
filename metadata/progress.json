@@ -4561,8 +4561,8 @@
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-24",
-      "last_verified_against": "bytedance/btrace GitHub README",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "bytedance/btrace GitHub README, rhea-trace-shell sched category, external review 2026-04-25",
       "confidence": "medium",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -4575,7 +4575,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T13:23:00+08:00"
+      "last_task9_at": "2026-04-24T13:23:00+08:00",
+      "last_task2b_at": "2026-04-25T07:48:00+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "19.05": {
       "task6_reviewed": true,
@@ -4656,20 +4659,24 @@
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-24",
-      "last_verified_against": "Firebase Performance get-started / troubleshooting / network-traces / screen-traces docs",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "Firebase Performance custom-code-traces / screen-traces / troubleshooting docs, Firebase Android SDK 20.1.0+ Fragment screen rendering boundary, external review 2026-04-25",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T07:20:23+08:00"
+      "last_task9_at": "2026-04-25T07:20:23+08:00",
+      "last_task2b_at": "2026-04-25T07:48:00+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b",
+      "task6_result": "pass-light-edit"
     },
     "src/part3-tools/ch19-apm/18-commercial-apm.md": {
       "path": "src/part3-tools/ch19-apm/18-commercial-apm.md",
@@ -5534,6 +5541,33 @@
           "issues": 4
         }
       ]
+    },
+    {
+      "date": "2026-04-25",
+      "task": "task2b-rework",
+      "time": "07:48",
+      "sections_reviewed": [
+        {
+          "section": "19.17",
+          "title": "Firebase Performance",
+          "result": "fixed",
+          "issues": 5,
+          "sources": [
+            "task9-deep-tech-review",
+            "external-ai-review"
+          ]
+        },
+        {
+          "section": "19.04",
+          "title": "btrace / RheaTrace",
+          "result": "fixed",
+          "issues": 3,
+          "sources": [
+            "external-ai-review"
+          ],
+          "auto_promoted": true
+        }
+      ]
     }
   ],
   "progress": {
@@ -5604,11 +5638,17 @@
       },
       "19.04": {
         "reviewed_by": "openclaw-task9",
-        "reviewed_date": "2026-04-24",
+        "reviewed_date": "2026-04-25",
         "task9_result": "pass-tech-review",
         "task9_state": "reviewed",
         "pipeline_stage": "ready-to-publish",
-        "issues_found": "minor"
+        "issues_found": "fixed",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-25"
       },
       "19.05": {
         "reviewed_by": "openclaw-task9",
@@ -5760,6 +5800,20 @@
         "task6_result": "pass-light-edit",
         "task2b_state": "pending",
         "updated_by": "openclaw-task9",
+        "updated_date": "2026-04-25"
+      },
+      "19.17": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "pending",
+        "pipeline_stage": "task6_pending",
+        "issues_found": "fixed",
+        "task6_state": "revisiting",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
         "updated_date": "2026-04-25"
       }
     }

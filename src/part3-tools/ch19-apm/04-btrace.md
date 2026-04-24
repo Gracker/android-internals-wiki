@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "bytedance/btrace GitHub README"
+last_verified: "2026-04-25"
+last_verified_against: "bytedance/btrace GitHub README, rhea-trace-shell sched category, external review 2026-04-25"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -28,6 +28,9 @@ task9_result: pass-tech-review
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T13:23:00+08:00"
+last_task2b_at: "2026-04-25T07:48:00+08:00"
+repaired_date: "2026-04-25"
+repaired_by: openclaw-task2b
 ---
 
 # btrace / RheaTrace
@@ -81,7 +84,7 @@ btrace，也就是 RheaTrace，是字节跳动开源的高性能 tracing 工具�
 
 Android 侧接入分成两段：
 
-1. App 包里集成 `com.bytedance.btrace:rhea-inhouse` 或 no-op 依赖，并在 `Application.attachBaseContext()` 调用初始化。
+1. App 包里集成 `com.bytedance.btrace:rhea-inhouse:3.0.0` 或对应 no-op 依赖，并在 `Application.attachBaseContext()` 调用初始化。
 2. 通过 PC 侧脚本连接设备，用 adb 控制采集时长、包名、输出文件、是否重启 App、是否带系统调度信息。
 
 官方 README 中的典型命令是：
@@ -90,7 +93,7 @@ Android 侧接入分成两段：
 java -jar rhea-trace-shell.jar -a your.package.name -t 10 -o output.pb -r sched
 ```
 
-这个命令的含义是抓取指定包名 10 秒 trace，输出 `output.pb`，并重启 App 以覆盖启动阶段。生成文件可以直接放进 Perfetto UI 分析。
+这个命令的含义是抓取指定包名 10 秒 trace，输出 `output.pb`，用 `-r` 重启 App 以覆盖启动阶段，并把 `sched` 作为系统 trace category 一起采集。`sched` 会带来 CPU 调度事件，后面才能判断线程是 Running、Runnable，还是被切走。生成文件可以直接放进 Perfetto UI 分析。
 
 ## perfetto 模式和 simple 模式
 
@@ -141,10 +144,13 @@ btrace 3.0 的 PC 侧命令参数直接影响 trace 内容。常见参数可以�
 | `-t` | 采集时长，单位秒 | 启动 5-15 秒常见，复杂交互按脚本时长设置 |
 | `-o` | 输出 `.pb` 文件 | 文件名带场景、版本、设备，方便归档 |
 | `-r` | 重启 App 后采集启动阶段 | 冷启动分析常用 |
+| `sched` | 系统 trace category，采集 CPU 调度事件 | 启动、滑动、卡顿样本默认带上；缺少它时很难判断 Runnable 线程是否拿到 CPU |
 | `-m` | ProGuard mapping 路径 | 混淆包必须带，否则方法名不可读 |
 | `-mode perfetto/simple` | 决定是否叠加系统信息 | Android 8.1+ 优先 perfetto |
 | `-sampleInterval` | 最小采样回溯间隔 | 间隔越小，细节越多，开销也越高 |
 | `-maxAppTraceBufferSize` | 应用 trace buffer 上限 | 启动和长交互要避免 buffer 被覆盖 |
+
+`-r` 解决启动阶段覆盖，`sched` 解决系统调度证据。两者不是同一个开关。缺少 `sched` 时，启动慢 trace 容易只剩应用方法名。
 
 这些参数要写进复现记录。没有采集时长、设备、版本和 mode，后续读 trace 的人很难判断“没看到系统信息”是工具没开，还是设备不支持。
 
@@ -155,7 +161,7 @@ btrace 3.0 的 PC 侧命令参数直接影响 trace 内容。常见参数可以�
 1. 找目标场景窗口：启动从进程创建到首帧，滑动从触摸开始到列表停止。
 2. 看 Main thread：这段时间主线程是在跑、睡眠、等待，还是被调度饿住。
 3. 看 RenderThread：UI 线程提交后，RenderThread 是否继续阻塞。
-4. 看 CPU 调度：线程是否频繁 runnable 但拿不到 CPU。
+4. 看 CPU 调度：线程是否频繁 Runnable 但拿不到 CPU；Perfetto 中浅色等待段通常对应 Runnable，实际 Running 会在 CPU 轨道或线程状态里显示 CPU core 归属。
 5. 看 btrace 方法轨道：业务方法和系统慢段是否在同一窗口。
 6. 看 Binder / I/O / GC：是否有跨进程、磁盘或回收事件插入。
 
