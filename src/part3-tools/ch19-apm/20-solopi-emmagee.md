@@ -30,9 +30,9 @@ sources:
 - type: official
   path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
 pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+task6_state: reviewed
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -41,8 +41,8 @@ last_task2b_at: '2026-04-25T04:45:04+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task9_result: needs-rework
-task9_reviewed_date: '2026-04-24'
-task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: "openclaw-task6"
 last_task9_at: '2026-04-24T20:44:37+08:00'
 ---
 

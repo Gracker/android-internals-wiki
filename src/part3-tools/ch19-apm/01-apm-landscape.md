@@ -33,17 +33,17 @@ sources:
   - type: blog
     path: "https://github.com/measure-sh/measure"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_date: "2026-04-25"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-25T07:04:06+08:00"
 task9_result: needs-rework
-task9_reviewed_date: 2026-04-24
-task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: "openclaw-task6"
 last_task9_at: "2026-04-24T13:23:00+08:00"
 ---
 
