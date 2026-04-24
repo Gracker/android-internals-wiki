@@ -1388,3 +1388,124 @@
 - **位置**：L90-L94（trace、metric、attribute 表）
 - **问题**：metric 被写成“低基数、可聚合数值”。基数问题主要属于 attribute 过滤/分组维度；metric 是数值计量，用于累加、平均或分布统计。
 - **建议**：把 metric 改成“数值计量，不拼动态维度”；把低基数约束移动到 attribute，并提醒高基数 attribute 会破坏控制台聚合。
+
+## [2026-04-25] External Review Integration
+
+### [External Review] 19.04 btrace / RheaTrace — 2026-04-25
+- **类型**: 版本标识
+- **位置**: 采集流程
+- **问题**: 未提及 rhea-inhouse 具体版本号，可能接入旧版
+- **建议**: 建议更新为 com.bytedance.btrace:rhea-inhouse:3.0.0
+- **来源**: External AI Review
+
+### [External Review] 19.04 btrace / RheaTrace — 2026-04-25
+- **类型**: 数据支撑
+- **位置**: Perfetto UI 里的读法
+- **问题**: 缺乏 Runnable/Running 状态 UI 视觉特征
+- **建议**: 补充浅色=Runnable、深色带CPU核心号=Running
+- **来源**: External AI Review
+
+### [External Review] 19.07 DoraemonKit / DoKit — 2026-04-25
+- **类型**: 原理对比
+- **位置**: 不适合替代线上 APM
+- **问题**: 未从 Hook 深度区分 Debug 全量插桩与线上 APM 抽样/底层 Hook 的技术选型差异
+- **建议**: 点明全量插桩 vs PLT Hook/信号捕获/抽样上报的架构差异
+- **来源**: External AI Review
+
+### [External Review] 19.08 ArgusAPM — 2026-04-25
+- **类型**: 细节严谨性
+- **位置**: 网络监控的现代适配
+- **问题**: EventListener 使用未提及 OkHttp 版本分界线
+- **建议**: 补充 EventListener 完整支持需要 OkHttp >= 3.11
+- **来源**: External AI Review
+
+### [External Review] 19.09 Measure — 2026-04-25
+- **类型**: 版本差异
+- **位置**: 核心能力 - Crash/ANR 捕获
+- **问题**: 未提及 ANR 捕获的底层机制在 Android 11 前后的差异（Signal Catcher vs ApplicationExitInfo）
+- **建议**: 补充 ApplicationExitInfo 在现代 APM 中的应用
+- **来源**: External AI Review
+
+### [External Review] 19.09 Measure — 2026-04-25
+- **类型**: 机制实现
+- **位置**: 隐私策略 - 截图遮罩
+- **问题**: 只描述功能未提及 Android 端实现（View Hierarchy 遍历与坐标遮挡）
+- **建议**: 补充 Screenshot Mask 的底层实现逻辑
+- **来源**: External AI Review
+
+### [External Review] 19.10 其他开源 APM 库（AndroidGodEye、Collie、Rabbit） — 2026-04-25
+- **类型**: 技术落地
+- **位置**: 最小 APM SDK 信号采集
+- **问题**: JankStats/Choreographer/FrameMetrics 平级排列无优先级区分
+- **建议**: 注明 JankStats 作为首选推荐，其余作为底层原理来源
+- **来源**: External AI Review
+
+### [External Review] 19.10 其他开源 APM 库（AndroidGodEye、Collie、Rabbit） — 2026-04-25
+- **类型**: 技术落地
+- **位置**: Collie 轻量采样
+- **问题**: ContentProvider 采集启动耗时的方案需与 Jetpack App Startup 评估执行顺序
+- **建议**: 提及 App Startup 与 ContentProvider 的整合考量
+- **来源**: External AI Review
+
+### [External Review] 19.13 androidx.tracing（Tracing SDK） — 2026-04-25
+- **类型**: 细节改进
+- **位置**: Native 标注
+- **问题**: 缺乏具体 Native API 引导
+- **建议**: 补充 ATrace_beginSection 及 #include <android/trace.h>
+- **来源**: External AI Review
+
+### [External Review] 19.13 androidx.tracing（Tracing SDK） — 2026-04-25
+- **类型**: 原理链
+- **位置**: 阅读方式
+- **问题**: 缺失 Gap 和 Scheduler 观察方法
+- **建议**: 增加两个 Slice 间 Gap 代表 I/O 等待或 CPU 调度抢占的说明
+- **来源**: External AI Review
+
+### [External Review] 19.14 Jetpack Benchmark（Microbenchmark + Macrobenchmark） — 2026-04-25
+- **类型**: 表述优化
+- **位置**: CI 中的噪声控制
+- **问题**: 提到需人工处理设备温度，忽略 Benchmark 库自身的 ThermalThrottle 检测机制
+- **建议**: 说明库内置过热休眠，但 CI 仍需保证散热
+- **来源**: External AI Review
+
+### [External Review] 19.19 PerfDog — 2026-04-25
+- **类型**: 原理补充
+- **位置**: 自动化脚本
+- **问题**: 未提及 PerfDog Service APK 角色（特权代理利用 shell 权限）
+- **建议**: 说明 Service APK 和 ADB DUMP 权限授予
+- **来源**: External AI Review
+
+### [External Review] 19.19 PerfDog — 2026-04-25
+- **类型**: 指标补充
+- **位置**: 功耗
+- **问题**: 未提及 FPower（每帧功耗=Total Power/FPS）这一高价值衍生指标
+- **建议**: 补充 FPower 概念
+- **来源**: External AI Review
+
+### [External Review] 19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo） — 2026-04-25
+- **类型**: 技术细节
+- **位置**: Geekbench 分数
+- **问题**: 未提及 GB6 Shared Task 模型变化
+- **建议**: 补充多核协同单一任务的建模逻辑演进
+- **来源**: External AI Review
+
+### [External Review] 19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo） — 2026-04-25
+- **类型**: 覆盖不足
+- **位置**: 3DMark
+- **问题**: 仅提 Wild Life 级别，未提及 Solar Bay 和 Steel Nomad Light
+- **建议**: 更新 3DMark 负载推荐列表
+- **来源**: External AI Review
+
+### [External Review] 19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo） — 2026-04-25
+- **类型**: 覆盖不足
+- **位置**: Web 测试
+- **问题**: 未给出现代 Web 性能基准
+- **建议**: 补充 Speedometer 3.0 或 JetStream 2
+- **来源**: External AI Review
+
+### [External Review] 19.22 存储 Benchmark（AndroBench、A1 SD Bench） — 2026-04-25
+- **类型**: 补充工具
+- **位置**: AOSP 内置
+- **问题**: 未提及 Android 系统自带 sm benchmark 命令
+- **建议**: 补充 adb shell sm benchmark <diskId> 用法
+- **来源**: External AI Review

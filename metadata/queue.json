@@ -1125,6 +1125,15 @@
         "location": "",
         "detail": "- [P1][原理链完整性][采集流程 & 采集参数怎么读]\n  - **原文问题**：官方命令示例中给出了 `java -jar rhea-trace-shell.jar -a your.package.name -t 10 -o output.pb -r sched`，但在后续的“采集参数怎么读”表格中，只解释了 `-r` 代表“重启 App 后采集启动阶段”，完全遗漏了对 `sched` 的解释。\n  - **缺失内容**：`sched` 是指定的 atrace/ftrace category，代表 CPU 调度信息（CPU Scheduling）。\n  - **运行原理说明**：在抓取",
         "suggestion": ""
+      },
+      {
+        "type": "原理断裂/参数解释缺失",
+        "location": "采集参数怎么读",
+        "detail": "命令示例包含 sched 但参数表未解释 sched 含义（atrace category 用于抓取 CPU 调度）",
+        "suggestion": "在表格中单列 sched 说明",
+        "evidence": [
+          "Btrace GitHub README"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -1333,6 +1342,24 @@
         "location": "",
         "detail": "\n- [P1][版本差异覆盖][Rabbit 介绍及横向对比]\n  - 原文问题：“慢函数插桩是否还能适配当前 AGP、R8、混淆和 mapping 体系” 描述过于温和。\n  - 一手资料锚点：AGP API Updates (AGP 8.0 彻底移除了 `Transform` API，由 `AsmClassVisitorFactory` 替代)\n  - 缺失内容：AndroidGodEye, Collie, Rabbit 最后更新均停留于 2022-2023 年。在现代 Android 工程（AGP 8.0 及更高版本）中，由于 `Transform` API 的彻底移除，这些旧库中依赖字",
         "suggestion": ""
+      },
+      {
+        "type": "版本差异/构建链兼容性",
+        "location": "Rabbit 及横向对比",
+        "detail": "未指出 AGP 8.0 废弃 Transform API 导致旧库编译失败",
+        "suggestion": "明确 AGP 8.0 分水岭",
+        "evidence": [
+          "AGP API Updates"
+        ]
+      },
+      {
+        "type": "版本差异/API 支持性",
+        "location": "迁移映射表",
+        "detail": "推荐 ProfilingManager 未说明 Android 15+ 版本要求",
+        "suggestion": "标注 API 35 下限",
+        "evidence": [
+          "developer.android.com"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -1453,6 +1480,42 @@
         "location": "",
         "detail": "\n- [P1][原理链完整性][基本用法]\n- **原文问题**：只展示了 Kotlin `trace {}` 块，未提及 Java 侧的异常安全要求。\n- **源码 / 一手资料锚点**：`androidx.tracing.Trace` (Java API)\n- **关键代码逻辑**：`trace {}` 内部通过 `try-finally` 保证了 `endSection` 必定触发。Java 用户若直接调用 `beginSection`/`endSection` 且未加 `try-finally`，一旦代码抛出异常，会导致整个线程后续的 Trace 嵌套全部乱序。\n- **运行原理说明*",
         "suggestion": ""
+      },
+      {
+        "type": "原理断裂",
+        "location": "基本用法",
+        "detail": "未提及 Java try-finally 异常安全",
+        "suggestion": "补充 Java 示例",
+        "evidence": [
+          "androidx.tracing.Trace"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "协程挂起",
+        "detail": "未提及协程挂起对同步 Trace 的破坏",
+        "suggestion": "增加协程陷阱说明",
+        "evidence": [
+          "traceCoroutine"
+        ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "JankStats Context",
+        "detail": "缺失与 JankStats 集成说明",
+        "suggestion": "增加命名对齐建议",
+        "evidence": [
+          "PerformanceMetricsState"
+        ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "工具关系",
+        "detail": "缺失 Macrobenchmark 分工",
+        "suggestion": "补充 Macrobenchmark 角色",
+        "evidence": [
+          "Macrobenchmark 文档"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -1709,6 +1772,33 @@
         "location": "",
         "detail": "\n- [P1][原理链完整性][它能测什么 / 功耗和温度的读法]\n- 原文问题：未明确说明功耗测量在 USB 连接模式下的不可信性。\n- 运行原理说明：在 USB 连接时，`/sys/class/power_supply/battery/current_now` 反映的是“充电电流 - 耗电电流”的净值。若不切换到 Wi-Fi 模式断开充电，无法获得 App 的真实耗电数据。\n- 建议修正方向：明确补充“Wi-Fi 模式测试”是功耗准确性的前提，解释 USB 模式采集的是净电流而非设备总功耗。\n\n- [P1][源码准确性][FPS 之外还要看帧时间]\n- 原文问题：未解释 FPS 数据的采集",
         "suggestion": ""
+      },
+      {
+        "type": "原理断裂",
+        "location": "功耗",
+        "detail": "未说明 USB 模式功耗净值问题",
+        "suggestion": "补充 Wi-Fi 模式前提",
+        "evidence": [
+          "current_now sysfs"
+        ]
+      },
+      {
+        "type": "源码准确性",
+        "location": "FPS",
+        "detail": "未解释 FPS 采集源（SurfaceFlinger BufferQueue）",
+        "suggestion": "补充数据来源",
+        "evidence": [
+          "dumpsys SurfaceFlinger"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "location": "全文",
+        "detail": "未提及 Android 13+ Restricted Settings 影响",
+        "suggestion": "增加版本适配",
+        "evidence": [
+          "Restricted Settings"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -2218,6 +2308,24 @@
         "location": "",
         "detail": "\n- [P1][版本差异覆盖][测试规范 / 机型分层方法]\n- **原文问题**：机型分层部分完全采用自定义 Benchmark 分数，未提及 Android 官方的 **Performance Class (PC)** 体系。\n- **一手资料锚点**：[developer.android.com - Performance Class](https://developer.android.com/guide/topics/manifest/uses-native-heap-tag#performance-class)\n- **关键代码逻辑**：`androidx.core.perform",
         "suggestion": ""
+      },
+      {
+        "type": "标准缺失",
+        "location": "机型分层",
+        "detail": "未提及 Android Performance Class 体系",
+        "suggestion": "引入 PC12-15 表",
+        "evidence": [
+          "Performance Class"
+        ]
+      },
+      {
+        "type": "工具过时",
+        "location": "存储测试",
+        "detail": "仍推荐已停维 AndroBench",
+        "suggestion": "推荐 CPDT",
+        "evidence": [
+          "AndroBench 2017"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -2241,6 +2349,24 @@
         "location": "19.07",
         "detail": "- [P1][源码准确性][Debug 工具箱的工程结构]\n- 原文问题：虽然列出了诸如 `DoraemonStatisticsUtil#uploadUserInfo` 和 `NetWorkMockFragment` 等网络相关类，但对 DoKit 最核心的插件/Transform 编译期逻辑没有给出任何源码或机制锚点。\n- 缺失内容：没有点出 DoKit 编译期插件的核心实现机制（如利用 AGP Transform 配合 ASM 框架进行字节码修改的逻辑路径），这是 DoKit 实现无侵入监控的灵魂。\n- 为什么这是重要缺失：作为一本内部深度 Wiki，读者需要知道“如果我要自己造一个类似的无侵入监控轮子，我应该参考 DoKit 的哪部分源码”。缺失这部分会导致技术资产的可复用性大幅降低。\n- 建议补充方向：补充 `dokitx-plugin` 机制的简要说明，指出网络 Hook 或方法插桩的具体构建期阶段，或者提供核心类的锚点（如针对 ASM 的 Transformer 类机制）。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "原理断裂/大纲内容缺失",
+        "location": "性能面板的数据可信度",
+        "detail": "遗漏采集来源要素，未说明 ASM 字节码插桩和 Choreographer",
+        "suggestion": "补充核心指标采集来源技术揭秘",
+        "evidence": [
+          "dokitx-plugin"
+        ]
+      },
+      {
+        "type": "源码准确性",
+        "location": "工程结构",
+        "detail": "未给出 DoKit 编译期插件核心实现机制",
+        "suggestion": "补充 dokitx-plugin 机制",
+        "evidence": [
+          "dokitx-plugin 源码"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -2258,6 +2384,15 @@
         "location": "src/part3-tools/ch19-apm/08-argusapm.md",
         "detail": "- [P1][原理链完整性][架构分成采集模块和 Gradle Plugin]\n- 原文问题：文中在提及其字节码注入时，使用了“AOP / ASM 织入”这样较为笼统的并列描述，未能说清这两种不同技术体系在 ArgusAPM 中的真实分工，容易产生黑盒感。\n- 源码 / 一手资料锚点：ArgusAPM 开源仓库中的 `argus-apm-main`（基于 AspectJ 的实现）与 `argus-apm-gradle`（基于 ASM 的实现）。\n- 缺失内容：AspectJ 与 ASM 在 ArgusAPM 体系内具体的职责分工与选型考量。\n- 运行原理说明：在真实 ArgusAPM 工程设计中，两者是“分层防御”关系：\n  1. **AspectJ**：负责开发效率高、调用频次较低的业务逻辑插桩（如 Activity/Fragment 生命周期事件、点击事件拦截等）。\n  2. **ASM**：作为核心底层插桩引擎，用于极高频次且对性能损耗极度敏感的场景（如 Method Trace 方法耗时全量统计、`new Thread()` 创建劫持）。\n- 为什么这是重要缺失：ArgusAP",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "原理断裂",
+        "location": "架构 / AOP 织入",
+        "detail": "未区分 AspectJ（低频业务）与 ASM（高频性能）职责分工",
+        "suggestion": "明确两者分工",
+        "evidence": [
+          "ArgusAPM 源码"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -2281,6 +2416,24 @@
         "location": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
         "detail": "- [P1][原理链完整性/实战落地][和 Baseline Profiles 的配合 & 工程形态]\n  - 原文问题：未提及 `androidx.profileinstaller:profileinstaller` 依赖，以及 `BaselineProfileRule` 的使用。\n  - 源码 / 一手资料锚点：`androidx.benchmark.macro.junit4.BaselineProfileRule` 及 `androidx.profileinstaller.ProfileInstaller`。\n  - 缺失内容：要在本地或 CI 的 Android 7.0+ (API 24+) 设备上使得 `CompilationMode.Partial` 生效，**被测 App** 必须包含 `profileinstaller` 依赖。否则 Macrobenchmark 库无法将 Profile 写入被测 App 并触发编译。\n  - 运行原理说明：Macrobenchmark 依赖 ProfileInstaller 将基线配置文件写入应用的私有目录，并发送广播要求 `bg-d",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "原理断裂",
+        "location": "Microbenchmark",
+        "detail": "遗漏 Blackhole.consume() 防 DCE 机制",
+        "suggestion": "增加 DCE 示例",
+        "evidence": [
+          "androidx.benchmark.Blackhole"
+        ]
+      },
+      {
+        "type": "遗漏依赖",
+        "location": "Baseline Profiles 配合",
+        "detail": "未提及 profileinstaller 依赖和 BaselineProfileRule",
+        "suggestion": "强调依赖必要性",
+        "evidence": [
+          "Macrobenchmark Setup"
+        ]
       }
     ],
     "added_by": "external-ai-review",

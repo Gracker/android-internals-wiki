@@ -4929,3 +4929,105 @@ Profile 不仅引导 AOT，还引导 `dex2oat` 生成 App Image，预加载类�
 
 ### 外部 review 来源
 - External AI Review (2026-04-25-15-ch19.15-external-review.md)
+
+## [2026-04-25] External Review Integration
+
+### [2026-04-25] 19.04 btrace / RheaTrace — 知识盲区
+
+**盲区描述**: Btrace 3.0 插桩在 ART (Android 12+) 上的实际性能开销失真
+
+**重要程度**: 中
+
+**建议研究方向**: 分析百万量级插桩在 AOT/JIT 混合编译下的性能退化
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.07 DoraemonKit / DoKit — 知识盲区
+
+**盲区描述**: AGP 8.0+ 废弃 Transform API 后 DoKit 的兼容性与 AsmClassVisitorFactory 适配
+
+**重要程度**: 高
+
+**建议研究方向**: 调研 DoKit 在 Gradle 8+/AGP 8+ 下的兼容表现
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.08 ArgusAPM — 知识盲区
+
+**盲区描述**: 现代 AGP 8.0+ 强制移除 Transform API 对存量自研 APM 的影响
+
+**重要程度**: 高
+
+**建议研究方向**: 研究从 Transform API 迁移到 AsmClassVisitorFactory 的路径
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.09 Measure — 知识盲区
+
+**盲区描述**: APM 平台底层 ANR 跨版本捕获机制差异（Signal 拦截 vs ApplicationExitInfo）
+
+**重要程度**: 中
+
+**建议研究方向**: 结合 Measure 源码研究 Android 11+ 新系统 API 的利用
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.10 其他开源 APM 库（AndroidGodEye、Collie、Rabbit） — 知识盲区
+
+**盲区描述**: 现代 Android APM 构建期插桩技术迁移（Transform API 到 AsmClassVisitorFactory）
+
+**重要程度**: 高
+
+**建议研究方向**: 可作为单独的编译期插桩小结
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.13 androidx.tracing（Tracing SDK） — 知识盲区
+
+**盲区描述**: androidx.tracing 在协程挂起时的表现及 traceCoroutine 的实战效果
+
+**重要程度**: 高
+
+**建议研究方向**: 调研 alpha 版 traceCoroutine 是否能生成 Flow 连接片段
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.14 Jetpack Benchmark（Microbenchmark + Macrobenchmark） — 知识盲区
+
+**盲区描述**: ProfileInstaller 跨进程 Profile 写入和 dexopt 触发机制
+
+**重要程度**: 中
+
+**建议研究方向**: AOSP ProfileInstaller BroadcastReceiver 实现
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.19 PerfDog — 知识盲区
+
+**盲区描述**: Android 16 QPR2 引入的 GPU syscall filtering 是否封杀非调试应用 GPU 采集
+
+**重要程度**: 高
+
+**建议研究方向**: 关注 AOSP 变更与 PerfDog 官方适配
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo） — 知识盲区
+
+**盲区描述**: Android Performance Class PC15 对内存（12GB）和渲染（Vulkan 1.3）的硬门槛
+
+**重要程度**: 高
+
+**建议研究方向**: 调研 Android 15 PC15 完整规格要求
+
+**来源**: External AI Review
+
+### [2026-04-25] 19.22 存储 Benchmark（AndroBench、A1 SD Bench） — 知识盲区
+
+**盲区描述**: 存储测试中 Page Cache 对 Benchmark 准确性的干扰机制及 O_DIRECT 规避
+
+**重要程度**: 中
+
+**建议研究方向**: 解释 O_DIRECT 或清除缓存对 Benchmark 的影响
+
+**来源**: External AI Review

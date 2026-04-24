@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-20 06:11",
+  "generated_at": "2026-04-25T06:00",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -53784,6 +53784,312 @@
       "status": "new",
       "source_type": "mixed",
       "content_hash": "274622a95edb2ad59aa08eeaf506f785"
+    },
+    {
+      "path": "src/graphify-out/GRAPH_REPORT.md",
+      "title": "GRAPH_REPORT",
+      "mapped_chapters": [],
+      "total_score": 45
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+      "title": "Hook 基础设施与性能工具实现原理",
+      "mapped_chapters": [
+        "'14.13'"
+      ],
+      "total_score": 58
+    },
+    {
+      "path": "src/part3-tools/ch14-other-tools/12-apm-observability.md",
+      "title": "APM / 可观测性平台与 SDK 选型",
+      "mapped_chapters": [
+        "'14.12'"
+      ],
+      "total_score": 58
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
+      "title": "从采集到治理的闭环",
+      "mapped_chapters": [
+        "15.9"
+      ],
+      "total_score": 73
+    },
+    {
+      "path": "src/part3-tools/ch15-methodology/10-performance-governance.md",
+      "title": "性能治理工程化",
+      "mapped_chapters": [
+        "15.10"
+      ],
+      "total_score": 73
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/18-commercial-apm.md",
+      "title": "商业 APM 平台（Sentry、APMPlus、Bugly）",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 50
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/22-storage-benchmark.md",
+      "title": "存储 Benchmark（AndroBench、A1 SD Bench）",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "title": "13-tracing-sdk",
+      "mapped_chapters": [],
+      "total_score": 58
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/21-benchmark-apps.md",
+      "title": "Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）",
+      "mapped_chapters": [
+        "'19'"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/03-koom.md",
+      "title": "KOOM",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 65
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/08-argusapm.md",
+      "title": "ArgusAPM",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/02-tencent-matrix.md",
+      "title": "Tencent Matrix",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 50
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/20-solopi-emmagee.md",
+      "title": "SoloPi 与 Emmagee",
+      "mapped_chapters": [
+        "'19'"
+      ],
+      "total_score": 53
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/09-measure.md",
+      "title": "Measure",
+      "mapped_chapters": [
+        "'19'"
+      ],
+      "total_score": 65
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/17-firebase-performance.md",
+      "title": "Firebase Performance",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 50
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/11-jankstats.md",
+      "title": "JankStats",
+      "mapped_chapters": [
+        "'19'"
+      ],
+      "total_score": 58
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+      "title": "网络 APM 底层捕获原理",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 58
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/06-blockcanary.md",
+      "title": "BlockCanary",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 60
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/README.md",
+      "title": "第 19 章：APM 工具与性能监控生态",
+      "mapped_chapters": [
+        "19.0"
+      ],
+      "total_score": 50
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+      "title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 58
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/04-btrace.md",
+      "title": "btrace / RheaTrace",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 65
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+      "title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+      "mapped_chapters": [
+        "'19'"
+      ],
+      "total_score": 53
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/25-battery-thermal-apm.md",
+      "title": "耗电与发热监控 (Battery & Thermal)",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 68
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/12-framemetrics.md",
+      "title": "FrameMetrics",
+      "mapped_chapters": [
+        "'19'"
+      ],
+      "total_score": 73
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/19-perfdog.md",
+      "title": "PerfDog",
+      "mapped_chapters": [
+        "'19'"
+      ],
+      "total_score": 75
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/05-leakcanary.md",
+      "title": "LeakCanary",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 50
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/10-other-opensource-apm.md",
+      "title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）",
+      "mapped_chapters": [
+        "'19'"
+      ],
+      "total_score": 73
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/15-baseline-profiles.md",
+      "title": "Baseline Profiles 与编译优化",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 58
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/16-profiling-manager.md",
+      "title": "ProfilingManager",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 73
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+      "title": "崩溃与 ANR 捕获机制",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 58
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/07-dokit.md",
+      "title": "DoraemonKit / DoKit",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/27-apm-client-architecture.md",
+      "title": "千万级 DAU 的 APM 端侧架构",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 50
+    },
+    {
+      "path": "src/part3-tools/ch19-apm/01-apm-landscape.md",
+      "title": "APM 全景图与分类体系",
+      "mapped_chapters": [
+        "19"
+      ],
+      "total_score": 58
+    },
+    {
+      "path": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
+      "title": "ProfilingManager 系统触发式性能追踪",
+      "mapped_chapters": [
+        "8.10"
+      ],
+      "total_score": 68
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
+      "title": "GAPS：Android 动态分析目标可达性路径重建",
+      "mapped_chapters": [
+        "7.14"
+      ],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
+      "title": "场景化性能作战手册",
+      "mapped_chapters": [
+        "7.15"
+      ],
+      "total_score": 68
+    },
+    {
+      "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
+      "title": "ANR 非技术故障诊断",
+      "mapped_chapters": [
+        "'9.7'"
+      ],
+      "total_score": 83
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/README.md",
+      "title": "README",
+      "mapped_chapters": [],
+      "total_score": 45
+    },
+    {
+      "path": "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
+      "title": "EyeDropper API 与跨设备协作性能",
+      "mapped_chapters": [
+        "18.21"
+      ],
+      "total_score": 73
     }
   ],
   "stats": {
