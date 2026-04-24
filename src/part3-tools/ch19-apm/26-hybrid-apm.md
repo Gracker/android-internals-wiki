@@ -11,20 +11,24 @@ last_verified_against: "Android PixelCopy / WebViewRenderProcess APIs, Flutter F
 confidence: high
 tags: [apm, webview, flutter, hybrid]
 related_chapters: ["19.0", "19.01"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-25
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 sources:
   - "https://developer.android.com/reference/android/view/PixelCopy"
   - "https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)"
   - "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient"
   - "https://api.flutter.dev/flutter/dart-ui/FrameTiming-class.html"
   - "https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addTimingsCallback.html"
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-25T04:21:00+08:00"
 ---
 
 # 混合栈与跨平台 APM (WebView / Flutter)

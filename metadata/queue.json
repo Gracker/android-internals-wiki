@@ -2216,5 +2216,75 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T04:19:06+08:00",
     "status": "pending"
+  },
+  {
+    "section": "19.25",
+    "section_title": "耗电与发热监控 (Battery & Thermal)",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 正文只讨论 Doze 下高频唤醒，但没有交代 Android 12+ exact alarm 特殊权限与版本差异：SCHEDULE_EXACT_ALARM、canScheduleExactAlarms",
+    "material_paths": [
+      "src/part3-tools/ch19-apm/25-battery-thermal-apm.md",
+      "logs/deep-review/2026-04-25-04-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "§3 Alarm 与后台任务：setExactAndAllowWhileIdle / setAlarmClock",
+        "detail": "正文只讨论 Doze 下高频唤醒，但没有交代 Android 12+ exact alarm 特殊权限与版本差异：SCHEDULE_EXACT_ALARM、canScheduleExactAlarms()、ACTION_REQUEST_SCHEDULE_EXACT_ALARM，以及 Android 13/14 后 USE_EXACT_ALARM / 默认授权策略变化。对 APM 来说，这会影响“业务设置了闹钟”和“系统是否允许精确触发”的归因判断。",
+        "suggestion": "补一张 Android 12/13/14+ exact alarm 权限与触发能力表；端侧样本增加 permission/app-op 状态、canScheduleExactAlarms() 结果、alarm type、allowWhileIdle/exact 标记、未获授权时的降级路径。",
+        "evidence": [
+          "Android exact alarm behavior changes: SCHEDULE_EXACT_ALARM / canScheduleExactAlarms()",
+          "AlarmManager.setExactAndAllowWhileIdle 版本限制"
+        ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "§5 Thermal API 示例：只注册 addThermalStatusListener",
+        "detail": "示例只记录 thermal status change callback，没有在注册时读取 getCurrentThermalStatus()。应用如果在设备已经处于 SEVERE/CRITICAL 时启动，监听器可能要等下一次状态变化才回调，APM 会漏掉初始热状态，降级策略也可能延迟执行。",
+        "suggestion": "注册 listener 后立即读取 PowerManager.getCurrentThermalStatus() 并走同一条 record/applyThermalPolicy 路径；日志中区分 initial_snapshot 与 status_changed。",
+        "evidence": [
+          "AOSP PowerManager#getCurrentThermalStatus()",
+          "AOSP PowerManager#addThermalStatusListener(Executor, listener)"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T04:21:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.26",
+    "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 章节 frontmatter 写 Android 8/API 26 起适用，正文把 onRenderProcessGone() 与 WebViewRenderProcessClient 放在同一能力层",
+    "material_paths": [
+      "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+      "logs/deep-review/2026-04-25-04-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "§3 WebViewRenderProcessClient",
+        "detail": "章节 frontmatter 写 Android 8/API 26 起适用，正文把 onRenderProcessGone() 与 WebViewRenderProcessClient 放在同一能力层描述。onRenderProcessGone() 是 API 26；WebViewRenderProcessClient / onRenderProcessUnresponsive / setWebViewRenderProcessClient 属于 API 29+。API 26-28 设备不能直接接入 unresponsive/responsive 回调。",
+        "suggestion": "拆成两级版本边界：API 26+ 处理 onRenderProcessGone()；API 29+ 再接 WebViewRenderProcessClient，并给 API 26-28 的降级信号（页面 ready 超时、JSBridge 心跳、PixelCopy/DOM 白屏采样）。",
+        "evidence": [
+          "Android WebViewClient#onRenderProcessGone API 26",
+          "Android WebViewRenderProcessClient / WebView#setWebViewRenderProcessClient API 29"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "location": "§1 JS PerformanceObserver 示例：FCP / LCP",
+        "detail": "示例直接 observe paint 和 largest-contentful-paint，但 WebView 的前端性能 API 能力取决于 Android System WebView / Chromium 版本，不只取决于 Android API level。LCP 在旧 WebView 中不可用；没有 supportedEntryTypes/try-catch 时，注入脚本可能异常退出，导致 FCP/LCP 都不上报。",
+        "suggestion": "在示例中加入 PerformanceObserver.supportedEntryTypes 特性检测和 try/catch；样本字段增加 webviewProviderPackage / Chromium major version；对不支持 LCP 的 WebView 回退到 FCP、业务 ready、DOM/像素采样。",
+        "evidence": [
+          "Largest Contentful Paint WebView/Chromium 版本支持边界",
+          "PerformanceObserver.supportedEntryTypes feature detection"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T04:21:00+08:00",
+    "status": "pending"
   }
 ]
