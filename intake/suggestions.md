@@ -1086,3 +1086,221 @@
 - **建议**：
 - **来源**：Gemini 外部 review
 
+
+## [External Review] 19.01 01-apm-landscape.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：01-apm-landscape.md
+- **问题**：- [P2][知识盲区][常见采集路线的工程代价]
+  - 原文问题：对 `ApplicationExitInfo`（API 30+）的代价描述不足。
+  - 证据或观察依据：`ActivityManager.getHistoricalProcessExitReasons()` 是一个对 `system_server` 的同步 IPC 调用。很多业务 APM 喜欢在 App 刚启动的主线程里调用它来判断上次退出的原因，这会导致严重的启动性能退化（Lock 竞争）。
+  - 建议：在提及 `ApplicationExitInfo` 的代价时，补充一句提醒：“获取历史退出原因涉及对 `system
+- **来源**：外部 AI review
+
+## [External Review] 19.03 03-koom.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：03-koom.md
+- **问题**：- [P2][原理链完整性][Hprof 裁剪和引用链摘要]
+  - 原文问题：提到“Hprof 文件仍然很大，需要裁剪或只上传摘要”，但未说明裁剪了什么。
+  - 证据或观察依据：在 Hprof 结构中，占据绝大多数空间的往往是 primitive arrays (如 `byte[]`，通常是图片像素数据或大文本)。
+  - 问题描述：缺少对裁剪对象的说明，使内容停留在概念上。
+  - 建议：补充说明 Hprof 裁剪的本质往往是丢弃大量的基本数据类型数组（Primitive Array），只保留类元数据和对象引用关系网。
+- **来源**：外部 AI review
+
+## [External Review] 19.07 19.07 — 2026-04-25
+- **类型**：建议改进
+- **位置**：19.07
+- **问题**：- [P2][知识盲区][和 Android Studio Profiler、Perfetto 的关系]
+- 原文问题：虽然说明了“DoKit 给的是入口，不是最终证据”，但没有明确点出它与线上成熟 APM 工具在技术实现流派上的最大区别。
+- 问题描述：诸如 Matrix 等线上 APM 倾向于使用底层的 PLT Hook (例如 xhook) 或相对轻量的抽样机制；而 DoKit 作为 Debug 工具则肆无忌惮地依赖较重的运行时计算或全量字节码插桩。
+- 建议：在对比说明中，可以一语道破 DoKit 的“全量插桩/高频轮询策略”与线上 APM 的“抽样/底层轻量级 Hook 策略”在架构
+- **来源**：外部 AI review
+
+## [External Review] 19.08 src/part3-tools/ch19-apm/08-argusapm.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/08-argusapm.md
+- **问题**：- [P2][细节严谨性][网络监控的现代适配]
+- 原文问题：网络阶段拆分中提到了使用 `StageEventListener` 代替 `Interceptor`，但未考虑到旧版本 OkHttp 的限制。
+- 证据或观察依据：OkHttp 在 `3.11.0` 才引入了相对完整成熟的 `EventListener` 机制。而上文（兼容风险章节）明确提到公开 sample 的基线停留在 `okhttp:3.10.0`。
+- 问题描述：如果读者强行在存量旧系统（基于 3.10.0）上套用这段现代化的 EventListener 适配代码，可能会遇到 API 缺失或回调不全的问题。
+- 建议：在展
+- **来源**：外部 AI review
+
+## [External Review] 19.09 src/part3-tools/ch19-apm/09-measure.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/09-measure.md
+- **问题**：- [P2][版本差异覆盖][核心能力]
+  - 原文问题：“Crash / ANR 自动捕获”
+  - 证据或观察依据：现代 APM 在 Android 端捕获 ANR 存在明显的版本分水岭：Android 11 之前通常依赖 `FileObserver` 监听 `/data/anr/traces.txt` 或者拦截 SIGQUIT 信号；而 Android 11+ 引入了官方的 `ApplicationExitInfo`（`REASON_ANR`）来回溯崩溃和 ANR 原因。
+  - 问题描述：原文只是介绍了 Measure 的能力，但在 AIW 这个以深度机制解析为主的 Wiki 中，缺
+- **来源**：外部 AI review
+
+## [External Review] 19.09 src/part3-tools/ch19-apm/09-measure.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/09-measure.md
+- **问题**：- [P2][数据/案例支撑][隐私策略要在接入前定清]
+  - 原文问题：“截图 / 附件：默认开启文字或敏感输入遮罩”
+  - 证据或观察依据：移动端的 Screenshot Mask 通常不是魔法，它一般需要通过遍历当前 Activity 的 View Hierarchy（视图树），找出特定的 inputType（如 password）或者开发者打上的特定 Tag，然后在最终的 Bitmap 截图中用实色方块覆盖对应的坐标（bounds）。
+  - 问题描述：原文只提了功能现象，没有提及 Android 上的实现成本和原理。
+  - 建议：简要补充 Screenshot Mask 的底层
+- **来源**：外部 AI review
+
+## [External Review] 19.10 src/part3-tools/ch19-apm/10-other-opensource-apm.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/10-other-opensource-apm.md
+- **问题**：- [P2][知识盲区][Collie 轻量线上采样思路]
+  - 原文问题：启动采集依赖“`ContentProvider`、window focus 等关键节点”。
+  - 问题描述：虽然借助 ContentProvider 采集启动耗时是经典方案，但在当前现代化 Android 开发中，开发者大概率在使用 `androidx.startup`。
+  - 建议：建议顺带提及现今广泛使用的 Jetpack App Startup，指出轻量 APM 若使用 ContentProvider，需与 App Startup 这类初始化框架评估执行顺序或进行整合。
+- **来源**：外部 AI review
+
+## [External Review] 19.10 src/part3-tools/ch19-apm/10-other-opensource-apm.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/10-other-opensource-apm.md
+- **问题**：- [P2][原理链完整性][最小 APM SDK 采集方式]
+  - 原文问题：慢帧信号来源列举了 `JankStats / Choreographer / FrameMetrics`，未作优先级区分。
+  - 问题描述：读者对于选哪一个会有困惑。`FrameMetrics` 适用 API 24+，而 `JankStats` 是官方目前推荐的、支持到 API 16 并且能附带生命周期/UI 状态追踪的最佳封装。
+  - 建议：建议注明 `JankStats` 作为首要推荐库，而将其余两者作为其底层原理来源或降级参考。
+- **来源**：外部 AI review
+
+## [External Review] 19.14 src/part3-tools/ch19-apm/14-jetpack-benchmark.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/14-jetpack-benchmark.md
+- **问题**：- [P2][数据/案例支撑][CI 中的噪声控制]
+  - 原文问题：“设备温度过高时跳过或降权本轮结果”描述得像是需要外部 CI 脚本自己处理。
+  - 证据或观察依据：`androidx.benchmark` 内部包含了 `ThermalThrottle` 检测机制。
+  - 问题描述：Benchmark 库在执行期间，默认会监控设备热节流状态。如果设备过热，库会自动介入休眠等待降温（Sleep to cool down），或者通过 `IsolationActivity` 进行控制。
+  - 建议：修正表述，说明 Benchmark 库自身具备热节流防御机制，但 CI 环境仍需保证散热条
+- **来源**：外部 AI review
+
+## [External Review] 19.18 src/part3-tools/ch19-apm/18-commercial-apm.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/18-commercial-apm.md
+- **问题**：- [P2][知识盲区][Sentry profiling 风险]
+  - 原文问题：提到 profiling 存在特定场景 crash 风险，但未给出具体特征。
+  - 证据或观察依据：Sentry 官方文档和 GitHub Issue。
+  - 问题描述：缺少具体的信号特征（如 `pthread_getcpuclockid` 或 `art::Trace::StopTracing` 崩溃）。
+  - 建议：在 Sentry profiling 段落补充这些特征，帮助工程人员在 Logcat 中快速识别是否为 Sentry SDK 导致的系统级崩溃。
+- **来源**：外部 AI review
+
+## [External Review] 19.18 src/part3-tools/ch19-apm/18-commercial-apm.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/18-commercial-apm.md
+- **问题**：- [P2][原理链完整性][APMPlus 私有化]
+  - 原文问题：提到私有化，但未说明其核心技术栈。
+  - 问题描述：APMPlus 私有化核心依赖 ClickHouse (ByteHouse) 和 Flink。
+  - 建议：在私有化部分简述其对高性能存储的要求，这对企业采购时的硬件成本评估非常重要。
+- **来源**：外部 AI review
+
+## [External Review] 19.19 src/part3-tools/ch19-apm/19-perfdog.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/19-perfdog.md
+- **问题**：- [P2][知识盲区][与自动化脚本结合]
+- 原文问题：未提及 PerfDog Service APK 的角色。
+- 问题描述：PerfDog 通过 PUSH 一个辅助 APK 到设备来作为“特权代理”，利用 shell 权限绕过部分沙箱限制。
+- 建议：简要说明 PerfDog Service 的作用，以及为什么需要通过 ADB 手动授予 `DUMP` 权限。
+- **来源**：外部 AI review
+
+## [External Review] 19.19 src/part3-tools/ch19-apm/19-perfdog.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/19-perfdog.md
+- **问题**：- [P2][原理链完整性][功耗和温度的读法]
+- 原文问题：未提及 FPower（每帧功耗）这一高价值衍生指标。
+- 建议：补充 FPower 的概念（Total Power / FPS），它是评估渲染能效比的核心指标。
+- **来源**：外部 AI review
+
+## [External Review] 19.04 src/part3-tools/ch19-apm/04-btrace.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/04-btrace.md
+- **问题**：- [P2][源码准确性][采集流程]
+  - **原文问题**：App 包里集成 `com.bytedance.btrace:rhea-inhouse`，未提及具体版本号。
+  - **证据或观察依据**：Btrace 3.0 与 2.x 的产物格式和能力有质的区别，3.0 默认输出 PB 格式以供 Perfetto 分析。
+  - **问题描述**：不写具体版本号可能导致读者接入旧版本。
+  - **建议**：建议将依赖声明更新为完整的 `com.bytedance.btrace:rhea-inhouse:3.0.0`（或当前最新版本）。
+- **来源**：外部 AI review
+
+## [External Review] 19.04 src/part3-tools/ch19-apm/04-btrace.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/04-btrace.md
+- **问题**：- [P2][数据/案例支撑][Perfetto UI 里的读法]
+  - **原文问题**：提到“看 CPU 调度：线程是否频繁 runnable 但拿不到 CPU”。
+  - **证据或观察依据**：Perfetto UI 中 Runnable 和 Running 的视觉表现不同。
+  - **问题描述**：对初次接触 Perfetto 的读者来说，知道要看 Runnable 状态，但不知道在 UI 上长什么样。
+  - **建议**：建议用一两句话补充 UI 表现特征，例如“在 Perfetto 中，Runnable 通常表现为浅色/无 CPU 编号的片段，而实际运行（Running）状
+- **来源**：外部 AI review
+
+## [External Review] 19.11 ch19.11 — 2026-04-25
+- **类型**：建议改进
+- **位置**：ch19.11
+- **问题**：### 1. [P2][源码准确性][jank 阈值]
+- **问题描述**：默认倍率 2.0f 过于保守。
+- **建议**：说明其 implication（2x 预期时长才判 jank）。
+- **来源**：外部 AI review
+
+## [External Review] 19.11 ch19.11 — 2026-04-25
+- **类型**：建议改进
+- **位置**：ch19.11
+- **问题**：### 2. [P2][知识盲区][JankStats 状态]
+- **问题描述**：未提示库处于 Alpha 阶段。
+- **建议**：增加 API 稳定性风险提示。
+- **来源**：外部 AI review
+
+## [External Review] 19.13 13-tracing-sdk.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：13-tracing-sdk.md
+- **问题**：- [P2][知识盲区][Native 标注]
+- **原文问题**：Native Trace 描述过于笼统。
+- **问题描述**：仅提到了 native 侧有自定义事件，未给出具体的 API 参考。
+- **建议**：补充 `#include <android/trace.h>` 以及 `ATrace_beginSection` / `ATrace_endSection` 的名称，并明确说明 native slice 会出现在相同的线程轨道上。
+- **来源**：外部 AI review
+
+## [External Review] 19.13 13-tracing-sdk.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：13-tracing-sdk.md
+- **问题**：- [P2][原理链完整性][阅读方式]
+- **原文问题**：缺失对 "Gap" 和 "Scheduler" 的观察方法。
+- **问题描述**：大纲要求说明如何看 gap 和 scheduler。
+- **建议**：在 Perfetto UI 描述部分，增加关于“两个同步 Slice 之间的 Gap 可能代表 I/O 等待或 CPU 调度抢占”的说明，并引导读者查看 Thread State 轨道。
+- **来源**：外部 AI review
+
+## [External Review] 19.17 src/part3-tools/ch19-apm/17-firebase-performance.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/17-firebase-performance.md
+- **问题**：- [P2][知识盲区][网络请求聚合和 URL pattern]
+- **原文问题**：提及了 Cronet，但未说明其采集特殊性。
+- **问题描述**：FPM 的 Gradle 插件无法自动对 Cronet 这种 native 网络栈进行字节码插桩。
+- **建议**：明确指出使用 Cronet 时需要手动使用 `FirebasePerfUrlConnection` 包装或添加拦截器，否则会自动“漏掉”。
+- **来源**：外部 AI review
+
+## [External Review] 19.17 src/part3-tools/ch19-apm/17-firebase-performance.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：src/part3-tools/ch19-apm/17-firebase-performance.md
+- **问题**：- [P2][数据/案例支撑][数据模型：trace、metric、attribute]
+- **原文问题**：描述 Metric 时使用“低基数”。
+- **问题描述**：Metric 是数值（Long），属性（Attribute）才是用来做分类聚合的（涉及基数问题）。
+- **建议**：修改表述，强调 Metric 用于计算（累加、平均），Attribute 用于过滤和分组（高基数 Attribute 会导致控制台聚合失败）。
+- **来源**：外部 AI review
+
+## [External Review] 19.21 21-benchmark-apps.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：21-benchmark-apps.md
+- **问题**：- [P2][原理链完整性][Geekbench 分数的工程解释]
+- **问题描述**：未提及 Geekbench 6 的 **“Shared Task” (共享任务)** 模型。
+- **原理说明**：GB6 从 GB5 的独立多核任务改为多核协同完成单一任务（模拟真实软件逻辑），这解释了为什么现代高核数 SoC 的 GB6 多核分数增长不如 GB5 线性。
+- **建议**：补充这一技术细节，帮助读者理解 Benchmark 建模逻辑的演进。
+- **来源**：外部 AI review
+
+## [External Review] 19.21 21-benchmark-apps.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：21-benchmark-apps.md
+- **问题**：- [P2][知识盲区][3DMark 分数的工程解释]
+- **问题描述**：仅提到 Wild Life 级别的测试，未提及现代光追（Solar Bay）和 AAA 级负载（Steel Nomad Light）。
+- **建议**：补充针对 Android 14+ 旗舰机型应关注 **Solar Bay**（测光追性能）和 **Steel Nomad Light**（取代 Wild Life Extreme）的建议。
+- **来源**：外部 AI review
+
+## [External Review] 19.21 21-benchmark-apps.md — 2026-04-25
+- **类型**：建议改进
+- **位置**：21-benchmark-apps.md
+- **问题**：- [P2][知识盲区][历史工具的处理]
+- **问题描述**：提到 Vellamo 已过期，但未给出现代 Web 性能测试建议。
+- **建议**：补充 **Speedometer 3.0** 或 **JetStream 2** 作为现代移动浏览器/Web 性能的基准工具。
+- **来源**：外部 AI review

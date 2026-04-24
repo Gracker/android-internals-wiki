@@ -985,6 +985,30 @@
         "detail": "数据合同缺乏代码符号化（Mapping/Build-ID）的字段约束。",
         "suggestion": "在“样本字段”或维度中，补充 Mapping UUID / Build-ID。",
         "priority": "P1"
+      },
+      {
+        "type": "重要缺失",
+        "location": "01-apm-landscape.md",
+        "detail": "- [P1][原理链完整性/案例支撑][APM 先解决线上可见性]\n  - 原文问题：大纲中明确要求（必须覆盖）：`补一个线上慢帧或 OOM 样本从发现到定位的例子。` 但原文仅在 `指标、样本、trace 是三种不同证据` 一节画了一个理论上的流程图（Mermaid），没有给出任何具体的实战案例。\n  - 为什么这是重要缺失：这是 APM 的核心价值。如果不给一个真实的排查链路（例如：“指标发现 Android 13 OOM 抬升 -> APM 给出 Hprof 摘要样本发现 `Activity` 泄漏 -> 线下用 Profiler 确认是某静态 `Handler` 导致”），读者仍会觉得 APM 只是几个图表。\n  - 建议补充方向：在第一节或流程图下方，补充一个具体的 OOM 或慢帧从“看盘发现趋势”到“下钻看样本”，再到“线下复现修复”的 1-2 段具体案例描述。",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "01-apm-landscape.md",
+        "detail": "- [P1][知识盲区][线上采样要先写清数据合同]\n  - 原文问题：在“数据合同”的字段列表里，遗漏了决定堆栈可用性的关键因素：代码混淆/符号化版本。\n  - 缺失内容：对于 Java/Kotlin 需要 `mapping.txt` 的版本标识（如 UUID 或 build version）；对于 Native 崩溃/Trace 需要 `build-id`。\n  - 为什么这是重要缺失：在线上 APM 实践中，收集到的堆栈全是混淆后的 `a.b.c.a()`。如果没有在数据合同中强约束 `mapping` 版本标识，服务端根本无法符号化，这会导致收集上来的现场成为“废数据”，这是 APM 研发最容易踩的坑。\n  - 建议补充方向：在“样本字段”或“稳定维度”中，强制加入“符号化标识（Mapping UUID / Native Build-ID）”。",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "01-apm-landscape.md",
+        "detail": "1. 章节：`ch19.01`\n   - 严重级别：P1\n   - 问题类型：案例缺失\n   - 位置：全文/APM 先解决线上可见性\n   - 问题描述：大纲要求的“线上慢帧/OOM 样本发现到定位的具体案例”未落实。\n   - 建议修正方向：补充一段文字，描述一个从指标异常、定位样本、到线下 Trace/Hprof 验证的具体排查案例。",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "01-apm-landscape.md",
+        "detail": "2. 章节：`ch19.01`\n   - 严重级别：P1\n   - 问题类型：知识盲区\n   - 位置：线上采样要先写清数据合同\n   - 问题描述：数据合同缺乏代码符号化（Mapping/Build-ID）的字段约束。\n   - 建议修正方向：在“样本字段”或维度中，补充 Mapping UUID / Build-ID。",
+        "suggestion": "见 external-review 文件"
       }
     ],
     "added_by": "external-ai-review",
@@ -1034,6 +1058,24 @@
         "location": "",
         "detail": "提及“ApplicationExitInfo：确认进程是否因为 low memory、ANR、crash 等退出。”",
         "suggestion": "明确标注 `ApplicationExitInfo` 的 Android 11+ 版本要求。"
+      },
+      {
+        "type": "重要缺失",
+        "location": "03-koom.md",
+        "detail": "- [P1][源码准确性][Java 泄漏：重点是 dump 成本]\n  - 原文问题：文中仅提到“采用 fork 子进程 dump 的思路，用 copy-on-write 降低主进程停顿风险”，完全没有提及 AOSP 中导致停顿的具体方法和原因。\n  - 源码 / 一手资料锚点：`dalvik/system/VMDebug.java` (`dumpHprofData()`)。\n  - 缺失内容：原生的 `VMDebug.dumpHprofData()` 在 ART 中执行时会触发 Stop-The-World (STW)，挂起所有线程，这正是线上直接 dump 会引发 ANR 的根源所在。并且，KOOM 在使用 fork 时，必须处理子进程中复杂的锁状态与死锁风险。\n  - 为什么这是重要缺失：这是 KOOM 解决的最大痛点。不交代 `dumpHprofData()` 带来的 STW，就无法凸显 fork dump 的必要性；不交代多线程环境下的 fork 风险，技术细节便显得漂浮。\n  - 建议补充方向：结合 AOSP 源码，补充原生的 `VMDebug.dumpHprofData",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "03-koom.md",
+        "detail": "- [P1][源码准确性][Native leak 检测的成本点]\n  - 原文问题：文中提到“记录分配元数据，再扫描进程内存中可达指针”，但未交代记录的手段。\n  - 缺失内容：KOOM 监控 Native 内存分配强依赖于 PLT Hook 技术（主要使用了 bhook 或 xhook 等优秀的开源 Hook 框架）来拦截 `malloc`、`free` 等底层 C 函数。\n  - 为什么这是重要缺失：拦截 libc 内存分配是 Native 监控工具的基础。如果不说明使用 PLT Hook 及具体的库引擎（如 bhook），读者无法建立可落地的工程实践认知。\n  - 建议补充方向：补充基于 PLT Hook（bhook/xhook）技术拦截 libc 函数的原理说明。",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "03-koom.md",
+        "detail": "- [P1][版本差异覆盖][和 Android 系统内存信号配合]\n  - 原文问题：提及“ApplicationExitInfo：确认进程是否因为 low memory、ANR、crash 等退出。”\n  - 缺失内容：没有说明 `ApplicationExitInfo` 是 Android 11 (API 30) 才引入的关键特性。\n  - 为什么这是重要缺失：在系统诊断 API 的使用上，版本边界是强约束。不说明版本，可能导致实战中在低版本兼容性上踩坑。\n  - 建议补充方向：明确标注 `ApplicationExitInfo` 的 Android 11+ 版本要求。",
+        "suggestion": "见 external-review 文件"
       }
     ],
     "added_by": "external-ai-review",
@@ -1247,6 +1289,18 @@
         "location": "",
         "detail": "推荐使用“`ProfilingManager` + Perfetto”作为启动异常后的重样本方案。",
         "suggestion": "标注该 API 的 (Android 15+) 版本下限要求。"
+      },
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/10-other-opensource-apm.md",
+        "detail": "- [P1][版本差异覆盖][Rabbit 介绍及横向对比]\n  - 原文问题：“慢函数插桩是否还能适配当前 AGP、R8、混淆和 mapping 体系” 描述过于温和。\n  - 一手资料锚点：AGP API Updates (AGP 8.0 彻底移除了 `Transform` API，由 `AsmClassVisitorFactory` 替代)\n  - 缺失内容：AndroidGodEye, Collie, Rabbit 最后更新均停留于 2022-2023 年。在现代 Android 工程（AGP 8.0 及更高版本）中，由于 `Transform` API 的彻底移除，这些旧库中依赖字节码插桩（慢方法监测、网络抓包拦截等）的插件模块将直接引发编译失败，无法被集成。\n  - 为什么这是重要缺失：这不只是“能否适配”的兼容性问题，而是新项目引入该库会导致整个工程无法 Build 的硬性门槛。必须指出现代构建链对遗留 APM 的致命阻断。\n  - 建议修正方向：明确指出 AGP 8.0 取消 Transform API 的分水岭。强调对于这些库中涉及字节码修改的功能，在新项目中只能作为",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/10-other-opensource-apm.md",
+        "detail": "- [P1][版本差异覆盖][旧开源工具迁移到官方 SDK 映射表]\n  - 原文问题：推荐使用“`ProfilingManager` + Perfetto”作为启动异常后的重样本方案。\n  - 一手资料锚点：`android.os.ProfilingManager` (Android API 35)\n  - 缺失内容：`ProfilingManager` 是 Android 15 (API 35) 刚刚引入的系统级 API，无法向下兼容低版本设备。\n  - 为什么这是重要缺失：文章在 `Applicable Versions` 标明了 `Android 8 - 17`，如果直接抛出 `ProfilingManager` 而不加版本前缀，开发者在低于 Android 15 的设备上无法找到或调用此能力，产生困惑。\n  - 建议补充方向：标注该 API 的 (Android 15+) 版本下限要求。",
+        "suggestion": "见 external-review 文件"
       }
     ],
     "added_by": "external-ai-review",
@@ -1264,6 +1318,18 @@
         "detail": "暂无。*",
         "suggestion": "",
         "evidence": []
+      },
+      {
+        "type": "重要缺失",
+        "location": "ch19.11",
+        "detail": "### 1. [P1][原理链完整性][它输出什么]\n- **原文问题**：未解释异步 FrameMetrics 如何与同步 UI 状态精确对齐。\n- **源码锚点**：`androidx.metrics.performance.JankStatsApi24Impl`\n- **运行原理说明**：JankStats 使用 **时间区间重叠（Overlap）算法**。它以 `OnPreDrawListener` 作为 UI 线程的同步锚点。当异步的 `FrameMetrics` 返回时，它将该帧的时间区间 `[frameStart, frameEnd]` 与 `PerformanceMetricsState` 记录的所有状态区间进行交集判定。\n- **建议修正方向**：增加“状态关联原理”说明。",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "ch19.11",
+        "detail": "### 2. [P1][版本差异覆盖][frontmatter / API 版本差异]\n- **原文问题**：Frontmatter (API 26+) 与正文 (API 16+) 冲突。\n- **核验结论**：JankStats 支持 API 16+。\n- **建议修正方向**：统一为 API 16+。",
+        "suggestion": "见 external-review 文件"
       }
     ],
     "added_by": "external-ai-review",
@@ -1522,6 +1588,18 @@
         "detail": "未区分 Bugly 普通版与 Pro 版，漏掉了 2025 年的关键 APM 能力。",
         "suggestion": "重写 Bugly 部分，引入 Bugly Pro 的概念，重点描述其“页面回放”和“ANR 预堆栈”能力。",
         "priority": "P1"
+      },
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/18-commercial-apm.md",
+        "detail": "- [P1][原理链完整性][Bugly 稳定性边界]\n  - 原文问题：将 Bugly 定位为“稳定性治理入口”，并认为其在性能治理上较弱。\n  - 源码 / 一手资料锚点：`Bugly Pro` 官方文档及 2024-2025 更新日志。\n  - 运行原理说明：Bugly Pro 引入了 ANR 预抓取主线程堆栈（`setEnableRecordAnrMainStack`）、启动 Span 测量、页面回放（Page Replay）等深度 APM 能力。\n  - 核验结论：原文描述的是“Bugly 普通版”，而当前主流已转向“Bugly Pro”，后者的 APM 能力已不逊于 APMPlus。\n  - 为什么这是重要缺失：误导读者认为 Bugly 只能做崩溃监控，导致错误的选型决策。\n  - 建议补充方向：区分 Bugly Regular 与 Bugly Pro，强调 Pro 版在 ANR 预分析和页面回放上的优势。",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/18-commercial-apm.md",
+        "detail": "- [P1][版本差异覆盖][Android 15 适配]\n  - 原文问题：虽然 frontmatter 提到支持 Android 17，但正文未提及 Android 15 引入的 16KB Page Size 对原生 APM SDK 的毁灭性影响。\n  - 源码 / 一手资料锚点：Android 15 Release Notes (Support for 16 KB page sizes); Bugly v4.4.6.2 Release Note; APMPlus Android 15 Migration Guide.\n  - 关键代码逻辑：原生库必须按 16KB 边界对齐（`max-page-size: 16384`），否则在 Android 15 16KB 模式下会触发 `SIGSEGV`。\n  - 为什么这是重要缺失：这是 2024-2025 年商业 APM 接入的首要技术关卡，不提此点显得内容缺乏时效性。\n  - 建议补充方向：在“商业 APM 的评审维度”表中增加“16KB Page Size 兼容性”项。",
+        "suggestion": "见 external-review 文件"
       }
     ],
     "added_by": "external-ai-review",
@@ -1578,6 +1656,24 @@
         "detail": "缺少 USB vs Wi-Fi 模式对功耗电流采集影响的解释。",
         "suggestion": "补充电流采集原理。",
         "priority": "P1"
+      },
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/19-perfdog.md",
+        "detail": "- [P1][原理链完整性][它能测什么 / 功耗和温度的读法]\n- 原文问题：未明确说明功耗测量在 USB 连接模式下的不可信性。\n- 运行原理说明：在 USB 连接时，`/sys/class/power_supply/battery/current_now` 反映的是“充电电流 - 耗电电流”的净值。若不切换到 Wi-Fi 模式断开充电，无法获得 App 的真实耗电数据。\n- 建议修正方向：明确补充“Wi-Fi 模式测试”是功耗准确性的前提，解释 USB 模式采集的是净电流而非设备总功耗。",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/19-perfdog.md",
+        "detail": "- [P1][源码准确性][FPS 之外还要看帧时间]\n- 原文问题：未解释 FPS 数据的采集源，导致读者无法理解其与系统 Trace 的对应关系。\n- 源码 / 一手资料锚点：`adb shell dumpsys SurfaceFlinger --latency <WindowName>`\n- 关键代码逻辑：PerfDog 通过解析 SurfaceFlinger 的 BufferQueue 延迟数据（Desired Present Time vs Actual Present Time）来计算 FPS 和 Jank。\n- 建议修正方向：补充数据来源说明，区分 Activity (通常通过 SF 主窗口) 和 SurfaceView (游戏独立渲染 Surface) 的采集逻辑。",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/19-perfdog.md",
+        "detail": "- [P1][版本差异覆盖][全文]\n- 原文问题：未提及 Android 13/14+ 对 PerfDog Service 的“受限设置”（Restricted Settings）影响。\n- 版本差异：Android 13+ 引入了对侧载 APK 的敏感权限限制。\n- 核验结论：如果用户不手动在“应用信息 -> 允许受限设置”中开启，PerfDog Service 无法获取辅助功能、通知访问等关键权限，导致采集失败。\n- 建议修正方向：增加“版本适配坑点”或“疑难排查”小节，专门针对 Android 13-16 的权限变迁给出操作建议。",
+        "suggestion": "见 external-review 文件"
       }
     ],
     "added_by": "external-ai-review",
@@ -2056,6 +2152,69 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T03:16:09.066416+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.07",
+    "section_title": "19.07",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 2 个回炉问题",
+    "review_issues": [
+      {
+        "type": "重要缺失",
+        "location": "19.07",
+        "detail": "- [P1][原理链完整性][性能面板的数据可信度]\n- 原文问题：大纲明确要求说明“FPS、CPU、内存、网络数据的采集来源、刷新频率、误差”，但正文《性能面板的数据可信度》一节仅给出了“适合用途”和“需要复核”的对比，**完全忽略了“采集来源”（底层技术实现原理）**。\n- 缺失内容：未说明 FPS 监控依赖于 `Choreographer.FrameCallback`；未说明 CPU/内存监控依赖于系统文件读取或 `Debug.MemoryInfo`；网络和方法耗时/Mock 完全未提及 ASM 字节码插桩机制（Transform API/AGP 插件）。\n- 运行原理说明：DoKit 之所以能“无需业务代码介入即实现网络抓包与 Mock”，是因为其配套的 `dokitx-plugin` 在编译期通过 ASM 扫描并替换了 `OkHttpClient` 的构造方法或注册了全局 Interceptor，耗时统计同理。这正是导致其“端上采集逻辑本身也会消耗资源”的根本技术原因。\n- 为什么这是重要缺失：仅告诉读者“它消耗资源、不准”，却不解释“因为它在编译期强行织入了大量耗时统计代码",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "19.07",
+        "detail": "- [P1][源码准确性][Debug 工具箱的工程结构]\n- 原文问题：虽然列出了诸如 `DoraemonStatisticsUtil#uploadUserInfo` 和 `NetWorkMockFragment` 等网络相关类，但对 DoKit 最核心的插件/Transform 编译期逻辑没有给出任何源码或机制锚点。\n- 缺失内容：没有点出 DoKit 编译期插件的核心实现机制（如利用 AGP Transform 配合 ASM 框架进行字节码修改的逻辑路径），这是 DoKit 实现无侵入监控的灵魂。\n- 为什么这是重要缺失：作为一本内部深度 Wiki，读者需要知道“如果我要自己造一个类似的无侵入监控轮子，我应该参考 DoKit 的哪部分源码”。缺失这部分会导致技术资产的可复用性大幅降低。\n- 建议补充方向：补充 `dokitx-plugin` 机制的简要说明，指出网络 Hook 或方法插桩的具体构建期阶段，或者提供核心类的锚点（如针对 ASM 的 Transformer 类机制）。",
+        "suggestion": "见 external-review 文件"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T04:19:06+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.08",
+    "section_title": "src/part3-tools/ch19-apm/08-argusapm.md",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 1 个回炉问题",
+    "review_issues": [
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/08-argusapm.md",
+        "detail": "- [P1][原理链完整性][架构分成采集模块和 Gradle Plugin]\n- 原文问题：文中在提及其字节码注入时，使用了“AOP / ASM 织入”这样较为笼统的并列描述，未能说清这两种不同技术体系在 ArgusAPM 中的真实分工，容易产生黑盒感。\n- 源码 / 一手资料锚点：ArgusAPM 开源仓库中的 `argus-apm-main`（基于 AspectJ 的实现）与 `argus-apm-gradle`（基于 ASM 的实现）。\n- 缺失内容：AspectJ 与 ASM 在 ArgusAPM 体系内具体的职责分工与选型考量。\n- 运行原理说明：在真实 ArgusAPM 工程设计中，两者是“分层防御”关系：\n  1. **AspectJ**：负责开发效率高、调用频次较低的业务逻辑插桩（如 Activity/Fragment 生命周期事件、点击事件拦截等）。\n  2. **ASM**：作为核心底层插桩引擎，用于极高频次且对性能损耗极度敏感的场景（如 Method Trace 方法耗时全量统计、`new Thread()` 创建劫持）。\n- 为什么这是重要缺失：ArgusAP",
+        "suggestion": "见 external-review 文件"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T04:19:06+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.14",
+    "section_title": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 2 个回炉问题",
+    "review_issues": [
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+        "detail": "- [P1][原理链完整性/知识盲区][Microbenchmark 测小代码段]\n  - 原文问题：完全遗漏了防御死代码消除（DCE）的机制，且未按照大纲要求覆盖 `Blackhole` 和 `BenchmarkState`。\n  - 源码 / 一手资料锚点：`androidx.benchmark.Blackhole` 及其 `consume()` 方法，`androidx.benchmark.BenchmarkState`。\n  - 缺失内容：Microbenchmark 执行的代码段往往因为返回值未被使用，在 AOT 编译阶段被编译器直接优化掉（Dead Code Elimination），导致耗时测出来为 0 或极小。\n  - 运行原理说明：必须使用 `Blackhole.consume(result)` 来强制消费变量，欺骗编译器保留被测代码逻辑。\n  - 为什么这是重要缺失：这是写 Microbenchmark 时最容易踩坑、最常导致“测了假数据”的致命点，大纲已要求却未覆盖。\n  - 建议补充方向：在“避免测错对象”部分增加一个由于未处理返回值导致 DCE 的反面示例，并",
+        "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
+        "detail": "- [P1][原理链完整性/实战落地][和 Baseline Profiles 的配合 & 工程形态]\n  - 原文问题：未提及 `androidx.profileinstaller:profileinstaller` 依赖，以及 `BaselineProfileRule` 的使用。\n  - 源码 / 一手资料锚点：`androidx.benchmark.macro.junit4.BaselineProfileRule` 及 `androidx.profileinstaller.ProfileInstaller`。\n  - 缺失内容：要在本地或 CI 的 Android 7.0+ (API 24+) 设备上使得 `CompilationMode.Partial` 生效，**被测 App** 必须包含 `profileinstaller` 依赖。否则 Macrobenchmark 库无法将 Profile 写入被测 App 并触发编译。\n  - 运行原理说明：Macrobenchmark 依赖 ProfileInstaller 将基线配置文件写入应用的私有目录，并发送广播要求 `bg-d",
+        "suggestion": "见 external-review 文件"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T04:19:06+08:00",
     "status": "pending"
   }
 ]
