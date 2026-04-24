@@ -22,16 +22,16 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/network-traces"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
-last_task9_at: "2026-04-24T16:40:21+08:00"
+last_task9_at: "2026-04-25T07:20:23+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 last_task2b_at: "2026-04-24T19:38:05+08:00"

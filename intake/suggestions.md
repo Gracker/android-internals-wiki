@@ -1358,3 +1358,33 @@
 - **位置**：WebView 冷启动、内存与 Perfetto 观察点（多处“明显跳升/明显更长”）
 - **问题**：章节很克制地避免写固定毫秒和 MB，但完全没有给出一组带设备条件的 baseline，读者难以判断“明显”在自己的设备上应落在哪个量级。
 - **建议**：补一组最小观测表：设备型号、Android/WebView provider 版本、是否 multiprocess、首次/二次创建主线程耗时、renderer 拉起时间、native heap / graphics / RSS 增量。
+
+## [Task9 Deep Review] 19.02 Tencent Matrix — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：L207-L213 / L215-L230
+- **问题**：Trace Canary 只写 method id 与 method map 必须关联，但没有说明 methodMapping.txt 在编译期由插桩流程生成、线上 payload 依赖该文件反解方法名。
+- **建议**：补 methodMapping 生成与服务端反解链路，说明 mapping / method map 丢失时线上报告只能保留数字 id。
+
+## [Task9 Deep Review] 19.02 Tencent Matrix — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L215-L230（Matrix 报告入库）
+- **问题**：表格列了平台字段，但没有 Trace Canary 慢函数或 IO Canary 的具体 Issue payload 示例，读者仍不知道 Matrix 上报字段和排查动作怎么对应。
+- **建议**：补一个 Trace block/slow method JSON 片段和一个 IO main-thread 文件读写样例，演示 cost、stack/method id、file path、buffer size 如何驱动下一步 Perfetto 或代码排查。
+
+## [Task9 Deep Review] 19.02 Tencent Matrix — 2026-04-25
+- **类型**：知识盲区
+- **位置**：L89-L92 / L131-L140
+- **问题**：Battery Canary、MemGuard、Pthread Hook 被列入能力表，但没有写清系统服务 Hook、PLT Hook、native heap 防护在定制 ROM、ABI、灰度采样上的稳定性风险。
+- **建议**：补底层 Hook 模块的启用前提、崩溃回滚策略、采样率和远程开关要求，不要让读者把它们当成默认可全量开启的模块。
+
+## [Task9 Deep Review] 19.15 Baseline Profiles 与编译优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L175-L184（验证 profile 是否生效）
+- **问题**：验证表没有给系统底层核验命令，ProfileVerifier 能说明状态，但排查 ART 采纳情况还需要看 dexopt 状态。
+- **建议**：补 `adb shell dumpsys package <pkg> | grep -A 10 dexopt` 或等价命令，观察 speed-profile / compilation status，并说明不同 Android 版本输出字段可能不同。
+
+## [Task9 Deep Review] 19.17 Firebase Performance — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：L90-L94（trace、metric、attribute 表）
+- **问题**：metric 被写成“低基数、可聚合数值”。基数问题主要属于 attribute 过滤/分组维度；metric 是数值计量，用于累加、平均或分布统计。
+- **建议**：把 metric 改成“数值计量，不拼动态维度”；把低基数约束移动到 attribute，并提醒高基数 attribute 会破坏控制台聚合。

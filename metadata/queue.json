@@ -1548,57 +1548,33 @@
   {
     "section": "19.17",
     "section_title": "Firebase Performance",
-    "priority": 85,
-    "reason": "[External Review] 合并更新 - 2026-04-25",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Firebase Performance trace 命名长度写错，并遗漏 Fragment 自动屏幕追踪版本边界",
     "review_issues": [
       {
-        "type": "知识盲区",
-        "location": "",
-        "detail": "[知识盲区][自定义 trace 的命名规则]\n- **原文问题**：声称 Trace 名称“最大长度 32 个字符”。\n- **源码 / 一手资料锚点**：[Firebase Custom Traces Docs](https://firebase.google.com/docs/perf-mon/custom-code-traces?platform=android#add-custom-attributes)\n- **关键代码逻辑**：SDK 内部常量 `MAX_TRACE_NAME_LENGTH` 在近几个版本中已上调。\n- **运行原理说明**：Trace 和 Metric 名称上限为 **100** 字符。真正的 32 字符限制存在于 **Attribute Key**（部分文档标记为 32 或 40）。\n- **核验结论**：原文将 Attribute 的限制套用到了 Trace 名称上，严重限制了用户命名的灵活性。\n- **为什么是重要缺失**：误导用户进行过度缩写，降低了看板的可读性。\n- **建议修正方向**：区分 Trace/Metric 名（100 字符）和 A",
-        "suggestion": "",
-        "evidence": []
+        "type": "源码错误/事实错误",
+        "location": "L140（自定义 trace 的命名规则）",
+        "detail": "章节写“trace 名称最大长度 32 个字符”。Firebase Performance 官方限制是 custom trace name 和 metric name 最大 100 个字符；32 字符限制适用于 custom attribute key，且每个 custom trace 最多 5 个 custom attributes。当前写法把 attribute 限制套到了 trace 名称上。",
+        "suggestion": "改成“trace / metric 名最大 100；attribute key 最大 32；每个 trace 最多 5 个 attribute”，并保留不能有前后空格、不能以下划线开头的规则。"
       },
       {
-        "type": "版本差异覆盖",
-        "location": "",
-        "detail": "[版本差异覆盖][自动采集能力与版本边界]\n- **原文问题**：声称屏幕渲染“只有 screen 级聚合，没有页面上下文”。\n- **源码 / 一手资料锚点**：Firebase Android SDK v20.1.0+ release notes.\n- **关键代码逻辑**：`FragmentManager.FragmentLifecycleCallbacks` 被用于自动采集 Fragment 级的渲染数据。\n- **缺失内容**：Firebase 现在已支持 **Fragment 的自动屏幕追踪**。\n- **运行原理说明**：不再局限于 Activity，可以自动识别 `HomeFragment` 等页面，解决了单 Activity 架构下的监控痛点。\n- **为什么这是重要缺失**：这是现代 Android 开发（Navigation Component）的基础，缺失此点会让读者认为 FPM 对单 Activity 架构无能为力。\n- **建议补充方向**：在“自动采集能力”表格中明确补充对 Fragment 的支持及其 SDK 版本要求（20.1.0+）。",
-        "suggestion": "",
-        "evidence": []
-      },
-      {
-        "type": "原理链完整性",
-        "location": "",
-        "detail": "[原理链完整性][自动采集能力与版本边界 - App Start]\n- **原文问题**：对应用启动的起点描述较模糊。\n- **源码 / 一手资料锚点**：`Process.getStartUptimeMillis()` (API 24+)。\n- **关键代码逻辑**：Firebase 优先使用系统 API 获取进程 fork 时间，而非仅依靠 ContentProvider。\n- **运行原理说明**：区分了“绝对冷启动”（系统级起点）和“SDK 起点”。\n- **核验结论**：原文仅提到“跟随当前 SDK 接入”，缺乏对 API 24+ 关键实现（`Process.getStartUptimeMillis()`）的提及。\n- **建议补充方向**：说明 API 24+ 会使用系统级进程启动时间，以及 60 秒过滤规则（防止后台启动干扰）。",
-        "suggestion": "",
-        "evidence": []
-      },
-      {
-        "type": "重要缺失",
-        "location": "",
-        "detail": "- [P1][知识盲区][自定义 trace 的命名规则]\n- **原文问题**：声称 Trace 名称“最大长度 32 个字符”。\n- **源码 / 一手资料锚点**：[Firebase Custom Traces Docs](https://firebase.google.com/docs/perf-mon/custom-code-traces?platform=android#add-custom-attributes)\n- **关键代码逻辑**：SDK 内部常量 `MAX_TRACE_NAME_LENGTH` 在近几个版本中已上调。\n- **运行原理说明**：Trace 和 Metri",
-        "suggestion": ""
-      },
-      {
-        "type": "重要缺失",
-        "location": "",
-        "detail": "- [P1][版本差异覆盖][自动采集能力与版本边界]\n- **原文问题**：声称屏幕渲染“只有 screen 级聚合，没有页面上下文”。\n- **源码 / 一手资料锚点**：Firebase Android SDK v20.1.0+ release notes.\n- **关键代码逻辑**：`FragmentManager.FragmentLifecycleCallbacks` 被用于自动采集 Fragment 级的渲染数据。\n- **缺失内容**：Firebase 现在已支持 **Fragment 的自动屏幕追踪**。\n- **运行原理说明**：不再局限于 Activity，可以自动识别 `",
-        "suggestion": ""
-      },
-      {
-        "type": "重要缺失",
-        "location": "",
-        "detail": "- [P1][原理链完整性][自动采集能力与版本边界 - App Start]\n- **原文问题**：对应用启动的起点描述较模糊。\n- **源码 / 一手资料锚点**：`Process.getStartUptimeMillis()` (API 24+)。\n- **关键代码逻辑**：Firebase 优先使用系统 API 获取进程 fork 时间，而非仅依靠 ContentProvider。\n- **运行原理说明**：区分了“绝对冷启动”（系统级起点）和“SDK 起点”。\n- **核验结论**：原文仅提到“跟随当前 SDK 接入”，缺乏对 API 24+ 关键实现（`Process.getSta",
-        "suggestion": ""
-      },
-      {
-        "type": "from-body",
-        "location": "",
-        "detail": "\n- [P1][知识盲区][自定义 trace 的命名规则]\n- **原文问题**：声称 Trace 名称“最大长度 32 个字符”。\n- **源码 / 一手资料锚点**：[Firebase Custom Traces Docs](https://firebase.google.com/docs/perf-mon/custom-code-traces?platform=android#add-custom-attributes)\n- **关键代码逻辑**：SDK 内部常量 `MAX_TRACE_NAME_LENGTH` 在近几个版本中已上调。\n- **运行原理说明**：Trace 和 Metr",
-        "suggestion": ""
+        "type": "版本差异",
+        "location": "L129-L133（自动采集能力与版本边界）",
+        "detail": "表格把 Screen rendering 写成“只有 screen 级聚合，没有页面上下文”。Firebase Performance Android SDK 20.1.0+ 已支持 Fragment 级自动 screen rendering trace；现代单 Activity / Navigation 架构下，这个版本边界会影响读者对页面粒度的判断。",
+        "suggestion": "补 SDK 20.1.0+ Fragment 自动屏幕追踪边界，区分 Activity/Fragment screen trace 与业务自定义 UI state；仍需说明它不能替代 JankStats 的逐帧上下文。"
       }
     ],
-    "added_by": "external-ai-review",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/external-review/archive/2026-04-25-17-ch19.17-external-review.md"
+    ],
+    "added_at": "2026-04-25T07:20:23+08:00",
+    "validated_external_review_paths": [
+      "logs/external-review/archive/2026-04-25-17-ch19.17-external-review.md"
+    ]
   },
   {
     "section": "19.18",
@@ -2148,25 +2124,26 @@
     "section": "19.02",
     "section_title": "Tencent Matrix",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉问题",
+    "reason": "[Deep Tech Review] Matrix Trace Canary 的 AGP 8+ 插桩适配链路缺失，现代项目落地边界不清楚",
     "review_issues": [
       {
-        "type": "未分类",
-        "location": "未知",
-        "detail": "",
-        "suggestion": "",
-        "priority": "P1"
-      },
-      {
-        "type": "from-body",
-        "location": "",
-        "detail": "\n- **[P1][版本差异/原理链完整性][Trace Canary 的工程边界]**\n  - **原文问题**：“AGP 8.x 之后 `android.registerTransform` 已不再是可用入口。新项目接入时要先确认所用版本...适配当前 AGP。”\n  - **缺失内容**：没有给出 AGP 8.x 时代 Matrix 的真正生存现状和适配方案。\n  - **运行原理说明**：Matrix 官方仓库主分支（截至 2.1.0）尚未正式兼容 AGP 8。核心的 Trace 插桩强依赖已废弃的 Transform API。目前社区和实际工程中的标准解法是迁移至 AGP 8 推荐的",
-        "suggestion": ""
+        "type": "版本差异/原理断裂",
+        "location": "L111（Trace Canary 的工程边界）",
+        "detail": "章节只写 AGP 8.x 后 android.registerTransform 不再可用，并要求读者确认适配，但没有说明 Matrix Trace 插桩在 AGP 8+ 下的可落地边界。AGP 8.0 已移除 Transform API；Matrix 这类 ASM 插桩需要迁到 Android Components Instrumentation API / AsmClassVisitorFactory，未迁移的官方版本或旧 fork 会直接构建失败。",
+        "suggestion": "补 Matrix 官方版本/所用 fork 对 AGP 8+ 的支持状态；写清可用路径是使用已迁移 fork，或将 MatrixTraceTransform 迁到 variant.instrumentation.transformClassesWith(AsmClassVisitorFactory)，否则只能固定在 AGP 7.x。"
       }
     ],
-    "added_by": "external-ai-review",
-    "added_at": "2026-04-25T03:16:09.066416+08:00",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T07:20:23+08:00",
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/external-review/archive/2026-04-25-02-ch19.02-external-review.md"
+    ],
+    "validated_external_review_paths": [
+      "logs/external-review/archive/2026-04-25-02-ch19.02-external-review.md"
+    ]
   },
   {
     "section": "19.09",
@@ -2188,21 +2165,40 @@
   },
   {
     "section": "19.15",
-    "section_title": "APM 线下工具实践",
+    "section_title": "Baseline Profiles 与编译优化",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉问题",
+    "reason": "[Deep Tech Review] Baseline Profiles 与 Startup Profiles 的编译主体、ART 链路和规则标志位没有讲完整",
     "review_issues": [
       {
-        "type": "未分类",
-        "location": "未知",
-        "detail": "",
-        "suggestion": "",
-        "priority": "P1"
+        "type": "原理断裂",
+        "location": "L121-L130（Baseline Profiles 和 Startup Profiles）",
+        "detail": "章节只说 Startup Profiles 用于 DEX layout 优化，没有说明生效主体和时机。Startup Profiles 主要由构建期的 R8/D8 消费，用来调整启动相关类/方法在 DEX 中的布局；Baseline Profiles 则主要被安装/后台阶段的 ART AOT 编译链消费。当前写法容易把 R8 构建期布局优化和 ART speed-profile 编译混成一条机制。",
+        "suggestion": "把 R8 构建期 DEX layout 与 ART 安装/后台 dex2oat 编译拆成两段，明确 Startup Profiles 解决 page fault / DEX 加载局部性，Baseline Profiles 解决解释执行/JIT 预热成本。"
+      },
+      {
+        "type": "原理断裂/源码锚点缺失",
+        "location": "L82-L96 / L175-L184（生效与验证）",
+        "detail": "章节没有交代 baseline-prof.txt 到设备端 ART 编译的中间链路。读者只看到包内 baseline.prof、ProfileInstaller、ProfileVerifier，却缺少 profgen 生成二进制 profile、ProfileInstaller 安装、profman 合并/分析、dex2oat --compiler-filter=speed-profile 编译这条关键路径。",
+        "suggestion": "补一张“生成 → 打包 → 安装 → profman → dex2oat”流程图，标出 art/profman/profman.cc、art/dex2oat/dex2oat.cc 作为源码锚点，并说明 ENQUEUED 与 COMPILED 的区别。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L153-L159（Profile 规则示例）",
+        "detail": "示例直接给出 HSPL 前缀，但没有解释 H/S/P/L 分别代表 Hot、Startup、Post-startup、Class/Load 相关标记。缺少这个说明，读者无法判断规则为什么会同时影响启动布局和编译优先级。",
+        "suggestion": "在规则示例后补 H/S/P/L 的含义和常见组合，并说明开发者通常不手写，但需要能在排查 profile 命中率时读懂。"
       }
     ],
-    "added_by": "external-ai-review",
-    "added_at": "2026-04-25T03:16:09.066416+08:00",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T07:20:23+08:00",
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/external-review/archive/2026-04-25-15-ch19.15-external-review.md"
+    ],
+    "validated_external_review_paths": [
+      "logs/external-review/archive/2026-04-25-15-ch19.15-external-review.md"
+    ]
   },
   {
     "section": "19.21",
@@ -2396,5 +2392,65 @@
     "completed_at": "2026-04-25T05:47:52+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "17-oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7589903499599347766"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "聊聊2026年Android开发会是什么样 — 最近在思考Android开发的未来走向，正好现在是2026年初，不如就结合这两年的变化，聊聊我对今年Android开发趋势的一些看法。 该文章深入分析了Android新版本特性领域的核心问题，通过实际...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-25T05:39:49.847279",
+    "status": "pending"
+  },
+  {
+    "section": "14-other-tools",
+    "section_title": "ch14-other-tools",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7596710680897863686"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "2026年了，Android开发该如何调试布局 — Android开发工具介绍，使用Layout Inspector、AYA可以提升布局分析速度。其中AYA可以辅助排查UI问题 该文章深入分析了性能优化领域的核心问题，通过实际案例和数据支撑，为Andr...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-25T05:39:49.885338",
+    "status": "pending"
+  },
+  {
+    "section": "14-other-tools",
+    "section_title": "ch14-other-tools",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      "https://juejin.cn/post/7591309945511739392"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分 — 谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分 该文章深入分析了性能优化领域的核心问题，通过实际案例和数据支撑，为Android开发者提供了切实可行的解决方案和技...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-25T05:39:49.920846",
+    "status": "pending"
   }
 ]
