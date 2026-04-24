@@ -1,39 +1,39 @@
 {
-  "generated_at": "2026-04-25T02:11:14+08:00",
+  "generated_at": "2026-04-25T02:26:14+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total_sections": 212,
-    "finalized": 60,
-    "ready-for-review": 150,
-    "ready-to-publish": 60,
-    "last_updated": "2026-04-25T02:11:14+08:00",
+    "finalized": 61,
+    "ready-for-review": 156,
+    "ready-to-publish": 61,
+    "last_updated": "2026-04-25T02:26:14+08:00",
     "pipeline_stage_counts": {
-      "None": 2,
-      "task6_pending": 28,
-      "task2b_pending": 36,
-      "ready-to-publish": 60,
-      "task9_pending": 83,
+      "None": 36,
+      "task6_pending": 26,
+      "task2b_pending": 37,
+      "ready-to-publish": 61,
+      "task9_pending": 87,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
-      "None": 5,
-      "reviewed": 193,
+      "None": 39,
+      "reviewed": 197,
       "revisiting": 14
     },
     "task9_state_counts": {
-      "None": 5,
-      "reviewed": 108,
-      "pending": 95,
+      "None": 43,
+      "reviewed": 111,
+      "pending": 92,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 7,
-      "fixed": 156,
-      "pending": 40,
+      "None": 45,
+      "fixed": 155,
+      "pending": 41,
       "'pending'": 2,
       "idle": 5,
       "'fixed'": 2
@@ -41,31 +41,31 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "None": 2,
-      "task6_pending": 28,
-      "task2b_pending": 36,
-      "ready-to-publish": 60,
-      "task9_pending": 83,
+      "None": 36,
+      "task6_pending": 26,
+      "task2b_pending": 37,
+      "ready-to-publish": 61,
+      "task9_pending": 87,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
-      "None": 5,
-      "reviewed": 193,
+      "None": 39,
+      "reviewed": 197,
       "revisiting": 14
     },
     "task9_state_counts": {
-      "None": 5,
-      "reviewed": 108,
-      "pending": 95,
+      "None": 43,
+      "reviewed": 111,
+      "pending": 92,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 7,
-      "fixed": 156,
-      "pending": 40,
+      "None": 45,
+      "fixed": 155,
+      "pending": 41,
       "'pending'": 2,
       "idle": 5,
       "'fixed'": 2
@@ -4634,13 +4634,13 @@
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T16:40:21+08:00",
+      "last_task9_at": "2026-04-25T02:26:14+08:00",
       "last_task2b_at": "2026-04-25T02:09:22+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b"
@@ -4841,25 +4841,25 @@
       "title": "BlockCanary",
       "chapter": "19",
       "section": "19.06",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "历史项目（公开基线：compileSdk 23 / targetSdk 22 / AGP 2.2.2）；现代 Android 版本需单独验证",
       "last_verified": "2026-04-24",
       "last_verified_against": "markzhai/AndroidPerformanceMonitor README + build.gradle",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T21:55:34+08:00",
+      "last_task9_at": "2026-04-25T02:26:14+08:00",
       "last_task2b_at": "2026-04-25T02:09:22+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b"
@@ -5130,14 +5130,18 @@
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-25T02:09:22+08:00",
       "repaired_date": "2026-04-25",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T02:26:14+08:00"
     }
   },
   "section_18_7": {
@@ -5366,6 +5370,32 @@
           "title": "ContentProvider 性能与优化",
           "result": "needs-rework",
           "issues": 2
+        }
+      ]
+    },
+    {
+      "date": "2026-04-25",
+      "task": "task9-deep-review",
+      "time": "02:26",
+      "sections_reviewed": [
+        {
+          "section": "19.0",
+          "title": "第 19 章：APM 工具与性能监控生态",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "19.06",
+          "title": "BlockCanary",
+          "result": "pass-tech-review",
+          "issues": 0,
+          "auto_promoted": true
+        },
+        {
+          "section": "19.16",
+          "title": "ProfilingManager",
+          "result": "pass-tech-review",
+          "issues": 0
         }
       ]
     }

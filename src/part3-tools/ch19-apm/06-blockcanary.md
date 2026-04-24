@@ -1,8 +1,9 @@
 ---
+
 title: "BlockCanary"
 chapter: "19"
 section: "19.06"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "历史项目（公开基线：compileSdk 23 / targetSdk 22 / AGP 2.2.2）；现代 Android 版本需单独验证"
@@ -14,16 +15,16 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-24"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-24T21:55:34+08:00"
+last_task9_at: "2026-04-25T02:26:14+08:00"
 task2b_state: fixed
 task2b_result: fixed
 review_round: 3
