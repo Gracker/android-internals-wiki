@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T07:52:07+08:00",
+  "generated_at": "2026-04-24T09:27:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,55 +7,55 @@
     "finalized": 49,
     "ready-for-review": 137,
     "ready-to-publish": 49,
-    "last_updated": "2026-04-24T08:27:00+08:00",
+    "last_updated": "2026-04-24T09:27:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 41,
-      "task2b_pending": 36,
+      "task6_pending": 39,
+      "task2b_pending": 34,
       "ready-to-publish": 49,
-      "task9_pending": 57
+      "task9_pending": 61
     },
     "task6_state_counts": {
       "unknown": 31,
-      "reviewed": 148,
-      "revisiting": 35
+      "reviewed": 150,
+      "revisiting": 33
     },
     "task9_state_counts": {
       "unknown": 31,
-      "reviewed": 95,
-      "pending": 87,
+      "reviewed": 94,
+      "pending": 88,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 33,
-      "fixed": 138,
-      "pending": 40,
+      "fixed": 140,
+      "pending": 38,
       "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 41,
-      "task2b_pending": 36,
+      "task6_pending": 39,
+      "task2b_pending": 34,
       "ready-to-publish": 49,
-      "task9_pending": 57
+      "task9_pending": 61
     },
     "task6_state_counts": {
       "unknown": 31,
-      "reviewed": 148,
-      "revisiting": 35
+      "reviewed": 150,
+      "revisiting": 33
     },
     "task9_state_counts": {
       "unknown": 31,
-      "reviewed": 95,
-      "pending": 87,
+      "reviewed": 94,
+      "pending": 88,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 33,
-      "fixed": 138,
-      "pending": 40,
+      "fixed": 140,
+      "pending": 38,
       "idle": 3
     }
   },
@@ -6089,40 +6089,28 @@
     },
     "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
-      "title": "链路分析方法论",
+      "title": "渲染管线分析方法论",
       "chapter": "18.20",
+      "section": "18.20",
       "status": "ready-for-review",
       "applicable_versions": "Android 9 (API 28) - Android 16 (API 36)",
-      "tags": [
-        "方法论",
-        "渲染链路",
-        "Perfetto",
-        "dumpsys",
-        "诊断",
-        "BufferQueue",
-        "性能分析"
-      ],
-      "related_chapters": [
-        "2.1",
-        "2.6",
-        "13.5",
-        "15.1"
-      ],
-      "created_by": "rendering-pipelines-merge",
-      "created_date": "2026-04-09",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "tags": "[\"方法论\", \"渲染管线\", \"Perfetto\", \"dumpsys\", \"诊断\", \"BufferQueue\", \"性能分析\"]",
+      "related_chapters": "[\"2.1\", \"2.6\", \"13.5\", \"15.1\"]",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "needs-rework",
       "task9_state": "pending",
-      "task2b_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-24",
-      "task6_result": "needs-rework",
-      "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-18",
       "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-18",
       "last_task9_at": "2026-04-18T14:30:00+08:00",
-      "task2b_result": "fixed",
-      "review_notes": " | 2026-04-24 task6 re-review (revisiting): needs-rework. L1: 「链路」禁用词全文命中~30处。评分: 结构5/5·措辞3/5·一致性4/5·验证4/5·元数据4/5。"
+      "repaired_date": "2026-04-24",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-24T09:27:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
@@ -7280,35 +7268,27 @@
       "chapter": "15.7",
       "section": "15.7",
       "status": "ready-for-review",
-      "drafted_date": "2026-04-04",
-      "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-04-04",
-      "last_verified_against": "AOSP android-16.0.0_r1",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、system/core/init）",
       "confidence": "medium",
-      "tags": [
-        "aosp",
-        "code-reading",
-        "cs.android.com",
-        "methodology"
-      ],
-      "related_chapters": [
-        "1.1",
-        "2.4",
-        "2.5",
-        "13.1"
-      ],
-      "pipeline_stage": "task2b_pending",
+      "tags": "['aosp', 'code-reading', 'cs.android.com', 'methodology']",
+      "related_chapters": "[\"1.1\", \"2.4\", \"2.5\", \"13.1\"]",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-24",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-18",
-      "task6_result": "pass-light-edit",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T06:54:00+08:00"
+      "task9_reviewed_date": "2026-04-24",
+      "last_task9_at": "2026-04-24T06:54:00+08:00",
+      "repaired_date": "2026-04-24",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-24T09:27:00+08:00"
     },
     "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md": {
       "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",

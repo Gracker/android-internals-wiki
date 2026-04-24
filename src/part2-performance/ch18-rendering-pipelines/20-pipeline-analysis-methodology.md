@@ -1,14 +1,15 @@
 ---
-title: "链路分析方法论"
+title: "渲染管线分析方法论"
 chapter: "18.20"
+section: "18.20"
 status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
-tags: ["方法论", "渲染链路", "Perfetto", "dumpsys", "诊断", "BufferQueue", "性能分析"]
+tags: ["方法论", "渲染管线", "Perfetto", "dumpsys", "诊断", "BufferQueue", "性能分析"]
 related_chapters: ["2.1", "2.6", "13.5", "15.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -19,46 +20,49 @@ task9_reviewed_date: "2026-04-18"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-18T14:30:00+08:00"
 task2b_result: fixed
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-24T09:27:00+08:00"
 ---
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- Step 1：识别当前场景的渲染模式（哪条链路）
-- Step 2：确定 Producer / Consumer / BufferQueue 链路
+- Step 1：识别当前场景的渲染模式（哪条渲染路径）
+- Step 2：确定 Producer / Consumer / BufferQueue 路径
 - Step 3：在 Perfetto 中定位关键 Track 和 Slice
 - Step 4：常见瓶颈模式与诊断思路
 - 常用 dumpsys 命令速查
-- 链路选型决策树
+- 渲染路径选型决策树
 
 **扩展（可选深入）：**
 - 帧率/延迟/功耗三维分析框架
-- 跨链路问题的诊断（如 WebView + 主 App 互相影响）
+- 跨路径问题的诊断（如 WebView + 主 App 互相影响）
 - 章节交叉引用表
 
 <!-- outline-end -->
 
-## 为什么需要链路分析方法论
+## 为什么需要渲染路径分析方法论
 
-当用户反馈"App 卡了"，我们打开 Perfetto 看到密密麻麻的 Track。在逐行看 Slice 之前，先判断这帧走的是哪条链路。不同的链路有不同的生产者线程、不同的 Buffer 传输机制、不同的同步模型。SurfaceView 的问题看 SurfaceFlinger，TextureView 的问题看 App RenderThread，WebView 的问题可能看 Chromium 的 Compositor Thread。链路判断错了，后续所有的优化方向都是南辕北辙。[已验证: 实践经验]
+当用户反馈"App 卡了"，我们打开 Perfetto 看到密密麻麻的 Track。在逐行看 Slice 之前，先判断这帧走的是哪条渲染路径。不同路径对应不同的 Producer 线程、Buffer 传输方式和同步模型。SurfaceView 的问题先看 SurfaceFlinger，TextureView 的问题先看 App RenderThread，WebView 的问题还要看 Chromium 的 Compositor Thread。路径判断错了，后面的排查会直接偏题。[已验证: 实践经验]
 
-本章提供一套系统化的链路分析方法论，用于在 Perfetto 中快速定位渲染瓶颈。
+本章提供一套系统化的渲染路径分析方法，用于在 Perfetto 中快速定位渲染瓶颈。
 
 ## Step 1：识别渲染模式
 
-分析之前，确认一件事：**这个场景走的是哪条链路？**
+分析之前，先确认一件事：**这个场景走的是哪条渲染路径？**
 
 ### 快速判断清单
 
-| 场景 | 典型链路 | 确认方法 |
+| 场景 | 典型路径 | 确认方法 |
 |:---|:---|:---|
 | 普通 RecyclerView 列表 | 18.2 Android View 标准路径（Android 9-10 看 BufferQueue，Android 11+ 看 BLAST） | App 主线程 + RenderThread |
-| 地图模块（GLES） | 18.8 OpenGL ES 链路 | 独立 GL Thread |
+| 地图模块（GLES） | 18.8 OpenGL ES 渲染路径 | 独立 GL Thread |
 | 视频播放（全屏） | 18.15 Video Overlay + HWC | SurfaceView + HWC Overlay |
 | 视频（内嵌页面） | 18.13 WebView + 18.7 TextureView | 看实现方式 |
 | Camera 预览 | 18.14 Camera 管线 | HAL → SurfaceView / TextureView |
-| Flutter 应用 | 18.12 Flutter 链路 | Dart Runner + Raster Thread |
-| 游戏（Unity/Unreal） | 18.16 游戏引擎链路 | UnityMain/RenderThread |
+| Flutter 应用 | 18.12 Flutter 渲染路径 | Dart Runner + Raster Thread |
+| 游戏（Unity/Unreal） | 18.16 游戏引擎渲染路径 | UnityMain/RenderThread |
 | 离屏渲染（Android 14+） | 18.17 HardwareBufferRenderer | GPU → AHardwareBuffer |
 | PIP / Freeform | 18.18 多窗口渲染 | 多 Layer + Resize 竞态 |
 | 高刷屏幕 | 18.19 VRR 管线 | 动态 VSync 周期 |
@@ -75,7 +79,7 @@ adb shell dumpsys SurfaceFlinger | sed -n '/SurfaceView/,/^$/p'
 
 `--list` 只负责枚举 Layer 名称。Composition Type 要看完整的 Layer dump，字段名会随 Android 版本和厂商实现变化。普通窗口先按版本分两档：Android 9-10 看传统 BufferQueue，Android 11+ 再看 BLASTBufferQueue 和 transaction 轨迹。
 
-## Step 2：确定 Producer-Consumer 链路
+## Step 2：确定 Producer-Consumer 路径
 
 确定渲染路径后，把 Producer、第一消费点和最终上屏路径拆开：
 
@@ -161,39 +165,39 @@ Android 12+ 先看 `actual_frame_timeline_slice`。Android 10/11 没有 FrameTim
 ### 模式 A：主线程卡顿
 
 **特征**：`doFrame` 超过 16.6ms，Measure/Layout 占大头。
-**链路**：标准链路（18.2）。
+**场景路径**：标准 Android View 路径（18.2）。
 **诊断**：在主线程 Track 中找耗时最长的方法。
 **优化**：减少布局层级、延迟执行、异步布局。
 
 ### 模式 B：GPU 过载
 
 **特征**：`DrawFrame` 超长，GPU Track 持续满载。
-**链路**：任何涉及 GPU 渲染的链路。
+**场景路径**：任何涉及 GPU 渲染的路径。
 **诊断**：检查 DrawCall 数量、Overdraw、Shader 复杂度。
 **优化**：减少 Overdraw、合批 DrawCall、简化 Shader。
 
 ### 模式 C：BufferQueue 饥饿
 
 **特征**：`dequeueBuffer` 频繁阻塞。
-**链路**：任何使用 BufferQueue 的链路。
+**场景路径**：任何使用 BufferQueue 的路径。
 **诊断**：Consumer 消费速度跟不上 Producer，或 Buffer 深度不够。
 **优化**：增加 Buffer 深度、加速 Consumer、检查 Fence 等待。
 
 ### 模式 D：HWC Overlay 失效
 
 **特征**：GPU Track 出现额外的合成任务。
-**链路**：本应走 Overlay 的 SurfaceView 回退到 GPU。
+**场景路径**：本应走 Overlay 的 SurfaceView 回退到 GPU。
 **诊断**：查看目标 Layer 的完整 `dumpsys SurfaceFlinger` 输出，确认 composition 字段是否从 DEVICE / Overlay 回退到 CLIENT。
 **优化**：移除 SurfaceView 的 Alpha/Transform/圆角设置。
 
 ### 模式 E：VRR 误判
 
 **特征**：工具报告大量"掉帧"，但视觉上并不卡。
-**链路**：VRR 设备（18.19）。
+**场景路径**：VRR 设备（18.19）。
 **诊断**：Android 12+ 用 `actual_frame_timeline_slice`；Android 10/11 用 `Choreographer#doFrame`、`VSYNC-app`、`VSYNC-sf` 和 `SurfaceFlinger` 时间窗复盘。
 **优化**：使用 `setFrameRate()` 明确帧率意图。
 
-## 链路选型决策树
+## 渲染路径选型决策树
 
 ```text
 需要嵌入复杂 View 层级？
@@ -202,7 +206,7 @@ Android 12+ 先看 `actual_frame_timeline_slice`。Android 10/11 没有 FrameTim
 │         └── 否 → SurfaceView
 └── 否 → 内容是视频/游戏/Camera？
           ├── 是 → SurfaceView（性能最优）
-          └── 否 → 标准 Android View 链路
+          └── 否 → 标准 Android View 路径
 
 是 WebView？
 ├── 国内 SDK → Custom TextureView 模式
@@ -238,7 +242,7 @@ Android 12+ 先看 `actual_frame_timeline_slice`。Android 10/11 没有 FrameTim
 
 - **15.1 性能优化的术、道、器**：方法论的哲学层面
 - **13.5 Perfetto 专题解读**：Perfetto 工具的使用技巧
-- **18.1 渲染链路分类与选择矩阵**：本章的索引和入口
+- **18.1 渲染分类与选择章节**：本章的索引和入口
 
 ## 参考资料
 

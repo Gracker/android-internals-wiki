@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-24"
+last_verified_against: "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、system/core/init）"
 confidence: medium
 sources:
   - type: official
@@ -18,12 +18,16 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-24T09:27:00+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
@@ -64,7 +68,7 @@ last_task9_at: "2026-04-24T06:54:00+08:00"
 
 博客、文档、Stack Overflow 能帮我们回答"是什么"，但只有源码能回答"为什么"和"怎么改"。对于做性能优化的工程师来说，AOSP 源码阅读不是锦上添花的技能，而是定位根因的基本功。
 
-问题是，AOSP 由几百个 Git 仓库通过 `repo` 工具拼接而成。传统的 GitHub 浏览方式在这里几乎不可用——我们无法像浏览一个普通开源项目那样在仓库之间跳转。面对几百万行代码，没有专门的工具和方法，很容易迷失。
+AOSP 由几百个 Git 仓库通过 `repo` 工具拼接而成。传统的 GitHub 浏览方式在这里几乎不可用——我们无法像浏览一个普通开源项目那样在仓库之间跳转。面对几百万行代码，没有专门的工具和方法，很容易迷失。
 
 本节的目标很实际：读完之后，我们拿到一行日志、一个 Trace 中的 tag，或者一个类名，能快速定位到对应的 AOSP 源码，理解它的上下文，追踪它的调用链。
 
@@ -74,7 +78,7 @@ last_task9_at: "2026-04-24T06:54:00+08:00"
 
 Android Code Search（cs.android.com）是 Google 为 AOSP 专门构建的代码搜索和浏览工具，2019 年底正式上线。它解决了一个核心问题：AOSP 由数百个 Git 仓库组成，在 android.googlesource.com 上逐个仓库翻看效率极低，而且无法跨仓库搜索和跳转。
 
-cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我们本地 checkout 出来的目录结构完全一致。这意味着我们搜索一个类名，就能直接看到它在整个 Android 系统中的定义、引用和调用者，不需要关心这个文件属于哪个底层 Git 仓库。
+cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我们本地 checkout 出来的目录结构完全一致。搜索一个类名时，我们能直接看到它在整个 Android 系统中的定义、引用和调用者，不需要关心这个文件属于哪个底层 Git 仓库。
 
 ### 核心能力
 
@@ -82,7 +86,7 @@ cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我�
 
 **交叉引用跳转**是最有价值的功能。当我们打开一个源文件时，每个标识符（类名、方法名、变量）都可以点击跳转到它的定义处或所有使用处。这就像在一个 IDE 中阅读代码——我们可以从 `Choreographer.doFrame()` 一路点击跳到 `ViewRootImpl.doTraversal()`，再到 `View.performDraw()`，沿着调用链一路深入，而不需要手动在仓库之间寻找文件。
 
-**分支切换**允许我们在不同 Android 版本之间对比。左上角可以选择目标分支，比如 `android-16.0.0_r1` 或 `master`。如果某个类在不同版本中的行为不同，我们可以切到对应分支对比源码。需要注意的是，并非所有分支都有完整的交叉引用信息，通常较新的稳定版本支持最好。
+**分支切换**允许我们在不同 Android 版本之间对比。左上角可以选择目标分支，比如 `android-16.0.0_r1` 或 `master`。如果某个类在不同版本中的行为不同，我们可以切到对应分支对比源码。并非所有分支都有完整的交叉引用信息，通常较新的稳定版本支持最好。
 
 ### 实操建议
 
@@ -108,13 +112,14 @@ cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我�
 
 性能分析中最常访问的几个子路径：
 
-- `core/java/android/app/` — ActivityThread（应用进程入口）、ActivityManagerService 相关
+- `core/java/android/app/` — ActivityThread、Instrumentation、LoadedApk 等应用进程侧入口
 - `core/java/android/view/` — ViewRootImpl、Choreographer、View、ViewGroup
 - `core/java/android/os/` — Handler、Looper、Trace、Binder 相关
 - `services/core/java/com/android/server/` — 系统服务实现：ActivityManagerService、WindowManagerService、PowerManagerService 等
+- `services/core/java/com/android/server/am/` — AMS、进程调度、广播和组件生命周期的 system_server 侧实现
 - `graphics/java/android/graphics/` — 渲染相关：Canvas、Bitmap、Paint、HardwareRenderer
 
-当我们分析卡顿、ANR、启动速度时，`core/java/android/view/` 和 `core/java/android/app/` 是最常进入的两个目录。
+分析应用进程内的启动、生命周期与渲染问题时，`core/java/android/view/` 和 `core/java/android/app/` 是最常进入的两个目录；涉及 AMS、PMS、WMS 等系统服务时，再切到 `services/core/java/com/android/server/`。
 
 ### frameworks/native — C++ 系统服务
 
@@ -136,7 +141,7 @@ cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我�
 - `logd/` — 系统日志守护进程
 - `toolbox/` — 基础命令行工具
 
-做启动性能分析时，`init/` 目录尤其重要——init 进程解析 init.rc、启动关键服务、触发 boot 完成 event 的全过程都在这里。
+做启动性能分析时，`init/` 目录尤其重要——它负责 early userspace 启动、解析 `init.rc`、拉起 zygote 和关键守护进程。进入 Framework 阶段后，zygote fork 出 `system_server`，再由 AMS/PMS/WMS 等系统服务继续推进开机流程；`BOOT_COMPLETED` / `LOCKED_BOOT_COMPLETED` 广播也发生在这个阶段。
 
 ### art — Android Runtime
 
@@ -392,7 +397,7 @@ repo sync -j8
 
 ### git log — 了解功能的演进
 
-在目标文件所在的 Git 仓库中，`git log --follow -p path/to/Choreographer.java` 可以看到这个文件的完整修改历史，包括每次改动的 diff。通过阅读 commit message 和 diff，我们可以理解一个功能是如何一步步演变的。
+在目标文件所在的 Git 仓库中，`git log --follow -p path/to/Choreographer.java` 会列出这个文件的完整修改历史，包括每次改动的 diff。通过阅读 commit message 和 diff，我们可以理解一个功能是如何一步步演变的。
 
 ### git blame — 定位特定代码的来源
 
@@ -403,7 +408,7 @@ cd frameworks/base
 git blame core/java/android/view/Choreographer.java | grep "scheduleVsync"
 ```
 
-这会显示每一行代码最后是被哪个 commit 修改的，以及提交者和时间。
+这会显示每一行代码最近一次由哪个 commit 修改，以及提交者和时间。
 
 ### Gerrit Code Review — 理解设计意图
 
