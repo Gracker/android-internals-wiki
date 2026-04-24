@@ -423,3 +423,66 @@
 - **位置**：## 私有化和退出成本 / AppMonitor facade 代码块
 - **问题**：Facade 只有接口，没有标准字段合同；如果 page/user/version/experiment/request-stage/tag 仍由 vendor 自己命名，迁移时还是会被锁死。
 - **建议**：在 facade 旁补内部 schema 约束，先统一字段词典，再映射到 Sentry/APMPlus/Bugly。
+
+## [Task6 Review] 15.15 Baseline Profiles 与编译优化 — 2026-04-24
+- **类型**：需技术核实
+- **位置**：Android 17版本兼容性
+- **问题**：文档覆盖Android 8-37版本，但未核实新版本中AOT编译机制是否仍然适用
+- **建议**：核实Android 17中AOT编译行为变化，确认Profile生成工具兼容性
+- **review日志**：logs/review/2026-04-24-17-review.md
+
+## [Task6 Review] 15.15 Baseline Profiles 与编译优化 — 2026-04-24
+- **类型**：需技术核实
+- **位置**：R8规则影响
+- **问题**：未确认新版本R8是否影响Profile规则有效性和命中率
+- **建议**：核实R8版本变化对Profile影响，添加版本适配建议
+- **review日志**：logs/review/2026-04-24-17-review.md
+
+## [Task6 Review] 15.15 Baseline Profiles 与编译优化 — 2026-04-24
+- **类型**：需补充验证案例
+- **位置**：验证章节
+- **问题**：缺少实际Profile生成失败的案例分析和规避建议
+- **建议**：增加Profile生成失败的典型场景和排查指南
+- **review日志**：logs/review/2026-04-24-17-review.md
+
+## [Task6 Review] 19.17 Firebase Performance — 2026-04-24
+- **类型**：需技术核实
+- **位置**：Android 17 API变化
+- **问题**：未确认Firebase Performance SDK在Android 17中的API变化
+- **建议**：核实最新版本Firebase SDK的API变化和兼容性
+- **review日志**：logs/review/2026-04-24-17-review.md
+
+## [Task6 Review] 19.17 Firebase Performance — 2026-04-24
+- **类型**：需补充验证
+- **位置**：网络监控章节
+- **问题**：未验证网络监控在不同Android版本中的采集能力差异
+- **建议**：补充网络监控的版本兼容性矩阵和限制说明
+- **review日志**：logs/review/2026-04-24-17-review.md
+
+## [Task6 Review] 19.17 Firebase Performance — 2026-04-24
+- **类型**：需补充内容
+- **位置**：指标差异章节
+- **问题**：未明确Firebase与Android Vitals的指标定义和计算方法差异
+- **建议**：补充指标对比表和口径统一建议
+- **review日志**：logs/review/2026-04-24-17-review.md
+
+## [Task6 Review] 19.18 商业 APM 平台 — 2026-04-24
+- **类型**：需重写
+- **位置**：平台选型章节
+- **问题**：选型维度过于简化，缺少深入工程考量标准
+- **建议**：重构选型维度，增加成本模型、ROI分析、长期维护成本评估
+- **review日志**：logs/review/2026-04-24-17-review.md
+
+## [Task6 Review] 19.18 商业 APM 平台 — 2026-04-24
+- **类型**：需补充素材
+- **位置**：成本模型章节
+- **问题**：缺少具体的成本计算模型和ROI分析
+- **建议**：补充具体的成本计算表、TCO分析和ROI建议
+- **review日志**：logs/review/2026-04-24-17-review.md
+
+## [Task6 Review] 19.18 商业 APM 平台 — 2026-04-24
+- **类型**：需补充案例
+- **位置**：迁移章节
+- **问题**：缺少实际迁移失败案例和教训总结
+- **建议**：增加2-3个实际迁移案例，分析失败原因和规避建议
+- **review日志**：logs/review/2026-04-24-17-review.md

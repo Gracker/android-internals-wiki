@@ -6,8 +6,8 @@
     "total_sections": 206,
     "finalized": 54,
     "ready-for-review": 149,
-    "ready-to-publish": 53,
-    "last_updated": "2026-04-24T16:50:00+08:00",
+    "ready-to-publish": 54,
+    "last_updated": "2026-04-24T17:31:36.784113",
     "pipeline_stage_counts": {
       "ready-to-publish": 54,
       "task6_pending": 35,
@@ -16,9 +16,9 @@
       "unknown": 3
     },
     "task6_state_counts": {
-      "reviewed": 178,
+      "reviewed": 181,
       "revisiting": 13,
-      "pending": 7,
+      "pending": 4,
       "unknown": 8
     },
     "task9_state_counts": {
@@ -36,16 +36,16 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 54,
+      "ready-to-publish": 55,
       "task6_pending": 35,
       "task9_pending": 79,
       "task2b_pending": 35,
       "unknown": 3
     },
     "task6_state_counts": {
-      "reviewed": 178,
+      "reviewed": 181,
       "revisiting": 13,
-      "pending": 7,
+      "pending": 4,
       "unknown": 8
     },
     "task9_state_counts": {

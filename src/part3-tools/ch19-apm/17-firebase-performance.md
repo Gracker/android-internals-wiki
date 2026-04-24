@@ -15,13 +15,15 @@ sources:
   - type: official
     path: "https://firebase.google.com/docs/perf-mon"
 pipeline_stage: task2b_pending
-task6_state: pending
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-24
-last_task9_at: 2026-04-24T16:40:21+08:00
+last_task9_at: 2026-04-24T16:40:21+08:00reviewed_by: openclaw-task6
+reviewed_date: 2026-04-24
+
 ---
 
 # Firebase Performance
@@ -67,13 +69,13 @@ last_task9_at: 2026-04-24T16:40:21+08:00
 
 ## Firebase Performance 是低门槛平台方案
 
-Firebase Performance Monitoring 是 Google Firebase 体系里的移动性能监控服务。Android 侧常见能力包括 App 启动、前后台、屏幕渲染、HTTP/S 网络请求、自定义 trace 和自定义 metric。
+Firebase Performance Monitoring 是 Google Firebase 体系的移动性能监控工具。Android 侧常见能力包括 App 启动、前后台、屏幕渲染、HTTP/S 网络请求、自定义 trace 和自定义 metric。
 
 它适合 Google 生态已经可用、希望快速拿到基础性能看板的团队。它不适合所有地区、所有合规场景，也不替代本地 Perfetto、JankStats 的自定义聚合或自建 APM 平台。
 
 ## trace 是 Firebase 的基本数据单位
 
-Firebase 文档把 trace 定义为 App 中两个时间点之间捕获的数据报告。不同 trace 会携带不同 metric，例如网络请求 trace 会包含响应时间、payload 大小等字段。
+在Firebase文档中，trace定义为App中两个时间点之间捕获的数据报告。不同 trace 会携带不同 metric，例如网络请求 trace 会包含响应时间、payload 大小等字段。
 
 常见 trace 类型包括：
 
