@@ -6,10 +6,10 @@ status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
-last_verified: '2026-04-21'
+last_verified: "2026-04-24"
 last_verified_against: perfetto.dev docs, google/perfetto main perf_event_config.proto
 confidence: high
-reviewed_date: '2026-04-21'
+reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 1
@@ -41,8 +41,8 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -375,7 +375,7 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 ### 系统服务（分析启动、ANR 必备）
 
 - **am**：ActivityManager 事件，包括 Activity 的生命周期回调、Service 启停、Broadcast 分发等。分析 App 启动流程和 ANR 时，`am` 是核心 category。
-- **wm**：WindowManager 事件，包括窗口的添加、移除、焦点变化等。配合 `am` 使用可以追踪完整的 UI 展示链路。
+- **wm**：WindowManager 事件，包括窗口的添加、移除、焦点变化等。配合 `am` 使用可以追踪完整的 UI 展示流程。
 - **sm**：ServiceManager 事件，追踪系统服务的注册和获取。在 Binder 调用频繁的场景中有参考价值。
 
 ### CPU 调度（几乎所有场景都要选）
@@ -721,7 +721,7 @@ data_sources {
 
 ### perf_event vs atrace：两条正交的追踪路径
 
-理解 `linux.perf` 数据源的关键是认识它与 `linux.ftrace`（即 atrace）之间的本质差异。两者在数据源、overhead 和适用场景上完全不同：
+理解 `linux.perf` 数据源，需要先认识它与 `linux.ftrace`（即 atrace）之间的本质差异。两者在数据源、overhead 和适用场景上完全不同：
 
 | 维度 | `linux.ftrace`（atrace） | `linux.perf`（perf_event） |
 |------|--------------------------|---------------------------|

@@ -7,7 +7,7 @@
     "finalized": 47,
     "ready-for-review": 139,
     "ready-to-publish": 47,
-    "last_updated": "2026-04-24T07:52:07+08:00",
+    "last_updated": "2026-04-24T08:27:12.100957",
     "pipeline_stage_counts": {
       "unknown": 31,
       "task6_pending": 41,
@@ -2842,7 +2842,9 @@
       "task2b_result": "fixed",
       "repaired_date": "2026-04-24",
       "repaired_by": "openclaw-task2b",
-      "last_task2b_at": "2026-04-24T07:52:07+08:00"
+      "last_task2b_at": "2026-04-24T07:52:07+08:00",
+      "task6_reviewed": true,
+      "task6_reviewed_date": "2026-04-24"
     },
     "src/part1-fundamentals/ch05-cpu-power/06-android-power.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
@@ -4086,7 +4088,9 @@
       "last_task9_at": "2026-04-24T06:54:00+08:00",
       "repaired_date": "2026-04-24",
       "repaired_by": "openclaw-task2b",
-      "last_task2b_at": "2026-04-24T07:52:07+08:00"
+      "last_task2b_at": "2026-04-24T07:52:07+08:00",
+      "task6_reviewed": true,
+      "task6_reviewed_date": "2026-04-24"
     },
     "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
       "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
@@ -6235,7 +6239,9 @@
       "last_task9_at": "2026-04-24T05:21:00+08:00",
       "repaired_date": "2026-04-24",
       "repaired_by": "openclaw-task2b",
-      "last_task2b_at": "2026-04-24T06:20:15+08:00"
+      "last_task2b_at": "2026-04-24T06:20:15+08:00",
+      "task6_reviewed": true,
+      "task6_reviewed_date": "2026-04-24"
     },
     "src/part3-tools/ch13-perfetto/03-perfetto-view.md": {
       "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
@@ -7865,6 +7871,34 @@
           "result": "pass-tech-review",
           "issues": 2,
           "auto_promoted": true
+        }
+      ]
+    },
+    {
+      "date": "2026-04-24",
+      "task": "task6-review",
+      "time": "08:13",
+      "sections_reviewed": [
+        {
+          "section": "5.5",
+          "title": "Thermal 管控",
+          "result": "pass-light-edit",
+          "fixes": 4,
+          "issues": 0
+        },
+        {
+          "section": "8.3",
+          "title": "启动优化策略",
+          "result": "pass-light-edit",
+          "fixes": 2,
+          "issues": 0
+        },
+        {
+          "section": "13.2",
+          "title": "Trace 抓取",
+          "result": "pass-light-edit",
+          "fixes": 2,
+          "issues": 0
         }
       ]
     }

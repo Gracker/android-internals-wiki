@@ -39,15 +39,15 @@ tags:
   - throttling
   - dvfs
   - cpu-frequency
-reviewed_date: "2026-04-15"
-reviewed_by: "openclaw-task6"
-task6_state: revisiting
+reviewed_date: "2026-04-24"
+reviewed_by: openclaw-task6
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_at: "2026-04-24T06:54:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
@@ -89,11 +89,11 @@ last_task2b_at: "2026-04-24T07:52:07+08:00"
 
 做过持续性能测试的工程师大概率遇到过这种情况——比如跑一个 30 分钟的游戏场景或者反复滑动列表：前 5 分钟帧率稳稳的 120fps，第 10 分钟开始偶尔掉帧，到了第 20 分钟帧率直接腰斩，CPU 频率也莫名其妙地降了下来。第一反应往往是“代码有 bug”，但换一台冷启动的设备，表现完全正常。
 
-这不是代码的问题，而是设备的温控系统开始介入了。
+这是设备的温控系统开始介入了。
 
 在 Perfetto 中，这种场景的 Trace 非常有辨识度：CPU Frequency 轨迹线一开始在高频区间，随后逐步下探，像一只慢慢放气的气球。与此同时，帧渲染时间（Frame Timeline）从稳定的 8.33ms 一路飘升到 16ms、20ms 甚至更高。这就是 Thermal Throttling——温度墙——对性能最直接的影响。
 
-了解温控系统的运作方式，对性能优化工程师来说是刚需。不是因为我们要去"关闭温控"——那是危险且不负责任的做法——而是因为：
+了解温控系统的运作方式，对性能优化工程师来说是刚需。关闭温控是危险且不负责任的做法，需要理解温控机制的原因有三：
 
 1. **我们需要区分温控导致的性能下降和代码缺陷导致的性能下降**。搞混了这两者，优化方向完全跑偏。
 2. **在性能测试中，温控是最大的干扰变量**。不知道温控什么时候介入，benchmark 数据就没有可比性。
@@ -112,7 +112,7 @@ Android 的温控是一个分层架构：从底层硬件传感器一直到上层
 - **CPU 各个 cluster**：大核 cluster 和小核 cluster 通常有独立的温度传感器，因为大小核的功耗和发热特性差异很大。
 - **GPU**：GPU 在游戏等场景是发热大户，需要独立监控。
 - **电池**：电池温度直接关系到安全，锂电池超过一定温度（通常 45°C-60°C）就需要强制保护。
-- **皮肤（Skin）**：用户能感知到的设备表面温度。这个温度不是直接测量的，而是通过 SoC 温度、电池温度等通过热模型估算出来的。
+- **皮肤（Skin）**：用户能感知到的设备表面温度。这个温度通过 SoC 温度、电池温度等经热模型估算得出。
 - **USB/充电 IC**：快充时充电电路也是发热源。
 
 在 Linux 内核中，这些传感器通过 `sysfs` 接口暴露，路径通常在 `/sys/class/thermal/` 下。每个 `thermal_zone` 对应一个传感器，其中 `temp` 文件保存当前温度值（单位通常是毫摄氏度）。
@@ -579,7 +579,7 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 | 15 (API 35) | ADPF thermal headroom hint 精度提升 [待验证] | 游戏场景热管理更精细 |
 | 16 (API 36) | ADPF Game Mode API 扩展，与温控协同增强 [待验证] | 更多性能-温控协调能力 |
 
-这些版本节点的共同趋势是：从被动响应走向主动感知，从系统独占走向应用参与。Android 希望应用不只是温控的“被动承受者”，而是能主动配合降载的“合作方”。
+这些版本节点的共同趋势是：从被动响应走向主动感知，从系统独占走向应用参与。Android 希望应用能主动配合降载，成为温控的合作方。
 
 ## 常见问题与误区
 
