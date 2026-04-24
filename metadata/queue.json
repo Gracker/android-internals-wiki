@@ -28,5 +28,57 @@
     "completed_at": "2026-04-24T11:42:58+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "19.01",
+    "section_title": "APM 全景图与分类体系",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 官方性能 SDK 的版本边界被混写，Android 8-17 的工具选型会误导",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L92/L145/L191/L195",
+        "detail": "JankStats、FrameMetrics、ApplicationExitInfo、ProfilingManager 被放进同一官方信号集合，但缺少 API floor 和精度差异说明。FrameMetrics 需要 API 24，ApplicationExitInfo 需要 API 30，ProfilingManager 需要 API 35；JankStats 在 API 16/24/31 的可观测精度也不同。",
+        "suggestion": "补一张版本矩阵或在表格中新增“最低 API / 精度边界 / 适用场景”列，并把接入顺序改成按 API floor 递进。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T13:23:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.02",
+    "section_title": "Tencent Matrix",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Matrix 模块能力和接入示例存在事实偏差，当前集成路径不可靠",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L84",
+        "detail": "MemGuard 和 Memory Hook 被合写成同一模块能力，但 upstream 将 native leak 检测与 heap corruption 检测分开维护，机制和适用问题不同。",
+        "suggestion": "拆成两行：Memory Hook 写成 native leak 检测（PLT hook + backtrace），MemGuard 写成 heap overlap / use-after-free / double free（GWP-ASan 相关能力）。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L119",
+        "detail": "Resource Canary 被描述成直接观察 Activity / Fragment 泄漏，但 upstream README 明确写的是 Activity leak 和 duplicate bitmap。",
+        "suggestion": "若无明确源码锚点，正文收敛到 Activity leak；如果要保留 Fragment，补对应 watcher / lifecycle hook 的源码路径。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L145-L160",
+        "detail": "示意代码没有通过 builder.plugin(...) 注册 TracePlugin 和 IOCanaryPlugin，就直接 matrix.getPluginByClass(...).start()。",
+        "suggestion": "补完整的插件构造与注册步骤，或把代码块显式标成伪代码并删除会误导接入的 start() 调用。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T13:23:00+08:00",
+    "status": "pending"
   }
 ]
