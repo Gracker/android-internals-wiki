@@ -25,13 +25,13 @@ tags: ["方法论", "渲染管线", "Perfetto", "dumpsys", "诊断", "BufferQueu
 related_chapters: ["18.1", "2.6", "13.5", "15.1", "18.13", "18.14", "18.15"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
-task6_result: needs-rework
+reviewed_date: "2026-04-25"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-18"
 task9_reviewed_by: "openclaw-task9"
