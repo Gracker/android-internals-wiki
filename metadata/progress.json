@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T09:54:00+08:00",
+  "generated_at": "2026-04-24T11:42:58+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 49,
     "ready-for-review": 137,
     "ready-to-publish": 49,
-    "last_updated": "2026-04-24T10:36:00+08:00",
+    "last_updated": "2026-04-24T11:42:58+08:00",
     "pipeline_stage_counts": {
       "unknown": 31,
       "task6_pending": 39,
