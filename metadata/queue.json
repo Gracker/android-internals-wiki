@@ -524,5 +524,25 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-24T17:37:21+08:00",
     "status": "pending"
+  },
+  {
+    "section": "19.11",
+    "section_title": "JankStats",
+    "priority": 95,
+    "reason": "[Deep Tech Review] JankStats 接入示例在 DecorView 尚未建立时直接 createAndTrack，按文接入可能抛 IllegalStateException",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L83-L105（最小接入示例）",
+        "detail": "AndroidX JankStats 源码里 createAndTrack(window, ...) 会先检查 window.peekDecorView()，DecorView 为空时直接抛 IllegalStateException。当前示例在 Activity.onCreate() 里先调用 JankStats.createAndTrack(window)，但没有先 setContentView() 或先确保 DecorView 已创建，读者按示例集成时可能在页面初始化阶段直接踩异常。",
+        "suggestion": "把示例改成在 setContentView() 之后初始化，或先通过 window.decorView / 根 View 显式建立 hierarchy，再调用 createAndTrack()；同时在正文里补一句“createAndTrack 依赖非空 DecorView”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T17:50:00+08:00",
+    "status": "pending"
   }
 ]

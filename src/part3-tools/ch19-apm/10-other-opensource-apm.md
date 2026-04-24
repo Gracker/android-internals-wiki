@@ -1,42 +1,54 @@
 ---
-title: "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）"
-chapter: "19"
-section: "19.10"
-status: ready-for-review
-drafted_date: "2026-04-24"
-drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "AndroidGodEye / Collie / Rabbit / Matrix GitHub READMEs + Android developers docs"
+title: 其他开源 APM 库（AndroidGodEye、Collie、Rabbit）
+chapter: '19'
+section: '19.10'
+status: finalized
+drafted_date: '2026-04-24'
+drafted_by: codex
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-24'
+last_verified_against: AndroidGodEye / Collie / Rabbit / Matrix GitHub READMEs + Android developers docs
 confidence: medium
-tags: [apm]
-related_chapters: ["19.02", "19.09", "19.11", "19.12", "19.16", "19.17", "19.18"]
+tags:
+- apm
+related_chapters:
+- '19.02'
+- '19.09'
+- '19.11'
+- '19.12'
+- '19.16'
+- '19.17'
+- '19.18'
 sources:
-  - type: blog
-    path: "https://github.com/Kyson/AndroidGodEye"
-  - type: blog
-    path: "https://github.com/happylishang/Collie"
-  - type: blog
-    path: "https://github.com/SusionSuc/rabbit-client"
-  - type: blog
-    path: "https://github.com/Tencent/matrix"
-  - type: official
-    path: "https://developer.android.com/topic/performance/jankstats"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Window.OnFrameMetricsAvailableListener"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
-pipeline_stage: task6_pending
+- type: blog
+  path: https://github.com/Kyson/AndroidGodEye
+- type: blog
+  path: https://github.com/happylishang/Collie
+- type: blog
+  path: https://github.com/SusionSuc/rabbit-client
+- type: blog
+  path: https://github.com/Tencent/matrix
+- type: official
+  path: https://developer.android.com/topic/performance/jankstats
+- type: official
+  path: https://developer.android.com/reference/android/view/Window.OnFrameMetricsAvailableListener
+- type: official
+  path: https://developer.android.com/reference/android/app/ApplicationExitInfo
+pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-24"
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-24T16:50:00+08:00"
-repaired_date: "2026-04-24"
-repaired_by: "openclaw-task2b"
+last_task2b_at: '2026-04-24T16:50:00+08:00'
+repaired_date: '2026-04-24'
+repaired_by: openclaw-task2b
+task9_result: pass-tech-review
+task9_reviewed_date: '2026-04-24'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-24T17:50:00+08:00'
 ---
 
 # 其他开源 APM 库（AndroidGodEye、Collie、Rabbit）

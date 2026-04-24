@@ -1,64 +1,64 @@
 {
-  "generated_at": "2026-04-24T16:50:00+08:00",
+  "generated_at": "2026-04-24T17:50:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total_sections": 206,
-    "finalized": 54,
-    "ready-for-review": 149,
-    "ready-to-publish": 54,
-    "last_updated": "2026-04-24T17:31:36.784113",
+    "finalized": 56,
+    "ready-for-review": 155,
+    "ready-to-publish": 56,
+    "last_updated": "2026-04-24T17:50:00+08:00",
     "pipeline_stage_counts": {
-      "ready-to-publish": 54,
-      "task6_pending": 35,
-      "task9_pending": 79,
-      "task2b_pending": 35,
-      "unknown": 3
+      "unknown": 37,
+      "task6_pending": 33,
+      "task2b_pending": 36,
+      "ready-to-publish": 56,
+      "task9_pending": 83
     },
     "task6_state_counts": {
-      "reviewed": 181,
+      "unknown": 42,
+      "reviewed": 183,
       "revisiting": 13,
-      "pending": 4,
-      "unknown": 8
+      "pending": 7
     },
     "task9_state_counts": {
-      "reviewed": 101,
-      "pending": 96,
-      "unknown": 8,
+      "unknown": 42,
+      "reviewed": 104,
+      "pending": 98,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 143,
-      "idle": 3,
-      "pending": 50,
-      "unknown": 10
+      "unknown": 44,
+      "fixed": 147,
+      "pending": 51,
+      "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 55,
-      "task6_pending": 35,
-      "task9_pending": 79,
-      "task2b_pending": 35,
-      "unknown": 3
+      "unknown": 37,
+      "task6_pending": 33,
+      "task2b_pending": 36,
+      "ready-to-publish": 56,
+      "task9_pending": 83
     },
     "task6_state_counts": {
-      "reviewed": 181,
+      "unknown": 42,
+      "reviewed": 183,
       "revisiting": 13,
-      "pending": 4,
-      "unknown": 8
+      "pending": 7
     },
     "task9_state_counts": {
-      "reviewed": 101,
-      "pending": 96,
-      "unknown": 8,
+      "unknown": 42,
+      "reviewed": 104,
+      "pending": 98,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 143,
-      "idle": 3,
-      "pending": 50,
-      "unknown": 10
+      "unknown": 44,
+      "fixed": 147,
+      "pending": 51,
+      "idle": 3
     }
   },
   "issues": {
@@ -8016,7 +8016,7 @@
       "title": "Measure",
       "chapter": "19",
       "section": "19.09",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
@@ -8067,17 +8067,21 @@
           "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md"
         }
       ],
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-24",
       "task6_result": "pass-light-edit",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task2b_fixed_at": "2026-04-24T14:55:00+08:00",
       "last_task2b_at": "2026-04-24T14:55:00+08:00",
-      "path": "src/part3-tools/ch19-apm/09-measure.md"
+      "path": "src/part3-tools/ch19-apm/09-measure.md",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T17:50:00+08:00"
     },
     "src/part3-tools/ch19-apm/16-profiling-manager.md": {
       "path": "src/part3-tools/ch19-apm/16-profiling-manager.md",
@@ -8227,10 +8231,14 @@
       "chapter": "19",
       "section": "19.11",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T17:50:00+08:00"
     },
     "src/part3-tools/ch19-apm/23-network-apm-internals.md": {
       "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
@@ -8308,7 +8316,7 @@
       "title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）",
       "chapter": "19",
       "section": "19.10",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
@@ -8357,9 +8365,9 @@
           "path": "https://developer.android.com/reference/android/app/ApplicationExitInfo"
         }
       ],
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-24",
@@ -8367,7 +8375,11 @@
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-24T16:50:00+08:00",
       "repaired_date": "2026-04-24",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T17:50:00+08:00"
     },
     "src/part3-tools/ch19-apm/15-baseline-profiles.md": {
       "path": "src/part3-tools/ch19-apm/15-baseline-profiles.md",
