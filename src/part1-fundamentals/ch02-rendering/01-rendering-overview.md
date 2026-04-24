@@ -20,24 +20,23 @@ sources:
     path: "https://www.yuque.com/docs/share/0a92fc0e-185c-4f03-a088-458bb9f3913f"
   - type: blog
     path: "https://mp.weixin.qq.com/s?__biz=MzkxMDc4NTc0OQ==&mid=2247483817&idx=1&sn=f280eb86b50d803c89113ff2c7bb105b"
-  - type: cubox
-    path: "Cubox/Android GUI系统之SurfaceFlinger（15）服务端分析4-handleMessageRefresh处理_51CTO博客_Android surfaceflinger-2022-10.md"
   - type: research
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 review_round: 3
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: "2026-04-24T01:51:58+08:00"
+task2b_state: fixed
+last_task2b_at: "2026-04-25T05:47:52+08:00"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T05:33:55+08:00"
+task2b_fixed_by: openclaw-task2b
 ---
 
 # Android 渲染架构全景
@@ -70,7 +69,7 @@ last_task9_at: "2026-04-25T05:33:55+08:00"
 
 ## 开头：为什么了解 Android 渲染架构
 
-打开一份 Perfetto Trace，我们会看到屏幕上密密麻麻的 Track 和色块：主线程上一段橘黄色的 doFrame、RenderThread 上一条绿色的 drawFrame、SurfaceFlinger 进程里周期性的 handleMessageRefresh、底部 GPU 的忙碌区间。这些色块就是 Android 渲染架构在 Trace 中的"可视化"——要是不理解它们之间的协作关系，Trace 就只是一堆花花绿绿的色条，无法告诉我们问题出在哪里。
+打开一份 Perfetto Trace，会看到屏幕上密密麻麻的 Track 和色块：主线程上一段橘黄色的 doFrame、RenderThread 上一条绿色的 drawFrame、SurfaceFlinger 进程里的 commit / composite / present、底部 GPU 的忙碌区间。这些色块就是 Android 渲染架构在 Trace 中的呈现——理解它们之间的协作关系之后，Trace 才能帮助我们定位问题。
 
 我们遇到的大多数 UI 性能问题，都可以归结为渲染管线的某一个环节出了状况：卡顿可能是因为主线程 Measure/Layout 耗时过长，也可能是 GPU 渲染跟不上 VSync 节拍；掉帧可能是因为 BufferQueue 没有可用的缓冲区，也可能是 SurfaceFlinger 合成时被 HWC 阻塞。了解渲染架构全景，就是给自己建一张"问题定位地图"——看到现象，就能沿着管线找到具体的瓶颈环节。
 
@@ -166,13 +165,13 @@ Choreographer.doFrame(...)
 └── doCallbacks(CALLBACK_TRAVERSAL, frameIntervalNanos) // 触发 performTraversals()
 ```
 
-`Choreographer` 在源码里不会暴露 `callInputCallbacks()` 这类方法名；`doFrame()` 内部按 callback type 依次执行 input、animation、insets animation 和 traversal，Traversal 阶段才会把 `performTraversals()` 推进到 Measure / Layout / Draw。
+`Choreographer` 在源码里不会暴露 `callInputCallbacks()` 这类方法名；`doFrame()` 内部按 callback type 依次执行 input、animation、insets animation 和 traversal，Traversal 阶段才会把 `performTraversals()` 推进到 Measure / Layout / Draw。`CALLBACK_INSETS_ANIMATION` 是较新系统中的 callback type；覆盖 Android 3.0/4.x 时，按 input、animation、traversal 三段理解即可。
 
-VSync 信号是整条渲染管线的节拍器。它的源头是显示硬件——以 60Hz 屏幕为例，硬件每 16.67ms 发出一次 VSync 中断。Android 系统不会把这个原始信号直接交给 App 和 SurfaceFlinger，而是通过 DispSync 将其分发为两个独立的信号：VSYNC_APP 和 VSYNC_SF，它们之间有一个精心计算的时间差（offset）。
+VSync 信号是整条渲染管线的节拍器。它的源头是显示硬件——以 60Hz 屏幕为例，硬件每 16.67ms 发出一次 VSync 中断。Android 系统先把原始硬件中断转成软件 VSync，再按不同 phase 投递给 App 与 SurfaceFlinger。
 
-VSYNC_APP 先到，通知 App 开始渲染这一帧；等 App 渲染完成、把缓冲区提交给 BufferQueue 之后，VSYNC_SF 到来，触发 SurfaceFlinger 开始合成。这个设计确保了 App 渲染和 SurfaceFlinger 合成在时间上能紧密衔接，既不互相阻塞，也不浪费 VSync 周期。
+版本边界要分清。Android 10/11 及更早的资料常用 DispSync 解释 VSYNC_APP / VSYNC_SF 的生成；Android 12 之后，SurfaceFlinger 的 Scheduler 路径逐步改成 `VSyncPredictor` 预测下一次硬件 VSync，再由 `VSyncDispatchTimerQueue`、`VsyncSchedule`、`VsyncConfiguration` 组织软件 VSync 投递。Android 14-16 的源码锚点应放在 `services/surfaceflinger/Scheduler/` 目录下，不能把 DispSync 写成当前主路径。
 
-关于 VSync 的详细机制（包括 offset 的计算、DispSync 模型、Android 16 的变化等），我们在 2.3 节会深入展开。
+VSYNC_APP 先唤醒 App 侧 `Choreographer`，App 完成渲染后通过 BufferQueue 提交 buffer；VSYNC_SF 唤醒 SurfaceFlinger，随后进入 `scheduleComposite()`，再走 commit / composite / present。2.3 节会展开 offset、预测模型和 Scheduler 目录下的实现。
 
 #### 5. GPU 渲染：将绘图命令转换为像素
 
@@ -250,28 +249,29 @@ T5: GPU 开始填充缓冲区 1（已经完成上一次填充）
 
 ### 在 Android 中的实现
 
-```cpp
-// frameworks/native/services/surfaceflinger/DisplayHardware/DisplayHardware.cpp
-void DisplayHardware::vsync(int64_t timestamp) {
-    // 处理 VSync 信号
-    mVsyncCallback->onVsync(timestamp, timestamp + mVsyncPeriod);
-}
+下面的伪代码只表达 BufferQueue slot 与 fence 的协作，不对应某个 AOSP 方法签名：
 
-// frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
-// [示意性伪代码] SurfaceFlinger 合成主循环
-void SurfaceFlinger::handleMessageRefresh() {
-    // 将已就绪的缓冲区绑定到对应 Layer
-    for (auto& layer : mLayersWithQueuedFrames) {
-        layer->latchBuffer();  // 通过 Fence 等待生产者完成绘制
-    }
-    // 按 Z-Order 合成所有 Layer 并提交显示
-    composeAndPresent();
-}
+```cpp
+// [示意性伪代码] BufferQueue / SurfaceFlinger 消费一帧
+BufferItem item = consumer.acquireBuffer();
+Fence acquireFence = item.mFence;
+acquireFence.wait();
+
+layer.latchBuffer(item);
+CompositionResult result = compositionEngine.present();
+
+consumer.releaseBuffer(item.mSlot, result.releaseFence);
 ```
 
-在 BufferQueue 的实现中，三缓冲依赖 buffer slot 数量和 Fence 协同工作：生产者只有拿到空闲 slot 才能继续写入，消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后，buffer 提交和窗口几何变更会放进同一事务节奏，减少 resize 与内容更新错拍。Android 16 对 64 位新设备要求支持 Vulkan 1.4，Host Image Copy 影响的是纹理上传和 image memory 路径；它和 BufferQueue / BLAST 属于不同层，不能直接并到同一段“三缓冲增强”描述里。本文先不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口，后续拿到 AOSP commit 再单列展开。
+在 BufferQueue 的实现中，三缓冲依赖 buffer slot 数量和 Fence 协同工作：生产者只有拿到空闲 slot 才能继续写入，消费者在 release fence 释放后才能安全复用旧缓冲区。进入 BLAST / SurfaceControl 事务路径后，buffer 提交和窗口几何变更会放进同一事务节奏，减少 resize 与内容更新错拍。Android 14-16 的 SurfaceFlinger 刷新路径应按 HWC / composer callback → Scheduler / EventThread → `scheduleComposite()` → `commit()` / `composite()` / `present()` 追踪。Android 10 及更早源码或旧文章会出现旧刷新入口；分析 Android 14-16 Trace 时，入口改看 `scheduleComposite()` 与 commit / composite / present。Android 16 对 64 位新设备要求支持 Vulkan 1.4，Host Image Copy 影响的是纹理上传和 image memory 路径；它和 BufferQueue / BLAST 属于不同层，不能直接并到同一段“三缓冲增强”描述里。本文不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口，后续拿到 AOSP commit 再单列展开。
 
-[待补充：Trace 中三缓冲的监控方法]
+Trace 中验证三缓冲，打开 FrameTimeline、gfx / view / sched / freq、SurfaceFlinger 相关类别后按这几类信号对照：
+
+- FrameTimeline：对比 `expected_present_time` 与 `actual_present_time`，确认 App 超时、SF 超时还是 present 延迟。
+- App 进程：看 `Choreographer#doFrame`、RenderThread `drawFrame`、`queueBuffer` 是否跨过本帧 deadline。
+- BufferQueue：看 `dequeueBuffer` 是否等待空闲 slot，或 `queueBuffer` 之后长时间没有被 SurfaceFlinger acquire。
+- SurfaceFlinger：看 `commit`、`composite`、`present` 是否连续堆积，结合 HWC validate / present 结果判断是否回退 GPU 合成。
+- Fence：`acquire fence` 等待长说明生产者绘制没完成，`present fence` / `release fence` 返回慢说明显示侧释放慢。
 
 ## BufferQueue 生产者-消费者模型：App → SurfaceFlinger → HWC
 
@@ -399,21 +399,9 @@ void OpenGLRenderer::drawRect(float left, float top, float right, float bottom,
 
 Vulkan 是比 OpenGL ES 更现代的图形 API，它的核心优势在于提供了更好的 CPU/GPU 并行性和对复杂图形特性的原生支持。与 OpenGL ES 的隐式状态管理不同，Vulkan 要求开发者显式管理 GPU 资源和同步，这虽然增加了使用复杂度，但换来了更高的 CPU 提交效率和更精细的 GPU 控制。
 
-Android 16 中 HWUI 的 Vulkan 渲染路径已整合到 Skia Pipeline 架构中，不再有独立的 VulkanRenderer 类。实际的 Vulkan 调用由 Skia 内部管理（通过 SkiaVulkanPipeline），上层代码只与 Skia API 交互。
+Android 16 中 HWUI 的 Vulkan 渲染路径位于 Skia Pipeline 架构下，不再有独立的 `VulkanRenderer` 类。可核对的文件是 `frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp`、`SkiaOpenGLPipeline.cpp` 和 `SkiaPipeline.cpp`：OpenGL / Vulkan pipeline 的 `draw` 方法准备目标 surface，再进入共享的 `SkiaPipeline::renderFrame()` / `renderFrameImpl()`，由 Skia 在后端 surface 上执行 RenderNode 绘制。上层 View 代码只接触 Canvas / RenderNode，不直接调用 Vulkan API。
 
-```cpp
-// [示意性伪代码] Android 16 中 Vulkan 后端的实际路径
-// SkiaVulkanPipeline 位于 frameworks/base/libs/hwui/pipeline/skia/
-// Skia 内部调用 Vulkan API（vkCmdDraw 等），上层无需感知
-
-// Skia 统一入口
-void SkiaVulkanPipeline::draw(RenderNode* root) {
-    // Skia 通过 GrContext 使用 Vulkan 后端
-    // 自动管理 VkBuffer、VkImage、VkQueue 等
-}
-```
-
-[待验证: SkiaVulkanPipeline 的具体实现细节在 android-16.0.0_r1 中是否有变化]
+[已验证: AOSP android-16.0.0_r1, `SkiaVulkanPipeline.cpp`、`SkiaOpenGLPipeline.cpp`、`SkiaPipeline.cpp`]
 
 ### 软件渲染 vs 硬件加速对比
 
@@ -475,23 +463,15 @@ public void drawRect(float left, float top, float right, float bottom, Paint pai
 
 #### RenderThread 的画布：从 OpenGLCanvas 到 Skia Pipeline
 
-在早期 Android 版本中，RenderThread 使用 OpenGLCanvas 将 DisplayList 指令转换为 OpenGL API 调用。但从 Android 10 开始，HWUI 统一走 Skia 后端：RenderThread 通过 SkiaOpenGLPipeline 或 SkiaVulkanPipeline 来执行绘制指令，不再有独立的 OpenGLCanvas 类。Skia 作为中间层统一管理 OpenGL 和 Vulkan 的 API 调用——好处是上层代码不需要关心底层用的是哪个图形 API。
+在早期 Android 版本中，RenderThread 使用 OpenGLCanvas 将 DisplayList 指令转换为 OpenGL API 调用。从 Android 10 开始，HWUI 统一走 Skia 后端：RenderThread 通过 SkiaOpenGLPipeline 或 SkiaVulkanPipeline 执行绘制指令，不再有独立的 OpenGLCanvas 类。Skia 作为中间层统一管理 OpenGL 和 Vulkan 的 API 调用，上层代码不需要关心底层图形 API。
 
-```cpp
-// [示意性伪代码] Android 16 中 RenderThread 的实际渲染路径
-// 真实实现在 frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp
-// 和 frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp
+| 文件 | 可核对入口 | 本节用法 |
+|---|---|---|
+| `SkiaOpenGLPipeline.cpp` | `SkiaOpenGLPipeline::draw` | 获取 OpenGL-backed surface，调用共享 `renderFrame`，再 swap buffers |
+| `SkiaVulkanPipeline.cpp` | `SkiaVulkanPipeline::draw` | 获取 Vulkan-backed surface，调用共享 `renderFrame`，再提交 / 交换 buffer |
+| `SkiaPipeline.cpp` | `SkiaPipeline::renderFrame`、`renderFrameImpl` | 遍历 RenderNode，执行 `root.draw(canvas)`，把 DisplayList 回放到 Skia canvas |
 
-// Skia Pipeline 统一处理绘制指令
-void SkiaPipeline::draw(RenderNode* root) {
-    // Skia 内部选择 OpenGL 或 Vulkan 后端
-    // 将 DisplayList 指令翻译为对应的 GPU API 调用
-    SkCanvas* canvas = surface->getCanvas();
-    root->draw(canvas);  // 递归执行 DisplayList
-}
-```
-
-[已验证：`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp`、`SkiaVulkanPipeline.cpp`]
+[已验证：AOSP android-16.0.0_r1, `frameworks/base/libs/hwui/pipeline/skia/`]
 
 ### RenderNode 架构
 
@@ -583,7 +563,7 @@ RenderEngine 和 GPU Composition 是两个经常被混淆的概念。混淆的�
 
 App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘制一段文字"），SurfaceFlinger 的 RenderEngine 组的是"所有 App 的画面叠加"（"把微信的界面叠在启动器上面，再加一层状态栏"）。两者都用到 Skia 和 GPU，但前者服务于 App 进程内的 UI 渲染，后者服务于 SurfaceFlinger 进程内的多 Layer 合成。
 
-在 Perfetto 中，App 渲染管线的耗时体现在 App 进程的 RenderThread track 上（drawFrame slice），SurfaceFlinger 合成管线的耗时体现在 SurfaceFlinger 进程的 GPU 活动和 handleMessageRefresh 中。如果 SurfaceFlinger 的合成耗时异常增长，且伴随着 GPU 合成回退的迹象，就需要检查 Layer 数量和混合模式是否触发了 RenderEngine 的 GPU 合成路径。
+在 Perfetto 中，App 渲染管线的耗时体现在 App 进程的 RenderThread track 上（drawFrame slice），SurfaceFlinger 合成管线的耗时体现在 SurfaceFlinger 进程的 commit / composite / present 以及 GPU 活动中。如果 SurfaceFlinger 的合成耗时异常增长，且同时出现 GPU 合成回退迹象，就需要检查 Layer 数量和混合模式是否触发了 RenderEngine 的 GPU 合成路径。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/RenderEngine/]
 
@@ -599,7 +579,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 **RenderThread Track**（紧邻主线程的独立线程条）：drawFrame 的执行时间在这里体现。主线程完成 Draw 阶段后，会将 DisplayList 同步给 RenderThread，RenderThread 负责将绘制指令交给 GPU 执行。如果 RenderThread 的 drawFrame 耗时异常增长，通常意味着 GPU 成了瓶颈，或者绘制指令过于复杂。
 
-**SurfaceFlinger Track**（SurfaceFlinger 进程）：handleMessageRefresh 和 composeSurfaces 的执行时间反映了合成阶段的开销。正常情况下合成应该很快（几毫秒），如果耗时增长，可能是因为 Layer 数量过多或 HWC 合成失败回退到了 GPU 合成。
+**SurfaceFlinger Track**（SurfaceFlinger 进程）：Android 14-16 中重点看 `commit`、`composite`、`present` 以及 HWC validate / present 相关 slice。正常情况下合成应该很快（几毫秒），如果耗时增长，可能是因为 Layer 数量过多或 HWC 合成失败回退到了 GPU 合成。
 
 **GPU Track**（Trace 底部的 GPU 条）：展示了 GPU 的整体利用率。如果 GPU Track 持续满载，说明 GPU 是性能瓶颈；如果 GPU 大量空闲但帧率仍然上不去，说明瓶颈在 CPU 侧（比如主线程耗时过长）。
 
@@ -609,13 +589,13 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 本节介绍的是渲染架构的全景图，渲染管线中的每个环节在后续章节中都有深入展开：
 
-- **VSync 机制**（2.3 节）是渲染管线的节拍器，决定了 Measure/Layout/Draw 何时开始。本节提到的 VSYNC_APP 和 VSYNC_SF 两个信号的生成逻辑、offset 的计算方式、DispSync 模型的工作原理，都在 2.3 节中详细拆解。
+- **VSync 机制**（2.3 节）是渲染管线的节拍器，决定了 Measure/Layout/Draw 何时开始。本节只把 VSYNC_APP 和 VSYNC_SF 当作 Trace 观察名；Android 10/11 及更早可结合 DispSync 理解，Android 14-16 要回到 Scheduler、VSyncPredictor、VSyncDispatchTimerQueue 和 VsyncSchedule 路径。
 - **Choreographer**（2.4 节）是 VSync 信号到实际渲染工作的桥梁——它接收 VSYNC_APP 信号，依次触发 Input 回调、Animation 回调和 Traversal 回调（即 performTraversals）。理解 Choreographer 的工作机制，是分析主线程调度问题的前提。
 - **MainThread 与 RenderThread 协作**（2.5 节）深入拆解了主线程录制 DisplayList 和 RenderThread 执行 GPU 渲染之间的同步机制，包括 syncFrameState、DrawOp 的传递、帧之间的依赖关系等。
 - **SurfaceFlinger 与合成**（2.6 节）详细讲解了 SurfaceFlinger 的内部工作流程，包括 Layer 管理、HWC 合成策略、GPU 合成回退条件、VSYNC_SF 触发的合成时机等。
 - **GPU 渲染深入**（2.10 节）从硬件层面分析 GPU 的渲染原理，包括 Vulkan 后端的性能优化、Shader 编译对渲染性能的影响等。
 
-建议的阅读顺序是先理解本节的全景图，然后按 2.3→2.4→2.5→2.6 的顺序深入每个环节。每个环节既独立完整，又与上下游紧密关联——了解了 VSync 才能理解 Choreographer 的调度时机，了解了 Choreographer 才能理解主线程为什么会在某些帧卡住。
+建议的阅读顺序是先理解本节的全景图，然后按 2.3→2.4→2.5→2.6 的顺序深入每个环节。每个环节既独立完整，又与上下游紧密关联——了解 VSync 才能理解 Choreographer 的调度时机，了解 Choreographer 才能理解主线程为什么会在某些帧卡住。
 
 ## 版本演进
 
@@ -656,7 +636,8 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 - `frameworks/base/core/java/android/view/ViewRootImpl.java` — performTraversals 入口
 - `frameworks/base/core/java/android/view/Choreographer.java` — VSync 回调调度
 - `frameworks/base/libs/hwui/` — HWUI 渲染引擎（RenderThread、RenderNode、DisplayList）
-- `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 服务
+- `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — `scheduleComposite()`、`commit()`、`composite()`、`present()` 主路径
+- `frameworks/native/services/surfaceflinger/Scheduler/` — `VSyncPredictor`、`VSyncDispatchTimerQueue`、`VsyncSchedule`
 - `frameworks/native/libs/gui/BufferQueue.cpp` — BufferQueue 生产者-消费者实现
 
 ### 官方文档
@@ -672,6 +653,6 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 ## 总结
 
-回到开头提出的问题：当我们打开 Perfetto 看到主线程上的 doFrame、RenderThread 上的 drawFrame、SurfaceFlinger 的 handleMessageRefresh 这些色块时，现在应该能明白它们之间的协作关系了。一条完整的渲染链路是：VSync 信号到来，Choreographer 通知主线程开始 performTraversals（Measure → Layout → Draw，将 View 树转换为 DisplayList 指令），然后把 DisplayList 同步给 RenderThread，RenderThread 通过 GPU 将指令执行为像素，写入 GraphicBuffer 后通过 BufferQueue 提交给 SurfaceFlinger，SurfaceFlinger 把多个 App 的缓冲区按 Z-Order 叠加后交给 HWC 输出到屏幕。整条链路中的每一个环节如果耗时超过 VSync 周期，都会导致掉帧。
+回到开头的 Perfetto 场景：主线程上的 doFrame、RenderThread 上的 drawFrame、SurfaceFlinger 的 commit / composite / present，分别对应 App 准备、App 渲染和系统合成。一条完整的渲染路径是：VSync 信号到来，Choreographer 通知主线程开始 performTraversals（Measure → Layout → Draw，将 View 树转换为 DisplayList 指令），然后把 DisplayList 同步给 RenderThread，RenderThread 通过 GPU 将指令执行为像素，写入 GraphicBuffer 后通过 BufferQueue 提交给 SurfaceFlinger，SurfaceFlinger 把多个 App 的缓冲区按 Z-Order 叠加后交给 HWC 输出到屏幕。路径中的任一环节耗时超过 VSync 周期，都会导致掉帧。
 
-理解了这个全景之后，我们就可以沿着链路逐个环节深入。下一节从 VSync 机制开始——它是整条渲染管线的节拍器，决定了每个环节的执行时机和同步方式。掌握 VSync 的工作原理，是理解 Perfetto 中那些 VSYNC-app 和 VSYNC-sf 信号间距的前提。
+理解这个全景之后，可以按环节逐层深入。下一节从 VSync 机制开始——它是整条渲染管线的节拍器，决定每个环节的执行时机和同步方式。掌握 VSync 的工作原理，是理解 Perfetto 中那些 VSYNC-app 和 VSYNC-sf 信号间距的前提。
