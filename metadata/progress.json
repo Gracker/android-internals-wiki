@@ -1,74 +1,62 @@
 {
-  "generated_at": "2026-04-25T00:03:09+08:00",
+  "generated_at": "2026-04-25T00:29:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 216,
   "metrics": {
     "total_sections": 216,
-    "finalized": 58,
-    "ready-for-review": 151,
-    "ready-to-publish": 58,
-    "last_updated": "2026-04-25T00:03:09+08:00",
+    "finalized": 59,
+    "ready-for-review": 150,
+    "ready-to-publish": 59,
+    "last_updated": "2026-04-25T00:29:00+08:00",
     "pipeline_stage_counts": {
-      "None": 3,
-      "ready-to-publish": 58,
-      "task9_pending": 83,
-      "task2b_pending": 37,
-      "task6_pending": 28,
-      "'task9_pending'": 2,
-      "'task2b_pending'": 1
+      "None": 29,
+      "task6_pending": 33,
+      "task2b_pending": 40,
+      "ready-to-publish": 59,
+      "task9_pending": 77
     },
     "task6_state_counts": {
-      "None": 6,
-      "reviewed": 192,
-      "revisiting": 14
+      "None": 32,
+      "reviewed": 186,
+      "revisiting": 20
     },
     "task9_state_counts": {
-      "None": 6,
-      "reviewed": 107,
-      "pending": 95,
-      "'pending'": 2,
-      "fixed": 1,
-      "'reviewed'": 1
+      "None": 32,
+      "reviewed": 111,
+      "pending": 94,
+      "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 8,
+      "None": 34,
       "fixed": 154,
-      "idle": 5,
-      "pending": 41,
-      "'fixed'": 2,
-      "'pending'": 2
+      "pending": 46,
+      "idle": 4
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "None": 3,
-      "ready-to-publish": 58,
-      "task9_pending": 83,
-      "task2b_pending": 37,
-      "task6_pending": 28,
-      "'task9_pending'": 2,
-      "'task2b_pending'": 1
+      "None": 29,
+      "task6_pending": 33,
+      "task2b_pending": 40,
+      "ready-to-publish": 59,
+      "task9_pending": 77
     },
     "task6_state_counts": {
-      "None": 6,
-      "reviewed": 192,
-      "revisiting": 14
+      "None": 32,
+      "reviewed": 186,
+      "revisiting": 20
     },
     "task9_state_counts": {
-      "None": 6,
-      "reviewed": 107,
-      "pending": 95,
-      "'pending'": 2,
-      "fixed": 1,
-      "'reviewed'": 1
+      "None": 32,
+      "reviewed": 111,
+      "pending": 94,
+      "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 8,
+      "None": 34,
       "fixed": 154,
-      "idle": 5,
-      "pending": 41,
-      "'fixed'": 2,
-      "'pending'": 2
+      "pending": 46,
+      "idle": 4
     }
   },
   "issues": {
@@ -393,7 +381,7 @@
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
       "title": "Activity Manager Service 与性能分析",
       "chapter": "1.8",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-05",
       "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
       "last_verified": "2026-04-18",
@@ -424,14 +412,14 @@
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-18",
       "task6_result": "pass-light-edit",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_result": "needs-rework",
-      "task9_state": "pending",
+      "task9_result": "pass-tech-review",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "last_task9_at": "2026-04-18T13:34:00+08:00",
-      "task9_reviewed_date": "2026-04-18",
+      "last_task9_at": "2026-04-25T00:29:00+08:00",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
       "review_round": 3
     },
@@ -440,7 +428,7 @@
       "title": "Package Manager Service 与应用安装性能",
       "chapter": "1.9",
       "section": "1.9",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-05",
       "polish_count": 1,
       "polish_date": "2026-04-09",
@@ -452,14 +440,14 @@
       "last_verified": "2026-04-18",
       "last_verified_against": "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
-      "last_task9_at": "2026-04-18T20:36:12+08:00",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-04-25T00:29:00+08:00",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_date": "2026-04-25",
       "task2b_result": "fixed",
       "task2b_state": "fixed"
     },
@@ -475,17 +463,19 @@
       "last_verified": "2026-04-05",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_date": "2026-04-25",
       "task2b_result": "fixed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "review_round": 2
+      "review_round": 2,
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T00:29:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
       "path": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
@@ -8899,6 +8889,33 @@
           "issues": 5
         }
       ]
+    },
+    {
+      "date": "2026-04-25",
+      "task": "task9-deep-review",
+      "time": "00:29",
+      "sections_reviewed": [
+        {
+          "section": "1.8",
+          "title": "Activity Manager Service 与性能分析",
+          "result": "pass-tech-review",
+          "issues": 1,
+          "auto_promoted": true
+        },
+        {
+          "section": "1.9",
+          "title": "Package Manager Service 与应用安装性能",
+          "result": "pass-tech-review",
+          "issues": 1,
+          "auto_promoted": true
+        },
+        {
+          "section": "1.10",
+          "title": "ContentProvider 性能与优化",
+          "result": "needs-rework",
+          "issues": 2
+        }
+      ]
     }
   ],
   "progress": {
@@ -9024,6 +9041,30 @@
         "task2b_result": "fixed",
         "updated_by": "openclaw-task2b",
         "updated_date": "2026-04-24"
+      },
+      "1.8": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "minor"
+      },
+      "1.9": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "minor"
+      },
+      "1.10": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
       }
     }
   },

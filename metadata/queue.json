@@ -780,5 +780,31 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-24T22:57:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.10",
+    "section_title": "ContentProvider 性能与优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 版本演进把隐藏 API 当成公开 SDK，且同章 ContentProvider 超时口径前后矛盾",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/SDK边界",
+        "location": "L485-L514（Android 11 / Android 12 版本演进）",
+        "detail": "将 ContentProviderClient.setDetectNotResponding() 与 ContentResolver.getProviderMimeTypeAsync() 写成应用可直接使用的公开 API，但二者属于 @hide 的系统内部接口，不是第三方应用可依赖的 SDK 能力。当前代码示例会误导读者按公开 API 接入。",
+        "suggestion": "删除面向应用开发者的直接调用示例；若保留，需明确标注为 framework / system-only 内部接口，并补公开替代路径（如 ContentResolver.getType()、调用侧异步封装与线程切换策略）。"
+      },
+      {
+        "type": "原理断裂/交叉一致性",
+        "location": "L187-L213 vs L520-L524（超时时间线与 Android 16 版本演进）",
+        "detail": "前文已说明 query/insert/update/delete 没有独立的 ContentProvider CRUD 10 秒超时，后文又写成“一般操作保持约 10 秒超时”。同章口径互相冲突，会直接影响 ANR 判责和排障判断。",
+        "suggestion": "统一超时模型：分别写清 publish / ready / remote provider timeout，与 CRUD 调用落到调用方组件 ANR 或系统内部 watchdog 的边界，不再使用“一般操作 10 秒”这种统称。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T00:29:00+08:00",
+    "status": "pending"
   }
 ]
