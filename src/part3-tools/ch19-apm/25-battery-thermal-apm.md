@@ -11,10 +11,13 @@ last_verified_against: "AOSP PowerManager / PowerManagerService / BatteryStats r
 confidence: high
 tags: [apm, battery, thermal, wakelock]
 related_chapters: ["19.0", "19.19"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-25
+task6_result: pass-light-edit
 task9_state: pending
 sources:
   - "https://developer.android.com/reference/android/os/PowerManager"
