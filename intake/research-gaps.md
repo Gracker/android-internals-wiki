@@ -2988,3 +2988,20 @@ io_uring 在 SQLite I/O 路径上的应用：近期 Linux 和 Android 内核对 
 
 ### 外部 review 来源
 - Gemini 外部 review
+
+
+## [2026-04-24] 18.13 WebView 渲染管线 — 知识盲区
+
+### 盲区描述
+SurfaceControl 独立子 Surface 在不同 WebView provider / Chromium milestone / channel 下的启用边界缺少版本矩阵。当前只按 Android major version 讨论，无法回答“这台设备当前 provider 是否真的具备这条路径”。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 Android System WebView Stable / Beta / Canary 与不同 Chromium milestone 下的 SurfaceControl overlay rollout
+- 收集 `dumpsys webviewupdate`、provider version、Perfetto、`dumpsys SurfaceFlinger` 的成组样本
+- 核验 `OverlayProcessorWebView` 相关默认条件在不同 provider 版本中的变化
+
+### 关联章节
+18.13, 18.10, 7.11

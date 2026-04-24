@@ -380,3 +380,28 @@
 - **问题**：outline 定义了隐私策略锚点（覆盖 URL pattern、用户标识、日志、请求体、截图/附件、地区合规和删除请求），但正文中完全缺失该节内容。Measure 作为开源自托管平台，隐私策略是选型评估的关键维度。
 - **建议**：参考 Measure 官方文档 Privacy/GDPR 部分，补充隐私策略章节。覆盖字段脱敏规则、URL pattern 过滤、用户数据删除请求处理、地区合规差异。
 - **review 日志**：logs/review/2026-04-24-14-review.md
+
+
+## [Task9 Deep Review] 10.6 内存抖动与频繁 GC — 2026-04-24
+- **类型**：数据缺失
+- **位置**：L220-L229（Memory Profiler / GC Events）
+- **问题**：正文把“GC Events 每秒超过 2-3 次”写成异常阈值，但没有给设备、负载、采样窗口或 trace 样本。这个数字缺少基线，容易被读者当成固定阈值。
+- **建议**：补 1 组实际 trace / profiler 样本，说明设备刷新率、页面负载、对象分配速率，再把阈值表述改成“场景化经验值”。
+
+## [Task9 Deep Review] 18.10 SurfaceControl API 深入 — 2026-04-24
+- **类型**：交叉引用
+- **位置**：L609-L611（附录交叉引用）
+- **问题**：`13-buffer-queue.md`、`06-surfaceflinger.md`、`16-sync-fence.md` 这 3 个相对链接在 ch18 目录下不存在，当前跳转会断开。
+- **建议**：改成指向 ch02 对应章节的正确相对路径，或统一改成稳定的章节号/WikiLink。
+
+## [Task9 Deep Review] 18.10 SurfaceControl API 深入 — 2026-04-24
+- **类型**：数据缺失
+- **位置**：L252-L266（Layer 数量与性能）
+- **问题**：正文已经给出“Layer 增多会抬高 SurfaceFlinger 工作量、可能导致 HWC 回退”的判断，但没有放任何一组真实 `dumpsys SurfaceFlinger` / Perfetto 证据样例。
+- **建议**：补 1 组设备级样例，至少包含 layer 数量、CompositionType 变化，以及 `setTransactionState` / `latchBuffer` 的对照观察点。
+
+## [Task9 Deep Review] 18.13 WebView 渲染管线 — 2026-04-24
+- **类型**：交叉引用
+- **位置**：与其他章节的关系 / frontmatter `related_chapters`
+- **问题**：正文大段使用 SurfaceControl 子 Surface 机制，但没有直接关联 18.10，frontmatter 的 `related_chapters` 也缺失该章节。
+- **建议**：补上 18.10 的正文交叉引用和 frontmatter 关联，避免 WebView 专章与 SurfaceControl 专章割裂。
