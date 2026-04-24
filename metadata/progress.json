@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T14:40:03+08:00",
+  "generated_at": "2026-04-24T14:55:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -4993,7 +4993,6 @@
       "task2b_result": "fixed"
     },
     "src/part2-performance/ch10-memory-perf/06-memory-churn.md": {
-      "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
       "title": "内存抖动与频繁 GC",
       "chapter": "10.6",
       "section": "10.6",
@@ -5004,9 +5003,35 @@
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-04-20",
-      "last_verified_against": "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 / Perfetto native-heap-profiler docs",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "official",
+          "path": "https://developer.android.com/studio/profile/memory-profiler"
+        },
+        {
+          "type": "official",
+          "path": "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/topic/performance/memory"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/com/android/internal/os/BinderInternal.java"
+        },
+        {
+          "type": "research",
+          "path": "intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md"
+        },
+        {
+          "type": "blog",
+          "path": "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
+        }
+      ],
       "tags": [
         "memory",
         "gc",
@@ -5027,17 +5052,19 @@
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "task2b_rework_date": "2026-04-20",
-      "task2b_fixed_at": "2026-04-20",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task2b_rework_date": "2026-04-24",
+      "task2b_fixed_at": "2026-04-24T14:55:00+08:00",
+      "last_task2b_at": "2026-04-24T14:55:00+08:00",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-04-24T14:40:03+08:00",
       "task9_reviewed_date": "2026-04-24",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_by": "openclaw-task9",
+      "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md"
     },
     "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md": {
       "path": "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
@@ -7976,6 +8003,73 @@
       "task6_reviewed": true,
       "task6_date": "2026-04-24",
       "task6_result": "pass-light-edit"
+    },
+    "src/part3-tools/ch19-apm/09-measure.md": {
+      "title": "Measure",
+      "chapter": "19",
+      "section": "19.09",
+      "status": "ready-for-review",
+      "drafted_date": "2026-04-24",
+      "drafted_by": "codex",
+      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "measure-sh docs/README.md + sdk-integration-guide + feature-network-monitoring + configuration-options + feature-bug-report-android + feature-data-retention",
+      "confidence": "medium",
+      "tags": [
+        "apm"
+      ],
+      "related_chapters": [
+        "19.0"
+      ],
+      "sources": [
+        {
+          "type": "official",
+          "path": "https://github.com/measure-sh/measure"
+        },
+        {
+          "type": "official",
+          "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/README.md"
+        },
+        {
+          "type": "official",
+          "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/sdk-integration-guide.md"
+        },
+        {
+          "type": "official",
+          "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-network-monitoring.md"
+        },
+        {
+          "type": "official",
+          "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-identify-users.md"
+        },
+        {
+          "type": "official",
+          "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-bug-report-android.md"
+        },
+        {
+          "type": "official",
+          "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/configuration-options.md"
+        },
+        {
+          "type": "official",
+          "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-data-retention.md"
+        },
+        {
+          "type": "official",
+          "path": "https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md"
+        }
+      ],
+      "pipeline_stage": "task6_pending",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-24",
+      "task6_result": "pass-light-edit",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task2b_fixed_at": "2026-04-24T14:55:00+08:00",
+      "last_task2b_at": "2026-04-24T14:55:00+08:00",
+      "path": "src/part3-tools/ch19-apm/09-measure.md"
     }
   },
   "section_18_7": {
