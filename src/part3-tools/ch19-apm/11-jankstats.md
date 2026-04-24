@@ -5,9 +5,9 @@ section: '19.11'
 status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-24'
-last_verified_against: AndroidX JankStats / StateInfo API reference
+applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
+last_verified: '2026-04-25'
+last_verified_against: AndroidX JankStats API reference + JankStatsApi24Impl / PerformanceMetricsState 状态关联逻辑
 confidence: medium
 tags:
 - apm
@@ -16,11 +16,11 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
@@ -28,8 +28,8 @@ task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T17:50:00+08:00'
 task2b_result: fixed
-last_task2b_at: '2026-04-24T18:25:09+08:00'
-repaired_date: '2026-04-24'
+last_task2b_at: '2026-04-25T04:45:04+08:00'
+repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 ---
 
@@ -130,6 +130,8 @@ data class JankFrameSample(
 
 `OnFrameListener` 回调里的 `FrameData` 只适合做当前帧内的轻量处理。要把事件交给后台线程、批量聚合或异步上报时，先复制 `isJank`、`frameDurationUiNanos` 和 `states` 到自己的 DTO。不要把 `FrameData` 对象本身跨线程保存，也不要在回调里做同步 I/O 或复杂序列化。
 
+状态关联依赖一条时间线。`PerformanceMetricsState` 在 UI 线程记录每个 `StateInfo` 的生效区间；`JankStatsApi24Impl` 用 `OnPreDrawListener` 作为同步锚点，给状态变化打上接近绘制前的时间戳。平台异步返回 `FrameMetrics` 后，JankStats 拿帧的 `[frameStart, frameEnd]` 区间和状态区间做 overlap 判定，交集命中的状态会进入这一帧的 `states`。这样 `screen=Home`、`interaction=scroll` 这类标签对应的是帧覆盖的状态区间，避免退化成“回调触发瞬间的当前页面状态”。
+
 ## API 版本差异
 
 JankStats 官方文档明确说明：不同 API 级别下，底层帧时间来源不同。
@@ -141,11 +143,11 @@ JankStats 官方文档明确说明：不同 API 级别下，底层帧时间来�
 | API 24-30 | 基于平台帧 timing API，数据更可靠 |
 | API 31+ | 平台暴露更多 frame timing 信息，判定更准确 |
 
-本章适用范围从 Android 8 起，所以通常会落在 API 26+。JankStats 在目标设备上已经能利用较可靠的帧 timing 能力。
+JankStats 的最低系统要求是 API 16。本书主体覆盖 Android 8 及以上设备，这些设备会走平台帧 timing 能力更完整的路径；如果产品仍覆盖 API 16-23，低版本数据要单独标记来源和精度。
 
 ## jank 阈值不是固定 16ms
 
-JankStats 通过 `jankHeuristicMultiplier` 控制 jank 判定，默认值是 2。官方文档说明它会结合当前刷新率计算帧时长阈值。60Hz、90Hz、120Hz 屏幕下，直接写死 16ms 都会带来口径偏差。
+JankStats 通过 `jankHeuristicMultiplier` 控制 jank 判定，默认值是 2，表示阈值约为当前预期帧时长的两倍。官方文档说明它会结合当前刷新率计算帧时长阈值。60Hz、90Hz、120Hz 屏幕下，直接写死 16ms 都会带来口径偏差。
 
 线上指标建议用这些口径：
 

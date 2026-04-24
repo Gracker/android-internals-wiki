@@ -5,9 +5,9 @@ section: '19.12'
 status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-04-24'
-last_verified_against: Android FrameMetrics API reference
+applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
+last_verified: '2026-04-25'
+last_verified_against: Android FrameMetrics API reference + API 31 GPU_DURATION / DEADLINE version boundary
 confidence: medium
 tags:
 - apm
@@ -22,11 +22,15 @@ reviewed_date: 2026-04-24
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: idle
+task2b_state: fixed
 task9_result: pass-tech-review
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T19:59:52+08:00'
+task2b_result: fixed
+last_task2b_at: '2026-04-25T04:45:04+08:00'
+repaired_date: '2026-04-25'
+repaired_by: openclaw-task2b
 ---
 
 # FrameMetrics
@@ -87,11 +91,12 @@ last_task9_at: '2026-04-24T19:59:52+08:00'
 | `DRAW_DURATION` | 构建 DisplayList 耗时 | View draw 或 Compose 绘制成本 |
 | `SYNC_DURATION` | UI 线程和 RenderThread 同步 | display list 同步、资源上传等待 |
 | `COMMAND_ISSUE_DURATION` | GPU 命令提交耗时 | 渲染命令提交压力 |
+| `GPU_DURATION` | GPU 完成本帧命令的耗时 | API 31+，用于区分 GPU 渲染压力和 UI / RenderThread 阶段压力 |
 | `SWAP_BUFFERS_DURATION` | Buffer 交换耗时 | 图形缓冲区相关等待 |
 | `TOTAL_DURATION` | 帧总耗时 | 该帧完整耗时 |
 | `DEADLINE` | 系统给应用生成该帧的时间预算 | API 31+，可用于判断是否 missed deadline |
 
-Android 官方文档说明：API 31 起 `DEADLINE` 表示系统分配给应用生成该帧的总时间。如果 `TOTAL_DURATION < DEADLINE`，这帧命中了预期 deadline，用户侧不会看到 jank。
+Android 官方文档说明：API 31 起 `DEADLINE` 表示系统分配给应用生成该帧的总时间，`GPU_DURATION` 表示 GPU 完成本帧命令的耗时。低于 API 31 的设备不要读取这两个字段，按 `TOTAL_DURATION` 和刷新率估算预算。
 
 ## 接入方式
 
@@ -99,32 +104,45 @@ Android 官方文档说明：API 31 起 `DEADLINE` 表示系统分配给应用�
 
 ```kotlin
 class FrameMetricsTracker(private val activity: Activity) {
-    private val thread = HandlerThread("frame-metrics").apply { start() }
-    private val handler = Handler(thread.looper)
+    private var thread: HandlerThread? = null
+    private var handler: Handler? = null
+    private var started = false
 
-    private val listener = Window.OnFrameMetricsAvailableListener { _, metrics, _ ->
+    private val listener = Window.OnFrameMetricsAvailableListener { _, metrics, dropCount ->
         val total = metrics.getMetric(FrameMetrics.TOTAL_DURATION)
         val draw = metrics.getMetric(FrameMetrics.DRAW_DURATION)
         val sync = metrics.getMetric(FrameMetrics.SYNC_DURATION)
-        reportFrame(totalDurationNanos = total, drawNanos = draw, syncNanos = sync)
+        reportFrame(
+            totalDurationNanos = total,
+            drawNanos = draw,
+            syncNanos = sync,
+            droppedReports = dropCount
+        )
     }
 
     fun start() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            activity.window.addOnFrameMetricsAvailableListener(listener, handler)
-        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || started) return
+
+        val metricsThread = HandlerThread("frame-metrics").apply { start() }
+        thread = metricsThread
+        handler = Handler(metricsThread.looper)
+        activity.window.addOnFrameMetricsAvailableListener(listener, handler)
+        started = true
     }
 
     fun stop() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && started) {
             activity.window.removeOnFrameMetricsAvailableListener(listener)
         }
-        thread.quitSafely()
+        started = false
+        handler = null
+        thread?.quitSafely()
+        thread = null
     }
 }
 ```
 
-这段代码省略了采样和批量上报。线上实现要避免每帧都创建大量对象，否则监控逻辑会增加 GC 压力。
+这段代码省略了采样和批量上报。`FrameMetrics` 回调参数会被复用，回调返回前只提取 primitive 值；如果要保留完整对象，用 `FrameMetrics(metrics)` 复制一份。`dropCount` 大于 0 时，说明回调侧处理过慢或线程拥塞，已经有帧报告被丢弃。
 
 ## 它的边界
 
@@ -132,10 +150,18 @@ FrameMetrics 数据来自 Window。它适合观察应用 UI 帧，但不覆盖�
 
 - 它不能直接告诉你 CPU 被哪个线程抢走。
 - 它不能完整解释 SurfaceFlinger、HWC、GPU driver 的问题。
+- 它不能判断 SurfaceView、播放器或相机预览内部生产帧的耗时。
 - 它不能替代方法调用栈。
 - 它不能自动关联业务页面状态。
 
-所以 FrameMetrics 更适合做 JankStats 的增强字段。比如线上慢帧率抬升时，同时看高版本设备的 `LAYOUT_MEASURE_DURATION` 是否抬升，可以快速判断问题更像 UI 树复杂度，还是主线程消息等待。
+FrameMetrics 更适合做 JankStats 的增强字段。比如线上慢帧率抬升时，同时看高版本设备的 `LAYOUT_MEASURE_DURATION` 是否抬升，可以快速判断问题更像 UI 树复杂度，还是主线程消息等待。
+
+| 维度 | JankStats | FrameMetrics |
+|---|---|---|
+| 事件口径 | 慢帧事件 + UI context | Window 每帧阶段耗时 |
+| 版本覆盖 | API 16+ | API 24+ |
+| 适合线上用途 | 页面 / 交互慢帧率聚合 | 高版本设备阶段归因补充 |
+| 主要缺口 | 根因仍需 Trace | 业务状态要自己关联 |
 
 ## 使用建议
 
@@ -173,11 +199,15 @@ API 31 之后的 `DEADLINE` 很适合处理 90Hz、120Hz、可变刷新率设备
 
 ```kotlin
 val total = metrics.getMetric(FrameMetrics.TOTAL_DURATION)
-val deadline = metrics.getMetric(FrameMetrics.DEADLINE)
-val missedDeadline = deadline > 0 && total > deadline
+val missedDeadline = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    val deadline = metrics.getMetric(FrameMetrics.DEADLINE)
+    deadline > 0 && total > deadline
+} else {
+    estimateMissedDeadlineFromRefreshRate(total)
+}
 ```
 
-如果设备低于 API 31，再按刷新率估算预算。不要在所有设备上硬编码 16ms。
+`DEADLINE` 是 API 31+ 字段，低版本设备按刷新率估算预算。不要在所有设备上硬编码 16ms。
 
 ## 聚合时不要保留所有原始帧
 
