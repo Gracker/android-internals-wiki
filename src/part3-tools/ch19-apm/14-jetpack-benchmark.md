@@ -1,35 +1,32 @@
 ---
-{
-  "title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
-  "chapter": "19",
-  "section": "19.14",
-  "status": "ready-for-review",
-  "drafted_date": "2026-04-24",
-  "drafted_by": "codex",
-  "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-  "last_verified": "2026-04-24",
-  "last_verified_against": "Android Developers Benchmark docs",
-  "confidence": "medium",
-  "tags": [
-    "apm"
-  ],
-  "related_chapters": [
-    "19.0"
-  ],
-  "sources": [
-    {
-      "type": "official",
-      "path": "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
-    }
-  ],
-  "pipeline_stage": "task9_pending",
-  "task6_state": "reviewed",
-  "task9_state": "pending",
-  "task2b_state": "pending",
-  "reviewed_by": "openclaw-task6",
-  "reviewed_date": "2026-04-24",
-  "task6_result": "pass-light-edit"
-}
+title: Jetpack Benchmark（Microbenchmark + Macrobenchmark）
+chapter: '19'
+section: '19.14'
+status: ready-for-review
+drafted_date: '2026-04-24'
+drafted_by: codex
+applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark / Baseline Profile 场景：Android 6.0+（API 23+）；书中样例以 Android 8-17 为主
+last_verified: '2026-04-24'
+last_verified_against: Android Developers Benchmark overview + Baseline Profiles overview
+confidence: medium
+tags:
+- apm
+related_chapters:
+- '19.0'
+sources:
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/benchmarking-overview
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-24'
+task6_result: pass-light-edit
+task2b_result: fixed
+last_task2b_at: '2026-04-24T18:25:09+08:00'
+repaired_date: '2026-04-24'
+repaired_by: openclaw-task2b
 ---
 
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）
@@ -78,6 +75,18 @@
 Jetpack Benchmark 不是线上 APM。它是本地、实验室和 CI 中用来稳定测量性能差异的工具。APM 告诉你线上哪个版本变差，Benchmark 用来验证某个修复是否真的让启动、滑动或函数耗时变好。
 
 Android 官方把 Benchmark 分成 Microbenchmark 和 Macrobenchmark。名字相近，但测的对象完全不同。
+
+## 版本兼容表
+
+官方 Benchmark 对比页给出了库级 API floor：Macrobenchmark 支持 API 23 及以上，Microbenchmark 支持 API 14 及以上。书里讨论 Android 8-17，是因为当前项目的发布设备段主要落在这一段，不是因为库从 API 26 才能使用。
+
+| 能力 | 官方 API floor | 书中主验证设备段 | 边界 |
+|---|---|---|---|
+| Microbenchmark | API 14+ | Android 8-17 | 适合进程内热点代码；结果更接近局部 CPU / 内存分配，不代表页面端到端体验 |
+| Macrobenchmark | API 23+ | Android 8-17 | 适合启动、滚动、转场；依赖外部测试进程驱动 App |
+| Baseline Profile 生成 / 验证 | 通常复用 Macrobenchmark 场景 | Android 8-17 | 生成脚本是实验室能力，最终收益仍要回到目标发布设备验证 |
+
+真正决定能不能测的，除了 API floor，还包括 metric 是否被当前设备支持、被测 App 是否使用接近 Release 的 build variant，以及 profileable / instrumentation 配置是否齐全。
 
 ## Microbenchmark 测小代码段
 
@@ -137,7 +146,7 @@ class StartupBenchmark {
 
 ## 测试条件优先于代码
 
-Benchmark 最常见的问题是测试条件不稳定。要让结果能被团队信任，至少控制这些变量：
+Benchmark 最常见的失败点是测试条件不稳定。要让结果能被团队信任，至少控制这些变量：
 
 - 设备型号和系统版本固定。
 - 关闭省电模式，保持充电和温度稳定。
@@ -146,6 +155,17 @@ Benchmark 最常见的问题是测试条件不稳定。要让结果能被团队�
 - 保留 trace 和原始结果，避免只看单个数字。
 
 冷启动测试还要区分首次安装、清数据后启动、普通冷启动、预编译状态。Baseline Profiles 生效前后，启动结果会明显不同。
+
+## 它解决不了哪些问题
+
+Benchmark 适合回答“这次改动在固定条件下是否更快”。不适合直接解决这些场景：
+
+- 只在少数线上机型、地区、账号或真实流量下出现的问题；这类问题先靠 APM、日志或灰度数据缩小范围。
+- 依赖服务端抖动、弱网、推送时序、真实账号数据的路径；实验室脚本很难稳定复现。
+- ANR、native crash、系统服务争用、Binder 跨进程阻塞这类现场；它们更适合 Perfetto、ANR 样本、Crash 堆栈。
+- 需要秒级看板或长期线上趋势的问题；Benchmark 只产出实验结果，不产出持续监控面板。
+
+所以 Benchmark 更像“实验室回归工具”。线上先发现异常，再把异常压缩成可重复脚本，再用 Benchmark 验证修复。
 
 ## 和线上 APM 的连接方式
 
@@ -163,7 +183,7 @@ Benchmark 的作用是把“线上变差”转化成“本地可重复、CI 可�
 - `:microbenchmark`：Microbenchmark module，测试可直接调用的热点代码。
 - `:app`：被测应用，提供 `benchmark` build type 或 `profile` build variant。
 
-Macrobenchmark 通常要求被测包接近 Release 配置。Debug 包有调试开销、无优化、日志更多，测出来的数据不适合做发布判断。
+Macrobenchmark 通常要求被测包接近 Release 配置。Debug 包有调试开销、无优化、日志更多，测出来的数据不适合做发布判断。被测 build variant 还要满足 benchmark runner 和 profileable 等前置条件，否则脚本连目标进程都不稳定。
 
 ## Microbenchmark 写法要避免测错对象
 
@@ -225,7 +245,7 @@ Benchmark 输出的数字要和业务目标对应：
 | `TraceSectionMetric` | 自定义 trace 区间耗时 | trace 名称不稳定导致结果断档 |
 | Allocation metrics | 局部代码分配压力 | 直接推断 OOM |
 
-启动耗时还要区分 TTID 和 TTFD。系统看到首帧不等于用户可交互。如果业务关心内容可用，需要在 App 中正确调用 `reportFullyDrawn()` 或自定义 trace。
+启动耗时还要区分 TTID 和 TTFD。系统看到首帧不等于用户可交互。如果业务关心内容可用，需要在 App 中正确调用 `reportFullyDrawn()` 或自定义 trace。像 `PowerMetric` 这类指标还依赖设备、电池状态和系统支持，开始前先确认 metric 本身的前置条件。
 
 ## CI 中的噪声控制
 

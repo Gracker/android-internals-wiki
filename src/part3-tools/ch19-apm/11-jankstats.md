@@ -7,7 +7,7 @@ drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-24'
-last_verified_against: AndroidX JankStats API reference
+last_verified_against: AndroidX JankStats / StateInfo API reference
 confidence: medium
 tags:
 - apm
@@ -16,17 +16,21 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T17:50:00+08:00'
+task2b_result: fixed
+last_task2b_at: '2026-04-24T18:25:09+08:00'
+repaired_date: '2026-04-24'
+repaired_by: openclaw-task2b
 ---
 
 # JankStats
@@ -94,23 +98,37 @@ class HomeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_home)
+
+        val decorView = window.decorView
+        val metricsState = PerformanceMetricsState.getHolderForHierarchy(decorView).state
 
         jankStats = JankStats.createAndTrack(window) { frameData ->
-            if (frameData.isJank) {
-                reportJank(
-                    durationUiNanos = frameData.frameDurationUiNanos,
-                    states = frameData.states
-                )
+            val sample = JankFrameSample(
+                isJank = frameData.isJank,
+                frameDurationUiNanos = frameData.frameDurationUiNanos,
+                states = frameData.states.associate { stateInfo -> stateInfo.key to stateInfo.value }
+            )
+
+            if (sample.isJank) {
+                reportJank(sample)
             }
         }
 
-        val metricsState = PerformanceMetricsState.getHolderForHierarchy(window.decorView).state
         metricsState.putState("screen", "Home")
     }
 }
+
+data class JankFrameSample(
+    val isJank: Boolean,
+    val frameDurationUiNanos: Long,
+    val states: Map<String, String>
+)
 ```
 
-这段代码只能说明接入方式，线上还要在 `reportJank()` 里做采样、聚合和批量上报。不要在回调里做同步 I/O 或复杂序列化。
+这段代码先通过 `setContentView()` 建立 `DecorView`，再调用 `createAndTrack()`。AndroidX reference 对这个调用有明确约束：`window` 必须处于 active 状态，且 `DecorView` 不能为空；如果在 `setContentView()` 前初始化，`createAndTrack(window, ...)` 可能直接抛 `IllegalStateException`。
+
+`OnFrameListener` 回调里的 `FrameData` 只适合做当前帧内的轻量处理。要把事件交给后台线程、批量聚合或异步上报时，先复制 `isJank`、`frameDurationUiNanos` 和 `states` 到自己的 DTO。不要把 `FrameData` 对象本身跨线程保存，也不要在回调里做同步 I/O 或复杂序列化。
 
 ## API 版本差异
 
@@ -123,7 +141,7 @@ JankStats 官方文档明确说明：不同 API 级别下，底层帧时间来�
 | API 24-30 | 基于平台帧 timing API，数据更可靠 |
 | API 31+ | 平台暴露更多 frame timing 信息，判定更准确 |
 
-本章适用范围从 Android 8 起，所以通常会落在 API 26+。这意味着 JankStats 在目标设备上已经能利用较可靠的帧 timing 能力。
+本章适用范围从 Android 8 起，所以通常会落在 API 26+。JankStats 在目标设备上已经能利用较可靠的帧 timing 能力。
 
 ## jank 阈值不是固定 16ms
 
