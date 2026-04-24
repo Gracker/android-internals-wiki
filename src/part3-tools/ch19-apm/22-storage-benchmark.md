@@ -19,15 +19,15 @@ sources:
   - type: blog
     path: "https://apkpure.com/a1-sd-bench/com.a1dev.sdbench"
 pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+task6_state: reviewed
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
-task9_reviewed_date: "2026-04-24"
-task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: "openclaw-task6"
 last_task9_at: "2026-04-24T22:57:00+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-25T02:45:50+08:00"
