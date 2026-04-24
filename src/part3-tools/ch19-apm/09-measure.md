@@ -1,45 +1,51 @@
 ---
-title: "Measure"
-chapter: "19"
-section: "19.09"
-status: ready-for-review
-drafted_date: "2026-04-24"
-drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "measure-sh docs/README.md + sdk-integration-guide + feature-network-monitoring + configuration-options + feature-bug-report-android + feature-data-retention"
+title: Measure
+chapter: '19'
+section: '19.09'
+status: finalized
+drafted_date: '2026-04-24'
+drafted_by: codex
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-24'
+last_verified_against: measure-sh docs/README.md + sdk-integration-guide + feature-network-monitoring + configuration-options + feature-bug-report-android + feature-data-retention
 confidence: medium
-tags: [apm]
-related_chapters: ["19.0"]
+tags:
+- apm
+related_chapters:
+- '19.0'
 sources:
-  - type: official
-    path: "https://github.com/measure-sh/measure"
-  - type: official
-    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/README.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/sdk-integration-guide.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-network-monitoring.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-identify-users.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-bug-report-android.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/configuration-options.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-data-retention.md"
-  - type: official
-    path: "https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md"
-pipeline_stage: task6_pending
+- type: official
+  path: https://github.com/measure-sh/measure
+- type: official
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/README.md
+- type: official
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/sdk-integration-guide.md
+- type: official
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-network-monitoring.md
+- type: official
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-identify-users.md
+- type: official
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-bug-report-android.md
+- type: official
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/configuration-options.md
+- type: official
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/features/feature-data-retention.md
+- type: official
+  path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task2b_fixed_at: "2026-04-24T14:55:00+08:00"
-last_task2b_at: "2026-04-24T14:55:00+08:00"
+task2b_fixed_at: '2026-04-24T14:55:00+08:00'
+last_task2b_at: '2026-04-24T14:55:00+08:00'
+task9_result: pass-tech-review
+task9_reviewed_date: '2026-04-24'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-24T17:50:00+08:00'
 ---
 
 # Measure
