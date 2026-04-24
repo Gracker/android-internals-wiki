@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "Android Developers JankStats / FrameMetrics / ApplicationExitInfo / ProfilingManager docs, Firebase docs, GitHub upstream READMEs"
+last_verified: "2026-04-25"
+last_verified_against: "Android Developers JankStats / FrameMetrics / ApplicationExitInfo / ProfilingManager docs, Firebase docs, GitHub upstream READMEs, External Review 2026-04-25"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -32,15 +32,15 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: blog
     path: "https://github.com/measure-sh/measure"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 reviewed_date: "2026-04-25"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-24T13:52:59+08:00"
+last_task2b_at: "2026-04-25T07:04:06+08:00"
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
@@ -92,7 +92,11 @@ last_task9_at: "2026-04-24T13:23:00+08:00"
 
 APM 在 Android 性能体系里的位置很清楚：它把线上设备里的性能信号采回来，让团队知道哪类问题正在发生、影响多少用户、是否需要进入修复队列。它不替代 Perfetto、Android Studio Profiler、simpleperf 这类线下诊断工具，也不保证单靠 SDK 上报就能还原所有现场。
 
-这层边界要先讲清。APM 负责发现样本和分布，Perfetto 负责还原一次具体慢帧、ANR、启动慢或内存异常的细节。
+APM 负责发现样本和分布，Perfetto 负责还原一次具体慢帧、ANR、启动慢或内存异常的细节。
+
+排查路径可以这样展开：灰度版本看板发现 `oom_rate` 在 Android 13/14 的低内存机型上抬升，按页面聚合后集中在图片编辑页。APM 拉到一条样本，主事件里有 `version`、`device`、`page`、`session_id`、`heap_used_ratio`，附件里有 Hprof 摘要：多个已销毁的 `ImageEditActivity` 仍被静态 `Handler` 消息引用。
+
+服务端用样本里的 Mapping UUID 对上当前构建，把混淆栈还原到业务类名。线下再用同版本 Debug 包打开 Profiler / LeakCanary 复现，修掉 `Handler` 持有 `Activity` 的引用后，灰度观察 `oom_rate` 和同签名样本数是否回落。
 
 ## 四类能力不要混在一起选
 
@@ -109,15 +113,18 @@ Android 性能监控工具可以按采集位置和使用场景分成四类：
 
 官方信号不能被写成同一批等价能力。JankStats 的 API floor 最低，但精度会随系统版本变化：API 16-23 依赖 `OnPreDrawListener`，API 24-30 依赖 `FrameMetrics`，API 31+ 才能补上 `frameOverrunNanos` 这类更接近 deadline 超时的信息。FrameMetrics 只从 API 24 起可用，ApplicationExitInfo 从 API 30 起给进程退出原因，ProfilingManager 则是 API 35 之后的按需 profiling 入口。
 
-## 一个完整线上体系至少有三层数据
+`ActivityManager.getHistoricalProcessExitReasons()` 是到 `system_server` 的查询，不放在冷启动主线程同步调用。更稳的做法是在后台线程读取退出记录，带上 `session_id`、`process_name` 和 build 标识，再和当前版本指标关联。
 
-线上性能治理通常从三层数据开始：
+## 一个完整线上体系至少有四类数据
 
-- **指标层**：启动耗时、慢帧率、ANR 率、OOM 率、网络耗时、磁盘占用等聚合指标，用来判断版本是否变差。
-- **现场层**：线程堆栈、方法 trace、Hprof 摘要、ANR trace、网络阶段耗时、页面状态等样本信息，用来定位问题方向。
-- **归因层**：版本、机型、系统版本、页面、实验分组、渠道、用户操作路径等上下文，用来判断影响范围和复现入口。
+线上性能治理通常从四类数据开始：
 
-只采指标，问题会停在“知道差了但不知道为什么”。只采现场，样本会很散，无法判断优先级。只采上下文，没有稳定指标，报警口径会变成业务猜测。
+- **指标 metrics**：`startup_p95_ms`、`jank_frame_rate`、`oom_rate`、`anr_rate` 等聚合值，用来判断版本是否变差。误用场景：只看 P95 抬升就直接定位到某个函数。
+- **样本 sample**：`main_thread_stack`、`hprof_summary_id`、`leak_signature`、`network_phase_cost` 等单次现场，用来定位问题方向。误用场景：把未按采样率归一化的样本数当成真实发生率。
+- **Trace**：`trace_id`、`time_range_ms`、`atrace_categories`、业务 `slice` 名等时间线数据，用来复核线程调度、Binder、I/O 和渲染阶段。误用场景：把大 trace 当成高频事件上传，导致端侧磁盘和网络成本失控。
+- **上下文 context**：App 版本、build number、系统版本、机型、ABI、页面、实验分组、`session_id` 与 `trace_id` 的关联关系，用来判断影响范围和复现入口。误用场景：页面名或实验名不稳定，导致同一问题被拆成多个统计桶。
+
+只采指标，问题会停在“知道差了但不知道为什么”。只采样本，样本会很散，无法判断优先级。只采 trace，成本会很快失控。只采上下文，没有稳定指标，报警口径会变成业务猜测。
 
 ## 工具边界优先于功能清单
 
@@ -162,7 +169,7 @@ APM 适合回答另一类问题：
 5. 再选一到两个专项客户端工具补现场，比如 Matrix 看卡顿和 IO，KOOM 看内存，btrace 看方法级 trace。
 6. 再决定是否接 Measure、Firebase、Sentry、APMPlus 这类平台方案，或自建数据管道。
 
-APM 不是“接一个库就完成”。它是一套持续运行的数据系统：采集要克制，指标要稳定，样本要可回查，结论要能被线下工具验证。
+接一个库不代表 APM 体系已经完成。它是一套持续运行的数据系统：采集要克制，指标要稳定，样本要可回查，结论要能被线下工具验证。
 
 ## 书稿级分析框架
 
@@ -178,27 +185,28 @@ APM 不是“接一个库就完成”。它是一套持续运行的数据系统�
 
 这一章的工具很多，但判断逻辑不会变。工具名会更新，系统 API 会变化，底层采集路线相对稳定。
 
-## 指标、样本、trace 是三种不同证据
+## 指标、样本、trace、上下文是四种不同证据
 
-做线上性能治理时，要把三种证据分开：
+做线上性能治理时，要把四种证据分开：
 
 - **指标**：适合看趋势和排序，例如慢帧率、启动 P95、ANR 率、OOM 率。
 - **样本**：适合看单个问题现场，例如一次 ANR 堆栈、一次主线程 block 调用栈、一次泄漏引用链。
-- **trace**：适合还原时间线，例如 Perfetto 里的线程调度、Binder、I/O、渲染阶段和业务 trace slice。
+- **Trace**：适合还原时间线，例如 Perfetto 里的线程调度、Binder、I/O、渲染阶段和业务 trace slice。
+- **上下文**：适合限定影响范围，例如版本、机型、页面、实验分组、渠道和用户操作路径。
 
-这三类证据不能互相替代。指标能告诉你“这个版本变差了”，但不能告诉你哪一行代码慢。样本能告诉你“这次卡在这里”，但不能说明影响面。trace 能还原一次现场，但没有采样体系时，团队不知道该抓哪条路径。
+这四类证据不能互相替代。指标能告诉你“这个版本变差了”，但不能告诉你哪一行代码慢。样本能告诉你“这次卡在这里”，但不能说明影响面。trace 能还原一次现场，但没有采样体系时，团队不知道该抓哪条路径。上下文能缩小排查范围，但没有稳定指标和样本时，只能做粗略猜测。
 
 一个能用的 APM 体系通常长这样：
 
 ```mermaid
 flowchart LR
-    A["线上指标\n慢帧率 / 启动 / ANR / OOM"] --> B["异常筛选\n版本 / 机型 / 页面 / 实验"]
-    B --> C["样本保留\n堆栈 / Hprof 摘要 / 网络阶段 / 用户路径"]
+    A["线上指标\n慢帧率 / 启动 / ANR / OOM"] --> B["上下文筛选\n版本 / 机型 / 页面 / 实验"]
+    B --> C["样本保留\n堆栈 / Hprof 摘要 / trace_id / 网络阶段"]
     C --> D["线下复现\nPerfetto / Profiler / Benchmark"]
     D --> E["修复验证\n灰度指标 + 回归测试"]
 ```
 
-这条路径里，APM 负责从 A 推到 C，Perfetto、Profiler、Benchmark 负责从 C 推到 E。把这些步骤混成“接个性能 SDK”会让体系失去可解释性。
+在这条路径里，APM 负责从 A 推到 C，Perfetto、Profiler、Benchmark 负责从 C 推到 E。把这些步骤混成“接个性能 SDK”会让体系失去可解释性。
 
 ## 常见采集路线的工程代价
 
@@ -218,11 +226,14 @@ flowchart LR
 APM SDK 上线前，团队应该先写数据合同。至少包括：
 
 - **事件名**：例如 `jank_frame_batch`、`startup_sample`、`anr_trace`、`io_issue`。
-- **稳定维度**：App 版本、build number、系统版本、机型、ABI、进程名、页面、前后台。
+- **稳定维度**：App 版本、build number、Mapping UUID、Native Build-ID、系统版本、机型、ABI、进程名、页面、前后台。
 - **指标字段**：耗时单位、计数窗口、分位口径、阈值来源。
-- **样本字段**：堆栈、线程名、文件路径哈希、trace id、Hprof 摘要 id。
+- **样本字段**：堆栈、线程名、文件路径哈希、trace id、session id、Hprof 摘要 id、leak signature。
 - **隐私策略**：URL 是否脱敏、文件路径是否哈希、日志是否裁剪、用户标识如何匿名化。
 - **采样策略**：全量、按用户、按会话、按异常、按远程配置。
+- **保留周期**：指标、样本、trace、Hprof 摘要的存储期限和删除策略。
+
+Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必须带 ELF Build-ID。缺少这些标识时，服务端无法把 `a.b.c.a()` 或裸地址还原到源码位置，样本只能做粗略聚合。
 
 没有数据合同，客户端和服务端会各自解释字段。常见结果是：平台能画图，但每个图都难以解释；问题能上报，但每条样本都缺定位所需的上下文。
 

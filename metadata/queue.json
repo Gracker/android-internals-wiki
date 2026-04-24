@@ -1030,7 +1030,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T07:04:27+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "completion_reason": "Task 2B 回炉修复：已按 external review 问题单补齐案例、符号化字段、源码锚点、Hook 机制与版本边界。"
   },
   {
     "section": "19.03",
@@ -1097,7 +1101,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T07:04:27+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "completion_reason": "Task 2B 回炉修复：已按 external review 问题单补齐案例、符号化字段、源码锚点、Hook 机制与版本边界。"
   },
   {
     "section": "19.04",

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T05:48:54+08:00",
+  "generated_at": "2026-04-25T07:04:27+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -4484,11 +4484,11 @@
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-24",
-      "last_verified_against": "Android Developers JankStats / FrameMetrics / ApplicationExitInfo / ProfilingManager docs, Firebase docs, GitHub upstream READMEs",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "Android Developers JankStats / FrameMetrics / ApplicationExitInfo / ProfilingManager docs, Firebase docs, GitHub upstream READMEs, External Review 2026-04-25",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -4498,7 +4498,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T13:23:00+08:00"
+      "last_task9_at": "2026-04-24T13:23:00+08:00",
+      "last_task2b_at": "2026-04-25T07:04:27+08:00"
     },
     "src/part3-tools/ch19-apm/02-tencent-matrix.md": {
       "path": "src/part3-tools/ch19-apm/02-tencent-matrix.md",
@@ -4534,8 +4535,8 @@
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-24",
-      "last_verified_against": "KwaiAppTeam/KOOM GitHub README",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "KwaiAppTeam/KOOM README.zh-CN and module READMEs, Android ApplicationExitInfo docs",
       "confidence": "medium",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -4548,7 +4549,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T13:23:00+08:00"
+      "last_task9_at": "2026-04-24T13:23:00+08:00",
+      "last_task2b_at": "2026-04-25T07:04:27+08:00"
     },
     "src/part3-tools/ch19-apm/04-btrace.md": {
       "path": "src/part3-tools/ch19-apm/04-btrace.md",

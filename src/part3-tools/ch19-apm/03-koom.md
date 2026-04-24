@@ -6,14 +6,22 @@ status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "KwaiAppTeam/KOOM GitHub README"
+last_verified: "2026-04-25"
+last_verified_against: "KwaiAppTeam/KOOM README.zh-CN and module READMEs, Android ApplicationExitInfo docs"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/KwaiAppTeam/KOOM"
+  - type: blog
+    path: "https://github.com/KwaiAppTeam/KOOM/tree/master/koom-java-leak"
+  - type: blog
+    path: "https://github.com/KwaiAppTeam/KOOM/tree/master/koom-native-leak"
+  - type: blog
+    path: "https://github.com/KwaiAppTeam/KOOM/tree/master/koom-thread-leak"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
@@ -22,6 +30,7 @@ reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
+last_task2b_at: "2026-04-25T07:04:06+08:00"
 task9_result: pass-tech-review
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
@@ -77,29 +86,33 @@ KOOM 来自快手团队，定位集中在 OOM 和内存泄漏治理。它覆盖 
 
 ## 三个模块对应三类内存风险
 
-| 模块 | 观察对象 | 适合处理的问题 |
-|---|---|---|
-| `koom-java-leak` | Java 堆对象 | Activity / Fragment / 业务对象泄漏导致 Java heap 持续升高 |
-| `koom-native-leak` | Native 分配块 | C/C++ 层 malloc 后不可达、图片/音视频/native SDK 内存上涨 |
-| `koom-thread-leak` | Java / native 线程 | 线程创建后长时间不退出，线程栈和调度资源被耗尽 |
+| 模块 | 观察对象 | 触发条件 / 产物 | 主要开销与边界 |
+|---|---|---|---|
+| `koom-java-leak` | Java 堆对象 | heap、线程数、FD、VSS 等资源连续超过阈值后，产出 fork dump、Hprof 裁剪结果和 Shark 分析报告 | 父进程仍有短暂 VM suspend / fork 窗口，子进程 dump 与分析会占用内存和 I/O；官方模块支持 Android 5.0+ |
+| `koom-native-leak` | Native 分配块 | 通过 `malloc` / `free` 记录分配元数据，周期性产出不可达 native 块、分配大小和调用栈 | 依赖 PLT Hook 与 unwind，官方模块面向 Android 7.0+ 且仅支持 arm64-v8a |
+| `koom-thread-leak` | Java / native 线程 | Hook `pthread_create` / `pthread_exit`，延迟上报未 `detach` / `join` 的 joinable 线程 | 依赖线程生命周期 Hook，官方模块面向 Android 7.0+ 且仅支持 arm64-v8a |
 
 把这三类问题放在一起看，KOOM 处理的是“哪类对象或分配没有按预期释放”，粒度比“内存数值偏高”更细。
 
 ## Java 泄漏：重点是 dump 成本
 
-Java 堆泄漏检测通常绕不开 Hprof。问题在于，主进程里直接 dump heap 很容易造成长时间停顿，严重时会诱发 ANR。KOOM 的 Java 模块采用 fork 子进程 dump 的思路，用 copy-on-write 降低主进程停顿风险。
+Java 堆泄漏检测通常绕不开 Hprof。Android 原生 heap dump 的入口通常是 `Debug.dumpHprofData()`，它最终走到 `dalvik.system.VMDebug.dumpHprofData()`。为了拿到一致的 Hprof，ART 会停住 Java 世界并遍历堆；在大堆和慢 I/O 设备上，这段 Stop-The-World 时间会拖到秒级，主进程直接调用就可能把前台交互拖成 ANR。
 
-这条路线的收益很直接：线上可以在达到阈值时保留堆现场，而不是等用户 OOM 后只拿到一个崩溃点。代价也要算清：
+KOOM 官方文档给出的路线是 `VM suspend -> fork -> VM resume -> child dump`：父进程借 Linux copy-on-write 只承受很短的 suspend / fork 窗口，Hprof 写文件和后续 Shark 分析落到子进程。这个设计降低主进程冻结时间，但没有消除成本。子进程仍会占用额外内存和 I/O；fork 发生在多线程进程里，还要控制 native 锁、malloc 状态和超时退出，避免子进程继承父进程的锁状态后卡死。
+
+这条路线的收益很直接：线上可以在达到阈值时保留堆现场，避免等用户 OOM 后只拿到一个崩溃点。代价也要算清：
 
 - Hprof 文件仍然很大，需要裁剪或只上传摘要。
-- fork 和 dump 对低内存设备仍然有压力。
+- fork 和 dump 对低内存设备仍然有压力，KOOM 文档也建议远程开关和采样开启。
 - dump 阈值过低会引入噪声，过高又可能错过泄漏早期。
 
 Java 泄漏报告不要只上报“内存超过 80%”。更有用的数据是触发前后的页面、进程状态、前台后台、GC 次数、最大对象类型、引用链摘要和是否接近 OOM。
 
 ## Native 泄漏：重点是可达性分析
 
-Native 泄漏比 Java 泄漏难，是因为 ART 的引用图帮不上忙。KOOM native 模块的思路接近 tracing garbage collection：记录分配元数据，再扫描进程内存中可达指针，未被标记到的分配块成为泄漏候选。
+Native 泄漏比 Java 泄漏难，是因为 ART 的引用图帮不上忙。KOOM native 模块的思路接近 tracing garbage collection：通过 `xhook` 这类 PLT Hook 库拦截 `malloc` / `free` 等分配器方法，记录地址、大小和分配调用栈；再扫描进程内存中可达指针，未被标记到的分配块成为泄漏候选。
+
+这一层依赖的是 native 分配入口拦截能力。KOOM 官方接入依赖里包含 `com.kuaishou.koom:xhook`，同类工程也常用 bhook / xhook 处理动态库符号重定向和 Android linker 兼容问题。
 
 报告里更有用的是这些信息：
 
@@ -121,16 +134,18 @@ KOOM 线程模块通过 Hook 线程生命周期函数记录创建和退出，再
 - 线程池 worker 按线程池维度统计，不按单线程直接报警。
 - 只对持续增长或超过阈值的线程数报警。
 
-线程泄漏影响的不只是 Java 堆。线程栈、文件描述符、调度开销都会被占用，32 位进程里虚拟地址空间也更容易被耗尽。
+线程泄漏还会占用线程栈、文件描述符和调度资源，32 位进程里虚拟地址空间也更容易被耗尽。
 
 ## 使用建议
 
 KOOM 不适合“先全量开起来看看”。更稳的接入方式是：
 
-1. 先用线上 OOM、LMK、PSS、Java heap 使用率确认内存问题是否足够集中。
+1. 先用线上 OOM、LMK、PSS、Java heap 使用率确认内存异常足够集中。
 2. 按问题类型只打开一个模块，比如先查 Java 泄漏或 native 泄漏。
 3. 设置灰度、采样、阈值和远程开关，避免异常版本把 dump 压力放大。
 4. 把报告接到符号表、混淆映射和页面上下文里，否则样本难以分配到代码负责人。
+
+Native 模块的依赖模式也要提前定。KOOM Native 模块支持 `c++_shared` 和 `c++_static` 两种模式，多个 KOOM 模块不能混用 shared / static。`c++_shared` 包体小，但 `libc++_shared.so` 版本冲突可能引发 `dlopen failed` 或符号缺失；`c++_static` 包体更大，隔离性更好。`pickFirst` 只适合临时解决打包冲突，不能替代 STL 版本治理。
 
 KOOM 的强项是把线上内存现场保下来。它的边界也清楚：它不能替代本地 heap 分析、native 符号化、Perfetto memory 轨道和业务缓存治理。
 
@@ -154,6 +169,8 @@ KOOM 的 fork dump 思路缓解了主进程卡顿，但不等于 dump 没成本�
 
 - **主事件**：版本、机型、进程、页面、heap 使用率、触发原因、摘要 id。
 - **分析附件**：引用链、最大对象类型、可疑 GC Root、对象数量、裁剪后的 Hprof 或 Shark/自研解析结果。
+
+裁剪的目标是缩小文件并保留引用关系。常见做法是丢弃体积大的 primitive arrays，例如图片像素 `byte[]` 或大文本数组；类元数据、对象 id、字段引用和 GC Root 信息要保留，否则引用链无法还原。
 
 引用链摘要要能回答这几个问题：
 
@@ -184,7 +201,7 @@ Native 内存上涨不一定是泄漏。图片缓存、播放器 buffer、OpenGL
 
 ## 线程泄漏的判定口径
 
-线程泄漏报告应该按“线程来源”和“增长趋势”判断，而不是按单个线程存活时间直接报警。
+线程泄漏报告应该按“线程来源”和“增长趋势”判断，不能只按单个线程存活时间直接报警。
 
 建议入库字段：
 
@@ -216,15 +233,17 @@ flowchart TD
     G --> H["本地复现 + LeakCanary / Profiler / Perfetto 验证"]
 ```
 
-这里的关键是先分类。Java、native、线程三类问题的修复人、证据和工具都不同。把所有内存问题都归到“OOM”只会让任务无法分配。
+这一步先做分类。Java、native、线程三类问题的修复人、证据和工具都不同。把所有内存问题都归到“OOM”只会让任务无法分配。
 
 ## 和 Android 系统内存信号配合
 
 KOOM 不应该单独使用。至少要和这些系统信号配合：
 
-- `ApplicationExitInfo`：确认进程是否因为 low memory、ANR、crash 等退出。
-- Android Vitals LMK / crash 数据：判断问题是否影响真实分发面。
+- `ApplicationExitInfo`（Android 11 / API 30+）：确认进程是否因为 low memory、ANR、crash 等退出；读取前先用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备是否能报告 `REASON_LOW_MEMORY`。
+- Android Vitals LMK / crash 数据：判断真实分发面的受影响程度。
 - Perfetto memory counters：看 RSS、PSS、heap、ion / dmabuf 等曲线变化。
 - `dumpsys meminfo`：本地复现时拆 Java heap、native heap、graphics、stack、code。
+
+Android 8-10 没有 `ApplicationExitInfo`，只能把 Android Vitals、LMK / lowmemorykiller 日志、Crash 平台和本地 `dumpsys meminfo` 放在一起判断。`ActivityManager.getHistoricalProcessExitReasons()` 是到 `system_server` 的查询，不放在冷启动主线程同步调用。
 
 KOOM 负责保留更细现场，系统信号负责定义事实口径。没有系统信号，线上 OOM 治理容易把“用户杀进程”“后台回收”“崩溃重启”混成一类。
