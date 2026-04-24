@@ -30,17 +30,17 @@ tags:
   - anr
   - sqlite
   - app-startup
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task2b_result: fixed
 task2b_state: fixed
-reviewed_date: "2026-04-18"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-25"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-review_round: 2
+review_round: 3
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-25T00:29:00+08:00"
 ---
@@ -178,7 +178,7 @@ App B: ContentProvider$Transport.query()
 
 CursorWindow 只有 2MB，但查询结果可能有几百 MB。SQLiteCursor 实现了一套"窗口滑动"机制来处理这个问题：当访问的行不在当前窗口中时，`onMove()` 方法会被触发，它会重新执行查询并填充新的窗口。
 
-这里有一个关键的性能陷阱：**SQLiteCursor 的窗口刷新是通过从头重新查询 + 跳过已读行来实现的**。假设查询返回 10000 行结果，每行 200 字节，一个 2MB 窗口大约放 10000 行。当访问第 10001 行时，SQLiteCursor 会重新执行原始查询，用类似 `SELECT . .. LIMIT windowSize OFFSET currentPos` 的方式跳过前 10000 行，只取后面的行。
+**SQLiteCursor 的窗口刷新是通过从头重新查询 + 跳过已读行来实现的**。假设查询返回 10000 行结果，每行 200 字节，一个 2MB 窗口大约放 10000 行。当访问第 10001 行时，SQLiteCursor 会重新执行原始查询，用类似 `SELECT . .. LIMIT windowSize OFFSET currentPos` 的方式跳过前 10000 行，只取后面的行。
 
 [已验证：AOSP, frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java, fillWindow() + onMove()]
 
