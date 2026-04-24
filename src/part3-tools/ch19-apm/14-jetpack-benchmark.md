@@ -20,13 +20,13 @@ sources:
   path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
 - type: official
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: pending
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-04-24'
-task6_result: pass-light-edit
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-25"
+task6_result: "pass-light-edit"
 task2b_result: fixed
 last_task2b_at: '2026-04-24T21:14:45+08:00'
 repaired_date: '2026-04-24'

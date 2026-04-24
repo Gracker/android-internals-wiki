@@ -10,10 +10,10 @@ last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: pending
 last_task2b_at: "2026-04-25T02:45:50+08:00"
 repaired_date: "2026-04-25"
@@ -22,6 +22,9 @@ task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T02:26:14+08:00"
 task9_result: needs-rework
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-25"
 ---
 
 # 第 19 章：APM 工具与性能监控生态

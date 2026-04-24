@@ -227,7 +227,9 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 优化思路：
 - 将 Fragment 的布局拆分为多个阶段：先加载骨架布局，数据准备好后再填充内容
-- 将 Fragment 事务提交时机与动画帧解耦：如果 Fragment 切换发生在动画期间（如 SharedElement 转场），事务的 commit 会触发 View 层级的完整重建（remove + add + measure + layout），这些操作会挤占动画帧的渲染时间。更好的做法是将 commit 延迟到动画结束之后，或者先暂停动画、执行事务、再恢复动画。[待验证: FragmentTransaction.commit() 触发 View 操作的具体时机需补 AOSP 或官方文档依据]
+- 将 Fragment 事务提交时机与动画帧解耦：如果 Fragment 切换发生在动画期间（如 SharedElement 转场），事务的 commit 会触发 View 层级的完整重建（remove + add + measure + layout），这些操作会挤占动画帧的渲染时间。更好的做法是将 commit 延迟到动画结束之后，或者先暂停动画、执行事务、再恢复动画。
+
+[已验证: AOSP android14-release, frameworks/base/core/java/android/app/FragmentManager.java — 完整调用链如下：BackStackRecord.commitInternal() → enqueueAction() → mPendingActions.add() → scheduleCommit() → Handler.post(mExecCommit) → execPendingActions() → runPendingActions() → dispatchExecuteOps() → moveToState()。commit() 本身是异步的，通过 Handler.post() 投递到主线程 MessageQueue，与 Choreographer 回调同属主线程 Looper 循环，不存在直接依赖关系。事务的 View 操作（remove/add/measure/layout）在 moveToState() 中执行，才是真正的瓶颈。]
 - 在非动画期间使用 `commitNow()` 同步执行：`commitNow()` 会在调用时立即执行事务中的所有操作，而不是等到下一个 Choreographer 周期。这在不需要动画的场景下（如 ViewPager2 内部的页面切换）可以减少一帧的延迟。但注意 `commitNow()` 不能和 `addToBackStack()` 一起使用。[已验证: AOSP FragmentTransaction.java — commitNow 文档说明]
 - 预加载下一页 Fragment 的 View（`setMaxLifecycle` 配合 ViewPager2 的 `setOffscreenPageLimit`）
 
