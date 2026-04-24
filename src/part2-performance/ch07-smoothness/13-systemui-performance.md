@@ -102,6 +102,101 @@ last_task9_at: '2026-04-21T01:15:00+08:00'
 - 🔸 **OEM 定制变量**：状态栏层级、主题动画、插件体系会放大 AOSP 基线之外的开销。
 <!-- outline-end -->
 
+## Android 15+ SceneContainer (Flexiglass)：通知栏架构的 Compose 化重构
+
+> ⚠️ **状态**：此部分描述的 Flexiglass / Scene Framework 截至 Android 15/16 开发阶段仍为**实验性功能**，默认关闭。启用方式：`adb shell device_config override systemui com.android.systemui.scene_container true` 后重启 SystemUI。以下内容基于 AOSP mainline 源码，适用于已启用该框架的设备。
+
+### 核心变化：从重叠 View 层级到 Scene Graph
+
+传统 SystemUI 的通知栏基于 `NotificationShadeWindowView`（一个超大 `FrameLayout`），锁屏、通知列表、Quick Settings 都通过 `setVisibility()` 在同一个 View Tree 中切换。这种架构的问题在于：状态逻辑分散、动画与 UI 声明耦合、OEM 定制困难。
+
+Flexiglass（内部代号，亦称 Scene Framework）将通知栏、锁屏、Bouncer、Quick Settings 各自封装为独立的 **Scene**，通过 **SceneTransitionLayout** 统一管理场景切换和过渡动画。
+
+**核心概念对照：**
+
+| 传统架构 | Flexiglass |
+|----------|------------|
+| `NotificationShadeWindowView`（单一重叠 ViewTree） | `SceneContainer`（Scene Graph 根节点） |
+| `setVisibility()` 控制显隐 | `SceneKey` 切换当前活跃 Scene |
+| 动画逻辑散落在 `PanelView.onTouchEvent()` 等各处 | `SceneContainerTransitions` 集中声明过渡动画 |
+| View 层级直接对应 UI 结构 | Scene 是独立 Composable，互不直接引用 |
+| `ScrimController` 控制 Scrim 透明度 | SceneTransitionLayout 内置 Element 动画系统 |
+
+### 源码文件索引
+
+| 文件路径（AOSP mainline） | 职责 |
+|---------------------------|------|
+| `packages/SystemUI/compose/features/src/com/android/systemui/scene/ui/composable/SceneContainer.kt` | Scene Graph 根 Composable，接收 ViewModel + scenes 参数 |
+| `packages/SystemUI/src/com/android/systemui/scene/shared/flag/SceneContainerFlag.kt` | 框架总开关，`isEnabled()` 查询 `com.android.systemui.scene_container` aconfig flag |
+| `packages/SystemUI/src/com/android/systemui/scene/ui/viewmodel/SceneContainerViewModel.kt` | 控制场景的 `isVisible` 状态 |
+| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayout.kt` | 底层 Compose 过渡组件，封装 Scene Graph 和 Transition |
+| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayoutState.kt` | 管理当前 Scene（`currentScene: SceneKey`）、`transitions`、`transitionState` |
+| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitions.kt` | 集中声明每对 Scene 之间的过渡动画（如 `lockscreenToShadeTransition`） |
+| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/transformation/PunchHole.kt` | punchHole 裁剪变换，实现场景间视觉穿透效果 |
+
+### 关键源码片段
+
+**SceneContainer 根节点（简化）：**
+
+```kotlin
+// packages/SystemUI/compose/features/src/.../SceneContainer.kt
+@Composable
+fun SceneContainer(
+    viewModel: SceneContainerViewModel,
+    scenes: Set<ComposableScene>,
+    config: SceneContainerConfig,
+    // ...
+)
+```
+
+**框架开关判断（影响现有组件分支）：**
+
+```kotlin
+// packages/SystemUI/src/.../SceneContainerFlag.kt
+object SceneContainerFlag {
+    fun isEnabled(): Boolean = 
+        device_config.get_boolean("systemui", "com.android.systemui.scene_container", false)
+}
+
+// 引用此开关的组件：
+// - ScrimController.java — Scrim 行为分支
+// - QSPanel.java — 面板可见性分支  
+// - KeyguardService.java — 锁屏逻辑分支
+// - OverviewProxyService.java — latency tracking 分支
+// - NotificationScrollViewModel.kt — 锁屏滚动手势分支
+```
+
+### 过渡动画机制
+
+每个 Scene 切换的动画在 `SceneTransitions` 中声明，而非写在 Composable 函数体内：
+
+```kotlin
+// 示意（SceneContainerTransitions.kt）
+val lockscreenToShadeTransition = transitionBuilder(
+    fromScene = SceneKey.Lockscreen,
+    toScene = SceneKey.Shade,
+) {
+    // tween 插值，300ms，FastOutSlowIn
+    // 标签为 ElementKey 的元素同步位移
+    element(elementKey) { translateY(it) }
+}
+```
+
+punchHole 变换允许当前 Scene "穿透" 下方 Scene 的部分区域可见（如 Shade 展开时锁屏背景从通知图标间隙中透出）。
+
+### Flexiglass 对性能分析的影响
+
+1. **Trace 观测变化**：`NotificationShadeWindowView#onMeasure` 在 Flexiglass 启用后不再是 Shade 展开的主导路径。取而代之的是 `SceneTransitionLayout` 相关的 Compose recomposition 和 animation slice。
+
+2. **主线程 vs RenderThread**：过渡动画在 RenderThread 执行，不阻塞 UI thread。但 Compose recomposition 本身在 UI thread，首次 Scene 切换有额外 composition overhead。
+
+3. **OEM 定制影响**：Scene 独立性使 OEM 更容易替换或移除单个场景，但同时需要理解 SceneGraph 的根节点结构和过渡声明方式才能正确定制。
+
+4. **Perfetto 追踪重点**：启用 Flexiglass 后，分析 Shade 展开应关注 `com.android.systemui` 进程的 Compose 重组和动画 slice，以及 SceneTransitionLayout 相关的状态转换，而非传统 View hierarchy 的 `onMeasure`/`onLayout`。
+
+<!-- AIW-源码调研-2026-04-24 -->
+
+
 ## 先分清谁负责什么
 
 SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemUI 更接近一组常驻窗口和控制器：状态栏、通知抽屉、锁屏相关视图、导航栏，以及围绕这些窗口的动画、输入、通知绑定过程。Overview / Recents 已经在 Launcher3 Quickstep 侧实现，本章分析 App 启动或最近任务切换时，至少要同时观察 `com.android.systemui`、`com.android.launcher3`、目标 App、SurfaceFlinger，有时还要把 WM Shell 单独拎出来看。

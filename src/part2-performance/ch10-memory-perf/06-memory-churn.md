@@ -43,6 +43,7 @@ task9_result: needs-rework
 last_task9_at: "2026-04-24T14:40:03+08:00"
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
+review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
 ---
 
 # 内存抖动与频繁 GC

@@ -35,11 +35,12 @@ task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-review_round: 4
+review_round: 5
 task9_reviewed_date: '2026-04-20'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-20T20:06:23+08:00'
 last_task2b_at: '2026-04-24T19:36:54+08:00'
+review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b 修复后内容无新L1/L2问题。版本边界清晰，编译流程拆分完整，验证路径实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 ---
 
 # 8.7 Baseline Profiles 与编译优化实践
