@@ -18535,18 +18535,26 @@
     },
     {
       "title": "Android World 与 MobileWorld 深度技术架构调研",
-      "path": "DeepResearch/Android World 与 MobileWorld 深度技术架构调研.md",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android World 与 MobileWorld 深度技术架构调研.md",
       "score": 20,
-      "relevance": "AI Agent框架调研",
+      "relevance": "AI × 手机 / GUI Agent 技术参考",
       "keywords": [
         "Android World",
         "MobileWorld",
-        "技术架构",
-        "AI框架",
-        "对比分析"
+        "GUI Agent",
+        "Agent",
+        "ADB",
+        "评测体系"
       ],
       "chapter": "ch16",
-      "scored_at": "2026-04-24T06:03:15.448393"
+      "scored_at": "2026-04-25T07:22:00+08:00",
+      "summary": "对 google-research/android_world 与 MobileWorld 的任务定义、环境架构、评测协议、ADB/无障碍控制链路和数据闭环做机制级对比，可作为端侧 GUI Agent 与手机自动化评测体系的外部参考。",
+      "chapter_mapping": "ch16",
+      "matched_chapter": "16",
+      "section_title": "第 16 章：AOSP 性能优化",
+      "action_taken": "inject",
+      "processed_at": "2026-04-25T07:22:00+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
     },
     {
       "title": "PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研",
@@ -18610,6 +18618,48 @@
       "indexed_at": "2026-04-25T21:07:00+00:00",
       "quality": "medium",
       "scored_at": "2026-04-25T05:08:48.534313"
+    },
+    {
+      "title": "Android Debug 与 Release 构建在 Profiling 下的系统性行为差异",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Debug 与 Release 构建在 Profiling 下的系统性行为差异.md",
+      "score": 20,
+      "relevance": "Android 系统 profiling 方法论",
+      "keywords": [
+        "Debug",
+        "Release",
+        "Profiling",
+        "ART",
+        "Zygote",
+        "dex2oat",
+        "SELinux"
+      ],
+      "chapter": "ch16",
+      "scored_at": "2026-04-25T07:22:00+08:00",
+      "summary": "系统梳理 Debug/Release 构建在 ART、Zygote、dex2oat、SELinux 与 profiling 工具链中的行为差异，解释为什么调试态与生产态 trace、采样和基准测试结果不可直接等价。",
+      "chapter_mapping": "ch16",
+      "matched_chapter": "16",
+      "section_title": "第 16 章：AOSP 性能优化",
+      "action_taken": "inject",
+      "processed_at": "2026-04-25T07:22:00+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
     }
-  ]
+  ],
+  "https://juejin.cn/post/7589903499599347766": {
+    "chapter": "ch17-oem",
+    "title": "聊聊2026年Android开发会是什么样",
+    "score": 13,
+    "added_at": "2026-04-25T05:39:49.867987"
+  },
+  "https://juejin.cn/post/7596710680897863686": {
+    "chapter": "ch14-other-tools",
+    "title": "2026年了，Android开发该如何调试布局",
+    "score": 15,
+    "added_at": "2026-04-25T05:39:49.903861"
+  },
+  "https://juejin.cn/post/7591309945511739392": {
+    "chapter": "ch14-other-tools",
+    "title": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分",
+    "score": 12,
+    "added_at": "2026-04-25T05:39:49.938875"
+  }
 }
