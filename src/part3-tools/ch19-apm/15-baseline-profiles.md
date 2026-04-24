@@ -14,12 +14,16 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: pendingreviewed_by: openclaw-task6
+reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
-
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_date: "2026-04-24"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-24T22:57:00+08:00"
 ---
 
 # Baseline Profiles 与编译优化

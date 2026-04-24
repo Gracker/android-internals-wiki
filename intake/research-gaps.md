@@ -3354,3 +3354,20 @@ SoloPi 缺少现代 Android / AGP 兼容矩阵。当前可查官方基线仍是 
 
 ### 关联章节
 19.19, 19.20
+
+
+## [2026-04-24] 19.22 存储 Benchmark（AndroBench、A1 SD Bench） — 知识盲区
+
+### 盲区描述
+AndroBench / A1 SD Bench 在 Android 10-17 的现代存储模型下还能稳定覆盖哪些路径，当前缺少一手核验。尤其是 scoped storage、app-specific external、SAF/MediaStore、可移除 SD/USB 目录在不同 targetSdk 和 ROM 上的可测边界，正文还没有证据链。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 核验 AndroBench 与 A1 SD Bench 在 Android 13/14/15/16/17 上的实际可运行性与权限前提
+- 拆清 app 内部目录、app-specific external、共享媒体目录、SAF tree URI、可移除 SD/USB 的可测范围
+- 记录主流 ROM 上 scoped storage、文件管理授权、USB/SD 挂载差异对 benchmark 结果的影响
+
+### 关联章节
+19.22, 6.2, 19.27
