@@ -165,5 +165,54 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-24T14:40:03+08:00",
     "status": "pending"
+  },
+  {
+    "section": "19.05",
+    "priority": "P1",
+    "reason": "版本兼容性未明确说明，Android 14+ 需要AndroidX，AGP 8.0+ 兼容性未声明",
+    "type": "tech-review",
+    "status": "pending"
+  },
+  {
+    "section": "19.05",
+    "priority": "P1",
+    "reason": "文档过时，未提及 LeakCanary 2.13+ 基于 ObjectWatcher 的新架构",
+    "type": "tech-review",
+    "status": "pending"
+  },
+  {
+    "section": "19.06",
+    "priority": "P1",
+    "reason": "维护状态未充分告知，BlockCanary 已停止维护",
+    "type": "tech-review",
+    "status": "pending"
+  },
+  {
+    "section": "19.06",
+    "priority": "P1",
+    "reason": "AGP 兼容性过时，声称支持 Android 8-17 但 compileSdkVersion=28",
+    "type": "tech-review",
+    "status": "pending"
+  },
+  {
+    "section": "19.07",
+    "priority": "P1",
+    "reason": "AGP 兼容性未声明，未说明 AGP 8.0+ 的兼容性限制",
+    "type": "tech-review",
+    "status": "pending"
+  },
+  {
+    "section": "19.08",
+    "priority": "P1",
+    "reason": "版本兼容性未明确，需要 Gradle 8.2+ 与 Android 17 声明矛盾",
+    "type": "tech-review",
+    "status": "pending"
+  },
+  {
+    "section": "19.08",
+    "priority": "P1",
+    "reason": "免费服务终止未标注，仍声称提供免费性能监控服务",
+    "type": "tech-review",
+    "status": "pending"
   }
 ]
