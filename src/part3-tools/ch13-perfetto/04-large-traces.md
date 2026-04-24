@@ -24,11 +24,11 @@ task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-reviewed_date: 2026-04-20
+reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T20:50:00+08:00'
@@ -64,7 +64,7 @@ last_task2b_at: '2026-04-22T21:50:17+08:00'
 
 ## 为什么要用命令行分析 Trace
 
-我们在上一节里用 Perfetto UI 打开 Trace、看 Track、看 Slice，体验很流畅。但当我们遇到一个 500MB 甚至 2GB 的 Trace 文件时，情况就不一样了——浏览器标签页开始疯狂吃内存，UI 变得卡顿甚至直接崩溃。这不是 Perfetto UI 本身的问题，而是浏览器的 WebAssembly（WASM）引擎在处理如此大的数据集时力不从心。
+我们在上一节里用 Perfetto UI 打开 Trace、看 Track、看 Slice，体验很流畅。但当我们遇到一个 500MB 甚至 2GB 的 Trace 文件时，情况就不一样了——浏览器标签页开始疯狂吃内存，UI 变得卡顿甚至直接崩溃。瓶颈出在浏览器的 WebAssembly（WASM）引擎——处理如此大的数据集时它力不从心。
 
 更常见的一个场景是：我们需要对一批 Trace 做批量分析，比如每天自动抓取 50 个冷启动 Trace，统计 P95 启动时间。手动一个个打开 UI 不现实，我们需要一个可以用脚本驱动、不依赖浏览器的分析工具。
 

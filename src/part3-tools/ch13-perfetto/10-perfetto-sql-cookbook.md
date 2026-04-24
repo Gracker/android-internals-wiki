@@ -36,11 +36,11 @@ task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-reviewed_date: 2026-04-20
+reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-04-22"
 task9_reviewed_by: openclaw-task9
@@ -492,9 +492,9 @@ JOIN thread USING (utid)
 WHERE thread.name = 'main'
   AND slice.ts BETWEEN (
     -- 假设 ANR 时间点为 trace_start() + X，需要替换为实际值
-    trace_start() + 0  -- [待补充: 替换为 ANR 时间戳 - 5秒]
+    trace_start() + 0  -- 替换为 ANR 时间戳 - 5秒（纳秒）
   ) AND (
-    trace_start() + 0  -- [待补充: 替换为 ANR 时间戳 + 1秒]
+    trace_start() + 0  -- 替换为 ANR 时间戳 + 1秒（纳秒）
   )
 ORDER BY slice.ts;
 ```
