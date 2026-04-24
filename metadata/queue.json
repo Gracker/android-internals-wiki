@@ -439,5 +439,90 @@
     "added_by": "task6-review",
     "added_at": "2026-04-24T17:29:56.866862",
     "status": "pending"
+  },
+  {
+    "section": "19.23",
+    "section_title": "网络 APM 底层捕获原理",
+    "priority": 95,
+    "reason": "[External Review] 正文完全缺失，当前文件仅为大纲骨架，大纲规定的 OkHttp 捕获、字节码插桩、Native 网络捕获等锚点均未展开",
+    "review_issues": [
+      {
+        "type": "正文缺失",
+        "location": "全文（outline-end 之后无正文）",
+        "detail": "大纲规定的所有核心技术点（OkHttp 捕获、字节码插桩、Native 网络捕获等）均未展开为正文",
+        "suggestion": "根据大纲 7 个锚点和 3 个扩展项，生成包含代码片段和原理链的完整正文"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-24T17:37:21+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.24",
+    "section_title": "崩溃与 ANR 捕获机制",
+    "priority": 95,
+    "reason": "[External Review] 正文完全缺失，Breakpad/Crashpad 信号拦截、ANR 捕获演进史等核心技术原理全盘缺失",
+    "review_issues": [
+      {
+        "type": "正文缺失",
+        "location": "全文（outline-end 之后无正文）",
+        "detail": "大纲规定的 Thread.setDefaultUncaughtExceptionHandler、ApplicationExitInfo 等核心技术原理全盘缺失",
+        "suggestion": "依据大纲的底层原理指引，补齐信号拦截和机制演进的完整正文"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-24T17:37:21+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.25",
+    "section_title": "耗电与发热监控",
+    "priority": 95,
+    "reason": "[External Review] 正文完全缺失，Wakelock 泄漏拦截原理、Android 10+ Thermal API 应用等内容全无",
+    "review_issues": [
+      {
+        "type": "正文缺失",
+        "location": "全文（outline-end 之后无正文）",
+        "detail": "关于 Wakelock 申请/释放的拦截原理以及 Android 10+ Thermal API 的应用完全缺失",
+        "suggestion": "基于大纲扩写正文，覆盖耗电监控的插桩拦截机制与降级策略"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-24T17:37:21+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.26",
+    "section_title": "混合栈与跨平台 APM",
+    "priority": 95,
+    "reason": "[External Review] 正文完全缺失，WebView 白屏检测、Flutter Engine 异常回传、JSBridge 瓶颈等核心内容全无",
+    "review_issues": [
+      {
+        "type": "正文缺失",
+        "location": "全文（outline-end 之后无正文）",
+        "detail": "大纲规定的 WebView 白屏检测流派、Flutter Engine 异常回传机制等内容全无",
+        "suggestion": "补齐 JSBridge 瓶颈、前端 FCP 融合以及 Session Timeline 打通的具体架构思路"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-24T17:37:21+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.27",
+    "section_title": "千万级 DAU 的 APM 端侧架构",
+    "priority": 95,
+    "reason": "[External Review] 正文完全缺失，mmap 高可靠存储、无锁队列、Protobuf 二进制协议、熔断降级自保等硬核架构内容全无",
+    "review_issues": [
+      {
+        "type": "正文缺失",
+        "location": "全文（outline-end 之后无正文）",
+        "detail": "Mmap 机制、Protobuf/FlatBuffers 对比、线程模型与熔断自保机制的完整阐述全部缺失",
+        "suggestion": "按照大纲将 mmap、Protobuf 二进制协议以及熔断降级自保机制落实为技术正文"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-24T17:37:21+08:00",
+    "status": "pending"
   }
 ]
