@@ -5,9 +5,9 @@ section: '19.21'
 status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+applicable_versions: "Geekbench 6：Android 10+；Vellamo：历史工具，仅用于旧报告；其他 Benchmark 按工具版本逐项核验"
 last_verified: '2026-04-24'
-last_verified_against: Geekbench and 3DMark official docs / benchmark vendor public materials
+last_verified_against: "Geekbench 6 requirements / Benchmark Internals, Android Performance Class docs, 3DMark official docs, CPDT / PCMark / Vellamo public materials"
 confidence: medium
 tags:
 - apm
@@ -18,19 +18,22 @@ sources:
   path: https://www.geekbench.com/
 - type: official
   path: https://benchmarks.ul.com/3dmark-android
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T20:44:37+08:00'
+task2b_result: fixed
+last_task2b_at: "2026-04-25T02:49:32+08:00"
+repaired_date: "2026-04-25"
+repaired_by: openclaw-task2b
 ---
-
 
 # Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）
 
@@ -91,9 +94,20 @@ Benchmark 结果可以帮助做机型分层、竞品对比、性能模式验证�
 
 这些工具的分数不能混用。Geekbench 单核高，不代表 3D 游戏帧率好；3DMark 稳定，不代表 App 冷启动快；安兔兔综合分高，也不能证明磁盘随机写入或 SQLite 事务一定快。
 
+## 适用版本要按工具拆开
+
+本节不能用一个 Android 8-17 范围概括所有工具。工具版本、上架状态和测试口径都要分开记录：
+
+| 工具 | 当前定位 | Android 版本边界 | 处理方式 |
+|---|---|---|---|
+| Geekbench 6 | CPU / Compute 主流基线 | 官方要求 Android 10+，并要求 4 GB RAM。 | Android 8/9 设备不要混入 Geekbench 6 口径；如需覆盖，单独保留 Geekbench 5 或历史基线。 |
+| 3DMark / PCMark | 图形、压力、工作负载与续航基线 | 按测试包版本和设备支持列表核验。 | 记录工具版本、测试项目和系统版本，避免跨大版本直接比较。 |
+| 安兔兔 | 综合分和大众设备档位参考 | 分数口径随应用大版本变化。 | 用于沟通设备档位，不用于工程归因。 |
+| Vellamo | 历史网页 / 设备测试工具 | 已属于历史工具。 | 只用于旧报告复盘；新机型分层改用 Geekbench、3DMark、PCMark、Speedometer 等当前工具。 |
+
 ## Geekbench：CPU 和 Compute
 
-Geekbench 6 官方说明它覆盖 CPU 单核、多核，以及 GPU Compute，使用真实任务和数据集建模，支持 Android、iOS、macOS、Windows、Linux。
+本节后文默认指 Geekbench 6。Geekbench 6 官方说明它覆盖 CPU 单核、多核，以及 GPU Compute，使用真实任务和数据集建模，支持 Android、iOS、macOS、Windows、Linux。
 
 在 Android 性能分析里，Geekbench 更适合做机型分层：
 
@@ -113,9 +127,9 @@ Geekbench 6 官方说明它覆盖 CPU 单核、多核，以及 GPU Compute，使
 
 安兔兔综合分适合快速判断设备档位，但它的 UX、内存、GPU 权重和测试版本会变化，不适合拿不同大版本分数做严肃纵向对比。
 
-PCMark 更偏日常任务和续航类负载，适合看设备在较真实工作流下的持续表现。它对普通 App 的机型分层有一定参考，但仍然不能替代 App 自己的启动、滚动和网络指标。
+PCMark 更偏日常任务和续航类负载，适合看设备在较真实工作流下的持续表现。PCMark Storage 2.0 和 CPDT 更适合当前 Android 存储基线；测试时要区分缓存路径和物理介质，能关闭缓存或记录首轮 / 稳定轮结果时要写进报告。AndroBench 只保留历史对比，不再作为现代默认入口。
 
-Vellamo 曾经常用于浏览器和 Web 性能测试，但已经偏历史工具。除非维护旧报告或老机型数据，不建议作为现代 Android 性能主参考。
+Vellamo 曾经常用于浏览器和 Web 性能测试，但已经偏历史工具。除非维护旧报告或老机型数据，不建议作为现代 Android 性能主参考。现代 Web / WebView 基线优先看 Speedometer 3.0；需要 JavaScript 引擎压力时可补 JetStream 2，二者仍不能替代 App 内 WebView trace。
 
 ## 测试规范
 
@@ -138,9 +152,17 @@ Benchmark 分数最适合做“设备能力分层”。把它和线上 APM 连�
 | CPU 单核 | Geekbench | 主线程、启动、JSON、布局计算 |
 | CPU 多核 | Geekbench | 后台并发、图片处理、解压 |
 | GPU | 3DMark | 游戏、动画、视频特效、地图 |
-| 存储随机 I/O | AndroBench | 启动小文件、SQLite、缓存 |
+| 存储随机 I/O | CPDT / PCMark Storage 2.0；AndroBench 仅保留历史对比 | 启动小文件、SQLite、缓存 |
 | 内存容量 | 设备信息 / 线上采集 | OOM、后台恢复、缓存策略 |
 | 热稳定性 | 3DMark stress / PerfDog 长测 | 长时间游戏、视频、直播 |
+
+Android Performance Class（Media Performance Class）适合作为设备分层的第一层粗筛。Android 12+ 设备可通过 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 暴露等级；Jetpack Core Performance 的 `DevicePerformance.mediaPerformanceClass` 可以提供兼容查询。它给出的是系统声明的媒体能力下限，覆盖内存、I/O、编解码、相机等维度。Benchmark 分数再用于补充更细的 CPU、GPU、存储和热稳定性差异。
+
+| 信号 | 用法 | 边界 |
+|---|---|---|
+| Performance Class | 作为服务端设备字典的官方能力标签，例如 PC12、PC13、PC14、PC15。 | 它偏媒体能力，不等同于某个 App 的启动或滚动表现。 |
+| Geekbench / 3DMark / CPDT | 补充 CPU、GPU、存储和热稳定性分档。 | 工具版本、测试项目、温度和缓存策略要记录清楚。 |
+| 线上 APM 指标 | 验证分档是否真的对应启动慢、慢帧、OOM 或 ANR。 | 不能用跑分替代真实用户指标。 |
 
 线上 APM 再按这些层级聚合。比如启动慢集中在低单核 + 低随机读设备，优化方向和集中在高端机完全不同。
 
@@ -154,7 +176,7 @@ Geekbench 单核分数对 Android App 很有参考价值，因为主线程仍然
 - RecyclerView bind。
 - 加密、压缩、图片预处理中的同步部分。
 
-多核分数更适合看后台并发能力。但多核强不代表 App 快，如果主线程串行工作太多，仍然会慢。
+多核分数更适合看后台并发能力。Geekbench 6 多核采用 shared-task 模型，多线程协作完成同一组任务，比 Geekbench 5 的 separate-task 模型更强调线程协作和核心间调度成本。多核强不代表 App 快，如果主线程串行工作太多，仍然会慢。
 
 ## 3DMark 分数的工程解释
 
@@ -165,7 +187,7 @@ Geekbench 单核分数对 Android App 很有参考价值，因为主线程仍然
 - 长时间负载后是否热降频。
 - 同一设备系统更新后图形表现是否变化。
 
-对于普通信息流 App，3DMark 分数只是一项设备能力背景。对于游戏、相机、视频编辑、AR、地图、特效页面，它的参考价值更高。
+对于普通信息流 App，3DMark 分数只是一项设备能力背景。对于游戏、相机、视频编辑、AR、地图、特效页面，它的参考价值更高。Android 12+ 且支持 Vulkan ray query 的设备，可以补 Solar Bay 看移动端光追压力；现代旗舰机型还可以补 Steel Nomad Light，看比 Wild Life 更重的非光追图形负载。
 
 ## 综合分的陷阱
 

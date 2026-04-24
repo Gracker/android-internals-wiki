@@ -732,7 +732,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-24T20:44:37+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T02:45:50+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "19.05",
@@ -874,7 +877,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-24T22:57:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T02:45:50+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "19.22",
@@ -894,7 +900,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-24T22:57:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T02:45:50+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "1.10",
@@ -1576,7 +1585,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T02:49:32+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "consumed_external_review": "logs/external-review/2026-04-25-21-ch19.21-external-review.md"
   },
   {
     "section": "19.README",
@@ -1919,6 +1932,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T02:26:14+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T02:45:50+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   }
 ]

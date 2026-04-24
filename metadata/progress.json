@@ -4701,21 +4701,25 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
-      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+      "applicable_versions": "历史存储 Benchmark 参考；Android 10/11+ 路径权限需逐机验证；方法可用于 Android 8-17 的设备基线分析",
       "last_verified": "2026-04-24",
-      "last_verified_against": "AndroBench paper / public app descriptions / A1 SD Bench public app descriptions",
+      "last_verified_against": "AndroBench paper / A1 SD Bench public materials / Android 11 scoped storage docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T22:57:00+08:00"
+      "last_task9_at": "2026-04-24T22:57:00+08:00",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-25T02:45:50+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/13-tracing-sdk.md": {
       "path": "src/part3-tools/ch19-apm/13-tracing-sdk.md"
@@ -4728,21 +4732,25 @@
       "status": "ready-for-review",
       "drafted_date": "'2026-04-24'",
       "drafted_by": "codex",
-      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+      "applicable_versions": "Geekbench 6：Android 10+；Vellamo：历史工具，仅用于旧报告；其他 Benchmark 按工具版本逐项核验",
       "last_verified": "'2026-04-24'",
-      "last_verified_against": "Geekbench and 3DMark official docs / benchmark vendor public materials",
+      "last_verified_against": "Geekbench 6 requirements / Benchmark Internals, Android Performance Class docs, 3DMark official docs, CPDT / PCMark / Vellamo public materials",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-24'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-24T20:44:37+08:00'"
+      "last_task9_at": "'2026-04-24T20:44:37+08:00'",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-25T02:49:32+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/08-argusapm.md": {
       "path": "src/part3-tools/ch19-apm/08-argusapm.md",
@@ -5021,20 +5029,25 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
-      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+      "applicable_versions": "Android 7 (API 24) - Android 17 (API 37)；Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景，非 Play 安装需单独验证",
       "last_verified": "2026-04-24",
-      "last_verified_against": "Android Developers Baseline Profiles docs",
+      "last_verified_against": "Android Developers Baseline Profiles overview / debug docs, ProfileInstaller ProfileVerifier docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T22:57:00+08:00"
+      "last_task9_at": "2026-04-24T22:57:00+08:00",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-25T02:45:50+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b",
+      "task6_result": "pass-light-edit"
     },
     "src/part3-tools/ch19-apm/24-crash-anr-internals.md": {
       "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
@@ -5130,12 +5143,12 @@
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-25T02:09:22+08:00",
+      "last_task2b_at": "2026-04-25T02:45:50+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b",
       "task9_result": "needs-rework",
@@ -5398,6 +5411,41 @@
           "issues": 0
         }
       ]
+    },
+    {
+      "date": "2026-04-25",
+      "task": "task2b-rework",
+      "time": "02:45",
+      "sections_reviewed": [
+        {
+          "section": "19.0",
+          "title": "第 19 章：APM 工具与性能监控生态",
+          "result": "fixed",
+          "issues": 1
+        },
+        {
+          "section": "19.15",
+          "title": "Baseline Profiles 与编译优化",
+          "result": "fixed",
+          "issues": 2
+        },
+        {
+          "section": "19.21",
+          "title": "Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）",
+          "result": "fixed",
+          "issues": 3,
+          "sources": [
+            "task9-deep-tech-review",
+            "external-ai-review"
+          ]
+        },
+        {
+          "section": "19.22",
+          "title": "存储 Benchmark（AndroBench、A1 SD Bench）",
+          "result": "fixed",
+          "issues": 1
+        }
+      ]
     }
   ],
   "progress": {
@@ -5547,6 +5595,58 @@
         "task9_state": "reviewed",
         "pipeline_stage": "task2b_pending",
         "issues_found": "major"
+      },
+      "19.0": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "pending",
+        "pipeline_stage": "task6_pending",
+        "issues_found": "fixed",
+        "task6_state": "revisiting",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-25"
+      },
+      "19.15": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "pending",
+        "pipeline_stage": "task6_pending",
+        "issues_found": "fixed",
+        "task6_state": "revisiting",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-25"
+      },
+      "19.21": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "pending",
+        "pipeline_stage": "task6_pending",
+        "issues_found": "fixed",
+        "task6_state": "revisiting",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-25"
+      },
+      "19.22": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "pending",
+        "pipeline_stage": "task6_pending",
+        "issues_found": "fixed",
+        "task6_state": "revisiting",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-25"
       }
     }
   },

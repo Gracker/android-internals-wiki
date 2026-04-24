@@ -5,25 +5,30 @@ section: "19.15"
 status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+applicable_versions: "Android 7 (API 24) - Android 17 (API 37)；Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景，非 Play 安装需单独验证"
 last_verified: "2026-04-24"
-last_verified_against: "Android Developers Baseline Profiles docs"
+last_verified_against: "Android Developers Baseline Profiles overview / debug docs, ProfileInstaller ProfileVerifier docs"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-24T22:57:00+08:00"
+task6_result: pass-light-edit
+task2b_result: fixed
+last_task2b_at: "2026-04-25T02:45:50+08:00"
+repaired_date: "2026-04-25"
+repaired_by: openclaw-task2b
 ---
 
 # Baseline Profiles 与编译优化
@@ -77,7 +82,16 @@ Baseline Profiles 使应用或库随包发布一组常用代码路径，Android 
 
 没有 profile 时，应用安装或更新后，很多代码路径要等运行中解释执行、JIT 编译或后台 profile 引导优化。用户首次打开时，关键路径可能还没被编译好。
 
-Baseline Profiles 把“哪些类和方法值得提前优化”提前打包进去。ART 在安装或后台优化阶段可以根据这些规则编译指定代码，让启动和高频交互更早进入较好状态。
+Baseline Profiles 把“哪些类和方法值得提前优化”提前打包进去。ART 按安装来源、系统版本和后台 dexopt 时机使用这些规则，让启动和高频交互更早进入较好状态。
+
+版本边界要拆开看：
+
+| 场景 | 生效方式 | 验证重点 |
+|---|---|---|
+| Android 7.0-8.1（API 24-27） | 系统没有 Play Cloud Profiles。应用需要随包携带 baseline profile，并依赖 `androidx.profileinstaller` 在首次运行后把 profile 安装给 ART，随后等待后台 dexopt 编译。 | 不能只看包内文件，要看 ProfileInstaller 返回状态和后续编译结果。 |
+| Android 9+（API 28+），Google Play 安装 | Baseline Profile 随包交付，Play Cloud Profiles 也可能参与后续优化。Baseline Profile 覆盖新版本初期和新用户，Cloud Profiles 来自 Play 的聚合数据。 | 灰度早期不要假设 Cloud Profiles 已经覆盖。 |
+| Android Studio / Gradle 安装 | 现代 AGP 可在安装流程中触发 profile 编译，适合本地验证。 | 记录 AGP 版本和安装命令，避免把本地安装结果当成商店安装结果。 |
+| 其他商店 / sideload | 依赖 APK 内 profile 与 ProfileInstaller 触发安装。AGP < 8.4 且非 Play 安装时，Baseline Profile 编译不会自动完成。 | 把“文件存在”和“ART 已编译”分开验证。 |
 
 适合纳入 profile 的路径包括：
 
@@ -159,11 +173,14 @@ Baseline Profile 的质量取决于生成脚本。只启动 App 一次，通常�
 
 ## 验证 profile 是否生效
 
-验证不能只看文件是否生成。要看三个层面：
+验证不能只看文件是否生成。要把产物、安装来源、ProfileVerifier 和 Macrobenchmark 分开：
 
-1. APK / AAB 中是否包含 profile。
-2. 安装后 ART 是否使用 profile 编译目标代码。
-3. Macrobenchmark 指标是否改善。
+| 验证对象 | 观察点 | 常见误判 |
+|---|---|---|
+| AAB / APK 产物 | AAB 中的 `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof` / `.profm`，APK 中的 `assets/dexopt/baseline.prof` / `.profm`。 | 包内有文件只能说明 profile 被打包，不代表设备已完成编译。 |
+| 安装来源 | Google Play、Android Studio / Gradle、其他商店或 sideload 的触发时机不同。AGP < 8.4 的非 Play 安装要单独验证。 | 用本地 Gradle 安装结果推断商店安装结果。 |
+| ProfileVerifier | 关注 `RESULT_CODE_COMPILED_WITH_PROFILE`、`RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION`、`RESULT_CODE_NO_PROFILE`、`RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION`。 | `ENQUEUED` 只是已入队，不能当成已编译。 |
+| Macrobenchmark | 对比 `CompilationMode.Partial`、无 profile、全编译等模式下的启动和滚动指标。 | 只看一次冷启动，忽略首装、升级、清数据用户的差异。 |
 
 常见问题：
 
@@ -171,8 +188,9 @@ Baseline Profile 的质量取决于生成脚本。只启动 App 一次，通常�
 - R8 后方法变化，旧 profile 命中率下降。
 - 多模块或动态特性模块的关键路径没有被录到。
 - CI 没有重新生成 profile，文件长期滞后。
+- AAB / APK 已包含 profile，但非 Play 安装没有完成 ART 编译。
 
-所以 Baseline Profiles 应该和关键路径测试一起维护，而不是生成一次就放着。
+Baseline Profiles 应该和关键路径测试一起维护，而不是生成一次就放着。
 
 ## 启动优化中的位置
 

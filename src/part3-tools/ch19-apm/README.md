@@ -1,5 +1,4 @@
 ---
-
 title: "第 19 章：APM 工具与性能监控生态"
 chapter: "19.0"
 section: "19.0"
@@ -11,14 +10,14 @@ last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_state: revisiting
-task9_state: reviewed
-last_task2b_at: "2026-04-25T02:09:22+08:00"
+task9_state: pending
+last_task2b_at: "2026-04-25T02:45:50+08:00"
 repaired_date: "2026-04-25"
-repaired_by: "openclaw-task2b"
+repaired_by: openclaw-task2b
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T02:26:14+08:00"
@@ -92,7 +91,7 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 
 ## 与其他章节的关系
 
-- **第 13 章（Perfetto）**：Perfetto 是线下 trace 分析的核心工具，本章的 btrace/RheaTrace、JankStats、Tracing SDK 都会产出 Perfetto 兼容的数据格式。
+- **第 13 章（Perfetto）**：Perfetto 是线下 trace 分析工具。btrace/RheaTrace 可以把方法调用写成可导入 Perfetto 的 trace 数据；Tracing SDK 用 `Trace.beginSection` / `androidx.tracing.trace {}` 给 Perfetto 添加进程内 slice；JankStats 不直接生成 Perfetto trace 文件，它通过 `OnFrameListener` / `FrameData` 输出帧级 jank 数据和 UI state，适合与 Perfetto、FrameTimeline、Tracing SDK 一起归因。
 - **第 14 章**：14.5 三方性能库做了概要介绍，14.12 APM 选型给了分层框架，14.13 Hook 基础设施讲底层原理。本章是这两个小节的展开版——每个工具独立深入。
 - **第 15 章（方法论）**：15.5 线上监控、15.9 线上问题流转、15.10 治理工程化讲的是"怎么把这些工具用成体系"，本章讲的是"这些工具本身是什么"。
 
