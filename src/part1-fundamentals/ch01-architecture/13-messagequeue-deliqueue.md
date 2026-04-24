@@ -7,14 +7,16 @@ applicable_versions: "传统 MessageQueue：Android 1.0 (API 1)+；并发实现�
 drafted_date: "2026-04-04"
 reviewed_date: "2026-04-20"
 reviewed_by: openclaw-task6
-last_verified: "2026-04-14"
-last_verified_against: "AOSP android-15.0.0_r1 + android-16.0.0_r1 + Android Developers 2026-03-30"
+last_verified: "2026-04-24"
+last_verified_against: "AOSP android-15.0.0_r1 + android-16.0.0_r1 + Android Developers MessageQueue 行为变更页 + Android Developers Blog 2026-02-17"
 confidence: medium
 sources:
   - type: doc
     path: "https://developer.android.com/about/versions/17/changes/messagequeue"
   - type: doc
     path: "https://developer.android.com/reference/android/os/MessageQueue.IdleHandler"
+  - type: blog
+    path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
   - type: aosp
     path: "frameworks/base/core/java/android/os/Looper.java (android-16.0.0_r1)"
   - type: aosp
@@ -23,6 +25,8 @@ sources:
     path: "frameworks/base/core/java/android/os/CombinedMessageQueue/MessageQueue.java (android-16.0.0_r1)"
   - type: aosp
     path: "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java (android-16.0.0_r1)"
+  - type: aosp
+    path: "frameworks/base/core/java/android/os/SemiConcurrentMessageQueue/MessageQueue.java (android-16.0.0_r1)"
   - type: aosp
     path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java (android-16.0.0_r1)"
   - type: wiki
@@ -43,6 +47,7 @@ task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-04-20'
 task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: '2026-04-24T09:54:00+08:00'
 ---
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化
@@ -55,7 +60,7 @@ task2b_result: fixed
 - 🔹 MessageQueue 在主线程事件循环中的角色
 - 🔹 传统 `synchronized` 链表为什么会带来锁竞争
 - 🔹 `Looper.next()` 的工作机制，包括 epoll、同步屏障与 IdleHandler
-- 🔹 Android 16 公开源码里的 Combined/ConcurrentMessageQueue 与 Android 17 默认启用边界
+- 🔹 Android 16 公开源码里的 Combined/Concurrent/SemiConcurrentMessageQueue 与 Android 17 默认启用边界
 - 🔹 新实现里 barrier、async queue、取消路径如何配合，以及我们在 Perfetto 里该怎么看
 
 ### 扩展（可选深入）
@@ -193,6 +198,8 @@ Message next() {
 
 也就是说，Android 16 公开源码已经把新旧两套实现放进来了，但不是所有应用都默认切过去。它更像 rollout 阶段：先给 system processes 和 SystemUI 用，普通应用为了兼容性仍然默认走 legacy。
 
+`android-16.0.0_r1` 里还能看到 `SemiConcurrentMessageQueue/MessageQueue.java`。这是一种中间态：生产者侧尽量无锁，Looper 侧继续集中整理 ready 消息。把它和 `LegacyMessageQueue`、`ConcurrentMessageQueue` 放在一起看，Android 16 的真实状态更接近“多变体并存的 rollout”，系统会按进程类型和兼容性风险选择不同实现。
+
 ### Android 17：面向应用的默认启用
 
 Android 17 的行为变更页面把面向应用的边界写清楚了：
@@ -203,7 +210,7 @@ Android 17 的行为变更页面把面向应用的边界写清楚了：
 
 因此本文里的版本边界要这样理解：
 
-- **Android 16**：公开源码出现 Combined/ConcurrentMessageQueue，属于内部试点和受控 rollout。
+- **Android 16**：公开源码出现 Combined/Concurrent/SemiConcurrentMessageQueue，属于内部试点和受控 rollout。
 - **Android 17**：新的 MessageQueue 对 `targetSdk 37` 的应用默认生效，进入 app-facing 阶段。
 
 ## 公开源码里能确认哪些并发结构
@@ -269,15 +276,17 @@ Android 的公开实现里，相关处理分散在 state node、取消路径、`
 
 ## 量化数据现在该怎么写
 
-这一节前一个版本把 15%、4%、7.7%-9.1%、5000x 都写成了确定结论。现在不能这么写。
+这一节可以恢复一组公开可追溯的数字，但要把实验场景一起写出来。Android Developers Blog 在 2026-02-17 发布的《Under the hood: Android 17's lock-free MessageQueue》中给了三类数据：
 
-原因很简单：公开能稳定访问的 Android 17 行为变更页面只给了定性描述，比如 **improves performance**、**reduces missed frames**、**may break reflection and old test libraries**。二手文章里流传的具体百分比，没有一组能同时给出设备、并发度、负载模型和公开可复核链接。旧 frontmatter 里那条博客 URL 现在还是 404。
+- **Synthetic benchmarks**：多线程向 busy queues 插入消息，最高可到 **5,000x faster**。这个数字对应极端竞争压测，用来说明新队列把生产者竞争从 monitor 切到了无锁结构。
+- **Perfetto traces acquired from internal beta testers**：App 主线程花在 lock contention 上的时间下降 **15%**。
+- **On the same test devices**：应用 missed frames 下降 **4%**，System UI 和 Launcher 交互的 missed frames 下降 **7.7%**，应用启动到首帧绘制的 95 分位缩短 **9.1%**。
 
-这类数字先降级处理更稳：
+正文引用时要把边界一起写上：
 
-- 可以写“公开页面确认新实现的目标是减少 lock contention 和 missed frames”。
-- 不保留 15%、5000x 这类无法复核条件的数字。
-- 如果后续拿到官方可访问原文或同机型 trace，再把数字和实验条件补回来。
+- `5,000x` 属于合成基准，不代表普通业务代码会得到同量级收益。
+- `15%` 和掉帧改善来自 Google 内部 beta 设备与既定 workload，适合说明方向，不适合外推成所有机型的统一收益。
+- 如果要写自己项目的结果，仍然要补设备、系统版本、并发模型、trace 口径和统计窗口。
 
 ## 兼容性和迁移影响
 
@@ -336,7 +345,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 | Android 1.0 (API 1) | `MessageQueue` 和 `IdleHandler` 已存在 |
 | Android 4.1 (API 16) | `Choreographer` 开始大规模使用同步屏障 + 异步消息 |
 | Android 15 (API 35) | 公开 legacy 参考仍是单链表 + `synchronized` |
-| Android 16 (API 36) | 公开源码出现 `CombinedMessageQueue` / `ConcurrentMessageQueue`，legacy 默认，concurrent 先给 system processes / SystemUI |
+| Android 16 (API 36) | 公开源码出现 `CombinedMessageQueue`，并同时放出 `LegacyMessageQueue`、`SemiConcurrentMessageQueue`、`ConcurrentMessageQueue` 多种实现；legacy 默认，concurrent 先给 system processes / SystemUI |
 | Android 17 (API 37) | `targetSdk 37` 的应用默认启用新的 lock-free MessageQueue |
 
 ## 常见误区
@@ -347,7 +356,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 ### “Android 16 已经把所有应用都切到 DeliQueue 了”
 
-没有。公开源码写的是 legacy 默认，并发实现先给 system processes 和 SystemUI。把 Android 16 的内部 rollout 和 Android 17 的 app-facing default 写成一条线，版本边界就会失真。
+没有。公开源码写的是 legacy 默认，并发实现先给 system processes 和 SystemUI，`SemiConcurrentMessageQueue` 也说明 Android 16 仍处在多变体 rollout 阶段。把 Android 16 的内部 rollout 和 Android 17 的 app-facing default 写成一条线，版本边界就会失真。
 
 ### “新实现里还是能从 `mMessages` 看见真实队列” 
 
@@ -359,7 +368,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 ## 收尾
 
-排查主线程调度问题时，先把流程切成三段：**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor。Android 16 的公开源码已经能看到并发实现试点，Android 17 把这件事推到了面向应用的默认行为。
+排查主线程调度问题时，先把流程切成三段：**入队、出队、分发**。旧 MessageQueue 的瓶颈集中在前两段共用一把 monitor。Android 16 的公开源码已经能看到 legacy / semi-concurrent / concurrent 多变体试点，Android 17 把这件事推到了面向应用的默认行为。
 
 这节最该带走的判断只有两个：
 

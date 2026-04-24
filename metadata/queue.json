@@ -1243,7 +1243,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-22T22:35:29",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-24T09:54:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
@@ -1381,7 +1385,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-22T22:35:29",
-      "status": "pending"
+      "status": "completed",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "fixed_at": "2026-04-24T09:54:00+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
