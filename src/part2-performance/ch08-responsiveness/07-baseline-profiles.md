@@ -9,7 +9,7 @@ applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-04-24'
 last_verified_against: developer.android.com create/debug/profileable docs + AOSP
   android-17-beta3 cross-check + Firebase-free local verification commands review
-reviewed_date: '2026-04-22'
+reviewed_date: '2026-04-24'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -30,12 +30,12 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-review_round: 3
+review_round: 4
 task9_reviewed_date: '2026-04-20'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-20T20:06:23+08:00'
