@@ -1111,7 +1111,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T02:09:22+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "Task2B 定向修复 external-ai-review P95 问题单"
   },
   {
     "section": "19.07",
@@ -1381,7 +1385,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T02:09:22+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "Task2B 定向修复 external-ai-review P95 问题单"
   },
   {
     "section": "19.17",
@@ -1591,7 +1599,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T02:09:22+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "Task2B 定向修复 external-ai-review P95 问题单"
   },
   {
     "section": "15.1",

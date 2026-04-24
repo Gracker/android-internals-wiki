@@ -14,8 +14,8 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
@@ -27,11 +27,15 @@ last_task9_at: "2026-04-24T21:55:34+08:00"
 task2b_state: fixed
 task2b_result: fixed
 review_round: 3
+last_task2b_at: "2026-04-25T02:09:22+08:00"
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
 ---
 
 # BlockCanary
 
 <!-- outline-start -->
+
 ## 本节要点大纲
 
 ### 锚点（必须覆盖）
@@ -75,6 +79,7 @@ review_round: 3
 BlockCanary 是早期开源的 Android 主线程卡顿检测库，仓库名是 `AndroidPerformanceMonitor`。它的核心思路很直接：当主线程一次 `Message` 执行时间超过阈值时，抓取堆栈并生成报告。
 
 这套思路今天还有学习价值，但公开仓库的构建基线已经停在较早期工具链：顶层 `build.gradle` 仍是 AGP 2.2.2，公共配置是 `compileSdkVersion 23`、`targetSdkVersion 22`，README 里的依赖写法还是 `compile` / `debugCompile`。把它直接写成 Android 8-17 的现成方案会误导。更合理的定位是：历史 Looper block 方案样本，现代项目借它理解 `Printer` + 采样堆栈这条链，再按现有工具链重写。
+
 ## 它抓的是一次 Looper 消息
 
 Android 主线程大部分工作都通过 `Looper.loop()` 分发 `Message`。BlockCanary 利用 `Looper.setMessageLogging()` 设置 `Printer`，在每个 Message 开始和结束时记录时间。如果开始到结束超过阈值，就认为这次消息执行期间发生了 block。
@@ -109,6 +114,7 @@ Android 主线程大部分工作都通过 `Looper.loop()` 分发 `Message`。Blo
 | `display activity label` / 通知开关 | 决定调试态是否可见 | 样本生成了但现场人员看不到 |
 
 线上系统通常还要补页面路由、前后台状态、采样率和远程开关。早期 BlockCanary 示例更偏本地或小范围调试，新项目不能照搬默认值。
+
 ## 和 JankStats、FrameMetrics 的差别
 
 JankStats 和 FrameMetrics 关心帧。BlockCanary 关心主线程 Message。
@@ -126,6 +132,7 @@ JankStats 和 FrameMetrics 关心帧。BlockCanary 关心主线程 Message。
 如果维护老项目里已有 BlockCanary，可以保留它作为低成本主线程 block 信号，但要减少它的决策权。报告进入分析平台前，至少补上页面、前后台、线程状态、采样时间、版本和机型。
 
 如果是新项目，更建议直接用 JankStats、FrameMetrics、Matrix Trace Canary 或自研轻量 Looper 监控。BlockCanary 的代码和思想仍有学习价值，但它的维护状态和公开构建基线都不适合作为现代项目唯一方案。
+
 ## Looper 监听的基本原理
 
 BlockCanary 的核心是 `Looper.setMessageLogging()`。主线程每次开始和结束处理 `Message` 时，Looper 会向 `Printer` 打印一行日志。BlockCanary 利用这两个边界计算一次 `Message` 的执行时间。
@@ -177,9 +184,14 @@ public final class MainLooperPrinterHub implements Printer {
 ```
 
 把 hub 设置给 `Looper` 后，再把 BlockCanary、trace logger 或自定义统计器都挂进 `delegates`，才能避免互相覆盖。
+
+注册 `Printer` 后，开销还包括 AOSP 层面的固定分配。`Looper.loop()` 在每个 Message 分发前后会拼接日志字符串，例如 `">>>>> Dispatching to " + msg.target + " " + msg.callback + ": " + msg.what`。只要 `mLogging` 不为 `null`，这段字符串拼接和对象分配就会发生。滑动、动画、Vsync 密集场景下，小 Message 数量很大，额外分配会带来 Young GC 压力。线上全量开启 `Printer` 方案时，要把这笔固定成本算进监控开销。
+
 ## 抓栈线程和主线程的关系
 
-BlockCanary 通常会启动一个后台采样线程，在主线程 `Message` 执行期间按固定间隔抓主线程堆栈。这个设计有三个直接后果：
+BlockCanary 通常会启动一个后台采样线程，在主线程 `Message` 执行期间按固定间隔抓主线程堆栈。常见实现会在采样线程里调用 `Looper.getMainLooper().getThread().getStackTrace()`。`Thread.getStackTrace()` 会跨进 ART / VM 获取目标线程栈，调用成本高于普通 Java 方法；在目标线程已经发生 block 时，高频采样会继续放大 CPU 和暂停成本。采样间隔、栈深和采样窗口要作为线上配置，不应固定写死。
+
+这个设计有三个直接后果：
 
 - 如果主线程正在执行 Java / Kotlin 代码，采样堆栈有机会抓到业务函数。
 - 如果主线程卡在 native、Binder、I/O、锁等待或调度等待，堆栈只能显示等待点，不能直接显示根因。
@@ -188,6 +200,9 @@ BlockCanary 通常会启动一个后台采样线程，在主线程 `Message` 执
 例如一次 1200ms block，采样线程每 300ms 抓一次，最多只拿到 4 个堆栈。若最慢的函数只运行 80ms，采样可能完全错过它。另一个常见误判是 GC：主线程被 Stop-The-World 停住时，采样点拿到的栈往往没有业务函数，只有一段看上去很平淡的等待状态。此时要回看 GC 日志、Perfetto 里的 GC slice 或 `HeapTaskDaemon` 活动，不能只看这条栈。
 
 Binder 和 I/O 也是同一类误判源。主线程栈可能停在 `BinderProxy.transact()`、`nativePollOnce()` 或磁盘读写入口，真正耗时点却在系统服务、远端进程或存储层。BlockCanary 的报告要按概率证据看，不能按精确 trace 看。
+
+遇到 GC 形态的 block，可以把报告和 Perfetto 一起看：主线程常停在 `Sleeping` 或等待状态，`HeapTaskDaemon`、GC 相关 slice 或内存分配峰值会给出旁证。遇到 Binder 等待，则要看远端进程、Binder 线程池和调度状态，不能只截取主线程栈顶。
+
 ## 典型报告应该怎样聚合
 
 BlockCanary 原始日志适合本地看，线上平台要做归一化。建议字段如下：
@@ -222,6 +237,7 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 ```
 
 只按堆栈聚合会丢页面信息，只按页面聚合又无法分配给代码负责人。两者都要有。
+
 ## 和慢帧指标的错位
 
 一次 80ms `Message` 在 60Hz 下可能造成 4-5 帧延迟，但如果它发生在页面静止、没有动画的时间窗口，用户未必感知明显。一次 25ms `Message` 低于很多 block 阈值，但在滚动过程中已经可能造成慢帧。
@@ -237,6 +253,7 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 | ANR traces | 5s 级无响应现场 | 系统认定的真正无响应 | 太晚，抓不到大量亚秒级卡顿 |
 
 不要用 BlockCanary 的 block 次数直接替代慢帧率，也不要拿 500ms-1s 的自定义 block 阈值去等同 5s 的系统 ANR。它们的分母、窗口和感知口径都不同。
+
 ## 自研轻量卡顿监控时的改进点
 
 如果团队要基于 BlockCanary 思路自研，建议补这些能力：
@@ -248,5 +265,6 @@ BlockCanary 原始日志适合本地看，线上平台要做归一化。建议�
 5. 采样只在前台和目标页面开启。
 6. 与 ANR、启动、页面切换等事件共享 trace id 或 session id。
 7. 调试器连接、GC 高压、Binder 长等待这三类场景单独打标，避免它们直接冲进“业务卡顿”榜单。
+8. Android 9（API 28）之后，`Looper` 内部有 `@hide` 的 `Looper.Observer`，回调 `messageDispatchStarting()` / `messageDispatched()` 不依赖字符串日志。它受 Hidden API 限制，不能当成公开接口承诺；评估现代 APM 方案时，可以把它作为系统演进方向和兼容性风险一起记录。
 
 BlockCanary 的价值在于简单。现代线上体系要在简单之上补上下文、冲突治理和采样控制。

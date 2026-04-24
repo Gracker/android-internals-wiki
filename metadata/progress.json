@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-04-25T00:53:17+08:00",
+  "generated_at": "2026-04-25T02:11:14+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total_sections": 212,
     "finalized": 60,
-    "ready-for-review": 149,
+    "ready-for-review": 150,
     "ready-to-publish": 60,
-    "last_updated": "2026-04-25T00:53:17+08:00",
+    "last_updated": "2026-04-25T02:11:14+08:00",
     "pipeline_stage_counts": {
-      "None": 3,
-      "task6_pending": 27,
+      "None": 2,
+      "task6_pending": 28,
       "task2b_pending": 36,
       "ready-to-publish": 60,
       "task9_pending": 83,
@@ -18,21 +18,21 @@
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
-      "None": 6,
+      "None": 5,
       "reviewed": 193,
-      "revisiting": 13
+      "revisiting": 14
     },
     "task9_state_counts": {
-      "None": 6,
+      "None": 5,
       "reviewed": 108,
-      "pending": 94,
+      "pending": 95,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 8,
-      "fixed": 155,
+      "None": 7,
+      "fixed": 156,
       "pending": 40,
       "'pending'": 2,
       "idle": 5,
@@ -41,8 +41,8 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "None": 3,
-      "task6_pending": 27,
+      "None": 2,
+      "task6_pending": 28,
       "task2b_pending": 36,
       "ready-to-publish": 60,
       "task9_pending": 83,
@@ -50,21 +50,21 @@
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
-      "None": 6,
+      "None": 5,
       "reviewed": 193,
-      "revisiting": 13
+      "revisiting": 14
     },
     "task9_state_counts": {
-      "None": 6,
+      "None": 5,
       "reviewed": 108,
-      "pending": 94,
+      "pending": 95,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 8,
-      "fixed": 155,
+      "None": 7,
+      "fixed": 156,
       "pending": 40,
       "'pending'": 2,
       "idle": 5,
@@ -4640,7 +4640,10 @@
       "task2b_result": "fixed",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T16:40:21+08:00"
+      "last_task9_at": "2026-04-24T16:40:21+08:00",
+      "last_task2b_at": "2026-04-25T02:09:22+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/17-firebase-performance.md": {
       "path": "src/part3-tools/ch19-apm/17-firebase-performance.md",
@@ -4852,11 +4855,14 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-24",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T21:55:34+08:00"
+      "last_task9_at": "2026-04-24T21:55:34+08:00",
+      "last_task2b_at": "2026-04-25T02:09:22+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/26-hybrid-apm.md": {
       "path": "src/part3-tools/ch19-apm/26-hybrid-apm.md",
@@ -5118,12 +5124,20 @@
       "title": "第 19 章：APM 工具与性能监控生态",
       "chapter": "19.0",
       "section": "19.0",
-      "status": "draft",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-24",
       "drafted_by": "openclaw",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
-      "confidence": "medium"
+      "confidence": "medium",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-25T02:09:22+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     }
   },
   "section_18_7": {

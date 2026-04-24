@@ -33,8 +33,8 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-24"
 last_task9_at: "2026-04-24T16:40:21+08:00"
 task2b_result: fixed
-last_task2b_at: "2026-04-24T16:50:00+08:00"
-repaired_date: "2026-04-24"
+last_task2b_at: "2026-04-25T02:09:22+08:00"
+repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 ---
 
@@ -105,6 +105,8 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 这段调用只说明一件事：**请求参数、执行过程、结果回传是异步拆开的**。应用线程负责提交 request，平台负责真正执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
 
+`ProfilingManager` 的结果写入应用私有目录，发起 request 不需要外部存储权限。若希望 system trace 覆盖更完整的调度与系统视角，调试包、内测包或可分析版本要在 manifest 中配置 `<profileable android:shell="true" />`，并让发布渠道确认这项配置符合内部合规口径。没有这类配置时，系统仍可能返回结果，但可见范围会收窄。
+
 ## request listener 和 global listener 是两层结果通道
 
 `requestProfiling(..., executor, listener)` 这层 callback 只覆盖本次显式请求。system-triggered profiling 的结果要靠 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 这层 global listener 收。
@@ -132,6 +134,17 @@ Profiling.requestProfiling(context, request, executor, result -> {
 | API 37 | `TRIGGER_TYPE_OOM` | Java heap dump | Java 层 OOM 根因定位 |
 | API 37 | `TRIGGER_TYPE_ANOMALY` / `TRIGGER_TYPE_APP_COMPAT` | 依异常类型返回不同 artifact | 异常行为与兼容性问题采样 |
 
+36.1 这类 Minor SDK 版本不能只用 `SDK_INT == 36` 判断。运行时要先确认大版本，再读 `Build.VERSION.SDK_INT_FULL`：
+
+```kotlin
+fun supportsKillTriggeredProfiling(): Boolean {
+    if (Build.VERSION.SDK_INT < 36) return false
+    return Build.VERSION.SDK_INT_FULL >= 3601
+}
+```
+
+编译时也要使用暴露 36.1 常量的 SDK。若工程还停在较低 `compileSdk`，不要直接引用 36.1 的 trigger 常量；可以把能力判断下沉到独立模块，或用服务端能力位控制触发器注册。
+
 启动相关的两个 trigger 也要分开写：
 
 - `TRIGGER_TYPE_APP_FULLY_DRAWN` 是冷启动尾段的 snapshot，触发点在 `Activity.reportFullyDrawn()` 之后
@@ -158,6 +171,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 | `ERROR_FAILED_RATE_LIMIT_SYSTEM` | 系统级预算没给这次样本 | 不在前台循环重试，按下一次命中条件再试 |
 | `ERROR_FAILED_PROFILING_IN_PROGRESS` | 已有 profiling 正在执行 | 请求侧串行化，同类重样本只保留一个 |
 | `ERROR_FAILED_NO_DISK_SPACE` | 结果文件无法落盘 | 清理历史样本，给本地缓存设大小上限 |
+| `ERROR_FAILED_PROFILING_NOT_ALLOWED` | 当前设备或应用状态不允许 profiling，常见触发点包括 profileable / debuggable 配置不满足、用户或系统关闭相关能力 | 记录为配置类失败，检查 manifest、构建变体、开发者选项和设备策略，不做自动重试 |
 | `ERROR_FAILED_POST_PROCESSING` | 采集完成，但后处理失败，结果被丢弃 | 记录设备、版本、request 类型、errorCode，回看是否集中在某个系统版本 |
 | `ERROR_FAILED_EXECUTING` | 平台执行阶段失败 | 记失败事件，不做立即重试，等待下一次业务触发 |
 | `ERROR_FAILED_INVALID_REQUEST` | 参数不合法或 request 构造不满足要求 | 直接修接入代码，不走线上重试 |
@@ -201,6 +215,7 @@ metadata 至少要带这些字段：
 - request callback 只做轻量关联，真正归档走后台流程
 - 结果文件要有大小上限、过期时间和清理策略
 - 堆文件、trace 文件的采集说明要和隐私条款、内部合规口径一致
+- manifest 中的 `profileable`、构建变体和设备策略要进入上线前检查，避免线上大量返回 `ERROR_FAILED_PROFILING_NOT_ALLOWED`
 - 线上预算默认保守，不要把 `ProfilingManager` 当高频指标 SDK
 
 ## 参考资料
