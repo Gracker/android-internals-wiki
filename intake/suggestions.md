@@ -1325,3 +1325,36 @@
 - **问题**：当前章节仅有大纲，属于空 draft / 正文草拟范围。Task 2B 只做回炉修复，不能新写整章。
 - **建议**：退回正文草拟流程完成初稿后，再进入 Task 6 / Task 9 review。
 - **来源**：Task 2B 回炉修复
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-25
+- **类型**：源码准确性 / 示意代码边界
+- **位置**：`SkiaPipeline::draw(RenderNode* root)` 伪代码（约 L486）
+- **问题**：android-16.0.0_r1 中 Skia pipeline 的实际入口是 `SkiaOpenGLPipeline::draw(...)` / `SkiaVulkanPipeline::draw(...)` 与 `SkiaPipeline::renderFrame(...)` 等组合；`SkiaPipeline::draw(RenderNode*)` 不是可核对的方法签名。
+- **建议**：保留概念解释时加 `[示意性伪代码]`，同时在文字里给出现代 HWUI 可核对入口：`pipeline/skia/SkiaOpenGLPipeline.cpp`、`SkiaVulkanPipeline.cpp`、`SkiaPipeline.cpp::renderFrame(...)`。
+
+- **类型**：版本差异 / Trace 可执行性
+- **位置**：`CALLBACK_INSETS_ANIMATION` 调用树与 `[待补充：Trace 中三缓冲的监控方法]`
+- **问题**：`CALLBACK_INSETS_ANIMATION` 属于较新版本 Choreographer callback type，章节适用范围从 API 11 开始，代码树缺少版本边界；三缓冲 Trace 观察点仍是待补充，读者无法落到 BufferQueue/Fence/FrameTimeline 的验证步骤。
+- **建议**：为 `CALLBACK_INSETS_ANIMATION` 标注 Android 11+ 边界；补一段最小 Trace 观察法：FrameTimeline、BufferQueue dequeue/queue/acquire/release、fence wait、SurfaceFlinger present/release fence 的对应关系。
+
+## [Task9 Deep Review] 5.5 Thermal 管控 — 2026-04-25
+- **类型**：原理边界
+- **位置**：`Thermal Governor：从 trip crossing 到 cooling state`（约 L147）
+- **问题**：正文写“Android 设备默认使用 step_wise”容易被理解为所有设备的实际温控策略都可从 kernel thermal governor 推导；但后文也承认 Qualcomm/MTK 等平台有 vendor thermal engine，实际策略经常由厂商用户态守护进程和私有配置决定。
+- **建议**：把该句收窄为“内核 thermal framework 中常见 governor 是 step_wise；实际设备是否走该策略、调节哪些 cooling device，由厂商 thermal engine 与内核配置共同决定”。
+
+- **类型**：版本差异
+- **位置**：frontmatter `applicable_versions_note` 与版本演进表 Android 16 条目（约 L580）
+- **问题**：frontmatter 标注 Android 15-17 待验证，版本表又写入 Android 16 ADPF Game Mode API 扩展。当前没有给出一手 API / CDD / ADPF 文档锚点。
+- **建议**：发布前二选一：补官方 ADPF / API change / CDD 证据；或把 Android 15-17 内容降为“待验证附录”，正文适用范围收回到已验证的 Android 7-14。
+
+## [Task9 Deep Review] 7.11 WebView 渲染性能与优化 — 2026-04-25
+- **类型**：源码准确性 / 版本证据
+- **位置**：`AwContents` 泄漏 bug 段落（约 L349）
+- **问题**：正文点名“Android 13 上的部分 Samsung 设备”和“native lambda 持有 WebView 实例长达 10 秒”，但只标 `[待验证]`，没有 Chromium bug、provider 版本或设备 build 证据。该说法如果无证据，容易被读者当作确定的厂商缺陷。
+- **建议**：补 Chromium issue / WebView provider 版本 / 复现设备信息；若暂时无法验证，删掉 Samsung 与 Android 13 限定，改成“某些 provider 版本出现过实例释放延迟，需要以 leak trace 和 provider 版本确认”。
+
+- **类型**：数据缺失
+- **位置**：WebView 冷启动、内存与 Perfetto 观察点（多处“明显跳升/明显更长”）
+- **问题**：章节很克制地避免写固定毫秒和 MB，但完全没有给出一组带设备条件的 baseline，读者难以判断“明显”在自己的设备上应落在哪个量级。
+- **建议**：补一组最小观测表：设备型号、Android/WebView provider 版本、是否 multiprocess、首次/二次创建主线程耗时、renderer 拉起时间、native heap / graphics / RSS 增量。

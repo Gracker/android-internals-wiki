@@ -2,7 +2,7 @@
 title: "Thermal 管控"
 section: "5.5"
 chapter: "5.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待验证"
 last_verified: "2026-04-24"
@@ -43,12 +43,12 @@ reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-24"
-task9_reviewed_by: "openclaw-task9"
-pipeline_stage: task9_pending
-last_task9_at: "2026-04-24T06:54:00+08:00"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: openclaw-task9
+pipeline_stage: ready-to-publish
+last_task9_at: "2026-04-25T05:33:55+08:00"
 task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-24"
