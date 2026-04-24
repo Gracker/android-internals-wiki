@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-15 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
-last_verified: '2026-04-24'
-last_verified_against: SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1
+last_verified: '2026-04-25'
+last_verified_against: SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1；Android 13 Restricted Settings behavior changes
 confidence: medium
 tags:
 - apm
@@ -27,16 +27,18 @@ sources:
   path: https://github.com/NetEase/Emmagee
 - type: official
   path: https://github.com/NetEase/Emmagee/releases/tag/V2.5.1
-pipeline_stage: task9_pending
-task6_state: reviewed
+- type: official
+  path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-04-24T21:14:45+08:00'
-repaired_date: '2026-04-24'
+last_task2b_at: '2026-04-25T04:45:04+08:00'
+repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-24'
@@ -153,6 +155,8 @@ Emmagee 只建议留在旧设备或历史报告对照流程里，不再承担现
 
 SoloPi 的启动耗时工具适合 QA 快速测用户感知启动。要让数据能和 Macrobenchmark、`am start -W` 或线上启动指标对读，记录模板要固定。
 
+SoloPi 的启动耗时口径偏视觉侧。典型路径是 MediaProjection 录屏，按帧截取启动过程，再用 OpenCV 做图像相似度或变化率判断：起点来自点击、广播或无障碍事件时间戳，终点是画面从启动态进入稳定页面的帧。记录结果时把它写成“视觉首屏 / 页面稳定”口径，和系统 Activity 启动耗时、Macrobenchmark 的 `timeToFullDisplayMs` 分列。
+
 | 必填字段 | 允许值 / 示例 | 说明 |
 |---|---|---|
 | 测试类型 | 冷启动 / 热启动 | 先区分是否走冷进程 |
@@ -176,8 +180,11 @@ SoloPi 的启动耗时工具适合 QA 快速测用户感知启动。要让数据
 - 悬浮窗会参与窗口合成。
 - 工具本身占用 CPU、内存和网络。
 - 无线 ADB 或控制通道可能带来额外系统负载。
+- Android 13+ 上如果 FPS 依赖 `dumpsys SurfaceFlinger` 文本解析，先用 FrameMetrics、`dumpsys gfxinfo` 或 Perfetto 复核字段可用性。
 
-所以 SoloPi 更适合作为"稳定操作路径"的工具,而不是最终性能采样源。正式报告可以用 SoloPi 控制操作,用 PerfDog、Perfetto 或系统指标采样。
+SoloPi 也会借助本地 ADB / 无线调试能力执行部分设备侧动作。这个能力解释了它免 Root、非侵入的使用方式，也带来连接稳定性和后台保活风险。
+
+SoloPi 更适合作为“稳定操作路径”的工具。正式性能报告用 SoloPi 控制操作路径，用 PerfDog、Perfetto 或系统指标采样。
 
 ## Emmagee 的历史价值
 
@@ -212,6 +219,7 @@ SoloPi 负责把操作路径固定,PerfDog 负责外部指标,Perfetto 负责根
 |---|---|
 | USB 调试 / 无线 ADB | 设备断连，回放中断，启动按钮无法触发 |
 | 无障碍 | 录制能开始，回放点击落空，找不到控件 |
+| Android 13+ 受限设置 | 无障碍开关置灰，提示“为了您的安全，此设置目前不可用”；进入 SoloPi 应用详情页，右上角三点选择“允许受限设置”后再开启无障碍 |
 | 悬浮窗 | 实时指标窗不显示，性能录制结果为空 |
 | 后台弹窗 / 后台运行 | 切后台后脚本被系统杀掉，长流程回放中断 |
 | 录屏 / 截图 | 报告缺少视频或截图证据 |

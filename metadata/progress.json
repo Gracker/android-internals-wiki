@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T04:21:00+08:00",
+  "generated_at": "2026-04-25T04:45:04+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,20 +7,20 @@
     "finalized": 61,
     "ready-for-review": 156,
     "ready-to-publish": 61,
-    "last_updated": "2026-04-25T04:21:00+08:00",
+    "last_updated": "2026-04-25T04:45:04+08:00",
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 25,
+      "task6_pending": 27,
       "task2b_pending": 38,
       "ready-to-publish": 61,
-      "task9_pending": 87,
+      "task9_pending": 85,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 199,
-      "revisiting": 14
+      "reviewed": 197,
+      "revisiting": 16
     },
     "task9_state_counts": {
       "None": 41,
@@ -32,27 +32,27 @@
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 156,
+      "fixed": 157,
       "pending": 42,
       "'pending'": 2,
-      "idle": 5,
+      "idle": 4,
       "'fixed'": 2
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 25,
+      "task6_pending": 27,
       "task2b_pending": 38,
       "ready-to-publish": 61,
-      "task9_pending": 87,
+      "task9_pending": 85,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 199,
-      "revisiting": 14
+      "reviewed": 197,
+      "revisiting": 16
     },
     "task9_state_counts": {
       "None": 41,
@@ -64,10 +64,10 @@
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 156,
+      "fixed": 157,
       "pending": 42,
       "'pending'": 2,
-      "idle": 5,
+      "idle": 4,
       "'fixed'": 2
     }
   },
@@ -4786,11 +4786,11 @@
       "drafted_date": "'2026-04-24'",
       "drafted_by": "codex",
       "applicable_versions": "SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-15 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持",
-      "last_verified": "'2026-04-24'",
-      "last_verified_against": "SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1；Android 13 Restricted Settings behavior changes",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -4800,7 +4800,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-24'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-24T20:44:37+08:00'"
+      "last_task9_at": "'2026-04-24T20:44:37+08:00'",
+      "last_task2b_at": "2026-04-25T04:45:04+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/11-jankstats.md": {
       "path": "src/part3-tools/ch19-apm/11-jankstats.md",
@@ -4810,12 +4813,12 @@
       "status": "ready-for-review",
       "drafted_date": "'2026-04-24'",
       "drafted_by": "codex",
-      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-      "last_verified": "'2026-04-24'",
-      "last_verified_against": "AndroidX JankStats / StateInfo API reference",
+      "applicable_versions": "Android 4.1 (API 16) - Android 17 (API 37)",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "AndroidX JankStats API reference + JankStatsApi24Impl / PerformanceMetricsState 状态关联逻辑",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -4825,7 +4828,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-24'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-24T17:50:00+08:00'"
+      "last_task9_at": "'2026-04-24T17:50:00+08:00'",
+      "last_task2b_at": "2026-04-25T04:45:04+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/23-network-apm-internals.md": {
       "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
@@ -4987,21 +4993,25 @@
       "status": "finalized",
       "drafted_date": "'2026-04-24'",
       "drafted_by": "codex",
-      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-      "last_verified": "'2026-04-24'",
-      "last_verified_against": "Android FrameMetrics API reference",
+      "applicable_versions": "Android 7.0 (API 24) - Android 17 (API 37)",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "Android FrameMetrics API reference + API 31 GPU_DURATION / DEADLINE version boundary",
       "confidence": "medium",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "idle",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-24'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-24T19:59:52+08:00'"
+      "last_task9_at": "'2026-04-24T19:59:52+08:00'",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-25T04:45:04+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/19-perfdog.md": {
       "path": "src/part3-tools/ch19-apm/19-perfdog.md",

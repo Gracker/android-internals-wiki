@@ -607,7 +607,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-24T17:37:21+08:00",
-    "status": "pending"
+    "status": "blocked",
+    "blocked_at": "2026-04-25T04:45:04+08:00",
+    "blocked_by": "openclaw-task2b",
+    "block_reason": "正文仅有大纲，按 Task 2B 规则禁止加工空 draft / 新写整章；需回到正文草拟流程。"
   },
   {
     "section": "19.11",
@@ -1333,7 +1336,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T04:45:04+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "修复 JankStats API 16+ 边界，并补充 JankStatsApi24Impl / PerformanceMetricsState 的状态区间 overlap 关联原理。"
   },
   {
     "section": "19.12",
@@ -1350,7 +1356,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T04:45:04+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "补充 GPU_DURATION，修复 HandlerThread 生命周期示例，给 DEADLINE 加 API 31+ 守护；满足自动 finalized 条件。"
   },
   {
     "section": "19.13",
@@ -1694,7 +1703,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T04:45:04+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "补充 SoloPi MediaProjection + OpenCV 视觉启动耗时原理，以及 Android 13+ 受限设置权限路径。"
   },
   {
     "section": "19.21",

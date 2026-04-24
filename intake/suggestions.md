@@ -1318,3 +1318,10 @@
 - **位置**：§5 Flutter FrameTiming 映射为 Android Jank
 - **问题**：正文提到 buildDuration/rasterDuration 超过刷新率预算可能丢帧，但没有说明 addTimingsCallback 是批量回调，也没有区分 build/raster/totalSpan 与 Android 宿主帧的关系。
 - **建议**：补充“Flutter 自有帧预算”与“Android 宿主 Choreographer”分层：按当前刷新率计算预算，分别聚合 UI/Raster/totalSpan，不把单个字段直接等同于 Android FrameMetrics/JankStats 的 jank。
+
+## [Task2B Blocked] 19.27 千万级 DAU 的 APM 端侧架构 — 2026-04-25
+- **类型**：流程阻断
+- **位置**：全文
+- **问题**：当前章节仅有大纲，属于空 draft / 正文草拟范围。Task 2B 只做回炉修复，不能新写整章。
+- **建议**：退回正文草拟流程完成初稿后，再进入 Task 6 / Task 9 review。
+- **来源**：Task 2B 回炉修复
