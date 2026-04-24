@@ -8194,10 +8194,15 @@
       "chapter": "19",
       "section": "19.22",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T22:57:00+08:00"
     },
     "src/part3-tools/ch19-apm/13-tracing-sdk.md": {
       "path": "src/part3-tools/ch19-apm/13-tracing-sdk.md"
@@ -8555,10 +8560,14 @@
       "chapter": "19",
       "section": "19.15",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T22:57:00+08:00"
     },
     "src/part3-tools/ch19-apm/24-crash-anr-internals.md": {
       "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",

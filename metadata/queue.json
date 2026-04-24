@@ -728,5 +728,51 @@
     "completed_at": "2026-04-24T22:54:12+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "19.15",
+    "section_title": "Baseline Profiles 与编译优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] API 24-27 与 API 28+ 的 Baseline Profile 生效链路被压成一条，适用版本与验证路径都写得不够准确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions（L8）+ L66-L76",
+        "detail": "章节把适用范围写成“Android 8-17”，正文又把生效时机概括成“安装或后台优化阶段”。Android Developers Baseline Profiles 概览页明确把支持链路分成两段：Android 7-8.1（API 24-27）依赖 androidx.profileinstaller 在首次运行后安装 Baseline Profile；Android 9+ 还会叠加 Play Cloud Profiles。当前写法既漏掉 API 24-25/27，也没有把 24-27 与 28+ 的编译路径拆开。",
+        "suggestion": "把适用范围改成 Android 7+，并补一张“API 24-27 / API 28+ / Play 安装 / 非 Play 安装”差异表，明确 ProfileInstaller 与 Cloud Profile 的分工。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L156-L171（验证 profile 是否生效）",
+        "detail": "验证段只写“包里是否带 profile / ART 是否使用 / Macrobenchmark 是否改善”，但官方调试文档还要求区分 AAB/APK 中 baseline.prof 的实际位置、ProfileVerifier 返回码，以及 Play Store、Android Studio/Gradle Wrapper、其他 sideload 安装方式的编译差异。文档还明确提示：AGP < 8.4 且非 Play 安装时，Baseline Profile 编译不会自动发生。当前章节缺这些前提，读者很容易把“文件存在”误当成“已完成编译”。",
+        "suggestion": "补一节“验证矩阵”：列出 AAB/APK 产物路径、ProfileVerifier 关键返回码、Play/Studio/sideload 三类安装来源，以及 AGP < 8.4 的额外注意事项。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T22:57:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.22",
+    "section_title": "存储 Benchmark（AndroBench、A1 SD Bench）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 章节把 AndroBench/A1 SD Bench 当成 Android 8-17 通用现役工具，但现代存储权限与路径边界没有交代",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions（L8）+ L87-L98 + L198-L218",
+        "detail": "章节 frontmatter 把工具统一写成“Android 8-17”，正文也把 A1 的“custom location / SD / USB / RAM”测试能力直接延展到当前 Android。现有一手来源只有 AndroBench 应用页（最后更新 2016）和 A1 SD Bench 应用页（最后更新 2021）；同时 Android 10/11 之后 scoped storage 与外部存储访问规则已经改变，Android 11 文档明确写了 app-specific external 目录和路径访问边界会变化。当前章节没有把“工具历史活跃度”与“现代 Android 路径权限模型”拆开，会让读者误以为这些路径测试在 Android 13-17 上天然可比。",
+        "suggestion": "把定位改成“历史存储 benchmark 工具 / 现代 Android 版本需逐机验证”，并补一张“内部存储、app-specific external、SAF/MediaStore、可移除 SD/USB”路径矩阵，标清哪些测试口径在 Android 10/11+ 需要单独验证。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T22:57:00+08:00",
+    "status": "pending"
   }
 ]
