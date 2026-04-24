@@ -20,14 +20,17 @@ sources:
     path: "https://bugly.qq.com/docs/"
 pipeline_stage: task2b_pending
 task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-24
-last_task9_at: 2026-04-24T16:40:21+08:00reviewed_by: openclaw-task6
+last_task9_at: "2026-04-24T16:40:21+08:00"
+reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 
+review_notes: "2026-04-24 task6 review: pass-light-edit. L1 fix x1 (frontmatter YAML line merge). 写作质量良好，商业平台对比清晰，接入建议实用。B类问题已在queue.json由task9录入（私有化责任表/PoC验收表/成本模型/迁移案例），等task2b处理。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 ---
 
 # 商业 APM 平台（Sentry、APMPlus、Bugly）

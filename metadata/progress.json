@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T22:54:12+08:00",
+  "generated_at": "2026-04-24T23:36:31+08:00",
   "state_machine_version": "v2",
   "total_sections": 216,
   "metrics": {
@@ -7,19 +7,18 @@
     "finalized": 57,
     "ready-for-review": 159,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-24T22:54:12+08:00",
+    "last_updated": "2026-04-24T23:36:31+08:00",
     "pipeline_stage_counts": {
-      "task6_pending": 37,
-      "task2b_pending": 37,
+      "null": 36,
+      "task6_pending": 33,
+      "task2b_pending": 39,
       "ready-to-publish": 57,
-      "task9_pending": 82,
-      "null": 3
+      "task9_pending": 84
     },
     "task6_state_counts": {
-      "reviewed": 185,
-      "revisiting": 20,
-      "null": 8,
-      "pending": 3
+      "null": 41,
+      "reviewed": 190,
+      "revisiting": 18
     },
     "task9_state_counts": {
       "reviewed": 106,
@@ -4330,17 +4329,17 @@
       "applicable_versions": "Android 9 (API 28) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "last_verified_against": "developer.android.com create/debug/profileable docs + AOSP android-17-beta3 cross-check + Firebase-free local verification commands review",
-      "reviewed_date": "2026-04-22",
+      "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "review_round": 3,
+      "review_round": 4,
       "task9_reviewed_date": "2026-04-20",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-20T20:06:23+08:00",
@@ -5049,11 +5048,11 @@
         "10.4"
       ],
       "word_count": "~7500",
-      "reviewed_date": "2026-04-21",
+      "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
@@ -8186,7 +8185,10 @@
       "last_task9_at": "2026-04-24T16:40:21+08:00",
       "chapter": "19",
       "status": "ready-for-review",
-      "task6_state": "pending"
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-24"
     },
     "src/part3-tools/ch19-apm/22-storage-benchmark.md": {
       "path": "src/part3-tools/ch19-apm/22-storage-benchmark.md",
