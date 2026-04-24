@@ -519,3 +519,10 @@ LIMIT 20;
 - [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Running 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/)
 - [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Sleep 和 Uninterruptible Sleep 篇](https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/)
 - [Linux 内核 - TASK_UNINTERRUPTIBLE 定义](https://elixir.bootlin.com/linux/latest/ident/TASK_UNINTERRUPTIBLE)
+
+### 当 Perfetto 显示 Running 时，Android 程序到底在做什么？
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md
+- 类型：DeepResearch 调研结果
+- 摘要：以 `BindApplication / Setup proxies` 为切口，把 Perfetto 的 Running 状态和 Linux `TASK_RUNNING`、`sched_slice`、user/kernel 切换、ART/native 执行及 CPU 微架构停顿联系起来，能直接提升线程状态解读的精度。
+- 注入时间：2026-04-24
+- 价值：把 Running 从“在线程状态名词”推进到可落地的 Perfetto 诊断方法。

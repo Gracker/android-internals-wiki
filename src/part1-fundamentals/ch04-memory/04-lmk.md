@@ -439,3 +439,10 @@ Android 15 引入了对 16KB 内存页的支持（传统为 4KB）。这不会�
 - 本章 4.3 节「ART 虚拟机内存管理」— Java 堆的内存分配与回收
 - 第 1 章第 3 节「进程模型与生命周期管理」— 进程优先级的生命周期管理
 - 第 10 章第 4 节「低内存对系统性能的影响」— 低内存场景的深度分析
+
+### PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md
+- 类型：DeepResearch 调研结果
+- 摘要：从内核 `psi.c` 到 `system/memory/lmkd/lmkd.cpp` 串起 Android 10–15 的内存压力判定链路，解释 PSI 如何替代 vmpressure、怎样结合 thrashing 和 oom_score_adj 触发 userspace lmkd 杀进程，并给出 AOSP 与 LPC 实测依据。
+- 注入时间：2026-04-24
+- 价值：把 PSI→lmkd 的源码链路讲透了，适合补强 LMK 的现代实现细节。

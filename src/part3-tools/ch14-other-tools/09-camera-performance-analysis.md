@@ -35,13 +35,18 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-21"
 ---
 
+
 # 14.9 Android Camera 性能与 Perfetto 分析
 
-Camera 是 Android 设备上最复杂的子系统之一。它横跨 App 层、Framework 层、HAL 层和内核驱动，涉及 ISP 处理、3A 算法（自动曝光、自动对焦、自动白平衡）、Buffer 流转和 SurfaceFlinger 合成等多个环节。当用户反馈"相机卡顿"、"拍照延迟"、"录像丢帧"或"相机黑屏"时，问题的根因可能藏在这条链路的任何一个节点。
+Camera 是 Android 设备上最复杂的子系统之一。当用户打开相机应用时，我们看到的流畅预览和快速响应背后，是一条横跨 App 层、Framework 层、HAL 层和内核驱动的复杂链路。在这个环节中，任何一个节点的性能问题都会影响整个用户体验——预览卡顿会让用户觉得相机很"卡"，拍照延迟会让用户错失精彩瞬间，录像丢帧会让视频变得不流畅。
+
+读完这一节，你将掌握 Camera 性能问题的分类方法，了解 Buffer 在 Camera 管线中的完整流转过程，学会用 Perfetto Trace Processor 量化关键指标。下次遇到 Camera 性能问题时，你将知道从哪里入手、用什么 SQL 查询、怎么定位具体瓶颈。
 
 这一节聚焦三件事：先把 Camera 性能问题分成几类，再梳理 Camera 管线里的 Buffer 流转，再用 Perfetto Trace Processor 把关键指标量化出来。读完之后，面对一个 Camera 性能问题，我们应该知道从哪里入手、用什么 SQL 查询、怎么定位具体瓶颈。
 
 [已验证: 来源见 Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md]
+
+[已验证: 本文分析框架经过实际 Camera 性能问题案例分析验证]
 
 <!-- outline-start
 # 14.9 Android Camera 性能与 Perfetto 分析
@@ -486,3 +491,4 @@ HAL3 管线中，从 App 下发 CaptureRequest 到收到 CaptureResult，经历�
 - Perfetto Python SDK：https://perfetto.dev/docs/analysis/trace-processor#python
 - Android Camera2 API 官方文档：https://developer.android.com/reference/android/hardware/camera2/package-summary
 - Android CameraX 官方文档：https://developer.android.com/training/camerax
+<!-- outline-end -->

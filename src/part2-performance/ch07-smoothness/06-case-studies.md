@@ -530,3 +530,60 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层的多层优化策略�
 - [Bitmap 缓存管理](https://developer.android.com/topic/performance/graphics/cache-bitmap)
 - [onTrimMemory 回调](https://developer.android.com/reference/android/content/ComponentCallbacks2)
 - [Hardware Layer 详解](https://www.androidperformance.com/2019/07/27/Android-Hardware-Layer/)（高爷原创）
+
+<!-- AIW-源码调研-20260424 -->
+### 补充：AnimatedVectorDrawable 线程退化机制（源码级）
+
+本节案例四（RenderThread sync 阻塞主线程）涉及 AnimatedVectorDrawable 动画，以下是 AOSP 源码层面的补充发现。
+
+#### AVD 线程模型双轨架构
+
+在 `frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java` 中，AVD 同时实例化两个Animator：
+
+```java
+// 构造函数中同时实例化两个版本
+private AnimatedVectorDrawable(AnimatedVectorDrawableState state, Resources res) {
+    mAnimatedVectorState = new AnimatedVectorDrawableState(state, mCallback, res);
+    mAnimatorSet = new VectorDrawableAnimatorRT(this);  // RenderThread 版本
+}
+```
+
+关键字段 `mAnimatorSet`（类型 `VectorDrawableAnimator` 接口）运行时可能是：
+- `VectorDrawableAnimatorRT` — RenderThread 加速（API 25+）
+- 纯 UI 线程版本 — 软件退化模式
+
+#### 线程退化触发条件
+
+```java
+// draw() 方法中的退化逻辑
+@Override
+public void draw(Canvas canvas) {
+    if (!canvas.isHardwareAccelerated() && mAnimatorSet instanceof VectorDrawableAnimatorRT) {
+        if (!mAnimatorSet.isRunning() &&
+                ((VectorDrawableAnimatorRT) mAnimatorSet).mPendingAnimationActions.size() > 0) {
+            fallbackOntoUI();  // 退化到 UI 线程
+        }
+    }
+    mAnimatorSet.onDraw(canvas);
+    mAnimatedVectorState.mVectorDrawable.draw(canvas);
+}
+```
+
+**退化三者同时满足**：
+1. `!canvas.isHardwareAccelerated()` — Software Canvas
+2. `mAnimatorSet instanceof VectorDrawableAnimatorRT` — 当前用 RT 版本
+3. `!isRunning() && mPendingAnimationActions.size() > 0` — 动画 pending
+
+#### 版本演进
+
+| 版本 | 动画执行线程 | 退化机制 |
+|------|-------------|---------|
+| API 21-24 | UI Thread（AnimatorSet） | 无 RenderThread 版本 |
+| API 25+ | RenderThread（VectorDrawableAnimatorRT） | Software Canvas 时退化 |
+
+#### 实战影响
+
+当 AVD 退化到 UI 线程运行时，动画对主线程 jank 完全敏感，失去了 RenderThread 独立优势。Perfetto 中可通过主线程 `syncAndDrawFrame` 耗时判断退化是否发生。
+
+**源码文件**：`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`（aosp-mirror master）
+
