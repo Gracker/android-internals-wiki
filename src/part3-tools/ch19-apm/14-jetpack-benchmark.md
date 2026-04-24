@@ -7,7 +7,7 @@ drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark / Baseline Profile 场景：Android 6.0+（API 23+）；书中样例以 Android 8-17 为主
 last_verified: '2026-04-24'
-last_verified_against: Android Developers Benchmark overview + Baseline Profiles overview
+last_verified_against: Android Developers Microbenchmark overview / Macrobenchmark overview / CompilationMode reference
 confidence: medium
 tags:
 - apm
@@ -15,16 +15,20 @@ related_chapters:
 - '19.0'
 sources:
 - type: official
-  path: https://developer.android.com/topic/performance/benchmarking/benchmarking-overview
-pipeline_stage: task2b_pending
+  path: https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+- type: official
+  path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: '2026-04-24T18:25:09+08:00'
+last_task2b_at: '2026-04-24T21:14:45+08:00'
 repaired_date: '2026-04-24'
 repaired_by: openclaw-task2b
 task9_result: needs-rework
@@ -94,7 +98,16 @@ Android 官方把 Benchmark 分成 Microbenchmark 和 Macrobenchmark。名字相
 
 ## Microbenchmark 测小代码段
 
-Microbenchmark 在进程内循环执行一段可直接调用的代码，适合测算法、序列化、正则、数据结构、图片处理等局部 CPU 工作。官方文档也说明，它更接近 warmed up JIT 和缓存命中的 best-case 情况。
+Microbenchmark 在进程内循环执行一段可直接调用的代码，适合测算法、序列化、正则、数据结构、图片处理等局部 CPU 工作。
+
+旧版经验常把 Microbenchmark 理解成热身后的 JIT 和 cache 命中口径。这个判断只适用于没有额外 AOT 预编译的配置。Android Developers 现在明确写明：Benchmark 1.3.0-beta01+ 配合 AGP 8.4.0+ 时，`androidx.benchmark` plugin 会默认把 microbenchmark APK 做 fully compile，口径更接近稳定的 AOT 结果；如果要回到旧的 warmed-up JIT 口径，需要在 `gradle.properties` 里设置 `androidx.benchmark.forceaotcompilation=false`。
+
+| Microbenchmark 运行形态 | 典型版本 | 结果口径 |
+|---|---|---|
+| 旧配置或手动关闭 AOT | Benchmark < 1.3.0-beta01，或 AGP < 8.4，或显式设置 `androidx.benchmark.forceaotcompilation=false` | 更接近热身后的 JIT 与 cache 命中结果 |
+| 新版默认配置 | Benchmark 1.3.0-beta01+ 且 AGP 8.4.0+ | 默认 full AOT，波动更小，适合做稳定回归 |
+
+读数据时要先写清编译模式。两条 benchmark 曲线如果编译模式不同，不能放在一张图里直接横比。
 
 适合 Microbenchmark 的问题：
 
@@ -125,9 +138,18 @@ Macrobenchmark 在应用进程外启动和控制 App，适合测冷启动、热�
 
 ## 最小 Macrobenchmark 示例
 
-下面这段代码展示冷启动 benchmark 的基本结构，重点看 `measureRepeated()` 包住的启动流程。
+下面这段代码展示冷启动 benchmark 的基本结构，重点看 `measureRepeated()` 包住的启动流程，以及显式写出的 `compilationMode`。
 
 ```kotlin
+import androidx.benchmark.macro.CompilationMode
+import androidx.benchmark.macro.StartupMode
+import androidx.benchmark.macro.StartupTimingMetric
+import androidx.benchmark.macro.junit4.MacrobenchmarkRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
 @RunWith(AndroidJUnit4::class)
 class StartupBenchmark {
     @get:Rule
@@ -137,14 +159,31 @@ class StartupBenchmark {
     fun coldStartup() = benchmarkRule.measureRepeated(
         packageName = "com.example.app",
         metrics = listOf(StartupTimingMetric()),
-        iterations = 10,
-        startupMode = StartupMode.COLD
+        compilationMode = CompilationMode.DEFAULT,
+        startupMode = StartupMode.COLD,
+        iterations = 10
     ) {
         pressHome()
         startActivityAndWait()
     }
 }
 ```
+
+`compilationMode` 要显式写出。Benchmark 结果经常因为这一项不同而失去可比性。默认值虽然存在，文稿和团队基线都不该省略它。
+
+## CompilationMode 的口径表
+
+Android Developers 和 AndroidX `CompilationMode` 源码把默认行为分成两段：
+
+| 模式 | API 24+ | API 23 | 适合场景 |
+|---|---|---|---|
+| `CompilationMode.DEFAULT` | 等同 `Partial(BaselineProfileMode.UseIfAvailable)`；有 Baseline Profile 时优先安装 | 系统默认就是 full compile | 接近 fresh install 的默认体验 |
+| `CompilationMode.None()` | 不做 AOT 预编译，允许运行期 JIT | 这一档不可用，API 23 只有 full compile | 看无 Baseline Profile 时的最差启动或交互口径 |
+| `CompilationMode.Partial()` | 走 Baseline Profile 和或 warmup 的部分预编译 | 这一档不可用，API 23 只有 full compile | 看接近真实用户设备的常态表现 |
+| `CompilationMode.Full()` | 全量 AOT，结果更稳，但不代表现代用户设备的常态 | 系统默认行为 | 做上限对照，或减少编译噪声 |
+| `CompilationMode.Ignore()` | 跳过库内编译步骤，保留外部已经准备好的编译状态 | 只能保留系统默认 full compile | 编译状态由外部脚本控制时使用 |
+
+如果目标是验证 Baseline Profile 是否生效，`CompilationMode.DEFAULT` 还不够直接，优先显式写 `CompilationMode.Partial(BaselineProfileMode.Required)`。如果目标是看最差冷启动，才改成 `None()`。如果目标是消掉 JIT 噪声做上限对照，再用 `Full()`。
 
 这个测试只适合放在 benchmark module 或独立测试配置里。CI 上还要固定设备、系统版本、充电状态、温度和后台进程，否则数据波动会吞掉优化效果。
 

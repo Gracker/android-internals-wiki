@@ -1,64 +1,62 @@
 {
-  "generated_at": "2026-04-24T20:44:37+08:00",
+  "generated_at": "2026-04-24T21:18:22+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
     "total_sections": 206,
-    "finalized": 56,
-    "ready-for-review": 156,
-    "ready-to-publish": 56,
-    "last_updated": "2026-04-24T18:25:09+08:00",
+    "finalized": 58,
+    "ready-for-review": 147,
+    "ready-to-publish": 58,
+    "last_updated": "2026-04-24T21:18:22+08:00",
     "pipeline_stage_counts": {
-      "unknown": 36,
-      "task6_pending": 35,
+      "ready-to-publish": 58,
+      "task6_pending": 31,
+      "task9_pending": 81,
       "task2b_pending": 35,
-      "ready-to-publish": 56,
-      "task9_pending": 83
+      "unknown": 1
     },
     "task6_state_counts": {
-      "unknown": 41,
-      "reviewed": 182,
+      "reviewed": 185,
       "revisiting": 15,
-      "pending": 7
+      "unknown": 6
     },
     "task9_state_counts": {
-      "unknown": 41,
-      "reviewed": 103,
-      "pending": 100,
+      "reviewed": 105,
+      "pending": 94,
+      "unknown": 6,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 43,
-      "fixed": 149,
-      "pending": 50,
-      "idle": 3
+      "fixed": 147,
+      "idle": 5,
+      "pending": 46,
+      "unknown": 8
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 36,
-      "task6_pending": 35,
+      "ready-to-publish": 58,
+      "task6_pending": 31,
+      "task9_pending": 81,
       "task2b_pending": 35,
-      "ready-to-publish": 56,
-      "task9_pending": 83
+      "unknown": 1
     },
     "task6_state_counts": {
-      "unknown": 41,
-      "reviewed": 182,
+      "reviewed": 185,
       "revisiting": 15,
-      "pending": 7
+      "unknown": 6
     },
     "task9_state_counts": {
-      "unknown": 41,
-      "reviewed": 103,
-      "pending": 100,
+      "reviewed": 105,
+      "pending": 94,
+      "unknown": 6,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "unknown": 43,
-      "fixed": 149,
-      "pending": 50,
-      "idle": 3
+      "fixed": 147,
+      "idle": 5,
+      "pending": 46,
+      "unknown": 8
     }
   },
   "issues": {
