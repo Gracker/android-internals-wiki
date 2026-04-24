@@ -339,6 +339,7 @@ JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直
 
 - **2.1 渲染架构全景**：Jank 发生在渲染管线的各个环节，理解渲染架构是定位 Jank 的基础
 - **2.3 VSync 机制**：Jank 的定义依赖于 VSync 周期，理解 VSync 才能理解 Jank 的"截止时间"
+  - **VSync Offset 机制**：Android 14+ 的 VSyncPredictor（线性回归预测周期）和 VsyncModulator（三相动态调整 Early/EarlyGpu/Late）是影响 Jank 的底层因素，详见 → [2.3 VSync 机制] 第十一节源码补充
 - **2.4 Choreographer 与渲染流水线**：App Jank 的核心检测点在 Choreographer 的 doFrame 流程中
 - **2.5 MainThread 与 RenderThread 协作**：App Jank 可以进一步细分为主线程 Jank 和 RenderThread Jank
 - **7.2 卡顿原因体系**：本节定义了"什么是卡顿"，7.2 则详细分析"卡顿是怎么产生的"

@@ -16,8 +16,11 @@ sources:
     path: "https://www.geekbench.com/"
   - type: official
     path: "https://benchmarks.ul.com/3dmark-android"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-24
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: pending
 ---

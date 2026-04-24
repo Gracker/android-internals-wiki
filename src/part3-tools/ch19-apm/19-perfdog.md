@@ -9,13 +9,16 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "PerfDog official site"
 confidence: medium
-tags: [apm]
+tags: [apm, perfdog, testing, benchmark, tools]
 related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://perfdog.qq.com/"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-24
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: pending
 ---
@@ -69,15 +72,15 @@ PerfDog 是腾讯 WeTest 的全平台性能测试分析工具，官网定位为 
 
 ## 它能测什么
 
-PerfDog 常见使用场景包括：
+PerfDog 的测试场景包括这些类型：
 
-- FPS、帧时间、卡顿、平均帧率。
-- CPU、内存、GPU、温度、功耗等设备指标。
-- 网络测试和弱网相关分析。
-- 常规测试、深度分析、云端看板和团队协作。
-- 自动化性能测试服务。
+- FPS、帧时间、卡顿、平均帧率等帧率相关指标。
+- CPU、内存、GPU、温度、功耗等设备资源指标。
+- 网络带宽、延迟、丢包率等网络相关测试。
+- 实验室性能基线测试、深度问题分析、云端数据汇总和团队协作工具集成。
+- 支持脚本化的自动化性能测试服务。
 
-官网还强调无需修改硬件、游戏或应用，即插即用。这一点对第三方 App、竞品包、游戏包测试很有用，因为你通常拿不到源码，也不能让对方集成 SDK。
+官网强调无需修改硬件、游戏或应用，即插即用。对第三方 App、竞品包、游戏包测试很有用，因为你通常拿不到源码，也不能让对方集成 SDK。
 
 ## 结果解释要看测试条件
 
@@ -124,7 +127,7 @@ PerfDog 报告要能复现，至少记录：
 | 环境 | 室温、是否散热、设备初始温度 |
 | 指标 | FPS、jank、CPU、GPU、内存、温度、功耗、网络 |
 
-没有这些字段，PerfDog 数据很难和下一次测试对比。性能测试报告的可复现性比单次分数更重要。
+缺少这些字段，PerfDog 数据很难和下一次测试对比。性能测试报告的可复现性比单次分数更重要。
 
 ## FPS 之外还要看帧时间
 
