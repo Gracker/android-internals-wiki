@@ -41,16 +41,16 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-21T23:18:40+08:00"
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-21"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-22T11:25:07+08:00"
@@ -225,9 +225,9 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 
 [已验证: AGP 8.0 Release Notes，Booster 的兼容性边界仍要看具体版本或 fork]
 
-## 启动优化框架：它们解决的是“怎么组织”，不是“怎么监控”
+## 启动优化框架：组织启动阶段的任务依赖
 
-启动优化框架和前面的监控库也不是一类东西。它们不负责发现问题，而是负责把启动阶段的任务组织得更清楚，减少串行依赖和不必要的阻塞。
+启动优化框架和前面的监控库定位不同。它们负责把启动阶段的任务组织得更清楚，减少串行依赖和不必要的阻塞。
 
 ### 核心思路：有向无环图（DAG）调度
 
@@ -358,7 +358,7 @@ Booster 使用的 Transform 属于编译期方案。它在 .class 文件阶段�
 
 一是**性能开销叠加**。每个运行时监控工具都有一定的性能开销（Matrix 约 2~5%，KOOM 的 Native Hook 也有少量开销），多个工具叠加后，低端机更容易出现用户可感知的卡顿。通常的做法是对监控工具本身做采样，只对部分用户开启完整监控。
 
-二是**Hook 冲突**。如果 Matrix 和 KOOM 都 Hook 了 libc 的 open/write，可能出现 Hook 链冲突。实际上 xHook 本身支持 Hook 链（多个 Hook 函数按序执行），但不同工具使用不同的 Hook 库时可能冲突。建议统一使用同一个底层 Hook 库。
+二是**Hook 冲突**。如果 Matrix 和 KOOM 都 Hook 了 libc 的 open/write，可能出现 Hook 链冲突。xHook 本身支持 Hook 链（多个 Hook 函数按序执行），但不同工具使用不同的 Hook 库时可能冲突。建议统一使用同一个底层 Hook 库。
 
 三是**上报数据整合**。多个工具各自上报数据到各自的平台，分析问题时需要跨平台关联。理想情况是建设统一的 APM 平台，将卡顿、内存、I/O 等数据关联到同一个用户会话上。
 
