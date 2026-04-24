@@ -2,7 +2,7 @@
 title: "DoraemonKit / DoKit"
 chapter: "19"
 section: "19.07"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,52 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/didi/DoKit"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # DoraemonKit / DoKit
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 DoKit 是研发现场工具箱，主要提高调试和 QA 效率，不承担线上指标平台职责。
+- 🔹 [能力地图] 按性能面板、网络、Mock、弱网、日志、业务入口、环境切换、视觉辅助拆功能和使用对象。
+- 🔹 [性能可信度] 说明 FPS、CPU、内存、网络数据的采集来源、刷新频率、误差和适合回答的问题。
+- 🔹 [工具关系] 和 Android Studio Profiler、Perfetto、JankStats、FrameMetrics 做分工表，写清 DoKit 何时只能当初筛工具。
+- 🔹 [接入结构] 展开 Debug-only 依赖、模块注册、业务入口封装、no-op 实现和多 flavor 管理。
+- 🔹 [弱网 / Mock] 说明它们对复现网络慢、接口异常、缓存策略、页面降级的价值；补一个测试场景。
+- 🔹 [Release 隔离] 给检查清单：依赖隔离、入口隐藏、权限、日志、网络代理、Mock 数据、隐私字段。
+- 🔹 [团队协作] 写清测试、开发、性能专项人员分别怎样使用 DoKit，避免只列功能。
+- 🔹 [安全风险] 覆盖内网地址、接口 token、用户数据、调试入口被误带到线上包的风险。
+- 🔹 [推荐方式] 给“DoKit 发现异常 -> 复现 -> Perfetto / Profiler 深查 -> 修复验证”的使用路径。
+
+### 扩展（可选深入）
+
+- 🔸 增加一个工具箱注册示例，展示如何把业务诊断入口收拢到统一面板。
+- 🔸 补充弱网、Mock、接口环境切换的测试用例表。
+- 🔸 对 DoKit upstream README、版本状态、Android Gradle 插件适配做核对。
+- 🔸 增加与 Flipper、Stetho、Android Studio 工具的差异说明。
+- 🔸 补一个 Release 包检查脚本或 Gradle 约束示例。
+
+### 流水线加工要求
+
+- DoKit 的每个能力都要写“适合现场”和“不适合结论”，不要把面板数据写成线上指标。
+- 涉及 Release 风险的内容必须给可执行检查项。
+- 示例应服务于团队工作流，不要只展示悬浮窗截图式描述。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## DoKit 是研发现场工具箱
 

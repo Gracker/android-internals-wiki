@@ -2,7 +2,7 @@
 title: "Firebase Performance"
 chapter: "19"
 section: "19.17"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,52 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://firebase.google.com/docs/perf-mon"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # Firebase Performance
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 Firebase Performance 是托管型低接入成本方案，适合快速获得基础性能看板，但定制能力和数据控制有限。
+- 🔹 [trace 模型] 展开自动 trace、自定义 trace、metric、attribute、screen rendering trace、network request trace 的数据关系。
+- 🔹 [自动采集] 按启动、前后台、屏幕渲染、HTTP/S 请求列自动采集能力和需要官方文档核对的版本要求。
+- 🔹 [自定义 trace] 给启动、首屏、登录、图片解码、数据库查询示例，说明 trace 名称、metric、attribute 的命名规则。
+- 🔹 [网络聚合] 说明 URL pattern、域名、path 参数、状态码、payload size、失败原因如何影响聚合结果和隐私。
+- 🔹 [JankStats 关系] 区分 Firebase 的屏幕渲染指标和 JankStats 的端侧帧数据；写清什么时候需要自采。
+- 🔹 [采样与延迟] 说明数据采集、上传、控制台展示延迟、采样、阈值、版本维度对问题定位的影响。
+- 🔹 [Google Play] 写与 Google Play Console / Android Vitals 的互补关系，避免重复解释同一类慢帧或 ANR 数据。
+- 🔹 [接入成本] 覆盖 Gradle plugin、Google services、地区访问、账号权限、隐私政策、Release 开关。
+- 🔹 [适用边界] 明确适合中小团队快速建看板，不适合深度私有化、复杂自定义诊断和完整原始样本回溯。
+
+### 扩展（可选深入）
+
+- 🔸 增加一份 Firebase custom trace Kotlin 示例，包含 metric 和 attribute。
+- 🔸 补一张 Firebase、JankStats、FrameMetrics、Google Play Vitals 的指标分工表。
+- 🔸 对 Firebase Performance official docs、Android SDK 版本要求和自动 trace 列表做 L1 核对。
+- 🔸 补一个 URL pattern 设计案例，说明如何避免把用户 id、订单 id 写进 trace 名。
+- 🔸 增加从 Firebase 迁移到自建 APM 或商业 APM 时需要保留的字段清单。
+
+### 流水线加工要求
+
+- 每个 Firebase 能力都要写清“自动采集还是自定义采集”。
+- 所有控制台数据解释必须包含展示延迟和采样限制。
+- 示例字段不能包含真实用户标识、完整 URL 或业务敏感值。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## Firebase Performance 是低门槛平台方案
 

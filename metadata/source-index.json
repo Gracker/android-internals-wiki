@@ -18462,6 +18462,143 @@
       "action_taken": "queue",
       "processed_at": "2026-04-23T07:24:46+08:00",
       "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "title": "ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md",
+      "score": 20,
+      "relevance": "Android GPU开发",
+      "keywords": [
+        "Mali",
+        "GPU",
+        "TBR",
+        "Vulkan",
+        "渲染",
+        "性能优化",
+        "ARM"
+      ],
+      "chapter": "ch02",
+      "scored_at": "2026-04-24T06:03:15.448376",
+      "summary": "系统梳理 Mali / Immortalis 的 tile-based rendering、AFBC、Transaction Elimination、IDVS、DVS 与 Fragment Prepass，并把 Vulkan render pass、HWUI/SurfaceFlinger 交互和 Streamline/Perfetto 诊断工作流连成一套。",
+      "chapter_mapping": "ch02",
+      "matched_chapter": "2.10",
+      "section_title": "GPU 渲染深入",
+      "action_taken": "queue",
+      "processed_at": "2026-04-24T07:14:37+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "title": "Android 14 → Android 17 Foreground Service Timeout / ANR 机制深度解析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md",
+      "score": 20,
+      "relevance": "Android系统开发",
+      "keywords": [
+        "Foreground Service",
+        "ANR",
+        "超时机制",
+        "AOSP源码",
+        "Android 14",
+        "Android 17"
+      ],
+      "chapter": "ch09",
+      "scored_at": "2026-04-24T06:03:15.448389",
+      "summary": "聚焦 `ActiveServices`、`ServiceRecord.ShortFgsInfo`、`AnrTimer` 等源码，梳理 Android 14–17 中 shortService 与 time-limited FGS 的超时窗口、回调语义、异常抛出与迟到 ANR 触发路径，适合补齐特殊场景 ANR 的系统侧视角。",
+      "chapter_mapping": "ch09",
+      "matched_chapter": "9.4",
+      "section_title": "特殊场景的 ANR",
+      "action_taken": "inject",
+      "processed_at": "2026-04-24T07:14:37+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "title": "Android Sync Fence 机制深度剖析：从 dma-fence 到 Android 16 Explicit Sync",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md",
+      "score": 20,
+      "relevance": "Android图形渲染",
+      "keywords": [
+        "Sync Fence",
+        "dma-fence",
+        "Explicit Sync",
+        "HWC3",
+        "Android 16",
+        "图形管道"
+      ],
+      "chapter": "ch02",
+      "scored_at": "2026-04-24T06:03:15.448391",
+      "summary": "围绕 Linux `dma_fence`、`sync_file`、Android `libsync` 与 `Fence` 类，解释 acquire/release/present fence 在 BufferQueue、SurfaceControl、HWC3 中的流转，并把 Android 16 explicit sync 与可观测性工具串起来。",
+      "chapter_mapping": "ch02",
+      "matched_chapter": "2.16",
+      "section_title": "Sync Fence 框架与帧同步机制",
+      "action_taken": "inject",
+      "processed_at": "2026-04-24T07:14:37+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "title": "Android World 与 MobileWorld 深度技术架构调研",
+      "path": "DeepResearch/Android World 与 MobileWorld 深度技术架构调研.md",
+      "score": 20,
+      "relevance": "AI Agent框架调研",
+      "keywords": [
+        "Android World",
+        "MobileWorld",
+        "技术架构",
+        "AI框架",
+        "对比分析"
+      ],
+      "chapter": "ch16",
+      "scored_at": "2026-04-24T06:03:15.448393"
+    },
+    {
+      "title": "PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md",
+      "score": 20,
+      "relevance": "Android内存管理",
+      "keywords": [
+        "PSI",
+        "LMKD",
+        "进程杀",
+        "内存管理",
+        "Pressure Stall Information"
+      ],
+      "chapter": "ch04",
+      "scored_at": "2026-04-24T06:03:15.448394",
+      "summary": "从内核 `psi.c` 到 `system/memory/lmkd/lmkd.cpp` 串起 Android 10–15 的内存压力判定链路，解释 PSI 如何替代 vmpressure、怎样结合 thrashing 和 oom_score_adj 触发 userspace lmkd 杀进程，并给出 AOSP 与 LPC 实测依据。",
+      "chapter_mapping": "ch04",
+      "matched_chapter": "4.4",
+      "section_title": "Low Memory Killer",
+      "action_taken": "inject",
+      "processed_at": "2026-04-24T07:14:37+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "title": "当 Perfetto 显示 Running 时，Android 程序到底在做什么？",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md",
+      "score": 20,
+      "relevance": "Android性能分析",
+      "keywords": [
+        "Perfetto",
+        "Running状态",
+        "CPU调度",
+        "性能诊断",
+        "simpleperf",
+        "PMU"
+      ],
+      "chapter": "ch13",
+      "scored_at": "2026-04-24T06:03:15.448396",
+      "summary": "以 `BindApplication / Setup proxies` 为切口，把 Perfetto 的 Running 状态和 Linux `TASK_RUNNING`、`sched_slice`、user/kernel 切换、ART/native 执行及 CPU 微架构停顿联系起来，能直接提升线程状态解读的精度。",
+      "chapter_mapping": "ch13",
+      "matched_chapter": "13.6",
+      "section_title": "线程 CPU 状态分析",
+      "action_taken": "inject",
+      "processed_at": "2026-04-24T07:14:37+08:00",
+      "source_task": "AIW · DeepResearch 材料注入"
     }
-  ]
+  ],
+  "Task 11 增量扫描": {
+    "chapter": "ch04-memory",
+    "title": "PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研",
+    "date": "2026-04-24 05:56",
+    "score": 15,
+    "processed_at": "2026-04-24T06:32:01.143383"
+  }
 }

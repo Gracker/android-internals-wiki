@@ -2,7 +2,7 @@
 title: "Baseline Profiles 与编译优化"
 chapter: "19"
 section: "19.15"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,52 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # Baseline Profiles 与编译优化
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 Baseline Profiles 是发布前编译优化手段，解决首次运行和冷启动性能，不是运行时监控。
+- 🔹 [机制] 解释 ART profile、ahead-of-time 编译、startup / hot path 方法和类的关系；写清安装后何时生效。
+- 🔹 [生成方式] 展开 Macrobenchmark / Baseline Profile Generator、Gradle 插件、managed device、本地与 CI 生成。
+- 🔹 [规则格式] 展示 profile rules 中类、方法、flags 的基本形态，并说明读者不需要手写大部分规则。
+- 🔹 [场景覆盖] 规定生成场景应覆盖冷启动、首页、关键 tab、搜索、详情、支付等用户路径。
+- 🔹 [Startup Profiles] 区分 Baseline Profiles 和 Startup Profiles 的目标、位置和验证方式。
+- 🔹 [验证] 写如何用 Macrobenchmark、ProfileVerifier、日志、APK / AAB 产物确认 profile 生效。
+- 🔹 [与 APM] 说明线上启动变差如何触发重新检查 profile 覆盖，发布后如何观察启动指标回归。
+- 🔹 [库作者] 说明 Android library 如何发布 baseline profile，App 如何合并依赖库 profile。
+- 🔹 [回归判断] 给 profile 失效、场景漏覆盖、AGP 配置错误、版本升级后重新生成的排查清单。
+
+### 扩展（可选深入）
+
+- 🔸 增加 Baseline Profile 生成 Gradle 配置和测试代码示例。
+- 🔸 补一份 profile 生效验证清单，覆盖本地、CI、发版产物和线上指标。
+- 🔸 对 Android Developers Baseline Profiles 文档、AGP 版本要求、ProfileVerifier 文档做核对。
+- 🔸 增加与 R8、startup library、App Startup、lazy init 的关系说明。
+- 🔸 补一个“启动优化改动后 profile 漏更新”的回归案例。
+
+### 流水线加工要求
+
+- 所有优化结论都要明确是发布前编译收益还是运行时逻辑收益。
+- 示例必须能说明生成、打包、验证三个阶段。
+- 不要把 Baseline Profiles 写成万能启动优化，需要列出它不处理的 I/O、网络、锁等待问题。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## Baseline Profiles 是发布前优化，不是监控
 

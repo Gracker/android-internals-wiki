@@ -2,7 +2,7 @@
 title: "Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）"
 chapter: "19"
 section: "19.21"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -16,10 +16,52 @@ sources:
     path: "https://www.geekbench.com/"
   - type: official
     path: "https://benchmarks.ul.com/3dmark-android"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 Geekbench、安兔兔、3DMark、PCMark、Vellamo 测的是设备能力或综合体验基线，不直接代表某个 App 的性能。
+- 🔹 [工具分工] 按 CPU、GPU、Compute、存储、网页、办公负载、综合分拆各工具关注点和适用场景。
+- 🔹 [Geekbench] 解释 single-core、multi-core、Compute 分数对启动、JSON、图片处理、加密、ML 推理的工程含义。
+- 🔹 [3DMark] 解释图形压力、frame stability、thermal throttling、stress test 对游戏和高负载 UI 的参考价值。
+- 🔹 [安兔兔 / PCMark / Vellamo] 写综合分、办公负载、历史网页测试工具的使用边界和过期风险。
+- 🔹 [测试规范] 规定设备状态、系统版本、温度、电量、刷新率、性能模式、后台进程、重复次数、取值方式。
+- 🔹 [机型分层] 设计线上机型分层方法，把 benchmark 分数与 SoC、RAM、存储、系统版本和线上指标关联。
+- 🔹 [分数解释] 说明单项分数比综合分更有用，不能用总分直接解释启动慢或卡顿。
+- 🔹 [线上连接] 说明如何把 Benchmark 结果用于低端机分组、灰度策略、性能预算和告警阈值。
+- 🔹 [历史工具] 对停止维护或口径变化的工具写处理方式：保留历史基线、停止新增、替换指标。
+
+### 扩展（可选深入）
+
+- 🔸 增加机型分层表，包含入门、中端、高端、旗舰四档和建议性能预算。
+- 🔸 补一个 Geekbench 分数与线上启动 P95 的关联示例。
+- 🔸 对 Geekbench、3DMark、PCMark 官方资料和 Vellamo 历史状态做核对。
+- 🔸 增加测试报告模板，记录分数、温度、轮次、版本和备注。
+- 🔸 补充“综合分误导”的案例，说明为什么要看单项分。
+
+### 流水线加工要求
+
+- Benchmark 应用章节必须反复区分设备基线和 App 实测数据。
+- 所有分数解释都要绑定具体工程场景。
+- 历史工具不得写成当前推荐工具，必须说明状态。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## Benchmark 应用测的是设备能力
 

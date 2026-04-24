@@ -2,7 +2,7 @@
 title: "FrameMetrics"
 chapter: "19"
 section: "19.12"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,10 +14,52 @@ related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # FrameMetrics
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 FrameMetrics 用来拆一帧内部耗时，适合分析 layout、draw、sync、command issue、swap 等阶段分布。
+- 🔹 [指标表] 列出 `TOTAL_DURATION`、`INPUT_HANDLING_DURATION`、`LAYOUT_MEASURE_DURATION`、`DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`SWAP_BUFFERS_DURATION`、`DEADLINE` 等指标含义和版本边界。
+- 🔹 [接入方式] 展开 `Window.addOnFrameMetricsAvailableListener`、HandlerThread、Window 生命周期、页面切换和回收。
+- 🔹 [阶段归因] 每个阶段给对应排查方向：主线程布局、RenderThread、GPU、Surface、系统调度、资源加载。
+- 🔹 [DEADLINE] 说明高刷新率设备下为什么应优先看 deadline / expected duration 相关口径。
+- 🔹 [聚合策略] 设计端侧窗口聚合，不保留所有原始帧；字段包含 page、frame count、p50/p95、slow count、stage max。
+- 🔹 [边界] 说明 FrameMetrics 不提供业务函数栈、网络状态、后台线程细节，需要和 tracing / Perfetto 配合。
+- 🔹 [Compose / View] 写清 Compose 最终仍落到 Window / View 渲染指标，但 UI 状态需要额外标记。
+- 🔹 [使用建议] 说明哪些页面适合采、哪些场景应降采样，如何避免 listener 泄漏和后台线程拥塞。
+- 🔹 [与 JankStats] 对比事件粒度、字段语义、易用性、线上聚合成本和专项诊断价值。
+
+### 扩展（可选深入）
+
+- 🔸 增加 FrameMetrics 接入代码，并标注 HandlerThread 和 Window 生命周期关键行。
+- 🔸 补一张“指标阶段 -> 可能原因 -> 下一步工具”的表。
+- 🔸 对 Android FrameMetrics API reference 做版本核对，特别是 DEADLINE 可用性。
+- 🔸 增加一个高刷新率设备上 16ms 口径失效的例子。
+- 🔸 补充与 Macrobenchmark FrameTimingMetric 的关系。
+
+### 流水线加工要求
+
+- 指标解释要绑定具体阶段，不要只翻译 API 名称。
+- 每个阶段都要写一个可执行的下一步排查动作。
+- 接入代码必须包含线程和生命周期清理，否则不算完整示例。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## FrameMetrics 拆的是一帧内部耗时
 

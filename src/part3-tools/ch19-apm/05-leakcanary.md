@@ -2,7 +2,7 @@
 title: "LeakCanary"
 chapter: "19"
 section: "19.05"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -16,10 +16,52 @@ sources:
     path: "https://square.github.io/leakcanary/"
   - type: official
     path: "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # LeakCanary
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明 LeakCanary 是 Debug / QA 阶段的本地泄漏诊断工具，不是线上内存平台；写清它和 KOOM、Profiler 的分工。
+- 🔹 [保留判定] 展开 ObjectWatcher、弱引用、GC、retained object、heap dump、Shark 分析的流程。
+- 🔹 [默认观察对象] 列出 Activity、Fragment、ViewModel、View、Service 等默认对象，说明 AndroidX / Lifecycle 依赖关系。
+- 🔹 [自定义观察] 给出业务对象 `ObjectWatcher` 示例，说明何时观察、何时取消、如何避免测试噪声。
+- 🔹 [leak trace 读法] 教读者区分 GC root、引用路径、suspect reference、retained size；必须写一个逐行阅读案例。
+- 🔹 [泄漏模式] 覆盖 static、Handler / Runnable、Coroutine、Flow、Listener、Adapter、匿名内部类、Context、Dialog、WebView。
+- 🔹 [Application / Library] 说明 Application Leak 和 Library Leak 的处理策略，哪些可以暂缓，哪些必须修。
+- 🔹 [Release 边界] 写清为什么 Release 中要克制使用 heap dump，涉及性能、隐私、文件大小和用户体验。
+- 🔹 [线上联动] 说明 KOOM / APM 发现页面内存异常后，如何回到 Debug 包复现并用 LeakCanary 验证修复。
+- 🔹 [测试集成] 说明 instrumentation test、CI 泄漏门禁、已知泄漏白名单和误报维护方式。
+
+### 扩展（可选深入）
+
+- 🔸 增加 Fragment / RecyclerView / coroutine 三个典型泄漏案例，每个案例包含代码片段和 leak trace 解释。
+- 🔸 补充 Shark 分析产物的字段说明，区分对象数量、retained size 和泄漏路径。
+- 🔸 对 LeakCanary 版本、默认观察对象、AndroidX 集成方式做官方文档核对。
+- 🔸 增加“泄漏修复后如何验证”的清单，覆盖本地复现、自动化测试、线上指标回看。
+- 🔸 补充不适合 LeakCanary 直接判断的问题，比如 native 内存上涨、Bitmap 复用策略、系统 WebView 问题。
+
+### 流水线加工要求
+
+- 泄漏案例必须能从代码走到 leak trace，再走到修复方式。
+- 不要只写“释放引用”，要指出哪个对象持有哪个对象、生命周期为什么不匹配。
+- 涉及线上样本时必须说明数据只用于定位入口，不用 LeakCanary 直接在用户设备上 dump。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## LeakCanary 是本地泄漏诊断工具
 

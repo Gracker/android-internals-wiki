@@ -2,7 +2,7 @@
 title: "存储 Benchmark（AndroBench、A1 SD Bench）"
 chapter: "19"
 section: "19.22"
-status: draft
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -18,10 +18,53 @@ sources:
     path: "https://apkpure.com/androbench-storage-benchmark/com.andromeda.androbench2"
   - type: blog
     path: "https://apkpure.com/a1-sd-bench/com.a1dev.sdbench"
-pipeline_stage: drafted
+pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
+task2b_state: pending
 ---
 
 # 存储 Benchmark（AndroBench、A1 SD Bench）
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 [定位] 说明存储 Benchmark 看的是设备 I/O 基线，用于解释低端机 I/O 风险，不直接定位 App 哪段代码慢。
+- 🔹 [AndroBench] 展开 Micro benchmark、SQLite benchmark、顺序读写、随机读写、insert / update / delete 的含义。
+- 🔹 [A1 SD Bench] 说明它更偏介质和路径测试，覆盖内部存储、SD 卡、RAM 等结果解释边界。
+- 🔹 [指标口径] 区分 MB/s、IOPS、latency、SQLite QPS、p50/p95，说明顺序和随机不能混看。
+- 🔹 [测试条件] 写文件大小、轮次、缓存、剩余空间、文件系统、UFS / eMMC、温度、电量、后台任务和重启策略。
+- 🔹 [缓存效应] 解释文件系统缓存、写回、thermal throttling、剩余空间对结果的影响。
+- 🔹 [App 场景] 将随机读写、小文件、SQLite、目录扫描、日志 flush、资源解压映射到启动、列表、离线包、图片缓存等场景。
+- 🔹 [SQLite] 说明 benchmark 只能给设备基线，业务数据库还要看事务、索引、WAL、checkpoint、query plan。
+- 🔹 [低端优化] 给减少小文件、批量事务、延迟 I/O、合并配置、限制 flush、首屏后解压的方向。
+- 🔹 [Matrix IO Canary] 说明 Benchmark 负责设备下限，IO Canary 负责 App 调用栈、线程、文件路径，两者要配合。
+- 🔹 [报告模板] 规定存储测试报告字段：device、storage type、filesystem、free space、rounds、temperature、metric median/p95、notes。
+
+### 扩展（可选深入）
+
+- 🔸 增加一份存储 Benchmark 报告模板，包含 AndroBench 和 A1 SD Bench 字段。
+- 🔸 补一个低端 eMMC 设备随机写差导致启动慢的分析案例。
+- 🔸 对 AndroBench 公开资料、A1 SD Bench 应用描述和存储指标定义做核对。
+- 🔸 增加 SQLite 慢查询与 I/O 基线区分的示例，配合 `EXPLAIN QUERY PLAN`。
+- 🔸 补充与 Perfetto I/O 轨道、Matrix IO Canary、业务日志的证据组合方式。
+
+### 流水线加工要求
+
+- 存储分数必须写测试条件和缓存影响。
+- 每个指标都要映射到 App 场景，不能只解释术语。
+- App I/O 根因必须回到调用栈、线程和文件路径，Benchmark 只能提供设备背景。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> **扩展**视素材丰富程度选择性深入。
+> 如果从 Obsidian 素材或 AOSP 源码中发现大纲未列出但与本节强相关的知识点，
+> 可**就地插入**最相关的锚点之后，并用 `[自动发现]` 标注，方便后续 review。
+> 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
+<!-- outline-end -->
 
 ## 存储 Benchmark 看的是 I/O 基线
 
