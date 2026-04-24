@@ -504,7 +504,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-24T17:37:21+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T03:46:32+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "Task 2B 回炉修复：补齐正文，并修正 external review 标注的技术缺失。"
   },
   {
     "section": "19.26",
@@ -563,7 +566,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-24T17:37:21+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T03:46:32+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "Task 2B 回炉修复：补齐正文，并修正 external review 标注的技术缺失。"
   },
   {
     "section": "19.27",
