@@ -14,13 +14,18 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Tencent/matrix"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
+task2b_result: pending
+task9_result: needs-rework
+task9_reviewed_date: 2026-04-24
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-24T13:23:00+08:00"
 ---
 
 # Tencent Matrix

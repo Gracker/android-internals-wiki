@@ -2,7 +2,7 @@
 title: "KOOM"
 chapter: "19"
 section: "19.03"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -14,13 +14,18 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/KwaiAppTeam/KOOM"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task2b_state: pending
+task9_state: reviewed
+task2b_state: fixed
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
+task2b_result: fixed
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-04-24
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-24T13:23:00+08:00"
 ---
 
 # KOOM

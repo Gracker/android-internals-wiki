@@ -4,16 +4,16 @@
   "total_sections": 211,
   "metrics": {
     "total_sections": 214,
-    "finalized": 50,
-    "ready-for-review": 136,
-    "ready-to-publish": 50,
-    "last_updated": "2026-04-24T12:27:37.926666",
+    "finalized": 52,
+    "ready-for-review": 134,
+    "ready-to-publish": 52,
+    "last_updated": "2026-04-24T13:23:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 31,
       "task6_pending": 36,
-      "task2b_pending": 34,
-      "ready-to-publish": 50,
-      "task9_pending": 67
+      "task2b_pending": 36,
+      "ready-to-publish": 52,
+      "task9_pending": 63
     },
     "task6_state_counts": {
       "unknown": 31,
@@ -23,14 +23,14 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "reviewed": 94,
-      "pending": 88,
+      "reviewed": 98,
+      "pending": 84,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 33,
-      "fixed": 140,
-      "pending": 38,
+      "fixed": 142,
+      "pending": 36,
       "idle": 3
     }
   },
@@ -38,9 +38,9 @@
     "pipeline_stage_counts": {
       "unknown": 31,
       "task6_pending": 39,
-      "task2b_pending": 34,
-      "ready-to-publish": 49,
-      "task9_pending": 61
+      "task2b_pending": 36,
+      "ready-to-publish": 51,
+      "task9_pending": 57
     },
     "task6_state_counts": {
       "unknown": 31,
@@ -49,14 +49,14 @@
     },
     "task9_state_counts": {
       "unknown": 31,
-      "reviewed": 94,
-      "pending": 88,
+      "reviewed": 98,
+      "pending": 84,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 33,
-      "fixed": 140,
-      "pending": 38,
+      "fixed": 142,
+      "pending": 36,
       "idle": 3
     }
   },
@@ -7880,10 +7880,16 @@
       "status": "ready-for-review",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "pipeline_stage": "task9_pending",
+      "task9_state": "reviewed",
+      "pipeline_stage": "task2b_pending",
       "reviewed_date": "2026-04-24",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T13:23:00+08:00"
     },
     "src/part3-tools/ch19-apm/02-tencent-matrix.md": {
       "path": "src/part3-tools/ch19-apm/02-tencent-matrix.md",
@@ -7893,36 +7899,54 @@
       "status": "ready-for-review",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "pipeline_stage": "task9_pending",
+      "task9_state": "reviewed",
+      "pipeline_stage": "task2b_pending",
       "reviewed_date": "2026-04-24",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T13:23:00+08:00"
     },
     "src/part3-tools/ch19-apm/03-koom.md": {
       "path": "src/part3-tools/ch19-apm/03-koom.md",
       "title": "KOOM",
       "chapter": "19.03",
       "section": "19.03",
-      "status": "ready-for-review",
+      "status": "finalized",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "pipeline_stage": "task9_pending",
+      "task9_state": "reviewed",
+      "pipeline_stage": "ready-to-publish",
       "reviewed_date": "2026-04-24",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T13:23:00+08:00"
     },
     "src/part3-tools/ch19-apm/04-btrace.md": {
       "path": "src/part3-tools/ch19-apm/04-btrace.md",
       "title": "btrace / RheaTrace",
       "chapter": "19.04",
       "section": "19.04",
-      "status": "ready-for-review",
+      "status": "finalized",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "pipeline_stage": "task9_pending",
+      "task9_state": "reviewed",
+      "pipeline_stage": "ready-to-publish",
       "reviewed_date": "2026-04-24",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "pass-tech-review",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T13:23:00+08:00"
     },
     "19.05": {
       "task6_reviewed": true,
@@ -8057,6 +8081,39 @@
           "auto_promoted": true
         }
       ]
+    },
+    {
+      "date": "2026-04-24",
+      "task": "task9-deep-review",
+      "time": "13:23",
+      "sections_reviewed": [
+        {
+          "section": "19.01",
+          "title": "APM 全景图与分类体系",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "19.02",
+          "title": "Tencent Matrix",
+          "result": "needs-rework",
+          "issues": 3
+        },
+        {
+          "section": "19.03",
+          "title": "KOOM",
+          "result": "pass-tech-review",
+          "issues": 2,
+          "auto_promoted": true
+        },
+        {
+          "section": "19.04",
+          "title": "btrace / RheaTrace",
+          "result": "pass-tech-review",
+          "issues": 1,
+          "auto_promoted": true
+        }
+      ]
     }
   ],
   "progress": {
@@ -8094,6 +8151,38 @@
         "issues_found": "major"
       },
       "18.18": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "minor"
+      },
+      "19.01": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
+      },
+      "19.02": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
+      },
+      "19.03": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "minor"
+      },
+      "19.04": {
         "reviewed_by": "openclaw-task9",
         "reviewed_date": "2026-04-24",
         "task9_result": "pass-tech-review",

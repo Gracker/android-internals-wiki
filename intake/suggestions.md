@@ -348,3 +348,27 @@
 - **问题**：只给方向，缺具体拦截器示例
 - **建议**：补充网络阶段拆分的OkHttp Interceptor代码片段
 - **review 日志**：logs/review/2026-04-24-1319-review.md
+
+## [Task9 Deep Review] 19.01 APM 全景图与分类体系 — 2026-04-24
+- **类型**：原理链完整性
+- **位置**：L98-L107, L159-L176
+- **问题**：正文先定义“指标/现场/归因”三层，后面又改成“指标/样本/trace 三种证据”，context/schema 合同没有独立落位，trace id / session id / field contract 关系不够稳定。
+- **建议**：把数据模型显式拆成 metrics / sample / trace / context 四类，并给每类至少 3 个字段例子和一个误用场景。
+
+## [Task9 Deep Review] 19.03 KOOM — 2026-04-24
+- **类型**：版本差异覆盖
+- **位置**：L220
+- **问题**：ApplicationExitInfo 被当成通用退出信号，但它只在 API 30+ 可用，低内存杀进程的准确上报还依赖设备支持。
+- **建议**：补上 API 30+ 与 isLowMemoryKillReportSupported() 的边界，并说明 Android 8-10 仍需依赖 LMK/Vitals/logcat。
+
+## [Task9 Deep Review] 19.03 KOOM — 2026-04-24
+- **类型**：知识盲区
+- **位置**：L121-L128
+- **问题**：接入建议没有交代 native 模块的 c++_shared / c++_static 双模式和 STL 打包冲突，落地时容易踩编译或运行时符号冲突。
+- **建议**：在使用建议里补一段 native module 接入边界，明确多个 KOOM 模块不能混用 shared/static 模式。
+
+## [Task9 Deep Review] 19.04 btrace / RheaTrace — 2026-04-24
+- **类型**：原理链完整性
+- **位置**：L82-L88
+- **问题**：命令示例写成 `-r sched`，正文只解释了重启采集，没有解释 `sched` 这个调度 category 的作用。
+- **建议**：把 `-r` 和 `sched` 分开解释，或者补一条 `--list` 查 category 的说明，避免读者把 `sched` 误读成 `-r` 的参数。
