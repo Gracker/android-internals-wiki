@@ -27,8 +27,8 @@ sources:
   path: https://github.com/NetEase/Emmagee
 - type: official
   path: https://github.com/NetEase/Emmagee/releases/tag/V2.5.1
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
