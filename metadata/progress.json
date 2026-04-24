@@ -1,62 +1,64 @@
 {
-  "generated_at": "2026-04-24T21:18:22+08:00",
+  "generated_at": "2026-04-24T21:55:34+08:00",
   "state_machine_version": "v2",
-  "total_sections": 206,
+  "total_sections": 216,
   "metrics": {
-    "total_sections": 206,
-    "finalized": 58,
-    "ready-for-review": 147,
-    "ready-to-publish": 58,
-    "last_updated": "2026-04-24T21:18:22+08:00",
+    "total_sections": 216,
+    "finalized": 57,
+    "ready-for-review": 159,
+    "ready-to-publish": 0,
+    "last_updated": "2026-04-24T21:55:34+08:00",
     "pipeline_stage_counts": {
-      "ready-to-publish": 58,
-      "task6_pending": 31,
-      "task9_pending": 81,
-      "task2b_pending": 35,
-      "unknown": 1
+      "task6_pending": 34,
+      "task2b_pending": 40,
+      "ready-to-publish": 57,
+      "task9_pending": 82,
+      "null": 3
     },
     "task6_state_counts": {
-      "reviewed": 185,
-      "revisiting": 15,
-      "unknown": 6
+      "reviewed": 188,
+      "revisiting": 17,
+      "null": 8,
+      "pending": 3
     },
     "task9_state_counts": {
-      "reviewed": 105,
+      "reviewed": 109,
       "pending": 94,
-      "unknown": 6,
-      "fixed": 1
+      "fixed": 1,
+      "null": 12
     },
     "task2b_state_counts": {
-      "fixed": 147,
-      "idle": 5,
-      "pending": 46,
-      "unknown": 8
+      "fixed": 150,
+      "pending": 48,
+      "idle": 4,
+      "null": 14
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 58,
-      "task6_pending": 31,
-      "task9_pending": 81,
-      "task2b_pending": 35,
-      "unknown": 1
+      "task6_pending": 34,
+      "task2b_pending": 40,
+      "ready-to-publish": 57,
+      "task9_pending": 82,
+      "null": 3
     },
     "task6_state_counts": {
-      "reviewed": 185,
-      "revisiting": 15,
-      "unknown": 6
+      "reviewed": 188,
+      "revisiting": 17,
+      "null": 8,
+      "pending": 3
     },
     "task9_state_counts": {
-      "reviewed": 105,
+      "reviewed": 109,
       "pending": 94,
-      "unknown": 6,
-      "fixed": 1
+      "fixed": 1,
+      "null": 12
     },
     "task2b_state_counts": {
-      "fixed": 147,
-      "idle": 5,
-      "pending": 46,
-      "unknown": 8
+      "fixed": 150,
+      "pending": 48,
+      "idle": 4,
+      "null": 14
     }
   },
   "issues": {
@@ -8219,10 +8221,14 @@
       "chapter": "19",
       "section": "19.08",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T21:55:34+08:00"
     },
     "src/part3-tools/ch19-apm/20-solopi-emmagee.md": {
       "path": "src/part3-tools/ch19-apm/20-solopi-emmagee.md",
@@ -8291,10 +8297,14 @@
       "chapter": "19",
       "section": "19.06",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T21:55:34+08:00"
     },
     "src/part3-tools/ch19-apm/26-hybrid-apm.md": {
       "path": "src/part3-tools/ch19-apm/26-hybrid-apm.md",
@@ -8378,10 +8388,14 @@
       "chapter": "19",
       "section": "19.05",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T21:55:34+08:00"
     },
     "src/part3-tools/ch19-apm/10-other-opensource-apm.md": {
       "path": "src/part3-tools/ch19-apm/10-other-opensource-apm.md",
@@ -8478,10 +8492,14 @@
       "chapter": "19",
       "section": "19.07",
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-24T21:55:34+08:00"
     },
     "src/part3-tools/ch19-apm/27-apm-client-architecture.md": {
       "path": "src/part3-tools/ch19-apm/27-apm-client-architecture.md",
@@ -8665,6 +8683,37 @@
           "auto_promoted": true
         }
       ]
+    },
+    {
+      "date": "2026-04-24",
+      "task": "task9-deep-review",
+      "time": "21:55",
+      "sections_reviewed": [
+        {
+          "section": "19.05",
+          "title": "LeakCanary",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "19.06",
+          "title": "BlockCanary",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "19.07",
+          "title": "DoraemonKit / DoKit",
+          "result": "needs-rework",
+          "issues": 3
+        },
+        {
+          "section": "19.08",
+          "title": "ArgusAPM",
+          "result": "needs-rework",
+          "issues": 2
+        }
+      ]
     }
   ],
   "progress": {
@@ -8740,6 +8789,38 @@
         "task9_state": "reviewed",
         "pipeline_stage": "ready-to-publish",
         "issues_found": "minor"
+      },
+      "19.05": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
+      },
+      "19.06": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
+      },
+      "19.07": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
+      },
+      "19.08": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-24",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
       }
     }
   },
@@ -8903,6 +8984,38 @@
         "status": "ready-for-review",
         "pipeline": "task6_pending",
         "task2b_result": "fixed"
+      }
+    }
+  },
+  "2026-04-24-21": {
+    "task": "deep-tech-review",
+    "sections": [
+      "19.05",
+      "19.06",
+      "19.07",
+      "19.08"
+    ],
+    "timestamp": "2026-04-24T13:55:34Z",
+    "results": {
+      "19.05": {
+        "status": "ready-for-review",
+        "pipeline": "task2b_pending",
+        "task9_result": "needs-rework"
+      },
+      "19.06": {
+        "status": "ready-for-review",
+        "pipeline": "task2b_pending",
+        "task9_result": "needs-rework"
+      },
+      "19.07": {
+        "status": "ready-for-review",
+        "pipeline": "task2b_pending",
+        "task9_result": "needs-rework"
+      },
+      "19.08": {
+        "status": "ready-for-review",
+        "pipeline": "task2b_pending",
+        "task9_result": "needs-rework"
       }
     }
   }
