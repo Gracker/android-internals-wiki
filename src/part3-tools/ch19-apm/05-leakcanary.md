@@ -7,7 +7,7 @@ drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
-last_verified_against: "LeakCanary official docs"
+last_verified_against: "LeakCanary fundamentals-how-leakcanary-works.md + recipes.md + changelog.md"
 confidence: medium
 tags: [apm, memory, leak-detection, debug-tools, shark]
 related_chapters: ["19.0"]
@@ -16,17 +16,18 @@ sources:
     path: "https://square.github.io/leakcanary/"
   - type: official
     path: "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-24"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T21:55:34+08:00"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # LeakCanary
@@ -78,15 +79,15 @@ LeakCanary 是 Square 开源的 Android 内存泄漏检测库。它最适合开�
 
 ## 它怎样判断对象被保留
 
-LeakCanary 的流程可以拆成四步：
+LeakCanary 不会在对象一销毁时就立刻 dump heap。实际流程如下：
 
-1. 观察对象生命周期，比如 Activity `onDestroy()` 后进入观察队列。
-2. 用弱引用判断对象在 GC 后是否仍然存活。
-3. 对持续存活的对象触发 heap dump。
-4. 用 Shark 分析 Hprof，生成从 GC Root 到泄漏对象的 leak trace。
+1. `Activity.onDestroy()`、`Fragment.onDestroy()`、`Fragment.onDestroyView()`、`ViewModel.onCleared()` 这些生命周期结束点把对象交给 `AppWatcher` / `ObjectWatcher`。
+2. `ObjectWatcher` 为对象保存弱引用。
+3. 等待 5 秒后再次检查，并主动触发 GC。弱引用还没清掉时，这个对象才算 retained object。
+4. LeakCanary 先累计 retained object 数量。默认阈值是应用可见时 5 个、应用不可见时 1 个。
+5. 只有达到阈值后才会 dump `.hprof`，再由 Shark 分析 GC Root、引用路径、suspect reference 和 retained size。
 
-这套流程的关键点是“应该释放的对象仍然被强引用持有”。LeakCanary 不是单纯看内存数值，也不是看到对象多就报警。它关心的是生命周期已经结束、但引用链仍然存在的对象。
-
+这套流程把 retained check 和 heap dump 分成了两步。日常接入里最容易写错的地方，就是把“对象还活着”直接写成“马上 dump”。
 ## leak trace 比堆大小更有用
 
 内存泄漏排查里，堆大小只能告诉你结果，引用链才能告诉你原因。LeakCanary 输出的 leak trace 会标出：
@@ -107,17 +108,21 @@ LeakCanary 会把泄漏分成 Application Leak 和 Library Leak。前者是应�
 
 ## Release 中使用要很克制
 
-LeakCanary 官方文档提供了 at scale 和 release 相关能力，但这不等于普通项目应该直接在线上全量打开。heap dump 会带来明显开销，Hprof 也可能包含敏感对象和用户数据。
+完整 LeakCanary 能力和 retained-object 观察能力不要混在一起写。常见边界如下：
 
-如果要在预发或小流量包里使用，建议先满足这些条件：
+| 依赖 / 能力 | 默认内容 | 适合场景 |
+|---|---|---|
+| `leakcanary-android` | 自动观察 + heap dump + Shark 分析 + 本地结果展示 | Debug / QA 包里的完整本地分析 |
+| `leakcanary-object-watcher-android` | 自动安装 `ObjectWatcher`，只保留 retained object 计数信号 | Release / 灰度包里只统计 retained object |
+| release heap analysis | 需要额外评估 dump、分析、脱敏和上传流程 | 预发或专项诊断，不适合默认常开 |
 
-- 只在内部渠道或灰度诊断包启用。
-- dump 前后做频率限制，避免短时间多次 dump。
-- Hprof 不直接上传，只上传裁剪后的 leak trace 或签名。
-- 明确数据保留周期和隐私审查范围。
+当前主流做法很明确：完整 `leakcanary-android` 只放 debug；release 若确实要留信号，通常只接 `leakcanary-object-watcher-android`。线上直接做 heap dump 仍然要面对三个代价：
+
+- dump 会冻结进程一小段时间，交互体验会抖。
+- Hprof 可能带出对象字段、URL、文本和用户态数据，隐私审查压力高。
+- 文件体积和上传成本都不低，频繁抓取会挤压磁盘和网络预算。
 
 生产环境内存治理更常见的搭配是：KOOM 或自研 SDK 负责线上趋势和样本，LeakCanary 负责本地复现和修复。
-
 ## 和 Perfetto、Profiler 的边界
 
 Perfetto 可以看进程内存曲线、RSS/PSS、GC、heap profile 等信号；Android Studio Memory Profiler 可以交互式查看对象分配和引用。LeakCanary 的优势是自动化和针对性：它知道 Android Framework 的生命周期语义，也内置了很多系统泄漏模式。
@@ -133,16 +138,16 @@ LeakCanary 是开发者修内存泄漏时最省时间的本地工具之一，但
 
 ## 默认观察对象
 
-LeakCanary 会自动覆盖 Android 常见生命周期对象，典型包括 Activity、Fragment、Fragment view、ViewModel 等。它也允许开发者通过 `ObjectWatcher` 观察业务对象。
+LeakCanary 2.x 的自动观察对象主要是四类：
 
-业务对象观察适合这些场景：
+- destroyed `Activity`
+- destroyed `Fragment`
+- destroyed fragment `View`
+- cleared `ViewModel`
 
-- 复杂播放器、相机、地图、WebView 容器。
-- 大型业务 controller / presenter / manager。
-- 订阅消息总线、协程、RxJava、Callback 后应释放的对象。
-- 持有 Bitmap、ByteArray、native handle 的对象。
+这四类对象背后依赖的是 Android 生命周期和 AndroidX / Lifecycle 回调，而不是“扫一遍堆里所有对象”。Activity 由 `Application.ActivityLifecycleCallbacks` 兜住；Fragment 与 fragment view 依赖 AndroidX Fragment 生命周期；ViewModel 则依赖 `onCleared()` 这个明确的生命周期终点。
 
-示意代码如下，重点是只观察“生命周期已经结束”的对象：
+`Service`、播放器容器、地图控制器、业务 presenter、手动创建的 detached view 这些对象，通常还要开发者自己调用 `AppWatcher.objectWatcher.watch()`。代码示例只保留关键调用：
 
 ```kotlin
 class PlayerController {
@@ -156,15 +161,15 @@ class PlayerController {
 }
 ```
 
-如果对象本来就应该常驻，加入 watch 只会制造噪声。LeakCanary 的前提永远是“这个对象此刻应该可回收”。
-
+如果对象本来就应该常驻，加入 watch 只会制造噪声。LeakCanary 的前提一直是：这个对象在当前时间点应该已经可回收。
 ## leak trace 应该怎么读
 
-LeakCanary 报告里的 leak trace 不是普通调用栈，它是从 GC Root 到泄漏对象的引用路径。读的时候按三步来：
+LeakCanary 报告里的 leak trace 不是普通调用栈，它是从 GC Root 到泄漏对象的引用路径。读的时候先抓四个点：
 
-1. 看末尾对象：确认被泄漏的是 Activity、View、Fragment view 还是业务对象。
-2. 看红线引用：这些引用是 LeakCanary 判断最可疑的保留点。
-3. 看 GC Root：判断根来自线程、静态字段、JNI、系统对象还是局部变量。
+1. 末尾对象：确认被泄漏的是 `Activity`、`Fragment view`、`Dialog` 还是业务对象。
+2. suspect reference：这些引用是 LeakCanary 标红的可疑保留点。
+3. GC Root：判断根来自线程、静态字段、JNI 还是系统对象。
+4. retained size：如果这个对象被释放，连带能回收多少内存。它决定了规模是几十 KB 的小泄漏，还是几 MB 的大对象链。
 
 例如，一个简化后的泄漏可能长这样：
 
@@ -188,21 +193,23 @@ v
 RecyclerView
 ```
 
-这条链说明问题不在 `RecyclerView` 本身，而在 `AnalyticsDispatcher.callbacks` 里保存的 callback 没有移除。修复点应该回到订阅/反订阅，而不是清空页面里的所有 View 字段。
+这里的 `this$0` 不是业务字段，而是匿名内部类或内部类对外部类实例的隐式引用。它把 `HomeFragment$callback` 和 `HomeFragment` 连在一起，所以真正的修复点不在 `RecyclerView`，而在 `AnalyticsDispatcher.callbacks` 里保存的 callback 没有移除。
 
+如果同一条 leak trace 还带着较大的 retained size，优先级就要往前提。一个泄漏的 `Dialog` 只占几十 KB，和一个把整页 Bitmap、Adapter、缓存对象都拖住的链，处理顺序不会一样。
 ## 常见泄漏模式
 
 | 模式 | 表现 | 修复方向 |
 |---|---|---|
 | 静态单例持有 Context / View | Activity 销毁后仍被 static 字段引用 | 存 application context，避免持有 View |
-| Handler / Runnable 延迟任务 | MessageQueue 中的任务持有页面对象 | 页面销毁时 remove callbacks |
+| Handler / Runnable 延迟任务 | MessageQueue 中的任务持有页面对象 | 页面销毁时 `removeCallbacksAndMessages()` |
 | 监听器未注销 | 全局 dispatcher、网络回调、传感器监听持有页面 | 成对注册和注销 |
-| 协程 / Rx 订阅未取消 | 后台任务完成前页面已销毁 | 绑定 lifecycle scope 或 dispose |
+| 协程 / Rx / Flow 收集未取消 | 页面销毁后 collector 还在推数据，闭包继续持有页面对象 | 绑定 lifecycle scope，退出页面时 cancel / dispose |
+| 匿名内部类 / lambda 持有外部类 | `this$0` 把 callback 和 Activity / Fragment 连在一起 | 改成静态类、顶层类，或在退出时解绑 |
 | Fragment view 泄漏 | `onDestroyView()` 后 adapter / binding 仍持有 View | 清空 binding、adapter、listener |
+| Dialog / PopupWindow 泄漏 | 弹窗 dismiss 后仍被 Window、listener 或 manager 持有 | `dismiss()` 后清理 listener、adapter、context 链 |
 | WebView / Map / Player 容器 | native 资源或内部线程持有 Activity | 独立生命周期封装，销毁顺序明确 |
 
-LeakCanary 的优势是直接告诉你引用路径。修复时不要只“把字段置空”，要理解谁负责释放这条引用。
-
+LeakCanary 的优势是直接告诉你引用路径。修复时不要只把字段置空，而要找到谁负责释放这条引用。
 ## Library Leak 的处理方式
 
 Library Leak 不是“可以忽略”的同义词。它表示泄漏来自系统或第三方库的已知模式，应用不一定能直接修，但仍要评估影响：
@@ -228,6 +235,50 @@ LeakCanary 更适合本地修复，但它可以和线上样本组成一条修复
 
 ## 测试集成建议
 
-LeakCanary 可以进入 UI 测试流程。对关键页面写自动化用例，执行进入、操作、退出，再检查 retained object 是否超过阈值。这样能防止常见生命周期泄漏回归。
+LeakCanary 放进 UI / instrumentation 测试时，门槛不在“能不能跑”，而在“怎样把噪声压住”。关键页面可以做一条最小门禁：进入页面、触发核心交互、退出页面，再检查 retained object 是否回到 0。下面这段示意代码只保留关键调用：
 
-测试时要给异步任务留出完成时间，也要避免在刚退出页面后立即断言。更稳的做法是等待主线程空闲、触发 GC、多轮检查后再判断。泄漏测试比普通 UI 测试慢，但对核心页面很值得。
+```kotlin
+// Several unrelated imports are omitted.
+@RunWith(AndroidJUnit4::class)
+class PlayerLeakTest {
+
+    @Test
+    fun playerPage_should_not_leave_retained_objects() {
+        ActivityScenario.launch(PlayerActivity::class.java).use { scenario ->
+            scenario.moveToState(Lifecycle.State.DESTROYED)
+        }
+
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        Runtime.getRuntime().gc()
+        SystemClock.sleep(6_000)
+
+        assertEquals(0, AppWatcher.objectWatcher.retainedObjectCount)
+    }
+}
+```
+
+这类门禁要配两条补充规则：
+
+- 只盯核心页面、核心容器和高频回归路径，不要把全量页面一次性全挂进 CI。
+- 退出页面后给异步任务、主线程空闲和 GC 留缓冲窗口，否则短暂存活对象会被误判成泄漏。
+
+已知系统泄漏或第三方库泄漏不能直接让 CI 全红。调试包可以把已知模式放进 `referenceMatchers`，在门禁里把噪声先分流：
+
+```kotlin
+class DebugExampleApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        LeakCanary.config = LeakCanary.config.copy(
+            referenceMatchers = AndroidReferenceMatchers.appDefaults +
+                AndroidReferenceMatchers.staticFieldLeak(
+                    className = "com.example.LegacySingleton",
+                    fieldName = "sContext",
+                    description = "LegacySingleton keeps a destroyed activity.",
+                    patternApplies = { manufacturer == "ExampleVendor" && sdkInt == 33 }
+                )
+        )
+    }
+}
+```
+
+门禁报告里至少保留 leak signature、页面路由、retained size 和构建版本。这样才能把“同一条老问题重复出现”与“新引入的泄漏”分开看。

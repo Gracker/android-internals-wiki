@@ -5,26 +5,27 @@ section: "19.08"
 status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+applicable_versions: "历史 APM 架构参考（公开 sample：compileSdk 27 / targetSdk 27 / Java 7）；现代 Android 版本需单独验证"
 last_verified: "2026-04-24"
-last_verified_against: "Qihoo360/ArgusAPM GitHub README"
+last_verified_against: "Qihoo360/ArgusAPM README + argus-apm-sample/build.gradle + argus-apm-okhttp/build.gradle"
 confidence: medium
 tags: [apm, aop, gradle-plugin, monitoring, legacy]
 related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Qihoo360/ArgusAPM"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-24"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T21:55:34+08:00"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # ArgusAPM
@@ -72,8 +73,7 @@ task2b_state: pending
 
 ArgusAPM 是 360 开源的 Android 性能监控平台，仓库 README 把它定义为移动端可视化性能监控平台。它覆盖交互分析、网络、内存、进程、文件、卡顿、ANR 等指标，并提供 Gradle Plugin 做接入和 AOP 织入。
 
-截至 2026-04-24，仓库 README 仍保留一条公告：由于公司业务调整及成本原因，ArgusAPM 停止支持服务端免费新增接入，已接入产品不受影响。这个状态决定了它更适合作为架构参考或存量项目维护对象，不适合作为新项目默认选型。
-
+截至 2026-04-24，仓库 README 仍保留一条公告：由于公司业务调整及成本原因，ArgusAPM 停止支持服务端免费新增接入，已接入产品不受影响。再往下看公开 sample，基线也停在较早期：`compileSdkVersion 27`、`targetSdkVersion 27`、`JavaVersion.VERSION_1_7`，示例里依赖的 OkHttp 还是 `3.10.0`。这个状态决定了它更适合作为架构参考或存量项目维护对象，不适合作为新项目默认选型。
 ## 架构分成采集模块和 Gradle Plugin
 
 ArgusAPM 的整体结构可以看成两部分：
@@ -85,31 +85,38 @@ ArgusAPM 的整体结构可以看成两部分：
 
 ## 支持的监控方向
 
-README 中列出的监控模块覆盖面较广：
+README 中列出的监控模块覆盖面较广。把它们当架构样本看时，需要把“数据从哪来”和“产出什么”写清楚：
 
-| 方向 | 采集目的 |
-|---|---|
-| 交互分析 | 统计 Activity 生命周期耗时，定位页面打开慢 |
-| 网络请求分析 | 记录请求耗时、流量、错误和网络问题 |
-| 内存分析 | 监控内存使用，辅助降低内存占用 |
-| 进程监控 | 统计多进程启动和异常存活情况 |
-| 文件监控 | 观察私有文件大小和变化 |
-| 卡顿分析 | 记录卡顿时刻和代码堆栈 |
-| ANR 分析 | 捕获 ANR 相关异常和现场 |
+| 方向 | 公开实现入口 / 数据来源 | 报告产物 |
+|---|---|---|
+| 交互分析 | Activity 生命周期回调或 AOP 织入生命周期方法 | 页面打开耗时、阶段耗时事件 |
+| 网络请求分析 | `argus-apm-okhttp` 这类网络采集模块，接在 OkHttp 调用链上 | 请求样本、错误码、耗时、流量 |
+| 内存分析 | 进程内存快照、阈值采样、GC / OOM 现场 | 周期性内存样本、异常快照 |
+| 进程监控 | 多进程启动、存活和退出事件 | 进程启动耗时、异常存活、退出记录 |
+| 文件监控 | 私有目录扫描、文件大小变化统计 | 文件增长样本、目录占用趋势 |
+| 卡顿分析 | 主线程 Looper 边界 + 抓栈样本 | block 样本、堆栈签名、页面上下文 |
+| ANR 分析 | ANR 现场抓取、主线程堆栈和进程状态快照 | ANR 现场样本、线程栈、版本聚类 |
 
 这些方向至今仍是移动 APM 的主干。变化主要发生在实现细节上：Android 版本提高、权限收紧、AGP 插件 API 变化、隐私审查变严，都会影响旧方案直接复用。
-
 ## 新项目使用要谨慎
 
-ArgusAPM 的问题不在思路，而在维护和平台依赖。新项目直接采用会遇到几类风险：
+ArgusAPM 的主要风险来自维护状态和平台依赖。新项目直接采用会遇到几类风险：
 
 - 服务端新增接入状态不确定，平台能力无法直接依赖。
 - Gradle 插件和 AOP 织入可能不适配现代 AGP。
 - 旧监控模块对 Android 12+、14+、16KB page size、隐私策略的适配需要重新验证。
 - 文档和社区活跃度不足，遇到兼容问题时更多要靠自修。
 
-如果已有项目还在用，建议先把采集模块、服务端依赖和构建插件分开评估。能保留的保留，无法适配的逐步替换成 AndroidX、Matrix、KOOM、Sentry、Firebase 或自研模块。
+公开 sample 的工具链基线也把迁移顺序指得很清楚：
 
+| 公开 sample 基线 | 对现代项目的风险 | 建议替换顺序 |
+|---|---|---|
+| `compileSdkVersion 27` / `targetSdkVersion 27` | 版本边界停在早期 Android 8.x 工具链 | 1：先收敛 Gradle 插件、字节码织入和构建脚本 |
+| `JavaVersion.VERSION_1_7` | 新版插件链、字节码工具和依赖兼容性差 | 1：和构建链一起升级 |
+| `okhttp:3.10.0` | TLS、API、网络埋点边界都偏旧 | 2：再替换网络采集模块 |
+| 历史服务端字段口径 | 迁移后看板和告警容易断档 | 3：再处理字段兼容和历史数据映射 |
+
+如果已有项目还在用，建议先把采集模块、服务端依赖和构建插件分开评估。能保留的保留，无法适配的逐步替换成 AndroidX、Matrix、KOOM、Sentry、Firebase 或自研模块。
 ## 作为参考，它仍然有学习价值
 
 ArgusAPM 展示了一个完整移动 APM 早期形态：客户端模块化采集、编译期织入、网络库适配、多进程处理、服务端看板。这些设计问题今天仍然存在，只是工具和系统环境变了。
@@ -140,8 +147,31 @@ ArgusAPM 这类方案使用编译期织入，最适合处理有明确调用边�
 - 业务埋点的自动包装。
 - 主线程风险 API 的静态扫描或插入。
 
-不适合用 AOP 解决所有问题。比如系统调度、RenderThread、GPU、native heap、Binder 对端，这些都不在 Java 方法入口出口里。AOP 能补业务上下文，不能替代系统 trace。
+织入前后的等价逻辑，可以用 Activity 生命周期耗时来理解：
 
+```kotlin
+// 业务代码
+override fun onResume() {
+    super.onResume()
+    renderAboveTheFold()
+}
+```
+
+```kotlin
+// 字节码织入后的等价逻辑示意，省略 ArgusAPM 内部上报实现
+override fun onResume() {
+    val startNs = SystemClock.elapsedRealtimeNanos()
+    try {
+        super.onResume()
+        renderAboveTheFold()
+    } finally {
+        val costMs = (SystemClock.elapsedRealtimeNanos() - startNs) / 1_000_000
+        // 将 costMs、页面名、进程名写入采集模块
+    }
+}
+```
+
+不适合用 AOP 解决所有问题。系统调度、RenderThread、GPU、native heap、Binder 对端都不在 Java 方法入口出口里。AOP 能补业务上下文，不能替代系统 trace。
 ## 多进程采集要单独设计
 
 README 提到 ArgusAPM 支持多进程采集。多进程 APM 的难点在三个地方：
@@ -159,11 +189,16 @@ README 提到 ArgusAPM 支持多进程采集。多进程 APM 的难点在三个�
 | 短命进程 | 只采 Crash / ANR / exit，避免重模块初始化 |
 | WebView / renderer | 依赖系统和 WebView 侧指标，谨慎注入 |
 
-多进程一刀切初始化，会增加启动成本，也会制造重复上报。
+去重规则也要提前设计。常见做法是每个样本都带 `session_id`、`trace_id`、`process_name`、`pid` 和单调递增的 `msg_id`：
 
+- 主进程发起的用户操作生成 `trace_id`，子进程沿用它。
+- 端侧落盘以 `process_name + msg_id` 去重，避免重试上传时重复写入。
+- 服务端按 `session_id + trace_id + stage` 聚合同一条操作链，把主进程页面事件和子进程 Crash / ANR 关联起来。
+
+多进程一刀切初始化，会增加启动成本，也会制造重复上报。
 ## 网络监控的现代适配
 
-ArgusAPM 里有 `argus-apm-okhttp` 这类网络采集模块。现代网络监控除了 OkHttp 耗时，还要区分：
+ArgusAPM 里有 `argus-apm-okhttp` 这类网络采集模块。现代网络监控除了总耗时，还要区分：
 
 - DNS、connect、TLS、request body、server wait、response body。
 - HTTP code、业务 code、异常类型、重试次数。
@@ -171,17 +206,57 @@ ArgusAPM 里有 `argus-apm-okhttp` 这类网络采集模块。现代网络监控
 - 缓存命中和离线缓存。
 - URL pattern 脱敏。
 
-如果平台只记录“接口耗时 1200ms”，定位价值有限。书稿级 APM 应该把网络请求拆成阶段指标，并和页面、用户操作、服务端 trace id 关联。
+这里有一个很容易混淆的边界：只靠 `Interceptor` 拿不到 DNS / connect / TLS 这些阶段，真正的阶段拆分要靠 `EventListener`；`Interceptor` 更适合补请求 ID、业务 code 和页面上下文。
 
+```kotlin
+class StageEventListener : EventListener() {
+    private var dnsStartNs = 0L
+    private var connectStartNs = 0L
+
+    override fun dnsStart(call: Call, domainName: String) {
+        dnsStartNs = System.nanoTime()
+    }
+
+    override fun dnsEnd(call: Call, domainName: String, inetAddressList: List<InetAddress>) {
+        val dnsMs = (System.nanoTime() - dnsStartNs) / 1_000_000
+        // 记录 DNS 耗时
+    }
+
+    override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
+        connectStartNs = System.nanoTime()
+    }
+
+    override fun connectEnd(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy, protocol: Protocol?) {
+        val connectMs = (System.nanoTime() - connectStartNs) / 1_000_000
+        // 记录 connect 耗时
+    }
+}
+```
+
+```kotlin
+class RequestContextInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val requestId = UUID.randomUUID().toString()
+        val request = chain.request().newBuilder()
+            .header("X-Trace-Id", requestId)
+            .build()
+        val response = chain.proceed(request)
+        // 这里补 route、业务 code、response.code、requestId
+        return response
+    }
+}
+```
+
+如果平台只记录“接口耗时 1200ms”，定位价值有限。书稿级 APM 应该把网络请求拆成阶段指标，并和页面、用户操作、服务端 trace id 关联。
 ## 存量项目迁移建议
 
 已有 ArgusAPM 存量接入时，建议按模块拆迁，不要一次推倒：
 
 1. 保留服务端能用的历史数据，避免趋势断档。
 2. 先替换构建链风险最高的 Gradle / AOP 插件。
-3. 卡顿和帧指标迁到 JankStats / FrameMetrics 或 Matrix。
-4. Crash / ANR 迁到 Bugly、Sentry、APMPlus 或自建平台。
-5. 网络数据迁到统一网络库拦截器。
+3. 再处理网络模块，把旧 OkHttp 依赖和阶段统计口径换成现代实现。
+4. 卡顿和帧指标迁到 JankStats / FrameMetrics 或 Matrix。
+5. Crash / ANR 迁到 Bugly、Sentry、APMPlus 或自建平台。
 6. 页面、版本、机型维度保持字段兼容，方便前后对比。
 
-旧 APM 最大的价值是历史口径。迁移时如果字段全变，平台会失去版本对比能力。
+旧 APM 最大的价值是历史口径。迁移时如果字段全变，平台会失去版本对比能力；如果字段不变、采集链先稳住，再逐个替换底层实现，迁移风险会小很多。
