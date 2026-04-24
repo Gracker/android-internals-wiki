@@ -1900,5 +1900,25 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T02:02:05+08:00",
     "status": "pending"
+  },
+  {
+    "section": "19.0",
+    "section_title": "第 19 章：APM 工具与性能监控生态",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 19.0 总纲误把 JankStats 写成 Perfetto 兼容 trace 产出方",
+    "material_paths": [
+      "logs/deep-review/2026-04-25-02-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "## 与其他章节的关系，第 1 条",
+        "detail": "该条写成 btrace/RheaTrace、JankStats、Tracing SDK 都会产出 Perfetto 兼容的数据格式。JankStats 的公开能力是通过 OnFrameListener / FrameData 回调输出帧级 jank 数据与 UI state，不会直接生成 Perfetto trace 文件。",
+        "suggestion": "把 JankStats 从“产出 Perfetto 兼容数据格式”的表述中移出，改成“提供帧级 jank 回调，可与 Perfetto / FrameTimeline / androidx.tracing 联合归因”。Perfetto 兼容输出只留给实际会写 trace / trace section 的工具。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T02:26:14+08:00",
+    "status": "pending"
   }
 ]
