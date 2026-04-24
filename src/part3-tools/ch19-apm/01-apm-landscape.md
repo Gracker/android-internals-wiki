@@ -7,7 +7,7 @@ drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
-last_verified_against: "Android Developers docs / Firebase docs / GitHub upstream READMEs"
+last_verified_against: "Android Developers JankStats / FrameMetrics / ApplicationExitInfo / ProfilingManager docs, Firebase docs, GitHub upstream READMEs"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
@@ -16,6 +16,12 @@ sources:
     path: "https://developer.android.com/topic/performance"
   - type: official
     path: "https://developer.android.com/reference/androidx/metrics/performance/JankStats"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/FrameMetrics"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon"
   - type: blog
@@ -26,14 +32,15 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: blog
     path: "https://github.com/measure-sh/measure"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task2b_result: pending
+task2b_result: fixed
+last_task2b_at: "2026-04-24T13:52:59+08:00"
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
@@ -91,14 +98,16 @@ APM 在 Android 性能体系里的位置很清楚：它把线上设备里的性�
 
 Android 性能监控工具可以按采集位置和使用场景分成四类：
 
-| 层次 | 代表工具 | 主要回答的问题 | 常见使用位置 |
-|---|---|---|---|
-| 客户端 APM 框架 | Matrix、KOOM、btrace、Measure | 线上发生了什么，能不能保留现场 | Release 或灰度包 |
-| 官方指标 SDK | JankStats、FrameMetrics、Tracing SDK、ProfilingManager | 系统和 AndroidX 愿意给哪些稳定信号 | Release、测试、专项诊断 |
-| 线下研发工具 | LeakCanary、DoKit、BlockCanary、AndroidGodEye | 开发和测试阶段怎样更快发现问题 | Debug、QA、实验室 |
-| Benchmark 工具 | Macrobenchmark、Geekbench、PerfDog、AndroBench | 设备、版本或代码改动前后差异是多少 | 自动化、实验室、竞品分析 |
+| 层次 | 代表工具 | 最低 API / 精度边界 | 主要回答的问题 | 常见使用位置 |
+|---|---|---|---|---|
+| 客户端 APM 框架 | Matrix、KOOM、btrace、Measure | 多数依赖应用自身 minSdk、native ABI 和构建链兼容性 | 线上发生了什么，能不能保留现场 | Release 或灰度包 |
+| 官方指标 SDK | JankStats、FrameMetrics、ApplicationExitInfo、Tracing SDK、ProfilingManager | JankStats API 16+，API 24+ 改走 FrameMetrics，API 31+ 可拿到 `frameOverrunNanos`；FrameMetrics API 24+；ApplicationExitInfo API 30+；Tracing SDK 更偏应用侧自定义 trace；ProfilingManager API 35+ | 系统和 AndroidX 愿意给哪些稳定信号 | Release、测试、专项诊断 |
+| 线下研发工具 | LeakCanary、DoKit、BlockCanary、AndroidGodEye | 更依赖 Debug 构建、测试设备和人工操作 | 开发和测试阶段怎样更快发现问题 | Debug、QA、实验室 |
+| Benchmark 工具 | Macrobenchmark、Geekbench、PerfDog、AndroBench | Macrobenchmark 依赖 Jetpack 与测试基建；外部工具还受设备与测试台约束 | 设备、版本或代码改动前后差异是多少 | 自动化、实验室、竞品分析 |
 
-同样写着“性能监控”，这四类工具的工程含义差别很大。客户端 APM 关心采样、上报、隐私、服务端存储；官方 SDK 关心系统版本和指标口径；线下工具关心诊断效率；Benchmark 关心可重复性和测试条件。
+同样写着“性能监控”，这四类工具的工程含义差别很大。客户端 APM 关心采样、上报、隐私、服务端存储；官方 SDK 关心系统版本、API floor 和指标口径；线下工具关心诊断效率；Benchmark 关心可重复性和测试条件。
+
+官方信号不能被写成同一批等价能力。JankStats 的 API floor 最低，但精度会随系统版本变化：API 16-23 依赖 `OnPreDrawListener`，API 24-30 依赖 `FrameMetrics`，API 31+ 才能补上 `frameOverrunNanos` 这类更接近 deadline 超时的信息。FrameMetrics 只从 API 24 起可用，ApplicationExitInfo 从 API 30 起给进程退出原因，ProfilingManager 则是 API 35 之后的按需 profiling 入口。
 
 ## 一个完整线上体系至少有三层数据
 
@@ -144,12 +153,14 @@ APM 适合回答另一类问题：
 
 ## 使用建议
 
-刚开始搭体系时，不要一次接满所有 SDK。更稳的顺序是：
+刚开始搭体系时，不要一次接满所有 SDK。更稳的顺序是按 API floor 往上加：
 
 1. 用 Android Vitals、Crash 平台、基础启动埋点建立版本级趋势。
-2. 用 JankStats、FrameMetrics、ApplicationExitInfo 补官方信号。
-3. 选一到两个专项客户端工具补现场，比如 Matrix 看卡顿和 IO，KOOM 看内存，btrace 看方法级 trace。
-4. 再决定是否接 Measure、Firebase、Sentry、APMPlus 这类平台方案，或自建数据管道。
+2. 先接 JankStats 作为跨版本帧信号；在 Android 8+ 设备上，再配 FrameMetrics 做窗口级拆解。
+3. Android 11+ 再补 ApplicationExitInfo，把 ANR、LMK、native crash 和用户主动杀进程分开看。
+4. Android 15+ 再考虑 ProfilingManager，用它按需拉 system trace、heap dump 或 heap profile。
+5. 再选一到两个专项客户端工具补现场，比如 Matrix 看卡顿和 IO，KOOM 看内存，btrace 看方法级 trace。
+6. 再决定是否接 Measure、Firebase、Sentry、APMPlus 这类平台方案，或自建数据管道。
 
 APM 不是“接一个库就完成”。它是一套持续运行的数据系统：采集要克制，指标要稳定，样本要可回查，结论要能被线下工具验证。
 
@@ -193,7 +204,7 @@ flowchart LR
 
 | 路线 | 代表工具 | 能拿到什么 | 主要代价 |
 |---|---|---|---|
-| 系统 API | JankStats、FrameMetrics、ApplicationExitInfo、ProfilingManager | 平台愿意暴露的稳定信号 | 口径受系统版本限制，细节不一定够 |
+| 系统 API | JankStats（API 16+；API 24+/31+ 精度逐级变好）、FrameMetrics（API 24+）、ApplicationExitInfo（API 30+）、ProfilingManager（API 35+） | 平台愿意暴露的稳定信号 | 口径受系统版本限制，细节不一定够 |
 | Looper / Choreographer 监听 | BlockCanary、Matrix Trace Canary、轻量自研 APM | 主线程消息耗时、帧间隔、慢帧样本 | 难以覆盖 RenderThread、GPU、系统调度 |
 | 字节码插桩 | Matrix、Rabbit、部分 ArgusAPM 能力 | 方法耗时、调用路径、启动节点 | 构建链复杂，AGP / R8 / 混淆适配成本高 |
 | PLT / native Hook | Matrix IO Canary、KOOM、部分内存工具 | I/O、malloc/free、pthread 生命周期 | ABI、linker namespace、ROM 差异、符号化成本 |

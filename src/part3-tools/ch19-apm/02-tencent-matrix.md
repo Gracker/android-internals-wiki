@@ -14,14 +14,15 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Tencent/matrix"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task2b_result: pending
+task2b_result: fixed
+last_task2b_at: "2026-04-24T13:52:59+08:00"
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
@@ -71,7 +72,7 @@ last_task9_at: "2026-04-24T13:23:00+08:00"
 
 ## Matrix 适合做客户端侧的监控框架
 
-Matrix 是微信团队开源的插件式 APM 框架，Android 侧覆盖 APK 检查、卡顿与慢函数、启动耗时、内存泄漏、文件 I/O、SQLite、耗电、native memory hook、pthread hook 等模块。它最适合的场景，是团队已经有上报和分析平台，需要一个客户端 SDK 把常见性能现场采回来。
+Matrix 是微信团队开源的插件式 APM 框架，Android 侧覆盖 APK 检查、卡顿与慢函数、启动耗时、内存泄漏、文件 I/O、SQLite、耗电、native memory leak 检测、MemGuard、pthread hook 等模块。它最适合的场景，是团队已经有上报和分析平台，需要一个客户端 SDK 把常见性能现场采回来。
 
 它不是一个“接入即有完整平台”的 SaaS。Matrix 更偏客户端采集框架，数据格式、采样、上传、聚合、报警和工单流转，都要由接入方自己接好。
 
@@ -86,9 +87,11 @@ Matrix Android 侧常见模块可以按问题类型理解：
 | IO Canary | 主线程 I/O、小 buffer、重复读、Closeable 泄漏 | native I/O Hook + Java 层资源检查 |
 | SQLite Lint | SQLite 语句质量和风险 | SQLite 官方工具能力封装 |
 | Battery Canary | 线程、WakeLock、Alarm、GPS、Wi-Fi、蓝牙等耗电行为 | 系统接口采样与行为监控 |
-| MemGuard / Memory Hook | native 内存越界、use-after-free、泄漏候选 | PLT Hook、GWP-ASan 相关能力 |
+| Memory Hook | native 内存泄漏候选 | PLT Hook + alloc/free backtrace |
+| MemGuard | heap overlap、use-after-free、double free | GWP-ASan 相关能力 |
+| Pthread Hook | Java / native 线程泄漏、线程栈空间修剪 | PLT Hook + pthread 生命周期拦截 |
 
-这个分法比“Matrix 很全”更有用。Trace Canary 和 IO Canary 适合线上卡顿现场，Resource Canary 更接近内存治理，APK Checker 更适合 CI 或发版前检查。
+这个分法比“Matrix 很全”更有用。Trace Canary 和 IO Canary 适合线上卡顿现场，Resource Canary 关注 Activity leak 与 duplicate bitmap，Memory Hook 和 MemGuard 则分别覆盖 native leak 与 native heap 错误。APK Checker 更适合 CI 或发版前检查。
 
 ## Trace Canary 的工程边界
 
@@ -121,9 +124,9 @@ Perfetto 能看到线程进入 D 状态、主线程被 I/O 拖住，也能看到
 
 ## Resource Canary 和 LeakCanary 的分工
 
-Resource Canary 通过弱引用观察 Activity / Fragment 销毁后的存活情况，再在需要时 dump 和裁剪 Hprof。它适合线上或自动化场景里发现“某类页面反复泄漏”的趋势。
+Resource Canary 通过弱引用观察 Activity 销毁后的存活情况，再在需要时 dump 和裁剪 Hprof。Matrix README 公开写明的两类能力是 Activity leak 和 duplicate bitmap，线上更适合把它当成“某类页面反复泄漏”或“同图被重复解码”的趋势探针。
 
-LeakCanary 更适合开发和测试阶段。它会在本地展示完整 leak trace，帮助开发者直接修代码。两者不冲突：线上用 Resource Canary 发现泄漏分布，本地用 LeakCanary 还原引用链。
+如果排查目标是 Fragment 泄漏、View 引用链或更完整的 leak trace，通常还要交给 LeakCanary 或团队自己的 lifecycle watcher。LeakCanary 更适合开发和测试阶段。它会在本地展示完整 leak trace，帮助开发者直接修代码。两者不冲突：线上用 Resource Canary 发现 Activity leak / duplicate bitmap 分布，本地用 LeakCanary 还原引用链。
 
 ## 接入建议
 
@@ -144,13 +147,13 @@ Matrix Android 的接入模型可以分成三层：
 2. App 运行时初始化 Matrix，并按需安装 `TracePlugin`、`ResourcePlugin`、`IOCanaryPlugin` 等模块。
 3. `PluginListener` 接收 `Issue`，业务侧把它转换成自己的上报 schema。
 
-代码层面通常会落到这样的结构。下面是示意代码，重点看插件注册和 `onReportIssue()` 的职责分离：
+代码层面通常会落到这样的结构。下面这段是接入骨架，重点看 `builder.plugin(...)` 的注册顺序和 `onReportIssue()` 的职责分离。`TraceConfig` 细节要按项目所用 Matrix 版本补齐，但不能跳过注册直接 `getPluginByClass(...).start()`：
 
 ```java
 public final class MatrixInitializer {
     public static void init(Application app) {
         Matrix.Builder builder = new Matrix.Builder(app);
-        builder.pluginListener(new DefaultPluginListener(app) {
+        builder.patchListener(new DefaultPluginListener(app) {
             @Override
             public void onReportIssue(Issue issue) {
                 super.onReportIssue(issue);
@@ -158,16 +161,28 @@ public final class MatrixInitializer {
             }
         });
 
-        Matrix matrix = builder.build();
-        Matrix.init(matrix);
+        IDynamicConfig dynamicConfig = new DynamicConfigImpl();
 
-        matrix.getPluginByClass(TracePlugin.class).start();
-        matrix.getPluginByClass(IOCanaryPlugin.class).start();
+        TracePlugin tracePlugin = buildTracePlugin(dynamicConfig); // 示意：补齐 TraceConfig
+        IOCanaryPlugin ioCanaryPlugin = new IOCanaryPlugin(
+                new IOConfig.Builder()
+                        .dynamicConfig(dynamicConfig)
+                        .build());
+
+        builder.plugin(tracePlugin);
+        builder.plugin(ioCanaryPlugin);
+
+        Matrix.init(builder.build());
+
+        tracePlugin.start();
+        ioCanaryPlugin.start();
     }
 }
 ```
 
-这段代码只是接入形态，真实项目还要把远程开关、进程过滤、采样率、Debug / Release 差异放进去。Matrix 模块不应该在所有进程里默认启动，尤其是推送进程、WebView 独立进程、插件进程和短命进程。
+真正接入时，顺序是“先构造插件，再 `builder.plugin(...)` 注册，再 `Matrix.init(...)`，再按需 `start()`”。如果少了注册步骤，`getPluginByClass(...)` 拿不到实例，示例就会把读者带到一条不存在的接入路径上。
+
+真实项目还要把远程开关、进程过滤、采样率、Debug / Release 差异放进去。Matrix 模块不应该在所有进程里默认启动，尤其是推送进程、WebView 独立进程、插件进程和短命进程。
 
 ## Trace Canary 的时间线
 
