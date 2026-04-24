@@ -5,26 +5,29 @@ section: "19.07"
 status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "didi/DoKit GitHub README"
+applicable_versions: "版本需按 artifact / AndroidX / Gradle / AGP 单独验证；README 明确覆盖 3.5.0 / 3.5.0.1 与 AGP 3.3.0+"
+last_verified: "2026-04-25"
+last_verified_against: "didi/DoKit README + Android/README"
 confidence: medium
 tags: [apm, debug-tools, testing, mock, weak-network]
 related_chapters: ["19.0"]
 sources:
-  - type: blog
-    path: "https://github.com/didi/DoKit"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+  - type: official
+    path: "https://github.com/didi/DoKit/blob/master/README.md"
+  - type: official
+    path: "https://github.com/didi/DoKit/blob/master/Android/README.md"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-24"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T21:55:34+08:00"
-task2b_state: pending
+task2b_result: fixed
+task2b_state: fixed
 ---
 
 # DoraemonKit / DoKit
@@ -111,6 +114,18 @@ DoKit 最好只进入 Debug、internal、QA 渠道包，并且把入口做成明
 
 团队可以把 DoKit 当作“公共研发面板”：统一环境切换、日志查看、沙盒文件、网络请求和基础性能观察。这样比每个业务线各自实现一套调试入口更容易维护，也能减少测试现场来回装工具的时间。
 
+## 版本说明与构建边界
+
+upstream 文档给的是构建兼容表，不是一个统一的“Android 8-17 都能用”承诺。当前 README 明确列出的信息如下：
+
+| 线路 | 依赖与 groupId | 构建前提 | 适用说明 |
+|---|---|---|---|
+| AndroidX 新线 | `io.github.didi.dokit:dokitx:3.5.0` 与配套 `dokitx-plugin` | Gradle 6.8 及以上，AGP 3.3.0+，仓库切到 `mavenCentral()` | README 把它作为当前 AndroidX 主线，Release 使用 `dokitx-no-op` |
+| AndroidX 兼容线 | `io.github.didi.dokit:dokitx:3.5.0.1` 与配套 plugin | Gradle 6.8 及以下，AGP 3.3.0+ | Android README 把这条线留给较旧的 Gradle 环境 |
+| 旧 groupId / support | `com.didichuxing.doraemonkit` 3.3.5 | 旧 AndroidX 或 support 工程 | upstream 写明 support 已停止更新，迁移后再继续接入 |
+
+Android 侧运行兼容性还要继续分开验证。README 没有单独给出 AGP 8.x、targetSdk 35+、Android 15-17 的兼容承诺，所以更稳的写法是：把 DoKit 当成“按构建工具链逐项目验证”的 Debug 能力，而不是写成一个统一的系统版本范围。
+
 ## Debug 工具箱的工程结构
 
 DoKit 这类工具通常由三块组成：
@@ -160,21 +175,44 @@ DoKit 的性能数据适合“现场判断”，不适合直接写入最终分�
 
 这些场景靠线上 APM 很难直接复现。DoKit 的价值在于让测试和开发在同一个包里快速切换条件，把“用户反馈偶现慢”转成可操作路径。
 
+## 平台网络上报与合规边界
+
+README 的“使用提醒”单独写明：SDK 会配合 `dokit.cn` 平台产生网络数据。官方列出的出站类型有四类：
+
+- 集成统计：`DoraemonStatisticsUtil#uploadUserInfo`
+- 内置 kit 使用统计：`DataPickManager#realPost`
+- 健康体检上传：`AppHealthInfoUtil#post`
+- 数据 Mock 相关请求：`NetWorkMockFragment` 中的接口
+
+这会改变“DoKit 只是本地调试面板”的风险边界。只隐藏悬浮窗还不够，内网测试包上线前至少要补三项检查：
+
+- 是否真的需要 `productId()` 和平台工具；不需要的平台能力用抓包再确认一次。
+- 是否把 DoKit 请求纳入测试包的出站域名白名单、代理规则和隐私审查。
+- 截图、日志导出、抓包面板里是否暴露内网地址、Header、token、用户标识。
+
 ## Release 隔离清单
 
 如果项目集成 DoKit，要检查 Release 包是否完全隔离：
 
-- 依赖没有进入 Release runtime classpath。
-- 悬浮窗权限、辅助功能权限、网络代理能力没有出现在正式包流程。
-- Mock、环境切换、数据库查看、沙盒浏览不能被用户触发。
-- 混淆规则没有因为 Debug 工具放宽太多业务类。
-- 自定义工具注册点不会保留敏感菜单或调试账号。
+- 构建依赖：`releaseImplementation` 或正式 flavor 明确切到 `dokitx-no-op`，CI 再检查 release dependency tree 里没有 `dokitx` 本体和调试面板资源。
+- 入口与权限：悬浮窗、辅助功能、网络代理、文件浏览、环境切换入口都不能出现在正式包流程里。
+- 平台出站：正式包不保留 `productId()`、健康体检、Mock、统计上报这类平台能力，测试包上线前先做一次抓包留档。
+- 数据与日志：抓包详情、Header、token、用户标识、内网地址、沙盒导出文件不能被普通用户触发，也不要出现在对外截图里。
+- 业务扩展：自定义工具注册点、测试账号菜单、后门手势和调试 deep link 不留到正式包。
 
-这些不是“安全洁癖”。调试工具常带有文件、网络、日志和环境切换能力，进入正式包后风险比普通性能 SDK 高。
+一个常见事故形态是：灰度包误带测试入口，排查同学把环境切到测试域名或打开 Mock，结果真实账号走到了错误接口；另一个常见情况是抓包截图带出 token 和内网地址。DoKit 的风险不在某个单独面板，而在它把网络、文件、环境切换和日志放进了同一个入口里。
 
-## 推荐使用方式
+## 团队协作与推荐使用方式
 
-DoKit 最适合变成团队统一的 QA 包能力。每个性能敏感业务可以注册自己的小工具，例如：
+DoKit 放进团队流程里时，三类角色的分工会更清楚：
+
+| 角色 | 先用 DoKit 做什么 | 后续工具 |
+|---|---|---|
+| 测试 | 复现弱网、Mock、环境切换，导出请求和操作路径 | 把稳定复现步骤交给开发或性能专项 |
+| 开发 | 看网络列表、页面状态、沙盒文件、临时业务面板 | 用 Profiler、日志、代码断点定位实现细节 |
+| 性能专项 | 用 DoKit 固化操作路径，确认问题只在某页面或某接口条件下出现 | 用 Perfetto、FrameTimeline、Macrobenchmark 做定量分析 |
+
+每个性能敏感业务还可以注册自己的小工具，例如：
 
 - 清理指定业务缓存。
 - 切换接口环境。
@@ -182,4 +220,11 @@ DoKit 最适合变成团队统一的 QA 包能力。每个性能敏感业务可�
 - 手动触发一次资源预加载。
 - 导出当前页面日志和关键性能点。
 
-这样测试人员不用知道每条 adb 命令，开发人员也能把临时调试代码收敛到统一入口里。对技术书稿来说，DoKit 更适合作为“如何把研发现场的诊断入口工程化”的案例，而不只是某个 FPS 功能。
+推荐路径可以写成一条固定动作链：
+
+1. 用 DoKit 发现异常，记下页面、手势、账号和网络条件。
+2. 用弱网、Mock、环境切换把现场复现稳定下来。
+3. 在同一操作路径下切到 Perfetto 或 Profiler 抓完整证据。
+4. 修复后回到 DoKit 做冒烟回归，再用专项工具复核。
+
+这样测试人员不用记 adb 命令，开发人员也能把临时诊断入口收拢到统一面板里。DoKit 负责把问题复现稳定，后面的定因和定量仍然交给 Perfetto、Profiler、JankStats 或基准测试工具。

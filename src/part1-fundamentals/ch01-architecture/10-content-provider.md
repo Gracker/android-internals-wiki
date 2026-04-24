@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-05"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-25"
+last_verified_against: "AOSP android-16.0.0_r1 / android-12.0.0_r1 / android-11.0.0_r1"
 confidence: medium
 sources:
   - type: aosp
@@ -30,13 +30,13 @@ tags:
   - anr
   - sqlite
   - app-startup
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 reviewed_date: "2026-04-18"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
@@ -484,46 +484,65 @@ Android 9 新增了一些 CursorWindow 相关的 API：
 
 Scoped Storage 对 ContentProvider 的影响主要体现在存储访问方式的变化上。`MediaStore` ContentProvider 仍然是访问媒体文件的标准接口，但访问其他 App 的私有文件需要通过 SAF。`FileProvider` 的使用变得更加重要，因为它可以在不暴露文件路径的情况下安全地共享文件。
 
-### Android 11（API 30）：调用方自定义超时
+### Android 11（API 30）：framework 内部的 Provider ANR 监测接口
 
-Android 11 引入了 `ContentProviderClient.setDetectNotResponding()` 方法，允许调用方为 ContentProvider 操作设置自定义超时时间。此前，ContentProvider CRUD 操作没有独立的客户端侧超时——调用方只能依赖所在组件的 ANR 机制被动等待。有了这个 API，调用方可以主动设置一个合理的超时阈值，超时后直接取消操作并走降级逻辑，而不是被动等待 ANR。
+AOSP android-11.0.0_r1 的 `ContentProviderClient` 确实加入了 `setDetectNotResponding()`，但这个方法带有 `@hide`、`@SystemApi`、`@TestApi` 标记，并要求 `REMOVE_TASKS` 权限。它面向 framework / system test 场景，普通应用编译时拿不到这个方法，不能把它写成公开 SDK 能力。
 
-典型用法：
+应用侧能做的还是调用方自管：
 
-```java
-ContentProviderClient client = getContentResolver().acquireContentProviderClient(uri);
-if (client != null) {
-    client.setDetectNotResponding(5000); // 5 秒超时
-    try {
-        Cursor cursor = client.query(uri, projection, selection, null, null);
-        // 处理结果
-    } catch (RemoteException e) {
-        // Provider 进程崩溃或超时
-    } finally {
-        client.close();
+- 把 `query()`、`insert()`、`update()`、`delete()` 放到 `Dispatchers.IO` 或自建线程池。
+- 需要超时控制时，用调用侧超时包裹，再配合 `CancellationSignal` 取消。
+- 需要隔离 provider 崩溃影响时，才考虑 `acquireUnstableContentProviderClient()` 这类公开 API；它解决的是进程稳定性边界，不是 CRUD 的统一超时。
+
+下面这段代码只展示应用侧可用的超时包装方式，重点看 `CancellationSignal` 和调用侧超时：
+
+```kotlin
+suspend fun queryWithTimeout(
+    contentResolver: ContentResolver,
+    uri: Uri,
+    projection: Array<String>?,
+): Cursor? {
+    val signal = CancellationSignal()
+    return try {
+        withContext(Dispatchers.IO) {
+            withTimeout(5_000) {
+                contentResolver.query(uri, projection, null, null, null, signal)
+            }
+        }
+    } catch (_: TimeoutCancellationException) {
+        signal.cancel()
+        null
     }
 }
 ```
 
-[已验证：AOSP android-11.0.0_r1, ContentProviderClient.setDetectNotResponding()]
+这里的 5 秒限制来自调用侧，不是系统替 ContentProvider 新增的固定超时。
 
-### Android 12（API 31）：getProviderMimeTypeAsync
+[已验证：AOSP android-11.0.0_r1, `ContentProviderClient.setDetectNotResponding()` 带 `@hide` / `@SystemApi` / `@TestApi`，并要求 `REMOVE_TASKS` 权限]
 
-Android 12 引入了 `ContentResolver.getProviderMimeTypeAsync()`，将原来同步的 MIME 类型查询改为异步。此前 `getProviderMimeType()` 在 system_server 主线程上同步执行，只有 1 秒超时（参见 ANR 超时时间线小节），如果 Provider 响应慢会直接导致系统进程的 ANR 风险。
+### Android 12（API 31）：MIME 类型查询改成框架内部异步回调
 
-异步版本通过 `Executor` 和回调返回结果，不再阻塞调用线程。对于需要在后台查询 MIME 类型的场景（如 Intent 解析），应该使用异步版本。
+Android 12 的变化发生在 framework 内部。应用可见的公开 API 仍然是 `ContentResolver.getType(Uri)`；AOSP 在内部把 provider 侧查询切到 `IContentProvider.getTypeAsync()` 和 AMS 的 `getProviderMimeTypeAsync()` 回调路径，减少 system_server 或 provider 线程同步等待的时间。
 
-[已验证：AOSP android-12.0.0_r1, ContentResolver.getProviderMimeTypeAsync()]
+章节里原先写的 `ContentResolver.getProviderMimeTypeAsync()` 并不存在于公开 SDK。应用侧如果不想阻塞主线程，做法仍然是把 `getType()` 放到后台线程、协程或自建 `Executor` 里调用。
+
+[已验证：AOSP android-12.0.0_r1, `ContentResolver.getType()` 内部调用 `ActivityManager.getService().getProviderMimeTypeAsync(...)`；公开 SDK 无 `ContentResolver.getProviderMimeTypeAsync()`]
 
 ### Android 14-15（API 34-35）：Photo Picker
 
 Android 14 引入的 Photo Picker 逐步替代了直接访问 `MediaStore` Images ContentProvider 的场景。App 不再需要 `READ_MEDIA_IMAGES` 权限就能通过 Photo Picker 让用户选择照片——这是一种更安全、更用户友好的替代方案。
 
-### Android 16（API 36）：ANR 超时保持不变
+### Android 16（API 36）：超时口径继续沿用旧模型
 
-截至 Android 16，ContentProvider 的 ANR 超时机制没有发生根本性变化。`getProviderMimeType()` 保持 1 秒超时，一般操作保持约 10 秒超时。系统的 ANR 检测机制在 Android 15/16 中有所优化（如异步 ANR 处理管线 AnrHelper），但超时阈值本身未改变。
+截至 Android 16，本章前面列出的三类超时口径没有新增统一的 CRUD 10 秒阈值：
 
-[已验证：AOSP android-16.0.0_r1, ActivityManagerService 中 ContentProvider 超时常量未变化]
+- publish / ready timeout 仍是 10 秒。
+- MIME type 查询仍是 framework 内部的 1 秒等待窗口。
+- `query()`、`insert()`、`update()`、`delete()` 仍然没有 ContentProvider 专用超时，ANR 归到调用方组件或系统内部 watchdog。
+
+Android 15/16 的变化更多在 ANR 收集和异步处理流程，例如 `AnrHelper` 一类实现继续演进；它没有把 CRUD 操作改成“常规 10 秒超时”。
+
+[已验证：AOSP android-16.0.0_r1, ActivityManagerService 中 ContentProvider 超时常量未变化；CRUD 仍无独立超时常量]
 
 ## 常见问题与误区
 
@@ -548,6 +567,8 @@ App Startup 减少的是 ContentProvider 的**数量**（从 N 个变为 1 个�
 - AOSP 源码：
   - `frameworks/base/core/java/android/app/ActivityThread.java` — `handleBindApplication()`, `installContentProviders()`, `installProvider()`
   - `frameworks/base/core/java/android/content/ContentProvider.java` — `Transport` 内部类, `onCreate()`
+  - `frameworks/base/core/java/android/content/ContentProviderClient.java` — `setDetectNotResponding()` 的 system/test API 边界
+  - `frameworks/base/core/java/android/content/ContentResolver.java` — `getType()` 与内部 `getProviderMimeTypeAsync()` 路径
   - `frameworks/base/core/java/android/database/CursorWindow.java` — 共享内存实现
   - `frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java` — `fillWindow()`, `onMove()`
 - 官方文档：
