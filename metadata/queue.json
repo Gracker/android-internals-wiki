@@ -965,6 +965,20 @@
         "location": "",
         "detail": "在“数据合同”的字段列表里，遗漏了决定堆栈可用性的关键因素：代码混淆/符号化版本。",
         "suggestion": "在“样本字段”或“稳定维度”中，强制加入“符号化标识（Mapping UUID / Native Build-ID）”。"
+      },
+      {
+        "type": "案例缺失",
+        "location": "全文/APM 先解决线上可见性",
+        "detail": "大纲要求的“线上慢帧/OOM 样本发现到定位的具体案例”未落实。",
+        "suggestion": "补充一段文字，描述一个从指标异常、定位样本、到线下 Trace/Hprof 验证的具体排查案例。",
+        "priority": "P1"
+      },
+      {
+        "type": "知识盲区",
+        "location": "线上采样要先写清数据合同",
+        "detail": "数据合同缺乏代码符号化（Mapping/Build-ID）的字段约束。",
+        "suggestion": "在“样本字段”或维度中，补充 Mapping UUID / Build-ID。",
+        "priority": "P1"
       }
     ],
     "added_by": "external-ai-review",
@@ -1180,6 +1194,13 @@
         "location": "",
         "detail": "文中在提及其字节码注入时，使用了“AOP / ASM 织入”这样较为笼统的并列描述，未能说清这两种不同技术体系在 ArgusAPM 中的真实分工，容易产生黑盒感。",
         "suggestion": "建议在“AOP 织入适合哪些数据”或架构梳理部分，用一两句话点破这种双核织入机制的原因。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "架构分成采集模块 / AOP 织入适合哪些数据",
+        "detail": "未明确区分 AspectJ 和 ASM 在 ArgusAPM 内部各自负责的具体场景（低频业务 vs 高频性能）。",
+        "suggestion": "明确指出 AspectJ 用于生命周期/点击埋点，ASM 用于方法级 Trace 和线程拦截。强调这种设计是为了平衡性能损耗与开发效率。",
+        "priority": "P1"
       }
     ],
     "added_by": "external-ai-review",
@@ -1480,6 +1501,13 @@
         "location": "",
         "detail": "虽然 frontmatter 提到支持 Android 17，但正文未提及 Android 15 引入的 16KB Page Size 对原生 APM SDK 的毁灭性影响。",
         "suggestion": "在“商业 APM 的评审维度”表中增加“16KB Page Size 兼容性”项。"
+      },
+      {
+        "type": "原理断裂 / 版本差异",
+        "location": "Bugly 段落",
+        "detail": "未区分 Bugly 普通版与 Pro 版，漏掉了 2025 年的关键 APM 能力。",
+        "suggestion": "重写 Bugly 部分，引入 Bugly Pro 的概念，重点描述其“页面回放”和“ANR 预堆栈”能力。",
+        "priority": "P1"
       }
     ],
     "added_by": "external-ai-review",
@@ -1529,6 +1557,13 @@
         "location": "",
         "detail": "未提及 Android 13/14+ 对 PerfDog Service 的“受限设置”（Restricted Settings）影响。",
         "suggestion": "增加“版本适配坑点”或“疑难排查”小节，专门针对 Android 13-16 的权限变迁给出操作建议。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "功耗部分",
+        "detail": "缺少 USB vs Wi-Fi 模式对功耗电流采集影响的解释。",
+        "suggestion": "补充电流采集原理。",
+        "priority": "P1"
       }
     ],
     "added_by": "external-ai-review",
@@ -1936,5 +1971,77 @@
     "completed_at": "2026-04-25T02:45:50+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "19.02",
+    "section_title": "Tencent Matrix",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉问题",
+    "review_issues": [
+      {
+        "type": "未分类",
+        "location": "未知",
+        "detail": "",
+        "suggestion": "",
+        "priority": "P1"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T03:16:09.066416+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.09",
+    "section_title": "APM 卡顿监控",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉问题",
+    "review_issues": [
+      {
+        "type": "未分类",
+        "location": "未知",
+        "detail": "",
+        "suggestion": "",
+        "priority": "P1"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T03:16:09.066416+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.15",
+    "section_title": "APM 线下工具实践",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉问题",
+    "review_issues": [
+      {
+        "type": "未分类",
+        "location": "未知",
+        "detail": "",
+        "suggestion": "",
+        "priority": "P1"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T03:16:09.066416+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.21",
+    "section_title": "APM 告警与根因分析",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉问题",
+    "review_issues": [
+      {
+        "type": "未分类",
+        "location": "未知",
+        "detail": "",
+        "suggestion": "",
+        "priority": "P1"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T03:16:09.066416+08:00",
+    "status": "pending"
   }
 ]
