@@ -1,37 +1,50 @@
 ---
-title: "APM / 可观测性平台与 SDK 选型"
-chapter: "14.12"
-section: "14.12"
+title: APM / 可观测性平台与 SDK 选型
+chapter: '14.12'
+section: '14.12'
 status: ready-for-review
-drafted_date: "2026-04-21"
-drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-22"
-last_verified_against: "Android Developers / Firebase docs / GitHub upstream READMEs"
+drafted_date: '2026-04-21'
+drafted_by: codex
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-22'
+last_verified_against: Android Developers / Firebase docs / GitHub upstream READMEs
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/reference/androidx/metrics/performance/JankStats"
-  - type: official
-    path: "https://developer.android.com/topic/performance/vitals"
-  - type: official
-    path: "https://firebase.google.com/docs/perf-mon"
-  - type: blog
-    path: "https://github.com/Tencent/matrix"
-  - type: blog
-    path: "https://github.com/KwaiAppTeam/KOOM"
-  - type: blog
-    path: "https://github.com/bytedance/btrace"
-  - type: blog
-    path: "https://github.com/measure-sh/measure"
-  - type: blog
-    path: "https://github.com/didi/DoKit"
-tags: [apm, observability, monitoring, matrix, koom, jankstats, firebase]
-related_chapters: ["14.5", "14.13", "15.3", "15.5", "15.9", "15.10"]
+- type: official
+  path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
+- type: official
+  path: https://developer.android.com/topic/performance/vitals
+- type: official
+  path: https://firebase.google.com/docs/perf-mon
+- type: blog
+  path: https://github.com/Tencent/matrix
+- type: blog
+  path: https://github.com/KwaiAppTeam/KOOM
+- type: blog
+  path: https://github.com/bytedance/btrace
+- type: blog
+  path: https://github.com/measure-sh/measure
+- type: blog
+  path: https://github.com/didi/DoKit
+tags:
+- apm
+- observability
+- monitoring
+- matrix
+- koom
+- jankstats
+- firebase
+related_chapters:
+- '14.5'
+- '14.13'
+- '15.3'
+- '15.5'
+- '15.9'
+- '15.10'
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-21"
+reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
@@ -39,9 +52,10 @@ task9_reviewed_date: '2026-04-23'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-23T02:33:00+08:00'
 task2b_state: pending
-repaired_date: "2026-04-22"
-repaired_by: "codex"
+repaired_date: '2026-04-22'
+repaired_by: codex
 ---
+
 
 # APM / 可观测性平台与 SDK 选型
 
@@ -54,7 +68,7 @@ repaired_by: "codex"
 - 🔹 `androidx.metrics` / `JankStats` 解决的是帧级指标采集，不是完整 APM
 - 🔹 `Matrix`、`KOOM`、`LeakCanary`、`btrace`、`DoKit` 的定位差异
 - 🔹 `Firebase Performance`、`Measure` 这类平台型方案的价值和边界
-- 🔹 选型先看目标：感知、定位、闭环、成本、隐私
+- 🔹 选型先看目标：感知、定位、问题解决、成本、隐私
 
 ### 扩展（可选深入）
 
@@ -66,12 +80,12 @@ repaired_by: "codex"
 
 刚开始做线上性能治理时，最容易出现一种很自然的冲动：先去找“最强的那套方案”。于是大家开始比工具名、比功能表、比 README，最后问题会慢慢变成“Matrix 和 Firebase 哪个更适合我们”“Measure 要不要一上来就接”“是不是再加一个 btrace 会更稳”。
 
-这些问题看起来都很像选型问题，但它们的共同前提其实还没成立：团队到底想先解决哪一类问题？  
+这些问题看起来都很像选型问题，但它们的共同前提还没成立：团队到底想先解决哪一类问题？  
 如果这个前提没说清楚，选型越认真，最后越容易把事情做偏。因为这些工具解决的根本不是同一件事。
 
 有些工具负责把线上问题先感知到，有些工具负责在异常发生时把现场保留下来，有些平台负责聚合、告警和回查，还有一些工具更偏开发阶段的调试现场。把它们都放进“性能库”这个大桶里看，结论往往只剩一个：信息很多，但判断不出来。
 
-所以这一章要做的第一件事，不是列清单，而是把这些能力重新放回它们原本的位置。
+所以这一章要做的第一件事，是把能力重新放回它们原本的位置。
 
 ## 先把三层能力分开
 
@@ -112,7 +126,7 @@ repaired_by: "codex"
 - trace 文件管理
 - 会话回放
 - 平台告警
-- 治理闭环
+- 治理流程走通
 
 所以它更像基础设施，而不是完整答案。
 
@@ -149,7 +163,7 @@ Android Vitals 的问题大家都知道：粒度不够细，自定义空间有�
 
 ### Matrix：把客户端常见监控问题先组织起来
 
-Matrix 最值得写的一点，不是它“模块很多”，而是它把客户端常见的监控问题组织成了一套框架。
+Matrix 最值得写的一点，是它把客户端常见的监控问题组织成了一套框架。
 
 这件事的重要性在于：很多团队在接监控时，真正难的不是某个技术点，而是没有统一入口。流畅性一套、IO 一套、内存一套、battery 一套，最后谁都接了一点，谁也接不完整。Matrix 提供的恰好是一种更容易收敛的接入方式。
 
@@ -201,7 +215,7 @@ DoKit 覆盖的能力很杂，也确实很实用：FPS、启动耗时、网络�
 它解决的核心问题是：开发和测试现场怎样更快看到问题。
 
 所以它更接近研发工具箱，而不是线上治理平台。  
-这也是为什么它和 Firebase、Measure 看起来都“能看性能”，但其实不在一条线上。
+这也是为什么它和 Firebase、Measure 看起来都“能看性能”，但并不在同一条线上。
 
 ## 第三层：平台层，决定治理能不能真正成立
 
@@ -223,9 +237,9 @@ Firebase Performance 最大的优点，是上手快。
 但这类平台也有很清楚的边界：越往深走，越会碰到定制能力、私有化、trace 流程控制这些限制。  
 它适合做第一层平台，不一定适合承载整个治理体系。
 
-### Measure：更接近完整治理底座
+### Measure：更接近完整治理平台
 
-`Measure` 这类平台更接近真正的移动可观测性底座：会话时间线、崩溃、ANR、trace、日志可以放在同一个视角里组织起来。
+`Measure` 这类平台更接近真正的移动可观测性平台：会话时间线、崩溃、ANR、trace、日志可以放在同一个视角里组织起来。
 
 对已经跨过“只想先看到几个指标”的团队来说，这类平台更贴近治理，而不只是展示。
 
@@ -325,10 +339,10 @@ Firebase Performance 最大的优点，是上手快。
 如果读者刚开始搭团队的线上性能体系，一个比较稳的起点是：
 
 1. 先用官方基线能力把启动、帧级信号、ANR / exit 看起来
-2. 再选一两个最贴近团队痛点的客户端增强工具
-3. 最后再考虑平台整合和闭环流程
+2. 再选一两个最贴近团队当前问题的客户端增强工具
+3. 最后再考虑平台整合和治理流程
 
-这个顺序不够激进，但更容易落地。
+这个顺序不够激进，但更容易推行。
 
 ## 这一章在全书里的位置
 
@@ -337,7 +351,7 @@ Firebase Performance 最大的优点，是上手快。
 - `7/8/9` 解释了体验问题是什么
 - `15.3` 解释了该看哪些指标
 - `15.5` 解释了线上怎么感知
-- `15.9` 解释了感知之后怎么闭环
+- `15.9` 解释了感知之后怎么把治理走通
 - `15.10` 解释了团队怎么长期把这件事做对
 
 读者如果读完后，能先分层、再看目标、最后按团队能力做组合，而不是直接抄一份工具清单，这一章就算达到目的了。

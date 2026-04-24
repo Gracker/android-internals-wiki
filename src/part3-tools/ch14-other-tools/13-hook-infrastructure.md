@@ -1,49 +1,61 @@
 ---
-title: "Hook 基础设施与性能工具实现原理"
-chapter: "14.13"
-section: "14.13"
+title: Hook 基础设施与性能工具实现原理
+chapter: '14.13'
+section: '14.13'
 status: ready-for-review
-drafted_date: "2026-04-21"
-drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-22"
-last_verified_against: "Android 16KB page size docs + ART TI + GitHub upstream READMEs"
+drafted_date: '2026-04-21'
+drafted_by: codex
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-22'
+last_verified_against: Android 16KB page size docs + ART TI + GitHub upstream READMEs
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/guide/practices/page-sizes"
-  - type: official
-    path: "https://source.android.com/docs/core/runtime/art-ti"
-  - type: blog
-    path: "https://github.com/bytedance/bhook"
-  - type: blog
-    path: "https://github.com/bytedance/android-inline-hook"
-  - type: blog
-    path: "https://github.com/iqiyi/xHook"
-  - type: blog
-    path: "https://github.com/didi/Booster"
-  - type: blog
-    path: "https://github.com/Tencent/matrix"
-  - type: blog
-    path: "https://github.com/KwaiAppTeam/KOOM"
-tags: [hook, bytehook, shadowhook, xhook, booster, tracing]
-related_chapters: ["14.5", "14.12", "13.9", "15.5", "15.9"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://source.android.com/docs/core/runtime/art-ti
+- type: blog
+  path: https://github.com/bytedance/bhook
+- type: blog
+  path: https://github.com/bytedance/android-inline-hook
+- type: blog
+  path: https://github.com/iqiyi/xHook
+- type: blog
+  path: https://github.com/didi/Booster
+- type: blog
+  path: https://github.com/Tencent/matrix
+- type: blog
+  path: https://github.com/KwaiAppTeam/KOOM
+tags:
+- hook
+- bytehook
+- shadowhook
+- xhook
+- booster
+- tracing
+related_chapters:
+- '14.5'
+- '14.12'
+- '13.9'
+- '15.5'
+- '15.9'
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-21"
+reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-21"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-21T23:18:40+08:00"
-repaired_date: "2026-04-22"
-repaired_by: "codex"
+task9_reviewed_date: '2026-04-21'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-21T23:18:40+08:00'
+repaired_date: '2026-04-22'
+repaired_by: codex
 task2b_result: fixed
 task2b_state: fixed
-last_task2b_at: "2026-04-22T19:39:59+08:00"
+last_task2b_at: '2026-04-22T19:39:59+08:00'
 ---
+
 
 
 # Hook 基础设施与性能工具实现原理
@@ -80,7 +92,7 @@ last_task2b_at: "2026-04-22T19:39:59+08:00"
 
 ## 先把四条常见路线分开
 
-性能工具常用的底层手段，表面上很多，骨架上其实可以收成四条：
+性能工具常用的底层手段，表面上很多，骨架上可以收成四条：
 
 1. 系统回调 / 官方接口
 2. 字节码插桩
@@ -164,7 +176,7 @@ PLT Hook 更像是"在动态库边界拦一手"。
 
 但它的边界也必须先记住:
 **不是所有调用都经过 PLT / GOT。**
-这意味着它天然会有盲区。
+所以 PLT Hook 天然有盲区。
 
 所以读者用 PLT Hook 时,应该先带着一个预期:它很适合做动态库边界监控,但不适合被想象成"所有函数调用都能拦"。
 
@@ -207,7 +219,7 @@ Inline Hook 更激进。它直接改目标函数入口处的机器码,把执行�
 | `ShadowHook` | 维护成本和兼容风险更高 |
 | `Booster` | 强依赖构建链和 AGP 版本 |
 
-最常见的误判,是把这些路线当成互相替代。实际上它们经常不在同一层。
+最常见的误判,是把这些路线当成互相替代。它们经常不在同一层。
 想在 Java / Kotlin 方法入口出口打点,优先想插桩;想拦 `malloc/free` 或 `open/read/write`,优先想 PLT Hook;只有当这些路都不够时,再认真考虑 Inline Hook。
 
 ## 再把这些路线和性能工具对上
@@ -372,7 +384,7 @@ Inline Hook 的完整执行流程在现代 Android 上被拆解为五个阶段�
 
 ### Android 14 对动态代码加载的强制要求
 
-Android 14（API 34）针对 targeting SDK 34 的应用引入了"Safer dynamic code loading"行为变更：**所有动态加载的文件必须标记为只读，否则系统抛出异常**。这意味着应用通过 `dlopen()` 加载的 .so 如果没有设置 `RTLD_NOW | RTLD_NODELETE`，系统会拒绝。
+Android 14（API 34）针对 targeting SDK 34 的应用引入了"Safer dynamic code loading"行为变更：**所有动态加载的文件必须标记为只读，否则系统抛出异常**。应用通过 `dlopen()` 加载的 .so 如果没有设置 `RTLD_NOW | RTLD_NODELETE`，系统会拒绝。
 
 ### 主流 Hook 库的 W^X 适配现状
 
