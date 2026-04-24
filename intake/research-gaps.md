@@ -4255,3 +4255,25 @@ Mmap 头部原子更新顺序
 
 ### 外部 review 来源
 - 外部 AI review
+
+## [2026-04-25] 19.README - 选择理由：总纲文件定义了全章的分类体系和工具链覆盖范围，如果分类逻辑或工具选型存在事实错误（如过时工具），将直接影响后续 22 个小节的编写价值。 — 知识盲区 (External Review)
+
+### ------
+- **重要程度**: ------
+- **建议研究方向**: -------
+- **来源**: 外部AI review (2026-04-25-00-ch19.README-external-review.md)
+
+### Android 16/17 ProfilingManager 增强
+- **重要程度**: 高
+- **建议研究方向**: 研究 Android 17 中“系统触发式采样”的具体触发阈值和配置方法。
+- **来源**: 外部AI review (2026-04-25-00-ch19.README-external-review.md)
+
+### 16KB Page Size 对 APM 开销的影响
+- **重要程度**: 中
+- **建议研究方向**: 在 16KB 页面下，某些 Hook 框架（如 Inline Hook）可能需要重新适配。
+- **来源**: 外部AI review (2026-04-25-00-ch19.README-external-review.md)
+
+### 自研 APM 存储方案 mmap vs Protobuf
+- **重要程度**: 中
+- **建议研究方向**: Matrix 和 KOOM 都在用的存储层优化原理。
+- **来源**: 外部AI review (2026-04-25-00-ch19.README-external-review.md)
