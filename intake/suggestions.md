@@ -278,3 +278,16 @@
 - **位置**：L637-L669「Baseline Profile 效果量化」
 - **问题**：“提升 20%-40%”“2 秒降到 1.2-1.6 秒”缺少 workload、设备、编译模式与测试轮次，当前只有裸数字，难以作为可复现结论。
 - **建议**：补充 Macrobenchmark 测试条件（机型、系统版本、CompilationMode、迭代次数、冷/热启动口径）后再保留量化结论。
+
+
+## [Task9 Deep Review] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 2026-04-24
+- **类型**：数据缺失
+- **位置**：性能特征
+- **问题**：当前对“更容易受益 / 更容易吃亏”只给了 workload 画像，没有同机 native vs ANGLE 的 A/B 数据、shader 冷启动/热启动分段，读者无法判断这些判断在什么设备和场景下成立。
+- **建议**：补一组同机对照样本：同时记录 `glGetString(GL_RENDERER)`、首帧 / 场景切换的 shader 编译耗时、FrameTimeline 或 GPU counter，对比 native 与 ANGLE 两条路径，再把收益边界写回正文。
+
+## [Task9 Deep Review] 18.21 EyeDropper API 与跨设备协作性能 — 2026-04-24
+- **类型**：数据缺失
+- **位置**：性能和可观测性
+- **问题**：章节给了应用侧 Trace 打点方案，但没有 API 37 设备上的 launch→result 时延样本，也没有 FrameTimeline/主线程回放样例，读者拿到 trace 后缺少判断基线。
+- **建议**：补一段真实 trace 观察：记录 `eye_dropper_launch` 到 `eye_dropper_result` 的时延范围，并附一张返回结果后 UI 刷新的 FrameTimeline/主线程窗口，说明哪些开销来自系统 picker，哪些来自应用回放。
