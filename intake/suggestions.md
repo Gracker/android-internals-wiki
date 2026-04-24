@@ -498,3 +498,27 @@
 - **位置**：L92-L116、L194-L205
 - **问题**：正文已经强调 HandlerThread，但没补官方回调契约：`Window.OnFrameMetricsAvailableListener` 回调过慢会丢报告，传入的 `FrameMetrics` 对象会在每次回调复用，超出回调作用域后就无效。
 - **建议**：在接入代码后补一句“只提取 primitive 值或用 `FrameMetrics(FrameMetrics)` 复制”，并说明 `dropCountSinceLastInvocation` 可用于观察回调侧丢报告。
+
+## [Task9 Deep Review] 19.19 PerfDog — 2026-04-24
+- **类型**：知识盲区
+- **位置**：L67-L83（工具定位与能力说明）
+- **问题**：官方文档区分 Android 免安装模式与安装模式：安装模式会自动安装 PerfDog.apk 并支持端上实时显示，免安装模式则没有端上显示。正文只写“非嵌入式、通常不需要 root”，没有交代两种模式对悬浮窗权限、现场可视化和测量环境的影响。
+- **建议**：补一张“免安装模式 / 安装模式”对照表，写清 USB 调试、PerfDog.apk、悬浮窗权限、是否在手机端显示实时指标，以及各自适用的回归/竞品测试场景。
+
+## [Task9 Deep Review] 19.19 PerfDog — 2026-04-24
+- **类型**：数据缺失
+- **位置**：L75-L160（指标解释与报告字段）
+- **问题**：正文列了 FPS、frame time、jank、功耗、温度，但没有补 PerfDog 官方对 FTime / Jank / Stutter / Smooth Index 等指标的定义，也没有说明不同设备或模式下指标可用性会不同。读者容易把不同模式、不同设备采到的值直接横比。
+- **建议**：补一段指标口径说明，至少解释 FTime、Jank、Stutter、Smooth Index 的含义，并标注“同机、同模式、同条件比较优先”。
+
+## [Task9 Deep Review] 19.20 SoloPi 与 Emmagee — 2026-04-24
+- **类型**：数据缺失
+- **位置**：L113-L122（启动耗时测试）
+- **问题**：正文提醒了起点和终点口径，但没有给出冷启动、热启动、清数据、清进程与“页面可交互”之间的固定组合，测试团队仍然可能拿不同口径的 SoloPi 数值去和 Macrobenchmark 或线上启动指标直接比较。
+- **建议**：补一张启动测试记录模板，把“冷/热启动、清数据、清进程、起点、终点、是否广播触发”固化成必填字段。
+
+## [Task9 Deep Review] 19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo） — 2026-04-24
+- **类型**：数据缺失
+- **位置**：frontmatter `sources`（L14-L18）与 L105-L111
+- **问题**：章节正文对安兔兔、PCMark、Vellamo 都给了方法论判断，但 frontmatter 只挂了 Geekbench 和 3DMark 两个来源。尤其 PCMark 的 Work 3.0 / Storage 2.0 与旧版本不可比这一边界，正文没有落到工具来源。
+- **建议**：补齐 PCMark、安兔兔、Vellamo 的一手来源或应用商店说明，并在 PCMark 段落明确写出 Work 3.0 / Storage 2.0 与旧版分数不可比。

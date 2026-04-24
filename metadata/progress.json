@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T19:38:05+08:00",
+  "generated_at": "2026-04-24T20:44:37+08:00",
   "state_machine_version": "v2",
   "total_sections": 206,
   "metrics": {
@@ -8208,10 +8208,12 @@
       "chapter": "19",
       "section": "19.21",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch19-apm/08-argusapm.md": {
       "path": "src/part3-tools/ch19-apm/08-argusapm.md",
@@ -8230,10 +8232,12 @@
       "chapter": "19",
       "section": "19.20",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework"
     },
     "src/part3-tools/ch19-apm/11-jankstats.md": {
       "path": "src/part3-tools/ch19-apm/11-jankstats.md",
@@ -8362,11 +8366,13 @@
       "title": "PerfDog",
       "chapter": "19",
       "section": "19.19",
-      "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "pending",
-      "task9_state": "pending",
-      "task2b_state": "pending"
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "idle",
+      "task6_result": "pass-light-edit",
+      "task9_result": "pass-tech-review"
     },
     "src/part3-tools/ch19-apm/05-leakcanary.md": {
       "path": "src/part3-tools/ch19-apm/05-leakcanary.md",

@@ -3338,3 +3338,19 @@ Linux mmap 的 Page Cache 落盘机制在 Android 系统遭遇 OOM/SigKill 时�
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-24-15-19.27)
+
+## [2026-04-24] 19.20 SoloPi 与 Emmagee — 知识盲区
+
+### 盲区描述
+SoloPi 缺少现代 Android / AGP 兼容矩阵。当前可查官方基线仍是 AGP 4.0.2、compileSdk/targetSdk 29、release v0.12.0（2022），书稿却按 Android 8-17 统一适用处理，未覆盖 Android 12+ 无障碍、悬浮窗、无线 ADB 和 targetSdk 31+ 行为变化。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 SoloPi 在 Android 12/13/14/15 上的已知兼容 issue、厂商 ROM 限制与 workaround
+- 验证 AGP 7/8、compileSdk 34/35 下的可编译性与 targetSdk 提升成本
+- 补充无障碍、悬浮窗、无线调试在主流厂商 ROM 上的权限差异和失败表现
+
+### 关联章节
+19.19, 19.20
