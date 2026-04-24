@@ -3768,8 +3768,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-24T05:21:00+08:00",
-      "status": "pending",
-      "task2b_state": "pending"
+      "status": "completed",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "fixed_at": "2026-04-24T07:52:07+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "ch09.anr",
@@ -3876,8 +3879,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-24T06:54:00+08:00",
-      "status": "pending",
-      "task2b_state": "pending"
+      "status": "completed",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "fixed_at": "2026-04-24T07:52:07+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
@@ -3901,8 +3907,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-24T06:54:00+08:00",
-      "status": "pending",
-      "task2b_state": "pending"
+      "status": "completed",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "fixed_at": "2026-04-24T07:52:07+08:00",
+      "fixed_by": "openclaw-task2b"
     },
     {
       "section": "src/part3-tools/ch15-methodology/07-aosp-reading.md",

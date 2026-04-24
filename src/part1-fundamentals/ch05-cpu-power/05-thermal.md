@@ -5,8 +5,8 @@ chapter: "5.5"
 status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待验证"
-last_verified: "2026-04-01"
-last_verified_against: "AOSP android-14.0.0_r1"
+last_verified: "2026-04-24"
+last_verified_against: "PowerManager#getThermalHeadroom docs + ADPF fixed-performance-mode docs"
 confidence: medium
 sources:
   - type: aosp
@@ -41,15 +41,19 @@ tags:
   - cpu-frequency
 reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 last_task9_at: "2026-04-24T06:54:00+08:00"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-24T07:52:07+08:00"
 ---
 
 
@@ -60,7 +64,7 @@ task2b_state: pending
 
 ### 锚点（必须覆盖）
 
-- 🔹 Thermal 管控链路：温度传感器 → Thermal HAL → thermal engine → 限频/限核
+- 🔹 Thermal 管控路径：温度传感器 → Thermal HAL → thermal engine → 限频/限核
 - 🔹 Android Thermal API（PowerManager.THERMAL_STATUS_*）
 - 🔹 温度墙（Thermal Throttling）对性能的影响：持续高负载场景的帧率下降
 - 🔹 Thermal Mitigation 策略：限频、限核、降亮度、关闭功能
@@ -95,11 +99,11 @@ task2b_state: pending
 2. **在性能测试中，温控是最大的干扰变量**。不知道温控什么时候介入，benchmark 数据就没有可比性。
 3. **App 层面的主动配合**。Android 提供了 Thermal API 让应用感知温度状态，在高负载场景（游戏、视频编码、AR）中主动降级，比被系统强制降频体验好得多。
 
-## Thermal 管控链路：从传感器到限频
+## Thermal 管控路径：从传感器到限频
 
-Android 的温控是一个分层架构，从底层硬件传感器一直到上层 Framework 服务，形成一条完整的管控链路。我们先从全局看这条链路长什么样，然后逐层拆解。
+Android 的温控是一个分层架构：从底层硬件传感器一直到上层 Framework 服务，组成了一条完整的管控路径。下面按层拆解。
 
-[图：Thermal 管控链路全景——温度传感器 → Kernel Thermal Core → Thermal HAL → ThermalManagerService → App/系统组件]
+[图：Thermal 管控路径全景——温度传感器 → Kernel Thermal Core → Thermal HAL → ThermalManagerService → App/系统组件]
 
 ### 温度传感器：数据的源头
 
@@ -142,7 +146,7 @@ Cooling Device 不一定是物理设备——更常见的"降温设备"就是 CP
 
 Trip point 被触发后，内核不会立刻把频率拉到最低——频率的变化幅度由 **thermal governor** 决定。Linux 内核提供了多种 governor 算法（`step_wise`、`fair_share`、`bang_bang`），Android 设备默认使用 **step_wise**。
 
-step_wise 的工作方式：每次温度采样周期，检查当前温度是否跨越了某个 trip point。如果温度上升并越过了 trip point，对应的 cooling device 的 cooling state 增加 1 级（每级对应一个频率档位）；如果温度下降并离开了 trip point，cooling state 减少 1 级。这意味着频率是阶梯式变化的——温度每上升一个采样周期，频率下降一档，而不是直接跳到极值。
+step_wise 的工作方式：每次温度采样周期，检查当前温度是否跨越了某个 trip point。如果温度上升并越过了 trip point，对应的 cooling device 的 cooling state 增加 1 级（每级对应一个频率档位）；如果温度下降并离开了 trip point，cooling state 减少 1 级。频率会按台阶式变化：温度每上升一个采样周期，频率下降一档，不会直接跳到极值。
 
 这个"渐进式降频"的设计是有意为之的。温度变化本身是连续的，如果温度刚过阈值就直接拉到最低频率，用户体验会出现断崖式下跌（帧率从 120fps 直接掉到 30fps）。step_wise 的单步调整让降频过程相对平滑，给用户一个"逐渐变慢"而非"突然卡死"的感知。
 
@@ -166,7 +170,7 @@ step_wise 的工作方式：每次温度采样周期，检查当前温度是否�
 
 AOSP 定义的 Thermal HAL 是一套标准接口，但不同厂商的设备在同样的 SoC、同样的负载下，温控行为可能截然不同。差异来自 HAL 层下方各厂商实现的 vendor-specific thermal engine。
 
-**Qualcomm** 平台上，`thermal-engine` 是一个用户态守护进程（`/vendor/bin/thermal-engine`），它读取内核 thermal zone 的温度数据，运行 PID 控制算法，然后通过 sysfs 和 Thermal HAL 配置来调节频率上限、CPU 核心数、充电电流等参数。OEM 可以通过 `/vendor/etc/thermal-engine.conf` 配置文件定义自己的温控策略——温度阈值、降频步进、每个 severity 级别对应的频率限制等。这意味着同一款 Snapdragon 8 Gen 3，在不同厂商的手机上 thermal-engine 的配置可能完全不同。
+**Qualcomm** 平台上，`thermal-engine` 是一个用户态守护进程（`/vendor/bin/thermal-engine`），它读取内核 thermal zone 的温度数据，运行 PID 控制算法，然后通过 sysfs 和 Thermal HAL 配置来调节频率上限、CPU 核心数、充电电流等参数。OEM 可以通过 `/vendor/etc/thermal-engine.conf` 配置文件定义自己的温控策略——温度阈值、降频步进、每个 severity 级别对应的频率限制等。同一款 Snapdragon 8 Gen 3，在不同厂商的手机上，thermal-engine 的配置也可能完全不同。
 
 **MediaTek** 平台有类似的组件（thermal manager / thermal daemon），同样负责将温度传感器数据映射为具体的限频/限核动作。MTK 的温控配置通常在 `/vendor/etc/thermal.conf` 中定义。
 
@@ -221,7 +225,7 @@ struct Temperature {
 2. **将 severity 广播给系统组件和 App**。内部组件通过 `IThermalEventListener` 接收；App 通过 `IThermalStatusListener`（封装为 `PowerManager.OnThermalStatusChangedListener`）接收。
 3. **执行系统级降温动作**。当 severity 升高到一定程度时，ThermalManagerService 会触发一系列系统级行为，比如限制 JobScheduler 的执行、降低屏幕亮度、甚至触发 Framework 层的关机流程。
 
-整条链路可以概括为：**传感器感知温度 → 内核 thermal core 做第一道硬件级保护 → Thermal HAL 将温度状态抽象为 severity 级别 → ThermalManagerService 协调系统响应 → App 通过 API 感知并自适应。**
+整条路径可以概括为：**传感器感知温度 → 内核 thermal core 做第一道硬件级保护 → Thermal HAL 将温度状态抽象为 severity 级别 → ThermalManagerService 协调系统响应 → App 通过 API 感知并自适应。**
 
 ## Android Thermal API：应用如何感知温度
 
@@ -283,7 +287,7 @@ pm.addThermalStatusListener(executor, status -> {
 
 ### 预测温控余量（getThermalHeadroom）
 
-Android 12（API 31）引入了一个更前瞻性的 API：`getThermalHeadroom(int forecastSeconds)`。它返回一个 0.0 到 1.0 的浮点数，表示距离达到 `SEVERE` 状态还有多少余量——1.0 意味着已经处于 SEVERE 状态。
+Android 11（API 30）引入了 `getThermalHeadroom(int forecastSeconds)`。它返回的是一个非负浮点值，用来表示距离 `THERMAL_STATUS_SEVERE` 还有多少热余量：`1.0` 对应 `SEVERE` 阈值，数值也可能大于 `1.0`，表示设备已经超过这个阈值并处在更重的限频状态。
 
 ```java
 // 查询当前的热余量
@@ -291,13 +295,14 @@ float headroom = pm.getThermalHeadroom(0);  // 当前状态
 float headroom5s = pm.getThermalHeadroom(5); // 预测5秒后的状态
 ```
 
-这个 API 的使用场景主要是游戏：游戏引擎可以在每帧的更新循环中查询 thermal headroom，当余量低于某个阈值时，主动降低渲染分辨率或帧率目标——与其等到系统强制降频导致突然卡顿，不如自己平滑地降低负载。
+这个 API 的使用场景主要是游戏或其他持续高负载场景：引擎可以周期性读取 thermal headroom，在靠近阈值时主动降低渲染分辨率、帧率目标或特效等级，把负载降下来。
 
 需要注意几点：
 
-- 这个 API 主要跟踪的是慢变化传感器（如皮肤温度），而不是 CPU 瞬时温度。所以它反映的是一种"趋势"而非"瞬时状态"。
-- 不要频繁调用——官方建议每秒最多调用一次。调用过于频繁，API 会返回 `NaN`。
-- 首次调用返回 `NaN` 表示设备不支持此 API。
+- 这个 API 主要跟踪的是慢变化传感器（如皮肤温度），而不是 CPU 瞬时温度，所以它更适合做趋势判断。
+- 不要频繁调用。官方明确说大约每秒调用一次已经够用，调用过密可能返回 `NaN`。
+- `NaN` 主要表示设备不支持，或者采样过密；不要把“首次调用返回 `NaN`”当成固定行为。
+- 预测值需要系统先积累多个温度样本。在最初几秒里，即使 `forecastSeconds` 大于 0，返回的通常仍是当前 headroom，而不是未来预测值。
 
 [已验证: 官方文档 developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)]
 
@@ -448,20 +453,23 @@ watch -n 1 "cat /sys/class/thermal/thermal_zone*/temp"
 
 ### 策略 2：使用 Sustained Performance Mode
 
-Android 7.0（API 24）引入的 Sustained Performance Mode，从一开始就把最高频率限制在一个"能持续 30 分钟不掉"的水平，避免先跑满再降频的断崖式下跌。设计理念是"稳定的平庸好过短暂的卓越"——benchmark 测试的 30 分钟数据不会因为温控介入而出现大的波动。
+Android 7.0（API 24）引入的 Sustained Performance Mode，会从一开始就把最高频率限制在一个更容易持续维持的区间，避免先跑满再降频。它适合长时间 benchmark：峰值成绩可能低一些，但 30 分钟窗口里的波动更小。
 
 前提条件是设备厂商必须在 Power HAL 中实现 `POWER_HINT_SUSTAINED_PERFORMANCE`，并通过 `PowerManager.isSustainedPerformanceModeSupported()` 声明支持。很多中低端设备并不支持。具体 API 用法和 CTS 要求见下文 [Sustained Performance Mode API](#sustained-performance-mode-api) 小节。
 
 ### 策略 3：使用 Fixed Performance Mode（Benchmark 专用）
 
-Android Dynamic Performance Framework (ADPF) 提供了 Fixed Performance Mode，专门用于 benchmark。启用后，CPU 和 GPU 频率固定在一个预设值，不会因为 DVFS 或 thermal 而变化。
+Fixed Performance Mode 是面向基准测试和实验室复现的调试开关，通常通过 `adb shell cmd power set-fixed-performance-mode-enabled true` 启用，不是普通应用通过 `PerformanceHintManager` 直接调用的公开 API。
 
-```java
-// ADPF 的 Performance Hint Manager 可用于固定性能模式
-// 具体接口参考 developer.android.com/games/optimize/adpf
+它的作用是把设备放到更稳定的性能区间，减少 DVFS 抖动，让 A/B 对比更容易复现；但它不会关闭 thermal，设备仍然可能过热，也不保证 CPU / GPU 频率永远固定在同一个值。
+
+```bash
+adb shell cmd power set-fixed-performance-mode-enabled true
+# 跑完基准测试后记得关闭
+adb shell cmd power set-fixed-performance-mode-enabled false
 ```
 
-这个模式适合横向对比不同设备或不同版本的性能差异——消除了 DVFS 和 thermal 的影响后，纯粹比较代码执行效率。
+这个模式适合横向对比不同设备或不同版本的性能差异，但测试前仍要等待设备回到可持续温度区间，并记录 thermal status 作为元数据。
 
 ### 策略 4：记录温控状态作为测试元数据
 
@@ -566,7 +574,7 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 | 7.0 (API 24) | 引入 Sustained Performance Mode | 首次提供可预测持续性能的 API |
 | 9 (API 28) | Thermal HAL 1.0（轮询模式） | 标准化温度读取接口 |
 | 10 (API 29) | Thermal HAL 2.0（事件驱动）+ PowerManager Thermal API | App 可感知温控状态 |
-| 12 (API 31) | `getThermalHeadroom()` API | 支持前瞻性热余量预测 |
+| 11 (API 30) | `getThermalHeadroom()` API | 支持前瞻性热余量预测 |
 | 14 (API 34) | Thermal HAL 从 HIDL 迁移至 AIDL | 接口现代化，无功能变化 |
 | 15 (API 35) | ADPF thermal headroom hint 精度提升 [待验证] | 游戏场景热管理更精细 |
 | 16 (API 36) | ADPF Game Mode API 扩展，与温控协同增强 [待验证] | 更多性能-温控协调能力 |
