@@ -8,8 +8,8 @@ drafted_by: "openclaw-task2a"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-21"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-22"
-last_verified_against: "Perfetto stdlib android/input.sql + android/frames/timeline.sql + android_input_event_config.proto"
+last_verified: "2026-04-24"
+last_verified_against: "Perfetto stdlib docs + android/input.sql + FrameTimeline trace config docs"
 confidence: high
 sources:
   - type: official
@@ -22,18 +22,20 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: "fixed"
 task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
 
-last_task2b_at: "2026-04-22T10:03:36+08:00"
+last_task2b_at: "2026-04-24T07:52:07+08:00"
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-24T05:21:00+08:00"
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
@@ -151,16 +153,16 @@ LIMIT 20;
 
 #### android_motion_events 与 android_key_events
 
-这两张表来自 `android.input.inputevent` 数据源，定位是“原始事件记录”，不是 `android_input_events` 的一一镜像。公开列比较少：
+这两张表来自 `android.input.inputevent` 数据源，定位是“原始事件记录”，不是 `android_input_events` 的一一镜像。当前 stdlib 文档里已经公开了一组事件元信息列：
 
 | 表 | 公开列 | 适合回答的问题 |
 |----|--------|----------------|
-| `android_motion_events` | `id, event_id, ts, arg_set_id` | 某次 motion event 何时进入系统、原始参数存在哪个 `arg_set_id` |
-| `android_key_events` | `id, event_id, ts, arg_set_id` | 某次 key event 何时进入系统、原始参数存在哪个 `arg_set_id` |
+| `android_motion_events` | `id, event_id, ts, arg_set_id, source, action, device_id, display_id` | 某次 motion event 何时进入系统、来自哪个输入源、动作类型是什么、原始参数存在哪个 `arg_set_id` |
+| `android_key_events` | `id, event_id, ts, arg_set_id, source, action, device_id, display_id, key_code` | 某次 key event 何时进入系统、按键码是什么、原始参数存在哪个 `arg_set_id` |
 
-`event_id` 是原始 inputevent 数据源里的 long 型 ID，`arg_set_id` 指向 `args` 表中的事件详情。动作类型、坐标、按键码这类字段要从 `arg_set_id` 继续解包，不能把它们当成公开列直接写进 SQL。
+`event_id` 是原始 inputevent 数据源里的 long 型 ID，`arg_set_id` 仍然指向 `args` 表中的事件详情。坐标、pointer properties、policy flag 这类 proto 细节仍然要从 `arg_set_id` 继续解包；但 `source`、`action`、`device_id`、`display_id`，以及 key event 的 `key_code` 已经可以直接作为公开列查询。
 
-[已验证: Perfetto stdlib android/input.sql]
+[已验证: Perfetto stdlib docs android_key_events / android_motion_events]
 
 ### android_input_event_dispatch（窗口分发表）
 
@@ -587,7 +589,7 @@ data_sources: {
 }
 data_sources: {
   config {
-    name: "android.frame_timeline"
+    name: "android.surfaceflinger.frametimeline"
   }
 }
 data_sources: {
@@ -602,7 +604,7 @@ data_sources: {
 }
 ```
 
-**版本与权限边界**：`android.input.inputevent` 只支持 debuggable build（userdebug / eng）。要采完整事件内容，可以把 rule 的 `trace_level` 提到 `TRACE_LEVEL_COMPLETE`，但这只适合本地排障和测试机。
+**版本与权限边界**：`android.input.inputevent` 只支持 debuggable build（userdebug / eng）。`android.surfaceflinger.frametimeline` 用于抓 FrameTimeline，章节里的联合分析按 Android 12+ 作为基线；低版本设备需要退回到 input + SurfaceFlinger slices + ftrace 的组合。要采完整事件内容，可以把 rule 的 `trace_level` 提到 `TRACE_LEVEL_COMPLETE`，但这只适合本地排障和测试机。
 
 ### 输入 + 帧联合配置
 
@@ -624,7 +626,7 @@ data_sources: {
 }
 data_sources: {
   config {
-    name: "android.frame_timeline"
+    name: "android.surfaceflinger.frametimeline"
   }
 }
 data_sources: {
@@ -669,7 +671,7 @@ for trace in "$TRACE_DIR"/*.perfetto-trace; do
     filename=$(basename "$trace" .perfetto-trace)
     echo "Processing $filename..."
     
-    trace_processor_shell "$trace" << 'SQL' > "$OUTPUT_DIR/${filename}_input_latency.csv"
+    trace_processor_shell "$trace" <<SQL > "$OUTPUT_DIR/${filename}_input_latency.csv"
 INCLUDE PERFETTO MODULE android.input;
 
 SELECT
@@ -687,6 +689,8 @@ done
 
 echo "Results in $OUTPUT_DIR/"
 ```
+
+这里要用未加引号的 heredoc，让 `${filename}` 在进入 Trace Processor 前先由 shell 展开；否则 `trace_name` 会变成字面量 `${filename}`。
 
 [已验证: trace_processor_shell 支持标准 SQL 输入和 CSV 输出]
 

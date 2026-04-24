@@ -9,8 +9,8 @@ polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-16"
-last_verified_against: "AOSP android-17-beta3 + Android Developer Documentation"
+last_verified: "2026-04-24"
+last_verified_against: "developer.android.com Activity/FrameMetrics docs + ActivityMetricsLogger/ActivityThread + AndroidX AppInitializer/InitializationProvider source"
 confidence: medium
 sources:
   - type: blog
@@ -34,14 +34,18 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-24T06:54:00+08:00"
+repaired_date: "2026-04-24"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-24T07:52:07+08:00"
 ---
 
 # 启动优化策略
@@ -84,7 +88,7 @@ TTID 是从用户触发启动到应用绘制第一帧的时间。对应 `am star
 
 TTFD 是从用户触发启动到应用内容完全就绪的时间。终点需要开发者在代码中调用 `Activity.reportFullyDrawn()` 来标记。没有调用 `reportFullyDrawn()` 的话，系统无法知道应用何时才算"真正准备好"。TTFD 衡量的是"用户看到的是完整内容"。
 
-两者可能差距很大。一个新闻 App 的 TTID 可能只有 800ms（首帧显示了骨架屏），但 TTFD 要 2 秒（首页新闻列表从服务端加载完成）。Google 在 Android 12（API 31）的 `Activity` 中新增了 `reportFullyDrawn()` 的完整支持，并在 `FrameMetrics` 中增加了 `TOTAL_DURATION` 等常量来配合度量。
+两者可能差距很大。一个新闻 App 的 TTID 可能只有 800ms（首帧显示了骨架屏），但 TTFD 要 2 秒（首页新闻列表从服务端加载完成）。这里有三个容易混在一起的时间点：`Activity.reportFullyDrawn()` 早在 API 19 就已经提供，用来告诉系统“内容已经完整可交互”；`FrameMetrics` 和 `FrameMetrics#TOTAL_DURATION` 则是 API 24 引入的帧耗时观测能力；Android 12（API 31）新增的是 SplashScreen API 和更统一的启动体验规范。另一个容易误判的点是：Android 12+ 如果应用在系统判定 TTID 之前就调用 `reportFullyDrawn()`，系统会把这次 TTFD 记成 TTID，避免过早上报把启动耗时做小。
 
 优化策略必须针对正确的指标：TTID 优化侧重减少主线程阻塞（延迟初始化、布局优化、ContentProvider 精简），TTFD 优化还需要考虑数据预加载、网络策略、以及 `reportFullyDrawn()` 的合理调用时机。
 
@@ -384,7 +388,7 @@ public class LoginInitializer implements Initializer<LoginSDK> {
 }
 ```
 
-App Startup 会自动分析所有 `Initializer` 的依赖关系，构建 DAG 并拓扑排序，然后按照依赖顺序执行。没有依赖关系的 `Initializer` 会被并行执行。
+App Startup 会自动分析所有 `Initializer` 的依赖关系，构建 DAG 并拓扑排序，然后按依赖顺序同步执行。`InitializationProvider` 在启动阶段触发 `AppInitializer.discoverAndInitialize()`，`doInitialize()` 也会逐个调用 `initializer.create(context)`；没有依赖关系的节点只是少了前置约束，不会被库自动并行化。要并发，只能在 `create()` 内自己切后台，或者使用自研调度框架。
 
 在 `AndroidManifest.xml` 中注册：
 
@@ -404,6 +408,8 @@ App Startup 会自动分析所有 `Initializer` 的依赖关系，构建 DAG 并
 ```
 
 App Startup 的优点是简单、官方维护、与 ContentProvider 机制集成（后面会讲）。缺点是功能比较基础——不支持异步执行（所有 `Initializer` 都在主线程执行），不支持条件初始化（比如只在用户登录后初始化某些 SDK），不支持延迟初始化。
+
+[已验证: AndroidX startup-runtime AppInitializer.java / InitializationProvider.java]
 
 ### 自研并行初始化框架的关键设计
 
@@ -427,7 +433,7 @@ App Startup 的优点是简单、官方维护、与 ContentProvider 机制集成
 
 很多第三方库为了简化接入流程，选择了通过 ContentProvider 来实现自动初始化。开发者只需要在 build.gradle 中添加一行依赖，库就会在应用启动时自动完成初始化，无需手动调用 init 方法。
 
-实现方式是：库在自己的 AndroidManifest.xml 中注册一个 ContentProvider，在该 ContentProvider 的 `onCreate()` 中执行初始化逻辑。由于 Android 系统在启动应用时会按顺序初始化所有已注册的 ContentProvider（在 Application.onCreate 之前），所以库的初始化代码会在启动阶段自动执行。
+实现方式是：库在自己的 AndroidManifest.xml 中注册一个 ContentProvider，在该 ContentProvider 的 `onCreate()` 中执行初始化逻辑。启动时系统会在 `ActivityThread#handleBindApplication` 中创建 `Application` 对象，接着执行 `installContentProviders()`，随后才进入 `Application.onCreate()`；所以 Provider 初始化仍然会卡在主线程上，而且发生在应用自己的 `Application.onCreate()` 之前。
 
 这个方案对开发者来说很方便，但对启动性能来说是个灾难。一个集成了 10 个以上第三方库的应用，可能有 5-6 个甚至更多的 ContentProvider 在启动阶段串行执行。每个 ContentProvider 的 `onCreate()` 可能耗时 10-50ms，累积起来就是 50-300ms 的额外启动时间。
 
@@ -783,11 +789,11 @@ Cloud Profile 的数据采集主要通过 Google Play 服务在用户设备上�
 - Release 构建中不设置 profileable（Cloud Profile 通过 Play 服务自动收集）
 避免混淆 shell 工具用途与 Cloud Profile 机制。
 
-### 各版本新增的监控能力
+### 各版本与启动相关的重要变化
 
 | 版本 | 新增能力 |
 |------|---------|
-| Android 12（API 31） | SplashScreen API、FrameMetrics 新增常量 |
+| Android 12（API 31） | SplashScreen API、启动画面与启动体验规范统一 |
 | Android 13（API 33） | Per-app language 对启动流程的影响 |
 | Android 15（API 35） | Cloud Profile 通过 ART Mainline 分发 |
 | Android 16（API 36） | AutoFDO、profileable 增强 |

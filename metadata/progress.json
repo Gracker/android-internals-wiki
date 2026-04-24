@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T06:54:00+08:00",
+  "generated_at": "2026-04-24T07:52:07+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,55 +7,55 @@
     "finalized": 47,
     "ready-for-review": 139,
     "ready-to-publish": 47,
-    "last_updated": "2026-04-24T06:54:00+08:00",
+    "last_updated": "2026-04-24T07:52:07+08:00",
     "pipeline_stage_counts": {
       "unknown": 31,
-      "task6_pending": 38,
-      "task2b_pending": 38,
+      "task6_pending": 41,
+      "task2b_pending": 35,
       "ready-to-publish": 47,
       "task9_pending": 60
     },
     "task6_state_counts": {
       "unknown": 31,
-      "reviewed": 150,
-      "revisiting": 33
+      "reviewed": 148,
+      "revisiting": 35
     },
     "task9_state_counts": {
       "unknown": 31,
-      "reviewed": 95,
-      "pending": 87,
+      "reviewed": 92,
+      "pending": 90,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 33,
-      "fixed": 136,
-      "pending": 42,
+      "fixed": 139,
+      "pending": 39,
       "idle": 3
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 28,
-      "task6_pending": 44,
-      "task2b_pending": 35,
+      "task6_pending": 47,
+      "task2b_pending": 32,
       "ready-to-publish": 46,
       "task9_pending": 58
     },
     "task6_state_counts": {
       "unknown": 28,
-      "reviewed": 146,
-      "revisiting": 37
+      "reviewed": 144,
+      "revisiting": 39
     },
     "task9_state_counts": {
       "unknown": 28,
-      "reviewed": 92,
-      "pending": 90,
+      "reviewed": 89,
+      "pending": 93,
       "fixed": 1
     },
     "task2b_state_counts": {
       "unknown": 30,
-      "fixed": 140,
-      "pending": 38,
+      "fixed": 143,
+      "pending": 35,
       "idle": 3
     }
   },
@@ -2767,9 +2767,43 @@
       "status": "ready-for-review",
       "applicable_versions": "Android 7.0 (API 24) - Android 17 (API 37)",
       "applicable_versions_note": "已验证范围 Android 7-14；Android 15-17 为待验证",
-      "last_verified": "2026-04-01",
-      "last_verified_against": "AOSP android-14.0.0_r1",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "PowerManager#getThermalHeadroom docs + ADPF fixed-performance-mode docs",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java"
+        },
+        {
+          "type": "aosp",
+          "path": "hardware/interfaces/thermal/2.0/IThermal.hal"
+        },
+        {
+          "type": "aosp",
+          "path": "hardware/interfaces/thermal/2.0/types.hal"
+        },
+        {
+          "type": "aosp",
+          "path": "hardware/interfaces/thermal/aidl/android/hardware/thermal/"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/reference/android/os/PowerManager#THERMAL_STATUS_NONE"
+        },
+        {
+          "type": "official",
+          "path": "source.android.com/docs/core/thermal"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/games/optimize/thermal"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/games/optimize/adpf"
+        }
+      ],
       "related_chapters": [
         "5.1",
         "5.2",
@@ -2785,17 +2819,30 @@
       "polish_count": 2,
       "polish_date": "2026-04-08",
       "polish_by": "task2b-polish",
+      "tags": [
+        "android",
+        "power",
+        "research",
+        "thermal",
+        "throttling",
+        "dvfs",
+        "cpu-frequency"
+      ],
       "reviewed_date": "2026-04-15",
       "reviewed_by": "openclaw-task6",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-04-24T06:54:00+08:00",
-      "task2b_state": "pending"
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "repaired_date": "2026-04-24",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-24T07:52:07+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/06-android-power.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
@@ -3968,9 +4015,43 @@
       "polish_date": "2026-04-06",
       "polish_by": "task2b-polish",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-16",
-      "last_verified_against": "AOSP android-17-beta3 + Android Developer Documentation",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "developer.android.com Activity/FrameMetrics docs + ActivityMetricsLogger/ActivityThread + AndroidX AppInitializer/InitializationProvider source",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "blog",
+          "path": "Personal-Knowlodge/source/2026-03-12_wechat_SplashScreen_优化启动体验_开发者说_DTalk.md"
+        },
+        {
+          "type": "blog",
+          "path": "Personal-Knowlodge/source/2026-03-06_wechat_性能优化_如何优雅实现_App_秒开.md"
+        },
+        {
+          "type": "blog",
+          "path": "Personal-Knowlodge/source/2026-03-06_wechat_淘宝页面首帧优化的经验和心得_1.md"
+        },
+        {
+          "type": "blog",
+          "path": "Cubox/Activity 启动速度分析方法（启动流程分析） - Light.Moon-2022-04-11.md"
+        },
+        {
+          "type": "blog",
+          "path": "Cubox/Android 强推的 Baseline Profiles 国内能用吗？我找 Google 工程师求证了！ - 掘金-2022-07-17.md"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/topic/performance/vitals/launch-time"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/guide/topics/ui/splash-screen"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/topic/performance/baselineprofiles"
+        }
+      ],
       "tags": [
         "startup-optimization",
         "lazy-init",
@@ -3994,14 +4075,18 @@
       "section": "8.3",
       "drafted_by": "openclaw-task2a",
       "drafted_date": "2026-04-01",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T06:54:00+08:00"
+      "last_task9_at": "2026-04-24T06:54:00+08:00",
+      "repaired_date": "2026-04-24",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-24T07:52:07+08:00"
     },
     "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
       "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
@@ -6326,9 +6411,27 @@
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-21",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
-      "last_verified": "2026-04-22",
-      "last_verified_against": "Perfetto stdlib android/input.sql + android/frames/timeline.sql + android_input_event_config.proto",
+      "last_verified": "2026-04-24",
+      "last_verified_against": "Perfetto stdlib docs + android/input.sql + FrameTimeline trace config docs",
       "confidence": "high",
+      "sources": [
+        {
+          "type": "official",
+          "path": "perfetto.dev/docs/analysis/sql-tables/android-input"
+        },
+        {
+          "type": "official",
+          "path": "source.android.com/docs/core/interaction/input"
+        },
+        {
+          "type": "research",
+          "path": "intake/research-feeds/2026-04-05-15-perfetto-input-latency-sql.md"
+        },
+        {
+          "type": "research",
+          "path": "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
+        }
+      ],
       "tags": [
         "Perfetto",
         "SQL",
@@ -6343,17 +6446,19 @@
         "13.3",
         "13.5"
       ],
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task2b_result": "fixed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "last_task2b_at": "2026-04-22T10:03:36+08:00",
+      "last_task2b_at": "2026-04-24T07:52:07+08:00",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T05:21:00+08:00"
+      "last_task9_at": "2026-04-24T05:21:00+08:00",
+      "repaired_date": "2026-04-24",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
       "path": "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
