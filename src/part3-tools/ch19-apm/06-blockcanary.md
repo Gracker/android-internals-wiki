@@ -9,13 +9,16 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "markzhai/AndroidPerformanceMonitor GitHub README"
 confidence: medium
-tags: [apm]
+tags: [apm, jank, looper, main-thread, block-detection]
 related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/markzhai/AndroidPerformanceMonitor"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-24"
 task9_state: pending
 task2b_state: pending
 ---

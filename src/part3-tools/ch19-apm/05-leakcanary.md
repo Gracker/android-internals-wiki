@@ -9,15 +9,18 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "LeakCanary official docs"
 confidence: medium
-tags: [apm]
+tags: [apm, memory, leak-detection, debug-tools, shark]
 related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://square.github.io/leakcanary/"
   - type: official
     path: "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-24"
 task9_state: pending
 task2b_state: pending
 ---
@@ -122,7 +125,7 @@ Perfetto 可以看进程内存曲线、RSS/PSS、GC、heap profile 等信号；A
 - LeakCanary 在本地复现路径上输出引用链。
 - Profiler / MAT / Shark 辅助查看更大的对象图。
 
-LeakCanary 的位置很稳：它是开发者修内存泄漏时最省时间的本地工具之一，但不是完整的线上内存 APM。
+LeakCanary 是开发者修内存泄漏时最省时间的本地工具之一，但不是完整的线上内存 APM。
 
 ## 默认观察对象
 
