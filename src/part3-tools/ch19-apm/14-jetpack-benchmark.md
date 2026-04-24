@@ -20,10 +20,10 @@ sources:
   path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
 - type: official
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode
-pipeline_stage: "task9_pending"
+pipeline_stage: task2b_pending
 task6_state: "reviewed"
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task6_result: "pass-light-edit"
@@ -32,9 +32,9 @@ last_task2b_at: '2026-04-24T21:14:45+08:00'
 repaired_date: '2026-04-24'
 repaired_by: openclaw-task2b
 task9_result: needs-rework
-task9_reviewed_date: '2026-04-24'
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-24T19:59:52+08:00'
+last_task9_at: "2026-04-25T03:28:33+08:00"
 ---
 
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）

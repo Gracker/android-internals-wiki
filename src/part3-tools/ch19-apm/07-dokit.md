@@ -16,18 +16,18 @@ sources:
     path: "https://github.com/didi/DoKit/blob/master/README.md"
   - type: official
     path: "https://github.com/didi/DoKit/blob/master/Android/README.md"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-24"
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-24T21:55:34+08:00"
+last_task9_at: "2026-04-25T03:28:33+08:00"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 review_round: 3
 ---
 

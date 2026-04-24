@@ -1144,67 +1144,71 @@
     "section": "19.07",
     "section_title": "DoraemonKit / DoKit",
     "priority": 85,
-    "reason": "[External Review] 合并更新 - 2026-04-25",
+    "reason": "[Deep Tech Review] DoraemonKit / DoKit external-review 复核确认仍有 P1 技术缺口",
     "review_issues": [
       {
-        "type": "原理链完整性",
-        "location": "",
-        "detail": "[原理链完整性][性能面板的数据可信度]\n- 原文问题：大纲明确要求说明“FPS、CPU、内存、网络数据的采集来源、刷新频率、误差”，但正文《性能面板的数据可信度》一节仅给出了“适合用途”和“需要复核”的对比，**完全忽略了“采集来源”（底层技术实现原理）**。\n- 缺失内容：未说明 FPS 监控依赖于 `Choreographer.FrameCallback`；未说明 CPU/内存监控依赖于系统文件读取或 `Debug.MemoryInfo`；网络和方法耗时/Mock 完全未提及 ASM 字节码插桩机制（Transform API/AGP 插件）。\n- 运行原理说明：DoKit 之所以能“无需业务代码介入即实现网络抓包与 Mock”，是因为其配套的 `dokitx-plugin` 在编译期通过 ASM 扫描并替换了 `OkHttpClient` 的构造方法或注册了全局 Interceptor，耗时统计同理。这正是导致其“端上采集逻辑本身也会消耗资源”的根本技术原因。\n- 为什么这是重要缺失：仅告诉读者“它消耗资源、不准”，却不解释“因为它在编译期强行织入了大量耗时统计代码”，会让文章",
-        "suggestion": "",
-        "evidence": []
+        "type": "原理断裂",
+        "location": "L152-L166《性能面板的数据可信度》",
+        "detail": "该节只写“适合用途/需要复核”，没有说明 FPS、CPU、内存、网络流量的采集来源和刷新频率。源码复核显示 DoKit 的 PerformanceDataManager 中 FPS 通过 Choreographer.FrameCallback 统计，FPS 采样间隔为 1000ms；CPU/内存普通采样间隔为 500ms，CPU 在 Android O+ 走 `top -n 1`，低版本读 `/proc/stat` 和 `/proc/<pid>/stat`；内存走 Debug.getMemoryInfo 或 ActivityManager.getProcessMemoryInfo。",
+        "suggestion": "补一张“指标 / 源码入口 / 采集方式 / 刷新频率 / 误差来源 / 应复核工具”表，把“DoKit 只能做现场判断”的结论和采集实现绑定。",
+        "severity": "P1",
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-25T03:28:33+08:00",
+        "external_review_file": "logs/external-review/2026-04-25-07-ch19.07-external-review.md"
       },
       {
-        "type": "源码准确性",
-        "location": "",
-        "detail": "[源码准确性][Debug 工具箱的工程结构]\n- 原文问题：虽然列出了诸如 `DoraemonStatisticsUtil#uploadUserInfo` 和 `NetWorkMockFragment` 等网络相关类，但对 DoKit 最核心的插件/Transform 编译期逻辑没有给出任何源码或机制锚点。\n- 缺失内容：没有点出 DoKit 编译期插件的核心实现机制（如利用 AGP Transform 配合 ASM 框架进行字节码修改的逻辑路径），这是 DoKit 实现无侵入监控的灵魂。\n- 为什么这是重要缺失：作为一本内部深度 Wiki，读者需要知道“如果我要自己造一个类似的无侵入监控轮子，我应该参考 DoKit 的哪部分源码”。缺失这部分会导致技术资产的可复用性大幅降低。\n- 建议补充方向：补充 `dokitx-plugin` 机制的简要说明，指出网络 Hook 或方法插桩的具体构建期阶段，或者提供核心类的锚点（如针对 ASM 的 Transformer 类机制）。",
-        "suggestion": "",
-        "evidence": []
-      },
-      {
-        "type": "重要缺失",
-        "location": "",
-        "detail": "大纲明确要求说明“FPS、CPU、内存、网络数据的采集来源、刷新频率、误差”，但正文《性能面板的数据可信度》一节仅给出了“适合用途”和“需要复核”的对比，**完全忽略了“采集来源”（底层技术实现原理）**。",
-        "suggestion": "在“数据可信度”或独立一节中，明确补充各项指标的底层采集手段（如 ASM 字节码插桩、Choreographer Hook 等），将“开销大、不适合线上”与底层技术原理挂钩。"
-      },
-      {
-        "type": "重要缺失",
-        "location": "",
-        "detail": "虽然列出了诸如 `DoraemonStatisticsUtil#uploadUserInfo` 和 `NetWorkMockFragment` 等网络相关类，但对 DoKit 最核心的插件/Transform 编译期逻辑没有给出任何源码或机制锚点。",
-        "suggestion": "补充 `dokitx-plugin` 机制的简要说明，指出网络 Hook 或方法插桩的具体构建期阶段，或者提供核心类的锚点（如针对 ASM 的 Transformer 类机制）。"
+        "type": "源码锚点缺失",
+        "location": "L130-L150《Debug 工具箱的工程结构》+ L179-L186《平台网络上报与合规边界》",
+        "detail": "正文列了统计上报类，但没有给 DoKit 无侵入网络/方法监控的编译期插桩锚点。源码复核显示 `Android/dokit-plugin/src/main/kotlin/.../DoKitPlugin.kt` 使用 `registerTransform` 注册 Transform，`Okhttp3ClassTransformer` 在 `okhttp3.OkHttpClient` 构造逻辑里插入 `OkHttpHook.addDoKitIntercept(OkHttpClient)`。该实现也解释了网络监控、慢方法等能力为什么会引入运行时开销和 AGP 8.x 兼容风险。",
+        "suggestion": "在工程结构后补 `dokit-plugin` / Transform / ASM ClassTransformer 的代码阅读索引，至少列 `DoKitPlugin.kt`、`Okhttp3ClassTransformer.kt`、`PerformanceDataManager.java` 三个入口；同时说明当前源码仍依赖 Transform API，AGP 8.x 兼容性不能只按 README 的 AGP 3.3.0+ 推断。",
+        "severity": "P1",
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-25T03:28:33+08:00",
+        "external_review_file": "logs/external-review/2026-04-25-07-ch19.07-external-review.md"
       }
     ],
-    "added_by": "external-ai-review",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "status": "pending",
+    "origin_added_by": "external-ai-review",
+    "origin_reason": "[External Review] 合并更新 - 2026-04-25",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-25-03-deep-review.md"
+    ],
+    "task9_verified_at": "2026-04-25T03:28:33+08:00",
+    "task9_verified_by": "openclaw-task9",
+    "added_at": "2026-04-25T03:28:33+08:00"
   },
   {
     "section": "19.08",
     "section_title": "ArgusAPM",
     "priority": 85,
-    "reason": "[External Review] 合并更新 - 2026-04-25",
+    "reason": "[Deep Tech Review] ArgusAPM external-review 复核确认仍有 P1 技术缺口",
     "review_issues": [
       {
-        "type": "原理链完整性",
-        "location": "",
-        "detail": "[原理链完整性][架构分成采集模块和 Gradle Plugin]\n- 原文问题：文中在提及其字节码注入时，使用了“AOP / ASM 织入”这样较为笼统的并列描述，未能说清这两种不同技术体系在 ArgusAPM 中的真实分工，容易产生黑盒感。\n- 源码 / 一手资料锚点：ArgusAPM 开源仓库中的 `argus-apm-main`（基于 AspectJ 的实现）与 `argus-apm-gradle`（基于 ASM 的实现）。\n- 缺失内容：AspectJ 与 ASM 在 ArgusAPM 体系内具体的职责分工与选型考量。\n- 运行原理说明：在真实 ArgusAPM 工程设计中，两者是“分层防御”关系：\n  1. **AspectJ**：负责开发效率高、调用频次较低的业务逻辑插桩（如 Activity/Fragment 生命周期事件、点击事件拦截等）。\n  2. **ASM**：作为核心底层插桩引擎，用于极高频次且对性能损耗极度敏感的场景（如 Method Trace 方法耗时全量统计、`new Thread()` 创建劫持）。\n- 为什么这是重要缺失：ArgusAPM 的学习价",
-        "suggestion": "",
-        "evidence": []
-      },
-      {
-        "type": "重要缺失",
-        "location": "",
-        "detail": "文中在提及其字节码注入时，使用了“AOP / ASM 织入”这样较为笼统的并列描述，未能说清这两种不同技术体系在 ArgusAPM 中的真实分工，容易产生黑盒感。",
-        "suggestion": "建议在“AOP 织入适合哪些数据”或架构梳理部分，用一两句话点破这种双核织入机制的原因。"
-      },
-      {
         "type": "原理断裂",
-        "location": "架构分成采集模块 / AOP 织入适合哪些数据",
-        "detail": "未明确区分 AspectJ 和 ASM 在 ArgusAPM 内部各自负责的具体场景（低频业务 vs 高频性能）。",
-        "suggestion": "明确指出 AspectJ 用于生命周期/点击埋点，ASM 用于方法级 Trace 和线程拦截。强调这种设计是为了平衡性能损耗与开发效率。",
-        "priority": "P1"
+        "location": "L77-L84《架构分成采集模块和 Gradle Plugin》+ L140-L174《AOP 织入适合哪些数据》",
+        "detail": "正文只讲 AOP/编译期织入，没有把 ArgusAPM 源码里的 AspectJ 和 ASM 两套路径拆开。源码复核显示 AspectJ 相关入口在 `argus-apm/argus-apm-aop/src/main/java/.../TraceActivity.java`、`TraceNetTrafficMonitor.java` 和 `argus-apm-gradle/src/main/kotlin/.../AspectJTransform.kt`；ASM 路径在 `argus-apm-gradle-asm/src/main/kotlin/.../ASMWeaver.kt`，并包含 `FuncClassAdapter`、`OkHttp3ClassAdapter`、`WebClassAdapter` 等。external-review 中“argus-apm-main 基于 AspectJ”的锚点不准确，应改为 `argus-apm-aop` + `argus-apm-gradle`。",
+        "suggestion": "新增“AspectJ 路径 / ASM 路径 / 适合场景 / 读源码入口”小表：AspectJ 负责生命周期、网络切面等注解式切入；ASM 负责方法耗时、OkHttp/WebView 等字节码适配。避免把 AOP 和 ASM 写成一个黑盒。",
+        "severity": "P1",
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-25T03:28:33+08:00",
+        "external_review_file": "logs/external-review/2026-04-25-08-ch19.08-external-review.md"
       }
     ],
-    "added_by": "external-ai-review",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "status": "pending",
+    "origin_added_by": "external-ai-review",
+    "origin_reason": "[External Review] 合并更新 - 2026-04-25",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-25-03-deep-review.md"
+    ],
+    "task9_verified_at": "2026-04-25T03:28:33+08:00",
+    "task9_verified_by": "openclaw-task9",
+    "added_at": "2026-04-25T03:28:33+08:00"
   },
   {
     "section": "19.10",
@@ -1340,39 +1344,43 @@
   },
   {
     "section": "19.14",
-    "section_title": "Jetpack Benchmark",
+    "section_title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
     "priority": 85,
-    "reason": "[External Review] 合并更新 - 2026-04-25",
+    "reason": "[Deep Tech Review] Jetpack Benchmark（Microbenchmark + Macrobenchmark） external-review 复核确认仍有 P1 技术缺口",
     "review_issues": [
       {
-        "type": "原理链完整性/知识盲区",
-        "location": "",
-        "detail": "[原理链完整性/知识盲区][Microbenchmark 测小代码段]\n  - 原文问题：完全遗漏了防御死代码消除（DCE）的机制，且未按照大纲要求覆盖 `Blackhole` 和 `BenchmarkState`。\n  - 源码 / 一手资料锚点：`androidx.benchmark.Blackhole` 及其 `consume()` 方法，`androidx.benchmark.BenchmarkState`。\n  - 缺失内容：Microbenchmark 执行的代码段往往因为返回值未被使用，在 AOT 编译阶段被编译器直接优化掉（Dead Code Elimination），导致耗时测出来为 0 或极小。\n  - 运行原理说明：必须使用 `Blackhole.consume(result)` 来强制消费变量，欺骗编译器保留被测代码逻辑。\n  - 为什么这是重要缺失：这是写 Microbenchmark 时最容易踩坑、最常导致“测了假数据”的致命点，大纲已要求却未覆盖。\n  - 建议补充方向：在“避免测错对象”部分增加一个由于未处理返回值导致 DCE 的反面示例，并展示如何使用",
-        "suggestion": "",
-        "evidence": []
+        "type": "原理断裂",
+        "location": "L99-L110《Microbenchmark 测小代码段》+ L231-L256《Microbenchmark 写法要避免测错对象》",
+        "detail": "大纲 L48 要求覆盖 Blackhole/state，但正文只讲 setUp 与 measureRepeated，没有讲 Dead Code Elimination。AndroidX `BlackHole.kt` 明确说明 Kotlin 编译器和 R8 可能移除被测代码，应把结果传给 `BlackHole.consume`；类名为 `androidx.benchmark.BlackHole`（大写 H），不是 external-review 写的 `Blackhole`。",
+        "suggestion": "补一个“错误写法：返回值未消费导致被优化掉”的示例，再给 `BlackHole.consume(result)` 修正版；同时说明 Kotlin 推荐 `BenchmarkRule.measureRepeated`，Java/手动循环可用 `BenchmarkState.keepRunning()`。",
+        "severity": "P1",
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-25T03:28:33+08:00",
+        "external_review_file": "logs/external-review/2026-04-25-14-ch19.14-external-review.md"
       },
       {
-        "type": "原理链完整性/实战落地",
-        "location": "",
-        "detail": "[原理链完整性/实战落地][和 Baseline Profiles 的配合 & 工程形态]\n  - 原文问题：未提及 `androidx.profileinstaller:profileinstaller` 依赖，以及 `BaselineProfileRule` 的使用。\n  - 源码 / 一手资料锚点：`androidx.benchmark.macro.junit4.BaselineProfileRule` 及 `androidx.profileinstaller.ProfileInstaller`。\n  - 缺失内容：要在本地或 CI 的 Android 7.0+ (API 24+) 设备上使得 `CompilationMode.Partial` 生效，**被测 App** 必须包含 `profileinstaller` 依赖。否则 Macrobenchmark 库无法将 Profile 写入被测 App 并触发编译。\n  - 运行原理说明：Macrobenchmark 依赖 ProfileInstaller 将基线配置文件写入应用的私有目录，并发送广播要求 `bg-dexopt`",
-        "suggestion": "",
-        "evidence": []
-      },
-      {
-        "type": "重要缺失",
-        "location": "",
-        "detail": "完全遗漏了防御死代码消除（DCE）的机制，且未按照大纲要求覆盖 `Blackhole` 和 `BenchmarkState`。",
-        "suggestion": "在“避免测错对象”部分增加一个由于未处理返回值导致 DCE 的反面示例，并展示如何使用 `Blackhole.consume()` 修复。"
-      },
-      {
-        "type": "重要缺失",
-        "location": "",
-        "detail": "未提及 `androidx.profileinstaller:profileinstaller` 依赖，以及 `BaselineProfileRule` 的使用。",
-        "suggestion": "明确指出目标 App 需要引入 `profileinstaller`；在“和 Baseline Profiles 的配合”小节明确指出生成 Profile 需使用 `BaselineProfileRule`。"
+        "type": "原理断裂",
+        "location": "L221-L229《Benchmark module 的工程形态》+ L306-L314《和 Baseline Profiles 的配合》",
+        "detail": "Baseline Profile 部分只写 generate / startup / scroll 三类任务，没有写被测 App 的 `androidx.profileinstaller:profileinstaller` 依赖、`BaselineProfileRule` 和 ProfileInstaller 广播链路。AndroidX `CompilationMode.Partial` 源码注明 Required 模式只支持包含 ProfileInstaller 且由 AGP 7.0+ 打包 baseline profile 的 APK；`BaselineProfileRule` 用于收集 profile，源码注释还限定非 root 设备主要支持 Android 13+，root 设备可到 Android P+。",
+        "suggestion": "在工程形态里补 target app 依赖和 AGP 7.0+ 前提；在 Baseline Profiles 小节区分 `BaselineProfileRule.collect()` 生成 profile 与 `MacrobenchmarkRule` 验证启动/滚动收益，并修正生成设备的 API 边界。",
+        "severity": "P1",
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-25T03:28:33+08:00",
+        "external_review_file": "logs/external-review/2026-04-25-14-ch19.14-external-review.md"
       }
     ],
-    "added_by": "external-ai-review",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "status": "pending",
+    "origin_added_by": "external-ai-review",
+    "origin_reason": "[External Review] 合并更新 - 2026-04-25",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-25-03-deep-review.md"
+    ],
+    "task9_verified_at": "2026-04-25T03:28:33+08:00",
+    "task9_verified_by": "openclaw-task9",
+    "added_at": "2026-04-25T03:28:33+08:00"
   },
   {
     "section": "19.16",
