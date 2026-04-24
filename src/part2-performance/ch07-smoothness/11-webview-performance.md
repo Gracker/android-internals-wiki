@@ -2,7 +2,7 @@
 title: "WebView 渲染性能与优化"
 chapter: "7.11"
 section: "7.11"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [WebView, Chromium, Blink, JS Bridge, 混合渲染, 硬件加速, ANR, jank, 内存优化]
 related_chapters: ["2.1", "2.5", "2.10", "7.1", "7.2", "8.1", "9.1"]
@@ -26,14 +26,14 @@ sources:
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_result: needs-rework
-task9_state: pending
+task9_result: pass-tech-review
+task9_state: reviewed
 task2b_state: fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-20"
-last_task9_at: "2026-04-20T14:50:48+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-25"
+last_task9_at: "2026-04-25T05:33:55+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-24T01:51:58+08:00"
 ---

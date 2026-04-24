@@ -2346,5 +2346,38 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T04:21:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.1",
+    "section_title": "Android 渲染架构全景",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 16 渲染/VSync/SF 路径仍混用旧 DispSync 与 handleMessageRefresh 模型",
+    "material_paths": [
+      "logs/deep-review/2026-04-25-05-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "§三缓冲机制 / 在 Android 中的实现（约 L254-L266）",
+        "detail": "代码块引用 `frameworks/native/services/surfaceflinger/DisplayHardware/DisplayHardware.cpp` 和 `DisplayHardware::vsync()`；android-16.0.0_r1 的 `services/surfaceflinger/DisplayHardware/` 下没有该文件，VSync 回调不走这个类名/方法名。",
+        "suggestion": "删除这段具名源码片段，或改为可核对的 `DisplayHardware/HWComposer.cpp` / composer callback 路径；如果只是解释三缓冲，请标注为示意性伪代码，不写不存在的文件路径。"
+      },
+      {
+        "type": "源码错误",
+        "location": "§三缓冲机制、Perfetto 表现与总结中多处 `SurfaceFlinger::handleMessageRefresh`",
+        "detail": "`handleMessageRefresh()` 是 Android 10 及更早 SurfaceFlinger 主循环里的旧入口；android-14/15/16 的 `SurfaceFlinger.cpp` 已不含该方法，主链路已转为 Scheduler 驱动的 `scheduleComposite()`，再进入 commit / composite / present。",
+        "suggestion": "统一为现代 SurfaceFlinger 路径：HWC/composer vsync → Scheduler/EventThread → `scheduleComposite()` → commit/composite/present；如保留 `handleMessageRefresh`，必须标注 Android 10 及更早版本。"
+      },
+      {
+        "type": "版本差异",
+        "location": "§VSync 同步（约 L171-L175）与文末交叉引用",
+        "detail": "正文把当前 Android 的 App/SF VSync 分发写成 DispSync 模型；android-14/15/16 的 SurfaceFlinger Scheduler 目录已使用 `VSyncPredictor`、`VSyncDispatchTimerQueue`、`VsyncSchedule`、`VsyncConfiguration` 等实现，`DispSync` 不再是当前主模型。",
+        "suggestion": "补版本边界：Android 10/11 及更早可讲 DispSync，Android 12+ 尤其 14-16 应改为 VSyncPredictor/VSyncDispatch/VsyncSchedule 模型；2.3 节可展开细节，本节先避免把旧模型写成 Android 16 现状。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T05:33:55+08:00",
+    "status": "pending"
   }
 ]
