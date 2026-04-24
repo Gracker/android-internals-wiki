@@ -1012,6 +1012,18 @@
         "location": "01-apm-landscape.md",
         "detail": "2. 章节：`ch19.01`\n   - 严重级别：P1\n   - 问题类型：知识盲区\n   - 位置：线上采样要先写清数据合同\n   - 问题描述：数据合同缺乏代码符号化（Mapping/Build-ID）的字段约束。\n   - 建议修正方向：在“样本字段”或维度中，补充 Mapping UUID / Build-ID。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "案例缺失",
+        "location": "全文/APM 先解决线上可见性",
+        "detail": "大纲要求的“线上慢帧/OOM 样本发现到定位的具体案例”未落实。\n   -",
+        "suggestion": "补充一段文字，描述一个从指标异常、定位样本、到线下 Trace/Hprof 验证的具体排查案例。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "线上采样要先写清数据合同",
+        "detail": "数据合同缺乏代码符号化（Mapping/Build-ID）的字段约束。\n   -",
+        "suggestion": "在“样本字段”或维度中，补充 Mapping UUID / Build-ID。"
       }
     ],
     "added_by": "external-ai-review",
@@ -1304,6 +1316,12 @@
         "location": "src/part3-tools/ch19-apm/10-other-opensource-apm.md",
         "detail": "- [P1][版本差异覆盖][旧开源工具迁移到官方 SDK 映射表]\n  - 原文问题：推荐使用“`ProfilingManager` + Perfetto”作为启动异常后的重样本方案。\n  - 一手资料锚点：`android.os.ProfilingManager` (Android API 35)\n  - 缺失内容：`ProfilingManager` 是 Android 15 (API 35) 刚刚引入的系统级 API，无法向下兼容低版本设备。\n  - 为什么这是重要缺失：文章在 `Applicable Versions` 标明了 `Android 8 - 17`，如果直接抛出 `ProfilingManager` 而不加版本前缀，开发者在低于 Android 15 的设备上无法找到或调用此能力，产生困惑。\n  - 建议补充方向：标注该 API 的 (Android 15+) 版本下限要求。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "from-body",
+        "location": "",
+        "detail": "\n- [P1][版本差异覆盖][Rabbit 介绍及横向对比]\n  - 原文问题：“慢函数插桩是否还能适配当前 AGP、R8、混淆和 mapping 体系” 描述过于温和。\n  - 一手资料锚点：AGP API Updates (AGP 8.0 彻底移除了 `Transform` API，由 `AsmClassVisitorFactory` 替代)\n  - 缺失内容：AndroidGodEye, Collie, Rabbit 最后更新均停留于 2022-2023 年。在现代 Android 工程（AGP 8.0 及更高版本）中，由于 `Transform` API 的彻底移除，这些旧库中依赖字",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -1417,6 +1435,12 @@
         "type": "重要缺失",
         "location": "",
         "detail": "- [P1][原理链完整性][和 btrace、Perfetto SDK 的区别]\n- **原文问题**：缺失 Macrobenchmark Trace Section 的分工。\n- **缺失内容**：文中区分了 btrace 和 Perfetto SDK，但漏掉了 Macrobenchmark。\n- **为什么这是重要缺失**：在编写 Macrobenchmark 时，通常会用 `androidx.tracing` 在 App 侧打标，然后在 Benchmark 侧通过 `FrameOverrun` 或自定义追踪区间进行校验。\n- **建议补充方向**：补充说明 `androidx.trac",
+        "suggestion": ""
+      },
+      {
+        "type": "from-body",
+        "location": "",
+        "detail": "\n- [P1][原理链完整性][基本用法]\n- **原文问题**：只展示了 Kotlin `trace {}` 块，未提及 Java 侧的异常安全要求。\n- **源码 / 一手资料锚点**：`androidx.tracing.Trace` (Java API)\n- **关键代码逻辑**：`trace {}` 内部通过 `try-finally` 保证了 `endSection` 必定触发。Java 用户若直接调用 `beginSection`/`endSection` 且未加 `try-finally`，一旦代码抛出异常，会导致整个线程后续的 Trace 嵌套全部乱序。\n- **运行原理说明*",
         "suggestion": ""
       }
     ],
@@ -1554,6 +1578,12 @@
         "location": "",
         "detail": "- [P1][原理链完整性][自动采集能力与版本边界 - App Start]\n- **原文问题**：对应用启动的起点描述较模糊。\n- **源码 / 一手资料锚点**：`Process.getStartUptimeMillis()` (API 24+)。\n- **关键代码逻辑**：Firebase 优先使用系统 API 获取进程 fork 时间，而非仅依靠 ContentProvider。\n- **运行原理说明**：区分了“绝对冷启动”（系统级起点）和“SDK 起点”。\n- **核验结论**：原文仅提到“跟随当前 SDK 接入”，缺乏对 API 24+ 关键实现（`Process.getSta",
         "suggestion": ""
+      },
+      {
+        "type": "from-body",
+        "location": "",
+        "detail": "\n- [P1][知识盲区][自定义 trace 的命名规则]\n- **原文问题**：声称 Trace 名称“最大长度 32 个字符”。\n- **源码 / 一手资料锚点**：[Firebase Custom Traces Docs](https://firebase.google.com/docs/perf-mon/custom-code-traces?platform=android#add-custom-attributes)\n- **关键代码逻辑**：SDK 内部常量 `MAX_TRACE_NAME_LENGTH` 在近几个版本中已上调。\n- **运行原理说明**：Trace 和 Metr",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -1683,6 +1713,12 @@
         "location": "src/part3-tools/ch19-apm/19-perfdog.md",
         "detail": "- [P1][版本差异覆盖][全文]\n- 原文问题：未提及 Android 13/14+ 对 PerfDog Service 的“受限设置”（Restricted Settings）影响。\n- 版本差异：Android 13+ 引入了对侧载 APK 的敏感权限限制。\n- 核验结论：如果用户不手动在“应用信息 -> 允许受限设置”中开启，PerfDog Service 无法获取辅助功能、通知访问等关键权限，导致采集失败。\n- 建议修正方向：增加“版本适配坑点”或“疑难排查”小节，专门针对 Android 13-16 的权限变迁给出操作建议。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "from-body",
+        "location": "",
+        "detail": "\n- [P1][原理链完整性][它能测什么 / 功耗和温度的读法]\n- 原文问题：未明确说明功耗测量在 USB 连接模式下的不可信性。\n- 运行原理说明：在 USB 连接时，`/sys/class/power_supply/battery/current_now` 反映的是“充电电流 - 耗电电流”的净值。若不切换到 Wi-Fi 模式断开充电，无法获得 App 的真实耗电数据。\n- 建议修正方向：明确补充“Wi-Fi 模式测试”是功耗准确性的前提，解释 USB 模式采集的是净电流而非设备总功耗。\n\n- [P1][源码准确性][FPS 之外还要看帧时间]\n- 原文问题：未解释 FPS 数据的采集",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -2106,6 +2142,12 @@
         "detail": "",
         "suggestion": "",
         "priority": "P1"
+      },
+      {
+        "type": "from-body",
+        "location": "",
+        "detail": "\n- **[P1][版本差异/原理链完整性][Trace Canary 的工程边界]**\n  - **原文问题**：“AGP 8.x 之后 `android.registerTransform` 已不再是可用入口。新项目接入时要先确认所用版本...适配当前 AGP。”\n  - **缺失内容**：没有给出 AGP 8.x 时代 Matrix 的真正生存现状和适配方案。\n  - **运行原理说明**：Matrix 官方仓库主分支（截至 2.1.0）尚未正式兼容 AGP 8。核心的 Trace 插桩强依赖已废弃的 Transform API。目前社区和实际工程中的标准解法是迁移至 AGP 8 推荐的",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -2160,6 +2202,12 @@
         "detail": "",
         "suggestion": "",
         "priority": "P1"
+      },
+      {
+        "type": "from-body",
+        "location": "",
+        "detail": "\n- [P1][版本差异覆盖][测试规范 / 机型分层方法]\n- **原文问题**：机型分层部分完全采用自定义 Benchmark 分数，未提及 Android 官方的 **Performance Class (PC)** 体系。\n- **一手资料锚点**：[developer.android.com - Performance Class](https://developer.android.com/guide/topics/manifest/uses-native-heap-tag#performance-class)\n- **关键代码逻辑**：`androidx.core.perform",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",

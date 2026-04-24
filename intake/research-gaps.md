@@ -4895,3 +4895,37 @@ WebView Core Web Vitals API 能力矩阵缺失。正文按 Android API 26-37 讨
 ### 关联章节
 - 19.26
 - 7.11
+
+## [2026-04-25] 19.15 19.15 Baseline Profiles — 知识盲区
+
+### 盲区描述
+Cloud Profiles 覆盖冲突
+
+### 重要程度
+中
+
+### 建议研究方向
+当 Google Play 的 Cloud Profile 与 App 自带的 Baseline Profile 冲突时，ART 的合并优先级逻辑（`profman` 合并策略）。
+
+### 关联章节
+- 19.15
+
+### 外部 review 来源
+- External AI Review (2026-04-25-15-ch19.15-external-review.md)
+
+## [2026-04-25] 19.15 19.15 Baseline Profiles — 知识盲区
+
+### 盲区描述
+App Image (art 文件) 生成
+
+### 重要程度
+高
+
+### 建议研究方向
+Profile 不仅引导 AOT，还引导 `dex2oat` 生成 App Image，预加载类对象，进一步减少类加载耗时。
+
+### 关联章节
+- 19.15
+
+### 外部 review 来源
+- External AI Review (2026-04-25-15-ch19.15-external-review.md)

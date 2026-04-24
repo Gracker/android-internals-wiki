@@ -18592,13 +18592,24 @@
       "action_taken": "inject",
       "processed_at": "2026-04-24T07:14:37+08:00",
       "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "path": "test",
+      "title": "test",
+      "score": 10,
+      "chapter": "ch16",
+      "indexed_at": "2026-04-25T00:00:00",
+      "quality": "high",
+      "scored_at": "2026-04-25T05:05:48.209856"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/调研/2026-04-24-Android-Benchmark-工具调研/Android-Benchmark-工具调研与对比方案.md",
+      "title": "Android-Benchmark-工具调研与对比方案",
+      "score": 14,
+      "chapter": "ch16",
+      "indexed_at": "2026-04-25T21:07:00+00:00",
+      "quality": "medium",
+      "scored_at": "2026-04-25T05:08:48.534313"
     }
-  ],
-  "Task 11 增量扫描": {
-    "chapter": "ch04-memory",
-    "title": "PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研",
-    "date": "2026-04-24 05:56",
-    "score": 15,
-    "processed_at": "2026-04-24T06:32:01.143383"
-  }
+  ]
 }
