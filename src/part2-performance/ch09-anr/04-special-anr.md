@@ -417,3 +417,10 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 - 高爷 androidperformance.com ANR 分析系列
 - [Perfetto Official Documentation](https://perfetto.dev/docs/)
+
+### Android 14 → Android 17 Foreground Service Timeout / ANR 机制深度解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
+- 类型：DeepResearch 调研结果
+- 摘要：聚焦 `ActiveServices`、`ServiceRecord.ShortFgsInfo`、`AnrTimer` 等源码，梳理 Android 14–17 中 shortService 与 time-limited FGS 的超时窗口、回调语义、异常抛出与迟到 ANR 触发路径，适合补齐特殊场景 ANR 的系统侧视角。
+- 注入时间：2026-04-24
+- 价值：直接补上前台服务超时 ANR 的版本演进与 system_server 判责链路。

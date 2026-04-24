@@ -248,3 +248,10 @@ VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 produce
 - AOSP 源码：`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp`
 - 官方文档：<https://source.android.com/docs/core/graphics/sync>
 - 官方文档：<https://source.android.com/docs/core/graphics/architecture>
+
+### Android Sync Fence 机制深度剖析：从 dma-fence 到 Android 16 Explicit Sync
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md
+- 类型：DeepResearch 调研结果
+- 摘要：围绕 Linux `dma_fence`、`sync_file`、Android `libsync` 与 `Fence` 类，解释 acquire/release/present fence 在 BufferQueue、SurfaceControl、HWC3 中的流转，并把 Android 16 explicit sync 与可观测性工具串起来。
+- 注入时间：2026-04-24
+- 价值：把 fence 的内核原语、Android 封装和 trace 观察方法一次讲清。

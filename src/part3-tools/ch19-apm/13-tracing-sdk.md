@@ -1,0 +1,180 @@
+---
+title: "androidx.tracing（Tracing SDK）"
+chapter: "19"
+section: "19.13"
+status: draft
+drafted_date: "2026-04-24"
+drafted_by: "codex"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+last_verified: "2026-04-24"
+last_verified_against: "Android tracing docs / androidx.tracing reference"
+confidence: medium
+tags: [apm]
+related_chapters: ["19.0"]
+sources:
+  - type: official
+    path: "https://developer.android.com/topic/performance/tracing"
+  - type: official
+    path: "https://developer.android.com/reference/androidx/tracing/package-summary"
+pipeline_stage: drafted
+---
+
+# androidx.tracing（Tracing SDK）
+
+## Tracing SDK 给代码区间命名
+
+`androidx.tracing` 是 AndroidX 对平台 tracing API 的封装。它的作用很简单：让应用在代码里标记某段工作，之后在 Perfetto 或 Systrace 里看到对应 slice。
+
+它不采集性能指标，也不自动分析慢在哪里。它只负责把“这段时间应用在做什么”写进 trace。对性能分析来说，这个能力很有用，因为系统 trace 里最缺的往往是业务语义。
+
+## 什么时候需要手动 trace
+
+系统 trace 能看到线程运行、调度、Binder、I/O、渲染等事件，但它不知道业务代码在做“首页首屏数据解析”还是“支付按钮状态刷新”。这些语义只能由应用自己标注。
+
+适合加 trace 的位置包括：
+
+- 启动阶段的关键节点：`Application` 初始化、首屏数据、首帧前布局。
+- 大列表刷新：diff、bind、图片解码、分页合并。
+- 复杂交互：转场动画、手势处理、地图/视频/相机页面初始化。
+- 同步等待点：缓存读取、数据库查询、跨进程调用包装。
+
+不适合给每个小函数都加 trace。slice 太多会污染视图，也会增加运行时开销。
+
+## 基本用法
+
+下面这段代码展示 Kotlin 扩展函数的写法，重点是把业务区间命名清楚。
+
+```kotlin
+import androidx.tracing.trace
+
+fun renderHomeFeed(items: List<FeedItem>) {
+    trace("HomeFeed#diffAndBind") {
+        val diff = calculateDiff(items)
+        adapter.submitList(diff)
+    }
+}
+```
+
+抓 Perfetto 时，`HomeFeed#diffAndBind` 会显示在对应线程轨道上。这样分析慢帧或启动慢时，可以把系统调度和业务阶段放在一起看。
+
+## 命名要稳定
+
+trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词、订单号。原因很直接：名称会进入 trace 文件，可能触发隐私问题，也会让分析视图变得不可聚合。
+
+更适合的命名方式是：
+
+- `Startup#loadConfig`
+- `Home#firstFeedRequest`
+- `Feed#diff`
+- `Image#decodeThumbnail`
+- `Checkout#submit`
+
+如果需要区分页面或业务类型，可以使用少量固定枚举，不要把动态内容写进 trace 名称。
+
+## 和 btrace、Perfetto SDK 的区别
+
+`androidx.tracing` 是手动标注。btrace / RheaTrace 可以采到更多方法级调用信息。Perfetto SDK 则适合写入更结构化或跨平台的自定义 trace 数据源。
+
+三者的关系可以这样理解：
+
+- `androidx.tracing`：轻量、稳定、适合长期保留的业务 slice。
+- btrace：专项诊断时补方法级现场。
+- Perfetto SDK：需要更复杂自定义数据源时使用。
+
+大多数 App 先用 `androidx.tracing` 就够。把启动、首屏、列表、图片、数据库和关键交互标好，Perfetto 可读性会提升很多。
+
+## 线上和线下的边界
+
+trace 标注代码可以留在 Release 包里，但是否被采集取决于系统 trace 会话。正常运行时，标注本身应尽量低成本；录制 Perfetto 时才会在文件里出现。
+
+仍然要注意两点：
+
+- 热路径上不要创建复杂字符串作为 trace 名称。
+- 不要在 trace 名称里写用户数据、业务密钥或完整请求信息。
+
+Tracing SDK 的收益来自长期积累。每个性能敏感模块都留下少量稳定 slice，后面任何人抓到 Perfetto，都能更快把系统事件和业务阶段对应起来。
+
+## trace 名称就是书里的索引
+
+业务 trace 名称要让读 trace 的人一眼知道阶段。建议采用 `Module#Action` 或 `Feature.Step` 形式：
+
+| 好的名称 | 含义 |
+|---|---|
+| `Startup#initImageLoader` | 启动阶段初始化图片库 |
+| `Home#loadFirstFeed` | 首页首屏 feed 加载 |
+| `Feed#diffAndBind` | 列表 diff 和提交 |
+| `Search#renderResult` | 搜索结果渲染 |
+| `Player#prepare` | 播放器 prepare 阶段 |
+
+命名不宜过细。`HomeRepository$getFeedFromCache` 这种函数式名称会让 trace 过度贴近代码实现，重构后就失效。书稿级工程里，trace 名称应该描述业务阶段，不描述当前实现。
+
+## 同步和异步区间要分开
+
+`trace {}` 只能覆盖当前线程上的同步区间。很多性能问题跨线程，单个 trace block 只包住发起点会误导读者。
+
+错误示例：
+
+```kotlin
+trace("Home#loadFirstFeed") {
+    repository.loadFirstFeedAsync()
+}
+```
+
+这段 trace 只记录异步任务提交耗时，不记录网络、解析、数据库和 UI 更新。更好的做法是在每个关键线程上标记自己的阶段：
+
+```kotlin
+trace("Home#requestFirstFeed") {
+    api.loadFirstFeed()
+}
+
+trace("Home#parseFirstFeed") {
+    parser.parse(response)
+}
+
+trace("Home#renderFirstFeed") {
+    adapter.submitList(items)
+}
+```
+
+这样 Perfetto 里会出现多个 slice，读者能看到工作在哪些线程执行，以及线程之间是否存在空洞。
+
+## trace 与线上指标关联
+
+`androidx.tracing` 本身不上传数据，但 trace 名称应该和线上 APM 的事件名保持一致。比如线上启动事件叫 `startup.first_draw`，Perfetto slice 可以叫 `Startup#firstDraw`。这样线上指标、日志和线下 trace 能互相对应。
+
+推荐建立一张性能阶段表：
+
+| 线上事件 | Trace slice | 说明 |
+|---|---|---|
+| `startup.app_on_create` | `Startup#appOnCreate` | `Application.onCreate()` 内关键初始化 |
+| `startup.first_screen_data` | `Startup#firstScreenData` | 首屏数据准备 |
+| `home.feed_render` | `Home#feedRender` | 首页列表渲染 |
+| `detail.content_ready` | `Detail#contentReady` | 详情页内容可见 |
+
+没有这张表，每个开发者会按自己的习惯命名，trace 读起来像一堆临时标签。
+
+## Native trace 标注
+
+如果性能敏感代码在 native 层，也要用 native trace 标注。Android 支持 native 代码写自定义 trace event，适合音视频、图像处理、渲染、压缩、加密等场景。
+
+典型使用点：
+
+- 图像解码和缩放。
+- OpenGL / Vulkan 资源创建。
+- 音视频解复用、解码、渲染。
+- native 数据库或文件处理。
+- JNI 边界上的大数组复制。
+
+Java 层只看到一次 JNI 调用，Perfetto 里如果没有 native slice，读者不知道 native 内部时间花在哪里。
+
+## 常见错误
+
+| 错误 | 后果 | 修正 |
+|---|---|---|
+| trace 包太大 | Perfetto 视图里 slice 跨太多逻辑，无法定位 | 拆成几个稳定阶段 |
+| trace 包太小 | 视图噪声过多，抓 trace 成本上升 | 只标性能敏感路径 |
+| 名称带动态数据 | 无法聚合，可能泄露隐私 | 用固定枚举和稳定名称 |
+| 只标异步提交 | 看不到实际工作耗时 | 在实际执行线程标记 |
+| Debug 才有 trace | Release 问题无法复现 | 低成本稳定 trace 留在正式代码 |
+
+Tracing SDK 的价值来自一致性。少量稳定、长期存在的 trace，比临时到处加标记更有用。

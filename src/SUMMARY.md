@@ -230,6 +230,30 @@ tags:
   - [15.9 从采集到治理的闭环](part3-tools/ch15-methodology/09-observability-closed-loop.md)
   - [15.10 性能治理工程化](part3-tools/ch15-methodology/10-performance-governance.md)
 
+- [第 19 章：APM 工具与性能监控生态](part3-tools/ch19-apm/README.md)
+  - [19.1 APM 全景图与分类体系](part3-tools/ch19-apm/01-apm-landscape.md)
+  - [19.2 Tencent Matrix](part3-tools/ch19-apm/02-tencent-matrix.md)
+  - [19.3 KOOM](part3-tools/ch19-apm/03-koom.md)
+  - [19.4 btrace / RheaTrace](part3-tools/ch19-apm/04-btrace.md)
+  - [19.5 LeakCanary](part3-tools/ch19-apm/05-leakcanary.md)
+  - [19.6 BlockCanary](part3-tools/ch19-apm/06-blockcanary.md)
+  - [19.7 DoraemonKit / DoKit](part3-tools/ch19-apm/07-dokit.md)
+  - [19.8 ArgusAPM](part3-tools/ch19-apm/08-argusapm.md)
+  - [19.9 Measure](part3-tools/ch19-apm/09-measure.md)
+  - [19.10 其他开源 APM 库（AndroidGodEye、Collie、Rabbit）](part3-tools/ch19-apm/10-other-opensource-apm.md)
+  - [19.11 JankStats](part3-tools/ch19-apm/11-jankstats.md)
+  - [19.12 FrameMetrics](part3-tools/ch19-apm/12-framemetrics.md)
+  - [19.13 androidx.tracing（Tracing SDK）](part3-tools/ch19-apm/13-tracing-sdk.md)
+  - [19.14 Jetpack Benchmark（Microbenchmark + Macrobenchmark）](part3-tools/ch19-apm/14-jetpack-benchmark.md)
+  - [19.15 Baseline Profiles 与编译优化](part3-tools/ch19-apm/15-baseline-profiles.md)
+  - [19.16 ProfilingManager](part3-tools/ch19-apm/16-profiling-manager.md)
+  - [19.17 Firebase Performance](part3-tools/ch19-apm/17-firebase-performance.md)
+  - [19.18 商业 APM 平台（Sentry、APMPlus、Bugly）](part3-tools/ch19-apm/18-commercial-apm.md)
+  - [19.19 PerfDog](part3-tools/ch19-apm/19-perfdog.md)
+  - [19.20 SoloPi 与 Emmagee](part3-tools/ch19-apm/20-solopi-emmagee.md)
+  - [19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）](part3-tools/ch19-apm/21-benchmark-apps.md)
+  - [19.22 存储 Benchmark（AndroBench、A1 SD Bench）](part3-tools/ch19-apm/22-storage-benchmark.md)
+
 ---
 
 # 第四部分：系统级优化与行业实践
