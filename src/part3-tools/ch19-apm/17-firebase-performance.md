@@ -7,25 +7,34 @@ drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
-last_verified_against: "Firebase Performance Monitoring docs"
+last_verified_against: "Firebase Performance get-started / troubleshooting / network-traces / screen-traces docs"
 confidence: medium
 tags: [apm]
-related_chapters: ["19.0"]
+related_chapters: ["19.0", "19.11"]
 sources:
   - type: official
     path: "https://firebase.google.com/docs/perf-mon"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+  - type: official
+    path: "https://firebase.google.com/docs/perf-mon/get-started-android"
+  - type: official
+    path: "https://firebase.google.com/docs/perf-mon/troubleshooting"
+  - type: official
+    path: "https://firebase.google.com/docs/perf-mon/network-traces"
+  - type: official
+    path: "https://firebase.google.com/docs/perf-mon/screen-traces"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-24
-last_task9_at: 2026-04-24T16:40:21+08:00reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
-
+task9_reviewed_date: "2026-04-24"
+last_task9_at: "2026-04-24T16:40:21+08:00"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-24"
+last_task2b_at: "2026-04-24T19:38:05+08:00"
 ---
-
 # Firebase Performance
 
 <!-- outline-start -->
@@ -67,152 +76,128 @@ reviewed_date: 2026-04-24
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## Firebase Performance 是低门槛平台方案
+## Firebase Performance 的定位
 
-Firebase Performance Monitoring 是 Google Firebase 体系的移动性能监控工具。Android 侧常见能力包括 App 启动、前后台、屏幕渲染、HTTP/S 网络请求、自定义 trace 和自定义 metric。
+Firebase Performance Monitoring 是托管型性能看板。它的长处是接入快、自动采集多、控制台开箱即用；短板是原始样本控制弱、字段合同弱、私有化能力弱，控制台还有处理延迟。
 
-它适合 Google 生态已经可用、希望快速拿到基础性能看板的团队。它不适合所有地区、所有合规场景，也不替代本地 Perfetto、JankStats 的自定义聚合或自建 APM 平台。
+它适合中小团队先把启动、渲染、网络和少量业务 trace 建起来，再用 JankStats、Perfetto 或自建 APM 补深度诊断。把它当成秒级事故面板会踩空。
 
-## trace 是 Firebase 的基本数据单位
+## 数据模型：trace、metric、attribute
 
-在Firebase文档中，trace定义为App中两个时间点之间捕获的数据报告。不同 trace 会携带不同 metric，例如网络请求 trace 会包含响应时间、payload 大小等字段。
+Firebase 的基本单位是 trace。自动 trace 和 custom trace 都会挂 metric 与 attribute。网络 request trace 还会附带 URL pattern、status code、payload size 这一类字段，用来做版本、设备和接口维度的聚合。
 
-常见 trace 类型包括：
+| 对象 | 含义 | 例子 | 使用建议 |
+| --- | --- | --- | --- |
+| trace | 一段时间窗口 | `app_start`、`home_first_feed` | 名称稳定，不拼动态值 |
+| metric | 这个窗口里的数值 | duration、`item_count`、`payload_kb` | 只放低基数、可聚合数值 |
+| attribute | 过滤维度 | `entry=cold_start`、`result=success` | 只放枚举型上下文，不放 user id |
 
-- App start、foreground、background。
-- Screen rendering。
-- HTTP/S network request。
-- Custom trace。
+这个模型擅长回答“哪个版本慢了”“哪类设备慢了”“哪条业务路径慢了”，不擅长还原某一次事故的完整调用链。
 
-每条 trace 还会带设备、App 版本等属性，用于过滤和聚合。这个模型很适合回答“哪些版本、哪些设备、哪些网络请求变慢”。
+## 构建链和采集开关
 
-## 自动采集和自定义采集
-
-Firebase 的优势是自动采集能力较多。接入 SDK 后，启动、屏幕渲染和网络请求可以较快进入看板。业务侧还可以用 custom trace 标记自己的路径，比如登录、下单、图片加载、首页首屏。
-
-自定义 trace 要注意粒度：
-
-- 只给用户感知路径加 trace，不给普通工具函数加。
-- metric 用固定名称，例如 `image_count`、`cache_hit`、`payload_kb`。
-- attribute 用有限枚举，例如页面类型、渠道、接口类型。
-- 不写用户 id、token、完整 URL、搜索词等敏感内容。
-
-平台型服务越容易接入，越要控制字段。字段失控后，看板会变得难查，也可能触发隐私审查问题。
-
-## 它和 JankStats 的关系
-
-Firebase 可以展示 screen rendering 相关数据，但 JankStats 更适合应用内自定义 UI context。两者可以同时存在：
-
-- Firebase 负责快速平台化展示和版本聚合。
-- JankStats 负责更细的页面、状态和业务上下文。
-- FrameMetrics 在高版本设备上补阶段耗时。
-
-如果团队只用 Firebase，需要接受它的口径和平台限制。如果团队需要把慢帧数据和内部页面、实验分组、用户路径深度结合，自研或二次上报仍然少不了。
-
-## 网络监控的边界
-
-Firebase 的网络请求监控适合看 URL pattern、响应耗时、payload、成功失败等指标。它不等于网络全路径分析。DNS、TCP、TLS、服务端耗时、网关耗时、弱网重试、缓存命中这些细节，仍然要结合网络库埋点、服务端 trace 和日志。
-
-线上排查时可以这样用：
-
-- Firebase 看某个 endpoint 是否在某版本变慢。
-- 网络库日志看请求阶段和错误类型。
-- 服务端监控看后端处理耗时和错误率。
-- Perfetto 看客户端是否被主线程、I/O 或调度拖住。
-
-只看单端网络耗时，很容易把服务端慢、弱网、客户端排队混在一起。
-
-## 使用建议
-
-Firebase Performance 适合做第一版性能看板：启动、屏幕、网络和少量自定义 trace。接入时先把采样、数据区域、隐私字段和团队权限确认清楚。
-
-如果产品面向无法稳定访问 Firebase 服务的地区，或者公司要求性能数据自托管，就要考虑 Measure、Sentry、自建平台或国内商业 APM。Firebase 的优势是省平台成本，边界是生态、合规和可定制能力。
-
-## 自动 trace 和自定义 trace 的分工
-
-Firebase Performance 的自动 trace 适合做基础盘，自定义 trace 适合补业务路径。两者不要互相替代。
-
-| Trace 类型 | 典型用途 | 边界 |
-|---|---|---|
-| App start | 冷启动、热启动趋势 | 不能代表首屏数据完整 |
-| Screen rendering | 页面渲染基础指标 | UI 状态和业务动作有限 |
-| HTTP/S request | 网络耗时和 payload | URL 聚合和服务端阶段要补充 |
-| Custom trace | 登录、下单、首屏、图片加载 | 需要业务稳定命名和采样控制 |
-
-如果只依赖自动 trace，平台能看到“启动慢”“网络慢”，但很难回答业务路径。自定义 trace 的作用就是把内部关键路径暴露给平台。
-
-## 自定义 trace 示例
-
-下面示意代码展示业务路径 trace。重点是 trace 名称稳定，metric 和 attribute 都使用低基数字段。
+Firebase Performance 不是只加一个 SDK 依赖就结束。官方 get-started 文档要求把 `com.google.gms.google-services` 和 `com.google.firebase.firebase-perf` 两个 Gradle plugin 都接进构建链，并提供 `google-services.json`。
 
 ```kotlin
-val trace = Firebase.performance.newTrace("home_first_feed")
-trace.putAttribute("entry", "cold_start")
-trace.start()
-
-try {
-    val response = api.loadFirstFeed()
-    trace.putMetric("item_count", response.items.size.toLong())
-    trace.putMetric("payload_kb", response.rawSizeBytes / 1024)
-    render(response.items)
-} finally {
-    trace.stop()
+plugins {
+    id("com.android.application")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.firebase-perf")
 }
 ```
 
-不要把用户 id、完整请求 URL、搜索词、商品 id 放进 attribute。Firebase attribute 用于过滤和聚合，字段一旦高基数，查询和隐私都会出问题。
+Manifest 开关要单独写清楚：
 
-## 网络请求聚合要做 URL pattern
+- `firebase_performance_collection_enabled=false`：默认关闭采集，后面还可以按灰度策略再打开
+- `firebase_performance_collection_deactivated=true`：彻底停用；它会覆盖前一个开关，想恢复只能改 Manifest 重新发版
 
-网络监控最容易被 URL 动态参数污染。比如：
-
-```text
-/api/item/10001/detail
-/api/item/10002/detail
-/api/item/10003/detail
+```xml
+<application>
+    <meta-data
+        android:name="firebase_performance_collection_enabled"
+        android:value="false" />
+</application>
 ```
 
-如果按完整 URL 上报，平台会认为这是三个接口。正确做法是归一化为：
+Release 策略也要固定下来：debug 包默认关闭，内部测试包只开小流量，正式版按地区和渠道放量。这样可以避免开发期噪声把线上盘面污染掉。
 
-```text
-/api/item/{id}/detail
-```
+## 自动采集能力与版本边界
 
-还要确认 query 参数策略。分页、实验参数、token、签名、搜索词都不适合直接进入聚合维度。网络 trace 只保留 endpoint pattern、method、status、payload 和阶段耗时即可。
+Firebase 的自动采集很多，但边界也很明确：
 
-## 采样和阈值策略
+| 能力 | 采集方式 | 稳妥边界 | 局限 |
+| --- | --- | --- | --- |
+| App start / foreground / background | 自动 | 跟随当前 Android SDK 接入 | 适合看版本趋势，不等于完整首屏 |
+| Screen rendering | 自动 | 按 API 24+ 的帧指标能力来写更稳妥 | 只有 screen 级聚合，没有页面上下文 |
+| HTTP/S request | 自动 + 手工补点 | 官方只承诺“多数 network requests” | 不同网络库覆盖不一样，未完成请求可能漏掉 |
+| Custom trace | 手工 | 跟随 SDK 接入 | 适合登录、图片解码、数据库查询这类业务路径 |
 
-Firebase 上手快，但生产环境仍然要控制数据量：
+到 Android 17，官方 get-started 和 troubleshooting 文档没有列出单独的 API 37 变更。本章按“使用最新 Firebase Android BoM，能力边界沿当前文档执行”来写，不额外编造 Android 17 专属行为。
 
-- 自定义 trace 只覆盖关键路径。
-- 低价值 trace 不上报或只在 Debug 验证。
-- 网络请求按 endpoint 聚合，不记录完整 URL。
-- 通过 Remote Config 或自己的开关控制业务 trace。
-- 版本灰度期间提高采样，稳定后降低采样。
+## 自定义 trace 的命名规则
 
-Firebase 控制台展示的是聚合结果。若团队还要保留单点现场，需要把 Firebase 数据和内部日志、Crash、Perfetto 样本关联起来。
+自定义 trace 要解决两个问题：名字能长期复用，字段不会把聚合盘打散。官方 troubleshooting 文档给了三条硬约束：名称不能有前后空格，不能以下划线开头，最大长度 32 个字符。
 
-## 和 Google Play Console 的配合
+| 场景 | trace 名 | metric 名 | attribute | 不要写 |
+| --- | --- | --- | --- | --- |
+| 首屏首批内容 | `home_first_feed` | `item_count`、`payload_kb` | `entry=cold_start` | 完整接口 URL、user id |
+| 登录流程 | `login_request` | `retry_count` | `result=success|fail` | 手机号、邮箱 |
+| 图片解码 | `image_decode_list` | `image_count`、`decode_ms` | `source=disk|network` | 图片 hash、CDN 签名 |
+| 数据库查询 | `db_query_user` | `row_count`、`query_ms` | `source=room` | SQL 原文、主键 id |
 
-Firebase Performance 和 Android Vitals 都来自 Google 生态，但定位不同：
+下面这类写法就不合适：把订单号、实验桶 id、SQL 文本、完整搜索词写进 attribute，或者把 trace 名拼成 `login_user_12345`。这会同时破坏聚合效果和隐私边界。
 
-- Android Vitals 来自 Play 分发面，更适合看真实用户质量门槛。
-- Firebase Performance 来自 App SDK，更适合看自定义 trace、网络和版本维度。
+## 网络请求聚合和 URL pattern
 
-如果两边都显示启动或渲染变差，优先级很高。如果 Firebase 变差但 Vitals 没变，可能是采样用户、渠道或自定义 trace 口径差异。如果 Vitals 变差但 Firebase 没变，可能是 SDK 覆盖不足或字段聚合掩盖了问题。
+Firebase 自动网络 trace 更像聚合盘，不是抓包器。它擅长回答“哪个接口在某个版本变慢了”，不擅长拆 DNS、TCP、TLS、服务端队列和弱网重试这些阶段。
 
-## 适合与不适合
+URL pattern 必须做归一化。像 `/api/item/10001/detail`、`/api/item/10002/detail` 这一类路径，在盘面上应该收敛成 `/api/item/{id}/detail`。query 参数里的 token、签名、搜索词、实验参数也不要直接进聚合维度。
 
-Firebase Performance 适合：
+官方文档还给了两条实操边界：
 
-- 快速搭建第一版性能看板。
-- 面向 Google Play 和海外用户的产品。
-- 需要 App start、screen、network、自定义 trace 的基础聚合。
+- 有些请求可能不会被自动捕获，遇到自研网络库、Cronet、native 网络栈或非常规封装时，要补 custom network trace
+- 只完成了一半、长时间不结束的连接，控制台不一定会形成稳定样本；`Content-Type` 非法的请求也可能不展示
 
-它不适合：
+线上要拆阶段时，还是要回到应用日志、服务端 trace 和 Perfetto。
 
-- 必须完全自托管性能数据的团队。
-- 需要深度方法 trace、Hprof、ANR 线程文件、native 内存分析的场景。
-- 无法稳定访问 Firebase 服务的发行区域。
+## 采样、时效和排查边界
 
-书稿里要把这个边界写清。Firebase 是好入口，但不是性能诊断的终点。
+Firebase Performance 的控制台时效必须单独写出来。官方 troubleshooting 文档明确给了版本边界：Android SDK `v19.0.10+`，或 Firebase Android BoM `v26.1.0+`，才进入 near real-time 路径；旧 SDK 的控制台展示通常会落后大约 36 小时。
+
+| SDK 情况 | 控制台时效 | 适合做什么 |
+| --- | --- | --- |
+| Android SDK `v19.0.10+` 或 BoM `v26.1.0+` | `SDK detected` 通常 10 分钟内可见，初始处理数据一般几分钟到 30 分钟 | 灰度观察、当日回归、版本趋势 |
+| 旧 SDK | 大约 36 小时延迟 | 次日复盘、长期趋势 |
+
+采样也不是无限上报。官方文档写明：设备侧对 code trace 和 network trace 有 10 分钟 300 事件的限流，还会做按项目动态采样。结果就是：控制台上的数据是“采样后的聚合盘”，不是每一条请求、每一帧卡顿都原样保留。
+
+这直接决定了排查边界：Firebase 适合发布回归、版本比较、趋势监控，不适合秒级 incident 排查。遇到线上突发故障，要切到日志、实时告警、自建 APM 或 Perfetto 样本。
+
+## 和 JankStats、FrameMetrics、Android Vitals 的分工
+
+这几套工具都能谈“卡顿”，但口径不一样：
+
+| 工具 | 主要样本 | 长处 | 不足 |
+| --- | --- | --- | --- |
+| Firebase Performance | screen 级聚合、network 聚合、自定义 trace | 接入快，控制台能直接看版本和设备分布 | 上下文弱，延迟高，原始样本少 |
+| JankStats | 端侧逐帧数据 + UI state | 能把卡顿和页面状态、实验桶、业务动作关联起来 | 需要自己存储和上报 |
+| FrameMetrics | 端侧阶段耗时 | 适合做渲染阶段拆分和本地诊断 | 平台 API，字段更底层 |
+| Android Vitals | Play 分发真实用户质量数据 | 适合看发布质量门槛、慢帧和 ANR 风险 | 只覆盖 Play 分发用户，业务上下文少 |
+
+Firebase 和 Android Vitals 也不要混成一套口径。两边都可能出现“slow frames”“frozen frames”这类指标，但样本面、聚合窗口和覆盖用户群都不同，不能把百分比直接拿来比较。
+
+## 使用建议
+
+Firebase Performance 适合下面这类团队：
+
+- 先把启动、渲染、网络盘面搭起来，再决定哪些流程要补自定义 trace
+- 产品主要面向 Google 生态可用地区
+- 团队更缺平台建设时间，不缺对聚合盘的接受度
+
+只靠 Firebase 不够的场景也很清楚：
+
+- 需要秒级事故排查和实时告警
+- 需要自托管、私有化或更严格的数据所有权控制
+- 需要还原原始 network stage、逐帧上下文、ANR 线程或 native 现场
+
+把它放在“第一层聚合盘”的位置最合适。深度诊断还是要靠 JankStats、Perfetto、服务端 trace 和更细的内部字段合同。

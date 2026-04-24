@@ -6,12 +6,13 @@ status: ready-for-review
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-04-14'
-last_verified_against: developer.android.com Baseline Profiles docs + profileable docs + AOSP android-17-beta3 cross-check
+last_verified: '2026-04-24'
+last_verified_against: developer.android.com create/debug/profileable docs + AOSP
+  android-17-beta3 cross-check + Firebase-free local verification commands review
 reviewed_date: '2026-04-22'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_result: "needs-rework"
+task9_result: needs-rework
 confidence: medium
 sources:
 - type: official
@@ -29,17 +30,17 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: "pending"
-task2b_state: "fixed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 review_round: 3
-task9_reviewed_date: "2026-04-20"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-20T20:06:23+08:00"
+task9_reviewed_date: '2026-04-20'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-20T20:06:23+08:00'
+last_task2b_at: '2026-04-24T19:36:54+08:00'
 ---
-
 
 # 8.7 Baseline Profiles 与编译优化实践
 
@@ -69,7 +70,7 @@ Baseline Profiles 的作用是让开发者在 APK 中预置一份"热点方法�
   编译状态用 `ProfileVerifier` 或 `dumpsys package dexopt`，收益用 Macrobenchmark 的 TTID / TTFD 对比 `CompilationMode.None()` 与 `CompilationMode.Partial()`。
 
 - 🔹 **`<profileable>` 与 OEM dexpreopt 要分开写**：[已验证: manifest docs + AOSP build 资料]
-  `<profileable>` 元素是 API 29，`android:shell` 是 API 30；`WITH_DEXPREOPT_*` 属于系统镜像 preopt 开关，和应用侧 Baseline Profiles 不是一套机制。
+  `<profileable>` 元素和 `android:shell` 都从 API 29 开始可用；API 30 新增的是 `android:enabled`。`WITH_DEXPREOPT_*` 属于系统镜像 preopt 开关，和应用侧 Baseline Profiles 不是一套机制。
 
 ### 扩展（可选深入）
 
@@ -144,7 +145,7 @@ Google 官方给出的通用范围是 **15-30% 的启动速度提升**。实际�
 |----------|--------------|--------------|----------|
 | Google Play | APK 自带 Baseline Profile + Play 聚合的 Cloud Profiles | 安装期或后续后台设备更新 | `ProfileVerifier`、`dumpsys package dexopt` |
 | Android Studio / Gradle 安装的 non-debuggable build | APK 自带 Baseline Profile | 设备端自动编译，必要时可手工触发 `bg-dexopt` | `ProfileVerifier`、`dumpsys package dexopt` |
-| 其他 installer / 侧载 | APK 自带 Baseline Profile，`ProfileInstaller` 负责把 profile 入队 | 常见为等待下一次 `bg-dexopt`，必要时手工执行 `cmd package compile -r bg-dexopt` | `ProfileVerifier`、`dumpsys package dexopt` |
+| 其他 installer / 侧载 | APK 自带 Baseline Profile，`ProfileInstaller` 负责把 profile 入队 | 常见为等待下一次 `bg-dexopt`；线下要立刻确认时，可手工执行 `cmd package compile -r bg-dexopt` 或 `cmd package compile -m speed-profile -f` | `ProfileVerifier`、`dumpsys package dexopt` |
 
 无论哪条路径，`/data/misc/profiles/...` 放的是 Profile 数据，`/data/app/.../oat/arm64/base.odex` 放的是编译后的应用 OAT 产物。把这两类目录分开看，`dumpsys package dexopt` 的输出才不会读反。
 
@@ -153,12 +154,17 @@ Google 官方给出的通用范围是 **15-30% 的启动速度提升**。实际�
 Android 14 之后，`dexopt` 管理更多由 ART Service 承担。写验证步骤时，命令口径最好和官方调试文档保持一致：
 
 ```bash
-# 触发一次后台编译
+# 触发一次后台 dexopt 语义的编译
 adb shell cmd package compile -r bg-dexopt com.example.app
+
+# 直接强制做 speed-profile 编译，线下验证更直观
+adb shell cmd package compile -m speed-profile -f com.example.app
 
 # 查看当前编译状态
 adb shell dumpsys package dexopt | grep -A 2 com.example.app
 ```
+
+如果要模拟系统稍后会不会吃到 profile，`-r bg-dexopt` 更贴近后台任务语义；如果只是线下确认当前包能不能按 Profile 编译，`-m speed-profile -f` 更直接。
 
 `dumpsys` 输出里常见的几个字段要这样读：
 
@@ -238,6 +244,17 @@ AGP 8.0+ 已经把 Baseline Profiles 的生成和打包流程收进官方插件�
 - `baseline-prof.txt` 是否随变更一起进仓
 - release 包里是否真的出现 `baseline.prof`
 
+### Android 17 与 R8 的适配边界
+
+到 Android 17，应用侧 Baseline Profiles 的消费路径没有换轨。公开文档和 android-17-beta3 交叉核对后，release 包里仍然是 `baseline.prof`，设备端仍然生成 `speed-profile` 对应的 OAT 产物。Android 14 之后更多 dexopt 调度转到 ART Service，但验证入口还是 `ProfileVerifier` 和 `dumpsys package dexopt`。
+
+R8 会影响收益，但影响点在 release 产物的代码形态和启动路径命中率，不是把 Baseline Profiles 机制改掉。官方生成文档明确要求按 release build 或基于 release 的 variant 生成 profile，product flavor 也要分别产出。实操里把下面四件事固定下来，命中率会稳定很多：
+
+- Profile 生成、打包和 Macrobenchmark 都对准 release 或 release-like variant，不拿 debug 产物代替
+- 打开 R8 full mode、调整 keep 规则、做大规模包结构改动后，重新生成 `baseline-prof.txt`
+- 先检查最终 APK / AAB 里是否还带着 `baseline.prof`，再谈命中率
+- 收益回落时，用同一 release 包对比 `CompilationMode.None()` 和 `CompilationMode.Partial()`，不要把版本差异和编译差异混在一起
+
 ## 与 AutoFDO 的关系与区别
 
 Baseline Profiles 和 AutoFDO 都属于 Profile-Guided Optimization，但它们处理的对象不同。
@@ -268,6 +285,7 @@ Baseline Profiles 和 AutoFDO 都属于 Profile-Guided Optimization，但它们�
 
 ```bash
 adb shell cmd package compile -r bg-dexopt com.example.app
+adb shell cmd package compile -m speed-profile -f com.example.app
 adb shell dumpsys package dexopt | grep -A 2 com.example.app
 ```
 
@@ -316,11 +334,29 @@ AAB 里的 `BUNDLE-METADATA` 是构建产物视角，安装到设备后不会原
 
 - APK 可以携带 `baseline.prof`，这表示安装包里带了规则，不等于设备侧已经生成 `speed-profile` 产物
 - 通过其他 installer 或侧载安装时，Jetpack `ProfileInstaller` 负责把 profile 入队，等待下一次后台 DEX 优化流程处理
-- 想确认当前设备是否已经吃到编译收益，还是要看 `ProfileVerifier` 或 `dumpsys package dexopt`，必要时手工执行 `cmd package compile -r bg-dexopt`
+- 想确认当前设备是否已经吃到编译收益，还是要看 `ProfileVerifier` 或 `dumpsys package dexopt`；需要立即验证时，用 `cmd package compile -m speed-profile -f`，要模拟后台任务语义时再用 `cmd package compile -r bg-dexopt`
 
 所以，非 Google Play 渠道并不是拿不到 Baseline Profile 收益，而是“何时完成编译”取决于安装器、`ProfileInstaller` 和后台 dexopt 是否已经跑完。Cloud Profiles 和 Cloud Compilation 仍然依赖 Google Play 服务，离线渠道拿不到这两类分发增强能力。
 
 [待验证: 国内主流应用商店是否有类似的云端 profile 基础设施]
+
+### Profile 生成失败或收益回落时怎么查
+
+常见的失败形态有四种：
+
+- 构建产物里没有 `baseline.prof`：生成任务没跑到目标 variant，或者 CI 只产出了 debug 包
+- 设备一直停在 `status = verify`：侧载路径只完成了 profile 入队，`bg-dexopt` 还没跑
+- 切到新的 R8 / Startup Profile 配置后收益消失：旧的 HRF 文件还在，但启动路径已经变了
+- Macrobenchmark 几乎没差异：测试拿的不是同一 release 包，或者对比模式不是 `None()` / `Partial()`
+
+排查顺序也固定下来：
+
+1. 检查 APK / AAB 里有没有 `baseline.prof`
+2. 用 `ProfileVerifier` 或 `dumpsys package dexopt` 看设备是否进入 `speed-profile`
+3. 仍停在 `verify` 时，先跑 `adb shell cmd package compile -m speed-profile -f com.example.app`
+4. 再用 Macrobenchmark 对同一包做 `None()` / `Partial()` 对比
+
+这组顺序能把“没打进去”“没编出来”“编出来但收益不明显”三类问题拆开。
 
 ### Library 的 Baseline Profiles 与 App 的合并
 
@@ -347,17 +383,18 @@ Google 在 Compose 的每个 release 中都附带了预生成的 Baseline Profil
 
 ### Profileable 应用与性能分析
 
-`<profileable>` 元素本身是 API 29 加入的，`android:shell` 属性是 API 30 新增的。写版本边界时，这两个点要分开。
+`<profileable>` 元素和 `android:shell` 都从 API 29 开始可用；API 30 新增的是 `android:enabled`。写版本边界时，把这三个点拆开更稳妥。
 
-- API 29：可以在 release-like build 上声明 `<profileable>`
-- API 30：`android:shell="true"` 允许 shell 工具、Perfetto、simpleperf、`am profile` 等本地工具分析应用
+- API 29：可以在 release-like build 上声明 `<profileable android:shell="true" />`
+- API 30：`android:enabled` 允许进一步控制系统服务或 shell 工具是否可见
+- 本地线下分析场景里，`android:shell="true"` 允许 shell 工具、Perfetto、simpleperf、`am profile` 等直接分析应用
 
 实际项目里，Baseline Profile 生成和验证通常使用 non-debuggable + `profileable` 的组合。debuggable build 会改变 ART 优化行为，启动时间和 trace 都更容易失真。
 
 ```xml
 <profileable
     android:shell="true"
-    tools:targetApi="30" />
+    tools:targetApi="29" />
 ```
 
 ### OEM 系统镜像级别的编译优化
