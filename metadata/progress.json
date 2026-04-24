@@ -1,63 +1,74 @@
 {
-  "generated_at": "2026-04-24T23:36:31+08:00",
+  "generated_at": "2026-04-25T00:03:09+08:00",
   "state_machine_version": "v2",
   "total_sections": 216,
   "metrics": {
     "total_sections": 216,
-    "finalized": 57,
-    "ready-for-review": 159,
-    "ready-to-publish": 0,
-    "last_updated": "2026-04-24T23:36:31+08:00",
+    "finalized": 58,
+    "ready-for-review": 151,
+    "ready-to-publish": 58,
+    "last_updated": "2026-04-25T00:03:09+08:00",
     "pipeline_stage_counts": {
-      "null": 36,
-      "task6_pending": 33,
-      "task2b_pending": 39,
-      "ready-to-publish": 57,
-      "task9_pending": 84
+      "None": 3,
+      "ready-to-publish": 58,
+      "task9_pending": 83,
+      "task2b_pending": 37,
+      "task6_pending": 28,
+      "'task9_pending'": 2,
+      "'task2b_pending'": 1
     },
     "task6_state_counts": {
-      "null": 41,
-      "reviewed": 190,
-      "revisiting": 18
+      "None": 6,
+      "reviewed": 192,
+      "revisiting": 14
     },
     "task9_state_counts": {
-      "reviewed": 106,
-      "pending": 97,
+      "None": 6,
+      "reviewed": 107,
+      "pending": 95,
+      "'pending'": 2,
       "fixed": 1,
-      "null": 12
+      "'reviewed'": 1
     },
     "task2b_state_counts": {
-      "fixed": 153,
-      "pending": 45,
-      "idle": 4,
-      "null": 14
+      "None": 8,
+      "fixed": 154,
+      "idle": 5,
+      "pending": 41,
+      "'fixed'": 2,
+      "'pending'": 2
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 37,
+      "None": 3,
+      "ready-to-publish": 58,
+      "task9_pending": 83,
       "task2b_pending": 37,
-      "ready-to-publish": 57,
-      "task9_pending": 82,
-      "null": 3
+      "task6_pending": 28,
+      "'task9_pending'": 2,
+      "'task2b_pending'": 1
     },
     "task6_state_counts": {
-      "reviewed": 185,
-      "revisiting": 20,
-      "null": 8,
-      "pending": 3
+      "None": 6,
+      "reviewed": 192,
+      "revisiting": 14
     },
     "task9_state_counts": {
-      "reviewed": 106,
-      "pending": 97,
+      "None": 6,
+      "reviewed": 107,
+      "pending": 95,
+      "'pending'": 2,
       "fixed": 1,
-      "null": 12
+      "'reviewed'": 1
     },
     "task2b_state_counts": {
-      "fixed": 153,
-      "pending": 45,
-      "idle": 4,
-      "null": 14
+      "None": 8,
+      "fixed": 154,
+      "idle": 5,
+      "pending": 41,
+      "'fixed'": 2,
+      "'pending'": 2
     }
   },
   "issues": {
@@ -8317,12 +8328,40 @@
       "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/23-network-apm-internals.md": {
-      "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
       "title": "网络 APM 底层捕获原理",
       "chapter": "19",
       "section": "19.23",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending"
+      "drafted_date": "2026-04-24",
+      "drafted_by": "gemini",
+      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+      "last_verified": "2026-04-24",
+      "confidence": "high",
+      "tags": [
+        "apm",
+        "network",
+        "okhttp",
+        "asm",
+        "cronet"
+      ],
+      "related_chapters": [
+        "19.0",
+        "19.08",
+        "19.17"
+      ],
+      "pipeline_stage": "task6_pending",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "sources": [
+        "https://square.github.io/okhttp/features/events/",
+        "https://square.github.io/okhttp/features/interceptors/",
+        "https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo"
+      ],
+      "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md"
     },
     "src/part3-tools/ch19-apm/06-blockcanary.md": {
       "path": "src/part3-tools/ch19-apm/06-blockcanary.md",
@@ -8572,12 +8611,40 @@
       "last_task9_at": "2026-04-24T22:57:00+08:00"
     },
     "src/part3-tools/ch19-apm/24-crash-anr-internals.md": {
-      "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
       "title": "崩溃与 ANR 捕获机制",
       "chapter": "19",
       "section": "19.24",
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending"
+      "drafted_date": "2026-04-24",
+      "drafted_by": "gemini",
+      "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+      "last_verified": "2026-04-24",
+      "confidence": "high",
+      "tags": [
+        "apm",
+        "crash",
+        "anr",
+        "stability",
+        "crashpad"
+      ],
+      "related_chapters": [
+        "19.0",
+        "19.03",
+        "19.16"
+      ],
+      "pipeline_stage": "task6_pending",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "sources": [
+        "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)",
+        "https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md",
+        "https://developer.android.com/ndk/guides/gwp-asan"
+      ],
+      "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
     },
     "src/part3-tools/ch19-apm/07-dokit.md": {
       "path": "src/part3-tools/ch19-apm/07-dokit.md",
@@ -9180,5 +9247,77 @@
         "task2b_result": "fixed"
       }
     }
+  },
+  "src/part3-tools/ch19-apm/23-network-apm-internals.md": {
+    "title": "网络 APM 底层捕获原理",
+    "chapter": "19",
+    "section": "19.23",
+    "status": "ready-for-review",
+    "drafted_date": "2026-04-24",
+    "drafted_by": "gemini",
+    "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+    "last_verified": "2026-04-24",
+    "confidence": "high",
+    "tags": [
+      "apm",
+      "network",
+      "okhttp",
+      "asm",
+      "cronet"
+    ],
+    "related_chapters": [
+      "19.0",
+      "19.08",
+      "19.17"
+    ],
+    "pipeline_stage": "task6_pending",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "sources": [
+      "https://square.github.io/okhttp/features/events/",
+      "https://square.github.io/okhttp/features/interceptors/",
+      "https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory",
+      "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback",
+      "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo"
+    ],
+    "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+  },
+  "src/part3-tools/ch19-apm/24-crash-anr-internals.md": {
+    "title": "崩溃与 ANR 捕获机制",
+    "chapter": "19",
+    "section": "19.24",
+    "status": "ready-for-review",
+    "drafted_date": "2026-04-24",
+    "drafted_by": "gemini",
+    "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
+    "last_verified": "2026-04-24",
+    "confidence": "high",
+    "tags": [
+      "apm",
+      "crash",
+      "anr",
+      "stability",
+      "crashpad"
+    ],
+    "related_chapters": [
+      "19.0",
+      "19.03",
+      "19.16"
+    ],
+    "pipeline_stage": "task6_pending",
+    "task2b_result": "fixed",
+    "task2b_state": "fixed",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "sources": [
+      "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler",
+      "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+      "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)",
+      "https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md",
+      "https://developer.android.com/ndk/guides/gwp-asan"
+    ],
+    "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
   }
 }
