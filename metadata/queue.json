@@ -107,5 +107,57 @@
     "added_at": "2026-04-24T14:06:00+08:00",
     "status": "pending",
     "original_review_log": "logs/review/2026-04-24-14-review.md"
+  },
+  {
+    "section": "10.6",
+    "section_title": "内存抖动与频繁 GC",
+    "priority": 95,
+    "reason": "[Deep Tech Review] heapprofd 使用命令与版本边界写错，按文中步骤无法稳定完成 Java heap 采样",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L232-L247（Perfetto heapprofd）",
+        "detail": "正文给出的 `adb shell heapprofd --pid=<PID> --java` 不是 Perfetto 官方文档给出的采样入口；Perfetto 文档写的是 `tools/heap_profile` / trace config，并在 Java heap sampling 场景下通过 `--heaps com.android.art` 或 HeapprofdConfig 开启。照文中命令执行，读者无法按文稿稳定复现 Java heap 采样。",
+        "suggestion": "把命令改成官方支持的 `tools/heap_profile` 或 Perfetto trace-config 流程，并明确 Java heap sampling 的 `com.android.art` 配置项。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L232-L247（Perfetto heapprofd）",
+        "detail": "本节把 heapprofd 写成 Android 8-16 的统一方案，但 Perfetto 文档把 Java heap sampling 边界放在 Android 12+；生产环境还要求目标进程具备 debuggable/profileable 条件。当前写法把 Android 10-11 的 native heap profiling 与 Android 12+ 的 Java heap sampling 混在一起了。",
+        "suggestion": "补一张“Android 10-11 native heap / Android 12+ Java heap sampling / profileable 条件”的版本矩阵，并把 Java heap 采样的前置条件写到命令旁。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T14:40:03+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.13",
+    "section_title": "WebView 渲染管线",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 渲染模式分类把官方 provider 内部路径、宿主全屏托管和第三方 SDK 路径混写，版本判断也缺 provider 维度",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L53 / L123-L150 / L165-L195",
+        "detail": "章节把“GL Functor / Custom View 托管 / SurfaceControl / Texture-like”并列成同一层级的 4 种 WebView 渲染模式，但其中 mode2 本质是 fullscreen custom view 交接，mode4 明确是第三方 SDK 路径，不是 Chromium WebView provider 的同层内部合成路径。当前分类把 provider 内部实现、宿主托管分支和第三方内核扩展混成一棵诊断树，读者容易把不同证据链混用。",
+        "suggestion": "把章节拆成“官方 Android System WebView 内部路径”“宿主全屏托管分支”“第三方 SDK 扩展路径”三层边界；表格和排障步骤也按这三层重排。"
+      },
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions + L178-L186",
+        "detail": "章节把适用范围写成 Android 5-16，但 WebView provider 自 Android 5 起就是可独立更新组件。像 SurfaceControl 子 Surface 这种能力更依赖 provider / Chromium milestone，而不是 Android major version 本身。当前只让读者看 OS 版本，会误判 mode3 的可用性。",
+        "suggestion": "补一张“Android floor + WebView provider / Chromium milestone + 关键能力”矩阵，并在 mode3 判断前先要求记录 `dumpsys webviewupdate` 与 provider version。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T14:40:03+08:00",
+    "status": "pending"
   }
 ]

@@ -2,22 +2,24 @@
 title: "SurfaceControl API 深入"
 chapter: "18.10"
 section: "18.10"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer-hierarchy", "FrameTimeline", "atomicity", "AHardwareBuffer"]
 related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-23"
-last_task9_at: "2026-04-18T03:45:00+08:00"
-task9_result: reworked
+last_task9_at: "2026-04-24T14:40:03+08:00"
+task9_result: pass-tech-review
 task6_result: pass-light-edit
 task2b_result: fixed
+task9_reviewed_date: 2026-04-24
+task9_reviewed_by: openclaw-task9
 ---
 
 <!-- outline-start -->
