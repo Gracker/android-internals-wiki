@@ -415,7 +415,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-24T17:37:21+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T00:03:09+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "resolution": "正文已补齐并回送 Task 6 / Task 9 流水线"
   },
   {
     "section": "19.24",
@@ -432,7 +435,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-24T17:37:21+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T00:03:09+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "resolution": "正文已补齐并回送 Task 6 / Task 9 流水线"
   },
   {
     "section": "19.25",
