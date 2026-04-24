@@ -18,8 +18,11 @@ sources:
     path: "https://apkpure.com/androbench-storage-benchmark/com.andromeda.androbench2"
   - type: blog
     path: "https://apkpure.com/a1-sd-bench/com.a1dev.sdbench"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-04-24
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: pending
 ---

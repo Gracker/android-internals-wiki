@@ -702,3 +702,125 @@ Offset 过小会导致 App 或 SF 来不及完成工作,错过 VSync 窗口,反�
 - [一文搞定 Android VSync 机制来龙去脉](https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247489959) - VSync 全链路详解
 - [Systrace 基础知识 - Vsync 产生与工作机制解读](https://www.androidperformance.com/2019/12/01/Android-Systrace-Vsync/) - 高爷原创
 - [Android Perfetto 系列 8:深入理解 Vsync 机制与性能分析](https://androidperformance.com/2025/08/05/Android-Perfetto-08-Vsync/) - 高爷原创
+<!-- AIW-源码调研-2026-04-24 -->
+## 十一、VSyncPredictor 线性回归算法详解（Android 14+ 源码补充）
+
+**[自动发现: 来源 AOSP mainline VSyncPredictor.cpp 源码分析]**
+
+AOSP mainline 的 `VSyncPredictor.cpp`（路径 `services/surfaceflinger/Scheduler/VSyncPredictor.cpp`）实现了基于**简单线性回归**的软件 VSync 周期预测算法，替代了早期 DispSync 使用的简单平均方法。
+
+### 11.1 核心算法
+
+VSyncPredictor 维护一个**环型缓冲区** `mTimestamps`（默认 `historySize=32`），记录最近的硬件 VSync 时间戳。计算周期时使用线性回归：
+
+```
+slope = Σ((X_i - mean(X)) × (Y_i - mean(Y))) / Σ((X_i - mean(X))²)
+intercept = mean(Y) - slope × mean(X)
+```
+
+其中：
+- X = 时间戳序号（ordinal），即第几个 VSync
+- Y = VSync 时间戳（纳秒）
+- slope ≈ VSync 周期（period）
+- intercept ≈ 首个 VSync 时间戳
+
+源码关键片段（VSyncPredictor.cpp 行 110-170）：
+
+```cpp
+// This is a 'simple linear regression' calculation of Y over X,
+// with Y being the vysnc timestamps, and X being the ordinal of vysnc count.
+std::vector<nsecs_t> vyncTS(numSamples);
+std::vector<nsecs_t> ordinals(numSamples);
+
+// Normalizing to the oldest timestamp reduces error in calculating the intercept
+const auto oldest = *std::min_element(mTimestamps.begin(), mTimestamps.end());
+for (size_t i = 0; i < numSamples; i++) {
+    const auto timestamp = mTimestamps[i] - oldest;
+    vyncTS[i] = timestamp;
+    // ordinal = round(vsync_timestamp / current_period × scaling_factor)
+    const auto ordinal = currentPeriod == 0 
+        ? 0 
+        : (vyncTS[i] + currentPeriod / 2) / currentPeriod * kScalingFactor;
+    ordinals[i] = ordinal;
+    meanOrdinal += ordinal;
+}
+```
+
+### 11.2 异常值过滤
+
+当新样本的周期偏差超过 `outlierTolerancePercent`（默认 10%）时，该样本被拒绝：
+
+```cpp
+// VSyncPredictor.cpp 行 85-100
+const auto percent = (timestamp - aValidTimestamp) % idealPeriod() * kMaxPercent / idealPeriod();
+if (percent >= kOutlierTolerancePercent &&
+    percent <= (kMaxPercent - kOutlierTolerancePercent)) {
+    // timestamp not aligned with model
+    return false;
+}
+```
+
+这个机制确保 DispSync 模型不会被偶发的硬件 VSync 抖动破坏。
+
+### 11.3 多帧采样（Android 14+）
+
+Android 14 引入了 `mNumVsyncsPerFrame` 参数，支持多帧采样预测：
+
+```cpp
+// VSyncPredictor.h
+nsecs_t minFramePeriod() const;
+nsecs_t minFramePeriodLocked() const;
+```
+
+这使得预测更加稳定，减少了单帧抖动的影响。
+
+### 11.4 VsyncModulator 的三相动态调整
+
+`VsyncModulator`（路径 `services/surfaceflinger/Scheduler/VsyncModulator.h`）根据事务状态和刷新率变化，动态切换三种 VSync 配置：
+
+| 配置类型 | 触发场景 | 设计意图 |
+|---------|---------|---------|
+| **Early** | 正常渲染，有早期偏移 | 减少输入延迟 |
+| **EarlyGpu** | GPU 合成时使用 | 给 GPU 更多时间完成合成 |
+| **Late** | 事务延迟或刷新率变化后 | 等待前一帧完成，避免级联延迟 |
+
+关键参数：
+
+```cpp
+// VsyncModulator.h
+static constexpr int MIN_EARLY_TRANSACTION_FRAMES = 2;  // 事务后保持早期偏移的帧数
+static constexpr int MIN_EARLY_GPU_FRAMES = 2;          // GPU 合成后保持早期偏移的帧数
+```
+
+当 `onTransactionCommit()` 被调用时，VsyncModulator 会：
+1. 将 `mEarlyTransactionFrames` 重置为 `MIN_EARLY_TRANSACTION_FRAMES`
+2. 在计数器耗尽前保持 **Early** 配置
+3. 计数器归零后逐步过渡到 **Late** 配置
+
+### 11.5 完整 VSync 信号生成调用链
+
+```
+硬件 VSync 中断
+    ↓
+HWComposer → SurfaceFlinger.onVsyncReceived()
+    ↓
+DispSync::addResyncSample() — 记录硬件时间戳
+    ↓
+VSyncPredictor::addVsyncTimestamp() — 线性回归计算周期
+    ↓
+VSyncPredictor::snapToVsync() — 预测下一个 VSync 时间
+    ↓
+Scheduler::setVsyncConfig() — 根据 VsyncModulator 选择配置
+    ↓
+VsyncConfig { workDuration, readyDuration } — 确定实际相位偏移
+    ↓
+EventThread — 按相位偏移分发 VSync-app / VSync-sf / VSync-appSf
+    ↓
+Choreographer.doFrame() / SurfaceFlinger.compose()
+```
+
+这个调用链揭示了 VSync Offset 的本质：**不是直接指定一个纳秒偏移值，而是通过 workDuration 和 readyDuration 两个时长参数，间接计算得出偏移**。
+
+---
+
+**本节贡献者**: AutoResearchClaw | **调研日期**: 2026-04-24 | **源码版本**: AOSP mainline
