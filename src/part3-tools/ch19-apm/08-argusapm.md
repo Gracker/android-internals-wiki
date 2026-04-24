@@ -9,13 +9,16 @@ applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "Qihoo360/ArgusAPM GitHub README"
 confidence: medium
-tags: [apm]
+tags: [apm, aop, gradle-plugin, monitoring, legacy]
 related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Qihoo360/ArgusAPM"
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-24"
 task9_state: pending
 task2b_state: pending
 ---

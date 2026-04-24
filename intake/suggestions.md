@@ -291,3 +291,60 @@
 - **位置**：性能和可观测性
 - **问题**：章节给了应用侧 Trace 打点方案，但没有 API 37 设备上的 launch→result 时延样本，也没有 FrameTimeline/主线程回放样例，读者拿到 trace 后缺少判断基线。
 - **建议**：补一段真实 trace 观察：记录 `eye_dropper_launch` 到 `eye_dropper_result` 的时延范围，并附一张返回结果后 UI 刷新的 FrameTimeline/主线程窗口，说明哪些开销来自系统 picker，哪些来自应用回放。
+
+
+## [Task6 Review] 19.05 LeakCanary — 2026-04-24
+- **类型**：L3-内容深度
+- **位置**：leak trace读法段
+- **问题**：trace示例中 `this$0` 未解释，许多开发者不了解匿名内部类对外部类的隐式引用
+- **建议**：补充一句解释 `this$0` 是匿名内部类对外部类的隐式引用
+- **review 日志**：logs/review/2026-04-24-1319-review.md
+
+## [Task6 Review] 19.05 LeakCanary — 2026-04-24
+- **类型**：L3-内容深度
+- **位置**：测试集成建议段
+- **问题**：仅1段文字，缺少具体instrumentation test代码示例和CI门禁配置
+- **建议**：补充LeakCanary instrumented test的典型代码片段和CI leak gate配置
+- **review 日志**：logs/review/2026-04-24-1319-review.md
+
+## [Task6 Review] 19.06 BlockCanary — 2026-04-24
+- **类型**：L3-内容深度
+- **位置**：误判处理（抓栈线程段）
+- **问题**：GC、Binder等待、I/O等因素如何导致误判只一笔带过
+- **建议**：补充1-2个具体误判场景（如GC期间抓到无意义堆栈）及识别方法
+- **review 日志**：logs/review/2026-04-24-1319-review.md
+
+## [Task6 Review] 19.06 BlockCanary — 2026-04-24
+- **类型**：L3-内容深度
+- **位置**：典型报告聚合段
+- **问题**：缺少具体的报告样例
+- **建议**：补充一个归一化后的block报告JSON示例
+- **review 日志**：logs/review/2026-04-24-1319-review.md
+
+## [Task6 Review] 19.07 DoraemonKit / DoKit — 2026-04-24
+- **类型**：L3-内容深度
+- **位置**：Release隔离清单段
+- **问题**：列出检查项但缺反面案例
+- **建议**：补充调试工具泄漏到线上的实际风险案例或行业案例
+- **review 日志**：logs/review/2026-04-24-1319-review.md
+
+## [Task6 Review] 19.07 DoraemonKit / DoKit — 2026-04-24
+- **类型**：L3-内容深度
+- **位置**：团队协作锚点
+- **问题**：只覆盖开发和测试，缺少性能专项人员使用场景
+- **建议**：补充性能工程师如何结合DoKit做专项测试的工作流
+- **review 日志**：logs/review/2026-04-24-1319-review.md
+
+## [Task6 Review] 19.08 ArgusAPM — 2026-04-24
+- **类型**：L3-内容深度
+- **位置**：AOP织入适合哪些数据段
+- **问题**：只列了适合/不适合场景，缺代码示例
+- **建议**：补充AOP织入前后的代码对比示例（如Activity生命周期耗时采集）
+- **review 日志**：logs/review/2026-04-24-1319-review.md
+
+## [Task6 Review] 19.08 ArgusAPM — 2026-04-24
+- **类型**：L3-内容深度
+- **位置**：网络监控的现代适配段
+- **问题**：只给方向，缺具体拦截器示例
+- **建议**：补充网络阶段拆分的OkHttp Interceptor代码片段
+- **review 日志**：logs/review/2026-04-24-1319-review.md
