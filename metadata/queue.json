@@ -217,5 +217,63 @@
     "reason": "免费服务终止未标注，仍声称提供免费性能监控服务",
     "type": "tech-review",
     "status": "pending"
+  },
+  {
+    "section": "19.10",
+    "section_title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）",
+    "priority": 90,
+    "reason": "[Task6 Review] 技术观点核实与内容深度补充",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需技术核实",
+        "location": "技术观点部分",
+        "detail": "Matrix官方定位表述需要核实，当前更像大型客户端监控框架为主观判断",
+        "suggestion": "参考Matrix官方文档重新表述官方定位"
+      },
+      {
+        "type": "需补充内容",
+        "location": "横向对比章节",
+        "detail": "缺少不同工具选择的代价分析和决策维度",
+        "suggestion": "补充轻量方案vs商业平台的决策分析"
+      },
+      {
+        "type": "需补充流程",
+        "location": "使用建议章节",
+        "detail": "缺少具体迁移步骤和checklist",
+        "suggestion": "添加从开源到官方SDK的迁移checklist"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-24T16:29:49.144535",
+    "status": "pending"
+  },
+  {
+    "section": "19.14",
+    "section_title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+    "priority": 90,
+    "reason": "[Task6 Review] 版本兼容性与边界条件补充",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需补充版本兼容性",
+        "location": "适用版本声明",
+        "detail": "Android 8-17范围过于宽泛，未区分API floor和具体兼容性边界",
+        "suggestion": "补充版本兼容性矩阵，区分Micro/Macrobenchmark的API要求"
+      },
+      {
+        "type": "需补充边界条件",
+        "location": "Benchmark定位章节",
+        "detail": "未说明Benchmark不适用场景和限制",
+        "suggestion": "补充哪些问题不能用Benchmark解决的边界说明"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-24T16:29:49.144541",
+    "status": "pending"
   }
 ]
