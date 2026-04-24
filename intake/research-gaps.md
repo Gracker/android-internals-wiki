@@ -3252,3 +3252,89 @@ Firebase 自动网络采集对不同 Android 网络栈的覆盖边界没有在�
 
 ### 外部 review 来源
 - external-review 已命中（2026-04-24-15-19.18-external-review.md)
+
+
+## [2026-04-24] 19.23 网络 APM 底层捕获原理 — 知识盲区
+
+### 盲区描述
+OkHttp 最新版中 EventListener 的生命周期回调与 APM 埋点的时序对应关系尚未研究
+
+### 重要程度
+中
+
+### 建议研究方向
+- 核验 OkHttp EventListener 各回调（callStart/dnsStart/connectStart/requestStart/responseStart/callEnd）与 APM 网络阶段拆分的精确时序映射
+
+### 关联章节
+19.23
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-24-15-19.23)
+
+## [2026-04-24] 19.24 崩溃与 ANR 捕获机制 — 知识盲区
+
+### 盲区描述
+Android 11+ 对 /data/anr 目录读取权限封堵的具体官方描述与替代方案
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 ApplicationExitInfo（API 30+）对传统 /data/anr traces 文件读取的替代关系，以及低版本兼容策略
+
+### 关联章节
+19.24, 9.2, 9.3
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-24-15-19.24)
+
+## [2026-04-24] 19.25 耗电与发热监控 — 知识盲区
+
+### 盲区描述
+Thermal API 中各 THERMAL_STATUS_xxx 状态码的具体触发温度范围与系统反应
+
+### 重要程度
+中
+
+### 建议研究方向
+- 收集不同 SoC/设备上 PowerManager.THERMAL_STATUS_* 各级别的触发阈值与降级行为差异
+
+### 关联章节
+19.25
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-24-15-19.25)
+
+## [2026-04-24] 19.26 混合栈与跨平台 APM — 知识盲区
+
+### 盲区描述
+Flutter 官方 FrameTiming API 的渲染管线映射与 Android Choreographer 的对应关系
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核验 Flutter FrameTiming 中 build/draw/raster/presentation 各阶段与 Android 渲染管线的精确映射，确保跨平台 APM 指标口径一致
+
+### 关联章节
+19.26, 7.7
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-24-15-19.26)
+
+## [2026-04-24] 19.27 千万级 DAU 的 APM 端侧架构 — 知识盲区
+
+### 盲区描述
+Linux mmap 的 Page Cache 落盘机制在 Android 系统遭遇 OOM/SigKill 时的真实表现
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 mmap MAP_SHARED 在 Android 低内存场景下 Page Cache 回收策略，以及 APM 端侧 mmap 高可靠存储的丢失边界
+
+### 关联章节
+19.27
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-24-15-19.27)
