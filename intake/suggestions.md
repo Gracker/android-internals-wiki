@@ -547,3 +547,284 @@
 - **位置**：L224 / L480（安装过程与后台 dexopt 的 Perfetto 小节）
 - **问题**：安装控制面、`artd`、`dex2oat` 的职责链已经补齐，但 Perfetto 部分仍停留在抓取命令和占位提示，缺少一条真实安装 trace 来对照 `PackageInstallerSession`、`artd`、`dex2oat` 的时序。
 - **建议**：补一条包含 `system_server`、`artd`、`dex2oat` 的安装 trace，最好附 1 组 SQL 或线程名对照，验证“控制面 vs 执行面”的归因路径。
+
+## [External Review] 19.01  — 2026-04-25
+- **问题类型**：最佳实践缺失
+- **位置**：系统 API 采集代价
+- **问题描述**：未提及 `ApplicationExitInfo` 存在的 IPC 开销陷阱。
+- **建议**：补充说明应在异步线程获取 `getHistoricalProcessExitReasons`。
+- **来源**：外部 AI review
+
+## [External Review] 19.03  — 2026-04-25
+- **问题描述**：[原理链完整性][Hprof 裁剪和引用链摘要]
+  - 原文问题：提到“Hprof 文件仍然很大，需要裁剪或只上传摘要”，但未说明裁剪了什么。
+  - 证据或观察依据：在 Hprof 结构中，占据绝大多数空间的往往是 primitive arrays (如 `byte[]`，通常是图片像素数据或大文本)。
+  - 问题描述：缺少对裁剪对象的说明，使内容停留在概念上。
+  - 建议：补充说明 Hp
+- **建议**：[原理链完整性][Hprof 裁剪和引用链摘要]
+  - 原文问题：提到“Hprof 文件仍然很大，需要裁剪或只上传摘要”，但未说明裁剪了什么。
+  - 证据或观察依据：在 Hprof 结构中，占据绝大多数空间的往往是 primitive arrays (如 `byte[]`，通常是图片像素数据或大文本)。
+  - 问题描述：缺少对裁剪对象的说明，使内容停留在概念上。
+  - 建议：补充说明 Hp
+- **来源**：外部 AI review
+
+## [External Review] 19.04  — 2026-04-25
+- **问题描述**：[源码准确性][采集流程]
+  - **原文问题**：App 包里集成 `com.bytedance.btrace:rhea-inhouse`，未提及具体版本号。
+  - **证据或观察依据**：Btrace 3.0 与 2.x 的产物格式和能力有质的区别，3.0 默认输出 PB 格式以供 Perfetto 分析。
+  - **问题描述**：不写具体版本号可能导致读者接入旧版本。
+  - **建议
+- **建议**：[源码准确性][采集流程]
+  - **原文问题**：App 包里集成 `com.bytedance.btrace:rhea-inhouse`，未提及具体版本号。
+  - **证据或观察依据**：Btrace 3.0 与 2.x 的产物格式和能力有质的区别，3.0 默认输出 PB 格式以供 Perfetto 分析。
+  - **问题描述**：不写具体版本号可能导致读者接入旧版本。
+  - **建议
+- **来源**：外部 AI review
+
+## [External Review] 19.04  — 2026-04-25
+- **问题描述**：[数据/案例支撑][Perfetto UI 里的读法]
+  - **原文问题**：提到“看 CPU 调度：线程是否频繁 runnable 但拿不到 CPU”。
+  - **证据或观察依据**：Perfetto UI 中 Runnable 和 Running 的视觉表现不同。
+  - **问题描述**：对初次接触 Perfetto 的读者来说，知道要看 Runnable 状态，但不知道在 UI 上长
+- **建议**：[数据/案例支撑][Perfetto UI 里的读法]
+  - **原文问题**：提到“看 CPU 调度：线程是否频繁 runnable 但拿不到 CPU”。
+  - **证据或观察依据**：Perfetto UI 中 Runnable 和 Running 的视觉表现不同。
+  - **问题描述**：对初次接触 Perfetto 的读者来说，知道要看 Runnable 状态，但不知道在 UI 上长
+- **来源**：外部 AI review
+
+## [External Review] 19.05  — 2026-04-25
+- **问题描述**：[原理链完整性][它怎样判断对象被保留]
+  - 原文问题：“默认阈值是应用可见时 5 个、应用不可见时 1 个。”
+  - 问题描述：数值准确，但未提及如果在可见时（5个以下）切到后台，阈值立刻变为 1 并触发 dump。
+  - 建议：补充退到后台（Home键）时立即触发 dump 的机制，更符合实战体验。
+- **建议**：[原理链完整性][它怎样判断对象被保留]
+  - 原文问题：“默认阈值是应用可见时 5 个、应用不可见时 1 个。”
+  - 问题描述：数值准确，但未提及如果在可见时（5个以下）切到后台，阈值立刻变为 1 并触发 dump。
+  - 建议：补充退到后台（Home键）时立即触发 dump 的机制，更符合实战体验。
+- **来源**：外部 AI review
+
+## [External Review] 19.06  — 2026-04-25
+- **问题描述**：[数据/案例支撑][抓栈线程和主线程的关系]
+  - **原文问题**：提到“另一个常见误判是 GC”，指出此时堆栈表现为一段平淡的等待状态。
+  - **问题描述**：缺乏与 Perfetto 中表现的交叉印证，读者难以将文字堆栈和系统 Trace 联系起来。
+  - **建议**：补充说明，遇到这类因 GC 导致的阻塞堆栈时，在 Perfetto 中通常对应主线程呈现 `Sleeping` 状
+- **建议**：[数据/案例支撑][抓栈线程和主线程的关系]
+  - **原文问题**：提到“另一个常见误判是 GC”，指出此时堆栈表现为一段平淡的等待状态。
+  - **问题描述**：缺乏与 Perfetto 中表现的交叉印证，读者难以将文字堆栈和系统 Trace 联系起来。
+  - **建议**：补充说明，遇到这类因 GC 导致的阻塞堆栈时，在 Perfetto 中通常对应主线程呈现 `Sleeping` 状
+- **来源**：外部 AI review
+
+## [External Review] 19.07  — 2026-04-25
+- **问题描述**：[知识盲区][和 Android Studio Profiler、Perfetto 的关系]
+- 原文问题：虽然说明了“DoKit 给的是入口，不是最终证据”，但没有明确点出它与线上成熟 APM 工具在技术实现流派上的最大区别。
+- 问题描述：诸如 Matrix 等线上 APM 倾向于使用底层的 PLT Hook (例如 xhook) 或相对轻量的抽样机制；而 DoKit 作为 Debug 工具则
+- **建议**：[知识盲区][和 Android Studio Profiler、Perfetto 的关系]
+- 原文问题：虽然说明了“DoKit 给的是入口，不是最终证据”，但没有明确点出它与线上成熟 APM 工具在技术实现流派上的最大区别。
+- 问题描述：诸如 Matrix 等线上 APM 倾向于使用底层的 PLT Hook (例如 xhook) 或相对轻量的抽样机制；而 DoKit 作为 Debug 工具则
+- **来源**：外部 AI review
+
+## [External Review] 19.08  — 2026-04-25
+- **问题描述**：[细节严谨性][网络监控的现代适配]
+- 原文问题：网络阶段拆分中提到了使用 `StageEventListener` 代替 `Interceptor`，但未考虑到旧版本 OkHttp 的限制。
+- 证据或观察依据：OkHttp 在 `3.11.0` 才引入了相对完整成熟的 `EventListener` 机制。而上文（兼容风险章节）明确提到公开 sample 的基线停留在 `okhttp:3.1
+- **建议**：[细节严谨性][网络监控的现代适配]
+- 原文问题：网络阶段拆分中提到了使用 `StageEventListener` 代替 `Interceptor`，但未考虑到旧版本 OkHttp 的限制。
+- 证据或观察依据：OkHttp 在 `3.11.0` 才引入了相对完整成熟的 `EventListener` 机制。而上文（兼容风险章节）明确提到公开 sample 的基线停留在 `okhttp:3.1
+- **来源**：外部 AI review
+
+## [External Review] 19.09  — 2026-04-25
+- **问题描述**：[版本差异覆盖][核心能力]
+  - 原文问题：“Crash / ANR 自动捕获”
+  - 证据或观察依据：现代 APM 在 Android 端捕获 ANR 存在明显的版本分水岭：Android 11 之前通常依赖 `FileObserver` 监听 `/data/anr/traces.txt` 或者拦截 SIGQUIT 信号；而 Android 11+ 引入了官方的 `ApplicationE
+- **建议**：[版本差异覆盖][核心能力]
+  - 原文问题：“Crash / ANR 自动捕获”
+  - 证据或观察依据：现代 APM 在 Android 端捕获 ANR 存在明显的版本分水岭：Android 11 之前通常依赖 `FileObserver` 监听 `/data/anr/traces.txt` 或者拦截 SIGQUIT 信号；而 Android 11+ 引入了官方的 `ApplicationE
+- **来源**：外部 AI review
+
+## [External Review] 19.09  — 2026-04-25
+- **问题描述**：[数据/案例支撑][隐私策略要在接入前定清]
+  - 原文问题：“截图 / 附件：默认开启文字或敏感输入遮罩”
+  - 证据或观察依据：移动端的 Screenshot Mask 通常不是魔法，它一般需要通过遍历当前 Activity 的 View Hierarchy（视图树），找出特定的 inputType（如 password）或者开发者打上的特定 Tag，然后在最终的 Bitmap 截图中用实
+- **建议**：[数据/案例支撑][隐私策略要在接入前定清]
+  - 原文问题：“截图 / 附件：默认开启文字或敏感输入遮罩”
+  - 证据或观察依据：移动端的 Screenshot Mask 通常不是魔法，它一般需要通过遍历当前 Activity 的 View Hierarchy（视图树），找出特定的 inputType（如 password）或者开发者打上的特定 Tag，然后在最终的 Bitmap 截图中用实
+- **来源**：外部 AI review
+
+## [External Review] 19.10  — 2026-04-25
+- **问题描述**：[知识盲区][Collie 轻量线上采样思路]
+  - 原文问题：启动采集依赖“`ContentProvider`、window focus 等关键节点”。
+  - 问题描述：虽然借助 ContentProvider 采集启动耗时是经典方案，但在当前现代化 Android 开发中，开发者大概率在使用 `androidx.startup`。
+  - 建议：建议顺带提及现今广泛使用的 Jetpack 
+- **建议**：[知识盲区][Collie 轻量线上采样思路]
+  - 原文问题：启动采集依赖“`ContentProvider`、window focus 等关键节点”。
+  - 问题描述：虽然借助 ContentProvider 采集启动耗时是经典方案，但在当前现代化 Android 开发中，开发者大概率在使用 `androidx.startup`。
+  - 建议：建议顺带提及现今广泛使用的 Jetpack 
+- **来源**：外部 AI review
+
+## [External Review] 19.10  — 2026-04-25
+- **问题描述**：[原理链完整性][最小 APM SDK 采集方式]
+  - 原文问题：慢帧信号来源列举了 `JankStats / Choreographer / FrameMetrics`，未作优先级区分。
+  - 问题描述：读者对于选哪一个会有困惑。`FrameMetrics` 适用 API 24+，而 `JankStats` 是官方目前推荐的、支持到 API 16 并且能附带生命周期/UI 状态追踪的最佳封
+- **建议**：[原理链完整性][最小 APM SDK 采集方式]
+  - 原文问题：慢帧信号来源列举了 `JankStats / Choreographer / FrameMetrics`，未作优先级区分。
+  - 问题描述：读者对于选哪一个会有困惑。`FrameMetrics` 适用 API 24+，而 `JankStats` 是官方目前推荐的、支持到 API 16 并且能附带生命周期/UI 状态追踪的最佳封
+- **来源**：外部 AI review
+
+## [External Review] 19.13  — 2026-04-25
+- **问题描述**：[知识盲区][Native 标注]
+- **原文问题**：Native Trace 描述过于笼统。
+- **问题描述**：仅提到了 native 侧有自定义事件，未给出具体的 API 参考。
+- **建议**：补充 `#include <android/trace.h>` 以及 `ATrace_beginSection` / `ATrace_endSection` 的名称，并明确说明 native
+- **建议**：[知识盲区][Native 标注]
+- **原文问题**：Native Trace 描述过于笼统。
+- **问题描述**：仅提到了 native 侧有自定义事件，未给出具体的 API 参考。
+- **建议**：补充 `#include <android/trace.h>` 以及 `ATrace_beginSection` / `ATrace_endSection` 的名称，并明确说明 native
+- **来源**：外部 AI review
+
+## [External Review] 19.13  — 2026-04-25
+- **问题描述**：[原理链完整性][阅读方式]
+- **原文问题**：缺失对 "Gap" 和 "Scheduler" 的观察方法。
+- **问题描述**：大纲要求说明如何看 gap 和 scheduler。
+- **建议**：在 Perfetto UI 描述部分，增加关于“两个同步 Slice 之间的 Gap 可能代表 I/O 等待或 CPU 调度抢占”的说明，并引导读者查看 Thread State 轨道。
+- **建议**：[原理链完整性][阅读方式]
+- **原文问题**：缺失对 "Gap" 和 "Scheduler" 的观察方法。
+- **问题描述**：大纲要求说明如何看 gap 和 scheduler。
+- **建议**：在 Perfetto UI 描述部分，增加关于“两个同步 Slice 之间的 Gap 可能代表 I/O 等待或 CPU 调度抢占”的说明，并引导读者查看 Thread State 轨道。
+- **来源**：外部 AI review
+
+## [External Review] 19.14  — 2026-04-25
+- **问题描述**：[数据/案例支撑][CI 中的噪声控制]
+  - 原文问题：“设备温度过高时跳过或降权本轮结果”描述得像是需要外部 CI 脚本自己处理。
+  - 证据或观察依据：`androidx.benchmark` 内部包含了 `ThermalThrottle` 检测机制。
+  - 问题描述：Benchmark 库在执行期间，默认会监控设备热节流状态。如果设备过热，库会自动介入休眠等待降温（Sleep to 
+- **建议**：[数据/案例支撑][CI 中的噪声控制]
+  - 原文问题：“设备温度过高时跳过或降权本轮结果”描述得像是需要外部 CI 脚本自己处理。
+  - 证据或观察依据：`androidx.benchmark` 内部包含了 `ThermalThrottle` 检测机制。
+  - 问题描述：Benchmark 库在执行期间，默认会监控设备热节流状态。如果设备过热，库会自动介入休眠等待降温（Sleep to 
+- **来源**：外部 AI review
+
+## [External Review] 19.16  — 2026-04-25
+- **问题描述**：[原理链完整性][app-driven request 示例]
+- **问题描述**：示例代码使用了 AndroidX 的 `SystemTraceRequestBuilder`，但未提及是否需要在 `AndroidManifest.xml` 中配置特殊的权限。
+- **建议**：补充说明虽然 `ProfilingManager` 本身不需要存储权限（写入私有目录），但为了获取更全的系统追踪，建议
+- **建议**：[原理链完整性][app-driven request 示例]
+- **问题描述**：示例代码使用了 AndroidX 的 `SystemTraceRequestBuilder`，但未提及是否需要在 `AndroidManifest.xml` 中配置特殊的权限。
+- **建议**：补充说明虽然 `ProfilingManager` 本身不需要存储权限（写入私有目录），但为了获取更全的系统追踪，建议
+- **来源**：外部 AI review
+
+## [External Review] 19.17  — 2026-04-25
+- **问题描述**：[知识盲区][网络请求聚合和 URL pattern]
+- **原文问题**：提及了 Cronet，但未说明其采集特殊性。
+- **问题描述**：FPM 的 Gradle 插件无法自动对 Cronet 这种 native 网络栈进行字节码插桩。
+- **建议**：明确指出使用 Cronet 时需要手动使用 `FirebasePerfUrlConnection` 包装或添加拦截器，否则会自动“漏掉”
+- **建议**：[知识盲区][网络请求聚合和 URL pattern]
+- **原文问题**：提及了 Cronet，但未说明其采集特殊性。
+- **问题描述**：FPM 的 Gradle 插件无法自动对 Cronet 这种 native 网络栈进行字节码插桩。
+- **建议**：明确指出使用 Cronet 时需要手动使用 `FirebasePerfUrlConnection` 包装或添加拦截器，否则会自动“漏掉”
+- **来源**：外部 AI review
+
+## [External Review] 19.17  — 2026-04-25
+- **问题描述**：[数据/案例支撑][数据模型：trace、metric、attribute]
+- **原文问题**：描述 Metric 时使用“低基数”。
+- **问题描述**：Metric 是数值（Long），属性（Attribute）才是用来做分类聚合的（涉及基数问题）。
+- **建议**：修改表述，强调 Metric 用于计算（累加、平均），Attribute 用于过滤和分组（高基数 Attribute 会
+- **建议**：[数据/案例支撑][数据模型：trace、metric、attribute]
+- **原文问题**：描述 Metric 时使用“低基数”。
+- **问题描述**：Metric 是数值（Long），属性（Attribute）才是用来做分类聚合的（涉及基数问题）。
+- **建议**：修改表述，强调 Metric 用于计算（累加、平均），Attribute 用于过滤和分组（高基数 Attribute 会
+- **来源**：外部 AI review
+
+## [External Review] 19.18  — 2026-04-25
+- **问题描述**：[知识盲区][Sentry profiling 风险]
+  - 原文问题：提到 profiling 存在特定场景 crash 风险，但未给出具体特征。
+  - 证据或观察依据：Sentry 官方文档和 GitHub Issue。
+  - 问题描述：缺少具体的信号特征（如 `pthread_getcpuclockid` 或 `art::Trace::StopTracing` 崩溃）。
+  - 建议：
+- **建议**：[知识盲区][Sentry profiling 风险]
+  - 原文问题：提到 profiling 存在特定场景 crash 风险，但未给出具体特征。
+  - 证据或观察依据：Sentry 官方文档和 GitHub Issue。
+  - 问题描述：缺少具体的信号特征（如 `pthread_getcpuclockid` 或 `art::Trace::StopTracing` 崩溃）。
+  - 建议：
+- **来源**：外部 AI review
+
+## [External Review] 19.18  — 2026-04-25
+- **问题描述**：[原理链完整性][APMPlus 私有化]
+  - 原文问题：提到私有化，但未说明其核心技术栈。
+  - 问题描述：APMPlus 私有化核心依赖 ClickHouse (ByteHouse) 和 Flink。
+  - 建议：在私有化部分简述其对高性能存储的要求，这对企业采购时的硬件成本评估非常重要。
+- **建议**：[原理链完整性][APMPlus 私有化]
+  - 原文问题：提到私有化，但未说明其核心技术栈。
+  - 问题描述：APMPlus 私有化核心依赖 ClickHouse (ByteHouse) 和 Flink。
+  - 建议：在私有化部分简述其对高性能存储的要求，这对企业采购时的硬件成本评估非常重要。
+- **来源**：外部 AI review
+
+## [External Review] 19.19  — 2026-04-25
+- **问题描述**：[知识盲区][与自动化脚本结合]
+- 原文问题：未提及 PerfDog Service APK 的角色。
+- 问题描述：PerfDog 通过 PUSH 一个辅助 APK 到设备来作为“特权代理”，利用 shell 权限绕过部分沙箱限制。
+- 建议：简要说明 PerfDog Service 的作用，以及为什么需要通过 ADB 手动授予 `DUMP` 权限。
+- **建议**：[知识盲区][与自动化脚本结合]
+- 原文问题：未提及 PerfDog Service APK 的角色。
+- 问题描述：PerfDog 通过 PUSH 一个辅助 APK 到设备来作为“特权代理”，利用 shell 权限绕过部分沙箱限制。
+- 建议：简要说明 PerfDog Service 的作用，以及为什么需要通过 ADB 手动授予 `DUMP` 权限。
+- **来源**：外部 AI review
+
+## [External Review] 19.19  — 2026-04-25
+- **问题描述**：[原理链完整性][功耗和温度的读法]
+- 原文问题：未提及 FPower（每帧功耗）这一高价值衍生指标。
+- 建议：补充 FPower 的概念（Total Power / FPS），它是评估渲染能效比的核心指标。
+- **建议**：[原理链完整性][功耗和温度的读法]
+- 原文问题：未提及 FPower（每帧功耗）这一高价值衍生指标。
+- 建议：补充 FPower 的概念（Total Power / FPS），它是评估渲染能效比的核心指标。
+- **来源**：外部 AI review
+
+## [External Review] 19.21  — 2026-04-25
+- **问题描述**：[原理链完整性][Geekbench 分数的工程解释]
+- **问题描述**：未提及 Geekbench 6 的 **“Shared Task” (共享任务)** 模型。
+- **原理说明**：GB6 从 GB5 的独立多核任务改为多核协同完成单一任务（模拟真实软件逻辑），这解释了为什么现代高核数 SoC 的 GB6 多核分数增长不如 GB5 线性。
+- **建议**：补充这一技术细节，帮助读者理
+- **建议**：[原理链完整性][Geekbench 分数的工程解释]
+- **问题描述**：未提及 Geekbench 6 的 **“Shared Task” (共享任务)** 模型。
+- **原理说明**：GB6 从 GB5 的独立多核任务改为多核协同完成单一任务（模拟真实软件逻辑），这解释了为什么现代高核数 SoC 的 GB6 多核分数增长不如 GB5 线性。
+- **建议**：补充这一技术细节，帮助读者理
+- **来源**：外部 AI review
+
+## [External Review] 19.21  — 2026-04-25
+- **问题描述**：[知识盲区][3DMark 分数的工程解释]
+- **问题描述**：仅提到 Wild Life 级别的测试，未提及现代光追（Solar Bay）和 AAA 级负载（Steel Nomad Light）。
+- **建议**：补充针对 Android 14+ 旗舰机型应关注 **Solar Bay**（测光追性能）和 **Steel Nomad Light**（取代 Wild Life Extreme
+- **建议**：[知识盲区][3DMark 分数的工程解释]
+- **问题描述**：仅提到 Wild Life 级别的测试，未提及现代光追（Solar Bay）和 AAA 级负载（Steel Nomad Light）。
+- **建议**：补充针对 Android 14+ 旗舰机型应关注 **Solar Bay**（测光追性能）和 **Steel Nomad Light**（取代 Wild Life Extreme
+- **来源**：外部 AI review
+
+## [External Review] 19.21  — 2026-04-25
+- **问题描述**：[知识盲区][历史工具的处理]
+- **问题描述**：提到 Vellamo 已过期，但未给出现代 Web 性能测试建议。
+- **建议**：补充 **Speedometer 3.0** 或 **JetStream 2** 作为现代移动浏览器/Web 性能的基准工具。
+- **建议**：[知识盲区][历史工具的处理]
+- **问题描述**：提到 Vellamo 已过期，但未给出现代 Web 性能测试建议。
+- **建议**：补充 **Speedometer 3.0** 或 **JetStream 2** 作为现代移动浏览器/Web 性能的基准工具。
+- **来源**：外部 AI review
+
+## [External Review] 19.25  — 2026-04-25
+- **问题描述**：[工具支撑][大纲 - 耗电归因]
+- 原文问题：未提及 `BatteryStats` 的底层采集原理。
+- 证据或观察依据：AOSP `BatteryStatsService.java` 使用了大量的 `Timer` 和 `Counter`。
+- 建议：补充对 `dumpsys batterystats --history` 的分析，解释系统如何通过“硬件状态机”转换（如 Wifi 扫描开启 -
+- **建议**：[工具支撑][大纲 - 耗电归因]
+- 原文问题：未提及 `BatteryStats` 的底层采集原理。
+- 证据或观察依据：AOSP `BatteryStatsService.java` 使用了大量的 `Timer` 和 `Counter`。
+- 建议：补充对 `dumpsys batterystats --history` 的分析，解释系统如何通过“硬件状态机”转换（如 Wifi 扫描开启 -
+- **来源**：外部 AI review
+
+## [External Review] 19.27  — 2026-04-25
+- **问题描述**：[知识盲区][Mmap 存储位置]
+- 证据或观察依据：Android 10+ 引入 Scoped Storage。
+- 问题描述：大纲提到了 Scoped Storage，但未明确建议最佳的缓存路径。
+- 建议：明确指出在 Scoped Storage 下，APM 的 mmap 缓存应优先放置在 `Context.getExternalFilesDir()` 或 `Context.getFile
+- **建议**：[知识盲区][Mmap 存储位置]
+- 证据或观察依据：Android 10+ 引入 Scoped Storage。
+- 问题描述：大纲提到了 Scoped Storage，但未明确建议最佳的缓存路径。
+- 建议：明确指出在 Scoped Storage 下，APM 的 mmap 缓存应优先放置在 `Context.getExternalFilesDir()` 或 `Context.getFile
+- **来源**：外部 AI review
