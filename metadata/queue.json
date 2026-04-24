@@ -556,5 +556,57 @@
     "completed_at": "2026-04-24T18:25:09+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "19.13",
+    "section_title": "androidx.tracing（Tracing SDK）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] androidx.tracing 的 release 可见性和异步区间机制写漏，线上/线下 trace 结论会偏差",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L142-L151",
+        "detail": "正文把 Release 包 trace 描述成“是否被采集取决于系统 trace 会话”，但 AndroidX `Trace.forceEnableAppTracing()` 文档明确：API 31+ app tracing 始终开启；API 29/30 默认只对 debuggable/profileable 进程开启；更早版本的非 debuggable 进程若不显式启用，正式包里可能看不到自定义 slice。",
+        "suggestion": "补一张 API 24-28 / 29-30 / 31+ 差异表，并说明何时需要 `Trace.forceEnableAppTracing()`、它在 API 31+ 上为何无效。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L167-L189",
+        "detail": "“同步和异步区间”一节只建议在各线程分别打同步 slice，没有介绍 `Trace.beginAsyncSection()` / `Trace.endAsyncSection()` 以及 cookie 唯一性。这样读者无法建立跨线程的单一逻辑 span，也无法判断何时该用 async trace。",
+        "suggestion": "补一个 async trace 示例，写明 begin/end 必须同名同 cookie 成对结束，重叠异步事件需要唯一 cookie，再对比“分线程多个同步 slice”的适用场景。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T19:59:52+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.14",
+    "section_title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Benchmark 默认编译模式和 Microbenchmark 新版执行模型遗漏，实验结果解释不稳",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L91-L106",
+        "detail": "正文把 Microbenchmark 解释为更接近 warmed-up JIT / cache best-case，但最新版 Microbenchmark 文档已说明：`androidx.benchmark` 插件在 Benchmark 1.3.0-beta01+ 且 AGP 8.4+ 时会默认 fully compile microbenchmark APK。当前写法会让读者误读结果口径。",
+        "suggestion": "补“默认 AOT 编译”版本边界，并区分旧版 warmed-up JIT 口径与新版插件默认行为；如需关闭，补 `androidx.benchmark.forceaotcompilation=false` 说明。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L122-L140",
+        "detail": "Macrobenchmark 的最小示例没有写 `compilationMode`，后文也没有解释 `CompilationMode.DEFAULT/None/Partial/Full/Ignore` 在 API 23 与 API 24+（含 Baseline Profile）下的默认差异。缺这层前提，startup/scroll 数字不可复现，也无法横向比较。",
+        "suggestion": "在最小示例补上 `compilationMode`，并新增一节解释 DEFAULT 在 API 23 与 24+ 的默认行为，以及 None/Partial/Full/Ignore 的适用场景。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T19:59:52+08:00",
+    "status": "pending"
   }
 ]

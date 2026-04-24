@@ -492,3 +492,9 @@
 - **位置**：L73-L107（输出数据与回调示例）
 - **问题**：AndroidX JankStats 源码明确说明 `OnFrameListener` 收到的 `FrameData` 是复用对象，监听器返回后该对象会在后续帧被覆盖。正文只提醒“不要做同步 I/O”，但没有提醒需要在回调里复制 `frameDurationUiNanos`、`states` 等字段；如果后续做异步聚合或批量上报，读者容易拿到被覆写的数据。
 - **建议**：在接入示例或“使用建议”里补一句“回调参数是 `volatileFrameData`，需要在返回前复制要保留的字段”，最好给一个轻量 DTO 聚合示例。
+
+## [Task9 Deep Review] 19.12 FrameMetrics — 2026-04-24
+- **类型**：源码准确性
+- **位置**：L92-L116、L194-L205
+- **问题**：正文已经强调 HandlerThread，但没补官方回调契约：`Window.OnFrameMetricsAvailableListener` 回调过慢会丢报告，传入的 `FrameMetrics` 对象会在每次回调复用，超出回调作用域后就无效。
+- **建议**：在接入代码后补一句“只提取 primitive 值或用 `FrameMetrics(FrameMetrics)` 复制”，并说明 `dropCountSinceLastInvocation` 可用于观察回调侧丢报告。
