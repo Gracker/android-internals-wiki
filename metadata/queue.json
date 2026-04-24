@@ -608,5 +608,52 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-24T19:59:52+08:00",
     "status": "pending"
+  },
+  {
+    "section": "19.20",
+    "section_title": "SoloPi 与 Emmagee",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 章节版本边界有事实错误：Emmagee 官方 README 明示 Android 7.0 不支持，当前却整体标成 Android 8-17。",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter `applicable_versions`（L8）",
+        "detail": "章节把整节适用范围写成“Android 8 - Android 17”，但 Emmagee 官方 README 明确写明 Android 7.0 因 /proc 与 pid 获取限制“can not be supported”。这不是“精度下降”，而是官方已声明不支持；当前元数据会把历史工具误标成现代 Android 8+ 可用方案。",
+        "suggestion": "把章节元数据改成按工具分别声明：SoloPi 单列版本边界；Emmagee 明确写成“历史工具，Android 7.0 起官方声明不支持”，正文和对比表都要同步。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L75-L111（SoloPi 定位、使用建议）",
+        "detail": "正文把 SoloPi 放在现代 QA 工具链里使用，但没有交代其当前构建基线仍停留在 AGP 4.0.2、compileSdk/targetSdk 29、release v0.12.0（2022）。这意味着 Android 12+ 的无障碍、悬浮窗、无线 ADB 和 targetSdk 31+ 行为变化是否兼容，需要单独验证；书稿现在没有这条版本矩阵。",
+        "suggestion": "新增“SoloPi 现代兼容性边界”小节，至少列 AGP 4.0.2 / targetSdk 29 / minSdk 18 / release 2022-05 的已知基线，并把 Android 12/13/14/15 的兼容性写成待验证矩阵。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T20:44:37+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.21",
+    "section_title": "Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Geekbench 6 最低支持 Android 10，但章节仍按 Android 8-17 统一适用，版本矩阵需要重写。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter `applicable_versions`（L8）与 L87-L111",
+        "detail": "正文明确讨论的是 Geekbench 6，但 Geekbench 6 官方 Benchmark Internals 把 Android 最低平台支持写成 Android 10；章节 frontmatter 仍写成“Android 8 - Android 17”，会误导读者把 Geekbench 6 直接用于 Android 8/9 设备分层。同时本节还混入已经历史化的 Vellamo，整节不能再用一个统一的 8-17 范围概括。",
+        "suggestion": "把适用范围拆成“Geekbench 6：Android 10+”“Vellamo：历史工具，仅旧报告对比”等分工具矩阵；如果要覆盖 Android 8/9，正文应补 Geekbench 5/旧版基线与迁移说明。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T20:44:37+08:00",
+    "status": "pending"
   }
 ]

@@ -1,29 +1,41 @@
 ---
-title: "SoloPi 与 Emmagee"
-chapter: "19"
-section: "19.20"
+title: SoloPi 与 Emmagee
+chapter: '19'
+section: '19.20'
 status: ready-for-review
-drafted_date: "2026-04-24"
-drafted_by: "codex"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "alipay/SoloPi and NetEase/Emmagee GitHub READMEs"
+drafted_date: '2026-04-24'
+drafted_by: codex
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-24'
+last_verified_against: alipay/SoloPi and NetEase/Emmagee GitHub READMEs
 confidence: medium
-tags: [apm, solopi, emmagee, testing, automation, qa]
-related_chapters: ["19.0"]
+tags:
+- apm
+- solopi
+- emmagee
+- testing
+- automation
+- qa
+related_chapters:
+- '19.0'
 sources:
-  - type: blog
-    path: "https://github.com/alipay/SoloPi"
-  - type: blog
-    path: "https://github.com/NetEase/Emmagee"
-pipeline_stage: task9_pending
+- type: blog
+  path: https://github.com/alipay/SoloPi
+- type: blog
+  path: https://github.com/NetEase/Emmagee
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_date: '2026-04-24'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-24T20:44:37+08:00'
 ---
+
 
 # SoloPi 与 Emmagee
 
