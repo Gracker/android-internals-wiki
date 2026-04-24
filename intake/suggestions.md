@@ -534,3 +534,16 @@
 - **位置**：L100-L110、L137-L162、L198-L218
 - **问题**：正文强调要保留顺序/随机读写和 median/p95，但没有把 MB/s、IOPS、latency、SQLite QPS 这些口径拆开解释。读者很容易把顺序吞吐、4K 随机 IOPS 和 SQLite 事务吞吐直接横比，或者不知道报告里为什么既要写 median 又要写 p95。
 - **建议**：补一张“指标 → 常见单位 → 典型工具口径 → 对应业务场景”的表，至少把顺序读写（MB/s）、随机读写（IOPS 或 4K 吞吐）、latency、SQLite QPS/txn/s 以及 median/p95 的使用边界写清。
+
+
+## [Task9 Deep Review] 1.8 Activity Manager Service 与性能分析 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L226 / L385 / L522（冷启动、ANR、进程被杀的 Perfetto 小节）
+- **问题**：三处仍是 Trace 截图占位，正文虽然已经给出 `am_proc_start`、`am_anr` 和关键线程的判断口径，但缺少一条真实 trace 或 SQL 输出把 `android_logs`、`system_server` 与应用主线程串起来。
+- **建议**：补一段真实 Perfetto 截图或 SQL 结果，至少覆盖 `am_proc_start` / `am_proc_bound` 与首帧、`am_anr` 与 `dumpStackTraces` 的对应关系。
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L224 / L480（安装过程与后台 dexopt 的 Perfetto 小节）
+- **问题**：安装控制面、`artd`、`dex2oat` 的职责链已经补齐，但 Perfetto 部分仍停留在抓取命令和占位提示，缺少一条真实安装 trace 来对照 `PackageInstallerSession`、`artd`、`dex2oat` 的时序。
+- **建议**：补一条包含 `system_server`、`artd`、`dex2oat` 的安装 trace，最好附 1 组 SQL 或线程名对照，验证“控制面 vs 执行面”的归因路径。

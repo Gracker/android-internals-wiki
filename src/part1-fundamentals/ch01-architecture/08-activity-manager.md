@@ -1,7 +1,7 @@
 ---
 title: "Activity Manager Service 与性能分析"
 chapter: "1.8"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-18"
@@ -76,15 +76,15 @@ rework_by: "task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_result: needs-rework
-task9_state: pending
+task9_result: pass-tech-review
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-04-18T13:34:00+08:00"
-task9_reviewed_date: 2026-04-18
-task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-25T00:29:00+08:00"
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: "openclaw-task9"
 review_round: 3
 ---
 
