@@ -275,5 +275,95 @@
     "added_by": "task6-review",
     "added_at": "2026-04-24T16:29:49.144541",
     "status": "pending"
+  },
+  {
+    "section": "19.16",
+    "section_title": "ProfilingManager",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ProfilingManager 的适用版本和触发式回调链写法存在事实/实现风险，按文接入容易把 API 覆盖面和回调模型都用错",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions",
+        "detail": "frontmatter 将章节适用范围写成“Android 8 (API 26) - Android 17 (API 37)”，但 android.os.ProfilingManager / ProfilingResult 官方 reference 明确是 API 35 才加入的平台 API。当前元数据会把 Android 8-14 设备误标成可用范围。",
+        "suggestion": "把章节适用范围改成 Android 15+，并拆清 API 35 的 app-driven profiling 与 Android 16+ 的 trigger 能力。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "## 基本调用形态 / ## Android 16 之后的触发能力",
+        "detail": "正文只展示 requestProfiling(..., callback) 的请求级回调，没有补 registerForAllProfilingResults(Executor, Consumer)。官方 reference 明确写到：system-triggered profiling（addProfilingTriggers）结果只能靠这个全局 listener 接收。现在的调用链缺了一半，读者照着接 trigger 模式拿不到结果。",
+        "suggestion": "补一张“request listener vs global listener”的回调矩阵，并在 trigger 小节明确 registerForAllProfilingResults 是必选步骤。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "## 结果文件的生命周期 / ## 使用建议",
+        "detail": "正文没有展开 ProfilingResult 的失败分支和系统限流。官方 ProfilingResult 提供 ERROR_FAILED_RATE_LIMIT_PROCESS / SYSTEM、ERROR_FAILED_PROFILING_IN_PROGRESS、ERROR_FAILED_EXECUTING、ERROR_FAILED_POST_PROCESSING、ERROR_FAILED_NO_DISK_SPACE 等错误码；当前只泛化成“处理失败原因”，不足以指导生产接入。",
+        "suggestion": "补一张错误码/限流/重试表，明确哪些错误直接丢弃、哪些错误需要降采样、哪些错误应该记录到 APM 事件中。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T16:40:21+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.17",
+    "section_title": "Firebase Performance",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Firebase Performance 的实时性边界和接入控制链缺失，当前章节会误导事故响应与 release 配置",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "## 采样和阈值策略 / ## 使用建议",
+        "detail": "正文没有写 Firebase Performance 的控制台时效边界。官方 troubleshooting 明确说明：Android 侧只有 v19.0.10+（或 Firebase Android BoM v26.1.0+）才是 near real-time，控制台通常几分钟可见；旧 SDK 的展示延迟大约 36 小时。当前写法会让读者把它误当成实时 incident 面板。",
+        "suggestion": "补“几分钟可见 vs 约 36 小时延迟”的版本矩阵，并明确它更适合版本复盘和趋势观察，不适合秒级事故排障。"
+      },
+      {
+        "type": "版本差异",
+        "location": "## 使用建议 / 接入成本相关段落缺失",
+        "detail": "章节只写“接入 SDK 后”，没有把官方 get-started 要求的 com.google.gms.google-services、com.google.firebase.firebase-perf 两个插件，以及 firebase_performance_collection_enabled / firebase_performance_collection_deactivated 这两个 Manifest 开关写出来。当前内容不足以指导 release 开关和灰度污染控制。",
+        "suggestion": "补一个“构建链 + 采集开关”小节，写清 Gradle plugin、google-services.json、Manifest 采集开关和 Debug/Release 策略。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T16:40:21+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.18",
+    "section_title": "商业 APM 平台（Sentry、APMPlus、Bugly）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 商业 APM 选型章节缺少私有化/数据所有权/PoC 验收这些关键决策面，当前不足以支撑真实采购评审",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "数据缺失",
+        "location": "## 商业 APM 的评审维度",
+        "detail": "评审表只覆盖 SDK、稳定性、性能数据、现场能力、符号化、采样、合规、运营，没有把大纲要求的“数据所有权、价格、迁移成本/退出成本”纳入。商业 APM 采购里这几项常常决定最终可用性。",
+        "suggestion": "扩表，新增计费模型、数据导出能力、历史数据可迁移性、SaaS/专有云/私有化的数据归属列。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "## 私有化和退出成本",
+        "detail": "“私有化”只停留在名词层，没有展开部署、升级、存储、权限、审计、数据删除、故障责任这些真实运维边界。当前读者只会知道“可以私有化”，不知道代价来自哪里。",
+        "suggestion": "补一个私有化责任表，把厂商负责、客户负责、平台故障责任和容量成本拆开写。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "## 接入建议",
+        "detail": "正文说要小流量验证，但没有把 PoC 验收项结构化。大纲要求的采样准确性、符号还原、慢帧定位、网络阶段、告警噪声、低端设备开销都没有形成 checklist。",
+        "suggestion": "补一张 PoC 验收表，要求用已知 crash/ANR/慢帧/弱网/低端机场景做真机验证。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-24T16:40:21+08:00",
+    "status": "pending"
   }
 ]
