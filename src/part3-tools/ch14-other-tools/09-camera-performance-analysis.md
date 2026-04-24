@@ -1,46 +1,54 @@
 ---
-title: "Android Camera 性能与 Perfetto 分析"
-chapter: "14.9"
-section: "14.9"
+title: Android Camera 性能与 Perfetto 分析
+chapter: '14.9'
+section: '14.9'
 status: ready-for-review
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
-reviewed_by: "openclaw-task6"
-last_task2b_at: "2026-04-21T22:42:29+08:00"
-reviewed_date: "2026-04-21"
-applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-06"
-last_verified_against: "AOSP android-14.0.0_r1"
+drafted_date: '2026-04-06'
+drafted_by: openclaw-task2a
+reviewed_by: openclaw-task6
+last_task2b_at: '2026-04-21T22:42:29+08:00'
+reviewed_date: '2026-04-24'
+applicable_versions: Android 12 (API 31) - Android 17 (API 37)
+last_verified: '2026-04-06'
+last_verified_against: AOSP android-14.0.0_r1
 confidence: medium
 sources:
-  - type: blog
-    path: "Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md"
-  - type: blog
-    path: "Cubox/Android Camera内存问题剖析-2024-02-04.md"
-  - type: blog
-    path: "Cubox/一文N张图带你理解Android Camera Native Framework架构-2023-08-13.md"
-  - type: aosp
-    path: "frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java"
-tags: ['camera', 'perfetto', 'buffer-queue', 'preview-stutter', 'hal3']
-related_chapters: ["2.13", "13.5", "11.2", "4.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: blog
+  path: Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md
+- type: blog
+  path: Cubox/Android Camera内存问题剖析-2024-02-04.md
+- type: blog
+  path: Cubox/一文N张图带你理解Android Camera Native Framework架构-2023-08-13.md
+- type: aosp
+  path: frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java
+tags:
+- camera
+- perfetto
+- buffer-queue
+- preview-stutter
+- hal3
+related_chapters:
+- '2.13'
+- '13.5'
+- '11.2'
+- '4.3'
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
-last_task9_at: "2026-04-21T18:42:00+08:00"
+last_task9_at: '2026-04-21T18:42:00+08:00'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-21"
+task9_reviewed_date: '2026-04-21'
 ---
+
 
 
 # 14.9 Android Camera 性能与 Perfetto 分析
 
 Camera 是 Android 设备上最复杂的子系统之一。当用户打开相机应用时，我们看到的流畅预览和快速响应背后，是一条横跨 App 层、Framework 层、HAL 层和内核驱动的复杂链路。在这个环节中，任何一个节点的性能问题都会影响整个用户体验——预览卡顿会让用户觉得相机很"卡"，拍照延迟会让用户错失精彩瞬间，录像丢帧会让视频变得不流畅。
-
-读完这一节，你将掌握 Camera 性能问题的分类方法，了解 Buffer 在 Camera 管线中的完整流转过程，学会用 Perfetto Trace Processor 量化关键指标。下次遇到 Camera 性能问题时，你将知道从哪里入手、用什么 SQL 查询、怎么定位具体瓶颈。
 
 这一节聚焦三件事：先把 Camera 性能问题分成几类，再梳理 Camera 管线里的 Buffer 流转，再用 Perfetto Trace Processor 把关键指标量化出来。读完之后，面对一个 Camera 性能问题，我们应该知道从哪里入手、用什么 SQL 查询、怎么定位具体瓶颈。
 
