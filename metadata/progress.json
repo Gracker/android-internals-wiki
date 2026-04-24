@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T03:47:51+08:00",
+  "generated_at": "2026-04-25T04:21:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,11 +7,11 @@
     "finalized": 61,
     "ready-for-review": 156,
     "ready-to-publish": 61,
-    "last_updated": "2026-04-25T03:47:51+08:00",
+    "last_updated": "2026-04-25T04:21:00+08:00",
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 26,
-      "task2b_pending": 37,
+      "task6_pending": 25,
+      "task2b_pending": 38,
       "ready-to-publish": 61,
       "task9_pending": 87,
       "'task9_pending'": 2,
@@ -19,21 +19,21 @@
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 197,
-      "revisiting": 16
+      "reviewed": 199,
+      "revisiting": 14
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 111,
-      "pending": 94,
+      "reviewed": 112,
+      "pending": 93,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 157,
-      "pending": 41,
+      "fixed": 156,
+      "pending": 42,
       "'pending'": 2,
       "idle": 5,
       "'fixed'": 2
@@ -42,8 +42,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 26,
-      "task2b_pending": 37,
+      "task6_pending": 25,
+      "task2b_pending": 38,
       "ready-to-publish": 61,
       "task9_pending": 87,
       "'task9_pending'": 2,
@@ -51,21 +51,21 @@
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 197,
-      "revisiting": 16
+      "reviewed": 199,
+      "revisiting": 14
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 111,
-      "pending": 94,
+      "reviewed": 112,
+      "pending": 93,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 157,
-      "pending": 41,
+      "fixed": 156,
+      "pending": 42,
       "'pending'": 2,
       "idle": 5,
       "'fixed'": 2
@@ -4882,20 +4882,37 @@
       "drafted_by": "gemini",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-25",
-      "confidence": "high",
-      "pipeline_stage": "task6_pending",
       "last_verified_against": "Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming docs",
+      "confidence": "high",
+      "tags": [
+        "apm",
+        "webview",
+        "flutter",
+        "hybrid"
+      ],
+      "related_chapters": [
+        "19.0",
+        "19.01"
+      ],
+      "pipeline_stage": "task2b_pending",
       "task2b_result": "fixed",
-      "task2b_state": "fixed",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task2b_state": "pending",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-25",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
       "sources": [
         "https://developer.android.com/reference/android/view/PixelCopy",
         "https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)",
         "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient",
         "https://api.flutter.dev/flutter/dart-ui/FrameTiming-class.html",
         "https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addTimingsCallback.html"
-      ]
+      ],
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T04:21:00+08:00"
     },
     "src/part3-tools/ch19-apm/14-jetpack-benchmark.md": {
       "path": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
@@ -4932,18 +4949,35 @@
       "drafted_by": "gemini",
       "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
       "last_verified": "2026-04-25",
-      "confidence": "high",
-      "pipeline_stage": "task6_pending",
       "last_verified_against": "AOSP PowerManager / PowerManagerService / BatteryStats references, Android Thermal API docs",
+      "confidence": "high",
+      "tags": [
+        "apm",
+        "battery",
+        "thermal",
+        "wakelock"
+      ],
+      "related_chapters": [
+        "19.0",
+        "19.19"
+      ],
+      "pipeline_stage": "task2b_pending",
       "task2b_result": "fixed",
-      "task2b_state": "fixed",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task2b_state": "pending",
+      "task6_state": "reviewed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-25",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
       "sources": [
         "https://developer.android.com/reference/android/os/PowerManager",
         "https://source.android.com/docs/core/power/thermal-mitigation",
         "https://developer.android.com/topic/performance/power/setup-battery-historian"
-      ]
+      ],
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T04:21:00+08:00"
     },
     "src/part3-tools/ch19-apm/12-framemetrics.md": {
       "path": "src/part3-tools/ch19-apm/12-framemetrics.md",
@@ -5468,6 +5502,25 @@
           "issues": 1
         }
       ]
+    },
+    {
+      "date": "2026-04-25",
+      "task": "task9-deep-review",
+      "time": "04:21",
+      "sections_reviewed": [
+        {
+          "section": "19.25",
+          "title": "耗电与发热监控 (Battery & Thermal)",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "19.26",
+          "title": "混合栈与跨平台 APM (WebView / Flutter)",
+          "result": "needs-rework",
+          "issues": 4
+        }
+      ]
     }
   ],
   "progress": {
@@ -5668,6 +5721,32 @@
         "task2b_state": "fixed",
         "task2b_result": "fixed",
         "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-25"
+      },
+      "19.25": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "pending",
+        "updated_by": "openclaw-task9",
+        "updated_date": "2026-04-25"
+      },
+      "19.26": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "pending",
+        "updated_by": "openclaw-task9",
         "updated_date": "2026-04-25"
       }
     }

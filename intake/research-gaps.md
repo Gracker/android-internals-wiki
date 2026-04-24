@@ -4860,3 +4860,38 @@ Flutter Impeller 引擎
 中
 ### 建议研究方向
 Android 14+ 下着色器编译卡顿（Shader Jank）监控差异
+
+
+## [2026-04-25] 19.25 耗电与发热监控 — 知识盲区
+
+### 盲区描述
+Exact Alarm 特殊权限、Doze idle quota 与 APM 端侧归因的版本矩阵仍不完整。已有外部 review 命中过 Doze quota，本轮补充确认还需要覆盖 Android 12+ `SCHEDULE_EXACT_ALARM` / `canScheduleExactAlarms()`、Android 13+ `USE_EXACT_ALARM` 适用边界，以及 Android 14+ 默认授权变化对线上 Alarm 样本的影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 按 Android 12/13/14/15/16/17 拆出 exact alarm 权限、特殊应用访问、豁免类型和失败表现。
+- 建立 APM 采样字段：permission/app-op 状态、`canScheduleExactAlarms()`、alarm type、allowWhileIdle/exact 标记、实际触发延迟。
+- 与现有 Doze quota 盲区合并成“后台唤醒归因版本矩阵”。
+
+### 关联章节
+- 19.25
+
+
+## [2026-04-25] 19.26 混合栈与跨平台 APM — 知识盲区
+
+### 盲区描述
+WebView Core Web Vitals API 能力矩阵缺失。正文按 Android API 26-37 讨论 FCP/LCP，但实际可用性取决于 Android System WebView / Chromium 版本、provider channel 与企业 ROM 是否冻结 WebView 更新。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 建立 WebView/Chromium major version 与 `PerformanceObserver`、`paint`、`largest-contentful-paint`、`supportedEntryTypes` 的可用性表。
+- 补充 feature detection 与降级策略：不支持 LCP 时回退到 FCP、业务 ready、DOM 信号或 PixelCopy 白屏采样。
+- 记录样本中的 WebView provider package/version，避免只按 Android major version 聚合。
+
+### 关联章节
+- 19.26
+- 7.11

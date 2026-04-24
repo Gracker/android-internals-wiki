@@ -1304,3 +1304,17 @@
 - **问题描述**：提到 Vellamo 已过期，但未给出现代 Web 性能测试建议。
 - **建议**：补充 **Speedometer 3.0** 或 **JetStream 2** 作为现代移动浏览器/Web 性能的基准工具。
 - **来源**：外部 AI review
+
+
+## [Task9 Deep Review] 19.26 混合栈与跨平台 APM (WebView / Flutter) — 2026-04-25
+- **类型**：数据缺失
+- **位置**：§2 PixelCopy 白屏采样示例
+- **问题**：示例每次 createBitmap，未说明 bitmap 复用、降采样尺寸、PixelCopy error code 记录和采样成本上限。线上白屏采样如果在弱机上集中触发，监控本身会制造内存抖动。
+- **建议**：补充固定尺寸 bitmap pool / 采样矩形缩放 / result code 上报 / 采样频率上限，并建议在灰度中记录单次采样耗时和 bitmap 分配量。
+
+
+## [Task9 Deep Review] 19.26 混合栈与跨平台 APM (WebView / Flutter) — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：§5 Flutter FrameTiming 映射为 Android Jank
+- **问题**：正文提到 buildDuration/rasterDuration 超过刷新率预算可能丢帧，但没有说明 addTimingsCallback 是批量回调，也没有区分 build/raster/totalSpan 与 Android 宿主帧的关系。
+- **建议**：补充“Flutter 自有帧预算”与“Android 宿主 Choreographer”分层：按当前刷新率计算预算，分别聚合 UI/Raster/totalSpan，不把单个字段直接等同于 Android FrameMetrics/JankStats 的 jank。
