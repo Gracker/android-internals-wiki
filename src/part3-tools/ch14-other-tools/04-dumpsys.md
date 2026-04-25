@@ -2,7 +2,7 @@
 title: dumpsys 系列命令
 chapter: '14.4'
 section: '14.4'
-status: "ready-for-review"
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
@@ -31,13 +31,13 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: "fixed"
-last_task2b_at: "2026-04-25T12:22:08+08:00"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-25T22:46:46+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
@@ -103,7 +103,7 @@ dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服�
 
 当我们怀疑某个场景的卡顿或 ANR 与 Activity 生命周期有关时，Activity 栈是第一手线索。执行 `adb shell dumpsys activity activities` 后，输出会按照 Task 分组，每个 Task 下列出从底到顶的 Activity 栈。关键的几个字段：
 
-- `TaskRecord` 中的 `affinity` 和 `taskId` 告诉我们这个 Task 属于哪个应用
+- `Task`（旧版资料中常写作 `TaskRecord`）中的 `affinity` 和 `taskId` 告诉我们这个 Task 属于哪个应用
 - `ActivityRecord` 中的 `state` 表示 Activity 当前状态（resumed、paused、stopped 等）
 - `mFocusedActivity` 和 `mFocusedApp` 标记当前获得焦点的 Activity 和应用
 
@@ -127,7 +127,7 @@ adb shell dumpsys activity exit-info <package_name>
 
 `dumpsys activity lastanr` 仍可作为遗留兜底：它只保留最近一次 ANR 的文本快照，设备重启、日志轮转或新 ANR 出现后都可能覆盖旧现场。排查线上问题时，`exit-info` 负责确认“这个进程为什么退出”，Perfetto / bugreport / ANR traces 负责还原“退出前线程在等什么”。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java: dump()；ActivityManagerService 分发 `exit-info` 到 `mAppExitInfoTracker.dumpHistoryProcessExitInfo()`]
+[已验证: AOSP android-16.0.0_r1, `frameworks/base/services/core/java/com/android/server/wm/Task.java`、`ActivityRecord.java`；`ActivityManagerService.java` 分发 `exit-info` 到 `mAppExitInfoTracker.dumpHistoryProcessExitInfo()`]
 
 ## dumpsys meminfo：系统和进程内存全景
 
@@ -154,7 +154,7 @@ adb shell dumpsys meminfo --slab
 
 **USS（Unique Set Size）** 是进程独占的物理内存，不被任何其他进程共享。如果这个进程被杀掉，USS 这部分内存会被完全释放。USS 适合用来估算一个进程被杀掉后理论上能回收多少私有内存，也适合做线下泄漏分析和方案对比。LMKD 运行时不会去计算 USS，目标选择仍要回到 `oom_score_adj`、RSS 和 PSI 这类实时决策线索。
 
-**Private Dirty** 是已经被修改过的私有内存页。这部分内存不能被换出到磁盘（Android 默认不用 swap），必须常驻物理 RAM。在内存分析中，Private Dirty 持续增长通常是内存泄漏的信号。
+**Private Dirty** 是已经被修改过的私有内存页。这部分内存不能像 clean file-backed page 一样直接丢弃；在启用 zRAM 的设备上，部分脏页可能被压缩换出，并在 `dumpsys meminfo` 中体现为 `SwapPss` / `Swapped Dirty`。分析泄漏时不要只看单列，需同时看 PSS、Private Dirty、SwapPss 和设备的 zRAM 状态。
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory]
 
@@ -454,6 +454,7 @@ dumpsys 不只是系统服务的专利。任何应用或服务都可以实现自
 
 - AOSP 源码：`frameworks/native/cmds/dumpsys/dumpsys.cpp`
 - AOSP 源码：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（dump 方法）
+- AOSP 源码：`frameworks/base/services/core/java/com/android/server/wm/Task.java`、`ActivityRecord.java`（现代 Task / Activity 栈结构）
 - AOSP 源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`（dump / `--frontend` / `--hwclayers` / `--latency`）
 - AOSP 源码：`frameworks/native/services/surfaceflinger/FrontEnd/LayerSnapshot.h`（Frontend 快照结构）
 - AOSP 源码：`frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java`（分显示器焦点状态）

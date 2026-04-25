@@ -26,26 +26,28 @@ sources:
   - Flutter engine 仓库：shell/platform/android/
 section: '18.12'
 review_notes: "2026-04-23 task6 re-review (revisiting): pass-light-edit. 10 L1 fixes (禁用词「链路」→「管线」全量替换: 标题/tags/大纲/正文). 无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-23T01:13:23+08:00"
+last_task2b_at: "2026-04-25T22:46:46+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
 last_task9_at: "2026-04-25T13:26:00+08:00"
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
 ---
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
 - Flutter 线程模型：Flutter 3.29+ 的 Merged Platform Model（UI + Platform 合并）
-- Dart Runner → Raster Thread → GPU → Display 的渲染管线
+- Main Thread（Dart UI task）→ Raster Thread → GPU → Display 的渲染管线
 - Impeller vs Skia 渲染后端
 - SurfaceView render mode vs TextureView render mode
 - Platform Views 的 Hybrid Composition 模式
@@ -100,9 +102,9 @@ Engine 内部仍有 task runner 的概念，但在 merged model 下，插件和�
 
 Flutter 的渲染流程分为四个阶段，每个阶段对应不同的线程和组件。
 
-### 阶段一：Dart Runner（UI 构建）
+### 阶段一：Main Thread（Dart UI Task）
 
-由 VSync-App 信号驱动（通过 Engine 层桥接 Choreographer）：
+Android `Choreographer` 发出的 VSync-App 到达宿主 Main thread 后，Flutter engine 在同一线程执行 Dart UI task：
 
 1. **Build**：执行 `Widget.build()`，构建 Element Tree。
 2. **Layout**：`RenderObject.performLayout()`，计算每个渲染对象的大小和位置（对应 Android 的 Measure/Layout，但全在 Dart 里完成）。
@@ -111,7 +113,7 @@ Flutter 的渲染流程分为四个阶段，每个阶段对应不同的线程和
 
 ### 阶段二：Raster Thread（光栅化）
 
-1. **LayerTree Processing**：接收 Dart 发来的 LayerTree，进行优化和合成排序。
+1. **LayerTree Processing**：接收 Main Thread 提交的 LayerTree，进行优化和合成排序。
 2. **Rasterization**：
    - **Impeller**（Flutter 3.27+ 在 Android API 29+ 的默认后端）：使用预编译 Shader，优先走 Vulkan，不满足条件时可回退到 GLES
    - **Skia**（旧版默认或回退路径）：运行时编译 GLSL Shader
@@ -136,16 +138,14 @@ Flutter 的独立 Surface 直接与 SurfaceFlinger 交互，**不经过宿主 Ap
 ```mermaid
 sequenceDiagram
     participant HW as Hardware VSync
-    participant Main as Android Main
-    participant Dart as Dart Runner
+    participant Main as Main Thread (UI + Platform)
     participant Raster as Raster Thread
     participant BBQ as BLAST Adapter
     participant SF as SurfaceFlinger
 
     HW->>Main: VSync-App
-    Main->>Dart: Engine.ScheduleFrame()
-    Dart->>Dart: Build → Layout → Paint
-    Dart->>Raster: Submit LayerTree
+    Main->>Main: Build → Layout → Paint
+    Main->>Raster: Submit LayerTree
     
     Raster->>BBQ: dequeueBuffer()
     Raster->>Raster: Impeller Rasterize (GPU)
@@ -165,19 +165,21 @@ Flutter 渲染到 SurfaceTexture，再由宿主 App RenderThread 采样合成到
 
 ```mermaid
 sequenceDiagram
-    participant Dart as Dart Runner
+    participant HW as Hardware VSync
+    participant Main as Main Thread (UI + Platform)
     participant Raster as Raster Thread
     participant ST as SurfaceTexture
-    participant Main as Android Main
     participant RT as Android RenderThread
     participant SF as SurfaceFlinger
 
-    Dart->>Raster: LayerTree
+    HW->>Main: VSync-App
+    Main->>Main: Build → Layout → Paint
+    Main->>Raster: Submit LayerTree
     Raster->>ST: queueBuffer(Frame N)
     ST-->>Main: onFrameAvailable()
     Main->>Main: invalidate()
     
-    Note over Main: VSync-App 到达
+    Note over Main: 下一次 VSync-App 到达
     Main->>RT: SyncFrameState
     RT->>ST: updateTexImage() (Bind Texture)
     RT->>RT: Draw View Hierarchy + Flutter Texture
@@ -230,7 +232,7 @@ sequenceDiagram
 
 | 场景 | 轨道 / 关键词 | 该看什么 |
 |:---|:---|:---|
-| Flutter UI 阶段 | `Engine::BeginFrame`、`Build`、`Layout`、`Paint` | Dart Runner 有没有在 VSync 后很快进入 Build/Layout/Paint |
+| Flutter UI 阶段 | `Engine::BeginFrame`、`Build`、`Layout`、`Paint` | Main Thread 上的 Dart UI task 是否在 VSync 后及时进入 Build/Layout/Paint |
 | Flutter 光栅化 | `Rasterizer::DrawToSurfaces`、`EntityPass::*` | Raster Thread 是否把一帧及时光栅化完成 |
 | SurfaceView mode | App 进程里的 Flutter 轨道 + SurfaceFlinger 独立 Flutter Layer | Flutter 独立 Layer 是否按节拍提交；若宿主页面平稳、Flutter Layer 自己断节拍，问题多半在 Flutter 侧 |
 | TextureView mode | 宿主主线程 `invalidate()`、宿主 `RenderThread` 的 `DrawFrame` / `updateTexImage()` | Flutter 帧是否已经准备好，但卡在宿主 `RenderThread` 的采样和合成上 |
@@ -238,7 +240,7 @@ sequenceDiagram
 
 **轨道观察清单**：
 
-- **SurfaceView mode**：能看到 Dart Runner 与 Raster Thread 正常推进，同时 SurfaceFlinger 里有独立 Flutter Layer 跟着提交；这类 trace 往往先查 Flutter 自身的 Dart / Raster 阶段。
+- **SurfaceView mode**：能看到 Main Thread 上的 Dart UI task 与 Raster Thread 正常推进，同时 SurfaceFlinger 里有独立 Flutter Layer 跟着提交；这类 trace 往往先查 Flutter 自身的 Dart / Raster 阶段。
 - **TextureView mode**：先确认 Raster Thread 已经产出新帧，再看宿主主线程有没有及时 `invalidate()`，以及宿主 `RenderThread` 的 `updateTexImage()` / `DrawFrame` 有没有被拖长。
 - **Platform Views**：如果页面里同时有 WebView 或 MapView，再叠看 SurfaceFlinger Layer 和宿主窗口轨道，判断卡顿落在 Flutter 自身、Platform View，还是宿主合成。
 

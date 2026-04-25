@@ -7362,7 +7362,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T13:26:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T22:46:46+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已将 Flutter 3.29+ merged model 下的阶段一与两张时序图统一为 Main Thread（Dart UI task）视角。"
   },
   {
     "section": "07.07",
@@ -8647,8 +8650,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-18.12-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-18.12-external-review.md",
+    "completed_at": "2026-04-25T22:46:46+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已闭环该 external-review 条目中 18.12 Flutter P0 merged model 问题；条目内提到的其他章节问题不在本节修改范围。"
   },
   {
     "section": "18.13",
@@ -9831,7 +9837,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T18:39:22+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T22:46:46+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已修正 OkHttp/0-RTT、HPKE API level、cleartext 版本边界，并补充 Android CT Policy 表。"
   },
   {
     "section": "15.10",
@@ -10080,7 +10089,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T20:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T22:46:46+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已重写 ART 版本演进表，拆出 Profile 分发口径，并移除无来源的通用收益百分比。"
   },
   {
     "section": "14.4",
@@ -10107,6 +10119,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T22:29:14+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T22:46:46+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已将 TaskRecord 改为现代 Task/ActivityRecord 口径，并修正 Private Dirty 与 zRAM/SwapPss 关系。"
   }
 ]

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T22:29:14+08:00",
+  "generated_at": "2026-04-25T22:47:26+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,55 +7,55 @@
     "finalized": 77,
     "ready-for-review": 141,
     "ready-to-publish": 77,
-    "last_updated": "2026-04-25T22:29:14+08:00",
+    "last_updated": "2026-04-25T22:47:26+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 40,
-      "task2b_pending": 52,
+      "task6_pending": 44,
+      "task2b_pending": 48,
       "ready-to-publish": 77,
       "task9_pending": 46
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 181,
-      "revisiting": 33
+      "reviewed": 177,
+      "revisiting": 37
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 141,
-      "pending": 68,
+      "reviewed": 137,
+      "pending": 72,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 147,
-      "pending": 57,
+      "fixed": 151,
+      "pending": 53,
       "idle": 4
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 40,
-      "task2b_pending": 52,
+      "task6_pending": 44,
+      "task2b_pending": 48,
       "ready-to-publish": 77,
       "task9_pending": 46
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 181,
-      "revisiting": 33
+      "reviewed": 177,
+      "revisiting": 37
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 141,
-      "pending": 68,
+      "reviewed": 137,
+      "pending": 72,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 147,
-      "pending": 57,
+      "fixed": 151,
+      "pending": 53,
       "idle": 4
     }
   },
@@ -264,8 +264,8 @@
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md": {
       "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
       "title": "ART 编译管线与 dex2oat 优化",
-      "chapter": "'1.7'",
-      "section": "'1.7'",
+      "chapter": "1.7",
+      "section": "1.7",
       "status": "ready-for-review",
       "drafted_date": "'2026-04-05'",
       "drafted_by": "openclaw-task2a",
@@ -273,10 +273,10 @@
       "last_verified": "'2026-04-05'",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -285,7 +285,10 @@
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-25T20:20:00+08:00",
-      "review_round": "2"
+      "review_round": "2",
+      "last_task2b_at": "2026-04-25T22:46:46+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
@@ -3012,10 +3015,10 @@
       "last_verified": "2026-04-08",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -3024,7 +3027,10 @@
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-25T18:39:22+08:00",
-      "review_round": "2"
+      "review_round": "2",
+      "last_task2b_at": "2026-04-25T22:46:46+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch12-apk-network/README.md": {
       "path": "src/part2-performance/ch12-apk-network/README.md"
@@ -3246,14 +3252,14 @@
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
       "title": "Flutter 渲染管线",
-      "chapter": "'18.12'",
-      "section": "'18.12'",
+      "chapter": "18.12",
+      "section": "18.12",
       "status": "ready-for-review",
       "applicable_versions": "Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -3261,7 +3267,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T13:26:00+08:00"
+      "last_task9_at": "2026-04-25T13:26:00+08:00",
+      "last_task2b_at": "2026-04-25T22:46:46+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
@@ -3803,10 +3812,10 @@
       "last_verified": "2026-04-15",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -3815,7 +3824,7 @@
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-25T22:29:14+08:00",
-      "last_task2b_at": "2026-04-25T12:22:08+08:00",
+      "last_task2b_at": "2026-04-25T22:46:46+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b"
     },
