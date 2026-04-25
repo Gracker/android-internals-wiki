@@ -5077,3 +5077,136 @@ Frame Overrun、ApplicationExitInfo 与 RSS 指标缺口（external-review 已�
 
 ### 关联章节
 15.3
+
+## [2026-04-25] 13.1 Perfetto 简介与演进 — 知识盲区
+
+### 盲区描述
+1. **Mainline APEX 挂载**：apexd 如何在启动时将模块挂载到 /apex/com.android.perfetto
+2. **ProtoZero 零拷贝原理**：Perfetto 开销极低（1%-3% CPU）的核心原因
+3. **Java HPROF 采集权限**：user 版本上 profileable 如何影响 perfetto_hprof 加载
+
+### 重要程度
+高（APEX）/ 中（ProtoZero、HPROF 权限）
+
+### 建议研究方向
+- Android 12+ apexd 挂载流程
+- perfetto.dev ProtoZero 设计文档
+- profileable 与 perfetto_hprof 的权限交互
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 13.2 Trace 抓取 — 知识盲区
+
+### 盲区描述
+1. **perfetto --dropbox 机制**：未 Root 设备上通过 DropboxManager 获取 Trace
+2. **atrace_userspace_only 字段**：FtraceConfig 新字段，减少内核开销
+3. **127 字符限制演进**：Android 13+ 是否依然严格生效
+
+### 重要程度
+中 / 低
+
+### 建议研究方向
+- perfetto dropbox 生产设备采集方案
+- 对比不同版本 libcutils 源码中的 ATRACE_MESSAGE_LENGTH
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 13.3 Perfetto View — 知识盲区
+
+### 盲区描述
+1. **Blocked 状态（红色）**：锁竞争识别与 waking_thread 追踪
+2. **V 键对齐操作**：跨进程（App→SF→HWC）时间点对齐效率
+
+### 重要程度
+高（Blocked）/ 中（V 键）
+
+### 建议研究方向
+- Perfetto 锁竞争追踪完整链路
+- 多轨道关联分析最佳实践
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 13.4 大文件处理 — 知识盲区
+
+### 盲区描述
+1. **Perfetto Stdlib**：INCLUDE PERFETTO MODULE 及 android.* 模块复用
+2. **Span Join 操作符**：处理重叠时间段的高级 SQL 语法
+
+### 重要程度
+中 / 低
+
+### 建议研究方向
+- perfetto.dev/docs/analysis/stdlib 最新预置模块
+- CPU 状态与线程状态交集的 Span Join 用法
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 13.5 专题分析 — 知识盲区
+
+### 盲区描述
+1. **Prediction Error 归因**：SurfaceFlinger 预测机制
+2. **Buffer Stuffing 量化阈值**：结合 BlastBufferQueue 源码研究
+3. **亚哨完成帧预警**：on_time_finish=1 但 dur 接近 deadline 的筛选 SQL
+
+### 重要程度
+低 / 中
+
+### 建议研究方向
+- SurfaceFlinger 预测与 jank_type 关系
+- BlastBufferQueue buffer stuffing 阈值
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 13.6 线程 CPU 状态 — 知识盲区
+
+### 盲区描述
+1. **TASK_KILLABLE 状态**：在 Trace 中是否显示为 D 或有特殊标记
+2. **SCHED_IDLE 优先级影响**：R 状态下的表现差异
+
+### 重要程度
+中 / 低
+
+### 建议研究方向
+- Android 内核 TASK_KILLABLE 在 Perfetto 中的呈现
+- SCHED_IDLE 调度策略的 Trace 特征
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 13.7 高级用法 — 知识盲区
+
+### 盲区描述
+1. **Bigtrace 架构**：分布式 SQL 查询在 K8s 上的部署与分片逻辑
+2. **Custom Data Source (SDK)**：自定义 Proto + protozero 高效写入
+3. **Perfetto Standard Library**：官方已内置的 SQL 模块复用
+
+### 重要程度
+高
+
+### 建议研究方向
+- perfetto.dev Bigtrace Orchestrator/Worker 架构
+- perfetto.dev Custom Data Source C++ 示例
+- perfetto.dev Standard Library 章节完整模块清单
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 13.8 Input Latency SQL — 知识盲区
+
+### 盲区描述
+1. **is_speculative_frame 列存在性**：Perfetto v40+ 实验性字段，需提醒版本检查
+
+### 重要程度
+中
+
+### 建议研究方向
+- 确认 is_speculative_frame 在各版本中的可用性
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+

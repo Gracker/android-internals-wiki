@@ -18642,24 +18642,259 @@
       "action_taken": "inject",
       "processed_at": "2026-04-25T07:22:00+08:00",
       "source_task": "AIW · DeepResearch 材料注入"
+    },
+    {
+      "title": "谷歌开发者：聚焦 Android 11: Android 开发者工具",
+      "path": "AndroidWeekly/#4/谷歌开发者：聚焦 Android 11: Android 开发者工具",
+      "source_url": "https://zhuanlan.zhihu.com/p/248387576",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-Android系统架构",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "技术文章：谷歌开发者：聚焦 Android 11: And...",
+      "scored_at": "2026-04-25T09:13:40.303185"
+    },
+    {
+      "title": "深入探索Android启动速度优化（下）",
+      "path": "AndroidWeekly/#4/深入探索Android启动速度优化（下）",
+      "source_url": "https://juejin.im/post/6870457006784774152",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 4,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "技术文章：深入探索Android启动速度优化...",
+      "scored_at": "2026-04-25T09:13:40.303197"
+    },
+    {
+      "title": "in nek：假共享内存(False Sharing)",
+      "path": "AndroidWeekly/#4/in nek：假共享内存(False Sharing)",
+      "source_url": "https://zhuanlan.zhihu.com/p/210665963",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 3,
+        "depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "技术文章：in nek：假共享内存(False Shar...",
+      "scored_at": "2026-04-25T09:13:40.303200"
+    },
+    {
+      "title": "重学安卓：是让人 过目难忘 的 Android GUI 族谱解析啊！ － 小专栏",
+      "path": "AndroidWeekly/#4/重学安卓：是让人 过目难忘 的 Android GUI 族谱解析啊！ － 小专栏",
+      "source_url": "https://xiaozhuanlan.com/topic/2073915486",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02-Android系统架构",
+          "confidence": "high"
+        }
+      ],
+      "summary": "技术文章：重学安卓：是让人 过目难忘 的 A...",
+      "scored_at": "2026-04-25T09:13:40.303201"
+    },
+    {
+      "title": "霜蓝手环：Flutter之踩坑的日子（6）",
+      "path": "AndroidWeekly/#4/霜蓝手环：Flutter之踩坑的日子（6）",
+      "source_url": "https://zhuanlan.zhihu.com/p/250464603",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-应用开发",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "技术文章：霜蓝手环：Flutter之踩坑的日子...",
+      "scored_at": "2026-04-25T09:13:40.303202"
+    },
+    {
+      "title": "闲聊 Kotlin-Native (0) - 我们为什么应该关注一下 Kotlin Native？",
+      "path": "AndroidWeekly/#4/闲聊 Kotlin-Native (0) - 我们为什么应该关注一下 Kotlin Native？",
+      "source_url": "https://mp.weixin.qq.com/s/rIPYiODurQ5r1x8N6yamig",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-应用开发",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "技术文章：闲聊 Kotlin-Native (0) - 我们为...",
+      "scored_at": "2026-04-25T09:13:40.303204"
+    },
+    {
+      "title": "Android 复习笔记（五）—— OutOfMemoryError 可以被 try catch 吗 ？",
+      "path": "AndroidWeekly/#4/Android 复习笔记（五）—— OutOfMemoryError 可以被 try catch 吗 ？",
+      "source_url": "https://mp.weixin.qq.com/s/SdP2wvLPf6LSizeCf0izlg",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "技术文章：Android 复习笔记（五）—— OutOfMem...",
+      "scored_at": "2026-04-25T09:13:40.303205"
+    },
+    {
+      "title": "会写「18.dp」只是个入门——Kotlin 的扩展函数和属性 | 开发者说·DTalk",
+      "path": "AndroidWeekly/#4/会写「18.dp」只是个入门——Kotlin 的扩展函数和属性 | 开发者说·DTalk",
+      "source_url": "https://mp.weixin.qq.com/s/6LzS9aUg6QW0-laPC1RoaQ",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-应用开发",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "技术文章：会写「18.dp」只是个入门——Kotlin...",
+      "scored_at": "2026-04-25T09:13:40.303206"
+    },
+    {
+      "title": "新课程上线 | 学习使用 Kotlin 进行 Android 开发的最佳时机！",
+      "path": "AndroidWeekly/#4/新课程上线 | 学习使用 Kotlin 进行 Android 开发的最佳时机！",
+      "source_url": "https://mp.weixin.qq.com/s/roM0NfkEF2ikhhP_XRrkDw",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-应用开发",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "技术文章：新课程上线 | 学习使用 Kotlin...",
+      "scored_at": "2026-04-25T09:13:40.303208"
+    },
+    {
+      "title": "Android 中为什么需要 Handler?",
+      "path": "AndroidWeekly/#4/Android 中为什么需要 Handler?",
+      "source_url": "https://www.zhijin.com/question/421330220/answer/1480860373",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04-进程间通信",
+          "confidence": "high"
+        }
+      ],
+      "summary": "技术文章：Android 中为什么需要 Handler?",
+      "scored_at": "2026-04-25T09:13:40.303209"
+    },
+    {
+      "title": "Android Studio 中 System Trace 的新增功能",
+      "path": "AndroidWeekly/#4/Android Studio 中 System Trace 的新增功能",
+      "source_url": "https://mp.weixin.qq.com/s/yABygaF_KryHUsQNVhC2YA",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "技术文章：Android Studio 中 System Trace 的新增...",
+      "scored_at": "2026-04-25T09:13:40.303210"
     }
-  ],
-  "https://juejin.cn/post/7589903499599347766": {
-    "chapter": "ch17-oem",
-    "title": "聊聊2026年Android开发会是什么样",
-    "score": 13,
-    "added_at": "2026-04-25T05:39:49.867987"
-  },
-  "https://juejin.cn/post/7596710680897863686": {
-    "chapter": "ch14-other-tools",
-    "title": "2026年了，Android开发该如何调试布局",
-    "score": 15,
-    "added_at": "2026-04-25T05:39:49.903861"
-  },
-  "https://juejin.cn/post/7591309945511739392": {
-    "chapter": "ch14-other-tools",
-    "title": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分",
-    "score": 12,
-    "added_at": "2026-04-25T05:39:49.938875"
-  }
+  ]
 }

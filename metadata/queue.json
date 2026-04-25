@@ -2692,5 +2692,165 @@
     "added_by": "task8-classifier",
     "added_at": "2026-04-25T05:39:49.920846",
     "status": "pending"
+  },
+  {
+    "section": "13.1",
+    "section_title": "Perfetto 简介与演进",
+    "priority": 85,
+    "reason": "[External Review] 源码路径错误、Mainline APEX 机制缺失、Trace Processor 预置指标未提及",
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "架构说明 - heapprofd/java_hprof_producer",
+        "detail": "java_hprof_producer 路径应为 external/perfetto/src/profiling/java/ 及 art/perfetto_hprof/，而非 src/profiling/memory/",
+        "suggestion": "修正路径并补充 perfetto_hprof 作为 ART 插件的运行特征",
+        "evidence": [
+          "cs.android.com: external/perfetto/src/profiling/java/",
+          "art/perfetto_hprof/"
+        ]
+      },
+      {
+        "type": "机制缺失",
+        "location": "版本演进表",
+        "detail": "未提及 Android 12+ Mainline APEX 模块化更新机制",
+        "suggestion": "增加更新机制列，说明 Android 12+ 后工具能力与 OS 版本解耦",
+        "evidence": [
+          "com.google.android.perfetto APEX"
+        ]
+      },
+      {
+        "type": "原理链缺失",
+        "location": "Trace Processor 章节",
+        "detail": "未提及 Built-in Metrics 预置指标系统",
+        "suggestion": "提及 android_cpu/android_jank/android_startup 等预置指标",
+        "evidence": [
+          "trace_processor --run-metrics"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T09:17:47+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.2",
+    "section_title": "Trace 抓取",
+    "priority": 85,
+    "reason": "[External Review] 未区分 Java 采样与快照数据源差异",
+    "review_issues": [
+      {
+        "type": "原理链缺失",
+        "location": "Java Heap Sampling 章节",
+        "detail": "未明确区分 android.heapprofd（持续采样）与 android.java_hprof（单次快照）",
+        "suggestion": "补充两者选择逻辑：看谁在分配用 heapprofd，看谁在持有用 java_hprof",
+        "evidence": [
+          "java_hprof_config.proto"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T09:17:47+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.3",
+    "section_title": "Perfetto View 使用",
+    "priority": 85,
+    "reason": "[External Review] 遗漏 Blocked（红色）线程状态颜色编码",
+    "review_issues": [
+      {
+        "type": "重要缺失",
+        "location": "颜色编码章节",
+        "detail": "只描述了绿/浅绿/灰/橙，遗漏了 Blocked（红色）- 锁竞争状态",
+        "suggestion": "增加 Blocked（红色）：等待锁竞争的描述及 waking_thread 追踪方法",
+        "evidence": [
+          "Perfetto UI thread state color coding"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T09:17:47+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.6",
+    "section_title": "线程 CPU 状态分析",
+    "priority": 85,
+    "reason": "[External Review] Runnable 颜色描述错误 + SQL 漏掉 R+ 状态",
+    "review_issues": [
+      {
+        "type": "描述错误",
+        "location": "五种核心状态 - Runnable",
+        "detail": "将 Runnable 颜色误描述为包含白色，白色实际对应 Sleeping",
+        "suggestion": "修正为浅绿色，强调白色代表 Sleeping"
+      },
+      {
+        "type": "数据错误",
+        "location": "SQL 量化分析",
+        "detail": "SQL 脚本漏掉 R+（被抢占）状态统计",
+        "suggestion": "CASE 语句使用 LIKE 'R%' 或单独处理 R+",
+        "evidence": [
+          "Perfetto thread_state 表包含 R+ 状态"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T09:17:47+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.7",
+    "section_title": "Perfetto 高级用法",
+    "priority": 85,
+    "reason": "[External Review] 缺失 Custom Data Source、Bigtrace、Metrics v2 Stdlib 关键高级架构",
+    "review_issues": [
+      {
+        "type": "原理链缺失",
+        "location": "自定义 Trace Point - Perfetto SDK",
+        "detail": "只介绍 TRACE_EVENT，未提及 Custom Data Source（继承 DataSource 的自定义 Proto 扩展）",
+        "suggestion": "补充自定义数据源的类结构和注册流程",
+        "evidence": [
+          "perfetto.dev/docs/instrumentation/tracing-sdk#custom-data-sources"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "CI/CD - BatchTraceProcessor",
+        "detail": "未提及 Bigtrace 分布式分析方案",
+        "suggestion": "说明 Bigtrace 的 Orchestrator/Worker 架构及云存储应用场景",
+        "evidence": [
+          "perfetto.dev/docs/analysis/bigtrace"
+        ]
+      },
+      {
+        "type": "原理链缺失",
+        "location": "Metrics v2 章节",
+        "detail": "未讲清与 Standard Library 的关系，误导读者继续手写底层 SQL",
+        "suggestion": "说明 v2 提倡基于标准库模块化查询"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T09:17:47+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.8",
+    "section_title": "Input Latency SQL 分析",
+    "priority": 85,
+    "reason": "[External Review] event_seq 字段类型标注错误",
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "android_input_events 字段列表",
+        "detail": "event_seq 类型标注为 string，应为 long",
+        "suggestion": "改为 long 类型",
+        "evidence": [
+          "external/perfetto/src/trace_processor/stdlib/android/input.sql"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T09:17:47+08:00",
+    "status": "pending"
   }
 ]

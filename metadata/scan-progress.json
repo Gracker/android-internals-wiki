@@ -1,5 +1,6 @@
 {
   "current_issue": 5,
+  "total_issues": 58,
   "completed_issues": [
     0,
     1,
@@ -7,9 +8,9 @@
     3,
     4
   ],
-  "indexed_links": 15,
-  "skipped_links": 40,
-  "fetch_failures": 23,
+  "indexed_links": 26,
+  "skipped_links": 32,
+  "fetch_failures": 11,
   "issue_list": [
     "2020-08-18_Android_Weekly_#0.md",
     "2020-08-25_Android_Weekly_#1.md",

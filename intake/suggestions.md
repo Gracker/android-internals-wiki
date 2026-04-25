@@ -1529,3 +1529,87 @@
 - **位置**：L184
 - **问题**：Click-to-Display 的 100ms/200ms 阈值已标“待验证”，仍缺少公开来源或本书自测条件。
 - **建议**：补充来源、实验条件，或把阈值移到经验备注并避免作为治理红线。
+
+## [External Review] 13.1 Perfetto 简介与演进 — 2026-04-25
+- **类型**：知识补强
+- **位置**：核心概念 - Data Source
+- **问题**：未提及 ProtoZero 库，这是 Perfetto 开销极低的核心原因
+- **建议**：补充 ProtoZero 零拷贝写入机制说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.1 Perfetto 简介与演进 — 2026-04-25
+- **类型**：架构说明
+- **位置**：traced 通信机制
+- **问题**：未明确 traced 通过 Unix Domain Socket 与应用进程通信
+- **建议**：补充说明，解释加固 App 可能阻断追踪的原因
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.2 Trace 抓取 — 2026-04-25
+- **类型**：知识补强
+- **位置**：Trace.beginSection 截断
+- **问题**：未说明 127 字符限制的根本原因
+- **建议**：补充内核 trace_marker 写入原子性保证和缓冲区限制说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.3 Perfetto View — 2026-04-25
+- **类型**：操作效率
+- **位置**：快捷键
+- **问题**：未提及 V 键（垂直参考线）
+- **建议**：补充跨进程时间对齐快捷键说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.3 Perfetto View — 2026-04-25
+- **类型**：技术更新
+- **位置**：SQL 查询
+- **问题**：未提及新版 self_dur 字段
+- **建议**：补充 self_dur 字段减少手动计算的说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.4 大文件处理 — 2026-04-25
+- **类型**：功能补强
+- **位置**：Perfetto SQL 查询基础
+- **问题**：未提及 Stdlib（INCLUDE PERFETTO MODULE）
+- **建议**：补充官方预置分析模块介绍
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.4 大文件处理 — 2026-04-25
+- **类型**：内存优化
+- **位置**：trace_processor 高级参数
+- **问题**：未提及 --no-ftrace-raw 标志
+- **建议**：超大 Trace 分析时关键内存优化手段
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.4 大文件处理 — 2026-04-25
+- **类型**：功能补强
+- **位置**：Python 自动化分析
+- **问题**：trace_processor 支持直接加载 .gz/.zip 文件
+- **建议**：在加载 Trace 部分增加提示
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.5 专题分析 — 2026-04-25
+- **类型**：配置建议
+- **位置**：13.5.3 Binder 抓取
+- **问题**：建议加上 atrace_categories: "aidl" 以使 aidl_name 字段有值
+- **建议**：在 Binder 抓取配置中显式加上 aidl 类别
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.6 线程 CPU 状态 — 2026-04-25
+- **类型**：数据支撑
+- **位置**：SQL 量化分析
+- **问题**：未提及 blocked_function 列
+- **建议**：补充 D 状态分析的 blocked_function 查询示例
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.7 高级用法 — 2026-04-25
+- **类型**：准确性
+- **位置**：自定义 Metric proto 字段号
+- **问题**：字段号 450-500 说明不够严谨，仅限本地实验
+- **建议**：补充说明合入 AOSP 需向 Perfetto 团队申请正式字段号
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.8 Input Latency SQL — 2026-04-25
+- **类型**：精确性
+- **位置**：InputDispatcher 队列匹配
+- **问题**：GLOB '*iq*' 匹配可能存在干扰
+- **建议**：使用更精确的 track.name IN (...) 替代 GLOB 匹配
+- **来源**：Gemini 外部 review
