@@ -2269,3 +2269,756 @@
 - **位置**：L127 / L272
 - **问题**：Memory Churn 与 GC Event/Heap Track 图仍是占位。章节技术结论已可成立，但观测路径缺少实际截图或 trace 配置。
 - **建议**：补 Perfetto trace 配置与截图：android.java_hprof 或 android.heapprofd、art/gc slices、Java Heap track、sched；标出分配峰值、GC 事件和帧耗时尖峰的同一时间窗。
+
+## [External Review] 11 19.11 — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][JankStatsApi16Impl 降级方案]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 11 19.11 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 提到 API 16-23 使用“较粗的帧时间估算”。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 11 19.11 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：补充说明其底层是基于 `Choreographer.FrameCallback` 和 `ViewTreeObserver.OnPreDrawListener` 来模拟计算的，相比 `FrameMetrics` 缺少了渲染线程和 GPU 的真实反馈，因此在低版本上该数据不包含 GPU 耗时。
+- **suggestion**: 补充说明其底层是基于 `Choreographer.FrameCallback` 和 `ViewTreeObserver.OnPreDrawListener` 来模拟计算的，相比 `FrameMetrics` 缺少了渲染线程和 GPU 的真实反馈，因此在低版本上该数据不包含 GPU 耗时。
+- **来源**: external-review
+
+## [External Review] 12 19.12 — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][SYNC_DURATION 的深层含义]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 12 19.12 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：补充说明 `SYNC_DURATION` 不仅包含 DisplayList 同步，还包含“等待前一帧 GPU 完成以腾出 Buffer”的时间。如果 GPU 负载极高导致 Buffer 阻塞，该值会显著升高。
+- **suggestion**: 补充说明 `SYNC_DURATION` 不仅包含 DisplayList 同步，还包含“等待前一帧 GPU 完成以腾出 Buffer”的时间。如果 GPU 负载极高导致 Buffer 阻塞，该值会显著升高。
+- **来源**: external-review
+
+## [External Review] 13 19.13 — 2026-04-25
+- **type**: 数据支撑
+- **location**: 
+- **description**: [数据支撑][Trace 缓冲区溢出]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13 19.13 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 未提及 App Trace 写入太快会导致系统缓冲区溢出。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13 19.13 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：提醒开发者如果开启了 `forceEnableAppTracing` 并大量打标，需要增大 Perfetto 的缓冲区大小，否则会导致 trace 断片。
+- **suggestion**: 提醒开发者如果开启了 `forceEnableAppTracing` 并大量打标，需要增大 Perfetto 的缓冲区大小，否则会导致 trace 断片。
+- **来源**: external-review
+
+## [External Review] 13.1 13.1 — 2026-04-25
+- **type**: 知识盲区
+- **location**: 
+- **description**: [知识盲区][核心概念 - Shared Memory]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.1 13.1 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 提到了 Shared Memory，但没讲清它的底层实现（匿名共享内存 vs memfd）。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.1 13.1 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：Perfetto 源码 `src/base/unix_shared_memory.cc`。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.1 13.1 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: Android 9+ 优先使用 `memfd_create`，这在安全和开销上与传统的 `ashmem` 不同。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.1 13.1 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：在解释“低开销写入”时，顺带提一句“基于 memfd 的匿名共享内存”，增加技术深度。
+- **suggestion**: 在解释“低开销写入”时，顺带提一句“基于 memfd 的匿名共享内存”，增加技术深度。
+- **来源**: external-review
+
+## [External Review] 13.10 13.10 — 2026-04-25
+- **type**: 版本差异覆盖
+- **location**: 
+- **description**: [版本差异覆盖][Java Heap 相关 Counter 名称]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.10 13.10 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 查询 Java Heap 时提到了几种名称匹配方式。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.10 13.10 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：在 Android 13+ 的某些版本中，`process_stats` 数据源上报的 heap 字段名可能变为 `mem.java_heap.size_kb`。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.10 13.10 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 如果读者直接使用固定字符串查询，可能会返回空结果。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.10 13.10 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：在 SQL 示例中优先展示“查看可用 counter”的查询，教读者“授人以渔”。
+- **suggestion**: 在 SQL 示例中优先展示“查看可用 counter”的查询，教读者“授人以渔”。
+- **来源**: external-review
+
+## [External Review] 13.2 13.2 — 2026-04-25
+- **type**: 知识盲区
+- **location**: 
+- **description**: [知识盲区][atrace Categories - binder_driver]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.2 13.2 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 提到了 `binder_driver`，但没说明它对内核版本或 `CONFIG_BINDERFS` 的依赖。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.2 13.2 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：Android 10+ 引入 binderfs，其 ftrace 挂载点发生了变化。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.2 13.2 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 部分旧内核设备可能不支持某些 binder 事件。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.2 13.2 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：在分类表里注上一句“取决于内核是否开启相应 ftrace event”。
+- **suggestion**: 在分类表里注上一句“取决于内核是否开启相应 ftrace event”。
+- **来源**: external-review
+
+## [External Review] 13.3 13.3 — 2026-04-25
+- **type**: 知识盲区
+- **location**: 
+- **description**: [知识盲区][颜色编码 - 锁竞争红色标记]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.3 13.3 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 提到了红色代表锁竞争，但没说明 Perfetto 如何区分“正常的互斥等待”和“严重的优先级翻转”。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.3 13.3 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：Perfetto 详情面板中的 `waking_thread` 和 `owner` 信息。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.3 13.3 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 读者可能只看到红色就紧张，但需要教他们通过 `owner` 轨迹判断这是否属于关键路径阻塞。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.3 13.3 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：在“实战示例”部分增加一句话，引导读者点击红色 slice 查看 `owner`。
+- **suggestion**: 在“实战示例”部分增加一句话，引导读者点击红色 slice 查看 `owner`。
+- **来源**: external-review
+
+## [External Review] 13.4 13.4 — 2026-04-25
+- **type**: 知识盲区
+- **location**: 
+- **description**: [知识盲区][Python API - as_pandas_dataframe]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.4 13.4 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 推荐使用 `as_pandas_dataframe()`。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.4 13.4 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：在处理 GB 级 Trace 且查询结果集巨大时，一次性转为 DataFrame 会导致 Python 进程 OOM。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.4 13.4 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 未提及大数据量下的分批处理或迭代器模式的优势。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.4 13.4 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：增加一句话提醒：如果查询结果达到百万行级，应优先使用迭代器模式处理。
+- **suggestion**: 增加一句话提醒：如果查询结果达到百万行级，应优先使用迭代器模式处理。
+- **来源**: external-review
+
+## [External Review] 13.5 13.5 — 2026-04-25
+- **type**: 知识盲区
+- **location**: 
+- **description**: [知识盲区][Binder 专题 - aidl_name 为空]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.5 13.5 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 提到了 `aidl_name`。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.5 13.5 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：`android_binder_txns` 模块依赖 trace 中存在 `AIDL::DoSomething` 形式的 slice。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.5 13.5 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 如果用户采集时没有在 `atrace_apps` 中指定包名，或 App 没有打对应的 trace 点，`aidl_name` 会为空。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.5 13.5 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：在 SQL 示例后增加说明，告知读者 `aidl_name` 缺失时的 fallback 方案（依靠 tid 和 timestamp）。
+- **suggestion**: 在 SQL 示例后增加说明，告知读者 `aidl_name` 缺失时的 fallback 方案（依靠 tid 和 timestamp）。
+- **来源**: external-review
+
+## [External Review] 13.6 13.6 — 2026-04-25
+- **type**: 源码准确性
+- **location**: 
+- **description**: [源码准确性][Block Reason - 内核支持检查]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.6 13.6 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 提到了 `sched_blocked_reason` 需要内核补丁。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.6 13.6 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：并非所有 Android 10+ 设备的内核都回填了此 tracepoint。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.6 13.6 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 读者可能因为找不到 Block Reason 而困惑。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.6 13.6 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：补充 adb 命令 `adb shell "ls /sys/kernel/debug/tracing/events/sched/sched_blocked_reason"` 作为验证手段。
+- **suggestion**: 补充 adb 命令 `adb shell "ls /sys/kernel/debug/tracing/events/sched/sched_blocked_reason"` 作为验证手段。
+- **来源**: external-review
+
+## [External Review] 13.7 13.7 — 2026-04-25
+- **type**: 源码准确性
+- **location**: 
+- **description**: [源码准确性][Trace Summarization - 字段别名]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.7 13.7 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: `spec.textproto` 示例中的字段名。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.7 13.7 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：新版总结 API 对聚合算子（如 `DURATION_WEIGHTED_MEAN`）的输出字段名有特定的默认映射规则。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.7 13.7 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 如果读者自定义了 `result_column_name` 但 SQL 模块内部没对应上，会导致抽取失败。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.7 13.7 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：增加一句话提醒读者检查 stdlib 模块的导出列名。
+- **suggestion**: 增加一句话提醒读者检查 stdlib 模块的导出列名。
+- **来源**: external-review
+
+## [External Review] 13.8 13.8 — 2026-04-25
+- **type**: 知识盲区
+- **location**: 
+- **description**: [知识盲区][ Choroegrapher 与 Input 的时序关联 - 预测输入]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.8 13.8 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 提到了 `frame_id` 关联。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.8 13.8 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：Android 输入系统支持 `Predictive Back` 和 `Resampled Motion Events`。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.8 13.8 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 如果开启了输入采样（Resampling），一个渲染帧可能对应多个原始输入采样点，`android_input_events` 的一行可能不代表一个完整的物理采样。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.8 13.8 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：在解释 `frame_id` 时，注上一句“如果开启了事件重采样，关联关系会变得复杂”。
+- **suggestion**: 在解释 `frame_id` 时，注上一句“如果开启了事件重采样，关联关系会变得复杂”。
+- **来源**: external-review
+
+## [External Review] 13.9 13.9 — 2026-04-25
+- **type**: 版本差异覆盖
+- **location**: 
+- **description**: [版本差异覆盖][tracefs 路径演进]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.9 13.9 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 提到了 `/sys/kernel/tracing`。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.9 13.9 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 证据或观察依据：在某些 Android 11 以下或旧内核（< 4.14）的设备上，该路径可能不存在，只能访问 `/sys/kernel/debug/tracing`。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.9 13.9 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: 如果读者在旧设备上排查问题，可能会找不到目录。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 13.9 13.9 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：在路径列表后注上一句“旧内核（如 Linux 3.18/4.4）可能仅挂载在 debugfs 下”。
+- **suggestion**: 在路径列表后注上一句“旧内核（如 Linux 3.18/4.4）可能仅挂载在 debugfs 下”。
+- **来源**: external-review
+
+## [External Review] 15.1  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.1  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.1  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.1  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.1  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.10  — 2026-04-25
+- **description**: 章节：15.10
+- **来源**: external-review
+
+## [External Review] 15.10  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.10  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.10  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.10  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.10  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.2  — 2026-04-25
+- **description**: 章节：15.2
+- **来源**: external-review
+
+## [External Review] 15.2  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.2  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.2  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.2  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.2  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.3  — 2026-04-25
+- **description**: 章节：15.3
+- **来源**: external-review
+
+## [External Review] 15.3  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.3  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.3  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.3  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.3  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.4  — 2026-04-25
+- **description**: 章节：15.4
+- **来源**: external-review
+
+## [External Review] 15.4  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.4  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.4  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.4  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.4  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.5  — 2026-04-25
+- **description**: 章节：15.5
+- **来源**: external-review
+
+## [External Review] 15.5  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.5  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.5  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.5  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.5  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.6  — 2026-04-25
+- **description**: 章节：15.6
+- **来源**: external-review
+
+## [External Review] 15.6  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.6  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.6  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.6  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.6  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.7  — 2026-04-25
+- **description**: 章节：15.7
+- **来源**: external-review
+
+## [External Review] 15.7  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.7  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.7  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.7  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.7  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.8  — 2026-04-25
+- **description**: 章节：15.8
+- **来源**: external-review
+
+## [External Review] 15.8  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.8  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.8  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.8  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.8  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.9  — 2026-04-25
+- **description**: 章节：15.9
+- **来源**: external-review
+
+## [External Review] 15.9  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] 15.9  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] 15.9  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] 15.9  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 15.9  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] None  — 2026-04-25
+- **description**: 章节：15.README
+- **来源**: external-review
+
+## [External Review] None  — 2026-04-25
+- **description**: 问题类型：建议改进
+- **来源**: external-review
+
+## [External Review] None  — 2026-04-25
+- **description**: 位置：正文
+- **来源**: external-review
+
+## [External Review] None  — 2026-04-25
+- **description**: 问题描述：建议增加更多实战中的 Trace 观察点描述。
+- **来源**: external-review
+
+## [External Review] None  — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][正文]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] None  — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 19 19.19 — 2026-04-25
+- **type**: 原理链完整性
+- **location**: 
+- **description**: [原理链完整性][热降频识别]
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 19 19.19 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: PerfDog 是观察热降频的最佳工具。
+- **suggestion**: 
+- **来源**: external-review
+
+## [External Review] 19 19.19 — 2026-04-25
+- **type**: 建议改进
+- **location**: 
+- **description**: - 建议：补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
+- **suggestion**: 补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
+- **来源**: external-review
