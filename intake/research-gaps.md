@@ -7530,3 +7530,37 @@ Android 10+ 沙盒权限收紧，普通 App 无法监听系统目录，应全面
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 12.1 APK 体积优化 — 知识盲区
+
+### 盲区描述
+AGP 8.12/8.13 的 `android.r8.optimizedResourceShrinking` 与 AGP 9.0 默认启用路径下，动态资源引用（`Resources.getIdentifier()`、字符串拼接资源名、插件/WebView 资源路径）如何安全保留，正文缺少可执行验证方案。external-review 已命中 optimized resource shrinking 风险，本轮复核后确认需要补官方 `tools:keep` / `resources.txt` 口径。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 官方 “Customize which resources to keep” 文档中 `getIdentifier()`、`tools:keep`、`resources.txt` 的现代用法
+- AGP 8.12/8.13 opt-in 与 AGP 9.0 默认启用的行为差异
+- 典型动态资源访问回归测试样例
+
+### 关联章节
+- 12.1
+
+## [2026-04-25] 12.4 Android 网络安全与 TLS 性能优化 — 知识盲区
+
+### 盲区描述
+Android 17 网络安全行为需要按 ECH、CT、cleartext、客户端网络库能力拆开验证。ECH 依赖网络库集成；CT 默认启用有完整 SCT policy；cleartext hard block 目前缺少官方行为变更证据；OkHttp 的 TLS 1.3 与 0-RTT/HTTP3 能力也不能混写。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 17 behavior changes 中 ECH、CT 的 targetSdk 条件
+- Android Certificate Transparency Policy 的 embedded / OCSP / TLS SCT 数量规则
+- OkHttp、Cronet、HttpEngine 对 ECH、HTTP/3、0-RTT 的公开能力边界
+- `usesCleartextTraffic` 与 Network Security Configuration 在 API 28/37 的官方行为说明
+
+### 关联章节
+- 12.4
+- 12.3

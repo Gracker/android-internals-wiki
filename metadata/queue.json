@@ -9323,5 +9323,71 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T16:33:30+08:00",
     "status": "pending"
+  },
+  {
+    "section": "12.1",
+    "section_title": "APK 体积优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] AGP 8.12/9.0 资源缩减和 native 符号处理的版本边界缺失，可能误导构建配置",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "L167-L178",
+        "detail": "正文只写了 android.r8.optimizedResourceShrinking 的开启方式，没有补动态资源引用的安全边界。官方资源保留文档把 getIdentifier() 作为少数需要 keep file 的例外；AGP 8.12/8.13 是手动 opt-in，AGP 9.0 起在 isShrinkResources=true 时默认启用。",
+        "suggestion": "补一段启用前检查清单：扫描 Resources.getIdentifier / 反射式资源名 / WebView 或插件资源路径，使用 tools:keep 的 keep.xml 保留动态资源，检查 build/outputs/mapping/*/resources.txt，并跑资源路径回归测试。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L289-L303",
+        "detail": "正文建议通过 CMake LINK_FLAGS \"-Wl,--strip-all\" 和 ANDROID_STRIP_DEBUG_SYMBOLS 控制 release 符号，但 Android 官方文档说明 AGP release 默认 strip native libraries；线上符号化应使用 ndk.debugSymbolLevel，保留符号应使用 packaging.jniLibs.keepDebugSymbols。",
+        "suggestion": "把该节改为 AGP 8.x DSL 口径：默认 strip、Play 符号上传用 debugSymbolLevel=SYMBOL_TABLE/FULL、仅需保留指定 .so 调试符号时使用 packaging.jniLibs.keepDebugSymbols；删除未验证的 ANDROID_STRIP_DEBUG_SYMBOLS 作为主推荐。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T18:39:22+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "12.4",
+    "section_title": "Android 网络安全与 TLS 性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] TLS 0-RTT、HPKE API level、cleartext 与 CT 策略存在事实/版本边界错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L73",
+        "detail": "正文写“OkHttp 从 4.x 支持 TLS 1.3，但默认不启用 0-RTT，需要开发者手动配置”。已核对 OkHttp 5 Builder.protocols 文档：公开支持集合是 http/1.1、h2、h2 prior knowledge；Protocol enum 虽有 QUIC/HTTP_3 常量，但 Builder 不把 HTTP/3/QUIC/0-RTT 暴露成稳定配置入口。",
+        "suggestion": "改成：OkHttp 可通过平台 TLS provider 使用 TLS 1.3，但没有稳定公开的 0-RTT early data 开关；若要 QUIC/HTTP3/0-RTT，优先写 Cronet 或 HttpEngine，并单独说明幂等请求与重放风险。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L52 / L213-L227",
+        "detail": "导读写“Android 17 引入 HPKE”，正文后半段又写 HpkeSpi 在 API 35 引入。官方 HpkeSpi reference 标注 Added in API level 35。",
+        "suggestion": "统一为 API 35 / Android 15 引入 HpkeSpi；Android 17 只作为 ECH/CT 行为变化的上下文，不要把 HPKE 归到 Android 17 新增。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L95 / L157-L166",
+        "detail": "正文写 Android 17 “cleartext 阻断”、usesCleartextTraffic=true 不再生效；当前官方 security-config 与 manifest docs 只确认 API 28+ 默认禁用明文、Network Security Config 存在时 manifest 属性被忽略，Android 17 behavior changes 页面未列 cleartext hard block。",
+        "suggestion": "删除或降级这条 Android 17 断言；改为已验证版本线：API 23 引入 usesCleartextTraffic，API 24 引入 NSC 且会覆盖 manifest，targetSdk 28+ 默认 false。若保留 Android 17 说法，必须补官方行为变更链接和作用条件。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L136-L148",
+        "detail": "正文把 Android 17 CT 策略简化成“至少 2 个有效 SCT”。Android Certificate Transparency Policy 区分 SCT 交付方式：OCSP/TLS 至少 2 个；embedded SCT 还要按证书有效期决定 distinct log 数，<=180 天为 2，>180 天为 3，并要求至少两个不同 log operators。",
+        "suggestion": "补一张 CT policy 表：Android 16 opt-in、Android 17 targetSdk 37+ 默认启用；embedded / OCSP / TLS 三种 SCT 交付方式分别列出数量、log 状态、operator 唯一性要求。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T18:39:22+08:00",
+    "status": "pending"
   }
 ]

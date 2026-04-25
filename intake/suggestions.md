@@ -3267,3 +3267,15 @@
 ## [external-review] 14.11 Battery Historian — 2026-04-25
 - **类型**：工具建议
 - **建议**：社区镜像 Apple Silicon 兼容性说明可更突出 --platform linux/amd64 参数
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L442
+- **问题**：Baseline Profile “`.odex` / `.vdex` 新增磁盘占用通常比 DEX 字节码再大 10%-30%”缺少实验环境、设备、ART 编译模式和样本来源。
+- **建议**：补一个可复现实验口径：同一 release 包、有/无 baseline profile、固定 Android 版本和 ABI，比较 `/data/app/.../oat`、安装耗时和首启 trace；如果没有数据，先删除百分比。
+
+## [Task9 Deep Review] 12.4 Android 网络安全与 TLS 性能优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L119 / L230
+- **问题**：ECH/HPKE “计算开销很小”“硬件加速处理”“缺少 HPKE 基准”三处没有给出设备、算法 suite、消息大小或来源，容易把协议级判断写成通用性能结论。
+- **建议**：补 Android 设备侧 microbenchmark 或官方/Chromium 实测来源；至少区分 X25519/P-256、AES-GCM/ChaCha20-Poly1305、payload 大小和是否命中硬件加速。
