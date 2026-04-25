@@ -46,8 +46,8 @@ related_chapters:
   - "15.5"
   - "15.9"
 pipeline_stage: task6_pending
-task6_state: revisiting
-review_round: 2
+task6_state: reviewed
+review_round: 3
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
@@ -216,7 +216,7 @@ Booster 的功能以模块化形式提供，我们可以按需引入。
 
 **性能检测模块**通过静态分析所有 .class 文件构建全局调用图（Call Graph），找出在主线程调用了 I/O 操作、SharedPreferences 读写、网络请求等可能阻塞的 API。它生成可视化报告帮助我们快速定位问题代码。这和 Trace Canary 的运行时检测形成互补——Trace Canary 发现的是实际发生了的卡顿，Booster 发现的是潜在可能卡顿的代码。
 
-**资源索引内联与常量清除**模块针对的是 Android 构建系统中一个经典的冗余问题。编译后，R 类（如 R.id.xxx、R.layout.xxx）其实就是一组 static final int 常量。运行时访问这些字段需要一次字段查找（虽然 JIT 会优化，但首次访问仍有开销）。Booster 直接将这些字段访问替换为字面值常量，并从类中删除不再需要的常量字段，既减少了包体积，也略微提升了运行时性能。
+**资源索引内联与常量清除**模块针对的是 Android 构建系统中一个经典的冗余问题。编译后，R 类（如 R.id.xxx、R.layout.xxx）是一组 static final int 常量。运行时访问这些字段需要一次字段查找（虽然 JIT 会优化，但首次访问仍有开销）。Booster 直接将这些字段访问替换为字面值常量，并从类中删除不再需要的常量字段，既减少了包体积，也略微提升了运行时性能。
 
 **系统 Bug 修复**模块展现了编译期优化的另一个优势。比如 Android API 25 中 Toast 的 BadTokenException 问题（在 Toast.show() 时如果 NotificationManagerService 还未来得及处理，会抛出异常导致崩溃）。Booster 通过字节码注入，在所有 Toast.show() 调用前后包裹 try-catch，一次性解决全局问题，而不需要每个调用点手动处理。
 
@@ -327,7 +327,7 @@ Rhea 的一个关键优化是将直接写入内核态 trace_marker 文件的 Tra
 
 ## 扩展：Hook 机制对比
 
-上面提到的工具大量使用了 Hook 技术，但 Hook 方案之间有本质区别。理解这些区别有助于我们在评估工具时判断其适用范围和稳定性风险。
+上面提到的工具大量使用了 Hook 技术，但 Hook 方案之间有结构性差异。理解这些区别有助于我们在评估工具时判断其适用范围和稳定性风险。
 
 ### PLT Hook（以 xHook 为代表）
 

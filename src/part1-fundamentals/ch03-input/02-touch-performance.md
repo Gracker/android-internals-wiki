@@ -481,3 +481,42 @@ Input ANR 的触发条件是：InputDispatcher 将事件派发给 App 后，5 �
 - [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md]
 - [引用: http://gityuan.com/2016/12/11/input-reader/]
 - [引用: http://gityuan.com/2016/12/17/input-dispatcher/]
+
+
+## 输入重采样（Motion Resampling）机制
+
+### 源码级细节（2026-04-25 调研补充）
+
+Android Native 层实现了 **LegacyResampler**（`frameworks/native/libs/input/Resampler.cpp`），负责将触摸屏硬件高频采样与屏幕刷新率解耦。核心实现逻辑：
+
+**两种工作模式：**
+
+1. **插值模式（Interpolation）**：收到未来帧后，在历史帧和未来帧之间线性插值
+   - `alpha = (resampleTime - pastSample.eventTime) / delta`
+   - `resampledCoord = lerp(pastCoord, futureCoord, alpha)`
+   - `RESAMPLE_LATENCY{5ms}` 人为延迟给等待未来帧留出时间窗口
+   - 适用条件：`delta ∈ [2ms, 20ms]`
+
+2. **外推模式（Extrapolation）**：无未来帧可用时，根据历史速度预测
+   - `farthestPrediction = presentSample.eventTime + min(delta/2, 8ms)`
+   - 预测窗口上限 8ms，防止误差累积
+   - 适用条件：`delta ∈ [2ms, 20ms]`
+
+**关键约束：**
+- 仅支持 FINGER / MOUSE / STYLUS / UNKNOWN 四种工具类型
+- `isResampled=true` 标记可供 App 层查询该坐标是否为重采样点
+- 开关：`ro.input.resampling` 系统属性（默认启用）
+
+**调用链：**
+```
+evdev → EventHub → InputReader → TouchInputMapper → LegacyResampler → 
+InputDispatcher → ViewRootImpl → Choreographer → SurfaceFlinger
+```
+
+**性能影响：**
+- 正面：消除频率差带来的抖动，使触摸轨迹对齐 VSync 边界
+- 负面：5ms 人为延迟，外推在速度突变时可能预测错误
+
+源码：`frameworks/native/libs/input/Resampler.cpp`（AOSP mainline）
+
+<!-- AIW-源码调研-2026-04-25 -->

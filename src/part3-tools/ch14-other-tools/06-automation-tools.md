@@ -39,8 +39,8 @@ related_chapters:
 - '8.3'
 - '8.7'
 pipeline_stage: task6_pending
-task6_state: revisiting
-review_round: 2
+task6_state: reviewed
+review_round: 3
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
