@@ -3,8 +3,7 @@ title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
 status: ready-for-review
-applicable_versions: Android 12 (API 31) - Android 17 (API 37)，通知图标源码入口需区分 Android
-  12-14 与 Android 15+
+applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - systemui
 - jank
@@ -64,8 +63,8 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
