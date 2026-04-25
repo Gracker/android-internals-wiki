@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 35)"
-last_verified: "2026-04-14"
-last_verified_against: "perfetto.dev docs + source.android FrameTimeline + AOSP android-16.0.0_r1"
+last_verified: "2026-04-25"
+last_verified_against: "perfetto.dev docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-16.0.0_r1"
 confidence: medium-high
 reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
@@ -47,6 +47,8 @@ task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task9_result: pass-tech-review
+last_task2b_at: "2026-04-25T10:40:00+08:00"
+task2b_fixed_by: openclaw-task2b
 ---
 
 
@@ -61,7 +63,7 @@ task9_result: pass-tech-review
 - 🔹 关键 Track 的含义：CPU 频率/调度、进程/线程 Slice、FrameTimeline、SurfaceFlinger
 - 🔹 Slice 详情面板的解读：Wall Duration、CPU Duration、Self Time
 - 🔹 Flow Events 的跟踪：Binder 调用的配对
-- 🔹 颜色编码：线程状态色（Running/Runnable/Sleep/Uninterruptible）
+- 🔹 颜色编码：线程状态色（Running/Runnable/Sleep/Uninterruptible/锁竞争红色标记）
 
 ### 扩展（可选深入）
 
@@ -125,7 +127,7 @@ Perfetto 的导航操作继承了 Systrace 的设计，但流畅度有了质的�
 
 最常用的操作是 `F`（Fit）：选中一个 Slice 后按 `F`，视图会自动缩放到刚好容纳这个 Slice 的大小。再按一次 `F`，会进一步缩放到填满整个视图。这个操作在日常分析中使用频率极高——比如我们在主线程看到一个很长的 `doFrame` Slice，按 `F` 就可以立刻看到这一帧内部的全部细节。
 
-时间选区用鼠标拖拽实现：按住鼠标左键在时间轴上拖动，会选中一个时间区间。选中后，底部面板会展示这个区间内的统计信息，包括各线程状态（Running/Runnable/Sleep/Uninterruptible）的占比。这在分析 App 启动场景时非常有用——选中从 `Activity.onCreate` 到第一帧渲染完成的区间，就能直观地看到主线程有多少时间在真正执行代码，多少时间在等待 CPU 或 I/O。
+时间选区用鼠标拖拽实现：按住鼠标左键在时间轴上拖动，会选中一个时间区间。选中后，底部面板会展示这个区间内的统计信息，包括各线程状态（Running/Runnable/Sleep/Uninterruptible）的占比，并结合红色锁竞争标记判断等待原因。这在分析 App 启动场景时非常有用——选中从 `Activity.onCreate` 到第一帧渲染完成的区间，就能直观地看到主线程有多少时间在真正执行代码，多少时间在等待 CPU 或 I/O。
 
 [已验证: 官方文档, perfetto.dev UI keyboard shortcuts]
 
@@ -175,7 +177,7 @@ CPU 相关的 Track 位于 Trace 内容区的最顶部，分为三组。
 
 CPU Track 下面是以进程为单位组织的 Track 区域。每个进程有一个可折叠的分组，展开后会列出该进程下的各个线程。
 
-**Thread Track** 是我们分析最多的 Track 类型。每个线程 Track 上展示两种信息：下方是 Slice（事件片段），对应代码中 `Trace.beginSection()` / `ATRACE_BEGIN` 记录的事件；上方是线程状态条，用不同颜色表示线程在每个时刻的 CPU 状态（Running、Runnable、Sleep、Uninterruptible Sleep）。线程状态条的颜色编码在下一节详细介绍。
+**Thread Track** 是我们分析最多的 Track 类型。每个线程 Track 上展示两种信息：下方是 Slice（事件片段），对应代码中 `Trace.beginSection()` / `ATRACE_BEGIN` 记录的事件；上方是线程状态条，用不同颜色表示线程在每个时刻的 CPU 状态（Running、Runnable、Sleep、Uninterruptible Sleep），并用红色锁竞争 slice 提醒 Java/ART monitor 等等待问题。线程状态条的颜色编码在下一节详细介绍。
 
 对于 App 进程，我们最常关注的线程是：
 
@@ -260,6 +262,8 @@ Counter Track 的数值点来自代码中的 `Trace.traceCounter()` / `ATRACE_IN
 
 Self Time 的意义在于定位瓶颈层级。比如 `doFrame` 的 Wall Duration 是 20ms，但 Self Time 只有 1ms——说明时间都花在了它的子 Slice 里（比如 `performTraversals` 里的 `measure` 5ms + `layout` 3ms + `draw` 11ms）。进一步看 `draw` 的 Self Time 可能也只有 2ms，因为大部分时间在子 Slice `RenderThread:DrawFrame` 里。这样逐层 drill-down，我们就能精确找到时间花在了哪一层。
 
+做批量分析时，不要手写一长串父子 Slice 扣减逻辑。新版 Trace Processor 的 stdlib 提供 `slice_self_dur` 辅助能力，可以直接按 slice id 查 Self Duration；旧版本没有这组 stdlib 时，再退回到 `slice` 表父子关系手工计算。
+
 ### Thread States 标签
 
 详情面板中的 Thread States 标签用饼图和列表展示 Slice 期间线程各状态的占比。结合 Wall Duration 和 CPU Duration，这里给出了最完整的时间分解：
@@ -334,6 +338,12 @@ Runnable 段过长是"调度延迟"的信号。常见原因包括：系统负载
 
 点击 Sleeping 段，底部面板会显示线程的阻塞原因。比如 `futex_wait_queue_me` 表示在等一个 futex（Fast Userspace Mutex），这通常对应 Java 层的 `synchronized` 锁或 `ReentrantLock`。如果看到 `binder_write_read`，说明在等 Binder 调用返回。
 
+### Blocked / 锁竞争（红色）
+
+红色通常出现在 `Lock contention on a monitor lock` 这类锁等待 slice 或锁竞争标记上，表示线程正在等 Java/Kotlin monitor、ART monitor 或 native lock。它和 Running、Runnable、Sleeping 属于两层信息：底层调度状态可能仍然是 Sleep，但红色 slice 直接指出等待原因是锁。
+
+选中红色段后，先看详情面板里的持锁线程、等待线程和锁对象信息；如果面板给出 `waking_thread`、owner 或跳转箭头，沿着它回到持锁线程的同一时间窗。主线程出现长红色段时，排查顺序是：持锁线程当时是否在 Running、是否又在等 Binder / I/O、锁持有范围是否过大。
+
 ### Uninterruptible Sleep（深橙色）
 
 深橙色是性能分析中需要特别关注的颜色——它表示线程在等待磁盘 I/O 或其他不可中断的内核操作。Uninterruptible 意味着即使发送信号（如 `kill`）也无法唤醒这个线程，只能等 I/O 操作完成。
@@ -349,14 +359,15 @@ Uninterruptible Sleep 段过长通常指向 I/O 瓶颈。常见场景包括：Ap
 
 - **绿色长，其他短**：计算密集型瓶颈，优化方向是减少计算量。
 - **浅绿色长**：调度瓶颈，优化方向是降低系统负载或提升线程优先级。
-- **灰色长**：锁或 IPC 瓶颈，需要看具体在等什么。
+- **灰色长**：锁、IPC 或条件等待，需要看具体在等什么。
+- **红色长**：锁竞争瓶颈，先跳到持锁线程，看它为什么不释放锁。
 - **橙色长**：I/O 瓶颈，需要看具体在读什么。
 
 当然，实际情况往往比这个口诀复杂——可能一个 Slice 里同时有绿色、灰色和深橙色。这时候就需要用前面介绍的 Thread States 标签来看精确的百分比分解。
 
-Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起成为一等公民功能（不再是实验性的），通过命令面板 `Ctrl/Cmd+Shift+P` 搜索 "Dark mode" 即可切换。两种主题下颜色编码的对应关系不变：绿色 = Running、浅绿 = Runnable、灰色 = Sleep、深橙色 = Uninterruptible。暗色主题在长时间分析 Trace 时对眼睛更友好，建议默认开启。
+Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起成为一等公民功能（不再是实验性的），通过命令面板 `Ctrl/Cmd+Shift+P` 搜索 "Dark mode" 即可切换。两种主题下颜色编码的对应关系不变：绿色 = Running、浅绿 = Runnable、灰色 = Sleep、红色 = 锁竞争、深橙色 = Uninterruptible。暗色主题在长时间分析 Trace 时对眼睛更友好，建议默认开启。
 
-[图：线程状态条颜色编码对照——Running(绿)/Runnable(浅绿)/Sleep(灰)/Uninterruptible(深橙)，附 Perfetto Trace 实际截图]
+[图：线程状态条颜色编码对照——Running(绿)/Runnable(浅绿)/Sleep(灰)/Blocked 锁竞争(红)/Uninterruptible(深橙)，附 Perfetto Trace 实际截图]
 
 ## 进阶操作与效率技巧
 
@@ -372,6 +383,8 @@ Perfetto UI 支持亮色和暗色两种主题。暗色主题从 Perfetto v52 起
 
 `Ctrl+Shift+P`（Mac 上 `Cmd+Shift+P`）打开命令面板，可以快速执行各种操作，比如切换到 Query 面板、调整 Trace 配置等。也可以在搜索栏中输入 `>` 来激活命令面板模式。
 
+`?` 键会打开当前 UI 版本的快捷键列表。Perfetto UI 的快捷键随版本会有调整，团队内部文档记录快捷键时，最好把 UI 版本或验证日期一起写上。
+
 [已验证: 官方文档, perfetto.dev — Keyboard shortcuts]
 
 ### 查看 Buffer 消费关系
@@ -382,9 +395,9 @@ App 的渲染输出通过 BufferQueue 传递给 SurfaceFlinger 消费。在 Perf
 
 ### 查看锁竞争
 
-当 Trace 中出现 `Lock contention on a monitor lock`（Java 层）或 `monitor contention`（ART 层）的 Slice 时，点击它可以在底部面板看到完整的锁竞争详情：当前锁被谁持有、持锁线程正在执行什么方法、当前线程在哪个方法上被阻塞、以及当前有多少个线程在排队等这把锁。
+当 Trace 中出现 `Lock contention on a monitor lock`（Java 层）或 `monitor contention`（ART 层）的红色 Slice 时，点击它可以在底部面板看到锁竞争详情：当前锁被谁持有、持锁线程正在执行什么方法、当前线程在哪个方法上被阻塞、以及当前有多少个线程在排队等这把锁。
 
-锁竞争信息对于分析 ANR 和响应延迟很有用。一个典型的模式是：主线程调用 `ActivityManagerService` 的某个方法（通过 Binder），`system_server` 的 Binder 线程在处理这个调用时遇到了锁竞争，导致处理时间变长，主线程也就跟着等了更长时间。
+锁竞争信息对于分析 ANR 和响应延迟很有用。一个典型的模式是：主线程调用 `ActivityManagerService` 的某个方法（通过 Binder），`system_server` 的 Binder 线程在处理这个调用时遇到了锁竞争，导致处理时间变长，主线程也就跟着等了更长时间。遇到红色段时，不要只盯着等待线程；沿详情面板里的 owner / waking 线索跳到持锁线程，才知道锁为什么没有及时释放。
 
 [来源: Perfetto 分析进阶, https://mp.weixin.qq.com/s?__biz=MzAxMDM0NjExNA==&mid=2247487984]
 
@@ -458,7 +471,7 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 Perfetto 在 2025-2026 年的版本迭代中引入了多项影响分析体验的改进（基于 [Perfetto Releases](https://github.com/google/perfetto/releases)）：
 
 - **UI 层**：暗色主题正式支持（v52+）、触摸屏手势操作、多 Track 批量折叠/展开
-- **分析层**：`android_anrs` 表新增 `anr_type` 字段用于 ANR 分类、`slice_self_dur()` 函数直接计算 Self Duration（不再需要手动减去子 Slice）、`regexp_extract()` 函数增强 SQL 文本处理
+- **分析层**：`android_anrs` 表新增 `anr_type` 字段用于 ANR 分类、`slice_self_dur` 辅助能力直接计算 Self Duration（不再需要手动减去子 Slice）、`regexp_extract()` 函数增强 SQL 文本处理
 - **数据源**：`android.bitmaps` 表提供位图时序数据，可用于追踪 Bitmap 生命周期
 
 [已验证: Perfetto GitHub Releases, github.com/google/perfetto/releases]
