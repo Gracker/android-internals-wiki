@@ -3667,3 +3667,22 @@
 - **问题**：PerfDog 是观察热降频的最佳工具。
 - **建议**：补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
 - **来源**：2026-04-25-15-19-external-review.md
+
+## [Task9 Deep Review] 6.2 文件系统 — 2026-04-25
+- **类型**：源码准确性
+- **位置**：L113
+- **问题**：`flush` 线程“每 30 秒触发一次”的说法把 dirty page 过期阈值和后台写回唤醒周期混在一起。Linux/Android 内核通常要同时看 `dirty_writeback_centisecs`、`dirty_expire_centisecs` 与设备调参。
+- **建议**：改成“后台写回由 dirty_* sysctl 和内核 flusher 共同决定；默认口径常见为 5s 唤醒、30s 过期阈值，设备可能调参”，并保留 fsync 被后台写回挤占队列的因果。
+
+## [Task9 Deep Review] 6.2 文件系统 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L279-L283 / L457
+- **问题**：EROFS 压缩率、随机读、启动时间收益给出了 30%-45%、20%、300%、10%-15% 等数字，但正文没有绑定具体设备、Android 版本、分区大小、压缩算法和测试来源。
+- **建议**：补充来源表，至少标出 Pixel / 华为公开数据各自的测试条件；无法闭环的数字降级为“公开案例中出现过的量级”。
+
+## [Task9 Deep Review] 18.8 OpenGL ES 渲染链路 — 2026-04-25
+- **类型**：版本差异/边界说明
+- **位置**：L198-L217
+- **问题**：章节把 GLES BufferQueue 写成“通常 3 个 Slot”，方向正确，但容易被读者当作固定结论。实际 buffer count 会受 BufferQueue 配置、async mode、producer/consumer 最大持有数和厂商实现影响。
+- **建议**：补一句边界：三缓冲是常见形态，不是协议保证；实战应从 Perfetto 的 dequeue/queue 节奏、SurfaceFlinger dump 或 Winscope 中确认实际 Buffer 深度。
+

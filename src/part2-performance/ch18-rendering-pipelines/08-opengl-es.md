@@ -1,7 +1,7 @@
 ---
 title: OpenGL ES 渲染链路
 chapter: '18.8'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 9 (API 28) - Android 16 (API 36)
 tags:
 - OpenGL-ES
@@ -20,18 +20,19 @@ related_chapters:
 - '18.9'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-23
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-22'
+task9_reviewed_date: "2026-04-25"
 task2b_result: fixed
 last_task2b_at: '2026-04-22T21:50:17+08:00'
+last_task9_at: "2026-04-25T21:21:00+08:00"
 ---
 
 <!-- outline-start -->

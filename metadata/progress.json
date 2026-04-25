@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-04-25T20:40:00+08:00",
+  "generated_at": "2026-04-25T21:21:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 250,
-    "finalized": 74,
-    "ready-for-review": 144,
-    "ready-to-publish": 74,
-    "last_updated": "2026-04-25T20:20:00+08:00",
+    "finalized": 77,
+    "ready-for-review": 141,
+    "ready-to-publish": 77,
+    "last_updated": "2026-04-25T21:21:00+08:00",
     "pipeline_stage_counts": {
       "None": 35,
       "task6_pending": 38,
       "task2b_pending": 50,
-      "ready-to-publish": 74,
-      "task9_pending": 50,
+      "ready-to-publish": 77,
+      "task9_pending": 47,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
@@ -24,8 +24,8 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 136,
-      "pending": 70,
+      "reviewed": 139,
+      "pending": 67,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
@@ -44,8 +44,8 @@
       "None": 35,
       "task6_pending": 38,
       "task2b_pending": 50,
-      "ready-to-publish": 74,
-      "task9_pending": 50,
+      "ready-to-publish": 77,
+      "task9_pending": 47,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
@@ -56,8 +56,8 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 136,
-      "pending": 70,
+      "reviewed": 139,
+      "pending": 67,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
@@ -1742,27 +1742,28 @@
     "src/part1-fundamentals/ch06-storage/02-filesystem.md": {
       "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
       "title": "文件系统",
-      "chapter": "'6.2'",
-      "section": "'6.2'",
-      "status": "ready-for-review",
+      "chapter": "6.2",
+      "section": "6.2",
+      "status": "finalized",
       "drafted_date": "'2026-04-01'",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10+",
       "last_verified": "'2026-04-23'",
       "last_verified_against": "AOSP EROFS docs + source.android 16KB page size docs + kernel/common android15-6.6 ext4 journal / f2fs segment,gc,uapi/linux/f2fs.h,include/linux/f2fs_fs.h + developer.android.com",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-23'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-23'",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "review_round": "4"
+      "review_round": "4",
+      "last_task9_at": "2026-04-25T21:21:00+08:00"
     },
     "src/part1-fundamentals/ch06-storage/03-io-scheduling.md": {
       "path": "src/part1-fundamentals/ch06-storage/03-io-scheduling.md",
@@ -3174,20 +3175,22 @@
     "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
       "title": "OpenGL ES 渲染链路",
-      "chapter": "'18.8'",
-      "status": "ready-for-review",
+      "chapter": "18.8",
+      "status": "finalized",
       "applicable_versions": "Android 9 (API 28) - Android 16 (API 36)",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "section": "18.8",
+      "last_task9_at": "2026-04-25T21:21:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
@@ -3412,20 +3415,20 @@
       "title": "渲染管线分析方法论",
       "chapter": "18.20",
       "section": "18.20",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 9 (API 28) - Android 16 (API 36)",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-18T14:30:00+08:00"
+      "last_task9_at": "2026-04-25T21:21:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md",
@@ -5762,6 +5765,34 @@
         "19.22": "pass-tech-review; auto-finalized"
       },
       "log": "logs/deep-review/2026-04-25-17-deep-review.md"
+    },
+    {
+      "date": "2026-04-25",
+      "task": "task9-deep-review",
+      "time": "21:21",
+      "sections_reviewed": [
+        {
+          "section": "6.2",
+          "title": "文件系统",
+          "result": "pass-tech-review",
+          "issues": 2,
+          "auto_promoted": true
+        },
+        {
+          "section": "18.8",
+          "title": "OpenGL ES 渲染链路",
+          "result": "pass-tech-review",
+          "issues": 1,
+          "auto_promoted": true
+        },
+        {
+          "section": "18.20",
+          "title": "渲染管线分析方法论",
+          "result": "pass-tech-review",
+          "issues": 0,
+          "auto_promoted": true
+        }
+      ]
     }
   ],
   "progress": {
@@ -6157,6 +6188,33 @@
         "task2b_result": "fixed",
         "updated_by": "openclaw-task2b",
         "updated_date": "2026-04-25"
+      },
+      "6.2": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "minor",
+        "auto_promoted": true
+      },
+      "18.8": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "minor",
+        "auto_promoted": true
+      },
+      "18.20": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "none",
+        "auto_promoted": true
       }
     }
   },
@@ -6498,7 +6556,7 @@
       }
     }
   },
-  "last_updated": "2026-04-25T20:40:00+08:00",
+  "last_updated": "2026-04-25T21:21:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
