@@ -27,6 +27,8 @@ drafted_by: openclaw-task2a
 gap_source: AOSP结构+读者需求+素材驱动
 gap_score: 18
 confidence: medium
+last_verified: '2026-04-25'
+last_verified_against: AOSP main / Android 16 SystemUI
 sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/res/layout/super_notification_shade.xml
@@ -62,8 +64,8 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -74,6 +76,7 @@ task6_result: pass-light-edit
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-21'
 last_task9_at: '2026-04-21T01:15:00+08:00'
+last_task2b_at: "2026-04-25T13:47:46+08:00"
 ---
 
 # 7.13 SystemUI 性能分析
@@ -194,6 +197,8 @@ punchHole 变换允许当前 Scene "穿透" 下方 Scene 的部分区域可见�
 
 4. **Perfetto 追踪重点**：启用 Flexiglass 后，分析 Shade 展开应关注 `com.android.systemui` 进程的 Compose 重组和动画 slice，以及 SceneTransitionLayout 相关的状态转换，而非传统 View hierarchy 的 `onMeasure`/`onLayout`。
 
+5. **窗口层边界**：Flexiglass 改的是 SystemUI 内部 UI 组织方式，SurfaceFlinger 侧通常仍落在 `NotificationShade` 对应的大窗口上。做窗口数量、Layer 顺序或 fence 分析时，先定位 `NotificationShade` surface，再回到 SystemUI 主线程关联 Compose / Scene 相关 slice。
+
 <!-- AIW-源码调研-2026-04-24 -->
 
 
@@ -241,7 +246,9 @@ SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemU
 - `NotificationContentInflater` 创建 `AsyncInflationTask`，并在常规路径上通过 executor 执行。
 - 真正应用 `RemoteViews` 时，优先走 `applyAsync()` / `reapplyAsync()`；只有 `inflateSynchronously` 测试路径或异步失败后的兜底才会回到同步 apply。
 
-这段差异很重要。它决定了我们在 Perfetto 里排查通知更新卡顿时，不能只盯着主线程是否直接卡在 `RemoteViews.apply()`。更常见的情况是：异步绑定已经启动，但主线程仍要承担 View 树重新挂接、测量、布局、动画回调，结果首帧或展开帧还是超预算。
+Android 14+ / 16 当前主线里，`NotificationContentInflater` 通过构造函数接收 `@NotifInflation Executor`，`AsyncInflationTask` 统一走这个 executor，避免每条通知各自开散乱线程。通知洪峰到来时，并发 inflate 会被集中调度；这能避免 I/O、图片预加载和 RemoteViews 解析同时把 CPU 撑满。
+
+这段差异决定了 Perfetto 的观察方式。排查通知更新卡顿时，不要只盯主线程是否直接卡在 `RemoteViews.apply()`；更常见的情况是异步绑定已经启动，但主线程仍要承担 View 树重新挂接、测量、布局、动画回调，结果首帧或展开帧超预算。可观察的 slice 包括 `NotificationContentInflater.AsyncInflationTask#doInBackground`、主线程 `applyAsync` 回调以及后续 traversal。
 
 大图通知也别写成固定数字。`BigPictureStyle` 的图片解码、像素拷贝、上传 GPU 是否会拖慢一帧，取决于图片尺寸、压缩格式、Hardware Bitmap 策略、热路径还是冷路径。这里给定值很容易误导，工程上应该把它写成条件化结论。
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T13:26:00+08:00",
+  "generated_at": "2026-04-25T13:48:53+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,20 +7,20 @@
     "finalized": 65,
     "ready-for-review": 152,
     "ready-to-publish": 65,
-    "last_updated": "2026-04-25T13:26:00+08:00",
+    "last_updated": "2026-04-25T13:48:53+08:00",
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 36,
+      "task6_pending": 39,
       "task2b_pending": 39,
       "ready-to-publish": 64,
-      "task9_pending": 72,
+      "task9_pending": 69,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 188,
-      "revisiting": 25
+      "reviewed": 185,
+      "revisiting": 28
     },
     "task9_state_counts": {
       "None": 41,
@@ -42,17 +42,17 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 36,
+      "task6_pending": 39,
       "task2b_pending": 39,
       "ready-to-publish": 64,
-      "task9_pending": 72,
+      "task9_pending": 69,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 188,
-      "revisiting": 25
+      "reviewed": 185,
+      "revisiting": 28
     },
     "task9_state_counts": {
       "None": 41,
@@ -1991,8 +1991,8 @@
       "last_verified": "'2026-04-01'",
       "last_verified_against": "Android 16 Developer Preview",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -2003,7 +2003,8 @@
       "task9_reviewed_date": "'2026-04-22'",
       "task9_reviewed_by": "'openclaw-task9'",
       "last_task9_at": "'2026-04-22T13:35:00+08:00'",
-      "review_round": "3"
+      "review_round": "3",
+      "last_task2b_at": "2026-04-25T13:48:53+08:00"
     },
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
@@ -2117,8 +2118,8 @@
       "last_verified": "2026-04-08",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -2128,7 +2129,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T14:50:48+08:00"
+      "last_task9_at": "2026-04-20T14:50:48+08:00",
+      "last_task2b_at": "2026-04-25T13:48:53+08:00"
     },
     "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
@@ -2140,8 +2142,8 @@
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)，通知图标源码入口需区分 Android",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -2151,7 +2153,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-21'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-21T01:15:00+08:00'"
+      "last_task9_at": "'2026-04-21T01:15:00+08:00'",
+      "last_task2b_at": "2026-04-25T13:48:53+08:00",
+      "last_verified": "'2026-04-25'",
+      "last_verified_against": "AOSP main / Android 16 SystemUI"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
@@ -2201,7 +2206,8 @@
       "last_task9_at": "2026-04-22T10:14:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/README.md": {
-      "path": "src/part2-performance/ch07-smoothness/README.md"
+      "path": "src/part2-performance/ch07-smoothness/README.md",
+      "last_task2b_at": "2026-04-25T13:48:53+08:00"
     },
     "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md": {
       "path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
