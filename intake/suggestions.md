@@ -3022,3 +3022,27 @@
 - **description**: - 建议：补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
 - **suggestion**: 补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
 - **来源**: external-review
+
+## [Task9 Deep Review] 11.1 Android 功耗模型 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L282 / L405
+- **问题**：归属流程图和 Battery Historian 截图仍是占位，章节的功耗归属路径已经讲清，但缺少可复核的图或 bugreport 示例。
+- **建议**：补一张 BatteryStatsImpl → BatteryUsageStatsProvider → *PowerCalculator → Settings/bugreport 的流程图；再补一个 Battery Historian 或 bugreport 电池摘要样例，标出 CPU、Screen、WakeLock 的归属入口。
+
+## [Task9 Deep Review] 11.2 App 耗电优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L210 / L271 / L357
+- **问题**：后台任务、位置、Alarm 三处观测图仍是占位，读者无法按章节复现 Battery Historian / dumpsys / Perfetto 的取证路径。
+- **建议**：补 3 个最小样例：JobScheduler 频繁触发、定位请求过密、精确闹钟穿透 Doze；每个样例给出 bugreport/Battery Historian 行名、辅助 dumpsys 命令和判断条件。
+
+## [Task9 Deep Review] 11.3 系统级功耗优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L147 / L315
+- **问题**：Doze 维护窗口和 Battery Saver 对 CPU/Job 的影响仍是图占位，机制描述缺少一段可复核时间线。
+- **建议**：补一段可复现实验：`dumpsys deviceidle step/force-idle`、`settings get global low_power`、`dumpsys jobscheduler` 与 Perfetto `power/cpu_idle`、`power/cpu_frequency`、`sched/*` 对时。
+
+## [Task9 Deep Review] 11.3 系统级功耗优化 — 2026-04-25（Adaptive Battery）
+- **类型**：知识盲区/数据支撑
+- **位置**：L187
+- **问题**：Adaptive Battery 段落保留了“TensorFlow Lite 的 CNN + 前馈网络架构”待验证说法，但 AOSP / 官方文档不公开具体模型结构。继续保留具体网络结构会让读者把未证实实现当成系统事实。
+- **建议**：删除具体网络结构猜测，改写为“系统根据 Usage Events、通知交互、前台时长等本地信号预测使用频率，并输出 Standby Bucket 调整”；如果要写 TFLite/CNN，必须补一手来源和版本边界。
