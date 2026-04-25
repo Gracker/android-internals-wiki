@@ -3900,7 +3900,9 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T18:49:36+08:00",
+    "completed_by": "openclaw-task2b"
   },
   {
     "section": "7.1",
@@ -4426,7 +4428,9 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T18:49:36+08:00",
+    "completed_by": "openclaw-task2b"
   },
   {
     "section": "8.7",

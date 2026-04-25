@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T18:39:22+08:00",
+  "generated_at": "2026-04-25T18:50:50+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,20 +7,20 @@
     "finalized": 72,
     "ready-for-review": 146,
     "ready-to-publish": 72,
-    "last_updated": "2026-04-25T18:39:22+08:00",
+    "last_updated": "2026-04-25T18:50:50+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 37,
+      "task6_pending": 38,
       "task2b_pending": 48,
       "ready-to-publish": 72,
-      "task9_pending": 55,
+      "task9_pending": 54,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 186,
-      "revisiting": 28
+      "reviewed": 184,
+      "revisiting": 30
     },
     "task9_state_counts": {
       "None": 40,
@@ -42,17 +42,17 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 37,
+      "task6_pending": 38,
       "task2b_pending": 48,
       "ready-to-publish": 72,
-      "task9_pending": 55,
+      "task9_pending": 54,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 186,
-      "revisiting": 28
+      "reviewed": 184,
+      "revisiting": 30
     },
     "task9_state_counts": {
       "None": 40,
@@ -2317,11 +2317,11 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-02",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-04-08",
-      "last_verified_against": "AOSP android-16.0.0_r1, developer.android.com",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "AOSP android-16.0.0_r1, developer.android.com ProfilingManager docs + external review",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -2332,7 +2332,10 @@
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T05:29:00+08:00",
-      "review_round": "4"
+      "review_round": "4",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-25T18:50:50+08:00"
     },
     "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md": {
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -4038,11 +4041,11 @@
       "drafted_date": "'2026-04-21'",
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
-      "last_verified": "'2026-04-22'",
-      "last_verified_against": "Android 16KB page size docs + ART TI + GitHub upstream READMEs",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "AOSP sepolicy public/domain.te + bionic linker linker_phdr.cpp + Android 16KB page size docs + ART TI + GitHub upstream READMEs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -4052,7 +4055,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-21'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-21T23:18:40+08:00'"
+      "last_task9_at": "'2026-04-21T23:18:40+08:00'",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-25T18:50:50+08:00"
     },
     "src/part3-tools/ch14-other-tools/README.md": {
       "path": "src/part3-tools/ch14-other-tools/README.md"
