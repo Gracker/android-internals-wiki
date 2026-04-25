@@ -47,8 +47,8 @@ task9_result: needs-rework
 last_task9_at: "2026-04-25T20:20:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
@@ -89,7 +89,7 @@ repaired_by: "openclaw-task2b"
 
 我们在 Perfetto 中分析冷启动时，经常会看到应用进程的 `bindApplication` 阶段耗时几百毫秒甚至几秒，其中一个容易被忽略的变量是：**这段代码是以解释执行的方式跑的，还是已经编译成了机器码？**
 
-同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度可能差距 30% 以上。[待验证: 此数据需与官方基准测试或实测数据核对] 这不是因为代码变了，而是因为**编译策略**变了。ART 编译管线决定了应用代码从 DEX 字节码到机器指令走哪条路，也就是解释执行、JIT 即时编译，还是 AOT 预编译。了解这条管线后，我们就能回答这些问题：
+同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度可能差距 30% 以上。[待验证: 此数据需与官方基准测试或实测数据核对] 这是因为**编译策略**变了。ART 编译管线决定了应用代码从 DEX 字节码到机器指令走哪条路，也就是解释执行、JIT 即时编译，还是 AOT 预编译。了解这条管线后，我们就能回答这些问题：
 
 - 冷启动慢，有没有可能是编译策略不够优化？
 - 安装耗时过长，跟 dex2oat 有什么关系？
@@ -322,7 +322,7 @@ Cloud Profiles 的优势是覆盖面广——它反映的是真实用户的普�
 
 上面三层 Profile 优化的都是“编译哪些方法”，但编译覆盖率只是冷启动性能的一个维度。另一个容易被忽视的维度是 **DEX 文件的物理布局**——即使所有启动方法都已 AOT 编译，如果这些方法散落在不同的 DEX 文件中，类加载器的 I/O 开销仍然不可忽视。Startup Profiles 解决的就是这个问题。
 
-Startup Profiles 是 Baseline Profiles 的**启动子集**，但它影响的不是编译策略，而是 DEX 文件的物理布局。
+Startup Profiles 是 Baseline Profiles 的**启动子集**，它影响的是 DEX 文件的物理布局，而非编译策略。
 
 类加载器按顺序从 classes.dex 开始加载类。如果启动路径上的类散落在 DEX 文件的不同位置（甚至不同的 DEX 文件中），类加载器需要更多的 I/O 操作和内存映射。Startup Profiles 的作用是告诉 R8/D8 编译器：**把这些启动类排列到 classes.dex 的前部**。
 
