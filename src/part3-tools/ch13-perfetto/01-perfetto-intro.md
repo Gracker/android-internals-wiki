@@ -38,16 +38,16 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-task9_reviewed_date: '2026-04-24'
+task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2x 不是X而是Y→直接陈述, 1x 口水过渡词(更准确的版本线是)删除. 评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。'
-last_task9_at: '2026-04-22T08:40:18+08:00'
+last_task9_at: '2026-04-25T10:28:35+08:00'
 ---
 
 # Perfetto 简介与演进

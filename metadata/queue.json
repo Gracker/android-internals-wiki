@@ -2705,80 +2705,76 @@
     "section": "13.1",
     "section_title": "Perfetto 简介与演进",
     "priority": 85,
-    "reason": "[External Review] 源码路径错误、Mainline APEX 机制缺失、Trace Processor 预置指标未提及",
+    "reason": "[Deep Tech Review] 需补齐 Java HPROF 触发链、Android 15+ Profiling/APEX 边界、Trace Processor 内置 Metrics；已校正外部 review 的 java_hprof 路径误判",
     "review_issues": [
       {
-        "type": "源码错误",
-        "location": "架构说明 - heapprofd/java_hprof_producer",
-        "detail": "java_hprof_producer 路径应为 external/perfetto/src/profiling/java/ 及 art/perfetto_hprof/，而非 src/profiling/memory/",
-        "suggestion": "修正路径并补充 perfetto_hprof 作为 ART 插件的运行特征",
+        "type": "原理断裂",
+        "location": "heapprofd / java_hprof_producer / traced_perf：专用 profiling 组件",
+        "detail": "外部 review 指出的 java_hprof_producer 路径错误不成立：AOSP main 仍有 external/perfetto/src/profiling/memory/java_hprof_producer.cc/h。正文路径可保留，但只写“负责 Java heap dump”不够；缺少 JavaHprofProducer 通过 android.java_hprof 数据源发信号触发 ART 插件 art/perfetto_hprof/perfetto_hprof.cc 在目标进程内执行快照的机制。",
+        "suggestion": "保留 external/perfetto/src/profiling/memory/java_hprof_producer.cc 路径，同时补充 art/perfetto_hprof/、android.java_hprof（DataSourceConfig 中标注 Android 11 引入）和 __SIGRTMIN+6 信号触发链。",
         "evidence": [
-          "cs.android.com: external/perfetto/src/profiling/java/",
-          "art/perfetto_hprof/"
+          "external/perfetto/src/profiling/memory/java_hprof_producer.cc",
+          "external/perfetto/protos/perfetto/config/data_source_config.proto: android.java_hprof introduced in Android 11",
+          "art/perfetto_hprof/perfetto_hprof.cc"
         ]
       },
       {
-        "type": "机制缺失",
-        "location": "版本演进表",
-        "detail": "未提及 Android 12+ Mainline APEX 模块化更新机制",
-        "suggestion": "增加更新机制列，说明 Android 12+ 后工具能力与 OS 版本解耦",
+        "type": "版本差异",
+        "location": "Android 版本对照表",
+        "detail": "章节 frontmatter 覆盖 Android 17 Beta，但表格只到 Android 11+，把后续版本折叠成 R+。本轮核验不支持直接写成“Android 12+ com.google.android.perfetto APEX 已确认”；AOSP main 中更明确的是部分 Perfetto/Trace Processor 组件对 com.android.profiling（min_sdk 35）开放，需把 Android 15+ Profiling 模块、System Triggered Profiling/ProfilingManager 与传统 traced/traced_probes 的边界说清。",
+        "suggestion": "拆分 Android 12 FrameTimeline、Android 15/API 35 Profiling module 与 Android 16+/17 触发式 profiling；对 APEX 包名与可更新边界用“待验证”标注，避免把外部 review 的 com.google.android.perfetto 结论直接写入正文。",
         "evidence": [
-          "com.google.android.perfetto APEX"
+          "external/perfetto/Android.bp: apex_available com.android.profiling, min_sdk_version 35（部分组件）",
+          "traced/traced_probes 模块仍以平台二进制方式声明"
         ]
       },
       {
-        "type": "原理链缺失",
-        "location": "Trace Processor 章节",
-        "detail": "未提及 Built-in Metrics 预置指标系统",
-        "suggestion": "提及 android_cpu/android_jank/android_startup 等预置指标",
+        "type": "原理断裂",
+        "location": "Trace Processor：SQL 分析引擎",
+        "detail": "当前只介绍手写 SQL 查询，缺少内置 Metrics、Trace Summary v2 与 Perfetto Standard Library 的层次关系。作为全章入口，会让读者误以为自动化分析只能从原始表手写 SQL。",
+        "suggestion": "补充 trace_processor --run-metrics、android_cpu/android_startup/android_jank 等内置指标，以及 Trace Summarization 通过 referenced_modules 复用标准库模块的定位。",
         "evidence": [
+          "perfetto.dev Trace Summary 文档",
           "trace_processor --run-metrics"
         ]
-      },
-      {
-        "type": "P1-重要缺失",
-        "detail": "[源码准确性] Perfetto 的架构 - heapprofd / java_hprof_producer"
-      },
-      {
-        "type": "P1-重要缺失",
-        "detail": "[版本差异覆盖] Android 版本对照表"
-      },
-      {
-        "type": "P1-重要缺失",
-        "detail": "[原理链完整性] Trace Processor"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T09:17:47+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T10:28:35+08:00"
   },
   {
     "section": "13.2",
     "section_title": "Trace 抓取",
     "priority": 95,
-    "reason": "[External Review] 未区分 Java 采样与快照数据源差异",
+    "reason": "[Deep Tech Review] Heap Profiling 只给 android.heapprofd 示例，缺少 android.java_hprof 快照配置与 Android 11+ 版本边界",
     "review_issues": [
       {
-        "type": "原理链缺失",
-        "location": "Java Heap Sampling 章节",
-        "detail": "未明确区分 android.heapprofd（持续采样）与 android.java_hprof（单次快照）",
-        "suggestion": "补充两者选择逻辑：看谁在分配用 heapprofd，看谁在持有用 java_hprof",
+        "type": "原理断裂",
+        "location": "Heap Profiling 与 Callstack Sampling / Java Heap Sampling",
+        "detail": "正文已经区分 Sampling 与 Heap Dump，但抓取章节没有给 android.java_hprof 的 TraceConfig 示例，读者无法从“看谁持有对象”落到可执行配置。DataSourceConfig 明确 android.java_hprof 的 java_hprof_config 字段，并标注 Introduced in Android 11。",
+        "suggestion": "在 Java Heap Sampling 之后补一个 Java Heap Snapshot 小节，给出 data_sources.config.name=\"android.java_hprof\" + java_hprof_config { process_cmdline: \"com.example.myapp\" } 的最小配置，并说明它与 android.heapprofd + heaps:\"com.android.art\" 的使用边界。",
         "evidence": [
-          "java_hprof_config.proto"
+          "external/perfetto/protos/perfetto/config/data_source_config.proto: java_hprof_config = 110, Data source name android.java_hprof, Introduced in Android 11",
+          "external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto"
         ]
-      },
-      {
-        "type": "P0-事实错误",
-        "detail": "See file for details"
-      },
-      {
-        "type": "P1-重要缺失",
-        "detail": "- **[P1]"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T09:17:47+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T10:28:35+08:00"
   },
   {
     "section": "13.3",
@@ -2836,38 +2832,48 @@
   },
   {
     "section": "13.7",
-    "section_title": "Perfetto 高级用法",
+    "section_title": "Perfetto 的高级用法",
     "priority": 85,
-    "reason": "[External Review] 缺失 Custom Data Source、Bigtrace、Metrics v2 Stdlib 关键高级架构",
+    "reason": "[Deep Tech Review] 高级篇缺少 Custom Data Source、Bigtrace 架构和 Trace Summary/Standard Library 的明确关系",
     "review_issues": [
       {
-        "type": "原理链缺失",
-        "location": "自定义 Trace Point - Perfetto SDK",
-        "detail": "只介绍 TRACE_EVENT，未提及 Custom Data Source（继承 DataSource 的自定义 Proto 扩展）",
-        "suggestion": "补充自定义数据源的类结构和注册流程",
+        "type": "知识盲区",
+        "location": "自定义 Trace Point 的最佳实践 / 方法二：Perfetto SDK TRACE_EVENT",
+        "detail": "章节只覆盖 TrackEvent/TRACE_EVENT。Perfetto SDK 官方把 Track events 与 Custom data sources 作为两层抽象；高级场景应说明 perfetto::DataSource<T>、OnSetup/OnStart/OnStop 和 NewTracePacket 写自定义 proto 的路径。",
+        "suggestion": "新增 Custom Data Source 小节，说明适用场景：结构化二进制数据、自定义 counter/packet、系统服务或引擎级采集；给出注册流程和 protozero 写包边界。",
         "evidence": [
-          "perfetto.dev/docs/instrumentation/tracing-sdk#custom-data-sources"
+          "perfetto.dev/docs/instrumentation/tracing-sdk: Custom data sources vs Track events"
         ]
       },
       {
         "type": "知识盲区",
-        "location": "CI/CD - BatchTraceProcessor",
-        "detail": "未提及 Bigtrace 分布式分析方案",
-        "suggestion": "说明 Bigtrace 的 Orchestrator/Worker 架构及云存储应用场景",
+        "location": "Trace Processor Python API 的高级用法 / BatchTraceProcessor",
+        "detail": "正文只用一句话提到 Bigtrace，未解释它与 BatchTraceProcessor 的规模边界。Perfetto 文档里的 Bigtrace Kubernetes 架构由 Orchestrator 分片调度、Worker Pod 运行 TraceProcessor，并从 GCS/local object store 读取 trace。",
+        "suggestion": "补一个对比表：BatchTraceProcessor=单机多 trace；Bigtrace=K8s 分布式 SQL，适合大规模回归/云端 trace 仓库。修正资料链接为 perfetto.dev/docs/deployment/deploying-bigtrace-on-kubernetes。",
         "evidence": [
-          "perfetto.dev/docs/analysis/bigtrace"
+          "perfetto.dev/docs/deployment/deploying-bigtrace-on-kubernetes: Orchestrator / Worker / Object Store"
         ]
       },
       {
-        "type": "原理链缺失",
-        "location": "Metrics v2 章节",
-        "detail": "未讲清与 Standard Library 的关系，误导读者继续手写底层 SQL",
-        "suggestion": "说明 v2 提倡基于标准库模块化查询"
+        "type": "原理断裂",
+        "location": "Trace Summarization：结构化指标提取",
+        "detail": "示例已经使用 referenced_modules:\"linux.memory.process\"，但正文未明确这是基于 Perfetto Standard Library 的稳定模块复用路径，也未说明 PerfettoSQL 的 MODULE/函数/表封装与旧版手写 SQL Metric 的关系。",
+        "suggestion": "补充 Standard Library 的定位：优先复用官方模块，再用 Trace Summary spec 定义 dimensions/value；需要落到底层 SQL 时再写自定义 PerfettoSQL。",
+        "evidence": [
+          "perfetto.dev/docs/analysis/trace-summary: Using Summaries with the Standard Library",
+          "perfetto.dev/docs/analysis/perfetto-sql-getting-started"
+        ]
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T09:17:47+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T10:28:35+08:00"
   },
   {
     "section": "13.8",
