@@ -4677,9 +4677,9 @@
   },
   {
     "section": "8.7",
-    "section_title": "Baseline Profiles",
+    "section_title": "Baseline Profiles 与编译优化实践",
     "priority": 85,
-    "reason": "[External Review] Android 16 SDM 文件和 artd 进程角色缺失",
+    "reason": "[Deep Tech Review] Baseline Profiles 与编译优化实践 仍有 P0/P1 技术问题需回炉",
     "review_issues": [
       {
         "type": "原理链完整性",
@@ -4698,10 +4698,32 @@
         "evidence": [
           "AOSP artd 源码"
         ]
+      },
+      {
+        "type": "原理断裂/版本差异",
+        "location": "L183-L190 Android 16 云端预编译分发；L153-L168 ART Service 验证路径",
+        "detail": "章节把 Android 16 云端预编译中的 SDM 文件格式、签名绑定和设备侧是否仍需本地编译整体标成“公开证据不足”，同时只写 ART Service，没有交代 Android 14+ dexopt 调度中 artd / com.android.art Mainline 模块的职责。外部 review 已命中 SDM 与 artd 缺口，本轮复核后确认正文仍未闭环。",
+        "suggestion": "补一张版本/渠道矩阵：Android 14+ ART Service + artd 负责 dexopt 编排；Android 16 Google Play cloud compilation 通过 Secure Dex Metadata 分发云端编译产物，SDM 与 APK 签名绑定；“是否完全跳过设备端编译”保留边界说明。",
+        "confirmed_by": "task9-deep-tech-review",
+        "confirmed_at": "2026-04-25T22:29:14+08:00"
+      },
+      {
+        "type": "版本差异",
+        "location": "L143-L149 安装来源表；L240 AGP 自动化",
+        "detail": "正文写 Android Studio / Gradle 安装 non-debuggable build 时设备端会自动编译 Baseline Profile，但官方 debug 文档对 AGP < 8.4 给出反例：Android Studio、Gradle wrapper 或非 Play 工具安装时不会自动编译，需要 ProfileInstaller 入队或手工触发编译。",
+        "suggestion": "在安装来源表加入 AGP 8.4 分界：AGP 8.4+ 的 Android Studio / Gradle 安装可走自动编译；AGP < 8.4 或其他 installer 要依赖 ProfileInstaller / 后台 dexopt / 手工 compile。",
+        "confirmed_by": "task9-deep-tech-review",
+        "confirmed_at": "2026-04-25T22:29:14+08:00"
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "pending",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T22:29:14+08:00",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ]
   },
   {
     "section": "8.8",
@@ -4735,7 +4757,7 @@
     "section": "8.10",
     "section_title": "ProfilingManager 系统触发式性能追踪",
     "priority": 85,
-    "reason": "[External Review] TRIGGER_TYPE_ANOMALY 在内存治理中的核心场景未展开",
+    "reason": "[Deep Tech Review] ProfilingManager 系统触发式性能追踪 仍有 P0/P1 技术问题需回炉",
     "review_issues": [
       {
         "type": "知识盲区",
@@ -4745,10 +4767,24 @@
         "evidence": [
           "ProfilingService.java"
         ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "L287-L298 版本演进；L300-L316 常见误区",
+        "detail": "章节列出了 `TRIGGER_TYPE_ANOMALY=8` 和 `APP_COMPAT=11`，也写到 artifact/tag 会随 anomaly 变化，但没有展开 tag 驱动的分流、artifact 类型判断、MemoryLimiter/ProfilingService 证据链和无法保证产物的边界。queue 中已有 external-review 指出 MemoryLimiter 场景，本轮复核确认正文仍只停在常量表。",
+        "suggestion": "新增 ANOMALY 专段：先用公开契约写清 `ProfilingResult.getTag()` 与 artifact varies，再用 `[待验证]` 或源码锚点说明 MemoryLimiter / ProfilingService 可能给出的内存治理信号；补上多包同 UID 注册时可能不返回 artifact 的限制。",
+        "confirmed_by": "task9-deep-tech-review",
+        "confirmed_at": "2026-04-25T22:29:14+08:00"
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "pending",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T22:29:14+08:00",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ]
   },
   {
     "section": "13.03",
@@ -10044,6 +10080,33 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T20:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.4",
+    "section_title": "dumpsys 系列命令",
+    "priority": 95,
+    "reason": "[Deep Tech Review] dumpsys 系列命令 存在 P0 事实错误",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/事实错误",
+        "location": "L157 Private Dirty 解释",
+        "detail": "正文写 “Android 默认不用 swap，Private Dirty 必须常驻物理 RAM”。现代 Android 设备常用 zRAM 作为压缩 swap，`dumpsys meminfo` 也会出现 `SwapPss` / `Swapped Dirty` 口径；Private Dirty 不能像 clean file-backed page 一样直接丢弃，但在内存压力下可被换入 zRAM。",
+        "suggestion": "改成 “Private Dirty 不能直接丢弃；在启用 zRAM 的设备上可能被压缩换出，需同时看 PSS / Private Dirty / SwapPss / zRAM 状态”。避免把“无传统磁盘 swap”写成“无 swap”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L102-L110 Activity 栈字段",
+        "detail": "章节按 Android 16 验证，但仍用 `TaskRecord` 描述 Task 输出。AOSP android-16.0.0_r1 已没有 `TaskRecord.java`，任务实现位于 `frameworks/base/services/core/java/com/android/server/wm/Task.java`，dump 字段来自 `Task` / `ActivityRecord`。",
+        "suggestion": "把 `TaskRecord` 改为 `Task`，并把源码锚点改到 `com/android/server/wm/Task.java` 与 `ActivityRecord.java`；如兼容旧资料，可注明旧版资料里的 TaskRecord 与现代 Task 的对应关系。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T22:29:14+08:00",
     "status": "pending"
   }
 ]

@@ -3701,3 +3701,17 @@
 - **问题**：未提及 Heap Dump 敏感数据脱敏与合规
 - **建议**：补充安全警示段落，提醒上传前 OID 脱敏或加密
 - **来源**：Gemini 外部 review
+
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-04-25
+- **类型**：源码准确性/数据缺失
+- **位置**：L64-L65、L134-L139、L323-L330 构建产物路径
+- **问题**：章节把二进制打包产物基本写成 `baseline.prof` 单文件。官方手动安装/测量流程还会处理 `assets/dexopt/baseline.profm`，并在 `.dm` 包中重命名为 `primary.profm`。
+- **建议**：保留 `baseline.prof` 作为首要检查项，同时补一句 `baseline.profm` 是伴随 metadata，手动 sideload / `.dm` 验证时要和 `baseline.prof` 一起处理。
+
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L270-L276 cpuinfo 阈值
+- **问题**：“后台进程 CPU 持续超过 5% 就值得调查”缺少设备类型、核心数、采样窗口和业务场景基线。
+- **建议**：改为建议读者先采集 30-60 秒 `top -H` / Perfetto CPU 轨道并与同机型基线对比；如保留 5%，必须说明它只是经验起点，不是 Android 系统阈值。

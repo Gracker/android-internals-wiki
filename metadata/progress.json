@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T21:43:45+08:00",
+  "generated_at": "2026-04-25T22:29:14+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,15 +7,13 @@
     "finalized": 77,
     "ready-for-review": 141,
     "ready-to-publish": 77,
-    "last_updated": "2026-04-25T21:43:45+08:00",
+    "last_updated": "2026-04-25T22:29:14+08:00",
     "pipeline_stage_counts": {
       "None": 35,
       "task6_pending": 40,
-      "task2b_pending": 48,
+      "task2b_pending": 52,
       "ready-to-publish": 77,
-      "task9_pending": 47,
-      "'task9_pending'": 2,
-      "'task2b_pending'": 1
+      "task9_pending": 46
     },
     "task6_state_counts": {
       "None": 36,
@@ -24,30 +22,24 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 137,
-      "pending": 69,
-      "'reviewed'": 1,
-      "'pending'": 2,
+      "reviewed": 141,
+      "pending": 68,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 148,
-      "pending": 52,
-      "'pending'": 2,
-      "idle": 4,
-      "'fixed'": 2
+      "fixed": 147,
+      "pending": 57,
+      "idle": 4
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
       "task6_pending": 40,
-      "task2b_pending": 48,
+      "task2b_pending": 52,
       "ready-to-publish": 77,
-      "task9_pending": 47,
-      "'task9_pending'": 2,
-      "'task2b_pending'": 1
+      "task9_pending": 46
     },
     "task6_state_counts": {
       "None": 36,
@@ -56,19 +48,15 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 137,
-      "pending": 69,
-      "'reviewed'": 1,
-      "'pending'": 2,
+      "reviewed": 141,
+      "pending": 68,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 148,
-      "pending": 52,
-      "'pending'": 2,
-      "idle": 4,
-      "'fixed'": 2
+      "fixed": 147,
+      "pending": 57,
+      "idle": 4
     }
   },
   "issues": {
@@ -2373,18 +2361,18 @@
       "last_verified": "'2026-04-24'",
       "last_verified_against": "developer.android.com create/debug/profileable docs + AOSP",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-24'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-20'",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-20T20:06:23+08:00'",
+      "last_task9_at": "2026-04-25T22:29:14+08:00",
       "review_round": "5"
     },
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
@@ -2422,18 +2410,18 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP main + Android Developers",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-23",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T21:48:59+08:00"
+      "last_task9_at": "2026-04-25T22:29:14+08:00"
     },
     "src/part2-performance/ch08-responsiveness/09-game-performance.md": {
       "path": "src/part2-performance/ch08-responsiveness/09-game-performance.md",
@@ -3815,18 +3803,18 @@
       "last_verified": "2026-04-15",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-23",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-23T02:33:00+08:00",
+      "last_task9_at": "2026-04-25T22:29:14+08:00",
       "last_task2b_at": "2026-04-25T12:22:08+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b"

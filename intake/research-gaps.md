@@ -7995,3 +7995,24 @@ ProfilingManager 简化了 Heap Dump 采集，但未解决敏感数据合规问�
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25-15-16-external-review.md)
+
+## [2026-04-25] 8.7 Baseline Profiles 与编译优化实践 — 知识盲区
+
+### 盲区描述
+Android 16 Google Play cloud compilation 中 SDM（Secure Dex Metadata）与 Baseline Profile、Cloud Profile、设备侧 dex2oat/artd 的边界仍未闭环。章节目前只保留 `[待验证]`，缺少可执行的源码与官方资料核验方向。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 16 SDM 的公开说明：分发渠道、与 APK 签名绑定、包含的云端编译产物类型。
+- 核对 `packages/modules/Art/artd/` 与 ART Service 在 Android 14+ 后台 dexopt / `install-dm` / `bg-dexopt` 中的职责。
+- 梳理 `baseline.prof`、`baseline.profm`、`.dm`、Cloud Profile、SDM 在 Play 安装、侧载、AGP 8.4 前后路径中的差异。
+
+### 关联章节
+- 8.7
+- 1.7
+
+### 外部 review 来源
+- external-review 已命中：Android 16 SDM 文件和 artd 进程角色缺失
+
