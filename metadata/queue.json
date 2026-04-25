@@ -3665,7 +3665,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:48:53+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter: corrected SlotTable/LayoutNode role and Strong Skipping reference-equality trap"
   },
   {
     "section": "7.10",
@@ -3740,7 +3743,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:48:53+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter: updated LayoutInflater constructor cache description from AOSP source and added AsyncAppCompatFactory 1.1.0"
   },
   {
     "section": "7.13",
@@ -3759,7 +3765,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:48:53+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter: added @NotifInflation Executor concurrency model and Flexiglass window-layer boundary"
   },
   {
     "section": "7.14",
@@ -3816,7 +3825,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:48:53+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter: README content list now matches physical ch07 files"
   },
   {
     "section": "8.1",
@@ -5154,7 +5166,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:48:53+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter: corrected SlotTable/LayoutNode role and Strong Skipping reference-equality trap"
   },
   {
     "section": "07.08",
@@ -5428,7 +5443,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:48:53+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter: updated LayoutInflater constructor cache description from AOSP source and added AsyncAppCompatFactory 1.1.0"
   },
   {
     "section": "07.13",
@@ -5478,7 +5496,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:48:53+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter: added @NotifInflation Executor concurrency model and Flexiglass window-layer boundary"
   },
   {
     "section": "07.README",
@@ -5558,7 +5579,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:48:53+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter: README content list now matches physical ch07 files"
   },
   {
     "section": "08",

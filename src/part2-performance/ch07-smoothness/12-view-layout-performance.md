@@ -30,8 +30,8 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -39,7 +39,7 @@ task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-20T14:50:48+08:00"
-last_task2b_at: "2026-04-23T19:25:33+08:00"
+last_task2b_at: "2026-04-25T13:47:46+08:00"
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
@@ -95,31 +95,43 @@ Google 在 2017 年推广 ConstraintLayout 时做过一组基准测试 [已验�
 
 **第二步：反射创建 View 对象。** 这是 inflate 耗时的主要来源。对于 XML 中的每个标签（如 `<TextView>`、`<com.example.MyView>`），`LayoutInflater` 需要通过反射找到对应的类并实例化。具体来说：
 
-- **框架 View**（如 `TextView`、`ImageView`）：`LayoutInflater` 会尝试多个包前缀——`android.widget.`、`android.webkit.`、`android.app.`、`android.view.`——拼接成全限定名后调用 `ClassLoader.loadClass()` 加载类，再通过 `Constructor.newInstance()` 创建实例。
+- **框架 View**（如 `TextView`、`ImageView`）：`LayoutInflater` 会尝试多个包前缀——`android.widget.`、`android.webkit.`、`android.app.`、`android.view.`——拼接成全限定名后用当前 `Context` 的 `ClassLoader` 加载类，再通过 `Constructor.newInstance()` 创建实例。
 - **自定义 View**：如果标签名包含点号（如 `com.example.MyView`），直接用全限定名加载。
 
 ```java
 // frameworks/base/core/java/android/view/LayoutInflater.java
-// @ AOSP android-16.0.0_r1
-public final View createView(String name, String prefix, AttributeSet attrs)
-        throws ClassNotFoundException, InflateException {
-    // 从缓存获取 Constructor（优化：同一个类只反射一次）
+// @ AOSP main / android-16.0.0_r1，节选
+private static final HashMap<String, Constructor<? extends View>> sConstructorMap =
+        new HashMap<>();
+
+public final View createView(Context viewContext, String name,
+        String prefix, AttributeSet attrs) throws ClassNotFoundException {
     Constructor<? extends View> constructor = sConstructorMap.get(name);
+    if (constructor != null && !verifyClassLoader(constructor)) {
+        constructor = null;
+        sConstructorMap.remove(name);
+    }
+
     if (constructor == null) {
-        Class<? extends View> clazz = mContext.getClassLoader()
-                .loadClass(prefix != null ? prefix + name : name)
-                .asSubclass(View.class);
+        Class<? extends View> clazz = Class.forName(
+                prefix != null ? prefix + name : name,
+                false,
+                mContext.getClassLoader()).asSubclass(View.class);
         constructor = clazz.getConstructor(mConstructorSignature);
+        constructor.setAccessible(true);
         sConstructorMap.put(name, constructor);
     }
-    // 用缓存的 Constructor 创建实例
-    return constructor.newInstance(mContextArgs);
+
+    Object[] args = mConstructorArgs;
+    args[0] = viewContext;
+    args[1] = attrs;
+    return constructor.newInstance(args);
 }
 ```
 
-这里真正省时间的是 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。这就是为什么 RecyclerView 的 ViewHolder 复用比反复 inflate 快得多，既省了 XML 解析，也省了反射开销。
+这里省时间的是 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。截至 AOSP main / android-16.0.0_r1，这个缓存仍是进程内静态缓存；`verifyClassLoader()` 会在复用前校验缓存的 Constructor 是否来自当前 `Context` 可见的 ClassLoader，不匹配时移除并重新查找。动态特性模块、插件化或热更新场景要把 ClassLoader 生命周期纳入内存排查，避免旧 Constructor 被静态缓存延长存活时间。
 
-[已验证: AOSP LayoutInflater.java, sConstructorMap 缓存机制]
+[已验证: AOSP `frameworks/base/core/java/android/view/LayoutInflater.java`, `sConstructorMap` 与 `verifyClassLoader()`]
 
 **第三步：递归 inflate 子 View 并设置属性。** 创建完父 View 后，`LayoutInflater` 遍历 XML 中的子标签，递归调用 `rInflateChildren()` 创建子 View，然后调用 `ViewGroup.addView()` 将子 View 添加到父容器中。每一层嵌套都会增加一轮递归。
 
@@ -230,7 +242,7 @@ void scheduleTraversals() {
 
 [已验证: AOSP ViewRootImpl.java, scheduleTraversals()]
 
-`requestLayout()` 会在消息队列中插入一个同步屏障（`sync barrier`），确保 `TraversalRunnable`（即 `doFrame`）在下一个 VSync 到来时优先执行，不会被其他同步消息阻塞。
+`requestLayout()` 会在消息队列中插入一个同步屏障（`sync barrier`）。`postSyncBarrier()` 会暂时挡住普通同步消息；`Choreographer` 发布的 traversal 回调是异步消息，可以越过屏障。这让下一轮 `TraversalRunnable`（即 `doFrame`）比队列中已有的普通 Handler 消息更早执行。屏障会在 traversal 执行后移除，只按 Handler 入队顺序看 trace 时，容易误判 `requestLayout()` 被普通消息拖住。
 
 ### requestLayout() vs invalidate()：性能差异的本质
 
@@ -387,10 +399,25 @@ new AsyncLayoutInflater(context).inflate(
 
 1. **parent 的 `generateLayoutParams(AttributeSet)` 必须线程安全**。如果父容器的这一步只能在主线程执行，后台 inflate 会失败并回退到 UI thread。
 2. **被创建的 View 不能在构造或初始化阶段创建 `Handler`，也不能依赖 `Looper.myLooper()`**。这类 View 在后台线程里构造时很容易抛异常。
-3. **默认 `BasicInflater` 不会复用 AppCompat 那套主线程 `Factory2` 链，也不支持包含 Fragment 的布局**。AndroidX 新版额外提供 `AsyncLayoutFactory` 构造入口，但 factory 逻辑本身也必须能在后台线程安全运行。
+3. **默认 `BasicInflater` 不会复用 AppCompat 那套主线程 `Factory2` 链，也不支持包含 Fragment 的布局**。AndroidX `AsyncLayoutInflater 1.1.0` 增加了 `AsyncLayoutFactory` 构造入口；AppCompat 项目可以引入 `asynclayoutinflater-appcompat`，用 `AsyncAppCompatFactory` 让 AppCompatViewInflater 参与后台 inflate。
 4. **回退是常见结果，不是异常路径**。`AsyncLayoutInflater` 的后台线程只要抛 `RuntimeException`，就会记录日志并在 UI thread 重新 inflate。功能可能看起来正常，但主线程时间并没有省下来。
 
-[已验证: AndroidX `asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java` 注释与 `InflateThread.runInner()` 回退逻辑]
+AppCompat 场景的最小接入形态如下：
+
+```kotlin
+val inflater = AsyncLayoutInflater(
+    context,
+    AsyncAppCompatFactory()
+)
+
+inflater.inflate(R.layout.complex_layout, parent, mainExecutor) { view, _, target ->
+    target?.addView(view)
+}
+```
+
+如果指定 `callbackExecutor`，最终 `addView()`、ViewBinding 绑定和状态写入仍要回到主线程执行。
+
+[已验证: AndroidX `asynclayoutinflater 1.1.0` 新增 `AsyncLayoutFactory` 构造入口与 callback executor；`asynclayoutinflater-appcompat 1.1.0` 提供 `AsyncAppCompatFactory`]
 
 实际使用中，`AsyncLayoutInflater` 更适合启动后延迟展示的复杂布局，或者弹窗/对话框里可以晚一点 attach 的内容视图。
 

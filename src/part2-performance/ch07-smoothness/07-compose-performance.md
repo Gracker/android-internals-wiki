@@ -7,7 +7,7 @@ last_verified: '2026-04-01'
 last_verified_against: Android 16 Developer Preview
 confidence: medium
 reviewed_date: '2026-04-22'
-last_task2b_at: "2026-04-22T13:58:00+08:00"
+last_task2b_at: "2026-04-25T13:47:46+08:00"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -51,8 +51,8 @@ related_chapters:
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 section: '7.7'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -100,17 +100,17 @@ Compose 需要单独建立一套分析视角。它的渲染管线、状态管理
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/mental-model]
 
-传统 View 体系的渲染过程，我们在前面章节已经讲过了：measure → layout → draw，由 Choreographer 驱动，每个 VSync 周期最多执行一轮。Compose 的渲染过程同样是这三个阶段，但在前面多了一个"Composition"阶段。
+传统 View 体系的渲染过程，我们在前面章节已经讲过了：measure → layout → draw，由 Choreographer 驱动，每个 VSync 周期最多执行一轮。Compose 的渲染过程同样有 Layout 和 Drawing，但在前面多了一个 Composition 阶段。
 
-**Composition（组合）** 是 Compose 独有的阶段，也是它和传统 View 体系最大的区别。在这个阶段，Compose 运行时会执行所有的 @Composable 函数，生成一棵"虚拟的"UI 树——注意，这棵树不是 View 对象的树，而是一个描述 UI 结构的数据结构（SlotTable）。每个 @Composable 函数的执行，相当于在这棵树上挂一个节点。
+**Composition（组合）** 会执行 @Composable 函数，更新运行时记录的 group / slot 信息，并通过 Applier 维护后续阶段要消费的节点。这里不能把 `SlotTable` 写成 UI 树：`SlotTable` 是 Compose runtime 的扁平存储结构，底层用 gap buffer 管理 group 和 slot，保存 Composition 过程中产生的调用结构、key、`remember` 值等信息。
 
-Composition 之后就是 **Layout** 阶段。这个阶段和传统 View 体系的 layout 非常类似：Compose 会遍历 UI 树，测量每个节点的尺寸，确定它们在屏幕上的位置。具体来说，Compose 的 Layout 阶段会调用每个节点的 measure 方法，完成尺寸协商。
+进入 **Layout** 阶段时，负责测量和布局的是 `LayoutNode` 树。`LayoutNode` 对应 Compose UI 的布局节点，承接 measure、layout、draw 相关的 modifier / coordinator 信息。Composition 更新运行时状态与节点关系，Layout / Drawing 再沿 `LayoutNode` 树完成尺寸协商和绘制提交。
 
 最后是 **Drawing** 阶段。Compose 的 UI 元素最终会通过 Android 的 Canvas 进行绘制。虽然 Jetpack Compose 是全新的 UI 框架，底层并没有脱离 Android 的范畴——最终还是要把像素画到 Canvas 上。
 
-关键的区别在于：传统 View 体系只在 UI 结构发生变化时才重新创建 View 对象（比如 addView/removeView），而 **Compose 的 Composition 阶段在每次状态变化时都可能重新执行**。这就是所谓的"Recomposition"（重组）。
+主要区别在于：传统 View 体系只在 UI 结构发生变化时才重新创建 View 对象（比如 addView/removeView），而 **Compose 的 Composition 阶段在每次状态变化时都可能重新执行**。这就是所谓的"Recomposition"（重组）。
 
-[图：Compose 渲染管线三阶段示意——Composition 生成 SlotTable → Layout 测量定位 → Drawing 绘制到 Canvas，与传统 View 体系 measure → layout → draw 对比]
+[图：Compose 渲染管线三阶段示意——Composition 更新 SlotTable 并维护 LayoutNode 树 → Layout 沿 LayoutNode 测量定位 → Drawing 绘制到 Canvas，与传统 View 体系 measure → layout → draw 对比]
 
 ### 重组到底是什么
 
@@ -161,6 +161,19 @@ fun Greeting(msg: String) {
 从 Kotlin 2.0.20 开始，Compose 的 Strong Skipping 默认开启。现在判断一个 restartable Composable 能不能跳过重组，优先看的是"这次参数和上次是不是同一个输入"：稳定参数按 `Object.equals()` 比较，不稳定参数按引用相等 `===` 比较。只要比较结果没变，这个 Composable 就可以被跳过。
 
 这改变了优化顺序。老规则里，开发者经常要先把参数都做成稳定类型，才能拿到 skippable。现在大多数 restartable Composable 默认就有跳过机会，很多只为"让它能跳过"而加的包装层可以省掉。编译器还会自动 memoize Composable 内部创建的 lambda，减少因为回调对象重新分配带来的连锁重组。
+
+这条规则也改变了可变集合的失败方式。不稳定参数按引用比较，`ArrayList`、`MutableList` 这类对象如果原地修改后继续传同一个引用，restartable Composable 会把它视为同一个输入。UI 是否刷新还取决于上游状态容器有没有发出新值；如果 ViewModel 只执行 `items.add(newItem)`，再把同一个列表引用传下去，StateFlow / Compose 都可能看不到这次内容变化。
+
+```kotlin
+// 容易漏刷新：原地修改同一个 ArrayList
+_items.value.add(newItem)
+_items.value = _items.value
+
+// 更稳：发布一个新的 List 实例
+_items.value = _items.value + newItem
+```
+
+Strong Skipping 降低了稳定性标记的门槛，但没有替代不可变数据设计。列表、Map、复杂状态对象仍要避免原地修改。
 
 稳定性没有失效，但角色变了。`@Stable`、`@Immutable`、不可变集合和清晰的 State holder 设计，现在更像是在解决三类问题：
 
@@ -347,17 +360,18 @@ Title(snack) { scroll.value }  // scroll.value 被包装在 Lambda 中
 
 ### 陷阱一：不稳定参数导致整个页面被拖着重组
 
-这是 Compose 性能问题中最常见的一类。当我们把一个包含 var 属性的类，或者一个 `List<T>` 传给 Composable 时，编译器无法确定这个参数是否稳定，只好在每次父组件重组时都重新执行这个 Composable。
+这是 Compose 性能问题中最常见的一类。把包含 `var` 属性的类，或者普通 `List<T>` 传给 Composable 时，编译器通常会把它们归为不稳定参数。Strong Skipping 默认开启后，这类问题会出现两种表现：父组件频繁创建新的 List 会让子项重组；原地修改同一个 MutableList 又可能因为引用没变而被跳过。
 
-一个典型的案例：我们的 ViewModel 暴露了一个 `StateFlow<List<Item>>`，在 Compose 中通过 `collectAsState()` 收集。问题在于 `List<Item>` 是不稳定的——即使列表内容完全没变，Compose 也无法确定这一点，每次都会重组所有消费这个列表的 Composable。
+一个典型案例：ViewModel 暴露 `StateFlow<List<Item>>`，Compose 侧通过 `collectAsState()` 收集。安全的状态更新方式是把列表当成不可变快照，每次内容变化都发布新的 List 实例。直接修改 `ArrayList` 并复用原引用，既可能被 StateFlow 的相等性判断吞掉，也可能被 Strong Skipping 的引用比较跳过。
 
 解决方案：
 
-1. 用 `kotlinx.collections.immutable` 的不可变集合替代普通 List，让编译器能推断稳定性
-2. 用 `@Immutable` 注解标记我们的数据类（前提是我们真的保证它不可变）
-3. 在 Compose Compiler 1.5.5+ 中，可以通过 Stability Configuration File 声明外部类的稳定性
+1. 把上游状态建模成不可变快照，更新时发布新的 `List` 实例
+2. 用 `kotlinx.collections.immutable` 的不可变集合替代普通 List，让编译器能推断稳定性
+3. 用 `@Immutable` 注解标记数据类（前提是确实保证不可变）
+4. 在 Compose Compiler 1.5.5+ 中，通过 Stability Configuration File 声明外部类的稳定性
 
-[自动发现: Kotlin 2.0.20 引入的 Strong Skipping 模式可以在一定程度上缓解这个问题——即使参数类型不稳定，只要对象实例相同（引用相等），也可以跳过重组。来源: Android Developers Blog]
+[已验证: Kotlin 2.0.20+ Strong Skipping 对不稳定参数使用引用相等比较；这能减少过度重组，也会放大可变集合原地修改的刷新风险。来源: Android Developers Strong Skipping 文档]
 
 ### 陷阱二：LazyColumn 缺少 key 导致整列表重组
 
