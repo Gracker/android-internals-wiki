@@ -3661,3 +3661,9 @@
 - **位置**：L127
 - **问题**：Perfetto / simpleperf 观测链路仍停在示意图占位，缺一份可复核的 JNI ATrace slice 与 native 采样导入样例。
 - **建议**：补一组最小样例：Java `Trace` + NDK `ATrace_beginSection()` 的同线程 slice，以及一次 simpleperf `report-sample --protobuf` 导入 Perfetto 后的热点截图或 SQL/命令输出。
+
+## [External Review] 19.19 热降频识别 — 2026-04-25
+- **类型**：原理链完整性
+- **问题**：PerfDog 是观察热降频的最佳工具。
+- **建议**：补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
+- **来源**：2026-04-25-15-19-external-review.md

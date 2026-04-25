@@ -7900,3 +7900,61 @@ API 36 ASurfaceTransaction_setBufferWithRelease 在多缓冲池场景下的性�
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25-15-18.README-external-review.md)
+
+## [2026-04-25] 19.14 — 知识盲区
+
+### 多进程 App 监控限制
+remote` 或其他进程，`FrameTimingMetric` 可能采集不到对应的渲染帧。
+
+建议研究方向：提醒开发者对于多进程应用，需确认被测逻辑是否在 targetPackage 的主进程中，或查阅最新的多进程支持 API。
+
+### 外部 review 来源
+- 2026-04-25-15-14-external-review.md
+
+
+## [2026-04-25] 19.15 — 知识盲区
+
+### R8 混淆对 Profile 匹配的影响
+Baseline Profile 规则是在混淆前生成的。AGP 在打包时会自动将规则映射到混淆后的名称，但如果开发者手动移动 `.prof` 文件或使用了非标混淆流程，会导致 Profile 命中率为 0。
+
+建议研究方向：提醒开发者检查 AAB 产物中解密后的 profile 记录是否与混淆后的 `mapping.txt` 一致。
+
+### 外部 review 来源
+- 2026-04-25-15-15-external-review.md
+
+
+## [2026-04-25] 19.16 — 知识盲区
+
+### 重样本数据的安全性与合规
+未强调文件外传的安全性。
+
+建议研究方向：必须增加“安全警示”，提醒开发者在上传结果前必须在本地进行 OID（对象标识符）脱敏或加密，且必须符合 App 隐私协议。
+
+### 外部 review 来源
+- 2026-04-25-15-16-external-review.md
+
+
+## [2026-04-25] 19.17 — 知识盲区
+
+### 网络插桩冲突
+Firebase 通过字节码插桩拦截 OkHttp。如果业务中使用了某些复杂的 AOP 框架（如：自定义 Transformer 顺序不当）或者 OkHttp 的自定义 `EventListener` 占据了全局槽位，Firebase 的网络数据会采集失败。
+
+建议研究方向：提醒开发者在 `build.log` 中检查 Firebase 插件的插桩日志。
+
+### 9.2 知识盲区
+- Firebase 采集限流：10 分钟 300 事件，超出部分会被设备端直接丢弃。
+
+### 外部 review 来源
+- 2026-04-25-15-17-external-review.md
+
+
+## [2026-04-25] 19.19 — 知识盲区
+
+### GPU 指标的 SoC 依赖
+PerfDog 对 GPU 的读取深度取决于底层 SoC 驱动。在高通平台上数据较全，而在联发科或某些低端芯片上，GPU 利用率可能不可读或口径完全不同。
+
+建议研究方向：补充“跨芯片平台指标不可横比”的警示。
+
+### 外部 review 来源
+- 2026-04-25-15-19-external-review.md
+
