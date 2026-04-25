@@ -3797,3 +3797,21 @@
 - **问题**：正文多处写“地址和长度都必须按页大小对齐”。Linux `mprotect()` 的硬要求是起始地址按页对齐，长度覆盖到的页面会按范围处理；工程上通常会把长度向上取整，但这不是同一条 API 约束。
 - **建议**：改成“addr 必须页对齐，len 按覆盖范围向上扩展到页边界”，并保留 16KB 设备上不要硬编码 4096 的结论。
 
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-26
+- **类型**：SQL 性能
+- **位置**：大 Trace 上的 GC/ANR/锁竞争区间 JOIN
+- **问题**：外部 review 已指出窗口函数和大规模 JOIN 在 >1GB trace 上可能长时间无响应。正文只在少数位置提示缩小窗口，缺少统一的中间表固化建议。
+- **建议**：在 SQL 基础或结尾补充：复杂查询先用 CREATE PERFETTO TABLE 固化目标进程、目标时间窗和中间结果，再做 SPAN_JOIN / INTERVAL_INTERSECT。
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-26
+- **类型**：案例支撑
+- **位置**：SurfaceFlinger Frontend dump
+- **问题**：外部 review 建议补一个 Android 15+ Composition list / LayerSnapshot 的典型输出样例。当前解释准确，但读者第一次看新版 dump 时仍缺少对照样本。
+- **建议**：补一个短样例，说明 Composition list 的层级顺序、LayerSnapshot bounds/transform 与 HWC minidump 的对应关系。
+
+## [Task9 Deep Review] 15.5 线上性能监控 — 2026-04-26
+- **类型**：源码准确性
+- **位置**：FrameMetrics API 指标表：COMMAND_ISSUE
+- **问题**：表格把 COMMAND_ISSUE 描述成“GPU 命令执行耗时 / GPU”。FrameMetrics.COMMAND_ISSUE_DURATION 更准确是 RenderThread/HWUI 向 GPU 发出 draw command 的耗时，不等同于 GPU 实际执行完成时间。
+- **建议**：改成“命令提交耗时 / RenderThread→GPU 提交阶段”，并补一句：GPU 实际执行需结合 Perfetto GPU counter、FrameTimeline 或厂商 GPU 工具确认。

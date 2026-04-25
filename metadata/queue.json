@@ -10430,5 +10430,51 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T23:29:25+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.10",
+    "section_title": "Perfetto SQL 性能分析实战手册",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 多处 SQL 用 thread.name = 'main' 识别主线程；文本建议通过 sched_setscheduler 将主线程设为 SCHED_FIFO 来缓解调度延迟",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "SQL鲁棒性",
+        "location": "线程 CPU 时间统计 / 调度延迟 / 线程状态分布 / ANR / 锁竞争等 SQL 模板",
+        "detail": "多处 SQL 用 thread.name = 'main' 识别主线程。Perfetto thread 表提供 is_main_thread；Android 主线程在线程名上可能显示为进程名或被截断，固定匹配 'main' 会导致模板在部分真实 trace 中查不到主线程。",
+        "suggestion": "改为按目标进程过滤后使用 thread.is_main_thread = 1；必要时增加 thread.tid = process.pid 兜底，并在示例中保留 process.name/package 条件。"
+      },
+      {
+        "type": "技术建议风险",
+        "location": "调度延迟：Runnable → Running 的时间",
+        "detail": "文本建议通过 sched_setscheduler 将主线程设为 SCHED_FIFO 来缓解调度延迟。普通 Android App 没有 CAP_SYS_NICE，不能把 UI 主线程切到实时调度；即使在特权进程中，SCHED_FIFO 也可能造成系统饥饿和 watchdog 风险。",
+        "suggestion": "删除普通 App 可采用 SCHED_FIFO 的建议，改为减少后台 Runnable 竞争、限制线程池、降低后台线程优先级、排查热降频/CPU 争用；如保留实时调度，只标注为系统/厂商特权进程的受控场景。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T00:28:30+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.4",
+    "section_title": "dumpsys 系列命令",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 示例命令 adb shell dumpsys meminfo --slab 与 AOSP android-16.0.0_r1 不匹配",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "dumpsys meminfo：基本用法代码块",
+        "detail": "示例命令 adb shell dumpsys meminfo --slab 与 AOSP android-16.0.0_r1 不匹配。ActivityManagerService.dumpApplicationMemoryUsage() 的 meminfo 参数包含 -a/-d/-c/-s/-S/-p/--unreachable/--oom/--local/--package/--checkin/--proto/--logstats，没有 --slab。",
+        "suggestion": "删除 --slab 示例。若要查看 slab，改为说明 dumpsys meminfo 全局输出里可能包含 slab 汇总；深入分析用 /proc/meminfo 的 Slab/SReclaimable/SUnreclaim，root/debuggable 场景再看 /proc/slabinfo。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T00:28:30+08:00",
+    "status": "pending"
   }
 ]
