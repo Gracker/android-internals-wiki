@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "LeakCanary fundamentals-how-leakcanary-works.md + recipes.md + changelog.md"
+last_verified: "2026-04-25"
+last_verified_against: "LeakCanary fundamentals, changelog 2.6 ServiceWatcher, recipes / leakcanary-android-instrumentation"
 confidence: medium
 tags: [apm, memory, leak-detection, debug-tools, shark]
 related_chapters: ["19.0"]
@@ -16,8 +16,12 @@ sources:
     path: "https://square.github.io/leakcanary/"
   - type: official
     path: "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
-pipeline_stage: task9_pending
-task6_state: reviewed
+  - type: official
+    path: "https://square.github.io/leakcanary/changelog/"
+  - type: official
+    path: "https://square.github.io/leakcanary/recipes/"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
@@ -28,6 +32,9 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T21:55:34+08:00"
 task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-25T08:51:01+08:00"
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
 ---
 
 # LeakCanary
@@ -84,7 +91,7 @@ LeakCanary 不会在对象一销毁时就立刻 dump heap。实际流程如下�
 1. `Activity.onDestroy()`、`Fragment.onDestroy()`、`Fragment.onDestroyView()`、`ViewModel.onCleared()` 这些生命周期结束点把对象交给 `AppWatcher` / `ObjectWatcher`。
 2. `ObjectWatcher` 为对象保存弱引用。
 3. 等待 5 秒后再次检查，并主动触发 GC。弱引用还没清掉时，这个对象才算 retained object。
-4. LeakCanary 先累计 retained object 数量。默认阈值是应用可见时 5 个、应用不可见时 1 个。
+4. LeakCanary 先累计 retained object 数量。默认阈值是应用可见时 5 个、应用不可见时 1 个；App 退到后台后按不可见阈值计算，少量 retained object 也可能触发 dump。
 5. 只有达到阈值后才会 dump `.hprof`，再由 Shark 分析 GC Root、引用路径、suspect reference 和 retained size。
 
 这套流程把 retained check 和 heap dump 分成了两步。日常接入里最容易写错的地方，就是把“对象还活着”直接写成“马上 dump”。
@@ -138,16 +145,18 @@ LeakCanary 是开发者修内存泄漏时最省时间的本地工具之一，但
 
 ## 默认观察对象
 
-LeakCanary 2.x 的自动观察对象主要是四类：
+LeakCanary 2.x 的自动观察对象主要覆盖 Android 生命周期对象：
 
 - destroyed `Activity`
 - destroyed `Fragment`
 - destroyed fragment `View`
 - cleared `ViewModel`
+- detached root `View`
+- destroyed `Service`（LeakCanary 2.6 起默认包含 `ServiceWatcher`）
 
-这四类对象背后依赖的是 Android 生命周期和 AndroidX / Lifecycle 回调——不会扫描整个堆。Activity 由 `Application.ActivityLifecycleCallbacks` 兜住；Fragment 与 fragment view 依赖 AndroidX Fragment 生命周期；ViewModel 则依赖 `onCleared()` 这个明确的生命周期终点。
+这些对象背后依赖 Android 生命周期和 AndroidX / Lifecycle 回调，不会扫描整个堆。Activity 由 `Application.ActivityLifecycleCallbacks` 兜住；Fragment 与 fragment view 依赖 AndroidX Fragment 生命周期；ViewModel 依赖 `onCleared()`；Service 监测来自 2.6 加入的 `ServiceWatcher`，它通过灰名单反射观察 Service 生命周期。项目停留在 2.5 或更早版本时，Service 仍要手动观察。
 
-`Service`、播放器容器、地图控制器、业务 presenter、手动创建的 detached view 这些对象，通常还要开发者自己调用 `AppWatcher.objectWatcher.watch()`。代码示例只保留关键调用：
+播放器容器、地图控制器、业务 presenter、手动创建的 detached view 这些对象，通常还要开发者自己调用 `AppWatcher.objectWatcher.watch()`。代码示例保留必要调用：
 
 ```kotlin
 class PlayerController {
@@ -235,7 +244,19 @@ LeakCanary 更适合本地修复，但它可以和线上样本组成一条修复
 
 ## 测试集成建议
 
-LeakCanary 放进 UI / instrumentation 测试时，真正的门槛是“怎样把噪声压住”。关键页面可以做一条最小门禁：进入页面、触发核心交互、退出页面，再检查 retained object 是否回到 0。下面这段示意代码只保留关键调用：
+LeakCanary 放进 UI / instrumentation 测试时，先用官方的 `leakcanary-android-instrumentation`，让测试结束后自动检查泄漏。手写 `sleep + retainedObjectCount` 只适合临时验证，因为它容易受主线程空闲、GC 时机和异步任务收尾影响。
+
+Gradle 依赖只放在 `androidTest`：
+
+```kotlin
+dependencies {
+    androidTestImplementation("com.squareup.leakcanary:leakcanary-android-instrumentation:<leakcanary_version>")
+}
+```
+
+官方集成会在测试成功结束后运行检测逻辑，常见封装是 `DetectLeaksAfterTestSuccess` TestRule 或版本对应的 RunListener。CI 报告应保留 leak signature、页面路由、retained size 和构建版本，便于区分老问题复现和新泄漏。
+
+如果项目暂时不能接官方 instrumentation 依赖，再保留最小手写门禁：进入页面、触发主路径、退出页面，再检查 retained object 是否回到 0。下面这段示意代码保留必要调用：
 
 ```kotlin
 // Several unrelated imports are omitted.
@@ -282,3 +303,9 @@ class DebugExampleApplication : Application() {
 ```
 
 门禁报告里至少保留 leak signature、页面路由、retained size 和构建版本。这样才能把“同一条老问题重复出现”与“新引入的泄漏”分开看。
+
+## 参考资料
+
+- [LeakCanary documentation](https://square.github.io/leakcanary/)
+- [LeakCanary changelog](https://square.github.io/leakcanary/changelog/)
+- [LeakCanary recipes](https://square.github.io/leakcanary/recipes/)

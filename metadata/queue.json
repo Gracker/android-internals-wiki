@@ -1165,7 +1165,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T08:51:01+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "fixed external review items: ServiceWatcher 2.6 and instrumentation integration"
   },
   {
     "section": "19.06",
@@ -2050,12 +2054,16 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/suggestions.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T08:36:00+08:00"
+    "updated_at": "2026-04-25T08:36:00+08:00",
+    "completed_at": "2026-04-25T08:51:01+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "fixed external review items: Frame Overrun, ApplicationExitInfo, RSS/PSS and lmkd correction"
   },
   {
     "section": "15.4",
