@@ -19,7 +19,7 @@ sources:
   - type: official
     path: "https://bugly.qq.com/docs/"
 pipeline_stage: task9_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
