@@ -3226,5 +3226,411 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T11:42:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.4",
+    "section_title": "典型卡顿场景分析",
+    "priority": 85,
+    "reason": "[External Review] setHasFixedSize 结论待验证确认；SurfaceControl 移交细节缺失",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "§1.2 RecyclerView 性能瓶颈",
+        "detail": "setHasFixedSize(true) 作用描述处于待验证状态",
+        "suggestion": "明确该 API 跳过全局 requestLayout，但不跳过 onBindViewHolder",
+        "evidence": [
+          "External review 核验结论"
+        ]
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "§3.1 App 启动窗口",
+        "detail": "Android 12+ SplashScreen 的 Surface 移交细节缺失",
+        "suggestion": "补充 SurfaceControl 移交概念，解释为何不再闪烁",
+        "evidence": [
+          "StartingSurfaceController.java",
+          "SplashScreenView.java"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.5",
+    "section_title": "优化策略",
+    "priority": 85,
+    "reason": "[External Review] RenderEffect 底层机制区分度不足；RecyclerView 1.4.0 ARR 缺失；Binder 调用优化缺量化",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "渲染优化：RenderEffect",
+        "detail": "RenderEffect 与 Hardware Layer 的 FBO 机制混为一谈",
+        "suggestion": "明确 Shader 级集成 vs Buffer 级隔离的区别",
+        "evidence": [
+          "SkiaPipeline.cpp"
+        ]
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "RecyclerView 优化",
+        "detail": "RecyclerView 1.4.0 ARR 核心API未点出",
+        "suggestion": "补充 View.setFrameContentVelocity(float) 依赖 Android 15 API 35",
+        "evidence": [
+          "View.java setFrameContentVelocity"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "线程优化：Binder 调用",
+        "detail": "getMyMemoryState vs getProcessMemoryInfo 缺量化对比",
+        "suggestion": "补充 <2ms vs 50-200ms 量级对比",
+        "evidence": [
+          "getProcessMemoryInfo 解析 /proc/smaps"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.6",
+    "section_title": "案例集",
+    "priority": 85,
+    "reason": "[External Review] 案例5缺Android 14进程冻结机制；案例4缺AVD退化触发逻辑",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "案例五",
+        "detail": "Android 14 进程冻结机制未说明",
+        "suggestion": "强调 TRIM_MEMORY_UI_HIDDEN 触发时必须立即同步完成内存释放",
+        "evidence": [
+          "Android 14 cached process freezing"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "案例四",
+        "detail": "AVD 退化到 UI 线程的具体触发逻辑未说明",
+        "suggestion": "列出 fallbackOntoUI() 常见触发条件（setAlpha、不支持的路径变换）",
+        "evidence": [
+          "AnimatedVectorDrawable.java fallbackOntoUI()"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.7",
+    "section_title": "Compose 性能",
+    "priority": 95,
+    "reason": "[External Review] P0: SlotTable 物理角色描述错误，误称 UI 树",
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "渲染模型章节",
+        "detail": "SlotTable 描述为'虚拟 UI 树'，实际是 Gap Buffer（扁平数组），记录 Composition 执行日志。物理 UI 树是 LayoutNode 树",
+        "suggestion": "区分 SlotTable（状态存储/Memoization）与 LayoutNode（Measure/Layout/Draw）",
+        "evidence": [
+          "SlotTable.kt",
+          "LayoutNode.kt"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "Strong Skipping",
+        "detail": "未强调不稳定参数使用 === 比较的副作用",
+        "suggestion": "增加 Strong Skipping 下引用相等性陷阱提示",
+        "evidence": [
+          "Kotlin 2.0.20 changelog"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.10",
+    "section_title": "图片与 Bitmap 性能",
+    "priority": 85,
+    "reason": "[External Review] inSampleSize 取整逻辑陈旧；Coil 3.0 不使用 BitmapPool 原因未充分说明",
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "inSampleSize 取整逻辑",
+        "detail": "称必须为2的幂，但现代 Skia/SkCodec 已支持非2幂次采样",
+        "suggestion": "标注 Skia 已支持，但工程上仍推荐2的幂",
+        "evidence": [
+          "SkCodec.cpp onGetScaledDimensions"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "Coil 3.0 架构",
+        "detail": "Coil 不使用 BitmapPool 原因解释简略",
+        "suggestion": "补充为支持 Immutable Bitmap 和跨平台",
+        "evidence": [
+          "Coil 3.0 官方文档"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.11",
+    "section_title": "WebView 性能",
+    "priority": 85,
+    "reason": "[External Review] Renderer 进程崩溃后恢复逻辑描述不完整",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "onRenderProcessGone",
+        "detail": "未深入分析多 WebView 共享 Renderer 时的同步崩溃及恢复流程",
+        "suggestion": "补充正确恢复流程：removeView + new WebView，不能在旧实例 loadUrl",
+        "evidence": [
+          "WebViewClient.java"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.12",
+    "section_title": "View 体系性能优化",
+    "priority": 95,
+    "reason": "[External Review] P0: Android 15 LayoutInflater sConstructorMap 从 static 改为实例变量",
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "LayoutInflater.inflate() 第二步",
+        "detail": "sConstructorMap 在 Android 15 前为 static，Android 15 后改为实例变量，解决 ClassLoader 泄漏",
+        "suggestion": "修正缓存作用域描述，补充 ClassLoader 泄漏背景",
+        "evidence": [
+          "LayoutInflater.java Android 15+"
+        ]
+      },
+      {
+        "type": "版本滞后",
+        "location": "AsyncLayoutInflater 限制部分",
+        "detail": "未覆盖 AsyncLayoutInflater 1.1.0 对 AppCompat 的支持",
+        "suggestion": "补充 AsyncAppCompatFactory 用法",
+        "evidence": [
+          "AndroidX AsyncLayoutInflater 1.1.0 Release Notes"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.13",
+    "section_title": "SystemUI 性能分析",
+    "priority": 85,
+    "reason": "[External Review] 通知内容绑定异步链路并发模型变化未说明",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "通知内容绑定",
+        "detail": "Android 14+ NotificationContentInflater 转向 NotifInflationExecutor 统一并发控制",
+        "suggestion": "补充并发限制说明，强调 SystemUI 如何保护主线程",
+        "evidence": [
+          "NotificationContentInflater.java"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.14",
+    "section_title": "GAPS 动态分析",
+    "priority": 85,
+    "reason": "[External Review] GAPS 反向遍历的上下文敏感性未深入说明",
+    "review_issues": [
+      {
+        "type": "原理链",
+        "location": "实现细节",
+        "detail": "未说明 GAPS 静态阶段如何处理 Entry Point 及 Intent-filter/Callback 注册",
+        "suggestion": "补充 GAPS Section 4.2 上下文敏感性机制",
+        "evidence": [
+          "GAPS 论文 Section 4.2"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.15",
+    "section_title": "作战手册",
+    "priority": 85,
+    "reason": "[External Review] 冷启动慢未提及 Android 15/16 16KB Page Size 影响",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "冷启动慢小节",
+        "detail": "未提及 16KB Page Size 导致的内存映射延迟风险",
+        "suggestion": "增加检查 ELF page alignment 步骤",
+        "evidence": [
+          "developer.android.com/guide/practices/page-sizes"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "7.README",
+    "section_title": "第7章 README",
+    "priority": 85,
+    "reason": "[External Review] README 仅列出7篇，实际已扩展至15篇，缺失近50%内容索引",
+    "review_issues": [
+      {
+        "type": "交叉引用一致性",
+        "location": "全文",
+        "detail": "缺失 7.07-7.14 共8篇的目录索引",
+        "suggestion": "重写 README 本章内容部分，确保与物理文件一一对应",
+        "evidence": [
+          "实际目录文件列表"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "8.1",
+    "section_title": "响应速度原理",
+    "priority": 85,
+    "reason": "[External Review] Android Vitals 指标量化描述陈旧",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "Android Vitals 指标",
+        "detail": "慢帧/冻结帧定义需更新，缺少 700ms 冻结帧阈值",
+        "suggestion": "明确冻结帧(>700ms, >0.1%)和慢帧(>16ms, >50%)的精确指标",
+        "evidence": [
+          "Play Console Vitals 文档"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "8.3",
+    "section_title": "启动优化策略",
+    "priority": 85,
+    "reason": "[External Review] Android 16 AutoFDO 漏掉内核级优化这一核心突破",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "AutoFDO 章节",
+        "detail": "Android 16 AutoFDO 首次应用到 Linux 内核层级，Binder效率提升21%",
+        "suggestion": "补充内核级优化关键词和量化数据",
+        "evidence": [
+          "Android 16 AutoFDO kernel optimization"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "8.5",
+    "section_title": "启动优化案例集",
+    "priority": 85,
+    "reason": "[External Review] ProfilingManager 核心调用方法和触发源缺失",
+    "review_issues": [
+      {
+        "type": "原理链",
+        "location": "ProfilingManager 段落",
+        "detail": "未说明 requestProfiling() 的具体调用方法和触发机制",
+        "suggestion": "补充 requestProfiling(int type, Bundle params, Executor, Callback) 代码示例",
+        "evidence": [
+          "android.os.ProfilingManager Android 15+"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "8.7",
+    "section_title": "Baseline Profiles",
+    "priority": 85,
+    "reason": "[External Review] Android 16 SDM 文件和 artd 进程角色缺失",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "Android 16 云端预编译",
+        "detail": "SDM(Secure Dex Metadata)文件角色未明确",
+        "suggestion": "说明 SDM 如何通过 Play 服务端预生成实现首启即 AOT",
+        "evidence": [
+          "packages/modules/Art/artd/"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "ART Service 验证",
+        "detail": "未提及 artd 进程在后台编译调度中的角色",
+        "suggestion": "简要提及 artd 属于 com.android.art Mainline 模块",
+        "evidence": [
+          "AOSP artd 源码"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "8.8",
+    "section_title": "多媒体管线性能",
+    "priority": 85,
+    "reason": "[External Review] Media3 Compose 组件版本归属不清；低延迟解码模式缺失",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "Media3 Compose",
+        "detail": "media3-ui-compose-material3 新模块未充分强调",
+        "suggestion": "补充 Material 3 深度集成原子组件",
+        "evidence": [
+          "Media3 1.10 release notes"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "低延迟解码",
+        "detail": "Android 11+ FEATURE_LowLatency 未提及",
+        "suggestion": "补充 KEY_LOW_LATENCY 配置说明",
+        "evidence": [
+          "MediaCodec FEATURE_LowLatency"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "8.10",
+    "section_title": "ProfilingManager 系统触发式性能追踪",
+    "priority": 85,
+    "reason": "[External Review] TRIGGER_TYPE_ANOMALY 在内存治理中的核心场景未展开",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "MemoryLimiter 预警",
+        "detail": "ANOMALY 触发器可捕获 MemoryLimiter 事件，在 LMK 前生成 Heap Dump",
+        "suggestion": "强调 ANOMALY 是实现'死前留言'的关键",
+        "evidence": [
+          "ProfilingService.java"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
   }
 ]
