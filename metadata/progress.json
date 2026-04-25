@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T08:51:01+08:00",
+  "generated_at": "2026-04-25T09:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -4735,7 +4735,19 @@
       "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/13-tracing-sdk.md": {
-      "path": "src/part3-tools/ch19-apm/13-tracing-sdk.md"
+      "path": "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "title": "androidx.tracing（Tracing SDK）",
+      "chapter": "19",
+      "section": "19.13",
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-25T09:40:00+08:00"
     },
     "src/part3-tools/ch19-apm/21-benchmark-apps.md": {
       "path": "src/part3-tools/ch19-apm/21-benchmark-apps.md",
@@ -5088,10 +5100,10 @@
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "'2026-04-24'",
-      "last_verified_against": "AndroidGodEye / Collie / Rabbit / Matrix GitHub READMEs + Android developers docs",
+      "last_verified_against": "AndroidGodEye / Collie / Rabbit / Matrix GitHub READMEs + AGP API updates + Android developers docs",
       "confidence": "medium",
       "pipeline_stage": "ready-to-publish",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -5101,7 +5113,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-24'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-24T17:50:00+08:00'"
+      "last_task9_at": "'2026-04-24T17:50:00+08:00'",
+      "last_task2b_at": "'2026-04-25T09:40:00+08:00'"
     },
     "src/part3-tools/ch19-apm/15-baseline-profiles.md": {
       "path": "src/part3-tools/ch19-apm/15-baseline-profiles.md",
@@ -5573,6 +5586,19 @@
           ],
           "auto_promoted": true
         }
+      ]
+    },
+    {
+      "at": "2026-04-25T09:40:00+08:00",
+      "task": "task2b-content-processing-rework",
+      "sections": [
+        "19.10",
+        "19.13"
+      ],
+      "result": "fixed",
+      "files": [
+        "src/part3-tools/ch19-apm/10-other-opensource-apm.md",
+        "src/part3-tools/ch19-apm/13-tracing-sdk.md"
       ]
     }
   ],
