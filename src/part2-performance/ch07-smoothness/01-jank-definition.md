@@ -38,20 +38,20 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: '2026-04-22T21:50:17+08:00'
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
 review_round: 5
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-22"
-last_task9_at: "2026-04-20T13:38:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-25'
+last_task9_at: '2026-04-25T11:42:00+08:00'
 ---
 
 # 卡顿的定义与分类

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T10:40:00+08:00",
+  "generated_at": "2026-04-25T11:42:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,13 +7,13 @@
     "finalized": 64,
     "ready-for-review": 153,
     "ready-to-publish": 64,
-    "last_updated": "2026-04-25T10:40:00+08:00",
+    "last_updated": "2026-04-25T11:42:00+08:00",
     "pipeline_stage_counts": {
       "None": 36,
       "task6_pending": 32,
-      "task2b_pending": 36,
+      "task2b_pending": 39,
       "ready-to-publish": 63,
-      "task9_pending": 80,
+      "task9_pending": 77,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
@@ -24,16 +24,16 @@
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 112,
-      "pending": 93,
+      "reviewed": 115,
+      "pending": 90,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 159,
-      "pending": 40,
+      "fixed": 156,
+      "pending": 43,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -43,9 +43,9 @@
     "pipeline_stage_counts": {
       "None": 36,
       "task6_pending": 32,
-      "task2b_pending": 36,
+      "task2b_pending": 39,
       "ready-to-publish": 63,
-      "task9_pending": 80,
+      "task9_pending": 77,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
@@ -56,16 +56,16 @@
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 112,
-      "pending": 93,
+      "reviewed": 115,
+      "pending": 90,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 159,
-      "pending": 40,
+      "fixed": 156,
+      "pending": 43,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -1852,18 +1852,18 @@
       "last_verified": "2026-04-22",
       "last_verified_against": "AOSP android-16.0.0_r1 FrameTimeline.cpp + Perfetto docs / Android Developers docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T13:38:00+08:00",
+      "last_task9_at": "2026-04-25T11:42:00+08:00",
       "review_round": "5"
     },
     "src/part2-performance/ch07-smoothness/02-jank-causes.md": {
@@ -1875,16 +1875,18 @@
       "last_verified": "2026-04-08",
       "last_verified_against": "AOSP android-15.0.0_r1",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "last_task9_at": "2026-04-19T01:44:00+08:00"
+      "last_task9_at": "2026-04-25T11:42:00+08:00",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-25"
     },
     "src/part2-performance/ch07-smoothness/03-jank-methodology.md": {
       "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
@@ -1895,18 +1897,18 @@
       "last_verified": "2026-03-31",
       "last_verified_against": "AOSP android-16.0.0_r1, Perfetto 官方文档",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
-      "task9_reviewed_by": "'openclaw-task9'",
-      "last_task9_at": "'2026-04-22T13:35:00+08:00'"
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T11:42:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/04-typical-scenarios.md": {
       "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
@@ -5608,6 +5610,31 @@
         "src/part3-tools/ch19-apm/10-other-opensource-apm.md",
         "src/part3-tools/ch19-apm/13-tracing-sdk.md"
       ]
+    },
+    {
+      "date": "2026-04-25",
+      "task": "task9-deep-review",
+      "time": "11:42",
+      "sections_reviewed": [
+        {
+          "section": "7.1",
+          "title": "卡顿的定义与分类",
+          "result": "needs-rework",
+          "issues": 3
+        },
+        {
+          "section": "7.2",
+          "title": "卡顿原因体系",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "7.3",
+          "title": "卡顿分析方法论",
+          "result": "needs-rework",
+          "issues": 2
+        }
+      ]
     }
   ],
   "progress": {
@@ -5898,6 +5925,33 @@
         "updated_by": "openclaw-task2b",
         "updated_date": "2026-04-25",
         "auto_finalized": true
+      },
+      "7.1": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "task2b_state": "pending",
+        "issues_found": "major"
+      },
+      "7.2": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "task2b_state": "pending",
+        "issues_found": "major"
+      },
+      "7.3": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "task2b_state": "pending",
+        "issues_found": "major"
       }
     }
   },

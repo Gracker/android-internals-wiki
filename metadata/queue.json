@@ -3160,5 +3160,71 @@
     ],
     "added_by": "external-ai-review",
     "status": "pending"
+  },
+  {
+    "section": "7.1",
+    "section_title": "卡顿的定义与分类",
+    "priority": 85,
+    "reason": "[Deep Tech Review] FrameTimeline JankType 覆盖停在基础分类，未覆盖 android-15/16 JankInfo.h 中已存在的 SurfaceFlingerScheduling、Unknown、SurfaceFlingerStuffing 等归因，Android 15/16 设备上容易把 SF 调度类问题误归因到 App/SF deadline miss。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L142-L209 Google 的 Jank 分类体系",
+        "detail": "正文覆盖 AppDeadlineMissed、SurfaceFlingerCpuDeadlineMissed、SurfaceFlingerGpuDeadlineMissed、DisplayHAL、PredictionError、BufferStuffing、Dropped Frame，但 android-15.0.0_r1/android16-release 的 frameworks/native/libs/gui/include/gui/JankInfo.h 还包含 SurfaceFlingerScheduling(0x20)、Unknown(0x80)、SurfaceFlingerStuffing(0x100)。其中 SurfaceFlingerScheduling 用于 SF 唤醒/调度导致的 early/late present，SurfaceFlingerStuffing 用于上一帧占用当前 expected vsync 后把当前帧推后的场景。",
+        "suggestion": "在 Jank 分类小节新增“Android 15/16 JankType 补充表”，至少列出 SurfaceFlingerScheduling、Unknown、SurfaceFlingerStuffing 的触发条件、Perfetto 字符串和排查入口；同时说明外部 review 提到的 JANK_APP_RESYNCED_JITTER/JANK_NON_ANIMATING 未在 android-15/16 JankInfo.h 复核到，不能直接写入正文。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T11:42:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.2",
+    "section_title": "卡顿原因体系",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 章节适用范围写到 Android 17，但主线程锁竞争/系统级原因没有纳入 Android 17 lock-free MessageQueue（DeliQueue）边界，也未交叉引用 1.13，最新系统下锁竞争排查入口不完整。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L162-L183 主线程锁竞争；L242-L406 系统级原因/分析树；frontmatter related_chapters L37",
+        "detail": "Android Developers Blog 2026-02-17 明确说明 Android 17 面向 targetSdk 37+ 应用启用 lock-free MessageQueue（DeliQueue），用 Treiber stack 处理生产者入队、Looper 侧 min-heap 处理出队，目标是减少 MessageQueue monitor contention 和 missed frames。本章仍按传统锁竞争泛讲日志锁、单例锁、Kotlin lazy，缺少 MessageQueue 锁竞争作为主线程卡顿来源，也没有链接已成稿的 1.13 MessageQueue 机制与 DeliQueue 无锁优化、1.14 锁竞争。",
+        "suggestion": "在“主线程锁竞争”或“系统级原因”中补一个 Android 17 DeliQueue 边界段：Android 15 及以下传统 MessageQueue 仍可能出现 monitor contention；Android 17 + targetSdk 37+ 默认无锁实现后，Perfetto 中 MessageQueue 锁竞争的模式会改变，但业务锁、Binder 对端锁、native futex 仍要继续排查。related_chapters 补 1.13、1.14。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T11:42:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.3",
+    "section_title": "卡顿分析方法论",
+    "priority": 95,
+    "reason": "[Deep Tech Review] frontmatter 将 Android 16 标成 API 35，且 FrameTimeline 方法论未覆盖 ARR 动态 VSYNC 场景；会直接影响 Android 15-QPR1/16 设备上的掉帧判断。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter L14 applicable_versions",
+        "detail": "写成 “Android 8 (API 26) - Android 16 (API 35)”。API 35 对应 Android 15；Android 16 对应 API 36。该元数据会误导版本覆盖范围和后续自动筛选。",
+        "suggestion": "修正为 “Android 8 (API 26) - Android 16 (API 36)”；如果要覆盖 Android 17，则同步改为 API 37 并补 DeliQueue/ARR 等 17/15+ 差异。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L173-L199 FrameTimeline：Expected vs Actual；L504-L514 与其他章节关系",
+        "detail": "章节讲 FrameTimeline 时没有纳入 Android 15-QPR1+ Adaptive Refresh Rate。ARR 场景下 VSYNC 间隔和 Expected Timeline 宽度可能随内容节奏变化，固定 8.33ms/16.67ms 心理网格会误判正常降频或离散 VSYNC step。项目内 2.18 已单独成章，但本节未交叉引用。",
+        "suggestion": "在 FrameTimeline 方法段补 ARR 观察规则：优先以 Expected Timeline 动态宽度、Display/VSYNC 轨道和 FrameTimeline token 判断，不用固定刷新率阈值硬套；与其他章节关系补 2.18 Adaptive Refresh Rate。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T11:42:00+08:00",
+    "status": "pending"
   }
 ]
