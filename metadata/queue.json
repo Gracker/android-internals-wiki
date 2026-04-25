@@ -4473,6 +4473,15 @@
         "evidence": [
           "实际目录文件列表"
         ]
+      },
+      {
+        "type": "交叉引用一致性",
+        "location": "README.md 本章内容列表",
+        "detail": "仅列出7篇，实际目录已扩展至15篇，遗漏了 Compose/RecyclerView 深度优化/感官流畅性/Bitmap/WebView/布局优化/SystemUI/GAPS 等近50%内容",
+        "suggestion": "重写 README 本章内容部分，与物理文件一一对应；增加核心知识链路导航",
+        "evidence": [
+          "实际目录 vs README 列表对比"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -6951,6 +6960,25 @@
         "level": "P1",
         "detail": "- 建议：代码示例中加入线程优先级设置逻辑。",
         "suggestion": "代码示例中加入线程优先级设置逻辑。"
+      },
+      {
+        "type": "原理链缺失",
+        "location": "02-network-performance QUIC 0-RTT 段落",
+        "detail": "据 RFC 9001，0-RTT 数据不具备前向安全性且易受重放攻击，未提供业务层幂等性保障指导",
+        "suggestion": "补充非幂等请求(POST/PATCH)显式禁用或携带幂等 Token 的指导",
+        "evidence": [
+          "RFC 9001",
+          "Cronet 0-RTT 配置"
+        ]
+      },
+      {
+        "type": "版本差异风险",
+        "location": "01-apk-size.md",
+        "detail": "R8 统一引用图接管资源分析后，getIdentifier()动态获取资源的 keep.xml 模糊匹配可能失效",
+        "suggestion": "明确提示开启后需重新审计 res/raw/keep.xml",
+        "evidence": [
+          "AGP 8.12.0+ R8 资源缩减"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -8019,6 +8047,34 @@
         "detail": "- **[P1][源码准确性][06-memory-churn.md] GcWatcher 路径更新**",
         "type": "源码准确性",
         "evidence": "提到 `ActivityThread` 内部的 `GcWatcher`。\n  - **源码锚点**：`frameworks/base/core/java/com/android/internal/os/BinderInternal.java` (android-16.0.0_r1)。\n  - **核验结论**：现代 Android 版本中，`GcWatcher` 的核心逻辑已迁移至 `BinderInternal`，通过 `addGcWatcher` 进行通知。`ActivityThread` 仅作为注册方，不再是定义的 Owner。\n  - **建议修正**：更新源码指向到 `BinderInternal.java`。"
+      },
+      {
+        "type": "工具陈旧",
+        "location": "06-memory-churn.md",
+        "detail": "adb shell heapprofd --pid=<PID> --java 已过时，--java 非稳定参数，应通过 tools/heap_profile 或 android.heapprofd 数据源触发",
+        "suggestion": "更新为 tools/heap_profile --heaps com.android.art 推荐",
+        "evidence": [
+          "Android 12+ Perfetto 工具链"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "location": "06-memory-churn.md GC 演进段落",
+        "detail": "Android 15 引入 CMC(Concurrent Mark-Compact)+userfaultfd，Android 16 进一步完善分代 CMC，与分代 CC 性能特征有显著差异",
+        "suggestion": "明确区分 CC(Android 8-14)与 CMC(Android 15+)演进路线",
+        "evidence": [
+          "art/runtime/gc/heap.cc (android-15.0.0_r1+)"
+        ]
+      },
+      {
+        "type": "源码错误",
+        "location": "06-memory-churn.md GcWatcher 段落",
+        "detail": "现代 Android 版本中 GcWatcher 核心逻辑已迁移至 BinderInternal，ActivityThread 仅作为注册方",
+        "suggestion": "更新指向 frameworks/base/core/java/com/android/internal/os/BinderInternal.java",
+        "evidence": [
+          "BinderInternal.java (android-16.0.0_r1)",
+          "addGcWatcher"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -9710,6 +9766,91 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T19:19:39.292657+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "8.09",
+    "section_title": "Game Performance",
+    "priority": 85,
+    "reason": "[External Review] Vulkan 渲染阶段(Render Stages) Perfetto 观测缺失，影响 Vulkan 游戏优化",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "Perfetto 观测口径小节",
+        "detail": "仅泛泛提到启用 GPU 性能计数器，缺少 android.gpu.renderstages 数据源说明，无法分析 Vulkan RenderPass 耗时分布",
+        "suggestion": "加入 android.gpu.renderstages 配置，说明 RenderPass 分析方法及部分设备需 setprop security.perfetto.gpu_counters.privileged 1",
+        "evidence": [
+          "perfetto.dev GPU Profiling 指南",
+          "android.gpu.renderstages Android 10+"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Android 16 ADPF Headroom API 小节",
+        "detail": "1ms+ 同步 Binder 阻塞在 120fps 下消耗12%帧预算(8.33ms/帧)，原文未强调严禁在渲染主线程调用",
+        "suggestion": "强调采用低频异步轮询模式，严禁渲染主线程调用",
+        "evidence": [
+          "API 36 (Android 16) Headroom API"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "15.README",
+    "section_title": "方法论章节 README",
+    "priority": 85,
+    "reason": "[External Review] 缺乏具体 AOSP 源码锚点，读者无法按图索骥",
+    "review_issues": [
+      {
+        "type": "源码缺失",
+        "location": "核心原理解释部分",
+        "detail": "缺乏 cs.android.com 具体类/方法引用和调用链",
+        "suggestion": "补充 Android 14/15 具体源码方法签名和调用链",
+        "evidence": [
+          "AOSP 15 相关实现"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "18.16",
+    "section_title": "渲染管线(Game Engine/VRR/PIP 等)",
+    "priority": 95,
+    "reason": "[External Review] ARR API 版本归属错误：setRequestedFrameRate 是 API 35，hasArrSupport 是 API 36",
+    "review_issues": [
+      {
+        "type": "版本差异错误",
+        "location": "19-variable-refresh-rate.md 系统如何决定刷新节奏",
+        "detail": "View.setRequestedFrameRate 属 API 35(Android 15)，Display.hasArrSupport() 属 API 36(Android 16)，API 35 上无法调用后者",
+        "suggestion": "精确修正两 API 的版本归属，避免读者在 API 35 上误用",
+        "evidence": [
+          "AOSP API 35/36 差异"
+        ]
+      },
+      {
+        "type": "源码准确性",
+        "location": "17-hardware-buffer-renderer.md Java API 示例",
+        "detail": "原生 SDK 命名为 getFence()，可能存在与 AndroidX getSyncFence() 的混用",
+        "suggestion": "统一使用原生 SDK 命名 getFence()",
+        "evidence": [
+          "Android SDK HardwareBufferRenderer.RenderResult"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "location": "16-game-engine.md SurfaceView + BLAST 段落",
+        "detail": "Android 14 起 SurfaceView 支持 arbitrary alpha，Z-Below 模式下透明度应用到 Hole Punch 而非 Surface 内容，此合成器逻辑变更未说明",
+        "suggestion": "补充 Z-Below vs setZOrderOnTop(true) 两种模式下的透明度应用差异",
+        "evidence": [
+          "Android 14 Compositor 逻辑变更"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
     "status": "pending"
   }
 ]
