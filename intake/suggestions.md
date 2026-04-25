@@ -3197,3 +3197,21 @@
 - **建议**：补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
 - **来源**：Gemini 外部 review (2026-04-25-15-19-external-review.md)
 
+## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L151 / L556
+- **问题**：Compose vs View 帧耗时对比、重组驱动动画 vs Draw 阶段动画对比仍是 `[待补充]`，当前结论虽有边界说明，但缺少可复现 trace 或 Macrobenchmark 数据支撑。
+- **建议**：补 1 组 `FrameTimingMetric` / Perfetto Trace 样例，至少标明设备、刷新率、Compose 版本、测试场景，并给出 Composition/Layout/Draw 或 FrameTimeline 的观察点。
+
+## [Task9 Deep Review] 7.7 Jetpack Compose 性能优化 — 2026-04-25
+- **类型**：待验证
+- **位置**：L510
+- **问题**：`Compose 1.10 中 ReuseComposeView API 的稳定性` 仍标为待验证。
+- **建议**：下一轮补官方 release note / AndroidX 源码锚点；如果 API 仍处实验或不存在稳定入口，改成条件化说明，避免读者按稳定 API 使用。
+
+## [Task9 Deep Review] 7.12 View 体系性能优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L603
+- **问题**：`Layout Inspector V2 使用 View.encode() 而非反射获取属性，dump 速度提升 3-5 倍` 缺少来源或 benchmark 条件，且与前文源码错误位于同一补充段。
+- **建议**：补 Android Studio / AOSP 工具侧资料或删除具体倍数，只保留可由 AOSP 验证的 `ViewDebug.dumpv2()` / `View.encode(ViewHierarchyEncoder)` 关系。
+

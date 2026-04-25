@@ -1,39 +1,39 @@
 {
-  "generated_at": "2026-04-25T15:40:00+08:00",
+  "generated_at": "2026-04-25T16:33:30+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total_sections": 212,
-    "finalized": 67,
-    "ready-for-review": 151,
-    "ready-to-publish": 67,
-    "last_updated": "2026-04-25T15:31:06+08:00",
+    "finalized": 68,
+    "ready-for-review": 150,
+    "ready-to-publish": 68,
+    "last_updated": "2026-04-25T16:33:30+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 40,
-      "task2b_pending": 48,
-      "ready-to-publish": 67,
+      "task6_pending": 37,
+      "task2b_pending": 50,
+      "ready-to-publish": 68,
       "task9_pending": 57,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 183,
-      "revisiting": 31
+      "reviewed": 186,
+      "revisiting": 28
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 127,
-      "pending": 79,
+      "reviewed": 130,
+      "pending": 76,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 148,
-      "pending": 52,
+      "fixed": 146,
+      "pending": 54,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -42,30 +42,30 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 40,
-      "task2b_pending": 48,
-      "ready-to-publish": 67,
+      "task6_pending": 37,
+      "task2b_pending": 50,
+      "ready-to-publish": 68,
       "task9_pending": 57,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 183,
-      "revisiting": 31
+      "reviewed": 186,
+      "revisiting": 28
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 127,
-      "pending": 79,
+      "reviewed": 130,
+      "pending": 76,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 148,
-      "pending": 52,
+      "fixed": 146,
+      "pending": 54,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -1984,27 +1984,27 @@
       "title": "Jetpack Compose 性能优化",
       "chapter": "'7.7'",
       "section": "'7.7'",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "'2026-04-01'",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
       "last_verified": "'2026-04-01'",
       "last_verified_against": "Android 16 Developer Preview",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "reviewed_date": "'2026-04-22'",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
-      "task9_reviewed_by": "'openclaw-task9'",
-      "last_task9_at": "'2026-04-22T13:35:00+08:00'",
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T16:33:30+08:00",
       "review_round": "3",
-      "last_task2b_at": "2026-04-25T13:48:53+08:00"
+      "last_task2b_at": "2026-04-25T13:47:46+08:00"
     },
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
@@ -2118,19 +2118,19 @@
       "last_verified": "2026-04-08",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "high",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-23",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T14:50:48+08:00",
-      "last_task2b_at": "2026-04-25T13:48:53+08:00"
+      "last_task9_at": "2026-04-25T16:33:30+08:00",
+      "last_task2b_at": "2026-04-25T13:47:46+08:00"
     },
     "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
@@ -2142,20 +2142,20 @@
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)，通知图标源码入口需区分 Android",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "'2026-04-21'",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-21'",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-21T01:15:00+08:00'",
-      "last_task2b_at": "2026-04-25T13:48:53+08:00",
-      "last_verified": "'2026-04-25'",
+      "last_task9_at": "2026-04-25T16:33:30+08:00",
+      "last_task2b_at": "2026-04-25T13:47:46+08:00",
+      "last_verified": "2026-04-25",
       "last_verified_against": "AOSP main / Android 16 SystemUI"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
@@ -5687,6 +5687,21 @@
         "10.6": "pass-tech-review; auto-finalized"
       },
       "log": "logs/deep-review/2026-04-25-14-deep-review.md"
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "at": "2026-04-25T16:33:30+08:00",
+      "sections": [
+        "7.7",
+        "7.12",
+        "7.13"
+      ],
+      "results": {
+        "7.7": "pass-tech-review; auto-finalized",
+        "7.12": "needs-rework",
+        "7.13": "needs-rework"
+      },
+      "log": "logs/deep-review/2026-04-25-16-deep-review.md"
     }
   ],
   "progress": {
