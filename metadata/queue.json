@@ -9852,5 +9852,25 @@
     ],
     "added_by": "external-ai-review",
     "status": "pending"
+  },
+  {
+    "section": "1.7",
+    "section_title": "ART 编译管线与 dex2oat 优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ART 编译版本演进表存在平台版本与构建工具口径混写",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L497-L502",
+        "detail": "版本演进表把 ART 平台演进、构建工具演进和 Profile 分发机制混在一起：quicken 应归到 Android 8；Hidden API 限制从 Android 9 开始、Android 10 是进一步收紧；R8 full mode 默认属于 AGP 8.0+，不是 Android 11 平台行为；Baseline Profiles 的官方口径应区分 API 24-27 ProfileInstaller 与 API 28+ Play Baseline/Cloud Profile，而不是写成 Android 13 通过 Mainline 推送。",
+        "suggestion": "重写版本演进表：只保留 ART/运行时平台事实；R8 full mode 移到构建工具章节；Baseline/Cloud Profiles 按官方版本矩阵（API 24-27、API 28+）补充。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T20:20:00+08:00",
+    "status": "pending"
   }
 ]

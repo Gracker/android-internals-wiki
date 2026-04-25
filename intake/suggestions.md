@@ -3642,3 +3642,22 @@
 - **类型**：改进建议
 - **来源**：Gemini 外部 review (2026-04-25-15-18.README-external-review.md)
 - **建议**：EyeDropper API 37 需明确指出 secure window 和 protected buffer 像素拦截机制
+
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L89 / L173 / L310 / L336 / L452
+- **问题**：冷启动差距 30%+、JIT code cache 常见 4MB、Baseline / Startup Profiles 15-30% 或 30%+ 这几组数字仍缺设备、版本、样本与官方出处。正文已标待验证，但发布前仍会削弱技术可信度。
+- **建议**：把收益数字集中成一张数据表，至少补官方文档原文、测试设备/Android 版本、样本应用、对照组；不能补齐的数字保留为定性判断。
+
+## [Task9 Deep Review] 1.12 AutoFDO 反馈导向编译优化 — 2026-04-25
+- **类型**：交叉引用一致性
+- **位置**：L254
+- **问题**：Baseline Profiles 的引入版本写成“Android 9（作为 App Profiles）/ Android 13（正式名称）”，与官方 Baseline Profiles 版本矩阵口径不一致。
+- **建议**：改成 API 24-27 通过 ProfileInstaller 在首轮运行后安装 Baseline Profile，API 28+ Play 在安装时使用 Baseline Profiles 并叠加 Cloud Profiles；避免把“正式名称”绑定到 Android 13。
+
+## [Task9 Deep Review] 1.15 JNI/NDK 性能优化 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L127
+- **问题**：Perfetto / simpleperf 观测链路仍停在示意图占位，缺一份可复核的 JNI ATrace slice 与 native 采样导入样例。
+- **建议**：补一组最小样例：Java `Trace` + NDK `ATrace_beginSection()` 的同线程 slice，以及一次 simpleperf `report-sample --protobuf` 导入 Perfetto 后的热点截图或 SQL/命令输出。
