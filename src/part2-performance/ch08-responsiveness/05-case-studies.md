@@ -11,8 +11,8 @@ reviewed_by: openclaw-task6
 review_cycle: 3
 re_review_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
+last_verified: "2026-04-25"
+last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ProfilingManager docs + external review"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-06"
@@ -28,12 +28,14 @@ sources:
     path: "性能优化日报/2026-03-14-官方 社区-Android Baseline Profiles 启动优化实战.md"
   - type: official
     path: "android-developers.googleblog.com (Google AutoFDO)"
+  - type: official
+    path: "https://developer.android.com/reference/android/os/ProfilingManager"
   - type: blog
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -42,6 +44,9 @@ task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T05:29:00+08:00"
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-25T18:48:46+08:00"
 review_round: 4
 ---
 
@@ -402,7 +407,36 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，这说明他们最清楚一件事：优化成果的保持比取得优化更难。每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
 
-[自动发现] **ProfilingManager（Android 16/17）** 对响应速度案例分析的辅助价值：Android 16 引入的系统触发式 Profiling 能力，可以在 App 冷启动时自动捕获 Perfetto trace（`reportFullyDrawn` trace），无需在代码中手动 `Debug.startMethodTracing()`。Android 17 进一步扩展了触发类型（OOM、CPU 过高被杀等）。这意味着线上用户遇到启动慢时，开发者可以获取当时的完整 trace 做回溯分析——这在以前是做不到的。[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
+[自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供 `android.os.ProfilingManager`,应用可以通过 `requestProfiling()` 请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件,启动慢不再只能依赖开发者手动复现。
+
+下面的代码只展示显式请求 system trace 的最小路径,重点看 `PROFILING_TYPE_SYSTEM_TRACE`、`KEY_DURATION_MS` 和结果回调:
+
+```kotlin
+@RequiresApi(35)
+fun requestStartupSystemTrace(context: Context) {
+    val profilingManager = context.getSystemService(ProfilingManager::class.java)
+    val params = Bundle().apply {
+        putLong(ProfilingManager.KEY_DURATION_MS, 10_000L)
+    }
+
+    profilingManager.requestProfiling(
+        ProfilingManager.PROFILING_TYPE_SYSTEM_TRACE,
+        params,
+        "startup_trace",
+        null,
+        context.mainExecutor
+    ) { result ->
+        if (result.errorCode == ProfilingResult.ERROR_NONE) {
+            val tracePath = result.resultFilePath
+            Log.i("StartupTrace", "profiling result: $tracePath")
+        } else {
+            Log.w("StartupTrace", "profiling failed: ${result.errorCode}")
+        }
+    }
+}
+```
+
+结果文件由系统写入应用可访问目录,回调只负责拿到路径和错误码。线上接入时还要加采样率、用户授权、隐私脱敏和上传窗口控制,否则 trace 文件会带来额外 I/O 和合规风险。[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md；Android `ProfilingManager` API 文档]
 
 ---
 

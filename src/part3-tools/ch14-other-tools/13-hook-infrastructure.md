@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-04-22'
-last_verified_against: Android 16KB page size docs + ART TI + GitHub upstream READMEs
+last_verified: '2026-04-25'
+last_verified_against: AOSP sepolicy public/domain.te + bionic linker linker_phdr.cpp + Android 16KB page size docs + ART TI + GitHub upstream READMEs
 confidence: medium
 sources:
 - type: official
@@ -39,8 +39,8 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
@@ -49,11 +49,11 @@ task9_result: needs-rework
 task9_reviewed_date: '2026-04-21'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-21T23:18:40+08:00'
-repaired_date: '2026-04-22'
-repaired_by: codex
+repaired_date: '2026-04-25'
+repaired_by: openclaw-task2b
 task2b_result: fixed
 task2b_state: fixed
-last_task2b_at: '2026-04-22T19:39:59+08:00'
+last_task2b_at: '2026-04-25T18:48:46+08:00'
 ---
 
 
@@ -66,7 +66,7 @@ last_task2b_at: '2026-04-22T19:39:59+08:00'
 ### 锚点(必须覆盖)
 
 - 🔹 很多性能工具本质上建立在 Hook / 插桩 / 监听机制之上
-- 🔹 `PLT Hook`、`Inline Hook`、`字节码插桩`、`系统回调` 是四种完全不同的实现路线
+- 🔹 `系统回调`、`字节码插桩`、`PLT Hook`、`Inline Hook`、`ART 运行时 Hook` 是五种不同的实现路线
 - 🔹 `ByteHook`、`ShadowHook`、`xHook`、`Booster` 各自解决的问题不同
 - 🔹 运行时灵活性、稳定性、兼容性、维护成本要一起看
 - 🔹 先理解底层机制,才能正确评估 Matrix / KOOM / btrace 这类工具的边界
@@ -90,16 +90,17 @@ last_task2b_at: '2026-04-22T19:39:59+08:00'
 这些问题的答案不在功能列表里,而在实现机制中。
 这一章不教读者自己编写 Hook,但会详细介绍常见的实现路线及其工程代价。理解这些机制后,再看 `Matrix`、`KOOM`、`btrace`、`Booster` 等工具时,你将能够基于技术原理而非表面功能来做决策。
 
-## 先把四条常见路线分开
+## 先把五条常见路线分开
 
-性能工具常用的底层手段，表面上很多，骨架上可以收成四条：
+性能工具常用的底层手段，表面上很多，骨架上可以收成五条：
 
 1. 系统回调 / 官方接口
 2. 字节码插桩
 3. PLT Hook
 4. Inline Hook
+5. ART 运行时 Hook
 
-把这四条线分清楚，比记住几个库名更重要。因为工具会变，名字会变，版本会变，但这些基本路线不会轻易变。
+把这五条线分清楚，比记住几个库名更重要。因为工具会变，名字会变，版本会变，但这些基本路线不会轻易变。
 
 [已验证: 本文分类框架参考了 Android 性能工具生态的实际发展脉络]
 
@@ -200,6 +201,19 @@ Inline Hook 更激进。它直接改目标函数入口处的机器码,把执行�
 所以 Inline Hook 的位置通常不应该太靠前。
 它不是"默认优先方案",而更像"前几条路都不够时,才值得认真评估的一条路"。
 
+## 第五条路线:ART 运行时 Hook
+
+ART 运行时 Hook 直接改 Java 方法在 ART 内部的入口点。典型实现会定位 `ArtMethod`,再把 `entry_point_from_quick_compiled_code_` 指向代理入口,或在解释/编译入口之间插入跳转。`SandHook`、`Epic` 属于这条路线。
+
+它解决的是字节码插桩覆盖不到的运行时拦截:例如无法重打包、无法修改 AOSP、又需要临时接管某个 Java Framework 方法的场景。代价也很明确:
+
+- `ArtMethod` 结构随 Android/ART 版本变化,字段偏移需要逐版本适配
+- JIT、AOT、inline、quickening 会改变方法入口和调用路径
+- hidden API、SELinux、ROM 定制会影响可用性
+- 线上常驻风险高,适合实验室诊断、自动化取证或受控灰度,不适合作为默认监控方案
+
+这条路线和字节码插桩不在同一层。插桩改的是构建产物,ART Hook 改的是运行时入口。前者稳定性更好,后者灵活性更高,但维护成本和崩溃风险也更高。
+
 ## 把几个名字放回它们对应的位置
 
 这时候再看几个常见工具,位置就会清楚很多:
@@ -209,6 +223,7 @@ Inline Hook 更激进。它直接改目标函数入口处的机器码,把执行�
 | `ByteHook` | PLT Hook | 稳定拦截动态库函数、做 IO / malloc 类监控 |
 | `xHook` | PLT Hook | 较早期的 Android PLT Hook 基础设施 |
 | `ShadowHook` | Inline Hook | 覆盖更广的 native 拦截场景 |
+| `SandHook` / `Epic` | ART 运行时 Hook | 运行期拦截 Java 方法入口、实验室诊断 |
 | `Booster` | 字节码插桩 | 编译期优化、主线程风险扫描、代码注入 |
 
 如果再把"天然短板"也补出来,这张表会更接近工程现实:
@@ -217,10 +232,11 @@ Inline Hook 更激进。它直接改目标函数入口处的机器码,把执行�
 |---|---|
 | `ByteHook` / `xHook` | 不是所有调用都走 PLT;系统库还受 linker namespace 约束 |
 | `ShadowHook` | 维护成本和兼容风险更高 |
+| `SandHook` / `Epic` | 依赖 ART 内部结构,受版本、inline/JIT/AOT 与 hidden API 影响大 |
 | `Booster` | 强依赖构建链和 AGP 版本 |
 
 最常见的误判,是把这些路线当成互相替代。它们经常不在同一层。
-想在 Java / Kotlin 方法入口出口打点,优先想插桩;想拦 `malloc/free` 或 `open/read/write`,优先想 PLT Hook;只有当这些路都不够时,再认真考虑 Inline Hook。
+想在 Java / Kotlin 方法入口出口打点,优先想插桩;无法重打包且必须运行期接管 Java 方法,再评估 ART 运行时 Hook;想拦 `malloc/free` 或 `open/read/write`,优先想 PLT Hook;只有当这些路都不够时,再认真考虑 Inline Hook。
 
 ## 再把这些路线和性能工具对上
 
@@ -253,8 +269,9 @@ Inline Hook 更激进。它直接改目标函数入口处的机器码,把执行�
 
 ### 1. 到底要拦什么?
 
-- Java / Kotlin 方法:先看字节码插桩
-- Native 动态库符号:先看 PLT Hook
+- Java / Kotlin 方法:优先看字节码插桩
+- 无法重打包但必须运行期接管 Java 方法:再看 ART 运行时 Hook
+- Native 动态库符号:优先看 PLT Hook
 - 更底层、覆盖更广:再看 Inline Hook
 
 ### 2. 更重视覆盖面,还是更重视稳定性?
@@ -297,6 +314,14 @@ Native Hook 无论是改 GOT/PLT 还是改函数入口,收束到实现层时都�
 - 重新检查地址和长度的页边界计算,确保所有权限修改都按 16KB 边界展开
 - 重新构建 native 库时确认 ELF 满足 16KB 页边界要求;旧构建链通常还需要显式补 `-Wl,-z,max-page-size=16384`
 
+构建侧检查不能被运行时代码替代。`readelf -l libxxx.so` 里 `LOAD` 段的 `p_align` 要满足 16KB 设备的加载要求;旧 NDK/CMake 链接参数不足时,可以在目标库上补一条链接选项:
+
+```cmake
+# 旧构建链适配 16KB page size 的检查项
+# NDK r27/r28 之后的默认行为仍要以项目实际链接参数为准
+target_link_options(your_native_lib PRIVATE "-Wl,-z,max-page-size=16384")
+```
+
 如果某个 Hook 库几年没维护,又默认假设 4KB 页,这在 Android 15/16 设备上就是上线前必须先排掉的兼容性红线。
 
 - Android API 版本变化
@@ -329,7 +354,8 @@ Hook 到了,不代表结论就一定对。例如:
 1. 官方接口能不能回答问题?
 2. 不能的话,编译期插桩能不能回答?
 3. 再不行,PLT Hook 是否足够?
-4. 只有前三者都不够时,再考虑 Inline Hook。
+4. 必须运行期拦 Java 方法时,ART Hook 的版本风险能不能接受?
+5. 只有前面几条路都不够时,再考虑 Inline Hook。
 
 这个顺序的价值,是把高风险能力尽量后置。
 
@@ -339,18 +365,15 @@ Hook 到了,不代表结论就一定对。例如:
 
 Android 14 对 Inline Hook 的影响主要体现在两条线上：**W^X 内存保护策略限制了"同时可写可执行"的内存操作窗口**，以及 **16KB Page Size 改变了 `mprotect()` 的页边界假设**。
 
-### W^X 的真正来源：Bionic Linker 而非内核
+### W^X 在 Hook 场景里的三层约束
 
-W^X 策略不是内核特性，而是 **Bionic Linker 在用户态实施的约束**。关键 commit 来自 2015 年（Nick Kralevich）：
+Inline Hook 修改的是已映射的代码页,不能只用一句“Bionic Linker 限制”解释。工程约束分三层:
 
-> "linker: never mark pages simultaneously writable / executable"
+- `mprotect()` 是内核接口,页面权限变更最终要经过内核 VMA 检查和 SELinux 判定;直接请求 `PROT_WRITE | PROT_EXEC` 的 RWX 组合,在现代 Android 上不能作为可用路径。
+- SELinux 权限标签按内存来源区分:匿名可执行内存、JIT trampoline 更接近 `execmem`;文件映射代码页被改脏后再执行,会落到 `execmod` / text relocation 这类约束。原文把两者简单归到 `execmod`,会误导读者。
+- Bionic Linker 在处理 text relocation 等场景时遵循 RX→RW→RX 的转换,不保留同时可写可执行的页面。`bionic/linker/linker_phdr.cpp` 的加载流程体现了这种约束。
 
-该 commit 修改了动态链接器处理 text relocations 的方式：此前链接器为了修改代码段中的重定位条目，会临时将页面权限设为 `PROT_READ|PROT_WRITE|PROT_EXEC`。修改后遵循 **RX→RW→RX 两步过渡**：
-
-1. 先将页面从 RX 改为 RW（此时页面可写但不可执行），完成代码修改
-2. 再从 RW 改回 RX（可执行但不可写）
-
-这一设计导致的后果是：**任何试图通过 `mprotect()` 直接设置 `PROT_WRITE|PROT_EXEC` 的行为会触发 SELinux 的 `execmod` 而非 `execmem` 检查**。虽然 Android 允许 `execmod` 权限（因为它代表"修改文件支持的代码"），但 Linker 本身的实现已经封死了同时 W+X 的路径。
+因此 Inline Hook 的工程做法要拆成三个动作:短时间切到可写、写完后恢复可执行、刷新 icache。Trampoline 如果放在匿名内存,也要单独确认分配、写入、转为可执行三个阶段是否满足 `execmem` 和设备 SELinux 策略。
 
 ### Inline Hook 在 W^X 约束下的标准执行流程
 
@@ -365,7 +388,7 @@ Inline Hook 的完整执行流程在现代 Android 上被拆解为五个阶段�
 ```
 
 **关键约束**：
-- 不能尝试 `mprotect(PROT_WRITE|PTECT_EXEC)`（违反 W^X，Linker 拒绝）
+- 不能尝试 `mprotect(PROT_WRITE|PROT_EXEC)`（违反 W^X,会被内核/SELinux/Linker 约束拦住）
 - 不能跳过 icache flush（ARM64 icache 和 dcache 是非一致性的，CPU 可能继续取旧指令）
 - 每次 `mprotect()` 调用的地址和长度必须按页对齐（`getpagesize()` 返回值，非 4096 硬编码）
 
@@ -384,7 +407,7 @@ Inline Hook 的完整执行流程在现代 Android 上被拆解为五个阶段�
 
 ### Android 14 对动态代码加载的强制要求
 
-Android 14（API 34）针对 targeting SDK 34 的应用引入了"Safer dynamic code loading"行为变更：**所有动态加载的文件必须标记为只读，否则系统抛出异常**。应用通过 `dlopen()` 加载的 .so 如果没有设置 `RTLD_NOW | RTLD_NODELETE`，系统会拒绝。
+Android 14（API 34）针对 targetSdkVersion 34 的应用引入了 “Safer dynamic code loading” 行为变更:动态加载的 DEX/JAR/APK 等代码文件在加载前必须是只读文件,否则系统会抛出异常。这个限制处理的是加载来源被篡改的风险,和 `mprotect()` 改代码页权限不是同一个问题。
 
 ### 主流 Hook 库的 W^X 适配现状
 
@@ -411,13 +434,13 @@ Compat Mode 触发条件在 `linker_phdr.cpp`：`kPageSize == 16384 && min_align
 
 | Android 版本 | W^X 严格程度 | 动态代码加载限制 | 页大小 |
 |--------------|-------------|-----------------|--------|
-| Android 7 (API 24) | PIE 强制，但无运行时 W^X 强制 | 无 | 4KB |
-| Android 8-13 (API 26-33) | Bionic Linker 强制 W^X | 无强制 | 4KB |
-| Android 14 (API 34) | 同上 + SELinux execmod 区分 | targeting 34+ 强制 read-only | 4KB |
+| Android 7 (API 24) | PIE 强制,系统库装载边界开始收紧 | 无 | 4KB |
+| Android 8-13 (API 26-33) | Bionic Linker 与 SELinux 共同约束 W^X/execmod/execmem | 无强制 | 4KB |
+| Android 14 (API 34) | 同上;targetSdkVersion 34 的动态代码加载只读要求更严 | DEX/JAR/APK 等动态代码文件加载前必须只读 | 4KB |
 | Android 15 (API 35) | 同上 | 同上 | 4KB / 16KB（设备相关） |
 | Android 16 (API 36) | 同上 | 同上 | 4KB / 16KB（设备相关） |
 
-**核心教训**：Inline Hook 在 Android 14+ 下不是"能不能做"的问题，而是"必须拆成两步 mprotect + icache flush + 页边界用 `getpagesize()` 动态获取"的问题。任何一个步骤不遵守 W^X 约束或页边界要求，都会导致 Hook 失败或进程崩溃。
+**结论**：Android 14+ 上的 Inline Hook 必须遵守两步 `mprotect()`、icache flush 和运行时页大小;任一环节出错都会导致 Hook 失败或进程崩溃。
 
 
 ## 这一章在全书里的位置
