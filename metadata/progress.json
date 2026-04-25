@@ -3825,7 +3825,7 @@
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -3838,7 +3838,8 @@
       "last_task9_at": "2026-04-25T22:29:14+08:00",
       "last_task2b_at": "2026-04-25T22:46:46+08:00",
       "repaired_date": "2026-04-25",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "task6_reviewed_date": "2026-04-26"
     },
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md": {
       "path": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
