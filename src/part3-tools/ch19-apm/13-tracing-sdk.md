@@ -8,7 +8,7 @@
   "drafted_by": "codex",
   "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
   "last_verified": "2026-04-24",
-  "last_verified_against": "Android tracing docs / androidx.tracing Trace reference / custom events docs",
+  "last_verified_against": "Android tracing docs / AndroidX tracing reference / JankStats docs / Macrobenchmark docs / NDK tracing docs",
   "confidence": "medium",
   "tags": [
     "apm"
@@ -24,6 +24,22 @@
     {
       "type": "official",
       "path": "https://developer.android.com/reference/androidx/tracing/package-summary"
+    },
+    {
+      "type": "official",
+      "path": "https://developer.android.com/topic/performance/jankstats"
+    },
+    {
+      "type": "official",
+      "path": "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+    },
+    {
+      "type": "official",
+      "path": "https://developer.android.com/ndk/reference/group/tracing"
+    },
+    {
+      "type": "official",
+      "path": "https://developer.android.com/jetpack/androidx/releases/tracing"
     }
   ],
   "pipeline_stage": "task6_pending",
@@ -38,8 +54,8 @@
   "task9_reviewed_by": "openclaw-task9",
   "last_task9_at": "2026-04-24T19:59:52+08:00",
   "task2b_result": "fixed",
-  "last_task2b_at": "2026-04-24T21:14:45+08:00",
-  "repaired_date": "2026-04-24",
+  "last_task2b_at": "2026-04-25T09:40:00+08:00",
+  "repaired_date": "2026-04-25",
   "repaired_by": "openclaw-task2b"
 }
 ---
@@ -119,7 +135,25 @@ fun renderHomeFeed(items: List<FeedItem>) {
 }
 ```
 
-抓 Perfetto 时，`HomeFeed#diffAndBind` 会显示在对应线程轨道上。这样分析慢帧或启动慢时，可以把系统调度和业务阶段放在一起看。
+Java 侧没有 `trace {}` 的语法保护，`beginSection()` / `endSection()` 要用 `try-finally` 配对。下面的示例重点看 `finally`：无论 diff 计算是否抛异常，当前线程上的 trace 栈都会被关闭。
+
+```java
+import androidx.tracing.Trace;
+
+void renderHomeFeed(List<FeedItem> items) {
+    Trace.beginSection("HomeFeed#diffAndBind");
+    try {
+        List<FeedItem> diff = calculateDiff(items);
+        adapter.submitList(diff);
+    } finally {
+        Trace.endSection();
+    }
+}
+```
+
+`beginSection()` 和 `endSection()` 必须在同一线程配对。漏掉 `finally` 后，异常路径会把后续 slice 嵌进错误的父区间，Perfetto 里的线程时间线会失真。
+
+抓 Perfetto 时，`HomeFeed#diffAndBind` 会显示在对应线程轨道上。这样分析慢帧或启动慢时，可以把系统调度和业务阶段放在一起读。
 
 ## 命名要稳定
 
@@ -142,10 +176,11 @@ trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词�
 三者的关系可以这样理解：
 
 - `androidx.tracing`：轻量、稳定、适合长期保留的业务 slice。
+- Macrobenchmark：测试侧抓 trace；App 侧的 `androidx.tracing` slice 会成为 `TraceSectionMetric` 或 Perfetto 人工分析里的业务阶段锚点。
 - btrace：专项诊断时补方法级现场。
 - Perfetto SDK：需要更复杂自定义数据源时使用。
 
-大多数 App 先用 `androidx.tracing` 就够。把启动、首屏、列表、图片、数据库和关键交互标好，Perfetto 可读性会提升很多。
+大多数 App 先用 `androidx.tracing` 就够。把启动、首屏、列表、图片、数据库和关键交互标好，Macrobenchmark 报告和 Perfetto trace 才能指向同一组业务阶段。
 
 ## 线上和线下的边界
 
@@ -192,7 +227,11 @@ trace("Home#loadFirstFeed") {
 }
 ```
 
-这段 trace 只记录异步任务提交耗时，不记录网络、解析、数据库和 UI 更新。跨线程任务要分两层标注：
+这段 trace 只记录异步任务提交耗时，不记录网络、解析、数据库和 UI 更新。
+
+协程里也有同样边界，且更容易写错。不要把包含 `delay()`、`withContext()` 或其他挂起点的 `suspend` 块直接包进同步 `trace {}`。挂起后线程会去跑别的任务，但这个同步 slice 还没结束，Perfetto 里会留下很长的错误区间。未引入 AndroidX Tracing 2.0.0 alpha 的 coroutine tracing API 前，包含挂起点的业务跨度用 async trace 显式配对；线程内真实工作仍用同步 slice。
+
+跨线程任务要分两层标注：
 
 - 每个线程保留自己的同步 slice，用来读本线程的真实耗时。
 - 同一个业务 span 再补一组 async trace，用来串起跨线程阶段。
@@ -224,11 +263,27 @@ fun loadFirstFeed() {
 
 在 Perfetto 里，`beginAsyncSection()` 和 `endAsyncSection()` 会按同名加同 cookie 配对。多个异步任务并发时，cookie 必须唯一；如果名称相同而 cookie 复用，几个任务会被合并成一条错误的 span。
 
-只想看线程内耗时分布时，分线程同步 slice 就够了。需要读一个完整的跨线程逻辑链时，再补 async trace。
+只想看线程内耗时分布时，分线程同步 slice 就够了。需要读一个完整的跨线程逻辑路径时，再补 async trace。
+
+如果团队已经评估 AndroidX Tracing 2.0.0 alpha 系列，可以单独验证 `traceCoroutine` 在挂起和恢复时的 Perfetto 表现。它仍是 alpha API，发布包接入前要验证生成的 trace 体积、线程切换呈现方式和工具兼容性。
 
 ## trace 与线上指标关联
 
 `androidx.tracing` 本身不上传数据，但 trace 名称应该和线上 APM 的事件名保持一致。比如线上启动事件叫 `startup.first_draw`，Perfetto slice 可以叫 `Startup#firstDraw`。这样线上指标、日志和线下 trace 能互相对应。
+
+JankStats 的 `PerformanceMetricsState` 也要使用同一套阶段命名。下面的代码把线上 jank 状态和线下 trace slice 放进同一张阶段表：线上样本看 `screen=Home` 与 `phase=feed_render`，Perfetto 里读 `Home#feedRender`。
+
+```kotlin
+val holder = PerformanceMetricsState.getHolderForHierarchy(rootView)
+holder.state?.putState("screen", "Home")
+holder.state?.putState("phase", "feed_render")
+
+trace("Home#feedRender") {
+    adapter.submitList(items)
+}
+```
+
+阶段结束后要移除对应 state，避免后续帧继续带着过期上下文。trace 名称、JankStats state、APM 事件名都用固定枚举，不写动态 id、URL 或用户数据。
 
 推荐建立一张性能阶段表：
 
@@ -253,7 +308,30 @@ fun loadFirstFeed() {
 - native 数据库或文件处理。
 - JNI 边界上的大数组复制。
 
-Java 层只看到一次 JNI 调用，Perfetto 里如果没有 native slice，读者不知道 native 内部时间花在哪里。
+Native 侧最小写法如下，重点是引入 NDK tracing 头文件，并让 begin/end 在同一线程配对。
+
+```cpp
+#include <android/trace.h>
+
+void DecodeFrame() {
+    ATrace_beginSection("Video#decodeFrame");
+    DecodeOneFrame();
+    ATrace_endSection();
+}
+```
+
+Java 层只看到一次 JNI 调用，Perfetto 里如果没有 native slice，读者不知道 native 内部时间花在哪里。native slice 会出现在执行它的线程轨道上，名称规则应和 Java 层保持一致。存在 early return 或异常边界时，用局部 guard 封装 `ATrace_endSection()`，不要让区间失配。
+
+## 在 Perfetto 里怎么读
+
+抓到 trace 后，用固定 slice 名称定位业务阶段，再把它和线程状态放在同一个时间窗里读。
+
+- slice 轨道：搜索 `Home#feedRender` 这类固定名称，确认它落在哪条线程上。主线程 slice 用来判断 UI 阶段，I/O 线程 slice 用来判断后台工作。
+- 嵌套关系：父 slice 太长时，继续看子 slice 是否已经拆到可行动的阶段；没有子 slice 时，回到代码补更细的稳定标记。
+- Gap：两个业务 slice 中间的空白不等于业务没做事，可能是 I/O 等待、锁等待、Binder 等待或 CPU 调度延迟。
+- Thread State / Scheduler：Gap 或长 slice 旁边要一起读 Thread State。线程处于 Running 但耗时长，优先查 CPU 占用；处于 Runnable，优先查调度竞争；处于 Sleeping / Uninterruptible Sleep，优先查锁、I/O 或 Binder 等待。
+
+这样读 trace 时，业务 slice 负责标出“阶段”，Thread State 负责解释“为什么这段时间没有继续跑”。
 
 ## 常见错误
 
@@ -263,6 +341,8 @@ Java 层只看到一次 JNI 调用，Perfetto 里如果没有 native slice，读
 | trace 包太小 | 视图噪声过多，抓 trace 成本上升 | 只标性能敏感路径 |
 | 名称带动态数据 | 无法聚合，可能泄露隐私 | 用固定枚举和稳定名称 |
 | 只标异步提交 | 看不到实际工作耗时 | 在实际执行线程标记 |
+| Java begin/end 没有 `finally` | 异常路径会破坏后续 slice 嵌套 | 用 `try-finally` 固定关闭区间 |
+| 同步 `trace {}` 包含协程挂起点 | Perfetto 出现跨线程的错误长 slice | 挂起跨度用 async trace 或评估 `traceCoroutine` |
 | Debug 才有 trace | Release 问题无法复现 | 低成本稳定 trace 留在正式代码 |
 
 Tracing SDK 的价值来自一致性。少量稳定、长期存在的 trace，比临时到处加标记更有用。
