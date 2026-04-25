@@ -1,11 +1,16 @@
 ---
 title: 自动化测试工具
 chapter: '14.6'
+repaired_by: openclaw-task2b
+repaired_date: '2026-04-25'
+last_task2b_at: '2026-04-25T13:01:11+08:00'
+task2b_result: fixed
+section: '14.6'
 status: ready-for-review
 drafted_date: '2026-04-04'
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-04-04'
-last_verified_against: developer.android.com
+last_verified: '2026-04-25'
+last_verified_against: AndroidX docs + external review + Android test docs
 confidence: medium
 sources:
 - type: official
@@ -14,6 +19,12 @@ sources:
   path: developer.android.com/topic/performance/benchmarking/microbenchmark-overview
 - type: official
   path: developer.android.com/topic/performance/benchmarking/benchmarking-in-ci
+- type: official
+  path: developer.android.com/studio/test/other-testing-tools/monkey
+- type: blog
+  path: github.com/alipay/SoloPi
+- type: official
+  path: appium.io/docs/en/latest/
 tags:
 - macrobenchmark
 - microbenchmark
@@ -27,10 +38,10 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-16'
 task6_result: pass-light-edit
@@ -89,12 +100,14 @@ Macrobenchmark 运行在一个独立的测试模块（`com.android.test`）中�
 
 它的核心 API 是 `MacrobenchmarkRule.measureRepeated()`。这个方法做的事情可以概括为：启动你的应用 → 按照你定义的步骤执行操作（比如点击按钮、滑动列表）→ 收集系统 Trace → 重复 N 次取平均值。每次迭代的 Trace 都会被保存下来，我们可以在 Android Studio 或 Perfetto 中打开分析。
 
-Macrobenchmark 提供了几种内置的指标类型：
+Macrobenchmark 常用指标如下：
 
-- **StartupTimingMetric**：测量应用启动时间，包括 Time To Initial Display（TTID）和 Time To Full Display（TTFD）。这是衡量冷启动、温启动、热启动性能的标准方式。
-- **FrameTimingMetric**：测量帧渲染时间，统计超过帧预算（如 16.67ms for 60fps）的帧占比，也就是我们常说的"掉帧率"。
-- **TraceSectionMetric**：测量代码中自定义 Trace Section 的耗时，用于关注某个特定代码路径的性能表现。
-- **PowerMetric**（API 31+）：测量功耗指标，包括电量消耗和温度变化。
+| 指标 | 版本边界 | 读法 |
+|---|---|---|
+| `StartupTimingMetric` | Macrobenchmark 最低 API 23；TTFD 依赖应用调用 `reportFullyDrawn()`，API 30+ 统计更稳定 | TTID 看首帧显示，TTFD 看主要内容加载完成 |
+| `FrameTimingMetric` | 基础帧时间可用；`frameOverrunMs` 等 deadline / overrun 指标仅 API 31+ | API 31+ 优先看 overrun，API 30 及以下看帧时间分位数 |
+| `TraceSectionMetric` | 随 Macrobenchmark 运行环境；依赖应用里存在同名 Trace Section | 用于度量某段业务路径或初始化阶段 |
+| `PowerMetric` | API 31+ | 用于功耗与温度变化观察，需要固定设备状态和测试时长 |
 
 此外，Macrobenchmark 还支持 **CompilationMode** 参数，可以控制应用在测试前的编译状态——是完全 AOT 编译、部分编译（模拟 Baseline Profile 安装后的状态），还是完全未编译。这让我们可以量化 Baseline Profile 带来的启动速度提升。
 
@@ -129,7 +142,7 @@ Microbenchmark 会自动处理预热（warmup）——先运行若干次让 JIT 
 
 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview 和 microbenchmark-overview]
 
-[适用版本: Macrobenchmark 最低 API 23, Microbenchmark 最低 API 14]
+[适用版本: Macrobenchmark 最低 API 23；Microbenchmark 当前主流稳定版按 API 21+ 规划；`frameOverrunMs`、`PowerMetric` 等高级指标按上表版本限制读取]
 
 ## 使用 Macrobenchmark 测量启动时间和滑动帧率
 
@@ -161,7 +174,9 @@ class StartupBenchmark {
 }
 ```
 
-这段代码的核心逻辑非常直白：先按 Home 键回到桌面（确保每次测试的起始状态一致），然后启动应用的默认 Activity，等待它完成首帧渲染。`measureRepeated` 会把这一过程重复 10 次，每次都杀掉进程重新冷启动，最终输出平均的 TTID 和 TTFD。
+这段代码的逻辑很直白：先按 Home 键回到桌面（确保每次测试的起始状态一致），然后启动应用的默认 Activity，等待它完成首帧渲染。`measureRepeated` 会把这一过程重复 10 次，每次都杀掉进程重新冷启动，最终输出平均的 TTID 和 TTFD。
+
+TTFD 不会自动等到所有异步内容完成。应用必须在首屏主要内容加载完后调用 `Activity.reportFullyDrawn()`；否则结果里只能稳定拿到 TTID，TTFD 会缺失，或只代表首帧之后很短的一段等待。Android 11（API 30）及以上对 fully-drawn 信号的统计更稳定，也会把该信号反馈给系统启动优化和后续 profile 处理。测试脚本要让 `reportFullyDrawn()` 的调用点对应“首页主要内容出现”这一时刻。
 
 `StartupMode` 有三种选择：`COLD`（杀进程重新创建）、`WARM`（只重建 Activity，保留进程）、`HOT`（只恢复 Activity）。三种模式分别对应我们在第 8 章讨论的三种启动类型。在 Perfetto 中，这些 Trace 会被自动捕获，我们可以在 Android Studio 中直接打开查看主线程的 doFrame 时序。
 
@@ -187,7 +202,7 @@ fun scrollList() = benchmarkRule.measureRepeated(
 }
 ```
 
-`FrameTimingMetric` 会收集每一帧的渲染时间。Macrobenchmark 会统计帧时间分布——P50、P90、P95 和 P99 分位数。P50 代表典型帧的渲染时间，而 P95/P99 则揭示了极端情况下的掉帧。如果 P95 超过了 16.67ms（60fps）或 8.33ms（120fps），就意味着有可感知的卡顿。
+`FrameTimingMetric` 会收集每一帧的渲染时间。Macrobenchmark 会统计帧时间分布——P50、P90、P95 和 P99 分位数。P50 代表典型帧的渲染时间，P95/P99 用来观察尾部掉帧。API 31+ 还会输出 `frameOverrunMs`，它按每帧完成时间与系统 deadline 的差值判断是否越界，比固定套 16.67ms 或 8.33ms 更适合高刷新率、可变刷新率设备。API 30 及以下主要看帧时间分布和 Trace 中的 `Choreographer#doFrame`。
 
 这里的滑动操作使用了 `UiDevice.drag()`，这是 UI Automator 的 API。Macrobenchmark 在底层依赖 UI Automator 来驱动 UI 操作——后面会详细讨论。
 
@@ -264,11 +279,11 @@ UI Automator 在性能测试中的优势是它不干扰被测应用：因为它�
 
 ### Espresso：白盒验证，不是性能测量工具
 
-Espresso 是一个**白盒测试框架**，运行在被测应用的同一个进程中。它的核心设计理念是"自动同步"——当我们在测试中执行 `onView(...).perform(click())` 时，Espresso 会等待 UI 线程空闲、所有异步操作完成后再执行下一步。这让 Espresso 的测试非常稳定、不 flaky。
+Espresso 是一个**白盒测试框架**，运行在被测应用的同一个进程中。它的设计重点是“自动同步”：当测试执行 `onView(...).perform(click())` 时，Espresso 会等待 UI 线程空闲、`IdlingResource` 归零以及已注册异步任务完成后再执行下一步。这让功能测试更稳定。
 
-但 Espresso 的这个特性使它**不适合直接做性能测量**。原因是它和应用在同一个进程中，测试代码本身会影响被测量的性能数据。而且 Espresso 的自动同步机制会等待 UI 线程空闲——这意味着测试的执行时间不能反映用户实际感知的响应时间。
+这套同步机制不适合直接做性能测量。它和应用在同一个进程中，测试代码本身会影响被测量的 CPU、内存和调度数据；`IdlingResource` 等等待机制还会改变用户输入到 UI 响应之间的时间关系，掩盖主线程竞争、后台任务排队和首帧等待。
 
-Espresso 在性能测试中的真正价值是**验证**：我们可以用 Espresso 快速确认某个性能优化是否改变了功能行为。比如优化了布局层级后，想确认 UI 仍然正确渲染，这时候用 Espresso 写一个快速的功能回归测试是合适的。
+Espresso 在性能测试中的主要价值是**验证**：可以用 Espresso 快速确认某个性能优化是否改变了功能行为。比如优化了布局层级后，想确认 UI 仍然正确渲染，这时候用 Espresso 写一个快速的功能回归测试是合适的。
 
 ### 不能混用的地方
 
@@ -277,6 +292,34 @@ Espresso 在性能测试中的真正价值是**验证**：我们可以用 Espres
 如果测试需要跨应用操作（比如授权弹窗），正确的做法是在 Macrobenchmark 的 `setupBlock` 中使用 UI Automator 处理系统弹窗，然后在 `measureBlock` 中继续用 UI Automator 驱动被测应用。
 
 [已验证: 官方文档, developer.android.com/training/testing/ui-automator 和 developer.android.com/training/testing/ui-testing/espresso]
+
+## Monkey、SoloPi 与 Appium：自动化工具的另一类用途
+
+基准测试负责回答“这次改动是否让指标变差”。稳定性和专项测试工具负责覆盖长时间运行、随机输入、跨端脚本这些场景。
+
+### Monkey：低成本压力测试
+
+`Monkey` 通过随机事件持续触发点击、滑动、按键和 Activity 切换，适合在夜间构建或专项回归中暴露 ANR、崩溃、OOM 和资源泄漏。它不提供可信的性能指标，价值在于制造足够多的状态组合，然后把异常现场交给 logcat、bugreport、Perfetto 或 LeakCanary 复核。
+
+这条命令把随机事件限制在单个包内，并通过 `--throttle` 控制事件间隔：
+
+```bash
+adb shell monkey -p com.example.app \
+  --pct-touch 60 --pct-motion 20 \
+  --throttle 200 -v 10000
+```
+
+读结果时看三类证据：崩溃 / ANR 日志、测试前后 RSS / Java heap 变化、是否能导出 Hprof 或 tombstone。Monkey 本身不适合做启动耗时、滑动帧率这类精确度量。
+
+### SoloPi：专项性能脚本和视觉拆帧
+
+`SoloPi` 偏向线下专项测试。它可以录制操作脚本、采集 FPS / CPU / 内存等指标，并通过录屏帧变化估计页面加载完成时间。这个结果更贴近测试同学观察到的“页面是否已经可用”，但它依赖录屏、无障碍和设备状态，复现性低于 Macrobenchmark。适合做竞品对比、快速走查和人工测试补充。
+
+### Appium：跨端自动化，不负责指标可信度
+
+`Appium` 的优势是脚本生态和跨平台能力。用它可以覆盖长流程业务场景，但驱动层经过 WebDriver、无障碍和多次 IPC，输入延迟和同步等待会影响耗时。性能测试中，Appium 适合做场景编排；指标采集仍应交给 Macrobenchmark、Perfetto、dumpsys 或设备侧专项工具。
+
+[已验证: Android Monkey 文档、SoloPi GitHub、Appium 文档]
 
 ## 性能自动化测试的 CI/CD 集成方案
 

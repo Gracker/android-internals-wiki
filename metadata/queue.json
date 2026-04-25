@@ -3034,7 +3034,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:01:11+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "已修复 Matrix AGP 8.0+ 官方插件不可用边界，补 KOOM joinable 线程泄漏、DoKit 云端状态、BlockCanary/Rabbit 选型定位。"
   },
   {
     "section": "14.6",
@@ -3051,7 +3054,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T13:01:11+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "已修复 Microbenchmark API 下限，补 Macrobenchmark 指标版本边界、reportFullyDrawn/TTFD、Espresso IdlingResource、Monkey/SoloPi/Appium。"
   },
   {
     "section": "14.7",

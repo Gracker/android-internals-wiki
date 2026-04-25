@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T12:22:08+08:00",
+  "generated_at": "2026-04-25T13:01:11+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,33 +7,33 @@
     "finalized": 64,
     "ready-for-review": 153,
     "ready-to-publish": 64,
-    "last_updated": "2026-04-25T12:22:08+08:00",
+    "last_updated": "2026-04-25T13:01:11+08:00",
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 34,
-      "task2b_pending": 38,
+      "task6_pending": 36,
+      "task2b_pending": 37,
       "ready-to-publish": 63,
-      "task9_pending": 76,
+      "task9_pending": 75,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 190,
-      "revisiting": 23
+      "reviewed": 188,
+      "revisiting": 25
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 114,
-      "pending": 91,
+      "reviewed": 113,
+      "pending": 92,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 157,
-      "pending": 42,
+      "fixed": 158,
+      "pending": 41,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -42,30 +42,30 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 34,
-      "task2b_pending": 38,
+      "task6_pending": 36,
+      "task2b_pending": 37,
       "ready-to-publish": 63,
-      "task9_pending": 76,
+      "task9_pending": 75,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 190,
-      "revisiting": 23
+      "reviewed": 188,
+      "revisiting": 25
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 114,
-      "pending": 91,
+      "reviewed": 113,
+      "pending": 92,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 157,
-      "pending": 42,
+      "fixed": 158,
+      "pending": 41,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -3811,11 +3811,11 @@
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
-      "last_verified": "2026-04-21",
-      "last_verified_against": "GitHub upstream READMEs + Firebase docs + AndroidX docs",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "external review + GitHub upstream READMEs + AndroidX/AGP docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -3825,29 +3825,37 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T23:18:40+08:00"
+      "last_task9_at": "2026-04-21T23:18:40+08:00",
+      "last_task2b_at": "2026-04-25T13:01:11+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch14-other-tools/06-automation-tools.md": {
       "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
       "title": "自动化测试工具",
-      "chapter": "'14.6'",
+      "chapter": "14.6",
       "status": "ready-for-review",
       "drafted_date": "'2026-04-04'",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
-      "last_verified": "'2026-04-04'",
-      "last_verified_against": "developer.android.com",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "AndroidX docs + external review + Android test docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "'2026-04-16'",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-21'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-21T22:00:33.103917+08:00'"
+      "last_task9_at": "'2026-04-21T22:00:33.103917+08:00'",
+      "section": "14.6",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-25T13:01:11+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
       "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
