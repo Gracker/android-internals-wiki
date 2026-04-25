@@ -38,15 +38,16 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
+review_round: 2
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-16'
+reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_reviewed_date: '2026-04-21'
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-21T22:00:33.103917+08:00'
 ---
@@ -430,7 +431,7 @@ project_root/macrobenchmark/build/outputs/
 connected_android_test_additional_output/
 ```
 
-在 Perfetto（ui.perfetto.dev）中打开这些 Trace，我们可以看到完整的启动或滑动过程。对于启动基准测试，关注的主线程 Track 通常会显示：
+在 Perfetto（ui.perfetto.dev）中打开这些 Trace，就能看到完整的启动或滑动过程。对于启动基准测试，关注的主线程 Track 通常会显示：
 
 - `Choreographer#doFrame` 的执行时间——反映首帧渲染耗时
 - `ActivityThread.handleBindApplication` 到 `Activity.onCreate` 的间隔——反映 Application 初始化耗时
@@ -450,7 +451,7 @@ connected_android_test_additional_output/
 
 **"把基准测试放在应用模块里就行"**——Macrobenchmark 必须放在独立的 `com.android.test` 模块中。因为它需要从外部控制应用的启动和停止，如果和应用在同一个模块，就无法保证测试环境的独立性。Microbenchmark 则可以放在 library 模块中。
 
-**"基准测试结果应该完全稳定"**——即使控制了编译模式、设备温度、后台进程等变量，基准测试仍然会有 5-15% 的波动。这是正常的——ARM 处理器的动态调频、thermal throttling、内核调度决策都引入不确定性。解决方案不是追求单次数值的精确，而是通过多次迭代（至少 10 次）取中位数，以及长期趋势追踪来过滤噪声。
+**"基准测试结果应该完全稳定"**——即使控制了编译模式、设备温度、后台进程等变量，基准测试仍然会有 5-15% 的波动。这是正常的——ARM 处理器的动态调频、thermal throttling、内核调度决策都引入不确定性。解决方案是通过多次迭代（至少 10 次）取中位数，加上长期趋势追踪来过滤噪声，而不是追求单次数值的精确。
 
 **"Espresso 可以用于 Macrobenchmark"**——如前所述，Macrobenchmark 测试运行在独立进程中，而 Espresso 必须和应用在同一个进程。两者在架构上不兼容。
 
