@@ -1,0 +1,11 @@
+# Ch15 Performance Methodology Review Tasks
+- [x] 15.1 01-philosophy.md
+- [x] 15.2 02-system-vs-app.md
+- [x] 15.3 03-metrics.md
+- [x] 15.4 04-competitive-analysis.md
+- [x] 15.5 05-online-monitoring.md
+- [x] 15.6 06-testing-best-practices.md
+- [x] 15.7 07-aosp-reading.md
+- [x] 15.8 08-empirical-performance-issues.md
+- [x] 15.9 09-observability-closed-loop.md
+- [x] 15.10 10-performance-governance.md

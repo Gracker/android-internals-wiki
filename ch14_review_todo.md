@@ -1,0 +1,14 @@
+# Ch14 Other Tools Review Tasks
+- [x] 14.1 01-as-profiler.md
+- [x] 14.2 02-simpleperf.md
+- [x] 14.3 03-memory-tools.md
+- [x] 14.4 04-dumpsys.md
+- [x] 14.5 05-third-party-libs.md
+- [x] 14.6 06-automation-tools.md
+- [x] 14.7 07-profiling-manager.md
+- [x] 14.8 08-gpu-debug-tools.md
+- [x] 14.9 09-camera-performance-analysis.md
+- [x] 14.10 10-ebpf-performance-analysis.md
+- [x] 14.11 11-battery-historian.md
+- [x] 14.12 12-apm-observability.md
+- [x] 14.13 13-hook-infrastructure.md
