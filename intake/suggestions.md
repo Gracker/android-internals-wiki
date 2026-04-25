@@ -1613,3 +1613,178 @@
 - **问题**：GLOB '*iq*' 匹配可能存在干扰
 - **建议**：使用更精确的 track.name IN (...) 替代 GLOB 匹配
 - **来源**：Gemini 外部 review
+
+## [External Review] 13.1 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.1
+- **问题**：[知识盲区] 核心概念 - Data Source
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.01-external-review.md)
+
+
+## [External Review] 13.1 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.1
+- **问题**：[架构] traced
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.01-external-review.md)
+
+
+## [External Review] 13.2 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.2
+- **问题**：[知识盲区] Trace.beginSection 截断细节
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.02-external-review.md)
+
+
+## [External Review] 13.3 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.3
+- **问题**：[操作效率] 快捷键
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.03-external-review.md)
+
+
+## [External Review] 13.3 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.3
+- **问题**：[技术更新] SQL
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.03-external-review.md)
+
+
+## [External Review] 13.5 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.5
+- **问题**：[原理链] 13.5.3
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.05-external-review.md)
+
+
+## [External Review] 13.8 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.8
+- **问题**：[知识盲区] InputDispatcher 队列匹配
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.08-external-review.md)
+
+
+## [External Review] 13.9 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.9
+- **问题**：[知识盲区] 用户空间 Trace tag 底层实现
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.09-external-review.md)
+
+
+## [External Review] 13.9 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.9
+- **问题**：[原理链完整性] atrace 的分类机制
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.09-external-review.md)
+
+
+## [External Review] 13.10 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.10
+- **问题**：[数据/案例支撑] ANR 分析节
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.10-external-review.md)
+
+
+## [External Review] 13.10 — 2026-04-25
+- **类型**：建议改进
+- **章节**：13.10
+- **问题**：[源码准确性] Binder 分析节
+- **来源**：Gemini 外部 review (2026-04-25-13-ch13.10-external-review.md)
+
+
+## [External Review] 14.1 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.1
+- **问题**：[知识盲区] Memory Profiler
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.01-external-review.md)
+
+
+## [External Review] 14.2 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.2
+- **问题**：[数据/案例支撑] simpleperf stat：快速查看事件计数
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.02-external-review.md)
+
+
+## [External Review] 14.2 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.2
+- **问题**：[知识盲区] 准备工作
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.02-external-review.md)
+
+
+## [External Review] 14.3 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.3
+- **问题**：[知识盲区] showmap 章节
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.03-external-review.md)
+
+
+## [External Review] 14.4 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.4
+- **问题**：[数据支撑] meminfo 章节
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.04-external-review.md)
+
+
+## [External Review] 14.4 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.4
+- **问题**：[原理链完整性] cpuinfo 章节
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.04-external-review.md)
+
+
+## [External Review] 14.5 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.5
+- **问题**：[原理链完整性] ArgoAPM
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.05-external-review.md)
+
+
+## [External Review] 14.6 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.6
+- **问题**：[原理链完整性] Espresso 同步机制影响
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.06-external-review.md)
+
+
+## [External Review] 14.7 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.7
+- **问题**：[知识盲区] 结果通道部分
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.07-external-review.md)
+
+
+## [External Review] 14.7 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.7
+- **问题**：[数据支撑] 失败结果处理部分
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.07-external-review.md)
+
+
+## [External Review] 14.9 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.9
+- **问题**：[原理链完整性] HAL 3.5 requestStreamBuffers 同步阻塞
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.09-external-review.md)
+
+
+## [External Review] 14.10 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.10
+- **问题**：[数据/案例支撑] CPU 利用率精准计算
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.10-external-review.md)
+
+
+## [External Review] 14.11 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.11
+- **问题**：[版本差异] Android 14 权限与缓冲区
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.11-external-review.md)
+
+
+## [External Review] 14.13 — 2026-04-25
+- **类型**：建议改进
+- **章节**：14.13
+- **问题**：[原理链完整性] icache 刷新的硬件背景
+- **来源**：Gemini 外部 review (2026-04-25-14-ch14.13-external-review.md)
+

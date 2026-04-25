@@ -5210,3 +5210,752 @@ Frame Overrun、ApplicationExitInfo 与 RSS 指标缺口（external-review 已�
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25)
 
+## [2026-04-25] 13.1 — 知识盲区
+
+### 盲区描述
+Mainline APEX 挂载
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 `apexd` 如何在启动时将模块挂载到 `/apex/com.android.perfetto`
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.01-external-review.md)
+
+
+## [2026-04-25] 13.1 — 知识盲区
+
+### 盲区描述
+ProtoZero 零拷贝原理
+
+### 重要程度
+中
+
+### 建议研究方向
+查阅 `perfetto.dev` 关于 ProtoZero 库的设计文档
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.01-external-review.md)
+
+
+## [2026-04-25] 13.1 — 知识盲区
+
+### 盲区描述
+Java HPROF 采集权限
+
+### 重要程度
+中
+
+### 建议研究方向
+调研在 `user` 版本上 `profileable` 如何具体影响 `perfetto_hprof` 的加载
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.01-external-review.md)
+
+
+## [2026-04-25] 13.1 — 知识盲区
+
+### 盲区描述
+Perfetto 在 Android 14+ 引入的 `CLONE_SNAPSHOT` 触发机制如何实现“事后录制”。
+
+### 重要程度
+中
+
+### 建议研究方向
+调研 `traced` 对环形缓冲区快照的克隆逻辑。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.01-external-review.md)
+
+
+## [2026-04-25] 13.2 — 知识盲区
+
+### 盲区描述
+`perfetto --dropbox` 机制
+
+### 重要程度
+中
+
+### 建议研究方向
+了解在未 Root 的生产设备上如何通过 DropboxManager 获取 Trace。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.02-external-review.md)
+
+
+## [2026-04-25] 13.2 — 知识盲区
+
+### 盲区描述
+`atrace_userspace_only` 字段
+
+### 重要程度
+低
+
+### 建议研究方向
+在 `FtraceConfig` 中新引入的字段，用于减少内核开销。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.02-external-review.md)
+
+
+## [2026-04-25] 13.2 — 知识盲区
+
+### 盲区描述
+127 字符限制在 Android 13+ 是否依然严格生效（部分内核版本可能放宽）。
+
+### 重要程度
+低
+
+### 建议研究方向
+对比 Android 不同版本的 `libcutils` 源码。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.02-external-review.md)
+
+
+## [2026-04-25] 13.3 — 知识盲区
+
+### 盲区描述
+Blocked 状态（红色）
+
+### 重要程度
+高
+
+### 建议研究方向
+补充锁竞争的识别与 waking_thread 追踪。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.03-external-review.md)
+
+
+## [2026-04-25] 13.3 — 知识盲区
+
+### 盲区描述
+V 键对齐操作
+
+### 重要程度
+中
+
+### 建议研究方向
+提升多轨道关联分析速度。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.03-external-review.md)
+
+
+## [2026-04-25] 13.5 — 知识盲区
+
+### 盲区描述
+Prediction Error 归因
+
+### 重要程度
+低
+
+### 建议研究方向
+了解 SurfaceFlinger 预测机制。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.05-external-review.md)
+
+
+## [2026-04-25] 13.5 — 知识盲区
+
+### 盲区描述
+Buffer Stuffing 的量化阈值
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 `BlastBufferQueue` 源码研究。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.05-external-review.md)
+
+
+## [2026-04-25] 13.5 — 知识盲区
+
+### 盲区描述
+`jank_type` 之外的“亚哨完成帧”预警机制。
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 `on_time_finish = 1` 但 `dur` 接近 deadline 的量化筛选 SQL。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.05-external-review.md)
+
+
+## [2026-04-25] 13.8 — 知识盲区
+
+### 盲区描述
+`is_speculative_frame` 的列存在性
+
+### 重要程度
+中
+
+### 建议研究方向
+确认为 Perfetto v40+ 引入的实验性字段，需提醒用户检查版本。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.08-external-review.md)
+
+
+## [2026-04-25] 13.9 — 知识盲区
+
+### 盲区描述
+GKI 内核下 tracefs 挂载路径
+
+### 重要程度
+中
+
+### 建议研究方向
+确认在所有主流厂商 Android 13+ 设备中，`/sys/kernel/tracing` 是否已完全取代 `/sys/kernel/debug/tracing`。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.09-external-review.md)
+
+
+## [2026-04-25] 13.9 — 知识盲区
+
+### 盲区描述
+Perfetto SDK 的 Java 层封装
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 16+ 的 `ProfilingManager` 是否允许 Java 层直接注册结构化数据源。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.09-external-review.md)
+
+
+## [2026-04-25] 13.9 — 知识盲区
+
+### 盲区描述
+Android 16+ 是否提供了 Java 层直接向 Perfetto 注册 Data Source 的能力。
+
+### 重要程度
+低
+
+### 建议研究方向
+关注 Android 16 `ProfilingManager` 的 API 演进。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.09-external-review.md)
+
+
+## [2026-04-25] 13.10 — 知识盲区
+
+### 盲区描述
+锁竞争的非 Java 层 (Native) 表现
+
+### 重要程度
+中
+
+### 建议研究方向
+Perfetto 对内核锁 (futex) 的 SQL 追踪方式。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.10-external-review.md)
+
+
+## [2026-04-25] 13.10 — 知识盲区
+
+### 盲区描述
+Perfetto 虚拟表性能优化
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 `CREATE VIRTUAL TABLE USING ...` 在 Trace Processor 中的索引限制。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-13-ch13.10-external-review.md)
+
+
+## [2026-04-25] 14.1 — 知识盲区
+
+### 盲区描述
+Profileable 模式下的 Network Inspector
+
+### 重要程度
+中
+
+### 建议研究方向
+研究在不开启 `debuggable` 时，AS 如何通过拦截器查看 Release 包的网络数据（通常需要代码侵入）。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.01-external-review.md)
+
+
+## [2026-04-25] 14.1 — 知识盲区
+
+### 盲区描述
+ODPM 硬件要求
+
+### 重要程度
+中
+
+### 建议研究方向
+明确非 Pixel 设备上 Power Profiler 的降级表现。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.01-external-review.md)
+
+
+## [2026-04-25] 14.1 — 知识盲区
+
+### 盲区描述
+Profileable 模式下 Java Heap Dump 的缺失对排查生产环境内存问题的替代方案。
+
+### 重要程度
+中
+
+### 建议研究方向
+AOSP `perfetto` 工具集中的 `heapprofd` 如何在 `profileable` 模式下工作。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.01-external-review.md)
+
+
+## [2026-04-25] 14.2 — 知识盲区
+
+### 盲区描述
+`ProfilingManager` 与 Simpleperf 关系
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 15/16 引入的 `ProfilingManager` 如何触发 Simpleperf 采样并自动拉取。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.02-external-review.md)
+
+
+## [2026-04-25] 14.2 — 知识盲区
+
+### 盲区描述
+混合架构（big.LITTLE）下的采样差异
+
+### 重要程度
+低
+
+### 建议研究方向
+不同核心（大核/小核）的 PMU 事件计数器可能不一致，是否需要 `-c` 绑定核心分析。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.02-external-review.md)
+
+
+## [2026-04-25] 14.3 — 知识盲区
+
+### 盲区描述
+`libmemunreachable` 信号触发
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 14 信号 48 的具体日志输出格式及限制。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.03-external-review.md)
+
+
+## [2026-04-25] 14.3 — 知识盲区
+
+### 盲区描述
+MTE 异步模式实战
+
+### 重要程度
+高
+
+### 建议研究方向
+MTE 在 Android 15+ 上的默认策略及对 `malloc` 性能的影响。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.03-external-review.md)
+
+
+## [2026-04-25] 14.3 — 知识盲区
+
+### 盲区描述
+Graphics 内存跨进程分摊
+
+### 重要程度
+中
+
+### 建议研究方向
+如何在 `dumpsys meminfo` 中区分 SurfaceFlinger 侧和 App 侧的 buffer 占用。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.03-external-review.md)
+
+
+## [2026-04-25] 14.3 — 知识盲区
+
+### 盲区描述
+MTE (Memory Tagging Extension) 在 Android 15 生产设备上的实际可用性。
+
+### 重要程度
+高
+
+### 建议研究方向
+Pixel 8/9 系列的 MTE 开启状态及对应用层的影响。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.03-external-review.md)
+
+
+## [2026-04-25] 14.4 — 知识盲区
+
+### 盲区描述
+Android 15 Frontend 架构下的 LayerSnapshot 计算逻辑
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 SF 如何将 RequestedState 转换为 Snapshot 并进行 z-order 合并
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.04-external-review.md)
+
+
+## [2026-04-25] 14.4 — 知识盲区
+
+### 盲区描述
+ApplicationExitInfo (exit-info) 的详细字段定义
+
+### 重要程度
+中
+
+### 建议研究方向
+深入 ProcessList.java 研究 REASON_ANR 下的 subReason 分类
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.04-external-review.md)
+
+
+## [2026-04-25] 14.4 — 知识盲区
+
+### 盲区描述
+VRR 模式下 FrameMetrics 的截止时间计算
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 API 31+ FrameMetrics.DEADLINE 在 Android 15 上的精度提升逻辑
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.04-external-review.md)
+
+
+## [2026-04-25] 14.4 — 知识盲区
+
+### 盲区描述
+16KB 页大小对内存统计 PSS 的间接影响（如元数据开销）。
+
+### 重要程度
+中
+
+### 建议研究方向
+对比 4KB 和 16KB 模式下 system_server 的 meminfo 差异。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.04-external-review.md)
+
+
+## [2026-04-25] 14.5 — 知识盲区
+
+### 盲区描述
+16KB Page Size 兼容性
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 15 强制要求的 16KB 物理页对现有 PLT Hook 库（xHook, ByteHook）的破坏性影响。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.05-external-review.md)
+
+
+## [2026-04-25] 14.5 — 知识盲区
+
+### 盲区描述
+鸿蒙原生适配
+
+### 重要程度
+中
+
+### 建议研究方向
+三方性能库在鸿蒙系统（HarmonyOS Next）下的替代方案（如鸿蒙原生 AOP）。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.05-external-review.md)
+
+
+## [2026-04-25] 14.5 — 知识盲区
+
+### 盲区描述
+Android 15 (16KB Page Size) 对三方库 Native Hook 的冲击。
+
+### 重要程度
+高
+
+### 建议研究方向
+调研 ByteHook 对 16KB Page 的适配实现。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.05-external-review.md)
+
+
+## [2026-04-25] 14.6 — 知识盲区
+
+### 盲区描述
+**Monkey + LeakCanary 自动检测**
+
+### 重要程度
+高
+
+### 建议研究方向
+如何在自动化测试中结合 Monkey 触发泄漏并利用 LeakCanary 导出 Hprof
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.06-external-review.md)
+
+
+## [2026-04-25] 14.6 — 知识盲区
+
+### 盲区描述
+**SoloPi 视觉拆帧原理**
+
+### 重要程度
+中
+
+### 建议研究方向
+了解其如何通过录屏每一帧的颜色变化判定“页面加载完成”
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.06-external-review.md)
+
+
+## [2026-04-25] 14.6 — 知识盲区
+
+### 盲区描述
+Monkey 的性能集成方案。
+
+### 重要程度
+中
+
+### 建议研究方向
+研究如何通过 `am instrument` 封装 Monkey 操作。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.06-external-review.md)
+
+
+## [2026-04-25] 14.7 — 知识盲区
+
+### 盲区描述
+Mainline 模块更新机制
+
+### 重要程度
+中
+
+### 建议研究方向
+深入研究 `com.android.profiling` APEX 模块如何通过 Google Play 系统更新下发新的 Trigger 类型。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.07-external-review.md)
+
+
+## [2026-04-25] 14.7 — 知识盲区
+
+### 盲区描述
+系统触发器的冲突解决
+
+### 重要程度
+中
+
+### 建议研究方向
+当多个应用同时注册高频 Trigger（如 ANR）时，系统底层的仲裁逻辑。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.07-external-review.md)
+
+
+## [2026-04-25] 14.10 — 知识盲区
+
+### 盲区描述
+BPF CO-RE 在厂商自定义内核中的重定位失效场景
+
+### 重要程度
+中
+
+### 建议研究方向
+研究当厂商修改了内核核心结构体（如 `task_struct`）且未更新 BTF 时 CO-RE 的表现
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.10-external-review.md)
+
+
+## [2026-04-25] 14.10 — 知识盲区
+
+### 盲区描述
+sched_ext 对 Android 功耗（Energy Aware Scheduling, EAS）的潜在冲突
+
+### 重要程度
+高
+
+### 建议研究方向
+研究自定义调度器如何与 EAS 的能效模型协作或共存
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.10-external-review.md)
+
+
+## [2026-04-25] 14.11 — 知识盲区
+
+### 盲区描述
+`dumpsys battery` 隐藏字段
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 14+ 新增的 `mSavedBatteryAsoc` (ASOC, 电池健康度)
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.11-external-review.md)
+
+
+## [2026-04-25] 14.11 — 知识盲区
+
+### 盲区描述
+PowerStats HAL 2.0
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 15 之后 HAL 层如何定义自定义 Power Rail
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.11-external-review.md)
+
+
+## [2026-04-25] 14.11 — 知识盲区
+
+### 盲区描述
+Android 14+ 硬件级电池循环次数与健康度查询。
+
+### 重要程度
+中
+
+### 建议研究方向
+补充 `adb shell dumpsys battery` 在 A14+ 的新字段解析。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.11-external-review.md)
+
+
+## [2026-04-25] 14.12 — 知识盲区
+
+### 盲区描述
+**BTrace 3.0 采样原理**
+
+### 重要程度
+高
+
+### 建议研究方向
+研究同步采样如何与 Perfetto 时间戳对齐。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.12-external-review.md)
+
+
+## [2026-04-25] 14.12 — 知识盲区
+
+### 盲区描述
+**AppExitInfo 持久化**
+
+### 重要程度
+中
+
+### 建议研究方向
+调研 `/data/system/exit_info/` 的存储上限和清理机制。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.12-external-review.md)
+
+
+## [2026-04-25] 14.13 — 知识盲区
+
+### 盲区描述
+ArtMethod Hook 稳定性
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 ART 虚拟机版本演进对结构体偏移的影响
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.13-external-review.md)
+
+
+## [2026-04-25] 14.13 — 知识盲区
+
+### 盲区描述
+16KB Page Size 构建链适配
+
+### 重要程度
+中
+
+### 建议研究方向
+NDK r27 对 16KB 的默认支持情况
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.13-external-review.md)
+
+
+## [2026-04-25] 14.13 — 知识盲区
+
+### 盲区描述
+Android 14 动态库只读限制
+
+### 重要程度
+高
+
+### 建议研究方向
+`File.setReadOnly()` 对 `System.load()` 的强制校验逻辑
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.13-external-review.md)
+
+
+## [2026-04-25] 14.13 — 知识盲区
+
+### 盲区描述
+运行时 ART Hook 的具体实现。
+
+### 重要程度
+高
+
+### 建议研究方向
+调研 SandHook 对 Android 12-15 的适配方案。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-14-ch14.13-external-review.md)
+
