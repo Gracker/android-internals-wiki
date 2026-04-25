@@ -3217,6 +3217,24 @@
         "location": "14.11",
         "detail": "- **建议修正方向**：修正单位描述，更新源码路径引用。",
         "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "源码准确性",
+        "detail": "- **[P1][源码准确性][Android 15 源码演进]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "原理链完整性",
+        "detail": "- **[P1][原理链完整性][PowerMonitor API 单位]**",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.11",
+        "detail": "**：API 单位需对齐官方（μJ）；需补充 Android 15 功耗统计服务向 `power.stats` 包迁移的背景。",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -3289,6 +3307,30 @@
         "type": "回炉问题",
         "location": "14.12",
         "detail": "- **建议修正方向**：修正版本范围描述，增加 API 30 判断建议。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "- **[P1][版本差异][14.12] ApplicationExitInfo 兼容性**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "源码准确性",
+        "detail": "- **[P1][源码准确性][14.12] JankStats UI 状态关联**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "- **[P1][知识盲区][14.12] 插桩 vs 采样成本**",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.12",
+        "detail": "**：版本声明与实际 API 级别（API 30）不符。",
         "suggestion": ""
       }
     ],
@@ -3472,6 +3514,30 @@
         "type": "回炉问题",
         "location": "14.13",
         "detail": "- **建议修正方向**：参考报告四。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0",
+        "location": "源码准确性",
+        "detail": "- **[P0][源码准确性][Android 14 W^X 机制]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "原理链完整性",
+        "detail": "- **[P1][原理链完整性][ArtMethod Hook 路线缺失]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "- **[P1][知识盲区][16KB Page Size 的 ELF 布局约束]**",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.13",
+        "detail": "**：对 SELinux 权限标签（execmod/execmem）的适用场景描述有误，且未区分内核强制与权限校验。",
         "suggestion": ""
       }
     ],
@@ -4024,6 +4090,12 @@
         "location": "13.03",
         "detail": "- **描述**：增加对红色 Blocked 状态的说明。",
         "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -4141,6 +4213,18 @@
         "type": "回炉问题",
         "location": "13.09",
         "detail": "- **建议修正方向**：从 `src/traced_probes/` 修正为 `src/traced/probes/`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "源码准确性",
+        "detail": "- **[P1][源码准确性][Perfetto 架构部分]**",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "13.09",
+        "detail": "**：`traced_probes` 源码路径引用不准确。",
         "suggestion": ""
       }
     ],
@@ -4294,6 +4378,30 @@
         "location": "14.01",
         "detail": "- **建议修正方向**：改为具体的代号（如 Meercat）或“2025 年预览版”。",
         "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "源码准确性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.01",
+        "detail": "**：`TRIGGER_TYPE_COLD_START` 常量名与 API 36 不符。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.01",
+        "detail": "**：版本命名不规范，易导致混淆。",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -4415,6 +4523,30 @@
         "type": "回炉问题",
         "location": "14.03",
         "detail": "- **建议修正方向**：同步最新 AOSP 目录结构，并补全信号量说明。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "源码准确性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "原理链完整性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.03",
+        "detail": "**：1. `libmeminfo` 路径应更新为 `system/memory/libmeminfo` (Android 11+)。2. 缺失 Android 14 `SIGRTMAX-16` 信号。",
         "suggestion": ""
       }
     ],
@@ -4561,6 +4693,36 @@
         "type": "回炉问题",
         "location": "14.05",
         "detail": "- **建议修正方向**：明确标记官方版在 AGP 8.0+ 下不可用。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0",
+        "location": "源码准确性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "原理链完整性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.05",
+        "detail": "**：对 AGP 8.0 兼容性描述不准，官方版目前仍不支持。",
         "suggestion": ""
       }
     ],
@@ -4738,6 +4900,36 @@
         "location": "14.06",
         "detail": "- **建议修正方向**：修正版本号。",
         "suggestion": ""
+      },
+      {
+        "type": "P0",
+        "location": "源码准确性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.06",
+        "detail": "**：API 14 描述错误，应为 API 21。",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -4799,6 +4991,30 @@
         "type": "回炉问题",
         "location": "14.09",
         "detail": "- **建议修正方向**：补充 `CamXWorker` 线程分析和 YUV 帧转储技巧。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0",
+        "location": "数据支撑",
+        "detail": "- **[P0][数据支撑][Camera2 vs CameraX 性能差异]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "1. **[P1][知识盲区][Qualcomm CamX/CHI 在 Trace 中的体现]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "2. **[P1][知识盲区][GFXReconstruct 缓冲区分析]**",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "14.09",
+        "detail": "**：缺乏厂商特定链路（高通 CamX）和高级分析工具（GFXReconstruct）的描述，导致文章在生产环境的实用性打折。",
         "suggestion": ""
       }
     ],
@@ -4897,6 +5113,24 @@
         "type": "回炉问题",
         "location": "07.04",
         "detail": "- **建议修正方向**：根据本次核验结论：该 API 用于跳过全局布局请求，开发者需保证 RecyclerView 容器尺寸不随内容变化。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "07.04",
+        "detail": "**：结论处于待验证状态。",
         "suggestion": ""
       }
     ],
@@ -5026,6 +5260,30 @@
         "location": "07.05",
         "detail": "- **建议修正方向**：明确“Shader 级集成”与“Buffer 级隔离”的区别。",
         "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "原理链完整性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "07.05",
+        "detail": "**：底层机制区分度不足。",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -5063,6 +5321,18 @@
         "type": "回炉问题",
         "location": "07.06",
         "detail": "- **建议**：补充进程冻结对 `onTrimMemory` 实际执行机会的限制。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
         "suggestion": ""
       }
     ],
@@ -5243,6 +5513,24 @@
         "location": "07.10",
         "detail": "- **修正建议**：补充对现代 Android 版本中 Skia 采样逻辑的说明。",
         "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "源码准确性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "07.10",
+        "detail": "**：inSampleSize 取整逻辑过于陈旧，未反映现代 Skia 的灵活性。",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -5280,6 +5568,18 @@
         "type": "回炉问题",
         "location": "07.11",
         "detail": "- **修正建议**：增加 `onRenderProcessGone` 的规范处理流程（移除、销毁、重建）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "原理链完整性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "07.11",
+        "detail": "**：对 Renderer 进程崩溃后的业务侧恢复逻辑描述不完整。",
         "suggestion": ""
       }
     ],
@@ -6174,6 +6474,438 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T13:26:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.07",
+    "section_title": "7.7",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P0",
+        "location": "源码准确性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.12",
+    "section_title": "07.12",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P0",
+        "location": "源码准确性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "07.12",
+        "detail": "**：Android 15 中 `sConstructorMap` 不再是静态变量，改为实例变量。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "07.12",
+        "detail": "**：未覆盖 1.1.0 版本对 `AppCompat` 的支持。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.13",
+    "section_title": "07.13",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "原理链完整性",
+        "detail": "",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.14",
+    "section_title": "07.14",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "原理链",
+        "detail": "",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.15",
+    "section_title": "07.15",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "08.01",
+    "section_title": "08.01",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "版本差异/知识盲区",
+        "detail": "- **[P1][版本差异/知识盲区][Android Vitals 指标]**",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "08.03",
+    "section_title": "08.03",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "版本差异/知识盲区",
+        "detail": "- **[P1][版本差异/知识盲区][Android 16 AutoFDO]**",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "08.07",
+    "section_title": "08.07",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "原理链完整性",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "08.08",
+    "section_title": "08.08",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "08.05",
+    "section_title": "08.05",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "原理链",
+        "detail": "- **[P1][原理链][05-case-studies.md][ProfilingManager 段落]**",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "08.05",
+        "detail": "**：遗漏了 `ProfilingManager` 的核心调用方法和触发源。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "09.01",
+    "section_title": "ch09 ANR 系列",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P0",
+        "location": "源码准确性",
+        "detail": "### 1. [P0][源码准确性][01-anr-design.md] AnrHelper 引入版本",
+        "suggestion": ""
+      },
+      {
+        "type": "P0",
+        "location": "版本差异",
+        "detail": "### 2. [P0][版本差异][02-anr-types.md] FGS 启动超时 10s 规则",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "原理链",
+        "detail": "### 1. [P1][原理链][03-anr-analysis.md] ApplicationExitInfo 深度",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "### 2. [P1][版本差异][02-anr-types.md] Android 14 Modern Broadcast Queue",
+        "suggestion": ""
+      },
+      {
+        "type": "P0",
+        "location": "01",
+        "detail": "- [P0][01] 修正 `AnrHelper` 为 Android 11 引入。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0",
+        "location": "02",
+        "detail": "- [P0][02] 重新梳理 FGS 启动超时的版本分界线（10s 是 Android 14 关键值）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "03",
+        "detail": "- [P1][03] 细化 `ApplicationExitInfo` 的实战用法及 Android 11+ 的版本背景。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "10.01",
+    "section_title": "10.01",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "- **[P1][版本差异][Graphics 内存归属]**",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "10.02",
+    "section_title": "10.02",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "原理链",
+        "detail": "- **[P1][原理链][分析方法] Android 16 ProfilingManager 触发式采样**",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "10.03",
+    "section_title": "10.03",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "- **[P1][版本差异][监控指标] 16KB Page Size 下的指标基线偏移**",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.01",
+    "section_title": "18.01",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "知识盲区",
+        "detail": "",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.03",
+    "section_title": "18.03",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.06",
+    "section_title": "ch18.06-10",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P0",
+        "location": "版本差异",
+        "detail": "- **[P0][版本差异]** 遗漏 Android 14 对 Alpha 的重磅支持。Android 14 解决了 `SurfaceView` 无法半透明的痛点，支持任意 Alpha 混合。如果是 `ZOrderOnTop`，Alpha 作用于内容；否则作用于“挖洞”区域。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0",
+        "location": "源码准确性",
+        "detail": "- **[P0][源码准确性]** `onFrameAvailable` 回调线程。`TextureView.java` 在内部监听中未指定 Handler，默认回调到 UI 线程，这才是导致其受主线程卡顿影响的物理原因。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "- **[P1][版本差异]** 缺失 Android 15 (VRA15) 强制要求 Vulkan 1.3 的关键信息。VRA15 标准化了特性集，对性能选型至关重要。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异",
+        "detail": "- **[P1][版本差异]** 缺失 API 36 (Android 16) 新增的 `ASurfaceTransaction_setBufferWithRelease`。这是图形 Buffer 生命周期管理的最佳实践。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.11",
+    "section_title": "ch18.11-15",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "review_issues": [
+      {
+        "type": "P0",
+        "location": "原理链完整性",
+        "detail": "### [P0][原理链完整性][18.12 Flutter 渲染管线]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "源码准确性",
+        "detail": "### [P1][源码准确性][18.11 ANGLE]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "源码准确性",
+        "detail": "### [P1][源码准确性][18.14 Camera 渲染管线]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1",
+        "location": "版本差异覆盖",
+        "detail": "### [P1][版本差异覆盖][18.15 视频叠加与 HWC]",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉",
+        "location": "18.11",
+        "detail": "| 建议修正方向 |",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T14:10:00+08:00",
     "status": "pending"
   }
 ]

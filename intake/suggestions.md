@@ -2203,3 +2203,51 @@
 - **位置**：L170-L174 / L190
 - **问题**：内存对比把 SurfaceView 写成“只需要 Producer Buffer（1x）”，但 App 主窗口 Buffer 在 SurfaceView 场景仍然存在；准确差异是 TextureView 还要把 Producer 内容采样进 App Window 合成结果，独立内容也失去直接 Overlay 机会。“SurfaceView 不受主线程影响”也应限定为内容生产/提交相对独立，View 树位置、生命周期和宿主 UI 仍受主线程约束。
 - **建议**：把“2 倍”改成带条件的估算，补分辨率、像素格式、buffer count 与是否已有 App Window Buffer 的基线；表格中把 SurfaceView 主线程影响改为“内容帧相对独立，宿主 View 变更仍受影响”。
+
+## [External Review] 07.06 — 2026-04-25
+- **类型**：外部建议
+- **位置**：07.06
+- **问题**：[P2][数据支撑][案例一]
+- **来源**：外部 AI review (2026-04-25-15-ch07.06-external-review.md)
+
+## [External Review] 07.10 — 2026-04-25
+- **类型**：外部建议
+- **位置**：07.10
+- **问题**：[P2][原理链完整性][Hardware Bitmap fd 监控]
+- **来源**：外部 AI review (2026-04-25-15-ch07.10-external-review.md)
+
+## [External Review] 07.11 — 2026-04-25
+- **类型**：外部建议
+- **位置**：07.11
+- **问题**：[P2][版本差异][Android 11 内存优化]
+- **来源**：外部 AI review (2026-04-25-15-ch07.11-external-review.md)
+
+## [External Review] 07.15 — 2026-04-25
+- **类型**：外部建议
+- **位置**：07.15
+- **问题**：[P2][工具应用][ANR]
+- **来源**：外部 AI review (2026-04-25-15-ch07.15-external-review.md)
+
+## [External Review] 08.02 — 2026-04-25
+- **类型**：外部建议
+- **位置**：08.02
+- **问题**：**[P2][原理链/源码锚点][ActivityMetricsLogger]**
+- **来源**：外部 AI review (2026-04-25-15-ch08.02-external-review.md)
+
+## [External Review] 10.02 — 2026-04-25
+- **类型**：外部建议
+- **位置**：10.02
+- **问题**：**[P2][知识盲区][原因分析] ApplicationExitInfo 深度分析**
+- **来源**：外部 AI review (2026-04-25-15-ch10.02-external-review.md)
+
+## [External Review] 10.04 — 2026-04-25
+- **类型**：外部建议
+- **位置**：10.04
+- **问题**：**[P2][版本差异][ZRAM 调优]**
+- **来源**：外部 AI review (2026-04-25-15-ch10.04-external-review.md)
+
+## [External Review] 18.06 — 2026-04-25
+- **类型**：外部建议
+- **位置**：18.06
+- **问题**：**[P2][原理改进]** 建议补充 `BufferStateLayer` 的角色，解释 BLAST 事务如何让宿主 Window 的透明矩形与独立 Surface 同步。
+- **来源**：外部 AI review (2026-04-25-15-ch18.[06-10]-external-review.md)
