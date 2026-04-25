@@ -246,3 +246,47 @@ Java/Kotlin 堆栈必须带 Mapping UUID 或等价构建标识，Native 栈必�
 1. 这个工具能放在体系里的哪一层。
 2. 它产出的数据能支撑哪类判断。
 3. 问题继续往下查时，要接哪个工具或哪条分析路径。
+
+<!-- AIW-源码调研-2026-04-25 -->
+## 补充：AppExitInfoTracker 内部机制（源码级）
+
+以下内容基于 AOSP 源码调研，补充到 §19.01 作为 AppExitInfoTracker 的实现细节参考。
+
+### AppExitInfoTracker 在 AOSP 中的位置
+
+`AppExitInfoTracker` 是 `ProcessList.java`（`services/core/java/com/android/server/am/`）的内部类，由 `ActivityManagerService` 实例化并通过 `ProcessList` 持有。
+
+它在系统侧维护每个包名的进程退出记录 circular buffer，接入两类消息：
+
+| 消息类型 | 来源 | 创建的 exitInfo.reason |
+|---|---|---|
+| `MSG_LMKD_PROC_KILLED` | lmkd 杀进程后通知 AMS | `REASON_LOW_MEMORY (6)` |
+| `MSG_CHILD_PROC_DIED` | Zygote 感知子进程异常退出（SIGCHLD/SIGKILL） | `REASON_CRASH (5)` / `REASON_SIGNALED (10)` |
+
+应用侧通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询，该 API 底层调用 `ActivityManagerService.getHistoricalProcessExitReasons()`，后者从 `AppExitInfoTracker` 读取。
+
+### ApplicationExitInfo 关键字段（API 30+）
+
+| 方法 | 说明 | 版本 |
+|---|---|---|
+| `getReason()` | 返回值：`REASON_ANR(4)` `REASON_CRASH(5)` `REASON_LOW_MEMORY(6)` `REASON_SIGNALED(10)` `REASON_PROCESS_ENTRY_NULL(13)` 等 | API 30 |
+| `getDescription()` | 人类可读退出描述字符串 | API 30 |
+| `getTimestamp()` | 退出时间戳（毫秒） | API 30 |
+| `getTraceInputStream()` | 获取 ANR/native crash 的 trace 流，仅 `REASON_ANR` / native crash 有效；`REASON_LOW_MEMORY` 无 trace | API 30 |
+| `getRss()` | 退出前最近采样 RSS（KB），采样值非精确时刻 | API 30 |
+| `getImportance()` | 退出时进程 importance 级别 | API 30 |
+
+### 关键设计原则
+
+- circular buffer 持久化到磁盘，重启后可查询
+- 不支持 `USER_ALL` / `USER_CURRENT` 作为 userId 参数
+- `getTraceInputStream()` 对 `REASON_LOW_MEMORY` 返回 null（无 trace）
+
+---
+
+**调研来源**：
+- `services/core/java/com/android/server/am/ProcessList.java` (AOSP mainline) — AppExitInfoTracker 内部类
+- `core/java/android/app/ApplicationExitInfo.java` (API 30+) — 应用层 API
+- `github.com/KwaiAppTeam/KOOM` — koom-java-leak 模块 fork dump HPROF 机制
+
+<!-- AIW-源码调研-2026-04-25 -->

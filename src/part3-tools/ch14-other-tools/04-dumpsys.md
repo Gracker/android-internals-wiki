@@ -31,8 +31,8 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -84,7 +84,7 @@ dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服�
 
 每个系统服务都实现了自己的 `dump()` 方法，因此 dumpsys 的输出覆盖了 Android 系统的多个关键面向，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
 
-本章不打算穷举 dumpsys 支持的所有子命令（在设备上运行 `adb shell dumpsys -l` 就能列出完整列表），而是聚焦于性能分析中最常用的六个子命令，逐个讲清楚它的用途、输出结构、关键指标的含义，以及在实际性能分析中怎么用。
+本节不打算穷举 dumpsys 支持的所有子命令（在设备上运行 `adb shell dumpsys -l` 就能列出完整列表），而是聚焦于性能分析中最常用的六个子命令，逐个讲清楚它的用途、输出结构、关键指标的含义，以及在实际性能分析中怎么用。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]
 

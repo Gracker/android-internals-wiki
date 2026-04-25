@@ -42,8 +42,8 @@
       "path": "https://developer.android.com/jetpack/androidx/releases/tracing"
     }
   ],
-  "pipeline_stage": "task6_pending",
-  "task6_state": "revisiting",
+  "pipeline_stage": "task9_pending",
+  "task6_state": "reviewed",
   "task9_state": "pending",
   "task2b_state": "fixed",
   "reviewed_by": "openclaw-task6",
