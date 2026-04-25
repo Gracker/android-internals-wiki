@@ -40,13 +40,13 @@ related_chapters:
 - '15.5'
 - '15.9'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-24'
+reviewed_date: '2026-04-25'
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: '2026-04-21'
+task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-21T23:18:40+08:00'
 repaired_date: '2026-04-25'

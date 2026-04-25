@@ -42,13 +42,13 @@ related_chapters:
 - '15.9'
 - '15.10'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-24'
+reviewed_date: '2026-04-25'
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: '2026-04-23'
+task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-23T02:33:00+08:00'
 task2b_state: fixed
@@ -354,7 +354,7 @@ Firebase Performance 最大的优点，是上手快。
 
 ## 这一章在全书里的位置
 
-这一章不是单独介绍几个热门项目，而是把工具能力放回治理体系里看：
+这一章把工具能力放回治理体系里看：
 
 - `7/8/9` 解释了体验问题是什么
 - `15.3` 解释了该看哪些指标
