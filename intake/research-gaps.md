@@ -8016,3 +8016,158 @@ Android 16 Google Play cloud compilation 中 SDM（Secure Dex Metadata）与 Bas
 ### 外部 review 来源
 - external-review 已命中：Android 16 SDM 文件和 artd 进程角色缺失
 
+## [2026-04-25] 10.6 内存抖动 — 知识盲区 (External Review)
+
+### 盲区描述
+CMC GC 的 userfaultfd 损耗：Android 15 在非分代 CMC 下的内存分配 Stall 表现未覆盖。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 15 CMC 下 userfaultfd 相关 Uninterruptible Sleep 状态的 Perfetto 观察方法
+- 非分代 CMC vs 分代 CMC 的 STW 时间对比
+
+### 关联章节
+- 10.6
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-10.README-external-review.md)
+
+## [2026-04-25] 10.7 SQLite — 知识盲区 (External Review)
+
+### 盲区描述
+SQLite CursorWindow 在 64 位进程下的限制：验证 64 位进程下 config_cursorWindowSize 是否有厂商层面的大幅上调。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 各 OEM 64 位进程 CursorWindow 大小配置差异
+
+### 关联章节
+- 10.7
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-10.README-external-review.md)
+
+## [2026-04-25] 12.2 QUIC 连接迁移 — 知识盲区 (External Review)
+
+### 盲区描述
+QUIC Connection Migration 在 Perfetto 中如何识别 Socket 切换。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Perfetto 中 Connection Migration 触发的 Socket 切换观测方法
+
+### 关联章节
+- 12.2
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-12.README-external-review.md)
+
+## [2026-04-25] 15.README 边缘 Trace 场景 — 知识盲区 (External Review)
+
+### 盲区描述
+高负载或内存触顶情况下的边界 Trace 异常特征。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 边缘性能恶化场景的 Trace 特征提取
+
+### 关联章节
+- 15.README
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-15.README-external-review.md)
+
+## [2026-04-25] 19.17 Firebase 采集限流 — 知识盲区 (External Review)
+
+### 盲区描述
+Firebase 采集限流：10 分钟 300 事件，超出部分被设备端直接丢弃。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Firebase Performance SDK 各版本限流策略对比
+- 与业务监控互补的最佳实践
+
+### 关联章节
+- 19.17
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-17-external-review.md)
+
+## [2026-04-25] 18.17 Buffer Release 性能量化 — 知识盲区 (External Review)
+
+### 盲区描述
+API 36 ASurfaceTransaction_setBufferWithRelease 在多缓冲池场景下的具体性能收益量化数据。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 补充多 Buffer Pooling 场景的 Trace 案例对比
+
+### 关联章节
+- 18.17
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-18.README-external-review.md)
+
+## [2026-04-25] 18.21 EyeDropper 折叠屏取色 — 知识盲区 (External Review)
+
+### 盲区描述
+Android 17 EyeDropper 在折叠屏/跨屏场景下的取色点坐标映射逻辑。
+
+### 重要程度
+低
+
+### 建议研究方向
+- Android 17 EyeDropper 多 Display 取色坐标映射
+
+### 关联章节
+- 18.21
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-18.README-external-review.md)
+
+## [2026-04-25] 8.09 Vulkan Render Stages — 知识盲区 (External Review)
+
+### 盲区描述
+Vulkan Render Stages 观测：各设备 Perfetto GPU Render Stages 插件与驱动支持情况。
+
+### 重要程度
+高
+
+### 建议研究方向
+- android.gpu.renderstages 数据源在各 SoC 平台的支持度
+- security.perfetto.gpu_counters.privileged 属性配置
+
+### 关联章节
+- 8.09
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-8.README-external-review.md)
+
+## [2026-04-25] 9.6 ProgressStyle 渲染进程 — 知识盲区 (External Review)
+
+### 盲区描述
+Android 16 ProgressStyle 性能：其渲染是否完全在 SystemUI 进程内完成。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 验证 Android 16 ProgressStyle 渲染是否不回掉给 App
+
+### 关联章节
+- 9.6
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-9.README-external-review.md)

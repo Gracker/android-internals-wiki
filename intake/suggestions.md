@@ -3715,3 +3715,72 @@
 - **位置**：L270-L276 cpuinfo 阈值
 - **问题**：“后台进程 CPU 持续超过 5% 就值得调查”缺少设备类型、核心数、采样窗口和业务场景基线。
 - **建议**：改为建议读者先采集 30-60 秒 `top -H` / Perfetto CPU 轨道并与同机型基线对比；如保留 5%，必须说明它只是经验起点，不是 Android 系统阈值。
+## [External Review] 10.README ch10 目录索引 — 2026-04-25
+- **类型**：交叉引用
+- **位置**：README.md 目录列表
+- **问题**：README 列出的子章节与实际文件名（05-07）存在断层
+- **建议**：确保 README 列表与文件名一一对应
+- **来源**：Gemini 外部 review
+
+## [External Review] 10.7 SQLite WAL F2FS — 2026-04-25
+- **类型**：知识盲区
+- **位置**：07-sqlite-room-performance.md
+- **问题**：未提及 F2FS 下 WAL 模式可能的写入放大
+- **建议**：补充 F2FS 文件系统下 WAL 写入放大效应说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 12.1 ANDROID_STRIP_DEBUG_SYMBOLS — 2026-04-25
+- **类型**：工具建议
+- **位置**：01-apk-size.md
+- **问题**：推荐 CMake 传参方式，AGP 8.x 已默认处理 strip
+- **建议**：优先推荐 Gradle DSL packaging.jniLibs.keepDebugSymbols 配置
+- **来源**：Gemini 外部 review
+
+## [External Review] 12.2 Brotli 压缩 — 2026-04-25
+- **类型**：数据支撑
+- **位置**：02-network-performance.md
+- **问题**：仅提到 Gzip，未提及 Brotli (br) 可额外减少 15-25% 文本体积
+- **建议**：在协议选择章节增加 Brotli 推荐
+- **来源**：Gemini 外部 review
+
+## [External Review] 13.README 目录标签 — 2026-04-25
+- **类型**：结构建议
+- **位置**：目录列表
+- **问题**：13.8 和 13.10 SQL 重灾区未标记为进阶必读
+- **建议**：在目录项后增加难度/场景标签
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.README 版本演进 — 2026-04-25
+- **类型**：版本差异
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：补充 Android 12-15 相关演进简短说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.20 Winscope 优先推荐 — 2026-04-25
+- **类型**：工具建议
+- **位置**：dumpsys SurfaceFlinger --latency 段
+- **问题**：dumpsys --latency 在 BLAST 架构下参考价值下降
+- **建议**：在方法论中增加 Winscope (SurfaceFlinger trace) 优先级推荐
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.19 热降频识别模型 — 2026-04-25
+- **类型**：原理链
+- **位置**：温度与帧率关联
+- **问题**：缺少热降频的判定模型
+- **建议**：补充判定模型：Temperature 达临界 + CPU/GPU Frequency 断崖下跌 → FPS 下降归因系统调度
+- **来源**：Gemini 外部 review
+
+## [External Review] 8.09 Thermal 策略组合 — 2026-04-25
+- **类型**：实操建议
+- **位置**：ADPF Headroom API 段
+- **问题**：未区分 getThermalHeadroom（预测性）与 getCpuHeadroom（即时性）
+- **建议**：给出组合策略建议
+- **来源**：Gemini 外部 review
+
+## [External Review] 9.5 QueuedWork 反射限制 — 2026-04-25
+- **类型**：版本差异
+- **位置**：05-case-studies.md QueuedWork 反射修复
+- **问题**：Android 12+ Hidden API 限制，反射需配合元反射策略
+- **建议**：补充 Hidden API 限制说明及 Modern Broadcast Queue 优化
+- **来源**：Gemini 外部 review
