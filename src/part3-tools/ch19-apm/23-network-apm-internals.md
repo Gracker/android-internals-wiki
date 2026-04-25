@@ -13,7 +13,7 @@ related_chapters: ["19.0", "19.08", "19.17"]
 pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 sources:
   - "https://square.github.io/okhttp/features/events/"

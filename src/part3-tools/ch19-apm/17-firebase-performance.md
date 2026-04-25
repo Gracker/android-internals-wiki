@@ -23,7 +23,7 @@ sources:
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
