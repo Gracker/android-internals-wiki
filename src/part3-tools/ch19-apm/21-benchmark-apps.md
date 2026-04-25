@@ -11,6 +11,12 @@ last_verified_against: "Geekbench 6 requirements / Benchmark Internals, Android 
 confidence: medium
 tags:
 - apm
+- benchmark
+- geekbench
+- 3dmark
+- device-tiering
+- antutu
+- pcmark
 related_chapters:
 - '19.0'
 sources:
@@ -18,10 +24,10 @@ sources:
   path: https://www.geekbench.com/
 - type: official
   path: https://benchmarks.ul.com/3dmark-android
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: 2026-04-25
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
