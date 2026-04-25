@@ -2205,8 +2205,8 @@
   {
     "section": "15.5",
     "section_title": "线上监控体系",
-    "priority": 85,
-    "reason": "[External Review] 外部AI review发现P1重要缺失",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Task9 复核确认 线上性能监控 仍有 P0/P1 技术问题",
     "review_issues": [
       {
         "type": "重要缺失",
@@ -2231,17 +2231,58 @@
         "location": "ANR 监控",
         "detail": "FileObserver 监听 traces.txt 在 Android 10+ 沙盒权限收紧后已不可行",
         "suggestion": "明确指出应全面转向 ApplicationExitInfo"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "参考资料：ProcessRecord.java — ANR 检测与 traces 写入",
+        "detail": "AOSP android-16 中 ANR 主流程不在 ProcessRecord.java。ProcessRecord 只保留进程状态，appNotResponding 与 dumpStackTraces 位于 ProcessErrorStateRecord.java / AnrHelper.java / ActivityManagerService.java。当前锚点会把读者引到错误文件。",
+        "suggestion": "将 ANR 源码锚点改为 frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java、AnrHelper.java、ActivityManagerService.java；ProcessRecord.java 只作为进程状态补充。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "ANR 监控：从 Watchdog 到 ApplicationExitInfo",
+        "detail": "大纲要求覆盖 ANR signal handler，但正文只讲 Watchdog、ApplicationExitInfo 和 FileObserver，没有解释 SIGQUIT 被 ART SignalCatcher 处理、APM 如何基于信号/线程栈补现场，以及与系统 ANR 判定的边界。",
+        "suggestion": "补一节“SIGQUIT/SignalCatcher 与 APM 自采栈边界”，源码锚点可用 art/runtime/signal_catcher.cc 的 SignalCatcher::HandleSigQuit()。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "监控数据的采样、聚合与报警策略",
+        "detail": "章节适用到 Android 16，但异常触发补证据仍停留在自定义 trace/session timeline，未覆盖 ProfilingManager 与 system-triggered profiling 对线上取证方式的变化。",
+        "suggestion": "补充 API 35/36 Extension 相关 ProfilingManager 能力、触发条件、产物类型和隐私边界；说明它与自建 APM trace 的分工。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "ApplicationExitInfo 小节",
+        "detail": "正文只围绕 REASON_ANR 展开，未说明 ApplicationExitInfo 还能用于 REASON_CRASH_NATIVE、REASON_CRASH 等退出原因的线上稳定性监控，导致“ANR/崩溃统一 exit 口径”缺失。",
+        "suggestion": "补充 Native crash / Java crash / ANR 的 exit reason 统一采集模型，以及 getTraceInputStream() 并非所有 reason 都有 trace 的边界。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T19:35:26+08:00"
   },
   {
     "section": "15.6",
     "section_title": "性能测试方法论",
     "priority": 85,
-    "reason": "[External Review] 外部AI review发现P1重要缺失",
+    "reason": "[Deep Tech Review] Task9 复核确认 性能测试最佳实践 仍有 P0/P1 技术问题",
     "review_issues": [
       {
         "type": "重要缺失",
@@ -2265,17 +2306,49 @@
         "type": "外部Review问题",
         "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "测试环境标准化 / 屏幕亮度与显示设置",
+        "detail": "环境控制覆盖温度、电量、网络、亮度，但没有锁定刷新率。90/120Hz 与 ARR/VRR 会直接改变帧 deadline，滑动帧率和 Macrobenchmark 帧指标不可横比。",
+        "suggestion": "补充固定刷新率步骤：记录 display mode，按设备能力设置 peak_refresh_rate / min_refresh_rate，测试后恢复；同时说明 OEM/Android 版本可能不开放该设置，需用 dumpsys display 或 Perfetto FrameTimeline 验证。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "消除测试干扰：关闭不必要的后台进程",
+        "detail": "只写 am kill-all，无法处理 Android 14+ ART Service 背景 dexopt / profile 任务。后台 dexopt 会制造 CPU/I/O 干扰，尤其影响启动、安装后首次运行和 CI 基准。",
+        "suggestion": "补充 Android 14+ 的 bg-dexopt-job 控制：pm/cmd package bg-dexopt-job --cancel 或 --disable、必要时 setprop pm.dexopt.disable_bg_dexopt true；注明命令随版本和权限变化，执行后要恢复。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "温度控制 / 性能分析误区：峰值帧率 vs 稳态帧率",
+        "detail": "正文讲了温控，但没有把“峰值性能测试”和“热稳定态测试”拆成两套实验设计；末尾素材提到 30 分钟稳态，但未进入主流程。",
+        "suggestion": "补测试分层：短跑回归看冷机峰值，长跑/游戏/视频看热稳定态；分别定义预热时长、温度门槛、降频判据和报告字段。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T19:35:26+08:00"
   },
   {
     "section": "15.7",
     "section_title": "源码阅读方法论",
-    "priority": 85,
-    "reason": "[External Review] 外部AI review发现P1重要缺失",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Task9 复核确认 AOSP 代码阅读 仍有 P0/P1 技术问题",
     "review_issues": [
       {
         "type": "重要缺失",
@@ -2299,11 +2372,61 @@
         "type": "外部Review问题",
         "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "路径二：Native 层使用 ATRACE_CALL / ATRACE_NAME；参考资料 Trace.h",
+        "detail": "正文把内部 Trace.h 写成 frameworks/native/include/utils/Trace.h；该路径在 android-16.0.0_r1 下 404。实际内部头文件在 system/core/libutils/include/utils/Trace.h，tag 定义在 system/core/libcutils/include/cutils/trace.h；NDK 公开头为 frameworks/native/include/android/trace.h。",
+        "suggestion": "替换错误路径，并区分内部 libutils/cutils 头与 NDK android/trace.h。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "SurfaceFlinger — 系统级合成器：关键源码入口",
+        "detail": "`SurfaceFlinger::onMessageRefresh()`、`Layer::onDraw()`、`HWComposer::validateDisplay()/presentDisplay()` 作为 android-16 核心入口已不准确：SurfaceFlinger.cpp 中没有 onMessageRefresh；Layer.cpp 没有 Layer::onDraw；HWComposer.cpp 对应 wrapper 方法是 getDeviceCompositionChanges()、presentAndGetReleaseFences()。",
+        "suggestion": "按 Android 16 重写入口：SurfaceFlinger::composite() → CompositionEngine::present() → Output::prepareFrame()/present() → HWComposer::getDeviceCompositionChanges()/presentAndGetReleaseFences()。老版本 composeSurfaces/onMessageRefresh 可放入版本差异表。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "frameworks/base 子路径 / 速查表",
+        "detail": "WindowManager 相关目录只写到 services/core/java/com/android/server/，没有显式拆出 wm/。Android 10+ Activity/Task/Window 转场大量逻辑在 wm 包，继续只写 am 会误导读者。",
+        "suggestion": "补 `services/core/java/com/android/server/wm/`：ActivityTaskManager、WindowManager、Task/DisplayArea、转场动画与窗口布局。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "追踪调用链的三种方法",
+        "detail": "调用链追踪只覆盖同进程函数跳转，没有讲 Binder/AIDL 边界。实际性能问题常从 App 进程跨到 system_server、SurfaceFlinger 或 vendor service。",
+        "suggestion": "补“跨 Binder 边界追踪”：从 aidl 接口找 Stub/Proxy、搜索 extends IXXX.Stub / onTransact、结合 Perfetto binder transaction 与 pid/tid 对齐。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "从 Systrace / Perfetto tag 定位源码",
+        "detail": "只讲同步 traceBegin/traceEnd 和 ATRACE_CALL，未覆盖 async trace。异步 begin/end 需要 name + cookie 配对，是分析启动、动画、跨线程任务时的常见入口。",
+        "suggestion": "补 Java Trace.asyncTraceBegin/End、native ATRACE_ASYNC_BEGIN/END 的搜索方式，说明 cookie 配对和跨线程 slice 的读法。",
+        "reviewed_by": "task9-deep-tech-review",
+        "reviewed_at": "2026-04-25T19:35:26+08:00"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/research-gaps.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T19:35:26+08:00"
   },
   {
     "section": "15.8",
