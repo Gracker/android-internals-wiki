@@ -2031,6 +2031,12 @@
         "detail": "“Baseline Profiles（2022，随 Jetpack 从 Android 13 起分发）”与前文“覆盖 Android 7+”冲突。Baseline Profile 通常随 APK/AAB 打包，并通过 Jetpack ProfileInstaller 回填到 API 24+；不应描述为 Android 13 起分发。",
         "suggestion": "改成 Jetpack Baseline Profiles + ProfileInstaller 支持 API 24+；如果要谈 Cloud Profiles，再单独说明与 Play 分发、系统版本的关系。",
         "priority": "P1"
+      },
+      {
+        "type": "事实核验",
+        "location": "过早优化引用",
+        "detail": "引用 Knuth 名言但未给出关键的 3% 上下文",
+        "suggestion": "补充 Knuth 完整论述：97% 忽略微小提升，3% 关键路径不能放弃"
       }
     ],
     "added_by": "external-ai-review",
@@ -2079,6 +2085,12 @@
         "detail": "kswapd、D 状态、LMK 的系统压力判断已覆盖，但缺少“哪个进程制造内存压力”的闭环。没有使用 Perfetto rss_stat / process memory 轨道、lmkd 事件或 ApplicationExitInfo.getRss()/REASON_LOW_MEMORY 做进程级归因。",
         "suggestion": "增加内存元凶定位方法：按时间窗聚合进程 RSS/PSS 变化，结合 lmkd kill 日志、ApplicationExitInfo 和目标 App 内存曲线判断是自身泄漏、其他 App 压力还是系统策略问题。",
         "priority": "P1"
+      },
+      {
+        "type": "版本差异",
+        "location": "ANR 阈值",
+        "detail": "未反映 Android 14+ 的弹性放宽",
+        "suggestion": "补充 Android 14+ CPU 饥饿时 BroadcastReceiver ANR 窗口可能放宽到 2x"
       }
     ],
     "added_by": "external-ai-review",
@@ -2208,6 +2220,12 @@
         "location": "",
         "detail": "仅讨论了其在 ANR 中的应用。",
         "suggestion": "补充说明 `ApplicationExitInfo` 在监控 Native 崩溃方面的扩展能力。"
+      },
+      {
+        "type": "事实核验",
+        "location": "ANR 监控",
+        "detail": "FileObserver 监听 traces.txt 在 Android 10+ 沙盒权限收紧后已不可行",
+        "suggestion": "明确指出应全面转向 ApplicationExitInfo"
       }
     ],
     "added_by": "external-ai-review",
@@ -3555,6 +3573,12 @@
         "location": "14.11",
         "detail": "**：API 单位需对齐官方（μJ）；需补充 Android 15 功耗统计服务向 `power.stats` 包迁移的背景。",
         "suggestion": ""
+      },
+      {
+        "type": "知识盲区",
+        "location": "PowerMonitor API (API 35)",
+        "detail": "getConsumedEnergy() 返回累计微瓦秒，需两次快照做减法才能算特定操作功耗",
+        "suggestion": "在 API 35 章节提醒累计值 vs 瞬时功率的转换逻辑"
       }
     ],
     "added_by": "external-ai-review",
@@ -3656,6 +3680,12 @@
       {
         "level": "P0",
         "detail": "*无*"
+      },
+      {
+        "type": "版本差异",
+        "location": "ApplicationExitInfo",
+        "detail": "强调 API 30+ 但未说明 API 26-29 如何补齐稳定性归因信号",
+        "suggestion": "简要列举低版归因手段：traces.txt 监听、崩溃回调、前后台状态记录"
       }
     ],
     "added_by": "external-ai-review",
