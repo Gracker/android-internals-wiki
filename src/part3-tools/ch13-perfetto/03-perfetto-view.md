@@ -5,7 +5,7 @@ section: "13.3"
 status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 35)"
+applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-25"
 last_verified_against: "perfetto.dev docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-16.0.0_r1"
 confidence: medium-high
@@ -47,8 +47,10 @@ task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task9_result: pass-tech-review
-last_task2b_at: "2026-04-25T10:40:00+08:00"
+last_task2b_at: "2026-04-26T01:40:00+08:00"
 task2b_fixed_by: openclaw-task2b
+updated_date: "2026-04-26"
+updated_by: openclaw-task2b
 ---
 
 
@@ -221,6 +223,8 @@ Android 14+ 的主流程更适合直接看 `commit`、`composite`、`present`。
 
 分析掉帧时，App Track 只是入口，SurfaceFlinger Track 是下游验证点。Android 12-13 上先对照 `REFRESH` 是否跨了当前刷新窗口；Android 14+ 上更该看 `commit` / `composite` / `present` 有没有明显拉长，再判断是事务处理、Client composition 还是显示提交拖慢了这一帧。
 
+如果 `composite` 下方出现 `drawLayers`、`renderengine` 或 GPU render stage 相关子调用，通常表示本帧触发了 Client Composition。此时再回看图层数量、透明混合、圆角/阴影、Protected content 等因素，判断是 HWC 无法直接接管，还是 GPU 合成工作本身过重。
+
 [来源: https://www.androidperformance.com/2024/05/21/Android-Perfetto-03-how-to-analysis-perfetto/]
 
 ### [自动发现] Counter Track
@@ -262,7 +266,7 @@ Counter Track 的数值点来自代码中的 `Trace.traceCounter()` / `ATRACE_IN
 
 Self Time 的意义在于定位瓶颈层级。比如 `doFrame` 的 Wall Duration 是 20ms，但 Self Time 只有 1ms——说明时间都花在了它的子 Slice 里（比如 `performTraversals` 里的 `measure` 5ms + `layout` 3ms + `draw` 11ms）。进一步看 `draw` 的 Self Time 可能也只有 2ms，因为大部分时间在子 Slice `RenderThread:DrawFrame` 里。这样逐层 drill-down，我们就能精确找到时间花在了哪一层。
 
-做批量分析时，不要手写一长串父子 Slice 扣减逻辑。新版 Trace Processor 的 stdlib 提供 `slice_self_dur` 辅助能力，可以直接按 slice id 查 Self Duration；旧版本没有这组 stdlib 时，再退回到 `slice` 表父子关系手工计算。
+做批量分析时，不要手写一长串父子 Slice 扣减逻辑。新版 Trace Processor 的 `slices.self_dur` stdlib 模块提供 `slice_self_dur` 表，`self_dur` 列就是已经扣掉子 Slice 的自身耗时；旧版本没有这组 stdlib 时，再退回到 `slice` 表父子关系手工计算。
 
 ### Thread States 标签
 
@@ -343,6 +347,8 @@ Runnable 段过长是"调度延迟"的信号。常见原因包括：系统负载
 红色通常出现在 `Lock contention on a monitor lock` 这类锁等待 slice 或锁竞争标记上，表示线程正在等 Java/Kotlin monitor、ART monitor 或 native lock。它和 Running、Runnable、Sleeping 属于两层信息：底层调度状态可能仍然是 Sleep，但红色 slice 直接指出等待原因是锁。
 
 选中红色段后，先看详情面板里的持锁线程、等待线程和锁对象信息；如果面板给出 `waking_thread`、owner 或跳转箭头，沿着它回到持锁线程的同一时间窗。主线程出现长红色段时，排查顺序是：持锁线程当时是否在 Running、是否又在等 Binder / I/O、锁持有范围是否过大。
+
+红色段不等于严重优先级翻转。判断它是否影响当前卡顿，要看红色段是否位于这次掉帧或 ANR 的关键路径，持锁线程是否占着 CPU，或者持锁线程本身又被 Binder / I/O 阻塞。
 
 ### Uninterruptible Sleep（深橙色）
 
@@ -433,7 +439,7 @@ Android Studio Profiler 也提供了 CPU Trace 的可视化视图，很多开发
 
 **第三步：看主线程**。向下滚动到 MainThread Track，找到同一时间窗里的 `Choreographer#doFrame` Slice。放大之后，先看 `CALLBACK_INPUT`、`CALLBACK_ANIMATION`、`CALLBACK_TRAVERSAL`、`CALLBACK_COMMIT` 哪一段最长。
 
-**第四步：看线程状态颜色**。如果主线程大段是绿色，说明主要在执行 CPU 工作；灰色长，优先排查锁或 Binder 等待；深橙色长，优先排查 I/O。再结合 Wall Duration、CPU Duration、Self Time 判断瓶颈是计算、等待还是磁盘。
+**第四步：看线程状态颜色**。如果主线程大段是绿色，说明主要在执行 CPU 工作；灰色长，优先排查锁或 Binder 等待；红色长，点开详情里的 owner / `waking_thread` 并跳到持锁线程；深橙色长，优先排查 I/O。再结合 Wall Duration、CPU Duration、Self Time 判断瓶颈是计算、等待还是磁盘。
 
 **第五步：继续看 RenderThread**。如果 `doFrame` 本身不长，但 `DrawFrame`、GPU work 或 fence wait 明显拉长，就把同一时间窗切到 `RenderThread`。这里要区分是 App 侧 GPU 提交慢，还是下游消费慢。
 

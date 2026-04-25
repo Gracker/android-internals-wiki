@@ -8035,8 +8035,12 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-13-13.3-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-13-13.3-external-review.md",
+    "completed_at": "2026-04-26T01:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_detail": "fixed-in-chapter: added blocked/lock-contention handling depth, explicit self_dur stdlib note, and Android 14+ SurfaceFlinger Client Composition observation point."
   },
   {
     "section": "14.5",
@@ -10519,7 +10523,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T01:28:54+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T01:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_detail": "fixed-in-chapter: corrected FrameTimeline TokenManager path/signature and Project Butter callback version boundary; also removed unverifiable SkiaVulkan percentage."
   },
   {
     "section": "4.1",

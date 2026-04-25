@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T00:47:01+08:00",
+  "generated_at": "2026-04-26T01:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,11 +7,11 @@
     "finalized": 77,
     "ready-for-review": 141,
     "ready-to-publish": 77,
-    "last_updated": "2026-04-26T00:47:01+08:00",
+    "last_updated": "2026-04-26T01:40:00+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 43,
-      "task2b_pending": 48,
+      "task6_pending": 44,
+      "task2b_pending": 47,
       "ready-to-publish": 77,
       "task9_pending": 44,
       "'task9_pending'": 2,
@@ -19,21 +19,21 @@
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 176,
-      "revisiting": 38
+      "reviewed": 175,
+      "revisiting": 39
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 137,
-      "pending": 69,
+      "reviewed": 136,
+      "pending": 70,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 148,
-      "pending": 52,
+      "fixed": 149,
+      "pending": 51,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -42,8 +42,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 43,
-      "task2b_pending": 48,
+      "task6_pending": 44,
+      "task2b_pending": 47,
       "ready-to-publish": 77,
       "task9_pending": 44,
       "'task9_pending'": 2,
@@ -51,21 +51,21 @@
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 176,
-      "revisiting": 38
+      "reviewed": 175,
+      "revisiting": 39
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 137,
-      "pending": 69,
+      "reviewed": 136,
+      "pending": 70,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 148,
-      "pending": 52,
+      "fixed": 149,
+      "pending": 51,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -762,10 +762,10 @@
       "last_verified": "'2026-04-23'",
       "last_verified_against": "AOSP android-16.0.0_r1 + external/perfetto + developer.android.com",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -773,7 +773,11 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T01:29:40+08:00"
+      "last_task9_at": "2026-04-26T01:29:40+08:00",
+      "last_task2b_at": "2026-04-26T01:40:00+08:00",
+      "task2b_fixed_by": "openclaw-task2b",
+      "updated_by": "openclaw-task2b",
+      "updated_date": "2026-04-26"
     },
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
       "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
@@ -3530,7 +3534,7 @@
       "status": "finalized",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
-      "applicable_versions": "Android 10 (API 29) - Android 16 (API 35)",
+      "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
       "last_verified": "2026-04-25",
       "last_verified_against": "perfetto.dev docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-16.0.0_r1",
       "confidence": "medium-high",
@@ -3543,10 +3547,10 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "last_task2b_at": "2026-04-25T10:40:00+08:00",
+      "last_task2b_at": "2026-04-26T01:40:00+08:00",
       "task2b_fixed_by": "openclaw-task2b",
       "updated_by": "openclaw-task2b",
-      "updated_date": "2026-04-25"
+      "updated_date": "2026-04-26"
     },
     "src/part3-tools/ch13-perfetto/04-large-traces.md": {
       "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",

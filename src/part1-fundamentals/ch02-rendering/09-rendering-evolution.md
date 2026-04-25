@@ -53,21 +53,23 @@ related_chapters:
 - '2.10'
 - '3.1'
 - '8.2'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: "openclaw-task9"
-repaired_date: '2026-04-24'
+repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1: 无新命中. 评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。'
-  (否定-纠正结构: 不是X而是Y → 直接陈述). 无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。'
+review_notes: "2026-04-24 task6 re-review: pass-light-edit；2026-04-26 task2b 修复 Task9 TokenManager 源码路径、Choreographer 版本边界、SkiaVulkan 裸数字问题。"
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: '2026-04-24T06:20:15+08:00'
+task2b_state: fixed
+last_task2b_at: '2026-04-26T01:40:00+08:00'
 last_task9_at: "2026-04-26T01:29:40+08:00"
+task2b_fixed_by: openclaw-task2b
+updated_date: '2026-04-26'
+updated_by: openclaw-task2b
 ---
 
 # 渲染机制的版本演进
@@ -114,7 +116,7 @@ Android 4.0 Ice Cream Sandwich（API 14，2011 年）将硬件加速设为 **所
 
 Android 4.1 Jelly Bean（API 16，2012 年）的 **Project Butter** 是渲染流畅度的一次标志性升级。Google 承诺"vsync 时代的 60 FPS"，核心改动有三个：
 
-**Choreographer** 是整个改动的枢纽。它接收来自 SurfaceFlinger 的 VSync 信号（在 Perfetto 中对应 `VSYNC-app`），在信号到来时触发 `doFrame()`，依次执行 `INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT` 回调。`TRAVERSAL` 阶段执行 `performTraversals()`，即 `measure → layout → draw`。
+**Choreographer** 是整个改动的枢纽。它接收来自 SurfaceFlinger 的 VSync 信号（在 Perfetto 中对应 `VSYNC-app`），在信号到来时触发 `doFrame()`。Android 4.1 当年的回调队列是 `INPUT → ANIMATION → TRAVERSAL`；现代 AOSP 在这条顺序中加入了 `INSETS_ANIMATION` 与 `COMMIT`，读现代源码和 Trace 时要把它们看作后续版本演进。`TRAVERSAL` 阶段执行 `performTraversals()`，即 `measure → layout → draw`。
 
 在 Perfetto 中，Choreographer 的调度可以通过 `Choreographer#doFrame` slice 观察。每个 `doFrame` 的开始时间应该紧贴 `VSYNC-app` 信号，如果出现明显延迟，说明主线程被阻塞。
 
@@ -182,7 +184,7 @@ Android Oreo（8.0）开始测试将 Skia 作为统一的渲染后端，通过 S
 Skia 同时实现了 Vulkan GPU 后端。从 Android Q（10.0）开始，开发者可以通过调试参数启用 `SkiaVulkan` 管线。到 2024 年，新芯片组开始默认使用 SkiaVulkan 后端。
 
 Vulkan 后端相比 OpenGL ES 的具体改进：
-- **CPU 开销降低约 30–50%** [待验证：需补充 benchmark 来源]：Vulkan 的命令缓冲区（Command Buffer）允许多线程并行构建和提交 GPU 命令，省去了 OpenGL ES 驱动层大量的隐式状态验证和同步开销
+- **减少驱动侧隐式开销**：Vulkan 的命令缓冲区（Command Buffer）允许多线程并行构建和提交 GPU 命令，减少 OpenGL ES 驱动层的隐式状态验证和同步等待。不同 SoC、驱动版本和 workload 的收益差异很大，正文不保留缺少测试条件的百分比结论
 - **显式内存管理**：应用可以精确控制 GPU 内存的分配时机（通过 `VkAllocateMemory`）、绑定和释放，而非依赖 GL 驱动的隐式管理。内存生命周期与帧调度因此可以精确对齐，减少显存浪费
 - **扩展图形特性集**：Vulkan 1.1+ 提供计算着色器（Compute Shader）、多通道渲染（Multi-pass Rendering）、异步计算队列等 OpenGL ES 3.x 不具备或受限的能力
 
@@ -337,17 +339,23 @@ struct TimelineItem {
 
 #### TokenManager 与 vsyncId 生成
 
-TokenManager 是 FrameTimeline 的心脏，负责生成 vsyncId 并管理预测数据生命周期：
+`TokenManager` 负责给预测时间线生成 vsyncId，并在短时间内保存这组 prediction。android-14.0.0_r1 与 android-16.0.0_r1 中，`TokenManager` 声明在 `FrameTimeline.h` 内；AOSP 对应版本没有独立的 `TokenManager.h`。
 
 ```cpp
-// frameworks/native/services/surfaceflinger/FrameTimeline/TokenManager.h
+// frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h
 class TokenManager {
-    std::map<Token, TimelineItem> mPredictions; // 令牌→预测数据映射
-    Token generateTokenForPredictions(targetWakeupTime, readyTime, vsyncTime);
+public:
+    virtual ~TokenManager() = default;
+
+    // Generates a token for the given set of predictions.
+    // Stores the predictions for 120ms and destroys it later.
+    virtual int64_t generateTokenForPredictions(TimelineItem&& prediction) = 0;
+
+    virtual std::optional<TimelineItem> getPredictionsForToken(int64_t token) const = 0;
 };
 ```
 
-**调用链**：`MessageQueue::vsyncCallback()` 收到 VSync 信号 → 调用 `TokenManager::generateTokenForPredictions()` → 生成 vsyncId（作为 token）存入 `mPredictions` map → 帧完成后 App 通过 `Choreographer.FrameTimeline.VsyncId` 将 vsyncId 传回 SF → SF 关联 SurfaceFrame 与 DisplayFrame。
+调用关系可以按数据流理解：VSync 预测器先产出一组 `TimelineItem`，`TokenManager::generateTokenForPredictions(TimelineItem&& prediction)` 返回 token，App 侧通过 `Choreographer.FrameTimeline.getVsyncId()` 拿到同一个标识；帧完成后，SurfaceFlinger 再用这个 token 把 App 的 `SurfaceFrame` 与显示侧的 `DisplayFrame` 关联起来。源码注释里 prediction 的保存窗口是 120ms，超过窗口后通过 token 取回 prediction 会进入 expired 分支。
 
 #### PresentState 与 JankType 判定
 
@@ -408,7 +416,7 @@ Android 13（API 33）同批新增 NDK API：`AChoreographer_postVsyncCallback()
 
 Perfetto 中 SurfaceView 的 FrameTimeline 尚未完全支持。DisplayFrame 被选中时，FrameTimeline 会绘制箭头，指向所有被合成进该 DisplayFrame 的 SurfaceFrame（可能跨多进程）。
 
-> [源码: frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h (android-14); TokenManager.h; perfetto/dev docs; AOSP Gerrit commits 757f24e3, 603a15d2] **[一手：AOSP 源码 + Perfetto 官方文档]**
+> [源码: frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h/cpp (android-14/android-16); perfetto.dev docs; AOSP Gerrit commits 757f24e3, 603a15d2] **[一手：AOSP 源码 + Perfetto 官方文档]**
 
 <!-- /AIW-源码调研-2026-04-18 -->
 
@@ -479,8 +487,7 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 - `frameworks/base/core/java/android/view/Display.java` — ARR 公共 API（`hasArrSupport()` / `getSuggestedFrameRate()`）
 - `frameworks/base/core/java/android/view/Window.java` — Window 级 ARR 偏好设置
 - `frameworks/native/services/surfaceflinger/FrameTimeline/` — FrameTimeline 系统（Jank 检测框架）
-  - `FrameTimeline.h/cpp` — FrameTimeline / DisplayFrame / SurfaceFrame 主实现
-  - `TokenManager.h` — vsyncId 生成与预测数据（mPredictions map）管理
+  - `FrameTimeline.h/cpp` — FrameTimeline / DisplayFrame / SurfaceFrame 主实现；`TokenManager` 声明也在 `FrameTimeline.h`，`generateTokenForPredictions(TimelineItem&&)` 负责生成 vsyncId
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 合成逻辑
 
 > [已验证: 上述源码路径经 web 搜索验证，在 android-16.0.0_r1 分支中存在。hwui 目录下可见 StatsUtils.cpp、AutoBackendTextureRelease.cpp、JankTracker.cpp 等文件；Choreographer.java、FrameMetrics.java、BLASTBufferQueue.cpp、SurfaceFlinger/ 均为 AOSP 稳定路径，跨版本未变。验证时间: 2026-04-03]
