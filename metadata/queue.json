@@ -10485,5 +10485,75 @@
     "completed_at": "2026-04-26T00:45:50+08:00",
     "completed_by": "openclaw-task2b",
     "completion_reason": "Task2B: 删除无效 dumpsys meminfo --slab 示例，补充 AOSP 支持参数与 slab 排查替代路径。"
+  },
+  {
+    "section": "2.9",
+    "section_title": "渲染机制的版本演进",
+    "priority": 95,
+    "reason": "[Deep Tech Review] FrameTimeline TokenManager 源码路径/签名与 Project Butter 回调版本边界存在错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "L343-L350 / L411 / L483（FrameTimeline TokenManager）",
+        "detail": "正文引用 frameworks/native/services/surfaceflinger/FrameTimeline/TokenManager.h，并给出 generateTokenForPredictions(targetWakeupTime, readyTime, vsyncTime) 与 mPredictions map 示例。AOSP android-14.0.0_r1、android-16.0.0_r1 中 TokenManager 声明在 FrameTimeline.h 内，不存在该 TokenManager.h；公开接口是 generateTokenForPredictions(TimelineItem&& prediction)。",
+        "suggestion": "把源码锚点改为 frameworks/native/services/surfaceflinger/FrameTimeline/FrameTimeline.h；代码片段改成 TimelineItem&& prediction 的接口，或删除伪代码并只描述 TokenManager 保存短期 prediction、按 token 取回。",
+        "evidence": [
+          "AOSP frameworks/native services/surfaceflinger/FrameTimeline/FrameTimeline.h android-14.0.0_r1/android-16.0.0_r1",
+          "TokenManager.h raw path 404"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "L117（Project Butter / Choreographer 回调顺序）",
+        "detail": "Android 4.1 Project Butter 小节直接写 doFrame 依次执行 INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT。INSETS_ANIMATION 是后续 WindowInsetsAnimation 相关的现代 Choreographer 回调，不应归入 Android 4.1 当年的 Project Butter 行为。",
+        "suggestion": "改成“现代 AOSP 的回调顺序包含 INSETS_ANIMATION；Android 4.1 叙述保留 INPUT / ANIMATION / TRAVERSAL 等核心阶段”，并标注该回调是后续版本演进。",
+        "evidence": [
+          "AOSP Choreographer.java android-16.0.0_r1 CALLBACK_INSETS_ANIMATION 注释"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T01:28:54+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "4.1",
+    "section_title": "Android 内存模型全景",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 线程栈物理占用与 ZRAM dumpsys 口径存在关键误读",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "severity": "P1",
+        "location": "L253-L255（Stack 内存）",
+        "detail": "正文把每线程约 1MB 栈空间直接推到“50 个线程光栈空间就可能占 50MB”。默认栈大小主要是虚拟地址空间保留，只有实际触碰的栈页才进入 RSS/PSS；线程数会增加 VSS、页表/guard 与已用栈页开销，但不能把 1MB × 线程数当作稳定物理占用。",
+        "suggestion": "拆成“虚拟栈保留”和“实际 resident stack pages”两层；保留线程过多会增加内存压力的判断，但不要把 50MB 写成默认 PSS/RSS 结论。",
+        "evidence": [
+          "Android pthread 默认栈约 1MB；Linux/Android 按页触碰后才占物理内存"
+        ]
+      },
+      {
+        "type": "数据缺失",
+        "severity": "P1",
+        "location": "L487-L490（ZRAM dumpsys meminfo 解读）",
+        "detail": "正文写 “physical used 接近 ZRAM 总大小” 表示压缩空间即将耗尽。dumpsys meminfo 的 physical used 是压缩后实际占用的 RAM，in swap 是未压缩换出量，total swap 是 ZRAM 设备可容纳的未压缩 swap 容量。判断容量接近耗尽应看 in swap/SwapUsed 是否接近 total swap，而不是 physical used 对比 total swap。",
+        "suggestion": "改成：123MB physical used 存 456MB uncompressed swap，压缩比约 3.7x；容量压力看 in swap 接近 total swap，RAM 开销看 physical used，压缩效率看两者比值。",
+        "evidence": [
+          "Android dumpsys meminfo ZRAM 口径",
+          "Linux zram mm_stat/orig_data_size 与 mem_used_total 语义"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T01:28:54+08:00",
+    "status": "pending"
   }
 ]
