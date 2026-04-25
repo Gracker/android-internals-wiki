@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: 2026-04-23
+reviewed_date: '2026-04-25'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 confidence: high
@@ -30,8 +30,8 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -533,7 +533,7 @@ public float getAlpha() { return mAlpha; }
 - ADB：`adb shell setprop debug.layout true`
 - 属性刷新（需重启 UI）：`adb shell service call activity 1599295570`（SYSPROPS_TRANSACTION）
 
-**属性读取链路**（[未经一手验证：基于 AOSP 代码搜索推断]）：
+**属性读取路径**（[未经一手验证：基于 AOSP 代码搜索推断]）：
 
 ```
 debug.layout 系统属性

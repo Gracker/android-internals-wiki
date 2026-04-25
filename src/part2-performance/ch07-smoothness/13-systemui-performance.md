@@ -64,14 +64,14 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-21'
+reviewed_date: '2026-04-25'
 task6_result: pass-light-edit
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-21'
