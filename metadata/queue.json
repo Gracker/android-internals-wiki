@@ -7699,8 +7699,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-11.1-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-11.1-external-review.md",
+    "completed_at": "2026-04-25T15:31:06+08:00",
+    "completed_by": "openclaw-task9-deep-tech-review",
+    "resolution": "verified-stale-external-review; 11.1 CPU power model 已覆盖，11.2/11.3 实际问题已拆成独立 Task9 条目"
   },
   {
     "section": "13",
@@ -8809,5 +8812,45 @@
     "added_at": "2026-04-25T15:21:32.054234",
     "status": "pending",
     "source_file": "2026-04-25-15-9.5-external-review.md"
+  },
+  {
+    "section": "11.2",
+    "section_title": "App 耗电优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] mediaPlayback 前台服务类型的版本边界混写，Android 12 后台启动限制与 Android 14 类型强制被合成一条规则",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L426",
+        "detail": "正文写“从 Android 12 开始，后台播放音乐必须使用 mediaPlayback 类型的 FGS”。Android 12 的变化是后台启动 FGS 的限制；targetSdk 34+ 在 Android 14 才强制声明 foregroundServiceType 和 FOREGROUND_SERVICE_MEDIA_PLAYBACK。",
+        "suggestion": "拆成两句：后台音频长时间播放应使用前台服务；Android 12 说明 background FGS start restriction；Android 14/targetSdk 34+ 再说明 mediaPlayback type 与权限要求。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T15:31:06+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "11.3",
+    "section_title": "系统级功耗优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Background Activity Starts 豁免条件把前台服务通知误写成后台拉起 Activity 的通用豁免",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/原理断裂",
+        "location": "L243-L248",
+        "detail": "正文把“App 有正在运行的前台服务并带通知”列为后台 Activity 启动豁免。Android 14+ 的后台 Activity 启动规则里，前台服务本身仍按后台处理，不能仅凭 FGS 通知获得 BAL 权限；PendingIntent 或 bound service 需要显式 opt-in。",
+        "suggestion": "删除 FGS 通知这一豁免项，改成官方豁免：可见窗口、近期用户交互、通知 PendingIntent、系统绑定服务 / 可见 App 绑定并带 BIND_ALLOW_ACTIVITY_STARTS；保留 PendingIntent sender/creator 的 Android 14/15/16 显式授权说明。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T15:31:06+08:00",
+    "status": "pending"
   }
 ]
