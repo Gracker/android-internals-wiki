@@ -2768,13 +2768,19 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T09:17:47+08:00",
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/research-gaps.md",
       "intake/suggestions.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T10:28:35+08:00"
+    "updated_at": "2026-04-25T10:28:35+08:00",
+    "completed_at": "2026-04-25T10:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter-java-hprof-snapshot",
+    "fixed_paths": [
+      "src/part3-tools/ch13-perfetto/02-trace-capture.md"
+    ]
   },
   {
     "section": "13.3",
@@ -2802,7 +2808,13 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T09:17:47+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T10:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter-blocked-red-thread-state",
+    "fixed_paths": [
+      "src/part3-tools/ch13-perfetto/03-perfetto-view.md"
+    ]
   },
   {
     "section": "13.6",

@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
-last_verified: "2026-04-24"
-last_verified_against: perfetto.dev docs, google/perfetto main perf_event_config.proto
+last_verified: "2026-04-25"
+last_verified_against: perfetto.dev docs, google/perfetto main data_source_config/java_hprof_config/perf_event_config.proto, Android Trace API
 confidence: high
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
@@ -28,6 +28,10 @@ sources:
   path: Cubox/Android Perfetto 系列 4：使用命令行在本地打开超大 Trace · Android Performance-2025-02-09.md
 - type: official
   path: https://perfetto.dev/docs/data-sources/native-heap-profiler
+- type: aosp
+  path: external/perfetto/protos/perfetto/config/data_source_config.proto
+- type: aosp
+  path: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
 tags:
 - perfetto
 - trace
@@ -41,18 +45,19 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-25T10:28:35+08:00'
-repaired_date: '2026-04-24'
+repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
-last_task2b_at: '2026-04-24T06:20:15+08:00'
+task2b_fixed_by: openclaw-task2b
+last_task2b_at: '2026-04-25T10:40:00+08:00'
 ---
 
 # Trace 抓取
@@ -531,7 +536,7 @@ try {
 
 最基本的要求是 `beginSection` 和 `endSection` 必须**严格配对、嵌套调用**——不能交叉嵌套，也不能在一个线程中 `beginSection` 然后在另一个线程中 `endSection`。`Trace.endSection()` 不需要传入标签名，它自动关闭最近一次 `beginSection` 对应的区域，和栈的 push/pop 机制一样。正因为这个栈式设计，如果 `endSection` 调用次数和 `beginSection` 不匹配，后续所有标记都会错位。
 
-标签名会被 Perfetto 截断到 127 个字符。建议使用简洁但足够描述性的标签名，比如 `"HomeFragment.loadData"` 而不是 `"Load the home page data from the remote server"`。在实际项目中，推荐用 `类名.方法名` 或 `模块.操作` 的命名规则。
+`Trace.beginSection` 的 section name 上限是 127 个 Unicode code unit。Java public API 对过长名字会抛出 `IllegalArgumentException`；native 侧也受 ATrace 消息长度和 ftrace `trace_marker` 写入格式约束。这个限制来自一条 trace marker 消息要同时容纳事件类型、线程信息和 section name，名字过长会增加 trace buffer 压力，也会让 Perfetto UI 难以阅读。建议使用简洁但足够描述性的标签名，比如 `"HomeFragment.loadData"`，不要把请求 URL、JSON 片段或用户标识塞进 section name。
 
 另外，`beginSection`/`endSection` 只能在同一线程中使用。如果要标记跨线程操作，需要用下面介绍的异步 API。
 
@@ -691,7 +696,34 @@ data_sources {
 }
 ```
 
-需要注意，Java Heap Sampling 和传统的 Java Heap Dump（如通过 `android.app.ActivityManager.getProcessMemoryDump` 获取的，或者 Android Studio Profiler 的 Dump Java Heap）是两种不同的分析手段。Sampling 记录的是每次分配发生时的调用栈，能看到"谁在频繁分配内存"；而 Heap Dump 是某一时刻的对象存留快照，能看到"谁持有大量对象不释放"。两者互补，前者适合定位分配热点，后者适合定位泄漏源头。
+Java Heap Sampling 和传统的 Java Heap Dump（如通过 `android.app.ActivityManager.getProcessMemoryDump` 获取的，或者 Android Studio Profiler 的 Dump Java Heap）是两种不同的分析手段。Sampling 记录的是每次分配发生时的调用栈，能看到"谁在频繁分配内存"；Heap Dump 是某一时刻的对象存留快照，能看到"谁持有大量对象不释放"。两者互补，前者适合定位分配热点，后者适合定位泄漏源头。
+
+### Java Heap Snapshot（Android 11+）
+
+如果目标是查看某一刻的 Java 对象保留关系，使用 `android.java_hprof` 数据源。它走 `JavaHprofConfig`，输出一次 Java heap 快照；数据形态不同于 `android.heapprofd` + `heaps: "com.android.art"` 的持续采样。
+
+最小配置如下：
+
+```
+data_sources {
+  config {
+    name: "android.java_hprof"
+    java_hprof_config {
+      process_cmdline: "com.example.myapp"
+    }
+  }
+}
+
+duration_ms: 10000
+```
+
+选择逻辑可以直接按问题拆开：
+
+- `android.heapprofd` + `heaps: "com.android.art"`：Android 12+，看 Java 分配热点和调用栈，适合回答“谁在频繁分配”。
+- `android.java_hprof` + `java_hprof_config`：Android 11+，看快照里的对象持有关系，适合回答“谁还持有没有释放”。
+- 快照会让目标进程产生停顿，适合复现窗口明确、可接受短暂停顿的泄漏分析；长时间趋势仍然用 heapprofd continuous dump。
+
+源码锚点是 `external/perfetto/protos/perfetto/config/data_source_config.proto` 中的 `java_hprof_config` 字段，以及 `external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto`。
 
 ### CPU Callstack Sampling
 
@@ -866,7 +898,8 @@ duration_ms: 20000
 2. Perfetto 官方文档 - TraceConfig 配置: https://perfetto.dev/docs/concepts/config
 3. Perfetto 官方文档 - Native Heap Profiler: https://perfetto.dev/docs/data-sources/native-heap-profiler
 4. Perfetto 官方文档 - TraceConfig Proto Reference（PerfEventConfig）: https://perfetto.dev/docs/reference/trace-config-proto#perfeventconfig
-5. Android Developers - Trace API: https://developer.android.com/reference/android/os/Trace
-6. AOSP Trace.java 源码: frameworks/base/core/java/android/os/Trace.java
-7. 高爷博客 - Android Perfetto 系列 2：Perfetto Trace 抓取: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
-8. 高爷博客 - Android Perfetto 系列 4：使用命令行在本地打开超大 Trace: https://www.androidperformance.com/2025/02/08/Android-Perfetto-04-Open-Big-Trace-With-Command-Line/
+5. Perfetto AOSP Proto - JavaHprofConfig: external/perfetto/protos/perfetto/config/profiling/java_hprof_config.proto
+6. Android Developers - Trace API: https://developer.android.com/reference/android/os/Trace
+7. AOSP Trace.java 源码: frameworks/base/core/java/android/os/Trace.java
+8. 高爷博客 - Android Perfetto 系列 2：Perfetto Trace 抓取: https://www.androidperformance.com/2024/05/21/Android-Perfetto-02-how-to-get-perfetto/
+9. 高爷博客 - Android Perfetto 系列 4：使用命令行在本地打开超大 Trace: https://www.androidperformance.com/2025/02/08/Android-Perfetto-04-Open-Big-Trace-With-Command-Line/

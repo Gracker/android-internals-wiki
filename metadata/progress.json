@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T09:40:00+08:00",
+  "generated_at": "2026-04-25T10:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,20 +7,20 @@
     "finalized": 64,
     "ready-for-review": 153,
     "ready-to-publish": 64,
-    "last_updated": "2026-04-25T08:51:01+08:00",
+    "last_updated": "2026-04-25T10:40:00+08:00",
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 31,
+      "task6_pending": 32,
       "task2b_pending": 36,
       "ready-to-publish": 63,
-      "task9_pending": 81,
+      "task9_pending": 80,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 193,
-      "revisiting": 20
+      "reviewed": 192,
+      "revisiting": 21
     },
     "task9_state_counts": {
       "None": 41,
@@ -42,17 +42,17 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 31,
+      "task6_pending": 32,
       "task2b_pending": 36,
       "ready-to-publish": 63,
-      "task9_pending": 81,
+      "task9_pending": 80,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 193,
-      "revisiting": 20
+      "reviewed": 192,
+      "revisiting": 21
     },
     "task9_state_counts": {
       "None": 41,
@@ -3452,17 +3452,17 @@
     "src/part3-tools/ch13-perfetto/02-trace-capture.md": {
       "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
       "title": "Trace 抓取",
-      "chapter": "'13.2'",
-      "section": "'13.2'",
+      "chapter": "13.2",
+      "section": "13.2",
       "status": "ready-for-review",
       "drafted_date": "'2026-04-03'",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
-      "last_verified": "2026-04-24",
-      "last_verified_against": "perfetto.dev docs, google/perfetto main perf_event_config.proto",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "perfetto.dev docs, google/perfetto main data_source_config/java_hprof_config/perf_event_config.proto, Android Trace API",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -3473,7 +3473,11 @@
       "task9_reviewed_date": "'2026-04-24'",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "'2026-04-24T05:21:00+08:00'",
-      "review_round": "2"
+      "review_round": "2",
+      "last_task2b_at": "2026-04-25T10:40:00+08:00",
+      "task2b_fixed_by": "openclaw-task2b",
+      "updated_by": "openclaw-task2b",
+      "updated_date": "2026-04-25"
     },
     "src/part3-tools/ch13-perfetto/03-perfetto-view.md": {
       "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
@@ -3484,8 +3488,8 @@
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 35)",
-      "last_verified": "2026-04-14",
-      "last_verified_against": "perfetto.dev docs + source.android FrameTimeline + AOSP android-16.0.0_r1",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "perfetto.dev docs + source.android FrameTimeline + Perfetto thread-state/lock-contention docs + AOSP android-16.0.0_r1",
       "confidence": "medium-high",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -3495,7 +3499,11 @@
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "last_task2b_at": "2026-04-25T10:40:00+08:00",
+      "task2b_fixed_by": "openclaw-task2b",
+      "updated_by": "openclaw-task2b",
+      "updated_date": "2026-04-25"
     },
     "src/part3-tools/ch13-perfetto/04-large-traces.md": {
       "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
@@ -5861,6 +5869,35 @@
         "task2b_result": "fixed",
         "updated_by": "openclaw-task2b",
         "updated_date": "2026-04-25"
+      },
+      "13.2": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "needs-rework",
+        "task9_state": "pending",
+        "pipeline_stage": "task6_pending",
+        "issues_found": "fixed",
+        "task6_state": "revisiting",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-25"
+      },
+      "13.3": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "fixed",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-25",
+        "auto_finalized": true
       }
     }
   },
@@ -6156,5 +6193,28 @@
       "https://developer.android.com/ndk/guides/gwp-asan"
     ],
     "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+  },
+  "2026-04-25-10": {
+    "task": "task2b-rework",
+    "sections": [
+      "13.2",
+      "13.3"
+    ],
+    "timestamp": "2026-04-25T02:40:00Z",
+    "results": {
+      "13.2": {
+        "status": "ready-for-review",
+        "pipeline": "task6_pending",
+        "task2b_result": "fixed",
+        "queue_status": "completed"
+      },
+      "13.3": {
+        "status": "finalized",
+        "pipeline": "ready-to-publish",
+        "task2b_result": "fixed",
+        "queue_status": "completed",
+        "auto_finalized": true
+      }
+    }
   }
 }
