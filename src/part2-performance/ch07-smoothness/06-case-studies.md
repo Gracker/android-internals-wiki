@@ -4,7 +4,7 @@ chapter: "7.6"
 section: "7.6"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-14"
+reviewed_date: "2026-04-25"
 reviewed_by: "openclaw-task6"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -31,9 +31,9 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task6_pending
+pipeline_stage: task6_re_review
 task6_state: reviewed
-task6_result: needs-rework
+task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
 task9_result: needs-rework
@@ -531,14 +531,13 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层的多层优化策略�
 - [onTrimMemory 回调](https://developer.android.com/reference/android/content/ComponentCallbacks2)
 - [Hardware Layer 详解](https://www.androidperformance.com/2019/07/27/Android-Hardware-Layer/)（高爷原创）
 
-<!-- AIW-源码调研-20260424 -->
 ### 补充：AnimatedVectorDrawable 线程退化机制（源码级）
 
 本节案例四（RenderThread sync 阻塞主线程）涉及 AnimatedVectorDrawable 动画，以下是 AOSP 源码层面的补充发现。
 
 #### AVD 线程模型双轨架构
 
-在 `frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java` 中，AVD 同时实例化两个Animator：
+在 `frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java` 中，AVD 同时实例化两个 Animator：
 
 ```java
 // 构造函数中同时实例化两个版本

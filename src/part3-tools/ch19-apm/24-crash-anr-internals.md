@@ -10,10 +10,10 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: pending
-task6_state: revisiting
+task2b_state: done
+task6_state: reviewed
 task9_state: reviewed
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
