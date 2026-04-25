@@ -2913,7 +2913,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T09:17:47+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T12:22:08+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task 2B 回炉修复完成，章节已重新送回 Task 6。"
   },
   {
     "section": "13.9",
@@ -3011,7 +3014,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T12:22:08+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task 2B 回炉修复完成，章节已重新送回 Task 6。"
   },
   {
     "section": "14.5",
