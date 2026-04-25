@@ -41,17 +41,17 @@ sources:
     path: "https://developer.android.com/reference/android/os/ext/SdkExtensions"
     title: "SdkExtensions API Reference"
     date: "2026"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-23"
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-20T21:48:59+08:00"
+last_task9_at: "2026-04-25T22:29:14+08:00"
 task2b_result: fixed
 ---
 
