@@ -1788,3 +1788,10 @@
 - **问题**：[原理链完整性] icache 刷新的硬件背景
 - **来源**：Gemini 外部 review (2026-04-25-14-ch14.13-external-review.md)
 
+
+
+## [Task9 Deep Review] 13.2 Trace 抓取 — 2026-04-25
+- **类型**：交叉引用/版本边界
+- **位置**：命令行抓取：perfetto 命令
+- **问题**：§13.1 写 Android 9 已有 Perfetto services，§13.2 写 Perfetto 从 Android 10 开始内置；两处没有解释“services 已进 system image”和“命令行文本配置/抓取入口”的差别。
+- **建议**：明确 Android 9 的 binary protobuf / enable 边界、Android 10+ 的 --txt 配置入口，以及本章为什么把实操范围放在 Android 10+。
