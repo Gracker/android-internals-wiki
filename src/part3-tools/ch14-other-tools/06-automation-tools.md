@@ -1,9 +1,9 @@
 ---
 title: 自动化测试工具
 chapter: '14.6'
-repaired_by: "openclaw-task2b"
-repaired_date: "2026-04-25"
-last_task2b_at: "2026-04-25T20:40:00+08:00"
+repaired_by: openclaw-task2b
+repaired_date: "2026-04-26"
+last_task2b_at: "2026-04-26T00:45:50+08:00"
 task2b_result: fixed
 section: '14.6'
 status: ready-for-review
@@ -38,11 +38,11 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 review_round: 3
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
@@ -108,7 +108,7 @@ Macrobenchmark 常用指标如下：
 | `StartupTimingMetric` | Macrobenchmark 最低 API 23；TTFD 依赖应用调用 `reportFullyDrawn()`，API 30+ 统计更稳定 | TTID 看首帧显示，TTFD 看主要内容加载完成 |
 | `FrameTimingMetric` | 基础帧时间可用；`frameOverrunMs` 等 deadline / overrun 指标仅 API 31+ | API 31+ 优先看 overrun，API 30 及以下看帧时间分位数 |
 | `TraceSectionMetric` | 随 Macrobenchmark 运行环境；依赖应用里存在同名 Trace Section | 用于度量某段业务路径或初始化阶段 |
-| `PowerMetric` | API 31+ | 用于功耗与温度变化观察，需要固定设备状态和测试时长 |
+| `PowerMetric` | API 31+；设备需暴露 power rail，实测优先使用 Pixel 6 或更新的受支持机型 | 用于功耗与温度变化观察；CI 中要对设备白名单、指标缺失和温度状态做显式处理 |
 
 此外，Macrobenchmark 还支持 **CompilationMode** 参数，可以控制应用在测试前的编译状态——是完全 AOT 编译、部分编译（模拟 Baseline Profile 安装后的状态），还是完全未编译。这让我们可以量化 Baseline Profile 带来的启动速度提升。
 
@@ -216,13 +216,18 @@ fun scrollList() = benchmarkRule.measureRepeated(
 CompilationMode.None()
 
 // 测量安装 Baseline Profile 后的启动速度
+CompilationMode.Partial()
+
+// 如果测试必须要求 Baseline Profile 存在，可以显式指定
 CompilationMode.Partial(
-    CompilationMode.Partial.Mode.DEFAULT
+    baselineProfileMode = BaselineProfileMode.Require
 )
 
 // 完全 AOT 编译
 CompilationMode.Full()
 ```
+
+使用 `BaselineProfileMode.Require` 的文件要导入 `androidx.benchmark.macro.BaselineProfileMode`；只采用默认策略时，`CompilationMode.Partial()` 更不容易受旧 API 签名影响。
 
 Baseline Profile 不是运行时开关。构建产物会携带启动路径和热点方法规则，安装或后台 dexopt 时，系统把这些规则合并到 ART profile，再由 `dex2oat` 按 `speed-profile` 口径把命中的类和方法编译进 `.odex` / `.oat` / `.vdex` 产物。`CompilationMode.Partial()` 用来模拟这条安装后编译路径，只编译 profile 覆盖的热路径；`CompilationMode.Full()` 更接近全量 AOT。
 
@@ -347,7 +352,7 @@ buildTypes {
 
 **执行阶段**：在真实设备上运行基准测试。不要在模拟器上运行基准测试，模拟器的 CPU 调度、内存带宽、GPU 渲染路径都和真实设备完全不同，测出来的数据没有参考价值。
 
-CI 里要把设备状态当成测试输入固定下来：同一型号和系统版本、充电状态一致、测试前冷却到稳定温度、关闭省电模式和后台同步，并记录电量与温度。AndroidX Benchmark 会检测 thermal throttling，触发后应让本轮结果失败或延后重跑。`androidx.benchmark.enabledRules` 只负责区分 `Macrobenchmark` 与 `BaselineProfile` 这类任务，不负责锁频；只有 rooted 设备上的 Microbenchmark 才适合用 `lockClocks` 降低频率波动。
+CI 里要把设备状态当成测试输入固定下来：同一型号和系统版本、充电状态一致、测试前冷却到稳定温度、关闭省电模式和后台同步，并记录电量与温度。AndroidX Benchmark 会检测 thermal throttling，触发后应让本轮结果失败或延后重跑。如果启用 `PowerMetric`，设备池要做白名单：API 31+ 只是下限，设备还要暴露 power rail；拿不到 energy / power 字段时，本轮功耗指标应标为缺失，不能用 0 或空值参加对比。`androidx.benchmark.enabledRules` 只负责区分 `Macrobenchmark` 与 `BaselineProfile` 这类任务，不负责锁频；只有 rooted 设备上的 Microbenchmark 才适合用 `lockClocks` 降低频率波动。
 
 对于没有自建设备农场的小团队，Firebase Test Lab（FTL）是一个实用的选择。FTL 提供了大量真实 Android 设备，通过 gcloud 命令行提交测试：
 
@@ -439,7 +444,7 @@ connected_android_test_additional_output/
 
 - `Choreographer#doFrame` 的执行时间——反映首帧渲染耗时
 - `ActivityThread.handleBindApplication` 到 `Activity.onCreate` 的间隔——反映 Application 初始化耗时
-- `RenderThread` 的首次 DrawQL——反映 GPU 渲染准备时间
+- `RenderThread` 的 `DrawFrame` 以及 GPU completion / `queueBuffer` 附近片段——反映渲染命令提交和等待完成的时间
 
 对于帧率基准测试，Perfetto 会显示每一帧的 doFrame 调用及其耗时。掉帧的帧在 Trace 中表现为超过 VSync 间隔的 doFrame，在 Perfetto 的帧时间线视图中会以红色或橙色标记。
 

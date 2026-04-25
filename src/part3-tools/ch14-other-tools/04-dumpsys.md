@@ -31,21 +31,21 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-25T22:46:46+08:00"
+last_task2b_at: "2026-04-26T00:45:50+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-26T00:28:30+08:00"
-repaired_date: "2026-04-25"
-repaired_by: "openclaw-task2b"
+repaired_date: "2026-04-26"
+repaired_by: openclaw-task2b
 ---
 
 # dumpsys 系列命令
@@ -142,9 +142,11 @@ adb shell dumpsys meminfo
 # 指定进程的详细内存分布
 adb shell dumpsys meminfo <package_name>
 
-# 按 slab 排序查看内核内存
-adb shell dumpsys meminfo --slab
+# 输出更完整的系统和进程内存明细
+adb shell dumpsys meminfo -a
 ```
+
+`dumpsys meminfo` 没有 `--slab` 参数。AOSP `dumpApplicationMemoryUsage()` 支持的是 `-a/-d/-c/-s/-S/-p/--unreachable/--oom/--local/--package/--checkin/--proto/--logstats` 这组参数，不包含 `--slab`。全局输出里可能包含 slab 汇总；要深入看内核 slab，先读 `/proc/meminfo` 里的 `Slab`、`SReclaimable`、`SUnreclaim`，root 或 debuggable 环境下再看 `/proc/slabinfo`。
 
 ### 关键指标：PSS、USS、Private Dirty
 

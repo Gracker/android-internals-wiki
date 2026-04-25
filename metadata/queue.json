@@ -10240,7 +10240,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T23:18:59+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T00:45:50+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B: 在系统刷新节奏位置补齐 API 35/36 版本归属，并说明 Android 15 QPR 设备的查询边界。"
   },
   {
     "section": "18.17",
@@ -10394,7 +10397,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T23:29:25+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T00:45:50+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B: 修正 CompilationMode.Partial API、RenderThread 观察点和 PowerMetric 设备能力边界。"
   },
   {
     "section": "14.13",
@@ -10475,6 +10481,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T00:28:30+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T00:45:50+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B: 删除无效 dumpsys meminfo --slab 示例，补充 AOSP 支持参数与 slab 排查替代路径。"
   }
 ]
