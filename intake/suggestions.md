@@ -1795,3 +1795,23 @@
 - **位置**：命令行抓取：perfetto 命令
 - **问题**：§13.1 写 Android 9 已有 Perfetto services，§13.2 写 Perfetto 从 Android 10 开始内置；两处没有解释“services 已进 system image”和“命令行文本配置/抓取入口”的差别。
 - **建议**：明确 Android 9 的 binary protobuf / enable 边界、Android 10+ 的 --txt 配置入口，以及本章为什么把实操范围放在 Android 10+。
+
+
+## [Task9 Deep Review] 7.1 卡顿的定义与分类 — 2026-04-25
+- **类型**：源码准确性
+- **位置**：L168-L173 DisplayHAL
+- **问题**：DisplayHAL 解释停在现象层，未把判定条件接到 PresentFence / presentTime。android16 FrameTimeline::setSfPresent() 将 presentFence 放入 pending 队列，flush 后用 signalTime 调用 DisplayFrame::onPresent()，DisplayFrame::classifyJank() 在 SF finish on time 但 present late 且 delta 接近 vsync 周期时归为 DisplayHAL。
+- **建议**：补一句底层证据：DisplayHAL 归因要看 present fence signal time 与 expected present 的差值，同时结合 SF combinedEndTime 是否已经按时完成；不要只写“HAL 慢”。
+
+## [Task9 Deep Review] 7.1 卡顿的定义与分类 — 2026-04-25
+- **类型**：版本差异
+- **位置**：L312 JankStats
+- **问题**：JankStats 阈值写成 current refresh period × multiplier，未区分 API 31+ 走 FrameMetrics.DEADLINE 的实现。AndroidX JankStatsApi31Impl#getExpectedFrameDuration() 返回 FrameMetrics.DEADLINE，并额外记录 frameOverrunNanos=TOTAL_DURATION-DEADLINE。
+- **建议**：把表述改成：默认仍是 deadline × jankHeuristicMultiplier；API 31+ 的 deadline 来自 FrameMetrics.DEADLINE，旧版本才退化为按刷新率估算。
+
+## [Task9 Deep Review] 7.2 卡顿原因体系 — 2026-04-25
+- **类型**：源码准确性
+- **位置**：L337 Binder 线程池耗尽
+- **问题**：“libbinder 默认最多按需创建 15 个 Binder 线程”容易被读成总服务线程数 15。android16 ProcessState.cpp 中 DEFAULT_MAX_BINDER_THREADS=15，getThreadPoolMaxTotalThreadCount() 注释说明 startThreadPool 自己启动 1 个线程，kernel 还能按 mMaxThreads 再启动更多线程，用户也可能直接 joinThreadPool。
+- **建议**：改成“默认 mMaxThreads=15，表示 kernel 可额外拉起的线程上限；调用 startThreadPool() 本身会先启动 1 个线程，所以默认池总量通常按 1+15 理解，另有手动 joinThreadPool 的边界”。
+
