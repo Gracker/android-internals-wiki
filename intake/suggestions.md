@@ -3279,3 +3279,306 @@
 - **位置**：L119 / L230
 - **问题**：ECH/HPKE “计算开销很小”“硬件加速处理”“缺少 HPKE 基准”三处没有给出设备、算法 suite、消息大小或来源，容易把协议级判断写成通用性能结论。
 - **建议**：补 Android 设备侧 microbenchmark 或官方/Chromium 实测来源；至少区分 X25519/P-256、AES-GCM/ChaCha20-Poly1305、payload 大小和是否命中硬件加速。
+
+## [External Review] 15.10 Performance Governance — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.10 Performance Governance — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.6 Testing Best Practices — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.6 Testing Best Practices — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.7 AOSP Reading — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.7 AOSP Reading — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.8 Empirical Performance Issues — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.8 Empirical Performance Issues — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.9 Observability Closed Loop — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 15.9 Observability Closed Loop — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.19 PerfDog — 2026-04-25
+- **类型**：建议改进
+- **位置**：
+- **问题**：- [P2]- [P2][原理链完整性][热降频识别]
+- 描述：PerfDog 是观察热降频的最佳工具。
+- 建议：补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
+- **建议**：见 external-review 文件
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.1 APM Landscape — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.1 APM Landscape — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.10 Other Open-source APM — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.10 Other Open-source APM — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.11 JankStats — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.11 JankStats — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.12 FrameMetrics — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.12 FrameMetrics — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.13 Tracing SDK — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.13 Tracing SDK — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.14 Jetpack Benchmark — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.14 Jetpack Benchmark — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.15 Baseline Profiles — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.15 Baseline Profiles — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.16 ProfilingManager — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.16 ProfilingManager — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.2 Tencent Matrix — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.2 Tencent Matrix — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.3 KOOM — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.3 KOOM — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.4 BTrace — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.4 BTrace — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.5 LeakCanary — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.5 LeakCanary — 2026-04-25
+- **类型**：版本演进
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足
+- **建议**：适当补充新版本的差异。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.6 BlockCanary — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.6 BlockCanary — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.7 DoKit — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.7 DoKit — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.8 ArgusAPM — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.8 ArgusAPM — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.9 Measure — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：全文
+- **问题**：Android 12+ 演进细节不足 / 缺少具体性能案例数据
+- **建议**：适当补充新版本的差异和 benchmark 数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.9 Measure — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：全文
+- **问题**：缺乏具体的性能案例数据。
+- **建议**：补充真实测试数据或 Trace 截图。
+- **来源**：Gemini 外部 review
