@@ -4,7 +4,7 @@ chapter: "8.5"
 section: "8.5"
 status: ready-for-review
 drafted_date: "2026-04-02"
-reviewed_date: "2026-04-22"
+reviewed_date: "2026-04-25"
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
 reviewed_by: openclaw-task6
@@ -34,8 +34,8 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -268,7 +268,7 @@ ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代�
 
 ## 案例四：页面切换优化——从 500ms 到 150ms 的 Activity 跳转
 
-前面三个案例都聚焦在冷启动优化。但在实际项目中，用户感知最频繁的“慢”往往不是冷启动——而是页面跳转。点击一个商品、打开一个详情、切换一个 Tab，这些操作的频率远高于冷启动，对应的响应时间要求也更苛刻。这个案例展示如何将 8.4 节讨论的 Activity/Fragment 切换原理应用到具体项目中。
+前面三个案例都聚焦在冷启动优化。但在实际项目中，用户感知最频繁的“慢”往往是页面跳转，而不是冷启动。点击一个商品、打开一个详情、切换一个 Tab，这些操作的频率远高于冷启动，对应的响应时间要求也更苛刻。这个案例展示如何将 8.4 节讨论的 Activity/Fragment 切换原理应用到具体项目中。
 
 ### 问题背景
 
@@ -444,7 +444,7 @@ fun requestStartupSystemTrace(context: Context) {
 
 **误区一：“启动优化就是减少 Application.onCreate() 的耗时。”**
 
-这是一个过于狭隘的认知。从本章的案例可以看到，启动耗时分布在多个阶段——Reddit 的瓶颈是 JIT 编译，抖音的瓶颈是 MultiDex 和主线程同步消息，电商案例的瓶颈是 View 层级的 measure/layout。`Application.onCreate()` 只是一个环节。正确的做法是先用 Perfetto/Macrobenchmark 建立完整的耗时分布图，找到真正的瓶颈再针对性优化，而不是一上来就砍 `onCreate()`。
+这是一个过于狭隘的认知。从本章的案例中，启动耗时分布在多个阶段——Reddit 的瓶颈是 JIT 编译，抖音的瓶颈是 MultiDex 和主线程同步消息，电商案例的瓶颈是 View 层级的 measure/layout。`Application.onCreate()` 只是一个环节。正确的做法是先用 Perfetto/Macrobenchmark 建立完整的耗时分布图，找到真正的瓶颈再针对性优化，而不是一上来就砍 `onCreate()`。
 
 **误区二：“Baseline Profiles 只对首次启动有效，之后就失效了。”**
 

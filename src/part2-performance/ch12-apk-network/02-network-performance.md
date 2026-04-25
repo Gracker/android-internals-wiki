@@ -5,7 +5,7 @@ section: '12.2'
 status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-04-17'
+reviewed_date: "2026-04-25"
 polish_count: 1
 polish_date: '2026-04-10'
 polish_by: task2b-polish
@@ -35,7 +35,7 @@ related_chapters:
 - '6.1'
 - '8.1'
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -130,7 +130,7 @@ HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个�
 
 **零/一次 RTT 连接建立**：QUIC 将传输层握手和 TLS 1.3 加密握手合并为一次交互。首次连接只需 1-RTT，后续连接可以利用保存的会话信息实现 0-RTT，即第一个包就可以携带请求数据。在移动网络下，一个 RTT 可能是 50-100ms，省掉一次往返意味着白屏时间直接减少 50-100ms。
 
-**独立的 Stream 丢包恢复**：QUIC 在自己的传输层实现了多路复用，每个 Stream 的丢包重传互不影响。一个 Stream 丢包不会阻塞其他 Stream 的数据传输——这正是 HTTP/2 over TCP 最大的痛点。
+**独立的 Stream 丢包恢复**：QUIC 在自己的传输层实现了多路复用，每个 Stream 的丢包重传互不影响。一个 Stream 丢包不会阻塞其他 Stream 的数据传输——这正是 HTTP/2 over TCP 最大的薄弱环节。
 
 **连接迁移**：QUIC 使用 Connection ID 而不是四元组（源 IP、源端口、目标 IP、目标端口）来标识连接。这意味着当用户的网络从 Wi-Fi 切换到 4G/5G 时（IP 地址改变），QUIC 连接可以无缝迁移，不需要重新建立连接。在 HTTP/2 下，这种网络切换会导致所有正在进行的请求失败并需要重试。
 
@@ -422,7 +422,7 @@ public final class NetworkMonitor {
 
 ## 常见问题与误区
 
-**"网络慢就是服务端的问题"**——这是最常见的误区。实际上，DNS 慢、连接建立慢、客户端重试逻辑不当，都可能导致请求耗时长。区分责任方的关键是看 TTFB：如果 TTFB 正常但总耗时高，问题在数据传输或客户端处理；如果 TTFB 本身就高，问题在服务端或网络链路。
+**"网络慢就是服务端的问题"**——这是最常见的误区。DNS 慢、连接建立慢、客户端重试逻辑不当，都可能导致请求耗时长。区分责任方要看 TTFB：如果 TTFB 正常但总耗时高，问题在数据传输或客户端处理；如果 TTFB 本身就高，问题在服务端或网络路径。
 
 **"HTTP/2 就够了，不需要 HTTP/3"**——在稳定的 Wi-Fi 环境下确实如此。但在移动网络（尤其是弱网、高丢包、频繁切换基站）下，HTTP/3 的 QUIC 协议在高丢包和频繁网络切换场景下优势明显。如果 App 的用户主要在移动网络下使用，值得评估 HTTP/3。
 

@@ -8,12 +8,12 @@ related_chapters: ["2.5", "8.9", "18.6", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-18"
+reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task2b_result: fixed
 task9_reviewed_date: '2026-04-22'
@@ -41,7 +41,7 @@ last_task9_at: '2026-04-22T20:50:00+08:00'
 
 普通 App 的渲染是事件驱动的——用户操作触发 `invalidate()`，Choreographer 在 VSync 时回调 `doFrame()`，UI 线程执行 Measure/Layout/Draw。但游戏引擎不是这样工作的：它有一个**自主运行的 Game Loop**，不管有没有用户输入，都会按照固定节奏持续更新和渲染。
 
-游戏引擎渲染链路面临一个普通 App 不存在的问题：**如何让游戏逻辑帧率与屏幕刷新率对齐**。跑 40fps 的游戏在 60Hz 屏幕上如果不做帧节奏控制，会导致部分帧显示 16ms、部分显示 33ms，视觉抖动非常明显。[已验证: Android Game SDK 文档]
+游戏引擎渲染链路面临一个普通 App 不存在的问题：**如何让游戏逻辑帧率与屏幕刷新率同步**。跑 40fps 的游戏在 60Hz 屏幕上如果不做帧节奏控制，会导致部分帧显示 16ms、部分显示 33ms，视觉抖动非常明显。[已验证: Android Game SDK 文档]
 
 ## Game Loop 模型
 
@@ -223,13 +223,13 @@ DrawCall 是 GPU 渲染的基本单元。每次 `glDrawElements` 或 `vkCmdDraw`
 |:---|:---|:---|
 | 逻辑帧率低 | 物理模拟/AI 太重 | Logic Thread Track |
 | 渲染帧率低 | GPU 过载或 DrawCall 过多 | RenderThread + GPU Track |
-| 帧率波动 | 未接入 Swappy，帧节奏不稳 | VSync 对齐情况 |
+| 帧率波动 | 未接入 Swappy，帧节奏不稳 | VSync 同步情况 |
 | 帧延迟高 | 呈现模式不优或 BufferQueue 阻塞 | `dequeueBuffer` 耗时 |
 
 ## 与其他章节的关系
 
 - **8.9 游戏性能与 Game Mode API**：游戏性能优化实战
-- **18.8 OpenGL ES / 18.9 Vulkan**：底层图形 API 链路
+- **18.8 OpenGL ES / 18.9 Vulkan**：底层图形 API 管线
 - **2.17 Frame Pacing Library**：帧节奏控制原理
 
 ## 参考资料
