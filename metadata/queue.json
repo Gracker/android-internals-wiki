@@ -2705,7 +2705,7 @@
     "section": "13.1",
     "section_title": "Perfetto 简介与演进",
     "priority": 85,
-    "reason": "[Deep Tech Review] 需补齐 Java HPROF 触发链、Android 15+ Profiling/APEX 边界、Trace Processor 内置 Metrics；已校正外部 review 的 java_hprof 路径误判",
+    "reason": "[External Review] 外部 AI review 发现 5 个需回炉问题",
     "review_issues": [
       {
         "type": "原理断裂",
@@ -2737,6 +2737,30 @@
           "perfetto.dev Trace Summary 文档",
           "trace_processor --run-metrics"
         ]
+      },
+      {
+        "level": "P1",
+        "detail": "[源码准确性][Perfetto 的架构 - 源码路径]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "文中给出的源码路径如 `external/perfetto/src/traced/service/` 是正确的 AOSP 镜像路径，但遗漏了 Android 12+ 中 Perfetto 作为 Mainline APEX 存在的实事。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 源码 / 一手资料锚点：`com.android.adbd` (APEX) 类似，Perfetto 也有 APEX 封装。核心逻辑在 `external/perfetto`，但在运行时，它是通过 `com.android.os.perfetto` APEX 部署的。",
+        "evidence": "`com.android.adbd` (APEX) 类似，Perfetto 也有 APEX 封装。核心逻辑在 `external/perfetto`，但在运行时，它是通过 `com.android.os.perfetto` APEX 部署的。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 为什么这是重要缺失：Android 12+ 以后，系统服务的二进制文件位于 `/apex/com.android.os.perfetto/bin/`，如果用户在 shell 里找不到对应的进程或想查看运行时的共享库，只看 AOSP 路径会困惑。",
+        "why_important": "Android 12+ 以后，系统服务的二进制文件位于 `/apex/com.android.os.perfetto/bin/`，如果用户在 shell 里找不到对应的进程或想查看运行时的共享库，只看 AOSP 路径会困惑。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议补充方向：在“架构”或“版本演进”部分，简要提到 Android 12+ 后 Perfetto 属于 Mainline 模块。",
+        "suggestion": "在“架构”或“版本演进”部分，简要提到 Android 12+ 后 Perfetto 属于 Mainline 模块。"
       }
     ],
     "added_by": "external-ai-review",
@@ -2857,7 +2881,7 @@
     "section": "13.7",
     "section_title": "Perfetto 的高级用法",
     "priority": 85,
-    "reason": "[Deep Tech Review] 高级篇缺少 Custom Data Source、Bigtrace 架构和 Trace Summary/Standard Library 的明确关系",
+    "reason": "[External Review] 外部 AI review 发现 5 个需回炉问题",
     "review_issues": [
       {
         "type": "知识盲区",
@@ -2886,6 +2910,30 @@
           "perfetto.dev/docs/analysis/trace-summary: Using Summaries with the Standard Library",
           "perfetto.dev/docs/analysis/perfetto-sql-getting-started"
         ]
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][自定义 Trace Point - ProGuard/R8 移除]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "讲解了 `android.os.Trace` 的用法，但没提它对 Release 包的影响。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 源码 / 一手资料锚点：`android.os.Trace.beginSection` 是一个 native 调用，虽然开销小，但大量字符串 section name 会增加 DEX 体积并可能暴露业务逻辑。",
+        "evidence": "`android.os.Trace.beginSection` 是一个 native 调用，虽然开销小，但大量字符串 section name 会增加 DEX 体积并可能暴露业务逻辑。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 为什么这是重要缺失：在生产环境大规模使用自定义打点时，如果不通过 R8/ProGuard 移除，会带来不必要的开销和安全风险。",
+        "why_important": "在生产环境大规模使用自定义打点时，如果不通过 R8/ProGuard 移除，会带来不必要的开销和安全风险。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议补充方向：提供一个 R8 混淆规则示例，展示如何自动移除 `Trace.beginSection`。",
+        "suggestion": "提供一个 R8 混淆规则示例，展示如何自动移除 `Trace.beginSection`。"
       }
     ],
     "added_by": "external-ai-review",
@@ -3008,11 +3056,63 @@
   {
     "section": "14.1",
     "priority": 85,
-    "reason": "[External Review] 章节 14.1 存在 P0/P1 问题需回炉",
+    "reason": "[External Review] 外部 AI review 发现 14 个需回炉问题",
     "review_issues": [
       {
         "type": "P1-重要缺失",
         "detail": "See file for P1 details"
+      },
+      {
+        "level": "P1",
+        "detail": "[源码准确性][使用 Profiler API 在代码中触发 profiling]",
+        "type": "源码准确性",
+        "evidence": "文中提到的 `TRIGGER_TYPE_COLD_START` 等常量名需核实是否为最终 API 命名。",
+        "why_important": "API 命名的准确性直接影响读者的代码实践。"
+      },
+      {
+        "level": "P1",
+        "detail": "[版本差异覆盖][CPU Profiler：三种分析模式的深度对比]",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：14.1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题类型**：源码错误"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：`使用 Profiler API 在代码中触发 profiling` 小节"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：`TRIGGER_TYPE_COLD_START` 常量名与 API 36 不符。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：更改为 `TRIGGER_TYPE_STARTUP`，并补充注册监听器的代码片段。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题类型**：版本描述不准"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：多处提到 `Android Studio 2025`"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：版本命名不规范，易导致混淆。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：改为具体的代号（如 Meercat）或“2025 年预览版”。"
       }
     ],
     "added_by": "external-ai-review",
@@ -3034,11 +3134,51 @@
   {
     "section": "14.3",
     "priority": 85,
-    "reason": "[External Review] 章节 14.3 存在 P0/P1 问题需回炉",
+    "reason": "[External Review] 外部 AI review 发现 9 个需回炉问题",
     "review_issues": [
       {
         "type": "P1-重要缺失",
         "detail": "See file for P1 details"
+      },
+      {
+        "level": "P1",
+        "detail": "[源码准确性][Frontmatter Sources]",
+        "type": "源码准确性",
+        "evidence": "引用的 AOSP 路径为 `system/core/libmeminfo` 和 `system/extras/malloc_debug`。"
+      },
+      {
+        "level": "P1",
+        "detail": "[版本差异覆盖][malloc debug 章节]",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "[原理链完整性][MAT 章节]",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：14.3 内存分析工具"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题类型**：源码错误 / 版本差异缺失"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：Frontmatter Sources 及 malloc debug 信号描述"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：1. `libmeminfo` 路径应更新为 `system/memory/libmeminfo` (Android 11+)。2. 缺失 Android 14 `SIGRTMAX-16` 信号。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：同步最新 AOSP 目录结构，并补全信号量说明。"
       }
     ],
     "added_by": "external-ai-review",
@@ -3140,7 +3280,7 @@
   {
     "section": "14.9",
     "priority": 95,
-    "reason": "[External Review] 章节 14.9 存在 P0/P1 问题需回炉",
+    "reason": "[External Review] 外部 AI review 发现 9 个需回炉问题",
     "review_issues": [
       {
         "type": "P0-事实错误",
@@ -3149,6 +3289,44 @@
       {
         "type": "P1-重要缺失",
         "detail": "See file for P1 details"
+      },
+      {
+        "level": "P0",
+        "detail": "- **[P0][数据支撑][Camera2 vs CameraX 性能差异]**",
+        "type": "数据支撑"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：未量化 CameraX 的初始化延迟。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **核验结论**：CameraX 在冷启动场景下，由于 UseCase 绑定和多层 Capability 映射，首帧延迟比 Camera2 高约 **80ms-150ms**。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**：在对应小节补充此量化数据，提醒“即拍即走”场景的开发者注意。"
+      },
+      {
+        "level": "P1",
+        "detail": "1. **[P1][知识盲区][Qualcomm CamX/CHI 在 Trace 中的体现]**",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：14.9"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：缺乏厂商特定链路（高通 CamX）和高级分析工具（GFXReconstruct）的描述，导致文章在生产环境的实用性打折。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充 `CamXWorker` 线程分析和 YUV 帧转储技巧。"
       }
     ],
     "added_by": "external-ai-review",
@@ -3174,7 +3352,7 @@
   {
     "section": "14.11",
     "priority": 85,
-    "reason": "[External Review] 章节 14.11 存在 P0/P1 问题需回炉",
+    "reason": "[External Review] 外部 AI review 发现 7 个需回炉问题",
     "review_issues": [
       {
         "type": "P1-重要缺失",
@@ -3251,7 +3429,7 @@
   {
     "section": "14.12",
     "priority": 95,
-    "reason": "[External Review] 章节 14.12 存在 P0/P1 问题需回炉",
+    "reason": "[External Review] 外部 AI review 发现 9 个需回炉问题",
     "review_issues": [
       {
         "type": "P0-事实错误",
@@ -3340,6 +3518,10 @@
         "location": "14.12",
         "detail": "**：版本声明与实际 API 级别（API 30）不符。",
         "suggestion": ""
+      },
+      {
+        "level": "P0",
+        "detail": "*无*"
       }
     ],
     "added_by": "external-ai-review",
@@ -3348,7 +3530,7 @@
   {
     "section": "14.13",
     "priority": 95,
-    "reason": "[External Review] 章节 14.13 存在 P0/P1 问题需回炉",
+    "reason": "[External Review] 外部 AI review 发现 22 个需回炉问题",
     "review_issues": [
       {
         "type": "P0-事实错误",
@@ -3622,7 +3804,7 @@
     "section": "7.4",
     "section_title": "典型卡顿场景分析",
     "priority": 85,
-    "reason": "[External Review] setHasFixedSize 结论待验证确认；SurfaceControl 移交细节缺失",
+    "reason": "[External Review] 外部 AI review 发现 7 个需回炉问题",
     "review_issues": [
       {
         "type": "知识盲区",
@@ -3642,6 +3824,37 @@
           "StartingSurfaceController.java",
           "SplashScreenView.java"
         ]
+      },
+      {
+        "level": "P1",
+        "detail": "[版本差异覆盖][§3.1 App 启动窗口]",
+        "type": "版本差异覆盖",
+        "evidence": "`frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java`, `SplashScreenView.java`"
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][§1.2 RecyclerView 的性能瓶颈]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：7.4"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：1.2 节关于 `setHasFixedSize`"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：结论处于待验证状态。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：根据本次核验结论：该 API 用于跳过全局布局请求，开发者需保证 RecyclerView 容器尺寸不随内容变化。"
       }
     ],
     "added_by": "external-ai-review",
@@ -3651,7 +3864,7 @@
     "section": "7.5",
     "section_title": "优化策略",
     "priority": 85,
-    "reason": "[External Review] RenderEffect 底层机制区分度不足；RecyclerView 1.4.0 ARR 缺失；Binder 调用优化缺量化",
+    "reason": "[External Review] 外部 AI review 发现 8 个需回炉问题",
     "review_issues": [
       {
         "type": "原理链完整性",
@@ -3679,6 +3892,43 @@
         "evidence": [
           "getProcessMemoryInfo 解析 /proc/smaps"
         ]
+      },
+      {
+        "level": "P1",
+        "detail": "[版本差异覆盖][§RecyclerView 优化：SnapHelper 的性能考量]",
+        "type": "版本差异覆盖",
+        "evidence": "`View.setFrameContentVelocity(float velocity)` (Android 15+), RecyclerView 1.4.0+"
+      },
+      {
+        "level": "P1",
+        "detail": "[原理链完整性][§渲染优化：RenderEffect]",
+        "type": "原理链完整性",
+        "evidence": "`frameworks/base/libs/hwui/pipeline/skia/SkiaPipeline.cpp`"
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][§线程优化：Binder 调用优化]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：7.5"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：RenderEffect 与硬件层对比部分"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：底层机制区分度不足。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：明确“Shader 级集成”与“Buffer 级隔离”的区别。"
       }
     ],
     "added_by": "external-ai-review",
@@ -3945,8 +4195,8 @@
   {
     "section": "8.5",
     "section_title": "启动优化案例集",
-    "priority": 85,
-    "reason": "[External Review] ProfilingManager 核心调用方法和触发源缺失",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 11 个需回炉问题",
     "review_issues": [
       {
         "type": "原理链",
@@ -3956,6 +4206,52 @@
         "evidence": [
           "android.os.ProfilingManager Android 15+"
         ]
+      },
+      {
+        "level": "P0",
+        "detail": "*无*。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **[P1][原理链][05-case-studies.md][ProfilingManager 段落]**",
+        "type": "原理链"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：提到 `ProfilingManager` 可以自动捕获 trace，但未说明具体触发机制。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **源码 / 一手资料锚点**：`android.os.ProfilingManager` (Android 15+)。",
+        "evidence": "`android.os.ProfilingManager` (Android 15+)。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **运行原理说明**：该管理器通过 `requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 方法请求系统转储。Android 16 强化了其在 `App Startup` 阶段的自动化。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充典型的 `requestProfiling` 代码示例。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：`05-case-studies.md`"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：`ProfilingManager` 自动发现段落"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：遗漏了 `ProfilingManager` 的核心调用方法和触发源。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充 `ProfilingManager.requestProfiling()` 的典型代码片段。"
       }
     ],
     "added_by": "external-ai-review",
@@ -6154,7 +6450,7 @@
     "section": "11",
     "section_title": "全章批量 Review（第 11 章全集）",
     "priority": 95,
-    "reason": "[external-review] P0 事实错误",
+    "reason": "[External Review] 外部 AI review 发现 8 个需回炉问题",
     "material_paths": [
       "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch11.[01-README]-external-review.md"
     ],
@@ -6218,6 +6514,44 @@
         "location": "11",
         "detail": "3. **[P1][11.5]** 强化对 `SystemSuspend` 服务的描述，确认其作为 Android 10+ 功耗中枢的地位。",
         "suggestion": ""
+      },
+      {
+        "level": "P1",
+        "detail": "提到在 `setContentView()` 前初始化可能抛 `IllegalStateException`。",
+        "type": "源码准确性",
+        "evidence": "提到在 `setContentView()` 前初始化可能抛 `IllegalStateException`。"
+      },
+      {
+        "level": "P1",
+        "detail": "未提及 `FrameData` 的对象重用机制。",
+        "suggestion": "强制提醒开发者“不要异步持有 FrameData 引用”，必须拷贝出 DTO 数据，否则会导致数据污染。",
+        "type": "知识盲区",
+        "evidence": "`androidx.metrics.performance.JankStatsApi24Impl` 等实现类中对 `FrameData` 的构造。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 章节：19.11"
+      },
+      {
+        "level": "P1",
+        "detail": "- 严重级别：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- 问题类型：源码错误/知识盲区"
+      },
+      {
+        "level": "P1",
+        "location": "初始化代码段及 FrameData 处理建议",
+        "detail": "- 位置：初始化代码段及 FrameData 处理建议"
+      },
+      {
+        "level": "P1",
+        "detail": "缺少 DecorView 依赖的精确描述和 FrameData 对象复用的风险提示。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议修正方向：补充“禁止异步持有 FrameData 引用”的警告，并修正初始化时机的技术说明。"
       }
     ],
     "added_by": "external-ai-review",
@@ -6228,7 +6562,7 @@
     "section": "12",
     "section_title": "12",
     "priority": 85,
-    "reason": "[external-review] 回炉问题",
+    "reason": "[External Review] 外部 AI review 发现 7 个需回炉问题",
     "material_paths": [
       "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch12.[01-README]-external-review.md"
     ],
@@ -6250,6 +6584,40 @@
         "location": "12",
         "detail": "- **章节 12.4**：明确 Android 17 CT 强制验证仅针对 `targetSdkVersion >= 37` 且访问公网证书的情形。[P1]",
         "suggestion": ""
+      },
+      {
+        "level": "P1",
+        "detail": "示例代码创建了 `HandlerThread` 但未指定优先级。",
+        "suggestion": "建议在 `HandlerThread` 启动后调用 `Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY)` 或 `THREAD_PRIORITY_DISPLAY`，确保监控数据的准时性。",
+        "type": "原理链完整性",
+        "evidence": "`android.os.HandlerThread` 构造函数及 `android.os.Process.setThreadPriority`。"
+      },
+      {
+        "level": "P1",
+        "detail": "未提及 `GPU_DURATION` 在某些驱动实现下可能不准。",
+        "suggestion": "增加一条“驱动依赖说明”，提醒开发者在分析该指标时需核对 `GPU_DURATION > 0`。",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "- 章节：19.12"
+      },
+      {
+        "level": "P1",
+        "detail": "- 严重级别：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- 问题类型：原理断裂"
+      },
+      {
+        "level": "P1",
+        "detail": "监控线程优先级未强调。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议：代码示例中加入线程优先级设置逻辑。",
+        "suggestion": "代码示例中加入线程优先级设置逻辑。"
       }
     ],
     "added_by": "external-ai-review",
@@ -6260,7 +6628,7 @@
     "section": "18",
     "section_title": "18",
     "priority": 95,
-    "reason": "[external-review] P0 事实错误",
+    "reason": "[External Review] 外部 AI review 发现 2 个需回炉问题",
     "material_paths": [
       "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch18.[11-15]-external-review.md"
     ],
@@ -6432,6 +6800,18 @@
         "location": "18",
         "detail": "- **[P1][18.16][位置：SurfaceView + BLAST]**：补充 Android 14 针对 Z-Below 模式下 Alpha 应用到“Hole Punch”上的细节说明。",
         "suggestion": ""
+      },
+      {
+        "level": "P1",
+        "detail": "未提及 SDK 初始化对启动的影响。",
+        "suggestion": "必须增加一个“自监控”建议，要求开发者用 `Trace.beginSection` 包裹 APM SDK 的初始化调用，并确保其在 `Application.onCreate` 中不产生阻塞。",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "提到合规，但未说明具体操作。",
+        "suggestion": "要求在选型表中增加一列“隐私数据字段审计清单”。",
+        "type": "原理链完整性"
       }
     ],
     "added_by": "external-ai-review",
@@ -6879,7 +7259,7 @@
     "section": "18.11",
     "section_title": "ch18.11-15",
     "priority": 95,
-    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "reason": "[External Review] 外部 AI review 发现 18 个需回炉问题",
     "review_issues": [
       {
         "type": "P0",
@@ -6910,6 +7290,75 @@
         "location": "18.11",
         "detail": "| 建议修正方向 |",
         "suggestion": ""
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文位置**：线程模型：Merged Platform Model / 渲染管线全景"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：架构图将 Dart Runner (UI Thread) 与 Android Main (Platform Thread) 画为独立并行线程，并描述“通过 Engine 层桥接”。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **源码 / 一手资料锚点**：",
+        "evidence": "- Flutter 3.29 Release Note & Engine Source.\n  - `shell/platform/android/io/flutter/embedding/android/FlutterActivityAndFragmentDelegate.java`"
+      },
+      {
+        "level": "P0",
+        "detail": "- **关键代码逻辑**：Flutter 3.29+ 默认启用 Merged Platform Model。Dart 的 UI 任务现在直接在宿主主线程 (Platform Thread) 上执行。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **运行原理说明**：为了解决 Dart 与 Native 通信的异步延迟，支持双向同步调用，UI 线程已不复存在。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **为什么构成 P0**：这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。",
+        "why_important": "这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**："
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：未提及 Android 15 中 `com.android.angle` 作为系统 APK 并支持通过 Play Store 更新的机制。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **源码锚点**：Android 15 发行说明；`GraphicsEnvironment.java`。",
+        "evidence": "Android 15 发行说明；`GraphicsEnvironment.java`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充“Updatable Graphics Layer”概念，说明 Google 如何通过此机制统一碎片化的 GLES 驱动。",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：虽然提到了 AIDL HAL，但未明确指出 Android 13+ 引入的新特性（如 10-bit HDR）强制要求 AIDL 接口。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：在“版本演进”部分补充：HIDL 接口已进入维护模式，新功能不再下放。",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：对 HWC 3.0 (AIDL) 的优化描述不足。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **关键代码逻辑**：`Capability::SKIP_VALIDATE`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充说明在图层状态未变时，SurfaceFlinger 如何利用 AIDL 接口跳过 `validate` 阶段直接 `present`，从而降低显示延迟。"
+      },
+      {
+        "level": "P1",
+        "detail": "| 章节 | 级别 | 类型 | 位置 | 问题描述 | 建议修正方向 |"
       }
     ],
     "added_by": "external-ai-review",
@@ -6963,5 +7412,1402 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T14:25:03+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.3",
+    "section_title": "13.3",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 5 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "- 无。"
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][颜色编码]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文位置**：## 颜色编码：线程状态色"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：只描述了绿、浅绿、灰、橙四种颜色。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **缺失内容**：遗漏了 **Blocked（红色/Red）** 状态。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **为什么重要**：锁竞争（Monitor Contention）是 Android 卡顿的最核心原因之一，Perfetto 专门用红色高亮此类状态，不提会导致读者在面对锁问题时失去关键视觉索引。",
+        "why_important": "锁竞争（Monitor Contention）是 Android 卡顿的最核心原因之一，Perfetto 专门用红色高亮此类状态，不提会导致读者在面对锁问题时失去关键视觉索引。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议方向**：增加“Blocked（红色）：等待锁竞争”的描述。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：颜色编码章节"
+      },
+      {
+        "level": "P1",
+        "detail": "- **描述**：增加对红色 Blocked 状态的说明。"
+      },
+      {
+        "level": "P1",
+        "detail": "[源码准确性][SurfaceFlinger Track - Android 14+ 逻辑]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "提到了 `commit` / `composite` / `present`，但没有明确说明在哪个 slice 里可以观察到 GPU 合成（Client Composition）的耗时。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 源码 / 一手资料锚点：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`。在 Android 14+ 中，GPU 合成的逻辑主要被包裹在 `composite` 阶段的子调用中。",
+        "evidence": "`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`。在 Android 14+ 中，GPU 合成的逻辑主要被包裹在 `composite` 阶段的子调用中。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 为什么这是重要缺失：开发者在分析卡顿时，最需要知道是“图层太多导致的 GPU 合成太慢”还是“HWC 提交太慢”。",
+        "why_important": "开发者在分析卡顿时，最需要知道是“图层太多导致的 GPU 合成太慢”还是“HWC 提交太慢”。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议补充方向：说明 `composite` slice 下级如果出现 `drawLayers` 或类似的 GPU 渲染事件，即代表触发了 Client Composition。",
+        "suggestion": "说明 `composite` slice 下级如果出现 `drawLayers` 或类似的 GPU 渲染事件，即代表触发了 Client Composition。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-13-13.3-external-review.md"
+  },
+  {
+    "section": "14.5",
+    "section_title": "14.5",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 13 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "[源码准确性][Matrix：Trace Canary]",
+        "type": "源码准确性",
+        "evidence": "Trace Canary]"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：提到 AGP 8.x 下接入方要“结合具体 Matrix 版本、社区 fork 或自研改造，确认是否已经迁到 Instrumentation API”。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **核验结论**：此描述过于乐观。截至 2025 年 Q1，Matrix 官方仓库（Tencent/matrix）主分支仍未发布支持 AGP 8.0+ 的正式版本。对于使用 AGP 8.0+ 的新项目，Matrix 插件是 **Hard Block**。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**：明确告知读者：若项目已升级至 AGP 8.0+，Matrix 官方插件目前不可用，必须依赖非官方 Fork 版或自行实现 ASM 迁移。"
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][三方库选择]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "[原理链完整性][KOOM：线程泄漏]",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P1",
+        "detail": "[版本差异覆盖][DoKit]",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：14.5"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P0"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题类型**：源码错误/兼容性误导"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：Matrix Trace Canary：卡顿与 ANR 的精准定位"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：对 AGP 8.0 兼容性描述不准，官方版目前仍不支持。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：明确标记官方版在 AGP 8.0+ 下不可用。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-14-14.5-external-review.md"
+  },
+  {
+    "section": "14.6",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 16 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "[源码准确性][Microbenchmark API 限制]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：描述 Microbenchmark 最低 API 为 14。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **源码 / 一手资料锚点**：`androidx.benchmark.junit4.BenchmarkRule`",
+        "evidence": "`androidx.benchmark.junit4.BenchmarkRule`"
+      },
+      {
+        "level": "P0",
+        "detail": "- **关键代码逻辑**：Microbenchmark 依赖现代 AndroidJUnit4 运行器及特定的性能隔离技术。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **核验结论**：官方推荐最低 API 为 **21**。API 14 (ICS) 虽在极早期实验版中提及，但当前 Jetpack 库的主流稳定版均要求 21+。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **为什么错**：混淆了旧版 Android 测试库与现代 Jetpack Benchmark 库的边界。",
+        "why_important": "混淆了旧版 Android 测试库与现代 Jetpack Benchmark 库的边界。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**：修正为 API 21。"
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][缺失 Monkey 工具]",
+        "type": "知识盲区",
+        "why_important": "自动化性能测试不只是测“速度”，还包括测“稳定性”和“长时间运行下的资源泄漏”。Monkey 是探测 OOM 和 ANR 的最廉价且高效的自动化手段。"
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][缺失 SoloPi / Appium]",
+        "type": "知识盲区",
+        "why_important": "在真实工程中，SoloPi 常用于快速测量启动耗时和录制性能脚本，其视觉拆帧算法比系统 API 更接近用户感知。"
+      },
+      {
+        "level": "P1",
+        "detail": "[版本差异覆盖][指标 API 级别限制缺失]",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：14.6"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P0"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题类型**：源码错误"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：Microbenchmark 章节 API 说明"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：API 14 描述错误，应为 API 21。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：修正版本号。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-14-14.6-external-review.md"
+  },
+  {
+    "section": "10.5",
+    "section_title": "ch10-memory-perf [05-07, README]",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 3 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "- **[P1][版本差异/工具][06-memory-churn.md] heapprofd 使用方法描述陈旧**",
+        "type": "版本差异/工具"
+      },
+      {
+        "level": "P1",
+        "detail": "- **[P1][版本差异][06-memory-churn.md] Android 15/16 GC 描述不精确**",
+        "type": "版本差异",
+        "evidence": "`art/runtime/gc/heap.cc` (android-15.0.0_r1+)。\n  - **运行原理**：Android 15 引入了 CMC (Concurrent Mark-Compact)，并利用 `userfaultfd` 内核特性进行并发压缩。Android 16 进一步完善了分代 CMC。这与之前的分代 CC（Concurrent Copying）在代价模型和 Stop-The-World 时间分布上有显著差异。\n  - **建议修正**：明确区分 CC (Android 8-14) 与 CMC (Android 15+) 的演进路线，避免将两者的性能特征混为一谈。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **[P1][源码准确性][06-memory-churn.md] GcWatcher 路径更新**",
+        "type": "源码准确性",
+        "evidence": "提到 `ActivityThread` 内部的 `GcWatcher`。\n  - **源码锚点**：`frameworks/base/core/java/com/android/internal/os/BinderInternal.java` (android-16.0.0_r1)。\n  - **核验结论**：现代 Android 版本中，`GcWatcher` 的核心逻辑已迁移至 `BinderInternal`，通过 `addGcWatcher` 进行通知。`ActivityThread` 仅作为注册方，不再是定义的 Owner。\n  - **建议修正**：更新源码指向到 `BinderInternal.java`。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-10.5-external-review.md"
+  },
+  {
+    "section": "11.1",
+    "section_title": "2 | 路径基本准确，需更新 Android 16 的计算细项。",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 3 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "- **[P0][版本差异][11.2] 遗漏 Android 15 `dataSync` FGS 超时限制**",
+        "type": "版本差异",
+        "evidence": "`Service.onTimeout(int, int)` API 35；官方文档：[Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)。\n  - **核验结论**：在 Android 15 中，`dataSync` 在 24 小时内累计运行超过 6 小时会被强行停止并回调 `onTimeout`，不处理会触发 ANR。这是当前功耗治理的最强硬手段。\n  - **建议修正方向**：在 FGS 章节补充 6 小时限制及 `onTimeout` 处理建议。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **[P1][版本差异][11.3] 遗漏 Android 16 Active 存储桶配额化**",
+        "type": "版本差异"
+      },
+      {
+        "level": "P1",
+        "detail": "- **[P1][源码准确性][11.1] Android 16 `CpuPowerCalculator` 细项**",
+        "type": "源码准确性",
+        "evidence": "对 CPU 能量消耗的转换公式描述略简略。\n  - **源码锚点**：`frameworks/base/core/java/com/android/internal/os/CpuPowerCalculator.java`\n  - **核验结论**：Android 16 强化了对 `EnergyConsumer.TYPE_CPU_CLUSTER` 的支持，归因逻辑开始结合 `Cycles` 与 `Time` 比例，不仅仅是 `Time`。\n  - **建议补充方向**：在计算公式中提及 `uJ` (微焦耳) 优先于 `mA` (电流) 的逻辑。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-11.1-external-review.md"
+  },
+  {
+    "section": "13",
+    "section_title": "19.13",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 5 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "提到不要在挂起点用同步 `trace {}`。",
+        "suggestion": "强烈建议补充一个“视图污染”的示意图描述或伪代码示例，说明这种错误的破坏性。",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P1",
+        "detail": "提到了不要用复杂字符串，但未给出具体成本参考。",
+        "suggestion": "推荐在热点路径使用静态常量名称，或者预先拼接好字符串。",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "- 章节：19.13"
+      },
+      {
+        "level": "P1",
+        "detail": "- 严重级别：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议：加强协程 Trace 错误使用的警告，并提供具体的 JNI/GC 开销警示。",
+        "suggestion": "加强协程 Trace 错误使用的警告，并提供具体的 JNI/GC 开销警示。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-13-external-review.md"
+  },
+  {
+    "section": "13.2",
+    "section_title": "13.2",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 11 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "[源码准确性][CPU Callstack Sampling - PerfEventConfig]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "文中的 `perf_event_config` 示例中提到了“旧资料里常见的顶层 `target_cmdline` 已过时”，但在前面的大段 pbtxt 示例中仍然没有完全体现 `callstack_sampling` 内部的 `scope` 结构。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 源码 / 一手资料锚点：`external/perfetto/protos/perfetto/config/profiling/perf_event_config.proto`。新版 `PerfEventConfig` 明确将进程过滤逻辑收口到了 `CallstackSampling.Scope` 消息中。",
+        "evidence": "`external/perfetto/protos/perfetto/config/profiling/perf_event_config.proto`。新版 `PerfEventConfig` 明确将进程过滤逻辑收口到了 `CallstackSampling.Scope` 消息中。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 为什么这是重要缺失：使用旧字段在 Android 14+ 的 perfetto 版本上会触发 `deprecated` 警告，且可能在未来版本中失效。",
+        "why_important": "使用旧字段在 Android 14+ 的 perfetto 版本上会触发 `deprecated` 警告，且可能在未来版本中失效。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议补充方向：提供一个符合当前主干推荐实践的 `perf_event_config` 最小化 pbtxt 示例。",
+        "suggestion": "提供一个符合当前主干推荐实践的 `perf_event_config` 最小化 pbtxt 示例。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 章节：13.2"
+      },
+      {
+        "level": "P1",
+        "detail": "- 严重级别：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- 问题类型：源码错误 / 接口过时"
+      },
+      {
+        "level": "P1",
+        "location": "CPU Callstack Sampling 配置示例",
+        "detail": "- 位置：CPU Callstack Sampling 配置示例"
+      },
+      {
+        "level": "P1",
+        "detail": "使用的 `perf_event_config` 结构不符合当前推荐的 AOSP proto 定义。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议修正方向：参考 `perf_event_config.proto`，将采样范围和 unwinding 配置移入 `callstack_sampling` 块。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-13.2-external-review.md"
+  },
+  {
+    "section": "13.4",
+    "section_title": "13.4",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 11 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "[源码准确性][trace_processor CLI 参数]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "文中提到 `trace_processor -Q \"select 1 as a, 2 as b\" /dev/null`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 源码 / 一手资料锚点：`external/perfetto/src/trace_processor/main.cc`。标准参数通常是 `--query` 或 `-q` (针对文件)。",
+        "evidence": "`external/perfetto/src/trace_processor/main.cc`。标准参数通常是 `--query` 或 `-q` (针对文件)。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 为什么这是重要缺失：如果读者复制了带 `-Q` 的命令但环境不支持，会直接报错，降低文档可信度。",
+        "why_important": "如果读者复制了带 `-Q` 的命令但环境不支持，会直接报错，降低文档可信度。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议补充方向：统一推荐使用全名 `--query` 或明确标注版本兼容性。",
+        "suggestion": "统一推荐使用全名 `--query` 或明确标注版本兼容性。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 章节：13.4"
+      },
+      {
+        "level": "P1",
+        "detail": "- 严重级别：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- 问题类型：CLI 参数描述不准确"
+      },
+      {
+        "level": "P1",
+        "location": "用 trace_processor 批量跑 SQL 脚本章节",
+        "detail": "- 位置：用 trace_processor 批量跑 SQL 脚本章节"
+      },
+      {
+        "level": "P1",
+        "detail": "`-Q` 参数在标准 `trace_processor_shell` 中可能不被支持。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议修正方向：改为 `-q` 并说明它是读取文件，或使用 `--query` 直接执行语句。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-13.4-external-review.md"
+  },
+  {
+    "section": "14",
+    "section_title": "19.14",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 2 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "未提及 Macrobenchmark 对多进程 App 的处理。",
+        "suggestion": "提醒开发者对于多进程应用，需确认被测逻辑是否在 targetPackage 的主进程中，或查阅最新的多进程支持 API。",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "提到控制温度，但未说明 Benchmark 库的自动保护机制。",
+        "suggestion": "补充对 `androidx.benchmark.suppressErrors` 配置的警示，说明强行跳过温控检查会导致实验结果不可信。",
+        "type": "原理链完整性",
+        "evidence": "`androidx.benchmark.macro.MacrobenchmarkScope`。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-14-external-review.md"
+  },
+  {
+    "section": "15",
+    "section_title": "19.15",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 2 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "提到非 Play 安装依赖 `ProfileInstaller`。",
+        "suggestion": "增加“混淆与初始化检查”锚点。",
+        "type": "源码准确性",
+        "evidence": "提到非 Play 安装依赖 `ProfileInstaller`。"
+      },
+      {
+        "level": "P1",
+        "detail": "未提及 R8 混淆后的规则匹配。",
+        "suggestion": "提醒开发者检查 AAB 产物中解密后的 profile 记录是否与混淆后的 `mapping.txt` 一致。",
+        "type": "知识盲区"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-15-external-review.md"
+  },
+  {
+    "section": "16",
+    "section_title": "19.16",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 5 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "[知识盲区][重样本数据的安全性与合规]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "未强调文件外传的安全性。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 关键背景：`Heap Dump` 包含内存中所有 Java 对象的明文信息（如：用户登录后的 Token、手机号等）。`ProfilingManager` 虽然简化了采集，但未简化合规。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议：必须增加“安全警示”，提醒开发者在上传结果前必须在本地进行 OID（对象标识符）脱敏或加密，且必须符合 App 隐私协议。",
+        "suggestion": "必须增加“安全警示”，提醒开发者在上传结果前必须在本地进行 OID（对象标识符）脱敏或加密，且必须符合 App 隐私协议。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议：补充关于 Heap Dump 敏感数据脱敏的安全建议。",
+        "suggestion": "补充关于 Heap Dump 敏感数据脱敏的安全建议。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-16-external-review.md"
+  },
+  {
+    "section": "17",
+    "section_title": "19.17",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 2 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "仅提到“某些网络库可能漏掉”。",
+        "suggestion": "提醒开发者在 `build.log` 中检查 Firebase 插件的插桩日志。",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "提到最新 SDK 有“几分钟”的延迟。",
+        "suggestion": "强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
+        "type": "原理链完整性"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-17-external-review.md"
+  },
+  {
+    "section": "18.12",
+    "section_title": "2 | 总体极高，仅部分新版本 AIDL 细节待补。",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 18 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "### [P0][原理链完整性][18.12 Flutter 渲染管线]",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文位置**：线程模型：Merged Platform Model / 渲染管线全景"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：架构图将 Dart Runner (UI Thread) 与 Android Main (Platform Thread) 画为独立并行线程，并描述“通过 Engine 层桥接”。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **源码 / 一手资料锚点**：",
+        "evidence": "- Flutter 3.29 Release Note & Engine Source.\n  - `shell/platform/android/io/flutter/embedding/android/FlutterActivityAndFragmentDelegate.java`"
+      },
+      {
+        "level": "P0",
+        "detail": "- **关键代码逻辑**：Flutter 3.29+ 默认启用 Merged Platform Model。Dart 的 UI 任务现在直接在宿主主线程 (Platform Thread) 上执行。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **运行原理说明**：为了解决 Dart 与 Native 通信的异步延迟，支持双向同步调用，UI 线程已不复存在。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **为什么构成 P0**：这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。",
+        "why_important": "这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**："
+      },
+      {
+        "level": "P1",
+        "detail": "### [P1][源码准确性][18.11 ANGLE]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：未提及 Android 15 中 `com.android.angle` 作为系统 APK 并支持通过 Play Store 更新的机制。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **源码锚点**：Android 15 发行说明；`GraphicsEnvironment.java`。",
+        "evidence": "Android 15 发行说明；`GraphicsEnvironment.java`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充“Updatable Graphics Layer”概念，说明 Google 如何通过此机制统一碎片化的 GLES 驱动。",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：虽然提到了 AIDL HAL，但未明确指出 Android 13+ 引入的新特性（如 10-bit HDR）强制要求 AIDL 接口。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：在“版本演进”部分补充：HIDL 接口已进入维护模式，新功能不再下放。",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：对 HWC 3.0 (AIDL) 的优化描述不足。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **关键代码逻辑**：`Capability::SKIP_VALIDATE`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充说明在图层状态未变时，SurfaceFlinger 如何利用 AIDL 接口跳过 `validate` 阶段直接 `present`，从而降低显示延迟。"
+      },
+      {
+        "level": "P1",
+        "detail": "| 章节 | 级别 | 类型 | 位置 | 问题描述 | 建议修正方向 |"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-18.12-external-review.md"
+  },
+  {
+    "section": "18.13",
+    "section_title": "2 | 总体极高，仅部分新版本 AIDL 细节待补。",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 18 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "### [P0][原理链完整性][18.12 Flutter 渲染管线]",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文位置**：线程模型：Merged Platform Model / 渲染管线全景"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：架构图将 Dart Runner (UI Thread) 与 Android Main (Platform Thread) 画为独立并行线程，并描述“通过 Engine 层桥接”。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **源码 / 一手资料锚点**：",
+        "evidence": "- Flutter 3.29 Release Note & Engine Source.\n  - `shell/platform/android/io/flutter/embedding/android/FlutterActivityAndFragmentDelegate.java`"
+      },
+      {
+        "level": "P0",
+        "detail": "- **关键代码逻辑**：Flutter 3.29+ 默认启用 Merged Platform Model。Dart 的 UI 任务现在直接在宿主主线程 (Platform Thread) 上执行。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **运行原理说明**：为了解决 Dart 与 Native 通信的异步延迟，支持双向同步调用，UI 线程已不复存在。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **为什么构成 P0**：这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。",
+        "why_important": "这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**："
+      },
+      {
+        "level": "P1",
+        "detail": "### [P1][源码准确性][18.11 ANGLE]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：未提及 Android 15 中 `com.android.angle` 作为系统 APK 并支持通过 Play Store 更新的机制。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **源码锚点**：Android 15 发行说明；`GraphicsEnvironment.java`。",
+        "evidence": "Android 15 发行说明；`GraphicsEnvironment.java`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充“Updatable Graphics Layer”概念，说明 Google 如何通过此机制统一碎片化的 GLES 驱动。",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：虽然提到了 AIDL HAL，但未明确指出 Android 13+ 引入的新特性（如 10-bit HDR）强制要求 AIDL 接口。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：在“版本演进”部分补充：HIDL 接口已进入维护模式，新功能不再下放。",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：对 HWC 3.0 (AIDL) 的优化描述不足。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **关键代码逻辑**：`Capability::SKIP_VALIDATE`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充说明在图层状态未变时，SurfaceFlinger 如何利用 AIDL 接口跳过 `validate` 阶段直接 `present`，从而降低显示延迟。"
+      },
+      {
+        "level": "P1",
+        "detail": "| 章节 | 级别 | 类型 | 位置 | 问题描述 | 建议修正方向 |"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-18.13-external-review.md"
+  },
+  {
+    "section": "18.14",
+    "section_title": "2 | 总体极高，仅部分新版本 AIDL 细节待补。",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 18 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "### [P0][原理链完整性][18.12 Flutter 渲染管线]",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文位置**：线程模型：Merged Platform Model / 渲染管线全景"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：架构图将 Dart Runner (UI Thread) 与 Android Main (Platform Thread) 画为独立并行线程，并描述“通过 Engine 层桥接”。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **源码 / 一手资料锚点**：",
+        "evidence": "- Flutter 3.29 Release Note & Engine Source.\n  - `shell/platform/android/io/flutter/embedding/android/FlutterActivityAndFragmentDelegate.java`"
+      },
+      {
+        "level": "P0",
+        "detail": "- **关键代码逻辑**：Flutter 3.29+ 默认启用 Merged Platform Model。Dart 的 UI 任务现在直接在宿主主线程 (Platform Thread) 上执行。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **运行原理说明**：为了解决 Dart 与 Native 通信的异步延迟，支持双向同步调用，UI 线程已不复存在。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **为什么构成 P0**：这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。",
+        "why_important": "这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**："
+      },
+      {
+        "level": "P1",
+        "detail": "### [P1][源码准确性][18.11 ANGLE]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：未提及 Android 15 中 `com.android.angle` 作为系统 APK 并支持通过 Play Store 更新的机制。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **源码锚点**：Android 15 发行说明；`GraphicsEnvironment.java`。",
+        "evidence": "Android 15 发行说明；`GraphicsEnvironment.java`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充“Updatable Graphics Layer”概念，说明 Google 如何通过此机制统一碎片化的 GLES 驱动。",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：虽然提到了 AIDL HAL，但未明确指出 Android 13+ 引入的新特性（如 10-bit HDR）强制要求 AIDL 接口。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：在“版本演进”部分补充：HIDL 接口已进入维护模式，新功能不再下放。",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：对 HWC 3.0 (AIDL) 的优化描述不足。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **关键代码逻辑**：`Capability::SKIP_VALIDATE`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充说明在图层状态未变时，SurfaceFlinger 如何利用 AIDL 接口跳过 `validate` 阶段直接 `present`，从而降低显示延迟。"
+      },
+      {
+        "level": "P1",
+        "detail": "| 章节 | 级别 | 类型 | 位置 | 问题描述 | 建议修正方向 |"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-18.14-external-review.md"
+  },
+  {
+    "section": "18.15",
+    "section_title": "2 | 总体极高，仅部分新版本 AIDL 细节待补。",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 18 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "### [P0][原理链完整性][18.12 Flutter 渲染管线]",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文位置**：线程模型：Merged Platform Model / 渲染管线全景"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：架构图将 Dart Runner (UI Thread) 与 Android Main (Platform Thread) 画为独立并行线程，并描述“通过 Engine 层桥接”。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **源码 / 一手资料锚点**：",
+        "evidence": "- Flutter 3.29 Release Note & Engine Source.\n  - `shell/platform/android/io/flutter/embedding/android/FlutterActivityAndFragmentDelegate.java`"
+      },
+      {
+        "level": "P0",
+        "detail": "- **关键代码逻辑**：Flutter 3.29+ 默认启用 Merged Platform Model。Dart 的 UI 任务现在直接在宿主主线程 (Platform Thread) 上执行。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **运行原理说明**：为了解决 Dart 与 Native 通信的异步延迟，支持双向同步调用，UI 线程已不复存在。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **为什么构成 P0**：这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。",
+        "why_important": "这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**："
+      },
+      {
+        "level": "P1",
+        "detail": "### [P1][源码准确性][18.11 ANGLE]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：未提及 Android 15 中 `com.android.angle` 作为系统 APK 并支持通过 Play Store 更新的机制。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **源码锚点**：Android 15 发行说明；`GraphicsEnvironment.java`。",
+        "evidence": "Android 15 发行说明；`GraphicsEnvironment.java`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充“Updatable Graphics Layer”概念，说明 Google 如何通过此机制统一碎片化的 GLES 驱动。",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：虽然提到了 AIDL HAL，但未明确指出 Android 13+ 引入的新特性（如 10-bit HDR）强制要求 AIDL 接口。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：在“版本演进”部分补充：HIDL 接口已进入维护模式，新功能不再下放。",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：对 HWC 3.0 (AIDL) 的优化描述不足。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **关键代码逻辑**：`Capability::SKIP_VALIDATE`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充说明在图层状态未变时，SurfaceFlinger 如何利用 AIDL 接口跳过 `validate` 阶段直接 `present`，从而降低显示延迟。"
+      },
+      {
+        "level": "P1",
+        "detail": "| 章节 | 级别 | 类型 | 位置 | 问题描述 | 建议修正方向 |"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-18.15-external-review.md"
+  },
+  {
+    "section": "19",
+    "section_title": "19.19",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 4 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "[知识盲区][GPU 指标的 SoC 依赖]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "将 GPU 利用率作为通用指标。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 关键限制：PerfDog 对 GPU 的读取深度取决于底层 SoC 驱动。在高通平台上数据较全，而在联发科或某些低端芯片上，GPU 利用率可能不可读或口径完全不同。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议：补充“跨芯片平台指标不可横比”的警示。",
+        "suggestion": "补充“跨芯片平台指标不可横比”的警示。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-19-external-review.md"
+  },
+  {
+    "section": "20",
+    "section_title": "19.20",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 10 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "[版本差异覆盖][Emmagee 的不可用性]",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P0",
+        "detail": "虽然提到了 Android 7.0 起不支持，但在本章（针对 Android 8-17）中仍作为主要小节介绍。"
+      },
+      {
+        "level": "P0",
+        "detail": "- 理由：Emmagee 依赖的 `/proc` 读取权限在 Android 8.0 之后被彻底封死。在现代设备上运行 Emmagee 采集到的 CPU/内存数据几乎全部为 0 或错误。"
+      },
+      {
+        "level": "P0",
+        "detail": "- 建议修正方向：将 Emmagee 移至“附录：历史工具回顾”，或在正文中以极其醒目的“Deprecated / 不可用”标识。"
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][SoloPi 维护状态风险]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "未强调仓库已两年未更新。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 关键风险：SoloPi 的 `targetSdkVersion` 为 29。在 Android 14+ 上，系统对“前台服务类型”和“后台启动 Activity”有更严格的限制。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议：增加“由于上游维护停止，不建议作为自动化测试唯一依赖”的风险提示。",
+        "suggestion": "增加“由于上游维护停止，不建议作为自动化测试唯一依赖”的风险提示。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 严重级别：P0"
+      },
+      {
+        "level": "P1",
+        "detail": "- 建议：修正 Emmagee 的章节定位。",
+        "suggestion": "修正 Emmagee 的章节定位。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-20-external-review.md"
+  },
+  {
+    "section": "7.12",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 24 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "[源码准确性][LayoutInflater.inflate() 的三个阶段 - 第二步]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：原文描述 `sConstructorMap` 缓存了每个 View 类的 Constructor 对象，后续遇到同类型 View 直接用缓存。隐含语义是进程内全局共享。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **源码锚点**：`frameworks/base/core/java/android/view/LayoutInflater.java` (Android 15+)",
+        "evidence": "`frameworks/base/core/java/android/view/LayoutInflater.java` (Android 15+)"
+      },
+      {
+        "level": "P0",
+        "detail": "- **关键代码逻辑**：在 Android 15 之前，`sConstructorMap` 是 `static` 的。而在 Android 15 中，它已被重构为实例变量。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **运行原理说明**：这是为了解决动态加载（Dynamic Features）时的 `ClassLoader` 内存泄漏问题。静态缓存会持有 Constructor，Constructor 持有 Class，Class 持有 ClassLoader。改为实例变量后，缓存随 `LayoutInflater` 实例销毁而释放。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **核验结论**：原文的“全局缓存”断言在 Android 15 下失效。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**：明确指出在 Android 15 之前是静态全局缓存，Android 15 之后改为实例缓存及其背后的内存管理考量。"
+      },
+      {
+        "level": "P1",
+        "detail": "[版本差异覆盖][AsyncLayoutInflater 异步布局加载 - 限制与注意事项]",
+        "type": "版本差异覆盖"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：原文提到 `AsyncLayoutInflater` 不支持 `AppCompat` 的 `Factory2` 链。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **缺失内容**：遗漏了 AndroidX `AsyncLayoutInflater 1.1.0` (2025.04) 引入的 `AsyncAppCompatFactory`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **为什么这是重要缺失**：这解决了该工具长期以来最大的痛点（无法应用主题和自动替换 AppCompat 组件），使得该工具的实用性大幅提升。",
+        "why_important": "这解决了该工具长期以来最大的痛点（无法应用主题和自动替换 AppCompat 组件），使得该工具的实用性大幅提升。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议补充方向**：更新“限制”小节，说明最新版本已支持 `AppCompat`，并给出 `AsyncAppCompatFactory` 的简单用法。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：7.12"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P0"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题类型**：源码错误/机制变更"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：`LayoutInflater.inflate()` 流程部分"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：Android 15 中 `sConstructorMap` 不再是静态变量，改为实例变量。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：修正缓存作用域描述，并补充 ClassLoader 泄漏的背景原因。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：7.12"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题类型**：版本滞后"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：`AsyncLayoutInflater` 限制部分"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：未覆盖 1.1.0 版本对 `AppCompat` 的支持。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充 `AsyncAppCompatFactory` 知识点。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-7.12-external-review.md"
+  },
+  {
+    "section": "7.13",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 6 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "*本章节暂未发现 P0 级事实错误。*"
+      },
+      {
+        "level": "P1",
+        "detail": "[原理链完整性][通知内容绑定 - 异步链路]",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：原文提到“异步内容绑定”，但未明确说明其并发模型的变化。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **缺失内容**：在 Android 14+ 中，`NotificationContentInflater` 已全面清理旧有的并发逻辑，更依赖于集中的 `NotifInflationExecutor`。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **运行原理说明**：旧版本中可能存在多个线程池竞争的情况。新版本通过统一的 Executor 限制了通知绑定的最大并发数，以防止通知洪峰直接压垮 I/O 和 CPU。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议补充方向**：在“通知内容绑定”小节补充关于并发限制（Confinement）的说明，强调 SystemUI 如何通过限制并发来保护主线程。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-7.13-external-review.md"
+  },
+  {
+    "section": "7.7",
+    "section_title": "7.7",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 14 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "[源码准确性][渲染模型章节]",
+        "type": "源码准确性"
+      },
+      {
+        "level": "P0",
+        "detail": "- **原文问题**：描述 `SlotTable` 为“生成一棵虚拟的 UI 树”。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **核验结论**：`SlotTable` 的物理结构是 **Gap Buffer（扁平数组）**，它记录的是 Composition 的执行日志，而非 UI 树实体。Compose 真正的“物理 UI 树”是 **`LayoutNode` 树**。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **为什么错**：这会导致读者混淆“状态存储”与“渲染节点”的关系。",
+        "why_important": "这会导致读者混淆“状态存储”与“渲染节点”的关系。"
+      },
+      {
+        "level": "P0",
+        "detail": "- **建议修正方向**：明确 `SlotTable` 存储的是 Composition 的记忆（Memoization），而 `LayoutNode` 负责具体的 Measure/Layout/Draw。"
+      },
+      {
+        "level": "P1",
+        "detail": "[知识盲区][Strong Skipping]",
+        "type": "知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：虽然提到了 Strong Skipping 默认开启，但未强调其对不稳定参数（如 `List`）使用 `===`（引用相等性）比较带来的副作用。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **核验结论**：由于不稳定参数改为 `===` 比较，如果开发者在 ViewModel 中直接修改 `ArrayList` 内容而不更换引用，UI 将不会重组。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **为什么重要**：这是升级 Kotlin 2.0.20 后最容易出现的 Bug。",
+        "why_important": "这是升级 Kotlin 2.0.20 后最容易出现的 Bug。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议补充方向**：增加“Strong Skipping 下的引用相等性陷阱”提示。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P0"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：渲染模型章节"
+      },
+      {
+        "level": "P1",
+        "detail": "- **描述**：纠正 SlotTable 与 LayoutNode 的角色定义，避免将 SlotTable 误称为 UI 树。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **修正方向**：参考 `SlotTable.kt` 和 `LayoutNode.kt` 源码，区分 Composition 日志存储与物理节点树。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-7.7-external-review.md"
+  },
+  {
+    "section": "7.8",
+    "section_title": "08-recyclerview-performance.md",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 2 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "- 无。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 无。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-7.8-external-review.md"
+  },
+  {
+    "section": "7.9",
+    "section_title": "09-perceived-smoothness.md",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 2 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "- 无。"
+      },
+      {
+        "level": "P1",
+        "detail": "- 无。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-7.9-external-review.md"
+  },
+  {
+    "section": "8.6",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 11 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "*无*。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **[P1][原理链][05-case-studies.md][ProfilingManager 段落]**",
+        "type": "原理链"
+      },
+      {
+        "level": "P1",
+        "detail": "- **原文问题**：提到 `ProfilingManager` 可以自动捕获 trace，但未说明具体触发机制。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **源码 / 一手资料锚点**：`android.os.ProfilingManager` (Android 15+)。",
+        "evidence": "`android.os.ProfilingManager` (Android 15+)。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **运行原理说明**：该管理器通过 `requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 方法请求系统转储。Android 16 强化了其在 `App Startup` 阶段的自动化。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充典型的 `requestProfiling` 代码示例。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：`05-case-studies.md`"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：`ProfilingManager` 自动发现段落"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：遗漏了 `ProfilingManager` 的核心调用方法和触发源。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：补充 `ProfilingManager.requestProfiling()` 的典型代码片段。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-8.6-external-review.md"
+  },
+  {
+    "section": "8.9",
+    "section_title": "",
+    "priority": 85,
+    "reason": "[External Review] 外部 AI review 发现 8 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P1",
+        "detail": "[知识盲区][Perfetto 分析路径]",
+        "type": "知识盲区",
+        "evidence": "Perfetto `android.gpu.renderstages` 数据源（Android 10+ 支持）。"
+      },
+      {
+        "level": "P1",
+        "detail": "[原理链完整性][Headroom API 风险点]",
+        "type": "原理链完整性"
+      },
+      {
+        "level": "P1",
+        "detail": "- **章节**：`09-game-performance.md`"
+      },
+      {
+        "level": "P1",
+        "detail": "- **严重级别**：P1"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题类型**：知识盲区"
+      },
+      {
+        "level": "P1",
+        "detail": "- **位置**：Perfetto 观测口径小节"
+      },
+      {
+        "level": "P1",
+        "detail": "- **问题描述**：缺少对 Vulkan 渲染阶段（Render Stages）轨道的详细说明。"
+      },
+      {
+        "level": "P1",
+        "detail": "- **建议修正方向**：在 Perfetto 配置示例中加入 `android.gpu.renderstages`，并说明其在分析 Vulkan RenderPass 时的作用。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-8.9-external-review.md"
+  },
+  {
+    "section": "9.5",
+    "section_title": "ch09 案例集与专项",
+    "priority": 95,
+    "reason": "[External Review] 外部 AI review 发现 3 个需回炉问题",
+    "review_issues": [
+      {
+        "level": "P0",
+        "detail": "*无*"
+      },
+      {
+        "level": "P1",
+        "detail": "*无*"
+      },
+      {
+        "level": "P1",
+        "detail": "*审核通过，建议进入 finalized 状态。*"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T15:21:32.054234",
+    "status": "pending",
+    "source_file": "2026-04-25-15-9.5-external-review.md"
   }
 ]
