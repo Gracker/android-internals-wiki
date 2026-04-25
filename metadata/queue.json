@@ -8695,8 +8695,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-7.12-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-7.12-external-review.md",
+    "completed_at": "2026-04-25T16:33:30+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "stale-external-review-closed; sConstructorMap 外部结论与 AOSP main/android-16.0.0_r1 不符，AsyncLayoutInflater 1.1.0 内容已覆盖；本轮另建新的 ViewDebug/debug.layout 源码问题单"
   },
   {
     "section": "7.13",
@@ -8732,8 +8735,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-7.13-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-7.13-external-review.md",
+    "completed_at": "2026-04-25T16:33:30+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "verified-fixed-in-chapter; NotifInflation Executor / applyAsync 并发模型已覆盖；本轮另建新的 SceneContainer 源码问题单"
   },
   {
     "section": "7.7",
@@ -8804,8 +8810,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-7.7-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-7.7-external-review.md",
+    "completed_at": "2026-04-25T16:33:30+08:00",
+    "completed_by": "task9-deep-tech-review",
+    "resolution": "verified-fixed-in-chapter; Task 9 复核后无剩余 P0/P1"
   },
   {
     "section": "7.8",
@@ -9124,6 +9133,64 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T16:17:20+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.12",
+    "section_title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ViewDebug/debug.layout 补充段存在源码级错误：debug.layout 常量归属、MSG_INVALIDATE_WORLD 触发语义、ViewHierarchyEncoder.dumpv2 方法归属均需修正",
+    "material_paths": [
+      "src/part2-performance/ch07-smoothness/12-view-layout-performance.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L529-L554 debug.layout 系统属性与布局边界可视化",
+        "detail": "正文写“debug.layout 定义在 View.DEBUG_LAYOUT_PROPERTY”，并写成 mDebugLayout==true 时 Handler 持续发送 MSG_INVALIDATE_WORLD、每帧全树重绘。AOSP main / android-16.0.0_r1 的 View.java 没有 DEBUG_LAYOUT_PROPERTY；ViewRootImpl.loadSystemProperties() 读取 DisplayProperties.debug_layout()，仅在属性值变化时延迟发送一次 MSG_INVALIDATE_WORLD，handleMessage 只调用 invalidateWorld(mView)，没有循环重发。",
+        "suggestion": "改为“属性变更触发一次全树 invalidate，用于刷新布局边界状态”；删除“持续发送/每帧全树重绘”断言，并把源码锚点标为 ViewRootImpl.loadSystemProperties() + MSG_INVALIDATE_WORLD + invalidateWorld()。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L583-L603 ViewHierarchyEncoder 代码片段",
+        "detail": "正文把 public static dumpv2(View, OutputStream) 写进 ViewHierarchyEncoder。AOSP ViewHierarchyEncoder 只有 beginObject/addProperty/endObject/endStream 等编码方法；dumpv2 是 ViewDebug.dumpv2(...) 的静态方法，内部使用 View.encode(ViewHierarchyEncoder)。",
+        "suggestion": "把 dumpv2 归属改为 ViewDebug，ViewHierarchyEncoder 只描述编码器职责；代码片段不要把不存在的方法放进 ViewHierarchyEncoder。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T16:33:30+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.13",
+    "section_title": "SystemUI 性能分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] SceneContainer / Flexiglass 段落包含 AOSP 代码片段与执行模型错误，需要回炉修正",
+    "material_paths": [
+      "src/part2-performance/ch07-smoothness/13-systemui-performance.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L155-L162 SceneContainerFlag 代码片段",
+        "detail": "正文把 SceneContainerFlag.isEnabled 写成 device_config.get_boolean(\"systemui\", \"com.android.systemui.scene_container\", false)。AOSP main 的 SceneContainerFlag.kt 实际是 inline val isEnabled，返回 sceneContainer() 并同时要求 KeyguardBottomAreaRefactor、KeyguardWmStateRefactor、MigrateClocksToBlueprint、NotificationThrottleHun、PredictiveBackSysUiFlag 等 secondary flags。",
+        "suggestion": "改成真实 aconfig/Flags.sceneContainer() + secondary flags 依赖，或明确标为伪代码；不要把不存在的 device_config.get_boolean 当成源码片段。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L142-L152 SceneContainer 根节点片段",
+        "detail": "正文给出的 SceneContainer(...) 签名包含 scenes: Set<ComposableScene>、config: SceneContainerConfig。AOSP main 实际签名接收 sceneByKey: Map<SceneKey, Scene>、overlayByKey: Map<OverlayKey, Overlay>、initialSceneKey、sceneTransitions、dataSourceDelegator、qsSceneAdapter、modifier 等参数。",
+        "suggestion": "用当前 AOSP main 的真实签名重写片段，或删除参数级代码，只保留职责说明。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L190-L198 Flexiglass 对性能分析的影响",
+        "detail": "正文断言“过渡动画在 RenderThread 执行，不阻塞 UI thread”。SceneTransitionLayout 是 Compose 组件，场景切换会涉及 Compose 状态、recomposition、layout/draw；只有部分 RenderNode/GPU 属性动画可由 RenderThread/GPU 承担。把整段过渡归为 RenderThread 会误导 Perfetto 读法。",
+        "suggestion": "拆成 UI thread 上的 Compose recomposition/layout 与 RenderThread/GPU 合成两类观察点；在没有 trace 证据前不要写“不阻塞 UI thread”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T16:33:30+08:00",
     "status": "pending"
   }
 ]
