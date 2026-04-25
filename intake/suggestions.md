@@ -2197,3 +2197,9 @@
 
 **external. 10**
 - - **建议**：补充提及在现代 Android 手机普遍使用的 F2FS 文件系统下，WAL 模式可能带来的微小写入放大效应，以及对闪存寿命/性能的极小影响，提升深度。
+
+## [Task9 Deep Review] 18.7 TextureView 合成链路 — 2026-04-25
+- **类型**：数据缺失/边界说明
+- **位置**：L170-L174 / L190
+- **问题**：内存对比把 SurfaceView 写成“只需要 Producer Buffer（1x）”，但 App 主窗口 Buffer 在 SurfaceView 场景仍然存在；准确差异是 TextureView 还要把 Producer 内容采样进 App Window 合成结果，独立内容也失去直接 Overlay 机会。“SurfaceView 不受主线程影响”也应限定为内容生产/提交相对独立，View 树位置、生命周期和宿主 UI 仍受主线程约束。
+- **建议**：把“2 倍”改成带条件的估算，补分辨率、像素格式、buffer count 与是否已有 App Window Buffer 的基线；表格中把 SurfaceView 主线程影响改为“内容帧相对独立，宿主 View 变更仍受影响”。

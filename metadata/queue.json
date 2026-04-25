@@ -6105,5 +6105,51 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
     "status": "pending"
+  },
+  {
+    "section": "18.9",
+    "section_title": "Vulkan 原生渲染链路",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Vulkan 提交示例缺少必需同步字段，且 Android 15 requirements profile 边界未写清",
+    "material_paths": [
+      "logs/external-review/2026-04-25-15-ch18.[06-10]-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L155-L161",
+        "detail": "VkSubmitInfo 设置 waitSemaphoreCount=1 / pWaitSemaphores，但没有 pWaitDstStageMask。Vulkan 规范要求 waitSemaphoreCount > 0 时 pWaitDstStageMask 必须指向同等长度的 VkPipelineStageFlags 数组；当前代码若被当作可复用示例会触发 validation error。",
+        "suggestion": "补 VkPipelineStageFlags waitStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT，并在 VkSubmitInfo 中设置 .pWaitDstStageMask = &waitStages；同时补 .sType，或明确代码块是省略必要字段的节选。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L101-L112",
+        "detail": "正文只提到 VP_ANDROID_15_requirements / VP_ANDROID_16_requirements，没有写明 VP_ANDROID_15_requirements 的 api-version 为 1.3.273，属于 Android 15 Vulkan Minimum Requirements / VRA15 口径；读者无法判断 Android 15 新机、升级/续签设备与旧设备的能力边界。",
+        "suggestion": "在 AVP 小节补一张 profile 矩阵：baseline_2022=Vulkan 1.1.x 兼容基线；VP_ANDROID_15_requirements=Vulkan 1.3.273；VP_ANDROID_16_requirements=Vulkan 1.3.276，并标注适用对象是 Android 对新/续签芯片的要求，不等价于所有存量设备。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T13:26:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.12",
+    "section_title": "Flutter 渲染管线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Flutter 3.29+ merged model 与后文 Dart Runner 独立线程图仍冲突",
+    "material_paths": [
+      "logs/external-review/2026-04-25-15-ch18.[11-15]-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L102-L109 / L135-L147 / L165-L175",
+        "detail": "前文已写 Flutter 3.29+ 的 Dart UI task 与 Platform callback 合并到宿主 Main thread，但“阶段一：Dart Runner”和两张时序图仍把 Dart Runner 画成独立参与者，并出现 Main->Dart / Dart->Raster 的跨线程表达。读者按图查 Perfetto 时仍会寻找不存在的独立 UI Thread。",
+        "suggestion": "把阶段一改为 “Main Thread（Dart UI task）”，时序图中删除独立 Dart participant，改为 Main 自身执行 Build/Layout/Paint 后提交 LayerTree 给 Raster；仅在旧版/定制 engine 边界里保留独立 UI task runner 的说明。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T13:26:00+08:00",
+    "status": "pending"
   }
 ]
