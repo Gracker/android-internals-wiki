@@ -3420,7 +3420,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T16:47:13+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_notes": "fixed: added Connectivity bpf/progs path, BTF CONFIG_DEBUG_INFO_BTF dependency, sched_ext runtime checks, sched_switch/cpu_frequency observation; UprobeStats path kept at src/bpf_progs after direct AOSP verification"
   },
   {
     "section": "14.11",
@@ -3598,7 +3602,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T16:47:13+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_notes": "fixed: added ApplicationExitInfo API 30+ boundary, JankStats PerformanceMetricsState, Matrix instrumentation vs btrace sampling tradeoff, Measure open-source platform positioning"
   },
   {
     "section": "14.13",

@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-04-22'
-last_verified_against: Android Developers / Firebase docs / GitHub upstream READMEs
+last_verified: "2026-04-25"
+last_verified_against: "Android Developers / AndroidX metrics docs / Firebase docs / GitHub upstream READMEs / external review 2026-04-25"
 confidence: medium
 sources:
 - type: official
@@ -41,19 +41,21 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-23'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-23T02:33:00+08:00'
-task2b_state: pending
+task2b_state: fixed
 repaired_date: '2026-04-22'
 repaired_by: codex
+task2b_result: fixed
+last_task2b_at: "2026-04-25T16:44:10+08:00"
 ---
 
 
@@ -93,7 +95,7 @@ repaired_by: codex
 
 | 层次 | 解决的问题 | 代表能力 |
 |---|---|---|
-| **官方基线能力** | 系统已经愿意暴露哪些信号 | `JankStats`、`FrameMetrics`、`ApplicationExitInfo`、Android Vitals |
+| **官方基线能力** | 系统已经愿意暴露哪些信号 | `JankStats`（AndroidX，低版本有回退）、`FrameMetrics`（API 24+）、`ApplicationExitInfo`（API 30+）、Android Vitals |
 | **客户端增强层** | 应用自己还能补哪些上下文和现场 | `Matrix`、`KOOM`、`LeakCanary`、`btrace`、`DoKit` |
 | **平台层** | 数据怎么聚合、回查、告警、进入治理 | Firebase Performance、Measure、自建平台 |
 
@@ -118,6 +120,8 @@ repaired_by: codex
 - 当前这帧花了多久
 - 这帧是否被判为 jank
 - 当时 UI 正在什么状态
+
+`PerformanceMetricsState` 是 `JankStats` 区别于原始 `FrameMetrics` 的关键能力。它允许把页面名、列表滚动状态、业务场景等状态写入当前窗口的 metrics state，回调里的帧数据会带上这些状态。平台收到帧记录时，可以直接知道 jank 发生在首页首屏、列表 fling 还是某个弹窗过渡期。
 
 这个能力非常适合当第一层信号源。对一个刚开始做线上流畅性监控的团队来说，能先知道“哪些页面、哪些交互、哪些版本的帧开始变差”，已经非常有价值。
 
@@ -149,6 +153,8 @@ repaired_by: codex
 
 没有这层能力，很多团队只能靠客户端自己的启发式判断去猜测“像不像 ANR”“是不是被系统回收了”。  
 一旦口径建立在猜测上，后面的聚合和报警很容易一路变形。
+
+它的版本边界要单独写清：`ApplicationExitInfo` 从 Android 11（API 30）开始可用，API 26-29 不能把它当作基础能力。低版本上的 ANR、crash、low-memory 归因仍要依赖 traces、崩溃回调、前后台状态、进程重启痕迹和服务端会话拼接。接入时也不要在冷启动主线程同步拉取大量历史记录，`ActivityManager.getHistoricalProcessExitReasons()` 经过 `system_server`，适合延后到首帧后或后台线程。
 
 ### Android Vitals：最粗，但也最不能忽视
 
@@ -207,7 +213,9 @@ Matrix 最值得写的一点，是它把客户端常见的监控问题组织成�
 
 比如一个版本的冷启动 P95 开始抬升，JankStats 也能看出首页某段交互开始变差，但为什么变差仍然说不清。这种时候，如果能按异常样本补一段方法级 trace，再叠上 Perfetto 体系里的系统事件，很多原本模糊的问题会迅速清楚。
 
-所以 `btrace` 的位置不是“又一个 tracing 库”，而是客户端增强层里专门用来补现场的高价值工具。
+所以 `btrace` 的位置是客户端增强层里的现场补强工具，不适合作为常驻 tracing 库。
+
+Matrix Trace Canary 和 btrace 都能补方法级现场，但路线不同。Matrix 依赖编译期 ASM 插桩，覆盖面广，包体积和运行时事件量也更高；btrace 3.0 更偏同步采样，默认开销低，代价是采样命中率和还原精度需要按场景评估。线上选型时要把这类差异写进采样率、灰度和开关策略。
 
 ### DoKit：更像开发和测试现场的工具箱
 
@@ -239,9 +247,9 @@ Firebase Performance 最大的优点，是上手快。
 
 ### Measure：更接近完整治理平台
 
-`Measure` 这类平台更接近真正的移动可观测性平台：会话时间线、崩溃、ANR、trace、日志可以放在同一个视角里组织起来。
+`Measure` 是开源移动可观测性平台，适合想替代 Firebase 但又希望自托管、数据留存可控、会话时间线可回查的团队。它把崩溃、ANR、trace、日志放在同一个视角里组织，适合已有 owner 维护平台和数据 schema 的团队。
 
-对已经跨过“只想先看到几个指标”的团队来说，这类平台更贴近治理，而不只是展示。
+对已经跨过“只想先看到几个指标”的团队来说，这类平台更贴近治理，不能只按展示看板来评估。
 
 ## 真正做选型时，先问四个问题
 
@@ -297,7 +305,7 @@ Firebase Performance 最大的优点，是上手快。
 
 - `JankStats`
 - 启动埋点
-- `ApplicationExitInfo`
+- `ApplicationExitInfo`（API 30+；低版本仍要保留传统 crash / ANR 归因）
 - Android Vitals / Firebase 这类基础平台能力
 
 这个阶段最忌讳一上来接过重方案。因为团队连“哪些指标最有用”都还没形成共识，过度建设只会放大噪音。

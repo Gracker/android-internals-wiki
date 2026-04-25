@@ -6,14 +6,16 @@ status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-22"
-last_verified_against: "AOSP android-16.0.0_r1 + Perfetto/BPF upstream docs + Android GKI release builds"
+last_verified: "2026-04-25"
+last_verified_against: "AOSP android-16.0.0_r1 (googlesource direct check) + external review 2026-04-25 + Perfetto/BPF upstream docs + Android GKI release builds"
 confidence: medium
 sources:
   - type: aosp
     path: "packages/modules/UprobeStats/src/bpf_progs/"
   - type: aosp
     path: "system/bpf/"
+  - type: aosp
+    path: "packages/modules/Connectivity/bpf/progs/"
   - type: aosp
     path: "frameworks/native/services/gpuservice/bpfprogs/gpuMem.c"
   - type: blog
@@ -46,8 +48,8 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -58,7 +60,7 @@ task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-20T21:48:59+08:00"
 task2b_result: fixed
-last_task2b_at: "2026-04-22T10:03:36+08:00"
+last_task2b_at: "2026-04-25T16:44:10+08:00"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
@@ -139,7 +141,7 @@ Android 在启动阶段会自动加载 `/system/etc/bpf/` 目录下的所有 eBP
 
 Android 已经在系统级使用 eBPF 的场景包括：
 
-- **网络统计**：`netd` 使用 eBPF 程序统计每个 UID 的网络流量，区分前台/后台流量，实现按应用的网络用量监控和防火墙规则。这也是 eBPF 在 Android 上最早的大规模应用。
+- **网络统计**：Android 12+ 的网络 BPF 程序主要位于 `packages/modules/Connectivity/bpf/progs/`，由 `netd` 和 Connectivity 模块使用，用来统计每个 UID 的网络流量、区分前台 / 后台流量，并支撑按应用的网络用量监控和防火墙规则。这也是 eBPF 在 Android 上最早的大规模应用。
 
 - **CPU 频率统计**：`time_in_state` eBPF 程序精确统计每个 App 在不同 CPU 频率上停留的时间，用于功耗分析。比起 `/proc/stat` 的 Tick 级精度（通常 4ms），eBPF 可以在每次频率切换时记录精确时间戳，精度达到纳秒级。
 
@@ -154,7 +156,7 @@ Android 已经在系统级使用 eBPF 的场景包括：
 
 eBPF 程序长期受内核版本兼容性影响。结构体布局一变，硬编码偏移就会失效。BPF CO-RE（Compile Once, Run Everywhere）通过 BTF（BPF Type Format）记录“程序要访问哪些类型和字段”，加载时再按当前内核的 BTF 做重定位。
 
-放到 Android 上，CO-RE 的收益主要体现在 GKI 公共内核面：核心 ABI 更稳定，BTF 也更可预期，跨设备复用难度明显下降。边界同样要写清楚——厂商私有驱动、额外模块或缺失 BTF 的路径，仍然可能需要按设备单独处理。CO-RE 不能替代所有兼容性验证。
+放到 Android 上，CO-RE 的收益主要体现在 GKI 公共内核面：核心 ABI 更稳定，BTF 也更可预期，跨设备复用难度明显下降。CO-RE 依赖内核导出 BTF 信息，设备内核需要打开 `CONFIG_DEBUG_INFO_BTF`，并提供与当前镜像匹配的 BTF。非 GKI 内核、厂商私有驱动、额外模块或缺失 BTF 的路径，仍然可能需要按设备单独处理。CO-RE 不能替代兼容性验证。
 
 目前 Android 上直接从普通 App 加载自定义 eBPF 程序仍然受 SELinux 和权限限制，常见做法还是通过系统组件、root / userdebug 设备，或 AOSP 构建出来的专用工具去加载。
 
@@ -165,6 +167,7 @@ eBPF 程序长期受内核版本兼容性影响。结构体布局一变，硬编
 | 路径 | 这里放的是什么 | 本章要用到的观察点 |
 |---|---|---|
 | `system/bpf/` | Android 的 BPF loader、共享头文件和基础框架 | 系统级 BPF 能力的装载入口 |
+| `packages/modules/Connectivity/bpf/progs/` | 网络统计、计费、防火墙相关 BPF 程序 | 区分 BPF 源码位置与 `netd` 使用方 |
 | `packages/modules/UprobeStats/src/bpf_progs/` | UprobeStats 随模块下发的 BPF 程序，如 `BitmapAllocation.c`、`GenericInstrumentation.c`、`MalwareSignal.c`、`ProcessManagement.c` | 动态埋点与 user space instrumentation 的主线源码 |
 | `frameworks/native/services/gpuservice/bpfprogs/gpuMem.c` | GPU 内存统计用的 BPF 程序 | GPU memory tracking 的具体实现锚点 |
 
@@ -270,7 +273,7 @@ UprobeStats 以 APEX 模块形式集成（`/system/apex/com.android.uprobestats.
 [图：UprobeStats 端到端数据流——StatsD 订阅触发 → 配置解析 → BPF attach → RingBuf 读取 → StatsD 上报]
 
 [来源: Cubox/探索Android动态埋点的新视界：UprobeStats深度解析-2025-02-21.md]
-[已验证: AOSP, packages/modules/UprobeStats/src/]
+[已验证: AOSP, packages/modules/UprobeStats/src/bpf_progs/ + packages/modules/UprobeStats/src/bpf/]
 
 ### 预置的 BPF 程序
 
@@ -349,7 +352,7 @@ Meta 和 Google 都在持续投入 sched_ext。Meta 的 Oculus 团队已经在 A
 
 放到 Android 平台上，先要看 GKI 版本时间线。官方 release builds 已经给出比较清楚的映射：Android 14 对应 `android14-6.1`，Android 15 对应 `android15-6.6`，Android 16 对应 `android16-6.12`。因此，`sched_ext` 真正开始具备平台侧评估条件，是 Android 16 / GKI 6.12 这一代，不是 Android 17 才第一次出现。
 
-这只解决了“底层内核版本够不够”的问题。设备上能不能真正启用，还要继续看内核配置、CTS / VTS、OEM 适配、功耗与稳定性回归，以及是否允许在 shipping build 中开放相应能力。
+这只解决了“底层内核版本够不够”的问题。判断一台设备是否具备实验条件，至少看两处：内核配置是否包含 `CONFIG_SCHED_CLASS_EXT`，运行时是否存在 `/sys/kernel/sched_ext` 相关节点。设备上能不能启用，还要继续看 CTS / VTS、OEM 适配、功耗与稳定性回归，以及是否允许在 shipping build 中开放相应能力。
 
 [来源: intake/research-feeds/2026-04-03-07-sched-ext-bpf-scheduler.md + Android GKI release builds]
 
@@ -359,7 +362,7 @@ Meta 和 Google 都在持续投入 sched_ext。Meta 的 Oculus 团队已经在 A
 
 传统方式通过读 `/proc/stat` 获取 CPU 利用率，精度受限于 Tick 频率（通常 250Hz 或 1000Hz，即 4ms 或 1ms）。而且 `/proc/stat` 的数据来自 `account_process_tick()`，只在时钟中断时更新——如果一个任务在两次 Tick 之间跑了很多短任务，这些时间会被归入下一次 Tick 的统计中。
 
-eBPF 通过挂载到 `sched_switch` tracepoint，在每次上下文切换时精确记录前一个任务的运行时间和当前任务开始运行的时间戳。精度从 Tick 级别（4ms）提升到纳秒级（ns）。
+eBPF 可以挂到 `sched:sched_switch` tracepoint，在每次上下文切换时记录前一个任务的运行时间和当前任务开始运行的时间戳。精度从 Tick 级别（4ms）提升到纳秒级（ns）。如果还要把运行时间折算到不同频点下的容量或功耗口径，需要同时采集 `power:cpu_frequency` / cpufreq 相关事件，把 tid 运行区间和 CPU 频率区间按时间相交。
 
 实际效果：在 120Hz 屏幕上，一帧只有 8.33ms。Tick 级精度可能把 2-3 帧的 CPU 时间混在一起，而 eBPF 可以精确区分每一帧的 CPU 使用量。
 
@@ -423,7 +426,7 @@ simpleperf record -a -g --exclude-perf \
 实际情况：bpftrace 不是 Android 标准工具链的一部分，通常需要单独构建。Android 上更实用的路径，是用 Simpleperf 的 `probe:` 事件配合 `--uprobe` / `--kprobe` 定义探针，或者直接走 AOSP 自带的 BPF loader / 系统模块能力。
 
 **误区：sched_ext 已经在 Android 上普遍可用了。**
-实际情况：`sched_ext` 需要 Linux 6.12+。平台基线已经走到 Android 16 的 GKI 6.12，但这不等于所有 Android 16 设备都会启用它，更不等于所有 OEM 都会把它开放给日常性能分析。
+实际情况：`sched_ext` 需要 Linux 6.12+、`CONFIG_SCHED_CLASS_EXT` 和 `/sys/kernel/sched_ext` 运行时接口。平台基线已经走到 Android 16 的 GKI 6.12，但这不等于所有 Android 16 设备都会启用它，更不等于所有 OEM 都会把它开放给日常性能分析。
 
 ## 限制与注意事项
 
@@ -463,6 +466,7 @@ eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那
 
 - AOSP eBPF 文档：https://source.android.com/docs/core/architecture/kernel/bpf
 - AOSP UprobeStats BPF 程序：https://cs.android.com/android/platform/superproject/main/+/main:packages/modules/UprobeStats/src/bpf_progs/
+- AOSP Connectivity BPF 程序：https://cs.android.com/android/platform/superproject/main/+/main:packages/modules/Connectivity/bpf/progs/
 - AOSP GPU memory BPF 程序：https://cs.android.com/android/platform/superproject/main/+/main:frameworks/native/services/gpuservice/bpfprogs/gpuMem.c
 - Linux kernel sched_ext 文档：https://kernel.org/doc/html/latest/scheduler/sched-ext.html
 - sched-ext 项目：https://github.com/sched-ext/scx
