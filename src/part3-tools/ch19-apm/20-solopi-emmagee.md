@@ -2,7 +2,7 @@
 title: SoloPi 与 Emmagee
 chapter: '19'
 section: '19.20'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-15 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持
@@ -29,21 +29,21 @@ sources:
   path: https://github.com/NetEase/Emmagee/releases/tag/V2.5.1
 - type: official
   path: https://developer.android.com/about/versions/13/behavior-changes-all#restricted-settings
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-04-25T04:45:04+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-25"
-task9_reviewed_by: "openclaw-task6"
-last_task9_at: '2026-04-24T20:44:37+08:00'
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-25T17:41:15+08:00"
 ---
 
 

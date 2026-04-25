@@ -1,31 +1,31 @@
 {
-  "generated_at": "2026-04-25T16:47:13+08:00",
+  "generated_at": "2026-04-25T17:41:15+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total_sections": 212,
-    "finalized": 68,
-    "ready-for-review": 150,
-    "ready-to-publish": 68,
-    "last_updated": "2026-04-25T16:47:13+08:00",
+    "finalized": 71,
+    "ready-for-review": 147,
+    "ready-to-publish": 71,
+    "last_updated": "2026-04-25T17:41:15+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 39,
+      "task6_pending": 36,
       "task2b_pending": 49,
-      "ready-to-publish": 68,
+      "ready-to-publish": 71,
       "task9_pending": 56,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 184,
-      "revisiting": 30
+      "reviewed": 187,
+      "revisiting": 27
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 129,
-      "pending": 77,
+      "reviewed": 132,
+      "pending": 74,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
@@ -42,22 +42,22 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 39,
+      "task6_pending": 36,
       "task2b_pending": 49,
-      "ready-to-publish": 68,
+      "ready-to-publish": 71,
       "task9_pending": 56,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 184,
-      "revisiting": 30
+      "reviewed": 187,
+      "revisiting": 27
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 129,
-      "pending": 77,
+      "reviewed": 132,
+      "pending": 74,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
@@ -4727,49 +4727,53 @@
       "title": "商业 APM 平台（Sentry、APMPlus、Bugly）",
       "chapter": "19",
       "section": "19.18",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "last_verified_against": "Sentry Android docs / Volcengine APMPlus docs / Bugly docs",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "reviewed_date": "2026-04-24",
+      "task9_result": "pass-tech-review",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T16:40:21+08:00",
-      "task2b_result": "fixed"
+      "last_task9_at": "2026-04-25T17:41:15+08:00",
+      "task2b_result": "fixed",
+      "review_notes": "2026-04-24 task6 review: pass-light-edit. L1 fix x1 (frontmatter YAML line merge). 写作质量良好，商业平台对比清晰，接入建议实用。B类问题已在queue.json由task9录入（私有化责任表/PoC验收表/成本模型/迁移案例），等task2b处理。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。",
+      "last_task2b_at": "2026-04-25T05:47:52+08:00",
+      "task2b_fixed_by": "openclaw-task2b",
+      "review_notes_2": "2026-04-25 task6 re-review (round 2): pass-light-edit after task2b fix. L1: no banned words. L2: good. All 10 anchors covered. No B-class issues. Pending task9 re-review."
     },
     "src/part3-tools/ch19-apm/22-storage-benchmark.md": {
       "path": "src/part3-tools/ch19-apm/22-storage-benchmark.md",
       "title": "存储 Benchmark（AndroBench、A1 SD Bench）",
       "chapter": "19",
       "section": "19.22",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "历史存储 Benchmark 参考；Android 10/11+ 路径权限需逐机验证；方法可用于 Android 8-17 的设备基线分析",
       "last_verified": "2026-04-24",
       "last_verified_against": "AndroBench paper / A1 SD Bench public materials / Android 11 scoped storage docs",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "reviewed_date": "2026-04-24",
+      "task9_result": "pass-tech-review",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T22:57:00+08:00",
+      "last_task9_at": "2026-04-25T17:41:15+08:00",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-25T02:45:50+08:00",
       "repaired_date": "2026-04-25",
@@ -4846,27 +4850,27 @@
     "src/part3-tools/ch19-apm/20-solopi-emmagee.md": {
       "path": "src/part3-tools/ch19-apm/20-solopi-emmagee.md",
       "title": "SoloPi 与 Emmagee",
-      "chapter": "'19'",
-      "section": "'19.20'",
-      "status": "ready-for-review",
-      "drafted_date": "'2026-04-24'",
+      "chapter": "19",
+      "section": "19.20",
+      "status": "finalized",
+      "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "SoloPi：源码编译基线 minSdk 18 / compileSdk 29 / targetSdk 29，Android 12-15 需逐机验证；Emmagee：历史工具，README 明确声明 Android 7.0 起不支持",
       "last_verified": "2026-04-25",
       "last_verified_against": "SoloPi README + src/build.gradle + src/app/build.gradle + GitHub release v0.12.0；Emmagee README + GitHub release V2.5.1；Android 13 Restricted Settings behavior changes",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-24",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-24'",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-24T20:44:37+08:00'",
+      "last_task9_at": "2026-04-25T17:41:15+08:00",
       "last_task2b_at": "2026-04-25T04:45:04+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b"
@@ -5718,6 +5722,21 @@
         "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
         "src/part3-tools/ch14-other-tools/12-apm-observability.md"
       ]
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "at": "2026-04-25T17:41:15+08:00",
+      "sections": [
+        "19.18",
+        "19.20",
+        "19.22"
+      ],
+      "results": {
+        "19.18": "pass-tech-review; auto-finalized",
+        "19.20": "pass-tech-review; auto-finalized",
+        "19.22": "pass-tech-review; auto-finalized"
+      },
+      "log": "logs/deep-review/2026-04-25-17-deep-review.md"
     }
   ],
   "progress": {
@@ -5916,15 +5935,12 @@
       "19.22": {
         "reviewed_by": "openclaw-task9",
         "reviewed_date": "2026-04-25",
-        "task9_result": "needs-rework",
-        "task9_state": "pending",
-        "pipeline_stage": "task6_pending",
-        "issues_found": "fixed",
-        "task6_state": "revisiting",
-        "task2b_state": "fixed",
-        "task2b_result": "fixed",
-        "updated_by": "openclaw-task2b",
-        "updated_date": "2026-04-25"
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "status": "finalized",
+        "issues_found": "minor",
+        "auto_promoted": true
       },
       "19.25": {
         "reviewed_by": "openclaw-task9",
@@ -6063,6 +6079,26 @@
         "task2b_result": "fixed",
         "updated_by": "openclaw-task2b",
         "updated_date": "2026-04-25"
+      },
+      "19.18": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "status": "finalized",
+        "issues_found": "minor",
+        "auto_promoted": true
+      },
+      "19.20": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-25",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "status": "finalized",
+        "issues_found": "minor",
+        "auto_promoted": true
       }
     }
   },
@@ -6404,5 +6440,5 @@
       }
     }
   },
-  "last_updated": "2026-04-25T17:26:18.863575"
+  "last_updated": "2026-04-25T17:41:15+08:00"
 }
