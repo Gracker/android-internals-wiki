@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-04-25T13:01:11+08:00",
+  "generated_at": "2026-04-25T13:26:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total_sections": 212,
-    "finalized": 64,
-    "ready-for-review": 153,
-    "ready-to-publish": 64,
-    "last_updated": "2026-04-25T13:01:11+08:00",
+    "finalized": 65,
+    "ready-for-review": 152,
+    "ready-to-publish": 65,
+    "last_updated": "2026-04-25T13:26:00+08:00",
     "pipeline_stage_counts": {
       "None": 36,
       "task6_pending": 36,
-      "task2b_pending": 37,
-      "ready-to-publish": 63,
-      "task9_pending": 75,
+      "task2b_pending": 39,
+      "ready-to-publish": 64,
+      "task9_pending": 72,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
@@ -24,16 +24,16 @@
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 113,
-      "pending": 92,
+      "reviewed": 116,
+      "pending": 89,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 158,
-      "pending": 41,
+      "fixed": 156,
+      "pending": 43,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -43,9 +43,9 @@
     "pipeline_stage_counts": {
       "None": 36,
       "task6_pending": 36,
-      "task2b_pending": 37,
-      "ready-to-publish": 63,
-      "task9_pending": 75,
+      "task2b_pending": 39,
+      "ready-to-publish": 64,
+      "task9_pending": 72,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
@@ -56,16 +56,16 @@
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 113,
-      "pending": 92,
+      "reviewed": 116,
+      "pending": 89,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 158,
-      "pending": 41,
+      "fixed": 156,
+      "pending": 43,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -3138,19 +3138,20 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
       "title": "TextureView 合成链路",
       "chapter": "18.7",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 4.0 (API 14) - Android 16 (API 36)",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T13:26:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
@@ -3176,18 +3177,18 @@
       "chapter": "18.9",
       "status": "ready-for-review",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T12:34:00+08:00"
+      "last_task9_at": "2026-04-25T13:26:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
@@ -3236,17 +3237,18 @@
       "section": "'18.12'",
       "status": "ready-for-review",
       "applicable_versions": "Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-23",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T13:26:00+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
@@ -5280,7 +5282,11 @@
     "task6_reviewed": "2026-04-23",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
-    "status": "ready-for-review"
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "task9_reviewed": "2026-04-25"
   },
   "section_18_8": {
     "task6_reviewed": "2026-04-23",
@@ -5292,7 +5298,12 @@
     "task6_reviewed": "2026-04-23",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
-    "status": "ready-for-review"
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task9_reviewed": "2026-04-25",
+    "task2b_state": "pending"
   },
   "review_history": [
     {
