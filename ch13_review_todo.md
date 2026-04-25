@@ -1,0 +1,11 @@
+# Ch13 Perfetto Review Tasks
+- [x] 13.1 01-perfetto-intro.md
+- [x] 13.2 02-trace-capture.md
+- [x] 13.3 03-perfetto-view.md
+- [x] 13.4 04-large-traces.md
+- [x] 13.5 05-topic-analysis.md
+- [x] 13.6 06-thread-cpu-states.md
+- [x] 13.7 07-advanced-usage.md
+- [x] 13.8 08-input-latency-sql.md
+- [x] 13.9 09-tracing-infrastructure.md
+- [x] 13.10 10-perfetto-sql-cookbook.md
