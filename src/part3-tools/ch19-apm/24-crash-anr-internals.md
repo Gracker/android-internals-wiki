@@ -10,7 +10,7 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: pending
 task6_state: revisiting
@@ -263,7 +263,7 @@ fun readRecentExitRecords(context: Context): List<String> {
 
 ## 7. 多 SDK 冲突：默认假设 handler 会被覆盖
 
-项目同时接 Bugly、Firebase、自研 SDK 时，最常见的问题不是“谁采得更多”，而是谁在收尾安装 handler，谁把前面的回调关系断了。
+项目同时接 Bugly、Firebase、自研 SDK 时，最常见的麻烦在于谁在收尾安装 handler，谁把前面的回调关系断了——“谁采得更多”反而不是重点。
 
 ### 7.1 Java 层冲突
 
