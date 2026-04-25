@@ -3233,3 +3233,33 @@
 - **位置**：Emmagee 定位修正
 - **建议**：将 Emmagee 移至附录：历史工具回顾，或在正文中以醒目 Deprecated 标识
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 19.18 商业 APM 平台（Sentry、APMPlus、Bugly） — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L100 Sentry profiling 排查建议
+- **问题**：文中列出 `libart.so`、`art::Trace::StopTracing`、`pthread_getcpuclockid` 等崩溃栈排查路径，但未绑定 Sentry Android SDK 版本、issue 链接或真实事故样本。
+- **建议**：补充 Sentry SDK 版本/issue/官方文档锚点；如果来自实践经验，应标成经验性排查清单，并写明适用 Android 版本和采样率范围。
+
+## [Task9 Deep Review] 19.18 商业 APM 平台（Sentry、APMPlus、Bugly） — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L132/L207 SDK 自身开销验收
+- **问题**：已经要求看 SDK crash、ANR、启动开销、线程数、包体积，但没有给出 APM SDK 初始化自监控的具体观测口径。
+- **建议**：增加 `apm.sdk.init` / `apm.sdk.first_upload` 等 Trace 名称，要求用 Macrobenchmark 或 Perfetto 对比接入前后启动 P50/P95、主线程耗时、线程数、流量和包体积增量。
+
+## [Task9 Deep Review] 19.20 SoloPi 与 Emmagee — 2026-04-25
+- **类型**：源码准确性
+- **位置**：L158 SoloPi 启动耗时算法
+- **问题**：正文写成 MediaProjection 录屏 + OpenCV 图像相似度/变化率的“典型路径”，但 SoloPi README 只确认双点按钮与广播调用，未给出算法级实现细节。
+- **建议**：补 SoloPi 源码锚点或官方 wiki 证明；若无法闭环，把该段改为“视觉首屏/页面稳定口径”，避免把未核验实现写成确定事实。
+
+## [Task9 Deep Review] 19.22 存储 Benchmark（AndroBench、A1 SD Bench） — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L230-L233 存储报告模板
+- **问题**：模板对吞吐量和 IOPS 使用 `median / p95`。这类指标数值越高越好，p95 表示偏高表现，不代表尾部退化；读者可能把它误读成延迟指标的 p95。
+- **建议**：吞吐量/IOPS 建议记录 median + p10/min 或稳定轮均值；延迟指标另列 p50/p95/p99。报告中明确“高好/低好”的指标方向。
+
+## [Task9 Deep Review] 19.22 存储 Benchmark（AndroBench、A1 SD Bench） — 2026-04-25
+- **类型**：数据支撑
+- **位置**：frontmatter sources L18-L20
+- **问题**：AndroBench / A1 SD Bench 的来源包含 APKPure 这类第三方镜像，作为版本能力和维护状态依据不够稳。
+- **建议**：补充论文、开发者主页、Google Play/官方发布页或项目维护信息；若只能用镜像来源，需标注“第三方镜像，仅用于包名和历史版本线索”。

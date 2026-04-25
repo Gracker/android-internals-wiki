@@ -2,7 +2,7 @@
 title: "商业 APM 平台（Sentry、APMPlus、Bugly）"
 chapter: "19"
 section: "19.18"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -18,15 +18,15 @@ sources:
     path: "https://www.volcengine.com/docs/6431"
   - type: official
     path: "https://bugly.qq.com/docs/"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
-last_task9_at: "2026-04-24T16:40:21+08:00"
+last_task9_at: "2026-04-25T17:41:15+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 
