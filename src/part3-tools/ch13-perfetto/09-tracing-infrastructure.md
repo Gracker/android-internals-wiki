@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-17-beta3, kernel/trace/"
+last_verified: "2026-04-25"
+last_verified_against: "AOSP main, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/"
 confidence: medium
 sources:
   - type: aosp
@@ -22,13 +22,13 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-24'
-rework_date: "2026-04-21"
+rework_date: "2026-04-25"
 rework_by: openclaw-task2b
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -37,7 +37,7 @@ last_task9_at: "2026-04-25T13:04:00+08:00"
 task9_reviewed_by: openclaw-task9
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1: 1x 不是X而是Y(FAQ合理使用,未超限). 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据5/5。'
 task9_reviewed_date: "2026-04-25"
-
+last_task2b_at: "2026-04-25T14:40:00+08:00"
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
@@ -146,7 +146,7 @@ Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接�
 3. `atrace_begin()` 将追踪数据写入一个特殊的文件描述符——这个 fd 指向的是 `/sys/kernel/tracing/trace_marker`
 4. `trace_marker` 是 ftrace 提供的一个接口，允许用户空间程序向 per-CPU ring buffer 写入自定义事件
 
-`trace_marker` 写入的数据格式是 `B|<pid>|<name>`（begin）和 `E|<pid>`（end）。在 Perfetto 解析 Trace 时，这些用户空间 tag 被提取并显示在对应进程的 Track 中。
+`trace_marker` 常见写入格式包括 `B|<pid>|<name>`（begin）、`E|<pid>`（end）和 `C|<pid>|<name>|<value>`（counter）。Counter 用于记录随时间变化的数值，例如队列长度、缓存大小或业务侧自定义计数。Perfetto 解析 Trace 时，会把这些用户空间 tag 转成对应进程的 slice 或 counter Track。
 
 [已验证: AOSP android-17-beta3, system/core/libcutils/Trace.cpp, kernel/trace/trace.c trace_marker_write()]
 
@@ -207,14 +207,15 @@ traced_probes 采集 ftrace 数据的核心步骤：
 - `ftrace_buffer_size_kb`：per-CPU ring buffer 大小。设备 8 核时设 32KB 意味着总共 256KB 的内核缓冲区，高负载场景下很容易溢出
 - `ftrace_events`：要启用的 tracepoint 列表。Perfetto 文档有完整的事件列表
 
-traced_probes 读取 ftrace 数据的源码路径：
+traced_probes 读取 ftrace 数据的源码路径（AOSP main 组织方式）：
 
-- `FtraceController`（`external/perfetto/src/traced_probes/ftrace_controller.cc`）是核心调度器，`ReadTick()` 方法按 `ftrace_drain_period_ms` 周期读取各 CPU 的 ring buffer
-- `FtraceReader`（`external/perfetto/src/traced_probes/ftrace_reader/`）负责打开 per-CPU 的 `/sys/kernel/tracing/per_cpu/cpu<N>/trace_pipe_raw` 文件描述符并循环 read
-- 读取到的原始二进制数据通过 `FtraceEventFilter` 过滤后，序列化为 Perfetto protobuf 流交给 traced service
-- `trace_pipe_raw` 与 `trace`（文本格式）的区别：前者输出二进制 ftrace event 结构体，由 traced_probes 直接解析，避免了一次文本序列化和反序列化的开销
+- `FtraceController`（`external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc`）负责读取 `TraceConfig`、启停 ftrace，并按 `ftrace_drain_period_ms` 触发采集循环
+- `CpuReader`（`external/perfetto/src/traced/probes/ftrace/cpu_reader.cc`）负责解析单个 CPU 的原始 ftrace page
+- `FtraceProcfs`（`external/perfetto/src/traced/probes/ftrace/ftrace_procfs.cc`）封装 tracefs 访问；`OpenPipeForCpu()` 打开 `/sys/kernel/tracing/per_cpu/cpu<N>/trace_pipe_raw`
+- 原始二进制事件通过 ftrace parser / event filter 处理后，写入 Perfetto protobuf 流并交给 traced service
+- `trace_pipe_raw` 与 `trace`（文本格式）的区别：前者输出二进制 ftrace event 结构体，由 traced_probes 直接解析，避免一次文本序列化和反序列化
 
-[待验证: 具体文件名在不同 Perfetto 版本中的变化，以及 GKI kernel 下 tracefs 挂载路径差异]
+[已验证: AOSP main, external/perfetto/src/traced/probes/ftrace/{ftrace_controller.cc,cpu_reader.cc,ftrace_procfs.cc}]
 
 ### 用户空间 Data Source 注册
 
@@ -302,14 +303,19 @@ ATRACE_END();
 
 ### 内核层：添加自定义 tracepoint
 
-对于系统/OEM 开发者，添加内核级 tracepoint 的标准流程：
+系统/OEM 开发者添加内核级 tracepoint 时，最小可编译路径分三步。
 
-1. 在头文件中声明 tracepoint：
+1. 在 `include/trace/events/<subsystem>.h` 声明 tracepoint。`<trace/define_trace.h>` 要放在 include guard 外面：
 
 ```c
-// kernel/trace/events/my_custom.h
+// include/trace/events/my_custom.h
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM my_custom
+
+#if !defined(_TRACE_MY_CUSTOM_H) || defined(TRACE_HEADER_MULTI_READ)
+#define _TRACE_MY_CUSTOM_H
+
+#include <linux/tracepoint.h>
 
 TRACE_EVENT(my_event,
     TP_PROTO(int value, const char *name),
@@ -324,18 +330,35 @@ TRACE_EVENT(my_event,
     ),
     TP_printk("value=%d name=%s", __entry->value, __get_str(name))
 );
+
+#endif /* _TRACE_MY_CUSTOM_H */
+
+/* This part must be outside protection. */
+#include <trace/define_trace.h>
 ```
 
-2. 在代码中调用：
+2. 在唯一一个 C 文件中生成 tracepoint 定义：
+
+```c
+// drivers/.../my_custom_trace.c
+#define CREATE_TRACE_POINTS
+#include <trace/events/my_custom.h>
+```
+
+3. 在业务代码中调用生成的 helper：
 
 ```c
 #include <trace/events/my_custom.h>
-trace_my_event(42, "test_event");
+
+void my_path(void)
+{
+    trace_my_event(42, "test_event");
+}
 ```
 
-3. 在 `kernel/trace/Makefile` 中注册
+Makefile 只负责把包含 `CREATE_TRACE_POINTS` 的源文件编进对应模块或内核目录，不在 `kernel/trace/Makefile` 里“注册” tracepoint。编译完成后，事件会出现在 tracefs 的 `available_events` 中，名称是 `my_custom:my_event`，Perfetto 配置里写成 `my_custom/my_event`。
 
-[待验证: 完整的 tracepoint 注册流程在不同 GKI 版本中的差异]
+[已验证: Linux kernel tracepoint pattern, include/trace/events/*.h, include/trace/define_trace.h, CREATE_TRACE_POINTS]
 
 ### 在 Perfetto 中查看自定义追踪数据
 

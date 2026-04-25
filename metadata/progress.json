@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T14:26:23+08:00",
+  "generated_at": "2026-04-25T14:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,20 +7,20 @@
     "finalized": 66,
     "ready-for-review": 152,
     "ready-to-publish": 66,
-    "last_updated": "2026-04-25T14:26:23+08:00",
+    "last_updated": "2026-04-25T14:40:00+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 38,
+      "task6_pending": 40,
       "task2b_pending": 46,
       "ready-to-publish": 66,
-      "task9_pending": 62,
+      "task9_pending": 60,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 185,
-      "revisiting": 29
+      "reviewed": 183,
+      "revisiting": 31
     },
     "task9_state_counts": {
       "None": 40,
@@ -42,17 +42,17 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 38,
+      "task6_pending": 40,
       "task2b_pending": 46,
       "ready-to-publish": 66,
-      "task9_pending": 62,
+      "task9_pending": 60,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 185,
-      "revisiting": 29
+      "reviewed": 183,
+      "revisiting": 31
     },
     "task9_state_counts": {
       "None": 40,
@@ -3652,46 +3652,48 @@
       "drafted_date": "2026-04-08",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-08",
-      "last_verified_against": "AOSP android-17-beta3, kernel/trace/",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "AOSP main, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "'2026-04-24'",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "'2026-04-24'",
-      "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-24'",
+      "last_task9_at": "2026-04-25T13:04:00+08:00",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T03:54:40+08:00"
+      "task9_reviewed_date": "2026-04-25",
+      "last_task2b_at": "2026-04-25T14:40:00+08:00"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
       "title": "Perfetto SQL 性能分析实战手册",
       "chapter": "13.10",
-      "section": "13.10",
       "status": "ready-for-review",
       "drafted_date": "2026-04-09",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
-      "last_verified": "2026-04-22",
-      "last_verified_against": "Perfetto stdlib docs (android.frames.timeline / android.monitor_contention)",
+      "last_verified": "2026-04-25",
+      "last_verified_against": "AOSP Binder/ZygoteInit review anchors, Perfetto SQL tables/stdlib docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "section": "13.10",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
       "task2b_result": "fixed",
+      "task6_state": "revisiting",
+      "task6_result": "pass-light-edit",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "pipeline_stage": "task6_pending",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T17:08:00+08:00"
+      "last_task9_at": "2026-04-25T13:04:00+08:00",
+      "last_task2b_at": "2026-04-25T14:40:00+08:00"
     },
     "src/part3-tools/ch13-perfetto/README.md": {
       "path": "src/part3-tools/ch13-perfetto/README.md",

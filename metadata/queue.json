@@ -2948,14 +2948,18 @@
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "status": "pending",
+    "status": "completed",
     "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
     "material_paths": [
       "intake/suggestions.md"
     ],
     "added_at": "2026-04-25T13:04:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T13:04:00+08:00"
+    "updated_at": "2026-04-25T13:04:00+08:00",
+    "completed_at": "2026-04-25T14:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_note": "已按 Task9 问题单修复，并吸收同章节 external review 中可直接落地的补充项。"
   },
   {
     "section": "13.10",
@@ -2988,14 +2992,18 @@
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "status": "pending",
+    "status": "completed",
     "section_title": "Perfetto SQL 性能分析实战手册",
     "material_paths": [
       "intake/suggestions.md"
     ],
     "added_at": "2026-04-25T13:04:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T13:04:00+08:00"
+    "updated_at": "2026-04-25T13:04:00+08:00",
+    "completed_at": "2026-04-25T14:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_note": "已按 Task9 问题单修复，并吸收同章节 external review 中可直接落地的补充项。"
   },
   {
     "section": "14.1",
