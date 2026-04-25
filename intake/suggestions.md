@@ -3046,3 +3046,144 @@
 - **位置**：L187
 - **问题**：Adaptive Battery 段落保留了“TensorFlow Lite 的 CNN + 前馈网络架构”待验证说法，但 AOSP / 官方文档不公开具体模型结构。继续保留具体网络结构会让读者把未证实实现当成系统事实。
 - **建议**：删除具体网络结构猜测，改写为“系统根据 Usage Events、通知交互、前台时长等本地信号预测使用频率，并输出 Standby Bucket 调整”；如果要写 TFLite/CNN，必须补一手来源和版本边界。
+
+## [External Review] ? ch10-memory-perf [05-07, README] — 2026-04-25
+- **类型**：交叉引用
+- **位置**：ch10-memory-perf [05-07, README]
+- **问题**：- **[P2][交叉引用][README.md] 目录索引不匹配**
+  - **原文问题**：README 列出的子章节为“App 内存分析、内存泄漏、内存持续增长...”，但对应的文件名为 `05-case-studies.md` 等。
+  - **建议**：确保 README 的列表与 `01-04` 缺失章节的占位或实际文件名保持一致。
+- **[P2][知识盲区][07-sqlite-
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-25-15-10.README-external-review.md)
+
+## [External Review] ? 13.README — 2026-04-25
+- **类型**：建议改进
+- **位置**：本章内容列表
+- **问题**：建议将 13.8 和 13.10 这两个“SQL 重灾区”标记为“进阶分析必读”。
+- **建议**：在目录项后增加简单的难度或场景标签。
+- **来源**：Gemini 外部 review (2026-04-25-15-13.README-external-review.md)
+
+## [External Review] 14.1 14.1 — 2026-04-25
+- **类型**：知识盲区
+- **位置**：14.1
+- **问题**：建议补充如何通过 `AS_PROFILER_AGENT_MEMORY_LIMIT`（或类似环境变量，需核实）来控制 Agent 开销的说明。
+- **建议**：说明在做极致内存测试时，应尽量减少 Profiler 的记录项。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.1-external-review.md)
+
+## [External Review] 14.1 14.1 — 2026-04-25
+- **类型**：建议改进
+- **位置**：Power Profiler
+- **问题**：ODPM 的支持机型目前仍集中在 Pixel 系列。
+- **建议**：补充说明对于不支持 ODPM 的机型，Power Profiler 会降级到传统的估算模型。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.1-external-review.md)
+
+## [External Review] 14.2 14.2 — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：14.2
+- **问题**：建议补充如何通过 `simpleperf list` 结果来校准具体事件名称的说明。
+- **建议**：在 14.2.4 节增加一段提示，引导读者根据设备实际输出调整命令。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.2-external-review.md)
+
+## [External Review] 14.2 14.2 — 2026-04-25
+- **类型**：建议改进
+- **位置**：off-CPU Profiling
+- **问题**：建议补充 `sched_switch` 事件在 simpleperf 内部是如何与采样周期对齐的说明。
+- **建议**：简要解释 off-CPU 样本的权重计算逻辑（Time Difference）。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.2-external-review.md)
+
+## [External Review] 14.3 14.3 — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：14.3
+- **问题**：建议补充一个从 GC Root 到 Activity 实例的节点层级展示图。
+- **建议**：提供一个 OQL 查询“查询所有未释放 Activity”的语句示例。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.3-external-review.md)
+
+## [External Review] 14.3 14.3 — 2026-04-25
+- **类型**：建议改进
+- **位置**：MTE 部分
+- **问题**：MTE 的 Async 模式在 Android 14+ 已经可以被 App 自定义。
+- **建议**：补充说明如何在 `AndroidManifest.xml` 中配置 `android:memtagMode`。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.3-external-review.md)
+
+## [External Review] 14.4 14.4 — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：14.4
+- **问题**：建议补充一段关于“如何从 Frontend dump 中识别 Layer 遮挡关系”的文字提示。
+- **建议**：说明 `Composition list` 的排列顺序通常对应合成层级顺序。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.4-external-review.md)
+
+## [External Review] 14.4 14.4 — 2026-04-25
+- **类型**：建议改进
+- **位置**：gfxinfo 专题
+- **问题**：建议增加一个“VRR 场景下 deadline 判定”的数值计算公式。
+- **建议**：对比 120Hz 下 `FrameInterval` 的纳秒值与 `FrameDeadline` 的关系。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.4-external-review.md)
+
+## [External Review] 14.5 14.5 — 2026-04-25
+- **类型**：知识盲区
+- **位置**：14.5
+- **问题**：建议补充如何通过 `__builtin_clear_cache` 或厂商专有指令来刷新指令缓存的简要说明。
+- **建议**：在 14.5.8 节增加一段关于“Inline Hook 稳定性边界”的提示。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.5-external-review.md)
+
+## [External Review] 14.5 14.5 — 2026-04-25
+- **类型**：建议改进
+- **位置**：KOOM 部分
+- **问题**：建议补充“Fork 子进程 Dump”在 Android 11+ 之后可能遇到的写写时拷贝（Copy-on-Write）放大问题。
+- **建议**：简要说明在大堆（> 4GB）场景下，Fork 可能导致的短暂系统卡顿。
+- **来源**：Gemini 外部 review (2026-04-25-15-14.5-external-review.md)
+
+## [External Review] ? ? — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：?
+- **问题**：- [P2][原理链完整性][正文]
+- 建议补充更具体的 Perfetto Trace 截图占位符，引导读者对应源码行为。
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-25-15-15.README-external-review.md)
+
+## [External Review] ? ? — 2026-04-25
+- **类型**：建议改进
+- **位置**：正文
+- **问题**：建议增加更多实战中的 Trace 观察点描述。
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-25-15-15.README-external-review.md)
+
+## [External Review] ? ? — 2026-04-25
+- **类型**：数据/案例支撑
+- **位置**：?
+- **问题**：- [P2][数据/案例支撑][Thermal 关联策略]
+- **建议内容**：建议明确给出 `getThermalHeadroom`（预测性）与 `getCpuHeadroom`（即时性）的组合策略建议。
+- **理由**：帮助读者理解何时该看热，何时该看调度压力。
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-25-15-8.README-external-review.md)
+
+## [External Review] ? ? — 2026-04-25
+- **类型**：建议改进
+- **位置**：?
+- **问题**：- **章节**：`README.md`
+- **问题类型**：结构建议
+- **位置**：阅读建议部分
+- **问题描述**：可以更明确地引导游戏开发者关注“输入响应（Input Latency）”与“Game Activity”的关联。
+- **建议**：在阅读建议中增加一行：“如果是游戏开发者关注输入延迟，请参考 8.9”。
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-25-15-8.README-external-review.md)
+
+## [External Review] ? ch09 案例集与专项 — 2026-04-25
+- **类型**：知识盲区
+- **位置**：ch09 案例集与专项
+- **问题**：- [P2][知识盲区][src/part2-performance/ch09-anr/05-case-studies.md]
+- **原文内容**：提到的反射修复 `QueuedWork` 方案。
+- **建议**：应补充说明 Android 12+ 后由于 Hidden API 限制，此类反射需配合内卷（元反射）或特定策略，且 Google 已在 `Modern Broadcast Queue
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-25-15-9.README-external-review.md)
+
+## [External Review] ? ch09 案例集与专项 — 2026-04-25
+- **类型**：建议改进
+- **位置**：ch09 案例集与专项
+- **问题**：- **关键源码路径**：`frameworks/native/libs/binder/ProcessState.cpp` (Binder 线程池上限)。
+- **核心机制**：Input ANR 的 5s 检测是在 `inputflinger` 的 `InputDispatcher.cpp` 中通过 `processAnrsLocked` 驱动的。
+- **版本锚点**：`POST_NOTIFI
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-25-15-9.README-external-review.md)
+

@@ -3252,6 +3252,13 @@
       {
         "type": "P1-重要缺失",
         "detail": "See file for P1 details"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "14.6",
+        "detail": "### 9.2 知识盲区清单\n- 章节：14.6\n- 盲区描述：Baseline Profiles 的二进制格式与 ART 解析逻辑。\n- 重要程度：中\n- 建议研究方向：`frameworks/base/core/java/android/util/PackageMobileProfiles.java` (假想路径，需核实为 `art/libartbase/base/zip_archive.cc",
+        "suggestion": "`frameworks/base/core/java/android/util/PackageMobileProfiles.java` (假想路径，需核实为 `art/libartbase/base/zip_archive.cc` 等)。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -6824,6 +6831,20 @@
         "detail": "提到合规，但未说明具体操作。",
         "suggestion": "要求在选型表中增加一列“隐私数据字段审计清单”。",
         "type": "原理链完整性"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.18",
+        "detail": "未提及 SDK 初始化对启动的影响。",
+        "suggestion": "必须增加一个“自监控”建议，要求开发者用 `Trace.beginSection` 包裹 APM SDK 的初始化调用，并确保其在 `Application.onCreate` 中不产生阻塞。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.18",
+        "detail": "提到合规，但未说明具体操作。",
+        "suggestion": "要求在选型表中增加一列“隐私数据字段审计清单”。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -7894,6 +7915,20 @@
         "suggestion": "补充对 `androidx.benchmark.suppressErrors` 配置的警示，说明强行跳过温控检查会导致实验结果不可信。",
         "type": "原理链完整性",
         "evidence": "`androidx.benchmark.macro.MacrobenchmarkScope`。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.14",
+        "detail": "未提及 Macrobenchmark 对多进程 App 的处理。",
+        "suggestion": "提醒开发者对于多进程应用，需确认被测逻辑是否在 targetPackage 的主进程中，或查阅最新的多进程支持 API。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.14",
+        "detail": "提到控制温度，但未说明 Benchmark 库的自动保护机制。",
+        "suggestion": "补充对 `androidx.benchmark.suppressErrors` 配置的警示，说明强行跳过温控检查会导致实验结果不可信。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -7919,6 +7954,20 @@
         "detail": "未提及 R8 混淆后的规则匹配。",
         "suggestion": "提醒开发者检查 AAB 产物中解密后的 profile 记录是否与混淆后的 `mapping.txt` 一致。",
         "type": "知识盲区"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.15",
+        "detail": "提到非 Play 安装依赖 `ProfileInstaller`。",
+        "suggestion": "增加“混淆与初始化检查”锚点。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.15",
+        "detail": "未提及 R8 混淆后的规则匹配。",
+        "suggestion": "提醒开发者检查 AAB 产物中解密后的 profile 记录是否与混淆后的 `mapping.txt` 一致。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -7954,6 +8003,13 @@
         "level": "P1",
         "detail": "- 建议：补充关于 Heap Dump 敏感数据脱敏的安全建议。",
         "suggestion": "补充关于 Heap Dump 敏感数据脱敏的安全建议。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.16",
+        "detail": "未强调文件外传的安全性。",
+        "suggestion": "必须增加“安全警示”，提醒开发者在上传结果前必须在本地进行 OID（对象标识符）脱敏或加密，且必须符合 App 隐私协议。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -7978,6 +8034,20 @@
         "detail": "提到最新 SDK 有“几分钟”的延迟。",
         "suggestion": "强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
         "type": "原理链完整性"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.17",
+        "detail": "仅提到“某些网络库可能漏掉”。",
+        "suggestion": "提醒开发者在 `build.log` 中检查 Firebase 插件的插桩日志。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.17",
+        "detail": "提到最新 SDK 有“几分钟”的延迟。",
+        "suggestion": "强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -8372,6 +8442,13 @@
         "level": "P1",
         "detail": "- 建议：补充“跨芯片平台指标不可横比”的警示。",
         "suggestion": "补充“跨芯片平台指标不可横比”的警示。"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.19",
+        "detail": "将 GPU 利用率作为通用指标。",
+        "suggestion": "补充“跨芯片平台指标不可横比”的警示。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -8428,6 +8505,22 @@
         "level": "P1",
         "detail": "- 建议：修正 Emmagee 的章节定位。",
         "suggestion": "修正 Emmagee 的章节定位。"
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "19.20",
+        "detail": "虽然提到了 Android 7.0 起不支持，但在本章（针对 Android 8-17）中仍作为主要小节介绍。",
+        "suggestion": "将 Emmagee 移至“附录：历史工具回顾”，或在正文中以极其醒目的“Deprecated / 不可用”标识。",
+        "evidence": [
+          "Emmagee 依赖的 `/proc` 读取权限在 Android 8.0 之后被彻底封死。在现代设备上运行 Emmagee 采集到的 CPU/内存数据几乎全部为 0 或错误。"
+        ]
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.20",
+        "detail": "未强调仓库已两年未更新。",
+        "suggestion": "增加“由于上游维护停止，不建议作为自动化测试唯一依赖”的风险提示。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -8863,6 +8956,66 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T15:31:06+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "?",
+    "section_title": "ch10-memory-perf [05-07, README]",
+    "priority": 85,
+    "reason": "[External Review] - **[P1][版本差异/工具][06-memory-churn.md] heapprofd 使用方法描述陈旧**\n  - **原文问题**：建议使用 `adb shell heapprofd --pid=<PID> --java`。\n  - **核验结论**：在 Android 12+ 及最新的 Perfetto 工具链中，`heapprofd` 主要通过 `tools/heap_profil",
+    "review_issues": [
+      {
+        "type": "P1 重要缺失",
+        "location": "ch10-memory-perf [05-07, README]",
+        "detail": "- **[P1][版本差异/工具][06-memory-churn.md] heapprofd 使用方法描述陈旧**\n  - **原文问题**：建议使用 `adb shell heapprofd --pid=<PID> --java`。\n  - **核验结论**：在 Android 12+ 及最新的 Perfetto 工具链中，`heapprofd` 主要通过 `tools/heap_profil",
+        "suggestion": "更新为基于 `tools/heap_profile` 的推荐流程。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "ch12",
+        "detail": "- **章节 12.2**：补充 Cronet 在 Non-GMS 设备上的独立包（Standalone Provider）体积成本（约 3-5MB）。[P1]\n- **章节 12.4**：明确 Android 17 CT 强制验证仅针对 `targetSdkVersion >= 37` 且访问公网证书的情形。[P1]\n\n### 9.4 可复用知识资产\n- **章节 12.3**：`package",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "?",
+        "detail": "- **[可复用资产]**：SQL 示例中使用的 `android_frames.timeline` 模块是 Perfetto 标准库的最佳实践，建议保留。\n\n### 20-pipeline-analysis-methodology.md (渲染管线分析方法论)\n- **[P2][实战性]**：`dumpsys SurfaceFlinger --latency` 在现代 Android (BLAS",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "?",
+        "detail": "- **[P1][18.16][位置：SurfaceView + BLAST]**：补充 Android 14 针对 Z-Below 模式下 Alpha 应用到“Hole Punch”上的细节说明。\n\n### 9.2 知识盲区清单\n- **[18.17]**：API 36 的 `ASurfaceTransaction_setBufferWithRelease` 在多缓冲池（Buffer Pooli",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "?",
+        "detail": "`README.md` 中的“本章内容”列表未包含以下实际存在的文件：",
+        "suggestion": "重写 README 的“本章内容”部分，确保与物理文件一一对应。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "?",
+        "detail": "- [P1][知识盲区][Perfetto 分析路径]\n- **原文问题**：在“游戏 Trace 的特殊配置”和“关键分析路径”中，仅泛泛提到“启用 GPU 性能计数器”。\n- **源码 / 一手资料锚点**：Perfetto `android.gpu.renderstages` 数据源（Android 10+ 支持）。\n- **关键代码逻辑**：Vulkan 渲染管线的 Binning/Ren",
+        "suggestion": "明确建议开启 `android.gpu.renderstages`，并提及某些设备需 `adb shell setprop security.perfetto.gpu_counters.privileged 1` 权限。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "?",
+        "detail": "- [P1][原理链完整性][Headroom API 风险点]\n- **原文问题**：虽然提到了 Headroom API 的 1ms+ 耗时，但未明确强调其在 120Hz/144Hz 游戏中的“破坏性”。\n- **核验结论**：在 120fps 下，一帧只有 8.33ms。1ms 的同步 Binder 阻塞意味着消耗了 12% 的帧预算。\n- **建议修正方向**：在“Android 16：A",
+        "suggestion": "在“Android 16：ADPF Headroom API”小节中，进一步强调严禁在渲染主线程调用，建议采用低频异步轮询模式。",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T16:15:23+08:00",
     "status": "pending"
   }
 ]

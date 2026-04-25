@@ -1,36 +1,61 @@
 # AIW 批量 Review 任务总结报告
 
-## 一、任务执行概况
-- 任务时间：2026-04-25 15:00
-- 评审范围：`src/part3-tools/ch13-perfetto/` (11 个文件)
-- 评审深度：源码级技术审计 + 2026 技术基线核验
-- 完成状态：全部完成
+## 一、评审概述
+- **评审日期**：2026-04-25
+- **评审范围**：电量优化 (11.2-11.5)、网络性能 (12.2-12.4)、渲染管线 (18.17-18.21)
+- **文件总数**：12 个
+- **总体结论**：整体质量极高，覆盖了 Android 14-17 的最新特性，源码级拆解深入。
 
-## 二、评审文件清单与结论
-| 章节 ID | 文件路径 | 总体评分 | 是否回炉 | 主要发现 |
-|---------|---------|----------|---------|----------|
-| 13.1 | 01-perfetto-intro.md | 4.5 | 否 | 建议补充 Android 12+ Mainline APEX 部署背景 |
-| 13.2 | 02-trace-capture.md | 4.2 | 否 | **P1**: PerfEventConfig 示例需更新为新的嵌套 schema |
-| 13.3 | 03-perfetto-view.md | 4.7 | 否 | 补充 Android 14+ SF Client Composition 判定逻辑 |
-| 13.4 | 04-large-traces.md | 4.3 | 否 | **P1**: 修正 trace_processor CLI 参数 `-Q` 的表述 |
-| 13.5 | 05-topic-analysis.md | 4.9 | 否 | 高质量，对 stdlib 模块应用精准 |
-| 13.6 | 06-thread-cpu-states.md | 4.6 | 否 | 区分了 io_wait 的内核语义，建议增加内核支持检查 adb 命令 |
-| 13.7 | 07-advanced-usage.md | 4.5 | 否 | **P1**: 建议补充 R8 移除自定义 Trace 点的工程实践 |
-| 13.8 | 08-input-latency-sql.md | 4.8 | 否 | 深度应用 android.input 模块，量化口径极具专业性 |
-| 13.9 | 09-tracing-infrastructure.md | 4.9 | 否 | 拆解了 traced 源码逻辑，内核 tracepoint 声明示例准确 |
-| 13.10 | 10-perfetto-sql-cookbook.md | 4.8 | 否 | 提供了自动化 ANR 归因和调度延迟计算的行业级算法 |
-| 13.README | README.md | 5.0 | 否 | 教学模型设计合理，阅读顺序建议务实 |
+## 二、核心发现汇总
 
-## 三、核心风险与共性建议
-1. **配置过时风险**：部分 `TraceConfig` 示例（如 perf_event）存在旧字段，需统一向 AOSP 最新 proto 看齐以避免 Android 14+ 报错。
-2. **环境依赖提醒**：部分高级 SQL 和采集能力（如 inputevent, FrameTimeline）对 Android 版本或内核补丁有依赖，建议在文中显著位置增加“版本门槛自查” adb 命令。
-3. **工程化闭环**：高级用法章节应补充如何在大规模 Release 包中安全管理自定义打点的建议。
+### 1. 电量优化章节 (11.2 - 11.5)
+- **亮点**：对 Android 15 FGS Timeout 和 Android 16 Active 桶配额的前瞻性描述非常精准。
+- **主要问题**：建议补强 FGS 超时后的重启限制说明，以及 SystemSuspend 的命令行调试工具。
 
-## 四、可复用知识资产汇总
-- **算法模型**：`Wall = CPU + R + S + D` 耗时拆解公式。
-- **SQL 模板**：基于 `actual_frame_timeline_slice` 的掉帧归因查询。
-- **源码锚点**：`external/perfetto/src/traced/probes/ftrace/` 下的数据采集核心类。
+### 2. 网络性能章节 (12.2 - 12.4)
+- **亮点**：对 DoH3、ECH、CT、HPKE 等前沿安全特性的性能损耗分析科学，指标定义（DNS/Connect/TTFB）准确。
+- **主要问题**：预连接与 authority 一致性的提醒，以及 0-RTT 重放攻击的客户端防护逻辑需补强。
 
-## 五、落盘信息
-- 批量总结：`logs/external-review/2026-04-25-15-batch-review-summary.md`
-- 个体报告：`logs/external-review/2026-04-25-15-{id}-external-review.md` (11 个)
+### 3. 渲染管线章节 (18.17 - 18.21)
+- **亮点**：提供了 HardwareBufferRenderer 的深度拆解，以及 VRR/ARR 在 FrameTimeline 下的诊断口径。渲染分析“四步法”具有极强的工程实践价值。
+- **主要问题**：NDK 侧 EGL 导入 AHardwareBuffer 的关键扩展补充，以及 EyeDropper 动作对“截屏检测”事件影响的调研。
+
+## 三、六维评分统计 (平均分)
+| 维度 | 平均评分 | 备注 |
+|------|------|-------|
+| 源码准确性 | 5.0 | 维持了极高的源码级严谨性 |
+| 原理链完整性 | 5.0 | 机制因果链条闭环 |
+| 版本差异覆盖 | 4.9 | 准确覆盖了 Android 11-17 的演进 |
+| 知识盲区 | 4.5 | 识别出了一些前沿 API 的边缘行为盲区 |
+| 数据/案例支撑 | 4.7 | 案例集数据详实，部分章节建议增加量化区间 |
+| 交叉引用一致性 | 5.0 | 章节间调用关系逻辑一致 |
+
+## 四、回炉问题单 (P1 级)
+| 章节 | 问题类型 | 问题描述 | 建议修正方向 |
+|------|------|------|------|
+| 11.2 | 知识盲区 | FGS Timeout 细节缺失 | 补充 `onTimeout` 响应限制说明 |
+| 11.4 | 知识盲区 | 线上功耗监控体系缺失 | 补充基于 `BatteryStats` 的线上方案 |
+| 12.2 | 知识盲区 | 预连接与 authority 一致性 | 提醒预热 URL 需与业务同一 authority |
+| 18.17| 知识盲区 | NDK EGL 导入细节 | 补充关键 EGL 扩展名称 |
+| 18.19| 知识盲区 | ARR 与系统动画缩放交互 | 补充全局设置对 ARR 的影响 |
+| 18.21| 知识盲区 | 截屏检测事件触发 | 调研取色动作对安全感应的影响 |
+
+## 五、可复用知识资产 (Top 3)
+1. **SystemSuspend 深度拆解**：揭示了 Android 10+ 现代电源管理的核心机制（11.5）。
+2. **DoH3 Rollout 证据链**：明确了 Android 11+ 系统级加密 DNS 的演进路径（12.3）。
+3. **VRR 诊断标准口径**：定义了在变频设备上判断“真实掉帧”的 SQL 查询模板（18.19）。
+
+## 六、落盘文件清单
+- `logs/external-review/2026-04-25-15-11.2-external-review.md`
+- `logs/external-review/2026-04-25-15-11.3-external-review.md`
+- `logs/external-review/2026-04-25-15-11.4-external-review.md`
+- `logs/external-review/2026-04-25-15-11.5-external-review.md`
+- `logs/external-review/2026-04-25-15-12.2-external-review.md`
+- `logs/external-review/2026-04-25-15-12.3-external-review.md`
+- `logs/external-review/2026-04-25-15-12.4-external-review.md`
+- `logs/external-review/2026-04-25-15-18.17-external-review.md`
+- `logs/external-review/2026-04-25-15-18.18-external-review.md`
+- `logs/external-review/2026-04-25-15-18.19-external-review.md`
+- `logs/external-review/2026-04-25-15-18.20-external-review.md`
+- `logs/external-review/2026-04-25-15-18.21-external-review.md`
+- `logs/external-review/2026-04-25-15-batch-review-summary.md`
