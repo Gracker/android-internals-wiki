@@ -7958,3 +7958,40 @@ PerfDog 对 GPU 的读取深度取决于底层 SoC 驱动。在高通平台上�
 ### 外部 review 来源
 - 2026-04-25-15-19-external-review.md
 
+
+
+## [2026-04-25] 19.17 Firebase Performance Monitoring — 知识盲区
+
+### 盲区描述
+Firebase 采集存在设备端限流：10 分钟 300 事件，超出部分直接丢弃。这一限制可能导致事故分析时数据缺失。
+
+### 重要程度
+中
+
+### 建议研究方向
+- Firebase SDK 设备端限流策略与采样率的关系
+- 限流场景下的数据完整性保障方案
+
+### 关联章节
+- 19.17
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-17-external-review.md)
+
+## [2026-04-25] 19.16 ProfilingManager — 知识盲区
+
+### 盲区描述
+ProfilingManager 简化了 Heap Dump 采集，但未解决敏感数据合规问题。Heap Dump 包含所有 Java 对象明文。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Heap Dump 脱敏方案（OID 替换、字段过滤）
+- 合规框架下性能数据外传的最佳实践
+
+### 关联章节
+- 19.16
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-16-external-review.md)

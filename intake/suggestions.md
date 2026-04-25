@@ -3686,3 +3686,18 @@
 - **问题**：章节把 GLES BufferQueue 写成“通常 3 个 Slot”，方向正确，但容易被读者当作固定结论。实际 buffer count 会受 BufferQueue 配置、async mode、producer/consumer 最大持有数和厂商实现影响。
 - **建议**：补一句边界：三缓冲是常见形态，不是协议保证；实战应从 Perfetto 的 dequeue/queue 节奏、SurfaceFlinger dump 或 Winscope 中确认实际 Buffer 深度。
 
+
+
+## [External Review] 19.19 PerfDog 与实验室性能测试 — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：热降频识别
+- **问题**：缺少热降频的判定模型说明
+- **建议**：补充判定模型——Temperature 达临界值且 CPU/GPU Frequency 断崖式下跌时，FPS 下降应归因为系统调度而非业务逻辑
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.16 ProfilingManager — 2026-04-25
+- **类型**：安全警示
+- **位置**：Heap Dump 敏感数据段落
+- **问题**：未提及 Heap Dump 敏感数据脱敏与合规
+- **建议**：补充安全警示段落，提醒上传前 OID 脱敏或加密
+- **来源**：Gemini 外部 review

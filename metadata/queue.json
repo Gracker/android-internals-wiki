@@ -1649,6 +1649,12 @@
         "detail": "- 建议：补充关于 Heap Dump 敏感数据脱敏的安全建议。",
         "suggestion": "",
         "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "Heap Dump 安全性",
+        "detail": "Heap Dump 包含内存中所有 Java 对象明文信息（Token、手机号等），ProfilingManager 简化了采集但未简化合规",
+        "suggestion": "必须增加安全警示，要求上传前进行 OID 脱敏或加密，且符合 App 隐私协议"
       }
     ],
     "added_by": "external-ai-review",
@@ -1904,6 +1910,12 @@
         "detail": "将 GPU 利用率作为通用指标。",
         "suggestion": "补充“跨芯片平台指标不可横比”的警示。",
         "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "GPU 利用率指标",
+        "detail": "PerfDog 对 GPU 读取深度取决于 SoC 驱动，高通数据较全但联发科或低端芯片可能不可读或口径不同",
+        "suggestion": "补充跨芯片平台指标不可横比的警示"
       }
     ],
     "added_by": "external-ai-review",
@@ -2869,6 +2881,21 @@
         "evidence": [
           "`androidx.benchmark.macro.MacrobenchmarkScope`。"
         ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "Macrobenchmark 多进程场景",
+        "detail": "Macrobenchmark 默认监控主进程，若核心逻辑在 :remote 进程，FrameTimingMetric 可能采集不到渲染帧",
+        "suggestion": "提醒开发者确认被测逻辑是否在 targetPackage 主进程，或查阅多进程支持 API",
+        "evidence": [
+          "androidx.benchmark.macro.MacrobenchmarkScope"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "温控降频段落",
+        "detail": "未说明 Benchmark 1.2+ 在设备温度过高时会自动暂停或抛异常",
+        "suggestion": "补充 androidx.benchmark.suppressErrors 的警示，说明强行跳过温控检查会导致数据失真"
       }
     ],
     "added_by": "external-ai-review",
@@ -9537,6 +9564,21 @@
         "evidence": [
           "`androidx.profileinstaller.ProfileInstallReceiver`。"
         ]
+      },
+      {
+        "type": "源码准确性",
+        "location": "ProfileInstaller 激活段落",
+        "detail": "若禁用 androidx.startup 且未手动初始化 ProfileInstaller，或混淆 ProfileInstallReceiver，profile 信号将丢失",
+        "suggestion": "增加混淆与初始化检查锚点",
+        "evidence": [
+          "androidx.profileinstaller.ProfileInstallReceiver"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "R8 混淆与 Profile 匹配",
+        "detail": "手动移动 .prof 文件或使用非标混淆流程可能导致 Profile 命中率为 0",
+        "suggestion": "提醒开发者检查 AAB 产物中解密后的 profile 与 mapping.txt 一致性"
       }
     ],
     "added_by": "external-ai-review",
@@ -9605,6 +9647,18 @@
         "detail": "在事故发生时，几分钟的延迟加上采样过滤，可能导致控制台在事故前半小时依然“一片升平”。",
         "suggestion": "强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
         "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "网络插桩段落",
+        "detail": "复杂 AOP 框架或自定义 EventListener 占据全局槽位会导致 Firebase 网络数据采集失败",
+        "suggestion": "提醒开发者检查 build.log 中 Firebase 插桩日志"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Near Real-time 延迟",
+        "detail": "几分钟延迟加上采样过滤，事故发生时控制台可能'一片升平'",
+        "suggestion": "强烈要求不将 Firebase 作为唯一故障发现工具，必须配合实时业务错误码监控"
       }
     ],
     "added_by": "external-ai-review",
