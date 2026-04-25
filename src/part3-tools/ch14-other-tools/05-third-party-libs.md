@@ -45,8 +45,8 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 review_round: 2
 task9_state: pending
 task9_result: needs-rework
@@ -58,7 +58,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-25T13:01:11+08:00"
+last_task2b_at: "2026-04-25T20:40:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 ---
@@ -345,7 +345,9 @@ Inline Hook 直接修改目标函数的机器码（通常是将函数入口处�
 
 优势是覆盖范围广，理论上无 Hook 盲区。劣势是：需要处理不同 CPU 架构的指令差异（ARM、ARM64、x86 等），兼容性风险高；如果目标函数很短（短于一条跳转指令的长度），可能无法 Hook；在多线程环境下修改代码段存在竞态条件。字节跳动在开源生态里把这两条路线拆得很清楚：`ByteHook` 是 PLT Hook 库，`ShadowHook` 才是 Inline Hook 库。分析字节系方案时，先区分自己看到的是 ELF 导入表拦截，还是函数入口改写。两者的稳定性边界和适用场景不同。
 
-[已验证: bytedance/bhook 为 PLT Hook，bytedance/android-inline-hook 为 ShadowHook Inline Hook]
+Inline Hook 写入 trampoline 后，还要把被改写地址区间的 instruction cache 刷新掉。NDK 侧通常通过 `__builtin___clear_cache(begin, end)` 或 Hook 框架内部封装完成这一步；漏掉 I-cache 刷新时，CPU 可能继续执行旧指令，表现为偶发 `SIGILL`、跳转到旧入口或只在特定 SoC 上复现的崩溃。Android 15 的 16KB page size 设备还要求 Hook 库不要假设页大小固定为 4KB，涉及 `mprotect` 的页边界计算、trampoline 分配和 ELF segment alignment 的代码都要回归验证。
+
+[已验证: bytedance/bhook 为 PLT Hook，bytedance/android-inline-hook 为 ShadowHook Inline Hook；Inline Hook 需处理 I-cache 刷新和 16KB page size 兼容边界]
 
 ### Transform（编译期字节码修改）
 

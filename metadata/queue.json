@@ -5370,7 +5370,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T20:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "已确认并补齐 Matrix AGP 8.0+ 官方插件不可用边界、BlockCanary/Rabbit、KOOM joinable 线程泄漏、DoKit 云端状态；本轮追加 Inline Hook I-cache 刷新和 Android 15 16KB page size 兼容边界。"
   },
   {
     "section": "14.06",
@@ -5576,7 +5579,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T20:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "已确认并补齐 Microbenchmark API 21 边界、Monkey/SoloPi/Appium、指标 API 限制；本轮追加 Baseline Profile/dex2oat 编译路径和 CI thermal throttling 处理。"
   },
   {
     "section": "14.09",
@@ -7938,8 +7944,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-14-14.5-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-14-14.5-external-review.md",
+    "completed_at": "2026-04-25T20:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "已确认并补齐 Matrix AGP 8.0+ 官方插件不可用边界、BlockCanary/Rabbit、KOOM joinable 线程泄漏、DoKit 云端状态；本轮追加 Inline Hook I-cache 刷新和 Android 15 16KB page size 兼容边界。"
   },
   {
     "section": "14.6",
@@ -8022,8 +8031,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-14-14.6-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-14-14.6-external-review.md",
+    "completed_at": "2026-04-25T20:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "已确认并补齐 Microbenchmark API 21 边界、Monkey/SoloPi/Appium、指标 API 限制；本轮追加 Baseline Profile/dex2oat 编译路径和 CI thermal throttling 处理。"
   },
   {
     "section": "10.5",
