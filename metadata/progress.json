@@ -762,18 +762,18 @@
       "last_verified": "'2026-04-23'",
       "last_verified_against": "AOSP android-16.0.0_r1 + external/perfetto + developer.android.com",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-24'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-24'",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-24T05:21:00+08:00'"
+      "last_task9_at": "2026-04-26T01:29:40+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
       "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
@@ -973,25 +973,25 @@
       "title": "Adaptive Refresh Rate 与动态帧率控制",
       "chapter": "2.18",
       "section": "2.18",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持",
       "last_verified": "2026-04-19",
       "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-19T17:21:00+08:00"
+      "last_task9_at": "2026-04-26T01:29:40+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md": {
       "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
@@ -1246,18 +1246,18 @@
       "last_verified": "2026-04-21",
       "last_verified_against": "AOSP android-16.0.0_r1 / Android Developers bitmap memory & 16 KB page size docs / kernel zram docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T05:29:00+08:00"
+      "last_task9_at": "2026-04-26T01:29:40+08:00"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -5809,6 +5809,21 @@
           "auto_promoted": true
         }
       ]
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "at": "2026-04-26T01:29:40+08:00",
+      "sections": [
+        "2.9",
+        "2.18",
+        "4.1"
+      ],
+      "results": {
+        "2.9": "needs-rework",
+        "2.18": "pass-tech-review; auto-finalized",
+        "4.1": "needs-rework"
+      },
+      "log": "logs/deep-review/2026-04-26-01-deep-review.md"
     }
   ],
   "progress": {

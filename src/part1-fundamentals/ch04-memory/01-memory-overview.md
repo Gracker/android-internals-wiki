@@ -42,15 +42,15 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-04-21T05:29:00+08:00"
+task9_reviewed_date: "2026-04-26"
+last_task9_at: "2026-04-26T01:29:40+08:00"
 ---
 
 # Android 内存模型全景

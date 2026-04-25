@@ -2,7 +2,7 @@
 title: "Adaptive Refresh Rate 与动态帧率控制"
 chapter: "2.18"
 section: "2.18"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持"
@@ -30,17 +30,17 @@ sources:
     path: "https://perfetto.dev/docs/analysis/stdlib-docs"
 tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
-pipeline_stage: task9_pending
-last_task9_at: "2026-04-19T17:21:00+08:00"
+pipeline_stage: ready-to-publish
+last_task9_at: "2026-04-26T01:29:40+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-19"
+task9_reviewed_date: "2026-04-26"
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pass-tech-review
 task2b_result: fixed
 ---
 

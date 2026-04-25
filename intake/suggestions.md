@@ -3815,3 +3815,15 @@
 - **位置**：FrameMetrics API 指标表：COMMAND_ISSUE
 - **问题**：表格把 COMMAND_ISSUE 描述成“GPU 命令执行耗时 / GPU”。FrameMetrics.COMMAND_ISSUE_DURATION 更准确是 RenderThread/HWUI 向 GPU 发出 draw command 的耗时，不等同于 GPU 实际执行完成时间。
 - **建议**：改成“命令提交耗时 / RenderThread→GPU 提交阶段”，并补一句：GPU 实际执行需结合 Perfetto GPU counter、FrameTimeline 或厂商 GPU 工具确认。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：L185（SkiaVulkan CPU 开销降低 30–50%）
+- **问题**：正文保留了“[待验证：需补充 benchmark 来源]”。量化区间没有设备、GPU、驱动、场景或来源，读者会把它当成通用收益。
+- **建议**：补充官方/厂商 benchmark 条件；若无法确认，删除 30–50% 量化，只保留 Vulkan 可能降低 CPU driver overhead 的机制描述。
+
+## [Task9 Deep Review] 4.1 Android 内存模型全景 — 2026-04-26
+- **类型**：版本差异
+- **位置**：L273（Ashmem 替代路径）
+- **问题**：正文写 Ashmem 在现代 Android 上逐渐被 dmabuf 替代，容易把匿名共享内存与图形/硬件 buffer 混在一起。匿名共享内存主替代路径更接近 memfd，dmabuf 主要用于可被硬件/DMA 子系统共享的 buffer。
+- **建议**：改成“匿名共享内存从 ashmem 迁移到 memfd；图形、相机、媒体等硬件共享 buffer 更多使用 dma-buf”，并保留老版本 ashmem 兼容边界。
