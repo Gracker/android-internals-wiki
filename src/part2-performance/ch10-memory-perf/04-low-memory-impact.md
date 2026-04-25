@@ -22,13 +22,13 @@ sources:
     path: "source.android.com - mm_events, PSI, lmkd"
 tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto', 'MGLRU', 'cgroup', 'mm-events', 'vmscan', 'oom-score-adj']
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
-reviewed_date: "2026-04-22"
+reviewed_date: "2026-04-25"
 reviewed_by: openclaw-task6
 polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
@@ -103,7 +103,7 @@ Direct Reclaim 的执行过程是：扫描 LRU 链表 → 根据 swappiness 参�
 
 当 kswapd 的回收速度赶不上内存分配速度时，Direct Reclaim 被触发。此时发起内存分配的进程被同步阻塞，必须等待回收完成才能继续执行。
 
-Direct Reclaim 在回收脏文件页时会触发磁盘回写，I/O 带宽可能被打满。更要命的是，当内存紧张到一定程度，几乎所有正在分配内存的进程都会同时进入 Direct Reclaim，争抢同一块 I/O 带宽。[来源: Personal-Knowlodge/source/2026-03-06_wechat_Linux内存变低会发生什么问题.md]
+Direct Reclaim 在回收脏文件页时会触发磁盘回写，I/O 带宽可能被打满。更严重的是，当内存紧张到一定程度，几乎所有正在分配内存的进程都会同时进入 Direct Reclaim，争抢同一块 I/O 带宽。[来源: Personal-Knowlodge/source/2026-03-06_wechat_Linux内存变低会发生什么问题.md]
 
 I/O 阻塞进一步蔓延。等待 I/O 完成的进程持有各种内核锁（mutex、rwsem 等），其他等待这些锁的进程也会被连带阻塞——即使某些进程本身不做内存分配，也会因为等待被 I/O 阻塞的进程持有的锁而卡住。
 
