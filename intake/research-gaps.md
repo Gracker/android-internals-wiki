@@ -7744,3 +7744,57 @@ Measure 工具在极端场景下的自身性能开销。
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25)
 
+## [2026-04-25] 15.5 线上性能监控 — 知识盲区
+
+### 盲区描述
+ANR/退出监控仍缺 SIGQUIT SignalCatcher、自建 APM 信号栈、ApplicationExitInfo 多退出原因，以及 Android 15/16 ProfilingManager 异常触发取证的统一模型。external-review 已命中 SIGQUIT Hook 与 ProfilingManager 缺口，本轮源码复核后确认需要 Task 2B 补强。
+
+### 重要程度
+高
+
+### 建议研究方向
+- ART `art/runtime/signal_catcher.cc` 中 `SignalCatcher::HandleSigQuit()` 与系统 ANR trace 生成
+- `ApplicationExitInfo` 的 `REASON_ANR`、`REASON_CRASH_NATIVE`、`getTraceInputStream()` 适用边界
+- Android 15/16 `ProfilingManager` system-triggered profiling 的触发条件、产物类型与隐私约束
+
+### 关联章节
+- 15.5
+- 9.3
+- 19.16
+
+## [2026-04-25] 15.6 性能测试最佳实践 — 知识盲区
+
+### 盲区描述
+现代性能测试环境控制缺少刷新率锁定、Android 14+ ART Service 背景 dexopt 干扰处理，以及峰值性能/热稳定态两套实验设计。external-review 已命中刷新率与测试场景分层缺口，本轮复核后确认会直接影响测试可重复性。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `peak_refresh_rate` / `min_refresh_rate` 设置、`dumpsys display` 与 Perfetto FrameTimeline 验证方式
+- Android 14+ `pm bg-dexopt-job --cancel/--disable`、`pm cancel-bg-dexopt-job` 兼容关系
+- 短跑回归与长跑稳态测试的温度门槛、预热时长和报告字段
+
+### 关联章节
+- 15.6
+- 14.6
+- 5.5
+
+## [2026-04-25] 15.7 AOSP 代码阅读 — 知识盲区
+
+### 盲区描述
+源码阅读方法缺少 Android 10+ `wm/` 包、跨 Binder/AIDL 边界追踪、异步 Trace cookie 配对，以及 Android 16 SurfaceFlinger/CompositionEngine 入口变更。external-review 已命中 wm 目录与 Binder 边界缺口，本轮源码复核又发现 Trace.h 与 SurfaceFlinger 锚点过期。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `frameworks/base/services/core/java/com/android/server/wm/` 与 `am/` 的职责分界
+- AIDL Stub/Proxy、`onTransact`、Perfetto binder transaction 的联合追踪
+- `Trace.asyncTraceBegin/End`、`ATRACE_ASYNC_BEGIN/END` 的 name + cookie 配对
+- Android 16 `SurfaceFlinger::composite()`、`CompositionEngine::present()`、`Output::present()` 调用链
+
+### 关联章节
+- 15.7
+- 2.6
+- 13.9

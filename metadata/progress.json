@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T18:50:50+08:00",
+  "generated_at": "2026-04-25T19:35:26+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -4176,18 +4176,18 @@
       "last_verified": "2026-04-04",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-19",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-19T09:03:50+08:00"
+      "last_task9_at": "2026-04-25T19:35:26+08:00"
     },
     "src/part3-tools/ch15-methodology/06-testing-best-practices.md": {
       "path": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
@@ -4200,18 +4200,18 @@
       "last_verified": "2026-04-21",
       "last_verified_against": "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T09:26:24+08:00"
+      "last_task9_at": "2026-04-25T19:35:26+08:00"
     },
     "src/part3-tools/ch15-methodology/07-aosp-reading.md": {
       "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
@@ -4225,18 +4225,18 @@
       "last_verified": "2026-04-24",
       "last_verified_against": "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、system/core/init）",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T06:54:00+08:00"
+      "last_task9_at": "2026-04-25T19:35:26+08:00"
     },
     "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md": {
       "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
