@@ -1615,6 +1615,13 @@
         "location": "",
         "detail": "- [P1][知识盲区][错误码处理]\n- **原文问题**：错误码表格中未提及 `ERROR_FAILED_PROFILING_NOT_ALLOWED`。\n- **源码 / 一手资料锚点**：`android.os.ProfilingResult.ERROR_FAILED_PROFILING_NOT_ALLOWED` (API 35)。\n- **缺失内容**：该错误码通常表示用户在“开发者选项”中关闭了分析功能，或者应用未声明 `profileable`。\n- **为什么这是重要缺失**：这是线上最常见的失败原因之一，直接影响“为什么采集不到数据”的排查。\n- **建议补充方向**：在错误码",
         "suggestion": ""
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.16",
+        "detail": "未强调文件外传的安全性。",
+        "suggestion": "必须增加“安全警示”，提醒开发者在上传结果前必须在本地进行 OID（对象标识符）脱敏或加密，且必须符合 App 隐私协议。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -1709,6 +1716,20 @@
         "location": "src/part3-tools/ch19-apm/18-commercial-apm.md",
         "detail": "- [P1][版本差异覆盖][Android 15 适配]\n  - 原文问题：虽然 frontmatter 提到支持 Android 17，但正文未提及 Android 15 引入的 16KB Page Size 对原生 APM SDK 的毁灭性影响。\n  - 源码 / 一手资料锚点：Android 15 Release Notes (Support for 16 KB page sizes); Bugly v4.4.6.2 Release Note; APMPlus Android 15 Migration Guide.\n  - 关键代码逻辑：原生库必须按 16KB 边界对齐（`max-page-size: 16384`），否则在 Android 15 16KB 模式下会触发 `SIGSEGV`。\n  - 为什么这是重要缺失：这是 2024-2025 年商业 APM 接入的首要技术关卡，不提此点显得内容缺乏时效性。\n  - 建议补充方向：在“商业 APM 的评审维度”表中增加“16KB Page Size 兼容性”项。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.18",
+        "detail": "未提及 SDK 初始化对启动的影响。",
+        "suggestion": "必须增加一个“自监控”建议，要求开发者用 `Trace.beginSection` 包裹 APM SDK 的初始化调用，并确保其在 `Application.onCreate` 中不产生阻塞。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.18",
+        "detail": "提到合规，但未说明具体操作。",
+        "suggestion": "要求在选型表中增加一列“隐私数据字段审计清单”。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -1819,6 +1840,13 @@
         "evidence": [
           "Restricted Settings"
         ]
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.19",
+        "detail": "将 GPU 利用率作为通用指标。",
+        "suggestion": "补充“跨芯片平台指标不可横比”的警示。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -1835,6 +1863,22 @@
         "location": "",
         "detail": "本轮未发现 P0 级事实错误。*",
         "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "P0 事实错误",
+        "location": "19.20",
+        "detail": "虽然提到了 Android 7.0 起不支持，但在本章（针对 Android 8-17）中仍作为主要小节介绍。",
+        "suggestion": "将 Emmagee 移至“附录：历史工具回顾”，或在正文中以极其醒目的“Deprecated / 不可用”标识。",
+        "evidence": [
+          "Emmagee 依赖的 `/proc` 读取权限在 Android 8.0 之后被彻底封死。在现代设备上运行 Emmagee 采集到的 CPU/内存数据几乎全部为 0 或错误。"
+        ]
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.20",
+        "detail": "未强调仓库已两年未更新。",
+        "suggestion": "增加“由于上游维护停止，不建议作为自动化测试唯一依赖”的风险提示。",
         "evidence": []
       }
     ],
@@ -2529,6 +2573,20 @@
         "evidence": [
           "Macrobenchmark Setup"
         ]
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.14",
+        "detail": "未提及 Macrobenchmark 对多进程 App 的处理。",
+        "suggestion": "提醒开发者对于多进程应用，需确认被测逻辑是否在 targetPackage 的主进程中，或查阅最新的多进程支持 API。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.14",
+        "detail": "提到控制温度，但未说明 Benchmark 库的自动保护机制。",
+        "suggestion": "补充对 `androidx.benchmark.suppressErrors` 配置的警示，说明强行跳过温控检查会导致实验结果不可信。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -9016,6 +9074,56 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T16:15:23+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.15",
+    "section_title": "19.15",
+    "priority": 85,
+    "reason": "[External Review] 提到非 Play 安装依赖 `ProfileInstaller`。",
+    "review_issues": [
+      {
+        "type": "P1 重要缺失",
+        "location": "19.15",
+        "detail": "提到非 Play 安装依赖 `ProfileInstaller`。",
+        "suggestion": "增加“混淆与初始化检查”锚点。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.15",
+        "detail": "未提及 R8 混淆后的规则匹配。",
+        "suggestion": "提醒开发者检查 AAB 产物中解密后的 profile 记录是否与混淆后的 `mapping.txt` 一致。",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T16:17:20+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.17",
+    "section_title": "19.17",
+    "priority": 85,
+    "reason": "[External Review] 仅提到“某些网络库可能漏掉”。",
+    "review_issues": [
+      {
+        "type": "P1 重要缺失",
+        "location": "19.17",
+        "detail": "仅提到“某些网络库可能漏掉”。",
+        "suggestion": "提醒开发者在 `build.log` 中检查 Firebase 插件的插桩日志。",
+        "evidence": []
+      },
+      {
+        "type": "P1 重要缺失",
+        "location": "19.17",
+        "detail": "提到最新 SDK 有“几分钟”的延迟。",
+        "suggestion": "强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T16:17:20+08:00",
     "status": "pending"
   }
 ]
