@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T15:31:06+08:00",
+  "generated_at": "2026-04-25T15:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -3887,7 +3887,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T18:42:00+08:00"
+      "last_task9_at": "2026-04-21T18:42:00+08:00",
+      "last_task2b_at": "2026-04-25T15:40:00+08:00"
     },
     "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md": {
       "path": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
@@ -3926,8 +3927,8 @@
       "last_verified": "'2026-04-06'",
       "last_verified_against": "AOSP android-14.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -3937,7 +3938,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-21'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-21T18:42:00+08:00'"
+      "last_task9_at": "'2026-04-21T18:42:00+08:00'",
+      "last_task2b_at": "2026-04-25T15:40:00+08:00"
     },
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md": {
       "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
