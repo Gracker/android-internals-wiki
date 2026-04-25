@@ -27,17 +27,19 @@ reviewed_by: openclaw-task6
 polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
 last_task9_at: "2026-04-25T14:25:03+08:00"
-last_task2b_at: "2026-04-22T12:08:42+08:00"
+last_task2b_at: "2026-04-25T17:43:00+08:00"
+rework_by: openclaw-task2b
+rework_type: "review回炉修复（Task9/External 问题单）"
 ---
 
 # 低内存对系统性能的影响
@@ -89,7 +91,7 @@ kswapd 的核心工作函数是 `balance_pgdat()`。它会根据 `scan_control` 
 
 当内存进一步紧张，空闲页面降到 MIN 水位线以下时，异步的 kswapd 已经来不及了。此时，发起内存分配的那个进程会被迫亲自执行内存回收——这就是 Direct Reclaim。
 
-Direct Reclaim 和 kswapd 走的是同一条回收路径（最终都调用 `shrink_node()`），但有一个关键区别：Direct Reclaim 是同步的。发起分配的进程会被阻塞，直到回收完成。因此，当 App 在主线程上分配内存时触发 Direct Reclaim，主线程就被阻塞了——在 Perfetto 中表现为进入 D 状态（Uninterruptible Sleep），调用栈中可见 `__alloc_pages_slowpath` → `__perform_reclaim` 路径。
+Direct Reclaim 和 kswapd 走的是同一条回收路径（最终都调用 `shrink_node()`），但有一个关键区别：Direct Reclaim 是同步的。发起分配的进程会被阻塞，直到回收完成。因此，当 App 在主线程分配内存并触发 Direct Reclaim，主线程就被阻塞了——在 Perfetto 中表现为进入 D 状态（Uninterruptible Sleep），调用栈中可见 `__alloc_pages_slowpath` → `__perform_reclaim` 路径。
 
 Direct Reclaim 的执行过程是：扫描 LRU 链表 → 根据 swappiness 参数决定回收匿名页还是文件页 → 对脏文件页执行回写 → 释放页面。其中脏页回写会触发磁盘 I/O，而这个 I/O 是同步等待的。
 
@@ -99,7 +101,7 @@ Direct Reclaim 的执行过程是：扫描 LRU 链表 → 根据 swappiness 参�
 
 内存不足触发 kswapd 持续活跃。kswapd 在后台回收内存会消耗 CPU，如果回收的是匿名页（需要压缩写入 ZRAM），还会额外消耗 CPU 做压缩计算。
 
-当 kswapd 的回收速度跟不上分配速度时，Direct Reclaim 被触发。此时发起内存分配的进程被同步阻塞，必须等待回收完成才能继续执行。
+当 kswapd 的回收速度赶不上内存分配速度时，Direct Reclaim 被触发。此时发起内存分配的进程被同步阻塞，必须等待回收完成才能继续执行。
 
 Direct Reclaim 在回收脏文件页时会触发磁盘回写，I/O 带宽可能被打满。更要命的是，当内存紧张到一定程度，几乎所有正在分配内存的进程都会同时进入 Direct Reclaim，争抢同一块 I/O 带宽。[来源: Personal-Knowlodge/source/2026-03-06_wechat_Linux内存变低会发生什么问题.md]
 
@@ -121,9 +123,9 @@ lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置两个阈值：`p
 
 ### lmkd 的杀进程策略
 
-lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 来选择要杀的进程。在 PSI 触发的情况下，`min_score_adj`（最低可杀分数）通常设置为 201（即 `PREVIOUS_APP_ADJ`），即从"上一个应用"开始往后杀。如果内存极度紧张，这个值会降到 0，前台进程也可能被杀。
+lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 和当前压力等级选择可杀范围。`min_score_adj` 表示本轮候选进程的最低 `oom_score_adj`，它是运行时阈值或设备属性阈值，不能等同于某个固定进程等级。AOSP `ProcessList` 里常见分层是：前台进程 0、可见进程 100、perceptible 进程 200、服务进程 500、previous app 700、cached 进程 900-999。
 
-被杀进程的选择顺序大致是：缓存进程（900+）→ 后台服务（500+）→ 上一个应用（200）→ 后台可见进程（100）→ 前台进程（0）。分数越高的进程越先被杀。
+被杀进程通常从分数更高的一侧开始筛选：cached 进程（900+）优先，之后才可能进入 previous app（700）、服务进程（500）、perceptible 进程（200）、可见进程（100）和前台进程（0）。常见设备会把 `lowmem_min_oom_score` 放在 701 附近，用来避开 previous app；在压力继续升级或厂商策略更激进时，阈值才会继续下探。分析 lmkd 日志时要直接读事件里的 `oom_score_adj`、`min_score_adj`、kill reason 和释放内存，不能把 201 写成 `PREVIOUS_APP_ADJ`。
 
 在 Perfetto 中，lmkd 的杀进程事件会以 `ProcessKilled` 或 `lmk` 相关的 trace event 出现。我们可以在 Trace 中搜索 `lmk` 关键字，或者查看 `lowmemorykiller` 的日志来定位杀进程的时间点。
 
@@ -208,7 +210,50 @@ PSI 数据在 Perfetto 的 `sys_stats` 数据源中可以找到。PSI 为每种�
 
 如果 1-3 出现但还没有 5-6，说明系统在低内存但还在努力维持。如果 5-6 也出现了，说明系统已经无法仅靠内存回收来维持运转了。
 
-[图：Perfetto 中低内存场景的典型 Trace 片段，标注 kswapd 活跃区域、Direct Reclaim 的 D 状态、GC 密集区域和 lmk 事件]
+可复现的低内存 Trace 可以从下面这份配置起步。它覆盖 vmscan、sched、process stats、PSI、ART GC 和 lmkd 事件；设备内核裁剪不同时，录制前先用 `adb shell ls /sys/kernel/tracing/events/vmscan` 和 `adb shell atrace --list_categories` 确认可用项。
+
+```protobuf
+buffers { size_kb: 32768 fill_policy: RING_BUFFER }
+duration_ms: 10000
+
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_wakeup"
+      ftrace_events: "vmscan/mm_vmscan_kswapd_wake"
+      ftrace_events: "vmscan/mm_vmscan_kswapd_sleep"
+      ftrace_events: "vmscan/mm_vmscan_direct_reclaim_begin"
+      ftrace_events: "vmscan/mm_vmscan_direct_reclaim_end"
+      atrace_categories: "am"
+      atrace_categories: "dalvik"
+      atrace_categories: "lmkd"
+    }
+  }
+}
+
+data_sources {
+  config {
+    name: "linux.process_stats"
+    process_stats_config { scan_all_processes_on_start: true }
+  }
+}
+
+data_sources {
+  config {
+    name: "linux.sys_stats"
+    sys_stats_config {
+      meminfo_period_ms: 1000
+      vmstat_period_ms: 1000
+      stat_period_ms: 1000
+      psi_period_ms: 1000
+    }
+  }
+}
+```
+
+读这类 Trace 时按同一时间窗核对四组信号：`kswapd0` 长时间 Running，应用线程出现 Direct Reclaim 前后的 D 状态，目标 App 的 GC slice 变密，随后出现 `lmkd` / `ProcessKilled` 事件。Perfetto 版本暴露 `mem.mm_events` 视图时，可以用它汇总 kswapd、direct reclaim 和 compaction 计数；没有该视图时，直接回到上面的 ftrace slice 和线程状态。
 
 ## 系统级内存优化手段
 
