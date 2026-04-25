@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-04-08"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-25"
+last_verified_against: "AOSP android-16.0.0_r1 ViewRootImpl / ViewDebug / ViewHierarchyEncoder"
 reviewed_date: '2026-04-25'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -30,16 +30,16 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-25"
 last_task9_at: "2026-04-25T16:33:30+08:00"
-last_task2b_at: "2026-04-25T13:47:46+08:00"
+last_task2b_at: "2026-04-25T21:43:45+08:00"
 ---
 
 # 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销
@@ -526,32 +526,28 @@ public float getAlpha() { return mAlpha; }
 
 ### debug.layout 系统属性与布局边界可视化
 
-**系统属性名**：`"debug.layout"`（定义在 `View.DEBUG_LAYOUT_PROPERTY`）
+**系统属性名**：`debug.layout`。截至 AOSP main / android-16.0.0_r1，`View.java` 未提供 `View.DEBUG_LAYOUT_PROPERTY` 常量；框架侧通过 `android.sysprop.DisplayProperties.debug_layout()` 读取该属性。
 
 启用方式：
 - 开发者选项 → "显示布局边界"（Show layout bounds）
 - ADB：`adb shell setprop debug.layout true`
-- 属性刷新（需重启 UI）：`adb shell service call activity 1599295570`（SYSPROPS_TRANSACTION）
+- 已存在窗口通常要触发系统属性变更回调或重启相关 UI 进程，才能重新读取属性值
 
-**属性读取路径**（[未经一手验证：基于 AOSP 代码搜索推断]）：
+**属性读取路径**（[已验证: AOSP `frameworks/base/core/java/android/view/ViewRootImpl.java`, `loadSystemProperties()` / `MSG_INVALIDATE_WORLD` / `invalidateWorld()`]）：
 
 ```
 debug.layout 系统属性
-    ↓ SystemProperties.get("debug.layout")
-    ↓
+    ↓ DisplayProperties.debug_layout().orElse(false)
 ViewRootImpl.loadSystemProperties()
-    ↓ 设置 AttachInfo.mDebugLayout
-    ↓
-WindowManagerGlobal.addSystemPropertyChangedCallback()
-    ↓ 属性变更时触发
-    ↓
-ViewRootImpl.invalidateWorld(mView)  ← MSG_INVALIDATE_WORLD 消息
-    ↓ 递归 invalidate() 整棵 View 树
-    ↓
-重新触发 performTraversals()，绘制布局边界
+    ↓ 更新 AttachInfo.mDebugLayout
+WindowManagerGlobal.addSystemPropertyChangedCallback(...)
+    ↓ 属性变化时发送一次 MSG_INVALIDATE_WORLD（带延迟）
+ViewRootImpl.handleMessage(MSG_INVALIDATE_WORLD)
+    ↓ invalidateWorld(mView)
+下一轮 traversal 重绘布局边界
 ```
 
-当 `mDebugLayout == true` 时，`ViewRootImpl` 通过 Handler 持续发送 `MSG_INVALIDATE_WORLD` 消息，保证布局边界在每帧持续可见。`handleMessage()` 处理该消息并递归调用 `invalidateWorld()`。**注意**：开启 `debug.layout` 会导致每帧额外的全树重绘，不应在性能测试时启用。
+`MSG_INVALIDATE_WORLD` 用于刷新整棵 View 树的 dirty 状态，让布局边界开关变化反映到当前窗口。这个消息只在属性变化路径中触发一次带延迟的刷新；`ViewRootImpl.handleMessage()` 处理该消息时只调用 `invalidateWorld(mView)`。打开布局边界会增加调试绘制成本，性能测试前应关闭，避免描述成 Handler 每帧强制全树重绘。
 
 ### performTraversals() 中的 Trace 埋点
 
@@ -582,25 +578,30 @@ ViewRootImpl.performTraversals()
 
 ### ViewHierarchyEncoder：高效的 View 层级序列化
 
-**源码位置**：`frameworks/base/core/java/android/view/ViewHierarchyEncoder.java`（API 21+）
+**源码位置**：`frameworks/base/core/java/android/view/ViewHierarchyEncoder.java`（API 21+）。`dumpv2()` 定义在 `ViewDebug`；`ViewHierarchyEncoder` 不提供这个静态入口。
 
-替代早期基于反射的属性读取，使用编码器直接序列化 View 属性到流：
+`ViewHierarchyEncoder` 负责把单个 View 对象的属性编码到输出流。典型调用过程由 `ViewDebug.dumpv2(View, OutputStream)` 发起：`ViewDebug` 遍历 View 树，调用每个 View 的 `encode(ViewHierarchyEncoder)`，编码器写入属性 ID、属性值和末尾的 ID → 属性名映射。
 
 ```java
-// 使用短整数 ID（shortPropertyId）代替完整属性名字符串节省带宽
-// 末尾附上 ID→属性名映射表
+// frameworks/base/core/java/android/view/ViewHierarchyEncoder.java
+// 编码器职责节选：保留方法签名，方法体省略。
 public final class ViewHierarchyEncoder {
-    public void beginObject(Object view) { /* 开始编码单个 View */ }
-    public void addProperty(String name, boolean value) { /* ... */ }
-    public void endObject() { /* 结束当前 View */ }
-    public void endStream() { /* 结束整个流 */ }
-    
-    // dumpv2 静态方法：从指定 View 开始 dump 层级
-    public static void dumpv2(View view, OutputStream out) { /* ... */ }
+    public void beginObject(Object object) { /* Several lines omitted. */ }
+    public void addProperty(String name, boolean value) { /* Several lines omitted. */ }
+    public void addProperty(String name, int value) { /* Several lines omitted. */ }
+    public void addProperty(String name, float value) { /* Several lines omitted. */ }
+    public void endObject() { /* Several lines omitted. */ }
+    public void endStream() { /* Several lines omitted. */ }
+}
+
+// frameworks/base/core/java/android/view/ViewDebug.java
+// dumpv2() 位于 ViewDebug，内部使用 View.encode(encoder) 写出层级。
+public static void dumpv2(View root, OutputStream clientStream) throws IOException {
+    // Several lines omitted.
 }
 ```
 
-Layout Inspector V2 使用 `View.encode()` 而非反射获取属性，dump 速度提升 3-5 倍。
+Layout Inspector V2 通过 `View.encode()` 这条路径读取属性，减少早期反射式层级 dump 的开销。写工具或读源码时，要把 `ViewDebug` 的遍历入口和 `ViewHierarchyEncoder` 的编码职责分开。
 
 ### debug_view_attributes 与 Layout Inspector
 
