@@ -6236,3 +6236,323 @@ ANOMALY 触发器在 LMK 前生成 Heap Dump 的完整链路；MemoryLimiter 事
 
 ### 外部 review 来源
 - Gemini 外部 review
+**external. 13.03**
+- | Blocked 状态（红色） | 高 | 补充锁竞争的识别与 waking_thread 追踪。 |
+
+**external. 13.03**
+- | V 键对齐操作 | 中 | 提升多轨道关联分析速度。 |
+
+**external. 13.05**
+- | Prediction Error 归因 | 低 | 了解 SurfaceFlinger 预测机制。 |
+
+**external. 13.05**
+- | Buffer Stuffing 的量化阈值 | 中 | 结合 `BlastBufferQueue` 源码研究。 |
+
+**external. 13.05**
+- - **章节**：13.5.2
+
+**external. 13.05**
+- - **盲区描述**：`jank_type` 之外的“亚哨完成帧”预警机制。
+
+**external. 13.05**
+- - **建议研究方向**：研究 `on_time_finish = 1` 但 `dur` 接近 deadline 的量化筛选 SQL。
+
+**external. 13.09**
+- | GKI 内核下 tracefs 挂载路径 | 中 | 确认在所有主流厂商 Android 13+ 设备中，`/sys/kernel/tracing` 是否已完全取代 `/sys/kernel/debug/tracing`。 |
+
+**external. 13.09**
+- | Perfetto SDK 的 Java 层封装 | 中 | Android 16+ 的 `ProfilingManager` 是否允许 Java 层直接注册结构化数据源。 |
+
+**external. 13.09**
+- - **章节**：13.9
+
+**external. 13.09**
+- - **盲区描述**：Android 16+ 是否提供了 Java 层直接向 Perfetto 注册 Data Source 的能力。
+
+**external. 13.09**
+- - **重要程度**：低
+
+**external. 13.09**
+- - **建议研究方向**：关注 Android 16 `ProfilingManager` 的 API 演进。
+
+**external. 14.01**
+- | Profileable 模式下的 Network Inspector | 中 | 研究在不开启 `debuggable` 时，AS 如何通过拦截器查看 Release 包的网络数据（通常需要代码侵入）。 |
+
+**external. 14.01**
+- | ODPM 硬件要求 | 中 | 明确非 Pixel 设备上 Power Profiler 的降级表现。 |
+
+**external. 14.01**
+- - **章节**：14.1
+
+**external. 14.01**
+- - **盲区描述**：Profileable 模式下 Java Heap Dump 的缺失对排查生产环境内存问题的替代方案。
+
+**external. 14.01**
+- - **建议研究方向**：AOSP `perfetto` 工具集中的 `heapprofd` 如何在 `profileable` 模式下工作。
+
+**external. 14.03**
+- | `libmemunreachable` 信号触发 | 中 | 研究 Android 14 信号 48 的具体日志输出格式及限制。 |
+
+**external. 14.03**
+- | MTE 异步模式实战 | 高 | MTE 在 Android 15+ 上的默认策略及对 `malloc` 性能的影响。 |
+
+**external. 14.03**
+- | Graphics 内存跨进程分摊 | 中 | 如何在 `dumpsys meminfo` 中区分 SurfaceFlinger 侧和 App 侧的 buffer 占用。 |
+
+**external. 14.03**
+- - **章节**：14.3
+
+**external. 14.03**
+- - **盲区描述**：MTE (Memory Tagging Extension) 在 Android 15 生产设备上的实际可用性。
+
+**external. 14.03**
+- - **建议研究方向**：Pixel 8/9 系列的 MTE 开启状态及对应用层的影响。
+
+**external. 14.05**
+- | 16KB Page Size 兼容性 | 高 | Android 15 强制要求的 16KB 物理页对现有 PLT Hook 库（xHook, ByteHook）的破坏性影响。 |
+
+**external. 14.05**
+- | 鸿蒙原生适配 | 中 | 三方性能库在鸿蒙系统（HarmonyOS Next）下的替代方案（如鸿蒙原生 AOP）。 |
+
+**external. 14.05**
+- - **章节**：14.5
+
+**external. 14.05**
+- - **盲区描述**：Android 15 (16KB Page Size) 对三方库 Native Hook 的冲击。
+
+**external. 14.05**
+- - **建议研究方向**：调研 ByteHook 对 16KB Page 的适配实现。
+
+**external. 14.06**
+- | :--- | :--- | :--- |
+
+**external. 14.06**
+- | **Monkey + LeakCanary 自动检测** | 高 | 如何在自动化测试中结合 Monkey 触发泄漏并利用 LeakCanary 导出 Hprof |
+
+**external. 14.06**
+- | **SoloPi 视觉拆帧原理** | 中 | 了解其如何通过录屏每一帧的颜色变化判定“页面加载完成” |
+
+**external. 14.06**
+- - **章节**：14.6
+
+**external. 14.06**
+- - **盲区描述**：Monkey 的性能集成方案。
+
+**external. 14.06**
+- - **建议研究方向**：研究如何通过 `am instrument` 封装 Monkey 操作。
+
+**external. 14.11**
+- | `dumpsys battery` 隐藏字段 | 中 | Android 14+ 新增的 `mSavedBatteryAsoc` (ASOC, 电池健康度) |
+
+**external. 14.11**
+- | PowerStats HAL 2.0 | 高 | Android 15 之后 HAL 层如何定义自定义 Power Rail |
+
+**external. 14.11**
+- - **章节**：14.11
+
+**external. 14.11**
+- - **盲区描述**：Android 14+ 硬件级电池循环次数与健康度查询。
+
+**external. 14.11**
+- - **建议研究方向**：补充 `adb shell dumpsys battery` 在 A14+ 的新字段解析。
+
+**external. 14.11**
+- ## 十、下一候选章节
+
+**external. 14.11**
+- - `src/part2-performance/ch11-power/02-optimization-strategy.md`（与本章工具篇紧密衔接的实战篇）
+
+**external. 14.11**
+- ## 十一、落盘信息
+
+**external. 14.11**
+- - **已写入文件**：`logs/external-review/2026-04-25-14-ch14.11-external-review.md`
+
+**external. 14.12**
+- | **BTrace 3.0 采样原理** | 高 | 研究同步采样如何与 Perfetto 时间戳对齐。 |
+
+**external. 14.12**
+- | **AppExitInfo 持久化** | 中 | 调研 `/data/system/exit_info/` 的存储上限和清理机制。 |
+
+**external. 14.13**
+- | ArtMethod Hook 稳定性 | 高 | 研究 ART 虚拟机版本演进对结构体偏移的影响 |
+
+**external. 14.13**
+- | 16KB Page Size 构建链适配 | 中 | NDK r27 对 16KB 的默认支持情况 |
+
+**external. 14.13**
+- | Android 14 动态库只读限制 | 高 | `File.setReadOnly()` 对 `System.load()` 的强制校验逻辑 |
+
+**external. 14.13**
+- - **章节**：14.13
+
+**external. 14.13**
+- - **盲区描述**：运行时 ART Hook 的具体实现。
+
+**external. 14.13**
+- - **建议研究方向**：调研 SandHook 对 Android 12-15 的适配方案。
+
+**external. 07.04**
+- | SurfaceFlinger 的 HWC Overlay 掉退 (Fallback) | 中 | 当通知栏展开时，如果层级过多触发 GPU 合成，对帧率的影响。 |
+
+**external. 07.04**
+- | RenderThread 亲和力调度 (Affinity) | 高 | 除了小核运行案例，系统如何通过 PowerHAL 动态调整 RenderThread 优先级。 |
+
+**external. 07.04**
+- - **章节**：7.4
+
+**external. 07.04**
+- - **盲区描述**：跨进程动画中 `SurfaceControl` 的接管 (Handover) 细节。
+
+**external. 07.04**
+- - **建议研究方向**：Android 12+ `SplashScreen` 的 `RemoteAnimation` 实现。
+
+**external. 07.05**
+- | Skia Graphite 引擎 | 低 | Android 15 正在推行的下一代 GPU 渲染引擎对 RenderEffect 的性能加持。 |
+
+**external. 07.05**
+- | ContentProvider 批量操作原子性 | 中 | 除了减少 Binder 调用，`applyBatch` 的事务特性对数据一致性的帮助。 |
+
+**external. 07.05**
+- - **章节**：7.5
+
+**external. 07.05**
+- - **盲区描述**：Android 15 新增的 `setFrameContentVelocity` 对自研 UI 引擎的启示。
+
+**external. 07.08**
+- | RecyclerView 1.4.0 预取的优先级算法 | 中 | 研究 `GapWorker` 在多 RecyclerView 实例共存时的任务排序逻辑 |
+
+**external. 07.08**
+- - [7.8][预取任务调度] 探讨在多屏、多列表场景下 `GapWorker` 如何平衡不同 `RecyclerView` 的预取预算。
+
+**external. 07.09**
+- | Chrome 的时间源平滑算法 | 中 | 调研 Chrome 如何在 Blink 层处理来自 VSync 的微小抖动 |
+
+**external. 07.09**
+- - [7.9][厂商优化调研] 调研主流手机厂商是否已经在 Framework 层修复了 `Choreographer` 的毫秒截断问题。
+
+**external. 07.10**
+- - **源码路径**：`frameworks/base/graphics/java/android/graphics/Bitmap.java` -> `checkHardware()`
+
+**external. 07.10**
+- - **技术结论**：`HARDWARE` 格式 Bitmap 禁止一切 CPU 侧像素读写（getPixel/copyPixelsToBuffer），违规将抛出 `IllegalStateException`。
+
+**external. 07.10**
+- - **版本差异**：Android 8.0+ 像素内存由 `NativeAllocationRegistry` 注册到 ART，内存压力能正确触发 GC。
+
+**external. 07.10**
+- ## 八、落盘信息
+
+**external. 07.10**
+- - 已写入文件：`logs/external-review/2026-04-25-15-ch07.10-external-review.md`
+
+**external. 07.11**
+- - **技术结论**：**WebView 的 GPU Service 始终为 In-Process（宿主进程线程）**。
+
+**external. 07.11**
+- - **风险点**：GPU 驱动崩溃会直接导致宿主进程（Host App）死亡，且无法通过 `onRenderProcessGone` 挽救。
+
+**external. 07.11**
+- - **版本分界线**：Android 11 是多进程渲染全量覆盖的分水岭；在此之前 32 位低内存设备常回退到单进程。
+
+**external. 07.12**
+- | LayoutLib / Compose 混合预览性能 | 中 | 预览时的布局解析逻辑与真机差异 |
+
+**external. 07.12**
+- | RenderNode 在重绘时的损坏区计算 | 高 | 硬件加速下 `invalidate(Rect)` 的实际作用边界 |
+
+**external. 07.13**
+- | Scene Framework 的手势冲突处理 | 高 | 多个场景重叠时，手势分发优先级如何动态切换 |
+
+**external. 07.13**
+- | Compose 在 SystemUI 中的常驻内存开销 | 中 | 与传统 ViewTree 相比，Composed UI 的基准内存占用 |
+
+**external. 07.13**
+- - **章节**：7.13
+
+**external. 07.13**
+- - **盲区描述**：Flexiglass 场景下的手势拦截机制。
+
+**external. 07.13**
+- - **建议研究方向**：分析 `SceneTransitionLayout` 内部的手势检测器如何与 `NotificationShadeWindowView` 的原有触摸逻辑并存。
+
+**external. 08**
+- | 16KB Page Size 导致的 NDK 对齐膨胀 | 中 | 研究 `-Wl,-z,max-page-size=16384` 对多层级动态库加载的影响 |
+
+**external. 08**
+- | Kotlin 2.2 的 K2 编译器对协程状态机的内联优化 | 高 | 比较 K1 vs K2 生成的字节码深度差异 |
+
+**external. 08**
+- - **章节**：`06-coroutine-performance.md`
+
+**external. 08**
+- - **盲区描述**：Android 16 是否支持在 `perfetto` 中直接看到协程层级的切换。
+
+**external. 08**
+- - **建议研究方向**：研究 `CoroutineContext` 的 `TrackedCoroutineInterceptor` 实验性特性。
+
+**external. 08**
+- | Vulkan Render Stages 观测 | 高 | Perfetto GPU Render Stages 插件与驱动支持情况 |
+
+**external. 08**
+- | GPU Counter 特权访问 | 中 | `security.perfetto.gpu_counters.privileged` 属性 |
+
+**external. 08**
+- - **章节**：`09-game-performance.md`
+
+**external. 08**
+- - **盲区描述**：各 OEM 厂商对 `Mode.GAME_LOADING` 的具体 HAL 实现差异。
+
+**external. 08**
+- - **建议研究方向**：调研主流厂商（如华为、小米、OPPO）对该信号的实际提频策略。
+
+**external. 09**
+- | Android 16 ProgressStyle 性能 | 中 | 验证其渲染是否完全在 SystemUI 进程内完成，不回掉给 App。 |
+
+**external. 09**
+- - **章节 9.6**：需持续关注 Android 16/17 中 `Live Update` 的配额管理机制。
+
+**external. 10**
+- | CMC GC 的 userfaultfd 损耗 | 高 | 研究 Android 15 在非分代 CMC 下的内存分配 Stall 表现。 |
+
+**external. 10**
+- | SQLite CursorWindow 在 64 位进程下的限制 | 中 | 验证 64 位进程下 `config_cursorWindowSize` 是否有厂商层面的大幅上调。 |
+
+**external. 10**
+- - **[05-case-studies.md][高]**：补充 GPU 驱动层（如 PowerVR/Adreno）内存池回收机制的差异性分析（虽不可直接 Hook，但可给出各厂商的典型行为模式）。
+
+**external. 11**
+- - **关键源码路径**：
+
+**external. 11**
+- - `frameworks/base/core/java/com/android/internal/os/CpuPowerCalculator.java` (Android 16 功耗计算核心)
+
+**external. 11**
+- - `system/hardware/interfaces/suspend/aidl/.../SystemSuspend.cpp` (现代 WakeLock 中枢)
+
+**external. 11**
+- - **能量优先原则**：Android 16 默认优先使用硬件 `uJ` 数据，只有在 HAL 不支持时才回退到 `power_profile.xml` 的 `mA` 估算。
+
+**external. 11**
+- - **权限豁免**：`OnAlarmListener` 设置的精确闹钟在 Android 14+ 豁免 `SCHEDULE_EXACT_ALARM` 权限，但其生命周期仅限于进程存活期。
+
+**external. 11**
+- - `src/part2-performance/ch13-tools/`（第 13 章：性能工具链路）
+
+**external. 18**
+- - **18.11 ANGLE**: `GraphicsEnvironment.shouldUseAngleInternal()` 的决策链是排查“为什么我的 App 走/没走 ANGLE”的唯一官方真相。
+
+**external. 18**
+- - **18.13 WebView**: `OverlayProcessorWebView` 源码路径是分析 WebView 视频卡顿（是否命中硬件 Overlay）的终极证据。
+
+**external. 18**
+- - **18.14 Camera**: AIDL 接口 `ICameraDeviceSession.aidl` 是 Android 14+ 之后所有相机性能调试（特别是 Buffer 流转）的入口。
+
+**external. 18**
+- - `src/part2-performance/ch19-power-optimization/`（功耗优化与 HWC 章节高度关联）
+
+**external. 18**
+- - **[18.17]**：API 36 的 `ASurfaceTransaction_setBufferWithRelease` 在多缓冲池（Buffer Pooling）场景下的具体性能收益量化数据（待补充 Trace 案例）。
+
+**external. 18**
+- - **[18.21]**：Android 17 EyeDropper 在折叠屏/跨屏场景下的取色点坐标映射逻辑。

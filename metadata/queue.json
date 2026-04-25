@@ -3175,6 +3175,48 @@
       {
         "type": "P1-重要缺失",
         "detail": "- **[P1]"
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.11",
+        "detail": "- **[P1][源码准确性][Android 15 源码演进]**\n- **原文问题**：只提到了 `BatteryStatsService.java`。\n- **源码锚点**：`frameworks/base/services/core/java/com/android/server/power/stats/`\n- **关键代码逻辑**：Android 15 引入了 `PowerStatsService` 和一系列基于 `PowerStatsProcessor` 的新架构，用于处理各组件（CPU, GPU, Modem 等）的能耗计算，逐渐解耦原有的 `BatteryStatsImpl` 巨型类。\n- **建议修正方向**：在“参考资料”或相关段落说明 Android 15 下 `com.android.server.power.stats` 是新的逻辑核心。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.11",
+        "detail": "- **[P1][原理链完整性][PowerMonitor API 单位]**\n- **原文问题**：描述单位为“微瓦秒 (μWs)”。\n- **核验结论**：Android 15 `PowerMonitorReadings.getConsumedEnergy()` 官方文档标注单位为 **microjoules (μJ)**。\n- **为什么重要**：虽然 1J = 1Ws，但开发者在查阅官方 API 时会优先寻找 μJ，统一术语可减少认知摩擦。\n- **建议修正方向**：统一为“微焦耳 (μJ)”。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.11",
+        "detail": "- **章节**：14.11",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.11",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.11",
+        "detail": "- **位置**：PowerMonitor API 章节 & 参考资料",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.11",
+        "detail": "- **问题描述**：API 单位需对齐官方（μJ）；需补充 Android 15 功耗统计服务向 `power.stats` 包迁移的背景。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.11",
+        "detail": "- **建议修正方向**：修正单位描述，更新源码路径引用。",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -3200,6 +3242,54 @@
       {
         "type": "P1-重要缺失",
         "detail": "- **[P1]"
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.12",
+        "detail": "- **[P1][版本差异][14.12] ApplicationExitInfo 兼容性**\n- **原文位置**：`ApplicationExitInfo：先把稳定性事实说准`\n- **原文问题**：暗示其为基础通用能力，未提及 API 30+ 限制。\n- **源码锚点**：`frameworks/base/core/java/android/app/ApplicationExitInfo.java` (Added in API 30)\n- **建议修正方向**：明确该 API 在低版本不可用，并提示旧版本（API 26-29）需依赖传统的崩溃/ANR 捕获。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.12",
+        "detail": "- **[P1][源码准确性][14.12] JankStats UI 状态关联**\n- **原文问题**：对 `JankStats` 描述过于简略，未提及 `PerformanceMetricsState`。\n- **核验结论**：`JankStats` 的核心竞争力在于它解决了原始 `FrameMetrics` 无法感知“当前是谁在滑动”的问题。\n- **建议修正方向**：在 JankStats 小节补充其对 UI 状态追踪的支持。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.12",
+        "detail": "- **[P1][知识盲区][14.12] 插桩 vs 采样成本**\n- **原文问题**：将 `Matrix` 和 `btrace` 并列为增强层，未说明技术路线差异。\n- **原理说明**：Matrix 基于 ASM 编译期全量插桩，开销中等且增加包体积；BTrace 3.0 采用同步采样，开销极低。\n- **建议补充方向**：在“运行时开销”考量中增加插桩与采样的对比。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.12",
+        "detail": "- **章节**：14.12",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.12",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.12",
+        "detail": "- **位置**：`ApplicationExitInfo` 小节",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.12",
+        "detail": "- **问题描述**：版本声明与实际 API 级别（API 30）不符。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.12",
+        "detail": "- **建议修正方向**：修正版本范围描述，增加 API 30 判断建议。",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -3221,6 +3311,168 @@
       {
         "type": "P1-重要缺失",
         "detail": "- **[P1]"
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- **[P0][源码准确性][Android 14 W^X 机制]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- **原文位置**：`补充：Android 14 W^X 与 Inline Hook iCache 失效机制` 章节下。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- **原文问题**：称直接设置 `PROT_WRITE|PROT_EXEC` 会触发 `execmod` 而非 `execmem` 检查。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- **源码 / 一手资料锚点**：",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- `selinux/common/domain.te`",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- Bionic Linker: `linker_phdr.cpp` 中的权限校验逻辑。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- **核验结论**：",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- `execmem` 对应匿名内存（JIT 场景）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- `execmod` 对应文件映射内存（Hook 系统 .so 场景）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- 原文将两者简单对立，忽略了 Inline Hook 如果在匿名内存分配跳板（Trampoline）时依然会触发 `execmem` 检查。更重要的是，Android 14 的限制是**内核级的 W^X 强制**（禁止 R+W+X 组合），这不仅仅是 SELinux 的问题。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.13",
+        "detail": "- **建议修正方向**：修正对 `execmod/execmem` 的定义，并强调 Android 14 后内核对 `PROT_WRITE | PROT_EXEC` 的原子性拦截。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **[P1][原理链完整性][ArtMethod Hook 路线缺失]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **原文问题**：分类框架只有四条线。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **缺失内容**：运行时 ART Hook（通过修改 `ArtMethod` 结构体实现，如 SandHook/Epic）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **为什么这是重要缺失**：在性能工具（如自动化测试、线上问题取证）中，拦截系统 Java 方法但又无法修改 AOSP 或进行静态插桩时，这是唯一的运行时手段。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **建议补充方向**：增加“第五条路线：ART 运行时 Hook”，并注明其对 `entry_point_from_quick_compiled_code_` 的修改逻辑。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **[P1][知识盲区][16KB Page Size 的 ELF 布局约束]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **原文问题**：仅提到了代码层的 `getpagesize()` 对齐。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **缺失内容**：ELF 文件的编译对齐参数 `p_align`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **为什么这是重要缺失**：如果 `.so` 在编译时没有通过 `-Wl,-z,max-page-size=16384` 强制 16KB 对齐，即便代码逻辑对了，库也无法在 16KB 设备上加载。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.13",
+        "detail": "- **建议补充方向**：在 16KB Page Size 部分增加构建链（NDK/CMake）的适配要求。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.13",
+        "detail": "- **章节**：14.13",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.13",
+        "detail": "- **严重级别**：P0",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.13",
+        "detail": "- **问题类型**：原理错误",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.13",
+        "detail": "- **位置**：W^X 解释部分",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.13",
+        "detail": "- **问题描述**：对 SELinux 权限标签（execmod/execmem）的适用场景描述有误，且未区分内核强制与权限校验。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.13",
+        "detail": "- **建议修正方向**：参考报告四。",
+        "suggestion": ""
       }
     ],
     "added_by": "external-ai-review",
@@ -3696,6 +3948,2162 @@
       }
     ],
     "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "13.03",
+    "section_title": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-13-ch13.03-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "13.03",
+        "detail": "- [P1][知识盲区][颜色编码]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.03",
+        "detail": "- **原文位置**：## 颜色编码：线程状态色",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.03",
+        "detail": "- **原文问题**：只描述了绿、浅绿、灰、橙四种颜色。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.03",
+        "detail": "- **缺失内容**：遗漏了 **Blocked（红色/Red）** 状态。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.03",
+        "detail": "- **为什么重要**：锁竞争（Monitor Contention）是 Android 卡顿的最核心原因之一，Perfetto 专门用红色高亮此类状态，不提会导致读者在面对锁问题时失去关键视觉索引。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.03",
+        "detail": "- **建议方向**：增加“Blocked（红色）：等待锁竞争”的描述。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.03",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.03",
+        "detail": "- **位置**：颜色编码章节",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.03",
+        "detail": "- **描述**：增加对红色 Blocked 状态的说明。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.05",
+    "section_title": "13.05",
+    "priority": 85,
+    "reason": "[external-review] 回炉问题",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-13-ch13.05-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "回炉问题",
+        "location": "13.05",
+        "detail": "*无。*",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.09",
+    "section_title": "13.09",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-13-ch13.09-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "13.09",
+        "detail": "- **[P1][源码准确性][Perfetto 架构部分]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.09",
+        "detail": "- **原文问题**：`traced_probes` 源码位于 `external/perfetto/src/traced_probes/`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.09",
+        "detail": "- **源码 / 一手资料锚点**：AOSP `external/perfetto/src/traced/probes/`",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.09",
+        "detail": "- **关键代码逻辑**：在现代 Perfetto 代码库中，`traced_probes` 的核心实现（如 `ftrace_controller.cc`）已移至 `src/traced/probes/` 目录下。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.09",
+        "detail": "- **运行原理说明**：虽然 binary 名字仍叫 `traced_probes`，但其源码组织结构已与 `traced` service 归并到同一父目录下以便共享逻辑。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.09",
+        "detail": "- **核验结论**：路径引用过时。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.09",
+        "detail": "- **为什么这是重要缺失**：读者若按此路径在 AOSP 检索源码会找不到核心文件。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "13.09",
+        "detail": "- **建议补充方向**：修正为 `src/traced/probes/`。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.09",
+        "detail": "- **章节**：13.9",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.09",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.09",
+        "detail": "- **问题类型**：源码错误",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.09",
+        "detail": "- **位置**：Perfetto traced 守护进程与数据流 -> traced 的架构",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.09",
+        "detail": "- **问题描述**：`traced_probes` 源码路径引用不准确。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "13.09",
+        "detail": "- **建议修正方向**：从 `src/traced_probes/` 修正为 `src/traced/probes/`。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.01",
+    "section_title": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-14-ch14.01-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- [P1][源码准确性][使用 Profiler API 在代码中触发 profiling]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **原文问题**：文中提到的 `TRIGGER_TYPE_COLD_START` 等常量名需核实是否为最终 API 命名。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **源码 / 一手资料锚点**：`android.os.ProfilingManager` (API 36), `android.os.ProfilingTrigger`",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **关键代码逻辑**：Android 16 引入的系统触发分析。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **核验结论**：根据 Android 16 预览版文档，对应的常量应为 `ProfilingTrigger.TRIGGER_TYPE_STARTUP`（针对启动）和 `ProfilingTrigger.TRIGGER_TYPE_ANR`。原文中的 `TRIGGER_TYPE_COLD_START` 可能不准确。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **为什么这是重要缺失**：API 命名的准确性直接影响读者的代码实践。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **建议修正方向**：更新常量名为官方 API 36 确定的名称，并补充 `ProfilingTrigger` 的使用示例。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- [P1][版本差异覆盖][CPU Profiler：三种分析模式的深度对比]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **原文问题**：文中提到“Android Studio 2025 的最新版本”，但目前 AS 采用动物命名（如 Ladybug, Meercat）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **核验结论**：2024 年版本为 Koala (2024.1), Ladybug (2024.2), Meercat (2024.3)。“2025”是一个年份而非具体版本号。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.01",
+        "detail": "- **建议修正方向**：建议使用具体的代号（如 Meercat）或说明是“预计 2025 年发布的版本”。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **章节**：14.1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **问题类型**：源码错误",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **位置**：`使用 Profiler API 在代码中触发 profiling` 小节",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **问题描述**：`TRIGGER_TYPE_COLD_START` 常量名与 API 36 不符。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **建议修正方向**：更改为 `TRIGGER_TYPE_STARTUP`，并补充注册监听器的代码片段。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **章节**：14.1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **问题类型**：版本描述不准",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **位置**：多处提到 `Android Studio 2025`",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **问题描述**：版本命名不规范，易导致混淆。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.01",
+        "detail": "- **建议修正方向**：改为具体的代号（如 Meercat）或“2025 年预览版”。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.03",
+    "section_title": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-14-ch14.03-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- [P1][源码准确性][Frontmatter Sources]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **原文问题**：引用的 AOSP 路径为 `system/core/libmeminfo` 和 `system/extras/malloc_debug`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **核验结论**：自 Android 11 (R) 起，`libmeminfo` 已迁移至 `system/memory/libmeminfo`。`malloc_debug` 的核心实现始终位于 `bionic/libc/malloc_debug`，`system/extras` 下仅为部分辅助脚本或旧版镜像残留。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **建议修正方向**：更新 Frontmatter 中的源码路径，并标注 Android 11 这一变更分界线。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- [P1][版本差异覆盖][malloc debug 章节]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **原文问题**：只提到了 `SIGRTMAX-19` 和 `SIGRTMAX-17`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **核验结论**：Android 14 (U) 引入了 `SIGRTMAX-16` (信号值 48)，用于在收到信号时触发 `libmemunreachable` 扫描并报告内存泄漏。这对于 Native 内存泄漏的在线/离线快速诊断非常有价值。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **建议修正方向**：在 malloc debug 的信号表格或描述中补充 `SIGRTMAX-16`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- [P1][原理链完整性][MAT 章节]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **原文问题**：提到 Android 8.0+ 后无法直接看像素，建议用 Profiler。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **运行原理说明**：虽然无法直接看像素，但通过 OQL 结合 `mWidth`、`mHeight` 和 `Config` 可以精确过滤“疑似大图”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.03",
+        "detail": "- **建议补充方向**：提供一段 OQL 示例代码，展示如何计算 Estimated Native Memory，这比单纯依赖 Profiler 更具自动化潜力。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.03",
+        "detail": "- **章节**：14.3 内存分析工具",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.03",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.03",
+        "detail": "- **问题类型**：源码错误 / 版本差异缺失",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.03",
+        "detail": "- **位置**：Frontmatter Sources 及 malloc debug 信号描述",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.03",
+        "detail": "- **问题描述**：1. `libmeminfo` 路径应更新为 `system/memory/libmeminfo` (Android 11+)。2. 缺失 Android 14 `SIGRTMAX-16` 信号。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.03",
+        "detail": "- **建议修正方向**：同步最新 AOSP 目录结构，并补全信号量说明。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.05",
+    "section_title": "14.05",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-14-ch14.05-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "14.05",
+        "detail": "- [P0][源码准确性][Matrix：Trace Canary]",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.05",
+        "detail": "- **原文问题**：提到 AGP 8.x 下接入方要“结合具体 Matrix 版本、社区 fork 或自研改造，确认是否已经迁到 Instrumentation API”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.05",
+        "detail": "- **核验结论**：此描述过于乐观。截至 2025 年 Q1，Matrix 官方仓库（Tencent/matrix）主分支仍未发布支持 AGP 8.0+ 的正式版本。对于使用 AGP 8.0+ 的新项目，Matrix 插件是 **Hard Block**。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.05",
+        "detail": "- **建议修正方向**：明确告知读者：若项目已升级至 AGP 8.0+，Matrix 官方插件目前不可用，必须依赖非官方 Fork 版或自行实现 ASM 迁移。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- [P1][知识盲区][三方库选择]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **原文问题**：缺失 **BlockCanary** 和 **Rabbit**。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **缺失内容**：\n1. **BlockCanary**：虽然已废弃，但它是理解 Looper 监控模式的鼻祖。\n2. **Rabbit (rabbit-client)**：轻量级 APM 代表，相比 Matrix 的重型，Rabbit 在中小团队调研阶段非常流行。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **建议补充方向**：在“为什么这一章值得单独写”或“工具选型指南”中，增加对这两类库的定位说明。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- [P1][原理链完整性][KOOM：线程泄漏]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **原文问题**：提到 Hook `pthread_create/exit`，但未解释其核心解决的是什么类型的泄漏。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **运行原理说明**：KOOM 核心解决的是 **Joinable 线程** 在退出后未被 `join/detach` 导致的 native 资源（线程描述符、内核栈等）残留，而非简单的“线程不退出”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **建议补充方向**：强调 POSIX 线程状态对 native 内存的影响。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- [P1][版本差异覆盖][DoKit]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **原文问题**：未提及 DoKit 的云端平台状态。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **核验结论**：2024-2025 年间，`www.dokit.cn` 多次宕机且维护停滞，导致依赖云端的 Mock 和数据看板功能基本不可用。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.05",
+        "detail": "- **建议补充方向**：告知读者 DoKit 目前应仅作为“本地研发工具箱”使用。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.05",
+        "detail": "- **章节**：14.5",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.05",
+        "detail": "- **严重级别**：P0",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.05",
+        "detail": "- **问题类型**：源码错误/兼容性误导",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.05",
+        "detail": "- **位置**：Matrix Trace Canary：卡顿与 ANR 的精准定位",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.05",
+        "detail": "- **问题描述**：对 AGP 8.0 兼容性描述不准，官方版目前仍不支持。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.05",
+        "detail": "- **建议修正方向**：明确标记官方版在 AGP 8.0+ 下不可用。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.06",
+    "section_title": "14.06",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-14-ch14.06-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "14.06",
+        "detail": "- [P0][源码准确性][Microbenchmark API 限制]",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.06",
+        "detail": "- **原文问题**：描述 Microbenchmark 最低 API 为 14。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.06",
+        "detail": "- **源码 / 一手资料锚点**：`androidx.benchmark.junit4.BenchmarkRule`",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.06",
+        "detail": "- **关键代码逻辑**：Microbenchmark 依赖现代 AndroidJUnit4 运行器及特定的性能隔离技术。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.06",
+        "detail": "- **核验结论**：官方推荐最低 API 为 **21**。API 14 (ICS) 虽在极早期实验版中提及，但当前 Jetpack 库的主流稳定版均要求 21+。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.06",
+        "detail": "- **为什么错**：混淆了旧版 Android 测试库与现代 Jetpack Benchmark 库的边界。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.06",
+        "detail": "- **建议修正方向**：修正为 API 21。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- [P1][知识盲区][缺失 Monkey 工具]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **原文问题**：全篇未提及 Monkey。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **缺失内容**：Monkey 压力测试在性能自动化中的位置。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **为什么这是重要缺失**：自动化性能测试不只是测“速度”，还包括测“稳定性”和“长时间运行下的资源泄漏”。Monkey 是探测 OOM 和 ANR 的最廉价且高效的自动化手段。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **建议补充方向**：在“自动化工具”分类中增加 Monkey，说明其在压力测试和稳定性测试中的角色。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- [P1][知识盲区][缺失 SoloPi / Appium]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **原文问题**：未提及三方自动化/性能专项工具。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **缺失内容**：SoloPi (支付宝开源) 的非侵入式性能监控能力。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **为什么这是重要缺失**：在真实工程中，SoloPi 常用于快速测量启动耗时和录制性能脚本，其视觉拆帧算法比系统 API 更接近用户感知。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **建议补充方向**：补充 SoloPi 作为专项性能测试工具的推荐，对比其与 Macrobenchmark 的使用场景差异。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- [P1][版本差异覆盖][指标 API 级别限制缺失]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **原文问题**：未注明 `FrameTimingMetric` 的高级指标限制。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **核验结论**：`frameOverrunMs` 等精确掉帧指标仅在 **API 31+** 可用；`StartupTimingMetric` 的 TTFD 依赖开发者正确调用 `reportFullyDrawn()` 且在 **API 30+** 统计更准。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "14.06",
+        "detail": "- **建议补充方向**：在指标介绍表单中增加 API 版本限制列。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.06",
+        "detail": "- **章节**：14.6",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.06",
+        "detail": "- **严重级别**：P0",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.06",
+        "detail": "- **问题类型**：源码错误",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.06",
+        "detail": "- **位置**：Microbenchmark 章节 API 说明",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.06",
+        "detail": "- **问题描述**：API 14 描述错误，应为 API 21。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.06",
+        "detail": "- **建议修正方向**：修正版本号。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.09",
+    "section_title": "09-camera-performance-analysis.md",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-14-ch14.09-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "14.09",
+        "detail": "- **[P0][数据支撑][Camera2 vs CameraX 性能差异]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.09",
+        "detail": "- **原文问题**：未量化 CameraX 的初始化延迟。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.09",
+        "detail": "- **核验结论**：CameraX 在冷启动场景下，由于 UseCase 绑定和多层 Capability 映射，首帧延迟比 Camera2 高约 **80ms-150ms**。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "14.09",
+        "detail": "- **建议修正方向**：在对应小节补充此量化数据，提醒“即拍即走”场景的开发者注意。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.09",
+        "detail": "- **章节**：14.9",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.09",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.09",
+        "detail": "- **问题描述**：缺乏厂商特定链路（高通 CamX）和高级分析工具（GFXReconstruct）的描述，导致文章在生产环境的实用性打折。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "14.09",
+        "detail": "- **建议修正方向**：补充 `CamXWorker` 线程分析和 YUV 帧转储技巧。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.04",
+    "section_title": "04-typical-scenarios.md",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.04-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- [P1][版本差异覆盖][§3.1 App 启动窗口]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- **原文问题**：提到 Android 12 启动窗口由 SystemServer 管理，但未详细说明其如何平滑过渡到 App 进程。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- **源码 / 一手资料锚点**：`frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java`, `SplashScreenView.java`",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- **运行原理说明**：Android 12+ 使用了 `RemoteAnimationAdapter` 机制。系统进程持有 `StartingWindow` 的 `SurfaceControl`，当 App 就绪时，系统通过 `IRemoteAnimationRunner` 将该 Surface 的控制权移交给 App 进程。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- **建议补充方向**：补充“SurfaceControl 移交”这一关键概念，解释为什么 Android 12 后不再有启动页消失时的“闪烁”或“黑块”现象。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- [P1][知识盲区][§1.2 RecyclerView 的性能瓶颈]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- **原文问题**：对 `setHasFixedSize(true)` 的作用描述处于 `[待验证]` 状态。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- **核验结论**：该方法告诉 RecyclerView 忽略来自 Adapter 的尺寸改变请求，从而跳过 **全局 `requestLayout()`**。它不跳过 `onBindViewHolder`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.04",
+        "detail": "- **建议修正方向**：明确该 API 的边界：它能阻止 `RecyclerView` 本身触发 `requestLayout` 到父布局，但如果 Item 内部 View 依然在 `onBind` 里触发 `requestLayout`（如图片加载未定宽），该优化无效。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.04",
+        "detail": "- **章节**：7.4",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.04",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.04",
+        "detail": "- **位置**：1.2 节关于 `setHasFixedSize`",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.04",
+        "detail": "- **问题描述**：结论处于待验证状态。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.04",
+        "detail": "- **建议修正方向**：根据本次核验结论：该 API 用于跳过全局布局请求，开发者需保证 RecyclerView 容器尺寸不随内容变化。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.05",
+    "section_title": "05-optimization.md",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.05-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- [P1][版本差异覆盖][§RecyclerView 优化：SnapHelper 的性能考量]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **原文问题**：提到 RecyclerView 1.4.0 支持自适应刷新率，但未点出核心 API。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **源码 / 一手资料锚点**：`View.setFrameContentVelocity(float velocity)` (Android 15+), RecyclerView 1.4.0+",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **关键代码逻辑**：RecyclerView 在通过 `OverScroller` 滚动时，会自动调用 `setFrameContentVelocity`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **建议补充方向**：明确指出这依赖于 Android 15 (API 35) 的新特性，且开发者在使用自定义 Scroller 时应手动同步该速度，以触发系统的刷新率优化。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- [P1][原理链完整性][§渲染优化：RenderEffect]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **原文问题**：将 `RenderEffect` 与 `Hardware Layer` 的 FBO 机制混为一谈。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **源码 / 一手资料锚点**：`frameworks/base/libs/hwui/pipeline/skia/SkiaPipeline.cpp`",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **运行原理说明**：`LAYER_TYPE_HARDWARE` 是 **Buffer 级**隔离（强制创建 FBO 并缓存）；`RenderEffect` 是 **Shader 级**集成（利用 `SkImageFilter` 链，Skia 能够进行算子融合并复用内部 Scratch Texture）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **建议修正方向**：强调 `RenderEffect` 的内存开销通常更低且更利于 GPU 调度，对于动态内容应优先于硬件层使用。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- [P1][知识盲区][§线程优化：Binder 调用优化]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **原文问题**：提到 `getMyMemoryState` 比 `getProcessMemoryInfo` 快，但未给出量化概念。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **核验结论**：`getProcessMemoryInfo` 涉及解析 `/proc/smaps`（耗时 50-200ms），`getMyMemoryState` 仅读取内存对象属性（< 2ms）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.05",
+        "detail": "- **建议补充方向**：补充这两者的量级对比，并明确指出 `getProcessMemoryInfo` 在 Android 10+ 受到严格限流。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.05",
+        "detail": "- **章节**：7.5",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.05",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.05",
+        "detail": "- **位置**：RenderEffect 与硬件层对比部分",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.05",
+        "detail": "- **问题描述**：底层机制区分度不足。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.05",
+        "detail": "- **建议修正方向**：明确“Shader 级集成”与“Buffer 级隔离”的区别。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.06",
+    "section_title": "06-case-studies.md",
+    "priority": 85,
+    "reason": "[external-review] 回炉问题",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.06-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "回炉问题",
+        "location": "07.06",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.06",
+        "detail": "- **位置**：案例五 - Android 14 内存回调部分",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.06",
+        "detail": "- **描述**：缺少“进程冻结”机制的说明。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.06",
+        "detail": "- **建议**：补充进程冻结对 `onTrimMemory` 实际执行机会的限制。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.07",
+    "section_title": "07-compose-performance.md",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.07-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "07.07",
+        "detail": "- [P0][源码准确性][渲染模型章节]",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.07",
+        "detail": "- **原文问题**：描述 `SlotTable` 为“生成一棵虚拟的 UI 树”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.07",
+        "detail": "- **核验结论**：`SlotTable` 的物理结构是 **Gap Buffer（扁平数组）**，它记录的是 Composition 的执行日志，而非 UI 树实体。Compose 真正的“物理 UI 树”是 **`LayoutNode` 树**。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.07",
+        "detail": "- **为什么错**：这会导致读者混淆“状态存储”与“渲染节点”的关系。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.07",
+        "detail": "- **建议修正方向**：明确 `SlotTable` 存储的是 Composition 的记忆（Memoization），而 `LayoutNode` 负责具体的 Measure/Layout/Draw。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.07",
+        "detail": "- [P1][知识盲区][Strong Skipping]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.07",
+        "detail": "- **原文问题**：虽然提到了 Strong Skipping 默认开启，但未强调其对不稳定参数（如 `List`）使用 `===`（引用相等性）比较带来的副作用。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.07",
+        "detail": "- **核验结论**：由于不稳定参数改为 `===` 比较，如果开发者在 ViewModel 中直接修改 `ArrayList` 内容而不更换引用，UI 将不会重组。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.07",
+        "detail": "- **为什么重要**：这是升级 Kotlin 2.0.20 后最容易出现的 Bug。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.07",
+        "detail": "- **建议补充方向**：增加“Strong Skipping 下的引用相等性陷阱”提示。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.07",
+        "detail": "- **严重级别**：P0",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.07",
+        "detail": "- **位置**：渲染模型章节",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.07",
+        "detail": "- **描述**：纠正 SlotTable 与 LayoutNode 的角色定义，避免将 SlotTable 误称为 UI 树。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.07",
+        "detail": "- **修正方向**：参考 `SlotTable.kt` 和 `LayoutNode.kt` 源码，区分 Composition 日志存储与物理节点树。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.08",
+    "section_title": "08-recyclerview-performance.md",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.08-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "07.08",
+        "detail": "- 无。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.09",
+    "section_title": "09-perceived-smoothness.md",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.09-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "07.09",
+        "detail": "- 无。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.10",
+    "section_title": "10-image-bitmap-performance.md",
+    "priority": 85,
+    "reason": "[external-review] 回炉问题",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.10-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "回炉问题",
+        "location": "07.10",
+        "detail": "- **章节**：7.10",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.10",
+        "detail": "- **级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.10",
+        "detail": "- **问题描述**：inSampleSize 取整逻辑过于陈旧，未反映现代 Skia 的灵活性。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.10",
+        "detail": "- **修正建议**：补充对现代 Android 版本中 Skia 采样逻辑的说明。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.11",
+    "section_title": "11-webview-performance.md",
+    "priority": 85,
+    "reason": "[external-review] 回炉问题",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.11-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "回炉问题",
+        "location": "07.11",
+        "detail": "- **章节**：7.11",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.11",
+        "detail": "- **级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.11",
+        "detail": "- **问题描述**：对 Renderer 进程崩溃后的业务侧恢复逻辑描述不完整。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.11",
+        "detail": "- **修正建议**：增加 `onRenderProcessGone` 的规范处理流程（移除、销毁、重建）。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.12",
+    "section_title": "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.12-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "07.12",
+        "detail": "- [P0][源码准确性][LayoutInflater.inflate() 的三个阶段 - 第二步]",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.12",
+        "detail": "- **原文问题**：原文描述 `sConstructorMap` 缓存了每个 View 类的 Constructor 对象，后续遇到同类型 View 直接用缓存。隐含语义是进程内全局共享。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.12",
+        "detail": "- **源码锚点**：`frameworks/base/core/java/android/view/LayoutInflater.java` (Android 15+)",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.12",
+        "detail": "- **关键代码逻辑**：在 Android 15 之前，`sConstructorMap` 是 `static` 的。而在 Android 15 中，它已被重构为实例变量。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.12",
+        "detail": "- **运行原理说明**：这是为了解决动态加载（Dynamic Features）时的 `ClassLoader` 内存泄漏问题。静态缓存会持有 Constructor，Constructor 持有 Class，Class 持有 ClassLoader。改为实例变量后，缓存随 `LayoutInflater` 实例销毁而释放。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.12",
+        "detail": "- **核验结论**：原文的“全局缓存”断言在 Android 15 下失效。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.12",
+        "detail": "- **建议修正方向**：明确指出在 Android 15 之前是静态全局缓存，Android 15 之后改为实例缓存及其背后的内存管理考量。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.12",
+        "detail": "- [P1][版本差异覆盖][AsyncLayoutInflater 异步布局加载 - 限制与注意事项]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.12",
+        "detail": "- **原文问题**：原文提到 `AsyncLayoutInflater` 不支持 `AppCompat` 的 `Factory2` 链。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.12",
+        "detail": "- **缺失内容**：遗漏了 AndroidX `AsyncLayoutInflater 1.1.0` (2025.04) 引入的 `AsyncAppCompatFactory`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.12",
+        "detail": "- **为什么这是重要缺失**：这解决了该工具长期以来最大的痛点（无法应用主题和自动替换 AppCompat 组件），使得该工具的实用性大幅提升。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.12",
+        "detail": "- **建议补充方向**：更新“限制”小节，说明最新版本已支持 `AppCompat`，并给出 `AsyncAppCompatFactory` 的简单用法。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **章节**：7.12",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **严重级别**：P0",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **问题类型**：源码错误/机制变更",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **位置**：`LayoutInflater.inflate()` 流程部分",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **问题描述**：Android 15 中 `sConstructorMap` 不再是静态变量，改为实例变量。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **建议修正方向**：修正缓存作用域描述，并补充 ClassLoader 泄漏的背景原因。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **章节**：7.12",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **问题类型**：版本滞后",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **位置**：`AsyncLayoutInflater` 限制部分",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **问题描述**：未覆盖 1.1.0 版本对 `AppCompat` 的支持。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "07.12",
+        "detail": "- **建议修正方向**：补充 `AsyncAppCompatFactory` 知识点。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.13",
+    "section_title": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.13-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "07.13",
+        "detail": "*本章节暂未发现 P0 级事实错误。*",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.13",
+        "detail": "- [P1][原理链完整性][通知内容绑定 - 异步链路]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.13",
+        "detail": "- **原文问题**：原文提到“异步内容绑定”，但未明确说明其并发模型的变化。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.13",
+        "detail": "- **缺失内容**：在 Android 14+ 中，`NotificationContentInflater` 已全面清理旧有的并发逻辑，更依赖于集中的 `NotifInflationExecutor`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.13",
+        "detail": "- **运行原理说明**：旧版本中可能存在多个线程池竞争的情况。新版本通过统一的 Executor 限制了通知绑定的最大并发数，以防止通知洪峰直接压垮 I/O 和 CPU。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "07.13",
+        "detail": "- **建议补充方向**：在“通知内容绑定”小节补充关于并发限制（Confinement）的说明，强调 SystemUI 如何通过限制并发来保护主线程。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "07.README",
+    "section_title": "README.md",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch07.README-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- [P0][交叉引用][全文]",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 原文问题：`README.md` 中的“本章内容”列表未包含以下实际存在的文件：",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 7.07 Compose 性能",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 7.08 RecyclerView 深度优化",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 7.09 感官流畅性",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 7.10 图片与 Bitmap 性能",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 7.11 WebView 渲染性能",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 7.12 View 布局优化",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 7.13 SystemUI 性能",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 7.14 GAPS 动态分析",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "07.README",
+        "detail": "- 建议修正方向：重写 README 的“本章内容”部分，确保与物理文件一一对应。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "08",
+    "section_title": "08",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch08.[05-06]-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **[P1][原理链][05-case-studies.md][ProfilingManager 段落]**",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **原文问题**：提到 `ProfilingManager` 可以自动捕获 trace，但未说明具体触发机制。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **源码 / 一手资料锚点**：`android.os.ProfilingManager` (Android 15+)。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **运行原理说明**：该管理器通过 `requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 方法请求系统转储。Android 16 强化了其在 `App Startup` 阶段的自动化。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **建议修正方向**：补充典型的 `requestProfiling` 代码示例。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **章节**：`05-case-studies.md`",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **位置**：`ProfilingManager` 自动发现段落",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **问题描述**：遗漏了 `ProfilingManager` 的核心调用方法和触发源。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **建议修正方向**：补充 `ProfilingManager.requestProfiling()` 的典型代码片段。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- [P1][知识盲区][Perfetto 分析路径]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **原文问题**：在“游戏 Trace 的特殊配置”和“关键分析路径”中，仅泛泛提到“启用 GPU 性能计数器”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **源码 / 一手资料锚点**：Perfetto `android.gpu.renderstages` 数据源（Android 10+ 支持）。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **关键代码逻辑**：Vulkan 渲染管线的 Binning/Rendering/Clears 阶段需要通过专门的渲染阶段轨道观测。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **运行原理说明**：如果不开启 renderstages，开发者只能看到 GPU Busy 情况，无法看到具体的 RenderPass 耗时分布，这对于 Vulkan 游戏的 DrawCall 优化和 Overdraw 分析是致命缺失。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **建议补充方向**：明确建议开启 `android.gpu.renderstages`，并提及某些设备需 `adb shell setprop security.perfetto.gpu_counters.privileged 1` 权限。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- [P1][原理链完整性][Headroom API 风险点]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **原文问题**：虽然提到了 Headroom API 的 1ms+ 耗时，但未明确强调其在 120Hz/144Hz 游戏中的“破坏性”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **核验结论**：在 120fps 下，一帧只有 8.33ms。1ms 的同步 Binder 阻塞意味着消耗了 12% 的帧预算。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "08",
+        "detail": "- **建议修正方向**：在“Android 16：ADPF Headroom API”小节中，进一步强调严禁在渲染主线程调用，建议采用低频异步轮询模式。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **章节**：`09-game-performance.md`",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **严重级别**：P1",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **问题类型**：知识盲区",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **位置**：Perfetto 观测口径小节",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **问题描述**：缺少对 Vulkan 渲染阶段（Render Stages）轨道的详细说明。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "08",
+        "detail": "- **建议修正方向**：在 Perfetto 配置示例中加入 `android.gpu.renderstages`，并说明其在分析 Vulkan RenderPass 时的作用。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "09",
+    "section_title": "09",
+    "priority": 85,
+    "reason": "[external-review] 回炉问题",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch09.[01-04]-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "回炉问题",
+        "location": "09",
+        "detail": "- [P0][01] 修正 `AnrHelper` 为 Android 11 引入。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "09",
+        "detail": "- [P0][02] 重新梳理 FGS 启动超时的版本分界线（10s 是 Android 14 关键值）。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "09",
+        "detail": "- [P1][03] 细化 `ApplicationExitInfo` 的实战用法及 Android 11+ 的版本背景。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "09",
+        "detail": "*审核通过，建议进入 finalized 状态。*",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "10",
+    "section_title": "10",
+    "priority": 85,
+    "reason": "[external-review] P1 重要缺失",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch10.[05-README]-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "location": "10",
+        "detail": "- **[P1][版本差异/工具][06-memory-churn.md] heapprofd 使用方法描述陈旧**\n- **原文问题**：建议使用 `adb shell heapprofd --pid=<PID> --java`。\n- **核验结论**：在 Android 12+ 及最新的 Perfetto 工具链中，`heapprofd` 主要通过 `tools/heap_profile` 或配置 `android.heapprofd` 数据源触发。`--java` 并不是 `heapprofd` 二进制文件的标准稳定参数，Java Heap Sampling 应通过 `heaps: \"com.android.art\"` 配置实现。\n- **建议修正**：更新为基于 `tools/heap_profile` 的推荐流程。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "10",
+        "detail": "- **[P1][版本差异][06-memory-churn.md] Android 15/16 GC 描述不精确**\n- **原文问题**：将 Android 15/16 的 GC 代价简单等同于 CC 或分代 CC。\n- **源码锚点**：`art/runtime/gc/heap.cc` (android-15.0.0_r1+)。\n- **运行原理**：Android 15 引入了 CMC (Concurrent Mark-Compact)，并利用 `userfaultfd` 内核特性进行并发压缩。Android 16 进一步完善了分代 CMC。这与之前的分代 CC（Concurrent Copying）在代价模型和 Stop-The-World 时间分布上有显著差异。\n- **建议修正**：明确区分 CC (Android 8-14) 与 CMC (Android 15+) 的演进路线，避免将两者的性能特征混为一谈。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "10",
+        "detail": "- **[P1][源码准确性][06-memory-churn.md] GcWatcher 路径更新**\n- **原文问题**：提到 `ActivityThread` 内部的 `GcWatcher`。\n- **源码锚点**：`frameworks/base/core/java/com/android/internal/os/BinderInternal.java` (android-16.0.0_r1)。\n- **核验结论**：现代 Android 版本中，`GcWatcher` 的核心逻辑已迁移至 `BinderInternal`，通过 `addGcWatcher` 进行通知。`ActivityThread` 仅作为注册方，不再是定义的 Owner。\n- **建议修正**：更新源码指向到 `BinderInternal.java`。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "10",
+        "detail": "- **[06-memory-churn.md][P1][工具]**：更新 `heapprofd` 的命令行使用指南，对齐 Perfetto 官方文档。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "10",
+        "detail": "- **[06-memory-churn.md][P1][版本差异]**：重写 Android 15/16 GC 演进段落，引入 CMC 和 `userfaultfd` 概念。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "10",
+        "detail": "- **[06-memory-churn.md][P1][源码]**：修正 `GcWatcher` 的源码路径至 `BinderInternal.java`。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "11",
+    "section_title": "全章批量 Review（第 11 章全集）",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch11.[01-README]-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "11",
+        "detail": "- **[P0][版本差异][11.2] 遗漏 Android 15 `dataSync` FGS 超时限制**",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "11",
+        "detail": "- **原文问题**：未提及 Android 15 对 `dataSync` 类型前台服务的 6 小时限制。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "11",
+        "detail": "- **源码/一手资料锚点**：`Service.onTimeout(int, int)` API 35；官方文档：[Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "11",
+        "detail": "- **核验结论**：在 Android 15 中，`dataSync` 在 24 小时内累计运行超过 6 小时会被强行停止并回调 `onTimeout`，不处理会触发 ANR。这是当前功耗治理的最强硬手段。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "11",
+        "detail": "- **建议修正方向**：在 FGS 章节补充 6 小时限制及 `onTimeout` 处理建议。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "11",
+        "detail": "- **[P1][版本差异][11.3] 遗漏 Android 16 Active 存储桶配额化**\n- **原文问题**：描述 App Standby 时认为 Active 桶是不限额的。\n- **核验结论**：Android 16 引入了 `Active` 桶的 Job 配额（如 60 分钟内限 20 分钟），且规定 FGS 运行期间的 Job 也要消耗配额。\n- **建议补充方向**：更新 11.3 的表格，明确指出“Active 桶不再是无限资源”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "11",
+        "detail": "- **[P1][源码准确性][11.1] Android 16 `CpuPowerCalculator` 细项**\n- **原文问题**：对 CPU 能量消耗的转换公式描述略简略。\n- **源码锚点**：`frameworks/base/core/java/com/android/internal/os/CpuPowerCalculator.java`\n- **核验结论**：Android 16 强化了对 `EnergyConsumer.TYPE_CPU_CLUSTER` 的支持，归因逻辑开始结合 `Cycles` 与 `Time` 比例，不仅仅是 `Time`。\n- **建议补充方向**：在计算公式中提及 `uJ` (微焦耳) 优先于 `mA` (电流) 的逻辑。\n---",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "11",
+        "detail": "1. **[P0][11.2]** 补充 Android 15 `dataSync` FGS 6 小时超时机制。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "11",
+        "detail": "2. **[P1][11.3]** 更新 App Standby Buckets 表格，加入 Android 16 Active 桶配额限制。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "11",
+        "detail": "3. **[P1][11.5]** 强化对 `SystemSuspend` 服务的描述，确认其作为 Android 10+ 功耗中枢的地位。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "12",
+    "section_title": "12",
+    "priority": 85,
+    "reason": "[external-review] 回炉问题",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch12.[01-README]-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "回炉问题",
+        "location": "12",
+        "detail": "- **章节 12.1**：细化 R8 新资源缩减开关对动态资源的影响。[P1]",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "12",
+        "detail": "- **章节 12.2**：补充 Cronet 在 Non-GMS 设备上的独立包（Standalone Provider）体积成本（约 3-5MB）。[P1]",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "12",
+        "detail": "- **章节 12.4**：明确 Android 17 CT 强制验证仅针对 `targetSdkVersion >= 37` 且访问公网证书的情形。[P1]",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18",
+    "section_title": "18",
+    "priority": 95,
+    "reason": "[external-review] P0 事实错误",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch18.[11-15]-external-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "### [P0][原理链完整性][18.12 Flutter 渲染管线]",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- **原文位置**：线程模型：Merged Platform Model / 渲染管线全景",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- **原文问题**：架构图将 Dart Runner (UI Thread) 与 Android Main (Platform Thread) 画为独立并行线程，并描述“通过 Engine 层桥接”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- **源码 / 一手资料锚点**：",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- Flutter 3.29 Release Note & Engine Source.",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- `shell/platform/android/io/flutter/embedding/android/FlutterActivityAndFragmentDelegate.java`",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- **关键代码逻辑**：Flutter 3.29+ 默认启用 Merged Platform Model。Dart 的 UI 任务现在直接在宿主主线程 (Platform Thread) 上执行。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- **运行原理说明**：为了解决 Dart 与 Native 通信的异步延迟，支持双向同步调用，UI 线程已不复存在。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- **为什么构成 P0**：这是 Flutter 架构近三年来最大的变更。如果读者按原文“独立线程”模型去查 Trace，会发现在 3.29+ 版本中根本找不到对应的 `UI Thread` 轨道，导致归因失败。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "- **建议修正方向**：",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "1. 重绘线程模型图：展示 Main 线程如何同时承担 UI Task 和 Platform Task。",
+        "suggestion": ""
+      },
+      {
+        "type": "P0-事实错误",
+        "location": "18",
+        "detail": "2. 修改“阶段一：Dart Runner”为“阶段一：Main Thread (UI Task)”。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "18",
+        "detail": "- **原文问题**：未提及 Android 15 中 `com.android.angle` 作为系统 APK 并支持通过 Play Store 更新的机制。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "18",
+        "detail": "- **源码锚点**：Android 15 发行说明；`GraphicsEnvironment.java`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "18",
+        "detail": "- **建议修正方向**：补充“Updatable Graphics Layer”概念，说明 Google 如何通过此机制统一碎片化的 GLES 驱动。\n### [P1][源码准确性][18.14 Camera 渲染管线]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "18",
+        "detail": "- **原文问题**：虽然提到了 AIDL HAL，但未明确指出 Android 13+ 引入的新特性（如 10-bit HDR）强制要求 AIDL 接口。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "18",
+        "detail": "- **建议修正方向**：在“版本演进”部分补充：HIDL 接口已进入维护模式，新功能不再下放。\n### [P1][版本差异覆盖][18.15 视频叠加与 HWC]",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "18",
+        "detail": "- **原文问题**：对 HWC 3.0 (AIDL) 的优化描述不足。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "18",
+        "detail": "- **关键代码逻辑**：`Capability::SKIP_VALIDATE`。",
+        "suggestion": ""
+      },
+      {
+        "type": "P1-重要缺失",
+        "location": "18",
+        "detail": "- **建议修正方向**：补充说明在图层状态未变时，SurfaceFlinger 如何利用 AIDL 接口跳过 `validate` 阶段直接 `present`，从而降低显示延迟。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "18",
+        "detail": "| 章节 | 级别 | 类型 | 位置 | 问题描述 | 建议修正方向 |",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "18",
+        "detail": "|------|------|------|------|----------|-------------|",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "18",
+        "detail": "| 18.12 | P0 | 原理断裂 | 线程模型 / 管线图 | 描述仍基于旧版独立线程模型，不符合 Flutter 3.29+ 事实。 | 统一为单线程 (Main Thread) 视角，重绘时序图。 |",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "18",
+        "detail": "| 18.11 | P1 | 源码缺失 | 启用条件 | 缺失 Android 15 可更新驱动 APK 的描述。 | 补充 `com.android.angle` 系统应用机制。 |",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "18",
+        "detail": "| 18.15 | P1 | 版本差异 | HWC 职责 | 缺失 HWC 3.0 AIDL Skip Validate 优化。 | 补充 HWC 3.0 接口演进细节。 |",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "18",
+        "detail": "- **[P0][18.19][位置：系统如何决定刷新节奏]**：修正 API 版本归属。明确 `View.setRequestedFrameRate` 属于 API 35，`Display.hasArrSupport` 属于 API 36。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "18",
+        "detail": "- **[P1][18.17][位置：Java API 示例]**：确认 `result.getFence()` 的命名，避免与 AndroidX 包装类的 `getSyncFence()` 混用。",
+        "suggestion": ""
+      },
+      {
+        "type": "回炉问题",
+        "location": "18",
+        "detail": "- **[P1][18.16][位置：SurfaceView + BLAST]**：补充 Android 14 针对 Z-Below 模式下 Alpha 应用到“Hole Punch”上的细节说明。",
+        "suggestion": ""
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T13:17:17+08:00",
     "status": "pending"
   }
 ]

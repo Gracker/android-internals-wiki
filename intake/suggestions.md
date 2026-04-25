@@ -1907,3 +1907,293 @@
 - **问题**：未提及 Android Studio Coroutine Debugger 通过 JDWP 不需要 DebugProbes
 - **建议**：补充系统级协程观测方案
 - **来源**：Gemini 外部 review
+**external. 13.03**
+- - [P2][操作效率][快捷键]：建议补充 **`V` 键（垂直参考线）**。在对齐跨进程（App -> SF -> HWC）的时间点时，该快捷键是绝对的效率神器。
+
+**external. 13.03**
+- - [P2][技术更新][SQL]：提及新版 Perfetto SQL 已支持 `self_dur` 字段，减少手动计算负担。
+
+**external. 13.05**
+- - [P2][原理链][13.5.3] 建议在 Binder 抓取配置中显式加上 `atrace_categories: "aidl"`。虽然 `ftrace` 能拿到事务，但只有开启了 `aidl` 类别，`android_binder_txns` 视图中的 `aidl_name` 字段才会有值。
+
+**external. 13.09**
+- - **[P2][知识盲区][用户空间 Trace tag 底层实现]**
+
+**external. 13.09**
+- - **原文问题**：只提到了 `B` (Begin) 和 `E` (End) 格式。
+
+**external. 13.09**
+- - **证据或观察依据**：`atrace.cpp` 和 `libcutils/Trace.cpp` 广泛使用 `C` (Counter) 格式。
+
+**external. 13.09**
+- - **问题描述**：基础设施章节应覆盖 `trace_marker` 的完整常用协议。
+
+**external. 13.09**
+- - **建议**：补充 `C|<pid>|<name>|<value>` 格式说明，因为 Counter 也是 Perfetto 中非常重要的数据维度。
+
+**external. 13.09**
+- - **[P2][原理链完整性][atrace 的分类机制]**
+
+**external. 13.09**
+- - **原文问题**：`atrace gfx` → 主线实现里至少启用 `ATRACE_TAG_GRAPHICS`。
+
+**external. 13.09**
+- - **证据或观察依据**：`atrace.cpp` 中的 `k_categories` 和 `k_ftraceEventMap`。
+
+**external. 13.09**
+- - **问题描述**：`atrace` 的 category 不仅仅对应用户态 tag，通常还联动特定的 ftrace events。
+
+**external. 13.09**
+- - **建议**：明确指出 `gfx` 除了 tag，还会联动如 `events/gpu_mem/gpu_mem_total/enable`（如果存在）或特定的 vendor ftrace points。
+
+**external. 13.09**
+- - **问题类型**：原理缺失
+
+**external. 13.09**
+- - **位置**：用户空间 Trace tag 的底层实现
+
+**external. 13.09**
+- - **问题描述**：缺失 `trace_marker` 的 Counter (C) 格式。
+
+**external. 13.09**
+- - **建议**：增加对 Counter 格式的简要说明。
+
+**external. 14.01**
+- - [P2][知识盲区][Memory Profiler]
+
+**external. 14.01**
+- - **原文问题**：未明确指出 `profileable` 模式在内存分析中的局限性。
+
+**external. 14.01**
+- - **证据依据**：官方文档显示，`profileable` 模式不支持 Java 堆转储（Heap Dump）和对象分配跟踪（Allocation Tracking）。
+
+**external. 14.01**
+- - **建议**：在“各 Profiler 模式的性能开销与适用场景”或 Memory Profiler 章节中增加说明：如果需要 Heap Dump 来排查 Java 泄露，目前仍需 `debuggable` 模式或通过特定手段（如使用 `am dumpheap`）绕过。
+
+**external. 14.01**
+- - **问题类型**：补充说明
+
+**external. 14.01**
+- - **位置**：`profileable` 与 `debuggable` 对比
+
+**external. 14.01**
+- - **问题描述**：提到“28% 性能提升”时，可以简单备注出处为社区性能评测数据，增加可信度。
+
+**external. 14.03**
+- - [P2][知识盲区][showmap 章节]
+
+**external. 14.03**
+- - **问题描述**：未提及 `showmap` 对 `profileable` 应用的限制。
+
+**external. 14.03**
+- - **建议**：补充说明在非 root 设备上，即便应用是 `profileable`，`adb shell showmap <pid>` 依然可能因为权限无法读取 `/proc/<pid>/smaps`，此时 heapprofd 是更好的选择。
+
+**external. 14.05**
+- - [P2][原理链完整性][ArgoAPM]
+
+**external. 14.05**
+- - **问题描述**：指令提到的 ArgoAPM (饿了么) 已多年不维护。
+
+**external. 14.05**
+- - **建议**：如果要在文中提及此类库，建议改提 **ArgusAPM** (360) 或明确标注 ArgoAPM 为历史参考。
+
+**external. 14.05**
+- - **问题描述**：缺失 BlockCanary 等历史纵深。
+
+**external. 14.05**
+- - **建议**：在“演进”小节增加 BlockCanary 作为 Looper 监控的起源说明。
+
+**external. 14.06**
+- - [P2][原理链完整性][Espresso 同步机制影响]
+
+**external. 14.06**
+- - **原文问题**：提到 Espresso 不适合性能测量。
+
+**external. 14.06**
+- - **建议**：进一步明确指出 Espresso 的 `IdlingResource` 机制会导致 UI 线程“被动等待”，从而掩盖了真实的竞争和耗时情况。
+
+**external. 14.09**
+- - **[P2][原理链完整性][HAL 3.5 requestStreamBuffers 同步阻塞]**
+
+**external. 14.09**
+- - **建议**：强调此 API 的同步阻塞特性，建议在专用高优先级线程预取，避免 Request 下发抖动。
+
+**external. 14.11**
+- - **[P2][版本差异][Android 14 权限与缓冲区]**
+
+**external. 14.11**
+- - **原文问题**：提到了断开 USB，但未细化 Android 14 的权限收紧。
+
+**external. 14.11**
+- - **建议描述**：Android 14+ 访问详细电池统计需手动执行 `adb shell pm grant <pkg> android.permission.BATTERY_STATS`。同时，History Buffer 默认仅 256KB，开启全量记录后溢出极快。
+
+**external. 14.12**
+- - **[P2][原理链完整性] Measure 工具说明**
+
+**external. 14.12**
+- - **问题**：`Measure` 作为一个新兴开源项目（measure-sh），其知名度远低于 Sentry/Bugly，建议补充其适用场景（如：寻求 Firebase 替代方案的开源可观测性方案）。
+
+**external. 14.13**
+- - **[P2][原理链完整性][icache 刷新的硬件背景]**
+
+**external. 14.13**
+- - **建议描述**：补充说明 ARM64 架构下 icache 和 dcache 的**非一致性**原因，即 CPU 预取指令的流水线不会自动感应数据总线的写入，从而必须显式 flush。
+
+**external. 07.04**
+- - [P2][原理链完整性][§5.2 多任务切换]
+
+**external. 07.04**
+- - **原文问题**：提到 TaskSnapshot 使用 HardwareBuffer 传递。
+
+**external. 07.04**
+- - **证据或观察依据**：Android 8+ 引入 `HardwareBuffer` (native `AHardwareBuffer`) 替代共享内存处理跨进程图像传输，减少了拷贝开销。
+
+**external. 07.04**
+- - **建议**：在提到缩略图加载时，简要点出 `HardwareBuffer` 如何通过 Zero-copy 提升 Recents 列表滑动的流畅度。
+
+**external. 07.05**
+- - [P2][原理链完整性][§Compose 优化]
+
+**external. 07.05**
+- - **原文问题**：提到了 BOM 2025.12.00。
+
+**external. 07.05**
+- - **证据或观察依据**：该版本确实是目前的最前沿版本，包含了强跳过模式（Strong Skipping）的正式优化。
+
+**external. 07.05**
+- - **建议**：补充 `Strong Skipping` 模式如何减少对 `Stable` 标记的依赖，这是 2025 年 Compose 优化的重要里程碑。
+
+**external. 07.07**
+- - [P2][原理链][SnapshotStateObserver]
+
+**external. 07.07**
+- - **建议**：补充 `SnapshotStateObserver` 如何通过 `registerApplyObserver` 实现“状态变化 -> Scope 失效”的映射逻辑。
+
+**external. 07.08**
+- - [P2][原理链][ViewHolder 缓存] 原文提到 `ViewCacheExtension` 在 Pool 之前查询，建议明确标注该扩展层默认值为 `null`，且开发者需手动管理存取，以防读者误以为设置后系统会自动处理。
+
+**external. 07.08**
+- - [P2][数据支撑][DiffUtil] 原文标注复杂度为 $O(N + D^2)$，虽然这是 Android 官方文档的精准表述，但建议补充说明 $D$ 代表编辑距离，以便算法背景较弱的读者理解。
+
+**external. 07.08**
+- - [7.8][ViewCacheExtension] 在描述查找顺序时，补充“默认不启用”的说明。
+
+**external. 07.09**
+- - [P2][数据支撑][Perfetto] 建议在“路径二：用 FrameTimeline 判断”部分，补充一个关于 `Expected Timeline` 为绿色而 `Actual Timeline` 也是绿色但画面依然“抖动”的逻辑链闭环描述。
+
+**external. 07.09**
+- - [7.9][配图建议] 建议补充一张 8ms/9ms 交替导致位移波动的示意图。
+
+**external. 07.12**
+- - [P2][知识盲区][requestLayout() 触发的完整流程]
+
+**external. 07.12**
+- - **问题描述**：虽然提到了同步屏障（Sync Barrier），但未深入解释它是如何通过 `MessageQueue` 确保 UI 消息优先于普通 Handler 消息的。
+
+**external. 07.12**
+- - **建议**：补充 1-2 句关于 `postSyncBarrier` 拦截同步消息、仅允许异步消息（如 TraversalRunnable）通过的机制说明，帮助读者建立“UI 优先级”的深度模型。
+
+**external. 07.13**
+- - [P2][知识盲区][Flexiglass 与窗口系统]
+
+**external. 07.13**
+- - **问题描述**：原文详尽描述了 Flexiglass 的 Compose 化，但未说明它在 `WindowManager` 层面的窗口数量变化。
+
+**external. 07.13**
+- - **证据依据**：Flexiglass 旨在将 UI 逻辑场景化，但在 SurfaceFlinger 层面，它通常仍运行在 `NotificationShade` 对应的单一超大窗口中。
+
+**external. 07.13**
+- - **建议**：补充说明 Flexiglass 虽然在 UI 逻辑上实现了“解耦”，但在窗口管理层面仍遵循单一层级以确保手势连续性。
+
+**external. 08**
+- - **[P2][知识盲区][06-coroutine-performance.md][调试工具段落]**
+
+**external. 08**
+- - **问题描述**：对 `kotlinx-coroutines-debug` 的限制描述准确，但建议补充 Android 16+ 引入的系统级协程观测方案。
+
+**external. 08**
+- - **建议**：补充提及 Android Studio 的 "Coroutine Debugger" 是通过 JDWP 协议直接扫描堆栈的，不需要手机端安装 `DebugProbes`。
+
+**external. 08**
+- - **章节**：`06-coroutine-performance.md`
+
+**external. 08**
+- - **关键源码路径**：`kotlinx-coroutines-core/jvm/src/scheduling/CoroutineScheduler.kt`
+
+**external. 08**
+- - **关键结论**：Kotlin 2.2 优化的核心在于 `CoroutineScheduler` 中的 `local queue` 窃取算法从单向环形队列优化为双端优先级队列。
+
+**external. 08**
+- ## 十、下一候选章节
+
+**external. 08**
+- - `src/part2-performance/ch09-ui-smoothness/01-rendering-pipeline.md`
+
+**external. 08**
+- ## 十一、落盘信息
+
+**external. 08**
+- - 已写入文件：`/Users/chris/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/logs/external-review/2026-04-25-15-ch08.[05-06]-external-review.md`
+
+**external. 08**
+- - [P2][数据/案例支撑][Thermal 关联策略]
+
+**external. 08**
+- - **建议内容**：建议明确给出 `getThermalHeadroom`（预测性）与 `getCpuHeadroom`（即时性）的组合策略建议。
+
+**external. 08**
+- - **理由**：帮助读者理解何时该看热，何时该看调度压力。
+
+**external. 08**
+- - **章节**：`README.md`
+
+**external. 08**
+- - **问题类型**：结构建议
+
+**external. 08**
+- - **位置**：阅读建议部分
+
+**external. 08**
+- - **问题描述**：可以更明确地引导游戏开发者关注“输入响应（Input Latency）”与“Game Activity”的关联。
+
+**external. 08**
+- - **建议**：在阅读建议中增加一行：“如果是游戏开发者关注输入延迟，请参考 8.9”。
+
+**external. 09**
+- - [P2][知识盲区][src/part2-performance/ch09-anr/05-case-studies.md]
+
+**external. 09**
+- - **原文内容**：提到的反射修复 `QueuedWork` 方案。
+
+**external. 09**
+- - **建议**：应补充说明 Android 12+ 后由于 Hidden API 限制，此类反射需配合内卷（元反射）或特定策略，且 Google 已在 `Modern Broadcast Queue` 中优化了此类排队逻辑。
+
+**external. 09**
+- - **关键源码路径**：`frameworks/native/libs/binder/ProcessState.cpp` (Binder 线程池上限)。
+
+**external. 09**
+- - **核心机制**：Input ANR 的 5s 检测是在 `inputflinger` 的 `InputDispatcher.cpp` 中通过 `processAnrsLocked` 驱动的。
+
+**external. 09**
+- - **版本锚点**：`POST_NOTIFICATIONS` 权限分界线是 Android 13。
+
+**external. 09**
+- - `src/part2-performance/ch10-memory/`
+
+**external. 09**
+- - 已写入文件：`logs/external-review/2026-04-25-15-ch09.[05-README]-external-review.md`
+
+**external. 10**
+- - **[P2][交叉引用][README.md] 目录索引不匹配**
+
+**external. 10**
+- - **原文问题**：README 列出的子章节为“App 内存分析、内存泄漏、内存持续增长...”，但对应的文件名为 `05-case-studies.md` 等。
+
+**external. 10**
+- - **建议**：确保 README 的列表与 `01-04` 缺失章节的占位或实际文件名保持一致。
+
+**external. 10**
+- - **[P2][知识盲区][07-sqlite-room-performance.md] WAL 模式下的 F2FS 写入放大**
+
+**external. 10**
+- - **建议**：补充提及在现代 Android 手机普遍使用的 F2FS 文件系统下，WAL 模式可能带来的微小写入放大效应，以及对闪存寿命/性能的极小影响，提升深度。
