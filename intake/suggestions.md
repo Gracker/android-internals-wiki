@@ -3582,3 +3582,63 @@
 - **问题**：缺乏具体的性能案例数据。
 - **建议**：补充真实测试数据或 Trace 截图。
 - **来源**：Gemini 外部 review
+
+## [External Review] 8.09 Game Performance — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-8.README-external-review.md)
+- **建议**：建议明确 getThermalHeadroom(预测性)与 getCpuHeadroom(即时性)的组合策略
+
+## [External Review] 8.09 Game Performance — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-8.README-external-review.md)
+- **建议**：README 阅读建议中增加游戏开发者关注输入延迟与 Game Activity 关联的引导
+
+## [External Review] 9.05 ch09 案例集与专项 — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-9.README-external-review.md)
+- **建议**：反射修复 QueuedWork 方案应补充说明 Android 12+ Hidden API 限制及 Modern Broadcast Queue 优化
+
+## [External Review] 10.5 ch10 Memory Perf [05-07, README] — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-10.README-external-review.md)
+- **建议**：README 目录索引需与实际文件名(01-04)缺失章节占位保持一致
+
+## [External Review] 10.5 ch10 Memory Perf [05-07, README] — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-10.README-external-review.md)
+- **建议**：07-sqlite-room-performance.md 补充 F2FS 下 WAL 模式写入放大说明
+
+## [External Review] 12 APK 与网络性能 — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-12.README-external-review.md)
+- **建议**：ANDROID_STRIP_DEBUG_SYMBOLS 在 AGP 8.x 中优先推荐 packaging.jniLibs.keepDebugSymbols DSL 写法
+
+## [External Review] 12 APK 与网络性能 — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-12.README-external-review.md)
+- **建议**：网络传输优化补充 Brotli(br)相比 Gzip 额外减少 15-25% 体积的推荐
+
+## [External Review] 13.README Perfetto 章节导航 — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-13.README-external-review.md)
+- **建议**：建议在 13.8 和 13.10(SQL 重灾区)目录项后增加难度或场景标签(进阶分析必读)
+
+## [External Review] 15.README 方法论章节 README — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-15.README-external-review.md)
+- **建议**：Android 12+ 演进细节不足，适当补充新版本差异
+
+## [External Review] 18.16 渲染管线(Game Engine/VRR/PIP 等) — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-18.README-external-review.md)
+- **建议**：Freeform Resize 分析补充 Android 12+ Shell Transition 将窗口管理从 System Server 剥离到 SysUI 的说明
+
+## [External Review] 18.16 渲染管线(Game Engine/VRR/PIP 等) — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-18.README-external-review.md)
+- **建议**：dumpsys SurfaceFlinger --latency 在 BLAST 架构下参考价值下降，建议优先推荐 Winscope
+
+## [External Review] 18.16 渲染管线(Game Engine/VRR/PIP 等) — 2026-04-25
+- **类型**：改进建议
+- **来源**：Gemini 外部 review (2026-04-25-15-18.README-external-review.md)
+- **建议**：EyeDropper API 37 需明确指出 secure window 和 protected buffer 像素拦截机制

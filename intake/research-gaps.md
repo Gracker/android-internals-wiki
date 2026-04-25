@@ -7798,3 +7798,105 @@ ANR/退出监控仍缺 SIGQUIT SignalCatcher、自建 APM 信号栈、Applicatio
 - 15.7
 - 2.6
 - 13.9
+
+## [2026-04-25] 8.09 Game Performance — 知识盲区
+
+### 盲区描述
+GPU Counter 特权访问属性 security.perfetto.gpu_counters.privileged
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- 外部 review 提出的后续研究项
+
+### 关联章节
+- 8.09
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-8.README-external-review.md)
+
+## [2026-04-25] 9.05 ch09 案例集与专项 — 知识盲区
+
+### 盲区描述
+Android 16/17 Live Update 渲染是否完全在 SystemUI 进程内完成
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- 外部 review 提出的后续研究项
+
+### 关联章节
+- 9.05
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-9.README-external-review.md)
+
+## [2026-04-25] 12 APK 与网络性能 — 知识盲区
+
+### 盲区描述
+Brotli 共享字典 SDCH 在 Android 15 的支持情况
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- 外部 review 提出的后续研究项
+
+### 关联章节
+- 12
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-12.README-external-review.md)
+
+## [2026-04-25] 12 APK 与网络性能 — 知识盲区
+
+### 盲区描述
+QUIC Connection Migration 在 Perfetto 中的识别方法
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- 外部 review 提出的后续研究项
+
+### 关联章节
+- 12
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-12.README-external-review.md)
+
+## [2026-04-25] 15.README 方法论章节 README — 知识盲区
+
+### 盲区描述
+高负载或内存触顶情况下边缘 Trace 异常特征
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- 外部 review 提出的后续研究项
+
+### 关联章节
+- 15.README
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-15.README-external-review.md)
+
+## [2026-04-25] 18.16 渲染管线(Game Engine/VRR/PIP 等) — 知识盲区
+
+### 盲区描述
+API 36 ASurfaceTransaction_setBufferWithRelease 在多缓冲池场景下的性能收益量化
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- 外部 review 提出的后续研究项
+
+### 关联章节
+- 18.16
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-18.README-external-review.md)
