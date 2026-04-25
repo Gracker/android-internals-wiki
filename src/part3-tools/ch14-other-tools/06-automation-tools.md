@@ -38,18 +38,18 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 review_round: 3
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-21T22:00:33.103917+08:00'
+last_task9_at: "2026-04-25T23:29:25+08:00"
 ---
 
 # 自动化测试工具
