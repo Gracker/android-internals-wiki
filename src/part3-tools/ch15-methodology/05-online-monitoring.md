@@ -1,7 +1,7 @@
 ---
 title: "线上性能监控"
 chapter: "15.5"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
@@ -35,18 +35,18 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-25'
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-04-25T19:35:26+08:00"
+last_task9_at: "2026-04-26T00:28:30+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: '2026-04-25'
-task9_result: needs-rework
+task9_reviewed_date: "2026-04-26"
+task9_result: pass-tech-review
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T19:43:07+08:00"
