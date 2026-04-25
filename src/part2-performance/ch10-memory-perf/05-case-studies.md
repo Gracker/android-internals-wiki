@@ -34,12 +34,14 @@ polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
 task6_state: reviewed
-pipeline_stage: task9_pending
-task9_state: pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-21"
-task2b_state: fixed
+task9_reviewed_date: "2026-04-25"
+task2b_state: pending
 task2b_result: fixed
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-25T14:25:03+08:00"
 ---
 
 # 案例集
