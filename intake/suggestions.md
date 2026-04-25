@@ -3187,3 +3187,13 @@
 - **建议**：
 - **来源**：Gemini 外部 review (2026-04-25-15-9.README-external-review.md)
 
+## [External Review] 19.19 19.19 — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：19.19
+- **问题**：- [P2][原理链完整性][热降频识别]
+- 描述：PerfDog 是观察热降频的最佳工具。
+- 建议：补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
+
+- **建议**：补充一个判定模型：如果 `Temperature` 达到临界值且 `CPU/GPU Frequency` 出现断崖式下跌，此时的 FPS 下降应归因为系统调度而非业务逻辑。
+- **来源**：Gemini 外部 review (2026-04-25-15-19-external-review.md)
+

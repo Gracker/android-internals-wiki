@@ -7384,3 +7384,11 @@ Firebase 采集限流：10 分钟 300 事件，超出部分会被设备端直接
 - 17
 ### 外部 review 来源
 - external-review
+
+## [2026-04-25] 19.17 19.17 — 知识盲区
+
+- Firebase 采集限流：10 分钟 300 事件，超出部分会被设备端直接丢弃。
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25-15-17-external-review.md)
+
