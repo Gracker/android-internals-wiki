@@ -4,8 +4,8 @@ chapter: "15.3"
 status: ready-for-review
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-23"
-last_verified_against: "developer.android.com/topic/performance/vitals/render, launch-time, FrameMetrics / FrameMetricsAggregator / ProfilingManager 官方文档"
+last_verified: "2026-04-25"
+last_verified_against: "developer.android.com/topic/performance/vitals/render, FrameMetrics.DEADLINE, Macrobenchmark FrameTimingMetric, ApplicationExitInfo, lmkd 官方文档"
 confidence: medium
 sources:
   - type: official
@@ -22,24 +22,32 @@ sources:
     path: "https://developer.android.com/reference/androidx/core/app/FrameMetricsAggregator"
   - type: official
     path: "https://developer.android.com/reference/android/os/ProfilingManager"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/FrameMetrics#DEADLINE"
+  - type: official
+    path: "https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric"
+  - type: official
+    path: "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+  - type: official
+    path: "https://source.android.com/docs/core/perf/lmkd"
 tags:
   - android
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-25
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-04-25T08:36:00+08:00
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
-repaired_date: "2026-04-21"
-repaired_by: "codex"
-last_task2b_at: "2026-04-23T02:15:00+08:00"
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-25T08:51:01+08:00"
 section: "15.3"
 related_chapters: ['7.1', '7.2', '7.3', '8.1', '8.2', '9.1', '10.1', '11.1', '15.5', '15.9', '15.10']
 ---
@@ -143,6 +151,21 @@ Google 在 Android Vitals 中把 slow rendering 定义为单帧渲染时间落�
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
 从治理角度看，`Janky Frame Rate` 更像平台监控指标，`Frame Time P90/P99` 更像工程诊断指标。前者便于横向比较版本和机型，后者更适合回到具体页面或 trace 做深入分析。
+
+### Frame Overrun（Deadline 超限）
+
+在 Android 12（API 31）之后，帧诊断可以从“耗时有没有超过固定 16ms”前进到“这一帧有没有错过系统给它的 deadline”。`FrameMetrics.DEADLINE` 给出本帧应完成的截止时间，`TOTAL_DURATION` 给出实际耗时。二者相减得到 overrun：正值表示帧晚于 deadline，负值表示还有余量。
+
+这个口径更适合高刷和可变刷新率设备。120Hz 的单帧预算约 8.3ms，一帧耗时 10ms 时仍低于 Android Vitals 的 16ms slow rendering 口径，但已经可能错过本轮刷新窗口。线下门禁和 Macrobenchmark 更适合看 `frameOverrunMs`，Play Console 报表仍按 Android Vitals 的 slow / frozen frames 口径解释。
+
+Macrobenchmark 的 `FrameTimingMetric` 会同时输出两类信号：
+
+- `frameDurationCpuMs`：App 侧 UI Thread 与 RenderThread 为单帧消耗的 CPU 时间，适合判断 CPU 侧工作是否过重。
+- `frameOverrunMs`：帧完成时间相对 deadline 的偏移，正值说明 missed deadline，负值说明在预算内完成。API 31+ 上这个指标更贴近高刷和 VRR 场景。
+
+用这组指标做门禁时，不要只写“P99 小于 16ms”。更稳的写法是按场景和刷新率分开设阈值：60Hz 先看 Vitals slow frame 口径，90Hz / 120Hz 专项再看 `frameOverrunMs` 的 P90/P99 和正值占比。
+
+[已验证: FrameMetrics.DEADLINE; Macrobenchmark FrameTimingMetric]
 
 ### Frozen Frame Rate（冻帧率）
 
@@ -258,6 +281,36 @@ Google Play 设定的不良行为阈值：
 
 Crash rate 和 ANR rate 的治理方法也不同。Crash 更适合按错误簇、版本、堆栈聚类；ANR 更依赖线程状态、等待链路和系统负载背景。
 
+### 进程退出原因分析（ApplicationExitInfo）
+
+Crash / ANR 只回答“有没有失败”，`ApplicationExitInfo` 回答进程为什么退出。Android 11（API 30）开始，`ActivityManager.getHistoricalProcessExitReasons()` 可以读取系统保存的进程退出记录，用来区分 crash、ANR、LMK、用户或系统主动结束进程。
+
+这段代码展示采集入口，主要看 `reason`、退出前内存采样和 trace 取法：
+
+```kotlin
+val activityManager = context.getSystemService(ActivityManager::class.java)
+val exits = activityManager.getHistoricalProcessExitReasons(
+    context.packageName,
+    0, // 0 means all pids for this package.
+    20
+)
+
+for (exit in exits) {
+    when (exit.reason) {
+        ApplicationExitInfo.REASON_LOW_MEMORY -> handleLmk(exit.getRss(), exit.getPss())
+        ApplicationExitInfo.REASON_ANR -> exit.traceInputStream?.use(::saveAnrTrace)
+        ApplicationExitInfo.REASON_CRASH,
+        ApplicationExitInfo.REASON_CRASH_NATIVE -> handleCrashExit(exit)
+    }
+}
+```
+
+`REASON_LOW_MEMORY` 用来把 LMK 与普通 crash 分开。设备是否支持低内存杀进程报告，要通过 `ActivityManager.isLowMemoryKillReportSupported()` 判断；不支持的设备可能只给出 `REASON_SIGNALED` 和 `SIGKILL` 状态。`getTraceInputStream()` 可用于读取 ANR trace 或 native crash tombstone，`getRss()` / `getPss()` 是系统最近一次内存采样，不等于进程死亡瞬间的精确值。
+
+把这个指标放进稳定性看板后，Crash Rate、ANR Rate 和“系统杀进程后用户回到 App 看到重启”的问题才能分开治理。
+
+[已验证: ActivityManager.getHistoricalProcessExitReasons; ApplicationExitInfo]
+
 ## 内存指标
 
 内存指标的重要性常常被低估。在 Android 上，内存问题不只是 OOM——一个 App 占用内存过多，会触发系统更频繁的 GC、增加 LMK（Low Memory Killer）杀进程的概率、影响其他 App 的可用内存，最终以卡顿或闪退的形式呈现给用户。
@@ -268,7 +321,7 @@ Crash rate 和 ANR rate 的治理方法也不同。Crash 更适合按错误簇�
 
 PSS 是 Android 上度量 App 真实物理内存占用的标准指标。它的计算方式是：App 独占的内存页（Private Clean + Private Dirty）加上按比例分摊的共享内存页。所谓"按比例分摊"，是指如果一个 4KB 的内存页被 4 个进程共享，那么每个进程的 PSS 只计算 1KB。
 
-这种统计方式的好处是：把系统上所有进程的 PSS 加总，约等于实际使用的物理内存总量。Android 的 LMK 在决定杀哪个进程时，主要参考的就是进程的 PSS 值——PSS 越大的进程被杀的优先级越高。
+这种统计方式的好处是：把系统上所有进程的 PSS 加总，约等于实际使用的物理内存总量。PSS 适合做进程占用归因，但不要把它写成 lmkd 的杀进程优先级。现代 lmkd 先由 PSI / vmpressure 等信号判断内存压力，再用 `oom_score_adj` 限定可杀进程范围；具体目标还受 `ro.lmk.kill_heaviest_task` 等策略影响。PSS / RSS 能帮助估算回收收益，不是单独的优先级规则。
 
 你可以通过 `dumpsys meminfo <package_name>` 获取 App 的详细内存分布：
 
@@ -291,6 +344,20 @@ PSS 是 Android 上度量 App 真实物理内存占用的标准指标。它的�
 [已验证: 官方文档, developer.android.com/studio/profile/memory]
 
 从线上治理角度，PSS 更适合作为“系统压力代理指标”，而 Java Heap Usage 更适合作为“应用内部堆行为指标”。二者不要混用。
+
+### PSS 与 RSS 的分工
+
+PSS 和 RSS 都在描述内存占用，但统计口径不同。PSS 会把共享页按进程数量分摊，适合回答“这个 App 应该承担多少物理内存成本”。RSS 统计进程当前驻留在内存中的页，包含共享页的完整大小，适合观察 resident 内存增长、瞬时抖动和内核侧回收压力。
+
+| 维度 | PSS | RSS |
+|---|---|---|
+| 统计口径 | 独占页 + 按比例分摊的共享页 | 进程 resident 页总量，共享页不分摊 |
+| 适合用途 | 线上内存占用归因、跨进程汇总、发布门禁 | Perfetto / kernel 侧趋势、瞬时增长、LMK 前后对照 |
+| 常见入口 | `dumpsys meminfo`、`Debug.MemoryInfo`、Android Studio Profiler | Perfetto `rss_stat`、`/proc/<pid>/status`、`ApplicationExitInfo.getRss()` |
+
+Perfetto 里看到 `rss_stat` 抬升时，不要直接拿它和 PSS 门禁阈值对比。更稳的做法是：RSS 用来定位哪个时间段 resident 内存增长，PSS 用来评估该场景最终给系统带来的占用成本。
+
+[已验证: Perfetto rss_stat; ApplicationExitInfo.getRss; source.android.com/docs/core/perf/lmkd]
 
 ### Java Heap Usage
 
@@ -470,6 +537,10 @@ Android Vitals 的核心指标（Core Vitals）包括：
 - [FrameMetrics API | developer.android.com](https://developer.android.com/reference/android/view/FrameMetrics)
 - [FrameMetricsAggregator | developer.android.com](https://developer.android.com/reference/androidx/core/app/FrameMetricsAggregator)
 - [ProfilingManager | developer.android.com](https://developer.android.com/reference/android/os/ProfilingManager)
+- [FrameMetrics.DEADLINE | developer.android.com](https://developer.android.com/reference/android/view/FrameMetrics#DEADLINE)
+- [FrameTimingMetric | developer.android.com](https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric)
+- [ApplicationExitInfo | developer.android.com](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+- [Low memory killer daemon | source.android.com](https://source.android.com/docs/core/perf/lmkd)
 - [Android Vitals bad behavior thresholds | support.google.com](https://support.google.com/googleplay/android-developer/answer/9844476)
 - [Investigate RAM usage | developer.android.com](https://developer.android.com/studio/profile/memory)
 - [Manage your app's memory | developer.android.com](https://developer.android.com/topic/performance/memory)
