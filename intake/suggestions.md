@@ -3263,3 +3263,7 @@
 - **位置**：frontmatter sources L18-L20
 - **问题**：AndroBench / A1 SD Bench 的来源包含 APKPure 这类第三方镜像，作为版本能力和维护状态依据不够稳。
 - **建议**：补充论文、开发者主页、Google Play/官方发布页或项目维护信息；若只能用镜像来源，需标注“第三方镜像，仅用于包名和历史版本线索”。
+
+## [external-review] 14.11 Battery Historian — 2026-04-25
+- **类型**：工具建议
+- **建议**：社区镜像 Apple Silicon 兼容性说明可更突出 --platform linux/amd64 参数

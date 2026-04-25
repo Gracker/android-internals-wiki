@@ -7477,3 +7477,56 @@ SoloPi targetSdkVersion 29，Android 14+ 限制更严
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25)
+
+## [2026-04-25] 14.11 Battery Historian — 知识盲区
+
+### 盲区描述
+PowerMonitor API 累计值语义
+
+### 重要程度
+高
+
+### 建议研究方向
+getConsumedEnergy() 返回设备启动以来累计 μWs，需差值计算特定操作功耗；Perfetto Power Rails 可联合查询功耗与调度
+
+### 关联章节
+- 14.11
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+
+## [2026-04-25] 15.2 系统 vs 应用归因 — 知识盲区
+
+### 盲区描述
+Android 14+ ANR 弹性放宽机制
+
+### 重要程度
+高
+
+### 建议研究方向
+CPU 饥饿时 BroadcastReceiver ANR 窗口可能放宽到 2x，需补充文档锚点
+
+### 关联章节
+- 15.2
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+
+## [2026-04-25] 15.5 线上监控 — 知识盲区
+
+### 盲区描述
+现代 Android traces.txt 监听不可行
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 10+ 沙盒权限收紧，普通 App 无法监听系统目录，应全面转向 ApplicationExitInfo
+
+### 关联章节
+- 15.5
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
