@@ -38,8 +38,8 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 review_round: 3
 task9_state: pending
 task2b_state: fixed
