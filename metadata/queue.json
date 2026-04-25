@@ -10315,5 +10315,120 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T23:18:59+08:00",
     "status": "pending"
+  },
+  {
+    "section": "14.5",
+    "section_title": "三方性能库",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Matrix Resource Canary 能力边界与 Booster 资源索引优化前提存在版本/源码偏差",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P1",
+        "location": "L124/L145（Resource Canary）",
+        "detail": "正文把 Resource Canary 写成 Activity/Fragment 泄漏检测，但 Matrix 上游公开能力主要是 Activity leak 与 duplicated bitmap。若要保留 Fragment，必须补出 watcher/lifecycle hook 的源码锚点，否则会把 LeakCanary/通用对象泄漏能力错投到 Matrix Resource Canary。",
+        "suggestion": "收敛为 Activity leak + duplicated bitmap；或补充 Matrix 中 Fragment 监听的具体类、方法和版本。",
+        "evidence": [
+          "Tencent/matrix Resource Canary upstream",
+          "external-review 2026-04-25"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "L219（Booster 资源索引内联）",
+        "detail": "正文把 R.id/R.layout 统一描述成 static final int，并据此解释字段访问替换。但 AGP 8.0 起 android.nonFinalResIds 与 nonTransitiveRClass 默认开启，应用模块 R 字段不再能按传统 final 常量前提理解。",
+        "suggestion": "把该优化限定在旧 AGP/final R id 模式下，补充 AGP 8+ 默认 non-final/non-transitive R 的边界和 Booster/fork 适配状态。",
+        "evidence": [
+          "AGP 8.0 release notes"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T23:29:25+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.6",
+    "section_title": "自动化测试工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Macrobenchmark API 示例和 Perfetto 观察点存在可执行性错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "L219-L220（CompilationMode.Partial 示例）",
+        "detail": "`CompilationMode.Partial(CompilationMode.Partial.Mode.DEFAULT)` 不是 AndroidX Macrobenchmark 的有效 API；`Partial` 使用 `BaselineProfileMode` 参数或默认构造。照文中代码会编译失败。",
+        "suggestion": "改成 `CompilationMode.Partial()`，或显式写 `CompilationMode.Partial(baselineProfileMode = BaselineProfileMode.Require)` 并补 import。",
+        "evidence": [
+          "AndroidX Benchmark API docs",
+          "external-review 2026-04-18 已命中但正文仍未闭环"
+        ]
+      },
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "L442（Perfetto RenderThread 观察点）",
+        "detail": "`RenderThread` 的“DrawQL”不是常见 AOSP/Perfetto slice 名称。读者按该名称检索 trace 会找不到目标；常见观察点应是 `DrawFrame`、GPU completion/queueBuffer 等实际 slice。",
+        "suggestion": "把 `DrawQL` 改为可验证的 `DrawFrame` 或按 Android 版本列出真实 RenderThread/FrameTimeline slice 名称。",
+        "evidence": [
+          "Perfetto/Android frame rendering docs"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "L111/L146（PowerMetric 版本边界）",
+        "detail": "表格只写 `PowerMetric` API 31+，缺少硬件 power rail / Pixel 6+ 等设备能力边界。CI/FTL 段落如果按任意 API 31+ 真机采集功耗，结果可能缺失或不可比。",
+        "suggestion": "把 PowerMetric 改成“API 31+ 且设备暴露 power rail/受支持机型”，并在 CI 方案中加入设备白名单与指标缺失处理。",
+        "evidence": [
+          "AndroidX Macrobenchmark PowerMetric docs"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T23:29:25+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.13",
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Inline Hook 版本边界与 ARM64 跳转细节描述存在误导",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "L366（Android 14 对 Inline Hook 的影响）",
+        "detail": "正文把 Android 14 影响写成 W^X 与 16KB Page Size 两条线；但 16KB Page Size 是 Android 15+ 设备/构建链适配主题，不应归入 Android 14 行为变更。后文 L422 又写 Android 15 引入，章节内版本边界自相矛盾。",
+        "suggestion": "拆成 Android 14 targetSdk 动态代码只读/W^X 约束、Android 15+ 16KB Page Size 两个小节，并在表格中单独标注 API 34 与 API 35+。",
+        "evidence": [
+          "Android 14 behavior changes",
+          "Android 15 16KB page size docs"
+        ]
+      },
+      {
+        "type": "源码错误",
+        "severity": "P1",
+        "location": "L385（Inline Hook 标准执行流程）",
+        "detail": "“通常为 12 字节的 BL/BLR 指令”不准确。ARM64 近跳可用 4 字节 B/BL（有范围限制），远跳常见是 LDR/BR + literal 的 16 字节级 stub；BLR 是寄存器跳转，不是 12 字节固定模板。固定写 12 字节会误导实现者低估指令重写和 trampoline 长度。",
+        "suggestion": "改成“不固定长度；取决于架构、目标距离和框架实现”，示例可写 4B B/BL 与 16B LDR/BR 两类，并说明必须做原指令重定位。",
+        "evidence": [
+          "ShadowHook/ARM64 trampoline practice"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T23:29:25+08:00",
+    "status": "pending"
   }
 ]
