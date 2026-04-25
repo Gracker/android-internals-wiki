@@ -2820,7 +2820,7 @@
     "section": "13.6",
     "section_title": "线程 CPU 状态分析",
     "priority": 85,
-    "reason": "[External Review] Runnable 颜色描述错误 + SQL 漏掉 R+ 状态",
+    "reason": "[Deep Tech Review] 线程状态颜色和 Runnable/R+ SQL 口径仍会误导调度延迟判断",
     "review_issues": [
       {
         "type": "描述错误",
@@ -2836,11 +2836,22 @@
         "evidence": [
           "Perfetto thread_state 表包含 R+ 状态"
         ]
+      },
+      {
+        "type": "源码准确性/数据口径",
+        "location": "L81 / L113-L116 / L404-L417",
+        "detail": "正文把 Runnable 写成“蓝色（浅绿色或白色）”，但同节 L115 又写白色是 Sleeping，颜色口径自相矛盾；SQL 只把 state=R 映射为 Runnable，R+ 会落到单独分组，读者按 Runnable 聚合时会漏掉 preempted runnable 时间。",
+        "suggestion": "删除 Runnable 的“白色”描述，统一 Running/Runnable/Sleeping/D 的 UI 口径；SQL 中把 state IN ('R', 'R+') 合并为 Runnable，或显式输出 “Runnable” 与 “Runnable (Preempted)” 两行。"
       }
     ],
-    "added_by": "external-ai-review",
-    "added_at": "2026-04-25T09:17:47+08:00",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-25T13:04:00+08:00",
+    "status": "pending",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T13:04:00+08:00"
   },
   {
     "section": "13.7",
@@ -2920,29 +2931,71 @@
   },
   {
     "section": "13.9",
-    "priority": 85,
-    "reason": "[External Review] 章节 13.9 存在 P0/P1 问题需回炉",
+    "priority": 95,
+    "reason": "[Deep Tech Review] traced_probes 源码路径与内核 tracepoint 注册流程存在事实错误",
     "review_issues": [
       {
-        "type": "P1-重要缺失",
-        "detail": "- **[P1]"
+        "type": "源码错误",
+        "location": "L211-L214（traced_probes 读取 ftrace 数据的源码路径）",
+        "detail": "正文引用 external/perfetto/src/traced_probes/ftrace_controller.cc 和 traced_probes/ftrace_reader/。AOSP main 中旧路径返回 404，当前 FtraceController 位于 external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc；FtraceReader 类/目录已不存在，per-CPU 读取由 CpuReader/FtraceProcfs 等代码承接。",
+        "suggestion": "改为 external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc，并把 FtraceReader 说明改成 CpuReader + FtraceProcfs::OpenPipeForCpu()/trace_pipe_raw 的现代路径。"
+      },
+      {
+        "type": "原理断裂/源码错误",
+        "location": "L306-L337（内核层：添加自定义 tracepoint）",
+        "detail": "示例把 tracepoint 头文件写在 kernel/trace/events/my_custom.h，并写“在 kernel/trace/Makefile 中注册”。Linux/Android 内核常规做法是 include/trace/events/<subsystem>.h，头文件末尾在 include guard 外包含 <trace/define_trace.h>，并在唯一一个 C 文件中 #define CREATE_TRACE_POINTS 后 include 该头文件。当前步骤照做无法形成可编译的 tracepoint。",
+        "suggestion": "按 include/trace/events/my_custom.h + CREATE_TRACE_POINTS + <trace/define_trace.h> 重写最小可编译流程；Makefile 只负责把使用 tracepoint 的模块/源文件纳入编译，不写成 kernel/trace/Makefile 注册步骤。"
       }
     ],
-    "added_by": "external-ai-review",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "status": "pending",
+    "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "added_at": "2026-04-25T13:04:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T13:04:00+08:00"
   },
   {
     "section": "13.10",
-    "priority": 85,
-    "reason": "[External Review] 章节 13.10 存在 P0/P1 问题需回炉",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Binder 默认线程数、启动 Slice 与多组 SQL 关联逻辑存在事实/可执行性风险",
     "review_issues": [
       {
-        "type": "P1-重要缺失",
-        "detail": "See file for P1 details"
+        "type": "源码错误",
+        "location": "L293 / L343-L358（Binder 线程池利用率）",
+        "detail": "正文写 Binder 线程池默认上限 16。AOSP frameworks/native/libs/binder/ProcessState.cpp 中 DEFAULT_MAX_BINDER_THREADS 为 15；system_server 又在 SystemServer.java 中显式设置 sMaxBinderThreads=31。当前写法既不符合默认 native 进程，也不符合 system_server。",
+        "suggestion": "改成“普通 libbinder 进程默认 15，system_server 当前配置 31，厂商/进程可通过 setThreadPoolMaxThreadCount 调整”；SQL 结论也要区分 CPU 忙、并发占满与请求排队。"
+      },
+      {
+        "type": "源码错误/数据缺失",
+        "location": "L436-L446（冷启动关键时间节点 SQL）",
+        "detail": "SQL 写入 'ZygoteInit.xxx'。AOSP ZygoteInit.java 中 trace section 是 'ZygoteInit'，不是带 .xxx 的名称；并且 ZygoteInit 更接近 zygote 进程初始化/系统启动阶段，不是每次 App 冷启动都会出现的应用侧阶段。",
+        "suggestion": "把 'ZygoteInit.xxx' 改为精确名称 'ZygoteInit'，并说明它只适合系统启动/zygote 初始化分析；App 冷启动应另给 am_proc_start / bindApplication / ActivityThread / first frame 的查询路径。"
+      },
+      {
+        "type": "数据缺失/版本差异",
+        "location": "L407-L420（Java Heap 大小变化）",
+        "detail": "只用 counter_track.name GLOB '*Java Heap*' 匹配连续 Java Heap 计数器，容易在当前 Perfetto/Android trace 中返回空结果。Java heap dump 更常落在 heap graph 相关表，Java allocation sampling 需要 heapprofd com.android.art；process_stats 的 mem.rss.anon 也不能直接等同 Java Heap。",
+        "suggestion": "先查询 counter_track 可用名称；把“连续内存趋势”“Java heap dump”“Java allocation sampling”拆成三条路径，分别给出 process_stats/heapprofd/java_hprof 的数据源前提和 SQL 表。"
+      },
+      {
+        "type": "原理断裂/SQL 逻辑错误",
+        "location": "L383-L399 / L508-L530（GC-帧关联与 ANR 阻塞分类）",
+        "detail": "GC 与 doFrame 的 JOIN 只按时间重叠，没有约束同一进程/主线程，会把其他进程的 Choreographer#doFrame 误配给当前 GC；ANR 阻塞分类用 thread_state LEFT JOIN slice 的区间条件，遇到嵌套 slice 会重复计数，且没有限定 ANR 时间窗，total_ms 可能被放大。",
+        "suggestion": "给所有区间 JOIN 加进程/线程/时间窗约束；复杂区间分析改用 PerfettoSQL 的 SPAN_JOIN/INTERVAL_INTERSECT 或标准库视图，并在 SQL 前声明 trace 配置和适用表。"
       }
     ],
-    "added_by": "external-ai-review",
-    "status": "pending"
+    "added_by": "task9-deep-tech-review",
+    "status": "pending",
+    "section_title": "Perfetto SQL 性能分析实战手册",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "added_at": "2026-04-25T13:04:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T13:04:00+08:00"
   },
   {
     "section": "14.1",
