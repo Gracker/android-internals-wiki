@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-21"
-last_verified_against: "GitHub upstream READMEs + Firebase docs + AndroidX docs"
+last_verified: "2026-04-25"
+last_verified_against: "external review + GitHub upstream READMEs + AndroidX/AGP docs"
 confidence: medium
 sources:
   - type: blog
@@ -30,6 +30,10 @@ sources:
     path: "https://github.com/measure-sh/measure (Measure)"
   - type: blog
     path: "https://github.com/didi/DoKit (滴滴 DoKit)"
+  - type: blog
+    path: "https://github.com/markzhai/AndroidPerformanceMonitor (BlockCanary)"
+  - type: blog
+    path: "https://github.com/SusionSuc/rabbit-client (Rabbit)"
 tags:
   - android
   - research
@@ -41,8 +45,8 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
@@ -53,8 +57,8 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-22T11:25:07+08:00"
-repaired_date: "2026-04-22"
+last_task2b_at: "2026-04-25T13:01:11+08:00"
+repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 ---
 
@@ -102,7 +106,7 @@ repaired_by: "openclaw-task2b"
 | 层次 | 代表方案 | 更接近什么 |
 |---|---|---|
 | **官方基础能力** | JankStats、FrameMetrics、ApplicationExitInfo | 指标与系统回调，不是完整 APM |
-| **客户端 SDK / 组件** | Matrix、KOOM、LeakCanary、btrace、DoKit | 在 App 里负责采集或研发诊断 |
+| **客户端 SDK / 组件** | Matrix、KOOM、LeakCanary、btrace、DoKit、BlockCanary、Rabbit | 在 App 里负责采集或研发诊断 |
 | **平台 / 可观测性方案** | Firebase Performance、Measure | 聚合、展示、分析、告警 |
 
 先把层次分清楚，后面的选型才不会变成“哪个名字更响就接哪个”。
@@ -127,13 +131,13 @@ Matrix 的设计目标是低侵入接入，覆盖从采集到上报的完整监�
 
 Trace Canary 的核心能力是检测卡顿、慢函数、ANR、启动耗时和帧率异常。它的工作原理可以分两层来看。
 
-第一层是**编译期插桩**。Trace Canary 会在编译阶段对应用字节码做方法级改写，在每个方法的入口和出口插入计时逻辑。这种插桩是选择性的，可以按包名、类名或白名单限制范围，控制运行时开销。插桩后的代码会在方法执行时记录起止时间戳和调用堆栈。公开上游长期保留的是 Transform 路径。到 AGP 8.x，`android.registerTransform` 已被移除，接入方要结合具体 Matrix 版本、社区 fork 或自研改造，确认是否已经迁到 Instrumentation API / Artifacts API。正文只保留到这个边界。
+第一层是**编译期插桩**。Trace Canary 会在编译阶段对应用字节码做方法级改写，在每个方法的入口和出口插入计时逻辑。这种插桩是选择性的，可以按包名、类名或白名单限制范围，控制运行时开销。插桩后的代码会在方法执行时记录起止时间戳和调用堆栈。公开上游长期保留的是 Transform 路径；截至 2025 Q1，Tencent/matrix 官方插件还没有发布面向 AGP 8.0+ 的正式可用版本。AGP 8.0 起 `android.registerTransform` 已移除，使用 AGP 8.0+ 的项目不要把 Matrix 官方插件视为可直接接入的选项。可执行路线只有两类：使用已经迁移到 Android Components instrumentation 管线且经过团队验证的 fork；或自行把 `MatrixTraceTransform` 迁到 `variant.instrumentation.transformClassesWith(...)` / `AsmClassVisitorFactory`，再按需配合 Artifacts API 处理产物。迁移验证至少覆盖 Debug/Release、R8、增量编译和多模块场景。
 
 第二层是**运行时检测**。Trace Canary 监听主线程的 Looper 消息分发和 Choreographer 的 doFrame 回调。当一个 Message 的执行耗时超过阈值（比如默认 700ms），或者一帧的渲染超过 16.6ms 导致连续掉帧，它就会触发上报逻辑。对于 ANR 检测，Trace Canary 提供两种方式：LooperAnrTracer 在主线程 Message 开始执行时设置一个 5 秒超时（类似"埋炸弹"），如果超时触发则判定为 ANR；SignalAnrTracer 则通过捕捉系统发出的 SIGQUIT 信号来检测。
 
 在实际分析中，我们可以通过 Trace Canary 的上报数据看到：触发卡顿的具体方法、完整的调用堆栈、该方法的执行耗时以及执行次数。这比在 Perfetto 中逐帧查看 Trace 要高效得多，特别是在线上环境中。
 
-[已验证: Matrix 上游仍可见 `MatrixTraceLegacyTransform` 等 Transform 路径；公开 issue #888 明确记录 AGP 8.x 下 `android.registerTransform` 已移除]
+[已验证: Matrix 上游仍可见 `MatrixTraceLegacyTransform` 等 Transform 路径；公开 issue #888 记录 AGP 8.x 下 `android.registerTransform` 已移除；AGP 8.0+ 字节码改写需迁移到 Android Components instrumentation API / `AsmClassVisitorFactory`]
 
 ### Resource Canary：内存泄漏与冗余 Bitmap
 
@@ -189,7 +193,7 @@ KOOM 的 Native 泄漏检测模块（koom-native-leak）采用了与 Android 系
 
 ### 线程泄漏检测
 
-KOOM 还提供了线程泄漏检测能力。它通过 Hook pthread_create 和 pthread_exit，记录线程的创建和退出。如果一个线程在创建后长时间没有退出（超过可配置的阈值），且线程栈中看不到有意义的业务逻辑（比如卡在 Object.wait 或 nativePollOnce），KOOM 会将其标记为疑似泄漏线程。线程泄漏在生产环境中经常被忽视，但它占用的不仅是内存（每个线程默认 1MB 栈空间），还有文件描述符和调度资源。线上使用时通常还要配合线程白名单、业务线程命名规范或常驻线程标记，先过滤掉 Binder 线程池、线程池 worker、监控线程这类预期长期存活的线程，避免误报。
+KOOM 还提供了线程泄漏检测能力。这里的“泄漏”分两类：线程长时间存活；POSIX 默认 joinable 线程已经退出、但没有被 `pthread_join()` 或 `pthread_detach()` 回收。joinable 线程结束后仍会保留线程描述符、栈等 native 资源，数量累积后会推高 native 内存和线程相关资源占用。KOOM 通过 Hook `pthread_create`、`pthread_exit` 并跟踪 join/detach 状态，识别长时间存活的线程和退出后未回收的 joinable 线程。线上使用时通常还要配合线程白名单、业务线程命名规范或常驻线程标记，先过滤掉 Binder 线程池、线程池 worker、监控线程这类预期长期存活的线程，避免误报。
 
 [待验证: KOOM 线程泄漏模块的线上稳定性表现]
 
@@ -282,11 +286,23 @@ Booster 基于 Transform API 的经典方案也有局限。Transform API 在 AGP
 
 ### DoKit：更像研发工具箱
 
-`DoKit` 的覆盖面很广，FPS、启动耗时、网络、沙盒浏览、各种研发辅助能力都在里面。它对开发和测试现场非常有价值，但定位更接近“研发工具箱”，而不是面向生产环境的大规模线上 APM。
+`DoKit` 的覆盖面很广，FPS、启动耗时、网络、沙盒浏览、各种研发辅助能力都在里面。它对开发和测试现场有价值，定位更接近“本地研发工具箱”；生产环境的大规模线上 APM 采样、聚合、告警不应依赖它。2024-2025 年间，DoKit 云端服务和官网维护状态不稳定，依赖 `www.dokit.cn` 的 Mock、数据看板等能力不应作为团队长期方案；离线可用的设备侧工具更值得保留。
 
 把它和 `Firebase Performance`、`Measure` 完全写成同一类工具，会让读者误判其使用场景。
 
-[已验证: github.com/didi/DoKit]
+[已验证: github.com/didi/DoKit + external-review 2026-04-25]
+
+### BlockCanary：理解 Looper 监控的历史样本
+
+`BlockCanary` 已多年停更，不适合作为新项目的生产监控方案。它的价值在于展示早期卡顿监控的基本做法：通过 `Looper.getMainLooper().setMessageLogging(...)` 观察 Message 分发前后时间，再配合主线程堆栈采样定位长耗时片段。读旧项目时，如果看到类似 Printer / Looper 日志的卡顿监控，可以把它归到这一类。
+
+[已验证: github.com/markzhai/AndroidPerformanceMonitor]
+
+### Rabbit：轻量级研发侧后门
+
+`Rabbit`（`SusionSuc/rabbit-client`）更像轻量级研发侧工具，把性能观察、页面信息和调试入口放在手机端 UI 中。它适合中小团队在调研期快速建立“设备上能看到”的反馈面，但不承担完整线上 APM 的采样、聚合和告警能力。选型时应把它放在 DoKit 这类研发工具箱旁边，避免拿它和 Matrix、Measure 做同层比较。
+
+[已验证: github.com/SusionSuc/rabbit-client]
 
 ## 扩展：Rhea / btrace —— 字节跳动的 Trace 工具
 
