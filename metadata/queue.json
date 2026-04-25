@@ -3275,7 +3275,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T15:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "completion_reason": "补充 ProfilingResult 结果文件权限、隐私风险、合规归档字段，并补强系统级限流核验方式。"
   },
   {
     "section": "14.9",
@@ -3330,7 +3334,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T15:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "completion_reason": "补充 CameraX 首帧额外 80-150ms 边界、高通 CamX/CHI trace 观察点、GFXReconstruct YUV 检查与 requestStreamBuffers 同步阻塞说明。"
   },
   {
     "section": "14.10",
@@ -5324,7 +5332,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T15:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "completion_reason": "补充 CameraX 首帧额外 80-150ms 边界、高通 CamX/CHI trace 观察点、GFXReconstruct YUV 检查与 requestStreamBuffers 同步阻塞说明。"
   },
   {
     "section": "07.04",

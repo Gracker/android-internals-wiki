@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: openclaw-task6
-last_task2b_at: '2026-04-21T22:42:29+08:00'
+last_task2b_at: '2026-04-25T15:40:00+08:00'
 reviewed_date: '2026-04-24'
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
@@ -32,8 +32,8 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -48,9 +48,9 @@ task9_reviewed_date: '2026-04-21'
 
 # 14.9 Android Camera 性能与 Perfetto 分析
 
-Camera 是 Android 设备上最复杂的子系统之一。当用户打开相机应用时，我们看到的流畅预览和快速响应背后，是一条横跨 App 层、Framework 层、HAL 层和内核驱动的复杂链路。在这个环节中，任何一个节点的性能问题都会影响整个用户体验——预览卡顿会让用户觉得相机很"卡"，拍照延迟会让用户错失精彩瞬间，录像丢帧会让视频变得不流畅。
+Camera 性能问题通常横跨 App、Framework、HAL、内核驱动和显示系统。预览卡顿、拍照慢、录像丢帧、内存上涨分别对应不同观测点：有的看 `cameraserver` 和 HAL slice，有的看 BufferQueue，有的看 `CameraMetadataNative` 引用保留和 native allocation。
 
-这一节聚焦三件事：先把 Camera 性能问题分成几类，再梳理 Camera 管线里的 Buffer 流转，再用 Perfetto Trace Processor 把关键指标量化出来。读完之后，面对一个 Camera 性能问题，我们应该知道从哪里入手、用什么 SQL 查询、怎么定位具体瓶颈。
+本节聚焦三件事：把 Camera 性能问题分成可排查的类别，梳理 Camera 管线里的 Buffer 流转，再用 Perfetto Trace Processor 把指标量化。读完后，面对 Camera 性能问题，可以先判断问题落在哪一段，再选择 SQL、Track 和补充工具。
 
 [已验证: 来源见 Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md]
 
@@ -98,6 +98,8 @@ Camera 是 Android 设备上最复杂的子系统之一。当用户打开相机�
 ## 🆚 Camera2 API vs CameraX API 的性能差异  <!-- anchor: camera2-vs-camerax -->
 
 ## 📊 HAL3 管线延迟的深度分析  <!-- anchor: hal3-latency -->
+
+## 🧪 GFXReconstruct 辅助检查花屏和 YUV 帧问题  <!-- anchor: gfxreconstruct-yuv -->
 
 ## ⚠️ 常见问题与误区  <!-- anchor: common-mistakes -->
 
@@ -182,6 +184,8 @@ EOF
 **cameraserver 进程**：包含 CameraService、Camera3Device 和各个 Camera3Stream 的 Slice。关键的 Slice 包括 `connectDevice`（打开 Camera 设备）、`beginConfigure`/`endConfigure`（配置 Stream）、`submitRequestList`（下发 CaptureRequest）、`frame capture`（处理一帧）、`first full buffer`（首帧到达）。
 
 **Camera HAL 进程**：名称因厂商而异（如 `android.hardware.camera.provider`），包含 HAL 内部的处理 Slice。如果 HAL 厂商加了自定义的 ATrace，这里会显示 ISP 处理、3A 计算等耗时。
+
+**厂商 Camera HAL 线程**：高通平台常见 `CamXWorker`、`CHI`、`ProcessCaptureRequest`、`ProcessCaptureResult`、`Flush` 等名字，MTK 平台可能出现 `MtkCam`、`P1Node`、`P2Node` 等标记。这些名字不属于 Android 公开 ABI，只能作为设备侧排查线索。排查时先按线程名和 slice 名筛出 HAL 进程里的长耗时段，再按时间戳和 `cameraserver` 的 `submitRequestList`、`frame capture`、`first full buffer` 比对。`ProcessCaptureRequest` 卡住通常指向 HAL 或算法接收请求慢；`ProcessCaptureResult` 或 worker 线程尾段变长，更像 ISP、3A、多帧算法或 buffer 归还慢。
 
 **App 进程**：包含 `deliverInputEvent`（用户点击事件）、CameraManager API 调用的 Slice。预览场景下还需要看 `queueBuffer` 的时间间隔。
 
@@ -430,6 +434,8 @@ Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP
 
 **HAL Buffer 管理策略**：Android 10 引入了 Camera HAL 3.5 的 `requestStreamBuffers`/`returnStreamBuffers` API，允许 HAL 和 Framework 解耦 Buffer 分配。HAL 可以按需请求 Buffer，而不是在 Session 配置时一次性分配所有 Buffer。这减少了内存占用，也降低了因 Buffer 数量不足导致卡顿的风险。
 
+这组 API 仍然会把取 Buffer 的等待暴露到请求时序里。HAL 在 `processCaptureRequest` 附近现取 Buffer 时，如果 Framework 侧没有空闲 Buffer、消费端持有过久或 BufferQueue 正在等待 release fence，`requestStreamBuffers` 会同步等待，后续 Request 下发也会抖动。排查时把 `requestStreamBuffers`、`returnStreamBuffers`、`dequeueBuffer` 的耗时放在同一张时间线上看；工程上保留少量预取 Buffer，或把取 Buffer 放到独立高优先级线程，避免每帧都在 Request 热路径上等空闲 Buffer。
+
 **功耗度量**：在 Perfetto 中可以用 `android_cpu` Metric 查看 Camera 相关进程的 CPU 时间。如果 `cameraserver` 的 CPU 时间异常高，说明 HAL 的处理负载很重；如果 App 进程的 CPU 时间高，说明可能在主线程做了过多处理（如直接在 `onPreviewFrame` 中做图像处理）。将 Camera 操作移到后台线程，或者用 RenderScript/HAL 硬件加速来替代 CPU 软处理，通常能带来明显的功耗下降。
 
 [待补充: 不同 Sensor 模式下的功耗量化数据]
@@ -452,7 +458,7 @@ CameraX 是 Jetpack 提供的高层 Camera 库，构建在 Camera2 之上。它�
 - **自动选择最优的 Sensor 模式和分辨率组合**，避免 App 手动配置时选择了低效的组合
 - **内部管理 Camera Session 的生命周期**，避免了 App 因不当的 Session 操作导致的帧率波动
 - **对低版本设备的兼容性处理**，在不支持某些 Camera2 高级特性的设备上自动降级到更高效的实现
-- **冷启动阶段多一层 capability 解析、UseCase 绑定和默认配置收敛**，首帧前通常会比直接调用 Camera2 多出一段初始化开销。扫码、即拍即走这类冷启动敏感场景，要实测首帧时间，再决定是否接受这层封装
+- **冷启动阶段多一层 capability 解析、UseCase 绑定和默认配置收敛**，首帧前常见额外 80-150ms 初始化开销。扫码、即拍即走这类冷启动敏感场景，要把 `deliverInputEvent` → 首帧上屏拆开实测；如果预算只剩几十毫秒，直接 Camera2 更可控
 
 从 Perfetto Trace 的角度看，使用 CameraX 的 App 通常会在 `cameraserver` 中呈现更简洁的调用流程，因为 CameraX 会把不少配置步骤收束到库内部。代价是多了一层抽象，在极端性能场景（如高帧率录像、多摄像头并发）里，CameraX 反而可能成为限制，这时候还是需要直接使用 Camera2 API。
 
@@ -477,6 +483,12 @@ HAL3 管线中，从 App 下发 CaptureRequest 到收到 CaptureResult，经历�
 在 Perfetto 中追踪 HAL3 管线延迟，可以关注 `submitRequestList` → `first full buffer` 的时间差，这个差值反映了从 Request 下发到首帧产出的端到端延迟。
 
 [待验证: 不同 SoC 平台（高通/联发科/三星）上 HAL3 管线延迟的典型值]
+
+## GFXReconstruct 辅助检查花屏和 YUV 帧问题
+
+Perfetto 能告诉你哪一帧晚到、哪段处理慢，但不能直接看到 Buffer 内容。遇到花屏、颜色错乱、UV 平面顺序错误这类问题，GFXReconstruct 可以作为补充工具：在使用 Vulkan / OpenGL 导入 `AHardwareBuffer` 的路径上抓取图形 API 调用，再用 `gfxrecon-convert --include-binaries` 导出 capture 中的二进制资源，离线检查 YUV 平面、stride、crop 和色彩格式。
+
+这个方法有边界。Camera 预览如果走 `SurfaceView` 直送 SurfaceFlinger 或 HWC overlay，GFXReconstruct 可能抓不到最终预览帧；它也看不到 Sensor 和 ISP 内部状态。它适合回答“进入图形 API 后 Buffer 内容是否已经错了”，不适合替代 HAL trace、vendor log 或原始帧 dump。
 
 ## 常见问题与误区
 

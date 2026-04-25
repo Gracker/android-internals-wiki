@@ -39,6 +39,7 @@ task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-25T15:40:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
 last_task9_at: "2026-04-21T18:42:00+08:00"
@@ -128,6 +129,14 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 同时注册两层 listener 时，去重主键优先用 `resultFilePath`。失败结果没有文件时，再用 `triggerType + tag + errorCode + caseId` 兜底。这样显式请求和 trigger 结果可以走同一条归档流程，不会出现双写同一份 artifact 的情况。
 
+## 结果文件的权限、隐私和合规
+
+Profiling 结果按当前应用 UID 归属返回。`registerForAllProfilingResults(...)` 只接收当前 UID 的 profiling 结果，不能读取其他应用的结果；应用处理 `ProfilingResult.getResultFilePath()` 指向的文件时，也不需要 `READ_EXTERNAL_STORAGE` 这类外部存储权限。把它当成应用私有的诊断文件处理即可。
+
+隐私风险主要来自结果内容，不来自读取权限。system trace 可能包含线程名、进程名、Surface 名、Binder 调用和业务 `tag`；heap dump / heap profile 可能暴露对象类型、字符串内容和内存分配路径；stack sampling 可能包含方法名与包名。平台会对跨应用信息做裁剪，但 App 自己的业务上下文仍然可能进入结果文件。上传前要按采集类型做过滤、压缩、加密、保留期限和用户授权校验。
+
+归档流程里记录三类字段：`profilingType`、`triggerType`、`fileSizeBytes`。`tag` 不要写手机号、订单号、地理位置等可识别用户的信息，用内部 case id 或哈希值更稳。采集策略写进隐私条款和内部数据留存说明，避免线上追踪能力和合规说明不一致。
+
 ## System Triggered Profiling 的版本对照表
 
 逐项 trigger 的 stop condition、产物细节和 AOSP 路径放在 §8.8《ProfilingManager 系统触发式性能追踪》展开，这里只保留接入时最容易写错的版本边界。
@@ -185,6 +194,8 @@ W/ProfilingCaseRepo: result failed, case=scroll-jank-20260419-01, trigger=TRIGGE
 ```
 
 聚合面板按 `errorCode` 分组更稳，`errorMessage` 更适合留在原始日志里做单次排查。
+
+`ERROR_FAILED_RATE_LIMIT_SYSTEM` 的预算不要写死成产品常量。Profiling 模块可通过 Mainline 和 `device_config` 调整阈值，不同版本、OEM 构建和调试配置可能不一致。实验室核验时可以用 `adb shell device_config list profiling` 查看当前设备的 profiling 参数；线上策略只按错误码退避、降采样和聚合统计，不依赖某个固定次数。
 
 ## 与其他工具的分工
 
