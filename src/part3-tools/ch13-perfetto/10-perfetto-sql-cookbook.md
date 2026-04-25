@@ -5,8 +5,8 @@ status: ready-for-review
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-22"
-last_verified_against: "Perfetto stdlib docs (android.frames.timeline / android.monitor_contention)"
+last_verified: "2026-04-25"
+last_verified_against: "AOSP Binder/ZygoteInit review anchors, Perfetto SQL tables/stdlib docs"
 confidence: medium
 sources:
   - type: official
@@ -32,21 +32,22 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T13:04:00+08:00"
-last_task2b_at: "2026-04-22T19:39:59+08:00"
-
+last_task2b_at: "2026-04-25T14:40:00+08:00"
+rework_date: "2026-04-25"
+rework_by: openclaw-task2b
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册
@@ -291,7 +292,7 @@ Perfetto 通过 linux.ftrace 的 `binder_transaction` / `binder_transaction_rece
 - **server_dur**：服务端实际处理时间
 - **dispatch_dur**：服务端排队等待时间（从收到请求到开始处理）
 
-当 `dispatch_dur` 持续大于 `server_dur` 时，说明服务端 Binder 线程池饱和（默认上限 16 线程），新来的请求在排队等待空闲线程。
+当 `dispatch_dur` 持续大于 `server_dur` 时，说明服务端开始出现排队。线程上限要按进程口径看：普通 libbinder 进程的 `DEFAULT_MAX_BINDER_THREADS` 是 15；`system_server` 在 `SystemServer.java` 中把 `sMaxBinderThreads` 配成 31；厂商进程或 native 服务还可以通过 `ProcessState::setThreadPoolMaxThreadCount()` 调整。排队时间升高不一定来自线程数本身，还要结合服务端 CPU 忙、锁等待和同步 Binder 嵌套调用判断。
 
 > **注意**：下面的 SQL 通过 `slice.name GLOB '*binder*'` 筛选 Binder 相关 slice，能量化单次调用的总耗时。但要精确分离 client/server/dispatch 三阶段，需要通过 ftrace 的 `binder_transaction` 事件按时间戳关联客户端和服务端的 tracepoint。本节先聚焦总耗时的定位和排序，三阶段拆分需要更复杂的 JOIN 逻辑。
 
@@ -335,7 +336,7 @@ WHERE thread.name = 'main'
 ORDER BY slice.dur DESC;
 ```
 
-`binder_code` 是 Binder 调用的方法编号，可以对照 AIDL 接口定义确定具体调用了哪个方法。结合 §1.4 Binder IPC 章节的知识，我们可以判断这个耗时是否合理。
+`binder_code` 是 Binder 调用的方法编号，可以对照 AIDL 接口定义确定具体调用了哪个方法。`EXTRACT_ARG()` 返回的是 PerfettoSQL 的动态值；如果后续要按编号做大小比较或分桶，先用 `CAST(EXTRACT_ARG(slice.arg_set_id, 'code') AS INTEGER)` 转成整数。结合 §1.4 Binder IPC 章节的知识，可以判断这个耗时是否合理。
 
 ### Binder 线程池利用率
 
@@ -356,7 +357,7 @@ GROUP BY thread.name
 ORDER BY cpu_ms DESC;
 ```
 
-如果大部分 `Binder:*` 线程的 `cpu_ms` 都很高且 `sched_count` 很大，说明线程池负载很重，可能需要优化服务端处理逻辑或考虑异步化改造。
+这个查询统计的是 Binder 线程获得 CPU 执行的时间，不能直接等同于线程池利用率。如果多数 `Binder:*` 线程在同一时间窗内都有较高 `cpu_ms`，同时客户端 Binder slice 的耗时或 `binder_transaction` 排队间隔也在升高，才可以判断服务端接近饱和。后续处理方向通常是缩短服务端同步工作、拆掉嵌套同步 Binder 调用，或在确认业务模型允许后调整线程池上限。
 
 ## 内存与 GC 分析
 
@@ -378,75 +379,121 @@ WHERE slice.name GLOB '*GC*'
   OR slice.name GLOB '*GarbageCollector*';
 ```
 
-这个查询给出 GC 的全景统计。如果 `avg_pause_ms` 超过 3-5ms，或者 `max_pause_ms` 超过 16ms（一帧的预算），就需要关注了。GC 暂停和帧时间的关联分析可以这样做：
+这个查询给出 GC 的全景统计。如果 `avg_pause_ms` 超过 3-5ms，或者 `max_pause_ms` 超过 16ms（一帧的预算），就需要继续查。GC 暂停和帧时间的关联分析要限定同一进程，并把 frame 限在主线程：
 
 ```sql
--- GC 暂停与帧时间的关联
+-- GC 暂停与同进程主线程帧时间的关联
 SELECT
+  gc_process.name AS process_name,
   gc.ts AS gc_ts,
   CAST(gc.dur / 1e6 AS FLOAT) AS gc_ms,
   CAST(frame.dur / 1e6 AS FLOAT) AS frame_ms
 FROM slice AS gc
 JOIN thread_track AS gc_track ON gc.track_id = gc_track.id
 JOIN thread AS gc_thread ON gc_track.utid = gc_thread.utid
-JOIN slice AS frame ON
-  frame.name = 'Choreographer#doFrame'
-  AND frame.ts <= gc.ts
-  AND frame.ts + frame.dur >= gc.ts
+JOIN process AS gc_process ON gc_thread.upid = gc_process.upid
+JOIN slice AS frame
+  ON frame.name = 'Choreographer#doFrame'
+ AND frame.ts < gc.ts + gc.dur
+ AND gc.ts < frame.ts + frame.dur
 JOIN thread_track AS frame_track ON frame.track_id = frame_track.id
-WHERE gc.name GLOB '*GC*'
+JOIN thread AS frame_thread ON frame_track.utid = frame_thread.utid
+JOIN process AS frame_process ON frame_thread.upid = frame_process.upid
+WHERE (gc.name GLOB '*GC*' OR gc.name GLOB '*GarbageCollector*')
   AND gc.dur > 1e6
+  AND frame_thread.name = 'main'
+  AND gc_process.upid = frame_process.upid
 ORDER BY gc.dur DESC;
 ```
 
-这个查询找出发生在 doFrame 期间的 GC 暂停——如果结果中有 `gc_ms` 接近或超过 5ms 的记录，它们就是导致 jank 的直接原因。解决方案通常是减少内存分配频率、优化对象池，参见 §4.3 和 §10.6。
+这个查询找出与目标进程主线程 `doFrame` 重叠的 GC 暂停。结果中如果有 `gc_ms` 接近或超过 5ms 的记录，再沿着同一进程的分配热点继续查。大规模 Trace 上，优先把目标进程和时间窗加进 WHERE；更复杂的区间交集可以改用 PerfettoSQL 的 `SPAN_JOIN` / `INTERVAL_INTERSECT`。
 
 ### Java Heap 变化趋势
 
-通过 counter 表可以追踪 Java Heap 大小随时间的变化：
+Java Heap 在 Perfetto 里有三条常用观察路径。第一步先确认 trace 里有哪些 counter：
 
 ```sql
--- Java Heap 大小变化
+-- 查看可用的 Java / Heap 相关 counter 名称
+SELECT DISTINCT counter_track.name
+FROM counter_track
+WHERE counter_track.name GLOB '*Java*Heap*'
+   OR counter_track.name IN ('Heap size (KB)', 'mem.java_heap')
+   OR counter_track.name GLOB '*_MEM_STATS*Java*'
+ORDER BY counter_track.name;
+```
+
+路径一是连续趋势，适合观察进程内存压力和 Java heap counter 的变化：
+
+```sql
+-- Java Heap / Heap counter 趋势。value_raw 的单位要按 counter 名称和数据源确认
 SELECT
   CAST((counter.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
-  counter.value / 1024 / 1024 AS heap_mb
+  counter_track.name AS counter_name,
+  counter.value AS value_raw
 FROM counter
 JOIN counter_track ON counter.track_id = counter_track.id
-WHERE counter_track.name GLOB '*Java Heap*'
+WHERE counter_track.name GLOB '*Java*Heap*'
+   OR counter_track.name IN ('Heap size (KB)', 'mem.java_heap')
+   OR counter_track.name GLOB '*_MEM_STATS*Java*'
 ORDER BY counter.ts;
 ```
 
-如果 Heap 大小呈锯齿形上升（分配→GC 回收→再分配→再回收），且每次 GC 后的基准线持续抬高，说明存在内存泄漏。参见 §10.2 内存泄漏章节。
+路径二是 Java heap dump。它依赖 heap graph / `android.java_hprof` 相关数据源，分析对象数量、类名和引用关系时看 `heap_graph_object`、`heap_graph_class`、`heap_graph_reference` 等表。
 
-[待验证: counter_track.name 中的 Java Heap 名称可能因设备和 Android 版本而异，建议先在 UI 中确认 track 名称]
+路径三是 Java allocation sampling。它依赖 heapprofd 与 ART Java allocation 相关配置，分析分配热点时看 `heap_profile_allocation` 以及 callsite / frame 相关表。`process_stats` 里的 `mem.rss.anon` 只能表示匿名 RSS 趋势，不能直接当成 Java Heap。
+
+如果 Heap 相关 counter 呈锯齿形上升（分配→GC 回收→再分配→再回收），且每次 GC 后的基准线持续抬高，说明存在内存泄漏。参见 §10.2 内存泄漏章节。
+
+[已验证: Perfetto counter / heap graph / heapprofd 表族；counter 名称随 trace 配置和 Android 版本变化]
 
 ## 启动时间分析
 
-冷启动是从用户点击 App 图标到首帧渲染完成的过程。Perfetto SQL 可以精确分解这个过程中的每个阶段耗时。
+冷启动是从用户点击 App 图标到首帧渲染完成的过程。Perfetto SQL 可以分解这个过程中的关键阶段。`ZygoteInit` 要单独看：它是 zygote 进程初始化 / 系统启动阶段的 trace section，不是每次 App 冷启动都会出现的应用侧阶段。
 
 ### 冷启动全流程时间分解
 
+系统启动或 zygote 初始化分析时，可以查精确的 `ZygoteInit` slice：
+
 ```sql
--- 冷启动关键时间节点
+-- 系统启动 / zygote 初始化中的 ZygoteInit slice
 SELECT
   slice.name,
   CAST((slice.ts - trace_start()) / 1e6 AS INTEGER) AS start_ms,
   CAST(slice.dur / 1e6 AS FLOAT) AS dur_ms
 FROM slice
-JOIN thread_track ON slice.track_id = thread_track.id
-WHERE slice.name IN (
-  'ZygoteInit.xxx',
-  'ActivityThread.handleBindApplication',
-  'Application.onCreate',
-  'Activity.onCreate',
-  'Choreographer#doFrame'
-)
+WHERE slice.name = 'ZygoteInit'
 ORDER BY slice.ts;
 ```
 
-[待验证: 上述 slice name 需要根据实际 Trace 中的名称调整，不同 Android 版本可能有差异]
+App 冷启动分析更常看进程创建、绑定应用、主线程入口和首帧。下面的查询同时兼容 thread track 与 process track：
 
-通过这个查询可以得到启动过程中各个阶段的时间线。正常情况下，`Application.onCreate` 应该控制在 200ms 以内，`Activity.onCreate` 在 100ms 以内。如果某个阶段明显偏长，可以进一步分析该阶段内的 Binder 调用和锁等待。
+```sql
+-- App 冷启动关键节点。按实际 trace 中的 slice 名再收窄 WHERE
+SELECT
+  slice.name,
+  CAST((slice.ts - trace_start()) / 1e6 AS INTEGER) AS start_ms,
+  CAST(slice.dur / 1e6 AS FLOAT) AS dur_ms,
+  COALESCE(thread_process.name, track_process.name, thread.name, 'unknown') AS owner
+FROM slice
+LEFT JOIN thread_track ON slice.track_id = thread_track.id
+LEFT JOIN thread ON thread_track.utid = thread.utid
+LEFT JOIN process AS thread_process ON thread.upid = thread_process.upid
+LEFT JOIN process_track ON slice.track_id = process_track.id
+LEFT JOIN process AS track_process ON process_track.upid = track_process.upid
+WHERE slice.name GLOB '*am_proc_start*'
+   OR slice.name GLOB '*bindApplication*'
+   OR slice.name GLOB '*ActivityThread*'
+   OR slice.name IN (
+     'Application.onCreate',
+     'Activity.onCreate',
+     'Choreographer#doFrame'
+   )
+ORDER BY slice.ts;
+```
+
+[已验证: AOSP ZygoteInit.java 使用 `ZygoteInit` trace section；App 冷启动节点需按实际 trace 中的 slice 名确认]
+
+通过这个查询可以得到启动过程中各个阶段的时间线。`Application.onCreate`、`Activity.onCreate` 是否可见，取决于应用或 Framework 是否写入对应 trace section。如果某个阶段明显偏长，可以进一步分析该阶段内的 Binder 调用和锁等待。
 
 ### 启动过程中的 Binder 调用统计
 
@@ -476,62 +523,115 @@ ORDER BY total_ms DESC;
 
 ## ANR 分析
 
-ANR（Application Not Responding）是用户最直接感知的性能问题。ANR 发生时，系统会 dump 当前线程堆栈到 `/data/anr/` 目录。但堆栈只能看到 ANR 时刻的快照，无法看到"导致 ANR 的 5 秒里主线程到底在做什么"。Perfetto SQL 可以补全这个时间窗口。
+ANR（Application Not Responding）是用户最直接感知的性能问题。ANR 发生时，系统会 dump 当前线程堆栈到 `/data/anr/` 目录。但堆栈只能看到 ANR 时刻的快照，无法看到"导致 ANR 的 5 秒里主线程到底在做什么"。Perfetto SQL 可以补全这个时间窗口。下面两组 SQL 依赖 `thread_state` 和 `slice`；如果要继续拆 Binder 阶段，还要在抓取配置里启用 Binder ftrace events。
 
 ### ANR 前后主线程活动分析
 
 ```sql
 -- ANR 前后 5 秒主线程活动
+WITH params AS (
+  -- 替换 0：ANR 发生时刻相对 trace_start() 的纳秒偏移
+  SELECT trace_start() + 0 AS anr_ts
+),
+window AS (
+  SELECT
+    anr_ts - 5000000000 AS start_ts,
+    anr_ts + 1000000000 AS end_ts
+  FROM params
+)
 SELECT
   CAST((slice.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
+  process.name AS process_name,
   slice.name,
   CAST(slice.dur / 1e6 AS FLOAT) AS dur_ms,
   slice.depth
 FROM slice
 JOIN thread_track ON slice.track_id = thread_track.id
 JOIN thread USING (utid)
-WHERE thread.name = 'main'
-  AND slice.ts BETWEEN (
-    -- 假设 ANR 时间点为 trace_start() + X，需要替换为实际值
-    trace_start() + 0  -- 替换为 ANR 时间戳 - 5秒（纳秒）
-  ) AND (
-    trace_start() + 0  -- 替换为 ANR 时间戳 + 1秒（纳秒）
-  )
+JOIN process USING (upid)
+CROSS JOIN window
+WHERE process.name = 'com.example.app'  -- 替换为目标进程
+  AND thread.name = 'main'
+  AND slice.ts < window.end_ts
+  AND slice.ts + slice.dur > window.start_ts
 ORDER BY slice.ts;
 ```
 
-实际使用时，需要先把 ANR 的时间点定位出来（在 Perfetto UI 中搜索 `am_anr` 或 ANR 相关的 slice），然后把时间戳替换进去。
+实际使用时，先定位 ANR 时间点（在 Perfetto UI 中搜索 `am_anr` 或 ANR 相关 slice），再把 `params.anr_ts` 换成真实时间。
 
 ### 主线程阻塞原因分类
 
-这里要以 `thread_state` 为主表，因为 ANR / 卡顿排查关心的是主线程在一段时间里处于什么状态，而不是它某个 CPU slice 结束时留下了什么 `end_state`。
+ANR / 卡顿排查应以 `thread_state` 为主表，因为它记录主线程在一段时间里的状态；`sched.end_state` 只描述 CPU slice 结束那一刻。下面的查询先裁剪 ANR 时间窗，再为每个 `thread_state` 只挑一个重叠时间最长的 slice，避免嵌套 slice 重复放大 `total_ms`：
 
 ```sql
 -- 主线程阻塞原因分类
+WITH params AS (
+  -- 替换 0：ANR 发生时刻相对 trace_start() 的纳秒偏移
+  SELECT trace_start() + 0 AS anr_ts
+),
+window AS (
+  SELECT
+    anr_ts - 5000000000 AS start_ts,
+    anr_ts + 1000000000 AS end_ts
+  FROM params
+),
+main_states AS (
+  SELECT
+    thread_state.id AS state_id,
+    thread_state.utid,
+    thread_state.state,
+    MAX(thread_state.ts, window.start_ts) AS ts,
+    MIN(thread_state.ts + thread_state.dur, window.end_ts)
+      - MAX(thread_state.ts, window.start_ts) AS dur
+  FROM thread_state
+  JOIN thread USING (utid)
+  JOIN process USING (upid)
+  CROSS JOIN window
+  WHERE process.name = 'com.example.app'  -- 替换为目标进程
+    AND thread.name = 'main'
+    AND thread_state.state != 'Running'
+    AND thread_state.ts < window.end_ts
+    AND thread_state.ts + thread_state.dur > window.start_ts
+),
+state_with_slice AS (
+  SELECT
+    main_states.*,
+    (
+      SELECT name
+      FROM (
+        SELECT
+          s.name,
+          MIN(s.ts + s.dur, main_states.ts + main_states.dur)
+            - MAX(s.ts, main_states.ts) AS overlap_dur
+        FROM slice AS s
+        JOIN thread_track AS tt ON s.track_id = tt.id
+        WHERE tt.utid = main_states.utid
+          AND s.ts < main_states.ts + main_states.dur
+          AND s.ts + s.dur > main_states.ts
+        ORDER BY overlap_dur DESC
+        LIMIT 1
+      )
+    ) AS slice_name
+  FROM main_states
+)
 SELECT
   CASE
-    WHEN slice.name GLOB '*monitor*' THEN 'Lock Contention'
-    WHEN slice.name GLOB '*binder*' THEN 'Binder Call'
-    WHEN thread_state.state = 'D' THEN 'Uninterruptible IO'
-    WHEN thread_state.state = 'S' THEN 'Sleeping (generic)'
-    WHEN thread_state.state IN ('R', 'R+') THEN 'Runnable but waiting for CPU'
-    ELSE 'Other: ' || COALESCE(slice.name, thread_state.state, 'unknown')
+    WHEN slice_name GLOB '*monitor*' THEN 'Lock Contention'
+    WHEN slice_name GLOB '*binder*' THEN 'Binder Call'
+    WHEN state = 'D' THEN 'Uninterruptible IO'
+    WHEN state = 'S' THEN 'Sleeping (generic)'
+    WHEN state IN ('R', 'R+') THEN 'Runnable but waiting for CPU'
+    ELSE 'Other: ' || COALESCE(slice_name, state, 'unknown')
   END AS block_reason,
   COUNT(*) AS count,
-  CAST(SUM(thread_state.dur) / 1e6 AS FLOAT) AS total_ms
-FROM thread_state
-JOIN thread USING (utid)
-LEFT JOIN slice ON
-  slice.track_id IN (SELECT id FROM thread_track WHERE utid = thread_state.utid)
-  AND slice.ts <= thread_state.ts
-  AND slice.ts + slice.dur > thread_state.ts
-WHERE thread.name = 'main'
-  AND thread_state.state != 'Running'
+  CAST(SUM(dur) / 1e6 AS FLOAT) AS total_ms
+FROM state_with_slice
+WHERE dur > 0
 GROUP BY block_reason
 ORDER BY total_ms DESC;
 ```
 
-这个查询的结果直接告诉我们在选定时间窗口内，主线程分别在等锁、等 Binder、等 IO 或等 CPU 上花了多少时间。实际排 ANR 时，再叠加 ANR 前后 5 秒的时间范围约束，`total_ms` 最大的那一类通常就是最先该继续查的方向。
+这个结果按裁剪后的 `thread_state.dur` 统计，每段状态只计一次。大规模 Trace 上，先缩小 `window.start_ts` / `window.end_ts`；更复杂的多区间交集，优先使用 PerfettoSQL 的 `SPAN_JOIN` / `INTERVAL_INTERSECT` 或标准库视图。
 
 ## 锁竞争与同步分析
 
