@@ -2734,6 +2734,18 @@
         "evidence": [
           "trace_processor --run-metrics"
         ]
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "[源码准确性] Perfetto 的架构 - heapprofd / java_hprof_producer"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "[版本差异覆盖] Android 版本对照表"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "[原理链完整性] Trace Processor"
       }
     ],
     "added_by": "external-ai-review",
@@ -2743,7 +2755,7 @@
   {
     "section": "13.2",
     "section_title": "Trace 抓取",
-    "priority": 85,
+    "priority": 95,
     "reason": "[External Review] 未区分 Java 采样与快照数据源差异",
     "review_issues": [
       {
@@ -2754,6 +2766,14 @@
         "evidence": [
           "java_hprof_config.proto"
         ]
+      },
+      {
+        "type": "P0-事实错误",
+        "detail": "See file for details"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
       }
     ],
     "added_by": "external-ai-review",
@@ -2763,7 +2783,7 @@
   {
     "section": "13.3",
     "section_title": "Perfetto View 使用",
-    "priority": 85,
+    "priority": 95,
     "reason": "[External Review] 遗漏 Blocked（红色）线程状态颜色编码",
     "review_issues": [
       {
@@ -2774,6 +2794,14 @@
         "evidence": [
           "Perfetto UI thread state color coding"
         ]
+      },
+      {
+        "type": "P0-事实错误",
+        "detail": "See file for details"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
       }
     ],
     "added_by": "external-ai-review",
@@ -2844,7 +2872,7 @@
   {
     "section": "13.8",
     "section_title": "Input Latency SQL 分析",
-    "priority": 85,
+    "priority": 95,
     "reason": "[External Review] event_seq 字段类型标注错误",
     "review_issues": [
       {
@@ -2855,10 +2883,264 @@
         "evidence": [
           "external/perfetto/src/trace_processor/stdlib/android/input.sql"
         ]
+      },
+      {
+        "type": "P0-事实错误",
+        "detail": "See file for details"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T09:17:47+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.9",
+    "priority": 85,
+    "reason": "[External Review] 章节 13.9 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "13.10",
+    "priority": 85,
+    "reason": "[External Review] 章节 13.10 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.1",
+    "priority": 85,
+    "reason": "[External Review] 章节 14.1 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.2",
+    "priority": 85,
+    "reason": "[External Review] 章节 14.2 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.3",
+    "priority": 85,
+    "reason": "[External Review] 章节 14.3 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.4",
+    "priority": 95,
+    "reason": "[External Review] 章节 14.4 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "detail": "描述 `dumpsys SurfaceFlinger` 默认输出 Layer 列表。"
+      },
+      {
+        "type": "P0-事实错误",
+        "detail": "建议使用 `grep mCurrentFocus` 获取全局焦点。"
+      },
+      {
+        "type": "P0-事实错误",
+        "detail": "推荐 `dumpsys activity lastanr` 作为 ANR 分析的首选快照。"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.5",
+    "priority": 95,
+    "reason": "[External Review] 章节 14.5 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "detail": "提到 AGP 8.x 下接入方要“结合具体 Matrix 版本、社区 fork 或自研改造，确认是否已经迁到 Instrumentation API”。"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.6",
+    "priority": 95,
+    "reason": "[External Review] 章节 14.6 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "detail": "描述 Microbenchmark 最低 API 为 14。"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.7",
+    "priority": 95,
+    "reason": "[External Review] 章节 14.7 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "detail": "See file for details"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.9",
+    "priority": 95,
+    "reason": "[External Review] 章节 14.9 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "detail": "未量化 CameraX 的初始化延迟。"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.10",
+    "priority": 95,
+    "reason": "[External Review] 章节 14.10 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "detail": "See file for details"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "See file for P1 details"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.11",
+    "priority": 85,
+    "reason": "[External Review] 章节 14.11 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.12",
+    "priority": 95,
+    "reason": "[External Review] 章节 14.12 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "detail": "See file for details"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "14.13",
+    "priority": 95,
+    "reason": "[External Review] 章节 14.13 存在 P0/P1 问题需回炉",
+    "review_issues": [
+      {
+        "type": "P0-事实错误",
+        "detail": "称直接设置 `PROT_WRITE|PROT_EXEC` 会触发 `execmod` 而非 `execmem` 检查。"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      },
+      {
+        "type": "P1-重要缺失",
+        "detail": "- **[P1]"
+      }
+    ],
+    "added_by": "external-ai-review",
     "status": "pending"
   }
 ]
