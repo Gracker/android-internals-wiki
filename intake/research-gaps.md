@@ -5031,3 +5031,49 @@ Profile 不仅引导 AOT，还引导 `dex2oat` 生成 App Image，预加载类�
 **建议研究方向**: 解释 O_DIRECT 或清除缓存对 Benchmark 的影响
 
 **来源**: External AI Review
+
+## [2026-04-25] 15.1 性能优化的术、道、器 — 知识盲区
+
+### 盲区描述
+ProfilingManager / Baseline Profiles 版本锚点不完整（external-review 已命中，Task 9 已复核）
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 android.os.ProfilingManager(API 35)、ProfilingTrigger/API 36 触发器、AndroidX Core Profiling 封装的对应关系。
+- 梳理 Baseline Profiles、ProfileInstaller(API 24+)、Cloud Profiles、Play 分发之间的边界。
+
+### 关联章节
+15.1
+
+## [2026-04-25] 15.2 如何区分系统问题和 App 问题 — 知识盲区
+
+### 盲区描述
+Binder 服务端归因与内存元凶定位闭环缺失（external-review 已命中，Task 9 已复核）
+
+### 重要程度
+高
+
+### 建议研究方向
+- 整理 Perfetto 中 client binder wait 跳转到 server binder 线程的操作路径和 SQL。
+- 验证 rss_stat/process memory/lmkd/ApplicationExitInfo.getRss() 如何联合定位内存压力制造者。
+
+### 关联章节
+15.2
+
+## [2026-04-25] 15.3 性能指标体系 — 知识盲区
+
+### 盲区描述
+Frame Overrun、ApplicationExitInfo 与 RSS 指标缺口（external-review 已命中，Task 9 已复核）
+
+### 重要程度
+高
+
+### 建议研究方向
+- 补齐 Macrobenchmark FrameTimingMetric.frameOverrunMs(API 31+) 的定义和适用边界。
+- 梳理 ApplicationExitInfo(API 30+) 在 Crash/ANR/LMK 归因中的字段、兼容性与采集时机。
+- 对比 PSS 与 RSS 在 Android Vitals、Perfetto、lmkd、进程退出记录中的用途。
+
+### 关联章节
+15.3

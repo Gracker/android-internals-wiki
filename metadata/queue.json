@@ -1903,7 +1903,7 @@
     "section": "15.1",
     "section_title": "方法论哲学与框架",
     "priority": 85,
-    "reason": "[External Review] 外部AI review发现P1重要缺失",
+    "reason": "[Deep Tech Review] 正文只写“API 35 ProfilingManager / API 36 system-triggered profiling triggers”，没有落到 android.os.ProfilingManager、android.os.ProfilingTrigger、ProfilingManager.addProfilingTriggers(List<ProfilingTrigger>)、registerForAllProfilingResults 等 API 锚点，也没有说明触发式采样有 rate limit 且不保证一定返回结果; “Baseline Profiles（2022，随 Jetpack 从 Android 13 起分发）”与前文“覆盖 Android 7+”冲突",
     "review_issues": [
       {
         "type": "重要缺失",
@@ -1922,17 +1922,36 @@
         "location": "",
         "detail": "提到了 Baseline Profiles 但未说明其在 Android 12+ 之后的底层实现差异。",
         "suggestion": "在持续优化章节补充 Baseline Profiles 的后端处理流程简介。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L159",
+        "detail": "正文只写“API 35 ProfilingManager / API 36 system-triggered profiling triggers”，没有落到 android.os.ProfilingManager、android.os.ProfilingTrigger、ProfilingManager.addProfilingTriggers(List<ProfilingTrigger>)、registerForAllProfilingResults 等 API 锚点，也没有说明触发式采样有 rate limit 且不保证一定返回结果。",
+        "suggestion": "补充 API 35/36 的类名、方法名和触发器类型；明确触发式 profiling 只能通过全局 listener 接结果，且系统可能因限流跳过。",
+        "priority": "P1"
+      },
+      {
+        "type": "版本差异",
+        "location": "L328",
+        "detail": "“Baseline Profiles（2022，随 Jetpack 从 Android 13 起分发）”与前文“覆盖 Android 7+”冲突。Baseline Profile 通常随 APK/AAB 打包，并通过 Jetpack ProfileInstaller 回填到 API 24+；不应描述为 Android 13 起分发。",
+        "suggestion": "改成 Jetpack Baseline Profiles + ProfileInstaller 支持 API 24+；如果要谈 Cloud Profiles，再单独说明与 Play 分发、系统版本的关系。",
+        "priority": "P1"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T08:36:00+08:00"
   },
   {
     "section": "15.2",
     "section_title": "系统瓶颈 vs 应用瓶颈",
     "priority": 85,
-    "reason": "[External Review] 外部AI review发现P1重要缺失",
+    "reason": "[Deep Tech Review] 正文判断 Binder 等待可能是服务端慢，并在速查表写“查看服务端线程 Trace”，但没有说明如何从客户端 binder wait 追到服务端 Binder 线程、如何判断服务端是在 Running/Runnable/Sleep; kswapd、D 状态、LMK 的系统压力判断已覆盖，但缺少“哪个进程制造内存压力”的闭环",
     "review_issues": [
       {
         "type": "重要缺失",
@@ -1951,17 +1970,36 @@
         "location": "",
         "detail": "提到 `kswapd` 活跃是系统压力，但未说明如何快速识别“哪个 App 是内存元凶”。",
         "suggestion": "补充利用 `rss_stat` 轨道识别内存异常增长进程的方法，使内存归因更具可操作性。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L107/L278/L312",
+        "detail": "正文判断 Binder 等待可能是服务端慢，并在速查表写“查看服务端线程 Trace”，但没有说明如何从客户端 binder wait 追到服务端 Binder 线程、如何判断服务端是在 Running/Runnable/Sleep。",
+        "suggestion": "补一段 Binder 归因步骤：定位 client binder transaction/blocked_function → 跳到 server 进程 binder 线程 → 检查服务端 slice、thread_state、CPU 调度延迟和锁/I/O 等待，再给出 SQL 或 Perfetto 操作路径。",
+        "priority": "P1"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L153-L167/L329",
+        "detail": "kswapd、D 状态、LMK 的系统压力判断已覆盖，但缺少“哪个进程制造内存压力”的闭环。没有使用 Perfetto rss_stat / process memory 轨道、lmkd 事件或 ApplicationExitInfo.getRss()/REASON_LOW_MEMORY 做进程级归因。",
+        "suggestion": "增加内存元凶定位方法：按时间窗聚合进程 RSS/PSS 变化，结合 lmkd kill 日志、ApplicationExitInfo 和目标 App 内存曲线判断是自身泄漏、其他 App 压力还是系统策略问题。",
+        "priority": "P1"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T08:36:00+08:00"
   },
   {
     "section": "15.3",
     "section_title": "性能指标体系",
-    "priority": 85,
-    "reason": "[External Review] 外部AI review发现P1重要缺失",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 正文写“Android 的 LMK 主要参考 PSS，PSS 越大的进程被杀优先级越高”; 流畅性指标已讨论 Frame Time、Janky Frame Rate 和高刷预算，但缺少 Android 12(API 31)+ Macrobenchmark FrameTimingMetric 的 frameOverrunMs",
     "review_issues": [
       {
         "type": "重要缺失",
@@ -1980,11 +2018,44 @@
         "location": "",
         "detail": "重点介绍了 PSS，但未提及在 Perfetto 追踪和内核排查中更常用的 RSS。",
         "suggestion": "在内存指标中补充 PSS 与 RSS 的对比及其在 Perfetto 分析中的不同用途。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L271",
+        "detail": "正文写“Android 的 LMK 主要参考 PSS，PSS 越大的进程被杀优先级越高”。这会误导读者。现代 lmkd 先由 PSI/vmpressure 判断内存压力，再按 oom_score_adj 选择可杀进程；是否杀最重 eligible task 还受 ro.lmk.kill_heaviest_task 等策略影响。PSS/RSS 是内存占用维度，不是单独的杀进程优先级。",
+        "suggestion": "改为：lmkd 以进程重要性/oom_score_adj 作为首要约束，在内存压力触发后从 eligible 进程中选择目标；内存占用用于估算收益或在 kill_heaviest_task 策略下参与选择，并补 source.android.com/docs/core/perf/lmkd 锚点。",
+        "priority": "P0"
+      },
+      {
+        "type": "版本差异",
+        "location": "L110-L145",
+        "detail": "流畅性指标已讨论 Frame Time、Janky Frame Rate 和高刷预算，但缺少 Android 12(API 31)+ Macrobenchmark FrameTimingMetric 的 frameOverrunMs。官方定义它为帧错过 deadline 的时间，正值表示掉帧，负值表示提前完成，是高刷和可变刷新率场景更直接的 deadline miss 指标。",
+        "suggestion": "在流畅性指标中新增 Frame Overrun：说明 frameOverrunMs、frameDurationCpuMs、API 31+ 可用性，以及它与 16ms Vitals 口径、120Hz 8.3ms 预算的区别。",
+        "priority": "P1"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L205-L244/L429",
+        "detail": "稳定性指标只有 Crash Rate/ANR Rate，后文只在表格中泛写 exit reason，缺少 Android 11(API 30)+ ApplicationExitInfo 作为归因工具。",
+        "suggestion": "补充 ActivityManager.getHistoricalProcessExitReasons()、ApplicationExitInfo.REASON_LOW_MEMORY/REASON_ANR/REASON_CRASH_NATIVE、getTraceInputStream()、isLowMemoryKillReportSupported() 的用途和版本边界。",
+        "priority": "P1"
+      },
+      {
+        "type": "知识盲区",
+        "location": "L263-L311",
+        "detail": "内存指标只讲 PSS、Java Heap、OOM Rate，缺少 RSS 在 Perfetto rss_stat、ApplicationExitInfo.getRss()、内核排查中的作用，导致线上指标和系统 trace 之间无法对齐。",
+        "suggestion": "增加 PSS vs RSS 对比：PSS 适合归因共享页后的占用，RSS 适合看 resident 内存增长和 Perfetto/kernel 侧趋势；明确两者不能混用做门禁。",
+        "priority": "P1"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-25T08:36:00+08:00"
   },
   {
     "section": "15.4",
