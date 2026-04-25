@@ -1,39 +1,39 @@
 {
-  "generated_at": "2026-04-25T13:48:53+08:00",
+  "generated_at": "2026-04-25T14:26:23+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
     "total_sections": 212,
-    "finalized": 65,
+    "finalized": 66,
     "ready-for-review": 152,
-    "ready-to-publish": 65,
-    "last_updated": "2026-04-25T13:48:53+08:00",
+    "ready-to-publish": 66,
+    "last_updated": "2026-04-25T14:26:23+08:00",
     "pipeline_stage_counts": {
-      "None": 36,
-      "task6_pending": 39,
-      "task2b_pending": 39,
-      "ready-to-publish": 64,
-      "task9_pending": 69,
+      "None": 35,
+      "task6_pending": 38,
+      "task2b_pending": 46,
+      "ready-to-publish": 66,
+      "task9_pending": 62,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
-      "None": 37,
+      "None": 36,
       "reviewed": 185,
-      "revisiting": 28
+      "revisiting": 29
     },
     "task9_state_counts": {
-      "None": 41,
-      "reviewed": 116,
-      "pending": 89,
+      "None": 40,
+      "reviewed": 124,
+      "pending": 82,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 43,
-      "fixed": 156,
-      "pending": 43,
+      "None": 42,
+      "fixed": 150,
+      "pending": 50,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -41,31 +41,31 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "None": 36,
-      "task6_pending": 39,
-      "task2b_pending": 39,
-      "ready-to-publish": 64,
-      "task9_pending": 69,
+      "None": 35,
+      "task6_pending": 38,
+      "task2b_pending": 46,
+      "ready-to-publish": 66,
+      "task9_pending": 62,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
-      "None": 37,
+      "None": 36,
       "reviewed": 185,
-      "revisiting": 28
+      "revisiting": 29
     },
     "task9_state_counts": {
-      "None": 41,
-      "reviewed": 116,
-      "pending": 89,
+      "None": 40,
+      "reviewed": 124,
+      "pending": 82,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 43,
-      "fixed": 156,
-      "pending": 43,
+      "None": 42,
+      "fixed": 150,
+      "pending": 50,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -2711,18 +2711,18 @@
       "last_verified": "2026-04-02",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium-high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T10:14:00+08:00"
+      "last_task9_at": "2026-04-25T14:25:03+08:00"
     },
     "src/part2-performance/ch10-memory-perf/05-case-studies.md": {
       "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
@@ -2735,41 +2735,43 @@
       "last_verified": "2026-04-02",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21"
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T14:25:03+08:00"
     },
     "src/part2-performance/ch10-memory-perf/06-memory-churn.md": {
       "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
       "title": "内存抖动与频繁 GC",
       "chapter": "10.6",
       "section": "10.6",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-24",
       "last_verified_against": "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 / Perfetto native-heap-profiler docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-24'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T14:40:03+08:00"
+      "last_task9_at": "2026-04-25T14:25:03+08:00"
     },
     "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md": {
       "path": "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
@@ -5666,6 +5668,21 @@
           "issues": 2
         }
       ]
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "at": "2026-04-25T14:25:03+08:00",
+      "sections": [
+        "10.4",
+        "10.5",
+        "10.6"
+      ],
+      "results": {
+        "10.4": "needs-rework",
+        "10.5": "needs-rework",
+        "10.6": "pass-tech-review; auto-finalized"
+      },
+      "log": "logs/deep-review/2026-04-25-14-deep-review.md"
     }
   ],
   "progress": {

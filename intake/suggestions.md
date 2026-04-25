@@ -2251,3 +2251,21 @@
 - **位置**：18.06
 - **问题**：**[P2][原理改进]** 建议补充 `BufferStateLayer` 的角色，解释 BLAST 事务如何让宿主 Window 的透明矩形与独立 Surface 同步。
 - **来源**：外部 AI review (2026-04-25-15-ch18.[06-10]-external-review.md)
+
+## [Task9 Deep Review] 10.4 低内存对系统性能的影响 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L211
+- **问题**：低内存 Perfetto 图仍是占位，缺少实际 trace 片段或可复现 TraceConfig。
+- **建议**：补一段可复现 trace：mem.mm_events、linux.ftrace mm_vmscan_*、sched、process_stats/psi、lmkd 事件，并标出 kswapd、direct reclaim、GC、lmk 的时间关系。
+
+## [Task9 Deep Review] 10.5 案例集 — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L96-L100 / L209 / L231 / L285
+- **问题**：三处图示与两个效果百分比仍为占位，案例集要求“修复方案与量化效果”，当前证据链没有闭合。
+- **建议**：补原始 trace/堆栈截图或删除图占位；renderD128 与 MemoryThrashing 的效果若无公开数值，应改成“回落至基线/明显下降（来源未给百分比）”，不要保留待补充百分比。
+
+## [Task9 Deep Review] 10.6 内存抖动与频繁 GC — 2026-04-25
+- **类型**：数据缺失
+- **位置**：L127 / L272
+- **问题**：Memory Churn 与 GC Event/Heap Track 图仍是占位。章节技术结论已可成立，但观测路径缺少实际截图或 trace 配置。
+- **建议**：补 Perfetto trace 配置与截图：android.java_hprof 或 android.heapprofd、art/gc slices、Java Heap track、sched；标出分配峰值、GC 事件和帧耗时尖峰的同一时间窗。

@@ -2,7 +2,7 @@
 title: "内存抖动与频繁 GC"
 chapter: "10.6"
 section: "10.6"
-status: ready-for-review
+status: finalized
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
@@ -31,17 +31,17 @@ word_count: "~7500"
 reviewed_date: '2026-04-24'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task2b_rework_date: "2026-04-24"
 task2b_fixed_at: "2026-04-24T14:55:00+08:00"
 last_task2b_at: "2026-04-24T14:55:00+08:00"
-task9_result: needs-rework
-last_task9_at: "2026-04-24T14:40:03+08:00"
-task9_reviewed_date: 2026-04-24
+task9_result: pass-tech-review
+last_task9_at: "2026-04-25T14:25:03+08:00"
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
 ---
