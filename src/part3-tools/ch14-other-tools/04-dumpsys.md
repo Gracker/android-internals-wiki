@@ -2,7 +2,7 @@
 title: dumpsys 系列命令
 chapter: '14.4'
 section: '14.4'
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
@@ -31,19 +31,21 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
-last_task2b_at: '2026-04-21T22:42:29+08:00'
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_at: "2026-04-25T12:22:08+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-23"
 task6_result: "pass-light-edit"
 task9_reviewed_date: '2026-04-23'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-23T02:33:00+08:00'
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
 ---
 
 # dumpsys 系列命令
@@ -94,7 +96,8 @@ dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服�
 
 - `dumpsys activity activities`：查看所有 Task 和 Activity 的栈信息
 - `dumpsys activity processes`：查看所有进程的优先级和状态
-- `dumpsys activity lastanr`：查看最近一次 ANR 的详细信息
+- `dumpsys activity exit-info`：查看进程退出历史，ANR / Crash / LMK 归因优先从这里取证
+- `dumpsys activity lastanr`：遗留快照，只保留最近一次 ANR，作为没有 `exit-info` 历史时的兜底
 
 ### 读懂 Activity 栈
 
@@ -112,9 +115,19 @@ dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服�
 
 举个例子：如果一个 App 当前在前台展示界面，本应处于 `adj=0`（FOREGROUND），但 dumpsys 显示它的 `oom_adj=100`（VISIBLE），说明系统的进程优先级计算出了问题——进程被错误降级，LMK 在内存紧张时会优先杀掉它。
 
-`dumpsys activity lastanr` 输出最近一次 ANR 发生时的调用栈和系统状态。当我们拿到一个用户反馈的 ANR 问题，但手头没有完整的 Trace 文件时，先看看 `lastanr` 里是否还有残留信息，有时可以直接定位到阻塞主线程的代码行。
+Android 11+ 的 ANR 快照优先看 `dumpsys activity exit-info`。它来自 `ApplicationExitInfo` 历史记录，同一包名下可以保留多次退出原因，适合区分 `REASON_ANR`、Crash、LMK、用户强停等场景，也能和系统记录的 trace 文件路径、进程状态放在一起看。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java: dump()]
+```bash
+# 查看全部进程退出历史
+adb shell dumpsys activity exit-info
+
+# 查看指定包名的退出历史
+adb shell dumpsys activity exit-info <package_name>
+```
+
+`dumpsys activity lastanr` 仍可作为遗留兜底：它只保留最近一次 ANR 的文本快照，设备重启、日志轮转或新 ANR 出现后都可能覆盖旧现场。排查线上问题时，`exit-info` 负责确认“这个进程为什么退出”，Perfetto / bugreport / ANR traces 负责还原“退出前线程在等什么”。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java: dump()；ActivityManagerService 分发 `exit-info` 到 `mAppExitInfoTracker.dumpHistoryProcessExitInfo()`]
 
 ## dumpsys meminfo：系统和进程内存全景
 
@@ -196,7 +209,7 @@ adb shell dumpsys gfxinfo <package_name> reset
 
 不带 `framestats` 参数时，gfxinfo 输出聚合指标。最重要的几个：
 
-**Janky frames** 是超过帧预算的帧数（60Hz 设备上超过 16.67ms，120Hz 设备上超过 8.33ms）。Janky frames 占比超过 5% 就值得调查了。
+**Janky frames** 是超过帧预算的帧数。Android 15/16 的 HWUI 统计同时保留 legacy 判定和 deadline 判定：legacy 主要按固定帧间隔估算，deadline 判定会读取每帧的 `FrameDeadline` / `FrameInterval`，在 90Hz、120Hz、LTPO 自适应刷新率设备上更接近真实渲染预算。聚合输出里如果出现 `Number Frame deadline missed`，优先把它作为 VRR 场景的掉帧入口，再回到 Perfetto 的 FrameTimeline 核对该帧的 deadline。
 
 **90th / 95th / 99th percentile** 是帧耗时的分位值。如果 99th percentile 是 50ms，意味着有 1% 的帧耗时超过 50ms——在 60Hz 设备上这就是连续掉 3 帧，用户能明显感知到卡顿。
 
@@ -206,9 +219,9 @@ adb shell dumpsys gfxinfo <package_name> reset
 
 ### framestats：逐帧时间线
 
-`framestats` 输出最近 120 帧的逐帧时间戳。每一行是一帧，各列代表渲染管线中的关键时间节点：`IntendedVsync`、`Vsync`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`。
+`framestats` 输出最近 120 帧的逐帧时间戳。每一行是一帧，各列代表渲染管线中的关键时间节点：`IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`、`FrameStartTime`、`FrameInterval`、`WorkloadTarget`、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等。
 
-所有时间戳均为纳秒（ns）。60Hz 设备上一个 VSync 周期为 16667000ns（约 16.67ms），120Hz 设备上为 8333000ns（约 8.33ms），这些是判断帧耗时的基准值。
+所有时间戳均为纳秒（ns）。固定刷新率设备上可以用 60Hz 的 16667000ns（约 16.67ms）或 120Hz 的 8333000ns（约 8.33ms）做粗略基准；VRR / ARR 设备要读每行的 `FrameInterval` 和 `FrameDeadline`，不能把整段测试都按一个固定 VSync 周期判定。
 
 通过计算相邻时间点的差值，我们可以精确知道每一帧的时间花在了哪里。例如 `PerformTraversalsStart` 到 `DrawStart` 的差值就是主线程 `measure`/`layout` 的耗时；`SyncStart` 到 `IssueDrawCommandsStart` 是 RenderThread 执行 OpenGL 命令的时间。
 
@@ -262,7 +275,9 @@ adb shell top -H -p <pid>
 
 `dumpsys cpuinfo` 的局限在于它只提供瞬时快照，无法看到趋势。如果需要持续监控 CPU 占用随时间的变化，建议使用 Perfetto 的 CPU 采样功能（通过 `perfetto` 命令抓取 `cpu` track），或者在终端使用 `adb shell top` 做持续观察。
 
-[待验证: Android 16 中 dumpsys cpuinfo 的输出格式是否有变化]
+如果输出里带有 `minor faults` / `major faults`，跨设备对比时要把 page size 放进测试条件。Android 15/16 已支持 16KB page size，单页覆盖范围变大后，同样访问模式下的 minor faults 次数可能低于 4KB 设备。这个数字下降不一定来自 I/O 或内存访问优化，先用 `adb shell getconf PAGESIZE` 确认页大小，再做同条件对比。
+
+[已验证: Android 16 中 dumpsys cpuinfo 仍保留按进程输出 CPU 快照；16KB page size 设备需单独标注 page size 条件]
 
 ## dumpsys window：窗口层级与焦点
 
@@ -275,8 +290,9 @@ adb shell dumpsys window
 # 窗口列表（含 Z-order）
 adb shell dumpsys window windows
 
-# WindowManager 视角的焦点
-adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'
+# DisplayContent 视角的焦点，适合 Android 15+ 和多屏场景
+adb shell dumpsys window displays
+adb shell dumpsys window displays | grep -E 'DisplayContent|mCurrentFocus|mFocusedApp'
 
 # InputDispatcher 视角的焦点
 adb shell dumpsys input | grep -E 'FocusedWindow|FocusedApplication'
@@ -286,7 +302,7 @@ adb shell dumpsys input | grep -E 'FocusedWindow|FocusedApplication'
 
 在性能分析中，dumpsys window 主要用于两类场景。
 
-**第一类是确认窗口焦点。** 当用户报告"点了没反应"或"触摸不灵敏"时，先看 `mCurrentFocus` 和 `mFocusedApp`，确认 WindowManagerService 眼里的前台窗口是谁。它们不一定一致：比如用户拉下通知栏时，`mCurrentFocus` 会切换到 SystemUI 的通知面板，但 `mFocusedApp` 仍然是之前使用的 App。
+**第一类是确认窗口焦点。** 当用户报告"点了没反应"或"触摸不灵敏"时，优先从 `adb shell dumpsys window displays` 看每个 `DisplayContent` 下的 `mCurrentFocus` 和 `mFocusedApp`。Android 15+ 的焦点状态已经明显转向显示器维度；多屏、投屏、车机、副屏场景下，直接在全局输出里 grep `mCurrentFocus` 容易拿到非目标显示器的窗口。它们不一定一致：比如用户拉下通知栏时，`mCurrentFocus` 会切换到 SystemUI 的通知面板，但 `mFocusedApp` 仍然是之前使用的 App。
 
 **第二类是排查 Input ANR。** `dumpsys window` 只能回答 WMS 视角的窗口状态，真正决定触摸事件去向的还是 InputDispatcher。遇到窗口看起来有焦点、点击却没有反应的场景，要再执行 `adb shell dumpsys input`，联动查看 `FocusedWindow` 和 `FocusedApplication`。如果两边不一致，或者 InputDispatcher 指向了意料之外的窗口，再回头检查 `NOT_TOUCHABLE`、InputChannel 和覆盖层拦截。
 
@@ -338,13 +354,19 @@ Battery Historian 工具本身已经不再积极维护（Google 已将重点转�
 ### 基本用法
 
 ```bash
-# 完整的 SurfaceFlinger 状态
+# SurfaceFlinger 状态快照；Android 15+ 默认以 Frontend 可见快照为主
 adb shell dumpsys SurfaceFlinger
 
-# 仅查看 Layer 列表（Android 14 及更早版本）
+# Android 15+：查看全部 Frontend LayerSnapshot / Input list / Hierarchy
+adb shell dumpsys SurfaceFlinger --frontend
+
+# 仅列出 Layer 名称
 adb shell dumpsys SurfaceFlinger --list
 
-# 查看特定 Layer 的详细信息
+# 查看 HWC 视角的 Layer minidump
+adb shell dumpsys SurfaceFlinger --hwclayers
+
+# 查看特定 Layer 的历史 present 时间戳
 adb shell dumpsys SurfaceFlinger --latency <layer_name>
 ```
 
@@ -352,17 +374,27 @@ adb shell dumpsys SurfaceFlinger --latency <layer_name>
 
 ### Layer 列表与合成方式
 
-dumpsys SurfaceFlinger 的核心输出是当前屏幕上所有可见 Layer 的列表及其合成方式。每个 Layer 代表一个可视化表面——一个 Activity 的窗口、一个 Dialog、StatusBar、NavigationBar，各自都是一个独立的 Layer。
+`dumpsys SurfaceFlinger` 在 Android 15+ 上不能再按旧资料理解成“默认输出完整 Layer 属性表”。AOSP android-16.0.0_r1 的默认 dump 会输出 `Composition list`、`Input list`、Layer Hierarchy 和 HWC minidump，主要来自 Frontend 计算后的 `LayerSnapshot`；这和旧版从 `Layer` 对象直接展开 Source Crop、Display Frame、Composition Type 的文本格式不同。
 
-在输出中，每个 Layer 旁边标注了它的合成方式：`HWC`（Hardware Composer）或 `GLES`（GPU 合成）。HWC 合成意味着这个 Layer 由显示硬件直接叠加输出，不需要 GPU 参与，功耗低、效率高。GLES 合成意味着 SurfaceFlinger 需要用 GPU 把这个 Layer 绘制到帧缓冲区，再交给 HWC 显示。
+读 Layer 时先分清三个视角：
 
-在实际分析中，如果我们发现大量 Layer 退回到 GLES 合成（理想情况下，大多数 Layer 应该由 HWC 处理），那可能意味着 HWC overlay 数量不够、或者某些 Layer 的属性（如圆角、混合模式）超出了 HWC 的硬件能力。这时就需要检查 App 端是否可以减少 Layer 数量或简化视觉效果。
+| 视角 | 命令 / 输出 | 适合回答的问题 |
+|------|-------------|----------------|
+| 名称列表 | `dumpsys SurfaceFlinger --list` | 当前有哪些 Layer，`--latency` 应该传哪个 layer name |
+| Frontend 快照 | `dumpsys SurfaceFlinger --frontend` 或默认 dump 的 `Composition list` / `Input list` | 当前参与合成和输入命中的 LayerSnapshot、LayerStack、bounds、transform、触摸相关属性 |
+| HWC 视角 | `dumpsys SurfaceFlinger --hwclayers` / 默认 dump 的 HWC minidump | 哪些 Layer 交给 HWC，哪些回退到 GPU 合成 |
+
+`RequestedLayerState` 存的是客户端通过 transaction 请求的服务端状态；`LayerSnapshot` 是 SurfaceFlinger Frontend 在当前帧计算出的快照。排查“为什么某个窗口没有显示 / 没有接触摸”时，先看 `Composition list` 和 `Input list` 是否出现目标 Layer，再对比 HWC minidump 中的合成方式。
+
+在实际分析中，如果我们发现大量 Layer 退回到 GPU 合成，常见原因是 HWC overlay 数量不够，或某些 Layer 的属性（如圆角、混合模式、颜色空间、保护内容）超出了 HWC 的硬件能力。这时再回到 App 端检查 Layer 数量和视觉效果复杂度。
 
 ### Android 15+ 的输出变化
 
-从 Android 15（AOSP 15）开始，`dumpsys SurfaceFlinger` 的输出格式发生了较大变化。以前版本会直接列出所有 Layer 的详细信息（包括 Source Crop、Display Frame、Composition Type 等），Android 15 引入了新的 Frontend 架构，输出分为 `Composition list`（按合成优先级排列）和 `Input list`（按触摸优先级排列），每个 Layer 的信息更加结构化，包含了 `bounds`、`input` 标志和 `toDisplayTransform` 等字段。
+从 Android 15（AOSP 15）开始，SurfaceFlinger Frontend 成为默认路径，dump 输出从旧版“逐 Layer 展开属性”转为快照化输出。`Composition list` 按合成顺序组织，`Input list` 按输入命中顺序组织，两者都围绕 `LayerSnapshot` 展开；源码入口在 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp::dumpFrontEnd()` 和 `FrontEnd/LayerSnapshot.h`。
 
-如果在 Android 15+ 设备上执行 dumpsys SurfaceFlinger 后看不到 Layer 信息，通常是因为新架构需要额外的参数或权限。在实际调试中，Winscope 工具（Android Studio 集成）通常是查看 Layer 层次结构更好的选择——它提供可视化的时间线视图，比文本输出更容易理解。
+AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`--hwclayers`、`--latency`，没有 `--all-layer`。如果厂商系统或调试资料里出现额外参数，以该设备的 `dumpsys SurfaceFlinger --help` 和对应源码分支为准。
+
+在实际调试中，Winscope 工具（Android Studio 集成）更适合查看 Layer 层次结构和跨帧变化。文本 dump 适合取当前快照，Winscope 适合看一段时间内的 transaction、Layer 层级、可见性和输入区域变化。
 
 [来源: Obsidian Personal-Knowledge/source/2026-03-05_wechat_aosp15上SurfaceFlinger的dump部分新特性]
 
@@ -379,6 +411,8 @@ dumpsys SurfaceFlinger 的核心输出是当前屏幕上所有可见 Layer 的�
 | 第三列 | `frame_ready_time` | 帧数据准备完成的时间 |
 
 判断掉帧的方法：计算 `actual_present_time - desired_present_time`，如果差值大于 refresh period（第一行的值），说明这一帧被延迟了至少一个 VSync 周期。如果 actual 频繁晚于 desired 超过一个 refresh period，说明这个 Layer 的生产者（App 端渲染线程）跟不上显示刷新率。
+
+在 VRR / ARR 场景下，第一行 refresh period 只能代表 dump 当下的 pacesetter VSync 周期，不能代表每一帧的动态预算。Android 15+ 设备上分析 `--latency` 时，把它作为粗筛：发现 actual 晚于 desired 后，再回到 Perfetto FrameTimeline、`dumpsys gfxinfo framestats` 的 `FrameDeadline` / `FrameInterval`，或 SurfaceFlinger scheduler / vsync 轨道确认该帧对应的真实 deadline。
 
 当 desired_present_time 为 0 时，表示该帧没有期望呈现时间（通常是未使用的缓冲区槽位），应跳过不计。
 
@@ -408,7 +442,7 @@ dumpsys 不只是系统服务的专利。任何应用或服务都可以实现自
 
 ## 常见问题与误区
 
-**"dumpsys 输出太多，不知道看哪里"**——这是新手最常见的问题。正确做法是先明确分析目标，再选择对应的子命令。分析内存看 `meminfo`，分析卡顿看 `gfxinfo`，分析 ANR 看 `activity lastanr`，分析功耗看 `batterystats`。不要一上来就执行 `adb shell dumpsys` 不带参数——那会输出所有服务的 dump，几千行文本，几乎不可读。
+**"dumpsys 输出太多，不知道看哪里"**——这是新手最常见的问题。正确做法是先明确分析目标，再选择对应的子命令。分析内存看 `meminfo`，分析卡顿看 `gfxinfo`，分析 ANR 优先看 `activity exit-info`，`lastanr` 只做遗留兜底，分析功耗看 `batterystats`。不要一上来就执行 `adb shell dumpsys` 不带参数——那会输出所有服务的 dump，几千行文本，几乎不可读。
 
 **"gfxinfo 的 Janky frames 总是很多，是不是系统有问题"**——Janky frames 的判定标准是超过一个 VSync 周期。在 120Hz 设备上，超过 8.33ms 就算 Jank。一些合理的长帧（如页面切换时的布局重建）也会被计入。关注 Janky frames 占比而不是绝对值，如果占比低于 5%，通常不需要优化。
 
@@ -420,7 +454,11 @@ dumpsys 不只是系统服务的专利。任何应用或服务都可以实现自
 
 - AOSP 源码：`frameworks/native/cmds/dumpsys/dumpsys.cpp`
 - AOSP 源码：`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`（dump 方法）
-- AOSP 源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`（dump 方法）
+- AOSP 源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`（dump / `--frontend` / `--hwclayers` / `--latency`）
+- AOSP 源码：`frameworks/native/services/surfaceflinger/FrontEnd/LayerSnapshot.h`（Frontend 快照结构）
+- AOSP 源码：`frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java`（分显示器焦点状态）
+- AOSP 源码：`frameworks/base/libs/hwui/JankTracker.cpp`（`FrameDeadline` 与 `kMissedDeadline` 判定）
+- AOSP 源码：`frameworks/base/libs/hwui/service/GraphicsStatsService.cpp`（`Number Frame deadline missed` 输出）
 - 官方文档：[Investigate RAM usage](https://developer.android.com/studio/profile/investigate-ram)
 - 官方文档：[Profile GPU Rendering](https://developer.android.com/studio/profile/dev-options-rendering)
 - 官方文档：[Battery Historian](https://developer.android.com/studio/profile/battery-historian)

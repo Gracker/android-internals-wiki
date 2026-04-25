@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T11:42:00+08:00",
+  "generated_at": "2026-04-25T12:22:08+08:00",
   "state_machine_version": "v2",
   "total_sections": 212,
   "metrics": {
@@ -7,33 +7,33 @@
     "finalized": 64,
     "ready-for-review": 153,
     "ready-to-publish": 64,
-    "last_updated": "2026-04-25T11:42:00+08:00",
+    "last_updated": "2026-04-25T12:22:08+08:00",
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 32,
-      "task2b_pending": 39,
+      "task6_pending": 34,
+      "task2b_pending": 38,
       "ready-to-publish": 63,
-      "task9_pending": 77,
+      "task9_pending": 76,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 192,
-      "revisiting": 21
+      "reviewed": 190,
+      "revisiting": 23
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 115,
-      "pending": 90,
+      "reviewed": 114,
+      "pending": 91,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 156,
-      "pending": 43,
+      "fixed": 157,
+      "pending": 42,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -42,30 +42,30 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 36,
-      "task6_pending": 32,
-      "task2b_pending": 39,
+      "task6_pending": 34,
+      "task2b_pending": 38,
       "ready-to-publish": 63,
-      "task9_pending": 77,
+      "task9_pending": 76,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 37,
-      "reviewed": 192,
-      "revisiting": 21
+      "reviewed": 190,
+      "revisiting": 23
     },
     "task9_state_counts": {
       "None": 41,
-      "reviewed": 115,
-      "pending": 90,
+      "reviewed": 114,
+      "pending": 91,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 43,
-      "fixed": 156,
-      "pending": 43,
+      "fixed": 157,
+      "pending": 42,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -3617,8 +3617,8 @@
       "last_verified": "2026-04-24",
       "last_verified_against": "Perfetto stdlib docs + android/input.sql + FrameTimeline trace config docs",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -3628,7 +3628,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T05:21:00+08:00"
+      "last_task9_at": "2026-04-24T05:21:00+08:00",
+      "last_task2b_at": "2026-04-25T12:21:17+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
       "path": "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
@@ -3774,27 +3777,30 @@
     "src/part3-tools/ch14-other-tools/04-dumpsys.md": {
       "path": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
       "title": "dumpsys 系列命令",
-      "chapter": "'14.4'",
-      "section": "'14.4'",
+      "chapter": "14.4",
+      "section": "14.4",
       "status": "ready-for-review",
-      "drafted_date": "'2026-04-03'",
+      "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 6.0 (API 23) - Android 16 (API 36)",
-      "last_verified": "'2026-04-15'",
+      "last_verified": "2026-04-15",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-23'",
+      "task9_reviewed_date": "2026-04-23",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-23T02:33:00+08:00'"
+      "last_task9_at": "2026-04-23T02:33:00+08:00",
+      "last_task2b_at": "2026-04-25T12:22:08+08:00",
+      "repaired_date": "2026-04-25",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch14-other-tools/05-third-party-libs.md": {
       "path": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",

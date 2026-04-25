@@ -2,7 +2,7 @@
 title: "Perfetto 输入延迟 SQL 深度分析"
 chapter: "13.8"
 section: "13.8"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: openclaw-task6
@@ -22,19 +22,19 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task9_pending
-task2b_result: fixed
+pipeline_stage: "task6_pending"
+task2b_result: "fixed"
 task2b_state: "fixed"
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 task9_state: "pending"
 task9_result: "needs-rework"
 
-last_task2b_at: "2026-04-24T07:52:07+08:00"
+last_task2b_at: "2026-04-25T12:21:17+08:00"
 task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-24T05:21:00+08:00"
-repaired_date: "2026-04-24"
+repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 ---
 
@@ -122,7 +122,7 @@ INCLUDE PERFETTO MODULE android.input;
 | `process_name` | string | 接收进程名 |
 | `event_type` | string | `InputMessage` 类型 |
 | `event_action` | string | 输入动作 |
-| `event_seq` | string | 同一 event channel 内递增的序号 |
+| `event_seq` | long | 同一 event channel 内递增的序号 |
 | `event_channel` | string | 输入 channel 名 |
 | `input_event_id` | string | 输入事件唯一标识 |
 | `read_time` | long | InputReader 读到事件的时间戳 |
@@ -280,23 +280,43 @@ WHERE total_latency_dur IS NOT NULL;
 
 InputDispatcher 内部维护三个关键队列：`iq`（inbound queue，等待分发）、`oq`（outbound queue，已发送等待 ACK）、`wq`（wait queue，等待窗口焦点）。队列长度的变化是定位输入延迟瓶颈的经典指标。
 
-在 Perfetto 中，这些队列通过 counter track 追踪。用 SQL 查询队列堆积的时间段：
+在 Perfetto 中，这些队列通过 counter track 追踪。查询前先确认当前 trace 中的 track 名称：
 
 ```sql
--- 查找 iq（inbound queue）堆积超过 5 个事件的时间段
+SELECT DISTINCT name
+FROM track
+WHERE lower(name) GLOB '*input*'
+ORDER BY name;
+```
+
+确认名称后，用精确名称过滤队列，避免 `GLOB '*iq*'` 命中无关 track：
+
+```sql
+-- 查找 inbound queue 堆积超过 5 个事件的时间段
+WITH input_dispatcher_queues AS (
+  SELECT id, name
+  FROM track
+  WHERE name IN (
+    'InputDispatcher inbound queue',
+    'InputDispatcher outbound queue',
+    'InputDispatcher wait queue'
+  )
+)
 SELECT
-  CAST(ts / 1000000.0) AS timestamp_ms,
-  CAST(dur / 1000000.0) AS duration_ms,
-  value AS queue_length
+  CAST(counter.ts / 1000000.0) AS timestamp_ms,
+  CAST(counter.dur / 1000000.0) AS duration_ms,
+  queues.name AS queue_name,
+  counter.value AS queue_length
 FROM counter
-JOIN track ON counter.track_id = track.id
-WHERE track.name GLOB '*iq*'
-  AND value > 5
-ORDER BY value DESC
+JOIN input_dispatcher_queues AS queues
+  ON counter.track_id = queues.id
+WHERE queues.name = 'InputDispatcher inbound queue'
+  AND counter.value > 5
+ORDER BY counter.value DESC
 LIMIT 50;
 ```
 
-[待验证: 不同 Perfetto 版本中 iq/oq/wq 的 track name 命名可能不同，建议先用 `SELECT DISTINCT name FROM track WHERE name GLOB '*input*'` 确认]
+[已验证: `iq/oq/wq` 对应 InputDispatcher 的 inbound / outbound / wait queue；不同 Perfetto 版本和厂商构建可能改写 track name，查询时以当前 trace 的 `track.name` 为准]
 
 [图：Perfetto 中 InputDispatcher 的 iq/oq/wq counter track 示例——三个 counter 分别以不同颜色显示在 InputDispatcher 线程下方，标注 iq 堆积 > 5 的时段和对应的 App 主线程耗时操作]
 
