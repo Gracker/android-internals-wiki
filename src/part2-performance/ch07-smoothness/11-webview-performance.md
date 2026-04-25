@@ -501,6 +501,87 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
 
 这是一个常见误解。`evaluateJavascript()` 是异步 API——调用后立即返回，JS 执行结果通过 `ValueCallback` 异步回调。但由于它必须在 UI 线程调用且回调也在 UI 线程，很多开发者错误地用同步等待模式来使用它，导致 ANR。正确做法是完全基于回调/异步模式。
 
+
+## AIW-源码调研-2026-04-25
+
+<!-- AIW-源码调研-2026-04-25 -->
+
+### Render 进程崩溃恢复（onRenderProcessGone）
+
+当 WebView 的渲染进程因 OOM 或 crash 退出时，宿主 App 进程不会崩溃，但 WebView 会显示白屏。正确处理 `WebViewClient.onRenderProcessGone()` 是恢复用户体验的关键。
+
+**完整调用链：**
+
+```
+Native Renderer Process (Chromium)
+  ↓ crash / OOM-killed
+AwContents.onRenderProcessGone(crashed, effectivePriority)
+  ↓
+AwContentsClient.onRenderProcessGone(AwRenderProcessGoneDetail)
+  ↓ JNI/native bridge
+WebViewContentsClientAdapter (framework internal)
+  ↓ 适配层包装
+android.webkit.WebViewClient.onRenderProcessGone(view, RenderProcessGoneDetail)
+  ↓ 应用实现
+  - 返回 true：应用已处理，WebView 实例作废，白屏
+  - 返回 false：App 进程崩溃（crash）或被杀死（killed）
+```
+
+**关键源码文件：**
+
+| 文件路径 | 关键内容 | 版本 |
+|----------|---------|------|
+| `frameworks/base/core/java/android/webkit/WebViewClient.java` | `onRenderProcessGone()` 回调定义（行 597） | API 26+ |
+| `frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java` | `didCrash()` / `rendererPriorityAtExit()` 抽象方法 | API 26+ |
+| `frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java` | 渲染器无响应回调体系 | API 29+ |
+| `frameworks/base/core/java/android/webkit/WebViewRenderProcess.java` | `terminate()` 方法 | API 29+ |
+| `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | 渲染进程退出事件触发层 | Chromium mainline |
+
+**RenderProcessGoneDetail 关键方法：**
+
+```java
+// 文件: frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java
+public abstract class RenderProcessGoneDetail {
+    @Deprecated
+    public RenderProcessGoneDetail() {}
+
+    // 返回 true：渲染进程崩溃；返回 false：被系统杀死（通常因 OOM）
+    public abstract boolean didCrash();
+
+    // 返回退出时的渲染器优先级：RENDERER_PRIORITY_WAIVED/BOUND/IMPORTANT
+    @WebView.RendererPriority
+    public abstract int rendererPriorityAtExit();
+}
+```
+
+**正确恢复流程（应用层）：**
+
+```java
+webView.setWebViewClient(new WebViewClient() {
+    @Override
+    public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+        // 1. 移除旧 WebView
+        ViewGroup parent = (ViewGroup) view.getParent();
+        if (parent != null) parent.removeView(view);
+        // 2. 清空引用（将 mWebView = null）
+        // 3. 销毁
+        view.destroy();
+        // 4. 重建新实例
+        mWebView = new WebView(context);
+        mWebView.setWebViewClient(this);
+        container.addView(mWebView);
+        mWebView.loadUrl(mCurrentUrl);
+        return true; // 已处理，防止 App 崩溃
+    }
+});
+```
+
+**特别注意：**
+- `chrome://crash` 可触发渲染器崩溃用于测试（影响所有共享渲染器的 WebView）
+- 多个 WebView 共享同一渲染器时，`onRenderProcessGone` 会针对**每个**受影响 WebView 分别调用
+- 每次调用只能清理对应的 `view` 参数，不能假设其他 WebView 也受影响
+- API 29+ 新增 `WebViewRenderProcessClient` 提供 `onRenderProcessUnresponsive` 回调，可在进程被杀前主动终止
+
 ## 参考资料
 
 - **AOSP 源码路径**：

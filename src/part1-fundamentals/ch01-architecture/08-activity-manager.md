@@ -441,6 +441,57 @@ Google 的推荐替代方案是使用 `WorkManager` 来调度可延迟的后台�
 
 ---
 
+
+<!-- AIW-源码调研-2026-04-25 -->
+### AMS mServices 锁竞争与 Perfetto 诊断
+
+在 §1.8 的 Service 管理基础上，这里补充 `mServices`（`ActiveServices` 实例）内部锁竞争的结构性来源，以及 Perfetto 中的识别方法。
+
+**结构位置**：`ActivityManagerService` 持有 `ActiveServices mServices` 引用，`ActiveServices` 构造时保存 `final ActivityManagerService mAm`：
+
+```java
+// ActivityManagerService.java (android14-release)
+final ActiveServices mServices;
+
+// ActiveServices.java (android14-release)
+public final class ActiveServices {
+    final ActivityManagerService mAm;
+    final SparseArray<ServiceMap> mServiceMap = new SparseArray<>();
+    final ArrayList<ServiceRecord> mPendingServices = new ArrayList<>();
+    final ArrayList<ServiceRecord> mRestartingServices = new ArrayList<>();
+    ...
+}
+```
+
+**Service 启动的锁路径**：`Context.startService()` → `AMS.startService()` **\[synchronized AMS]**，在 AMS 锁内部调用 `mServices.startServiceLocked()` → `bringUpServiceLocked()` → `realStartServiceLocked()`。`realStartServiceLocked` 在持有 AMS 锁的同时通过 `app.thread.scheduleCreateService()` 向 App 进程发起跨进程调用。
+
+**并发竞争场景**：多个 App 同时 `bindService`/`startService` 时，Binder 线程池中的线程在 AMS 的 `synchronized` 方法级锁上排队。Logcat 会出现 `Long monitor contention with owner Binder:1234 at com.android.server.am.ActivityManagerService$UiHandler`（Blocking time: 500ms+）。
+
+**Perfetto 诊断路径**：
+
+```sql
+-- Perfetto SQL：在 system_server 中定位 AMS 锁竞争
+SELECT 
+  blocked_thread_name,
+  blocking_thread_name,
+  lock_class_name,
+  duration_ns / 1e6 AS duration_ms,
+  num_waiters
+FROM android.monitor_contention
+WHERE process_name = 'system_server'
+  AND (lock_class_name LIKE '%ActivityManagerService%'
+       OR lock_class_name LIKE '%ActiveServices%')
+ORDER BY duration_ns DESC
+LIMIT 20;
+```
+
+**因果链还原**：在 Perfetto UI 中，`binder_transaction` 结束时间点与紧接着的 `monitor_contention` 开始时间点重叠，说明是 Binder 线程在等待 AMS 锁。Thread State track 中 Binder 线程从 Running 切换到 Sleeping（`futex_wait`）的切片宽度即为锁等待时长。
+
+> [AIW-源码调研-2026-04-25: ActiveServices.java (android14-release) + ActivityManagerService.java (android14-release) + perfetto.dev docs]
+
+---
+
+
 ## AMS 的广播管理
 
 ### 广播分发机制
