@@ -24,11 +24,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 task6_result: "pass-light-edit"
@@ -37,6 +37,9 @@ task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
 last_task9_at: "2026-04-25T18:39:22+08:00"
+last_task2b_at: "2026-04-25T22:46:46+08:00"
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
 ---
 
 # 12.4 Android 网络安全与 TLS 性能优化
@@ -49,7 +52,7 @@ last_task9_at: "2026-04-25T18:39:22+08:00"
 ## 本节导读
 - 🔹 TLS 握手与连接延迟：梳理 TLS 1.2、TLS 1.3、0-RTT 与 Session Resumption 对连接时延的影响。
 - 🔹 ECH、CT 与 Cleartext 迁移：说明 Android 17 相关安全默认值带来的延迟、兼容性与迁移成本。
-- 🔹 HPKE SPI：交代 Android 17 引入的 HPKE 能力、适用场景与性能边界。
+- 🔹 HPKE SPI：交代 API 35 / Android 15 引入的 HPKE 能力、适用场景与性能边界。
 - 🔹 优化实践：从连接池、DNS、证书链和重定向配置出发，整理可执行的优化动作。
 - 🔹 版本演进与交叉引用：把网络安全策略放回 Android 版本演进和相关章节的上下文里。
 <!-- outline-end -->
@@ -68,9 +71,11 @@ TLS 1.3 把这个流程压缩到了 1-RTT。核心变化在于密钥交换机制
 
 Google 在 Android 10（API 29）上默认启用 TLS 1.3 后报告，相比 TLS 1.2 有最高 40% 的速度提升。[已验证: 官方文档, developer.android.com/about/versions/10/security]
 
-TLS 1.3 还引入了 0-RTT（Zero Round-Trip Time）恢复模式。当客户端之前连接过某个服务器并获得了 session ticket 后，下次连接时可以直接在 ClientHello 中携带加密的 "early data"，实现零延迟恢复。对于频繁请求同一 API 的场景，TLS 开销可以降到接近零。
+TLS 1.3 还定义了 0-RTT（Zero Round-Trip Time）恢复模式。当客户端之前连接过某个服务器并获得 session ticket 后，下次连接时可以在 ClientHello 中携带加密的 "early data"。Android 客户端能不能使用这条路径，取决于网络库是否公开 early data / QUIC / HTTP/3 能力。
 
-0-RTT 有一个安全代价：early data 不具备前向安全性（forward secrecy），而且可以被重放。因此只适用于幂等请求（如 GET），不能用于有副作用的操作（如 POST /transfer）。OkHttp 从 4.x 版本开始支持 TLS 1.3，但默认不启用 0-RTT，需要开发者手动配置。
+OkHttp 可以通过平台 TLS provider 使用 TLS 1.3，但 OkHttp 5 的公开 `protocols` 配置面仍以 `http/1.1`、`h2`、`h2_prior_knowledge` 为主，没有稳定公开的 0-RTT early data 开关。需要 QUIC / HTTP/3 / 0-RTT 时，优先评估 Cronet 或平台 `HttpEngine`，并把请求幂等性和重放风险单独纳入设计。
+
+0-RTT 有一个安全代价：early data 不具备前向安全性（forward secrecy），而且可以被重放。因此只适用于幂等请求（如 GET / HEAD），不能用于有副作用的操作（如 POST /transfer）。
 
 ### Session Resumption：被低估的优化手段
 
@@ -92,7 +97,7 @@ Android 平台的 TLS 行为随着版本演进持续收紧：
 | Android 8.1 (API 27) | TLS 1.2 连接验证更严格 |
 | Android 10 (API 29) | TLS 1.3 默认启用，通过 Conscrypt provider |
 | Android 11 (API 30) | TLS 1.3 完善支持 |
-| Android 17 (API 37) | ECH 平台级支持、CT 默认启用、cleartext 阻断 |
+| Android 17 (API 37) | ECH 平台配置面、targetSdk 37+ CT 默认验证 |
 
 [已验证: 官方文档, developer.android.com/training/articles/security-gms-provider]
 
@@ -116,9 +121,9 @@ ECH 的额外开销来自两部分：
 
 1. **DNS 查询增加**：客户端要先拿到 ECH 配置。这个动作通常体现在一次 DNS HTTPS/SVCB 查询或缓存命中判断里，不一定意味着额外发起一次 DoH HTTPS 请求。首次解析未命中缓存时，额外延迟主要还是 RTT；命中缓存后，这部分成本接近零。
 
-2. **ClientHello 加密**：ECH 使用 HPKE（Hybrid Public Key Encryption）对 ClientHello 进行加密，加密操作本身的计算开销很小。Chrome 的 ECH 试用数据显示对通用指标的影响"可以忽略"。
+2. **ClientHello 加密**：ECH 使用 HPKE（Hybrid Public Key Encryption）对 ClientHello 进行加密。公开资料通常把延迟主项放在 DNS 查询、缓存命中和网络 RTT 上，而不是 HPKE 本身。正文不把这一步写成固定耗时；如果要给出设备侧数字，需要按 X25519 / P-256、AES-GCM / ChaCha20-Poly1305、payload 大小和设备加速能力分别压测。
 
-在现代 Android 设备上，加密操作通常由硬件加速器（ARM CE 指令集）处理，TLS 相关的 CPU 开销在整体请求延迟中占比很小。真正影响延迟的始终是 RTT，而不是计算。
+在性能排查里，先拆 DNS HTTPS/SVCB 获取、TLS 握手、连接复用和证书验证四段，再决定是否需要单独压测 HPKE suite。
 
 [图：ECH 在 TLS 握手中的位置。标出正常 TLS（SNI 明文）vs ECH 模式（SNI 加密，经 DNS HTTPS/SVCB 获取 ECH 配置）的流程差异，重点展示 DNS 解析阶段与 TLS 握手阶段的分界]
 
@@ -133,19 +138,19 @@ ECH 的额外开销来自两部分：
 
 ### Android 17 默认启用
 
-Android 16 及之前，CT 默认不启用，需要 App 通过 Network Security Configuration 显式 opt-in。Android 17 将 CT 默认启用——targetSdkVersion >= 37 的 App，其 TLS 连接会自动验证服务器证书中的 SCT。[待验证: Android 17 正式版中 CT 强制启用的确切条件（是否仅限 targetSdk >= 37）以及最低 SCT 数量要求]
+Android 16 及之前，CT 默认不启用，需要 App 通过 Network Security Configuration 显式 opt-in。Android 17 对 targetSdkVersion >= 37 的 App 默认启用 CT 验证，服务器证书需要满足 Android CT Policy。这里不能只写“至少 2 个 SCT”，因为 SCT 的交付方式会改变检查口径。
 
-SCT 可以通过三种方式交付：
+| SCT 交付方式 | Android CT Policy 关注点 | 排查入口 |
+|:---|:---|:---|
+| 嵌入证书 | 至少有 1 个 SCT 来自检查时处于 Qualified / Usable / ReadOnly 状态的日志；还要按证书有效期满足 distinct log 数，180 天及以内通常为 2 个，超过 180 天通常为 3 个；满足数量的 SCT 中至少来自 2 个不同 log operators | 证书的 X.509v3 SCT 扩展 |
+| OCSP Stapling | 服务器在 TLS 握手里附带 OCSP 响应，响应中需要包含满足策略的 SCT | 服务器 OCSP stapling 配置、TLS 抓包 |
+| TLS 扩展 | 服务器通过 `signed_certificate_timestamp` TLS 扩展发送 SCT，仍要满足日志状态和 operator 要求 | TLS 扩展抓包、服务端配置 |
 
-1. **嵌入证书**：作为 X.509v3 扩展直接嵌入证书中（最常见）
-2. **OCSP Stapling**：服务器在 TLS 握手时附带 OCSP 响应，其中包含 SCT
-3. **TLS 扩展**：作为 `signed_certificate_timestamp` TLS 扩展发送
+### 性能影响：先查兼容性，再查计算成本
 
-### 性能影响：计算开销可以忽略，兼容性风险不能
+CT 验证通常不该成为移动网络请求的首要耗时项。更常见的现场是兼容性失败：证书缺少足够 SCT、SCT 来自不合规日志、私有 CA 或内部证书没有按 Android CT Policy 配置，targetSdk 37 升级后 TLS 直接失败。App 不会收到“性能差”的反馈，而是直接收到连接异常。
 
-CT 验证的计算成本：每个 SCT 一次 ECDSA 签名验证，一张证书通常含 2-3 个 SCT。在 ARM Cortex-A76+ 处理器上，单次 ECDSA P-256 验证约 50-100 微秒，3 次 SCT 验证总计约 150-300 微秒。对比 4G 网络下一个 RTT 的 50-200 毫秒，这个开销完全可以忽略。
-
-真正要担心的是兼容性：Android 17 要求至少 2 个有效 SCT。如果服务器证书没有包含足够的 SCT（老旧证书、内部 CA 签发的证书、或 CA 配置遗漏），TLS 握手会失败。App 不会收到"性能差"的反馈，而是直接收到连接异常。
+如果要把 CT 验证写成具体耗时，需要给出设备型号、Android 版本、证书链长度、SCT 数量、签名算法和采集方式。没有这组条件时，正文只保留方向判断，不写通用微秒级数字。
 
 排查方法：在 OkHttp 的 `EventListener` 中监听 `connectEnd` / `connectFailed` 回调，如果 targetSdk >= 37 的 App 在升级后出现大量 TLS 连接失败，优先检查服务器证书的 SCT 配置。可以用 `openssl s_client -connect host:443 -ct` 命令查看证书的 SCT 数量。
 
@@ -154,7 +159,7 @@ CT 验证的计算成本：每个 SCT 一次 ECDSA 签名验证，一张证书�
 
 ## 从 HTTP 到 HTTPS：迁移中的延迟陷阱
 
-Android 对明文流量的限制逐代收紧，最终在 Android 17 正式弃用 `usesCleartextTraffic` 属性。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。
+Android 对明文流量的限制逐代收紧。当前能从官方文档稳定确认的边界是：API 23 引入 `usesCleartextTraffic`，API 24 引入 Network Security Configuration，targetSdkVersion >= 28 默认禁止明文流量。本文不把 Android 17 写成 cleartext hard block；如果后续正式行为变更文档给出新条件，再按条件补充。迁移本身的技术难度不大——把 URL 从 `http://` 改成 `https://`——但迁移过程中的几个延迟陷阱经常被忽略。
 
 ### 弃用时间线
 
@@ -163,7 +168,6 @@ Android 对明文流量（HTTP）的限制是一个渐进过程：
 - **Android 6.0 (API 23)**：引入 `usesCleartextTraffic` 标志和 `StrictMode` 检测
 - **Android 7.0 (API 24)**：引入 Network Security Configuration，提供更细粒度的控制
 - **Android 9 (API 28)**：targetSdkVersion >= 28 的 App 默认禁止明文流量
-- **Android 17 (API 37)**：正式弃用 `usesCleartextTraffic` 属性，即使设为 `true` 也不再生效。[待验证: 弃用的确切范围——是否仅 targetSdk >= 37 受影响，以及与 Network Security Configuration 的交互关系]
 
 [已验证: 官方文档, developer.android.com/training/articles/security-config]
 
@@ -183,7 +187,7 @@ Android 对明文流量（HTTP）的限制是一个渐进过程：
 
 ### Network Security Configuration 的性能配置
 
-Network Security Configuration 是 Android 推荐的网络安全管理方式（取代 `usesCleartextTraffic`）。从性能角度，有几个和性能直接相关的配置：
+Network Security Configuration 是 Android 推荐的网络安全管理方式，能比 `usesCleartextTraffic` 更细地控制域名、信任锚和明文策略。从性能角度，有几个和性能直接相关的配置：
 
 ```xml
 <!-- res/xml/network_security_config.xml -->
@@ -214,7 +218,7 @@ Android 平台在 API 35 起公开了 Hybrid Public Key Encryption（HPKE，RFC 
 
 ### 为什么要关注
 
-在 HPKE 之前，如果开发者需要实现端到端加密，通常要自己组合密钥交换（ECDH）和对称加密（AES-GCM）方案。不同的实现方式安全性和性能差异很大。HPKE 通过标准化这个流程，让开发者不需要自己设计加密方案，同时保证了性能和安全性。
+在 HPKE 之前，如果开发者需要实现端到端加密，通常要自己组合密钥交换（ECDH）和对称加密（AES-GCM）方案。不同的实现方式安全性和性能差异很大。HPKE 通过标准化这个流程，减少开发者自行组合加密原语时出错的概率；性能仍要按 provider、suite 和消息体大小实测。
 
 ### 适用场景
 
@@ -293,4 +297,6 @@ Android 9（API 28）引入了 Private DNS（DoT）设置，Android 11 扩展支
 - [HPKE RFC 9180](https://www.rfc-editor.org/rfc/rfc9180)，HPKE 标准规范
 - [TLS 1.3 RFC 8446](https://www.rfc-editor.org/rfc/rfc8446)，TLS 1.3 标准规范
 - [Certificate Transparency RFC 6962](https://www.rfc-editor.org/rfc/rfc6962)，CT 标准规范
+- [Android Certificate Transparency Policy](https://source.android.com/docs/security/cert-transparency)，Android CT Policy 的 SCT 与日志状态要求
+- [OkHttp Protocols API](https://square.github.io/okhttp/5.x/okhttp/okhttp3/-ok-http-client/-builder/protocols.html)，OkHttp 5 公开协议配置面
 - [Conscrypt Security Provider](https://developer.android.com/training/articles/security-gms-provider)，Android TLS 实现说明

@@ -47,12 +47,15 @@ task9_result: needs-rework
 last_task9_at: "2026-04-25T20:20:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 review_round: 2
+last_task2b_at: "2026-04-25T22:46:46+08:00"
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
 ---
 
 
@@ -307,7 +310,7 @@ Baseline Profiles 是**开发者在应用中预先定义的 Profile**，告诉�
 3. 打包进 APK/AAB
 4. 应用安装或后续 dexopt 命中 Baseline Profiles 时，ART 常会选择 `speed-profile` 编译其中标记的方法
 
-Baseline Profiles 的核心价值：**Day-0 性能**。不需要等用户先用几天，安装完就立刻有 AOT 编译覆盖。Google 官方数据表明，正确配置 Baseline Profiles 可以提升约 30% 的代码执行速度。[待验证: 需定位 Google 官方基准测试报告出处]
+Baseline Profiles 的核心价值：**Day-0 性能**。不需要等用户先用几天，安装完就立刻有 AOT 编译覆盖。Google 官方文档把 Baseline Profiles 的收益描述为启动和运行性能改善，但具体幅度取决于应用、设备、Android 版本和 Profile 覆盖率。发布稿不把固定百分比写成通用结论。
 
 **第三层：Cloud Profiles（Google Play 聚合）**
 
@@ -333,7 +336,7 @@ Startup Profiles 是 Baseline Profiles 的**启动子集**，但它影响的不�
   classes2.dex: [配置类, 其他类, ...]
 ```
 
-AGP 8.3 起，DEX 布局优化（`dexLayoutOptimization`）默认启用。实际效果：**使用 Startup Profiles + DEX Layout 后，冷启动速度比单独使用 Baseline Profiles 快 15-30%**。
+AGP 8.3 起，DEX 布局优化（`dexLayoutOptimization`）默认启用。它的目标是减少启动路径上的类加载 I/O；收益要用同一 release 包、同一设备、同一 Android 版本和同一 Macrobenchmark 脚本对照确认。
 
 [已验证: 官方文档 developer.android.com, Startup Profiles 与 DEX Layout 优化]
 
@@ -449,7 +452,7 @@ android {
 
 Startup Profiles 的文件名通常是 `startup-prof.txt`，放在 `src/main/` 目录下。它只列出启动路径上的类和方法，R8/D8 编译器会将这些类集中到 classes.dex 的前部。
 
-实测效果：综合使用 Baseline Profiles + Startup Profiles，总体启动和运行时性能可提升 30% 以上。
+效果验证要拆成两组：Baseline Profiles 看解释执行 / JIT 热身是否减少，Startup Profiles 看启动路径类加载 I/O 是否减少。不要把两者的收益合成一个通用百分比。
 
 [已验证: 官方文档, Baseline + Startup Profiles 综合效果]
 
@@ -489,20 +492,27 @@ ART 编译管线与全书多个章节有交叉：
 
 ## 版本演进
 
-| 版本 | 编译策略变化 | 性能影响 |
+| 版本 | ART / 运行时变化 | 性能影响 |
 |------|------------|---------|
-| Android 4.4 | ART 引入，全量 AOT | 安装慢、存储大、运行快 |
-| Android 5.0-6.0 | 全量 AOT 为默认 | OTA 后批量 recompile 耗时问题 |
-| Android 7.0 | 混合编译（JIT + Profile-Guided AOT） | 安装快、存储小、渐进式性能提升 |
-| Android 8.0 | JIT code cache 从 2MB 扩展到 64MB；多 dex 支持优化 | JIT 覆盖率大幅提升 |
-| Android 9.0 | Profile 引导的后台编译优化；`quicken` 编译级别引入 | 后台 dex2oat 覆盖率提升，首次启动编译速度改善 |
-| Android 10 | Hidden API 限制开始执行，影响反射调用编译路径 | 运行时兼容性约束增加 |
-| Android 11 | R8 完整模式（full mode）成为默认混淆器；`shrinker` 优化改进 | DEX 体积进一步缩小，间接改善安装和加载时间 |
-| Android 12 | ART 模块化（Mainline，com.android.art 模块） | 编译优化可独立推送，不再依赖系统 OTA |
-| Android 13 | Baseline Profiles 通过 Mainline 推送到设备 | 首次安装 AOT 覆盖率提升 |
-| Android 14 | ART Service 统一管理编译调度（取代 BackgroundDexOptService） | 编译管理更统一 |
+| Android 4.4 | ART 引入，可选安装期 AOT | 安装更慢、存储占用更高，运行期解释和 JIT 压力下降 |
+| Android 5.0-6.0 | ART 成为默认运行时，全量 AOT 是主路径 | OTA 后批量重新编译时间长，安装与存储成本明显 |
+| Android 7.0 | 混合编译（JIT + Profile-Guided AOT）成为主路径 | 安装速度恢复，热点代码在运行和空闲维护窗口中逐步编译 |
+| Android 8.0/8.1 | `quicken` / `verify` 等 compiler filter 进入常用路径，JIT code cache 上限扩大 | 首次启动更偏向验证和轻量优化，后台再按 Profile 补 AOT |
+| Android 9.0 | Hidden API 限制开始执行，反射访问边界收紧 | 依赖隐藏 API 的热路径更容易出现兼容性和优化前提变化 |
+| Android 10 | Hidden API 限制继续收紧，灰名单 / 黑名单规则更严格 | 插件化、反射和 Mock 框架需要按目标版本核对运行时行为 |
+| Android 12 | ART 模块化（Mainline，com.android.art 模块） | 编译器和运行时优化可以独立更新，不完全依赖系统 OTA |
+| Android 14 | ART Service 统一管理编译调度（取代 BackgroundDexOptService 主路径） | 编译调度更集中，设备策略对 dexopt 结果的影响更明显 |
 | Android 16 | Cloud Compilation 等云侧编译资料开始公开 | 安装侧编译流程继续演进，应用侧仍以设备上的实际编译状态为准 |
-| Android 17 | `static final` 行为进一步收紧；分代 GC（Generational GC）默认启用 | 编译器假设更稳定，但具体优化收益要结合 ART 版本与代码形态判断 |
+| Android 17 | targetSdk 37+ 下 `static final` 行为进一步收紧；分代 GC（Generational GC）默认启用 | 编译器假设更稳定，但收益要结合 ART 版本与代码形态验证 |
+
+#### Profile 分发口径
+
+Baseline Profiles、ProfileInstaller 和 Play Cloud Profiles 属于应用分发与 Profile 供给口径，不应该写成某个 Android 平台版本单独“引入”的 ART 行为。
+
+| 版本范围 | Baseline Profiles | Play Cloud Profiles |
+|:---|:---|:---|
+| API 24-27（Android 7.0-8.1） | APK / AAB 内置的 Baseline Profile 依赖 `androidx.profileinstaller` 在首轮运行后安装，后续 dexopt 可据此选择 `speed-profile` | 不支持 |
+| API 28+（Android 9+） | Google Play 可在安装时使用应用内置 Baseline Profile；`ProfileInstaller` 仍可作为兜底 | 支持。Google Play 聚合历史用户 Profile，并可与 Baseline Profile 一起影响后续安装和更新 |
 
 #### Android 17 `static final` 行为变化的编译边界
 
