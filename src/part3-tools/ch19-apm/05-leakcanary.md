@@ -21,9 +21,9 @@ sources:
   - type: official
     path: "https://square.github.io/leakcanary/recipes/"
 pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task9_state: pending
 task9_result: needs-rework
@@ -35,6 +35,9 @@ task2b_result: fixed
 last_task2b_at: "2026-04-25T08:51:01+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
+reviewed_date: "2026-04-25"
+review_round: 5
+review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
 ---
 
 # LeakCanary
