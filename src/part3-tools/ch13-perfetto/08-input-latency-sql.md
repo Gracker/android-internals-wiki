@@ -6,7 +6,7 @@ status: "ready-for-review"
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-25"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "Perfetto stdlib docs + android/input.sql + FrameTimeline trace config docs"
@@ -22,17 +22,17 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: "task6_pending"
+pipeline_stage: task9_pending
 task2b_result: "fixed"
 task2b_state: "fixed"
-task6_state: "revisiting"
-task6_result: "pass-light-edit"
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: "pending"
 task9_result: "needs-rework"
 
 last_task2b_at: "2026-04-25T12:21:17+08:00"
-task9_reviewed_date: "2026-04-24"
-task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-25"
+task9_reviewed_by: openclaw-task6
 last_task9_at: "2026-04-24T05:21:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
