@@ -5,8 +5,8 @@ status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-25"
+last_verified_against: "AOSP android-16.0.0_r1, Android ProfilingManager / ProfilingTrigger / ApplicationExitInfo docs, art/runtime/signal_catcher.cc"
 confidence: medium
 sources:
   - type: official
@@ -16,27 +16,40 @@ sources:
   - type: official
     path: "developer.android.com/reference/android/app/ApplicationExitInfo"
   - type: official
+    path: "developer.android.com/reference/android/os/ProfilingManager"
+  - type: official
+    path: "developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
     path: "developer.android.com/topic/libraries/architecture/startup"
   - type: official
     path: "developer.android.com/jetpack/androidx/releases/jankstats"
   - type: official
     path: "perfetto.dev/docs/instrumentation/tracing-sdk"
+  - type: aosp
+    path: "art/runtime/signal_catcher.cc"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/AnrHelper.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java"
 tags: [monitoring, APM, FrameMetrics, JankStats, ANR, startup, production]
 related_chapters: ["7.1", "7.3", "8.1", "9.3", "14.1", "14.6", "14.12", "15.3", "15.4", "15.9", "15.10"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task9_at: "2026-04-25T19:35:26+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-25"
 task9_result: needs-rework
-repaired_date: "2026-04-21"
-repaired_by: "codex"
+repaired_date: "2026-04-25"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-25T19:43:07+08:00"
 ---
 
 # 线上性能监控
@@ -176,7 +189,7 @@ FrameMetrics 的数据通过 `Window.OnFrameMetricsAvailableListener` 回调获�
 
 第一个问题是**版本兼容**。FrameMetrics 从 API 24 才有，JankStats 在低版本上回退到 `ViewTreeObserver.OnPreDrawListener` 来近似监测帧率，对开发者屏蔽了版本差异。
 
-第二个问题是**UI 状态关联**。JankStats 提供了 `PerformanceMetricsState` API，允许你在代码中标记当前的 UI 状态（比如"正在滚动首页列表"、"详情页加载中"）。这样当掉帧事件上报时，就能直接知道"用户在做什么的时候掉帧了"。这是定位和复现掉帧问题的前提。
+第二项是**UI 状态关联**。JankStats 提供了 `PerformanceMetricsState` API，允许你在代码中标记当前的 UI 状态（比如"正在滚动首页列表"、"详情页加载中"）。这样当掉帧事件上报时，就能直接知道"用户在做什么的时候掉帧了"。这是定位和复现掉帧问题的前提。低版本回退到 `ViewTreeObserver.OnPreDrawListener` 时，这个监听点还承担同步锚点的作用：业务侧写入的页面、操作、列表状态，会和帧信号重新匹配，避免纯 FrameMetrics 上报只有耗时而缺少业务 context。
 
 ```java
 performanceMetricsState.putState("navigation", "HomeFragment");
@@ -302,9 +315,9 @@ for (ApplicationExitInfo info : exitInfos) {
 [已验证: 官方文档, developer.android.com/reference/android/app/ApplicationExitInfo]
 [适用版本: Android 11 (API 30)+]
 
-`ApplicationExitInfo` 的关键优势在于数据来自系统，与 Google Play Console 的 ANR 统计口径一致。它不仅记录了 ANR 发生的原因和堆栈，还包含了进程重要性级别（前台 ANR vs 后台 ANR）、发生时间戳、以及 `getTraceInputStream()` 方法提供的 ANR traces 数据。
+`ApplicationExitInfo` 的优势在于数据来自系统，与 Google Play Console 的 ANR 统计口径一致。对 `REASON_ANR`，`getTraceInputStream()` 通常返回系统保留的 ANR traces；对 `REASON_CRASH` / `REASON_CRASH_NATIVE`，它能把 Java Crash、Native Crash 和 ANR 纳入同一套退出历史模型。Android 12（API 31）之后，Native Crash 场景可能返回 Protobuf 格式的 tombstone trace，解析流程要按二进制 tombstone 处理，不能假设它一定是纯文本。`getTraceInputStream()` 不是所有退出原因都有值，线上代码要把 `null` 当成正常分支。
 
-但 `ApplicationExitInfo` 有一个限制：只有在 API 30+ 的设备上才可用。对于覆盖 API 30 以下设备的应用，需要同时保留 Watchdog 方案作为兜底。大多数成熟的 APM SDK（如 Firebase Crashlytics、Sentry）都采用了这种分层策略：API 30+ 用 ApplicationExitInfo，低版本回退到 Watchdog。
+`ApplicationExitInfo` 只有在 API 30+ 的设备上才可用。对于覆盖 API 30 以下设备的应用，需要同时保留 Watchdog 方案作为兜底。大多数成熟的 APM SDK（如 Firebase Crashlytics、Sentry）都采用了这种分层策略：API 30+ 用 ApplicationExitInfo，低版本回退到 Watchdog。
 
 ### 关于 FileObserver 监听 traces.txt
 
@@ -318,7 +331,18 @@ for (ApplicationExitInfo info : exitInfos) {
 
 所以今天线上 ANR 监控的最佳实践是：API 30+ 用 ApplicationExitInfo，低版本用 Watchdog 线程兜底，FileObserver 方案仅在特殊场景（如系统级 App 或有平台签名权限的 App）下考虑。
 
-[自动发现]
+### 思路三：SIGQUIT / SignalCatcher 自采栈
+
+系统处理 ANR 时会让目标进程 dump 线程栈，ART 侧入口是 `art/runtime/signal_catcher.cc` 中的 `SignalCatcher::HandleSigQuit()`。`SignalCatcher` 线程通过 `sigwait` 消费 `SIGQUIT`，再生成 Java 线程 dump。自研 APM 所说的 ANR signal handler，通常是在这个信号现场补采进程状态、主线程栈、最近页面和业务 breadcrumb。
+
+这类方案的边界要写清：
+
+- 它只补现场，不负责判定系统是否已经认定 ANR；最终口径仍以系统 ANR、`ApplicationExitInfo` 和 Android Vitals 为准。
+- 普通 `sigaction(SIGQUIT, ...)` 不一定稳定收到信号，因为 ART 的 `SignalCatcher` 使用 `sigwait` 消费 `SIGQUIT`。SDK 如果改动信号掩码或 hook SignalCatcher 路径，必须保证系统 dump 线程栈的流程继续执行。
+- signal 现场只做轻量记录，例如时间戳、tid、主线程栈快照、ring buffer 指针。文件 IO、JSON 序列化、网络上报放到后续线程或下次启动。
+- 面向普通 App 的量产版本，API 30+ 默认优先用 `ApplicationExitInfo`；SIGQUIT 自采栈更适合作为低版本、内测包、厂商合作或强控制环境下的补充方案。
+
+[已验证: AOSP android-16.0.0_r1, art/runtime/signal_catcher.cc]
 
 ## 监控数据的采样、聚合与报警策略
 
@@ -333,6 +357,18 @@ for (ApplicationExitInfo info : exitInfos) {
 **第二层：采样采集详细数据（中等开销）**。对一部分用户（通常 5%-10%）启用详细帧率监控（FrameMetrics 拆解数据）和启动子阶段埋点。采样比例可以根据用户量动态调整——日活 100 万的 App 采 5% 就够了，日活 1 万的 App 可能需要采 50% 才能获得统计意义。要保证采样是随机的，不能只采高端设备。
 
 **第三层：定向全量采集（高开销）**。对于异常会话（发生 ANR、崩溃、或启动超过阈值），不受采样比例限制，全量采集所有数据。这是"发现问题"的关键——你不需要所有用户的详细数据，但你绝对需要出问题的那些用户的详细数据。
+
+### 异常触发补证据：ProfilingManager
+
+Android 15（API 35）开始提供 `android.os.ProfilingManager`，应用可以请求 system trace、Java heap dump、heap profile、stack sampling 等重样本。Android 16（API 36）加入 `ProfilingTrigger` 的系统触发模式，例如 `TRIGGER_TYPE_ANR`、`TRIGGER_TYPE_APP_FULLY_DRAWN`。系统命中事件后返回正在运行的 system trace snapshot，适合放在第三层采样里作为“异常触发补证据”的默认候选。
+
+它和自建 APM trace 的分工很清楚：轻量指标负责长期覆盖，`ProfilingManager` 负责在异常样本上拿一份系统视角的重证据。ANR、启动超标这类场景里，running trace snapshot 可以利用系统环形缓冲区回看事件发生前的一小段时间，比异常之后再临时开始抓 trace 更有价值。
+
+接入时要把三个边界写进客户端策略：
+
+- **版本边界**：API 35 支持应用主动请求 profiling；API 36 起才有系统触发器。Android 14 及以下仍要走自建 trace、Perfetto SDK 或实验包抓取流程。
+- **限流边界**：系统会按进程和系统预算限流，结果不保证每次都返回。客户端要记录 request type、trigger type、error code 和设备上下文，不在前台循环重试。
+- **隐私边界**：trace、heap dump、tombstone 都是诊断 artifact，可能包含路径、线程名、业务 tag 或对象信息。上传前要做大小限制、加密、过期清理和合规审查。
 
 ### 数据聚合
 
@@ -420,7 +456,7 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
 
 - **基础指标全量**：如启动、jank、exit reason
 - **异常样本加密集采样**：异常设备 / 页面 / 版本加大采样率
-- **异常触发补证据**：例如掉帧持续超过阈值后，再补 trace 或 session timeline
+- **异常触发补证据**：例如掉帧持续超过阈值后，API 35+ 用 `ProfilingManager` 请求 system trace / heap artifact，API 36+ 注册 `ProfilingTrigger` 等系统触发器；低版本再退回自建 trace 或 session timeline
 
 经验上，越重的证据越不应该全量。指标负责广覆盖，trace / dump 负责窄而深。
 
@@ -516,11 +552,17 @@ Firebase 的局限在于它是 Google 生态内的服务，在国内使用存在
   - `frameworks/base/core/java/android/view/FrameMetrics.java` — 帧耗时拆解 API
   - `frameworks/base/core/java/android/view/Window.java` — OnFrameMetricsAvailableListener 注册
   - `frameworks/base/core/java/android/app/ApplicationExitInfo.java` — 进程退出信息 API
-  - `frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java` — ANR 检测与 traces 写入
+  - `frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java` — `appNotResponding` 入口
+  - `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java` — ANR 排队与处理辅助逻辑
+  - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — ANR 与进程管理入口
+  - `frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java` — 进程状态记录，作为 ANR 上下文补充
+  - `art/runtime/signal_catcher.cc` — ART `SignalCatcher::HandleSigQuit()`
 - 官方文档：
   - [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
   - [JankStats Library](https://developer.android.com/jetpack/androidx/releases/jankstats)
   - [ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)
+  - [ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)
+  - [ProfilingTrigger](https://developer.android.com/reference/android/os/ProfilingTrigger)
   - [App Startup Time](https://developer.android.com/topic/performance/vitals/launch-time)
   - [Jetpack App Startup](https://developer.android.com/topic/libraries/architecture/startup)
   - [Android Vitals](https://developer.android.com/topic/performance/vitals)
