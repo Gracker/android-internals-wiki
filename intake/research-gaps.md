@@ -5959,3 +5959,280 @@ Android 14 动态库只读限制
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25-14-ch14.13-external-review.md)
 
+
+
+## [2026-04-25] 7.4 典型卡顿场景分析 — 知识盲区
+
+### 盲区描述
+跨进程动画中 SurfaceControl 的接管 (Handover) 细节未覆盖。SurfaceFlinger HWC Overlay 掉退对帧率影响、RenderThread 亲和力调度未深入研究。
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- Android 12+ SplashScreen 的 RemoteAnimation 实现
+- PowerHAL 动态调整 RenderThread 优先级的机制
+- 通知栏展开时 HWC Overlay 掉退对帧率的影响
+
+### 关联章节
+- 7.1
+- 7.2
+- 7.4
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.5 优化策略 — 知识盲区
+
+### 盲区描述
+Android 15 setFrameContentVelocity 对自研 UI 引擎的启示；Skia Graphite 引擎对 RenderEffect 的性能加持。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Skia Graphite 在 Android 15 的推行路线图
+- ContentProvider applyBatch 事务特性对数据一致性的帮助
+
+### 关联章节
+- 7.5
+- 7.10
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.7 Compose 性能 — 知识盲区
+
+### 盲区描述
+Strong Skipping 下不稳定参数使用 === 引用相等性比较的副作用；SnapshotStateObserver 的注册观察机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- Kotlin 2.0.20+ Strong Skipping 引用相等性陷阱
+- SnapshotStateObserver registerApplyObserver 的"状态变化→Scope 失效"映射
+
+### 关联章节
+- 7.7
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.8 RecyclerView 深度优化 — 知识盲区
+
+### 盲区描述
+多 RecyclerView 实例共存时 GapWorker 预取任务排序逻辑。
+
+### 重要程度
+中
+
+### 建议研究方向
+- GapWorker 在多列表场景下的预取预算平衡
+- factorInCreateTime 衰减系数（通常 0.25）
+
+### 关联章节
+- 7.8
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.9 感官流畅性 — 知识盲区
+
+### 盲区描述
+主流手机厂商是否已在 Framework 层修复 Choreographer 毫秒截断问题；Chrome Blink 层 VSync 抖动处理。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 各厂商 ROM 中 lockAnimationClock 的魔改优化
+- Chrome 时间源平滑算法
+
+### 关联章节
+- 7.9
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.10 图片与 Bitmap 性能 — 知识盲区
+
+### 盲区描述
+Immutable Bitmap 在硬件加速渲染时的具体路径优化；Android 14 AVIF 硬件解码强制要求对业务层的实际收益。
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- HARDWARE Bitmap 禁止 CPU 侧读写的渲染路径优化
+- AV1 硬件解码覆盖率与 App 层收益量化
+
+### 关联章节
+- 7.10
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.11 WebView 性能 — 知识盲区
+
+### 盲区描述
+不同 OEM GPU 驱动在 WebView 场景下的崩溃特征；宿主 App 通过 CDP 自动化获取 V8 Heap Snapshot。
+
+### 重要程度
+中-高
+
+### 建议研究方向
+- Adreno 驱动 WebView 崩溃特征统计
+- Chrome DevTools Protocol 远程获取 Renderer V8 Heap Snapshot
+
+### 关联章节
+- 7.11
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.12 View 布局优化 — 知识盲区
+
+### 盲区描述
+RenderNode 在重绘时的损坏区计算；LayoutLib/Compose 混合预览与真机差异。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 硬件加速下 invalidate(Rect) 的实际作用边界
+- LayoutLib 预览时布局解析逻辑
+
+### 关联章节
+- 7.12
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.13 SystemUI 性能 — 知识盲区
+
+### 盲区描述
+Flexiglass 场景下的手势拦截机制；Compose 在 SystemUI 中的常驻内存开销。
+
+### 重要程度
+高
+
+### 建议研究方向
+- SceneTransitionLayout 手势检测器与 NotificationShadeWindowView 触摸逻辑并存
+- Composed UI vs ViewTree 基准内存占用对比
+
+### 关联章节
+- 7.13
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.14 GAPS 动态分析 — 知识盲区
+
+### 盲区描述
+GAPS 生成的 JSON 指令集的具体 Schema。
+
+### 重要程度
+中
+
+### 建议研究方向
+- GAPS Activity/ResourceID/Action 指令集 Schema
+- 目标方法驱动性能压测新思路
+
+### 关联章节
+- 7.14
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 7.15 作战手册 — 知识盲区
+
+### 盲区描述
+Android 15/16 的 16KB Page Size 对 mmap 及冷启动二进制加载的量化影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 16KB Page 模式对冷启动 Native Lib 加载的量化影响
+- ELF page alignment 检查方法
+
+### 关联章节
+- 7.15
+- 8.3
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 8.1 响应速度原理 — 知识盲区
+
+### 盲区描述
+Android 15 Adaptive Refresh Rate 对 Input 响应延迟的影响。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 系统如何根据 Input 事件动态从 10Hz 跳到 120Hz
+- InputDispatcher 共享内存事件分发的延迟测量
+
+### 关联章节
+- 8.1
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 8.3 启动优化策略 — 知识盲区
+
+### 盲区描述
+Android 15+ 16KB Page 模式对文件预取(Read-ahead)和大型资源加载速度的影响。
+
+### 重要程度
+低
+
+### 建议研究方向
+- 16KB Page Size 改变 read-ahead 行为的量化数据
+
+### 关联章节
+- 8.3
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 8.5-8.6 案例集与协程性能 — 知识盲区
+
+### 盲区描述
+16KB Page Size 导致 NDK 对齐膨胀；Kotlin 2.2 K2 编译器对协程状态机的内联优化；Android 16 perfetto 中协程层级切换可见性。
+
+### 重要程度
+高
+
+### 建议研究方向
+- -Wl,-z,max-page-size=16384 对多层级动态库加载的影响
+- K1 vs K2 生成字节码深度差异
+- CoroutineContext TrackedCoroutineInterceptor 实验性特性
+
+### 关联章节
+- 8.5
+- 8.6
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-25] 8.10 ProfilingManager 系统触发式追踪 — 知识盲区
+
+### 盲区描述
+ANOMALY 触发器在 LMK 前生成 Heap Dump 的完整链路；MemoryLimiter 事件机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- TRIGGER_TYPE_ANOMALY 与 MemoryLimiter 的协作链路
+- device_config 绕过 Rate Limiter 进行全流程压测
+
+### 关联章节
+- 8.10
+
+### 外部 review 来源
+- Gemini 外部 review

@@ -1815,3 +1815,95 @@
 - **问题**：“libbinder 默认最多按需创建 15 个 Binder 线程”容易被读成总服务线程数 15。android16 ProcessState.cpp 中 DEFAULT_MAX_BINDER_THREADS=15，getThreadPoolMaxTotalThreadCount() 注释说明 startThreadPool 自己启动 1 个线程，kernel 还能按 mMaxThreads 再启动更多线程，用户也可能直接 joinThreadPool。
 - **建议**：改成“默认 mMaxThreads=15，表示 kernel 可额外拉起的线程上限；调用 startThreadPool() 本身会先启动 1 个线程，所以默认池总量通常按 1+15 理解，另有手动 joinThreadPool 的边界”。
 
+
+
+## [External Review] 7.4 典型卡顿场景分析 — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：§5.2 多任务切换
+- **问题**：TaskSnapshot 使用 HardwareBuffer 但未点出 Zero-copy
+- **建议**：简要点出 HardwareBuffer 通过 Zero-copy 提升 Recents 列表流畅度
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.5 优化策略 — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：Compose 优化
+- **问题**：未补充 Strong Skipping 模式如何减少 Stable 标记依赖
+- **建议**：补充 Strong Skipping 作为 2025 Compose 优化里程碑的意义
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.6 案例集 — 2026-04-25
+- **类型**：数据支撑
+- **位置**：案例一
+- **问题**：缺少 View 层级对比数据
+- **建议**：引用 Google 官方博文 ConstraintLayout 比传统嵌套快 40% 的数据
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.8 RecyclerView 深度优化 — 2026-04-25
+- **类型**：原理链
+- **位置**：ViewHolder 缓存
+- **问题**：ViewCacheExtension 默认值为 null 未标注
+- **建议**：补充"默认不启用，需手动管理存取"的说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.8 RecyclerView 深度优化 — 2026-04-25
+- **类型**：数据支撑
+- **位置**：DiffUtil
+- **问题**：O(N+D²) 复杂度未解释 D 含义
+- **建议**：补充 D 代表编辑距离的说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.9 感官流畅性 — 2026-04-25
+- **类型**：配图建议
+- **位置**：Perfetto FrameTimeline 部分
+- **问题**：缺少 8ms/9ms 交替导致位移波动的示意图
+- **建议**：补充步幅波动示意图
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.10 图片与 Bitmap 性能 — 2026-04-25
+- **类型**：原理链完整性
+- **位置**：Hardware Bitmap fd 监控
+- **问题**：Glide fd 检查机制描述不够具体
+- **建议**：补充每50次解码检查一次 /proc/self/fd，阈值700-800
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.11 WebView 性能 — 2026-04-25
+- **类型**：版本差异
+- **位置**：Android 11 内存优化
+- **问题**：未解释 Android 11 为何能在低端设备跑多进程
+- **建议**：补充 Memory-aware sandboxing 动态调整子进程优先级
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.12 View 布局优化 — 2026-04-25
+- **类型**：原理链
+- **位置**：requestLayout 触发流程
+- **问题**：同步屏障机制说明不够深入
+- **建议**：补充 postSyncBarrier 拦截同步消息、仅允许异步消息通过的机制
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.13 SystemUI 性能 — 2026-04-25
+- **类型**：知识盲区
+- **位置**：Flexiglass 与窗口系统
+- **问题**：未说明 Flexiglass 在 WindowManager 层面的窗口数量变化
+- **建议**：补充说明仍为单一 Surface 以保证手势连续性
+- **来源**：Gemini 外部 review
+
+## [External Review] 7.15 作战手册 — 2026-04-25
+- **类型**：工具应用
+- **位置**：ANR 部分
+- **问题**：仅列出 ApplicationExitInfo 和 traces.txt
+- **建议**：补充 Perfetto Thread State 和 Blocked on Binder SQL 查询技巧
+- **来源**：Gemini 外部 review
+
+## [External Review] 8.2 App 启动全流程 — 2026-04-25
+- **类型**：原理链
+- **位置**：ApplicationStartInfo
+- **问题**：ContentProvider 触发启动时计时起点追溯未说明
+- **建议**：补充 REASON_CONTENT_PROVIDER 场景下 ActivityMetricsLogger 的计时起点
+- **来源**：Gemini 外部 review
+
+## [External Review] 8.5-8.6 案例集与协程 — 2026-04-25
+- **类型**：知识盲区
+- **位置**：调试工具
+- **问题**：未提及 Android Studio Coroutine Debugger 通过 JDWP 不需要 DebugProbes
+- **建议**：补充系统级协程观测方案
+- **来源**：Gemini 外部 review
