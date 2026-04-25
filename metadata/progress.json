@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T20:20:00+08:00",
+  "generated_at": "2026-04-25T20:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -3838,7 +3838,7 @@
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
       "last_verified": "2026-04-25",
-      "last_verified_against": "external review + GitHub upstream READMEs + AndroidX/AGP docs",
+      "last_verified_against": "external review + GitHub upstream READMEs + AndroidX/AGP docs + Inline Hook I-cache/16KB page-size check",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
@@ -3852,7 +3852,7 @@
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-21T23:18:40+08:00",
-      "last_task2b_at": "2026-04-25T13:01:11+08:00",
+      "last_task2b_at": "2026-04-25T20:40:00+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b"
     },
@@ -3864,7 +3864,7 @@
       "drafted_date": "'2026-04-04'",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-25",
-      "last_verified_against": "AndroidX docs + external review + Android test docs",
+      "last_verified_against": "AndroidX docs + external review + Android test docs + ART profile-guided compilation docs",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
@@ -3879,7 +3879,7 @@
       "last_task9_at": "'2026-04-21T22:00:33.103917+08:00'",
       "section": "14.6",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-25T13:01:11+08:00",
+      "last_task2b_at": "2026-04-25T20:40:00+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b"
     },
@@ -6498,7 +6498,7 @@
       }
     }
   },
-  "last_updated": "2026-04-25T17:43:00+08:00",
+  "last_updated": "2026-04-25T20:40:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -6553,5 +6553,23 @@
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-04-25T17:43:00+08:00"
+  },
+  "2026-04-25-20-task2b": {
+    "task": "task2b-content-processing-rework",
+    "sections": [
+      "14.5",
+      "14.6"
+    ],
+    "timestamp": "2026-04-25T20:40:00+08:00",
+    "results": {
+      "14.5": "fixed external-review duplicate queue; added Inline Hook I-cache and 16KB page size boundary",
+      "14.6": "fixed external-review duplicate queue; added Baseline Profile/dex2oat path and CI thermal guidance"
+    },
+    "queue_completed_indexes": [
+      117,
+      118,
+      160,
+      161
+    ]
   }
 }

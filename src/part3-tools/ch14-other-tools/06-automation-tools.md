@@ -1,9 +1,9 @@
 ---
 title: 自动化测试工具
 chapter: '14.6'
-repaired_by: openclaw-task2b
-repaired_date: '2026-04-25'
-last_task2b_at: '2026-04-25T13:01:11+08:00'
+repaired_by: "openclaw-task2b"
+repaired_date: "2026-04-25"
+last_task2b_at: "2026-04-25T20:40:00+08:00"
 task2b_result: fixed
 section: '14.6'
 status: ready-for-review
@@ -38,8 +38,8 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 review_round: 2
 task9_state: pending
 task2b_state: fixed
@@ -224,9 +224,11 @@ CompilationMode.Partial(
 CompilationMode.Full()
 ```
 
-Google 官方的数据显示，Baseline Profile 可以将冷启动时间改善约 30%。通过对比 `CompilationMode.None()` 和 `CompilationMode.Partial()` 的测试结果，我们可以量化自己应用的 Baseline Profile 实际收益。
+Baseline Profile 不是运行时开关。构建产物会携带启动路径和热点方法规则，安装或后台 dexopt 时，系统把这些规则合并到 ART profile，再由 `dex2oat` 按 `speed-profile` 口径把命中的类和方法编译进 `.odex` / `.oat` / `.vdex` 产物。`CompilationMode.Partial()` 用来模拟这条安装后编译路径，只编译 profile 覆盖的热路径；`CompilationMode.Full()` 更接近全量 AOT。
 
-[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
+Google 官方的数据显示，Baseline Profile 可以将冷启动时间改善约 30%。通过对比 `CompilationMode.None()` 和 `CompilationMode.Partial()` 的测试结果，我们可以量化自己应用的 Baseline Profile 收益。保留量化数字时，要同时写清设备型号、系统版本、启动模式、迭代次数和 profile 安装方式。
+
+[已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics；Android Runtime profile-guided compilation 机制]
 
 [待补充: Perfetto Trace 截图——Macrobenchmark 输出的 startup 和 frame timing Trace 在 Android Studio 中的具体表现]
 
@@ -343,7 +345,9 @@ buildTypes {
 }
 ```
 
-**执行阶段**：在真实设备上运行基准测试。这一步是最关键的——**不要在模拟器上运行基准测试**。模拟器的 CPU 调度、内存带宽、GPU 渲染路径都和真实设备完全不同，测出来的数据没有任何参考价值。
+**执行阶段**：在真实设备上运行基准测试。不要在模拟器上运行基准测试，模拟器的 CPU 调度、内存带宽、GPU 渲染路径都和真实设备完全不同，测出来的数据没有参考价值。
+
+CI 里要把设备状态当成测试输入固定下来：同一型号和系统版本、充电状态一致、测试前冷却到稳定温度、关闭省电模式和后台同步，并记录电量与温度。AndroidX Benchmark 会检测 thermal throttling，触发后应让本轮结果失败或延后重跑。`androidx.benchmark.enabledRules` 只负责区分 `Macrobenchmark` 与 `BaselineProfile` 这类任务，不负责锁频；只有 rooted 设备上的 Microbenchmark 才适合用 `lockClocks` 降低频率波动。
 
 对于没有自建设备农场的小团队，Firebase Test Lab（FTL）是一个实用的选择。FTL 提供了大量真实 Android 设备，通过 gcloud 命令行提交测试：
 
