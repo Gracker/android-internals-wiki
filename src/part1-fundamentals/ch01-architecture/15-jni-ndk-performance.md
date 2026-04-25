@@ -2,7 +2,7 @@
 title: "JNI/NDK 性能优化"
 section: "1.15"
 chapter: "1.15"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-06"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-23"
@@ -46,14 +46,14 @@ tags:
 related_chapters:
   - "4.7"
   - "14.2"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: '2026-04-23'
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-23T04:05:49+08:00'
+last_task9_at: "2026-04-25T20:20:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
