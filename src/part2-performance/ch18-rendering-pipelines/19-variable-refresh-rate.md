@@ -19,6 +19,9 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T08:27:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-26T00:45:50+08:00"
+repaired_date: "2026-04-26"
+repaired_by: openclaw-task2b
 ---
 
 <!-- outline-start -->
@@ -57,7 +60,7 @@ LTPO 面板经常和 ARR 一起出现，因为它更容易覆盖更宽的刷新�
 
 刷新率选择可以拆成三层。
 
-- **App 投票层**：`Surface.setFrameRate()`、`View.setRequestedFrameRate()`、Compose `preferredFrameRate()`，以及滚动时的 `setFrameContentVelocity()` 都在表达内容需要多快更新。
+- **App 投票层**：Android 11+ 的 `Surface.setFrameRate()`、Android 15（API 35）的 `View.setRequestedFrameRate()` / Compose `preferredFrameRate()`，以及滚动时的 `setFrameContentVelocity()` 都在表达内容需要多快更新。Android 16（API 36）的 `Display.hasArrSupport()` 只负责能力查询，不参与 API 35 设备上的投票调用。
 - **系统决策层**：SurfaceFlinger 收集可见 Layer 的更新节奏、事务状态和显示约束，再由 Scheduler 选当前更合适的刷新率。
 - **设备能力层**：面板能力和 device-specific HAL support 决定系统到底能不能用 ARR；不满足时只能回到多刷新率 mode switching。
 
@@ -89,7 +92,7 @@ surface.setFrameRate(0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT);
 
 ### Android 15：View / Compose 开始直接表达刷新率偏好
 
-`View.setRequestedFrameRate(float)` Added in API level 35。它既能写具体 fps，也能写类别常量。普通 UI 组件在这一层给投票更自然，滚动场景还可以配合 `setFrameContentVelocity(float)` 告诉系统当前内容速度。
+`View.setRequestedFrameRate(float)` Added in API level 35 (Android 15)。它既能写具体 fps，也能写类别常量。普通 UI 组件在这一层给投票更自然，滚动场景还可以配合 `setFrameContentVelocity(float)` 告诉系统当前内容速度。
 
 ```java
 view.setRequestedFrameRate(View.REQUESTED_FRAME_RATE_CATEGORY_NORMAL);
@@ -102,7 +105,7 @@ Compose 对应的是 `Modifier.preferredFrameRate(frameRate)` 和 `Modifier.pref
 
 ### Android 16：`Display` 查询 API 用来读能力和建议值
 
-Android 16 补齐了查询入口。`Display.hasArrSupport()` 判断设备是否公开支持 ARR，`Display.getSuggestedFrameRate(int)` 读取系统建议值。支持档位仍可通过 `getSupportedRefreshRates()` 查看。
+Android 16 (API 36) 补齐了查询入口。`Display.hasArrSupport()` 判断设备是否公开支持 ARR，`Display.getSuggestedFrameRate(int)` 读取系统建议值。支持档位仍可通过 `getSupportedRefreshRates()` 查看。
 
 ```java
 Display display = context.getDisplay();
@@ -114,6 +117,8 @@ if (display != null && display.hasArrSupport()) {
 ```
 
 `getSuggestedFrameRate(int)` 的入参是类别，不是任意 fps。它适合回答“系统建议普通动画跑多快”或“当前场景是否值得升到高刷”，不适合把 45fps、72fps 这类业务目标直接塞进去做映射。
+
+Android 15 QPR 设备可能已经有 ARR 调度逻辑，但没有 `Display.hasArrSupport()`。这类设备只能用机型白名单和 Perfetto 中 refresh-rate selection 片段辅助确认，不能把 API 36 查询失败直接判成不支持。
 
 ## 渲染过程里的 deadline 没有消失
 
