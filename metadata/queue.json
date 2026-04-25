@@ -1581,7 +1581,7 @@
     "section": "19.16",
     "section_title": "ProfilingManager",
     "priority": 95,
-    "reason": "[External Review] 合并更新 - 2026-04-25",
+    "reason": "[External Review] Heap Dump 敏感数据脱敏安全建议缺失",
     "review_issues": [
       {
         "type": "事实错误",
@@ -1622,6 +1622,12 @@
         "detail": "未强调文件外传的安全性。",
         "suggestion": "必须增加“安全警示”，提醒开发者在上传结果前必须在本地进行 OID（对象标识符）脱敏或加密，且必须符合 App 隐私协议。",
         "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "Heap Dump 安全性与合规",
+        "detail": "Heap Dump 包含所有 Java 对象明文信息（Token、手机号等），ProfilingManager 简化了采集但未简化合规",
+        "suggestion": "增加安全警示，要求上传前进行 OID 脱敏或加密，符合 App 隐私协议"
       }
     ],
     "added_by": "external-ai-review",
@@ -1670,7 +1676,7 @@
     "section": "19.18",
     "section_title": "商业 APM 平台",
     "priority": 85,
-    "reason": "[External Review] 合并更新 - 2026-04-25",
+    "reason": "[External Review] APM SDK 初始化开销与隐私政策对齐缺失",
     "review_issues": [
       {
         "type": "原理链完整性",
@@ -1730,6 +1736,18 @@
         "detail": "提到合规，但未说明具体操作。",
         "suggestion": "要求在选型表中增加一列“隐私数据字段审计清单”。",
         "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "APM SDK 初始化开销",
+        "detail": "Sentry、Bugly Pro 等在初始化时进行大量反射、字节码插桩检查或线程启动",
+        "suggestion": "增加自监控建议，用 Trace.beginSection 包裹 APM SDK 初始化并确保不阻塞 Application.onCreate"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "隐私政策对齐",
+        "detail": "如果 Sentry 采集了 Android ID 但隐私协议未声明，会导致应用商店下架",
+        "suggestion": "在选型表中增加隐私数据字段审计清单列"
       }
     ],
     "added_by": "external-ai-review",
@@ -1742,7 +1760,7 @@
     "section": "19.19",
     "section_title": "APM 采样与上报策略",
     "priority": 85,
-    "reason": "[External Review] 合并更新 - 2026-04-25",
+    "reason": "[External Review] GPU 指标 SoC 依赖与热降频识别模型缺失",
     "review_issues": [
       {
         "type": "原理链完整性",
@@ -1847,6 +1865,12 @@
         "detail": "将 GPU 利用率作为通用指标。",
         "suggestion": "补充“跨芯片平台指标不可横比”的警示。",
         "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "GPU 指标的 SoC 依赖",
+        "detail": "PerfDog 对 GPU 读取深度取决于底层 SoC 驱动，高通数据较全，联发科或低端芯片可能不可读或口径不同",
+        "suggestion": "补充跨芯片平台指标不可横比的警示"
       }
     ],
     "added_by": "external-ai-review",
@@ -1856,7 +1880,7 @@
     "section": "19.20",
     "section_title": "SoloPi 与 Emmagee",
     "priority": 95,
-    "reason": "[External Review] 外部 review 发现 1 个问题",
+    "reason": "[External Review] Emmagee 在 Android 8+ 章节中出现存在误导性，需强制修正为历史工具",
     "review_issues": [
       {
         "type": "事实错误",
@@ -1880,6 +1904,21 @@
         "detail": "未强调仓库已两年未更新。",
         "suggestion": "增加“由于上游维护停止，不建议作为自动化测试唯一依赖”的风险提示。",
         "evidence": []
+      },
+      {
+        "type": "版本差异覆盖",
+        "location": "Emmagee 的不可用性",
+        "detail": "Emmagee 依赖 /proc 读取权限在 Android 8.0 后被彻底封死，现代设备上采集数据几乎全部为 0 或错误",
+        "suggestion": "将 Emmagee 移至附录：历史工具回顾，或在正文中以醒目的 Deprecated 标识",
+        "evidence": [
+          "Android 8.0 /proc 权限封禁"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "SoloPi 维护状态风险",
+        "detail": "SoloPi 仓库已两年未更新，targetSdkVersion 为 29，Android 14+ 对前台服务类型和后台启动 Activity 限制更严",
+        "suggestion": "增加不建议作为自动化测试唯一依赖的风险提示"
       }
     ],
     "added_by": "external-ai-review",
@@ -2542,7 +2581,7 @@
     "section": "19.14",
     "section_title": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现 2 个回炉问题",
+    "reason": "[External Review] 多进程 App 监控限制与温控降频硬阻断未说明",
     "review_issues": [
       {
         "type": "重要缺失",
@@ -2587,6 +2626,24 @@
         "detail": "提到控制温度，但未说明 Benchmark 库的自动保护机制。",
         "suggestion": "补充对 `androidx.benchmark.suppressErrors` 配置的警示，说明强行跳过温控检查会导致实验结果不可信。",
         "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "多进程 App 监控",
+        "detail": "Macrobenchmark 默认监控主进程，若核心逻辑在 :remote 进程，FrameTimingMetric 可能采集不到渲染帧",
+        "suggestion": "提醒开发者确认被测逻辑是否在 targetPackage 主进程中，或查阅最新多进程支持 API",
+        "evidence": [
+          "androidx.benchmark.macro.MacrobenchmarkScope"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "温控降频（Thermal Throttling）",
+        "detail": "Macrobenchmark 1.2+ 在设备温度过高时会抛出异常或自动暂停测试，强行跳过会导致结果不可信",
+        "suggestion": "补充对 androidx.benchmark.suppressErrors 配置的警示",
+        "evidence": [
+          "androidx.benchmark.macro.MacrobenchmarkScope"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -9097,7 +9154,7 @@
     "section": "19.15",
     "section_title": "19.15",
     "priority": 85,
-    "reason": "[External Review] 提到非 Play 安装依赖 `ProfileInstaller`。",
+    "reason": "[External Review] ProfileInstaller 激活风险与 R8 混淆对 Profile 匹配的影响",
     "review_issues": [
       {
         "type": "P1 重要缺失",
@@ -9112,6 +9169,21 @@
         "detail": "未提及 R8 混淆后的规则匹配。",
         "suggestion": "提醒开发者检查 AAB 产物中解密后的 profile 记录是否与混淆后的 `mapping.txt` 一致。",
         "evidence": []
+      },
+      {
+        "type": "源码准确性",
+        "location": "ProfileInstaller 激活",
+        "detail": "ProfileInstaller 默认通过 androidx.startup 初始化，若禁用 startup 且未手动初始化，或混淆了 ProfileInstallReceiver，profile 信号将丢失",
+        "suggestion": "增加混淆与初始化检查锚点",
+        "evidence": [
+          "androidx.profileinstaller.ProfileInstallReceiver"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "R8 混淆对 Profile 匹配",
+        "detail": "手动移动 .prof 文件或使用非标混淆流程会导致 Profile 命中率为 0",
+        "suggestion": "提醒开发者检查 AAB 产物中 profile 记录与 mapping.txt 的一致性"
       }
     ],
     "added_by": "external-ai-review",
@@ -9122,7 +9194,7 @@
     "section": "19.17",
     "section_title": "19.17",
     "priority": 85,
-    "reason": "[External Review] 仅提到“某些网络库可能漏掉”。",
+    "reason": "[External Review] 网络插桩冲突与 Near Real-time 延迟风险",
     "review_issues": [
       {
         "type": "P1 重要缺失",
@@ -9137,6 +9209,18 @@
         "detail": "提到最新 SDK 有“几分钟”的延迟。",
         "suggestion": "强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
         "evidence": []
+      },
+      {
+        "type": "知识盲区",
+        "location": "网络插桩冲突",
+        "detail": "Firebase 通过字节码插桩拦截 OkHttp，复杂 AOP 框架或自定义 EventListener 占据全局槽位会导致采集失败",
+        "suggestion": "提醒开发者在 build.log 中检查 Firebase 插件插桩日志"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Near Real-time 延迟",
+        "detail": "几分钟延迟加采样过滤可能导致控制台在事故前半小时仍'一片升平'",
+        "suggestion": "强烈建议不将 Firebase 作为唯一故障发现工具，必须配合实时业务错误码监控"
       }
     ],
     "added_by": "external-ai-review",

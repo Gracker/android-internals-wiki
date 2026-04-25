@@ -3215,3 +3215,21 @@
 - **问题**：`Layout Inspector V2 使用 View.encode() 而非反射获取属性，dump 速度提升 3-5 倍` 缺少来源或 benchmark 条件，且与前文源码错误位于同一补充段。
 - **建议**：补 Android Studio / AOSP 工具侧资料或删除具体倍数，只保留可由 AOSP 验证的 `ViewDebug.dumpv2()` / `View.encode(ViewHierarchyEncoder)` 关系。
 
+
+## [External Review] 19.14 Macrobenchmark — 2026-04-25
+- **类型**：知识盲区
+- **位置**：温控降频
+- **建议**：补充对 androidx.benchmark.suppressErrors 配置的警示，说明强行跳过温控检查会导致实验结果不可信
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.15 Baseline Profile — 2026-04-25
+- **类型**：源码准确性
+- **位置**：ProfileInstaller 激活
+- **建议**：增加混淆与初始化检查锚点，确保 ProfileInstallReceiver 未被混淆
+- **来源**：Gemini 外部 review
+
+## [External Review] 19.20 其他工具 — 2026-04-25
+- **类型**：版本差异覆盖
+- **位置**：Emmagee 定位修正
+- **建议**：将 Emmagee 移至附录：历史工具回顾，或在正文中以醒目 Deprecated 标识
+- **来源**：Gemini 外部 review
