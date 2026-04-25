@@ -351,6 +351,56 @@ ORDER BY max_ms DESC;
 **误区：`setItemViewCacheSize(0)` 总是负优化。** 在某些场景下（比如 item 数据频繁更新，CachedViews 中的 ViewHolder 经常 invalid），把 cache size 设为 0 反而可以避免无效的缓存查找，直接走 Pool 的 rebind 流程。但这属于针对性优化，不应该作为默认策略。
 
 **误区：高刷新率设备上 RecyclerView 不需要优化。** 高刷新率设备的帧预算更短（120Hz 下只有 8.33ms），任何在 60Hz 下勉强达标的操作在高刷新率下都可能超时。RecyclerView 的优化在高刷新率设备上反而更重要。
+<!-- AIW-源码调研-2026-04-25 -->
+## GapWorker bindTime 盲区：measure 阶段不计入预取预算
+
+**来源**：research-gaps.md §7.8 盲区——GapWorker 均值未涵盖 measure 耗时
+
+### 核心问题
+
+GapWorker 通过 `ScrapData.mBindRunningAverageNs` 追踪 `onBindViewHolder` 的平均执行时间，用 `willBindInTime()` 判断是否在 VSync deadline 内完成预取。**这个均值只覆盖 bind，不覆盖 measure。** 当 item 布局使用 `ConstraintLayout + match_constraint` (0dp) 时，首帧 `performTraversals()` 内的 measure 阶段可能耗时 10-15ms，而 GapWorker 的 bindTime 均值可能只有 2ms。
+
+```java
+// RecyclerView.java 行 6556-6566
+void factorInBindTime(int viewType, long bindTimeNs) {
+    ScrapData scrapData = getScrapDataForType(viewType);
+    scrapData.mBindRunningAverageNs = runningAverage(
+            scrapData.mBindRunningAverageNs, bindTimeNs);
+}
+
+boolean willBindInTime(int viewType, long approxCurrentNs, long deadlineNs) {
+    long expectedDurationNs = getScrapDataForType(viewType).mBindRunningAverageNs;
+    return expectedDurationNs == 0 || (approxCurrentNs + expectedDurationNs < deadlineNs);
+}
+```
+
+### ConstraintLayout double-measure 机制
+
+`MATCH_CONSTRAINT` 维度触发两段式测量（Pass 1 → Constraint Solver → Pass 2），每次 `onMeasure` 传入不同的 `widthMeasureSpec`。这意味着：
+- bindTime 历史均值 = 2ms（假设绑定很快）
+- 首帧 measure 实际耗时 = 15ms（ConstraintLayout 复杂子 view）
+- GapWorker 认为"赶得上 deadline"，但首帧 measure 把帧时间吃光
+
+### Perfetto 识别特征
+
+在 Perfetto 中表现为：
+1. `RV Prefetch` 存在，但 prefetch 完成
+2. 下一帧 `measure/layout` slice 异常突出（15ms+）
+3. `RV onBindViewHolder` 正常（2ms），但帧仍然超时
+
+识别关键：bind 阶段正常但 measure 异常长的突变帧，根因不在 bindTime。
+
+### 设计意图与局限性
+
+GapWorker 设计假设：bindTime 是帧耗时的主要变量，measure/layout 是相对固定的。这个假设在固定尺寸 item（`setHasFixedSize(true)`）场景下成立，但在 `ConstraintLayout + match_constraint` 场景下失效——这类 item 的 measure 耗时是 bindTime 的 5-10 倍。
+
+### 应对策略
+
+1. **避免在 item 内层使用复杂的 `match_constraint`**：尤其是多层嵌套 ConstraintLayout
+2. **`setHasFixedSize(true)` + 固定 item 高度**：让 measure 结果可预测
+3. **提前 `prepareToDraw()`**：触发异步 measure（如果 item 支持）
+4. **Trace 优先看 measure 而非 bind**：当 bindTime 均值正常但帧仍超时，问题在 measure
+
 
 ## 扩展
 

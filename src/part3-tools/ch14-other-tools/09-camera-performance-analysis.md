@@ -7,7 +7,7 @@ drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: openclaw-task6
 last_task2b_at: '2026-04-25T15:40:00+08:00'
-reviewed_date: '2026-04-24'
+reviewed_date: "2026-04-25"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
 last_verified_against: AOSP android-14.0.0_r1
@@ -32,8 +32,8 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -113,15 +113,15 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **预览卡顿**是最常见的投诉。用户打开相机后，预览画面出现肉眼可见的掉帧或卡顿。这类问题的根因通常在 Buffer 流转环节——可能是 HAL 处理慢了，可能是 SurfaceFlinger 合成不及时，也可能是 BufferQueue 的 Buffer 被耗尽了。在 Perfetto 中，我们需要关注 `cameraserver` 进程中 `queueBuffer` 的时间间隔，以及 SurfaceFlinger 的 `BufferTX - SurfaceView` Counter。
 
-**预览卡顿的具体表现**：30fps预览目标下，帧间隔波动超过5ms用户就能感知到卡顿。低端设备上，GPU纹理上传可能额外增加5-10ms延迟，加剧卡顿问题。
+**预览卡顿的具体表现**：30fps 预览目标下，帧间隔波动超过 5ms 用户就能感知到卡顿。低端设备上，GPU 纹理上传可能额外增加 5-10ms 延迟，加剧卡顿问题。
 
 **拍照延迟**指的是从用户点击快门到照片真正拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，我们可以用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
 
-**拍照延迟的典型值**：普通拍照通常需要200-800ms，包含ISP处理时间、曝光等待、多帧合成等环节。ZSL技术可以减少到50-100ms，但会持续消耗内存和功耗。
+**拍照延迟的典型值**：普通拍照通常需要 200-800ms，包含 ISP 处理时间、曝光等待、多帧合成等环节。ZSL 技术可以减少到 50-100ms，但会持续消耗内存和功耗。
 
 **录像丢帧**发生在视频录制场景。录像对帧率的稳定性要求极高——30fps 录制要求每帧间隔稳定在 33ms 左右。如果 HAL 或 Codec2 编码器处理不过来，帧间隔就会出现大幅抖动。在 Perfetto 中，我们需要看 `/system/bin/mediaserver` 进程中 `queueBuffer` 的帧间隔分布，用 SQL 的 `LAG()` 窗口函数可以直接计算相邻帧的差值。
 
-**丢帧的阈值判断**：帧间隔超过40ms或标准差超过8ms就会触发明显丢帧。4K录制时，编码器处理压力更大，更容易出现连续丢帧。
+**丢帧的阈值判断**：帧间隔超过 40ms 或标准差超过 8ms 就会触发明显丢帧。4K 录制时，编码器处理压力更大，更容易出现连续丢帧。
 
 **内存压力**是 Camera 场景的隐形杀手。`CameraMetadataNative` 通过 JNI 在 Native 层持有 `camera_metadata_t` 内存，而 Java 层只暴露 `TotalCaptureResult`、`CaptureResult`、`CameraCharacteristics` 等包装对象。Android 14 及更早版本主要沿 finalizer 路径清理这块 Native 内存，Android 15+ 切到 `NativeAllocationRegistry` + `Cleaner`，不再把释放逻辑绑在 `finalize()` 上。只要结果对象被长时间强引用，metadata 仍会持续堆积。
 
@@ -351,7 +351,7 @@ if not df.empty:
 
 BufferQueue 中 Buffer 数量有限（Camera 通常 3-4 个）。如果 HAL 生产帧的速度超过了 SurfaceFlinger 消费的速度，或者 App 持有 Buffer 的时间过长，就会出现所有 Buffer 都被占用的情况——HAL 无法 dequeue 到新的 Buffer，只能等待。
 
-在 Perfetto 中，这种情况表现为 `dequeueBuffer` 的耗时突然变大。如果 Camera App 使用了 `SurfaceTexture`（而非直接 `SurfaceView`），GPU 纹理上传也会成为瓶颈——每帧都需要把 Camera 的 YUV 数据上传为 GL 纹理，在低端设备上这个操作可能需要 5-10ms。
+在 Perfetto 中，这种情况表现为 `dequeueBuffer` 的耗时突然变大。如果 Camera App 使用了 `SurfaceTexture`（而非直接 `SurfaceView`），GPU 纹理上传也会成为瓶颈——每帧都需要把 Camera 的 YUV 数据上传为 GL 纹理，在低端设备上这个操作可能需要 5-10 ms。
 
 排查步骤：
 
