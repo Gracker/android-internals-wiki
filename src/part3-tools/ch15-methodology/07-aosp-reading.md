@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-24"
-last_verified_against: "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、system/core/init）"
+last_verified: "2026-04-25"
+last_verified_against: "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、frameworks/base/services/core/java/com/android/server/wm、system/core/libutils/include/utils/Trace.h、system/core/libcutils/include/cutils/trace.h、frameworks/native/services/surfaceflinger）"
 confidence: medium
 sources:
   - type: official
@@ -18,16 +18,16 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-repaired_date: "2026-04-24"
+repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-24T09:27:00+08:00"
+last_task2b_at: "2026-04-25T19:43:07+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
@@ -115,11 +115,13 @@ cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我�
 - `core/java/android/app/` — ActivityThread、Instrumentation、LoadedApk 等应用进程侧入口
 - `core/java/android/view/` — ViewRootImpl、Choreographer、View、ViewGroup
 - `core/java/android/os/` — Handler、Looper、Trace、Binder 相关
-- `services/core/java/com/android/server/` — 系统服务实现：ActivityManagerService、WindowManagerService、PowerManagerService 等
-- `services/core/java/com/android/server/am/` — AMS、进程调度、广播和组件生命周期的 system_server 侧实现
+- `services/core/java/com/android/server/` — 系统服务总目录：ActivityManagerService、WindowManagerService、PowerManagerService 等
+- `services/core/java/com/android/server/am/` — 进程、广播、服务、ANR 等 ActivityManager 相关实现
+- `services/core/java/com/android/server/wm/` — ActivityTaskManager、WindowManager、Task/DisplayArea、窗口布局与转场动画
+- `packages/SystemUI/` — 状态栏、通知面板、锁屏、快捷设置和系统 UI 动画
 - `graphics/java/android/graphics/` — 渲染相关：Canvas、Bitmap、Paint、HardwareRenderer
 
-分析应用进程内的启动、生命周期与渲染问题时，`core/java/android/view/` 和 `core/java/android/app/` 是最常进入的两个目录；涉及 AMS、PMS、WMS 等系统服务时，再切到 `services/core/java/com/android/server/`。
+分析应用进程内的启动、生命周期与渲染问题时，`core/java/android/view/` 和 `core/java/android/app/` 是最常进入的两个目录；涉及系统服务时，AMS / PMS / WMS 的公共入口在 `services/core/java/com/android/server/`，Activity 栈、Task、DisplayArea、窗口排版和转场动画要继续进入 `wm/` 包。
 
 ### frameworks/native — C++ 系统服务
 
@@ -141,6 +143,8 @@ cs.android.com 将所有 AOSP 代码呈现在一个统一的视图中，与我�
 - `logd/` — 系统日志守护进程
 - `toolbox/` — 基础命令行工具
 
+现代 AOSP 的部分基础组件已经出现 Rust 代码。遇到 `.rs` 文件时，先看同目录 `Android.bp` 里的 `rust_binary` / `rust_library`，再沿 JNI、Binder 或命令入口追调用关系。`system/core` 不能再按纯 C/C++ 目录处理。
+
 做启动性能分析时，`init/` 目录尤其重要——它负责 early userspace 启动、解析 `init.rc`、拉起 zygote 和关键守护进程。进入 Framework 阶段后，zygote fork 出 `system_server`，再由 AMS/PMS/WMS 等系统服务继续推进开机流程；`BOOT_COMPLETED` / `LOCKED_BOOT_COMPLETED` 广播也发生在这个阶段。
 
 ### art — Android Runtime
@@ -161,6 +165,8 @@ ART 虚拟机的完整实现。这个目录结构比较独立和完整：
 | UI 卡顿 / 掉帧 | frameworks/base/core/java/android/view/ |
 | VSync / 帧调度 | frameworks/base/core/java/android/view/Choreographer.java |
 | SurfaceFlinger 合成 | frameworks/native/services/surfaceflinger/ |
+| Activity / Window / 转场 | frameworks/base/services/core/java/com/android/server/wm/ |
+| SystemUI 动画 / 通知 / 锁屏 | frameworks/base/packages/SystemUI/ |
 | 应用启动 | frameworks/base/core/java/android/app/ActivityThread.java |
 | 系统启动 | system/core/init/ |
 | 内存管理 / GC | art/runtime/ |
@@ -201,7 +207,7 @@ D/Choreographer: Skipping 2 frames!  The application may be doing too much work 
 
 ### 路径二：从 Systrace / Perfetto tag 定位源码
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/include/utils/Trace.h]
+[已验证: AOSP android-16.0.0_r1, system/core/libutils/include/utils/Trace.h；system/core/libcutils/include/cutils/trace.h；frameworks/native/include/android/trace.h]
 
 在 Perfetto 中，我们看到的每一个 slice 都有一个名字，比如 `Choreographer#doFrame`、`measure`、`layout`、`draw`、`queueBuffer` 等。这些名字不是 Perfetto 自动生成的，而是开发者在源码中主动埋点的结果。
 
@@ -219,23 +225,25 @@ Trace.traceEnd(Trace.TRACE_TAG_VIEW);
 
 `traceBegin` 的第二个参数 `"measure"` 就是在 Perfetto 中显示的 slice 名字。当我们在 Perfetto 中看到 `measure` 这个 slice，就可以在 cs.android.com 中搜索 `"measure"` 并结合 `TRACE_TAG_VIEW` 上下文，找到对应的源码位置。
 
-**Native 层**使用 `ATRACE_CALL()` 或 `ATRACE_NAME()` 宏：
+**Native 层**使用 `ATRACE_CALL()` 或 `ATRACE_NAME()` 宏。内部宏位于 `system/core/libutils/include/utils/Trace.h`，tag 常量在 `system/core/libcutils/include/cutils/trace.h`，NDK 公开入口则是 `frameworks/native/include/android/trace.h`。
 
 ```cpp
-// frameworks/native/include/utils/Trace.h
+// system/core/libutils/include/utils/Trace.h
 // @ AOSP android-16.0.0_r1
 // ATRACE_CALL() 展开为以当前函数名为 slice 名的 trace 段
 void SurfaceFlinger::composite() {
     ATRACE_CALL();  // Perfetto 中显示为 "SurfaceFlinger::composite"
-    // ...
+    // Several composition steps are omitted.
 }
 ```
 
 `ATRACE_CALL()` 会自动以当前函数名作为 slice 名。所以当我们在 Perfetto 中看到 `SurfaceFlinger::composite`，直接在 `frameworks/native/services/surfaceflinger/` 下搜索 `composite` 函数即可。
 
-这里有一个关键的查找模式：Perfetto 中的 slice 名如果是 `ClassName::methodName` 的格式，几乎可以确定是 `ATRACE_CALL()` 或 `ATRACE_NAME()` 产生的，直接在对应目录下搜索这个函数名就行。如果 slice 名是自定义字符串（如 `"measure"`、`"draw"`），则需要搜索 `traceBegin` 或 `ATRACE_BEGIN` 加上这个字符串。
+查找模式是：Perfetto 中的 slice 名如果是 `ClassName::methodName` 的格式，通常来自 `ATRACE_CALL()` 或 `ATRACE_NAME()`，直接在对应目录下搜索这个函数名。如果 slice 名是自定义字符串（如 `"measure"`、`"draw"`），则搜索 `traceBegin` 或 `ATRACE_BEGIN` 加上这个字符串。
 
-Systrace/Perfetto 的 tag 体系中还有一个重要概念：tag 类别（`ATRACE_TAG`）。系统定义了几十个 tag 类别（如 `ATRACE_TAG_GRAPHICS`、`ATRACE_TAG_INPUT`、`ATRACE_TAG_VIEW`），只有在抓取时启用了对应的 tag，相关的 trace 事件才会被记录。如果我们在 Perfetto 中看不到预期的 slice，可能是因为对应的 tag 没有被启用。[已验证: AOSP android-16.0.0_r1, frameworks/native/include/utils/Trace.h 中 ATRACE_TAG 定义]
+**异步 Trace** 要按 name + cookie 配对。Java 层搜索 `Trace.asyncTraceBegin()` / `Trace.asyncTraceEnd()`，公共 API 场景还会看到 `Trace.beginAsyncSection()` / `Trace.endAsyncSection()`；Native 层搜索 `ATRACE_ASYNC_BEGIN` / `ATRACE_ASYNC_END`。Perfetto 中这类 slice 可能跨线程、跨时间段出现，不能只按相邻 begin/end 读，要看同名事件和同一个 cookie。
+
+Systrace/Perfetto 的 tag 体系中还有一个概念：tag 类别（`ATRACE_TAG`）。系统定义了几十个 tag 类别（如 `ATRACE_TAG_GRAPHICS`、`ATRACE_TAG_INPUT`、`ATRACE_TAG_VIEW`），只有在抓取时启用了对应的 tag，相关的 trace 事件才会被记录。如果我们在 Perfetto 中看不到预期的 slice，可能是因为对应的 tag 没有被启用。[已验证: AOSP android-16.0.0_r1, system/core/libcutils/include/cutils/trace.h 中 ATRACE_TAG 定义]
 
 [图：Perfetto 中的 slice 名与 AOSP 源码中 traceBegin 调用的对应关系示意]
 
@@ -299,18 +307,28 @@ Systrace/Perfetto 的 tag 体系中还有一个重要概念：tag 类别（`ATRA
 
 SurfaceFlinger 是 Android 图形系统的核心服务，负责将各个 Layer 合成后提交给显示器。它是 C++ 实现的独立进程，代码结构与 Java Framework 有很大差异。
 
-关键源码入口：
+Android 16 上更稳的阅读入口是这条调用链：
 
-- `SurfaceFlinger::onMessageRefresh()` — 合成一帧的入口
-- 合成流程入口 — Android 9 及以下为 `SurfaceFlinger::composeSurfaces()`；Android 10+ 重构后由 `CompositionEngine`/`Output` 类管理（调用链入口仍经过 `onMessageRefresh()`）
-- `Layer::onDraw()` — 单个 Layer 的绘制
-- `HWComposer::validateDisplay()` / `presentDisplay()` — 与 HWC2 的协商接口（Android 8+ 使用 HWC2 协议）
+- `SurfaceFlinger::composite()` — 一帧合成的主要入口，负责组织本轮 composition
+- `CompositionEngine::present()` — 进入 CompositionEngine，按 display / output 准备提交
+- `Output::prepareFrame()` / `Output::present()` — 为每个输出准备合成方式并提交
+- `HWComposer::getDeviceCompositionChanges()` — 向 HWC 查询哪些 layer 可走 device composition，哪些要回退 client composition
+- `HWComposer::presentAndGetReleaseFences()` — present 后取回 release fence，用于后续 buffer 生命周期管理
 
-SurfaceFlinger 的源码量大且复杂，建议从 `onMessageRefresh()` 开始，沿着调用链往下追踪。本书第 2.6 节有更详细的机制分析。
+老版本资料里常见的 `composeSurfaces()`、`onMessageRefresh()`、`Layer::onDraw()` 不能直接当作 Android 16 的主入口。阅读旧文章时，把它们放进版本差异里看；真正查 android-16.0.0_r1，要从 `SurfaceFlinger::composite()` 往 `CompositionEngine` / `Output` / `HWComposer` 走。
 
-## 追踪调用链的三种方法
+| 资料里的入口 | Android 16 阅读方式 |
+|---|---|
+| `SurfaceFlinger::onMessageRefresh()` | 改看 `SurfaceFlinger::composite()` 及其调度上下文 |
+| `SurfaceFlinger::composeSurfaces()` | 改看 `CompositionEngine::present()` 与 `Output` 相关实现 |
+| `Layer::onDraw()` | 不作为 Android 16 合成入口；优先看 layer state 如何进入 Output composition |
+| `HWComposer::validateDisplay()` / `presentDisplay()` | 改看 wrapper 方法 `getDeviceCompositionChanges()` / `presentAndGetReleaseFences()` |
 
-找到了入口函数之后，我们通常需要追踪一个完整的调用链——从用户操作到最终效果，中间经过了哪些函数，在哪个环节出了问题。这里介绍三种方法，各有适用场景。
+本书第 2.6 节有更详细的 SurfaceFlinger 机制分析。
+
+## 追踪调用链的四种方法
+
+找到了入口函数之后，我们通常需要追踪一个完整的调用链——从用户操作到最终效果，中间经过了哪些函数，在哪个环节出了问题。这里介绍四种方法，各有适用场景。
 
 ### 方法一：cs.android.com 交叉引用
 
@@ -341,8 +359,22 @@ SurfaceFlinger 的源码量大且复杂，建议从 `onMessageRefresh()` 开始�
 - **cs.android.com**：零成本，适合快速定位和轻量浏览，不适合追踪深层调用链
 - **grep**：速度快，适合精确搜索，但无法自动追踪引用关系
 - **IDE**：功能最强，适合深入分析，但需要本地代码和较长的初始化时间
+- **AIDL / Binder 边界追踪**：适合从 App 进程跨到 system_server、SurfaceFlinger 或 vendor service 的问题
 
-建议的策略是：先用 cs.android.com 快速定位到感兴趣的代码区域，当需要深入追踪时再切换到本地 IDE。
+建议的策略是：先用 cs.android.com 快速定位到感兴趣的代码区域；遇到同进程深层调用链时切到本地 IDE；遇到 Binder 边界时，沿 AIDL 接口找到服务端实现，再回到 Perfetto 匹配 transaction 的 pid / tid。
+
+### 方法四：跨 Binder 边界追踪 AIDL 实现
+
+性能问题经常跨进程。App 里看到一次 `WindowManager`、`ActivityManager`、`PowerManager` 或 vendor service 调用时，Java 调用栈只能走到 Manager 或 Proxy，真正耗时可能发生在 system_server、SurfaceFlinger 或 HAL 进程。
+
+可执行的追踪步骤：
+
+1. 找接口定义。搜索 `IWindowSession.aidl`、`IActivityTaskManager.aidl`、`IPowerManager.aidl` 这类 `.aidl` 文件。Framework AIDL 常在 `frameworks/base/core/java/android/...`，模块化或 Stable AIDL 还可能在 `packages/modules/`、`hardware/interfaces/` 或 `aidl_api/` 快照目录。
+2. 找服务端实现。Java 服务端通常搜索 `extends IXXX.Stub`，Native / NDK AIDL 则搜索 `BnXXX`、`BpXXX` 或 `ndk::BnCInterface`。如果找不到直接实现，再搜 `onTransact` 和 service registration。
+3. 匹配运行现场。Perfetto 中看 `binder transaction` / `binder reply`，用 client pid/tid、server pid/tid 和 transaction 时间窗匹配调用链。这样可以判断时间花在客户端等待、system_server 执行、SurfaceFlinger 合成，还是 vendor service。
+4. 回到源码读业务逻辑。确认服务端入口后，再用 cs.android.com 或 IDE 继续追内部调用。不要只停在生成的 Stub / Proxy；它们主要是跨进程胶水，根因通常在服务端实现类里。
+
+这个方法能避免一个常见误判：App 主线程栈只显示“Binder 调用中”，就把问题归为 App 卡顿。很多场景里，App 主线程只是同步等待，真正需要看的线程在 system_server 或 SurfaceFlinger。
 
 ## 本地 AOSP 代码的获取与配置
 
@@ -447,4 +479,6 @@ git blame core/java/android/view/Choreographer.java | grep "scheduleVsync"
 - 芦半山《学习源码的三重境界》: https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668
 - Systrace Tag 含义参考: https://wizzie.top/Blog/2021/03/09/2021/210309_android_systraceTAG/
 - AOSP Trace.java 源码: frameworks/base/core/java/android/os/Trace.java
-- AOSP Trace.h (ATRACE 定义): frameworks/native/include/utils/Trace.h
+- AOSP Trace.h (libutils 内部宏): system/core/libutils/include/utils/Trace.h
+- AOSP cutils trace tag 定义: system/core/libcutils/include/cutils/trace.h
+- NDK trace 公开头文件: frameworks/native/include/android/trace.h
