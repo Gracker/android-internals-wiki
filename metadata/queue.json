@@ -9635,7 +9635,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T16:33:30+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T21:43:45+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "completion_reason": "修正 debug.layout 属性读取路径、MSG_INVALIDATE_WORLD 触发语义与 ViewHierarchyEncoder/dumpv2 归属。"
   },
   {
     "section": "7.13",
@@ -9667,7 +9671,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T16:33:30+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-25T21:43:45+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "completion_reason": "修正 SceneContainer 参数说明、SceneContainerFlag 开关依赖与 Flexiglass UI thread/RenderThread 执行模型。"
   },
   {
     "section": "12.1",

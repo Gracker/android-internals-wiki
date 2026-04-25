@@ -27,8 +27,8 @@ drafted_by: openclaw-task2a
 gap_source: AOSP结构+读者需求+素材驱动
 gap_score: 18
 confidence: medium
-last_verified: '2026-04-25'
-last_verified_against: AOSP main / Android 16 SystemUI
+last_verified: "2026-04-25"
+last_verified_against: "AOSP main / Android 16 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout"
 sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/res/layout/super_notification_shade.xml
@@ -64,11 +64,11 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-25'
@@ -76,7 +76,7 @@ task6_result: pass-light-edit
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-25'
 last_task9_at: '2026-04-25T16:33:30+08:00'
-last_task2b_at: '2026-04-25T13:47:46+08:00'
+last_task2b_at: "2026-04-25T21:43:45+08:00"
 ---
 
 # 7.13 SystemUI 性能分析
@@ -107,7 +107,7 @@ last_task2b_at: '2026-04-25T13:47:46+08:00'
 
 ## Android 15+ SceneContainer (Flexiglass)：通知栏架构的 Compose 化重构
 
-> ⚠️ **状态**：此部分描述的 Flexiglass / Scene Framework 截至 Android 15/16 开发阶段仍为**实验性功能**，默认关闭。启用方式：`adb shell device_config override systemui com.android.systemui.scene_container true` 后重启 SystemUI。以下内容基于 AOSP mainline 源码，适用于已启用该框架的设备。
+> ⚠️ **状态**：此部分描述的 Flexiglass / Scene Framework 截至 Android 15/16 开发阶段仍为**实验性功能**，默认关闭。不同分支可能通过 aconfig、device_config override 或工程编译开关打开；验证时以目标构建上的 flag dump 和对应 AOSP 分支为准，不要只按一个 `device_config.get_boolean(...)` 判断。以下内容基于 AOSP mainline 源码，适用于已启用该框架的设备。
 
 ### 核心变化：从重叠 View 层级到 Scene Graph
 
@@ -129,45 +129,30 @@ Flexiglass（内部代号，亦称 Scene Framework）将通知栏、锁屏、Bou
 
 | 文件路径（AOSP mainline） | 职责 |
 |---------------------------|------|
-| `packages/SystemUI/compose/features/src/com/android/systemui/scene/ui/composable/SceneContainer.kt` | Scene Graph 根 Composable，接收 ViewModel + scenes 参数 |
-| `packages/SystemUI/src/com/android/systemui/scene/shared/flag/SceneContainerFlag.kt` | 框架总开关，`isEnabled()` 查询 `com.android.systemui.scene_container` aconfig flag |
+| `packages/SystemUI/compose/features/src/com/android/systemui/scene/ui/composable/SceneContainer.kt` | Scene Graph 根 Composable，接收 scene / overlay / transition / data source 等配置 |
+| `packages/SystemUI/src/com/android/systemui/scene/shared/flag/SceneContainerFlag.kt` | 框架总开关，封装 aconfig 主开关与 secondary flags 依赖 |
 | `packages/SystemUI/src/com/android/systemui/scene/ui/viewmodel/SceneContainerViewModel.kt` | 控制场景的 `isVisible` 状态 |
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayout.kt` | 底层 Compose 过渡组件，封装 Scene Graph 和 Transition |
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayoutState.kt` | 管理当前 Scene（`currentScene: SceneKey`）、`transitions`、`transitionState` |
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitions.kt` | 集中声明每对 Scene 之间的过渡动画（如 `lockscreenToShadeTransition`） |
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/transformation/PunchHole.kt` | punchHole 裁剪变换，实现场景间视觉穿透效果 |
 
-### 关键源码片段
+### 源码入口与开关依赖
 
-**SceneContainer 根节点（简化）：**
+`SceneContainer` 是 Scene Graph 的 Compose 根节点。AOSP main 的参数级签名仍在变化，正文只保留可核对的入参分组，避免把某个开发分支的签名写成稳定 API：
 
-```kotlin
-// packages/SystemUI/compose/features/src/.../SceneContainer.kt
-@Composable
-fun SceneContainer(
-    viewModel: SceneContainerViewModel,
-    scenes: Set<ComposableScene>,
-    config: SceneContainerConfig,
-    // ...
-)
-```
+| 入参分组 | 用途 |
+| --- | --- |
+| `sceneByKey: Map<SceneKey, Scene>` | 注册可切换的 Scene 实例 |
+| `overlayByKey: Map<OverlayKey, Overlay>` | 注册浮层与临时覆盖层 |
+| `initialSceneKey` | 指定初始活跃 Scene |
+| `sceneTransitions` | 声明 Scene 之间的过渡规则 |
+| `dataSourceDelegator` / `qsSceneAdapter` | 连接 SystemUI 现有状态源与 QS 适配层 |
+| `modifier` 等 Compose 参数 | 控制布局、绘制和外部修饰 |
 
-**框架开关判断（影响现有组件分支）：**
+`SceneContainerFlag.kt` 不直接读取单个 `device_config.get_boolean("systemui", "com.android.systemui.scene_container", false)`。AOSP main 使用 aconfig 生成的 `Flags.sceneContainer()` 作为主开关，并要求一组 secondary flags 同时满足，例如 Keyguard bottom area refactor、Keyguard WM state refactor、migrate clocks to blueprint、notification throttle HUN、predictive back SystemUI flag。读源码时应把它看成“主开关 + 依赖开关”的组合；单个布尔值不足以判断该框架生效。
 
-```kotlin
-// packages/SystemUI/src/.../SceneContainerFlag.kt
-object SceneContainerFlag {
-    fun isEnabled(): Boolean = 
-        device_config.get_boolean("systemui", "com.android.systemui.scene_container", false)
-}
-
-// 引用此开关的组件：
-// - ScrimController.java — Scrim 行为分支
-// - QSPanel.java — 面板可见性分支  
-// - KeyguardService.java — 锁屏逻辑分支
-// - OverviewProxyService.java — latency tracking 分支
-// - NotificationScrollViewModel.kt — 锁屏滚动手势分支
-```
+引用这个开关的组件包括 Scrim、QS、Keyguard、Overview latency tracking、锁屏滚动手势等分支。定位 Flexiglass 是否生效时，先核对这些依赖开关，再看对应组件是否切到了 SceneContainer 路径。
 
 ### 过渡动画机制
 
@@ -189,13 +174,13 @@ punchHole 变换允许当前 Scene "穿透" 下方 Scene 的部分区域可见�
 
 ### Flexiglass 对性能分析的影响
 
-1. **Trace 观测变化**：`NotificationShadeWindowView#onMeasure` 在 Flexiglass 启用后不再是 Shade 展开的主导路径。取而代之的是 `SceneTransitionLayout` 相关的 Compose recomposition 和 animation slice。
+1. **Trace 观测变化**：`NotificationShadeWindowView#onMeasure` 在 Flexiglass 启用后权重下降。此时更该看 `SceneTransitionLayout` 相关的 Compose recomposition、layout / draw 记录和 animation slice。
 
-2. **主线程 vs RenderThread**：过渡动画在 RenderThread 执行，不阻塞 UI thread。但 Compose recomposition 本身在 UI thread，首次 Scene 切换有额外 composition overhead。
+2. **UI thread 与 RenderThread 分工**：`SceneTransitionLayout` 是 Compose 组件。Scene 切换会在 UI thread 上触发状态读取、recomposition、layout / draw 记录；进入 RenderNode / GPU 的属性动画和合成阶段才更多落到 RenderThread / GPU。没有 trace 证据时，不应把整段过渡写成“不会阻塞 UI thread”。
 
-3. **OEM 定制影响**：Scene 独立性使 OEM 更容易替换或移除单个场景，但同时需要理解 SceneGraph 的根节点结构和过渡声明方式才能正确定制。
+3. **OEM 定制影响**：Scene 独立性使 OEM 更容易替换或移除单个场景，但同时要理解 SceneGraph 的根节点结构和过渡声明方式才能正确定制。
 
-4. **Perfetto 追踪重点**：启用 Flexiglass 后，分析 Shade 展开应关注 `com.android.systemui` 进程的 Compose 重组和动画 slice，以及 SceneTransitionLayout 相关的状态转换，而非传统 View hierarchy 的 `onMeasure`/`onLayout`。
+4. **Perfetto 追踪重点**：启用 Flexiglass 后，分析 Shade 展开要同时看 `com.android.systemui` UI thread 上的 Compose recomposition、layout / draw slice，RenderThread 上的动画提交，以及 SurfaceFlinger Layers。`NotificationShadeWindowView#onMeasure` 只是入口之一；兼容层、旧 View 容器和 OEM 插件仍可能参与 traversal。
 
 5. **窗口层边界**：Flexiglass 改的是 SystemUI 内部 UI 组织方式，SurfaceFlinger 侧通常仍落在 `NotificationShade` 对应的大窗口上。做窗口数量、Layer 顺序或 fence 分析时，先定位 `NotificationShade` surface，再回到 SystemUI 主线程关联 Compose / Scene 相关 slice。
 
