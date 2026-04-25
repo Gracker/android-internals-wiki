@@ -1628,6 +1628,27 @@
         "location": "Heap Dump 安全性与合规",
         "detail": "Heap Dump 包含所有 Java 对象明文信息（Token、手机号等），ProfilingManager 简化了采集但未简化合规",
         "suggestion": "增加安全警示，要求上传前进行 OID 脱敏或加密，符合 App 隐私协议"
+      },
+      {
+        "type": "知识盲区",
+        "location": "重样本数据的安全性与合规",
+        "detail": "未强调文件外传的安全性。",
+        "suggestion": "必须增加“安全警示”，提醒开发者在上传结果前必须在本地进行 OID（对象标识符）脱敏或加密，且必须符合 App 隐私协议。",
+        "evidence": []
+      },
+      {
+        "type": "回炉建议",
+        "location": "19.16",
+        "detail": "- 建议：补充关于 Heap Dump 敏感数据脱敏的安全建议。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "回炉建议",
+        "location": "19.16",
+        "detail": "- 建议：补充关于 Heap Dump 敏感数据脱敏的安全建议。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -1876,6 +1897,13 @@
         "type": "外部Review问题",
         "detail": "- [P1]- [P1][知识盲区][GPU 指标的 SoC 依赖]\n- 原文问题：将 GPU 利用率作为通用指标。\n- 关键限制：PerfDog 对 GPU 的读取深度取决于底层 SoC 驱动。在高通平台上数据较全，而在联发科或某些低端芯片上，GPU 利用率可能不可读或口径完全不同。\n- 建议：补充“跨芯片平台指标不可横比”的警示。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "知识盲区",
+        "location": "GPU 指标的 SoC 依赖",
+        "detail": "将 GPU 利用率作为通用指标。",
+        "suggestion": "补充“跨芯片平台指标不可横比”的警示。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -2816,6 +2844,31 @@
         "type": "外部Review问题",
         "detail": "- [P1][原理链完整性][温控降频（Thermal Throttling）的硬阻断]\n- 原文问题：提到控制温度，但未说明 Benchmark 库的自动保护机制。\n- 源码锚点：`androidx.benchmark.macro.MacrobenchmarkScope`。\n- 缺失内容：当设备温度过高时，Macrobenchmark 1.2+ 会抛出异常或自动暂停测试以防止数据失真。\n- 建议：补充对 `androidx.benchmark.suppressErrors` 配置的警示，说明强行跳过温控检查会导致实验结果不可信。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "知识盲区",
+        "location": "多进程 App 监控限制",
+        "detail": "未提及 Macrobenchmark 对多进程 App 的处理。",
+        "suggestion": "提醒开发者对于多进程应用，需确认被测逻辑是否在 targetPackage 的主进程中，或查阅最新的多进程支持 API。",
+        "evidence": []
+      },
+      {
+        "type": "原理链完整性",
+        "location": "温控降频（Thermal Throttling）的硬阻断",
+        "detail": "提到控制温度，但未说明 Benchmark 库的自动保护机制。",
+        "suggestion": "补充对 `androidx.benchmark.suppressErrors` 配置的警示，说明强行跳过温控检查会导致实验结果不可信。",
+        "evidence": [
+          "`androidx.benchmark.macro.MacrobenchmarkScope`。"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "温控降频（Thermal Throttling）的硬阻断",
+        "detail": "当设备温度过高时，Macrobenchmark 1.2+ 会抛出异常或自动暂停测试以防止数据失真。",
+        "suggestion": "补充对 `androidx.benchmark.suppressErrors` 配置的警示，说明强行跳过温控检查会导致实验结果不可信。",
+        "evidence": [
+          "`androidx.benchmark.macro.MacrobenchmarkScope`。"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -9459,6 +9512,31 @@
         "type": "外部Review问题",
         "detail": "- [P1][知识盲区][R8 混淆对 Profile 匹配的影响]\n- 原文问题：未提及 R8 混淆后的规则匹配。\n- 缺失内容：Baseline Profile 规则是在混淆前生成的。AGP 在打包时会自动将规则映射到混淆后的名称，但如果开发者手动移动 `.prof` 文件或使用了非标混淆流程，会导致 Profile 命中率为 0。\n- 建议：提醒开发者检查 AAB 产物中解密后的 profile 记录是否与混淆后的 `mapping.txt` 一致。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "源码准确性",
+        "location": "ProfileInstaller 激活风险",
+        "detail": "提到非 Play 安装依赖 `ProfileInstaller`。",
+        "suggestion": "增加“混淆与初始化检查”锚点。",
+        "evidence": [
+          "`androidx.profileinstaller.ProfileInstallReceiver`。"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "R8 混淆对 Profile 匹配的影响",
+        "detail": "未提及 R8 混淆后的规则匹配。",
+        "suggestion": "提醒开发者检查 AAB 产物中解密后的 profile 记录是否与混淆后的 `mapping.txt` 一致。",
+        "evidence": []
+      },
+      {
+        "type": "源码准确性",
+        "location": "ProfileInstaller 激活风险",
+        "detail": "`ProfileInstaller` 默认通过 `androidx.startup` 初始化。如果业务为了优化启动禁用了 `androidx.startup` 且未手动初始化 `ProfileInstaller`，或者混淆了 `ProfileInstallReceiver`，则 `adb shell cmd package compile -m speed-profile` 等命令将无法获取 profile 信号。",
+        "suggestion": "增加“混淆与初始化检查”锚点。",
+        "evidence": [
+          "`androidx.profileinstaller.ProfileInstallReceiver`。"
+        ]
       }
     ],
     "added_by": "external-ai-review",
@@ -9506,6 +9584,27 @@
         "type": "外部Review问题",
         "detail": "- [P1][原理链完整性][Near Real-time 的虚假感]\n- 原文问题：提到最新 SDK 有“几分钟”的延迟。\n- 现实风险：在事故发生时，几分钟的延迟加上采样过滤，可能导致控制台在事故前半小时依然“一片升平”。\n- 建议：强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "知识盲区",
+        "location": "网络插桩冲突",
+        "detail": "仅提到“某些网络库可能漏掉”。",
+        "suggestion": "提醒开发者在 `build.log` 中检查 Firebase 插件的插桩日志。",
+        "evidence": []
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Near Real-time 的虚假感",
+        "detail": "提到最新 SDK 有“几分钟”的延迟。",
+        "suggestion": "强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
+        "evidence": []
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Near Real-time 的虚假感",
+        "detail": "在事故发生时，几分钟的延迟加上采样过滤，可能导致控制台在事故前半小时依然“一片升平”。",
+        "suggestion": "强烈要求开发者不要将 Firebase 作为唯一的“故障发现”工具，必须配合实时的业务错误码监控。",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
