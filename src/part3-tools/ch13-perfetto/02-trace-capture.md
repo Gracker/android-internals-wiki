@@ -9,7 +9,7 @@ applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 last_verified: "2026-04-25"
 last_verified_against: perfetto.dev docs, google/perfetto main data_source_config/java_hprof_config/perf_event_config.proto, Android Trace API
 confidence: high
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-25"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 1
@@ -45,13 +45,13 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: '2026-04-25'
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-25T10:28:35+08:00'
 repaired_date: '2026-04-25'

@@ -45,16 +45,17 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
+review_round: 2
 task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-21"
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-21T23:18:40+08:00"
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-25T13:01:11+08:00"
@@ -97,7 +98,7 @@ repaired_by: "openclaw-task2b"
 
 因为真实工作里，很多问题发生在线上版本、灰度用户、复杂设备分布里。官方工具擅长把问题看透，三方库更擅长把问题先感知到、保留住、或者提前拦下来。两者在不同位置上各有分工。
 
-这一章真正想回答的问题是：**什么场景下需要借助三方能力，它们各自补的是哪一块空白。**
+这一章要回答的是：**什么场景下需要借助三方能力，它们各自补的是哪一块空白。**
 
 ## 先按层看，不要先按库名看
 
@@ -205,7 +206,7 @@ KOOM 还提供了线程泄漏检测能力。这里的“泄漏”分两类：线
 
 要理解 Booster，我们先要知道它在构建流程中的位置。Android 应用的构建流程大致是：源码 → Java/Kotlin 编译 → .class 文件 → **Transform 阶段** → .dex 文件 → APK 打包。Booster 就工作在 Transform 阶段，拿到所有 .class 文件后、生成 .dex 之前。
 
-因此，Booster 能做的事情非常广泛：它可以看到整个应用的字节码，可以做静态分析、代码注入和代码优化。而且这些操作都在编译期完成，对运行时性能没有额外开销。
+Booster 能做的事情非常广泛：拿到整个应用的字节码后，可以做静态分析、代码注入和代码优化。这些操作都在编译期完成，对运行时性能没有额外开销。
 
 [已验证: github.com/didi/Booster]
 
