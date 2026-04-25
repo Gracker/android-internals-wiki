@@ -131,6 +131,35 @@
         "location": "L232-L247（Perfetto heapprofd）",
         "detail": "本节把 heapprofd 写成 Android 8-16 的统一方案，但 Perfetto 文档把 Java heap sampling 边界放在 Android 12+；生产环境还要求目标进程具备 debuggable/profileable 条件。当前写法把 Android 10-11 的 native heap profiling 与 Android 12+ 的 Java heap sampling 混在一起了。",
         "suggestion": "补一张“Android 10-11 native heap / Android 12+ Java heap sampling / profileable 条件”的版本矩阵，并把 Java heap 采样的前置条件写到命令旁。"
+      },
+      {
+        "type": "源码错误(external)",
+        "location": "06-memory-churn.md heapprofd 段落",
+        "detail": "Gemini review 确认 heapprofd --java 非标准参数，Android 12+ 应使用 tools/heap_profile --heaps com.android.art",
+        "suggestion": "更新为基于 tools/heap_profile 的推荐流程",
+        "evidence": [
+          "Gemini external review 2026-04-25"
+        ]
+      },
+      {
+        "type": "版本差异(external)",
+        "location": "06-memory-churn.md GC 演进段落",
+        "detail": "Android 15 引入 CMC (Concurrent Mark-Compact) + userfaultfd，Android 16 完善分代 CMC，与旧分代 CC 代价模型不同",
+        "suggestion": "明确区分 CC (Android 8-14) 与 CMC (Android 15+) 的演进路线",
+        "evidence": [
+          "Gemini external review 2026-04-25",
+          "art/runtime/gc/heap.cc android-15.0.0_r1+"
+        ]
+      },
+      {
+        "type": "源码错误(external)",
+        "location": "06-memory-churn.md GcWatcher 引用",
+        "detail": "GcWatcher 核心逻辑已迁移至 BinderInternal.java，ActivityThread 仅是注册方",
+        "suggestion": "更新源码指向到 BinderInternal.java:addGcWatcher",
+        "evidence": [
+          "Gemini external review 2026-04-25",
+          "frameworks/base/core/java/com/android/internal/os/BinderInternal.java android-16"
+        ]
       }
     ],
     "added_by": "task9-deep-tech-review",
@@ -2896,6 +2925,18 @@
         "location": "温控降频段落",
         "detail": "未说明 Benchmark 1.2+ 在设备温度过高时会自动暂停或抛异常",
         "suggestion": "补充 androidx.benchmark.suppressErrors 的警示，说明强行跳过温控检查会导致数据失真"
+      },
+      {
+        "type": "知识盲区",
+        "location": "多进程监控",
+        "detail": "Macrobenchmark 默认监控主进程",
+        "suggestion": "确认被测逻辑在主进程"
+      },
+      {
+        "type": "原理链缺失",
+        "location": "温控",
+        "detail": "1.2+ 温度过高自动暂停",
+        "suggestion": "补充 suppressErrors 警示"
       }
     ],
     "added_by": "external-ai-review",
@@ -10123,5 +10164,156 @@
     "completed_at": "2026-04-25T22:46:46+08:00",
     "completed_by": "task2b-content-processing-rework",
     "completion_reason": "已将 TaskRecord 改为现代 Task/ActivityRecord 口径，并修正 Private Dirty 与 zRAM/SwapPss 关系。"
+  },
+  {
+    "section": "12.1",
+    "section_title": "APK 体积优化",
+    "priority": 85,
+    "reason": "[External Review] R8 新资源缩减开关 (AGP 8.12+) 对动态资源引用的破坏性未说明",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "android.r8.optimizedResourceShrinking",
+        "detail": "开启后 getIdentifier() 动态获取资源可能被误缩减，keep.xml 模糊匹配可能失效",
+        "suggestion": "补充开启此开关后需重新审计 res/raw/keep.xml 的说明",
+        "evidence": [
+          "AGP 8.12.0+ release notes"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T23:18:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "12.2",
+    "section_title": "网络性能优化",
+    "priority": 85,
+    "reason": "[External Review] QUIC 0-RTT 重放攻击风险未警告",
+    "review_issues": [
+      {
+        "type": "原理链缺失",
+        "location": "QUIC 0-RTT 段",
+        "detail": "0-RTT 数据不具备前向安全性且易受重放，必须在业务层确保请求幂等",
+        "suggestion": "补充业务层安全使用 0-RTT 的指导，非幂等请求应显式禁用",
+        "evidence": [
+          "RFC 9001"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T23:18:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "15.README",
+    "section_title": "方法论章节 README",
+    "priority": 85,
+    "reason": "[External Review] 缺乏 cs.android.com 具体源码行级链接和方法签名",
+    "review_issues": [
+      {
+        "type": "源码缺失",
+        "location": "核心原理解释部分",
+        "detail": "缺乏 AOSP 代码类/方法引用的行级溯源",
+        "suggestion": "补充 Android 14/15 的具体源码方法签名和调用链"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T23:18:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.19",
+    "section_title": "可变刷新率渲染管线 — API 版本归属错误",
+    "priority": 95,
+    "reason": "[External Review][P0] ARR API 版本归属错误：setRequestedFrameRate 是 API 35，hasArrSupport 是 API 36",
+    "review_issues": [
+      {
+        "type": "版本差异(P0)",
+        "location": "系统如何决定刷新节奏",
+        "detail": "View.setRequestedFrameRate 是 API 35 引入，Display.hasArrSupport 是 API 36 引入，文中混淆",
+        "suggestion": "精确标注每个 API 的最低 API level",
+        "evidence": [
+          "AOSP API 35/36 diff"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T23:18:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.17",
+    "section_title": "Hardware Buffer Renderer — API 命名",
+    "priority": 85,
+    "reason": "[External Review] getFence() vs getSyncFence() 命名混淆",
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "Java API 示例",
+        "detail": "SDK 原生命名 getFence()，AndroidX 包装类用 getSyncFence()，文中可能混用",
+        "suggestion": "统一为 SDK 原生 getFence() 命名"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T23:18:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.16",
+    "section_title": "游戏引擎渲染 — SurfaceView Alpha 细节",
+    "priority": 85,
+    "reason": "[External Review] Android 14 SurfaceView Z-Below 模式 Alpha 应用细节缺失",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "SurfaceView + BLAST",
+        "detail": "Android 14 起 SurfaceView 支持 arbitrary alpha，Z-Below 模式下 Alpha 应用到打孔而非内容",
+        "suggestion": "补充 setZOrderOnTop(true) vs 默认 Z-Below 的 Alpha 应用差异"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T23:18:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.19",
+    "section_title": "PerfDog — GPU 指标 SoC 依赖",
+    "priority": 85,
+    "reason": "[External Review] GPU 利用率指标跨 SoC 平台不可横比",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "GPU 指标",
+        "detail": "PerfDog GPU 读取深度取决于 SoC 驱动，高通数据全，联发科可能不可读或口径不同",
+        "suggestion": "补充跨芯片平台指标不可横比的警示"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T23:18:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "8.09",
+    "section_title": "游戏性能 — Vulkan Render Stages + Headroom API",
+    "priority": 85,
+    "reason": "[External Review] Perfetto Vulkan Render Stages 观测缺失 + Headroom API 120Hz 风险",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "Perfetto 观测口径",
+        "detail": "缺少 android.gpu.renderstages 数据源说明，Vulkan RenderPass 耗时无法观测",
+        "suggestion": "加入 renderstages 配置，说明特权属性需求"
+      },
+      {
+        "type": "原理链缺失",
+        "location": "Headroom API",
+        "detail": "120fps 下 1ms Binder 阻塞消耗 12% 帧预算",
+        "suggestion": "强调严禁渲染主线程调用，建议低频异步轮询"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-25T23:18:59+08:00",
+    "status": "pending"
   }
 ]
