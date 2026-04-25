@@ -50,3 +50,16 @@
 ## 状态
 - 全部消费完成
 - 等待归档
+
+## Round 2 补充处理
+
+以下章节级 review 文件已在 Round 2 中完成消费写入：
+- 2026-04-25-15-14-external-review.md → 19.14
+- 2026-04-25-15-15-external-review.md → 19.15
+- 2026-04-25-15-16-external-review.md → 19.16
+- 2026-04-25-15-17-external-review.md → 19.17
+- 2026-04-25-15-18-external-review.md → 19.18
+- 2026-04-25-15-19-external-review.md → 19.19
+- 2026-04-25-15-20-external-review.md → 19.20
+
+Queue 新增 2 条，合并 10 条。等待归档 helper 下轮归档。
