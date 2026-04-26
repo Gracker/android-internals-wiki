@@ -1288,7 +1288,7 @@
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "status": "pending",
+    "status": "completed",
     "origin_added_by": "external-ai-review",
     "origin_reason": "[External Review] 合并更新 - 2026-04-25",
     "material_paths": [
@@ -1298,7 +1298,11 @@
     ],
     "task9_verified_at": "2026-04-25T03:28:33+08:00",
     "task9_verified_by": "openclaw-task9",
-    "added_at": "2026-04-25T03:28:33+08:00"
+    "added_at": "2026-04-25T03:28:33+08:00",
+    "completed_at": "2026-04-27T04:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_note": "Task2B 回炉修复：补齐源码入口、采集口径、版本边界与复核工具。"
   },
   {
     "section": "19.08",
@@ -1318,7 +1322,7 @@
       }
     ],
     "added_by": "task9-deep-tech-review",
-    "status": "pending",
+    "status": "completed",
     "origin_added_by": "external-ai-review",
     "origin_reason": "[External Review] 合并更新 - 2026-04-25",
     "material_paths": [
@@ -1328,7 +1332,11 @@
     ],
     "task9_verified_at": "2026-04-25T03:28:33+08:00",
     "task9_verified_by": "openclaw-task9",
-    "added_at": "2026-04-25T03:28:33+08:00"
+    "added_at": "2026-04-25T03:28:33+08:00",
+    "completed_at": "2026-04-27T04:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_note": "Task2B 回炉修复：补齐源码入口、采集口径、版本边界与复核工具。"
   },
   {
     "section": "19.10",
@@ -2780,7 +2788,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T04:19:06+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T04:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_note": "Task2B 回炉修复：补齐源码入口、采集口径、版本边界与复核工具。"
   },
   {
     "section": "19.08",
@@ -2806,7 +2818,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T04:19:06+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T04:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_note": "Task2B 回炉修复：补齐源码入口、采集口径、版本边界与复核工具。"
   },
   {
     "section": "19.14",
