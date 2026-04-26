@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T20:23:00+08:00",
+  "generated_at": "2026-04-26T20:59:39+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,32 +7,32 @@
     "finalized": 84,
     "ready-for-review": 134,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T20:23:00+08:00",
+    "last_updated": "2026-04-26T20:59:39+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 41,
-      "task2b_pending": 59,
+      "task6_pending": 42,
+      "task2b_pending": 58,
       "ready-to-publish": 84,
       "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 173,
-      "revisiting": 41
+      "reviewed": 172,
+      "revisiting": 42
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 152,
-      "pending": 55,
+      "reviewed": 151,
+      "pending": 56,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 140,
-      "pending": 62,
+      "fixed": 141,
+      "pending": 61,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -41,29 +41,29 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 41,
-      "task2b_pending": 59,
+      "task6_pending": 42,
+      "task2b_pending": 58,
       "ready-to-publish": 84,
       "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 173,
-      "revisiting": 41
+      "reviewed": 172,
+      "revisiting": 42
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 152,
-      "pending": 55,
+      "reviewed": 151,
+      "pending": 56,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 140,
-      "pending": 62,
+      "fixed": 141,
+      "pending": 61,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -943,13 +943,13 @@
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 7 (API 24) - Android 17 (API 37)",
-      "last_verified": "2026-04-11",
-      "last_verified_against": "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, source.android.com/docs/core/graphics/sync",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaGraphitePipeline.cpp, source.android.com/docs/core/graphics/sync",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -957,7 +957,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-19",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-19T09:59:00+08:00"
+      "last_task9_at": "2026-04-19T09:59:00+08:00",
+      "last_task2b_at": "2026-04-26T20:59:03+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
@@ -993,8 +996,8 @@
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持",
-      "last_verified": "2026-04-19",
-      "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev + external review 2026-04-25",
       "confidence": "high",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -1007,7 +1010,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T01:29:40+08:00"
+      "last_task9_at": "2026-04-26T01:29:40+08:00",
+      "last_task2b_at": "2026-04-26T20:59:03+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md": {
       "path": "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",

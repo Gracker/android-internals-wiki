@@ -6,8 +6,8 @@ status: finalized
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持"
-last_verified: "2026-04-19"
-last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev + external review 2026-04-25"
 confidence: high
 sources:
   - type: official
@@ -42,6 +42,9 @@ reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
 task9_result: pass-tech-review
 task2b_result: fixed
+last_task2b_at: "2026-04-26T20:59:03+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 # 2.18 Adaptive Refresh Rate 与动态帧率控制
@@ -58,7 +61,7 @@ task2b_result: fixed
   调用点在 `SurfaceFlinger.cpp` 的 `mScheduler->chooseRefreshRateForContent(...)`，不是把选择函数简单归到 SurfaceFlinger 某个公开方法名上。
 
 - 🔹 **Display 查询 API 的真实语义**：[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Display.java]
-  `hasArrSupport()` 查能力，`getSupportedRefreshRates()` 查当前显示可用档位，`getSuggestedFrameRate(int)` 只接受 `FRAME_RATE_CATEGORY_NORMAL/HIGH` 这两个类别。
+  `hasArrSupport()`、`getSupportedRefreshRates()`、`getSuggestedFrameRate(int)` 是 Android 16 / API 36 公开查询入口；ARR 系统能力从 Android 15-QPR1 起步，App 可见 API 晚一版公开。`getSuggestedFrameRate(int)` 只接受 `FRAME_RATE_CATEGORY_NORMAL/HIGH` 这两个类别。
 
 - 🔹 **View / RecyclerView / Compose 才是普通 UI 应用的主入口**：[已验证: developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
   `setRequestedFrameRate()`、`setFrameContentVelocity()`、`Modifier.preferredFrameRate()` 负责表达 UI 偏好，`Surface.setFrameRate()` 属于更底层的 Surface 提示。
@@ -101,13 +104,13 @@ DisplayManager 这一层先决定系统允许在哪些模式里挑。AOSP androi
 
 到了 SurfaceFlinger 这一层，`mScheduler->chooseRefreshRateForContent(...)` 才开始根据当前可见 Layer 的内容节奏做 content-based selection。这里的输入已经带着前面那层收窄后的 allowed ranges，所以 Battery Saver、用户峰值刷新率和 App 请求范围会先影响候选集合，再交给 Scheduler 做评分。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 
-`VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以我们在 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
+`VsyncModulator` 负责在某些阶段调整 VSYNC offset，给事务提交和合成留出时间余量。它的源码路径是 `frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp`，阅读入口可以从 `VsyncModulator::setVsyncConfigSet()` 和 `VsyncModulator::updateVsyncConfig()` 开始。前者装载 Early / EarlyGl / Late 等 offset 配置，后者根据 transaction、刷新率变化和调度状态选择本轮使用哪组配置。当刷新率变化、事务开始或系统需要更早唤醒 App / SurfaceFlinger 时，offset 会跟着调整。所以我们在 Trace 里看到 VSYNC-app 与 VSYNC-sf 的间距短暂变化，不必马上把它当成异常。[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
 ## App 侧可以用的 ARR API
 
 ### Display 查询 API
 
-如果我们先想知道“这台设备支不支持 ARR、系统建议用什么档位”，入口在 `Display`。
+想知道“这台设备支不支持 ARR、系统建议用什么档位”，入口在 `Display`。这组查询 API 属于 Android 16（API 36）公开接口；Android 15-QPR1 先提供系统侧 ARR 能力，App 可见查询晚到 API 36。
 
 - `Display.hasArrSupport()`：检查显示设备是否支持 ARR。
 - `Display.getSupportedRefreshRates()`：返回当前显示的默认刷新率列表。
@@ -116,6 +119,7 @@ DisplayManager 这一层先决定系统允许在哪些模式里挑。AOSP androi
 `getSuggestedFrameRate()` 的语义不能写成“给 45fps，系统返回 90Hz 或 60Hz”。AOSP `Display.java` 里它只接受类别型参数，内部也是按 `FRAME_RATE_CATEGORY_NORMAL` / `FRAME_RATE_CATEGORY_HIGH` 去取系统给出的建议值，不处理任意 fps 到任意 Hz 的映射。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Display.java]
 
 ```java
+// Android 16 (API 36)+
 Display display = context.getDisplay();
 if (display != null && display.hasArrSupport()) {
     float normal = display.getSuggestedFrameRate(Display.FRAME_RATE_CATEGORY_NORMAL);
@@ -235,7 +239,7 @@ ORDER BY actual.ts;
 
 - **Android 11-14**：系统已经支持多刷新率、`Surface.setFrameRate()` 和更成熟的 mode switching。这一阶段的重点是“能选多个刷新率”。
 - **Android 15-QPR1 及以上**：官方 ARR 文档把真正的 ARR 支持放在这个窗口，并要求设备实现对应 HAL API。这一阶段的重点是“刷新率能更细地跟着内容变化”。
-- **Android 16**：`Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 这组查询 API 让 App 更容易知道设备能力和系统建议值。[已验证: 官方文档, developer.android.com/reference/android/view/Display]
+- **Android 16（API 36）**：`Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 这组公开查询 API 让 App 更容易知道设备能力和系统建议值。ARR 系统能力与 App 可见 API 的版本边界需要分开写。[已验证: 官方文档, developer.android.com/reference/android/view/Display]
 
 按这个时间线区分，适用范围就很明确。我们谈 Android 11-14 时，主要是在交代背景；谈 ARR 主体时，焦点应该放在 Android 15-QPR1 及以上。
 
