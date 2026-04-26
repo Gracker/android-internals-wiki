@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T18:52:00+08:00",
+  "generated_at": "2026-04-26T19:47:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -891,8 +891,8 @@
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 4.0 (API 14) - Android 17 (API 37)",
-      "last_verified": "2026-04-23",
-      "last_verified_against": "source.android.com implement-vulkan + developer.android.com AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX WebGPU docs",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "source.android.com implement-vulkan + developer.android.com AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX WebGPU docs + AOSP vk_android_native_buffer.h",
       "confidence": "medium",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -905,7 +905,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T00:05:03+08:00"
+      "last_task9_at": "2026-04-21T00:05:03+08:00",
+      "last_task2b_at": "2026-04-26T19:47:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md": {
       "path": "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
@@ -916,8 +917,8 @@
       "drafted_date": "'2026-04-05'",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
-      "last_verified": "'2026-04-19'",
-      "last_verified_against": "AOSP android-16.0.0_r1, Linux kernel 6.12, developer.android.com/guide/practices/page-sizes",
+      "last_verified": "'2026-04-26'",
+      "last_verified_against": "AOSP android-16.0.0_r1, Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes",
       "confidence": "medium",
       "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
@@ -930,7 +931,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T00:05:03+08:00"
+      "last_task9_at": "2026-04-21T00:05:03+08:00",
+      "last_task2b_at": "2026-04-26T19:47:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
       "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
@@ -6915,7 +6917,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T19:33:53+08:00",
+  "last_updated": "2026-04-26T19:47:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -7126,5 +7128,34 @@
       }
     },
     "note": "Only one eligible section remained after excluding today/recent Task9 reviews and short README shells."
+  },
+  "2026-04-26-19-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-26T19:47:00+08:00",
+    "sections": [
+      "2.14",
+      "2.15"
+    ],
+    "queue_indexes_completed": [
+      251,
+      252
+    ],
+    "result": "fixed",
+    "auto_finalized": [
+      "2.14",
+      "2.15"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "2.14 vkAcquireImageANDROID signature fixed and WebView backend boundary clarified",
+        "2.15 mapper interface version wording corrected to Stable AIDL allocator + stable-C AIMapper v5 + mapper@4 compatibility",
+        "2.15 16KB page-size overhead example added"
+      ],
+      "auto_promotion": "Kept/finalized because task6_result=pass-light-edit, task9_result=pass-tech-review, and section queue has no pending entries after this run."
+    }
   }
 }

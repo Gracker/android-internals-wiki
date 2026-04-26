@@ -11332,8 +11332,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T19:47:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "2.15",
@@ -11383,8 +11386,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T19:47:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "2.16",

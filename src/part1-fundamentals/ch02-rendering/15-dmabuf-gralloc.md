@@ -4,8 +4,8 @@ chapter: '2.15'
 section: '2.15'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
-last_verified: '2026-04-19'
-last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, developer.android.com/guide/practices/page-sizes
+last_verified: '2026-04-26'
+last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
 confidence: medium
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
@@ -24,6 +24,8 @@ sources:
   path: hardware/interfaces/graphics/allocator/4.0/IAllocator.hal
 - type: aosp
   path: hardware/interfaces/graphics/mapper/4.0/IMapper.hal
+- type: aosp
+  path: hardware/interfaces/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h
 - type: aosp
   path: hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl
 - type: aosp
@@ -66,7 +68,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-21T00:05:03+08:00"
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-19T12:48:00+08:00"
+last_task2b_at: "2026-04-26T19:47:00+08:00"
 ---
 
 # 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享
@@ -175,12 +177,13 @@ DMA-BUF 提供了内核级的共享机制，但 Android 还需要一个用户空
 
 ### Gralloc HAL：图形内存分配器
 
-Gralloc（Graphics Allocator）是 Android 定义的图形内存分配 HAL。它仍然分成两层，但在 Android 16 这个时间点，接口形态不能简单写成“已经完全 AIDL 化”。
+Gralloc（Graphics Allocator）是 Android 定义的图形内存分配 HAL。Android 16 的接口形态要拆成 allocator、mapper 和 common graphics types 三层看。
 
-- **Allocator HAL**：负责分配 buffer。在 `android-16.0.0_r1` 下，我们能同时看到 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl` 和 `graphics/allocator/4.0/IAllocator.hal`。
-- **Mapper HAL**：负责 `createDescriptor`、import / free handle、lock / unlock 等映射动作。当前公开 tag 里仍能看到 `graphics/mapper/4.0/IMapper.hal`。
+- **Allocator HAL**：负责分配 buffer。在 `android-16.0.0_r1` 下，主线入口是 `graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl`。其中 `allocate2(BufferDescriptorInfo, count)` 面向新 descriptor 结构，`getIMapperLibrarySuffix()` 用来定位 vendor 侧 mapper 实现库。
+- **Mapper HAL**：负责 `createDescriptor`、import / free handle、lock / unlock 等映射动作。Android 16 公开 tag 里同时能看到 `graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h` 和 `graphics/mapper/4.0/IMapper.hal`。`IMapper.h` 写明：IMapper 2-4 是 HIDL，C-style `AIMapper` API 从版本 5 开始。
+- **Common graphics types**：usage、dataspace、format 这类公共类型已经放在 `graphics/common/aidl/...` 下，`BufferUsage.aidl` 是后文 usage flags 对照表的来源。
 
-AIDL allocator 的注释写得很直白：如果 `android.hardware.graphics.mapper@4` 仍在使用，旧的 `allocate()` 入口仍然必须实现。也就是说，到 `android-16.0.0_r1` 为止，更准确的说法是 **allocator 已经提供稳定 AIDL 接口，但 mapper@4 兼容路径仍然存在**，不是“整套 Gralloc HAL 已经彻底告别 HIDL”。
+工程上可以这样记：分配入口看 Stable AIDL `IAllocator`，现代 mapper library 看 stable-C `AIMapper` v5，`mapper@4` 仍是历史兼容路径。只写“Mapper 还是 HIDL 4.0”会低估 Android 16 的新接口形态；只写“整套 Gralloc 已经 AIDL 化”也会忽略 stable-C mapper 这条主线。
 
 Usage flags 这一层也要注意版本语境。很多历史文章还在用 legacy `GRALLOC_USAGE_HW_*` 宏，但 Android 12+ 的主线术语已经落在 `graphics/common/aidl/.../BufferUsage.aidl` 里。对照起来更清楚：
 
@@ -194,13 +197,22 @@ Usage flags 这一层也要注意版本语境。很多历史文章还在用 lega
 
 所以下文默认用 Android 12+/AIDL 术语来讲行为，旧宏只在解释历史资料时顺手提一下。这样读者对照 Android 16 以后源码时，不会把旧宏误当成当前 HAL 的正式字段名。
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl]
+[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h; hardware/interfaces/graphics/mapper/4.0/IMapper.hal; hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl]
 
 ### 16KB 页面模式下的分配预算
 
 如果设备运行在 Android 15+ 的 16KB page size 环境，GraphicBuffer 的内存成本不能只看 `width × height × bytesPerPixel`。allocator 最终提交的是 `BufferDescriptorInfo`，其中除了宽高、format、usage 之外，还有 `reservedSize` 这类保留区；这些区域落到内核映射时，都要按页粒度取整。
 
 页大小从 4KB 变成 16KB 后，小尺寸 buffer、图标 atlas、metadata buffer，或者只带少量 `reservedSize` 的 handle，更容易出现尾部空洞。单个 buffer 看起来不大，但同一个 handle 被 App、SurfaceFlinger、Camera 或编解码进程分别 import 之后，PSS 增长会更明显。
+
+一个具体计算例子更好对照：
+
+| 场景 | 原始大小 | 4KB 页粒度 | 16KB 页粒度 |
+|---|---:|---:|---:|
+| 256×256 RGBA_8888 纹理 | 262,144 B | 64 页，0 B 尾部空洞 | 16 页，0 B 尾部空洞 |
+| 同一纹理 + 2KB `reservedSize` | 264,192 B | 65 页，约 2KB 尾部空洞 | 17 页，约 14KB 尾部空洞 |
+
+这个例子说明：16KB page size 不会让每个 buffer 都变贵。风险集中在刚好跨过页边界的 metadata、`reservedSize`、小尺寸 plane 和多进程 import 叠加。
 
 排查这类问题时，至少同时核对四组量：像素 payload、stride 或 plane layout、`reservedSize`、以及 handle 被几个进程映射。只看像素分辨率，常常会低估 16KB 设备上的显存和 PSS 占用。
 
@@ -247,9 +259,9 @@ status_t GraphicBuffer::flatten(void*& buffer, size_t& size,
 
 如果 BufferQueue 的 slot 中已经有合适的 GraphicBuffer（大小和格式匹配），则复用已有的缓冲区，不需要重新分配。这就是为什么我们说 BufferQueue 的「slot」持有的是 GraphicBuffer 的引用（参见 §2.13）——slot 本身不移动，producer / consumer 两端维护的是 slot 到 buffer handle 的镜像关系。
 
-这里还有一个容易写错的版本点：在 `android-16.0.0_r1` 中，我们能同时看到 AIDL allocator 和 HIDL allocator / mapper 接口，所以更准确的说法不是“Android 16 已经完全改成 AIDL”，而是 allocator 已提供 AIDL 入口，mapper@4 兼容路径仍在。
+这个版本点容易写错：`android-16.0.0_r1` 同时包含 AIDL allocator、stable-C `AIMapper` v5，以及 HIDL allocator / mapper 兼容接口。写版本结论时应拆成三层：分配入口看 `IAllocator.aidl`，现代 mapper library 看 `IMapper.h` stable-C，历史兼容路径看 `mapper@4`。
 
-[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/4.0/IMapper.hal]
+[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/android/hardware/graphics/allocator/IAllocator.aidl; hardware/interfaces/graphics/allocator/4.0/IAllocator.hal; hardware/interfaces/graphics/mapper/stable-c/include/android/hardware/graphics/mapper/IMapper.h; hardware/interfaces/graphics/mapper/4.0/IMapper.hal]
 
 ## 跨进程传递的实际路径
 
