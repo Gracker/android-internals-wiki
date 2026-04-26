@@ -33,7 +33,7 @@ sources:
     path: "https://source.android.com/docs/core/power/systemsuspend"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/android-power-energy"
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 pipeline_stage: task6_pending
@@ -43,7 +43,7 @@ task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-22"
+task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-22T07:21:28+08:00"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
@@ -304,9 +304,9 @@ adb shell dumpsys android.system.suspend.ISuspendControlService
 
 虽然 PowerManagerService 注册了 `DeathRecipient` 来在进程死亡时自动释放 wakelock，但如果进程还活着（只是逻辑上泄漏），系统不会自动干预。这就是为什么 Play Store 的惩罚政策关注的是"24 小时内累计超过 2 小时"这个指标，而不是单次持有时间——系统需要给合法使用留出空间，但累计时间过长几乎一定意味着问题。
 
-### PowerManagerService 功耗链路：WakeLock / Suspend Blocker / Power HAL 的边界
+### PowerManagerService 功耗路径：WakeLock / Suspend Blocker / Power HAL 的边界
 
-Android 功耗管理是一条跨 Java → JNI → Native Library → Kernel HAL 的四层链路。Java WakeLock 不是一个单一的"开关"，它被 PMS 翻译成两类独立的内核机制：**suspend blocker**（阻止 deep suspend）和 **Power HAL hint**（调整 CPU/GPU 性能参数）。此外 `nativeSetAutoSuspend` / `nativeSetInteractive` 控制系统级的 suspend 行为和交互状态，与 WakeLock 并行工作。理解这四条独立链路，是分析功耗问题的前提。
+Android 功耗管理是一条跨 Java → JNI → Native Library → Kernel HAL 的四层路径。Java WakeLock 不是一个单一的"开关"，它被 PMS 翻译成两类独立的内核机制：**suspend blocker**（阻止 deep suspend）和 **Power HAL hint**（调整 CPU/GPU 性能参数）。此外 `nativeSetAutoSuspend` / `nativeSetInteractive` 控制系统级的 suspend 行为和交互状态，与 WakeLock 并行工作。理解这四条独立路径，是分析功耗问题的前提。
 
 #### Java WakeLock → Suspend Blocker 的映射
 
@@ -372,7 +372,7 @@ static void* suspend_thread_func(void* arg) {
 
 **关键结论**：`autosuspend_enable()` 创建后台线程，该线程在所有 suspend blocker 释放后（无 wake lock 持有），向 `/sys/power/state` 写入 `"mem"`，触发 Linux kernel 的 suspend-to-RAM (deep sleep)。
 
-#### nativeSetAutoSuspend / nativeSetInteractive 的独立链路
+#### nativeSetAutoSuspend / nativeSetInteractive 的独立路径
 
 **源码位置**：`com_android_server_power_PowerManagerService.cpp`
 
