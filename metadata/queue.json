@@ -10805,7 +10805,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T10:43:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T11:51:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 回炉修复完成，章节已退回 Task6/Task9 复核"
   },
   {
     "section": "14.9",
@@ -10837,7 +10840,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T10:43:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T11:51:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 回炉修复完成，章节已退回 Task6/Task9 复核"
   },
   {
     "section": "11.2",
@@ -10903,6 +10909,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T11:47:04+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T11:51:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 回炉修复完成，章节已退回 Task6/Task9 复核"
   }
 ]

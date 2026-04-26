@@ -2716,10 +2716,10 @@
       "last_verified": "2026-04-02",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium-high",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -2728,9 +2728,11 @@
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T10:43:00+08:00",
-      "last_task2b_at": "2026-04-25T17:43:00+08:00",
+      "last_task2b_at": "2026-04-26T11:51:00+08:00",
       "updated_by": "openclaw-task2b",
-      "updated_date": "2026-04-25"
+      "updated_date": "2026-04-25",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch10-memory-perf/05-case-studies.md": {
       "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
@@ -3254,10 +3256,10 @@
       "section": "18.11",
       "status": "ready-for-review",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-23",
@@ -3267,7 +3269,7 @@
       "last_task9_at": "2026-04-26T11:47:04+08:00",
       "review_round": "1",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "last_task2b_at": "2026-04-26T11:51:00+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b"
     },
@@ -3976,12 +3978,12 @@
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
       "last_verified": "'2026-04-06'",
-      "last_verified_against": "AOSP android-14.0.0_r1",
+      "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -3990,7 +3992,9 @@
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T10:43:00+08:00",
-      "last_task2b_at": "2026-04-25T15:40:00+08:00"
+      "last_task2b_at": "2026-04-26T11:51:00+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md": {
       "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
@@ -6262,7 +6266,7 @@
       },
       "10.4": {
         "reviewed_by": "openclaw-task9",
-        "reviewed_date": "2026-04-25",
+        "reviewed_date": "2026-04-26",
         "task9_result": "needs-rework",
         "task9_state": "pending",
         "pipeline_stage": "task6_pending",
@@ -6272,7 +6276,7 @@
         "task2b_state": "fixed",
         "task2b_result": "fixed",
         "updated_by": "openclaw-task2b",
-        "updated_date": "2026-04-25"
+        "updated_date": "2026-04-26"
       },
       "6.2": {
         "reviewed_by": "openclaw-task9",
@@ -6330,6 +6334,32 @@
         "updated_by": "openclaw-task2b",
         "updated_date": "2026-04-26",
         "last_task2b_at": "2026-04-26T08:55:00+08:00"
+      },
+      "14.9": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-26",
+        "task9_result": "needs-rework",
+        "task9_state": "pending",
+        "pipeline_stage": "task6_pending",
+        "task6_state": "revisiting",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-26"
+      },
+      "18.11": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-26",
+        "task9_result": "needs-rework",
+        "task9_state": "pending",
+        "pipeline_stage": "task6_pending",
+        "task6_state": "revisiting",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "updated_by": "openclaw-task2b",
+        "updated_date": "2026-04-26"
       }
     }
   },
@@ -6671,7 +6701,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T11:47:04+08:00",
+  "last_updated": "2026-04-26T11:51:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -6725,7 +6755,7 @@
     "task9_reviewed": "2026-04-25",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
-    "last_task2b_at": "2026-04-25T17:43:00+08:00"
+    "last_task2b_at": "2026-04-26T11:51:00+08:00"
   },
   "2026-04-25-20-task2b": {
     "task": "task2b-content-processing-rework",
@@ -6773,5 +6803,20 @@
         "queue_status": "completed"
       }
     }
+  },
+  "2026-04-26-11-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-26T11:51:00+08:00",
+    "sections": [
+      "10.4",
+      "14.9",
+      "18.11"
+    ],
+    "queue_indexes_completed": [
+      230,
+      231,
+      234
+    ],
+    "result": "fixed"
   }
 }
