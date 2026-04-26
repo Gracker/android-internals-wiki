@@ -46,12 +46,12 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"

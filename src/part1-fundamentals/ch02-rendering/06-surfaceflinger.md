@@ -26,14 +26,15 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-27T00:40:00+08:00"
-review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。"
+review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。"
+task6_reviewed_date: "2026-04-27"
 ---
 
 # SurfaceFlinger 与合成
@@ -69,7 +70,7 @@ review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2�
 
 打开 Perfetto 抓一段 Trace，在进程列表里总能看到一个名为 `surfaceflinger` 的进程。它的主线程 Track 上，每隔一帧都会出现一组和版本相关的 slice。Android 12-13 常见 `INVALIDATE`、`REFRESH`，Android 14+ 更常见 `commit`、`composite`、`present`。做过 Android 性能优化的工程师，大概率在排查系统级卡顿时被这块区域吸引过，但往往不知道该怎么读。
 
-这就是 SurfaceFlinger——Android 图形系统的合成器。它接受来自多个来源的数据缓冲区，对它们进行合成，然后发送到显示设备。用一个形象的比喻：如果把每个应用的渲染结果比作一张幻灯片，SurfaceFlinger 就是把这些幻灯片按顺序叠在一起，投影到屏幕上的那个投影仪。
+这就是 SurfaceFlinger——Android 图形系统的合成器。它接受来自多个来源的数据缓冲区，按 z-order 叠加后输出到显示设备。
 
 理解 SurfaceFlinger 的意义在于，它能将性能分析的视角从"应用画得慢不慢"提升到"整条图形管线的哪个环节出了问题"。很多时候 App 渲染没问题，但用户还是觉得卡——这种问题的根因往往在 SurfaceFlinger 这一层。可能是合成耗时过长，可能是 VSync 信号分发有延迟，也可能是 BufferQueue 的 Buffer 周转不过来。
 

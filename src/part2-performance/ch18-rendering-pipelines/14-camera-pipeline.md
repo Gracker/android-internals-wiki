@@ -86,6 +86,75 @@ cameraDevice.createCaptureSession(
 
 Android 12+ 的 Extensions 是这一步的一个变体。App 通过 `CameraDevice.createExtensionSession()` 或 CameraX Extensions 建立 `CameraExtensionSession` 时，session 配置仍然要校验输出 Surface 组合，但 OEM extension 库会在 Preview 或 Still Capture 路径里插入额外的多帧后处理节点。夜景、HDR、虚化模式下，排查范围要同时覆盖 extension service、额外的中间 Buffer 和后处理线程。
 
+
+<!-- AIW-源码调研-2026-04-26 -->
+### Stream Use Case：HAL 层面的业务意图路由（Android 13+）
+
+`OutputConfiguration.setStreamUseCase()` 是 Android 13 (API 33) 引入的性能调优入口。通过它，App 可以告诉 Camera HAL 单个输出流的业务意图（预览/录像/拍照/视频通话），HAL 据此选择 sensor mode、ISP pipeline 参数和调优策略。这与 Capture Intent 控制全局 3A 不同——Stream Use Case 控制的是单个 OutputConfiguration 的硬件 pipeline 参数。
+
+**常量定义**（`frameworks/base/core/java/android/hardware/camera2/CameraMetadata.java`，android14-release）：
+
+| 常量 | 值 | 语义 |
+|:---|:---|:---|
+| `SCALER_AVAILABLE_STREAM_USE_CASES_DEFAULT` | 0x0 | 默认，HAL 根据 surface 类型推断 |
+| `SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW` | 0x1 | 实时取景/应用内图像分析，优先高帧率 |
+| `SCALER_AVAILABLE_STREAM_USE_CASES_STILL_CAPTURE` | 0x2 | 高质量静态拍照，不保证实时帧率 |
+| `SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_RECORD` | 0x3 | 视频录制，启用 EISR 时保证视频防抖 |
+| `SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW_VIDEO_STILL` | 0x4 | 单流同时服务预览+录像+拍照，社交媒体推荐 |
+| `SCALER_AVAILABLE_STREAM_USE_CASES_VIDEO_CALL` | 0x5 | 长时间视频通话，功耗优先，允许低分辨率 sensor mode |
+
+**关键源码**（`frameworks/base/core/java/android/hardware/camera2/params/OutputConfiguration.java`）：
+
+```java
+// android14-release, setStreamUseCase() 方法
+public void setStreamUseCase(@StreamUseCase long streamUseCase) {
+    if (isConfigurationValid(streamUseCase)) {
+        mStreamUseCase = streamUseCase;
+    }
+}
+
+public long getStreamUseCase() {
+    return mStreamUseCase;
+}
+```
+
+**调用约束**：必须在 `createCaptureSession()` 之前；Session 创建后调用无效；未调用时默认返回 `DEFAULT (0x0)`。
+
+**Guaranteed Stream Combination**（`frameworks/base/core/java/android/hardware/camera2/params/MandatoryStreamCombination.java`）：
+
+具有 `REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE` 能力的设备，必须保证以下组合（所有流 use case 设为非 DEFAULT）：
+
+| 组合 | 分辨率 | 用途 |
+|:---|:---|:---|
+| YUV / PRIV | s1440p | 应用内视频或图像处理 |
+| PRIV | s1440p | 应用内取景框分析 |
+| JPEG | s1440p | 无取景框拍照 |
+| YUV/PRIV @ s720p + JPEG @ s1440p | 混合 | 标准静态拍照 |
+| YUV/PRIV @ s720p + YUV/PRIV @ s1440p | 混合 | 应用内视频/处理+预览 |
+
+**CameraX Interop 接入**（`androidx.camera:camera-core`，CameraX 1.2+）：
+
+```kotlin
+val previewBuilder = Preview.Builder()
+val extender = Camera2Interop.Extender(previewBuilder)
+extender.setStreamUseCase(
+    CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW.toLong()
+)
+val preview = previewBuilder.build()
+```
+
+CameraX 默认的 UseCase 映射：Preview→PREVIEW、ImageCapture→STILL_CAPTURE、VideoCapture→VIDEO_RECORD。通过 Interop 覆盖后，CameraX 会在构建 `OutputConfiguration` 时将 `setStreamUseCase()` 传递下去，覆盖 CameraX 默认推断逻辑。
+
+**与 ZSL 的关系**：ZSL 控制帧选择策略（从 ring buffer 选时间戳最接近快门的帧），Stream Use Case 控制 pipeline 参数（sensor mode、ISP 配置）。两者正交：ZSL 依赖 HAL reprocessing 能力（`PRIVATE_REPROCESSING`）；Stream Use Case 依赖设备 `REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE` 能力。
+
+**性能影响**：切换 Stream Use Case 时 HAL 通常需要重新配置 sensor mode（2-5 帧延迟）。PREVIEW_VIDEO_STILL 设计用于解决"三流并发"时的 pipeline 冲突。VIDEO_CALL use case 提示 HAL 使用更低功耗的 sensor mode（可变帧率+低光友好曝光）。
+
+**Perfetto 观测**：`adb shell perfetto -o /data/misc/perfetto-traces/cam_trace.perfetto-trace -t 20s sched camera ...`
+
+关键 Slice：`camera3_process_capture_request`（HAL 层）、`BufferQueue::dequeueBuffer/queueBuffer`（Buffer 状态）、`requestStreamBuffers`（Android 13+ AIDL）。
+
+<!-- AIW-源码调研-2026-04-26 -->
+
 ### 阶段二：生产（Request & Produce）
 
 稳态预览阶段，App 通常通过 `setRepeatingRequest()` 持续下发同一组 request。Android 13+ 的主线实现里，CameraService 通过 AIDL `ICameraDeviceSession.processCaptureRequest()` 把 request 送到 vendor HAL；Android 10-12 机型仍常见 `processCaptureRequest_3_4()` 或 `processCaptureRequest_3_7()` 这类 HIDL 方法。HAL 收到 request 后驱动 Sensor 曝光，ISP 完成图像处理，再把结果写入对应输出 Buffer。对预览和录像场景，主路径通常保持在 GraphicBuffer 内流转，CPU 不直接搬运像素数据。
