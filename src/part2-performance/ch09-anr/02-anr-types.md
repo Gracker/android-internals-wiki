@@ -44,16 +44,19 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: 'task9_pending'
-task6_state: reviewed
-task9_state: 'pending'
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: 'needs-rework'
-task2b_state: 'fixed'
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-22T13:06:00+08:00"
+last_task2b_at: "2026-04-26T13:40:00+08:00"
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: 'openclaw-task9'
 last_task9_at: '2026-04-22T11:30:00+08:00'
+task2b_fixed_at: "2026-04-26T13:40:00+08:00"
+rework_by: openclaw-task2b
+rework_type: "review回炉修复（External 问题单核对）"
 ---
 
 # ANR 类型与触发条件

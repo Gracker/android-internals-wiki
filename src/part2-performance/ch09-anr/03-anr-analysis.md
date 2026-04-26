@@ -33,7 +33,7 @@ sources:
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
@@ -43,6 +43,10 @@ last_task9_at: "2026-04-21T05:29:00+08:00"
 task2b_result: fixed
 task6_result: pass-light-edit
 review_round: 2
+last_task2b_at: "2026-04-26T13:40:00+08:00"
+task2b_fixed_at: "2026-04-26T13:40:00+08:00"
+rework_by: openclaw-task2b
+rework_type: "review回炉修复（External 问题单核对）"
 ---
 
 # ANR 分析方法
