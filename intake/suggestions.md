@@ -4601,3 +4601,9 @@
 - **位置**：L365 Perfetto 截图占位
 - **问题**：文中已留“待补充 Perfetto 截图”，但没有给出 lmkd kill、MemAvailable/Cached/SwapFree、冷启动三者的同一时间轴例子。
 - **建议**：补一张真实 Trace 或给 trace_processor 查询，验证 kill 后 reclaim 与冷启动的时间关系。
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：StartingWindow 与启动性能 / Perfetto 表现
+- **问题**：章节有 StartingWindow Trace 截图占位，但没有给出 addStartingWindow、finishDrawing/reportDraw、removeStartingWindow 与 App 首帧的同一时间轴。
+- **建议**：补一段真实 Perfetto 或 trace_processor 查询，至少包含 system_server、Shell/SystemUI starting surface、App 主线程首帧、SurfaceFlinger transaction/latch。
