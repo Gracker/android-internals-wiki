@@ -12561,5 +12561,54 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T21:29:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.3",
+    "section_title": "卡顿分析方法论",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 配置只启用了 linux.ftrace/atrace categories，后文却把 FrameTimeline 的 Expected/Actual 作为 Android 12+ 的核心定位入口。FrameTimelin",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-22-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "“第二步：抓取合适的 Trace” TraceConfig 代码块",
+        "detail": "配置只启用了 linux.ftrace/atrace categories，后文却把 FrameTimeline 的 Expected/Actual 作为 Android 12+ 的核心定位入口。FrameTimeline 不是 `gfx`/`view` atrace category 自动保证的数据，需要显式启用 `android.surfaceflinger.frametimeline` 数据源；否则读者按本节配置抓到的 trace 可能没有 FrameTimeline 轨道。",
+        "suggestion": "在最小配置中增加 `data_sources { config { name: \"android.surfaceflinger.frametimeline\" } }`，并标注 Android 12+ 可用；Android 11- fallback 到 BufferQueue/SF 经典方法。",
+        "severity": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T22:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.9",
+    "section_title": "Vulkan 原生渲染管线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] `SwappyVk_initAndGetRefreshCycleDuration(env, activity, physicalDevice, device, swapchain, &refreshDuration)` ",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-22-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "Swappy Frame Pacing / 关键 API 代码块",
+        "detail": "`SwappyVk_initAndGetRefreshCycleDuration(env, activity, physicalDevice, device, swapchain, &refreshDuration)` 的参数签名不符合 Android Frame Pacing Vulkan API。公开签名是 `bool SwappyVk_initAndGetRefreshCycleDuration(VkPhysicalDevice physicalDevice, VkDevice device, VkSwapchainKHR swapchain, uint64_t* refreshDuration)`，没有 `env` / `activity` 参数。",
+        "suggestion": "替换为官方签名，并保留“每个 swapchain 初始化/设置 swap interval”的说明；`SwappyVk_queuePresent` 与 `SwappyVk_setSwapIntervalNS` 可继续保留但需统一返回值/错误处理。",
+        "severity": "P0"
+      },
+      {
+        "type": "源码错误",
+        "location": "Pipeline Barrier 与 Image Layout / `vkCmdPipelineBarrier` 示例",
+        "detail": "从 `COLOR_ATTACHMENT_OPTIMAL` 转到 `PRESENT_SRC_KHR` 的示例使用 `.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT`，但 `dstStageMask` 写的是 `VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT`。BOTTOM_OF_PIPE 不执行 memory read，把 READ access mask 配到这里会触发 Vulkan validation 或造成同步语义误导。",
+        "suggestion": "旧同步写法改为 `dstAccessMask = 0` + `dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT`；若使用 synchronization2，可写 `dstStageMask = VK_PIPELINE_STAGE_2_NONE` / `dstAccessMask = 0`。同时说明 present 侧依赖 `vkQueuePresentKHR` 等待的 semaphore。",
+        "severity": "P0"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T22:20:00+08:00",
+    "status": "pending"
   }
 ]
