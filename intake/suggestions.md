@@ -3875,3 +3875,9 @@
 - **位置**：L326-L334（sched_ext 管理范围）
 - **问题**：正文同时写“管理 SCHED_NORMAL/BATCH/IDLE/EXT”与“部分切换”，但没有把 SCX_OPS_SWITCH_PARTIAL 开关前后的任务归属差异写清。
 - **建议**：补 kernel.org 口径：未设置 SCX_OPS_SWITCH_PARTIAL 时 NORMAL/BATCH/IDLE/EXT 由 sched_ext 管；设置后只有 SCHED_EXT policy 任务交给 sched_ext。
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-26
+- **类型**：数据缺失/SQL 鲁棒性
+- **位置**：L317-L334
+- **问题**：预览 Buffer 到达 SQL 固定匹配 counter.name LIKE "%BufferTX - SurfaceView%" 且 value=1。CameraX PreviewView、TextureView、SurfaceTexture、自定义 Surface 名或 OEM layer 名都可能导致查询为空，当前缺少先枚举 counter_track/track 名称再选目标 layer 的步骤。
+- **建议**：补一条预查询：列出包含 BufferTX/Surface/Preview 的 counter track 名称和 upid/track_id，再按实际 layer 名计算帧间隔；示例说明 SurfaceView 只是样例，不是通用 track 名。
