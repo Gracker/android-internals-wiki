@@ -2,7 +2,7 @@
 title: "多窗口与桌面模式渲染性能"
 chapter: "2.20"
 section: "2.20"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
@@ -30,19 +30,19 @@ sources:
     path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
 tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_date: "2026-04-26"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
-last_task9_at: "2026-04-19T20:31:01+08:00"
+last_task9_at: "2026-04-26T22:20:00+08:00"
 last_task2b_at: "2026-04-26T21:49:23+08:00"
-
+task9_reviewed_by: openclaw-task9
 ---
 
 # 2.20 多窗口与桌面模式渲染性能

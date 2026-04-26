@@ -4607,3 +4607,15 @@
 - **位置**：StartingWindow 与启动性能 / Perfetto 表现
 - **问题**：章节有 StartingWindow Trace 截图占位，但没有给出 addStartingWindow、finishDrawing/reportDraw、removeStartingWindow 与 App 首帧的同一时间轴。
 - **建议**：补一段真实 Perfetto 或 trace_processor 查询，至少包含 system_server、Shell/SystemUI starting surface、App 主线程首帧、SurfaceFlinger transaction/latch。
+
+## [Task9 Deep Review] 2.20 多窗口与桌面模式渲染性能 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：dumpsys SurfaceFlinger / Perfetto 观察面占位
+- **问题**：正文已给出全屏、分屏、外接显示器三类分析口径，但 `dumpsys SurfaceFlinger` layer 对比截图与 FrameTimeline/layer snapshot 对照图仍是占位。当前结论方向正确，缺少可复跑的 trace/dumpsys 样例支撑。
+- **建议**：补一组同设备全屏/分屏/外接显示器的 `dumpsys SurfaceFlinger` 与 Perfetto 片段，至少包含 layer 数、display_id、compositionType、FrameTimeline jank_type。
+
+## [Task9 Deep Review] 7.3 卡顿分析方法论 — 2026-04-26
+- **类型**：版本差异
+- **位置**：frontmatter applicable_versions 与 FrameMetrics 小节
+- **问题**：frontmatter 写 `Android 8 (API 26) - Android 16 (API 36)`，正文 FrameMetrics 小节明确使用 API 24+ 的 `Window.OnFrameMetricsAvailableListener`，并说明 `FrameMetrics.DEADLINE` API 31+。版本边界在元数据和正文之间不一致。
+- **建议**：二选一：把 applicable_versions 下限改为 Android 7/API 24；或在 FrameMetrics 小节开头说明本节主分析目标为 API 26+，线上 FrameMetrics 监控另从 API 24 起可用。
