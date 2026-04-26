@@ -63,13 +63,13 @@ related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-27"
+task6_reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
@@ -373,7 +373,7 @@ Android 的多窗口能力经历了从实验性功能到核心特性的演变。
 - **Freeform**：每个自由窗口都有自己的 WindowState、SurfaceControl 和 Window frames
 - **PiP**：画中画窗口虽然是缩小版，但它的 Window 生命周期和 Surface 更新逻辑和全屏 Window 一样完整
 
-这意味着 WMS 的 `performLayout()` 需要处理的 Window 数量成倍增加，每个 SurfaceControl.Transaction 包含的操作也更多。在低端设备上，多窗口模式是 system_server CPU 占用上升的常见原因。
+WMS 的 `performLayout()` 需要处理的 Window 数量因此成倍增加，每个 SurfaceControl.Transaction 包含的操作也更多。在低端设备上，多窗口模式是 system_server CPU 占用上升的常见原因。
 
 ### 折叠屏与大屏配置变更
 
