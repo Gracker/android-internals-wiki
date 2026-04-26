@@ -4566,3 +4566,38 @@
 - **位置**：frontmatter related_chapters 与 L343-L352
 - **问题**：正文未引用已 finalized 的 §18.12 Flutter 渲染管线；§18.12 已按 Flutter 3.29+ merged model 写成 Main(UI+Platform)/Raster/IO，而本章仍按旧四线程模型展开，两章口径冲突。
 - **建议**：把 §18.12 加入 related_chapters，并在修文时以 §18.12 的 3.29+ 线程模型为主口径；本章保留旧模型时标注版本边界。
+
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：L249-L251 HWC 合成 Track
+- **问题**：“Device 合成 doComposition 几乎不消耗时间、通常不到 1ms”缺少设备、Trace 和版本条件。HWC HAL 调用本身也可能阻塞，vendor composer 内部耗时无法只用这句话概括。
+- **建议**：改成条件化表述；给一段 Pixel/参考设备 Trace 或 dumpsys SurfaceFlinger 观察点，区分 SF 调用耗时、present fence、HWC 内部硬件处理时间。
+
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-26
+- **类型**：版本差异
+- **位置**：版本演进小节
+- **问题**：章节覆盖 Android 12-16，但未提 Android 15 ARR/可变刷新率对 Scheduler、present hint、FrameTimeline 分析口径的影响。
+- **建议**：在版本演进中补一行：Android 15 ARR 使 VSync 调度与刷新率切换解耦，SurfaceFlinger 分析需结合 2.18/2.19。
+
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-26
+- **类型**：版本差异
+- **位置**：L586-L606 InputFlinger 角色与版本边界
+- **问题**：正文保留“InputFlinger 是否独立进程”待验证，但 AOSP android-14/16 的 inputflinger/Android.bp 仍有 TODO(b/23084678): Move inputflinger to its own process，且 inputflinger binary 在 checkinput 中标注 currently unused。
+- **建议**：把 AOSP 默认事实写清：12-16 主线仍以 libinputflinger 方式进入 system_server；独立进程只作为产品/OEM 形态待核验。
+
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-26
+- **类型**：知识盲区
+- **位置**：InputChannel 与 Socket Pair 小节
+- **问题**：正文覆盖正常分发，但未覆盖 InputChannel 断开、BROKEN/ZOMBIE 连接、应用进程死亡后的清理路径。线上输入无响应和窗口泄漏问题常需要这条失败路径。
+- **建议**：补 InputDispatcher 发现 socket 断连、移除 connection、通知策略层和窗口状态刷新的最小流程。
+
+
+## [Task9 Deep Review] 4.4 Low Memory Killer — 2026-04-26
+- **类型**：数据缺失
+- **位置**：L365 Perfetto 截图占位
+- **问题**：文中已留“待补充 Perfetto 截图”，但没有给出 lmkd kill、MemAvailable/Cached/SwapFree、冷启动三者的同一时间轴例子。
+- **建议**：补一张真实 Trace 或给 trace_processor 查询，验证 kill 后 reclaim 与冷启动的时间关系。

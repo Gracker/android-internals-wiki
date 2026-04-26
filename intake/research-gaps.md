@@ -9585,3 +9585,52 @@ DeliQueue 与同步屏障（Sync Barriers）的兼容实现。
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25)
+
+
+## [2026-04-26] 2.6 SurfaceFlinger 与合成 — BLAST/HWC 现代合成路径
+
+### 盲区描述
+BLASTBufferQueue 的 transaction 合并机制、HWC2/HWC3 validate/present 协商路径、以及 Android 15 ARR 对 SurfaceFlinger Scheduler 的影响需要合并成一张版本化源码图。external-review 已命中 BLAST transaction 合并不足。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `frameworks/native/libs/gui/BLASTBufferQueue.cpp`：`onFrameAvailable()`、`acquireNextBufferLocked()`、`Transaction::setBuffer()`
+- `frameworks/native/services/surfaceflinger/`：`commit()`、`composite()`、CompositionEngine 与 HWC HAL 调用点
+- AIDL `android.hardware.graphics.composer3` 与 HIDL composer@2.x 的 validate/present 差异
+
+### 关联章节
+2.6, 2.13, 2.16, 2.18, 2.19
+
+## [2026-04-26] 3.1 Input 事件分发全流程 — InputClassifier/InputProcessor 与窗口信息版本边界
+
+### 盲区描述
+Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor，以及 Android 12 setInputWindows 与 Android 13+ WindowInfosListener 的切换需要补成版本矩阵。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `frameworks/native/services/inputflinger/Android.bp` 对比 Android 12-16
+- `InputDispatcher.cpp` 中 `setInputWindows()`、`DispatcherWindowListener`、`addWindowInfosListener()` 的版本差异
+- 普通触摸、palm rejection、stylus 场景在 Trace 中的可观察点
+
+### 关联章节
+3.1, 9.1, 13.8
+
+## [2026-04-26] 4.4 Low Memory Killer — lmkd/minfree/CachedAppOptimizer 版本矩阵
+
+### 盲区描述
+旧 LMK minfree/adj 写入链、userspace lmkd 引入时间、PSI 默认路径、CachedAppOptimizer/Freezer 默认策略变化需要按 Android 8.1-16 重建版本矩阵。
+
+### 重要程度
+高
+
+### 建议研究方向
+- `ProcessList.java`：`updateOomLevels()`、LMK_TARGET socket、oom_score_adj 常量
+- `system/memory/lmkd/lmkd.cpp`：PSI、thrashing、reaper、low-RAM 分支
+- `CachedAppOptimizer.java`：Android 11-16 `DEFAULT_FREEZER_DEBOUNCE_TIMEOUT` 与 `Process.setProcessFrozen()`
+
+### 关联章节
+1.3, 4.1, 4.2, 10.4

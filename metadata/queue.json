@@ -12364,5 +12364,128 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T19:33:53+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.6",
+    "section_title": "SurfaceFlinger 与合成",
+    "priority": 95,
+    "reason": "[Deep Tech Review] SurfaceFlinger 与合成 存在 P0/P1 技术问题，需回炉修正",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-20-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L132-L134 Device 合成定义",
+        "detail": "正文把 HWC（Hardware Composer）写成“显示控制器中专门用于合成的硬件单元”。HWC 在 Android 中是 Hardware Composer HAL / 厂商 composer 实现，负责把 layer 列表、buffer、fence、composition type 等提交给显示硬件；真正执行 overlay/scanout 的是 DPU/display controller 等硬件。把 HWC 直接等同为硬件单元会误导后文 HWC HAL 与 DPU 能力边界。",
+        "suggestion": "改成“HWC 是 SurfaceFlinger 与显示硬件之间的 HAL/厂商实现；它根据硬件 overlay plane、缩放、旋转、格式、保护内容等能力返回 DEVICE/CLIENT composition 决策”。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L138-L140 合成方式选择逻辑",
+        "detail": "正文只写 prepareFrame 阶段协商，未把 HWC2/HWC3 的关键调用链写出来。现代路径应至少覆盖 setLayer* → validateDisplay() → getChangedCompositionTypes/displayRequests → acceptDisplayChanges() → presentDisplay()/presentOrValidateDisplay()，否则读者难以把 Device/Client composition 与 dumpsys/Perfetto/HWC HAL 日志对应起来。",
+        "suggestion": "补一段 Android 12-16 通用的 HWC 协商步骤，并标注 HIDL composer@2.x 与 AIDL composer3 的接口差异。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L312-L316 BLASTBufferQueue 代码锚点",
+        "detail": "external-review 已命中 BLAST transaction 合并机制不足。正文提到 onFrameAvailable()/acquireNextBufferLocked()/Transaction::setBuffer()，但没有解释 buffer、acquire fence、damage、dataspace、frame number、geometry transaction 怎样合成同一笔 SurfaceControl.Transaction，以及 SurfaceFlinger commit 阶段怎样消费这笔 transaction。",
+        "suggestion": "补 ViewRootImpl 主窗口提交 → BLASTBufferQueue::onFrameAvailable() → acquireNextBufferLocked() → Transaction::setBuffer()/setAcquireFence()/setDamageRegion() → SurfaceFlinger::commit() 应用 transaction 的顺序，并交叉引用 2.13/2.16。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T20:23:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "3.1",
+    "section_title": "Input 事件分发全流程",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Input 事件分发全流程 存在 P0/P1 技术问题，需回炉修正",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-20-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L532-L538 DEFAULT_INPUT_DISPATCHING_TIMEOUT 代码块",
+        "detail": "正文标注“已验证 Android 14”但代码仍写成 static const nsecs_t DEFAULT_INPUT_DISPATCHING_TIMEOUT = 5 * 1000000000LL。AOSP android-14.0.0_r1 中实际为 const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::milliseconds(android::os::IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS * HwTimeoutMultiplier())。",
+        "suggestion": "替换为 Android 14/16 的 chrono 写法，并说明默认 5s 会经过 HwTimeoutMultiplier；窗口级超时来自 WindowInfo/InputWindowHandle 的 dispatchingTimeout。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L407-L410 WindowInfosListener 机制",
+        "detail": "正文写“Android 12+ 引入 WindowInfosListener / addWindowInfosListener”。复核 AOSP：android-12.0.0_r1 的 InputDispatcher 仍有 setInputWindows 路径，未出现 addWindowInfosListener；android-13.0.0_r1 起 InputDispatcher 构造中注册 DispatcherWindowListener 并调用 SurfaceComposerClient::addWindowInfosListener()。",
+        "suggestion": "将标题和版本表改为 Android 13+；Android 12 单独写 WMS/IMS 直接更新 input windows 的路径，避免把 13 的机制提前到 12。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L83-L85 EventHub → InputReader → InputDispatcher",
+        "detail": "章节自称“全流程”，但 Android 12/13 中 InputReader 与 InputDispatcher 之间还有 InputClassifier.cpp；Android 14+ Android.bp 中该环节演进为 InputProcessor.cpp。正文直接写 InputReader 加工完交给 InputDispatcher，少了一层影响触摸分类、手势过滤、palm rejection/stylus 等处理的中间环节。",
+        "suggestion": "补一段版本化路径：Android 12/13：InputReader → InputClassifier → InputDispatcher；Android 14+：InputReader → InputProcessor → InputDispatcher，并说明该层在普通触摸 Trace 中怎样出现。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T20:23:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "4.4",
+    "section_title": "Low Memory Killer",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Low Memory Killer 存在 P0/P1 技术问题，需回炉修正",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-20-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L87 in-kernel LMK 初始化",
+        "detail": "正文写 init 进程向 lowmemorykiller 的 minfree/adj 写阈值。AOSP android-4.0.1_r1 中 init.rc 只调整 /sys/module/lowmemorykiller/parameters/{adj,minfree} 权限；实际阈值由 frameworks/base/services/.../ProcessList.java 的 updateOomLevels()/writeFile() 写入。",
+        "suggestion": "改为“init 设置节点权限，AMS/ProcessList 根据内存与屏幕尺寸计算后写入 adj/minfree”。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L185-L190 minfree 示例",
+        "detail": "示例把 18432/adj=0 注释为“杀 CACHED 进程”。旧 LMK 逻辑在 other_free/other_file 低于对应 minfree 后使用 min_score_adj=lowmem_adj[i]，adj=0 表示从 FOREGROUND_APP_ADJ 及以下都可被选中，不是只杀 cached。cached 通常对应更高的 adj/oom_score_adj（如 900+）。",
+        "suggestion": "重写示例，使用 ProcessList 的 6 档阈值，并说明 minfree 升序、adj 从前台到 cached 的含义，以及当前 oom_score_adj 900-999 才是 cached 区间。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L153 HEAVY_WEIGHT_ADJ 定义",
+        "detail": "正文把 HEAVY_WEIGHT_ADJ 写成“用户通过通知栏设置为不被优化的 App”。AOSP 中 HEAVY_WEIGHT_APP_ADJ 对应 android:heavyWeight=\"true\" 的重量级 Activity 进程/保留 UI 状态，不等同于电池优化白名单或通知栏设置。",
+        "suggestion": "改成 heavyWeight Activity 语义，并把电池优化白名单/前台服务与 oom_score_adj 提升分开写。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L173 oom_score_adj 数值范围",
+        "detail": "正文写“转化为了一个 0-1000 的数字”。同章 L125-L126 已写明 oom_score_adj 完整范围是 -1000 到 1000；负值段用于 native/system/persistent 等高优先级进程。",
+        "suggestion": "改为“-1000 到 1000”，并说明 lmkd 正常候选多从非负段开始。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "L387-L389 Android 15 16KB Page Size 数据",
+        "detail": "正文写 Google 声称冷启动速度提升 20%-40%。developer.android.com 16KB Page Size 文档给出的公开数据是：app launch under memory pressure 平均降低 3.16%、部分应用 up to 30%，camera cold start 平均 6.60%，boot time 平均 8%/约 950ms。20%-40% 找不到官方依据。",
+        "suggestion": "替换为官方公开数字，并注明“initial testing，actual devices may differ”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L105 userspace lmkd 引入版本",
+        "detail": "正文写 Android 9 开始引入 lmkd。AOSP Android 8.1 的 ProcessList 已有 LMK_TARGET/LMK_PROCPRIO/LMK_PROCREMOVE 与 lmkd socket 交互；Android 9/10 才逐步成为主路径并在 Android 10+ 默认使用 PSI。",
+        "suggestion": "改为“Android 8.1 起引入 userspace lmkd/控制 socket；Android 10+ 默认使用 PSI monitors”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L405-L410 CachedAppOptimizer",
+        "detail": "正文写 Android 12+ 引入 CachedAppOptimizer/cgroup v2 Freezer。AOSP android-11.0.0_r1 已存在 CachedAppOptimizer.java、KEY_USE_FREEZER、Process.setProcessFrozen()；Android 12/13 DEFAULT_FREEZER_DEBOUNCE_TIMEOUT 为 600_000L，Android 14+ 才改为 10_000L。",
+        "suggestion": "补 Android 11/12/14 的版本矩阵，区分“机制存在”“默认策略/超时变化”“cgroup 配置形态”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T20:23:00+08:00",
+    "status": "pending"
   }
 ]
