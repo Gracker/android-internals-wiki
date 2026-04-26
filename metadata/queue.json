@@ -11921,17 +11921,52 @@
   {
     "section": "4.7",
     "section_title": "`07-16kb-page-size.md`",
-    "priority": 85,
-    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉；[Deep Tech Review] 16KB app compat 的 RELRO 结论与 Perfetto/TLB 观测口径存在事实错误",
     "review_issues": [
       {
         "type": "P1重要缺失",
         "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `16KB Page Size 适配` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`bionic/libc/bionic/malloc_common.cpp` \n- 关键代码逻辑：在 Android 15 之后，逻辑主要流经 `GetPageSize`，需要结合状态机看。\n- 缺失内容：未讲清 N"
+      },
+      {
+        "level": "P0",
+        "type": "源码错误",
+        "location": "L183-L187 兼容模式的代价",
+        "detail": "正文写成 bionic 16KB app compat 会“禁用 RELRO 段保护，RELRO 段运行时变为可写”。AOSP main 的 linker_phdr.cpp 仍通过 phdr_table_protect_gnu_relro() 对 PT_GNU_RELRO 执行 mprotect(PROT_READ)，并另有 phdr_table_protect_gnu_relro_16kib_compat() 处理 compat relro 区域。当前表述把兼容加载的映射/对齐代价误写成 RELRO 关闭。",
+        "suggestion": "改为按源码拆开：kPageSize==16KiB && min_align_==4096 时启用 should_use_16kib_app_compat_；LoadSegments() 使用 kCompatPageSize/CompatMapSegment；RELRO 保护路径仍需以 _phdr_table_set_gnu_relro_prot() 和 compat relro mprotect 为准。不要写“禁用 RELRO”，除非补到对应分支的一手证据。",
+        "evidence": [
+          "bionic/linker/linker_phdr.cpp: ElfReader::Read()",
+          "LoadSegments()",
+          "phdr_table_protect_gnu_relro()",
+          "phdr_table_protect_gnu_relro_16kib_compat()"
+        ],
+        "added_by": "task9-deep-tech-review",
+        "added_at": "2026-04-27T05:20:00+08:00"
+      },
+      {
+        "level": "P0",
+        "type": "原理错误",
+        "location": "L279-L281 CPU 内核态时间占比",
+        "detail": "正文把 TLB miss / hardware page table walk 写成“CPU 在内核态处理 Page Table Walk”，并建议从 Perfetto CPU Scheduling 的 iowait/内核态时间观察。ARM64 常规页表遍历由硬件 page-table walker 完成，不会以 kernel slice 或 iowait 形式直接出现在调度轨道；page fault 才会进入内核异常处理。",
+        "suggestion": "把观测口径改为：Perfetto 侧看 minor/major fault 计数、mmap/page fault 相关 counter；CPU/TLB 侧需要 simpleperf/perf PMU 事件（如 DTLB/ITLB walk、TLB refill，具体事件依 SoC 支持）。不要用 iowait/内核态时间作为 TLB walk 直接证据。",
+        "evidence": [
+          "ARM Architecture Reference Manual: hardware translation table walk",
+          "Perfetto counter_track / process_counter_track",
+          "Linux perf PMU TLB events"
+        ],
+        "added_by": "task9-deep-tech-review",
+        "added_at": "2026-04-27T05:20:00+08:00"
       }
     ],
     "added_by": "external-ai-review",
     "status": "pending",
-    "date": "2026-04-26"
+    "date": "2026-04-26",
+    "material_paths": [
+      "logs/deep-review/2026-04-27-05-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-27T05:20:00+08:00"
   },
   {
     "section": "4.8",
@@ -12041,17 +12076,37 @@
   {
     "section": "5.7",
     "section_title": "`07-cpu-evolution.md`",
-    "priority": 85,
-    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉；[Deep Tech Review] uclamp 对 App 开发者的可用边界写错",
     "review_issues": [
       {
         "type": "P1重要缺失",
         "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `CPU 架构演进与性能趋势` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`N/A` \n- 关键代码逻辑：在 Android ARMv8/v9 之后，逻辑主要流经 `N/A`，需要结合状态机看。\n- 缺失内容：未讲清 ARMv9 引入的 SVE2/MTE (Memory Tagging Exten"
+      },
+      {
+        "level": "P0",
+        "type": "源码/API边界错误",
+        "location": "L363-L364 “设置线程的 uclamp 值”",
+        "detail": "正文给 App 开发者的建议是“通过设置线程的 uclamp 值告诉调度器高性能”。普通 Android App 没有公开 API 直接写 cpu.uclamp.min/max；task_profiles.json 的 UClampMin/UClampMax 是 system/libprocessgroup/task profile 层的策略映射，直接写 cgroup 需要系统权限或厂商/系统组件参与。",
+        "suggestion": "改为：App 侧使用 ADPF / PerformanceHintManager 描述工作时长目标，或使用线程优先级等公开接口；系统/厂商策略再把 hint、task profile、cpuset/uclamp 连接到调度器。只有系统组件、root/调试环境或 OEM 策略才能直接操作 uclamp。",
+        "evidence": [
+          "system/core/libprocessgroup/profiles/task_profiles.json",
+          "source.android.com/docs/core/perf/cgroups",
+          "android.os.PerformanceHintManager"
+        ],
+        "added_by": "task9-deep-tech-review",
+        "added_at": "2026-04-27T05:20:00+08:00"
       }
     ],
     "added_by": "external-ai-review",
     "status": "pending",
-    "date": "2026-04-26"
+    "date": "2026-04-26",
+    "material_paths": [
+      "logs/deep-review/2026-04-27-05-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-27T05:20:00+08:00"
   },
   {
     "section": "9.1",
@@ -12823,6 +12878,46 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T03:32:04+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.10",
+    "section_title": "JobScheduler/WorkManager 调度与后台任务性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] JobScheduler 源码伪代码与 setOverrideDeadline 语义存在事实错误",
+    "material_paths": [
+      "logs/deep-review/2026-04-27-05-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "level": "P0",
+        "type": "源码错误",
+        "location": "L125-L139 JobSchedulerService 简化代码",
+        "detail": "代码块标注为 android-16.0.0_r1 JobSchedulerService.java，但使用了 mPendingJobs、assignJobToContext(job) 这类当前源码中不存在/不对应的字段和调用。Android 16 中 onControllerStateChanged() 主要向 JobHandler 投递 MSG_CHECK_JOB / MSG_CHECK_CHANGED_JOB_LIST；ready job 经 mPendingJobQueue、maybeQueueReadyJobsForExecutionLocked()/queueReadyJobsForExecutionLocked() 和 JobConcurrencyManager.assignJobsToContextsLocked() 进入执行。",
+        "suggestion": "不要把伪代码写成源码片段。改成“源码流程摘要”，并列出真实方法名：onControllerStateChanged() → JobHandler MSG_CHECK_* → maybeQueueReadyJobsForExecutionLocked()/queueReadyJobsForExecutionLocked() → mPendingJobQueue → JobConcurrencyManager.assignJobsToContextsLocked()。",
+        "evidence": [
+          "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java @ android-16.0.0_r1"
+        ],
+        "added_by": "task9-deep-tech-review",
+        "added_at": "2026-04-27T05:20:00+08:00"
+      },
+      {
+        "level": "P0",
+        "type": "API语义错误",
+        "location": "L419 / L492-L493 setOverrideDeadline 保底执行",
+        "detail": "正文写“使用 setOverrideDeadline() 设置最晚执行时间，确保任务不会无限等待 / deadline 到了也会执行”。JobInfo.Builder 文档在 setOverrideDeadline() 中明确说明：该 API 只在 Android Lollipop 曾试图保证 deadline 执行，从 Android M 起不再有该保证。它也不能用于 periodic job；Android 13+ 禁止 prefetch job deadline；Android 15+ 对过短 time window 可能直接 build 失败。",
+        "suggestion": "改为：setOverrideDeadline 可让普通非周期 job 在 deadline 后忽略 functional constraints，但不能作为“保证执行”语义。需要立即/强时效场景应比较 Expedited Job、UIDT、AlarmManager exact alarm/OnAlarmListener 或 FGS，并写清 build() 限制。",
+        "evidence": [
+          "JobInfo.Builder#setOverrideDeadline(long) docs",
+          "JobInfo.enforceValidity(): periodic/prefetch/minimum time window checks"
+        ],
+        "added_by": "task9-deep-tech-review",
+        "added_at": "2026-04-27T05:20:00+08:00"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T05:20:00+08:00",
     "status": "pending"
   }
 ]
