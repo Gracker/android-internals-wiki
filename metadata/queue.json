@@ -280,7 +280,7 @@
       {
         "type": "原理断裂",
         "location": "## 基本调用形态 / ## Android 16 之后的触发能力",
-        "detail": "正文只展示 requestProfiling(..., callback) 的请求级回调，没有补 registerForAllProfilingResults(Executor, Consumer)。官方 reference 明确写到：system-triggered profiling（addProfilingTriggers）结果只能靠这个全局 listener 接收。现在的调用链缺了一半，读者照着接 trigger 模式拿不到结果。",
+        "detail": "正文只展示 requestProfiling(..., callback) 的请求级回调，没有补 registerForAllProfilingResults(Executor, Consumer)。官方 reference 明确写到：system-triggered profiling（addProfilingTriggers）结果只能靠这个全局 listener 接收。现在的调用路径缺了一半，读者照着接 trigger 模式拿不到结果。",
         "suggestion": "补一张“request listener vs global listener”的回调矩阵，并在 trigger 小节明确 registerForAllProfilingResults 是必选步骤。"
       },
       {
@@ -2376,7 +2376,7 @@
       },
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       },
       {
@@ -2431,7 +2431,7 @@
       {
         "type": "重要缺失",
         "location": "",
-        "detail": "追踪调用链部分仅讨论了函数跳转，未提及如何跨越 Binder 边界。",
+        "detail": "追踪调用路径部分仅讨论了函数跳转，未提及如何跨越 Binder 边界。",
         "suggestion": "增加一小节“跨进程追踪：如何找 AIDL 的真实实现”，介绍搜索 `extends IXXX.Stub` 或 `implements IXXX` 的技巧，特别是针对现代 AOSP 中的 Stable AIDL（`frameworks/base/core/java/android/os/IXXX.aidl`）。"
       },
       {
@@ -2442,7 +2442,7 @@
       },
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       },
       {
@@ -2475,8 +2475,8 @@
       {
         "type": "原理断裂",
         "severity": "P1",
-        "location": "追踪调用链的三种方法",
-        "detail": "调用链追踪只覆盖同进程函数跳转，没有讲 Binder/AIDL 边界。实际性能问题常从 App 进程跨到 system_server、SurfaceFlinger 或 vendor service。",
+        "location": "追踪调用路径的三种方法",
+        "detail": "调用路径追踪只覆盖同进程函数跳转，没有讲 Binder/AIDL 边界。实际性能问题常从 App 进程跨到 system_server、SurfaceFlinger 或 vendor service。",
         "suggestion": "补“跨 Binder 边界追踪”：从 aidl 接口找 Stub/Proxy、搜索 extends IXXX.Stub / onTransact、结合 Perfetto binder transaction 与 pid/tid 对齐。",
         "reviewed_by": "task9-deep-tech-review",
         "reviewed_at": "2026-04-25T19:35:26+08:00"
@@ -9973,7 +9973,7 @@
     "review_issues": [
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       }
     ],
@@ -9989,7 +9989,7 @@
     "review_issues": [
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       }
     ],
@@ -10005,7 +10005,7 @@
     "review_issues": [
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       }
     ],
@@ -10037,7 +10037,7 @@
     "review_issues": [
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       }
     ],
@@ -10053,7 +10053,7 @@
     "review_issues": [
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       }
     ],
@@ -10069,7 +10069,7 @@
     "review_issues": [
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       }
     ],
@@ -10085,7 +10085,7 @@
     "review_issues": [
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       }
     ],
@@ -10101,7 +10101,7 @@
     "review_issues": [
       {
         "type": "外部Review问题",
-        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用链。",
+        "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
       }
     ],
@@ -10147,8 +10147,8 @@
       {
         "type": "源码缺失",
         "location": "核心原理解释部分",
-        "detail": "缺乏 cs.android.com 具体类/方法引用和调用链",
-        "suggestion": "补充 Android 14/15 具体源码方法签名和调用链",
+        "detail": "缺乏 cs.android.com 具体类/方法引用和调用路径",
+        "suggestion": "补充 Android 14/15 具体源码方法签名和调用路径",
         "evidence": [
           "AOSP 15 相关实现"
         ]
@@ -10300,7 +10300,7 @@
         "type": "源码缺失",
         "location": "核心原理解释部分",
         "detail": "缺乏 AOSP 代码类/方法引用的行级溯源",
-        "suggestion": "补充 Android 14/15 的具体源码方法签名和调用链"
+        "suggestion": "补充 Android 14/15 的具体源码方法签名和调用路径"
       }
     ],
     "added_by": "external-ai-review",
@@ -11560,8 +11560,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T22:53:54+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "已补强 VSyncPredictor validate() 异常样本过滤、duplicate timestamp 处理与 Android 14+/16 Scheduler 调用路径。"
   },
   {
     "section": "2.4",
@@ -11696,7 +11699,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11711,7 +11714,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11726,7 +11729,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11741,7 +11744,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11756,7 +11759,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11771,7 +11774,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11786,7 +11789,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11801,7 +11804,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11816,7 +11819,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -11831,7 +11834,7 @@
     "review_issues": [
       {
         "type": "P1重要缺失",
-        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
       }
     ],
     "added_by": "external-ai-review",
@@ -12104,7 +12107,7 @@
         "type": "源码缺失",
         "location": "全文原理部分",
         "detail": "缺少关键调用的 AOSP 锚点，无法作为深度技术参考",
-        "suggestion": "补充对应模块的 AOSP 链接和关键方法，如 InputDispatcher、InputConsumer 调用链",
+        "suggestion": "补充对应模块的 AOSP 链接和关键方法，如 InputDispatcher、InputConsumer 调用路径",
         "evidence": [
           "cs.android.com AOSP 源码"
         ]
@@ -12118,13 +12121,13 @@
     "section": "4",
     "section_title": "内存管理 (ch04 README)",
     "priority": 85,
-    "reason": "[External Review] 内存章节导读缺少源码级跨层调用链",
+    "reason": "[External Review] 内存章节导读缺少源码级跨层调用路径",
     "review_issues": [
       {
         "type": "源码断层",
         "location": "核心机制讲解部分",
         "detail": "缺少 App 内存与系统内存 (ZRAM, Kswapd) 之间的全局关联分析",
-        "suggestion": "补充基于 AOSP 的关键调用链片段，结合状态机梳理内存回收流程",
+        "suggestion": "补充基于 AOSP 的关键调用路径片段，结合状态机梳理内存回收流程",
         "evidence": [
           "cs.android.com AOSP 分支"
         ]
@@ -12325,27 +12328,33 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T18:52:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T22:53:54+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "已修正 CursorWindow API 签名，并按 SQLiteCursor -> SQLiteQuery -> SQLiteSession 源码调用顺序重写窗口刷新说明。"
   },
   {
     "section": "2.3",
     "section_title": "VSync 机制",
     "priority": 95,
-    "reason": "[Deep Tech Review] Android 14+/16 VSync 调用链混入旧 DispSync 路径",
+    "reason": "[Deep Tech Review] Android 14+/16 VSync 调用路径混入旧 DispSync 路径",
     "material_paths": [
       "intake/suggestions.md"
     ],
     "review_issues": [
       {
         "type": "源码错误",
-        "location": "L807「VSyncPredictor 线性回归算法详解 / 完整调用链」",
+        "location": "L807「VSyncPredictor 线性回归算法详解 / 完整调用路径」",
         "detail": "该小节标注 Android 14+ / mainline，却把硬件样本入口写成 DispSync::addResyncSample()。android-16.0.0_r1 的 Scheduler 目录已无 DispSync 主路径，样本入口应是 VSyncReactor::addHwVsyncTimestamp()/addPresentFence() 进入 VSyncPredictor；同章 L201 已说明不再靠 DispSync::addResyncSample()，内部自相矛盾。",
-        "suggestion": "把“完整调用链”拆成历史 DispSync 链与 Android 16 Scheduler 链；当前链路使用 HWComposer/SurfaceFlinger vsync 回调 -> VSyncReactor -> VSyncPredictor -> VsyncSchedule/VSyncDispatchTimerQueue -> EventThread/MessageQueue。"
+        "suggestion": "把“完整调用路径”拆成历史 DispSync 链与 Android 16 Scheduler 链；当前链路使用 HWComposer/SurfaceFlinger vsync 回调 -> VSyncReactor -> VSyncPredictor -> VsyncSchedule/VSyncDispatchTimerQueue -> EventThread/MessageQueue。"
       }
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T18:52:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T22:53:54+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "已拆分历史 DispSync 路径与 Android 14+/16 Scheduler 路径，移除当前路径中的 DispSync::addResyncSample()。"
   },
   {
     "section": "2.11",
@@ -12400,7 +12409,7 @@
       {
         "type": "原理断裂",
         "location": "L138-L140 合成方式选择逻辑",
-        "detail": "正文只写 prepareFrame 阶段协商，未把 HWC2/HWC3 的关键调用链写出来。现代路径应至少覆盖 setLayer* → validateDisplay() → getChangedCompositionTypes/displayRequests → acceptDisplayChanges() → presentDisplay()/presentOrValidateDisplay()，否则读者难以把 Device/Client composition 与 dumpsys/Perfetto/HWC HAL 日志对应起来。",
+        "detail": "正文只写 prepareFrame 阶段协商，未把 HWC2/HWC3 的关键调用路径写出来。现代路径应至少覆盖 setLayer* → validateDisplay() → getChangedCompositionTypes/displayRequests → acceptDisplayChanges() → presentDisplay()/presentOrValidateDisplay()，否则读者难以把 Device/Client composition 与 dumpsys/Perfetto/HWC HAL 日志对应起来。",
         "suggestion": "补一段 Android 12-16 通用的 HWC 协商步骤，并标注 HIDL composer@2.x 与 AIDL composer3 的接口差异。"
       },
       {

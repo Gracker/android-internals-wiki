@@ -8,8 +8,8 @@ polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP android-16.0.0_r1 Scheduler/VSyncReactor.cpp + VSyncPredictor.cpp + VSyncDispatchTimerQueue"
 confidence: medium
 sources:
   - type: aosp
@@ -40,17 +40,21 @@ sources:
     path: "https://cloud.tencent.com/developer/article/1905184 (Vsync Phase 详解)"
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T18:52:00+08:00"
 review_round: 2
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-26T22:53:54+08:00"
+
 ---
 
 # VSync 机制
@@ -237,15 +241,15 @@ Present Fence 也走同一套入口。`VSyncReactor::addPresentFence()` 在 fenc
 
 **1)学习**:`VSyncReactor` 接收 HW_VSYNC 或 Present Fence 时间戳,把样本交给 `VSyncPredictor`。模型初建、刷新率切换或校正失败时,`needsMoreSamples()` 会保持为 true,系统继续打开硬件采样。
 
-**2)预测**:样本足够后,`VSyncPredictor::nextAnticipatedVSyncTimeFrom()` 会从当前时间点推算未来的 VSync 时间。SurfaceFlinger 和 App 侧分发依赖的是这个预测结果,而不是每一拍都等真实中断。
+**2)预测**:样本足够后,`VSyncPredictor::nextAnticipatedVSyncTimeFrom()` 会从当前时间点推算未来的 VSync 时间。SurfaceFlinger 和 App 侧分发使用这个预测结果,通常不等待每一拍真实中断。
 
-**3)校正**:一旦硬件真实时间和预测结果偏差变大,`validate()` 会失败,或者 `VSyncReactor` 在刷新率切换、Present Fence 异常时重新进入采样模式。你在 Perfetto 里看到的 HW_VSYNC 短暂开启,本质上就是系统重新收集样本,而不是渲染管线长期依赖硬件中断。
+**3)校正**:一旦硬件真实时间和预测结果偏差变大,`validate()` 会失败,或者 `VSyncReactor` 在刷新率切换、Present Fence 异常时重新进入采样模式。Perfetto 里短暂出现 HW_VSYNC 开启,表示系统正在重新收集样本；模型稳定后仍回到软件预测和定时分发。
 
 `[已验证: AOSP android-16.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp + 官方文档 implement-vsync]`
 
 ### 3.3 现代架构:Scheduler 子目录承担 DispSync 的旧职责
 
-如果把 Android 4.x 的资料和 Android 16 的公开源码对照着看,最容易误解的一点是:名字变了,看起来像换了一套系统;变的是职责拆分,不是基本思路。
+对照 Android 4.x 资料和 Android 16 公开源码时,容易把文件名变化误读成架构替换。实际变化主要是职责拆分,基本思路仍是采样、预测、按相位分发。
 
 - `VSyncPredictor`:根据历史样本预测未来 VSync 时间点
 - `VSyncReactor`:处理 HW_VSYNC / Present Fence,决定何时重新学习
@@ -253,7 +257,7 @@ Present Fence 也走同一套入口。`VSyncReactor::addPresentFence()` 在 fenc
 - `EventThread`:服务 VSYNC-app / vsync-appSf 客户端
 - `MessageQueue`:服务 VSYNC-sf,把合成消息送回 SurfaceFlinger
 
-所以当我们说"DispSync 在校正模型""DispSync 在分发 VSYNC-app"时,更准确的现代说法其实是:Scheduler 里的预测、校正和分发组件一起完成了旧版 DispSync 时代的那套工作。
+现代实现里,Scheduler 下的预测、校正和分发组件共同承担了旧版 DispSync 的工作。
 
 ## 四、VSync 信号的传递路径
 
@@ -749,19 +753,20 @@ for (size_t i = 0; i < numSamples; i++) {
 
 ### 11.2 异常值过滤
 
-当新样本的周期偏差超过 `outlierTolerancePercent`（默认 10%）时，该样本被拒绝：
+新样本进入 `addVsyncTimestamp()` 时,`validate()` 会先把它和当前 `idealPeriod()` 模型比较。源码将 `(timestamp - aValidTimestamp) % idealPeriod()` 转成百分比；结果落在 `10% ~ 90%` 区间时,表示样本离最近的理想 VSync 点太远,预测器拒绝这个样本：
 
 ```cpp
-// VSyncPredictor.cpp 行 85-100
-const auto percent = (timestamp - aValidTimestamp) % idealPeriod() * kMaxPercent / idealPeriod();
+// services/surfaceflinger/Scheduler/VSyncPredictor.cpp
+// @ AOSP android-16.0.0_r1
+const auto percent =
+        (timestamp - aValidTimestamp) % idealPeriod() * kMaxPercent / idealPeriod();
 if (percent >= kOutlierTolerancePercent &&
     percent <= (kMaxPercent - kOutlierTolerancePercent)) {
-    // timestamp not aligned with model
     return false;
 }
 ```
 
-这个机制确保 DispSync 模型不会被偶发的硬件 VSync 抖动破坏。
+`validate()` 还会检查重复时间戳：新时间戳如果离历史样本太近,会被当作 duplicate timestamp 拒绝。被拒绝的样本不会进入 `mTimestamps` 环形缓冲区；学习期样本不足时,预测器会清空时间戳并重新开始学习。样本已经足够时,预测器更新 `mKnownTimestamp`,保留现有时间线,避免单次硬件抖动直接改写后续 `nextAnticipatedVSyncTimeFrom()` 的预测结果。
 
 ### 11.3 多帧采样（Android 14+）
 
@@ -798,29 +803,43 @@ static constexpr int MIN_EARLY_GPU_FRAMES = 2;          // GPU 合成后保持�
 2. 在计数器耗尽前保持 **Early** 配置
 3. 计数器归零后逐步过渡到 **Late** 配置
 
-### 11.5 完整 VSync 信号生成调用链
+### 11.5 VSync 信号生成调用路径
+
+早期 DispSync 资料里的主路径常写成：
 
 ```
 硬件 VSync 中断
     ↓
-HWComposer → SurfaceFlinger.onVsyncReceived()
+HWComposer → SurfaceFlinger
     ↓
-DispSync::addResyncSample() — 记录硬件时间戳
+DispSync::addResyncSample()
     ↓
-VSyncPredictor::addVsyncTimestamp() — 线性回归计算周期
+DispSync 计算软件 VSync 模型
     ↓
-VSyncPredictor::snapToVsync() — 预测下一个 VSync 时间
-    ↓
-Scheduler::setVsyncConfig() — 根据 VsyncModulator 选择配置
-    ↓
-VsyncConfig { workDuration, readyDuration } — 确定实际相位偏移
-    ↓
-EventThread — 按相位偏移分发 VSync-app / VSync-sf / VSync-appSf
-    ↓
-Choreographer.doFrame() / SurfaceFlinger.compose()
+EventThread 分发 VSYNC-app / VSYNC-sf
 ```
 
-这个调用链揭示了 VSync Offset 的本质：**不是直接指定一个纳秒偏移值，而是通过 workDuration 和 readyDuration 两个时长参数，间接计算得出偏移**。
+这条路径适合阅读 Android 4.x 到 Android 10 前后的实现。放到 Android 14+/16 当前 Scheduler 目录时,应按下面的路径核对：
+
+```
+HWC VSync 回调 / Present Fence signal
+    ↓
+SurfaceFlinger Scheduler 采样入口
+    ↓
+VSyncReactor::addHwVsyncTimestamp() / VSyncReactor::addPresentFence()
+    ↓
+VSyncPredictor::addVsyncTimestamp() — 校验样本并更新线性回归模型
+    ↓
+VSyncPredictor::nextAnticipatedVSyncTimeFrom() — 预测下一次 VSync
+    ↓
+VSyncDispatchTimerQueue — 根据 workDuration / readyDuration / phase 安排回调时间
+    ↓
+EventThread 分发 VSYNC-app / vsync-appSf；MessageQueue 分发 VSYNC-sf
+    ↓
+Choreographer#doFrame() / SurfaceFlinger 合成消息
+```
+
+VSync Offset 在当前实现中的落点是 `VsyncConfig { workDuration, readyDuration }` 和分发队列的触发时间。它不再表现为一个单独写死的纳秒偏移值；调度器根据预测时间、工作时长和准备时长算出 App 与 SurfaceFlinger 各自的回调时间。
 
 ---
 
