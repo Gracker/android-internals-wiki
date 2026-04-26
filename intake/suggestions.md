@@ -3881,3 +3881,23 @@
 - **位置**：L317-L334
 - **问题**：预览 Buffer 到达 SQL 固定匹配 counter.name LIKE "%BufferTX - SurfaceView%" 且 value=1。CameraX PreviewView、TextureView、SurfaceTexture、自定义 Surface 名或 OEM layer 名都可能导致查询为空，当前缺少先枚举 counter_track/track 名称再选目标 layer 的步骤。
 - **建议**：补一条预查询：列出包含 BufferTX/Surface/Preview 的 counter track 名称和 upid/track_id，再按实际 layer 名计算帧间隔；示例说明 SurfaceView 只是样例，不是通用 track 名。
+
+## [Task9 Deep Review] 13.2 Trace 抓取 — 2026-04-26
+- **类型**：知识盲区
+- **位置**：L365-L416（atrace Categories 详解）
+- **问题**：正文只说不同设备 category 略有差异，但没有交代 Qualcomm/MTK 等厂商私有 category 与 vendor tracepoint 的识别方法；遇到 camera/audio/gpu 专项问题时，读者仍不知道如何从 atrace --list_categories 回到具体 ftrace event。
+- **建议**：补一段“厂商私有 category 处理”：先保存 adb shell atrace --list_categories 输出，再用 tracefs available_events / Perfetto UI Recording command 对照 category 展开的 ftrace_events；不能把示例中的 power/gpu_frequency 当成所有设备必有事件。
+
+
+## [Task9 Deep Review] 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：L385-L393（Tracing 开销与性能影响表）
+- **问题**：表中给出 function tracer 10-15%、tracepoint 100-500ns、trace_marker 200-500ns、eBPF kprobe 500-2000ns 等精确范围，但正文同时标注待验证，缺少设备、内核版本、事件频率和测量方法。
+- **建议**：补一组可复现实测条件，或把数值降级为“量级参考”；至少写清 Pixel/内核版本、启用事件集、采样频率、CPU 占用或 benchmark delta。
+
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：L234（Baseline Profile 约 30% 冷启动收益）
+- **问题**：“约 30%”是官方宣传口径，但正文没有给出来源链接、测试条件或边界，容易被读者当成任何 App 都稳定获得 30%。
+- **建议**：补官方 Baseline Profiles 文档引用，并说明该数字依赖设备、启动路径、profile 覆盖率和安装/编译状态；示例结果应写设备型号、系统版本、启动模式、迭代次数。

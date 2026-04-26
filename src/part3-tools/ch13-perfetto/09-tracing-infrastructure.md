@@ -22,10 +22,10 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 rework_date: "2026-04-25"
@@ -33,10 +33,10 @@ rework_by: openclaw-task2b
 task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
-last_task9_at: "2026-04-25T13:04:00+08:00"
+last_task9_at: "2026-04-26T12:46:09+08:00"
 task9_reviewed_by: openclaw-task9
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1: 1x 不是X而是Y(FAQ合理使用,未超限). 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据5/5。'
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: "2026-04-26"
 last_task2b_at: "2026-04-25T14:40:00+08:00"
 ---
 
