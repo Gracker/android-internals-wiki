@@ -4,20 +4,20 @@ chapter: "18.9"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T22:20:00+08:00"
+last_task9_at: "2026-04-27T02:20:00+08:00"
 tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 sources:
   - type: official

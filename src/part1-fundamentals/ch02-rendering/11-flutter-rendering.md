@@ -2,7 +2,7 @@
 title: "2.11 Flutter 渲染管线与性能"
 section: "2.11"
 chapter: "2.11"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-27"
@@ -30,17 +30,17 @@ sources:
     path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java"
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7", "18.12"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "ready-to-publish"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-27T00:40:00+08:00"
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T19:33:53+08:00"
+last_task9_at: "2026-04-27T02:20:00+08:00"
 ---
 
 <!-- outline-start -->

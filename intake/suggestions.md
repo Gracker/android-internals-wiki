@@ -4656,3 +4656,9 @@
 - **位置**：在 Perfetto 里怎么读 Fence
 - **问题**：章节给出了 acquire/release/present fence 的判断方向，但没有落到具体 Trace 观察点、slice 名称、FrameTimeline 字段或 trace_processor 查询，读者难以复跑验证。
 - **建议**：补一个最小 Perfetto 案例或 SQL：串起 `queueBuffer`/`latchBuffer`/`presentDisplay`、GPU busy、FrameTimeline actual/expected 和 BufferQueue slot 状态。
+
+## [Task9 Deep Review] 18.9 Vulkan 原生渲染管线 — 2026-04-27
+- **类型**：交叉引用
+- **位置**：L60、L428-L429
+- **问题**：`[2.14 图形 API 演进](14-graphics-api-evolution.md)` 与 `[2.13 图形缓冲区管理](13-buffer-queue.md)` 在 ch18 目录下解析到不存在文件；实际目标在 `src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md` 与 `src/part1-fundamentals/ch02-rendering/13-buffer-queue.md`。
+- **建议**：改成正确相对路径，或改用全书统一的章节引用格式，避免发布后链接断开。
