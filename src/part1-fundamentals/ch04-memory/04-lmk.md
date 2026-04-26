@@ -34,8 +34,8 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_state: pending
