@@ -4,8 +4,8 @@ chapter: "2.16"
 section: "2.16"
 status: ready-for-review
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, source.android.com/docs/core/graphics/sync"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaGraphitePipeline.cpp, source.android.com/docs/core/graphics/sync"
 confidence: medium
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
@@ -20,16 +20,18 @@ sources:
     path: "system/core/libsync/sync.c"
   - type: aosp
     path: "frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp"
   - type: official
     path: "https://source.android.com/docs/core/graphics/sync"
   - type: official
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-19"
 task6_result: pass-light-edit
@@ -38,6 +40,9 @@ task2b_result: fixed
 task9_reviewed_date: "2026-04-19"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-19T09:59:00+08:00"
+last_task2b_at: "2026-04-26T20:59:03+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制
@@ -60,15 +65,18 @@ App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App �
 - 🔹 **Acquire fence、Release fence、Present fence 的方向与两侧视角**：[已验证: source.android.com/docs/core/graphics/sync, AOSP android-7.0.0_r1 HWC2.h]
   producer 在 `queueBuffer()` 输入的 fence，到了 consumer 一侧就叫 acquire fence；consumer 在 `getReleaseFences()` / `releaseBuffer()` 返回的 fence，回到 producer 下一次 `dequeueBuffer()` 时就是“写之前先等我读完”的 release fence；present fence 表示本帧真正上屏。
 
+- 🔹 **Fence Merge 解释多 layer 合成里的多对一等待**：[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/Fence.cpp, system/core/libsync/sync.c]
+  `Fence::merge()` / `sync_merge()` 可以把多条 fence fd 合成一个等待对象。合并后的 fence 要等所有输入 fence signal 后才 signal，SurfaceFlinger client composition 和 HWC 多层提交都依赖这个语义。
+
 - 🔹 **在 Perfetto 中如何判断 fence 是正常同步还是掉帧瓶颈**：[已验证: source.android.com/docs/core/graphics/architecture]
   需要把 `queueBuffer()`、`latchBuffer`、`presentDisplay()`、BufferQueue 状态和 GPU busy 片段连起来看，不能只盯一段 `fence wait`。
 
-- 🔹 **版本演进的真实主线**：[已验证: AOSP android-7.0.0_r1 HWC2.h, android-8.1.0_r81 system/core/libsync/sync.c, android-16.0.0_r1 SkiaOpenGLPipeline.cpp]
-  Android 7 已有 HWC2；Android 8+ 用户空间已经能看到 modern libsync / sync_file API；Skia 管线在 Android 8.1 已存在，Android 14-16 的变化主要在后端调度、FrameTimeline / ARR 配合和 release fence 生成路径。
+- 🔹 **版本演进的真实主线**：[已验证: AOSP android-7.0.0_r1 HWC2.h, android-8.1.0_r81 system/core/libsync/sync.c, android-16.0.0_r1 SkiaOpenGLPipeline.cpp / SkiaGraphitePipeline.cpp]
+  Android 7 已有 HWC2；Android 8+ 用户空间已经能看到 modern libsync / sync_file API；Skia 管线在 Android 8.1 已存在。Android 14-16 需要同时核对 GL/Ganesh 与 Graphite 两条后端入口，变化主要集中在后端调度、FrameTimeline / ARR 配合和 release fence 生成路径。
 
 ### 扩展（可选深入）
 
-- 🔸 **sw_sync 的边界**：`sw_sync` 保留测试与特定软件管线接口，但生产路径中的 acquire / release / present fence 仍由内核驱动或硬件推进。
+- 🔸 **sw_sync 的边界**：`sw_sync` 保留测试与特定软件管线接口；生产路径中的 acquire / release / present fence 仍由内核驱动或硬件推进。生产设备 user build 上，普通 App 通常无法访问 `/dev/sw_sync` 或 `/sys/kernel/debug/sync`。
 - 🔸 **常见误区**：fd 泄漏、slot 长时间不可复用、GPU hang 是三类不同问题，排查入口不能混用。
 <!-- outline-end -->
 
@@ -96,9 +104,17 @@ Android 图形栈的同步基础来自内核里的显式同步框架。官方文
 
 把这三层拆开后，很多“资料和源码对不上”的困惑就消失了。旧文档在讲概念模型，libsync 在讲 userspace 查询接口，驱动代码则在讲内核对象本身，它们站在不同抽象层。
 
-### sw_sync 的边界：用户空间不是完全不能创建 fence
+### Fence Merge：多条 fence 合成一个等待对象
 
-这一点很容易被一句话讲歪。`android-16.0.0_r1` 的 `system/core/libsync/sw_sync.h` 公开了下面三个接口：
+单层 buffer 示例只覆盖一对一传递；多 layer 合成需要把多条 acquire fence 收束成一个等待对象。AOSP 的入口是 `frameworks/native/libs/ui/Fence.cpp` 里的 `Fence::merge()`，它向下调用 `system/core/libsync/sync.c` 的 `sync_merge()`。返回的新 fd 代表一组 fence 的合集，只有所有输入 fence 都 signal 后才会 signal。
+
+这个语义支撑 Client Composition 和 HWC 多层提交。比如同一帧里既有 App 主 Surface，又有 SurfaceView 或视频 layer，SurfaceFlinger 不能只等其中一条 fence；它需要把多个 producer 的完成点合并成一个可传递对象，再交给后续合成或显示阶段。Perfetto 里看到一个 wait 覆盖多个 buffer 的完成状态时，可以沿 `Fence::merge()` / `sync_merge()` 去核对。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/ui/Fence.cpp, system/core/libsync/sync.c]
+
+### sw_sync 的边界：测试接口受权限和场景限制
+
+`android-16.0.0_r1` 的 `system/core/libsync/sw_sync.h` 公开了下面三个接口：
 
 ```c
 int sw_sync_timeline_create(void);
@@ -106,9 +122,9 @@ int sw_sync_timeline_inc(int fd, unsigned count);
 int sw_sync_fence_create(int fd, const char *name, unsigned value);
 ```
 
-这说明“用户空间完全不能创建或 signal fence”并不成立。**生产路径里的硬件 fence 由内核驱动或硬件 signal，以保证 forward progress；但 Android 同时保留 `sw_sync`，给测试和特定软件管线提供 userspace 的 software timeline 接口。** 这两件事必须分开说。
+这些接口说明 Android 保留了 userspace software timeline 能力。生产路径里的 GPU、HWC、display fence 仍由内核驱动或硬件 signal，以保证 forward progress；`sw_sync` 主要服务内核开发测试、模拟器、root/debug 环境和少量软件管线。
 
-所以我们在排查图形问题时，可以把 `sw_sync` 看成测试与 fallback 工具，而不是普通 App 随手控制生产 acquire / release fence 的入口。尤其是 App 正常渲染链路里的 GPU、HWC、display fence，仍然依赖驱动与硬件推进，不靠业务进程手动 `inc`。
+生产设备的 user build 上，普通 App 通常无法打开 `/dev/sw_sync`，也无法读取 `/sys/kernel/debug/sync` 这类 debugfs 节点。访问权限会被文件权限、SELinux domain、root/system/graphics 组策略共同限制。排查图形问题时，可以把 `sw_sync` 当作测试和调试入口，不能把它写成业务进程控制 acquire / release / present fence 的方案。
 
 [已验证: AOSP android-16.0.0_r1, system/core/libsync/sw_sync.h]
 
@@ -161,7 +177,7 @@ release fence 的方向正好相反。官方文档对它的定义是：它表示
 
 ### Present fence（旧资料里也常叫 retire fence）：本帧真正上屏的时刻
 
-present fence 是每帧一个，它在 `presentDisplay()` 之后返回。对物理屏来说，它表示当前帧真正出现在屏幕上的时间点；对虚拟显示来说，它表示什么时候可以安全读取输出 buffer。很多旧资料会把它叫 retire fence，本质上讨论的是同一类“本帧已经完成 display 侧消费”的信号。
+present fence 是每帧一个，它在 `presentDisplay()` 之后返回。对物理屏来说，它表示当前帧真正出现在屏幕上的时间点；对虚拟显示来说，它表示什么时候可以安全读取输出 buffer。HWC1 文档里常见 retire fence 这个名字，HWC2/HWC3 语境下更常用 present fence；读旧资料时要把协议版本和术语放在一起看。
 
 这条 fence 很适合用来理解端到端显示延迟。`queueBuffer()` 只能说明 producer 把帧交出来了，present fence 才更接近“用户什么时候真的看到这一帧”。如果我们在 SurfaceFlinger / HWC 侧做帧耗时分析，不把 present fence 连起来看，很容易把“已经提交”和“已经显示”混为一谈。
 
@@ -207,7 +223,7 @@ Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。我�
 
 ### Android 14-16：变化重点在后端调度、FrameTimeline / ARR 配合，以及 release fence 路径
 
-Skia 并不是 Android 14-16 才突然出现。`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp` 在 `android-8.1.0_r81` 就已经存在，所以不能把这段历史写成“Android 14-16 全面切到 Skia”。Skia 管线早就存在，后续版本的变化更多在后端调度、FrameTimeline、ARR 配合，以及 fence 的生成和观测路径上。
+Skia 管线在 Android 8.1 源码里已经存在，Android 14-16 的变化集中在后端调度、FrameTimeline、ARR 配合，以及 fence 的生成和观测路径。核对 Android 16 时不能只看 `SkiaOpenGLPipeline.cpp` 的 GL/Ganesh 路径；`frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp` 也要一起读。Graphite 面向 Vulkan/Metal 风格的显式资源和同步模型，和 GL 路径的 release fence 生成位置不同，设备或构建是否走 Graphite 还要结合系统配置和运行时选择判断。
 
 `android-16.0.0_r1` 的 `SkiaOpenGLPipeline.cpp` 里，GL 路径使用的是：
 
@@ -216,9 +232,9 @@ skgpu::ganesh::FlushAndSubmit(surface);
 mEglManager.createReleaseFence(true, &sync, &fence);
 ```
 
-旧稿把这里写成另一条 flush-and-signal 路径，这会把读者带到错误的源码位置。“当前 Android 16 的 GL backend 通过 `FlushAndSubmit(surface)` 提交，再由 `EglManager::createReleaseFence()` 生成 release fence。” 这样读者才能在 AOSP 里直接对上号。
+当前 Android 16 的 GL backend 通过 `FlushAndSubmit(surface)` 提交，再由 `EglManager::createReleaseFence()` 生成 release fence。Graphite 路径要从 `SkiaGraphitePipeline` 追到 RenderThread / CanvasContext 的后端选择。这里更接近 Vulkan explicit sync 语义，fence 与 semaphore 的对应关系不会完全沿用 GL/EGL 的 `EglManager::createReleaseFence()` 观察点。Trace 分析时，GL 设备优先看 EGL release fence，Graphite/Vulkan 设备还要把 GPU queue submit、present fence 和 FrameTimeline 放在同一时间窗里看。
 
-[已验证: AOSP android-8.1.0_r81 / android-16.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp]
+[已验证: AOSP android-8.1.0_r81 / android-16.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp, frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp]
 
 ## 常见问题与误区
 
@@ -246,6 +262,7 @@ VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 produce
 - AOSP 源码：`frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
 - AOSP 源码：`system/core/libsync/sw_sync.h`、`system/core/libsync/sync.c`
 - AOSP 源码：`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp`
+- AOSP 源码：`frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp`
 - 官方文档：<https://source.android.com/docs/core/graphics/sync>
 - 官方文档：<https://source.android.com/docs/core/graphics/architecture>
 

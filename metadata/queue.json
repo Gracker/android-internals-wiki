@@ -11414,8 +11414,12 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T20:59:39+08:00",
+    "completed_by": "openclaw-task2b",
+    "result": "fixed",
+    "completion_reason": "已补 Fence Merge、Skia Graphite 路径、sw_sync 权限边界与 HWC1/HWC2 present/retire 术语边界，送回 Task 6/Task 9。"
   },
   {
     "section": "2.17",
@@ -11478,8 +11482,12 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T20:59:39+08:00",
+    "completed_by": "openclaw-task2b",
+    "result": "fixed",
+    "completion_reason": "已补 API 36 公开查询边界与 VsyncModulator 源码锚点；章节满足自动晋升条件，保持 finalized / ready-to-publish。"
   },
   {
     "section": "2.19",
