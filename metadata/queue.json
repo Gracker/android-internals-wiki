@@ -12010,5 +12010,85 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T14:36:59+08:00",
     "status": "pending"
+  },
+  {
+    "section": "3",
+    "section_title": "Input 事件处理 (ch03-input README)",
+    "priority": 85,
+    "reason": "[External Review] 机制解释缺少具体源码类名和方法名支撑",
+    "review_issues": [
+      {
+        "type": "源码缺失",
+        "location": "全文原理部分",
+        "detail": "缺少关键调用的 AOSP 锚点，无法作为深度技术参考",
+        "suggestion": "补充对应模块的 AOSP 链接和关键方法，如 InputDispatcher、InputConsumer 调用链",
+        "evidence": [
+          "cs.android.com AOSP 源码"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T15:14:34+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "4",
+    "section_title": "内存管理 (ch04 README)",
+    "priority": 85,
+    "reason": "[External Review] 内存章节导读缺少源码级跨层调用链",
+    "review_issues": [
+      {
+        "type": "源码断层",
+        "location": "核心机制讲解部分",
+        "detail": "缺少 App 内存与系统内存 (ZRAM, Kswapd) 之间的全局关联分析",
+        "suggestion": "补充基于 AOSP 的关键调用链片段，结合状态机梳理内存回收流程",
+        "evidence": [
+          "cs.android.com AOSP 分支"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T15:14:34+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5",
+    "section_title": "CPU 调度与能耗管理 (ch05-cpu-power README)",
+    "priority": 85,
+    "reason": "[External Review] 章节导读缺少架构级协同关系简述",
+    "review_issues": [
+      {
+        "type": "原理缺失",
+        "location": "全局导读",
+        "detail": "仅有名词列表，缺少从 CFS 到 EAS 演进背景及调度器与 Thermal/DVFS 耦合关系说明",
+        "suggestion": "补充架构视角简述：EAS、大小核、Thermal 管控如何构成动态平衡系统",
+        "evidence": [
+          "AOSP 官方 EAS 说明"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T15:14:34+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "6",
+    "section_title": "存储 I/O (ch06-storage README)",
+    "priority": 85,
+    "reason": "[External Review] 引言未概述 Android 存储系统核心挑战",
+    "review_issues": [
+      {
+        "type": "内容缺失",
+        "location": "全局引言",
+        "detail": "未能点明 F2FS 与 ext4 抉择背景、UFS 硬件特性对 I/O 的影响、Android I/O 栈架构",
+        "suggestion": "加入 Android I/O 栈架构摘要，包括 eMMC→UFS、ext4→F2FS 演进动机、随机写/fsync 问题",
+        "evidence": [
+          "Android 官方文件系统和存储架构文档"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T15:14:34+08:00",
+    "status": "pending"
   }
 ]
