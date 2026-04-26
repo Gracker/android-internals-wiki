@@ -12569,7 +12569,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T21:29:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T23:53:43+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "移除 SkiaGraphitePipeline.cpp 的 android-16 已验证锚点，改为 SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / VulkanManager.cpp。"
   },
   {
     "section": "7.3",
@@ -12618,6 +12622,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T22:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T23:53:43+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "resolution_note": "Pipeline barrier 按 P0 修正；Swappy 签名按官方 swappyVk.h 保留 JNIEnv/jactivity，并补 bool/VkResult 处理。"
   }
 ]

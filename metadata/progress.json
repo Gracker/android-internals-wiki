@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T23:28:47+08:00",
+  "generated_at": "2026-04-26T23:53:43+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,32 +7,32 @@
     "finalized": 85,
     "ready-for-review": 133,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T22:53:54+08:00",
+    "last_updated": "2026-04-26T23:53:43+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 46,
-      "task2b_pending": 56,
+      "task6_pending": 48,
+      "task2b_pending": 54,
       "ready-to-publish": 85,
       "task9_pending": 27,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 168,
-      "revisiting": 46
+      "reviewed": 167,
+      "revisiting": 47
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 150,
-      "pending": 57,
+      "reviewed": 148,
+      "pending": 59,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 143,
-      "pending": 59,
+      "fixed": 145,
+      "pending": 57,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -41,34 +41,34 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 46,
-      "task2b_pending": 56,
+      "task6_pending": 48,
+      "task2b_pending": 54,
       "ready-to-publish": 85,
       "task9_pending": 27,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 168,
-      "revisiting": 46
+      "reviewed": 167,
+      "revisiting": 47
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 150,
-      "pending": 57,
+      "reviewed": 148,
+      "pending": 59,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 143,
-      "pending": 59,
+      "fixed": 145,
+      "pending": 57,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
     },
-    "last_updated": "2026-04-26T22:53:54+08:00"
+    "last_updated": "2026-04-26T23:53:43+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -936,32 +936,85 @@
       "last_task2b_at": "2026-04-26T19:47:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/16-sync-fence.md": {
-      "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
       "title": "Sync Fence 框架与帧同步机制",
       "chapter": "2.16",
       "section": "2.16",
       "status": "ready-for-review",
-      "drafted_date": "2026-04-05",
-      "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 7 (API 24) - Android 17 (API 37)",
       "last_verified": "2026-04-26",
-      "last_verified_against": "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaGraphitePipeline.cpp, source.android.com/docs/core/graphics/sync",
+      "last_verified_against": "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp, source.android.com/docs/core/graphics/sync",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "drafted_date": "2026-04-05",
+      "drafted_by": "openclaw-task2a",
+      "sources": [
+        {
+          "type": "aosp",
+          "path": "frameworks/native/libs/ui/Fence.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h"
+        },
+        {
+          "type": "aosp",
+          "path": "system/core/libsync/sw_sync.h"
+        },
+        {
+          "type": "aosp",
+          "path": "system/core/libsync/sync.c"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/libs/hwui/renderthread/VulkanManager.cpp"
+        },
+        {
+          "type": "official",
+          "path": "https://source.android.com/docs/core/graphics/sync"
+        },
+        {
+          "type": "official",
+          "path": "https://source.android.com/docs/core/graphics/architecture"
+        }
+      ],
+      "tags": [
+        "sync-fence",
+        "fence",
+        "hwui",
+        "rendering",
+        "synchronization",
+        "timeline"
+      ],
+      "related_chapters": [
+        "2.4",
+        "2.5",
+        "2.6",
+        "2.13",
+        "2.15"
+      ],
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-26",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-19",
-      "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T21:29:00+08:00",
-      "last_task2b_at": "2026-04-26T20:59:03+08:00",
+      "last_task2b_at": "2026-04-26T23:53:43+08:00",
       "repaired_date": "2026-04-26",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md"
     },
     "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
@@ -3388,14 +3441,14 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-25",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
       "sources": [
         {
           "type": "official",
@@ -3412,11 +3465,17 @@
         {
           "type": "aosp",
           "path": "frameworks/native/vulkan"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/opt/gamesdk/include/swappy/swappyVk.h"
         }
       ],
-      "last_task2b_at": "2026-04-25T17:43:00+08:00",
+      "last_task2b_at": "2026-04-26T23:53:43+08:00",
       "rework_by": "openclaw-task2b",
       "rework_type": "review回炉修复（Task9/External 问题单）",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b",
       "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md"
     },
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md": {
