@@ -9651,3 +9651,20 @@ Android 16/17 中 OpenGL ES → ANGLE → Vulkan 的启用策略没有形成源�
 
 ### 关联章节
 2.9、2.14、18.11
+
+## [2026-04-27] 4.7 16KB Page Size 与 Android 性能 — 知识盲区
+
+### 盲区描述
+16KB app compat mode 的真实副作用需要按 AOSP 分支复核。当前正文把 compat mode 写成“禁用 RELRO”，但 AOSP main 的 linker_phdr.cpp 仍存在 GNU RELRO mprotect 路径；需要区分兼容加载、segment padding/page-size migration、RELRO 保护、RELRO sharing 以及安全提示之间的边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对比 AOSP main、android-15、android-16 分支的 `bionic/linker/linker_phdr.cpp`：`should_use_16kib_app_compat_`、`CompatMapSegment()`、`phdr_table_protect_gnu_relro()`、`phdr_table_protect_gnu_relro_16kib_compat()`。
+- 查官方 16KB compat/backcompat 文档，确认 `android:pageSizeCompat`、`bionic.linker.16kb.app_compat.enabled`、包管理器开关的 API level / SDK 暴露边界。
+- 如需写安全代价，必须区分“RELRO 不生效”“RELRO sharing 不生效”“临时 RW 映射”“用户/开发者兼容模式警告”。
+
+### 关联章节
+- 4.7
+- 14.13

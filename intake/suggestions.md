@@ -4717,3 +4717,33 @@
 - **位置**：~L170
 - **问题**：Android 16 内核分支映射只提 6.12 未提 6.6 向下兼容分支
 - **建议**：补充 GKI 分支选择逻辑或加"主分支"限定
+
+## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L82-L93 / L277
+- **问题**：官方 16KB 性能数字已列出，但测试设备、Android build、样本 App、4KB/16KB 对照方法没有落到正文；Perfetto 位置也留在“待补充”。
+- **建议**：补一个最小复现实验：同一 App、同一设备 4KB/16KB 各抓冷启动 trace，记录 PAGE_SIZE、build fingerprint、min_flt/maj_flt、启动耗时与 simpleperf TLB 事件可用性。
+
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L338-L340 趋势总结
+- **问题**：“后台网络异常提示（15）”被放进“用户可见性越来越高”趋势里。Android 15 的后台网络限制主要表现为 App 侧 UnknownHostException / IOException，不是通用用户可见提示。
+- **建议**：把 Android 15 放回“平台约束”维度；用户可见性趋势保留 FGS 通知、FGS Task Manager、Play listing 警告等有明确用户界面的机制。
+
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-04-27
+- **类型**：交叉引用一致性
+- **位置**：L350-L352 Perfetto 观察
+- **问题**：本章仍写“System Server 进程中的 JobScheduler track”即可观察 bucket/调度间隔；5.10 已把 JobScheduler 观测拆成 statsd 的 android_job_scheduler_states 与 atrace ss 的 android_job_scheduler_events。两章口径不一致。
+- **建议**：同步 5.10 的观测口径：pending/constraint/bucket 用 statsd atom 表，system_server 执行事件用 atrace ss；不要把两类数据都称为一个 JobScheduler track。
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L477 调度方式选择表
+- **问题**：“需要精确定时 → AlarmManager OnAlarmListener → Android 17 进程内回调”版本边界错误。OnAlarmListener 不是 Android 17 才出现；exact alarm 权限例外也应按 Android 12+ exact alarm 文档说明。
+- **建议**：改成“AlarmManager exact alarm + OnAlarmListener（listener 形态不需要 SCHEDULE_EXACT_ALARM，按官方 exact alarm 文档验证）”，不要标 Android 17。
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-27
+- **类型**：数据/指标命名
+- **位置**：L442-L449 Android Vitals 监控指标
+- **问题**：“WakeLock 停滞率：因 WakeLock 导致的 ANR 比例”“JobScheduler/AlarmManager 触发频率”不是当前 Play Android Vitals 对 excessive wake locks 的准确指标表达。
+- **建议**：按 Android Vitals 官方口径改为 excessive partial wake locks / non-exempt wake lock session threshold，并区分 Play 政策指标、batterystats 本地聚合、Perfetto trace 观测。
