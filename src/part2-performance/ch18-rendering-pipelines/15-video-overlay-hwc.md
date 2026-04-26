@@ -18,17 +18,20 @@ related_chapters:
 - '18.6'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-24"
 task6_result: pass-light-edit
-task2b_result: pending
+task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-22'
+last_task2b_at: "2026-04-26T10:41:09+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 <!-- outline-start -->
@@ -91,6 +94,8 @@ graph LR
 5. 随后调用 `presentDisplay()`，把 `DEVICE` Layer 和 client target 一起提交给显示硬件。
 
 文中常写的 `HWC::validate()` / `HWC::present()` 是 SurfaceFlinger 包装层里的名字。HAL 真正暴露的是 `validateDisplay()`、`getChangedCompositionTypes()`、`acceptDisplayChanges()`、`setClientTarget()`、`presentDisplay()`。HWC3 把接口迁到 AIDL，但这套协商流程没有变成“纯 HWC 直出”，SurfaceFlinger 仍然负责 layer latch、client composition 和 fence 协调。
+
+HWC3 / AIDL 还引入能力声明来减少重复协商。设备声明 `Capability::SKIP_VALIDATE` 后，如果 layer 栈、buffer 属性和显示配置没有变化，SurfaceFlinger 可以跳过本帧 `validateDisplay()`，直接走 `presentDisplay()`。这只省掉“向 HWC 再确认一次”的开销，不代表 HWC 绕过 SurfaceFlinger；一旦 composition type、damage、color mode 或 fence 条件变化，下一帧仍要重新 validate。
 
 - **HWC2::Composition::DEVICE**：该 Layer 由显示硬件直接处理，常见于视频 YUV Layer。
 - **HWC2::Composition::CLIENT**：该 Layer 先由 SurfaceFlinger / GPU 合成，再作为 client target 交回 HWC。

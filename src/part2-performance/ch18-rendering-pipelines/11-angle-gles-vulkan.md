@@ -22,8 +22,8 @@ sources:
 - AOSP external/angle/
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
@@ -32,8 +32,12 @@ task9_reviewed_date: "2026-04-24"
 task9_reviewed_by: openclaw-task9
 task9_result: needs-rework
 review_round: 1
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-26T10:41:09+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 <!-- outline-start -->
@@ -102,6 +106,8 @@ AOSP 里，`GraphicsEnvironment.queryAngleChoice()` 会先决定当前进程该�
 3. 平台自带 allowlist，AOSP 资源里是 `config_angleAllowList`。
 
 如果结果是 `angle`，`GraphicsEnvironment.setupAngle()` 会先尝试 ANGLE APK，再回退到 system ANGLE。EGL loader 随后在 `frameworks/native/opengl/libs/EGL/Loader.cpp` 按当前选择加载 ANGLE 或 native GLES driver。ANGLE 路径的实际执行路径是 ANGLE frontend → vendor Vulkan driver → GPU。Vulkan driver 自身的行为差异仍然会透传到应用侧。
+
+Android 15 以后还要把 ANGLE 当成可更新的系统图形层（Updatable Graphics Layer）看。设备可以预装 `com.android.angle`，通过系统包或 Play Store 更新把 ANGLE 库带到新版本；`GraphicsEnvironment.setupAngle()` 会先查可用 ANGLE package，再决定是否回退到 system ANGLE。排查“为什么这台机型走 ANGLE”时，除 Settings 键值外，还要记录 `com.android.angle` 的版本、是否禁用，以及进程实际加载的 EGL/GLES 库。
 
 如果结果是 `native`，loader 会回到设备自带 GLES driver。调试时需要把设置值和运行时证据放在一起看，因为 ANGLE APK 缺失、库加载失败、system ANGLE 与 native driver 切换都会影响最终落点。
 

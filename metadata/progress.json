@@ -1,39 +1,39 @@
 {
-  "generated_at": "2026-04-26T08:55:00+08:00",
+  "generated_at": "2026-04-26T10:41:09+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 250,
-    "finalized": 77,
-    "ready-for-review": 141,
-    "ready-to-publish": 77,
-    "last_updated": "2026-04-26T08:55:00+08:00",
+    "finalized": 79,
+    "ready-for-review": 139,
+    "ready-to-publish": 79,
+    "last_updated": "2026-04-26T10:41:09+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 47,
-      "task2b_pending": 44,
-      "ready-to-publish": 77,
-      "task9_pending": 44,
+      "task6_pending": 50,
+      "task2b_pending": 46,
+      "ready-to-publish": 79,
+      "task9_pending": 37,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 172,
-      "revisiting": 42
+      "reviewed": 169,
+      "revisiting": 45
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 133,
-      "pending": 73,
+      "reviewed": 136,
+      "pending": 70,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 152,
-      "pending": 48,
+      "fixed": 150,
+      "pending": 50,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -42,30 +42,30 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 47,
-      "task2b_pending": 44,
-      "ready-to-publish": 77,
-      "task9_pending": 44,
+      "task6_pending": 50,
+      "task2b_pending": 46,
+      "ready-to-publish": 79,
+      "task9_pending": 37,
       "'task9_pending'": 2,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 172,
-      "revisiting": 42
+      "reviewed": 169,
+      "revisiting": 45
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 133,
-      "pending": 73,
+      "reviewed": 136,
+      "pending": 70,
       "'reviewed'": 1,
       "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 152,
-      "pending": 48,
+      "fixed": 150,
+      "pending": 50,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 2
@@ -2844,7 +2844,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T15:31:06+08:00"
+      "last_task9_at": "2026-04-25T15:31:06+08:00",
+      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch11-power/02-app-power-optimization.md": {
       "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
@@ -2858,10 +2861,10 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service docs",
       "confidence": "medium-high",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -2869,7 +2872,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T15:31:06+08:00"
+      "last_task9_at": "2026-04-25T15:31:06+08:00",
+      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch11-power/03-system-power-optimization.md": {
       "path": "src/part2-performance/ch11-power/03-system-power-optimization.md",
@@ -2883,10 +2889,10 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -2894,7 +2900,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T15:31:06+08:00"
+      "last_task9_at": "2026-04-25T15:31:06+08:00",
+      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch11-power/04-case-studies.md": {
       "path": "src/part2-performance/ch11-power/04-case-studies.md",
@@ -2929,18 +2938,21 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "pending",
+      "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T07:21:28+08:00"
+      "last_task9_at": "2026-04-22T07:21:28+08:00",
+      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch11-power/README.md": {
       "path": "src/part2-performance/ch11-power/README.md"
@@ -3254,10 +3266,10 @@
       "section": "'18.11'",
       "status": "ready-for-review",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-23",
@@ -3265,13 +3277,17 @@
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-24T08:27:00+08:00",
-      "review_round": "1"
+      "review_round": "1",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
       "title": "Flutter 渲染管线",
-      "chapter": "18.12",
-      "section": "18.12",
+      "chapter": "'18.12'",
+      "section": "'18.12'",
       "status": "ready-for-review",
       "applicable_versions": "Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android",
       "pipeline_stage": "task6_pending",
@@ -3286,8 +3302,8 @@
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-25T13:26:00+08:00",
-      "last_task2b_at": "2026-04-25T22:46:46+08:00",
-      "repaired_date": "2026-04-25",
+      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md": {
@@ -3317,9 +3333,9 @@
       "chapter": "18.14",
       "status": "ready-for-review",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
@@ -3328,7 +3344,10 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-23",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-23T00:30:00+08:00"
+      "last_task9_at": "2026-04-23T00:30:00+08:00",
+      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
@@ -3336,17 +3355,20 @@
       "chapter": "'18.15'",
       "status": "ready-for-review",
       "applicable_versions": "Android 7.0 (API 24) - Android 16 (API 36)",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "pending",
+      "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-22'",
-      "task9_reviewed_by": "openclaw-task9"
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",

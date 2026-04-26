@@ -53,7 +53,7 @@ sources:
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: "openclaw-task9"
@@ -61,9 +61,12 @@ last_task9_at: "2026-04-25T15:31:06+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-04-26T10:41:09+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 # App 耗电优化
@@ -386,6 +389,8 @@ Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入
 
 到点后，系统会回调 `Service.onTimeout(int, int)`；服务有几秒钟调用 `stopSelf()` 自行结束。若没有及时停止，它不再被视为 foreground service，Logcat 会记录 `RemoteServiceException`，继续拖住主线程或 Binder 回调时还可能演化为 ANR。
 
+`onTimeout()` 触发后，不适合再启动同类型的长时间 FGS 来延长预算。剩余收尾只做资源释放、进度持久化和替代任务调度；大文件上传或下载优先迁到 WorkManager、user-initiated data transfer job 或 DownloadManager。服务如果需要下一轮工作，等用户重新把 App 带到前台或系统重新给出预算，再由正常入口启动。
+
 [已验证: 官方文档, developer.android.com/develop/background-work/services/fgs/timeout]
 
 ### FGS 的功耗分析方法
@@ -423,7 +428,7 @@ Audio 的功耗优化主要关注两个方面：
 
 **避免使用不必要的高采样率**。多数普通媒体播放和语音业务用 44.1kHz 或 48kHz 就够了。96kHz 更常见于专业采集、低延迟监听或外接音频接口场景，是否值得开启要看 codec、输出路径和设备是否真的支持高采样率直通。若最终仍在 AudioFlinger / HAL 里被重采样，处理开销会上去，听感收益不一定能保留下来。
 
-**后台播放需要 FGS**。从 Android 12 开始，后台播放音乐必须使用 `mediaPlayback` 类型的 FGS。这是合理的要求——后台音频确实需要持续运行，但系统需要通过通知告知用户。
+**后台音频要拆开看 FGS 启动限制和类型声明**。后台音频如果需要长时间播放，应使用前台服务向用户展示持续通知。Android 12 的变化是限制后台直接启动 FGS：App 退到后台后，只有满足豁免条件才能启动前台服务。Android 14（targetSdk 34+）才强制要求在 manifest 中声明 `foregroundServiceType="mediaPlayback"`，并声明 `FOREGROUND_SERVICE_MEDIA_PLAYBACK` 权限。不要把 Android 12 的启动限制写成 Android 14 的类型强制。
 
 ## 与其他章节的关系
 
