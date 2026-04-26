@@ -12495,5 +12495,63 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T20:23:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.12",
+    "section_title": "Window Manager Service 与窗口管理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Window Manager Service 与窗口管理 存在源码/原理/版本问题，需回炉修正",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L137-L145、L431-L433 StartingWindow 创建/绘制职责",
+        "detail": "正文把 Android 12+ StartingWindow 写成 WMS 直接创建内容、由 system_server 绘制。复核 AOSP android-12/14/16：services 侧是 StartingSurfaceController / SplashScreenStartingData 管理 starting data 与请求；实际 starting window 创建/绘制在 WM Shell 的 StartingWindowController、StartingSurfaceDrawer、SplashscreenWindowCreator 路径，通过 TaskOrganizer add/removeStartingWindow 回调完成。把它写成 WMS 直接画，会混淆 WMS、Shell/SystemUI 与 App 进程边界。",
+        "suggestion": "改为“ATMS/WMS 决定是否需要 starting surface，StartingSurfaceController 生成请求；Android 12+ Shell starting-surface 组件创建 SplashScreen/TaskSnapshot 窗口并加入 Task；App 首帧完成后由 finishDrawing / removeStartingWindow 路径移除”。补对应源码锚点。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L286-L307 Window 动画与 Activity 切换动画",
+        "detail": "正文写 WMS 创建 AppWindowAnimator 并由 WindowAnimator 统一调度 Activity 切换动画。AOSP android-12/14/16 的 wm 目录没有 AppWindowAnimator.java；Android 16 也不再保留 AppTransition.java，现代转场主线是 TransitionController / Transition / SurfaceAnimator / SurfaceAnimationRunner，并可由 WM Shell/remote transition 参与。",
+        "suggestion": "删除 AppWindowAnimator 叙述；按 Android 12-14 legacy AppTransition/TransitionController 并存、Android 16 TransitionController/Shell transition 为主的口径重写 Activity/open-close/recents/predictive back 动画路径。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L316、L416 Predictive Back 版本线",
+        "detail": "正文写 Android 14 引入、Android 15 默认启用 Predictive Back。官方文档显示 Android 13/14 可通过开发者选项测试 predictive back animation；Android 15 起开发者选项移除，back-to-home/cross-task/cross-activity 系统动画对已 opt-in 的应用显示。",
+        "suggestion": "版本表改成 Android 13：引入 OnBackInvokedCallback / predictive back 早期能力；Android 14：完善跨 Activity / 自定义过渡接入；Android 15：系统动画不再藏在开发者选项后，但仍要求应用/Activity opt-in。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T21:29:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.16",
+    "section_title": "Sync Fence 框架与帧同步机制",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Sync Fence 框架与帧同步机制 存在源码/原理/版本问题，需回炉修正",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "frontmatter sources、L74-L75、L226-L237、L265 SkiaGraphitePipeline.cpp",
+        "detail": "正文和 frontmatter 多处标注 AOSP android-16.0.0_r1 的 frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp。复核 android-16.0.0_r1 与 main 的该目录，存在 SkiaOpenGLPipeline.cpp、SkiaVulkanPipeline.cpp、SkiaGpuPipeline.cpp，但不存在 SkiaGraphitePipeline.cpp。",
+        "suggestion": "把 Android 16 后端锚点改成 SkiaOpenGLPipeline.cpp + SkiaVulkanPipeline.cpp + renderthread/VulkanManager.cpp；若要讨论 Graphite，必须单独标注“非 AOSP android-16.0.0_r1 路径/待验证”，不能写成已验证源码。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L226-L235 Android 14-16 后端调度与 release fence 路径",
+        "detail": "由于把 Android 16 Vulkan/HWUI 后端写成 Graphite，release fence 生成路径缺了 Vulkan 分支。AOSP android-16 SkiaVulkanPipeline.cpp 会调用 vulkanManager().createReleaseFence(...)，VulkanManager.cpp 通过 semaphore / sync fd 生成 fence；GL 分支才是 EglManager::createReleaseFence(...)。",
+        "suggestion": "版本演进小节拆成 GL/EGL 与 Vulkan 两条：GL 看 SkiaOpenGLPipeline.cpp + EglManager::createReleaseFence；Vulkan 看 SkiaVulkanPipeline.cpp + VulkanManager::createReleaseFence / presentFence，并说明 Trace 观察点差异。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T21:29:00+08:00",
+    "status": "pending"
   }
 ]
