@@ -9390,8 +9390,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-7.8-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-7.8-external-review.md",
+    "completed_at": "2026-04-26T17:47:55+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "resolution": "external review P0/P1 均为“无”，章节已是 finalized；完成 stale pending 队列清理，未改正文。"
   },
   {
     "section": "7.9",
@@ -9410,8 +9413,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-7.9-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-7.9-external-review.md",
+    "completed_at": "2026-04-26T17:47:55+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "resolution": "external review P0/P1 均为“无”，章节已是 finalized；完成 stale pending 队列清理，未改正文。"
   },
   {
     "section": "8.5",
@@ -9542,8 +9548,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-9.5-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-9.5-external-review.md",
+    "completed_at": "2026-04-26T17:47:55+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "resolution": "external review P0/P1 均为“无”，仅完成队列清理；因章节 task9_result 仍为 needs-rework，未自动晋升 finalized。"
   },
   {
     "section": "11.2",
@@ -11241,8 +11250,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T17:47:55+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "resolution": "修正 Flutter VSync/Choreographer 事实错误，补充 BufferQueue 边界、PlatformView TLHC/SurfaceProducer/ImageReader 版本分支、Perfetto trace 过滤与线程名差异；章节送回 Task 6。"
   },
   {
     "section": "2.12",

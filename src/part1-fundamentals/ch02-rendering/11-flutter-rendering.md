@@ -12,8 +12,8 @@ polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-05"
-last_verified_against: "Flutter 3.27 / Impeller default on Android API 29+"
+last_verified: "2026-04-26"
+last_verified_against: "Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java / FlutterRenderer.java) + Flutter 3.27 docs"
 confidence: medium
 sources:
   - type: official
@@ -22,11 +22,17 @@ sources:
     path: "https://docs.flutter.dev/perf/impeller"
   - type: blog
     path: "https://github.com/flutter/flutter/wiki/Impeller"
+  - type: source
+    path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/view/VsyncWaiter.java"
+  - type: source
+    path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java"
+  - type: source
+    path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java"
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
@@ -39,8 +45,8 @@ task2b_result: fixed
 
 - 🔹 Flutter 的渲染架构：Framework(Dart) → Engine(C++) → Platform Embedder 三层模型
 - 🔹 Flutter 的线程模型：Platform / UI / Raster / IO 四线程职责与 Perfetto 中的 Track 对应
-- 🔹 与原生 Android 渲染管线的根本区别：无 Choreographer、无 RenderThread、自管理 VSync 监听
-- 🔹 PlatformView 的两种合成模式（Virtual Display vs Hybrid Composition）及性能影响
+- 🔹 与原生 Android 渲染管线的根本区别：通过 Choreographer 获取 VSync、跳过 ViewRootImpl Traversal、无 RenderThread
+- 🔹 PlatformView 的 Virtual Display / Hybrid Composition / TLHC 多路径及性能影响
 - 🔹 常见性能问题：Shader 编译卡顿、Widget 过度重建、列表滚动卡顿
 - 🔹 Impeller 引擎的 AOT shader 编译设计与 Skia 的对比
 - 🔹 性能分析工具：Flutter DevTools + Perfetto 系统级分析的结合使用
@@ -63,11 +69,11 @@ task2b_result: fixed
 
 ## 为什么要了解 Flutter 的渲染
 
-如果我们在 Perfetto 中看过一个 Flutter 应用的 Trace，我们会发现一件奇怪的事：看不到熟悉的 Choreographer.doFrame，看不到 RenderThread，甚至连 ViewRootImpl.Traversal 都没有。取而代之的是一些我们不太熟悉的线程——一个叫 `1.platform`，一个叫 `1.raster`，还有一个叫 `1.ui`。
+在 Perfetto 中分析 Flutter 应用时，最先变的是线程视角。原生应用里常看的 `ViewRootImpl.Traversal`、RenderThread 绘制阶段，在 Flutter 自绘 UI 路径上不会出现；有些 trace 会在 `1.platform` 或 `io.flutter.platform` 上看到 `Choreographer#doFrame`，那是 Flutter 订阅系统 VSync 的入口，不代表它回到了原生 View 绘制流程。
 
-这不是因为 Flutter 出了问题，而是因为 Flutter 从根本上走了另一条路：它不使用 Android 原生的 View 体系来渲染 UI。Flutter 自己管理整个渲染管线，从 Widget 树的构建到最终的像素输出，全部在 Flutter Engine 内部完成。这意味着我们在本书前面章节学到的 Choreographer、MainThread/RenderThread 协作、Hardware Layer 这些机制，对 Flutter 应用来说大部分不适用。
+Flutter 的 Android Embedder 通过 `VsyncWaiter` 调用 `Choreographer.postFrameCallback()`。回调到达后，`VsyncWaiter.FrameCallback#doFrame()` 把时间戳交给 `FlutterJNI.onVsync()`，后续的 Build、Layout、Paint 和 Raster 调度由 Flutter Engine 接管。Flutter 不使用 Android 原生 View 树渲染自己的 Widget，也没有原生应用里的 RenderThread 分工。
 
-这种"另起炉灶"的设计带来了一个直接的后果：当 Flutter 应用出现性能问题时，我们不能直接用分析原生 Android 应用的那一套方法。如果 Flutter 应用在列表滚动时掉帧，我们盯着 MainThread 的 CPU slice 看，很可能什么异常都找不到——因为真正干活的是 `1.raster` 线程。
+这个差异会改变排查入口。列表滚动卡顿时，只看 Android 主线程的 CPU slice 很容易漏掉问题；`1.ui` / `io.flutter.ui` 和 `1.raster` / `io.flutter.raster` 才是 Flutter 自绘路径的主观察对象。
 
 所以这一章要解决的问题是：Flutter 在 Android 上到底是怎么渲染的？它的渲染管线和原生 Android 有什么本质区别？当 Flutter 应用出现性能问题时，我们应该看哪里、怎么分析？
 
@@ -81,7 +87,7 @@ Engine 层是 Flutter 的核心引擎，用 C++ 编写。它负责两件事：�
 
 平台嵌入层是一个比较薄的层，负责把 Flutter Engine 嵌入到具体的平台中。在 Android 上，它创建和管理 FlutterView（通常是一个 SurfaceView 或 TextureView），处理 Android 的生命周期事件，并将触摸等输入事件转发给 Flutter Engine。
 
-这种三层架构的关键在于：从 Framework 层到 Engine 层，Flutter 完全掌控了渲染过程。它不需要经过 Android 的 measure/layout/draw 流程，不需要经过 Choreographer 调度，也不需要通过 SurfaceFlinger 的 BufferQueue 机制来和系统合成器交互——至少在 Flutter 自己的渲染部分是这样。Flutter 直接在自己的 Surface 上绘制，然后把绘制好的帧通过 Android 的 Surface 机制提交给 SurfaceFlinger。
+这套三层结构把原生 View 体系留在 Android Embedder 边界。Widget 的 Build/Layout/Paint 不走 `ViewRootImpl.performTraversals()`，Raster 也不走原生应用的 RenderThread；但 Flutter 仍然通过 Android `Surface` / `ANativeWindow` 向 BufferQueue 提交 buffer，SurfaceFlinger 仍负责最终合成。差异在 producer：原生应用通常由 HWUI/RenderThread 生产图层内容，Flutter 自绘 UI 由 Engine 的 Raster 路径生产。
 
 `[图：Flutter 三层架构与 Android 系统服务的关系。展示 Framework(Dart) → Engine(C++) → Platform Embedder(Android) 的层次关系，以及与 SurfaceFlinger、InputManager 的交互点]`
 
@@ -97,7 +103,7 @@ Flutter 的线程模型和原生 Android 差异很大，理解它对性能分析
 
 **IO 线程**（`1.io`）：主要负责从磁盘或网络加载图片资源，并将解码后的图片数据上传到 GPU 内存。这个线程的任务比较单一，通常不会成为性能瓶颈。
 
-在 Perfetto 中，我们可以清晰地看到这四个线程。一个正常运行的 Flutter 应用，每一帧的工作流程大致是这样的：UI 线程执行 Build/Layout/Paint 生成 DisplayList → Raster 线程接收 DisplayList 并执行光栅化 → 通过 Surface 提交给 SurfaceFlinger。
+在 Perfetto 中，线程名可能显示为 `1.ui`、`1.raster`，也可能显示为 `io.flutter.ui`、`io.flutter.raster`；内核线程名长度和 Embedder 命名都会影响展示。搜索 `io.flutter` 通常比只搜 `1.ui` 更稳。一个正常运行的 Flutter 应用，每一帧的工作流程大致是这样的：UI 线程执行 Build/Layout/Paint 生成 DisplayList → Raster 线程接收 DisplayList 并执行光栅化 → 通过 Surface 提交给 SurfaceFlinger。
 
 `[图：Flutter 线程模型在 Perfetto 中的表现。展示 1.platform、1.ui、1.raster、1.io 四个线程的 Track，标注一帧在 UI 线程和 Raster 线程上的时序关系]`
 
@@ -107,31 +113,33 @@ Flutter 的线程模型和原生 Android 差异很大，理解它对性能分析
 
 ### 渲染管线的根本区别
 
-原生 Android 的渲染管线我们已经在前面章节详细讲过了：VSync → Choreographer → MainThread(doFrame: Input/Animation/Traversal) → RenderThread → SurfaceFlinger。这条管线有几个关键特征：它是 VSync 驱动的，渲染工作由系统的 VSync-app 信号触发；MainThread 和 RenderThread 是流水线式的协作关系；最终的帧提交要通过 BufferQueue 和 SurfaceFlinger。
+原生 Android 的渲染管线我们已经在前面章节详细讲过了：VSync → Choreographer → MainThread(doFrame: Input/Animation/Traversal) → RenderThread → SurfaceFlinger。这条管线有几个特征：它由系统的 VSync-app 信号触发；MainThread 和 RenderThread 是流水线式的协作关系；最终的帧提交要通过 BufferQueue 和 SurfaceFlinger。
 
-Flutter 的渲染管线则完全由自己的 Engine 驱动。UI 线程不需要等待 VSync 信号来开始工作——当 Dart 代码调用 setState() 时，Framework 会标记需要重建的 Element，然后在下一帧的回调中执行 Build/Layout/Paint。这个"下一帧的回调"虽然也通过 vsync waiter 来同步（Flutter Engine 内部会监听 VSync 信号），但整个调度逻辑是 Engine 自己管理的，不经过 Choreographer。
+Flutter 的帧起点仍来自系统 VSync。Android 侧 `VsyncWaiter` 注册 `FlutterJNI.AsyncWaitForVsyncDelegate`，在 `asyncWaitForVsync()` 中调用 `Choreographer.getInstance().postFrameCallback()`；回调进入 `FrameCallback#doFrame()` 后再调用 `flutterJNI.onVsync(delay, refreshPeriodNanos, cookie)`。Flutter 使用 Choreographer 获取系统帧信号，随后由 Engine 接管 Dart 与 Raster 调度。它没有脱离 Choreographer 自己计时，也不会进入原生 View 的 traversal 流程。
 
-这意味着在 Perfetto 中，我们看不到 Choreographer 的 doFrame 标记。取而代之的是 Flutter Engine 自己的 trace event，比如 `FrameRequest`、`BeginFrame`、`DrawFrame` 等。
+拿到帧信号之后，Dart 层的 `setState()` 只负责标记需要重建的 Element；Build/Layout/Paint 在 Flutter Framework 内生成 DisplayList，再交给 Raster 线程执行 Skia 或 Impeller 绘制。在 Perfetto 中，如果开启 `view`/`gfx` 相关 atrace 类别，`1.platform` 或 `io.flutter.platform` 上可能出现 `Choreographer#doFrame`。判断是否走原生 View 绘制，不看有没有 Choreographer，而看后面有没有 `ViewRootImpl.Traversal`、HWUI / RenderThread 绘制和对应的 Android View 层级工作。Flutter 自绘 UI 的主路径会更多显示为 `BeginFrame`、`DrawFrame`、`GPURasterizer::DrawToSurface` 等 Engine 事件。
 
 ### Surface 的使用方式
 
 Flutter 在 Android 上通过一个 Surface（通常是 SurfaceView 或 TextureView 提供的 Surface）来输出渲染结果。Flutter Engine 在 Raster 线程上完成光栅化后，直接将帧 buffer queue 到这个 Surface 中。SurfaceFlinger 在 VSYNC-SF 到来时，像合成其他任何 Surface 一样合成 Flutter 的 Surface。
 
-还有一个细节：Flutter 的 Surface 不经过 BufferQueue 的 Android 原生渲染管线。原生 Android 中，App 通过 queueBuffer 将 GraphicBuffer 提交给 BufferQueue，然后 SurfaceFlinger 通过 acquireBuffer 拿到 buffer 进行合成。Flutter 也走这个路径，但 Flutter 的 queueBuffer 是 Engine 层直接调用的，不经过 Framework 层的 RenderThread。
+还有一个细节：Flutter 没有绕过 BufferQueue。原生 Android 中，App 通过 `queueBuffer` 将 `GraphicBuffer` 提交给 BufferQueue，然后 SurfaceFlinger 通过 `acquireBuffer` 拿到 buffer 进行合成；Flutter 也走 Surface/BufferQueue 这条系统边界。Flutter 的 buffer producer 在 Engine Raster 路径里，提交动作来自 Engine 对 `Surface` / `ANativeWindow` 的使用，不经过 Android Framework 的 HWUI / RenderThread。
 
-`[已验证: Flutter Engine 使用 Skia/Impeller 直接在 Surface 上绘制并通过 ANativeWindow_queueBuffer 提交帧, flutter.dev]`
+`[已验证: Flutter Engine 通过 Android Surface/ANativeWindow 提交帧，SurfaceFlinger 仍按普通 layer 合成；Engine VSync 入口见 VsyncWaiter.java, flutter/engine]`
 
 ### PlatformView：Flutter 与原生 View 的桥梁
 
 Flutter 应用有时候需要嵌入原生的 Android View——比如 WebView、MapView、或者某些只有 Android 原生实现的控件。这就是 PlatformView 的工作。
 
-PlatformView 有两种合成模式：**Virtual Display** 模式和 **Hybrid Composition** 模式。
+PlatformView 不能再只按“两种模式”理解。Flutter Engine 源码里至少有三条可核对路径：
 
-Virtual Display 模式是早期方案，它将原生 View 的内容渲染到一个 VirtualDisplay 的 Surface 上，然后 Flutter 通过 Texture Widget 来显示这个 Surface 的内容。这种方式有一个严重的性能问题：数据需要经过 GPU → CPU → GPU 的往返传输（在 Android 10 之前），导致每帧有显著的额外开销。
+- **Virtual Display**：早期路径，把原生 View 渲染到 VirtualDisplay 的 Surface，再通过 Texture Widget 显示。Android 10 之前常见的额外拷贝来自这条路径，滚动和输入同步也更容易出问题。
+- **Hybrid Composition / PlatformViewLayer**：把原生 View 放回 Android View 层级，适合承载 `SurfaceView` 这类无法稳定投影到 TextureLayer 的 View。`PlatformViewsController#createForPlatformViewLayer()` 会进入 `configureForHybridComposition()`，这条路径仍可能带来 Platform 线程上的布局、offset 和同步开销。
+- **TextureLayer Hybrid Composition（TLHC）**：`PlatformViewsController#createForTextureLayer()` 的默认路径。源码注释把它标为 default / recommended for better performance；条件是 API 23+，且嵌入 View 不能包含需要 Virtual Display 的类型（典型是 `SurfaceView`）。Android 侧用 `PlatformViewWrapper` 把 View 放在 View 层级中，再把画面投影到 `PlatformViewRenderTarget`，由 Engine 以 TextureLayer 方式合成。
 
-Hybrid Composition 模式是当前的推荐方案。它不再通过 Texture 中转，而是直接将原生 View 添加到 Android 的 View 树中，让 Flutter 的 Surface 和原生 View 在 SurfaceFlinger 层面进行合成。这种方式在 Android 10+ 上性能更好，因为 Flutter 官方文档明确提到，Android 10 之前每一帧都要经历一次“显存 → 主存 → GPU 纹理”的往返拷贝，而 Android 10 及之后只需要一次拷贝。这才是 Hybrid Composition 在系统层面的关键性能拐点。`[已验证: Flutter Platform Views 文档, https://docs.flutter.dev/platform-integration/android/platform-views]`
+现代 Flutter 的 PlatformView 性能边界还要看 render target。`FlutterRenderer#createSurfaceProducer()` 在 API 29+ 且 AHB 可用时优先使用 `ImageReaderSurfaceProducer`，否则回退到 `SurfaceTextureSurfaceProducer`；`ImageReaderPlatformViewRenderTarget` 在 API 33+ 才能通过 `Image.getFence()` 等待同步 fence。这个分支解释了为什么 Android 10、Android 13 以后 PlatformView 的表现不能只套用早期 Hybrid Composition 结论。
 
-但 Hybrid Composition 也有代价。当 Flutter 内容和 PlatformView 内容需要同时显示时（比如 Flutter 的 UI 叠加在 WebView 上方），Flutter 必须在 Platform 线程（也就是 Android 主线程）上完成自己的 UI 合成。这意味着此时 Flutter 的渲染会退回到和原生应用一样的主线程依赖，之前提到的线程模型优势就不复存在了。在 Perfetto 中，我们会看到此时 `1.platform` 线程的 CPU 占用明显增加，而 `1.raster` 线程可能处于等待状态。
+分析 PlatformView 卡顿时，不要直接把所有问题归因成“线程合并”。如果走 PlatformViewLayer / Hybrid fallback，`1.platform` 上通常会出现更重的 View hierarchy、layout/offset/sync 工作；如果走 TLHC + ImageReader/SurfaceProducer，开销更多体现在 render target resize、image acquire、fence 等待和 SurfaceFlinger 合成上。WebView、MapView、SurfaceView、叠加动画和滚动列表会触发不同路径，Perfetto 里要同时看 `io.flutter.platform`、`io.flutter.raster` 和 SurfaceFlinger。
 
 到了 Android 14 这一代，公开可核对的 Flutter 官方资料并没有给出“Hybrid Composition 再减少一次拷贝”这类新的通用结论。更实际的变化是 PlatformView 相关路径经历了一轮兼容性修复，Flutter 3.24 的 release notes 里可以直接看到 `Workaround HardwareRenderer breakage in Android 14` 和 `Fix another instance of platform view breakage on Android 14` 这样的修复项。Android 14+ 的收益更偏向 PlatformView/Surface 管理路径的稳定性修复，而不是 Hybrid Composition 的基本合成模型被重新设计。`[已验证: Flutter 3.24 release notes, https://docs.flutter.dev/release/release-notes/release-notes-3.24.0]`
 
@@ -190,7 +198,7 @@ EOF
 - CPU 整体使用率：看 Flutter 的多个线程是否在争抢 CPU 时间
 - SurfaceFlinger Track：看 Flutter 的 Surface 合成是否正常
 
-在 Perfetto 中，Flutter Engine 会输出自己的 trace event。我们可以通过搜索 `flutter` 关键字来快速定位相关的 slice。常见的有 `FlutterEngine::BeginFrame`、`GPURasterizer::DrawToSurface` 等。
+在 Perfetto 中，Flutter Engine 会输出自己的 trace event。系统抓 trace 时要保留 `gfx`、`view` 这类 atrace 类别，并在 UI 里同时搜索 `flutter`、`io.flutter`、`BeginFrame`、`DrawFrame`。常见 slice 包括 `FlutterEngine::BeginFrame`、`GPURasterizer::DrawToSurface`；不同 Flutter 版本的事件名会变化，过滤时不要只依赖单个字符串。
 
 ### 自定义 Trace
 
@@ -349,4 +357,7 @@ Flutter 的渲染虽然自成体系，但它仍然运行在 Android 系统之上
 - Flutter 性能最佳实践：https://docs.flutter.dev/perf/best-practices
 - PlatformView 性能：https://docs.flutter.dev/platform-integration/android/platform-views
 - Flutter Engine 源码（Impeller 目录）：https://github.com/flutter/engine/tree/main/impeller
+- Flutter Engine VSyncWaiter 源码：https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/view/VsyncWaiter.java
+- Flutter Engine PlatformViewsController 源码：https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java
+- Flutter Engine FlutterRenderer SurfaceProducer 源码：https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java
 - Flutter DevTools 文档：https://docs.flutter.dev/tools/devtools
