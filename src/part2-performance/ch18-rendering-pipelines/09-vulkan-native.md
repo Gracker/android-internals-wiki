@@ -11,11 +11,11 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
-task6_result: pass-light-edit
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-27"
+task6_result: "pass-light-edit"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed

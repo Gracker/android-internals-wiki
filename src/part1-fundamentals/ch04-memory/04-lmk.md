@@ -4,7 +4,7 @@ section: "4.4"
 chapter: "4.4"
 status: ready-for-review
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -28,9 +28,9 @@ sources:
     path: "https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -81,7 +81,7 @@ repaired_by: openclaw-task2b
 
 Linux 内核有自己的 OOM Killer，但它的设计面向服务器场景——服务器上进程的重要性通常由管理员预设，而且 OOM Killer 触发时系统已经处于严重内存不足的状态，响应往往又慢又粗暴。Android 需要一种更精细的机制：在内存还没耗尽之前，就根据 App 对用户的"重要程度"有序地回收进程，保证前台体验不受影响。
 
-这就是 Low Memory Killer（LMK）存在的意义。它不是一个简单的"内存不够就杀进程"的工具，而是一套根据 Android 应用生命周期设计的分级回收策略——先杀谁、后杀谁、什么条件下才杀前台 App，都有明确的规则。
+这就是 Low Memory Killer（LMK）存在的意义。LMK 是一套根据 Android 应用生命周期设计的分级回收策略——先杀谁、后杀谁、什么条件下才杀前台 App，都有明确的规则。
 
 ## 从内核模块到用户空间守护进程的演进
 
@@ -484,6 +484,6 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 ### PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md
 - 类型：DeepResearch 调研结果
-- 摘要：从内核 `psi.c` 到 `system/memory/lmkd/lmkd.cpp` 串起 Android 10–15 的内存压力判定链路，解释 PSI 如何替代 vmpressure、怎样结合 thrashing 和 oom_score_adj 触发 userspace lmkd 杀进程，并给出 AOSP 与 LPC 实测依据。
+- 摘要：从内核 `psi.c` 到 `system/memory/lmkd/lmkd.cpp` 串起 Android 10–15 的内存压力判定流程，解释 PSI 如何替代 vmpressure、怎样结合 thrashing 和 oom_score_adj 触发 userspace lmkd 杀进程，并给出 AOSP 与 LPC 实测依据。
 - 注入时间：2026-04-24
-- 价值：把 PSI→lmkd 的源码链路讲透了，适合补强 LMK 的现代实现细节。
+- 价值：把 PSI→lmkd 的源码调用流程讲透了，适合补强 LMK 的现代实现细节。
