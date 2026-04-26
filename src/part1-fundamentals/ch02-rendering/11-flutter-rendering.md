@@ -5,7 +5,7 @@ chapter: "2.11"
 status: ready-for-review
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
 review_notes: "task6 re-review (revisiting): pass-light-edit。L1禁用词4处已修复。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
 polish_count: 1
@@ -30,9 +30,9 @@ sources:
     path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java"
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7", "18.12"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
