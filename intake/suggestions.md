@@ -4450,3 +4450,16 @@
 - **问题**：关于 trace 的阅读建议不够深入，缺少具体系统调用关键字
 - **建议**：补充常见 D 状态阻塞点如 fsync、fdatasync、__x64_sys_read 等
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-26
+- **类型**：源码准确性 / 边界条件
+- **位置**：L276 `setText()` / `setImageDrawable()` 与 `invalidate()` 的关系
+- **问题**：正文把文字、图标变化归为“这些方法内部会自动调用 `invalidate()`”。`TextView#setText()` 在宽高为 `wrap_content`、动态高度变化或重新生成 layout 时会进入 `checkForRelayout()`，并调用 `requestLayout()` + `invalidate()`；不是稳定的 draw-only 路径。
+- **建议**：改成条件化说明：固定尺寸且文本 layout 高度不变时可只重绘；文字内容、行数、字体度量或 drawable 尺寸影响测量结果时，需要按 `requestLayout()` 成本分析。
+
+## [Task9 Deep Review] 7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销 — 2026-04-26
+- **类型**：源码准确性 / Trace 观察点
+- **位置**：L429 AsyncLayoutInflater 后台线程描述
+- **问题**：正文说 Perfetto 中通常看到 `AsyncLayoutInflater` 的 `HandlerThread`。AndroidX `AsyncLayoutInflater` 当前实现使用单例 `InflateThread extends Thread` + `ArrayBlockingQueue`，完成后通过 Handler / 可选 Executor 回调；不是 `HandlerThread`。
+- **建议**：把 Trace 观察点改成“后台 InflateThread / AsyncLayoutInflater 任务线程”，同时说明回调是否回主线程取决于是否传入 `callbackExecutor`。
+
