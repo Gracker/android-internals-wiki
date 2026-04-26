@@ -1,20 +1,19 @@
 {
-  "generated_at": "2026-04-26T19:47:00+08:00",
+  "generated_at": "2026-04-26T20:23:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 250,
-    "finalized": 83,
-    "ready-for-review": 135,
+    "finalized": 84,
+    "ready-for-review": 134,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T19:33:53+08:00",
+    "last_updated": "2026-04-26T20:23:00+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 43,
-      "task2b_pending": 52,
-      "ready-to-publish": 83,
-      "task9_pending": 35,
-      "'task9_pending'": 1,
+      "task6_pending": 41,
+      "task2b_pending": 59,
+      "ready-to-publish": 84,
+      "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
@@ -24,29 +23,28 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 144,
-      "pending": 63,
+      "reviewed": 152,
+      "pending": 55,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 146,
-      "pending": 55,
-      "'pending'": 2,
+      "fixed": 140,
+      "pending": 62,
       "idle": 4,
+      "'pending'": 1,
       "'fixed'": 1
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 43,
-      "task2b_pending": 53,
-      "ready-to-publish": 83,
-      "task9_pending": 34,
-      "'task9_pending'": 1,
+      "task6_pending": 41,
+      "task2b_pending": 59,
+      "ready-to-publish": 84,
+      "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
@@ -56,18 +54,18 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 145,
-      "pending": 62,
+      "reviewed": 152,
+      "pending": 55,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 145,
-      "pending": 56,
-      "'pending'": 2,
+      "fixed": 140,
+      "pending": 62,
       "idle": 4,
+      "'pending'": 1,
       "'fixed'": 1
     }
   },
@@ -694,18 +692,20 @@
       "last_verified": "2026-04-12",
       "last_verified_against": "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1, source.android.com docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
+      "task2b_result": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T12:34:00+08:00"
+      "last_task9_at": "2026-04-26T20:23:00+08:00",
+      "section": "2.6",
+      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。"
     },
     "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md": {
       "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
@@ -1109,18 +1109,20 @@
       "last_verified": "2026-04-23",
       "last_verified_against": "AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
+      "task2b_result": "pending",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T17:08:00+08:00"
+      "last_task9_at": "2026-04-26T20:23:00+08:00",
+      "section": "3.1",
+      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。"
     },
     "src/part1-fundamentals/ch03-input/02-touch-performance.md": {
       "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
@@ -1334,18 +1336,19 @@
       "last_verified": "2026-03-31",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
+      "task2b_result": "pending",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T20:06:23+08:00"
+      "last_task9_at": "2026-04-26T20:23:00+08:00",
+      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 5，P1 2，P2 1。"
     },
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md": {
       "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
@@ -6055,6 +6058,22 @@
         }
       ],
       "log": "logs/deep-review/2026-04-26-19-deep-review.md"
+    },
+    {
+      "date": "2026-04-26",
+      "time": "20:23",
+      "task": "task9-deep-review",
+      "sections_reviewed": [
+        "2.6 SurfaceFlinger 与合成",
+        "3.1 Input 事件分发全流程",
+        "4.4 Low Memory Killer"
+      ],
+      "results": {
+        "2.6": "needs-rework",
+        "3.1": "needs-rework",
+        "4.4": "needs-rework"
+      },
+      "log": "logs/deep-review/2026-04-26-20-deep-review.md"
     }
   ],
   "progress": {
@@ -6576,6 +6595,36 @@
         "updated_by": "openclaw-task9",
         "updated_date": "2026-04-26",
         "last_task9_at": "2026-04-26T19:33:53+08:00"
+      },
+      "2.6": {
+        "date": "2026-04-26",
+        "time": "20:23",
+        "task": "task9-deep-review",
+        "result": "needs-rework",
+        "log": "logs/deep-review/2026-04-26-20-deep-review.md",
+        "p0": 1,
+        "p1": 2,
+        "p2": 2
+      },
+      "3.1": {
+        "date": "2026-04-26",
+        "time": "20:23",
+        "task": "task9-deep-review",
+        "result": "needs-rework",
+        "log": "logs/deep-review/2026-04-26-20-deep-review.md",
+        "p0": 1,
+        "p1": 2,
+        "p2": 2
+      },
+      "4.4": {
+        "date": "2026-04-26",
+        "time": "20:23",
+        "task": "task9-deep-review",
+        "result": "needs-rework",
+        "log": "logs/deep-review/2026-04-26-20-deep-review.md",
+        "p0": 5,
+        "p1": 2,
+        "p2": 1
       }
     }
   },
