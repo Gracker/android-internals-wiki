@@ -26,20 +26,26 @@ sources:
     path: "https://developer.android.com/topic/performance/memory"
   - type: blog
     path: "https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html"
+  - type: aosp
+    path: "frameworks/base/core/java/android/content/pm/ApplicationInfo.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskSupervisor.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: "pass-light-edit"
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T02:20:00+08:00"
-review_notes: "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace lmkd 版本、oom_score_adj/HEAVY_WEIGHT_ADJ/minfree、16KB 数据、CachedAppOptimizer 版本表，并补 Perfetto SQL 观察点。"
-last_task2b_at: "2026-04-27T01:50:00+08:00"
+review_notes: "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace lmkd 版本、oom_score_adj/HEAVY_WEIGHT_ADJ/minfree、16KB 数据、CachedAppOptimizer 版本表，并补 Perfetto SQL 观察点。2026-04-27 03:40 task2b: 修复 Task9 P95 HEAVY_WEIGHT_APP_ADJ manifest 属性，改为 android:cantSaveState / PRIVATE_FLAG_CANT_SAVE_STATE，并补 AMS/ATMS 源码锚点。"
+last_task2b_at: "2026-04-27T03:40:00+08:00"
 task2b_fixed_by: openclaw-task2b
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
@@ -157,7 +163,7 @@ Linux 内核有两个 OOM 相关的进程调整值：
 **可以被杀的层级（300 到 900）：**
 
 - **BACKUP_APP_ADJ（300）**：正在执行备份操作的进程。被杀了损失不大，下次可以重新备份。
-- **HEAVY_WEIGHT_APP_ADJ（400）**：声明 `android:heavyWeight="true"` 的重量级 Activity 进程，用于保留较重的 UI 状态。电池优化白名单和前台服务通知属于另一组机制。
+- **HEAVY_WEIGHT_APP_ADJ（400）**：在 `<application>` 上声明 `android:cantSaveState="true"` 后，系统会设置 `ApplicationInfo.PRIVATE_FLAG_CANT_SAVE_STATE`。AMS / ATMS 根据这个 flag 把对应 package 作为 heavy-weight process 处理，`ProcessList` 再把这类进程映射到 `HEAVY_WEIGHT_APP_ADJ`。电池优化白名单和前台服务通知属于另一组机制。
 - **SERVICE_ADJ（500）**：运行着后台 Service 的进程。
 - **HOME_APP_ADJ（600）**：桌面（Launcher）进程。虽然不在前台，但用户按 Home 键会立刻用到。
 - **PREVIOUS_APP_ADJ（700）**：上一个使用的 App。保留它可以让用户快速切回去。
