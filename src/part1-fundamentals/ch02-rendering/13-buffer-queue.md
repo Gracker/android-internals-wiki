@@ -29,8 +29,8 @@ drafted_by: openclaw-task2a
 drafted_date: '2026-04-04'
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
-last_verified: '2026-04-11'
-last_verified_against: AOSP main + android-11.0.0_r48 + android-10.0.0_r47 + android-4.1.2_r1
+last_verified: '2026-04-26'
+last_verified_against: AOSP main + android-14.0.0_r1 + android-12/11/10/4.1 tags + external review
 sources:
 - type: aosp
   path: frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h
@@ -45,16 +45,20 @@ sources:
 - type: aosp
   path: frameworks/native/libs/gui/BufferQueueCore.cpp
 - type: aosp
+  path: frameworks/native/libs/gui/BufferQueueProducer.cpp
+- type: aosp
+  path: frameworks/native/libs/gui/BufferQueueConsumer.cpp
+- type: aosp
   path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
 - type: aosp
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_result: "pass-light-edit"
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 ---
@@ -181,7 +185,7 @@ AOSP 在 `BufferItem.h` 里把 `mFence` 注释为“buffer idle 时 signal 的 f
 
 如果把 BLAST 只概括成“少了一次 Binder hop”，说轻了。它真正解决的问题，是 buffer 提交和 geometry transaction 以前走的是两条线，窗口尺寸、crop、transform、buffer 内容不一定能落在同一帧。
 
-AOSP tag 也能直接说明它的引入边界。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`，`android-11.0.0_r48` 已经有了这个文件，同时 `ViewRootImpl.java` 里也已经有 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。也就是说，BLAST 至少从 Android 11 的窗口路径里已经正式出现了。
+AOSP tag 只能说明 BLAST 的代码进入时间，不能直接等同于所有窗口的默认路径。`android-10.0.0_r47` 里没有 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`，`android-11.0.0_r48` 已经有这个文件，`ViewRootImpl.java` 里也能看到 `mBlastBufferQueue` 和 `new BLASTBufferQueue(...)`。Android 11 可以确认已有 BLAST 窗口提交流程；常规 Activity 窗口全面转向 BLAST，要按 Android 12（S）作为默认分界更稳。
 
 ```java
 // frameworks/base/core/java/android/view/ViewRootImpl.java
@@ -219,7 +223,7 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 
 <!-- AIW-源码调研-2026-04-19 -->
 
-本节前面描述了 BLAST 的行为特征，这一小节专门对比 Legacy（Android 11 及之前）和 BLAST（Android 12+）在 **Consumer 端驻留位置**这一根本维度上的差异。这是理解 BLAST 解决了什么问题的核心前提。
+本节前面描述了 BLAST 的行为特征，这一小节专门对比 Legacy 路径和 Android 12+ 常规窗口默认 BLAST 路径在 **Consumer 端驻留位置** 这一维度上的差异。这是理解 BLAST 解决了什么问题的前提。
 
 ### Legacy 模式：Consumer 在 SurfaceFlinger 进程
 
@@ -232,7 +236,7 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 
 ### BLAST 模式：Consumer 移入 App 进程
 
-Android S（12）引入的 BLASTBufferQueue 将 Consumer 端移入 App 进程：
+Android S（12）开始，常规 Activity 窗口默认使用 BLASTBufferQueue，Consumer 端移入 App 进程：
 
 **BLASTBufferQueue 内部组件**（`platform/frameworks/native/libs/gui/BLASTBufferQueue.cpp`，android-14.0.0_r1）：
 
@@ -262,11 +266,11 @@ mBlastBufferQueue = new BLASTBufferQueue(mTag, mSurfaceControl,
         mSurfaceSize.x, mSurfaceSize.y, mWindowAttributes.format);
 ```
 
-**BBQBufferQueueProducer 异步回调**（android-14 commit f982044859e）：传统 BufferQueueProducer 的同步 IProducerListener 回调可能导致死锁（如果 listener 内部调用 queueBuffer）。BBQBufferQueueProducer 将 listener 包装为 AsyncProducerListener，避免在 dequeue 路径上同步等待。
+**BBQBufferQueueProducer 异步回调**（android-14 commit `f982044859e`）：`BLASTBufferQueue.cpp` 中的 `AsyncProducerListener` 会把 `IProducerListener` 回调投递到 `AsyncWorker`。传统同步回调如果在 listener 内部再次触发 `queueBuffer()` 一类路径，容易形成锁等待；异步包装把 producer 的 dequeue 路径和 listener 执行解耦，减少渲染线程被回调反向拖住的风险。
 
 ### 架构差异总结
 
-| 维度 | Legacy（Android 11-） | BLAST（Android 12+） |
+| 维度 | Legacy 路径 | BLAST 常规窗口路径（Android 12+ 默认） |
 |------|---------------------|---------------------|
 | Consumer 端位置 | SurfaceFlinger 进程 | App 进程（BLASTBufferItemConsumer） |
 | Buffer/Geometry 提交 | 两条独立路径，无原子性 | 合并为 Transaction，原子 apply |
@@ -274,7 +278,7 @@ mBlastBufferQueue = new BLASTBufferQueue(mTag, mSurfaceControl,
 | SF 负担 | BufferQueue 管理集中在 SF | 卸荷到 App，SF 只合成 |
 | 多 SurfaceControl 同步 | 各自 queueBuffer，无协调 | Transaction 合并统一 apply |
 
-**为什么这个区别对性能分析重要**：当我们在 Perfetto 中看到 App 侧 `dequeueBuffer()` 阻塞，在 Legacy 模式下这是 SF 进程的 Consumer release 延迟传导过来的；在 BLAST 模式下则可能是 App 进程内 BLASTBufferItemConsumer 的 acquire/release 延迟。判断是哪一层的问题，需要先知道当前设备运行在哪个模型下（Android 12+ 默认 BLAST）。
+**为什么这个区别对性能分析重要**：当我们在 Perfetto 中看到 App 侧 `dequeueBuffer()` 阻塞，Legacy 路径通常来自 SF 进程的 Consumer release 延迟；BLAST 路径还要检查 App 进程内 `BLASTBufferItemConsumer` 的 acquire/release 延迟。判断是哪一层的问题，需要先确认当前窗口是否运行在 Android 12+ 默认 BLAST 模型下。
 
 [已验证：AOSP `android-11.0.0_r48`、`android-14.0.0_r1` 的 BLASTBufferQueue.cpp/BBQBufferQueueProducer commit (f982044859e, d8b3d5f056)]
 
@@ -304,20 +308,28 @@ BufferQueue 的等待时间强依赖刷新率、Surface 类型和系统负载。
 
 [需补充素材：异常场景 Perfetto 截图 1 张，要求标出 `dequeueBuffer()` 长等待，以及与上一帧 release / present 的关系。]
 
-### 阻塞根因：mDequeueCondition 与 releaseBuffer 唤醒链
+### 阻塞根因：mDequeueCondition、非阻塞返回与 releaseBuffer 唤醒链
 
-`dequeueBuffer()` 等待不是玄学，它是一条确定的条件变量路径。
+`dequeueBuffer()` 的等待可以落到 `waitForFreeSlotThenRelock()` 的条件变量路径上。
 
-AOSP 源码里，Producer 线程在 `waitForFreeSlotThenRelock()` 中通过 `mCore->mDequeueCondition.wait(lock)` 主动阻塞（`BufferQueueProducer.cpp` 行 398）。触发这个等待有两个充分条件：
+AOSP 源码里，Producer 线程先在 `BufferQueueProducer::waitForFreeSlotThenRelock()` 查找可用 slot。进入重试的原因主要有两类：
 
-- **条件一**：已 dequeue 的 buffer 数量 `dequeuedCount >= mMaxDequeuedBufferCount`（默认值为 1）。一旦 producer 已经持有一个正在渲染的 buffer，第二次 `dequeueBuffer()` 就会触发等待。
-- **条件二**：队列积压 `mQueue.size() > maxBufferCount`。Consumer 来不及消费时，Producer 也必须等，防止内存溢出。
+- **没有可用 slot**：`getFreeBufferLocked()` / `getFreeSlotLocked()` 都返回无效 slot，常见原因是已 dequeue 或已 acquire 的 buffer 达到上限。
+- **队列积压过多**：`mQueue.size() > maxBufferCount`，producer 已经提交过多 buffer，consumer 还没有及时消费。
 
-唤醒路径只有一条：`BufferQueueConsumer::releaseBuffer()` 执行 `mCore->mDequeueCondition.notify_all()`（`BufferQueueConsumer.cpp` 行 568）。Consumer 把 buffer 状态从 ACQUIRED 改回 FREE，同时把 slot 放回 `mFreeBuffers`，然后 broadcast condition variable。等待中的 Producer 线程被唤醒，再次尝试获取 free slot。
+进入重试后，源码会先判断非阻塞模式。如果 `mCore->mDequeueBufferCannotBlock` 或 `mCore->mAsyncMode` 为 true，且 `acquiredCount <= mCore->mMaxAcquiredBufferCount`，函数直接返回 `WOULD_BLOCK`。这类场景里 RenderThread 可能拿到错误或跳过本帧，`mDequeueCondition.wait()` 上不一定出现长等待。分析 trace 时，不能只按“有没有 dequeue wait slice”判断 BufferQueue 背压，还要看返回状态、drop frame、Surface 类型和 producer 是否开启 async / non-blocking 配置。
 
-**Jank 场景的 backpressure 链**：SurfaceFlinger / HWC 合成耗时 > 16ms（或其他刷新周期）→ `releaseBuffer()` 延迟 → `mFreeBuffers` 为空 → Producer（RenderThread）在 `waitForFreeSlotThenRelock()` 中阻塞 → 本帧无法开始渲染。这整条链的根因在上游（SF/HWC 慢），`dequeueBuffer()` 阻塞只是下游症状。
+只有需要阻塞时，路径才会进入 `mCore->mDequeueCondition.wait_for(...)` 或 `wait(...)`。唤醒来自 consumer 侧归还或取消 buffer：`BufferQueueConsumer::releaseBuffer()` 和 `BufferQueueProducer::cancelBuffer()` 都会触发 `mCore->mDequeueCondition.notify_all()`（或新版 buffer release channel 的等价通知）。等待中的 producer 线程被唤醒后，再次尝试获取 free slot。
 
-[已验证：AOSP android-main `BufferQueueProducer.cpp` 行 297–399、`BufferQueueConsumer.cpp` 行 480–591、`BufferQueueCore.h` 行 302–304]
+**Jank 场景的 backpressure 链**：SurfaceFlinger / HWC 合成耗时超过刷新周期 → `releaseBuffer()` 延迟 → `mFreeBuffers` 为空 → Producer（RenderThread）在 `waitForFreeSlotThenRelock()` 中阻塞或收到 `WOULD_BLOCK` → 本帧无法按时开始渲染。这条链的根因在上游 SF / HWC，`dequeueBuffer()` 的等待或返回错误只是下游症状。
+
+[已验证：AOSP main `BufferQueueProducer.cpp` 行 330–405、`BufferQueueConsumer.cpp` release 路径、`BufferQueueCore.h` 的 `mDequeueCondition` / `mDequeueBufferCannotBlock` 字段]
+
+### Perfetto 里的 BufferQueue counters
+
+除了 slice，Perfetto 里还应看 BufferQueue 相关 counter。不同版本和厂商的命名会有差异，通常可以先搜索 `BufferQueue`、`buffer_count`、`dequeued`、`queued` 这几类名字，再把 counter 变化和 RenderThread 的 `dequeueBuffer()` / `queueBuffer()` slice 放在同一段时间线里。
+
+这些 counter 的价值在于把“等待”拆成数量变化：已分配 buffer 数是否上升、已 dequeue 数是否长期接近上限、queued 数是否持续堆积。只看一条长 slice，只能知道 producer 等了多久；配合 counter 才能判断是 slot 上限、consumer release 慢，还是非阻塞模式直接返回 `WOULD_BLOCK`。
 
 ### 异常 2：`queueBuffer()` 之后很久才被消费
 
@@ -338,11 +350,13 @@ AOSP 源码里，Producer 线程在 `waitForFreeSlotThenRelock()` 中通过 `mCo
 | 版本 | 已核实的变化 | 对理解 BufferQueue 的意义 |
 |------|--------------|----------------------------|
 | Android 4.1 (API 16) | `android-4.1.2_r1` 已存在 `frameworks/native/libs/gui/BufferQueue.cpp` | 说明 BufferQueue 从 Project Butter 时代起就已经是 native 图形管线的一部分，不存在“Android 7 才从 Java 迁到 native”这回事 |
-| Android 11 (API 30) | `android-11.0.0_r48` 已存在 `BLASTBufferQueue.cpp`，`ViewRootImpl.java` 已创建 `new BLASTBufferQueue(...)` | BLAST 进入窗口提交流程，buffer 与 geometry transaction 开始按 frame number 归到同一帧 |
+| Android 11 (API 30) | `android-11.0.0_r48` 已存在 `BLASTBufferQueue.cpp`，`ViewRootImpl.java` 已创建 `new BLASTBufferQueue(...)` | BLAST 代码进入窗口提交流程，但常规 Activity 窗口是否默认使用要按具体分支和设备实现核对 |
+| Android 12 (API 31) | 常规 Activity 窗口默认转向 BLAST 路径 | 读 trace 时应优先按 App 进程内 `BLASTBufferItemConsumer` + `SurfaceControl.Transaction::setBuffer()` 模型分析 |
+| Android 14 (API 34) | `BLASTBufferQueue.cpp` 引入 `AsyncProducerListener` 包装 `IProducerListener` 回调 | producer dequeue 路径与 listener 执行解耦，降低同步回调造成锁等待的风险 |
 
-Android 12 之后当然还有持续演进，但 `frame rate override`、`maxBufferCount`、以及“无锁 MessageQueue 与 BLAST 协同优化”这些说法，必须分别拿 release note、commit 或源码落点来支撑，不能因为它们听起来合理就先写进版本表。当前素材还不足以把这些结论稳稳地归因到 BufferQueue 本身，所以这里先不展开。
+Android 12 之后还有持续演进，但 `frame rate override`、`maxBufferCount`、以及“无锁 MessageQueue 与 BLAST 协同优化”这些说法，必须分别拿 release note、commit 或源码落点来支撑，不能因为它们听起来合理就先写进版本表。当前素材还不足以把这些结论稳稳地归因到 BufferQueue 本身，所以这里先不展开。
 
-[已验证：AOSP `android-4.1.2_r1`、`android-10.0.0_r47`、`android-11.0.0_r48`]
+[已验证：AOSP `android-4.1.2_r1`、`android-10.0.0_r47`、`android-11.0.0_r48`、`android-14.0.0_r1`、AOSP main `BufferQueueProducer.cpp` / `BLASTBufferQueue.cpp`]
 
 ## 常见问题与误区
 

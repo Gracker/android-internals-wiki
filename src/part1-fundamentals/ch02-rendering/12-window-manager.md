@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
-last_verified: "2026-04-19"
-last_verified_against: "AOSP android-17-beta3 + Android 16/17 official docs"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP main ViewRootImpl/IWindowSession/Session + BufferQueueProducer + Android 16/17 official docs + external review"
 confidence: medium
 sources:
   - type: aosp
@@ -18,6 +18,10 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/wm/WindowSurfacePlacer.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/IWindowSession.aidl"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/Session.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/SurfaceControl.java"
   - type: aosp
@@ -42,7 +46,7 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -120,9 +124,7 @@ t.setAlpha(surfaceControl, 0.5f);
 t.apply(); // 一次性提交给 SurfaceFlinger
 ```
 
-`Transaction.apply()` 的执行方式值得说明：它在 framework 层通过 JNI 调用到 native 的 `SurfaceComposerClient::apply()`，后者将所有操作打包成一个 `transaction` 通过 Binder 发送给 SurfaceFlinger。SurfaceFlinger 在下一个合成周期（VSYNC_SF）处理这个 transaction。所以 `apply()` 本身不是同步阻塞等待 SurfaceFlinger 完成的——它更像是"发送一个命令然后返回"。
-
-[待验证: SurfaceControl.Transaction.apply() 是否在某些情况下会同步等待 SurfaceFlinger 的回复，特别是在 Surface 首次创建时]
+`Transaction.apply()` 的常规路径是在 framework 层经 JNI 进入 native `SurfaceComposerClient::apply()`，把 transaction 通过 Binder 交给 SurfaceFlinger，随后由 SurfaceFlinger 在后续合成周期消费。它通常不等待本次合成上屏。同步场景要单独看：`apply(true)`、BLAST sync transaction、`TransactionCommittedListener`、present fence 等路径可能让调用方等待提交确认或显示完成。首帧创建的耗时也要拆到 layer 创建、relayout 返回、buffer 分配和 fence 等位置，不宜只归因到 `apply()`。
 
 ## StartingWindow 与启动性能
 
@@ -182,7 +184,9 @@ StartingWindow 的移除时机是一个性能调优的关键点：
 
 因此，`invalidate()` 只会触发 draw 的场景，不一定碰到 WMS；`requestLayout()` 也不等于一定跨进程。把所有 traversal 都解释成 `relayoutWindow`，Perfetto 诊断就会失真。
 
-Android 14+ 的部分属性更新场景还会走 `relayoutAsync()`。这种路径会把结果延后到 `W.resized()` 回调，不再让 UI 线程同步卡在 Binder 上。观察 trace 时，需要把当前帧的 traversal 和后续 resize callback 放在一起看。
+Android 14+ 增加了 `relayoutAsync()`，适用范围很窄。`ViewRootImpl.relayoutWindow()` 会先用客户端持有的 `InsetsState` 和 `WindowConfiguration` 计算一份临时 frame；只有窗口可见性未变化、窗口类型不是 `TYPE_APPLICATION_STARTING`、客户端没有等待新的 sync seq、AM 与 WMS 看到的 `WindowConfiguration` 无差异，并且本地算出的 frame 没有同时改变位置和尺寸时，才会调用 `IWindowSession.relayoutAsync()`。只改 `FLAG_KEEP_SCREEN_ON`、`screenBrightness` 这类不会触发窗口 frame 同步的属性时，较容易命中这条路径；如果变化会影响窗口可见性、尺寸、Insets、`SurfaceControl` 或 BLAST sync，仍走同步 `relayout()`。
+
+服务端实现很薄：`Session.relayoutAsync()` 复用 `relayout(...)`，只是 `outRelayoutResult` 传 `null`，随后仍进入 `WindowManagerService.relayoutWindow()`。Trace 上的区别是 App UI 线程不用等待返回 frames、Insets、`SurfaceControl` 和 sync seq；system_server 侧仍会处理属性变化、`mGlobalLock` 和 surface placement。分析时要把当前 traversal 与后续 `W.resized()` / Insets 回调放在同一段时间线里。
 
 ### relayoutWindow 内部流程
 
@@ -203,7 +207,7 @@ WMS 侧的执行过程不能简化成“`relayoutWindow()` 直接调 `performLay
 | `invalidate()` 触发的纯重绘 | 否 | App 主线程 `performDraw` 与 RenderThread |
 | `requestLayout()` 但窗口尺寸未变 | 通常否 | App 主线程 measure / layout / draw |
 | 首帧、窗口 resize、Insets 变化 | 是 | App 主线程 Binder 等待，加 system_server Binder / DisplayThread 配套工作 |
-| 安全属性变更走 `relayoutAsync()` | 异步 | 当前帧轻量 traversal，后续 `W.resized()` 回调触发下一轮布局 |
+| 只改不会影响 frame 同步的窗口属性，且命中 `relayoutAsync()` 条件 | 异步 | App 当前 traversal 不等 `RelayoutResult`；后续 `W.resized()` / Insets 回调再刷新本地状态 |
 
 
 ### scheduleTraversals() 与 performTraversals() 的职责边界
@@ -340,7 +344,7 @@ Android 的多窗口能力经历了从实验性功能到核心特性的演变。
 
 折叠、展开、拖到外接显示器，都会让 WMS 处理一次窗口边界和显示区域变化。路径通常是 DisplayManager / WindowOrganizer 通知 WMS，WMS 更新可见窗口的 frames、Insets 和 configuration，再把结果回送给 App。App 是否重建 Activity，取决于目标 API、compat 行为和自身声明的配置变化处理方式。
 
-Android 16 针对 `sw >= 600dp` 设备强化了 adaptive behavior。target API 36 的应用在大屏上更可能被系统忽略 `screenOrientation`、`resizeableActivity`、aspect ratio 等限制，窗口尺寸变化会更频繁地落到 WMS relayout 和 App configuration callback。`recreateOnConfigChanges` 是 Android 17 的新 manifest 属性，公开 Beta 材料指向 keyboard / navigation / touchscreen / colorMode / desk mode 一类变化；它不能直接当成“屏幕尺寸变化默认不重建”的同义词。
+Android 16 针对 `sw >= 600dp` 设备强化了 adaptive behavior。target API 36 的应用在大屏上更可能被系统忽略 `screenOrientation`、`resizeableActivity`、aspect ratio 等限制，窗口尺寸变化会更频繁地落到 WMS relayout 和 App configuration callback。Android 17 的 `android:recreateOnConfigChanges` 需要和传统 `android:configChanges` 分开读：`configChanges` 声明应用自行处理某类变化，避免系统重建；`recreateOnConfigChanges` 针对 API 37 Beta 中默认不重建的部分变化，允许应用显式请求重建。当前应按 keyboard、keyboardHidden、navigation、touchscreen、colorMode 和部分 uiMode 这类配置变化理解，不能外推到 `screenSize` / `orientation`。
 
 ### Android 16 Desktop Windowing
 
@@ -412,7 +416,7 @@ WMS 不是一个孤立的系统服务，它的性能表现受到多个上下游�
 | Android 14 (API 34) | Predictive Back 引入 | 返回手势进入实时预览，WMS 动画和 Input 协作变重 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
 | Android 15 (API 35) | Edge-to-Edge enforcement 扩大覆盖面 | Insets 分发更常见，不当处理更容易引出额外 relayout | `developer.android.com/about/versions/15/behavior-changes-15` |
 | Android 16 (API 36) | Desktop Windowing 与大屏 adaptive behavior | 自由窗口、caption bar、外接显示器和强制可调整窗口会提高 relayout / resize 频率 | `developer.android.com/about/versions/16/features` / `developer.android.com/about/versions/16/behavior-changes-all` |
-| Android 17 (API 37) | `recreateOnConfigChanges` `[待验证]` | 公开 Beta 文档指向 keyboard / navigation / touchscreen / colorMode / desk mode 一类变化；不要把它当成屏幕尺寸或方向变化的简写 | `developer.android.com/about/versions/17/behavior-changes-all` |
+| Android 17 (API 37) | API 37 Beta 口径中的 `recreateOnConfigChanges` | keyboard、keyboardHidden、navigation、touchscreen、colorMode 和部分 uiMode 变化可显式请求 Activity 重建；本节只把它视为部分配置变化的重建策略信号，不能外推到 `screenSize` / `orientation` | `developer.android.com/about/versions/17/behavior-changes-all` |
 
 ## 常见问题与误区
 
@@ -471,7 +475,7 @@ WMS 维护的 Window Z-order 和区域信息是 InputDispatcher 进行 hit-test 
 - [Android 官方文档，Predictive Back](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture) ，返回手势动画与过渡回调
 - [Android 官方文档，Android 16 Features](https://developer.android.com/about/versions/16/features) ，Desktop Windowing 与 connected display 特性
 - [Android 官方文档，Android 16 Behavior Changes](https://developer.android.com/about/versions/16/behavior-changes-all) ，大屏自适应与 orientation / resizable 行为变化
-- [Android 官方文档，Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-all) ，`recreateOnConfigChanges` 的公开 Beta 口径，终版范围仍需核对
+- [Android 官方文档，Android 17 Behavior Changes](https://developer.android.com/about/versions/17/behavior-changes-all) ，`recreateOnConfigChanges` 的 API 37 Beta 口径
 - [Android 官方文档，WindowInsets](https://developer.android.com/develop/ui/views/layout/window-insets) ，Insets 分发与适配实践
 
 
