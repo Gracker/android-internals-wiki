@@ -19,7 +19,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T08:27:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-26T00:45:50+08:00"
+last_task2b_at: "2026-04-26T14:46:27+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 ---
@@ -102,6 +102,8 @@ list.setFrameContentVelocity(2400f);
 ```
 
 Compose 对应的是 `Modifier.preferredFrameRate(frameRate)` 和 `Modifier.preferredFrameRate(frameRateCategory)`。这一层表达的是偏好，系统会综合这些输入做刷新率选择。
+
+`Display.hasArrSupport()` 不属于 API 35。面向 Android 15 的代码要把刷新率投票和设备能力查询拆开：投票走 `View` / Compose，能力查询只在 API 36+ 调用。
 
 ### Android 16：`Display` 查询 API 用来读能力和建议值
 

@@ -17,11 +17,11 @@ related_chapters:
   - 18.2
 created_by: rendering-pipelines-merge
 created_date: 2026-04-09
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-24
 task6_result: pass-light-edit
@@ -29,6 +29,9 @@ task9_result: needs-rework
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-24T03:39:00+08:00"
+last_task2b_at: "2026-04-26T14:46:27+08:00"
+repaired_date: "2026-04-26"
+repaired_by: openclaw-task2b
 ---
 
 <!-- outline-start -->
@@ -141,7 +144,7 @@ request.draw(executor, result -> {
 
 1. `setContentRoot()` 属于 `HardwareBufferRenderer`，不在 `RenderRequest` 上。
 2. `HardwareBuffer.create()` 里给 GPU render target 至少要带 `USAGE_GPU_COLOR_OUTPUT`；direct `SurfaceControl.setBuffer()` 场景还要补 `USAGE_GPU_SAMPLED_IMAGE | USAGE_COMPOSER_OVERLAY`。[已验证: `HardwareBuffer.java` / `SurfaceControl.java`]
-3. `RenderResult.getFence()` 解决的是“consumer 什么时候能读这块 buffer”。SurfaceFlinger 在 latch 前要等它 signal。
+3. 原生 SDK 方法名是 `RenderResult.getFence()`，返回的 `SyncFence` 解决的是“consumer 什么时候能读这块 buffer”。`getSyncFence()` 属于其他封装命名，示例和正文里不要混用。SurfaceFlinger 在 latch 前要等它 signal。
 4. `setBuffer(..., fence, releaseCallback)` 里的 callback 才对应“这块 buffer 什么时候能再次写”。如果不跟踪 release，同一块 buffer 连续覆写会把上一帧还在显示的内容踩掉。[已验证: `SurfaceControl.Transaction#setBuffer(..., Consumer<SyncFence>)`]
 
 ### NDK API
@@ -171,6 +174,8 @@ ASurfaceTransaction_setBuffer(tx, surfaceControl, buffer, acquireFenceFd);
 // API 36+ 可以改成 ASurfaceTransaction_setBufferWithRelease(...)
 ASurfaceTransaction_apply(tx);
 ```
+
+如果走 EGL / OpenGL ES 路径，`AHardwareBuffer` 不能直接当纹理或 render target 使用。常见做法是通过 `EGL_ANDROID_get_native_client_buffer` 拿到 `EGLClientBuffer`，再配合 `EGL_ANDROID_image_native_buffer` 创建 `EGLImage`，然后绑定到纹理或 framebuffer。Vulkan 路径则要按 external memory / Android hardware buffer 扩展导入。
 
 NDK 侧的最小版本要分开记：
 
