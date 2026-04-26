@@ -1,4 +1,5 @@
 ---
+
 title: "eBPF/BPF 在 Android 性能分析中的应用"
 chapter: "14.10"
 section: "14.10"
@@ -49,11 +50,11 @@ polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-26"
