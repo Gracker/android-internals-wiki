@@ -30,8 +30,8 @@ tags:
   - anr
   - sqlite
   - app-startup
-pipeline_stage: task6_pending
-task6_state: "revisiting"
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
@@ -39,8 +39,8 @@ task2b_result: fixed
 task2b_state: fixed
 reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
-review_round: 5
+task6_result: pass-light-edit
+review_round: 6
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T06:20:00+08:00"
 repaired_date: "2026-04-27"
@@ -201,7 +201,7 @@ CursorWindow 容量有限，查询结果可能远大于当前窗口。SQLiteCurs
 
 [已验证：AOSP Binder 驱动默认配置，每个进程约 1MB]
 
-这意味着即使单个 ContentProvider 调用的数据量远小于 1MB，如果同时有多个 ContentProvider 调用在并发进行（比如列表页同时请求多个数据源），它们的 Binder 事务数据可能累积超过缓冲区上限，触发 `TransactionTooLargeException`。在实践中，数据载荷达到约 0.5MB 时就可能触发此异常，因为缓冲区还需要留空间给其他系统 Binder 调用。
+即使单个 ContentProvider 调用的数据量远小于 1MB，如果同时有多个 ContentProvider 调用在并发进行（比如列表页同时请求多个数据源），它们的 Binder 事务数据也会累积超过缓冲区上限，触发 `TransactionTooLargeException`。在实践中，数据载荷达到约 0.5MB 时就可能触发此异常，因为缓冲区还需要留空间给其他系统 Binder 调用。
 
 优化策略很直接：**始终指定 projection（只查需要的列），使用 selection 过滤行，避免在 ContentProvider 中传输大量数据。** 如果确实需要传输大数据（如图片、文件），应该使用文件描述符（`openFile()` / `openAssetFile()`）或 `MemoryFile`，让数据走单独的共享内存通道，不占用 Binder 事务缓冲区。
 
