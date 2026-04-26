@@ -9333,3 +9333,37 @@ Android 17 光线追踪加速 (Ray Query)
 ### 外部 review 来源
 - 2026-04-26-10-ch02-rendering-overview-external-review.md
 
+## [2026-04-26] 9.1/9.2 ANR 广播动态超时 — 知识盲区
+
+### 盲区描述
+Android 14+ BroadcastQueueModernImpl 的 soft timeout / hard timeout 机制还没有在 9.1 与 9.2 中完整展开。external-review 已命中 9.1 的 Modern Broadcast Queue 动态超时问题，本轮复核确认 9.1 仍保留固定 10s/60s 表述。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 `BroadcastQueueModernImpl.dispatchReceivers()`、`deliveryTimeoutSoftLocked()`、`ProcessRecord.getCpuDelayTime()`，补齐 CPU starvation 如何把 10s/60s 拉到 20s/120s。
+- 对照 Android Developers ANR vitals 文档，说明 app startup 时间与 `goAsync()` 是否共享同一广播窗口。
+- 明确 Android 13 及以下 `BroadcastQueue` 与 Android 14+ modern queue 的版本边界。
+
+### 关联章节
+9.1, 9.2
+
+### 外部 review 来源
+- logs/external-review/2026-04-25-part2-batch-review-summary.md
+
+## [2026-04-26] 9.3 ANR Perfetto 诊断轨道 — 知识盲区
+
+### 盲区描述
+9.3 写到 Android 14 新增 `android.anr` track，但目前只复核到 AOSP 的 `AnrLatencyTracker` trace slice/counter 与 statsd `ANR_LATENCY_REPORTED`，尚未确认是否存在稳定命名的 Perfetto track 或 SQL 表。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 使用 Android 14/15/16 真实 ANR trace，检查 Perfetto UI track 名、`slice` / `track` / `args` 表中 ANR 相关记录。
+- 对照 Perfetto trace processor schema，确认是否存在 `android_anr` 标准表或仅为 ActivityManager trace slices。
+- 若不存在稳定 track 名，把正文改为 `AnrLatencyTracker` / `ANR_LATENCY_REPORTED` 诊断观测点。
+
+### 关联章节
+9.3, 13.2, 13.9

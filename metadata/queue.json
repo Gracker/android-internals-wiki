@@ -11913,5 +11913,93 @@
     "added_by": "external-ai-review",
     "status": "pending",
     "date": "2026-04-26"
+  },
+  {
+    "section": "9.1",
+    "section_title": "ANR 设计思想",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 2 个技术问题需回炉：文中把 BroadcastReceiver 超时写成固定“前台 10 秒、后台 60 秒”。该表述只适合 Android 13 及以下的排查口径；Android；文中写“InputMethodManagerService#onInputEvent timeout”，但 AOSP android-14.0.0_r1 的 I",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md",
+      "logs/deep-review/2026-04-26-14-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "level": "P0",
+        "location": "“ANR 机制的核心流程 / 第一阶段：注册超时”",
+        "detail": "文中把 BroadcastReceiver 超时写成固定“前台 10 秒、后台 60 秒”。该表述只适合 Android 13 及以下的排查口径；Android 14+ 官方口径是前台 10-20 秒、后台 60-120 秒。AOSP android-14.0.0_r1 的 BroadcastQueueModernImpl 会先发 soft timeout，再按 app.getCpuDelayTime() 追加不超过 soft timeout 的 hard timeout。",
+        "suggestion": "把 9.1 的固定值改成“旧版典型值”，并补充 Android 14+ soft/hard timeout 与 CPU starvation / cold start 计入窗口的说明，或显式跳转到 9.2。",
+        "evidence": "AOSP android-14.0.0_r1: BroadcastQueueModernImpl.java dispatchReceivers() 记录 lastCpuDelayTime 并发送 MSG_DELIVERY_TIMEOUT_SOFT；deliveryTimeoutSoftLocked() 用 getCpuDelayTime() 计算 hard timeout。外部 review 已命中同一问题。"
+      },
+      {
+        "type": "源码错误",
+        "level": "P0",
+        "location": "“AMS 中 ANR 的核心代码路径 / InputConnection ANR”",
+        "detail": "文中写“InputMethodManagerService#onInputEvent timeout”，但 AOSP android-14.0.0_r1 的 InputMethodManagerService 中没有该 timeout 判定点。InputConnection 相关无响应更应落到 InputDispatcher 的 dispatching timeout / waitQueue 机制，IME/IMMS 是输入法交互路径的一部分，不是该 5s ANR 的直接判定者。",
+        "suggestion": "删除 `InputMethodManagerService#onInputEvent timeout` 说法，改为说明 IME/InputConnection 场景最终仍需回到 InputDispatcher 的 input dispatch timeout，并补 AOSP 路径 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`。",
+        "evidence": "AOSP android-14.0.0_r1: InputDispatcher.cpp 定义 DEFAULT_INPUT_DISPATCHING_TIMEOUT 并对 waitQueue/AnrTracker 处理超时；InputMethodManagerService.java 未检索到 onInputEvent timeout。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T14:36:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "9.2",
+    "section_title": "ANR 类型与触发条件",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 1 个技术问题需回炉：章节把 JobService callback ANR 写成“几秒级”，但 sources 未列 AOSP JobScheduler 路径，也未给出 Andro",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md",
+      "logs/deep-review/2026-04-26-14-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码引用准确性",
+        "level": "P1",
+        "location": "“JobService callback ANR 与 job 超时的边界”",
+        "detail": "章节把 JobService callback ANR 写成“几秒级”，但 sources 未列 AOSP JobScheduler 路径，也未给出 Android 14/15 的实际等待常量。",
+        "suggestion": "补充 `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java`：`OP_TIMEOUT_MILLIS = 8 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；`handleOpTimeoutLocked()` 对 STARTING/STOPPING 生成 `No response to onStartJob/onStopJob` 并调用 `ActivityManagerInternal.appNotResponding()`。",
+        "evidence": "AOSP android-14.0.0_r1 / android-15.0.0_r1: JobServiceContext.java。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T14:36:59+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "9.3",
+    "section_title": "ANR 分析方法",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 2 个技术问题需回炉：“android.anr track” 缺少可复核证据。AOSP android-15 SDK 可见的是 `AnrLatencyTracker` 写入 Trac；frontmatter 写 `Android 17 (API 36)`，但正文版本演进又把 Android 16 标为 API 36；9.1/9.2 也写 An",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md",
+      "logs/deep-review/2026-04-26-14-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "level": "P1",
+        "location": "版本演进：Android 14 “Perfetto 中新增 android.anr track”",
+        "detail": "“android.anr track” 缺少可复核证据。AOSP android-15 SDK 可见的是 `AnrLatencyTracker` 写入 Trace slice/counter（如 `anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()`）和 statsd `ANR_LATENCY_REPORTED`，未能确认存在名为 `android.anr` 的 Perfetto track / SQL 表。",
+        "suggestion": "不要直接写 `android.anr track`。改为可验证表述：Android 13/14+ 增加 ANR latency trace/statsd 观测点；如保留 track 名，需补 Perfetto trace 示例或 SQL schema 证据。",
+        "evidence": "AOSP android-35 SDK source: com/android/internal/os/anr/AnrLatencyTracker.java；FrameworkStatsLog 中 ANRLatencyReported atom。"
+      },
+      {
+        "type": "交叉引用一致性",
+        "level": "P1",
+        "location": "frontmatter applicable_versions",
+        "detail": "frontmatter 写 `Android 17 (API 36)`，但正文版本演进又把 Android 16 标为 API 36；9.1/9.2 也写 Android 17 (API 37)。同一主题簇版本声明不一致。",
+        "suggestion": "统一 9.1/9.2/9.3 的适用版本。若 Android 17 API level 尚未发布，写到 `Android 17 [待确认]`；若按当前书内约定，9.3 应改为 Android 17 (API 37)。",
+        "evidence": "9.3 frontmatter 与同文件版本演进段、9.1/9.2 frontmatter 互相矛盾。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T14:36:59+08:00",
+    "status": "pending"
   }
 ]

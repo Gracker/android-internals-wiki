@@ -4398,3 +4398,26 @@
   - **建议**：补充一个计算例子。例如：一个 256x256 的 RGBA_8888 纹理占 256KB。在 4KB 下正好 64 页；在 16KB 下也是 16 页，没有浪费。但如果是一个带有 2KB metadata 的 bu
 - **来源**：2026-04-26-15-2.15-external-review.md
 
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-04-26 — P2-1
+- **类型**：版本差异
+- **位置**：“ANR 信息的产出 / traces.txt”
+- **问题**：Android 10+ trace 文件命名与 Android 12/13 的按进程命名改进被合并成一句，版本线不够清楚。
+- **建议**：拆成 Android 10 从单一 traces.txt 转为 /data/anr/anr_*，Android 12/13 再补按进程/时间命名与可靠性改进。
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-04-26 — P2-2
+- **类型**：知识盲区
+- **位置**：“ANR 信息的产出”
+- **问题**：只列 traces/event log/dropbox，未提 Android 11+ ApplicationExitInfo 和 Android 16+ system-triggered profiling 作为线上回捞入口。
+- **建议**：在概览节补一段“现代线上采集入口”，详细方法跳转到 9.3。
+
+## [Task9 Deep Review] 9.2 ANR 类型与触发条件 — 2026-04-26 — P2-3
+- **类型**：数据缺失
+- **位置**：“Service Timeout”
+- **问题**：`Build.HW_TIMEOUT_MULTIPLIER` 出现但未解释默认值和适用边界。
+- **建议**：补充默认值通常为 1，主要用于特殊硬件/测试环境放大 timeout，避免读者误解 20s/200s 不是默认值。
+
+## [Task9 Deep Review] 9.3 ANR 分析方法 — 2026-04-26 — P2-4
+- **类型**：源码准确性
+- **位置**：“Binder 调用超时 / binder_sample 示例”
+- **问题**：示例中的 `code=6` 未说明是 AIDL transaction code，跨版本/接口变更时不应当作固定语义。
+- **建议**：补一句：code 需要结合对应版本的 AIDL/Stub 常量反查。
