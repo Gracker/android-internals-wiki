@@ -30,7 +30,7 @@ sources:
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -331,7 +331,7 @@ Watchdog 触发后，意味着 system_server 本身出了问题（通常是死�
 
 在 Perfetto Trace 中，ANR 事件通常表现为：
 - 应用主线程上出现一段长时间的非空闲执行块（RUNNABLE 或 BLOCKED）
-- 在 system_server 进程中可以看到 `AnrHelper` 相关的活动
+- system_server 进程中会出现 `AnrHelper` 相关的活动
 - Input ANR 可以在 InputDispatcher 的 track 中看到 "Application Not Responding" 标记
 
 Watchdog 触发时，在 Perfetto 中会表现为：
@@ -349,7 +349,7 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 这是最核心的 ANR 诊断文件。系统通过 SIGQUIT 信号触发虚拟机 dump 出所有线程的堆栈。文件内容包括：
 
 - **所有线程的完整堆栈**：包括线程名、优先级、状态（RUNNABLE / BLOCKED / WAITING 等）、tid
-- **线程持有的锁信息**：如 `- locked <0x12345678>`，可以看到哪个线程持有哪些锁
+- **线程持有的锁信息**：如 `- locked <0x12345678>`，标明哪个线程持有哪些锁
 - **CPU 使用统计**：ANR 发生前一段时间的 CPU 负载信息
 
 在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。可以通过 `adb pull /data/anr/` 获取。
@@ -420,7 +420,7 @@ Google Play Console 将 ANR 率作为应用核心性能指标（Android Vitals�
 
 按 10000 个日活用户估算，0.47% 对应每天约 47 个用户遇到用户感知 ANR。这个数字只是官方质量红线，不适合作为内部目标；线上治理通常要把内部告警线设得更低，并按设备、系统版本和场景拆开看。
 
-Play Console 中可以看到的 ANR 信息包括：
+Play Console 提供的 ANR 信息包括：
 - 按设备和 Android 版本分组的 ANR 分布
 - ANR 触发时的堆栈信息（来自 traces.txt）
 - ANR 趋势图（按日/周/月）
