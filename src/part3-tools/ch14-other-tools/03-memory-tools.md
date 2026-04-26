@@ -512,7 +512,34 @@ Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应�
 
 [已验证: 官方文档, https://developer.android.com/ndk/guides/sanitizers]
 [已验证: 官方文档, https://source.android.com/docs/security/test/memory-safety]
-[待验证: MTE 异步模式在 Android 15+ 设备上的默认状态]
+
+<!-- AIW-源码调研-2026-04-26: MTE ASYMM 深度补充 -->
+### [已验证 2026-04-26] MTE 三种模式与 Asymmetric（ASYMM）升级机制
+
+现有描述只涉及 sync 和 async 两种模式，实际硬件（Arm v8.7-A+）支持第三种——**Asymmetric（ASYMM）模式**，Android 系统对 App 透明使用：
+
+| 模式 | 读取检查 | 写入检查 | 性能 | 生产可用性 |
+|------|---------|---------|------|---------|
+| SYNC | 立即 SIGSEGV | 立即 SIGSEGV | 高开销 | 仅测试 |
+| ASYNC | 延迟 SIGSEGV | 延迟 SIGSEGV | **1-2%** | ✅ 可用 |
+| ASYMM | 立即 SIGSEGV | 延迟 SIGSEGV | 接近 ASYNC | **✅ 推荐** |
+
+**ASYMM 核心价值**：读取越界（use-after-free read）提供精确错误位置，写入越界保持低开销。在 SPEC INT 2006 实测中，SYNC 最高可达 6.64x 减速，ASYMM 保持在 1-2% 区间（Pixel 8/9，来源：arxiv:2405.02735）。
+
+**Android 系统行为**：App 通过 `android:memtagMode="async"` 请求 MTE 时，如果硬件支持 ASYMM，OS 自动静默升级到 ASYMM，无需 App 感知。系统组件（蓝牙/NFC/网络daemon）以 ASYNC 模式运行，实际也受益于 ASYMM 硬件。
+
+**检测 ASYMM 支持**：`cat /proc/cpuinfo` 中显示 `mte mte3` 表示 ASYMM 可用；仅有 `mte` 表示仅支持 SYNC/ASYNC（Arm v8.5-A）。
+
+**sysfs 控制**：`/sys/devices/system/cpu/cpu<N>/mte_tcf_preferred`（root）可设置 per-CPU preferred 模式为 `async` / `sync` / `asymm`。
+
+**Android 15+ 默认状态**：MTE 在所有 Android 版本中均默认**关闭**。Compatibility Framework 明确 `NATIVE_MEMTAG_ASYNC` 和 `NATIVE_MEMTAG_SYNC` 的默认状态为"对所有 App 禁用"。Android 15 强烈建议生产环境使用 MTE，但保持关闭，由 OEM/设备配置决定。
+
+**Scudo 协作**：Android 默认堆分配器 Scudo（Android 11+）通过 `IRG`（生成随机 tag）和 `STG`（存储 tag）指令与 MTE 协作。仅 Primary 分配（< 0x10000 字节）应用 MTE tag。
+
+[已验证: Android 15 MTE 默认关闭，来源：Android 15 Compatibility Definition Document]
+[来源: arxiv:2405.02735 - ARM MTE Performance in Practice]
+[来源: AOSP frameworks/base/core/java/com/android/internal/os/Zygote.java]
+
 
 ## 工具选择指南
 

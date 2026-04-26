@@ -408,6 +408,32 @@ ISA 时间线说明的是硬件能力在扩展，不等于同一时间 Android �
 
 Stack Tagging 属于另一条能力线。它要求 JNI / NDK 代码重新用 MTE instrumentation 构建，公开文档给出的平台边界是 Android 14 QPR3 起可用。
 
+<!-- AIW-源码调研-2026-04-26: MTE ASYMM 深度补充 -->
+### [自动发现] Asymmetric（ASYMM）模式：生产环境推荐方案
+
+在「App 侧只看 sync / async」的框架下，文档只暴露了 sync 和 async 两个模式。但从 Arm v8.7-A 开始，硬件层面存在第三个模式——**Asymmetric（ASYMM）**，它对读取执行同步检查，对写入执行异步检查。这意味着：
+
+- **读取越界（如 use-after-free read）**：立即触发 `SEGV_MTESERR`，提供精确错误位置
+- **写入越界**：延迟到下次内核入口触发 `SEGV_MTEAERR`，开销与 async 相当
+
+**性能表现**：Arm 官方估算 ASYMM 性能接近 ASYNC（1-2% 开销），远低于 SYNC 的理论开销。在 SPEC INT 2006 实测中，SYNC 在性能核上最高可达 6.64x 减速，而 ASYNC 通常在 1.82x 以内（Pixel 8/9 实测数据，来源：arxiv:2405.02735）。
+
+**关键限制**：ASYMM 需要 `mte3` 特性，即 `/proc/cpuinfo` 中显示 `mte mte3`（而非仅有 `mte`）。当前仅部分 Arm v8.7-A+ 设备支持，主流手机 SoC 中 Pixel 8/9 是较早公开验证的机型。
+
+**Android 系统行为**：Android **不向 App 暴露 ASYMM API**。当 App 通过 `android:memtagMode="async"` 请求 MTE 时，OS 会自动将模式透明升级为 ASYMM（如果硬件支持）。这是系统层的静默优化，App 无需感知。
+
+**sysfs 底层控制**：`/sys/devices/system/cpu/cpu<N>/mte_tcf_preferred` 控制 per-CPU 的 preferred MTE 模式（`async` / `sync` / `asymm`）。写入 `asymm` 可强制启用 ASYMM，但需要 root 权限。
+
+**Scudo + MTE 协作**：Android 默认堆分配器 Scudo（Android 11+）通过 `IRG`（生成随机 tag）和 `STG`（存储 tag 到内存 granule）指令与 MTE 协作。仅 Primary 分配（< 0x10000 字节）支持 MTE tag，Secondary 大块分配通过 mmap 不使用 MTE tag。
+
+**源码锚点**：`frameworks/base/core/java/com/android/internal/os/Zygote.java` 中 `memtagModeToZygoteMemtagLevel()` 将 App 请求映射到内部 `MEMORY_TAG_LEVEL_ASYNC`（Zygote 本身始终 ASYNC）。Scudo MTE tag 逻辑在 `bionic/linker/scudo/scudo_memtag.h`。
+
+[来源: arxiv:2405.02735 - ARM MTE Performance in Practice (Extended Version)]
+[来源: developer.android.com - Memory Tagging Extension]
+[来源: AOSP frameworks/base/core/java/com/android/internal/os/Zygote.java]
+[来源: AOSP bionic/linker/scudo/scudo_memtag.h]
+
+
 [已验证: 官方文档 developer.android.com/ndk/guides/arm-mte]
 [已验证: 官方文档 source.android.com/docs/security/test/memory-safety/arm-mte]
 
