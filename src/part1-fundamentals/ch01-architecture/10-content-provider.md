@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-26"
-last_verified_against: "AOSP android-16.0.0_r1 CursorWindow / SQLiteCursor / SQLiteQuery / SQLiteSession"
+last_verified: "2026-04-27"
+last_verified_against: "AOSP android-16.0.0_r1 ContentProvider.applyBatch / CursorWindow / SQLiteCursor / SQLiteQuery / SQLiteSession; Android SDK Application.getProcessName"
 confidence: medium
 sources:
   - type: aosp
@@ -30,22 +30,22 @@ tags:
   - anr
   - sqlite
   - app-startup
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: "revisiting"
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_round: 5
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T06:20:00+08:00"
-repaired_date: "2026-04-26"
+repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-26T22:53:54+08:00"
+last_task2b_at: "2026-04-27T06:57:48+08:00"
 task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。"
 ---
 
@@ -223,9 +223,9 @@ ContentProvider 的 ANR 涉及三个不同的超时机制，容易混淆：
 
 这三类超时中最容易误判的是"CRUD 操作超时"。ContentProvider 的 query/insert/update/delete **没有自己的 10 秒超时**——常见误解是 ContentProvider 有一套类似 Service 的独立超时，但 AOSP 中并不存在这样的常量。当我们在 traces.txt 中看到 ContentProvider 调用导致了 ANR，真正的超时来源是调用方所在的组件（比如 Activity 的 Input dispatching timeout 5 秒）。
 
-### Binder 线程池模型与线程耗尽
+### 远程 ContentProvider 的 Binder 线程池模型与线程耗尽
 
-ContentProvider 的 CRUD 操作执行在**提供方进程的 Binder 线程池**中，不是在提供方的主线程上。这个区分对 ANR 排查至关重要。
+这一节只讨论跨进程远程调用。App A 通过 `ContentResolver` 访问 App B 的 provider 时，`query()` / `insert()` / `update()` / `delete()` 会在提供方进程的 Binder 线程中执行。同进程 provider，或调用方拿到本地 provider 引用的路径，可以在调用方线程内直接执行，不会进入远端 Binder 线程池。判读 ANR traces 时先确认调用是否跨进程，否则容易把本地数据库耗时误判为提供方 Binder 线程耗尽。
 
 Binder 线程池的关键参数：
 
@@ -246,7 +246,13 @@ Binder 线程池的关键参数：
 - **调用方进程**：主线程栈帧停在 `IContentProvider$Stub$Proxy.query()` → WAITING 状态
 - **线程数量**：traces.txt 中提供方进程的 Binder 线程数接近 15-16 个，大部分处于 BLOCKED/WAITING 状态
 
-这个场景的根因不是 ContentProvider 本身慢，而是数据库锁竞争导致了 Binder 线程池耗尽。修复方向是在提供方侧做数据库操作的异步化和锁粒度优化。
+这个场景的根因是数据库锁竞争拖住 Binder 线程池，ContentProvider 只是入口。修复方向是在提供方侧缩短数据库锁持有时间，减少 Binder 线程里执行的 I/O 和长事务。
+
+判责时把三条路径分开看：
+
+- 调用方主线程阻塞在 `IContentProvider$Stub$Proxy.query()`：调用方在等待远端 Binder reply，主线程调用需要先移出。
+- 提供方 Binder 线程进入 `ContentProvider$Transport.query()` 后长时间运行或等待锁：瓶颈在 provider 的查询、I/O 或数据库锁。
+- 提供方主线程还停在 `ActivityThread.handleBindApplication()` / `installContentProviders()`：问题在远端 provider 冷启动或 provider 发布超时。
 
 ### 远程 ContentProvider 冷启动导致的级联 ANR
 
@@ -269,7 +275,7 @@ Binder 线程池的关键参数：
 - **冷启动场景**：提供方进程的主线程栈帧包含 `ActivityThread.handleBindApplication()`，说明它正在初始化过程中
 - **日志关键字**：`ContentProviderTimeout` 出现在 system_server 的日志中
 
-[图：ContentProvider ANR 在 Perfetto 中的时间线——调用方主线程 BLOCKED，提供方进程冷启动区间]
+在 Perfetto 里把三类轨道放到同一时间轴：调用方主线程的 `binder transaction`，提供方进程的 Binder 线程，以及提供方主线程的启动切片。调用方只看到等待区间，实际执行位置要从 Binder reply 对应到提供方线程。
 
 
 ## 多进程 ContentProvider
@@ -325,7 +331,7 @@ ContentProvider 支持通过 `android:process` 属性声明在独立进程中运
 - Provider 的内存使用量不可控（如第三方数据库缓存），需要独立进程避免影响主进程 OOM
 
 注意事项：
-- Provider 进程的 Application.onCreate() 应尽量轻量。可以通过 `Process.isProviderProcess()` 或检查进程名来跳过主进程才需要的初始化逻辑 [待验证：Process API 是否提供直接的 Provider 进程判断方法，实践中通常通过进程名匹配实现]
+- Provider 进程的 Application.onCreate() 应尽量轻量。API 28+ 可以用 `Application.getProcessName()` 获取当前进程名，再和 manifest 中的 `android:process` 值（如 `com.example:provider`）匹配；低版本走团队已有的进程名兼容函数。Android SDK 没有 `Process.isProviderProcess()` 这类公开 API。
 - Provider 进程会被系统纳入 oom_adj 管理，后台时可能被低内存杀手回收。下次访问时需要重新冷启动
 - 多进程场景下数据库的锁竞争更加复杂：主进程和 Provider 进程访问同一个 SQLite 文件时，WAL（Write-Ahead Logging）模式是必需的，否则并发写入会频繁触发 SQLITE_BUSY 错误
 
@@ -384,7 +390,27 @@ for (ContentValues values : dataList) {
 contentResolver.applyBatch(authority, ops); // 一次 Binder IPC
 ```
 
-`applyBatch()` 会将所有操作打包成一个 `ContentProviderOperation` 数组，通过一次 Binder 调用传到远端，远端在同一个事务中顺序执行。这既减少了 Binder 开销，又保证了操作的原子性。
+`applyBatch()` 会将所有操作打包成一个 `ContentProviderOperation` 数组，通过一次 Binder 调用传到远端。AOSP `ContentProvider.applyBatch(ArrayList<ContentProviderOperation>)` 的默认实现只是按数组顺序调用每个 operation 的 `apply()`；它不会自动开启 SQLite transaction，也不会在某个操作失败时回滚前面已经执行的操作。
+
+如果这批操作必须具备原子性，provider 需要 override `applyBatch()`，在自己的数据库层显式包一层 transaction。最小示意如下，关注 transaction 的边界：
+
+```java
+@Override
+public ContentProviderResult[] applyBatch(ArrayList<ContentProviderOperation> operations)
+        throws OperationApplicationException {
+    SQLiteDatabase db = helper.getWritableDatabase();
+    db.beginTransaction();
+    try {
+        ContentProviderResult[] results = super.applyBatch(operations);
+        db.setTransactionSuccessful();
+        return results;
+    } finally {
+        db.endTransaction();
+    }
+}
+```
+
+系统或三方 provider 可以自己实现事务语义，但这不是 framework 默认保证。调用方只能把 `applyBatch()` 当成减少 Binder 往返的批处理入口；是否原子，要看目标 provider 的实现。
 
 ### Cursor 优化
 
@@ -408,7 +434,7 @@ ContentProvider 相关的性能问题在 Perfetto 中有几个典型的观测点
 
 如果这个区间特别长（比如超过 50ms），说明有 ContentProvider 在 `onCreate()` 中做了重操作。我们可以展开这个切片，看具体是哪个 CP 的初始化最耗时。
 
-[图：Perfetto 中 installContentProviders 切片——主线程 track 上的长条，对应 Application.onCreate 之前的区间]
+截图取证时只截三处：`installContentProviders` 起止时间、内部最慢的 provider `onCreate()` 区间，以及它和 `Application.onCreate()` 的先后关系。这样截图能直接回答“启动慢是不是 provider 初始化造成的”。
 
 ### 跨进程 ContentProvider 调用
 
@@ -445,7 +471,7 @@ WHERE slice.name LIKE '%binder%' AND slice.dur > 100e6
 ORDER BY slice.dur DESC;
 ```
 
-[待补充：Trace 截图——正常 vs 异常 ContentProvider 调用的对比]
+对比快慢调用时保留同一套字段：调用方线程、提供方进程、slice 名称、耗时、提供方线程状态、是否伴随 provider 冷启动。正常调用通常只需要一段短 `binder transaction`；慢调用会在提供方 Binder 线程上看到长查询、锁等待、I/O 或 GC。
 
 ## 与其他机制的关系
 
