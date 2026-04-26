@@ -1,6 +1,7 @@
 ---
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
+section: "2.6"
 status: ready-for-review
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-27"
@@ -20,20 +21,22 @@ last_task9_at: "2026-04-27T01:20:00+08:00"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/CompositionEngine/"
   - type: official
     path: "https://source.android.com/docs/core/graphics/surfaceflinger"
   - type: blog
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-27T00:40:00+08:00"
-review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。"
+last_task2b_at: "2026-04-27T02:40:00+08:00"
+review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。"
 task6_reviewed_date: "2026-04-27"
 
 ---
@@ -115,9 +118,9 @@ SurfaceFlinger 和应用之间通过 BufferQueue 传递画面数据。最常见�
 
 SurfaceFlinger 合成慢不只是自己的问题——它会沿着 BufferQueue 链向上传递 backpressure，最终堵死 App 的渲染线程。
 
-完整路径是确定的（已验证 AOSP `BufferQueueProducer.cpp` 行 297–399、`BufferQueueConsumer.cpp` 行 480–591）：SurfaceFlinger / HWC 持有 Buffer 进行合成时，App 侧 `releaseBuffer()` 不会被调用，`mFreeBuffers` 保持为空；此时 App 的 RenderThread 调用 `dequeueBuffer()` → `waitForFreeSlotThenRelock()` → `mDequeueCondition.wait(lock)` 主动阻塞，等 SurfaceFlinger 完成 present 后 `releaseBuffer()` → `mDequeueCondition.notify_all()` 才会被唤醒。
+这条路径发生在 consumer 释放旧 Buffer 与 producer 重新拿到可写 slot 之间（已验证 AOSP `BufferQueueProducer.cpp` 行 297–399、`BufferQueueConsumer.cpp` 行 480–591）：SurfaceFlinger / HWC 持有 Buffer 参与合成或等待 present fence 时，consumer 侧 `releaseBuffer()` 还没有让对应 slot 回到可用状态；App 的 RenderThread 调用 `dequeueBuffer()` 后，会在 `waitForFreeSlotThenRelock()` 里等待 free slot、out fence 或 release fence 条件满足，必要时进入 `mDequeueCondition.wait(lock)`。当 consumer 完成 release 并触发 `mDequeueCondition.notify_all()` 后，producer 才能继续拿到可写 Buffer。
 
-所以在 Trace 里看到 RenderThread `dequeueBuffer()` 阻塞，根因不一定在 App 侧。顺着往上看：如果 SurfaceFlinger 主线程的 `commit` / `composite` / `present` 耗时异常，或者 HWC 持有 Buffer 时间变长，`dequeueBuffer()` 等待通常是下游持有 Buffer 的结果。反过来，如果 SurfaceFlinger 并不忙，但 dequeue 依然持续阻塞，那就该查 slot 数量配置、shared buffer mode、或 buffer count 约束这些上层设置。
+在 Trace 里看到 RenderThread `dequeueBuffer()` 阻塞，根因不一定在 App 侧。顺着往上看：如果 SurfaceFlinger 主线程的 `commit` / `composite` / `present` 耗时异常，或者 HWC 持有 Buffer 时间变长，`dequeueBuffer()` 等待通常是下游长期持有 Buffer 的结果。反过来，如果 SurfaceFlinger 并不忙，但 dequeue 依然持续阻塞，那就该查 slot 数量配置、shared buffer mode、或 buffer count 约束这些上层设置。
 
 [已验证：AOSP android-main `BufferQueueProducer::waitForFreeSlotThenRelock`、`BufferQueueConsumer::releaseBuffer::mDequeueCondition.notify_all`]
 
@@ -238,7 +241,7 @@ void Scheduler::onFrameSignal(ICompositor& compositor, VsyncId vsyncId,
 
 这个 Track 显示触发应用程序渲染的 VSync 信号。VSYNC-app 和 VSYNC-sf 之间的时间差就是 offset——VSYNC-app 先到，App 开始渲染；渲染完成后 VSYNC-sf 到来，SurfaceFlinger 开始合成。
 
-**关键检查点**：VSYNC-app 到 VSYNC-sf 的间距应该稳定。如果间距异常增大，意味着 App 可用的时间变少了；如果间距异常减小甚至 VSYNC-sf 先于 VSYNC-app 到来，说明时序配置有问题。
+**检查点**：VSYNC-app 到 VSYNC-sf 的间距应该稳定。间距缩短会压缩 App 在本轮 SF latch 前的生产时间，`doFrame`、RenderThread 渲染或 GPU fence 稍有延迟就更容易错过 latch。间距增大通常给 App 更多生产时间，但会改变 SF / display 侧余量和端到端延迟，仍要结合 expected present、actual present 和 FrameTimeline 判断。
 
 ### BufferQueue Track
 
@@ -282,9 +285,9 @@ Layer 是 SurfaceFlinger 管理显示内容的基本单元。每个 Activity、�
 
 Layer 之间有父子关系，构成树形结构。父 Layer 可以控制子 Layer 的可见性和变换。最终决定屏幕上显示效果的是 z-order——Layer 的前后顺序。z-order 值越大的 Layer 越靠前（离用户越近），会遮挡 z-order 值小的 Layer。
 
-在 SurfaceFlinger 主循环的 `rebuildLayerStacks` 阶段，所有可见的 Layer 会按 z-order 排序，形成最终的合成列表。通过 `dumpsys SurfaceFlinger` 命令可以查看当前所有 Layer 的 z-order 和层级关系。
+Android 12-16 的 SurfaceFlinger 主路径不要再按旧博客中 Layer stack 重建 / working set 两个阶段名解释。更稳妥的口径是：`SurfaceFlinger::commit()` 收拢 transaction、Layer state 和 Buffer latch 结果；`SurfaceFlinger::composite()` 把可见 Layer 交给 CompositionEngine；CompositionEngine 的 Output / OutputLayer 路径再按显示输出计算可见区域、裁剪、z-order、composition type，并把结果送往 HWC 或 RenderEngine。通过 `dumpsys SurfaceFlinger` 可以查看当前 Layer 树、z-order、Buffer 状态和部分合成类型快照。
 
-一个常见的性能陷阱是 Layer 数量过多。每多一个 Layer，SurfaceFlinger 在 `rebuildLayerStacks` 和 `calculateWorkingSet` 阶段就要多处理一层，HWC 也需要多分配一个 Overlay 平面。当 Layer 数量超过 HWC 支持的最大 Overlay 数量时，多余的 Layer 会被退回 Client 合成，GPU 开销陡增。所以在做性能优化时，减少不必要的 Layer（比如合并过度绘制的 View 层级、避免不必要的硬件层）是值得关注的。
+一个常见的性能陷阱是可见 Layer 数量过多。每多一个可见 Layer，SurfaceFlinger 在 commit/composite 与 CompositionEngine 输出规划中就要多处理一份状态，HWC 也要评估是否还能分配 overlay plane。当 Layer 组合超过 DPU / display controller 能力，或存在缩放、旋转、透明、颜色格式等限制时，部分 Layer 会退回 Client 合成，GPU 和内存带宽开销会上升。减少不必要的 Surface / 硬件层、控制窗口和浮层数量，是排查这类问题时的基础动作。
 
 [图：Layer 树形结构和 z-order 排列示意图——状态栏(z=高)、App(z=中)、壁纸(z=低)的叠加关系]
 
@@ -392,6 +395,7 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 ### AOSP 源码
 
 - `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` — SurfaceFlinger 主流程实现，Android 12-13 侧重 `onMessageReceived` / `handleMessageInvalidate` / `onMessageRefresh`，Android 14+ 侧重 `commit()` / `composite()`
+- `frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp` / `OutputLayer.cpp` — 显示输出层规划、可见区域、裁剪和 composition type 计算入口
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 服务完整实现
 - `frameworks/base/core/java/android/view/ViewRootImpl.java` — 主窗口 BLAST 接入路径
 - `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现（Android 11 进入主线，Android 12+ 更适合结合 FrameTimeline 一起分析）
