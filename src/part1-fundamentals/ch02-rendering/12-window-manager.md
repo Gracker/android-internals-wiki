@@ -63,21 +63,22 @@ related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-26"
-last_task9_at: "2026-04-26T21:29:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-27"
+last_task9_at: "2026-04-27T06:20:00+08:00"
 last_task2b_at: "2026-04-27T02:40:00+08:00"
 review_notes: "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line."
 review_log: "logs/review/2026-04-11-11-review.md"
+task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
 ---
 # 2.12 Window Manager Service 与窗口管理
 
