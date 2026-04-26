@@ -9137,8 +9137,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-20-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-20-external-review.md",
+    "completed_at": "2026-04-26T15:45:22+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "External Review P0/P1：补强 Emmagee Deprecated / 不可用标识，补充 SoloPi 上游停更与 targetSdk 29 风险；满足 task6/task9 pass 且本 section 无剩余 pending，自动保持 finalized。"
   },
   {
     "section": "7.12",
@@ -11037,7 +11040,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T13:26:21+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T15:45:22+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task9 P95：修正 ANGLE 渲染时序图，删除 GPU scanout 误导，补 SurfaceFlinger/HWC/RenderEngine 边界。"
   },
   {
     "section": "1.1",
@@ -11970,7 +11976,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T14:36:59+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T15:45:22+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task9 P95：修正 BroadcastReceiver Android 14+ soft/hard timeout 口径，删除 IMMS onInputEvent timeout 错误锚点并改回 InputDispatcher。"
   },
   {
     "section": "9.2",

@@ -29,21 +29,23 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 
 task9_result: needs-rework
 last_task9_at: "2026-04-26T14:36:59+08:00"
-last_task2b_at: "2026-04-26T13:40:00+08:00"
-task2b_fixed_at: "2026-04-26T13:40:00+08:00"
+last_task2b_at: "2026-04-26T15:45:22+08:00"
+task2b_fixed_at: "2026-04-26T15:45:22+08:00"
 rework_by: openclaw-task2b
-rework_type: "review回炉修复（External 问题单）"
+rework_type: "review回炉修复（Task9 问题单）"
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 # ANR 设计思想
@@ -103,24 +105,27 @@ ANR 机制在这个场景中介入的方式是：设置一个超时计时器，�
 
 ## ANR 机制的核心流程
 
-了解了设计初衷之后，我们来看 ANR 机制具体是怎么工作的。整个流程可以抽象为四个阶段。
+ANR 机制可以拆成四个阶段：注册超时、主线程处理、超时触发、弹窗或杀进程。
 
 ### 第一阶段：注册超时
 
-当某个需要应用响应的操作开始时，system_server 会在一个后台线程上设置一个延迟消息。以 BroadcastReceiver 为例：当 AMS 将一个广播分发给目标应用时，它会同时通过 Handler 发送一个延迟消息，延迟时间就是该类型广播的超时阈值（前台广播 10 秒，后台广播 60 秒）。
+当某个需要应用响应的操作开始时，system_server 会在后台线程上设置延迟消息。以 BroadcastReceiver 为例，Android 13 及以下常用排查口径是前台广播 10 秒、后台广播 60 秒；Android 14+ 的 Modern Broadcast Queue 把广播超时拆成 soft timeout 和 hard timeout，官方诊断窗口扩展为前台 10-20 秒、后台 60-120 秒。
 
 ```java
 // 概念流程（简化）
 // frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java
+// frameworks/base/services/core/java/com/android/server/am/BroadcastQueueModernImpl.java
 // @ AOSP android-14.0.0_r1
 
-// 1. 将广播入队并设置超时
-enqueueOrderedBroadcastLocked(r);
-// 2. 设置超时检测（在 AMS 的后台 Handler 上）
+// Android 13 及以下的典型口径：分发广播时设置固定 timeout
 scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
+
+// Android 14+ Modern Broadcast Queue：先触发 soft timeout
+// dispatchReceivers() 记录 lastCpuDelayTime 并发送 MSG_DELIVERY_TIMEOUT_SOFT
+// deliveryTimeoutSoftLocked() 再按 app.getCpuDelayTime() 计算 hard timeout
 ```
 
-这段代码的核心思路是"发令枪 + 计时器"：广播发送出去的同时，计时器开始倒计时。如果应用在规定时间内完成了 `onReceive()` 的执行并通知了 AMS，这个计时器就会被取消——一切正常，用户毫无感知。
+广播发送出去的同时，计时器开始倒计时。如果应用在窗口内完成 `onReceive()` 并通过 `finishReceiver()` 通知 AMS，计时器会被取消。Android 14+ 追加 hard timeout 的目的，是把 CPU starvation 和冷启动阶段的等待纳入窗口，避免系统忙或进程刚拉起时过早判定 Broadcast ANR。
 
 ### 第二阶段：主线程处理
 
@@ -137,7 +142,7 @@ scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
 
 这些完成通知都运行在 Binder 线程上，与组件自身的执行（运行在主线程）是异步的。也就是说，主线程在执行 `onReceive()` 的过程中不需要同步等待 AMS 确认——AMS 的超时计时器在后台独立运行，只要 Binder 回调到达就会取消计时。
 
-这里有一个重要的细节：**超时检测和应用执行是完全异步的。** 超时计时器运行在 system_server 的后台线程上，它不会去检查应用主线程"在做什么"，它只关心"结果有没有回来"。这种设计是故意的——如果超时检测需要同步调用应用，那应用自身的问题可能连检测机制一起拖死。
+超时检测和应用执行是异步关系。超时计时器运行在 system_server 的后台线程上，它不会检查应用主线程"在做什么"，只检查"结果有没有回来"。如果超时检测同步调用应用，应用自身的问题可能连检测机制一起拖死。
 
 ### 第三阶段：超时触发
 
@@ -207,9 +212,9 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 
 [已验证: AOSP android-8.0.0_r1 / android-9.0.0_r1 / android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, ActiveServices.java 与 ActivityManagerConstants.java]
 
-**InputConnection ANR**：当输入法通过 `InputConnection` 向应用发送输入事件时，如果应用在 5 秒内没有响应（`InputMethodManagerService#onInputEvent` timeout），系统会判定为 InputConnection ANR。这类 ANR 在使用自定义键盘或富文本编辑器的场景中较为常见，与前述 Input ANR（InputDispatcher 层面）的触发条件不同——InputConnection ANR 发生在输入事件已经被分发到目标窗口之后，但应用的 InputConnection 回调处理超时。
+**InputConnection / IME 输入相关无响应**：不要把它写成 `InputMethodManagerService#onInputEvent` 的 5 秒 timeout。AOSP android-14.0.0_r1 的 `InputMethodManagerService` 中没有这个判定点。IME 和 `InputConnection` 是输入法交互路径的一部分；如果表现为输入事件长期没有完成，最终仍要回到 `InputDispatcher` 的 dispatching timeout、waitQueue 和 `AnrTracker` 机制，由 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` 处理。排查这类问题时，把 IME Binder 调用、目标应用主线程和 InputDispatcher 超时放在同一条时间线上看。
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/inputmethod/InputMethodManagerService.java]
+[已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp；InputMethodManagerService.java 未见 `onInputEvent` timeout 判定点]
 
 ### 核心：AnrHelper 与 ProcessErrorStateRecord
 

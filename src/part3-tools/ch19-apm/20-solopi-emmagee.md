@@ -37,13 +37,14 @@ task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-04-25T04:45:04+08:00'
-repaired_date: '2026-04-25'
+last_task2b_at: "2026-04-26T15:45:22+08:00"
+repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T17:41:15+08:00"
+rework_type: "review回炉修复（External Review 问题单）"
 ---
 
 
@@ -108,6 +109,8 @@ SoloPi 是支付宝开源的无线化、非侵入式 Android 自动化工具。R
 
 SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2，README 写明 Android Studio 4.0、Gradle 6.1.1、TargetApi 29、MinimumApi 18；GitHub latest release 仍是 v0.12.0（2022-05）。这套基线直接影响 Android 12 之后的验收方式。
 
+上游维护状态也要放进工具选型：公开 release 停在 2022-05，仓库 `targetSdkVersion` 为 29，公开构建链没有跟进 Android 14+ 前台服务类型、后台启动 Activity、受限设置等行为变化。SoloPi 可以用来固定操作路径，但不要作为自动化测试的唯一依赖；关键回归要保留 adb、Macrobenchmark、PerfDog、Perfetto 等可替代路径。
+
 | 项目 | 上游公开基线 | 对测试的影响 |
 |---|---|---|
 | AGP | 4.0.2 | 构建链停留在 Android Studio 4.0 时代，后续平台行为变化没有在仓库里公开成新基线 |
@@ -127,6 +130,8 @@ SoloPi 公开仓库暴露出的构建基线比较老：根工程使用 AGP 4.0.2
 ## Emmagee：早期单 App 性能悬浮窗
 
 Emmagee 是网易早期开源的 Android 性能测试工具。README 写明它可监控指定 App 的 CPU、内存、流量、电池电流与状态、启动时间，并输出悬浮窗与 CSV 报告。
+
+> **Deprecated / 不可用边界**：Emmagee 不应作为 Android 8-17 主力工具。README 已声明 Android 7.0 不支持；Android 8+ 对外部进程信息读取继续收紧，Emmagee 这类外部采样工具更难获得可信 CPU、内存和 TopActivity 数据，现代设备上的结果可能是 0、空值或错误值。正文只把它作为历史工具和旧报告对照材料。
 
 版本边界要按 README 原文写：Android 5.0 以上 `getRunningTasks()` 和 `getRunningAppProcesses()` 行为受限，拿不到 TopActivity；Android 7.0 上 `/proc` 访问和 `TOP` 命令拿 pid 都受限，README 直接写出“7.0 can not be supported”。这一条比“精度下降”更强，含义就是官方已经把 Android 7.0 列为不支持平台。
 

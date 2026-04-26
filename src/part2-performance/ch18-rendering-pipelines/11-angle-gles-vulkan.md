@@ -22,8 +22,8 @@ sources:
 - AOSP external/angle/
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
@@ -32,10 +32,10 @@ task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 task9_result: needs-rework
 review_round: 1
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-26T11:51:00+08:00"
+last_task2b_at: "2026-04-26T15:45:22+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9 问题单）"
@@ -121,22 +121,34 @@ sequenceDiagram
     participant App as App (GLES)
     participant ANGLE as ANGLE Translator
     participant VK as Vulkan Driver
-    participant GPU as GPU
+    participant BQ as ANativeWindow / BufferQueue
     participant SF as SurfaceFlinger
+    participant RE as RenderEngine / GPU
+    participant HWC as HWC
+    participant DISP as Display pipeline
 
-    Note over App: App 以为自己在用 GLES
+    Note over App: App 侧仍调用 GLES
     App->>ANGLE: glDrawArrays()
-    ANGLE->>ANGLE: State Validation
-    ANGLE->>ANGLE: Translate to Vulkan Cmd
+    ANGLE->>ANGLE: State validation
+    ANGLE->>ANGLE: Translate to Vulkan commands
     ANGLE->>VK: vkCmdDraw()
-    
+
     App->>ANGLE: eglSwapBuffers()
     ANGLE->>VK: vkQueuePresentKHR()
-    VK->>SF: queueBuffer (via BLAST)
-    
-    SF->>GPU: Composite
-    GPU->>GPU: Scanout
+    VK->>BQ: queueBuffer / present buffer
+    BQ->>SF: latch buffer
+    SF->>HWC: validateDisplay() / getChangedCompositionTypes()
+    alt CLIENT composition exists
+        SF->>RE: compose client target
+        RE->>HWC: setClientTarget()
+    else DEVICE composition only
+        SF->>HWC: accept device composition
+    end
+    SF->>HWC: presentDisplay()
+    HWC->>DISP: scanout through display controller
 ```
+
+这张图把 ANGLE 的责任边界停在 Vulkan WSI 与 BufferQueue。SurfaceFlinger latch 之后会先和 HWC 协商每个 layer 的 composition type；只有 CLIENT layer 需要 RenderEngine / GPU 生成 client target，最终送显由 HWC 和显示控制器完成。
 
 关键差异点：
 
@@ -144,7 +156,7 @@ sequenceDiagram
 |:---|:---|:---|
 | `glDrawArrays` | 直接调用 GLES 驱动 | 翻译为 `vkCmdDraw` |
 | `glShaderSource` | GLSL → GPU Binary | GLSL → SPIR-V → GPU Binary |
-| `eglSwapBuffers` | GLES 驱动处理 | 翻译为 `vkQueuePresentKHR` |
+| `eglSwapBuffers` | GLES 驱动提交 buffer | ANGLE 走 Vulkan WSI / ANativeWindow 提交 buffer，后段由 SurfaceFlinger、HWC 和显示控制器处理 |
 
 ## 性能特征
 
