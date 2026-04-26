@@ -48,10 +48,10 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
@@ -60,7 +60,10 @@ task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T08:30:00+08:00"
 task2b_result: fixed
-last_task2b_at: "2026-04-25T16:44:10+08:00"
+last_task2b_at: "2026-04-26T08:55:00+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
+
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
@@ -182,21 +185,21 @@ eBPF 程序长期受内核版本兼容性影响。结构体布局一变，硬编
 
 ### uprobe：追踪用户态函数
 
-Simpleperf 记录 uprobe 时，事件选择更稳的写法是 `-e probe:<event_name>`，探针定义仍通过 `--uprobe` 传入。示例：
+Simpleperf 记录 uprobe 时，事件选择使用 `-e uprobes:<event_name>`，探针定义通过 `--uprobe` 传入。符号偏移要来自目标设备上的同一份 `.so`：
 
 ```bash
-# 第一步：获取函数符号地址
-unwind_info /system/lib64/libc.so | grep "kill"
-# PC 0xbfea0-0xbfeb8 <kill>
+# 第一步：在目标设备的 libc.so 中确认符号和偏移
+readelf -sW /system/lib64/libc.so | grep ' kill$'
+#  123: 00000000000bfea0 ... kill
 
 # 第二步：定义 uprobe 并录制它
 simpleperf record --app com.example.app -g \
-  -e probe:libc_kill \
+  -e uprobes:libc_kill \
   --uprobe 'p:libc_kill /system/lib64/libc.so:0xbfea0' \
   -o /data/local/tmp/perf.data
 ```
 
-这里 `probe:libc_kill` 是录制事件名，`--uprobe` 里的 `p:libc_kill ...` 负责把探针挂到目标 ELF 和偏移上。若要记录返回点，可以把定义改成 `r:<event_name>` 或 `%return` 形式。
+这里 `uprobes:libc_kill` 是录制事件名，`--uprobe` 里的 `p:libc_kill ...` 负责把探针挂到目标 ELF 和偏移上。不同 Android build 的 libc 偏移可能变化，换设备或换系统镜像后要重新查符号。
 
 这类探针适合追踪 JNI 边界、闭源 `.so` 的关键函数、低频控制路径调用次数等场景。若目标函数本身已经很热，再叠加栈回溯、参数抓取或 ring buffer 写出，探针成本会很快放大。
 
@@ -206,43 +209,57 @@ simpleperf record --app com.example.app -g \
 
 ### kprobe：追踪内核函数
 
-Simpleperf 也支持 `--kprobe`，事件名同样建议用 `probe:` 前缀：
+Simpleperf 也支持 `--kprobe`，事件名使用 `kprobes:<event_name>`：
 
 ```bash
-# 追踪文件打开操作
+# 追踪文件打开操作。内核符号名以当前设备 /proc/kallsyms 为准。
 simpleperf record -a -g --duration 30 \
-  -e probe:open_entry \
-  --kprobe "p:open_entry do_sys_open" \
+  -e kprobes:open_entry \
+  --kprobe "p:open_entry do_sys_openat2" \
   -o /data/local/tmp/perf.data
 
 # 追踪特定大小的内存分配
-simpleperf record -e probe:system_heap_alloc \
+simpleperf record -e kprobes:system_heap_alloc \
   --kprobe "p:system_heap_alloc system_heap_do_allocate len=%x1" \
   --tp-filter "len == 49942528" \
   --call-graph dwarf -a \
   -o /data/cam5.data
 ```
 
-第二个例子展示了 kprobe 的高级用法：不仅追踪函数调用，还通过 `len=%x1` 读取第一个参数的值，然后用 `--tp-filter` 过滤出特定大小的分配。这种"在内核中过滤"的方式避免了大量无关事件传到用户态，保持了低开销。
+第二个例子展示了 kprobe 的参数过滤：通过 `len=%x1` 读取 arm64 第一个参数，再用 `--tp-filter` 过滤出特定大小的分配。这种过滤发生在事件写出前，可以减少用户态后处理压力。
 
 [来源: Cubox/simpleperf的使用技巧-2025-11-18.md]
 
 ### 实战示例：追踪 RenderThread 帧耗时
 
-一个典型的 Android 性能分析场景：我们想知道 RenderThread 每一帧的 `eglSwapBuffers` 调用耗时。使用 bpftrace（eBPF 的高层前端）可以这样做：
+一个典型的 Android 性能分析场景：我们想知道 RenderThread 每一帧的 `eglSwapBuffers` 调用耗时。入口探针只能看到函数开始，耗时要用 `uprobe` 和 `uretprobe` 配对：
 
-> ⚠️ bpftrace 不是 Android 标准工具链的一部分，需要在设备上单独编译安装（或使用 userdebug/eng 版本中预装的版本）。在生产环境分析中，更推荐使用 Simpleperf 的 `probe:` 事件配合 `--uprobe` 定义探针。
+> ⚠️ bpftrace 不属于 Android 标准工具链，要在设备上单独编译安装，或使用 userdebug/eng 版本中预装的版本。生产环境分析优先使用 Simpleperf 的 `uprobes:` 事件配合 `--uprobe` 定义探针。
 
 ```bash
 # 找到 eglSwapBuffers 在 libEGL.so 中的符号
-# 然后用 bpftrace 统计每次调用的时间间隔
-bpftrace -e 'uprobe:/system/lib64/libEGL.so:eglSwapBuffers
-  { @swap_interval = stats(nsec - @last_swap); @last_swap = nsec; }'
+# 用入口/返回探针统计每次调用耗时
+bpftrace -e '
+uprobe:/system/lib64/libEGL.so:eglSwapBuffers
+{
+  @swap_start[tid] = nsecs;
+}
+
+uretprobe:/system/lib64/libEGL.so:eglSwapBuffers
+/@swap_start[tid]/
+{
+  $dur_ms = (nsecs - @swap_start[tid]) / 1000000;
+  @swap_ms = hist($dur_ms);
+  @swap_stats_ms = stats($dur_ms);
+  @swap_max_ms = max($dur_ms);
+  @swap_min_ms = min($dur_ms);
+  delete(@swap_start[tid]);
+}'
 ```
 
-bpftrace 的 `stats()` 函数会自动计算均值、方差、最大值、最小值。比起用 Systrace 手动标记每一帧，这种方式更高效，而且每次 uprobe 触发只执行几条指令。
+`stats()` 输出 count、average、total。最大值和最小值要分别用 `max()` / `min()`，分布用 `hist()` / `lhist()`，分位数通常在导出数据后离线计算。
 
-[图：bpftrace stats() 输出示例——展示 eglSwapBuffers 调用间隔的均值 / 方差 / 分位数]
+[图：bpftrace 输出示例——展示 eglSwapBuffers 调用耗时的直方图、count、average、total、max、min]
 
 [来源: Cubox/ebpf在 Android 上的玩法示例-2025-12-22.md]
 
@@ -372,17 +389,18 @@ eBPF 可以挂到 `sched:sched_switch` tracepoint，在每次上下文切换时�
 
 ### 系统调用延迟追踪
 
-通过 eBPF 挂载到 `raw_syscalls:sys_enter` 和 `raw_syscalls:sys_exit` tracepoint，可以精确测量每个系统调用的延迟分布：
+通过 eBPF 测系统调用延迟时，入口和退出事件要成对采集，并在后处理或 BPF map 中按 `tid + syscall id` 配对。只记录 `raw_syscalls:sys_enter` 只能说明哪些 syscall 被调用，不能直接得到延迟：
 
 ```bash
-# 用 simpleperf 追踪特定系统调用
+# 记录 aarch64 signal/exit 相关 syscall 的进入和退出事件
+# 后处理时按 tid + id 配对，计算 sys_exit.ts - sys_enter.ts
 simpleperf record -a -g -c 1 \
-  -e "raw_syscalls:sys_enter" \
-  --tp-filter 'id == 94 || id == 93 || id == 424 || id == 129 || id == 130' \
+  -e raw_syscalls:sys_enter,raw_syscalls:sys_exit \
+  --tp-filter 'id == 93 || id == 94 || id == 129 || id == 130 || id == 131' \
   -o /data/perf.data
 ```
 
-这比 strace 快几个数量级——eBPF 在内核中直接记录，不需要像 strace 那样在每次系统调用时暂停和恢复目标进程。
+上面的 id 以 arm64 / asm-generic syscall table 为准：93 是 `exit`，94 是 `exit_group`，129 是 `kill`，130 是 `tkill`，131 是 `tgkill`。换成其他 ABI 或其他 syscall 时先查目标内核的 syscall 表。Simpleperf 负责录制事件和栈；延迟分布要在导出的事件里按 enter/exit 时间差计算。若使用 bpftrace 或自写 eBPF 程序，可以把起始时间存进 BPF map，在 exit 时输出直方图。
 
 [来源: Cubox/simpleperf的使用技巧-2025-11-18.md]
 
