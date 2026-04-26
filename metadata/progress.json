@@ -7814,5 +7814,78 @@
       ],
       "auto_promotion": "not applied: both sections still have task9_result=needs-rework and were returned to task6_pending"
     }
+  },
+  "section_4_7": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T05:45:00+08:00",
+    "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
+    "title": "16KB Page Size 与 Android 性能",
+    "notes": "Task2B fixed P95 Task9/External review issues; returned to Task6 pending."
+  },
+  "section_5_7": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T05:45:00+08:00",
+    "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+    "title": "CPU 相关的版本演进",
+    "notes": "Task2B fixed P95 Task9/External review issues; returned to Task6 pending."
+  },
+  "section_5_10": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T05:45:00+08:00",
+    "path": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+    "title": "JobScheduler/WorkManager 调度与后台任务性能",
+    "notes": "Task2B fixed P95 Task9/External review issues; returned to Task6 pending."
+  },
+  "2026-04-27-05-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-27T05:45:00+08:00",
+    "sections": [
+      "4.7",
+      "5.7",
+      "5.10"
+    ],
+    "queue_indexes_completed": [
+      279,
+      287,
+      316
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
+      "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+      "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "4.7 修正 16KB app compat RELRO 结论，补 linker_phdr/linker_phdr_16kib_compat/linker.cpp 源码路径",
+        "4.7 修正 TLB/page-table walk 观测口径，Perfetto 只作为 page fault/mmap/启动时序证据，TLB 用 PMU/simpleperf",
+        "5.7 补 ARMv8.5/ARMv9 SVE2/MTE 边界，修正 App 直接设置 uclamp 的 API 边界",
+        "5.7 同步 JobScheduler statsd/atrace 观测口径，修正 Android 15 后台网络限制的趋势归类",
+        "5.10 替换伪源码为 android-16.0.0_r1 JobSchedulerService 流程摘要，修正 setOverrideDeadline 语义",
+        "5.10 修正 Android Vitals wake lock 指标、OnAlarmListener 版本边界和 UIDT/FGS 选型表"
+      ],
+      "auto_promotion": "not applied: three sections still have task9_result=needs-rework and were returned to task6_pending"
+    }
   }
 }

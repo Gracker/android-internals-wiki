@@ -10,8 +10,8 @@ polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 applicable_versions: "Android 15 (API 35) - Android 17 (API 37)"
-last_verified: "2026-04-06"
-last_verified_against: "developer.android.com, source.android.com, ARM Architecture Reference Manual"
+last_verified: "2026-04-27"
+last_verified_against: "developer.android.com, source.android.com, AOSP bionic main, AOSP android-16.0.0_r1, ARM Architecture Reference Manual"
 confidence: medium
 sources:
   - type: official
@@ -20,6 +20,14 @@ sources:
     path: "source.android.com/docs/architecture/16kb-page-size"
   - type: official
     path: "android-developers.googleblog.com/16kb-page-size"
+  - type: aosp
+    path: "platform/bionic/+/main/linker/linker_phdr.cpp"
+  - type: aosp
+    path: "platform/bionic/+/main/linker/linker_phdr_16kib_compat.cpp"
+  - type: aosp
+    path: "platform/bionic/+/main/linker/linker.cpp"
+  - type: aosp
+    path: "platform/bionic/+/main/libc/platform/bionic/page.h"
   - type: research
     path: "ARM Architecture Reference Manual — TLB 结构与页大小"
 tags:
@@ -29,28 +37,32 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-27
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-04-27T05:20:00+08:00
-last_task2b_at: "2026-04-22T12:08:42+08:00"
+last_task2b_at: "2026-04-27T05:45:00+08:00"
 task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。"
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
+rework_type: "review回炉修复（Task9/External 问题单）"
+
 ---
 # 4.7 16KB Page Size 与 Android 性能
 
 ## 为什么要了解 16KB Page Size
 
-当我们在 Perfetto 中对比同一台设备上 4KB 和 16KB page size 的启动 trace 时，会发现一个明显的差异：冷启动阶段主线程的 page fault 次数大幅减少，CPU 在内核态的时间占比明显下降。这不是魔法——是内存管理粒度变化带来的直接效果。
+在同一设备上对比 4KB 和 16KB page size 的冷启动 trace，最稳定的差异通常来自 page fault 计数、`mmap` 映射数量和启动耗时。TLB refill / page-table walk 不会直接以 kernel slice 或 `iowait` 出现在 CPU Scheduling 轨道里；这类 CPU 事件更适合用 simpleperf / perf 的 PMU 事件核对。Perfetto 负责把 page fault、`mmap` 和进程启动时序放到同一时间轴比较。
 
 从 Android 15 开始，AOSP 支持使用 16KB page size 的设备。Google Play 当前公开的兼容要求也围绕 Android 15 展开：从 2025 年 11 月 1 日起，target Android 15+ 的 64 位新 App 和现有 App 更新需要支持 16KB。对 Android 16、Android 17 的设备侧强制策略，要以当年的 CDD 或官方公告为准。
 
-为什么是现在？手机 RAM 从 2015 年的 2-3GB 增长到 2025 年的 8-16GB，但 Linux 的默认内存页大小一直停留在 4KB——这个值是 1980 年代为 VAX 架构设计的。现代 ARM CPU 的 TLB 容量虽然在增长，但 4KB 页粒度下 TLB 覆盖的内存总量（TLB Reach）已经远远不够用了。Google 的测试数据表明，切换到 16KB 后平均冷启动速度提升 3.16%，部分 App 甚至提升 30%——这不是微优化，是值得系统级投入的性能收益。
+为什么是现在？手机 RAM 从 2015 年的 2-3GB 增长到 2025 年的 8-16GB，但 Linux 的默认内存页大小一直停留在 4KB——这个值是 1980 年代为 VAX 架构设计的。现代 ARM CPU 的 TLB 容量虽然在增长，但 4KB 页粒度下 TLB 覆盖的内存总量（TLB Reach）已经不够。Google 在官方文档中给出的 Pixel 测试结果显示，16KB 页的平均冷启动提升 3.16%，启动功耗降低 4.56%，系统启动时间缩短约 8%。这些数字适合作为方向性参考；落到具体 App 时，要用同一设备、同一 build、同一 App 在 4KB / 16KB 下复测。
 
 ## 核心机制
 
@@ -93,7 +105,7 @@ Google 在 Pixel 设备上的测试给出了以下具体数据：
 
 [已验证: 来源见 Google 官方 16KB Page Size 文档及 Android Developers Blog]
 
-冷启动提升 3.16% 是所有 App 的平均值，30% 的最佳值出现在内存访问密集型 App 上（如大型游戏、图片编辑类 App）。这类 App 在启动时需要映射大量代码和资源文件，TLB Miss 和 Page Fault 是主要瓶颈，因此 16KB 页的收益最大。
+公开页面没有给出完整样本 App 列表、每个 build fingerprint、重复次数和统计区间。本章把这些数字当作方向性收益，不把它们写成所有 App 的固定收益。冷启动提升 3.16% 是平均值，30% 的最佳值更接近内存访问密集型 App（如大型游戏、图片编辑类 App）。这类 App 在启动时需要映射大量代码和资源文件，TLB Miss 和 Page Fault 是主要瓶颈，因此 16KB 页的收益最大。
 
 功耗降低 4.56% 来自 CPU 减少了 TLB refill 和 Page Table Walk 的次数。这些操作需要访问内存中的页表，相比直接命中 TLB，功耗要高出数倍。减少这类"管理开销"，CPU 可以把更多时间用在有意义的计算上。
 
@@ -153,21 +165,28 @@ int page_size2 = getpagesize();
 
 > 以下内容来自 2026-04-23 源码调研，补充正文未覆盖的 Linker 层实现细节。
 
-### 核心检测逻辑（linker_phdr.cpp）
+### Bionic 中的页大小来源与 Linker 分支
 
-Bionic Linker 在加载 ELF 文件时，通过 `linker_phdr.cpp` 中的 `min_palign` 检测判断是否需要启用兼容模式。关键触发条件：
+Bionic 的页大小查询由 `libc/platform/bionic/page.h` 里的 `page_size()` 统一提供。固定页大小构建直接返回 `PAGE_SIZE`；page-size migration 构建从 `getauxval(AT_PAGESZ)` 读取运行时页大小。Native 代码把页大小写死成 `4096`，会绕过这条运行时路径。
+
+Bionic Linker 加载 ELF 时，`linker_phdr.cpp` 先在 `ElfReader::Read()` 中读取 program header，并通过 `CheckProgramHeaderAlignment()` 得到 `min_align_`。下面保留关键分支，省略无关检查；它用于说明条件判断，不作为可编译片段。
 
 ```cpp
 // bionic/linker/linker_phdr.cpp (AOSP main)
-// 当系统页大小为 16KB 且 ELF 的 min_palign 为 4KB 时触发
-if (kPageSize == 16*1024 && min_align_ == 4096) {
-    // 读取 bionic.linker.16kb.app_compat.enabled 属性
-    // 该值不能缓存，因为开发者可能动态开关
-    // 此检查为临时措施，16KB 兼容成为默认后将移除
+bool ElfReader::Read(...) {
+    // Several unrelated ELF header, section and dynamic checks are omitted.
+    CheckProgramHeaderAlignment();
+
+    if (kPageSize == 16 * 1024 && min_align_ == 4096) {
+        should_use_16kib_app_compat_ =
+            android::base::GetBoolProperty(
+                "bionic.linker.16kb.app_compat.enabled", false) ||
+            get_16kb_appcompat_mode();
+    }
 }
 ```
 
-**`kPageSize`** 是系统级常量，在 16KB 设备上等于 `16*1024`；**`min_align_`**（对应 ELF 程序头的 `min_palign`）来自 ELF 文件本身的段对齐声明。
+**`kPageSize`** 是 Linker 看到的运行时页大小；**`min_align_`** 来自 ELF program header 的最小 `p_align`。在 16KB 系统上遇到以 4KB 作为 `p_align` 的 ELF，Linker 才会读取 `bionic.linker.16kb.app_compat.enabled` 和 per-app compat mode。没有启用 compat 时，`LoadSegments()` 会在 `min_align_ < kPageSize` 的分支报错：`program alignment (4096) cannot be smaller than system page size (16384)`。
 
 ### 错误消息改进（commit fc89c8ae，2024-08-05）
 
@@ -181,11 +200,11 @@ program alignment (4096) cannot be smaller than system page size (16384)
 - **作者**：Steven Moreland
 - **文件**：`linker/linker_phdr.cpp` + `linker/linker_phdr.h`
 
-### 兼容模式的代价
+### 兼容模式的加载方式与代价
 
-当 `bionic.linker.16kb.app_compat.enabled=true` 时，Linker 绕过严格的 16KB 对齐要求，允许加载 4KB 对齐的 ELF。但**代价是禁用 RELRO 段保护**——RELRO 段在运行时变为可写，削弱 ASLR/RELRO 安全防护。
+启用 compat 后，`LoadSegments()` 使用 `kCompatPageSize` 对 `p_vaddr` / `p_offset` 向下取整。`CompatMapSegment()` 不直接 `mmap64()` 文件段，而是把按 4KB 边界组织的 LOAD segment 读入匿名 RW 映射；`Setup16KiBAppCompat()` 再调整 `load_bias_`，让 RX/RW permission boundary 位于 16KB 页起点。
 
-这是因为旧版 lld 链接器产生的 RELRO 段结尾未能 16KB 对齐，Compat Mode 通过牺牲这部分安全性换取加载成功。
+RELRO 保护仍然存在。`soinfo::protect_relro()` 在 compat 分支调用 `phdr_table_protect_gnu_relro_16kib_compat()`，对 compat RELRO 区域执行 `mprotect(PROT_READ | PROT_EXEC)`；普通分支走 `phdr_table_protect_gnu_relro()` / `_phdr_table_set_gnu_relro_prot(..., PROT_READ, ...)`。因此本节不能写“compat mode 禁用 RELRO”。它的代价集中在匿名映射、额外地址空间预留、VMA 数量和 16KB 权限边界处理上。
 
 ### 控制接口矩阵
 
@@ -253,9 +272,9 @@ Play Console 的 App Bundle Explorer 也提供了自动化的对齐检查。上�
 
 16KB 页大小不会在 Perfetto 中显示为一个独立的 Track 或标记——它的影响体现在多个 Track 的数据差异中。
 
-### Page Fault 频率变化
+### Page Fault 与 mmap 变化
 
-Perfetto 的 `mem.mm.min_flt` 计数器（部分 Pixel 设备支持）可以追踪 Minor Page Fault 的频率。对比 4KB 和 16KB 设备上同一 App 的冷启动 trace，16KB 设备上的 page fault 计数应该明显更低。
+Perfetto 侧优先看 minor / major fault 与 `mmap` / `munmap` 相关事件。`mem.mm.min_flt` 这类计数器是否可用，取决于设备内核和 trace 配置；没有该 counter 时，可用 `/proc/<pid>/stat` 启动前后差值、`am start -W` 启动耗时和 simpleperf 单独采样互相校验。对比 4KB 和 16KB 设备上同一 App 的冷启动 trace，16KB 设备上的 page fault 计数通常会更低。
 
 使用 Trace Processor SQL 查询：
 
@@ -275,11 +294,13 @@ GROUP BY process.name
 ORDER BY total_page_faults DESC;
 ```
 
-[待补充: 实际 16KB vs 4KB 的 Perfetto trace 截图对比]
+最小复现实验的记录项要固定下来：同一台可切换 page size 的设备、同一 Android build、同一 App 版本；每轮记录 `adb shell getconf PAGE_SIZE`、`adb shell getprop ro.build.fingerprint`、`am start -W` 启动耗时、minor / major fault 计数和 trace 时间段。若 SoC 暴露 TLB PMU 事件，再用 simpleperf / perf 采 `DTLB` / `ITLB` refill 或 walk 相关事件；事件名依内核导出而定，不能在正文写死成所有设备通用。
 
-### CPU 内核态时间占比
+### TLB / page-table walk 的观测边界
 
-TLB Miss 减少后，CPU 在内核态处理 Page Table Walk 的时间也相应减少。在 Perfetto 的 CPU Scheduling Track 中，对比两种页大小下启动阶段的 `iowait` 和内核态时间，可以看到 16KB 设备的内核态占比更低。
+TLB miss 后的 page-table walk 主要由 ARM64 hardware page-table walker 完成，不会直接变成 Perfetto CPU Scheduling 的 kernel slice 或 `iowait`。只有 page fault 才会进入内核异常路径，并可能在 trace 或计数器中留下调度侧信号。
+
+因此，Perfetto 用来合并比较 page fault、`mmap` 和启动时序；TLB refill / DTLB walk 需要 simpleperf / perf 的 PMU 事件。设备没有导出 TLB PMU 事件时，只能把 page fault 减少和启动耗时变化作为间接证据，不能用 `iowait` 或内核态时间当成 TLB walk 的直接证据。
 
 ## 与 Linux THP（Transparent Huge Pages）的关系
 
@@ -338,5 +359,5 @@ adb shell getconf PAGE_SIZE
 - [已验证: developer.android.com/guide/practices/page-sizes — Google 官方 16KB 迁移指南]
 - [已验证: source.android.com/docs/architecture/16kb-page-size — AOSP 架构文档]
 - [已验证: ARM Architecture Reference Manual — TLB 结构与页大小]
-- [待验证: Google 官方 16KB 测试数据的精确测试条件（设备型号 / Android 版本 / App 样本）]
+- [已标注边界: Google 官方 16KB 性能数据缺少完整样本与 build 细节，本章只作方向性参考]
 - [待验证: 16KB 基础页 + THP 在 Android 16 设备上的默认启用状态]

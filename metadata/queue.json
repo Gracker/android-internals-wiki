@@ -11959,14 +11959,17 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
+    "status": "completed",
     "date": "2026-04-26",
     "material_paths": [
       "logs/deep-review/2026-04-27-05-deep-review.md",
       "intake/suggestions.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-27T05:20:00+08:00"
+    "updated_at": "2026-04-27T05:20:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completed_at": "2026-04-27T05:45:00+08:00",
+    "completion_reason": "Task2B 已按 Task9 / External Review 问题单完成正文修复，章节退回 Task6 复审。"
   },
   {
     "section": "4.8",
@@ -12099,14 +12102,17 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
+    "status": "completed",
     "date": "2026-04-26",
     "material_paths": [
       "logs/deep-review/2026-04-27-05-deep-review.md",
       "intake/suggestions.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-27T05:20:00+08:00"
+    "updated_at": "2026-04-27T05:20:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completed_at": "2026-04-27T05:45:00+08:00",
+    "completion_reason": "Task2B 已按 Task9 / External Review 问题单完成正文修复，章节退回 Task6 复审。"
   },
   {
     "section": "9.1",
@@ -12918,6 +12924,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T05:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-content-processing-rework",
+    "completed_at": "2026-04-27T05:45:00+08:00",
+    "completion_reason": "Task2B 已按 Task9 / External Review 问题单完成正文修复，章节退回 Task6 复审。"
   }
 ]
