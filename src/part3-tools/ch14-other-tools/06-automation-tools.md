@@ -6,7 +6,7 @@ repaired_date: "2026-04-26"
 last_task2b_at: "2026-04-26T12:54:28+08:00"
 task2b_result: fixed
 section: '14.6'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-04'
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 last_verified: "2026-04-26"
@@ -38,18 +38,18 @@ related_chapters:
 - '14.1'
 - '8.3'
 - '8.7'
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 review_round: 3
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-26"
-task9_reviewed_by: openclaw-task6
-last_task9_at: "2026-04-26T12:46:09+08:00"
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-04-27
+task9_reviewed_by: openclaw-task9
+last_task9_at: 2026-04-27T03:32:04+08:00
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
 ---
