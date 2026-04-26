@@ -53,15 +53,15 @@ tags:
 
 polish_count: 1
 drafted_date: "2026-04-01"
-reviewed_date: "2026-04-21"
+task6_reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
