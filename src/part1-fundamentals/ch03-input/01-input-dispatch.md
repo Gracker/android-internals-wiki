@@ -7,7 +7,7 @@ last_verified: "2026-04-27"
 last_verified_against: "AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp / InputProcessor.cpp / inputflinger Android.bp"
 version_note: "已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android 13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及 Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。"
 confidence: high
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6
 rework2_date: "2026-04-15"
 rework2_by: "openclaw-task2b"
@@ -26,14 +26,15 @@ sources:
     path: "https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture"
 tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
 related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
-task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+task6_result: "pass-light-edit"
+pipeline_stage: task6_reviewed
+task6_state: "reviewed"
+task6_reviewed_date: "2026-04-27"
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T20:23:00+08:00"
 review_notes: "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；补 InputClassifier/InputProcessor、WindowInfosListener 版本边界、ANR 默认超时、InputChannel 失败路径、InputFlinger 默认进程形态。"
@@ -188,7 +189,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 }
 ```
 
-这里有一个重要的设计决策：为什么触摸事件不用焦点窗口？因为触摸事件的天然语义就是"点到谁就给谁"。如果用户点了一个悬浮窗下方的按钮，应该由悬浮窗接收事件（因为它在上面），而不是焦点窗口。而按键事件没有空间信息，只能用焦点窗口来决定接收者。
+为什么触摸事件不用焦点窗口？因为触摸事件的天然语义就是"点到谁就给谁"。如果用户点了一个悬浮窗下方的按钮，应该由悬浮窗接收事件（因为它在上面），而不是焦点窗口。而按键事件没有空间信息，只能用焦点窗口来决定接收者。
 
 ### 三大队列：iq / oq / wq
 
@@ -360,7 +361,7 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 
 **第三步：自身消费。** 如果没有子 View 消费（`mFirstTouchTarget == null`），ViewGroup 调用自己的 `onTouchEvent()`。如果子 View 消费了 `ACTION_DOWN`，后续的 `MOVE`、`UP` 事件会直接分发给记录在 `mFirstTouchTarget` 中的那个子 View，不再遍历。
 
-这里有一个关键设计：**`mFirstTouchTarget` 链表**。它记录了消费了 `ACTION_DOWN` 事件的子 View。后续的 `MOVE`、`UP` 事件直接沿着这个链表分发，不再重新查找目标。这保证了整个触摸序列（DOWN → MOVE... → UP）由同一个 View 处理，避免了滑动过程中事件在不同 View 之间跳来跳去的混乱。
+**`mFirstTouchTarget` 链表**是整个分发机制的关键数据结构。它记录了消费了 `ACTION_DOWN` 事件的子 View。后续的 `MOVE`、`UP` 事件直接沿着这个链表分发，不再重新查找目标。这保证了整个触摸序列（DOWN → MOVE... → UP）由同一个 View 处理，避免了滑动过程中事件在不同 View 之间跳来跳去的混乱。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewGroup.java]
 
