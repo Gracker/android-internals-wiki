@@ -7,7 +7,7 @@
     "finalized": 83,
     "ready-for-review": 135,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T18:45:27+08:00",
+    "last_updated": "2026-04-26T19:33:53+08:00",
     "pipeline_stage_counts": {
       "None": 35,
       "task6_pending": 43,
@@ -43,9 +43,9 @@
     "pipeline_stage_counts": {
       "None": 35,
       "task6_pending": 43,
-      "task2b_pending": 52,
+      "task2b_pending": 53,
       "ready-to-publish": 83,
-      "task9_pending": 35,
+      "task9_pending": 34,
       "'task9_pending'": 1,
       "'task2b_pending'": 1
     },
@@ -56,16 +56,16 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 144,
-      "pending": 63,
+      "reviewed": 145,
+      "pending": 62,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 146,
-      "pending": 55,
+      "fixed": 145,
+      "pending": 56,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 1
@@ -818,16 +818,19 @@
       "last_verified": "2026-04-05",
       "last_verified_against": "Flutter 3.27 / Impeller default on Android API 29+",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task6_reviewed_date": "2026-04-26"
+      "task6_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-26T19:33:53+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/12-window-manager.md": {
       "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
@@ -6034,6 +6037,22 @@
         }
       ],
       "log": "logs/deep-review/2026-04-26-13-deep-review.md"
+    },
+    {
+      "date": "2026-04-26",
+      "time": "19:33",
+      "task": "task9-deep-review",
+      "sections_reviewed": [
+        {
+          "section": "2.11",
+          "title": "2.11 Flutter 渲染管线与性能",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 2,
+          "p2": 2
+        }
+      ],
+      "log": "logs/deep-review/2026-04-26-19-deep-review.md"
     }
   ],
   "progress": {
@@ -6541,6 +6560,20 @@
         "updated_by": "openclaw-task9",
         "updated_date": "2026-04-26",
         "last_task9_at": "2026-04-26T12:46:09+08:00"
+      },
+      "2.11": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-26",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "task2b_state": "pending",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "issues_found": "major",
+        "updated_by": "openclaw-task9",
+        "updated_date": "2026-04-26",
+        "last_task9_at": "2026-04-26T19:33:53+08:00"
       }
     }
   },
@@ -6882,7 +6915,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T17:47:55+08:00",
+  "last_updated": "2026-04-26T19:33:53+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -7078,5 +7111,20 @@
         "2.11 Perfetto trace filters and io.flutter thread names"
       ]
     }
+  },
+  "2026-04-26-19-task9": {
+    "task": "deep-tech-review",
+    "sections": [
+      "2.11"
+    ],
+    "timestamp": "2026-04-26T19:33:53+08:00",
+    "results": {
+      "2.11": {
+        "status": "ready-for-review",
+        "pipeline": "task2b_pending",
+        "task9_result": "needs-rework"
+      }
+    },
+    "note": "Only one eligible section remained after excluding today/recent Task9 reviews and short README shells."
   }
 }

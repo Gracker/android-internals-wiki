@@ -4554,3 +4554,15 @@
 - **位置**：L276-L304「在 Perfetto 中怎么读 BufferQueue」
 - **问题**：正常/异常 BufferQueue 场景仍是 `[图]` 与 `[需补充素材]` 占位，缺少真实 Trace 证据。
 - **建议**：补同机型、同刷新率下的正常滑动 trace 与 dequeueBuffer 长等待 trace，各标出 `queueBuffer()`、`QueuedBuffer - <window>BLAST#...`、FrameTimeline actual present、release fence / dequeue wait 的对应关系。
+
+## [Task9 Deep Review] 2.11 2.11 Flutter 渲染管线与性能 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：L263
+- **问题**：移动 GPU shader 编译“10-100 倍、数百毫秒”的数字没有绑定设备、驱动、shader 类型或 benchmark 来源。
+- **建议**：补一条可复现实验或官方 / issue tracker 依据；如果没有稳定来源，删除固定倍数，改成“首帧 shader 编译可能拉长 Raster 线程，需用目标机型 trace 验证”。
+
+## [Task9 Deep Review] 2.11 2.11 Flutter 渲染管线与性能 — 2026-04-26
+- **类型**：交叉引用
+- **位置**：frontmatter related_chapters 与 L343-L352
+- **问题**：正文未引用已 finalized 的 §18.12 Flutter 渲染管线；§18.12 已按 Flutter 3.29+ merged model 写成 Main(UI+Platform)/Raster/IO，而本章仍按旧四线程模型展开，两章口径冲突。
+- **建议**：把 §18.12 加入 related_chapters，并在修文时以 §18.12 的 3.29+ 线程模型为主口径；本章保留旧模型时标注版本边界。

@@ -12324,5 +12324,39 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T18:52:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "2.11",
+    "section_title": "2.11 Flutter 渲染管线与性能",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Flutter 3.29+ 线程模型与 Impeller shader/PSO 机制描述仍停留在旧模型，需回炉修正。",
+    "material_paths": [
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-26-19-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/原理错误",
+        "location": "L95-L107, L299-L313",
+        "detail": "正文仍按 Platform/UI/Raster/IO 四线程旧模型描述，并明确 Dart UI 不在 Android 主线程；Flutter 官方架构文档写明 Flutter 3.29 起 Android/iOS 合并 UI 与 platform 线程，UI thread 被移除，Dart code 运行在 native platform thread。",
+        "suggestion": "主线改成 Flutter 3.29+ 的 Main(UI+Platform)/Raster/IO；旧四线程模型只作为 Flutter 3.28- 或定制 embedder 分支说明。Perfetto 观察点同步改为合并后的主线程 + Raster thread。"
+      },
+      {
+        "type": "源码准确性/原理断裂",
+        "location": "L263-L277",
+        "detail": "Impeller 的 shader/PSO 描述混淆 app build 与 engine build。官方 Impeller 文档和 engine/impeller README 说明 shader 与 reflection 在 engine build 阶段离线处理并随 engine 打包；正文写成应用构建阶段预编译所有可能 shader、所有 PSO 在构建时创建，且“只光栅化变化 Tile”没有一手源码依据。",
+        "suggestion": "改为 offline shader/reflection + upfront pipeline state 设计；补 engine/impeller README 中 impellerc、shader_archive、generated C++ translation units 的依据；删除“只光栅化变化 Tile”或标注 [待验证] 并给源码锚点。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L283",
+        "detail": "Android fallback 条件被简化为“不支持 Vulkan 的设备主要是 API 28 及以下”。官方 Impeller 文档表述为 Android API 29+ 默认；低版本或不支持 Vulkan 的设备回退 legacy OpenGL。FlutterRenderer#createSurfaceProducer() 还存在 API29+ 但 AHB 禁用时走 SurfaceTexture/GL 的分支。",
+        "suggestion": "写成“API 29+ 默认启用 Impeller；低版本、无 Vulkan 支持或 AHB/后端条件不满足时回退 OpenGL/SurfaceTexture”，避免把版本边界固定成 API 28 以下。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T19:33:53+08:00",
+    "status": "pending"
   }
 ]
