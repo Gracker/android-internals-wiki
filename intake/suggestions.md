@@ -4795,3 +4795,28 @@
 - **位置**：L614-L616 Android 8/10 渲染管线版本节点
 - **问题**：“Android 8.0 引入 SurfaceFlinger 预合成重构”“Android 10 引入 Skia 渲染后端统一”缺少源码或官方版本锚点，且容易与 HWC2、CompositionEngine、HWUI Skia renderer 的不同演进线混在一起。
 - **建议**：补准确版本线：HWC2/Composer HAL、CompositionEngine/RenderEngine、HWUI SkiaGL/SkiaVK 分别列锚点，避免用单句概括不同子系统。
+
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L406-L422 实际优化案例
+- **问题**：WeSing、电商详情页案例给出卡顿率、帧率和 measure 耗时，但缺设备型号、刷新率、系统版本、测试轮次、trace 片段或原始报告页码。当前只能作为经验案例，不能支撑可复跑的技术结论。
+- **建议**：补 before/after trace、测试条件和指标定义；若无法补齐，把这些数字标成“来源案例数据”，不要作为通用优化收益。
+
+## [Task9 Deep Review] 19.0 第 19 章：APM 工具与性能监控生态 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L64 / L97 androidx.tracing 2.0 与 Perfetto 格式
+- **问题**：正文写“Tracing SDK 2.0 支持 Perfetto 格式”，但缺少 2.0.0-alpha 版本边界和作用域说明。AndroidX Tracing 2.0 当前主要是 in-process tracing / tracing-wire / TraceSink 方向，不等同于稳定版 `Trace.beginSection` 或系统级 Perfetto 数据源。
+- **建议**：标注 2.0.0-alpha 的时间点、artifact（如 tracing-wire）和“不替代系统 trace”的边界；稳定接入仍区分 `androidx.tracing:tracing`、`tracing-perfetto`、平台 `android.os.Trace`。
+
+## [Task9 Deep Review] 19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo） — 2026-04-27
+- **类型**：数据缺失
+- **位置**：frontmatter sources / L132-L138 PCMark、CPDT、Speedometer、JetStream 2
+- **问题**：frontmatter 只列 Geekbench 和 3DMark 官方来源，但正文还对 PCMark Storage、CPDT、Speedometer 3.0、JetStream 2、安兔兔和 Vellamo 状态做了判断，缺对应一手资料或版本说明。
+- **建议**：补 UL PCMark/3DMark Android 文档、Speedometer 3.0 官方说明、CPDT 项目页、安兔兔版本口径来源；Vellamo 只保留历史状态说明。
+
+## [Task9 Deep Review] 19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo） — 2026-04-27
+- **类型**：交叉引用
+- **位置**：README L123；src/SUMMARY.md L254；本节标题
+- **问题**：README 把 19.21 写成“Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）”，SUMMARY 和本节标题仍写 Vellamo。正文又把 Vellamo降为历史工具，并建议现代 Web/WebView 基线看 Speedometer 3.0，三个位置命名不一致。
+- **建议**：统一标题。建议标题改成“Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Speedometer）”，正文保留 Vellamo 为历史工具；SUMMARY 同步更新。

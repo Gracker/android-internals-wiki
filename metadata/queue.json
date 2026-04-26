@@ -13182,5 +13182,71 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T06:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "7.5",
+    "section_title": "优化策略",
+    "priority": 95,
+    "reason": "[Deep Tech Review] RenderEffect 源码路径和调用链写错，且与 Hardware Layer 的离屏机制混为一谈",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L222-L264 RenderEffect 底层实现",
+        "detail": "正文写 frameworks/base/libs/hwui/RenderEffect.h/cpp、RenderEffect::applyToTree() 和 core/java/android/graphics/RenderEffect.java。AOSP android-16.0.0_r1 中 Java API 在 graphics/java/android/graphics/RenderEffect.java；native 工厂在 libs/hwui/jni/RenderEffect.cpp，返回 SkImageFilter；RenderNode.setRenderEffect() 通过 native nSetRenderEffect 写入 RenderProperties/LayerProperties 的 imageFilter。未找到 RenderEffect::applyToTree()。",
+        "suggestion": "改为 View.setRenderEffect() → RenderNode.setRenderEffect() → nSetRenderEffect() → RenderProperties::setImageFilter(SkImageFilter*)；把 SkImageFilters::Blur / RuntimeShader 的创建路径和 RenderNode 属性设置路径分开写。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L237 RenderEffect 与 Hardware Layer 的关系",
+        "detail": "正文把 RenderEffect 和 LAYER_TYPE_HARDWARE 归为“本质同一套 FBO API”，容易误导。RenderEffect 是 SkImageFilter/RuntimeShader 作为 RenderNode imageFilter 参与绘制；Hardware Layer 是强制 View 建层并缓存 display list 输出，两者都可能触发离屏渲染，但缓存语义、失效条件和 API 目的不同。",
+        "suggestion": "改成“二者都可能带来离屏渲染和 GPU 内存开销，但 RenderEffect 是效果过滤器，Hardware Layer 是显式建层/缓存策略”，不要写成同一 API。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T07:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.0",
+    "section_title": "第 19 章：APM 工具与性能监控生态",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Ch19 目录与 SUMMARY 漏掉 19.23-19.27，章节导航和知识覆盖不完整",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "知识盲区/交叉引用错误",
+        "location": "README L101-L124；src/SUMMARY.md L233-L255",
+        "detail": "实际目录已有 23-network-apm-internals.md、24-crash-anr-internals.md、25-battery-thermal-apm.md、26-hybrid-apm.md、27-apm-client-architecture.md，但 README“本章内容”和 SUMMARY 都停在 19.22。读者无法从目录进入网络 APM、Crash/ANR 捕获、功耗热治理、Hybrid APM、客户端架构这些核心章节。",
+        "suggestion": "README 和 SUMMARY 同步补 19.23-19.27；同时核对 19.21/19.22 标题，使 Benchmark、存储 Benchmark、Speedometer/CPDT/历史工具的命名一致。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T07:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.21",
+    "section_title": "Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Geekbench 6 Android 版本/RAM 边界缺官方锚点且疑似误写，会影响机型分层口径",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "frontmatter applicable_versions；L107-L112 适用版本表",
+        "detail": "正文写 Geekbench 6 “官方要求 Android 10+，并要求 4 GB RAM”，并要求 Android 8/9 不混入 Geekbench 6 口径。当前可检索的公开包元数据多指向 Android 7/API 24+；4 GB RAM 更像桌面端要求，未看到 Android 端官方 RAM floor。该口径若不复核，会把 Android 8/9 设备错误排除出 Geekbench 6 基线。",
+        "suggestion": "补可复核的一手来源：Geekbench 官方下载页、Google Play minSdk/设备要求或 release notes。若确认 API 24+，把 Android 10+ 改为 API 24+；若 Android 10+ 是项目分层策略，改写为“本书建议口径”，不要写成官方要求。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T07:20:00+08:00",
+    "status": "pending"
   }
 ]

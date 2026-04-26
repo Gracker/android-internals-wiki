@@ -7,13 +7,13 @@
     "finalized": 93,
     "ready-for-review": 125,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T06:59:49+08:00",
+    "last_updated": "2026-04-27T07:20:00+08:00",
     "pipeline_stage_counts": {
       "None": 33,
-      "task6_pending": 41,
-      "task2b_pending": 55,
+      "task6_pending": 39,
+      "task2b_pending": 58,
       "ready-to-publish": 93,
-      "task9_pending": 27,
+      "task9_pending": 26,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
@@ -23,16 +23,16 @@
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 157,
-      "pending": 52,
+      "reviewed": 160,
+      "pending": 49,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 146,
-      "pending": 58,
+      "fixed": 143,
+      "pending": 61,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -42,10 +42,10 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 33,
-      "task6_pending": 41,
-      "task2b_pending": 55,
+      "task6_pending": 39,
+      "task2b_pending": 58,
       "ready-to-publish": 93,
-      "task9_pending": 27,
+      "task9_pending": 26,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
@@ -55,21 +55,21 @@
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 157,
-      "pending": 52,
+      "reviewed": 160,
+      "pending": 49,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 146,
-      "pending": 58,
+      "fixed": 143,
+      "pending": 61,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
     },
-    "last_updated": "2026-04-27T06:59:49+08:00"
+    "last_updated": "2026-04-27T07:20:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -2385,18 +2385,18 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android 官方文档, AndroidX RecyclerView release notes",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T13:38:00+08:00"
+      "last_task9_at": "2026-04-27T07:20:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/06-case-studies.md": {
       "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
@@ -5441,17 +5441,17 @@
       "last_verified": "'2026-04-24'",
       "last_verified_against": "Geekbench 6 requirements / Benchmark Internals, Android Performance Class docs, 3DMark official docs, CPDT / PCMark / Vellamo public materials",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-24'",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-24T20:44:37+08:00'",
+      "last_task9_at": "2026-04-27T07:20:00+08:00",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-25T02:49:32+08:00",
       "repaired_date": "2026-04-25",
@@ -5955,18 +5955,18 @@
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-25T02:45:50+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T02:26:14+08:00"
+      "last_task9_at": "2026-04-27T07:20:00+08:00"
     }
   },
   "section_18_7": {
@@ -7493,7 +7493,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T04:40:00+08:00",
+  "last_updated": "2026-04-27T07:20:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8008,5 +8008,36 @@
       ],
       "auto_promotion": "not applied: three sections still have task9_result=needs-rework and were returned to task6_pending"
     }
+  },
+  "2026-04-27-07-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "7.5",
+      "19.0",
+      "19.21"
+    ],
+    "timestamp": "2026-04-27T07:20:00+08:00",
+    "results": {
+      "7.5": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 1,
+        "p2": 1
+      },
+      "19.0": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 1
+      },
+      "19.21": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 2
+      }
+    },
+    "auto_finalized": [],
+    "note": "本轮复核 logs/external-review 根目录 ch19/ch13/part2 summary，只部分消费 7.5、19.0、19.21 相关线索，未归档 broad summary。"
   }
 }
