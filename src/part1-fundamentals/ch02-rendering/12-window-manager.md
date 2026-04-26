@@ -239,7 +239,7 @@ if (relayoutRequested) {
 
 **因此**：`requestLayout()` → `scheduleTraversals()` → `performTraversals()`，全程在 App 进程内执行；只有当窗口尺寸、Insets 或属性实际变化时，才在 `performTraversals()` 内部触发 `relayoutWindow()` 跨进程调用 WMS。
 
-**Perfetto 区分矩阵**：
+**Perfetto 区分表**：
 
 | Slice 名称 | 进程 | 线程 | 含义 |
 |-----------|------|------|------|
