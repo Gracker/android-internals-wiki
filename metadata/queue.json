@@ -10990,5 +10990,25 @@
     "completed_at": "2026-04-26T12:54:28+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "18.11",
+    "section_title": "ANGLE（GLES-over-Vulkan 翻译层）",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ANGLE 渲染时序图把 SurfaceFlinger 后段写成 GPU 合成/scanout，混淆 RenderEngine、HWC 与显示控制器职责",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂/源码错误",
+        "location": "L133-L138「渲染时序」sequenceDiagram",
+        "detail": "图中把 eglSwapBuffers()/vkQueuePresentKHR() 之后写成 VK→SurfaceFlinger queueBuffer、SurfaceFlinger→GPU Composite、GPU→GPU Scanout，混淆了 Vulkan WSI/ANativeWindow 出队入队、SurfaceFlinger 的 HWC 协商、RenderEngine client composition、HWC/display controller 最终送显四层职责。官方 HWC 流程是 SurfaceFlinger 调 validateDisplay/getChangedCompositionTypes/acceptDisplayChanges，必要时用 GPU 合成 client target，再 setClientTarget/presentDisplay；最终输出不是 GPU 自己 scanout。",
+        "suggestion": "把图改成：eglSwapBuffers/vkQueuePresentKHR → ANativeWindow/BufferQueue 或 BLASTBufferQueue → SurfaceFlinger latch → HWC validate/present；若存在 CLIENT layer，再补 RenderEngine/GPU → client target → setClientTarget。删除 “GPU→GPU Scanout”，用 HWC/display controller 或 display pipeline 表示最终输出。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T13:26:21+08:00",
+    "status": "pending"
   }
 ]

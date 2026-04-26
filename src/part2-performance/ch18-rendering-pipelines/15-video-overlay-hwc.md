@@ -1,7 +1,7 @@
 ---
 title: 视频叠加与 HWC
 chapter: '18.15'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 7.0 (API 24) - Android 16 (API 36)
 tags:
 - HWC
@@ -18,20 +18,21 @@ related_chapters:
 - '18.6'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-22'
+task9_reviewed_date: "2026-04-26"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+last_task9_at: "2026-04-26T13:26:21+08:00"
 ---
 
 <!-- outline-start -->

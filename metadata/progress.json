@@ -1,62 +1,74 @@
 {
-  "generated_at": "2026-04-26T12:54:28+08:00",
+  "generated_at": "2026-04-26T13:26:21+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 250,
-    "finalized": 80,
-    "ready-for-review": 138,
-    "ready-to-publish": 80,
-    "last_updated": "2026-04-26T12:54:28+08:00",
+    "finalized": 82,
+    "ready-for-review": 136,
+    "ready-to-publish": 82,
+    "last_updated": "2026-04-26T13:26:21+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 46,
+      "task6_pending": 43,
       "task2b_pending": 50,
-      "ready-to-publish": 80,
-      "task9_pending": 39
+      "ready-to-publish": 82,
+      "task9_pending": 37,
+      "'task9_pending'": 2,
+      "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 169,
-      "revisiting": 45
+      "reviewed": 174,
+      "revisiting": 40
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 141,
-      "pending": 68,
+      "reviewed": 143,
+      "pending": 63,
+      "'reviewed'": 1,
+      "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 149,
-      "pending": 55,
-      "idle": 4
+      "fixed": 146,
+      "pending": 54,
+      "'pending'": 2,
+      "idle": 4,
+      "'fixed'": 2
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 46,
+      "task6_pending": 43,
       "task2b_pending": 50,
-      "ready-to-publish": 80,
-      "task9_pending": 39
+      "ready-to-publish": 82,
+      "task9_pending": 37,
+      "'task9_pending'": 2,
+      "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 169,
-      "revisiting": 45
+      "reviewed": 174,
+      "revisiting": 40
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 141,
-      "pending": 68,
+      "reviewed": 143,
+      "pending": 63,
+      "'reviewed'": 1,
+      "'pending'": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 149,
-      "pending": 55,
-      "idle": 4
+      "fixed": 146,
+      "pending": 54,
+      "'pending'": 2,
+      "idle": 4,
+      "'fixed'": 2
     }
   },
   "issues": {
@@ -3256,17 +3268,17 @@
       "section": "18.11",
       "status": "ready-for-review",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "reviewed_date": "2026-04-23",
+      "reviewed_date": "2026-04-26",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T11:47:04+08:00",
+      "last_task9_at": "2026-04-26T13:26:21+08:00",
       "review_round": "1",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-26T11:51:00+08:00",
@@ -3278,20 +3290,20 @@
       "title": "Flutter 渲染管线",
       "chapter": "'18.12'",
       "section": "'18.12'",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-23",
+      "reviewed_date": "2026-04-26",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T13:26:00+08:00",
+      "last_task9_at": "2026-04-26T13:26:21+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b"
@@ -3343,22 +3355,23 @@
       "path": "src/part2-performance/ch18-rendering-pipelines/15-video-overlay-hwc.md",
       "title": "视频叠加与 HWC",
       "chapter": "'18.15'",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 7.0 (API 24) - Android 16 (API 36)",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-24",
+      "reviewed_date": "2026-04-26",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "last_task9_at": "2026-04-26T13:26:21+08:00"
     },
     "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
@@ -5919,6 +5932,40 @@
         }
       ],
       "log": "logs/deep-review/2026-04-26-12-deep-review.md"
+    },
+    {
+      "date": "2026-04-26",
+      "time": "13:26",
+      "task": "task9-deep-review",
+      "sections_reviewed": [
+        {
+          "section": "18.11",
+          "title": "ANGLE（GLES-over-Vulkan 翻译层）",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 1
+        },
+        {
+          "section": "18.12",
+          "title": "Flutter 渲染管线",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "auto_promoted": true
+        },
+        {
+          "section": "18.15",
+          "title": "视频叠加与 HWC",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 2,
+          "auto_promoted": true
+        }
+      ],
+      "log": "logs/deep-review/2026-04-26-13-deep-review.md"
     }
   ],
   "progress": {
@@ -6767,7 +6814,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T11:51:00+08:00",
+  "last_updated": "2026-04-26T13:26:21+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -6884,5 +6931,33 @@
       234
     ],
     "result": "fixed"
+  },
+  "2026-04-26-13-task9": {
+    "task": "deep-tech-review",
+    "sections": [
+      "18.11",
+      "18.12",
+      "18.15"
+    ],
+    "timestamp": "2026-04-26T13:26:21+08:00",
+    "results": {
+      "18.11": {
+        "status": "ready-for-review",
+        "pipeline": "task2b_pending",
+        "task9_result": "needs-rework"
+      },
+      "18.12": {
+        "status": "finalized",
+        "pipeline": "ready-to-publish",
+        "task9_result": "pass-tech-review",
+        "auto_finalized": true
+      },
+      "18.15": {
+        "status": "finalized",
+        "pipeline": "ready-to-publish",
+        "task9_result": "pass-tech-review",
+        "auto_finalized": true
+      }
+    }
   }
 }

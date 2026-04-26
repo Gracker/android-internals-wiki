@@ -3901,3 +3901,16 @@
 - **位置**：L234（Baseline Profile 约 30% 冷启动收益）
 - **问题**：“约 30%”是官方宣传口径，但正文没有给出来源链接、测试条件或边界，容易被读者当成任何 App 都稳定获得 30%。
 - **建议**：补官方 Baseline Profiles 文档引用，并说明该数字依赖设备、启动路径、profile 覆盖率和安装/编译状态；示例结果应写设备型号、系统版本、启动模式、迭代次数。
+
+
+## [Task9 Deep Review] 18.15 视频叠加与 HWC — 2026-04-26
+- **类型**：数据缺失
+- **位置**：L57「功耗差异」
+- **问题**：`GPU Path 多消耗 2-3x 内存带宽`、`Overlay vs GPU 合成功耗差异可能达到 10-20%` 没有设备、分辨率、刷新率、编解码格式、亮度、测试时长或 Perfetto / power rail 证据。AOSP HWC 源码只能证明机制，不能证明这些数值区间。
+- **建议**：补一组最小实验条件：同一视频、同一设备、同一亮度和刷新率下，对比 TextureView/GPU path 与 SurfaceView/DEVICE composition 的 GPU counter、memory bandwidth、power rail 或 Battery Historian 数据；拿不到数据时把数值收敛成定性结论。
+
+## [Task9 Deep Review] 18.15 视频叠加与 HWC — 2026-04-26
+- **类型**：交叉引用
+- **位置**：frontmatter `related_chapters`
+- **问题**：正文依赖 BufferQueue/BLASTBufferQueue 与 fence 协调，但关联章节只列了 2.6、2.10、18.6，缺少 2.13 BufferQueue 与 2.16 Sync Fence。
+- **建议**：补 `2.13` 与 `2.16`，让读者能顺着 HWC 协商继续追 buffer 生命周期和 acquire/release fence。
