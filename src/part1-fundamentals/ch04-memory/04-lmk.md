@@ -10,9 +10,9 @@ polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-03-31"
-last_verified_against: "AOSP android-16.0.0_r1"
-confidence: medium
+last_verified: "2026-04-27"
+last_verified_against: "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1 ProcessList/lmkd socket, android-10 lmkd PSI, android-11/12/14/16 CachedAppOptimizer, Android 16 lmkd/reaper, developer.android.com 16KB Page Size"
+confidence: medium-high
 sources:
   - type: aosp
     path: "system/memory/lmkd/"
@@ -28,17 +28,21 @@ sources:
     path: "https://android-developers.googleblog.com/2020/07/lmkd-userspace-low-memory-killer-daemon.html"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T20:23:00+08:00"
-review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 5，P1 2，P2 1。"
+review_notes: "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace lmkd 版本、oom_score_adj/HEAVY_WEIGHT_ADJ/minfree、16KB 数据、CachedAppOptimizer 版本表，并补 Perfetto SQL 观察点。"
+last_task2b_at: "2026-04-27T01:50:00+08:00"
+task2b_fixed_by: openclaw-task2b
+repaired_date: "2026-04-27"
+repaired_by: openclaw-task2b
 ---
 
 # Low Memory Killer
@@ -85,8 +89,10 @@ Linux 内核有自己的 OOM Killer，但它的设计面向服务器场景——
 
 早期的 Android（从 Android 1.0 到大约 Android 8）使用的是一个内核驱动 `drivers/staging/android/lowmemorykiller.c`。它的工作方式很直接：
 
-系统启动时，`init` 进程会向 `/sys/module/lowmemorykiller/parameters/minfree` 写入一组内存阈值（例如 `18432,23040,27648,32256,36864,46080`，单位是页），同时向 `adj` 写入对应的 `oom_adj` 值。当系统空闲内存低于某个阈值时，内核遍历所有进程，找到 `oom_adj` 值最大的（即优先级最低的）进程，发送 `SIGKILL` 信号将其杀死。
+系统启动时，`init.rc` 只把 `/sys/module/lowmemorykiller/parameters/{adj,minfree}` 的 owner 和权限交给 `system`。实际阈值不由 init 写入，而是由 `frameworks/base/services/.../ProcessList.java` 根据设备内存和屏幕尺寸计算，再通过 `updateOomLevels()` / `writeFile()` 写入 `adj` 和 `minfree`。当系统空闲内存低于某个阈值时，内核模块遍历进程，按候选门槛选择 `oom_adj` 较高的进程并发送 `SIGKILL`。
 
+[已验证: AOSP android-4.0.1_r1, system/core/rootdir/init.rc]
+[已验证: AOSP android-4.0.1_r1, frameworks/base/services/java/com/android/server/am/ProcessList.java]
 [已验证: AOSP android-4.0.1_r1, drivers/staging/android/lowmemorykiller.c]
 
 这套机制简单有效，但有几个根本性问题：
@@ -103,9 +109,9 @@ Linux 内核有自己的 OOM Killer，但它的设计面向服务器场景——
 
 [已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
 
-从 Android 9（Pie）开始，Google 引入了用户空间的 `lmkd`（Low Memory Killer Daemon）。它的源码位于 `system/memory/lmkd/`，作为 `init` 启动的一个守护进程运行。
+Android 8.1 已经出现 userspace `lmkd` 及控制 socket，`ProcessList.java` 包含 `LMK_TARGET`、`LMK_PROCPRIO`、`LMK_PROCREMOVE` 三类命令。Android 9/10 之后，userspace `lmkd` 逐步成为主路径；Android 10+ 默认使用 PSI monitors 作为内存压力检测机制。新版本源码位于 `system/memory/lmkd/`，旧版本在 `system/core/lmkd/`。
 
-`lmkd` 的核心思路是：**把杀进程的决策权从内核搬回用户空间，让 AMS 的进程优先级信息能更直接地参与决策。** 具体来说：
+`lmkd` 的设计是把杀进程的决策权从内核搬回用户空间，让 AMS 的进程优先级信息能更直接地参与决策。具体来说：
 
 AMS 在调整进程优先级时，通过 `/proc/<pid>/oom_score_adj` 文件将最新的优先级写入内核。`lmkd` 则通过内核提供的内存压力信号来判断何时需要杀进程。两者通过 `/proc` 文件系统实现信息共享，不需要额外的 Binder 调用。
 
@@ -151,7 +157,7 @@ Linux 内核有两个 OOM 相关的进程调整值：
 **可以被杀的层级（300 到 900）：**
 
 - **BACKUP_APP_ADJ（300）**：正在执行备份操作的进程。被杀了损失不大，下次可以重新备份。
-- **HEAVY_WEIGHT_ADJ（400）**：重量级进程，通常是用户明确通过通知栏设置为"不被优化"的 App。
+- **HEAVY_WEIGHT_APP_ADJ（400）**：声明 `android:heavyWeight="true"` 的重量级 Activity 进程，用于保留较重的 UI 状态。电池优化白名单和前台服务通知属于另一组机制。
 - **SERVICE_ADJ（500）**：运行着后台 Service 的进程。
 - **HOME_APP_ADJ（600）**：桌面（Launcher）进程。虽然不在前台，但用户按 Home 键会立刻用到。
 - **PREVIOUS_APP_ADJ（700）**：上一个使用的 App。保留它可以让用户快速切回去。
@@ -171,7 +177,7 @@ Linux 内核有两个 OOM 相关的进程调整值：
 
 [已验证: AOSP frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java]
 
-这套机制把"对用户的重要性"这个主观概念，转化为了一个 0-1000 的数字。而 `lmkd` 只需要根据这个数字做排序，就能决定先杀谁。
+这套机制把"对用户的重要性"这个主观概念，转化为 `-1000` 到 `1000` 的数字。负值段通常留给 native、system、persistent 等高优先级进程；`lmkd` 的常规候选多从非负段开始，并优先从 `oom_score_adj` 较高的 cached/service B/previous 进程中选择目标。
 
 ## lmkd 的杀进程策略
 
@@ -181,17 +187,18 @@ Linux 内核有两个 OOM 相关的进程调整值：
 
 **传统模式（minfree 阈值模式）：**
 
-当属性 `ro.lmk.use_minfree_levels=true` 时，`lmkd` 使用类似旧内核 LMK 的逻辑：配置一组 `(minfree, oom_adj)` 对，当空闲内存低于某个 `minfree` 值时，杀掉 `oom_adj` 大于等于对应阈值的进程。
+当属性 `ro.lmk.use_minfree_levels=true` 时，`lmkd` 使用类似旧内核 LMK 的逻辑：配置一组 `(minfree, min_adj)` 对。当空闲内存低于某个 `minfree` 值时，候选门槛降到对应 `min_adj`，再从 `oom_score_adj >= min_adj` 的进程里挑目标。
 
-```
-# 典型的 minfree 配置（单位：页）
-# minfree         oom_adj
-18432  0         # 约 72MB，杀 CACHED 进程
-23040  100       # 约 90MB，杀 VISIBLE 以下的进程
-27648  200       # 约 108MB，杀 PERCEPTIBLE 以下的进程
+```text
+# ProcessList 生成的 6 档语义（Android 8.1 低端设备基线，minfree 以 KB 表示）
+# minfree_kb: 12288, 18432, 24576, 36864, 43008, 49152
+# min_adj:       0,   100,   200,   300,   900, CACHED_APP_MAX_ADJ
+# 含义:      FOREGROUND, VISIBLE, PERCEPTIBLE, BACKUP, CACHED_MIN, CACHED_MAX
 ```
 
-这种方式简单直接，但阈值是固定的，无法反映实际的内存压力程度——有时候空闲内存低是因为缓存了大量文件页（这是正常的），不需要杀进程。
+`min_adj=0` 表示候选范围已经下探到 `FOREGROUND_APP_ADJ` 及其以下优先级的所有进程。cached 进程通常落在 `oom_score_adj` 900 及以上，因此 cached 档应对应 `CACHED_APP_MIN_ADJ` / `CACHED_APP_MAX_ADJ`。
+
+这种方式阈值固定，无法反映实际内存压力程度。有时空闲内存低是因为文件页缓存较多，并不需要杀进程。
 
 **现代模式（PSI 驱动模式）：**
 
@@ -362,8 +369,36 @@ data_sources: {
 
 如果 kill 之前已经出现长期的 thrashing、`MemAvailable` 下探，kill 之后内存短暂回升，随后用户回到某个 App 又触发冷启动，这就是 LMK 正在影响体验的典型模式。
 
+可以用下面的 trace_processor SQL 做无截图复核。第一段找 `lmkd` 相关 slice，第二段把 meminfo counter 拉到同一时间轴；冷启动则在被杀包名后续的进程创建、`ActivityThread.main`、`bindApplication`、`Activity.onCreate` 附近确认。
+
+```sql
+-- lmkd / kill 相关 slice。不同构建的 slice 名可能不同，先用模糊匹配定位。
+SELECT
+  s.ts,
+  s.dur,
+  p.name AS process_name,
+  t.name AS thread_name,
+  s.name
+FROM slice s
+JOIN thread_track tt ON s.track_id = tt.id
+JOIN thread t ON tt.utid = t.utid
+JOIN process p ON t.upid = p.upid
+WHERE p.name = 'lmkd' OR s.name GLOB '*lmk*' OR s.name GLOB '*kill*'
+ORDER BY s.ts;
+
+-- MemAvailable / Cached / SwapFree 的同轴变化。
+SELECT
+  c.ts,
+  ct.name,
+  c.value
+FROM counter c
+JOIN counter_track ct ON c.track_id = ct.id
+WHERE ct.name IN ('MemAvailable', 'Cached', 'SwapFree')
+ORDER BY c.ts;
+```
+
 [已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
-[待补充：Perfetto 截图，展示 `lmkd` kill、meminfo 变化和 App 冷启动的对应关系]
+[已验证: Perfetto trace_processor SQL schema, `slice` / `counter` / `counter_track`]
 
 ## 扩展二：各厂商对 lmkd 的定制化策略
 
@@ -385,13 +420,13 @@ data_sources: {
 
 Android 15 引入了对 16KB 内存页的支持（传统为 4KB）。这不会直接改变 `lmkd` 的杀进程策略，但会影响内存管理的整体格局：
 
-- **TLB 压力降低**：更大的页意味着更少的 TLB entry，减少 Page Table Walk 的开销
-- **App 冷启动加速**：Google 声称冷启动速度提升 20%-40%
-- **内存效率**：更大的页减少了页表本身占用的内存，但可能导致内部碎片增加（小对象也需要占用 16KB 页）
+- **TLB 压力降低**：更大的页意味着更少的 TLB entry，减少 Page Table Walk 的开销。
+- **App 启动数据**：Android 官方 16KB Page Size 文档给出的公开数据是，在内存压力下 app launch 平均降低 3.16%，部分应用最高约 30%；camera cold start 平均降低 6.60%；系统 boot time 平均降低 8%，约 950ms。
+- **内存效率**：更大的页减少页表本身占用，但可能带来内部碎片。小对象和小映射也会按 16KB 页粒度占用内存。
 
-[已验证: 官方文档, developer.android.com — 16KB Page Size 说明]
+[已验证: 官方文档, developer.android.com — 16KB Page Size 说明；数据口径为 initial testing，actual devices may differ]
 
-在 16KB 页模式下，虽然单个进程的内存开销可能略有增加，但系统整体性能的改善，尤其是冷启动速度的提升，可以缓解 LMK 频繁杀进程带来的用户体验问题。
+在 16KB 页模式下，单个进程的内存占用可能略有变化。分析 LMK 频繁触发时，应把页大小、页表占用、冷启动耗时和内存压力放在同一条时间线上看，应避免使用“启动一定提升 20%-40%”这种无来源数字下判断。
 
 ### Android 16：沿用 userspace lmkd + reaper 回收链
 
@@ -403,25 +438,30 @@ Android 15 引入了对 16KB 内存页的支持（传统为 4KB）。这不会�
 
 
 <!-- AIW-源码调研-2026-04-20: CachedAppOptimizer 机制补充 -->
-### 扩展四：Android 12+ CachedAppOptimizer 与 cgroup v2 Freezer（源码级补充）
+### 扩展四：Android 11+ CachedAppOptimizer 与 cgroup Freezer（源码级补充）
 
-`CachedAppOptimizer` 是 Android 12 引入的「缓存进程冻结」机制，与 lmkd 的「杀死进程」不同，它使用 Linux cgroup v2 freezer 将进程冻结在内存中：进程 Track 仍存在但所有线程 Slice 消失（状态 = FROZEN），既避免冷启动延迟，又节省 CPU/功耗。
+AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` 和 `Process.setProcessFrozen()` 调用。它和 lmkd 的 kill 路径不同：freezer 把 cached 进程冻结在内存中，进程 Track 仍存在，但线程不再继续运行；LMK 则会让进程退出，后续再进入冷启动。
 
-**核心源码**（android14-release）：
-- `services/core/java/com/android/server/am/CachedAppOptimizer.java` — 冻结逻辑，`FREEZER_DEBOUNCE_TIMEOUT=10_000`（Android 14 从 10 分钟骤降至 10 秒），`FREEZE_BINDER_TIMEOUT_MS=100`，解冻原因码（30+ 种）
-- 触发条件：`OomAdjuster.updateOomAdjLocked()` 中进程 oom_adj 达到 `CACHED_APP_MIN_ADJ`（=900）后保持 10 秒
-- 冻结流程：`freezeAppAsyncLSP()` → 文件锁检查 → `freezeBinderThreads()` → `android.os.Process.setProcessFrozen(pid, uid, true)` → 写入 `cgroup.freeze="1"`
+| 版本 | 已核验事实 |
+|------|------------|
+| Android 11 | 已存在 `CachedAppOptimizer.java`、`KEY_USE_FREEZER`、`Process.setProcessFrozen()` |
+| Android 12/13 | `DEFAULT_FREEZER_DEBOUNCE_TIMEOUT = 600_000L`，默认 debounce 为 10 分钟 |
+| Android 14/15 | `DEFAULT_FREEZER_DEBOUNCE_TIMEOUT = 10_000L`，默认 debounce 调整为 10 秒 |
+| Android 16 | 仍保留 cached app freezer 机制，冻结/解冻封装进一步收口到 `Freezer` 辅助对象 |
 
-**Perfetto 区分**：被 LMK 杀死 = 进程消失 + `android_lmk_proc_state` 事件；被 Freezer 冻结 = 进程 Track 仍在 + 所有线程无 Slice（无 `process_exit` 事件）。查看 `linux.process_freeze_state` 事件可确认冻结状态。
+**Perfetto 区分**：被 LMK 杀死 = 进程消失 + lmkd kill / process exit 信号；被 Freezer 冻结 = 进程 Track 仍在 + 线程长期无 Slice。支持对应 ftrace 事件的设备上，可结合 `linux.process_freeze_state` 确认冻结状态。
 
-[源码验证: CachedAppOptimizer.java (android14-release), libprocessgroup/task_profiles.json (android14-release)]
+[源码验证: AOSP android-11.0.0_r1 / android-12.0.0_r1 / android-14.0.0_r1 / android-16.0.0_r1, CachedAppOptimizer.java]
+[源码验证: libprocessgroup/task_profiles.json]
 
 ## 参考资料
 
 ### AOSP 源码
+- `system/core/lmkd/lmkd.c` — Android 8.1-10 userspace lmkd 旧路径
 - `system/memory/lmkd/` — lmkd 守护进程源码
-- `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` — oom_adj 常量定义
+- `frameworks/base/services/core/java/com/android/server/am/ProcessList.java` — oom_adj / oom_score_adj 常量和 LMK socket 命令
 - `frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java` — 优先级动态调整逻辑
+- `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` — cached app freezer 机制
 - `frameworks/base/core/java/android/content/ComponentCallbacks2.java` — `onTrimMemory()` 与 trim 级别定义
 - `system/memory/lmkd/reaper.cpp` — kill 后回收执行链
 
