@@ -67,7 +67,7 @@ review_log: "logs/review/2026-04-11-11-review.md"
 
 这并不是偶然。WMS 是 Android 窗口系统的中枢神经：从我们点击桌面图标那一刻起，WMS 就开始了一连串的工作——创建 StartingWindow 给用户即时的视觉反馈，为 App 分配 Surface 用于绘制，在 Activity 切换时管理过渡动画，在旋转屏幕时触发整个窗口树的 relayout。我们日常在 Perfetto 中看到的大量 system_server 活动，有相当一部分是 WMS 在工作。
 
-不了解 WMS，我们在分析 Perfetto Trace 时遇到 system_server 的 Binder 调用就只能"看个热闹"。而理解了 WMS 的工作方式之后，我们就知道 `wm.relayout_window` 这个 Slice 对应的是什么操作，为什么它可能耗时，以及如何优化。简单来说，这是把"system_server 好像很忙"变成"我知道它在忙什么"的关键一步。
+不了解 WMS，我们在分析 Perfetto Trace 时遇到 system_server 的 Binder 调用就只能"看个热闹"。而理解了 WMS 的工作方式之后，我们就知道 `wm.relayout_window` 这个 Slice 对应的是什么操作，为什么它可能耗时，以及如何优化。这是把"system_server 好像很忙"变成"我知道它在忙什么"的关键一步。
 
 [待补充：Trace 截图 — 一段典型的冷启动 Trace，标注 WMS 相关的 Slice]
 
@@ -144,7 +144,7 @@ StartingWindow 的创建流程大致如下：
 6. App 进程启动完成后，App 的主 Window 准备好第一帧
 7. WMS 移除 StartingWindow，显示 App 的主 Window
 
-这个过程在 Perfetto 中表现为：我们在 system_server 进程中可以看到 WindowState 的创建和 visibility 变化。在 App 进程中，`reportDrawFinished` 这个 Slice 标记着 App 的第一帧绘制完成，此后 WMS 会安排 StartingWindow 的移除。
+这个过程在 Perfetto 中表现为：system_server 进程中会出现 WindowState 的创建和 visibility 变化。在 App 进程中，`reportDrawFinished` 这个 Slice 标记着 App 的第一帧绘制完成，此后 WMS 会安排 StartingWindow 的移除。
 
 [待补充：Trace 截图 — StartingWindow 创建和移除在 Perfetto 中的表现]
 
