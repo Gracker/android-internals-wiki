@@ -5,7 +5,7 @@ section: "2.16"
 status: ready-for-review
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-26"
-last_verified_against: "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaGraphitePipeline.cpp, source.android.com/docs/core/graphics/sync"
+last_verified_against: "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp, source.android.com/docs/core/graphics/sync"
 confidence: medium
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
@@ -21,17 +21,19 @@ sources:
   - type: aosp
     path: "frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp"
   - type: aosp
-    path: "frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp"
+    path: "frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/renderthread/VulkanManager.cpp"
   - type: official
     path: "https://source.android.com/docs/core/graphics/sync"
   - type: official
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
@@ -40,7 +42,7 @@ task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-26T21:29:00+08:00"
-last_task2b_at: "2026-04-26T20:59:03+08:00"
+last_task2b_at: "2026-04-26T23:53:43+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 ---
@@ -71,8 +73,8 @@ App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App �
 - 🔹 **在 Perfetto 中如何判断 fence 是正常同步还是掉帧瓶颈**：[已验证: source.android.com/docs/core/graphics/architecture]
   需要把 `queueBuffer()`、`latchBuffer`、`presentDisplay()`、BufferQueue 状态和 GPU busy 片段连起来看，不能只盯一段 `fence wait`。
 
-- 🔹 **版本演进的真实主线**：[已验证: AOSP android-7.0.0_r1 HWC2.h, android-8.1.0_r81 system/core/libsync/sync.c, android-16.0.0_r1 SkiaOpenGLPipeline.cpp / SkiaGraphitePipeline.cpp]
-  Android 7 已有 HWC2；Android 8+ 用户空间已经能看到 modern libsync / sync_file API；Skia 管线在 Android 8.1 已存在。Android 14-16 需要同时核对 GL/Ganesh 与 Graphite 两条后端入口，变化主要集中在后端调度、FrameTimeline / ARR 配合和 release fence 生成路径。
+- 🔹 **版本演进的真实主线**：[已验证: AOSP android-7.0.0_r1 HWC2.h, android-8.1.0_r81 system/core/libsync/sync.c, android-16.0.0_r1 SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp]
+  Android 7 已有 HWC2；Android 8+ 用户空间已经能看到 modern libsync / sync_file API；Skia 管线在 Android 8.1 已存在。Android 14-16 核对 release fence 时要分 GL/EGL 与 Vulkan 两条后端：GL 看 `SkiaOpenGLPipeline.cpp` / `EglManager::createReleaseFence()`，Vulkan 看 `SkiaVulkanPipeline.cpp` / `VulkanManager::createReleaseFence()` / `presentFence`。
 
 ### 扩展（可选深入）
 
@@ -221,20 +223,30 @@ Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。我�
 
 这也是我们今天读代码时经常会遇到的现象，文档还在讲 `sync_timeline`，调试工具却在打印 `sync_file_info`。同一套显式同步体系在不同层暴露出的命名不同。
 
-### Android 14-16：变化重点在后端调度、FrameTimeline / ARR 配合，以及 release fence 路径
+### Android 14-16：GL/EGL 与 Vulkan 的 release fence 路径要分开看
 
-Skia 管线在 Android 8.1 源码里已经存在，Android 14-16 的变化集中在后端调度、FrameTimeline、ARR 配合，以及 fence 的生成和观测路径。核对 Android 16 时不能只看 `SkiaOpenGLPipeline.cpp` 的 GL/Ganesh 路径；`frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp` 也要一起读。Graphite 面向 Vulkan/Metal 风格的显式资源和同步模型，和 GL 路径的 release fence 生成位置不同，设备或构建是否走 Graphite 还要结合系统配置和运行时选择判断。
+Skia 管线在 Android 8.1 源码里已经存在。Android 16 的 HWUI 后端不能写成 Graphite 已验证路径。AOSP android-16.0.0_r1 的 `frameworks/base/libs/hwui/pipeline/skia/` 目录包含 `SkiaOpenGLPipeline.cpp`、`SkiaVulkanPipeline.cpp`、`SkiaGpuPipeline.cpp`；没有 `SkiaGraphitePipeline.cpp`。如果后续讨论 Graphite，只能标成非该 tag 已验证路径或待核对内容。
 
-`android-16.0.0_r1` 的 `SkiaOpenGLPipeline.cpp` 里，GL 路径使用的是：
+GL 后端的 release fence 入口在 `SkiaOpenGLPipeline::flush()`。读代码时看下面两行就够：
 
 ```cpp
 skgpu::ganesh::FlushAndSubmit(surface);
 mEglManager.createReleaseFence(true, &sync, &fence);
 ```
 
-当前 Android 16 的 GL backend 通过 `FlushAndSubmit(surface)` 提交，再由 `EglManager::createReleaseFence()` 生成 release fence。Graphite 路径要从 `SkiaGraphitePipeline` 追到 RenderThread / CanvasContext 的后端选择。这里更接近 Vulkan explicit sync 语义，fence 与 semaphore 的对应关系不会完全沿用 GL/EGL 的 `EglManager::createReleaseFence()` 观察点。Trace 分析时，GL 设备优先看 EGL release fence，Graphite/Vulkan 设备还要把 GPU queue submit、present fence 和 FrameTimeline 放在同一时间窗里看。
+这条路径先通过 Ganesh flush/submit 提交，再让 `EglManager::createReleaseFence()` 创建 native fence；如果设备不支持 native fence，代码会退到 EGL sync wait 后返回无效 fd。
 
-[已验证: AOSP android-8.1.0_r81 / android-16.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp, frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp]
+Vulkan HWUI 后端走另一条入口。`SkiaVulkanPipeline::flush()` 直接调用 `VulkanManager`：
+
+```cpp
+vulkanManager().createReleaseFence(&fence, mRenderThread.getGrContext());
+```
+
+`VulkanManager::createReleaseFence()` 会创建可导出 sync fd 的 `VkSemaphore`，通过 Skia `GrFlushInfo` signal semaphore，再用 `vkGetSemaphoreFdKHR` 导出 fence fd。`finishFrame()` 还会返回 `presentFence`，并在 `VulkanManager::swapBuffers()` 里随当前 buffer 提交给底层 surface。
+
+Trace 分析时，GL 后端把 `flush commands`、EGL release fence、SurfaceFlinger acquire/release fence 放在同一时间窗里看。Vulkan 后端还要把 GPU queue submit、semaphore 导出的 sync fd、`presentFence` 和 FrameTimeline 放在同一时间窗里看。这样才能判断等待来自 HWUI 后端提交、SurfaceFlinger 消费，还是显示侧 present。
+
+[已验证: AOSP android-8.1.0_r81 / android-16.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp, frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp, frameworks/base/libs/hwui/renderthread/VulkanManager.cpp]
 
 ## 常见问题与误区
 
@@ -262,7 +274,8 @@ VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 produce
 - AOSP 源码：`frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
 - AOSP 源码：`system/core/libsync/sw_sync.h`、`system/core/libsync/sync.c`
 - AOSP 源码：`frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp`
-- AOSP 源码：`frameworks/base/libs/hwui/pipeline/skia/SkiaGraphitePipeline.cpp`
+- AOSP 源码：`frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp`
+- AOSP 源码：`frameworks/base/libs/hwui/renderthread/VulkanManager.cpp`
 - 官方文档：<https://source.android.com/docs/core/graphics/sync>
 - 官方文档：<https://source.android.com/docs/core/graphics/architecture>
 

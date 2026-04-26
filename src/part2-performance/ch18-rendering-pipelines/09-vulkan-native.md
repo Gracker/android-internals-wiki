@@ -11,14 +11,14 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
@@ -28,9 +28,13 @@ sources:
     path: "developer.android.com/about/versions/15/features#vulkan"
   - type: aosp
     path: "frameworks/native/vulkan"
-last_task2b_at: "2026-04-25T17:43:00+08:00"
+  - type: aosp
+    path: "frameworks/opt/gamesdk/include/swappy/swappyVk.h"
+last_task2b_at: "2026-04-26T23:53:43+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9/External 问题单）"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 <!-- outline-start -->
@@ -260,7 +264,7 @@ Pipeline Barrier 显式地告诉 GPU："在这之前的操作必须完成，之�
 VkImageMemoryBarrier barrier = {
     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
     .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-    .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+    .dstAccessMask = 0,
     .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
     .image = swapchainImages[imageIndex],
@@ -274,6 +278,8 @@ vkCmdPipelineBarrier(
     0, 1, NULL, 0, NULL, 1, &barrier
 );
 ```
+
+这里不要把 `VK_ACCESS_MEMORY_READ_BIT` 配给 `VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT`。`BOTTOM_OF_PIPE` 不执行内存读；这段 barrier 只负责把颜色附件写入收束到 layout transition。Present 侧的等待由前文 `VkPresentInfoKHR.pWaitSemaphores = &renderFinishedSemaphore` 承担。使用 synchronization2 时，可以写成 `dstStageMask = VK_PIPELINE_STAGE_2_NONE`、`dstAccessMask = 0`。
 
 ## Presentation Mode
 
@@ -334,20 +340,33 @@ sequenceDiagram
 
 ### 关键 API
 
+这段示例保留初始化、设置 interval、替换 present 三步，主要看返回值处理和每个 swapchain 的初始化顺序。
+
 ```c
-// 初始化（在 Swapchain 创建后）
-SwappyVk_initAndGetRefreshCycleDuration(env, activity, physicalDevice, device, 
-                                         swapchain, &refreshDuration);
+uint64_t refreshDuration = 0;
+bool initialized = SwappyVk_initAndGetRefreshCycleDuration(
+    env,
+    jactivity,
+    physicalDevice,
+    device,
+    swapchain,
+    &refreshDuration
+);
+if (!initialized) {
+    // 省略：回退到应用自己的 frame pacing 策略，或停止接入 Swappy。
+}
 
-// 替代原生 vkQueuePresentKHR（关键：所有 Present 调用都要走 Swappy）
-SwappyVk_queuePresent(queue, presentInfo);
+SwappyVk_setSwapIntervalNS(device, swapchain, refreshDuration);
 
-// 设置目标帧率（如 60fps）
-SwappyVk_setSwapIntervalNS(device, swapchain, 16666666);
+VkResult presentResult = SwappyVk_queuePresent(queue, &presentInfo);
+if (presentResult != VK_SUCCESS) {
+    // 省略：按 VK_ERROR_OUT_OF_DATE_KHR / VK_SUBOPTIMAL_KHR 等结果重建 swapchain。
+}
 
-// 自动选择最优 Swap Interval（根据屏幕刷新率）
 SwappyVk_setAutoSwapInterval(true);
 ```
+
+`SwappyVk_initAndGetRefreshCycleDuration()` 的公开头文件签名包含 `JNIEnv* env` 和 `jobject jactivity`，返回 `bool`，刷新周期通过 `uint64_t* pRefreshDuration` 写回。`SwappyVk_queuePresent()` 返回 `VkResult`，出错时仍要按普通 Vulkan swapchain 错误处理。每个 swapchain 都要先初始化，再设置该 swapchain 的 swap interval。
 
 ### Trace 特征
 
