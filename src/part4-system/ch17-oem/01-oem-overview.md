@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-16"
+reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-04"
@@ -24,6 +24,7 @@ sources:
 tags: ['oem', 'performance', 'freezer', 'preloading', 'background-management']
 related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
 task6_state: reviewed
+review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修1处（「这意味着」x1 禁用词替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 pipeline_stage: task6_pending
 task9_state: reviewed
 task9_result: needs-rework
@@ -185,7 +186,7 @@ ColorOS 的 Trinity Engine 就是这种思路的典型代表——它通过 AI �
 
 理解厂商的后台管理策略，必须先理解中国 Android 生态的一个根本特殊性：**没有 Google Play Services**。
 
-这意味着没有统一的推送服务（FCM）。App 为了确保能及时收到消息通知，不得不自己维持后台进程的活跃状态。于是各种保活方案层出不穷：双进程守护、JobScheduler 定时唤醒、AccountSync 同步触发、1 像素 Activity 保活、甚至静默播放音频文件来防止进程被杀。多个 App 之间还会相互唤醒——你打开了 App A，它通过 ContentProvider 或广播把同公司的 App B 也拉起来。这就是臭名昭著的「全家桶」现象。
+因为没有统一的推送服务（FCM），App 为了确保能及时收到消息通知，不得不自己维持后台进程的活跃状态。于是各种保活方案层出不穷：双进程守护、JobScheduler 定时唤醒、AccountSync 同步触发、1 像素 Activity 保活、甚至静默播放音频文件来防止进程被杀。多个 App 之间还会相互唤醒——你打开了 App A，它通过 ContentProvider 或广播把同公司的 App B 也拉起来。这就是臭名昭著的「全家桶」现象。
 
 这种生态导致了一个恶性循环：App 越来越激进的保活 → 系统越来越卡、越来越耗电 → 厂商越来越激进的杀后台 → App 为了存活更加激进地保活。这个循环的结果是，国内 Android 手机的后台管理策略远比 AOSP 默认策略更激进。
 

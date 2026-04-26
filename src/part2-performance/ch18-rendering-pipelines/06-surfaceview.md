@@ -8,11 +8,12 @@ tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独�
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
+review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。小修0处（L1禁用词零命中）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-26"
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework

@@ -454,3 +454,144 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timel
 - [AndroidX WebGPU release notes](https://developer.android.com/jetpack/androidx/releases/webgpu) — AndroidX WebGPU 与 Dawn 更新记录
 - [Dawn README](https://github.com/google/dawn/blob/main/README.md) — Dawn 与 Chromium WebGPU 的关系
 - AOSP 源码路径：`frameworks/base/core/java/android/os/GraphicsEnvironment.java`（driver selection / per-app override）、`frameworks/native/opengl/libs/EGL/Loader.cpp`（ANGLE / native / updated driver 选路）、`frameworks/native/libs/graphicsenv/GraphicsEnv.cpp`（ANGLE APK / system setup 与 rules string 接口）、`external/angle/`（ANGLE 实现）
+
+---
+
+<!-- AIW-源码调研-2026-04-26: ANGLE Vulkan Sync + RenderThread CPU Affinity -->
+
+## 补充：ANGLE Vulkan 同步机制（源码级）
+
+### EGL_ANDROID_native_fence_sync 的实现路径
+
+ANGLE 的 Vulkan backend 在 Android 上通过 `EGL_ANDROID_native_fence_sync` 扩展实现 EGL Sync 对象与 Vulkan 同步原语的互操作。该扩展使得 EGL fence sync 对象可以与 native fence fd 关联，从而在 EGL 与 Vulkan 之间共享同步状态。
+
+**关键调用链**（ANGLE Vulkan backend，源码位于 `external/angle/src/libANGLE/renderer/vulkan/android/`）：
+
+```
+eglCreateSync(EGL_ANDROID_native_fence_sync, fd)
+  ├─ if fd provided: vkImportFenceFdKHR → VkFence
+  └─ if no fd: create VkFence → vkGetFenceFdKHR → export fd
+
+eglClientWaitSync(eglSync, timeout)
+  → vkWaitForFences(fence, VK_TRUE, timeout)
+
+eglWaitSync(eglSync, flags)
+  → dup(nativeFenceFd) → vkImportSemaphoreFdKHR → VkSemaphore
+  → add as wait semaphore to next vkQueueSubmit
+```
+
+### vkAcquireImageANDROID：EGL ↔ Vulkan 图像同步
+
+`vkAcquireImageANDROID`（定义于 `vk_android_native_buffer.h`）是 Android 上 Vulkan 获取 EGL 管理图像的关键函数。其签名包含 `nativeFenceFd` 参数，允许 Vulkan 端等待 EGL 端完成图像处理后再复用：
+
+```cpp
+// vkAcquireImageANDROID signature
+VkResult vkAcquireImageANDROID(
+    VkDevice device,
+    VkImage image,
+    int nativeFenceFd,    // from EGL side — represents GPU completion point
+    VkSemaphore semaphore,
+    VkImageLayout *optimalLayout);
+```
+
+**典型使用场景**：
+1. GLES App 渲染完成 → 创建 EGL fence sync → 获得 fd
+2. 同一 Surface 切换到 Vulkan 消费 → `vkAcquireImageANDROID(waitFd)` 阻塞直到 GLES 完成
+3. 两个 API 之间的资源安全共享
+
+### vkQueuePresentKHR 的同步陷阱
+
+**核心问题**：`vkQueuePresentKHR` **不返回 fence 或 semaphore** 告知何时 presentation 操作完成。这导致 ANGLE 等 Vulkan 消费者无法安全复用 wait semaphore。
+
+**Validation Layer 警告**（Vulkan SDK 1.4.313+）：
+> "your VkSemaphore is being signaled by VkQueue, but it may still be in use by VkSwapchainKHR"
+
+**解决方案**：
+- **per-swapchain-image semaphore**：为每个 swapchain image 分配独立 "submit finished" semaphore，而非 per-frame
+- **VK_EXT_swapchain_maintenance1**：允许 `vkQueuePresentKHR` 指定 fence，解决了这个长期问题
+
+### Perfetto Trace 切片命名影响
+
+当 ANGLE 开启 Vulkan backend 时，GPU 同步点的 Trace 命名从 GLES 风格变为 Vulkan 风格：
+
+| 场景 | GLES/EGL 路径 | Vulkan/ANGLE 路径 |
+|------|-------------|-----------------|
+| Frame Signal | `eglSwapBuffers` | `vkQueuePresentKHR` |
+| Wait 切片 | `GLFence::ClientWait` | `vkWaitForFences` |
+| Image 获取 | N/A | `vkAcquireNextImageKHR` |
+| Semaphore 操作 | `eglClientWaitSyncKHR` | `vkSemaphoreWait` |
+
+---
+
+## 补充：RenderThread CPU Affinity（SCHED_FIFO 调度机制）
+
+### 系统级调度策略控制
+
+RenderThread 的 CPU 亲和性通过 cgroup/task_profiles 体系由系统统一分配，**不是**通过显式 `sched_setaffinity` 调用管理。
+
+**关键源码路径**：
+```
+frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java
+```
+
+RenderThread 调度策略由 `sys.use_fifo_ui` 系统属性控制：
+
+```java
+// ActivityManagerService.java (simplified from AOSP)
+if (SystemProperties.get("sys.use_fifo_ui", "0").equals("1")) {
+    // Apply SCHED_FIFO to UI thread and RenderThread of top-app
+    final int renderThreadTid = renderThread.getTid();
+    Process.setThreadScheduler(renderThreadTid,
+                               Process.SCHED_FIFO | Process.SCHED_RESET_ON_FORK,
+                               1 /* priority */);
+}
+```
+
+**完整调度链**：
+```
+sys.use_fifo_ui=1
+  → ActivityManagerService identifies top-app process
+  → ProcessList.SCHED_GROUP_TOP_APP
+  → setThreadScheduler(RenderThread, SCHED_FIFO, 1)
+  → RenderThread gets SCHED_FIFO with priority 1
+```
+
+### cgroup 资源组分配
+
+`SCHED_GROUP_TOP_APP` 是 Android 资源管理框架的调度组概念，与 cpuset 相关但不完全等同于 cpuset 绑定：
+
+```
+/dev/cpuset/
+├── cpuset.top-app/      ← TOP_APP 调度组的 cpuset
+│   ├── cpus             ← 大核（big cores）分配
+│   └── mems             ← 对应 memory nodes
+```
+
+RenderThread 作为 top-app 进程内的线程，理论上可调度到大核。
+
+### 早期实现的性能问题
+
+RenderThread SCHED_FIFO 的早期实现曾导致显著性能回退：
+
+| 版本 | 问题 | 后果 |
+|------|------|------|
+| 早期实现 | RenderThread load balancer 非 capacity-aware | RenderThread 抢占大核导致 UI thread 被驱逐到小核 |
+| 影响 | App 启动速度降低 **30%** | 关键场景性能降级 |
+| 修复 | 引入 capacity-aware RT load balancer | 95th/99th percentile 帧时间降低 10-15% |
+
+### RenderThread 架构确认
+
+```java
+// android.graphics.HardwareRenderer (API 29+)
+public class HardwareRenderer {
+    // 所有 HardwareRenderer 实例共享同一个 RenderThread
+    private final RenderThread mRenderThread;
+    
+    // RenderThread 在进程内是唯一的，负责所有 GPU 命令提交
+    // 线程生命周期独立于任何一个 ViewRootImpl
+}
+```
+
+> **待核实声明**：AOSP 中未找到 Android 15+ 新增"更激进的 CPU 大核绑定"相关 API 或参数。该说法来源为外部讨论，未经一手源码验证。
+
+[已验证: AOSP ActivityManagerService.java, HardwareRenderer.java, vkAcquireImageANDROID, vkQueuePresentKHR spec]

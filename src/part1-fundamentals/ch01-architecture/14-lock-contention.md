@@ -304,3 +304,31 @@ Android 17 的 DeliQueue 是这类优化里很典型的一个案例。它不是�
 ## 小结
 
 锁竞争分析真正难的地方在于，不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，我们再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才不是碰运气，而是有目标地改。 
+
+
+<!-- AIW-源码调研-2026-04-26 -->
+## 补充：16KB Page Size 对线程栈内存的影响
+
+本节于 2026-04-26 通过源码调研补充，发现以下内容与锁竞争分析相关（线程栈溢出导致的 lock overhead 也属于锁竞争范畴）：
+
+### PTHREAD_STACK_MIN 与 16KB Page Size
+
+**源码位置**：
+- `bionic/libc/include/pthread.h` — PTHREAD_STACK_MIN 定义（16KB on 16KB page systems）
+- `bionic/libc/pthread.c` — FixStackSize 栈大小调整逻辑
+- `runtime/thread.cc` — ART 线程创建时调用 FixStackSize
+
+**16KB Page 系统下的关键差异**：
+
+| 方面 | 4KB Page 系统 | 16KB Page 系统 |
+|------|-------------|--------------|
+| 最小栈分配粒度 | 4KB | 16KB |
+| 小线程栈内部碎片 | 较低 | 较高（最小值增加 4×） |
+| 栈溢出 guard page | 4KB | 16KB |
+| 页表内存（1GB 映射） | 2MB PTE | 0.5MB PTE（节省 75%） |
+
+**NDK 兼容性**：Google Play 要求 2025-11-01 起，targetSdk ≥ 35 的 App 必须支持 16KB。NDK r28+ 编译产出天然满足 16KB 对齐，旧版 NDK 编译的 so 需要重新编译或通过 Compat Mode 加载。
+
+> 本补充调研同步更新至 §1.13 MessageQueue 机制与 DeliQueue 无锁优化章节。
+
+<!-- AIW-源码调研-2026-04-26 END -->
