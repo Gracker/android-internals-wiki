@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T00:40:00+08:00",
+  "generated_at": "2026-04-27T01:50:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,32 +7,32 @@
     "finalized": 88,
     "ready-for-review": 130,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T00:40:00+08:00",
+    "last_updated": "2026-04-27T01:50:00+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 40,
-      "task2b_pending": 56,
+      "task6_pending": 42,
+      "task2b_pending": 54,
       "ready-to-publish": 88,
       "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 173,
-      "revisiting": 41
+      "reviewed": 171,
+      "revisiting": 43
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 153,
-      "pending": 54,
+      "reviewed": 151,
+      "pending": 56,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 143,
-      "pending": 59,
+      "fixed": 145,
+      "pending": 57,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -42,34 +42,34 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 40,
-      "task2b_pending": 56,
+      "task6_pending": 42,
+      "task2b_pending": 54,
       "ready-to-publish": 88,
       "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 173,
-      "revisiting": 41
+      "reviewed": 171,
+      "revisiting": 43
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 153,
-      "pending": 54,
+      "reviewed": 151,
+      "pending": 56,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 143,
-      "pending": 59,
+      "fixed": 145,
+      "pending": 57,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
     },
-    "last_updated": "2026-04-27T00:40:00+08:00"
+    "last_updated": "2026-04-27T01:50:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1235,23 +1235,34 @@
       "chapter": "3.1",
       "status": "ready-for-review",
       "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
-      "last_verified": "2026-04-23",
-      "last_verified_against": "AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp / InputProcessor.cpp / inputflinger Android.bp",
       "confidence": "high",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "pending",
+      "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T20:23:00+08:00",
       "section": "3.1",
-      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。"
+      "review_notes": "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；补 InputClassifier/InputProcessor、WindowInfosListener 版本边界、ANR 默认超时、InputChannel 失败路径、InputFlinger 默认进程形态。",
+      "version_note": "已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android 13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及 Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。",
+      "rework2_date": "2026-04-15",
+      "rework2_by": "openclaw-task2b",
+      "rework2_reason": "Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）",
+      "polish_count": "1",
+      "polish_date": "2026-04-05",
+      "polish_by": "task2b-polish",
+      "last_task2b_at": "2026-04-27T01:50:00+08:00",
+      "task2b_fixed_by": "openclaw-task2b",
+      "repaired_date": "2026-04-27",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part1-fundamentals/ch03-input/02-touch-performance.md": {
       "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
@@ -1462,22 +1473,29 @@
       "status": "ready-for-review",
       "drafted_date": "2026-03-31",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-03-31",
-      "last_verified_against": "AOSP android-16.0.0_r1",
-      "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1 ProcessList/lmkd socket, android-10 lmkd PSI, android-11/12/14/16 CachedAppOptimizer, Android 16 lmkd/reaper, developer.android.com 16KB Page Size",
+      "confidence": "medium-high",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "pending",
+      "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T20:23:00+08:00",
-      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 5，P1 2，P2 1。"
+      "review_notes": "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace lmkd 版本、oom_score_adj/HEAVY_WEIGHT_ADJ/minfree、16KB 数据、CachedAppOptimizer 版本表，并补 Perfetto SQL 观察点。",
+      "polish_count": "1",
+      "polish_date": "2026-04-05",
+      "polish_by": "task2b-polish",
+      "last_task2b_at": "2026-04-27T01:50:00+08:00",
+      "task2b_fixed_by": "openclaw-task2b",
+      "repaired_date": "2026-04-27",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md": {
       "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",

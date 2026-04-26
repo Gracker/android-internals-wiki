@@ -11728,8 +11728,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-27T01:50:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 已补源码锚点与调用路径，external-ai-review P1 已消费。"
   },
   {
     "section": "3.2",
@@ -11863,8 +11866,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-27T01:50:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 已补源码锚点与调用路径，external-ai-review P1 已消费。"
   },
   {
     "section": "4.5",
@@ -12485,7 +12491,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T20:23:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T01:50:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 已按 task9-deep-tech-review 问题单完成回炉修复。"
   },
   {
     "section": "4.4",
@@ -12542,7 +12551,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T20:23:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T01:50:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 已按 task9-deep-tech-review 问题单完成回炉修复。"
   },
   {
     "section": "2.12",

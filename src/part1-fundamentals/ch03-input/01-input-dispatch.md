@@ -1,20 +1,20 @@
 ---
-title:"Input 事件分发全流程"
-chapter:"3.1"
-status:ready-for-review
-applicable_versions:"Android 12 (API 31) - Android 16 (API 36)"
-last_verified:"2026-04-23"
-last_verified_against:"AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1"
-version_note:"已补核 android-12/13/14/15/16 的 InputDispatcher.cpp：Android 12 使用静态 isStaleEvent()，Android 13/14 使用 mStaleEventTimeout，Android 15/16 改为 mPolicy.isStaleEvent(...)。独立进程化和 Predictive Back 影响范围仍保留 [待验证]。"
-confidence:high
+title: "Input 事件分发全流程"
+chapter: "3.1"
+status: ready-for-review
+applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
+last_verified: "2026-04-27"
+last_verified_against: "AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp / InputProcessor.cpp / inputflinger Android.bp"
+version_note: "已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android 13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及 Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。"
+confidence: high
 reviewed_date: "2026-04-23"
 reviewed_by: openclaw-task6
-rework2_date:"2026-04-15"
-rework2_by:"openclaw-task2b"
-rework2_reason:"Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）"
-polish_count:1
-polish_date:"2026-04-05"
-polish_by:"task2b-polish"
+rework2_date: "2026-04-15"
+rework2_by: "openclaw-task2b"
+rework2_reason: "Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）"
+polish_count: 1
+polish_date: "2026-04-05"
+polish_by: "task2b-polish"
 sources:
   - type: blog
     path: "https://utzcoz.github.io/2020/05/06/Analyze-AOSP-input-architecture.html"
@@ -24,19 +24,23 @@ sources:
     path: "https://source.android.com/docs/core/interaction/input"
   - type: blog
     path: "https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture"
-tags:['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
-related_chapters:["3.2", "3.3", "2.5", "9.1", "9.2"]
+tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
+related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T20:23:00+08:00"
-review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。"
+review_notes: "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；补 InputClassifier/InputProcessor、WindowInfosListener 版本边界、ANR 默认超时、InputChannel 失败路径、InputFlinger 默认进程形态。"
+last_task2b_at: "2026-04-27T01:50:00+08:00"
+task2b_fixed_by: openclaw-task2b
+repaired_date: "2026-04-27"
+repaired_by: openclaw-task2b
 ---
 
 # Input 事件分发全流程
@@ -46,7 +50,7 @@ review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2�
 
 ### 锚点（必须覆盖）
 
-- 🔹 输入事件完整链路：硬件 → Kernel InputDriver → EventHub → InputReader → InputDispatcher → App ViewRootImpl → View 树
+- 🔹 输入事件完整路径：硬件 → Kernel InputDriver → EventHub → InputReader → InputClassifier/InputProcessor → InputDispatcher → App ViewRootImpl → View 树
 - 🔹 InputDispatcher 的分发策略：焦点窗口、触摸窗口、ANR 超时
 - 🔹 App 侧的事件分发：ViewRootImpl → DecorView → Activity.dispatchTouchEvent → ViewGroup → View
 - 🔹 InputChannel 与 Socket pair 机制
@@ -83,7 +87,7 @@ review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2�
 
 **第二段：EventHub → InputReader**。这是 Android Framework 层的第一道关卡。`EventHub` 利用 Linux 的 `epoll` 机制监听 `/dev/input/` 目录下的设备文件，当有新事件时可读取。`InputReader` 是一个跑在 `system_server` 进程中的 Native 循环线程，它不断从 `EventHub` 读取原始的 `struct input_event`，然后根据设备类型（触摸屏、键盘、鼠标等）交给对应的 `InputMapper` 做"加工"（cook）——把原始数据转成 Android 层认识的 `KeyEvent`、`MotionEvent`。
 
-**第三段：InputDispatcher → 目标窗口**。`InputReader` 加工完事件后，交给同样跑在 `system_server` 中的 `InputDispatcher` 线程。`InputDispatcher` 负责找到该事件的目标窗口（焦点窗口或触摸区域命中的窗口），然后通过 `InputChannel`（底层是 `socketpair`）跨进程把事件发送给 App。
+**第三段：InputClassifier/InputProcessor → InputDispatcher → 目标窗口**。触摸事件在进入分发线程前还有一层版本化处理：Android 12/13 的代码路径是 `InputReader → InputClassifier → InputDispatcher`，Android 14+ 演进为 `InputReader → InputProcessor → InputDispatcher`。这一层负责触摸分类、palm rejection、stylus 等处理；不需要分类的事件会直接透传到 queued listener，然后进入 `InputDispatcher`。`InputDispatcher` 再找到目标窗口（焦点窗口或触摸区域命中的窗口），通过 `InputChannel`（底层是 `socketpair`）跨进程把事件发送给 App。
 
 **第四段：App 侧分发**。App 进程通过 `WindowInputEventReceiver` 收到事件，经过 `ViewRootImpl` 的责任链式 `InputStage` 管线处理，最终分发到 View 树中的具体控件。
 
@@ -143,12 +147,15 @@ void InputReader::loopOnce() {
 - 键盘设备 → `KeyboardInputMapper`
 - 鼠标/轨迹球设备 → `CursorInputMapper`
 
-以触摸事件为例，`TouchInputMapper` 会将多点触控的原始坐标数据加工为包含坐标、压力、触摸点数量等完整信息的 `NotifyMotionArgs`，然后通过 `InputDispatcher::notifyMotion()` 提交给分发队列。
+以触摸事件为例，`TouchInputMapper` 会将多点触控的原始坐标数据加工为包含坐标、压力、触摸点数量等完整信息的 `NotifyMotionArgs`。之后的提交路径要按版本拆开：Android 12/13 通过 `services/inputflinger/InputClassifier.cpp` 的 `InputClassifier::notifyMotion()` 进入 queued listener；Android 14+ 对应 `services/inputflinger/InputProcessor.cpp` 的 `InputProcessor::notifyMotion()`。代码里专门把 MotionClassifier 放到独立 HAL thread，目的就是避免分类 HAL 的耗时直接卡住输入分发。
 
-一个容易忽略的细节：开发者选项中的 "Show taps"（显示触摸操作）功能，就是在 `InputReader` 这一层处理的，而不是在 App 层。`TouchInputMapper` 在加工触摸事件时，如果检测到 `showTouches` 配置开启，会通过 `PointerController` 直接在系统层绘制触摸圆点。这样做的好处是响应更快、不占用 App 进程资源。这也是为什么即使 App 卡住了，我们依然能看到触摸圆点在动。
+普通触摸 Trace 中不一定会出现单独的 `InputClassifier` 或 `InputProcessor` 长 slice；更常见的信号仍是 `InputReader`、`InputDispatcher`、`iq/oq/wq` 和 App 侧 `deliverInputEvent`。当怀疑触摸分类、手掌误触、stylus 过滤影响延迟时，再结合 `dumpsys input`、设备配置和 inputflinger 日志确认这一层。
+
+开发者选项中的 "Show taps"（显示触摸操作）功能，也是在 `InputReader` 这一层处理，不在 App 层。`TouchInputMapper` 在加工触摸事件时，如果检测到 `showTouches` 配置开启，会通过 `PointerController` 直接在系统层绘制触摸圆点。这样即使 App 卡住了，我们依然能看到触摸圆点在动。
 
 > [来源: obsidian/Cubox/从显示 Tap 原理一探 Android 12 的 Input 系统-2022-03-21.md]
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/reader/]
+> [已验证: AOSP android-12.0.0_r1 / android-13.0.0_r1, services/inputflinger/InputClassifier.cpp]
+> [已验证: AOSP android-14.0.0_r1 / android-16.0.0_r1, services/inputflinger/InputProcessor.cpp]
 
 ## InputDispatcher 的分发策略
 
@@ -260,7 +267,18 @@ mInputEventReceiver = new WindowInputEventReceiver(inputChannel, Looper.myLooper
 
 在 native 层，`NativeInputEventReceiver` 的构造函数中，会把这个 socket fd 注册到 App 主线程的 native `Looper` 上监听。当 `InputDispatcher` 往 server 端写入事件数据时，App 主线程的 `Looper` 被 epoll 唤醒，回调到 `NativeInputEventReceiver::consumeEvents()`，完成事件接收。
 
+### InputChannel 断开后的清理路径
+
+`InputChannel` 还承担失败感知。App 进程退出、窗口销毁或 socket 断开后，`InputDispatcher` 会在对应 `Connection` 上看到 channel broken / zombie 状态，随后移除 fd 监听、清理 `mConnectionsByFd` 中的连接，并让策略层刷新窗口状态。线上遇到“窗口已经消失但还在等输入反馈”的问题时，要把这条失败路径纳入排查。
+
+最小判断流程是：
+
+- `dumpsys input` 中检查目标窗口 `Connection` 的 `status`，区分 `NORMAL`、`BROKEN`、`ZOMBIE` 或 `NOT_RESPONDING`。
+- 如果连接已经 broken，但 `wq:{windowName}` 仍长时间存在，继续看窗口移除和 WMS/SurfaceFlinger 窗口信息刷新是否滞后。
+- 如果 App 进程死亡，结合 `process_exit`、Activity/Window 销毁日志和 `InputDispatcher` warning 判断连接清理是否完成。
+
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/libs/input/InputTransport.cpp]
+> [已验证: DeepResearch/Android 16 InputChannel 失败处理与 SurfaceFlinger 协作的系统运行机制.md]
 > [来源: obsidian/Cubox/Android图形系统（五）番外篇：触摸事件详解-2023-03-03.md]
 
 ## App 侧的事件分发：从 ViewRootImpl 到 View 树
@@ -405,16 +423,17 @@ stale event 和 Input ANR 处理的是两类问题：
 
 <!-- AIW-源码调研-2026-04-19 -->
 
-## InputDispatcher 与 SurfaceFlinger 协作：WindowInfosListener 机制（Android 12+）
+## InputDispatcher 与 SurfaceFlinger 协作：WindowInfosListener 机制（Android 13+）
 
-Android 12+ 引入的 WindowInfosListener 协作机制重构了 InputDispatcher 获取窗口信息的方式：原来 WindowManagerService 直接通过 Binder 调用向 InputDispatcher 推送窗口信息，Android 12 改为 SurfaceFlinger 作为中间 hub，通过 `addWindowInfosListener()` 注册监听器，每帧通过 `updateInputFlinger()` 主动推送。
+Android 13 起，InputDispatcher 可以通过 `SurfaceComposerClient::addWindowInfosListener()` 注册 `DispatcherWindowListener`，由 SurfaceFlinger / WindowInfosListenerReporter 推送窗口信息。Android 12 的 `InputDispatcher.cpp` 仍保留 `setInputWindows()` 路径，没有 `addWindowInfosListener()`；因此版本边界要写成 Android 13+。Android 13 中 `setInputWindows()` 仍作为兼容路径存在，Android 14 起源码里已经出现“待移除 setInputWindows API”的 TODO。
 
 ### 注册流程
 
-**InputDispatcher 构造时**注册 `DispatcherWindowListener`：
+`InputDispatcher` 构造时注册 `DispatcherWindowListener`：
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+// android-13.0.0_r1+
 InputDispatcher::InputDispatcher(InputDispatcherPolicyInterface& policy, ...) {
     mWindowInfoListener = sp<DispatcherWindowListener>::make(*this);
 #if defined(__ANDROID__)
@@ -423,7 +442,7 @@ InputDispatcher::InputDispatcher(InputDispatcherPolicyInterface& policy, ...) {
 }
 ```
 
-`DispatcherWindowListener` 是 `InputDispatcher.h` 中的内嵌类，实现了 `BnWindowInfosListener` 接口：
+`DispatcherWindowListener` 是 `InputDispatcher.h` 中的内嵌类，实现 `BnWindowInfosListener` 接口：
 
 ```cpp
 class DispatcherWindowListener : public BnWindowInfosListener {
@@ -435,32 +454,13 @@ class DispatcherWindowListener : public BnWindowInfosListener {
 };
 ```
 
-### SurfaceFlinger 侧：updateInputFlinger
+### Android 12 的边界
 
-SurfaceFlinger 在每次合成周期（`doComposition()` 之前）调用 `updateInputFlinger()`，通过 `mWindowInfosListenerInvoker` 推送窗口信息：
-
-```cpp
-// services/surfaceflinger/SurfaceFlinger.cpp
-void SurfaceFlinger::updateInputFlinger(VsyncId vsyncId, TimePoint frameTime) {
-    // 设置 eInputInfoUpdateNeeded 标志
-    // ...
-}
-```
-
-标志位定义（`SurfaceFlinger.h`）：
-```cpp
-enum {
-    eInputInfoUpdateNeeded = 0x00000020,  // 窗口信息需要更新
-};
-```
-
-`SurfaceComposerClient::addWindowInfosListener()` 实际转发给单例 `WindowInfosListenerReporter`，注册后立即回调一次 initial window info 让 InputDispatcher 初始化。
+Android 12 仍由 WMS/IMS 侧把 input windows 更新给 InputDispatcher，`InputDispatcher::setInputWindows()` 是明确存在的入口。版本演进表应把 Android 12 放到旧路径，Android 13+ 再写 WindowInfosListener 机制。
 
 ### 推送的窗口信息内容
 
-`gui::WindowInfo` 包含：token（WindowToken）、name、frame（窗口几何区域 Rect）、visible（是否可见）、focusable、hasFocus（是否当前焦点窗口）、inputConfig（touchable/secure 等标志）、transform（显示变换矩阵）。
-
-`gui::DisplayInfo` 包含：displayId、resolution（宽高）、refreshRate、density。
+`gui::WindowInfo` 包含 token、name、frame、visible、focusable、hasFocus、inputConfig、transform 等字段。`gui::DisplayInfo` 包含 displayId、resolution、refreshRate、density 等显示信息。
 
 ### InputDispatcher 接收与决策
 
@@ -478,21 +478,11 @@ void InputDispatcher::onWindowInfosChanged(
 }
 ```
 
-窗口信息变化直接影响：
-1. **目标窗口选择**：`findFocusedWindowTargets()` 需要 `hasFocus` 标志
-2. **触摸有效性**：`isWindowVisible()` 判断触摸是否投递
-3. **ANR 判责**：`AnrController` 使用窗口信息判断是 App 无响应还是焦点窗口问题
-4. **Stale Event 丢弃**：`BLOCKED` 状态需要窗口信息判断用户是否已切换焦点
+窗口信息会影响目标窗口选择、触摸命中判断、ANR 判责和 blocked 状态处理。性能分析时，这条路径解释的是“输入拓扑如何跟随窗口/Surface 状态刷新”，不是 App 侧事件处理耗时本身。
 
-### 性能意义
-
-- **避免轮询**：从主动查询 → SurfaceFlinger 主动推送，减少 IPC
-- **每帧同步开销**：120Hz 设备上最多每秒 120 次调用，但只有窗口状态实际变化时才处理
-- **批量推送**：`std::vector<WindowInfo>` 一次性推送所有窗口信息
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/]
+> [已验证: AOSP android-12.0.0_r1, InputDispatcher.cpp — 存在 `setInputWindows()`，无 `addWindowInfosListener()`]
+> [已验证: AOSP android-13.0.0_r1 / android-14.0.0_r1 / android-16.0.0_r1, InputDispatcher.cpp — 存在 `DispatcherWindowListener` 与 `addWindowInfosListener()`]
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.h — eInputInfoUpdateNeeded 标志]
-> [版本补核: android-12.0.0_r1 / android-13.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 的 `InputDispatcher.cpp`]
 
 <!-- AIW-源码调研-2026-04-19 -->
 
@@ -530,15 +520,17 @@ if (connection->responsive) {
 
 ### 5 秒超时的来源
 
-默认超时时间在 InputDispatcher 中定义：
+默认超时时间在 InputDispatcher 中定义。Android 14/15/16 的代码已经是 `std::chrono` 写法，默认 5 秒来自 `IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS`，并会经过 `HwTimeoutMultiplier()` 放大：
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
-// [已验证: AOSP android-14.0.0_r1]
-static const nsecs_t DEFAULT_INPUT_DISPATCHING_TIMEOUT = 5 * 1000000000LL; // 5 sec
+// [已验证: AOSP android-14.0.0_r1 / android-16.0.0_r1]
+const std::chrono::duration DEFAULT_INPUT_DISPATCHING_TIMEOUT = std::chrono::milliseconds(
+        android::os::IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS *
+        HwTimeoutMultiplier());
 ```
 
-这个值可以通过 `InputWindowHandle.dispatchingTimeoutNanos` 覆盖。系统窗口（如状态栏、导航栏）可能使用不同的超时值，但 App 窗口默认是 5 秒。
+窗口级超时由窗口信息中的 `dispatchingTimeout` 覆盖。InputDispatcher 查到目标窗口后，会走 `window->getDispatchingTimeout(DEFAULT_INPUT_DISPATCHING_TIMEOUT)`；没有目标窗口可用时才回退到默认值。
 
 在 Perfetto 中，如果我们看到某个 App 的 `wq` 值持续大于 0 超过 5 秒，那么接下来就会出现 Input ANR。这就是为什么分析 Input 问题时，`wq` Track 是最重要的观察指标之一。
 
@@ -586,27 +578,21 @@ Android 的 Input 系统区分两种基本的指针类事件：
 
 ## InputFlinger 的角色与版本边界
 
-按已复核的源码目录，Android 12 到 Android 16 的 `InputReader` 和 `InputDispatcher` 都位于 `frameworks/native/services/inputflinger/`。这能确认“实现以 inputflinger 目录组织”，但还不能只靠目录形态推出“Android 14+ 再次模块化”或“Android 16 的 Predictive Back 已改写 InputDispatcher 主分发路径”。
+Android 12 到 Android 16 的 `InputReader`、`InputDispatcher`、`InputProcessor` 等实现都位于 `frameworks/native/services/inputflinger/`。这说明源码按 inputflinger 模块组织，但 AOSP 主线默认运行形态仍是通过 `libinputflinger` 等库进入 `system_server`；独立 `inputflinger` 进程仍停留在 TODO 或 OEM 形态。
 
-### 本节已经核验的点
+### 已核验的版本事实
 
 | 版本 | 已核验事实 |
 |------|------------|
-| Android 12 | `dispatcher/InputDispatcher.cpp` 中的 stale 判定是静态 `isStaleEvent(...)`，目录已经是 `services/inputflinger/` |
-| Android 13 | stale 判定改成 `InputDispatcher::isStaleEvent(...)`，`mAnrTracker` 已在 dispatcher 中参与超时管理 |
-| Android 14 | stale 判定路径延续 Android 13：`InputDispatcher::isStaleEvent(...)` + `mStaleEventTimeout` |
-| Android 15 | stale 判定改为 `mPolicy.isStaleEvent(...)` |
-| Android 16 | stale 判定路径延续 Android 15，源码目录仍是 `services/inputflinger/` |
+| Android 12 | `dispatcher/InputDispatcher.cpp` 中的 stale 判定是静态 `isStaleEvent(...)`；触摸分类路径使用 `InputClassifier.cpp` |
+| Android 13 | 引入 `DispatcherWindowListener` / `addWindowInfosListener()`；触摸分类路径仍是 `InputClassifier.cpp` |
+| Android 14 | 触摸分类路径演进为 `InputProcessor.cpp`；`DEFAULT_INPUT_DISPATCHING_TIMEOUT` 使用 `std::chrono` + `HwTimeoutMultiplier()` |
+| Android 15 | stale 判定改为 `mPolicy.isStaleEvent(currentTime, entry.eventTime)` |
+| Android 16 | stale 判定路径延续 Android 15；`services/inputflinger/Android.bp` 仍保留 “Move inputflinger to its own process” TODO |
 
-### 仍然保留 [待验证] 的点
+`services/inputflinger/Android.bp` 中的 TODO 说明独立进程化仍不是 AOSP 12-16 的默认事实。某些产品/OEM 可以调整服务形态，但正文只能按可核验的 AOSP 主线描述。
 
-- InputFlinger 是否在某些产品形态下独立成单独进程。
-- 文中“Android 14+ 进一步模块化”对应的具体行为变化。
-- Predictive Back 对 InputDispatcher 主路径的影响范围。
-
-如果后续补源码，优先查 `InputDispatcher.cpp`、`InputManager.cpp`、init/service 配置和输入策略接口，不要只看目录名字下结论。
-
-> [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/]
+> [已验证: AOSP android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1 / android-16.0.0_r1, frameworks/native/services/inputflinger/Android.bp]
 
 ## 常见问题与误区
 
@@ -632,13 +618,13 @@ Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中
 
 | 版本 | 已核验变化 |
 |------|------------|
-| Android 12 (API 31) | `InputDispatcher.cpp` 中的 stale 判定是静态 `isStaleEvent(...)`，超时常量是固定 10 秒 |
-| Android 13 (API 33) | stale 判定改成 `InputDispatcher::isStaleEvent(...)`，`mAnrTracker` 已进入 dispatcher 超时管理 |
-| Android 14 (API 34) | stale 判定路径延续 Android 13，默认超时由 `mStaleEventTimeout` 管理 |
+| Android 12 (API 31) | `InputDispatcher.cpp` 中的 stale 判定是静态 `isStaleEvent(...)`；窗口信息仍走 `setInputWindows()` 路径；触摸分类使用 `InputClassifier.cpp` |
+| Android 13 (API 33) | 引入 `DispatcherWindowListener` / `addWindowInfosListener()`；`setInputWindows()` 仍作为兼容入口存在 |
+| Android 14 (API 34) | 触摸分类路径演进为 `InputProcessor.cpp`；默认 dispatch timeout 使用 `std::chrono` + `HwTimeoutMultiplier()` |
 | Android 15 (API 35) | stale 判定改为 `mPolicy.isStaleEvent(currentTime, entry.eventTime)` |
-| Android 16 (API 36) | stale 判定路径延续 Android 15，源码目录仍位于 `services/inputflinger/` |
+| Android 16 (API 36) | stale 判定路径延续 Android 15；AOSP 主线仍没有默认把 inputflinger 独立成单独进程 |
 
-[待验证：Predictive Back 对 InputDispatcher 主分发路径的具体影响、IME 交互优化的代码落点、目录层面的“进一步模块化”是否对应可见行为变化]
+[待验证：Predictive Back 对 InputDispatcher 主分发路径的具体影响、IME 交互优化的代码落点]
 
 ## 调试技巧
 
@@ -656,6 +642,8 @@ Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中
 
 - `frameworks/native/services/inputflinger/reader/EventHub.cpp` — 事件入口
 - `frameworks/native/services/inputflinger/reader/InputReader.cpp` — 事件读取与加工
+- `frameworks/native/services/inputflinger/InputClassifier.cpp` — Android 12/13 触摸分类路径
+- `frameworks/native/services/inputflinger/InputProcessor.cpp` — Android 14+ 触摸分类路径
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — 事件分发
 - `frameworks/native/libs/input/InputTransport.cpp` — InputChannel 与跨进程通信
 - `frameworks/base/core/java/android/view/ViewRootImpl.java` — App 侧事件接收
