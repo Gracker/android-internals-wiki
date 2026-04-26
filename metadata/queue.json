@@ -12702,5 +12702,51 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T01:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "4.4",
+    "section_title": "Low Memory Killer",
+    "priority": 95,
+    "reason": "[Deep Tech Review] HEAVY_WEIGHT_APP_ADJ 的 manifest 属性写错，会误导读者使用不存在的 android:heavyWeight",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L160 HEAVY_WEIGHT_APP_ADJ",
+        "detail": "正文写“声明 android:heavyWeight=\"true\" 的重量级 Activity 进程”。AOSP android-16.0.0_r1 中 heavy-weight 判断来自 ApplicationInfo.PRIVATE_FLAG_CANT_SAVE_STATE；Manifest attr 是 android:cantSaveState，ActivityTaskSupervisor 在 mHasHeavyWeightFeature 条件下设置 heavy-weight process。公开 attrs_manifest.xml 与 ProcessList.java 中不存在 android:heavyWeight 属性。",
+        "suggestion": "改为 android:cantSaveState / PRIVATE_FLAG_CANT_SAVE_STATE 触发 heavy-weight process，并引用 ActivityTaskSupervisor、ActivityTaskManagerService、ProcessList；继续保留它与电池优化白名单、前台服务的区分。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T02:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.9",
+    "section_title": "Vulkan 原生渲染管线",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android Vulkan Profile 名称与 Command Buffer 多线程约束存在错误/缺口",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L110-L120 Android Vulkan Profile 表格",
+        "detail": "正文把 Android 15/16 profile 写成 VP_ANDROID_15_requirements / VP_ANDROID_16_requirements。KhronosGroup/Vulkan-Profiles main 的公开 JSON 文件为 VP_ANDROID_15_minimums.json、VP_ANDROID_16_minimums.json；直接按正文名称查 profile 会失败。1.3.273 / 1.3.276 对应的是 minimums profile 的 api-version。",
+        "suggestion": "将表格和正文改为 VP_ANDROID_15_minimums / VP_ANDROID_16_minimums；如果要保留 requirements 口径，应明确它是平台要求描述，不是 Khronos profile 文件名。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L157-L187 Command Buffer 并行录制",
+        "detail": "正文只写 Command Buffer 可以在任意线程并行录制，没有交代 Vulkan host synchronization 约束：VkCommandPool/VkCommandBuffer 的 host access 需要外部同步；共享同一个 command pool 并发分配/录制会违反规范并触发 validation 或数据竞争。",
+        "suggestion": "补充每线程 command pool、secondary command buffer 并行录制、同一 command buffer/pool 不可无锁并发访问等规则，避免把“支持多线程录制”写成“任意共享对象可并发”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T02:20:00+08:00",
+    "status": "pending"
   }
 ]
