@@ -10780,5 +10780,63 @@
     "status": "pending",
     "source_file": "logs/external-review/archive/2026-04-25-15-18.11-external-review.md",
     "split_from": "queue[136]"
+  },
+  {
+    "section": "10.4",
+    "section_title": "低内存对系统性能的影响",
+    "priority": 95,
+    "reason": "[Deep Tech Review] compactd 与 mm_events 机制口径不符合 Android/AOSP 实现",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L290-L296",
+        "detail": "正文把 Android 10 的内存规整写成 userspace compactd / Compact Daemon。公开 Android/AOSP 口径没有这个独立守护进程；现代 Android 应区分 Linux kernel compaction/kcompactd、vmstat compact_* 计数，以及 Android framework 的 cached app compaction。当前说法会让读者去找不存在的 daemon 和触发路径。",
+        "suggestion": "删除 compactd 口径；改为“内核 compaction/kcompactd 负责高阶页规整，观测 /proc/vmstat compact_* 与 mm_compaction_* tracepoint”。如果要讲 Android 进程压缩，单独锚定 ActivityManager/CachedAppOptimizer 相关源码，不要命名为 compactd。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L171-L177",
+        "detail": "mm_events 被写成常驻守护进程通过 perf_event_open 订阅内核 tracepoints。官方 mm_events 口径是内存压力下触发 Perfetto trace，记录 vmstat 与 ftrace/mm_event 统计，常见触发器为 kmem_activity；perf_event_open 不是这段机制的稳定说明。",
+        "suggestion": "改为“mm_events 在启用后由内存压力触发 Perfetto 采集窗口，按 /vendor/etc/mm_events.cfg 记录 vmstat 和 ftrace/mm_event 数据”；补充 persist.mm_events.enabled 与 kmem_activity rate limit。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T10:43:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.9",
+    "section_title": "Android Camera 性能与 Perfetto 分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] CameraMetadataNative 清理路径、录像进程定位和 RenderScript 建议存在版本/源码错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L126 / L499-L501",
+        "detail": "正文写 Android 15+ CameraMetadataNative 改为 NativeAllocationRegistry + Cleaner。复核 AOSP android-16.0.0_r1，CameraMetadataNative.java 仍保留 mMetadataPtr、private close() 和 protected finalize() -> close() 路径，未看到 NativeAllocationRegistry / Cleaner。",
+        "suggestion": "删除“Android 15+ 切到 NativeAllocationRegistry + Cleaner”的版本断言；保留 finalizer/private close() 口径，若要写新分支必须给出具体 tag/commit。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L122",
+        "detail": "录像丢帧段要求查看 /system/bin/mediaserver 进程中的 queueBuffer。Android 7/8 起媒体服务已拆分为 audioserver、cameraserver、media.extractor、media.codec 等，本文适用 Android 12-17，继续把录像编码路径落到 monolithic mediaserver 会误导 Perfetto 进程定位。",
+        "suggestion": "改成按实际设备进程定位：App/CameraX 或 Camera2 进程、cameraserver、vendor camera provider/HAL、media.codec / Codec2 vendor 进程和 SurfaceFlinger；先用 slice/track 查询找 queueBuffer 所在线程，不固定写 /system/bin/mediaserver。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L439",
+        "detail": "正文建议用 RenderScript/HAL 硬件加速替代 CPU 软处理。RenderScript 从 Android 12 起 deprecated，厂商硬件加速路径也不再作为现代推荐；本文覆盖 Android 12-17，这条建议已经过时。",
+        "suggestion": "把 RenderScript 改为现代替代：CameraX ImageAnalysis/YUV 转换能力、RenderScript Intrinsics Replacement Toolkit（仅替代 intrinsics）、OpenGL ES/Vulkan compute、NDK/MediaCodec/厂商 HAL 能力，并说明按场景实测。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T10:43:00+08:00",
+    "status": "pending"
   }
 ]
