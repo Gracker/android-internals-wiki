@@ -443,6 +443,140 @@ Compat Mode 触发条件在 `linker_phdr.cpp`：`kPageSize == 16384 && min_align
 **结论**：Android 14+ 上的 Inline Hook 必须遵守两步 `mprotect()`、icache flush 和运行时页大小;任一环节出错都会导致 Hook 失败或进程崩溃。
 
 
+## 补充：Linker Namespace 限制与 ByteDance Hook 库绕过机制
+
+<!-- AIW-源码调研-2026-04-27 -->
+
+### Android Linker Namespace 机制从引入到收紧的演进
+
+Android 从 7.0 (Nougat) 开始引入 Linker Namespace，核心目标是**隔离私有系统库、防止应用依赖非 NDK API**。这个机制在 Android 8.0 (Oreo) 随着 Project Treble 全面落地，成为系统安全架构的基础组件。
+
+**classloader-namespace 的分配流程**：
+
+```
+Zygote 进程
+  → libnativeloader.so 为 Java 应用创建 classloader-namespace
+  → System.loadLibrary() 加载的库沿用 ClassLoader 的 namespace
+  → 该 namespace 限制只能从以下目录加载 SO：
+      /data
+      /mnt/expand
+      应用私有目录（/data/data/<pkg>）
+```
+
+**dlopen 的 namespace 校验逻辑**（与标准 Linux 不同）：
+
+Android 的 `dlopen` 内部实现会检查调用者的 `caller_addr`（调用者函数地址），Linker 根据该地址确定调用者所属的 soinfo，从而获知其 namespace。如果目标库路径不在 namespace 的允许列表中，加载失败并返回 NULL。
+
+关键源码位置：
+- `bionic/linker/linker_soinfo.h` — soinfo 类定义，含 `primary_namespace_` 和 `secondary_namespaces_`
+- `bionic/linker/linker.cpp` — namespace 校验和 dlopen 实现
+- `bionic/linker/linker_soinfo.cpp` — soinfo 成员函数实现
+
+### 三大绕过手段的技术原理
+
+#### 手段一：修改 soinfo 结构（Quarkslab 公开技术）
+
+`soinfo` 结构的字段是**可直接读写**的（不是 const），其 `primary_namespace_` 和 `secondary_namespaces_` 字段直接决定库的 namespace 关联。通过修改这些字段，可以使原本受限的模块获得访问其他 namespace 下库的权限。
+
+**绕过步骤**：
+1. 通过 `dl_iterate_phdr()` 遍历所有已加载 ELF，获取 linker 的基地址
+2. 解析 ELF 的 dynsym 表，找到 `g_soinfo_handles_map` 等内部变量的 RVA
+3. 计算绝对地址并读取/修改 soinfo 的 namespace 字段
+4. 修改后可直接 dlopen 原本被禁止的系统库
+
+#### 手段二：伪造 caller_addr（__loader_dlopen 技巧）
+
+标准 Linux `dlopen` 不接受 `caller_addr`，而 Android 版本隐式使用调用者地址。在某些场景下（hook 框架内部），可以通过以下方式伪造调用者身份：
+1. 获取目标库自身的句柄（`dlopen(target_lib, RTLD_NOLOAD)`）
+2. 将该句柄的地址作为 `caller_addr` 传入，伪装成目标库自身在加载依赖
+3. Linker 认为请求来自目标库的 namespace，从而允许加载
+
+#### 手段三：ShadowHook 的 do_dlopen Hook
+
+ShadowHook 能够在用户 hook 一个**尚未加载**的库时，内部 hook 链接器的 `do_dlopen` 函数。当目标库通过正常路径加载时，ShadowHook 的 hook 先被触发：
+
+1. 完成用户请求的 hook 操作
+2. 放行让原始 `do_dlopen` 继续执行
+
+同时，ShadowHook 支持注册 `.init` / `.init_array` / `.fini` / `.fini_array` 的回调，用于在库加载完成后执行自定义逻辑，从而支持符号查询、namespace 绕过等操作。
+
+ShadowHook README 明确说明：
+> Supports bypassing linker namespace restrictions to query symbol addresses in .dynsym and .symtab of all ELFs in the process.
+
+### ByteDance Hook 库生态：ByteHook 与 ShadowHook 对比
+
+字节跳动维护了两套互补的 Hook 库，已在 TikTok/Douyin/Toutiao/Xigua Video/Lark 等亿级用户应用中大规模生产使用。
+
+| 特性 | ByteHook (PLT Hook) | ShadowHook (Inline Hook) |
+|------|-------|---------|
+| **Hook 方式** | PLT 表替换（不改代码段） | 函数指令级 Inline 修改 |
+| **API 级别** | Android 4.1 - 15（API 16-35） | Android 4.1 - 16（API 16-36） |
+| **架构支持** | armeabi-v7a, arm64-v8a, x86, x86_64 | armeabi-v7a, arm64-v8a |
+| **Namespace 绕过** | 不支持 | 支持 |
+| **典型场景** | 通用函数 Hook、IO/malloc 类监控 | 需要访问任意 ELF 符号或绕过 namespace |
+| **W^X 影响** | 无（不修改代码段） | 需要两步 mprotect + icache flush |
+
+**ByteHook 三种 Hook 模式**（bytehook/bytehook.h）：
+
+```c
+// hook 单个调用者
+bytehook_stub_t bytehook_hook_single(
+    const char *caller_path_name,
+    const char *callee_path_name,
+    const char *sym_name,
+    void *new_func,
+    bytehook_hooked_t hooked,
+    void *hooked_arg);
+
+// hook 部分匹配调用者
+bytehook_stub_t bytehook_hook_partial(
+    bytehook_caller_allow_filter_t caller_allow_filter,
+    void *caller_allow_filter_arg,
+    const char *callee_path_name,
+    const char *sym_name,
+    void *new_func,
+    bytehook_hooked_t hooked,
+    void *hooked_arg);
+
+// hook 所有调用者
+bytehook_stub_t bytehook_hook_all(
+    const char *callee_path_name,
+    const char *sym_name,
+    void *new_func,
+    bytehook_hooked_t hooked,
+    void *hooked_arg);
+```
+
+**ShadowHook 的初始化优化**：
+
+为了避免重复获取 linker's global mutex lock，ShadowHook 将 `dlopen`/`dlsym` 操作移至 `libshadowhook.so` 的 `.init_array` 段执行，确保在后续初始化阶段不需要再次持有 linker 全局锁。
+
+### Android 11+ namespace API 收紧的历史脉络
+
+| Android 版本 | 关键变更 |
+|--------------|---------|
+| Android 7.0 (API 24) | 引入 linker namespace，初步隔离 |
+| Android 8.0 (API 26) | classloader-namespace 分配给 Java App（Treble 核心） |
+| Android 9 (API 28) | 进一步收紧限制，禁止加载私有 API |
+| Android 11 (API 30) | `android_create_namespace()` 从 `libdl.so` 移除并私有化 |
+| Android 14 (API 34) | W^X 强制 read-only，Inline Hook 需要额外 mprotect 步骤 |
+| Android 16 (API 36) | ShadowHook 支持至 API 36 |
+
+`android_create_namespace()` 在 Android 8 中允许创建自定义 namespace 并指定 LSPath 和隔离规则，但该函数在 Android 11 被移除并移至 `libc.so` 内部，外部应用无法直接调用。这是 namespace 绕过技术（尤其是 soinfo 修改和 `__loader_dlopen` 技巧）存在的技术背景。
+
+### 源码文件索引
+
+| 文件路径 | 关键内容 | 版本 |
+|----------|---------|------|
+| `bionic/linker/linker_soinfo.h` | soinfo 类定义，含 primary_namespace_/secondary_namespaces_ | AOSP mainline |
+| `bionic/linker/linker.cpp` | dlopen namespace 校验逻辑 | AOSP mainline |
+| `bionic/linker/linker_soinfo.cpp` | soinfo 成员函数实现 | AOSP mainline |
+| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode + ELF 解析 | AOSP mainline |
+| `github.com/bytedance/bhook` | ByteHook PLT Hook 库（v1.1.1, 2025-01） | API 16-35 |
+| `github.com/bytedance/android-inline-hook` | ShadowHook Inline Hook 库 | API 16-36 |
+
+
+
 ## 这一章在全书里的位置
 
 这一章不是孤立的底层技术补充,它和全书主线直接相连:

@@ -22,11 +22,11 @@ sources:
 - AOSP external/angle/
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-26"
-review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
+reviewed_date: "2026-04-27"
+review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task6_result: pass-light-edit
 last_task9_at: "2026-04-26T13:26:21+08:00"
 task9_reviewed_date: "2026-04-26"
@@ -243,8 +243,8 @@ LIMIT 50;
 ## 与其他章节的关系
 
 - **2.14 图形 API 演进与选择策略**：ANGLE 在 Android 图形生态中的定位
-- **18.8 OpenGL ES 渲染链路**：原生 GLES 链路，与 ANGLE 形成对比
-- **18.9 Vulkan 原生渲染链路**：ANGLE 底层走的就是 Vulkan
+- **18.8 OpenGL ES 渲染路径**：原生 GLES 路径，与 ANGLE 形成对比
+- **18.9 Vulkan 原生渲染路径**：ANGLE 底层走的就是 Vulkan
 
 
 
