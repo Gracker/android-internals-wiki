@@ -4637,3 +4637,22 @@
 - **位置**：四类能力对照表 Benchmark 工具行（约 L105-L111）
 - **问题**：19.21 已把 AndroBench 降级为历史工具，并推荐 CPDT / PCMark Storage 2.0 等当前存储基线；19.01 仍把 AndroBench 和 Macrobenchmark、Geekbench、PerfDog 并列，容易被读成当前推荐入口。
 - **建议**：与 19.21 对齐：将 AndroBench 标注为“历史旧报告复盘”，或在代表工具中改为 CPDT / PCMark Storage 2.0，并把 AndroBench 放到边界说明。
+
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L252 ARR 自适应刷新率
+- **问题**：正文写 LTPO 静态场景显示侧功耗“通常能降到原先的一半左右”，但没有绑定面板、亮度、刷新率档位、DDIC/SoC、测试工具或公开数据来源。
+- **建议**：补一组可复现实测条件或官方/OEM 数据；如果没有稳定来源，改成“可能显著降低显示侧功耗，幅度取决于面板与系统策略”，并把量化结论留给案例。
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-27
+- **类型**：版本差异
+- **位置**：frontmatter applicable_versions
+- **问题**：frontmatter 写 `Android 7 (API 24) - Android 17 (API 37)`，但 `last_verified_against` 只到 AOSP android-16.0.0_r1，正文也没有 Android 17 的 fence/HWUI/Composer 差异说明。
+- **建议**：二选一：把适用范围收敛到 Android 16；或补 Android 17 tag / API 37 的 Fence、HWUI Vulkan、HWC3/Composer 相关核验结果。
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：在 Perfetto 里怎么读 Fence
+- **问题**：章节给出了 acquire/release/present fence 的判断方向，但没有落到具体 Trace 观察点、slice 名称、FrameTimeline 字段或 trace_processor 查询，读者难以复跑验证。
+- **建议**：补一个最小 Perfetto 案例或 SQL：串起 `queueBuffer`/`latchBuffer`/`presentDisplay`、GPU busy、FrameTimeline actual/expected 和 BufferQueue slot 状态。

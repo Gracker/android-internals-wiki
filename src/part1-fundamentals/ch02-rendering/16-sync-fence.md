@@ -2,7 +2,7 @@
 title: "Sync Fence 框架与帧同步机制"
 chapter: "2.16"
 section: "2.16"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-26"
 last_verified_against: "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp, source.android.com/docs/core/graphics/sync"
@@ -30,22 +30,24 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
-task9_result: needs-rework
+task9_result: pass-tech-review
 task2b_result: fixed
-task9_reviewed_date: "2026-04-26"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-26T21:29:00+08:00"
+task9_reviewed_date: "2026-04-27"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-27T01:20:00+08:00"
 last_task2b_at: "2026-04-26T23:53:43+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
+
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制

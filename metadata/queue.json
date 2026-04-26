@@ -11648,16 +11648,38 @@
     "section": "2.9",
     "section_title": "2.9",
     "priority": 85,
-    "reason": "[External Review] 技术评分 4.8/5",
+    "reason": "[External Review] 技术评分 4.8/5；[Deep Tech Review] BLASTBufferQueue 版本线与 ANGLE 自动启用边界存在 P1 技术缺口",
     "review_issues": [
       {
         "type": "P1重要缺失",
         "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 渲染机制的版本演进 中某些深层机制的说明不够彻底。\n- 缺失内容：ANGLE（OpenGL ES on Vulkan）层的状态机转换开销缺乏深入的技术剖析。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n- 建议补充方向：深入 "
+      },
+      {
+        "type": "版本差异/交叉引用错误",
+        "location": "L198-L204、L212、L449-L450 BLASTBufferQueue 版本线",
+        "detail": "正文把 BLASTBufferQueue 写成 Android 12 引入，并把 Android 11 及之前统一归为旧 BufferQueue 口径；但 AOSP android-11.0.0_r1 的 ViewRootImpl 已有 mBlastBufferQueue，并会 new BLASTBufferQueue。§2.6 也写成 Android 11 主窗口 BLAST 进入主线，两章冲突。",
+        "suggestion": "把版本线改成：Android 11 主窗口 BLAST 已进入 ViewRootImpl 主线；Android 12 重点是 FrameTimeline/VSyncId/窗口同步观测口径完善。同步修正标题、FAQ 和总览表。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L208 BLASTBufferQueue 核心改进",
+        "detail": "正文说 App 不再需要等待 SurfaceFlinger 释放 Buffer 才能获取新 Buffer，容易被读成 BLAST 取消 BufferQueue slot/release fence backpressure。实际 BLAST 仍要遵守 BufferQueue slot、acquire/release fence 和 max acquired buffer count 约束。",
+        "suggestion": "改成“BLAST 将 buffer 与 SurfaceControl.Transaction 绑定到同一帧边界提交，改善 geometry/buffer 同步；buffer 复用等待仍由 BufferQueue slot 与 release fence 决定”。"
+      },
+      {
+        "type": "知识盲区/版本差异",
+        "location": "L224-L229 Android 16 Vulkan + ANGLE",
+        "detail": "正文写 OpenGL ES App 自动获得 ANGLE 翻译层优化，缺少 Android 15/16/17 分阶段策略、设备默认/开发者选项/应用名单/OEM 覆盖边界，也没有解释 GraphicsEnvironment 到 ANGLE/Vulkan 的决策链。external-review 已命中 ANGLE 状态机转换开销缺口。",
+        "suggestion": "补 GraphicsEnvironment.shouldUseAngle*、ANGLE package/driver 选择、developer option / per-app 设置、Android 16/17 staged rollout 边界，以及 GLES→ANGLE→Vulkan 后 Trace 中可观察的线程/同步变化。"
       }
     ],
     "added_by": "external-ai-review",
     "status": "pending",
-    "date": "2026-04-26"
+    "date": "2026-04-26",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ]
   },
   {
     "section": "2.0",
@@ -12636,5 +12658,37 @@
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter",
     "resolution_note": "Pipeline barrier 按 P0 修正；Swappy 签名按官方 swappyVk.h 保留 JNIEnv/jactivity，并补 bool/VkResult 处理。"
+  },
+  {
+    "section": "2.6",
+    "section_title": "SurfaceFlinger 与合成",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 12-16 SurfaceFlinger 阶段名与 VSync offset 判断存在技术错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "L284-L286 Layer 与 z-order",
+        "detail": "正文把 rebuildLayerStacks / calculateWorkingSet 写成 Android 12-16 SurfaceFlinger 主循环阶段；复核 AOSP android-12.0.0_r1、android-14.0.0_r1、android-16.0.0_r1 的 SurfaceFlinger.cpp，均未找到这两个符号，当前主路径应围绕 commit()/composite()、Layer/CompositionEngine 的遍历与输出规划描述。",
+        "suggestion": "删除或改成旧版本限定；若面向 Android 12-16，改用 SurfaceFlinger::commit、SurfaceFlinger::composite 与 CompositionEngine 输出层规划的源码锚点。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L240 VSYNC-app Track",
+        "detail": "正文说 VSYNC-app 到 VSYNC-sf 间距增大意味着 App 可用时间变少、间距减小才是时序问题；按 Android offset 模型，VSYNC-app 先触发 App 生产，VSYNC-sf 后触发 SF latch/composite，二者间距缩短才会压缩 App 在本轮 SF latch 前的生产时间。",
+        "suggestion": "改成：间距缩短会压缩 App 侧预算并增加错过 latch 的风险；间距增大通常给 App 更多时间，但可能改变 SF/display 侧余量，需结合 expected present 和 FrameTimeline 判断。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L117 SF 慢 → dequeueBuffer 阻塞",
+        "detail": "正文写“App 侧 releaseBuffer() 不会被调用”。releaseBuffer 是 BufferQueueConsumer/consumer 侧释放旧 buffer 的动作，不是 App producer 侧回调；App/RenderThread 在 dequeueBuffer() 处等待的是 free slot/outFence/release fence 条件满足。",
+        "suggestion": "改成“SurfaceFlinger/HWC 尚未释放旧 buffer，consumer 侧 releaseBuffer 尚未让 slot 回到可用状态；producer 的 waitForFreeSlotThenRelock() 因无 free slot 或 release fence 未就绪而等待”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T01:20:00+08:00",
+    "status": "pending"
   }
 ]

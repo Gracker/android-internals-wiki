@@ -9634,3 +9634,20 @@ Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor，以及 Andr
 
 ### 关联章节
 1.3, 4.1, 4.2, 10.4
+
+
+## [2026-04-27] 2.9 渲染机制的版本演进 — ANGLE/Vulkan 分阶段切换知识盲区
+
+### 盲区描述
+Android 16/17 中 OpenGL ES → ANGLE → Vulkan 的启用策略没有形成源码级决策链。当前章节容易被读成“Android 16 上所有 GLES App 自动走 ANGLE 并获得优化”，但实际还涉及设备默认、开发者选项、应用名单、OEM 覆盖、ANGLE package/driver 选择与后续 Android 17 扩展范围。external-review 已命中 ANGLE 状态机转换开销缺失。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 `frameworks/base/core/java/android/os/GraphicsEnvironment.java` 中 ANGLE 选择逻辑，以及 settings / package / rules 的优先级。
+- 对照 source.android.com / developer.android.com 的 Android Vulkan / ANGLE roadmap，拆出 Android 15、16、17 的分阶段边界。
+- 补 GLES → ANGLE → Vulkan 后在 Perfetto 中可观察的线程、GPU queue、fence/semaphore、driver slice 变化。
+
+### 关联章节
+2.9、2.14、18.11
