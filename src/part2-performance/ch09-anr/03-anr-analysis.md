@@ -7,7 +7,7 @@ drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-04-26"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
@@ -32,8 +32,8 @@ sources:
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
@@ -201,7 +201,7 @@ traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是�
 
 分析 ANR 的核心思路是区分"应用的问题"还是"系统的问题"。这个判断会直接决定后续的优化方向。
 
-ANR 的根因本质上可以归为三类：主线程被阻塞（等着拿不到的东西）、主线程在干不该干的事（I/O、计算）；主线程拿不到 CPU（别人占着）。下面的分类就是按照这三种模式展开的，每一类都有对应的 trace 特征和排查路径。
+ANR 的根因可以归为三类：主线程被阻塞（等着拿不到的东西）、主线程在干不该干的事（I/O、计算）；主线程拿不到 CPU（别人占着）。下面的分类就是按照这三种模式展开的，每一类都有对应的 trace 特征和排查路径。
 
 ### 死锁
 
