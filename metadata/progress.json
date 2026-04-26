@@ -7241,12 +7241,15 @@
   },
   "section_2_20": {
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task9_pending",
+    "task6_state": "reviewed",
     "task9_state": "pending",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
-    "last_task2b_at": "2026-04-26T21:49:23+08:00"
+    "last_task2b_at": "2026-04-26T21:49:23+08:00",
+    "task6_result": "pass-light-edit",
+    "reviewed_date": "2026-04-26",
+    "reviewed_by": "openclaw-task6"
   },
   "section_7_13": {
     "status": "ready-for-review",
