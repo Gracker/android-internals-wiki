@@ -4421,3 +4421,32 @@
 - **位置**：“Binder 调用超时 / binder_sample 示例”
 - **问题**：示例中的 `code=6` 未说明是 AIDL transaction code，跨版本/接口变更时不应当作固定语义。
 - **建议**：补一句：code 需要结合对应版本的 AIDL/Stub 常量反查。
+
+
+## [External Review] ch03 Input 事件处理 — 2026-04-26
+- **类型**：数据支撑
+- **位置**：性能优化段落
+- **问题**：部分性能优化结论没有量化数据，缺乏 Perfetto 或实测数据图表支持
+- **建议**：补充具体的 Trace 图表说明或 Benchmark 对比数据
+- **来源**：Gemini 外部 review
+
+## [External Review] ch04 内存管理 — 2026-04-26
+- **类型**：数据与案例缺失
+- **位置**：实战部分
+- **问题**：未提供 Perfetto slice 视角
+- **建议**：补充在 Perfetto 中抓取和过滤 meminfo 的具体操作建议及截图
+- **来源**：Gemini 外部 review
+
+## [External Review] ch05 CPU 调度与能耗管理 — 2026-04-26
+- **类型**：内容补充
+- **位置**：阅读建议
+- **问题**：提及 Perfetto 时未给出具体 Track 建议
+- **建议**：增加 sched_switch 和 cpu_frequency 等 Track 提示
+- **来源**：Gemini 外部 review
+
+## [External Review] ch06 存储 I/O — 2026-04-26
+- **类型**：实战指导
+- **位置**：阅读建议
+- **问题**：关于 trace 的阅读建议不够深入，缺少具体系统调用关键字
+- **建议**：补充常见 D 状态阻塞点如 fsync、fdatasync、__x64_sys_read 等
+- **来源**：Gemini 外部 review

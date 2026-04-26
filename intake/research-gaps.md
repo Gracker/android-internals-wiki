@@ -9367,3 +9367,76 @@ Android 14+ BroadcastQueueModernImpl 的 soft timeout / hard timeout 机制还�
 
 ### 关联章节
 9.3, 13.2, 13.9
+
+
+## [2026-04-26] ch03 Input 事件处理 — 知识盲区
+
+### 盲区描述
+最新 Android 16/17 版本 Input 相关机制变化未覆盖。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 调研最新 AOSP release notes 中 Input 子系统变更
+- Android 14/15/16 中 InputDispatcher timeout 判定逻辑变化
+
+### 关联章节
+- ch03-input
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-26] ch04 内存管理 — 知识盲区
+
+### 盲区描述
+不同 OEM 厂商对 Kswapd 水位线调整对整体内存架构的冲击
+
+### 重要程度
+高
+
+### 建议研究方向
+- 结合最新 Linux Kernel / ART 源码进行行为分析
+- OEM 差异化 lmkd 配置对比
+
+### 关联章节
+- ch04 内存管理、性能优化相关章节
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-26] ch05 CPU 调度与能耗管理 — 知识盲区
+
+### 盲区描述
+内核态调度策略与 Android Framework 层（如 AMS 的 ProcessState/OomAdj）如何联动
+
+### 重要程度
+高
+
+### 建议研究方向
+- ProcessList.java 中 setOomAdj 对 CPU cpuset 的影响
+- kernel/sched/ 及 drivers/cpufreq/ 中 EAS 核心架构
+
+### 关联章节
+- ch05-cpu-power、内存管理、进程管理
+
+### 外部 review 来源
+- Gemini 外部 review
+
+## [2026-04-26] ch06 存储 I/O — 知识盲区
+
+### 盲区描述
+SQLite 同步写 (fsync) 如何通过文件系统传递到块设备层并导致主线程 D 状态；F2FS GC 对性能抖动影响
+
+### 重要程度
+高
+
+### 建议研究方向
+- 结合 SQLite WAL 模式与 VFS 层交互过程分析
+- AOSP 中 F2FS 挂载参数及内核端 f2fs 模块
+
+### 关联章节
+- ch06-storage、SQLite 性能优化、启动优化
+
+### 外部 review 来源
+- Gemini 外部 review
