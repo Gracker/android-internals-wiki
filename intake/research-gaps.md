@@ -9440,3 +9440,148 @@ SQLite 同步写 (fsync) 如何通过文件系统传递到块设备层并导致�
 
 ### 外部 review 来源
 - Gemini 外部 review
+
+## [2026-04-26] 16.1 Google 官方优化 — 知识盲区
+
+### 盲区描述
+BLASTBufferQueue 与 WMS 的跨进程 Transaction 同步引擎（BLASTSyncEngine）机制未覆盖。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 分析 BLASTSyncEngine 和 WindowContainerTransaction 的源码实现
+- 梳理 WMS 如何收集多个应用/系统的 Transaction 并统一 apply
+
+### 关联章节
+- 16.1
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-26] 16.2 版本变更 — 知识盲区
+
+### 盲区描述
+CachedAppOptimizer 具体冻结/解冻策略及 cgroup v2 freezer 机制。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 深入 CachedAppOptimizer.java 了解 freezer 机制
+- 研究 Android 如何使用 cgroup 控制进程冻结
+- 了解 binder 调用触发短暂 unfreeze 的机制
+
+### 关联章节
+- 16.2
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-26] 16.3 AOSP 编译与环境搭建 — 知识盲区
+
+### 盲区描述
+Dynamic Partitions 对 adb remount 的限制，scratch 分区从 super 动态分配机制。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 梳理 OverlayFS 时 scratch 分区如何从 super 动态分配
+- fastboot delete-logical-partition 等处理 scratch 空间的方法
+
+### 关联章节
+- 16.3
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-26] 16.4 Kernel 6.12 性能 — 知识盲区
+
+### 盲区描述
+sched_ext 实际 BPF 加载机制与调度器实现示例。
+
+### 重要程度
+低
+
+### 建议研究方向
+- 分析 tools/testing/selftests/sched_ext/ 中的 scx_simple
+- 如何通过 BPF 工具链在 Android 上加载 sched_ext 策略
+
+### 关联章节
+- 16.4
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-26] 16.5 Android 17 API 37 性能变更 — 知识盲区
+
+### 盲区描述
+DeliQueue 与同步屏障（Sync Barriers）的兼容实现。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查阅 ConcurrentMessageQueue 对于 postSyncBarrier 的支持机制
+- 研究基于 min-heap 和无锁栈的新队列如何高效识别并阻塞异步消息之前的同步消息
+
+### 关联章节
+- 16.5, Handler 消息机制章节
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-26] 17.1 OEM 优化通用思路 — 知识盲区
+
+### 盲区描述
+不同厂商对后台 Freezer 介入的超时时间和白名单控制逻辑。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 扒取不同厂商设备的 /sys/fs/cgroup/uid_*/cgroup.freeze 写入逻辑和时机
+- 抓取不同厂商设备的 dumpsys activity 和 logcat 日志做对比
+
+### 关联章节
+- 17.1
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-26] 17.2 SoC 平台差异 — 知识盲区
+
+### 盲区描述
+联发科全大核架构的 EAS 参数细节，以及不同 SoC 的 NPU 调度对内存带宽的抢占。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 寻找开源内核中 MTK 调度器特定参数（sched_energy_aware 行为调整）
+- 使用 PMU 计数器对比开启和关闭 AI 功能时的内存带宽消耗
+
+### 关联章节
+- 17.2
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)
+
+## [2026-04-26] 17.3 行业案例 — 知识盲区
+
+### 盲区描述
+不同 OEM 对 ADPF Hint 的实际响应调度逻辑差异。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 测量调用 reportActualWorkDuration 到 CPU 频率实际拉高之间的时间延迟
+- 在多台设备上对比 ADPF 生效时的 CPU 频率与调度器状态
+
+### 关联章节
+- 17.3
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-25)

@@ -4463,3 +4463,58 @@
 - **问题**：正文说 Perfetto 中通常看到 `AsyncLayoutInflater` 的 `HandlerThread`。AndroidX `AsyncLayoutInflater` 当前实现使用单例 `InflateThread extends Thread` + `ArrayBlockingQueue`，完成后通过 Handler / 可选 Executor 回调；不是 `HandlerThread`。
 - **建议**：把 Trace 观察点改成“后台 InflateThread / AsyncLayoutInflater 任务线程”，同时说明回调是否回主线程取决于是否传入 `callbackExecutor`。
 
+## [External Review] 16.1 Google 官方优化 — 2026-04-26
+- **类型**：源码扩展
+- **位置**：Binder 线程池与优先级继承
+- **问题**：提到 DEFAULT_MAX_BINDER_THREADS = 15 但未指明 ioctl 调用点
+- **建议**：补充 BINDER_SET_MAX_THREADS ioctl 调用细节
+- **来源**：Gemini 外部 review
+
+## [External Review] 16.2 版本变更 — 2026-04-26
+- **类型**：深度扩展
+- **位置**：缓存应用冻结
+- **问题**：可以略微提及 cgroup freezer 机制
+- **建议**：添加一两句话说明底层是基于 cgroup v2 的机制
+- **来源**：Gemini 外部 review
+
+## [External Review] 16.3 AOSP 编译与环境搭建 — 2026-04-26
+- **类型**：细节补充
+- **位置**：adb remount
+- **问题**：未提及 Dynamic Partitions 空间不足问题
+- **建议**：加上 fastboot 调整分区大小或清理的简短提示
+- **来源**：Gemini 外部 review
+
+## [External Review] 16.4 Kernel 6.12 性能 — 2026-04-26
+- **类型**：深度扩展
+- **位置**：EEVDF 章节
+- **问题**：建议深化对 lag 机制的定义
+- **建议**：引用 kernel/sched/fair.c 中 update_curr() 时的 vruntime 更新逻辑
+- **来源**：Gemini 外部 review
+
+## [External Review] 16.5 Android 17 API 37 性能变更 — 2026-04-26
+- **类型**：机制补充
+- **位置**：DeliQueue
+- **问题**：未明确指出同步屏障在 DeliQueue 中的行为如何演进
+- **建议**：添加一句关于 DeliQueue 对 Sync Barrier 兼容实现的说明
+- **来源**：Gemini 外部 review
+
+## [External Review] 17.1 OEM 优化通用思路 — 2026-04-26
+- **类型**：数据支撑
+- **位置**：应用冻结技术
+- **问题**：缺乏 Perfetto trace 的实际对应
+- **建议**：提供一段具体的描述，告知读者在 Perfetto 中冻结前后 CPU track 的表现差异
+- **来源**：Gemini 外部 review
+
+## [External Review] 17.2 SoC 平台差异 — 2026-04-26
+- **类型**：案例补充
+- **位置**：GPU 差异对渲染性能的影响
+- **问题**：Adreno 和 Mali 的 gpu_render_stages 差异未列明
+- **建议**：提供具体的 stage 名字差异表（如 Adreno 报 Binning，Mali 报 Vertex/Tiler/Fragment）
+- **来源**：Gemini 外部 review
+
+## [External Review] 17.3 行业案例 — 2026-04-26
+- **类型**：内容补充
+- **位置**：折叠屏与大屏设备
+- **问题**：建议对 Configuration Change 进行更深入的 API 级解释
+- **建议**：补充 android:configChanges="screenSize|smallestScreenSize|screenLayout" 最佳实践
+- **来源**：Gemini 外部 review
