@@ -72,14 +72,14 @@ sources:
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: "reviewed"
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-reviewed_by: openclaw-task6
-reviewed_date: '2026-04-25'
-task6_result: pass-light-edit
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-26"
+task6_result: "pass-light-edit"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T15:20:00+08:00"
