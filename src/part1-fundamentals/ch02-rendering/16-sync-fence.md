@@ -175,7 +175,7 @@ release fence 的方向正好相反。官方文档对它的定义是：它表示
 
 这也是为什么我们不能把 producer 在 `queueBuffer()` 输入的那个 fence 写成 release fence。**producer `queueBuffer()` 输入的 fence，到 consumer 一侧叫 acquire fence；consumer 返回给 producer 的 fence，才是 release fence。** 两边说的是同一轮 buffer 交接的两个方向。
 
-如果把这两个方向说反，后面分析 `dequeueBuffer()` 阻塞和 `latchBuffer` 等待时就一定会乱。一个常见误判是把 App 侧等待旧 buffer 可重用的时间，写成“等待 acquire fence”；其实它等的是 consumer 返回来的 release fence，只是 producer 拿到的字段名未必总把这个语义写在脸上。
+如果把这两个方向说反，后面分析 `dequeueBuffer()` 阻塞和 `latchBuffer` 等待时就一定会乱。一个常见误判是把 App 侧等待旧 buffer 可重用的时间，写成“等待 acquire fence”；它等的是 consumer 返回来的 release fence，只是 producer 拿到的字段名未必总把这个语义写在脸上。
 
 ### Present fence（旧资料里也常叫 retire fence）：本帧真正上屏的时刻
 
