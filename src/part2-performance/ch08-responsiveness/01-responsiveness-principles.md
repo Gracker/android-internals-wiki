@@ -6,7 +6,7 @@ status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
@@ -29,6 +29,7 @@ sources:
     path: "https://web.dev/articles/rail"
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
+review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修3处（「这意味着」x2 / 「首先其次最后」x1 禁用词替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
@@ -104,7 +105,7 @@ RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 
 
 在 Android 中的具体含义：
 - 主线程（UI Thread）的任何操作都不能阻塞超过 100ms
-- 这意味着所有耗时操作（网络请求、数据库读写、复杂计算）都必须放到后台线程
+- 所有耗时操作（网络请求、数据库读写、复杂计算）都必须放到后台线程
 - 如果某个操作确实需要超过 100ms，应该在 50ms 内先给出一个过渡态反馈（比如显示 loading 状态），然后异步处理
 
 ### Animation——动画（每帧 < 16ms）
@@ -225,7 +226,7 @@ ANR 是响应速度问题的极端表现。当主线程被阻塞超过一定时�
 
 骨架屏是最常用的感知优化手段。核心思路是：在真实内容加载完成之前，先显示一个与最终布局结构一致的灰色占位界面。
 
-骨架屏的核心作用体现在三个方面。首先，它消除了布局跳变——用户看到的界面结构从一开始就是稳定的，不会出现内容加载完成后突然"跳"出来的情况，视觉上的连贯性得到了保证。其次，它制造了进度感——即使内容还没加载完，灰色块的闪烁或渐变动画也在持续告诉用户"正在处理"。最后，它降低了等待焦虑——心理学研究表明，明确的等待状态比不确定的等待更容易被接受，骨架屏恰好提供了一个明确的中间状态。
+骨架屏的核心作用体现在三个方面。**消除布局跳变**：用户看到的界面结构从一开始就是稳定的，不会出现内容加载完成后突然"跳"出来的情况，视觉上的连贯性得到了保证。**制造进度感**：即使内容还没加载完，灰色块的闪烁或渐变动画也在持续告诉用户"正在处理"。**降低等待焦虑**：心理学研究表明，明确的等待状态比不确定的等待更容易被接受，骨架屏恰好提供了一个明确的中间状态。
 
 Android 12 的 SplashScreen API 提供了系统级的启动画面支持，可以在 App 初始化期间显示一个带图标的启动画面。
 
@@ -252,7 +253,7 @@ Android 目前没有直接采用 INP 这个概念，但有功能等价的指标�
 2. **Frame Rendering Time**——从 Choreographer.doFrame() 开始到帧被提交的时间，对应 INP 中的"处理+渲染时间"
 3. **TTID / TTFD**——启动场景下的端到端响应指标
 
-核心区别在于：Web 的 INP 是浏览器统一度量的端到端指标，而 Android 的响应速度需要开发者通过 Perfetto 等工具手动拼装各环节的耗时来获得完整视图。这意味着在 Android 上做响应速度优化，需要更深入地理解系统各层的机制。
+核心区别在于：Web 的 INP 是浏览器统一度量的端到端指标，而 Android 的响应速度需要开发者通过 Perfetto 等工具手动拼装各环节的耗时来获得完整视图。在 Android 上做响应速度优化，需要更深入地理解系统各层的机制。
 
 ## 在 Perfetto 中分析响应速度
 
