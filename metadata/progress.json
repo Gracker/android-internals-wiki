@@ -6875,7 +6875,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T13:40:00+08:00",
+  "last_updated": "2026-04-26T17:47:55+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -7039,5 +7039,37 @@
       "src/part2-performance/ch09-anr/03-anr-analysis.md",
       "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
     ]
+  },
+  "2026-04-26-17-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-26T17:47:55+08:00",
+    "sections": [
+      "7.8",
+      "7.9",
+      "9.5",
+      "2.11"
+    ],
+    "queue_indexes_completed": [
+      180,
+      181,
+      184,
+      248
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md"
+    ],
+    "notes": {
+      "queue_cleanup": [
+        "7.8 external no P0/P1, already finalized",
+        "7.9 external no P0/P1, already finalized",
+        "9.5 external no P0/P1, not auto-promoted because task9_result != pass-tech-review"
+      ],
+      "content_fix": [
+        "2.11 VsyncWaiter/Choreographer correction",
+        "2.11 PlatformView TLHC and render target version branches",
+        "2.11 Perfetto trace filters and io.flutter thread names"
+      ]
+    }
   }
 }
