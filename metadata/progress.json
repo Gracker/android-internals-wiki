@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T02:40:00+08:00",
+  "generated_at": "2026-04-27T03:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,19 +7,19 @@
     "finalized": 89,
     "ready-for-review": 129,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T02:40:00+08:00",
+    "last_updated": "2026-04-27T03:40:00+08:00",
     "pipeline_stage_counts": {
       "None": 35,
       "task6_pending": 40,
-      "task2b_pending": 55,
-      "ready-to-publish": 89,
+      "task2b_pending": 54,
+      "ready-to-publish": 90,
       "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 174,
-      "revisiting": 40
+      "reviewed": 172,
+      "revisiting": 42
     },
     "task9_state_counts": {
       "None": 40,
@@ -31,8 +31,8 @@
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 144,
-      "pending": 58,
+      "fixed": 145,
+      "pending": 57,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -43,15 +43,15 @@
     "pipeline_stage_counts": {
       "None": 35,
       "task6_pending": 40,
-      "task2b_pending": 55,
-      "ready-to-publish": 89,
+      "task2b_pending": 54,
+      "ready-to-publish": 90,
       "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 174,
-      "revisiting": 40
+      "reviewed": 172,
+      "revisiting": 42
     },
     "task9_state_counts": {
       "None": 40,
@@ -63,13 +63,13 @@
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 144,
-      "pending": 58,
+      "fixed": 145,
+      "pending": 57,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
     },
-    "last_updated": "2026-04-27T02:40:00+08:00"
+    "last_updated": "2026-04-27T03:40:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1642,10 +1642,10 @@
       "last_verified": "2026-04-27",
       "last_verified_against": "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1 ProcessList/lmkd socket, android-10 lmkd PSI, android-11/12/14/16 CachedAppOptimizer, Android 16 lmkd/reaper, developer.android.com 16KB Page Size",
       "confidence": "medium-high",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1658,7 +1658,7 @@
       "polish_count": "1",
       "polish_date": "2026-04-05",
       "polish_by": "task2b-polish",
-      "last_task2b_at": "2026-04-27T01:50:00+08:00",
+      "last_task2b_at": "2026-04-27T03:40:00+08:00",
       "task2b_fixed_by": "openclaw-task2b",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b"
@@ -3637,13 +3637,13 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-25",
       "task6_result": "pass-light-edit",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
       "sources": [
         {
@@ -3667,10 +3667,10 @@
           "path": "frameworks/opt/gamesdk/include/swappy/swappyVk.h"
         }
       ],
-      "last_task2b_at": "2026-04-26T23:53:43+08:00",
+      "last_task2b_at": "2026-04-27T03:40:00+08:00",
       "rework_by": "openclaw-task2b",
       "rework_type": "review回炉修复（Task9/External 问题单）",
-      "repaired_date": "2026-04-26",
+      "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
       "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md"
     },
@@ -4515,10 +4515,10 @@
       "last_verified": "2026-04-25",
       "last_verified_against": "AOSP android-16.0.0_r1 (googlesource direct check) + external review 2026-04-25 + Perfetto/BPF upstream docs + Android GKI release builds",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -4527,8 +4527,8 @@
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T08:30:00+08:00",
-      "last_task2b_at": "2026-04-26T08:55:00+08:00",
-      "repaired_date": "2026-04-26",
+      "last_task2b_at": "2026-04-27T03:40:00+08:00",
+      "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
       "updated_by": "openclaw-task2b",
       "updated_date": "2026-04-26"
@@ -5890,15 +5890,16 @@
   },
   "section_18_9": {
     "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
-    "task6_state": "reviewed",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
     "task6_result": "pass-light-edit",
-    "task9_state": "reviewed",
+    "task9_state": "pending",
     "task9_result": "needs-rework",
     "task9_reviewed": "2026-04-26",
-    "task2b_state": "pending",
-    "task2b_result": "pending",
-    "last_task9_at": "2026-04-26T22:20:00+08:00"
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task9_at": "2026-04-26T22:20:00+08:00",
+    "last_task2b_at": "2026-04-27T03:40:00+08:00"
   },
   "review_history": [
     {
@@ -7377,7 +7378,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T00:40:00+08:00",
+  "last_updated": "2026-04-27T03:40:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -7738,6 +7739,36 @@
         "2.11 related_chapters now includes finalized §18.12 to keep 3.29+ thread-model wording consistent"
       ],
       "auto_promotion": "not applied: both sections still have task9_result=needs-rework and were returned to task6_pending"
+    }
+  },
+  "2026-04-27-03-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-27T03:40:00+08:00",
+    "sections": [
+      "4.4",
+      "18.9",
+      "14.10"
+    ],
+    "queue_indexes_completed": [
+      312,
+      313,
+      314
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part1-fundamentals/ch04-memory/04-lmk.md",
+      "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
+      "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "HEAVY_WEIGHT_APP_ADJ manifest 属性改为 android:cantSaveState / PRIVATE_FLAG_CANT_SAVE_STATE，并补 AMS/ATMS 源码锚点",
+        "Android 15/16 Vulkan Profile 名称改为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程 host synchronization 约束",
+        "UprobeStats 引入版本改为 Android 16 正式 APEX，并修正 /apex/com.android.uprobestats.apex 与 Guardrail allowlist",
+        "18.9 同章节交叉引用改为正确相对路径",
+        "14.10 同章节补 Guardrail allowlist、sched_ext partial 模式和 Binder command 版本锚点"
+      ],
+      "auto_promotion": "not applied: three sections still have task9_result=needs-rework and were returned to task6_pending"
     }
   }
 }

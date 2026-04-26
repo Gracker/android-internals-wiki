@@ -41,6 +41,10 @@ sources:
     path: "intake/research-feeds/2026-04-02-15-ch05-sched-ext-bpf-android.md"
   - type: research
     path: "intake/research-feeds/2026-04-03-07-sched-ext-bpf-scheduler.md"
+  - type: aosp
+    path: "packages/modules/UprobeStats/src/Guardrail.cpp"
+  - type: aosp
+    path: "packages/modules/UprobeStats/Android.bp"
 tags: [eBPF, BPF, observability, tracing, sched_ext, simpleperf, kernel, performance]
 related_chapters: ["14.2", "13.1", "5.1", "1.14"]
 created_by: "task2a-knowledge-gap"
@@ -49,10 +53,10 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
@@ -61,17 +65,19 @@ task9_reviewed_date: 2026-04-27
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-04-27T03:32:04+08:00
 task2b_result: fixed
-last_task2b_at: "2026-04-26T08:55:00+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-
+last_task2b_at: "2026-04-27T03:40:00+08:00"
+repaired_date: "2026-04-27"
+repaired_by: openclaw-task2b
+updated_by: openclaw-task2b
+updated_date: "2026-04-27"
+review_notes: "2026-04-27 task2b: 修复 UprobeStats 版本边界，改为 Android 16 正式 APEX；补 Guardrail allowlist、sched_ext partial 模式与 Binder command 版本锚点。"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
 
 在 Android 上做深度性能分析时，经常会遇到这样的困境：想看某个系统调用的延迟分布，strace 的开销几乎无法接受；想追踪一个内核函数的执行路径，却发现设备上没有 ftrace 的权限；想统计 App 在各 CPU 频率上的真实停留时间，发现 `/proc/stat` 的精度只有 Tick 级别（通常 4ms 或 10ms），远远不够。
 
-eBPF（extended Berkeley Packet Filter）改变了这类分析方式。它让我们能在内核中安全运行自定义追踪程序，用更低的观测开销拿到更细粒度的数据。Android 从 10 开始在系统侧使用 eBPF，Android 15 引入 UprobeStats 做动态埋点，Linux 6.12 的 sched_ext 又把 eBPF 推进到调度器扩展。
+eBPF（extended Berkeley Packet Filter）改变了这类分析方式。它让我们能在内核中安全运行自定义追踪程序，用更低的观测开销拿到更细粒度的数据。Android 从 10 开始在系统侧使用 eBPF，Android 16 把 UprobeStats 作为 APEX 模块引入，用 uprobe + eBPF 做动态埋点；Linux 6.12 的 sched_ext 又把 eBPF 推进到调度器扩展。
 
 读完这一节，我们应该能回答四个问题：Android 上已经有哪些 eBPF 基础设施，哪些工具链现在就能用，sched_ext 会给后续调度器演进带来什么变化，以及 eBPF 分析的边界在哪里。
 
@@ -267,11 +273,13 @@ uretprobe:/system/lib64/libEGL.so:eglSwapBuffers
 
 ## UprobeStats 与动态埋点
 
-Android 15 引入的 UprobeStats 是 eBPF 在 Android 上的一个代表性使用场景。它利用 uprobe 机制做“无需改业务代码”的动态埋点：系统按配置 attach 到目标方法，把命中事件写进 BPF map / ring buffer，再汇总给 StatsD。
+Android 16 引入的 UprobeStats 是 eBPF 在 Android 上的一个代表性使用场景。它利用 uprobe 机制做“无需改业务代码”的动态埋点：系统按配置 attach 到目标方法，把命中事件写进 BPF map / ring buffer，再汇总给 StatsD。
+
+版本边界要分开：android-15.0.0_r1 中没有正式的 `/apex/com.android.uprobestats.apex` 打包，也没有 Android 16 这一版的 `GenericInstrumentation.c` / `ProcessManagement.c` 模板。相关动态埋点能力按 Android 16 的正式 APEX 发布口径描述。
 
 ### UprobeStats 的工作原理
 
-UprobeStats 以 APEX 模块形式集成（`/system/apex/com.android.uprobestats.apex`），核心组件包括：
+UprobeStats 以 APEX 模块形式集成，设备上的挂载路径是 `/apex/com.android.uprobestats.apex`。源码主目录是 `packages/modules/UprobeStats/`，主要组件包括：
 
 - `uprobestats`：主执行程序，负责读取配置、解析方法偏移、attach BPF 程序、收集数据
 - `uprobestatsbpfload`：BPF 程序加载器，开机时加载预编译的 eBPF 程序到内核
@@ -314,7 +322,10 @@ UprobeStats 更适合低频关键路径、系统服务里的诊断点、临时�
 UprobeStats 有严格的安全限制。在 user 版本上，仅允许监控特定类前缀的方法：
 
 ```cpp
+// packages/modules/UprobeStats/src/Guardrail.cpp, android-16.0.0_r1 节选
 constexpr std::array kAllowedMethodPrefixes = {
+    "com.android.server.am.ActivityManagerService$LocalService."
+    "updateDeviceIdleTempAllowlist",
     "com.android.server.am.CachedAppOptimizer",
     "com.android.server.am.OomAdjuster",
     "com.android.server.am.OomAdjusterModernImpl",
@@ -341,7 +352,7 @@ sched_ext 打开了第三条路：通过 eBPF 程序实现自定义调度策略�
 
 ### sched_ext 的架构
 
-sched_ext 在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间。它管理 SCHED_NORMAL/BATCH/IDLE/EXT 任务，而 SCHED_FIFO/RR/DEADLINE 等实时调度类不受影响。
+sched_ext 在调度优先级栈中位于 SCHED_IDLE 和 SCHED_NORMAL 之间。未设置 `SCX_OPS_SWITCH_PARTIAL` 时，它管理 SCHED_NORMAL / BATCH / IDLE / EXT 任务；设置 `SCX_OPS_SWITCH_PARTIAL` 后，只把显式设为 SCHED_EXT policy 的任务交给 BPF 调度器，其余 NORMAL / BATCH / IDLE 任务继续走默认调度器。SCHED_FIFO / RR / DEADLINE 等实时调度类不受影响。
 
 关键设计特征：
 
@@ -419,7 +430,7 @@ AOSP 中有使用 eBPF 监控 signal 发送和接收的示例，通过追踪 `si
 
 ### Binder 调用追踪
 
-使用 Simpleperf 的 tracepoint 过滤能力，可以追踪特定类型的 Binder 事务：
+使用 Simpleperf 的 tracepoint 过滤能力，可以追踪特定类型的 Binder 事务。Binder command 值来自当前设备内核的 `include/uapi/linux/android/binder.h`，不同 Android common kernel 分支应以目标设备源码为准；下面的 `0x7212` / `0x7214` 只作为写法示例。
 
 ```bash
 # 追踪发送到冻结 App 的异步 Binder 事务

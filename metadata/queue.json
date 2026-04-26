@@ -12727,7 +12727,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T02:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T03:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "task2b_result": "fixed",
+    "task2b_fix_summary": "HEAVY_WEIGHT_APP_ADJ manifest 属性改为 android:cantSaveState / PRIVATE_FLAG_CANT_SAVE_STATE，并补 AMS/ATMS 源码锚点"
   },
   {
     "section": "18.9",
@@ -12753,7 +12757,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T02:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T03:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "task2b_result": "fixed",
+    "task2b_fix_summary": "Android 15/16 Vulkan Profile 名称改为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程 host synchronization 约束"
   },
   {
     "section": "14.10",
@@ -12771,7 +12779,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T03:32:04+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T03:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "task2b_result": "fixed",
+    "task2b_fix_summary": "UprobeStats 引入版本改为 Android 16 正式 APEX，并修正 /apex/com.android.uprobestats.apex 与 Guardrail allowlist"
   },
   {
     "section": "14.4",

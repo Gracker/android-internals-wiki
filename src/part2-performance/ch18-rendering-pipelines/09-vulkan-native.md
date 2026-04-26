@@ -11,13 +11,13 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 sources:
   - type: official
@@ -30,11 +30,18 @@ sources:
     path: "frameworks/native/vulkan"
   - type: aosp
     path: "frameworks/opt/gamesdk/include/swappy/swappyVk.h"
-last_task2b_at: "2026-04-26T23:53:43+08:00"
+  - type: official
+    path: "github.com/KhronosGroup/Vulkan-Profiles/profiles/VP_ANDROID_15_minimums.json"
+  - type: official
+    path: "github.com/KhronosGroup/Vulkan-Profiles/profiles/VP_ANDROID_16_minimums.json"
+  - type: official
+    path: "registry.khronos.org/vulkan/specs/latest/html/vkspec.html#fundamentals-threadingbehavior"
+last_task2b_at: "2026-04-27T03:40:00+08:00"
 rework_by: openclaw-task2b
-rework_type: "review回炉修复（Task9/External 问题单）"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
+rework_type: "review回炉修复（Task9 P95 + 同章节链接修复）"
+repaired_date: "2026-04-27"
+repaired_by: openclaw-task2b
+review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。"
 ---
 
 <!-- outline-start -->
@@ -57,7 +64,7 @@ repaired_by: "openclaw-task2b"
 
 Vulkan 是 Android 的主低层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只做传达，不再替你猜。换来的是更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
 
-关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](14-graphics-api-evolution.md)。本节聚焦 Vulkan 渲染管线的实战视角：从 Acquire 到 Present 的完整流程、Presentation Mode 的选择，以及如何在 Trace 中识别 Vulkan 调用路径。
+关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。本节聚焦 Vulkan 渲染管线的实战视角：从 Acquire 到 Present 的完整流程、Presentation Mode 的选择，以及如何在 Trace 中识别 Vulkan 调用路径。
 
 ## 为什么选择 Vulkan
 
@@ -108,7 +115,7 @@ Vulkan 面临的主要难点是碎片化：不同设备支持的 Extension 不�
 Android Vulkan Profile 的演进分成两类口径：
 
 - `VP_ANDROID_baseline_2021`、`VP_ANDROID_baseline_2022`：描述当年 Android 设备上广泛可用的能力集合，适合当兼容性基线
-- Android 15+：平台口径转向按系统代际命名的 requirements profiles，例如 `VP_ANDROID_15_requirements`、`VP_ANDROID_16_requirements`。它们描述的是新设备 launch / 续签时必须满足的 Vulkan 能力，不等价于“baseline_2024”
+- Android 15/16：Khronos Vulkan-Profiles 仓库公开的 JSON 文件名是 `VP_ANDROID_15_minimums.json`、`VP_ANDROID_16_minimums.json`，profile 名分别是 `VP_ANDROID_15_minimums`、`VP_ANDROID_16_minimums`。Android 文档或内部要求里可能使用 requirements target 的描述，但写工程配置和 profile 检查时以 JSON profile 名为准。
 - 如果资料里提到 2024 roadmap 或 community profile，需要单独标注其身份是生态路线图，并与 Android 官方 requirements target 分开表述
 
 常见 profile 的边界如下：
@@ -116,17 +123,17 @@ Android Vulkan Profile 的演进分成两类口径：
 | Profile | Vulkan API version | 使用口径 |
 |:---|:---|:---|
 | `VP_ANDROID_baseline_2022` | Vulkan 1.1.x 兼容基线 | 用来判断广覆盖设备是否满足基本能力集合，适合作为运行时兼容性下限 |
-| `VP_ANDROID_15_requirements` | Vulkan 1.3.273 | Android 15 / VRA15 面向新机 launch 与芯片续签的最低能力要求，不代表所有升级到 Android 15 的存量设备 |
-| `VP_ANDROID_16_requirements` | Vulkan 1.3.276 | Android 16 代际 requirements profile，适合在明确瞄准 Android 16 新设备时使用 |
+| `VP_ANDROID_15_minimums` | Vulkan 1.3.273 | Android 15 / VRA15 面向新机 launch 与芯片续签的最低能力要求；requirements 属于要求描述，Khronos profile 文件名以 `minimums` 为准 |
+| `VP_ANDROID_16_minimums` | Vulkan 1.3.276 | Android 16 代际最低能力要求，适合在明确瞄准 Android 16 新设备时使用 |
 
 ### 使用方式
 
 工程上更稳的做法是分两步：
 
 1. 先用 baseline profile 检查目标设备是否满足你的兼容性下限
-2. 如果产品明确瞄准 Android 15+ 新机，再额外检查对应的 requirements profile，确认能否依赖该代际要求的特性集合
+2. 如果产品明确瞄准 Android 15+ 新机，再额外检查对应的 `minimums` profile，确认能否依赖该代际要求的特性集合
 
-这样可以把“广覆盖兼容基线”和“新设备强制要求”分开处理，不会把 `VP_ANDROID_baseline_2022` 与 requirements profile 混成一个名字。
+这样可以把“广覆盖兼容基线”和“新设备强制要求”分开处理，不会把 `VP_ANDROID_baseline_2022` 与 Android 15/16 的 `minimums` profile 混成一个名字。
 
 ## 渲染流程详解
 
@@ -154,7 +161,7 @@ VkResult result = vkAcquireNextImageKHR(
 
 ### 第二阶段：Record & Submit（录制与提交）
 
-这是 Vulkan 相比 GLES 最大的优势之一——**Command Buffer 可以在任意线程并行录制**。
+Command Buffer 的录制可以并行，但前提是 host 侧对象不被多个线程无锁共享。Vulkan 规范里很多对象标注为 externally synchronized；同一个 `VkCommandPool`、同一个 `VkCommandBuffer`、以及同一个 `VkQueue` 的提交访问都要由应用自己同步。常见做法是每个录制线程持有独立 `VkCommandPool`，worker 线程录制 secondary command buffer，提交线程把它们合入 primary command buffer 后统一提交。
 
 ```c
 // 录制命令（可以在任意线程，不阻塞 GPU）
@@ -181,8 +188,12 @@ VkSubmitInfo submitInfo = {
 vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
 ```
 
-**关键点**：
+**观察点**：
 - Command Buffer 录制是纯 CPU 操作，不涉及 GPU
+- 多线程录制不等于共享同一个 command pool 并发录制；每个录制线程应使用自己的 `VkCommandPool` 和 command buffers
+- 同一个 `VkCommandBuffer` 在 begin / record / end / reset 过程中不能被多个线程同时修改
+- secondary command buffer 适合把 draw call 生成拆到 worker 线程；primary command buffer 负责执行它们并进入提交阶段
+- `vkQueueSubmit` 针对同一 `VkQueue` 也需要外部同步；多个线程提交同一 queue 时要加锁或集中到提交线程
 - `waitSemaphore` 确保 Image 真正可写后才开始绘制（GPU 端等待）
 - `pWaitDstStageMask` 指定等待发生在哪个 pipeline stage。`waitSemaphoreCount > 0` 时必须提供同长度数组，否则会触发 Vulkan validation error
 - `signalSemaphore` 确保渲染完成后才允许 Present
@@ -425,5 +436,5 @@ adb shell setprop debug.vulkan.layers VK_LAYER_KHRONOS_validation
 > **交叉引用**：
 > - OpenGL ES 管线（对比参考）详见 [18.8 OpenGL ES 渲染管线](08-opengl-es.md)
 > - SurfaceControl API 与 FrameTimeline 详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)
-> - 图形 API 演进历史详见 [2.14 图形 API 演进](14-graphics-api-evolution.md)
-> - BufferQueue 与 Transaction 机制详见 [2.13 图形缓冲区管理](13-buffer-queue.md)
+> - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
+> - BufferQueue 与 Transaction 机制详见 [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
