@@ -1,14 +1,15 @@
 ---
+
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
 status: ready-for-review
 drafted_date: "2026-04-02"
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-04-26"
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
 reviewed_by: openclaw-task6
-review_cycle: 3
+review_cycle: 4
 re_review_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-25"
@@ -35,7 +36,7 @@ sources:
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -47,7 +48,6 @@ last_task9_at: "2026-04-26T08:30:00+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-26T08:55:00+08:00"
-review_round: 4
 
 ---
 
