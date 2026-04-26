@@ -51,11 +51,11 @@ task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-26"
 task6_result: "pass-light-edit"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-20"
+task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-19T19:24:00+08:00"
 review_log: "logs/review/2026-04-11-11-review.md"
 ---
@@ -156,7 +156,7 @@ StartingWindow 的创建流程大致如下：
 - SplashScreen 支持自定义退出动画（`setOnExitAnimationListener`）
 - 向后兼容库 `androidx.core:splashscreen` 支持 Android 5.0+
 
-从性能角度，SplashScreen API 最大的好处是标准化了 StartingWindow 的生命周期。在此之前，不少 App 自己实现一个 SplashActivity 作为启动页，这实际上增加了 Activity 启动的数量（先启动 SplashActivity，再跳转到 MainActivity），反而拖慢了启动速度。SplashScreen API 让 StartingWindow 成为系统层面的即时反馈，不增加 App 侧的 Activity 数量。
+从性能角度，SplashScreen API 最大的好处是标准化了 StartingWindow 的生命周期。在此之前，不少 App 自己实现一个 SplashActivity 作为启动页，反而多了一步 Activity 启动（先启动 SplashActivity，再跳转到 MainActivity），反而拖慢了启动速度。SplashScreen API 让 StartingWindow 成为系统层面的即时反馈，不增加 App 侧的 Activity 数量。
 
 ### StartingWindow 的时机陷阱
 
@@ -444,9 +444,9 @@ Predictive Back 动画涉及 Input 系统和 WMS 的协作。手势事件的分�
 
 ### 🔸 WindowInsets 与布局性能
 
-WindowInsets 是 WMS 向 App 传递系统 UI 元素（状态栏、导航栏、键盘、刘海屏）占用空间的机制。理解它的分发链路对优化布局性能很重要。
+WindowInsets 是 WMS 向 App 传递系统 UI 元素（状态栏、导航栏、键盘、刘海屏）占用空间的机制。理解它的分发路径对优化布局性能很重要。
 
-分发链路是这样的：WMS 计算每个 Window 的 Insets → 通过 `relayoutWindow` 的返回值传递给 ViewRootImpl → ViewRootImpl 触发 View hierarchy 的 `dispatchApplyWindowInsets` → 各 View 根据 Insets 调整自己的 padding/margin。
+分发路径是这样的：WMS 计算每个 Window 的 Insets → 通过 `relayoutWindow` 的返回值传递给 ViewRootImpl → ViewRootImpl 触发 View hierarchy 的 `dispatchApplyWindowInsets` → 各 View 根据 Insets 调整自己的 padding/margin。
 
 性能风险在于：如果 App 在 Insets 处理中调用了 `requestLayout()`，会触发整棵 View 树的 measure/layout pass。如果 WindowInsets 频繁变化（如动画过程中），这个开销可能很可观。Android 15 强制 Edge-to-Edge 后，更多 App 需要主动处理 Insets，这个问题变得更加普遍。
 
