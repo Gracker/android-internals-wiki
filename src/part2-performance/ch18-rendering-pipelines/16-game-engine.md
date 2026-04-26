@@ -19,6 +19,9 @@ task2b_result: fixed
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T20:50:00+08:00'
+last_task2b_at: "2026-04-26T14:46:27+08:00"
+repaired_date: "2026-04-26"
+repaired_by: openclaw-task2b
 ---
 
 <!-- outline-start -->
@@ -104,6 +107,8 @@ Unity 和 Unreal 都采用了**逻辑线程与渲染线程分离**的架构。�
 
 - **Android 5-10**：常见路径是 `eglSwapBuffers` / `vkQueuePresentKHR` → `BufferQueue` → `SurfaceFlinger` → `HWC`。窗口尺寸和位置变化仍按旧版 SurfaceView 机制处理，排查 resize 闪烁、几何不同步时要按 [18.6 SurfaceView 章节](06-surfaceview.md) 里的 pre-BLAST 路径去看。
 - **Android 11+**：SurfaceView 更常和 `BLASTBufferQueue`、`SurfaceControl.Transaction` 一起出现。折叠、分屏、自由窗口、分辨率切换这类几何变化会经过事务同步，Buffer 与几何信息更容易在同一批次提交。对应细节见 [18.6 SurfaceView 章节](06-surfaceview.md) 的现代 SurfaceView 路径。
+
+Android 14 之后，`SurfaceView` 支持 arbitrary alpha，但两种 Z 顺序的含义不同：默认 Z-Below 模式下，alpha 作用在宿主窗口为 `SurfaceView` 留出的 hole punch 区域；调用 `setZOrderOnTop(true)` 后，alpha 才直接作用在 Surface 内容本身。排查半透明游戏画面时，要先确认 SurfaceView 的 Z 顺序，否则会把合成器行为误判成引擎输出问题。
 
 稳态渲染阶段，两条路径的判断方法一致：游戏线程负责生产帧，SurfaceFlinger 负责消费，App 主线程的 `doFrame()` 不是主提交流程里的提交点。
 

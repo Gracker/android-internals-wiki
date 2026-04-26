@@ -10177,7 +10177,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T14:46:27+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "1.7",
@@ -10327,7 +10330,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T23:18:59+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T14:46:27+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "18.16",
@@ -10344,7 +10350,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T23:18:59+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T14:46:27+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "19.19",

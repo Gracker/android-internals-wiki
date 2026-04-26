@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T14:36:59+08:00",
+  "generated_at": "2026-04-26T14:46:27+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,11 +7,11 @@
     "finalized": 82,
     "ready-for-review": 136,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T14:36:59+08:00",
+    "last_updated": "2026-04-26T14:46:27+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 42,
-      "task2b_pending": 53,
+      "task6_pending": 43,
+      "task2b_pending": 52,
       "ready-to-publish": 82,
       "task9_pending": 36,
       "'task9_pending'": 1,
@@ -24,16 +24,16 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 145,
-      "pending": 62,
+      "reviewed": 144,
+      "pending": 63,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 144,
-      "pending": 57,
+      "fixed": 145,
+      "pending": 56,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 1
@@ -42,8 +42,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 42,
-      "task2b_pending": 53,
+      "task6_pending": 43,
+      "task2b_pending": 52,
       "ready-to-publish": 82,
       "task9_pending": 36,
       "'task9_pending'": 1,
@@ -56,16 +56,16 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 145,
-      "pending": 62,
+      "reviewed": 144,
+      "pending": 63,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 144,
-      "pending": 57,
+      "fixed": 145,
+      "pending": 56,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 1
@@ -3382,17 +3382,39 @@
       "status": "finalized",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
       "pipeline_stage": "ready-to-publish",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-18",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
+      "task9_reviewed_date": "2026-04-22",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-22T20:50:00+08:00'"
+      "last_task9_at": "2026-04-22T20:50:00+08:00",
+      "tags": [
+        "Unity",
+        "Unreal",
+        "Game-Engine",
+        "Swappy",
+        "Frame-Pacing",
+        "Vulkan",
+        "GLES",
+        "渲染链路"
+      ],
+      "related_chapters": [
+        "2.5",
+        "8.9",
+        "18.6",
+        "18.8",
+        "18.9"
+      ],
+      "created_by": "rendering-pipelines-merge",
+      "created_date": "2026-04-09",
+      "last_task2b_at": "2026-04-26T14:46:27+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
@@ -3400,18 +3422,37 @@
       "chapter": "18.17",
       "status": "ready-for-review",
       "applicable_versions": "Android 14 (API 34) - Android 16 (API 36)",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "pending",
+      "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T03:39:00+08:00"
+      "last_task9_at": "2026-04-24T03:39:00+08:00",
+      "tags": [
+        "HardwareBufferRenderer",
+        "离屏渲染",
+        "GPU",
+        "RenderNode",
+        "HDR",
+        "BLAST",
+        "渲染管线"
+      ],
+      "related_chapters": [
+        "2.5",
+        "2.10",
+        "18.2"
+      ],
+      "created_by": "rendering-pipelines-merge",
+      "created_date": "2026-04-09",
+      "last_task2b_at": "2026-04-26T14:46:27+08:00",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md",
@@ -3451,11 +3492,25 @@
       "task9_reviewed_date": "2026-04-24",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-24T08:27:00+08:00",
-      "last_task2b_at": "2026-04-26T00:45:50+08:00",
+      "last_task2b_at": "2026-04-26T14:46:27+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
       "created_date": "2026-04-09",
-      "created_by": "rendering-pipelines-merge"
+      "created_by": "rendering-pipelines-merge",
+      "tags": [
+        "VRR",
+        "ARR",
+        "Variable-Refresh-Rate",
+        "LTPO",
+        "setFrameRate",
+        "FrameTimeline",
+        "渲染管线"
+      ],
+      "related_chapters": [
+        "2.3",
+        "2.18",
+        "2.19"
+      ]
     },
     "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
