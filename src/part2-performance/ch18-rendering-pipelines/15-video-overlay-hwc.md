@@ -18,13 +18,13 @@ related_chapters:
 - '18.6'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
@@ -52,7 +52,7 @@ repaired_by: "openclaw-task2b"
 
 ## 为什么需要理解 HWC
 
-当你用 TextureView 播放视频时，每一帧视频都要经过 GPU 采样再画到 App 的 Framebuffer 上——这意味着即使 App 没有其他 UI 更新，GPU 也得每帧工作。而如果用 SurfaceView + HWC Overlay，视频帧可以**完全绕过 GPU**，直接由显示硬件（DPU，Display Processing Unit）叠加到屏幕上。
+当你用 TextureView 播放视频时，每一帧视频都要经过 GPU 采样再画到 App 的 Framebuffer 上——即使 App 没有其他 UI 更新，GPU 也得每帧工作。而如果用 SurfaceView + HWC Overlay，视频帧可以**完全绕过 GPU**，直接由显示硬件（DPU，Display Processing Unit）叠加到屏幕上。
 
 这个差异直接体现在功耗上：GPU Path 多消耗 2-3x 的内存带宽，Overlay Path 几乎不消耗 GPU 资源。在视频播放、导航地图等长时间运行的场景下，Overlay vs GPU 合成的功耗差异可能达到 10-20%。[已验证: AOSP SurfaceFlinger / HWC 实现]
 
@@ -167,7 +167,7 @@ SurfaceFlinger 收到本帧 Transaction 后，真正的合成流程一般是：
 1. **layer latch**：收集本帧可见 Layer，更新几何信息、裁剪区域和 acquire fence。
 2. **`validateDisplay()`**：把 Layer 栈交给 HWC，让它返回本轮 `DEVICE` / `CLIENT` / `SIDEBAND` 决策。
 3. **`getChangedCompositionTypes()` / `acceptDisplayChanges()`**：如果 HWC 改写了某些 Layer 的合成类型，SurfaceFlinger 先接受这轮变更。
-4. **GPU 合成 client target**：只对 `CLIENT` Layer 做 GPU 合成。这个结果不是直接上屏，而是一个 client target buffer。
+4. **GPU 合成 client target**：只对 `CLIENT` Layer 做 GPU 合成。这个结果是 client target buffer，不直接上屏。
 5. **`setClientTarget()`**：把 client target 交回 HWC，让 HWC 把它和仍保留为 `DEVICE` 的 Layer 一起完成最终合成。
 6. **`presentDisplay()`**：提交本帧到 display。
 
