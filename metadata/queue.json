@@ -12278,5 +12278,51 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-26T16:12:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.10",
+    "section_title": "ContentProvider 性能与优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] CursorWindow API 与 SQLiteCursor 窗口刷新源码描述不准确",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L478「Android 9：CursorWindow API 增强」",
+        "detail": "原文写“CursorWindow(int) 构造函数指定窗口大小”。AOSP android-16.0.0_r1 / SDK 中不存在该构造；API 28 的可调大小入口是 CursorWindow(String name, long windowSizeBytes)。",
+        "suggestion": "把版本表改成 CursorWindow(String, long windowSizeBytes)，并说明旧的 CursorWindow(boolean) 已废弃；不要写不存在的 CursorWindow(int)。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L181「SQLiteCursor 的分页机制」",
+        "detail": "原文把窗口刷新描述为“重新执行原始查询，用类似 SELECT ... LIMIT/OFFSET 的方式跳过”。AOSP SQLiteCursor.fillWindow() 实际调用 SQLiteQuery.fillWindow()，再到 SQLiteSession.executeForCursorWindow(sql,args,window,startPos,requiredPos,...)；性能风险来自 startPos/requiredPos 跳行，不是源码改写 SQL 为 LIMIT/OFFSET。",
+        "suggestion": "按 onMove()->fillWindow(requiredPos)->SQLiteQuery.fillWindow()->executeForCursorWindow() 重写源码链；保留深分页 O(n) 风险，但去掉 LIMIT/OFFSET 改写说法。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T18:52:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.3",
+    "section_title": "VSync 机制",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 14+/16 VSync 调用链混入旧 DispSync 路径",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L807「VSyncPredictor 线性回归算法详解 / 完整调用链」",
+        "detail": "该小节标注 Android 14+ / mainline，却把硬件样本入口写成 DispSync::addResyncSample()。android-16.0.0_r1 的 Scheduler 目录已无 DispSync 主路径，样本入口应是 VSyncReactor::addHwVsyncTimestamp()/addPresentFence() 进入 VSyncPredictor；同章 L201 已说明不再靠 DispSync::addResyncSample()，内部自相矛盾。",
+        "suggestion": "把“完整调用链”拆成历史 DispSync 链与 Android 16 Scheduler 链；当前链路使用 HWComposer/SurfaceFlinger vsync 回调 -> VSyncReactor -> VSyncPredictor -> VsyncSchedule/VSyncDispatchTimerQueue -> EventThread/MessageQueue。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T18:52:00+08:00",
+    "status": "pending"
   }
 ]
