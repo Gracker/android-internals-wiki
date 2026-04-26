@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "AOSP android-16.0.0_r1 / android-12.0.0_r1 / android-11.0.0_r1"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP android-16.0.0_r1 CursorWindow / SQLiteCursor / SQLiteQuery / SQLiteSession"
 confidence: medium
 sources:
   - type: aosp
@@ -30,19 +30,23 @@ tags:
   - anr
   - sqlite
   - app-startup
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-26"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 reviewed_date: "2026-04-25"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 review_round: 4
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T18:52:00+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-26T22:53:54+08:00"
+
 ---
 
 
@@ -143,7 +147,7 @@ ContentProvider 的跨进程数据传输是理解其性能特征的关键。Cont
 
 ### Transport 层：Binder 的封装
 
-ContentProvider 内部有一个 `Transport` 类（`ContentProvider` 的内部类），它继承自 `ContentProviderNative`，是 Binder Stub 的实现。当 App A 通过 `ContentResolver.query()` 查询 App B 的 ContentProvider 时，实际调用链是这样的：
+ContentProvider 内部有一个 `Transport` 类（`ContentProvider` 的内部类），它继承自 `ContentProviderNative`，是 Binder Stub 的实现。当 App A 通过 `ContentResolver.query()` 查询 App B 的 ContentProvider 时，实际调用路径是这样的：
 
 ```
 App A: ContentResolver.query()
@@ -161,30 +165,35 @@ App B: ContentProvider$Transport.query()
 
 ### CursorWindow：共享内存的数据窗口
 
-`query()` 的返回值是一个 `Cursor`，但这个 Cursor 不是直接通过 Binder 序列化传回调用方的。传输的是一个 `CursorWindow` 对象——它底层是一块共享内存（通过 Binder 的 shared memory 机制映射），默认大小 2MB。
+`query()` 的返回值是一个 `Cursor`，跨进程返回时不会把所有行序列化进 Binder 事务。Provider 进程先把一批行写入 `CursorWindow`，CursorWindow 底层通过共享内存映射传递文件描述符；Binder 只负责传递描述符和少量元数据。默认窗口大小来自 `config_cursorWindowSize`，AOSP 默认值为 2MB，厂商可以通过资源值调整。
 
-[已验证：AOSP, frameworks/base/core/java/android/database/CursorWindow.java, CURSOR_WINDOW_SIZE]
+[已验证：AOSP android-16.0.0_r1, frameworks/base/core/java/android/database/CursorWindow.java, CursorWindow(String) + getCursorWindowSize()]
 
 工作流程是这样的：
 
 1. ContentProvider 执行 `query()`，得到一个 `SQLiteCursor`
-2. 系统创建一个 `CursorWindow`（共享内存），调用 `SQLiteCursor.fillWindow()` 将第一批数据填入窗口
-3. 窗口通过 Binder 传回调用方（只传递文件描述符，不拷贝数据）
-4. 调用方拿到的是一个 `CursorWrapperInner`，它内部持有这个 CursorWindow
+2. 系统创建一个 `CursorWindow`，调用 `SQLiteCursor.fillWindow()` 将第一批数据填入窗口
+3. 窗口通过 Binder 传回调用方（只传递文件描述符和元数据，不拷贝整批行数据）
+4. 调用方拿到 `CursorWrapperInner`，后续读取窗口内容或触发下一轮窗口填充
 
-这个设计很巧妙：**数据本身不经过 Binder 序列化，而是通过共享内存直接映射到调用方的进程空间**。读取 Cursor 的数据时，调用方直接从共享内存中读取，没有额外的拷贝开销。
+数据路径的重点是：CursorWindow 里的行数据不进入 Binder 事务缓冲区，调用方读取的是映射到本进程的窗口内容。它减少了大结果集跨进程传输的拷贝，但窗口容量有限，访问窗口外的行会触发下一轮填充。
 
 ### SQLiteCursor 的分页机制：隐藏的性能陷阱
 
-CursorWindow 只有 2MB，但查询结果可能有几百 MB。SQLiteCursor 实现了一套"窗口滑动"机制来处理这个问题：当访问的行不在当前窗口中时，`onMove()` 方法会被触发，它会重新执行查询并填充新的窗口。
+CursorWindow 容量有限，查询结果可能远大于当前窗口。SQLiteCursor 通过窗口滑动处理这个问题：访问的行不在当前窗口时，`SQLiteCursor.onMove()` 会触发 `fillWindow(requiredPos)`，为目标位置重新填充窗口。
 
-**SQLiteCursor 的窗口刷新是通过从头重新查询 + 跳过已读行来实现的**。假设查询返回 10000 行结果，每行 200 字节，一个 2MB 窗口大约放 10000 行。当访问第 10001 行时，SQLiteCursor 会重新执行原始查询，用类似 `SELECT . .. LIMIT windowSize OFFSET currentPos` 的方式跳过前 10000 行，只取后面的行。
+源码调用顺序是：
 
-[已验证：AOSP, frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java, fillWindow() + onMove()]
+1. `SQLiteCursor.onMove(oldPosition, newPosition)` 判断 `newPosition` 是否落在当前窗口范围内
+2. 超出窗口时调用 `fillWindow(newPosition)`
+3. `fillWindow()` 计算 `startPos`，再调用 `SQLiteQuery.fillWindow(window, startPos, requiredPos, countAllRows)`
+4. `SQLiteQuery.fillWindow()` 进入 `SQLiteSession.executeForCursorWindow(sql, args, window, startPos, requiredPos, ...)`
 
-这意味着什么？**偏移量越大，查询越慢**。第 1 页的查询是 O(1)，第 100 页的查询需要数据库跳过前 99 页的所有行，实际复杂度是 O(n)。这是 SQL `OFFSET` 的固有缺陷——数据库必须扫描并丢弃前面所有行才能到达目标位置。
+`executeForCursorWindow()` 接收原始 SQL、绑定参数、`startPos` 和 `requiredPos`。源码没有把 SQL 改写成 `LIMIT/OFFSET`；性能风险来自窗口起点变大后，底层执行需要逐步走过前面的结果行，直到填到目标窗口。
 
-在 Perfetto 中，这种性能退化表现为：ContentProvider 所在进程的数据库查询耗时随翻页次数逐渐增长。如果我们在 Trace 中看到 `query()` 调用的持续时间呈现阶梯式增长，很可能就是 CursorWindow 的翻页机制在作怪。
+[已验证：AOSP android-16.0.0_r1, SQLiteCursor.onMove()/fillWindow(), SQLiteQuery.fillWindow(), SQLiteSession.executeForCursorWindow()]
+
+偏移越深，填充下一窗口越慢。第 1 个窗口只需要从结果集起点填充；访问很靠后的行时，SQLite 仍要走过前面的结果，再把目标附近的行写入 CursorWindow。Perfetto 中的表现通常是 ContentProvider 所在进程的数据库查询耗时随翻页深度增长，`ContentProvider$Transport.query` 或数据库执行 slice 呈现阶梯式变长。
 
 ### Binder 事务缓冲区的隐形限制
 
@@ -473,12 +482,15 @@ Android 8.0 引入了后台执行限制，间接影响了 ContentProvider 的使
 
 ### Android 9（API 28）：CursorWindow API 增强
 
-Android 9 新增了一些 CursorWindow 相关的 API：
+Android 9 开始公开按字节指定窗口大小的构造函数：
 
-- 可以通过 `CursorWindow(int)` 构造函数指定窗口大小，不再强制 2MB
-- 新增 API 允许禁用"1/3 窗口预读"的启发式策略，对大数据量场景更友好
+- `CursorWindow(String name, long windowSizeBytes)`：创建指定名称和窗口大小的窗口，单位为 byte。
+- `CursorWindow(boolean localWindow)`：旧构造函数已废弃；local / remote CursorWindow 的区分已经取消。
+- `CursorWindow(String name)`：继续使用系统默认窗口大小，默认值来自 `config_cursorWindowSize`。
 
-[待验证：具体 API 名称和默认行为变化]
+这项 API 只改变单个窗口的容量上限，不能消除深分页的逐步填充成本。窗口开得越大，单次查询占用的共享内存越高，适合少量大字段行的查询，不适合把大结果集一次塞进 Cursor。
+
+[已验证：AOSP android-16.0.0_r1, CursorWindow(String, long windowSizeBytes), CursorWindow(boolean) deprecated]
 
 ### Android 10（API 29）：Scoped Storage
 

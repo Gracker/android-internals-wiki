@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T22:20:00+08:00",
+  "generated_at": "2026-04-26T22:53:54+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,32 +7,32 @@
     "finalized": 85,
     "ready-for-review": 133,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T22:20:00+08:00",
+    "last_updated": "2026-04-26T22:53:54+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 44,
-      "task2b_pending": 58,
+      "task6_pending": 46,
+      "task2b_pending": 56,
       "ready-to-publish": 85,
       "task9_pending": 27,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 170,
-      "revisiting": 44
+      "reviewed": 168,
+      "revisiting": 46
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 152,
-      "pending": 55,
+      "reviewed": 150,
+      "pending": 57,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 141,
-      "pending": 61,
+      "fixed": 143,
+      "pending": 59,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -41,33 +41,34 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 44,
-      "task2b_pending": 58,
+      "task6_pending": 46,
+      "task2b_pending": 56,
       "ready-to-publish": 85,
       "task9_pending": 27,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 170,
-      "revisiting": 44
+      "reviewed": 168,
+      "revisiting": 46
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 152,
-      "pending": 55,
+      "reviewed": 150,
+      "pending": 57,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 141,
-      "pending": 61,
+      "fixed": 143,
+      "pending": 59,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
-    }
+    },
+    "last_updated": "2026-04-26T22:53:54+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
