@@ -7686,7 +7686,16 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T14:10:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T13:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_summary": "修正 9.1 AnrHelper 版本、移除不存在的 AppNotResponding 源码路径、修正 FGS 宽限期和 Android Vitals ANR 阈值；核对 9.2/9.3 已覆盖 Broadcast / ApplicationExitInfo。",
+    "processed_files": [
+      "src/part2-performance/ch09-anr/01-anr-design.md",
+      "src/part2-performance/ch09-anr/02-anr-types.md",
+      "src/part2-performance/ch09-anr/03-anr-analysis.md"
+    ]
   },
   {
     "section": "10.01",
@@ -7806,7 +7815,17 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T14:10:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T13:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_summary": "补充 18.6 Android 14 SurfaceView alpha 的 Z-Below / OnTop 语义和 BufferStateLayer 事务同步说明；核对 18.7/18.9/18.10 已覆盖回调线程、VRA15、setBufferWithRelease。",
+    "processed_files": [
+      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md",
+      "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
+      "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
+      "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
+    ]
   },
   {
     "section": "18.11",

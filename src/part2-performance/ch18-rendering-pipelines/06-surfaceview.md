@@ -8,20 +8,23 @@ tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独�
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-20"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-23T01:48:42+08:00"
 task9_reviewed_date: "2026-04-23"
 task2b_result: fixed
 task2b_rework_date: "2026-04-20"
-task2b_fixed_at: "2026-04-20"
+task2b_fixed_at: "2026-04-26T13:40:00+08:00"
+last_task2b_at: "2026-04-26T13:40:00+08:00"
+rework_by: openclaw-task2b
+rework_type: "review回炉修复（External 问题单）"
 ---
 
 <!-- outline-start -->
@@ -84,6 +87,15 @@ graph TD
 
 默认的 `Z=-2` 给 `MediaOverlay` 预留了 `-1` 这一层。多 SurfaceView 叠加时，这个细节会直接影响字幕、弹幕、画中画的层级判断。
 
+#### Android 14 起的 alpha 语义
+
+Android 14 起，`SurfaceView#setAlpha()` 支持 0 到 1 之间的连续透明度。alpha 的作用位置取决于 Z-Order：
+
+- **默认 Z-Below / MediaOverlay**：Surface 位于宿主窗口下方，alpha 作用在宿主 window 的 punch-through 区域。系统改变的是透明洞的混合比例，独立 Surface 内容仍按自己的 buffer 输出。
+- **`setZOrderOnTop(true)`**：Surface 位于宿主窗口上方，alpha 作用在 Surface 内容本身。这个模式适合让 Surface 内容半透明覆盖在 UI 上，但宿主窗口里的普通 View 不能再盖到它上面。
+
+排查半透明 SurfaceView 时，要同时看 `setZOrderOnTop()`、Surface buffer 格式和 `dumpsys SurfaceFlinger` 中的 Composition Type。alpha 混合可能让原本可走 DEVICE 的 layer 退回 CLIENT，具体结果取决于 SoC 的 HWC 能力、上层遮挡和 buffer 格式。
+
 Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方没有其他 UI 元素遮挡（即"挖洞"区域只有 App 主窗口的透明部分），HWC 可以将 SurfaceView Layer 作为独立 Overlay 直接输出到屏幕，这就是最省 GPU 的路径。
 
 一旦在 SurfaceView 上方叠加了 UI 元素（比如弹幕、控制按钮），Overlay 可能失效，退化为 GPU 合成。如果你的视频播放器需要悬浮控件，就要把这部分代价算进去。
@@ -93,7 +105,7 @@ Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方�
 挖洞这件事本身一直没有消失。`SurfaceView` 在宿主 window 的绘制阶段仍会用 `CLEAR` 模式把对应矩形区域清成透明，让独立 surface 从下面露出来。版本差异主要在“洞”和 surface 内容怎么同步：
 
 - **Android 10 及以下**：透明洞的绘制、窗口位置变化、Surface buffer 更新更容易错拍，resize / move 时更容易看到黑边、拉伸或短闪
-- **Android 11+（BLASTBufferQueue）**：App 进程内的 BLAST 层先 acquire buffer，再把 buffer、fence 和几何信息打进 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。它解决的是事务同步问题，不是把 `CLEAR` 挖洞替换掉
+- **Android 11+（BLASTBufferQueue）**：App 进程内的 BLAST 层先 acquire buffer，再把 buffer、fence 和几何信息打进 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。SurfaceFlinger 侧的 BufferStateLayer/Layer 状态更新会在同一个事务边界里处理 buffer 与几何变化。它解决事务同步问题，`CLEAR` 挖洞仍保留
 
 ## 完整渲染链路
 

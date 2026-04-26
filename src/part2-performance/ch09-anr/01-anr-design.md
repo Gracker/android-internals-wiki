@@ -9,14 +9,14 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-16"
-last_verified_against: "AOSP android-14.0.0_r1"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs"
 reviewed_date: "2026-04-22"
 reviewed_by: openclaw-task6
 confidence: medium
 sources:
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/AppNotResponding.java"
+    path: "frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/AnrHelper.java"
   - type: aosp
@@ -29,15 +29,19 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 
 task9_result: needs-rework
 last_task9_at: 2026-04-16T17:25:51.813647
+last_task2b_at: "2026-04-26T13:40:00+08:00"
+task2b_fixed_at: "2026-04-26T13:40:00+08:00"
+rework_by: openclaw-task2b
+rework_type: "review回炉修复（External 问题单）"
 ---
 
 # ANR 设计思想
@@ -49,7 +53,7 @@ last_task9_at: 2026-04-16T17:25:51.813647
 
 - 🔹 ANR 的设计初衷：保护用户体验，防止 App 无响应
 - 🔹 ANR 机制的核心流程：注册超时 → 主线程处理 → 超时触发 → 弹窗/杀进程
-- 🔹 AMS 中 ANR 的核心代码路径：AppNotResponding 类
+- 🔹 AMS 中 ANR 的核心代码路径：AnrHelper / ProcessErrorStateRecord
 - 🔹 ANR 与 Watchdog 的区别
 - 🔹 ANR 信息的产出：traces.txt、event log、dropbox
 
@@ -135,26 +139,38 @@ scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
 
 ### 第三阶段：超时触发
 
-当延迟消息到期时，system_server 进入 ANR 处理流程。在 Android 14 中，这个入口是 `AnrHelper.appNotResponding()`（早期版本直接在 `ActivityManagerService` 或 `BroadcastQueue` 中处理）。
+当延迟消息到期时，system_server 进入 ANR 处理流程。Android 11 起，这个入口由 `AnrHelper.appNotResponding()` 承接；更早版本会散在 `ActivityManagerService`、`BroadcastQueue` 或对应组件管理类中处理。Android 14 仍沿用 `AnrHelper`，并通过内部 `AnrRecord` 与 `AnrConsumerThread` 排队执行。
 
 ```java
 // 概念流程（简化）
 // frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
 // @ AOSP android-14.0.0_r1
 
-void appNotResponding(ProcessRecord app, String activityShortComponentName,
-        String annotation, ProcessRecord parentProcess) {
-    // 1. 创建 ANR 描述对象
-    AppNotResponding anr = new AppNotResponding(...);
-    // 2. 将 ANR 处理提交到专门的线程执行（避免阻塞 AMS 主线程）
-    mAnrRecords.add(anr);
-    startAnrTaskIfNeeded();
+void appNotResponding(ProcessRecord anrProcess, TimeoutRecord timeoutRecord) {
+    // 1. 把一次 ANR 请求封装成 AnrRecord
+    synchronized (mAnrRecords) {
+        mAnrRecords.add(new AnrRecord(anrProcess, activityShortComponentName, aInfo,
+                parentShortComponentName, parentProcess, aboveSystem, timeoutRecord,
+                isContinuousAnr, firstPidDumpPromise));
+    }
+    // 2. 由独立的 AnrConsumerThread 顺序处理，避免阻塞 AMS 主线程
+    startAnrConsumerIfNeeded();
+}
+
+private final class AnrRecord {
+    void appNotResponding(boolean onlyDumpSelf) {
+        // 真实的 dump、event log、dropbox、弹窗/杀进程决策在这里继续展开
+        mApp.mErrorState.appNotResponding(mActivityShortComponentName, mAppInfo,
+                mParentShortComponentName, mParentProcess, mAboveSystem,
+                mTimeoutRecord, mAuxiliaryTaskExecutor, onlyDumpSelf,
+                mIsContinuousAnr, mFirstPidFilePromise);
+    }
 }
 ```
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java]
+[已验证: AOSP android-11.0.0_r1 / android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java, ProcessErrorStateRecord.java]
 
-注意 `startAnrTaskIfNeeded()`——ANR 处理被放到了单独的线程中执行，目的是避免 ANR 处理逻辑阻塞 AMS 的主线程。这个设计考虑很重要：如果系统在处理一个 ANR 时又导致自身卡住，那就本末倒置了。
+注意 `startAnrConsumerIfNeeded()`——ANR 处理被放到了单独的 `AnrConsumerThread` 中执行，目标是避免 ANR 处理逻辑阻塞 AMS 主线程。系统处理一个应用无响应事件时，AMS 仍要继续服务其他进程，ANR dump 不能把调度线程拖住。
 
 ### 第四阶段：弹窗或杀进程
 
@@ -185,58 +201,58 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT = 10 * 1000]
 
 
-**startForeground() 超时**：Android 12 引入了 `startForeground()` 调用的独立超时检测。当 Service 通过 `startForegroundService()` 启动后，必须在 5 秒内（Android 12+；之前为 10 秒）调用 `startForeground()` 并发出通知。如果超时未调用，系统会抛出 `ForegroundServiceDidNotStartInTimeException` 并杀掉应用进程。这是现代 Android 开发中最高频的 Service ANR 类型之一——很多开发者以为只要调用了 `startForegroundService()` 就够了，但如果没有及时跟上 `startForeground()` 调用，就会触发这个超时。
+**startForeground() 宽限期**：这条规则约束的是 `Context.startForegroundService()` 之后多久必须调用 `Service.startForeground()`。版本边界要分开记：Android 8.0 是 5 秒；Android 9-12 是 10 秒；Android 13/14/15 的默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`，运行时字段是 `mServiceStartForegroundTimeoutMs`，设备也可通过 DeviceConfig 覆盖。Android 12 的主要变化是超时后常见 `ForegroundServiceDidNotStartInTimeException`；5 秒只对应 Android 8.0 的初始宽限期。
 
-[已验证: AOSP android-12.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActiveServices.java, SERVICE_START_FOREGROUND_TIMEOUT = 5 * 1000 (Android 12+), 10 * 1000 (之前)]
+[已验证: AOSP android-8.0.0_r1 / android-9.0.0_r1 / android-12.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, ActiveServices.java 与 ActivityManagerConstants.java]
 
 **InputConnection ANR**：当输入法通过 `InputConnection` 向应用发送输入事件时，如果应用在 5 秒内没有响应（`InputMethodManagerService#onInputEvent` timeout），系统会判定为 InputConnection ANR。这类 ANR 在使用自定义键盘或富文本编辑器的场景中较为常见，与前述 Input ANR（InputDispatcher 层面）的触发条件不同——InputConnection ANR 发生在输入事件已经被分发到目标窗口之后，但应用的 InputConnection 回调处理超时。
 
 [已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/inputmethod/InputMethodManagerService.java]
 
-### 核心：AppNotResponding 类
+### 核心：AnrHelper 与 ProcessErrorStateRecord
 
-在 Android 14 中，ANR 的核心处理逻辑被重构到了 `AppNotResponding` 类中。这个类封装了一次 ANR 事件的完整处理流程：
+Android 11 起，`AnrHelper` 成为应用 ANR 请求的排队入口。它把一次 ANR 封装成内部 `AnrRecord`，再交给 `AnrConsumerThread` 串行处理。真正负责收集 trace、写 event log / dropbox、决定弹窗或杀进程的路径，在 `ProcessErrorStateRecord.appNotResponding()` 里继续展开。
 
 ```java
-// frameworks/base/services/core/java/com/android/server/am/AppNotResponding.java
+// frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
 // @ AOSP android-14.0.0_r1
-// 概念级简化，展示核心步骤
+// 节选后保留核心路径
 
-class AppNotResponding {
-    void run() {
-        // 1. 收集进程状态
-        ProcessRecord app = mApp;
-        
-        // 2. 如果需要，先 dump 其他进程的堆栈
-        // （system_server 会向多个进程发送 SIGQUIT）
-        for (ProcessRecord p : mOtherProcesses) {
-            p.getPkgList().dumpTraces();
+class AnrHelper {
+    private final ArrayList<AnrRecord> mAnrRecords = new ArrayList<>();
+
+    void appNotResponding(ProcessRecord anrProcess, TimeoutRecord timeoutRecord) {
+        synchronized (mAnrRecords) {
+            mAnrRecords.add(new AnrRecord(anrProcess, activityShortComponentName, aInfo,
+                    parentShortComponentName, parentProcess, aboveSystem, timeoutRecord,
+                    isContinuousAnr, firstPidDumpPromise));
         }
+        startAnrConsumerIfNeeded();
+    }
 
-        // 3. 收集系统状态信息（CPU 负载等）
-        updateCpuStats();
-        
-        // 4. 生成 traces.txt（通过 SIGQUIT 信号）
-        // 向目标进程发送 Signal 3 (SIGQUIT)
-        Process.sendSignal(app.pid, Process.SIGNAL_QUIT);
-        
-        // 5. 写入 event log 和 dropbox
-        EventLog.writeEvent(EventLogTags.AM_ANR, ...);
-        mService.addErrorToDropBox("anr", app, ...);
+    private final class AnrConsumerThread extends Thread {
+        public void run() {
+            AnrRecord r;
+            while ((r = next()) != null) {
+                r.appNotResponding(onlyDumpSelf);
+            }
+        }
+    }
 
-        // 6. 决策：弹对话框还是直接杀进程
-        if (app.isInterestingToUser()) {
-            // 前台 ANR：弹对话框
-            mService.showAnrDialog(app);
-        } else {
-            // 后台 ANR：直接杀
-            mService.killAppAtUsersRequest(app);
+    private final class AnrRecord {
+        void appNotResponding(boolean onlyDumpSelf) {
+            mApp.mErrorState.appNotResponding(mActivityShortComponentName, mAppInfo,
+                    mParentShortComponentName, mParentProcess, mAboveSystem,
+                    mTimeoutRecord, mAuxiliaryTaskExecutor, onlyDumpSelf,
+                    mIsContinuousAnr, mFirstPidFilePromise);
         }
     }
 }
 ```
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AppNotResponding.java]
+`mApp.mErrorState` 对应 `ProcessErrorStateRecord`。这条调用会进入 trace 收集、CPU 信息采样、event log、dropbox 和 UI 决策。文章里讨论“ANR 处理核心”时，应把 `AnrHelper` 理解成排队和线程隔离层，把 `ProcessErrorStateRecord` 理解成一次 ANR 的实际处理层。
+
+[已验证: AOSP android-14.0.0_r1, `AnrHelper.java`, `ProcessErrorStateRecord.java`]
 
 这段代码揭示了几个关键细节：
 
@@ -351,7 +367,7 @@ Dropbox 是 Android 系统的持久化日志存储机制，用于保存系统级
 通过 `adb shell dumpsys dropbox --print` 可以查看所有 Dropbox 条目，包括历史 ANR 记录。这在分析偶发性 ANR 时特别有用——用户可能无法实时提供 traces.txt，但 Dropbox 中可能保留了之前 ANR 的记录。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/anr]
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AppNotResponding.java]
+[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java]
 
 ### 三种信息的互补关系
 
@@ -371,15 +387,15 @@ Android 8.0 引入了后台执行限制，后台 Service 的超时阈值从 20 �
 
 Android 10 解决了一个长期困扰开发者的诊断难题：ANR trace 文件从单一的 `traces.txt` 改为按时间和进程分别存储在 `/data/anr/` 目录下。在此之前，如果一个 App 连续触发多次 ANR，后面的 traces 会覆盖前面的，导致丢失重要的诊断信息。按进程和时间分开存储后，每次 ANR 都有独立的 trace 文件，历史信息不再被覆盖。
 
-Android 12 引入了 ANR 延迟报告机制。当后台 ANR 导致应用被杀时，系统会在应用下次启动时通知它，让开发者有机会收集崩溃报告。这个改进填补了后台 ANR 不可见的盲区——在此之前，后台 ANR 直接杀进程，开发者可能完全不知道 ANR 发生过。Android 12 同时引入了 `startForeground()` 的 5 秒独立超时检测（见上文），将 `startForegroundService()` + `startForeground()` 的窗口从 10 秒缩短到 5 秒。
+Android 12 收紧了前台服务启动失败后的异常表现。`startForegroundService()` 后没有及时调用 `startForeground()` 时，常见结果是 `ForegroundServiceDidNotStartInTimeException`；AOSP 对应宽限期仍是 10 秒。Android 13 起，这个默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`。
 
 Android 13 对 ANR trace 的存储做了改进：trace 文件改为按进程独立存储，并且增加了 trace 采集的可靠性。此前，在多个进程同时触发 ANR 时，trace 文件的写入可能互相干扰导致内容丢失。Android 13 还改进了后台执行限制策略，进一步收紧了后台 Service 的行为约束，间接减少了后台 Service ANR 的场景。
 
-Android 14 对 ANR 处理代码做了一次重要的架构重构：将处理逻辑从 AMS 中解耦到独立的 `AnrHelper` 和 `AppNotResponding` 类中。在此之前，ANR 处理代码散布在 AMS 的各个角落，与正常的 AMS 业务逻辑相互干扰。重构后，ANR 处理在一个独立的线程中执行，不再影响 AMS 主线程的调度。
+Android 14 的 ANR 变化主要落在触发条件和诊断口径上：BroadcastReceiver 的官方诊断窗口更新为前台 10-20 秒、后台 60-120 秒，并引入 `BroadcastQueueModernImpl` 这条现代广播分发实现；targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 主线程超时也会显式上报 ANR。`AnrHelper` 从 Android 11 起已经承担排队和线程隔离职责。
 
 Android 16 引入的系统触发式 ProfilingManager 追踪可能是迄今最有价值的 ANR 诊断改进。当 ANR 发生时，系统可以自动捕获 ANR 时刻的 Perfetto trace，提供比传统 traces.txt 远为丰富的信息。这个改进有望从根本上解决 traces.txt "刻舟求剑"的问题——系统触发式 trace 可以捕获 ANR 发生前一段时间的主线程完整行为，而不仅仅是一个堆栈快照。
 
-[已验证: AOSP android-14.0.0_r1, AnrHelper/AppNotResponding 类在 Android 14 引入]
+[已验证: AOSP android-11.0.0_r1 / android-14.0.0_r1, AnrHelper.java；AOSP android-14.0.0_r1, BroadcastQueueModernImpl.java, ActiveServices.java]
 [已验证: Android 16 ProfilingManager ANR 触发, intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md]
 [待验证: Android 8.0 后台 Service 200 秒超时的具体 commit]
 
@@ -393,12 +409,9 @@ Android 16 引入的系统触发式 ProfilingManager 追踪可能是迄今最有
 
 Google Play Console 将 ANR 率作为应用核心性能指标（Android Vitals）的一部分进行监控。当用户的设备上发生 ANR 时，Play Services 会匿名上报 ANR 信息到 Play Console。
 
-Google 对 ANR 率的阈值定义是：
+当前 Android Vitals 的核心 ANR 指标采用“用户感知 ANR 率”（user-perceived ANR rate）口径。全局坏行为阈值是 **0.47%**：如果应用跨设备总体超过这条线，可能影响 Google Play 的曝光；Play Console 还会按设备型号检查局部高发问题。
 
-- **ANR 率 > 0.38%**：应用的表现被标记为"差"（Bad），会在 Play Store 的应用详情页中被标注
-- **ANR 率 > 0.10%**：应用的表现被标记为"需要改进"（Needs improvement）
-
-这意味着如果你的应用每天有 10000 个活跃用户，只要每天有超过 38 个用户遇到 ANR，Google 就会认为你的应用质量有问题。在 Google Play 的搜索和推荐算法中，ANR 率高的应用会被降权，直接影响应用的曝光和下载量。
+按 10000 个日活用户估算，0.47% 对应每天约 47 个用户遇到用户感知 ANR。这个数字只是官方质量红线，不适合作为内部目标；线上治理通常要把内部告警线设得更低，并按设备、系统版本和场景拆开看。
 
 Play Console 中可以看到的 ANR 信息包括：
 - 按设备和 Android 版本分组的 ANR 分布
@@ -411,12 +424,12 @@ Play Console 中可以看到的 ANR 信息包括：
 
 ## [自动发现] ANR trace 堆栈的"替罪羊"现象
 
-我们在前面分析 `AppNotResponding` 类时已经提到过堆栈捕获的滞后性。这里把这个问题的完整机制展开，因为它直接决定了我们后续分析 ANR 的方法论。
+我们在前面分析 `AnrHelper` 与 `ProcessErrorStateRecord` 时已经提到过堆栈捕获的滞后性。这里把这个问题的完整机制展开，因为它直接决定了我们后续分析 ANR 的方法论。
 
 **ANR trace 中主线程的堆栈，往往不是导致 ANR 的真正原因。** 这个现象的根本原因在于 ANR 机制的时序设计：超时检测发生在 system_server 中，而堆栈 dump 发生在超时检测之后。从"真正导致超时的代码开始执行"到"堆栈被 dump 下来"，中间经历了至少三个阶段：
 
 1. 超时计时器到期 → system_server 检测到超时
-2. system_server 的 AnrHelper 开始处理 → 创建 AppNotResponding 对象
+2. system_server 的 AnrHelper 开始处理 → 创建 `AnrRecord` 并进入 `ProcessErrorStateRecord`
 3. 向目标进程发送 SIGQUIT → 目标进程 dump 堆栈
 
 在这整个过程中，应用的主线程并没有停止工作。真正导致超时的"长耗时消息"很可能已经执行完毕，主线程已经开始处理下一个消息，甚至进入了空闲状态（`nativePollOnce`）。
@@ -444,13 +457,13 @@ ANR 的触发条件是"主线程在超时时间内没有响应"，而不是"CPU 
 
 ### 误区四："ANR 率低就不需要关注"
 
-Google Play Console 的 ANR 率阈值（0.38% 标记为"差"）是全局统计值。对于一个日活 100 万的应用，0.38% 意味着每天有 3800 个用户遇到 ANR。而且，ANR 率是按会话计算的，一个用户可能在同一天遇到多次 ANR，但只计算一次。所以即使 ANR 率在"可接受"范围内，频繁 ANR 的用户很可能已经流失了。
+Google Play Console 的核心 ANR 坏行为阈值（用户感知 ANR 率 0.47%）是全局统计值。对于一个日活 100 万的应用，0.47% 意味着每天约 4700 个用户遇到用户感知 ANR。而且，ANR 率是按会话计算的，一个用户可能在同一天遇到多次 ANR，但只计算一次。所以即使 ANR 率在"可接受"范围内，频繁 ANR 的用户很可能已经流失了。
 
 ## 参考资料
 
 - AOSP 源码路径：
-  - `frameworks/base/services/core/java/com/android/server/am/AppNotResponding.java`（Android 14+）
-  - `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`（Android 14+）
+  - `frameworks/base/services/core/java/com/android/server/am/ProcessErrorStateRecord.java`
+  - `frameworks/base/services/core/java/com/android/server/am/AnrHelper.java`（Android 11+）
   - `frameworks/base/services/core/java/com/android/server/am/ProcessRecord.java`
   - `frameworks/base/services/core/java/com/android/server/Watchdog.java`
   - `frameworks/base/services/core/java/com/android/server/am/BroadcastQueue.java`

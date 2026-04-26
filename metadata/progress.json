@@ -6814,7 +6814,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T13:26:21+08:00",
+  "last_updated": "2026-04-26T13:40:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -6959,5 +6959,24 @@
         "auto_finalized": true
       }
     }
+  },
+  "2026-04-26-14-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-26T13:40:00+08:00",
+    "sections": [
+      "09.01",
+      "18.06"
+    ],
+    "queue_indexes_completed": [
+      149,
+      155
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part2-performance/ch09-anr/01-anr-design.md",
+      "src/part2-performance/ch09-anr/02-anr-types.md",
+      "src/part2-performance/ch09-anr/03-anr-analysis.md",
+      "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+    ]
   }
 }
