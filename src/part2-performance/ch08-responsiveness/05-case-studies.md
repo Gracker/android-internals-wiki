@@ -34,16 +34,16 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-04-21T05:29:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-26"
+last_task9_at: "2026-04-26T08:30:00+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-25T18:48:46+08:00"
