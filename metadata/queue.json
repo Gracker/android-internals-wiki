@@ -12754,5 +12754,47 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T02:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "priority": 95,
+    "reason": "[Deep Tech Review] P0: UprobeStats 引入版本错误（写 Android 15，实际为 Android 16）",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "L74, L268-L270",
+        "detail": "章节写\"Android 15 引入的 UprobeStats\"，但 AOSP android-15.0.0_r1 无 APEX 打包、无 DynamicInstrumentationManager、无 GenericInstrumentation.c/ProcessManagement.c；android-16.0.0_r1 才包含完整 APEX 模块。Google 官方文档明确标注 Android 16 引入。",
+        "suggestion": "修正为\"Android 16 引入的 UprobeStats\"；apex 路径确认 /apex/com.android.uprobestats.apex；区分 Android 15 的平台侧原型代码与 Android 16 的正式 APEX 发布"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T03:32:04+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.4",
+    "section_title": "dumpsys 系列命令",
+    "priority": 85,
+    "reason": "[Deep Tech Review] P1x2: --latency 语义模糊；framestats 版本差异未标注",
+    "material_paths": [],
+    "review_issues": [
+      {
+        "type": "源码准确性",
+        "location": "~L260-L275",
+        "detail": "--latency 第三列 frame_ready_time 语义描述不精确",
+        "suggestion": "收紧为\"AOSP 记录的 frame ready time，表示帧提交给 HWC 的时间点\""
+      },
+      {
+        "type": "版本差异",
+        "location": "~L175-L180",
+        "detail": "gfxinfo framestats 列名未标注 Android 14+ 版本分界",
+        "suggestion": "标注 FrameDeadline/FrameInterval/WorkloadTarget 为 Android 14+ 新增"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T03:32:04+08:00",
+    "status": "pending"
   }
 ]

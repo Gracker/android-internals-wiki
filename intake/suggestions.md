@@ -4662,3 +4662,58 @@
 - **位置**：L60、L428-L429
 - **问题**：`[2.14 图形 API 演进](14-graphics-api-evolution.md)` 与 `[2.13 图形缓冲区管理](13-buffer-queue.md)` 在 ch18 目录下解析到不存在文件；实际目标在 `src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md` 与 `src/part1-fundamentals/ch02-rendering/13-buffer-queue.md`。
 - **建议**：改成正确相对路径，或改用全书统一的章节引用格式，避免发布后链接断开。
+
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-27
+- **类型**：版本差异
+- **位置**：~L80-L95
+- **问题**：`oom_adj` 数值以 Android 10+ 为例，未提及 Android 15+ LMKD 转向 `oom_score_adj`
+- **建议**：补充"Android 15+ LMKD 决策更多依赖 `oom_score_adj`（`/proc/<pid>/oom_score_adj`），`dumpsys activity processes` 中的 `oom_adj` 仍可参考但非唯一决策输入"
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-27
+- **类型**：版本差异
+- **位置**：~L235
+- **问题**：`dumpsys batterystats --enable full-wake-history` 在部分 Android 12+ 设备上已 deprecated
+- **建议**：补充版本可用性说明或标注"Android 12 以下可用"
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-27
+- **类型**：数据支撑
+- **位置**：~L70-L75
+- **问题**：`exit-info` 保留条数未量化
+- **建议**：补充"Android 16 上默认保留最近 10 条退出记录（MAX_EXIT_INFOS_PER_PACKAGE=10）"
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-27
+- **类型**：版本差异
+- **位置**：全文
+- **问题**：未提及 16KB page size 对 Macrobenchmark/Microbenchmark 的影响
+- **建议**：在 CompilationMode 段或 CI 段补充 benchmark 基线需重新建立，CompilationMode.Full 的 .odex 产物体积和编译耗时可能显著增加
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-27
+- **类型**：知识盲区
+- **位置**：~SoloPi 段
+- **问题**：遗漏 SoloPi 视觉拆帧算法原理
+- **建议**：补一段 SoloPi 视觉拆帧技术原理（像素差异检测/录屏帧 diff）和与 Macrobenchmark FrameTimingMetric 的精度对比
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-27
+- **类型**：数据支撑
+- **位置**：PowerMetric 段
+- **问题**：未提及 CI 中设备白名单筛选方法
+- **建议**：补"CI 设备选型可用 `adb shell dumpsys powerhal` 确认 power rail 支持"
+
+## [Task9 Deep Review] 14.6 自动化测试工具 — 2026-04-27
+- **类型**：交叉引用
+- **位置**：StartupMode 段
+- **问题**："第 8 章讨论的三种启动类型"未给小节号
+- **建议**：改为"第 8 章 8.3 节讨论的三种启动类型"
+
+## [Task9 Deep Review] 14.10 eBPF/BPF — 2026-04-27
+- **类型**：原理链
+- **位置**：~L145
+- **问题**：kprobe 示例中 simpleperf `--tp-filter` 联用 kprobe 参数过滤语法待验证
+- **建议**：确认 simpleperf 新版本是否支持 kprobe 参数提取 + `--tp-filter`，否则改为 bpftrace 示例或标注伪代码
+
+## [Task9 Deep Review] 14.10 eBPF/BPF — 2026-04-27
+- **类型**：版本差异
+- **位置**：~L170
+- **问题**：Android 16 内核分支映射只提 6.12 未提 6.6 向下兼容分支
+- **建议**：补充 GKI 分支选择逻辑或加"主分支"限定
