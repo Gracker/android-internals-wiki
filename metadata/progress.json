@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T06:20:00+08:00",
+  "generated_at": "2026-04-27T06:59:49+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,32 +7,32 @@
     "finalized": 93,
     "ready-for-review": 125,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T06:20:00+08:00",
+    "last_updated": "2026-04-27T06:59:49+08:00",
     "pipeline_stage_counts": {
       "None": 33,
-      "task6_pending": 39,
-      "task2b_pending": 57,
+      "task6_pending": 41,
+      "task2b_pending": 55,
       "ready-to-publish": 93,
       "task9_pending": 27,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 34,
-      "reviewed": 176,
-      "revisiting": 40
+      "reviewed": 174,
+      "revisiting": 42
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 159,
-      "pending": 50,
+      "reviewed": 157,
+      "pending": 52,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 144,
-      "pending": 60,
+      "fixed": 146,
+      "pending": 58,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -42,34 +42,34 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 33,
-      "task6_pending": 39,
-      "task2b_pending": 57,
+      "task6_pending": 41,
+      "task2b_pending": 55,
       "ready-to-publish": 93,
       "task9_pending": 27,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 34,
-      "reviewed": 176,
-      "revisiting": 40
+      "reviewed": 174,
+      "revisiting": 42
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 159,
-      "pending": 50,
+      "reviewed": 157,
+      "pending": 52,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 144,
-      "pending": 60,
+      "fixed": 146,
+      "pending": 58,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
     },
-    "last_updated": "2026-04-27T06:20:00+08:00"
+    "last_updated": "2026-04-27T06:59:49+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -352,7 +352,6 @@
       "last_task9_at": "2026-04-25T00:29:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/10-content-provider.md": {
-      "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
       "title": "ContentProvider 性能与优化",
       "chapter": "1.10",
       "section": "1.10",
@@ -360,23 +359,62 @@
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-25",
-      "last_verified_against": "AOSP android-16.0.0_r1 / android-12.0.0_r1 / android-11.0.0_r1",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "AOSP android-16.0.0_r1 ContentProvider.applyBatch / CursorWindow / SQLiteCursor / SQLiteQuery / SQLiteSession; Android SDK Application.getProcessName",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "task6_result": "pass-light-edit",
+      "sources": [
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/app/ActivityThread.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/content/ContentProvider.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/database/CursorWindow.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/database/sqlite/SQLiteCursor.java"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/guide/topics/providers/content-provider-basics"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/topic/libraries/app-startup"
+        }
+      ],
+      "tags": [
+        "android",
+        "content-provider",
+        "binder",
+        "startup",
+        "anr",
+        "sqlite",
+        "app-startup"
+      ],
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "reviewed_date": "2026-04-18",
-      "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-27",
+      "task2b_result": "fixed",
+      "task2b_state": "fixed",
+      "reviewed_date": "2026-04-26",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
+      "review_round": 5,
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-27T06:20:00+08:00",
-      "review_round": "4",
-      "review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。"
+      "repaired_date": "2026-04-27",
+      "repaired_by": "openclaw-task2b",
+      "last_task2b_at": "2026-04-27T06:57:48+08:00",
+      "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。",
+      "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
     },
     "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
       "path": "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md",
@@ -5589,29 +5627,64 @@
       "last_task9_at": "2026-04-25T04:21:00+08:00"
     },
     "src/part3-tools/ch19-apm/14-jetpack-benchmark.md": {
-      "path": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
       "title": "Jetpack Benchmark（Microbenchmark + Macrobenchmark）",
-      "chapter": "'19'",
-      "section": "'19.14'",
+      "chapter": "19",
+      "section": "19.14",
       "status": "ready-for-review",
-      "drafted_date": "'2026-04-24'",
+      "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark / Baseline Profile 场景：Android 6.0+（API 23+）；书中样例以 Android 8-17 为主",
-      "last_verified": "'2026-04-24'",
-      "last_verified_against": "Android Developers Microbenchmark overview / Macrobenchmark overview / CompilationMode reference",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "AndroidX BlackHole / BenchmarkState / BaselineProfileRule / CompilationMode source and Android Developers Benchmark docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "reviewed_date": "2026-04-25",
+      "tags": [
+        "apm"
+      ],
+      "related_chapters": [
+        "19.0"
+      ],
+      "sources": [
+        {
+          "type": "official",
+          "path": "https://developer.android.com/topic/performance/benchmarking/microbenchmark-overview"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/kotlin/androidx/benchmark/BlackHole"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile"
+        }
+      ],
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-25",
+      "task6_result": "pass-light-edit",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-27T06:57:48+08:00",
+      "repaired_date": "2026-04-27",
+      "repaired_by": "openclaw-task2b",
+      "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T03:28:33+08:00"
+      "last_task9_at": "2026-04-25T03:28:33+08:00",
+      "path": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
     },
     "src/part3-tools/ch19-apm/25-battery-thermal-apm.md": {
       "path": "src/part3-tools/ch19-apm/25-battery-thermal-apm.md",

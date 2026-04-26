@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark / Baseline Profile 场景：Android 6.0+（API 23+）；书中样例以 Android 8-17 为主
-last_verified: '2026-04-24'
-last_verified_against: Android Developers Microbenchmark overview / Macrobenchmark overview / CompilationMode reference
+last_verified: '2026-04-27'
+last_verified_against: AndroidX BlackHole / BenchmarkState / BaselineProfileRule / CompilationMode source and Android Developers Benchmark docs
 confidence: medium
 tags:
 - apm
@@ -20,16 +20,22 @@ sources:
   path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
 - type: official
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/CompilationMode
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
-task2b_state: pending
+- type: official
+  path: https://developer.android.com/reference/kotlin/androidx/benchmark/BlackHole
+- type: official
+  path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
+pipeline_stage: task6_pending
+task6_state: "revisiting"
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task6_result: "pass-light-edit"
 task2b_result: fixed
-last_task2b_at: '2026-04-24T21:14:45+08:00'
-repaired_date: '2026-04-24'
+last_task2b_at: '2026-04-27T06:57:48+08:00'
+repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
@@ -45,7 +51,7 @@ last_task9_at: "2026-04-25T03:28:33+08:00"
 ### 锚点（必须覆盖）
 
 - 🔹 [定位] 说明 Jetpack Benchmark 用来证明代码改动效果，承担可重复实验，不承担线上监控。
-- 🔹 [Microbenchmark] 展开适合测试的对象、JIT / warmup、measurement、Blackhole、state、避免测到日志或随机数。
+- 🔹 [Microbenchmark] 展开适合测试的对象、JIT / warmup、measurement、BlackHole、state、避免测到日志或随机数。
 - 🔹 [Macrobenchmark] 展开端到端场景、启动、滚动、页面切换、UiAutomator、CompilationMode、StartupMode。
 - 🔹 [工程结构] 写 benchmark module、target app、instrumentation runner、Gradle 插件、依赖和构建变体。
 - 🔹 [最小示例] 提供 cold startup 和列表滑动两个 Macrobenchmark 示例，标注关键行。
@@ -108,6 +114,8 @@ Microbenchmark 在进程内循环执行一段可直接调用的代码，适合�
 | 新版默认配置 | Benchmark 1.3.0-beta01+ 且 AGP 8.4.0+ | 默认 full AOT，波动更小，适合做稳定回归 |
 
 读数据时要先写清编译模式。两条 benchmark 曲线如果编译模式不同，不能放在一张图里直接横比。
+
+Microbenchmark 还要防止 Dead Code Elimination。Kotlin 编译器和 R8 可能移除“计算了但结果没被使用”的代码，尤其是纯函数、解析器、编码器这类返回值路径。AndroidX 提供的类名是 `androidx.benchmark.BlackHole`，用法是把被测结果传给 `BlackHole.consume(result)`，让编译器保留这段计算。
 
 适合 Microbenchmark 的问题：
 
@@ -179,11 +187,11 @@ Android Developers 和 AndroidX `CompilationMode` 源码把默认行为分成两
 |---|---|---|---|
 | `CompilationMode.DEFAULT` | 等同 `Partial(BaselineProfileMode.UseIfAvailable)`；有 Baseline Profile 时优先安装 | 系统默认就是 full compile | 接近 fresh install 的默认体验 |
 | `CompilationMode.None()` | 不做 AOT 预编译，允许运行期 JIT | 这一档不可用，API 23 只有 full compile | 看无 Baseline Profile 时的最差启动或交互口径 |
-| `CompilationMode.Partial()` | 走 Baseline Profile 和或 warmup 的部分预编译 | 这一档不可用，API 23 只有 full compile | 看接近真实用户设备的常态表现 |
+| `CompilationMode.Partial()` | 走 Baseline Profile 或 warmup 的部分预编译 | 这一档不可用，API 23 只有 full compile | 看接近真实用户设备的常态表现 |
 | `CompilationMode.Full()` | 全量 AOT，结果更稳，但不代表现代用户设备的常态 | 系统默认行为 | 做上限对照，或减少编译噪声 |
 | `CompilationMode.Ignore()` | 跳过库内编译步骤，保留外部已经准备好的编译状态 | 只能保留系统默认 full compile | 编译状态由外部脚本控制时使用 |
 
-如果目标是验证 Baseline Profile 是否生效，`CompilationMode.DEFAULT` 还不够直接，优先显式写 `CompilationMode.Partial(BaselineProfileMode.Required)`。如果目标是看最差冷启动，才改成 `None()`。如果目标是消掉 JIT 噪声做上限对照，再用 `Full()`。
+如果目标是验证 Baseline Profile 是否生效，`CompilationMode.DEFAULT` 还不够直接，优先显式写 `CompilationMode.Partial(BaselineProfileMode.Require)`。这个模式要求被测 APK 由 AGP 7.0+ 打包 baseline profile，并包含 `androidx.profileinstaller:profileinstaller`。如果目标是看最差冷启动，才改成 `None()`。如果目标是消掉 JIT 噪声做上限对照，再用 `Full()`。
 
 这个测试只适合放在 benchmark module 或独立测试配置里。CI 上还要固定设备、系统版本、充电状态、温度和后台进程，否则数据波动会吞掉优化效果。
 
@@ -228,6 +236,17 @@ Benchmark 的作用是把“线上变差”转化成“本地可重复、CI 可�
 
 Macrobenchmark 通常要求被测包接近 Release 配置。Debug 包有调试开销、无优化、日志更多，测出来的数据不适合做发布判断。被测 build variant 还要满足 benchmark runner 和 profileable 等前置条件，否则脚本连目标进程都不稳定。
 
+如果要验证 Baseline Profile 或使用 `CompilationMode.Partial(BaselineProfileMode.Require)`，被测 App 侧还要加入 ProfileInstaller 依赖，并确认使用 AGP 7.0+ 打包 baseline profile：
+
+```kotlin
+// :app/build.gradle.kts
+dependencies {
+    implementation("androidx.profileinstaller:profileinstaller:<latest>")
+}
+```
+
+这条依赖属于 target app，不能放错到 benchmark module。缺少它时，Macrobenchmark 可能无法把 profile 写入目标应用并触发对应编译，`Partial(Require)` 也会失去验证价值。
+
 ## Microbenchmark 写法要避免测错对象
 
 Microbenchmark 容易写成“测了测试代码”。比如在 benchmark 循环里构造大量输入数据，会把数据构造成本算进去。
@@ -235,6 +254,8 @@ Microbenchmark 容易写成“测了测试代码”。比如在 benchmark 循环
 推荐结构：
 
 ```kotlin
+import androidx.benchmark.BlackHole
+
 @RunWith(AndroidJUnit4::class)
 class JsonParserBenchmark {
     private lateinit var payload: String
@@ -248,12 +269,13 @@ class JsonParserBenchmark {
 
     @Test
     fun parseFeed() = benchmarkRule.measureRepeated {
-        parser.parse(payload)
+        val result = parser.parse(payload)
+        BlackHole.consume(result)
     }
 }
 ```
 
-`setUp()` 准备稳定输入，`measureRepeated` 里只放被测代码。否则数据生成、文件读取、对象初始化都会污染结果。
+`setUp()` 准备稳定输入，`measureRepeated` 里只放被测代码；`BlackHole.consume(result)` 防止返回值未使用时被 DCE 移除。Java 或手动循环写法可以使用 `BenchmarkRule.getState()` 拿到 `BenchmarkState`，再用 `while (state.keepRunning()) { ... }` 控制测量循环。
 
 ## Macrobenchmark 场景要有业务脚本
 
@@ -277,6 +299,8 @@ fun homeFeedScroll() = benchmarkRule.measureRepeated(
 
 真实项目要给关键控件稳定 resource id。没有稳定 id，测试脚本容易因为 UI 改动失效。
 
+多进程 App 还要确认被测 UI、渲染 surface 和主要 CPU 工作是否在 `targetPackage` 的主进程内。如果页面主要跑在 `:remote` 或其他进程，`FrameTimingMetric` 可能只反映被匹配到的窗口帧，无法解释远端进程里的 CPU、Binder 或 I/O 耗时。处理这类场景时，把 Macrobenchmark 结果和 Perfetto 进程轨道、`TraceSectionMetric` 或应用内 trace 名称一起核对。
+
 ## 指标解释
 
 Benchmark 输出的数字要和业务目标对应：
@@ -296,7 +320,8 @@ CI 跑性能测试比功能测试更脆弱。建议：
 
 - 使用固定物理设备池，不用普通共享模拟器做最终性能门禁。
 - 测试前清理后台任务，固定亮度、刷新率、性能模式。
-- 设备温度过高时跳过或降权本轮结果。
+- 保持散热条件稳定。Benchmark 库检测到 thermal throttling 时会丢弃受影响数据并等待设备降温；CI 仍要避免设备长期过热导致整轮测试被拉长。
+- 不要为了跑通流水线滥用 `androidx.benchmark.suppressErrors`。被压成 warning 的低电量、debuggable、模拟器等错误都会降低结果可信度，只适合 smoke test，不适合做回归门禁。
 - 每个场景至少多次 iteration，看中位数和 P95。
 - 保存 trace 文件，失败时能回放分析。
 - 阈值用相对回归，例如比 main 分支慢 8% 才报警。
@@ -305,10 +330,35 @@ CI 跑性能测试比功能测试更脆弱。建议：
 
 ## 和 Baseline Profiles 的配合
 
-Baseline Profiles 的生成和验证离不开 Macrobenchmark。推荐把这两类测试放在同一套场景里：
+Baseline Profiles 的生成和验证离不开 Macrobenchmark，但两类测试的 Rule 不同：
 
-- `generateBaselineProfile`：执行关键路径，生成 profile。
-- `startupBenchmark`：验证 profile 对启动的影响。
-- `scrollBenchmark`：验证 profile 对高频交互的影响。
+- `BaselineProfileRule.collect()`：执行关键路径，生成 baseline profile 规则。
+- `MacrobenchmarkRule.measureRepeated()`：在 `CompilationMode.Partial(BaselineProfileMode.Require)`、`None()`、`Full()` 等模式下验证启动或滚动收益。
+- `startupBenchmark` / `scrollBenchmark`：复用同一批用户路径，把 profile 收集结果转成可比较的性能数据。
 
-每次改启动路径、首页依赖或大 SDK 初始化，都要重新跑 profile 生成和 benchmark。否则 profile 可能还存在，但已经覆盖不到新的热点路径。
+生成 profile 的最小骨架如下，代码里只看 `BaselineProfileRule` 和 `collect()`：
+
+```kotlin
+import androidx.benchmark.macro.junit4.BaselineProfileRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+@RunWith(AndroidJUnit4::class)
+class BaselineProfileGenerator {
+    @get:Rule
+    val baselineProfileRule = BaselineProfileRule()
+
+    @Test
+    fun generate() = baselineProfileRule.collect(
+        packageName = "com.example.app"
+    ) {
+        pressHome()
+        startActivityAndWait()
+        device.waitForIdle()
+    }
+}
+```
+
+每次改启动路径、首页依赖或大 SDK 初始化，都要重新跑 profile 生成和 benchmark。否则 profile 可能还存在，但已经覆盖不到新的热点路径。生成设备的 API、root 状态和库版本要记录进报告；收益验证仍然回到目标发布设备段。
