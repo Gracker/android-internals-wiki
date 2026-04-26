@@ -17,6 +17,16 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/WindowSurfacePlacer.java"
   - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java"
+  - type: aosp
+    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java"
+  - type: aosp
+    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingSurfaceDrawer.java"
+  - type: aosp
+    path: "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java"
+  - type: aosp
     path: "frameworks/base/core/java/android/view/ViewRootImpl.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/IWindowSession.aidl"
@@ -24,6 +34,14 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/wm/Session.java"
   - type: aosp
     path: "frameworks/base/core/java/android/view/SurfaceControl.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/TransitionController.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/Transition.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/SurfaceAnimator.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/SurfaceAnimationRunner.java"
   - type: aosp
     path: "frameworks/base/core/java/android/graphics/BLASTBufferQueue.java"
   - type: aosp
@@ -45,10 +63,10 @@ related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
@@ -57,6 +75,8 @@ task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T21:29:00+08:00"
+last_task2b_at: "2026-04-27T02:40:00+08:00"
+review_notes: "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line."
 review_log: "logs/review/2026-04-11-11-review.md"
 ---
 # 2.12 Window Manager Service 与窗口管理
@@ -134,38 +154,43 @@ WMS 在这个过程中的角色是提供"即时反馈"——在 App 进程还没
 
 ### StartingWindow 的工作原理
 
-StartingWindow 的创建流程大致如下：
+Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/WMS 负责判断本次 Activity 启动是否需要 starting surface，`StartingSurfaceController` 根据 SplashScreen 或 TaskSnapshot 路径生成 starting data；WM Shell 的 starting-surface 组件负责创建 SplashScreen / TaskSnapshot 窗口并挂到对应 Task 上。常用源码锚点包括：
 
-1. AMS 决定启动一个 Activity → 通知 WMS
-2. WMS 发现目标 App 进程尚未启动（冷启动）
-3. WMS 立即创建一个 StartingWindow（类型为 `TYPE_APPLICATION_STARTING`）
-4. StartingWindow 的内容来自 App 的主题配置（`windowBackground`）或 Android 12+ 的 SplashScreen API 配置
-5. StartingWindow 显示在屏幕上，用户看到了 App 的 splash screen
-6. App 进程启动完成后，App 的主 Window 准备好第一帧
-7. WMS 移除 StartingWindow，显示 App 的主 Window
+- `frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java`：服务端发起 starting surface 请求
+- `frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java`：保存 SplashScreen starting data
+- `frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java`：Shell 侧接收 `TaskOrganizer.addStartingWindow` 回调
+- `StartingSurfaceDrawer.java` / `SplashscreenWindowCreator.java`：Shell 侧创建并绘制 SplashScreen window
 
-这个过程在 Perfetto 中表现为：system_server 进程中会出现 WindowState 的创建和 visibility 变化。在 App 进程中，`reportDrawFinished` 这个 Slice 标记着 App 的第一帧绘制完成，此后 WMS 会安排 StartingWindow 的移除。
+冷启动路径可以按这组边界读：
+
+1. ATMS 推进 Activity 启动，WMS 在 `ActivityRecord` / Task 可见性变化中判断是否需要 starting surface。
+2. `StartingSurfaceController` 生成请求，SplashScreen 路径使用 `SplashScreenStartingData`，历史任务恢复路径可能使用 TaskSnapshot starting data。
+3. Android 12+ 的 Shell starting-surface 组件收到 `addStartingWindow` 回调后，在 Shell / SystemUI 侧创建 SplashScreen 或 TaskSnapshot 窗口。
+4. App 进程启动并绘制主 Window 第一帧。
+5. App 通过 `finishDrawing` / `reportDrawFinished` 让服务端知道主窗口已完成首帧，随后走 `removeStartingWindow` 路径通知 Shell 移除 starting surface。
+
+Perfetto 里要把三段分开看：system_server 侧是 starting data、Activity/Task 状态和移除请求；Shell / SystemUI 侧才是 starting surface 的创建与绘制；App 侧的 `reportDrawFinished` 标记主 Window 首帧完成。把 starting surface 的绘制职责放在 system_server，会混淆服务端、Shell 和 App 进程边界。
 
 [待补充：Trace 截图 — StartingWindow 创建和移除在 Perfetto 中的表现]
 
 ### Android 12 SplashScreen API
 
-在 Android 12 之前，StartingWindow 的外观完全由 `windowBackground` 决定，各家 OEM 也做了大量定制（有些甚至添加了广告 splash screen）。Android 12 引入了 SplashScreen API（`android.window.splashscreen`），统一了 StartingWindow 的行为：
+在 Android 12 之前，StartingWindow 的外观主要由 `windowBackground` 决定，OEM 定制差异较大。Android 12 引入 SplashScreen API（`android.window.splashscreen`），把启动页主题、icon、背景色、退出动画等配置收敛到统一接口：
 
-- 开发者可以通过 `Theme.SplashScreen` 主题配置 icon、背景色、动画等
-- SplashScreen 支持自定义退出动画（`setOnExitAnimationListener`）
-- 向后兼容库 `androidx.core:splashscreen` 支持 Android 5.0+
+- 开发者通过 `Theme.SplashScreen` 配置 icon、背景色、动画等元素。
+- 退出动画通过 `setOnExitAnimationListener` 接入，移除时机仍要和主 Window 首帧完成信号配合。
+- `androidx.core:splashscreen` 向后支持 Android 5.0+，但 Android 12+ 的系统 starting surface 创建仍落在 Shell starting-surface 路径。
 
-从性能角度，SplashScreen API 最大的好处是标准化了 StartingWindow 的生命周期。在此之前，不少 App 自己实现一个 SplashActivity 作为启动页，反而多了一步 Activity 启动（先启动 SplashActivity，再跳转到 MainActivity），反而拖慢了启动速度。SplashScreen API 让 StartingWindow 成为系统层面的即时反馈，不增加 App 侧的 Activity 数量。
+这套 API 的性能价值在于减少 App 自建 SplashActivity。自建启动页会多一次 Activity 启动、窗口切换和可能的 relayout；系统 SplashScreen 则复用 starting surface 生命周期，不增加 App 侧 Activity 数量。
 
 ### StartingWindow 的时机陷阱
 
-StartingWindow 的移除时机是一个性能调优的关键点：
+StartingWindow 的移除时机会影响启动体感：
 
-- **过早移除**：如果 App 第一帧还没准备好就移除了 StartingWindow，用户会看到短暂的闪白/闪黑（取决于 Window 背景）
-- **过晚移除**：如果 StartingWindow 持续显示太久，用户会感觉"App 启动好慢"，即使 App 内容早已准备好
+- **过早移除**：App 主 Window 第一帧还没准备好时移除 starting surface，用户可能看到短暂闪白或闪黑。
+- **过晚移除**：主 Window 已经完成首帧，starting surface 仍停留在前台，用户会把这段时间感知为启动变慢。
 
-理想情况下，StartingWindow 应该在 App 第一帧绘制完成的那一刻无缝切换。WMS 内部通过 `reportDrawFinished` 信号来协调这个时机——App 完成第一帧绘制后通知 WMS，WMS 在下一个 VSync 中移除 StartingWindow 并显示 App 主 Window。
+合理的切换点是 App 主 Window 首帧完成之后。服务端通过 `finishDrawing` / `reportDrawFinished` 收到首帧完成信号，再走 `removeStartingWindow` 路径让 Shell 移除 starting surface。分析启动 Trace 时，`reportDrawFinished` 只说明 App 首帧完成；真正的视觉切换还要看 Shell 移除 starting surface、SurfaceFlinger 消费 transaction 和后续 present。
 
 ## relayoutWindow：WMS 最频繁的操作
 
@@ -283,46 +308,56 @@ ORDER BY s.name;
 
 ## Window 动画与过渡性能
 
-当我们切换 App、回到桌面、或打开 Recent 页面时，屏幕上出现的过渡动画由 WMS 的 WindowAnimator 统一调度。这些动画不仅仅是视觉装饰——它们的性能直接影响用户对"流畅度"的感知。
+切换 App、回到桌面、打开 Recent 页面和预测返回都属于窗口过渡。现代 Android 不能再按“WMS 创建某个 Activity 专用 animator，然后统一调度切换动画”来理解。Android 12-14 仍能看到 legacy `AppTransition` 与 `TransitionController` 并存；到 Android 16，主线口径已经转向 `TransitionController` / `Transition` 收集 WindowContainer 变化，再由 WM Shell transition、remote transition 或服务端 surface animation 路径执行动画。
 
-### 动画的工作方式
+### 动画路径如何分工
 
-WindowAnimator 负责系统级别的 Window 动画。在每一帧动画中，WindowAnimator 计算所有参与动画的 Window 的 transform（缩放、平移、透明度），然后通过 SurfaceControl.Transaction 提交给 SurfaceFlinger。
+Activity、Task、Recents、桌面和 predictive back 这类过渡通常跨 ATMS/WMS、WM Shell、SurfaceFlinger 三层：
 
-这意味着每帧动画都涉及：
-1. WindowAnimator 在 system_server 中计算 transform
-2. 构建 SurfaceControl.Transaction
-3. 通过 Binder 提交给 SurfaceFlinger
-4. SurfaceFlinger 在下一个 VSYNC_SF 合成
+1. ATMS/WMS 更新 `ActivityRecord`、Task、DisplayContent 等 WindowContainer 状态，并由 `TransitionController` 收集 open / close / change。
+2. `Transition` 把参与过渡的窗口、leash、起止 bounds、可见性变化整理成一次 transition。
+3. 如果本轮过渡交给 Shell，WM Shell transition handler 或 remote transition 根据 leash 构建动画；Recents、跨 Task、桌面模式和 predictive back 常走这条路径。
+4. 服务端动画仍会用到 `SurfaceAnimator` / `SurfaceAnimationRunner` 等组件，把每帧 transform、alpha、crop 写入 `SurfaceControl.Transaction`。
+5. SurfaceFlinger 在后续 `commit` / `composite` 中消费这些 transaction，完成合成与 present。
 
-整个过程在 120Hz 屏幕上需要在 8.33ms 内完成（一个 VSync 周期）。如果 system_server 在某帧中因为锁竞争或其他操作导致 WindowAnimator 延迟，就会出现动画掉帧。
+每帧成本主要落在三处：transition 状态收集、Shell / remote transition handler 计算动画、`SurfaceControl.Transaction` 应用与 SurfaceFlinger 合成。120Hz 屏幕下单帧预算约 8.33ms，任何一层把 transaction 或合成拖长，过渡都会出现掉帧。
 
-[已验证: AOSP android-17-beta3, WindowAnimator 运行在 system_server 的动画线程（`android.anim` 和 `android.anim.lf`）上，而非主线程。这是 Android 的一个重要设计决策——将动画计算从主线程剥离，避免主线程的耗时操作影响动画流畅度。]
+源码阅读可从这些入口进入：
+
+- `frameworks/base/services/core/java/com/android/server/wm/TransitionController.java`：收集和调度 WindowContainer transition
+- `frameworks/base/services/core/java/com/android/server/wm/Transition.java`：记录参与过渡的窗口变化
+- `frameworks/base/services/core/java/com/android/server/wm/SurfaceAnimator.java`：对 surface leash 执行动画
+- `frameworks/base/services/core/java/com/android/server/wm/SurfaceAnimationRunner.java`：驱动 surface animation 的帧推进
+- `frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/`：Shell transition handler 与 remote transition 接入
 
 ### Activity 切换动画
 
-Activity 切换动画（open/close）是 WMS 动画中最常见的一种。当启动一个新的 Activity 时：
+Activity open / close 动画可以按版本分层理解：
 
-1. AMS 通知 WMS 准备切换动画
-2. WMS 创建一个 AppWindowAnimator，配置动画参数（如缩放动画、淡入动画）
-3. 旧 Activity 的 Window 逐渐缩小/淡出，新 Activity 的 Window 逐渐放大/淡入
-4. 动画期间，两个 Window 的 SurfaceControl transform 每帧更新
-5. 动画结束后，旧 Window 的 visibility 设为 GONE
+| 版本范围 | 主线口径 | 排查重点 |
+|----------|----------|----------|
+| Android 12-14 | legacy `AppTransition` 仍覆盖一部分路径，`TransitionController` 和 Shell transition 逐步接管 Task / Activity 级过渡 | 同时看 `wm`、`transition`、`android.anim*`、Shell 进程和 SurfaceFlinger transaction |
+| Android 15-16 | `TransitionController` / Shell transition 成为 Activity、Recents、predictive back、桌面模式等场景的主要分析入口 | 先定位 transition id，再看 Shell handler、remote transition、leash transaction 与 SF `commit` / `composite` |
 
-在 Perfetto 中，我们可以在 `android.anim` 线程中看到动画的帧调度。如果动画期间出现掉帧，通常需要检查 system_server 的整体负载——是否有其他 Binder 调用占用了主线程导致动画线程被阻塞。
+一次 Activity 切换里，旧 Activity 和新 Activity 的 Window 往往会被包到 leash surface 下。动画过程更新的是 leash 的 transform、alpha、crop 和 layer，而不是让 App 每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server transition 状态收集慢、SurfaceFlinger 合成慢，都会表现成切换掉帧，但根因落点不同。
+
+Perfetto 里不要只看 `android.anim`。如果掉帧发生在 Activity open / close 期间，应按这个顺序拆：
+
+1. App 主线程和 RenderThread 是否按时提交首帧。
+2. system_server 里 transition collect / ready / finish 是否被锁等待或 Binder 调用拖长。
+3. Shell / SystemUI 进程里的 transition handler 是否每帧稳定产出 transaction。
+4. SurfaceFlinger 的 `commit` / `composite` / present 是否消化了这些 transaction。
 
 ### Predictive Back 动画
 
-Android 14 引入、Android 15 默认启用的 Predictive Back 是 WMS 动画的一个重要演进。与传统的一按就返回不同，Predictive Back 允许用户在手指滑动过程中实时预览返回后的界面，松手后才执行实际的返回操作。
+Predictive Back 的版本线要拆开读：
 
-这个功能对 WMS 的影响在于：WMS 需要与 Input 系统紧密协作，在手势进行过程中实时更新当前 Window 和目标 Window 的 SurfaceControl transform。具体来说：
+- **Android 13**：引入 `OnBackInvokedCallback` 和预测返回早期能力，系统动画可通过开发者选项测试。
+- **Android 14**：完善跨 Activity、跨 Task 和自定义过渡接入，开发者仍经常通过开发者选项验证 predictive back animation。
+- **Android 15**：开发者选项不再是系统动画显示前提；对已经 opt-in 的应用或 Activity，back-to-home、cross-task、cross-activity 等系统动画会按系统策略显示。未 opt-in 的应用仍按传统返回行为处理。
+- **Android 16**：继续补充 `finishAndRemoveTaskCallback`、`moveTaskToBackCallback` 等回调，便于区分 finish、move task to back 等返回结尾场景。
 
-- 用户开始返回手势 → Input 系统通知 WMS
-- WMS 识别返回目标（前一个 Activity / 桌面 / 上一个 Task）
-- 手势滑动过程中，WMS 每帧更新当前 Window 的偏移量和透明度
-- 手势完成（松手）→ WMS 执行完整的过渡动画或取消动画
-
-Android 16 进一步完善了这个机制，引入了 `finishAndRemoveTaskCallback` 和 `moveTaskToBackCallback` 等新的回调 API，让 WMS 能更精确地控制不同返回场景的动画行为。
+它的性能路径跨 Input、ATMS/WMS、Shell transition 和 SurfaceFlinger。手势开始后，Input 侧持续上报 back progress；WMS / Shell 根据返回目标更新当前窗口和目标窗口的 leash；手势完成或取消时，transition 进入 finish 或 cancel。分析卡顿时要同时看 Input 事件节奏、Shell transition handler、system_server transition 状态，以及 SurfaceFlinger 是否在同一时间段出现 transaction 堆积。
 
 [已验证: 官方文档, developer.android.com/guide/navigation/custom-back/predictive-back-gesture]
 
@@ -412,9 +447,10 @@ WMS 不是一个孤立的系统服务，它的性能表现受到多个上下游�
 
 | 版本 | 变化 | 性能影响 | 参考锚点 |
 |------|------|---------|---------|
-| Android 12 (API 31) | SplashScreen API 统一 StartingWindow | 启动反馈路径更标准，StartingWindow 创建和退出时机更容易对应到 WMS / App 首帧分析 | `developer.android.com/develop/ui/views/layout/splash-screen` |
-| Android 14 (API 34) | Predictive Back 引入 | 返回手势进入实时预览，WMS 动画和 Input 协作变重 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
-| Android 15 (API 35) | Edge-to-Edge enforcement 扩大覆盖面 | Insets 分发更常见，不当处理更容易引出额外 relayout | `developer.android.com/about/versions/15/behavior-changes-15` |
+| Android 12 (API 31) | SplashScreen API 统一 StartingWindow | 启动反馈路径更标准，但 Android 12+ 的 SplashScreen / TaskSnapshot starting window 创建与绘制主要落在 WM Shell starting-surface 路径 | `developer.android.com/develop/ui/views/layout/splash-screen` |
+| Android 13 (API 33) | `OnBackInvokedCallback` 与 Predictive Back 早期能力 | 应用可接入新的 back callback；系统预测返回动画多处仍需要开发者选项辅助测试 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
+| Android 14 (API 34) | Predictive Back 跨 Activity / 自定义过渡能力继续完善 | 返回手势进入实时预览，Input、WMS transition 与 Shell transition 需要放在同一段时间轴内分析 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
+| Android 15 (API 35) | Predictive Back 系统动画不再依赖开发者选项；Edge-to-Edge enforcement 扩大覆盖面 | 已 opt-in 的应用 / Activity 会显示 back-to-home、cross-task、cross-activity 等系统动画；Insets 分发也更常见 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` / `developer.android.com/about/versions/15/behavior-changes-15` |
 | Android 16 (API 36) | Desktop Windowing 与大屏 adaptive behavior | 自由窗口、caption bar、外接显示器和强制可调整窗口会提高 relayout / resize 频率 | `developer.android.com/about/versions/16/features` / `developer.android.com/about/versions/16/behavior-changes-all` |
 | Android 17 (API 37) | API 37 Beta 口径中的 `recreateOnConfigChanges` | keyboard、keyboardHidden、navigation、touchscreen、colorMode 和部分 uiMode 变化可显式请求 Activity 重建；本节只把它视为部分配置变化的重建策略信号，不能外推到 `screenSize` / `orientation` | `developer.android.com/about/versions/17/behavior-changes-all` |
 
@@ -430,7 +466,7 @@ Window 数量本身不是问题。真正需要关注的是有多少 Window 参�
 
 ### 误区 3："StartingWindow 是 App 画的"
 
-StartingWindow 不是由 App 进程绘制的。它的内容由 WMS 直接创建，使用 App 主题中定义的 `windowBackground` 或 SplashScreen API 配置的资源。App 进程启动期间，StartingWindow 已经在屏幕上了。这就是为什么即使 App 启动很慢，用户也能立即看到 splash screen——因为那是 system_server 画的，不是 App 画的。
+StartingWindow 不是 App 主 Window 的第一帧。现代 Android 的边界是：ATMS/WMS 判断是否需要 starting surface 并发出生命周期请求；Android 12+ 的 SplashScreen / TaskSnapshot starting window 多由 WM Shell starting-surface 组件创建和绘制。App 进程完成主窗口首帧之前，Shell 侧 starting surface 已经挂到 Task 上。
 
 ### 误区 4："relayoutWindow 慢一定是 WMS 的问题"
 
@@ -468,6 +504,9 @@ WMS 维护的 Window Z-order 和区域信息是 InputDispatcher 进行 hit-test 
 
 - [AOSP WindowManagerService 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java) ，`relayoutWindow()` 和窗口状态管理入口
 - [AOSP WindowSurfacePlacer 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/WindowSurfacePlacer.java) ，`performSurfacePlacement(true)` 的主执行点
+- [AOSP StartingSurfaceController 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java) ，服务端 starting surface 请求入口
+- [AOSP WM Shell StartingWindowController 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java) ，Shell 侧 `addStartingWindow` / `removeStartingWindow` 入口
+- [AOSP TransitionController 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/TransitionController.java) ，WindowContainer transition 收集与调度入口
 - [AOSP ViewRootImpl 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/view/ViewRootImpl.java) ，App 侧 traversal、`relayout()` 判定和 `updateBlastSurfaceIfNeeded()`
 - [AOSP SurfaceControl JNI 路径](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/jni/android_view_SurfaceControl.cpp) ，native `createSurfaceChecked(...)` 入口
 - [AOSP BLASTBufferQueue 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/graphics/BLASTBufferQueue.java) ，客户端 surface materialization

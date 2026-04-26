@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T02:20:00+08:00",
+  "generated_at": "2026-04-27T02:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,11 +7,11 @@
     "finalized": 89,
     "ready-for-review": 129,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T02:20:00+08:00",
+    "last_updated": "2026-04-27T02:40:00+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 39,
-      "task2b_pending": 56,
+      "task6_pending": 40,
+      "task2b_pending": 55,
       "ready-to-publish": 89,
       "task9_pending": 30,
       "'task2b_pending'": 1
@@ -23,16 +23,16 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 154,
-      "pending": 53,
+      "reviewed": 153,
+      "pending": 54,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 143,
-      "pending": 59,
+      "fixed": 144,
+      "pending": 58,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -42,8 +42,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 39,
-      "task2b_pending": 56,
+      "task6_pending": 40,
+      "task2b_pending": 55,
       "ready-to-publish": 89,
       "task9_pending": 30,
       "'task2b_pending'": 1
@@ -55,21 +55,21 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 154,
-      "pending": 53,
+      "reviewed": 153,
+      "pending": 54,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 143,
-      "pending": 59,
+      "fixed": 144,
+      "pending": 58,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
     },
-    "last_updated": "2026-04-27T02:20:00+08:00"
+    "last_updated": "2026-04-27T02:40:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -688,27 +688,70 @@
       "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
       "title": "SurfaceFlinger 与合成",
       "chapter": "2.6",
+      "section": "2.6",
       "status": "ready-for-review",
-      "drafted_date": "2026-03-30",
       "applicable_versions": "Android 12 (API S) - Android 16 (API 36)",
       "last_verified": "2026-04-27",
+      "drafted_date": "2026-03-30",
+      "reviewed_date": "2026-04-20",
+      "reviewed_by": "openclaw-task6",
+      "task6_result": "pass-light-edit",
+      "rework_date": "2026-04-02",
       "last_verified_against": "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1 (SurfaceFlinger / BLASTBufferQueue / HWC2-HWC3) + source.android.com HWC docs",
       "confidence": "medium",
+      "polish_count": 1,
+      "polish_date": "2026-04-04",
+      "polish_by": "task2b-polish",
+      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-27T01:20:00+08:00",
+      "sources": [
+        {
+          "type": "aosp",
+          "path": "frameworks/native/services/surfaceflinger/"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/native/services/surfaceflinger/CompositionEngine/"
+        },
+        {
+          "type": "official",
+          "path": "https://source.android.com/docs/core/graphics/surfaceflinger"
+        },
+        {
+          "type": "blog",
+          "path": "https://www.androidperformance.com/"
+        }
+      ],
+      "tags": [
+        "surfaceflinger",
+        "bufferqueue",
+        "hwc",
+        "composition",
+        "layer",
+        "vsync",
+        "blastbufferqueue",
+        "renderengine"
+      ],
+      "related_chapters": [
+        "2.1",
+        "2.3",
+        "2.4",
+        "2.5",
+        "2.10",
+        "2.13",
+        "2.16",
+        "7.3"
+      ],
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
       "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-20",
-      "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
-      "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T20:23:00+08:00",
-      "section": "2.6",
-      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。",
-      "last_task2b_at": "2026-04-27T00:40:00+08:00"
+      "last_task2b_at": "2026-04-27T02:40:00+08:00",
+      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。",
+      "task6_reviewed_date": "2026-04-27"
     },
     "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md": {
       "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
@@ -857,18 +900,141 @@
       "last_verified": "2026-04-26",
       "last_verified_against": "AOSP main ViewRootImpl/IWindowSession/Session + BufferQueueProducer + Android 16/17 official docs + external review",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "sources": [
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/WindowState.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/WindowSurfacePlacer.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingSurfaceDrawer.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/SplashscreenWindowCreator.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/view/ViewRootImpl.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/view/IWindowSession.aidl"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/Session.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/view/SurfaceControl.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/TransitionController.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/Transition.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/SurfaceAnimator.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/services/core/java/com/android/server/wm/SurfaceAnimationRunner.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/java/android/graphics/BLASTBufferQueue.java"
+        },
+        {
+          "type": "aosp",
+          "path": "frameworks/base/core/jni/android_view_SurfaceControl.cpp"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/reference/android/view/WindowManager"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/develop/ui/views/layout/splash-screen"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/guide/navigation/custom-back/predictive-back-gesture"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/about/versions/16/features"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/about/versions/16/behavior-changes-all"
+        },
+        {
+          "type": "official",
+          "path": "developer.android.com/about/versions/17/behavior-changes-all"
+        }
+      ],
+      "tags": [
+        "WMS",
+        "WindowManagerService",
+        "Surface",
+        "Window",
+        "StartingWindow",
+        "Window动画",
+        "多窗口",
+        "SurfaceControl",
+        "WindowInsets",
+        "Desktop Windowing"
+      ],
+      "related_chapters": [
+        "2.1",
+        "2.6",
+        "3.1",
+        "8.2",
+        "8.4"
+      ],
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-04-04",
+      "gap_source": "AOSP结构+官方文档+读者需求",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "reviewed_by": "openclaw-task6",
+      "reviewed_date": "2026-04-27",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "reviewed_date": "2026-04-20",
-      "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T21:29:00+08:00"
+      "task9_reviewed_date": "2026-04-26",
+      "last_task9_at": "2026-04-26T21:29:00+08:00",
+      "last_task2b_at": "2026-04-27T02:40:00+08:00",
+      "review_notes": "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line.",
+      "review_log": "logs/review/2026-04-11-11-review.md"
     },
     "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
       "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
