@@ -4619,3 +4619,21 @@
 - **位置**：frontmatter applicable_versions 与 FrameMetrics 小节
 - **问题**：frontmatter 写 `Android 8 (API 26) - Android 16 (API 36)`，正文 FrameMetrics 小节明确使用 API 24+ 的 `Window.OnFrameMetricsAvailableListener`，并说明 `FrameMetrics.DEADLINE` API 31+。版本边界在元数据和正文之间不一致。
 - **建议**：二选一：把 applicable_versions 下限改为 Android 7/API 24；或在 FrameMetrics 小节开头说明本节主分析目标为 API 26+，线上 FrameMetrics 监控另从 API 24 起可用。
+
+## [Task9 Deep Review] 15.3 性能指标体系 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：Click-to-Display 段落（约 L235-L239）
+- **问题**：100ms/200ms 触摸响应阈值被写成 Google 内部测试标准，但正文保留“待验证”，缺少公开来源或测试方法。
+- **建议**：若作为行业经验，应改成团队 SLA/RAIL 类经验阈值并补来源；若保留 Google 表述，需要补公开文档或一手测试材料，并说明高刷设备、测量工具和统计口径。
+
+## [Task9 Deep Review] 15.3 性能指标体系 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：Active / Idle Power 段落（约 L406-L411）
+- **问题**：Perfetto Power Rails / Energy Consumer 观察点成立，但仅停在 track 名称，缺少一张示例 trace 或采集配置，读者无法校准 mW/energy counter 的解读边界。
+- **建议**：补一段最小 Perfetto 配置或截图说明，标注 Power Rails、Battery、CPU Frequency、Energy Consumer 的单位和对齐方式。
+
+## [Task9 Deep Review] 19.01 APM 全景图与分类体系 — 2026-04-26
+- **类型**：交叉引用错误
+- **位置**：四类能力对照表 Benchmark 工具行（约 L105-L111）
+- **问题**：19.21 已把 AndroBench 降级为历史工具，并推荐 CPDT / PCMark Storage 2.0 等当前存储基线；19.01 仍把 AndroBench 和 Macrobenchmark、Geekbench、PerfDog 并列，容易被读成当前推荐入口。
+- **建议**：与 19.21 对齐：将 AndroBench 标注为“历史旧报告复盘”，或在代表工具中改为 CPDT / PCMark Storage 2.0，并把 AndroBench 放到边界说明。

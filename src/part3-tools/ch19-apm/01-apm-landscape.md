@@ -2,7 +2,7 @@
 title: "APM 全景图与分类体系"
 chapter: "19"
 section: "19.01"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -32,19 +32,19 @@ sources:
     path: "https://github.com/bytedance/btrace"
   - type: blog
     path: "https://github.com/measure-sh/measure"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-04-25"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-25T07:04:06+08:00"
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
-task9_reviewed_by: "openclaw-task6"
-last_task9_at: "2026-04-24T13:23:00+08:00"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-26"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-26T23:27:38+08:00"
 ---
 
 # APM 全景图与分类体系
