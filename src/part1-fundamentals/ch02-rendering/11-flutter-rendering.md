@@ -7,13 +7,13 @@ drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
-review_notes: "task6 re-review (revisiting): pass-light-edit。L1禁用词4处修复（可以看到×2/实际上/并用）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
+review_notes: "task6 re-review (revisiting): pass-light-edit。L1禁用词4处已修复。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-26"
-last_verified_against: "Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java / FlutterRenderer.java) + Flutter 3.27 docs"
+last_verified: "2026-04-27"
+last_verified_against: "Flutter 3.29 architecture/thread merge docs + Flutter Impeller docs/engine impeller README + Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java / FlutterRenderer.java)"
 confidence: medium
 sources:
   - type: official
@@ -29,14 +29,15 @@ sources:
   - type: source
     path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java"
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
-related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7", "18.12"]
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-27T00:40:00+08:00"
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T19:33:53+08:00"
@@ -48,7 +49,7 @@ last_task9_at: "2026-04-26T19:33:53+08:00"
 ### 锚点（必须覆盖）
 
 - 🔹 Flutter 的渲染架构：Framework(Dart) → Engine(C++) → Platform Embedder 三层模型
-- 🔹 Flutter 的线程模型：Platform / UI / Raster / IO 四线程职责与 Perfetto 中的 Track 对应
+- 🔹 Flutter 的线程模型：Flutter 3.29+ 的 Main(UI+Platform) / Raster / IO，以及 Flutter 3.28- 或定制 Embedder 的旧四线程模型
 - 🔹 与原生 Android 渲染管线的根本区别：通过 Choreographer 获取 VSync、跳过 ViewRootImpl Traversal、无 RenderThread
 - 🔹 PlatformView 的 Virtual Display / Hybrid Composition / TLHC 多路径及性能影响
 - 🔹 常见性能问题：Shader 编译卡顿、Widget 过度重建、列表滚动卡顿
@@ -58,7 +59,7 @@ last_task9_at: "2026-04-26T19:33:53+08:00"
 ### 扩展（可选深入）
 
 - 🔸 Impeller 在 Android 上的 Vulkan 后端与 OpenGL ES 回退策略
-- 🔸 PlatformView 导致的线程合并（thread merging）对性能的影响
+- 🔸 PlatformView 对 Main(UI+Platform)、Raster 与 SurfaceFlinger 的性能影响
 - 🔸 Flutter 自定义 Trace event 在 DevTools 和 Perfetto 中的使用
 
 ### OpenClaw 加工指引
@@ -77,7 +78,7 @@ last_task9_at: "2026-04-26T19:33:53+08:00"
 
 Flutter 的 Android Embedder 通过 `VsyncWaiter` 调用 `Choreographer.postFrameCallback()`。回调到达后，`VsyncWaiter.FrameCallback#doFrame()` 把时间戳交给 `FlutterJNI.onVsync()`，后续的 Build、Layout、Paint 和 Raster 调度由 Flutter Engine 接管。Flutter 不使用 Android 原生 View 树渲染自己的 Widget，也没有原生应用里的 RenderThread 分工。
 
-这个差异会改变排查入口。列表滚动卡顿时，只看 Android 主线程的 CPU slice 很容易漏掉问题；`1.ui` / `io.flutter.ui` 和 `1.raster` / `io.flutter.raster` 才是 Flutter 自绘路径的主观察对象。
+这个差异会改变排查入口。列表滚动卡顿时，Flutter 3.29+ 要同时看 Android 主线程上的 Dart / Platform 工作和 `1.raster` / `io.flutter.raster`；Flutter 3.28- 或定制 Embedder 才需要单独找 `1.ui` / `io.flutter.ui`。
 
 所以这一章要解决的问题是：Flutter 在 Android 上到底是怎么渲染的？它的渲染管线和原生 Android 有什么本质区别？当 Flutter 应用出现性能问题时，我们应该看哪里、怎么分析？
 
@@ -97,23 +98,23 @@ Engine 层是 Flutter 的核心引擎，用 C++ 编写。它负责两件事：�
 
 ### 线程模型
 
-Flutter 的线程模型和原生 Android 差异很大，理解它对性能分析至关重要。Flutter Engine 主要使用四个线程：
+Flutter 3.29 之后，Android / iOS 的主线线程模型改成 Main(UI+Platform) / Raster / IO。原先单独的 UI 线程不再作为移动端主线存在，Dart main isolate 与 Platform Embedder 运行在同一个原生平台主线程上。旧文档、旧 Trace 或定制 Embedder 仍可能出现 Platform / UI / Raster / IO 四线程形态，读 Trace 时先用 Flutter 版本判断。
 
-**Platform 线程**（对应 Android 主线程 / `1.platform`）：这是 Flutter 应用的"主线程"，但它的工作和原生 Android 的主线程有所不同。Platform 线程负责处理 Android 的生命周期事件、输入事件分发、以及 Platform Channel 的消息传递。但 UI 的渲染计算不在这个线程上完成。
+**Main（UI + Platform）线程**（Android 主线程，Perfetto 中可能显示为 `1.platform`、`io.flutter.platform` 或进程主线程）：承接 Android 生命周期、输入、Platform Channel、插件回调，也执行 Dart main isolate 上的 Widget Build、Layout、Paint，生成 DisplayList。这个线程被同步插件调用、Dart 计算或 View / PlatformView 工作占满时，都会直接压缩本帧预算。
 
-**UI 线程**（`1.ui`）：也叫 Dart 线程，这是 Dart 虚拟机运行 Isolate 的地方。我们写的 Dart 代码——Widget 的 build、状态管理、业务逻辑——都在这个线程上执行。当 UI 需要更新时，UI 线程会执行 Build → Layout → Paint 流程，生成 DisplayList，然后把它发送给 Raster 线程。
+**Raster 线程**（`1.raster` / `io.flutter.raster`）：接收 DisplayList，调用 Skia 或 Impeller 生成 GPU 命令并提交到 Surface。Raster 线程 CPU 占用高，通常说明光栅化、纹理上传、shader / pipeline 或 GPU 提交工作偏重。
 
-**Raster 线程**（`1.raster`）：这个线程负责实际的像素光栅化。它从 UI 线程接收 DisplayList，然后调用 Skia 或 Impeller 的 API 将绘制指令转换为 GPU 命令，最终输出到 Surface 上。如果我们在 Perfetto 中看到 Raster 线程 CPU 占用很高，说明光栅化工作量很大。
+**IO 线程**（`1.io` / `io.flutter.io`）：负责图片、文件等资源加载与部分 GPU 资源准备。它不直接执行 Widget Build，但图片解码、上传或资源等待会间接拖慢后续帧。
 
-**IO 线程**（`1.io`）：主要负责从磁盘或网络加载图片资源，并将解码后的图片数据上传到 GPU 内存。这个线程的任务比较单一，通常不会成为性能瓶颈。
+**Flutter 3.28- 旧模型**：Platform 线程处理 Android 主线程事件，UI 线程单独运行 Dart main isolate，Raster 与 IO 线程保持独立。读旧 Trace 时，`1.ui` / `io.flutter.ui` 上的 Build/Layout/Paint 是 Dart 侧主入口；读 3.29+ Trace 时，这些工作会并入 Main(UI+Platform) 线程观察。
 
-在 Perfetto 中，线程名可能显示为 `1.ui`、`1.raster`，也可能显示为 `io.flutter.ui`、`io.flutter.raster`；内核线程名长度和 Embedder 命名都会影响展示。搜索 `io.flutter` 通常比只搜 `1.ui` 更稳。一个正常运行的 Flutter 应用，每一帧的工作流程大致是这样的：UI 线程执行 Build/Layout/Paint 生成 DisplayList → Raster 线程接收 DisplayList 并执行光栅化 → 通过 Surface 提交给 SurfaceFlinger。
+在 Perfetto 中，线程名受内核 16 字符限制和 Embedder 命名影响。搜索 `io.flutter`、`flutter`、`BeginFrame`、`DrawFrame` 比只搜 `1.ui` 更稳。一个 3.29+ Flutter 应用的一帧大致是：Main(UI+Platform) 收到 VSync → Dart Build/Layout/Paint 生成 DisplayList → Raster 线程光栅化并提交 Surface → SurfaceFlinger 合成。
 
-`[图：Flutter 线程模型在 Perfetto 中的表现。展示 1.platform、1.ui、1.raster、1.io 四个线程的 Track，标注一帧在 UI 线程和 Raster 线程上的时序关系]`
+`[图：Flutter 3.29+ 线程模型在 Perfetto 中的表现。展示 Main(UI+Platform)、1.raster / io.flutter.raster、1.io / io.flutter.io 三组 Track，旁注 Flutter 3.28- 或定制 Embedder 中 1.ui / io.flutter.ui 仍可能独立出现]`
 
 ## 与 Android 原生渲染的差异
 
-理解了 Flutter 的渲染架构后，我们把它和原生 Android 的渲染管线做一个系统性的对比。这个对比不是用来评判哪个更好的，而是帮助我们在实际工作中快速定位问题。
+理解了 Flutter 的渲染架构后，我们把它和原生 Android 的渲染管线做一个系统性的对比。这个对比的用途是帮助我们在实际工作中快速定位问题，不做路线优劣判断。
 
 ### 渲染管线的根本区别
 
@@ -145,7 +146,7 @@ PlatformView 不能再只按“两种模式”理解。Flutter Engine 源码里�
 
 分析 PlatformView 卡顿时，不要直接把所有问题归因成“线程合并”。如果走 PlatformViewLayer / Hybrid fallback，`1.platform` 上通常会出现更重的 View hierarchy、layout/offset/sync 工作；如果走 TLHC + ImageReader/SurfaceProducer，开销更多体现在 render target resize、image acquire、fence 等待和 SurfaceFlinger 合成上。WebView、MapView、SurfaceView、叠加动画和滚动列表会触发不同路径，Perfetto 里要同时看 `io.flutter.platform`、`io.flutter.raster` 和 SurfaceFlinger。
 
-到了 Android 14 这一代，公开可核对的 Flutter 官方资料并没有给出“Hybrid Composition 再减少一次拷贝”这类新的通用结论。更实际的变化是 PlatformView 相关路径经历了一轮兼容性修复，Flutter 3.24 的 release notes 里可以直接看到 `Workaround HardwareRenderer breakage in Android 14` 和 `Fix another instance of platform view breakage on Android 14` 这样的修复项。Android 14+ 的收益更偏向 PlatformView/Surface 管理路径的稳定性修复，而不是 Hybrid Composition 的基本合成模型被重新设计。`[已验证: Flutter 3.24 release notes, https://docs.flutter.dev/release/release-notes/release-notes-3.24.0]`
+到了 Android 14 这一代，公开可核对的 Flutter 官方资料并没有给出“Hybrid Composition 再减少一次拷贝”这类新的通用结论。PlatformView 相关路径经历了一轮兼容性修复，Flutter 3.24 release notes 记录了 `Workaround HardwareRenderer breakage in Android 14` 和 `Fix another instance of platform view breakage on Android 14` 等修复项。Android 14+ 的收益更偏向 PlatformView / Surface 管理路径的稳定性修复，Hybrid Composition 的基本合成模型没有被重新设计。`[已验证: Flutter 3.24 release notes, https://docs.flutter.dev/release/release-notes-3.24.0]`
 
 ## 性能分析方法
 
@@ -155,9 +156,9 @@ PlatformView 不能再只按“两种模式”理解。Flutter Engine 源码里�
 
 Flutter DevTools 是 Flutter 官方的性能分析套件。它提供了几个关键的分析面板：
 
-**Performance 面板**（集成 Perfetto trace viewer）：这是最常用的面板。它记录每一帧的 UI 线程和 Raster 线程的耗时，用火焰图展示。Flutter DevTools 在 2.21.1 版本就已经把旧的 timeline trace viewer 替换成 Perfetto trace viewer——DevTools 的演进节奏和 Flutter SDK 版本不是一一绑定的，分析问题时以 DevTools 自身版本为准。`[已验证: Flutter DevTools 2.21.1 release notes, https://docs.flutter.dev/tools/devtools/release-notes/release-notes-2.21.1]`Performance 面板中展示的信息包括：
+**Performance 面板**（集成 Perfetto trace viewer）：这是最常用的面板。它记录每一帧的 UI / Main 侧和 Raster 线程耗时，用火焰图展示。Flutter DevTools 在 2.21.1 版本就已经把旧的 timeline trace viewer 替换成 Perfetto trace viewer——DevTools 的演进节奏和 Flutter SDK 版本不一一绑定，分析问题时以 DevTools 自身版本为准。`[已验证: Flutter DevTools 2.21.1 release notes, https://docs.flutter.dev/tools/devtools/release-notes/release-notes-2.21.1]`Performance 面板中展示的信息包括：
 
-- 每一帧在 UI 线程上的 Build、Layout、Paint 各自花了多少时间
+- 每一帧在 UI / Main 侧的 Build、Layout、Paint 各自花了多少时间
 - Raster 线程的光栅化耗时
 - 是否有帧超出了帧预算（60Hz 下 16ms，120Hz 下 8ms）
 - 具体是哪个 Widget 或哪个 Dart 函数消耗了最多的时间
@@ -196,10 +197,11 @@ EOF
 
 在 Perfetto UI 中查看时，我们需要关注不同的 Track：
 
-- `1.platform`（Platform 线程）：看是否有长时间的 Platform Channel 调用、PlatformView 合成开销
-- `1.ui`（UI 线程）：看 Dart 代码的执行耗时，是否有频繁的 GC（Dart VM 的 GC 也会在这个线程上标记）
-- `1.raster`（Raster 线程）：看光栅化耗时，是否存在 shader 编译导致的卡顿
-- CPU 整体使用率：看 Flutter 的多个线程是否在争抢 CPU 时间
+- Flutter 3.29+ 的 Main(UI+Platform) 线程：看 Dart Build/Layout/Paint、Platform Channel、插件同步调用和 PlatformView 工作是否挤占同一帧预算
+- Flutter 3.28- 或定制 Embedder 的 `1.ui` / `io.flutter.ui`：看 Dart 代码执行耗时、Widget 重建和 Dart VM GC
+- `1.raster` / `io.flutter.raster`：看光栅化、纹理上传、shader / pipeline 和 GPU 提交耗时
+- `1.io` / `io.flutter.io`：看图片解码、资源加载和 GPU 资源准备是否拖慢后续帧
+- CPU 整体使用率：看 Flutter 线程和系统服务是否在争抢 CPU 时间
 - SurfaceFlinger Track：看 Flutter 的 Surface 合成是否正常
 
 在 Perfetto 中，Flutter Engine 会输出自己的 trace event。系统抓 trace 时要保留 `gfx`、`view` 这类 atrace 类别，并在 UI 里同时搜索 `flutter`、`io.flutter`、`BeginFrame`、`DrawFrame`。常见 slice 包括 `FlutterEngine::BeginFrame`、`GPURasterizer::DrawToSurface`；不同 Flutter 版本的事件名会变化，过滤时不要只依赖单个字符串。
@@ -227,9 +229,9 @@ developer.Timeline.finishSync();
 
 这是 Flutter 在使用 Skia 渲染引擎时最臭名昭著的问题。Skia 在运行时编译 shader 程序——这些 shader 是 GPU 用来执行特定绘制操作的小程序。当 Flutter 应用首次遇到一种新的绘制操作（比如第一次使用某个复杂的 BlendMode、第一次绘制带有特定 path 操作的裁剪）时，Skia 需要在 Raster 线程上编译对应的 shader。
 
-这个编译过程可能需要几十到几百毫秒，远超一帧的预算。表现出来的现象就是：应用启动后第一次滚动到某个页面时，或者第一次播放某个动画时，会出现明显的卡顿。但第二次经过同样的页面或同样的动画时，卡顿就消失了——因为 shader 已经编译好了，缓存在内存中。
+这个编译过程可能明显超出一帧预算。常见现象是：应用启动后第一次滚动到某个页面时，或者第一次播放某个动画时出现卡顿；第二次经过同样的页面或动画时，shader 已经进入缓存，卡顿会减轻或消失。具体耗时要以目标设备和驱动为准。
 
-在 Perfetto 中，这种现象表现为 Raster 线程上突然出现一个很长的 slice，内部包含 `ShaderCompile` 相关的标记。整个 Raster 线程在这段时间被阻塞，UI 线程虽然已经准备好了 DisplayList，但必须等 Raster 线程完成 shader 编译才能继续。
+在 Perfetto 中，这种现象表现为 Raster 线程上突然出现一个很长的 slice，内部包含 `ShaderCompile` 相关的标记。整个 Raster 线程在这段时间被阻塞，UI / Main 侧虽然已经准备好了 DisplayList，但必须等 Raster 线程完成 shader 编译才能继续。
 
 Flutter 团队曾提供 `flutter drive` 配合 SkSL warm-up 的方案来预热 shader，但这个方案使用复杂，效果也不稳定。根本的解决方案是切换到 Impeller 引擎（后面会详细讲）。
 
@@ -237,7 +239,7 @@ Flutter 团队曾提供 `flutter drive` 配合 SkSL warm-up 的方案来预热 s
 
 这是 Dart 层面最常见的性能问题。Flutter 的声明式 UI 框架在状态变化时会重建 Widget 树，但如果不注意控制重建范围，很容易导致整棵树都在重建。
 
-最常见的表现是：在 Perfetto 或 DevTools 中，UI 线程的每一帧耗时都很长，火焰图显示大量的 `build` 方法在执行。但 Raster 线程很空闲——因为虽然 UI 线程生成了大量的 DisplayList，但很多都是没变化的。
+最常见的表现是：在 Perfetto 或 DevTools 中，UI / Main 侧每一帧耗时都很长，火焰图显示大量的 `build` 方法在执行。但 Raster 线程很空闲——因为虽然 UI / Main 侧生成了大量的 DisplayList，但很多内容没有变化。
 
 这类问题的诊断和修复属于 Flutter 开发层面的优化，核心思路是：用 `const` 构造函数标记不需要重建的 Widget、将大的 build 方法拆分为小组件、使用合适的 State 管理方案限制重建范围。DevTools 的 "Rebuild Tracker" 功能可以帮助定位哪些 Widget 被频繁重建。
 
@@ -245,15 +247,15 @@ Flutter 团队曾提供 `flutter drive` 配合 SkSL warm-up 的方案来预热 s
 
 当 Flutter 应用中嵌入了原生 View（如 WebView、MapView），性能特征会发生显著变化。
 
-一是线程合并（thread merging）问题。Hybrid Composition 模式下，当 Flutter 内容和 PlatformView 内容重叠时，Flutter 的渲染会退回到 Platform 线程执行。在 Perfetto 中我们会看到 `1.platform` 线程上出现了渲染相关的工作，而 `1.raster` 线程处于空闲。每帧大约会增加 2ms 的额外开销。
+一是 Main(UI+Platform) 线程压力。旧模型里常把 Hybrid Composition 的回退称为 thread merging：当 Flutter 内容和 PlatformView 内容重叠时，部分渲染与 View hierarchy 工作会压到 Platform 线程。Flutter 3.29+ 已把 Dart UI 与 Platform 主线程合并，表现会变成同一条主线程同时承担 Dart Build/Layout/Paint、插件回调、View 布局和 PlatformView 同步工作。Perfetto 中要同时看 Main(UI+Platform) 与 `1.raster` 是否一忙一闲，不能只套用旧的 `1.ui` / `1.platform` 分离模型。
 
-另一类常见问题是在可滚动的列表中嵌入多个 PlatformView。因为每个 PlatformView 在滚动时都需要调用 setOffset() 来更新位置，这会触发昂贵的布局和绘制操作。如果列表快速滚动，这些操作可能超出帧预算。
+另一个常见场景是可滚动列表中嵌入多个 PlatformView。每个 PlatformView 在滚动时都需要更新 offset、size 或 Surface 状态，这会触发布局、同步 fence 或 SurfaceControl transaction。如果列表快速滚动，这些操作可能超出帧预算。
 
 ### 列表滚动卡顿
 
 Flutter 的 ListView/GridView/CustomScrollView 在数据量大时可能出现卡顿。原因通常是 item builder 太慢——每个 item 在构建时做了太多的工作（网络请求、图片解码、复杂的 Widget 树等）。
 
-在 Perfetto 中的表现是 UI 线程在滚动时持续高负载，每一帧的 Build 阶段耗时过长。Flutter 提供了 `ListView.builder` 和 `cacheExtent` 等机制来缓解这个问题——builder 只构建可见区域附近的 item，cacheExtent 控制预构建的范围。
+在 Perfetto 中的表现是 UI / Main 侧在滚动时持续高负载，每一帧的 Build 阶段耗时过长。Flutter 提供了 `ListView.builder` 和 `cacheExtent` 等机制来缓解这个问题——builder 只构建可见区域附近的 item，cacheExtent 控制预构建的范围。
 
 ## Impeller 引擎
 
@@ -261,35 +263,35 @@ Flutter 的 ListView/GridView/CustomScrollView 在数据量大时可能出现卡
 
 ### 为什么需要 Impeller
 
-Impeller 是 Flutter 的新一代渲染引擎，从 Flutter 3.16 开始在 iOS 上默认启用，从 Flutter 3.27 开始在 Android API 29+ 上默认启用。它的核心设计目标只有一个：**消除 shader 编译导致的运行时卡顿**。
+Impeller 是 Flutter 的新一代渲染引擎，从 Flutter 3.16 开始在 iOS 上默认启用，从 Flutter 3.27 开始在 Android API 29+ 上默认启用。它的目标是把 shader compilation jank 从移动端运行时路径里移出去。
 
-为了理解 Impeller 的设计，我们先回顾 Skia 的问题。Skia 是一个功能强大的 2D 图形库，被 Chrome、Android 等众多项目使用。但它的 shader 管理是运行时（JIT，Just-In-Time）的：只有在实际需要某个 shader 时才编译它。这在桌面平台上影响不大——桌面 GPU 的驱动程序内置了成熟的 shader 编译器，且桌面 GPU 有充足的计算资源来在后台完成编译。但在移动平台上，GPU 驱动的 shader 编译器性能远不如桌面——移动 GPU 的驱动为了节省内存和功耗，通常使用解释型或优化程度较低的编译策略，编译同一个 shader 的耗时可能是桌面 GPU 的 10-100 倍。对于中低端 Android 设备上的 Mali/Adreno GPU，一个复杂 shader 的编译可能需要数百毫秒。
+Skia 时代，某些 shader / pipeline 在首次遇到时才由驱动编译，复杂 path、blend、mask、clip 或特定 GPU 驱动组合可能让 Raster 线程出现长 slice。耗时没有通用数字，受 GPU、驱动、shader 类型、缓存状态影响；排查时以目标设备的 DevTools / Perfetto 为准。
 
-Impeller 的核心改变是把 shader 编译从运行时移到了构建时（AOT，Ahead-Of-Time）。在 Flutter 应用的构建过程中，Impeller 会预编译所有可能用到的 shader，生成针对目标平台的编译产物（Vulkan 上是 SPIR-V，Metal 上是 MSL）。这样应用运行时，所有 shader 都已经准备好了，不需要任何运行时编译。
+Impeller 的离线处理发生在 engine build 阶段；应用构建阶段不会把业务里所有可能 shader 逐个预编译。engine 的 `impellerc` 将 Impeller 源码树中的 GLSL 4.60 shader 转成后端格式，生成 shader archive / binary blob，并通过 reflector 生成 C++ translation units，减少运行时 shader reflection。应用运行时使用随 engine 打包的 shader 资产和生成代码，再按绘制场景创建或复用 pipeline state object。官方文档把它概括为：shader compilation and reflection offline at build time，pipeline state objects built upfront，缓存由 engine 显式控制。
 
 ### Impeller 的架构
 
 Impeller 的内部架构可以分为几个层次：
 
-**Aiks 层**是 Impeller 对外暴露的高级绘图 API，相当于 Skia 的 SkCanvas。它提供了路径绘制、图片渲染、文本绘制等常见操作。Aiks 层的设计比 Skia 的 API 更简洁，去掉了 Skia 中大量 Flutter 不需要的功能，降低了维护成本。
+**DisplayList / Entity 层**负责接收 Flutter Framework 生成的 DisplayList，并把绘图意图转换为 Impeller 内部的 2D render entity。每个 entity 描述一次绘制操作，包括变换、裁剪、纹理、颜色和 shader 参数等信息，后续再由 renderer 转成具体后端命令。
 
-**Entity/DisplayList 层**负责将 Aiks 层的绘图命令转换为一种中间表示——Entity。每个 Entity 描述了一个绘制操作（包括它的变换矩阵、裁剪区域、shader 参数等）。这种中间表示是 GPU 无关的，可以在任何后端上执行。
+**Renderer / backend 层**管理纹理、buffer、render pass、pipeline state object（PSO）和后端 API 适配。Impeller 支持 Vulkan、Metal 和 OpenGL ES 等后端；具体后端实现位于 `//impeller/renderer/backend` 之下，上层通过 backend-agnostic 的接口组织绘制。
 
-**HAL（Hardware Abstraction Layer）层**是对底层图形 API 的抽象。Impeller 通过 HAL 支持 Vulkan（Android）、Metal（iOS）和 OpenGL ES（Android 回退）。HAL 层管理纹理、缓冲区、Pipeline State Object（PSO）等 GPU 资源的生命周期。关键的是，PSO 的创建（其中包括 shader 的编译）在 HAL 层完成，而 Impeller 在构建时就把所有 PSO 创建好了。
+**离线 shader 管线**由 `//impeller/compiler`、`//impeller/shader_archive` 和生成的 C++ translation units 组成。`impellerc` 不随应用发布；它在 engine build 阶段把 shader 与 reflection 信息处理成 engine 可打包的资产和代码，运行时再用这些资产创建或复用 PSO。
 
-**渲染执行**阶段，Impeller 采用了一种基于 Tile 的渲染策略。它将一帧的画面划分为多个 Tile（通常是 256×256 像素），然后对每个 Tile 独立执行光栅化。这种方式和移动 GPU 的硬件架构高度匹配——移动 GPU 本身就是 tile-based 的。只光栅化内容发生变化的 Tile，避免了对整帧画面重新光栅化。
+**渲染执行**阶段，Impeller 按 render pass / command buffer 组织绘制，并尽量利用现代图形 API 的并发和显式资源管理。公开 README 说明 Impeller 可以在需要时把单帧 workload 分发到多线程，以及 entity 层有 pass optimization / pass rewriting；“只光栅化变化 Tile”缺少一手资料支撑，本节不把它当成 Android 通用行为。
 
-`[图：Impeller 渲染管线的层次结构。展示 Aiks → Entity → HAL → GPU (Vulkan/Metal/OpenGL ES) 的数据流，标注 AOT shader 编译发生的位置]`
+`[图：Impeller 渲染管线的层次结构。展示 DisplayList / Entity → Renderer → backend → GPU (Vulkan/Metal/OpenGL ES) 的数据流，标注 engine build 阶段的 impellerc、shader archive 与 C++ translation units]`
 
 ### Impeller 在 Android 上的表现
 
-Impeller 在 Android 上优先使用 Vulkan 后端。对于不支持 Vulkan 的设备（主要是 Android API 28 及以下），Impeller 会回退到 OpenGL ES 后端。
+Impeller 在 Android 上优先使用 Vulkan 后端。Flutter 3.27 起，Android API 29+ 默认启用 Impeller；低于 API 29、设备不支持 Vulkan，或 API 29+ 但 AHB / 后端条件不满足时，会回退到 legacy OpenGL / SurfaceTexture 路径。
 
 从公开可核对的资料看，Impeller 相比 Skia 最明确的收益是更可预测的渲染时序。Flutter 官方文档强调的是两件事：一是 shader 在 engine build 阶段就完成预编译，不再把编译压力留到运行时；二是 pipeline state object 会提前构建好，所以复杂动画第一次出现时更不容易被 shader compilation jank 打断。`[已验证: Flutter Impeller 文档, https://docs.flutter.dev/perf/impeller]`
 
 这也是为什么前文的“30-50% 改善”不适合当作通用结论。那组数字更接近 2024-2025 年第三方样本中的经验区间，受 GPU 型号、驱动版本、场景复杂度、是否夹杂 PlatformView 等因素影响很大。更稳妥的写法是：社区测试经常观察到光栅化时间下降、jank 帧减少，但 Flutter 官方并没有给出一个对所有 Android 设备都成立的统一基准。
 
-如果我们在项目里评估 Impeller，真正该关注的是两类现象：第一，首次进入复杂页面或首次播放动画时，Raster 线程是否还会被 shader 编译长时间阻塞；第二，在同一段动画里，帧时间分布是否比 Skia 更稳定。至于提升幅度，最好直接用目标机型的 Perfetto 和 Flutter DevTools 做实测，而不是套用别人的百分比。
+如果我们在项目里评估 Impeller，需要关注两类现象：第一，首次进入复杂页面或首次播放动画时，Raster 线程是否还会被 shader 编译长时间阻塞；第二，在同一段动画里，帧时间分布是否比 Skia 更稳定。提升幅度最好直接用目标机型的 Perfetto 和 Flutter DevTools 做实测，不套用别人的百分比。
 
 `[已验证: Impeller 默认状态基于 Flutter 3.27 release notes, flutter.dev]`
 
@@ -299,9 +301,9 @@ Impeller 在 Android 上优先使用 Vulkan 后端。对于不支持 Vulkan 的�
 
 在分析 Flutter 应用性能时，有几个常见的认知陷阱值得注意：
 
-**误区一："Flutter 不卡，因为渲染不走主线程"**
+**误区一："Flutter 不卡，因为渲染不走 Android 主线程"**
 
-确实，Flutter 的 UI 计算在 Dart 线程上执行，不占用 Android 主线程。但这不意味着不会卡顿——如果 UI 线程的 Build/Layout/Paint 超出帧预算，或者 Raster 线程被 shader 编译阻塞，用户感知到的仍然是卡顿。帧预算是固定的（120Hz 下 8ms），哪个线程超了都一样。在 Perfetto 中看到 `1.ui` 或 `1.raster` 上的长 slice，就是卡顿的信号。
+Flutter 3.29+ 的 Dart UI 工作就在 Android 主线程上运行；旧模型里 Dart UI 即使在独立 UI 线程，也仍受固定帧预算约束。Dart Build/Layout/Paint、Raster、Platform Channel、PlatformView 任一段超预算，用户都会感知到卡顿。120Hz 下每帧预算约 8.33ms，在 Perfetto 中看到 Main(UI+Platform)、`1.ui` 或 `1.raster` 上的长 slice，都需要继续拆。
 
 **误区二："DevTools 够用了，不需要 Perfetto"**
 
@@ -309,11 +311,11 @@ DevTools 能看到 Dart 层面的性能数据，但看不到系统层面的问�
 
 **误区三："换成 Impeller 就不需要优化了"**
 
-Impeller 解决的是 shader 编译卡顿这一类特定问题，它不是性能的万能药。Widget 过度重建、PlatformView 线程合并、列表 item builder 过慢——这些问题 Impeller 都帮不上忙。Impeller 让渲染管线的性能更可预测，但不代表不需要关注每帧的工作量。
+Impeller 解决的是 shader 编译卡顿这一类特定问题。Widget 过度重建、PlatformView 主线程压力、列表 item builder 过慢仍然要单独优化。Impeller 让渲染管线的性能更可预测，每帧工作量仍然要控制。
 
 **误区四："Flutter 的帧率和原生应用用同一套方法分析"**
 
-虽然最终都是 SurfaceFlinger 合成，但 Flutter 的线程模型和原生完全不同。在原生应用中我们盯着 MainThread 和 RenderThread 看；在 Flutter 中我们需要看 `1.ui` 和 `1.raster`。工具和分析思路都需要切换。
+虽然最终都是 SurfaceFlinger 合成，但 Flutter 的线程模型和原生不同。原生应用主要看 MainThread、RenderThread 和 SurfaceFlinger；Flutter 3.29+ 要看 Main(UI+Platform)、Raster、IO 与 SurfaceFlinger，旧模型还要单独看 `1.ui`。工具和分析思路都需要切换。
 
 ## 优化策略
 
@@ -323,7 +325,7 @@ Impeller 解决的是 shader 编译卡顿这一类特定问题，它不是性能
 
 **始终在 Profile/Release 模式下测试性能**。Debug 模式的性能数据毫无参考价值——JIT 编译、调试断言、DevTools 的通信开销会让性能看起来比实际差得多。
 
-**优先使用 Impeller**。如果应用 targetSdk 是 29+（Android 10+），Impeller 已经默认启用。如果还没有升级 Flutter 版本，尽快升级到 3.27+ 以获得 Impeller 的 Android 支持。
+**优先使用 Impeller**。运行在 Android API 29+ 的 Flutter 3.27+ 应用默认启用 Impeller；低版本系统、无 Vulkan 支持或后端条件不满足时会回退到 legacy OpenGL。评估时用 `--no-enable-impeller` 做 A/B，对比 Raster 线程首次进入复杂页面或动画时是否仍有 shader / pipeline 长 slice。
 
 **控制 Widget 重建范围**。使用 `const` 构造函数、拆分大 Widget、选择合适的状态管理方案。用 DevTools 的 Rebuild Tracker 来定位不必要的重建。
 
@@ -331,9 +333,9 @@ Impeller 解决的是 shader 编译卡顿这一类特定问题，它不是性能
 
 遇到 Flutter 性能问题时，按照以下步骤排查：
 
-1. **先在 DevTools Performance 面板看**：是 UI 线程慢还是 Raster 线程慢？这直接决定了解决方向。
-2. **UI 线程慢**：打开 CPU Profiler 看 Dart 函数热点，检查是否有不必要的 Widget 重建、同步 IO 操作、或耗时的计算。用 Isolate 把重计算移出 UI 线程。
-3. **Raster 线程慢**：检查是否还有 shader 编译卡顿（如果还在用 Skia）；检查是否有过度绘制；简化复杂的 Clip/Opacity/ShaderMask 操作。
+1. **先在 DevTools Performance 面板看**：是 Main / UI 侧慢，还是 Raster 线程慢？这会决定后续排查方向。
+2. **Main(UI+Platform) 或 UI 侧慢**：打开 CPU Profiler 看 Dart 函数热点，检查 Widget 重建、同步 IO、插件同步调用和耗时计算。重计算应移到 Isolate，插件同步调用要拆成可等待的异步路径。
+3. **Raster 线程慢**：检查是否还有 shader / pipeline 长 slice；检查过度绘制、纹理上传、复杂 Clip / Opacity / ShaderMask 和 PlatformView 合成。
 4. **两边都不慢但帧率仍低**：可能是系统层面的问题。用 Perfetto 抓系统 Trace，看 CPU 调度、GC、内存压力等。
 
 ### PlatformView 的优化
@@ -348,16 +350,19 @@ Impeller 解决的是 shader 编译卡顿这一类特定问题，它不是性能
 Flutter 的渲染虽然自成体系，但它仍然运行在 Android 系统之上。理解本书前面讲的基础知识对分析 Flutter 性能同样重要：
 
 - **§2.3 VSync 机制**：Flutter 的 VSync 监听最终依赖 Android 的 VSync-app 信号，理解 VSync 的调度逻辑有助于排查帧同步问题
-- **§2.5 MainThread 与 RenderThread 协作**：当 PlatformView 导致线程合并时，Flutter 退回到类似原生 Android 的渲染模式，此时 MainThread 的性能特征就和原生一样了
+- **§2.5 MainThread 与 RenderThread 协作**：Flutter 3.29+ 的 Dart UI 与 Platform 主线程已经合并；PlatformView、插件同步调用和原生 View 工作会直接影响同一条主线程的帧预算
 - **§4.4 Low Memory Killer**：Flutter 应用占用内存通常比原生应用高（Dart VM 堆 + Skia/Impeller 资源），在低内存场景下更容易被 LMK 杀掉
 - **§5.4 DVFS**：Flutter 的多线程模型（UI + Raster 同时运行）对 CPU 频率调度有影响，可能导致 DVFS 策略不如预期
-- **§7.1 卡顿的定义与分类**：Flutter 应用的掉帧表现和原生应用在 Perfetto 中的 Track 不同，但卡顿的分类框架同样适用——理解 jank 的分类有助于在 DevTools 中快速判断是 UI 线程 jank 还是 Raster 线程 jank
-- **§7.7 Jetpack Compose 性能**：Compose 和 Flutter 都是"自绘引擎"路线（不依赖原生 View 体系），两者在 PlatformView/互操作场景下遇到类似的线程合并和合成性能问题，优化思路可以互相参考
+- **§7.1 卡顿的定义与分类**：Flutter 应用的掉帧表现和原生应用在 Perfetto 中的 Track 不同，但卡顿的分类框架同样适用——理解 jank 的分类有助于在 DevTools 中快速判断是 UI / Main 侧 jank 还是 Raster 线程 jank
+- **§7.7 Jetpack Compose 性能**：Compose 和 Flutter 都是"自绘引擎"路线（不依赖原生 View 体系），两者在 PlatformView/互操作场景下遇到类似的主线程压力和合成性能问题，优化思路可以互相参考
+- **§18.12 Flutter 渲染路径**：该章节按 Flutter 3.29+ 的 Main(UI+Platform) / Raster / IO 口径展开，可作为本章实践分析部分的延伸阅读
 
 ## 参考资料
 
 - Flutter 官方性能文档：https://docs.flutter.dev/perf/rendering-performance
-- Impeller 设计文档：https://github.com/flutter/flutter/wiki/Impeller
+- Impeller 文档：https://docs.flutter.dev/perf/impeller
+- Impeller engine README：https://github.com/flutter/engine/blob/main/impeller/README.md
+- Flutter 3.29 线程模型说明：https://docs.flutter.dev/release/release-notes/release-notes-3.29.0
 - Flutter 性能最佳实践：https://docs.flutter.dev/perf/best-practices
 - PlatformView 性能：https://docs.flutter.dev/platform-integration/android/platform-views
 - Flutter Engine 源码（Impeller 目录）：https://github.com/flutter/engine/tree/main/impeller

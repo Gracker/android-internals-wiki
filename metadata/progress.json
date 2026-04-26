@@ -1,74 +1,75 @@
 {
-  "generated_at": "2026-04-26T23:53:43+08:00",
+  "generated_at": "2026-04-27T00:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 250,
-    "finalized": 85,
-    "ready-for-review": 133,
+    "finalized": 88,
+    "ready-for-review": 130,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T23:53:43+08:00",
+    "last_updated": "2026-04-27T00:40:00+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 48,
-      "task2b_pending": 54,
-      "ready-to-publish": 85,
-      "task9_pending": 27,
+      "task6_pending": 40,
+      "task2b_pending": 56,
+      "ready-to-publish": 88,
+      "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 167,
-      "revisiting": 47
+      "reviewed": 173,
+      "revisiting": 41
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 148,
-      "pending": 59,
+      "reviewed": 153,
+      "pending": 54,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 145,
-      "pending": 57,
+      "fixed": 143,
+      "pending": 59,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
-    }
+    },
+    "draft": 0
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 48,
-      "task2b_pending": 54,
-      "ready-to-publish": 85,
-      "task9_pending": 27,
+      "task6_pending": 40,
+      "task2b_pending": 56,
+      "ready-to-publish": 88,
+      "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 167,
-      "revisiting": 47
+      "reviewed": 173,
+      "revisiting": 41
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 148,
-      "pending": 59,
+      "reviewed": 153,
+      "pending": 54,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 145,
-      "pending": 57,
+      "fixed": 143,
+      "pending": 59,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
     },
-    "last_updated": "2026-04-26T23:53:43+08:00"
+    "last_updated": "2026-04-27T00:40:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -690,23 +691,24 @@
       "status": "ready-for-review",
       "drafted_date": "2026-03-30",
       "applicable_versions": "Android 12 (API S) - Android 16 (API 36)",
-      "last_verified": "2026-04-12",
-      "last_verified_against": "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1, source.android.com docs",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1 (SurfaceFlinger / BLASTBufferQueue / HWC2-HWC3) + source.android.com HWC docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "pending",
+      "task2b_result": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T20:23:00+08:00",
       "section": "2.6",
-      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。"
+      "review_notes": "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。",
+      "last_task2b_at": "2026-04-27T00:40:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md": {
       "path": "src/part1-fundamentals/ch02-rendering/07-hardware-layer.md",
@@ -816,13 +818,13 @@
       "drafted_date": "2026-04-01",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
-      "last_verified": "2026-04-05",
-      "last_verified_against": "Flutter 3.27 / Impeller default on Android API 29+",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "Flutter 3.29 architecture/thread merge docs + Flutter Impeller docs/engine impeller README + Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java / FlutterRenderer.java)",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-19",
@@ -831,7 +833,17 @@
       "task6_reviewed_date": "2026-04-26",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T19:33:53+08:00"
+      "last_task9_at": "2026-04-26T19:33:53+08:00",
+      "last_task2b_at": "2026-04-27T00:40:00+08:00",
+      "related_chapters": [
+        "2.1",
+        "2.3",
+        "2.4",
+        "2.5",
+        "7.1",
+        "7.7",
+        "18.12"
+      ]
     },
     "src/part1-fundamentals/ch02-rendering/12-window-manager.md": {
       "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
@@ -7181,7 +7193,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T22:20:00+08:00",
+  "last_updated": "2026-04-27T00:40:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -7489,5 +7501,59 @@
       "18.9"
     ],
     "log": "logs/deep-review/2026-04-26-22-deep-review.md"
+  },
+  "section_2_11": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T00:40:00+08:00",
+    "notes": "Task2B fixed Flutter 3.29+ thread model, Impeller offline shader/reflection, Android fallback wording."
+  },
+  "section_2_6": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T00:40:00+08:00",
+    "notes": "Task2B fixed HWC HAL boundary, HWC validate/present path, BLAST transaction merge path."
+  },
+  "2026-04-27-00-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-27T00:40:00+08:00",
+    "sections": [
+      "2.11",
+      "2.6"
+    ],
+    "queue_indexes_completed": [
+      303,
+      304,
+      262
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part1-fundamentals/ch02-rendering/11-flutter-rendering.md",
+      "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "2.11 Flutter 3.29+ Main(UI+Platform)/Raster/IO model replaces old four-thread mainline; old model retained as 3.28-/custom Embedder branch",
+        "2.11 Impeller shader/reflection corrected to engine build offline pipeline with impellerc, shader_archive and generated C++ translation units; Tile claim removed",
+        "2.11 Android Impeller fallback corrected to API 29+ default plus low-version/no-Vulkan/AHB-backend fallback",
+        "2.6 HWC corrected from hardware unit to HAL/vendor composer boundary with DPU/display controller separated",
+        "2.6 HWC2/HWC3 validate/getChanged/accept/present path added",
+        "2.6 BLASTBufferQueue transaction merge sequence added and external P85 issue closed",
+        "2.11 related_chapters now includes finalized §18.12 to keep 3.29+ thread-model wording consistent"
+      ],
+      "auto_promotion": "not applied: both sections still have task9_result=needs-rework and were returned to task6_pending"
+    }
   }
 }
