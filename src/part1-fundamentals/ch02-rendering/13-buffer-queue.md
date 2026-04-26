@@ -2,7 +2,7 @@
 title: 图形缓冲区管理 (BufferQueue)
 chapter: '2.13'
 section: '2.13'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
 tags:
 - BufferQueue
@@ -54,13 +54,17 @@ sources:
   path: frameworks/base/core/java/android/view/ViewRootImpl.java
 - type: official
   path: https://source.android.com/docs/core/graphics/architecture
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_result: "pass-light-edit"
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_result: needs-rework
+task9_result: pass-tech-review
 task2b_result: fixed
+task9_reviewed_date: "2026-04-26"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-26T18:52:00+08:00"
+review_round: 1
 ---
 
 # 2.13 图形缓冲区管理 (BufferQueue)

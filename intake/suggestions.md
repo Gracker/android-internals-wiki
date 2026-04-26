@@ -4542,3 +4542,15 @@
 - **位置**：验证路径中的 `adb shell perfetto ...` 示例
 - **问题**：正文随后直接查询 `actual_frame_timeline_slice` / `expected_frame_timeline_slice`，但示例命令只列出 atrace 类别，没有显式启用 `android.surfaceflinger.frametimeline` 数据源。读者照抄后可能拿不到 FrameTimeline 表。
 - **建议**：补一段 TraceConfig 示例，显式加入 `data_sources { config { name: "android.surfaceflinger.frametimeline" } }`，并保留 ftrace / atrace 类别用于和调度、SurfaceView buffered frames 对照。
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-04-26
+- **类型**：源码准确性
+- **位置**：L319「多进程 ContentProvider 的适用场景与注意事项」
+- **问题**：正文仍保留 `Process.isProviderProcess()` 这个待验证 API 名。Android SDK 没有该公开方法，虽然已标 `[待验证]`，但放在优化建议里仍容易被照抄。
+- **建议**：改成 `Application.getProcessName()` 或读取当前进程名后与 manifest `android:process` 字符串匹配；删除不存在 API 名。
+
+## [Task9 Deep Review] 2.13 图形缓冲区管理 (BufferQueue) — 2026-04-26
+- **类型**：数据缺失
+- **位置**：L276-L304「在 Perfetto 中怎么读 BufferQueue」
+- **问题**：正常/异常 BufferQueue 场景仍是 `[图]` 与 `[需补充素材]` 占位，缺少真实 Trace 证据。
+- **建议**：补同机型、同刷新率下的正常滑动 trace 与 dequeueBuffer 长等待 trace，各标出 `queueBuffer()`、`QueuedBuffer - <window>BLAST#...`、FrameTimeline actual present、release fence / dequeue wait 的对应关系。
