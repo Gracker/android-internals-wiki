@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T21:29:00+08:00",
+  "generated_at": "2026-04-26T21:49:23+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,32 +7,32 @@
     "finalized": 84,
     "ready-for-review": 134,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T20:59:39+08:00",
+    "last_updated": "2026-04-26T21:49:23+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 42,
-      "task2b_pending": 58,
+      "task6_pending": 44,
+      "task2b_pending": 56,
       "ready-to-publish": 84,
       "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 172,
-      "revisiting": 42
+      "reviewed": 170,
+      "revisiting": 44
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 151,
-      "pending": 56,
+      "reviewed": 149,
+      "pending": 58,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 141,
-      "pending": 61,
+      "fixed": 143,
+      "pending": 59,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -41,29 +41,29 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 42,
-      "task2b_pending": 58,
+      "task6_pending": 44,
+      "task2b_pending": 56,
       "ready-to-publish": 84,
       "task9_pending": 30,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 172,
-      "revisiting": 42
+      "reviewed": 170,
+      "revisiting": 44
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 151,
-      "pending": 56,
+      "reviewed": 149,
+      "pending": 58,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 141,
-      "pending": 61,
+      "fixed": 143,
+      "pending": 59,
       "idle": 4,
       "'pending'": 1,
       "'fixed'": 1
@@ -1046,20 +1046,21 @@
       "drafted_date": "2026-04-08",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 7.0 (API 24) - Android 17 (API 37)",
-      "last_verified": "2026-04-11",
-      "last_verified_against": "AOSP android-16.0.0_r1 attrs_manifest.xml + Android Developers multi-window/desktop/connected displays/behavior changes 16 + Perfetto stdlib docs",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "AOSP android-16.0.0_r1 attrs_manifest.xml + Android Developers multi-window/desktop/connected displays/behavior changes 16/17 + android.R.attr#recreateOnConfigChanges + Perfetto stdlib docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-19",
-      "last_task9_at": "2026-04-19T20:31:01+08:00"
+      "last_task9_at": "2026-04-19T20:31:01+08:00",
+      "last_task2b_at": "2026-04-26T21:49:23+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md": {
       "path": "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
@@ -2175,10 +2176,10 @@
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)，通知图标源码入口需区分 Android",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -2187,9 +2188,9 @@
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T15:20:00+08:00",
-      "last_task2b_at": "2026-04-25T21:43:45+08:00",
-      "last_verified": "2026-04-25",
-      "last_verified_against": "AOSP main / Android 16 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout"
+      "last_task2b_at": "2026-04-26T21:49:23+08:00",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "AOSP main / Android 16 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout / ContainerReveal；PunchHole.kt 未作为 AOSP mainline 锚点"
     },
     "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md": {
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
@@ -6972,7 +6973,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T19:47:00+08:00",
+  "last_updated": "2026-04-26T21:49:23+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -7212,5 +7213,48 @@
       ],
       "auto_promotion": "Kept/finalized because task6_result=pass-light-edit, task9_result=pass-tech-review, and section queue has no pending entries after this run."
     }
+  },
+  "2026-04-26-21-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-26T21:49:23+08:00",
+    "sections": [
+      "2.20",
+      "7.13"
+    ],
+    "queue_indexes_completed": [
+      258,
+      295
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part1-fundamentals/ch02-rendering/20-multiwindow-desktop-rendering.md",
+      "src/part2-performance/ch07-smoothness/13-systemui-performance.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "2.20 recreateOnConfigChanges semantics updated for Android O/API 37 and separated from large-screen size/orientation changes",
+        "2.20 Android 16 large-screen behavior linked to configChanges/recreation risk; multi-display VSync and display_id filtering added",
+        "7.13 AOSP mainline Scene Framework source anchor corrected from PunchHole.kt to ContainerReveal.kt and existing transformation directory"
+      ],
+      "auto_promotion": "not applied: both sections still have task9_result=needs-rework and were returned to task6_pending"
+    }
+  },
+  "section_2_20": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-26T21:49:23+08:00"
+  },
+  "section_7_13": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-26T21:49:23+08:00"
   }
 }

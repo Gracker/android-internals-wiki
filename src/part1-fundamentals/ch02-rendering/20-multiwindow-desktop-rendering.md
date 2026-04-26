@@ -6,14 +6,18 @@ status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
-last_verified: "2026-04-11"
-last_verified_against: "AOSP android-16.0.0_r1 attrs_manifest.xml + Android Developers multi-window/desktop/connected displays/behavior changes 16 + Perfetto stdlib docs"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP android-16.0.0_r1 attrs_manifest.xml + Android Developers multi-window/desktop/connected displays/behavior changes 16/17 + android.R.attr#recreateOnConfigChanges + Perfetto stdlib docs"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/large-screens/multi-window-support"
   - type: official
     path: "https://developer.android.com/about/versions/16/behavior-changes-16"
+  - type: official
+    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
+  - type: official
+    path: "https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges"
   - type: official
     path: "https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing"
   - type: official
@@ -26,17 +30,19 @@ sources:
     path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
 tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task2b_result: fixed
 task9_reviewed_date: "2026-04-19"
 last_task9_at: "2026-04-19T20:31:01+08:00"
+last_task2b_at: "2026-04-26T21:49:23+08:00"
+
 ---
 
 # 2.20 多窗口与桌面模式渲染性能
@@ -56,8 +62,8 @@ last_task9_at: "2026-04-19T20:31:01+08:00"
 - 🔹 **SurfaceFlinger 的压力来自 layer、composition 和 display 数量**：[已验证: source.android.com SurfaceFlinger 文档]
   多窗口先增加可见 layer，再提高 HWC 选择和 GPU composition 的概率。外接显示器还会把 display pipeline 再加一份。
 
-- 🔹 **`recreateOnConfigChanges` 不是 Android 17 的通用窗口尺寸开关**：[已验证: AOSP `frameworks/base/core/res/res/values/attrs_manifest.xml`]
-  当前公开 AOSP 里，这个属性针对的是 `mcc|mnc`。窗口尺寸、方向、screen layout 这些高频配置变化，仍然要看 `android:configChanges`、`onConfigurationChanged()` 和系统是否重建 Activity。
+- 🔹 **`recreateOnConfigChanges` 是显式请求重建的补充开关**：[已验证: AOSP `frameworks/base/core/res/res/values/attrs_manifest.xml`, Android Developers `android.R.attr#recreateOnConfigChanges`]
+  这个属性用于声明哪些配置变化仍应触发 Activity 重建。Android O 口径主要覆盖 `mcc|mnc`，API 37 又覆盖 keyboard、navigation、touchscreen、colorMode、部分 uiMode 等默认不再重建的变化；它仍不能当成窗口尺寸和方向变化的通用处理方案。
 
 - 🔹 **Android 10 之后，multi-resume 改写了优化边界**：[已验证: Android Developers multi-window support]
   多窗口下多个可见 Activity 可以同时停留在 `RESUMED`。失去焦点不等于进入 `onStop()`，独占资源和高频渲染要参考 `onTopResumedActivityChanged()`。
@@ -101,7 +107,9 @@ last_task9_at: "2026-04-19T20:31:01+08:00"
 
 第二件事是 **composition decision 更复杂**。HWC 的 overlay plane 数量受 SoC 和显示路径限制，layer 数量、尺寸、alpha、rotation、pixel format 任何一项不合适，部分 layer 就会走 GPU composition。窗口少的时候，这种回退未必明显。窗口一多，回退出现得更频繁，SurfaceFlinger 主线程和 GPU 两边的时间都容易被拉长。
 
-第三件事是 **display 可能不止一块**。connected display 场景里，SurfaceFlinger 不只是合成更多 layer，还可能同时维护手机内屏和外部显示器两套 display pipeline。外屏分辨率更高、刷新率不同，或者两边窗口树完全不同，都会让合成成本继续上升。
+第三件事是 **display 可能不止一块**。connected display 场景里，SurfaceFlinger 可能同时维护手机内屏和外部显示器两套 display pipeline。外屏分辨率更高、刷新率不同，或者两边窗口树完全不同，都会让合成成本继续上升。
+
+多 display 还会把 VSync 和 deadline 观察拆成两份。60Hz 内屏加 120Hz 外屏时，不能拿一条固定帧预算解释全部掉帧；要按目标 display 看对应的 frame timeline、presentation deadline、SurfaceFlinger slice 和 layer 集合。某块屏幕出现 `SurfaceFlingerCpuDeadlineMissed`，只说明这块 display 的提交或合成没赶上 deadline，不能直接外推到另一块屏幕。
 
 这里不要脱离设备条件写固定毫秒数。把某组固定毫秒数直接写成通用规律，离开 trace、设备型号、刷新率和显示分辨率，就没有复用价值。直接回到观察面：看 layer 数量、看 compositionType、看 FrameTimeline，再决定是不是已经到了 SurfaceFlinger 侧瓶颈。
 
@@ -113,9 +121,11 @@ last_task9_at: "2026-04-19T20:31:01+08:00"
 
 ### `recreateOnConfigChanges` 的公开语义
 
-这部分先把一个常见误写删干净。当前公开 AOSP 里，`recreateOnConfigChanges` 不是 Android 17 新增的通用属性，也不是给屏幕尺寸、方向、density 这些变化准备的“快速通道”。`frameworks/base/core/res/res/values/attrs_manifest.xml` 里能核到的语义很窄，针对的是 `mcc|mnc` 这类运营商和区域配置变化。
+`recreateOnConfigChanges` 的方向和 `android:configChanges` 相反。`configChanges` 表示“这类变化由 App 自己处理，系统不要重建 Activity”；`recreateOnConfigChanges` 表示“即使系统默认不重建，这类变化仍要按完整 Activity 生命周期重走一遍”。
 
-窗口尺寸变化、方向变化、screen layout 变化这类多窗口场景里最常见的配置变化，还是要回到两条老路上看。要么系统按默认行为重建 Activity，要么 App 自己声明 `android:configChanges` 并在 `onConfigurationChanged()` 里接住变化。把这一层写错，后面关于“极短时间完成过渡”或者“官方轻量路径”的结论就会一起漂掉。
+这个属性的公开语义不是“所有配置变化的通用重启开关”。Android O 之后，`mcc|mnc` 默认不再触发 Activity 重建，应用可以用 `recreateOnConfigChanges` 显式要求这两类变化重建。API 37 又把 keyboard、keyboardHidden、navigation、touchscreen、colorMode，以及切入 / 切出 desk 模式这类 `uiMode` 变化纳入默认不重建范围；依赖完整重建加载资源的应用，需要在 manifest 中显式声明。
+
+窗口尺寸变化、方向变化、screen layout 变化这类多窗口场景里的高频变化，仍要回到 `android:configChanges`、`onConfigurationChanged()`、状态保存和系统实际生命周期回调。把 `recreateOnConfigChanges` 写成“折叠屏或桌面模式尺寸变化开关”，会把大屏适配的判断带偏。
 
 ### Android 16 / 17 的真实边界
 
@@ -135,7 +145,9 @@ Android 16（API 36）进一步把规则收紧到 `sw >= 600dp`。对 `targetSdk
 
 这条 opt-out 只在 API 36 过渡期有效。行为变更文档已经写明，应用面向 API 37 之后，这个 opt-out 不再生效。到了 Android 17（API 37），`sw >= 600dp` 设备上的方向、宽高比和 resizability 限制会被平台直接忽略。
 
-对应到渲染分析，结论也要跟着改。大屏和外接显示器上的窗口尺寸变化，会更频繁地触发 relayout、buffer 重新分配和 `performTraversals()`，但这不等于存在一个 Android 17 专用 manifest 属性帮你跳过整个过程。保存 UI state，把窗口尺寸变化当成常态输入，而不是把它当成少见异常。
+这会改变 `android:configChanges` 的风险边界。应用仍然可以声明某些配置变化自行处理，但大屏上窗口被拉伸、旋转、进入分屏或桌面窗口时，系统给出的形态约束已经变少，Activity 更容易收到连续的尺寸、方向、screen layout 变化。声明了 `configChanges` 的应用也要真的更新资源、布局和渲染目标；没有声明或声明不完整时，系统仍可能走 Activity 重建路径。
+
+API 37 的 `recreateOnConfigChanges` 要和这条大屏规则分开读。它面向 keyboard、keyboardHidden、navigation、touchscreen、colorMode、部分 desk `uiMode` 变化，用来恢复“发生这些变化时重建 Activity”的旧行为；它不会让 `screenOrientation`、宽高比或 resizability 限制重新生效。对应到渲染分析，大屏和外接显示器上的窗口尺寸变化，会更频繁地触发 relayout、buffer 重新分配和 `performTraversals()`。保存 UI state，把窗口尺寸变化当成常态输入，不要把它当成少见异常。
 
 ## Multi-resume 把“失去焦点”和“停止可见”拆开了
 
@@ -198,11 +210,12 @@ SELECT
   l.layer_name
 FROM surfaceflinger_layers_snapshot s
 JOIN surfaceflinger_layer l ON l.snapshot_id = s.id
+WHERE l.display_id = 0 -- 按目标 display 调整；0 通常是内屏
 ORDER BY s.ts DESC, l.layer_name
 LIMIT 100;
 ```
 
-这个查询适合先看“当前有多少 layer、名字是什么”。后面如果要继续和窗口拖拽、分屏切换、PiP 播放关联，再按时间区间收窄。
+这个查询适合先看“当前有多少 layer、名字是什么”。connected display trace 里要先区分 display；不按 `display_id` 过滤，内屏和外屏的 layer 会混在一起，统计出来的 layer 数量和窗口归属都容易偏。后面如果要继续和窗口拖拽、分屏切换、PiP 播放关联，再按时间区间收窄。
 
 ### 3. FrameTimeline 的 jank 名称要写全
 
@@ -235,7 +248,7 @@ FrameTimeline 里，App 侧和 SurfaceFlinger 侧至少要分成三类：
 
 ### 误区 2：`recreateOnConfigChanges` 能处理折叠屏和窗口尺寸变化
 
-就当前公开 AOSP 和开发者文档能核到的内容，这个属性的公开语义不在这里。折叠屏展开、窗口缩放、横竖屏切换这些场景，还是先查 `android:configChanges`、`onConfigurationChanged()`、状态保存，以及系统是否触发 Activity 重建。
+这个属性只声明“哪些默认不重建的配置变化仍要重建”。折叠屏展开、窗口缩放、横竖屏切换这些场景，还是查 `android:configChanges`、`onConfigurationChanged()`、状态保存，以及系统是否触发 Activity 重建。API 37 对 keyboard、navigation、touchscreen、colorMode、部分 desk `uiMode` 的处理，不应外推成窗口尺寸变化的通用方案。
 
 ### 误区 3：多窗口掉帧一定是 App 的问题
 
