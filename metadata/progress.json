@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T12:46:09+08:00",
+  "generated_at": "2026-04-26T12:54:28+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,11 +7,11 @@
     "finalized": 80,
     "ready-for-review": 138,
     "ready-to-publish": 80,
-    "last_updated": "2026-04-26T10:43:00+08:00",
+    "last_updated": "2026-04-26T12:54:28+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 44,
-      "task2b_pending": 52,
+      "task6_pending": 46,
+      "task2b_pending": 50,
       "ready-to-publish": 80,
       "task9_pending": 39
     },
@@ -22,22 +22,22 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 143,
-      "pending": 66,
+      "reviewed": 141,
+      "pending": 68,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 147,
-      "pending": 57,
+      "fixed": 149,
+      "pending": 55,
       "idle": 4
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 44,
-      "task2b_pending": 52,
+      "task6_pending": 46,
+      "task2b_pending": 50,
       "ready-to-publish": 80,
       "task9_pending": 39
     },
@@ -48,14 +48,14 @@
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 143,
-      "pending": 66,
+      "reviewed": 141,
+      "pending": 68,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 147,
-      "pending": 57,
+      "fixed": 149,
+      "pending": 55,
       "idle": 4
     }
   },
@@ -3703,13 +3703,13 @@
       "drafted_date": "2026-04-08",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-25",
-      "last_verified_against": "AOSP main, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "AOSP android-16.0.0_r1 / main frameworks/native/cmds/atrace/atrace.cpp, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "'2026-04-24'",
       "task6_result": "pass-light-edit",
@@ -3718,9 +3718,11 @@
       "last_task9_at": "2026-04-26T12:46:09+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-26",
-      "last_task2b_at": "2026-04-25T14:40:00+08:00",
-      "updated_by": "openclaw-task9",
-      "updated_date": "2026-04-26"
+      "last_task2b_at": "2026-04-26T12:54:28+08:00",
+      "updated_by": "openclaw-task2b",
+      "updated_date": "2026-04-26",
+      "repaired_date": "2026-04-26",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
@@ -3903,13 +3905,13 @@
       "status": "ready-for-review",
       "drafted_date": "2026-04-04",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-04-25",
-      "last_verified_against": "AndroidX docs + external review + Android test docs",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "AndroidX docs + AndroidX Benchmark PowerMetric @RequiresApi(Q) + Android test docs + external review",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-25",
@@ -3919,11 +3921,11 @@
       "last_task9_at": "2026-04-26T12:46:09+08:00",
       "section": "14.6",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-26T00:45:50+08:00",
+      "last_task2b_at": "2026-04-26T12:54:28+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
       "review_round": "3",
-      "updated_by": "openclaw-task9",
+      "updated_by": "openclaw-task2b",
       "updated_date": "2026-04-26"
     },
     "src/part3-tools/ch14-other-tools/07-profiling-manager.md": {
