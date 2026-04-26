@@ -5,9 +5,9 @@ chapter: "2.11"
 status: ready-for-review
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
-review_notes: "task6 review完成：修正术语统一(Raster线程)，优化数据表达，添加存疑和需补充素材标注。3个大问题已回炉处理"
+review_notes: "task6 re-review (revisiting): pass-light-edit。L1禁用词4处修复（可以看到×2/实际上/并用）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -30,8 +30,9 @@ sources:
     path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java"
 tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -95,7 +96,7 @@ Engine 层是 Flutter 的核心引擎，用 C++ 编写。它负责两件事：�
 
 Flutter 的线程模型和原生 Android 差异很大，理解它对性能分析至关重要。Flutter Engine 主要使用四个线程：
 
-**Platform 线程**（对应 Android 主线程 / `1.platform`）：这是 Flutter 应用的"主线程"，但实际上它的工作和原生 Android 的主线程有所不同。Platform 线程负责处理 Android 的生命周期事件、输入事件分发、以及 Platform Channel 的消息传递。但 UI 的渲染计算不在这个线程上完成。
+**Platform 线程**（对应 Android 主线程 / `1.platform`）：这是 Flutter 应用的"主线程"，但它的工作和原生 Android 的主线程有所不同。Platform 线程负责处理 Android 的生命周期事件、输入事件分发、以及 Platform Channel 的消息传递。但 UI 的渲染计算不在这个线程上完成。
 
 **UI 线程**（`1.ui`）：也叫 Dart 线程，这是 Dart 虚拟机运行 Isolate 的地方。我们写的 Dart 代码——Widget 的 build、状态管理、业务逻辑——都在这个线程上执行。当 UI 需要更新时，UI 线程会执行 Build → Layout → Paint 流程，生成 DisplayList，然后把它发送给 Raster 线程。
 
@@ -151,14 +152,14 @@ PlatformView 不能再只按“两种模式”理解。Flutter Engine 源码里�
 
 Flutter DevTools 是 Flutter 官方的性能分析套件。它提供了几个关键的分析面板：
 
-**Performance 面板**（集成 Perfetto trace viewer）：这是最常用的面板。它记录每一帧的 UI 线程和 Raster 线程的耗时，并用火焰图展示。Flutter DevTools 在 2.21.1 版本就已经把旧的 timeline trace viewer 替换成 Perfetto trace viewer——DevTools 的演进节奏和 Flutter SDK 版本不是一一绑定的，分析问题时以 DevTools 自身版本为准。`[已验证: Flutter DevTools 2.21.1 release notes, https://docs.flutter.dev/tools/devtools/release-notes/release-notes-2.21.1]`在 Performance 面板中，我们可以看到：
+**Performance 面板**（集成 Perfetto trace viewer）：这是最常用的面板。它记录每一帧的 UI 线程和 Raster 线程的耗时，用火焰图展示。Flutter DevTools 在 2.21.1 版本就已经把旧的 timeline trace viewer 替换成 Perfetto trace viewer——DevTools 的演进节奏和 Flutter SDK 版本不是一一绑定的，分析问题时以 DevTools 自身版本为准。`[已验证: Flutter DevTools 2.21.1 release notes, https://docs.flutter.dev/tools/devtools/release-notes/release-notes-2.21.1]`Performance 面板中展示的信息包括：
 
 - 每一帧在 UI 线程上的 Build、Layout、Paint 各自花了多少时间
 - Raster 线程的光栅化耗时
 - 是否有帧超出了帧预算（60Hz 下 16ms，120Hz 下 8ms）
 - 具体是哪个 Widget 或哪个 Dart 函数消耗了最多的时间
 
-**CPU Profiler 面板**：提供 Dart 代码的 CPU 采样分析，可以看到 Dart 函数级别的 CPU 占用。
+**CPU Profiler 面板**：提供 Dart 代码的 CPU 采样分析，展示 Dart 函数级别的 CPU 占用。
 
 **Memory 面板**：监控 Dart 堆的内存使用，帮助发现内存泄漏。
 
