@@ -30,16 +30,16 @@ sources:
     path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
 tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
-reviewed_date: "2026-04-19"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-26"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
-task9_reviewed_date: "2026-04-19"
+task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-19T20:31:01+08:00"
 last_task2b_at: "2026-04-26T21:49:23+08:00"
 

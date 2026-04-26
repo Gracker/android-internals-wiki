@@ -7,7 +7,7 @@ drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: openclaw-task6
 last_task2b_at: '2026-04-26T11:51:00+08:00'
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-04-26"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
 last_verified_against: AOSP android-16.0.0_r1
@@ -32,15 +32,15 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-04-26T10:43:00+08:00"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_by: openclaw-task6
 task9_reviewed_date: "2026-04-26"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
