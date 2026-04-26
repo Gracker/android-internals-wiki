@@ -30,13 +30,14 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_reviewed_date: "2026-04-27"
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-26"
-task6_result: pass-light-edit
+reviewed_date: "2026-04-27"
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
