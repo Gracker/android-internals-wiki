@@ -12928,5 +12928,235 @@
     "completed_by": "task2b-content-processing-rework",
     "completed_at": "2026-04-27T05:45:00+08:00",
     "completion_reason": "Task2B 已按 Task9 / External Review 问题单完成正文修复，章节退回 Task6 复审。"
+  },
+  {
+    "section": "17.oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android 17 有什么需要适配的？2026 Android 禁止侧载又是什么？ — ...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-27T05:44:59.722724",
+    "status": "pending"
+  },
+  {
+    "section": "17.oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android17 为什么重写 MessageQueue — ...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-27T05:44:59.756863",
+    "status": "pending"
+  },
+  {
+    "section": "17.oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分 — ...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-27T05:44:59.789879",
+    "status": "pending"
+  },
+  {
+    "section": "17.oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "当 Perfetto 显示 Running 时,Android 程序到底在做什么? — ...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-27T05:44:59.823927",
+    "status": "pending"
+  },
+  {
+    "section": "17.oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "聊聊2026年Android开发会是什么样 — ...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-27T05:44:59.857022",
+    "status": "pending"
+  },
+  {
+    "section": "17.oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "从踌躇到拥抱：为什么说 KMP 已迈入黄金时代 — ...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-27T05:44:59.890170",
+    "status": "pending"
+  },
+  {
+    "section": "17.oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "用 AI 写 Android 需求：少踩坑的实战心得 — ...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-27T05:44:59.924591",
+    "status": "pending"
+  },
+  {
+    "section": "17.oem",
+    "section_title": "ch17-oem",
+    "priority": 60,
+    "reason": "[素材注入] 新增参考文章，建议补充到章节",
+    "material_paths": [
+      ""
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考",
+        "location": "参考资料小节",
+        "detail": "Android17 为什么重写 MessageQueue — ...",
+        "suggestion": "判断是否适合作为章节参考，如适合请补充"
+      }
+    ],
+    "added_by": "task8-classifier",
+    "added_at": "2026-04-27T05:44:59.956297",
+    "status": "pending"
+  },
+  {
+    "section": "2.12",
+    "section_title": "Window Manager Service 与窗口管理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] FAQ 仍写成“动画的计算和 SurfaceControl 更新是 WMS 的 WindowAnimator 负责”。这与正文前面已经修正的现代转场口径冲突：Android 12+ Activity/back 过渡主线应按 ATMS/WMS",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/源码准确性",
+        "location": "L477「Predictive Back 动画」误区",
+        "detail": "FAQ 仍写成“动画的计算和 SurfaceControl 更新是 WMS 的 WindowAnimator 负责”。这与正文前面已经修正的现代转场口径冲突：Android 12+ Activity/back 过渡主线应按 ATMS/WMS 的 TransitionController/Transition 收集状态，再由 WM Shell/remote transition/back animation handler 计算动画并提交 leash transaction；不能把 predictive back 归到旧 WindowAnimator。",
+        "suggestion": "把该误区改为 Input progress、ATMS/WMS transition 状态、WM Shell BackAnimationController/transition handler、SurfaceFlinger transaction/present 四段联合排查；删除 WindowAnimator 作为 predictive back 动画主责的表述。",
+        "severity": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T06:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.10",
+    "section_title": "ContentProvider 性能与优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 正文写“远端在同一个事务中顺序执行，并保证原子性”。AOSP android-16.0.0_r1 `ContentProvider.applyBatch(ArrayList)` 默认实现只是顺序遍历 `operations.get(i).a",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L387 `applyBatch()` 原子性描述",
+        "detail": "正文写“远端在同一个事务中顺序执行，并保证原子性”。AOSP android-16.0.0_r1 `ContentProvider.applyBatch(ArrayList)` 默认实现只是顺序遍历 `operations.get(i).apply(...)`，不会自动开启 SQLite transaction；失败时前面已执行的操作不由 framework 自动回滚。",
+        "suggestion": "改为：`applyBatch()` 只保证把多次操作合并为一次 provider 调用/一次 Binder 往返；原子性取决于具体 provider 是否 override `applyBatch()` 并显式用数据库 transaction 包裹。自定义 provider 示例应展示 `beginTransaction()` / `setTransactionSuccessful()` / `endTransaction()`。",
+        "severity": "P0"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L228-L249 Binder 线程池模型",
+        "detail": "“ContentProvider 的 CRUD 操作执行在提供方进程 Binder 线程池”缺少作用域。跨进程远程 provider 调用确实落在提供方 Binder 线程；同进程 provider 或本地 provider 引用可能在调用方线程直接执行，不经过远端 Binder 线程池。当前写法会误导 ANR 判责，把所有 CP 慢调用都归因到 provider Binder 线程池。",
+        "suggestion": "将该节标题或首句限定为“远程 ContentProvider 调用”；补充同进程 provider / 本地调用的线程模型差异，并在 traces 判读中区分调用方主线程阻塞、提供方 Binder 线程执行、提供方主线程冷启动三种路径。",
+        "severity": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T06:20:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "2.1",
+    "section_title": "Android 渲染架构全景",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 正文多处把 Skia Vulkan 写成 Android 13+ 或 Android 12 后逐步成为主要/默认 UI 渲染后端。AOSP android-16.0.0_r1 `frameworks/base/libs/hwui/Prope",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/源码准确性",
+        "location": "L402/L545/L620 Vulkan HWUI 默认口径",
+        "detail": "正文多处把 Skia Vulkan 写成 Android 13+ 或 Android 12 后逐步成为主要/默认 UI 渲染后端。AOSP android-16.0.0_r1 `frameworks/base/libs/hwui/Properties.cpp` 中 `peekRenderPipelineType()` 仍按 `use_vulkan` flag 与 `debug.hwui.renderer` 在 `skiagl` / `skiavk` 间选择；默认是否走 Vulkan 取决于设备配置/OEM/属性，不是 Android 13 的统一平台行为。Android 16 的 Vulkan 1.4 新设备要求也不能直接推出 HWUI 默认 Vulkan。",
+        "suggestion": "改为：HWUI 同时保留 SkiaGL 与 SkiaVulkan pipeline；实际默认后端按 `use_vulkan`、`debug.hwui.renderer`、设备/OEM 配置决定。版本演进中把“Vulkan API/设备基线提升”和“HWUI 默认 renderer”分开写。",
+        "severity": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T06:20:00+08:00",
+    "status": "pending"
   }
 ]

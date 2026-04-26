@@ -4718,6 +4718,24 @@
 - **问题**：Android 16 内核分支映射只提 6.12 未提 6.6 向下兼容分支
 - **建议**：补充 GKI 分支选择逻辑或加"主分支"限定
 
+## [Task9 Deep Review] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 2026-04-27
+- **类型**：数据缺失
+- **位置**：性能特征 / 在 Perfetto 中识别 ANGLE（L174-L235）
+- **问题**：章节已经把 ANGLE 性能结论收敛为定性判断，但 shader 首编、pipeline cache 冷启动、native GLES 与 ANGLE 的对比缺少同设备 trace 或 AGI frame capture 证据。当前只能指导排查方向，不能支撑性能预算判断。
+- **建议**：补一组同设备 native GLES vs ANGLE 的冷启动/暖启动对比：记录 GL_RENDERER、ANGLE package 版本、shader/pipeline cache 状态、首帧或场景切换耗时，并用 Perfetto/AGI 关联 vkQueueSubmit、RenderThread 与 GPU slice。
+
+## [Task9 Deep Review] 18.14 Camera 渲染管线 — 2026-04-27
+- **类型**：版本差异
+- **位置**：Stream Use Case 常量定义表（L95-L105）
+- **问题**：表格覆盖 DEFAULT/PREVIEW/STILL_CAPTURE/VIDEO_RECORD/PREVIEW_VIDEO_STILL/VIDEO_CALL，但 Android 14-16 的 CameraMetadata 还包含 SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW=0x6 以及 vendor range。章节适用到 Android 16，表题写成“常量定义”时容易被读成完整枚举。
+- **建议**：补一行 CROPPED_RAW（RAW_SENSOR/RAW10/RAW12 场景，配合 SCALER_RAW_CROP_REGION）和一行 vendor range，或把表题改为“常见非 RAW stream use case”。
+
+## [Task9 Deep Review] 18.17 Hardware Buffer Renderer — 2026-04-27
+- **类型**：版本差异
+- **位置**：wide color 与 HDR 要分开看（L270-L279）
+- **问题**：章节提到 Android 15/API 35 之后的 SurfaceControl.Transaction.setDesiredHdrHeadroom()，但 AOSP android-15/16 current API 中该方法带 @FlaggedApi("com.android.graphics.hwui.flags.limited_hdr")。实际可用性受平台 flag / SDK 暴露状态影响，不能只按 API level 判断。
+- **建议**：在 HDR 小节补充“setDesiredHdrHeadroom 是 flagged API；量产适配需检测 SDK/flag/厂商开放情况”，并给出 fallback：只设置 dataspace 或继续使用 setExtendedRangeBrightness()。
+
 ## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-04-27
 - **类型**：数据缺失
 - **位置**：L82-L93 / L277
@@ -4747,3 +4765,33 @@
 - **位置**：L442-L449 Android Vitals 监控指标
 - **问题**：“WakeLock 停滞率：因 WakeLock 导致的 ANR 比例”“JobScheduler/AlarmManager 触发频率”不是当前 Play Android Vitals 对 excessive wake locks 的准确指标表达。
 - **建议**：按 Android Vitals 官方口径改为 excessive partial wake locks / non-exempt wake lock session threshold，并区分 Play 政策指标、batterystats 本地聚合、Perfetto trace 观测。
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-04-27
+- **类型**：原理断裂
+- **位置**：L495-L497「WMS 与 Input 系统的协作」
+- **问题**：“InputDispatcher 从 WMS 获取当前所有可见 Window 的区域和 Z-order”容易被理解成每次触摸时同步向 WMS 拉取窗口列表。现代实现更接近 WMS/InputMonitor 维护 input window info，经 SurfaceControl/WindowInfo/IMS 等路径把快照推送给 native InputDispatcher，InputDispatcher 按已缓存的 WindowInfo 做 hit-test。
+- **建议**：补一句说明这是窗口状态变化时推送/同步的 WindowInfo 快照，不是触摸事件到来时的逐次 WMS 查询。
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L479-L481 Android 8.0 后台限制
+- **问题**：“后台 App 的 ContentResolver.query() 调用受到限制、目标 provider 后台时优先级降低”缺少官方/AOSP 锚点。Android 8 后台执行限制主要针对后台 service 与隐式 broadcast；ContentProvider 相关更明确的变化是 content URI observer/notify 的 authority 有效性约束，以及后台任务需要改走 JobScheduler/WorkManager 的间接影响。
+- **建议**：删除“query 优先级降低”的确定性说法，改为后台执行限制对发起查询的组件生命周期产生间接影响，并补充 API 26 与 ContentObserver/notifyChange authority 校验相关变化。
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L543-L545 Photo Picker 版本线
+- **问题**：Photo Picker 是 Android 13/API 33 引入；Android 14/API 34 的重点是 Selected Photos Access / `READ_MEDIA_VISUAL_USER_SELECTED` 等更细粒度媒体权限。当前写成 Android 14 引入 Photo Picker。
+- **建议**：把版本节点拆成 Android 13 Photo Picker、Android 14 Selected Photos Access；说明它们如何替代直接访问 MediaStore Provider 的部分场景。
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L545-L574 Vulkan 性能优势
+- **问题**：Vulkan 性能优势主要是泛化判断，末尾仍标 `[待验证]`，缺少同设备、同页面、同 trace 配置下 `skiagl` vs `skiavk` 的 CPU submit、RenderThread、GPU slice、帧 deadline 数据。
+- **建议**：补一组可复现实验：记录设备/GPU/系统版本，分别用 `debug.hwui.renderer=skiagl` 与 `skiavk` 跑同一复杂 UI 场景，给出 RenderThread dur、GPU busy、jank count、FrameTimeline deadline 对比。
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L614-L616 Android 8/10 渲染管线版本节点
+- **问题**：“Android 8.0 引入 SurfaceFlinger 预合成重构”“Android 10 引入 Skia 渲染后端统一”缺少源码或官方版本锚点，且容易与 HWC2、CompositionEngine、HWUI Skia renderer 的不同演进线混在一起。
+- **建议**：补准确版本线：HWC2/Composer HAL、CompositionEngine/RenderEngine、HWUI SkiaGL/SkiaVK 分别列锚点，避免用单句概括不同子系统。
