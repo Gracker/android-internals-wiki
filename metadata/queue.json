@@ -11541,8 +11541,12 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T21:49:23+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "Task 2B fixed 2.20: recreateOnConfigChanges API 37 boundary, Android 16 large-screen recreation/configChanges risk, multi-display VSync and display_id SQL filtering.",
+    "task2b_rework_summary": "Task 2B fixed 2.20: recreateOnConfigChanges API 37 boundary, Android 16 large-screen recreation/configChanges risk, multi-display VSync and display_id SQL filtering."
   },
   {
     "section": "2.3",
@@ -12188,7 +12192,11 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T15:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T21:49:23+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "Task 2B fixed 7.13: replaced non-existent PunchHole.kt mainline anchor with ContainerReveal/transformation directory and added branch-limited guidance.",
+    "task2b_rework_summary": "Task 2B fixed 7.13: replaced non-existent PunchHole.kt mainline anchor with ContainerReveal/transformation directory and added branch-limited guidance."
   },
   {
     "section": "16.1",

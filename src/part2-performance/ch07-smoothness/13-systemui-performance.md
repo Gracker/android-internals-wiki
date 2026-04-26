@@ -26,8 +26,8 @@ drafted_by: openclaw-task2a
 gap_source: AOSP结构+读者需求+素材驱动
 gap_score: 18
 confidence: medium
-last_verified: "2026-04-25"
-last_verified_against: "AOSP main / Android 16 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP main / Android 16 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout / ContainerReveal；PunchHole.kt 未作为 AOSP mainline 锚点"
 sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/res/layout/super_notification_shade.xml
@@ -54,6 +54,14 @@ sources:
 - type: aosp
   path: frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java
 - type: aosp
+  path: frameworks/base/packages/SystemUI/src/com/android/systemui/scene/shared/flag/SceneContainerFlag.kt
+- type: aosp
+  path: frameworks/base/packages/SystemUI/compose/features/src/com/android/systemui/scene/ui/composable/SceneContainer.kt
+- type: aosp
+  path: frameworks/base/packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayout.kt
+- type: aosp
+  path: frameworks/base/packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/reveal/ContainerReveal.kt
+- type: aosp
   path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java
 - type: aosp
   path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java
@@ -63,11 +71,11 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-25'
@@ -75,7 +83,8 @@ task6_result: pass-light-edit
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T15:20:00+08:00"
-last_task2b_at: "2026-04-25T21:43:45+08:00"
+last_task2b_at: "2026-04-26T21:49:23+08:00"
+
 ---
 
 # 7.13 SystemUI 性能分析
@@ -134,7 +143,8 @@ Flexiglass（内部代号，亦称 Scene Framework）将通知栏、锁屏、Bou
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayout.kt` | 底层 Compose 过渡组件，封装 Scene Graph 和 Transition |
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitionLayoutState.kt` | 管理当前 Scene（`currentScene: SceneKey`）、`transitions`、`transitionState` |
 | `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/SceneTransitions.kt` | 集中声明每对 Scene 之间的过渡动画（如 `lockscreenToShadeTransition`） |
-| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/transformation/PunchHole.kt` | punchHole 裁剪变换，实现场景间视觉穿透效果 |
+| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/reveal/ContainerReveal.kt` | 当前 AOSP main 可核对的 reveal 相关实现入口，用于容器揭示类过渡效果 |
+| `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/transformation/` | 现有基础变换集合，例如 anchored、translate、fade、scale 等；不要把不存在的 `PunchHole.kt` 写成 mainline 锚点 |
 
 ### 源码入口与开关依赖
 
@@ -169,7 +179,7 @@ val lockscreenToShadeTransition = transitionBuilder(
 }
 ```
 
-punchHole 变换允许当前 Scene "穿透" 下方 Scene 的部分区域可见（如 Shade 展开时锁屏背景从通知图标间隙中透出）。
+AOSP main 当前可核对的相邻实现是 `scene/reveal/ContainerReveal.kt` 和 `transformation/` 目录下的 anchored、translate、fade、scale 等基础变换。正文不能再把 `PunchHole.kt` 或 `SceneTransitions.kt` 里的 punchHole 符号写成 mainline 已验证路径；如果目标厂商分支或历史分支存在类似 punch-hole 效果，需要在引用处标出具体分支或 commit。
 
 ### Flexiglass 对性能分析的影响
 
