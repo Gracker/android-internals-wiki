@@ -12136,5 +12136,108 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T15:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "16.1",
+    "section_title": "Google 官方优化",
+    "priority": 85,
+    "reason": "[External Review] BLASTBufferQueue 跨进程 Transaction 传递链缺失，读者对 App→WMS→SurfaceFlinger 同步理解断层",
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "窗口管理：BLASTBufferQueue 优化",
+        "detail": "仅提及 syncNextTransaction/mergeWithNextTransaction，未讲清 App 端 buffer 封装在 Transaction 中经 Binder 传给 WMS，WMS merge 后统一 apply 给 SF",
+        "suggestion": "补充 App → WMS → SurfaceFlinger 的 Transaction 传递链，参考 BLASTSyncEngine.java",
+        "evidence": [
+          "frameworks/native/libs/gui/BLASTBufferQueue.cpp",
+          "frameworks/base/services/core/java/com/android/server/wm/BLASTSyncEngine.java"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T16:12:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "16.3",
+    "section_title": "AOSP 编译与环境搭建",
+    "priority": 85,
+    "reason": "[External Review] Cuttlefish 底层依赖 crosvm 和 virtio 机制未说明，读者不知为何推荐",
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "模拟器运行 AOSP → Cuttlefish",
+        "detail": "提及 Cuttlefish 使用 KVM 硬件加速，但未深入解释与 QEMU 的本质区别，未说明 crosvm + virtio 架构",
+        "suggestion": "补充一句话指出 Cuttlefish 基于 crosvm 和 virtio，这也是它轻量并被 CI 选用的原因",
+        "evidence": [
+          "device/google/cuttlefish",
+          "source.android.com/devices/architecture/kernel/crosvm"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T16:12:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "17.1",
+    "section_title": "OEM 性能优化的通用思路",
+    "priority": 85,
+    "reason": "[External Review] 预创建进程缺乏 AOSP USAP Pool 机制的对应关系",
+    "review_issues": [
+      {
+        "type": "源码缺失",
+        "location": "预加载与预测启动 - 预创建进程",
+        "detail": "提到厂商预创建进程但缺乏 USAP Pool 机制说明，未提及 usap_pool_enabled 等属性",
+        "suggestion": "补充 AOSP USAP Pool 机制，说明厂商如何基于 usap_pool_enabled 做预热缓存池",
+        "evidence": [
+          "frameworks/base/core/java/com/android/internal/os/ZygoteServer.java"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T16:12:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "17.2",
+    "section_title": "SoC 平台差异",
+    "priority": 85,
+    "reason": "[External Review] 联发科全大核调度缺少 Perfetto 验证数据或深入分析",
+    "review_issues": [
+      {
+        "type": "数据支撑缺失",
+        "location": "CPU 核心架构差异与性能调度策略",
+        "detail": "描述联发科全大核架构时提到调度器迁移决策更频繁，但没有给出任何证据或 trace 表现",
+        "suggestion": "补充 Perfetto 中如何观察全大核架构带来的频繁任务迁移，或补充内核调度器逻辑说明",
+        "evidence": [
+          "perfetto.dev 社区案例"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T16:12:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "17.3",
+    "section_title": "行业案例",
+    "priority": 85,
+    "reason": "[External Review] ADPF 缺少 Perfetto 验证手段，读者不知如何确认 ADPF 接入是否被系统正确响应",
+    "review_issues": [
+      {
+        "type": "数据缺失",
+        "location": "ADPF Performance Hint API",
+        "detail": "缺乏 Perfetto 中如何观测 ADPF 生效的描述，缺少 actual_duration vs target_duration 对比",
+        "suggestion": "补充 Perfetto 视角下 ADPF 相关 counter track",
+        "evidence": [
+          "perfetto.dev 官网 ADPF 分析指南",
+          "PerformanceHintManager.java"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T16:12:00+08:00",
+    "status": "pending"
   }
 ]
