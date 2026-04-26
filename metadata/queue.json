@@ -8338,9 +8338,9 @@
   },
   {
     "section": "13.2",
-    "section_title": "13.2",
+    "section_title": "Trace 抓取",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现 11 个需回炉问题",
+    "reason": "[Deep Tech Review] linux.perf callstack sampling 示例缺少 callstack_sampling.scope，仍需回炉",
     "review_issues": [
       {
         "level": "P1",
@@ -8390,12 +8390,29 @@
       {
         "level": "P1",
         "detail": "- 建议修正方向：参考 `perf_event_config.proto`，将采样范围和 unwinding 配置移入 `callstack_sampling` 块。"
+      },
+      {
+        "type": "原理断裂/版本差异",
+        "severity": "P1",
+        "location": "L732-L746 / L855-L866（CPU Callstack Sampling 与组合配置示例）",
+        "detail": "两个 linux.perf 示例都只写了空的 callstack_sampling {}，没有给 callstack_sampling.scope.target_cmdline / target_pid。AOSP main perf_event_config.proto 的当前示例把采样范围放在 CallstackSampling.Scope 中；scope 为空会保留所有进程样本，容易让 traced_perf/unwinder 队列过载。正文 L770-L798 已说明旧顶层 target_cmdline deprecated，但可执行示例没有落到新版结构。",
+        "suggestion": "补一个当前推荐的最小 pbtxt：callstack_sampling { scope { target_cmdline: \"com.example.myapp\" } kernel_frames: false user_frames: UNWIND_DWARF }，并说明 Android 13+ target_cmdline wildcard 语义；组合配置也不要默认全进程采样。",
+        "evidence": [
+          "google/perfetto main protos/perfetto/config/profiling/perf_event_config.proto：官方 basic cpu profiling 示例使用 callstack_sampling.scope.target_cmdline；Scope unset 会保留所有样本并提示可能压垮 unwinder。"
+        ]
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
     "status": "pending",
-    "source_file": "2026-04-25-15-13.2-external-review.md"
+    "source_file": "2026-04-25-15-13.2-external-review.md",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-12-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "last_reviewed_by": "task9-deep-tech-review",
+    "last_reviewed_at": "2026-04-26T12:46:09+08:00",
+    "last_review_log": "logs/deep-review/2026-04-26-12-deep-review.md"
   },
   {
     "section": "13.4",
@@ -10913,5 +10930,56 @@
     "completed_at": "2026-04-26T11:51:00+08:00",
     "completed_by": "openclaw-task2b",
     "completion_reason": "Task2B 回炉修复完成，章节已退回 Task6/Task9 复核"
+  },
+  {
+    "section": "13.9",
+    "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+    "priority": 95,
+    "reason": "[Deep Tech Review] atrace freq category 与 cpu_idle 映射写错",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-12-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "L130-L132（atrace 的分类机制示例）",
+        "detail": "正文写成 atrace freq 会启用 cpu_frequency 和 cpu_idle。AOSP android-16.0.0_r1 / main frameworks/native/cmds/atrace/atrace.cpp 中，freq category 启用 events/power/cpu_frequency/enable 以及 clock/cpuhp/suspend_resume 等可选项；cpu_idle 是 idle category 的必选事件，二者是分开的。",
+        "suggestion": "把示例拆成 freq → cpu_frequency / clock_* / cpu_frequency_limits，idle → cpu_idle；功耗抓取推荐组合仍可写 sched + freq + idle + power，但不要把 cpu_idle 归到 freq。",
+        "evidence": [
+          "AOSP android-16.0.0_r1 frameworks/native/cmds/atrace/atrace.cpp：k_categories 中 freq 与 idle 分别定义。"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T12:46:09+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.6",
+    "section_title": "自动化测试工具",
+    "priority": 95,
+    "reason": "[Deep Tech Review] PowerMetric API 版本边界写错",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-12-deep-review.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/源码错误",
+        "severity": "P0",
+        "location": "L111 / L146（PowerMetric 版本边界）",
+        "detail": "正文把 PowerMetric 写成 API 31+。AndroidX Macrobenchmark PowerMetric 源码/文档标注 RequiresApi(Build.VERSION_CODES.Q)，即 API 29+；真正的限制是设备是否暴露 ODPM/power rail 数据以及指标类别是否可用，不是 API 31 硬下限。",
+        "suggestion": "改成 PowerMetric：API 29+，设备需支持 power rails / ODPM；Pixel 6+ 等设备更适合作为白名单。API 31+ 可以作为 FrameTiming deadline/overrun 等指标边界，不要和 PowerMetric 混在一起。",
+        "evidence": [
+          "AndroidX Benchmark PowerMetric API docs/source：@RequiresApi(Build.VERSION_CODES.Q)",
+          "Android power rails / ODPM 设备能力决定能否返回能耗分类数据。"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T12:46:09+08:00",
+    "status": "pending"
   }
 ]
