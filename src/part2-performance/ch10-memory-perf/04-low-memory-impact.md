@@ -27,19 +27,21 @@ reviewed_by: openclaw-task6
 polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T10:43:00+08:00"
-last_task2b_at: "2026-04-25T17:43:00+08:00"
+last_task2b_at: "2026-04-26T11:51:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9/External 问题单）"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 # 低内存对系统性能的影响
@@ -166,13 +168,13 @@ ART 的垃圾回收会直接受到系统内存压力影响。就 Perfetto 的常
 
 在 Perfetto Trace 中识别内存压力，需要关注以下几个关键信号源。这些信号通常不会单独出现，而是组合在一起时才有诊断价值。
 
-### mm_events：常驻守护进程 + 触发式记录
+### mm_events：内存压力触发的 Perfetto 记录
 
-`mm_events` 是 Android 12+ 的内存压力追踪组件。守护进程本身常驻，平时通过 `perf_event_open` 订阅内核 tracepoints；当 `mm_vmscan_kswapd_wake`、`mm_vmscan_direct_reclaim_begin`、`mm_compaction_begin` 这类事件出现时，再按配置窗口抓取一段 vmstat 和 ftrace 数据。它以常驻监听的方式工作，记录窗口由内核事件触发。
+`mm_events` 是 Android 12+ 的内存压力记录机制，和 `perf_event_open` 常驻订阅 tracepoint 的用户态守护进程模型不同。设备启用后，内存压力触发器会拉起一段受限采集窗口，按 `/vendor/etc/mm_events.cfg` 记录 vmstat 和 ftrace/mm_event 数据，用来保留压力发生前后的证据。
 
-`mm_events` 的配置文件通常位于 `/vendor/etc/mm_events.cfg`。在 Perfetto 里，它常和 `linux.ftrace` 轨道一起看：前者给出一段压力窗口内的统计快照，后者用 `mm_vmscan_*`、`mm_compaction_*` 把时序补齐。
+排查时先看 `persist.mm_events.enabled` 是否打开，再看触发器和限流配置。常见触发器是 `kmem_activity`，触发过密时会受 rate limit 限制；所以 trace 里没有 `mm_events` 记录，不等于设备没有发生内存压力。
 
-Android 10/11 还没有 `mm_events` 这条路径。分析这两个版本的低内存问题时，仍然要回到 `vmscan` ftrace、PSI 和 lmkd 日志。到 Android 12+，再把 `mem.mm_events` 纳入统一判断。
+在 Perfetto 里，`mm_events` 要和 `linux.ftrace` 轨道一起读：前者给出压力窗口内的统计快照，后者用 `mm_vmscan_*`、`mm_compaction_*` 把时序补齐。Android 10/11 还没有这条路径，分析这两个版本时仍然回到 `vmscan` ftrace、PSI 和 lmkd 日志。
 
 [已验证: 官方文档, source.android.com; 源码锚点: system/memory/mm_events/]
 
@@ -287,13 +289,13 @@ Android 10+ 引入了 cgroup 抽象层和 Task Profiles 机制。厂商可以在
 
 cgroup 和 PSI 不是同一层。cgroup 负责进程分组、内存记账和 task profile 约束；PSI 负责把 stall 时间暴露给 lmkd，帮助它决定什么时候该杀后台进程。把这几条线分开看，才不会把“userspace lmkd”、“memcg 依赖”和“PSI 模式”写成同一个版本开关。[已验证: 官方文档, source.android.com]
 
-### Compact Daemon（用户空间内存规整）
+### 内存规整：内核 kcompactd 与 cached app compaction
 
-Android 10 引入了 compactd（Compact Daemon），一个用户空间的内存规整守护进程。它的工作是在后台对内存进行规整（compaction），把分散的空闲页面合并为连续的高阶页面，减少内存分配时的碎片化问题。
+公开 Android / AOSP 口径里没有 Android 10 引入 `compactd` 这个独立用户空间 daemon。低内存分析要拆成两层：内核 compaction 负责把分散空闲页整理成连续高阶页；Android Framework 的 cached app compaction 负责压缩或回收 cached 进程的一部分匿名页，降低后台 RSS。
 
-compactd 的触发条件基于内存压力信号。当系统检测到内存碎片化严重（通过 `/proc/vmstat` 中的 `compact_fail` 和 `compact_stall` 计数判断），或者 lmkd 发出内存压力通知时，compactd 会对指定 cgroup 中的进程内存执行规整操作。
+内核侧看 `kcompactd` 线程、`/proc/vmstat` 里的 `compact_*` 计数，以及 ftrace 的 `mm_compaction_*` 事件。它处理的是系统空闲页碎片化，目标是让高阶页分配更容易成功，不会直接释放 App 的 Java 对象。
 
-与 kswapd 的回收不同，compactd 不回收页面，只做规整。它和 kswapd 互补：kswapd 负责释放内存，compactd 负责让剩余内存更"好用"。在 Perfetto 中，compactd 的活动可以通过 `/proc/vmstat` 中的 `compact_*` 计数器间接观察到。[已验证: source.android.com]
+Framework 侧看 `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java` 相关逻辑。它会按 cached 进程状态触发 partial / full compaction，和 lmkd、PSI 配合降低后台进程驻留成本。排查时不要把这条路径命名为 `compactd`，也不要让读者去找不存在的守护进程。[已验证: source.android.com; AOSP frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java]
 
 ### onTrimMemory 与系统压力信号的边界
 
