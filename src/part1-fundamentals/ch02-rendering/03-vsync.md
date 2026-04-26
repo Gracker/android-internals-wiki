@@ -2,8 +2,8 @@
 title: "VSync 机制"
 chapter: "2.3"
 status: ready-for-review
-reviewed_date: 2026-04-22
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-26"
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
@@ -41,8 +41,8 @@ sources:
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
 pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -50,7 +50,7 @@ task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T18:52:00+08:00"
-review_round: 2
+review_round: 3
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-26T22:53:54+08:00"
@@ -708,7 +708,7 @@ Offset 过小会导致 App 或 SF 来不及完成工作,错过 VSync 窗口,反�
 - [Systrace 基础知识 - Vsync 产生与工作机制解读](https://www.androidperformance.com/2019/12/01/Android-Systrace-Vsync/) - 高爷原创
 - [Android Perfetto 系列 8:深入理解 Vsync 机制与性能分析](https://androidperformance.com/2025/08/05/Android-Perfetto-08-Vsync/) - 高爷原创
 <!-- AIW-源码调研-2026-04-24 -->
-## 十一、VSyncPredictor 线性回归算法详解（Android 14+ 源码补充）
+## 十二、VSyncPredictor 线性回归算法详解（Android 14+ 源码补充）
 
 **[自动发现: 来源 AOSP mainline VSyncPredictor.cpp 源码分析]**
 

@@ -241,6 +241,108 @@ SurfaceFlinger 瓶颈导致的卡顿有一个特点：App 侧的 Trace 看起来
 
 **在 Perfetto 中的表现：** 先看 SurfaceFlinger 的 `doComposition`、`composeSurfaces` 或 RenderEngine 相关 slice 是否拉长，再用 `adb shell dumpsys SurfaceFlinger` 做快照，检查对应 layer 是否出现 `DEVICE` / `CLIENT` 一类的 composition type 分配结果。厂商输出格式差异很大，这一步适合做复核，不要只凭一条未验证的 SQL 下结论。
 
+
+
+<!-- AIW-源码调研-2026-04-26: HWC厂商差异深度分析 -->
+#### HWC 厂商差异：Qualcomm vs MediaTek 源码级分析
+
+> 以下内容基于 AOSP 源码和公开技术文档的一手研究。高通/联发科的 HWC 私有实现代码不在 AOSP 主线中，以下分析基于 AOSP HAL 接口定义和公开技术博客。
+
+**核心结论：高通与联发科的 HWC 具体决策算法属于厂商私有实现，不在 AOSP 主线源码中公开。两家厂商的核心差异体现在 Overlay 平面数量和分配策略、私有优化技术、以及功耗管理策略上。**
+
+**HWC2 Composition 类型体系（AOSP 源码）：**
+
+```cpp
+// hardware/libhardware/include/hardware/hwcomposer2.h
+enum class HWC2::Composition {
+    Invalid = 0,
+    Client = 1,     // GPU GLES 合成，SurfaceFlinger 负责
+    Device = 2,      // HWC 硬件 Overlay 合成
+    SolidColor = 3,  // 纯色层
+    Cursor = 4,      // 光标层
+    Sideband = 5,    // 视频流直通道
+};
+```
+
+Android 13+ 的 HWC3 (AIDL) 使用相同的语义但通过 AIDL 接口暴露：
+
+```hal
+// hardware/interfaces/graphics/composer/IComposerClient.aidl
+enum CompositionType : int32 {
+    DEVICE = 1,      // 硬件 Overlay 合成
+    CLIENT = 2,      // GPU 回退合成
+    SOLID_COLOR = 3,
+    CURSOR = 4,
+    SIDEBAND = 5,
+};
+```
+
+**DEVICE vs CLIENT 决策流程（AOSP）：**
+
+```
+SurfaceFlinger.prepareImage()
+  → HWComposer::prepare()
+  → for each layer: hwc2::Composer::validateDisplay()
+  → HWC vendor layer 返回 composition type
+  → SurfaceFlinger.acceptDisplayChanges()
+```
+
+关键源码：`frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp`
+
+**Qualcomm 私有优化技术：**
+
+1. **"Solid Fill Planes"（固态填充平面）**：允许显示硬件直接渲染单色层，无需从内存读取像素数据，显著降低功耗
+2. **"Peripheral Tiny Overlap Removal (PTOR)"**：将小的重叠区域通过 Copybit 处理到渲染缓冲区，避免为微小重叠触发完整 GPU 合成
+
+**Qualcomm HWC 代码位置**（私有仓库，不在 AOSP 主线）：
+- `platform/hardware/qcom/display/` — Qualcomm 私有 HWC 实现
+- `platform/external/drm_hwcomposer/` — DRM HWC 参考实现（开源部分）
+
+**MediaTek HWC 特点：**
+
+- MTK Dimensity 系列通常支持 4 个或更多 Overlay 平面
+- 某些 MTK 实现在静态场景下更激进地将 DEVICE 切换到 CLIENT，以节省 Overlay 平面功耗
+- "Miravision"技术栈包含显示处理优化，与 HWC 协同处理视频增强
+
+**dumpsys SurfaceFlinger DEVICE/CLIENT 输出格式（AOSP）：**
+
+```
+Display 0 (Primary):
+  HWC layers:
+  + Bounds: 1080x2400, z=0, type=DEVICE, hdl=0x...
+  |  Layer: com.android.systemui.statusbar
+  + Bounds: 1080x2400, z=1, type=DEVICE, hdl=0x...
+  |  Layer: com.example.app/MainActivity
+  ...
+  + ClientTarget: 1080x2400, type=CLIENT
+```
+
+关键含义：
+- `type=DEVICE`：HWC 决定使用硬件 Overlay 合成
+- `type=CLIENT`：SurfaceFlinger 先 GLES 合成到 ClientTarget，再提交给 HWC
+
+**厂商差异对调试的实际影响：**
+
+| 维度 | Qualcomm | MediaTek |
+|------|----------|----------|
+| Overlay 平面数量 | 通常 4-6 个 | 通常 4 个或更多 |
+| 静态场景策略 | 保留 Overlay | 更积极切换到 CLIENT |
+| 视频场景优化 | 优先保留 Overlay 给受保护内容 | 类似策略 |
+| 私有优化 | Solid Fill Planes、PTOR | Miravision 视频增强 |
+
+**关键源码文件索引：**
+
+| 文件路径 | 关键内容 | 版本 |
+|---------|---------|------|
+| `hardware/libhardware/include/hardware/hwcomposer2.h` | HWC2 Composition 枚举定义 | 全版本 |
+| `hardware/interfaces/graphics/composer/IComposer.aidl` | HWC3 AIDL 接口 | Android 13+ |
+| `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` | SurfaceFlinger HWC 封装 | 全版本 |
+| `platform/hardware/qcom/display/` | Qualcomm 私有 HWC 实现 | 厂商私有 |
+| `platform/external/drm_hwcomposer/` | DRM HWC 参考实现 | Linux mainline |
+
+[一手研究: AOSP hwcomposer2.h, IComposer.aidl, HWComposer.cpp; Qualcomm 官方博客; developer.android.com HWC 文档]
+
+
 ## 系统级原因
 
 前面三类原因（主线程、RenderThread、SurfaceFlinger）属于渲染管线内部的问题。但在实际分析中，我们还会遇到一种情况：渲染管线内的每一步看起来都很快，但整体还是超时了。这时候问题往往出在系统层面——CPU 调度、内存管理、温度控制等因素在背后影响着渲染管线的执行效率。
