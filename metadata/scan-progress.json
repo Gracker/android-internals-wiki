@@ -8,9 +8,9 @@
     3,
     4
   ],
-  "indexed_links": 26,
-  "skipped_links": 32,
-  "fetch_failures": 11,
+  "indexed_links": 25,
+  "skipped_links": 28,
+  "fetch_failures": 12,
   "issue_list": [
     "2020-08-18_Android_Weekly_#0.md",
     "2020-08-25_Android_Weekly_#1.md",
