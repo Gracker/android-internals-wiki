@@ -19131,6 +19131,29 @@
       "date": "2026-04-26",
       "type": "incremental",
       "scored_at": "2026-04-26T09:49:45.295048"
+    },
+    {
+      "title": "会写『18.dp』只是个入门——Kotlin 的扩展函数和属性 | 开发者说·DTalk",
+      "path": "AndroidWeekly/#4/会写『18.dp』只是个入门——Kotlin 的扩展函数和属性 | 开发者说·DTalk",
+      "source_url": "https://mp.weixin.qq.com/s/6LzS9aUg6QW0-laPC1RoaQ",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch08-Java生态",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Kotlin扩展函数与属性",
+      "scored_at": "2026-04-26T16:45:18.722097"
     }
   ]
 }
