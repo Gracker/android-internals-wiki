@@ -34,7 +34,7 @@ sources:
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
 related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5", "1.10"]
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-04-26"
 review_v2_date: "2026-04-09"
 review_v2_by: "openclaw-task6"
 review_type: "post-polish-quality-gate"
@@ -44,8 +44,8 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: 'needs-rework'
 task2b_state: fixed
