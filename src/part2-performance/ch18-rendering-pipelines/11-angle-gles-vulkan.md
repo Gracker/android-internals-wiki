@@ -11,7 +11,7 @@ tags:
 - 翻译层
 - SPIR-V
 - 图形驱动
-- 渲染链路
+- 渲染路径
 related_chapters:
 - '2.14'
 - '18.8'
@@ -26,9 +26,11 @@ pipeline_stage: task6_pending
 task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
+review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task6_result: pass-light-edit
 last_task9_at: "2026-04-26T13:26:21+08:00"
 task9_reviewed_date: "2026-04-26"
+review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。小修1处（「渲染链路」→「渲染路径」禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task9_reviewed_by: openclaw-task9
 task9_result: needs-rework
 review_round: 1
