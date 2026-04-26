@@ -10597,7 +10597,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T08:30:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T08:55:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "修复 ProfilingManager hidden API 示例、AutoFDO 数据口径和 Google Play 16KB 条件。"
   },
   {
     "section": "13.8",
@@ -10625,7 +10628,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T08:30:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T08:55:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "修复 counter.dur 不存在与主线程 JOIN 错误。"
   },
   {
     "section": "14.10",
@@ -10667,6 +10673,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T08:30:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T08:55:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "修复 simpleperf probe 事件名、bpftrace stats 输出和 syscall latency enter/exit 配对。"
   }
 ]

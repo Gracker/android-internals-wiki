@@ -34,20 +34,21 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T08:30:00+08:00"
-repaired_date: "2026-04-25"
+repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-25T18:48:46+08:00"
+last_task2b_at: "2026-04-26T08:55:00+08:00"
 review_round: 4
+
 ---
 
 # 案例集
@@ -356,17 +357,22 @@ AutoFDO（Automatic Feedback-Directed Optimization）的核心思路是：收集
 
 为什么优化内核能加速 App 启动？因为在 Android 上，内核操作约占总 CPU 时间的 40% [已验证: developer.android.com, Google Blog 2026-03]。App 启动过程中的每一次 Binder 调用、每一次内存分配、每一次文件 IO，背后都有内核的参与。优化内核热路径等于优化了所有 App 共用的基础设施。
 
-实测效果：
+公开资料里的数字来自两类口径，不能放在同一张“实测效果”表里。Android GKI / Pixel 相关结果如下：
 
-| 指标 | 变化 |
-|------|------|
-| 整体启动时间 | **-2.1%** |
-| 部分基准测试 | **最高 +26.4%** |
-| 几何平均 | **+10.5%** |
-| Binder 测试 | **+21%** |
-| 开机时间 | **缩短 1-2%** |
+| 场景 / benchmark | 口径 | 变化 |
+|------------------|------|------|
+| App cold start | Pixel 设备上常用应用 profile 驱动的 Android GKI 内核优化 | **-2.1%** 启动耗时 |
+| Boot | Android GKI 内核优化后的系统开机场景 | **缩短 1-2%** |
+| Binder RPC | Android 内核微基准 | **+21%** |
+| HWBinder | Android 内核微基准中的高收益子项 | **最高 +26.4%** |
 
-AutoFDO 目前已部署到 android16-6.12 和 android15-6.6 内核分支，计划扩展到 android17-6.18 GKI。
+AutoFDO 早期论文 / 数据中心基准另算：
+
+| 场景 / benchmark | 口径 | 变化 |
+|------------------|------|------|
+| AutoFDO historical benchmark | 早期 AutoFDO 论文与服务端 workload 的几何平均 | **+10.5%** |
+
+这两张表不能互相外推：`+10.5%` 不代表 Android App 启动收益，`+26.4%` 也不能当成系统级平均收益。AutoFDO 目前已部署到 android16-6.12 和 android15-6.6 内核分支，计划扩展到 android17-6.18 GKI。
 
 ### 16KB 页面大小：减少 TLB Miss 的架构级优化
 
@@ -387,7 +393,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 内存使用增加约 9% 是代价。但考虑到启动速度和功耗的改善，这个 trade-off 对大多数设备是值得的。
 
-自 2025 年 11 月 1 日起，新应用和更新必须支持 16KB 页面大小才能在 Google Play 上架。这对 NDK/JNI 开发者影响最大——需要确保 native 代码中没有硬编码 `PAGE_SIZE = 4096` 的假设。
+自 2025 年 11 月 1 日起，提交到 Google Play、面向 Android 15+ 设备的新应用和更新，在 64-bit 设备上要支持 16KB page size。影响集中在 NDK/JNI 和第三方 `.so`：检查 ELF segment alignment、AGP/NDK 版本、`mmap` 长度计算、任何硬编码 `4096` 或 `PAGE_SIZE` 的假设。纯 Java/Kotlin 代码大多由系统处理，但只要 APK 里有 native library，就要在 16KB emulator 或真机上跑安装、启动、so 加载和动态 mmap 路径。
 
 ### 本案例的关键启示
 
@@ -407,21 +413,18 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，这说明他们最清楚一件事：优化成果的保持比取得优化更难。每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
 
-[自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供 `android.os.ProfilingManager`,应用可以通过 `requestProfiling()` 请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件,启动慢不再只能依赖开发者手动复现。
+[自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件，启动慢不再只能依赖开发者手动复现。
 
-下面的代码只展示显式请求 system trace 的最小路径,重点看 `PROFILING_TYPE_SYSTEM_TRACE`、`KEY_DURATION_MS` 和结果回调:
+下面的代码只展示公开 SDK 可编译的显式 system trace 请求路径，重点看 `PROFILING_TYPE_SYSTEM_TRACE`、`tag` 和结果回调。公开 SDK 没有暴露 `KEY_DURATION_MS`；普通 App 代码不要依赖隐藏常量控制采集时长：
 
 ```kotlin
 @RequiresApi(35)
 fun requestStartupSystemTrace(context: Context) {
     val profilingManager = context.getSystemService(ProfilingManager::class.java)
-    val params = Bundle().apply {
-        putLong(ProfilingManager.KEY_DURATION_MS, 10_000L)
-    }
 
     profilingManager.requestProfiling(
         ProfilingManager.PROFILING_TYPE_SYSTEM_TRACE,
-        params,
+        null,
         "startup_trace",
         null,
         context.mainExecutor
@@ -436,7 +439,7 @@ fun requestStartupSystemTrace(context: Context) {
 }
 ```
 
-结果文件由系统写入应用可访问目录,回调只负责拿到路径和错误码。线上接入时还要加采样率、用户授权、隐私脱敏和上传窗口控制,否则 trace 文件会带来额外 I/O 和合规风险。[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md；Android `ProfilingManager` API 文档]
+`requestProfiling()` 的第二个参数可以传 `null` 或公开参数组成的 `Bundle`。如果要调整采集时长，只能等公开 SDK 提供对应键，或在平台 / 系统 App 场景使用已确认的内部接口；普通 App 示例不应写 `ProfilingManager.KEY_DURATION_MS`。结果文件由系统写入应用可访问目录，回调只负责拿到路径和错误码。线上接入时还要加采样率、用户授权、隐私脱敏和上传窗口控制，否则 trace 文件会带来额外 I/O 和合规风险。[来源: intake/research-feeds/2026-04-01-12-android16-17-profilingmanager-system-triggered.md；Android `ProfilingManager` API 文档]
 
 ---
 

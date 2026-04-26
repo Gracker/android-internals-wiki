@@ -2,7 +2,7 @@
 title: "Perfetto 输入延迟 SQL 深度分析"
 chapter: "13.8"
 section: "13.8"
-status: "ready-for-review"
+status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: openclaw-task6
@@ -22,20 +22,21 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task2b_pending
-task2b_result: "fixed"
-task2b_state: pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 
-last_task2b_at: "2026-04-25T12:21:17+08:00"
+last_task2b_at: "2026-04-26T08:55:00+08:00"
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T08:30:00+08:00"
-repaired_date: "2026-04-25"
+repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析
@@ -289,7 +290,7 @@ WHERE lower(name) GLOB '*input*'
 ORDER BY name;
 ```
 
-确认名称后，用精确名称过滤队列，避免 `GLOB '*iq*'` 命中无关 track：
+确认名称后，用精确名称过滤队列，避免 `GLOB '*iq*'` 命中无关 track。`counter` 表没有 `dur` 列，队列长度持续时间要用下一条采样时间反推：
 
 ```sql
 -- 查找 inbound queue 堆积超过 5 个事件的时间段
@@ -301,18 +302,30 @@ WITH input_dispatcher_queues AS (
     'InputDispatcher outbound queue',
     'InputDispatcher wait queue'
   )
+),
+queue_samples AS (
+  SELECT
+    c.ts,
+    LEAD(c.ts) OVER (
+      PARTITION BY c.track_id
+      ORDER BY c.ts
+    ) AS next_ts,
+    q.name AS queue_name,
+    c.value AS queue_length
+  FROM counter AS c
+  JOIN input_dispatcher_queues AS q
+    ON c.track_id = q.id
+  WHERE q.name = 'InputDispatcher inbound queue'
 )
 SELECT
-  CAST(counter.ts / 1000000.0) AS timestamp_ms,
-  CAST(counter.dur / 1000000.0) AS duration_ms,
-  queues.name AS queue_name,
-  counter.value AS queue_length
-FROM counter
-JOIN input_dispatcher_queues AS queues
-  ON counter.track_id = queues.id
-WHERE queues.name = 'InputDispatcher inbound queue'
-  AND counter.value > 5
-ORDER BY counter.value DESC
+  ts / 1000000.0 AS timestamp_ms,
+  (next_ts - ts) / 1000000.0 AS duration_ms,
+  queue_name,
+  queue_length
+FROM queue_samples
+WHERE queue_length > 5
+  AND next_ts IS NOT NULL
+ORDER BY queue_length DESC, duration_ms DESC
 LIMIT 50;
 ```
 
@@ -494,25 +507,46 @@ ORDER BY ts DESC
 LIMIT 5;
 
 -- Step 2: 用上面得到的 anr_ts，查看之前 5 秒 App 主线程上的长耗时操作
-SELECT
-  CAST(ts / 1000000.0) AS timestamp_ms,
-  name,
-  CAST(dur / 1000000.0) AS duration_ms,
-  thread.name AS thread_name
-FROM slice
-JOIN thread ON slice.track_id IN (
-  SELECT id FROM track WHERE thread.utid = (
-    SELECT utid FROM thread WHERE name = 'main'
-      AND upid = (SELECT upid FROM process WHERE name = '{app_package}')
-  )
+WITH target_process AS (
+  SELECT upid, pid
+  FROM process
+  WHERE name = '{app_package}'
+  LIMIT 1
+),
+target_main_thread AS (
+  SELECT t.utid
+  FROM thread AS t
+  JOIN target_process AS p
+    ON t.upid = p.upid
+  WHERE t.is_main_thread = 1
+     OR t.tid = p.pid
+     OR t.name = 'main'
+  ORDER BY CASE
+    WHEN t.is_main_thread = 1 THEN 0
+    WHEN t.tid = p.pid THEN 1
+    ELSE 2
+  END
+  LIMIT 1
 )
-WHERE ts BETWEEN {anr_ts} - 5000000000 AND {anr_ts}
-  AND dur > 16000000  -- 超过一帧（16ms@60Hz）
-ORDER BY dur DESC
+SELECT
+  s.ts / 1000000.0 AS timestamp_ms,
+  s.name,
+  s.dur / 1000000.0 AS duration_ms,
+  t.name AS thread_name
+FROM slice AS s
+JOIN thread_track AS tt
+  ON s.track_id = tt.id
+JOIN thread AS t
+  ON tt.utid = t.utid
+JOIN target_main_thread AS mt
+  ON t.utid = mt.utid
+WHERE s.ts BETWEEN {anr_ts} - 5000000000 AND {anr_ts}
+  AND s.dur > 16000000  -- 超过一帧（16ms@60Hz）
+ORDER BY s.dur DESC
 LIMIT 50;
 ```
 
-这个两步查询先定位 ANR 时间点，然后找出 App 主线程上所有超过 16ms 的操作。通常会发现某个 Binder 调用、IO 操作或锁等待占据了主线程。
+第二步通过 `thread_track` 把 `slice.track_id` 关联到目标线程，再用 `process.name` 锁定目标进程。这样可以避免把其他线程或其他进程的 slice 混进 ANR 前主线程耗时列表。
 
 [交叉引用: §9.3 ANR 分析方法 — 完整的 ANR 分析流程]
 
