@@ -11122,16 +11122,33 @@
     "section": "1.7",
     "section_title": "1.7 ART 编译管线与 dex2oat 优化",
     "priority": 85,
-    "reason": "[External Review] 技术评分 4.0/5",
+    "reason": "[Deep Tech Review] ART 编译章节缺少真实 Trace / 编译状态对照，数据支撑未闭环",
     "review_issues": [
       {
         "type": "P1重要缺失",
         "detail": "- [P1][数据/案例支撑][在 Perfetto 和工具中的表现]\n- 原文问题：文中多次提到“在 Perfetto 中看到 `art::jit::*`”、“`Jit compilation`”、“`Deoptimization` Slice”，但全篇没有提供任何实际的 Perfetto 截图或完整的查询 SQL。\n- 缺失内容：真实的 Trace 表现是读者落地的关键，没有截图会导致实战指导"
+      },
+      {
+        "type": "数据缺失/Trace证据缺失",
+        "location": "L81, L219-L222, L371-L389：Perfetto / JIT 观测方式",
+        "detail": "章节仍保留“真实 Trace 截图待补充”，但正文已经把 `Jit compilation`、`Jit method compilation`、`Jit code cache`、`Jit trampoline` 等写成诊断入口；缺少 Perfetto 抓取配置、真实 slice 截图或 SQL、以及 `cmd package art dump` / `profman` 输出对照，读者无法复现实战判断。",
+        "suggestion": "补一组可复现实验：首次安装/清 Profile 与命中 Baseline 或 speed-profile 后的对照 Trace；给出 Perfetto config 或抓取命令、关键线程/slice截图、`cmd package art dump` 编译状态和 `profman --dump-profile-file` 方法数。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "L92：冷启动差距 30% 以上",
+        "detail": "“首次安装和积累 JIT Profile 后冷启动速度可能差距 30% 以上”仍标注待验证。该数字会影响读者对 Profile 收益的预期，不能只作为经验值保留在正文。",
+        "suggestion": "如果保留 30% 数字，补官方 benchmark 或本书 Macrobenchmark 测试条件（设备、Android 版本、样本次数、TTID/TTFD 指标、方差）；否则改成条件化描述，不给固定百分比。"
       }
     ],
     "added_by": "external-ai-review",
     "status": "pending",
-    "date": "2026-04-26"
+    "date": "2026-04-26",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-15-deep-review.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-26T15:20:00+08:00"
   },
   {
     "section": "1.8",
@@ -12089,6 +12106,26 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-26T15:14:34+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.13",
+    "section_title": "SystemUI 性能分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Scene Framework 源码路径 PunchHole.kt 在 AOSP master 不存在，Flexiglass 过渡机制描述需按目标分支重核",
+    "material_paths": [
+      "logs/deep-review/2026-04-26-15-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L137 / L172：Android 15+ SceneContainer 源码索引与 punchHole 过渡描述",
+        "detail": "文中引用 `packages/SystemUI/compose/scene/src/com/android/compose/animation/scene/transformation/PunchHole.kt`，但 AOSP master 当前 `transformation/` 目录没有该文件，`SceneTransitions.kt` 也没有 punchHole 相关符号；相邻的可核对实现位于 `scene/reveal/ContainerReveal.kt` 和现有 transformation 类。该段把不存在或已迁移的开发分支符号写成 AOSP mainline 稳定源码锚点。",
+        "suggestion": "按目标分支重新核对 Scene Framework 过渡实现；若当前分支已改为 ContainerReveal / reveal 机制，就替换源码路径与机制说明；若 punchHole 仅存在于历史或实验分支，必须标成分支限定并移出“已验证 AOSP mainline”口径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T15:20:00+08:00",
     "status": "pending"
   }
 ]
