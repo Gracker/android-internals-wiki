@@ -28,7 +28,7 @@ polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
