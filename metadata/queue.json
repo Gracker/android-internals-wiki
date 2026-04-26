@@ -11608,8 +11608,11 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-27T00:40:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已补充 BLASTBufferQueue transaction 合并机制与 SurfaceFlinger commit 消费路径。"
   },
   {
     "section": "2.7",
@@ -12388,7 +12391,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T19:33:53+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T00:40:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已修复 Flutter 3.29+ 线程模型、Impeller engine build 离线 shader/reflection、Android Impeller fallback 条件。"
   },
   {
     "section": "2.6",
@@ -12421,7 +12427,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T20:23:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T00:40:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已修复 HWC HAL 与显示硬件边界、HWC2/HWC3 协商步骤、BLASTBufferQueue transaction 合并路径。"
   },
   {
     "section": "3.1",
