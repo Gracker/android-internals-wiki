@@ -4,8 +4,8 @@ chapter: "5.7"
 section: "5.7"
 status: ready-for-review
 applicable_versions: "Android 5.0 - 16"
-last_verified: "2026-04-20"
-last_verified_against: "developer.android.com + source.android.com + AOSP android-16.0.0_r1 + android15-6.6.98_r00"
+last_verified: "2026-04-27"
+last_verified_against: "developer.android.com + source.android.com + AOSP android-16.0.0_r1 + android15-6.6.98_r00 + Arm MTE docs"
 confidence: medium
 sources:
   - type: official
@@ -35,6 +35,12 @@ sources:
   - type: aosp
     path: "platform/system/core/+/android-16.0.0_r1/libprocessgroup/profiles/task_profiles.json"
   - type: aosp
+    path: "platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/PerformanceHintManager.java"
+  - type: official
+    path: "developer.android.com/ndk/guides/arm-mte"
+  - type: official
+    path: "source.android.com/docs/security/test/memory-safety/arm-mte"
+  - type: aosp
     path: "kernel/common/+/refs/tags/android15-6.6.98_r00/include/trace/hooks/sched.h"
 tags:
   - android
@@ -54,16 +60,21 @@ related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-27
 last_task9_at: 2026-04-27T05:20:00+08:00
 task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。"
+last_task2b_at: "2026-04-27T05:45:00+08:00"
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
+rework_type: "review回炉修复（Task9/External 问题单）"
+
 ---
 
 
@@ -226,6 +237,18 @@ Android 10 还做了两件和功耗直接相关的改动：
 
 [已验证: 官方文档, developer.android.com/about/versions/10/privacy/changes]
 
+## [自动发现] ARMv8.5 / ARMv9：SVE2 与 MTE 对 App 的影响
+
+ARMv9 进入手机后，Android App 主要受到两类硬件能力分化影响：向量指令和内存标记。
+
+SVE2 面向 native 热点路径，典型受益场景是图像处理、音频 DSP、加解密、ML 前后处理这类循环密集代码。它不是 Java / Kotlin 层直接调用的 Android API；NDK 代码要做运行时能力检测，并保留 NEON 或标量 fallback。不同 SoC 是否暴露 SVE / SVE2 能力差异很大，不能按 Android 版本直接判断。
+
+MTE（Memory Tagging Extension）由 Armv8.5-A 引入，Android 在支持硬件的设备上通过 `android:memtagMode` 控制 App 或进程的 native 内存标记检查。`sync` 模式更适合调试，能在 tag mismatch 附近给出精确崩溃；`async` / `asymm` 更偏低开销监控，但崩溃点可能滞后到后续 kernel entry。MTE 的目标是内存安全，不应被当成性能优化开关；开启前要在目标机型上用 Perfetto / simpleperf 复测 CPU、启动耗时和 native 崩溃率。
+
+这条演进和调度策略不是同一层。Perfetto 能帮助观察 MTE 开启后的线程时序、崩溃前后 CPU 状态和启动耗时变化；tag mismatch 的直接证据仍然来自 tombstone / logcat / crash report。SVE2 的收益则要通过 native benchmark、simpleperf 热点和硬件能力检测一起确认。
+
+[已验证: developer.android.com/ndk/guides/arm-mte；source.android.com/docs/security/test/memory-safety/arm-mte；Arm Architecture Reference Manual]
+
 ## [自动发现] Android 11-15：schedtune 退场，uclamp 与 task profiles 进入主线
 
 如果只记住 EAS 和 GKI，中间会少掉最关键的一层，线程的性能意图怎么真正传到调度器。Android 10 之前，很多设备习惯用 schedtune 和一组厂商自定义 cgroup boost 做前台、后台、Top App 的差异化调度。到 Android 11 之后，AOSP 开始把这类策略收敛到 `libprocessgroup` 和 `task_profiles.json` 这一套统一接口里。
@@ -338,7 +361,7 @@ GKI 对 CPU 调度的影响，主要体现在厂商还能在哪里放自己的�
 
 1. **约束越来越严格**：从推荐使用 JobScheduler（5.0），到限制后台服务（8.0），到限制精确闹钟（12-13），到限制后台网络（15）。每一步都在封堵"App 自己控制 CPU"的路径。
 2. **策略越来越智能**：从静态的 Doze（6.0），到 ML 驱动的 Adaptive Battery（9.0），再到按 Standby Bucket、前后台状态和 Job 配额做动态控制（16）。系统越来越擅长根据用户行为和设备状态做决策。
-3. **用户可见性越来越高**：前台服务通知（8.0）→ FGS Task Manager（13）→ 后台网络异常提示（15）。用户对"哪些 App 在用 CPU"的了解越来越清晰。
+3. **用户可见性越来越高**：前台服务通知（8.0）→ FGS Task Manager（13）→ Play listing / Vitals 警告。Android 15 的后台网络限制属于平台约束，常见表现是 App 侧 `UnknownHostException` 或 socket `IOException`，不写成通用用户提示。
 
 ## 在 Perfetto 中的观察
 
@@ -348,9 +371,9 @@ GKI 对 CPU 调度的影响，主要体现在厂商还能在哪里放自己的�
 
 2. **任务迁移模式**：对比不同 Android 版本上同一 App 的 CPU 调度 Track。在 EAS 启用前（Android 9 及更早），任务迁移更"随机"；EAS 启用后（Android 10+），会更常看到"把轻量任务集中到小核"的规律性模式。
 
-3. **JobScheduler 执行**：在 Android 12+ 上，Job 的执行间隔明显更不规律，特别是 Rare 桶的 App。可以通过 System Server 进程中的 JobScheduler track 观察任务的调度和执行情况。
+3. **JobScheduler 执行**：在 Android 12+ 上，Job 的执行间隔明显更不规律，特别是 Rare 桶的 App。Perfetto 里要把两类数据分开：`android_job_scheduler_states` 来自 statsd atom，适合看 constraint、bucket 和 pending 状态；`android_job_scheduler_events` 来自 system_server 的 atrace `ss` 类别，适合看 schedule / execute 事件。
 
-4. **Standby Bucket 变化**：在长时间 Trace 中，同一个 App 的 Job 执行频率通常会随时间推移而降低，这正是 Adaptive Battery 在起作用。通过 System Server 进程中的 `JobScheduler` track，能看到任务调度间隔逐渐拉长。
+4. **Standby Bucket 变化**：在长时间 Trace 中，同一个 App 的 Job 执行频率通常会随时间推移而降低，这正是 Adaptive Battery 在起作用。bucket 与约束状态优先看 statsd 生成的 `android_job_scheduler_states`，执行时序再用 atrace 生成的 `android_job_scheduler_events` 互查。
 
 5. **WakeLock 持有时间**：Doze 模式下 WakeLock 被忽略，所以在 Perfetto 中可能会看到 WakeLock 被 acquire 后很久才被 release，但这期间 CPU 并没有实际活动——因为 Doze 覆盖了 WakeLock 的效果。
 
@@ -362,7 +385,7 @@ GKI 对 CPU 调度的影响，主要体现在厂商还能在哪里放自己的�
 最大可能：使用了精确闹钟但没有声明 `SCHEDULE_EXACT_ALARM` 权限，或者 App 被放到了 Restricted 桶。检查 `adb shell am get-standby-bucket` 和 `adb shell dumpsys alarm`。
 
 ### "EAS 让我的 App 变慢了"
-不完全是。EAS 可能会让某些场景下的单次执行时间变长（因为任务被放到了小核），但整体功耗下降。如果 App 对延迟敏感，可以通过设置线程的 uclamp 值来告诉调度器"这个线程需要高性能"，EAS 会尊重这个提示。
+EAS 可能会让某些场景下的单次执行时间变长，因为任务被放到了小核，但整体功耗下降。App 侧没有公开 API 直接写 `cpu.uclamp.min` / `cpu.uclamp.max`。延迟敏感工作应优先使用 ADPF / `PerformanceHintManager` 创建 hint session，持续上报 target / actual work duration；系统组件或 OEM 策略再把 hint、task profile、cpuset 和 uclamp 连接到调度器。直接操作 uclamp 属于系统组件、root / 调试环境或厂商策略范围。
 
 ### "Doze 模式下我的推送收不到"
 FCM（Firebase Cloud Messaging）高优先级消息可以绕过 Doze。如果推送走的是自有长连接，在 Doze 下确实会被延迟。建议将关键推送迁移到 FCM 高优先级通道。
@@ -384,7 +407,9 @@ FCM（Firebase Cloud Messaging）高优先级消息可以绕过 Doze。如果推
 - [sched_ext - LWN.net](https://lwn.net/Articles/922405/) [已验证: LWN]
 - [Android 15 Behavior Changes](https://developer.android.com/about/versions/15/behavior-changes-15) [已验证: 官方文档]
 - [JobScheduler Reference](https://developer.android.com/reference/android/app/job/JobScheduler) [已验证: 官方文档]
+- [PerformanceHintManager API Reference](https://developer.android.com/reference/android/os/PerformanceHintManager) [已验证: 官方文档]
 - [Android cgroups and task profiles](https://source.android.com/docs/core/perf/cgroups) [已验证: source.android.com]
+- [Arm Memory Tagging Extension on Android](https://developer.android.com/ndk/guides/arm-mte) [已验证: 官方文档]
 - AOSP 路径参考（android-16.0.0_r1 / android15-6.6.98_r00）：
   - `frameworks/base/core/java/android/app/usage/UsageStatsManager.java` — Standby bucket 常量定义（含 `STANDBY_BUCKET_NEVER = 50`）
   - `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze 模式实现

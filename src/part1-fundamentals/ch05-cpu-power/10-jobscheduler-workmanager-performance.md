@@ -8,10 +8,10 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-20"
+last_verified: "2026-04-27"
 reviewed_date: "2026-04-21"
 reviewed_by: openclaw-task6
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs"
+last_verified_against: "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs, Android Vitals docs"
 confidence: medium
 sources:
   - type: official
@@ -40,10 +40,10 @@ sources:
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -51,6 +51,11 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-27
 last_task9_at: 2026-04-27T05:20:00+08:00
 task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。"
+last_task2b_at: "2026-04-27T05:45:00+08:00"
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
+rework_type: "review回炉修复（Task9 问题单）"
+
 ---
 
 # JobScheduler/WorkManager 调度与后台任务性能
@@ -122,22 +127,18 @@ JobScheduler 在 Android 16 的代码已经搬到 `frameworks/base/apex/jobsched
 
 **JobStore** 负责任务的持久化。带 `setPersisted(true)` 的 job 会以 XML 形式存储在 `/data/system/job/jobs.xml` 中，系统重启后可以由 JobStore 恢复。这一点是 JobScheduler 相比 AlarmManager 方案的一条实际差异。alarm 本身不会跨 reboot 保留，App 通常要在 `BOOT_COMPLETED` 之后自行重建调度；`BroadcastReceiver` 组件不会因为 `PendingIntent` 而“丢失”，真正消失的是系统里那条已经注册的 alarm。
 
-```java
-// frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
-// @ AOSP android-16.0.0_r1
-// 简化：当 Controller 报告状态变化时触发
-void onControllerStateChanged() {
-    synchronized (mLock) {
-        // 遍历所有任务，检查约束是否满足
-        for (int i = 0; i < mPendingJobs.size(); i++) {
-            JobStatus job = mPendingJobs.get(i);
-            if (job.isReady()) {
-                // 将任务交给 ExecutionPriorityTracker 排序后执行
-                assignJobToContext(job);
-            }
-        }
-    }
-}
+Android 16 的真实源码路径按方法名看更稳，下面是流程摘要，不把它写成可编译源码片段：
+
+```text
+Controller 状态变化
+  -> JobSchedulerService.onControllerStateChanged(changedJobs)
+  -> JobHandler: MSG_CHECK_JOB / MSG_CHECK_CHANGED_JOB_LIST
+  -> maybeQueueReadyJobsForExecutionLocked()
+     或 queueReadyJobsForExecutionLocked()
+  -> mPendingJobQueue.add(...)
+  -> maybeRunPendingJobsLocked()
+  -> JobConcurrencyManager.assignJobsToContextsLocked()
+  -> JobServiceContext 绑定 App 的 JobService 并回调 onStartJob()
 ```
 
 当所有约束条件满足时，JobSchedulerService 通过 `JobServiceContext` 绑定到 App 的 `JobService`，回调 `onStartJob()`。任务执行期间，系统自动持有 WakeLock，确保设备不会在任务中途休眠。开发者不需要自己管理 WakeLock——这是 JobScheduler 相比手动 AlarmManager + WakeLock 方案的重要改进之一。
@@ -156,10 +157,10 @@ JobInfo.Builder 允许开发者设置以下约束：
 | 电量不低 | `setRequiresBatteryNotLow()` | 电量高于低电量阈值 |
 | 存储不低 | `setRequiresStorageNotLow()` | 存储空间充足 |
 | 最小延迟 | `setMinimumLatency()` | 最早可执行时间 |
-| 截止时间 | `setOverrideDeadline()` | 最晚必须执行时间 |
+| 截止时间 | `setOverrideDeadline()` | 普通非周期 job 的 override deadline；Android M 起不保证按 deadline 执行 |
 | 内容触发 | `addTriggerContentUri()` | Content URI 数据变化时触发 |
 
-约束的组合方式很灵活，但也需要谨慎。一个常见的错误是设置了过多约束（比如要求充电 + WiFi + 空闲），导致任务永远得不到执行。在 Perfetto 中，这种情况表现为 JobScheduler track 上该任务的 slice 一直处于 pending 状态。
+约束的组合方式很灵活，但也需要谨慎。一个常见的错误是设置了过多约束（比如要求充电 + WiFi + 空闲），导致任务长期 pending。工具侧要分两路看：`dumpsys jobscheduler` 看 Required / Satisfied；Perfetto 中 `android_job_scheduler_states` 看 constraint / bucket 状态，`android_job_scheduler_events` 看 system_server 里的 schedule / execute 事件。
 
 从 Android Q（10）开始，可以调度无约束的任务（prior to Q 需要至少一个约束）。无约束任务可以在任何时候执行，但受 App Standby Bucket 配额限制。
 
@@ -415,9 +416,9 @@ Android Studio 提供了 **WorkManager Inspector**（View → Tool Windows → A
 
 ### 常见性能问题模式
 
-**任务积压**：当 App 进入 Restricted Bucket 或配额耗尽时，新调度的任务会排队等待。在 Perfetto 中表现为 JobScheduler track 上该 App 的 pending slice 越积越多。解决方案：减少不必要的 PeriodicWorkRequest 频次，合并多个小任务为一个大任务。
+**任务积压**：当 App 进入 Restricted Bucket 或配额耗尽时，新调度的任务会排队等待。Perfetto 侧用 `android_job_scheduler_states` 看 pending / bucket / constraint 变化，再用 `android_job_scheduler_events` 互查 system_server 的执行事件。处理方式是减少不必要的 PeriodicWorkRequest 频次，合并多个小任务为一个大任务。
 
-**约束不满足导致无限延迟**：设置了 `setRequiresCharging(true)` + `setRequiredNetworkType(NetworkType.UNMETERED)` 但设备很少同时满足这两个条件。在 dumpsys 中看到 `Required: CHARGING, UNMETERED_NETWORK` 而 `Satisfied: (none)`。解决方案：使用 `setOverrideDeadline()` 设置最晚执行时间，确保任务不会无限等待。
+**约束不满足导致长期延迟**：设置了 `setRequiresCharging(true)` + `setRequiredNetworkType(NetworkType.UNMETERED)`，但设备很少同时满足这两个条件。在 dumpsys 中看到 `Required: CHARGING, UNMETERED_NETWORK` 而 `Satisfied: (none)`。处理方式是放宽非必要约束；普通非周期 job 可设置合理的 `setOverrideDeadline()`，让 deadline 后忽略 functional constraints，但不能把它当成强时效保证。需要立即或强时效的场景，应比较 Expedited Job、UIDT、AlarmManager exact alarm / OnAlarmListener 或 Foreground Service。
 
 **重复调度**：每次 App 启动都调用 `WorkManager.enqueue()` 而不检查是否已有相同 tag 的任务在队列中。使用 `enqueueUniquePeriodicWork()` 和 `enqueueUniqueWork()` 来保证同一个任务的唯一性。
 
@@ -442,13 +443,9 @@ Android Studio 提供了 **WorkManager Inspector**（View → Tool Windows → A
 
 ### Android Vitals 监控指标
 
-Play Console 的 Android Vitals 面板提供了与后台任务相关的监控指标：
+Play Console 的 Android Vitals 中，和本节最直接相关的是 **excessive partial wake locks**。它按用户 session 统计非豁免 partial WakeLock 的后台累计时长；24 小时内超过 2 小时会成为 bad session，28 天窗口内 bad session 比例超过 5% 会影响 Play 曝光和详情页提示。
 
-- **WakeLock 停滞率**：因 WakeLock 导致的 ANR 比例
-- **后台 WakeLock 使用率**：各 App 的 WakeLock 累计时长分布
-- **JobScheduler / AlarmManager 触发频率**：后台唤醒频次
-
-这些指标可以帮助开发者从线上用户的角度了解后台任务行为的影响面，而不仅仅依赖本地测试。
+JobScheduler / AlarmManager 触发频率不是 Vitals 的指标名。它更适合作为本地解释变量：用 `batterystats` 看聚合唤醒和 WakeLock 时长，用 Perfetto 合并比较 job / alarm / WakeLock 的具体时序，再回到 Vitals 看线上影响面。
 
 ### 合规方案
 
@@ -458,8 +455,8 @@ Play Console 的 Android Vitals 面板提供了与后台任务相关的监控指
 |------|---------|---------|---------|-------------|
 | 可延期、可重试、需要持久化 | WorkManager `OneTimeWorkRequest` / `PeriodicWorkRequest` | 无需用户当场盯着结果 | 交给系统批处理，受 bucket、quota、约束影响 | 约束不满足、bucket 过低、周期 work 被批量延后 |
 | 用户刚触发，希望尽快开始，工作本身不长 | Expedited Job / Expedited Work | 任务要短，且确实需要更快开始 | 走单独的 expedited quota | 直接 `JobScheduler.schedule()` 可能因 quota 返回 `RESULT_FAILURE`；WorkManager 会按 `OutOfQuotaPolicy` 降级或取消 |
-| 用户发起的大文件上传 / 下载 | UIDT Job（`setUserInitiated(true)`） | Android 14+、声明 `RUN_USER_INITIATED_JOBS`、App 在前台或处于允许后台启动 Activity 的状态、必须声明 network 约束、运行时必须调用 `JobService.setNotification(...)` | 只用于 network data transfer，不走常规 job quota，条件满足时会尽快开始 | 用户从 Task Manager 停止后，App 不能直接把同一个 UIDT job 悄悄重新排回去 |
-| 用户可见、需要持续运行，而且不只是网络传输 | Foreground Service | 需要正确的 FGS type，满足后台启动限制 | 适合持续进行中的可见工作 | Android 12+ 启动限制、Android 14+ 类型约束、Android 15 某些类型有时长预算 |
+| 用户发起的大文件上传 / 下载 | UIDT Job（`setUserInitiated(true)`） | Android 14+、声明 `RUN_USER_INITIATED_JOBS`、App 在前台或处于允许后台启动 Activity 的状态、必须声明 network 约束、运行时必须调用 `JobService.setNotification(...)` | 只用于 network data transfer，不走常规 job quota，条件满足时会尽快开始 | 未及时设置 notification 会被系统停止；用户从 Task Manager 停止后，App 不能直接把同一个 UIDT job 悄悄重新排回去 |
+| 用户可见、需要持续运行，而且不只是网络传输 | Foreground Service | 需要正确的 FGS type，满足后台启动限制 | 适合持续进行中的可见工作 | Android 12+ 启动限制、Android 14+ 类型约束、Android 15 `dataSync` / `mediaProcessing` 等类型有 24 小时内约 6 小时的累计时长预算 |
 
 代入具体场景会更直观。用户点“上传 2GB 视频”时，UIDT 比 Expedited Job 更合适；用户点“立即同步一条记录”时，Expedited Job 更轻；任务能等几分钟甚至几个小时，而且希望系统自己挑时机，就回到 WorkManager。Foreground Service 留给“用户现在就能看到它在运行，而且它不只是一次网络传输”的工作。
 
@@ -475,7 +472,7 @@ Play Console 的 Android Vitals 面板提供了与后台任务相关的监控指
 | 周期性数据上报 | WorkManager Periodic | 15 分钟最短周期，配额管理 |
 | 用户触发的即时操作 | WorkManager Expedited | 独立配额，快速响应 |
 | 长时间用户数据传输 | UIDT Job | 不受常规配额限制 |
-| 需要精确定时 | AlarmManager OnAlarmListener | Android 17 进程内回调 |
+| 需要精确定时 | AlarmManager exact alarm + OnAlarmListener | listener 形态不需要 `SCHEDULE_EXACT_ALARM`；PendingIntent 形态按 Android 12+ exact alarm 特殊访问处理 |
 | 需要持续前台存在 | Foreground Service | 用户可见，合规 |
 
 ### 任务合并与去重
@@ -491,7 +488,7 @@ Play Console 的 Android Vitals 面板提供了与后台任务相关的监控指
 约束太严 → 任务永远不执行；约束太松 → 任务在不合适的时机执行。建议：
 
 - 基础约束：只设置对任务成功有硬性要求的约束（如网络上传必须有网络连接）
-- 使用 `setOverrideDeadline()` 作为保底：即使其他约束不满足，deadline 到了也会执行
+- `setOverrideDeadline()` 只用于普通非周期 job 的时间窗口调节；Android M 起没有“deadline 到了保证执行”的语义，不能用于 periodic job，Android 13+ 也不能用于 prefetch job
 - 监控 dumpsys 中 Required vs Satisfied 的差异，判断约束设置是否合理
 
 ### App Standby Bucket 适配
@@ -592,6 +589,8 @@ Expedited Job 有独立配额，但配额有限。大约每天几十分钟的量
 - [Background Execution Limits](https://developer.android.com/about/versions/oreo/background)
 - [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)
 - [Android 17 Job Debugging](https://developer.android.com/about/versions/17/features#job-debugging)
+- [Exact alarms](https://developer.android.com/develop/background-work/services/alarms)
+- [Android Vitals excessive wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock)
 
 ### 性能分析工具
 - [PerfettoSQL standard library: android.job_scheduler / android.job_scheduler_states](https://perfetto.dev/docs/analysis/stdlib-docs)
