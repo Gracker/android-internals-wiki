@@ -8171,3 +8171,1165 @@ Android 16 ProgressStyle 性能：其渲染是否完全在 SystemUI 进程内完
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-25-15-9.README-external-review.md)
+## [2026-04-26] 1.1 1.1 — 知识盲区
+
+### 盲区描述
+JNI Microbenchmarks
+
+### 重要程度
+高
+
+### 建议研究方向
+挖掘 `art/benchmark/jni_perf` 中的官方测试数据，以量化 JNI 开销
+
+### 外部 review 来源
+- 2026-04-25-15-1.1-external-review.md
+
+## [2026-04-26] 1.1 1.1 — 知识盲区
+
+### 盲区描述
+Android 各大子系统从 ashmem 完全迁移到 memfd_create 的具体内核级表现和时间线。
+
+### 重要程度
+中
+
+### 建议研究方向
+AOSP `system/core/libcutils/ashmem-dev.cpp` 历史演进。
+
+### 外部 review 来源
+- 2026-04-25-15-1.1-external-review.md
+
+## [2026-04-26] 1.10 1.10 ContentProvider 性能与优化 — 知识盲区
+
+### 盲区描述
+ContentProvider Client 缓存机制
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 `ContentProviderClient` 在频繁调用时的缓存复用策略，以及如何正确 `release()` 避免泄漏。
+
+### 外部 review 来源
+- 2026-04-25-15-1.10-external-review.md
+
+## [2026-04-26] 1.10 1.10 ContentProvider 性能与优化 — 知识盲区
+
+### 盲区描述
+多次调用场景下 `ContentProviderClient` 的连接保活机制。
+
+### 重要程度
+中
+
+### 建议研究方向
+AOSP `ContentResolver.acquireContentProviderClient()` 底层实现。
+
+### 外部 review 来源
+- 2026-04-25-15-1.10-external-review.md
+
+## [2026-04-26] 1.11 1.11 Zygote 机制与启动性能优化 — 知识盲区
+
+### 盲区描述
+USAP Pool 在现代 Android 系统上的启用率
+
+### 重要程度
+低
+
+### 建议研究方向
+调查 Android 14+ 实际量产设备中，OEM 是否默认开启 USAP Pool，以及其对内存水位的实际影响。
+
+### 外部 review 来源
+- 2026-04-25-15-1.11-external-review.md
+
+## [2026-04-26] 1.11 1.11 Zygote 机制与启动性能优化 — 知识盲区
+
+### 盲区描述
+USAP Pool 的实际启用现状。
+
+### 重要程度
+低
+
+### 建议研究方向
+验证各家 OEM 默认的 USAP 开启策略。
+
+### 外部 review 来源
+- 2026-04-25-15-1.11-external-review.md
+
+## [2026-04-26] 1.12 1.12 AutoFDO 反馈导向编译优化 — 知识盲区
+
+### 盲区描述
+GKI 模块（GKI modules）的独立 AutoFDO profile 管理
+
+### 重要程度
+中
+
+### 建议研究方向
+除了 `vmlinux` 的全局 profile，单独加载的 KO（Kernel Object）如何管理自己的 `.afdo` 并在 DDK 中构建。
+
+### 外部 review 来源
+- 2026-04-25-15-1.12-external-review.md
+
+## [2026-04-26] 1.12 1.12 AutoFDO 反馈导向编译优化 — 知识盲区
+
+### 盲区描述
+Kernel modules (KO) 的独立 AutoFDO 配置。
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 DDK (Device Driver Kit) 文档，确认是否支持为每个 ko 文件独立注入 afdo profile。
+
+### 外部 review 来源
+- 2026-04-25-15-1.12-external-review.md
+
+## [2026-04-26] 1.13 1.13 — 知识盲区
+
+### 盲区描述
+DeliQueue 在 Android 17 正式版的最终表现
+
+### 重要程度
+中
+
+### 建议研究方向
+持续追踪最终 AOSP 释放的 17 分支代码
+
+### 外部 review 来源
+- 2026-04-25-15-1.13-external-review.md
+
+## [2026-04-26] 1.14 1.14 — 知识盲区
+
+### 盲区描述
+Android 17 新版 Bionic 对 mutex 的优化
+
+### 重要程度
+低
+
+### 建议研究方向
+检查 Bionic 源码
+
+### 外部 review 来源
+- 2026-04-25-15-1.14-external-review.md
+
+## [2026-04-26] 1.15 1.15 — 知识盲区
+
+### 盲区描述
+Android 17 是否对 CriticalNative 增加了新的基础类型支持
+
+### 重要程度
+低
+
+### 建议研究方向
+检查 ART 源码
+
+### 外部 review 来源
+- 2026-04-25-15-1.15-external-review.md
+
+## [2026-04-26] 1.16 1.16 — 知识盲区
+
+### 盲区描述
+AAudio offloaded playback 最终 API 形态
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 17 最终 SDK 验证
+
+### 外部 review 来源
+- 2026-04-25-15-1.16-external-review.md
+
+## [2026-04-26] 1.17 1.17 — 知识盲区
+
+### 盲区描述
+Android 17 中 Rust HAL 带来的 IPC 行为差异
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Rust AIDL binding
+
+### 外部 review 来源
+- 2026-04-25-15-1.17-external-review.md
+
+## [2026-04-26] 1.2 1.2 — 知识盲区
+
+### 盲区描述
+Cloud Profiles 性能指标
+
+### 重要程度
+中
+
+### 建议研究方向
+收集官方针对 Cloud Profiles 对冷启动时间改善的量化实验报告
+
+### 外部 review 来源
+- 2026-04-25-15-1.2-external-review.md
+
+## [2026-04-26] 1.2 1.2 — 知识盲区
+
+### 盲区描述
+dm-verity 验证在现代 Android 内核（GKI 5.15+）中带来的块读取验证开销确切毫秒级别数据。
+
+### 重要程度
+低
+
+### 建议研究方向
+Perfetto boot trace 中的 dm-verity 耗时分析。
+
+### 外部 review 来源
+- 2026-04-25-15-1.2-external-review.md
+
+## [2026-04-26] 1.3 1.3 — 知识盲区
+
+### 盲区描述
+SDK Sandbox 进程开销
+
+### 重要程度
+中
+
+### 建议研究方向
+实际测量加载包含复杂广告 SDK 的 App 时，`_sdk_sandbox` 进程产生的 IPC 延迟和内存开销
+
+### 外部 review 来源
+- 2026-04-25-15-1.3-external-review.md
+
+## [2026-04-26] 1.3 1.3 — 知识盲区
+
+### 盲区描述
+CachedAppOptimizer 的 `enableFreezer` 在陷入内核后，cgroup v2 contro
+
+### 重要程度
+低
+
+### 建议研究方向
+在 Perfetto 中深究 `android_freezer_events`。
+
+### 外部 review 来源
+- 2026-04-25-15-1.3-external-review.md
+
+## [2026-04-26] 1.4 1.4 — 知识盲区
+
+### 盲区描述
+Android 14 Lazy Async 反压机制
+
+### 重要程度
+中
+
+### 建议研究方向
+阅读 Android 14/15 源码中关于 Binder 驱动队列管理和反压控制机制（`binder.c` 和 `IPCThreadState.cpp`）
+
+### 外部 review 来源
+- 2026-04-25-15-1.4-external-review.md
+
+## [2026-04-26] 1.4 1.4 — 知识盲区
+
+### 盲区描述
+Android 14 中 Binder oneway 的 Lazy Async 导致客户端阻塞的底层条件。
+
+### 重要程度
+中
+
+### 建议研究方向
+梳理 `binder.c` 针对异步事务队列积压时的阻塞返回逻辑。
+
+### 外部 review 来源
+- 2026-04-25-15-1.4-external-review.md
+
+## [2026-04-26] 1.5 1.5 — 知识盲区
+
+### 盲区描述
+无锁 MessageQueue 实现细节
+
+### 重要程度
+中
+
+### 建议研究方向
+详细分析 `android/os/ConcurrentMessageQueue` 在 AOSP 16 中的性能对比表现
+
+### 外部 review 来源
+- 2026-04-25-15-1.5-external-review.md
+
+## [2026-04-26] 1.5 1.5 — 知识盲区
+
+### 盲区描述
+无锁消息队列对 UI 线程卡顿率的微观改善。
+
+### 重要程度
+中
+
+### 建议研究方向
+关联阅读 1.13 节并做 benchmark。
+
+### 外部 review 来源
+- 2026-04-25-15-1.5-external-review.md
+
+## [2026-04-26] 1.6 1.6 — 知识盲区
+
+### 盲区描述
+Android 16 System-triggered Profiling
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 `frameworks/base/core/java/android/os/ProfilingManager.java` 或对应系统服务的内部工作原理
+
+### 外部 review 来源
+- 2026-04-25-15-1.6-external-review.md
+
+## [2026-04-26] 1.6 1.6 — 知识盲区
+
+### 盲区描述
+Android 16 性能监控 API（system-triggered profiling）的系统调用层实现路径。
+
+### 重要程度
+高
+
+### 建议研究方向
+剖析 framework 中的 Profiling 服务与 Perfetto 数据源的交互。
+
+### 外部 review 来源
+- 2026-04-25-15-1.6-external-review.md
+
+## [2026-04-26] 1.7 1.7 ART 编译管线与 dex2oat 优化 — 知识盲区
+
+### 盲区描述
+Android 16 Cloud Compilation 的端侧落地实现
+
+### 重要程度
+中
+
+### 建议研究方向
+跟踪 `system/update_engine` 或 Play Store 相关的 OTA / staged install 机制如何消费云端 Profile。
+
+### 外部 review 来源
+- 2026-04-25-15-1.7-external-review.md
+
+## [2026-04-26] 1.7 1.7 ART 编译管线与 dex2oat 优化 — 知识盲区
+
+### 盲区描述
+Cloud Compilation 在端侧的精确落地代码路径及兜底策略。
+
+### 重要程度
+中
+
+### 建议研究方向
+关注 `artd` 和 PackageInstaller 如何处理来自 Play Store 的额外编译产物。
+
+### 外部 review 来源
+- 2026-04-25-15-1.7-external-review.md
+
+## [2026-04-26] 1.8 1.8 Activity Manager Service 与性能分析 — 知识盲区
+
+### 盲区描述
+Phantom Process Killer 细节
+
+### 重要程度
+低
+
+### 建议研究方向
+研究 Android 12+ 中 `ActivityManagerService` 如何具体监控并限制 `Runtime.exec()` 派生的子进程（32个上限的具体实现逻辑）。
+
+### 外部 review 来源
+- 2026-04-25-15-1.8-external-review.md
+
+## [2026-04-26] 1.8 1.8 Activity Manager Service 与性能分析 — 知识盲区
+
+### 盲区描述
+Phantom Process Killer 的源码级执行机制。
+
+### 重要程度
+低
+
+### 建议研究方向
+结合 `PhantomProcessList.java` 分析其与 lmkd 的联动。
+
+### 外部 review 来源
+- 2026-04-25-15-1.8-external-review.md
+
+## [2026-04-26] 1.9 1.9 Package Manager Service 与应用安装性能 — 知识盲区
+
+### 盲区描述
+VAB (Virtual A/B) 更新期间的后台 I/O 影响
+
+### 重要程度
+中
+
+### 建议研究方向
+研究系统在进行 Seamless Update 时，后台 block device 的合并操作对前台 I/O 性能的挤压。
+
+### 外部 review 来源
+- 2026-04-25-15-1.9-external-review.md
+
+## [2026-04-26] 1.9 1.9 Package Manager Service 与应用安装性能 — 知识盲区
+
+### 盲区描述
+Virtual A/B 机制下 snapshot 合并对系统存储性能的隐性影响。
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 `snapuserd` 进程的 I/O 行为及其对前台应用加载速度的干扰。
+
+### 外部 review 来源
+- 2026-04-25-15-1.9-external-review.md
+
+## [2026-04-26] 2.1 2.1 — 知识盲区
+
+### 盲区描述
+Android 16 Host Image Copy 对纹理上传的具体影响。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.1-external-review.md
+
+## [2026-04-26] 2.10 2.10 — 知识盲区
+
+### 盲区描述
+Vulkan 多线程命令缓冲区构建在 Android UI 渲染中的实际应用案例。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.10-external-review.md
+
+## [2026-04-26] 2.11  — 知识盲区
+
+### 盲区描述
+Impeller 的 PSO 预编译文件存放路径
+
+### 重要程度
+中
+
+### 建议研究方向
+调查 Android 上的缓存路径（通常在 `/data/user/0/.../app_flutter/impeller_cache`）
+
+### 外部 review 来源
+- 2026-04-25-15-2.11-external-review.md
+
+## [2026-04-26] 2.11  — 知识盲区
+
+### 盲区描述
+Android 14+ 对 PlatformView 的 HardwareRenderer 限制绕过
+
+### 重要程度
+高
+
+### 建议研究方向
+调查 Flutter 3.24 对 Android 14 渲染异常的 Workaround
+
+### 外部 review 来源
+- 2026-04-25-15-2.11-external-review.md
+
+## [2026-04-26] 2.11  — 知识盲区
+
+### 盲区描述
+跨线程同步屏障（Synchronous SurfaceView）
+
+### 重要程度
+低
+
+### 建议研究方向
+调查 Flutter 如何保证 Raster 帧和 PlatformView 帧在 SurfaceFlinger 中的同步
+
+### 外部 review 来源
+- 2026-04-25-15-2.11-external-review.md
+
+## [2026-04-26] 2.12 `2.12 Window Manager Service 与窗口管理` — 知识盲区
+
+### 盲区描述
+**Shared Memory Insets**
+
+### 重要程度
+中
+
+### 建议研究方向
+Android 15 后 Insets 是否存在通过共享内存减少跨进程通信的优化。
+
+### 外部 review 来源
+- 2026-04-25-15-2.12-external-review.md
+
+## [2026-04-26] 2.12 `2.12 Window Manager Service 与窗口管理` — 知识盲区
+
+### 盲区描述
+**WMS 锁拆分现状**
+
+### 重要程度
+高
+
+### 建议研究方向
+`mGlobalLock` 在 Android 16+ 中是否有进一步拆分（如针对 Display 或 Task 级别）的计划。
+
+### 外部 review 来源
+- 2026-04-25-15-2.12-external-review.md
+
+## [2026-04-26] 2.12 `2.12 Window Manager Service 与窗口管理` — 知识盲区
+
+### 盲区描述
+**BLASTBufferQueue 资源回收**
+
+### 重要程度
+中
+
+### 建议研究方向
+App 侧 `updateBlastSurfaceIfNeeded` 触发时，旧 Buffer 的释放时机对内存瞬时峰值的影响。
+
+### 外部 review 来源
+- 2026-04-25-15-2.12-external-review.md
+
+## [2026-04-26] 2.13  — 知识盲区
+
+### 盲区描述
+Gralloc 分配时机
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 `dequeueBuffer` 触发的 `GraphicBufferAllocator::allocate` 链路，解释为什么第一次渲染特别慢。
+
+### 外部 review 来源
+- 2026-04-25-15-2.13-external-review.md
+
+## [2026-04-26] 2.13  — 知识盲区
+
+### 盲区描述
+BufferLayerConsumer 差异
+
+### 重要程度
+低
+
+### 建议研究方向
+BLAST 之后，SF 侧不再直接持有 BufferQueueConsumer，而是通过 Transaction 接收 Buffer，需理清 SF 侧对应的映射组件。
+
+### 外部 review 来源
+- 2026-04-25-15-2.13-external-review.md
+
+## [2026-04-26] 2.14 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 知识盲区
+
+### 盲区描述
+WebView 独立后端选路
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 `aw_main_delegate.cc` 中对 `use-vulkan` 标志位的判断逻辑
+
+### 外部 review 来源
+- 2026-04-25-15-2.14-external-review.md
+
+## [2026-04-26] 2.14 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 知识盲区
+
+### 盲区描述
+Host Image Copy 兼容性
+
+### 重要程度
+中
+
+### 建议研究方向
+调研 Android 16 之前版本对 `VK_EXT_host_image_copy` 的模拟支持情况
+
+### 外部 review 来源
+- 2026-04-25-15-2.14-external-review.md
+
+## [2026-04-26] 2.14 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 知识盲区
+
+### 盲区描述
+RenderThread 亲和性动态调整
+
+### 重要程度
+低
+
+### 建议研究方向
+调研 `libprocessgroup` 对 top-app 核心绑定的具体 cpuset 值
+
+### 外部 review 来源
+- 2026-04-25-15-2.14-external-review.md
+
+## [2026-04-26] 2.14 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 知识盲区
+
+### 盲区描述
+WebView 在 SkiaVulkan 模式下不受系统 ANGLE 策略影响。
+
+### 重要程度
+高
+
+### 建议研究方向
+完善 §2.9 中关于 WebView 渲染管线的描述。
+
+### 外部 review 来源
+- 2026-04-25-15-2.14-external-review.md
+
+## [2026-04-26] 2.15 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 知识盲区
+
+### 盲区描述
+DMA-BUF Sync File vs Fence
+
+### 重要程度
+高
+
+### 建议研究方向
+DMA-BUF 本身的 `dma_fence` 机制与 Android Sync Fence 的映射关系，将在 2.16 深挖。
+
+### 外部 review 来源
+- 2026-04-25-15-2.15-external-review.md
+
+## [2026-04-26] 2.15 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 知识盲区
+
+### 盲区描述
+Multi-planar Buffer 分配逻辑
+
+### 重要程度
+中
+
+### 建议研究方向
+调研 `BufferUsage.VIDEO_DECODER` 下 YV12/NV12 格式在现代 Gralloc 里的 fd 数量选择。
+
+### 外部 review 来源
+- 2026-04-25-15-2.15-external-review.md
+
+## [2026-04-26] 2.16  — 知识盲区
+
+### 盲区描述
+Fence FD 传递的成本
+
+### 重要程度
+中
+
+### 建议研究方向
+跨进程传递 FD 时的引用计数变化与内核句柄开销。
+
+### 外部 review 来源
+- 2026-04-25-15-2.16-external-review.md
+
+## [2026-04-26] 2.16  — 知识盲区
+
+### 盲区描述
+Vulkan Explicit Sync
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 15+ 在 Vulkan 后端下如何跳过传统的 Fence 封装，实现更底层的同步。
+
+### 外部 review 来源
+- 2026-04-25-15-2.16-external-review.md
+
+## [2026-04-26] 2.16  — 知识盲区
+
+### 盲区描述
+Fence 挂死（Hang）的内核恢复机制
+
+### 重要程度
+中
+
+### 建议研究方向
+驱动侧的 Fence Timeout 机制以及如何触发 GPU Reset。
+
+### 外部 review 来源
+- 2026-04-25-15-2.16-external-review.md
+
+## [2026-04-26] 2.17  — 知识盲区
+
+### 盲区描述
+Swappy 与 Vulkan `VK_GOOGLE_display_timing` 的底层交互
+
+### 重要程度
+中
+
+### 建议研究方向
+深入研究该扩展在不同厂商 GPU 驱动上的实现差异
+
+### 外部 review 来源
+- 2026-04-25-15-2.17-external-review.md
+
+## [2026-04-26] 2.17  — 知识盲区
+
+### 盲区描述
+Android 17 DeliQueue 对 native 侧 AChoreographer 的间接影响
+
+### 重要程度
+高
+
+### 建议研究方向
+确认 DeliQueue 是否仅优化 Java 侧 MessageQueue，还是对 NDK 侧的 `ALooper` 同样有提速
+
+### 外部 review 来源
+- 2026-04-25-15-2.17-external-review.md
+
+## [2026-04-26] 2.18 `2.18 Adaptive Refresh Rate 与动态帧率控制` — 知识盲区
+
+### 盲区描述
+HAL 层的 ARR 实现
+
+### 重要程度
+中
+
+### 建议研究方向
+关注 `IComposerClient` 的 `setLayerGenericMetadata` 及其对 ARR 的传参。
+
+### 外部 review 来源
+- 2026-04-25-15-2.18-external-review.md
+
+## [2026-04-26] 2.18 `2.18 Adaptive Refresh Rate 与动态帧率控制` — 知识盲区
+
+### 盲区描述
+对变帧率视频的支持
+
+### 重要程度
+低
+
+### 建议研究方向
+`Surface.setFrameRate` 的 `FRAME_RATE_COMPATIBILITY_FIXED_SOURCE` 在 ARR 模式下的具体降频策略。
+
+### 外部 review 来源
+- 2026-04-25-15-2.18-external-review.md
+
+## [2026-04-26] 2.19  — 知识盲区
+
+### 盲区描述
+**Multi-display 刷新率异步切换**
+
+### 重要程度
+中
+
+### 建议研究方向
+当内屏 120Hz、外屏 60Hz 同时活跃时，SurfaceFlinger 的单线程合成瓶颈。
+
+### 外部 review 来源
+- 2026-04-25-15-2.19-external-review.md
+
+## [2026-04-26] 2.19  — 知识盲区
+
+### 盲区描述
+**VRR (Variable Refresh Rate) 与 ARR 的细微差异**
+
+### 重要程度
+高
+
+### 建议研究方向
+硬件层 VRR 协议（如 QSync/FreeSync 转移动端）在 Display HAL 层的映射。
+
+### 外部 review 来源
+- 2026-04-25-15-2.19-external-review.md
+
+## [2026-04-26] 2.19  — 知识盲区
+
+### 盲区描述
+**RenderEngine 缓存对切换的影响**
+
+### 重要程度
+低
+
+### 建议研究方向
+切换瞬间 GL context 是否会重置或导致缓存失效。
+
+### 外部 review 来源
+- 2026-04-25-15-2.19-external-review.md
+
+## [2026-04-26] 2.2 2.2 — 知识盲区
+
+### 盲区描述
+Game Mode API 在真实设备上的实际降频表现差异。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.2-external-review.md
+
+## [2026-04-26] 2.20  — 知识盲区
+
+### 盲区描述
+多窗口下的 Input 路由延迟
+
+### 重要程度
+中
+
+### 建议研究方向
+关注 `InputDispatcher` 在分屏边界处的 ANR 风险
+
+### 外部 review 来源
+- 2026-04-25-15-2.20-external-review.md
+
+## [2026-04-26] 2.20  — 知识盲区
+
+### 盲区描述
+窗口模糊（Blur）的渲染开销
+
+### 重要程度
+高
+
+### 建议研究方向
+Android 12+ 窗口模糊在多窗口下会极大增加 GPU 负载
+
+### 外部 review 来源
+- 2026-04-25-15-2.20-external-review.md
+
+## [2026-04-26] 2.20  — 知识盲区
+
+### 盲区描述
+任务栏（Taskbar）的独立合成层
+
+### 重要程度
+低
+
+### 建议研究方向
+了解 `TaskbarDelegate` 与 SF 的交互
+
+### 外部 review 来源
+- 2026-04-25-15-2.20-external-review.md
+
+## [2026-04-26] 2.3 2.3 — 知识盲区
+
+### 盲区描述
+HW_VSYNC 短暂开启的具体阈值与时长。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.3-external-review.md
+
+## [2026-04-26] 2.4 2.4 — 知识盲区
+
+### 盲区描述
+厂商对 Choreographer 回调的定制（如华为 VSync 注入）在最新系统的现状。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.4-external-review.md
+
+## [2026-04-26] 2.5 2.5 — 知识盲区
+
+### 盲区描述
+Deferred GPU Commands 的 Pipeline Flush 具体合并策略。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.5-external-review.md
+
+## [2026-04-26] 2.6 2.6 — 知识盲区
+
+### 盲区描述
+HWC HAL v3 接口在不同设备上的兼容性问题。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.6-external-review.md
+
+## [2026-04-26] 2.7 2.7 — 知识盲区
+
+### 盲区描述
+Compose 的 graphicsLayer 在 CompositingStrategy.ModulateAlpha 下的具体光栅化时机。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.7-external-review.md
+
+## [2026-04-26] 2.8 2.8 — 知识盲区
+
+### 盲区描述
+Compose 中 drawBehind 与过度绘制的实际减少量验证。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.8-external-review.md
+
+## [2026-04-26] 2.9 2.9 — 知识盲区
+
+### 盲区描述
+Frame Timeline 在不同 OEM ROM 上的实现一致性。
+
+### 重要程度
+中
+
+### 建议研究方向
+结合 AOSP 最新源码和 OEM 文档深入研究
+
+### 外部 review 来源
+- 2026-04-25-15-2.9-external-review.md
+
+## [2026-04-26] 2.0 `src/part1-fundamentals/ch02-rendering/README.md` — 知识盲区
+
+### 盲区描述
+Skia Graphite 异步指令录制性能
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 Android 17 中 Graphite 如何通过多线程降低录制开销。
+
+### 外部 review 来源
+- 2026-04-25-15-2.README-external-review.md
+
+## [2026-04-26] 2.0 `src/part1-fundamentals/ch02-rendering/README.md` — 知识盲区
+
+### 盲区描述
+ARR 对游戏 Swappy 库的底层交互
+
+### 重要程度
+中
+
+### 建议研究方向
+验证 Android 15 后 ARR 如何与 Frame Pacing Library 协同工作。
+
+### 外部 review 来源
+- 2026-04-25-15-2.README-external-review.md
+
+## [2026-04-26] 2.0 `src/part1-fundamentals/ch02-rendering/README.md` — 知识盲区
+
+### 盲区描述
+Android 17 硬件加速光线追踪 (Ray Query)
+
+### 重要程度
+低
+
+### 建议研究方向
+针对 2026 年高性能 SoC 的移动端游戏渲染新特性。
+
+### 外部 review 来源
+- 2026-04-25-15-2.README-external-review.md
+
+## [2026-04-26] 3.1 `src/part1-fundamentals/ch03-input/01-input-dispatch.md` — 知识盲区
+
+### 盲区描述
+最新 Android 16/17 版本相关机制变化
+
+### 重要程度
+高
+
+### 建议研究方向
+调研最新 AOSP release notes
+
+### 外部 review 来源
+- 2026-04-25-15-3.1-external-review.md
+
+## [2026-04-26] 3.1 `src/part1-fundamentals/ch03-input/01-input-dispatch.md` — 知识盲区
+
+### 盲区描述
+新版本实现差异
+
+### 重要程度
+高
+
+### 建议研究方向
+AOSP main 分支
+
+### 外部 review 来源
+- 2026-04-25-15-3.1-external-review.md
+
+## [2026-04-26] 4.5 `05-app-memory-optimization.md` — 知识盲区
+
+### 盲区描述
+ART GC 触发与 onTrimMemory 之间的时序耦合关系
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-4.5-external-review.md
+
+## [2026-04-26] 4.6 `06-memory-evolution.md` — 知识盲区
+
+### 盲区描述
+PSI 指标在不同内核版本下的计算差异及其对 LMKD 杀进程策略的影响
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-4.6-external-review.md
+
+## [2026-04-26] 4.7 `07-16kb-page-size.md` — 知识盲区
+
+### 盲区描述
+JEMalloc/Scudo 在 16KB 页大小下的对齐碎片与内存占用开销增长规律
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-4.7-external-review.md
+
+## [2026-04-26] 4.8 `08-art-generational-gc.md` — 知识盲区
+
+### 盲区描述
+Read Barrier 在 Generational CC 期间对运行期性能的具体指令集开销
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-4.8-external-review.md
+
+## [2026-04-26] 5.1 `01-linux-scheduling.md` — 知识盲区
+
+### 盲区描述
+PELT (Per-Entity Load Tracking) 算法在任务负载骤增时的衰减曲线与响应延迟
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-5.1-external-review.md
+
+## [2026-04-26] 5.2 `02-eas.md` — 知识盲区
+
+### 盲区描述
+当设备处于高温降频状态时，EAS 如何动态调整选核策略
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-5.2-external-review.md
+
+## [2026-04-26] 5.3 `03-big-little.md` — 知识盲区
+
+### 盲区描述
+DynamIQ 架构中 L3 Cache 共享机制对跨簇调度的延迟降低程度
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-5.3-external-review.md
+
+## [2026-04-26] 5.4 `04-dvfs.md` — 知识盲区
+
+### 盲区描述
+硬件调频 (如 Arm AMU) 相比软件 cpufreq 带来的延迟降低优势
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-5.4-external-review.md
+
+## [2026-04-26] 5.5 `05-thermal.md` — 知识盲区
+
+### 盲区描述
+不同厂商的 thermal-engine 配置文件 (thermal-engine.conf) 对 CPU 节流 (throttling) 的具体档位策略
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-5.5-external-review.md
+
+## [2026-04-26] 5.6 `06-android-power.md` — 知识盲区
+
+### 盲区描述
+Doze 模式下网络限制与 Alarms 对齐机制在 Doze Maintenance Window 中的集中释放逻辑
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-5.6-external-review.md
+
+## [2026-04-26] 5.7 `07-cpu-evolution.md` — 知识盲区
+
+### 盲区描述
+大核 X 系列架构的乱序执行深度增加对分支预测失败惩罚的影响
+
+### 重要程度
+高
+
+### 建议研究方向
+结合最新 Linux Kernel / ART 源码进行行为分析
+
+### 外部 review 来源
+- 2026-04-25-15-5.7-external-review.md
+
+## [2026-04-26] 2.0 `src/part1-fundamentals/ch02-rendering/README.md` — 知识盲区
+
+### 盲区描述
+Android 17 光线追踪加速 (Ray Query)
+
+### 重要程度
+低
+
+### 建议研究方向
+仅针对高性能游戏场景，总纲可作为锦上添花提及。
+
+### 外部 review 来源
+- 2026-04-26-10-ch02-rendering-overview-external-review.md
+

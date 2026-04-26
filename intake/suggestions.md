@@ -3914,3 +3914,487 @@
 - **位置**：frontmatter `related_chapters`
 - **问题**：正文依赖 BufferQueue/BLASTBufferQueue 与 fence 协调，但关联章节只列了 2.6、2.10、18.6，缺少 2.13 BufferQueue 与 2.16 Sync Fence。
 - **建议**：补 `2.13` 与 `2.16`，让读者能顺着 HWC 协商继续追 buffer 生命周期和 acquire/release fence。
+## [External Review] 1.1 1.1 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.1
+- **问题**：- [P2][版本差异覆盖][16KB Page Size 对 Android 16 的影响]
+- 原文问题：描述了 16KB 特性，但标注 `[待验证: 16KB Page Size 在 Android 16 上的性能数据需实际设备验证]`。
+- 问题描述：16KB 页面的性能影响缺乏实证支撑。
+- 建议：引用 Android 开发者博客中官方给出的 16KB Page Size 性能提升（如启
+- **来源**：2026-04-25-15-1.1-external-review.md
+
+## [External Review] 1.1 1.1 — 2026-04-26
+- **类型**：数据补充
+- **位置**：16KB Page Size
+- **问题**：缺乏性能提升的直观数据。
+- **建议**：引用 Android 15/16 官方关于 16KB 优化的博文数据。
+- **来源**：2026-04-25-15-1.1-external-review.md
+
+## [External Review] 1.10 1.10 ContentProvider 性能与优化 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.10
+- **问题**：- [P2][原理链完整性][多进程 ContentProvider]
+- 原文问题：提到了 `Process.isProviderProcess()` 判断，标注了 `[待验证：Process API 是否提供直接的 Provider 进程判断方法...]`。
+- 证据或观察依据：Android SDK 中的 `Process` 类并没有提供 `isProviderProcess()` 这样的官
+- **来源**：2026-04-25-15-1.10-external-review.md
+
+## [External Review] 1.10 1.10 ContentProvider 性能与优化 — 2026-04-26
+- **类型**：API 准确性
+- **位置**：`多进程 ContentProvider 的适用场景与注意事项`
+- **问题**：猜测存在 `Process.isProviderProcess()`。
+- **建议**：改为使用 `Application.getProcessName()` 判断进程名。
+- **来源**：2026-04-25-15-1.10-external-review.md
+
+## [External Review] 1.11 1.11 Zygote 机制与启动性能优化 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.11
+- **问题**：- [P2][数据/案例支撑][在 Perfetto / logcat 里怎么观察这条链]
+- 原文问题：文章提供了很棒的 SQL 查询，但没有提供查询结果的可视化呈现或 Trace 截图。
+- 证据或观察依据：读者对代码和 SQL 较易理解，但对 Perfetto UI 的直观感受需要图片支撑。
+- 问题描述：缺少 Trace 截图。
+- 建议：提供包含 `launching: pkg`、`am
+- **来源**：2026-04-25-15-1.11-external-review.md
+
+## [External Review] 1.11 1.11 Zygote 机制与启动性能优化 — 2026-04-26
+- **类型**：易读性
+- **位置**：全文
+- **问题**：无 Trace 截图。
+- **建议**：补充带有关键标记的 Trace 截图。
+- **来源**：2026-04-25-15-1.11-external-review.md
+
+## [External Review] 1.12 1.12 AutoFDO 反馈导向编译优化 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.12
+- **问题**：- [P2][数据/案例支撑][OEM 能做什么]
+- 原文问题：提到 Kleaf / DDK 的配置时，带有 `[待验证: Kleaf / DDK 的具体属性名会随分支演进调整...]` 的标记。
+- 证据或观察依据：Kleaf 的属性配置在 AOSP GKI build 脚本中相对固定。
+- 问题描述：可以给出 Kleaf build 中引用 `kernel.afdo` 的确切 Bazel 属
+- **来源**：2026-04-25-15-1.12-external-review.md
+
+## [External Review] 1.12 1.12 AutoFDO 反馈导向编译优化 — 2026-04-26
+- **类型**：细节补充
+- **位置**：`OEM 能做什么` 小节
+- **问题**：缺乏具体的 Bazel build 配置示例。
+- **建议**：提供一小段 `kernel_build` target 引用 afdo profile 的示例配置。
+- **来源**：2026-04-25-15-1.12-external-review.md
+
+## [External Review] 1.13 1.13 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.13
+- **问题**：- [P2][原理链完整性][DeliQueue 无锁优化]
+- 原文问题：“取消路径会和 drain / 遍历竞争，源码里明确提到 tombstone”
+- 证据或观察依据：AOSP 源码中对 tombstone 的处理逻辑比较复杂。
+- 问题描述：原文只是提到了 tombstone，但未解释消费者如何清理这些 tombstone。
+- 建议：建议补充一句话解释清理时机。
+- **来源**：2026-04-25-15-1.13-external-review.md
+
+## [External Review] 1.14 1.14 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.14
+- **问题**：- [P2][交叉引用一致性][与其他机制的关系]
+- 原文问题：提到了 §2.4 / 2.5 但没有明确具体章节名称
+- 证据或观察依据：排版规范要求
+- 问题描述：引用缺少章节名
+- 建议：补充章节名以方便阅读
+- **来源**：2026-04-25-15-1.14-external-review.md
+
+## [External Review] 1.2 1.2 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.2
+- **问题**：- [P2][数据/案例支撑][参考基线数据表]
+- 原文问题：数据表中标注 `[待补充：Pixel 8 实测 bootstat 数据截图]`。
+- 建议：通过执行真实的 `adb shell bootstat -l` 获取一组参考输出，补充到文档中，提高说服力。
+- **来源**：2026-04-25-15-1.2-external-review.md
+
+## [External Review] 1.2 1.2 — 2026-04-26
+- **类型**：图表补充
+- **位置**：bootstat 和 Perfetto 示例
+- **问题**：需要一张带标注的实际开机 Trace 截图。
+- **建议**：准备环境抓取一份完整的 reboot trace 截图并补充。
+- **来源**：2026-04-25-15-1.2-external-review.md
+
+## [External Review] 1.3 1.3 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.3
+- **问题**：- [P2][原理链完整性][Shared Memory]
+- 原文问题：关于图形缓冲区提到 `GraphicBuffer` / `HardwareBuffer` 更接近 dma-buf，建议放到其他章节讲。
+- 建议：在此处简单给出 1-2 句 dma-buf 相较于 memfd_create 的区别（如面向硬件设备零拷贝），以增强进程间通信机制的知识闭环。
+- **来源**：2026-04-25-15-1.3-external-review.md
+
+## [External Review] 1.3 1.3 — 2026-04-26
+- **类型**：扩展说明
+- **位置**：共享内存
+- **问题**：可以略微补充一点 dma-buf 的概念。
+- **建议**：用一句话说明 dma-buf 是如何实现跨进程且跨硬件的零拷贝。
+- **来源**：2026-04-25-15-1.3-external-review.md
+
+## [External Review] 1.4 1.4 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.4
+- **问题**：- [P2][原理链完整性][oneway 调用的反压机制]
+- 原文问题：提到“特别是在 Android 14+ 引入 Lazy Async 之后... Client 端调用 oneway 方法也可能被短暂阻塞”。
+- 问题描述：未给出 Lazy Async 导致阻塞的具体条件或相关源码路径（如 `IPCThreadState.cpp` 的特定实现）。
+- 建议：提供一到两句对 Lazy Asy
+- **来源**：2026-04-25-15-1.4-external-review.md
+
+## [External Review] 1.4 1.4 — 2026-04-26
+- **类型**：技术细节补充
+- **位置**：oneway 调用
+- **问题**：Lazy Async 导致调用方阻塞的机制不够明晰。
+- **建议**：添加针对 Lazy Async 的简短源码层说明。
+- **来源**：2026-04-25-15-1.4-external-review.md
+
+## [External Review] 1.5 1.5 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.5
+- **问题**：- [P2][数据/案例支撑][Perfetto Trace 截图]
+- 原文问题：标注 `[待补充：Perfetto Trace 截图 — 主线程各状态...]`
+- 建议：提供真实且直观的 Perfetto 截图，将不同颜色状态（绿色 Running，深橙色 Uninterruptible Sleep）图文并茂展示。
+- **来源**：2026-04-25-15-1.5-external-review.md
+
+## [External Review] 1.5 1.5 — 2026-04-26
+- **类型**：配图补充
+- **位置**：在 Perfetto 中的表现
+- **问题**：缺少实际的 Trace 截图。
+- **建议**：后续编辑阶段落实截图，确保图文一致。
+- **来源**：2026-04-25-15-1.5-external-review.md
+
+## [External Review] 1.6 1.6 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.6
+- **问题**：- [P2][原理链完整性][最新架构变化]
+- 原文问题：标注 `[待验证：具体 API 在 android-16.0.0_r1 中的实现细节]`（关于 system-triggered profiling）。
+- 建议：提供针对 `ProfilingManager` (如果存在该新增类) 或 `ApplicationStartInfo` 的直接 AOSP 源码路径引用，以增加技术说服力。
+- **来源**：2026-04-25-15-1.6-external-review.md
+
+## [External Review] 1.6 1.6 — 2026-04-26
+- **类型**：源码引用补充
+- **位置**：最新架构变化
+- **问题**：对 ApplicationStartInfo 的提及过于概念化。
+- **建议**：给出对应的 API 类名和示例属性（如 `getStartupState()`）。
+- **来源**：2026-04-25-15-1.6-external-review.md
+
+## [External Review] 1.7 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.7
+- **问题**：- [P2][原理链完整性][Android 16/17 编译体系的最新演进]
+- 原文问题：“Android 16 的公开资料开始出现 Cloud Compilation 等云侧编译信号... Android 17 则把 static final 的行为约束收得更紧”
+- 证据或观察依据：Cloud Compilation 目前多为外部宣发，在 AOSP 核心主干中不易找到直接确凿的完整量产链路
+- **来源**：2026-04-25-15-1.7-external-review.md
+
+## [External Review] 1.7 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-26
+- **类型**：表述严谨性
+- **位置**：`Android 16/17 编译体系的最新演进`
+- **问题**：Cloud Compilation 描述偏向新闻性。
+- **建议**：补充说明其对 GMS 的依赖性。
+- **来源**：2026-04-25-15-1.7-external-review.md
+
+## [External Review] 1.8 1.8 Activity Manager Service 与性能分析 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.8
+- **问题**：- [P2][原理链完整性][Input ANR]
+- 原文问题：Input ANR 部分提到了 `notifyWindowUnresponsive()`。
+- 证据或观察依据：在某些设备或复杂 UI 树中，InputDispatcher 的状态可能受到 SurfaceFlinger 侧 Buffer 积压的影响。
+- 问题描述：仅从 WMS 和 AMS 角度解释了 Input ANR，稍微缺乏了
+- **来源**：2026-04-25-15-1.8-external-review.md
+
+## [External Review] 1.8 1.8 Activity Manager Service 与性能分析 — 2026-04-26
+- **类型**：原理补充
+- **位置**：Input ANR 小节
+- **问题**：可以增加关于 SurfaceFlinger 阻塞主线程导致 Input ANR 的提示。
+- **建议**：补充 1-2 句话的扩展说明。
+- **来源**：2026-04-25-15-1.8-external-review.md
+
+## [External Review] 1.9 1.9 Package Manager Service 与应用安装性能 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：1.9
+- **问题**：- [P2][原理链完整性][OTA 更新后的 mass dexopt]
+- 原文问题：提到 ART Service 策略中，OTA 后只对 primary DEX 做 `verify`。
+- 问题描述：可以进一步解释 `verify` 的耗时在现代设备（UFS 3.1/4.0）上大约的量级，给读者一个更直观的体感。
+- 建议：补充一些经验数据，比如中端机型一次 verify 的平均耗时。
+- **来源**：2026-04-25-15-1.9-external-review.md
+
+## [External Review] 1.9 1.9 Package Manager Service 与应用安装性能 — 2026-04-26
+- **类型**：细节补充
+- **位置**：`应用更新与 OTA 更新的性能影响`
+- **问题**：缺乏耗时量级感。
+- **建议**：提供 verify 的粗略耗时参考值。
+- **来源**：2026-04-25-15-1.9-external-review.md
+
+## [External Review] 2.1 2.1 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.1
+- **问题**：- [P2][数据/案例支撑][实战案例]
+- 原文问题：特定参数缺乏定量数据
+- 证据或观察依据：在说明机制时多为定性描述
+- 问题描述：缺少具体的毫秒级/字节级估算
+- 建议：补充业界普遍的实测数据或典型的 benchmark 表现。
+- **来源**：2026-04-25-15-2.1-external-review.md
+
+## [External Review] 2.1 2.1 — 2026-04-26
+- **类型**：案例丰富度
+- **位置**：全文
+- **问题**：可以加入更多真实的 Trace 截图分析
+- **建议**：提供包含具体时间的 Perfetto 截图
+- **来源**：2026-04-25-15-2.1-external-review.md
+
+## [External Review] 2.11  — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.11
+- **问题**：- **[P2][源码准确性][§渲染管线的根本区别]**
+- **原文问题**：文中提到 `1.ui` 和 `1.raster`。
+- **证据或观察依据**：Flutter Engine 源码中设置线程名的逻辑：`fml::Thread::SetCurrentThreadName("io.flutter.ui")`。
+- **问题描述**：在某些 Android 版本的 Perfetto/Sy
+- **来源**：2026-04-25-15-2.11-external-review.md
+
+## [External Review] 2.12 `2.12 Window Manager Service 与窗口管理` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.12
+- **问题**：- **[P2][数据/案例支撑][Perfetto Slice 名变迁]**
+  - 问题描述：Android 14 后，部分核心 Slice 名（如 `relayoutWindow`）在某些厂商或特定的 Atrace Category 下可能被重构。
+  - 建议：在 Perfetto 章节补充一个“Slice 模糊搜索”的技巧，说明如何通过 `SELECT name FROM slice W
+- **来源**：2026-04-25-15-2.12-external-review.md
+
+## [External Review] 2.13  — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.13
+- **问题**：- **[P2][知识盲区][BufferQueue Counters]**
+  - **问题描述**：Perfetto 分析部分提到了 Slice，但忽略了 `BufferQueue` 自动上报的计数器（Counters）。
+  - **建议**：说明在 Perfetto 中搜索 `buffer_count` 或 `BufferQueue` 可以看到当前已分配、已 dequeue 的实时数字，这
+- **来源**：2026-04-25-15-2.13-external-review.md
+
+## [External Review] 2.14 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.14
+- **问题**：- [P2][源码准确性][补充：vkQueuePresentKHR 的同步陷阱]
+- 原文问题：Vulkan 扩展命名不规范。
+- 证据或观察依据：Khronos 官方文档及 Vulkan SDK。
+- 问题描述：原文写为 `VK_EXT_swapchain_maintenance1`，实际应为 `VK_KHR_swapchain_maintenance1`。虽然部分驱动曾存在 EXT 阶段，但
+- **来源**：2026-04-25-15-2.14-external-review.md
+
+## [External Review] 2.14 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-04-26
+- **类型**：源码准确性
+- **位置**：补充：vkQueuePresentKHR 的同步陷阱
+- **问题**：`VK_EXT_swapchain_maintenance1` 命名不规范。
+- **建议**：修正为 `VK_KHR_swapchain_maintenance1`。
+- **来源**：2026-04-25-15-2.14-external-review.md
+
+## [External Review] 2.15 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.15
+- **问题**：- **[P2][数据/案例支撑][16KB 页面开销]**
+  - **原文位置**：16KB 页面分配预算小节。
+  - **证据或观察依据**：16KB page size 带来的内部碎片化。
+  - **问题描述**：提到了“更容易出现尾部空洞”，但没有给出一个具体的量化对比。
+  - **建议**：补充一个计算例子（如 258KB buffer 在 4KB vs 16KB 下的页占用对比
+- **来源**：2026-04-25-15-2.15-external-review.md
+
+## [External Review] 2.16  — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.16
+- **问题**：- **[P2][原理链完整性][名词解释]**：建议明确 **HWC1 的 Retire Fence** 与 **HWC2 的 Present Fence** 的演进关系。文中提到了“旧资料叫 retire”，但没说清楚这是协议版本（HWC1 vs HWC2）的变化，容易让读者混淆新旧文档。
+- **来源**：2026-04-25-15-2.16-external-review.md
+
+## [External Review] 2.17  — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.17
+- **问题**：### 1. [P2][数据/案例支撑][Perfetto 验证部分]
+- **原文问题**：提到 `SurfaceViews are currently not supported` (Perfetto 文档)。
+- **证据或观察依据**：最新版本的 Perfetto 其实已经通过 `FrameTimeline` 支持了 `SurfaceView`（只要该 Surface 关联了特定的 Win
+- **来源**：2026-04-25-15-2.17-external-review.md
+
+## [External Review] 2.18 `2.18 Adaptive Refresh Rate 与动态帧率控制` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.18
+- **问题**：- [P2][数据/案例支撑][Perfetto SQL]
+- **原文问题**：SQL 示例使用了 `actual_frame_timeline_slice`。
+- **建议**：建议在文中明确说明，如果是在 Android 14+ 使用内置的 Perfetto SQL 引擎，可以直接调用 `android_jank_cuj` 标准库函数，这样比手写 SQL 查 raw table 更高效。
+- **来源**：2026-04-25-15-2.18-external-review.md
+
+## [External Review] 2.19  — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.19
+- **问题**：- **[P2][版本差异覆盖][Android 16 API]**
+  - **问题描述**：文中提到 `Android 16 (API 36) 才公开 Display.getSuggestedFrameRate(int category)`。
+  - **核验结论**：经核实，`Display.getSuggestedFrameRate` 及其分类（Category）API 的定义和初步实现实
+- **来源**：2026-04-25-15-2.19-external-review.md
+
+## [External Review] 2.20  — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.20
+- **问题**：- **[P2][数据/案例支撑][2.20 - SQL 过滤建议]**
+- **原文问题**：SQL 示例未过滤 `display_id`。
+- **问题描述**：在 Connected Display 场景下，`surfaceflinger_layers_snapshot` 会同时包含两块屏幕的 layer。不加 `display_id` 过滤会导致统计出的 layer 数量翻倍，误导分析。
+
+- **来源**：2026-04-25-15-2.20-external-review.md
+
+## [External Review] 2.0 `src/part1-fundamentals/ch02-rendering/README.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.0
+- **问题**：- [P2][数据/案例支撑][阅读建议]
+- 原文位置：阅读建议部分
+- 问题描述：阅读建议中虽提供了路径，但未提及 Perfetto 指标（如 `Expected Timeline`）的跨章节对应关系。
+- 建议：在阅读建议末尾增加指引，关联具体章节与 Perfetto 关键轨道（如 FrameTimeline 对应 2.4/2.16）。
+- **来源**：2026-04-25-15-2.README-external-review.md
+
+## [External Review] 2.0 `src/part1-fundamentals/ch02-rendering/README.md` — 2026-04-26
+- **类型**：易读性
+- **位置**：阅读建议
+- **问题**：缺乏对 Perfetto 核心轨道（FrameTimeline）的引导。
+- **建议**：增加对 `Actual/Expected Timeline` 轨道的文字引导。
+- **来源**：2026-04-25-15-2.README-external-review.md
+
+## [External Review] 3.1 `src/part1-fundamentals/ch03-input/01-input-dispatch.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：3.1
+- **问题**：- [P2][数据/案例支撑][案例部分]
+- 原文问题：部分性能优化结论没有量化数据。
+- 证据或观察依据：文章中出现“显著提升”但无具体指标。
+- 问题描述：缺乏 Perfetto 或实测数据图表支持。
+- 建议：提供具体的 Trace 图表说明或 Benchmark 对比数据。
+- **来源**：2026-04-25-15-3.1-external-review.md
+
+## [External Review] 3.1 `src/part1-fundamentals/ch03-input/01-input-dispatch.md` — 2026-04-26
+- **类型**：数据支撑
+- **位置**：性能段落
+- **问题**：需要量化数据
+- **建议**：补充实测 Trace 截图
+- **来源**：2026-04-25-15-3.1-external-review.md
+
+## [External Review] 4.5 `05-app-memory-optimization.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：4.5
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `App 内存回收与优化` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `App 内存回收与优化` 往往依赖 Trace 中的 `sys_memory_trim` 事件。
+- 问题描述：纯文字描述排查过程不够直观。
+- 建议：补充在 Perfetto 中抓取和过滤 `sys_mem
+- **来源**：2026-04-25-15-4.5-external-review.md
+
+## [External Review] 4.5 `05-app-memory-optimization.md` — 2026-04-26
+- **类型**：数据与案例缺失
+- **位置**：实战部分
+- **问题**：未提供 Perfetto `slice` 视角。
+- **建议**：补充 `sys_memory_trim` 的抓取与分析截图。
+- **来源**：2026-04-25-15-4.5-external-review.md
+
+## [External Review] 4.6 `06-memory-evolution.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：4.6
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `Android 内存架构演进` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `Android 内存架构演进` 往往依赖 Trace 中的 `lmkd_kill` 事件。
+- 问题描述：纯文字描述排查过程不够直观。
+- 建议：补充在 Perfetto 中抓取和过滤 `lmkd_ki
+- **来源**：2026-04-25-15-4.6-external-review.md
+
+## [External Review] 4.7 `07-16kb-page-size.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：4.7
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `16KB Page Size 适配` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `16KB Page Size 适配` 往往依赖 Trace 中的 `mmap` 事件。
+- 问题描述：纯文字描述排查过程不够直观。
+- 建议：补充在 Perfetto 中抓取和过滤 `mmap` 
+- **来源**：2026-04-25-15-4.7-external-review.md
+
+## [External Review] 4.8 `08-art-generational-gc.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：4.8
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `ART 世代垃圾回收 (Generational CC)` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `ART 世代垃圾回收 (Generational CC)` 往往依赖 Trace 中的 `GC: Concurrent Copying` 事件。
+- 问题描述：纯文字描述排查
+- **来源**：2026-04-25-15-4.8-external-review.md
+
+## [External Review] 5.1 `01-linux-scheduling.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：5.1
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `Linux 进程调度 (CFS)` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `Linux 进程调度 (CFS)` 往往依赖 Trace 中的 `sched_switch` 事件。
+- 问题描述：纯文字描述排查过程不够直观。
+- 建议：补充在 Perfetto 中抓取和过滤 `
+- **来源**：2026-04-25-15-5.1-external-review.md
+
+## [External Review] 5.2 `02-eas.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：5.2
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `EAS (Energy Aware Scheduling)` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `EAS (Energy Aware Scheduling)` 往往依赖 Trace 中的 `sched_energy_diff` 事件。
+- 问题描述：纯文字描述排查过程不
+- **来源**：2026-04-25-15-5.2-external-review.md
+
+## [External Review] 5.3 `03-big-little.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：5.3
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `大小核架构 (big.LITTLE / DynamIQ)` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `大小核架构 (big.LITTLE / DynamIQ)` 往往依赖 Trace 中的 `sched_migrate_task` 事件。
+- 问题描述：纯文字描述排查过程不够
+- **来源**：2026-04-25-15-5.3-external-review.md
+
+## [External Review] 5.4 `04-dvfs.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：5.4
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `DVFS (动态电压频率调节)` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `DVFS (动态电压频率调节)` 往往依赖 Trace 中的 `cpu_frequency` 事件。
+- 问题描述：纯文字描述排查过程不够直观。
+- 建议：补充在 Perfetto 中抓取和过滤 `c
+- **来源**：2026-04-25-15-5.4-external-review.md
+
+## [External Review] 5.5 `05-thermal.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：5.5
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `温控机制 (Thermal)` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `温控机制 (Thermal)` 往往依赖 Trace 中的 `thermal_status` 事件。
+- 问题描述：纯文字描述排查过程不够直观。
+- 建议：补充在 Perfetto 中抓取和过滤 `th
+- **来源**：2026-04-25-15-5.5-external-review.md
+
+## [External Review] 5.6 `06-android-power.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：5.6
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `Android 耗电分析与管理` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `Android 耗电分析与管理` 往往依赖 Trace 中的 `battery_stats` 事件。
+- 问题描述：纯文字描述排查过程不够直观。
+- 建议：补充在 Perfetto 中抓取和过滤 `b
+- **来源**：2026-04-25-15-5.6-external-review.md
+
+## [External Review] 5.7 `07-cpu-evolution.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：5.7
+- **问题**：- [P2][数据/案例支撑][实战建议部分]
+- 原文问题：缺乏 `CPU 架构演进与性能趋势` 在遇到极端情况下的 Perfetto 抓包截图或指标指引。
+- 证据或观察依据：实战中，分析 `CPU 架构演进与性能趋势` 往往依赖 Trace 中的 `cpu_cycles` 事件。
+- 问题描述：纯文字描述排查过程不够直观。
+- 建议：补充在 Perfetto 中抓取和过滤 `cpu_cycl
+- **来源**：2026-04-25-15-5.7-external-review.md
+
+## [External Review] 2.0 `src/part1-fundamentals/ch02-rendering/README.md` — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.0
+- **问题**：- [P2][数据/案例支撑][阅读建议]
+- 问题描述：阅读建议中虽提供了路径，但未提及 Perfetto 指标（如 `Expected Timeline`）的跨章节对应关系。
+- 建议：在阅读建议末尾增加一句话，指引读者在分析具体章节时对应的关键 Perfetto 轨道（如 FrameTimeline 指向 2.4/2.16）。
+- **来源**：2026-04-26-10-ch02-rendering-overview-external-review.md
+
+## [External Review] 2.0 `src/part1-fundamentals/ch02-rendering/README.md` — 2026-04-26
+- **类型**：案例支撑
+- **位置**：阅读建议
+- **问题**：缺乏 Perfetto 核心轨道关联描述。
+- **建议**：增加对 `Actual/Expected Timeline` 轨道的引导。
+- **来源**：2026-04-26-10-ch02-rendering-overview-external-review.md
+
+## [External Review] 2.15 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-04-26
+- **类型**：P2建议改进
+- **位置**：2.15
+- **问题**：- **[P2][数据/案例支撑][16KB 页面开销]**
+  - **原文问题**：提到了 16KB 下“更容易出现尾部空洞”，但没有给出一个具体的对比示例。
+  - **建议**：补充一个计算例子。例如：一个 256x256 的 RGBA_8888 纹理占 256KB。在 4KB 下正好 64 页；在 16KB 下也是 16 页，没有浪费。但如果是一个带有 2KB metadata 的 bu
+- **来源**：2026-04-26-15-2.15-external-review.md
+

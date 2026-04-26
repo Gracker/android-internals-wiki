@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T06:00",
+  "generated_at": "2026-04-26T09:25",
   "documents": [
     {
       "path": "Cubox/#01 创始人解密 Discord-2023-02-20.md",
@@ -44044,14 +44044,24 @@
     },
     {
       "path": "src/part4-system/ch16-aosp/README.md",
-      "title": "README.md",
+      "title": "第 16 章：AOSP 性能优化",
+      "tags": [],
+      "word_count": 111,
       "mapped_chapters": [
-        "16"
+        "ch01",
+        "ch04",
+        "ch13",
+        "ch16"
       ],
+      "chapter_confidences": {
+        "ch01": 70,
+        "ch04": 70,
+        "ch13": 80,
+        "ch16": 80
+      },
       "total_score": 30,
-      "size": 193,
-      "status": "stub",
-      "mtime": "2026-03-28 17:06"
+      "content_hash": "b9172018df4f1971afa8a563a573965d",
+      "last_modified": "2026-04-25T07:24"
     },
     {
       "path": "src/part4-system/ch16-aosp/03-aosp-build.md",
@@ -44439,32 +44449,20 @@
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
-      "title": "渲染机制的版本演进",
-      "mtime": "2026-04-09 13:50",
-      "size_kb": 24.5,
-      "wc": 285,
-      "tags": [
-        "'frametimeline'",
-        "'vulkan'",
-        "'rendering-evolution'",
-        "'blastBufferQueue'",
-        "'hwui'"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "title": "渲染机制的版本演进\nchapter:",
+      "tags": [],
+      "word_count": 168,
+      "mapped_chapters": [
         "ch02",
-        "ch05",
-        "ch10",
         "ch16"
       ],
-      "total_score": 78,
-      "mapped_chapters": [
-        "ch02"
-      ],
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch02": 80,
+        "ch16": 90
+      },
+      "total_score": 53,
+      "content_hash": "910eb309f48988d82bb09f33ae03a5ad",
+      "last_modified": "2026-04-26T08:23"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/README.md",
@@ -44480,30 +44478,30 @@
     {
       "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
       "title": "Android 渲染架构全景",
-      "mtime": "2026-04-09 13:45",
-      "size_kb": 46.7,
-      "wc": 295,
       "tags": [
-        "'rendering'",
-        "'hwui'",
-        "'skia'",
-        "'surfaceflinger'",
-        "'gpu'"
+        "vsync",
+        "surfaceflinger",
+        "rendering",
+        "bufferqueue",
+        "triple-buffering",
+        "skia",
+        "gpu",
+        "rendernode",
+        "rendering-pipeline",
+        "displaylist",
+        "status:ready-for-review\napplicable_versions:",
+        "hwui"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch02",
-        "ch05",
-        "ch10",
+      "word_count": 185,
+      "mapped_chapters": [
         "ch16"
       ],
-      "total_score": 100,
-      "mapped_chapters": [
-        "ch02"
-      ]
+      "chapter_confidences": {
+        "ch16": 90
+      },
+      "total_score": 53,
+      "content_hash": "60c5e9acb316621f32fcf1655b663e18",
+      "last_modified": "2026-04-25T09:08"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
@@ -45153,39 +45151,24 @@
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/02-filesystem.md",
-      "title": "文件系统",
-      "mtime": "2026-04-08 13:36",
-      "size_kb": 38.8,
-      "wc": 265,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch06",
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch11",
+      "title": "文件系统\nchapter:",
+      "tags": [
+        "status:finalized\napplicable_versions: Android 10+\nlast_verified:"
+      ],
+      "word_count": 184,
+      "mapped_chapters": [
+        "ch05",
+        "ch13",
         "ch16"
       ],
-      "last_modified": "2026-04-20 03:37",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch01",
-        "ch13",
-        "ch16",
-        "ch08",
-        "ch17",
-        "ch04",
-        "ch07",
-        "ch14",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "d8024abcb897ba0c077c66429c7b1b0e"
+      "chapter_confidences": {
+        "ch05": 90,
+        "ch13": 70,
+        "ch16": 70
+      },
+      "total_score": 48,
+      "content_hash": "22af99ee31477e8e7e6e22d73737a470",
+      "last_modified": "2026-04-25T21:28"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
@@ -45227,28 +45210,17 @@
     {
       "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
       "title": "Android 内存模型全景",
-      "mtime": "2026-04-07 07:56",
-      "size_kb": 30.3,
-      "wc": 277,
-      "tags": [
-        "'memory'",
-        "'PSS'",
-        "'RSS'",
-        "'dumpsys'",
-        "'meminfo'"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch04",
-        "ch05",
-        "ch08",
-        "ch10",
-        "ch14",
+      "tags": [],
+      "word_count": 165,
+      "mapped_chapters": [
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "b71a80c0ce13408e3f61611e917b2b72",
+      "last_modified": "2026-04-26T01:30"
     },
     {
       "path": "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
@@ -45368,27 +45340,34 @@
     {
       "path": "src/part1-fundamentals/ch03-input/02-touch-performance.md",
       "title": "触摸响应的性能分析",
-      "mtime": "2026-04-05 19:28",
-      "size_kb": 30.7,
-      "wc": 260,
       "tags": [
+        "batching",
+        "Choreographer",
+        "status:finalized\ndrafted_date:",
+        "InputDispatcher",
         "touch",
+        "responsiveness",
         "input",
-        "latency",
+        "sampling-rate",
         "InputReader",
-        "InputDispatcher"
+        "latency"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "word_count": 179,
+      "mapped_chapters": [
         "ch02",
         "ch03",
-        "ch07",
-        "ch08",
-        "ch10",
+        "ch13",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch02": 70,
+        "ch03": 80,
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "22826e747035f849e3252dbfd41adac3",
+      "last_modified": "2026-04-25T20:56"
     },
     {
       "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
@@ -45546,134 +45525,116 @@
     {
       "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
       "title": "网络性能优化",
-      "mtime": "2026-04-03 08:14",
-      "size_kb": 25.4,
-      "wc": 261,
       "tags": [
-        "network",
-        "OkHttp",
-        "HTTP/2",
-        "HTTP/3",
-        "QUIC"
+        "status:finalized\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch08",
+      "word_count": 185,
+      "mapped_chapters": [
+        "ch06",
         "ch12",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch06": 95,
+        "ch12": 90,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "39531c9afe6a84e3cc79ea35a4d398df",
+      "last_modified": "2026-04-25T19:13"
     },
     {
       "path": "src/part2-performance/ch12-apk-network/01-apk-size.md",
       "title": "APK 体积优化",
-      "mtime": "2026-04-03 06:13",
-      "size_kb": 25.6,
-      "wc": 283,
       "tags": [
-        "apk",
+        "dynamic-feature",
+        "dex",
+        "status:ready-for-review\ndrafted_date:",
+        "native-libs",
+        "code-shrinking",
+        "abi-filter",
+        "apk-analyzer",
         "r8",
-        "proguard",
         "app-bundle",
-        "resource-optimization"
+        "webp",
+        "apk",
+        "resource-optimization",
+        "proguard"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch07",
-        "ch14",
-        "ch16",
-        "ch17"
-      ],
-      "last_modified": "2026-04-20 04:37",
-      "word_count": 3000,
-      "total_score": 78,
+      "word_count": 160,
       "mapped_chapters": [
-        "ch05",
-        "ch18",
-        "ch16",
-        "ch08",
-        "ch04",
-        "ch07",
-        "ch12",
-        "ch14",
-        "ch06"
+        "ch11",
+        "ch16"
       ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "ab1324db90641cb44645f3e0241dcfe8"
+      "chapter_confidences": {
+        "ch11": 70,
+        "ch16": 70
+      },
+      "total_score": 43,
+      "content_hash": "527360a90c8f08c585dbf94cfd283060",
+      "last_modified": "2026-04-25T18:40"
     },
     {
       "path": "src/part2-performance/ch11-power/01-power-model.md",
       "title": "Android 功耗模型",
-      "mtime": "2026-04-07 08:04",
-      "size_kb": 30.7,
-      "wc": 247,
       "tags": [
-        "'power'",
-        "'battery'",
-        "'power_profile'",
-        "'BatteryStats'",
-        "'ODPM'"
+        "status:finalized\nreviewed_date: 2026-04-23\nreviewed_by:",
+        "battery",
+        "ODPM",
+        "power",
+        "BatteryStats",
+        "Fuel Gauge",
+        "IPowerStats",
+        "power_profile",
+        "Coulomb Counter",
+        "功耗归属"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch05",
+      "word_count": 146,
+      "mapped_chapters": [
         "ch09",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch09": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "dfb004a8911e6a4930b3b2b0096c1e1d",
+      "last_modified": "2026-04-25T15:31"
     },
     {
       "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
       "title": "App 耗电优化",
-      "mtime": "2026-04-07 23:43",
-      "size_kb": 29.4,
-      "wc": 276,
-      "tags": [
-        "'wakelock'",
-        "'jobscheduler'",
-        "'workmanager'",
-        "'doze'",
-        "'location'"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch05",
-        "ch08",
+      "tags": [],
+      "word_count": 156,
+      "mapped_chapters": [
         "ch09",
-        "ch13",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch09": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "11a9fd526d1970614f5882e3d5005162",
+      "last_modified": "2026-04-25T15:31"
     },
     {
       "path": "src/part2-performance/ch11-power/03-system-power-optimization.md",
       "title": "系统级功耗优化",
-      "mtime": "2026-04-05 04:47",
-      "size_kb": 27.7,
-      "wc": 257,
-      "tags": [
-        "'doze'",
-        "'standby'",
-        "'battery-saver'",
-        "'background-restriction'",
-        "'oem-power'"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch05",
-        "ch07",
+      "tags": [],
+      "word_count": 131,
+      "mapped_chapters": [
         "ch09",
-        "ch16",
-        "ch17"
-      ]
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch09": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "07d6421402c930eecde81a59ee677877",
+      "last_modified": "2026-04-25T15:31"
     },
     {
       "path": "src/part2-performance/ch11-power/04-case-studies.md",
@@ -45711,26 +45672,32 @@
     {
       "path": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
       "title": "案例集",
-      "mtime": "2026-04-09 08:23",
-      "size_kb": 29.7,
-      "wc": 274,
       "tags": [
-        "'case-study'",
-        "'cold-start'",
-        "'response-optimization'",
-        "'baseline-profile'",
-        "'r8-full-mode'"
+        "baseline-profile",
+        "status:ready-for-review\ndrafted_date:",
+        "dag-scheduler",
+        "case-study",
+        "auto-fdo",
+        "macrobenchmark",
+        "page-switch",
+        "aot-compilation",
+        "16kb-page",
+        "r8-full-mode",
+        "response-optimization",
+        "cold-start"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch07",
+      "word_count": 179,
+      "mapped_chapters": [
         "ch08",
-        "ch11",
-        "ch13",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch08": 90,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "a1f0035a19938eba01579f82beb3e036",
+      "last_modified": "2026-04-26T09:09"
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles.md",
@@ -45900,29 +45867,28 @@
     {
       "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
       "title": "案例集",
-      "mtime": "2026-04-09 03:42",
-      "size_kb": 26.5,
-      "wc": 258,
       "tags": [
-        "'case-study'",
-        "'memory-leak'",
-        "'native-memory'",
-        "'low-memory'",
-        "'oom'"
+        "status:ready-for-review\ndrafted_date:",
+        "cache",
+        "native-memory",
+        "case-study",
+        "low-memory",
+        "gc",
+        "oom",
+        "memory-leak"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch04",
-        "ch05",
-        "ch07",
-        "ch08",
+      "word_count": 178,
+      "mapped_chapters": [
         "ch10",
-        "ch13",
-        "ch14",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch10": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "07c4148b5c33a71397448e68e0fe00bb",
+      "last_modified": "2026-04-25T14:25"
     },
     {
       "path": "src/part2-performance/ch10-memory-perf/02-memory-leak.md",
@@ -45948,83 +45914,63 @@
     {
       "path": "src/part2-performance/ch10-memory-perf/04-low-memory-impact.md",
       "title": "低内存对系统性能的影响",
-      "mtime": "2026-04-09 02:43",
-      "size_kb": 25.0,
-      "wc": 284,
       "tags": [
-        "'low-memory'",
-        "'kswapd'",
-        "'direct-reclaim'",
-        "'lmkd'",
-        "'GC'"
+        "PSI",
+        "status:ready-for-review\ndrafted_date:",
+        "cgroup",
+        "lmkd",
+        "low-memory",
+        "kswapd",
+        "direct-reclaim",
+        "mm-events",
+        "GC",
+        "MGLRU",
+        "ZRAM",
+        "oom-score-adj",
+        "Perfetto",
+        "vmscan",
+        "memory-pressure"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "word_count": 195,
+      "mapped_chapters": [
         "ch04",
-        "ch07",
-        "ch10",
-        "ch11",
-        "ch14",
+        "ch08",
         "ch16"
       ],
-      "last_modified": "2026-04-19 21:40",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch05",
-        "ch13",
-        "ch16",
-        "ch08",
-        "ch04",
-        "ch07",
-        "ch10",
-        "ch14",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "673d65ef3d10a3956def52f405bc900b"
+      "chapter_confidences": {
+        "ch04": 70,
+        "ch08": 80,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "673d65ef3d10a3956def52f405bc900b",
+      "last_modified": "2026-04-25T18:18"
     },
     {
       "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
       "title": "内存抖动与频繁 GC",
-      "mtime": "2026-04-09 05:42",
-      "size_kb": 22.1,
-      "wc": 262,
       "tags": [
-        "'memory'",
-        "'gc'",
-        "'churn'",
-        "'object-pool'",
-        "'tlab'"
+        "status:finalized\npolish_count: 1\npolish_date:",
+        "churn",
+        "tlab",
+        "object-pool",
+        "gc",
+        "heapprofd",
+        "autoboxing",
+        "memory"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "word_count": 154,
+      "mapped_chapters": [
         "ch04",
-        "ch10",
-        "ch11",
         "ch16"
       ],
-      "last_modified": "2026-04-20 05:56",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch05",
-        "ch01",
-        "ch13",
-        "ch14",
-        "ch16",
-        "ch04",
-        "ch07",
-        "ch12",
-        "ch02",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "e5848ef38c93e326403f9737d6ad3054"
+      "chapter_confidences": {
+        "ch04": 70,
+        "ch16": 90
+      },
+      "total_score": 53,
+      "content_hash": "d4e4401ed618098eca6f1ea317299d0e",
+      "last_modified": "2026-04-25T14:25"
     },
     {
       "path": "src/part2-performance/ch10-memory-perf/README.md",
@@ -46105,109 +46051,90 @@
     {
       "path": "src/part2-performance/ch07-smoothness/01-jank-definition.md",
       "title": "卡顿的定义与分类",
-      "mtime": "2026-04-05 08:23",
-      "size_kb": 24.1,
-      "wc": 269,
-      "tags": [
-        "jank",
-        "smoothness",
-        "FrameTimeline",
-        "Choreographer",
-        "掉帧"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "tags": [],
+      "word_count": 146,
+      "mapped_chapters": [
         "ch02",
-        "ch05",
-        "ch08",
-        "ch10",
-        "ch14",
+        "ch07",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch02": 70,
+        "ch07": 80,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "0a72a49572eca4d7a201a28582ceb25d",
+      "last_modified": "2026-04-25T11:53"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
-      "title": "Jetpack Compose 性能优化",
-      "mtime": "2026-04-07 22:21",
-      "size_kb": 29.4,
-      "wc": 269,
+      "title": "Jetpack Compose 性能优化\nchapter:",
       "tags": [
-        "compose",
-        "jank",
-        "recomposition",
-        "stability",
-        "lazy-column"
+        "status:finalized\napplicable_versions: Android 8.0 (API 26) - Android 16 (API 36)\nlast_verified:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
-        "ch07",
+      "word_count": 181,
+      "mapped_chapters": [
+        "ch08",
         "ch16"
       ],
-      "last_modified": "2026-04-19 23:16",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch15",
-        "ch05",
-        "ch18",
-        "ch13",
-        "ch14",
-        "ch16",
-        "ch08",
-        "ch07",
-        "ch02",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "b130276f12d7529fcda62c0696adc9a7"
+      "chapter_confidences": {
+        "ch08": 70,
+        "ch16": 70
+      },
+      "total_score": 43,
+      "content_hash": "ff8748fa541fb5e0341423f32cfed2ee",
+      "last_modified": "2026-04-25T16:33"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/README.md",
-      "title": "README.md",
+      "title": "第 7 章：流畅性",
+      "tags": [],
+      "word_count": 102,
       "mapped_chapters": [
-        "7"
+        "ch07",
+        "ch13"
       ],
+      "chapter_confidences": {
+        "ch07": 95,
+        "ch13": 70
+      },
       "total_score": 30,
-      "size": 193,
-      "status": "stub",
-      "mtime": "2026-03-28 17:06"
+      "content_hash": "c790c23c5f93c8fcae5667be2cda539a",
+      "last_modified": "2026-04-25T13:47"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
       "title": "案例集",
-      "mtime": "2026-04-07 07:56",
-      "size_kb": 28.2,
-      "wc": 267,
       "tags": [
-        "'case-study'",
-        "'jank'",
-        "'smoothness'",
-        "'GC'",
-        "'layout'"
+        "jank",
+        "smoothness",
+        "layout",
+        "case-study",
+        "low-memory",
+        "perfetto",
+        "bitmap-cache",
+        "GC",
+        "vendor-optimization",
+        "binder",
+        "render-thread",
+        "recycler-view",
+        "status:ready-for-review\napplicable_versions:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch02",
-        "ch04",
-        "ch05",
+      "word_count": 159,
+      "mapped_chapters": [
         "ch07",
-        "ch10",
+        "ch13",
         "ch16"
       ],
-      "total_score": 70,
-      "mapped_chapters": [
-        "ch07"
-      ],
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch07": 80,
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "eb43f5f9e9b845bcde42d2624c9a8583",
+      "last_modified": "2026-04-25T11:41"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
@@ -46273,70 +46200,56 @@
     {
       "path": "src/part2-performance/ch07-smoothness/03-jank-methodology.md",
       "title": "卡顿分析方法论",
-      "mtime": "2026-04-08 23:30",
-      "size_kb": 35.9,
-      "wc": 239,
       "tags": [
-        "'jank'",
-        "'methodology'",
-        "'Perfetto'",
-        "'Systrace'",
-        "'FrameTimeline'"
+        "jank",
+        "Systrace",
+        "checklist",
+        "status:ready-for-review\nreviewed_date:",
+        "methodology",
+        "FrameMetrics",
+        "CPU",
+        "Perfetto",
+        "FrameTimeline"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
-        "ch05",
-        "ch10",
-        "ch14",
+      "word_count": 157,
+      "mapped_chapters": [
+        "ch07",
+        "ch13",
+        "ch15",
         "ch16"
       ],
-      "last_modified": "2026-04-19 23:14",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch15",
-        "ch05",
-        "ch13",
-        "ch14",
-        "ch16",
-        "ch07",
-        "ch12",
-        "ch02",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "d57b2994d729a2b6c112ecc3b1ec3df6"
+      "chapter_confidences": {
+        "ch07": 70,
+        "ch13": 80,
+        "ch15": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "c048d04e1b4fe5d127364898c284b9ea",
+      "last_modified": "2026-04-25T18:18"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/02-jank-causes.md",
       "title": "卡顿原因体系",
-      "mtime": "2026-04-08 20:29",
-      "size_kb": 37.1,
-      "wc": 277,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
+      "tags": [
+        "status:ready-for-review\napplicable_versions:"
+      ],
+      "word_count": 195,
+      "mapped_chapters": [
         "ch02",
-        "ch03",
         "ch04",
-        "ch05",
-        "ch08",
-        "ch10",
-        "ch11",
+        "ch07",
         "ch16"
       ],
-      "mapped_chapters": [
-        "ch07"
-      ],
-      "total_score": 77,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch02": 90,
+        "ch04": 70,
+        "ch07": 80,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "e19cf4e9bb647cd9d1d8688514f18832",
+      "last_modified": "2026-04-25T11:53"
     },
     {
       "path": "src/part2-performance/ch09-anr/05-case-studies.md",
@@ -46487,41 +46400,21 @@
     {
       "path": "src/part3-tools/ch14-other-tools/07-profiling-manager.md",
       "title": "ProfilingManager",
-      "mtime": "2026-04-08 11:22",
-      "size_kb": 25.0,
-      "wc": 224,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch04",
-        "ch05",
-        "ch06",
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch14",
+      "tags": [
+        "status:finalized\napplicable_versions:"
+      ],
+      "word_count": 147,
+      "mapped_chapters": [
+        "ch13",
         "ch16"
       ],
-      "last_modified": "2026-04-19 16:58",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch03",
-        "ch05",
-        "ch01",
-        "ch13",
-        "ch08",
-        "ch04",
-        "ch09",
-        "ch07",
-        "ch12",
-        "ch14",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "46d6691758c3b37157939de7fa4c59e1"
+      "chapter_confidences": {
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "c3af1287ac036fb7c8d27681fdbc9e27",
+      "last_modified": "2026-04-25T15:45"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/02-simpleperf.md",
@@ -46628,140 +46521,94 @@
     },
     {
       "path": "src/part3-tools/ch14-other-tools/04-dumpsys.md",
-      "title": "dumpsys 系列命令",
-      "mtime": "2026-04-03 22:46",
-      "size_kb": 22.1,
-      "wc": 301,
+      "title": "dumpsys 系列命令\nchapter:",
       "tags": [
-        "dumpsys",
-        "meminfo",
-        "gfxinfo",
-        "activity",
-        "window"
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "word_count": 208,
+      "mapped_chapters": [
         "ch02",
-        "ch04",
-        "ch07",
-        "ch08",
-        "ch10",
         "ch14",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch02": 70,
+        "ch14": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "3111f5a484dd0582d25609f397992f10",
+      "last_modified": "2026-04-26T01:10"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/05-third-party-libs.md",
       "title": "三方性能库",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 25.1,
-      "wc": 273,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch02",
-        "ch04",
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch14",
-        "ch16"
-      ]
+      "tags": [
+        "status:ready-for-review\ndrafted_date:"
+      ],
+      "word_count": 188,
+      "mapped_chapters": [
+        "ch16",
+        "ch19"
+      ],
+      "chapter_confidences": {
+        "ch16": 70,
+        "ch19": 80
+      },
+      "total_score": 35,
+      "content_hash": "87e041e36d7c2cd391bfa39eab43ad54",
+      "last_modified": "2026-04-25T23:29"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
-      "title": "自动化测试工具",
-      "mtime": "2026-04-04 00:16",
-      "size_kb": 23.6,
-      "wc": 241,
+      "title": "自动化测试工具\nchapter:",
       "tags": [
-        "macrobenchmark",
-        "microbenchmark",
-        "espresso",
-        "uiautomator",
-        "ci/cd"
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch07",
-        "ch10",
-        "ch13",
+      "word_count": 209,
+      "mapped_chapters": [
         "ch14",
-        "ch15",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch14": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "016c351b179678caa2288b6de4a577a1",
+      "last_modified": "2026-04-26T01:10"
     },
     {
       "path": "src/part3-tools/ch15-methodology/03-metrics.md",
       "title": "性能指标体系",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 26.0,
-      "wc": 267,
       "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
-        "ch04",
-        "ch08",
-        "ch15",
+      "word_count": 130,
+      "mapped_chapters": [
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch16": 70
+      },
+      "total_score": 43,
+      "content_hash": "76e69337d7d98813dfe8909f58037482",
+      "last_modified": "2026-04-25T09:08"
     },
     {
       "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
       "title": "线上性能监控",
-      "mtime": "2026-04-04 06:13",
-      "size_kb": 30.2,
-      "wc": 258,
-      "tags": [
-        "monitoring",
-        "APM",
-        "FrameMetrics",
-        "JankStats",
-        "ANR"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
-        "ch05",
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch13",
-        "ch16",
-        "ch17"
-      ],
-      "last_modified": "2026-04-19 09:31",
-      "word_count": 3000,
-      "total_score": 88,
+      "tags": [],
+      "word_count": 142,
       "mapped_chapters": [
-        "ch03",
-        "ch15",
-        "ch05",
-        "ch13",
-        "ch14",
-        "ch08",
-        "ch17",
-        "ch04",
-        "ch09",
-        "ch07",
-        "ch12",
-        "ch02",
-        "ch06"
+        "ch16",
+        "ch19"
       ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "3dc9bb7d5dd393877593d4b6bda5979b"
+      "chapter_confidences": {
+        "ch16": 80,
+        "ch19": 70
+      },
+      "total_score": 53,
+      "content_hash": "34b07700d8a1ccdc02d9b60ef38f9d8c",
+      "last_modified": "2026-04-26T00:28"
     },
     {
       "path": "src/part3-tools/ch15-methodology/README.md",
@@ -46777,50 +46624,44 @@
     {
       "path": "src/part3-tools/ch15-methodology/02-system-vs-app.md",
       "title": "如何区分系统问题和 App 问题",
-      "mtime": "2026-04-04 02:16",
-      "size_kb": 24.2,
-      "wc": 278,
       "tags": [
-        "'methodology'",
-        "'system-vs-app'",
-        "'trace-analysis'",
-        "'attribution'"
+        "status:ready-for-review\ndrafted_date:",
+        "trace-analysis",
+        "system-vs-app",
+        "methodology",
+        "attribution"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch02",
-        "ch05",
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch15",
+      "word_count": 196,
+      "mapped_chapters": [
+        "ch13",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch13": 80,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "3f4d0f2201e7d87d6216a69cf3996635",
+      "last_modified": "2026-04-25T08:43"
     },
     {
       "path": "src/part3-tools/ch15-methodology/01-philosophy.md",
-      "title": "性能优化的术、道、器",
-      "mtime": "2026-04-07 22:21",
-      "size_kb": 32.7,
-      "wc": 232,
+      "title": "性能优化的术、道、器\nchapter:",
       "tags": [
-        "'methodology'",
-        "'philosophy'",
-        "'tools'",
-        "'best-practices'"
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch07",
+      "word_count": 200,
+      "mapped_chapters": [
         "ch08",
-        "ch14",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch08": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "0347b1794ff8aff4e5608adb67aff24c",
+      "last_modified": "2026-04-25T08:43"
     },
     {
       "path": "src/part3-tools/ch15-methodology/04-competitive-analysis.md",
@@ -46851,113 +46692,90 @@
     {
       "path": "src/part3-tools/ch15-methodology/06-testing-best-practices.md",
       "title": "性能测试最佳实践",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 30.7,
-      "wc": 243,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch04",
-        "ch05",
-        "ch06",
-        "ch07",
-        "ch10",
-        "ch13",
-        "ch14",
-        "ch15",
+      "tags": [
+        "status:ready-for-review\ndrafted_date:"
+      ],
+      "word_count": 176,
+      "mapped_chapters": [
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "8ea3ed38e0f614f65865673893ea27b0",
+      "last_modified": "2026-04-25T19:35"
     },
     {
       "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
       "title": "AOSP 代码阅读",
-      "mtime": "2026-04-04 09:15",
-      "size_kb": 25.2,
-      "wc": 238,
       "tags": [
-        "'aosp'",
-        "'code-reading'",
-        "'cs.android.com'",
-        "'methodology'"
+        "aosp",
+        "status:ready-for-review\ndrafted_date:",
+        "code-reading",
+        "methodology",
+        "cs.android.com"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "word_count": 165,
+      "mapped_chapters": [
         "ch02",
-        "ch10",
         "ch14",
         "ch16"
       ],
-      "mapped_chapters": [
-        "ch15"
-      ],
-      "total_score": 70,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch02": 70,
+        "ch14": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "2bfda6697fdf69eab0d304c3198c0356",
+      "last_modified": "2026-04-25T21:09"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
       "title": "线程 CPU 状态分析",
-      "mtime": "2026-04-03 17:19",
-      "size_kb": 34.9,
-      "wc": 242,
       "tags": [
-        "'perfetto'",
-        "'thread-state'",
-        "'sched-switch'",
-        "'running'",
-        "'runnable'"
+        "running",
+        "status:ready-for-review\ndrafted_date:",
+        "runnable",
+        "uninterruptible-sleep",
+        "perfetto",
+        "thread-state",
+        "cpu-scheduling",
+        "sched-switch",
+        "sleep"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch05",
-        "ch07",
-        "ch08",
-        "ch09",
-        "ch10",
-        "ch11",
-        "ch14",
+      "word_count": 183,
+      "mapped_chapters": [
+        "ch13",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "be041874d7570e962f402565b422545f",
+      "last_modified": "2026-04-25T13:13"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
       "title": "Perfetto 的高级用法",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 23.3,
-      "wc": 305,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch05",
-        "ch07",
-        "ch10",
+      "tags": [
+        "status:ready-for-review\ndrafted_date:"
+      ],
+      "word_count": 192,
+      "mapped_chapters": [
         "ch13",
-        "ch15",
         "ch16"
       ],
-      "last_modified": "2026-04-19 06:47",
-      "word_count": 3000,
-      "total_score": 80,
-      "mapped_chapters": [
-        "ch15",
-        "ch05",
-        "ch13",
-        "ch08",
-        "ch07",
-        "ch12",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "6641d23fec8e70039791f315b8b39bde"
+      "chapter_confidences": {
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "2d8fa6d20433cea2bdba82c11e316393",
+      "last_modified": "2026-04-25T10:28"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
@@ -46988,53 +46806,24 @@
     },
     {
       "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
-      "title": "Perfetto 简介与演进",
-      "mtime": "2026-04-11T05:41:00",
-      "size_kb": 25.1,
-      "wc": 297,
+      "title": "Perfetto 简介与演进\nchapter:",
       "tags": [
-        "perfetto",
-        "systrace",
-        "tracing",
-        "buffering",
-        "protobuf"
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch13"
-      ],
-      "chapter": "13.1",
-      "word_count": 3000,
-      "status": "ready-for-review",
-      "source_type": "高爷原创",
-      "confidence": "medium",
-      "quality_score": {
-        "篇幅分": 20,
-        "新鲜度": 25,
-        "准确性线索": 15,
-        "可用度": 20,
-        "total": 80
-      },
-      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
-      "last_modified": "2026-04-19 06:47",
-      "total_score": 88,
+      "word_count": 210,
       "mapped_chapters": [
-        "ch03",
-        "ch05",
-        "ch01",
         "ch13",
-        "ch16",
-        "ch04",
-        "ch09",
-        "ch07",
-        "ch12",
         "ch14",
-        "ch06"
+        "ch16"
       ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "74f4e88ccf6ecbc315a66027c5604444"
+      "chapter_confidences": {
+        "ch13": 90,
+        "ch14": 70,
+        "ch16": 90
+      },
+      "total_score": 43,
+      "content_hash": "6350c0dd767b6382d9e5549ef2b60519",
+      "last_modified": "2026-04-25T10:28"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/README.md",
@@ -47074,67 +46863,40 @@
     {
       "path": "src/part3-tools/ch13-perfetto/03-perfetto-view.md",
       "title": "Perfetto View 解读",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 36.3,
-      "wc": 258,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch02",
-        "ch05",
-        "ch10",
-        "ch14",
+      "tags": [
+        "status:finalized\ndrafted_date:"
+      ],
+      "word_count": 167,
+      "mapped_chapters": [
+        "ch13",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "a8c7c84187eb0f97a8a658351a50f25b",
+      "last_modified": "2026-04-26T01:45"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
-      "title": "Trace 抓取",
-      "mtime": "2026-04-07 07:56",
-      "size_kb": 32.8,
-      "wc": 299,
+      "title": "Trace 抓取\nchapter:",
       "tags": [
-        "'perfetto'",
-        "'trace'",
-        "'atrace'",
-        "'trace-capture'",
-        "'heapprofd'"
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch04",
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch14",
+      "word_count": 182,
+      "mapped_chapters": [
+        "ch13",
         "ch16"
       ],
-      "last_modified": "2026-04-19 15:33",
-      "word_count": 3000,
-      "total_score": 80,
-      "mapped_chapters": [
-        "ch03",
-        "ch05",
-        "ch01",
-        "ch13",
-        "ch16",
-        "ch08",
-        "ch04",
-        "ch09",
-        "ch07",
-        "ch10",
-        "ch12",
-        "ch14",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "eaf24510f21589e14d541215a534ad81"
+      "chapter_confidences": {
+        "ch13": 80,
+        "ch16": 70
+      },
+      "total_score": 43,
+      "content_hash": "db1d5713e89c60fd4a2a86b5a47325dd",
+      "last_modified": "2026-04-25T13:24"
     },
     {
       "path": "intake/research-feeds/2026-03-30-15-vsync-dispsync-pipeline.md",
@@ -47721,42 +47483,21 @@
     {
       "path": "src/part1-fundamentals/ch01-architecture/12-autofdo-optimization.md",
       "title": "AutoFDO 反馈导向编译优化",
-      "mtime": "2026-04-11T03:52:00",
-      "size_kb": 23.0,
-      "wc": 239,
       "tags": [
-        "AutoFDO",
-        "PGO",
-        "dex2oat",
-        "compilation",
-        "profile-guided"
+        "status:finalized\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": true,
-      "chapters": [
-        "ch01",
-        "ch07"
-      ],
-      "chapter": "1.12",
-      "word_count": 1488,
-      "status": "ready-for-review",
-      "source_type": "高爷原创",
-      "confidence": "medium",
-      "quality_score": {
-        "篇幅分": 20,
-        "新鲜度": 25,
-        "准确性线索": 20,
-        "可用度": 20,
-        "total": 85
-      },
-      "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
+      "word_count": 180,
       "mapped_chapters": [
-        "ch01"
+        "ch13",
+        "ch16"
       ],
-      "total_score": 75,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "a384b4514a90a90bc933d70844d02df6",
+      "last_modified": "2026-04-25T20:28"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
@@ -47799,28 +47540,18 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/15-jni-ndk-performance.md",
-      "title": "1.15 JNI/NDK 性能优化",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 24.8,
-      "wc": 293,
+      "title": "JNI/NDK 性能优化",
       "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch02",
-        "ch07",
-        "ch10",
-        "ch14",
+      "word_count": 141,
+      "mapped_chapters": [
         "ch16"
       ],
-      "mapped_chapters": [
-        "ch01"
-      ],
-      "total_score": 75,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "28020de7c9b87ff3e892872d9e547e32",
+      "last_modified": "2026-04-25T20:28"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
@@ -47955,72 +47686,67 @@
     },
     {
       "path": "src/part2-performance/ch12-apk-network/03-network-performance-deep.md",
-      "title": "12.3 网络性能深入：连接池、TLS 与传输优化",
-      "mtime": "2026-04-07 22:21",
-      "size_kb": 24.7,
-      "wc": 267,
-      "tags": [
-        "network",
-        "okhttp",
-        "retrofit",
-        "tls",
-        "http2"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch11",
+      "title": "网络性能深入：连接池、TLS 与传输优化",
+      "tags": [],
+      "word_count": 130,
+      "mapped_chapters": [
         "ch12",
-        "ch13",
-        "ch14",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch12": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "7c3be1d5d9f47804b880b1d29f8aec48",
+      "last_modified": "2026-04-25T18:40"
     },
     {
       "path": "src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md",
-      "title": "12.4 Android 网络安全与 TLS 性能优化",
-      "mtime": "2026-04-08 04:22",
-      "size_kb": 15.6,
-      "wc": 316,
+      "title": "Android 网络安全与 TLS 性能优化",
       "tags": [
-        "network-security",
-        "tls",
+        "status:ready-for-review\ndrafted_date:",
         "ech",
+        "performance",
+        "certificate-transparency",
         "hpke",
-        "certificate-transparency"
+        "cleartext",
+        "network-security",
+        "tls"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch10",
+      "word_count": 176,
+      "mapped_chapters": [
+        "ch06",
         "ch12",
         "ch16"
       ],
-      "total_score": 100,
-      "mapped_chapters": [
-        "ch12"
-      ]
+      "chapter_confidences": {
+        "ch06": 70,
+        "ch12": 70,
+        "ch16": 90
+      },
+      "total_score": 53,
+      "content_hash": "76eda7c32b4bb8a338da74b182417655",
+      "last_modified": "2026-04-25T23:09"
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
-      "title": "8.7 Baseline Profiles 与编译优化实践",
-      "mtime": "2026-04-08 06:15",
-      "size_kb": 20.9,
-      "wc": 241,
-      "tags": [],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch07",
-        "ch13",
+      "title": "Baseline Profiles 与编译优化实践\nchapter:",
+      "tags": [
+        "status:ready-for-review\ndrafted_date:"
+      ],
+      "word_count": 149,
+      "mapped_chapters": [
+        "ch08",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch08": 90,
+        "ch16": 90
+      },
+      "total_score": 53,
+      "content_hash": "154517fd46d851a721ebb0d12d1f1f31",
+      "last_modified": "2026-04-25T22:29"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
@@ -48096,30 +47822,20 @@
     },
     {
       "path": "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md",
-      "title": "14.10 eBPF/BPF 在 Android 性能分析中的应用",
-      "mtime": "2026-04-08 15:59",
-      "size_kb": 24.0,
-      "wc": 277,
-      "tags": [
-        "eBPF",
-        "BPF",
-        "observability",
-        "tracing",
-        "sched_ext"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch05",
-        "ch07",
-        "ch14",
+      "title": "eBPF/BPF 在 Android 性能分析中的应用",
+      "tags": [],
+      "word_count": 167,
+      "mapped_chapters": [
+        "ch13",
         "ch16"
       ],
-      "total_score": 100,
-      "mapped_chapters": [
-        "ch14"
-      ]
+      "chapter_confidences": {
+        "ch13": 80,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "c455547044059b81bac29b28a0b5c23b",
+      "last_modified": "2026-04-26T09:09"
     },
     {
       "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
@@ -49298,41 +49014,29 @@
     {
       "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
       "title": "Adaptive Refresh Rate 与动态帧率控制",
-      "mtime": "2026-04-05 22:43",
-      "size_kb": 24.2,
-      "wc": 260,
       "tags": [
-        "ARR",
-        "refresh-rate",
-        "VSync",
+        "Android-16",
+        "Choreographer",
+        "status:finalized\ndrafted_date:",
         "SurfaceFlinger",
-        "Choreographer"
+        "ARR",
+        "VSync",
+        "refresh-rate",
+        "LTPO",
+        "frame-pacing"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "word_count": 148,
+      "mapped_chapters": [
         "ch02",
-        "ch08",
-        "ch10",
         "ch16"
       ],
-      "last_modified": "2026-04-19 17:51",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch05",
-        "ch13",
-        "ch14",
-        "ch16",
-        "ch11",
-        "ch07",
-        "ch12",
-        "ch02",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "e9ef8c883fe7861b282f2a2ab5ed5660"
+      "chapter_confidences": {
+        "ch02": 80,
+        "ch16": 70
+      },
+      "total_score": 53,
+      "content_hash": "0ccc13b5bba9ddabfb3eafa9f2effe55",
+      "last_modified": "2026-04-26T01:30"
     },
     {
       "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
@@ -49759,85 +49463,39 @@
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
-      "title": "ART 编译管线与 dex2oat 优化",
-      "mtime": "2026-04-09 07:23",
-      "size_kb": 25.7,
-      "wc": 293,
+      "title": "ART 编译管线与 dex2oat 优化\nchapter:",
       "tags": [
-        "ART",
-        "dex2oat",
-        "JIT",
-        "AOT",
-        "Baseline-Profiles"
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch07",
-        "ch10",
-        "ch13",
-        "ch15",
+      "word_count": 208,
+      "mapped_chapters": [
+        "ch08",
         "ch16"
       ],
-      "last_modified": "2026-04-20 02:20",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch01",
-        "ch13",
-        "ch16",
-        "ch08",
-        "ch07",
-        "ch12",
-        "ch14",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "9f39a7845ed7647db3a90915dfba50e2"
+      "chapter_confidences": {
+        "ch08": 90,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "a60cc3bc71b16118fe426c778d33ac5e",
+      "last_modified": "2026-04-25T23:09"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
       "title": "Activity Manager Service 与性能分析",
-      "mtime": "2026-04-11T01:07:00",
-      "size_kb": 40.1,
-      "wc": 264,
-      "tags": [
-        "AMS",
-        "activity",
-        "service",
-        "进程管理",
-        "oom_adj",
-        "FGS"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch07",
-        "ch08"
-      ],
-      "chapter": "1.8",
-      "word_count": 2599,
-      "status": "ready-for-review",
-      "source_type": "高爷原创",
-      "confidence": "high",
-      "quality_score": {
-        "篇幅分": 25,
-        "新鲜度": 25,
-        "准确性线索": 22,
-        "可用度": 22,
-        "total": 94
-      },
-      "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
+      "tags": [],
+      "word_count": 119,
       "mapped_chapters": [
-        "ch01"
+        "ch03",
+        "ch16"
       ],
-      "total_score": 77,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch03": 70,
+        "ch16": 80
+      },
+      "total_score": 45,
+      "content_hash": "beda6e9e54b93ee7642346bedc2306d0",
+      "last_modified": "2026-04-25T14:53"
     },
     {
       "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
@@ -50124,132 +49782,94 @@
     {
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
       "title": "WebView 渲染性能与优化",
-      "mtime": "2026-04-08 16:12",
-      "size_kb": 25.7,
-      "wc": 322,
       "tags": [
-        "WebView",
-        "Chromium",
+        "混合渲染",
+        "jank",
         "Blink",
+        "内存优化",
+        "WebView",
+        "status:finalized\napplicable_versions:",
+        "Chromium",
         "JS Bridge",
-        "混合渲染"
+        "ANR",
+        "硬件加速"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
+      "word_count": 198,
+      "mapped_chapters": [
         "ch07",
         "ch08",
-        "ch16"
-      ],
-      "last_modified": "2026-04-20 05:15",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch03",
-        "ch05",
-        "ch18",
-        "ch01",
         "ch13",
         "ch16",
-        "ch08",
-        "ch04",
-        "ch09",
-        "ch07",
-        "ch10",
-        "ch12",
-        "ch02",
-        "ch06"
+        "ch17"
       ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "d7c639f42ea2627d92abd37b6d584bd5"
+      "chapter_confidences": {
+        "ch07": 80,
+        "ch08": 80,
+        "ch13": 70,
+        "ch16": 90,
+        "ch17": 70
+      },
+      "total_score": 53,
+      "content_hash": "856074261577e41fe3783e743c6019c9",
+      "last_modified": "2026-04-25T09:05"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
-      "title": "7.13 SystemUI 性能分析",
-      "mtime": "2026-04-09 05:08",
-      "size_kb": 21.9,
-      "wc": 265,
-      "tags": [
-        "systemui",
-        "jank",
-        "launcher",
-        "statusbar",
-        "navigationbar"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
-        "ch03",
-        "ch07",
-        "ch10",
-        "ch11",
+      "title": "SystemUI 性能分析\nchapter:",
+      "tags": [],
+      "word_count": 127,
+      "mapped_chapters": [
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch16": 80
+      },
+      "total_score": 45,
+      "content_hash": "37c9144682e63783d3b0ec5c62247749",
+      "last_modified": "2026-04-25T22:10"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/12-view-layout-performance.md",
-      "title": "7.12 View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
-      "mtime": "2026-04-08 19:14",
-      "size_kb": 27.5,
-      "wc": 245,
+      "title": "View 体系性能优化：布局层级、inflate 与 measure/layout 开销",
       "tags": [
-        "view",
+        "jank",
+        "viewstub",
+        "status:ready-for-review\ndrafted_date:",
         "layout",
-        "inflate",
         "measure",
-        "draw"
+        "view",
+        "constraintlayout",
+        "async-inflate",
+        "draw",
+        "inflate"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
-        "ch10",
-        "ch13",
+      "word_count": 170,
+      "mapped_chapters": [
+        "ch07",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch07": 90,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "340dd23620545504a23f9a1dbadacd6f",
+      "last_modified": "2026-04-25T22:10"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
       "title": "RecyclerView 列表滑动性能深度优化",
-      "mtime": "2026-04-08 14:01",
-      "size_kb": 24.0,
-      "wc": 230,
-      "tags": [
-        "recyclerview",
-        "scrolling",
-        "jank",
-        "prefetch",
-        "difftutil"
-      ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
-        "ch07",
-        "ch10",
+      "tags": [],
+      "word_count": 126,
+      "mapped_chapters": [
         "ch16"
       ],
-      "last_modified": "2026-04-19 23:59",
-      "word_count": 3000,
-      "total_score": 88,
-      "mapped_chapters": [
-        "ch05",
-        "ch01",
-        "ch13",
-        "ch14",
-        "ch07",
-        "ch12",
-        "ch02",
-        "ch06"
-      ],
-      "doc_type": "高爷原创文章",
-      "content_hash": "65cd9965683b3c63240a6d3eb3f08601"
+      "chapter_confidences": {
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "65cd9965683b3c63240a6d3eb3f08601",
+      "last_modified": "2026-04-25T12:47"
     },
     {
       "path": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
@@ -50277,32 +49897,22 @@
     },
     {
       "path": "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
-      "title": "14.9 Android Camera 性能与 Perfetto 分析",
-      "mtime": "2026-04-07 07:56",
-      "size_kb": 23.5,
-      "wc": 316,
+      "title": "Android Camera 性能与 Perfetto 分析\nchapter:",
       "tags": [
-        "'camera'",
-        "'perfetto'",
-        "'buffer-queue'",
-        "'preview-stutter'",
-        "'hal3'"
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch01",
-        "ch02",
-        "ch04",
-        "ch08",
-        "ch10",
+      "word_count": 219,
+      "mapped_chapters": [
+        "ch13",
         "ch16"
       ],
-      "total_score": 100,
-      "mapped_chapters": [
-        "ch14"
-      ]
+      "chapter_confidences": {
+        "ch13": 80,
+        "ch16": 80
+      },
+      "total_score": 35,
+      "content_hash": "3794fd6411a0a199042c8bd0b9d39755",
+      "last_modified": "2026-04-25T16:10"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/08-gpu-debug-tools.md",
@@ -50370,92 +49980,87 @@
     },
     {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
-      "title": "13.10 Perfetto SQL 性能分析实战手册",
-      "mtime": "2026-04-09 12:19",
-      "size_kb": 5.1,
-      "wc": 464,
+      "title": "Perfetto SQL 性能分析实战手册",
       "tags": [
-        "Perfetto",
-        "SQL",
+        "status:ready-for-review\ndrafted_date:",
         "Trace Processor",
         "性能分析",
-        "帧时间"
+        "帧时间",
+        "Binder",
+        "SQL",
+        "启动时间",
+        "Perfetto",
+        "ANR"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
+      "word_count": 157,
+      "mapped_chapters": [
         "ch01",
-        "ch03",
-        "ch04",
-        "ch05",
-        "ch07",
-        "ch08",
-        "ch10",
-        "ch11",
+        "ch13",
         "ch16"
-      ]
+      ],
+      "chapter_confidences": {
+        "ch01": 70,
+        "ch13": 80,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "415bbc79485291dfe7871eb080e329c4",
+      "last_modified": "2026-04-26T00:28"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
-      "title": "13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
-      "mtime": "2026-04-08 23:09",
-      "size_kb": 17.2,
-      "wc": 268,
+      "title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
       "tags": [
+        "status:ready-for-review\ndrafted_date:",
         "tracing",
-        "atrace",
+        "perfetto",
         "ftrace",
-        "tracepoint",
-        "perfetto"
+        "kernel",
+        "observability",
+        "atrace",
+        "tracepoint"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch04",
-        "ch05",
-        "ch10",
+      "word_count": 186,
+      "mapped_chapters": [
         "ch13",
-        "ch14",
         "ch16"
       ],
-      "total_score": 70,
-      "mapped_chapters": [
-        "ch13"
-      ],
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "70f83fa4dadfe911286c86453aa6bfd3",
+      "last_modified": "2026-04-25T16:10"
     },
     {
       "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
-      "title": "13.8 Perfetto 输入延迟 SQL 深度分析",
-      "mtime": "2026-04-07 07:56",
-      "size_kb": 24.5,
-      "wc": 353,
+      "title": "Perfetto 输入延迟 SQL 深度分析",
       "tags": [
-        "Perfetto",
+        "status:ready-for-review\ndrafted_date:",
+        "trace-analysis",
+        "input-events",
+        "android.input",
         "SQL",
         "input-latency",
-        "android.input",
-        "input-events"
+        "Perfetto"
       ],
-      "is_original": false,
-      "is_quicknote": false,
-      "has_reprint": false,
-      "chapters": [
-        "ch02",
+      "word_count": 206,
+      "mapped_chapters": [
         "ch03",
-        "ch07",
         "ch08",
-        "ch10",
-        "ch14",
+        "ch13",
         "ch16"
       ],
-      "total_score": 100,
-      "mapped_chapters": [
-        "ch13"
-      ]
+      "chapter_confidences": {
+        "ch03": 80,
+        "ch08": 70,
+        "ch13": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "7c96b04051b1a35ffda9efd082298eff",
+      "last_modified": "2026-04-26T09:08"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md",
@@ -50571,40 +50176,82 @@
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/07-textureview.md",
       "title": "TextureView 合成链路",
-      "mapped_chapters": [
-        "ch18",
-        "ch13",
-        "ch01",
-        "ch16",
-        "ch07",
-        "ch02",
-        "ch06"
+      "tags": [
+        "BLAST",
+        "OES",
+        "TextureView",
+        "status:finalized\napplicable_versions:",
+        "App 侧合成",
+        "渲染链路",
+        "SurfaceTexture",
+        "纹理采样"
       ],
-      "total_score": 80,
-      "last_modified": "2026-04-20 05:57",
-      "word_count": 3000,
-      "doc_type": "高爷原创文章",
-      "content_hash": "4eb0bce634bc4f0c31bed7e1146f9fd5"
+      "word_count": 204,
+      "mapped_chapters": [
+        "ch02",
+        "ch13",
+        "ch16",
+        "ch18"
+      ],
+      "chapter_confidences": {
+        "ch02": 80,
+        "ch13": 70,
+        "ch16": 90,
+        "ch18": 80
+      },
+      "total_score": 45,
+      "content_hash": "81449738060eaac215eab1e04165c78b",
+      "last_modified": "2026-04-25T13:33"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/08-opengl-es.md",
-      "title": "18.8 OpenGL ES 渲染",
-      "mapped_chapters": [
-        "ch18",
-        "18",
-        "8"
+      "title": "OpenGL ES 渲染链路\nchapter:",
+      "tags": [
+        "status:finalized\napplicable_versions: Android 9 (API 28) - Android 16 (API 36)\ntags:\n- OpenGL-ES\n- EGL\n- GLThread\n- GLSurfaceView\n- eglSwapBuffers\n- fence\n- ANGLE\n- Triple-Buffering\nrelated_chapters:\n-"
       ],
-      "total_score": 45
+      "word_count": 239,
+      "mapped_chapters": [
+        "ch02",
+        "ch13",
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch02": 90,
+        "ch13": 70,
+        "ch16": 70
+      },
+      "total_score": 35,
+      "content_hash": "de44d817e9302bf9b3d85c452c267ebb",
+      "last_modified": "2026-04-25T21:28"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
-      "title": "18.9 Vulkan 原生渲染",
-      "mapped_chapters": [
-        "ch18"
+      "title": "Vulkan 原生渲染管线",
+      "tags": [
+        "Presentation-Mode",
+        "VkSwapchainKHR",
+        "VkQueue",
+        "Vulkan",
+        "AVP",
+        "explicit-control",
+        "Swappy",
+        "status:ready-for-review\napplicable_versions:",
+        "frame-pacing"
       ],
-      "total_score": 75,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "word_count": 196,
+      "mapped_chapters": [
+        "ch02",
+        "ch13",
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch02": 80,
+        "ch13": 80,
+        "ch16": 70
+      },
+      "total_score": 43,
+      "content_hash": "2c779804d32d94c4a18c7cf3b1d90a86",
+      "last_modified": "2026-04-25T18:18"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
@@ -50628,13 +50275,24 @@
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/12-flutter-rendering.md",
-      "title": "18.12 Flutter 渲染管线",
+      "title": "Flutter 渲染管线\nchapter:",
+      "tags": [
+        "status:ready-for-review\napplicable_versions: Flutter 3.29+（Merged Platform Model 主路径） / Flutter 3.27+（Android\n  API 29+ 默认 Impeller） / Android 10 (API 29) - Android 16 (API 36)\ntags:\n- Flutter\n- Impeller\n- Skia\n- SurfaceView\n- TextureView\n- Merged-Thread\n- PlatformView\n- 渲染管线\nrelated_chapters:\n-"
+      ],
+      "word_count": 236,
       "mapped_chapters": [
+        "ch02",
+        "ch16",
         "ch18"
       ],
-      "total_score": 75,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch02": 90,
+        "ch16": 70,
+        "ch18": 90
+      },
+      "total_score": 35,
+      "content_hash": "30efd31b3dd3b82d2d26c5ab093065f0",
+      "last_modified": "2026-04-25T23:09"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/13-webview-rendering.md",
@@ -50667,13 +50325,34 @@
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/16-game-engine.md",
-      "title": "18.16 游戏引擎渲染",
+      "title": "游戏引擎渲染链路",
+      "tags": [
+        "Frame-Pacing",
+        "Vulkan",
+        "status:finalized\napplicable_versions:",
+        "Swappy",
+        "Unreal",
+        "渲染链路",
+        "Game-Engine",
+        "GLES",
+        "Unity"
+      ],
+      "word_count": 216,
       "mapped_chapters": [
+        "ch02",
+        "ch03",
+        "ch16",
         "ch18"
       ],
-      "total_score": 73,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch02": 95,
+        "ch03": 70,
+        "ch16": 70,
+        "ch18": 80
+      },
+      "total_score": 35,
+      "content_hash": "33824bc9f79c7935f2e6242412321259",
+      "last_modified": "2026-04-25T19:13"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/17-hardware-buffer-renderer.md",
@@ -50697,23 +50376,57 @@
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md",
-      "title": "18.19 可变刷新率 (VRR)",
-      "mapped_chapters": [
-        "ch18"
+      "title": "可变刷新率渲染管线",
+      "tags": [
+        "Variable-Refresh-Rate",
+        "渲染管线",
+        "ARR",
+        "status:finalized\napplicable_versions:",
+        "setFrameRate",
+        "LTPO",
+        "FrameTimeline",
+        "VRR"
       ],
-      "total_score": 75,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "word_count": 201,
+      "mapped_chapters": [
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch16": 70
+      },
+      "total_score": 35,
+      "content_hash": "515f53365054d98ae2c81158c2045398",
+      "last_modified": "2026-04-26T00:45"
     },
     {
       "path": "src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md",
-      "title": "18.20 渲染管线分析方法论",
+      "title": "渲染管线分析方法论",
+      "tags": [
+        "性能分析",
+        "渲染管线",
+        "诊断",
+        "dumpsys",
+        "status:finalized\napplicable_versions:",
+        "BufferQueue",
+        "Perfetto",
+        "方法论"
+      ],
+      "word_count": 177,
       "mapped_chapters": [
+        "ch02",
+        "ch13",
+        "ch16",
         "ch18"
       ],
-      "total_score": 78,
-      "category": "high_author_original",
-      "last_analyzed": "2026-04-19"
+      "chapter_confidences": {
+        "ch02": 80,
+        "ch13": 70,
+        "ch16": 70,
+        "ch18": 70
+      },
+      "total_score": 43,
+      "content_hash": "e697252e26718de7a61c804a302dc3e6",
+      "last_modified": "2026-04-25T21:28"
     },
     {
       "path": "appendix/version-changelog.md",
@@ -53793,19 +53506,43 @@
     },
     {
       "path": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
-      "title": "Hook 基础设施与性能工具实现原理",
-      "mapped_chapters": [
-        "'14.13'"
+      "title": "Hook 基础设施与性能工具实现原理\nchapter:",
+      "tags": [
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "total_score": 58
+      "word_count": 213,
+      "mapped_chapters": [
+        "ch16",
+        "ch17"
+      ],
+      "chapter_confidences": {
+        "ch16": 80,
+        "ch17": 70
+      },
+      "total_score": 53,
+      "content_hash": "2a623ab8a7e41bd2971e073ed6aa33e0",
+      "last_modified": "2026-04-25T23:29"
     },
     {
       "path": "src/part3-tools/ch14-other-tools/12-apm-observability.md",
-      "title": "APM / 可观测性平台与 SDK 选型",
-      "mapped_chapters": [
-        "'14.12'"
+      "title": "APM / 可观测性平台与 SDK 选型\nchapter:",
+      "tags": [
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "total_score": 58
+      "word_count": 209,
+      "mapped_chapters": [
+        "ch07",
+        "ch16",
+        "ch19"
+      ],
+      "chapter_confidences": {
+        "ch07": 70,
+        "ch16": 70,
+        "ch19": 90
+      },
+      "total_score": 43,
+      "content_hash": "703b7159508820f7cd765637b417e25a",
+      "last_modified": "2026-04-25T20:08"
     },
     {
       "path": "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
@@ -53826,40 +53563,96 @@
     {
       "path": "src/part3-tools/ch19-apm/18-commercial-apm.md",
       "title": "商业 APM 平台（Sentry、APMPlus、Bugly）",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:finalized\ndrafted_date:"
       ],
-      "total_score": 50
+      "word_count": 197,
+      "mapped_chapters": [
+        "ch16",
+        "ch17",
+        "ch19"
+      ],
+      "chapter_confidences": {
+        "ch16": 80,
+        "ch17": 80,
+        "ch19": 80
+      },
+      "total_score": 35,
+      "content_hash": "6a774290453d6588eee45674d2f318df",
+      "last_modified": "2026-04-25T17:41"
     },
     {
       "path": "src/part3-tools/ch19-apm/22-storage-benchmark.md",
       "title": "存储 Benchmark（AndroBench、A1 SD Bench）",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:finalized\ndrafted_date:"
       ],
-      "total_score": 45
+      "word_count": 194,
+      "mapped_chapters": [
+        "ch05",
+        "ch08"
+      ],
+      "chapter_confidences": {
+        "ch05": 90,
+        "ch08": 70
+      },
+      "total_score": 30,
+      "content_hash": "1e6e1844ddd48450ecf4b9c58aae56da",
+      "last_modified": "2026-04-25T17:41"
     },
     {
       "path": "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-      "title": "13-tracing-sdk",
-      "mapped_chapters": [],
-      "total_score": 58
+      "title": "androidx.tracing（Tracing SDK）",
+      "tags": [],
+      "word_count": 153,
+      "mapped_chapters": [
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch16": 70
+      },
+      "total_score": 43,
+      "content_hash": "6989d759cb4cde1b36aff9a19e6b1cbb",
+      "last_modified": "2026-04-26T01:10"
     },
     {
       "path": "src/part3-tools/ch19-apm/21-benchmark-apps.md",
-      "title": "Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）",
-      "mapped_chapters": [
-        "'19'"
+      "title": "Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）\nchapter:",
+      "tags": [
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "total_score": 45
+      "word_count": 197,
+      "mapped_chapters": [
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch16": 70
+      },
+      "total_score": 30,
+      "content_hash": "871265db183333ee5179c9dd26b3c63c",
+      "last_modified": "2026-04-25T08:35"
     },
     {
       "path": "src/part3-tools/ch19-apm/03-koom.md",
       "title": "KOOM",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:finalized\ndrafted_date:"
       ],
-      "total_score": 65
+      "word_count": 189,
+      "mapped_chapters": [
+        "ch10",
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch10": 70,
+        "ch16": 80
+      },
+      "total_score": 43,
+      "content_hash": "afbd11f747a31ed9e501ee07666cf422",
+      "last_modified": "2026-04-25T07:05"
     },
     {
       "path": "src/part3-tools/ch19-apm/08-argusapm.md",
@@ -53872,18 +53665,45 @@
     {
       "path": "src/part3-tools/ch19-apm/02-tencent-matrix.md",
       "title": "Tencent Matrix",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "total_score": 50
+      "word_count": 224,
+      "mapped_chapters": [
+        "ch05",
+        "ch10",
+        "ch13",
+        "ch16",
+        "ch19"
+      ],
+      "chapter_confidences": {
+        "ch05": 70,
+        "ch10": 70,
+        "ch13": 70,
+        "ch16": 80,
+        "ch19": 70
+      },
+      "total_score": 25,
+      "content_hash": "73f2e9bebc8501f80cbfd6bb710ab1b3",
+      "last_modified": "2026-04-25T07:20"
     },
     {
       "path": "src/part3-tools/ch19-apm/20-solopi-emmagee.md",
-      "title": "SoloPi 与 Emmagee",
-      "mapped_chapters": [
-        "'19'"
+      "title": "SoloPi 与 Emmagee\nchapter:",
+      "tags": [
+        "status:finalized\ndrafted_date:"
       ],
-      "total_score": 53
+      "word_count": 194,
+      "mapped_chapters": [
+        "ch08"
+      ],
+      "chapter_confidences": {
+        "ch08": 80
+      },
+      "total_score": 38,
+      "content_hash": "f9d163babc65e17f4be5a6fcb1a589d7",
+      "last_modified": "2026-04-25T17:41"
     },
     {
       "path": "src/part3-tools/ch19-apm/09-measure.md",
@@ -53896,10 +53716,22 @@
     {
       "path": "src/part3-tools/ch19-apm/17-firebase-performance.md",
       "title": "Firebase Performance",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "total_score": 50
+      "word_count": 184,
+      "mapped_chapters": [
+        "ch06",
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch06": 70,
+        "ch16": 80
+      },
+      "total_score": 35,
+      "content_hash": "021359007d8b27504470fa4d98746246",
+      "last_modified": "2026-04-25T12:52"
     },
     {
       "path": "src/part3-tools/ch19-apm/11-jankstats.md",
@@ -53912,10 +53744,28 @@
     {
       "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
       "title": "网络 APM 底层捕获原理",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "asm",
+        "status:ready-for-review\ndrafted_date:",
+        "cronet",
+        "network",
+        "okhttp"
       ],
-      "total_score": 58
+      "word_count": 194,
+      "mapped_chapters": [
+        "ch06",
+        "ch12",
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch06": 90,
+        "ch12": 70,
+        "ch16": 70
+      },
+      "total_score": 43,
+      "content_hash": "a0e32d535b3c7d13bcbb7683fbdd1b64",
+      "last_modified": "2026-04-25T12:52"
     },
     {
       "path": "src/part3-tools/ch19-apm/06-blockcanary.md",
@@ -53944,10 +53794,28 @@
     {
       "path": "src/part3-tools/ch19-apm/04-btrace.md",
       "title": "btrace / RheaTrace",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:finalized\ndrafted_date:"
       ],
-      "total_score": 65
+      "word_count": 203,
+      "mapped_chapters": [
+        "ch01",
+        "ch07",
+        "ch13",
+        "ch14",
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch01": 70,
+        "ch07": 70,
+        "ch13": 80,
+        "ch14": 70,
+        "ch16": 80
+      },
+      "total_score": 33,
+      "content_hash": "e3e90553409ea984451520b8650a5e18",
+      "last_modified": "2026-04-25T07:52"
     },
     {
       "path": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md",
@@ -53984,26 +53852,69 @@
     {
       "path": "src/part3-tools/ch19-apm/05-leakcanary.md",
       "title": "LeakCanary",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:ready-for-review\ndrafted_date:",
+        "shark",
+        "leak-detection",
+        "debug-tools",
+        "memory"
       ],
-      "total_score": 50
+      "word_count": 192,
+      "mapped_chapters": [
+        "ch04",
+        "ch16"
+      ],
+      "chapter_confidences": {
+        "ch04": 70,
+        "ch16": 70
+      },
+      "total_score": 35,
+      "content_hash": "bac32643cbea95e040df631229c81c29",
+      "last_modified": "2026-04-25T09:08"
     },
     {
       "path": "src/part3-tools/ch19-apm/10-other-opensource-apm.md",
-      "title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）",
-      "mapped_chapters": [
-        "'19'"
+      "title": "其他开源 APM 库（AndroidGodEye、Collie、Rabbit）\nchapter:",
+      "tags": [
+        "status:finalized\ndrafted_date:"
       ],
-      "total_score": 73
+      "word_count": 181,
+      "mapped_chapters": [
+        "ch16",
+        "ch19"
+      ],
+      "chapter_confidences": {
+        "ch16": 70,
+        "ch19": 70
+      },
+      "total_score": 43,
+      "content_hash": "2ca93840cd39cbb8c58f455cb0e37d43",
+      "last_modified": "2026-04-25T09:44"
     },
     {
       "path": "src/part3-tools/ch19-apm/15-baseline-profiles.md",
       "title": "Baseline Profiles 与编译优化",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "total_score": 58
+      "word_count": 224,
+      "mapped_chapters": [
+        "ch08",
+        "ch11",
+        "ch16",
+        "ch19"
+      ],
+      "chapter_confidences": {
+        "ch08": 90,
+        "ch11": 70,
+        "ch16": 80,
+        "ch19": 70
+      },
+      "total_score": 43,
+      "content_hash": "5282806629dfb7086e8d8efdcb11fd5a",
+      "last_modified": "2026-04-25T07:20"
     },
     {
       "path": "src/part3-tools/ch19-apm/16-profiling-manager.md",
@@ -54016,10 +53927,32 @@
     {
       "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
       "title": "崩溃与 ANR 捕获机制",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "crash",
+        "status:ready-for-review\ndrafted_date:",
+        "stability",
+        "anr",
+        "crashpad"
       ],
-      "total_score": 58
+      "word_count": 211,
+      "mapped_chapters": [
+        "ch04",
+        "ch10",
+        "ch16",
+        "ch17",
+        "ch19"
+      ],
+      "chapter_confidences": {
+        "ch04": 80,
+        "ch10": 70,
+        "ch16": 70,
+        "ch17": 90,
+        "ch19": 90
+      },
+      "total_score": 43,
+      "content_hash": "30dda8bc82ea4a2b1e3649c747c4e42c",
+      "last_modified": "2026-04-25T11:41"
     },
     {
       "path": "src/part3-tools/ch19-apm/07-dokit.md",
@@ -54040,18 +53973,41 @@
     {
       "path": "src/part3-tools/ch19-apm/01-apm-landscape.md",
       "title": "APM 全景图与分类体系",
-      "mapped_chapters": [
-        "19"
+      "tags": [
+        "apm",
+        "status:ready-for-review\ndrafted_date:"
       ],
-      "total_score": 58
+      "word_count": 168,
+      "mapped_chapters": [
+        "ch07",
+        "ch14",
+        "ch16",
+        "ch19"
+      ],
+      "chapter_confidences": {
+        "ch07": 70,
+        "ch14": 70,
+        "ch16": 70,
+        "ch19": 70
+      },
+      "total_score": 43,
+      "content_hash": "edcf165cf58106f32e98885dc18b4248",
+      "last_modified": "2026-04-25T23:57"
     },
     {
       "path": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
       "title": "ProfilingManager 系统触发式性能追踪",
+      "tags": [],
+      "word_count": 147,
       "mapped_chapters": [
-        "8.10"
+        "ch16"
       ],
-      "total_score": 68
+      "chapter_confidences": {
+        "ch16": 80
+      },
+      "total_score": 53,
+      "content_hash": "07c594dd353a374e40934ddf6242754d",
+      "last_modified": "2026-04-25T22:29"
     },
     {
       "path": "src/part2-performance/ch07-smoothness/14-gaps-dynamic-analysis.md",
@@ -54090,6 +54046,54 @@
         "18.21"
       ],
       "total_score": 73
+    },
+    {
+      "path": "ch13_review_todo.md",
+      "title": "Ch13 Perfetto Review Tasks",
+      "tags": [],
+      "word_count": 45,
+      "mapped_chapters": [],
+      "chapter_confidences": {},
+      "total_score": 30,
+      "content_hash": "aea5e6822ba018190983f8472f6ab392",
+      "last_modified": "2026-04-25T09:19"
+    },
+    {
+      "path": "ch14_review_todo.md",
+      "title": "Ch14 Other Tools Review Tasks",
+      "tags": [],
+      "word_count": 58,
+      "mapped_chapters": [
+        "ch14"
+      ],
+      "chapter_confidences": {
+        "ch14": 70
+      },
+      "total_score": 30,
+      "content_hash": "0b3bc2d8fd9d9fe381ef98af0ba962f3",
+      "last_modified": "2026-04-25T09:43"
+    },
+    {
+      "path": "part2_review_todo.md",
+      "title": "Part 2 Performance Review TODO List",
+      "tags": [],
+      "word_count": 97,
+      "mapped_chapters": [],
+      "chapter_confidences": {},
+      "total_score": 22,
+      "content_hash": "4b0fa02cf8a5e07b84f14b33af50ef59",
+      "last_modified": "2026-04-25T12:12"
+    },
+    {
+      "path": "part3_tools_review_summary.md",
+      "title": "Part 3 Tools Review Consolidated Summary",
+      "tags": [],
+      "word_count": 59,
+      "mapped_chapters": [],
+      "chapter_confidences": {},
+      "total_score": 22,
+      "content_hash": "43e72b49ac2071eaf8a9ed950be523cb",
+      "last_modified": "2026-04-25T09:44"
     }
   ],
   "stats": {
