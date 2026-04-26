@@ -5,8 +5,8 @@ status: finalized
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
-last_verified: "2026-04-23"
-last_verified_against: "source.android.com implement-vulkan + developer.android.com AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX WebGPU docs"
+last_verified: "2026-04-26"
+last_verified_against: "source.android.com implement-vulkan + developer.android.com AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX WebGPU docs + AOSP vk_android_native_buffer.h"
 confidence: medium
 sources:
   - type: official
@@ -23,6 +23,8 @@ sources:
     path: "frameworks/native/opengl/libs/EGL/Loader.cpp"
   - type: aosp
     path: "frameworks/native/libs/graphicsenv/GraphicsEnv.cpp"
+  - type: aosp
+    path: "frameworks/native/vulkan/include/vulkan/vk_android_native_buffer.h"
   - type: aosp
     path: "external/angle/"
   - type: official
@@ -49,7 +51,7 @@ review_log: "logs/review/2026-04-11-13-review.md"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-21"
 task2b_result: fixed
-last_task2b_at: "2026-04-23T09:22:00+08:00"
+last_task2b_at: "2026-04-26T19:47:00+08:00"
 last_task9_at: "2026-04-21T00:05:03+08:00"
 task9_reviewed_by: openclaw-task9
 ---
@@ -273,9 +275,9 @@ ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换*
 1. **现有 GLES 应用不一定需要立刻迁移**：如果目标设备仍在原生 GLES driver 上，应用会继续按原路径运行；如果设备把该包选进 ANGLE，API 代码通常不用改，但我们仍要重新做稳定性和性能回归。
 2. **性能变化要按 workload 测**：ANGLE 可能变慢，也可能因为绕开厂商 GLES driver 的问题而更稳定。
 3. **调试时先确认“是否走 ANGLE”再看 Trace**：没有这一步，后面的 Perfetto 解释很容易错层。
-4. **WebView / WebGL 需要单独判断**：Chromium、Skia、WebView 的 GPU backend 由它自己的构建和运行时选择决定，不能直接套用系统 ANGLE policy 得出结论。
+4. **WebView / WebGL 需要单独判断**：Chromium / WebView 先由自身的 Skia backend 决定走 Vulkan 还是 GL。SkiaVulkan 直接调用 Vulkan driver，系统 ANGLE policy 不参与；只有回到 SkiaGL / GLES 路径时，ANGLE 选路才会影响这条栈。
 
-系统 ANGLE policy 只解释“系统 GLES driver 怎么选”，它并不自动回答“Chromium 内部这次到底用的是哪条 GPU backend”。
+系统 ANGLE policy 只解释“系统 GLES driver 怎么选”，它不能替代 Chromium / WebView backend 检查。
 
 ### 热 / 功耗信号也会进入选路
 
@@ -436,8 +438,8 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timel
 **误区：Android 15+ 之后所有 GLES 应用都会自动走 ANGLE**
 实际情况：是否走 ANGLE，取决于系统 driver、全局开关、per-app override、平台 allowlist，以及 loader 的 fallback 路径。官方 roadmap 说的是“更多新设备会把 ANGLE 作为 GL system driver”，不是“所有设备、所有应用今天都已经统一切换”。
 
-**误区：WebView / WebGL 一定不受系统 ANGLE 路线影响**
-实际情况：WebView / Chromium 的 GPU backend 是它自己的运行时选择问题，不能直接拿系统 GLES driver policy 代替结论。分析这类问题时，我们需要单独验证 Chromium / Skia / WebView 当前 build 的 backend。
+**误区：WebView / WebGL 一定受系统 ANGLE 路线控制**
+实际情况：WebView / Chromium 的 GPU backend 先在 SkiaVulkan 和 SkiaGL 等路径之间选择。SkiaVulkan 路径绕过 GLES / ANGLE；SkiaGL 路径才会落到系统 GLES driver 选路。分析这类问题时，先验证 Chromium / Skia / WebView 当前 build 和运行时 backend。
 
 **误区：Vulkan 一定比 OpenGL ES 快**
 实际情况：如果 Vulkan 代码没有做 Pipeline 预创建、cache 预热和正确的同步，性能可能反而比 GLES 更差。Vulkan 提供了更高的性能上限，但也要求更多的工程投入。
@@ -491,8 +493,10 @@ VkResult vkAcquireImageANDROID(
     VkImage image,
     int nativeFenceFd,    // from EGL side — represents GPU completion point
     VkSemaphore semaphore,
-    VkImageLayout *optimalLayout);
+    VkFence fence);
 ```
+
+末尾两个参数分别接收 `VkSemaphore` 和 `VkFence`。这个函数不会返回 `VkImageLayout*`；把末尾参数写成 layout 指针，会把 Android 私有 WSI 扩展和其他 image acquire 路径混在一起。
 
 **典型使用场景**：
 1. GLES App 渲染完成 → 创建 EGL fence sync → 获得 fd
@@ -508,7 +512,7 @@ VkResult vkAcquireImageANDROID(
 
 **解决方案**：
 - **per-swapchain-image semaphore**：为每个 swapchain image 分配独立 "submit finished" semaphore，而非 per-frame
-- **VK_EXT_swapchain_maintenance1**：允许 `vkQueuePresentKHR` 指定 fence，解决了这个长期问题
+- **VK_KHR_swapchain_maintenance1**：允许 `vkQueuePresentKHR` 指定 fence，解决了这个长期问题
 
 ### Perfetto Trace 切片命名影响
 
