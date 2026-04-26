@@ -27,13 +27,13 @@ sources:
     path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
 tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
 related_chapters: ["1.5", "7.7", "8.1", "8.2"]
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-19"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-04-26
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-19T11:10:00+08:00"
+last_task9_at: "2026-04-26T17:20:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
 ---

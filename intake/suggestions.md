@@ -4518,3 +4518,27 @@
 - **问题**：建议对 Configuration Change 进行更深入的 API 级解释
 - **建议**：补充 android:configChanges="screenSize|smallestScreenSize|screenLayout" 最佳实践
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-26
+- **类型**：数据缺失
+- **位置**：“withContext 的实际开销”与“版本演进”中 Kotlin 2.2 / 15% 性能提升描述
+- **问题**：正文把“多并发网络请求场景响应聚合时间缩短约 15%”标为已验证，但公开 kotlinx.coroutines 1.10/1.11 release notes 只看到 Kotlin 编译器版本更新、调度 bugfix 和文档更新，没有给出这组 15% benchmark。该数字可以保留为待验证材料，但不应继续写成官方已验证结论。
+- **建议**：补充明确来源、测试设备、coroutines 版本、JVM/ART 版本、并发请求模型和统计口径；无法补齐时改为“社区 benchmark 待核验”，并删除“官方博客已验证”标注。
+
+## [Task9 Deep Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-26
+- **类型**：源码准确性 / 边界条件
+- **位置**：“各 Dispatcher 在 Trace 中的对应”表格
+- **问题**：表格写 Default 线程数 = CPU 核心数，但正文前面已经说明 blocking compensation 会让 worker 数短时高于核心数；IO 又和 Default 共享 worker 池。表格当前写法容易让读者误判“线程数多于核心数 = 泄漏”。
+- **建议**：改成“Default 的 CPU 并行许可接近核心数；实际 DefaultDispatcher-worker-N 可因 IO / blocking compensation 超出核心数，需结合任务类型和时间窗判断”。
+
+## [Task9 Deep Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-26
+- **类型**：队列元数据错误
+- **位置**：metadata/queue.json section=8.6 的 External Review 条目
+- **问题**：该条目的所有 P1 证据都指向 05-case-studies.md / ProfilingManager 段落，不属于 8.6 协程性能章节。
+- **建议**：已将该条 queue 从 8.6 改挂到 8.5，避免 8.6 被无关 P1 阻塞。
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 — 2026-04-26
+- **类型**：数据/Trace 配置缺失
+- **位置**：验证路径中的 `adb shell perfetto ...` 示例
+- **问题**：正文随后直接查询 `actual_frame_timeline_slice` / `expected_frame_timeline_slice`，但示例命令只列出 atrace 类别，没有显式启用 `android.surfaceflinger.frametimeline` 数据源。读者照抄后可能拿不到 FrameTimeline 表。
+- **建议**：补一段 TraceConfig 示例，显式加入 `data_sources { config { name: "android.surfaceflinger.frametimeline" } }`，并保留 ftrace / atrace 类别用于和调度、SurfaceView buffered frames 对照。

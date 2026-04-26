@@ -9414,10 +9414,10 @@
     "source_file": "2026-04-25-15-7.9-external-review.md"
   },
   {
-    "section": "8.6",
-    "section_title": "",
-    "priority": 95,
-    "reason": "[External Review] 外部 AI review 发现 11 个需回炉问题",
+    "section": "8.5",
+    "section_title": "案例集",
+    "priority": 85,
+    "reason": "[External Review] 05-case-studies ProfilingManager P1（Task9 2026-04-26 修正误挂 8.6）",
     "review_issues": [
       {
         "level": "P0",
@@ -9469,7 +9469,10 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
     "status": "pending",
-    "source_file": "2026-04-25-15-8.6-external-review.md"
+    "source_file": "2026-04-25-15-8.6-external-review.md",
+    "corrected_by": "task9-deep-tech-review",
+    "corrected_at": "2026-04-26T17:20:00+08:00",
+    "correction_note": "原 section=8.6，但问题证据全部指向 05-case-studies.md / ProfilingManager 段落。"
   },
   {
     "section": "8.9",
@@ -11390,7 +11393,7 @@
     "section": "2.17",
     "section_title": "",
     "priority": 85,
-    "reason": "[External Review] 技术评分 0/5",
+    "reason": "[External Review] 技术评分 0/5；[Deep Tech Review] DeliQueue / frame-rate vote P1 已复核",
     "review_issues": [
       {
         "type": "原理断裂",
@@ -11401,6 +11404,20 @@
       {
         "type": "P1重要缺失",
         "detail": "### 1. [P1][原理链完整性][正文 - Android 17 DeliQueue 缺位]\n- **原文问题**：正文完全未提及 metadata 中提到的 DeliQueue 架构。\n- **源码 / 一手资料锚点**：AOSP `frameworks/base` 中关于 `MessageQueue` 与 `DeliQueue` 的改动。\n- **关键代码逻辑**：DeliQueue 通"
+      },
+      {
+        "type": "原理断裂 / 版本差异",
+        "location": "Choreographer 回退路径之后 / Android 17 适配",
+        "detail": "frontmatter 将适用范围写到 Android 17，参考资料也注入了“Swappy × Choreographer × Android 17 架构深研”，但正文没有解释 DeliQueue 对主线程 MessageQueue 锁竞争、FrameCallback 到达质量和 Swappy 节拍稳定性的影响。现在正文只覆盖 Java/NDK Choreographer 和 DisplayManager 回退树，Android 17 变化停留在参考资料里。",
+        "suggestion": "在“Choreographer / DisplayManager 的回退路径”后补一小节：DeliQueue 优化的是主线程 MessageQueue 投递/消费竞争，间接改善 Java Choreographer doFrame 到达质量；Swappy 本体仍依赖 ChoreographerThread、AChoreographer deadline / expectedPresentationTime、fence 和 stats。对 NDK AChoreographer / ALooper 是否直接受益标注 [待验证]，并交叉引用 §1.13。",
+        "source": "task9-deep-tech-review 2026-04-26 17"
+      },
+      {
+        "type": "知识盲区 / 原理链完整性",
+        "location": "Auto 模式与多刷新率 / 与 ARR 的关系",
+        "detail": "正文说明 Swappy 会在 `setPreferredRefreshPeriod()` 中调用 `ANativeWindow_setFrameRate()` 投票 frame rate，但没有交代它与应用手动 `Surface.setFrameRate()` / `ANativeWindow_setFrameRate()`、平台 ARR 和 SurfaceFlinger vote 合并之间的关系。实际代码只要 `mANativeWindow_setFrameRate && mWindow` 成立就会按 frameTime / swapDuration 计算 vote；应用如果另行投票，读者需要知道以哪个 surface、哪个调用时机和 compatibility 为准。",
+        "suggestion": "补充“Swappy vote 与手动 vote 的边界”：Swappy 的 vote 来源、调用条件、`ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_DEFAULT`、应用手动投票的覆盖/竞争风险，以及为什么更细的 policy 放到 §2.18 ARR。",
+        "source": "task9-deep-tech-review 2026-04-26 17"
       }
     ],
     "added_by": "external-ai-review",
