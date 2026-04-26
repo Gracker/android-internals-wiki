@@ -11029,5 +11029,889 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T13:26:21+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.1",
+    "section_title": "1.1",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][数据/案例支撑][Linux 内核层]\n- 原文问题：提到“内存回收这条线要按版本看：Android 8-9 仍能看到 in-kernel LMK... [待验证: 各子系统从 ashmem 迁移的具体时间线]”\n- 缺失内容：缺乏确切的版本分界点和 AOSP commit/官方架构文档说明。\n- 为什么这是重要缺失：读者在分析不同版本系统时，如果不清楚 ashmem 和 memfd"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "][数据/案例支撑][JNI 边界]\n- 原文问题：带有 `[待验证: JNI 延迟数据需实际设备验证...]` 以及 `@FastNative` 和 `@CriticalNative` 注解降低开销 30-50% `[待验证: 降低比例数据来源需确认]`。\n- 缺失内容：缺乏真实的 benchmark 来源。\n- 为什么这是重要缺失：JNI 是性能优化的核心战场，提供不准确或未经证实的优化比例会"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "1.10",
+    "section_title": "1.10 ContentProvider 性能与优化",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.5/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][数据/案例支撑][在 Perfetto 中的表现]\n- 原文问题：文章留有多处截图占位符，如 `[图：Perfetto 中 installContentProviders 切片...]` 和 `[待补充：Trace 截图——正常 vs 异常 ContentProvider 调用的对比]`。\n- 缺失内容：缺乏真实 Trace 展示主线程等待远端 CP 返回的 `binder tran"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "1.2",
+    "section_title": "1.2",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.0/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][数据/案例支撑][Zygote 阶段 / Cloud Profiles]\n- 原文问题：`[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]`。\n- 缺失内容：缺乏 Cloud Profiles 实际缩短启动时间的量化比例或具体毫秒数。\n- 为什么这是重要缺失：Cloud Profiles 是 Android 15/16 的核心启动优化点，没有量化数据会"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "1.3",
+    "section_title": "1.3",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.0/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][数据/案例支撑][SDK Sandbox]\n- 原文问题：标注 `[待验证: SDK Sandbox 在 Android 16 中的实际采用率]`。\n- 缺失内容：SDK Sandbox 是安全层面的重大改动，缺少现实世界的采用率数据会削弱其讲解的实际工程意义。\n- 为什么这是重要缺失：开发者需要知道是否应高度关注 `_sdk_sandbox` 进程的性能表现。\n- 建议补充方向：查"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "1.6",
+    "section_title": "1.6",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.0/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][数据/案例支撑][Project Mainline 与 APEX]\n- 原文问题：标注 `[待验证：47-95 PB 的精确出处]`。\n- 缺失内容：关于 ART Mainline 更新带来的存储空间节省数据缺乏明确出处。\n- 为什么这是重要缺失：使用极其庞大且范围宽泛的数字（47-95 PB）如果没有确切来源，会降低工程文档的严谨性。\n- 建议补充方向：搜索并核验 Google D"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "1.7",
+    "section_title": "1.7 ART 编译管线与 dex2oat 优化",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.0/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][数据/案例支撑][在 Perfetto 和工具中的表现]\n- 原文问题：文中多次提到“在 Perfetto 中看到 `art::jit::*`”、“`Jit compilation`”、“`Deoptimization` Slice”，但全篇没有提供任何实际的 Perfetto 截图或完整的查询 SQL。\n- 缺失内容：真实的 Trace 表现是读者落地的关键，没有截图会导致实战指导"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "1.8",
+    "section_title": "1.8 Activity Manager Service 与性能分析",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.5/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][数据/案例支撑][各个 Perfetto 表现小节]\n- 原文问题：文中存在多个 `[待高爷补充：系统架构图]` 和 `[待高爷补充：Trace 截图]` 的占位符。\n- 缺失内容：冷启动 Trace 片段、三种典型场景（冷启动、ANR、进程被杀）的 Perfetto 对比截图。\n- 为什么这是重要缺失：作为以性能分析为导向的 Wiki，没有 Trace 截图会让理论无法落地到 Pe"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "1.9",
+    "section_title": "1.9 Package Manager Service 与应用安装性能",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.5/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][数据/案例支撑][安装耗时分析方法]\n- 原文问题：文章占位 `[待补充：安装过程在 Perfetto 中的 Trace 截图，标注各阶段]`。\n- 缺失内容：具体的 Trace 截图，展示 `system_server` 的 `PackageInstallerSession` 和 `dex2oat` 的高 CPU 占用时段。\n- 建议补充方向：提供一段典型的通过 adb insta"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.1",
+    "section_title": "2.1",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.5/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 Android 渲染架构全景 中某些深层机制的说明不够彻底。\n- 缺失内容：三缓冲的具体 Buffer slot 机制与 BLASTBufferQueue 的协同逻辑不够深入。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n- "
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.10",
+    "section_title": "2.10",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.7/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 GPU 渲染深入 中某些深层机制的说明不够彻底。\n- 缺失内容：Bandwidth Bound 下，不同纹理压缩格式（ASTC vs ETC2）在 Android 上的解码开销对比缺失。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.11",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 0/5",
+    "review_issues": [
+      {
+        "type": "源码事实错误",
+        "location": "§与 Android 原生渲染的差异 - 渲染管线的根本区别",
+        "detail": "错误断言 Flutter 不使用 Choreographer。",
+        "suggestion": "P0"
+      },
+      {
+        "type": "P0事实错误",
+        "detail": "- **[P0][源码准确性][§与 Android 原生渲染的差异 - 渲染管线的根本区别]**\n- **原文问题**：文中称“看不到熟悉的 Choreographer.doFrame...整个调度逻辑是 Engine 自己管理的，不经过 Choreographer”。\n- **源码 / 一手资料锚点**：\n  - `engine/shell/platform/android/io/flutte"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- **[P1][版本差异覆盖][§PlatformView：Flutter 与原生 View 的桥梁]**\n- **原文问题**：仅提到了 Hybrid Composition 模式，且结论停留在 Android 10 的内存优化。\n- **源码 / 一手资料锚点**：\n  - `engine/shell/platform/android/io/flutter/plugin/platform/P"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.12",
+    "section_title": "`2.12 Window Manager Service 与窗口管理`",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 4.2/5",
+    "review_issues": [
+      {
+        "type": "原理断裂 / 版本差异",
+        "location": "`relayoutWindow` 节及版本演进表",
+        "detail": "缺乏 `relayoutAsync` 的触发条件细节；Android 17 `recreateOnConfigChanges` 状态不明确。",
+        "suggestion": "P1"
+      },
+      {
+        "type": "P0事实错误",
+        "detail": "*本章节未发现 P0 级事实错误。*"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- **[P1][原理链完整性][relayoutAsync 触发规则]**\n  - 原文问题：提及了 Android 14+ 引入 `relayoutAsync()`，但未具体说明哪些属性变更会走异步路径，哪些必须维持同步。\n  - 缺失内容：`relayoutAsync` 在 `ViewRootImpl` 中的判定逻辑及 WMS 端的配套处理流程。\n  - 建议补充方向：补充基于 `Layou"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.13",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 0/5",
+    "review_issues": [
+      {
+        "type": "原理链/版本差异",
+        "location": "“阻塞根因”、“版本演进”",
+        "detail": "1. 缺失 `mDequeueBufferCannotBlock` 的逻辑分支说明；2. Android 11 与 12 在 BLAST 普及度上的界限模糊。",
+        "suggestion": "P1"
+      },
+      {
+        "type": "P0事实错误",
+        "detail": "*暂未发现 P0 级事实错误。*"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- **[P1][原理链][dequeueBuffer 阻塞逻辑]**\n  - **原文问题**：在“阻塞根因”小节中，仅列出了 `dequeuedCount >= mMaxDequeuedBufferCount` 和 `mQueue.size() > maxBufferCount` 两个条件。\n  - **源码锚点**：`frameworks/native/libs/gui/BufferQueu"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.14",
+    "section_title": "2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 4.2/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P0事实错误",
+        "detail": "- [P0][源码准确性][补充：ANGLE Vulkan 同步机制]\n- 原文问题：`vkAcquireImageANDROID` 签名中最后两个参数写错。\n- 源码 / 一手资料锚点：`frameworks/native/vulkan/include/vulkan/vk_android_native_buffer.h`\n- 关键代码逻辑：该函数是 Android WSI 的私有扩展，用于将 A"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][知识盲区][ANGLE 路线对开发者的实际影响]\n- 原文问题：对 WebView 渲染后端的解释可以更具有区分度。\n- 缺失内容：Chromium 在 Android 上的渲染后端（Skia backend）如果选择了 Vulkan 路径，将完全绕过 OpenGL ES 栈。\n- 运行原理说明：如果 Chromium/WebView 运行在 SkiaVulkan 模式（Androi"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.15",
+    "section_title": "2.15 DMA-BUF、Gralloc 与跨进程图形内存共享",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 2.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "源码错误 / 文本错误",
+        "location": "文中所有出现 `@logs/external-review/...` 的地方。",
+        "detail": "占位符残留，导致技术路径描述错误。",
+        "suggestion": "P0"
+      },
+      {
+        "type": "版本差异",
+        "location": "Gralloc HAL 章节及版本演进章节。",
+        "detail": "低估了 Mapper AIDL 的普及程度，将 Android 16 的接口现状描述得过于守旧。",
+        "suggestion": "P1"
+      },
+      {
+        "type": "P0事实错误",
+        "detail": "- **[P0][源码准确性][全书多处]**\n  - **原文位置**：文中多次出现 `mapper @logs/external-review/2026-04-25-15-2.13-external-review.md`。\n  - **原文问题**：占位符残留，导致技术路径描述变成了一个文件路径。\n  - **源码 / 一手资料锚点**：应指代 `IMapper 4.0 (HIDL)` 或 `"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- **[P1][版本差异][Gralloc Mapper AIDL 化进度]**\n  - **原文位置**：Gralloc HAL 章节。\n  - **原文问题**：文中称“到 `android-16.0.0_r1` 为止... mapper ... 兼容路径仍然存在... 系统并不是一刀切地彻底 AIDL 化”。\n  - **源码 / 一手资料锚点**：`hardware/interfaces"
+      },
+      {
+        "type": "源码错误 / 文本错误",
+        "location": "文中所有出现 `@logs/external-review/...` 的地方。",
+        "detail": "占位符残留，导致技术路径描述变成了一个文件路径。",
+        "suggestion": "P0"
+      },
+      {
+        "type": "版本差异",
+        "location": "Gralloc HAL 章节及版本演进章节。",
+        "detail": "低估了 Mapper AIDL 的普及程度，将 Android 16 的接口现状描述得过于守旧。",
+        "suggestion": "P1"
+      },
+      {
+        "type": "P0事实错误",
+        "detail": "- **[P0][源码准确性][全书多处]**\n  - **原文问题**：文中多次出现 `mapper @logs/external-review/2026-04-25-15-2.13-external-review.md`。\n  - **核验结论**：这是一个严重的 hallucination 或脚本处理错误。此处原本应指代 `IMapper 4.0` 或 `IMapper AIDL` 版本，却"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- **[P1][版本差异][Gralloc Mapper AIDL 化进度]**\n  - **原文问题**：文中称“到 `android-16.0.0_r1` 为止... mapper ... 兼容路径仍然存在... 系统并不是一刀切地彻底 AIDL 化”。\n  - **源码锚点**：`hardware/interfaces/graphics/mapper/aidl/android/hardwa"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.16",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 0/5",
+    "review_issues": [
+      {
+        "type": "原理断裂 / 版本差异",
+        "location": "核心机制 / 版本演进",
+        "detail": "遗漏 Fence Merge 机制；遗漏 Android 15/16 Skia Graphite 管线描述；未说明 sw_sync 权限受限。",
+        "suggestion": "P1"
+      },
+      {
+        "type": "P0事实错误",
+        "detail": "*本轮暂未发现 P0 级事实错误。*"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "### [P1][原理链完整性][核心机制]\n- **原文问题**：文中仅描述了 Fence 的一对一传递（Producer -> Consumer），忽略了“多对一”场景。\n- **缺失内容**：**Fence Merge (合并) 机制**。在 SurfaceFlinger 进行 Client Composition 或 HWC 合成多层时，需要将多个 Layer 的 Acquire Fenc"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.17",
+    "section_title": "",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 0/5",
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "Choreographer 回退路径 / Android 17 适配",
+        "detail": "未将 DeliQueue 架构演进注入正文，导致版本覆盖不完整。",
+        "suggestion": "P1"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "### 1. [P1][原理链完整性][正文 - Android 17 DeliQueue 缺位]\n- **原文问题**：正文完全未提及 metadata 中提到的 DeliQueue 架构。\n- **源码 / 一手资料锚点**：AOSP `frameworks/base` 中关于 `MessageQueue` 与 `DeliQueue` 的改动。\n- **关键代码逻辑**：DeliQueue 通"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.18",
+    "section_title": "`2.18 Adaptive Refresh Rate 与动态帧率控制`",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 4.2/5",
+    "review_issues": [
+      {
+        "type": "版本差异/源码缺失",
+        "location": "Display 查询 API 节、VsyncModulator 描述处",
+        "detail": "1. 未明确 API 36 才是 `hasArrSupport` 的起点；2. `VsyncModulator` 缺乏关键方法锚点。",
+        "suggestion": "P1"
+      },
+      {
+        "type": "P0事实错误",
+        "detail": "暂未发现明显的 P0 级事实错误。"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][版本差异覆盖][Display 查询 API]\n- **原文问题**：文中将 `Display.hasArrSupport()` 等 API 标记为 Android 16，但在“适用范围”中又提到 ARR 主体是 Android 15-QPR1。\n- **源码 / 一手资料锚点**：`frameworks/base/core/java/android/view/Display.jav"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "][源码准确性][VsyncModulator 逻辑]\n- **原文位置**：系统里谁在做什么 -> `VsyncModulator`\n- **原文问题**：提到 `VsyncModulator` 负责调整 offset，但未给出关键方法名，导致读者难以在源码中定位。\n- **源码锚点**：`frameworks/native/services/surfaceflinger/Scheduler/V"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.19",
+    "section_title": "",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 0/5",
+    "review_issues": [
+      {
+        "type": "源码锚点过时",
+        "location": "[SurfaceFlinger 仲裁逻辑] 小节",
+        "detail": "`calculateLayerScoreLocked` 在 Android 15/16 源码中职能已迁移，读者无法按图索骥。",
+        "suggestion": "P1"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- **[P1][源码准确性][SurfaceFlinger 仲裁逻辑]**\n  - **原文问题**：提到 `RefreshRateSelector::calculateLayerScoreLocked()` 是计算单层 score 的核心。\n  - **源码锚点**：`frameworks/native/services/surfaceflinger/Scheduler/RefreshRate"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.2",
+    "section_title": "2.2",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.6/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 帧率与刷新率 中某些深层机制的说明不够彻底。\n- 缺失内容：缺乏不同 Layer 间帧率不匹配时 SurfaceFlinger 的具体调优权重（VsyncModulator）分析。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.20",
+    "section_title": "",
+    "priority": 95,
+    "reason": "[External Review] 技术评分 0/5",
+    "review_issues": [
+      {
+        "type": "P0事实错误",
+        "detail": "- **[P0][源码准确性][2.20 - recreateOnConfigChanges 的公开语义]**\n- **原文问题**：声称 `recreateOnConfigChanges` 仅针对 `mcc|mnc` 变化，且不适用于屏幕尺寸/方向变化。\n- **源码 / 一手资料锚点**：\n  - `frameworks/base/core/res/res/values/attrs_manif"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- **[P1][版本差异覆盖][2.20 - Android 16/17 大屏边界]**\n- **原文问题**：提到了 Android 16 会忽略 `screenOrientation` 等限制，但未提及其核心前提：**强制 Activity 重启（Recreation）逻辑的增强**。\n- **一手资料锚点**：[Android 16 Developer Preview 1 - Behavi"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.3",
+    "section_title": "2.3",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.7/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 VSync 机制 中某些深层机制的说明不够彻底。\n- 缺失内容：详细的 VSyncPredictor 线性回归算法的异常值过滤机制（Outlier filtering）只有少量源码截取。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.4",
+    "section_title": "2.4",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.8/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 Choreographer 与渲染流水线 中某些深层机制的说明不够彻底。\n- 缺失内容：FrameMetrics 的 GPU_DURATION 在不同厂商设备的准确性差异未讨论。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n-"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.5",
+    "section_title": "2.5",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.5/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 MainThread 与 RenderThread 协作 中某些深层机制的说明不够彻底。\n- 缺失内容：多窗口（同进程/跨进程）下的 RenderThread 竞争机制描述不足。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n-"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.6",
+    "section_title": "2.6",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.6/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 SurfaceFlinger 与合成 中某些深层机制的说明不够彻底。\n- 缺失内容：BLASTBufferQueue 的具体 transaction 合并机制在 AOSP 源码中的路径不够细化。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.7",
+    "section_title": "2.7",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.7/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 Hardware Layer 中某些深层机制的说明不够彻底。\n- 缺失内容：缺乏具体的 GPU 显存增加的定量计算公式或实例。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n- 建议补充方向：补充不同分辨率下开启 Hardwar"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.8",
+    "section_title": "2.8",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.6/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 过度绘制 中某些深层机制的说明不够彻底。\n- 缺失内容：TBR 架构下 GPU 的 On-Chip memory 处理过度绘制的实际开销机制缺失。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n- 建议补充方向：补充 Mali/"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.9",
+    "section_title": "2.9",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.8/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 渲染机制的版本演进 中某些深层机制的说明不够彻底。\n- 缺失内容：ANGLE（OpenGL ES on Vulkan）层的状态机转换开销缺乏深入的技术剖析。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n- 建议补充方向：深入 "
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "2.0",
+    "section_title": "`src/part1-fundamentals/ch02-rendering/README.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 4.2/5",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][版本差异覆盖][2.14 图形 API 演进]\n- 原文位置：2.14 章节描述\n- 原文问题：仅提到“梳理 OpenGL ES、Vulkan、ANGLE 的边界”。\n- 源码 / 一手资料锚点：Android 17 (API 37) AOSP 预览版、`source.android.com` 关于 ANGLE 的说明。\n- 关键代码逻辑：Android 17 强制要求新 SoC 支"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "][知识盲区][2.11 Flutter 渲染管线]\n- 原文位置：2.11 章节描述\n- 原文问题：描述为“单独看 Flutter 的调度和工具链”。\n- 源码 / 一手资料锚点：Flutter 3.29+ (Impeller on Android API 29+ default)。\n- 运行原理说明：2026 年 Impeller 已全面替代 Skia 成为 Android 10+ 默认后端，"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "][版本差异覆盖][2.10 GPU 渲染深入]\n- 原文位置：2.10 章节描述\n- 原文问题：描述仅提到“补上 Skia”。\n- 源码 / 一手资料锚点：AOSP `frameworks/base/libs/hwui/renderthread/CanvasContext.cpp` (Skia Graphite 后端集成)。\n- 关键代码逻辑：Android 16/17 中 Skia Graph"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][版本差异覆盖][2.14 图形 API 演进]\n- 原文问题：仅提到“梳理 OpenGL ES、Vulkan、ANGLE 的边界”。\n- 源码 / 一手资料锚点：Android 17 (API 37) AOSP 预览版。\n- 关键代码逻辑：Android 17 强制要求 Vulkan 1.4，并默认通过 ANGLE 运行 OpenGL ES（Denylist 模式）。\n- 缺失内容："
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "][知识盲区][2.11 Flutter 渲染管线]\n- 原文问题：描述为“单独看 Flutter 的调度和工具链”。\n- 源码 / 一手资料锚点：Flutter 3.29+ (Impeller on Android API 29+ default)。\n- 运行原理说明：2026 年 Impeller 已全面替代 Skia 成为 Android 10+ 默认后端。\n- 为什么这是重要缺失：仍沿用旧"
+      },
+      {
+        "type": "P1重要缺失",
+        "detail": "][版本差异覆盖][2.10 GPU 渲染深入]\n- 原文问题：描述提到“补上 Skia”。\n- 源码 / 一手资料锚点：AOSP `frameworks/base/libs/hwui/renderthread/CanvasContext.cpp` (Graphite 集成)。\n- 关键代码逻辑：Android 16/17 中 Skia Graphite (Vulkan 后端) 已成为 UI 渲染"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "3.1",
+    "section_title": "`src/part1-fundamentals/ch03-input/01-input-dispatch.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "3.2",
+    "section_title": "`src/part1-fundamentals/ch03-input/02-touch-performance.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "3.3",
+    "section_title": "`src/part1-fundamentals/ch03-input/03-gesture-navigation.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "3.4",
+    "section_title": "`src/part1-fundamentals/ch03-input/04-input-latency-prediction.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "3.5",
+    "section_title": "`src/part1-fundamentals/ch03-input/05-input-interception-security.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "3.6",
+    "section_title": "`src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "4.1",
+    "section_title": "`src/part1-fundamentals/ch04-memory/01-memory-overview.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "4.2",
+    "section_title": "`src/part1-fundamentals/ch04-memory/02-linux-memory.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "4.3",
+    "section_title": "`src/part1-fundamentals/ch04-memory/03-art-memory.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "4.4",
+    "section_title": "`src/part1-fundamentals/ch04-memory/04-lmk.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用链。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "4.5",
+    "section_title": "`05-app-memory-optimization.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `App 内存回收与优化` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`frameworks/base/core/java/android/app/ActivityThread.java` \n- 关键代码逻辑：在 Android 14 之后，逻辑主要流经 `handleTrimMemory`，需要"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "4.6",
+    "section_title": "`06-memory-evolution.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `Android 内存架构演进` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`system/memory/lmkd/lmkd.c` \n- 关键代码逻辑：在 Android 12 之后，逻辑主要流经 `mp_event_common`，需要结合状态机看。\n- 缺失内容：未讲清 LMKD 从基于 vm"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "4.7",
+    "section_title": "`07-16kb-page-size.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `16KB Page Size 适配` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`bionic/libc/bionic/malloc_common.cpp` \n- 关键代码逻辑：在 Android 15 之后，逻辑主要流经 `GetPageSize`，需要结合状态机看。\n- 缺失内容：未讲清 N"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "4.8",
+    "section_title": "`08-art-generational-gc.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `ART 世代垃圾回收 (Generational CC)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`art/runtime/gc/collector/concurrent_copying.cc` \n- 关键代码逻辑：在 Android 10/12 之后，逻辑主要流经 `ConcurrentC"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "5.1",
+    "section_title": "`01-linux-scheduling.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `Linux 进程调度 (CFS)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`kernel/sched/fair.c` \n- 关键代码逻辑：在 Android Kernel 5.10+ 之后，逻辑主要流经 `pick_next_task_fair`，需要结合状态机看。\n- 缺失内容：未讲清 C"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "5.2",
+    "section_title": "`02-eas.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `EAS (Energy Aware Scheduling)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`kernel/sched/fair.c` \n- 关键代码逻辑：在 Android Kernel 4.14+ 之后，逻辑主要流经 `find_energy_efficient_cpu`，需要结"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "5.3",
+    "section_title": "`03-big-little.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `大小核架构 (big.LITTLE / DynamIQ)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`kernel/sched/core.c` \n- 关键代码逻辑：在 Android Kernel 5.4+ 之后，逻辑主要流经 `select_task_rq_fair`，需要结合状态机看。\n-"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "5.4",
+    "section_title": "`04-dvfs.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `DVFS (动态电压频率调节)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`kernel/drivers/cpufreq/cpufreq_schedutil.c` \n- 关键代码逻辑：在 Android Kernel 4.19+ 之后，逻辑主要流经 `sugov_update_single`，"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "5.5",
+    "section_title": "`05-thermal.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `温控机制 (Thermal)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`hardware/interfaces/thermal/2.0/default/Thermal.cpp` \n- 关键代码逻辑：在 Android 10/11 之后，逻辑主要流经 `getCurrentTemperatur"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "5.6",
+    "section_title": "`06-android-power.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `Android 耗电分析与管理` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java` \n- 关键代码逻辑：在 Android 12+ 之后"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
+  },
+  {
+    "section": "5.7",
+    "section_title": "`07-cpu-evolution.md`",
+    "priority": 85,
+    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "review_issues": [
+      {
+        "type": "P1重要缺失",
+        "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `CPU 架构演进与性能趋势` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`N/A` \n- 关键代码逻辑：在 Android ARMv8/v9 之后，逻辑主要流经 `N/A`，需要结合状态机看。\n- 缺失内容：未讲清 ARMv9 引入的 SVE2/MTE (Memory Tagging Exten"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending",
+    "date": "2026-04-26"
   }
 ]

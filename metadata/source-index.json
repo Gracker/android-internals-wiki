@@ -18455,13 +18455,14 @@
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 Generational CMC 深度源码剖析-从 CC 到分代并发标记压缩的演进.md",
       "title": "Android 17 Generational CMC 深度源码剖析:从 CC 到分代并发标记压缩的演进",
-      "summary": "基于 `mark_compact` 与 `concurrent_copying` 源码，解释 Android 17 Generational CMC 如何用 userfaultfd + mremap 替代 CC 读屏障，并引入 young/mid/old 三代、live-words bitmap 与 page state FSM；有助于补强 ART 分代 GC 章节的版本边界与实现细节。",
+      "summary": "基于 ART `mark_compact` 与 `concurrent_copying` 源码，解释 Android 17 Generational CMC 如何用 userfaultfd + mremap 替代 CC 读屏障，并引入 young/mid/old 三代、live-words bitmap 与 page state FSM。",
       "chapter_mapping": "ch04",
       "matched_chapter": "4.8",
       "section_title": "ART 分代垃圾回收与 GC 暂停优化",
       "action_taken": "queue",
-      "processed_at": "2026-04-23T07:24:46+08:00",
-      "source_task": "AIW · DeepResearch 材料注入"
+      "processed_at": "2026-04-26T10:24:39+08:00",
+      "source_task": "AIW · DeepResearch 材料注入",
+      "queue_repaired_at": "2026-04-26T10:24:39+08:00"
     },
     {
       "title": "ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告",
@@ -18484,8 +18485,9 @@
       "matched_chapter": "2.10",
       "section_title": "GPU 渲染深入",
       "action_taken": "queue",
-      "processed_at": "2026-04-24T07:14:37+08:00",
-      "source_task": "AIW · DeepResearch 材料注入"
+      "processed_at": "2026-04-26T10:24:39+08:00",
+      "source_task": "AIW · DeepResearch 材料注入",
+      "queue_repaired_at": "2026-04-26T10:24:39+08:00"
     },
     {
       "title": "Android 14 → Android 17 Foreground Service Timeout / ANR 机制深度解析",
@@ -18895,6 +18897,240 @@
       ],
       "summary": "技术文章：Android Studio 中 System Trace 的新增...",
       "scored_at": "2026-04-25T09:13:40.303210"
+    },
+    {
+      "title": "2026-04-25-ams-mServices-lock-contention-perfetto",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-25-ams-mServices-lock-contention-perfetto.md",
+      "score": 17,
+      "chapter": "ch05",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295003"
+    },
+    {
+      "title": "2026-04-25-appexitinfotracker-koom-fork-dump-hprof",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-25-appexitinfotracker-koom-fork-dump-hprof.md",
+      "score": 20,
+      "chapter": "ch03",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295013"
+    },
+    {
+      "title": "2026-04-25-gapworker-bindtime-constraintlayout-measure-anomaly",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-25-gapworker-bindtime-constraintlayout-measure-anomaly.md",
+      "score": 13,
+      "chapter": "ch02",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295016"
+    },
+    {
+      "title": "2026-04-25-motion-resampling-mechanism",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-25-motion-resampling-mechanism.md",
+      "score": 19,
+      "chapter": "ch02",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295021"
+    },
+    {
+      "title": "2026-04-25-zygote-preload-hals-graphics-driver",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-25-zygote-preload-hals-graphics-driver.md",
+      "score": 17,
+      "chapter": "ch02",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295023"
+    },
+    {
+      "title": "技术简报（2026第五期）",
+      "path": "技术简报2026第五期/00-原文-技术简报2026第五期/技术简报（2026第五期）.md",
+      "score": 15,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295024"
+    },
+    {
+      "title": "01-宝华-top-down性能分析-示例程序",
+      "path": "技术简报2026第五期/01-宝华-top-down性能分析-示例程序.md",
+      "score": 11,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295025"
+    },
+    {
+      "title": "02-宝华-while1的top-down分析",
+      "path": "技术简报2026第五期/02-宝华-while1的top-down分析.md",
+      "score": 11,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295026"
+    },
+    {
+      "title": "04-GitHub-lemire-counters",
+      "path": "技术简报2026第五期/04-GitHub-lemire-counters.md",
+      "score": 15,
+      "chapter": "ch03",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295028"
+    },
+    {
+      "title": "05-GitHub-perf-cpp",
+      "path": "技术简报2026第五期/05-GitHub-perf-cpp.md",
+      "score": 15,
+      "chapter": "ch03",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295029"
+    },
+    {
+      "title": "06-SIMD-CSV-Parser",
+      "path": "技术简报2026第五期/06-SIMD-CSV-Parser.md",
+      "score": 12,
+      "chapter": "ch03",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295030"
+    },
+    {
+      "title": "07-Powerful-Page-Mapping-Techniques",
+      "path": "技术简报2026第五期/07-Powerful-Page-Mapping-Techniques.md",
+      "score": 11,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295032"
+    },
+    {
+      "title": "08-ArXiv-AgentCgroup",
+      "path": "技术简报2026第五期/08-ArXiv-AgentCgroup.md",
+      "score": 11,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295034"
+    },
+    {
+      "title": "10-eBPF-spinlock修复案例",
+      "path": "技术简报2026第五期/10-eBPF-spinlock修复案例.md",
+      "score": 14,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295035"
+    },
+    {
+      "title": "11-syntaqlite-devtools",
+      "path": "技术简报2026第五期/11-syntaqlite-devtools.md",
+      "score": 15,
+      "chapter": "ch05",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295036"
+    },
+    {
+      "title": "12-syntaqlite-AI构建",
+      "path": "技术简报2026第五期/12-syntaqlite-AI构建.md",
+      "score": 17,
+      "chapter": "ch03",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295037"
+    },
+    {
+      "title": "13-Bloomberg-Temporal-JS",
+      "path": "技术简报2026第五期/13-Bloomberg-Temporal-JS.md",
+      "score": 13,
+      "chapter": "ch03",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295038"
+    },
+    {
+      "title": "14-知乎-MySQL内存OOM",
+      "path": "技术简报2026第五期/14-知乎-MySQL内存OOM.md",
+      "score": 16,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295039"
+    },
+    {
+      "title": "15-内存泄漏排查-jemalloc-meilisearch",
+      "path": "技术简报2026第五期/15-内存泄漏排查-jemalloc-meilisearch.md",
+      "score": 14,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295041"
+    },
+    {
+      "title": "16-浮点数详解-floating-dragon",
+      "path": "技术简报2026第五期/16-浮点数详解-floating-dragon.md",
+      "score": 13,
+      "chapter": "ch03",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295042"
+    },
+    {
+      "title": "17-浮点数相等比较",
+      "path": "技术简报2026第五期/17-浮点数相等比较.md",
+      "score": 12,
+      "chapter": "ch03",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295043"
+    },
+    {
+      "title": "18-知乎-技术简报第四期",
+      "path": "技术简报2026第五期/18-知乎-技术简报第四期.md",
+      "score": 16,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295044"
+    },
+    {
+      "title": "19-知乎-软件工程技术汇总",
+      "path": "技术简报2026第五期/19-知乎-软件工程技术汇总.md",
+      "score": 14,
+      "chapter": "ch05",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295045"
+    },
+    {
+      "title": "20-知乎-Perfetto内存buffer",
+      "path": "技术简报2026第五期/20-知乎-Perfetto内存buffer.md",
+      "score": 15,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295046"
+    },
+    {
+      "title": "21-知乎-Android MC主题LPC2025",
+      "path": "技术简报2026第五期/21-知乎-Android MC主题LPC2025.md",
+      "score": 18,
+      "chapter": "ch04",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295047"
+    },
+    {
+      "title": "03-精读",
+      "path": "论文/Android-2026-04-26-PowerLens-mmp/03-精读.md",
+      "score": 16,
+      "chapter": "ch05",
+      "date": "2026-04-26",
+      "type": "incremental",
+      "scored_at": "2026-04-26T09:49:45.295048"
     }
   ]
 }
