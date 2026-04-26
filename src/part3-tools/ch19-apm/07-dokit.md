@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "版本需按 artifact / AndroidX / Gradle / AGP 单独验证；README 明确覆盖 3.5.0 / 3.5.0.1 与 AGP 3.3.0+"
-last_verified: "2026-04-25"
-last_verified_against: "didi/DoKit README + Android/README"
+last_verified: "2026-04-27"
+last_verified_against: "didi/DoKit README + Android/README + DoKitPlugin.kt + Okhttp3ClassTransformer.kt + PerformanceDataManager.java"
 confidence: medium
 tags: [apm, debug-tools, testing, mock, weak-network]
 related_chapters: ["19.0"]
@@ -16,19 +16,20 @@ sources:
     path: "https://github.com/didi/DoKit/blob/master/README.md"
   - type: official
     path: "https://github.com/didi/DoKit/blob/master/Android/README.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T03:28:33+08:00"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 review_round: 3
+last_task2b_at: "2026-04-27T04:40:00+08:00"
 ---
 
 # DoraemonKit / DoKit
@@ -101,6 +102,8 @@ DoKit 的强项是现场效率，不是生产监控。原因有三点：
 - Debug 工具更重，开销和兼容性不适合默认带到线上。
 - 它输出的是端上观察结果，不是稳定的版本级指标体系。
 
+实现策略也要分开看。DoKit 在 Debug 包里使用 500ms/1000ms 轮询、运行时 hook 和编译期 ASM 插桩，优先换取现场可见性；线上 APM 要控制探针开销、采样率和出站数据，常见做法是更窄的埋点、native hook、系统信号或按需采样。两类工具的数据口径不能混用。
+
 如果团队把 DoKit 当线上 APM 用，后面会遇到采样、上报、数据合规、用户影响、开关控制等问题。它可以帮助开发和测试更快复现线上问题，但不应该直接承担线上采集职责。
 
 ## 和 Android Studio Profiler、Perfetto 的关系
@@ -135,6 +138,16 @@ DoKit 这类工具通常由三块组成：
 - **采集层**：FPS、CPU、内存、网络、Crash、启动、UI 层级、函数耗时等模块。
 - **扩展层**：业务自定义工具、环境切换、Mock、沙盒浏览、日志查看。
 
+源码阅读时要把运行时采集和编译期插件分开：
+
+| 位置 | 入口 | 读法 |
+|---|---|---|
+| Gradle 插件入口 | `Android/dokit-plugin/src/main/kotlin/com/didichuxing/doraemonkit/plugin/DoKitPlugin.kt` | `apply()` 中按 application / library 分支注册 `DoKitCommonTransform`，并读取 `DOKIT_METHOD_SWITCH`、`DOKIT_WEBVIEW_CLASS_NAME` 等开关。 |
+| OkHttp 注入 | `Android/dokit-plugin/src/main/kotlin/com/didichuxing/doraemonkit/plugin/transform/classtransform/Okhttp3ClassTransformer.kt` | 匹配 `okhttp3.OkHttpClient` 构造方法，在 `networkInterceptors` 写入后插入 `OkHttpHook.addDoKitIntercept(OkHttpClient)`。 |
+| 性能面板采样 | `Android/dokit/src/main/java/com/didichuxing/doraemonkit/kit/performance/PerformanceDataManager.java` | 统一处理 FPS、CPU、内存、网络流量采样，是判断面板数据可信度的入口。 |
+
+README 写 AGP 3.3.0+，但源码仍有 `registerTransform` 路径；AGP 8.x 项目要按实际插件版本和构建日志验证，不能只按 README 推断兼容性。
+
 这三层要和业务代码隔离。推荐做法是只在 Debug / QA flavor 引入 DoKit 依赖，业务模块通过接口注册自定义工具，Release flavor 使用 no-op 实现。
 
 ```kotlin
@@ -151,19 +164,19 @@ class NoopDevToolRegistry : DevToolRegistry {
 
 ## 性能面板的数据可信度
 
-DoKit 的性能数据适合“现场判断”，不适合直接写入最终分析结论。原因是端上悬浮窗和采集逻辑本身也会消耗资源。
+DoKit 的性能数据适合现场判断，不适合直接写入最终分析结论。端上浮窗、后台 Handler 轮询、Choreographer 回调和编译期插桩都会改变运行环境。
 
-读这些数据时要按层级使用：
+读这些数据时要先看采集口径：
 
-| 数据 | 适合用途 | 需要复核 |
-|---|---|---|
-| FPS 曲线 | 快速发现某个操作顿挫 | 用 JankStats / Perfetto 校验帧边界 |
-| CPU / 内存 | 判断是否有明显资源上涨 | 用 Profiler / dumpsys / Perfetto 复核 |
-| 网络列表 | 联调接口、检查大包体或失败请求 | 用网络库日志和服务端监控复核 |
-| 启动耗时 | QA 回归中的粗粒度对比 | 用 Macrobenchmark / `am start -W` / Perfetto 复核 |
-| UI 层级 | 发现布局过深或控件异常 | 用 Layout Inspector / trace 复核 |
+| 指标 | 源码入口 | 采集方式与刷新频率 | 误差来源 | 复核工具 |
+|---|---|---|---|---|
+| FPS | `PerformanceDataManager#startMonitorFrameInfo()` / `FrameRateRunnable` | 主线程 `Choreographer.FrameCallback` 统计，`FPS_SAMPLING_TIME = 1000` ms | 浮窗绘制、主线程回调排队、刷新率变化；只给每秒帧数，不给 FrameTimeline 里的 jank 类型 | JankStats / Perfetto FrameTimeline |
+| CPU | `PerformanceDataManager#executeCpuData()` | Android O+ 执行 `top -n 1`；低版本读 `/proc/stat` 和 `/proc/<pid>/stat`；`NORMAL_SAMPLING_TIME = 500` ms | `top` 执行成本、短尖峰被平均、按 CPU 核数归一化后的口径差异 | Android Studio Profiler / Perfetto sched |
+| 内存 | `PerformanceDataManager#getMemoryData()` | Android P 之后走 `Debug.getMemoryInfo()`；较低版本走 `ActivityManager.getProcessMemoryInfo()`；500 ms 轮询 | PSS 更新频率、GC 时机、系统 API 限流；不能直接解释对象引用关系 | Profiler / `dumpsys meminfo` / HPROF |
+| 网络流量 | `startMonitorNetFlowInfo()` / `NetworkManager#getTotalRequestSize()` / `Okhttp3ClassTransformer` | Handler 每 500 ms 读取请求和响应累计字节；OkHttp 侧通过编译期 ASM 插入 `OkHttpHook.addDoKitIntercept()` | 只覆盖被 hook 的网络栈；Interceptor 自身有开销；无法拆 DNS、connect、TLS 等阶段 | OkHttp `EventListener` / 网络库日志 / 服务端 trace |
+| 启动耗时 | 启动模块与插件配置，按接入版本核对 | 按阶段事件计时，不属于固定 500 ms 轮询 | Debug 包、冷启动 / 温启动状态、插件插桩都会影响耗时 | Macrobenchmark / `am start -W` / Perfetto |
 
-这个分工能避免测试现场“看到数值异常就直接定因”。DoKit 给的是入口，不是最终证据。
+这张表把“DoKit 只能初筛”的原因落到实现上：FPS 是主线程帧回调统计，CPU / 内存是进程级采样，网络依赖 OkHttp 注入和流量累计。它们能帮助复现路径和缩小范围，定因仍要回到专项工具。
 
 ## 弱网和 Mock 的价值
 

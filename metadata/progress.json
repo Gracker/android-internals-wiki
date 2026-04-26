@@ -5212,12 +5212,22 @@
     "19.07": {
       "task6_reviewed": true,
       "task6_date": "2026-04-24",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending"
     },
     "19.08": {
       "task6_reviewed": true,
       "task6_date": "2026-04-24",
-      "task6_result": "pass-light-edit"
+      "task6_result": "pass-light-edit",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending"
     },
     "src/part3-tools/ch19-apm/09-measure.md": {
       "path": "src/part3-tools/ch19-apm/09-measure.md",
@@ -5406,13 +5416,13 @@
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "历史 APM 架构参考（公开 sample：compileSdk 27 / targetSdk 27 / Java 7）；现代 Android 版本需单独验证",
-      "last_verified": "2026-04-24",
-      "last_verified_against": "Qihoo360/ArgusAPM README + argus-apm-sample/build.gradle + argus-apm-okhttp/build.gradle",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "Qihoo360/ArgusAPM README + argus-apm-aop + argus-apm-gradle + argus-apm-gradle-asm",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -5420,7 +5430,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T03:28:33+08:00"
+      "last_task9_at": "2026-04-25T03:28:33+08:00",
+      "last_task2b_at": "2026-04-27T04:40:00+08:00"
     },
     "src/part3-tools/ch19-apm/20-solopi-emmagee.md": {
       "path": "src/part3-tools/ch19-apm/20-solopi-emmagee.md",
@@ -5790,13 +5801,13 @@
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "版本需按 artifact / AndroidX / Gradle / AGP 单独验证；README 明确覆盖 3.5.0 / 3.5.0.1 与 AGP 3.3.0+",
-      "last_verified": "2026-04-25",
-      "last_verified_against": "didi/DoKit README + Android/README",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "didi/DoKit README + Android/README + DoKitPlugin.kt + Okhttp3ClassTransformer.kt + PerformanceDataManager.java",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -5804,7 +5815,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T03:28:33+08:00"
+      "last_task9_at": "2026-04-25T03:28:33+08:00",
+      "last_task2b_at": "2026-04-27T04:40:00+08:00"
     },
     "src/part3-tools/ch19-apm/27-apm-client-architecture.md": {
       "path": "src/part3-tools/ch19-apm/27-apm-client-architecture.md",
@@ -7378,7 +7390,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T03:40:00+08:00",
+  "last_updated": "2026-04-27T04:40:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -7769,6 +7781,35 @@
         "14.10 同章节补 Guardrail allowlist、sched_ext partial 模式和 Binder command 版本锚点"
       ],
       "auto_promotion": "not applied: three sections still have task9_result=needs-rework and were returned to task6_pending"
+    }
+  },
+  "2026-04-27-04-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-27T04:40:00+08:00",
+    "sections": [
+      "19.07",
+      "19.08"
+    ],
+    "queue_indexes_completed": [
+      34,
+      35,
+      63,
+      64
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part3-tools/ch19-apm/07-dokit.md",
+      "src/part3-tools/ch19-apm/08-argusapm.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "19.07 DoKit 补 DoKitPlugin/registerTransform、Okhttp3ClassTransformer、PerformanceDataManager 源码入口",
+        "19.07 DoKit 补 FPS/CPU/内存/网络流量/启动耗时采集口径、刷新频率、误差来源和复核工具表",
+        "19.07 DoKit 补 Debug 全量插桩/高频轮询与线上 APM 采样/native hook 的实现差异",
+        "19.08 ArgusAPM 拆 AspectJ 与 ASM 两条织入路径，修正 argus-apm-aop + argus-apm-gradle/gradle-asm 源码入口",
+        "19.08 ArgusAPM 补 OkHttp EventListener 3.9 preview / 3.11 stable 的版本边界，避免 sample 3.10.0 直接套用现代阶段拆分"
+      ],
+      "auto_promotion": "not applied: both sections still have task9_result=needs-rework and were returned to task6_pending"
     }
   }
 }
