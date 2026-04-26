@@ -10838,5 +10838,71 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T10:43:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "11.2",
+    "section_title": "App 耗电优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Android 15 time-limited FGS 超时后的失败形态与 shortService ANR 路径混写",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/源码行为",
+        "location": "L390 / L457",
+        "detail": "正文在 dataSync/mediaProcessing 6h/24h budget 段落里写成 RemoteServiceException 或 ANR。AOSP android-16.0.0_r1 中 Service.onTimeout(int,int) 面向 time-limited FGS，ActiveServices.onFgsCrashTimeout() 走 ForegroundServiceDidNotStopInTimeException crash；shortService 的旧 onTimeout(int) 才是 ANR 路径。当前写法会让读者把 dataSync/mediaProcessing timeout 当作 ANR 归因。",
+        "suggestion": "拆成两条：shortService 约 3 分钟超时后未停会进入 ANR；dataSync/mediaProcessing Android 15+ 触发 onTimeout(int,int) 后若未及时 stopSelf()/stopForeground()，按 time-limited FGS crash 处理，并补充 Android 14 及以下没有 onTimeout(int,int) 的边界。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T11:47:04+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "11.3",
+    "section_title": "系统级功耗优化",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 自适应省电（Routine Battery Saver）被写成 Android 9 能力，和 Adaptive Battery 版本边界混淆",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L304-L308",
+        "detail": "正文写“Android 9 引入自适应省电功能”，但 source.android.com/docs/core/power/routine-battery-saver 明确写 Android 10 引入 Based on routine 的 Battery Saver schedule，且需要 OEM 用 config_batterySaverScheduleProvider 配置 provider app。Android 9 引入的是 Adaptive Battery / Standby Bucket 预测，不是全局 Battery Saver 的 routine schedule。",
+        "suggestion": "把 Android 9 Adaptive Battery 与 Android 10 Routine Battery Saver 分开：前者影响 App Standby Bucket，后者是可选的 Battery Saver 调度入口；补 provider app / config_batterySaverScheduleProvider / default disable threshold 的边界，删除“Pixel 默认开启”这种未给版本和机型边界的泛化描述。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T11:47:04+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "18.11",
+    "section_title": "ANGLE（GLES-over-Vulkan 翻译层）",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ANGLE Driver-Selection 段落混用 Android 14/15/16 源码路径，方法名、allowlist 与系统包名存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "L245-L289",
+        "detail": "同一章前文 L102-L110 已按 Android 16 写 queryAngleChoice() + config_angleAllowList，但 Driver-Selection 补充段仍把 shouldUseAngleInternal()/isAngleEnabledByGameMode() 写成核心路径。复核 AOSP：android-14.0.0_r1 存在 shouldUseAngleInternal() 和 Game Mode 分支；android-15.0.0_r1 改为 queryAngleChoiceInternal()；android-16.0.0_r1 为 queryAngleChoice()，且不再有 shouldUseAngleInternal()/isAngleEnabledByGameMode()。当前段落会误导 Android 15/16 排查。",
+        "suggestion": "重写为版本矩阵：Android 14 路径单列 shouldUseAngleInternal()/Game Mode；Android 15 单列 queryAngleChoiceInternal()；Android 16 单列 queryAngleChoice() + config_angleAllowList。删除未标版本的 shouldUseAngleInternal 伪代码。"
+      },
+      {
+        "type": "源码错误",
+        "location": "L292-L335",
+        "detail": "正文把 System ANGLE 常见包名写成 org.chromium.angle，并把 Platform allowlist 写成 ANGLE APK 内置 a4a_rules.json。AOSP android-16.0.0_r1 external/angle/android/AndroidManifest.xml 的 package 是 com.android.angle；GraphicsEnvironment.getAnglePackageName() 通过 ACTION_ANGLE_FOR_ANDROID + MATCH_SYSTEM_ONLY 查询系统 ANGLE 包；Android 16 平台 allowlist 入口是 framework resource config_angleAllowList，而不是文中 a4a_rules.json 兜底。",
+        "suggestion": "把 system ANGLE 包名和调试包名拆开：Android 16 系统包按 com.android.angle / ACTION_ANGLE_FOR_ANDROID 描述，org.chromium.angle 只作为历史或 debug package 示例并标版本；Platform allowlist 改为 config_angleAllowList，a4a_rules.json 若保留需限定 Chromium/旧版 ANGLE APK 场景，不能作为 AOSP 16 决策兜底。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T11:47:04+08:00",
+    "status": "pending"
   }
 ]

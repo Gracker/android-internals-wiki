@@ -53,17 +53,17 @@ sources:
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-25T15:31:06+08:00"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-26T11:47:04+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 task6_result: "pass-light-edit"
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task6_pending
+task9_state: reviewed
+pipeline_stage: task2b_pending
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"

@@ -2849,18 +2849,18 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service docs",
       "confidence": "medium-high",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T15:31:06+08:00",
+      "last_task9_at": "2026-04-26T11:47:04+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b"
@@ -2877,18 +2877,18 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T15:31:06+08:00",
+      "last_task9_at": "2026-04-26T11:47:04+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b"
@@ -3250,21 +3250,21 @@
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
       "title": "ANGLE（GLES-over-Vulkan 翻译层）",
-      "chapter": "'18.11'",
-      "section": "'18.11'",
+      "chapter": "18.11",
+      "section": "18.11",
       "status": "ready-for-review",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T08:27:00+08:00",
+      "last_task9_at": "2026-04-26T11:47:04+08:00",
       "review_round": "1",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
@@ -5846,6 +5846,37 @@
         "4.1": "needs-rework"
       },
       "log": "logs/deep-review/2026-04-26-01-deep-review.md"
+    },
+    {
+      "date": "2026-04-26",
+      "task": "task9-deep-tech-review",
+      "sections_reviewed": [
+        {
+          "section": "11.2",
+          "title": "App 耗电优化",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 1,
+          "p2": 1
+        },
+        {
+          "section": "11.3",
+          "title": "系统级功耗优化",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 1,
+          "p2": 1
+        },
+        {
+          "section": "18.11",
+          "title": "ANGLE（GLES-over-Vulkan 翻译层）",
+          "result": "needs-rework",
+          "p0": 2,
+          "p1": 0,
+          "p2": 1
+        }
+      ],
+      "timestamp": "2026-04-26T11:47:04+08:00"
     }
   ],
   "progress": {
@@ -6640,7 +6671,7 @@
       }
     }
   },
-  "last_updated": "2026-04-26T00:28:30+08:00",
+  "last_updated": "2026-04-26T11:47:04+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
