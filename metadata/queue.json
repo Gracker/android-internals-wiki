@@ -10563,5 +10563,110 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T01:28:54+08:00",
     "status": "pending"
+  },
+  {
+    "section": "8.5",
+    "section_title": "案例集",
+    "priority": 95,
+    "reason": "[Deep Tech Review] ProfilingManager 示例引用隐藏 API，AutoFDO/16KB 页面数据边界缺失",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P0",
+        "location": "L418-L420 / L422-L428（ProfilingManager system trace 示例）",
+        "detail": "示例代码直接引用 ProfilingManager.KEY_DURATION_MS，并用 putLong 写入 10_000L。AOSP packages/modules/Profiling/framework/api/current.txt 的 public API 只暴露 PROFILING_TYPE_* 常量，不暴露 KEY_DURATION_MS；源码中 KEY_DURATION_MS 标为 @hide，且类型说明为 int。应用按公开 SDK 编译会找不到该常量。",
+        "suggestion": "删除对 KEY_DURATION_MS 的公开示例依赖，改为公开 API 可编译的 requestProfiling(PROFILING_TYPE_SYSTEM_TRACE, Bundle/null, tag, CancellationSignal, Executor, Consumer) 示例；若需要控制时长，必须标注该参数当前不是公开 SDK 常量，不能作为普通 App 代码推荐。"
+      },
+      {
+        "type": "数据缺失/版本差异",
+        "severity": "P1",
+        "location": "L359-L367（AutoFDO 实测效果表）",
+        "detail": "AutoFDO 表把 Android GKI 内核基准、Binder/HWBinder 子项和 AutoFDO 论文/数据中心口径混在一个“实测效果”表里。+26.4% 对应特定 HWBinder 基准，+10.5% 是早期 AutoFDO 基准几何平均，不应直接写成 Android 系统级启动案例的同一组指标。",
+        "suggestion": "拆成“Android GKI/Pixel 实测指标”和“AutoFDO 历史论文指标”两张表；Android 表中逐项标注内核分支、设备、benchmark 名称，如 cold start、boot、syscall_mmap、Binder RPC/HWBinder。"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "L390（Google Play 16KB 页面要求）",
+        "detail": "正文写“新应用和更新必须支持 16KB 页面大小才能在 Google Play 上架”，缺少 Google Play 要求中的 Android 15+ / 64-bit 设备适用条件。读者可能误以为所有历史 target 和所有设备形态都受同一强制要求。",
+        "suggestion": "改为“自 2025-11-01 起，提交到 Google Play、面向 Android 15+ 设备的新应用和更新，需要在 64-bit 设备上支持 16KB page size”；并补充 native so page alignment / PAGE_SIZE 假设检查。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T08:30:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.8",
+    "section_title": "Perfetto 输入延迟 SQL 深度分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Perfetto SQL 模板存在 counter.dur 字段错误和主线程 JOIN 错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/SQL 可执行性",
+        "severity": "P0",
+        "location": "L306-L307（InputDispatcher 队列长度追踪 SQL）",
+        "detail": "SQL 查询 counter.dur，但 Perfetto Trace Processor 的 counter 表列为 ts、track_id、value、arg_set_id，不包含 dur。读者照抄会得到 no such column: counter.dur。",
+        "suggestion": "改用 LEAD(counter.ts) OVER (PARTITION BY track_id ORDER BY ts) 计算下一采样点时间，或使用 Perfetto 推荐的 counter interval helper，再输出 duration_ms。"
+      },
+      {
+        "type": "SQL 鲁棒性/原理断裂",
+        "severity": "P1",
+        "location": "L502-L508（ANR 前主线程长耗时查询）",
+        "detail": "SQL 用 JOIN thread ON slice.track_id IN (SELECT id FROM track WHERE thread.utid = (...))，没有通过 thread_track 把 slice.track_id 关联到 thread.utid。该写法会按 outer thread.utid 相关子查询选择 track，容易把目标主线程过滤退化成错误结果。",
+        "suggestion": "改为 slice JOIN thread_track tt ON slice.track_id = tt.id JOIN thread t ON tt.utid = t.utid，并用 process/package 过滤目标进程；主线程识别优先使用 t.is_main_thread = 1，必要时用 t.tid = process.pid 兜底。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T08:30:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.10",
+    "section_title": "eBPF/BPF 在 Android 性能分析中的应用",
+    "priority": 95,
+    "reason": "[Deep Tech Review] simpleperf probe 事件名、bpftrace stats 与 syscall latency 示例存在技术错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/命令错误",
+        "severity": "P0",
+        "location": "L185-L196 / L213-L223（simpleperf uprobe/kprobe 示例）",
+        "detail": "正文把 simpleperf 探针事件选择写成 -e probe:<event_name>。AOSP simpleperf cmd_record 文档和测试用例使用 kprobes:<event> / uprobes:<event> 作为事件名；cmd_record_test 覆盖 -e kprobes:myprobe 与 -e uprobes:myprobe。probe: 前缀不是当前 simpleperf 文档中的 probe 事件组。",
+        "suggestion": "把示例改为 -e uprobes:libc_kill --uprobe ... 和 -e kprobes:open_entry --kprobe ...；同步说明默认事件组是 uprobes/kprobes。"
+      },
+      {
+        "type": "源码错误/工具 API",
+        "severity": "P1",
+        "location": "L188-L190（获取 libc kill 地址）",
+        "detail": "unwind_info 不是 Android 标准 shell 工具，也不是 simpleperf record 文档里的取符号地址步骤。读者照抄大概率找不到命令。",
+        "suggestion": "改用 readelf -sW /system/lib64/libc.so | grep \" kill$\"、llvm-nm/readelf，或明确说明该命令来自特定环境；同时提醒不同 build 的 libc 偏移会变化。"
+      },
+      {
+        "type": "源码错误/工具 API",
+        "severity": "P1",
+        "location": "L239-L245（bpftrace stats() 说明）",
+        "detail": "bpftrace stats(value) 聚合输出 count、average、total，不直接输出方差、最大值、最小值；正文和图注写成均值/方差/最大值/最小值/分位数。",
+        "suggestion": "改为 stats() 输出 count/avg/total；若需要最大/最小值用 max()/min()，需要分布用 hist()/lhist()，需要分位数则离线计算或换工具。"
+      },
+      {
+        "type": "原理断裂/示例错误",
+        "severity": "P1",
+        "location": "L375-L385（系统调用延迟追踪）",
+        "detail": "正文说可测每个系统调用延迟分布，但命令只记录 raw_syscalls:sys_enter，没有记录 sys_exit，也没有 enter/exit 时间配对；无法得到延迟。过滤 id 数字也未说明 arm64 syscall 号来源，容易把 x86_64 编号误用于 Android 设备。",
+        "suggestion": "要测延迟需同时采集 sys_enter/sys_exit 并按 tid+id 配对，或改写成“采集特定 syscall 进入事件”。如果保留 id 过滤，标注 aarch64 syscall.tbl 来源和具体 syscall 名称。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-26T08:30:00+08:00",
+    "status": "pending"
   }
 ]

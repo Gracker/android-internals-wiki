@@ -3827,3 +3827,51 @@
 - **位置**：L273（Ashmem 替代路径）
 - **问题**：正文写 Ashmem 在现代 Android 上逐渐被 dmabuf 替代，容易把匿名共享内存与图形/硬件 buffer 混在一起。匿名共享内存主替代路径更接近 memfd，dmabuf 主要用于可被硬件/DMA 子系统共享的 buffer。
 - **建议**：改成“匿名共享内存从 ashmem 迁移到 memfd；图形、相机、媒体等硬件共享 buffer 更多使用 dma-buf”，并保留老版本 ashmem 兼容边界。
+
+## [Task9 Deep Review] 8.5 案例集 — 2026-04-26
+- **类型**：版本差异
+- **位置**：L181-L191（MultiDex 加载阶段与优化手段）
+- **问题**：正文写 Android 5.0+ 上 MultiDex 的 dex 提取和验证仍消耗可观 IO，又写其余 dex 在子线程异步加载。官方 Multidex 文档说明 Android 5.0+ ART 原生支持从 APK 加载多个 DEX，并在安装时预编译；pre-21 的 androidx.multidex 才有运行时解压/安装路径。
+- **建议**：按 pre-21 Dalvik / API 21+ ART 拆开写：pre-21 说明 MultiDex.install 与 secondary dex 处理；API 21+ 重点写类加载、verification/oat、启动路径类布局，不要把 dex 提取作为通用 Android 5.0+ 瓶颈。
+
+- **类型**：数据缺失
+- **位置**：L193（Protobuf 比 JSON 快 5-10 倍）
+- **问题**：5-10 倍没有绑定数据结构、字段数量、parser 实现和设备条件。
+- **建议**：限定为抖音该配置数据场景或补 benchmark 条件；否则降级为“通常更快，具体倍数依场景变化”。
+
+- **类型**：版本差异
+- **位置**：L146/L248/L455（R8 full mode 开关）
+- **问题**：AGP 8.0+ 默认 full mode 的方向正确，但 compat 开关、warning/移除时间线和 AGP 版本边界没有说清。
+- **建议**：补 AGP 8.x 默认 full mode、旧 compat 开关的迁移边界，以及 keep rules/反射/JNI 的验证清单。
+
+## [Task9 Deep Review] 13.8 Perfetto 输入延迟 SQL 深度分析 — 2026-04-26
+- **类型**：SQL 逻辑
+- **位置**：L468-L471（滑动卡顿输入分析 CASE 顺序）
+- **问题**：TOTAL_SLOW 放在 HANDLING_SLOW 和 DISPATCH_SLOW 之后，total 已超过 32ms 的样本可能先被标成局部阶段慢。
+- **建议**：先判断 total_latency_dur，再判断 handling/dispatch；或输出多个布尔列避免单标签遮蔽。
+
+- **类型**：源码准确性
+- **位置**：L125（android_input_events.event_seq 类型）
+- **问题**：Perfetto stdlib android_input_events 将 event_seq 声明为 STRING，正文表格标为 long。
+- **建议**：把 event_seq 类型改为 string，并说明它是同一 event channel 内递增的序号字符串。
+
+- **类型**：数据缺失
+- **位置**：L268-L274（Pixel 7 参考值示例）
+- **问题**：参考值给出设备/版本/样本量，但没有 trace 配置、场景脚本或统计来源，难以复现实验边界。
+- **建议**：补采集配置、输入手势脚本、Trace Processor 版本和原始样本来源；否则标为经验参考。
+
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-26
+- **类型**：源码准确性
+- **位置**：L296-L304（UprobeStats user build allowlist）
+- **问题**：AOSP android-16.0.0_r1 Guardrail.cpp 的 allowlist 还包含 ActivityManagerService$LocalService.updateDeviceIdleTempAllowlist，正文代码片段只列了 CachedAppOptimizer/OomAdjuster/OomAdjusterModernImpl。
+- **建议**：补齐 allowlist，或标注代码片段为节选；同时把源码锚点指到 packages/modules/UprobeStats/src/Guardrail.cpp。
+
+- **类型**：数据缺失
+- **位置**：L407-L412（Binder command hex 值）
+- **问题**：kBR_FROZEN_REPLY / kBR_TRANSACTION_PENDING_FROZEN 的 0x7212/0x7214 没有绑定 binder.h 版本；binder command code 属于内核头文件口径，跨版本应以源码为准。
+- **建议**：补 Linux/Android common kernel binder.h 版本锚点，或在示例前说明“以当前设备 binder.h 为准”。
+
+- **类型**：版本差异
+- **位置**：L326-L334（sched_ext 管理范围）
+- **问题**：正文同时写“管理 SCHED_NORMAL/BATCH/IDLE/EXT”与“部分切换”，但没有把 SCX_OPS_SWITCH_PARTIAL 开关前后的任务归属差异写清。
+- **建议**：补 kernel.org 口径：未设置 SCX_OPS_SWITCH_PARTIAL 时 NORMAL/BATCH/IDLE/EXT 由 sched_ext 管；设置后只有 SCHED_EXT policy 任务交给 sched_ext。
