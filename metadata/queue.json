@@ -11278,8 +11278,13 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T18:45:27+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_rework_summary": "补齐 relayoutAsync 触发条件、服务端 oneway 处理与 Android 17 recreateOnConfigChanges Beta 口径",
+    "consumed_external_review": "logs/external-review/archive/2026-04-25-15-2.12-external-review.md"
   },
   {
     "section": "2.13",
@@ -11303,8 +11308,13 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending",
-    "date": "2026-04-26"
+    "status": "completed",
+    "date": "2026-04-26",
+    "completed_at": "2026-04-26T18:45:27+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter",
+    "task2b_rework_summary": "补齐 mDequeueBufferCannotBlock/WOULD_BLOCK 分支、Android 12 BLAST 默认分界和 Android 14 AsyncProducerListener",
+    "consumed_external_review": "logs/external-review/archive/2026-04-25-15-2.13-external-review.md"
   },
   {
     "section": "2.14",

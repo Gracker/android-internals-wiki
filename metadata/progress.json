@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-26T15:45:22+08:00",
+  "generated_at": "2026-04-26T18:45:27+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,33 +7,33 @@
     "finalized": 83,
     "ready-for-review": 135,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-26T15:45:22+08:00",
+    "last_updated": "2026-04-26T18:45:27+08:00",
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 42,
+      "task6_pending": 43,
       "task2b_pending": 52,
       "ready-to-publish": 83,
-      "task9_pending": 36,
+      "task9_pending": 35,
       "'task9_pending'": 1,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 175,
-      "revisiting": 39
+      "reviewed": 173,
+      "revisiting": 41
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 145,
-      "pending": 62,
+      "reviewed": 144,
+      "pending": 63,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 145,
-      "pending": 56,
+      "fixed": 146,
+      "pending": 55,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 1
@@ -42,30 +42,30 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 35,
-      "task6_pending": 42,
+      "task6_pending": 43,
       "task2b_pending": 52,
       "ready-to-publish": 83,
-      "task9_pending": 36,
+      "task9_pending": 35,
       "'task9_pending'": 1,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 36,
-      "reviewed": 175,
-      "revisiting": 39
+      "reviewed": 173,
+      "revisiting": 41
     },
     "task9_state_counts": {
       "None": 40,
-      "reviewed": 145,
-      "pending": 62,
+      "reviewed": 144,
+      "pending": 63,
       "'reviewed'": 1,
       "fixed": 1,
       "'pending'": 1
     },
     "task2b_state_counts": {
       "None": 42,
-      "fixed": 145,
-      "pending": 56,
+      "fixed": 146,
+      "pending": 55,
       "'pending'": 2,
       "idle": 4,
       "'fixed'": 1
@@ -837,11 +837,11 @@
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
-      "last_verified": "2026-04-19",
-      "last_verified_against": "AOSP android-17-beta3 + Android 16/17 official docs",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "AOSP main ViewRootImpl/IWindowSession/Session + BufferQueueProducer + Android 16/17 official docs + external review",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -856,18 +856,18 @@
     "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md": {
       "path": "src/part1-fundamentals/ch02-rendering/13-buffer-queue.md",
       "title": "图形缓冲区管理 (BufferQueue)",
-      "chapter": "'2.13'",
-      "section": "'2.13'",
+      "chapter": "2.13",
+      "section": "2.13",
       "status": "ready-for-review",
-      "drafted_date": "'2026-04-04'",
+      "drafted_date": "2026-04-04",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 4.1 (API 16) - Android 17 (API 37)",
-      "last_verified": "'2026-04-11'",
-      "last_verified_against": "AOSP main + android-11.0.0_r48 + android-10.0.0_r47 + android-4.1.2_r1",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "last_verified": "2026-04-26",
+      "last_verified_against": "AOSP main + android-14.0.0_r1 + android-12/11/10/4.1 tags + external review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
