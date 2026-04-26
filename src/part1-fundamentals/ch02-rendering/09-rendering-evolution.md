@@ -54,7 +54,7 @@ related_chapters:
 - '3.1'
 - '8.2'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -62,7 +62,7 @@ task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: "openclaw-task9"
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-review_notes: "2026-04-24 task6 re-review: pass-light-edit；2026-04-26 task2b 修复 Task9 TokenManager 源码路径、Choreographer 版本边界、SkiaVulkan 裸数字问题。"
+review_notes: "2026-04-24 task6 re-review: pass-light-edit；2026-04-26 task2b 修复 Task9 TokenManager 源码路径、Choreographer 版本边界、SkiaVulkan 裸数字问题；2026-04-26 task6 revisiting review: pass-light-edit, 修复1处禁用词。"
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: '2026-04-26T01:40:00+08:00'
@@ -281,7 +281,7 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 ### FrameMetrics API：量化每一帧的"慢"在哪里
 
-分析卡顿时，首先要回答的问题："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
+分析卡顿时，核心问题是："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
 
 FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。开发者不需要在代码里手动打点，就能拿到完整的帧耗时分布。
 
