@@ -5029,7 +5029,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T12:54:28+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "already-fixed-in-chapter: traced_probes source path now points to external/perfetto/src/traced/probes/"
   },
   {
     "section": "14.01",
@@ -10954,7 +10957,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T12:46:09+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T12:54:28+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "14.6",
@@ -10980,6 +10986,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T12:46:09+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T12:54:28+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   }
 ]

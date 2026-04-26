@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "AOSP main, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/"
+last_verified: "2026-04-26"
+last_verified_against: "AOSP android-16.0.0_r1 / main frameworks/native/cmds/atrace/atrace.cpp, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/"
 confidence: medium
 sources:
   - type: aosp
@@ -22,10 +22,10 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 rework_date: "2026-04-25"
@@ -37,7 +37,11 @@ last_task9_at: "2026-04-26T12:46:09+08:00"
 task9_reviewed_by: openclaw-task9
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1: 1x 不是X而是Y(FAQ合理使用,未超限). 评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据5/5。'
 task9_reviewed_date: "2026-04-26"
-last_task2b_at: "2026-04-25T14:40:00+08:00"
+last_task2b_at: "2026-04-26T12:54:28+08:00"
+repaired_by: openclaw-task2b
+repaired_date: "2026-04-26"
+updated_by: openclaw-task2b
+updated_date: "2026-04-26"
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
@@ -129,9 +133,12 @@ ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户
 例如：
 - `atrace sched` → 启用 ftrace 的 `sched_switch`, `sched_wakeup`, `sched_wakeup_new` 等 tracepoint
 - `atrace gfx` → 主线实现里至少启用 `ATRACE_TAG_GRAPHICS`，并可附带 `events/gpu_mem/gpu_mem_total/enable` 这类 graphics 相关 sysfs 开关；厂商还可以追加自己的 vendor categories，因此不能把 `gfx` 直接等同为某一个固定的 kernel event
-- `atrace freq` → 启用 `cpu_frequency`, `cpu_idle` 等 tracepoint
+- `atrace freq` → 启用 `events/power/cpu_frequency/enable`，并按设备支持启用 `clock/cpu_frequency_limits`、`clock/cpuhp/suspend_resume` 等与频率变化相关的事件或开关
+- `atrace idle` → 启用 `events/power/cpu_idle/enable`
 
-[已验证: AOSP main, frameworks/native/cmds/atrace/atrace.cpp]
+功耗分析里常把 `sched + freq + idle + power` 放在同一份采集配置中。这里的 `idle` 是独立 category，不能把 `cpu_idle` 归到 `freq`。
+
+[已验证: AOSP android-16.0.0_r1 / main, frameworks/native/cmds/atrace/atrace.cpp k_categories]
 
 Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。这也是为什么 Perfetto 比 atrace 更灵活——我们可以精确指定需要哪些 tracepoint，而不受 atrace 预设分类的限制。
 
