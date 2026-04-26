@@ -13,10 +13,12 @@ task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: "2026-04-26"
+review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task6_result: pass-light-edit
 task2b_result: fixed
-task9_reviewed_date: 2026-04-23
+task9_reviewed_date: "2026-04-26"
+review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-23T00:30:00+08:00"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
