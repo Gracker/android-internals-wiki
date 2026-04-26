@@ -7,9 +7,9 @@ tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "Image
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -19,7 +19,9 @@ task2b_result: fixed
 task9_reviewed_date: 2026-04-23
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-23T00:30:00+08:00"
-
+last_task2b_at: "2026-04-26T10:41:09+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 <!-- outline-start -->
@@ -187,6 +189,8 @@ CameraX 的 ZSL 是另一层实现。`ImageCapture` 的零快门延迟模式会�
 3. CameraService 仍然从 `Camera3OutputStream` 管理的 stream cache / Surface 池取出 buffer，再把 handle 和 fence 交给 HAL。
 4. HAL 完成写入后，通过 `processCaptureResult()` 归还正常输出；超出本次 request 实际消耗的 buffer 通过 `returnStreamBuffers()` 返还给 Framework。
 5. consumer 释放 buffer 之后，Framework 把它重新放回可复用池。
+
+Android 13+ 也改变了 Camera 新能力的投放口径。HIDL HAL3.x 基本进入维护路径，新能力优先落在 AIDL camera device/session 接口；例如 10-bit HDR、动态范围配置、部分 extension 或 stream use case 组合，在新设备上通常要求 AIDL HAL 才能完整暴露。排查 Android 14-16 设备时，如果只按 HIDL 方法名找 Trace，容易漏掉新版 Binder slice。
 
 三版的观察重点一致：Framework 侧的 `dequeueBuffer` / stream cache 压力、HAL 持有 buffer 的时长、consumer 侧的归还速度。差别在于 Android 13+ 要优先按 AIDL 接口和 slice 名称定位，Android 10-12 再去对照 HIDL 3.x 的方法名。
 

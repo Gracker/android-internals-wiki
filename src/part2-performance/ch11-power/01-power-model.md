@@ -47,7 +47,9 @@ last_task9_at: "2026-04-25T15:31:06+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-25"
 task2b_result: fixed
-last_task2b_at: "2026-04-23T08:16:00+08:00"
+last_task2b_at: "2026-04-26T10:41:09+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 
@@ -165,6 +167,8 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经不是一句“频率时间 × 电流”能讲清的。`CpuPowerCalculator` 在 power-profile 模式下把 CPU 功耗拆成三层：`PowerProfile.POWER_CPU_ACTIVE` 表示 CPU 进入 active 状态后的基础电量；`getAveragePowerForCpuScalingPolicy()` 表示某个 scaling policy 被点亮时的附加电量；`getAveragePowerForCpuScalingStep()` 表示具体频点带来的增量。对应的时间来源也分成 `getCpuActiveTime()`、policy running time 和 `getCpuFreqTimes()`。很多设备上 scaling policy 和 cluster 接近，但 Android 16 的源码口径已经按 policy 组织。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/CpuPowerCalculator.java]
 
 如果设备接了 `EnergyConsumer` 硬件计量，`CpuPowerCalculator` 会优先读取 `u.getCpuEnergyConsumptionUC()`，直接走 `POWER_MODEL_ENERGY_CONSUMPTION`。只有没有硬件能量数据时，才回退到 power-profile 估算。设置页里的 CPU 百分比也是沿着这套归属流程产出的，不能一概当成 `power_profile.xml` 查表结果。
+
+在 CPU cluster 能量可用的设备上，`EnergyConsumer.TYPE_CPU_CLUSTER` 提供的是硬件测得的能量总量，Framework 再结合 UID 的 CPU time、policy running time 和 freq step 统计做归属。这里的优先顺序是 measured energy 先行，`power_profile.xml` 的 mA 均值只做兜底；读设置页 CPU 耗电时，不要把它理解成单纯的运行时长乘电流。
 
 组件是否走 measured energy path，取决于 HAL 和统计能力。CPU、Screen 这类组件在支持的设备上更容易拿到 hardware energy data；WiFi、Radio、蓝牙等组件则要看 HAL 是否提供对应的 measured energy 或 controller activity 统计。`BatteryUsageStats` 会优先消费硬件能量数据，缺失时才回退到 power-profile 或 controller-based 估算。
 

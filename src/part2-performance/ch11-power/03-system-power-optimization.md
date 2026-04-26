@@ -49,7 +49,7 @@ sources:
 tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
 related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: "openclaw-task9"
@@ -57,9 +57,12 @@ last_task9_at: "2026-04-25T15:31:06+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-04-26T10:41:09+08:00"
+repaired_date: "2026-04-26"
+repaired_by: "openclaw-task2b"
 ---
 
 # 系统级功耗优化
@@ -176,6 +179,8 @@ Android 9（API 28）引入了 App Standby Buckets 机制，根据用户对每�
 | Rare | 很少打开 | 约 `10 min / 24h` | 约 `10 min / 24h` | `1 次 / 小时` | 后台禁用 |
 | Restricted | Android 12 引入，系统认为资源消耗异常或长期不互动 | 每天 1 次，最多 10 分钟，且与其他 Job 合批 | `5 min / 24h` | `1 次 / 天` | 后台禁用 |
 
+Android 16 还改变了一个常见判断：FGS 运行期间启动的 regular job 仍会消耗 Job quota。`Active` 桶不再等于后台任务无限额；如果业务依赖 FGS 包住 Job 执行，需要用 `dumpsys jobscheduler <pkg>` 查看 quota 用量，不能只看 App 是否处于 Active。
+
 Restricted 桶的触发条件要按版本拆开。Android 12 / 12L 的“不互动”阈值是 45 天，Android 13 起缩短到 8 天；设备关机的时长不计入这段天数。Android 13 以后，高优先级 FCM 配额也不再由桶直接决定。
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby; developer.android.com/topic/performance/power/power-details#app-stdby-bucket]
@@ -240,12 +245,14 @@ Doze 和 Standby Buckets 会根据设备状态和用户行为动态收紧后台�
 
 这里没有新增 manifest 权限，也不是 runtime permission。变化点是 `ActivityOptions` 的显式授权模式。
 
-豁免场景包括：
+常见豁免场景包括：
 
-- App 有一个正在运行的前台服务，且该服务与通知关联
-- App 刚刚收到高优先级 FCM 消息
-- 用户刚刚与 App 的通知交互，如点击通知
-- App 是设备的当前输入法、`VoiceInteractionService` 等
+- App 当前有可见窗口，或者刚刚结束一个可见 Activity
+- 用户刚刚完成明确交互，例如点击通知里的 Activity `PendingIntent`
+- 系统绑定服务或可见 App 绑定服务，并通过对应 opt-in 授予后台拉起 Activity 的能力；Android 14+ 可见 App 绑定时要使用 `BIND_ALLOW_ACTIVITY_STARTS`
+- App 是当前输入法、`VoiceInteractionService`、设备所有者等系统认可角色
+
+前台服务通知本身不是通用豁免。它能提示用户 App 正在工作，但不能单独授予后台拉起 Activity 的能力。
 
 [已验证: 官方文档, developer.android.com/guide/components/activities/background-starts]
 

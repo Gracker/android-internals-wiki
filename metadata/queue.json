@@ -7061,7 +7061,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T10:41:09+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Ch11 external P95 consumed: 11.1 CpuPowerCalculator energy path, 11.2 FGS timeout, 11.3 Active quota, 11.5 SystemSuspend command; misparsed 19.11 issue split to new queue item."
   },
   {
     "section": "12",
@@ -7354,7 +7357,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T10:41:09+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Ch18.11-15 external P95 consumed: Flutter merged model verified, ANGLE updatable package, Camera AIDL features, HWC3 SKIP_VALIDATE; misparsed 19.18 issue split to new queue item."
   },
   {
     "section": "18.9",
@@ -7907,7 +7913,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T14:10:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T10:41:09+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Duplicate ch18.11-15 batch entry consumed by the same Task2B repair."
   },
   {
     "section": "10.4",
@@ -8789,8 +8798,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-18.13-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-18.13-external-review.md",
+    "completed_at": "2026-04-26T10:41:09+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Duplicate ch18.11-15 batch entry; no 18.13 body issue in source report, consumed with batch repair."
   },
   {
     "section": "18.14",
@@ -8880,8 +8892,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-18.14-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-18.14-external-review.md",
+    "completed_at": "2026-04-26T10:41:09+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Duplicate ch18.11-15 batch entry consumed by Camera AIDL repair."
   },
   {
     "section": "18.15",
@@ -8971,8 +8986,11 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
-    "source_file": "2026-04-25-15-18.15-external-review.md"
+    "status": "completed",
+    "source_file": "2026-04-25-15-18.15-external-review.md",
+    "completed_at": "2026-04-26T10:41:09+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Duplicate ch18.11-15 batch entry consumed by HWC3 repair."
   },
   {
     "section": "19",
@@ -9500,7 +9518,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T15:31:06+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T10:41:09+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Ch11.2 Task9 P85 consumed: split Android 12 background FGS start restriction from Android 14 mediaPlayback type requirement."
   },
   {
     "section": "11.3",
@@ -9520,7 +9541,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T15:31:06+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-26T10:41:09+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Ch11.3 Task9 P85 consumed: removed FGS notification as generic BAL exemption and added official opt-in cases."
   },
   {
     "section": "?",
@@ -10677,5 +10701,84 @@
     "completed_at": "2026-04-26T08:55:00+08:00",
     "completed_by": "openclaw-task2b",
     "completion_reason": "修复 simpleperf probe 事件名、bpftrace stats 输出和 syscall latency enter/exit 配对。"
+  },
+  {
+    "section": "2.10",
+    "section_title": "GPU 渲染深入",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告 — 系统梳理 Mali / Immortalis 的 tile-based rendering、AFBC、Transaction Elimination、IDVS、DVS 与 Fragment Prepa",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-04-26T10:24:39+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "4.8",
+    "section_title": "ART 分代垃圾回收与 GC 暂停优化",
+    "priority": 80,
+    "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 Generational CMC 深度源码剖析-从 CC 到分代并发标记压缩的演进.md"
+    ],
+    "review_issues": [
+      {
+        "type": "新增参考材料",
+        "location": "参考资料/延伸阅读",
+        "detail": "Android 17 Generational CMC 深度源码剖析:从 CC 到分代并发标记压缩的演进 — 基于 ART `mark_compact` 与 `concurrent_copying` 源码，解释 Android 17 Generational CMC 如何用 userfaultfd + mre",
+        "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+      }
+    ],
+    "added_by": "task-deepresearch-injector",
+    "added_at": "2026-04-26T10:24:39+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.11",
+    "section_title": "JankStats",
+    "priority": 85,
+    "reason": "[Task2B split] 从 Ch11 批量 external-review 错归档条目拆出：JankStats 初始化时机与 FrameData 对象复用风险",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "src/part3-tools/ch19-apm/11-jankstats.md 初始化代码段及 FrameData 处理建议",
+        "detail": "缺少 DecorView 依赖的精确描述和 FrameData 对象复用的风险提示；提到在 setContentView() 前初始化可能抛 IllegalStateException。",
+        "suggestion": "补充“不要异步持有 FrameData 引用，必须拷贝出 DTO 数据”的警告，并修正初始化时机说明。",
+        "evidence": "androidx.metrics.performance.JankStatsApi24Impl 等实现类中对 FrameData 的构造。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T10:41:09+08:00",
+    "status": "pending",
+    "source_file": "logs/external-review/archive/2026-04-25-15-11.README-external-review.md",
+    "split_from": "queue[134]"
+  },
+  {
+    "section": "19.18",
+    "section_title": "商业 APM 选型与接入",
+    "priority": 85,
+    "reason": "[Task2B split] 从 Ch18 批量 external-review 错归档条目拆出：APM SDK 初始化自监控与隐私字段审计",
+    "review_issues": [
+      {
+        "type": "重要缺失",
+        "location": "src/part3-tools/ch19-apm/18-commercial-apm.md SDK 初始化与选型表",
+        "detail": "未提及 SDK 初始化对启动的影响；提到合规但未说明具体操作。",
+        "suggestion": "增加用 Trace.beginSection 包裹 APM SDK 初始化的自监控建议，并在选型表加入“隐私数据字段审计清单”。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-26T10:41:09+08:00",
+    "status": "pending",
+    "source_file": "logs/external-review/archive/2026-04-25-15-18.11-external-review.md",
+    "split_from": "queue[136]"
   }
 ]
