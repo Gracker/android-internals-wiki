@@ -14,8 +14,9 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Qihoo360/ArgusAPM"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task6_reviewed
+task6_state: "reviewed"
+task6_reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
@@ -216,7 +217,7 @@ ArgusAPM 里有 `argus-apm-okhttp` 这类网络采集模块。现代网络监控
 - 缓存命中和离线缓存。
 - URL pattern 脱敏。
 
-这里有一个很容易混淆的边界：只靠 `Interceptor` 拿不到 DNS / connect / TLS 这些阶段，真正的阶段拆分要靠 `EventListener`；`Interceptor` 更适合补请求 ID、业务 code 和页面上下文。
+只靠 `Interceptor` 拿不到 DNS / connect / TLS 这些阶段，真正的阶段拆分要靠 `EventListener`；`Interceptor` 更适合补请求 ID、业务 code 和页面上下文。
 
 这段 `EventListener` 示例属于迁移后的写法。OkHttp 的 `EventListener` 在 3.9 进入预览，3.11 才成为稳定 API；ArgusAPM sample 仍是 `okhttp:3.10.0`，存量工程不要直接复制这段阶段拆分。迁移顺序应先升级网络采集模块，再把旧 Interceptor / 流量包装改成 `EventListener + Interceptor` 分工。
 
