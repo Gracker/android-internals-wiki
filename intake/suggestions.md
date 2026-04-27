@@ -5055,3 +5055,21 @@
 - **问题**：表中列出 Input、Service、Broadcast、FGS 等默认阈值，但章节适用范围是 Android 8-16；其中 Broadcast CPU-starved 放宽是 Android 14+ 行为，FGS/Service 超时也应以当版 ActiveServices / BroadcastQueue 常量为准。
 - **建议**：在表头或备注中标注“以当前 AOSP/Android 14+ 默认值为主，旧版本/OEM 以源码常量为准”，并为 Android 14+ 放宽行为单独标版本边界。
 
+## [Task9 Deep Review] 15.4 竞品分析方法 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L308（APK 体积与安装转化率）
+- **问题**：“APK 每增加 10MB，安装转化率下降约 1.5%”缺少出处和适用范围；Google Play 公开资料常见口径是全球 6MB≈1% 或新兴市场 10MB≈2.5%，当前数字需要来源或边界。
+- **建议**：补 Google Play / Android Developers 原始出处、地区和样本口径；如果没有稳定来源，改成定性描述或把数字写成“参考口径”。
+
+## [Task9 Deep Review] 15.4 竞品分析方法 — 2026-04-27
+- **类型**：知识盲区
+- **位置**：L284-L302（使用 FrameMetrics 做线上对比）
+- **问题**：FrameMetrics 只能在接入代码的 App 内采集。竞品分析场景下，外部竞品通常无法部署 FrameMetrics 监听；这段容易让读者以为可以直接采集任意竞品线上帧指标。
+- **建议**：补边界：FrameMetrics 适合自家 App、多产品线或可接入 SDK 的对比；对外部竞品应退回 Perfetto、gfxinfo、录像/高速摄像或公开指标。
+
+## [Task9 Deep Review] 15.7 AOSP 代码阅读 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L293-L301（Choreographer 回调分类）
+- **问题**：正文把 Choreographer 概括为 Input → Animation → Traversal 三类回调。当前 Framework 还包含 CALLBACK_INSETS_ANIMATION、CALLBACK_COMMIT 等阶段；只写三类会弱化 Android 11+ Insets 动画和 commit 阶段在 trace 解读中的作用。
+- **建议**：保留三类主路径的同时补一句：现代版本还要看 Insets Animation 与 Commit，Perfetto 中 doFrame 宽度异常时需结合对应 callback 队列和 ViewRootImpl traversal/commit 阶段判断。
+

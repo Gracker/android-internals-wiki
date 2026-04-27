@@ -26,17 +26,17 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
 related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-04-21T09:26:24+08:00"
+task9_reviewed_date: "2026-04-27"
+last_task9_at: "2026-04-27T21:34:35+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-27T16:44:00+08:00"
 repaired_date: "2026-04-27"

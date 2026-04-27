@@ -18,12 +18,12 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
-task2b_state: fixed
+task9_reviewed_date: "2026-04-27"
+task2b_state: pending
 task2b_result: fixed
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -31,8 +31,8 @@ last_task2b_at: "2026-04-25T19:43:07+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-25T19:35:26+08:00"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-27T21:34:35+08:00"
 review_round: 3
 ---
 

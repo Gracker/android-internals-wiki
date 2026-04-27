@@ -14221,5 +14221,68 @@
     "completed_at": "2026-04-27T20:58:38+08:00",
     "completed_by": "openclaw-task2b",
     "completion_reason": "Task2B fixed Binder tracepoint issue: removed nonexistent binder_reply and clarified reply semantics."
+  },
+  {
+    "section": "15.4",
+    "section_title": "竞品分析方法",
+    "priority": 95,
+    "reason": "[Deep Tech Review] FrameMetrics TOTAL_DURATION 口径与 AOSP FrameMetrics.java 不一致",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/FrameMetrics 口径",
+        "location": "L302（FrameMetrics TOTAL_DURATION 定义）",
+        "detail": "正文称 FrameMetrics.TOTAL_DURATION 从 performTraversals() 开始到帧提交到 BufferQueue 结束。AOSP android-16.0.0_r1 FrameMetrics.java 的 DURATIONS 映射显示 TOTAL_DURATION = INTENDED_VSYNC → FRAME_COMPLETED；PERFORM_TRAVERSALS_START 只用于 LAYOUT_MEASURE_DURATION，不能作为 TOTAL_DURATION 起点。",
+        "suggestion": "改成“从 intended vsync 到 frame completed”，并补 FrameMetrics.DEADLINE / TOTAL_DURATION 的关系；如要讲 performTraversals 到 BufferQueue，应分别引用 LAYOUT_MEASURE、DRAW、SYNC、COMMAND_ISSUE、SWAP_BUFFERS 等分段指标。",
+        "level": "P0"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T21:34:35+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "15.6",
+    "section_title": "性能测试最佳实践",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 后台 dexopt / ART Service 源码路径指向不存在或旧位置",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/AOSP 路径",
+        "location": "frontmatter sources、L247、参考资料（BackgroundDexOptJob / ArtManagerLocal 路径）",
+        "detail": "正文和 sources 指向 frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptJob.java 与 packages/modules/Art/service/java/com/android/server/art/ArtManagerLocal.java。android-14.0.0_r1 / android-16.0.0_r1 中前者路径不存在；shell 命令入口在 PackageManagerShellCommand.java，Android 14 还有 BackgroundDexOptService.java / BackgroundDexOptJobService.java；Android 16 的 ART service 源码在 platform/art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java，不是 packages/modules/Art。",
+        "suggestion": "把后台 dexopt 源码锚点改为 PackageManagerShellCommand.java + Android 14 的 BackgroundDexOptService/BackgroundDexOptJobService，并补 Android 16 ART service 的 platform/art/libartservice/.../ArtManagerLocal.java；版本说明中标出 Android U/14 后由 ART Service 承接的变化。",
+        "level": "P0"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T21:34:35+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "15.7",
+    "section_title": "AOSP 代码阅读",
+    "priority": 85,
+    "reason": "[Deep Tech Review] SurfaceFlinger trace 示例与 Android 16 真实实现不一致",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/版本差异",
+        "location": "L235-L241、L313-L317（SurfaceFlinger trace 示例与 Android 16 合成入口）",
+        "detail": "正文用 SurfaceFlinger::composite() + ATRACE_CALL() 举例，并称 Perfetto 中显示为 SurfaceFlinger::composite。AOSP android-16.0.0_r1 的 SurfaceFlinger::composite() 实际使用 SFTRACE_ASYNC_FOR_TRACK_BEGIN 与 SFTRACE_NAME(ftl::Concat(__func__, vsyncId))；libutils 的 ATRACE_CALL() 也只是 ATRACE_NAME(__FUNCTION__)，不保证带类名。当前写法会误导读者按不存在的 slice 名和宏实现去反查。",
+        "suggestion": "把示例改成明确的“概念示例”或换成 Android 16 真实代码：SFTRACE_NAME / SFTRACE_ASYNC_FOR_TRACK_BEGIN；Trace 反查规则改为“先搜 slice 文本，再看宏族 ATRACE_/SFTRACE_ 和 __func__/自定义 name”，不要固定写 SurfaceFlinger::composite。",
+        "level": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T21:34:35+08:00",
+    "status": "pending"
   }
 ]
