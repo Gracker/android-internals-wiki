@@ -6005,3 +6005,33 @@
 - **位置**：MCQ 标准化
 - **建议**：提及 UFS 4.0 MCQ 在 Android 17 Premium 认证中的核心地位，作为支撑 Desktop Mode 响应性的技术前提
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 8.5 案例集 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L150-L163（Reddit 指标表与贡献拆分）
+- **问题**：冷启动 -40%、ANR -30%、帧渲染时间 +25%、APK -14% 使用了聚合数据，但正文没有给出原始页面 URL、指标定义和测试口径；Baseline Profiles 20-30% 与 R8 10-20% 的拆分属于推断，不能和公开 A/B 结果放在同一证据层。
+- **建议**：补 Google Performance Spotlight/Reddit 原始链接，说明各指标是 cold start、feed median、frozen frame 还是 APK/AAB 口径；贡献拆分改成“公开材料未拆分，官方 Baseline Profiles 基准另列参考范围”。
+
+## [Task9 Deep Review] 8.5 案例集 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L252-L263（Disney+ R8 Full Mode 案例）
+- **问题**：启动时间 -30% 与 ANR -25% 只有“Google Performance Spotlight Week 2025”概称，没有链接、设备范围、统计窗口和迁移前配置。
+- **建议**：补原始分享链接和实验口径；若找不到一手材料，把表格降级为“公开分享摘要”，不要写成可复现实测。
+
+## [Task9 Deep Review] 8.5 案例集 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L271-L335（页面切换 500ms→150ms 案例）
+- **问题**：该案例已标注为多个电商 App 经验归纳，但标题和表格写成单一案例闭环；缺少 Perfetto slice 名、设备档位、页面结构和样本数。
+- **建议**：要么替换为单一可引用案例，要么改成“示例场景”，补 trace 标注口径：点击事件、startActivity Binder、目标 Activity lifecycle、first frame/FrameTimeline。
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-28
+- **类型**：知识盲区
+- **位置**：L390-L398（OEM 游戏模式对 Trace 的干扰）
+- **问题**：正文留下“各主要 OEM 厂商游戏模式的关闭方法列表”占位。该列表直接影响 Game Mode、interventions、ADPF 与 OEM 私有策略的归因实验。
+- **建议**：补 Pixel/三星/小米/OPPO/vivo 等设备的关闭路径或 adb/设置入口；不能全量覆盖时，至少给出“基线轮必须关闭 OEM 面板”的核验清单。
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L231-L260（Young GC STW 1-3ms / 1.83ms）
+- **问题**：GC 暂停时间给了固定范围和平均值，但正文没有把该数字绑定到 ART 文档、Android 版本、设备负载和 GC 类型；后文又讨论 Android 17 CMC 待验证，容易被读成跨版本通用结论。
+- **建议**：补 source.android.com ART GC 文档或实验来源，明确该范围只用于正常 Young/CC GC 的参考；Full GC、CMC、内存压力和低端设备另列边界。

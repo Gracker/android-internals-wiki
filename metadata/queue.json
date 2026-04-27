@@ -16830,5 +16830,60 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-28T05:14:26+08:00",
     "status": "pending"
+  },
+  {
+    "section": "8.9",
+    "section_title": "Android 游戏性能与 Game Mode/State API",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 示例只写了 `android.game_mode_config` meta-data，没有在 `<application>` 上声明 `android:appCategory=\"game\"`。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L143-L149（Game Mode Manifest 声明示例）",
+        "detail": "示例只写了 `android.game_mode_config` meta-data，没有在 `<application>` 上声明 `android:appCategory=\"game\"`。官方 Game Mode API 文档要求应用先被声明为 game，`game_mode_config.xml` 只负责声明支持 Battery/Performance 模式。按当前示例复制，系统可能不会把应用纳入 Game Mode/Game Dashboard 路径。",
+        "suggestion": "Manifest 示例改为 `<application android:appCategory=\"game\">` + `android.game_mode_config`，并补一句：appCategory 负责游戏识别，game_mode_config 负责模式能力声明。",
+        "evidence": [
+          "Android Developers Game Mode API: android:appCategory=\"game\" + android.game_mode_config"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T05:29:35+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "9.4",
+    "section_title": "特殊场景的 ANR",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 表格把 Android 8 / 9 合在一起，并把 O 分支 5 秒宽限期带到了 Android 9。AOSP 中 `android-8.1.0_r81` 的 `SERVICE_START_F",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L278-L279（前台服务启动宽限期版本表）",
+        "detail": "表格把 Android 8 / 9 合在一起，并把 O 分支 5 秒宽限期带到了 Android 9。AOSP 中 `android-8.1.0_r81` 的 `SERVICE_START_FOREGROUND_TIMEOUT` 是 `5*1000`，但 `android-9.0.0_r61` 起已是 `10*1000`，Android 10/11 也保持 10 秒，Android 12 变为 `10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`。",
+        "suggestion": "拆成 Android 8：5 秒；Android 9-13：10 秒（12+ 带 HW_TIMEOUT_MULTIPLIER）；再单列 Android 12+ 后台启动拒绝，不要把通知延迟、启动拒绝和前台化宽限期混写。",
+        "evidence": [
+          "frameworks/base/services/core/java/com/android/server/am/ActiveServices.java android-8.1.0_r81/android-9.0.0_r61/android-12.0.0_r34"
+        ]
+      },
+      {
+        "type": "源码错误",
+        "location": "L211-L221（Binder 线程池耗尽）",
+        "detail": "正文写“Android 默认为每个进程分配最多 16 个 Binder 线程”。AOSP `frameworks/native/libs/binder/ProcessState.cpp` 在 Android 14/15/16 都定义 `DEFAULT_MAX_BINDER_THREADS 15`。如果把发起同步调用的线程或主线程另算，需要单独说明，不能写成默认 Binder worker 上限 16。",
+        "suggestion": "改为“普通进程 libbinder 默认 Binder 线程池上限为 15，system_server 等进程可显式调高；排查时看接近 15 个 Binder worker 被同步调用占满的情况”。",
+        "evidence": [
+          "frameworks/native/libs/binder/ProcessState.cpp android-14.0.0_r75/android-15.0.0_r1/android-16.0.0_r1"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T05:29:35+08:00",
+    "status": "pending"
   }
 ]
