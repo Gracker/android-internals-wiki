@@ -10759,7 +10759,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-26T00:28:30+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T15:52:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "已将主线程识别从 thread.name 固定匹配改为 thread.is_main_thread / tid=pid，并删除普通 App 使用 SCHED_FIFO 的建议。"
   },
   {
     "section": "14.4",
@@ -13945,7 +13948,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T15:52:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "已补充 Android 15/16 16KB page size 对 PSS/RSS 基线的影响，并同步 Android 16 IMemtrack pid=0 全局 GPU 查询说明。"
   },
   {
     "section": "13.10",
@@ -13964,6 +13970,9 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T15:52:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "已补充 Perfetto SQL 目标进程/主线程识别、大 Trace 查询固化与区间 JOIN 约束。"
   }
 ]
