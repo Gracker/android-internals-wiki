@@ -2,7 +2,7 @@
 title: "DoraemonKit / DoKit"
 chapter: "19"
 section: "19.07"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "版本需按 artifact / AndroidX / Gradle / AGP 单独验证；README 明确覆盖 3.5.0 / 3.5.0.1 与 AGP 3.3.0+"
@@ -16,21 +16,22 @@ sources:
     path: "https://github.com/didi/DoKit/blob/master/README.md"
   - type: official
     path: "https://github.com/didi/DoKit/blob/master/Android/README.md"
-pipeline_stage: task6_reviewed
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task6_reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-25T03:28:33+08:00"
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-27"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-27T11:27:00+08:00"
 task2b_result: fixed
 task2b_state: fixed
 review_round: 3
 last_task2b_at: "2026-04-27T04:40:00+08:00"
+review_notes: "2026-04-27 Task9 复审通过：DoKit README 版本矩阵、registerTransform/AGP8 风险、OkHttp ASM 注入、PerformanceDataManager 采样口径与 dokit.cn 出站边界已覆盖。"
 ---
 
 # DoraemonKit / DoKit
