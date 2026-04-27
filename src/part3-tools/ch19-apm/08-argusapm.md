@@ -14,20 +14,21 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Qihoo360/ArgusAPM"
-pipeline_stage: task6_reviewed
+pipeline_stage: task2b_pending
 task6_state: "reviewed"
 task6_reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-25T03:28:33+08:00"
-task2b_state: fixed
+last_task9_at: "2026-04-27T22:33:32+08:00"
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-27T04:40:00+08:00"
+
 ---
 
 # ArgusAPM

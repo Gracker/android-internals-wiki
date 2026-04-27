@@ -9981,9 +9981,9 @@
   },
   {
     "section": "19.17",
-    "section_title": "19.17",
+    "section_title": "Firebase Performance",
     "priority": 85,
-    "reason": "[External Review] 网络插桩冲突与 Near Real-time 延迟风险",
+    "reason": "[Deep Tech Review] Firebase Performance 网络自动采集缺少可执行验证路径，外部 review 高风险点未闭环；原待办：[External Review] 网络插桩冲突与 Near Real-time 延迟风险",
     "review_issues": [
       {
         "type": "P1 重要缺失",
@@ -10053,11 +10053,20 @@
         "location": "Near Real-time 延迟",
         "detail": "几分钟延迟加上采样过滤，事故发生时控制台可能'一片升平'",
         "suggestion": "强烈要求不将 Firebase 作为唯一故障发现工具，必须配合实时业务错误码监控"
+      },
+      {
+        "type": "知识盲区/验证路径",
+        "location": "L167/L174-L181",
+        "detail": "near real-time 延迟已写明，但网络自动插桩只写可能漏掉，缺少“如何确认采集生效”的步骤。",
+        "suggestion": "补充构建日志/Logcat 验证、`firebase_performance_logcat_enabled`、`FirebasePerformance` 日志过滤，以及 Cronet/native/自研网络栈的 custom network trace 兜底。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T16:17:20+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/suggestions.md"
+    ]
   },
   {
     "section": "7.12",
@@ -10278,20 +10287,29 @@
     "status": "pending"
   },
   {
-    "section": "19.2",
+    "section": "19.02",
     "section_title": "Tencent Matrix",
-    "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Matrix 接入示例调用不存在的 Builder.patchListener API，当前示例不可编译；原待办：[External Review] 外部 AI review 发现需回炉修正的问题",
     "review_issues": [
       {
         "type": "外部Review问题",
         "detail": "- [P1]- [P1][源码准确性][全文核心机制]\n- 原文问题：缺乏具体 AOSP 代码类/方法引用的行级溯源。\n- 缺失内容：关键类的 `cs.android.com` 具体锚点和实现变迁。\n- 为什么这是重要缺失：读者无法直接按图索骥进行源码阅读。\n- 建议补充方向：补充对应 Android 14/15 的具体源码方法签名和调用路径。",
         "suggestion": "见 external-review 文件"
+      },
+      {
+        "type": "源码错误",
+        "location": "L181",
+        "detail": "`Matrix.Builder` 当前公开方法是 `pluginListener(PluginListener)`，未发现 `patchListener`；官方 sample 使用 `builder.pluginListener(new TestPluginListener(this))`。",
+        "suggestion": "将 `builder.patchListener(...)` 修为 `builder.pluginListener(...)`，并核对示例 import 与初始化顺序。"
       }
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T19:19:39.292657+08:00",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/suggestions.md"
+    ]
   },
   {
     "section": "19.3",
@@ -14289,6 +14307,26 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T21:34:35+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.08",
+    "section_title": "ArgusAPM",
+    "priority": 85,
+    "reason": "[Deep Tech Review] ArgusAPM ASM 织入能力被写成泛化方法耗时，和源码匹配范围不一致",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码准确性/能力边界",
+        "location": "L91/L153-L160",
+        "detail": "`FuncClassAdapter` 仅在 `isRunMethod()` 或 `isOnReceiveMethod()` 成立时返回 `FuncMethodAdapter`；`OkHttp3ClassAdapter` 和 `WebClassAdapter` 也只匹配固定入口。正文“方法耗时”表述过宽。",
+        "suggestion": "改为固定入口列表，并补 `TypeUtil.isRunMethod/isOnReceiveMethod/isOkhttpClientBuilder/isOnPageFinishedMethod` 作为源码锚点。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T22:33:32+08:00",
     "status": "pending"
   }
 ]

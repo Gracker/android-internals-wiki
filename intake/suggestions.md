@@ -5073,3 +5073,16 @@
 - **问题**：正文把 Choreographer 概括为 Input → Animation → Traversal 三类回调。当前 Framework 还包含 CALLBACK_INSETS_ANIMATION、CALLBACK_COMMIT 等阶段；只写三类会弱化 Android 11+ Insets 动画和 commit 阶段在 trace 解读中的作用。
 - **建议**：保留三类主路径的同时补一句：现代版本还要看 Insets Animation 与 Commit，Perfetto 中 doFrame 宽度异常时需结合对应 callback 队列和 ViewRootImpl traversal/commit 阶段判断。
 
+
+
+## [Task9 Deep Review] 19.08 ArgusAPM — 2026-04-27
+- **类型**：源码准确性
+- **位置**：L91
+- **问题**：表格只写 `FuncClassAdapter.kt`、`OkHttp3ClassAdapter.kt`、`WebClassAdapter.kt` 文件名，缺少精确路径；后续读者按路径查源码时需要再猜目录。
+- **建议**：补全 `argus-apm-gradle-asm/src/main/kotlin/com/argusapm/gradle/internal/asm/bytecode/func/FuncClassAdapter.kt`、`.../bytecode/okhttp3/OkHttp3ClassAdapter.kt`、`.../bytecode/webview/WebClassAdapter.kt`。
+
+## [Task9 Deep Review] 19.17 Firebase Performance — 2026-04-27
+- **类型**：数据限制
+- **位置**：L148
+- **问题**：已写 trace / metric 名称长度和 attribute 数量限制，但漏掉 custom metrics 数量限制。
+- **建议**：补充“每个 custom code trace 最多 32 个 metric（包含默认 Duration）”，避免业务把高频计数全部塞进同一个 trace。

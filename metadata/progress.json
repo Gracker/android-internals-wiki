@@ -5232,18 +5232,18 @@
       "last_verified": "2026-04-24",
       "last_verified_against": "Tencent Matrix GitHub README and wiki",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T07:20:23+08:00",
+      "last_task9_at": "2026-04-27T22:33:32+08:00",
       "last_task2b_at": "2026-04-27T20:58:38+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
@@ -5395,17 +5395,17 @@
       "last_verified": "2026-04-25",
       "last_verified_against": "Firebase Performance custom-code-traces / screen-traces / troubleshooting docs, Firebase Android SDK 20.1.0+ Fragment screen rendering boundary, external review 2026-04-25",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T07:20:23+08:00",
+      "last_task9_at": "2026-04-27T22:33:32+08:00",
       "last_task2b_at": "2026-04-25T07:48:00+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b",
@@ -5528,18 +5528,18 @@
       "last_verified": "2026-04-27",
       "last_verified_against": "Qihoo360/ArgusAPM README + argus-apm-aop + argus-apm-gradle + argus-apm-gradle-asm",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T03:28:33+08:00",
+      "last_task9_at": "2026-04-27T22:33:32+08:00",
       "last_task2b_at": "2026-04-27T04:40:00+08:00"
     },
     "src/part3-tools/ch19-apm/20-solopi-emmagee.md": {
@@ -7663,7 +7663,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T20:35:19+08:00",
+  "last_updated": "2026-04-27T22:33:32+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8604,5 +8604,69 @@
     "task6": "reviewed",
     "task6_date": "2026-04-27",
     "task6_result": "pass-light-edit"
+  },
+  "section_19_02": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-04-27T22:33:32+08:00",
+    "path": "src/part3-tools/ch19-apm/02-tencent-matrix.md"
+  },
+  "section_19_08": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-04-27T22:33:32+08:00",
+    "path": "src/part3-tools/ch19-apm/08-argusapm.md"
+  },
+  "section_19_17": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-04-27T22:33:32+08:00",
+    "path": "src/part3-tools/ch19-apm/17-firebase-performance.md"
+  },
+  "2026-04-27-22-task9": {
+    "task": "deep-tech-review",
+    "sections": [
+      "19.02",
+      "19.08",
+      "19.17"
+    ],
+    "timestamp": "2026-04-27T22:33:32+08:00",
+    "results": {
+      "19.02": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 0,
+        "p2": 0
+      },
+      "19.08": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 1
+      },
+      "19.17": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 1
+      }
+    },
+    "auto_finalized": [],
+    "queue_added": [
+      "19.02",
+      "19.08",
+      "19.17"
+    ],
+    "log": "logs/deep-review/2026-04-27-22-deep-review.md",
+    "note": "本轮复核 Matrix/ArgusAPM/Firebase Performance 的 Task2B 后章节；消费 ch19 batch external-review 风险点。"
   }
 }
