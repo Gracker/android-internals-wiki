@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T20:58:38+08:00",
+  "generated_at": "2026-04-27T21:44:26+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 107,
     "ready-for-review": 111,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T20:35:19+08:00",
+    "last_updated": "2026-04-27T21:44:26+08:00",
     "pipeline_stage_counts": {
       "None": 33,
       "task6_pending": 30,
@@ -59,7 +59,7 @@
       "pending": 67,
       "idle": 4
     },
-    "last_updated": "2026-04-27T20:58:38+08:00"
+    "last_updated": "2026-04-27T21:44:26+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -4791,7 +4791,7 @@
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-27",
-      "last_verified_against": "developer.android.com, AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord",
+      "last_verified_against": "developer.android.com, AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord / FrameMetrics",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
@@ -4799,13 +4799,13 @@
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "reviewed_date": "2026-04-17",
+      "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T09:26:24+08:00",
+      "last_task9_at": "2026-04-27T21:34:35+08:00",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-27T16:44:00+08:00",
+      "last_task2b_at": "2026-04-27T21:44:26+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b"
     },
@@ -4845,7 +4845,7 @@
       "drafted_date": "2026-04-04",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-27",
-      "last_verified_against": "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1 ThermalManagerService / DisplayModeDirector / BackgroundDexOptJob, ART Service",
+      "last_verified_against": "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1 ThermalManagerService / DisplayModeDirector / PackageManagerShellCommand / BackgroundDexOptService / BackgroundDexOptJobService; AOSP android-16.0.0_r1 PackageManagerShellCommand / ArtManagerLocal",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
       "task6_state": "revisiting",
@@ -4856,10 +4856,10 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T19:35:26+08:00",
-      "last_task2b_at": "2026-04-27T16:44:00+08:00",
+      "last_task9_at": "2026-04-27T21:34:35+08:00",
+      "last_task2b_at": "2026-04-27T21:44:26+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b"
     },
