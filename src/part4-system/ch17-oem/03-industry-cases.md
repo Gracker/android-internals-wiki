@@ -30,13 +30,13 @@ tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industr
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-task6_state: revisiting
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-23"
-task6_result: pass-light-edit
+task6_state: "reviewed"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-28"
+task6_result: "pass-light-edit"
 section: "17.3"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -82,7 +82,7 @@ last_task2b_at: "2026-04-27T14:50:00+08:00"
 
 行业案例的价值在于：**它们是真实战场的复盘报告。** 每一个案例背后都是某个团队在数亿用户、复杂设备和苛刻时间约束下做出的技术决策。看这些案例的目的是学习他们的**分析思路、决策逻辑和权衡取舍**。
 
-我们在前面各章节提到的技术手段——ADPF、Baseline Profiles、Game Mode API、Perfetto 分析——在本节都能看到它们在真实项目中的应用方式。可以说，这一节是对前面所有章节的一次"综合运用"。
+我们在前面各章节提到的技术手段——ADPF、Baseline Profiles、Game Mode API、Perfetto 分析——在本节都能看到它们在真实项目中的应用方式。这一节是前面章节技术的综合运用。
 
 ## 手机厂商的性能优化体系
 
@@ -173,7 +173,7 @@ Performance Hint API 用于把周期性 workload 的目标耗时和实际耗时�
 
 ## 系统级启动速度优化：抖音的实践
 
-启动速度是 Android 性能优化中讨论最多的主题之一，也是 App 开发者能直接控制的核心体验指标。字节跳动（抖音/TikTok）在启动优化上的实践堪称行业标杆，他们的方法论和工具链对任何大型 App 都有参考价值。
+启动速度是 Android 性能优化中讨论最多的主题之一，也是 App 开发者能直接控制的核心体验指标。字节跳动（抖音/TikTok）公开的启动优化实践覆盖了从任务治理到工具自研的完整链路，对大型 App 有参考价值。
 
 ### 从 300+ 启动任务到架构重构
 
@@ -195,9 +195,9 @@ Performance Hint API 用于把周期性 workload 的目标耗时和实际耗时�
 
 Google 自己的 Lifecycle 组件（`ProcessLifecycleOwnerInitializer`）和 FileProvider 就是典型的例子。单个 ContentProvider 的耗时可能只有几毫秒，但大型 App 可能注册了几十个 ContentProvider，累积起来就是几十毫秒甚至上百毫秒的开销。
 
-抖音的解决方案非常巧妙：**在编译期通过字节码插桩修改 FileProvider 的行为**。具体来说，他们在 `FileProvider.attachInfo()` 中插桩，临时将 `grantUriPermissions` 设为 `false`，让 `getPathStrategy()` 的解析逻辑被跳过（因为 FileProvider 会检查这个标志并在为 false 时抛异常），然后在异常捕获后恢复原始值。这样 FileProvider 在启动阶段只执行了最轻量的初始化，真正的 XML 解析被延迟到第一次实际使用文件操作时才进行。
+抖音的做法是在编译期通过字节码插桩修改 FileProvider 的行为：具体来说，他们在 `FileProvider.attachInfo()` 中插桩，临时将 `grantUriPermissions` 设为 `false`，让 `getPathStrategy()` 的解析逻辑被跳过（因为 FileProvider 会检查这个标志并在为 false 时抛异常），然后在异常捕获后恢复原始值。这样 FileProvider 在启动阶段只执行了最轻量的初始化，真正的 XML 解析被延迟到第一次实际使用文件操作时才进行。
 
-这种方案的技术亮点在于：它不修改业务代码，而是在构建流水线中自动完成，对开发者完全透明。对于 WorkManager 等其他有类似问题的库，也可以用同样的方式处理。
+这种做法不修改业务代码，在构建流水线中自动完成，对开发者透明。对于 WorkManager 等其他有类似问题的库，也可以用同样的方式处理。
 
 ### 自研工具 Rhea：方法论价值高于产品细节
 
