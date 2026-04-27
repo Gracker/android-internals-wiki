@@ -13927,5 +13927,43 @@
     "completed_at": "2026-04-27T14:50:00+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "10.1",
+    "section_title": "内存性能优化基础",
+    "priority": 95,
+    "reason": "[External Review] 批处理摘要检测到需回炉修正的技术问题",
+    "review_issues": [
+      {
+        "type": "技术补强需求",
+        "location": "批量review摘要",
+        "detail": "Android 15的16KB页面机制导致PSS/RSS天然膨胀约9%，现有绝对值基线策略失效",
+        "suggestion": "需要重构指标基线，适应Android 15/16内存页面机制变化",
+        "evidence": [
+          "来源文件: 2026-04-25-15-10-batch-review-summary.md"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
+  },
+  {
+    "section": "13.10",
+    "section_title": "Perfetto SQL性能",
+    "priority": 95,
+    "reason": "[External Review] 批处理摘要检测到需回炉修正的技术问题",
+    "review_issues": [
+      {
+        "type": "技术补强需求",
+        "location": "批量review摘要",
+        "detail": "SQL鲁棒性与性能问题，部分SQL脚本在处理R+状态和大规模Join时存在精度或性能风险",
+        "suggestion": "优化SQL脚本，增强处理R+状态和大规模Join的性能与精度",
+        "evidence": [
+          "来源文件: 2026-04-25-13-13-batch-review-summary.md"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "status": "pending"
   }
 ]
