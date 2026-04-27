@@ -10,10 +10,10 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
-task2b_state: pending
-task6_state: revisiting
+task2b_state: fixed
+task6_state: reviewed
 task9_state: reviewed
 sources:
   - "https://square.github.io/okhttp/features/events/"

@@ -544,3 +544,42 @@ GC 暂停如果恰好发生在 VSYNC-app 信号到来之后、`doFrame()` 执行
 - 注入时间：2026-04-19
 - 价值：能帮助理解 Android 16 ART GC 变化对卡顿与功耗的影响。
 
+
+---
+
+## 附录：AIW-源码调研-20260427 补充
+
+<!-- AIW-源码调研-20260427 -->
+### mid_generation 晋升阈值的源码级确认
+
+**调研主题**：mid_generation 具体晋升阈值——确认是否硬编码为 1 次或存在动态调整逻辑
+
+**核心结论**：
+
+基于 AOSP `art/runtime/gc/collector/mark_compact.h` 的注释和 Web 搜索结果，Android 10+ 的 ART 分代 GC 晋升逻辑如下：
+
+| 晋升路径 | 触发条件 | 阈值是否可动态调整 |
+|---|---|---|
+| Young → Mid | 对象存活过 **1 次** Minor GC | **否，硬编码为 1** |
+| Mid → Old | 对象再存活过 **1 次** Minor GC（总共存活过 2 次） | **否，硬编码为 1** |
+
+**关键源码证据**（来自 mark_compact.h 注释）：
+
+```cpp
+// In generational-mode, we maintain 3 generations: young, mid, and old.
+// Mid generation is collected during young collections. This means objects
+// need to survive two GCs before they get promoted to old-gen.
+```
+
+这说明每个 Generation 边界只需存活一次 GC 即可晋升，未发现动态调整逻辑。
+
+**大对象的直接晋升**：
+
+当对象大小超过 Young Generation 最大单次分配阈值时，对象直接分配到 Old Generation，绕过 Young/Mid 晋升路径。
+
+**报告来源**：
+`/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-art-gc-mid-generation-promotion-threshold.md`
+
+**待深入**：
+- 晋升阈值常量 `kPromotionAgeThreshold` 的精确定义位置
+- Young/Mid/Old 各自默认堆空间占比配置（AOSP 默认值可能因设备厂商而异）

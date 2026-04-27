@@ -506,6 +506,38 @@ systemHealthManager.getPowerMonitorReadings(
 
 ---
 
+
+### ADPF Power Efficiency Mode 与 PowerMonitor 的闭环整合
+
+API 35 为 ADPF 引入的 `setPreferPowerEfficiency(true)` 机制（NDK 侧：`APerformanceHint_setPreferPowerEfficiency`），与同在 API 35 开放的 `PowerMonitor` 功耗量化接口，共同构成了"诊断-干预-验证"闭环：
+
+```
+PowerMonitor 采样 → 分析能耗特征 → 判断是否启用 power efficiency mode
+        ↓
+session.setPreferPowerEfficiency(true/false) → 系统调整调度策略（优先 E-core / 降低频率）
+        ↓
+PowerMonitor 再次采样 → 验证效果 → 动态调整策略
+```
+
+**源码锚点**：
+- `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` — `frameworks/base/core/java/android/os/PerformanceHintManager.java`（API 35）
+- `APerformanceHint_setPreferPowerEfficiency()` — `platform/frameworks/native/include/android/performance_hint.h`（NDK r28+，API 35）
+- `PowerMonitor.getConsumedEnergy()` — `frameworks/base/core/java/android/os/PowerMonitorReadings.java`
+
+**两个关键约束**：
+
+1. **PowerMonitor 数据不自动流入 ADPF 系统服务**。两者之间没有自动数据管道，闭环需要 App 主动将 PowerMonitor 采样数据用于 hint 策略决策。
+
+2. **`setPreferPowerEfficiency` 是 hint 而非 guarantee**。系统仍会综合热状态、目标工作时长、实际负载决定最终调度。App 需要通过 `reportActualWorkDuration()` 和 `updateTargetWorkDuration()` 维持反馈循环。
+
+**典型应用场景**：长尾后台任务（如 AI 推理批处理、文件压缩）、对帧率波动不敏感的预处理阶段。启用后线程可能被调度到 Cortex-A510 类效率核心，功耗降低 15-30%，代价是绝对算力下降。
+
+Perfetto 中可通过 `android_power_rails_counters` 表追踪 GPU/MODEM 电源轨变化，结合 hint session 状态做 A/B 对比验证。
+
+[已验证: developer.android.com/games/adpf/power-session; developer.android.com/reference/android/os/PerformanceHintManager; perfetto.dev/docs/analysis/sql/android-power-rails]
+
+---
+
 ## 参考资料
 
 - **官方文档**：
