@@ -59,7 +59,7 @@
       "pending": 67,
       "idle": 4
     },
-    "last_updated": "2026-04-27T21:44:26+08:00"
+    "last_updated": "2026-04-27T23:21:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -6755,6 +6755,17 @@
         }
       ],
       "log": "logs/deep-review/2026-04-27-15-deep-review.md"
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "timestamp": "2026-04-27T23:21:00+08:00",
+      "sections": [
+        "19.02",
+        "19.15",
+        "19.24"
+      ],
+      "result": "completed",
+      "log": "logs/deep-review/2026-04-27-23-deep-review.md"
     }
   ],
   "progress": {
@@ -7665,7 +7676,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T22:40:00+08:00",
+  "last_updated": "2026-04-27T23:21:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8630,17 +8641,14 @@
     "task6_result": "pass-light-edit"
   },
   "section_19_02": {
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task9_state": "pending",
-    "task9_result": "needs-rework",
-    "task2b_state": "fixed",
-    "last_task9_at": "2026-04-27T22:33:32+08:00",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task9_at": "2026-04-27T23:21:00+08:00",
     "path": "src/part3-tools/ch19-apm/02-tencent-matrix.md",
-    "task2b_result": "fixed",
-    "last_task2b_at": "2026-04-27T22:40:00+08:00",
     "title": "Tencent Matrix",
-    "task6_state": "revisiting"
+    "auto_finalized": true
   },
   "section_19_08": {
     "status": "ready-for-review",
@@ -8724,15 +8732,13 @@
   },
   "section_19_15": {
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task2b_state": "fixed",
-    "task2b_result": "fixed",
-    "last_task2b_at": "2026-04-27T22:40:00+08:00",
-    "path": "src/part3-tools/ch19-apm/15-baseline-profiles.md",
-    "title": "Baseline Profiles 与编译优化",
-    "task9_state": "pending",
+    "pipeline_stage": "task2b_pending",
+    "task2b_state": "pending",
+    "task9_state": "reviewed",
     "task9_result": "needs-rework",
-    "task6_state": "revisiting"
+    "last_task9_at": "2026-04-27T23:21:00+08:00",
+    "path": "src/part3-tools/ch19-apm/15-baseline-profiles.md",
+    "title": "Baseline Profiles 与编译优化"
   },
   "section_19_09": {
     "status": "finalized",
@@ -8744,5 +8750,53 @@
     "title": "Measure",
     "task9_state": "reviewed",
     "task9_result": "pass-tech-review"
+  },
+  "2026-04-27-23-task9": {
+    "task": "deep-tech-review",
+    "sections": [
+      "19.02",
+      "19.15",
+      "19.24"
+    ],
+    "timestamp": "2026-04-27T23:21:00+08:00",
+    "results": {
+      "19.02": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 0
+      },
+      "19.15": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 0,
+        "p2": 0
+      },
+      "19.24": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 0,
+        "p2": 0
+      }
+    },
+    "auto_finalized": [
+      "19.02"
+    ],
+    "queue_added": [
+      "19.15",
+      "19.24"
+    ],
+    "log": "logs/deep-review/2026-04-27-23-deep-review.md",
+    "note": "复核 ch19 APM 三节；19.02 经 Task2B 修复后通过并自动 finalized；19.15/19.24 留下 API/规则格式 P0。"
+  },
+  "section_19_24": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task2b_state": "pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-04-27T23:21:00+08:00",
+    "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+    "title": "崩溃与 ANR 捕获机制"
   }
 }

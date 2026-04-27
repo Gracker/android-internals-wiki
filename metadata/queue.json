@@ -14340,5 +14340,51 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T22:33:32+08:00",
     "status": "pending"
+  },
+  {
+    "section": "19.15",
+    "section_title": "Baseline Profiles 与编译优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 示例和解释把 Baseline Profile 文本规则中的 L 写成 Load 标记，并给出 `HLcom/example/app/HomeRepository;` 这种类规则写法。Baseline Profile 文本格式中方法 flags 是 H/S/P；`L...;` 是 dex class descriptor 的起始字符，类规则本身不带 H/S/P flags。当前写法会让读者把 descriptor 前缀误当成 profile flag，并可能写出无效规则。",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-27-23-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "level": "P0",
+        "location": "L180-L190「Profile 规则长什么样」",
+        "detail": "示例和解释把 Baseline Profile 文本规则中的 L 写成 Load 标记，并给出 `HLcom/example/app/HomeRepository;` 这种类规则写法。Baseline Profile 文本格式中方法 flags 是 H/S/P；`L...;` 是 dex class descriptor 的起始字符，类规则本身不带 H/S/P flags。当前写法会让读者把 descriptor 前缀误当成 profile flag，并可能写出无效规则。",
+        "suggestion": "把示例改成方法规则 `HSPLcom/...;->method(...)V`（解释为 H/S/P flags + Lclass descriptor）和类规则 `Lcom/...;` 两类；删除 `L：Load` 解释，改为说明 L 是 JVM/Dex 类型描述符前缀。",
+        "evidence": "Android Baseline Profile textual rules use H/S/P method flags; class descriptors use `L...;` syntax. ART/profgen 消费的是 profile 规则，不存在单独的 Load flag。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T23:21:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.24",
+    "section_title": "崩溃与 ANR 捕获机制",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Kotlin 示例写成 `activityManager.isLowMemoryKillReportSupported()`。AOSP `android.app.ActivityManager` 中 `isLowMemoryKillReportSupported()` 是 `public static boolean`，不是实例方法；该示例在 Kotlin 中应按类名调用，否则读者复制后无法编译。",
+    "material_paths": [
+      "intake/suggestions.md",
+      "logs/deep-review/2026-04-27-23-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "level": "P0",
+        "location": "L251 `readRecentExitRecords()` 示例",
+        "detail": "Kotlin 示例写成 `activityManager.isLowMemoryKillReportSupported()`。AOSP `android.app.ActivityManager` 中 `isLowMemoryKillReportSupported()` 是 `public static boolean`，不是实例方法；该示例在 Kotlin 中应按类名调用，否则读者复制后无法编译。",
+        "suggestion": "改为 `val lowMemoryReportSupported = ActivityManager.isLowMemoryKillReportSupported()`；`activityManager` 实例只用于 `getHistoricalProcessExitReasons(...)`。",
+        "evidence": "AOSP frameworks/base/core/java/android/app/ActivityManager.java：`public static boolean isLowMemoryKillReportSupported()`。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T23:21:00+08:00",
+    "status": "pending"
   }
 ]
