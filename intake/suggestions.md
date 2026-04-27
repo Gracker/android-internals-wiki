@@ -5030,3 +5030,10 @@
 - **位置**：全文
 - **问题**：章节已覆盖命名、版本边界、async trace 和 JankStats 对应关系，但缺少一个最小 Perfetto 样本或 benchmark 数据来说明 trace 标注的阅读收益和热路径开销。
 - **建议**：补一个同机型 release/profileable 构建的最小样本：标出 `Home#feedRender` slice、Thread State、TraceSectionMetric 或人工读取耗时，并记录开启标注前后的包体积/主线程耗时差异。
+
+## [Task9 Deep Review] 2.3 VSync 机制 — 2026-04-27
+- **类型**：数据缺失 / Trace 支撑
+- **位置**：§6.2 / §6.3 “待补充 Perfetto Trace 截图”
+- **问题**：章节已经给出 VSYNC-app、VSYNC-sf、HW_VSYNC 的判断口径，但缺一个可复核的 Trace 示例或 SQL/截图，读者无法直接验证 phase offset、HW_VSYNC 重新采样、jank 场景下的时间差。
+- **建议**：补 60Hz 或 120Hz 设备的一组 Perfetto 截图 / trace_processor SQL，标出 VSYNC-app → Choreographer#doFrame、VSYNC-sf → SurfaceFlinger 合成、HW_VSYNC 采样窗口。
+
