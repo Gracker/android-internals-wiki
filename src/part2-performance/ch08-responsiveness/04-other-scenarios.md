@@ -5,8 +5,8 @@ section: "8.4"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: 2026-04-23
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-27"
+reviewed_by: openclaw-task6-task6
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-27"
 last_verified_against: "AOSP android-16.0.0_r1 InputTransport/InputDispatcher/ViewRootImpl + AndroidX ViewPager2/Fragment release notes + Task9 deep review 2026-04-27"
@@ -30,13 +30,13 @@ sources:
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
 task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_by: openclaw-task6-task9
 last_task9_at: "2026-04-27T10:02:28+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-27T10:44:00+08:00"
