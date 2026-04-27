@@ -37,23 +37,23 @@ sources:
     path: "hardware/libhardware_legacy/power.cpp"
   - type: aosp
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
-reviewed_date: "2026-04-27"
+reviewed_date: '2026-04-28'
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-28"
+task9_reviewed_date: '2026-04-28'
 last_task9_at: "2026-04-28T06:20:00+08:00"
 last_task2b_at: "2026-04-27T19:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 review_round: 2
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录"
 ---
 
 # 11.5 Wakelock 机制与功耗分析
