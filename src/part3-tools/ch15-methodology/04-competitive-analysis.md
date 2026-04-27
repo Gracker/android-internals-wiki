@@ -6,12 +6,18 @@ status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-04"
-last_verified_against: "developer.android.com, AOSP android-16.0.0_r1"
+last_verified: "2026-04-27"
+last_verified_against: "developer.android.com, AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord"
 confidence: medium
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/launch-time"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java"
   - type: official
     path: "https://developer.android.com/studio/build/apk-analyzer"
   - type: official
@@ -20,10 +26,10 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
 related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
@@ -31,6 +37,10 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T09:26:24+08:00"
+task2b_result: fixed
+last_task2b_at: "2026-04-27T16:44:00+08:00"
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
 ---
 
 # 竞品分析方法
@@ -117,7 +127,9 @@ last_task9_at: "2026-04-21T09:26:24+08:00"
 
 ### adb am start -W 的原理与正确使用
 
-`adb shell am start -W` 是测量 App 启动时间最直接的工具。它的原理很简单：通过 Activity Manager 发送一个启动 Intent，然后等待目标 Activity 完成 `onResume()` 回调后返回计时结果。
+`adb shell am start -W` 是测量 App 启动时间最直接的工具。现代 Android 中，这条命令经由 `ActivityTaskManagerService#startActivityAndWait` 发起启动，并等待系统拿到启动结果。启动转场、窗口绘制和 `Displayed` 日志主要由 `com.android.server.wm` 下的 `ActivityRecord`、`ActivityMetricsLogger` 和窗口管理代码协同完成，参考路径应落到 `ActivityTaskManagerService.java` / `ActivityMetricsLogger.java`，不再指向旧的 `ActivityManagerService.java` 单点。
+
+当目标 Activity 的窗口完成首轮绘制，WindowManager 侧会把 `windowsDrawn` 事件传给 `ActivityMetricsLogger`，本次启动 transition 的统计才结束，`am start -W` 的 `WaitResult` 才能填出 `ThisTime` / `TotalTime` / `WaitTime`。这个口径比“执行到 `onResume()`”更接近用户看到首帧的时刻。
 
 执行命令：
 
@@ -143,7 +155,7 @@ Complete.
 
 这里有三个时间值需要区分清楚：
 
-**TotalTime** 是我们最应该关注的值。它代表从系统接收到启动请求、创建进程、初始化 Application、创建 Activity 并执行到 `onResume()` 的总耗时。对于只有一个 Activity 的冷启动场景，TotalTime 反映的就是 App 自身的启动性能。
+**TotalTime** 是竞品冷启动对比中优先看的值。它代表从系统接收到启动请求，到启动路径中末端 Activity 首轮窗口绘制完成的耗时。对于只有一个 Activity 的冷启动场景，TotalTime 基本反映 App 从进程创建到首帧可见的成本。
 
 **ThisTime** 记录的是最后一个 Activity 的启动耗时。如果 App 的启动路径中有中间 Activity（比如一个透明的路由 Activity 跳转到真正的首页），ThisTime 只计最后一段，TotalTime 则包含整个路径。所以竞品对比用 TotalTime，不要用 ThisTime。
 
@@ -206,11 +218,22 @@ awk '{sum+=$1; vals[NR]=$1; if($1>max) max=$1; if(NR==1||$1<min) min=$1}
 
 有几个常见的坑需要特别注意：
 
-**SplashScreen 的影响**：Android 12 引入了 Splash Screen API（`android.window.splashScreen`），系统会在 App 进程启动时立即显示一个启动画面。这个启动画面的显示时间被计入 `am start -W` 的 TotalTime。如果竞品 A 使用了默认的 SplashScreen 而 B 自定义了更复杂的启动画面，两者的 TotalTime 中可能包含了不可比的系统开销。在对比时需要关注这个差异，或者通过 Perfetto Trace 分析实际的 `reportFullyDrawn()` 时间。
+**Android 12+ SplashScreen 的拆段**：Android 12 引入系统 SplashScreen 后，用户先看到系统起始窗口，首页内容通常在后面一段才完成。`TotalTime` 仍是系统等待启动完成的命令行口径，不能单独代表首页内容已经可交互。竞品对比时，打开 Perfetto 的 `ActivityManager` / `WindowManager` track，把启动拆成两段记录：
+
+- `Start proc` / `activityStart` → SplashScreen starting window 显示：主要反映进程创建、`Application` 初始化和系统起始窗口准备。
+- SplashScreen 退出 → 首页首帧 / `reportFullyDrawn()`：主要反映路由页、首屏数据、布局绘制和业务 ready。
+
+报告里把 `TotalTime`、首页首帧和 `reportFullyDrawn()` 分开写。两个竞品如果 SplashScreen 策略不同，只拿一个 `TotalTime` 数字横比，会把系统起始窗口和业务首页成本混在一起。
 
 **Multi-Window 和分屏模式**：如果设备处于分屏状态，启动时间会显著增加。确保测试时设备处于全屏模式。
 
-**编译模式差异**：ART 的编译模式会影响启动速度。如果某个 App 刚安装未经过后台优化（`dex2oat`），启动会比已优化过的慢很多。在正式测试前，建议先启动 App 几次让它完成 JIT 编译和 Profile 引导优化，或者手动触发全量编译：`adb shell cmd package compile -m speed -f <package_name>`。
+**编译模式差异**：ART 的编译模式会影响启动速度。如果某个 App 刚安装未经过后台优化（`dex2oat`），启动会比已优化过的慢很多。在正式测试前，可以对所有待测包执行同一组 profile 引导步骤，再强制按 profile 编译：
+
+```bash
+adb shell cmd package compile -m speed-profile -f <package_name>
+```
+
+`speed-profile` 只把 profile 命中的热点路径 AOT 编译，接近用户使用一段时间后的稳定状态。`speed` 会全量 AOT 编译，容易把竞品和自家 App 都推到实验室上限，适合排除 JIT 噪声，不适合当默认竞品口径。
 
 ## 竞品流畅性对比
 
@@ -446,7 +469,9 @@ battery-historian --port 9998
 - [Battery Historian](https://developer.android.com/topic/performance/power/battery-historian) — 电量分析工具
 
 ### AOSP 源码
-- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `am start -W` 的服务端实现
+- `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — `am start -W` 等启动请求的服务端入口
+- `frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java` — 启动 transition、`windowsDrawn` 与 `Displayed` 计时记录
+- `frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java` — Activity 窗口绘制完成状态与启动等待结果
 - `frameworks/base/core/java/android/view/FrameMetrics.java` — FrameMetrics API 定义
 - `frameworks/base/core/java/android/view/Choreographer.java` — VSync 和帧回调机制
 
