@@ -7,7 +7,7 @@
     "finalized": 108,
     "ready-for-review": 110,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-28T01:31:04+08:00",
+    "last_updated": "2026-04-28T02:30:00+08:00",
     "pipeline_stage_counts": {
       "None": 33,
       "task6_pending": 27,
@@ -59,7 +59,7 @@
       "pending": 69,
       "idle": 4
     },
-    "last_updated": "2026-04-28T01:31:04+08:00"
+    "last_updated": "2026-04-28T02:30:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1954,10 +1954,10 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T05:20:00+08:00",
-      "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。"
+      "last_task9_at": "2026-04-28T02:30:00+08:00",
+      "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。"
     },
     "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/08-background-execution.md",
@@ -2012,25 +2012,25 @@
       "title": "JobScheduler/WorkManager 调度与后台任务性能",
       "chapter": "5.10",
       "section": "5.10",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-06",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T05:20:00+08:00",
-      "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。"
+      "last_task9_at": "2026-04-28T02:30:00+08:00",
+      "task9_review_notes": "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。自动晋升 finalized。"
     },
     "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
@@ -2345,26 +2345,27 @@
       "title": "典型场景分析",
       "chapter": "7.4",
       "section": "7.4",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "'2026-04-01'",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-27",
       "last_verified_against": "AOSP android-16.0.0_r1, AndroidX Fragment 1.8.x, Perfetto/Chromium docs",
       "confidence": "high",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-22T08:40:18+08:00'",
+      "last_task9_at": "2026-04-28T02:30:00+08:00",
       "last_task2b_at": "2026-04-27T12:54:09+08:00",
-      "notes": "Task2B fixed P95 Task9 and P85 External issues for RecyclerView/ImageView, Fragment, SplashScreen, Recents and WebView; returned to Task6 pending."
+      "notes": "Task2B fixed P95 Task9 and P85 External issues for RecyclerView/ImageView, Fragment, SplashScreen, Recents and WebView; returned to Task6 pending.",
+      "task9_review_notes": "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。自动晋升 finalized。"
     },
     "src/part2-performance/ch07-smoothness/05-optimization.md": {
       "path": "src/part2-performance/ch07-smoothness/05-optimization.md",
@@ -7676,7 +7677,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T23:21:00+08:00",
+  "last_updated": "2026-04-28T02:30:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8135,31 +8136,43 @@
   },
   "section_5_7": {
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "task9_result": "needs-rework",
-    "task2b_state": "fixed",
+    "task2b_state": "pending",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-04-27T05:45:00+08:00",
     "path": "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
     "title": "CPU 相关的版本演进",
-    "notes": "Task2B fixed P95 Task9/External review issues; returned to Task6 pending."
+    "notes": "Task9 re-review found Doze/WakeLock trigger boundary P1; returned to Task2B pending.",
+    "chapter": "5.7",
+    "section": "5.7",
+    "last_task9_at": "2026-04-28T02:30:00+08:00",
+    "task9_reviewed_date": "2026-04-28",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。"
   },
   "section_5_10": {
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task9_state": "pending",
-    "task9_result": "needs-rework",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-04-27T05:45:00+08:00",
     "path": "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
     "title": "JobScheduler/WorkManager 调度与后台任务性能",
-    "notes": "Task2B fixed P95 Task9/External review issues; returned to Task6 pending."
+    "notes": "Task9 re-review passed after Task2B fixes; P2 suggestions logged; auto-finalized.",
+    "chapter": "5.10",
+    "section": "5.10",
+    "last_task9_at": "2026-04-28T02:30:00+08:00",
+    "task9_reviewed_date": "2026-04-28",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。自动晋升 finalized。"
   },
   "2026-04-27-05-task2b": {
     "task": "task2b-content-processing-rework",
@@ -8395,12 +8408,12 @@
     }
   },
   "section_7_4": {
-    "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task9_state": "pending",
-    "task9_result": "needs-rework",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-04-27T12:54:09+08:00",
@@ -8410,7 +8423,11 @@
     "section": "7.4",
     "last_verified": "2026-04-27",
     "last_verified_against": "AOSP android-16.0.0_r1, AndroidX Fragment 1.8.x, Perfetto/Chromium docs",
-    "notes": "Task2B fixed P95 Task9 and P85 External issues for RecyclerView/ImageView, Fragment, SplashScreen, Recents and WebView; returned to Task6 pending."
+    "notes": "Task9 re-review passed after Task2B fixes; auto-finalized.",
+    "last_task9_at": "2026-04-28T02:30:00+08:00",
+    "task9_reviewed_date": "2026-04-28",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。自动晋升 finalized。"
   },
   "section_8_9": {
     "status": "ready-for-review",
@@ -8798,5 +8815,46 @@
     "last_task9_at": "2026-04-27T23:21:00+08:00",
     "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
     "title": "崩溃与 ANR 捕获机制"
+  },
+  "2026-04-28-02-task9": {
+    "task": "deep-tech-review",
+    "sections": [
+      "5.7",
+      "5.10",
+      "7.4"
+    ],
+    "timestamp": "2026-04-28T02:30:00+08:00",
+    "results": {
+      "5.7": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 0
+      },
+      "5.10": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 2
+      },
+      "7.4": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 0
+      }
+    },
+    "auto_finalized": [
+      "5.10",
+      "7.4"
+    ],
+    "queue_added": [
+      "5.7"
+    ],
+    "suggestions_added": [
+      "5.10"
+    ],
+    "log": "logs/deep-review/2026-04-28-02-deep-review.md",
+    "note": "复核 5.7/5.10/7.4；5.7 留 Doze/WakeLock 触发边界 P1；5.10、7.4 无 P0/P1 并自动 finalized。"
   }
 }
