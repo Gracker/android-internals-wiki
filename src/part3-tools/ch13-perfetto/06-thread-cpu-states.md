@@ -33,6 +33,7 @@ task9_reviewed_date: '2026-04-27'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-27T15:34:11+08:00'
 task2b_result: fixed
+last_task2b_at: '2026-04-28T01:40:00+08:00'
 ---
 
 # 线程 CPU 状态分析
@@ -78,7 +79,7 @@ Linux 内核为每个线程维护了一个状态字段。从性能分析的视�
 
 **Running**：线程正在某个 CPU 核心上执行代码。这是唯一真正在消耗 CPU 算力的状态。在 Perfetto 的线程轨道上显示为**绿色**。
 
-**Runnable (R)**：线程已经具备运行的一切条件，只差一个 CPU 核心来执行它。它被放在某个 CPU 的运行队列里排队，等待调度器的裁决。在 Perfetto 中显示为**蓝色**（浅绿色或白色）。
+**Runnable (R)**：线程已经具备运行的一切条件，只差一个 CPU 核心来执行它。它被放在某个 CPU 的运行队列里排队，等待调度器的裁决。在 Perfetto 中显示为**蓝色/浅绿色**。
 
 **Runnable (R+)**：线程原本在 Running，但在执行内核态代码期间被更高优先级的任务强行打断，被迫让出 CPU。这里的 `+` 号代表"被抢占"（Preempted）。这和普通 Runnable 的区别在于，R+ 意味着非自愿的让出——线程自己并不知道要停下来。
 
@@ -111,9 +112,11 @@ Perfetto 的 CPU 相关信息通常分组置于顶部区域。最核心的是 **
 从 CPU 区域向下展开到进程级别，再展开到具体的线程，我们会看到每个线程拥有一条独立的 **thread_state** 轨道。这条轨道上，时间轴被切割成连续的色块，每个色块代表线程在某个时间段的状态：
 
 - **绿色**：Running
-- **蓝色/浅绿色**：Runnable
+- **蓝色/浅绿色**：Runnable（含 Runnable 和 Runnable (Preempted)）
 - **白色**：Sleeping
 - **橙色**：Uninterruptible Sleep
+
+> **注意**：Runnable 在 Perfetto 中只对应蓝色/浅绿色，白色是 Sleeping。分析调度延迟时，需要同时关注 `R` 和 `R+` 两种 Runnable 子状态。
 
 这条轨道是分析单线程性能瓶颈的首选入口。选中任何一个色块，Current State 面板会显示该状态的详细信息，包括持续时间和阻塞原因。
 
@@ -403,11 +406,11 @@ Perfetto 内置的 SQL 引擎可以对线程状态进行精确的量化统计。
 
 ```sql
 SELECT
-  CASE state
-    WHEN 'Running' THEN 'Running'
-    WHEN 'R' THEN 'Runnable'
-    WHEN 'S' THEN 'Sleeping'
-    WHEN 'D' THEN 'Uninterruptible Sleep'
+  CASE
+    WHEN state = 'Running' THEN 'Running'
+    WHEN state IN ('R', 'R+') THEN 'Runnable'
+    WHEN state = 'S' THEN 'Sleeping'
+    WHEN state = 'D' THEN 'Uninterruptible Sleep'
     ELSE state
   END AS state_name,
   sum(dur) / 1e6 AS total_time_ms
@@ -416,6 +419,24 @@ WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
 GROUP BY state_name
 ORDER BY total_time_ms DESC;
 ```
+
+**查询某线程 Runnable 中 R 和 R+ 的占比：**
+
+```sql
+SELECT
+  CASE
+    WHEN state = 'R' THEN 'Runnable'
+    WHEN state = 'R+' THEN 'Runnable (Preempted)'
+  END AS runnable_type,
+  sum(dur) / 1e6 AS total_time_ms
+FROM thread_state
+WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
+  AND state IN ('R', 'R+')
+GROUP BY runnable_type
+ORDER BY total_time_ms DESC;
+```
+
+如果 R+ 占比高，说明该线程频繁被高优先级任务抢占，需要评估优先级和负载均衡策略。
 
 **查询某线程 D 状态里 `io_wait` 的分布：**
 
@@ -431,6 +452,24 @@ ORDER BY total_time_ms DESC;
 ```
 
 `io_wait=1` 更接近 I/O 等待，`io_wait=0` 更接近内核锁或内存回收；为空时，说明这份 trace 没把相关字段带出来。
+
+**查询 D 状态的阻塞函数分布（需要 sched_blocked_reason）：**
+
+```sql
+SELECT
+  ts,
+  dur / 1e6 AS duration_ms,
+  io_wait,
+  blocked_function
+FROM thread_state
+WHERE utid = (SELECT utid FROM thread WHERE name = 'surfaceflinger' LIMIT 1)
+  AND state = 'D'
+  AND blocked_function IS NOT NULL
+ORDER BY dur DESC
+LIMIT 20;
+```
+
+`blocked_function` 来自 `sched/sched_blocked_reason` ftrace 事件，记录线程进入 D 状态前最后一个非调度器内核函数。如果 `blocked_function` 为空，说明这份 trace 没有启用 `sched_blocked_reason` 事件，需要回到抓取配置补上。
 
 **查询某线程在各 CPU 核心上的运行时间分布（判断是否被调度到小核）：**
 
