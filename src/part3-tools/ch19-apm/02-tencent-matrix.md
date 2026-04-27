@@ -16,8 +16,8 @@ sources:
     path: "https://github.com/Tencent/matrix"
   - type: source
     path: "https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-android-lib/src/main/java/com/tencent/matrix/Matrix.java"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_date: "2026-04-24"
