@@ -7,7 +7,7 @@ drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-27"
-last_verified_against: "developer.android.com, AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord"
+last_verified_against: "developer.android.com, AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord / FrameMetrics"
 confidence: medium
 sources:
   - type: official
@@ -24,12 +24,14 @@ sources:
     path: "https://developer.android.com/topic/performance/benchmarking/overview"
   - type: official
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/FrameMetrics.java"
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
 related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
@@ -38,7 +40,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 last_task9_at: "2026-04-27T21:34:35+08:00"
 task2b_result: fixed
-last_task2b_at: "2026-04-27T16:44:00+08:00"
+last_task2b_at: "2026-04-27T21:44:26+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 ---
@@ -299,7 +301,9 @@ activity.getWindow().addOnFrameMetricsAvailableListener(
 );
 ```
 
-线上对比时，必须确保两个 App 上报的指标口径一致。FrameMetrics 的 `TOTAL_DURATION` 从 `performTraversals()` 开始到帧提交到 BufferQueue 结束，这个定义在不同 App 间是统一的。
+线上对比时，两个 App 上报的指标口径必须一致。AOSP android-16.0.0_r1 的 `FrameMetrics.java` 中，`TOTAL_DURATION` 对应 `INTENDED_VSYNC` 到 `FRAME_COMPLETED` 的完整跨度，`DEADLINE` 对应当前帧的目标完成时刻；当 `TOTAL_DURATION < DEADLINE` 时，本帧命中预期 deadline。`PERFORM_TRAVERSALS_START` 只参与 `LAYOUT_MEASURE_DURATION` 等分段指标，不能当作 `TOTAL_DURATION` 的起点。
+
+如果分析 `performTraversals()` 之后的应用侧开销，应该拆看 `LAYOUT_MEASURE_DURATION`、`DRAW_DURATION`、`SYNC_DURATION`、`COMMAND_ISSUE_DURATION`、`SWAP_BUFFERS_DURATION`，再对应到 Perfetto 中 UI thread、RenderThread、SurfaceFlinger 的时间线。
 
 [待补充: 不同 APM 平台（Firebase Performance / 自建 APM）的流畅性指标口径对比]
 
