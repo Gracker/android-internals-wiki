@@ -4928,3 +4928,15 @@
 - **位置**：L466 Android 17 Generational GC 量化收益
 - **问题**：正文写“GC 暂停时间从 10-30ms 降低到 1-5ms”，但没有设备、ART 版本、堆大小、对象分配模式和测试来源；同时 Android 17 版本边界缺少一手资料锚点。
 - **建议**：补 ART release note / AOSP commit / benchmark 链接和测试条件；如果没有一手数据，删除具体毫秒区间，只保留“可能降低部分 STW 暂停”的定性边界。
+
+## [Task9 Deep Review] 7.6 案例集 — 2026-04-27
+- **类型**：交叉引用
+- **位置**：L287, L452
+- **问题**：相对链接 `05-main-render-thread.md` 与 `01-oem-overview.md` 以当前目录解析会失效。
+- **建议**：改为 `../../part1-fundamentals/ch02-rendering/05-main-render-thread.md` 与 `../../part4-system/ch17-oem/01-oem-overview.md`，或改用纯章节号引用。
+
+## [Task9 Deep Review] 7.6 案例集 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：五个案例的 Trace 截图与效果对比
+- **问题**：正文有多个 `[待补充：Trace 截图]`，但已经写入明确耗时与 Jank 率。
+- **建议**：为每个数值补 trace 文件、设备、Android 版本、刷新率、采样窗口和统计方式；无法补证据的数值改成示例并标注 `[待验证]`。

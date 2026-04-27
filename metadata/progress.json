@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T11:41:00+08:00",
+  "generated_at": "2026-04-27T13:32:46+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 98,
     "ready-for-review": 106,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T11:41:00+08:00",
+    "last_updated": "2026-04-27T13:32:46+08:00",
     "pipeline_stage_counts": {
       "ready-to-publish": 98,
       "task2b_pending": 63,
@@ -64,7 +64,7 @@
       "None": 4,
       "done": 1
     },
-    "last_updated": "2026-04-27T11:41:00+08:00"
+    "last_updated": "2026-04-27T13:32:46+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -2407,14 +2407,17 @@
       "last_verified": "2026-04-01",
       "last_verified_against": "AOSP android-16.0.0_r1, Android 官方文档",
       "confidence": "medium-high",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
-      "task6_result": "needs-rework",
+      "task2b_state": "pending",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-14",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-27T13:32:46+08:00"
     },
     "src/part2-performance/ch07-smoothness/07-compose-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/07-compose-performance.md",
@@ -4929,25 +4932,25 @@
       "title": "Google 官方的性能优化思路",
       "section": "16.1",
       "chapter": "16.1",
-      "status": "ready-for-review",
+      "status": "finalized",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "applicable_versions": "Android 4.1 (API 16) - Android 17 (API 37)",
       "last_verified": "2026-04-11",
       "last_verified_against": "Android 17 release notes + Android 17 behavior changes + Mainline docs + AOSP master MessageQueue/Binder/BLAST",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-19",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-19T07:43:40+08:00",
+      "last_task9_at": "2026-04-27T13:32:46+08:00",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task2b_fixed_at": "2026-04-27T11:41:00+08:00",
       "last_task2b_at": "2026-04-27T11:41:00+08:00",
-      "task6_result": "needs-rework"
+      "task6_result": "pass-light-edit"
     },
     "src/part4-system/ch16-aosp/02-version-changes.md": {
       "path": "src/part4-system/ch16-aosp/02-version-changes.md",
