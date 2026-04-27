@@ -262,6 +262,38 @@ InputDispatcher 这一行最容易写错。输入事件不是通过 `/data/syste
 3. 只有共享区域，没有同步协议，最终读到半写入数据
 4. 用 Binder 传大 payload，而不是传 fd / descriptor
 
+
+
+<!-- AIW-源码调研-2026-04-28: memfd Sealing 与零拷贝安全 -->
+### 3.4.1 F_SEAL_FUTURE_WRITE 与 Parcel::writeBlob 零拷贝机制
+
+在"共享内存、DMA-BUF 与 FMQ"讨论框架下，需要补充一个关键安全机制：memfd Sealing。
+
+Android 的 `Parcel::writeBlob()` 对大于 `BLOB_INPLACE_LIMIT`（16 machine words ≈ 128B on 64-bit）的大数据使用 memfd 实现零拷贝：
+
+```cpp
+// frameworks/native/libs/binder/Parcel.cpp (AOSP mainline)
+// 完整调用链
+Parcel::writeBlob(size, data)
+  ├─ if (size <= BLOB_INPLACE_LIMIT)
+  │    writeInplace(data)  // 直接写入 Parcel 内部 buffer
+  └─ else
+       memfd_create("Parcel Blob", MFD_ALLOW_SEALING)  // 创建匿名内存文件
+       ftruncate(fd, size)
+       write(fd, data, data_size)              // 发送者写入数据
+       fcntl(fd, F_ADD_SEALS, F_SEAL_FUTURE_WRITE)  // 应用 Seal
+       // Binder 事务中只传 fd，不传数据本身
+```
+
+`F_SEAL_FUTURE_WRITE`（定义值 `0x0010`）的安全语义：
+- **允许**：发送者继续写入已存在的内存映射
+- **阻止**：未来任何 `mmap(PROT_WRITE)` 和 `write()` 尝试（包括接收者和未来映射）
+- **设计意图**：典型场景是 `CursorWindow`——发送者（ContentProvider）持续填充数据，接收者只需读取
+
+libartbase 的封装（`bionic/libartbase/base/memfd.cc`）提供 tmpfile fallback 以兼容不支持 memfd_create 的老内核。
+
+[源码验证: AOSP mainline frameworks/native/libs/binder/Parcel.cpp（writeBlob 零拷贝路径）；bionic/libartbase/base/memfd.cc（memfd_create 封装）；man7.org linux/man-pages/man2/memfd_create.2.html（F_SEAL_FUTURE_WRITE）]
+
 ### 3.5 mmap 文件映射
 
 **原理：** `mmap()` 将文件映射到进程地址空间，多个进程映射同一文件时共享物理页。

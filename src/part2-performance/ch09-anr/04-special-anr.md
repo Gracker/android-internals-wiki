@@ -27,7 +27,7 @@ sources:
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -35,7 +35,7 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-27T19:10:48+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-04-28"
 rework_date: "2026-04-16"
 rework_by: "task2b-rework"
 task9_reviewed_date: "2026-04-28"
