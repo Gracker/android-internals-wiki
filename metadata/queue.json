@@ -13553,5 +13553,69 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T10:57:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "16.1",
+    "section_title": "Google 官方的性能优化思路",
+    "priority": 90,
+    "reason": "[review回炉] 文风违规，使用多个禁用词（底座、落地、对齐等），需要重写",
+    "material_paths": [
+      "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "需重写",
+        "location": "全文多处",
+        "detail": "使用禁用词：底座、落地、对齐等，违反 writing-guide.md 规范",
+        "suggestion": "移除禁用词，使用更直接的技术表达，避免黑话和抽象职场词汇"
+      }
+    ],
+    "added_by": "task6-review",
+    "added_at": "2026-04-27T11:09:00+08:00",
+    "status": "pending",
+    "original_review_log": "logs/review/2026-04-27-11-review.md"
+  },
+  {
+    "section": "16.4",
+    "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 16.4 存在 EEVDF 版本事实错误与 Android 17/Kernel 6.12 源码锚点缺口，需回炉修正",
+    "material_paths": [
+      "intake/research-gaps.md",
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异/源码错误",
+        "severity": "P0",
+        "location": "§版本演进表 L252-L258；§EEVDF L61",
+        "detail": "正文写 Android 15/kernel 6.6 仍是 CFS 默认、Android 16 6.6→6.12 才是 EEVDF 可选、Android 17 6.12 才默认。复核 android15-6.6/kernel/sched/fair.c 已存在 pick_eevdf/entity_eligible，android16-6.12 也延续 EEVDF；该版本分界与源码不符。",
+        "suggestion": "改成“EEVDF 已进入 6.6 系列 fair scheduler，6.12 继续完善/配合 sched_ext”，不要把 6.12 写成 EEVDF 从可选到默认的分界。补 android15-6.6 与 android16-6.12 fair.c 源码锚点。"
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "开头 L33 与全篇 Android 17/API37 口径",
+        "detail": "正文把 Android 17 讨论语境绑定到 android16-6.12 GKI release branch，但缺少 Android 17/API37 平台文档、AOSP tag 或设备 rollout 边界。external-review part4 summary 已命中 16.4 Android 17/Kernel 6.12 对齐不足。",
+        "suggestion": "拆成“ACK/GKI android16-6.12 分支事实”和“Android 17/API37 平台特性”两层；所有 Android 17 结论补对应源码 tag/官方 release note，无法确认的改为待验证。"
+      },
+      {
+        "type": "源码锚点缺失/知识盲区",
+        "severity": "P1",
+        "location": "§DeliQueue L185-L192",
+        "detail": "DeliQueue 被写成 Android 17 用 MPSC 无锁队列替代 synchronized MessageQueue，并给出锁等待/掉帧/首帧 P95 数据，但没有 frameworks/base 或 native Looper 的源码路径、commit、release note。",
+        "suggestion": "补 MessageQueue/Looper/DeliQueue 的准确类名、文件路径、启用条件、版本 tag 和数据出处；如果无法定位源码，整段降级为待验证，避免作为定论。"
+      },
+      {
+        "type": "原理断裂/版本差异",
+        "severity": "P1",
+        "location": "§io_uring multishot + zero-copy L97-L113",
+        "detail": "正文把 IORING_SETUP_NO_MMAP、fixed buffers、zero-copy、Bionic liburing 兼容层和 OkHttp/Cronet/SQLite 受益串成一条确定链，但没有 Android 用户态接入源码或默认启用证据；IORING_SETUP_NO_MMAP 也不能等同于应用 I/O zero-copy。",
+        "suggestion": "拆开内核能力、bionic/liburing 暴露、framework/库是否采用三层；补 bionic/liburing、Cronet/SQLite/OkHttp 接入证据，未落地的只写“潜在收益”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T11:27:00+08:00",
+    "status": "pending"
   }
 ]

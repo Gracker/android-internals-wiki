@@ -4902,3 +4902,16 @@
 - **问题**：Compose 示例在 `onDispose` 里只移除 `interaction`，没有移除 `screen`。如果该 state 绑定在可切换页面的 Composable 上，页面切走后可能留下 stale screen 标签。
 - **建议**：页面级状态和交互状态都按生命周期成对清理，例如同时 `removeState("screen")` 和 `removeState("interaction")`；如果 `screen` 由 Activity 级容器维护，需要在示例旁明确说明生命周期边界。
 
+
+
+## [Task9 Deep Review] 3.1 Input 事件分发全流程 — 2026-04-27
+- **类型**：知识盲区/Trace 观察点
+- **位置**：Pointer Event 与 Motion Event 小节
+- **问题**：正文说 Compose PointerEvent 与 View MotionEvent 在 Perfetto 中表现完全一致，这对系统输入路径成立，但 Compose 侧还会经过 pointer input modifier / PointerInputEventProcessor 等运行时处理，专项分析时可能需要关联 Compose 章节观察额外消耗。
+- **建议**：补一句边界：系统侧仍是同一条 `InputChannel -> deliverInputEvent`，Compose 内部分发成本需回到 Compose 运行时/7.x 章节另查，不把它混入 InputDispatcher 结论。
+
+## [Task9 Deep Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：Kernel 6.12 性能全景表与 AutoFDO 量化数据
+- **问题**：启动、系统调用、Binder、MGLRU 等百分比数据分散出现，但没有逐项标注测试设备、benchmark 名称、内核分支、样本口径和官方出处；部分数字本轮只能验证到“方向一致”，不能验证到精确值。
+- **建议**：把每个数字拆成“来源 URL/测试对象/版本/指标定义/是否官方公开”，无法复核的数字改为待验证或删除。

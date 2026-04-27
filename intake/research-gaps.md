@@ -9703,3 +9703,20 @@ external-review 已命中 Qualcomm CamX/CHI 观察点。本轮复核发现章节
 ### 关联章节
 - 14.9
 - 18.14
+
+
+## [2026-04-27] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 知识盲区
+
+### 盲区描述
+16.4 仍缺少 Android 17/API37 平台特性与 `android16-6.12` ACK/GKI 分支之间的明确边界。external-review 已命中 16.4 对 Android 17 + Kernel 6.12 的源码锚点不足；本轮复核进一步确认 EEVDF 版本表与 android15-6.6 源码不一致，DeliQueue 与 io_uring 的 Android 落地链也缺少一手源码证据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `android15-6.6`、`android16-6.12`、后续 Android 17/API37 tag 中 `kernel/sched/fair.c`、`kernel/sched/ext.c`、GKI config 的差异，重写 EEVDF/sched_ext 版本边界。
+- 为 DeliQueue 定位准确源码路径、commit、启用条件和性能数据来源；无法定位时从定论改为待验证。
+- 拆分 io_uring 内核能力、bionic/liburing 暴露、Cronet/SQLite/OkHttp 是否实际接入三层证据。
+
+### 关联章节
+16.4, 16.5, 5.1, 5.7, 1.13, 6.3

@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-04-27T10:57:00+08:00",
+  "generated_at": "2026-04-27T11:27:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 205,
-    "finalized": 96,
-    "ready-for-review": 108,
+    "finalized": 98,
+    "ready-for-review": 106,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T10:57:00+08:00",
+    "last_updated": "2026-04-27T11:27:00+08:00",
     "pipeline_stage_counts": {
-      "ready-to-publish": 96,
-      "task2b_pending": 63,
+      "ready-to-publish": 98,
+      "task2b_pending": 64,
       "task9_pending": 18,
-      "task6_pending": 24,
+      "task6_pending": 21,
       "None": 1,
       "task6_reviewed": 3
     },
     "task6_state_counts": {
-      "reviewed": 198,
+      "reviewed": 200,
       "None": 2,
-      "revisiting": 5
+      "revisiting": 3
     },
     "task9_state_counts": {
-      "reviewed": 168,
-      "pending": 34,
+      "reviewed": 171,
+      "pending": 31,
       "None": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 132,
-      "pending": 65,
+      "fixed": 131,
+      "pending": 66,
       "idle": 3,
       "None": 4,
       "done": 1
@@ -39,32 +39,32 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 96,
-      "task2b_pending": 63,
+      "ready-to-publish": 98,
+      "task2b_pending": 64,
       "task9_pending": 18,
-      "task6_pending": 24,
+      "task6_pending": 21,
       "None": 1,
       "task6_reviewed": 3
     },
     "task6_state_counts": {
-      "reviewed": 198,
+      "reviewed": 200,
       "None": 2,
-      "revisiting": 5
+      "revisiting": 3
     },
     "task9_state_counts": {
-      "reviewed": 168,
-      "pending": 34,
+      "reviewed": 171,
+      "pending": 31,
       "None": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 132,
-      "pending": 65,
+      "fixed": 131,
+      "pending": 66,
       "idle": 3,
       "None": 4,
       "done": 1
     },
-    "last_updated": "2026-04-27T10:57:00+08:00"
+    "last_updated": "2026-04-27T11:27:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1434,23 +1434,23 @@
       "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
       "title": "Input 事件分发全流程",
       "chapter": "3.1",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
       "last_verified": "2026-04-27",
       "last_verified_against": "AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp / InputProcessor.cpp / inputflinger Android.bp",
       "confidence": "high",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T20:23:00+08:00",
+      "last_task9_at": "2026-04-27T11:27:00+08:00",
       "section": "3.1",
       "review_notes": "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；补 InputClassifier/InputProcessor、WindowInfosListener 版本边界、ANR 默认超时、InputChannel 失败路径、InputFlinger 默认进程形态。",
       "version_note": "已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android 13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及 Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。",
@@ -4999,18 +4999,18 @@
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 17 (API 37)",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T04:38:00+08:00"
+      "last_task9_at": "2026-04-27T11:27:00+08:00"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
@@ -5886,25 +5886,25 @@
       "title": "DoraemonKit / DoKit",
       "chapter": "19",
       "section": "19.07",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "版本需按 artifact / AndroidX / Gradle / AGP 单独验证；README 明确覆盖 3.5.0 / 3.5.0.1 与 AGP 3.3.0+",
       "last_verified": "2026-04-27",
       "last_verified_against": "didi/DoKit README + Android/README + DoKitPlugin.kt + Okhttp3ClassTransformer.kt + PerformanceDataManager.java",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T03:28:33+08:00",
+      "last_task9_at": "2026-04-27T11:27:00+08:00",
       "last_task2b_at": "2026-04-27T04:40:00+08:00"
     },
     "src/part3-tools/ch19-apm/27-apm-client-architecture.md": {
@@ -6621,6 +6621,40 @@
           "auto_promoted": true
         }
       ]
+    },
+    {
+      "date": "2026-04-27",
+      "time": "11:27",
+      "task": "task9-deep-review",
+      "sections_reviewed": [
+        {
+          "section": "3.1",
+          "title": "Input 事件分发全流程",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 1,
+          "auto_promoted": true
+        },
+        {
+          "section": "16.4",
+          "title": "Android 17 + Kernel 6.12 系统级性能优化",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 3,
+          "p2": 1
+        },
+        {
+          "section": "19.07",
+          "title": "DoraemonKit / DoKit",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 0,
+          "auto_promoted": true
+        }
+      ],
+      "log": "logs/deep-review/2026-04-27-11-deep-review.md"
     }
   ],
   "progress": {
@@ -8135,5 +8169,45 @@
       ],
       "auto_finalized": []
     }
+  },
+  "2026-04-27-11-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "3.1",
+      "16.4",
+      "19.07"
+    ],
+    "timestamp": "2026-04-27T11:27:00+08:00",
+    "results": {
+      "3.1": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 1,
+        "auto_finalized": true
+      },
+      "16.4": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 3,
+        "p2": 1
+      },
+      "19.07": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 0,
+        "auto_finalized": true
+      }
+    },
+    "auto_finalized": [
+      "3.1",
+      "19.07"
+    ],
+    "queue_added": [
+      "16.4"
+    ],
+    "log": "logs/deep-review/2026-04-27-11-deep-review.md",
+    "note": "参考 logs/external-review 根目录 part1/part4/ch19 broad summary；仅消费 16.4 相关明确风险，未归档 broad summary。"
   }
 }
