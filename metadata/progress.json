@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T20:35:19+08:00",
+  "generated_at": "2026-04-27T20:58:38+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -40,33 +40,26 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "None": 33,
-      "task6_pending": 30,
-      "task2b_pending": 66,
+      "task6_pending": 32,
+      "task2b_pending": 65,
       "ready-to-publish": 107,
-      "task9_pending": 13,
-      "'task2b_pending'": 1
+      "task9_pending": 13
     },
     "task6_state_counts": {
-      "None": 34,
-      "reviewed": 168,
-      "revisiting": 48
+      "reviewed": 166,
+      "revisiting": 50
     },
     "task9_state_counts": {
-      "None": 38,
-      "reviewed": 180,
-      "pending": 30,
-      "'reviewed'": 1,
+      "reviewed": 179,
+      "pending": 32,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 40,
-      "fixed": 137,
-      "pending": 68,
-      "idle": 4,
-      "'pending'": 1
+      "fixed": 139,
+      "pending": 67,
+      "idle": 4
     },
-    "last_updated": "2026-04-27T20:35:19+08:00"
+    "last_updated": "2026-04-27T20:58:38+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -4310,19 +4303,19 @@
       "last_verified_against": "AOSP Binder/ZygoteInit review anchors, Perfetto SQL tables/stdlib docs, Trace Processor large trace query patterns",
       "confidence": "medium",
       "section": "13.10",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task6_result": "pass-light-edit",
       "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-27T20:35:19+08:00",
-      "last_task2b_at": "2026-04-27T15:52:00+08:00",
+      "last_task2b_at": "2026-04-27T20:58:38+08:00",
       "rework_date": "2026-04-27",
       "rework_by": "openclaw-task2b",
       "tags": "[Perfetto, SQL, Trace Processor, 性能分析, 帧时间, ANR, 启动时间, Binder]",
@@ -4330,7 +4323,10 @@
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-04-09",
       "gap_source": "官方文档 + 读者需求 + AOSP 结构",
-      "gap_score": "19/20"
+      "gap_score": "19/20",
+      "repaired_date": "2026-04-27",
+      "repaired_by": "openclaw-task2b",
+      "notes": "Task2B fixed Binder tracepoint wording; binder_reply removed as nonexistent tracepoint."
     },
     "src/part3-tools/ch13-perfetto/README.md": {
       "path": "src/part3-tools/ch13-perfetto/README.md",
@@ -5236,10 +5232,10 @@
       "last_verified": "2026-04-24",
       "last_verified_against": "Tencent Matrix GitHub README and wiki",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -5247,7 +5243,11 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T07:20:23+08:00"
+      "last_task9_at": "2026-04-25T07:20:23+08:00",
+      "last_task2b_at": "2026-04-27T20:58:38+08:00",
+      "repaired_date": "2026-04-27",
+      "repaired_by": "openclaw-task2b",
+      "notes": "Task2B fixed Matrix AGP 8+ boundary, methodMapping, report examples and hook rollout risks."
     },
     "src/part3-tools/ch19-apm/03-koom.md": {
       "path": "src/part3-tools/ch19-apm/03-koom.md",
