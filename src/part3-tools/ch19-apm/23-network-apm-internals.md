@@ -10,11 +10,11 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 sources:
   - "https://square.github.io/okhttp/features/events/"
   - "https://square.github.io/okhttp/features/interceptors/"
@@ -30,6 +30,7 @@ reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 review_notes: "2026-04-25 task6 review: pass-light-edit. L1: no banned words. L2: good structure, clear progression. All 7 anchors covered. task2b_state inconsistency fixed (pending→fixed). Has task9 pending queue item, not eligible for auto-promotion."
 
+last_task2b_at: "2026-04-27T09:42:00+08:00"
 ---
 
 # 网络 APM 底层捕获原理
@@ -93,10 +94,22 @@ review_notes: "2026-04-25 task6 review: pass-light-edit. L1: no banned words. L2
 
 ### 2.2 一段可执行的 `EventListener` 埋点代码
 
-这段代码的用途是把一次 OkHttp 调用拆成 request 级样本和 attempt 级阶段耗时。重点看三点：一是 `callId` 与请求对象解耦；二是 `connectFailed` 会形成新的 attempt；三是复用连接时 DNS/TCP/TLS 字段可能为空。
+这段代码的用途是把一次 OkHttp 调用拆成 request 级样本和 attempt 级阶段耗时。重点看四点：一是 `EventListener.Factory` 为每个 `Call` 创建独立监听器；二是 `callId` 与请求对象解耦；三是 `connectFailed` 会形成新的 attempt；四是复用连接时 DNS/TCP/TLS 字段可能为空。
 
 ```kotlin
-class NetworkMetricEventListener(
+class NetworkMetricEventListenerFactory(
+    private val sink: NetworkMetricSink,
+    private val clock: () -> Long = { System.nanoTime() }
+) : EventListener.Factory {
+    override fun create(call: Call): EventListener =
+        NetworkMetricEventListener(sink, clock)
+}
+
+val client = OkHttpClient.Builder()
+    .eventListenerFactory(NetworkMetricEventListenerFactory(metricSink))
+    .build()
+
+private class NetworkMetricEventListener(
     private val sink: NetworkMetricSink,
     private val clock: () -> Long = { System.nanoTime() }
 ) : EventListener() {
@@ -194,6 +207,8 @@ class NetworkMetricEventListener(
 
 这段代码只负责采时间点，不在回调里做 JSON 序列化、数据库写入或网络上报。回调线程可能落在发起请求的业务线程或 OkHttp 的内部线程，采样逻辑越重，对请求路径的干扰越大。
 
+注册方式必须用 `eventListenerFactory(...)`。`eventListener(...)` 会把同一个 listener 实例复用到所有并发 `Call`，只适合没有 per-call mutable state 的监听器；上面的实现把 `callId`、`attempts`、`callStartNs` 放在实例字段里，必须让每个 `Call` 独占一个实例。
+
 ### 2.3 `Interceptor` 该做哪些事
 
 `Interceptor` 适合补这几类信息：
@@ -254,10 +269,12 @@ class OpenConnectionMethodVisitor(
 2. 在 `connect()`、`getInputStream()`、`getOutputStream()` 等关键点记录阶段时间。
 3. 将异常、响应码、字节数写入统一 sink。
 
-这类插桩要控制范围。只改项目代码通常已经足够；把依赖库也纳入插桩，构建耗时和兼容风险都会上升。还有两个边界要记住：
+这类插桩要控制范围。只改项目代码通常已经足够；把依赖库也纳入插桩，构建耗时和兼容风险都会上升。作用域按目标分开看：
 
-- 如果三方 SDK 使用的是 Native 网络库，Java 字节码插桩看不到真实传输层阶段。
-- 如果 SDK 在内部做了线程池封装和多次重试，调用点只能看到外层逻辑，attempt 级重试仍要靠库回调或底层 Hook。
+- `InstrumentationScope.PROJECT` 只处理当前工程模块里的 class，适合一方代码里直接出现的 `URL.openConnection()` 调用。
+- `InstrumentationScope.ALL` 会把依赖 class 纳入处理范围，才有机会覆盖 AAR/JAR 中三方 SDK 内部的 `HttpURLConnection` 调用。使用 `ALL` 时要通过 `isInstrumentable` 包名白名单、依赖排除和构建缓存控制开销。
+
+调用点清单也要补齐：`URL.openConnection()`、`URL.openConnection(Proxy)` 和 `URL.openStream()` 都可能出现在旧代码或 SDK 包装层里。替换这些 Java 调用点仍然看不到 Native 网络库内部请求，attempt 级重试还要靠库回调或底层 Hook。
 
 ## 4. Native 网络捕获：Cronet 先走官方指标，抓不到再考虑 Hook
 
@@ -277,8 +294,10 @@ class OpenConnectionMethodVisitor(
 
 - `getaddrinfo`：主机名解析
 - `connect`：建连
-- `send` / `recv`：明文传输字节数
-- `SSL_write` / `SSL_read`：TLS 封装后的读写
+- `SSL_write` / `SSL_read`：HTTPS 场景下观察应用明文字节长度、TLS 错误和读写返回值
+- `send` / `recv`：Socket 层传输字节、`errno`、断连和重传辅助归因；HTTPS 场景通常看到 TLS record / 密文字节
+
+明文 HTTP 是例外：没有 TLS 层时，`send` / `recv` 看到的就是应用明文。HTTPS 路径下，`SSL_write` 的输入和 `SSL_read` 的输出更接近业务明文长度；`send` / `recv` 位于 TLS 下方，更适合看 Socket 层错误和传输规模。
 
 PLT Hook 适合拦截动态链接符号，能覆盖部分 Cronet、Mars、libssl、libc 调用路径。它的局限同样明确：
 
@@ -333,6 +352,16 @@ eBPF 在 Android 系统侧已经广泛用于网络统计，但普通应用通常
 - 没有请求体的场景，TTFB 可以从 `requestHeadersStart` 算到 `responseHeadersStart`。
 - 连接复用时，DNS/TCP/TLS 应该记为 `null` 或 `0`，不能拿上一次连接的耗时回填。
 - HTTP/2 多路复用时，请求共享一条连接，阶段耗时和 socket 级事件不再一一对应。
+
+### 5.3 EventListener 的空阶段字段怎么解释
+
+看板里大量请求的 DNS/TCP/TLS 字段为空，不一定是采集失败。OkHttp 的事件口径要和连接复用一起看：
+
+| 观察现象 | 常见原因 | 处理方式 |
+| --- | --- | --- |
+| 没有 `dnsStart` / `connectStart` | 连接池复用已有连接 | 阶段字段记为 `null`，不要回填历史连接耗时 |
+| 多个请求共用同一条连接 | HTTP/2 multiplexing | request 级样本保留独立 TTFB，socket 级指标只做连接维度参考 |
+| 看到 `connectionAcquired` 后直接进入请求发送 | 后续请求复用连接 | 在样本中标记 `connection_reused = true`，避免误报“缺少 DNS/TCP 数据” |
 
 ## 6. 弱网与重试：一定要把“总耗时”和“服务端等待”分开
 
@@ -409,7 +438,7 @@ eBPF 在 Android 系统侧已经广泛用于网络统计，但普通应用通常
 - 大字段采样率单独控制，例如 body 摘要只抽样 1%-5%
 - 上报批量化，网络空闲或下次启动再传
 - 对失败风暴加熔断，防止故障期反向放大流量
-- 插桩范围优先 `PROJECT`，确有必要再扩到依赖
+- 一方代码优先用 `InstrumentationScope.PROJECT`；要审计三方 SDK 内部请求时再用 `InstrumentationScope.ALL`，并配合包名白名单和依赖排除
 
 ## 9. HTTP/3 / QUIC 带来的新口径
 

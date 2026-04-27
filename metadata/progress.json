@@ -7489,7 +7489,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T07:20:00+08:00",
+  "last_updated": "2026-04-27T09:42:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8035,5 +8035,34 @@
     },
     "auto_finalized": [],
     "note": "本轮复核 logs/external-review 根目录 ch19/ch13/part2 summary，只部分消费 7.5、19.0、19.21 相关线索，未归档 broad summary。"
+  },
+  "2026-04-27-09-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-27T09:42:00+08:00",
+    "sections": [
+      "15.8",
+      "19.23"
+    ],
+    "queue_indexes_completed": [
+      55,
+      56,
+      195
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
+      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "15.8 拆分 Java/Kotlin 主线程网络示例，补齐同步 Binder 调用与 Perfetto 观察点",
+        "15.8 补 cached-app freezer 解冻毛刺的版本边界与 trace 归因口径",
+        "19.23 补 EventListener.Factory per-call 实例注册方式，避免并发请求共享状态",
+        "19.23 修正 SSL_read/write 与 send/recv 在 HTTPS 下的明文/密文字节职责",
+        "19.23 补 InstrumentationScope.PROJECT/ALL 边界、URL 重载调用点和 HTTP/2 复用空字段解释",
+        "15.8 补 Binder wait、system_server 和 cached-app freezer 的 AOSP 源码锚点"
+      ],
+      "auto_finalized": []
+    }
   }
 }
