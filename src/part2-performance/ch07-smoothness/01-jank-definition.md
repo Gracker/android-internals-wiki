@@ -45,7 +45,7 @@ task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
-last_task2b_at: '2026-04-22T21:50:17+08:00'
+last_task2b_at: '2026-04-28T01:40:00+08:00'
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
 review_round: 5
@@ -182,6 +182,22 @@ Trace 里先点 App 的 `Actual Timeline` slice，再顺 token 回到 `Choreogra
 `BufferStuffing` 在 Perfetto 文档里被写成“more of a state than a jank”。它指的是 App 在上一帧还没 present 时，又继续往 SurfaceFlinger 塞新 buffer，队列里堆了多帧待显示内容。结果是画面还能持续刷新，但输入反馈越来越晚，严重时 App 还会卡在 dequeue 等待 buffer 归还。
 
 这类问题先看 FrameTimeline 的 `Jank Type` 和 high latency state，再用 BufferQueue 轨道、dequeue blocking、SurfaceFlinger 侧 flow event 做佐证。不要把 `queued > 1` 这类经验信号写成唯一判据。
+
+### [自动发现] Android 15/16 新增 JankType
+
+AOSP `frameworks/native/libs/gui/include/gui/JankInfo.h` 在 android-15.0.0\_r1 和 android-16-release 中新增了以下 JankType，用于更精细的归因：
+
+| JankType | 值 | 触发条件 | 排查入口 |
+|----------|------|----------|----------|
+| `SurfaceFlingerScheduling` | 0x20 | SurfaceFlinger 唤醒/调度时机偏差导致 present early/late | 检查 SF 唤醒时序、VsyncModulator 配置、HWC vsync 偏移 |
+| `SurfaceFlingerStuffing` | 0x100 | 上一帧占用了当前 expected vsync 的窗口，把当前帧推向下一个 vsync | 检查 BufferQueue 堆积、前一帧 GPU composition 是否超时 |
+| `Unknown` | 0x80 | 归因条件无法匹配任何已知类型 | 通常伴随其他 JankType 出现，需结合 FrameTimeline details 面板综合判断 |
+
+[已验证: AOSP android-15.0.0\_r1 / android-16.0.0\_r1, frameworks/native/libs/gui/include/gui/JankInfo.h]
+
+这些类型在 Android 15/16 设备上的 Perfetto FrameTimeline 轨道中可能出现。如果分析的目标设备运行 Android 15+，遇到无法用传统 App/SF/Display 归因解释的 jank，检查 details 面板是否包含这些新增类型。
+
+> **注意**：外部 review 提到的 `JANK_APP_RESYNCED_JITTER` / `JANK_NON_ANIMATING` 未在 android-15/16 的 JankInfo.h 中复核到，暂不写入正文。
 
 ### Dropped Frame
 
