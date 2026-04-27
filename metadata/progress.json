@@ -2699,13 +2699,13 @@
       "drafted_date": "2026-04-01",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
-      "last_verified": "2026-04-24",
-      "last_verified_against": "developer.android.com Activity/FrameMetrics docs + ActivityMetricsLogger/ActivityThread + AndroidX AppInitializer/InitializationProvider source",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "Android Developers Baseline Profiles/ProfileInstaller docs + Android Developers Blog AutoFDO kernel post + Task9 deep review 2026-04-27",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -2713,7 +2713,9 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T10:02:28+08:00"
+      "last_task9_at": "2026-04-27T10:02:28+08:00",
+      "last_task2b_at": "2026-04-27T10:44:00+08:00",
+      "notes": "Task2B fixed P95 Task9 Baseline Profile issues and P85 External AutoFDO issue; returned to Task6 pending."
     },
     "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
       "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
@@ -2724,13 +2726,13 @@
       "drafted_date": "2026-04-02",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-04-02",
-      "last_verified_against": "AOSP android-16.0.0_r1, developer.android.com",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "AOSP android-16.0.0_r1 InputTransport/InputDispatcher/ViewRootImpl + AndroidX ViewPager2/Fragment release notes + Task9 deep review 2026-04-27",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -2738,7 +2740,9 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T10:02:28+08:00"
+      "last_task9_at": "2026-04-27T10:02:28+08:00",
+      "last_task2b_at": "2026-04-27T10:44:00+08:00",
+      "notes": "Task2B fixed P95 Task9 InputChannel, ViewPager2, Fragment lifecycle, setReorderingAllowed issues; returned to Task6 pending."
     },
     "src/part2-performance/ch08-responsiveness/05-case-studies.md": {
       "path": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
@@ -7489,7 +7493,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T09:42:00+08:00",
+  "last_updated": "2026-04-27T10:44:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8061,6 +8065,69 @@
         "19.23 修正 SSL_read/write 与 send/recv 在 HTTPS 下的明文/密文字节职责",
         "19.23 补 InstrumentationScope.PROJECT/ALL 边界、URL 重载调用点和 HTTP/2 复用空字段解释",
         "15.8 补 Binder wait、system_server 和 cached-app freezer 的 AOSP 源码锚点"
+      ],
+      "auto_finalized": []
+    }
+  },
+  "section_8_3": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T10:44:00+08:00",
+    "path": "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
+    "title": "启动优化策略",
+    "notes": "Task2B fixed P95 Task9 Baseline Profile issues and P85 External AutoFDO issue; returned to Task6 pending.",
+    "chapter": "8.3",
+    "section": "8.3",
+    "last_verified": "2026-04-27",
+    "last_verified_against": "Android Developers Baseline Profiles/ProfileInstaller docs + Android Developers Blog AutoFDO kernel post + Task9 deep review 2026-04-27"
+  },
+  "section_8_4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T10:44:00+08:00",
+    "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
+    "title": "其他响应速度场景",
+    "notes": "Task2B fixed P95 Task9 InputChannel, ViewPager2, Fragment lifecycle, setReorderingAllowed issues; returned to Task6 pending.",
+    "chapter": "8.4",
+    "section": "8.4",
+    "last_verified": "2026-04-27",
+    "last_verified_against": "AOSP android-16.0.0_r1 InputTransport/InputDispatcher/ViewRootImpl + AndroidX ViewPager2/Fragment release notes + Task9 deep review 2026-04-27"
+  },
+  "2026-04-27-10-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-27T10:44:00+08:00",
+    "sections": [
+      "8.3",
+      "8.4"
+    ],
+    "queue_indexes_completed": [
+      334,
+      335,
+      107
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part2-performance/ch08-responsiveness/03-launch-optimization.md",
+      "src/part2-performance/ch08-responsiveness/04-other-scenarios.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "8.3 拆分 baseline-prof.txt、startup-prof.txt、ProfileInstaller、Cloud Profile 生效路径",
+        "8.3 修正 HRF 示例规则格式并补 Android 16 内核 AutoFDO 量化信息",
+        "8.4 修正 InputChannel socketpair 传输与 App 主 Looper 接收路径",
+        "8.4 修正 ViewPager2 独立 artifact、Fragment 1.1.0 setMaxLifecycle 与 setReorderingAllowed 语义"
       ],
       "auto_finalized": []
     }

@@ -9,8 +9,8 @@ polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "developer.android.com Activity/FrameMetrics docs + ActivityMetricsLogger/ActivityThread + AndroidX AppInitializer/InitializationProvider source"
+last_verified: "2026-04-27"
+last_verified_against: "Android Developers Baseline Profiles/ProfileInstaller docs + Android Developers Blog AutoFDO kernel post + Task9 deep review 2026-04-27"
 confidence: medium
 sources:
   - type: blog
@@ -34,18 +34,18 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T10:02:28+08:00"
-repaired_date: "2026-04-24"
+repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-24T07:52:07+08:00"
+last_task2b_at: "2026-04-27T10:44:00+08:00"
 ---
 
 # 启动优化策略
@@ -335,15 +335,12 @@ splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
 - 第二层（并发）：LoginSDK、CrashReportSDK
 - 第三层（并发）：PushSDK、UserProfileSDK
 
-这样 8 个串行初始化的任务变成了 3 层并发执行。实际测试数据显示，在中等复杂度应用中：
+这样 8 个串行初始化的任务变成了 3 层并发执行。下面这组数字只用于估算上限，不当成通用收益数据：
 
 **串行执行**：8 个任务每个平均耗时 100ms，总耗时约 800ms
 **3 层并行执行**：第一层(3个)约 100ms，第二层(2个)约 100ms，第三层(2个)约 100ms，总耗时约 300ms
-**实际提升**：启动时间减少约 37.5%
 
-测试环境：Pixel 6 (8核CPU)，Android 13，应用包含 12 个 SDK 初始化任务
-测试工具：Perfetto + adb shell am start -W
-数据来源：Google I/O 2023 官方演示及阿里淘宝团队性能优化实践报告
+真实收益取决于 CPU 核数、锁竞争、I/O 阻塞、SDK 内部同步依赖和主线程回切次数。实施时用 Perfetto、Macrobenchmark 或 `adb shell am start -W` 对比同一版本的串行/并行实现，不要直接套用示例里的百分比。
 
 ### Jetpack App Startup Library
 
@@ -580,7 +577,9 @@ Android 应用的代码在安装后并不会全部编译成机器码。ART 运�
 
 应用首次启动时，大量代码仍处于"解释执行"状态，执行效率远低于编译后的机器码。对于启动路径上的代码（从 Application.onCreate 到首帧绘制），这种性能损失可能贡献了几百毫秒甚至更多的额外耗时。
 
-Baseline Profile 是一个由开发者提供的"热点代码列表"（以 human-readable 的文本格式描述哪些类和方法需要在安装时 AOT 编译）。当应用通过 Google Play 安装时，系统会在安装过程中读取 Baseline Profile，提前编译列表中的代码。这样应用首次启动时，这些代码就已经是机器码了，执行效率提升 20%-40%（具体数据取决于应用复杂度，后面"效果量化"小节有详细分析）。
+Baseline Profile 是一个由开发者随 release 包发布的热点代码规则文件，HRF 文本规则会在构建时转成 `baseline.prof`。它的消费路径要拆开看：Google Play 安装可以在安装阶段用 Baseline Profile 触发 `speed-profile` 编译；非 Play 渠道也可以随 APK 携带 `baseline.prof`，再由 `androidx.profileinstaller` 在首次运行后把 profile 写入设备侧，等待后台 dexopt 或手动 `cmd package compile -m speed-profile -f` 完成编译。
+
+Cloud Profile 是另一条路径：Google Play 收集并聚合真实用户运行时 profile，再把聚合结果用于后续安装或更新。它属于 Play 分发侧能力，和开发者打包进 APK 的 Baseline Profile、ART Mainline 模块更新分属不同层级。
 
 ### Baseline Profile 的制作
 
@@ -606,11 +605,11 @@ class BaselineProfileGenerator {
     @Test
     fun generateBaselineProfile() {
         // includeInStartupProfile 需要 benchmark-macro-junit4 1.2.0+
-        // 设置为 true 会将启动路径收集到 startup-prof.txt 中
+        // true 表示同一条启动路径也写入 Startup Profile
         // 1.3.0+ 还支持 DSL 配置 profile mode
         rule.collect(
             packageName = "com.example.app",
-            includeInStartupProfile = true  // 最低依赖：benchmark-macro-junit4 1.2.0
+            includeInStartupProfile = true  // benchmark-macro-junit4 1.2.0+
         ) {
             // 这个块定义了需要优化的用户旅程
             // 启动应用
@@ -625,21 +624,25 @@ class BaselineProfileGenerator {
 
 3. **运行测试生成 Profile 文件**：
 
-生成的文件位于 `src/main/generated/baselineProfiles/startup-prof.txt`，内容类似：
+生成任务会产出 HRF 规则，常见落点是 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`；开启 Startup Profile 后，还会把启动路径写入 `startup-prof.txt`。两者用途不同：
 
-```
-Lcom/example/app/Application;->onCreate
-Lcom/example/app/MainActivity;->onCreate
-Lcom/example/app/network/NetworkSDK;->init
-Landroidx/recyclerview/widget/RecyclerView;->onMeasure
-...
+- `baseline-prof.txt`：描述需要 ART AOT 编译的热点类和方法，最终打包成 `assets/dexopt/baseline.prof`。
+- `startup-prof.txt`：服务于 DEX layout，把启动阶段更常用的类和方法排到更靠前的位置，减少启动期类加载 I/O。
+
+HRF 方法规则必须包含 flags、类描述符、完整方法签名和返回类型，例如：
+
+```text
+HSPLcom/example/app/MainActivity;->onCreate(Landroid/os/Bundle;)V
+HLcom/example/app/network/NetworkSDK;->init(Landroid/content/Context;)V
+PLandroidx/recyclerview/widget/RecyclerView;->onMeasure(II)V
+Lcom/example/app/Application;
 ```
 
-这个文件列出了在启动路径上被频繁调用的类和方法。
+`H` 表示 hot，`S` 表示 startup，`P` 表示 post-startup。类规则只写类描述符，例如 `Lcom/example/app/Application;`。
 
 4. **将 Profile 文件打包到 APK/Bundle 中**：
 
-生成的 Baseline Profile 文件会自动包含在 release 构建中（通过 `gradle-plugin` 集成）。当应用上传到 Google Play 时，Play Console 会将 Profile 分发给用户，在安装时提前编译。
+Release 构建会把 Baseline Profile 编译成二进制 ART profile 并打进 APK / AAB。Google Play 可以在安装阶段消费这份 profile；非 Play 安装路径需要确认包内是否带有 `baseline.prof`，以及 `ProfileInstaller` / 后台 dexopt 是否已经把设备端编译状态推进到 `speed-profile`。
 
 ### 效果量化
 
@@ -681,13 +684,13 @@ fun startupWithBaselineProfile() = benchmarkRule.measureRepeated(
 
 ### Cloud Profile：无需开发者参与的自动优化
 
-除了开发者手动提供的 Baseline Profile，Google Play 还有 Cloud Profile 机制。当大量用户使用应用后，Google Play 会收集匿名化的运行时 Profile 数据（哪些代码被频繁执行），将聚合后的 Profile 分发给后续安装该应用的用户。
+除了开发者随包提供的 Baseline Profile，Google Play 还有 Cloud Profile 机制。当大量用户使用应用后，Play Store 会收集并聚合 ART 运行时 profile，把聚合结果提供给后续安装或更新该应用的用户。
 
-即使开发者没有手动提供 Baseline Profile，应用也能从 Cloud Profile 中受益。但 Cloud Profile 的生效周期较长（需要足够多的用户数据），而且对于新发布的应用或更新版本，在 Cloud Profile 生效之前有一段时间的"无优化期"。手动提供 Baseline Profile 可以覆盖这段空白期，让应用在发布后第一天就有良好的启动性能。
+Cloud Profile 的边界很清楚：它依赖 Google Play 分发和足够多的真实用户样本，通常需要数小时到数天才能覆盖新版本。Baseline Profile 可以填这段空窗期，也能覆盖没有 Play Cloud Profile 的安装路径；非 Play 渠道的差异主要在编译触发时机，APK 仍然可以携带 Baseline Profile。
 
-关于 Baseline Profile 的制作流程、Cloud Profile 的分发机制以及与 AutoFDO（Android 16 引入的内核级反馈编译优化）的协同关系，我们在 8.7 节（Baseline Profiles 与编译优化实践）和 1.12 节（AutoFDO 反馈导向编译优化）中有更详细的讨论。
+关于 Baseline Profile 的制作流程、Cloud Profile 的分发机制以及与 AutoFDO（Android 16 引入的内核级反馈编译优化）的协同关系，8.7 节（Baseline Profiles 与编译优化实践）和 1.12 节（AutoFDO 反馈导向编译优化）会展开讨论。
 
-[待验证：Baseline Profile 在国内应用商店（华为、小米、OPPO、vivo）中的支持情况——目前这些商店可能不支持 Profile 分发机制]
+[待验证：国内主流应用商店是否提供类似 Google Play Cloud Profile 的云端聚合与安装期编译基础设施。]
 
 ## 大型 App 的启动框架设计
 
@@ -774,9 +777,9 @@ adb shell am start -W -n com.example.app/.MainActivity
 
 ### Baseline Profile 与编译优化演进
 
-- **Android 12-13**：Baseline Profile 机制成熟期。Jetpack `benchmark-macro-junit4` 1.2.0 引入 `includeInStartupProfile`，1.3.0 支持 DSL 配置。
-- **Android 15（API 35）**：Cloud Profile 通过 ART Mainline 模块化更新（`com.google.android.art`）分发给设备。即使应用未提供手动 Baseline Profile，Cloud Profile 的生效速度比之前快（不再依赖完整系统 OTA）。国内设备如果搭载了 Google Play Services 且 ART Mainline 可更新，同样受益。
-- **Android 16（API 36）**：引入 AutoFDO（Auto Feedback-Directed Optimization），利用内核级性能采样数据指导编译优化。AutoFDO 与 Baseline Profile 互补——Profile 指定"编译哪些代码"，AutoFDO 优化"如何编译这些代码"（如分支预测、内联策略）。详细机制见 1.12 节。同时 Android 16 对 `profileable` build type 的支持更加完善，建议在 benchmark 测试中启用。
+- **Android 12-13**：Baseline Profile 机制进入稳定使用期。Jetpack `benchmark-macro-junit4` 1.2.0 引入 `includeInStartupProfile`，1.3.0 支持 DSL 配置。
+- **Android 14-15**：ART 继续通过 Mainline 模块更新运行时和 dexopt 能力，但公开资料没有把 Cloud Profile 写成由 ART Mainline 直接分发。Cloud Profile 仍按 Google Play 的聚合与分发模型理解。
+- **Android 16（API 36）**：AutoFDO（Auto Feedback-Directed Optimization）覆盖到 Android 内核优化，Google 公开材料提到 Pixel 上冷启动提升超过 4%、boot time 降低约 2%、Binder 测试最高提升 21%。AutoFDO 与 Baseline Profile 互补：Baseline Profile 决定哪些 Java/Kotlin 方法进入 ART `speed-profile` 编译，AutoFDO 改善内核和 native binary 的机器码布局、分支预测和内联效果。详细机制见 1.12 节。
 
 ### profileable 要求变化
 
@@ -795,8 +798,8 @@ Cloud Profile 的数据采集主要通过 Google Play 服务在用户设备上�
 |------|---------|
 | Android 12（API 31） | SplashScreen API、启动画面与启动体验规范统一 |
 | Android 13（API 33） | Per-app language 对启动流程的影响 |
-| Android 15（API 35） | Cloud Profile 通过 ART Mainline 分发 |
-| Android 16（API 36） | AutoFDO、profileable 增强 |
+| Android 15（API 35） | ART Mainline / dexopt 持续演进，Cloud Profile 仍按 Play 聚合分发理解 |
+| Android 16（API 36） | 内核 AutoFDO、profileable benchmark 支持增强 |
 
 [待验证：Android 17（API 37）对启动流程的进一步变更——beta 阶段尚未完全公开]
 
@@ -809,7 +812,7 @@ Cloud Profile 的数据采集主要通过 Google Play 服务在用户设备上�
 3. **布局优化**（ViewStub、布局扁平化、AsyncLayoutInflater）
 4. **Splash Screen 配置**（改善用户感知，但不减少实际耗时）
 5. **多线程并行初始化框架**（中等收益，但实施成本较高）
-6. **Baseline Profile**（需要 Google Play 支持，收益因应用而异）
+6. **Baseline Profile**（需要生成、打包并确认设备端进入 `speed-profile`；非 Play 渠道要核对 `ProfileInstaller` 与后台 dexopt）
 7. **线上监控与防劣化体系**（长期保障）
 
 一条底线原则：**先度量，再优化，后验证**。没有数据支撑的优化是盲目的，没有线上监控的优化是不可持续的。
@@ -826,7 +829,9 @@ SplashScreen API 改善的是用户感知，不是实际启动耗时。从 BindA
 
 ### 误区三："Baseline Profile 在国内也能用"
 
-Baseline Profile 的安装时编译依赖应用商店支持 Profile 分发。Google Play 完整支持，但国内主流应用商店（华为、小米、OPPO、vivo）目前大多不支持这一机制。在国内，Baseline Profile 主要通过 adb profileinstaller 在设备侧生效，覆盖范围有限。对于国内市场，可以关注 Cloud Profile（Android 15+ ART Mainline 更新带来的自动 Profile 聚合），但生效周期较长。
+Baseline Profile 本身可以用于国内渠道，前提是 release 包里带着 `baseline.prof`，并且应用集成 `androidx.profileinstaller`。差异在编译时机：Google Play 可以在安装阶段消费 Baseline Profile；其他安装器或侧载路径通常由 ProfileInstaller 写入设备侧 profile，再等待后台 `bg-dexopt-job` 完成 `speed-profile` 编译。验证时看 `ProfileVerifier` 或 `dumpsys package dexopt`，不要只看包里是否存在 profile 文件。
+
+Cloud Profile 是 Google Play 的云端聚合分发能力。没有 Play Store 的国内渠道通常拿不到这条路径，但这不影响开发者随包发布 Baseline Profile。
 
 ### 误区四："启动优化做一次就够了"
 
@@ -841,3 +846,4 @@ Baseline Profile 的安装时编译依赖应用商店支持 Profile 分发。Goo
 - [AOSP: ActivityThread.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/app/ActivityThread.java)（进程启动入口）
 - [AOSP: ViewStub.java](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/view/ViewStub.java)
 - [Google I/O 2022: Improve app startup with Baseline Profiles](https://www.youtube.com/watch?v=NfbYyENDfgo)
+- [Android Developers Blog：Boosting Android Performance: Introducing AutoFDO for the Kernel](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)
