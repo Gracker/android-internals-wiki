@@ -4,10 +4,10 @@ chapter: "10.1"
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-21"
+last_verified: "2026-04-27"
 reviewed_date: "2026-04-15"
 reviewed_by: "openclaw-task6"
-last_verified_against: "AOSP android-16.0.0_r1 lmkd + memtrack HAL / developer.android.com docs"
+last_verified_against: "AOSP android-16.0.0_r1 lmkd + memtrack AIDL / Android 15 16KB page size docs / developer.android.com docs"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
@@ -29,6 +29,8 @@ sources:
     path: "https://android.googlesource.com/platform/hardware/interfaces/+/android11-release/memtrack/1.0/IMemtrack.hal"
   - type: official
     path: "https://android.googlesource.com/platform/hardware/interfaces/+/android-16.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl"
+  - type: official
+    path: "https://developer.android.com/guide/practices/page-sizes"
 tags: [memory, pss, rss, mat, heapprofd, memtrack, memory-analysis]
 related_chapters: ["4.1", "4.3", "4.5", "13.1", "14.3"]
 task6_state: reviewed
@@ -43,6 +45,7 @@ task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T13:57:22+08:00"
+last_task2b_at: "2026-04-27T15:52:00+08:00"
 ---
 
 # App 内存分析
@@ -110,7 +113,9 @@ PSS 适合做进程内存归因和回归监控。它计算进程的私有内存�
 
 RSS 则更粗粒度，它统计进程占用的所有物理内存，不做共享分摊。对于同一块共享内存，每个进程的 RSS 都会完整计入，所以所有进程的 RSS 之和会超过系统实际物理内存。RSS 的优势是计算速度快，适合观察单个进程的内存变化趋势。在 Android 9（API 28）以上，Memory Profiler 也直接展示 RSS 信息。
 
-[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler]
+Android 15 开始，设备可以使用 16KB page size。页大小会改变 PSS/RSS 的基线背景：同样一组小对象、`mmap` 映射或 `.so` 段，最小驻留粒度从 4KB 变成 16KB 后，页内未使用空间也会计入驻留页。Google 的 16KB 兼容性说明给出的经验口径是约 5-10% 性能收益，同时带来约 9% 额外内存使用。这里的 9% 属于系统页粒度变化带来的基线漂移，不能直接归因到 App 代码劣化。
+
+[已验证: 官方文档, developer.android.com/studio/profile/memory-profiler ; developer.android.com/guide/practices/page-sizes]
 
 `dumpsys meminfo` 的输出按内存类别展示了进程的完整内存布局：
 
@@ -262,7 +267,9 @@ Graphics 内存是内存分析中经常被忽略但又占据相当大比例的�
 
 [已验证: AOSP, android11-release hardware/interfaces/memtrack/1.0/IMemtrack.hal]
 
-Android 12 之后，Graphics 和 DMA-BUF 的记账口径继续收紧。android-16.0.0_r1 的 AIDL `IMemtrack` 仍提供 `getMemory()` 和 `getGpuDeviceInfo()`，用于区分 GPU 设备并减少 CPU 映射与 GPU 映射缓冲区的重复记账。分析 Graphics 内存时，`dumpsys meminfo`、`dumpsys gpu` 和设备厂商实现要结合着看。
+Android 12 之后，Graphics 和 DMA-BUF 的记账口径继续收紧。android-16.0.0_r1 的 AIDL `IMemtrack` 仍提供 `getMemory()` 和 `getGpuDeviceInfo()`，用于区分 GPU 设备并减少 CPU 映射与 GPU 映射缓冲区的重复记账。
+
+Android 16 还明确了系统级 GPU 查询：`pid = 0` 且 `type = GL` 时，HAL 返回全局 GPU private memory；对应记录可以带 `FLAG_SMAPS_UNACCOUNTED`，表示这部分显存不会出现在某个进程的 `/proc/<pid>/smaps` PSS/RSS 中。这个接口让进程 Graphics 行和系统 GPU 显存总量之间的差额有了标准查询入口。分析 Graphics 内存时，`dumpsys meminfo`、`dumpsys gpu`、`IMemtrack` 与设备厂商实现要结合着看。
 
 [已验证: AOSP, android-16.0.0_r1 hardware/interfaces/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl]
 
@@ -323,14 +330,25 @@ Android 14 引入了一项有意义的改进：当 `GraphicBufferProducer` 断�
 
 基线数据需要记录多次取平均值，因为 Java GC 的时机不确定会导致单次测量有波动。
 
+Android 15/16 上还要把 page size 纳入基线维度。同一条基线至少绑定设备型号、Android 版本、ABI、page size 和采样工具版本；4KB 与 16KB page size 分成两套基线。跨 page size 对比时，先按系统页粒度做分组，再看同组内的 PSS/RSS 变化。16KB 设备上约 9% 的系统性抬升不应直接算作应用回归。
+
+| 维度 | 记录方式 | 用途 |
+|------|----------|------|
+| `page_size_kb` | `adb shell getconf PAGE_SIZE` 换算为 KB | 区分 4KB / 16KB 基线 |
+| `android_api` | 设备系统版本 | 避免 Android 15/16 与旧版本混算 |
+| `pss_kb` / `rss_kb` | `dumpsys meminfo` 或线上采样 | 观察总体内存趋势 |
+| `private_dirty_kb` | `dumpsys meminfo` | 剥离共享库分摊影响，辅助判断 App 自身增长 |
+| `graphics_kb` | `dumpsys meminfo` / `dumpsys gpu` / memtrack | 单独跟踪 Bitmap、Surface、GPU 资源 |
+
 ### 回归检测
 
 有了基线之后，回归检测就是对比每次发版前的内存数据与基线的差异。自动化回归检测通常集成在 CI/CD 流水线中：
 
 1. 在真机或云测试设备上运行预定义的操作流程
 2. 用 `dumpsys meminfo` 或 Memory Profiler API 记录每个步骤的内存数据
-3. 与基线对比，如果 PSS 增长超过阈值（如 5%），标记为回归
-4. 使用 Macrobenchmark 库可以在 CI 中集成内存指标采集
+3. 与同设备族、同 Android 版本、同 page size 的基线对比；如果 PSS 或 Private Dirty 增长超过阈值（如 5%），标记为回归
+4. 跨 4KB / 16KB page size 汇总时，分别输出同组变化率和全量变化率，避免把系统页粒度变化误算进 App 回归
+5. 使用 Macrobenchmark 库可以在 CI 中集成内存指标采集
 
 [已验证: 官方文档, developer.android.com/studio/profile/benchmark]
 
@@ -468,6 +486,7 @@ PSS 是必要的但不够。它只能告诉你"内存高了"，但不知道是 J
 - [Android userspace lmkd 文档](https://source.android.com/docs/core/perf/lmkd)
 - [Memtrack HAL HIDL 接口（Android 11）](https://android.googlesource.com/platform/hardware/interfaces/+/android11-release/memtrack/1.0/IMemtrack.hal)
 - [Memtrack HAL AIDL 接口（android-16.0.0_r1）](https://android.googlesource.com/platform/hardware/interfaces/+/android-16.0.0_r1/memtrack/aidl/android/hardware/memtrack/IMemtrack.aidl)
+- [Android 16KB page size 兼容性说明](https://developer.android.com/guide/practices/page-sizes)
 - [MAT (Memory Analyzer Tool) 官方文档](https://eclipse.dev/mat/)
 - [malloc debug 官方文档](https://source.android.com/docs/core/debug/native-crash)
 - [ASan (AddressSanitizer) 官方文档](https://source.android.com/docs/core/debug/asan)

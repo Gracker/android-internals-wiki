@@ -6,7 +6,7 @@ drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-25"
-last_verified_against: "AOSP Binder/ZygoteInit review anchors, Perfetto SQL tables/stdlib docs"
+last_verified_against: "AOSP Binder/ZygoteInit review anchors, Perfetto SQL tables/stdlib docs, Trace Processor large trace query patterns"
 confidence: medium
 sources:
   - type: official
@@ -32,21 +32,21 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-04-25"
 reviewed_by: openclaw-task6
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-26T00:28:30+08:00"
-last_task2b_at: "2026-04-25T14:40:00+08:00"
-rework_date: "2026-04-25"
+last_task2b_at: "2026-04-27T15:52:00+08:00"
+rework_date: "2026-04-27"
 rework_by: openclaw-task2b
 ---
 
@@ -100,6 +100,72 @@ counter → counter_track (via track_id)
 ```
 
 [已验证: Perfetto 文档, perfetto.dev/docs/analysis/sql-tables]
+
+### 目标进程、主线程与大 Trace 查询约束
+
+后面的模板都按目标进程收窄。主线程不要只用 `thread.name = 'main'` 判断；真实 trace 中，主线程名可能显示为包名、进程名，或者被系统截断。更稳的写法是在目标进程内使用 `thread.is_main_thread = 1`，旧 trace 再用 `thread.tid = process.pid` 兜底。
+
+```sql
+-- 目标进程与主线程 CTE。把 com.example.app 替换为目标进程名
+WITH target_process AS (
+  SELECT upid, pid, name
+  FROM process
+  WHERE name = 'com.example.app'
+),
+main_thread AS (
+  SELECT
+    thread.utid,
+    thread.tid,
+    COALESCE(thread.name, target_process.name) AS thread_name,
+    target_process.upid,
+    target_process.name AS process_name
+  FROM thread
+  JOIN target_process USING (upid)
+  WHERE thread.is_main_thread = 1
+     OR thread.tid = target_process.pid
+)
+SELECT * FROM main_thread;
+```
+
+> 如果当前 Trace Processor 版本没有 `thread.is_main_thread` 字段，就保留 `thread.tid = process.pid` 作为主线程兜底，并在 Perfetto UI 中确认该线程是否承载 `Choreographer#doFrame`、`bindApplication` 等主线程 slice。
+
+大 Trace 上的查询要先裁剪再关联。不要让全量 `thread_state` 与全量 `slice` 做非等值 JOIN；先把目标进程、目标时间窗和中间结果固化，再做 `SPAN_JOIN` / `INTERVAL_INTERSECT` 或重叠区间查询。
+
+```sql
+-- 大 Trace 查询前先固化目标窗口内的主线程状态
+CREATE PERFETTO TABLE target_main_states AS
+WITH target_process AS (
+  SELECT upid, pid, name
+  FROM process
+  WHERE name = 'com.example.app'
+),
+main_thread AS (
+  SELECT thread.utid
+  FROM thread
+  JOIN target_process USING (upid)
+  WHERE thread.is_main_thread = 1
+     OR thread.tid = target_process.pid
+),
+window AS (
+  SELECT trace_start() + 0 AS start_ts, trace_start() + 5000000000 AS end_ts
+)
+SELECT
+  thread_state.id,
+  thread_state.utid,
+  thread_state.state,
+  MAX(thread_state.ts, window.start_ts) AS ts,
+  MIN(thread_state.ts + thread_state.dur, window.end_ts)
+    - MAX(thread_state.ts, window.start_ts) AS dur
+FROM thread_state
+JOIN main_thread USING (utid)
+CROSS JOIN window
+WHERE thread_state.ts < window.end_ts
+  AND thread_state.ts + thread_state.dur > window.start_ts;
+```
+
+`CREATE PERFETTO TABLE` 会把过滤后的结果物化，后续查询可以复用这张小表，减少窗口函数和区间 JOIN 的重复扫描成本。
+
+[已验证: Perfetto SQL tables / stdlib docs, perfetto.dev/docs/analysis/sql-tables]
 
 ### 时间单位与常用函数
 
@@ -205,17 +271,30 @@ Frame Timeline 还能检测一种更隐蔽的流畅性问题：步幅波动（ca
 `sched` 表记录了每个线程在 CPU 上的运行时间。下面的查询统计指定线程（默认主线程）的总运行时间和 CPU 利用率：
 
 ```sql
--- 主线程 CPU 使用统计
+-- 主线程 CPU 使用统计。把 com.example.app 替换为目标进程名
+WITH target_process AS (
+  SELECT upid, pid, name
+  FROM process
+  WHERE name = 'com.example.app'
+),
+main_thread AS (
+  SELECT
+    thread.utid,
+    COALESCE(thread.name, target_process.name) AS thread_name
+  FROM thread
+  JOIN target_process USING (upid)
+  WHERE thread.is_main_thread = 1
+     OR thread.tid = target_process.pid
+)
 SELECT
-  thread.name AS thread_name,
+  main_thread.thread_name,
   SUM(sched.dur) / 1e6 AS total_cpu_ms,
   COUNT(*) AS schedule_count,
   CAST(SUM(sched.dur) * 100.0 / (SELECT end_ts - start_ts FROM trace_bounds) AS FLOAT) AS cpu_pct
 FROM sched
-JOIN thread USING (utid)
-WHERE thread.name = 'main'
-  AND sched.cpu IS NOT NULL
-GROUP BY thread.name;
+JOIN main_thread USING (utid)
+WHERE sched.cpu IS NOT NULL
+GROUP BY main_thread.thread_name;
 ```
 
 `cpu_pct` 是整个 Trace 期间的 CPU 利用率。如果主线程的 CPU 利用率超过 80%，说明主线程大部分时间都在做计算——measure/layout/draw 太重了。如果 CPU 利用率很低但帧时间很长，说明主线程在等什么东西，需要进一步分析线程状态。
@@ -227,29 +306,44 @@ GROUP BY thread.name;
 ```sql
 -- 主线程调度延迟 Top 20
 -- 计算方式：线程以 Runnable 状态离开 CPU 后，到重新获得 CPU 的时间差
+WITH target_process AS (
+  SELECT upid, pid, name
+  FROM process
+  WHERE name = 'com.example.app'
+),
+main_thread AS (
+  SELECT thread.utid
+  FROM thread
+  JOIN target_process USING (upid)
+  WHERE thread.is_main_thread = 1
+     OR thread.tid = target_process.pid
+),
+main_sched AS (
+  SELECT
+    sched.ts,
+    sched.dur,
+    sched.end_state,
+    sched.ts + sched.dur AS left_at,
+    LEAD(sched.ts) OVER (PARTITION BY sched.utid ORDER BY sched.ts) AS run_start,
+    LEAD(sched.cpu) OVER (PARTITION BY sched.utid ORDER BY sched.ts) AS run_cpu,
+    LEAD(sched.ts) OVER (PARTITION BY sched.utid ORDER BY sched.ts) - (sched.ts + sched.dur) AS delay_ns,
+    sched.cpu AS left_cpu
+  FROM sched
+  JOIN main_thread USING (utid)
+)
 SELECT
   CAST((run_start - trace_start()) / 1e6 AS INTEGER) AS time_ms,
   CAST(delay_ns / 1e6 AS FLOAT) AS delay_ms,
   left_cpu,
   run_cpu
-FROM (
-  SELECT
-    ts, dur, end_state,
-    ts + dur AS left_at,
-    LEAD(ts) OVER (PARTITION BY utid ORDER BY ts) AS run_start,
-    LEAD(cpu) OVER (PARTITION BY utid ORDER BY ts) AS run_cpu,
-    LEAD(ts) OVER (PARTITION BY utid ORDER BY ts) - (ts + dur) AS delay_ns,
-    cpu AS left_cpu
-  FROM sched
-  WHERE utid IN (SELECT utid FROM thread WHERE name = 'main')
-)
+FROM main_sched
 WHERE end_state IN ('R', 'R+')   -- 只看被抢占后仍为 Runnable 的记录
   AND delay_ns > 0
 ORDER BY delay_ns DESC
 LIMIT 20;
 ```
 
-这个查询的核心逻辑：从 `sched` 表中找到主线程以 `R`（Runnable）或 `R+`（Runnable preempted）状态离开 CPU 的记录，然后用 `LEAD()` 窗口函数取同一 utid 的下一条调度记录，两者的时间差就是调度延迟。如果 `delay_ms` 频繁超过 5ms，说明系统 CPU 负载很重，主线程在排队等 CPU。可以通过提升主线程优先级（`sched_setscheduler` 设为 SCHED_FIFO）或减少后台线程数来缓解。
+这个查询的核心逻辑：从 `sched` 表中找到主线程以 `R`（Runnable）或 `R+`（Runnable preempted）状态离开 CPU 的记录，然后用 `LEAD()` 窗口函数取同一 utid 的下一条调度记录，两者的时间差就是调度延迟。如果 `delay_ms` 频繁超过 5ms，说明系统 CPU 负载很重，主线程在排队等 CPU。处理方向是减少后台 Runnable 竞争：限制业务线程池并发、降低后台线程优先级、拆分长 CPU 任务、排查热降频或系统负载。`SCHED_FIFO` 只适用于系统/厂商特权进程的受控场景；普通 App 没有 `CAP_SYS_NICE`，不能把 UI 主线程切到实时调度，滥用还可能造成系统饥饿和 watchdog 风险。
 
 ### 线程状态分布
 
@@ -257,16 +351,28 @@ LIMIT 20;
 
 ```sql
 -- 主线程状态分布
+WITH target_process AS (
+  SELECT upid, pid, name
+  FROM process
+  WHERE name = 'com.example.app'
+),
+main_thread AS (
+  SELECT thread.utid
+  FROM thread
+  JOIN target_process USING (upid)
+  WHERE thread.is_main_thread = 1
+     OR thread.tid = target_process.pid
+),
+main_states AS (
+  SELECT thread_state.*
+  FROM thread_state
+  JOIN main_thread USING (utid)
+)
 SELECT
   state,
   SUM(dur) / 1e6 AS total_ms,
-  ROUND(SUM(dur) * 100.0 / (
-    SELECT SUM(dur)
-    FROM thread_state
-    WHERE utid IN (SELECT utid FROM thread WHERE name = 'main')
-  ), 1) AS pct
-FROM thread_state
-WHERE utid IN (SELECT utid FROM thread WHERE name = 'main')
+  ROUND(SUM(dur) * 100.0 / (SELECT SUM(dur) FROM main_states), 1) AS pct
+FROM main_states
 GROUP BY state
 ORDER BY total_ms DESC;
 ```
@@ -322,6 +428,18 @@ LIMIT 20;
 
 ```sql
 -- 查找主线程发起的长时间 Binder 调用
+WITH target_process AS (
+  SELECT upid, pid, name
+  FROM process
+  WHERE name = 'com.example.app'
+),
+main_thread AS (
+  SELECT thread.utid
+  FROM thread
+  JOIN target_process USING (upid)
+  WHERE thread.is_main_thread = 1
+     OR thread.tid = target_process.pid
+)
 SELECT
   CAST((slice.ts - trace_start()) / 1e6 AS INTEGER) AS time_ms,
   slice.name,
@@ -329,9 +447,8 @@ SELECT
   EXTRACT_ARG(slice.arg_set_id, 'code') AS binder_code
 FROM slice
 JOIN thread_track ON slice.track_id = thread_track.id
-JOIN thread USING (utid)
-WHERE thread.name = 'main'
-  AND slice.name GLOB '*binder*'
+JOIN main_thread ON thread_track.utid = main_thread.utid
+WHERE slice.name GLOB '*binder*'
   AND slice.dur > 50e6  -- 超过 50ms 的 Binder 调用
 ORDER BY slice.dur DESC;
 ```
@@ -401,8 +518,9 @@ JOIN thread AS frame_thread ON frame_track.utid = frame_thread.utid
 JOIN process AS frame_process ON frame_thread.upid = frame_process.upid
 WHERE (gc.name GLOB '*GC*' OR gc.name GLOB '*GarbageCollector*')
   AND gc.dur > 1e6
-  AND frame_thread.name = 'main'
+  AND gc_process.name = 'com.example.app'
   AND gc_process.upid = frame_process.upid
+  AND (frame_thread.is_main_thread = 1 OR frame_thread.tid = frame_process.pid)
 ORDER BY gc.dur DESC;
 ```
 
@@ -499,6 +617,26 @@ ORDER BY slice.ts;
 
 ```sql
 -- 启动阶段的 Binder 调用统计
+WITH target_process AS (
+  SELECT upid, pid, name
+  FROM process
+  WHERE name = 'com.example.app'
+),
+main_thread AS (
+  SELECT thread.utid
+  FROM thread
+  JOIN target_process USING (upid)
+  WHERE thread.is_main_thread = 1
+     OR thread.tid = target_process.pid
+),
+startup_window AS (
+  SELECT
+    MIN(CASE WHEN slice.name GLOB '*bindApplication*' THEN slice.ts END) AS start_ts,
+    MIN(CASE WHEN slice.name = 'Choreographer#doFrame' THEN slice.ts END) AS end_ts
+  FROM slice
+  JOIN thread_track ON slice.track_id = thread_track.id
+  JOIN main_thread ON thread_track.utid = main_thread.utid
+)
 SELECT
   slice.name,
   COUNT(*) AS call_count,
@@ -507,14 +645,10 @@ SELECT
   CAST(MAX(slice.dur) / 1e6 AS FLOAT) AS max_ms
 FROM slice
 JOIN thread_track ON slice.track_id = thread_track.id
-JOIN thread USING (utid)
-WHERE thread.name = 'main'
-  AND slice.name GLOB '*binder*'
-  AND slice.ts BETWEEN (
-    SELECT MIN(ts) FROM slice WHERE name GLOB '*bindApplication*'
-  ) AND (
-    SELECT MIN(ts) FROM slice WHERE name = 'Choreographer#doFrame'
-  )
+JOIN main_thread ON thread_track.utid = main_thread.utid
+CROSS JOIN startup_window
+WHERE slice.name GLOB '*binder*'
+  AND slice.ts BETWEEN startup_window.start_ts AND startup_window.end_ts
 GROUP BY slice.name
 ORDER BY total_ms DESC;
 ```
@@ -551,7 +685,7 @@ JOIN thread USING (utid)
 JOIN process USING (upid)
 CROSS JOIN window
 WHERE process.name = 'com.example.app'  -- 替换为目标进程
-  AND thread.name = 'main'
+  AND (thread.is_main_thread = 1 OR thread.tid = process.pid)
   AND slice.ts < window.end_ts
   AND slice.ts + slice.dur > window.start_ts
 ORDER BY slice.ts;
@@ -588,7 +722,7 @@ main_states AS (
   JOIN process USING (upid)
   CROSS JOIN window
   WHERE process.name = 'com.example.app'  -- 替换为目标进程
-    AND thread.name = 'main'
+    AND (thread.is_main_thread = 1 OR thread.tid = process.pid)
     AND thread_state.state != 'Running'
     AND thread_state.ts < window.end_ts
     AND thread_state.ts + thread_state.dur > window.start_ts
@@ -675,12 +809,14 @@ SELECT
 FROM slice AS frame
 JOIN thread_track AS ft ON frame.track_id = ft.id
 JOIN thread AS ft_thread ON ft.utid = ft_thread.utid
+JOIN process AS ft_process ON ft_thread.upid = ft_process.upid
 JOIN android_monitor_contention AS contention
   ON contention.blocked_utid = ft_thread.utid
  AND contention.ts >= frame.ts
  AND contention.ts + contention.dur <= frame.ts + frame.dur
 WHERE frame.name = 'Choreographer#doFrame'
-  AND ft_thread.name = 'main'
+  AND ft_process.name = 'com.example.app'
+  AND (ft_thread.is_main_thread = 1 OR ft_thread.tid = ft_process.pid)
   AND contention.dur > 500000  -- 过滤 < 0.5ms 的短暂等待
 ORDER BY contention.dur DESC;
 ```
