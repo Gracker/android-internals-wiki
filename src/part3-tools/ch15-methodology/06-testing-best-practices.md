@@ -41,10 +41,10 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -92,13 +92,13 @@ repaired_by: "openclaw-task2b"
 
 性能测试和功能测试有一个根本性的区别：功能测试的结果是确定的——要么通过要么失败；而性能测试的结果是概率性的——它受到温度、后台进程、CPU 调频策略、GC 时机等大量不可控因素的影响。如果我们不主动控制这些变量，测试数据就没有参考价值。
 
-所以本节想解决的不是“怎么写一个 benchmark”，而是更前面的事：怎样把测试环境、采样方法和结果解释先做对。没有这一步，后面的数据就没有足够的参考价值。
+本节想解决的比“怎么写一个 benchmark”更前面的事：怎样把测试环境、采样方法和结果解释先做对。没有这一步，后面的数据就没有足够的参考价值。
 
 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking]
 
 ## 测试环境标准化
 
-性能测试的第一步，不是写测试用例，而是搭建一个**尽可能可控的测试环境**。这一步做好了，后面的一切才有意义。
+性能测试的第一步是搭建一个**尽可能可控的测试环境**，这一步做好了，后面的一切才有意义。
 
 ### 设备选择：覆盖主力用户群
 
@@ -341,7 +341,7 @@ Macrobenchmark 通过 `StartupMode.COLD` / `StartupMode.WARM` / `StartupMode.HOT
 
 ## 性能基线管理与回归检测
 
-有了可靠的测试环境和采样策略，接下来要解决的问题是：**怎么知道性能是变好了还是变差了？**
+有了可靠的测试环境和采样策略，下一个要回答的问题：**怎么知道性能是变好了还是变差了？**
 
 ### 什么是性能基线
 
@@ -377,7 +377,7 @@ Macrobenchmark 通过 `StartupMode.COLD` / `StartupMode.WARM` / `StartupMode.HOT
 
 ### 回归检测的阈值设定
 
-有了基线之后，每次代码变更都需要和基线做对比。但问题是：波动多少算正常，多少算回归？
+有了基线之后，每次代码变更都需要和基线做对比。但波动多少算正常，多少算回归？
 
 这取决于指标的**固有波动性**。冷启动时间的波动通常在 ±5-10%，帧率的波动通常在 ±1-2fps。一个实用的策略是：
 

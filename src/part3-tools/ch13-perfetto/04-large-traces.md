@@ -24,11 +24,11 @@ task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T12:33:00+08:00"
@@ -162,7 +162,7 @@ PerfettoSQL 建立在 SQLite 引擎之上，语法与标准 SQL 基本一致。�
 
 在写查询之前，我们需要理解 Perfetto 对 Trace 数据的抽象方式。
 
-所有时间戳都以**纳秒**为单位。这不是 wall clock time，而是从某个起始点开始的单调递增值（通常是 BOOTTIME 时钟）。所以我们可以直接对时间戳做减法得到持续时长，但不能把它直接当成“几点几分”这样的时钟时间。
+所有时间戳都以**纳秒**为单位。它从某个起始点开始单调递增（通常是 BOOTTIME 时钟），不同于 wall clock time。所以我们可以直接对时间戳做减法得到持续时长，但不能把它直接当成“几点几分”这样的时钟时间。
 
 **Slice** 是一个时间段，表示"某个操作从什么时候开始、持续了多久"。比如主线程上一次 `measure` 操作、一个 Binder 调用的耗时、一次 GC 过程，在 Perfetto 中都是一个 Slice。
 
@@ -194,7 +194,7 @@ SELECT DISTINCT name FROM slice ORDER BY name LIMIT 50;
 SELECT COUNT(*) FROM slice WHERE name = 'inflate';
 ```
 
-这是因为很多 Slice 名称（如 `inflate`、`Application.onCreate`、`ActivityThread.handleBindApplication`、`ANR`）是否出现在 Trace 中，取决于采集时开启了哪些 atrace category 和应用是否打了自定义 Trace marker。如果查询返回空结果，多半不是 SQL 写错了，而是采集配置没有覆盖对应事件。
+这是因为很多 Slice 名称（如 `inflate`、`Application.onCreate`、`ActivityThread.handleBindApplication`、`ANR`）是否出现在 Trace 中，取决于采集时开启了哪些 atrace category 和应用是否打了自定义 Trace marker。如果查询返回空结果，多半是采集配置没有覆盖对应事件，而不是 SQL 本身写错了。
 
 ### 几个典型查询
 
