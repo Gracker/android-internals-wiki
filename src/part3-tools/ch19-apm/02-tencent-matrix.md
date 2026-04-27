@@ -2,7 +2,7 @@
 title: "Tencent Matrix"
 chapter: "19"
 section: "19.02"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -16,19 +16,19 @@ sources:
     path: "https://github.com/Tencent/matrix"
   - type: source
     path: "https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-android-lib/src/main/java/com/tencent/matrix/Matrix.java"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-27T22:40:00+08:00"
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T22:33:32+08:00"
+last_task9_at: "2026-04-27T23:21:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
 review_notes: "2026-04-27 task2b: fixed Matrix.Builder pluginListener API usage and added Matrix.java source anchor for Builder/plugin registration."
