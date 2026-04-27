@@ -5,7 +5,7 @@ section: "7.6"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-27"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-27"
@@ -34,10 +34,10 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
-task9_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: "pending"
 task2b_state: fixed
 task2b_rework_date: "2026-04-27"
 task2b_fixed_at: "2026-04-27T13:40:00+08:00"
