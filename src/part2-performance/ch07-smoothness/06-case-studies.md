@@ -5,7 +5,7 @@ section: "7.6"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-27"
-reviewed_by: openclaw-task6-task6"
+reviewed_by: openclaw-task6
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-27"
@@ -34,15 +34,17 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_rework_date: "2026-04-27"
-task2b_fixed_at: "2026-04-27T09:15:00+08:00"
+task2b_fixed_at: "2026-04-27T13:40:00+08:00"
 task2b_result: fixed
 task9_result: needs-rework
+last_task2b_at: "2026-04-27T13:40:00+08:00"
+
 ---
 
 # 案例集
@@ -75,13 +77,17 @@ task9_result: needs-rework
 
 五个案例的难度递进排列：案例一和案例二是 App 端最常见的两类卡顿（布局与数据绑定）；案例三引入时间维度，展示"随使用劣化"的内存问题；案例四切换到渲染管线视角，看 RenderThread 如何反过来拖住主线程；案例五放大到系统级，分析低内存如何让所有 App 同时卡顿。建议按顺序阅读，因为后面的案例会引用前面讲过的分析方法。
 
+### 本节 Trace 与数据口径
+
+这五个案例来自历史问题复盘和公开资料归纳，原始 trace 与截图尚未随章节归档。文中的耗时区间、Jank 率和内存数值只作为案例化示例，用来说明判断过程；正式用于项目复盘前，需要补齐 trace 文件名、设备型号、Android 版本、刷新率、采样窗口、样本次数和统计口径。缺少这些字段时，不把数值当作可复核结论。
+
 ---
 
 ## 案例一：主线程 Measure/Layout 超时导致滑动卡顿
 
 ### 问题现象
 
-用户在某个社交 App 的联系人列表中快速滑动时，能感受到明显的"一顿一顿"的卡顿。60Hz 设备上，滑动体验评分（通过 JankStats 采集）显示 Jank 率约 12%，远超 5% 的可接受阈值。
+用户在某个社交 App 的联系人列表中快速滑动时，能感受到明显的"一顿一顿"的卡顿。以 60Hz 设备的示例复盘口径描述，滑动体验评分（JankStats）约 12%，用于说明问题量级；正式引用前需要补齐原始 trace 与测试条件。
 
 ### 分析思路
 
@@ -91,9 +97,9 @@ task9_result: needs-rework
 
 使用 Perfetto 抓取滑动场景的 Trace，关注主线程（`ui_thread`）的时间线。
 
-[待补充：Trace 截图 — 主线程 measure/layout 超时的 Perfetto 视图]
+[待验证：Trace 证据待归档 — 主线程 measure/layout 超时的 Perfetto 视图；需补 trace 文件名、设备型号、Android 版本、刷新率、采样窗口、样本次数与统计口径。当前耗时/Jank 数值只作为案例化示例。]
 
-Perfetto 显示，主线程在某些帧的 traversal 阶段耗时超过 16ms（一个 VSync 周期）。展开这些帧的 slice 详情，发现 measure 阶段反复执行，单次耗时 8-12ms。
+示例 trace 中，主线程在部分帧的 traversal 阶段超过一帧预算。展开这些帧的 slice 详情，measure 阶段反复执行，单次耗时落在 8-12ms 这一类风险区间。[待验证：需补原始 trace 后才能作为实测结论]
 
 ### 逐步分析
 
@@ -119,7 +125,7 @@ Perfetto 显示，主线程在某些帧的 traversal 阶段耗时超过 16ms（�
 
 ### 效果对比
 
-修复后 Perfetto 中 measure 阶段从 8-12ms 降到 2-3ms。滑动 Jank 率从 12% 降到 3%。
+示例复盘口径中，修复后 Perfetto 里的 measure 阶段从 8-12ms 区间降到 2-3ms 区间，滑动 Jank 率从约 12% 降到约 3%。[待验证：正式落盘时需补同一设备、同一脚本、同一刷新率下的前后 trace]
 
 ### 举一反三
 
@@ -146,17 +152,17 @@ Perfetto 显示，主线程在某些帧的 traversal 阶段耗时超过 16ms（�
 
 ### 抓取与定位
 
-[待补充：Trace 截图 — onBindViewHolder 中出现 Binder 调用的 Perfetto 视图]
+[待验证：Trace 证据待归档 — onBindViewHolder 中出现 Binder 调用的 Perfetto 视图；需补 trace 文件名、设备型号、Android 版本、刷新率、滑动脚本、采样窗口与样本次数。当前耗时/Jank 数值只作为案例化示例。]
 
-Perfetto 中看到：主线程在某些帧的执行过程中出现了 Binder 调用（Binder:XXX 事件），每次耗时 5-20ms 不等。这些 Binder 调用正好发生在 `onBindViewHolder` 的调用栈中。
+示例 trace 中，主线程在部分帧的执行过程中出现 Binder 调用（Binder:XXX 事件），单次耗时落在 5-20ms 这一类风险区间。这些 Binder 调用出现在 `onBindViewHolder` 的调用栈中。[待验证：需补原始 trace 后才能作为实测结论]
 
 ### 逐步分析
 
 **第一步：定位 Binder 调用来源。** 展开主线程的调用栈，发现 `onBindViewHolder()` → `loadUserInfo()` → `ContentResolver.query()`。每次绑定 item 都查询 ContentProvider 获取用户头像和昵称。
 
-**第二步：确认 ContentResolver.query 的本质。** `ContentResolver.query()` 如果目标是其他进程的 ContentProvider，就是一次跨进程 Binder 调用。系统空闲时 0.5-1ms，繁忙时可能 10-20ms 甚至更高。同进程的 Provider 虽然不走 Binder，但在主线程执行数据库查询仍然会阻塞帧处理。
+**第二步：确认 ContentResolver.query 的本质。** `ContentResolver.query()` 如果目标是其他进程的 ContentProvider，就是一次跨进程 Binder 调用。经验上，系统空闲时可能接近亚毫秒到 1ms 级别，繁忙时会拉长到 10ms 级甚至更高；具体数值必须以目标设备 trace 为准。同进程 Provider 虽然不走 Binder，但在主线程执行数据库查询仍然会阻塞帧处理。
 
-**第三步：量化影响。** 滑动时每个新可见的 item 触发一次 `onBindViewHolder`，滑动速度越快触发越频繁。一帧中如果有 2-3 个 item 需要绑定，仅 Binder 调用就可能消耗 10-60ms——远超 16ms 的帧预算。
+**第三步：量化影响。** 滑动时每个新可见的 item 触发一次 `onBindViewHolder`，滑动速度越快触发越频繁。一帧中如果有 2-3 个 item 需要绑定，仅 Binder 调用就可能吃掉一帧预算；示例区间可写成 10-60ms，但正式结论必须绑定具体 trace 与采样窗口。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 主线程 Binder 调用在系统繁忙时可能导致卡顿]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — WeSing 发现 onBindViewHolder 中的日志字符串拼接耗时 18ms]
@@ -189,7 +195,7 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 ### 效果对比
 
-修复后 Perfetto 中 onBindViewHolder 的单次耗时从 5-20ms 降到 0.5ms 以内（纯赋值）。滑动 Jank 率在系统高负载场景下从约 15% 降到 2%。
+示例复盘口径中，修复后 `onBindViewHolder` 的单次耗时从 5-20ms 区间降到 0.5ms 以内（纯赋值），滑动 Jank 率在系统高负载场景下从约 15% 降到约 2%。[待验证：正式落盘时需补同一负载条件下的前后 trace]
 
 ### 举一反三
 
@@ -210,7 +216,7 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 ### 问题现象
 
-一个音乐 App 在连续使用 30 分钟后，滑动体验逐渐劣化。初始时 Jank 率约 3%，使用 30 分钟后 Jank 率上升到 15%+。杀掉 App 重新打开后恢复正常。
+一个音乐 App 在连续使用 30 分钟后，滑动体验逐渐劣化。示例复盘口径中，初始 Jank 率约 3%，使用 30 分钟后上升到 15%+；杀掉 App 重新打开后恢复正常。[待验证：需补设备、版本、采样脚本和 30 分钟内的内存曲线]
 
 ### 分析思路
 
@@ -218,9 +224,9 @@ override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
 ### 抓取与定位
 
-[待补充：Trace 截图 — GC 暂停主线程的 Perfetto 视图]
+[待验证：Trace 证据待归档 — GC 暂停主线程的 Perfetto 视图；需补 trace 文件名、设备型号、Android/ART 版本、刷新率、使用时长、采样窗口与样本次数。当前内存/Jank 数值只作为案例化示例。]
 
-使用 Perfetto 同时开启 Java Heap 和 Scheduling 跟踪。观察到：
+使用 Perfetto 同时开启 Java Heap 和 Scheduling 跟踪。示例观察如下，正式结论需要绑定原始 trace：
 1. App 的 Java Heap 从初始的 80MB 持续增长到 200MB+
 2. GC 事件频率从初始的每 5 秒一次增加到每秒 2-3 次
 3. 主线程在 GC 期间出现大量 "GC For Alloc" 暂停，单次 5-15ms
@@ -264,7 +270,7 @@ val imageCache = object : LruCache<String, Bitmap>(cacheSizeKb) {
 
 ### 效果对比
 
-修复后 Heap 使用稳定在 100MB 以内，GC 频率恢复到正常水平（每 5-10 秒一次），滑动 Jank 率从 15% 降到 4%，且不再随时间劣化。
+示例复盘口径中，修复后 Heap 使用稳定在 100MB 以内，GC 频率回到每 5-10 秒一次的区间，滑动 Jank 率从约 15% 降到约 4%，且不再随时间劣化。[待验证：正式落盘时需补同一使用脚本下的前后 trace 与 heap 曲线]
 
 ### 举一反三
 
@@ -287,25 +293,27 @@ GC 导致卡顿的 Perfetto 特征：
 
 ### 分析思路
 
-有动画时卡顿、无动画时正常——问题一定跟动画渲染有关。在 Android 的渲染管线中，动画渲染涉及主线程（measure/layout/draw）和 RenderThread（GPU 指令提交）的协作（参见 [2.5 MainThread 与 RenderThread 协作](05-main-render-thread.md)）。
+有动画时卡顿、无动画时正常——问题一定跟动画渲染有关。在 Android 的渲染管线中，动画渲染涉及主线程（measure/layout/draw）和 RenderThread（GPU 指令提交）的协作（参见 [2.5 MainThread 与 RenderThread 协作](../../part1-fundamentals/ch02-rendering/05-main-render-thread.md)）。
 
 ### 抓取与定位
 
-[待补充：Trace 截图 — RenderThread sync 阻塞主线程的 Perfetto 视图]
+[待验证：Trace 证据待归档 — RenderThread sync 阻塞主线程的 Perfetto 视图；需补 trace 文件名、设备型号、Android 版本、刷新率、动画资源规模、采样窗口与样本次数。当前耗时/Jank 数值只作为案例化示例。]
 
-Perfetto 中同时观察主线程和 RenderThread：
-- 主线程在某些帧的 draw 结束后，会在 `syncAndDrawFrame` 停 8-15ms，然后才进入下一个 VSync 的等待
+Perfetto 中同时观察主线程和 RenderThread。示例 trace 的现象是：
+- 主线程在部分帧的 draw 结束后，会在 `syncAndDrawFrame` 停 8-15ms，然后才进入下一个 VSync 的等待
 - RenderThread 在同一时间段正在进行 `DrawFrame` 操作
+
+[待验证：需补原始 trace 后才能作为实测结论]
 
 ### 逐步分析
 
 **第一步：理解 sync 机制。** 主线程在 `performDraw()` 中通过 `ThreadedRenderer.syncAndDrawFrame()` 将本帧的绘制命令同步给 RenderThread。native 层对应 `DrawFrameTask::syncFrameState()`，它会等待 RenderThread 完成上一帧的渲染工作后，再把新的 DisplayList 数据交给 RenderThread。
 
-**第二步：为什么 sync 会耗时。** 当有多个动态表情（AnimatedVectorDrawable）同时在播放时，每一帧都会触发 DisplayList 重录制——向量动画的路径数据每帧变化，导致 RenderThread 需要重新执行绘制指令并提交给 GPU。如果 RenderThread 正在处理上一帧的工作（向量动画的栅格化、GPU tessellation 和 overdraw），主线程在 `syncFrameState()` 阶段就需要等待。
+**第二步：先判断 RenderThread 积压。** 多个 AnimatedVectorDrawable 同时播放时，向量路径、裁剪、alpha 或变换会让 DisplayList 更频繁地重录制，RenderThread 需要重新执行绘制指令并提交给 GPU。如果 RenderThread 还在处理上一帧的向量栅格化、tessellation 或 overdraw，主线程会在 `syncFrameState()` 阶段等待。AVD 是向量动画，不能把这个现象直接写成 GPU 纹理反复上传；只有 trace 中出现 `UploadTexture`、`glTexImage2D` 或同类证据时，才能单独讨论纹理上传。
 
-**第三步：确认根因。** 动态表情的每一帧都在变化，导致 Bitmap 频繁重新上传 GPU。正常情况下 RenderThread 可以快速完成 sync，但多表情叠加时 GPU 工作量激增，sync 等待时间从正常的 <1ms 增加到 8-15ms。
+**第三步：单独判断 AVD UI fallback。** API 25+ 的 AVD 可以走 `VectorDrawableAnimatorRT`。在 AOSP android-16.0.0_r1 中，`fallbackOntoUI()` 的主要触发条件是 Software Canvas 下仍有 pending animation action，或代码主动走 `forceAnimationOnUI()`。RT 不支持的属性通常在 RT animator 构建阶段跳过或抛错，不能描述成运行中自动退回 UI 线程。
 
-**第四步：排查 AnimatedVectorDrawable 退化路径。** API 25+ 的 AVD 可以走 `VectorDrawableAnimatorRT`，但 `AnimatedVectorDrawable.fallbackOntoUI()` 会把动画切回 UI 线程。常见触发面包括软件 Canvas、动画 pending action 未能进入 RT，以及动画过程中动态修改部分属性或使用 RT 不支持的变换。Trace 里如果主线程同时出现动画推进和 `syncAndDrawFrame` 等待，需要把 AVD UI fallback 与 RenderThread 积压放在一起判断。
+**第四步：把两类问题分开归因。** 主线程动画推进、`invalidateSelf()` 频繁出现，更像 UI fallback；RenderThread 的 `DrawFrame` 拉长、主线程停在 `syncAndDrawFrame`，更像 RT 积压。两者可能叠加，但修复手段不同，trace 里要分开标注。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — RenderThread 自身耗时导致主线程 sync 被阻塞]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 微信对话框有多个动态表情时出现 buildDrawingCache 耗时]
@@ -313,14 +321,14 @@ Perfetto 中同时观察主线程和 RenderThread：
 
 ### 根因
 
-多个动画表情同时播放，每帧触发 DisplayList 重录制，向量路径数据变化导致 RenderThread 承担了大量的绘制和 GPU 栅格化工作。RenderThread 处理变慢后，主线程在 `syncFrameState()` 阶段等待时间从正常的 <1ms 增加到 8-15ms，直接导致帧超时。若 AVD 命中 `fallbackOntoUI()`，主线程还会承担动画推进，帧预算会被进一步压缩。
+多个动画表情同时播放，每帧触发 DisplayList 重录制，向量路径和变换让 RenderThread 承担更多绘制、栅格化和 GPU 提交工作。RenderThread 处理变慢后，主线程在 `syncFrameState()` 阶段等待时间从正常的 <1ms 增加到 8-15ms 这一类风险区间，直接导致帧超时。若同时命中 AVD UI fallback，主线程还会承担动画推进，帧预算会被进一步压缩；两类原因需要通过 trace 分开确认。
 
 ### 修复方案
 
 1. **限制同时播放的动画表情数量**：只对可见区域内的表情启用动画
 2. **使用 Hardware Layer 缓存静态部分**：对非动画内容使用 `LAYER_TYPE_HARDWARE` 避免重绘
-3. **降低动画分辨率**：对小尺寸表情使用缩放后的低分辨率动画资源
-4. **避免触发 AVD UI fallback**：动画播放期间不要反复改 `alpha`、path morph 等属性；确认承载视图在硬件加速 Canvas 上绘制
+3. **降低向量动画复杂度**：减少 path 节点、变形范围和同屏播放数量；如果改成序列帧或 WebP，需要单独验证纹理上传和内存占用
+4. **避免触发 AVD UI fallback**：确认承载视图在硬件加速 Canvas 上绘制；不要主动调用 `forceAnimationOnUI()`；RT 不支持的属性要在资源构建阶段排除，不能指望运行期自动退化
 
 ```kotlin
 // 只对可见的表情播放动画
@@ -337,7 +345,7 @@ fun onViewHolderDetached(holder: EmojiViewHolder) {
 
 ### 效果对比
 
-限制同时播放的动画数量（最多 3 个）后，RenderThread 的 sync 等待时间从 8-15ms 降到 2-3ms，聊天界面 Jank 率从约 20% 降到 5%。
+示例复盘口径中，限制同时播放的动画数量（最多 3 个）后，RenderThread 的 sync 等待时间从 8-15ms 区间降到 2-3ms 区间，聊天界面 Jank 率从约 20% 降到约 5%。[待验证：正式落盘时需补同一聊天数据、同一动画资源和同一设备下的前后 trace]
 
 ### 举一反三
 
@@ -346,7 +354,7 @@ RenderThread 相关卡顿的 Perfetto 特征：
 - RenderThread 的 `DrawFrame` slice 明显延长
 - 向量动画场景下 DisplayList 重录制操作频繁
 
-**判断技巧：** 如果主线程卡顿，但业务代码本身不耗时，就先看 RenderThread 是否成了瓶颈。主线程很多时候是在等它。
+**判断入口：** 如果主线程卡顿，但业务代码本身不耗时，就先看 RenderThread 是否成了瓶颈。主线程很多时候是在等它。
 
 ---
 
@@ -360,13 +368,13 @@ RenderThread 相关卡顿的 Perfetto 特征：
 
 ### 分析思路
 
-全局性卡顿 + 重启恢复，怀疑系统级问题而非单个 App 问题。优先检查系统内存状态和 lmkd/kswapd 活动。
+全局性卡顿 + 重启恢复，怀疑系统级问题而非单个 App 问题。优先检查系统内存状态、lmkd 事件、kswapd 活动和 PSI（Pressure Stall Information）压力。
 
 ### 抓取与定位
 
-[待补充：Trace 截图 — kswapd 活跃 + lmkd 杀进程的系统级 Trace]
+[待验证：Trace 证据待归档 — kswapd 活跃 + lmkd 杀进程的系统级 Trace；需补 trace 文件名、设备型号、Android 版本、内存规格、采样窗口、后台 App 组合与统计口径。当前内存/Jank 数值只作为案例化示例。]
 
-通过 `adb shell dumpsys meminfo` 查看系统内存状态：
+通过 `adb shell dumpsys meminfo` 查看系统内存状态。下面是示例输出，正式结论需要补设备型号、系统版本和采样时间：
 
 ```
 Total RAM: 3,842,060K (status moderate)
@@ -382,7 +390,7 @@ Total RAM: 3,842,060K (status moderate)
 **第一步：确认是内存压力导致的级联效应。** 系统内存紧张时发生以下连锁反应：
 
 1. **kswapd 被频繁唤醒**：内核的后台内存回收线程开始工作，它在回收页面时需要获取各种内核锁（如 `pgdat->lru_lock`），这些锁的竞争会导致应用进程的内存分配变慢
-2. **lmkd 开始杀进程**：当 kswapd 回收的内存不够时，Low Memory Killer 开始杀后台进程。杀进程涉及大量的 page fault 和 TLB 刷新
+2. **lmkd 开始杀进程**：现代 Android 主线设备主要由 userspace `lmkd` 根据压力、adj 和水位策略杀后台进程。杀进程会带来页表回收、缓存失效和后续冷启动成本
 3. **所有 App 的 GC 压力增大**：系统内存紧张，lmkd 杀 App，App 被杀后缓存丢失，存活的 App 缺少共享缓存，更多缺页中断，更多 IO，更卡
 
 **第二步：在 Trace 中验证。** Perfetto 系统级视图中可以观察到：
@@ -391,7 +399,7 @@ Total RAM: 3,842,060K (status moderate)
 - 所有前台 App 的主线程出现更多 involuntary context switch（被调度器切出）
 - 前台 App 的 `GC` 事件频率显著升高
 
-**第三步：量化影响。** 在内存压力场景下，一帧的执行时间分布变为：
+**第三步：量化影响。** 在示例内存压力场景下，一帧的执行时间分布可能变为：
 - GC 暂停：5-20ms（正常 <5ms）
 - involuntary context switch：3-10ms（正常 <1ms）
 - 页面缺页：2-8ms（正常 <1ms）
@@ -436,13 +444,13 @@ override fun onTrimMemory(level: Int) {
 
 ### 效果对比
 
-App 端优化后（响应 onTrimMemory + 减少自身内存占用 30%），在同样的低内存场景下 Jank 率从 25% 降到 12%。系统端优化后（调整 lmkd 参数），全局 Jank 率进一步降到 8%。
+示例复盘口径中，App 端优化后（响应 onTrimMemory + 减少自身内存占用 30%），在同样的低内存场景下 Jank 率从约 25% 降到约 12%。系统端优化后（调整 lmkd 参数），全局 Jank 率进一步降到约 8%。[待验证：正式落盘时需补同一后台 App 组合、同一内存水位和同一滑动脚本下的前后 trace]
 
 ### 举一反三
 
 低内存导致全局卡顿的识别信号：
 - `adb shell dumpsys meminfo` 显示 Free RAM 极低
-- `adb shell dmesg | grep lowmemorykiller` 有大量杀进程记录
+- 现代设备优先看 `adb logcat -b events -b system | grep -i lmkd`、Perfetto 中的 lmkd/进程生命周期事件、statsd 低内存事件和 `/proc/pressure/memory`；`adb shell dmesg | grep lowmemorykiller` 只作为旧内核或厂商内核的补充入口
 - Perfetto 中 `kswapd0` 线程持续活跃
 - 多个 App 同时出现性能下降（不是单一 App 的问题）
 
@@ -452,7 +460,7 @@ App 端优化后（响应 onTrimMemory + 减少自身内存占用 30%），在�
 
 ## 厂商级流畅性优化案例
 
-以上五个案例都是从 App 开发者视角出发的——拿到一个卡顿问题，分析根因，修复代码。但 Android 生态中还有一群人从完全不同的角度优化流畅性：设备厂商。他们在系统框架层和硬件协同层做的优化，往往能带来 App 层无法企及的提升。本节提供一个厂商视角的流畅性优化概览。详细的厂商级优化方法参见 [17.1 OEM 性能优化的通用思路](01-oem-overview.md)。
+以上五个案例都是从 App 开发者视角出发的——拿到一个卡顿问题，分析根因，修复代码。但 Android 生态中还有一群人从完全不同的角度优化流畅性：设备厂商。他们在系统框架层和硬件协同层做的优化，往往能带来 App 层无法企及的提升。本节提供一个厂商视角的流畅性优化概览。详细的厂商级优化方法参见 [17.1 OEM 性能优化的通用思路](../../part4-system/ch17-oem/01-oem-overview.md)。
 
 ### OPPO ColorOS 极光引擎：并行绘制架构
 
@@ -579,10 +587,12 @@ public void draw(Canvas canvas) {
 }
 ```
 
-**退化三者同时满足**：
-1. `!canvas.isHardwareAccelerated()` — Software Canvas
-2. `mAnimatorSet instanceof VectorDrawableAnimatorRT` — 当前用 RT 版本
-3. `!isRunning() && mPendingAnimationActions.size() > 0` — 动画 pending
+`fallbackOntoUI()` 这一路径需要同时满足三项条件：
+1. `!canvas.isHardwareAccelerated()` — 当前是 Software Canvas
+2. `mAnimatorSet instanceof VectorDrawableAnimatorRT` — 当前使用 RT 版本
+3. `!isRunning() && mPendingAnimationActions.size() > 0` — 仍有待提交的动画动作
+
+另外，代码主动调用 `forceAnimationOnUI()` 会直接切到 UI 线程。RT 不支持的属性一般在 RT animator 构建阶段跳过或抛出异常，不能写成播放过程中自动 fallback。
 
 #### 版本演进
 
@@ -593,7 +603,7 @@ public void draw(Canvas canvas) {
 
 #### 实战影响
 
-当 AVD 退化到 UI 线程运行时，动画对主线程 jank 完全敏感，失去了 RenderThread 独立优势。Perfetto 中可通过主线程 `syncAndDrawFrame` 耗时判断退化是否发生。
+当 AVD 退化到 UI 线程运行时，主线程会同时承担动画推进和 View invalidation；没有 fallback 但同屏向量动画过多时，RenderThread 仍可能在 `DrawFrame` 中积压。Perfetto 里要分开看：主线程动画 slice / Choreographer 动画回调增多，指向 UI fallback；RenderThread `DrawFrame` 拉长且主线程停在 `syncAndDrawFrame`，指向 RT 积压。
 
-**源码文件**：`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`（aosp-mirror master）
+**源码文件**：`frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java`（AOSP android-16.0.0_r1）
 

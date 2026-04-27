@@ -8312,5 +8312,39 @@
     "last_verified": "2026-04-27",
     "last_verified_against": "AOSP external/perfetto trace_processor_shell.cc + Perfetto docs/python api",
     "notes": "Task2B fixed P95 trace_processor HTTP parameter issue and P85 query-string compatibility issue; returned to Task6 pending."
+  },
+  "task2b_runs": [
+    {
+      "at": "2026-04-27T13:40:00+08:00",
+      "task": "task2b-content-processing-rework",
+      "sections": [
+        "7.6",
+        "15.1"
+      ],
+      "files": [
+        "src/part2-performance/ch07-smoothness/06-case-studies.md",
+        "src/part3-tools/ch15-methodology/01-philosophy.md"
+      ],
+      "queue_items": [
+        342,
+        48
+      ]
+    }
+  ],
+  "last_task2b_run": {
+    "at": "2026-04-27T13:40:00+08:00",
+    "task": "task2b-content-processing-rework",
+    "sections": [
+      "7.6",
+      "15.1"
+    ],
+    "files": [
+      "src/part2-performance/ch07-smoothness/06-case-studies.md",
+      "src/part3-tools/ch15-methodology/01-philosophy.md"
+    ],
+    "queue_items": [
+      342,
+      48
+    ]
   }
 }
