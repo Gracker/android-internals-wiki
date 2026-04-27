@@ -13445,5 +13445,75 @@
     "completed_at": "2026-04-27T09:15:00+08:00",
     "completed_by": "task2b-content-processing-rework",
     "completion_reason": "已修复 JobScheduler API 边界、AppFunctions 误注入、Activity 配置变化 API 名称、static final 反射/JNI 后果区分。"
+  },
+  {
+    "section": "8.3",
+    "section_title": "启动优化策略",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Baseline Profile 分发机制与 HRF 规则格式存在事实错误，会误导国内渠道和启动编译优化判断",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L628-L636 Baseline Profile 文件与示例规则",
+        "detail": "示例规则缺少 HRF flags、方法签名和返回类型；startup-prof.txt / baseline-prof.txt 的作用也被混写。",
+        "suggestion": "拆开 baseline-prof.txt 与 startup-prof.txt 的用途；示例改成带 flags、完整方法签名和返回类型的 HRF 规则，例如 HSPLcom/example/app/MainActivity;->onCreate(Landroid/os/Bundle;)V，或使用 class rule。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L829 国内渠道 Baseline Profile 判断",
+        "detail": "文中把开发者提供的 Baseline Profile 与 Play Cloud Profile 合并，写成“安装时编译依赖应用商店支持 Profile 分发”。Baseline Profile 可随 APK/AAB 打包，并可通过 ProfileInstaller / 构建工具链在非 Play 渠道生效；Play Cloud Profile 才是 Play 后端聚合分发。",
+        "suggestion": "拆成 Baseline Profile、Cloud Profile、ProfileInstaller 三条路径，重新说明国内渠道边界。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L778 Android 15 Cloud Profile",
+        "detail": "“Cloud Profile 通过 ART Mainline 分发，国内设备同样受益”的表述缺少官方版本锚点，也混淆 ART Mainline 模块化与 Play 后端聚合 profile。",
+        "suggestion": "补官方来源；不能验证则收敛为待验证，并删除“国内设备同样受益”的推断。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T10:02:28+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "8.4",
+    "section_title": "其他响应速度场景",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Input 传输机制与 ViewPager2/Fragment 版本演进存在事实错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L264 点击响应时间线 / InputDispatcher 分发延迟",
+        "detail": "InputChannel 被写成共享内存通道，并写成发送到目标进程 InputThread；AOSP InputTransport.cpp 中 openInputChannelPair() 使用 socketpair(AF_UNIX, SOCK_SEQPACKET)，App 侧通常由 ViewRootImpl.WindowInputEventReceiver 绑定主 Looper 接收。",
+        "suggestion": "改为“InputDispatcher 通过 InputChannel 的 Unix domain socketpair 将事件发给目标窗口；事件在 App 主 Looper 上由 InputEventReceiver 进入 ViewRootImpl 分发”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L167/L439 ViewPager2 版本描述",
+        "detail": "ViewPager2 被写成最早出现在 AndroidX Fragment 1.0.0，并在 Android 9/API 28 引入。ViewPager2 是独立 AndroidX viewpager2 artifact，stable 1.0.0 发布于 2019，依赖 AndroidX/RecyclerView，不能绑定到 Android 平台 API 28 或 Fragment 1.0.0。",
+        "suggestion": "版本表改成 AndroidX ViewPager2 1.0.0（2019，独立 artifact，minSdk 按库版本说明），不要列为 Android 9 平台能力。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L436/L441 Fragment 与 setMaxLifecycle 版本表",
+        "detail": "平台 Fragment 不是 Android 4.0/API 14 才引入，而是 Android 3.0/API 11；setMaxLifecycle 属于 AndroidX Fragment 1.1.x 系列即已提供，写成 1.2.0 引入不准确。",
+        "suggestion": "修正历史版本表，并区分平台 Fragment、AndroidX Fragment、ViewPager2 三条演进线。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L129 FragmentFactory / setReorderingAllowed(true)",
+        "detail": "setReorderingAllowed(true) 被解释为“并行处理多个 Fragment 操作”，这不是实际语义；它允许 FragmentManager 重排并优化同一事务/批量事务中的生命周期与中间操作，不会并发执行 Fragment 创建。示例中的 fetchPreloadData() 如果发生在 instantiate() 内，还会把同步取数塞回创建路径。",
+        "suggestion": "改成“只注入已预取的数据或 ID”；setReorderingAllowed(true) 说明为优化生命周期/transition 的重排，不写并行。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T10:02:28+08:00",
+    "status": "pending"
   }
 ]

@@ -29,15 +29,15 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: pending
-task2b_state: fixed
-task9_reviewed_date: '2026-04-22'
+task9_state: reviewed
+task2b_state: pending
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-22T14:30:00+08:00'
+last_task9_at: "2026-04-27T10:02:28+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-23T19:25:33+08:00"
 ---
