@@ -2292,7 +2292,14 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T16:44:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 回炉修复已写回章节，重新送入 Task6/Task9 流水线",
+    "fixed_files": [
+      "src/part3-tools/ch15-methodology/04-competitive-analysis.md"
+    ],
+    "task2b_result": "fixed"
   },
   {
     "section": "15.5",
@@ -2432,12 +2439,19 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/research-gaps.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T19:35:26+08:00"
+    "updated_at": "2026-04-25T19:35:26+08:00",
+    "completed_at": "2026-04-27T16:44:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B 回炉修复已写回章节，重新送入 Task6/Task9 流水线",
+    "fixed_files": [
+      "src/part3-tools/ch15-methodology/06-testing-best-practices.md"
+    ],
+    "task2b_result": "fixed"
   },
   {
     "section": "15.7",

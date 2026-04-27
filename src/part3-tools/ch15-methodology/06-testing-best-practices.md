@@ -5,8 +5,8 @@ section: "15.6"
 status: ready-for-review
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-21"
-last_verified_against: "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1"
+last_verified: "2026-04-27"
+last_verified_against: "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1 ThermalManagerService / DisplayModeDirector / BackgroundDexOptJob, ART Service"
 confidence: medium
 sources:
   - type: official
@@ -21,6 +21,12 @@ sources:
     path: "firebase.google.com/docs/perf-mon/troubleshooting#performance-monitoring-limits"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java"
+  - type: aosp
+    path: "frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptJob.java"
+  - type: aosp
+    path: "packages/modules/Art/service/java/com/android/server/art/ArtManagerLocal.java"
 tags:
   - android
   - benchmark
@@ -31,18 +37,21 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-25"
 last_task9_at: "2026-04-25T19:35:26+08:00"
+last_task2b_at: "2026-04-27T16:44:00+08:00"
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
 ---
 
 
@@ -117,6 +126,17 @@ Google 在官方文档中建议至少使用一台运行 AOSP 系统镜像的 Pix
 
 关于温度对性能的具体影响，我们在 §5.5 Thermal 管控中有详细的机制分析。
 
+### 峰值性能和热稳定态分开测
+
+同一个 App 可以有两套性能画像：冷机短时间的峰值表现，以及设备升温后的稳定表现。启动回归、单页面滑动回归更适合看峰值；游戏、视频、直播、长列表连续浏览更适合看热稳定态。两类测试混在一起，报告会把短时间调频收益和长期温控成本混成一个结论。
+
+| 场景 | 测试目标 | 前置状态 | 结束条件 | 报告字段 |
+|------|----------|----------|----------|----------|
+| 峰值性能测试 | 判断新版本是否引入短路径回归 | 设备冷却到温度阈值以下，清理后台任务 | 固定迭代次数完成，通常 10-30 轮 | 起始温度、结束温度、P50/P90、是否触发 thermal status |
+| 热稳定态测试 | 判断持续负载下的体感下限 | 先运行 10-30 分钟目标 workload，等频率和温度进入平台期 | 帧率、时延或功耗曲线进入稳定区间 | 稳态温度、CPU/GPU 频率区间、99th percentile 时延、掉帧率 |
+
+报告里要写清测试属于哪一类。短跑回归不能替代稳态测试，稳态测试也不能用来判断冷启动首轮体验。
+
 ### 电量与充电状态
 
 电池电量会影响 SoC 的性能策略。Android 的功耗管理子系统会根据当前电量调整 CPU 频率上限——低电量时系统会进入省电模式，限制大核使用和高频运行。
@@ -127,6 +147,25 @@ Google 在官方文档中建议至少使用一台运行 AOSP 系统镜像的 Pix
 - **充电状态**也需要注意：充电时设备温度上升更快，同时某些 SoC 在充电时会调整调度策略（优先充电效率而非峰值性能）
 - 最理想的状态是**连接电源但不充电**——这可以通过将电量充至 100% 后保持连接来实现，但某些设备在充满后会自动切换到小电流模式，行为可能不一致
 - 对于严格的基准测试，建议使用**不插电、电量 70-90%** 的状态
+
+### 刷新率与显示模式
+
+高刷新率设备上，60Hz、90Hz、120Hz 的帧 deadline 不同。Adaptive Refresh Rate / Variable Refresh Rate 还可能在测试过程中动态换档，导致滑动帧率、FrameTimeline deadline 和 Macrobenchmark 帧指标不可横比。性能测试前要记录并固定刷新率。
+
+```bash
+# 记录原始值，便于测试结束后恢复
+adb shell settings get system peak_refresh_rate
+adb shell settings get system min_refresh_rate
+
+# 按测试计划固定刷新率；60Hz 是最常见的跨设备基准
+adb shell settings put system peak_refresh_rate 60.0
+adb shell settings put system min_refresh_rate 60.0
+
+# 验证系统是否接受设置
+adb shell dumpsys display | grep -i "refresh"
+```
+
+部分 OEM 会忽略这两个 setting，或者在 LTPO 面板上继续做面板级动态刷新率调整。遇到这种设备，要在 Perfetto 的 FrameTimeline 中确认 `expected_display_time` 的间隔是否稳定，并把 `dumpsys display` 的当前 mode 写进报告。测试结束后恢复原始设置；原始值为 `null` 时，用 `settings delete system peak_refresh_rate` / `min_refresh_rate` 清理临时值。
 
 ### 网络环境
 
@@ -167,9 +206,19 @@ adb shell settings put global animator_duration_scale 0
 
 # 5. 清理最近任务（杀掉所有后台 App）
 adb shell am kill-all
+
+# 6. 处理后台 dexopt 干扰（Android 14+ / 部分版本命令名不同）
+adb shell cmd package bg-dexopt-job --cancel 2>/dev/null || \
+  adb shell cmd package cancel-bg-dexopt-job 2>/dev/null || true
+
+# 只在可恢复的实验设备上临时禁止后台 dexopt；测试结束后恢复为 false
+adb shell setprop pm.dexopt.disable_bg_dexopt true 2>/dev/null || true
+adb shell cmd package bg-dexopt-job --disable 2>/dev/null || true
 ```
 
-需要特别注意的是，`am kill-all` 只能杀掉后台进程，不能杀前台进程和系统关键服务。对于需要更彻底清理的场景，可以考虑在两次测试之间重启目标 App 进程。
+`am kill-all` 只能杀掉后台 App 进程，拦不住系统维护任务。Android 14+ 之后，ART Service 可能在设备空闲或充电时运行 background dexopt，带来 CPU 和 I/O 波动，启动、安装后首次运行、CI 基准测试都容易被影响。
+
+`bg-dexopt-job --cancel` / `--disable`、`cancel-bg-dexopt-job` 和 `pm.dexopt.disable_bg_dexopt` 的可用性会随系统版本、权限和厂商实现变化。CI 脚本要记录命令是否执行成功；执行失败时，把 ART 后台优化状态写进测试报告。测试结束后恢复 `pm.dexopt.disable_bg_dexopt=false`，避免长期影响设备的正常优化。
 
 ### 固定 CPU 频率（进阶）
 
@@ -189,6 +238,15 @@ adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
 更常用的做法是使用 `adb shell settings put global low_power 0` 确保系统不进入低功耗模式，再配合 `adb shell cmd thermalservice override-status 0` 临时把热状态锁到 `THERMAL_STATUS_NONE`。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控，执行前先用 `adb shell cmd thermalservice help` 或 `adb shell dumpsys thermalservice` 确认设备是否开放了这组 shell 命令。[已验证: AOSP android-14.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 的 shell 命令为 `override-status` 与 `reset`]
 
 Macrobenchmark 库在内部会自动执行一些环境稳定化操作，它会在每次测量前设置设备为"适合测量"的状态，包括关闭多窗口模式、设置屏幕亮度为固定值等 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]。
+
+### 环境控制的源码锚点
+
+这些步骤背后对应的源码入口要一并记录，后续排查脚本失效时可以直接回到实现层核对：
+
+- 刷新率设置：`frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java` 监听 `Settings.System.PEAK_REFRESH_RATE` / `MIN_REFRESH_RATE`，再参与 display mode 选择。
+- 热状态 shell：`frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 暴露 `override-status` / `reset` shell 命令，用于实验环境下临时固定 thermal status。
+- 后台 dexopt：`frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptJob.java` 和 Android 14+ `packages/modules/Art/service/java/com/android/server/art/ArtManagerLocal.java` 负责后台优化调度与 ART Service 侧执行。
+- Macrobenchmark：`androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/Macrobenchmark.kt` 中的 `MacrobenchmarkRule.measureRepeated(...)` 负责迭代、编译模式、启动模式和指标采集的编排。
 
 ### 屏幕亮度与显示设置
 
@@ -485,7 +543,7 @@ Firebase Performance Monitoring（FPM）是 Google 提供的线上性能监控�
 
 在 Perfetto 中验证性能测试数据的方法：
 
-- **启动时间验证**：在 Trace 中定位目标进程的启动时间点（搜索 `proc_start` 或 `ActivityManager: Start proc`），到首帧绘制完成（搜索 `Choreographer#doFrame` 或 `firstDraw`）之间的时间差，应该与 Macrobenchmark 报告的 `timeToInitialDisplay` 基本一致
+- **启动时间验证**：在 Trace 中定位目标进程的启动时间点（搜索 `proc_start` 或 `ActivityManager: Start proc`），到首帧绘制完成（搜索 `Choreographer#doFrame` 或 `firstDraw`）之间的时间差，应该与 Macrobenchmark 报告的 `timeToInitialDisplay` 基本一致。TTFD 要求 App 在首屏业务内容可用时调用 `Activity.reportFullyDrawn()`；Macrobenchmark 才能稳定产出 `timeToFullDisplay`。报告里要把 TTID 和 TTFD 分开列，避免把两个指标都写成“启动时间”
 - **帧率验证**：在 RenderThread track 中检查 `DrawFrame` 切片的耗时分布。正常情况下 60fps 设备的 DrawFrame 应该在 16ms 以内，120fps 设备应该在 8ms 以内。超过阈值的 DrawFrame 就是掉帧
 - **内存占用验证**：在 Trace 的 `memtrack` track 或 `Process Stats` 中查看目标进程的内存使用情况，与测试报告中的内存数据做交叉验证
 
@@ -533,13 +591,9 @@ Firebase Performance Monitoring（FPM）是 Google 提供的线上性能监控�
 - [Baseline Profiles | Android Developers](https://developer.android.com/topic/performance/baselineprofiles) — Baseline Profiles 生成与使用
 - [Measure performance | Android Developers](https://developer.android.com/topic/performance) — 性能测量总入口
 - AOSP 路径：`frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`（thermalservice shell 命令）
-- AOSP 路径：`frameworks/base/core/java/android/app/Activity.java`（启动时间相关 API）
+- AOSP 路径：`frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java`（刷新率 setting 与 mode 选择）
+- AOSP 路径：`frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptJob.java`（后台 dexopt Job 调度）
+- AOSP 路径：`packages/modules/Art/service/java/com/android/server/art/ArtManagerLocal.java`（Android 14+ ART Service 优化入口）
+- AOSP 路径：`frameworks/base/core/java/android/app/Activity.java`（`reportFullyDrawn()` / 启动时间相关 API）
 - AOSP 路径：`frameworks/base/core/java/android/view/Choreographer.java`（帧回调 API）
 - AndroidX 路径：`androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt`（CompilationMode 定义）
-
-
-### 性能分析误区：峰值帧率 vs 稳态帧率
-- 来源：https://android-developers.googleblog.com/performance-methodology
-- 类型：article
-- 摘要：骁龙8 Elite持续负载下30%性能衰减。有意义的指标：30分钟游戏后帧率、99th percentile延迟、冷启动后5分钟内响应。Benchmark应包含热稳定态测试。
-- 入库时间：2026-04-08
