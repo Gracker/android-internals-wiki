@@ -20,17 +20,17 @@ sources:
     path: "https://android.googlesource.com/platform/art/+/refs/heads/main/dex2oat/dex2oat.cc"
   - type: source
     path: "https://github.com/androidx/androidx/blob/androidx-main/profileinstaller/profileinstaller/src/main/AndroidManifest.xml"
-pipeline_stage: task6_pending
-task6_state: revisiting
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-28"
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: fixed
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T23:21:00+08:00"
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 task2b_result: fixed
 last_task2b_at: "2026-04-27T22:40:00+08:00"
 repaired_date: "2026-04-27"
@@ -145,7 +145,7 @@ flowchart LR
 
 Baseline Profiles 和 Startup Profiles 的作用点不同。Baseline Profiles 面向 ART 的 profile-guided AOT 编译,用来减少首次运行时的解释执行和 JIT 预热。Startup Profiles 面向构建期 DEX layout,R8 / D8 消费带 `S` 标记的规则,把启动路径中的类和方法排到更集中的 DEX 区域,减少启动阶段 page fault 和 DEX 加载局部性问题。
 
-可以这样拆:
+两者的区别:
 
 - Baseline Profiles:包内 profile 交给 ART,安装或后台 dexopt 阶段通过 `speed-profile` 编译常用方法。
 - Startup Profiles:构建期由 R8 / D8 使用,目标是调整 DEX 中启动代码的位置,不等同于 ART 编译。
