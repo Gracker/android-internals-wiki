@@ -27,11 +27,11 @@ sources:
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
 related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -378,7 +378,7 @@ done
 
 ## 注意事项：避免误导性结论
 
-竞品性能分析最怕的不是数据不好看，而是得出错误结论后投入资源优化了错误的方向。以下是几个常见的误区。
+竞品性能分析最怕得出错误结论后投入资源优化了错误的方向，这比数据不好看代价更大。以下是几个常见的误区。
 
 ### 误区一：只看单次数据就下结论
 
