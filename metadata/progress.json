@@ -1,30 +1,30 @@
 {
-  "generated_at": "2026-04-27T18:35:00+08:00",
+  "generated_at": "2026-04-27T19:37:10+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 191,
-    "finalized": 103,
-    "ready-for-review": 115,
+    "finalized": 105,
+    "ready-for-review": 113,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T18:35:00+08:00",
+    "last_updated": "2026-04-27T19:37:10+08:00",
     "pipeline_stage_counts": {
       "None": 33,
-      "task6_pending": 32,
+      "task6_pending": 30,
       "task2b_pending": 68,
-      "ready-to-publish": 103,
+      "ready-to-publish": 105,
       "task9_pending": 13,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 34,
-      "reviewed": 165,
-      "revisiting": 51
+      "reviewed": 167,
+      "revisiting": 49
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 178,
-      "pending": 32,
+      "reviewed": 180,
+      "pending": 30,
       "'reviewed'": 1,
       "fixed": 1
     },
@@ -41,21 +41,21 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 33,
-      "task6_pending": 32,
+      "task6_pending": 30,
       "task2b_pending": 68,
-      "ready-to-publish": 103,
+      "ready-to-publish": 105,
       "task9_pending": 13,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 34,
-      "reviewed": 165,
-      "revisiting": 51
+      "reviewed": 167,
+      "revisiting": 49
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 178,
-      "pending": 32,
+      "reviewed": 180,
+      "pending": 30,
       "'reviewed'": 1,
       "fixed": 1
     },
@@ -66,7 +66,7 @@
       "idle": 4,
       "'pending'": 1
     },
-    "last_updated": "2026-04-27T18:35:00+08:00"
+    "last_updated": "2026-04-27T19:37:10+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -655,24 +655,24 @@
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
       "title": "VSync 机制",
       "chapter": "2.3",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 4.1 (API 16) - Android 16 (API 36)",
       "last_verified": "2026-04-11",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T18:52:00+08:00",
-      "review_round": "2"
+      "last_task9_at": "2026-04-27T19:37:10+08:00",
+      "review_round": "4"
     },
     "src/part1-fundamentals/ch02-rendering/04-choreographer.md": {
       "path": "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
@@ -3169,30 +3169,31 @@
       "title": "低内存对系统性能的影响",
       "chapter": "10.4",
       "section": "10.4",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-02",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
       "last_verified": "2026-04-02",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium-high",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T10:43:00+08:00",
+      "last_task9_at": "2026-04-27T19:37:10+08:00",
       "last_task2b_at": "2026-04-26T11:51:00+08:00",
       "updated_by": "openclaw-task2b",
       "updated_date": "2026-04-25",
       "repaired_date": "2026-04-26",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "review_round": "3"
     },
     "src/part2-performance/ch10-memory-perf/05-case-studies.md": {
       "path": "src/part2-performance/ch10-memory-perf/05-case-studies.md",
@@ -3388,21 +3389,23 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T07:21:28+08:00",
+      "last_task9_at": "2026-04-27T19:37:10+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "review_round": "2",
+      "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。"
     },
     "src/part2-performance/ch11-power/README.md": {
       "path": "src/part2-performance/ch11-power/README.md"

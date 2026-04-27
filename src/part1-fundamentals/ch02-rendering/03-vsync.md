@@ -1,7 +1,7 @@
 ---
 title: "VSync 机制"
 chapter: "2.3"
-status: ready-for-review
+status: finalized
 reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
 polish_count: 1
@@ -40,17 +40,17 @@ sources:
     path: "https://cloud.tencent.com/developer/article/1905184 (Vsync Phase 详解)"
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_result: needs-rework
-task9_state: pending
+task9_result: pass-tech-review
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T18:52:00+08:00"
-review_round: 3
+last_task9_at: "2026-04-27T19:36:19+08:00"
+review_round: 4
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-26T22:53:54+08:00"

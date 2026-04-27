@@ -36,18 +36,20 @@ sources:
 reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-26"
-last_task9_at: "2026-04-22T07:21:28+08:00"
+task9_reviewed_date: "2026-04-27"
+last_task9_at: "2026-04-27T19:36:19+08:00"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+review_round: 2
+task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。"
 ---
 
 # 11.5 Wakelock 机制与功耗分析

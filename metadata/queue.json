@@ -14156,5 +14156,37 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T18:35:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "11.5",
+    "section_title": "Wakelock 机制与功耗分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] PowerManagerService/SuspendBlocker 当前路径混入旧 libsuspend 线程模型，且 App Standby Bucket 版本表仍写成 wakelock 直接配额。",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "PowerManagerService 功耗路径 → libsuspend：autosuspend 线程",
+        "detail": "正文把 Android 14/16 当前路径写成 system/core/libsuspend/autosuspend.c 创建 suspend_thread_func 并每 100ms 写 /sys/power/state；实测 android-16.0.0_r1 的 autosuspend.c 只是 autosuspend_ops 包装，wakeup_count/autosuspend 线程在 system/hardware/interfaces/suspend/1.0/default/SystemSuspend.cpp，PMS JNI 还经由 ISystemSuspend / ISuspendControlServiceInternal。",
+        "suggestion": "按 Android 10+ SystemSuspend 路径重写；旧 libsuspend 直写路径只作为历史实现，不要贴不存在于 autosuspend.c 的代码。"
+      },
+      {
+        "type": "版本差异/源码错误",
+        "location": "版本演进表 → Android 9 App Standby Bucket",
+        "detail": "表格写“不同桶的 wakelock 配额不同”，与正文和实际机制矛盾：App Standby 的直接配额主要作用于 Jobs / Alarms，wakelock 侧是 Doze 忽略、RESTRICTED_WAKELOCK_MAX_TIMEOUT 单次超时、后台入口减少等间接约束。",
+        "suggestion": "改成“后台任务 / Alarm 配额收紧，wakelock 受间接约束；无 Jobs 类累计配额”。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Power HAL 与 PowerHint 系统",
+        "detail": "正文以 hardware/interfaces/power/1.0/IPower.hal 和 powerHint 表格描述 Power HAL，未标明这是 Android 9 前后的 HIDL 接口；Android 12+ 主要转向 AIDL IPower、setMode / setBoost / PowerHintSession。",
+        "suggestion": "补版本分界：HIDL IPower 1.0 作为历史接口；当前 Android 14/16 指向 hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl 和 PowerHalController。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T19:36:19+08:00",
+    "status": "pending"
   }
 ]
