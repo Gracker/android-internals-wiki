@@ -2,7 +2,7 @@
 title: Jetpack Benchmark（Microbenchmark + Macrobenchmark）
 chapter: '19'
 section: '19.14'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Microbenchmark：Android 4.0+（API 14+）；Macrobenchmark / Baseline Profile 场景：Android 6.0+（API 23+）；书中样例以 Android 8-17 为主
@@ -26,9 +26,9 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
@@ -37,10 +37,10 @@ task2b_result: fixed
 last_task2b_at: '2026-04-27T06:57:48+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: "openclaw-task6"
-last_task9_at: "2026-04-25T03:28:33+08:00"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-27T10:57:00+08:00"
 ---
 
 # Jetpack Benchmark（Microbenchmark + Macrobenchmark）

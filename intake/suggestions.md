@@ -4891,3 +4891,14 @@
 - **位置**：L342 DAG 初始化框架收益
 - **问题**：“Pixel 6 / Android 13 / 12 个 SDK / 37.5% 提升”缺少可追溯来源，且把 Google I/O 演示与阿里实践混成一个测试环境。
 - **建议**：补原始演讲页码/报告链接/实验脚本；无法追溯时删掉具体设备与百分比，只保留“并行受依赖图和设备并发度限制”的结论。
+
+## [Task9 Deep Review] 19.11 JankStats — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L107-L112 / L149-L151
+- **问题**：最小 DTO 只拷贝 `isJank`、`frameDurationUiNanos` 和 `states`，没有保留 `expectedFrameDurationUiNanos` 或等价刷新率口径。线上回放时只能看到“被判 jank”，看不到当前阈值基线，60/90/120Hz 设备很难横向比较。
+- **建议**：DTO 或聚合 schema 增加 `expectedFrameDurationUiNanos` / `expected_frame_ms` / `refresh_rate` 中至少一个字段，并在服务端按刷新率分层。
+- **类型**：知识盲区
+- **位置**：L201-L209
+- **问题**：Compose 示例在 `onDispose` 里只移除 `interaction`，没有移除 `screen`。如果该 state 绑定在可切换页面的 Composable 上，页面切走后可能留下 stale screen 标签。
+- **建议**：页面级状态和交互状态都按生命周期成对清理，例如同时 `removeState("screen")` 和 `removeState("interaction")`；如果 `screen` 由 Activity 级容器维护，需要在示例旁明确说明生命周期边界。
+
