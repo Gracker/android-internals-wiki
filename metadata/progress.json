@@ -2348,16 +2348,16 @@
     "src/part2-performance/ch07-smoothness/04-typical-scenarios.md": {
       "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
       "title": "典型场景分析",
-      "chapter": "'7.4'",
-      "section": "'7.4'",
+      "chapter": "7.4",
+      "section": "7.4",
       "status": "ready-for-review",
       "drafted_date": "'2026-04-01'",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
-      "last_verified": "'2026-04-01'",
-      "last_verified_against": "AOSP android-16.0.0_r1, Perfetto 官方文档",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "AOSP android-16.0.0_r1, AndroidX Fragment 1.8.x, Perfetto/Chromium docs",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -2367,7 +2367,9 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-22'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-22T08:40:18+08:00'"
+      "last_task9_at": "'2026-04-22T08:40:18+08:00'",
+      "last_task2b_at": "2026-04-27T12:54:09+08:00",
+      "notes": "Task2B fixed P95 Task9 and P85 External issues for RecyclerView/ImageView, Fragment, SplashScreen, Recents and WebView; returned to Task6 pending."
     },
     "src/part2-performance/ch07-smoothness/05-optimization.md": {
       "path": "src/part2-performance/ch07-smoothness/05-optimization.md",
@@ -2880,11 +2882,11 @@
       "drafted_date": "2026-04-08",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
-      "last_verified": "2026-04-13",
-      "last_verified_against": "AOSP main + Android Developers 2026-02-26",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "Android Developers Game SDK Performance Tuner + GameActivity text input docs, AOSP GameManagerService, Perfetto gpu.renderstages proto",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -2894,7 +2896,9 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-21",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T01:15:00+08:00"
+      "last_task9_at": "2026-04-21T01:15:00+08:00",
+      "last_task2b_at": "2026-04-27T12:54:09+08:00",
+      "notes": "Task2B fixed P95 AGDK link issue and P85 External GPU Render Stages/Headroom issues; returned to Task6 pending."
     },
     "src/part2-performance/ch08-responsiveness/README.md": {
       "path": "src/part2-performance/ch08-responsiveness/README.md"
@@ -4125,11 +4129,11 @@
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
-      "last_verified": "2026-04-21",
-      "last_verified_against": "perfetto.dev docs, google/perfetto main trace_processor docs/python api",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "AOSP external/perfetto trace_processor_shell.cc + Perfetto docs/python api",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -4139,7 +4143,9 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "'2026-04-22'",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-22T20:50:00+08:00'"
+      "last_task9_at": "'2026-04-22T20:50:00+08:00'",
+      "last_task2b_at": "2026-04-27T12:54:09+08:00",
+      "notes": "Task2B fixed P95 trace_processor HTTP parameter issue and P85 query-string compatibility issue; returned to Task6 pending."
     },
     "src/part3-tools/ch13-perfetto/05-topic-analysis.md": {
       "path": "src/part3-tools/ch13-perfetto/05-topic-analysis.md",
@@ -7532,7 +7538,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T10:44:00+08:00",
+  "last_updated": "2026-04-27T12:54:09+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8210,5 +8216,98 @@
     ],
     "log": "logs/deep-review/2026-04-27-11-deep-review.md",
     "note": "参考 logs/external-review 根目录 part1/part4/ch19 broad summary；仅消费 16.4 相关明确风险，未归档 broad summary。"
+  },
+  "2026-04-27-12-task2b": {
+    "task": "task2b-content-processing-rework",
+    "updated_at": "2026-04-27T12:54:09+08:00",
+    "sections": [
+      "7.4",
+      "8.9",
+      "13.4"
+    ],
+    "queue_indexes_completed": [
+      95,
+      120,
+      166,
+      183,
+      203,
+      215,
+      339,
+      340,
+      341
+    ],
+    "result": "fixed",
+    "files": [
+      "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
+      "src/part2-performance/ch08-responsiveness/09-game-performance.md",
+      "src/part3-tools/ch13-perfetto/04-large-traces.md"
+    ],
+    "notes": {
+      "content_fix": [
+        "7.4 修正 ImageView 固定尺寸建议，删除不存在的 setFixedDimension API，并明确 setHasFixedSize(true) 边界",
+        "7.4 改用 AndroidX Fragment 源码口径，补 SplashScreen SurfaceControl 过渡和 Recents TaskSnapshot HardwareBuffer 路径，并合并 07.04 external 重复问题单",
+        "7.4 修正 WebView 段落重复与 render_process_gone 事件口径",
+        "8.9 更新 AGDK Performance Tuner / GameActivity text input 官方资料链接",
+        "8.9 补 gpu.renderstages Perfetto 数据源、Headroom API 120/144Hz 风险和低频异步轮询策略",
+        "8.9 删除 Android 17 分代 GC 固定毫秒收益表述",
+        "13.4 删除 AOSP trace_processor_shell 未公开的 --http-ip-address 指导，改用 --query-string / -q 兼容说明"
+      ],
+      "auto_finalized": [],
+      "auto_promotion": "not applied: sections were returned to task6_pending because task9_result remains needs-rework until the next Task9 pass"
+    }
+  },
+  "section_7_4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T12:54:09+08:00",
+    "path": "src/part2-performance/ch07-smoothness/04-typical-scenarios.md",
+    "title": "典型场景分析",
+    "chapter": "7.4",
+    "section": "7.4",
+    "last_verified": "2026-04-27",
+    "last_verified_against": "AOSP android-16.0.0_r1, AndroidX Fragment 1.8.x, Perfetto/Chromium docs",
+    "notes": "Task2B fixed P95 Task9 and P85 External issues for RecyclerView/ImageView, Fragment, SplashScreen, Recents and WebView; returned to Task6 pending."
+  },
+  "section_8_9": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T12:54:09+08:00",
+    "path": "src/part2-performance/ch08-responsiveness/09-game-performance.md",
+    "title": "Android 游戏性能与 Game Mode/State API",
+    "chapter": "8.9",
+    "section": "8.9",
+    "last_verified": "2026-04-27",
+    "last_verified_against": "Android Developers Game SDK Performance Tuner + GameActivity text input docs, AOSP GameManagerService, Perfetto gpu.renderstages proto",
+    "notes": "Task2B fixed P95 AGDK link issue and P85 External GPU Render Stages/Headroom issues; returned to Task6 pending."
+  },
+  "section_13_4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "pending",
+    "task9_result": "needs-rework",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-04-27T12:54:09+08:00",
+    "path": "src/part3-tools/ch13-perfetto/04-large-traces.md",
+    "title": "命令行打开超大 Trace",
+    "chapter": "13.4",
+    "section": "13.4",
+    "last_verified": "2026-04-27",
+    "last_verified_against": "AOSP external/perfetto trace_processor_shell.cc + Perfetto docs/python api",
+    "notes": "Task2B fixed P95 trace_processor HTTP parameter issue and P85 query-string compatibility issue; returned to Task6 pending."
   }
 }

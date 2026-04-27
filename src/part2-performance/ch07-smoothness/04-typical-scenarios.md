@@ -12,8 +12,8 @@ reviewed_by: openclaw-task6
 rework_date: '2026-04-04'
 rework_by: openclaw-task2b
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-04-01'
-last_verified_against: AOSP android-16.0.0_r1, Perfetto 官方文档
+last_verified: '2026-04-27'
+last_verified_against: "AOSP android-16.0.0_r1, AndroidX Fragment 1.8.x, Perfetto/Chromium docs"
 confidence: high
 sources:
 - type: blog
@@ -45,17 +45,17 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T12:33:00+08:00"
-last_task2b_at: "2026-04-22T11:26:25+08:00"
+last_task2b_at: "2026-04-27T12:54:09+08:00"
 ---
 
 # 典型场景分析
@@ -160,13 +160,13 @@ RecyclerView 虽然设计为复用 ViewHolder，但在某些场景下仍需要�
 
 **图片加载引起的卡顿**
 
-图片是列表滑动中最常见的卡顿源之一。问题不是图片加载本身——现代图片库（Glide、Coil、Fresco）都做了异步加载——而是图片加载完成后的回调处理。如果 ImageView 没有预设固定尺寸，图片解码后需要重新触发 requestLayout，导致整棵 View 树重新 measure/layout。在快速滑动中，多个图片几乎同时回调，每一帧都可能叠加多次 layout 计算。
+图片是列表滑动中最常见的卡顿源之一。现代图片库（Glide、Coil、Fresco）会把下载和解码放到后台线程，但结果回调仍会更新主线程上的 `ImageView`。如果 `ImageView` 的测量尺寸依赖图片原始尺寸，图片结果写入后可能触发 `requestLayout()`，带着 item 甚至 RecyclerView 父层重新 measure/layout。快速滑动时，多个图片回调集中到同几个 VSync 周期，主线程 Traversal 就容易被拉长。
 
-在 Perfetto 中，这种问题的特征是主线程频繁出现 measure/layout 的长 slice，且时间与图片回调的时机吻合。解决方案是为列表中的 ImageView 设置固定宽高（或使用 `match_parent` + 固定高度 / `setFixedDimension` 等），这样图片解码完成后 ImageView 不需要重新 requestLayout，避免了整棵 View 树的重新 measure/layout。
+在 Perfetto 中，这种问题的特征是主线程频繁出现 measure/layout 的长 slice，且时间与图片回调的时机吻合。修复方向是让列表图片在 bind 前就有稳定的测量边界：XML 里明确 `layout_width` / `layout_height`，使用固定比例容器，或在 Glide / Coil / Fresco 中通过 `override`、size resolver、自定义 Target 传入目标尺寸。Android View / ImageView 没有通用的 `setFixedDimension()` API，不能把它写成系统级方案。
 
-另外，如果 RecyclerView 自身的尺寸在 adapter 内容变化时不会改变（比如 RecyclerView 是 `match_parent`），可以调用 `setHasFixedSize(true)` 告知框架跳过 RecyclerView 自身的 requestLayout 调用。[待验证: RecyclerView.setHasFixedSize() 官方文档定义为「RecyclerView 自身尺寸不受 adapter 内容变化影响时为 true」，不等于 item 内部 View 的尺寸固定，也不能阻止单个 item 的 requestLayout()]
+`RecyclerView.setHasFixedSize(true)` 只描述 RecyclerView 容器尺寸不随 adapter 内容变化而改变。它可以减少 RecyclerView 自身向父布局发起的 `requestLayout()`，但不会跳过 `onBindViewHolder()`，也不能阻止 item 内部 `ImageView` 因尺寸变化重新 layout。
 
-[已验证: 官方文档, developer.android.com/topic/performance/recycler-view — 官方推荐设置固定尺寸避免重新测量]
+[已验证: 官方文档, developer.android.com/topic/performance/recycler-view；AndroidX RecyclerView `setHasFixedSize()` reference]
 
 ### 1.3 系统层面的滑动卡顿
 
@@ -227,10 +227,10 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 优化思路：
 - 将 Fragment 的布局拆分为多个阶段：先加载骨架布局，数据准备好后再填充内容
-- 将 Fragment 事务提交时机与动画帧解耦：如果 Fragment 切换发生在动画期间（如 SharedElement 转场），事务的 commit 会触发 View 层级的完整重建（remove + add + measure + layout），这些操作会挤占动画帧的渲染时间。更好的做法是将 commit 延迟到动画结束之后，或者先暂停动画、执行事务、再恢复动画。
+- 将 Fragment 事务提交时机与动画帧解耦：如果 Fragment 切换发生在动画期间（如 SharedElement 转场），事务执行会触发 View 层级的重建、动画准备和 measure/layout，这些操作会挤占动画帧的渲染时间。可以把事务延迟到动画结束之后，或先暂停动画、执行事务、再恢复动画。
 
-[已验证: AOSP android14-release, frameworks/base/core/java/android/app/FragmentManager.java — 完整调用链如下：BackStackRecord.commitInternal() → enqueueAction() → mPendingActions.add() → scheduleCommit() → Handler.post(mExecCommit) → execPendingActions() → runPendingActions() → dispatchExecuteOps() → moveToState()。commit() 本身是异步的，通过 Handler.post() 投递到主线程 MessageQueue，与 Choreographer 回调同属主线程 Looper 循环，不存在直接依赖关系。事务的 View 操作（remove/add/measure/layout）在 moveToState() 中执行，才是真正的瓶颈。]
-- 在非动画期间使用 `commitNow()` 同步执行：`commitNow()` 会在调用时立即执行事务中的所有操作，而不是等到下一个 Choreographer 周期。这在不需要动画的场景下（如 ViewPager2 内部的页面切换）可以减少一帧的延迟。但注意 `commitNow()` 不能和 `addToBackStack()` 一起使用。[已验证: AOSP FragmentTransaction.java — commitNow 文档说明]
+[已验证: AndroidX Fragment 1.8.x, `androidx/fragment/app/FragmentManager.java`, `BackStackRecord.java`, `SpecialEffectsController.kt` — 现代应用、ViewPager2 和 Jetpack Navigation 主要走 AndroidX Fragment。`commit()` 将 `BackStackRecord` 入队，由 FragmentManager 通过宿主主线程 Handler 执行 pending actions；View 创建/移除与动画、transition 的可见性变更由 `SpecialEffectsController` 协调。平台 `android.app.Fragment` 已废弃，`frameworks/base/core/java/android/app/FragmentManager.java` 只适合解释旧系统 Fragment。]
+- 在非动画期间使用 AndroidX `commitNow()` 同步执行：`commitNow()` 会在调用时立即执行事务中的操作，不等后续异步执行点。这适合无动画、无 back stack 的局部初始化路径；它不能和 `addToBackStack()` 一起使用，也不适合放进仍在播放的转场动画中。[已验证: AndroidX FragmentTransaction `commitNow()` reference]
 - 预加载下一页 Fragment 的 View（`setMaxLifecycle` 配合 ViewPager2 的 `setOffscreenPageLimit`）
 
 ### 2.3 页面切换动画在 Perfetto 中的表现
@@ -257,11 +257,13 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 
 从 Android 12 开始，系统为所有 App 提供了默认的 Splash Screen（通过 `SplashScreen` API）。在 App 进程完成初始化之前，系统会显示一个带有 App 图标和主题色的启动窗口。这个窗口由 SystemServer 管理，App 进程就绪后系统执行从启动窗口到 App 主界面的过渡动画。（启动窗口与 App 启动流程的完整分析见 8.2 节。）
 
+Android 12+ 的过渡发生在 `SurfaceControl` 级别。WMS 通过 `StartingSurfaceController` 创建 starting surface，App 首帧 surface 准备好后，系统用 `SurfaceControl.Transaction` 协调 starting surface 的退出和 App surface 的显示；SplashScreen 的退出动画还会把 `SplashScreenView` 暴露给 App 侧回调控制退出时机。这样可以把启动窗口隐藏、App 窗口显示、alpha / crop / z-order 等 layer 操作放在同一批事务里，减少旧启动页先消失、App 首帧未显示造成的黑块或闪烁。
+
 [图：SplashScreen 启动窗口到 App 主界面过渡动画的 Perfetto 截图，标注 SystemServer 动画线程和 App 进程的时间关系]
 
-启动窗口动画卡顿通常不是 App 的问题，而是系统侧的问题——SurfaceFlinger 在合成启动窗口和其他层时的性能不足，或者 CPU 调度没有给 SystemServer 的动画线程足够的优先级。但如果 App 的 `onCreate()` 耗时过长导致过渡动画延迟开始，那就是 App 的问题。
+启动窗口动画卡顿通常来自系统侧合成或调度：SurfaceFlinger 在合成启动窗口和其他层时耗时过长，或 SystemServer / Shell 动画相关线程没有及时拿到 CPU。如果 App 的 `onCreate()` 耗时过长导致首帧延后，过渡动画的起点也会被推迟。
 
-[已验证: 官方文档, developer.android.com/develop/ui/views/launch/splash-screen — SplashScreen API 说明]
+[已验证: 官方文档, developer.android.com/develop/ui/views/launch/splash-screen；AOSP `StartingSurfaceController.java`, `SplashScreenView.java`, `SurfaceControl.Transaction`]
 
 在 Perfetto 中分析启动窗口卡顿：
 - 关注 launching app 的首帧渲染时间、WindowManager 中 starting window 的创建与绘制、以及 SurfaceFlinger 对应 Layer 的合成情况。Android 12+ 的 SplashScreen 是系统管理的 starting window，由 StartingWindowController / StartingSurfaceController 负责，不存在独立的 SplashScreen 进程
@@ -359,7 +361,9 @@ PopupWindow 的情况类似。`showAsDropDown()` 会基于 anchor 构造 `Window
 
 **动画启动阶段**：Launcher 需要在短时间内完成多个 TaskView 的布局计算。如果 Recents 列表中有大量 Task（比如用户很久没清理），布局开销会线性增长。
 
-**缩略图加载**：每个 TaskView 需要显示对应 App 的缩略图（Thumbnail）。这些缩略图由 SystemServer 通过 `android.window.TaskSnapshot` 以 HardwareBuffer（GraphicBuffer）形式传递给 Launcher，解码和上传纹理都需要时间。[待验证: AOSP TaskSnapshot 使用 HardwareBuffer 而非 SharedMemory 传递截图数据，具体路径为 TaskSnapshotController → TaskSnapshotPersister → ThumbnailData] 如果缩略图分辨率高且数量多，GPU 负载会明显增大。
+**缩略图加载/采样**：每个 TaskView 需要显示对应 App 的缩略图（Thumbnail）。WMS 侧由 `TaskSnapshotController` 捕获 task snapshot，`android.window.TaskSnapshot` 携带 `HardwareBuffer` 和 `ColorSpace` 跨进程传给 Recents / Launcher；SystemUI shared 的 `ThumbnailData.fromSnapshot()` 通过 `Bitmap.wrapHardwareBuffer(buffer, colorSpace)` 包装成硬件 Bitmap。这条路径没有普通图片解码步骤，`HardwareBuffer` 也减少了 CPU 侧拷贝；真正要看的成本是硬件 buffer 生命周期、缩略图数量、GPU 采样和 SurfaceFlinger 合成负载。缩略图分辨率高、卡片数量多或背景层复杂时，GPU 带宽和合成时间仍会明显上升。
+
+[已验证: AOSP main, `frameworks/base/services/core/java/com/android/server/wm/TaskSnapshotController.java`, `android/window/TaskSnapshot.java`, `frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/recents/model/ThumbnailData.kt`]
 
 **手势冲突**：多任务手势（从底部上滑并停顿）和 App 内的滑动手势容易冲突。如果手势识别耗时，会导致动画的起始帧延迟。
 
@@ -392,7 +396,7 @@ PopupWindow 的情况类似。`showAsDropDown()` 会基于 anchor 构造 `Window
 | Dialog 弹出 | Dialog 布局 inflate + 首次 measure | show() 之后的帧超时 |
 | 通知栏展开 | RemoteViews re-inflate / 大量通知布局 | SystemUI 主线程耗时 + SurfaceFlinger 合成超时 |
 | 桌面滑动 | RenderThread 被调度到小核 | RenderThread running 但耗时异常，CPU 区域确认核分配 |
-| 多任务切换 | TaskView 布局 + 缩略图解码 | Launcher 主线程 + RenderThread 双重负载 |
+| 多任务切换 | TaskView 布局 + 缩略图 HardwareBuffer 包装/采样 | Launcher 主线程 + RenderThread / SurfaceFlinger 双重负载 |
 
 > 注：上表是"最常见"的根因，实际分析时不要先入为主。很多看似是 App 问题的卡顿，最后发现是系统调度或 SurfaceFlinger 合成的问题。始终以 Trace 数据为准。
 
@@ -414,9 +418,27 @@ PopupWindow 的情况类似。`showAsDropDown()` 会基于 anchor 构造 `Window
 
 **地图场景**（如 Google Maps、高德地图）：地图的渲染由地图 SDK 内部的 GLSurfaceView 或 TextureView 完成，App 主线程只负责 UI 覆盖层（控件、POI 标注等）。卡顿通常出现在地图引擎的 GL 渲染线程上，可能由瓦片加载、矢量数据解析、或 GPU 着色器编译引起。
 
-**WebView 场景**：WebView 的渲染由 Chromium 的渲染管线完成（Browser 进程 → Renderer 进程 → GPU 进程）。Android 的 WebView 在系统层面是一个独立的渲染体系，它的卡顿分析需要使用 Chrome DevTools 的 Performance 面板而非 Perfetto。
+**WebView 场景**：WebView 的渲染由 Chromium 的渲染管线完成。Android WebView 是嵌入式的 Chromium 实例，其渲染涉及 Browser 进程（承载 AwContents）、Renderer 进程（Blink + V8）、Viz / GPU Service（合成与硬件加速）等路径协作。Perfetto 可通过两类数据源追踪 WebView：
 
-[待补充：地图和 WebView 场景的具体分析方法]
+1. **ATrace 系统注解**：启用 `webview` 分类，捕获 Android Framework 层事件
+2. **Chromium TRACE_EVENT**：启用 `blink`（Blink 渲染引擎）、`cc`（Chromium Compositor）、`gpu`（GPU 进程）、`v8`（JS 执行）分类，捕获浏览器内部管线事件
+
+Perfetto 中 WebView 掉帧根因可按以下分类定位：
+
+| 根因 | Perfetto 特征 Slice | 关联分类 |
+|------|-------------------|---------|
+| JS 执行过长 | `v8` slice 超过 16ms | `v8` |
+| Layout/Paint 过长 | `blink` measure/layout 嵌套 | `blink` |
+| 组合层数过多 | `cc` CommitLayers 数量激增 | `cc` |
+| GPU 栅格化过长 | `gpu.` raster 过长 | `gpu` |
+| BufferQueue 堵塞 | dequeue slot 等待 | ATrace `webview` |
+| SurfaceFlinger 合成 | `SurfaceFlinger` compose 超时 | ATrace |
+
+Renderer 进程崩溃或被 LMK 杀死时，应用侧入口是 `WebViewClient.onRenderProcessGone()` 和 `WebViewRenderProcessGoneDetail.didCrash()`。Perfetto / Chromium trace 中不要默认搜索 `render_process_gone`，除非应用自己用 `Trace.beginSection("render_process_gone")` 做了自定义 marker。系统 trace 更常见的证据是 Renderer 进程轨道结束、LMK / OOM 事件、Chromium 相关 slice 中断，以及应用回调附近的自定义 marker。
+
+> ⚠️ 旧说法「WebView 卡顿分析需要用 Chrome DevTools 而非 Perfetto」已过时。Perfetto UI 在 target=Android 时可同时采集 ATrace 和 Chromium TRACE_EVENT，二者组合覆盖系统层和浏览器内部管线。
+
+[AIW-源码调研-2026-04-27: 依据 chromium/src/android_webview/ + perfetto.dev/docs 验证]
 
 ---
 
@@ -428,7 +450,7 @@ PopupWindow 的情况类似。`showAsDropDown()` 会基于 anchor 构造 `Window
 
 **"用了 Glide/Coil 加载图片，图片就不会导致卡顿了"**
 
-图片库解决的是"异步加载"问题，但加载完成后的回调仍然在主线程上执行。如果 ImageView 没有固定尺寸，每一张图片回调都会触发 `requestLayout()`，导致整棵 View 树重新 measure/layout。在快速滑动中，多个图片回调叠加，每一帧可能都有 layout 计算。解决方案是给 ImageView 设置固定宽高，让图片回调不再触发 requestLayout。如果 RecyclerView 自身尺寸不受 adapter 变化影响，可以额外调用 `setHasFixedSize(true)` 跳过 RecyclerView 容器级别的重新测量（但这不等于解决 item 内部的 layout 问题）。
+图片库解决的是"异步加载"问题，但加载完成后的回调仍然在主线程上执行。如果 `ImageView` 的测量尺寸依赖图片原始尺寸，图片结果写入后可能触发 `requestLayout()`，导致 item 甚至 RecyclerView 父层重新 measure/layout。解决方案是提前给图片 View 稳定的测量边界，例如固定宽高、固定比例容器，或在图片库请求中传入目标尺寸。如果 RecyclerView 自身尺寸不受 adapter 变化影响，可以额外调用 `setHasFixedSize(true)` 减少 RecyclerView 容器级别的重新测量；它不处理 item 内部的 layout 问题。
 
 **"黄帧就是掉帧"**
 

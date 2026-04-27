@@ -6,8 +6,8 @@ status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
-last_verified: "2026-04-13"
-last_verified_against: "AOSP main + Android Developers 2026-02-26"
+last_verified: "2026-04-27"
+last_verified_against: "Android Developers Game SDK Performance Tuner + GameActivity text input docs, AOSP GameManagerService, Perfetto gpu.renderstages proto"
 confidence: medium
 sources:
   - type: official
@@ -25,17 +25,19 @@ sources:
   - type: official
     path: "https://developer.android.com/reference/android/os/health/SystemHealthManager"
   - type: official
-    path: "https://developer.android.com/games/agdk/performance-tuner"
+    path: "https://developer.android.com/games/sdk/performance-tuner"
   - type: official
     path: "https://developer.android.com/games/agdk/game-activity/get-started"
   - type: official
-    path: "https://developer.android.com/games/agdk/game-text-input"
+    path: "https://developer.android.com/games/agdk/game-activity/use-text-input"
   - type: aosp
     path: "frameworks/base/core/java/android/app/GameManager.java"
   - type: aosp
     path: "frameworks/base/core/java/android/app/GameState.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/app/GameManagerService.java"
+  - type: aosp
+    path: "external/perfetto/protos/perfetto/config/data_source_config.proto"
   - type: research
     path: "intake/research-feeds/2026-04-08-19-android-adpf-agdk-game-mode-thermal-performance.md"
 tags: [game, gamemode, gamestate, agdk, frame-pacing, adpf, gaming-performance, thermal]
@@ -43,10 +45,10 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-23"
@@ -55,6 +57,7 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 last_task9_at: "2026-04-27T12:33:00+08:00"
+last_task2b_at: "2026-04-27T12:54:09+08:00"
 ---
 
 # 8.9 Android 游戏性能与 Game Mode/State API
@@ -295,7 +298,7 @@ Performance Tuner 的价值在于自动收集线上帧时间和设备分布，�
 
 更适合的用法是把它当线上分流器。Play Console 先告诉我们哪类设备、哪段场景的 P95/P99 抬升，再回到 Perfetto 抓同型号设备的本地 trace，把 FrameTimeline、频率和 thermal 放在一起看。一个回答“哪台机器更差”，另一个回答“差在哪里”。
 
-[已验证: 官方文档, developer.android.com/games/agdk/performance-tuner]
+[已验证: 官方文档, developer.android.com/games/sdk/performance-tuner]
 
 ## 游戏性能分析：Perfetto 中的关键 Track
 
@@ -316,6 +319,10 @@ data_sources: { config { name: "linux.ftrace" ftrace_config {
   atrace_categories: "power" atrace_categories: "freq"
 }}}
 data_sources: { config { name: "linux.process_stats" } }
+data_sources: { config {
+  name: "gpu.renderstages"
+  gpu_renderstages_config {}
+}}
 duration_ms: 30000
 EOF
 ```
@@ -323,7 +330,7 @@ EOF
 相比普通 App 的 Trace 配置，游戏场景需要额外关注：
 - **`power` 和 `freq` category**：追踪 CPU/GPU 频率变化，这是判断热降频和调度问题的核心数据
 - **更大的 buffer**：游戏持续满负载，30 秒的 Trace 数据量可能达到 100MB+
-- **GPU counter**：如果设备支持，启用 GPU 性能计数器追踪
+- **GPU counters / render stages**：GPU counter 适合看 busy、频率和带宽趋势；`gpu.renderstages` 适合把 Vulkan / OpenGL ES 的 RenderPass、binning、rendering、clears 等阶段放到时间轴上看。两类数据都依赖驱动和设备权限，userdebug/root 设备上还要确认 `security.perfetto.gpu_counters.privileged` 等开关是否允许采集
 
 ### 关键分析路径
 
@@ -337,7 +344,7 @@ EOF
 
 **第一步：先看 FrameTimeline 和应用 Surface layer**
 
-在 Perfetto 里找到游戏 Surface 对应的 layer，先看 Actual / Expected frame、present 节奏和 jank 分类。原生游戏掉帧时，这里比 `Choreographer` 更早暴露问题。
+在 Perfetto 里找到游戏 Surface 对应的 layer，先看 Actual / Expected frame、present 节奏和 jank 分类。原生游戏掉帧时，这里比 `Choreographer` 更早暴露问题。启用了 `gpu.renderstages` 后，再把 RenderPass / render stage 的耗时对应到同一段 Actual frame；如果某个 pass 的 rendering 或 clears 阶段贴着 present deadline 变长，排查方向就从 Java/UI 线程切到 draw call、overdraw、shader 和 render target 配置。
 
 **第二步：关联 CPU / GPU 频率和热状态**
 
@@ -395,7 +402,9 @@ OEM 面板往往会把 downscale、FPS override、触控策略、后台限制或
 
 Android 16 在游戏侧新增了 `SystemHealthManager#getCpuHeadroom()` 和 `SystemHealthManager#getGpuHeadroom()`。两个接口都在 API 36 添加，用来估算当前 CPU / GPU 的可用余量，帮助游戏判断这一段负载更像 CPU bound 还是 GPU bound。
 
-`SystemHealthManager` 官方 reference 写明：这两个接口每次调用至少会触发一次同步 binder transaction，耗时可能超过 1ms，不适合放在关键渲染线程上阻塞等待。实践里通常把查询放到较低频率的控制回路里，再用结果调整 target FPS、动态分辨率或特效档位。
+`SystemHealthManager` 官方 reference 写明：这两个接口每次调用至少会触发一次同步 binder transaction，耗时可能超过 1ms。120fps 下单帧预算只有 8.33ms，1ms 阻塞已经吃掉约 12% 的预算；144fps 下预算约 6.94ms，占比更高。渲染主线程不要直接同步调用 Headroom API。更稳妥的做法是放到低频控制回路或独立线程里异步轮询，把结果缓存给引擎，用于调整 target FPS、动态分辨率或特效档位。
+
+`getThermalHeadroom()` 更适合看未来一段时间的热余量，回答“还能不能继续维持当前负载”；`getCpuHeadroom()` / `getGpuHeadroom()` 更适合看当前 CPU / GPU 压力，回答“这一段更像 CPU bound 还是 GPU bound”。实战里先用 thermal headroom 决定是否提前降档，再用 CPU/GPU headroom 决定降 CPU 逻辑负载、GPU 分辨率还是后处理。
 
 [已验证: Android Developers SystemHealthManager reference, API level 36]
 
@@ -463,7 +472,7 @@ ART 的 GC 暂停是游戏卡顿的常见来源之一。游戏通常在每帧的
 1. 减少渲染循环中的对象分配，使用对象池复用
 2. 利用 §5.9 中 ADPF 的 Thermal API，在热状态安全时允许更大的 GC 堆，减少 GC 触发频率
 3. 在游戏加载阶段预分配所有需要的内存，避免在战斗场景中触发 GC
-4. 使用 Android 17 的 Generational GC（§4.8），它将 GC 暂停时间从原来的 10-30ms 降低到 1-5ms
+4. 在支持新版 ART 分代 GC 的设备上，观察短生命周期对象是否带来更少的 STW 暂停；具体收益受 ART 版本、堆大小、对象分配模式和场景负载影响，不能把固定毫秒区间当成通用结论
 
 ### 热节流导致的渐进式降帧
 
@@ -527,5 +536,7 @@ OEM 的游戏面板通常会把多种动作绑在一起，例如画质降档、F
 - 官方文档: https://developer.android.com/games/optimize/adpf/gamemode/gamemode-interventions
 - 官方文档: https://developer.android.com/games/optimize/adpf/gamemode/fps-throttling
 - AGDK Frame Pacing: https://developer.android.com/games/sdk/frame-pacing
+- Android Performance Tuner: https://developer.android.com/games/sdk/performance-tuner
+- GameActivity text input: https://developer.android.com/games/agdk/game-activity/use-text-input
 - 研究素材: intake/research-feeds/2026-04-08-19-android-adpf-agdk-game-mode-thermal-performance.md
 - 研究素材: intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md

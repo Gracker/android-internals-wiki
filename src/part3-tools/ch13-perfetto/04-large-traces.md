@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-21"
-last_verified_against: "perfetto.dev docs, google/perfetto main trace_processor docs/python api"
+last_verified: "2026-04-27"
+last_verified_against: "AOSP external/perfetto trace_processor_shell.cc + Perfetto docs/python api"
 confidence: medium
 sources:
   - type: official
@@ -20,19 +20,19 @@ sources:
     path: "external/perfetto/src/trace_processor/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T12:33:00+08:00"
-last_task2b_at: '2026-04-22T21:50:17+08:00'
+last_task2b_at: "2026-04-27T12:54:09+08:00"
 ---
 
 # 命令行打开超大 Trace
@@ -343,7 +343,7 @@ PY
 done
 ```
 
-这里 trace 文件要作为位置参数传给 `trace_processor`，`-q` 只负责指定 SQL 文件。非交互模式下的查询结果是带表头的 CSV。用 `trace_processor -Q "select 1 as a, 2 as b" /dev/null` 做最小验证，输出就是 `"a","b"` 和 `1,2` 两行，分隔符走标准 CSV 规则，不会出现 `|` 或制表符。
+这里 trace 文件要作为位置参数传给 `trace_processor`，`-q` 只负责指定 SQL 文件。非交互模式下的查询结果是带表头的 CSV。做最小验证时优先使用长参数 `--query-string`，例如 `trace_processor --query-string "select 1 as a, 2 as b" trace.perfetto-trace`；如果手头的发行版没有开放 query-string 参数，就把查询写入临时 `.sql` 文件后用 `-q` 执行。输出是标准 CSV，例如 `"a","b"` 和 `1,2` 两行，分隔符不会变成 `|` 或制表符。
 
 ### 查询结果的格式控制
 
@@ -369,7 +369,7 @@ done
 
 一些实用的启动参数：
 
-`--httpd` 启动 HTTP 守护进程模式，配合 Perfetto UI 使用。前面已经讲过。可以通过 `--http-port` 和 `--http-ip-address` 指定监听端口和地址。
+`--httpd` 启动 HTTP 守护进程模式，配合 Perfetto UI 使用。前面已经讲过。AOSP `external/perfetto` 版本公开的 HTTP 参数包含 `--http-port PORT`；不要在教程里假设存在 `--http-ip-address`。如果使用的是独立上游二进制，先以 `trace_processor --help` 的本机输出为准。
 
 `-W` 或 `--wide` 加宽输出列宽，让长字符串（如完整 Slice 名称）不被截断。在交互式查询中查看长名称时很有用。
 
