@@ -5,7 +5,7 @@ section: '19.21'
 status: ready-for-review
 drafted_date: '2026-04-24'
 drafted_by: codex
-applicable_versions: "Geekbench 6：Android 10+；Vellamo：历史工具，仅用于旧报告；其他 Benchmark 按工具版本逐项核验"
+applicable_versions: "Geekbench 6：Android 7.0+（API 24）；Vellamo：历史工具，仅用于旧报告；其他 Benchmark 按工具版本逐项核验"
 last_verified: '2026-04-24'
 last_verified_against: "Geekbench 6 requirements / Benchmark Internals, Android Performance Class docs, 3DMark official docs, CPDT / PCMark / Vellamo public materials"
 confidence: medium
@@ -106,7 +106,7 @@ Benchmark 结果可以帮助做机型分层、竞品对比、性能模式验证�
 
 | 工具 | 当前定位 | Android 版本边界 | 处理方式 |
 |---|---|---|---|
-| Geekbench 6 | CPU / Compute 主流基线 | 官方要求 Android 10+，并要求 4 GB RAM。 | Android 8/9 设备不要混入 Geekbench 6 口径；如需覆盖，单独保留 Geekbench 5 或历史基线。 |
+| Geekbench 6 | CPU / Compute 主流基线 | 官方最低要求 Android 7.0（API 24）；4 GB RAM 是桌面端要求，Android 端无公开 RAM 下限。 | 不同 Android 版本的 Geekbench 6 分数可比较；如需覆盖更早设备，保留 Geekbench 5 历史基线。 |
 | 3DMark / PCMark | 图形、压力、工作负载与续航基线 | 按测试包版本和设备支持列表核验。 | 记录工具版本、测试项目和系统版本，避免跨大版本直接比较。 |
 | 安兔兔 | 综合分和大众设备档位参考 | 分数口径随应用大版本变化。 | 用于沟通设备档位，不用于工程归因。 |
 | Vellamo | 历史网页 / 设备测试工具 | 已属于历史工具。 | 只用于旧报告复盘；新机型分层改用 Geekbench、3DMark、PCMark、Speedometer 等当前工具。 |
