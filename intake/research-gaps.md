@@ -9963,3 +9963,282 @@ ADJ 50 (PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ) 的宽限期时长定义机制未
 
 **来源**: Gemini 外部 review (2026-04-28-15-ch02-01-rendering-overview-external-review.md)
 
+
+## [2026-04-28] 2.21 文字渲染性能
+- **严重级别**：P1
+- **位置**：引擎原理、优化实践及 API 演进小节
+- **问题描述**：未反映 2026 年引擎提速、轴向缓存及排版 API 突破。
+- **建议修正方向**：同步 HarfBuzz 10.x 收益并加入 Android 17 新特性说明。
+
+### 9.4 可复用知识资产
+- **性能锚点**：阿拉伯语塑形提速达 45% (Android 16+)。
+- **核心 API**：`shiftDrawingOffsetForStartOverhang`。
+- **技术结论**：2026 年的 Android 文本系统已实现从“基础显示”向“高品质动态排版”的完全跨越。
+
+## 十一、落盘信息
+- 已写入文件：`logs/external-review/2026-04-28-15-ch02-21-text-rendering-performance-external-review.md` — 知识盲区
+
+### 动态字体回退延迟
+
+**重要程度**：高
+
+**建议研究方向**：Project Mainline 更新字体包时的系统级锁竞争
+
+**关联章节**：2.21
+
+**外部 review 来源**：2026-04-28-15-ch02-21-text-rendering-performance-external-review.md
+
+### 垂直文本缓存失效率
+
+**重要程度**：中
+
+**建议研究方向**：启用 VERTICAL_TEXT_FLAG 后的 WordCache 命中率波动
+
+**关联章节**：2.21
+
+**外部 review 来源**：2026-04-28-15-ch02-21-text-rendering-performance-external-review.md
+
+
+## [2026-04-28] 3.2 触控性能优化
+- **严重级别**：P1
+- **位置**：原理组成、预测机制及 16KB 适配小节
+- **问题描述**：未反映 HCI 科学研究阈值及 Android 16 的 AI 预测模型。
+- **建议修正方向**：同步 11ms 科学基准并引入 TFLite 预测模型实现。
+
+### 9.4 可复用知识资产
+- **性能锚点**：拖拽感知阈值 11ms。
+- **核心机制**：TFLite MotionPredictor (NPU 推理)。
+- **技术结论**：Android 16 标志着输入系统从“线性外推”跨入了“特征感知预测”的新阶段。
+
+## 十一、落盘信息
+- 已写入文件：`logs/external-review/2026-04-28-15-ch03-02-touch-performance-external-review.md` — 知识盲区
+
+### 极坐标变换特征
+
+**重要程度**：高
+
+**建议研究方向**：预测模型如何通过角度/距离输入解耦屏幕方向
+
+**关联章节**：3.2
+
+**外部 review 来源**：2026-04-28-15-ch03-02-touch-performance-external-review.md
+
+### 置信度动态过滤
+
+**重要程度**：中
+
+**建议研究方向**：预测点发生突跳时的系统自愈算法
+
+**关联章节**：3.2
+
+**外部 review 来源**：2026-04-28-15-ch03-02-touch-performance-external-review.md
+
+
+## [2026-04-28] 3.3 手势导航与系统交互
+- **严重级别**：P1
+- **位置**：回调模型、演进趋势及 Monitor 原理小节
+- **问题描述**：未反映 2026 年 AOT 强制拦截、观察者优先级及设备级隔离优化。
+- **建议修正方向**：同步返回键 AOT 模型及优先级新常数，补全多窗口指针窃取隔离逻辑。
+
+### 9.4 可复用知识资产
+- **性能锚点**：预测性返回通过 Shell 托管动画减少了 App 主线程的每帧负担。
+- **核心类名**：`OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER`。
+- **技术结论**：Android 16 实现了手势导航从“简单的输入捕获”向“精准的设备流管理”的飞跃。
+
+## 十一、落盘信息
+- 已写入文件：`logs/external-review/2026-04-28-15-ch03-03-gesture-navigation-external-review.md` — 知识盲区
+
+### 三键导航长按阈值
+
+**重要程度**：高
+
+**建议研究方向**：400ms 等长按逻辑如何通过 InputDispatcher 触发预测预览
+
+**关联章节**：3.3
+
+**外部 review 来源**：2026-04-28-15-ch03-03-gesture-navigation-external-review.md
+
+### Observer 注册竞争
+
+**重要程度**：中
+
+**建议研究方向**：为什么 API 36 暂时限制每个 Dispatcher 仅一个观察者回调
+
+**关联章节**：3.3
+
+**外部 review 来源**：2026-04-28-15-ch03-03-gesture-navigation-external-review.md
+
+
+## [2026-04-28] 3.4 输入延迟与预测输入技术
+- **严重级别**：P1
+- **位置**：调度优化、量化工具及采样策略小节
+- **问题描述**：未反映 2026 年 ADPF 闭环、HWC 4.0 标准及动态高频采样。
+- **建议修正方向**：同步最新闭环调度逻辑并引入标准化光子时间线。
+
+### 9.4 可复用知识资产
+- **性能锚点**：HWC 4.0 实现了端到端延迟的软件级精准度量。
+- **核心机制**：ADPF 动态线程提升。
+- **技术结论**：2026 年的输入优化已从“单点提速”进化为“全链路反馈闭环”。
+
+## 十一、落盘信息
+- 已写入文件：`logs/external-review/2026-04-28-15-ch03-04-input-latency-prediction-external-review.md` — 知识盲区
+
+### AI 预测的置信度管理
+
+**重要程度**：高
+
+**建议研究方向**：系统如何处理 TFLite 模型输出的概率分布
+
+**关联章节**：3.4
+
+**外部 review 来源**：2026-04-28-15-ch03-04-input-latency-prediction-external-review.md
+
+### ADPF Margin 的节能权衡
+
+**重要程度**：中
+
+**建议研究方向**：预留 CPU 余量对待机功耗的微观影响
+
+**关联章节**：3.4
+
+**外部 review 来源**：2026-04-28-15-ch03-04-input-latency-prediction-external-review.md
+
+
+## [2026-04-28] 3.5 输入事件拦截与安全机制
+- **严重级别**：P1
+- **位置**：安全边界、拦截机制及演进趋势小节
+- **问题描述**：未反映 2026 年敏感隔离属性、物理分发切断及通话保护策略。
+- **建议修正方向**：同步 API 36 敏感视图规范并引入 Android 17 的 InputMonitor 物理切断逻辑。
+
+### 9.4 可复用知识资产
+- **性能锚点**：密码输入触发 InputDispatcher 零延迟分发挂起。
+- **核心属性**：`accessibilityDataSensitive`。
+- **技术结论**：Android 16 标志着输入系统进入了“意图敏感型分发保护”阶段。
+
+## 十一、落盘信息
+- 已写入文件：`logs/external-review/2026-04-28-15-ch03-05-input-interception-security-external-review.md` — 知识盲区
+
+### TapTrap 动画漏洞
+
+**重要程度**：高
+
+**建议研究方向**：系统如何防止在 Activity 切换瞬间利用透明度进行点击欺诈
+
+**关联章节**：3.5
+
+**外部 review 来源**：2026-04-28-15-ch03-05-input-interception-security-external-review.md
+
+### Spy Window 的能量模型
+
+**重要程度**：中
+
+**建议研究方向**：后台高频监听输入流对系统唤醒锁的影响
+
+**关联章节**：3.5
+
+**外部 review 来源**：2026-04-28-15-ch03-05-input-interception-security-external-review.md
+
+
+## [2026-04-28] 4.1 Android 内存模型全景
+- **严重级别**：P1
+- **位置：**内核管理、物理内存及指标分析小节
+- **问题描述**：未反映 2026 年内存限额契约及 MTE/16KB 硬件开销。
+- **建议修正方向**：引入配额制说明并更新 MTE/16KB 的内存基准损耗。
+
+### 9.4 可复用知识资产
+- **性能锚点**：MTE 系统开销 5%，16KB 膨胀系数 1.1x。
+- **核心类名**：`ProfilingManager.TRIGGER_TYPE_ANOMALY`。
+- **技术结论**：2026 年的内存管理已从“策略建议”演进为“硬性配额审计”。
+
+## 十一、落盘信息
+- 已写入文件：`logs/external-review/2026-04-28-15-ch04-01-memory-overview-external-review.md` — 知识盲区
+
+### AnonSwap 的限额计算
+
+**重要程度**：高
+
+**建议研究方向**：MemoryLimiter 如何对 ZRAM 压缩后的匿名页进行计费
+
+**关联章节**：4.1
+
+**外部 review 来源**：2026-04-28-15-ch04-01-memory-overview-external-review.md
+
+### MTE SYNC 模式的性能降级
+
+**重要程度**：中
+
+**建议研究方向**：精确检测模式对 CPU 缓存带宽的二次占用
+
+**关联章节**：4.1
+
+**外部 review 来源**：2026-04-28-15-ch04-01-memory-overview-external-review.md
+
+
+## [2026-04-28] 4.2 Linux 内核内存管理
+- **严重级别**：P1
+- **位置**：页面回收、16KB 页适配及协同优化小节
+- **问题描述**：未反映 2026 年 MGLRU 默认化、内核-GC 协同细节及 75% 缺页降幅。
+- **建议修正方向**：同步最新内核策略并补全 Silk 论文落地后的架构逻辑。
+
+### 9.4 可复用知识资产
+- **性能锚点**：16KB 页模式下 page_fault 减少 75%。
+- **核心指令**：`madvise(MADV_COLD)`。
+- **技术结论**：Android 16 标志着内存治理进入了“由虚拟机驱动内核回收”的精细化阶段。
+
+## 十一、落盘信息
+- 已写入文件：`logs/external-review/2026-04-28-15-ch04-02-linux-memory-external-review.md` — 知识盲区
+
+### 16KB 下的匿名页回收延迟
+
+**重要程度**：中
+
+**建议研究方向**：单次压缩/解压 16KB 块对主线程 D 状态的时长贡献
+
+**关联章节**：4.2
+
+**外部 review 来源**：2026-04-28-15-ch04-02-linux-memory-external-review.md
+
+### mg_util 分代权重
+
+**重要程度**：高
+
+**建议研究方向**：系统如何根据 App 优先级（ADJ）动态干预 MGLRU 的代际转换
+
+**关联章节**：4.2
+
+**外部 review 来源**：2026-04-28-15-ch04-02-linux-memory-external-review.md
+
+
+## [2026-04-28] 4.3 ART 虚拟机内存管理
+- **严重级别**：P1
+- **位置**：分代回收、分配器原理及性能分析小节
+- **问题描述**：未反映 2026 年分代 CMC 收益、16KB 动态对齐及无锁队列红利。
+- **建议修正方向**：更新性能基准数据，引入运行时对齐逻辑，并加入稳定性优化说明。
+
+### 9.4 可复用知识资产
+- **性能锚点**：分代 CMC 使 OpenCL 计算能效提升 32.6%。
+- **核心逻辑**：运行时 GetPageSize() 取代硬编码对齐。
+- **技术结论**：Android 16 实现了虚拟机层与硬件层（大页/多核）的深度自适应对齐。
+
+## 十一、落盘信息
+- 已写入文件：`logs/external-review/2026-04-28-15-ch04-03-art-memory-external-review.md` — 知识盲区
+
+### 16KB 页对 TLAB 碎片的影响
+
+**重要程度**：中
+
+**建议研究方向**：最小 16KB TLAB 是否会导致极小线程应用的内存浪费
+
+**关联章节**：4.3
+
+**外部 review 来源**：2026-04-28-15-ch04-03-art-memory-external-review.md
+
+### 晋升阈值动态调节
+
+**重要程度**：高
+
+**建议研究方向**：系统如何根据 ARR 刷新率动态压缩年轻代回收的 Budget
+
+**关联章节**：4.3
+
+**外部 review 来源**：2026-04-28-15-ch04-03-art-memory-external-review.md
