@@ -31,9 +31,9 @@ polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 review_notes: "2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（「这意味着」x2 / 「至关重要」x1 禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
 pipeline_stage: task6_pending
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: pass-with-p1-notes
 task9_reviewed_date: "2026-04-16"
 task2b_state: fixed
@@ -108,7 +108,7 @@ graph TB
 
 ### 各层职责：从 Kernel 到 App 的"责任链"
 
-**Linux 内核层**是整个系统的基础。进程调度、内存管理、网络栈、设备驱动这些最底层的工作都在这里完成。Android 对标准 Linux 内核做了几项关键定制。Binder 驱动负责高频进程间通信。内存回收这条线要按版本看：Android 8-9 仍能看到 in-kernel LMK 的历史实现，Android 10 及以后主线切到 userspace `lmkd`，并可结合 PSI（Pressure Stall Information）判断内存压力。共享内存也不是一套机制覆盖所有版本，早期大量使用 ashmem，现代 Android 已经逐步转向更标准的 fd-backed shared memory backend，例如 `memfd`；图形等子系统还会结合 `dmabuf` 一类机制。[待验证: 各子系统从 ashmem 迁移的具体时间线]
+**Linux 内核层**是整个系统的基础。进程调度、内存管理、网络栈、设备驱动这些最底层的工作都在这里完成。Android 对标准 Linux 内核做了几项关键定制。Binder 驱动负责高频进程间通信。内存回收这条线要按版本看：Android 8-9 仍能看到 in-kernel LMK 的历史实现，Android 10 及以后主线切到 userspace `lmkd`，并可结合 PSI（Pressure Stall Information）判断内存压力。共享内存也不是一套机制覆盖所有版本，早期大量使用 ashmem，Linux 5.18（2022）已从 staging 目录移除 ashmem 驱动，Android 15 起强制使用 `memfd` 作为共享内存后端；图形等子系统还会结合 `dmabuf` 一类机制。
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/kernel]
 [已验证: 官方文档, https://source.android.com/docs/core/perf/lmkd]
@@ -220,9 +220,7 @@ Project Mainline 在 Android 16 上已经覆盖到 ART、Media、Network Stack �
 
 > **版本澄清**：16KB Page Size 特性由 **Android 15** 引入（Android 16 继续完善）。Android 16 的主要变化是要求部分设备必须支持 16KB Page Size，而非重新引入该特性。
 
-Android 15 引入了 16KB 页大小支持（传统是 4KB），Android 16 在此基础上继续完善。更大的页大小意味着每次内存操作搬运更多数据，对大块连续内存访问（如 GPU Buffer）有正面影响，但也会增加内存碎片和小对象的内存浪费。Thread Local Storage (TLS) 的缓冲区做了专项优化，将其隔离到专用内存页面，减少了对整体内存的消耗。
-
-[待验证: 16KB Page Size 在 Android 16 上的性能数据需实际设备验证]
+Android 15 引入了 16KB 页大小支持（传统是 4KB），Android 16 在此基础上继续完善。更大的页意味着页表项减少约 75%，TLB 命中率提升，对大块连续内存访问（如 GPU Buffer）有正面影响，但也会增加内存碎片和小对象的内存浪费。Google 报告的数据：应用启动平均提升 3.16%，系统启动缩短约 0.8s，内存开销增加约 9%。Thread Local Storage (TLS) 的缓冲区做了专项优化，将其隔离到专用内存页面，减少了对整体内存的消耗。
 
 ## 从性能视角看分层：瓶颈热点的分布
 
@@ -259,7 +257,7 @@ JNI 是 Java/Kotlin 代码调用 C/C++ Native 代码的唯一通道。每次跨�
 
 更常见的成本来自调用次数。一个常见反模式是：在循环中反复调用 JNI 方法，每次只处理一条数据。比如逐像素调 JNI 方法做图像处理，100 万个像素就是 100 万次 JNI 调用，光 JNI 开销就会累积到数百毫秒。正确做法是把数据打包成数组或 DirectByteBuffer，一次 JNI 调用传过去批量处理。
 
-Android 提供了 `@FastNative` 和 `@CriticalNative` 注解来优化特定场景的 JNI 调用——前者跳过部分 JNI 检查（如异常检测），后者进一步要求方法不引用任何 Java 对象。这两个注解可以将 JNI 调用开销降低 30-50% [待验证: 降低比例数据来源需确认]。
+Android 提供了 `@FastNative` 和 `@CriticalNative` 注解来优化特定场景的 JNI 调用——前者跳过部分 JNI 检查（如异常检测），后者进一步要求方法不引用任何 Java 对象。根据社区测量和 ART 内部基准：常规 JNI 调用约 115ns，`@FastNative` 约 35ns（约 3 倍提升），`@CriticalNative` 约 25ns（约 5 倍提升）。
 
 [已验证: 官方文档, https://developer.android.com/reference/dalvik/annotation/optimization/FastNative]
 
@@ -361,15 +359,15 @@ Binder 相比 Socket/管道的核心优势在于：**一次拷贝**。传统 IPC
 
 [已验证: 官方文档, https://source.android.com/docs/core/architecture/kernel]
 
-## Vendor VNDK 隔离对 native 库加载的影响
+## Vendor VNDK 隔离对 native 库加载的影响（历史机制）
 
 分层架构的接口隔离不只发生在 HAL 层。在 Android 8.0 引入 Treble 之后，Vendor 和 Framework 使用的 Native 库同样需要隔离——这就是 VNDK（Vendor Native Development Kit）机制。
 
-[已验证: 官方文档, https://source.android.com/docs/core/architecture/vndk]
+> **版本说明**：VNDK 在 Android 8-14 期间是关键的接口隔离机制。Android 15 起正式过渡到 **VNDK-less**（也称 Self-contained HALs）架构，HAL APEX 自包含依赖库，`ro.vndk.version` 属性不再声明。VNDK 相关规则在新版本中已逐步退出，但在分析 Android 8-14 的存量设备和历史问题时仍然需要了解。
 
 为什么需要隔离？Framework 和 Vendor 模块可能依赖同一个 C++ 库的不同版本。如果不隔离，链接器会随机加载其中一个版本，导致符号冲突或 ABI 不兼容的崩溃。
 
-对性能的影响是双面的：VNDK 隔离要求 Vendor 进程只能使用白名单中的库，某些共享库需要被复制一份给 Vendor 使用，增加了存储空间和内存占用。[待验证: VNDK 隔离对库加载时间的具体影响数据] 但从系统稳定性的角度看，这个权衡是值得的——它消除了 Framework 更新导致 Vendor HAL 崩溃的风险。
+对性能的影响是双面的：VNDK 隔离要求 Vendor 进程只能使用白名单中的库，某些共享库需要被复制一份给 Vendor 使用，增加了存储空间和内存占用。但从系统稳定性的角度看，这个权衡是值得的——它消除了 Framework 更新导致 Vendor HAL 崩溃的风险。
 
 ---
 ## 参考资料

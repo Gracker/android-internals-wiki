@@ -45,10 +45,10 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
@@ -139,12 +139,14 @@ Game Mode API（Android 12, API 31）通过 `GameManager` 类解决了这个问�
 
 ```xml
 <!-- AndroidManifest.xml -->
-<application>
+<application android:appCategory="game">
     <meta-data
         android:name="android.game_mode_config"
         android:resource="@xml/game_mode_config" />
 </application>
 ```
+
+`android:appCategory="game"` 让系统把应用识别为游戏，Game Dashboard 才会为它显示模式选择入口。`game_mode_config.xml` 则声明游戏支持哪些模式（Battery / Performance）。两者缺一不可。
 
 在 `res/xml/game_mode_config.xml` 中声明由游戏自己处理的模式：
 

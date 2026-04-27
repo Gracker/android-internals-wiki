@@ -159,6 +159,17 @@ VkResult result = vkAcquireNextImageKHR(
 - **通常非阻塞**：在 Swapchain 未满时立即返回；满了才会等
 - 在 Trace 中，`vkAcquireNextImageKHR` 耗时短说明 Buffer 充足，耗时长说明 Buffer 压力大
 
+#### Vulkan swapchain 在 Android 上的底层映射
+
+`VkSwapchainKHR` 在 Android 上**底层仍然基于 BufferQueue**，理解这套映射是排查"看似 CPU 很快、GPU 也不重"型卡顿的关键：
+
+- `vkAcquireNextImageKHR` 内部调用 `ANativeWindow::dequeueBuffer` 拿到一个 buffer 和对应的 fence fd，随后通过 `vkImportSemaphore/FenceFdKHR` 机制把这个 fd import 到 App 传入的 `VkSemaphore` / `VkFence` 中。这些同步对象 signal 的时机，对应 BufferQueue 里上一个消费者释放此 buffer 的时刻——显示路径里通常来自 HWC 在 `presentDisplay` 后通过 `getReleaseFences()` 返回、再经 SF / BufferQueue 回传的 **release fence**（per-layer，回答"上一帧 buffer 什么时候能被 Producer 安全复用"）。
+- Android 上 swapchain image 数量由 driver 和 surface capability 协商，一般落在 2-3（double / triple buffering）。BufferQueue 的 `maxDequeueBufferCount` 和 `VkSwapchainCreateInfoKHR::minImageCount` 共同决定实际可用 image 数，没有哪一个参数单独定死。
+- App 通常选择 `VK_PRESENT_MODE_FIFO_KHR`（Vulkan 规范要求所有实现必须支持，对应 vsync 对齐）；Android 上 `MAILBOX` 和 `IMMEDIATE` 是否可用取决于设备驱动，部分设备会在驱动 / SurfaceFlinger / vendor policy 中把请求的 mode 降级为 FIFO。
+- **如果在 `vkAcquireNextImageKHR` 上看到长时间等待**，通常是前面某个 image 的 release fence 还没回来（BufferQueue 消费端没跟上）——和 GLES 路径上 `eglSwapBuffers` 长 slice 的成因等价：**不是 GPU 还在画**，而是内部等空闲 buffer。
+
+[已验证: AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp` `AcquireNextImage` 路径 + `frameworks/native/libs/gui/Surface.cpp` `dequeueBuffer` + Khronos Vulkan-Samples Android-specific notes]
+
 ### 第二阶段：Record & Submit（录制与提交）
 
 Command Buffer 的录制可以并行，但前提是 host 侧对象不被多个线程无锁共享。Vulkan 规范里很多对象标注为 externally synchronized；同一个 `VkCommandPool`、同一个 `VkCommandBuffer`、以及同一个 `VkQueue` 的提交访问都要由应用自己同步。常见做法是每个录制线程持有独立 `VkCommandPool`，worker 线程录制 secondary command buffer，提交线程把它们合入 primary command buffer 后统一提交。

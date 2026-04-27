@@ -25,7 +25,9 @@ task9_reviewed_date: "2026-04-18"
 - [18.4.2 并行生产机制](#并行生产机制) — View Pipeline 与 Media Pipeline 的独立运行
 - [18.4.3 打洞与合成](#打洞与合成) — 两个 Layer 的视觉融合
 - [18.4.4 渲染时序图](#渲染时序图) — 双管线的完整交互
-- [18.4.5 性能特征与陷阱](#性能特征与陷阱) — 同步挑战与优化方向
+- [18.4.5 跨 Surface 同步机制](#跨-surface-同步机制) — 受控 Surface / Transaction 之间的同步原语
+- [18.4.6 SurfaceFlinger 在多 Layer 时的 latch 行为](#surfaceflinger-在多-layer-时的-latch-行为) — per-layer 推进与"视觉错位"的根因
+- [18.4.7 性能特征与陷阱](#性能特征与陷阱) — 同步挑战与优化方向
 
 **扩展（可选深入）：**
 - 混合渲染中的 BLAST 同步语义
@@ -163,6 +165,41 @@ sequenceDiagram
     Note over HWC: 4. 上屏
     HWC->>HWC: Scanout
 ```
+
+## 跨 Surface 同步机制
+
+混合渲染的核心难题不在每条管线本身，而在两条管线如何**收到同一帧里**。两个 Layer 由不同线程驱动、不同 BufferQueue 周转、有各自的 fence，要让它们在 SurfaceFlinger 这一轮被一起 latch、用同一组逻辑帧内容合成，需要专门的跨 Surface 同步原语。下面这些机制各自解决的问题不同，不能混用。
+
+| 机制 | 适用范围 | 解决什么问题 |
+|:---|:---|:---|
+| `SurfaceComposerClient::Transaction::merge` | 已有 `SurfaceControl.Transaction` | 把多个受控 Layer 的几何 / alpha / buffer 状态合并到同一个事务边界 |
+| `Transaction::setDesiredPresentTime` | per-transaction | 让 SF 在更合适的 vsync 周期 latch（**显示调度**，不消除 fence 等待） |
+| `Surface#setNextFrameTimestamp` | per-buffer | 单个 Surface 的下一帧期望 present 时间，与上一条互补 |
+| `SurfaceControl.Transaction#addTransactionCommittedListener` | Android 13 / API 33+ | 通知 transaction 已提交（**不等于** buffer release，**不等于** present） |
+| `SurfaceSyncGroup` | Android 14 / API 34+ | 把多个受控 Surface 包进一个同步组（`AttachedSurfaceControl`、`SurfaceView`、`SurfaceControlViewHost.SurfacePackage`），SurfaceView 还需通过 frame callback 声明要同步的下一帧 |
+| `latch unsignaled buffer` | 单 Layer 局部优化 | 满足 AutoSingleLayer 等条件时把 fence 等待时机后移；**不是跨 Surface 同步** |
+
+**重要边界**：上面这些原语只能协调**受控 Surface / Transaction**，不能让外部 Producer（Camera / MediaCodec / Flutter Engine）的下一块 buffer 在期望帧准时到达。当跨进程 Producer 节奏不可控时，这些机制能**缓解**不同步压力，但**不会自动解决**它——最终仍然需要一个时刻让各条 Surface 同时满足"可以参与这一轮合成"的条件，等待时机可以后移，同步要求没有消失。
+
+[已验证: AOSP `frameworks/native/libs/gui/SurfaceComposerClient.cpp` `Transaction::merge` / `setDesiredPresentTime` + Android Developers `SurfaceSyncGroup` (API 34) / `addTransactionCommittedListener` (API 33)]
+
+## SurfaceFlinger 在多 Layer 时的 latch 行为
+
+SurfaceFlinger 是按 **per-layer** 节奏推进合成的，并不等所有 Layer 都有新 buffer。每一轮 `vsync-sf` 到来时，SF 逐个检查每个 Layer：
+
+- 有新 buffer 且 fence / transaction 条件满足 → latch 新的；
+- 没有新 buffer → 沿用该 Layer 上一帧已经 latch 的 buffer；
+- 任一 Layer 有新内容需要合成时，SF 就会本轮合成，对其他 Layer 沿用旧 buffer。
+
+这是混合渲染最容易产生"视觉错位"的根因：系统已经合成了，但拼出来的结果里宿主部分和独立内容部分**不属于同一个逻辑帧**。常见症状：
+
+- 外层 UI 已经是新状态，视频还是旧帧（SF 用了宿主的新 buffer + 视频的旧 buffer）；
+- 视频帧已经到了，但遮罩 / 控制条还在旧位置；
+- 页面已经滚动了，但视频 SurfaceView 几何还没跟上。
+
+排查时不能只看 FrameTimeline 是否偏，要分别确认 SF 这一轮**对哪几个 Layer 用了新 buffer**——`dumpsys SurfaceFlinger` 的 `activeBuffer` / `latched buffer` 字段可以给到这一信息。
+
+[已验证: AOSP `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` `commitTransactions` / `latchBuffers`]
 
 ## 性能特征与陷阱
 

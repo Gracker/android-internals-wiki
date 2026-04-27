@@ -142,6 +142,20 @@ Flutter 在 Android 上的渲染架构有自己的线程分工。纯 Flutter 渲
 
 两者的性能差异与原生 SurfaceView / TextureView 的对比一致，差异来自是否多了一次纹理拷贝。
 
+## 补充：三种 fence 速查
+
+后续章节里的 buffer 流转都绕不开 acquire / release / present 这三类 fence。它们方向不同、粒度不同、回答的问题也不同，分析时不能混着用。
+
+| 名称 | 方向 | 粒度 | 回答的问题 |
+|:---|:---|:---|:---|
+| **acquire fence** | Producer → Consumer | per-buffer | 这块 buffer 的 GPU 写入什么时候完成，Consumer 何时能安全读 |
+| **release fence** | HWC → Producer（经 SF 中转） | per-layer、per-frame（关联到上一轮 latch 的那块 buffer） | 上一帧用的 buffer 什么时候能被 Producer 安全复用 |
+| **present fence** | HWC → SF | per-display、per-frame | 这一整轮 present 什么时候真正扫描到屏幕 |
+
+分析"用户什么时候看到这一帧"用 present fence；分析"App 的 `dequeueBuffer` 为什么一直等"看 release fence；分析"SF 读到半成品"才去怀疑 acquire fence。三者方向相反、粒度不同，不能混着用。内部实现详见 [2.16 Sync Fence 框架与帧同步机制](../../part1-fundamentals/ch02-rendering/16-sync-fence.md)。
+
+[已验证: AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` `getPresentFence()` / `getReleaseFences()` + `frameworks/native/libs/gui/BufferQueueProducer.cpp`]
+
 ---
 
 > **交叉引用**：本章讨论的是不同场景下 buffer 的流转方式。App 侧的提交线程可先看 [2.5 MainThread 与 RenderThread 协作](../../part1-fundamentals/ch02-rendering/05-main-render-thread.md)，SurfaceFlinger 的合成职责见 [2.6 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)，BufferQueue 与 BLAST 的底层队列机制见 [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)，Fence 同步见 [2.16 Sync Fence 框架与帧同步机制](../../part1-fundamentals/ch02-rendering/16-sync-fence.md)，图形 API 选型见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。

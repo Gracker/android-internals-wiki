@@ -195,6 +195,15 @@ TextureView:  Producer → SurfaceTexture → App RenderThread → SurfaceFlinge
 | **独立 Overlay 机会** | 可能 | 无。TextureView 内容先并入 App 主窗口 |
 | **变换能力** | Android 7.0+ 可稳定平移/缩放，Android 14+ 支持 View alpha；旋转和复杂裁剪仍受限 | 完整支持（旋转/缩放/透明度/圆角） |
 | **帧率独立性** | 独立 | 绑定到 App UI 帧率 |
+| **受保护内容（DRM）** | 支持，可以走 secure overlay / secure composition 路径 | 不支持，会显示为黑屏 |
+
+### 受保护内容为什么走不了 TextureView
+
+DRM 视频或其它受保护内容对应的 buffer 带 `GRALLOC_USAGE_PROTECTED` 标记，只能通过 secure composition / secure overlay plane 路径被读取。SurfaceView 的独立 layer 可以直接走这条 secure 合成路径；TextureView 必须走宿主 RenderThread 的 GPU 重采样，而 HWUI 的通用渲染 context 不处于 protected 模式，读 secure buffer 只能拿到黑屏。
+
+这是 TextureView 在视频播放场景下最常见的踩坑点之一——业务侧选择 TextureView 是为了 alpha / 圆角 / 旋转动画，但只要内容是 DRM 受保护的，路径选择就只能改回 SurfaceView。
+
+[已验证: AOSP `frameworks/native/libs/ui/Gralloc*.cpp` `USAGE_PROTECTED` flag + Android Developers `MediaDrm` 相关说明]
 
 ## onFrameAvailable 回调模型
 
@@ -231,6 +240,15 @@ SurfaceTexture 默认只保留最新的一帧。如果 Producer 生产了 3 帧�
 4. **onFrameAvailable 回调路径**：如果 Trace 配置包含相关回调或 View invalidation 信号，可定位从 Producer `queueBuffer` 到 App 请求重绘之间的延迟
 
 AOSP `GLConsumer.cpp` 的常见路径会把 acquire fence 转成 EGL wait（`eglWaitSyncKHR`）。CPU 端更像是在提交同步点，GPU 在后续采样这张 OES 纹理前再完成等待。驱动缺少 native fence sync 能力时，代码才会退化到 `waitForever()`。
+
+#### Fence 在 TextureView 链路里要分两层看
+
+TextureView 实际有两套 fence，用途不同不能混淆：
+
+- **外部 Producer 侧的 fence**：保护"宿主侧通过 `updateTexImage` acquire 时不要太早读到 GPU 还没写完的外部内容"
+- **宿主窗口侧的 fence**：保护"SurfaceFlinger 从宿主 `BLASTBufferQueue` latch 时不要太早读到宿主 GPU 还没合成完的最终窗口结果"
+
+外部内容那一层 fence 晚了，宿主 `updateTexImage` 就会等；宿主自己那一层 fence 晚了，SF 这一轮 latch 就会等。Trace 上排查时要分别定位这两条 fence 的 signal 时间。
 
 ### 关键 Slice
 

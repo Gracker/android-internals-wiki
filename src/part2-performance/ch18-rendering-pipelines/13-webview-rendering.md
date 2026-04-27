@@ -155,6 +155,18 @@ sequenceDiagram
 
 **性能特征**：网页绘制开销会直接计入宿主窗口这帧的 `DrawFrame`。Perfetto 里如果宿主 `RenderThread` 出现长时间的 functor 回调，同时 `CrRendererMain`、Viz 或 WebView GPU 线程也在忙，网页内容还在宿主窗口这帧里收口。
 
+#### Functor 路径里几个容易踩的点
+
+排查这条路时还要把下面几条架构事实记牢：
+
+1. **HWUI 后端 = WebView 后端，必须一致**：宿主 HWUI 走 Vulkan，WebView 必须走 Vulkan；走 GL 同理。它们共享 GPU context，不可能一边 GL 一边 Vulkan。判断 WebView 走哪条后端时不要单独看 WebView 侧开关，先看宿主 HWUI 配置。
+2. **`AwDrawFnImpl::DrawGL` / `DrawVk` 双回调**：Android P 之后 HWUI 通过 `AwDrawFnFunctorCallbacks` 结构体（含 `draw_gl` / `draw_vk` 两个字段）回调 Chromium 侧；HWUI 根据当前 pipeline 调用对应一个，最终落到 `AwDrawFnImpl::DrawGL` 或 `AwDrawFnImpl::DrawVk`。Trace 上看到 `DrawGL` slice 还是 `DrawVk` slice，对应当前后端。
+3. **`VizCompositorThread` 不做最终 swap**：独立 Chrome 中 Viz 既合成又 swap；stock WebView 中 Viz 仍然做合成、overlay 决策、SkiaRenderer DDL 记录，但**不做最终 buffer swap**——swap 由宿主 `RenderThread` 通过 draw functor 替 Viz 执行。这是 WebView 区别于独立 Chrome 的架构核心。
+4. **GPU 资源共享的精确口径**：Chromium 与 HWUI 各自持有 context，通过 GPU resource sharing 共享底层资源——GL 路径下 Chromium 用 virtual EGL context 映射到与 HWUI `RenderThread` 的 real context（同一 shared context group）；Vulkan 路径下走基于 `AHardwareBuffer` 的 SharedImage。底层不每帧 CPU 拷贝整块像素，但 context make-current 切换可能在 trace 上有可见开销。
+5. **软件渲染 fallback**：宿主未启用硬件加速（`android:hardwareAccelerated="false"`）或 View 设为 `LAYER_TYPE_SOFTWARE` 时，WebView 不走 functor，fallback 到 `AwContents.onDrawSoftware()` → `BrowserViewRenderer.onDrawSoftware()`，直接在 CPU Canvas 上做软件光栅化。trace 上看不到 `DrawFunctor` slice，取而代之的是 CPU 侧绘制耗时。注意软件 fallback 不等于 Chromium 内部纯 CPU——根据版本和功能开关，tile raster 仍可能走 GPU，只是最终合成后把 bitmap 拷回宿主 Canvas。
+
+[已验证: Chromium `android_webview/public/browser/draw_fn.h` `AwDrawFnFunctorCallbacks` + `android_webview/browser/gfx/aw_draw_fn_impl.cc` + `android_webview/browser/aw_contents.cc` `onDrawSoftware`]
+
 ### 路径 B：`SurfaceControl` 独立子 Surface（provider 条件满足时）
 
 这条路径仍发生在官方 provider 内部。`HardwareRenderer::DrawAndSwap()` 会先和 `OverlayProcessorWebView` 协商 `SurfaceControl` 可用性；`OverlayProcessorWebView::Manager` 负责创建和维护 `ASurfaceControl`，并在 RenderThread / GPU Main 上更新几何信息和 buffer。源码里至少有四层门槛：HWUI 通过 `SetOverlaysEnabledByHWUI()` 放行，Viz 侧 `GpuServiceImpl` 已就绪，candidate 通过 `OverlayProcessorSurfaceControl::CheckOverlaySupportImpl()` 检查，对应 frame sink 也没有进入 `blocked_frame_sink_ids_`。运行时是否真的命中，仍取决于这些门槛是否同时满足。[更多 Transaction / fence 细节见 §18.10 SurfaceControl API 深入]

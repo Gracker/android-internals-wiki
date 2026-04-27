@@ -32,10 +32,10 @@ repaired_by: openclaw-task2b
 - Unity 和 Unreal 的典型线程模型与 Trace 特征
 - Swappy Frame Pacing 的原理与作用
 - 游戏引擎几乎总是使用 SurfaceView + BLAST
+- ADPF / Frame Rate / Game Mode 三组系统调优 API
 
 **扩展（可选深入）：**
 - DrawCall 合批（Batching）与 GPU 性能
-- Game Mode / State API 对渲染链路的影响
 - 常见游戏性能问题的诊断思路
 
 <!-- outline-end -->
@@ -202,6 +202,48 @@ Swappy 没有一个默认必然出现的 `Swappy` Track。排查时把信号分�
 | 需要看到 GPU queue 与 present timing 细节 | 额外打开 graphics tracing 或用 AGI 复查 |
 
 [已验证: Android Game SDK Frame Pacing 文档, SwappyVk API Reference 中 `SwappyVk_determineDeviceExtensions` / `SwappyVk_setQueueFamilyIndex` / `SwappyVk_queuePresent` / `SwappyVk_injectTracer` / `SwappyVk_setSwapIntervalNS`, Perfetto FrameTimeline]
+
+## ADPF / Frame Rate / Game Mode：游戏侧的系统调优 API
+
+Swappy 解决的是帧节奏，不解决"系统该给我多少 CPU/GPU 资源"。这块由 ADPF（Android Dynamic Performance Framework）和两组配套 API 承担。它们不是同一个调用，但分析游戏 trace 时经常一起看。
+
+### ADPF：Performance Hint + Thermal + Game Mode/State 的集合
+
+ADPF **不是单一 API**，而是几组 API 的集合。常用的有：
+
+- **Performance Hint API**（`PerformanceHintManager`，Android 12+ / API 31）：App 通过 `createHintSession(threadIds, targetDurationNanos)` 告诉系统哪些是关键线程和期望帧时；每帧调 `reportActualWorkDuration(actualDurationNanos)` 反馈实际耗时。系统据此动态调整 CPU 频率和核心分配。Android 13 增加了动态更新 target 的能力，Android 14+ 增加了 CPU load up/down hint 等。
+- **Thermal API**（`PowerManager#getCurrentThermalStatus`，`addThermalStatusListener`）：让 App 感知设备热状态，主动降低画质或帧率以避免 throttling。
+- **Game Mode / Game State API**：见下文。
+
+主流引擎都有官方 ADPF 集成（Unity 2023.2+、UE 5.3+），开启后 Perfetto 上能看到 `PerformanceHintManager` 相关系统调用。判断 App 是否接入 ADPF，比起单看 trace 标签，更可靠的是看引擎版本和构建配置。
+
+[已验证: AOSP `frameworks/base/core/java/android/os/PerformanceHintManager.java` API 31+ + Android Developers ADPF 文档]
+
+### Frame Rate API（Android 11+）
+
+App 显式告知系统期望帧率：
+
+- **Java 侧**：`Surface.setFrameRate(float frameRate, int compatibility, int changeFrameRateStrategy)`
+- **Native 侧**：`ANativeWindow_setFrameRate`
+
+App 把期望帧率告知系统后，display stack 可以据此切换 VRR 档位、调度合成节奏。Perfetto 上能看到 refresh rate 切换和 `setFrameRate` 注册相关的 slice。这与 Swappy 的 swap interval 是两件事——前者表达**意图**（让系统知道我要多快），后者控制**提交时机**。
+
+更细的 VRR 投票机制详见 [18.19 可变刷新率渲染管线](19-variable-refresh-rate.md)。
+
+### Game Mode API（Android 12+）
+
+`GameManager#getGameMode()` 返回当前 GameMode intervention 的四种状态：
+
+| GameMode | 含义 |
+|:---|:---|
+| `GAME_MODE_PERFORMANCE` | 用户偏好性能（最高帧率 / 画质） |
+| `GAME_MODE_BATTERY` | 用户偏好省电（降帧 / 降分辨率） |
+| `GAME_MODE_STANDARD` | 默认 |
+| `GAME_MODE_CUSTOM` | OEM 自定义干预 |
+
+系统或 OEM 会据此对特定包做帧率、分辨率、HDR 等调优。**写 trace 分析报告时要先确认当前包是不是被 Game Mode 干预过**——同一台设备不同 GameMode 下的同一段游戏 trace，行为可能差异很大。看到帧率被压制 / 分辨率被改写而 App 自己什么都没设时，先查 GameMode。
+
+[已验证: AOSP `frameworks/base/core/java/android/app/GameManager.java` API 31+]
 
 ## DrawCall 合批（Batching）
 

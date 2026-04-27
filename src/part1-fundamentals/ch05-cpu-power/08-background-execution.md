@@ -348,6 +348,50 @@ Binder 侧也补了配套能力。`IBinder.FrozenStateChangeCallback` 允许系�
 
 
 <!-- AIW-源码调研-2026-04-27 -->
+
+<!-- AIW-源码调研-2026-04-28 -->
+### BINDER_FREEZE ioctl 内部结构与 race condition 修复补充
+
+2026-04-28 调研进一步核验了以下细节：
+
+**BINDER_FREEZE ioctl 结构体**（`kernel/common/drivers/android/binder.c`）：
+```c
+struct binder_freeze_info {
+    __u32 pid;        // 目标进程 group-leader PID
+    __u32 enable;     // 1=冻结, 0=解冻
+    __u32 timeout_ms; // 等待事务排空超时（ms），0=立即返回-EAGAIN
+};
+```
+
+**BINDER_GET_FROZEN_INFO 查询结果**：
+```c
+struct binder_frozen_status_info {
+    __u32 pid;
+    __u32 sync_recv;   // Bit0=冻结后收到同步事务; Bit1=race window内新事务
+    __u32 async_recv;  // 异步事务接收计数
+};
+```
+
+**race condition 修复**（commit `58a9e28781be68`）：
+- 两步冻结之间检测到新同步事务 → 允许回滚 cgroup freeze
+- 若响应在回滚前到达 → treat 为 oneway，等解冻后处理
+
+**FrozenStateChangeCallback 注册路径（API 36+）**：
+```
+IBinder.addFrozenStateChangeCallback(callback)
+  → BpBinder::addFrozenStateChangeCallback()  // libs/binder/BpBinder.cpp:962
+    → IPCThreadState::addFrozenStateChangeCallback(handle, proxy)  // IPCThreadState.cpp:1714
+      → mOut.writeInt32(BC_REQUEST_FREEZE_NOTIFICATION)  // 写入 kernel driver
+        → 内核维护 frozen 状态，变更时通过 BR_FROZEN_NOTIFICATION 推送
+```
+
+**BR_TRANSACTION_PENDING_FROZEN**（Android 14+）：内核告知用户空间 oneway 事务正在等待目标解冻，用于避免 buffer 溢出导致的进程崩溃。
+
+**关键源码索引**：
+- `libs/binder/BpBinder.cpp` L962-1010 — addFrozenStateChangeCallback 转发
+- `libs/binder/IPCThreadState.cpp` L1714-1730 — BC_REQUEST_FREEZE_NOTIFICATION 发送
+- `services/core/java/com/android/server/am/CachedAppOptimizer.java` L4230-4270 — 冻结编排完整流程
+<!-- AIW-源码调研-2026-04-28 -->
 ## Binder Freezer Driver 协同机制：源码级补充
 
 本节在 2026-04-27 通过 AOSP 源码核验了 CachedAppOptimizer 与 Binder Driver 协同冻结的完整链路，以下为关键实现细节补充。

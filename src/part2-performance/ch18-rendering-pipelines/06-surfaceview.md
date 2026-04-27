@@ -240,12 +240,16 @@ SurfaceView 最强大的性能优势在于它可以走 **HWC Overlay** 路径—
 
 ### Overlay 的条件
 
-SurfaceView 能走 Overlay 需要满足以下条件：
+SurfaceView 能走 Overlay 需要同时满足下面这几条。视频和相机这两类典型场景，HWC 的判断会比普通 RGBA layer 更严格：
 
-1. **Z-Order 无遮挡**：SurfaceView 上方没有其他不透明的 UI 元素
-2. **HWC 支持**：设备的 Hardware Composer 支持足够的 Overlay Layer（通常 3-4 个）
-3. **格式兼容**：SurfaceView 的 Buffer 格式（如 NV21、RGBA8888）被 HWC 支持
-4. **缩放比例合理**：如果 SurfaceView 的 Buffer 尺寸与显示区域差异过大，HWC 可能拒绝
+1. **Z-Order 无遮挡**：SurfaceView 上方没有其他不透明的 UI 元素。
+2. **Buffer 格式兼容**：YUV 格式（如 NV12 / NV21 / P010）通常比 RGBA 更容易被 overlay plane 直接接受，是视频路径的常态；不在 HWC 支持列表里的格式会回退。
+3. **DRM / HDCP 保护内容**：必须走 secure overlay 或 secure composition 路径；路径错了会直接表现为黑屏或拒播。
+4. **Overlay plane 数量上限**：HWC 提供的 plane 通常 3-4 个，同屏活跃 layer 超过上限时多出来的会回退为 client composition。Status Bar / Navigation Bar 已经占用 slot 时，留给 SurfaceView 的余量更小。
+5. **缩放比例与旋转**：超出 HWC scaler 能力或不支持的旋转会触发回退。
+6. **色彩空间与 HDR**：不在 HWC 支持列表里的色域 / HDR 元数据会触发 GPU 端的 tone mapping，本质上也是回退到 client 合成。
+
+[已验证: AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` `validateLayerCompositionTypes` 条件 + Android Graphics Architecture overlay 章节]
 
 ### Overlay 失效的常见原因
 
@@ -275,7 +279,12 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 在 Perfetto 中确认 SurfaceView 链路，看两个信号：**独立的 BufferQueue** 和 **Producer Thread 的独立性**：
 
 1. **多个 BufferQueue Track**：在 SurfaceFlinger 进程中，你会看到至少两个 Layer——一个是 App 主窗口，一个是 SurfaceView 的独立 Layer
-2. **Producer Thread 不在 App 主线程**：视频播放场景下，Producer 可能是 MediaCodec 的解码线程；游戏场景下，可能是 Unity 的 RenderThread
+2. **Producer Thread 不在 App 主线程**：Producer 出现的进程取决于内容来源——
+   - **MediaCodec / 视频硬解**：常见在 `media.codec` / `media.swcodec`、Codec2 vendor service、厂商 codec HAL 进程，应用进程往往只看到 output Surface 的回调
+   - **Camera 预览**：常见在 `cameraserver`、camera provider / HAL 或厂商 camera 进程
+   - **游戏引擎 / 地图 / 原生图形**：常见在应用进程内自己的渲染线程，也可能再分出引擎线程或 native 线程池
+   
+   排查时不要只盯应用主进程，要按 Producer 身份切到对应进程再看 `dequeueBuffer` / `queueBuffer` slice
 3. **App 主线程空闲不影响 SurfaceView**：这是最明显的特征——如果 App 主线程出现长时间阻塞（比如 GC 或 I/O 等待），但视频/Camera 画面仍在流畅更新，说明走的是 SurfaceView 的独立链路
 4. **Composition Type**：在 `dumpsys SurfaceFlinger` 中查看对应 Layer 的 Composition Type
 

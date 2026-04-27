@@ -34,6 +34,7 @@ task6_result: pass-light-edit
 - SyncFrameState 的阻塞语义
 - Fence 在 App-SF 间的流转
 - Thread Roles 与职责边界
+- Jetpack Compose 在这条链路上的位置
 
 <!-- outline-end -->
 
@@ -242,6 +243,66 @@ Android 12 引入了 FrameTimeline 机制，彻底改变了 Jank 的判定方式
 - **Jank Tag**：Actual 超过 Expected 时自动标记。分为 `Jank`（轻微）和 `BigJank`（严重）
 
 这种基于 VSyncId 的判定方式比传统的 "16.6ms 阈值" 精确得多。一个 30fps 渲染的页面，每两帧才有一个 VSync，FrameTimeline 能正确识别这不是掉帧——而简单的周期判定会把它标记为 Jank。
+
+## 补充：Jetpack Compose 在这条链路上的位置
+
+Jetpack Compose 是 Android 原生的声明式 UI 框架。从出图路径看，Compose 和 View 系统没有区别——最终都走这条 HWUI / BLAST / SurfaceFlinger 主链。Compose 的独立维度只有一个：**MainThread 上的工作形态不同**。RenderThread 之后的部分完全共用，所以本节只展开 Compose 特有的 MainThread 侧差异。
+
+### Compose 一帧的三阶段
+
+Compose 一帧在 MainThread 上分三个阶段：
+
+1. **Composition**：执行 `@Composable` 函数树，生成或更新代表界面结构的 layout node tree；Slot Table 记录 composition group、`remember` 状态和重组定位信息。这一阶段只决定"写什么"，不做布局和绘制。
+2. **Layout**：用 Compose 自己的 measure policy 计算每个节点的尺寸和位置。Compose **默认**是一次 measure/layout 遍历（single-pass），但 intrinsic measurements / `SubcomposeLayout` / Lookahead 这些机制会带来额外 pass。
+3. **Drawing**：把 layout node tree 对应的绘制指令录到 DisplayList（与 View 系统共用 HWUI 的 DisplayList / RenderNode）。
+
+三阶段执行完后，Compose 把结果挂到 Host View（`ComposeView` / `AbstractComposeView`）上。这个 Host View 对外仍是普通 Android View，继续走 `ViewRootImpl` 的 `performTraversals()` / `performDraw()` 路径。RenderThread 之后的一切和 View 标准链路完全相同。
+
+[已验证: AOSP `frameworks/base/core/java/android/view/ViewRootImpl.java` + Compose 官方文档 "Phases of a frame"]
+
+### 重组与跳过机制
+
+Compose 性能分析最先要盯的是**重组**（recomposition）——状态变化时只重新执行相关的 Composable，不整树重跑。重组的作用域和跳过由 Compose 编译器插入的代码决定：
+
+- **skippable**：参数都 stable 且没变化时，Composable 可以被跳过（不重新执行函数体）。
+- **restartable**：Composable 自身可以作为重组的起点，状态变化时从这里开始重跑。
+- **stable**：类型满足 Compose 的稳定性判定（primitive 类型、带 `@Stable` 或 `@Immutable` 注解的类、`MutableState` 的 value 等）。
+
+非 stable 参数（普通 `List<T>`、未加注解的 data class、捕获了不稳定状态的 lambda）会导致 Composable 每次都重组，即使参数内容没变。trace 上看到 MainThread 反复跑 Composition 阶段的大块 slice，多半是 skippability 出了问题。具体哪个 Composable 跑多了，用 Compose Compiler 的 stability report 或 Layout Inspector 的重组计数定位。
+
+### Compose 特有的 Perfetto Slice
+
+启用 Compose tracing（`androidx.compose.runtime:runtime-tracing`；具体环境门槛以官方 Compose tooling 文档为准）后，MainThread 上能看到几类 Compose 特有 slice：
+
+- **重组阶段相关 slice**（具体命名随 Compose runtime 版本，常见 `Recomposer` / `Composition` / `ComposerImpl.doCompose`）。
+- **Composable 函数调用 slice**（开启 source information 后能看到具体 `@Composable` 名字和位置）。
+- **Layout 阶段 slice**（Compose 自己的 measure policy 执行）。
+- **Drawing 阶段 slice**（录入 DisplayList，与 View 的 `onDraw` 共享 HWUI 底层）。
+
+未开启 Compose tracing 的 trace 里只能看到笼统的 `ComposeView#onMeasure` / `onLayout` / `onDraw`。排查 Compose 性能问题前先确认 tracing 是否启用，没启用的话数据价值有限。
+
+### Compose 与 View 在 Trace 上的对比
+
+| 维度 | View 系统 | Compose |
+|:---|:---|:---|
+| UI 构建方式 | XML + `findViewById` + `setText` 命令式 | `@Composable` 函数声明式 |
+| 变更触发 | `invalidate()` / `requestLayout()` | 状态（`MutableState` / `StateFlow` 等）变化 |
+| 布局遍历 | measure + layout 两阶段，嵌套容器可能触发多次 | 默认 single-pass，intrinsic / `SubcomposeLayout` / Lookahead 会带来额外 pass |
+| MainThread slice | `measure` / `layout` / `draw` / `onDraw` | `Composition` / `Layout` / `Drawing` / Composable 函数 |
+| 跨帧并行度 | UI Thread + RenderThread 两级 pipelining | 与 View 相同（Compose 不改变 pipelining 深度） |
+| RenderThread 之后 | 标准 BLAST 主路径 | 完全相同 |
+| 特有性能陷阱 | 深嵌套 ViewGroup 多次 measure、over-invalidation | 非 stable 参数触发的非必要重组、`remember` 用错 |
+
+性能差异主要落在 MainThread 上的工作效率——Compose 看重组跳过做得好不好，View 看 measure / layout 做得轻不轻。RenderThread 之后两者完全一致；瓶颈类型相同，只是 MainThread 上的分析入口不同。
+
+### ComposeView 与 AndroidView 的互嵌
+
+Compose 与 View 系统可以互相嵌入：
+
+- **Compose 内嵌 View**：用 `AndroidView { ... }` 在 Composable 里放原生 View。被嵌入的 View 走自己的 measure / layout / draw，Compose 负责把它挂在正确的位置。
+- **View 内嵌 Compose**：在 XML 里放 `ComposeView`，调 `setContent { ... }` 加 Composable 内容。`ComposeView` 对外是 `AbstractComposeView`（继承 `ViewGroup`），走标准 View 路径被 `ViewRootImpl` 管理。
+
+混合场景在 trace 上能看到 MainThread 交替出现 Compose 阶段 slice 和 View 的 measure / layout / draw slice。分析时先按外层容器判断整体驱动模型：外层是 `ViewRootImpl` 管的 View tree，内层 Compose 阶段在外层 `Traversal` 中间插入；外层是 `ComposeView`，Compose 阶段在其 `onMeasure` / `onLayout` / `onDraw` 回调里完成。
 
 ---
 
