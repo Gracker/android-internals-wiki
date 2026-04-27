@@ -4994,3 +4994,8 @@
 - **建议**：完善显存计量闭环，集成IMemtrack系统级GPU内存监控
 - **来源**：Gemini外部review - 2026-04-25-15-10-batch-review-summary.md
 
+## [Task9 Deep Review] 5.6 Android 功耗管理 — 2026-04-27
+- **类型**：版本差异/数据支撑
+- **位置**：WorkManager：Expedited Job（约 L389-L392）
+- **问题**：正文把 WorkManager expedited work 写成“不受 App Standby Bucket 限制”。这个表述过宽。Android 12+ expedited job 仍受系统 quota 约束；后台配额会受 App Standby Bucket 和进程重要性影响，前台时通常不受该配额限制，超额后还要按 `OutOfQuotaPolicy` 降级或丢弃。
+- **建议**：改成“优先尽快执行、较少受 Doze/Battery Saver 影响，但后台仍有 expedited quota；需要说明 foreground、background、out-of-quota 三种边界”，并补 WorkManager expedited work 官方文档锚点。

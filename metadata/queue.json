@@ -4724,9 +4724,9 @@
   },
   {
     "section": "7.14",
-    "section_title": "GAPS 动态分析",
+    "section_title": "GAPS：Android 动态分析目标可达性路径重建",
     "priority": 85,
-    "reason": "[External Review] GAPS 反向遍历的上下文敏感性未深入说明",
+    "reason": "[Deep Tech Review] GAPS 静态阶段缺少 callback/ICC/entry point 建模细节",
     "review_issues": [
       {
         "type": "原理链",
@@ -4736,10 +4736,21 @@
         "evidence": [
           "GAPS 论文 Section 4.2"
         ]
+      },
+      {
+        "type": "原理断裂",
+        "location": "“GAPS 的主链：目标方法 → 路径 → 指令 → 动态执行”",
+        "detail": "章节已写 backward traversal、points-to analysis、constant propagation，但没有展开 Android 隐式调用边：callback 映射、ICC/Intent 解析、entry point 到 adb Intent 指令的生成。论文 6.1/6.2 写到 EdgeMiner/Soot virtual edges、Intent 构造时 smali 最后寄存器解析目标 Activity、JSON plan 以 adb Intent 触发入口。缺少这段会让“目标方法如何变成可执行路径”中间断一层。",
+        "suggestion": "补一个“入口与隐式边建模”小节：callback mapping（onCreate/onClick/onItemSelected、setOnClickListener）、ICC/Intent 目标 Activity 解析、条件路径前置、public.xml 资源 ID 还原、JSON plan 首步 adb Intent + 后续 UI action。"
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "pending",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-27T16:20:00+08:00"
   },
   {
     "section": "7.15",
@@ -12266,18 +12277,35 @@
   },
   {
     "section": "5.6",
-    "section_title": "`06-android-power.md`",
+    "section_title": "Android 功耗管理",
     "priority": 85,
-    "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+    "reason": "[Deep Tech Review] BatteryStats/WakeLock 源码链和调度配额边界仍需回炉",
     "review_issues": [
       {
         "type": "P1重要缺失",
         "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `Android 耗电分析与管理` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`frameworks/base/services/core/java/com/android/server/am/BatteryStatsService.java` \n- 关键代码逻辑：在 Android 12+ 之后"
+      },
+      {
+        "type": "原理断裂",
+        "location": "PMS / WakeLock / Battery Historian 关联段（约 L100-L180、L255-L330）",
+        "detail": "章节解释了 PowerManagerService、WakeLock、suspend blocker，但没有把 WakeLock 事件如何进入 BatteryStats 说完整。Battery Historian、Android vitals 的统计来源不是 PMS 的文字状态，而是 PowerManagerService notify -> Notifier.onWakeLockAcquired/Released -> BatteryStatsService.noteStart/StopWakelock -> BatteryStatsImpl UID/history 计时这条链。",
+        "suggestion": "补一段源码链：PowerManagerService.acquireWakeLockInternal()/releaseWakeLockInternal()、Notifier.onWakeLockAcquired()/onWakeLockReleased()、BatteryStatsService.noteStartWakelock()/noteStopWakelock()、BatteryStatsImpl.noteStartWakeLocked()/noteStopWakeLocked()，并说明 bugreport/Battery Historian 读取的是 BatteryStats 持久化后的历史与 UID 统计。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "WakeLock 类型段（约 L130）：Android 8.0 cached 进程 WakeLock 描述",
+        "detail": "“其持有的 WakeLock 可能会被系统回收”不够准确。AOSP main/android-16 的 PowerManagerService.setWakeLockDisabledStateLocked() 对应用 UID 的 PARTIAL_WAKE_LOCK 主要是 disabled/ignored：NO_CACHED_WAKE_LOCKS=true、UID inactive、procState > PROCESS_STATE_RECEIVER 时不再尊重该锁；DeviceIdle / LowPowerStandby 还有额外禁用分支。Java WakeLock 对象并不是被直接释放。",
+        "suggestion": "改成“cached inactive UID 的 partial wakelock 会被 PMS 标记 disabled/不再计入保持唤醒；对象仍由持有方 release”，并补 procState、DeviceIdle allowlist、LowPowerStandby allowlist 三个边界。"
       }
     ],
     "added_by": "external-ai-review",
     "status": "pending",
-    "date": "2026-04-26"
+    "date": "2026-04-26",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "updated_by": "task9-deep-tech-review",
+    "updated_at": "2026-04-27T16:20:00+08:00"
   },
   {
     "section": "5.7",
