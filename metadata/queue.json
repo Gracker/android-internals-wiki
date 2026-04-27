@@ -2680,7 +2680,7 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T07:20:23+08:00",
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/research-gaps.md",
       "intake/suggestions.md",
@@ -2688,7 +2688,10 @@
     ],
     "validated_external_review_paths": [
       "logs/external-review/archive/2026-04-25-02-ch19.02-external-review.md"
-    ]
+    ],
+    "completed_at": "2026-04-27T20:58:38+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B fixed Matrix AGP 8+ instrumentation boundary and related external-review gaps."
   },
   {
     "section": "19.09",
@@ -14214,6 +14217,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T20:35:19+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T20:58:38+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task2B fixed Binder tracepoint issue: removed nonexistent binder_reply and clarified reply semantics."
   }
 ]

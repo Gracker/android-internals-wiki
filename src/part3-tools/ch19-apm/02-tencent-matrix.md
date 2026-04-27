@@ -6,27 +6,30 @@ status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "Tencent Matrix GitHub README and wiki"
+last_verified: "2026-04-27"
+last_verified_against: "Tencent Matrix README/wiki + AGP Transform API removal notes + external review AGP8/methodMapping assets"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Tencent/matrix"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-24T13:52:59+08:00"
+last_task2b_at: "2026-04-27T20:58:38+08:00"
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T07:20:23+08:00"
+repaired_date: "2026-04-27"
+repaired_by: openclaw-task2b
+review_notes: "2026-04-27 task2b: fixed AGP 8+ Trace Canary boundary, added methodMapping explanation, report schema examples, and Battery/native hook rollout risks."
 ---
 
 # Tencent Matrix
@@ -93,6 +96,8 @@ Matrix Android 侧常见模块可以按问题类型理解：
 
 这个分法比“Matrix 很全”更有用。Trace Canary 和 IO Canary 适合线上卡顿现场，Resource Canary 关注 Activity leak 与 duplicate bitmap，Memory Hook 和 MemGuard 则分别覆盖 native leak 与 native heap 错误。APK Checker 更适合 CI 或发版前检查。
 
+Battery Canary、Memory Hook、MemGuard、Pthread Hook 都不适合无差别开启。Battery Canary 会接触 WakeLock、Alarm、线程和系统服务调用，定制 ROM 上的行为差异会放大兼容风险；Memory Hook / Pthread Hook 依赖 native hook，系统库、架构和安全策略变化都可能引入 crash。生产环境更适合云端开关、低采样灰度、按机型放量，并保留一键关闭能力。
+
 ## Trace Canary 的工程边界
 
 Trace Canary 最容易被误解。它在编译期对目标方法插入入口和出口记录，再由运行时逻辑把方法耗时、调用栈和 Looper 消息耗时组织成报告。
@@ -108,7 +113,27 @@ Trace Canary 最容易被误解。它在编译期对目标方法插入入口和�
 - 混淆后需要稳定的 mapping / method map 关系，否则线上报告难以阅读。
 - 插桩范围过大时，方法记录本身会产生额外开销。
 
-Matrix README 里仍能看到旧版本对 Transform 路径的使用说明，AGP 8.x 之后 `android.registerTransform` 已不再是可用入口。新项目接入时要先确认所用版本、社区 fork 或内部改造是否适配当前 AGP。
+AGP 8.0 已移除 Transform API 和 `com.android.build.api.transform` 包，仍调用 `android.registerTransform` 的 Matrix Trace 插件会在配置阶段失败，典型错误是 `API 'android.registerTransform' is removed`。接入 AGP 8+ 项目前，先看所用官方版本、内部分支或社区 fork 的插件源码：如果还注册 `MatrixTraceTransform`，可选方案有三类：固定在 AGP 7.x；使用已经迁移到 Android Components Instrumentation API 的分支；把插桩迁到 `androidComponents.onVariants { variant.instrumentation.transformClassesWith(...) }`。
+
+迁移时要保留旧 Transform 里的三项能力：按包名和黑白名单过滤类，给被插桩方法分配稳定整数 id，输出与混淆 mapping 同版本保存的 `methodMapping.txt`。线上 `Issue` payload 通常只适合携带 method id、栈摘要和耗时；服务端必须用对应构建产物的 `methodMapping.txt` 反解方法名，否则慢函数报告无法聚合到源码位置。
+
+下面这段是 AGP 8+ 注册位置示意，`MatrixTraceClassVisitorFactory` 代表迁移后的 ASM visitor 工厂名，实际项目要替换为自己的实现类：
+
+```kotlin
+androidComponents {
+    onVariants { variant ->
+        variant.instrumentation.transformClassesWith(
+            MatrixTraceClassVisitorFactory::class.java,
+            InstrumentationScope.PROJECT
+        ) { params ->
+            params.traceConfig.set(traceConfigFile)
+            params.methodMapOutput.set(methodMapFile)
+        }
+    }
+}
+```
+
+这段只说明注册入口。真正迁移还要把原 `MatrixTraceTransform` 中的方法过滤、id 分配、method map 输出和增量构建处理搬到新的 visitor 工厂里。
 
 ## IO Canary 补的是 Perfetto 看不到的文件信息
 
@@ -228,6 +253,44 @@ Matrix 原始 `Issue` 不能直接当平台事件使用。书稿级工程里，�
 | `privacy_level` | 标记是否包含路径、URL、日志、文件名等敏感信息 |
 
 如果缺少 `page` 和 `stack_signature`，Matrix 数据会很快变成“很多样本，但无法排序”。如果缺少 `sample_payload_id`，服务端会被大堆栈、Hprof 摘要和 I/O 明细拖慢。
+
+Trace Canary 慢函数样本入库时，至少要保留 method id、耗时、场景和 method map 版本。下面是服务端事件 schema 示例，字段名按团队平台调整：
+
+```json
+{
+  "issue_type": "slow_method",
+  "process_name": "com.example.app",
+  "thread_name": "main",
+  "scene": "HomeActivity#onCreate",
+  "duration_ms": 1280,
+  "stack_signature": "home_startup_load_config",
+  "method_ids": [10231, 20488, 30412],
+  "method_mapping_version": "app-8.3.0-20260427-release",
+  "sample_payload_id": "matrix-trace-20260427-0001"
+}
+```
+
+读这类样本时，先用 `method_mapping_version` 找到同一包的 `methodMapping.txt`，把 `method_ids` 反解成方法名，再按 `scene` 和 `stack_signature` 聚合同类问题。只有单条 `duration_ms` 时，判断空间很小；同一签名在同版本、同机型或同入口上持续出现，才进入排查。
+
+IO Canary 样本要保留文件类型、线程、次数和 buffer 信息，方便和 Perfetto 的线程状态互证。下面是主线程重复小 buffer 读取的事件 schema 示例：
+
+```json
+{
+  "issue_type": "io_main_thread",
+  "process_name": "com.example.app",
+  "thread_name": "main",
+  "scene": "ColdStart",
+  "path_type": "shared_prefs",
+  "path_hash": "sha256:8d31...",
+  "op": "read",
+  "cost_ms": 86,
+  "repeat_count": 42,
+  "buffer_size_bytes": 128,
+  "sample_payload_id": "matrix-io-20260427-0032"
+}
+```
+
+这个样本的读法是：`thread_name=main` 和 `scene=ColdStart` 说明它可能影响首屏；`repeat_count=42` 与 `buffer_size_bytes=128` 指向重复小块读取；`path_hash` 保留聚合能力，同时避免把真实文件路径传到平台。
 
 ## IO Canary 的分析路径
 

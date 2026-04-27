@@ -32,22 +32,23 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T20:35:19+08:00"
-last_task2b_at: "2026-04-27T15:52:00+08:00"
+last_task2b_at: "2026-04-27T20:58:38+08:00"
 rework_date: "2026-04-27"
 rework_by: openclaw-task2b
+review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices."
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册
@@ -388,11 +389,11 @@ ORDER BY total_ms DESC;
 
 ## Binder 事务分析
 
-Binder 是 Android 进程间通信的核心机制。一次 Binder 调用涉及客户端发送、服务端排队、服务端处理、返回结果四个阶段。Perfetto 的 `binder_transaction` 相关表和标准库模块可以精确量化每个阶段的耗时。
+Binder 是 Android 进程间通信的主要机制。一次同步 Binder 调用通常包含客户端发起事务、服务端线程接收事务、服务端处理、客户端收到回复几个阶段。Perfetto 会把 Binder 相关内核事件和框架侧 slice 导入 trace；SQL 分析时要区分“公开 tracepoint”和“回复语义”。
 
 ### Binder 事务耗时统计
 
-Perfetto 通过 linux.ftrace 的 `binder_transaction` / `binder_transaction_received` / `binder_reply` 三个 tracepoint 追踪 Binder 活动。一次 Binder 调用涉及三个时间维度：
+Linux ftrace 中常用的 Binder tracepoint 是 `binder_transaction`、`binder_transaction_received`、`binder_return`、`binder_command` 等，AOSP `drivers/android/binder_trace.h` 没有 `TRACE_EVENT(binder_reply)`。回复路径应通过 `binder_return` / `binder_command` 中的 `BR_REPLY` / `BC_REPLY`，或 Perfetto 导出的 Android Binder slice / args 描述。一次同步调用可拆成三个时间维度：
 
 - **client_dur**：客户端总等待时间（从发起调用到收到回复）
 - **server_dur**：服务端实际处理时间
@@ -400,7 +401,7 @@ Perfetto 通过 linux.ftrace 的 `binder_transaction` / `binder_transaction_rece
 
 当 `dispatch_dur` 持续大于 `server_dur` 时，说明服务端开始出现排队。线程上限要按进程口径看：普通 libbinder 进程的 `DEFAULT_MAX_BINDER_THREADS` 是 15；`system_server` 在 `SystemServer.java` 中把 `sMaxBinderThreads` 配成 31；厂商进程或 native 服务还可以通过 `ProcessState::setThreadPoolMaxThreadCount()` 调整。排队时间升高不一定来自线程数本身，还要结合服务端 CPU 忙、锁等待和同步 Binder 嵌套调用判断。
 
-> **注意**：下面的 SQL 通过 `slice.name GLOB '*binder*'` 筛选 Binder 相关 slice，能量化单次调用的总耗时。但要精确分离 client/server/dispatch 三阶段，需要通过 ftrace 的 `binder_transaction` 事件按时间戳关联客户端和服务端的 tracepoint。本节先聚焦总耗时的定位和排序，三阶段拆分需要更复杂的 JOIN 逻辑。
+> **说明**：下面的 SQL 通过 `slice.name GLOB '*binder*'` 筛选 Binder 相关 slice，能量化单次调用的总耗时。准确分离 client/server/dispatch 三段时，要把 `binder_transaction`、`binder_transaction_received` 与 `binder_return` / `binder_command` 的 reply 语义按 transaction id、debug id 或时间窗关联起来。本节先处理总耗时排序，三段拆分可在后续专题中展开。
 
 ```sql
 -- Binder 事务按耗时排序 Top 20
