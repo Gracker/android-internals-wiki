@@ -9691,11 +9691,14 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T15:21:32.054234",
-    "status": "pending",
+    "status": "completed",
     "source_file": "2026-04-25-15-8.6-external-review.md",
     "corrected_by": "task9-deep-tech-review",
     "corrected_at": "2026-04-26T17:20:00+08:00",
-    "correction_note": "原 section=8.6，但问题证据全部指向 05-case-studies.md / ProfilingManager 段落。"
+    "correction_note": "原 section=8.6，但问题证据全部指向 05-case-studies.md / ProfilingManager 段落。",
+    "completed_at": "2026-04-27T19:10:48+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "External Review P1：ProfilingManager 段落已补充 requestProfiling 触发模型、系统触发边界和公开 SDK 示例。"
   },
   {
     "section": "8.9",
@@ -14050,7 +14053,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T17:39:46+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T19:10:48+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task9 P95：修正 MultiDex API<21 / ART 边界、View.setHasTransientState 误用、AutoFDO 与 16KB page size 透明性冲突。"
   },
   {
     "section": "9.1",
@@ -14106,7 +14112,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T17:39:46+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T19:10:48+08:00",
+    "completed_by": "openclaw-task2b",
+    "completion_reason": "Task9 P95：修正 ART GC 触发与伪源码、SQLite WAL 锁模型，并补前台服务 timeout 版本边界。"
   },
   {
     "section": "15.1",

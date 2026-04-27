@@ -9,8 +9,8 @@ polish_by: "task2b-polish"
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-02"
-last_verified_against: "AOSP android-14.0.0_r1"
+last_verified: "2026-04-27"
+last_verified_against: "AOSP android-15.0.0_r1 ART heap/gc_cause anchors, SQLite WAL docs, Android 14-17 FGS timeout research"
 confidence: medium
 sources:
   - type: aosp
@@ -26,14 +26,14 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: "fixed"
-last_task2b_at: "2026-04-23T01:13:23+08:00"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-27T19:10:48+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-23"
 rework_date: "2026-04-16"
@@ -41,6 +41,10 @@ rework_by: "task2b-rework"
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T17:39:46+08:00"
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
+updated_by: "openclaw-task2b"
+updated_date: "2026-04-27"
 ---
 
 # 特殊场景的 ANR
@@ -226,29 +230,28 @@ ART 的垃圾回收器从 Android 8.0 开始采用 Concurrent Copying（CC）GC�
 
 在正常情况下，年轻代 GC（Young Generation Collection）的 STW 暂停时间在 1-3ms 之间（实测平均约 1.83ms），对 60fps 的帧渲染周期（16.67ms）影响可以忽略。但当 Java 堆使用率持续攀升时，情况会迅速恶化。
 
-ART 的 GC 触发策略基于多个阈值。当堆的已分配内存达到目标利用率（默认 `TargetHeapUtilization` 为 0.5，即 50%）时触发 Concurrent GC；当分配速度超过回收速度时触发 Foreground GC（更激进的同步回收）；当堆接近耗尽时触发 Full GC——后者需要遍历整个堆，STW 时间可能达到数十毫秒。[待验证: Android 17 CMC GC 是否调整了默认触发阈值]
+ART 的 GC 触发不能按固定 50% 线理解。`TargetHeapUtilization` 是 GC 后计算 heap growth target / target footprint 的输入，影响下一次 GC 的触发距离；触发还会看 `concurrent_start_bytes_`、`target_footprint_` / `growth_limit_`、本次分配是否触顶、native allocation 压力、显式 `System.gc()`、后台 trim 等 `GcCause`。在 trace 里判断 GC 风暴，要同时看 GC cause、heap size、allocated bytes、concurrent GC 间隔和 STW slice，不能只看 heap 利用率。[待验证: Android 17 CMC GC 是否调整了默认触发阈值]
 
-关键源码路径：
+源码锚点放在三处：
 
-```cpp
-// art/runtime/gc/heap.cc
-// @ AOSP android-15.0.0_r1
-void Heap::CollectGarbageInternal(gc::collector::GcType gc_type,
-                                   GcCause gc_cause,
-                                   bool clear_soft_references) {
-    // gc_type: kGcTypePartial (Young Gen) / kGcTypeFull
-    // gc_cause: kGcCauseForAlloc / kGcCauseBackground / kGcCauseExplicit
-    ...
-    // STW: 暂停所有线程处理 root
-    collector->PausePhase();
-    // 并发阶段：应用线程继续运行
-    collector->ConcurrentPhase();
-    // STW: 第二次短暂暂停，处理并发阶段的变化
-    collector->PausePhase();
-}
+- `art/runtime/gc/heap.cc`：`Heap::GrowForUtilization()` 更新 GC 后的目标占用、`target_footprint_` 和 `concurrent_start_bytes_`。
+- `art/runtime/gc/heap.cc`：分配慢路径会根据 footprint / growth limit 和 concurrent start 阈值请求 concurrent GC 或 for-alloc GC。
+- `art/runtime/gc/gc_cause.h`：`kGcCauseForAlloc`、`kGcCauseBackground`、`kGcCauseExplicit`、`kGcCauseNativeAlloc` 等原因会影响 pause 形态和排查方向。
+
+下面是概念伪代码，用来说明判断顺序，不是 AOSP 函数体摘录：
+
+```text
+if allocated_bytes >= concurrent_start_bytes_:
+    request concurrent GC, cause = background / collector transition 等
+
+if allocation fails within current target_footprint_ or growth_limit_:
+    run for-alloc GC, cause = kGcCauseForAlloc
+
+after GC:
+    GrowForUtilization(...) updates target_footprint_ and concurrent_start_bytes_
 ```
 
-上面这段代码揭示了 GC 暂停的来源：`PausePhase()` 两次暂停所有线程。正常情况下每次暂停只处理 root，耗时 1-3ms。但当内存紧张导致 GC 频率飙升时，问题就出现了。
+Concurrent Copying 仍然包含短暂停顿，例如暂停线程处理 roots、处理 dirty objects 或完成收尾。正常情况下这些 STW slice 很短；当内存抖动、native allocation 压力或系统内存回收叠加时，GC 频率和调度延迟一起上升，主线程就可能在 ANR 窗口里拿不到足够执行时间。
 
 ### 从"偶尔 GC"到"GC 风暴"的临界点
 
@@ -273,9 +276,11 @@ void Heap::CollectGarbageInternal(gc::collector::GcType gc_type,
 | 版本 / 场景 | 规则 | 常见表现 |
 |:---|:---|:---|
 | Android 8 / 9 | `startForegroundService()` 后要在很短的宽限期内调用 `startForeground()`；AOSP O 分支常见值是 5 秒 | `RemoteServiceException` / 服务启动超时 |
-| Android 10-13 | AOSP 常见宽限期提升到 10 秒 | `ForegroundServiceDidNotStartInTimeException` |
-| Android 12+ | 后台启动前台服务必须满足豁免条件 | `ForegroundServiceStartNotAllowedException` |
-| Android 14+ | `short service`、`data sync`、`media processing` 还各自带有独立 timeout 规则 | `Service.onTimeout()`、ANR 或内部 timeout exception |
+| Android 10-13 已启动未晋升 | AOSP 常见宽限期提升到 10 秒；Android 12+ 的后台启动限制不改变这条“已启动但未及时前台化”路径 | `ForegroundServiceDidNotStartInTimeException` |
+| Android 12+ 后台启动限制 | 后台启动前台服务必须满足豁免条件，入口处直接判定 | `ForegroundServiceStartNotAllowedException` |
+| Android 14 shortService | `foregroundServiceType="shortService"` 有独立短超时；超时后回调 `Service.onTimeout()`，服务未及时停止会进入异常或 ANR 路径；源码看 `ActiveServices` 与 `ServiceRecord.ShortFgsInfo` | `Service.onTimeout()`、shortService timeout ANR |
+| Android 15 dataSync / mediaProcessing | `dataSync`、`mediaProcessing` 属于 time-limited FGS 类型，公开资料常按 6h / 24h 配额讨论；超时后先给 `Service.onTimeout()` 收尾窗口 | `Service.onTimeout()`、超时后的内部 exception / ANR 判定 |
+| Android 16 / 17 后续演进 | time-limited FGS 的配额、迟到 ANR 和 system_server 归因细节继续演进；核验时看 `ActiveServices`、`AnrTimer`、`ServiceRecord` | 同一个 logcat 关键字背后可能是不同版本规则 |
 
 ### 已启动，但没有及时晋升前台
 
@@ -295,35 +300,33 @@ void Heap::CollectGarbageInternal(gc::collector::GcType gc_type,
 
 ## 文件锁竞争导致的 ANR
 
-### SQLite WAL 模式的四级锁
+### SQLite WAL：单 writer、多 reader，不套 rollback journal 五态锁
 
-Android 上绝大多数数据库操作（包括通过 Room、ContentProvider 间接使用）最终都落在 SQLite 上。SQLite 从 Android 9.0 起默认启用 WAL（Write-Ahead Logging）模式，这个模式的核心设计是"写操作先写日志文件（WAL），再异步合并回主数据库文件"——这让读操作和写操作可以并发进行，是 WAL 相比传统 rollback journal 的主要优势。
+Android 上绝大多数数据库操作（包括通过 Room、ContentProvider 间接使用）最终都落在 SQLite 上。WAL（Write-Ahead Logging）的基本设计是：写事务先追加到 `.db-wal`，checkpoint 再把 WAL 内容合并回主数据库文件。读事务通过 WAL-index 选择自己的 end mark，因此一个 writer 和多个 readers 通常可以并发存在。
 
-但 WAL 并不意味着完全没有锁。SQLite 使用四级文件锁机制来协调并发访问，从低到高依次为：
+这里要把两个模型分开。rollback journal 文档里的 `UNLOCKED` / `SHARED` / `RESERVED` / `PENDING` / `EXCLUSIVE` 是五态锁模型；WAL 的并发主要靠 `.db-shm` WAL-index 里的 read locks、write lock、checkpoint lock 和 recovery lock 协调。WAL 仍然只有一个 writer，checkpoint 也可能被长读事务挡住；WAL 文件持续变大后，后续读写和 checkpoint 都会变慢。
 
-**UNLOCKED**：数据库未被任何连接访问，没有锁。**SHARED**：连接正在读取数据库，多个连接可以同时持有 SHARED 锁（读并发）。**RESERVED**：连接准备写入，在 WAL 模式下可以与 SHARED 锁共存——写入操作先进入 WAL 文件。**EXCLUSIVE**：连接正在执行 checkpoint（将 WAL 内容合并回主数据库文件）或执行大规模写入，此时其他连接不能获取新的 SHARED 锁。
-
-注意 PENDING 状态是 RESERVED 到 EXCLUSIVE 的过渡态：连接已经获取了 PENDING 锁，正在等待所有现有的 SHARED 锁释放后升级为 EXCLUSIVE。在 PENDING 状态下，新的 SHARED 锁请求会被阻塞。
+Android 还要区分 compatibility WAL 与 full WAL。Android 9+ framework 引入 compatibility WAL 以兼容旧行为，Room / SupportSQLiteOpenHelper 常见配置会显式启用 WAL。排查时别只看系统版本，还要看 `SQLiteOpenHelper#setWriteAheadLoggingEnabled()`、Room builder 配置、数据库打开日志和实际的 `journal_mode`。
 
 ### 锁竞争导致 ANR 的典型场景
 
-最常见的场景是同一 App 的多个进程访问同一个数据库文件。主进程的 ContentProvider 在主线程上执行 `query()`，需要获取 SHARED 锁；而后台进程正在执行一个大事务（比如同步服务器数据批量写入），持有 RESERVED 锁并最终需要升级到 EXCLUSIVE 锁来做 checkpoint。如果此时主进程的查询需要在 checkpoint 期间读取数据库，主线程就会被阻塞等待。
+常见场景是同一 App 的多个进程访问同一个数据库文件。主进程的 ContentProvider 在主线程上执行 `query()`；后台进程持有长写事务，WAL 文件持续增长，checkpoint 又被某个长读事务挡住。此时主线程可能卡在连接池等待、写事务结束、checkpoint 或文件系统 I/O 上。ANR 根因不一定是“读被写直接挡住”，也可能是 WAL 积压、连接池耗尽和 checkpoint 放大了等待时间。
 
-这个等待在 Perfetto 中表现为：主线程进入 D 状态（`D (disk sleep)`），调用栈中包含 `futex_wait` 或 `fcntl(F_SETLKW)` 系统调用。如果在 ANR 超时窗口内锁始终无法获取，就会触发 ANR。
+Perfetto 中的表现要分两类看：如果主线程在 `SQLiteConnectionPool`、Java 锁或 native mutex 上等待，常见状态是 WAITING / futex；如果卡在 `fsync()`、`fcntl()`、checkpoint 或底层 I/O，才更容易看到 D 状态。只用一个“文件锁”标签归因，很容易漏掉连接池和 checkpoint。
 
-### 关键源码路径与防御手段
+### 源码锚点与防御手段
 
 ```java
 // frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java
 // @ AOSP android-14.0.0_r1
-// beginTransaction() 获取 EXCLUSIVE 锁（默认）
+// beginTransaction() 默认使用 TRANSACTION_MODE_EXCLUSIVE
 public void beginTransaction() {
     getThreadSession().beginTransaction(
         SQLiteSession.TRANSACTION_MODE_EXCLUSIVE, ...
     );
 }
 
-// beginTransactionNonExclusive() 获取 IMMEDIATE 锁（允许并发读）
+// beginTransactionNonExclusive() 使用 TRANSACTION_MODE_IMMEDIATE
 public void beginTransactionNonExclusive() {
     getThreadSession().beginTransaction(
         SQLiteSession.TRANSACTION_MODE_IMMEDIATE, ...
@@ -331,15 +334,11 @@ public void beginTransactionNonExclusive() {
 }
 ```
 
-这段代码说明，`beginTransaction()` 默认获取的是 `TRANSACTION_MODE_EXCLUSIVE`，会阻塞其他所有读写。而 `beginTransactionNonExclusive()` 使用 `TRANSACTION_MODE_IMMEDIATE`，在 WAL 模式下允许其他连接继续读取数据库。
+这段代码只能说明 Android framework 层事务模式的入口，不能拿来替代 SQLite WAL 锁模型。实践里更稳的策略是：主线程不执行数据库写事务；大事务拆小；Room 使用异步 DAO；跨进程访问通过 ContentProvider 统一调度；批量写入场景评估 `beginTransactionNonExclusive()` 和 `yieldIfContendedSafely()`，并把 checkpoint 时机放到后台窗口。
 
-最根本的防御是避免在主线程执行任何数据库写事务——将写操作移到后台线程或使用 Room 的异步 API，从源头上消除主线程被锁阻塞的可能。
+多进程共用数据库时，还要监控 WAL 文件大小、checkpoint 耗时、SQLite busy / locked 次数、连接池等待时间。只有把这些信号放到同一个 ANR 时间窗里检查，才能区分“业务主线程误用数据库”和“后台写入 / checkpoint 把系统拖慢”。
 
-如果写事务不可避免，在 WAL 模式下优先使用 `beginTransactionNonExclusive()` 替代 `beginTransaction()`。前面我们看到了两者的区别：前者获取 IMMEDIATE 锁，允许其他连接继续读；后者直接拿 EXCLUSIVE 锁，阻塞一切。在大批量写入场景中，还可以调用 `yieldIfContendedSafely()`——这个方法在检测到锁竞争时会主动让出锁，避免长时间阻塞其他访问者。
-
-对于多进程访问同一数据库的场景，考虑通过 ContentProvider 的 `call()` 方法替代直接的数据库访问。ContentProvider 内部可以统一管理并发控制策略，把锁竞争的逻辑从业务代码中剥离出来。
-
-[已验证: 来源见 AOSP SQLiteDatabase.java + SQLite WAL 文档] [已验证: AOSP android-14.0.0_r1 + SQLite 官方文档 fileformat.html#walformat]
+[已验证: 来源见 AOSP SQLiteDatabase.java / SQLiteConnectionPool.java + SQLite WAL 文档] [已验证: AOSP android-14.0.0_r1 + SQLite 官方文档 wal.html / fileformat.html#walformat]
 
 ## 在 Perfetto / 工具中的表现
 
@@ -369,7 +368,7 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ### 文件锁竞争 ANR
 
-主线程进入 D 状态（深红色），调用栈包含 `__futex_wait`、`fcntl(F_SETLKW)` 或 `ioctl` 等系统调用。在同一个数据库文件的访问场景中，另一个线程或进程持有锁的信号会出现——通常表现为另一个线程长时间处于 Running 状态执行 SQLite 写事务。如果使用 Perfetto 的 ftrace track，可以观察到 `contention_begin` / `contention_end` 事件来精确确认锁等待的时长。
+主线程如果卡在 `SQLiteConnectionPool` 或 Java / native mutex 上，常见状态是 WAITING / futex；如果卡在 `fsync()`、`fcntl()`、checkpoint 或底层 I/O，才更容易进入 D 状态。多进程数据库场景要把后台写事务、WAL 文件增长、checkpoint、SQLite busy / locked 日志和连接池等待时间放到同一时间窗里看。
 
 ## 与其他机制的关系
 
@@ -383,8 +382,8 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 - **Android 8 / 9**：`startForegroundService()` 的前台化宽限期在 AOSP O 分支常见为 5 秒；后台 service 限制开始明显收紧。
 - **Android 10 / 11**：AOSP 常见前台化宽限期提升到 10 秒；广播超时仍以前台 10 秒、后台 60 秒为主。
 - **Android 12**：新增 `ForegroundServiceStartNotAllowedException`，把“后台启动被拒绝”和“已启动但未及时前台化”拆成两条路径。
-- **Android 14**：Broadcast 在 CPU starvation 条件下会出现前台 10-20 秒、后台 60-120 秒的浮动窗口；类型化前台服务开始有更明确的 timeout 规则。
-- **Android 15 / 16**：本章涉及的 `QueuedWork` / `SharedPreferences.apply()` 机制没有看到公开文档级别的根本改写，排查方法仍沿用前面的分析过程。
+- **Android 14**：Broadcast 在 CPU starvation 条件下会出现前台 10-20 秒、后台 60-120 秒的浮动窗口；`shortService` 前台服务类型引入独立 timeout 与 `Service.onTimeout()`。
+- **Android 15 / 16**：`dataSync` / `mediaProcessing` 这类 time-limited FGS 需要按配额、`onTimeout()` 和迟到 ANR / exception 路径排查；本章涉及的 `QueuedWork` / `SharedPreferences.apply()` 机制没有看到公开文档级别的根本改写。
 
 ## 常见问题与误区
 
@@ -406,6 +405,9 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 - `frameworks/base/core/java/android/app/SharedPreferencesImpl.java` — `apply()`、`awaitCommit()`
 - `frameworks/base/core/java/android/app/QueuedWork.java` — `waitToFinish()`
 - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `broadcastIntentLocked()`
+- `frameworks/base/services/core/java/com/android/server/am/ActiveServices.java` / `ServiceRecord.java` — 前台服务 timeout、`ServiceRecord.ShortFgsInfo`、迟到 ANR 判定
+- `art/runtime/gc/heap.cc` / `art/runtime/gc/gc_cause.h` — heap growth target、`concurrent_start_bytes_`、GC cause
+- `frameworks/base/core/java/android/database/sqlite/SQLiteDatabase.java` / `SQLiteConnectionPool.java` — 事务模式与连接池等待
 
 ### 官方文档
 
