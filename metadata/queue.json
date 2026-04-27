@@ -13260,5 +13260,172 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T07:20:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "13.9",
+    "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 正文把 android.os.Trace.beginSection() 的 native 路径写成 libcutils/Trace.cpp",
+    "material_paths": [
+      "logs/deep-review/2026-04-27-08-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "severity": "P1",
+        "location": "L152-L158",
+        "detail": "正文把 android.os.Trace.beginSection() 的 native 路径写成 libcutils/Trace.cpp。AOSP android-16.0.0_r1 中 JNI 入口在 frameworks/base/core/jni/android_os_Trace.cpp，libcutils 侧实现为 system/core/libcutils/trace-dev.cpp + trace-dev.inc，Trace.cpp 路径会让读者在现代分支找不到文件。",
+        "suggestion": "改为 android_os_Trace.cpp → cutils/trace.h → system/core/libcutils/trace-dev.cpp/trace-dev.inc，并同步 last_verified_against。",
+        "evidence": [
+          "AOSP android-16.0.0_r1: frameworks/base/core/jni/android_os_Trace.cpp",
+          "AOSP android-16.0.0_r1: system/core/libcutils/trace-dev.cpp / trace-dev.inc"
+        ]
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P1",
+        "location": "L123",
+        "detail": "“每一个 tracepoint 在 Perfetto SQL 中都有对应的表”表述过宽。sched 表是 Perfetto 对 sched_switch 等事件生成的调度切片视图，不等同于原始 ftrace event；部分事件只在 raw ftrace/generic event 或 counter 表中体现。",
+        "suggestion": "拆成“原始 ftrace 事件”和“Perfetto 派生表/视图”两层说明，例子写成 sched_switch 参与生成 sched 表，cpu_frequency 可进入 cpu_frequency_counters。"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P1",
+        "location": "L213-L214 / L219",
+        "detail": "正文使用 ftrace_drain_period_ms、ftrace_buffer_size_kb 作为 TraceConfig 字段名。Perfetto FtraceConfig 的实际字段名是 drain_period_ms 与 buffer_size_kb；32KB 例子也容易被理解成默认值。Perfetto v43+ 建议多数配置不显式设置 buffer_size_kb，默认/下限通常远大于 32KB。",
+        "suggestion": "把字段名改为 ftrace_config.drain_period_ms 和 ftrace_config.buffer_size_kb；说明 32KB 是反例，不是默认值，并补充 buffer_size_lower_bound 的版本口径。",
+        "evidence": [
+          "Perfetto protos/perfetto/config/ftrace/ftrace_config.proto: drain_period_ms, buffer_size_kb, buffer_size_lower_bound"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "L336",
+        "detail": "自定义 tracepoint 示例使用 __assign_str(name, name)。Linux 6.10 起 __assign_str 宏移除第二个参数，Android 17 + Kernel 6.12 相关内容若照此编译可能失败；旧 Android/GKI 分支仍可能需要双参数写法。",
+        "suggestion": "在代码块旁标注内核版本差异：旧分支使用 __assign_str(dst, src)，Linux 6.10+ 使用 __assign_str(dst)，并给出对应 include/trace/events 写法。",
+        "evidence": [
+          "Linux tracing 宏在 6.10 发生 __assign_str 参数变更；Android 17/Kernel 6.12 章节需同步版本边界。"
+        ]
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T08:53:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "14.9",
+    "section_title": "Android Camera 性能与 Perfetto 分析",
+    "priority": 85,
+    "reason": "[Deep Tech Review] frame capture FPS SQL 直接按 slice.name 计数，未限定 track/thread/stream",
+    "material_paths": [
+      "logs/deep-review/2026-04-27-08-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "数据缺失",
+        "severity": "P1",
+        "location": "L203-L206",
+        "detail": "frame capture FPS SQL 直接按 slice.name 计数，未限定 track/thread/stream。同名 slice 可出现在多个 track，跨 stream 合并会把 Request_FPS 算高。",
+        "suggestion": "先列出 frame capture 所在 track，再按 track_id 或 camera stream 单独统计 FPS。"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P1",
+        "location": "L228-L236",
+        "detail": "queueBuffer 帧间隔 SQL 仍硬编码 thread.name LIKE %PreviewSpacer%。正文 L241 承认线程名不是公开 ABI，示例直接复制后在不少设备上查不到或查错线程。",
+        "suggestion": "把第二段 SQL 改成使用上一步查到的 track_id/utid 参数，不固定 PreviewSpacer/PreviewFrameSpacer。",
+        "evidence": [
+          "AOSP Camera3OutputStream.cpp 中 PreviewFrameSpacer 线程名由 PreviewSpacer-<streamId> 拼出，设备和流类型会变化。"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "severity": "P1",
+        "location": "L437",
+        "detail": "正文写 Android 10 引入 HAL 3.5 requestStreamBuffers/returnStreamBuffers。HAL 3.5 接口在 Android 10 分支出现，但 framework 侧完整调用路径和设备可用性需要按 Android 11+ / vendor HAL 实现限定。",
+        "suggestion": "改成“Android 10 定义 HAL 3.5 接口，Android 11+ 框架侧与设备实现才更常见”，并说明需以目标设备 camera provider 版本为准。"
+      },
+      {
+        "type": "数据缺失",
+        "severity": "P1",
+        "location": "L118 / L348",
+        "detail": "“帧间隔波动超过 5ms 用户就能感知到卡顿”口径过强。5ms 更适合作为 jitter 风险指标，明显卡顿通常应结合 40ms/50ms 间隔、连续丢帧、FrameTimeline deadline miss 判断。",
+        "suggestion": "把 5ms 改成流畅度风险阈值，卡顿判断与 L243 的 40ms/50ms 口径和 FrameTimeline/JankDetector 逻辑对齐。"
+      },
+      {
+        "type": "数据缺失",
+        "severity": "P1",
+        "location": "L130 / L503",
+        "detail": "6658 个 CameraMetadataNative、1.3GB Native 内存来自第三方案例，但同一句标注“已验证: AOSP”。AOSP 只能验证 CameraMetadataNative 释放路径，不能验证该案例数字。",
+        "suggestion": "拆分来源：案例数字写“据西瓜视频团队报告”，AOSP 验证仅用于 mMetadataPtr/private close()/finalize 路径。"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P1",
+        "location": "L370-L396",
+        "detail": "Camera 启动拆解表和 SQL 使用 CameraHal::openSession。AOSP cameraserver 常见 trace 名更接近 CameraService::connectDevice、Camera3Device::initialize；CameraHal::openSession 更像 vendor HAL/CamX 侧命名。",
+        "suggestion": "标注 CameraHal::openSession 为 vendor-specific 示例，并提供 AOSP 通用 slice 名称和 fallback SQL。",
+        "evidence": [
+          "AOSP frameworks/av services/camera/libcameraservice/CameraService.cpp: connectDevice",
+          "AOSP frameworks/av services/camera/libcameraservice/device3/Camera3Device.cpp: frame capture traces"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "severity": "P1",
+        "location": "L241 / L437-L439",
+        "detail": "external-review 已命中 Qualcomm CamX/CHI 观察点。正文目前只给线程名和 requestStreamBuffers 口径，缺少 CamX/CHI pipeline node、CHI override、Preview/JPEG/ISP stage 与 Perfetto slice 的对应关系。",
+        "suggestion": "补一个 CamX/CHI 子节：常见线程、node/stage 命名、YUV dump/trace 入口、以及如何把 vendor slice 映射回 HAL3 request。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T08:53:48+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "16.5",
+    "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 正文把 getPendingJobReasonStats/getPendingJobReasons/getPendingJobReasonsHistory 合在“Android 17 扩了 pending reasons”下",
+    "material_paths": [
+      "logs/deep-review/2026-04-27-08-deep-review.md"
+    ],
+    "review_issues": [
+      {
+        "type": "API 版本错误",
+        "severity": "P0",
+        "location": "L219-L225",
+        "detail": "正文把 getPendingJobReasonStats/getPendingJobReasons/getPendingJobReasonsHistory 合在“Android 17 扩了 pending reasons”下。API 边界应拆开：getPendingJobReasons 与 PendingJobReasonsInfo/History 已在 Android 16(API 36) 出现，getPendingJobReasonStats 才是 API 37 口径；且 AOSP main/android-16.0.0_r1 JobScheduler.java 未检出 getPendingJobReasonStats，需要以 API 37 reference 或预览分支确认。",
+        "suggestion": "把三组 API 按 API 36/API 37 分列，并给每个方法标注 since API 与返回类型；对 getPendingJobReasonStats 增加 [待验证: API37 preview/reference] 源码锚点。",
+        "evidence": [
+          "AOSP android-16.0.0_r1 JobScheduler.java 已包含 getPendingJobReasons/getPendingJobReasonsHistory，但未包含 getPendingJobReasonStats。"
+        ]
+      },
+      {
+        "type": "交叉引用错误",
+        "severity": "P0",
+        "location": "L428-L433",
+        "detail": "参考资料末尾注入 Android AppFunctions DeepResearch 摘要，与本节 Android 17 性能行为变更没有正文引用，也不属于当前章节主题。",
+        "suggestion": "删除该段或移动到 Agent OS/AppFunctions 相关章节；本节只保留性能行为变更相关资料。"
+      },
+      {
+        "type": "API 名称错误",
+        "severity": "P1",
+        "location": "L280",
+        "detail": "recreateOnConfigChanges 不是标准 Activity API 或 manifest 属性。Android 处理配置变化的标准入口是 android:configChanges、onConfigurationChanged() 和 Activity 重建机制。",
+        "suggestion": "确认官方 behavior change 的准确名称；若指大屏/配置变化减少重建，应改用官方术语，不写成 Activity 的 recreateOnConfigChanges 行为。"
+      },
+      {
+        "type": "源码准确性",
+        "severity": "P1",
+        "location": "L237-L264",
+        "detail": "static final 段把反射与 JNI 后果并列为“抛 IllegalAccessException 或崩溃”，但没有区分可捕获异常与 VM abort/crash。读者迁移 JNI 测试代码时会误判处理方式。",
+        "suggestion": "拆成两条：反射 Field.set* 抛 IllegalAccessException；JNI SetStatic*Field 触发不可恢复崩溃/abort，并给出测试替代方案。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T08:53:48+08:00",
+    "status": "pending"
   }
 ]

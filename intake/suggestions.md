@@ -4820,3 +4820,58 @@
 - **位置**：README L123；src/SUMMARY.md L254；本节标题
 - **问题**：README 把 19.21 写成“Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）”，SUMMARY 和本节标题仍写 Vellamo。正文又把 Vellamo降为历史工具，并建议现代 Web/WebView 基线看 Speedometer 3.0，三个位置命名不一致。
 - **建议**：统一标题。建议标题改成“Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Speedometer）”，正文保留 Vellamo 为历史工具；SUMMARY 同步更新。
+
+## [Task9 Deep Review] 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L86 / L394
+- **问题**：function tracer 10-15% 开销未给出来源。
+- **建议**：补充平台、内核版本、benchmark 方法；无法确认则保留 [待验证]。
+
+
+## [Task9 Deep Review] 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理 — 2026-04-27
+- **类型**：源码准确性
+- **位置**：L156
+- **问题**：trace_marker 格式只列 B/E/C，未覆盖 S/F/N 等异步或 instant 事件格式。
+- **建议**：补充常见格式，并说明 Perfetto 会映射到 slice、counter 或 async slice。
+
+
+## [Task9 Deep Review] 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L426
+- **问题**：UprobeStats “性能开销 < 1%”缺少公开 benchmark 来源。
+- **建议**：给出测试条件或改成 [待验证]。
+
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L354
+- **问题**：Camera BufferQueue “通常 3-4 个”缺少 producer/consumer 协商口径。
+- **建议**：改成由 maxDequeued/maxAcquired/spare buffer 协商决定，预览常见 3 个，厂商或流类型可不同。
+
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-27
+- **类型**：工具版本
+- **位置**：L291-L296
+- **问题**：Perfetto Python SDK 示例强依赖 trace_processor_shell bin_path。
+- **建议**：说明 bin_path 可选，默认可使用 SDK 内置引擎；需要本地二进制时再指定。
+
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-04-27
+- **类型**：版本差异
+- **位置**：GFXReconstruct 段落
+- **问题**：GFXReconstruct 对 Camera 场景的适用边界和版本要求未写清。
+- **建议**：补充 Vulkan/GLES 支持差异、gfxrecon-convert 版本要求和 YUV/外部纹理限制。
+
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L199-L203
+- **问题**：ProfilingTrigger 冷启动产物写成 newly started system trace，官方口径更接近 running trace snapshot/系统触发产物，需核对。
+- **建议**：改为按 API reference 的 artifact 描述逐项列出，无法确认的产物类型标 [待验证]。
+
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-04-27
+- **类型**：知识盲区
+- **位置**：L416
+- **问题**：Network Security Configuration/ECH 只列资料，正文缺少 domainEncryption 配置和 CT/ECH targetSdk 门控说明。
+- **建议**：补充 <domainEncryption> 示例，并区分 CT 默认启用、ECH opportunistic 使用和 localhost 例外。

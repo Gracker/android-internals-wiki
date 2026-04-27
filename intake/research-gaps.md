@@ -9685,3 +9685,21 @@ Ch19 README 和 SUMMARY 未覆盖实际存在的 19.23 网络 APM、19.24 Crash/
 
 ### 关联章节
 19.0, 19.23, 19.24, 19.25, 19.26, 19.27
+
+
+## [2026-04-27] 14.9 Android Camera 性能与 Perfetto 分析 — CamX/CHI Trace 映射盲区
+
+### 盲区描述
+external-review 已命中 Qualcomm CamX/CHI 观察点。本轮复核发现章节仍缺少 CamX/CHI pipeline node、CHI override、Preview/JPEG/ISP stage 与 Perfetto slice 的对应关系；现有内容只列出线程名和 requestStreamBuffers 口径，无法指导读者把 vendor slice 映射回 HAL3 request。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 收集 Qualcomm CamX/CHI trace 中常见线程、node/stage、request id 命名。
+- 建立 CamX/CHI node 到 HAL3 CaptureRequest / Stream / Buffer 的映射方法。
+- 补充 YUV dump、vendor camera provider log、Perfetto slice 三者互证路径。
+
+### 关联章节
+- 14.9
+- 18.14
