@@ -4,7 +4,7 @@ section: "7.5"
 chapter: "7.5"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -50,7 +50,7 @@ rework_count: 2
 rework_date: "2026-04-27"
 rework_by: "task2b-rework"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -86,7 +86,7 @@ last_task2b_at: "2026-04-27T07:58:00+08:00"
 
 同样是"主线程耗时"，有的是布局层级太深导致 measure 反复执行，有的是 RecyclerView 的 onBindViewHolder 里做了不该做的事，有的是一个看似无害的 Binder 调用正好赶上了系统服务繁忙。每一种原因对应的优化策略都不同，用错方法不仅白费力气，还可能引入新问题。
 
-这一章按优化的"作用域"来组织。我们先看最底层的布局结构，再看列表控件、渲染管线和线程模型，最后看 Compose。每一条策略都回答三个问题：**为什么有效**、**在 Trace 中怎么验证效果**、**容易踩什么坑**。
+这一章按优化的"作用域"来组织：布局结构 → 列表控件 → 渲染管线 → 线程模型 → Compose。每一条策略都回答三个问题：**为什么有效**、**在 Trace 中怎么验证效果**、**容易踩什么坑**。
 
 
 

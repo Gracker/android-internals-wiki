@@ -1,29 +1,30 @@
 ---
 title: "Camera 渲染管线"
 chapter: 18.14
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 tags: ["Camera", "Camera2", "HAL3", "ZSL", "多流并发", "SurfaceView", "ImageReader", "渲染管线"]
 related_chapters: ["2.13", "2.15", "14.9", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 review_notes: "2026-04-27 task6 re-review-2 (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。task6_state→reviewed。 (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task6_result: pass-light-edit
 task2b_result: fixed
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-04-27"
 review_notes: "2026-04-26 task6 re-review (revisiting): pass-light-edit。L1禁用词零命中，无小修。无B类大问题。评分: 结构5/5·措辞5/5·一致性4/5·验证4/5·元数据3/5。"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-23T00:30:00+08:00"
+last_task9_at: "2026-04-27T04:25:00+08:00"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+task9_review_notes: "2026-04-27 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。自动晋升 finalized。"
 ---
 
 <!-- outline-start -->
