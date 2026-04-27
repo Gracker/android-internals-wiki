@@ -2132,12 +2132,15 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T01:49:14.454768+08:00",
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/suggestions.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T08:36:00+08:00"
+    "updated_at": "2026-04-25T08:36:00+08:00",
+    "completed_at": "2026-04-27T13:40:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "补 ProfilingManager/ProfilingTrigger API 锚点、工具选型表、Baseline Profiles 处理路径与 Knuth 引文。"
   },
   {
     "section": "15.2",
@@ -13757,6 +13760,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T13:32:46+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T13:40:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "修复 AVD fallback/RenderThread 混写、现代 lmkd 观测入口、示例数据口径与交叉引用路径。"
   }
 ]

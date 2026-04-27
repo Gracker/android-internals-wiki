@@ -35,11 +35,11 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-23'
@@ -47,7 +47,9 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-25
 last_task9_at: 2026-04-25T08:36:00+08:00
-last_task2b_at: "2026-04-22T12:08:42+08:00"
+last_task2b_at: "2026-04-27T13:40:00+08:00"
+task2b_fixed_at: "2026-04-27T13:40:00+08:00"
+
 ---
 
 # 性能优化的术、道、器
@@ -155,8 +157,11 @@ Android 系统在持续演进，每一代新版本都可能引入新的性能特
 - **Android 9-10**：Perfetto 逐步成为系统级 trace 主线，systrace 更多退到兼容入口。
 - **Android 11**：BLAST 改变了 buffer 交接模型，渲染路径的观测口径开始和旧 BufferQueue 时代分开。
 - **Android 12**：FrameTimeline 和更细的 jank 证据链让帧级诊断更直接。
-- **Baseline Profiles**：这是 Jetpack / ART 能力，不属于某一个 Android 大版本。按官方文档，它能让关键路径从第一次启动起就通过 AOT 获得收益，适用面覆盖 Android 7+。
-- **API 35 / Android 15**：`ProfilingManager` 正式进入平台 API；**API 36** 再补 system-triggered profiling triggers。
+- **Baseline Profiles**：这是 Jetpack ProfileInstaller + ART 的能力，不属于某一个 Android 大版本。Profile 规则随 APK/AAB 打包，ProfileInstaller 可在 API 24+ 设备上回填到 ART；如果讨论 Play Cloud Profiles，需要和本地 Baseline Profile 分开写。
+- **API 35 / Android 15**：`android.os.ProfilingManager` 正式进入平台 API，应用可通过 `requestProfiling()` 发起采样，并通过 `registerForAllProfilingResults()` 接收 profiling 结果。源码入口是 `frameworks/base/core/java/android/os/ProfilingManager.java` 与系统侧 `ProfilingManagerService`。
+- **API 36 / Android 16**：`android.os.ProfilingTrigger` 与 `ProfilingManager.addProfilingTriggers(List<ProfilingTrigger>)` 允许应用注册系统触发式 profiling，例如启动、ANR 或其他平台定义的触发器。触发式采样有系统限流，结果通过全局 listener 返回，系统也可能因为配额、负载或隐私策略跳过本次采样。
+
+Baseline Profiles 的处理路径可以拆成几段：AGP / profgen 把人类可读规则转成二进制 `baseline.prof`，随包进入 `assets/dexopt/`；ProfileInstaller 在设备端安装或合并 profile；ART 侧 `art/profman/profman.cc` 分析 profile，`art/dex2oat/dex2oat.cc` 在 `speed-profile` 等编译过滤器下编译热点方法。`ENQUEUED` 只表示编译任务进入队列，`COMPILED` 才表示 profile 已被编译消费。
 
 Android 14-16 继续扩展 Perfetto 的 Track 覆盖（Jobscheduler Track、App Startup Track），并强化了后台执行限制，后台任务的分析需要额外关注系统级的调度约束。
 
@@ -198,7 +203,7 @@ Android 14-16 继续扩展 Perfetto 的 Track 覆盖（Jobscheduler Track、App 
 
 **自动化性能测试**是最有效的防线。AndroidX 提供了 Macrobenchmark 和 Microbenchmark 两套库，前者用于测量端到端的用户场景（如冷启动、列表滚动），后者用于测量代码片段的执行时间 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking]。把这些测试集成到 CI 流水线中，每次提交都跑一遍，就能在性能回退发生的第一时间发现它。
 
-**性能预算（Performance Budget）** 是一种更主动的约束机制。团队为关键指标设定一个上限，比如「冷启动时间不超过 1.5 秒」「主线程帧耗时不超过 11ms（90Hz）」。任何导致指标超过预算的代码提交，都必须在合并前解决性能问题，或者重新评估预算的合理性。
+**性能预算（Performance Budget）** 是一种更主动的约束机制。团队为关键指标设定上限，比如「冷启动 P50 不超过 1.5 秒」「90Hz 设备上主线程帧耗时尽量压到 11ms 以内」。这些只能作为示例阈值，正式预算要绑定 release 包、设备档位、刷新率、冷/温/热启动口径、样本次数和 P50/P90/P95 分位数。任何导致指标超过预算的代码提交，都必须在合并前解决性能问题，或者重新评估预算是否适合当前业务基线。
 
 **线上监控**则是最后的兜底。Google Play Console 的 Vitals 面板会展示 App 在真实用户设备上的性能数据，包括 ANR 率、崩溃率、卡顿率等 [已验证: 官方文档, developer.android.com/topic/performance/vitals]。这些数据反映的是实验室环境无法覆盖的复杂场景——低端设备、网络不稳定、后台应用多、系统负载高——它们是性能优化最终要面对的现实。
 
@@ -210,7 +215,15 @@ Android 14-16 继续扩展 Perfetto 的 Track 覆盖（Jobscheduler Track、App 
 
 ### 工具的选择逻辑
 
-Android 性能分析工具很多，但它们各有定位。选择工具的关键是先搞清楚「要回答什么问题」，然后选择能回答这个问题的工具，而不是反过来。
+Android 性能分析工具很多，但它们各有定位。选择工具时先写清楚「要回答什么问题」，再选择能回答这个问题的工具。
+
+| 场景 | 先看什么 | 首选工具 | 继续深入时看什么 |
+|------|----------|----------|------------------|
+| 启动慢 | 冷/温/热启动分位数、TTID/TTFD | Macrobenchmark + Perfetto App Startup Track | `Application.onCreate()`、ContentProvider、首帧前主线程长任务、`reportFullyDrawn()` |
+| 滑动卡顿 | 超时帧、JankType、主线程/RenderThread 分工 | Perfetto FrameTimeline + JankStats | `Choreographer#doFrame`、`syncAndDrawFrame`、RenderThread `DrawFrame`、SurfaceFlinger `commit/composite` |
+| 内存增长 | Java/native heap 趋势、GC 频率、RSS/PSS | Android Studio Memory Profiler + Perfetto heap/process memory | Heap dump 引用关系、heapprofd 分配栈、lmkd 事件、`ApplicationExitInfo` |
+| 功耗/发热 | wakelock、alarm、job、thermal 状态 | Perfetto power rails / Battery Historian / `dumpsys batterystats` | Alarm 权限状态、JobScheduler 约束、Thermal API 初始快照与回调 |
+| 网络慢 | 请求耗时、DNS/TLS/TTFB 分段 | App 端网络埋点 + Perfetto Network Track | OkHttp event listener、TrafficStats、radio active 时间、失败重试策略 |
 
 **Perfetto** 是 Android 性能分析的「瑞士军刀」。它提供了全局视角——在一个 Trace 文件中可以看到 App、Framework、SurfaceFlinger、内核调度的完整运作。当问题不明朗，不知道是哪个模块导致的时候，Perfetto 是首选的入口。它特别适合分析流畅性、启动速度、响应速度、系统级交互等问题 [已验证: 来源见 Android-Perfetto-01-What-is-perfetto.md]。
 
@@ -272,11 +285,11 @@ Brendan Gregg 在讨论性能工程团队的 ROI 时提到，一个成熟的性�
 
 ### 误区一：过早优化
 
-Donald Knuth 的那句「过早优化是万恶之源」可能是软件工程领域被引用最多的话，但也是最常被断章取义的话。完整的引言是：**「在大约 97% 的情况下，我们应当忽略微小的效率提升——过早优化是万恶之源。但是，在剩余 3% 的关键场景中，我们绝不能错失优化良机。」** [已验证: 来源见 D. Knuth, Structured Programming with go to Statements, 1974; abseil.io/fast/hints.html]
+Donald Knuth 的那句「过早优化是万恶之源」可能是软件工程领域被引用最多的话，也很容易被截断。原文的约束更完整：**在大约 97% 的情况下，应当忽略微小的效率提升；但在剩余 3% 的关键路径上，不能放弃必要优化。** [已验证: 来源见 D. Knuth, Structured Programming with go to Statements, 1974; abseil.io/fast/hints.html]
 
-Jeff Dean 对此有更深入的分析。他指出，完全不关注性能的开发方式同样有害：如果在开发大型系统时完全不顾及性能，最终会得到一个「扁平的性能剖析结果」——性能损耗分散在各个环节，无法定位明显的热点，导致优化工作无从下手 [已验证: 来源见 abseil.io/fast/hints.html]。更糟糕的是，如果开发的是供他人使用的库，遭遇性能问题的使用者往往无法直接修复——他们需要深入理解别人写的代码，还要就优化的必要性与库的开发者沟通协商。
+Jeff Dean 对此有更深入的分析。他指出，完全不关注性能的开发方式同样有害：如果在开发大型系统时完全不顾及性能，最终会得到一个「扁平的性能剖析结果」——性能损耗分散在各个环节，无法定位明显的热点，导致优化工作无从下手 [已验证: 来源见 abseil.io/fast/hints.html]。如果开发的是供他人使用的库，遭遇性能问题的使用者往往无法直接修复，他们还要理解库代码并推动维护者接受优化。
 
-正确的态度不是「先不管性能以后再说」，也不是「每行代码都要极致优化」，而是 Jeff Dean 的建议：**编写代码时，若对代码的可读性或复杂度无显著影响，应优先选择性能更优的实现方案** [已验证: 来源见 abseil.io/fast/hints.html]。这不是过早优化，而是「不故意写慢代码」。
+合适的态度是 Jeff Dean 的建议：**编写代码时，若对代码的可读性或复杂度无显著影响，应优先选择性能更优的实现方案** [已验证: 来源见 abseil.io/fast/hints.html]。这属于「不故意写慢代码」，不等同于过早优化。
 
 ### 误区二：局部优化
 
@@ -325,7 +338,7 @@ Google 对性能的重视可以追溯到公司成立之初。两个经典的案�
 
 这种「工具 + 意识」的组合，是把性能从「事后补救」变成「开发过程中的基本素养」。Google 还通过 Play Console 的 Vitals 面板，把性能数据直接暴露给开发者，让「用户在实际设备上的体验」成为开发流程的一部分。
 
-从 Android 12 开始，Google 持续丰富 Jetpack 中的性能工具链。Baseline Profiles（2022，随 Jetpack 从 Android 13 起分发）让 App 从首次安装就获得接近 AOT 编译的性能；JankStats 库（2022 alpha）帮助开发者在生产环境中自动收集帧率数据；Macrobenchmark（2021-2022）让自动化性能测试成为 CI/CD 的标准环节 [已验证: 官方文档, developer.android.com]。到 Android 16，这些工具已迭代多个版本趋于成熟，Google 同时在 Perfetto 中加入了更多系统级 Track（如 Jobscheduler Track、Frame Timeline 改进），并强化了 Play Console Vitals 的性能指标覆盖。工具链的演进方向始终一致：**让性能优化从专家的「手艺活」变成工程师的「日常操作」**。
+从 Android 12 开始，Google 持续丰富 Jetpack 中的性能工具。Baseline Profiles（2022 前后进入稳定使用）随 APK/AAB 打包，并通过 Jetpack ProfileInstaller 在 API 24+ 设备上安装到 ART，让 App 从首次启动起获得更接近 AOT 编译的收益；它不是 Android 13 才开始分发的系统能力。JankStats 库（2022 alpha）帮助开发者在生产环境中自动收集帧率数据；Macrobenchmark（2021-2022）让自动化性能测试进入 CI 流程 [已验证: 官方文档, developer.android.com]。到 Android 16，这些工具已迭代多个版本，Google 同时在 Perfetto 中加入更多系统级 Track（如 Jobscheduler Track、Frame Timeline 改进），并强化 Play Console Vitals 的性能指标覆盖。工具演进的方向很清楚：把性能分析从少数专家的手工流程，变成工程师日常开发的一部分。
 
 ## 扩展：性能工程师的能力模型
 
@@ -338,6 +351,8 @@ Google 对性能的重视可以追溯到公司成立之初。两个经典的案�
 **分析推理力**：从数据到结论的推理能力。看到 Trace 中的一个异常，能推导出可能的原因，然后验证或排除。这需要实践积累，但也需要方法论——这正是本章讨论的核心。
 
 **代码洞察力**：能从代码层面理解性能问题的根源。不是所有的性能问题都能从 Trace 中看出来，有时候需要读代码才能理解为什么某个操作会那么慢。
+
+**成本/ROI 评估力**：性能优化也会影响基础设施成本、云资源和端侧功耗。面对大规模业务时，需要估算一次优化能减少多少 CPU 时间、带宽、存储或用户等待时间，再决定投入多少工程资源。
 
 **沟通影响力**：性能优化往往涉及多个团队——App 团队、系统团队、SDK 团队。推动优化实施需要清晰地表达问题、量化影响、说服利益相关者。
 
