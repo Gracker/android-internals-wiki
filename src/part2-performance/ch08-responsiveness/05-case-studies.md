@@ -5,10 +5,10 @@ chapter: "8.5"
 section: "8.5"
 status: ready-for-review
 drafted_date: "2026-04-02"
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-04-27"
 rework_date: "2026-04-08"
 rework_by: "task2b-rework"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 review_cycle: 4
 re_review_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -35,10 +35,10 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
-task9_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: "pending"
 task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
@@ -95,7 +95,7 @@ Reddit 技术团队在 2025 年 Google Performance Spotlight Week 上分享了�
 
 Reddit 的性能团队首先通过 Macrobenchmark 建立了启动耗时基线。他们发现冷启动的时间主要花在以下几个环节：
 
-首先是 Application.onCreate() 中的 SDK 初始化。Reddit 集成了大量第三方服务（广告、分析、推送等），这些 SDK 几乎都在 onCreate 里同步初始化，占据了主线程约 800ms。其次是首页 Feed 的数据加载——虽然是异步请求，但网络回调和 JSON 解析也会回到主线程处理。最后是首次渲染，由于 View 层级较深（首页是复杂的 RecyclerView），measure/layout 阶段消耗了不少时间。
+Application.onCreate() 中的 SDK 初始化是大头：Reddit 集成了大量第三方服务（广告、分析、推送等），这些 SDK 几乎都在 onCreate 里同步初始化，占据了主线程约 800ms。首页 Feed 的数据加载也在占用时间——虽然是异步请求，但网络回调和 JSON 解析会回到主线程处理。首次渲染同样有开销，由于 View 层级较深（首页是复杂的 RecyclerView），measure/layout 阶段消耗了不少时间。
 
 在分析过程中他们注意到一个关键事实：这些代码路径在安装后首次运行时全部走的是解释执行（interpreted），因为 ART 还没有来得及对这些路径做 JIT 编译。这正是 Baseline Profiles 要解决的问题。
 
@@ -162,7 +162,7 @@ Reddit 在 Google Play 上线后的 A/B 测试结果 [已验证: developer.andro
 
 ### 本案例的关键启示
 
-这个案例最大的价值不是"用了什么技术"，而是展示了一个高 ROI 的优化路径：当我们的 App 还没有做过 Baseline Profiles 和 R8 full mode 时，这两项工作应该是最先做的——改动小、风险低、收益确定。它们本质上是在帮 ART 做它"想做但还没来得及做的事"。
+这个案例展示了一个高 ROI 的优化路径：当 App 还没有做过 Baseline Profiles 和 R8 full mode 时，这两项工作应该是最先做的——改动小、风险低、收益确定。它们是在帮 ART 做它"想做但还没来得及做的事"。
 
 ---
 

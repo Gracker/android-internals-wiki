@@ -7,8 +7,8 @@ polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
 drafted_date: '2026-04-01'
-reviewed_date: 2026-04-22
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-27"
+reviewed_by: "openclaw-task6"
 rework_date: '2026-04-04'
 rework_by: openclaw-task2b
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
@@ -45,12 +45,12 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task2b_state: fixed
 task2b_result: fixed
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9

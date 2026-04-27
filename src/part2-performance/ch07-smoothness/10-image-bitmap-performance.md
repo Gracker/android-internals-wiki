@@ -421,6 +421,9 @@ software bitmap 解码完成后，像素还在 CPU 可访问内存里。第一�
 
 Hardware Bitmap 的价值就在这里。像素本来就在 GPU 可访问内存中，渲染阶段不用再做 software bitmap 的首帧上传。
 
+<!-- AIW-源码调研-2026-04-27 -->
+**源码级补充**：关于"Hardware Bitmap 是否绕过 RenderNode 直接提交给 SurfaceFlinger"的问题，答案是否定的。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。真正的优化在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理（1080p RGBA Bitmap 约 4-8ms），而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[来源：AOSP `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp` android-14]
+
 [图：Perfetto RenderThread 片段。`Bitmap.prepareToDraw` 或首帧 `DrawFrame` 前后出现长 slice，并且能看到同一帧的 jank frame。旁边补一张使用 Hardware Bitmap 的正常帧，说明少掉了首帧 texture upload。]
 
 ### 用 Perfetto SQL 查自定义解码 slice

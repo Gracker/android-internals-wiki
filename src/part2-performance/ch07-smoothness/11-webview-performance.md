@@ -582,6 +582,83 @@ webView.setWebViewClient(new WebViewClient() {
 - 每次调用只能清理对应的 `view` 参数，不能假设其他 WebView 也受影响
 - API 29+ 新增 `WebViewRenderProcessClient` 提供 `onRenderProcessUnresponsive` 回调，可在进程被杀前主动终止
 
+
+## AIW-源码调研-2026-04-27
+
+<!-- AIW-源码调研-2026-04-27 -->
+
+### WebView / Chromium 渲染管线与 Perfetto 追踪配置
+
+**背景补充（2026-04-27 调研）**：旧说法「WebView 卡顿分析需要用 Chrome DevTools 而非 Perfetto」已过时。Perfetto UI 在 target=Android 时可同时采集 ATrace 和 Chromium TRACE_EVENT，二者组合覆盖系统层和浏览器内部管线。
+
+#### Chromium 多进程架构源码路径
+
+Android WebView 的渲染引擎源码位于 `chromium/src/android_webview/`（AOSP external 仓库分支），核心组件：
+
+| 组件 | 源码路径 | 角色 |
+|------|---------|------|
+| `AwContents.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | WebView 内容管理层，持有 WebContents |
+| `AwGLFunctor.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwGLFunctor.java` | 原生 GL 渲染器，管理 GL 资源 |
+| Viz 进程 | `chromium/src/components/viz/` | GPU 组合器，聚合多 Renderer 帧 |
+
+**渲染调用链（从 JS 到屏幕）：**
+
+```
+V8 (JS 执行) → Blink (Layout/Paint) → CompositorThread → CompositorFrame
+  → Viz 进程 (GPU 组合) → GPU Service → ASurfaceControl / BufferQueue
+  → SurfaceFlinger (系统合成) → Display
+```
+
+#### Perfetto 追踪配置
+
+WebView Perfetto 追踪需要**同时开启两类数据源**：
+
+**ATrace 系统注解**（Android Framework 层）：
+- 在 Perfetto UI 中选择 target=Android，启用 `webview` 分类
+- 或 `adb shell perfetto` 配置 `atrace_categories: "webview"`
+- ATrace 注入 `ATRACE_TAG_WEBVIEW`（0x10000000 << 2），通过 `WebView.isTracingEnabled()`（API 29+）控制
+
+**Chromium TRACE_EVENT**（浏览器内部层）：
+| 分类 | 追踪内容 | 用途 |
+|------|---------|------|
+| `blink` | Blink 渲染引擎（DOM/CSS/Layout/Paint） | JS → 像素内部管线 |
+| `blink.user_timing` | `performance.measure` API 输出 | App 注入计时标记 |
+| `cc` (Chromium Compositor) | CompositorThread 帧提交 | 组合管线分析 |
+| `gpu` | GPU 进程与 GLES 命令 | GPU 负载评估 |
+| `v8` | V8 JS 引擎执行 | JS CPU 热点 |
+| `navigation` | 页面导航 IPC | 加载时间分解 |
+| `loading` | 资源加载 | 网络 → 渲染流水线 |
+
+#### 掉帧根因 Perfetto 定位表
+
+| 根因 | Perfetto Slice 特征 | 分类 |
+|------|-------------------|------|
+| JS 执行过长 | `v8` slice 超过 16ms | `v8` |
+| Layout/Paint 过长 | `blink` measure/layout 嵌套 | `blink` |
+| 组合层数过多 | `cc` CommitLayers 数量激增 | `cc` |
+| GPU 栅格化过长 | `gpu.` raster 过长 | `gpu` |
+| BufferQueue 堵塞 | dequeue slot 等待 | ATrace `webview` |
+| SurfaceFlinger 合成超时 | `SurfaceFlinger` compose 过长 | ATrace |
+
+#### 渲染进程崩溃的 Perfetto 识别
+
+Renderer 进程崩溃在 Perfetto 中的表现：
+- Renderer 进程所有 slice 在 `perfetto.process_track` 中突然消失
+- 对应 `render_process_gone` 事件出现在 `android_webview.timeline` 分类下
+- SurfaceFlinger 侧：`SurfaceFlinger::onLayerUpdate` 停止触发，WebView 图层消失
+
+#### 版本差异
+
+| 版本 | Renderer 进程 | Viz 进程 | GL 路径 |
+|------|-------------|---------|--------|
+| Android 7-8 (API 24-26) | In-process | 无独立 Viz | GLFunctor 直接渲染 |
+| Android 9-10 (API 28-29) | Out-of-process（部分设备） | 独立 Viz | Command Buffer |
+| Android 11+ (API 30) | 全部 out-of-process | 独立 Viz | ASurfaceControl |
+| Android 13+ (API 33) | Sandbox（加强隔离） | Viz + GPU Service | 优化 BufferQueue |
+
+> **源码依据**：Chromium `android_webview/docs/architecture.md`（多进程架构）、`chromium/src/base/trace_event/README.md`（TRACE_EVENT 宏）、`chromium/src/components/viz/`（Viz 进程）、`perfetto.dev/docs/analysis/webview-tracing`（Perfetto 配置）
+
+
 ## 参考资料
 
 - **AOSP 源码路径**：
