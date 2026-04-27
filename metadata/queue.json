@@ -16456,5 +16456,71 @@
     "added_at": "2026-04-28T04:27:39",
     "status": "pending",
     "source_file": "2026-04-28-15-ch05-07-cpu-evolution-external-review.md"
+  },
+  {
+    "section": "4.7",
+    "section_title": "16KB Page Size 与 Android 性能",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 章节已写到 16KB base + THP 的 32MB PMD 粒度，但结尾仍停在「待验证 Android 16 默认启用状态」。本轮 external-review 明确提出 Android 16/16KB 内核下 THP 默认策略、mTHP/contpte 等线索；当前正文没有给出官方文档、kernel conf",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L305-L315「与 Linux THP 的关系」",
+        "detail": "章节已写到 16KB base + THP 的 32MB PMD 粒度，但结尾仍停在「待验证 Android 16 默认启用状态」。本轮 external-review 明确提出 Android 16/16KB 内核下 THP 默认策略、mTHP/contpte 等线索；当前正文没有给出官方文档、kernel config 或实机 /sys/kernel/mm/transparent_hugepage 证据来闭环。",
+        "suggestion": "补一段 Android 16/17 设备上 THP 默认策略的核验：读取 /sys/kernel/mm/transparent_hugepage/enabled、查 common kernel 配置或官方 CDD/文档；若无法确认，把 32MB THP 描述限定为 arm64 粒度能力，不写成 Android 默认行为。mTHP/contpte 作为待验证内核特性补源码锚点后再入正文。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L203-L220「兼容模式的加载方式与代价」",
+        "detail": "正文已经写到 4KB 对齐 ELF 在 compat 下会走匿名映射和额外地址空间预留，但没有把这一步继续接到 PSS/共享页损失、启动收益消失和生产风险上。读者可能把 compat 当成长期可用方案，而不是过渡诊断开关。",
+        "suggestion": "补充 smaps/PSS 观察点：同一 4KB 对齐 .so 在 compat 与 16KB 对齐重编译后的 Shared_Clean/Private_Dirty/PSS 对比；明确 compat 只用于临时兼容，不应作为发布态性能方案。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T04:29:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.5",
+    "section_title": "优化策略",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 示例把 `@Immutable data class ItemListState(val items: List<String>)` 放在「正确」路径里。Compose 官方稳定性规则中，标准 Kotlin `List/Map/Set` 默认按 unstable 处理；手工标 `@Immutable` 是对编译器作不可",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L359-L366「Stable 类型」示例",
+        "detail": "示例把 `@Immutable data class ItemListState(val items: List<String>)` 放在「正确」路径里。Compose 官方稳定性规则中，标准 Kotlin `List/Map/Set` 默认按 unstable 处理；手工标 `@Immutable` 是对编译器作不可变承诺，但 `List` 背后仍可能是可变实现。这个示例会让读者用注解掩盖可变集合问题，导致跳过重组或状态一致性风险。",
+        "suggestion": "把正确示例改为 `kotlinx.collections.immutable.ImmutableList` / 持久化集合，或说明 stability configuration 只适用于能保证不可变语义的类型；不要把 `@Immutable + List` 单独写成推荐解。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T04:29:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "7.6",
+    "section_title": "案例集",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 章节锚点要求案例覆盖主线程阻塞、GC、调度、SurfaceFlinger 合成、温控。正文五个主案例实际覆盖 measure/layout、onBind Binder、GC、RenderThread sync、低内存；缺少独立的 SurfaceFlinger/HWC 合成案例和 thermal throttling 案",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "L58 锚点 vs 五个案例主体",
+        "detail": "章节锚点要求案例覆盖主线程阻塞、GC、调度、SurfaceFlinger 合成、温控。正文五个主案例实际覆盖 measure/layout、onBind Binder、GC、RenderThread sync、低内存；缺少独立的 SurfaceFlinger/HWC 合成案例和 thermal throttling 案例。后面的厂商/高刷/低端机段落不是完整案例，不能替代锚点。",
+        "suggestion": "新增两个完整案例：① SF/HWC 合成路径（CLIENT/DEVICE composition、GPU completion fence、present deadline、FrameTimeline 关联）；② 温控降频路径（thermal HAL/PowerStats、CPU/GPU freq 下探、Runnable 等待和帧预算变化）。每个案例补 Trace 观察点、根因和修复/缓解策略。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T04:29:00+08:00",
+    "status": "pending"
   }
 ]

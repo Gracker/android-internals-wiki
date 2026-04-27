@@ -10681,3 +10681,37 @@ ADJ 50 (PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ) 的宽限期时长定义机制未
 **关联章节**：05.07
 
 **外部 review 来源**：2026-04-28-15-ch05-07-cpu-evolution-external-review.md
+
+## [2026-04-28] 4.7 16KB Page Size 与 Android 性能 — 知识盲区
+
+### 盲区描述
+Android 16/17 16KB page size 设备上的 THP 默认策略、mTHP/contpte 支持状态，以及 4KB ELF compat 模式对 PSS / Shared_Clean / Private_Dirty 的影响仍缺少一手源码或实机证据。external-review 已命中这些线索，本轮复核后判断需要进入研究闭环。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查 Android common kernel / Pixel kernel 中 16KB page size 配置、THP 默认策略和 contpte/mTHP 相关开关。
+- 在 16KB 设备或模拟器上对 4KB 对齐 .so compat 与 16KB 对齐 .so 做 `/proc/<pid>/smaps` 对比。
+- 对照 bionic `linker_phdr_16kib_compat.cpp`，确认匿名映射、RELRO 保护和共享页损失的精确边界。
+
+### 关联章节
+- 4.7
+
+## [2026-04-28] 7.6 案例集 — 知识盲区
+
+### 盲区描述
+流畅度案例集缺少 SurfaceFlinger/HWC 合成和温控降频两个高频系统侧 Jank 场景，当前案例无法覆盖章节锚点中的 SF 合成、温控两类根因。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 采集 SF/HWC 合成异常 trace：CLIENT/DEVICE composition、fence、FrameTimeline、present deadline。
+- 采集 thermal throttling trace：thermal HAL、CPU/GPU frequency、sched runnable latency、FrameTimeline。
+- 将两个场景写成完整案例，包含现象、trace 证据、归因和修复/缓解策略。
+
+### 关联章节
+- 7.6
+- 2.6
+- 5.5

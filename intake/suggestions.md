@@ -5945,3 +5945,15 @@
 - **位置**：05.07
 - **建议**：提及 RVA23 标准的确立对 CPU 管理框架成熟度的贡献。
 - **来源**：2026-04-28-15-ch05-07-cpu-evolution-external-review.md
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L119-L124 ConstraintLayout 40% 基准
+- **问题**：ConstraintLayout 相对 RelativeLayout 快约 40% 的基准没有绑定版本、设备、布局复杂度和官方 benchmark 年份。
+- **建议**：保留为方向性参考，同时补充现代 ConstraintLayout 版本、样例布局和 Macrobenchmark/Perfetto measure 阶段复测口径。
+
+## [Task9 Deep Review] 7.6 案例集 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L100/L155/L227/L300/L375 五个案例 Trace 证据
+- **问题**：五个案例都明确标注 Trace 证据待归档，耗时、Jank 率和内存数值仍是示例口径。案例章节的核心价值依赖可复核 trace，当前数据只能说明分析方法，不能作为实测结论。
+- **建议**：为每个案例归档 trace 文件名、设备型号、Android/ART 版本、刷新率、采样脚本、样本次数、前后对比窗口；在正文引用对应 Perfetto SQL 或截图编号。
