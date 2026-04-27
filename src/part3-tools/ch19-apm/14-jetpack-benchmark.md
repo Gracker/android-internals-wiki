@@ -26,20 +26,20 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/benchmark/macro/junit4/BaselineProfileRule
 - type: official
   path: https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile
-pipeline_stage: task6_pending
-task6_state: "revisiting"
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 task2b_result: fixed
 last_task2b_at: '2026-04-27T06:57:48+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-27"
+task9_reviewed_by: "openclaw-task6"
 last_task9_at: "2026-04-25T03:28:33+08:00"
 ---
 
