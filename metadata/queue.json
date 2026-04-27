@@ -14554,5 +14554,61 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-28T01:17:06+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.10",
+    "section_title": "ContentProvider 性能与优化",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 正文写 SQLiteCursor 翻页通过“重新查询 + OFFSET 跳行”实现；AOSP android-16.0.0_r1 中 SQLiteCursor.fillWindow() 调 SQLiteQuery.fillWindow()，再进入 SQLiteSession.executeForCursorWindow(sql, startPos, requiredPos, ...)，没有把原始 SQL 改写成 LIMIT/OFFSET；正文写调用方主线程 binder transaction 阻塞超过 10 秒会触发 ContentProvider ANR；但同章 L216-L224 已说明 CRUD 无独立 ContentProvider 10 秒超时",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L599-L601「误区四：CursorWindow 的翻页是高效的」",
+        "detail": "正文写 SQLiteCursor 翻页通过“重新查询 + OFFSET 跳行”实现；AOSP android-16.0.0_r1 中 SQLiteCursor.fillWindow() 调 SQLiteQuery.fillWindow()，再进入 SQLiteSession.executeForCursorWindow(sql, startPos, requiredPos, ...)，没有把原始 SQL 改写成 LIMIT/OFFSET。",
+        "suggestion": "删掉“OFFSET 跳行”实现表述，改为“native cursor window 按 startPos/requiredPos 填充窗口，深位置访问需要走过前序结果行”；keyset paging 作为应用分页 SQL 的优化建议保留。",
+        "severity": "P0"
+      },
+      {
+        "type": "原理断裂/交叉一致性",
+        "location": "L447「跨进程 ContentProvider 调用」",
+        "detail": "正文写调用方主线程 binder transaction 阻塞超过 10 秒会触发 ContentProvider ANR；但同章 L216-L224 已说明 CRUD 无独立 ContentProvider 10 秒超时。普通 query/insert/update/delete 阻塞应归入调用方组件超时（例如 input dispatching 5s）或调用侧自管超时；10s 是 provider publish/ready 等待口径。",
+        "suggestion": "把“>10 秒触发 ContentProvider ANR”拆成两类：远端冷启动/发布等待超过 CONTENT_PROVIDER_PUBLISH_TIMEOUT；普通 CRUD 慢调用按调用方组件 ANR 或自定义超时判责。",
+        "severity": "P1"
+      },
+      {
+        "type": "版本差异",
+        "location": "L505-L508「Android 8.0（API 26）：后台限制」",
+        "detail": "正文把 Android 8.0 后台执行限制写成后台 App 的 ContentResolver.query() 受到直接限制、目标 provider 后台时调用优先级降低。Android 8.0 官方限制重点是后台 Service 启动和隐式广播；公开行为里没有 ContentResolver.query() 本身降优先级这一规则。",
+        "suggestion": "重写为间接影响：后台限制改变进程保活/启动方式，但 ContentProvider 查询是否慢仍需回到 provider 进程启动、AMS 进程优先级和 Binder 调用本身判断；若保留“降优先级”必须补 AOSP 锚点。",
+        "severity": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T01:31:04+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "4.4",
+    "section_title": "Low Memory Killer",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 正文在“Android 10 开始默认使用 PSI”之后直接给 ro.lmk.psi_partial_stall_ms=70ms、ro.lmk.psi_complete_stall_ms=700ms 默认值，容易被理解为 Android 10-16 通用",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L229-L234「PSI：更精准的内存压力度量」",
+        "detail": "正文在“Android 10 开始默认使用 PSI”之后直接给 ro.lmk.psi_partial_stall_ms=70ms、ro.lmk.psi_complete_stall_ms=700ms 默认值，容易被理解为 Android 10-16 通用。AOSP android-10.0.0_r1 lmkd.c 使用硬编码 psi_thresholds：some 70ms / some 100ms / full 70ms；android-11.0.0_r1 起 lmkd.cpp 才有 DEF_PARTIAL_STALL=70、DEF_COMPLETE_STALL=700（low-RAM partial 200）。",
+        "suggestion": "补版本表：Android 10 PSI 阈值硬编码 70/100/full70；Android 11-16 引入 ro.lmk.psi_* 属性，普通设备默认 partial 70 / complete 700，low-RAM partial 默认 200。",
+        "severity": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T01:31:04+08:00",
+    "status": "pending"
   }
 ]

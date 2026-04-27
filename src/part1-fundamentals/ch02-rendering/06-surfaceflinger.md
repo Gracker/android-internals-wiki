@@ -2,7 +2,7 @@
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-27"
 drafted_date: 2026-03-30
@@ -15,9 +15,9 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-04-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T01:20:00+08:00"
+last_task9_at: "2026-04-28T01:31:04+08:00"
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/"
@@ -29,16 +29,15 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-27T02:40:00+08:00"
-review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。"
+review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。"
 task6_reviewed_date: "2026-04-27"
-
 ---
 
 # SurfaceFlinger 与合成

@@ -34,17 +34,17 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: "pass-light-edit"
 task9_result: needs-rework
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-04-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T02:20:00+08:00"
-review_notes: "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace lmkd 版本、oom_score_adj/HEAVY_WEIGHT_ADJ/minfree、16KB 数据、CachedAppOptimizer 版本表，并补 Perfetto SQL 观察点。2026-04-27 03:40 task2b: 修复 Task9 P95 HEAVY_WEIGHT_APP_ADJ manifest 属性，改为 android:cantSaveState / PRIVATE_FLAG_CANT_SAVE_STATE，并补 AMS/ATMS 源码锚点。"
+last_task9_at: "2026-04-28T01:31:04+08:00"
+review_notes: "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace lmkd 版本、oom_score_adj/HEAVY_WEIGHT_ADJ/minfree、16KB 数据、CachedAppOptimizer 版本表，并补 Perfetto SQL 观察点。2026-04-27 03:40 task2b: 修复 Task9 P95 HEAVY_WEIGHT_APP_ADJ manifest 属性，改为 android:cantSaveState / PRIVATE_FLAG_CANT_SAVE_STATE，并补 AMS/ATMS 源码锚点。；2026-04-28 task9 deep-review: needs-rework。P0 0，P1 1，P2 3。"
 last_task2b_at: "2026-04-27T03:40:00+08:00"
 task2b_fixed_by: openclaw-task2b
 repaired_date: "2026-04-27"

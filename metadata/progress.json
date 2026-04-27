@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-04-27T21:44:26+08:00",
+  "generated_at": "2026-04-28T01:31:04+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 191,
-    "finalized": 107,
-    "ready-for-review": 111,
+    "finalized": 108,
+    "ready-for-review": 110,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T21:44:26+08:00",
+    "last_updated": "2026-04-28T01:31:04+08:00",
     "pipeline_stage_counts": {
       "None": 33,
-      "task6_pending": 30,
-      "task2b_pending": 66,
-      "ready-to-publish": 107,
+      "task6_pending": 27,
+      "task2b_pending": 68,
+      "ready-to-publish": 108,
       "task9_pending": 13,
       "'task2b_pending'": 1
     },
@@ -23,15 +23,15 @@
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 180,
-      "pending": 30,
+      "reviewed": 183,
+      "pending": 27,
       "'reviewed'": 1,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 137,
-      "pending": 68,
+      "fixed": 135,
+      "pending": 70,
       "idle": 4,
       "'pending'": 1
     },
@@ -40,9 +40,9 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "task6_pending": 32,
-      "task2b_pending": 65,
-      "ready-to-publish": 107,
+      "task6_pending": 29,
+      "task2b_pending": 67,
+      "ready-to-publish": 108,
       "task9_pending": 13
     },
     "task6_state_counts": {
@@ -50,16 +50,16 @@
       "revisiting": 50
     },
     "task9_state_counts": {
-      "reviewed": 179,
-      "pending": 32,
+      "reviewed": 182,
+      "pending": 29,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 139,
-      "pending": 67,
+      "fixed": 137,
+      "pending": 69,
       "idle": 4
     },
-    "last_updated": "2026-04-27T23:21:00+08:00"
+    "last_updated": "2026-04-28T01:31:04+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -387,19 +387,19 @@
         "sqlite",
         "app-startup"
       ],
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-04-28",
       "task2b_result": "fixed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "reviewed_date": "2026-04-26",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "review_round": 5,
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T06:20:00+08:00",
+      "last_task9_at": "2026-04-28T01:31:04+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
       "last_task2b_at": "2026-04-27T06:57:48+08:00",
@@ -719,7 +719,7 @@
       "title": "SurfaceFlinger 与合成",
       "chapter": "2.6",
       "section": "2.6",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 12 (API S) - Android 16 (API 36)",
       "last_verified": "2026-04-27",
       "drafted_date": "2026-03-30",
@@ -732,9 +732,9 @@
       "polish_count": 1,
       "polish_date": "2026-04-04",
       "polish_by": "task2b-polish",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T01:20:00+08:00",
+      "last_task9_at": "2026-04-28T01:31:04+08:00",
       "sources": [
         {
           "type": "aosp",
@@ -773,10 +773,10 @@
         "2.16",
         "7.3"
       ],
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-27T02:40:00+08:00",
@@ -1672,18 +1672,18 @@
       "last_verified": "2026-04-27",
       "last_verified_against": "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1 ProcessList/lmkd socket, android-10 lmkd PSI, android-11/12/14/16 CachedAppOptimizer, Android 16 lmkd/reaper, developer.android.com 16KB Page Size",
       "confidence": "medium-high",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T02:20:00+08:00",
+      "last_task9_at": "2026-04-28T01:31:04+08:00",
       "review_notes": "2026-04-27 task2b: 修复 Task9 P0/P1 与 external P1；校正旧 LMK 初始化、userspace lmkd 版本、oom_score_adj/HEAVY_WEIGHT_ADJ/minfree、16KB 数据、CachedAppOptimizer 版本表，并补 Perfetto SQL 观察点。",
       "polish_count": "1",
       "polish_date": "2026-04-05",

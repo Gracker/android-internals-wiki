@@ -5126,3 +5126,45 @@
 - **问题**：未提及 memcg v2 成为默认及 MaxActivationDepth 带来的内核遍历性能优化
 - **建议**：补充 cgroup v2 / memcg v2 迁移及 MaxActivationDepth 优化说明
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L367-L369「延迟初始化与 App Startup」
+- **问题**：“每合并一个 ContentProvider 约节省 2ms”“冷启动减少 35%-42%、2.8s 到 1.6s”没有测试环境、设备、样本或来源。
+- **建议**：补充 benchmark/官方案例来源；否则把 2ms 与百分比统一标为待验证，并说明只作为特定项目样本。
+
+## [Task9 Deep Review] 1.10 ContentProvider 性能与优化 — 2026-04-28
+- **类型**：数据缺失/边界条件
+- **位置**：L459-L471「正常调用 vs 慢调用的对比」
+- **问题**：100ms 被写成慢 ContentProvider 调用的统一判断线，缺少场景边界；后台同步、大型媒体查询和 UI 首屏查询的阈值不同。
+- **建议**：限定为“用户可感知路径上的经验筛选阈值”，并在 SQL 示例后补充需要回看 provider 线程、冷启动与数据库/锁等待证据。
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-28
+- **类型**：版本差异
+- **位置**：L365「版本演进：Android 13」
+- **问题**：“HWC HAL 开始支持 AIDL 接口……用于替代 HIDL”缺少落地边界。Android 13 引入/支持 composer3 AIDL，但许多 Android 13 设备仍以 HIDL composer@2.4 为主，AIDL 属于可选迁移路径。
+- **建议**：改成“Android 13 引入 AIDL composer3，可作为替代 HIDL 的新路径；Android 14+ HIDL 2.4 标为 deprecated，设备侧逐步迁移”。
+
+## [Task9 Deep Review] 2.6 SurfaceFlinger 与合成 — 2026-04-28
+- **类型**：版本差异/Perfetto 观察口径
+- **位置**：L262-L270「HWC 合成 Track」
+- **问题**：该段无条件使用 prepareFrame / doComposition 作为 Trace 观察名，容易和前文 Android 14+ commit/composite 口径混淆。
+- **建议**：补版本限定：Android 12-13 看 prepareFrame/doComposition；Android 14+ 放到 composite 阶段及其子操作里判断 HWC 调用、RenderEngine 和 fence 等待。
+
+## [Task9 Deep Review] 4.4 Low Memory Killer — 2026-04-28
+- **类型**：源码准确性
+- **位置**：L136-L139「从 oom_adj 到 oom_score_adj」
+- **问题**：正文写 oom_adj 取值范围 -17 到 15，未说明 -17 是 OOM_DISABLE/never kill 特殊哨兵值，不是常规可调档位。
+- **建议**：改为“常规调整范围 -16 到 15，-17 表示 OOM_DISABLE/never kill”。
+
+## [Task9 Deep Review] 4.4 Low Memory Killer — 2026-04-28
+- **类型**：版本差异/边界条件
+- **位置**：L258-L266「低内存设备（Android Go）的特殊策略」
+- **问题**：“单轮仍然只 kill one task”未限定到 Android 16 Go / 现代 PSI 路径，容易被外推到旧版 legacy minfree lmkd。
+- **建议**：限定为“android-16.0.0_r1 Go 分支/当前 PSI 决策周期”；旧版 minfree 路径是否多次 kill 需单独按版本核验。
+
+## [Task9 Deep Review] 4.4 Low Memory Killer — 2026-04-28
+- **类型**：版本差异/数据支撑
+- **位置**：L318-L322「onTrimMemory」
+- **问题**：Android 14/API 34 后 trim memory 级别不再下发的描述还不够精确，未列清哪些级别停止通知、哪些仍保留。
+- **建议**：按 ComponentCallbacks2 官方文档补一张 API 34+ 表：UI_HIDDEN 是否保留、RUNNING_* / BACKGROUND / MODERATE / COMPLETE 等级的通知变化。
