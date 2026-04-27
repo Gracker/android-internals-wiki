@@ -20,18 +20,18 @@ sources:
     path: "external/perfetto/src/trace_processor/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
-pipeline_stage: task9_pending
-task9_reviewed_date: '2026-04-22'
+pipeline_stage: task2b_pending
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-22T20:50:00+08:00'
+last_task9_at: "2026-04-27T12:33:00+08:00"
 last_task2b_at: '2026-04-22T21:50:17+08:00'
 ---
 
