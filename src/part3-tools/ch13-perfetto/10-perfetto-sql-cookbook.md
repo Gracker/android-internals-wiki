@@ -32,15 +32,15 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: "pass-light-edit"
 reviewed_date: "2026-04-28"
 reviewed_by: "openclaw-task6"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-28"
 task9_reviewed_by: openclaw-task9
@@ -236,6 +236,8 @@ ORDER BY MIN(dur);
 ### Frame Timeline：系统视角的帧分析
 
 `Choreographer#doFrame` 只反映主线程视角。Android 12（API 31）引入的 Frame Timeline 提供了系统视角：它同时记录期望时间线和实际时间线，能直接回答“这一帧有没有按时 present”。
+
+> **版本边界**：Frame Timeline 表（`actual_frame_timeline_slice` / `expected_frame_timeline_slice`）从 Android 12 起稳定可用。在 Android 10/11 的 trace 上运行下面的查询会返回空结果；旧版本需要退回 `Choreographer#doFrame`、`DrawFrame`、SurfaceFlinger 合成 slice、fence / sched 组合来判断帧时序。
 
 在 Perfetto 中，Frame Timeline 数据存储在 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice` 两张表中。这里要单独记一条：配对同一帧时不能拿 `track_id` 当主键；`track_id` 只表示 slice 落在哪条轨道上，真正稳定的帧标识是 `display_frame_token`，surface frame 还要再带上 `surface_frame_token`。如果要用标准库高层视图，可以先加载 `android.frames.timeline`：
 
@@ -780,19 +782,19 @@ INCLUDE PERFETTO MODULE android.monitor_contention;
 
 -- 主线程锁竞争 Top 10（等待时间最长）
 SELECT
-  lock_name,
   CAST(dur / 1e6 AS FLOAT) AS wait_ms,
   blocked_thread_name AS waiter_thread,
   blocking_thread_name AS owner_thread,
   short_blocked_method,
-  short_blocking_method
+  short_blocking_method,
+  waiter_count
 FROM android_monitor_contention
 WHERE is_blocked_thread_main = 1
 ORDER BY dur DESC
 LIMIT 10;
 ```
 
-`android_monitor_contention` 已经把锁名、owner 线程、blocked 线程和相关方法都解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。结合 Perfetto UI 的 Lock contention track，可以快速定位锁竞争的全貌。
+`android_monitor_contention` 已经把 owner 线程、blocked 线程和相关方法都解析好了，比直接在原始 `slice` 上用名字模糊匹配稳定得多。注意：Perfetto stdlib 当前版本的 `android_monitor_contention` 不提供 `lock_name` 列；如果需要锁对象名，要从原始 `slice` 表配合 `args` 另写限定查询。结合 Perfetto UI 的 Lock contention track，可以快速定位锁竞争的全貌。
 
 ### 锁竞争与帧时间关联
 
@@ -806,7 +808,6 @@ SELECT
   frame.dur / 1e6 AS frame_ms,
   contention.dur / 1e6 AS lock_wait_ms,
   ROUND(contention.dur * 100.0 / frame.dur, 1) AS lock_pct,
-  contention.lock_name,
   contention.blocking_thread_name AS owner_thread
 FROM slice AS frame
 JOIN thread_track AS ft ON frame.track_id = ft.id

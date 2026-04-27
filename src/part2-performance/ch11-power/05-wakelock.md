@@ -40,10 +40,10 @@ sources:
 reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
@@ -100,16 +100,17 @@ Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是
 
 Wakelock 就是 Android 为此设计的机制：它允许 App 或内核组件向系统声明"我现在需要 CPU 保持工作"。只要还有活跃的 wakelock，系统就不会进入 suspend。
 
-Android 提供了四种 wakelock 类型，但后三种已经废弃：
+Android 提供了以下 CPU/屏幕类 wake-lock level，后三种屏幕相关的已废弃：
 
 | 类型 | 效果 | 状态 |
 |------|------|------|
 | `PARTIAL_WAKE_LOCK` | CPU 保持运行，屏幕可关闭 | 推荐使用 |
 | `SCREEN_DIM_WAKE_LOCK` | 屏幕保持暗亮 | API 17 废弃 |
-| `SCREEN_BRIGHT_WAKE_LOCK` | 屏幕保持全亮 | API 13 废弃 |
-| `FULL_WAKE_LOCK` | CPU + 屏幕全亮 | API 13 废弃 |
+| `SCREEN_BRIGHT_WAKE_LOCK` | 屏幕保持全亮 | API 17 废弃 |
+| `FULL_WAKE_LOCK` | CPU + 屏幕全亮 | API 17 废弃 |
+| `PROXIMITY_SCREEN_OFF_WAKE_LOCK` | 配合距离传感器控制屏幕开关 | 可用 |
 
-后三种废弃的原因很简单：屏幕是否点亮应该由系统电源策略统一管理，而不是让 App 自行决定。现在如果需要保持屏幕常亮，正确做法是使用 `FLAG_KEEP_SCREEN_ON`（Window Flag）或 `android:keepScreenOn`（XML 属性），由 WindowManager 统一处理。
+`PROXIMITY_SCREEN_OFF_WAKE_LOCK` 用于通话等场景：距离传感器检测到物体靠近时关闭屏幕，远离时重新点亮。它不参与 CPU 保活，走的是屏幕/传感器控制路径。屏幕类 wake-lock（`SCREEN_DIM`、`SCREEN_BRIGHT`、`FULL`）废弃的原因很简单：屏幕是否点亮应该由系统电源策略统一管理，而不是让 App 自行决定。现在如果需要保持屏幕常亮，正确做法是使用 `FLAG_KEEP_SCREEN_ON`（Window Flag）或 `android:keepScreenOn`（XML 属性），由 WindowManager 统一处理。
 
 真正需要开发者关注的只有 `PARTIAL_WAKE_LOCK`。它让 CPU 在屏幕关闭后仍然运行——这正是功耗问题的高发区，因为用户看不到屏幕亮着，不知道 App 还在消耗电量。
 
@@ -667,7 +668,7 @@ class WakeLockManager(private val context: Context) {
     private val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     private var wakeLock: PowerManager.WakeLock? = null
 
-    fun withWakeLock(block: suspend () -> Unit) {
+    suspend fun withWakeLock(block: suspend () -> Unit) {
         val wl = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK, "MyApp::WakeLockManager"
         ).apply { acquire(10 * 60 * 1000L) /* 安全超时 */ }

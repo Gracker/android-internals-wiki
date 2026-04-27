@@ -16968,7 +16968,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T06:59:31+08:00",
+      "completed_reason": "Task 2B 回炉修复完成"
     },
     {
       "section": "13.10",
@@ -17003,7 +17005,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T06:59:31+08:00",
+      "completed_reason": "Task 2B 回炉修复完成"
     }
   ]
 }
