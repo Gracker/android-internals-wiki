@@ -10242,3 +10242,442 @@ ADJ 50 (PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ) 的宽限期时长定义机制未
 **关联章节**：4.3
 
 **外部 review 来源**：2026-04-28-15-ch04-03-art-memory-external-review.md
+
+### FrameRateCategory 权重
+
+**重要程度**：高
+
+**建议研究方向**：NORMAL 与 HIGH 在不同电池水位下的具体值差异
+
+**关联章节**：02.02
+
+**外部 review 来源**：2026-04-28-15-ch02-02-framerate-external-review.md
+
+
+### 高频注入对功耗的冲击
+
+**重要程度**：中
+
+**建议研究方向**：虚拟 VSync 触发时的 CPU Cluster 唤醒策略
+
+**关联章节**：02.02
+
+**外部 review 来源**：2026-04-28-15-ch02-02-framerate-external-review.md
+
+
+### resume 切片截止判定
+
+**重要程度**：高
+
+**建议研究方向**：组合器检查 deadlineNanos 的频率
+
+**关联章节**：02.04
+
+**外部 review 来源**：2026-04-28-15-ch02-04-choreographer-external-review.md
+
+
+### vsyncId 唯一性范围
+
+**重要程度**：低
+
+**建议研究方向**：系统重启后 ID 是否复位
+
+**关联章节**：02.04
+
+**外部 review 来源**：2026-04-28-15-ch02-04-choreographer-external-review.md
+
+
+### GPU Headroom 调控精度
+
+**重要程度**：高
+
+**建议研究方向**：系统如何避免性能反馈导致的频率震荡
+
+**关联章节**：02.05
+
+**外部 review 来源**：2026-04-28-15-ch02-05-main-render-thread-external-review.md
+
+
+### 并发分箱 (Concurrent Binning)
+
+**重要程度**：中
+
+**建议研究方向**：Adreno 830 对 Tile 渲染顺序的硬件级重排
+
+**关联章节**：02.05
+
+**外部 review 来源**：2026-04-28-15-ch02-05-main-render-thread-external-review.md
+
+
+### ModulateAlpha 规避路径
+
+**重要程度**：中
+
+**建议研究方向**：如何利用 Compose 1.10 策略彻底跳过离屏缓冲
+
+**关联章节**：02.07
+
+**外部 review 来源**：2026-04-28-15-ch02-07-hardware-layer-external-review.md
+
+
+### VMA 内存管理
+
+**重要程度**：高
+
+**建议研究方向**：驱动层如何通过子分配缓解大页碎片
+
+**关联章节**：02.07
+
+**外部 review 来源**：2026-04-28-15-ch02-07-hardware-layer-external-review.md
+
+
+### Z-Culling 的透明限制
+
+**重要程度**：高
+
+**建议研究方向**：半透明层如何阻断硬件深度测试的优化
+
+**关联章节**：02.08
+
+**外部 review 来源**：2026-04-28-15-ch02-08-overdraw-external-review.md
+
+
+### Standardized Descriptor
+
+**重要程度**：中
+
+**建议研究方向**：不同 GPU 厂商如何映射到统一的 pixels_drawn 标签
+
+**关联章节**：02.08
+
+**外部 review 来源**：2026-04-28-15-ch02-08-overdraw-external-review.md
+
+
+### Host Image Copy 内存收益
+
+**重要程度**：中
+
+**建议研究方向**：实际设备在 1080p 纹理上传时的 PSS 峰值对比
+
+**关联章节**：02.09
+
+**外部 review 来源**：2026-04-28-15-ch02-09-rendering-evolution-external-review.md
+
+
+### Graphite 多线程开销
+
+**重要程度**：高
+
+**建议研究方向**：并行命令录制对主线程 doFrame 耗时的量化减负
+
+**关联章节**：02.09
+
+**外部 review 来源**：2026-04-28-15-ch02-09-rendering-evolution-external-review.md
+
+
+### Headroom 刷新频率
+
+**重要程度**：中
+
+**建议研究方向**：调用该 API 本身带来的上下文切换开销
+
+**关联章节**：02.10
+
+**外部 review 来源**：2026-04-28-15-ch02-10-gpu-rendering-external-review.md
+
+
+### 标准化计数器的厂商覆盖率
+
+**重要程度**：高
+
+**建议研究方向**：旧机型升级 Android 16 后是否都能支持 gpu_busy
+
+**关联章节**：02.10
+
+**外部 review 来源**：2026-04-28-15-ch02-10-gpu-rendering-external-review.md
+
+
+### Timeline 模式下的 GPU Hang 诊断
+
+**重要程度**：高
+
+**建议研究方向**：当计数器停止前进时，系统如何执行超时自愈
+
+**关联章节**：02.16
+
+**外部 review 来源**：2026-04-28-15-ch02-16-sync-fence-external-review.md
+
+
+### IOTLB 空间覆盖率
+
+**重要程度**：中
+
+**建议研究方向**：16KB 页对 SMMU 访问 Fence 状态时的缓存命中率提升
+
+**关联章节**：02.16
+
+**外部 review 来源**：2026-04-28-15-ch02-16-sync-fence-external-review.md
+
+
+### present_id 跨屏映射
+
+**重要程度**：中
+
+**建议研究方向**：外接显示器场景下硬件 ID 与 Pacesetter 时钟的同步开销
+
+**关联章节**：02.17
+
+**外部 review 来源**：2026-04-28-15-ch02-17-frame-pacing-external-review.md
+
+
+### 16KB 页对 IPC 计时的提速
+
+**重要程度**：低
+
+**建议研究方向**：更少的上下文切换是否优化了 Swappy 内部 fd 传递耗时
+
+**关联章节**：02.17
+
+**外部 review 来源**：2026-04-28-15-ch02-17-frame-pacing-external-review.md
+
+
+### 预测失败的回滚机制
+
+**重要程度**：中
+
+**建议研究方向**：当预判的 expectedPresentTime 未命中时的系统补偿策略
+
+**关联章节**：02.19
+
+**外部 review 来源**：2026-04-28-15-ch02-19-refresh-rate-switching-external-review.md
+
+
+### 16KB 页对评分缓存的影响
+
+**重要程度**：低
+
+**建议研究方向**：打分表在内存大页下的 TLB 命中率提升
+
+**关联章节**：02.19
+
+**外部 review 来源**：2026-04-28-15-ch02-19-refresh-rate-switching-external-review.md
+
+
+### 内存预算的 A/B Test
+
+**重要程度**：中
+
+**建议研究方向**：不同内存分档下的降级策略对转化率的影响
+
+**关联章节**：04.05
+
+**外部 review 来源**：2026-04-28-15-ch04-05-app-memory-optimization-external-review.md
+
+
+### MemoryLimiter 的判定粒度
+
+**重要程度**：高
+
+**建议研究方向**：匿名内存与 Swap 的累计计费权重
+
+**关联章节**：04.05
+
+**外部 review 来源**：2026-04-28-15-ch04-05-app-memory-optimization-external-review.md
+
+
+### AnonSwap 的限额审计
+
+**重要程度**：高
+
+**建议研究方向**：系统如何防止应用通过共享进程（如 WebView）逃避内存计费
+
+**关联章节**：04.06
+
+**外部 review 来源**：2026-04-28-15-ch04-06-memory-evolution-external-review.md
+
+
+### MTE 4.0 硬件收益
+
+**重要程度**：中
+
+**建议研究方向**：Android 17 是否针对 MTE4 的异步错误队列进行了优化
+
+**关联章节**：04.06
+
+**外部 review 来源**：2026-04-28-15-ch04-06-memory-evolution-external-review.md
+
+
+### 32MB 页的回收背压
+
+**重要程度**：高
+
+**建议研究方向**：当系统内存紧张时，巨型页拆分的 CPU 停顿耗时
+
+**关联章节**：04.07
+
+**外部 review 来源**：2026-04-28-15-ch04-07-16kb-page-size-external-review.md
+
+
+### 兼容模式的 RELRO 状态
+
+**重要程度**：中
+
+**建议研究方向**：匿名拷贝后，Bionic 如何通过 phdr 重新应用只读保护
+
+**关联章节**：04.07
+
+**外部 review 来源**：2026-04-28-15-ch04-07-16kb-page-size-external-review.md
+
+
+### slice 长度对 Deadline 的偏置
+
+**重要程度**：高
+
+**建议研究方向**：应用如何通过控制处理时长请求获得更早的 CPU 响应
+
+**关联章节**：05.01
+
+**外部 review 来源**：2026-04-28-15-ch05-01-linux-scheduling-external-review.md
+
+
+### EEVDF 在低功耗核心的滞后
+
+**重要程度**：中
+
+**建议研究方向**：调度器如何防止小核任务因 Lag 过高而强行抢占大核
+
+**关联章节**：05.01
+
+**外部 review 来源**：2026-04-28-15-ch05-01-linux-scheduling-external-review.md
+
+
+### 16KB 页对 PELT 采样的干扰
+
+**重要程度**：中
+
+**建议研究方向**：大内存页访问模式是否导致利用率信号的相位偏移
+
+**关联章节**：05.02
+
+**外部 review 来源**：2026-04-28-15-ch05-02-eas-external-review.md
+
+
+### mTHP 时代的 CPUIdle 偏置
+
+**重要程度**：低
+
+**建议研究方向**：内核大页整理任务如何通过 EAS 避开前台大核
+
+**关联章节**：05.02
+
+**外部 review 来源**：2026-04-28-15-ch05-02-eas-external-review.md
+
+
+### 代理执行对中断亲和性的影响
+
+**重要程度**：中
+
+**建议研究方向**：硬件中断是否能随着线程的“优先级借用”而自动迁移核心
+
+**关联章节**：05.03
+
+**外部 review 来源**：2026-04-28-15-ch05-03-big-little-external-review.md
+
+
+### 全大核时代的 Idle 深度
+
+**重要程度**：高
+
+**建议研究方向**：失去小核后，系统如何通过 DSU-120 降低待机泄露电流
+
+**关联章节**：05.03
+
+**外部 review 来源**：2026-04-28-15-ch05-03-big-little-external-review.md
+
+
+### Direct Hint 的系统配额
+
+**重要程度**：高
+
+**建议研究方向**：多个高优 App 同时请求直连调频时的仲裁逻辑
+
+**关联章节**：05.04
+
+**外部 review 来源**：2026-04-28-15-ch05-04-dvfs-external-review.md
+
+
+### SCMI 快速通道延迟
+
+**重要程度**：中
+
+**建议研究方向**：基于 Memory-mapped channel 的 SCMI 命令执行耗时
+
+**关联章节**：05.04
+
+**外部 review 来源**：2026-04-28-15-ch05-04-dvfs-external-review.md
+
+
+### Headroom 的厂商标定一致性
+
+**重要程度**：高
+
+**建议研究方向**：不同 SoC 厂商对“1.0”余量的物理定义差异
+
+**关联章节**：05.05
+
+**外部 review 来源**：2026-04-28-15-ch05-05-thermal-external-review.md
+
+
+### 16KB 页下的 zRAM 功耗补偿
+
+**重要程度**：中
+
+**建议研究方向**：压缩内存操作增加的 CPU 热量是否抵消了页表节能
+
+**关联章节**：05.05
+
+**外部 review 来源**：2026-04-28-15-ch05-05-thermal-external-review.md
+
+
+### Energy Points 动态重算
+
+**重要程度**：高
+
+**建议研究方向**：系统如何处理外接电源对能量预算的瞬时扩容
+
+**关联章节**：05.06
+
+**外部 review 来源**：2026-04-28-15-ch05-06-android-power-external-review.md
+
+
+### Wattson 模型的 SoC 覆盖率
+
+**重要程度**：中
+
+**建议研究方向**：骁龙 8 Elite 以外的芯片如何通过 OEM 补丁支持 Wattson
+
+**关联章节**：05.06
+
+**外部 review 来源**：2026-04-28-15-ch05-06-android-power-external-review.md
+
+
+### Energy Limiter 的罚没逻辑
+
+**重要程度**：高
+
+**建议研究方向**：低电量模式下系统如何动态压缩单应用能量配额
+
+**关联章节**：05.07
+
+**外部 review 来源**：2026-04-28-15-ch05-07-cpu-evolution-external-review.md
+
+
+### EEVDF 时代的 nice 值权重
+
+**重要程度**：中
+
+**建议研究方向**：旧有的 nice -20 到 +19 映射在 EEVDF 中是否保持完全兼容
+
+**关联章节**：05.07
+
+**外部 review 来源**：2026-04-28-15-ch05-07-cpu-evolution-external-review.md
