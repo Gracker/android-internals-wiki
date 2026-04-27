@@ -26,12 +26,12 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-27T19:10:48+08:00"
 reviewed_by: openclaw-task6
@@ -209,7 +209,7 @@ public void apply() {
 
 ### Binder 线程池耗尽
 
-Android 默认为每个进程分配最多 16 个 Binder 线程。如果这些线程都在处理同步 Binder 调用且阻塞在等待对端返回，新的 Binder 请求就无法被接收。
+普通进程通过 libbinder 的 `ProcessState` 初始化 Binder 线程池时，默认上限为 **15** 个 Binder worker 线程（`DEFAULT_MAX_BINDER_THREADS`，见 `frameworks/native/libs/binder/ProcessState.cpp`，Android 14/15/16 均为 15）。system_server 等系统进程会通过 `ProcessState::setThreadPoolMaxThreadCount()` 显式调高。排查时看接近 15 个 Binder worker 被同步调用占满的情况。
 
 这个问题的触发条件比严格的死锁更容易满足：多个组件同时发起 Binder 调用 → 对端响应慢 → Binder 线程逐渐被占满 → 形成活锁。
 
@@ -219,7 +219,7 @@ Android 默认为每个进程分配最多 16 个 Binder 线程。如果这些线
 
 ### 预防和解决方案
 
-核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，这意味着如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 16 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
+核心原则：**永远不要在持锁状态下发起同步 Binder 调用。** 在实际项目中，这意味着如果必须在处理 Binder 请求时再发起另一个 Binder 调用，优先使用 `oneway` 接口（异步，不等待返回）。同时需要监控 Binder 线程池的使用率——如果经常出现接近 15 个线程全部占满的情况，说明调用频率或对端响应时间有问题，需要从这两个方向排查。
 
 [已验证: 来源见 AOSP Binder 驱动机制] [已验证: AOSP android-14.0.0_r1]
 
@@ -276,8 +276,9 @@ Concurrent Copying 仍然包含短暂停顿，例如暂停线程处理 roots、�
 
 | 版本 / 场景 | 规则 | 常见表现 |
 |:---|:---|:---|
-| Android 8 / 9 | `startForegroundService()` 后要在很短的宽限期内调用 `startForeground()`；AOSP O 分支常见值是 5 秒 | `RemoteServiceException` / 服务启动超时 |
-| Android 10-13 已启动未晋升 | AOSP 常见宽限期提升到 10 秒；Android 12+ 的后台启动限制不改变这条“已启动但未及时前台化”路径 | `ForegroundServiceDidNotStartInTimeException` |
+| Android 8 | `startForegroundService()` 后宽限期 5 秒（`SERVICE_START_FOREGROUND_TIMEOUT = 5*1000`，见 `ActiveServices.java` android-8.1.0_r81） | `RemoteServiceException` / 服务启动超时 |
+| Android 9-13 已启动未晋升 | 宽限期提升到 10 秒（`SERVICE_START_FOREGROUND_TIMEOUT = 10*1000`，从 android-9.0.0_r61 起）；Android 12+ 的后台启动限制不改变这条“已启动但未及时前台化”路径 | `ForegroundServiceDidNotStartInTimeException` |
+| Android 12+ 宽限期乘数 | Android 12 起 `SERVICE_START_FOREGROUND_TIMEOUT` 乘以 `Build.HW_TIMEOUT_MULTIPLIER`，实际宽限期 = `10 * HW_TIMEOUT_MULTIPLIER` 秒 | 同上，部分硬件平台宽限期更长 |
 | Android 12+ 后台启动限制 | 后台启动前台服务必须满足豁免条件，入口处直接判定 | `ForegroundServiceStartNotAllowedException` |
 | Android 14 shortService | `foregroundServiceType="shortService"` 有独立短超时；超时后回调 `Service.onTimeout()`，服务未及时停止会进入异常或 ANR 路径；源码看 `ActiveServices` 与 `ServiceRecord.ShortFgsInfo` | `Service.onTimeout()`、shortService timeout ANR |
 | Android 15 dataSync / mediaProcessing | `dataSync`、`mediaProcessing` 属于 time-limited FGS 类型，公开资料常按 6h / 24h 配额讨论；超时后先给 `Service.onTimeout()` 收尾窗口 | `Service.onTimeout()`、超时后的内部 exception / ANR 判定 |
@@ -380,7 +381,8 @@ CPU 概览 track 显示所有核心接近满载。主线程出现大段 Runnable
 
 ## 版本演进
 
-- **Android 8 / 9**：`startForegroundService()` 的前台化宽限期在 AOSP O 分支常见为 5 秒；后台 service 限制开始明显收紧。
+- **Android 8**：`startForegroundService()` 的前台化宽限期 5 秒（`SERVICE_START_FOREGROUND_TIMEOUT = 5*1000`）；后台 service 限制开始明显收紧。
+- **Android 9**：前台化宽限期提升到 10 秒（`10*1000`，见 ActiveServices.java android-9.0.0_r61）。
 - **Android 10 / 11**：AOSP 常见前台化宽限期提升到 10 秒；广播超时仍以前台 10 秒、后台 60 秒为主。
 - **Android 12**：新增 `ForegroundServiceStartNotAllowedException`，把“后台启动被拒绝”和“已启动但未及时前台化”拆成两条路径。
 - **Android 14**：Broadcast 在 CPU starvation 条件下会出现前台 10-20 秒、后台 60-120 秒的浮动窗口；`shortService` 前台服务类型引入独立 timeout 与 `Service.onTimeout()`。

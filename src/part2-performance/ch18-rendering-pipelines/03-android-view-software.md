@@ -47,6 +47,31 @@ task2b_state: pending
 
 **判断方法**：如果要判断当前这次 `draw()` 拿到的是不是硬件 Canvas，看 `Canvas.isHardwareAccelerated()`；`View.isHardwareAccelerated()` 只说明这个 View 所在窗口是否开启了硬件加速。官方文档写得很直接，挂在硬件加速窗口上的 View 仍可能被绘制到 software Canvas，例如绘制到 Bitmap 缓存时。[已验证: Android hardware acceleration 文档]
 
+### 整窗口软件渲染 vs 单 View software layer
+
+上一段的两类入口在 trace 上的表现完全不同，分析时要先认清楚是哪一类：
+
+| 触发方式 | 范围 | RenderThread 在 trace 上的表现 |
+|:---|:---|:---|
+| `android:hardwareAccelerated="false"` 或 GPU 不可用 | 整个窗口走软件渲染 | **完全看不到 `DrawFrame`**——`ThreadedRenderer` 不会被初始化 |
+| `View.setLayerType(LAYER_TYPE_SOFTWARE, null)` | 单个 View 子树走 software layer | `RenderThread` 仍在，`DrawFrame` 仍出现，但会额外伴随 Bitmap 分配 + `uploadToTexture` 纹理上传 slice |
+
+`View.buildDrawingCache()` 在 API 28 已经弃用且基本 no-op，现代 `LAYER_TYPE_SOFTWARE` 走的是 RenderNode 软件 layer 路径，不要再用旧 cache 语义解读相关 slice。
+
+### LAYER_TYPE_SOFTWARE / LAYER_TYPE_HARDWARE / Canvas.saveLayer 的区别
+
+这三类离屏机制经常被混在一起讨论，但底层完全不同：
+
+| 机制 | 触发位置 | 离屏承载 | Trace 上的特征 slice |
+|:---|:---|:---|:---|
+| `LAYER_TYPE_SOFTWARE` | View 属性 | CPU 在离屏 `Bitmap` 上栅格化，再上传为 GPU 纹理 | Bitmap 分配 + `uploadToTexture` |
+| `LAYER_TYPE_HARDWARE` | View 属性 | HWUI 直接在独立 GPU 离屏 buffer / FBO 上渲染子树，不经 CPU Bitmap | `eglCreateImage` / FBO 绑定 / `renderTargetBind` 等 GPU 侧 slice |
+| `Canvas.saveLayer()`（硬件加速路径下） | Canvas API | GPU FBO（不是 Bitmap），用于复杂合成效果（带透明度的子树合成、非 SRC_OVER 的 blend mode 等） | 同 hardware layer 风格的 GPU slice |
+
+看到一堆离屏相关 slice 集中出现时，先按这三类机制对号入座。如果某个 View 开了 software layer 又特别复杂，瓶颈往往就在 CPU 栅格化 + 纹理上传这一段。
+
+[已验证: AOSP `frameworks/base/core/java/android/view/View.java` `setLayerType()` + `frameworks/base/libs/hwui/Layer.h` + Android Developers Canvas API]
+
 ## 全链路执行流程
 
 软件渲染的核心特征是**没有 RenderThread 参与**。所有操作都在 UI Thread 上完成，从锁定画布到像素填充到提交 Buffer，全流程串行。

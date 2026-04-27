@@ -136,6 +136,20 @@ Decoder / Video Pipeline → Sideband Stream / Tunnel → HWC / Display
 - SurfaceFlinger 仍然参与 Layer 管理和时序协调，但不经手普通 BufferQueue 中的像素 buffer
 - 更常见于 Android TV 或特定 SoC 的低功耗视频播放场景
 
+#### 启用方式与 trace 特征
+
+App 侧的启用入口是 `MediaCodec` 的 Tunneled Playback 能力（Android 5.0 / API 21+）：
+
+- 通过 `MediaFormat.KEY_AUDIO_SESSION_ID` + `MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback` 启用；
+- 启用后**解码帧不经过 App BufferQueue**——解码器输出作为 sideband stream，由 SurfaceFlinger 交给 HWC 的 sideband layer（`HWC2::Composition::SIDEBAND`）；
+- A/V 同步与显示时序由 HAL + HWC 在硬件通路里完成，App 和 SurfaceFlinger 不再做 per-frame 工作。
+
+**Trace 上的典型特征**：App 侧看起来"什么都没做"却画面流畅。看不到 `dequeueBuffer` / `queueBuffer` 的高频跳动，也看不到 `latchBuffer` 对该 layer 的逐帧动作——这是 Tunneled 路径的正常现象，不是 trace 不完整。问题要到 HAL / HWC 层面才能定位。
+
+**强依赖条件**：是否能走 Tunneled，取决于 codec / Audio HAL / HWC 是否同时支持。普通手机上常见的视频播放仍以非 Tunneled 路径（DEVICE composition overlay）为主；Tunneled 主要见于 Android TV、机顶盒、部分高端 SoC 的低功耗视频播放场景。
+
+[已验证: Android Developers `MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback` + `MediaFormat.KEY_AUDIO_SESSION_ID` API 21+]
+
 ```mermaid
 graph LR
     subgraph "GPU Path"

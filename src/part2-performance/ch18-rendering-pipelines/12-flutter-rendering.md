@@ -202,6 +202,30 @@ sequenceDiagram
 | 需要圆角、旋转、alpha 动画 | TextureView | 这类效果依赖普通 View 变换与裁剪 |
 | 视频 / 游戏 | SurfaceView | 延迟更低，宿主 RenderThread 负担更小 |
 
+### `FlutterActivity` 的默认 `RenderMode` 怎么定
+
+`FlutterActivity` 的默认 `RenderMode` 和 `BackgroundMode` 绑定，不是统一的硬编码默认：
+
+| `BackgroundMode` | 默认 `RenderMode` | 承载 View | 为什么这样选 |
+|:---|:---|:---|:---|
+| `opaque` | `RenderMode.surface` | `FlutterSurfaceView` | 不透明背景下 SurfaceView 直出最省事 |
+| `transparent` | `RenderMode.texture` | `FlutterTextureView` | SurfaceView 的挖洞机制不支持透明混合，只能走 TextureView |
+
+嵌入到其他 View 层级（`FlutterFragment` 或 `FlutterView` 直接使用）时，`RenderMode` 由调用方显式配置，不走这套默认推断。SurfaceView 模式下还存在 z-ordering 约束——`FlutterSurfaceView` 背后的 Surface 默认在 Window 下方，可通过 `setZOrderOnTop` / `setZOrderMediaOverlay` 调整，这会影响 SurfaceFlinger 侧的 layer 叠加关系（参见 [18.6 SurfaceView 直出链路](06-surfaceview.md#z-order-与图层结构)）。
+
+[已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterActivity.java` `getRenderMode()` + `FlutterSurfaceView.java` 默认 z-order 行为]
+
+### `FlutterImageView` 是另一个维度的承载
+
+`FlutterImageView` **不是 `RenderMode` 枚举值**——`io.flutter.embedding.android.RenderMode` 只有 `surface` / `texture` 两个值。`FlutterImageView` 真正的角色是：
+
+- **Hybrid Composition 下 overlay Surface 的承载 View**：`PlatformViewsController.createOverlaySurface(...)` 在 HC 路径里创建 `ImageReader` 提供的 Surface 作为 overlay，结果由 `FlutterImageView` 承载并绘回宿主 View 层级；
+- **`FlutterView.convertToImageView()` 特殊过渡场景**：内部能力，遇到需要把当前 Flutter 内容快照为 image 时使用。
+
+`FlutterImageView` 的渲染链路是：Engine 渲染到 `ImageReader` 提供的 Surface → `acquireLatestImage()` → API 29+ 主要走 `Image` → `HardwareBuffer` → `Bitmap.wrapHardwareBuffer()`（`Config.HARDWARE`）→ `Canvas.drawBitmap` 绘到宿主。Trace 上看到 `FlutterImageView` 相关 slice 时，不要把它当成独立 root render mode 分析——它是 HC overlay 的承载形态。
+
+[已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterImageView.java` + `io/flutter/plugin/platform/PlatformViewsController.java` `createOverlaySurface`]
+
 ## Platform Views 嵌入
 
 当 Flutter 需要嵌入原生 Android View（如 WebView、MapView）时，要分开看两套开关：

@@ -28,10 +28,11 @@ task9_reviewed_date: 2026-04-20
 
 **锚点（必须覆盖）：**
 - [18.5.1 多窗口场景分析](#多窗口场景分析) — 什么时候会出现双窗口
-- [18.5.2 核心瓶颈：串行化](#核心瓶颈串行化) — UI Thread 与 RenderThread 的争抢
-- [18.5.3 全链路执行流程](#全链路执行流程) — 双窗口的完整时序
-- [18.5.4 Trace 视角](#trace-视角) — 识别多窗口瓶颈
-- [18.5.5 优化策略](#优化策略) — 减少串行开销
+- [18.5.2 同进程 vs 跨进程](#同进程-vs-跨进程两类完全不同的问题) — 拓扑决定瓶颈位置
+- [18.5.3 核心瓶颈：串行化](#核心瓶颈串行化) — UI Thread 与 RenderThread 的争抢
+- [18.5.4 全链路执行流程](#全链路执行流程) — 双窗口的完整时序
+- [18.5.5 Trace 视角](#trace-视角) — 识别多窗口瓶颈
+- [18.5.6 优化策略](#优化策略) — 减少串行开销
 
 **扩展（可选深入）：**
 - EGLContext 切换开销
@@ -51,6 +52,35 @@ task9_reviewed_date: 2026-04-20
 4. **PopupWindow**：虽然不是独立 Window，但在某些实现中会有独立的 Surface。
 
 这些场景的共同特征是：**两个窗口共享同一个进程内的渲染资源**——一个 UI Thread、一个 RenderThread、一个 EGLContext。
+
+## 同进程 vs 跨进程：两类完全不同的问题
+
+多窗口分析最容易看错的一点：**同样叫"多窗口"，同进程和跨进程拓扑产生的瓶颈完全不一样**。开始看 trace 前要先按 pid / `ViewRootImpl` / `Choreographer#doFrame` 归属判断，而不是只看窗口形态（split-screen / PiP / Dialog 看起来类似，底层归属可能差很远）。
+
+| 拓扑类型 | 典型场景 | 主要瓶颈位置 | 对应分析章节 |
+|:---|:---|:---|:---|
+| **同进程多窗口** | Dialog、PopupWindow、同 App 多可见 Activity、Activity Embedding（Android 12L+） | 应用进程内的串行竞争（同一个 MainThread、同一个 RenderThread 进程单例） | 本章主体（下一节起） |
+| **跨进程多窗口** | split-screen、PiP、freeform / desktop windowing、不同 App 同屏 | SurfaceFlinger 合成侧（各 App 帧率可能不同，SF 要在每轮 `vsync-sf` 协调多份不同节奏的 Surface） | 见 [18.2](02-android-view-standard.md) + 本章末尾 |
+
+### 同进程：串行挤占同一段调度时间
+
+同进程多窗口里，多个 `ViewRootImpl` 共享同一个 `Choreographer`（`Choreographer.getInstance()` 是 `ThreadLocal<Choreographer>`，同一主线程上的所有 `ViewRootImpl` 天然共享）。同一帧 `doFrame` 内，多个 `performTraversals` 按 callback 注册顺序**串行**执行；RenderThread 是进程级单例（`RenderThread::getInstance()`），`DrawFrame` 也按窗口先后串行排队。某个窗口的 `performTraversals` 长了，后续窗口的起跑点直接往后挪。
+
+### 跨进程：各自独立跑流水线，但共享一份 SF 帧节奏
+
+跨进程多窗口里，每个进程独立订阅 `vsync-app`，独立跑自己的 MainThread / RenderThread / `BLASTBufferQueue`。Perfetto 里能看到不同进程的 `Choreographer#doFrame` 各自独立出现，不挤在同一个线程里。问题几乎不会表现为"主线程互相挤"，而集中在：
+
+- 各窗口帧率可能不同（比如主窗口 120 Hz、PiP 30 Hz）；
+- 各窗口的 `BufferTX` / `acquire fence` 节奏不对齐；
+- SF 每一轮 `vsync-sf` 要在多份窗口状态里选出可以一起合成的一组（per-layer latch，详见 [18.4 混合渲染](04-android-view-mixed.md#surfaceflinger-在多-layer-时的-latch-行为)）。
+
+读跨进程多窗口 trace 时，应用进程内部的 slice 可能都很健康——问题要到 SurfaceFlinger 进程里去找。
+
+### Android 12L+ 的 Activity Embedding
+
+`TaskFragment` / Activity Embedding 是同进程多窗口里相对新的形态：在同一个 Task 内嵌入多个 Activity，常用于大屏 / 折叠屏的 list-detail 布局。它仍然是同进程，所以串行竞争规则适用；不同的是 WMS 层会把这些 Activity 组织进同一个 `Task` 而不是各自独立的 Task，几何变化要用 `WindowContainerTransaction` 协调。
+
+[已验证: AOSP `frameworks/base/core/java/android/view/Choreographer.java` (`sThreadLocal`) + `frameworks/base/libs/hwui/renderthread/RenderThread.cpp` (`getInstance`) + Android Developers Activity Embedding (API 32+)]
 
 ## 核心瓶颈：串行化
 

@@ -19330,6 +19330,1356 @@
       ],
       "summary": "系统层深度解析ANR机制，涵盖AMS、InputDispatcher等系统服务，包含traces.txt分析和避免策略。",
       "scored_at": "2026-04-27T09:32:18.551692"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口-backup-before-images-20260428-010411.md",
+      "title": "万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口-backup-before-images-20260428-010411",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293721",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口.md",
+      "title": "万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293728",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/01-agent-os-five-things/prompts/infographic.md",
+      "title": "infographic",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293730",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/01-agent-os-five-things/source.md",
+      "title": "source",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293732",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/02-task-object-model/prompts/infographic.md",
+      "title": "infographic",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293733",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/02-task-object-model/source.md",
+      "title": "source",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293735",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/03-capability-router/prompts/infographic.md",
+      "title": "infographic",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293736",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/04-android-agentos-architecture/prompts/infographic.md",
+      "title": "infographic",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293739",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/04-android-agentos-architecture/source.md",
+      "title": "source",
+      "score": 14,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293740",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/05-data-classification-routing/prompts/infographic.md",
+      "title": "infographic",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293741",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/06-timeline-and-players/prompts/infographic.md",
+      "title": "infographic",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293744",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/06-timeline-and-players/source.md",
+      "title": "source",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293745",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/07-first-screen/prompts/infographic.md",
+      "title": "infographic",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293746",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/万字长文推演：手机不再从 App 开始，Agent OS 如何接管任务入口/gracker-diagrams/07-first-screen/source.md",
+      "title": "source",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293748",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/调研1-Google A2A 协议深度调研及其在 Android 系统上的落地路径分析.md",
+      "title": "调研1-Google A2A 协议深度调研及其在 Android 系统上的落地路径分析",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293749",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/调研2-豆包手机 + 云端 Openclaw + 字节系 App 生态-超级助手深度技术方案.md",
+      "title": "调研2-豆包手机 + 云端 Openclaw + 字节系 App 生态-超级助手深度技术方案",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293750",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/调研3-入口之争-豆包手机 + 云端 Openclaw 超级助手生态深度推演.md",
+      "title": "调研3-入口之争-豆包手机 + 云端 Openclaw 超级助手生态深度推演",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293751",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/调研4-AI 手机产品形态深度推演 v2-七个普通人,七种生活,一部更轻的手机.md",
+      "title": "调研4-AI 手机产品形态深度推演 v2-七个普通人,七种生活,一部更轻的手机",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293752",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/调研5-AI 手机产品形态深度推演报告.md",
+      "title": "调研5-AI 手机产品形态深度推演报告",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293757",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "AgentOS/调研6-Agent OS 终局推演-四十年 OS 的第三次断点-原文.md",
+      "title": "调研6-Agent OS 终局推演-四十年 OS 的第三次断点-原文",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293758",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Cubox/30张Android系统架构图-系统掌握android整体架构-2026-04-27.md",
+      "title": "30张Android系统架构图-系统掌握android整体架构-2026-04-27",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293759",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Cubox/chenhg5-cc-connect- Bridge local AI coding agents (Claude Code, Cursor, Gemini CLI, Codex) to messag.md",
+      "title": "chenhg5-cc-connect- Bridge local AI coding agents (Claude Code, Cursor, Gemini CLI, Codex) to messag",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293760",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Cubox/freestylefly-awesome-gpt-image-2-2026-04-27.md",
+      "title": "freestylefly-awesome-gpt-image-2-2026-04-27",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293763",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Cubox/geekjourneyx-md2wechat-skill- 用 Markdown 写公众号文章，一键转换为精美排版并自动上传到微信草稿箱。支持 AI 多主题样式和批量发布，让公众号写作像发朋友圈一样简.md",
+      "title": "geekjourneyx-md2wechat-skill- 用 Markdown 写公众号文章，一键转换为精美排版并自动上传到微信草稿箱。支持 AI 多主题样式和批量发布，让公众号写作像发朋友圈一样简",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293764",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Cubox/全员 token-maxxing，一场没人敢停的军备竞赛-2026-04-27.md",
+      "title": "全员 token-maxxing，一场没人敢停的军备竞赛-2026-04-27",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293765",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Cubox/谁才是地表最强 Android Agent 大模型？Google官方测评来了！-2026-04-27.md",
+      "title": "谁才是地表最强 Android Agent 大模型？Google官方测评来了！-2026-04-27",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293766",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-04-27-AK-RSS-Digest（89源精选）.md",
+      "title": "2026-04-27-AK-RSS-Digest（89源精选）",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293769",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/Agent实践探索/2026-04-27-Agent实践探索.md",
+      "title": "2026-04-27-Agent实践探索",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293771",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AndroidLinux性能优化周报/2026-04-27-AndroidLinux性能优化周报.md",
+      "title": "2026-04-27-AndroidLinux性能优化周报",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293772",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-adpf-power-efficiency-mode-power-monitor-closed-loop.md",
+      "title": "2026-04-27-adpf-power-efficiency-mode-power-monitor-closed-loop",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293773",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-art-gc-mid-generation-promotion-threshold.md",
+      "title": "2026-04-27-art-gc-mid-generation-promotion-threshold",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293774",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-binder-freezer-driver-collaboration-mechanism.md",
+      "title": "2026-04-27-binder-freezer-driver-collaboration-mechanism",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293776",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-hardware-bitmap-rendernode-surfaceflinger-composition.md",
+      "title": "2026-04-27-hardware-bitmap-rendernode-surfaceflinger-composition",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293777",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-profilingmanager-api35-36-37-evolution.md",
+      "title": "2026-04-27-profilingmanager-api35-36-37-evolution",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293779",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-thermal-management-skin-temperature-power-allocator-oem.md",
+      "title": "2026-04-27-thermal-management-skin-temperature-power-allocator-oem",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293780",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-webview-chromium-rendering-pipeline-perfetto.md",
+      "title": "2026-04-27-webview-chromium-rendering-pipeline-perfetto",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293781",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-28-binder-freezer-mechanism-deep-dive.md",
+      "title": "2026-04-28-binder-freezer-mechanism-deep-dive",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293782",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/ClawFeed24小时高价值一览/2026-04-28-ClawFeed24小时高价值一览.md",
+      "title": "2026-04-28-ClawFeed24小时高价值一览",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293783",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/GitHub自仓库IssuePR监控/2026-04-27-GitHub自仓库IssuePR监控.md",
+      "title": "2026-04-27-GitHub自仓库IssuePR监控",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293784",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/Gracker的Rss订阅/2026-04-28-Gracker的Rss订阅.md",
+      "title": "2026-04-28-Gracker的Rss订阅",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293785",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/Obsidian内容回顾/2026-04-27-Obsidian内容回顾.md",
+      "title": "2026-04-27-Obsidian内容回顾",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293787",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/Obsidian定时任务目录卫生巡检/2026-04-27-Obsidian定时任务目录卫生巡检.md",
+      "title": "2026-04-27-Obsidian定时任务目录卫生巡检",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293791",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-04-27-Obsidian新增文件与今日总结（22点）.md",
+      "title": "2026-04-27-Obsidian新增文件与今日总结（22点）",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293792",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/Perfetto每日提交监控/2026-04-27-Perfetto每日提交监控.md",
+      "title": "2026-04-27-Perfetto每日提交监控",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293794",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/Perfetto每日提交解读/2026-04-27-Perfetto提交解读.md",
+      "title": "2026-04-27-Perfetto提交解读",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293795",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/掘金Android技术文章抓取/2026-04-28-掘金Android技术文章抓取.md",
+      "title": "2026-04-28-掘金Android技术文章抓取",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293801",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每周星球精选/2026-04-27-星球精选.md",
+      "title": "2026-04-27-星球精选",
+      "score": 14,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293802",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每周选题池/2026-04-27-选题池.md",
+      "title": "2026-04-27-选题池",
+      "score": 14,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293803",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每日Task巡检与自修复/2026-04-27-每日Task巡检与自修复.md",
+      "title": "2026-04-27-每日Task巡检与自修复",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293804",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每日内容流水线选题提案/2024-04-28-每日内容流水线选题提案.md",
+      "title": "2024-04-28-每日内容流水线选题提案",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293805",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每日冥想流程/2026-04-27-每日冥想流程.md",
+      "title": "2026-04-27-每日冥想流程",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293806",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每日深度研究选题/2026-04-27-每日深度研究选题.md",
+      "title": "2026-04-27-每日深度研究选题",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293808",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每日论文精读（AI）/2026-04-27-每日论文精读（AI）.md",
+      "title": "2026-04-27-每日论文精读（AI）",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293809",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每日论文精读（Android）/2026-04-27-每日论文精读（Android）.md",
+      "title": "2026-04-27-每日论文精读（Android）",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293810",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/每日论文速报/2026-04-27-论文.md",
+      "title": "2026-04-27-论文",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293811",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-05-深度技术Review.md",
+      "title": "2026-04-27-05-深度技术Review",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293812",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-06-深度技术Review.md",
+      "title": "2026-04-27-06-深度技术Review",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293813",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-07-深度技术Review.md",
+      "title": "2026-04-27-07-深度技术Review",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293814",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-07-知识加工(回炉).md",
+      "title": "2026-04-27-07-知识加工(回炉)",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293815",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-08-深度技术Review.md",
+      "title": "2026-04-27-08-深度技术Review",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293816",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-09-知识加工(回炉).md",
+      "title": "2026-04-27-09-知识加工(回炉)",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293818",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-10-57-深度技术Review.md",
+      "title": "2026-04-27-10-57-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293819",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-10-深度技术Review.md",
+      "title": "2026-04-27-10-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293820",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-10-知识加工(回炉).md",
+      "title": "2026-04-27-10-知识加工(回炉)",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293821",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-11-深度技术Review.md",
+      "title": "2026-04-27-11-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293822",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-12-深度技术Review.md",
+      "title": "2026-04-27-12-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293827",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-13-深度技术Review.md",
+      "title": "2026-04-27-13-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293828",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-14-深度技术Review.md",
+      "title": "2026-04-27-14-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293829",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-14-知识加工(回炉).md",
+      "title": "2026-04-27-14-知识加工(回炉)",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293830",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-15-深度技术Review.md",
+      "title": "2026-04-27-15-深度技术Review",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293831",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-16-深度技术Review.md",
+      "title": "2026-04-27-16-深度技术Review",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293832",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-16-知识加工(回炉).md",
+      "title": "2026-04-27-16-知识加工(回炉)",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293833",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-17-深度技术Review.md",
+      "title": "2026-04-27-17-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293834",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-18-深度技术Review.md",
+      "title": "2026-04-27-18-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293836",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-19-深度技术Review.md",
+      "title": "2026-04-27-19-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293837",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-19-知识加工(回炉).md",
+      "title": "2026-04-27-19-知识加工(回炉)",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293838",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-20-深度技术Review.md",
+      "title": "2026-04-27-20-深度技术Review",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293839",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-20-知识加工(回炉).md",
+      "title": "2026-04-27-20-知识加工(回炉)",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293843",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-21-深度技术Review.md",
+      "title": "2026-04-27-21-深度技术Review",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293845",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-22-深度技术Review.md",
+      "title": "2026-04-27-22-深度技术Review",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293846",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-27-23-深度技术Review.md",
+      "title": "2026-04-27-23-深度技术Review",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293847",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-28-00-深度技术Review.md",
+      "title": "2026-04-28-00-深度技术Review",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293849",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-28-00-知识加工(回炉).md",
+      "title": "2026-04-28-00-知识加工(回炉)",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293850",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-28-01-深度技术Review.md",
+      "title": "2026-04-28-01-深度技术Review",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293851",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-28-02-知识加工(回炉).md",
+      "title": "2026-04-28-02-知识加工(回炉)",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293852",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-28-03-深度技术Review.md",
+      "title": "2026-04-28-03-深度技术Review",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293853",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/知识加工/2026-04-28-04-深度技术Review.md",
+      "title": "2026-04-28-04-深度技术Review",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293854",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "OpenClaw定时任务/资讯简报（综合）/2026-04-28-资讯简报（综合）.md",
+      "title": "2026-04-28-资讯简报（综合）",
+      "score": 20,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293855",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_17f797df58.md",
+      "title": "2026-04-28_RSS_17f797df58",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293856",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_1b8037b01f.md",
+      "title": "2026-04-28_RSS_1b8037b01f",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293857",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_23777df0cc.md",
+      "title": "2026-04-28_RSS_23777df0cc",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293858",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_3981a7046f.md",
+      "title": "2026-04-28_RSS_3981a7046f",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293859",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_3a094beae0.md",
+      "title": "2026-04-28_RSS_3a094beae0",
+      "score": 20,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293861",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_4d8fb3bba8.md",
+      "title": "2026-04-28_RSS_4d8fb3bba8",
+      "score": 20,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293863",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_622afd5237.md",
+      "title": "2026-04-28_RSS_622afd5237",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293864",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_7f4d105c6e.md",
+      "title": "2026-04-28_RSS_7f4d105c6e",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293865",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_8e2b4e598a.md",
+      "title": "2026-04-28_RSS_8e2b4e598a",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293866",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_a63a69c9b7.md",
+      "title": "2026-04-28_RSS_a63a69c9b7",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293867",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_bf8372582c.md",
+      "title": "2026-04-28_RSS_bf8372582c",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293868",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_c5cc2d24c6.md",
+      "title": "2026-04-28_RSS_c5cc2d24c6",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293869",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_cc42b0d3fb.md",
+      "title": "2026-04-28_RSS_cc42b0d3fb",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293871",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_d538add312.md",
+      "title": "2026-04-28_RSS_d538add312",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293872",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-04-28_RSS_dbaa888eba.md",
+      "title": "2026-04-28_RSS_dbaa888eba",
+      "score": 18,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293873",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "Twitter/AI影响力日报/2026-04-27.md",
+      "title": "2026-04-27",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293875",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-AI产品黄叔-Hermas接入Codex GPT-im.md",
+      "title": "2026-04-27-1221-AI产品黄叔-Hermas接入Codex GPT-im",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293876",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-Aparna Dhinakaran-Aparna Dhinakaran 推文.md",
+      "title": "2026-04-27-1221-Aparna Dhinakaran-Aparna Dhinakaran 推文",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293877",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-Dr Moyu 摸鱼局长-Hermes Agent 8个实用项目推.md",
+      "title": "2026-04-27-1221-Dr Moyu 摸鱼局长-Hermes Agent 8个实用项目推",
+      "score": 17,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293878",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-Evan Long-Remodex iPhone远程控制Ma.md",
+      "title": "2026-04-27-1221-Evan Long-Remodex iPhone远程控制Ma",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293879",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-Geek Lite-AGENTSmd文件 编程代理高级工程师.md",
+      "title": "2026-04-27-1221-Geek Lite-AGENTSmd文件 编程代理高级工程师",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293880",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-Geek Lite-Kami文档排版系统 AI生成专业文档排.md",
+      "title": "2026-04-27-1221-Geek Lite-Kami文档排版系统 AI生成专业文档排",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293883",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-Suryansh Tiwari-Suryansh Tiwari 推文.md",
+      "title": "2026-04-27-1221-Suryansh Tiwari-Suryansh Tiwari 推文",
+      "score": 19,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293884",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-Vincent Logic  只上干货-Cardinal Mac生态最接近Eve.md",
+      "title": "2026-04-27-1221-Vincent Logic  只上干货-Cardinal Mac生态最接近Eve",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293886",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-Vincent Logic  只上干货-国内无魔法也能用Claude Code.md",
+      "title": "2026-04-27-1221-Vincent Logic  只上干货-国内无魔法也能用Claude Code",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293887",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-归藏guizangai-归藏 guizangai 推文.md",
+      "title": "2026-04-27-1221-归藏guizangai-归藏 guizangai 推文",
+      "score": 14,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293888",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-郭宇 guoyueth-wanman AI agents团队运营.md",
+      "title": "2026-04-27-1221-郭宇 guoyueth-wanman AI agents团队运营",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293889",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "X 文章/2026-04-27-1221-郭明錤Ming-Chi Kuo-郭明錤Ming-Chi Kuo 苹果供应.md",
+      "title": "2026-04-27-1221-郭明錤Ming-Chi Kuo-郭明錤Ming-Chi Kuo 苹果供应",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293890",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/480a4f5679ff.md",
+      "title": "480a4f5679ff",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293891",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/5725d3e623.md",
+      "title": "5725d3e623",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293892",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/5addfa0565.md",
+      "title": "5addfa0565",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293893",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/610222a205.md",
+      "title": "610222a205",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293894",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/853409a5bc.md",
+      "title": "853409a5bc",
+      "score": 15,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293895",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/88522d6077.md",
+      "title": "88522d6077",
+      "score": 14,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293896",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/a1b2c3d4.md",
+      "title": "a1b2c3d4",
+      "score": 11,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293897",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/c166d6b857.md",
+      "title": "c166d6b857",
+      "score": 14,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293900",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/e446406cb1.md",
+      "title": "e446406cb1",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293901",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/e5f6g7h8.md",
+      "title": "e5f6g7h8",
+      "score": 11,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293902",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/f8f64796ed.md",
+      "title": "f8f64796ed",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293903",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/i9j0k1l2.md",
+      "title": "i9j0k1l2",
+      "score": 11,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293904",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/m3n4o5p6.md",
+      "title": "m3n4o5p6",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293905",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/q7r8s9t0.md",
+      "title": "q7r8s9t0",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293908",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/re3mcqtn.md",
+      "title": "re3mcqtn",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293909",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/rnjpbgtm.md",
+      "title": "rnjpbgtm",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293910",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/sdqxy470.md",
+      "title": "sdqxy470",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293911",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/tcmvafdf.md",
+      "title": "tcmvafdf",
+      "score": 16,
+      "quality": "high",
+      "scored_at": "2026-04-28T05:05:05.293912",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/u1v2w3x4.md",
+      "title": "u1v2w3x4",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293913",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/content/y5z6a7b8.md",
+      "title": "y5z6a7b8",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293914",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/site-src/entry/469c12ee.md",
+      "title": "469c12ee",
+      "score": 14,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293915",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/site-src/entry/6f26b8b4.md",
+      "title": "6f26b8b4",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293916",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/site-src/entry/70668c26.md",
+      "title": "70668c26",
+      "score": 11,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293917",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/site-src/entry/9486b6f3.md",
+      "title": "9486b6f3",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293918",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/site-src/entry/a337aba3.md",
+      "title": "a337aba3",
+      "score": 11,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293919",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "awesome-ai-field-notes/site-src/entry/de9872fe.md",
+      "title": "de9872fe",
+      "score": 12,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293920",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第000章-额头.md",
+      "title": "第000章-额头",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293921",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第007章-效用函数.md",
+      "title": "第007章-效用函数",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293922",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第008章-修复路径.md",
+      "title": "第008章-修复路径",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293923",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第014章-选择.md",
+      "title": "第014章-选择",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293924",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第017章-真相在数据之外.md",
+      "title": "第017章-真相在数据之外",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293925",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第018章-光标闪烁.md",
+      "title": "第018章-光标闪烁",
+      "score": 10,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293926",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "论文/AI-2026-04-27-ANX-Agent-Protocol/03-精读.md",
+      "title": "03-精读",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293927",
+      "source_type": "incremental_scan"
+    },
+    {
+      "path": "论文/Android-2026-04-27-MobileGUIPerf-Screencast/03-精读.md",
+      "title": "03-精读",
+      "score": 13,
+      "quality": "medium",
+      "scored_at": "2026-04-28T05:05:05.293929",
+      "source_type": "incremental_scan"
     }
-  ]
+  ],
+  "https://juejin.cn/post/7591309945511739392": {
+    "source": "掘金Android",
+    "id": 3,
+    "full_content": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-01-05 00:00\n- **链接**：https://juejin.cn/post/7591309945511739392\n- **摘要**：App Performance Score：老板也能看懂的报告 测完一堆毫秒级数据，怎么跟非技术的上级汇报？...\n- **推荐映射章节**：ch05\n- **内容类型**：技术文章\n- **相关标签**：#性能优化",
+    "title": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分",
+    "date": "2026-01-05 00:00",
+    "url": "https://juejin.cn/post/7591309945511739392",
+    "summary": "App Performance Score：老板也能看懂的报告 测完一堆毫秒级数据，怎么跟非技术的上级汇报？...",
+    "recommended_chapter": "ch05",
+    "content_type": "技术文章",
+    "tags": "#性能优化",
+    "processed_at": "2026-04-28T05:39:37.553677",
+    "chapter": "ch14-other-tools",
+    "score": 14
+  },
+  "https://juejin.cn/post/7595108457496346639": {
+    "source": "掘金Android",
+    "id": 9,
+    "full_content": "Android 开发中，准确判断应用处于“前台（Foreground）”还是“后台（Background）\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-01-15 00:00\n- **链接**：https://juejin.cn/post/7595108457496346639\n- **摘要**：Android 应用前后台状态判断深度解析 ，准确判断应用处于前台（Foreground） 还是后台（Background） 是实现很多业务逻辑的基础。本文将深入分析目前最为...\n- **推荐映射章节**：待分类\n- **内容类型**：技术文章\n- **相关标签**：#Android",
+    "title": "Android 开发中，准确判断应用处于“前台（Foreground）”还是“后台（Background）",
+    "date": "2026-01-15 00:00",
+    "url": "https://juejin.cn/post/7595108457496346639",
+    "summary": "Android 应用前后台状态判断深度解析 ，准确判断应用处于前台（Foreground） 还是后台（Background） 是实现很多业务逻辑的基础。本文将深入分析目前最为...",
+    "recommended_chapter": "待分类",
+    "content_type": "技术文章",
+    "tags": "#Android",
+    "processed_at": "2026-04-28T05:39:37.564683",
+    "chapter": "ch17-oem",
+    "score": 14
+  },
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-adpf-power-efficiency-mode-power-monitor-closed-loop.md": {
+    "source": "增量扫描",
+    "id": 47,
+    "full_content": "2026-04-27-adpf-power-efficiency-mode-power-monitor-closed-loop\n- **来源**：Task 11 增量扫描\n- **时间**：2026-04-28 05:05\n- **链接**：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-adpf-power-efficiency-mode-power-monitor-closed-loop.md\n- **摘要**：# 源码调研：ADPF 能效模式与 PowerMonitor 闭环\n\n📅 2026-04-27 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§15.11 Battery Historian, §5.9 ADPF 自适应性能框架\n- **重要程度**：高\n- **原始描述**：ADPF 能效模式与功耗测量闭环——研究 API 35 `PerformanceHintManag...\n- **推荐映射章节**：ch02\n- **内容类型**：素材扫描\n- **相关标签**：#Android #系统开发",
+    "title": "2026-04-27-adpf-power-efficiency-mode-power-monitor-closed-loop",
+    "date": "2026-04-28 05:05",
+    "url": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-adpf-power-efficiency-mode-power-monitor-closed-loop.md",
+    "summary": "# 源码调研：ADPF 能效模式与 PowerMonitor 闭环",
+    "recommended_chapter": "ch02",
+    "content_type": "素材扫描",
+    "tags": "#Android #系统开发",
+    "processed_at": "2026-04-28T05:39:37.575341",
+    "chapter": "ch05-cpu-power",
+    "score": 16
+  },
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-art-gc-mid-generation-promotion-threshold.md": {
+    "source": "增量扫描",
+    "id": 48,
+    "full_content": "2026-04-27-art-gc-mid-generation-promotion-threshold\n- **来源**：Task 11 增量扫描\n- **时间**：2026-04-28 05:05\n- **链接**：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-art-gc-mid-generation-promotion-threshold.md\n- **摘要**：# 源码调研：ART GC 对象的代际晋升机制（Young → Mid → Old）\n\n📅 2026-04-27 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§4.8 ART 分代 GC\n- **重要程度**：高\n- **原始描述**：`mid_generation` 具体晋升阈值——确认是否硬编码为 1 次或存在动态调整逻辑\n\n## 核心发现\n\nAndroid 10+...\n- **推荐映射章节**：ch04\n- **内容类型**：素材扫描\n- **相关标签**：#Android #系统开发",
+    "title": "2026-04-27-art-gc-mid-generation-promotion-threshold",
+    "date": "2026-04-28 05:05",
+    "url": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-art-gc-mid-generation-promotion-threshold.md",
+    "summary": "# 源码调研：ART GC 对象的代际晋升机制（Young → Mid → Old）",
+    "recommended_chapter": "ch04",
+    "content_type": "素材扫描",
+    "tags": "#Android #系统开发",
+    "processed_at": "2026-04-28T05:39:37.586129",
+    "chapter": "ch04-memory",
+    "score": 16
+  },
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-binder-freezer-driver-collaboration-mechanism.md": {
+    "source": "增量扫描",
+    "id": 49,
+    "full_content": "2026-04-27-binder-freezer-driver-collaboration-mechanism\n- **来源**：Task 11 增量扫描\n- **时间**：2026-04-28 05:05\n- **链接**：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-binder-freezer-driver-collaboration-mechanism.md\n- **摘要**：# 源码调研：Binder Freezer Driver 协同机制\n\n📅 2026-04-27 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§5.8 后台执行限制\n- **重要程度**：高\n- **原始描述**：`FrozenStateChangeCallback` 在 AOSP 中的具体应用场景；Binder Freezer Driver 协同机制\n\n## 核心发现...\n- **推荐映射章节**：ch05\n- **内容类型**：素材扫描\n- **相关标签**：#Android #系统开发",
+    "title": "2026-04-27-binder-freezer-driver-collaboration-mechanism",
+    "date": "2026-04-28 05:05",
+    "url": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-binder-freezer-driver-collaboration-mechanism.md",
+    "summary": "# 源码调研：Binder Freezer Driver 协同机制",
+    "recommended_chapter": "ch05",
+    "content_type": "素材扫描",
+    "tags": "#Android #系统开发",
+    "processed_at": "2026-04-28T05:39:37.596896",
+    "chapter": "ch16-aosp",
+    "score": 16
+  },
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-hardware-bitmap-rendernode-surfaceflinger-composition.md": {
+    "source": "增量扫描",
+    "id": 50,
+    "full_content": "2026-04-27-hardware-bitmap-rendernode-surfaceflinger-composition\n- **来源**：Task 11 增量扫描\n- **时间**：2026-04-28 05:05\n- **链接**：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-hardware-bitmap-rendernode-surfaceflinger-composition.md\n- **摘要**：# 源码调研：Hardware Bitmap 对 RenderNode 和 SurfaceFlinger Composition 的具体影响\n\n📅 2026-04-27 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§7.10 图片与 Bitmap 性能优化 / §2.10 GPU 渲染深入\n- **重要程度**：中\n- **原始描述**：Hardware Bitmap 对...\n- **推荐映射章节**：ch02\n- **内容类型**：素材扫描\n- **相关标签**：#Android #系统开发",
+    "title": "2026-04-27-hardware-bitmap-rendernode-surfaceflinger-composition",
+    "date": "2026-04-28 05:05",
+    "url": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-hardware-bitmap-rendernode-surfaceflinger-composition.md",
+    "summary": "# 源码调研：Hardware Bitmap 对 RenderNode 和 SurfaceFlinger Composition 的具体影响",
+    "recommended_chapter": "ch02",
+    "content_type": "素材扫描",
+    "tags": "#Android #系统开发",
+    "processed_at": "2026-04-28T05:39:37.607437",
+    "chapter": "ch02-rendering",
+    "score": 16
+  },
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-profilingmanager-api35-36-37-evolution.md": {
+    "source": "增量扫描",
+    "id": 51,
+    "full_content": "2026-04-27-profilingmanager-api35-36-37-evolution\n- **来源**：Task 11 增量扫描\n- **时间**：2026-04-28 05:05\n- **链接**：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-profilingmanager-api35-36-37-evolution.md\n- **摘要**：# 源码调研：ProfilingManager API 演进（API 35/36/37）\n\n📅 2026-04-27 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：`§15.11 Battery Historian`，`§15.5 三方性能库`，`§11.2 性能框架`\n- **重要程度**：高\n- **原始描述**：通过查阅 `androidx.core.os.Profi...\n- **推荐映射章节**：ch04\n- **内容类型**：素材扫描\n- **相关标签**：#Android #系统开发",
+    "title": "2026-04-27-profilingmanager-api35-36-37-evolution",
+    "date": "2026-04-28 05:05",
+    "url": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-profilingmanager-api35-36-37-evolution.md",
+    "summary": "# 源码调研：ProfilingManager API 演进（API 35/36/37）",
+    "recommended_chapter": "ch04",
+    "content_type": "素材扫描",
+    "tags": "#Android #系统开发",
+    "processed_at": "2026-04-28T05:39:37.617895",
+    "chapter": "ch13-perfetto",
+    "score": 16
+  },
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-thermal-management-skin-temperature-power-allocator-oem.md": {
+    "source": "增量扫描",
+    "id": 52,
+    "full_content": "2026-04-27-thermal-management-skin-temperature-power-allocator-oem\n- **来源**：Task 11 增量扫描\n- **时间**：2026-04-28 05:05\n- **链接**：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-thermal-management-skin-temperature-power-allocator-oem.md\n- **摘要**：# 源码调研：皮肤温度估算模型（Thermal Model）与 Power Allocator\n\n📅 2026-04-27 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§5.12 热管理深度分析\n- **重要程度**：中\n- **原始描述**：OEM 如何利用 power_allocator tzp 在 sysfs 中暴露物理参数\n\n## 核心发现\n\nAndroid 热管...\n- **推荐映射章节**：ch02\n- **内容类型**：素材扫描\n- **相关标签**：#Android #系统开发",
+    "title": "2026-04-27-thermal-management-skin-temperature-power-allocator-oem",
+    "date": "2026-04-28 05:05",
+    "url": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-thermal-management-skin-temperature-power-allocator-oem.md",
+    "summary": "# 源码调研：皮肤温度估算模型（Thermal Model）与 Power Allocator",
+    "recommended_chapter": "ch02",
+    "content_type": "素材扫描",
+    "tags": "#Android #系统开发",
+    "processed_at": "2026-04-28T05:39:37.628438",
+    "chapter": "ch05-cpu-power",
+    "score": 16
+  },
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-webview-chromium-rendering-pipeline-perfetto.md": {
+    "source": "增量扫描",
+    "id": 53,
+    "full_content": "2026-04-27-webview-chromium-rendering-pipeline-perfetto\n- **来源**：Task 11 增量扫描\n- **时间**：2026-04-28 05:05\n- **链接**：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-webview-chromium-rendering-pipeline-perfetto.md\n- **摘要**：# 源码调研：WebView / Chromium 渲染管线与 Perfetto 的结合\n\n📅 2026-04-27 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§7.4 典型场景的卡顿根因分析、§7.11 WebView 渲染性能、§15.3 内存分析工具\n- **重要程度**：高\n- **原始描述**：WebView / Chromium 渲染管线与 Perfetto...\n- **推荐映射章节**：ch02\n- **内容类型**：素材扫描\n- **相关标签**：#Android #系统开发",
+    "title": "2026-04-27-webview-chromium-rendering-pipeline-perfetto",
+    "date": "2026-04-28 05:05",
+    "url": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-27-webview-chromium-rendering-pipeline-perfetto.md",
+    "summary": "# 源码调研：WebView / Chromium 渲染管线与 Perfetto 的结合",
+    "recommended_chapter": "ch02",
+    "content_type": "素材扫描",
+    "tags": "#Android #系统开发",
+    "processed_at": "2026-04-28T05:39:37.639241",
+    "chapter": "ch02-rendering",
+    "score": 16
+  },
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-28-binder-freezer-mechanism-deep-dive.md": {
+    "source": "增量扫描",
+    "id": 54,
+    "full_content": "2026-04-28-binder-freezer-mechanism-deep-dive\n- **来源**：Task 11 增量扫描\n- **时间**：2026-04-28 05:05\n- **链接**：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-28-binder-freezer-mechanism-deep-dive.md\n- **摘要**：# 源码调研：BINDER_FREEZE 机制与 FrozenStateChangeCallback 系统集成\n\n📅 2026-04-28 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§5.8 后台执行限制、§1.4 Binder IPC\n- **重要程度**：高\n- **原始描述**：CachedAppOptimizer 与 cgroup v2 Freezer 协同机制...\n- **推荐映射章节**：ch05\n- **内容类型**：素材扫描\n- **相关标签**：#Android #系统开发",
+    "title": "2026-04-28-binder-freezer-mechanism-deep-dive",
+    "date": "2026-04-28 05:05",
+    "url": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-28-binder-freezer-mechanism-deep-dive.md",
+    "summary": "# 源码调研：BINDER_FREEZE 机制与 FrozenStateChangeCallback 系统集成",
+    "recommended_chapter": "ch05",
+    "content_type": "素材扫描",
+    "tags": "#Android #系统开发",
+    "processed_at": "2026-04-28T05:39:37.649892",
+    "chapter": "ch16-aosp",
+    "score": 16
+  }
 }
