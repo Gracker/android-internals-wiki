@@ -143,9 +143,9 @@ Android 12 引入 `SCHEDULE_EXACT_ALARM` 权限，Android 13/14 进一步收紧�
 | Android 11 及以下 | 无权限限制，`setExact()` / `setExactAndAllowWhileIdle()` 正常工作 | alarm type、triggerAt、interval |
 | Android 12 | 新增 `SCHEDULE_EXACT_ALARM` 权限，新安装应用默认授予，预装应用视厂商策略 | 增加 permission 状态、`canScheduleExactAlarms()` 返回值 |
 | Android 13 | 权限默认不授予（除非闹钟/日历类应用），用户需在设置中手动授权；新增 `USE_EXACT_ALARM` 供特定类别申请 | 增加 app-op 状态、是否命中 `USE_EXACT_ALARM` 豁免 |
-| Android 14+ | 进一步收紧，系统会静默降级未授权的精确闹钟为 inexact | 增加降级标记，对比实际触发时间与预期触发时间的偏差 |
+| Android 14+ | 新安装且 target 33+ 的应用默认拒绝 `SCHEDULE_EXACT_ALARM`；未授权时调用 `setExact()` / `setExactAndAllowWhileIdle()` / `setAlarmClock()` 会抛 `SecurityException`，不会静默降级。需改用 `set()` / `setWindow()` / `setAndAllowWhileIdle()` 等 inexact API，或引导用户授权 | 调用 exact API 前必须检查 `canScheduleExactAlarms()`；未授权时记录 fallback 路径（inexact API 或权限请求），并在样本中区分"请求精确"与"实际精确" |
 
-未获精确闹钟权限时，`setExactAndAllowWhileIdle()` 会被系统降级为 inexact alarm，触发时间可能大幅偏移。APM 归因时如果只看"业务调了 setExact"，会误判为高频精确唤醒；实际触发频率取决于系统降级后的 inexact 窗口。端侧应记录未授权状态下降级后的实际触发间隔，并在 APM 面板中区分"请求精确"与"实际精确"两种口径。
+Android 14 起精确闹钟策略收紧：未持有 `SCHEDULE_EXACT_ALARM` 权限时，调用 `setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()` 会直接抛出 `SecurityException`，而非静默降级。APM 归因时需要区分两种场景：一是业务确实只用了 inexact API，触发时间本身就有偏移窗口；二是业务请求了 exact API 但因权限缺失导致崩溃或被迫回退。端侧应在调用前检查 `canScheduleExactAlarms()` 返回值，并在 APM 样本中分别记录"请求精确"与"实际精确"两种口径。
 
 ## 4. 硬件资源耗电归因：按占用窗口统计
 
