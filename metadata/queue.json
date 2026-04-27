@@ -14637,7 +14637,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-28T00:37:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-28T02:40:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "修复 ProfilingManager 版本描述、cleartext 弃用判断、后台音频失败语义、大屏配置变化语义"
   },
   {
     "section": "1.1",
@@ -14790,7 +14793,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-28T01:31:04+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-28T02:40:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "修复 SQLiteCursor 翻页实现描述、ContentProvider ANR 10秒超时交叉一致性、Android 8.0 后台限制描述"
   },
   {
     "section": "4.4",
