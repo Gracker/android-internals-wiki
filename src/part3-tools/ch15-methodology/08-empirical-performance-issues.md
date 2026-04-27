@@ -25,10 +25,10 @@ tags:
   - code-review
   - performance-patterns
   - empirical-study
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-21"
@@ -38,6 +38,7 @@ task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T02:02:05+08:00"
 
+last_task2b_at: "2026-04-27T09:42:00+08:00"
 ---
 
 
@@ -97,9 +98,9 @@ Android 12 及以上可以直接看 Perfetto 的 Frame Timeline。Expected Timel
 
 ANR 也不能写成统一 5 秒。输入分发超时常见的默认量级约为 5 秒，广播、服务、ContentProvider 等路径各有自己的超时条件。本节把它们统一归到响应性问题，具体阈值看 §9.1。
 
-## 六类性能问题代码模式
+## 六类论文代码模式与一类现代工程补充
 
-除了分类体系，研究者还从 GitHub commit 中归纳出了六类导致性能问题的代码模式。这些模式不是抽象理论，它们就是开发者在真实项目里反复踩过的坑。
+除了分类体系，研究者还从 GitHub commit 中归纳出了六类导致性能问题的代码模式。这些模式来自开发者在真实项目里反复踩过的坑。本节在论文分类之外补一类现代 Android 工程里高频出现的响应性风险：主线程同步 Binder 调用。
 
 ### 模式一：API 误用（API Misuse）
 
@@ -107,22 +108,42 @@ ANR 也不能写成统一 5 秒。输入分发超时常见的默认量级约为 
 
 **在主线程执行耗时操作**——在 onClick() 里直接调用网络请求、数据库查询、大文件读取。Android 的主线程负责所有 UI 渲染和事件处理，在上面做 I/O 或计算密集操作，直接后果就是卡顿或 ANR。
 
+Java 版本可以用后台 `Executor` 执行网络请求，再通过主线程 `Handler` 回到 UI 线程。下面是示意代码，省略了线程池释放和错误展示的业务实现。
+
 ```java
 // 错误：主线程网络请求
 button.setOnClickListener(v -> {
-    String result = httpClient.execute(request); // 主线程阻塞！
+    String result = httpClient.execute(request); // 主线程阻塞
     textView.setText(result);
 });
 
-// 正确：使用协程切到 IO 线程
+// Java：网络请求放到后台线程，UI 更新回到主线程
+ExecutorService ioExecutor = Executors.newSingleThreadExecutor();
+Handler mainHandler = new Handler(Looper.getMainLooper());
+
 button.setOnClickListener(v -> {
+    ioExecutor.execute(() -> {
+        try {
+            String result = httpClient.execute(request);
+            mainHandler.post(() -> textView.setText(result));
+        } catch (Exception e) {
+            mainHandler.post(() -> textView.setText("request failed"));
+        }
+    });
+});
+```
+
+Kotlin 版本可以用 `lifecycleScope` 绑定页面生命周期，并把阻塞 I/O 收进 `Dispatchers.IO`。`withContext(Dispatchers.IO)` 只包住网络请求，后面的 UI 更新会回到 `lifecycleScope` 所在的 Main dispatcher。
+
+```kotlin
+button.setOnClickListener {
     lifecycleScope.launch {
         val result = withContext(Dispatchers.IO) {
             httpClient.execute(request)
         }
-        textView.setText(result)
+        textView.text = result
     }
-});
+}
 ```
 
 **GlobalScope 协程**——协程在 GlobalScope 中启动，生命周期脱离 Activity/Fragment，即使界面销毁了仍在执行（同时持有外部引用，造成内存泄漏）。正确做法是使用 `lifecycleScope` 或 `viewModelScope`。
@@ -182,7 +203,25 @@ Bitmap 解码是最常见的场景。一张 4000×3000 的照片，ARGB_8888 格
 
 ### 模式六：其他模式
 
-包括不恰当的同步策略（在主线程等待锁）、过度使用反射、不必要的 IPC 调用等。这类问题需要结合具体场景分析。
+包括不恰当的同步策略（在主线程等待锁）、过度使用反射、过密的 JNI 边界转换等。这类问题需要结合具体场景分析。
+
+### 现代补充：主线程同步 Binder 调用（Synchronous Binder Call）
+
+主线程上的同步 Binder 调用会把远端进程的调度、锁竞争和队列堆积传回 App。常见入口包括 `PackageManager`、`ActivityManager`、`ContentResolver` 查询，以及三方 SDK 通过 Provider 或系统服务发起的同步调用。调用本身可能只是一行 API，但主线程会等待 Binder reply；如果服务端 Binder 线程正在排队、抢 CPU、等待锁，App 侧表现就是输入无响应、首帧延迟或 ANR。
+
+Perfetto 里可以按两步确认：App 主线程是否停在 `ioctl(BINDER_WRITE_READ)`、`binder transaction` 或 `binder reply` 附近；再沿 transaction 跳到服务端 Binder 线程，看它处于 Running、Runnable、Sleeping 还是 D 状态。服务端线程如果长期 Runnable，问题偏向 CPU 竞争；如果卡在锁或磁盘 I/O，修复方向就从 App 侧代码改成减少主线程同步等待、缓存系统服务结果、延后到首帧之后执行，或给三方 SDK 接入异步初始化。
+
+源码阅读入口可以从三处开始：
+
+- `frameworks/native/libs/binder/IPCThreadState.cpp`：`IPCThreadState::talkWithDriver()` 对应 `BINDER_WRITE_READ` ioctl，是 App 侧等待 Binder reply 的 Native 入口。
+- `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` 与 `frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`：system_server 常见服务端入口，用来反查 Binder 线程是在执行服务逻辑、等待锁，还是继续发起下游调用。
+- `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`：cached app freeze / unfreeze 策略入口，和 OOM adj、进程状态切换一起看。
+
+### 现代版本补充：cached-app freezer 与解冻毛刺
+
+在启用 cached-app freezer 的设备上，后台缓存进程可能被暂停执行。用户切回 App、前台组件拉起后台进程，或系统服务向被冻结进程投递任务时，进程会先解冻，再处理堆积的消息、Binder reply、广播和 I/O。这个阶段容易出现短时间 CPU 抢占和主线程消息积压，用户感知可能是“切回慢”或“首次点击没反应”。
+
+这属于 Android 版本和设备策略带来的归因维度，不属于论文原始 taxonomy。分析这类现场时，Perfetto 里同时看进程状态变化、主线程 runnable gap、Binder 事件和首帧时间，避免把解冻后的毛刺误判成单个函数耗时。
 
 ## 从数据看排查优先级
 
@@ -196,10 +235,11 @@ Bitmap 解码是最常见的场景。一张 4000×3000 的照片，ARGB_8888 格
 
 ## 构建 Code Review 性能检查清单
 
-基于上面六类代码模式，我们可以整理一份实用的 Code Review 性能检查清单。这份清单不是"什么都要检查"的泛泛之谈，而是针对实证数据中最高频的问题模式：
+基于上面的论文模式和现代工程补充，可以整理一份实用的 Code Review 性能检查清单。这份清单不是"什么都要检查"的泛泛之谈，而是针对实证数据中最高频的问题模式：
 
 **API 误用检查：**
 - 主线程是否有网络请求、数据库查询、文件 I/O？
+- 主线程是否有同步 Binder 调用，例如 `PackageManager`、`ActivityManager`、`ContentResolver` 查询，或三方 SDK Provider 调用？
 - 协程是否使用了正确的 Scope（lifecycleScope / viewModelScope 而非 GlobalScope）？
 - 是否频繁调用 `requestLayout()`，或把 `invalidate()` 和布局变更混在一起？
 
@@ -225,7 +265,7 @@ Bitmap 解码是最常见的场景。一张 4000×3000 的照片，ARGB_8888 格
 - Bitmap 解码是否做了降采样？
 - 数据库查询是否有合适的索引？
 
-**跨交叉验证：** 发现上述模式后，应该在 Perfetto Trace 中确认是否真的产生了性能问题。Code Review 中的"可疑代码"不一定真的导致了卡顿或 ANR——用工具验证比凭猜测修改更可靠（参见 7.3 节"卡顿分析方法论"）。
+**交叉验证：** 发现上述模式后，在 Perfetto Trace 中确认是否真的产生了性能问题。Code Review 中的"可疑代码"不一定导致卡顿或 ANR。主线程同步 Binder 要沿 transaction 找到服务端线程；cached-app freezer 相关毛刺要同时看进程状态、主线程 runnable gap 和首帧时间（参见 7.3 节"卡顿分析方法论"）。
 
 ## 对本书读者的实践指导
 
@@ -244,4 +284,7 @@ Bitmap 解码是最常见的场景。一张 4000×3000 的照片，ARGB_8888 格
 - [developer.android.com/reference/android/view/View#requestLayout()] Android View `requestLayout()` 文档
 - [perfetto.dev/docs/data-sources/frametimeline] Perfetto Frame Timeline 文档（Android 12+）
 - [developer.android.com/topic/performance] Android 官方性能优化文档
+- AOSP `frameworks/native/libs/binder/IPCThreadState.cpp` / `IPCThreadState::talkWithDriver()`（Binder wait Native 入口）
+- AOSP `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`、`frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java`（system_server 服务端 Binder 入口）
+- AOSP `frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java`（cached app freezer 机制入口）
 - 本书 §7.12（View 体系性能优化）、§9.1（ANR 设计思想）、§10.1（App 内存分析）、§14.4（dumpsys gfxinfo）、§15.3（性能指标体系）

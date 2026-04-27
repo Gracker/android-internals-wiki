@@ -2545,7 +2545,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T02:02:05+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-content-processing-rework",
+    "completed_at": "2026-04-27T09:42:00+08:00",
+    "completion_reason": "Task2B 已拆分 Java/Kotlin 主线程网络示例，补齐主线程同步 Binder 与 cached-app freezer 版本边界。"
   },
   {
     "section": "19.23",
@@ -2578,7 +2581,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T02:02:05+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-content-processing-rework",
+    "completed_at": "2026-04-27T09:42:00+08:00",
+    "completion_reason": "Task2B 已补 EventListener.Factory 注册、PLT Hook 明文/密文职责、InstrumentationScope PROJECT/ALL 边界及 HTTP/2 复用观察口径。"
   },
   {
     "section": "19.24",
@@ -10035,7 +10041,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T19:19:39.292657+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_by": "task2b-content-processing-rework",
+    "completed_at": "2026-04-27T09:42:00+08:00",
+    "completion_reason": "Task2B 已在 15.8 补 Binder wait、system_server 服务端入口与 cached-app freezer 的 AOSP 源码锚点。"
   },
   {
     "section": "15.9",
