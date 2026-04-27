@@ -2637,7 +2637,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T02:02:05+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T19:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "19.0",
@@ -14187,6 +14190,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T19:36:19+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T19:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   }
 ]

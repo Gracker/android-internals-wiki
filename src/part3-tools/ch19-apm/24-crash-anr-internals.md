@@ -10,22 +10,27 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: done
-task6_state: reviewed
-task9_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
   - "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,int,int)"
   - "https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md"
   - "https://developer.android.com/ndk/guides/gwp-asan"
+  - "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/signal_catcher.cc"
+  - "https://android.googlesource.com/platform/system/core/+/refs/heads/main/debuggerd/proto/tombstone.proto"
+  - "https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/include/signal.h"
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T02:02:05+08:00"
-
+last_task2b_at: "2026-04-27T19:40:00+08:00"
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
 ---
 
 # 崩溃与 ANR 捕获机制
@@ -124,7 +129,7 @@ class CrashHandlerInstaller {
 
 ## 3. Native Crash：信号处理器只负责“保命级”快照
 
-Native Crash 在 Linux / Android 上通常表现为 `SIGSEGV`、`SIGABRT`、`SIGBUS`、`SIGILL`、`SIGFPE` 等信号。AOSP 系统侧会通过 `debuggerd` / `tombstoned` 生成 tombstone。应用侧 APM 如果也要采样，常见做法是安装 `sigaction` handler，再把最小现场交给 Breakpad 或 Crashpad。
+Native Crash 在 Linux / Android 上通常表现为 `SIGSEGV`、`SIGABRT`、`SIGBUS`、`SIGILL`、`SIGFPE`、`SIGTRAP` 等信号。`SIGTRAP` 常见于断点、调试陷阱，以及 GWP-ASan 等内存破坏检测路径。AOSP 系统侧会通过 `debuggerd` / `tombstoned` 生成 tombstone。应用侧 APM 如果也要采样，常见做法是安装 `sigaction` handler，再把最小现场交给 Breakpad 或 Crashpad。
 
 ### 3.1 Breakpad / Crashpad 的角色分工
 
@@ -149,7 +154,35 @@ Signal handler 的工作应当收缩到最小集合：
 - 不能调用不满足 async-signal-safe 的复杂库函数
 - 不能在 handler 内直接拼大 JSON 或访问 Java VM
 
-如果项目里既想保留系统 tombstone，又想拿自定义 minidump，推荐的顺序是：应用侧记录最小信息 → 交给 Crashpad / Breakpad → 继续链到前一个 handler 或 re-raise signal。这样系统诊断链不会断。
+如果项目里既想保留系统 tombstone，又想拿自定义 minidump，顺序应收缩为：应用侧记录最小信息 → 交给 Crashpad / Breakpad → 按 `sigaction` 的旧配置链到前一个 handler；没有旧 handler 时恢复默认动作并重新抛出 signal。这里不能把旧 handler 一律当成单参数函数调用，`SA_SIGINFO` 会改变回调签名。
+
+这段伪代码只展示链式分发的分支。其中 `SA_SIGINFO`、`SIG_DFL`、`SIG_IGN` 三类处理决定后续调用方式，处理错会导致二次崩溃。
+
+```cpp
+static void DispatchToPreviousOrSystem(
+        int signum, siginfo_t* info, void* ucontext,
+        const struct sigaction& old_action) {
+    if ((old_action.sa_flags & SA_SIGINFO) && old_action.sa_sigaction != nullptr) {
+        old_action.sa_sigaction(signum, info, ucontext);
+        return;
+    }
+
+    if (old_action.sa_handler == SIG_IGN) {
+        return;
+    }
+
+    if (old_action.sa_handler != nullptr && old_action.sa_handler != SIG_DFL) {
+        old_action.sa_handler(signum);
+        return;
+    }
+
+    // 交回系统默认诊断链，让 debuggerd / tombstoned 继续生成 tombstone。
+    sigaction(signum, &old_action, nullptr);
+    raise(signum);
+}
+```
+
+线上实现还要处理重入保护、备用栈、信号掩码恢复和 handler 返回后的终止策略。应用级 APM 不应吞掉 crash signal，否则系统 tombstone、logcat fatal 记录和其他 SDK 的收尾逻辑都会缺失。
 
 ### 3.3 Tombstone、minidump、符号化各自管什么
 
@@ -177,19 +210,36 @@ ANR 的捕获链变化最大，原因是权限边界一直在收紧。
 
 ### 4.2 中期：SIGQUIT / Signal Catcher Hook
 
-系统在处理 ANR 时会对目标进程发送 `SIGQUIT`，ART 的 Signal Catcher 负责生成 Java 线程 dump。一些 APM 会在 Native 层 hook `SIGQUIT`，抢在系统 dump 或与之并行时记录时间点、主线程状态、前后台信息。
+系统在处理 ANR 时会对目标进程发送 `SIGQUIT`，ART 的 SignalCatcher 线程负责生成 Java 线程 dump。SignalCatcher 不是普通的 `sigaction` handler；AOSP `art/runtime/signal_catcher.cc` 中的等待逻辑使用 `sigwait()` 同步消费 `SIGQUIT`。
 
-这种做法能拿到更早的现场，但维护成本很高：
+`sigwait()` 的前提是目标信号在相关线程中被屏蔽。信号到达后，等待线程被唤醒，内核不会再把同一个信号分发给普通 `sigaction` handler。这也是很多端侧方案“注册了 SIGQUIT handler，却抓不到稳定 ANR 信号”的原因。
 
-- `SIGQUIT` handler 同样受 signal 语境限制
-- 与系统 Signal Catcher、其他 SDK 的兼容性复杂
-- Android 版本演进后，权限和行为边界经常变化
+APM 里所谓的 SIGQUIT Hook，通常需要改动以下环节之一；简单注册 handler 不足以稳定截获 ANR：
 
-它仍有价值，尤其在自研系统、厂商 ROM 或强控制环境里；面向普通 App 量产版本时，维护成本要单独评估。
+- 影响 SignalCatcher 线程或 ART dump 流程
+- 调整进程内线程的信号掩码
+- 在系统 dump 前后插入采样逻辑
+- 在厂商 ROM、root/test 环境中改造系统侧 ANR 流程
+
+这类方案能拿到更早的现场，但维护成本很高：
+
+- 与 ART、libsigchain、其他 SDK 的信号处理逻辑互相影响
+- Android 版本演进后，信号掩码和 dump 行为可能变化
+- 普通 App 量产环境缺少稳定权限边界，容易干扰系统 ANR 诊断
+
+量产 App 的默认路径应优先使用 `ApplicationExitInfo` 和下次启动补拉；SIGQUIT Hook 更适合自研系统、厂商 ROM、root/test 环境或强控制灰度。
 
 ### 4.3 Android 11+：`ApplicationExitInfo`
 
-Android 11 起，`ActivityManager.getHistoricalProcessExitReasons()` 提供了更稳的官方方案。应用可以在每次启动时拉最近的退出历史，识别 `REASON_ANR`、`REASON_LOW_MEMORY`、`REASON_CRASH`、`REASON_CRASH_NATIVE` 等原因。`ApplicationExitInfo.getTraceInputStream()` 在 ANR 场景下通常还能返回系统保留的 traces。
+Android 11 起，`ActivityManager.getHistoricalProcessExitReasons()` 提供了更稳的官方方案。应用可以在每次启动时拉最近的退出历史，识别 `REASON_ANR`、`REASON_LOW_MEMORY`、`REASON_CRASH`、`REASON_CRASH_NATIVE` 等原因。`ApplicationExitInfo.getTraceInputStream()` 的返回内容要按 API 版本和 `reason` 分支处理。
+
+| API / Android 版本 | `reason` | `getTraceInputStream()` 常见内容 | 端侧处理 |
+| --- | --- | --- | --- |
+| API 30 / Android 11 | `REASON_ANR` | 系统保留的 ANR traces 文本流 | 后台线程读取，按线程 dump 解析 |
+| API 31+ / Android 12+ | `REASON_CRASH_NATIVE` | tombstone protobuf 二进制流 | 按 `system/core/debuggerd/proto/tombstone.proto` 解析，不要当纯文本处理 |
+| API 30+ | `REASON_LOW_MEMORY`、`REASON_CRASH`、其他 reason | 通常没有 trace stream，或设备侧保留策略不同 | 使用 reason、status、description、RSS/PSS 与自研 breadcrumb 拼样本 |
+
+读取 trace stream 要放到后台线程，并用 `timestamp + reason + pid/processName` 或自研事件 id 去重。系统保留的是环形历史，重复启动、重复上传和流读取失败都要作为正常分支处理。
 
 这段代码的用途是拉取最近一次 ANR 或 LMK 记录。重点看两点：一是每次启动都拉，因为系统使用环形缓冲；二是 LMK 仍要结合设备是否支持低内存杀报告来解释。
 
@@ -234,8 +284,10 @@ fun readRecentExitRecords(context: Context): List<String> {
 | Native 内存增长 | 无 Java 异常，RSS 持续涨 | `Debug.MemoryInfo`、`/proc/self/status` | C/C++ buffer、图形内存、解码器 |
 | FD 耗尽 | `EMFILE`、文件或 socket 打不开 | `/proc/self/fd` 计数 | socket 未关闭、文件流泄漏、inotify 过多 |
 | 线程耗尽 | 新线程创建失败、调度抖动 | `/proc/self/status` 的 `Threads` | 无界线程池、阻塞任务堆积 |
-| VMA 耗尽 | `mmap` 失败、地址空间碎片 | `/proc/self/maps` 行数、`VmSize` | 大量映射文件、JIT / so / ashmem 碎片 |
+| VMA / 地址空间耗尽 | `mmap` 失败、地址空间碎片、maps 行数异常 | `/proc/self/maps` 行数、`VmSize`、RSS/PSS | 32 位地址空间紧张；64 位多见极端映射泄漏、图形/ashmem 资源异常 |
 | LMK | 进程被系统杀掉 | `ApplicationExitInfo`、Vitals | 后台占用过高、整机内存压力 |
+
+32 位和 64 位进程的 VMA 风险口径不同。32 位进程地址空间上限低，连续映射碎片、so/JIT/ashmem 分布都可能变成真实故障；64 位进程地址空间大，单纯 `VmSize` 变大不一定等价于风险，排查时更应看 maps 行数增长、RSS/PSS、图形内存、ashmem 和异常 mmap 泄漏。
 
 ### 5.2 端侧怎么做预警
 
@@ -312,6 +364,9 @@ Native 层要额外做两件事：
 
 ## 10. 参考资料与延伸阅读
 
+- `art/runtime/signal_catcher.cc`：ART SignalCatcher 使用 `sigwait()` 处理 `SIGQUIT` 的实现
+- `system/core/debuggerd/proto/tombstone.proto`：API 31+ native tombstone protobuf 的结构参考
+- `bionic/libc/include/signal.h`：`struct sigaction`、`SA_SIGINFO` 与 handler 签名
 - `Thread.UncaughtExceptionHandler`：Java 未捕获异常的官方处理契约
 - `ApplicationExitInfo` 与 `ActivityManager.getHistoricalProcessExitReasons()`：Android 11+ 统一退出历史入口
 - Crashpad Overview Design：out-of-process handler、socket 通知、crash dump 流程
