@@ -16522,5 +16522,313 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-28T04:29:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "5.8",
+    "section_title": "后台执行限制与优化",
+    "priority": 85,
+    "reason": "[External Review] Android 17 后台音频硬化：API 37 要求后台音频操作必须具备 While-In-Use 能力，由后台触发器拉起的 FGS 将无法获取音频焦点，播放；共 3 个 P1 问题",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "前台服务章节",
+        "detail": "Android 17 后台音频硬化：API 37 要求后台音频操作必须具备 While-In-Use 能力，由后台触发器拉起的 FGS 将无法获取音频焦点，播放操作将静默失败",
+        "suggestion": "解析新规对保活手段的毁灭性冲击",
+        "evidence": [
+          "API 37 While-In-Use 要求",
+          "FGS 音频焦点限制"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "选型指南章节",
+        "detail": "pVM 任务配额豁免：通过 AVF 运行的受保护虚拟机计算任务不再消耗宿主 App 的 JobScheduler 运行时配额",
+        "suggestion": "提供针对隔离计算的官方豁免路径说明",
+        "evidence": [
+          "AVF pVM 配额豁免"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "冻结优化章节",
+        "detail": "16KB GC 联动压缩：Android 16 引入在系统压缩期间强制触发应用 GC 的逻辑",
+        "suggestion": "同步大页模式下后台清理的架构进化",
+        "evidence": [
+          "Android 16 GC 联动压缩"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T05:14:26+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.9",
+    "section_title": "ADPF 自适应性能框架",
+    "priority": 85,
+    "reason": "[External Review] Android 17 setPreferIdle 机制：API 37 引入，允许应用在任务非紧急时主动示弱，系统优先将其置于效率核或进入低功耗休眠；共 3 个 P1 问题",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "能效模式章节",
+        "detail": "Android 17 setPreferIdle 机制：API 37 引入，允许应用在任务非紧急时主动示弱，系统优先将其置于效率核或进入低功耗休眠",
+        "suggestion": "提供非活跃渲染阶段的节能适配建议",
+        "evidence": [
+          "API 37 setPreferIdle"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "厂商差异章节",
+        "detail": "2026 旗舰机调频响应时间代差：小米 17 Ultra (1.2ms) > Pixel 10 (1.5ms) > 三星 S26 Ultra (5ms)，4倍代差决定掉帧后补频能否挽回当前帧",
+        "suggestion": "引入厂商延迟对照表，指导跨机型调优",
+        "evidence": [
+          "小米 17 Ultra 1.2ms",
+          "Pixel 10 1.5ms",
+          "三星 S26 Ultra 5ms"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "应用场景章节",
+        "detail": "RecyclerView 1.4 原生 ADPF 集成：新版 RecyclerView 已内置 Hint Session 管理，快速滑动时会自动触发系统提频",
+        "suggestion": "强调普通应用通过升级基础库即可无感获取 ADPF 性能收益",
+        "evidence": [
+          "RecyclerView 1.4 ADPF 集成"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T05:14:26+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.10",
+    "section_title": "JobScheduler/WorkManager 调度与后台任务性能",
+    "priority": 85,
+    "reason": "[External Review] 过度 CPU 占用 (Power Check) 判定算法：Android 17 每 5 分钟检查，缓存态前 10 分钟均值需 <25%，阶梯降至 10% 和 2；共 3 个 P1 问题",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "触发器章节",
+        "detail": "过度 CPU 占用 (Power Check) 判定算法：Android 17 每 5 分钟检查，缓存态前 10 分钟均值需 <25%，阶梯降至 10% 和 2%，超限强制终止并生成 ProfilingTrace",
+        "suggestion": "解析后台高负载的自动熔断机制",
+        "evidence": [
+          "Android 17 Power Check 25%/10%/2% 阈值"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "location": "调试接口章节",
+        "detail": "能量限额挂起原因常数：API 37 引入 PENDING_JOB_REASON_ENERGY_SCHEDULING，当能量配额耗尽时 Job 无限期挂起",
+        "suggestion": "引入能效审计导致的挂起诊断法",
+        "evidence": [
+          "PENDING_JOB_REASON_ENERGY_SCHEDULING"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "框架适配章节",
+        "detail": "WorkManager 2.10 DeliQueue 红利：深度适配 Android 17 无锁消息队列，解决大规模任务入队时的主线程锁竞争，掉帧率下降约 4%",
+        "suggestion": "强调框架升级对 UI 响应性的间接加持",
+        "evidence": [
+          "WorkManager 2.10 DeliQueue"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T05:14:26+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "5.11",
+    "section_title": "端侧 AI 推理性能",
+    "priority": 85,
+    "reason": "[External Review] Android 17 NPU 硬件特性声明：API 37 起访问 NPU 必须声明 uses-feature，系统建立 NPU 意图防火墙并结合电量配额审计；共 3 个 P1 问题",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "资源管理章节",
+        "detail": "Android 17 NPU 硬件特性声明：API 37 起访问 NPU 必须声明 uses-feature，系统建立 NPU 意图防火墙并结合电量配额审计",
+        "suggestion": "解析清单声明对驱动访问权限的影响",
+        "evidence": [
+          "API 37 NPU uses-feature 声明"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "内存核算章节",
+        "detail": "AICore 内存归属重算 (Attribution)：ATTRIBUTE_WORK_TO_OTHER_APPS 机制将 Gemini Nano 内存成本计入发起方应用",
+        "suggestion": "引入谁使用谁付费的内存统计新规",
+        "evidence": [
+          "ATTRIBUTE_WORK_TO_OTHER_APPS"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "图形联动章节",
+        "detail": "VPA16 纹理加载红利：LiteRT 在 Android 16 上利用 Vulkan 1.4 实现 50% 内存减省",
+        "suggestion": "同步 VPA16 对推理-渲染数据流转的加速作用",
+        "evidence": [
+          "VPA16 Vulkan 1.4 LiteRT"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T05:14:26+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "6.1",
+    "section_title": "Android 存储架构",
+    "priority": 85,
+    "reason": "[External Review] Storage Mainline (APEX) 模块化：Android 16 下 StorageManagerService 迁移至 com.android.s；共 3 个 P1 问题",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "架构章节",
+        "detail": "Storage Mainline (APEX) 模块化：Android 16 下 StorageManagerService 迁移至 com.android.storage 模块，实现独立于 OTA 的热修复",
+        "suggestion": "在存储栈图中加入模块化边界描述",
+        "evidence": [
+          "com.android.storage APEX"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "文件系统章节",
+        "detail": "EROFS 16KB 性能红利：通过子页压缩与原地解压，在 16KB 页环境下相比 Ext4 提升 25% 随机读速度",
+        "suggestion": "解析文件系统如何利用大页内存优化解压路径",
+        "evidence": [
+          "EROFS 16KB 25% 随机读提升"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "UFS 章节",
+        "detail": "MCQ 实时观测路径：内核 6.12+ 开放 /sys/class/scsi_host/host0/mcq_stats 节点，可分析 32 个硬件队列负载均衡",
+        "suggestion": "同步 MCQ 硬件级统计的查看方法",
+        "evidence": [
+          "/sys/class/scsi_host/host0/mcq_stats"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T05:14:26+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "6.2",
+    "section_title": "文件系统",
+    "priority": 85,
+    "reason": "[External Review] Android 16 ZNS (Zoned Namespace) 原生支持：GKI 6.12 允许 F2FS 直接管理闪存顺序分区，消除 SSD 固件不可控 G；共 3 个 P1 问题",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "f2fs 章节",
+        "detail": "Android 16 ZNS (Zoned Namespace) 原生支持：GKI 6.12 允许 F2FS 直接管理闪存顺序分区，消除 SSD 固件不可控 GC",
+        "suggestion": "新增存储新范式 ZNS 分区管理说明",
+        "evidence": [
+          "GKI 6.12 F2FS ZNS"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "EROFS 章节",
+        "detail": "16KB 时代亚页压缩：EROFS 支持在一个 16KB 页内管理多个 4KB 压缩单元，维持 45% 压缩率基准",
+        "suggestion": "解析亚页压缩如何实现空间与性能的终极调和",
+        "evidence": [
+          "EROFS Sub-page Compression"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "演进章节",
+        "detail": "Android 17 IncFS 预取提示：.prefetch_hints 机制使内核能根据 Play 商店大数据主动预读 APK 块",
+        "suggestion": "同步由按需加载向预判加载的演进",
+        "evidence": [
+          "IncFS .prefetch_hints"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T05:14:26+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "6.3",
+    "section_title": "I/O 调度",
+    "priority": 85,
+    "reason": "[External Review] io_uring 系统级实装：Android 16 存储 APEX 集成基于 io_uring 的异步 FUSE，Registered Buffers 零拷贝读；共 3 个 P1 问题",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "演进章节",
+        "detail": "io_uring 系统级实装：Android 16 存储 APEX 集成基于 io_uring 的异步 FUSE，Registered Buffers 零拷贝读取，外部存储扫描提速 40%",
+        "suggestion": "解析 io_uring 如何作为 2026 年 I/O 栈加速引擎",
+        "evidence": [
+          "io_uring Registered Buffers 40% 提升"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "保障章节",
+        "detail": "dm-verity 并行哈希加速：Android 16 Multi-buffer Hashing 将系统分区冷读取吞吐提升 35%",
+        "suggestion": "引入安全校验零延迟化技术分析",
+        "evidence": [
+          "dm-verity Multi-buffer Hashing 35%"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "权重章节",
+        "detail": "Android 17 cgroup v2 100:1 隔离比：Baklava 彻底移除 blkio，改用 io 控制器，前后台权重比 1000:10",
+        "suggestion": "同步 v2 时代优先级管理红线",
+        "evidence": [
+          "cgroup v2 io 1000:10 权重"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T05:14:26+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "6.4",
+    "section_title": "存储演进",
+    "priority": 85,
+    "reason": "[External Review] Android 16 (Baklava) 16KB 强制开启：API 36 确立 16KB 页为旗舰设备唯一运行模式，Google Play 要求 2025-1；共 3 个 P1 问题",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "时间轴章节",
+        "detail": "Android 16 (Baklava) 16KB 强制开启：API 36 确立 16KB 页为旗舰设备唯一运行模式，Google Play 要求 2025-11 前完成 NDK 库 16KB 对齐",
+        "suggestion": "在演进表中加入 16KB 适配死线警告",
+        "evidence": [
+          "API 36 16KB 强制",
+          "2025-11-01 适配死线"
+        ]
+      },
+      {
+        "type": "原理链完整性",
+        "location": "模拟层章节",
+        "detail": "Android 17 FUSE over io_uring：通过 Linux 6.14 内核原语实现外部存储异步非阻塞处理，读写延迟降低 20%",
+        "suggestion": "将 FUSE 演进总结为从模拟到原生异步的进化",
+        "evidence": [
+          "FUSE over io_uring 20% 延迟降低"
+        ]
+      },
+      {
+        "type": "知识盲区",
+        "location": "布局变更章节",
+        "detail": "云端编译 (SDM) 导入模式：Android 16 下应用编译产物转向云端下载直接链接模式，消除安装瞬间高强度本地编译 I/O",
+        "suggestion": "补充安装流程中存储负载的结构性减负描述",
+        "evidence": [
+          "SDM 云端编译"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T05:14:26+08:00",
+    "status": "pending"
   }
 ]
