@@ -10,9 +10,9 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 sources:
@@ -248,7 +248,7 @@ Android 11 起，`ActivityManager.getHistoricalProcessExitReasons()` 提供了�
 fun readRecentExitRecords(context: Context): List<String> {
     val activityManager = context.getSystemService(ActivityManager::class.java)
     val infos = activityManager.getHistoricalProcessExitReasons(null, 0, 10)
-    val lowMemoryReportSupported = activityManager.isLowMemoryKillReportSupported()
+    val lowMemoryReportSupported = ActivityManager.isLowMemoryKillReportSupported()
 
     return infos.map { info ->
         val reason = when (info.reason) {
