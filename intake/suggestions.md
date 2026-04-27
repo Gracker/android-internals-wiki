@@ -5086,3 +5086,21 @@
 - **位置**：L148
 - **问题**：已写 trace / metric 名称长度和 attribute 数量限制，但漏掉 custom metrics 数量限制。
 - **建议**：补充“每个 custom code trace 最多 32 个 metric（包含默认 Duration）”，避免业务把高频计数全部塞进同一个 trace。
+
+## [Task9 Deep Review] 18.9 Vulkan 原生渲染管线 — 2026-04-28
+- **类型**：源码准确性
+- **位置**：line 215 / line 217-245 Vulkan Present 时序图
+- **问题**：正文把 Vulkan Present 描述为通常通过 BLAST / Transaction 模型进入 SurfaceFlinger，但没有源码锚点。实际工程链路应拆成 vkQueuePresentKHR → Android WSI / ANativeWindow queueBuffer → BufferQueue/BLASTBufferQueue → SurfaceFlinger latch；不能写成 App 直接发 SurfaceControl Transaction。
+- **建议**：补 `frameworks/native/vulkan/libvulkan/swapchain.cpp`、nativewindow/BufferQueue、SurfaceFlinger latch 相关源码锚点，或把“Transaction(Buffer)”改成更中性的 BufferQueue/BLAST 消费路径。
+
+## [Task9 Deep Review] 18.9 Vulkan 原生渲染管线 — 2026-04-28
+- **类型**：原理断裂
+- **位置**：line 331-350 Swappy Frame Pacing 时序图
+- **问题**：图中写 Swappy 返回非阻塞、继续下一帧逻辑，容易误导。`swappyVk.h` 明确 `SwappyVk_queuePresent()` 会代 App 调 `vkQueuePresentKHR`，可能插入 pNext/命令；帧节奏开关和 blocking wait 设置会影响是否等待。
+- **建议**：把时序图改成“Swappy 接管 present 并按目标节奏安排等待/提交”，注明 queuePresent 可能阻塞，避免把非阻塞当成固定语义。
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：line 204 ProfilingTrigger cold start artifact
+- **问题**：正文仍保留 `[待验证] API37 reference 对 cold start artifact 的最终描述`。Android 17 features 页已写 `TRIGGER_TYPE_COLD_START` 返回 call stack sample 和 system trace。
+- **建议**：用官方 features 页把待验证项闭环；同时保留 reference 页只定义 trigger、features 页描述 artifact 的边界。
