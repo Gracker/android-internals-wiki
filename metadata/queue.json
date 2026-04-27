@@ -15833,5 +15833,628 @@
     "added_at": "2026-04-28T03:49:02+08:00",
     "status": "pending",
     "source_file": "2026-04-28-15-ch04-04-lmk-external-review.md"
+  },
+  {
+    "section": "02.02",
+    "section_title": "2.2 帧率与刷新率",
+    "priority": 85,
+    "reason": "[External Review] 2.2 帧率与刷新率 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "OEM 差异章节",
+        "detail": "高频 VSync 注入 (HyperOS)。。技术事实：小米 HyperOS 2.0 通过注入 240Hz+ 虚拟信号使 Choreographer 即时处理输入，打破了硬件刷新率对响应速度的物理上限。",
+        "suggestion": "解析高频注入如何实现“零延迟”交互感。"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Override 章节",
+        "detail": "Android 17 直接限帧检测。。技术事实：Display.getFrameRateOverride() 成为 Android 17 检测热缓解或省电限帧的官方标准路径。",
+        "suggestion": "更新检测逻辑，替代间接监听法。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:38",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-02-framerate-external-review.md"
+  },
+  {
+    "section": "02.04",
+    "section_title": "2.4 Choreographer 与渲染流水线",
+    "priority": 85,
+    "reason": "[External Review] 2.4 Choreographer 与渲染流水线 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "Compose 章节",
+        "detail": "Compose 1.10 内部 Trace 切片名。。技术事实：可暂停组合会在 Trace 中产生 `Compose:PausableComposition:resume` 切片，表征组合工作的跨帧恢复。",
+        "suggestion": "提供具体的 Trace 读图技巧。"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "doFrame 章节",
+        "detail": "增强型追踪命名规范。。技术事实：Android 16 标准命名为 `Choreographer#doFrame <vsyncId>`，用于跨进程关联 App、RT 和 SF。",
+        "suggestion": "解析 vsyncId 在联路追踪中的核心作用。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:38",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-04-choreographer-external-review.md"
+  },
+  {
+    "section": "02.05",
+    "section_title": "2.5 Main Thread 与 RenderThread 协作",
+    "priority": 85,
+    "reason": "[External Review] 2.5 Main Thread 与 RenderThread 协作 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "GPU 渲染章节",
+        "detail": "分片 GPU 的并行提交。。技术事实：Adreno 830 设备支持多 CPU 核心录制并向多个 GPU 硬件分片提交指令，极大缓解了 120Hz+ 下的提交延迟。",
+        "suggestion": "加入分片架构任务提交的原理分析。"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "同步章节",
+        "detail": "DeliQueue 消除优先级反转。。技术事实：Android 17 无锁消息队列消除了 UI 线程对 RT 获取任务的锁阻塞，使掉帧率下降约 4%-7.7%。",
+        "suggestion": "量化无锁队列对同步时序的正面贡献。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-05-main-render-thread-external-review.md"
+  },
+  {
+    "section": "02.07",
+    "section_title": "2.7 Hardware Layer",
+    "priority": 85,
+    "reason": "[External Review] 2.7 Hardware Layer 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "内存代价章节",
+        "detail": "16KB 显存对齐碎片。。技术事实：由于最小分配单元提升，小面积硬件层会产生严重的“尾部浪费”，累积增加系统内存压力的约 9%。",
+        "suggestion": "加入显存空间换时间的权衡警告。"
+      },
+      {
+        "type": "版本差异",
+        "location": "Compose 章节",
+        "detail": "Compose 1.10 缓冲池化。。技术事实：改进了 graphicsLayer 的纹理复用，离屏缓冲池化显著提升了 LazyLayout 滑动时的零掉帧表现。",
+        "suggestion": "同步池化重用收益。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-07-hardware-layer-external-review.md"
+  },
+  {
+    "section": "02.08",
+    "section_title": "2.8 过度绘制与层级压平",
+    "priority": 85,
+    "reason": "[External Review] 2.8 过度绘制与层级压平 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "工具章节",
+        "detail": "标准化 GPU 计数器量化分析。。技术事实：Perfetto 新增标准化的 pixels_drawn 数据，允许通过“实际绘制像素 / 物理像素”公式精确计算 Overdraw 倍率。",
+        "suggestion": "引入数据驱动的 Overdraw 度量体系。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "Compose 章节",
+        "detail": "Compose 1.10 背景合并优化。。技术事实：能够智能识别组件背景重叠，并自动跳过被遮挡父级的绘制指令提交。",
+        "suggestion": "同步该框架层面的自动减负特性。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-08-overdraw-external-review.md"
+  },
+  {
+    "section": "02.09",
+    "section_title": "2.9 渲染机制的版本演进",
+    "priority": 85,
+    "reason": "[External Review] 2.9 渲染机制的版本演进 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "引擎章节",
+        "detail": "Skia Graphite 算法转型。。技术事实：Graphite 引擎利用硬件 Z-test 实现了 Front-to-Back 绘制，终结了 Android 传统的画家算法，实现了自动过度绘制消除。",
+        "suggestion": "解析绘制逻辑从“叠层”向“排序”的转变。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "时间轴节点",
+        "detail": "16KB Page Size 里程碑。。技术事实：2024-2025 年落地的 16KB 页技术通过提升 TLB 命中率，为渲染管线带来了约 9% 的有效带宽增益。",
+        "suggestion": "将其作为底层性能演进的关键节点插入。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-09-rendering-evolution-external-review.md"
+  },
+  {
+    "section": "02.10",
+    "section_title": "2.10 GPU 渲染深入",
+    "priority": 85,
+    "reason": "[External Review] 2.10 GPU 渲染深入 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "优化章节",
+        "detail": "GPU Headroom 闭环调节。。技术事实：新增 getGpuHeadroom() API 允许应用评估 GPU 剩余能力，实现从“事后排查”向“事前自适应调优”的转变。",
+        "suggestion": "加入利用该 API 进行动态渲染降级的实战说明。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "内存章节",
+        "detail": "Gralloc AIDL V2 池化优化。。技术事实：针对 16KB 页环境，Gralloc 引入了内部子分配机制，显著降低了小面积纹理导致的显存浪费。",
+        "suggestion": "同步这一针对硬件环境变化的底层优化。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-10-gpu-rendering-external-review.md"
+  },
+  {
+    "section": "02.16",
+    "section_title": "2.16 Sync Fence 框架与帧同步机制",
+    "priority": 85,
+    "reason": "[External Review] 2.16 Sync Fence 框架与帧同步机制 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-16-sync-fence-external-review.md"
+  },
+  {
+    "section": "02.17",
+    "section_title": "2.17 Frame Pacing Library 与帧节奏控制",
+    "priority": 85,
+    "reason": "[External Review] 2.17 Frame Pacing Library 与帧节奏控制 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "Vulkan 章节",
+        "detail": "Vulkan 1.4 硬件级帧确认 (present_id)。。技术事实：Android 16 强制开启 present_id 特性，Swappy 借此可直接确认帧上屏时刻。相比旧的 Choreographer 估算法，帧间抖动 (Jitter) 降低达 30%。",
+        "suggestion": "新增针对物理帧确认路径的对比分析。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "调度章节",
+        "detail": "Android 17 DeliQueue 的确定性红利。。技术事实：底层无锁队列重构减少了 15% 的 AChoreographer 回调抖动，使得 Swappy 拿到的 VSync 时间戳更精准，显著提升了步调算法的拟合度。",
+        "suggestion": "同步底层架构重构对 Pacing 的正面影响。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-17-frame-pacing-external-review.md"
+  },
+  {
+    "section": "02.19",
+    "section_title": "2.19 刷新率切换与帧率适配性能",
+    "priority": 85,
+    "reason": "[External Review] 2.19 刷新率切换与帧率适配性能 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "同步章节",
+        "detail": "VsyncModulator 原子化相位切换。。技术事实：Android 16 采用 `std::atomic` 管理 VSync 偏移。这消除了 Binder 线程提交 Transaction 与 VSync 线程应用偏移间的锁竞争，实现了相位的“零抖动”切换。",
+        "suggestion": "同步无锁化对原子级调度的正面贡献。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "多屏章节",
+        "detail": "Android 17 多屏掉帧隔离。。技术事实：通过缩减 mGlobalLock 范围和引入 DeliQueue，Android 17 确保了副屏刷新率切换不会引起主屏的渲染节奏波动。",
+        "suggestion": "描述多显示器环境下的“性能主权隔离”。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch02-19-refresh-rate-switching-external-review.md"
+  },
+  {
+    "section": "03.02",
+    "section_title": "3.2 触控性能优化",
+    "priority": 85,
+    "reason": "[External Review] 3.2 触控性能优化 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "预测章节",
+        "detail": "Android 16 AI 预测模型。。技术事实：MotionPredictor 在 Native 层利用 TFLite 运行 TCN 模型，通过 NPU 加速处理极坐标序列，将预测窗口稳健扩展至 30ms。",
+        "suggestion": "解析 AI 如何通过“路径不变性”提升预测精度。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "16KB 影响章节",
+        "detail": "输入管道确定性提升。。技术事实：大页内存减少了 75% 的 Socket 映射缺页中断，使输入分发的微观时延更加确定（抖动减少 3%）。",
+        "suggestion": "同步大页内存对实时交互的正面加成。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch03-02-touch-performance-external-review.md"
+  },
+  {
+    "section": "03.03",
+    "section_title": "3.3 手势导航与系统交互",
+    "priority": 85,
+    "reason": "[External Review] 3.3 手势导航与系统交互 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "优化章节",
+        "detail": "PRIORITY_SYSTEM_NAVIGATION_OBSERVER 观察者优先级。。技术事实：API 36 允许应用注册非拦截式回调，仅用于观察返回进度而不触发系统预览失效。",
+        "suggestion": "介绍“埋点友好”的返回监听方案。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "InputMonitor 章节",
+        "detail": "设备级 pilferPointers 隔离。。技术事实：Android 16 能够精准识别并仅取消触发手势的特定设备流（如手指），而保留同一窗口内的其他设备（如手写笔）输入，支持复杂多模态操作。",
+        "suggestion": "同步按设备 ID 隔离的新型指针窃取逻辑。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch03-03-gesture-navigation-external-review.md"
+  },
+  {
+    "section": "03.04",
+    "section_title": "3.4 输入延迟与预测输入技术",
+    "priority": 85,
+    "reason": "[External Review] 3.4 输入延迟与预测输入技术 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "量化工具章节",
+        "detail": "HWC 4.0 标准化光子时间线。。技术事实：通过强制反馈 actualPresentTime，Android 16 首次实现了无需外部硬件即可准确测量“指尖到像素”全链路延迟的能力。",
+        "suggestion": "引入数据驱动的端到端延迟分析法。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "采样频率章节",
+        "detail": "动态报点率缩放 (Snapdragon)。",
+        "suggestion": "同步现代硬件对第一阶段延迟的极致压缩。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch03-04-input-latency-prediction-external-review.md"
+  },
+  {
+    "section": "03.05",
+    "section_title": "3.5 输入事件拦截与安全机制",
+    "priority": 85,
+    "reason": "[External Review] 3.5 输入事件拦截与安全机制 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "拦截机制章节",
+        "detail": "Android 17 密码场景物理切断。。技术事实：当焦点处于密码框时，InputDispatcher 强制暂停所有非系统级 InputMonitor 的事件分发，物理隔离触控轨迹，防止间谍窗口窃取。",
+        "suggestion": "解析从“权限控制”到“物理断路”的架构进化。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "权限策略章节",
+        "detail": "通话中防诈骗拦截。。技术事实：通话期间系统自动阻塞敏感权限（无障碍、侧载）的授予流，直接切断诈骗者的引导路径。",
+        "suggestion": "同步该场景化的安全硬红线。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch03-05-input-interception-security-external-review.md"
+  },
+  {
+    "section": "04.01",
+    "section_title": "4.1 Android 内存模型全景",
+    "priority": 85,
+    "reason": "[External Review] 4.1 Android 内存模型全景 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "物理内存章节",
+        "detail": "MTE 硬件预留开销。。技术事实：开启 MTE 的设备会预留约 3% 的物理 RAM 存储标签，加上对齐损耗，全系统 PSS 增量约为 5%。",
+        "suggestion": "同步安全硬件带来的“内存税”数据。"
+      },
+      {
+        "type": "版本差异",
+        "location": "指标量化章节",
+        "detail": "16KB 页下的 PSS 修正。。技术事实：由于页内碎片激增，16KB 环境下系统总 PSS 普遍上涨 5%-10%。这是正常的架构开销而非应用泄露。",
+        "suggestion": "提供大页模式下的 PSS 认知修正。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch04-01-memory-overview-external-review.md"
+  },
+  {
+    "section": "04.02",
+    "section_title": "4.2 Linux 内核内存管理",
+    "priority": 85,
+    "reason": "[External Review] 4.2 Linux 内核内存管理 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "协同章节",
+        "detail": "Android 17 内核-GC 语义协同。",
+        "suggestion": "解析跨层级信息交换如何解决“假热页面”痛点。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch04-02-linux-memory-external-review.md"
+  },
+  {
+    "section": "04.03",
+    "section_title": "4.3 ART 虚拟机内存管理",
+    "priority": 85,
+    "reason": "[External Review] 4.3 ART 虚拟机内存管理 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "分配空间章节",
+        "detail": "16KB 运行时动态对齐。。技术事实：针对 Android 16，BumpPointerSpace 彻底移除了 4KB 硬编码对齐，改用 art::GetPageSize() 实现动态边界，确保在大页内核下的地址空间合法性与缓存行效率。",
+        "suggestion": "描述引擎如何实现“页面无关（Page Agnostic）”分配。"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "性能影响章节",
+        "detail": "DeliQueue 终结 Finalizer 超时。",
+        "suggestion": "补全无锁架构对虚拟机稳定性的正面贡献。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch04-03-art-memory-external-review.md"
+  },
+  {
+    "section": "04.05",
+    "section_title": "4.5 App 内存优化",
+    "priority": 85,
+    "reason": "[External Review] 4.5 App 内存优化 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "监控章节",
+        "detail": "Android 17 内存峰值监测。。技术事实：ApplicationStartInfo 新增 getPeakRssKb、getPeakAnonKb 等方法，允许应用在重启后追溯上一周期的“内存天花板”，是诊断 MemoryLimiter 被杀原因的核心。",
+        "suggestion": "引导开发者利用该 API 闭环监控线上内存异常。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "16KB 章节",
+        "detail": "IDE 自动化 16KB 审计。。技术事实：Android Studio Panda 的 APK Analyzer 新增 16 KB 对齐状态列。开发者可直接审计第三方 .so 库的合规性。",
+        "suggestion": "同步最新的 IDE 审计流程。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch04-05-app-memory-optimization-external-review.md"
+  },
+  {
+    "section": "04.06",
+    "section_title": "4.6 内存相关的版本演进",
+    "priority": 85,
+    "reason": "[External Review] 4.6 内存相关的版本演进 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "内核章节",
+        "detail": "MGLRU 默认开启节点。。技术事实：GKI 6.12 (Android 16) 正式将 MGLRU 设为强制默认特性，终结了传统 LRU 在高性能 Android 设备上的地位。",
+        "suggestion": "同步 MGLRU 的基线化节点。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "16KB 章节",
+        "detail": "2026 旗舰机兼容现状。。技术事实：Pixel 10 (Tensor G5) 虽硬件优化 16KB，但默认出厂仍以 4KB 模式运行，以规避大量旧版 NDK 应用的崩溃。16KB 仍处于“开发者引领”阶段。",
+        "suggestion": "纠正“Android 16 默认 16KB”的误区，强调兼容过渡期的长期性。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch04-06-memory-evolution-external-review.md"
+  },
+  {
+    "section": "04.07",
+    "section_title": "4.7 16KB Page Size 与 Android 性能",
+    "priority": 85,
+    "reason": "[External Review] 4.7 16KB Page Size 与 Android 性能 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "兼容模式章节",
+        "detail": "兼容模式的 PSS 与共享代价。。技术事实：加载 4KB 库时，Bionic 因权限对齐冲突被迫执行匿名拷贝。这导致原本可共享的 .so 库变为每个进程独占一份，PSS 随之飙升，且无法享受 16KB 的启动加速红利。",
+        "suggestion": "明确标注“兼容模式不具备性能红利”。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "内核特性章节",
+        "detail": "mTHP 与 contpte 加速。。技术事实：Android 16 利用 contpte 实现了 16 个物理连续页的硬件级 TLB 合并（256KB 覆盖），在兼顾碎片的条件下最大化了 TLB Reach。",
+        "suggestion": "补全现代内核在 16KB 环境下的二次优化手段。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch04-07-16kb-page-size-external-review.md"
+  },
+  {
+    "section": "05.01",
+    "section_title": "5.1 Linux 进程调度基础",
+    "priority": 85,
+    "reason": "[External Review] 5.1 Linux 进程调度基础 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "量化工具章节",
+        "detail": "vlag 指标的量化诊断。。技术事实：通过 sched_eevdf_entity 事件，Perfetto 现可直接量化每个任务的“被欠债”程度。vlag 越高代表系统对该任务的调度越不及时。",
+        "suggestion": "提供利用该字段识别调度不公的实战方法。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "硬件红利章节",
+        "detail": "ARMv9.2 极致迁移延迟。。技术事实：骁龙 8 Elite 等芯片将跨核迁移开销压缩至 1.5μs - 3.5μs 级。这种高频率、低损耗的迁移使调度器负载均衡更加激进。",
+        "suggestion": "同步硬件效率提升对软件绑核必要性的稀释效应。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch05-01-linux-scheduling-external-review.md"
+  },
+  {
+    "section": "05.02",
+    "section_title": "5.2 EAS 能量感知调度",
+    "priority": 85,
+    "reason": "[External Review] 5.2 EAS 能量感知调度 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "UClamp 章节",
+        "detail": "UClamp Sum Aggregation (求和聚合)。。技术事实：GKI 6.12 将 UClamp 计算方式从取最大值改为求和。这消除了多任务场景下因频率预测过低导致的性能瓶颈，同时减少了冗余的 CPU 频率震荡。",
+        "suggestion": "同步该算法重构带来的能效红利。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "硬件适配章节",
+        "detail": "全大核架构的动态余量调优。",
+        "suggestion": "加入针对现代“2+6”或“全大核”布局的调度边界描述。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch05-02-eas-external-review.md"
+  },
+  {
+    "section": "05.03",
+    "section_title": "5.3 大小核架构",
+    "priority": 85,
+    "reason": "[External Review] 5.3 大小核架构 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "知识盲区",
+        "location": "SoC 配置章节",
+        "detail": "全大核架构的算力归一化标定。。技术事实：骁龙 8 Elite 性能核算力约为 837（Prime 为 1024），级差大幅收窄。这使得迁核逻辑更倾向于负载均衡而非节能压制。",
+        "suggestion": "同步现代旗舰 SoC 的 Capacity 阶梯变化。"
+      },
+      {
+        "type": "原理链完整性",
+        "location": "DynamIQ 章节",
+        "detail": "DSU-120 的 16KB 页协同优化。。技术事实：通过硬件寄存器开启 16KB 模式，修正 Snoop Filter 哈希索引，消除了大页内存下的探测冲突，显著降低了跨核缓存共享延迟。",
+        "suggestion": "补全互联单元对大页内存的硬件适配细节。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch05-03-big-little-external-review.md"
+  },
+  {
+    "section": "05.04",
+    "section_title": "5.4 DVFS 与功耗管理",
+    "priority": 85,
+    "reason": "[External Review] 5.4 DVFS 与功耗管理 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "Perfetto 章节",
+        "detail": "SCMI 频率真值观测。。技术事实：Android 16 深度集成了 SCMI ftrace 事件。通过观察 scmi_perf_level_get，开发者可以确认频率是否因为温控等固件因素被强制压低，即使内核 cpu_frequency 仍请求高频。",
+        "suggestion": "引入“内核意图 vs 固件实值”的对比分析法。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "原理章节",
+        "detail": "4GHz 时代的能效红线。",
+        "suggestion": "同步现代旗舰 SoC 的极端 V/F 曲线特征。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch05-04-dvfs-external-review.md"
+  },
+  {
+    "section": "05.05",
+    "section_title": "5.5 Thermal 管控",
+    "priority": 85,
+    "reason": "[External Review] 5.5 Thermal 管控 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "路径章节",
+        "detail": "16KB 页对热平衡的加持。。技术事实：大页内存使 MMU 功耗降低约 4.5%，实测应用启动功耗优化显著。这从底层变缓了热积累斜率，延长了设备维持最高频的时间窗。",
+        "suggestion": "同步底层架构对温控系统的反馈红利。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "测试工具章节",
+        "detail": "系统触发的热异常分析。。技术事实：Android 16 允许在跨越热阈值时自动生成 ProfilingTrace，帮助开发者捕获导致过热的真实负载现场。",
+        "suggestion": "引入自动化的热故障诊断流程。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch05-05-thermal-external-review.md"
+  },
+  {
+    "section": "05.06",
+    "section_title": "5.6 Android 功耗管理",
+    "priority": 85,
+    "reason": "[External Review] 5.6 Android 功耗管理 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "挂起路径章节",
+        "detail": "HWC 4.0 联动 Suspend 优化。",
+        "suggestion": "同步“显示状态驱动功耗”的新型分层架构。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch05-06-android-power-external-review.md"
+  },
+  {
+    "section": "05.07",
+    "section_title": "5.7 CPU 相关的版本演进",
+    "priority": 85,
+    "reason": "[External Review] 5.7 CPU 相关的版本演进 存在重要缺失，需回炉补强 2026 年最新特性",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "后台限制章节",
+        "detail": "能量限额制 (Energy Limiter)。。技术事实：API 37 引入了基于真实能耗监控的熔断机制。后台 App 消耗的 µJ 能量若超标，将被强制终止。这使能效优化从“选做题”变成了“必答题”。",
+        "suggestion": "描述配额制如何重构应用生存环境。"
+      },
+      {
+        "type": "知识盲区",
+        "location": "GKI 章节",
+        "detail": "sched_ext (eBPF 调度)。",
+        "suggestion": "** 引入“调度算法插件化”的演进蓝图。"
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T04:27:39",
+    "status": "pending",
+    "source_file": "2026-04-28-15-ch05-07-cpu-evolution-external-review.md"
   }
 ]
