@@ -32,23 +32,24 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
 reviewed_date: "2026-04-28"
 reviewed_by: "openclaw-task6"
-pipeline_stage: "task9_pending"
+pipeline_stage: task2b_pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-04-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T20:35:19+08:00"
+last_task9_at: "2026-04-28T06:20:00+08:00"
 last_task2b_at: "2026-04-27T20:58:38+08:00"
 rework_date: "2026-04-27"
 rework_by: openclaw-task2b
 review_notes: "2026-04-27 task2b: fixed Binder ftrace tracepoint wording; removed nonexistent binder_reply tracepoint and clarified reply correlation via binder_return/binder_command or Perfetto Binder slices."
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。"
 ---
 
 # 13.10 Perfetto SQL 性能分析实战手册

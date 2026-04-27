@@ -6035,3 +6035,39 @@
 - **位置**：L231-L260（Young GC STW 1-3ms / 1.83ms）
 - **问题**：GC 暂停时间给了固定范围和平均值，但正文没有把该数字绑定到 ART 文档、Android 版本、设备负载和 GC 类型；后文又讨论 Android 17 CMC 待验证，容易被读成跨版本通用结论。
 - **建议**：补 source.android.com ART GC 文档或实验来源，明确该范围只用于正常 Young/CC GC 的参考；Full GC、CMC、内存压力和低端设备另列边界。
+
+## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L506-L556 Perfetto 中的 wakelock 分析
+- **问题**：正文说明 activate/deactivate 需要 SQL 配对，但没有给出可运行模板。
+- **建议**：补一条按 wakeup_source 名称配对并计算持有时长的 SQL，说明不同 Perfetto 版本下 ftrace args 字段名需先用 schema/args 探测。
+
+## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-04-28
+- **类型**：版本差异
+- **位置**：L715-L728 版本演进表
+- **问题**：正文已经解释 Android 10 SystemSuspend 取代 libsuspend 直写路径，但版本演进表漏掉 Android 10 这一关键节点。
+- **建议**：补 Android 10 SystemSuspend / ISystemSuspend 行，避免读者只看到 Doze、Bucket、FGS 等策略变化。
+
+## [Task9 Deep Review] 13.4 命令行打开超大 Trace — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L81-L87 / L419-L498 大 Trace 内存与冷启动批处理
+- **问题**：正文给出 200MB/500MB、3-5 倍内存放大和 df.describe()，但没有真实 Trace 输出、机器配置或查询耗时样本。
+- **建议**：补一个本地样本：trace 大小、trace_processor 版本、内存峰值、加载耗时、查询耗时、输出表。
+
+## [Task9 Deep Review] 13.4 命令行打开超大 Trace — 2026-04-28
+- **类型**：知识盲区
+- **位置**：L520 / L628-L630 Bigtrace 只一句提及
+- **问题**：章节主题是超大 Trace，正文只说“更大规模用 Bigtrace”，未解释适用边界。
+- **建议**：补 Bigtrace 的定位：多 Trace / 分布式批处理，不是单个超大 trace 的局部加载；给出官方文档链接或单独章节引用。
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：全文 SQL 模板
+- **问题**：SQL 覆盖面广，但关键模板没有任何真实输出样例。
+- **建议**：至少在帧时间分桶、ANR 阻塞分类、monitor contention 三处各补 3-5 行示例输出，标注 trace 配置和单位。
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-28
+- **类型**：版本差异
+- **位置**：L402 / L459-L478 Binder 线程池利用率
+- **问题**：DEFAULT_MAX_BINDER_THREADS=15、system_server sMaxBinderThreads=31 缺少 AOSP 文件路径和验证版本。
+- **建议**：标注 ProcessState.cpp、SystemServer.java 的版本锚点，并说明厂商/native 服务可覆写。
