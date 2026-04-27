@@ -30,22 +30,24 @@ tags: ['case-study', 'game-mode', 'adpf', 'startup', 'foldable', 'oem', 'industr
 related_chapters: ["5.6", "7.4", "7.5", "8.2", "8.3", "11.1", "16.1", "17.1", "17.2"]
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-task6_state: reviewed
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
 section: "17.3"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-repaired_date: "2026-04-21"
+repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 last_task9_at: "2026-04-27T14:32:13+08:00"
+last_task2b_at: "2026-04-27T14:50:00+08:00"
+
 ---
 
 # 行业案例
@@ -132,42 +134,42 @@ OPPO、vivo 这类案例更适合用来说明 ADPF 与 vendor thermal / power st
 
 ### Game Mode API：让用户选择优化方向
 
-Game Mode API 的作用是把“用户更想要性能还是续航”这件事传给游戏。公开模式仍是 Standard、Performance 和 Battery Saver。开发者通过 `GameManager` 读取模式，再决定帧率、分辨率和画质策略。
+Game Mode API 的作用是把“用户更想要性能还是续航”这件事传给游戏。公开游戏适配文档仍要求游戏至少处理 Standard、Performance、Battery Saver 三类选择。Android 14+ 平台 API 还存在 `GAME_MODE_CUSTOM`，用于 OEM 或系统提供自定义模式；面向 Android 13 及以下 targetSdk 的应用，平台可能把 custom mode 兼容返回为 standard。读取 `GameManager#getGameMode()` 时不要只写三个分支，默认分支要记录原始值，并回退到安全画质或帧率策略。
 
 `Game Mode Interventions` 要和游戏自己实现的模式处理分开看。Android Developers 当前公开的干预项，主线是 `WindowManager` backbuffer resize 和 FPS throttling，文档还给出了 `downscaleFactor`、`allowGameDownscaling`、`allowGameFpsOverride` 这些配置与 opt-out 方式。公开文档没有提供“按包名调整线程调度策略”的标准接口或配置项。
 
-因此，正文里更合适的边界是：
+正文里的边界按两层写：
 
-- **标准能力**：`game_mode_config.xml`、`GameManager#getGameMode()`、backbuffer downscale、FPS throttling/override
+- **标准能力**：`game_mode_config.xml`、`GameManager#getGameMode()`、backbuffer downscale、FPS throttling/override，以及对 `GAME_MODE_CUSTOM` 的安全回退
 - **厂商私有能力**：线程调度、频率策略、驱动参数、Game Booster / Game Turbo 的设备定制逻辑
 
-如果 OEM 真的在系统侧做了线程调度或 governor 调整，那也应单列为厂商私有策略，不应写进 Game Mode Interventions 的公开能力清单。
+如果 OEM 在系统侧做了线程调度或 governor 调整，应单列为厂商私有策略，不写进 Game Mode Interventions 的公开能力清单。
 
 ### ADPF Thermal API：主动温控避免降频
 
-温控是移动设备上最容易被忽视但又最致命的性能因素。一个游戏可以在前 5 分钟跑满 60fps，但随着温度升高触发 thermal throttling，帧率可能骤降到 30fps 甚至更低——这种断崖式的体验降级比一直跑 45fps 更让人难受。
+温控是移动设备上最容易被忽视的性能因素。游戏前几分钟可能稳定跑满 60fps，温度升高后触发 thermal throttling，帧率可能骤降到 30fps 甚至更低。稳定的 45fps 往往比先满帧再突然半帧更容易接受。
 
-ADPF 的 Thermal API 提供了一种**主动温控**的思路：在温度接近阈值前就开始逐步降低负载，避免温度过高后被迫降频，让设备在一个可持续的性能水平上稳定运行。
+ADPF Thermal API 用于在温度接近阈值前逐步降低负载，避免设备进入被动降频。主要 API 是 `PowerManager.getThermalHeadroom(int forecastSeconds)`。它返回非负浮点值，表示当前工作负载持续 `forecastSeconds` 秒后的预测热余量；`1.0` 对应 `THERMAL_STATUS_SEVERE` 的预测阈值，不是取值上限。返回值可能大于 `1.0`。设备不支持预测、传感器数据不足，或调用频率过高时可能返回 `NaN`。接入代码要先处理 `NaN`，并把采样频率控制在秒级，避免把无效值写进降级策略。
 
-核心 API 是 `PowerManager.getThermalHeadroom(int forecastSeconds)`，它返回一个 0.0 到 1.0 的浮点值，表示从当前工作负载持续 `forecastSeconds` 秒后的预测热余量。0.0 表示完全没有热压力，1.0 表示即将触发热保护。
+降级阈值不能直接写死成 `0.5 / 0.7 / 0.85`。更稳的做法是读取 `getThermalHeadroomThresholds()` 中当前设备给出的状态阈值，或用同机型实测数据建立映射。策略可以按三档设计：
 
-一个典型的温控策略可以这样设计：
+- **无效值或不支持**：保持现有画质策略，只记录 `NaN`、机型、系统版本和采样间隔，不触发激进降级
+- **接近设备阈值**：逐步降低阴影、后处理、粒子等可回退负载，并观察帧时间是否收敛
+- **超过 `SEVERE` 预测阈值**：优先降低渲染分辨率或目标帧率，把设备拉回可持续区间
 
-当 thermal headroom < 0.5 时，保持最高画质和满帧率运行；当 headroom 在 0.5-0.7 之间时，关闭部分特效、降低阴影质量；当 headroom 在 0.7-0.85 之间时，降低渲染分辨率至 75%；当 headroom > 0.85 时，将帧率目标降至 30fps。
-
-这种渐进式降级的优势在于：**用户体验是平滑过渡的**，而不是突然从满帧掉到半帧。在实际的 Perfetto trace 中，你会看到帧时间从稳定的 16.6ms 逐渐增加到 20ms、25ms、33.3ms，而不是从 16.6ms 直接跳到 50ms（热保护触发时的典型表现）。
+在 Perfetto 里验证 Thermal API，至少同时看四组信号：thermal status / thermal headroom、CPU/GPU 频率 counter、FrameTimeline / 帧时间，以及应用侧的降级日志。只有 API 返回值、负载降级动作和帧时间变化能对上，才说明主动温控策略真的生效。
 
 [待高爷补充：游戏场景中 ADPF Thermal 主动降级前后的帧时间对比 Trace]
 
-### ADPF Performance Hint API：精确的帧级性能控制
+### ADPF Performance Hint API：帧级性能信号
 
-如果说 Thermal API 是"防守型"优化（防止过热），那么 Performance Hint API 就是"进攻型"优化（主动提升性能）。
+Performance Hint API 用于把周期性 workload 的目标耗时和实际耗时交给系统。传统 DVFS 更多依赖过去一段时间的平均负载，`PerformanceHintManager` 则让游戏或高负载 App 按线程组创建 `HintSession`，把目标帧时间和每轮实际工作时长直接上报给系统。
 
-它的工作原理我们在 5.6 节已经详细介绍过。从行业实践的角度，最值得关注的是**帧级精度**的控制能力。传统 DVFS 的工作粒度是"过去一段时间内的平均负载"，而 Performance Hint API 的工作粒度是"每一帧的实际耗时"。
+游戏或 App 在一帧渲染完成后调用 `reportActualWorkDuration()` 上报实际耗时，并用 `updateTargetWorkDuration()` 更新目标耗时，例如 `16.6ms@60fps`。系统会对比 actual duration 与 target duration：实际耗时长期低于目标时，可以降低资源供给；实际耗时接近或超过目标时，可以提前提高资源供给，减少下一帧超时概率。
 
-具体来说，游戏或 App 在每一帧渲染完成后调用 `reportActualWorkDuration()` 上报实际耗时，同时通过 `updateTargetWorkDuration()` 设置目标帧时间（例如 16.6ms@60fps）。系统会根据实际耗时与目标耗时的差异，动态调整 CPU 频率——如果实际耗时持续低于目标，系统会尝试降低频率以节省功耗；如果实际耗时接近或超过目标，系统会提前拉高频率以确保下一帧能按时完成。
+这套机制需要游戏引擎配合。Unity 引擎通过 ADPF 插件可以在每一帧渲染完成后调用这些 API；Unreal Engine 可以把可伸缩性设置与 ADPF 信号结合，按负载动态调整画质级别。
 
-这种机制的实现需要游戏引擎配合。Unity 引擎通过 ADPF 插件可以在每一帧的渲染完成后自动调用这些 API；Unreal Engine 则通过可伸缩性设置（Scalability Settings）配合 ADPF 的信号动态调整画质级别。
+验证 Performance Hint 是否生效时，不要只看 API 调用是否成功。抓 Perfetto trace 时同时保留应用自定义 Trace 标记、CPU/GPU 频率、线程调度状态、thermal status / headroom；如果系统版本或厂商镜像暴露 `HintSession`、target duration、actual duration 相关 track，再把它们和频率变化、帧时间变化放到同一时间窗里检查。一个可发布的结论至少要说明：目标耗时如何设置、实际耗时何时超标、系统资源供给是否跟随变化，以及帧时间是否回到目标区间。
 
 ## 系统级启动速度优化：抖音的实践
 
@@ -303,7 +305,7 @@ App 在屏幕切换时需要重新适配帧率策略。如果 App 使用了 Chor
 
 ### AOSP 源码路径
 
-- GameModeService: `frameworks/base/services/core/java/com/android/server/app/GameModeService.java`
+- GameManagerService: `frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`
 - GameManager: `frameworks/base/core/java/android/app/GameManager.java`
 - PerformanceHintManager: `frameworks/base/core/java/android/os/PerformanceHintManager.java`
 - PowerManager (Thermal API): `frameworks/base/core/java/android/os/PowerManager.java`

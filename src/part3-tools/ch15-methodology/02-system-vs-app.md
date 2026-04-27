@@ -26,19 +26,23 @@ sources:
     path: "frameworks/native/services/surfaceflinger/"
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: 2026-04-25T08:36:00+08:00
 task9_reviewed_date: 2026-04-25
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 review_round: 2
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
+last_task2b_at: "2026-04-27T14:50:00+08:00"
+
 ---
 
 # 如何区分系统问题和 App 问题
@@ -116,7 +120,7 @@ Wall = CPU 时间 + Runnable 时间 + Sleep 时间
 - **CPU 区域**：所有核心是否满载？如果是，说明系统负载确实很高，主线程拿不到 CPU 是合理的。
 - **频率轨道**：CPU 频率是否正常？如果被温控限频（`scaling_max_freq` 被压低），即使主线程分到了 CPU，执行速度也会打折扣。
 - **内存压力**：有没有看到 `kswapd` 线程活跃？有没有大量的 `direct reclaim` 事件？
-- **SurfaceFlinger 轨道**：SurfaceFlinger 主线程上的 `onMessageRefresh`、`commit`、`composite` 这些 slice 是否明显变长？Android 10+ 的合成逻辑已经收敛到 CompositionEngine，旧资料里的 `doComposition` 在现代 Perfetto 中通常对应这里的刷新入口。
+- **SurfaceFlinger 轨道**：Android 14+ 的 trace 里优先看 `commit` 和 `composite`。`commit` 处理事务、状态更新和 buffer latch；`composite` 负责合成决策、HWC/GPU 提交和 present 前后的工作。旧 trace 或部分设备上仍可能看到 `onMessageRefresh`，它更像外层刷新入口，不要把它当成唯一耗时归因点。
 
 这三步形成了一个从局部到全局的判断链：先看问题线程本身，再看它在等什么，最后看系统环境是否支持它。
 
@@ -164,7 +168,28 @@ LIMIT 10;
 2. **主线程进入 D 状态**：内存不足时，页面换入（page fault）会触发同步的磁盘 I/O，主线程如果触发了 page fault，就会进入不可中断的 D 状态等待 I/O 完成。
 3. **GC 频繁触发**：ART 在内存紧张时会更频繁地触发 GC。Android 10+ 默认的 Generational Concurrent Copying GC 中，Young GC 暂停往往在 1-3ms，但在高负载场景里这段暂停仍可能被放大，因为 GC 线程本身也要争抢 CPU。
 
-所以当你看到 `kswapd` 活跃 + 主线程出现 D 状态 + LMK 频繁杀进程这三件套，基本可以判定这是系统级的内存问题，不是单个 App 能解决的。App 端能做的最多是减少自身内存占用（详见 §4.5），但根本解决需要系统层面调整 LMK 策略或增加物理内存。
+定位内存压力来源时，不要停在 `kswapd` 这个信号上。继续看 `rss_stat` / process memory 轨道，把问题时间窗内各进程的 RSS 增长排出来，再结合 `lmkd` kill 事件、`oom_score_adj` 和 `ApplicationExitInfo.getRss()` 判断谁在制造压力。常用查询可以从 anon RSS 增长开始：
+
+```sql
+-- 按进程统计问题时间窗内 anon RSS 增长
+SELECT
+  process.name,
+  max(c.value) - min(c.value) AS anon_rss_growth_bytes,
+  max(c.value) AS anon_rss_peak_bytes
+FROM counter c
+JOIN process_counter_track pct ON c.track_id = pct.id
+JOIN process ON pct.upid = process.upid
+WHERE c.ts BETWEEN 2e9 AND 5e9
+  AND pct.name GLOB '*anon*rss*'
+GROUP BY process.name
+HAVING anon_rss_growth_bytes > 0
+ORDER BY anon_rss_growth_bytes DESC
+LIMIT 10;
+```
+
+不同 Android 版本和采集配置下，track 名称可能略有差异。查询没有结果时，先在 Perfetto UI 搜索 `rss_stat`、`anon_rss`、`file_rss`，确认 trace 是否采到了进程级内存 counter。
+
+所以当你看到 `kswapd` 活跃 + 主线程出现 D 状态 + LMK 频繁杀进程这三件套，可以判定这是系统级内存压力。App 端仍要确认自身 RSS 是否异常增长；如果自身内存稳定，根本解决通常需要系统层面调整 LMK 策略或增加物理内存。
 
 ### SurfaceFlinger 合成延迟
 
@@ -172,7 +197,7 @@ SurfaceFlinger 是系统级的合成服务，它负责把所有 App 的 Layer �
 
 在 Perfetto 中排查 SurfaceFlinger 延迟，主要看这几个信号（详见 §2.6）：
 
-- SurfaceFlinger 主线程 Track 上 `onMessageRefresh`、`commit`、`composite` 这一组 slice 的耗时。Android 10+ 之后，旧教程里的 `doComposition` 基本对应这里的刷新入口。经验上 Client 合成常见于几毫秒级，如果稳定拉长到 10ms+，说明合成遇到了瓶颈。
+- SurfaceFlinger 主线程 Track 上 `commit`、`composite`，以及旧 trace 中可能出现的 `onMessageRefresh`。Android 14+ 里 `commit` 主要覆盖事务处理和 buffer latch，`composite` 主要覆盖合成决策、HWC/GPU 提交和 present 相关工作。判断 SF 延迟时，先和同设备、同分辨率、同刷新率、相近 Layer 数量的正常帧对比。Client 合成在不同 GPU、HWC 能力和分辨率下差异很大；只有相对基线持续拉长，并且 FrameTimeline 标记指向 SF 侧，才把 SF 作为主要方向。
 - `VSYNC-sf` 信号到来时 SurfaceFlinger 是否及时响应。如果 SF 在一个 VSync 周期内没能完成合成，这一帧就会被延迟到下一个 VSync 才呈现——表现为全局性的掉帧，不只是一个 App 的掉帧。
 - Android 12+ 的 `FrameTimeline` 数据会明确标记 jank 的类型：如果是 `SurfaceFlingerCpuDeadlineMissed` 或 `SurfaceFlingerGpuDeadlineMissed`，那就是 SF 侧的问题。
 
@@ -277,6 +302,17 @@ LIMIT 15;
 
 举个例子：你的主线程在等一个 Binder 调用返回。通过唤醒链分析，你发现服务端（system_server）的 Binder 线程在处理你的请求之前，先花了 30ms 处理了另一个进程的请求。这说明你的请求本身不慢，只是排队等了——如果那个"插队"的进程一直在发密集的 Binder 调用，它就是问题间接制造者。
 
+### Binder 归因：追到服务端线程状态
+
+客户端主线程 Sleep 在 `binder_thread_read` 或 Binder ioctl 上，只能证明它在等回复，不能直接证明服务端代码慢。要把责任链说清楚，需要追到服务端 Binder 线程：
+
+1. 在客户端线程选中等待片段，记录等待开始时间、结束时间、`blocked_function` 和调用栈。
+2. 沿 Perfetto 的 wakeup arrow、Binder transaction slice，或同一时间窗内的 server 进程 Binder 线程跳转到服务端。
+3. 在服务端线程上拆 `Wall / CPU / thread_state`：`Wall ≈ CPU` 说明服务端代码在执行；Runnable 占比高说明服务端也在等 CPU；Sleep / futex 指向锁或另一个 Binder 对端；D 状态指向存储或内存压力。
+4. 如果服务端线程本身排队很久，再回到 CPU 区域看是谁占核，避免把系统调度拥塞误写成 system_server 逻辑慢。
+
+这条链能区分三类结论：客户端调用太频繁、服务端逻辑慢、系统资源竞争导致服务端也跑不上 CPU。报告里建议把客户端等待片段、服务端线程状态和全局 CPU top 进程放在同一个时间窗里说明。
+
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
 ## 系统级性能回归的排查方法
@@ -309,9 +345,9 @@ Android 大版本升级往往会引入新的系统服务，或者让既有服务
 |:--|:--|:--|
 | `doFrame` Wall ≈ CPU，且 CPU 耗时超过帧预算 | App：计算过重 | 火焰图定位热点函数 |
 | `doFrame` Wall >> CPU，差值主要是 Runnable | 系统：调度延迟 | CPU 区域是否满载？哪些进程在占 CPU？ |
-| `doFrame` Wall >> CPU，差值主要是 Sleep (binder) | App 或系统：Binder 对端慢 | 查看服务端线程的 Trace |
-| `doFrame` Wall >> CPU，差值主要是 D 状态 | 系统：I/O 延迟（可能是内存不足） | 看 kswapd 活跃度、zRAM 使用率 |
-| SurfaceFlinger `onMessageRefresh` / `composite` 耗时异常 | 系统：合成瓶颈 | 看 GPU 占用、Layer 数量、FrameTimeline jank 类型 |
+| `doFrame` Wall >> CPU，差值主要是 Sleep (binder) | App 或系统：Binder 对端慢 / 对端也被调度延迟 | 追到服务端 Binder 线程，看 thread_state、CPU 调度和锁/I/O 等待 |
+| `doFrame` Wall >> CPU，差值主要是 D 状态 | 系统：I/O 延迟（可能是内存不足） | 看 kswapd 活跃度、zRAM 使用率、rss_stat 增长进程 |
+| SurfaceFlinger `commit` / `composite` 耗时异常 | 系统：合成瓶颈 | 看 GPU 占用、Layer 数量、FrameTimeline jank 类型，并与同设备基线对比 |
 | 升级后性能普遍下降 | 系统：版本回归 | A/B 对比 Trace |
 | 特定操作才卡，其他时候正常 | App：操作触发 | 对比问题帧和正常帧 |
 
@@ -324,11 +360,12 @@ Android 大版本升级往往会引入新的系统服务，或者让既有服务
 1. **定位问题帧**：在主线程 Track 上找到 `doFrame` 耗时明显超过帧预算的那一帧。
 2. **查看 Wall vs CPU**：选中这个 `doFrame` Slice，看 `Wall` 和 `CPU` 的差值。
 3. **查看 thread_state**：在主线程下方找到 `thread_state` Track，观察这段时间内的状态分布（Running / Runnable / Sleep / D）。
-4. **查看 CPU 全局状态**：跳到顶部 CPU 区域，看这段时间所有核心的负载情况。是否有空闲核心？主线程是否被调度到了小核？
-5. **查看频率限制**：在 CPU Frequency Track 看 `scaling_max_freq` 是否被压低。
-6. **查看内存状态**：搜索 `kswapd`，看它在这段时间是否活跃。查看 `lmkd` 事件，看是否有进程被杀。
-7. **查看 SurfaceFlinger**：跳到 SurfaceFlinger 进程，看 `onMessageRefresh`、`commit`、`composite` 这些 slice 是否明显变长。
-8. **形成结论**：综合以上信息，判断问题归属——是 App 代码慢，还是系统资源不够。
+4. **追 Binder 对端**：如果 Sleep 来自 Binder，沿 wakeup arrow 或 Binder transaction 追到服务端线程，再看服务端 `thread_state`。
+5. **查看 CPU 全局状态**：跳到顶部 CPU 区域，看这段时间所有核心的负载情况。是否有空闲核心？主线程是否被调度到了小核？
+6. **查看频率限制**：在 CPU Frequency Track 看 `scaling_max_freq` 是否被压低。
+7. **查看内存状态**：搜索 `kswapd`，看它在这段时间是否活跃；再看 `rss_stat` / process memory 轨道和 `lmkd` 事件，确认是否有进程制造内存压力或被杀。
+8. **查看 SurfaceFlinger**：跳到 SurfaceFlinger 进程，看 `commit`、`composite` 以及旧 trace 中的 `onMessageRefresh` 是否相对基线变长。
+9. **形成结论**：综合以上信息，判断问题归属——是 App 代码慢，还是系统资源不够。
 
 ## 常见误区
 
