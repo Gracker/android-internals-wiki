@@ -15093,5 +15093,25 @@
     "added_by": "external-ai-review",
     "added_at": "2026-04-28T02:18:16.461948+08:00",
     "status": "pending"
+  },
+  {
+    "section": "5.7",
+    "section_title": "CPU 相关的版本演进",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Doze 触发条件把 WakeLock 写成进入前提，需按官方/AOSP 口径修正",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂/源码行为",
+        "location": "L147",
+        "detail": "Doze 触发条件把“没有持有长时间 WakeLock”列为进入前提。官方 Doze 入口口径是 unplugged、screen off、stationary；进入 Doze 后系统会忽略 app wake locks。WakeLock 是 Doze 的限制对象，不是阻止进入 Doze 的普通前提。",
+        "suggestion": "移除触发条件中的 WakeLock 前提，改成“持有 partial WakeLock 也不能保证阻止 Doze；Doze 中 wake lock 会被忽略，只在维护窗口恢复工作”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T02:30:00+08:00",
+    "status": "pending"
   }
 ]

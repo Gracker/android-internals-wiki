@@ -5314,3 +5314,15 @@
   - **建议**：说明 OpenGL ES 通过 ANGLE 运行在 Vulkan 之上的新常态及能效提升。
   - **来源**: Gemini 外部 review (2026-04-28-15-ch02-01-rendering-overview-external-review.md)
 
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L261
+- **问题**：`PeriodicWorkRequest` 每周期完成后的“写入 + 注册开销大约几十毫秒”是量化性能断言，但正文没有给出 WorkManager 版本、设备、trace/benchmark 条件或源码测量点。
+- **建议**：保留 WorkManager 使用 one-off JobInfo + `calculateNextRunTime()` 的源码结论；若继续写“几十毫秒”，补 Perfetto/Trace.beginSection/Room 写入耗时样本，否则删掉具体量级。
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-28
+- **类型**：知识盲区
+- **位置**：L227 / L553
+- **问题**：WorkManager 的“最终执行”表述缺少 force-stop 边界。AndroidX `ForceStopRunnable` 注释说明 force-stop 会取消 alarms/jobs，WorkManager 只能在进程再次启动后检测并重新调度，不能让被 force-stop 的 App 自行在后台恢复执行。
+- **建议**：在 WorkManager 保证语义旁补一句边界：设备重启、进程死亡可恢复；用户/系统 force-stop 后需等 App 再次启动，之后由 ForceStopRunnable / RescheduleReceiver 重建调度。
+
