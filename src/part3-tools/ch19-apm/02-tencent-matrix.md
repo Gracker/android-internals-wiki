@@ -7,30 +7,31 @@ drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-27"
-last_verified_against: "Tencent Matrix README/wiki + AGP Transform API removal notes + external review AGP8/methodMapping assets"
+last_verified_against: "Tencent Matrix README/wiki + Matrix.java Builder#pluginListener + AGP Transform API removal notes + external review AGP8/methodMapping assets"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Tencent/matrix"
-pipeline_stage: task2b_pending
+  - type: source
+    path: "https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-android-lib/src/main/java/com/tencent/matrix/Matrix.java"
+pipeline_stage: task6_pending
 task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-27T20:58:38+08:00"
+last_task2b_at: "2026-04-27T22:40:00+08:00"
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T22:33:32+08:00"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-review_notes: "2026-04-27 task2b: fixed AGP 8+ Trace Canary boundary, added methodMapping explanation, report schema examples, and Battery/native hook rollout risks."
-
+review_notes: "2026-04-27 task2b: fixed Matrix.Builder pluginListener API usage and added Matrix.java source anchor for Builder/plugin registration."
 ---
 
 # Tencent Matrix
@@ -173,13 +174,15 @@ Matrix Android 的接入模型可以分成三层：
 2. App 运行时初始化 Matrix，并按需安装 `TracePlugin`、`ResourcePlugin`、`IOCanaryPlugin` 等模块。
 3. `PluginListener` 接收 `Issue`，业务侧把它转换成自己的上报 schema。
 
-代码层面通常会落到这样的结构。下面这段是接入骨架，重点看 `builder.plugin(...)` 的注册顺序和 `onReportIssue()` 的职责分离。`TraceConfig` 细节要按项目所用 Matrix 版本补齐，但不能跳过注册直接 `getPluginByClass(...).start()`：
+代码层面通常会落到这样的结构。下面这段是接入骨架，重点看 `builder.plugin(...)` 的注册顺序和 `onReportIssue()` 的职责分离。`TraceConfig` 细节要按项目所用 Matrix 版本补齐，但不能跳过注册直接 `getPluginByClass(...).start()`。
+
+源码锚点是 `matrix-android-lib/src/main/java/com/tencent/matrix/Matrix.java`：`Matrix.Builder` 公开 `plugin(Plugin)` 和 `pluginListener(PluginListener)`，`build()` 在 listener 为空时补 `DefaultPluginListener`。示例应调用 `pluginListener(...)`，不存在 `patchListener(...)` 这个 Builder API。
 
 ```java
 public final class MatrixInitializer {
     public static void init(Application app) {
         Matrix.Builder builder = new Matrix.Builder(app);
-        builder.patchListener(new DefaultPluginListener(app) {
+        builder.pluginListener(new DefaultPluginListener(app) {
             @Override
             public void onReportIssue(Issue issue) {
                 super.onReportIssue(issue);

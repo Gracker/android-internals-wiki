@@ -1,5 +1,4 @@
 ---
-
 title: "Baseline Profiles 与编译优化"
 chapter: "19"
 section: "19.15"
@@ -7,29 +6,36 @@ status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)；Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景，非 Play 安装需单独验证"
-last_verified: "2026-04-24"
-last_verified_against: "Android Developers Baseline Profiles overview / debug docs, ProfileInstaller ProfileVerifier docs"
+last_verified: "2026-04-27"
+last_verified_against: "Android Developers Baseline Profiles docs + ProfileInstaller manifest/source + AOSP art/profman/profman.cc + art/dex2oat/dex2oat.cc"
 confidence: medium
 tags: [apm]
 related_chapters: ["19.0"]
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+  - type: source
+    path: "https://android.googlesource.com/platform/art/+/refs/heads/main/profman/profman.cc"
+  - type: source
+    path: "https://android.googlesource.com/platform/art/+/refs/heads/main/dex2oat/dex2oat.cc"
+  - type: source
+    path: "https://github.com/androidx/androidx/blob/androidx-main/profileinstaller/profileinstaller/src/main/AndroidManifest.xml"
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T07:20:23+08:00"
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-25T02:45:50+08:00"
-repaired_date: "2026-04-25"
+last_task2b_at: "2026-04-27T22:40:00+08:00"
+repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
+review_notes: "2026-04-27 task2b: split R8 Startup Profile layout from ART speed-profile compilation, added profman/dex2oat flow, HSPL flags, ProfileInstaller/R8 checks, and dexopt verification command."
 ---
 
 # Baseline Profiles 与编译优化
@@ -75,7 +81,7 @@ repaired_by: openclaw-task2b
 
 ## Baseline Profiles 是发布前优化，不是监控
 
-Baseline Profiles 使应用或库随包发布一组常用代码路径，Android Runtime 据此进行AOT编译优化。官方文档表明Baseline Profiles的目标是：优化启动、降低交互卡顿，让新用户和每次更新后的首次运行都受益。
+Baseline Profiles 使应用或库随包发布一组常用代码路径，Android Runtime 据此进行 AOT 编译优化。官方文档给出的目标是优化启动、降低交互卡顿，让新用户和每次更新后的首次运行都受益。
 
 它不属于 APM 采集工具，但和性能监控关系很近。线上启动慢或交互慢被发现后，Baseline Profiles 常常是修复手段之一；修复是否生效，再用 Macrobenchmark 和线上指标验证。
 
@@ -93,6 +99,23 @@ Baseline Profiles 把“哪些类和方法值得提前优化”提前打包进�
 | Android 9+（API 28+），Google Play 安装 | Baseline Profile 随包交付，Play Cloud Profiles 也可能参与后续优化。Baseline Profile 覆盖新版本初期和新用户，Cloud Profiles 来自 Play 的聚合数据。 | 灰度早期不要假设 Cloud Profiles 已经覆盖。 |
 | Android Studio / Gradle 安装 | 现代 AGP 可在安装流程中触发 profile 编译，适合本地验证。 | 记录 AGP 版本和安装命令，避免把本地安装结果当成商店安装结果。 |
 | 其他商店 / sideload | 依赖 APK 内 profile 与 ProfileInstaller 触发安装。AGP < 8.4 且非 Play 安装时，Baseline Profile 编译不会自动完成。 | 把“文件存在”和“ART 已编译”分开验证。 |
+
+从文本规则到设备端编译，中间会经过这几个环节：
+
+```mermaid
+flowchart LR
+    Gen[Macrobenchmark / Profile Generator] --> Text[baseline-prof.txt]
+    Text --> Profgen[profgen 转成二进制 profile]
+    Profgen --> Package[AAB / APK 内 baseline.prof 与 .profm]
+    Package --> Installer[ProfileInstaller 或安装来源投递]
+    Installer --> Profman[profman 合并与分析]
+    Profman --> Dex2oat[dex2oat --compiler-filter=speed-profile]
+    Dex2oat --> Oat[OAT / App image]
+```
+
+`baseline-prof.txt` 不会直接交给 ART 编译器。`profgen` 在构建期把文本规则转成二进制 profile；非 Play 安装时，`androidx.profileinstaller.ProfileInstaller` 通常负责把随包 profile 放到 ART 可读的位置。后续由 `profman` 合并和分析 profile，满足条件后由 `dex2oat --compiler-filter=speed-profile` 编译命中的方法。源码锚点是 AOSP `art/profman/profman.cc` 和 `art/dex2oat/dex2oat.cc`。
+
+`RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION` 表示 profile 已交给系统，等待后续 dexopt；`RESULT_CODE_COMPILED_WITH_PROFILE` 才表示当前包已经按 profile 完成编译。排查时不要把 ENQUEUED 当作收益已经生效。
 
 适合纳入 profile 的路径包括：
 
@@ -120,14 +143,15 @@ Baseline Profiles 把“哪些类和方法值得提前优化”提前打包进�
 
 ## Baseline Profiles 和 Startup Profiles
 
-Baseline Profiles 用于指定更广的热点代码路径，启动和交互都可以覆盖。Startup Profiles 更集中在 DEX layout 优化，目标是减少启动阶段需要加载的 DEX 页面和类加载成本。
+Baseline Profiles 和 Startup Profiles 的作用点不同。Baseline Profiles 面向 ART 的 profile-guided AOT 编译，用来减少首次运行时的解释执行和 JIT 预热。Startup Profiles 面向构建期 DEX layout，R8 / D8 消费带 `S` 标记的规则，把启动路径中的类和方法排到更集中的 DEX 区域，减少启动阶段 page fault 和 DEX 加载局部性问题。
 
-简单区分：
+可以这样拆：
 
-- Baseline Profiles：让 ART 预先编译常用方法。
-- Startup Profiles：帮助启动路径相关代码在 DEX 中布局得更利于加载。
+- Baseline Profiles：包内 profile 交给 ART，安装或后台 dexopt 阶段通过 `speed-profile` 编译常用方法。
+- Startup Profiles：构建期由 R8 / D8 使用，目标是调整 DEX 中启动代码的位置，不等同于 ART 编译。
+- 两者可同时存在：一个偏执行速度，一个偏加载局部性；启动慢时还要看资源加载、主线程 I/O、锁等待和业务初始化。
 
-两者可以配合，但不要把它们理解成同一个文件的两个名字。调启动时，既要看编译状态，也要看 DEX 布局、类加载、资源加载和业务初始化。
+调启动时，编译状态和 DEX 布局要分开验证。只看到 profile 文件存在，还不能说明启动路径已经被编译，也不能说明 DEX 页面已经按启动顺序排好。
 
 ## 和 APM 的连接方式
 
@@ -158,7 +182,14 @@ HLcom/example/app/HomeRepository;
 Lcom/example/app/FeedItem;
 ```
 
-实际生成内容由工具决定。书稿里需要记住的是：profile 不是“性能配置开关”，它是一组热点类和方法提示。它覆盖不到的路径，不会因为文件存在而自动变快。
+前缀里的字母含义如下：
+
+- `H`：Hot，频繁调用的方法。
+- `S`：Startup，启动路径内的方法或类，R8 / D8 可据此调整 DEX layout。
+- `P`：Post-startup，启动后仍常用的路径。
+- `L`：Load，类加载相关标记。
+
+`HSPL` 同时出现在一条规则上，表示这条记录既影响 ART 编译优先级，也可能参与启动布局优化。开发者通常不手写这些规则，但排查 profile 命中率时要能读懂前缀含义。profile 不是“性能配置开关”，它是一组热点类和方法提示。它覆盖不到的路径，不会因为文件存在而自动变快。
 
 ## 生成场景要覆盖用户路径
 
@@ -182,6 +213,21 @@ Baseline Profile 的质量取决于生成脚本。只启动 App 一次，通常�
 | 安装来源 | Google Play、Android Studio / Gradle、其他商店或 sideload 的触发时机不同。AGP < 8.4 的非 Play 安装要单独验证。 | 用本地 Gradle 安装结果推断商店安装结果。 |
 | ProfileVerifier | 关注 `RESULT_CODE_COMPILED_WITH_PROFILE`、`RESULT_CODE_PROFILE_ENQUEUED_FOR_COMPILATION`、`RESULT_CODE_NO_PROFILE`、`RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION`。 | `ENQUEUED` 只是已入队，不能当成已编译。 |
 | Macrobenchmark | 对比 `CompilationMode.Partial`、无 profile、全编译等模式下的启动和滚动指标。 | 只看一次冷启动，忽略首装、升级、清数据用户的差异。 |
+
+还可以用系统侧状态补一层验证：
+
+```bash
+adb shell dumpsys package com.example.app | grep -A 10 "dexopt"
+adb shell cmd package compile -m speed-profile -f com.example.app
+```
+
+不同 Android 版本的 `dumpsys package` 字段会变化，目标是确认当前包的编译过滤器或状态里出现 `speed-profile` / profile compiled 相关信息。第二条命令适合本地复现，不要拿它替代真实安装来源的自动编译结果。
+
+### 混淆与初始化检查
+
+`androidx.profileinstaller` 的 manifest 通过 `androidx.startup.InitializationProvider` 注册 `ProfileInstallerInitializer`，并声明 `androidx.profileinstaller.ProfileInstallReceiver` 处理安装、保存和 benchmark 相关 action。如果项目移除了 AndroidX Startup provider，要确认仍有等价的 profile 安装动作；如果 shrinker 或 manifest 合并把 `ProfileInstallReceiver` 裁掉，相关调试入口会失效。
+
+Baseline Profile 规则通常在混淆前由测试包生成，AGP 打包时会把规则映射到混淆后的名称并产出 `.prof` / `.profm`。不要把未重映射的文本规则手工塞进 release 包。存在非标混淆或手动移动 profile 时，抽取最终 AAB / APK 中的 profile，并和同版本 `mapping.txt` 对照，确认类和方法名对应。
 
 常见问题：
 
