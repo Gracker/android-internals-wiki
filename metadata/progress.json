@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T19:37:10+08:00",
+  "generated_at": "2026-04-27T19:40:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 105,
     "ready-for-review": 113,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T19:37:10+08:00",
+    "last_updated": "2026-04-27T19:40:00+08:00",
     "pipeline_stage_counts": {
       "None": 33,
       "task6_pending": 30,
@@ -66,7 +66,7 @@
       "idle": 4,
       "'pending'": 1
     },
-    "last_updated": "2026-04-27T19:37:10+08:00"
+    "last_updated": "2026-04-27T19:40:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -3389,20 +3389,20 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "revisiting",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-21",
+      "reviewed_date": "2026-04-26",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T19:37:10+08:00",
-      "last_task2b_at": "2026-04-26T10:41:09+08:00",
-      "repaired_date": "2026-04-26",
+      "last_task9_at": "2026-04-27T19:36:19+08:00",
+      "last_task2b_at": "2026-04-27T19:40:00+08:00",
+      "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
       "review_round": "2",
       "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。"
@@ -5924,7 +5924,14 @@
       "task6_state": "revisiting",
       "task9_state": "pending",
       "task2b_state": "fixed",
-      "task2b_result": "fixed"
+      "task2b_result": "fixed",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-25T02:02:05+08:00",
+      "last_task2b_at": "2026-04-27T19:40:00+08:00",
+      "repaired_date": "2026-04-27",
+      "repaired_by": "openclaw-task2b"
     },
     "src/part3-tools/ch19-apm/07-dokit.md": {
       "path": "src/part3-tools/ch19-apm/07-dokit.md",
@@ -7561,7 +7568,14 @@
       "https://raw.githubusercontent.com/chromium/crashpad/main/doc/overview_design.md",
       "https://developer.android.com/ndk/guides/gwp-asan"
     ],
-    "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+    "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",
+    "task9_result": "needs-rework",
+    "task9_reviewed_date": "2026-04-25",
+    "task9_reviewed_by": "openclaw-task9",
+    "last_task9_at": "2026-04-25T02:02:05+08:00",
+    "last_task2b_at": "2026-04-27T19:40:00+08:00",
+    "repaired_date": "2026-04-27",
+    "repaired_by": "openclaw-task2b"
   },
   "2026-04-25-10": {
     "task": "task2b-rework",
@@ -7608,7 +7622,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T15:34:11+08:00",
+  "last_updated": "2026-04-27T19:40:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8413,23 +8427,38 @@
         343,
         300
       ]
+    },
+    {
+      "at": "2026-04-27T19:40:00+08:00",
+      "task": "task2b-content-processing-rework",
+      "sections": [
+        "11.5",
+        "19.24"
+      ],
+      "files": [
+        "src/part2-performance/ch11-power/05-wakelock.md",
+        "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
+      ],
+      "queue_items": [
+        57,
+        351
+      ]
     }
   ],
   "last_task2b_run": {
-    "at": "2026-04-27T14:50:00+08:00",
+    "at": "2026-04-27T19:40:00+08:00",
     "task": "task2b-content-processing-rework",
     "sections": [
-      "17.3",
-      "15.2"
+      "11.5",
+      "19.24"
     ],
     "files": [
-      "src/part4-system/ch17-oem/03-industry-cases.md",
-      "src/part3-tools/ch15-methodology/02-system-vs-app.md"
+      "src/part2-performance/ch11-power/05-wakelock.md",
+      "src/part3-tools/ch19-apm/24-crash-anr-internals.md"
     ],
     "queue_items": [
-      49,
-      343,
-      300
+      57,
+      351
     ]
   },
   "2026-04-27-15-task9": {
