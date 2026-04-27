@@ -40,7 +40,12 @@ pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+task6_state: revisiting
+pipeline_stage: task6_pending
+task9_state: pending
+last_task2b_at: "2026-04-28T02:40:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 task9_reviewed_by: "openclaw-task9"
@@ -48,6 +53,10 @@ task9_reviewed_date: "2026-04-28"
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-04-28T00:37:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
+task6_state: revisiting
+pipeline_stage: task6_pending
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
@@ -187,7 +196,7 @@ RecyclerView 滑动是 GC 敏感场景的典型代表。在滑动过程中,`onBi
 
 ### 从手动埋点到系统自动触发
 
-Android 16 引入了 ProfilingManager,允许 App 在运行时请求 heap dump、stack sampling、system trace 等分析产物。Android 17 的新增点,是可以把采集条件交给系统触发器判断,但这仍是一套 trigger-based capture API,不是默认全局开启的自动抓取。
+ProfilingManager 在 Android 15（API 35）引入，提供运行时请求 heap dump、stack sampling、system trace 等分析产物的能力。API 36 补充了部分 trigger 入口。Android 17（API 37）新增了 cold start、OOM、kill、anomaly 等系统触发器，可以把采集条件交给系统事件驱动——但 ProfilingManager 仍是一套 trigger-based capture API，不是默认全局开启的自动抓取。
 
 要用这套能力,App 仍要完成两步:先通过 `ProfilingManager.registerForAllProfilingResults()` 注册结果回调,再调用 `ProfilingManager.addProfilingTriggers()` 添加触发器。触发器常量定义在 `android.os.ProfilingTrigger`,真正的产物交付仍由 ProfilingManager 完成。[已验证: Android 17 features 页和 `android.os.ProfilingTrigger` reference 都把 trigger 描述成 ProfilingManager 的注册式能力,而不是无需代码的默认抓取]
 
@@ -287,7 +296,7 @@ try {
 - `android:resizeableActivity="false"`(禁止调整大小)
 - 宽高比限制
 
-配置变化仍通过 `android:configChanges`、`onConfigurationChanged()` 和默认 Activity 重建机制处理；Android 没有名为 `Activity.recreateOnConfigChanges` 的标准 API 或 manifest 属性。若平台在大屏场景减少某些尺寸 / 方向变化下的强制重建，应用侧仍要把适配点落到这三类入口上。
+方向和 resize 限制被忽略后，配置变化仍然走 Android 现有的配置变更机制。默认情况下，屏幕尺寸或方向变化会触发 Activity 销毁重建；只有 App 在 manifest 中通过 `android:configChanges` 声明了对应配置类型，并在代码中正确处理 `onConfigurationChanged()`，才能避免重建导致的中断。使用自适应布局（Jetpack WindowManager、`SlidingPaneLayout` 等）可以进一步减少对 `configChanges` 声明的依赖。Android 没有名为 `Activity.recreateOnConfigChanges` 的标准 API 或 manifest 属性。
 
 ### 对渲染性能的影响
 
@@ -317,7 +326,7 @@ try {
 
 ### 明文流量迁移到 Network Security Configuration
 
-Android 17 弃用 `android:usesCleartextTraffic`,迁移到 Network Security Configuration。manifest 中的 `usesCleartextTraffic` 不再是可靠配置,需将必须保留的明文访问迁到 `network_security_config.xml`。
+Android 17 持续收紧明文流量策略，`android:usesCleartextTraffic` 的 manifest 级全局开关在 targetSdk 递增过程中逐步退出推荐路径。当前更稳妥的做法是优先通过 Network Security Configuration 按域名管理明文例外，把必须保留的 HTTP 端点迁到 `network_security_config.xml` 的 `<domain-config>` 白名单中。Android 17 官方 behavior changes 页面没有明确标注 `usesCleartextTraffic` 为 deprecated；ECH `<domainEncryption>` 和 CT 默认行为是这版更确定的网络层变更。
 
 ```xml
 <!-- res/xml/network_security_config.xml -->
@@ -405,7 +414,7 @@ Android 继续推动 16KB 页面大小的适配,这个变更对使用 NDK 的原
 
 ### 后台音频限制加强
 
-Android 17 对所有 App(无论 `targetSdkVersion`)强制执行后台音频限制:当 App 不在有效生命周期状态时,音频播放和焦点请求将静默失败。这对音乐播放器和语音通话类 App 有影响。
+Android 17 对所有 App（无论 `targetSdkVersion`）强制执行后台音频限制。当 App 不在有效生命周期状态时，音频播放和音量调节 API 会静默失败；`AudioManager.requestAudioFocus()` 返回 `AUDIOFOCUS_REQUEST_FAILED`，而不是静默丢弃。targetSdk 37 的应用还面临更严格的 FGS 约束：后台音频相关的 foreground service 需要 while-in-use capability，或同时持有 exact alarm schedule 权限并使用 `USAGE_ALARM` 用途。这对音乐播放器和语音通话类 App 有影响。
 
 ### 更安全的 Native 动态代码加载
 
