@@ -14392,5 +14392,43 @@
     "completed_at": "2026-04-27T23:40:00+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "16.5",
+    "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Android 17 行为变更章节存在 API 引入版本、cleartext 配置、后台音频失败语义和大屏配置变化语义错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "line 188 ProfilingManager 新触发器",
+        "detail": "正文写“Android 16 引入了 ProfilingManager”。官方 API reference 显示 `android.os.ProfilingManager` class Added in API level 35；Android 17 是新增/扩展 `ProfilingTrigger` 类型，不是首次引入 ProfilingManager。",
+        "suggestion": "改为“Android 15/API35 引入 ProfilingManager 基础采集；API36 补 trigger 相关入口；Android 17/API37 增加 cold start/OOM/kill/anomaly 等触发器”，并分别标注 API 级别。"
+      },
+      {
+        "type": "版本差异",
+        "location": "line 318 明文流量迁移",
+        "detail": "正文写“Android 17 弃用 `android:usesCleartextTraffic`，manifest 中该配置不再可靠”。Android 17 behavior changes 与 Network Security Configuration 官方页没有给出该弃用结论；官方变化点是 ECH `<domainEncryption>` 和 CT 默认行为等。",
+        "suggestion": "删除“弃用/不可靠”判断，保留“优先用 Network Security Configuration 管理域名级 cleartext 例外”；如果坚持写弃用，必须补 Android 17 官方 source anchor。"
+      },
+      {
+        "type": "源码准确性",
+        "location": "line 406 后台音频限制",
+        "detail": "正文写音频播放和焦点请求都会静默失败。Android 17 all-app behavior 文档写的是 audio playback / volume change APIs silently fail；audio focus API 返回 `AUDIOFOCUS_REQUEST_FAILED`。",
+        "suggestion": "拆成两句：播放/音量 API 静默失败；audio focus 失败返回 `AUDIOFOCUS_REQUEST_FAILED`。同时补 targetSdk 37 更严格条件：FGS 需 while-in-use capability，或 exact alarm + `USAGE_ALARM`。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "line 288 与 line 302 大屏配置变化",
+        "detail": "前文说配置变化仍通过 `android:configChanges`、`onConfigurationChanged()` 和默认 Activity 重建机制处理；后文又写“新模式下通过 `onConfigurationChanged()` 处理”。忽略方向/resize 限制不等于系统自动改走 `onConfigurationChanged()`。",
+        "suggestion": "明确默认仍可能触发 Activity recreation；只有声明并正确处理对应 `configChanges` 或使用自适应布局时，才可能减少重建导致的中断。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-28T00:37:00+08:00",
+    "status": "pending"
   }
 ]
