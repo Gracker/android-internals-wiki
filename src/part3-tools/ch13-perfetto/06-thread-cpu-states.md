@@ -550,6 +550,14 @@ LIMIT 20;
 
 **"应用设置高优先级就能解决 Runnable 问题"**。不一定，甚至可能适得其反。不同厂商对调度器有各自的客制化改动，应用设置的优先级在某些厂商的调度策略下可能出现意料之外的行为。更可靠的做法是合理安排任务模型，减少关键路径上的线程依赖。
 
+
+### Perfetto Running 状态全栈技术分析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md
+- 类型：DeepResearch 调研结果
+- 摘要：从 Perfetto trace 中 Setup proxies 片段的 Running 状态出发，逐层拆解 Linux task_struct→sched_switch→ftrace→Perfetto sched_slice 的完整信号链，覆盖用户态/内核态、ART/native、缓存/TLB 微架构层级，给出 Running vs Runnable vs Sleeping 的精确定义与诊断手法。
+- 注入时间：2026-04-28
+- 价值：源码级解释了 Perfetto thread state 的内核来源，对 ch13 的 CPU 状态分析章节是极好的补充参考
+
 ## 参考资料
 
 - [Perfetto 官方文档 - CPU Scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)

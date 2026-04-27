@@ -20681,5 +20681,52 @@
     "processed_at": "2026-04-28T05:39:37.649892",
     "chapter": "ch16-aosp",
     "score": 16
-  }
+  },
+  "entries": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md",
+      "title": "Perfetto Running 状态全栈技术分析",
+      "summary": "从 Perfetto trace 中 Setup proxies 片段的 Running 状态出发，逐层拆解 Linux task_struct→sched_switch→ftrace→Perfetto sched_slice 的完整信号链，覆盖用户态/内核态、ART/native、缓存/TLB 微架构层级。",
+      "chapter": "ch13",
+      "section": "06-thread-cpu-states",
+      "action": "inject",
+      "processed_at": "2026-04-28T06:13:23.086237"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md",
+      "title": "PSI 驱动的 Android LMKD 进程杀机制",
+      "summary": "从 vmpressure 到 PSI 的范式转移源码级贯通分析，覆盖 kernel/sched/psi.c → lmkd.cpp 完整信号链，包含进程选择策略与 Android 10-15 演进编年史。",
+      "chapter": "ch04",
+      "section": "04-lmk",
+      "action": "inject",
+      "processed_at": "2026-04-28T06:13:23.086237"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md",
+      "title": "FGS Timeout ANR 机制源码解析 (Android 14→17)",
+      "summary": "AOSP 源码视角逐行解析 ShortService 3分钟硬超时、TimeLimitedFgs 6h/24h 滚动窗口、onTimeout 回调链路与 FGS ANR 三段式语义演进。",
+      "chapter": "ch09",
+      "section": "02-anr-types",
+      "action": "inject",
+      "processed_at": "2026-04-28T06:13:23.086237"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md",
+      "title": "Android Sync Fence 机制深度剖析",
+      "summary": "从内核 dma_fence 到 Android 16 Explicit Sync 迁移的完整机制分析，含源码级 signal/wait 语义解读。",
+      "chapter": "ch02",
+      "section": "16-sync-fence",
+      "action": "queue",
+      "processed_at": "2026-04-28T06:13:23.086237"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 17 Generational CMC 深度源码剖析-从 CC 到分代并发标记压缩的演进.md",
+      "title": "Android 17 Generational CMC 深度源码剖析",
+      "summary": "ART 从 CC 到 Generational CMC 架构重写，消除读屏障，引入 userfaultfd 分代设计。",
+      "chapter": "ch04",
+      "section": "08-art-generational-gc",
+      "action": "queue",
+      "processed_at": "2026-04-28T06:13:23.086237"
+    }
+  ]
 }

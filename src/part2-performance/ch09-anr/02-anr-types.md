@@ -344,6 +344,14 @@ adb shell cat /data/anr/anr_* | tail -200
 
 **误区五："ContentProvider ANR 不常见。"** 在使用多个 ContentProvider 做初始化的架构中（很多第三方 SDK 通过 ContentProvider 做自动初始化），任何一个超时都会阻塞整个 App 启动。
 
+
+### FGS Timeout ANR 机制源码解析 (Android 14→17)
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
+- 类型：DeepResearch 调研结果
+- 摘要：AOSP 源码视角逐行解析 ShortService 3分钟硬超时、TimeLimitedFgs 6h/24h 滚动窗口、onTimeout 回调链路、ForegroundServiceDidNotStopInTimeException 投递路径，覆盖 Android 14→17 的 FGS ANR 三段式语义演进。
+- 注入时间：2026-04-28
+- 价值：FGS timeout 是 Android 14+ 最重要的 ANR 新类型之一，ch09 章节目前对此覆盖不足
+
 ## 参考资料
 
 - AOSP 源码路径：
