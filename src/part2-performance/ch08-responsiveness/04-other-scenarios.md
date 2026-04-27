@@ -8,8 +8,8 @@ drafted_by: "openclaw-task2a"
 reviewed_date: 2026-04-23
 reviewed_by: openclaw-task6
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-02"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
+last_verified: "2026-04-27"
+last_verified_against: "AOSP android-16.0.0_r1 InputTransport/InputDispatcher/ViewRootImpl + AndroidX ViewPager2/Fragment release notes + Task9 deep review 2026-04-27"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-07"
@@ -29,17 +29,19 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T10:02:28+08:00"
 task2b_result: fixed
-last_task2b_at: "2026-04-23T19:25:33+08:00"
+last_task2b_at: "2026-04-27T10:44:00+08:00"
+repaired_date: "2026-04-27"
+repaired_by: "openclaw-task2b"
 ---
 
 # 其他响应速度场景
@@ -118,7 +120,7 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 **回退栈（Back Stack）的生命周期开销。** 当使用 `addToBackStack()` 并执行 `replace()` 时，旧 Fragment 会走到 `onDestroyView()`（View 被销毁但 Fragment 实例保留）。用户按返回键时，旧 Fragment 需要重新走 `onCreateView()` → `onDestroyView()` 之间的所有回调——布局要重新 inflate。
 
-在 Perfetto 中，Fragment 的切换可以通过 `FragmentManager` 相关的 trace tag 观察到，但 Fragment 事务的 trace 点不如 Activity 那么完整，我们可能需要在代码中手动添加 `Trace.beginSection("FragmentTransaction")` 来获得更精确的度量。
+在 Perfetto 中，AndroidX Fragment 1.3.0+ 可以观察到 `FragmentManager:` 前缀的 trace slice，例如 `FragmentManager:commit`、`FragmentManager:execPendingActions`、`FragmentManager:moveToState`。业务代码仍然可以在导航入口外层加 `Trace.beginSection("FragmentTransaction")`，用来标出从点击到事务提交的应用侧边界。
 
 ### 页面跳转优化策略
 
@@ -126,19 +128,19 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 对于 Fragment 切换的具体优化手段：
 
-**1. 利用 FragmentFactory 注入预加载数据。** `FragmentFactory` 的核心能力是在系统创建 Fragment 实例时注入依赖，而非提前创建 Fragment。如果某个 Fragment 需要初始化数据（配置参数、预查询结果），可以在 `FragmentFactory.instantiate()` 中通过 `setArguments()` 注入，避免 Fragment 在 `onCreate()` 中再做同步数据获取。另外，在 `onCreate()` 阶段就 `commit()` 一个 `setReorderingAllowed(true)` 的事务，可以让系统并行处理多个 Fragment 操作，减少事务串行化带来的等待。
+**1. 利用 FragmentFactory 注入已准备好的参数。** `FragmentFactory` 用于在系统创建 Fragment 实例时提供依赖或轻量参数，不负责提前创建 Fragment，也不适合在 `instantiate()` 里做同步查询。如果某个 Fragment 需要初始化参数，可以把已经预取好的 ID、配置或内存对象通过 `setArguments()` 注入，避免 `onCreate()` 再做同步数据获取。`setReorderingAllowed(true)` 允许 FragmentManager 重排并优化同一事务里的生命周期、transition 和中间操作；它不会并行创建 Fragment。
 
 ```java
-// 自定义 FragmentFactory：在系统创建 Fragment 时注入预加载数据
+// 自定义 FragmentFactory：在系统创建 Fragment 时注入已准备好的参数
 public class PreloadFragmentFactory extends FragmentFactory {
     @NonNull
     @Override
     public Fragment instantiate(@NonNull ClassLoader loader, @NonNull String className) {
         Fragment fragment = super.instantiate(loader, className);
-        // 根据 Fragment 类型注入预加载数据，避免 onCreate 中的同步获取
+        // 只注入已预取的轻量参数，避免在 instantiate() 中同步查库或访问网络
         if (fragment instanceof DetailFragment) {
             Bundle args = new Bundle();
-            args.putParcelable("preload_data", fetchPreloadData());
+            args.putString("item_id", preloadedIds.get(className));
             fragment.setArguments(args);
         }
         return fragment;
@@ -164,13 +166,13 @@ Tab 切换是移动端最常见的交互模式之一。新闻 App 的频道切�
 
 ### ViewPager2 的工作机制
 
-ViewPager2 是 Jetpack/AndroidX 中的一个组件，来自 Jetpack/AndroidX，不属 Android 平台原生能力。它最早出现在 AndroidX Fragment 1.0.0 中，为传统的 ViewPager 添加了 RTL 支持、垂直滚动等特性。ViewPager2 内部使用 `RecyclerView` 实现，天然继承了 RecyclerView 的缓存机制。
+ViewPager2 以独立 AndroidX artifact（`androidx.viewpager2:viewpager2`）发布，1.0.0 stable 版本发布于 2019 年。它的版本演进跟 Android 平台 API、AndroidX Fragment 1.0.0 分属不同发布线；Fragment 场景依赖 `FragmentStateAdapter` 与 AndroidX Fragment 协作。ViewPager2 内部使用 `RecyclerView` 实现，继承了 RecyclerView 的缓存和预取机制。
 
-`offscreenPageLimit` 参数控制屏幕外保留的页面数量，默认值为 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)`，即不显式保留屏幕外页面，依赖 RecyclerView 自身的缓存和预取策略。这与直觉不同——默认行为不会"左右各保留 1 页"，而是让 RecyclerView 按 ViewHolder 缓存等级（CachedView、RecycledViewPool）自动管理。
+`offscreenPageLimit` 参数控制屏幕外保留的页面数量，默认值为 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)`，表示不显式保留屏幕外页面，由 RecyclerView 按 ViewHolder 缓存等级（CachedView、RecycledViewPool）和预取策略自动管理。
 
 当设为 1 时，ViewPager2 会在当前页左右各保留 1 个页面的 Fragment。`setOffscreenPageLimit()` 只接受默认值 `OFFSCREEN_PAGE_LIMIT_DEFAULT(-1)` 或大于等于 1 的整数；传入 0 会直接抛出 `IllegalArgumentException`，不存在“设为 0 减少预加载”这种安全写法。设为 2 或更高时，会同时持有更多 Fragment 实例和它们的 View 层级，内存压力也更高。对于 3-4 个 Tab 的常见场景，保持默认值 `-1` 或显式设为 `1` 是更常见的两种选择：前者交给 RecyclerView 的缓存与预取策略，后者换取更稳定的切换速度。
 
-ViewPager2 对 Fragment 生命周期管理的核心变化在于：它通过 `setMaxLifecycle()` 控制不可见 Fragment 的最高生命周期状态。当前可见的 Fragment 生命周期被设为 `RESUMED`，而 `offscreenPageLimit` 范围内但不可见的 Fragment 被设为 `STARTED`——这些 Fragment 的 `onResume()` 不会被调用，正是懒加载的切入点。
+ViewPager2 对 Fragment 生命周期管理的主要变化在于：它通过 AndroidX Fragment 1.1.0+ 提供的 `setMaxLifecycle()` 控制不可见 Fragment 的最高生命周期状态。当前可见的 Fragment 被设为 `RESUMED`，`offscreenPageLimit` 范围内但不可见的 Fragment 被设为 `STARTED`，这些 Fragment 的 `onResume()` 不会被调用，懒加载可以挂在 `onResume()` 或 Lifecycle 状态变化上。
 
 ### 懒加载的正确实现
 
@@ -234,11 +236,11 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 })
 ```
 
-**避免在 FragmentPagerAdapter 中使用 BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT 的误用。** 这个 flag 是 ViewPager2 的默认行为（当前页 RESUMED，其余 STARTED），但如果在 `onResume()` 之外的地方做了大量初始化工作（比如 `onViewCreated()`），那些工作会在 Fragment 还不可见时就已经执行了——这和懒加载的目标相悖。
+**避免把旧 ViewPager 的 flag 和 ViewPager2 混在一起。** `BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT` 属于 `FragmentPagerAdapter` / `FragmentStatePagerAdapter` 的旧接口；ViewPager2 通过 `FragmentStateAdapter` 内部的最大生命周期控制实现“当前页 RESUMED，其余页 STARTED”。如果大量初始化放在 `onViewCreated()`，页面还没可见也会执行，懒加载要放到 `onResume()` 或显式的可见状态触发点。
 
 [已验证: AOSP android-16.0.0_r1, androidx.viewpager2]
 
-在 Perfetto 中，Tab 切换的性能问题通常表现为：主线程上的 `inflate` 操作耗时过长、或者 Fragment 生命周期回调中的同步 IO 操作。我们可以搜索 `FragmentManager` 相关的 trace slice，或者通过自定义 `Trace.beginSection("TabSwitch_" + position)` 来精确度量每个 Tab 的切换耗时。
+在 Perfetto 中，Tab 切换的性能问题通常表现为主线程 `inflate` 耗时过长，或 Fragment 生命周期回调里存在同步 I/O。排查时搜索 `FragmentManager:` 前缀的 trace slice，并在业务入口用 `Trace.beginSection("TabSwitch_" + position)` 标出每个 Tab 的切换耗时。
 
 ```text
 [图：Perfetto 中 ViewPager2 Tab 切换的典型 Trace]
@@ -261,9 +263,9 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 **1. 硬件输入延迟（~5-15ms）**：触摸屏控制器扫描到触摸事件 → 触摸 IC 通过 I2C/SPI 上报给驱动 → 驱动通过 `/dev/input/eventX` 暴露给用户空间。这段延迟取决于硬件和驱动，App 开发者无法控制。
 
-**2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件 → `InputDispatcher` 将事件通过 InputChannel 发送到目标窗口所在进程的 InputThread。InputDispatcher 和 InputThread 之间通过共享内存（InputChannel）进行事件传递，而非 Binder IPC。如果系统负载高（大量后台进程、GC 暂停等），这个延迟会增加。我们在 §3.1 中详细分析了 Input 事件分发全流程。
+**2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件后，`InputDispatcher` 选择目标窗口，并通过 `InputChannel` 把事件发给应用进程。`InputChannel` 的 native 实现由 `InputTransport.cpp` 创建 Unix domain `socketpair(AF_UNIX, SOCK_SEQPACKET, 0, ...)`，事件通过 socket 传输；应用侧端点通常绑定到主线程 Looper，由 `ViewRootImpl.WindowInputEventReceiver` / native `InputEventReceiver` 接收后进入 ViewRootImpl 分发。如果主线程正在执行上一帧 `doFrame()`、同步 Binder 或 GC，事件会在主 Looper 上排队。我们在 §3.1 中详细分析 Input 事件分发全流程。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; Java 侧入口: frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/InputTransport.cpp; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/view/ViewRootImpl.java]
 
 **3. 主线程事件处理（变化最大）**：事件到达 App 进程后，进入主线程 Looper 的消息队列。如果此时主线程正在执行上一帧的 `doFrame()`、或者被某个同步 Binder 调用阻塞、或者在做密集的 GC，事件就必须排队等待。这是点击响应优化最核心的战场。
 
@@ -392,9 +394,9 @@ fun View.setOnSingleClickListener(delay: Long = 500L, onClick: (View) -> Unit) {
 
 四个场景在 Perfetto 中的表现各有特点：
 
-**页面跳转（Activity/Fragment）**：在主线程 track 中可以观察到 `ActivityThread.handleLaunchActivity`（Activity 切换）或 `FragmentManager.moveToState`（Fragment 切换）的 slice。关注从用户操作（Input 事件）到这些 slice 开始的延迟，以及 slice 内部的耗时分布（inflate vs. 数据加载 vs. 首帧渲染）。
+**页面跳转（Activity/Fragment）**：在主线程 track 中可以观察到 `ActivityThread.handleLaunchActivity`（Activity 切换）或 `FragmentManager:` 前缀的 slice（Fragment 切换）。关注从用户操作（Input 事件）到这些 slice 开始的延迟，以及 slice 内部的耗时分布（inflate vs. 数据加载 vs. 首帧渲染）。
 
-**Tab 切换（ViewPager2）**：ViewPager2 本身的 trace 点较少，建议在自定义代码中添加 `Trace.beginSection("TabSwitch")` 埋点。关注 `inflate` 的耗时和 `RecyclerView` 的布局耗时。
+**Tab 切换（ViewPager2）**：结合 `FragmentManager:` slice、`RecyclerView` layout / prefetch slice 和业务侧 `Trace.beginSection("TabSwitch")` 埋点观察。重点看 `inflate`、Fragment 生命周期回调、RecyclerView 布局和数据加载是否挤在同一帧。
 
 **点击响应**：搜索 `input_event` 或自定义的 `Click.*` trace slice。关注从 Input 事件注入到 onClick 回调开始的延迟（反映主线程是否被阻塞），以及从 onClick 到首帧渲染的延迟（反映 UI 更新是否高效）。
 
@@ -433,13 +435,13 @@ debounce 的目的是减少无效搜索，不是加快搜索速度。设太短�
 
 ## 版本演进
 
-- **Android 4.0（API 14）**：引入 `Fragment`，开启单 Activity 多页面架构。
-- **Android 4.4（API 19）**：`setUserVisibleHint()` 提供给 ViewPager 的懒加载支持（后来废弃）。
+- **Android 3.0（API 11）**：平台 `android.app.Fragment` 引入，后续项目通常迁移到 AndroidX Fragment。
+- **Android 4.4（API 19）**：旧 ViewPager 时代常用 `setUserVisibleHint()` 做懒加载，后续已废弃。
 - **Android 5.0（API 21）**：Material Design 引入 Ripple Drawable，点击反馈从纯色背景变化升级为波纹动画。
-- **Android 9.0（API 28）**：引入 `ViewPager2`（通过 AndroidX 发布），基于 RecyclerView 实现，修复了旧 ViewPager 的诸多问题。
-- **Android X Fragment 1.1.0**：引入 `FragmentFactory`，支持 Fragment 的依赖注入和预创建。
-- **Android X Fragment 1.2.0**：引入 `setMaxLifecycle()`，Fragment 懒加载从 `setUserVisibleHint()` 迁移到基于 Lifecycle 的方案。
-- **Android 16（API 36）**：ARR（Adaptive Refresh Rate）进一步优化了点击后的显示延迟，系统能根据内容变化动态调整刷新率，让点击反馈更快出现在屏幕上。[待验证：Android 16 ARR 对点击响应延迟的具体影响]
+- **AndroidX Fragment 1.1.0（2019）**：`FragmentFactory` 与 `setMaxLifecycle()` 进入稳定版本，Fragment 懒加载开始从 `setUserVisibleHint()` 迁移到 Lifecycle 约束。
+- **AndroidX ViewPager2 1.0.0（2019）**：独立 `androidx.viewpager2:viewpager2` artifact 发布，基于 RecyclerView 实现，不绑定 Android 9 / API 28 平台版本。
+- **AndroidX Fragment 1.3.0+**：FragmentManager trace 覆盖更完整，Perfetto 中可优先搜索 `FragmentManager:` 前缀。
+- **Android 16（API 36）**：ARR（Adaptive Refresh Rate）继续演进；它对点击响应尾延迟的量化影响需要按设备刷新率策略和 Perfetto trace 复核。
 
 ---
 
