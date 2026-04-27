@@ -43,14 +43,14 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
+status: ready-for-review
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"
 task9_result: "pass-tech-review"
-task9_state: "reviewed"
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task9_at: "2026-04-22T22:55:00+08:00"
@@ -224,7 +224,7 @@ void doFrame(long frameTimeNanos, int frame,
 
 第一，方法签名里第二个参数是 `int frame`，不是旧资料里常见的 `vsyncSource`。从 API 33 开始，`doFrame()` 还会收到 `VsyncEventData`，里面带着 `frameInterval`、preferred timeline、deadline 等帧时间线数据。应用侧对应的公开入口是 `postVsyncCallback(VsyncCallback)`，回调参数 `FrameData` 会把这组信息包装成 `getPreferredFrameTimeline()`、`getFrameTimelines()` 和 `FrameTimeline` 上的 `getExpectedPresentationTimeNanos()`、`getDeadlineNanos()`、`getVsyncId()`。
 
-第二，Perfetto 主线程 slice 的名字不是固定的 `Choreographer#doFrame`。AOSP 会把 `timeline.mVsyncId` 拼到 trace 名称后面，所以现代 trace 里常见的是 `Choreographer#doFrame 123456` 这种形式。
+第二，Perfetto 主线程 slice 的名字不是固定的 `Choreographer#doFrame`。AOSP 会把 `timeline.mVsyncId` 拼到 trace 名称后面，所以现代 trace 里常见的是 `Choreographer#doFrame 123456` 这种形式。这个 vsyncId 是跨进程关联的枢纽——同一个 vsyncId 会出现在 App 主线程的 `Choreographer#doFrame`、RenderThread 的 `DrawFrame`、以及 SurfaceFlinger 的帧合成 slice 中。在 Perfetto 中按 vsyncId 过滤，可以把同一帧在 App、RT、SF 三个环节的耗时串起来，实现端到端的联路追踪。Android 16（API 36）的 `FrameMetrics` 也新增了 `FRAME_TIMELINE_VSYNC_ID` 常量，允许将线上帧指标数据与线下 Perfetto trace 通过同一个 ID 精确匹配，解决了"线上发现慢帧但线下复现时找不到对应帧"的问题。
 
 第三，`mFrameData.update(...)` 和 `mFrameInfo.setVsync(...)` 都发生在回调执行之前。前者把 `VsyncEventData` 转成当前帧可用的 `FrameTimeline`；后者把 intended vsync、实际 frameTime、preferred deadline 等信息写进 `FrameInfo`，后面的 Traversal、RenderThread、Frame Timeline 都会用到这组数据。
 
@@ -605,6 +605,8 @@ Compose 1.10（2025 年 12 月稳定版）引入了“可暂停组合”（Pausa
 Compose 1.7 在内部引入了 `PausableComposition`，1.10 将其设为默认行为。核心控制流是 `setPausableContent()` → 返回 `PausedComposition` 控制器对象 → 预取系统反复调用 `resume()` 分步执行组合。每次 `resume()` 内部，Compose Runtime 通过 `shouldPause` lambda 频繁检查帧截止时间。这个截止时间来自 Choreographer 在 `doFrame` 开始时写入 `FrameInfo` 的 `deadlineNanos` 字段——即当前帧必须完成所有工作的最晚时间点。当 `System.nanoTime()` 接近 `deadlineNanos` 时，`shouldPause` 返回 `true`，Composition 立即在下一个 slot 边界（对应 slot table 中的一个完整 slot group）处暂停，把主线程让出来，确保当前帧的 Traversal 和 Draw 阶段能按时完成。
 
 暂停后的组合工作不会丢失。Compose Runtime 依赖 Composition 树的 slot table 结构来管理暂停和恢复的断点——slot table 中每个 slot group 记录了组合进度，下次 `resume()` 时从断点继续。当 `resume()` 返回 `isComplete=true` 时，调用 `apply()` 将计算结果通过 `applyChanges()` 回放到 UI 树，分发生命周期回调（`onRemembered`）和运行排队的 `SideEffect`。未完成的 UI 树不会被渲染。
+
+在 Perfetto Trace 中，可暂停组合会产生 `Compose:PausableComposition:resume` 切片。这个切片表征的是一次 `resume()` 调用从开始到暂停（或完成）的执行区间。如果在同一帧内看到多个 `resume` 切片，说明 Composition 被暂停后又恢复——这在 LazyLayout 预取路径中很常见。每个 `resume` 切片的耗时反映了该步组合工作量的大小；如果某个 `resume` 切片接近帧截止时间（`deadlineNanos`），说明组合工作在挤压渲染预算。搭配 `Choreographer#doFrame` 切片一起看，能判断组合暂停是否有效保护了当前帧的 Traversal 和 Draw 阶段。
 
 这个机制不是基于协程 `CancellationException` 的中断——它是 Compose Runtime 在 Composition 层面提供的基础设施，与协程调度无关。可暂停组合在 Compose 1.10 中默认应用于 Lazy Layout 的预取路径；对于非 Lazy 场景的常规重组（如状态变化触发的重组），仍然是原子执行。
 

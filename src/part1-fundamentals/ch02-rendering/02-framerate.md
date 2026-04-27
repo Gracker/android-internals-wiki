@@ -2,7 +2,7 @@
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
-status: finalized
+status: ready-for-review
 reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
 review_note: Task 6 复审：按 writing-guide / STYLE / content-quality-gate 完成 9 处 L1/L2
@@ -53,10 +53,10 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_result: 'pass-light-edit'
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-21"
 task2b_result: fixed
@@ -605,6 +605,20 @@ Choreographer.getInstance().postVsyncCallback(frameData -> {
 
 Android 目前没有提供直接的"帧率被覆盖"回调 API（如 `OnFrameRateOverrideListener`）。上面两种方法都是间接检测：第一种通过显示刷新率变化推断，第二种通过实际帧间隔推断。如果只需要知道当前的显示刷新率，`Display.getRefreshRate()` 是最简单可靠的方式。
 
+Android 17（API 37）引入了 `Display.getFrameRateOverride()`，作为检测热缓解或省电限帧的官方标准路径。相比前面的间接推断方式，这个 API 直接返回系统对当前 App 应用的帧率覆盖值，不需要监听刷新率变化或统计帧间隔。调用方式：
+
+```java
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.API_37) {
+    FrameRateOverride override = display.getFrameRateOverride();
+    if (override != null) {
+        float overrideRate = override.getFrameRate();
+        // overrideRate 就是系统实际施加的帧率上限
+    }
+}
+```
+
+这个 API 的适用场景包括：游戏运行时检测是否被热管理降帧、省电模式下的帧率限制感知、以及 Game Mode BATTERY 模式下的实际帧率查询。
+
 [已修正: 替换为 DisplayManager.DisplayListener + Choreographer.VsyncCallback 的实际可用的检测方式]
 
 [已验证: 官方文档, developer.android.com/games/sdk/game-mode]
@@ -769,6 +783,8 @@ FPS 是一个统计指标，60 FPS 只说明"一秒钟内渲染了 60 帧"，但
 这类修改会造成三个问题：回调时序与真实 VSync 不对齐、VSync 周期出现长短交替、时间戳偏差。对于依赖 Choreographer 回调做帧调度（如游戏引擎、自定义动画框架）的 App，这些 OEM 定制行为可能导致帧间隔抖动和掉帧。
 
 在 Perfetto 中，这类问题的特征是 `Choreographer#doFrame` 的间隔出现规律性的长短交替（比如 8ms / 24ms / 8ms / 24ms），而不是正常的均匀 16.6ms。
+
+除了华为的额外 VSync 注入，小米 HyperOS 2.0 采取了更激进的策略：通过在驱动层注入 240Hz+ 的虚拟 VSync 信号，使 Choreographer 在一个物理刷新周期内可以处理多次输入事件，将触控响应延迟压缩到接近物理极限。这种做法打破了"一个 VSync 处理一次输入"的传统假设——在高频注入模式下，Choreographer 的 `CALLBACK_INPUT` 回调在一个物理帧内可能被触发多次。代价是 CPU 唤醒频率显著增加，功耗上升，因此 HyperOS 通常只在游戏、手写笔等对延迟极度敏感的场景下激活。
 
 [待验证: 华为 VSync 修改是否在最新系统版本（HarmonyOS 4+）中已修复]
 [交叉引用: OEM 对 VSync 的定制行为在第 17 章（OEM 定制与差异化）中详细讨论。规避方案详见来源素材]
