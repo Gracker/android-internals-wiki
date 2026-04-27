@@ -14107,5 +14107,45 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T17:39:46+08:00",
     "status": "pending"
+  },
+  {
+    "section": "15.1",
+    "section_title": "性能优化的术、道、器",
+    "priority": 85,
+    "reason": "[Deep Tech Review] Macrobenchmark 冷启动控制变量仍写成 always_finish_activities，遗漏 CompilationMode",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L134 测量本身会影响被测系统",
+        "detail": "正文把长时 benchmark 的变量控制写成降温间隔、固定亮度以及 always_finish_activities。Macrobenchmark 冷启动测量里更大的变量是编译状态：None / Partial / Full / DEFAULT 会改变 JIT、AOT、Baseline Profile 的参与方式；StartupMode.COLD 本身会在迭代间处理进程冷启动，不应把 always_finish_activities 当成现代 Macrobenchmark 控制变量。",
+        "suggestion": "删除 always_finish_activities 作为 Macrobenchmark 建议的写法；补充 CompilationMode 与 StartupMode.COLD 的关系，说明用相同 CompilationMode、相同 profile 状态、同机型温控条件对比。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T18:35:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "19.13",
+    "section_title": "androidx.tracing（Tracing SDK）",
+    "priority": 85,
+    "reason": "[Deep Tech Review] async trace 示例异常/取消路径未保证 endAsyncSection 配对",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "L248-L257 beginAsyncSection 示例",
+        "detail": "示例在 Trace.beginAsyncSection(\"Home#loadFirstFeed\", cookie) 后，只在 mainHandler.post 的成功路径调用 endAsyncSection。api.loadFirstFeed()、parser.parse(response)、mainHandler.post 或 UI 更新任一环节抛异常/取消时，async section 不会关闭，Perfetto 会出现未配对 span，且与正文“begin/end 必须配对”的规则冲突。",
+        "suggestion": "用 try/finally 包住完整异步生命周期，或在 success/failure/cancel 回调里统一关闭 async section；协程场景可使用已验证的 traceAsync/suspend 包装，并说明取消路径也要执行 finally。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T18:35:00+08:00",
+    "status": "pending"
   }
 ]
