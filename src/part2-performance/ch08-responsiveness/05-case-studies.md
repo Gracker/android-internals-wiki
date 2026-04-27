@@ -12,8 +12,8 @@ reviewed_by: openclaw-task6
 review_cycle: 4
 re_review_date: "2026-04-09"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-25"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ProfilingManager docs + external review"
+last_verified: "2026-04-27"
+last_verified_against: "Android multidex docs, Android 16KB page size docs, android.os.ProfilingManager docs, AOSP / Perfetto context"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-06"
@@ -35,19 +35,21 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 last_task9_at: "2026-04-27T17:39:46+08:00"
-repaired_date: "2026-04-26"
+repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-26T08:55:00+08:00"
+last_task2b_at: "2026-04-27T19:10:48+08:00"
+updated_by: "openclaw-task2b"
+updated_date: "2026-04-27"
 ---
 
 # 案例集
@@ -178,7 +180,7 @@ Reddit 在 Google Play 上线后的 A/B 测试结果 [已验证: developer.andro
 
 通过 Rhea 的分析，抖音团队将冷启动的主线程时间分解为三个主要阶段：
 
-1. **MultiDex 加载阶段**：由于方法数超过 65K，App 使用了 MultiDex。在 Android 5.0 以下（虽然现在占比很小但仍需兼容），MultiDex 的 dex2oat 编译是启动的主要瓶颈。即使在 Android 5.0+ 上，MultiDex 的 dex 提取和验证仍消耗可观的 IO 时间。
+1. **MultiDex 加载阶段**：由于方法数超过 65K，App 使用了 MultiDex。API 21 以下走 support multidex 路径，`MultiDex.install()` 会在启动早期处理 secondary dex 的解压、校验和 ClassLoader 安装；Dalvik 侧还要承担 dexopt 与类加载成本。API 21+ 才进入 ART 原生 multidex 路径，安装或后台编译阶段由 dex2oat / profile guided 编译处理多个 dex，启动时仍可能受类验证、首次类加载、profile 命中率和 I/O 影响。
 
 2. **反序列化阶段**：抖音在启动时需要读取大量的配置数据和缓存数据（用户偏好、AB 实验配置、推荐策略参数等），这些数据以序列化形式存储在本地，启动时需要反序列化到内存。配置项越多，这个阶段的耗时越长。
 
@@ -316,7 +318,7 @@ ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代�
 - 使用 `ViewHolder` 模式减少 `findViewById()` 的重复调用
 - 将嵌套的 ScrollView + RecyclerView 改为单一 RecyclerView + 多 viewType
 - 自定义 View 使用 `setLayerType(HARDWARE)` 开启硬件加速层，减少重绘范围
-- 对于不频繁变化的静态区域，使用 `View.setHasTransientState(false)` 减少布局请求
+- 对于不频繁变化的静态区域，减少 `requestLayout()` 触发：约束布局层级、合并 payload 更新；RecyclerView 尺寸稳定时使用 `setHasFixedSize(true)`，批量更新期间可短时间使用 `suppressLayout(true/false)` 并在 `finally` 中恢复
 
 这一阶段将首帧渲染时间从 220ms 降到了约 100ms，总跳转耗时约 150ms。
 
@@ -346,7 +348,7 @@ ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代�
 
 ### 背景
 
-2025-2026 年，Google 在 Android 系统层面推了两项影响深远的优化——AutoFDO 和 16KB 页面大小。这两项优化不需要 App 开发者做任何改动，但会让所有 App 的启动速度有 2%-7% 的提升（视 App 和设备而定） [已验证: developer.android.com, Google Blog 2026-03]。
+2025-2026 年，Google 在 Android 系统层面推了两项影响较大的优化——AutoFDO 和 16KB 页面大小。AutoFDO 对普通 App 基本透明；16KB page size 对纯 Java/Kotlin App 基本透明，但只要 APK 含 NDK/JNI 或第三方 `.so`，开发团队就要验证 native library alignment、`mmap` / `PAGE_SIZE` 假设和依赖库版本。平台收益和发布兼容要求要分开看：AutoFDO 主要是系统内核优化，16KB page size 同时带来启动收益和 native 适配要求。
 
 ### AutoFDO：用真实数据指导内核编译
 
@@ -396,7 +398,7 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 ### 本案例的关键启示
 
-这个案例的意义在于：性能优化不总是"App 端能做的事"。Google 正在构建数据驱动的系统级自动优化体系——从 AutoFDO 到 ART 编译优化通过 Mainline 推送。作为 App 开发者，理解这些平台级优化能帮我们在性能分析时正确归因（"启动慢不一定是我的代码问题"），也能帮我们利用新平台特性获得额外收益。
+这个案例的意义在于：性能优化不总是"App 端能做的事"。Google 正在构建数据驱动的系统级自动优化体系——从 AutoFDO 到 ART 编译优化通过 Mainline 推送。App 开发者要把两类变化区分开：AutoFDO 可以作为系统背景条件；16KB page size 要进入 native 兼容测试和发布检查。理解这些平台级优化，能让启动耗时归因更稳，也能减少新平台适配时的遗漏。
 
 ---
 
@@ -406,13 +408,13 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 
 **第一，先度量，再优化。** Reddit 用 Macrobenchmark 建基线，抖音用 Rhea 做毫秒级差异分析，电商案例用 Perfetto 精确定位瓶颈。没有一个团队是凭直觉做优化的。度量工具的选择取决于我们的规模——小型 App 用 Macrobenchmark + Perfetto 就够了，大型 App 可能需要自建分析平台。
 
-**第二，区分"平台红利"和"应用优化"。** Baseline Profiles、R8 优化配置、AutoFDO、16KB 页面——这些是平台提供的能力，接入成本极低。应该优先利用这些红利，然后再投入人力做应用层的深度优化。
+**第二，区分"平台收益"和"应用优化"。** Baseline Profiles、R8 优化配置和 AutoFDO 是成本较低的收益来源；16KB page size 对纯 Java/Kotlin App 接近透明，但含 native library 的 App 要把 ELF alignment、`PAGE_SIZE` 假设和第三方 `.so` 版本纳入发布检查。先吃低成本收益，再投入应用层深度优化。
 
 **第三，系统化 > 贴膏药。** 抖音的启动任务调度框架、Reddit 的 CUJ Profile 管理——它们把优化过程从"每次手动排查"变成了"系统自动处理"。这种投入的 ROI 是长期累积的。
 
 **第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，这说明他们最清楚一件事：优化成果的保持比取得优化更难。每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
 
-[自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件，启动慢不再只能依赖开发者手动复现。
+[自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 主动请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件；这类系统触发与 App 主动调用共用结果回调模型，但是否生成、保存和上报仍受采样策略、设备版本、权限边界和隐私策略约束。
 
 下面的代码只展示公开 SDK 可编译的显式 system trace 请求路径，重点看 `PROFILING_TYPE_SYSTEM_TRACE`、`tag` 和结果回调。公开 SDK 没有暴露 `KEY_DURATION_MS`；普通 App 代码不要依赖隐藏常量控制采集时长：
 
