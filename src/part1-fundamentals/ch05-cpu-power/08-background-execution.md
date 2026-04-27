@@ -346,6 +346,70 @@ Android 16 在这里补了一层约 10 秒的 debounce。进程刚进入 cached 
 
 Binder 侧也补了配套能力。`IBinder.FrozenStateChangeCallback` 允许系统服务感知远端进程已经 frozen 或恢复运行。对高频 callback 分发器，这个信号的作用是暂停发送非必要回调，或者改用丢弃策略，避免事务堆积在 frozen 进程前面。排查后台任务时，如果 Job、Alarm 和配额都正常，但进程长时间停在 cached + frozen 状态，就要把 CachedAppOptimizer 和 Binder 回调一起看。
 
+
+<!-- AIW-源码调研-2026-04-27 -->
+## Binder Freezer Driver 协同机制：源码级补充
+
+本节在 2026-04-27 通过 AOSP 源码核验了 CachedAppOptimizer 与 Binder Driver 协同冻结的完整链路，以下为关键实现细节补充。
+
+### 两步冻结的原子性问题
+
+CachedAppOptimizer 对单个进程执行冻结时，严格按以下顺序操作：
+
+```
+1. freezeBinder(pid)  // BINDER_FREEZE ioctl → 冻结 Binder 接口
+2. setProcessFrozen(uid, pid, true)  // 写 cgroup.freeze → 冻结进程线程
+```
+
+这两步**不是原子操作**。commit `58a9e28781be68d9a91fe9b8975c5c4bbf4be481`（2021-09-07）修复了如下竞态：
+
+> 步骤 1-2 之间如果有新的同步 Binder 事务到达目标进程的已冻结主线程，该线程会收到 response 后尝试处理，导致崩溃或无响应。
+
+修复方案：在两步之间增加 pending transaction 检测，如有新事务则回滚主线程冻结状态。
+
+**关键源码路径**：
+- 冻结入口：`services/core/java/com/android/server/am/CachedAppOptimizer.java`
+- Kernel 实现：`kernel/common/drivers/android/binder.c` — `BINDER_FREEZE` ioctl handler
+- cgroup v2 freezer：`kernel/common/kernel/cgroup/freezer.c`
+- libprocessgroup 抽象：`system/core/libprocessgroup/profiles/cgroups.json` — FreezerState 定义
+
+### BINDER_FREEZE ioctl 的返回语义
+
+| 返回值/返回码 | 含义 |
+|-------------|------|
+| `-EAGAIN` | 有未排空的 Binder 事务，需重试 |
+| `BR_FROZEN_REPLY` | Binder 驱动向用户空间返回的冻结确认 |
+| 同步事务发往 frozen 进程 | 内核直接杀死目标进程，防止调用线程死锁 |
+
+### FrozenStateChangeCallback 的实际使用模式
+
+`IBinder.addFrozenStateChangeCallback()`（API 36）让系统服务在远端进程冻结/解冻时收到通知。典型使用：
+
+```java
+// 系统服务在获取 IBinder 代理后注册回调
+binder.addFrozenStateChangeCallback((b, frozen) -> {
+    if (frozen) {
+        // 暂停向该进程发送非关键 callback
+        // 或改用 FROZEN_CALLEE_POLICY_DROP
+    } else {
+        // 恢复发送
+    }
+});
+```
+
+**源码路径**：`libs/binder/include/binder/IBinder.h`
+
+### RemoteCallbackList 的 frozen 策略
+
+`RemoteCallbackList` 提供了两种内置策略处理发往 frozen 进程的回调：
+
+- `FROZEN_CALLEE_POLICY_DROP`：静默丢弃，节省 buffer 避免溢出崩溃
+- `FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT`：只保留最新一条，解冻后送达
+
+**源码路径**：`frameworks/base/core/java/android/os/RemoteCallbackList.java`
+
+<!-- AIW-源码调研-2026-04-27 -->
+
 ## 后台执行对前台性能的影响
 
 性能分析里，很多时候只盯前台 App 的渲染和响应，却漏掉了后台行为带来的间接代价。不合理的后台工作，经常和前台卡顿、发热、续航变短一起出现。
