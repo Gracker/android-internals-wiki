@@ -36,17 +36,13 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-24"
-task2b_rework_date: "2026-04-27"
-task2b_fixed_at: "2026-04-27T09:15:00+08:00"
-task9_result: needs-rework
-last_task9_at: "2026-04-27T08:53:48+08:00"
+reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 task2b_result: fixed
@@ -386,14 +382,14 @@ Android 继续推动 16KB 页面大小的适配,这个变更对使用 NDK 的原
 
 **受影响的原生库类型:**
 - **游戏引擎**:特别是较老版本的 Unity、Unreal Engine 可能在内存分配和 mmap 操作中使用硬编码的 PAGE_SIZE 常量
-- **图像处理库**:OpenCV、Skia 等库在处理图像数据分配时可能假设 4KB 页面对齐
-- **数据库引擎**:SQLite、RocksDB 等存储引擎在内存映射文件时可能使用 4KB 对齐
-- **音视频编解码器**:FFmpeg、MediaCodec 等在处理 Buffer 时可能有内存对齐假设
+- **图像处理库**:OpenCV、Skia 等库在处理图像数据分配时可能假设 4KB 页面匹配
+- **数据库引擎**:SQLite、RocksDB 等存储引擎在内存映射文件时可能使用 4KB 匹配
+- **音视频编解码器**:FFmpeg、MediaCodec 等在处理 Buffer 时可能有内存匹配假设
 
 **具体问题和解决方案:**
-1. **mmap offset 对齐问题**:使用 `mmap()` 时 `offset` 参数必须是 16KB 对齐,而非传统的 4KB 对齐。受影响的典型场景包括 SQLite 的 WAL 模式文件映射、RocksDB 的 SSTable mmap 读取
-2. **PAGE_SIZE 常量硬编码**:原生代码中直接使用 `4096` 而非 `sysconf(_SC_PAGESIZE)` 运行时查询。已知案例:FFmpeg 的某些编解码器模块在 buffer 分配时硬编码 4096 对齐;OpenCV 的 `Mat` 数据分配在特定版本中假设 4KB 页面
-3. **ELF 段对齐**:共享库需要使用 NDK r28+ 编译,确保 ELF 段按 16KB 对齐。未对齐的 .so 文件在 16KB 页面设备上加载时会抛出 `UnsatisfiedLinkError`
+1. **mmap offset 匹配问题**:使用 `mmap()` 时 `offset` 参数必须是 16KB 匹配,而非传统的 4KB 匹配。受影响的典型场景包括 SQLite 的 WAL 模式文件映射、RocksDB 的 SSTable mmap 读取
+2. **PAGE_SIZE 常量硬编码**:原生代码中直接使用 `4096` 而非 `sysconf(_SC_PAGESIZE)` 运行时查询。已知案例:FFmpeg 的某些编解码器模块在 buffer 分配时硬编码 4096 匹配;OpenCV 的 `Mat` 数据分配在特定版本中假设 4KB 页面
+3. **ELF 段匹配**:共享库需要使用 NDK r28+ 编译,确保 ELF 段按 16KB 匹配。未匹配的 .so 文件在 16KB 页面设备上加载时会抛出 `UnsatisfiedLinkError`
 
 **官方文档与工具链配置:**
 - 官方指南:[Build 16 KB-aligned ELFs](https://developer.android.com/guide/practices/page-sizes)
@@ -401,7 +397,7 @@ Android 继续推动 16KB 页面大小的适配,这个变更对使用 NDK 的原
 - AOSP 构建:`PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384`
 - NDK 编译:使用 `-Wl,-z,max-page-size=16384` 链接标志(NDK r27 及以下版本)
 - 运行时检测:使用 `sysconf(_SC_PAGESIZE)` 替代硬编码常量
-- 验证工具:`readelf -l lib.so` 检查 ELF 段对齐;Android Studio APK Analyzer 可自动识别未对齐的 .so 文件
+- 验证工具:`readelf -l lib.so` 检查 ELF 段匹配;Android Studio APK Analyzer 可自动识别未匹配的 .so 文件
 
 详见 **4.7 16KB 页面大小**章节。
 

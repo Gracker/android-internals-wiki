@@ -2,7 +2,7 @@
 title: APM / 可观测性平台与 SDK 选型
 chapter: '14.12'
 section: '14.12'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
@@ -41,21 +41,22 @@ related_chapters:
 - '15.5'
 - '15.9'
 - '15.10'
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-25'
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: '2026-04-25'
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-23T02:33:00+08:00'
+last_task9_at: "2026-04-27T18:35:00+08:00"
 task2b_state: fixed
 repaired_date: '2026-04-22'
 repaired_by: codex
 task2b_result: fixed
 last_task2b_at: "2026-04-25T16:44:10+08:00"
+task9_review_notes: "2026-04-27 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0。"
 ---
 
 

@@ -66,6 +66,7 @@ task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: "openclaw-task6"
+reviewed_date: "2026-04-27"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -433,6 +434,6 @@ Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swa
 ### Swappy × Choreographer × Android 17 架构深研
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Swappy × Choreographer × Android 17 架构深研.md
 - 类型：DeepResearch 调研结果
-- 摘要：围绕 Swappy、Choreographer、SurfaceFlinger 三层协作，指出 Android 17 的 DeliQueue 主要改善主线程 MessageQueue 锁竞争，从而提升 Vsync 回调到达质量；Swappy 本体仍依赖 ChoreographerFilter、AChoreographer deadline/expectedPresentationTime 与统计闭环做帧节奏控制。
+- 摘要：围绕 Swappy、Choreographer、SurfaceFlinger 三层协作，指出 Android 17 的 DeliQueue 主要改善主线程 MessageQueue 锁竞争，从而提升 Vsync 回调到达质量；Swappy 本体仍依赖 ChoreographerFilter、AChoreographer deadline/expectedPresentationTime 与统计循环做帧节奏控制。
 - 注入时间：2026-04-23
 - 价值：把 Android 17 的 DeliQueue 变化与现有 Swappy 架构连起来，适合解释高刷设备上帧节奏为何更稳。

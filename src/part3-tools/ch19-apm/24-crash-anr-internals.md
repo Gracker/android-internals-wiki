@@ -10,10 +10,10 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
@@ -25,7 +25,7 @@ sources:
   - "https://android.googlesource.com/platform/system/core/+/refs/heads/main/debuggerd/proto/tombstone.proto"
   - "https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/include/signal.h"
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T02:02:05+08:00"
 last_task2b_at: "2026-04-27T19:40:00+08:00"
