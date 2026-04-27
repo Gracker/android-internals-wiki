@@ -5104,3 +5104,25 @@
 - **位置**：line 204 ProfilingTrigger cold start artifact
 - **问题**：正文仍保留 `[待验证] API37 reference 对 cold start artifact 的最终描述`。Android 17 features 页已写 `TRIGGER_TYPE_COLD_START` 返回 call stack sample 和 system trace。
 - **建议**：用官方 features 页把待验证项闭环；同时保留 reference 页只定义 trigger、features 页描述 artifact 的边界。
+
+
+## [External Review] 1.1 Android 分层架构 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：Zygote fork 延迟段
+- **问题**：原文 [待验证: 具体数值需多设备实测确认]
+- **建议**：补充 ApplicationStartInfo.getStartupTimestamps() 包含 STARTUP_TIMESTAMP_FORK 锚点，作为开发者实测手段
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.2 系统启动全流程 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：SELinux 初始化段
+- **问题**：缺少 SELinux 初始化耗时量化锚点
+- **建议**：补充 ro.boottime.init.selinux 系统属性作为量化锚点（典型值 40ms-100ms）
+- **来源**：Gemini 外部 review
+
+## [External Review] 1.3 进程模型与生命周期管理 — 2026-04-28
+- **类型**：版本差异
+- **位置**：cgroup v2 迁移段
+- **问题**：未提及 memcg v2 成为默认及 MaxActivationDepth 带来的内核遍历性能优化
+- **建议**：补充 cgroup v2 / memcg v2 迁移及 MaxActivationDepth 优化说明
+- **来源**：Gemini 外部 review

@@ -14436,5 +14436,123 @@
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-28T00:37:00+08:00",
     "status": "pending"
+  },
+  {
+    "section": "1.1",
+    "section_title": "Android 分层架构",
+    "priority": 95,
+    "reason": "[External Review] VNDK 在 Android 15+ 已废弃，原文仍描述为关键机制；ashmem 迁移时间线含糊",
+    "review_issues": [
+      {
+        "type": "源码错误/版本过时",
+        "location": "VNDK 章节",
+        "detail": "描述 VNDK 为关键机制，未提及 Android 15 正式废弃 VNDK (VNDK-less)。新架构由 HAL APEX 自包含依赖库。",
+        "suggestion": "重写该小节，引入 VNDK-less 概念和 Self-contained HALs 架构",
+        "evidence": [
+          "ro.vndk.version 属性在 Android 15+ 已移除声明"
+        ]
+      },
+      {
+        "type": "版本差异",
+        "location": "Linux 内核层",
+        "detail": "ashmem 迁移描述为逐步转向...待验证具体时间线。事实：Linux 5.18 (2022) 已移除，Android 15 强制 memfd。",
+        "suggestion": "补充 2022/Linux 5.18 移除及 Android 15 强制 memfd 的具体年份",
+        "evidence": [
+          "Linux 5.18 staging 移除 ashmem"
+        ]
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T01:17:06+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.2",
+    "section_title": "系统启动全流程",
+    "priority": 85,
+    "reason": "[External Review] 缺失 GBL、并行模块加载、云端编译等 Android 16 关键特性",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "Bootloader 章节",
+        "detail": "缺失 Generic Bootloader (GBL)。Android 16 引入 GBL 标准化架构，使 boottime.bootloader.* 指标各厂商可比。",
+        "suggestion": "在引导阶段补充 GBL 的标准化作用",
+        "evidence": []
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Kernel 章节",
+        "detail": "缺失并行模块加载 (Asynchronous Probing)。Android 16 允许内核模块并行加载，内核阶段耗时缩短约 30%。",
+        "suggestion": "补充并行加载作为内核优化新锚点",
+        "evidence": []
+      },
+      {
+        "type": "版本差异",
+        "location": "启动时间度量",
+        "detail": "缺失 Cloud Compilation (Android 16)。直接下载预编译产物，解决 OTA 后首次开机优化痛点。",
+        "suggestion": "在优化手段中补充云端编译特性",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T01:17:06+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.3",
+    "section_title": "进程模型与生命周期管理",
+    "priority": 85,
+    "reason": "[External Review] 遗漏 Android 16 新增 ADJ 50；缺失 AVF Terminal 规避 PPK 方案；Freezer 无缝更新未覆盖",
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "ProcessList ADJ 章节",
+        "detail": "遗漏 ADJ 50 (PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ)。Android 16 引入该档位为 TOP 转 FGS 应用提供缓冲期。",
+        "suggestion": "在 ADJ 表格中插入该常量（值 50）",
+        "evidence": []
+      },
+      {
+        "type": "原理链完整性",
+        "location": "Phantom Process Killer 章节",
+        "detail": "缺失 AVF Terminal。Android 16 允许 pVM 中运行终端，内部进程不受宿主 PPK 32 名额限制。",
+        "suggestion": "补充虚拟化终端作为 PPK 官方规避路径",
+        "evidence": []
+      },
+      {
+        "type": "版本差异",
+        "location": "Freezer 机制演进",
+        "detail": "缺失 Seamless App Updates (Android 16)。更新时进程冻结从秒级降至毫秒级。",
+        "suggestion": "补充无缝更新对冻结策略的优化",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T01:17:06+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.1",
+    "section_title": "Android 分层架构",
+    "priority": 85,
+    "reason": "[External Review] 16KB Page Size 性能提升根因未解释；JNI 优化缺乏量化数据",
+    "review_issues": [
+      {
+        "type": "原理链完整性",
+        "location": "16KB Page Size 章节",
+        "detail": "缺乏性能提升根因：页表项减少 75%、TLB 命中率提升。",
+        "suggestion": "补充数据：应用启动平均提升 3.16%，系统启动缩短 0.8s，内存开销增加 ~9%",
+        "evidence": []
+      },
+      {
+        "type": "数据/案例支撑",
+        "location": "JNI 边界",
+        "detail": "缺少 @FastNative/@CriticalNative 的具体 overhead 缩减比例。",
+        "suggestion": "补充：Regular JNI (~115ns) -> FastNative (~35ns, 3x) -> CriticalNative (~25ns, 5x)",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T01:17:06+08:00",
+    "status": "pending"
   }
 ]

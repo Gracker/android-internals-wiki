@@ -9777,3 +9777,60 @@ Android 15/16版本演进覆盖不足：指标基线重构、分析工具代差�
 Gemini外部review - 2026-04-25-15-10-batch-review-summary.md
 
 ---
+
+
+## [2026-04-28] 1.1 Android 分层架构 — 知识盲区
+
+### 盲区描述
+VNDK-less 后的库冗余处理机制未覆盖；Trunk Stable 开发模式（Android 16 Baklava）对 AOSP 稳定性的影响未梳理；16KB 兼容模式下如何运行 4KB 对齐旧版应用未说明。
+
+### 重要程度
+高
+
+### 建议研究方向
+- HAL APEX 如何打包依赖库以替代系统 VNDK
+- Android 16 (Baklava) 的 Trunk Stable 开发模式变动
+- 16KB 内核上运行 4KB 对齐旧版应用的兼容机制
+
+### 关联章节
+- 1.1
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-28)
+
+## [2026-04-28] 1.2 系统启动全流程 — 知识盲区
+
+### 盲区描述
+GBL (Generic Bootloader) 标准化计时方案未研究；Asynchronous Probing 内核异步探测机制细节不足；Cloud Compilation 预编译产物下发完整流程待补。
+
+### 重要程度
+高
+
+### 建议研究方向
+- GBL 如何标准化开机计时
+- 内核异步探测机制实现细节
+- 预编译产物直接下发流程
+
+### 关联章节
+- 1.2
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-28)
+
+## [2026-04-28] 1.3 进程模型与生命周期管理 — 知识盲区
+
+### 盲区描述
+ADJ 50 (PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ) 的宽限期时长定义机制未研究；AVF 虚拟机内部与宿主的 I/O 性能差异未评估。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 系统如何定义 ADJ 50 的 RECENT 判定标准与宽限期时长
+- AVF pVM 内部与宿主的 I/O 性能差异
+
+### 关联章节
+- 1.3
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-28)
