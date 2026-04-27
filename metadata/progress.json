@@ -1,75 +1,72 @@
 {
-  "generated_at": "2026-04-27T06:59:49+08:00",
+  "generated_at": "2026-04-27T07:58:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
-    "total_sections": 250,
+    "total_sections": 205,
     "finalized": 93,
-    "ready-for-review": 125,
+    "ready-for-review": 111,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T07:20:00+08:00",
+    "last_updated": "2026-04-27T07:58:00+08:00",
     "pipeline_stage_counts": {
-      "None": 33,
-      "task6_pending": 39,
-      "task2b_pending": 58,
       "ready-to-publish": 93,
-      "task9_pending": 26,
-      "'task2b_pending'": 1
+      "task2b_pending": 58,
+      "task9_pending": 23,
+      "task6_pending": 26,
+      "None": 1,
+      "task6_reviewed": 3,
+      "task6_re_review": 1
     },
     "task6_state_counts": {
-      "None": 34,
-      "reviewed": 174,
-      "revisiting": 42
+      "reviewed": 195,
+      "revisiting": 8,
+      "None": 2
     },
     "task9_state_counts": {
-      "None": 38,
-      "reviewed": 160,
-      "pending": 49,
-      "'reviewed'": 1,
-      "fixed": 1,
-      "'pending'": 1
+      "reviewed": 161,
+      "pending": 41,
+      "None": 2,
+      "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 40,
-      "fixed": 143,
-      "pending": 61,
-      "idle": 4,
-      "'pending'": 1,
-      "'fixed'": 1
+      "fixed": 137,
+      "pending": 60,
+      "idle": 3,
+      "None": 4,
+      "done": 1
     },
-    "draft": 0
+    "draft": 0,
+    "None": 1
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "None": 33,
-      "task6_pending": 39,
-      "task2b_pending": 58,
       "ready-to-publish": 93,
-      "task9_pending": 26,
-      "'task2b_pending'": 1
+      "task2b_pending": 58,
+      "task9_pending": 23,
+      "task6_pending": 26,
+      "None": 1,
+      "task6_reviewed": 3,
+      "task6_re_review": 1
     },
     "task6_state_counts": {
-      "None": 34,
-      "reviewed": 174,
-      "revisiting": 42
+      "reviewed": 195,
+      "revisiting": 8,
+      "None": 2
     },
     "task9_state_counts": {
-      "None": 38,
-      "reviewed": 160,
-      "pending": 49,
-      "'reviewed'": 1,
-      "fixed": 1,
-      "'pending'": 1
+      "reviewed": 161,
+      "pending": 41,
+      "None": 2,
+      "fixed": 1
     },
     "task2b_state_counts": {
-      "None": 40,
-      "fixed": 143,
-      "pending": 61,
-      "idle": 4,
-      "'pending'": 1,
-      "'fixed'": 1
+      "fixed": 137,
+      "pending": 60,
+      "idle": 3,
+      "None": 4,
+      "done": 1
     },
-    "last_updated": "2026-04-27T07:20:00+08:00"
+    "last_updated": "2026-04-27T07:58:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
