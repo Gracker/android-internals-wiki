@@ -3,7 +3,7 @@
 title: JankStats
 chapter: '19'
 section: '19.11'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Android 4.1 (API 16) - Android 17 (API 37)
@@ -17,17 +17,17 @@ related_chapters:
 sources:
 - type: official
   path: https://developer.android.com/reference/androidx/metrics/performance/JankStats
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
-task9_result: needs-rework
-task9_reviewed_date: '2026-04-24'
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-24T17:50:00+08:00'
+last_task9_at: "2026-04-27T10:57:00+08:00"
 task2b_result: fixed
 last_task2b_at: '2026-04-25T04:45:04+08:00'
 repaired_date: '2026-04-25'

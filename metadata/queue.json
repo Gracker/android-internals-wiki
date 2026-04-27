@@ -10876,9 +10876,12 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-26T10:41:09+08:00",
-    "status": "pending",
+    "status": "completed",
     "source_file": "logs/external-review/archive/2026-04-25-15-11.README-external-review.md",
-    "split_from": "queue[134]"
+    "split_from": "queue[134]",
+    "completed_at": "2026-04-27T10:57:00+08:00",
+    "completed_by": "openclaw-task9",
+    "resolution": "verified-fixed-in-chapter"
   },
   {
     "section": "19.18",
@@ -13524,5 +13527,31 @@
     "completed_at": "2026-04-27T10:44:00+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "19.23",
+    "section_title": "网络 APM 底层捕获原理",
+    "priority": 85,
+    "reason": "[Deep Tech Review] 网络 APM EventListener attempt 建模和 TTFB 起点仍会误导弱网归因",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "原理断裂",
+        "location": "src/part3-tools/ch19-apm/23-network-apm-internals.md L170-L179/L197-L203",
+        "detail": "EventListener 示例在 connectFailed 后立刻 attempts += Attempt()。如果这是最后一次连接失败，随后 callFailed 会把失败写入一个空 attempt，导致 attempt_count 多算，retry_overhead_ms/server_wait_ms 归因被污染。",
+        "suggestion": "改成在下一次 connectStart/dnsStart 到来时再懒创建新 attempt，或在 record 前过滤没有任何阶段时间的空 attempt；connectFailed 只结束当前 attempt，不预判一定会重试。"
+      },
+      {
+        "type": "原理断裂",
+        "location": "src/part3-tools/ch19-apm/23-network-apm-internals.md L181-L190/L341-L352",
+        "detail": "阶段模型没有记录 requestHeadersEnd，却把无请求体场景的 TTFB 起点写成 requestHeadersStart。OkHttp 有 requestHeadersEnd 回调；从 headersStart 计算会把客户端写 header 的时间算进 server wait。",
+        "suggestion": "补 requestHeadersEnd/requestBodyStart/requestBodyEnd 字段；无请求体时用 requestHeadersEnd → responseHeadersStart，有请求体时用 requestBodyEnd → responseHeadersStart，并在表格里区分 request send 与 server wait。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T10:57:00+08:00",
+    "status": "pending"
   }
 ]
