@@ -4442,7 +4442,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T09:15:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已补充 AVD fallbackOntoUI 退化路径与 Android 14+ cached 进程冻结对 onTrimMemory 释放窗口的影响。"
   },
   {
     "section": "7.7",
@@ -6184,7 +6187,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T13:17:17+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T09:15:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已补充 AVD fallbackOntoUI 退化路径与 Android 14+ cached 进程冻结对 onTrimMemory 释放窗口的影响。"
   },
   {
     "section": "07.07",
@@ -13426,6 +13432,9 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T08:53:48+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T09:15:00+08:00",
+    "completed_by": "task2b-content-processing-rework",
+    "completion_reason": "已修复 JobScheduler API 边界、AppFunctions 误注入、Activity 配置变化 API 名称、static final 反射/JNI 后果区分。"
   }
 ]

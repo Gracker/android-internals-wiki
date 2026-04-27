@@ -4,8 +4,8 @@ chapter: "16.5"
 status: ready-for-review
 drafted_date: "2026-04-08"
 applicable_versions: "Android 17 (API 37)"
-last_verified: "2026-04-24"
-last_verified_against: "Android 17 behavior changes / MessageQueue guidance / ProfilingTrigger reference / AOSP CombinedMessageQueue + ConcurrentMessageQueue"
+last_verified: "2026-04-27"
+last_verified_against: "Android 17 behavior changes / API 36 JobScheduler pending reasons / API 37 JobScheduler reference / MessageQueue guidance / Activity configuration change guidance / static final reflection and JNI behavior"
 confidence: medium
 sources:
   - type: official
@@ -36,15 +36,15 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-24"
-task2b_rework_date: "2026-04-24"
-task2b_fixed_at: "2026-04-24T00:12:13+08:00"
+task2b_rework_date: "2026-04-27"
+task2b_fixed_at: "2026-04-27T09:15:00+08:00"
 task9_result: needs-rework
 last_task9_at: "2026-04-27T08:53:48+08:00"
 task9_reviewed_by: openclaw-task9
@@ -70,7 +70,7 @@ task2b_result: fixed
 |:---|:---|:---|:---|
 | MessageQueue | 单锁 + 单链表 | DeliQueue：Treiber Stack + min-heap | 有，见下文的 5,000x synthetic benchmark、15% lock contention 下降、4% / 7.7% / 9.1% 体验指标 |
 | ProfilingManager triggers | 需要手动注册，触发器集合较小 | 新增 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_APP_COMPAT` 等触发器 | 官方未给统一 benchmark |
-| JobScheduler pending reasons | 更偏向当前状态排障 | 增加 current reason、history、聚合时长这三类查询 | 官方未给统一 benchmark |
+| JobScheduler pending reasons | API 36 已有 `getPendingJobReasons(int)`、`getPendingJobReasonsHistory(int)` 与 `PendingJobReasonsInfo` | API 37 reference 新增 `getPendingJobReasonStats(int)`，聚合 pending reason 时长；AOSP android-16.0.0_r1 未包含，需以 API 37 reference / preview 分支核验 | 官方未给统一 benchmark |
 | 大屏 / 安全配置 / 16KB 页面 | 适配要求已在推进 | targetSdk 37 后约束更强、排障入口更明确 | 官方未给统一 benchmark |
 
 ---
@@ -132,7 +132,8 @@ DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message
 
 - `CombinedMessageQueue/MessageQueue.java` 还保留 legacy 视角下可见的字段和选择逻辑。
 - `ConcurrentMessageQueue/MessageQueue.java` 真正承载 DeliQueue 的并发结构。
-- 因此这次变化的实质是“保留兼容字段 + 切换底层实现”，不是“把 `mMessages` 改名成别的字段”。
+- 因此这次变化的实质是“保留兼容字段 + 切换底层实现”；不要按“`mMessages` 改名”理解。
+- 同步屏障语义仍按 `MessageQueue` 公共 API 理解。底层换成并发入队和 Looper 侧排序后，`postSyncBarrier()` 与异步消息选择逻辑仍由队列实现维护；业务侧不要依赖旧链表中 barrier 节点的位置做反射判断。
 
 如果你的项目中有以下情况，需要检查：
 
@@ -196,7 +197,7 @@ Android 16 引入了 ProfilingManager,允许 App 在运行时请求 heap dump、
 
 | 触发器 | 触发时机 | 产物类型 | 典型用途 |
 |--------|---------|---------|---------|
-| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | stack sampling profile + newly started system trace | 定位冷启动瓶颈 |
+| `ProfilingTrigger.TRIGGER_TYPE_COLD_START` | App cold start 尽早阶段 | 系统触发的 profiling artifact；running trace snapshot / stack sample 的最终组合按 API 37 reference 核验 | 定位冷启动瓶颈 |
 | `ProfilingTrigger.TRIGGER_TYPE_OOM` | App 发生 `OutOfMemoryError` | Java heap dump | 诊断内存泄漏和内存过度使用 |
 | `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | App 因异常 CPU 占用被系统杀死 | call stack sample | 定位后台 CPU 异常占用 |
 
@@ -204,9 +205,9 @@ Android 16 引入了 ProfilingManager,允许 App 在运行时请求 heap dump、
 
 ### 注册流程和适配建议
 
-冷启动触发器的文档口径是"app cold start 时尽早触发",它适合补到比 `Application.onCreate()` 更早的启动证据,但仍要靠 ProfilingManager 的注册和回调流程接收产物,不能写成"系统默认替所有 App 抓 trace"。
+冷启动触发器的文档口径是"app cold start 时尽早触发"。使用时先把它看作采样入口；产物类型以 API 37 reference 的 `ProfilingResult` 为准，不能固定写成 "newly started system trace"。[待验证: API37 reference 对 cold start artifact 的最终描述]
 
-`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应的是异常 CPU 占用导致的杀进程,结果更接近 call stack sample,不应写成 system trace。排障时,可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture,再在 Perfetto、heap dump 或采样结果上继续分析。
+`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 对应异常 CPU 占用导致的杀进程,结果更接近 call stack sample,不应写成 system trace。排障时,可以把 cold start、OOM、异常 CPU kill 这些系统事件交给 trigger-based capture,再在 Perfetto、heap dump 或采样结果上继续分析。
 
 详见 **14.7 ProfilingManager**。
 
@@ -216,15 +217,17 @@ Android 16 引入了 ProfilingManager,允许 App 在运行时请求 heap dump、
 
 ### 为什么需要这组 API
 
-`JobScheduler` 是 Android 后台任务调度的核心机制。过去排查"job 为什么没跑"时,很多信息只能从 `dumpsys jobscheduler` 里翻。Android 17 扩了 pending reasons 相关查询接口,但重点不是一个独立的 `JobDebugInfo` 类,而是 `JobScheduler` 上多了几组更细的诊断方法。
+`JobScheduler` 是 Android 后台任务调度的核心机制。过去排查"job 为什么没跑"时,很多信息只能从 `dumpsys jobscheduler` 里翻。Android 16 之后，公开 API 已经开始覆盖 current reason 和有限历史；Android 17 进一步把 pending reason 的聚合时长放到参考文档口径中。这里没有独立的 `JobDebugInfo` 类，诊断入口仍在 `JobScheduler` 上。
 
 ### API 边界
 
-- `JobScheduler.getPendingJobReasonStats(int jobId)`:返回指定 job 在 pending 状态期间,各原因聚合后的 `Map<Integer, Duration>`
-- `JobScheduler.getPendingJobReasons(int jobId)`:返回当前可能导致该 job pending 的 reason code 数组
-- `JobScheduler.getPendingJobReasonsHistory(int jobId)`:返回有限历史视图,元素是 `PendingJobReasonsInfo`
+| 方法 | since | 返回类型 | 用途 | 核验状态 |
+|:---|:---|:---|:---|:---|
+| `JobScheduler.getPendingJobReasons(int jobId)` | API 36 | `int[]` | 返回当前可能导致该 job pending 的 reason code | AOSP android-16.0.0_r1 已检出 |
+| `JobScheduler.getPendingJobReasonsHistory(int jobId)` | API 36 | `List<JobScheduler.PendingJobReasonsInfo>` | 返回有限历史视图，包含 reason 变化记录 | AOSP android-16.0.0_r1 已检出 |
+| `JobScheduler.getPendingJobReasonStats(int jobId)` | API 37 | `Map<Integer, Duration>` | 返回 pending 状态期间各 reason 的聚合时长 | [待验证: API37 preview/reference；AOSP android-16.0.0_r1 未检出] |
 
-这三组接口连起来,才能回答"某个 job 现在为什么没跑""过去一段时间主要卡在哪类约束上"。如果你的项目通过 WorkManager 间接落到 JobScheduler,调试时最好先拿到对应的 jobId,再对照这三组 API 看 current reason、history 和聚合时长。
+这几组接口合在一起，才能回答"某个 job 现在为什么没跑"和"过去一段时间主要卡在哪类约束上"。如果项目通过 WorkManager 间接落到 JobScheduler,调试时最好先拿到对应的 jobId,再对照 current reason、history 和聚合时长判断是哪类约束在持续阻塞。
 
 与 **5.10 JobScheduler/WorkManager 性能** 章节交叉引用。
 
@@ -234,7 +237,12 @@ Android 16 引入了 ProfilingManager,允许 App 在运行时请求 heap dump、
 
 ### 变更内容
 
-从 Android 17(API 37)开始,通过反射或 JNI 修改 `static final` 字段将抛出 `IllegalAccessException` 或导致应用崩溃。在旧版本中,通过 `Field.setAccessible(true)` 可以绕过访问控制修改 `static final` 字段,虽然 Java 规范一直不保证这种操作的行为。
+从 Android 17(API 37)开始,平台强化 `static final` 字段的不可变约束。反射路径和 JNI 路径的失败形态不同：
+
+- Java 反射：`Field.set()`、`Field.setInt()` 等 `Field.set*()` 路径会抛出可捕获的 `IllegalAccessException`。
+- JNI：`SetStatic<FieldType>Field` 系列可能触发 ART 层不可恢复的 abort / crash，不能按普通 Java 异常处理。
+
+旧版本里，通过 `Field.setAccessible(true)` 绕过访问控制修改 `static final` 字段本来就不受 Java 规范保证。Android 17 把这类灰色路径收紧后，测试代码和 Native 注入代码要分开迁移。
 
 ### 对性能的意义
 
@@ -246,24 +254,28 @@ Android 16 引入了 ProfilingManager,允许 App 在运行时请求 heap dump、
 
 ### 受影响的场景
 
-以下代码模式会受影响:
+以下代码模式会受影响：
 
 ```java
-// 1. 反射修改 static final 字段
+// 1. Java 反射修改 static final 字段：可捕获 IllegalAccessException
 Field field = SomeClass.class.getDeclaredField("CONSTANT");
 field.setAccessible(true);
-field.set(null, newValue); // Android 17 上抛 IllegalAccessException
+try {
+    field.set(null, newValue);
+} catch (IllegalAccessException expectedOnApi37) {
+    // Android 17+: static final 字段不再作为可写测试入口
+}
 
-// 2. JNI 层通过反射 API 修改
+// 2. JNI SetStatic<FieldType>Field 修改 static final 字段：可能触发 ART abort / crash
 // 3. 测试框架通过反射注入 mock 值
-// 4. 依赖反射修改 final 字段的依赖注入框架
+// 4. 依赖反射修改 final 字段的依赖注入或序列化框架
 ```
 
 ### 适配建议
 
-1. **检查测试代码**:很多单元测试通过反射修改 `static final` 字段来注入测试值。Android 17 上需要改用其他方式(如通过构造函数参数传入、使用非 final 字段 + setter、或者借助 `@VisibleForTesting` 注解暴露的内部 API)
-2. **检查依赖注入框架**:某些 DI 框架(特别是较老版本的 Dagger 或 Guice)可能使用了这种技巧。升级到最新版本
-3. **检查序列化/反序列化库**:某些 JSON/XML 解析库在反序列化时会修改 `final` 字段
+1. **测试代码改成显式注入**：把测试值通过构造函数参数、接口实现、非 final 配置对象或 `@VisibleForTesting` 暴露的内部 API 传入，不再 patch 编译期常量。
+2. **Native 测试代码移除 `SetStatic*Field` 注入**：把待注入值放到 JNI 方法参数、Native 配置结构或 Java 层测试开关里，避免触发不可恢复崩溃。
+3. **升级依赖注入与序列化库**：重点检查老版本 DI / JSON / XML 框架是否仍依赖修改 `final` 字段完成对象构造。
 
 ---
 
@@ -277,7 +289,7 @@ field.set(null, newValue); // Android 17 上抛 IllegalAccessException
 - `android:resizeableActivity="false"`(禁止调整大小)
 - 宽高比限制
 
-同时,`Activity` 的 `recreateOnConfigChanges` 行为变更:6 种配置变更(orientation、screenSize、smallestScreenSize、screenLayout、keyboard、keyboardHidden)不再触发 Activity 重建,改为通过 `onConfigurationChanged()` 回调通知。
+配置变化仍通过 `android:configChanges`、`onConfigurationChanged()` 和默认 Activity 重建机制处理；Android 没有名为 `Activity.recreateOnConfigChanges` 的标准 API 或 manifest 属性。若平台在大屏场景减少某些尺寸 / 方向变化下的强制重建，应用侧仍要把适配点落到这三类入口上。
 
 ### 对渲染性能的影响
 
@@ -320,17 +332,29 @@ Android 17 弃用 `android:usesCleartextTraffic`,迁移到 Network Security Conf
 
 如果项目还留着 HTTP 端点,当前更实际的动作是两件事:先确认哪些域名必须保留明文访问,再把例外放到按域名配置的白名单里。这样即使未来 target SDK gate 继续收紧,迁移成本也更可控。
 
+Android 17 还把 ECH 策略接入 Network Security Configuration。`<domainEncryption>` 可按域名声明 ECH 策略；具体属性名以最终 API 37 SDK schema 为准，迁移时不要只看 manifest 里的全局开关。
+
+```xml
+<!-- API 37 示意：以最终 SDK schema 为准 -->
+<network-security-config>
+    <domain-config>
+        <domain includeSubdomains="true">example.com</domain>
+        <domainEncryption mode="opportunistic" />
+    </domain-config>
+</network-security-config>
+```
+
 ### Encrypted Client Hello（ECH）
 
 Android 17 支持 ECH（Encrypted Client Hello）。ECH 是 TLS 1.3 扩展，加密 TLS 握手中的 SNI（Server Name Indication），防止网络观察者识别 App 连接的域名。
 
-这一版平台先补了 ECH 所需 API,包括 DnsResolver 查询带 ECH 配置的 HTTPS 记录,以及 Conscrypt 侧 `SSLEngine` / `SSLSocket` 的相关能力。具体到 HttpEngine、WebView、OkHttp 等库,要看各自版本何时接入这些平台 API。平台支持和库已经可用,是两回事。
+这一版平台先补了 ECH 所需 API,包括 DnsResolver 查询带 ECH 配置的 HTTPS 记录,以及 Conscrypt 侧 `SSLEngine` / `SSLSocket` 的相关能力。对 `targetSdkVersion` ≥ 37 的 App，ECH 更接近 opportunistic 使用：库和服务端都支持时启用，失败时回退到普通 TLS。具体到 HttpEngine、WebView、OkHttp 等库,要看各自版本何时接入这些平台 API。平台支持和库已经可用,是两回事。
 
 从性能角度看,ECH 的额外成本取决于 DNS / HTTPS 记录查询、库实现和服务端部署方式。连接协商失败时会回退到普通 TLS 握手,不适合给一个固定的延迟数字。
 
 ### Certificate Transparency 默认启用
 
-对于 `targetSdkVersion` ≥ 37 的 App,Certificate Transparency(CT)默认启用。系统会增加证书和 SCT(Signed Certificate Timestamp)校验约束。如果证书链或服务器提供的 SCT 不满足要求,连接会被拒绝。
+对于 `targetSdkVersion` ≥ 37 的 App,Certificate Transparency(CT)默认启用。系统会增加证书和 SCT(Signed Certificate Timestamp)校验约束。如果证书链或服务器提供的 SCT 不满足要求,连接会被拒绝。localhost / 本地调试域名通常不按公网证书链处理，排障时要把本地例外和公网域名分开。
 
 排障时不要把 CT 理解成"每次 HTTPS 建连都会额外请求一次 CT Log 服务器"。更常见的路径是校验证书里内嵌或握手携带的 SCT;是否出现额外网络往返,取决于证书链和服务器交付方式。
 
@@ -425,9 +449,3 @@ DCL(Dynamic Code Loading)保护从 DEX/JAR 文件扩展到原生库。通过 `Sy
 - AOSP: `art/runtime/gc/collector/` 目录下的分代 GC 实现
 - AOSP: `packages/modules/Profiling/` 目录下的 ProfilingManager 实现
 
-### Android AppFunctions:从 API 36 到 Agent OS —— 深度技术与战略参考
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android AppFunctions-从 API 36 到 Agent OS —— 深度技术与战略.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 AOSP、Jetpack 与 OEM 落地三层分析 `android.app.appfunctions`：它以 AppSearch 元数据、`AppFunctionManagerService` 与 `AppFunctionService` 组成跨包函数编排底座，是 Android 16/17 向 Agent OS 演进的核心平台原语；同时梳理角色权限、绑定超时、GMS 与非 GMS OEM 的战略分叉。
-- 注入时间：2026-04-23
-- 价值：这是 AI × 手机方向少见的源码级平台综述，能补足 AIW 对 Agent OS 原语的系统认知。
