@@ -9720,3 +9720,22 @@ external-review 已命中 Qualcomm CamX/CHI 观察点。本轮复核发现章节
 
 ### 关联章节
 16.4, 16.5, 5.1, 5.7, 1.13, 6.3
+
+
+## [2026-04-27] 7.4 典型场景分析 — 知识盲区
+
+### 盲区描述
+Recents / 多任务缩略图链路的源码锚点不足。当前正文只写到 `TaskSnapshotController → TaskSnapshotPersister → ThumbnailData`，且把 `HardwareBuffer` 路径描述成“解码和上传纹理”。AOSP main 中 `TaskSnapshot` 持有 `HardwareBuffer`，`frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/recents/model/ThumbnailData.kt` 通过 `Bitmap.wrapHardwareBuffer(buffer, colorSpace)` 包装。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 WMS `TaskSnapshotController`、`TaskSnapshotCache`、`TaskSnapshotPersister` 到 Recents/Launcher 的调用边界。
+- 补齐 `android.window.TaskSnapshot` 字段、`ThumbnailData.fromSnapshot()` 与 `Bitmap.wrapHardwareBuffer()` 的源码锚点。
+- 区分 HardwareBuffer 包装、GPU 采样/合成、普通图片 decode 三类成本，避免把 Recents 缩略图误写成图片解码问题。
+
+### 关联章节
+- 7.4
+- 8.4
+- 18.6

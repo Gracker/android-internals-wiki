@@ -13626,5 +13626,78 @@
     "completed_at": "2026-04-27T11:41:00+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "7.4",
+    "section_title": "典型场景分析",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 典型卡顿场景中存在未定义 API、Fragment 源码口径混用与 Recents 缩略图链路错误，需回炉校准",
+    "material_paths": [
+      "intake/suggestions.md",
+      "intake/research-gaps.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L165 ImageView 固定尺寸建议",
+        "detail": "正文把 `setFixedDimension` 写成可用于 ImageView/列表图片尺寸固定的方案，但 Android View/ImageView/RecyclerView 官方 API 中没有这个通用方法，官方 RecyclerView 性能文档也不支持这个写法。",
+        "suggestion": "改为明确的 `layout_width/layout_height`、图片库 size/override、或自定义 Target 尺寸；同时保留 `RecyclerView.setHasFixedSize(true)` 只针对 RecyclerView 自身尺寸不随 adapter 内容变化的边界。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "L232 Fragment 切换源码锚点",
+        "detail": "正文引用 `frameworks/base/core/java/android/app/FragmentManager.java` 来解释 FragmentTransaction，但同段建议涉及 ViewPager2 和现代应用场景。平台 `android.app.Fragment` 已废弃，AndroidX Fragment 的 `FragmentManager/BackStackRecord/SpecialEffectsController` 才是当前主要实现口径。",
+        "suggestion": "改用 AndroidX Fragment 源码锚点并标注版本，例如 `androidx.fragment:fragment` 对应的 `FragmentManager`、`BackStackRecord`、`SpecialEffectsController`；若保留 platform Fragment，需声明它只覆盖旧 API/系统 Fragment。"
+      },
+      {
+        "type": "知识盲区/源码错误",
+        "location": "L362 Recents 缩略图 TaskSnapshot 描述",
+        "detail": "正文把 Recents 缩略图写成 TaskSnapshot 经 HardwareBuffer 传给 Launcher 后还需要“解码和上传纹理”。AOSP main 中 `TaskSnapshot` 持有 `HardwareBuffer`，SystemUI shared 的 `ThumbnailData.kt` 通过 `Bitmap.wrapHardwareBuffer(buffer, colorSpace)` 包装，不是普通图片解码路径。",
+        "suggestion": "补完整路径：WMS `TaskSnapshotController` 捕获 gralloc buffer → `android.window.TaskSnapshot` 携带 `HardwareBuffer` → Recents/Launcher 侧 `ThumbnailData.fromSnapshot()` 用 `Bitmap.wrapHardwareBuffer()` 包装；删除“解码”表述，改写为 GPU 采样/合成与缩略图数量带来的显示侧负载。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T12:33:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "8.9",
+    "section_title": "Android 游戏性能与 Game Mode/State API",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AGDK 官方资料链接失效，Game Performance 章节的来源锚点需要校准",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/资料锚点错误",
+        "location": "Frontmatter L28/L32 sources",
+        "detail": "`https://developer.android.com/games/agdk/performance-tuner` 与 `https://developer.android.com/games/agdk/game-text-input` 当前返回 404；Performance Tuner 当前官方入口为 `https://developer.android.com/games/sdk/performance-tuner`，Game Text Input 相关入口应转向 GameActivity text input 文档或 AGDK 源码锚点。",
+        "suggestion": "更新 frontmatter sources：Performance Tuner 改为 `/games/sdk/performance-tuner`；Game Text Input 改为 `/games/agdk/game-activity/use-text-input` 或补充 Android Games SDK 源码路径，并同步 `last_verified_against`。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T12:33:00+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "13.4",
+    "section_title": "命令行打开超大 Trace",
+    "priority": 95,
+    "reason": "[Deep Tech Review] trace_processor HTTP 参数写入不存在的 CLI 选项，命令行指导会误导读者",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L372 trace_processor HTTP 参数",
+        "detail": "正文写 `--http-ip-address` 可指定监听地址，但 AOSP `external/perfetto/src/trace_processor/trace_processor_shell.cc` 当前 help 只暴露 `-D/--httpd` 与 `--http-port PORT`，没有 `--http-ip-address` 选项。",
+        "suggestion": "删除 `--http-ip-address`，只保留 `--http-port`；如果确需说明绑定地址，改为“trace_processor_shell CLI 当前未提供公开地址参数，Python API 通过 PlatformDelegate 控制 bind address”。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T12:33:00+08:00",
+    "status": "pending"
   }
 ]

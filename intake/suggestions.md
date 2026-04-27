@@ -4915,3 +4915,16 @@
 - **位置**：Kernel 6.12 性能全景表与 AutoFDO 量化数据
 - **问题**：启动、系统调用、Binder、MGLRU 等百分比数据分散出现，但没有逐项标注测试设备、benchmark 名称、内核分支、样本口径和官方出处；部分数字本轮只能验证到“方向一致”，不能验证到精确值。
 - **建议**：把每个数字拆成“来源 URL/测试对象/版本/指标定义/是否官方公开”，无法复核的数字改为待验证或删除。
+
+
+## [Task9 Deep Review] 7.4 典型场景分析 — 2026-04-27
+- **类型**：源码准确性
+- **位置**：L435 WebView Renderer 进程崩溃描述
+- **问题**：正文写“Perfetto 中对应 `render_process_gone` 事件”，但 `didCrash()` 是 WebView `WebViewRenderProcessGoneDetail` 回调语义；当前没有给出 Perfetto/Chromium trace 中确实存在该事件名的来源。
+- **建议**：如果这是 App 自定义插桩事件，明确写成自定义 Trace marker；否则改成 Android WebView 回调 `onRenderProcessGone()` / `RenderProcessGoneDetail.didCrash()`，并补 Chromium/WebView 实际 trace event 名称。
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L466 Android 17 Generational GC 量化收益
+- **问题**：正文写“GC 暂停时间从 10-30ms 降低到 1-5ms”，但没有设备、ART 版本、堆大小、对象分配模式和测试来源；同时 Android 17 版本边界缺少一手资料锚点。
+- **建议**：补 ART release note / AOSP commit / benchmark 链接和测试条件；如果没有一手数据，删除具体毫秒区间，只保留“可能降低部分 STW 暂停”的定性边界。
