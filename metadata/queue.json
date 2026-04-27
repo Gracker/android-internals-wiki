@@ -1962,7 +1962,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T07:58:00+08:00",
+    "completed_by": "task2b-rework",
+    "completion_reason": "External review：补 PerfDog FPS 来源、功耗 USB/Wi-Fi、Restricted Settings、GPU SoC、热降频模型"
   },
   {
     "section": "19.20",
@@ -4408,7 +4411,10 @@
       }
     ],
     "added_by": "external-ai-review",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T07:58:00+08:00",
+    "completed_by": "task2b-rework",
+    "completion_reason": "同章 external review：补 RenderEffect/ARR/Binder 量级边界，已并入 7.5 修复"
   },
   {
     "section": "7.6",
@@ -10413,7 +10419,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T23:18:59+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T07:58:00+08:00",
+    "completed_by": "task2b-rework",
+    "completion_reason": "External review：补 GPU 指标跨 SoC 不可横比警示"
   },
   {
     "section": "8.09",
@@ -13207,7 +13216,10 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-27T07:20:00+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T07:58:00+08:00",
+    "completed_by": "task2b-rework",
+    "completion_reason": "Task9：修正 RenderEffect 源码路径和 Hardware Layer 关系，已并入 7.5 修复"
   },
   {
     "section": "19.0",

@@ -20,6 +20,14 @@ sources:
     path: "developer.android.com/develop/ui/compose/performance"
   - type: official
     path: "https://developer.android.com/reference/android/graphics/RenderEffect"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/RenderEffect.java"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/jni/RenderEffect.cpp"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/RenderProperties.h"
+  - type: aosp
+    path: "frameworks/base/graphics/java/android/graphics/RenderNode.java"
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
   - type: official
@@ -38,18 +46,19 @@ tags:
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-rework_count: 1
-rework_date: "2026-04-09"
+rework_count: 2
+rework_date: "2026-04-27"
 rework_by: "task2b-rework"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 last_task9_at: "2026-04-27T07:20:00+08:00"
+last_task2b_at: "2026-04-27T07:58:00+08:00"
 ---
 
 # 优化策略
@@ -172,7 +181,7 @@ RecyclerView 从 25.1.0 开始支持预取——在主线程空闲的间隙提�
 
 `findSnapView()` 和 `calculateDistanceToFinalSnap()` 会在列表进入 settling 阶段时参与目标 item 计算。自定义 SnapHelper 仍要把复杂度控制在 O(log n) 或更低，避免在停止前的几帧里重复扫描大列表。
 
-RecyclerView 1.4.0 已把 adaptive refresh rate 支持接到滚动路径上。列表通过 `OverScroller` 滚动时，例如 fling 之后的 settling 或 smooth scroll，RecyclerView 会调用 `setFrameContentVelocity()` 向平台上报内容速度。这个优化要同时满足三个条件：RecyclerView 1.4.0+、设备平台支持 adaptive refresh rate、滚动路径经过 `OverScroller`。SnapHelper 本身没有额外的 Android 16 专属 API；它受益于的是这套已有的滚动速度上报机制。
+RecyclerView 1.4.0 已把 adaptive refresh rate 支持接到滚动路径上。Android 15（API 35）提供 `View.setFrameContentVelocity(float velocity)`，列表通过 `OverScroller` 滚动时，例如 fling 之后的 settling 或 smooth scroll，RecyclerView 会把内容速度上报给平台。这个优化要同时满足三个条件：RecyclerView 1.4.0+、设备平台支持 adaptive refresh rate、滚动路径经过 `OverScroller`。自定义 Scroller、自研列表容器或游戏内 UI 如果绕过 `OverScroller`，要在能稳定计算内容速度时同步调用 `setFrameContentVelocity()`，否则系统无法把减速阶段的刷新率选择和内容运动状态对应起来。SnapHelper 本身没有额外的 Android 16 专属 API；它受益于 Android 15+ 的速度上报能力。
 
 [已验证: AndroidX RecyclerView 1.4.0 release notes — RecyclerView 在通过 OverScroller 滚动时调用 setFrameContentVelocity() 以支持 adaptive refresh rate]
 
@@ -217,28 +226,34 @@ view.setLayerType(View.LAYER_TYPE_NONE, null);
 
 `RenderEffect.createBlurEffect()` 从 Android 12（API 31）开始可用，是 HWUI 硬件加速渲染管线中施加视觉特效的官方 API。
 
-#### RenderEffect 底层实现：Offscreen Texture / FBO 机制
+#### RenderEffect 底层实现：SkImageFilter 写入 RenderNode 属性
 
-RenderEffect 的本质是 **offscreen rendering**——当特效被设置到 View 或 RenderNode 上时，HWUI 先将节点内容渲染进一块 GPU 离屏纹理（FBO, Framebuffer Object），然后在该纹理上应用 blur/color filter/shader 等特效，最后将结果合成到主帧缓冲区。这个过程完全发生在 GPU 侧，通过 Skia/SkiaOpenGLPipeline 编排。
+`RenderEffect` 是 Java 层对 Skia 图像过滤器的封装。创建 blur 时，`RenderEffect.createBlurEffect()` 通过 JNI 在 HWUI / Skia 侧创建 `SkImageFilter`；设置到 View 时，`View.setRenderEffect(effect)` 把这个对象交给 View 持有的 `RenderNode`，再由 native `nSetRenderEffect()` 写入 RenderNode 属性中的 `imageFilter`。后续绘制该节点时，HWUI / Skia 在节点输出上执行对应的 blur、color filter 或 RuntimeShader 效果。
 
-**调用链**：
+**创建路径与设置路径要分开看**：
 ```
-View.setRenderEffect(effect)
-  └─> RenderNode.setRenderEffect(effect)        [frameworks/base/core/java/android/view/View.java]
-        └─> JNI: android_view_RenderNode_setRenderEffect()
-              └─> RenderEffect::applyToTree(RenderNode&, clipBounds)  [frameworks/base/libs/hwui/RenderEffect.cpp]
-                    └─> SkiaPipeline: draw with offscreen FBO
+RenderEffect.createBlurEffect(...)                 [frameworks/base/graphics/java/android/graphics/RenderEffect.java]
+  └─> nativeCreateBlurEffect(...)                 [frameworks/base/libs/hwui/jni/RenderEffect.cpp]
+        └─> SkImageFilters::Blur(...)
+
+View.setRenderEffect(effect)                      [frameworks/base/core/java/android/view/View.java]
+  └─> RenderNode.setRenderEffect(effect)          [frameworks/base/graphics/java/android/graphics/RenderNode.java]
+        └─> nSetRenderEffect(...)
+              └─> RenderProperties::setImageFilter(SkImageFilter*)
 ```
 
-Java 层 `RenderEffect`（`frameworks/base/core/java/android/graphics/RenderEffect.java`）是轻量 wrapper，持有 `long mNativeEffect` 指针指向 native C++ `RenderEffect` 对象。核心实现在 `frameworks/base/libs/hwui/RenderEffect.h/cpp`，其中 `applyToTree()` 方法将特效注入 RenderNode 树。
+这里没有 `RenderEffect::applyToTree()` 这条调用。源码锚点应落在 `graphics/java/android/graphics/RenderEffect.java`、`libs/hwui/jni/RenderEffect.cpp`，以及 RenderNode 属性的 `imageFilter` 写入路径。
 
-**Blur 特效的具体 GPU 操作**：separable blur（分水平+垂直两次 pass 的 Gaussian blur 优化），复杂度 O(radius)。高 radius blur（>25px）需要多层 downsampling 来维持性能。
+RenderEffect 和 Hardware Layer 都可能带来离屏渲染、临时纹理和 GPU 内存开销，但它们的目的不同：
 
-**关键结论**：RenderEffect 依赖的 offscreen texture 机制与 Hardware Layer（§2.7）本质上是同一套 GPU 离屏缓冲的两套 API。`View.setLayerType(LAYER_TYPE_HARDWARE)` 是手动强制建层；`View.setRenderEffect(blurEffect)` 则是自动建层+特效施加，二者在 HWUI 底层都创建 FBO。
+- `RenderEffect` 是效果过滤器。blur、color filter、RuntimeShader 作为 `SkImageFilter` / shader 参与 RenderNode 绘制，适合给动态内容加视觉效果。
+- `LAYER_TYPE_HARDWARE` 是显式建层和缓存策略。它把 View 的绘制结果缓存为 layer texture，适合属性动画；内容频繁 invalidate 时，缓存重建会抵消收益。
+
+处理 blur、阴影或 shader 效果时，优先用 `RenderEffect` 表达效果，再通过 Perfetto 的 GPU / FrameTimeline 观察帧时间和显存压力。只有在动画缓存场景里，才考虑手动打开 Hardware Layer。
 
 #### AGSL RuntimeShader（Android 13+, API 33）
 
-Android 13 引入 AGSL（Android Graphics Shading Language），底层是 SkSL（Skia Shading Language）。`RenderEffect.createRuntimeShaderEffect(shader, uniformName)` 允许用 AGSL shader 在 offscreen texture 上做自定义像素操作。shader 代码通过 JNI 编译为 GPU 程序，在 RenderNode 内容对应的 offscreen texture 上执行 `main(float2 fragCoord)` 函数。
+Android 13 引入 AGSL（Android Graphics Shading Language），底层是 SkSL（Skia Shading Language）。`RenderEffect.createRuntimeShaderEffect(shader, uniformName)` 允许用 AGSL shader 对输入内容做自定义像素处理。shader 代码由 HWUI / Skia 编译；输入节点以 `uniform shader inputNode` 的形式传入，`main(float2 fragCoord)` 对输入内容采样后输出颜色。
 
 ```java
 // AGSL shader 示例
@@ -255,14 +270,14 @@ view.setRenderEffect(effect);
 
 #### 性能优化原则
 
-- **模糊区域越小越好**：大 View 上的 blur 需要分配巨大的 offscreen texture，显存消耗显著
-- **缓存可复用结果**：特效参数不变时，offscreen texture 可以复用；内容 invalidate 时才重建
-- **避免动态参数**：每帧修改 blur radius 会触发 offscreen texture 重建，性能反而劣化
-- **优先于软件滤镜**：RenderEffect 完全在 GPU 执行，比 CPU 侧 RenderScript blur 快；但 Hardware Layer 的缓存建立本身有开销
+- **模糊区域越小越好**：大 View 上的 blur 需要更多中间渲染资源，显存和带宽开销都会上升
+- **复用效果对象**：参数不变时复用同一个 `RenderEffect`，避免在每帧构造新的 native filter 对象
+- **避免动态参数**：每帧修改 blur radius 会让 filter 和中间资源频繁变化，帧时间更容易抖动
+- **不要混用手动硬件层兜底**：RenderEffect 已经表达了效果需求；再手动打开 Hardware Layer 只适合明确的属性动画缓存场景
 
 [已验证: Android Developers reference，`RenderEffect#createBlurEffect(...)` Added in API level 31; `RuntimeShader` Added in API level 33]
-[已验证: AOSP frameworks/base/libs/hwui/RenderEffect.h/cpp — C++ 层实现; frameworks/base/core/java/android/graphics/RenderEffect.java — Java API]
-[AIW-源码调研-2026-04-22]
+[已验证: AOSP `frameworks/base/graphics/java/android/graphics/RenderEffect.java`; `frameworks/base/libs/hwui/jni/RenderEffect.cpp`; `frameworks/base/graphics/java/android/graphics/RenderNode.java`; RenderNode `imageFilter` 属性写入路径]
+[AIW-源码调研-2026-04-27]
 
 ## 线程优化：耗时操作异步化、Binder 调用、线程池
 
@@ -287,6 +302,8 @@ Binder 是 Android 进程间通信的核心机制（详见 [1.4 Binder IPC](04-b
 **缓存系统服务查询结果。** `PackageManager.getPackageInfo()` 这类调用每次都会走 Binder。进程状态查询也要区分场景：如果只是看当前进程的 importance、lru 或 `lastTrimLevel`，用 `ActivityManager.getMyMemoryState(ActivityManager.RunningAppProcessInfo)`；如果要看指定 PID 的 PSS、Private Dirty 等内存指标，用 `ActivityManager.getProcessMemoryInfo(int[])`。这两类查询都不该放在启动路径或滑动路径上反复执行，更适合在生命周期边界更新缓存，或者放到后台采样线程做诊断。
 
 [已验证: 官方文档, developer.android.com/reference/android/app/ActivityManager — `getMyMemoryState(...)` 用于当前进程状态，`getProcessMemoryInfo(int[])` 用于指定 PID 的内存信息]
+
+两者的耗时量级不同：`getMyMemoryState()` 读取的是当前进程已维护的状态字段，常见开销在毫秒以内到 2ms 左右；`getProcessMemoryInfo(int[])` 面向指定 PID 的 PSS / dirty 页面统计，底层可能触发 `/proc/<pid>/smaps` 解析和系统服务侧采样，几十毫秒到百毫秒量级都不罕见，Android 10+ 之后还存在更严格的调用限制。启动、滑动、动画路径里只适合读取缓存结果，不适合临时查 PSS。
 
 **绝不把 Binder 调用放在渲染路径上。** 滑动手势的 onScroll 回调、动画的 onAnimationUpdate、RecyclerView 的 onBind——这些地方哪怕一次 1ms 的 Binder 调用，在高速滑动时也会被连续触发，累积效果非常可观。如果确实需要在滑动过程中获取数据，应该在子线程提前获取并缓存，主线程只做轻量的 onBindViewHolder。
 
@@ -353,6 +370,8 @@ fun ItemList(state: ItemListState) { ... }
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/performance — Stable 类型和 Strong Skipping 模式]
 
+Strong Skipping 减少了“必须把所有参数都标成 stable 才能跳过”的压力。新版 Compose Compiler 会对更多可跳过的 Composable 做实例相等性判断，并对 lambda 做更积极的记忆化；这能降低列表项、卡片组件等场景的无效重组。它不能替代数据建模：可变集合原地修改仍然容易让 UI 状态和重组判断脱节，跨模块状态仍建议用不可变数据或明确的新实例传递。
+
 **策略二：remember 和 derivedStateOf 缩小重组范围**
 
 ```kotlin
@@ -405,21 +424,21 @@ Compose 的 LazyColumn 内部也实现了类似的预取机制——当用户在
 
 ### 案例一：WeSing 进房卡顿优化
 
-WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游客模式”和“登录模式”两套布局全部预加载。优化方案是用 ViewStub 延迟加载游客模式布局，只在实际需要时才 inflate。同时还发现 `onBindViewHolder` 中有一条日志字符串拼接耗时 18ms，移除后单帧渲染时间明显下降。两项优化合并后，整体卡顿率从 15% 降至 5%（降低 67%）。
+WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游客模式”和“登录模式”两套布局全部预加载。优化方案是用 ViewStub 延迟加载游客模式布局，只在实际需要时才 inflate。同时还发现 `onBindViewHolder` 中有一条日志字符串拼接耗时 18ms，移除后单帧渲染时间明显下降。两项优化合并后，原始案例数据中的整体卡顿率从 15% 降至 5%（降低 67%）。这组数字用于说明优化方向，不作为不同设备、刷新率和业务场景下的通用收益。
 
-[已验证: 来源见 2026-03-07_wechat_Android深入卡顿分析与实践.md §进房优化案例]
+[已验证: 来源案例数据见 2026-03-07_wechat_Android深入卡顿分析与实践.md §进房优化案例]
 
 ### 案例二：SDK 升级导致的线程泛滥
 
-某 App 在 SDK 升级后，新增 30 个线程和 250 个 fd。由于线程命名不规范（均为默认的 `pool-N-thread-M`），排查时无法快速定位来源。优化措施：通过自定义 ThreadFactory 给所有线程添加业务模块前缀（如 `ImageLoader-#1`、`DataSync-#2`），统一线程池管理，非核心模块共享线程池。优化后卡顿率从 20% 降至 12%。在 Perfetto 中通过线程名快速定位到问题线程，是这次排查的关键转折点。
+某 App 在 SDK 升级后，新增 30 个线程和 250 个 fd。由于线程命名不规范（均为默认的 `pool-N-thread-M`），排查时无法快速定位来源。优化措施：通过自定义 ThreadFactory 给所有线程添加业务模块前缀（如 `ImageLoader-#1`、`DataSync-#2`），统一线程池管理，非核心模块共享线程池。优化后，原始案例数据中的卡顿率从 20% 降至 12%。在 Perfetto 中通过线程名快速定位到问题线程，是这次排查的转折点。
 
-[已验证: 来源见 2026-03-07_wechat_Android深入卡顿分析与实践.md §SDK线程fd暴增]
+[已验证: 来源案例数据见 2026-03-07_wechat_Android深入卡顿分析与实践.md §SDK线程fd暴增]
 
 ### 案例三：ConstraintLayout 替代嵌套布局
 
-某电商 App 的商品详情页使用多层 RelativeLayout + LinearLayout 嵌套，View 树深度达到 15 层。滑动到商品详情区域时，measure 阶段耗时 6-8ms（120Hz 设备一个 VSync 周期仅 8.33ms）。优化方案：将整个页面重构为两层 ConstraintLayout（头部区域 + 滚动内容区域），View 树深度降至 5 层。measure 阶段耗时降至 2-3ms，详情页滑动帧率从 45fps 提升到 110fps。
+某电商 App 的商品详情页使用多层 RelativeLayout + LinearLayout 嵌套，View 树深度达到 15 层。滑动到商品详情区域时，measure 阶段耗时 6-8ms（120Hz 设备一个 VSync 周期仅 8.33ms）。优化方案：将整个页面重构为两层 ConstraintLayout（头部区域 + 滚动内容区域），View 树深度降至 5 层。measure 阶段耗时降至 2-3ms，详情页滑动帧率从 45fps 提升到 110fps。这里按案例数据保留，复跑时仍要补设备、刷新率、系统版本和测试轮次。
 
-[已验证: 来源见 Google Developers Blog ConstraintLayout 性能基准测试]
+[已验证: 来源案例数据见 Google Developers Blog ConstraintLayout 性能基准测试]
 
 ## 常见误区
 
