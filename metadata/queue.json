@@ -13726,5 +13726,37 @@
     "completed_at": "2026-04-27T12:54:09+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "7.6",
+    "section_title": "案例集",
+    "priority": 95,
+    "reason": "[Deep Tech Review] AVD fallback 与 RenderThread 案例存在源码级混写，低内存诊断命令不适配现代 lmkd",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/原理错误",
+        "location": "L301-L305, L311-L320, L542-L593",
+        "detail": "案例四把 AnimatedVectorDrawable 的 RT 退化、RenderThread 积压和 Bitmap 纹理上传混在一起。AOSP android-16.0.0_r1 中 fallbackOntoUI() 的触发点主要是 Software Canvas 下仍有 pending animation action，或 forceAnimationOnUI()；RT 不支持的属性会在 RT animator 构建阶段跳过或抛错，不能写成自动退化。AVD 是向量动画，正文 L303 的“Bitmap 频繁重新上传 GPU”与机制不符。",
+        "suggestion": "把案例四拆成两条判断：AVD RT fallback 只按源码条件描述；RenderThread 积压写成路径/属性动画导致 display list 或 HWUI 绘制工作增加。删除“Bitmap 频繁重新上传 GPU”，若要讨论 bitmap emoji，单独补真实 Trace 或纹理上传证据。"
+      },
+      {
+        "type": "版本差异",
+        "location": "L440-L443",
+        "detail": "低内存诊断仍建议 adb shell dmesg | grep lowmemorykiller。Android 8-16 主线已经以 userspace lmkd 为主，dmesg 不一定有 lowmemorykiller 记录，按这条命令排查会漏掉现代设备。",
+        "suggestion": "把现代设备的观测入口改成 logcat/lmkd、statsd/Perfetto lmkd 事件、/proc/pressure/memory 与 dumpsys meminfo 组合；保留 dmesg 只作为旧内核或厂商内核补充。"
+      },
+      {
+        "type": "数据缺失",
+        "location": "L91, L146, L218, L291, L364, L119, L189, L264, L337, L436",
+        "detail": "五个案例仍有 Trace 截图待补充，但效果对比写了明确数值。当前缺少 trace 文件名、测试设备、刷新率、样本次数和统计方式，读者无法复核。",
+        "suggestion": "补每个案例的 Perfetto trace/截图或删减为示例数值；保留数值时给设备、Android 版本、刷新率、采样窗口、统计口径。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T13:32:46+08:00",
+    "status": "pending"
   }
 ]

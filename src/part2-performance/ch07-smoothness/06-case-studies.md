@@ -14,6 +14,9 @@ polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 confidence: medium-high
+task9_reviewed_date: "2026-04-27"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-27T13:32:46+08:00"
 sources:
   - type: blog
     path: "obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md"
@@ -31,11 +34,11 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_rework_date: "2026-04-27"
 task2b_fixed_at: "2026-04-27T09:15:00+08:00"
 task2b_result: fixed
