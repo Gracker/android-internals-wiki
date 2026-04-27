@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-04-27T19:40:00+08:00",
+  "generated_at": "2026-04-27T20:35:19+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 191,
-    "finalized": 105,
-    "ready-for-review": 113,
+    "finalized": 107,
+    "ready-for-review": 111,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T19:40:00+08:00",
+    "last_updated": "2026-04-27T20:35:19+08:00",
     "pipeline_stage_counts": {
       "None": 33,
       "task6_pending": 30,
-      "task2b_pending": 68,
-      "ready-to-publish": 105,
+      "task2b_pending": 66,
+      "ready-to-publish": 107,
       "task9_pending": 13,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 34,
-      "reviewed": 167,
-      "revisiting": 49
+      "reviewed": 168,
+      "revisiting": 48
     },
     "task9_state_counts": {
       "None": 38,
@@ -30,8 +30,8 @@
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 135,
-      "pending": 70,
+      "fixed": 137,
+      "pending": 68,
       "idle": 4,
       "'pending'": 1
     },
@@ -42,15 +42,15 @@
     "pipeline_stage_counts": {
       "None": 33,
       "task6_pending": 30,
-      "task2b_pending": 68,
-      "ready-to-publish": 105,
+      "task2b_pending": 66,
+      "ready-to-publish": 107,
       "task9_pending": 13,
       "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 34,
-      "reviewed": 167,
-      "revisiting": 49
+      "reviewed": 168,
+      "revisiting": 48
     },
     "task9_state_counts": {
       "None": 38,
@@ -61,12 +61,12 @@
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 135,
-      "pending": 70,
+      "fixed": 137,
+      "pending": 68,
       "idle": 4,
       "'pending'": 1
     },
-    "last_updated": "2026-04-27T19:40:00+08:00"
+    "last_updated": "2026-04-27T20:35:19+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -4239,30 +4239,34 @@
       "title": "Perfetto 输入延迟 SQL 深度分析",
       "chapter": "13.8",
       "section": "13.8",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-06",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "last_verified_against": "Perfetto stdlib docs + android/input.sql + FrameTimeline trace config docs",
       "confidence": "high",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-25",
+      "reviewed_date": "2026-04-26",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T08:30:00+08:00",
+      "last_task9_at": "2026-04-27T20:35:19+08:00",
       "last_task2b_at": "2026-04-26T08:55:00+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
       "updated_by": "openclaw-task2b",
-      "updated_date": "2026-04-26"
+      "updated_date": "2026-04-26",
+      "tags": "[Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]",
+      "related_chapters": "[\"3.1\", \"3.4\", \"13.3\", \"13.5\"]",
+      "finalized_date": "2026-04-27",
+      "finalized_by": "openclaw-task9"
     },
     "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md": {
       "path": "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
@@ -4306,21 +4310,27 @@
       "last_verified_against": "AOSP Binder/ZygoteInit review anchors, Perfetto SQL tables/stdlib docs, Trace Processor large trace query patterns",
       "confidence": "medium",
       "section": "13.10",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task2b_result": "fixed",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "reviewed_date": "2026-04-25",
+      "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T00:28:30+08:00",
+      "last_task9_at": "2026-04-27T20:35:19+08:00",
       "last_task2b_at": "2026-04-27T15:52:00+08:00",
       "rework_date": "2026-04-27",
-      "rework_by": "openclaw-task2b"
+      "rework_by": "openclaw-task2b",
+      "tags": "[Perfetto, SQL, Trace Processor, 性能分析, 帧时间, ANR, 启动时间, Binder]",
+      "related_chapters": "[\"13.1\", \"13.3\", \"13.5\", \"13.8\", \"7.1\", \"7.9\", \"8.2\", \"9.3\", \"1.4\", \"1.14\"]",
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-04-09",
+      "gap_source": "官方文档 + 读者需求 + AOSP 结构",
+      "gap_score": "19/20"
     },
     "src/part3-tools/ch13-perfetto/README.md": {
       "path": "src/part3-tools/ch13-perfetto/README.md",
@@ -4720,29 +4730,33 @@
       "title": "如何区分系统问题和 App 问题",
       "chapter": "15.2",
       "section": "15.2",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-04",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-21",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "high",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-22",
+      "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T08:36:00+08:00",
+      "last_task9_at": "2026-04-27T20:35:19+08:00",
       "review_round": "2",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
-      "last_task2b_at": "2026-04-27T14:50:00+08:00"
+      "last_task2b_at": "2026-04-27T14:50:00+08:00",
+      "tags": "['methodology', 'system-vs-app', 'trace-analysis', 'attribution']",
+      "related_chapters": "[\"5.1\", \"7.1\", \"7.2\", \"7.3\", \"13.3\", \"13.6\", \"15.1\"]",
+      "finalized_date": "2026-04-27",
+      "finalized_by": "openclaw-task9"
     },
     "src/part3-tools/ch15-methodology/03-metrics.md": {
       "path": "src/part3-tools/ch15-methodology/03-metrics.md",
@@ -7180,18 +7194,17 @@
       },
       "13.8": {
         "reviewed_by": "openclaw-task9",
-        "reviewed_date": "2026-04-26",
-        "task9_result": "needs-rework",
-        "task9_state": "pending",
-        "pipeline_stage": "task6_pending",
-        "issues_found": "fixed",
-        "task6_state": "revisiting",
+        "reviewed_date": "2026-04-27",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "status": "finalized",
+        "issues_found": "none",
+        "task6_state": "reviewed",
         "task6_result": "pass-light-edit",
         "task2b_state": "fixed",
         "task2b_result": "fixed",
-        "updated_by": "openclaw-task2b",
-        "updated_date": "2026-04-26",
-        "last_task2b_at": "2026-04-26T08:55:00+08:00"
+        "last_task9_at": "2026-04-27T20:35:19+08:00"
       },
       "14.9": {
         "reviewed_by": "openclaw-task9",
@@ -7290,6 +7303,34 @@
         "p0": 5,
         "p1": 2,
         "p2": 1
+      },
+      "13.10": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-27",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "status": "ready-for-review",
+        "issues_found": "major",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "pending",
+        "task2b_result": "fixed",
+        "last_task9_at": "2026-04-27T20:35:19+08:00"
+      },
+      "15.2": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-27",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "status": "finalized",
+        "issues_found": "none",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "last_task9_at": "2026-04-27T20:35:19+08:00"
       }
     }
   },
@@ -7622,7 +7663,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T19:40:00+08:00",
+  "last_updated": "2026-04-27T20:35:19+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8497,5 +8538,56 @@
     ],
     "log": "logs/deep-review/2026-04-27-15-deep-review.md",
     "note": "复核 logs/external-review/2026-04-25-13-13-batch-review-summary.md；该文件为 batch summary，archive helper 默认不归档 batch-summary。"
+  },
+  "2026-04-27-20-task9": {
+    "sections": [
+      "13.8",
+      "13.10",
+      "15.2"
+    ],
+    "files": [
+      "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
+      "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
+      "src/part3-tools/ch15-methodology/02-system-vs-app.md"
+    ],
+    "results": {
+      "13.8": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 1,
+        "p3": 1,
+        "auto_finalized": true
+      },
+      "13.10": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 0,
+        "p2": 2,
+        "p3": 1,
+        "auto_finalized": false
+      },
+      "15.2": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 1,
+        "p3": 1,
+        "auto_finalized": true
+      }
+    },
+    "auto_finalized": [
+      "13.8",
+      "15.2"
+    ],
+    "queue_added": [
+      "13.10"
+    ],
+    "suggestions_added": 3,
+    "external_review_inputs": [
+      "logs/external-review/2026-04-25-13-13-batch-review-summary.md",
+      "logs/external-review/2026-04-25-19-15-batch-review-summary.md"
+    ],
+    "updated_at": "2026-04-27T20:35:19+08:00"
   }
 }
