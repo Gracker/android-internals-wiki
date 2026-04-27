@@ -44,10 +44,10 @@ task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
-task9_reviewed_date: '2026-04-25'
+task9_reviewed_date: '2026-04-27'
 task9_reviewed_by: openclaw-task9
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2x 不是X而是Y→直接陈述, 1x 口水过渡词(更准确的版本线是)删除. 评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。'
-last_task9_at: '2026-04-25T10:28:35+08:00'
+last_task9_at: '2026-04-27T15:34:11+08:00'
 ---
 
 # Perfetto 简介与演进
