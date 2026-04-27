@@ -11,22 +11,19 @@ last_verified_against: "AOSP PowerManager / PowerManagerService / BatteryStats r
 confidence: high
 tags: [apm, battery, thermal, wakelock]
 related_chapters: ["19.0", "19.19"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-25
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 sources:
   - "https://developer.android.com/reference/android/os/PowerManager"
   - "https://source.android.com/docs/core/power/thermal-mitigation"
   - "https://developer.android.com/topic/performance/power/setup-battery-historian"
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-25T04:21:00+08:00"
+
 ---
 
 # 耗电与发热监控 (Battery & Thermal)
@@ -132,6 +129,19 @@ Alarm 对耗电的影响来自“把设备叫醒”。在 Doze 模式下，系�
 
 工程上可把 `AlarmManager.set*()`、`PendingIntent` 标识、WorkManager 任务名、JobScheduler 的 jobId 放进同一个后台任务样本。这样能把“某个同步任务每 5 分钟唤醒一次、醒来后拉取网络并持有 WakeLock”的路径还原出来。不同 Android 版本和厂商 ROM 对 idle quota 的处理会变化，线上规则应看相对异常：同一用户、同一版本、同一任务名下的唤醒次数突然升高，就应进入采样上报。
 
+### Android 12+ 精确闹钟权限对 APM 归因的影响
+
+Android 12 引入 `SCHEDULE_EXACT_ALARM` 权限，Android 13/14 进一步收紧精确闹钟的行为。APM 记录 Alarm 样本时，要同时记录目标进程是否持有该权限、`canScheduleExactAlarms()` 的返回值、alarm type 和 `allowWhileIdle` 标记。这样在归因时才能区分"业务设置了精确闹钟但系统拒绝了"和"业务确实只用了 inexact alarm"。
+
+| Android 版本 | 精确闹钟行为 | APM 样本应记录的字段 |
+| --- | --- | --- |
+| Android 11 及以下 | 无权限限制，`setExact()` / `setExactAndAllowWhileIdle()` 正常工作 | alarm type、triggerAt、interval |
+| Android 12 | 新增 `SCHEDULE_EXACT_ALARM` 权限，新安装应用默认授予，预装应用视厂商策略 | 增加 permission 状态、`canScheduleExactAlarms()` 返回值 |
+| Android 13 | 权限默认不授予（除非闹钟/日历类应用），用户需在设置中手动授权；新增 `USE_EXACT_ALARM` 供特定类别申请 | 增加 app-op 状态、是否命中 `USE_EXACT_ALARM` 豁免 |
+| Android 14+ | 进一步收紧，系统会静默降级未授权的精确闹钟为 inexact | 增加降级标记，对比实际触发时间与预期触发时间的偏差 |
+
+未获精确闹钟权限时，`setExactAndAllowWhileIdle()` 会被系统降级为 inexact alarm，触发时间可能大幅偏移。APM 归因时如果只看"业务调了 setExact"，会误判为高频精确唤醒；实际触发频率取决于系统降级后的 inexact 窗口。端侧应记录未授权状态下降级后的实际触发间隔，并在 APM 面板中区分"请求精确"与"实际精确"两种口径。
+
 ## 4. 硬件资源耗电归因：按占用窗口统计
 
 GPS、蓝牙扫描、Wi-Fi 扫描、基带传输和 CPU 高负载都需要按占用窗口解释。APM 侧要记录“开始、停止、持续时间、触发任务、设备状态”。
@@ -173,6 +183,17 @@ class ThermalGuard(private val context: Context) {
 
     fun start() {
         powerManager.addThermalStatusListener(context.mainExecutor, listener)
+        // 注册后立即读取当前热状态，避免应用启动时设备已处于 SEVERE/CRITICAL 但监听器要等下一次状态变化才回调
+        val currentStatus = powerManager.currentThermalStatus
+        if (currentStatus != PowerManager.THERMAL_STATUS_NONE) {
+            BatteryApm.recordThermalStatus(
+                status = currentStatus,
+                elapsedRealtimeMs = SystemClock.elapsedRealtime(),
+                foreground = ProcessState.isForeground(),
+                source = "initial_snapshot"
+            )
+            applyThermalPolicy(currentStatus)
+        }
     }
 
     fun stop() {
