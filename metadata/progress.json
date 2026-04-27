@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-27T13:32:46+08:00",
+  "generated_at": "2026-04-27T14:32:13+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 205,
-    "finalized": 98,
-    "ready-for-review": 106,
+    "finalized": 100,
+    "ready-for-review": 104,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T13:32:46+08:00",
+    "last_updated": "2026-04-27T14:32:13+08:00",
     "pipeline_stage_counts": {
-      "ready-to-publish": 98,
-      "task2b_pending": 63,
-      "task9_pending": 18,
+      "ready-to-publish": 100,
+      "task2b_pending": 64,
+      "task9_pending": 15,
       "task6_pending": 22,
       "None": 1,
       "task6_reviewed": 3
@@ -22,14 +22,14 @@
       "revisiting": 5
     },
     "task9_state_counts": {
-      "reviewed": 169,
-      "pending": 33,
+      "reviewed": 172,
+      "pending": 30,
       "None": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 133,
-      "pending": 64,
+      "fixed": 132,
+      "pending": 65,
       "idle": 3,
       "None": 4,
       "done": 1
@@ -39,9 +39,9 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 98,
-      "task2b_pending": 63,
-      "task9_pending": 18,
+      "ready-to-publish": 100,
+      "task2b_pending": 64,
+      "task9_pending": 15,
       "task6_pending": 22,
       "None": 1,
       "task6_reviewed": 3
@@ -52,19 +52,19 @@
       "revisiting": 5
     },
     "task9_state_counts": {
-      "reviewed": 169,
-      "pending": 33,
+      "reviewed": 172,
+      "pending": 30,
       "None": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 133,
-      "pending": 64,
+      "fixed": 132,
+      "pending": 65,
       "idle": 3,
       "None": 4,
       "done": 1
     },
-    "last_updated": "2026-04-27T13:32:46+08:00"
+    "last_updated": "2026-04-27T14:32:13+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -3804,20 +3804,20 @@
       "title": "WebView 渲染管线",
       "chapter": "18.13",
       "section": "18.13",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 5.0+（WebView provider 可独立更新；SurfaceControl 子 Surface 需结合 provider / Chromium milestone 判断）",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-24'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T14:40:03+08:00",
+      "last_task9_at": "2026-04-27T14:32:13+08:00",
       "review_round": "3"
     },
     "src/part2-performance/ch18-rendering-pipelines/14-camera-pipeline.md": {
@@ -4858,25 +4858,25 @@
       "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
       "title": "Android 性能问题实证：真实世界的分类与代码模式",
       "chapter": "15.8",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-08",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)（章节方法适用范围；实证数据为跨版本综合观察）",
       "last_verified": "2026-04-18",
       "last_verified_against": "arXiv 2407.05090 / Android View docs / Perfetto FrameTimeline docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-18",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-18T16:41:43+08:00"
+      "last_task9_at": "2026-04-27T14:32:13+08:00"
     },
     "src/part3-tools/ch15-methodology/09-observability-closed-loop.md": {
       "path": "src/part3-tools/ch15-methodology/09-observability-closed-loop.md",
@@ -5105,18 +5105,18 @@
       "last_verified": "2026-04-21",
       "last_verified_against": "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T13:57:22+08:00"
+      "last_task9_at": "2026-04-27T14:32:13+08:00"
     },
     "src/part4-system/ch17-oem/README.md": {
       "path": "src/part4-system/ch17-oem/README.md"

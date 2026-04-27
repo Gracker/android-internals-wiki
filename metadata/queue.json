@@ -13764,5 +13764,31 @@
     "completed_at": "2026-04-27T13:40:00+08:00",
     "completed_by": "task2b-content-processing-rework",
     "completion_reason": "修复 AVD fallback/RenderThread 混写、现代 lmkd 观测入口、示例数据口径与交叉引用路径。"
+  },
+  {
+    "section": "17.3",
+    "section_title": "行业案例",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Game Mode 源码路径与 ADPF Thermal Headroom API 边界存在错误",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L306（AOSP 源码路径）",
+        "detail": "参考资料写 `frameworks/base/services/core/java/com/android/server/app/GameModeService.java`，但 AOSP android-16.0.0_r1 的该目录没有 GameModeService；Game Mode 服务端实现入口是 `GameManagerService.java`。",
+        "suggestion": "把源码路径改成 `frameworks/base/services/core/java/com/android/server/app/GameManagerService.java`，并在文中/参考资料统一使用 GameManagerService。"
+      },
+      {
+        "type": "源码错误/版本差异",
+        "location": "L152-L156（ADPF Thermal API）",
+        "detail": "`PowerManager.getThermalHeadroom(int)` 不是严格返回 0.0-1.0 区间；AOSP 文档写的是返回 >=0 的值，1.0 表示 SEVERE throttling threshold，设备不支持或调用频率显著快于 1 次/秒时会返回 NaN。固定用 0.5/0.7/0.85 阈值做策略，缺少设备阈值与 NaN 处理边界。",
+        "suggestion": "补充 NaN/unsupported/rate-limit 处理，说明应结合 `getThermalHeadroomThresholds()` 或设备实测阈值校准降级策略；把 1.0 改为 SEVERE 阈值口径，不写成封顶范围。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T14:32:13+08:00",
+    "status": "pending"
   }
 ]

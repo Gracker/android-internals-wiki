@@ -4940,3 +4940,9 @@
 - **位置**：五个案例的 Trace 截图与效果对比
 - **问题**：正文有多个 `[待补充：Trace 截图]`，但已经写入明确耗时与 Jank 率。
 - **建议**：为每个数值补 trace 文件、设备、Android 版本、刷新率、采样窗口和统计方式；无法补证据的数值改成示例并标注 `[待验证]`。
+
+## [Task9 Deep Review] 17.3 行业案例 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L135（Game Mode API 模式枚举）
+- **问题**：章节只列 Standard / Performance / Battery Saver，但 AOSP Android 16 `GameManager` 还包含 `GAME_MODE_CUSTOM`，并有 targetSdk <= Android 13 时 custom mode 兼容返回 standard 的逻辑。章节适用范围写 Android 12-16，缺少 Android 14+ custom mode 的版本边界。
+- **建议**：补一行版本说明：公开文档主线仍要求游戏支持 standard / performance / battery，Android 14+ 平台 API 还存在 custom mode；读取 `GameManager#getGameMode()` 时要处理 `GAME_MODE_CUSTOM` 及旧 targetSdk 兼容行为。
