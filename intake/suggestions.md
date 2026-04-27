@@ -5017,3 +5017,16 @@
 - **位置**：L273-L279
 - **问题**：前台服务表把 Android 14+ 的 `short service`、`data sync`、`media processing` timeout 合在一行，容易混淆 Android 14 shortService 与 Android 15/16 time-limited FGS 的版本边界。
 - **建议**：按 Android 14 shortService、Android 15 dataSync/mediaProcessing 6h 限制、Android 16/17 后续演进拆三行，并补 `ActiveServices` / `ServiceRecord.ShortFgsInfo` 锚点。
+
+
+## [Task9 Deep Review] 15.1 性能优化的术、道、器 — 2026-04-27
+- **类型**：原理准确性 / 版本差异
+- **位置**：L152 持续优化
+- **问题**：正文写“Android 12 引入 BlastBufferQueue 替代 BufferQueue”。BLAST 改变了 buffer 提交和 SurfaceControl 事务配合方式，但底层跨进程 buffer 流转仍依赖 BufferQueue；“替代”容易让读者误判 2.13 / 2.16 中 BufferQueue 与 fence 的解释。
+- **建议**：改成“Android 12 引入 BLASTBufferQueue，改变 Buffer 提交与 WindowManager 事务同步方式”，并引用 2.13 BufferQueue、2.16 Sync Fence。
+
+## [Task9 Deep Review] 19.13 androidx.tracing（Tracing SDK） — 2026-04-27
+- **类型**：数据缺失
+- **位置**：全文
+- **问题**：章节已覆盖命名、版本边界、async trace 和 JankStats 对应关系，但缺少一个最小 Perfetto 样本或 benchmark 数据来说明 trace 标注的阅读收益和热路径开销。
+- **建议**：补一个同机型 release/profileable 构建的最小样本：标出 `Home#feedRender` slice、Thread State、TraceSectionMetric 或人工读取耗时，并记录开启标注前后的包体积/主线程耗时差异。
