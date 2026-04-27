@@ -27,9 +27,9 @@ sources:
 tags: ['methodology', 'system-vs-app', 'trace-analysis', 'attribution']
 related_chapters: ["5.1", "7.1", "7.2", "7.3", "13.3", "13.6", "15.1"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-22"
+reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -265,7 +265,7 @@ App 侧问题的另一个特征是**可重现、可关联到特定用户操作**
 
 ### 场景三：温度控制导致降频
 
-设备过热时，温控系统会强制降低 CPU 频率。此时所有 App 的执行速度都会变慢——本来 6ms 能完成的工作可能要 12ms。这不是 App 的错，也不是调度器的错，而是物理限制。
+设备过热时，温控系统会强制降低 CPU 频率。此时所有 App 的执行速度都会变慢——本来 6ms 能完成的工作可能要 12ms。这是物理限制，App 和调度器都无能为力。
 
 **判断原则**：这种场景下，查看 CPU Frequency 轨道，如果 `scaling_max_freq` 被明显压低（比如大核从 3.0GHz 降到 1.5GHz），且设备温度传感器数值很高，就可以确认是温控降频。App 端能做的是降低计算量（减少渲染复杂度、降低帧率目标），系统端能做的是优化温控策略和散热设计。
 

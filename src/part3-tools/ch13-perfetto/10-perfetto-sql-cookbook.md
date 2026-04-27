@@ -36,9 +36,9 @@ task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6
 pipeline_stage: task6_pending
 task9_result: needs-rework
