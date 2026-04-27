@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-28T01:31:04+08:00",
+  "generated_at": "2026-04-28T03:43:01+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 108,
     "ready-for-review": 110,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-28T02:30:00+08:00",
+    "last_updated": "2026-04-28T03:43:01+08:00",
     "pipeline_stage_counts": {
       "None": 33,
       "task6_pending": 27,
@@ -59,7 +59,7 @@
       "pending": 69,
       "idle": 4
     },
-    "last_updated": "2026-04-28T02:30:00+08:00"
+    "last_updated": "2026-04-28T03:43:01+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -388,22 +388,23 @@
         "app-startup"
       ],
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-28",
-      "task2b_result": "fixed",
       "task2b_state": "pending",
-      "reviewed_date": "2026-04-26",
+      "task2b_result": "fixed",
+      "last_task2b_at": "2026-04-28T02:40:00+08:00",
+      "reviewed_date": "2026-04-28",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
-      "review_round": 5,
+      "review_round": 6,
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T01:31:04+08:00",
+      "task9_reviewed_date": "2026-04-28",
+      "last_task9_at": "2026-04-28T03:43:01+08:00",
+      "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 2。;2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。",
+      "review_notes": "2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-edit。Frontmatter去重整理。无新增L1/L2问题。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
-      "last_task2b_at": "2026-04-27T06:57:48+08:00",
-      "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。",
       "path": "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
     },
     "src/part1-fundamentals/ch01-architecture/11-zygote-startup.md": {
@@ -5061,27 +5062,100 @@
       "applicable_versions": "Android 17 (API 37)"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
-      "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
       "chapter": "16.5",
       "status": "ready-for-review",
       "drafted_date": "2026-04-08",
       "applicable_versions": "Android 17 (API 37)",
-      "last_verified": "2026-04-24",
-      "last_verified_against": "Android 17 behavior changes / MessageQueue guidance / ProfilingTrigger reference / AOSP CombinedMessageQueue + ConcurrentMessageQueue",
+      "last_verified": "2026-04-27",
+      "last_verified_against": "Android 17 behavior changes / API 36 JobScheduler pending reasons / API 37 JobScheduler reference / MessageQueue guidance / Activity configuration change guidance / static final reflection and JNI behavior",
       "confidence": "medium",
+      "sources": [
+        {
+          "type": "official",
+          "path": "https://developer.android.com/about/versions/17/behavior-changes-17"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/about/versions/17/features"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/about/versions/17/changes/messagequeue"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/android/os/ProfilingTrigger"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/reference/android/app/job/JobScheduler"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/privacy-and-security/security-config"
+        },
+        {
+          "type": "official",
+          "path": "https://developer.android.com/guide/practices/page-sizes"
+        },
+        {
+          "type": "blog",
+          "path": "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+        },
+        {
+          "type": "blog",
+          "path": "https://android-developers.googleblog.com/"
+        },
+        {
+          "type": "blog",
+          "path": "https://juejin.cn/post/7612812060795093002"
+        },
+        {
+          "type": "blog",
+          "path": "https://juejin.cn/post/7610233341305389099"
+        }
+      ],
+      "tags": [
+        "android17",
+        "api37",
+        "behavior-changes",
+        "performance",
+        "deliqueue",
+        "generational-gc",
+        "profiling-manager",
+        "cloud-compilation"
+      ],
+      "related_chapters": [
+        "1.6",
+        "1.13",
+        "4.8",
+        "5.7",
+        "8.2",
+        "14.7",
+        "16.2",
+        "16.4"
+      ],
+      "created_by": "task2a-knowledge-gap",
+      "created_date": "2026-04-08",
+      "gap_source": "官方文档+研究素材+AOSP结构+读者需求",
+      "gap_score": 20,
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
       "task9_result": "needs-rework",
+      "task2b_state": "pending",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-24",
+      "last_task2b_at": "2026-04-28T02:40:00+08:00",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T08:53:48+08:00",
+      "task9_reviewed_date": "2026-04-28",
+      "review_notes": "2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-edit。Frontmatter去重整理。无新增L1/L2问题。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。",
+      "last_task9_at": "2026-04-28T03:43:01+08:00",
+      "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。",
+      "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
       "section": "16.5"
     },
     "src/part4-system/ch16-aosp/README.md": {
@@ -5752,7 +5826,6 @@
       "path": "src/part3-tools/ch19-apm/14-jetpack-benchmark.md"
     },
     "src/part3-tools/ch19-apm/25-battery-thermal-apm.md": {
-      "path": "src/part3-tools/ch19-apm/25-battery-thermal-apm.md",
       "title": "耗电与发热监控 (Battery & Thermal)",
       "chapter": "19",
       "section": "19.25",
@@ -5778,7 +5851,7 @@
       "task2b_state": "pending",
       "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-25",
+      "reviewed_date": "2026-04-28",
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
       "sources": [
@@ -5787,9 +5860,11 @@
         "https://developer.android.com/topic/performance/power/setup-battery-historian"
       ],
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T04:21:00+08:00"
+      "task9_reviewed_date": "2026-04-28",
+      "last_task9_at": "2026-04-28T03:43:01+08:00",
+      "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。",
+      "path": "src/part3-tools/ch19-apm/25-battery-thermal-apm.md"
     },
     "src/part3-tools/ch19-apm/12-framemetrics.md": {
       "path": "src/part3-tools/ch19-apm/12-framemetrics.md",

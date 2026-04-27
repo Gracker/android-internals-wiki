@@ -11,19 +11,24 @@ last_verified_against: "AOSP PowerManager / PowerManagerService / BatteryStats r
 confidence: high
 tags: [apm, battery, thermal, wakelock]
 related_chapters: ["19.0", "19.19"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-28"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 sources:
   - "https://developer.android.com/reference/android/os/PowerManager"
   - "https://source.android.com/docs/core/power/thermal-mitigation"
   - "https://developer.android.com/topic/performance/power/setup-battery-historian"
 
+task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-28"
+last_task9_at: "2026-04-28T03:43:01+08:00"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。"
 ---
 
 # 耗电与发热监控 (Battery & Thermal)

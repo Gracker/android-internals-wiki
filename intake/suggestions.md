@@ -5326,3 +5326,9 @@
 - **问题**：WorkManager 的“最终执行”表述缺少 force-stop 边界。AndroidX `ForceStopRunnable` 注释说明 force-stop 会取消 alarms/jobs，WorkManager 只能在进程再次启动后检测并重新调度，不能让被 force-stop 的 App 自行在后台恢复执行。
 - **建议**：在 WorkManager 保证语义旁补一句边界：设备重启、进程死亡可恢复；用户/系统 force-stop 后需等 App 再次启动，之后由 ForceStopRunnable / RescheduleReceiver 重建调度。
 
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L388-L393「16KB 页面大小」
+- **问题**：FFmpeg、OpenCV、SQLite、RocksDB 等“已知案例”没有版本号、issue 链接或官方迁移文档支撑，读者无法判断是历史版本问题、特定构建参数问题还是当前通用风险。
+- **建议**：补具体版本/issue/官方文档；若没有一手证据，改成风险类别，避免把库名写成确定故障清单。
