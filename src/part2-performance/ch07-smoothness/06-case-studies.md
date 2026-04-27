@@ -8,8 +8,8 @@ reviewed_date: "2026-04-25"
 reviewed_by: "openclaw-task6"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-01"
-last_verified_against: "AOSP android-16.0.0_r1, Android 官方文档"
+last_verified: "2026-04-27"
+last_verified_against: "AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI / Android cached process freezing behavior / ComponentCallbacks2"
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
@@ -31,11 +31,14 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task6_re_review
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
+task2b_rework_date: "2026-04-27"
+task2b_fixed_at: "2026-04-27T09:15:00+08:00"
+task2b_result: fixed
 task9_result: needs-rework
 ---
 
@@ -299,18 +302,22 @@ Perfetto 中同时观察主线程和 RenderThread：
 
 **第三步：确认根因。** 动态表情的每一帧都在变化，导致 Bitmap 频繁重新上传 GPU。正常情况下 RenderThread 可以快速完成 sync，但多表情叠加时 GPU 工作量激增，sync 等待时间从正常的 <1ms 增加到 8-15ms。
 
+**第四步：排查 AnimatedVectorDrawable 退化路径。** API 25+ 的 AVD 可以走 `VectorDrawableAnimatorRT`，但 `AnimatedVectorDrawable.fallbackOntoUI()` 会把动画切回 UI 线程。常见触发面包括软件 Canvas、动画 pending action 未能进入 RT，以及动画过程中动态修改部分属性或使用 RT 不支持的变换。Trace 里如果主线程同时出现动画推进和 `syncAndDrawFrame` 等待，需要把 AVD UI fallback 与 RenderThread 积压放在一起判断。
+
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — RenderThread 自身耗时导致主线程 sync 被阻塞]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md — 微信对话框有多个动态表情时出现 buildDrawingCache 耗时]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java — `fallbackOntoUI()` 负责 AVD 退化到 UI 线程]
 
 ### 根因
 
-多个动画表情同时播放，每帧触发 DisplayList 重录制，向量路径数据变化导致 RenderThread 承担了大量的绘制和 GPU 栅格化工作。RenderThread 处理变慢后，主线程在 `syncFrameState()` 阶段等待时间从正常的 <1ms 增加到 8-15ms，直接导致帧超时。
+多个动画表情同时播放，每帧触发 DisplayList 重录制，向量路径数据变化导致 RenderThread 承担了大量的绘制和 GPU 栅格化工作。RenderThread 处理变慢后，主线程在 `syncFrameState()` 阶段等待时间从正常的 <1ms 增加到 8-15ms，直接导致帧超时。若 AVD 命中 `fallbackOntoUI()`，主线程还会承担动画推进，帧预算会被进一步压缩。
 
 ### 修复方案
 
 1. **限制同时播放的动画表情数量**：只对可见区域内的表情启用动画
 2. **使用 Hardware Layer 缓存静态部分**：对非动画内容使用 `LAYER_TYPE_HARDWARE` 避免重绘
 3. **降低动画分辨率**：对小尺寸表情使用缩放后的低分辨率动画资源
+4. **避免触发 AVD UI fallback**：动画播放期间不要反复改 `alpha`、path morph 等属性；确认承载视图在硬件加速 Canvas 上绘制
 
 ```kotlin
 // 只对可见的表情播放动画
@@ -400,15 +407,16 @@ App 开发者无法直接解决系统内存不足的问题，但可以减少自�
 1. **减少自身内存占用**：优化 Bitmap 大小、使用内存缓存策略、避免内存泄漏
 2. **响应 `onTrimMemory`**：在系统回调时主动释放非必要资源
 
+Android 14+ 的缓存进程冻结会影响 `onTrimMemory` 的执行窗口。App 进入 cached 状态后，系统可能在很短时间内冻结进程；冻结期间 Java/Kotlin 代码不会继续执行，排队的异步清理任务也可能拖到解冻后才跑。`TRIM_MEMORY_UI_HIDDEN` 应视为前台转后台后最可靠的释放窗口：图片缓存、可重建的 UI 资源、临时大对象要在回调内同步释放，耗时清理再拆到可中断的后台任务。
+
 ```kotlin
 override fun onTrimMemory(level: Int) {
     when (level) {
-        // TRIM_MEMORY_UI_HIDDEN: UI 不可见时，可释放与显示相关的资源
+        // TRIM_MEMORY_UI_HIDDEN: UI 不可见时，同步释放可重建的显示资源
         ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> imageCache.evictAll()
-        // 注意：从 Android 14 (API 34) 起，App 不再收到 TRIM_MEMORY_RUNNING_*
-        // 和 TRIM_MEMORY_MODERATE/COMPLETE 级别回调（参见 §4.4）。
+        // Android 14 (API 34)+ 可能很快冻结 cached 进程。
         // 低内存诊断以 Perfetto / logcat / statsd / 冷启动证据为主，
-        // 不要依赖 running_* trim level 做为运行时缓存回收的主要手段。
+        // 不要依赖 running_* trim level 作为运行时缓存回收的主要手段。
     }
 }
 ```

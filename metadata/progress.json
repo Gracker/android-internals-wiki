@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T07:58:00+08:00",
+  "generated_at": "2026-04-27T09:15:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,30 +7,29 @@
     "finalized": 93,
     "ready-for-review": 111,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T07:58:00+08:00",
+    "last_updated": "2026-04-27T09:15:00+08:00",
     "pipeline_stage_counts": {
       "ready-to-publish": 93,
-      "task2b_pending": 58,
+      "task2b_pending": 60,
       "task9_pending": 23,
-      "task6_pending": 26,
+      "task6_pending": 25,
       "None": 1,
-      "task6_reviewed": 3,
-      "task6_re_review": 1
+      "task6_reviewed": 3
     },
     "task6_state_counts": {
-      "reviewed": 195,
-      "revisiting": 8,
-      "None": 2
+      "reviewed": 198,
+      "None": 2,
+      "revisiting": 5
     },
     "task9_state_counts": {
-      "reviewed": 161,
-      "pending": 41,
+      "reviewed": 162,
+      "pending": 40,
       "None": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 137,
-      "pending": 60,
+      "fixed": 135,
+      "pending": 62,
       "idle": 3,
       "None": 4,
       "done": 1
@@ -41,32 +40,31 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "ready-to-publish": 93,
-      "task2b_pending": 58,
+      "task2b_pending": 60,
       "task9_pending": 23,
-      "task6_pending": 26,
+      "task6_pending": 25,
       "None": 1,
-      "task6_reviewed": 3,
-      "task6_re_review": 1
+      "task6_reviewed": 3
     },
     "task6_state_counts": {
-      "reviewed": 195,
-      "revisiting": 8,
-      "None": 2
+      "reviewed": 198,
+      "None": 2,
+      "revisiting": 5
     },
     "task9_state_counts": {
-      "reviewed": 161,
-      "pending": 41,
+      "reviewed": 162,
+      "pending": 40,
       "None": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 137,
-      "pending": 60,
+      "fixed": 135,
+      "pending": 62,
       "idle": 3,
       "None": 4,
       "done": 1
     },
-    "last_updated": "2026-04-27T07:58:00+08:00"
+    "last_updated": "2026-04-27T09:15:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
