@@ -6071,3 +6071,37 @@
 - **位置**：L402 / L459-L478 Binder 线程池利用率
 - **问题**：DEFAULT_MAX_BINDER_THREADS=15、system_server sMaxBinderThreads=31 缺少 AOSP 文件路径和验证版本。
 - **建议**：标注 ProcessState.cpp、SystemServer.java 的版本锚点，并说明厂商/native 服务可覆写。
+
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-28
+- **类型**：源码准确性
+- **位置**：Android eBPF 基础设施 / BPF Loader 与系统级 eBPF 程序
+- **问题**：正文说启动阶段自动加载 /system/etc/bpf/ 下所有 eBPF 程序，口径过窄。android-16.0.0_r1 system/bpf/loader/Loader.cpp 的 locations 同时包含 /system/etc/bpf/、/system/etc/bpf/memevents/、/vendor/etc/bpf/；UprobeStats 还有模块自己的 bpfloader。
+- **建议**：把“所有”改成“平台核心 BPF 程序之一”，补 vendor/memevents 与模块自带 loader 的边界。
+
+
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-28
+- **类型**：交叉引用
+- **位置**：UprobeStats / 预置的 BPF 程序
+- **问题**：表格列出 BitmapAllocation.c、GenericInstrumentation.c、MalwareSignal.c、ProcessManagement.c，但后文写“预置三类 BPF 程序模板”并遗漏 MalwareSignal.c。
+- **建议**：统一为四类，或说明 MalwareSignal.c 受 flag/场景限制、不是本节展开重点。
+
+
+## [Task9 Deep Review] 15.4 竞品分析方法 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：竞品包体积对比 / “APK 体积每增加 10MB，安装转化率下降约 1.5%”
+- **问题**：这是量化业务断言，但正文没有给出研究来源、样本市场、年份和适用范围。
+- **建议**：补官方/研究来源与适用条件；如果无法核验，改成定性描述，不保留固定百分比。
+
+
+## [Task9 Deep Review] 15.4 竞品分析方法 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：注意事项 / “差异大于标准差的 2 倍”
+- **问题**：把“2 倍标准差”当作显著性判断过粗，且前文主张看中位数/P90，不能直接套平均值标准差口径。
+- **建议**：补 bootstrap 置信区间、Mann-Whitney U 或至少“中位数差值 + MAD/IQR + 重复批次”的判断方法。
+
+
+## [Task9 Deep Review] 15.4 竞品分析方法 — 2026-04-28
+- **类型**：工具边界
+- **位置**：控制变量 / 同网络
+- **问题**：Network Link Conditioner 是 Apple/macOS 工具链口径，直接写进 Android 竞品测试容易让读者误以为设备侧可用。
+- **建议**：说明它只能通过 Mac 侧网络/热点间接塑形；Android 侧优先写 Charles/Proxyman 代理限速、root 环境 tc/netem 或测试网关限速。

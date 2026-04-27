@@ -53,17 +53,17 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: "openclaw-task6"
-last_task9_at: 2026-04-27T03:32:04+08:00
+task9_reviewed_date: "2026-04-28"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-28T07:40:26+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-27T03:40:00+08:00"
 repaired_date: "2026-04-27"
@@ -71,6 +71,7 @@ repaired_by: openclaw-task2b
 updated_by: openclaw-task2b
 updated_date: "2026-04-27"
 review_notes: "2026-04-27 task2b: 修复 UprobeStats 版本边界，改为 Android 16 正式 APEX；补 Guardrail allowlist、sched_ext partial 模式与 Binder command 版本锚点。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。"
 ---
 
 # 14.10 eBPF/BPF 在 Android 性能分析中的应用
