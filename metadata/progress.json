@@ -1,18 +1,18 @@
 {
-  "generated_at": "2026-04-27T15:52:00+08:00",
+  "generated_at": "2026-04-27T16:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 205,
-    "finalized": 100,
-    "ready-for-review": 104,
+    "finalized": 101,
+    "ready-for-review": 103,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-27T15:52:00+08:00",
+    "last_updated": "2026-04-27T16:20:00+08:00",
     "pipeline_stage_counts": {
-      "ready-to-publish": 100,
-      "task2b_pending": 61,
+      "ready-to-publish": 101,
+      "task2b_pending": 63,
       "task9_pending": 15,
-      "task6_pending": 25,
+      "task6_pending": 22,
       "None": 1,
       "task6_reviewed": 3
     },
@@ -22,14 +22,14 @@
       "revisiting": 8
     },
     "task9_state_counts": {
-      "reviewed": 169,
-      "pending": 33,
+      "reviewed": 172,
+      "pending": 30,
       "None": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 135,
-      "pending": 62,
+      "fixed": 133,
+      "pending": 64,
       "idle": 3,
       "None": 4,
       "done": 1
@@ -39,10 +39,10 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "ready-to-publish": 100,
-      "task2b_pending": 61,
+      "ready-to-publish": 101,
+      "task2b_pending": 63,
       "task9_pending": 15,
-      "task6_pending": 25,
+      "task6_pending": 22,
       "None": 1,
       "task6_reviewed": 3
     },
@@ -52,19 +52,19 @@
       "revisiting": 8
     },
     "task9_state_counts": {
-      "reviewed": 169,
-      "pending": 33,
+      "reviewed": 172,
+      "pending": 30,
       "None": 2,
       "fixed": 1
     },
     "task2b_state_counts": {
-      "fixed": 135,
-      "pending": 62,
+      "fixed": 133,
+      "pending": 64,
       "idle": 3,
       "None": 4,
       "done": 1
     },
-    "last_updated": "2026-04-27T15:52:00+08:00"
+    "last_updated": "2026-04-27T16:20:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1925,18 +1925,18 @@
       "last_verified": "2026-04-01",
       "last_verified_against": "AOSP android-16.0.0_r1, android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "'needs-rework'",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
-      "task9_reviewed_by": "'openclaw-task9'",
-      "last_task9_at": "'2026-04-22T12:36:00+08:00'",
+      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-27T16:20:00+08:00",
       "review_round": "2"
     },
     "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md": {
@@ -2575,25 +2575,25 @@
     "src/part2-performance/ch07-smoothness/13-systemui-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/13-systemui-performance.md",
       "title": "SystemUI 性能分析",
-      "chapter": "'7.13'",
-      "section": "'7.13'",
-      "status": "ready-for-review",
+      "chapter": "7.13",
+      "section": "7.13",
+      "status": "finalized",
       "drafted_date": "'2026-04-09'",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)，通知图标源码入口需区分 Android",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "revisiting",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T15:20:00+08:00",
+      "last_task9_at": "2026-04-27T16:20:00+08:00",
       "last_task2b_at": "2026-04-26T21:49:23+08:00",
       "last_verified": "2026-04-26",
       "last_verified_against": "AOSP main / Android 16 SystemUI SceneContainerFlag / SceneContainer / SceneTransitionLayout / ContainerReveal；PunchHole.kt 未作为 AOSP mainline 锚点"
@@ -2608,18 +2608,18 @@
       "last_verified": "2026-04-21",
       "last_verified_against": "arXiv 2511.23213 v2, ACM paper text, samudoria/GAPS README",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T15:34:18+08:00"
+      "last_task9_at": "2026-04-27T16:20:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md": {
       "path": "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
