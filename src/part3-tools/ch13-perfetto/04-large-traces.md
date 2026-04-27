@@ -2,7 +2,7 @@
 title: "命令行打开超大 Trace"
 chapter: "13.4"
 section: "13.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -20,19 +20,20 @@ sources:
     path: "external/perfetto/src/trace_processor/"
 tags: [perfetto, trace_processor, sql, python, cli, large-traces]
 related_chapters: ["13.1", "13.2", "13.3", "13.5"]
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6
-pipeline_stage: task9_pending
-task9_reviewed_date: "2026-04-27"
+pipeline_stage: ready-to-publish
+task9_reviewed_date: "2026-04-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T12:33:00+08:00"
+last_task9_at: "2026-04-28T06:20:00+08:00"
 last_task2b_at: "2026-04-27T12:54:09+08:00"
+task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。"
 ---
 
 # 命令行打开超大 Trace
