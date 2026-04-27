@@ -2,8 +2,8 @@
 title: "启动优化策略"
 chapter: "8.3"
 status: ready-for-review
-reviewed_date: "2026-04-24"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-27"
+reviewed_by: openclaw-task6-task6
 task6_result: pass-light-edit
 polish_count: 1
 polish_date: "2026-04-06"
@@ -35,13 +35,13 @@ section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_by: openclaw-task6-task9
 last_task9_at: "2026-04-27T10:02:28+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
@@ -80,7 +80,7 @@ last_task2b_at: "2026-04-27T10:44:00+08:00"
 
 在上一节（8.2 App 启动全流程）中，我们完整地梳理了从用户点击图标到首帧绘制的冷启动路径。如果我们在 Perfetto 中打开一个中等复杂度应用的冷启动 Trace，会发现从 `BindApplication` 到 `performTraversals` 之间可能有 1-3 秒的间隔——这段时间里，Application 在初始化十几个 SDK，Activity 在 inflate 一个复杂的布局，ContentProvider 在默默地加载各种库。这些操作串行堆积在主线程上，就构成了用户感知到的"启动慢"。
 
-了解启动流程是为了知道"时间花在哪里"，而本节要回答的另一个问题——"怎么把时间省下来"。启动优化不是在 Application.onCreate 里删几行代码这么简单——它是一套系统工程，涉及任务编排、布局优化、编译优化、以及线上监控等多个层面。每个优化手段都有适用场景和副作用，盲目套用可能适得其反。
+了解启动流程是为了知道"时间花在哪里"，本节回答"怎么把时间省下来"。启动优化不是在 Application.onCreate 里删几行代码这么简单——它是一套系统工程，涉及任务编排、布局优化、编译优化、以及线上监控等多个层面。每个优化手段都有适用场景和副作用，盲目套用可能适得其反。
 
 在展开具体策略之前，先明确两个衡量启动速度的核心指标：**TTID（Time To Initial Display）**和 **TTFD（Time To Full Display）**。
 
