@@ -5957,3 +5957,51 @@
 - **位置**：L100/L155/L227/L300/L375 五个案例 Trace 证据
 - **问题**：五个案例都明确标注 Trace 证据待归档，耗时、Jank 率和内存数值仍是示例口径。案例章节的核心价值依赖可复核 trace，当前数据只能说明分析方法，不能作为实测结论。
 - **建议**：为每个案例归档 trace 文件名、设备型号、Android/ART 版本、刷新率、采样脚本、样本次数、前后对比窗口；在正文引用对应 Perfetto SQL 或截图编号。
+
+## [External Review] 5.8 后台执行限制与优化 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：Job 内省 API
+- **建议**：提及 getPendingJobReasonsHistory 如何揭示能效感知调度（EAS）对任务的强制延后
+- **来源**：Gemini 外部 review
+
+## [External Review] 5.9 ADPF 自适应性能框架 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：阈值透明化
+- **建议**：提及 getThermalHeadroomThresholds() 如何终结开发者对阈值含义的猜测
+- **来源**：Gemini 外部 review
+
+## [External Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：加急配额量化
+- **建议**：补充加急作业在不同待机桶下的分钟级配额上限（如 Active 60min, Rare 5min）
+- **来源**：Gemini 外部 review
+
+## [External Review] 5.11 端侧 AI 推理性能 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：实时观测
+- **建议**：提及利用 adsprpc ftrace 事件量化 8 Elite NPU 真实利用率的方法
+- **来源**：Gemini 外部 review
+
+## [External Review] 6.1 Android 存储架构 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：16KB 吞吐
+- **建议**：提及大页内存减少 75% 块层元数据开销带来的系统启动提速红利
+- **来源**：Gemini 外部 review
+
+## [External Review] 6.2 文件系统 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：Folios 优化
+- **建议**：提及 F2FS 路径全面 Folio 化对减少 CPU 遍历开销的贡献
+- **来源**：Gemini 外部 review
+
+## [External Review] 6.3 I/O 调度 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：Checkpoint Merge
+- **建议**：提及 F2FS 检查点合并对降低 SQLite P99 写入延迟的贡献
+- **来源**：Gemini 外部 review
+
+## [External Review] 6.4 存储演进 — 2026-04-28
+- **类型**：数据支撑
+- **位置**：MCQ 标准化
+- **建议**：提及 UFS 4.0 MCQ 在 Android 17 Premium 认证中的核心地位，作为支撑 Desktop Mode 响应性的技术前提
+- **来源**：Gemini 外部 review
