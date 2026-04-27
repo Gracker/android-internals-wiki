@@ -28,8 +28,8 @@ sources:
     path: "frameworks/base/core/java/android/view/FrameMetrics.java"
 tags: ['competitive-analysis', 'benchmark', 'startup', 'fps', 'apk-size', 'methodology']
 related_chapters: ["7.3", "8.3", "12.1", "13.2", "14.1", "15.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -85,7 +85,7 @@ repaired_by: "openclaw-task2b"
 
 ## 竞品性能对比的方法论
 
-竞品性能对比的第一步不是选工具，而是定规矩。我们先建立一个可靠的实验框架，然后再往里面填具体的测试维度。
+竞品性能对比的第一步是定规矩。先建立一个可靠的实验框架，再往里面填具体的测试维度。
 
 ### 控制变量的四项基本原则
 
@@ -275,7 +275,7 @@ wait $PERFPID
 
 ### 帧耗时分析的关键指标
 
-拿到 Trace 后，我们关注的不是单一帧的时间，而是**分布特征**。在 Perfetto 中查看帧耗时的方法我们在 §13.3 和 §13.5 中已经详细介绍过，这里重点讲对比维度：
+拿到 Trace 后，我们关注的是帧耗时的**分布特征**，而非单一帧的时间。在 Perfetto 中查看帧耗时的方法我们在 §13.3 和 §13.5 中已经详细介绍过，这里重点讲对比维度：
 
 **P50（中位数帧耗时）**：反映"典型帧"的渲染速度。60Hz 设备上，P50 应该在 16.6ms 以下。120Hz 设备上，P50 应该在 8.3ms 以下。如果竞品 A 的 P50 是 12ms，竞品 B 是 9ms，说明 B 的单帧渲染效率更高。
 
