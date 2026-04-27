@@ -19154,6 +19154,182 @@
       ],
       "summary": "Kotlin扩展函数与属性",
       "scored_at": "2026-04-26T16:45:18.722097"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/AI 产品团队的速度，来自一套更短的判断回路 - 橙子的博客-2026-04-26.md",
+      "title": "AI 产品团队的速度，来自一套更短的判断回路 | 橙子的博客",
+      "category": "Cubox",
+      "sub_category": "AI 产品团队的速度，来自一套更短的判断回路 - 橙子的博客-2026-04-26.md",
+      "tags": [
+        "AI",
+        "product-team"
+      ],
+      "quality_score": 13,
+      "relevance_score": 4,
+      "technical_depth_score": 2,
+      "timeliness_score": 4,
+      "verifiability_score": 3,
+      "source": "Cubox",
+      "content_type": "blog",
+      "indexed_at": "2026-04-27 05:00",
+      "scored_at": "2026-04-27T05:01:12.441863"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/为 Agent 设计产品【译】-2026-04-26.md",
+      "title": "为 Agent 设计产品【译】",
+      "category": "Cubox",
+      "sub_category": "为 Agent 设计产品【译】-2026-04-26.md",
+      "tags": [
+        "AI",
+        "agent-design",
+        "product"
+      ],
+      "quality_score": 14,
+      "relevance_score": 5,
+      "technical_depth_score": 2,
+      "timeliness_score": 4,
+      "verifiability_score": 3,
+      "source": "Cubox",
+      "content_type": "blog",
+      "indexed_at": "2026-04-27 05:00",
+      "scored_at": "2026-04-27T05:02:35.573168"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md",
+      "title": "当 Perfetto 显示 Running 时,Android 程序到底在做什么?",
+      "category": "DeepResearch",
+      "sub_category": "Perfetto CPU调度",
+      "tags": [
+        "Android",
+        "Perfetto",
+        "CPU调度",
+        "性能分析",
+        "系统级",
+        "ART",
+        "Binder",
+        "Linux内核"
+      ],
+      "quality_score": 20,
+      "relevance_score": 5,
+      "technical_depth_score": 5,
+      "timeliness_score": 5,
+      "verifiability_score": 5,
+      "source": "DeepResearch",
+      "content_type": "technical_analysis",
+      "indexed_at": "2026-04-27 05:00",
+      "scored_at": "2026-04-27T05:03:07.129516"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-04-27-75899034-聊聊2026年Android开发会是什么.md",
+      "title": "聊聊2026年Android开发会是什么样",
+      "category": "juejin-android",
+      "sub_category": "Android开发趋势",
+      "tags": [
+        "Android",
+        "开发趋势",
+        "2026",
+        "掘金"
+      ],
+      "quality_score": 17,
+      "relevance_score": 5,
+      "technical_depth_score": 3,
+      "timeliness_score": 5,
+      "verifiability_score": 4,
+      "source": "juejin-android",
+      "content_type": "trend_analysis",
+      "indexed_at": "2026-04-27 05:00",
+      "scored_at": "2026-04-27T05:03:38.137122"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-04-27-76013134-从踌躇到拥抱：为什么说 KMP 已迈入黄.md",
+      "title": "从踌躇到拥抱：为什么说 KMP 已迈入黄金时代",
+      "category": "juejin-android",
+      "sub_category": "Kotlin Multiplatform",
+      "tags": [
+        "Android",
+        "Kotlin",
+        "KMP",
+        "跨平台开发",
+        "Compose",
+        "掘金"
+      ],
+      "quality_score": 18,
+      "relevance_score": 5,
+      "technical_depth_score": 4,
+      "timeliness_score": 5,
+      "verifiability_score": 4,
+      "source": "juejin-android",
+      "content_type": "trend_analysis",
+      "indexed_at": "2026-04-27 05:00",
+      "scored_at": "2026-04-27T05:04:04.573033"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-04-27-76049644-用 AI 写 Android 需求：少踩.md",
+      "title": "用 AI 写 Android 需求：少踩坑的实战心得",
+      "category": "juejin-android",
+      "sub_category": "AI开发工具",
+      "tags": [
+        "Android",
+        "AI",
+        "开发工具",
+        "需求分析",
+        "掘金"
+      ],
+      "quality_score": 18,
+      "relevance_score": 5,
+      "technical_depth_score": 4,
+      "timeliness_score": 5,
+      "verifiability_score": 4,
+      "source": "juejin-android",
+      "content_type": "tool_practice",
+      "indexed_at": "2026-04-27 05:00",
+      "scored_at": "2026-04-27T05:04:50.462546"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-04-27-76128120-Android17 为什么重写 Mess.md",
+      "title": "Android17 为什么重写 MessageQueue",
+      "category": "juejin-android",
+      "sub_category": "Android系统架构",
+      "tags": [
+        "Android",
+        "Android17",
+        "MessageQueue",
+        "系统架构",
+        "Handler",
+        "掘金"
+      ],
+      "quality_score": 20,
+      "relevance_score": 5,
+      "technical_depth_score": 5,
+      "timeliness_score": 5,
+      "verifiability_score": 5,
+      "source": "juejin-android",
+      "content_type": "system_analysis",
+      "indexed_at": "2026-04-27 05:00",
+      "scored_at": "2026-04-27T05:05:13.854851"
+    },
+    {
+      "title": "反思系列：深入探索ANR机制的设计与实现",
+      "path": "AndroidWeekly/#4/反思系列：深入探索ANR机制的设计与实现",
+      "source_url": "https://mp.weixin.qq.com/s/Qnser4SMoRtgEPd74oDJGQ",
+      "weekly_issue": "#4",
+      "weekly_date": "2020-09-22",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-性能监控",
+          "confidence": "high"
+        }
+      ],
+      "summary": "系统层深度解析ANR机制，涵盖AMS、InputDispatcher等系统服务，包含traces.txt分析和避免策略。",
+      "scored_at": "2026-04-27T09:32:18.551692"
     }
   ]
 }

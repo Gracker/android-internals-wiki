@@ -9739,3 +9739,41 @@ Recents / 多任务缩略图链路的源码锚点不足。当前正文只写到 
 - 7.4
 - 8.4
 - 18.6
+
+## [2026-04-27] 13 第13章 Perfetto — 知识盲区
+
+### 盲区描述
+现代架构对齐不足：Mainline APEX演进和Android 16+ UprobeStats/ProfilingManager的集成点覆盖较浅
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 12+ Mainline APEX演进与集成点；Android 16+ UprobeStats/ProfilingManager机制；perfetto::DataSource自定义实现；分布式处理方案Bigtrace；Perfetto内部源码路径同步
+
+### 关联章节
+13.1、13.2、13.3、13.4、13.5、13.6、13.7、13.8、13.9、13.10
+
+### 外部review来源
+Gemini外部review - 2026-04-25-13-13-batch-review-summary.md
+
+---
+
+## [2026-04-27] 10 第10章 内存性能优化 — 知识盲区
+
+### 盲区描述
+Android 15/16版本演进覆盖不足：指标基线重构、分析工具代差、显存计量闭环
+
+### 重要程度
+高
+
+### 建议研究方向
+- Android 15的16KB页面机制对PSS/RSS的影响；Android 16的ProfilingManager范式转移；Android 16显存计量闭环机制；AIDL IMemtrack系统级GPU内存监控；内存性能基线重构策略
+
+### 关联章节
+10.1、10.2、10.3、10.4
+
+### 外部review来源
+Gemini外部review - 2026-04-25-15-10-batch-review-summary.md
+
+---

@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-04-24T02:10:00+08:00",
+  "last_check": "2026-04-27T02:05:34.339495",
   "entries": [
     {
       "date": "2026-04-15",
@@ -439,6 +439,54 @@
         "Update appendix/version-changelog.md with Android 17 Beta 4 changes",
         "Add App Memory Limiter coverage to memory management chapters",
         "Update ch16-aosp/03-aosp-build.md for android-17 branches"
+      ]
+    },
+    {
+      "date": "2026-04-27",
+      "timestamp": "2026-04-27T02:05:34.339488",
+      "android_version_changes": {
+        "android_17_status": "Beta 4 (final beta) released April 2026 - memory optimization focus, App Memory Limiter introduced",
+        "android_17_beta4_highlights": [
+          "App Memory Limits per app based on device RAM for system stability",
+          "ProfilingManager anomaly detection integration (TRIGGER_TYPE_ANOMALY)",
+          "AlarmManager OnAlarmListener callback variant to reduce wakelocks",
+          "Background audio hardening for resource contention reduction",
+          "AutoFDO expanded to android17-6.18 kernel branch - up to 26.4% benchmark improvement",
+          "Jetpack Compose 1.11 (April 26) - trackpad as PointerType.Mouse, v2 testing API default StandardTestDispatcher"
+        ],
+        "key_changes": {
+          "app_memory_limiter": "Android 17 per-app memory limits based on device RAM",
+          "profiling_anomaly_trigger": "ProfilingManager anomaly detection now available",
+          "alarmmanager_onalarmlistener": "New callback-based setExactAndAllowWhileIdle variant",
+          "background_audio_hardening": "Stricter background audio restrictions in API 37",
+          "autofdo_618": "AutoFDO expanded to android17-6.18 with 26.4% benchmark gains"
+        }
+      },
+      "freshness_assessment": {
+        "total_files_scanned": 239,
+        "files_with_metadata": 213,
+        "files_ending_at_api36": 80,
+        "files_with_api37": 75,
+        "files_verified_under_14_days": 103,
+        "files_verified_over_90_days": 0,
+        "outdated_count": 0
+      },
+      "key_findings": [
+        "0 high-risk outdated files (none exceeding 90-day threshold)",
+        "80 files still max at API 36 (need Android 17 coverage)",
+        "75 files already cover API 37 - good coverage",
+        "103 files verified within 14 days - content is fresh",
+        "No files verified over 90 days ago",
+        "Android 17 Beta 4 changes not yet reflected in version-changelog.md (last updated 2026-04-17)",
+        "App Memory Limiter feature missing from memory management chapters",
+        "AutoFDO 6.18 expansion data not in ch16 kernel section"
+      ],
+      "action_items": [
+        "Update appendix/version-changelog.md with Android 17 Beta 4 changes (App Memory Limiter, profiling triggers, OnAlarmListener)",
+        "Add AutoFDO android17-6.18 benchmark data to ch16-aosp kernel section",
+        "Update memory chapters (ch10) to cover App Memory Limiter introduced in API 37",
+        "Update ProfilingManager chapter to add TRIGGER_TYPE_ANOMALY trigger capability",
+        "Consider adding Jetpack Compose 1.11 testing API changes to rendering chapters"
       ]
     }
   ]

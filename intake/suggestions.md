@@ -4946,3 +4946,51 @@
 - **位置**：L135（Game Mode API 模式枚举）
 - **问题**：章节只列 Standard / Performance / Battery Saver，但 AOSP Android 16 `GameManager` 还包含 `GAME_MODE_CUSTOM`，并有 targetSdk <= Android 13 时 custom mode 兼容返回 standard 的逻辑。章节适用范围写 Android 12-16，缺少 Android 14+ custom mode 的版本边界。
 - **建议**：补一行版本说明：公开文档主线仍要求游戏支持 standard / performance / battery，Android 14+ 平台 API 还存在 custom mode；读取 `GameManager#getGameMode()` 时要处理 `GAME_MODE_CUSTOM` 及旧 targetSdk 兼容行为。
+
+## [External Review] 13.1 Perfetto介绍 — 2026-04-27
+- **类型**：架构演进
+- **位置**：Perfetto介绍
+- **问题**：缺少Android 12+ Mainline APEX演进和Android 16+ UprobeStats/ProfilingManager的集成点
+- **建议**：补强现代架构对齐，补充Mainline APEX演进和ProfilingManager集成点
+- **来源**：Gemini外部review - 2026-04-25-13-13-batch-review-summary.md
+
+
+## [External Review] 13.7 Perfetto高级用法 — 2026-04-27
+- **类型**：功能补全
+- **位置**：Perfetto高级用法
+- **问题**：遗漏了perfetto::DataSource的自定义实现和分布式处理方案Bigtrace
+- **建议**：补充SDK高阶特性，添加perfetto::DataSource自定义实现和分布式处理方案
+- **来源**：Gemini外部review - 2026-04-25-13-13-batch-review-summary.md
+
+
+## [External Review] 13.10 Perfetto SQL性能 — 2026-04-27
+- **类型**：性能优化
+- **位置**：Perfetto SQL性能
+- **问题**：SQL脚本在处理R+状态和大规模Join时存在精度或性能风险
+- **建议**：优化SQL鲁棒性与性能，增强处理R+状态和大规模Join的能力
+- **来源**：Gemini外部review - 2026-04-25-13-13-batch-review-summary.md
+
+
+## [External Review] 10.1 内存性能优化基础 — 2026-04-27
+- **类型**：基线重构
+- **位置**：内存性能优化基础
+- **问题**：Android 15的16KB页面机制导致PSS/RSS天然膨胀约9%，现有绝对值基线策略失效
+- **建议**：重构指标基线策略，适应Android 15/16内存页面机制变化
+- **来源**：Gemini外部review - 2026-04-25-15-10-batch-review-summary.md
+
+
+## [External Review] 10.2 内存分析工具 — 2026-04-27
+- **类型**：工具升级
+- **位置**：内存分析工具
+- **问题**：Android 16的ProfilingManager标志着从被动抓转储到系统触发采样的范式转移
+- **建议**：升级分析工具，适配ProfilingManager系统触发采样范式
+- **来源**：Gemini外部review - 2026-04-25-15-10-batch-review-summary.md
+
+
+## [External Review] 10.3 GPU内存监控 — 2026-04-27
+- **类型**：监控闭环
+- **位置**：GPU内存监控
+- **问题**：Android 16通过AIDL IMemtrack补齐了系统级GPU内存的监控缺口
+- **建议**：完善显存计量闭环，集成IMemtrack系统级GPU内存监控
+- **来源**：Gemini外部review - 2026-04-25-15-10-batch-review-summary.md
+
