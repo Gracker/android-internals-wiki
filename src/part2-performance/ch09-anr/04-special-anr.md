@@ -26,8 +26,8 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -92,13 +92,13 @@ CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比�
 
 ### 在 Perfetto 中怎么分析
 
-首先看 CPU 概览 track。确认在 ANR 发生的时间段，所有 CPU 核心的占用率是否接近 100%。
+先看 CPU 概览 track：确认在 ANR 发生的时间段，所有 CPU 核心的占用率是否接近 100%。
 
 然后看主线程的线程状态 track。如果主线程长时间是 Runnable（青色）而不是 Running（蓝色），说明它"想跑但跑不了"——CPU 被其他线程占了。
 
 如果主线程长时间是 `D (iowait)`（深红色），说明它在等磁盘。需要去看是哪个进程在做密集 I/O。
 
-最后检查 ANR 发生时刻的 `loadavg`。如果 1 分钟平均负载远超 CPU 核心数（比如 8 核设备上负载 > 16），说明整机确实过载了。
+再检查 ANR 发生时刻的 `loadavg`。如果 1 分钟平均负载远超 CPU 核心数（比如 8 核设备上负载 > 16），说明整机确实过载了。
 
 ## Broadcast 风暴导致的连锁 ANR
 
