@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-04-27T11:27:00+08:00"
@@ -16,7 +16,7 @@ task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: "openclaw-task9"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-04-27T11:41:00+08:00"
 applicable_versions: "Android 17 (API 37)"

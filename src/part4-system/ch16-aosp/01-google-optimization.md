@@ -5,7 +5,7 @@ chapter: "16.1"
 status: ready-for-review
 drafted_date: "2026-04-10"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
 last_verified: "2026-04-11"
@@ -15,8 +15,8 @@ tags:
   - android
   - performance
   - aosp
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-19"
@@ -26,7 +26,7 @@ task2b_state: fixed
 task2b_result: fixed
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-04-27T11:41:00+08:00"
-task6_result: needs-rework
+task6_result: pass-light-edit
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/release-notes"
