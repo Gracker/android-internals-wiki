@@ -9834,3 +9834,132 @@ ADJ 50 (PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ) 的宽限期时长定义机制未
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-28)
+
+## [2026-04-28] 1.1 Android 分层架构 — 知识盲区
+
+- VNDK-less 后的库冗余处理 | 重要程度: 高 | 研究方向: HAL APEX 如何打包依赖库以替代系统 VNDK
+- Trunk Stable 开发模式 | 重要程度: 中 | 研究方向: Android 16 (Baklava) 的开发模式变动对 AOSP 稳定性的影响
+- 16KB 兼容模式 (Android 16) | 重要程度: 高 | 研究方向: 如何在 16KB 内核上运行 4KB 对齐的旧版应用
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-01-layered-architecture-external-review.md)
+
+## [2026-04-28] 1.2 系统启动全流程 — 知识盲区
+
+- GBL (Generic Bootloader) | 重要程度: 中 | 研究方向: 如何标准化开机计时
+- Asynchronous Probing | 重要程度: 高 | 研究方向: 内核异步探测机制
+- Cloud Compilation | 重要程度: 高 | 研究方向: 预编译产物直接下发流程
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-02-boot-process-external-review.md)
+
+## [2026-04-28] 1.3 进程模型与生命周期管理 — 知识盲区
+
+- ADJ 50 宽限期时长 | 重要程度: 高 | 研究方向: 系统如何定义“RECENT”
+- AVF 性能开销 | 重要程度: 中 | 研究方向: 虚拟机内部与宿主的 I/O 差异
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-03-process-model-external-review.md)
+
+## [2026-04-28] 1.4 Binder IPC 机制与性能影响 — 知识盲区
+
+- FROZEN_CALLEE_POLICY_DROP | 重要程度: 高 | 研究方向: 系统服务如何利用该策略降低后台负载
+- 16KB 页面的 mmap 对齐 | 重要程度: 中 | 研究方向: ProcessState.cpp 中的动态页大小适配
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-04-binder-external-review.md)
+
+## [2026-04-28] 1.5 线程模型 — 知识盲区
+
+- ADPF 核心迁移阈值 | 重要程度: 高 | 研究方向: 动态调度的触发逻辑
+- DeliQueue 排序成本 | 重要程度: 中 | 研究方向: 消息积压时的 CPU 消耗
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-05-threading-model-external-review.md)
+
+## [2026-04-28] 1.6 Android 版本演进中的架构变化 — 知识盲区
+
+- Trace 脱敏机制 | 重要程度: 中 | 研究方向: ProfilingService 如何保护用户隐私
+- HAL APEX 内存开销 | 重要程度: 高 | 研究方向: 重复库对 PSS 的累积影响
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-06-version-evolution-external-review.md)
+
+## [2026-04-28] 1.7 ART 编译管线与 dex2oat 优化 — 知识盲区
+
+- SDM 格式安全性 | 重要程度: 中 | 研究方向: 签名验证流程
+- 强制不可变性收益 | 重要程度: 高 | 研究方向: 对 P90 启动耗时的真实贡献
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-07-art-compilation-external-review.md)
+
+## [2026-04-28] 1.8 Activity Manager Service 与性能分析 — 知识盲区
+
+- 广播异步处理超时 | 重要程度: 中 | 研究方向: 进程队列下的弹性时长计算
+- ADJ 225 触发点 | 重要程度: 高 | 研究方向: 系统绑定的优先级分级
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-08-activity-manager-external-review.md)
+
+## [2026-04-28] 1.9 Package Manager Service 与应用安装性能 — 知识盲区
+
+- 快照重建开销 | 重要程度: 中 | 研究方向: 高频写入时的快照失效代价
+- v4.1 签名 I/O 成本 | 重要程度: 低 | 研究方向: IncFS 块校验对闪存带宽的占用
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-09-package-manager-external-review.md)
+
+## [2026-04-28] 1.10 ContentProvider 性能与优化 — 知识盲区
+
+- MIME 类型异步查询埋点 | 重要程度: 中 | 研究方向: Android 16 内部新 Trace 标签
+- 独立进程 CP 的页碎片 | 重要程度: 低 | 研究方向: 16KB 页大小对极小 Window 的内存浪费
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-10-content-provider-external-review.md)
+
+## [2026-04-28] 1.11 Zygote 机制与启动性能优化 — 知识盲区
+
+- 16KB 页下的 COW 颗粒度 | 重要程度: 中 | 研究方向: 单次复制 16KB 对 RAM 的微观影响
+- Vulkan 预热与多核心联动 | 重要程度: 低 | 研究方向: 预热阶段是否占用非主核心 CPU
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-11-zygote-startup-external-review.md)
+
+## [2026-04-28] 1.12 AutoFDO 反馈导向编译优化 — 知识盲区
+
+- Propeller 布局优化 | 重要程度: 中 | 研究方向: AutoFDO 的下一代进阶技术
+- 模块化 AFDO 签名 | 重要程度: 高 | 研究方向: GKI Module 与 Profile 的一致性校验
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-12-autofdo-optimization-external-review.md)
+
+## [2026-04-28] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 知识盲区
+
+- TestLooperManager 生产可用性 | 重要程度: 高 | 研究方向: 它是如何通过 Instrumentation 挂载的
+- MQ.Waiters 零值的含义 | 重要程度: 中 | 研究方向: 消费者线程饥饿或死锁的判断依据
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-13-messagequeue-deliqueue-external-review.md)
+
+## [2026-04-28] 1.14 锁竞争与同步性能分析 — 知识盲区
+
+- 标量替换 (Scalar Replacement) | 重要程度: 中 | 研究方向: 逃逸分析对锁消除之外的内存贡献
+- Declarative Workload API | 重要程度: 高 | 研究方向: 调度器如何感知临界区优先级
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-14-lock-contention-external-review.md)
+
+## [2026-04-28] 1.15 JNI/NDK 性能优化 — 知识盲区
+
+- Critical JNI 注册限制 | 重要程度: 高 | 研究方向: 为什么静态注册在旧版本上更稳
+- ARMv9 安全特性开销 | 重要程度: 低 | 研究方向: PAC/BTI 对 JNI 吞吐的微观影响
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-15-jni-ndk-performance-external-review.md)
+
+## [2026-04-28] 1.16 Audio Pipeline 延迟与性能 — 知识盲区
+
+- AIDL HAL 实时 Binder 调度 | 重要程度: 中 | 研究方向: 调度器如何保障 Binder 事务准时到达
+- LC3plus 低延迟扩展 | 重要程度: 低 | 研究方向: 2026 高端硬件对 LC3plus 的采用率
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-16-audio-pipeline-performance-external-review.md)
+
+## [2026-04-28] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 知识盲区
+
+- VSOCK Datagram 性能 | 重要程度: 中 | 研究方向: 相比 Stream 模式在心跳包场景的收益
+- memfd_file 安全审计 | 重要程度: 高 | 研究方向: Android 16 如何对匿名内存实施精细化控制
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch01-17-ipc-panorama-external-review.md)
+
+## [2026-04-28] 2.1 Android 渲染架构全景 — 知识盲区
+
+- 硬件切片调度 (Adreno 830) | 重要程度: 中 | 研究方向: GPU 分片如何优化 Android 16 的合成负载
+- Headroom API 联动 | 重要程度: 高 | 研究方向: 渲染器如何根据热余量降级渲染质量
+
+**来源**: Gemini 外部 review (2026-04-28-15-ch02-01-rendering-overview-external-review.md)
+

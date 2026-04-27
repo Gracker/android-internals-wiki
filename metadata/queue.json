@@ -11349,7 +11349,7 @@
   {
     "section": "1.1",
     "section_title": "1.1",
-    "priority": 85,
+    "priority": 95,
     "reason": "[External Review] 技术评分 3.5/5，建议回炉",
     "review_issues": [
       {
@@ -11359,6 +11359,34 @@
       {
         "type": "P1重要缺失",
         "detail": "][数据/案例支撑][JNI 边界]\n- 原文问题：带有 `[待验证: JNI 延迟数据需实际设备验证...]` 以及 `@FastNative` 和 `@CriticalNative` 注解降低开销 30-50% `[待验证: 降低比例数据来源需确认]`。\n- 缺失内容：缺乏真实的 benchmark 来源。\n- 为什么这是重要缺失：JNI 是性能优化的核心战场，提供不准确或未经证实的优化比例会"
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P0][源码准确性][Vendor VNDK 隔离章节]**\n  - **原文位置**：## Vendor VNDK 隔离对 native 库加载的影响\n  - **原文问题**：描述 VNDK 为“引入后解决隔离的关键机制”，且未提及废弃状态。\n  - **事实核验**：Android 15 正式废弃 VNDK (VNDK-less)。新架构不再提供统一的 VNDK APEX，转而由 ",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P0][版本差异][Linux Kernel 层章节]**\n  - **原文位置**：### 各层职责 -> Linux 内核层\n  - **原文问题**：描述 ashmem 迁移为“逐步转向...待验证具体时间线”。\n  - **事实核验**：Linux 5.18 (2022) 已将 ashmem 从 staging 移除。Android 15 对出厂设备强制使用 memfd。\n  -",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][16KB Page Size 章节]**\n  - **原文位置**：## Android 16 架构层面的最新变化 -> 16KB Page Size\n  - **缺失内容**：缺乏对 16KB Page Size 性能提升根因（页表项减少 75%、TLB 命中率提升）的解释。\n  - **重要性**：这是 Android 15/16 最重要的性能卖点。\n  - ",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][JNI 优化数据]**\n  - **原文位置**：## 从性能视角看分层 -> JNI 边界\n  - **缺失内容**：`@FastNative` 和 `@CriticalNative` 的具体 overhead 缩减比例。\n  - **技术事实**：Regular JNI (~115ns) -> FastNative (~35ns, 3x) -> CriticalN",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -11374,6 +11402,27 @@
       {
         "type": "P1重要缺失",
         "detail": "- [P1][数据/案例支撑][在 Perfetto 中的表现]\n- 原文问题：文章留有多处截图占位符，如 `[图：Perfetto 中 installContentProviders 切片...]` 和 `[待补充：Trace 截图——正常 vs 异常 ContentProvider 调用的对比]`。\n- 缺失内容：缺乏真实 Trace 展示主线程等待远端 CP 返回的 `binder tran"
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][启动时序章节]**\n  - **缺失内容**：Android 16 启动归因与按需初始化。\n  - **技术事实**：ApplicationStartInfo.getStartComponent() 可识别进程是否由 ContentProvider 触发。若是，应跳过 UI 框架初始化。\n  - **建议补充方向**：新增精细化启动优化逻辑。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][锁竞争章节]**\n  - **缺失内容**：ContentProviderHelper 锁粒度细化。\n  - **技术事实**：Android 16 将 Provider 获取逻辑从全局 AMS 锁剥离，显著降低了 system_server 的 ANR 风险。\n  - **建议补充方向**：补充系统侧锁优化进展。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][App Startup 数据]**\n  - **核验数据**：App Startup 1.2.0 在社交/电商类应用中可提升 35%-42% 的冷启动性能。\n  - **建议补充方向**：替换 [待验证] 为实测数据。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -11395,6 +11444,27 @@
       {
         "type": "P1重要缺失",
         "detail": "- [P1][数据/案例支撑][Zygote 阶段 / Cloud Profiles]\n- 原文问题：`[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]`。\n- 缺失内容：缺乏 Cloud Profiles 实际缩短启动时间的量化比例或具体毫秒数。\n- 为什么这是重要缺失：Cloud Profiles 是 Android 15/16 的核心启动优化点，没有量化数据会"
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][Bootloader 章节]**\n  - **缺失内容**：Generic Bootloader (GBL)。\n  - **技术事实**：Android 16 引入 GBL 标准化架构，使 `boottime.bootloader.*` 指标在各厂商间可比。\n  - **建议补充方向**：在引导阶段补充 GBL 的标准化作用。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][Kernel 章节]**\n  - **缺失内容**：并行模块加载 (Asynchronous Probing)。\n  - **技术事实**：Android 16 允许内核模块并行加载，使内核阶段耗时缩短约 30%。\n  - **建议补充方向**：补充“并行加载”作为内核优化的新锚点。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][启动时间度量 - 云端编译]**\n  - **缺失内容**：Cloud Compilation (Android 16)。\n  - **技术事实**：Android 16 演进到直接下载预编译产物，彻底解决了 OTA 后首次开机“正在优化应用”的痛点。\n  - **建议补充方向**：在优化手段中补充该特性。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -11410,6 +11480,27 @@
       {
         "type": "P1重要缺失",
         "detail": "- [P1][数据/案例支撑][SDK Sandbox]\n- 原文问题：标注 `[待验证: SDK Sandbox 在 Android 16 中的实际采用率]`。\n- 缺失内容：SDK Sandbox 是安全层面的重大改动，缺少现实世界的采用率数据会削弱其讲解的实际工程意义。\n- 为什么这是重要缺失：开发者需要知道是否应高度关注 `_sdk_sandbox` 进程的性能表现。\n- 建议补充方向：查"
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][ProcessList ADJ 章节]**\n  - **缺失内容**：ADJ 50 (PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ)。\n  - **技术事实**：Android 16 引入该档位，为从 TOP 转 FGS 的应用提供缓冲期，防止误杀。\n  - **建议补充方向**：在 ADJ 表格中插入该常量（值 50）。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][Phantom Process Killer 章节]**\n  - **缺失内容**：虚拟化终端 (AVF Terminal)。\n  - **技术事实**：Android 16 允许在 pVM 中运行终端，内部进程不受宿主 PPK 32 个名额的限制。\n  - **建议补充方向**：补充这一官方规避路径。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][Freezer 机制演进]**\n  - **缺失内容**：无缝应用更新 (Seamless App Updates)。\n  - **技术事实**：Android 16 将更新时的进程冻结从秒级降低到毫秒级。\n  - **建议补充方向**：补充“无缝更新”对冻结策略的优化。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -11425,6 +11516,27 @@
       {
         "type": "P1重要缺失",
         "detail": "- [P1][数据/案例支撑][Project Mainline 与 APEX]\n- 原文问题：标注 `[待验证：47-95 PB 的精确出处]`。\n- 缺失内容：关于 ART Mainline 更新带来的存储空间节省数据缺乏明确出处。\n- 为什么这是重要缺失：使用极其庞大且范围宽泛的数字（47-95 PB）如果没有确切来源，会降低工程文档的严谨性。\n- 建议补充方向：搜索并核验 Google D"
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][Android 16 Baklava 章节]**\n  - **缺失内容**：ProfilingManager 系统触发采样。\n  - **技术事实**：Android 16 通过背景环形缓冲区捕获 ANR 现场 Trace。\n  - **建议补充方向**：介绍 Profiling Mainline APEX 带来的主动捕获能力。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][VNDK 章节]**\n  - **缺失内容**：VNDK-less 与组件自包含。\n  - **技术事实**：Android 15+ 弃用 VNDK，转向 Vendor APEX 自包含依赖库。\n  - **建议补充方向**：定性 VNDK-less 为模块化的终极形态。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][ART Mainline 章节]**\n  - **核验数据**：ART 14 全球节省 95 PB 存储空间，平均瘦身 9.3%。\n  - **建议补充方向**：替换 [待验证] 为确切数字。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -11452,6 +11564,27 @@
         "location": "L92：冷启动差距 30% 以上",
         "detail": "“首次安装和积累 JIT Profile 后冷启动速度可能差距 30% 以上”仍标注待验证。该数字会影响读者对 Profile 收益的预期，不能只作为经验值保留在正文。",
         "suggestion": "如果保留 30% 数字，补官方 benchmark 或本书 Macrobenchmark 测试条件（设备、Android 版本、样本次数、TTID/TTFD 指标、方差）；否则改成条件化描述，不给固定百分比。"
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][Android 16 编译演进]**\n  - **缺失内容**：Cloud Compilation 与 SDM (Secure Dex Metadata)。\n  - **技术事实**：Android 16 允许直接下载预编译的 .odex/.vdex 产物，跳过本地 dex2oat。\n  - **建议补充方向**：介绍“带宽换计算”如何提速低端机安装体验。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][Android 17 优化]**\n  - **缺失内容**：static final 字段强制不可变性。\n  - **技术事实**：Android 17 严禁反射修改常量，使得编译器可以执行更激进的常量内联和死代码消除。\n  - **建议补充方向**：在演进部分加入此逻辑。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][PGO 收益量化]**\n  - **核验数据**：Baseline Profiles 冷启动平均提升 30%，低端机可达 40%。\n  - **建议补充方向**：替换 [待验证] 为实测百分比。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -11472,6 +11605,27 @@
       {
         "type": "P1重要缺失",
         "detail": "- [P1][数据/案例支撑][各个 Perfetto 表现小节]\n- 原文问题：文中存在多个 `[待高爷补充：系统架构图]` 和 `[待高爷补充：Trace 截图]` 的占位符。\n- 缺失内容：冷启动 Trace 片段、三种典型场景（冷启动、ANR、进程被杀）的 Perfetto 对比截图。\n- 为什么这是重要缺失：作为以性能分析为导向的 Wiki，没有 Trace 截图会让理论无法落地到 Pe"
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][oom_adj 章节]**\n  - **缺失内容**：Android 17 (Baklava) 新增 ADJ 档位。\n  - **技术事实**：引入 PERCEPTIBLE_MEDIUM_APP_ADJ (225) 和 CACHED_APP_LMK_FIRST_ADJ (950)。\n  - **建议补充方向**：更新对照表。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][广播管理章节]**\n  - **缺失内容**：ModernBroadcastQueue 架构。\n  - **技术事实**：广播进化为按进程组织的队列，解决了“队头阻塞”问题。\n  - **建议补充方向**：修正分发机制描述。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][启动耗时分析章节]**\n  - **缺失内容**：getStartComponent() 归因。\n  - **技术事实**：Android 16 可精确区分冷启动是由哪种组件（Activity/Service/Receiver/Provider）触发。\n  - **建议补充方向**：加入该 API 作为归因手段。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -11487,6 +11641,27 @@
       {
         "type": "P1重要缺失",
         "detail": "- [P1][数据/案例支撑][安装耗时分析方法]\n- 原文问题：文章占位 `[待补充：安装过程在 Perfetto 中的 Trace 截图，标注各阶段]`。\n- 缺失内容：具体的 Trace 截图，展示 `system_server` 的 `PackageInstallerSession` 和 `dex2oat` 的高 CPU 占用时段。\n- 建议补充方向：提供一段典型的通过 adb insta"
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][架构位置章节]**\n  - **缺失内容**：Computer 模式与 Snapshot 机制。\n  - **技术事实**：引入 Computer 接口实现读写分离，查询操作不再受写操作锁阻塞。\n  - **建议补充方向**：解释无锁读如何提升查询性能。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][安装阶段分解]**\n  - **缺失内容**：APK v4.1 签名与流式校验。\n  - **技术事实**：v4.1 支持密钥轮转，IncrementalService 在安装过程中通过 ioctl 实现块级校验。\n  - **建议补充方向**：加入 android.incremental Trace 指纹。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][启动扫描章节]**\n  - **缺失内容**：Android 16 Parallel APEX Scanning。\n  - **技术事实**：PMS 并行解析 APEX 模块，显著缩短开机扫描时长。\n  - **建议补充方向**：描述 scanDirLI 的并行化逻辑。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -11502,6 +11677,27 @@
       {
         "type": "P1重要缺失",
         "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 Android 渲染架构全景 中某些深层机制的说明不够彻底。\n- 缺失内容：三缓冲的具体 Buffer slot 机制与 BLASTBufferQueue 的协同逻辑不够深入。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n- "
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][Vulkan 章节]**\n  - **缺失内容**：Vulkan 1.4 VPA16 强制要求。\n  - **技术事实**：Android 16 要求新设备支持 VK_EXT_host_image_copy，允许 CPU 直接写入 GPU 图像内存，消除 50% 纹理上传内存峰值。\n  - **建议补充方向**：新增针对“零抖动纹理流”的描述。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][数据支撑][延迟章节]**\n  - **缺失内容**：2026 旗舰级延迟基准。\n  - **技术事实**：骁龙 8 Elite (Android 16) 的 120Hz 延迟已下探至 22ms-28ms，帧耗时中值仅 5.2ms。\n  - **建议补充方向**：更新延迟对比表。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][BufferQueue 章节]**\n  - **缺失内容**：异步模式深度重构。\n  - **技术事实**：Android 16 强制预留额外 Slot 并实现 Fence 异步解耦，提升高刷下的渲染并发。\n  - **建议补充方向**：细化异步路径的同步逻辑。",
+        "suggestion": "",
+        "evidence": []
       }
     ],
     "added_by": "external-ai-review",
@@ -14615,6 +14811,287 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-28T01:31:04+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.4",
+    "section_title": "Binder IPC 机制与性能影响",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.4 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][Perfetto 分析章节]**\n  - **缺失内容**：Android 16 接口与方法名直接记录。\n  - **技术事实**：Android 16 的 `android.binder` 数据源直接记录 `interface_name` 和 `method_name`。不再需要查 `code` 映射表。\n  - **建议补充方向**：更新读图技巧，强调直接读取方法",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][版本演进 - Binder Freezer]**\n  - **缺失内容**：主动冻结感知与 RemoteCallbackList 策略。\n  - **技术事实**：Android 16 引入 `RemoteCallbackList.FrozenCalleePolicy`，允许在客户端冻结时自动丢弃高频数据回调。\n  - **建议补充方向**：展开说明主动管理机制如",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][16KB Page Size 影响]**\n  - **缺失内容**：mmap 缓冲区对齐与性能加成。\n  - **技术事实**：16KB 环境下页表开销降低，大数据量 Binder 事务吞吐量提升约 12%。\n  - **建议补充方向**：在原理解释中加入 16KB 页面的加持效果。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.5",
+    "section_title": "线程模型",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.5 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][线程优先级 - ADPF 联动]**\n  - **缺失内容**：ADPF 自动核心迁移机制。\n  - **技术事实**：Android 16 通过 Performance Hint Manager 自动决定 RenderThread 是否上大核。手动 `sched_setaffinity` 可能干扰能效调度。\n  - **建议补充方向**：在实战章节提示优先使用 AD",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][DeliQueue 观测性]**\n  - **缺失内容**：MQ.Delivered 计数器。\n  - **技术事实**：Perfetto 中新的 `mq` 类别提供了 `MQ.Delivered` 计数器，是识别无锁队列的关键签名。\n  - **建议补充方向**：在 Perfetto 表现部分补充该特征。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.11",
+    "section_title": "Zygote 机制与启动性能优化",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.11 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][收益章节]**\n  - **缺失内容**：16KB Page Size 对 fork() 的提速原理。\n  - **技术事实**：页表条目减少 75%，直接降低了 fork() 复制虚拟地址空间的耗时。\n  - **建议补充方向**：在核心收益中加入页表精简描述。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][preload 阶段章节]**\n  - **缺失内容**：Vulkan 着色器快取预热。\n  - **技术事实**：Android 16 利用 Vulkan 1.4 特性在 Zygote 阶段预编译通用着色器，解决首帧卡顿。\n  - **建议补充方向**：细化图形驱动预热的职能变化。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][USAP 章节]**\n  - **缺失内容**：USAP 的默认状态与 Child Zygote 隔离。\n  - **技术事实**：AOSP 16 中 USAP 默认关闭，且明确不支持 App Zygote 等子孵化器。\n  - **建议补充方向**：明确 USAP 的开启条件和能力边界。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.12",
+    "section_title": "AutoFDO 反馈导向编译优化",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.12 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][OEM 能做什么]**\n  - **缺失内容**：Kleaf (Bazel) 构建属性名。\n  - **技术事实**：Android 16 标准属性为 `clang_autofdo_profile`。需配合 `--config=fdo` 命令行标志。\n  - **建议补充方向**：提供具体代码示例。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][Profile 转换]**\n  - **缺失内容**：内核去优化风险规避。\n  - **技术事实**：必须使用 `--prof_sym_list=false` 标志，否则未覆盖到的内核热点函数会被编译器误降级。\n  - **建议补充方向**：在 Step 5 加入此避坑提示。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][演进趋势]**\n  - **缺失内容**：Android 17 GKI Module 覆盖。\n  - **技术事实**：AFDO 范围已从 vmlinux 扩展至独立编译的 GKI 内核模块。\n  - **建议补充方向**：增加“模块化 AutoFDO”描述。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.13",
+    "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.13 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][兼容性章节]**\n  - **缺失内容**：TestLooperManager 官方 API 替代。\n  - **技术事实**：Android 17 中 mMessages 反射失效。应引导开发者使用 TestLooperManager 的 peekWhen()、poll() 等方法。\n  - **建议补充方向**：提供迁移代码示例。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][Perfetto 章节]**\n  - **缺失内容**：DeliQueue 原生计数器 (Counters)。\n  - **技术事实**：Trace 中新增了 MQ.Delivered、MQ.Backlog、MQ.Waiters 三个轨道。\n  - **建议补充方向**：加入 Counter 趋势与卡顿根因的关联分析。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][源码准确性][实现章节]**\n  - **缺失内容**：堆排序（SemiConcurrent 演进版）的最终胜出。\n  - **技术事实**：AOSP 17 最终弃用了跳表方案，采用 Min-heap 处理出队，以获得更稳定的调度性能。\n  - **建议补充方向**：明确“Treiber Stack + Min-heap”的最终形态。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.14",
+    "section_title": "锁竞争与同步性能分析",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.14 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][优化策略章节]**\n  - **缺失内容**：Android 16 ART 锁消除。\n  - **技术事实**：强化了逃逸分析，可自动移除线程私有对象上的冗余同步指令（如局部变量中的 StringBuffer 锁）。\n  - **建议补充方向**：介绍编译器如何自动化处理单线程锁。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][优先级反转章节]**\n  - **缺失内容**：SF/Input 路径的 PI-futex 实装。\n  - **技术事实**：SurfaceFlinger 主线程和 InputDispatcher 核心锁全面启用优先级继承，以维持高刷新率下的响应性。\n  - **建议补充方向**：明确 PI-futex 在关键图形链路的基石作用。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][16KB Page 影响]**\n  - **缺失内容**：Futex 哈希表冲突风险。\n  - **技术事实**：页数精简可能导致内核 Futex 哈希桶减少，在高并发下引发严重的缓存行抖动。\n  - **建议补充方向**：加入对 16KB 环境下内核同步开销波动的警告。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.15",
+    "section_title": "JNI/NDK 性能优化",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.15 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][基准数据章节]**\n  - **缺失内容**：现代设备基准。\n  - **技术事实**：Android 16 结合 ARMv9 使转换耗时缩短至：Regular ~35ns, Fast ~10ns, Critical ~7ns。\n  - **建议补充方向**：更新性能对照表。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][注解章节]**\n  - **缺失内容**：@CriticalNative 数组签名规范。\n  - **技术事实**：Java 中的基本类型数组在 Critical NDK 函数中会展开为 (jint len, T* ptr)，且函数名建议使用 JavaCritical_ 前缀。\n  - **建议补充方向**：提供正确的 C++ 签名代码示例。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][构建优化章节]**\n  - **缺失内容**：Propeller (Post-Link Optimization)。\n  - **技术事实**：NDK r28+ 支持通过重排二进制基本块，在 PGO 基础上再提速达 8%。\n  - **建议补充方向**：介绍该进阶构建技术。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.16",
+    "section_title": "Audio Pipeline 延迟与性能",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.16 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][AAudio 章节]**\n  - **缺失内容**：AAudio Power Saving Offloaded 模式。\n  - **技术事实**：Android 16 引入该模式，允许将解码工作完全交给 DSP，AP 深度睡眠，节省高达 75% 功耗。\n  - **建议补充方向**：介绍该模式的应用场景及 WIU FGS 要求。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][架构章节]**\n  - **缺失内容**：AIDL HAL 配置动态化。\n  - **技术事实**：Android 16 起，新设备必须通过 IConfig.aidl 动态提供音频策略，逐步淘汰 vendor XML 文件。\n  - **建议补充方向**：更新架构图描述。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][知识盲区][蓝牙基准]**\n  - **核验数据**：2026 年 LE Audio (LC3) 日常延迟 80-110ms，游戏模式 <40ms。\n  - **建议补充方向**：替换 [待验证] 为最新实测值。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "1.17",
+    "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+    "priority": 85,
+    "reason": "[External Review] 章节 1.17 外部AI review发现需要回炉的问题",
+    "review_issues": [
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][数据支撑][对比章节]**\n  - **缺失内容**：2026 旗舰级 Binder 延迟基准。\n  - **技术事实**：骁龙 8 Elite (Android 16) 同步 Binder 延迟已降至 32μs - 42μs。\n  - **建议补充方向**：更新定量对比表，将延迟单位统一为 μs 级。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][原理链完整性][清单章节]**\n  - **缺失内容**：虚拟机 IPC (AF_VSOCK)。\n  - **技术事实**：Android 16 AVF 利用 VSOCK 实现 10μs 级宿主通信，并衍生出 RpcBinder 机制。\n  - **建议补充方向**：在 IPC 矩阵中加入虚拟机通信维度。",
+        "suggestion": "",
+        "evidence": []
+      },
+      {
+        "type": "外部Review问题",
+        "location": "全文",
+        "detail": "- **[P1][版本差异][演进章节]**\n  - **缺失内容**：memfd 的完全胜利。\n  - **技术事实**：Android 16 下 CursorWindow 等已全量默认使用 /memfd: 路径。\n  - **建议补充方向**：明确 ashmem 已进入实质性的废弃阶段。",
+        "suggestion": "",
+        "evidence": []
+      }
+    ],
+    "added_by": "external-ai-review",
+    "added_at": "2026-04-28T02:18:16.461948+08:00",
     "status": "pending"
   }
 ]

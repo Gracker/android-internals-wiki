@@ -5168,3 +5168,149 @@
 - **位置**：L318-L322「onTrimMemory」
 - **问题**：Android 14/API 34 后 trim memory 级别不再下发的描述还不够精确，未列清哪些级别停止通知、哪些仍保留。
 - **建议**：按 ComponentCallbacks2 官方文档补一张 API 34+ 表：UI_HIDDEN 是否保留、RUNNING_* / BACKGROUND / MODERATE / COMPLETE 等级的通知变化。
+
+## [External Review] 1.1 Android 分层架构 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][Zygote fork 延迟]**
+  - **问题描述**：原文 `[待验证: 具体数值需多设备实测确认]`。
+  - **证据**：Android 15 提供了 `ApplicationStartInfo.getStartupTimestamps()` 包含 
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-01-layered-architecture-external-review.md)
+
+## [External Review] 1.2 系统启动全流程 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][SELinux 初始化]**
+  - **建议**：补充 `ro.boottime.init.selinux` 系统属性作为量化锚点（典型值 40ms-100ms）。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-02-boot-process-external-review.md)
+
+## [External Review] 1.3 进程模型与生命周期管理 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][cgroup v2 迁移]**
+  - **建议**：补充 memcg v2 成为默认以及 MaxActivationDepth 带来的内核遍历性能优化。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-03-process-model-external-review.md)
+
+## [External Review] 1.4 Binder IPC 机制与性能影响 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][原理链完整性][ART 16 优化]**
+  - **建议**：补充 ART 16 对 Parcel 序列化效率的提升（约 5%）。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-04-binder-external-review.md)
+
+## [External Review] 1.5 线程模型 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][cgroup v2 权重]**
+  - **建议**：补充具体权重值（1024 vs 52）和 `cpu.uclamp.latency_sensitive` 对 Top-app 的保护作用。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-05-threading-model-external-review.md)
+
+## [External Review] 1.6 Android 版本演进中的架构变化 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][Generic Bootloader]**
+  - **建议**：提及 GBL 采用 Rust 编写，用于消除厂商引导碎片化。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-06-version-evolution-external-review.md)
+
+## [External Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][ART Service 并发控制]**
+  - **建议**：补充 `pm.dexopt.*.concurrency` 属性作为调优锚点。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-07-art-compilation-external-review.md)
+
+## [External Review] 1.8 Activity Manager Service 与性能分析 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][源码准确性][AMS 锁拆分]**
+  - **建议**：提及 OomAdjusterLock 等细粒度锁对 Binder 线程池饱和的缓解。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-08-activity-manager-external-review.md)
+
+## [External Review] 1.9 Package Manager Service 与应用安装性能 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][原理链完整性][SDM 校验]**
+  - **建议**：明确 SDM 校验发生在 PackageInstallerSession 阶段。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-09-package-manager-external-review.md)
+
+## [External Review] 1.10 ContentProvider 性能与优化 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][CursorWindow 16KB 适配]**
+  - **建议**：提及 16KB 页面设备上 CursorWindow 内存分配的对齐要求及 TLB 效率提升。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-10-content-provider-external-review.md)
+
+## [External Review] 1.11 Zygote 机制与启动性能优化 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][时间戳上报]**
+  - **建议**：补充 START_TIMESTAMP_FORK 是由 System Server 同步记录的事实。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-11-zygote-startup-external-review.md)
+
+## [External Review] 1.12 AutoFDO 反馈导向编译优化 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][原理链完整性][工具链更新]**
+  - **建议**：提及 LLVM 19+ 引入的 `llvm-profgen --kernel` 作为原生方案。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-12-autofdo-optimization-external-review.md)
+
+## [External Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][adb 开关]**
+  - **建议**：补充 adb shell am compat enable NEXT_QUEUE_BEHAVIOR 命令。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-13-messagequeue-deliqueue-external-review.md)
+
+## [External Review] 1.14 锁竞争与同步性能分析 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][kLongWaitMs 阈值]**
+  - **建议**：补充 Debug 版本下阈值自动放大 10 倍的细节。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-14-lock-contention-external-review.md)
+
+## [External Review] 1.15 JNI/NDK 性能优化 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][Perfetto 追踪]**
+  - **建议**：提及 Android 16 dalvik 类别现在能自动生成 JNI <MethodName> Slice。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-15-jni-ndk-performance-external-review.md)
+
+## [External Review] 1.16 Audio Pipeline 延迟与性能 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][数据/案例支撑][极致延迟]**
+  - **建议**：补充 Pixel 9 Pro MMAP Exclusive 模式下的 15ms（有线）/ 18ms（内置）基准。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-16-audio-pipeline-performance-external-review.md)
+
+## [External Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][原理链完整性][Rust 编码优势]**
+  - **建议**：提及 Rust AIDL 对 UTF-8 的原生支持减少了现代 Web 数据交互的转码损耗。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch01-17-ipc-panorama-external-review.md)
+
+## [External Review] 2.1 Android 渲染架构全景 — 2026-04-28
+
+- **类型**: P2建议改进
+  - **位置**: 全文
+  - **问题**: - **[P2][版本差异][ANGLE 层]**
+  - **建议**：说明 OpenGL ES 通过 ANGLE 运行在 Vulkan 之上的新常态及能效提升。
+  - **来源**: Gemini 外部 review (2026-04-28-15-ch02-01-rendering-overview-external-review.md)
+
