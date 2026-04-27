@@ -4045,8 +4045,8 @@
     "src/part3-tools/ch13-perfetto/01-perfetto-intro.md": {
       "path": "src/part3-tools/ch13-perfetto/01-perfetto-intro.md",
       "title": "Perfetto 简介与演进",
-      "chapter": "'13.1'",
-      "section": "'13.1'",
+      "chapter": "13.1",
+      "section": "13.1",
       "status": "ready-for-review",
       "drafted_date": "'2026-04-03'",
       "drafted_by": "openclaw-task2a",
@@ -4054,18 +4054,18 @@
       "last_verified": "'2026-04-14'",
       "last_verified_against": "perfetto.dev docs, source.android.com/docs/core/debug/perfetto,",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-24'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-24'",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-22T08:40:18+08:00'"
+      "last_task9_at": "2026-04-27T15:34:11+08:00"
     },
     "src/part3-tools/ch13-perfetto/02-trace-capture.md": {
       "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
@@ -4187,17 +4187,17 @@
       "last_verified": "2026-04-03",
       "last_verified_against": "perfetto.dev/docs/data-sources/cpu-scheduling",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T21:48:59+08:00"
+      "last_task9_at": "2026-04-27T15:34:11+08:00"
     },
     "src/part3-tools/ch13-perfetto/07-advanced-usage.md": {
       "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
@@ -4210,18 +4210,18 @@
       "last_verified": "2026-04-22",
       "last_verified_against": "perfetto.dev/docs/analysis/metrics, perfetto.dev/docs/analysis/trace-summary, perfetto.dev/docs/instrumentation/tracing-sdk",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "'pending'",
-      "task2b_state": "'fixed'",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "'needs-rework'",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
-      "task9_reviewed_by": "'openclaw-task9'",
-      "last_task9_at": "'2026-04-22T12:36:00+08:00'"
+      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-27T15:34:11+08:00"
     },
     "src/part3-tools/ch13-perfetto/08-input-latency-sql.md": {
       "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",
@@ -6671,6 +6671,38 @@
         }
       ],
       "log": "logs/deep-review/2026-04-27-11-deep-review.md"
+    },
+    {
+      "date": "2026-04-27",
+      "time": "15:34",
+      "task": "task9-deep-review",
+      "sections_reviewed": [
+        {
+          "section": "13.1",
+          "title": "Perfetto 简介与演进",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 3,
+          "p2": 0
+        },
+        {
+          "section": "13.6",
+          "title": "线程 CPU 状态分析",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 2,
+          "p2": 1
+        },
+        {
+          "section": "13.7",
+          "title": "Perfetto 的高级用法",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 4,
+          "p2": 0
+        }
+      ],
+      "log": "logs/deep-review/2026-04-27-15-deep-review.md"
     }
   ],
   "progress": {
@@ -7547,7 +7579,7 @@
       }
     }
   },
-  "last_updated": "2026-04-27T14:50:00+08:00",
+  "last_updated": "2026-04-27T15:34:11+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -8370,5 +8402,42 @@
       343,
       300
     ]
+  },
+  "2026-04-27-15-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "13.1",
+      "13.6",
+      "13.7"
+    ],
+    "timestamp": "2026-04-27T15:34:11+08:00",
+    "results": {
+      "13.1": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 3,
+        "p2": 0
+      },
+      "13.6": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 2,
+        "p2": 1
+      },
+      "13.7": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 4,
+        "p2": 0
+      }
+    },
+    "auto_finalized": [],
+    "queue_added": [
+      "13.1",
+      "13.6",
+      "13.7"
+    ],
+    "log": "logs/deep-review/2026-04-27-15-deep-review.md",
+    "note": "复核 logs/external-review/2026-04-25-13-13-batch-review-summary.md；该文件为 batch summary，archive helper 默认不归档 batch-summary。"
   }
 }

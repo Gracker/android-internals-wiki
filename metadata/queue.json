@@ -3156,7 +3156,7 @@
     "section": "13.1",
     "section_title": "Perfetto 简介与演进",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现 5 个需回炉问题",
+    "reason": "[Deep Tech Review] Perfetto 架构演进、java_hprof 触发链和 Trace Processor 层次仍未补齐",
     "review_issues": [
       {
         "type": "原理断裂",
@@ -3212,6 +3212,48 @@
         "level": "P1",
         "detail": "- 建议补充方向：在“架构”或“版本演进”部分，简要提到 Android 12+ 后 Perfetto 属于 Mainline 模块。",
         "suggestion": "在“架构”或“版本演进”部分，简要提到 Android 12+ 后 Perfetto 属于 Mainline 模块。"
+      },
+      {
+        "level": "P1",
+        "type": "原理断裂",
+        "location": "L176-L184 heapprofd / java_hprof_producer / traced_perf",
+        "detail": "正文仍只写 java_hprof_producer 负责 Java heap dump，没有补出 android.java_hprof DataSourceConfig → JavaHprofProducer → __SIGRTMIN+6 → ART art/perfetto_hprof/perfetto_hprof.cc 在目标进程内执行快照的触发链。AOSP main 可核到 external/perfetto/src/profiling/memory/java_hprof_producer.cc 与 art/perfetto_hprof/perfetto_hprof.cc。",
+        "suggestion": "保留现有源码路径，同时补充 android.java_hprof（DataSourceConfig.java_hprof_config，Android 11 引入）、JavaHprofProducer::SendSignal()、kJavaHeapprofdSignal=__SIGRTMIN+6、ART perfetto_hprof 插件与 profileable/debuggable 权限边界。",
+        "evidence": [
+          "external/perfetto/src/profiling/memory/java_hprof_producer.cc",
+          "external/perfetto/protos/perfetto/config/data_source_config.proto",
+          "art/perfetto_hprof/perfetto_hprof.cc"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
+      },
+      {
+        "level": "P1",
+        "type": "原理断裂",
+        "location": "L198-L216 Trace Processor：SQL 分析引擎",
+        "detail": "正文仍把 Trace Processor 讲成“加载为 SQLite 后手写 SQL”，未补内置 Metrics、Trace Summary v2、Perfetto Standard Library / referenced_modules 的层次关系。作为 13 章入口，会误导读者认为自动化分析只能手写原始表 SQL。",
+        "suggestion": "补充 trace_processor --run-metrics、android_cpu/android_startup/android_jank 等内置指标、Trace Summary v2 的 metric_spec/referenced_modules，以及“优先复用 Standard Library，必要时再写自定义 PerfettoSQL”的使用边界。",
+        "evidence": [
+          "perfetto.dev/docs/analysis/metrics",
+          "perfetto.dev/docs/analysis/trace-summary",
+          "perfetto.dev/docs/analysis/stdlib"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
+      },
+      {
+        "level": "P1",
+        "type": "版本差异",
+        "location": "L386-L392 Android 版本对照表",
+        "detail": "frontmatter 覆盖 Android 17 Beta，但正文版本表仍折叠为 Android 11+。Android 12 FrameTimeline、API 35 ProfilingManager、Android 16 system-triggered profiling、AOSP main 中 com.android.profiling APEX 可用边界没有拆开。",
+        "suggestion": "把版本表拆到 Android 12 / Android 15(API 35) / Android 16+；APEX 名称使用已核到的 com.android.profiling，不写 com.android.perfetto；实际下发版本、设备覆盖范围用[待验证]标注。",
+        "evidence": [
+          "developer.android.com/reference/android/os/ProfilingManager: API level 35",
+          "external/perfetto/Android.bp(.extras): apex_available com.android.profiling",
+          "Android 16 SystemTriggeredProfiling 官方说明"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
       }
     ],
     "added_by": "external-ai-review",
@@ -3222,7 +3264,7 @@
       "intake/suggestions.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T10:28:35+08:00"
+    "updated_at": "2026-04-27T15:34:11+08:00"
   },
   {
     "section": "13.2",
@@ -3295,7 +3337,7 @@
     "section": "13.6",
     "section_title": "线程 CPU 状态分析",
     "priority": 85,
-    "reason": "[Deep Tech Review] 线程状态颜色和 Runnable/R+ SQL 口径仍会误导调度延迟判断",
+    "reason": "[Deep Tech Review] Runnable/R+ 状态口径和 SQL 聚合仍未修正",
     "review_issues": [
       {
         "type": "描述错误",
@@ -3317,6 +3359,43 @@
         "location": "L81 / L113-L116 / L404-L417",
         "detail": "正文把 Runnable 写成“蓝色（浅绿色或白色）”，但同节 L115 又写白色是 Sleeping，颜色口径自相矛盾；SQL 只把 state=R 映射为 Runnable，R+ 会落到单独分组，读者按 Runnable 聚合时会漏掉 preempted runnable 时间。",
         "suggestion": "删除 Runnable 的“白色”描述，统一 Running/Runnable/Sleeping/D 的 UI 口径；SQL 中把 state IN ('R', 'R+') 合并为 Runnable，或显式输出 “Runnable” 与 “Runnable (Preempted)” 两行。"
+      },
+      {
+        "level": "P1",
+        "type": "源码准确性/数据口径",
+        "location": "L82 / L114-L116 Runnable 与 Sleeping 颜色口径",
+        "detail": "正文仍写 Runnable 在 Perfetto 中显示为“蓝色（浅绿色或白色）”，但同节又写白色是 Sleeping。颜色口径自相矛盾，会让读者把 Sleeping 等待误判成 Runnable 调度延迟。",
+        "suggestion": "删除 Runnable 的“白色”描述，统一 Running/Runnable/Sleeping/D 的 UI 口径；R+ 可描述为 Runnable(Preempted)，不要和 Sleeping 白色混写。",
+        "evidence": [
+          "Perfetto thread_state UI 口径",
+          "当前章节 L82 与 L115-L116 自相矛盾"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
+      },
+      {
+        "level": "P1",
+        "type": "数据口径",
+        "location": "L357 / L405-L418 thread_state SQL",
+        "detail": "调度延迟分析仍提示筛选 state=R，状态分布 SQL 也只把 R 映射为 Runnable；R+ 会落到 ELSE state，导致被抢占的 Runnable 时间没有计入 Runnable 聚合。",
+        "suggestion": "CASE 中使用 state IN ('R','R+') 聚合为 Runnable，或显式输出 Runnable 与 Runnable (Preempted) 两行；正文说明 R+ 属于被抢占后的 runnable 口径。",
+        "evidence": [
+          "Perfetto thread_state 表含 R+ Runnable(Preempted) 状态"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
+      },
+      {
+        "level": "P2",
+        "type": "数据缺失",
+        "location": "L421-L434 D 状态 SQL",
+        "detail": "D 状态 SQL 仍只统计 io_wait，没有把前文已启用的 sched/sched_blocked_reason 接到 blocked_function / blocked_reason 级证据。",
+        "suggestion": "补一个 blocked_function 聚合 SQL；若 trace_processor 版本字段名有差异，标明需要先检查 thread_state 表 schema。",
+        "evidence": [
+          "sched/sched_blocked_reason 可填充 io_wait 与 blocked_function 类字段"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
       }
     ],
     "added_by": "task9-deep-tech-review",
@@ -3326,13 +3405,13 @@
       "intake/suggestions.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T13:04:00+08:00"
+    "updated_at": "2026-04-27T15:34:11+08:00"
   },
   {
     "section": "13.7",
     "section_title": "Perfetto 的高级用法",
     "priority": 85,
-    "reason": "[External Review] 外部 AI review 发现 5 个需回炉问题",
+    "reason": "[Deep Tech Review] Custom DataSource、Bigtrace 与 Trace Summary/Standard Library 仍未补齐",
     "review_issues": [
       {
         "type": "知识盲区",
@@ -3385,6 +3464,55 @@
         "level": "P1",
         "detail": "- 建议补充方向：提供一个 R8 混淆规则示例，展示如何自动移除 `Trace.beginSection`。",
         "suggestion": "提供一个 R8 混淆规则示例，展示如何自动移除 `Trace.beginSection`。"
+      },
+      {
+        "level": "P1",
+        "type": "知识盲区",
+        "location": "L599-L624 Perfetto SDK TRACE_EVENT",
+        "detail": "正文只覆盖 TrackEvent/TRACE_EVENT，仍缺 Perfetto SDK Custom Data Source 层：perfetto::DataSource<T>、OnSetup/OnStart/OnStop、Trace(ctx.NewTracePacket()) 与自定义 proto 解析边界。高级用法章节缺这层会把 SDK 能力讲窄。",
+        "suggestion": "新增 Custom Data Source 小节，对比 TrackEvent=轻量 slice/counter，Custom DataSource=结构化二进制 packet/自定义 schema/系统服务或引擎级采集；补最小类骨架和 Trace Processor/UI 解析边界。",
+        "evidence": [
+          "perfetto.dev/docs/instrumentation/tracing-sdk: Custom data sources vs Track events"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
+      },
+      {
+        "level": "P1",
+        "type": "知识盲区",
+        "location": "L316-L344 BatchTraceProcessor 与 Bigtrace",
+        "detail": "正文只用一句话说数千 trace 用 Bigtrace，没有说明 Bigtrace 的 Orchestrator / Worker / Object Store 架构，也没有划清 BatchTraceProcessor 单机多 trace 与 Bigtrace K8s 分布式 SQL 的规模边界。",
+        "suggestion": "补对比表：BatchTraceProcessor=本机并行加载多 trace，内存受单机约束；Bigtrace=K8s Orchestrator 分片、Worker Pod 运行 TraceProcessor、从 GCS/local object store 读 trace。",
+        "evidence": [
+          "perfetto.dev/docs/deployment/deploying-bigtrace-on-kubernetes"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
+      },
+      {
+        "level": "P1",
+        "type": "原理断裂",
+        "location": "L235-L239 / L345-L397 Trace Summarization",
+        "detail": "示例已经使用 referenced_modules:\"linux.memory.process\"，但正文未把它解释为 Perfetto Standard Library 模块复用，也没有说清旧版 metric SQL/proto、PerfettoSQL MODULE 和 Trace Summary v2 的关系。",
+        "suggestion": "补“Metric v1 → PerfettoSQL Standard Library → Trace Summary v2”三层关系，并说明优先复用官方模块，只有缺口指标才写自定义模块。",
+        "evidence": [
+          "perfetto.dev/docs/analysis/trace-summary",
+          "perfetto.dev/docs/analysis/stdlib"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
+      },
+      {
+        "level": "P1",
+        "type": "知识盲区",
+        "location": "L550-L630 android.os.Trace / ATrace_* 生产边界",
+        "detail": "正文讲了 beginSection/ATrace/TRACE_EVENT 用法，但没有说明 release 包中大量 section name 的体积、业务语义暴露和开销治理，也没有给出 R8/ProGuard 移除或构建开关边界。",
+        "suggestion": "补充生产包策略：高频/敏感 trace point 用构建开关或 R8 assumenosideeffects 处理；保留必要线上问题定位点时需稳定命名并控制粒度。",
+        "evidence": [
+          "android.os.Trace.beginSection 为平台 tracing API，字符串 section name 会进入调用点与 trace 输出"
+        ],
+        "verified_by": "task9-deep-tech-review",
+        "verified_at": "2026-04-27T15:34:11+08:00"
       }
     ],
     "added_by": "external-ai-review",
@@ -3395,7 +3523,7 @@
       "intake/suggestions.md"
     ],
     "updated_by": "task9-deep-tech-review",
-    "updated_at": "2026-04-25T10:28:35+08:00"
+    "updated_at": "2026-04-27T15:34:11+08:00"
   },
   {
     "section": "13.8",
