@@ -2709,7 +2709,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T03:16:09.066416+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T22:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "external-review-no-required-fix; cleared stale empty issue"
   },
   {
     "section": "19.15",
@@ -2738,7 +2741,7 @@
     ],
     "added_by": "task9-deep-tech-review",
     "added_at": "2026-04-25T07:20:23+08:00",
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/research-gaps.md",
       "intake/suggestions.md",
@@ -2746,7 +2749,10 @@
     ],
     "validated_external_review_paths": [
       "logs/external-review/archive/2026-04-25-15-ch19.15-external-review.md"
-    ]
+    ],
+    "completed_at": "2026-04-27T22:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "19.21",
@@ -9977,7 +9983,10 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T16:17:20+08:00",
-    "status": "pending"
+    "status": "completed",
+    "completed_at": "2026-04-27T22:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "19.17",
@@ -10306,10 +10315,13 @@
     ],
     "added_by": "external-ai-review",
     "added_at": "2026-04-25T19:19:39.292657+08:00",
-    "status": "pending",
+    "status": "completed",
     "material_paths": [
       "intake/suggestions.md"
-    ]
+    ],
+    "completed_at": "2026-04-27T22:40:00+08:00",
+    "completed_by": "openclaw-task2b",
+    "resolution": "fixed-in-chapter"
   },
   {
     "section": "19.3",
