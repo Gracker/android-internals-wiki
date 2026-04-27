@@ -21,8 +21,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:38",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-02-framerate-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-02-framerate-external-review.md",
+      "completed_at": "2026-04-27T23:49:46",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed-in-chapter: added HyperOS high-freq VSync injection description + Android 17 getFrameRateOverride() API"
     },
     {
       "section": "02.04",
@@ -45,8 +48,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:38",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-04-choreographer-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-04-choreographer-external-review.md",
+      "completed_at": "2026-04-27T23:49:46",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed-in-chapter: added Compose:PausableComposition:resume Trace slice + vsyncId cross-process correlation + FRAME_TIMELINE_VSYNC_ID"
     },
     {
       "section": "02.05",
