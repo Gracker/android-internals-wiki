@@ -1,10 +1,10 @@
 ---
-last_task9_at: "2026-04-20T11:51:17+08:00"
-task9_reviewed_by: openclaw-task6
-task9_reviewed_date: "2026-04-21"
+last_task9_at: "2026-04-27T10:02:28+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-27"
 title: "Thermal 管控深度：从内核子系统到 ADPF 主动降频"
 chapter: "5.12"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-04-09"
 drafted_by: "openclaw-task2a"
@@ -42,15 +42,15 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: "18/20"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_date: "2026-04-20"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
+task9_result: pass-tech-review
 ---
 
 # Thermal 管控深度：从内核子系统到 ADPF 主动降频

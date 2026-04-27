@@ -4875,3 +4875,19 @@
 - **位置**：L416
 - **问题**：Network Security Configuration/ECH 只列资料，正文缺少 domainEncryption 配置和 CT/ECH targetSdk 门控说明。
 - **建议**：补充 <domainEncryption> 示例，并区分 CT 默认启用、ECH opportunistic 使用和 localhost 例外。
+
+## [Task9 Deep Review] 5.12 Thermal 管控深度：从内核子系统到 ADPF 主动降频 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L612 环境温度影响结论
+- **问题**：“环境温度每升高 5°C，thermal throttling 触发时间大约提前 20-30%”缺少设备、负载、散热条件、样本数和来源。
+- **建议**：补充可复现实验条件和原始数据；如果没有数据，改成定性结论。
+- **类型**：数据缺失
+- **位置**：L651-L652 调度策略/预判式降载收益
+- **问题**：“功耗差异可达 30%”“持续性能窗口延长 40-60%”没有绑定 SoC、workload、温控阈值和测量工具。
+- **建议**：补 Perfetto + power rail / Battery Historian / vendor thermal log 对照，或标成案例数据并给出处。
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L342 DAG 初始化框架收益
+- **问题**：“Pixel 6 / Android 13 / 12 个 SDK / 37.5% 提升”缺少可追溯来源，且把 Google I/O 演示与阿里实践混成一个测试环境。
+- **建议**：补原始演讲页码/报告链接/实验脚本；无法追溯时删掉具体设备与百分比，只保留“并行受依赖图和设备并发度限制”的结论。
