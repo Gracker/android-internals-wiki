@@ -1,35 +1,35 @@
 {
-  "generated_at": "2026-04-28T06:20:00+08:00",
+  "generated_at": "2026-04-28T07:40:26+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 113,
-    "ready-for-review": 105,
+    "finalized": 114,
+    "ready-for-review": 104,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-28T06:20:00+08:00",
+    "last_updated": "2026-04-28T07:40:26+08:00",
     "pipeline_stage_counts": {
       "None": 33,
-      "ready-to-publish": 113,
-      "task2b_pending": 71,
+      "ready-to-publish": 114,
+      "task2b_pending": 73,
       "task9_pending": 13,
-      "task6_pending": 20
+      "task6_pending": 17
     },
     "task6_state_counts": {
       "None": 34,
-      "reviewed": 174,
-      "revisiting": 42
+      "reviewed": 177,
+      "revisiting": 39
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 190,
-      "pending": 21,
+      "reviewed": 193,
+      "pending": 18,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 133,
-      "pending": 73,
+      "fixed": 131,
+      "pending": 75,
       "idle": 4
     },
     "draft": 0,
@@ -38,29 +38,29 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 33,
-      "ready-to-publish": 113,
-      "task2b_pending": 71,
+      "ready-to-publish": 114,
+      "task2b_pending": 73,
       "task9_pending": 13,
-      "task6_pending": 20
+      "task6_pending": 17
     },
     "task6_state_counts": {
       "None": 34,
-      "reviewed": 174,
-      "revisiting": 42
+      "reviewed": 177,
+      "revisiting": 39
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 190,
-      "pending": 21,
+      "reviewed": 193,
+      "pending": 18,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 133,
-      "pending": 73,
+      "fixed": 131,
+      "pending": 75,
       "idle": 4
     },
-    "last_updated": "2026-04-28T06:20:00+08:00"
+    "last_updated": "2026-04-28T07:40:26+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -4615,23 +4615,24 @@
       "last_verified": "2026-04-25",
       "last_verified_against": "AOSP android-16.0.0_r1 (googlesource direct check) + external review 2026-04-25 + Perfetto/BPF upstream docs + Android GKI release builds",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T08:30:00+08:00",
+      "last_task9_at": "2026-04-28T07:40:26+08:00",
       "last_task2b_at": "2026-04-27T03:40:00+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
       "updated_by": "openclaw-task2b",
-      "updated_date": "2026-04-26"
+      "updated_date": "2026-04-26",
+      "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。"
     },
     "src/part3-tools/ch14-other-tools/11-battery-historian.md": {
       "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
@@ -4809,28 +4810,29 @@
       "title": "竞品分析方法",
       "chapter": "15.4",
       "section": "15.4",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-04",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-27",
       "last_verified_against": "developer.android.com, AOSP android-16.0.0_r1 ActivityTaskManagerService / ActivityMetricsLogger / ActivityRecord / FrameMetrics",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T21:34:35+08:00",
+      "last_task9_at": "2026-04-28T07:40:26+08:00",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-27T21:44:26+08:00",
       "repaired_date": "2026-04-27",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "task9_review_notes": "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。"
     },
     "src/part3-tools/ch15-methodology/05-online-monitoring.md": {
       "path": "src/part3-tools/ch15-methodology/05-online-monitoring.md",
@@ -4870,21 +4872,22 @@
       "last_verified": "2026-04-27",
       "last_verified_against": "developer.android.com, firebase.google.com, androidx-main, AOSP android-14.0.0_r1 ThermalManagerService / DisplayModeDirector / PackageManagerShellCommand / BackgroundDexOptService / BackgroundDexOptJobService; AOSP android-16.0.0_r1 PackageManagerShellCommand / ArtManagerLocal",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T21:34:35+08:00",
+      "last_task9_at": "2026-04-28T07:40:26+08:00",
       "last_task2b_at": "2026-04-27T21:44:26+08:00",
       "repaired_date": "2026-04-27",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。"
     },
     "src/part3-tools/ch15-methodology/07-aosp-reading.md": {
       "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
