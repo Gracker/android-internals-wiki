@@ -14016,5 +14016,96 @@
     "completed_at": "2026-04-27T15:52:00+08:00",
     "completed_by": "openclaw-task2b",
     "completion_reason": "已补充 Perfetto SQL 目标进程/主线程识别、大 Trace 查询固化与区间 JOIN 约束。"
+  },
+  {
+    "section": "8.5",
+    "section_title": "案例集",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 案例集 存在 P0/P1 技术问题，需回炉修正",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L182",
+        "detail": "“Android 5.0 以下 MultiDex 的 dex2oat 编译是启动主要瓶颈”混用了 ART/dex2oat 与 Dalvik 时代行为。dex2oat/ART 是 Android 5.0+ 路径；5.0 以下主要是 support multidex 的 secondary dex 解压、dexopt/加载成本，不能写成 dex2oat。",
+        "suggestion": "按版本拆开：API <21 写 support multidex 解压与 Dalvik/dexopt 成本；API 21+ 写原生 multidex、类加载/verification/profile/AOT/JIT 边界。",
+        "level": "P0"
+      },
+      {
+        "type": "源码错误",
+        "location": "L319-L320",
+        "detail": "把 `View.setHasTransientState(false)` 写成“减少布局请求”的优化手段不符合 Android View/RecyclerView 语义。该 API 表示 View 是否处于不宜回收的 transient state，不能用于降低 measure/layout 请求。",
+        "suggestion": "删除该建议，改为 `RecyclerView.setHasFixedSize(true)`、减少 `requestLayout()`、合并 payload 更新、约束布局层级或使用 `suppressLayout()` 的有边界用法。",
+        "level": "P0"
+      },
+      {
+        "type": "交叉引用错误",
+        "location": "L350-L396",
+        "detail": "“AutoFDO 和 16KB 页面不需要 App 开发者做任何改动”与后文“有 native library 必须适配 16KB page size”冲突。16KB page size 对含 NDK/JNI/第三方 so 的 App 是发布兼容要求，不是纯平台红利。",
+        "suggestion": "把 L350 改为“AutoFDO 对 App 基本透明；16KB page size 对纯 Java/Kotlin 基本透明，但含 native library 的 App 必须验证 ELF alignment、mmap/PAGE_SIZE 假设和依赖 so”。",
+        "level": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T17:39:46+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "9.1",
+    "section_title": "ANR 设计思想",
+    "priority": 85,
+    "reason": "[Deep Tech Review] ANR 设计思想 存在 P1 技术问题，需回炉修正",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "版本差异",
+        "location": "L393-L394",
+        "detail": "“Android 8.0 引入后台执行限制，后台 Service 超时阈值从 20 秒调整到 200 秒”把两个事实合并错了。AOSP 早期 ActiveServices/ActivityManagerConstants 已有 `SERVICE_BACKGROUND_TIMEOUT = SERVICE_TIMEOUT * 10` 这一类 200s 后台 service timeout；Android 8.0 的主要变化是后台执行限制，而不是把后台 Service ANR 阈值从 20s 改到 200s。",
+        "suggestion": "改成“前台 service timeout 常见 20s，后台 service timeout 常见 200s；Android 8.0 重点是后台执行限制改变了后台 Service 的可运行条件，不应把 200s 当成 O 才引入的阈值”。",
+        "level": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T17:39:46+08:00",
+    "status": "pending"
+  },
+  {
+    "section": "9.4",
+    "section_title": "特殊场景的 ANR",
+    "priority": 95,
+    "reason": "[Deep Tech Review] 特殊场景的 ANR 存在 P0/P1 技术问题，需回炉修正",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误",
+        "location": "L231-L249",
+        "detail": "ART GC 代码块以 `Heap::CollectGarbageInternal()` 标注 AOSP android-15.0.0_r1，但块内 `collector->PausePhase()`、`collector->ConcurrentPhase()` 的顺序是概念化伪代码，不是该函数的真实调用骨架。当前写法会让读者误以为这是 AOSP 源码摘录。",
+        "suggestion": "要么改成“概念伪代码”，要么换成真实 ART collector phase 源码锚点，并用文字说明 concurrent collector 的 STW pause phase，而不要伪造函数体。",
+        "level": "P0"
+      },
+      {
+        "type": "原理断裂",
+        "location": "L229-L230",
+        "detail": "GC 触发策略写成“达到 TargetHeapUtilization 0.5 触发 Concurrent GC；分配速度超过回收速度触发 Foreground GC；接近耗尽触发 Full GC”过度简化。`TargetHeapUtilization` 更接近 GC 后 heap growth target/footprint 调节参数，不是单独的 50% 触发线；ART 触发还涉及 concurrent start bytes、heap growth limit、allocation/native/explicit 等 cause。",
+        "suggestion": "改为“目标利用率影响 GC 后堆目标和下次触发距离”，并补 `Heap` 中 concurrent start / footprint / GcCause 的真实源码锚点。",
+        "level": "P1"
+      },
+      {
+        "type": "源码错误",
+        "location": "L300-L306",
+        "detail": "“SQLite WAL 模式的四级锁”使用了 rollback journal 的 UNLOCKED/SHARED/RESERVED/PENDING/EXCLUSIVE 状态来解释 WAL，并且标题称四级但列出五种状态。WAL 的并发主要由 WAL-index/shared-memory locks、writer/checkpoint/read locks 协调，不能直接套 rollback journal 锁模型。",
+        "suggestion": "把 WAL 与 rollback journal 分开写：WAL 说明单 writer、多 reader、checkpoint 与 WAL-index 锁；若保留五态锁，只能标注为 rollback journal locking model，并解释 Android compatibility WAL / Room full WAL 的差异。",
+        "level": "P1"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T17:39:46+08:00",
+    "status": "pending"
   }
 ]

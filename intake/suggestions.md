@@ -4999,3 +4999,21 @@
 - **位置**：WorkManager：Expedited Job（约 L389-L392）
 - **问题**：正文把 WorkManager expedited work 写成“不受 App Standby Bucket 限制”。这个表述过宽。Android 12+ expedited job 仍受系统 quota 约束；后台配额会受 App Standby Bucket 和进程重要性影响，前台时通常不受该配额限制，超额后还要按 `OutOfQuotaPolicy` 降级或丢弃。
 - **建议**：改成“优先尽快执行、较少受 Doze/Battery Saver 影响，但后台仍有 expedited quota；需要说明 foreground、background、out-of-quota 三种边界”，并补 WorkManager expedited work 官方文档锚点。
+
+## [Task9 Deep Review] 8.5 案例集 — 2026-04-27
+- **类型**：数据缺失
+- **位置**：L151-L160、L253-L260
+- **问题**：Reddit/Disney+ 的启动、ANR、帧耗时、APK 体积收益只给了“Google Performance Spotlight Week 2025”泛引用，缺少可点击的一手 URL、演讲标题或截图锚点。
+- **建议**：补官方页面/视频/slide 链接和数据口径；若找不到一手资料，把数值降级为待验证并移出核心论证表。
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-04-27
+- **类型**：版本差异
+- **位置**：L395-L399
+- **问题**：Android 10 “traces.txt 改为 /data/anr/anr_*”与 Android 13 “trace 文件按进程独立存储”两段说法边界重叠，Android 13 的新增点没有给出源码/commit 锚点。
+- **建议**：补 Android 13 具体变更的 AOSP commit 或删除“按进程独立存储”这句，只保留 Android 10 起 /data/anr/anr_* 的稳定口径。
+
+## [Task9 Deep Review] 9.4 特殊场景的 ANR — 2026-04-27
+- **类型**：版本差异
+- **位置**：L273-L279
+- **问题**：前台服务表把 Android 14+ 的 `short service`、`data sync`、`media processing` timeout 合在一行，容易混淆 Android 14 shortService 与 Android 15/16 time-limited FGS 的版本边界。
+- **建议**：按 Android 14 shortService、Android 15 dataSync/mediaProcessing 6h 限制、Android 16/17 后续演进拆三行，并补 `ActiveServices` / `ServiceRecord.ShortFgsInfo` 锚点。

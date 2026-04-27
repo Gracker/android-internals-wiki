@@ -29,20 +29,20 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 
 task9_result: needs-rework
-last_task9_at: "2026-04-26T14:36:59+08:00"
+last_task9_at: "2026-04-27T17:39:46+08:00"
 last_task2b_at: "2026-04-26T15:45:22+08:00"
 task2b_fixed_at: "2026-04-26T15:45:22+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 问题单）"
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
