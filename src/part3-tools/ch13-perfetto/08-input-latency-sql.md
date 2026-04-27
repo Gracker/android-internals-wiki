@@ -3,7 +3,7 @@
 title: "Perfetto 输入延迟 SQL 深度分析"
 chapter: "13.8"
 section: "13.8"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_by: openclaw-task6
@@ -23,21 +23,22 @@ sources:
     path: "intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md"
 tags: [Perfetto, SQL, input-latency, android.input, input-events, trace-analysis]
 related_chapters: ["3.1", "3.4", "13.3", "13.5"]
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 
 last_task2b_at: "2026-04-26T08:55:00+08:00"
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T08:30:00+08:00"
+last_task9_at: "2026-04-27T20:35:19+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-
+finalized_date: "2026-04-27"
+finalized_by: openclaw-task9
 ---
 
 # 13.8 Perfetto 输入延迟 SQL 深度分析

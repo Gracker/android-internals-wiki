@@ -5037,3 +5037,21 @@
 - **问题**：章节已经给出 VSYNC-app、VSYNC-sf、HW_VSYNC 的判断口径，但缺一个可复核的 Trace 示例或 SQL/截图，读者无法直接验证 phase offset、HW_VSYNC 重新采样、jank 场景下的时间差。
 - **建议**：补 60Hz 或 120Hz 设备的一组 Perfetto 截图 / trace_processor SQL，标出 VSYNC-app → Choreographer#doFrame、VSYNC-sf → SurfaceFlinger 合成、HW_VSYNC 采样窗口。
 
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-27
+- **类型**：版本差异
+- **位置**：Frame Timeline 查询（L234-L261）
+- **问题**：frontmatter 标注覆盖 Android 10-17，但 Frame Timeline 表仅在 Android 12+ trace 中稳定可用；正文没有明确说明 Android 10/11 上查询会为空或需退回 Choreographer/SurfaceFlinger slice。
+- **建议**：在 Frame Timeline 小节开头补版本边界：Android 12+ 使用 expected/actual frame timeline，Android 10/11 使用 doFrame、DrawFrame、SurfaceFlinger slice 与 ftrace 组合。
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-27
+- **类型**：SQL 鲁棒性
+- **位置**：GC 事件统计（L483-L497）
+- **问题**：首个 GC 统计查询只按 `slice.name GLOB '*GC*'` / `'*GarbageCollector*'` 全局匹配，没有目标进程过滤，容易把其他进程或非 ART GC 事件计入目标 App 结论。
+- **建议**：给基础查询也补 `process.name = 'com.example.app'` 过滤；或在说明中明确它是全局粗扫，结论必须回到同进程查询确认。
+
+## [Task9 Deep Review] 15.2 如何区分系统问题和 App 问题 — 2026-04-27
+- **类型**：版本差异
+- **位置**：ANR 阈值表（L386-L397）
+- **问题**：表中列出 Input、Service、Broadcast、FGS 等默认阈值，但章节适用范围是 Android 8-16；其中 Broadcast CPU-starved 放宽是 Android 14+ 行为，FGS/Service 超时也应以当版 ActiveServices / BroadcastQueue 常量为准。
+- **建议**：在表头或备注中标注“以当前 AOSP/Android 14+ 默认值为主，旧版本/OEM 以源码常量为准”，并为 Android 14+ 放宽行为单独标版本边界。
+

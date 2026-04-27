@@ -32,19 +32,19 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-09"
 gap_source: "官方文档 + 读者需求 + AOSP 结构"
 gap_score: "19/20"
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-26"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-26T00:28:30+08:00"
+task9_reviewed_date: "2026-04-27"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-27T20:35:19+08:00"
 last_task2b_at: "2026-04-27T15:52:00+08:00"
 rework_date: "2026-04-27"
 rework_by: openclaw-task2b

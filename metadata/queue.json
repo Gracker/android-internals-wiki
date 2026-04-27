@@ -14194,5 +14194,26 @@
     "completed_at": "2026-04-27T19:40:00+08:00",
     "completed_by": "openclaw-task2b",
     "resolution": "fixed-in-chapter"
+  },
+  {
+    "section": "13.10",
+    "section_title": "Perfetto SQL 性能分析实战手册",
+    "priority": 95,
+    "reason": "[Deep Tech Review] Binder ftrace tracepoint 名称错误：binder_reply 不是 AOSP/Perfetto 公开 tracepoint",
+    "material_paths": [
+      "intake/suggestions.md"
+    ],
+    "review_issues": [
+      {
+        "type": "源码错误/Perfetto tracepoint",
+        "severity": "P0",
+        "location": "L395（Binder 事务耗时统计开头）",
+        "detail": "正文称 Perfetto 通过 linux.ftrace 的 binder_transaction / binder_transaction_received / binder_reply 三个 tracepoint 追踪 Binder 活动；AOSP common kernel drivers/android/binder_trace.h 中没有 TRACE_EVENT(binder_reply)，只有 binder_transaction、binder_transaction_received、binder_return、binder_command 等。把 binder_reply 当作 tracepoint 会误导抓取配置和后续三阶段 SQL 关联。",
+        "suggestion": "改为 binder_transaction / binder_transaction_received，并用 binder_return / binder_command 中的 BR_REPLY / BC_REPLY 或 Perfetto Binder slice/arg 口径描述回复路径；若要拆 client/server/dispatch 三阶段，应说明按 transaction id/debug id/时间窗关联，而不是引用不存在的 binder_reply tracepoint。"
+      }
+    ],
+    "added_by": "task9-deep-tech-review",
+    "added_at": "2026-04-27T20:35:19+08:00",
+    "status": "pending"
   }
 ]
