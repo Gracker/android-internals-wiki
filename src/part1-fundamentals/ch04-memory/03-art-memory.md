@@ -34,16 +34,13 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
-# task6_result: pass-light-edit  # reset after rework
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-28T23:59:00+08:00"
-# task9_result: pass-tech-review  # reset after rework
-
-task6_result: pass-light-edit---
+task6_result: pass-light-edit
 
 # ART 虚拟机内存管理
 
