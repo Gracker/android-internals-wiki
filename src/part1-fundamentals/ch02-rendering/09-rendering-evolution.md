@@ -53,10 +53,10 @@ related_chapters:
 - '2.10'
 - '3.1'
 - '8.2'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
@@ -64,8 +64,8 @@ repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 review_notes: "2026-04-24 task6 re-review: pass-light-edit；2026-04-26 task2b 修复 Task9 TokenManager 源码路径、Choreographer 版本边界、SkiaVulkan 裸数字问题；2026-04-26 task6 revisiting review: pass-light-edit, 修复1处禁用词。；2026-04-27 task9 deep-review: needs-rework。P1 3，P2 1。"
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: '2026-04-26T01:40:00+08:00'
+task2b_state: fixed
+last_task2b_at: "2026-04-28T09:42:00+08:00"
 last_task9_at: "2026-04-27T01:20:00+08:00"
 task2b_fixed_by: openclaw-task2b
 updated_date: '2026-04-26'
@@ -180,6 +180,16 @@ Android Oreo（8.0）开始测试将 Skia 作为统一的渲染后端，通过 S
 
 这个改动简化了架构：HWUI 不再直接管理 OpenGL ES 上下文，而是将所有绘制命令交给 Skia，由 Skia 统一调度 GPU。好处是 Skia 团队可以独立优化渲染管线，无需 HWUI 逐版本调整 GL 调用。
 
+### Skia Graphite：从画家算法到深度剔除（Android 16+）
+
+Skia 的下一代渲染后端 **Graphite** 在 Android 16 开始进入生产部署。Graphite 对渲染管线做了一个根本性的改变：将传统的 Back-to-Front（画家算法）绘制顺序改为 **Front-to-Back**，配合 GPU 硬件的 **Early-Z 深度测试**，自动跳过被遮挡像素的片元着色。
+
+传统画家算法下，GPU 按从后到前的顺序逐层绘制，每一层都会实际执行片元着色并写入颜色缓冲。被遮挡的像素白白消耗了 GPU 算力。Graphite 的做法是先画前面的层，深度缓冲记录下已写入像素的深度值；后续层在着色前先做 Early-Z 测试，如果当前像素深度更大（被遮挡），直接跳过着色，不执行任何片元计算。
+
+这对过度绘制的影响是：在完全不透明的 UI 区域，过度绘制被引擎层面自动消除，开发者不需要手动裁剪或移除背景。但半透明层不在 Z-test 优化范围内——混合操作必须看到底层内容，所以半透明叠加场景仍然需要开发者优化层级结构。
+
+在 Perfetto 中，Graphite 后端对应的 RenderThread 行为和 SkiaGL/SkiaVulkan 有差异，命令录制的并行度更高，`DrawFrame` slice 的内部结构会发生变化。目前 Graphite 的部署范围取决于设备厂商的驱动适配进度，Android 16 上并非所有设备都启用。
+
 ### SkiaVulkan 后端（Android 10+ 可测试，2024+ 扩大部署）
 
 Skia 同时实现了 Vulkan GPU 后端。从 Android Q（10.0）开始，开发者可以通过调试参数启用 `SkiaVulkan` 管线。到 2024 年，新芯片组开始默认使用 SkiaVulkan 后端。
@@ -195,6 +205,7 @@ Vulkan 后端相比 OpenGL ES 的具体改进：
 
 - Android 10（API 29）：64 位设备必须支持 Vulkan 1.1
 - Android 13（API 33）：新设备必须支持 Vulkan 1.3
+- Android 16（API 36）：新设备必须支持 Vulkan 1.4 及 VPA16 Profile（Android Vulkan Profile 2025），Host Image Copy 等高性能纹理技术成为设备必选项。VPA16 的核心价值是统一跨厂商的驱动行为：以前同一份 Vulkan 代码在不同 SoC 上可能因为可选特性支持差异产生不同的性能表现，VPA16 把这些特性锁定为强制基线，减少了"设备 A 正常、设备 B 渲染错误"的碎片化问题。
 
 ## BLASTBufferQueue：统一的 Buffer 管理（Android 12）
 
@@ -448,7 +459,8 @@ Unreal Engine 已集成 Swappy。
 | 12 | 2021 | BLASTBufferQueue + FrameTimeline | Buffer 管理 Track 变化；FrameTimeline 可精确对比预期/实际帧时间 |
 | 13 | 2022 | vsync-appSf 解耦 + AGSL 引入 | Choreographer 同步精度提升；自定义图形着色器可用 |
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
-| 16 | 2025 | Vulkan 官方图形 API + ANGLE + ARR 增强 | 渲染堆栈统一；帧率动态切换更频繁 |
+| 16 | 2025 | Vulkan 官方图形 API + ANGLE + ARR 增强 + VPA16 强制 Vulkan 1.4 | 渲染堆栈统一；帧率动态切换更频繁；Graphite Front-to-Back 绘制 |
+| 16KB 页 | 2024-2025 | 16KB Page Size 在旗舰设备上落地 | TLB 命中率提升约 9%，渲染管线有效带宽增益 |
 
 > [已验证: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
 

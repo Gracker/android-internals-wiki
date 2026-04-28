@@ -2,7 +2,7 @@
 title: 过度绘制
 chapter: '2.8'
 section: '2.8'
-status: finalized
+status: ready-for-review
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
@@ -54,10 +54,11 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '7.2'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
+last_task2b_at: "2026-04-28T09:42:00+08:00"
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-21'
@@ -143,6 +144,18 @@ Perfetto 不会直接告诉我们“这里有 3x 过度绘制”。它给的是�
 4. **AGI**：当我们要继续追到单帧和 draw call 级别时，再用 Android GPU Inspector 抓一帧。AGI 官方站点说明它支持系统 trace、单帧 capture 和逐 draw call 分析，这一步适合确认到底是哪一层背景、阴影或透明 pass 在反复覆盖同一块像素。
 
 如果设备能导出 GPU counter，再补看 GPU busy、fragment 相关计数或厂商 GPU counter 是否在同一时段一起抬高。没有这些 counter 也没关系，颜色图、柱状图和 FrameTimeline 已经足够先把问题归到 GPU 侧。
+
+### 标准化 GPU 计数器：数据驱动的 Overdraw 量化（Android 16+）
+
+Android 16 的 Perfetto 新增了标准化的 `gpu.counters.pixels_drawn` 计数器，记录 GPU 在每帧实际写入的像素数。结合设备物理分辨率，可以直接算出精确的 Overdraw 倍率：
+
+```
+Overdraw 倍率 = pixels_drawn / (screen_width × screen_height)
+```
+
+这种方法比颜色叠加图更精确，而且可以在自动化测试流水线中使用。比如一个 1080×2400 的设备，一帧 pixels_drawn 为 5,200,000，则 Overdraw 倍率约为 2.0x。
+
+使用时注意两点：第一，不同 GPU 厂商对 `pixels_drawn` 的内部映射可能有差异，Perfetto 的标准化层负责归一化，但在跨厂商对比时仍然要确认数据源；第二，半透明层的混合操作会被计入 pixels_drawn，所以高 alpha 场景下的数值天然偏高，这属于正常混合开销而非过度绘制浪费。
 
 [图：同一段滚动操作里，先用 Debug GPU Overdraw 标出列表区域的粉色块，再在 Perfetto 中对照该 Layer 的 Expected Timeline / Actual Timeline 与 App 进程 RenderThread slice]
 [待补充：真实 Perfetto FrameTimeline / AGI frame capture 截图]
@@ -305,6 +318,7 @@ protected void onDraw(Canvas canvas) {
 - **Android 8.0（API 26）**：`clipRect(..., Region.Op)`、`clipPath(..., Region.Op)` 这类旧接口开始废弃。P 之后只应继续使用 `INTERSECT` / `DIFFERENCE` 或对应的 `clipOut*` API。
 - **Android 12（API 31）起**：Perfetto 的 FrameTimeline 成为定位 jank 的主线工具之一。它不直接显示 overdraw 次数，但能把 App、RenderThread 和 SurfaceFlinger 的帧预算串起来，帮助我们判断过度绘制有没有演变成可见掉帧。
 - **Android Studio 3.1 / 3.2 之后**：Android Device Monitor 废弃并移除，Hierarchy Viewer / Tracer for OpenGL ES 退出主线，Layout Inspector 与 AGI 成为当前工具链。
+- **Android 16（API 36）**：Perfetto 新增标准化 `pixels_drawn` GPU 计数器，支持数据驱动的 Overdraw 精确量化。同时 Skia Graphite 引擎通过 Front-to-Back 绘制顺序和硬件 Early-Z 剔除，在不透明区域自动跳过被遮挡像素的填充，从引擎层面减少了过度绘制。半透明层不在 Z-test 优化范围内，仍然需要开发者手动优化层级。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/hardware-accel] [已验证: 官方文档, developer.android.com/studio/profile/monitor] [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/frametimeline]
 
@@ -330,6 +344,14 @@ Compose 中真正会把 overdraw 颜色图压重的，通常还是下面几类�
 
 - 同一块像素是不是被多层不透明或半透明内容反复覆盖？
 - 如果 overdraw 颜色图没有变轻，只是动画或滚动更顺了，那通常是 phase 开销变小，不是 overdraw 指标下降。
+
+### Compose 1.10 背景合并优化
+
+Compose 1.10 对 `Modifier.background()` 和 `Surface` 组件的背景绘制做了智能合并：当框架检测到子组件的不透明背景完全覆盖了父组件的同区域背景时，会自动跳过父级在该区域的绘制指令提交。这种优化在 `LazyLayout` 滑动场景下收益最明显——每个 Item 的多层背景叠加不再逐层绘制，而是只画最终可见的那一层。
+
+这个优化是框架内部行为，开发者不需要修改代码。但需要注意两个边界条件：第一，半透明背景不参与合并，因为混合结果依赖底层内容；第二，如果父级背景在子组件范围之外仍然可见（比如 padding 区域），那些可见部分仍然会被绘制。
+
+[来源: Compose 1.10 release notes]
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/graphics/draw/modifiers] [已验证: 官方文档, developer.android.com/studio/debug/layout-inspector]
 
