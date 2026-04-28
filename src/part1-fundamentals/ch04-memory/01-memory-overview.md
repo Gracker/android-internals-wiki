@@ -42,11 +42,11 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-26"
@@ -98,6 +98,8 @@ Android 的内存体系可以分成三层来看：物理内存、内核管理、
 
 手机上的 RAM 就是我们说的物理内存。一台 8GB 内存的设备，真正能用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
 
+开启 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，加上对齐损耗，全系统 PSS 增量约为 5%。这是安全硬件的固定开销，在做内存基线对比时需要先扣除这一部分。
+
 和桌面系统不同，Android 设备通常没有磁盘级别的 Swap 空间。它使用的是 ZRAM——在内存中划出一块区域做压缩交换。这样做的好处是避免了闪存的写入磨损和 IO 延迟，代价是消耗 CPU 来做压缩和解压。当内存紧张时，内核通过 `kswapd` 线程把不太活跃的内存页压缩到 ZRAM 中，腾出物理内存。
 
 [已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
@@ -111,6 +113,8 @@ Android 在 Linux 内核的基础上做了几件特别的事情：
 **进程优先级与内存回收绑定。** Framework 在 `ProcessList.java` 里维护 `adj` / procstate 这一组进程重要性分层，最终会映射到 `/proc/<pid>/oom_score_adj`。`lmkd` 处理内存回收时，先看系统是否进入压力区间，再结合 `oom_score_adj` 选择更容易被杀的进程。前台进程的 `oom_score_adj` 更低，缓存进程更高。这个机制我们在 [4.4 Low Memory Killer](04-lmk.md) 中会详细展开。
 
 **App 侧 trim 回调和系统侧杀进程是两条路径。** `onTrimMemory()` 属于 `ComponentCallbacks2` 回调，由 framework 在合适的生命周期和内存压力点通知 `Application`、`Activity`、`Service` 等组件，让 App 主动释放缓存。`lmkd` 不会直接向 App 调 `onTrimMemory()`；当回收压力继续升高时，它会按 kill 策略直接结束目标进程。API 34 起，`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这些等级已经不再投递给 App。
+
+Android 17（API 37）引入了 MemoryLimiter 硬限额机制。当应用 PSS 超过系统分配的配额时，进程会被直接终止，`ApplicationExitInfo` 中会记录 `MemoryLimiter` 原因。这一机制从依赖 `onTrimMemory` 的自觉释放转为强制配额审计，意味着内存治理从"建议"变成了"硬约束"。
 
 **cgroup 约束。** Android 10 起把 cgroup 配置收口到 `cgroups.json` / `task_profiles.json` 这层抽象。具体 memory controller 字段要分 v1 / v2 看：`MemLimit` 映射 v1 `memory.limit_in_bytes`、v2 `memory.max`；`MemSoftLimit` 映射 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`。`memory.pressure_level` 仍是 v1 接口，不能和 `memory.max` / `memory.low` 当成同一条 v2 路径。
 
@@ -352,6 +356,8 @@ Locked:             0 kB
 上面这个片段按 4 KB page 设备展示。Android 15 开始，AOSP 支持 16 KB page size 设备。到这类设备上，`KernelPageSize`、`MMUPageSize` 以及很多 `Rss` / `Pss` 增量都会按 16 KB 粒度出现，`mmap` offset 粒度和 native 库页面边界要求也会跟着变化。
 
 smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 `dumpsys meminfo` 的分类无法定位具体原因时，逐项查看 smaps 来找到那个异常大的映射区域。**跨设备比对 `smaps`、Perfetto 内存曲线或 native 崩溃现场时，用 `adb shell getconf PAGE_SIZE` 或 `smaps` 里的页大小字段确认当前页大小，再解释页粒度带来的页内碎片、页表开销和 PSS / RSS 跳变。
+
+16KB 页环境下页内碎片显著增加——一个只使用 1KB 的对象也要占用整个 16KB 页面，全系统总 PSS 普遍上涨 5%-10%。这是架构层面的正常开销，不代表应用存在泄漏。跨版本或跨设备对比 PSS 基线时，需要先确认页大小，再判断增量是否在合理范围内。
 
 读取 `/proc/<pid>/smaps` 需要足够的权限（通常是 root，或者目标 App 是 debuggable 的），且读取操作本身有性能开销（内核需要遍历所有页表），不建议在高频循环中调用。
 

@@ -5,7 +5,7 @@ task9_reviewed_date: "2026-04-22"
 title: "手势导航与系统交互"
 section: "3.3"
 chapter: "3.3"
-status: "finalized"
+status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -59,9 +59,9 @@ sources:
     path: "https://developer.android.com/reference/androidx/activity/OnBackPressedCallback"
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
-pipeline_stage: "ready-to-publish"
-task6_state: reviewed
-task9_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: "pass-tech-review"
 task2b_state: fixed
 task2b_result: fixed

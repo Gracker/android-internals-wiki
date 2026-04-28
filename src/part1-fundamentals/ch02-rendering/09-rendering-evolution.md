@@ -5,8 +5,8 @@ section: '2.9'
 status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-28"'2026-04-24'
-reviewed_by: "openclaw-task6"openclaw-task6
+reviewed_date: "2026-04-28"
+reviewed_by: openclaw-task6
 applicable_versions: Android 3.0 (API 11) ~ Android 16 (API 36)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + external/perfetto + developer.android.com
@@ -54,8 +54,8 @@ related_chapters:
 - '3.1'
 - '8.2'
 pipeline_stage: task2b_pending
-task6_state: "reviewed"revisiting
-task6_result: "pass-light-edit"pass-light-edit
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: '2026-04-28'
@@ -196,7 +196,7 @@ Skia 同时实现了 Vulkan GPU 后端。从 Android Q（10.0）开始，开发�
 
 Vulkan 后端相比 OpenGL ES 的具体改进：
 - **减少驱动侧隐式开销**：Vulkan 的命令缓冲区（Command Buffer）允许多线程并行构建和提交 GPU 命令，减少 OpenGL ES 驱动层的隐式状态验证和同步等待。不同 SoC、驱动版本和 workload 的收益差异很大，正文不保留缺少测试条件的百分比结论
-- **显式内存管理**：应用可以精确控制 GPU 内存的分配时机（通过 `VkAllocateMemory`）、绑定和释放，而非依赖 GL 驱动的隐式管理。内存生命周期与帧调度因此可以精确对齐，减少显存浪费
+- **显式内存管理**：应用可以精确控制 GPU 内存的分配时机（通过 `VkAllocateMemory`）、绑定和释放，而非依赖 GL 驱动的隐式管理。内存生命周期与帧调度因此可以精确配合，减少显存浪费
 - **扩展图形特性集**：Vulkan 1.1+ 提供计算着色器（Compute Shader）、多通道渲染（Multi-pass Rendering）、异步计算队列等 OpenGL ES 3.x 不具备或受限的能力
 
 > [已验证: L2 — developer.android.com/ndk/guides/graphics, skia.org, XDA-developers.com]

@@ -31,8 +31,8 @@ sources:
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_reviewed_date: "2026-04-27"
+task6_state: reviewed
+task6_reviewed_date: "2026-04-28"
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
@@ -87,7 +87,7 @@ App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App �
 
 ## 为什么需要 Fence：渲染管线不是一条直线
 
-如果没有显式同步，producer 只能靠“我猜你差不多用完了”来复用 buffer。桌面系统有时还能把这种不确定性交给单一驱动兜底，Android 不行。这里至少有 App、BufferQueue、SurfaceFlinger、HWC、Display Controller 五段链路，跨线程、跨进程、跨硬件单元是常态，任何一段快一点或慢一点，都会影响同一个 GraphicBuffer 什么时候能读、什么时候能写。
+如果没有显式同步，producer 只能靠“我猜你差不多用完了”来复用 buffer。桌面系统有时还能把这种不确定性交给单一驱动兜底，Android 不行。这里至少有 App、BufferQueue、SurfaceFlinger、HWC、Display Controller 五个环节，跨线程、跨进程、跨硬件单元是常态，任何一段快一点或慢一点，都会影响同一个 GraphicBuffer 什么时候能读、什么时候能写。
 
 官方图形同步文档把这套机制称为 explicit synchronization。producer 把“我什么时候写完”随 buffer 一起传出去，consumer 再把“我什么时候读完”随旧 buffer 还回来。于是同样一段卡顿，我们就能继续追问：是 App/GPU 产出太慢，还是 SurfaceFlinger/HWC 长时间占着旧 buffer 不放。这个区分在 Perfetto 里非常关键，因为两类问题的优化方向完全不同。
 
@@ -218,7 +218,7 @@ Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。我�
 
 ### Android 7：HWC2 已经把 acquire / release / present fence 语义钉清楚
 
-这一版最重要的变化，是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这意味着我们可以明确问：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后，而不是把所有等待都糊成一个“显示慢”。
+这一版最重要的变化，是 HWC2 接口把每层 buffer 输入、release fence 回收、present fence 返回的职责分得更清楚。对排查来说，这个拆分让我们可以明确问：当前等待发生在 producer 交帧之前，还是 consumer 释放旧帧之后，而不是把所有等待都糊成一个“显示慢”。
 
 ### Android 8+：userspace 已经能看到 modern `sync_file` API，legacy 名词继续保留
 
@@ -257,7 +257,7 @@ Trace 分析时，GL 后端把 `flush commands`、EGL release fence、SurfaceFli
 
 ### Binary Semaphore vs Timeline Semaphore
 
-传统 Vulkan Binary Semaphore 的行为和 `sync_fence` 的 fd 类似：signal 一次后回到 unsignal 状态，只能表达"这一轮完成了"。Timeline Semaphore 引入了 64 位单调计数器：每次 signal 时计数器递增，等待端可以指定"我等计数器到达某个值"。这意味着同一个 semaphore 对象可以跨多轮使用，不需要每轮创建新的 fd。
+传统 Vulkan Binary Semaphore 的行为和 `sync_fence` 的 fd 类似：signal 一次后回到 unsignal 状态，只能表达"这一轮完成了"。Timeline Semaphore 引入了 64 位单调计数器：每次 signal 时计数器递增，等待端可以指定"我等计数器到达某个值"。于是同一个 semaphore 对象可以跨多轮使用，不需要每轮创建新的 fd。
 
 ```cpp
 // Timeline Semaphore 的等待语义
