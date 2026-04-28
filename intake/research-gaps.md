@@ -11088,3 +11088,35 @@ Cuttlefish 的 crosvm/KVM/virtio 架构与官方安装路径；external-review �
 
 ### 关联章节
 - 16.3
+
+## [2026-04-28] 2.10 GPU 渲染深入 — Android 16 GPU 观测与 Gralloc 16KB 行为
+
+### 盲区描述
+章节和 external-review 引入了 `gpu_busy` 标准化、`gpu_render_stages` 阶段可见性、Gralloc AIDL V2 sub-allocation 等 Android 16 说法，但缺少 source.android.com、perfetto.dev、AOSP 接口/VTS 或实机 trace 证据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 API 36 / Android 16 官方图形、Perfetto、VPA16 文档。
+- 核对 `hardware/interfaces/graphics/allocator/aidl`、mapper/allocator vendor 实现和 VTS 是否要求 sub-allocation。
+- 找一台 Android 16 设备导出 Perfetto GPU counter descriptor，确认是否存在统一 `gpu_busy` 标签。
+
+### 关联章节
+- 2.10
+
+## [2026-04-28] 2.16 Sync Fence 框架与帧同步机制 — Timeline Semaphore 与 native fence fd 边界
+
+### 盲区描述
+章节把 Vulkan Timeline Semaphores 写成会替代 acquire/release/present fence fd，并写入 Android 17 去 fd 化路线图；当前缺少 Android 17 CDD/AOSP/source.android.com 证据，也缺少 Vulkan external sync 与 Android native fence 交界的源码链说明。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 16/17 CDD、VPA16、AOSP Surface/ANativeWindow/BufferQueue/HWC3 的同步接口。
+- 查 Vulkan timeline semaphore、external semaphore/fence fd import/export 在 Android HWUI/ANGLE 中的使用边界。
+- 若保留 16KB 页减少 fence wait 抖动的说法，补 kernel/perf/ftrace 实测。
+
+### 关联章节
+- 2.16

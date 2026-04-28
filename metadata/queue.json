@@ -17550,6 +17550,120 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T11:41:58+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.1",
+      "section_title": "1.1 Android 分层架构",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.1 Android 分层架构 — 2026-04-28 12:30 发现 P0 2 / P1 2，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-28-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L144-L155 SystemServer 启动代码片段",
+          "detail": "正文把 SystemServer.main() 写成直接 loadLibrary 并调用 startBootstrapServices()/startCoreServices()/startOtherServices()。AOSP android-16.0.0_r1 中 main() 只有 new SystemServer().run()；System.loadLibrary(\"android_servers\") 与 startBootstrapServices(t)/startCoreServices(t)/startOtherServices(t)/startApexServices(t) 在 run() 中执行。",
+          "suggestion": "替换为 main()->run() 的真实骨架，并把 startOtherServices 的“可以并行初始化”改成主流程串行启动、个别初始化可借助 SystemServerInitThreadPool/异步路径。"
+        },
+        {
+          "type": "原理错误",
+          "location": "L234 Activity 启动 Binder 往返描述",
+          "detail": "正文写“AMS 向 Zygote 发起 fork 请求（一次 Binder）”。实际 SystemServer 侧通过 ZygoteProcess 与 zygote/zygote64 的 LocalSocket/USAP 池通信，不是 Binder。新 App 进程向 AMS/ATMS 报告 attachApplication 才是 Binder。",
+          "suggestion": "拆开 App→system_server Binder、system_server→zygote LocalSocket、app→system_server attach Binder 三段；删除“完整冷启动 20-50 次 Binder”或补 trace/统计口径。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L326 HAL Service 与 Binder IPC",
+          "detail": "正文写 Treble 之后 HAL Service 都是独立进程、每次 HAL 调用都走完整 Binder IPC；这与前文 HIDL passthrough/binderized 并存、AIDL HAL binderized 的版本线矛盾。",
+          "suggestion": "限定为 binderized HIDL/AIDL HAL；保留 passthrough/legacy HAL 在 client 进程内执行的边界。"
+        },
+        {
+          "type": "交叉引用错误",
+          "location": "L293-L295 Perfetto 分层映射",
+          "detail": "正文把 surfaceflinger 归到 Framework 层，把 HAL Service 一概写成 Treble 后独立进程；与本章前文“SurfaceFlinger 是独立 Native 进程”和第 2.6 章定位不一致。",
+          "suggestion": "把 surfaceflinger 放到 native system service / graphics stack 视角描述；HAL 进程按 transport 区分。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T12:30:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.10",
+      "section_title": "2.10 GPU 渲染深入",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.10 GPU 渲染深入 — 2026-04-28 12:30 发现 P0 1 / P1 3，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-28-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L302-L318 GPU Headroom API 示例",
+          "detail": "正文写 SystemConfigManager.getGpuHeadroom()、返回 0.0-1.0，并建议按帧轮询。AOSP android-16.0.0_r1/API 36 中公开类是 android.os.health.SystemHealthManager#getGpuHeadroom(android.os.GpuHeadroomParams)，返回 0-100 或 Float.NaN，并提供 getGpuHeadroomMinIntervalMillis() 约束轮询频率。",
+          "suggestion": "改为通过 Context.SYSTEM_HEALTH_SERVICE 获取 SystemHealthManager，使用 GpuHeadroomParams，并按 getGpuHeadroomMinIntervalMillis() 控制采样；同步修正阈值区间。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L565-L567 gpu_render_stages / gpu_busy",
+          "detail": "正文把 gpu_render_stages 写成所有平台上可直接看到 Vertex/Fragment 阶段，并断言 Android 16 标准化 gpu_busy counter。公开 Perfetto/GPU counter 模型仍依赖 producer/driver 暴露的 GpuCounterDescriptor；未找到 Android 16 官方文档确认统一 gpu_busy 标签。",
+          "suggestion": "改成“设备/驱动支持时可见 GPU render stage/counter”；如果保留 gpu_busy，需要补 source.android.com / perfetto.dev / AOSP proto 或实机 trace 证据。"
+        },
+        {
+          "type": "知识盲区",
+          "location": "L424-L428 Gralloc AIDL V2 sub-allocation",
+          "detail": "正文把 16KB 页下 Gralloc AIDL V2 内部子分配写成已验证事实，但只给“说明”，没有 AIDL 接口、mapper/allocator 实现、CDD/VTS 或 vendor 源码锚点。",
+          "suggestion": "补 hardware/interfaces/graphics/allocator/aidl 版本差异、VTS/CTS 要求或厂商实现证据；否则降级为待验证假设。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L215、L453-L455 Android 16 Vulkan/ANGLE 默认路径",
+          "detail": "正文把 Android 16 写成“Vulkan 默认图形 API”且 OpenGL ES 应用“系统自动通过 ANGLE”运行。公开口径更精确的是新设备 Vulkan 1.4/VPA16 基线和 ANGLE 逐步接管/按策略启用；不能等同于所有设备、所有 GLES 应用强制默认走 ANGLE-on-Vulkan。",
+          "suggestion": "拆成设备 launch requirement、Vulkan API 可用性、ANGLE rollout policy 三条版本线；避免用单一 OS 版本归纳全部设备行为。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T12:30:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.16",
+      "section_title": "2.16 Sync Fence 框架与帧同步机制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-28 12:30 发现 P0 1 / P1 2，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-28-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理错误",
+          "location": "L274-L278 Timeline Semaphore 与 acquire/release/present fence",
+          "detail": "正文写 Timeline Semaphore 用 64 位计数器替代 acquire/release/present 的多个 fd。Android BufferQueue、SurfaceFlinger、HWC 的跨进程/跨驱动显式同步仍以 native fence / sync_file fd 作为交换边界；Vulkan timeline semaphore 主要是 Vulkan 队列内部或 Vulkan interop 同步对象，不能直接等同替代 Android 图形栈的 acquire/release/present fence fd。",
+          "suggestion": "重写为“Vulkan 内部可减少 per-submit binary semaphore/fence 对象；进入 ANativeWindow/BufferQueue/HWC 边界仍需说明 native fence fd 或 external semaphore/fence interop”。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L284-L286 16KB 页对 Fence 路径加速",
+          "detail": "正文断言 16KB 页减少 fence 中断处理路径 TLB miss，并可在 Perfetto 看到 fence wait 尾部抖动更小；未给 kernel trace、perf counter、ftrace irq/wakeup 证据或官方文档。",
+          "suggestion": "补实测设计：同设备 4KB/16KB 内核对比、GPU IRQ 到 SurfaceFlinger wakeup 延迟、TLB miss/perf counter；没有证据前标为待验证。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L288-L292 Android 17 去 fd 化展望",
+          "detail": "正文写 Android 17 计划强推 Timeline Semaphores、逐步移除图形管线 fd 依赖；本轮未找到公开 Android 17 CDD/AOSP/source.android.com 依据。",
+          "suggestion": "移入“待验证路线图”，或补正式 API/架构文档；不要写成确定版本承诺。"
+        },
+        {
+          "type": "交叉引用错误",
+          "location": "L278 Perfetto 可观测性",
+          "detail": "正文写 Timeline Semaphore 等待仍会以 fence wait 形式呈现。Perfetto 中是否呈现为 Android fence wait 取决于驱动、Vulkan layer、external sync fd 导出路径和 trace producer，不能与 dma_fence wait 画等号。",
+          "suggestion": "区分 native fence wait、GPU queue wait、Vulkan semaphore/counter 事件；给出可观测性前提。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T12:30:00+08:00",
+      "status": "pending"
     }
   ]
 }

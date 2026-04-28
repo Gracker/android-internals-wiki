@@ -6245,3 +6245,15 @@
 - **位置**：常见性能问题与优化
 - **问题**：Buffer Starvation、Resize 闪烁、Overlay 失效、首帧延迟均为定性描述，缺少 Perfetto 截图或可复现实测范围。
 - **建议**：至少补 1-2 个 Perfetto 片段或典型数值范围，例如 dequeueBuffer 阻塞跨 VSync、首帧延迟分布。
+
+## [Task9 Deep Review] 1.1 Android 分层架构 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L168、L232-L234 Zygote fork / Binder 调用量级
+- **问题**：Zygote fork 20-50ms、Binder 单次 10-100μs、冷启动 20-50 次 Binder 调用没有绑定设备、Android 版本、trace 统计口径。
+- **建议**：补 Perfetto/atrace 样本或改为“示例量级，需按设备实测”。
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L510-L538 社交应用图片滚动案例
+- **问题**：案例写出 Snapdragon 8 Gen 2、GPU 18-25ms 降到 8-12ms、帧率 40-45fps 到 55-58fps，但正文仍标注 Trace 截图待补，缺少可复核 trace/AGI 数据。
+- **建议**：补 trace/AGI 截图与测试条件；若只是示意案例，删掉实测口吻并标成模拟数据。
