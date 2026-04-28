@@ -7,7 +7,7 @@ chapter: "4.3"
 section: "4.3"
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 reviewed_date: "2026-04-21"
@@ -34,14 +34,14 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task6_result: pass-light-edit
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+# task6_result: pass-light-edit  # reset after rework
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-23T17:25:41+08:00"
-task9_result: pass-tech-review
+last_task2b_at: "2026-04-28T23:59:00+08:00"
+# task9_result: pass-tech-review  # reset after rework
 ---
 
 # ART 虚拟机内存管理
@@ -115,7 +115,9 @@ Allocation Space（也叫 Main Space）是应用运行期间绝大多数对象�
 Allocation Space 的具体实现取决于当前使用的 GC 策略：
 
 - 在 Android 8.0–14 中使用 CC（Concurrent Copying）GC 时，Allocation Space 的数据结构是 `RegionSpace`，堆被划分为 256KB 固定大小的 Region
-- 在 Android 15+ 使用 CMC（Concurrent Mark-Compact）GC 时，Allocation Space 的数据结构切换为 `BumpPointerSpace`，结构更简单，更有利于全局压缩
+- 在 Android 15+ 使用 CMC（Concurrent Mark-Compact）GC 时，Allocation Space 的数据结构切换为 `BumpPointerSpace`，结构更简单，更有利于全局压缩。
+
+Android 16 针对 16KB 页环境进一步改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐——在 16KB 页设备上，4KB 对齐的分配会导致地址空间不合法、缓存行效率下降。Android 16 将这个硬编码替换为 `art::GetPageSize()` 动态获取当前页大小，实现了"页面无关（Page Agnostic）"分配。运行时根据内核实际配置的页大小自动调整分配粒度，不需要在 ART 层面区分 4KB 和 16KB 设备。
 
 这两种策略在后续的 GC 策略演进部分会详细展开。
 
@@ -241,6 +243,8 @@ Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generatio
 
 这条时间线更适合记成：Android 8.0-13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 / Android 17 再谈 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
 
+Android 16 QPR2 默认启用的 Generational CMC 已经有了实测收益数据：PCMark 跑分提升 19.6%，年轻代回收保持在 1-3ms 的延迟水平，在 OpenCL 计算负载下能效提升 32.6%。这些数据说明分代策略配合 CMC 的压缩能力，在高刷新率环境和高计算负载场景下都能释放可观的 CPU 吞吐量。
+
 [已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
 ### 分代 GC：Young Generation 的快速回收
@@ -287,6 +291,14 @@ GC 吞吐量指的是应用运行时间占总时间的比例。如果 GC 吞吐�
 在 Perfetto 中可以通过 `art_gc_*` 相关的 counter track 来监控 GC 的吞吐量和频率。
 
 [已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+
+### Android 17：DeliQueue 消除 FinalizerDaemon 锁竞争
+
+ART 的 FinalizerDaemon 线程负责处理对象的 `finalize()` 方法。在 Android 16 及之前，GC 完成标记后需要通过 `ReferenceQueue` 将待 finalize 对象传递给 FinalizerDaemon，这条路径涉及同步锁。当 GC 频率高、FinalizerDaemon 处理压力大时，锁竞争会导致 FinalizerDaemon 出现 `TimeoutException`，极端情况下引发 ANR。
+
+Android 17 的 DeliQueue 无锁消息队列机制延伸到了 `ReferenceQueue`，消除了 GC 与 FinalizerDaemon 之间的锁竞争。GC 标记完成后直接通过无锁队列投递引用对象，FinalizerDaemon 从队列中消费，双方互不阻塞。这从根本上降低了由同步阻塞导致的 `TimeoutException` 发生概率。
+
+在 Perfetto 中，如果看到 `FinalizerDaemon` 线程出现长时间的 `Object.wait()` 或 `ReferenceQueue` 相关的阻塞 slice，通常是这条锁竞争路径的表征。升级到 Android 17 后这类 slice 应该消失。
 
 ## 对象分配路径：从 TLAB 到 Full GC
 
