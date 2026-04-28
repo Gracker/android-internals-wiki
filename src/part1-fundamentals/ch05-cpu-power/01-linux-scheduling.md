@@ -39,12 +39,12 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
 review_round: 3
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 ---
 
 <!-- outline-start -->
@@ -298,6 +298,14 @@ Android 更常见的控制入口其实是 task profiles。Framework 通过 `libp
 
 ### 绑核的注意事项
 
+### 硬件迁移效率对绑核必要性的影响
+
+骁龙 8 Elite 等基于 ARMv9.2 的 SoC 将跨核迁移开销压缩到了 1.5μs - 3.5μs 级别，远低于前代平台的 10μs+。这种高频率、低损耗的迁移使调度器可以更激进地进行负载均衡——线程在大核和小核之间来回迁移的性能代价变小了。从性能分析角度看，这意味着：
+
+- 在 ARMv9.2 平台上，线程被调度到小核不一定是性能问题。迁移成本足够低时，调度器的动态选核可能比硬绑核更优
+- 手动 `sched_setaffinity()` 绑核的收益在新型 SoC 上会收窄，绑核前更应该先用 Perfetto 对比绑与不绑的实际 wall time 差异
+- 功耗角度上，让调度器自由选核可以利用小核处理短突发任务，降低整体能耗
+
 绑核不是银弹。过度使用绑核会导致：
 
 - **负载不均衡**：强制绑到大核后，如果大核已经有高优先级任务，线程反而要排队等待
@@ -434,6 +442,27 @@ CFS 的调度标准只有一个维度——vruntime 谁最小，不区分任务�
 | 睡眠任务处理 | 唤醒后可能"报复性"占用 CPU | lag 衰减机制防止超支 |
 | 时间片请求 | 被动接受调度器分配 | 任务可通过 sched_setattr() 主动申请（100µs~100ms） |
 | 调优复杂度 | 需要调整多个 sysctl 参数 | 算法驱动，大幅减少调优需求 |
+
+### vlag 的量化诊断（EEVDF 内核 6.6+）
+
+EEVDF 调度器中每个任务维护一个 vlag（virtual lag）值，表示该任务"被欠"或"透支"了多少 CPU 时间。在 Perfetto 中，如果内核 6.6+ 启用了 `sched_eevdf_entity` ftrace 事件，可以直接读取每个任务的 vlag 字段来量化调度公平性。
+
+vlag > 0 表示任务还没用完公平份额（系统"欠"它 CPU 时间），vlag < 0 表示任务已经超支。vlag 的绝对值越大，说明该任务的调度时机越偏离理想状态。实战中可以用这个指标识别调度不公：
+
+- 如果主线程在关键路径（如 `doFrame`）期间 vlag 持续为负且绝对值大，说明它被其他任务"抢"了太多 CPU 时间
+- 如果后台线程 vlag 持续为正，说明它在大量占用 CPU 份额
+
+```sql
+-- EEVDF 内核下观察任务的 vlag 分布（需要启用 sched_eevdf_entity 事件）
+-- 替换 '目标进程名' 和 '目标线程名'
+SELECT
+  ts,
+  vlag / 1e6 AS vlag_ms
+FROM sched_eevdf_entity
+WHERE thread_name = '目标线程名'
+ORDER BY ts
+LIMIT 100;
+```
 
 ### 对 Android 性能分析的预期影响
 

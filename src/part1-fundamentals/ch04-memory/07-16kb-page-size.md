@@ -37,11 +37,11 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-28
@@ -205,6 +205,12 @@ program alignment (4096) cannot be smaller than system page size (16384)
 
 RELRO 保护仍然存在。`soinfo::protect_relro()` 在 compat 分支调用 `phdr_table_protect_gnu_relro_16kib_compat()`，对 compat RELRO 区域执行 `mprotect(PROT_READ | PROT_EXEC)`；普通分支走 `phdr_table_protect_gnu_relro()` / `_phdr_table_set_gnu_relro_prot(..., PROT_READ, ...)`。因此本节不能写“compat mode 禁用 RELRO”。它的代价集中在匿名映射、额外地址空间预留、VMA 数量和 16KB 权限边界处理上。
 
+### 兼容模式不具备性能红利
+
+兼容模式的目标是**让旧 4KB ELF 不崩溃**，不是让它在 16KB 系统上获得 TLB 收益。`CompatMapSegment()` 把按 4KB 边界组织的 LOAD segment 读入匿名 RW 映射，而不是走 `mmap64()` 直接映射文件。加载 4KB 对齐的 `.so` 时，Bionic 因权限对齐冲突被迫将本可共享的 `.so` 内容执行匿名拷贝——原本可被多个进程共享的 `.so` 库变为每个进程独占一份，PSS 随之飙升，且无法享受 16KB 页带来的启动加速红利。
+
+在 Perfetto 中对比同一 App 的 compat 模式和非 compat 模式，compat 模式下 `mmap` 命中的文件映射更少、匿名页更多，启动耗时通常不会改善。对于有性能要求的 App，正确做法仍然是重新编译 `.so` 使其 16KB 对齐，不要依赖 compat 模式。
+
 ### 控制接口矩阵
 
 | 控制方式 | 属性/API | 作用域 |
@@ -312,6 +318,14 @@ TLB miss 后的 page-table walk 主要由 ARM64 hardware page-table walker 完�
 两者**可以叠加使用**：16KB 基础页 + THP 合并为 32MB 大页。ARM64 的 PMD_SIZE（PMD 级别的 block size）随基础页大小变化：4KB base → 2MB THP，16KB base → 32MB THP。这意味着 TLB entry 可以覆盖 16KB（普通页）或 32MB（大页），TLB Reach 进一步扩大。不过在实际的 Android 设备上，THP 默认配置通常是 `madvise` 模式（只对显式请求的内存区域启用），对大多数 App 的实际影响有限。
 
 对于性能分析来说，16KB 基础页的收益比 THP 更直接、更稳定。在分析 App 的 TLB 相关性能问题时，优先确认设备是否启用了 16KB 页。
+
+### mTHP 与 contpte：16KB 环境下的二次优化
+
+在 16KB 基础页之上，Android 16 利用内核的 contpte（contiguous page table entries）机制实现了进一步的 TLB 优化。contpte 将 16 个物理连续的 16KB 页组成一个 256KB 的连续块，ARM MMU 硬件可以将这个连续块合并为单个 TLB entry 覆盖 256KB——相当于在 TLB 容量不变的前提下，单个 entry 的覆盖范围从 16KB 扩大到 256KB。
+
+这个机制与 THP 的区别在于：THP 需要物理连续的 2MB（4KB base）或 32MB（16KB base）大块内存，对碎片化敏感；contpte 在更小的粒度（256KB）上工作，内存分配器更容易满足连续性要求，碎片化风险更低。
+
+同时，Android 16 也集成了 mTHP（Multi-size Transparent Huge Pages）框架，允许内核在 16KB 基础页上按需组装多种大小的中间页（如 64KB、256KB），兼顾 TLB 收益和碎片控制。在 Perfetto 中，mTHP 的效果仍然通过 page fault 减少和启动耗时缩短来间接观测。
 
 ## 版本演进与 OEM 适配
 

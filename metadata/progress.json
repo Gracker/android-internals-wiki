@@ -9315,6 +9315,24 @@
         "03.05"
       ],
       "source": "external-ai-review"
+    },
+    {
+      "section": "04.07",
+      "date": "2026-04-29T05:43:14.319282",
+      "type": "external-review",
+      "fixes": [
+        "兼容模式PSS代价",
+        "mTHP/contpte二次优化"
+      ]
+    },
+    {
+      "section": "05.01",
+      "date": "2026-04-29T05:43:14.319282",
+      "type": "external-review",
+      "fixes": [
+        "vlag量化诊断",
+        "ARMv9.2迁移延迟"
+      ]
     }
   ],
   "rework_log": [
