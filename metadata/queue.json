@@ -17932,6 +17932,50 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T16:21:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "2.2",
+      "section_title": "帧率与刷新率",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.2 帧率与刷新率 — 2026-04-28 22:57 发现 P0 1 / P1 0，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-04-28-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L33, L636-L641",
+          "detail": "章节仍把 FrameRateOverride 写成 android.os.FrameRateOverride，并在 frontmatter / 已验证标注中引用 developer.android.com/reference/android/os/FrameRateOverride。AOSP android-16.0.0_r1 不存在 android/os/FrameRateOverride.java；相关内部载荷是 android.view.DisplayEventReceiver.FrameRateOverride，且不是公开 SDK 文档。",
+          "suggestion": "删除无效官方文档链接；若保留内部机制说明，改为 AOSP 路径 frameworks/base/core/java/android/view/DisplayEventReceiver.java，并明确公开检测路径仍是 DisplayManager.DisplayListener / Choreographer.VsyncCallback 间接判断。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T22:57:00+08:00",
+      "status": "pending",
+      "source_file": "src/part1-fundamentals/ch02-rendering/02-framerate.md"
+    },
+    {
+      "section": "11.4",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.4 案例集 — 2026-04-28 22:57 发现 P0 1 / P1 1，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-04-28-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L632-L642, L665, L698, L790",
+          "detail": "章节引用 frameworks/base/services/core/java/com/android/server/job/JobServiceContext.java 和 EXECUTING_TIMESLICE_MILLIS=10min 解释 Android 16 JobScheduler 超时，但 android-16.0.0_r1 中 JobServiceContext 已在 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/，且执行上限由 JobSchedulerService.Constants / quota 决定：普通 Job 默认 free quota max 30min、min guarantee 10min，Expedited Job 通常按 10min 上限处理，User-initiated Job 还有更长限制。",
+          "suggestion": "重写案例五的超时模型：区分 regular / expedited / user-initiated Job，补 JobSchedulerService.java 中 DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS=30min、DEFAULT_RUNTIME_MIN_GUARANTEE_MS=10min、getMaxJobExecutionTimeMs() 的源码锚点；同步修正文中 10min/30min 图注不一致。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T22:57:00+08:00",
+      "status": "pending",
+      "source_file": "src/part2-performance/ch11-power/04-case-studies.md"
     }
   ]
 }
