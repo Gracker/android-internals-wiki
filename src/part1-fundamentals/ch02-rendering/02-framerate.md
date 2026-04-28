@@ -29,8 +29,8 @@ sources:
   path: https://developer.android.com/reference/android/view/View#setRequestedFrameRate(float)
 - type: official
   path: https://developer.android.com/reference/android/view/Window#setFrameRatePowerSavingsBalanced(boolean)
-- type: official
-  path: https://developer.android.com/reference/android/os/FrameRateOverride
+- type: aosp
+  path: frameworks/base/core/java/android/view/DisplayEventReceiver.java
 - type: research
   path: Android-Internal-Wiki/intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md
 - type: aosp
@@ -53,17 +53,19 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-28"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-28T22:57:00+08:00"
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。需 Task2B 回炉。"
+status: ready-for-review
+task2b_result: fixed
 ---
 
 # 帧率与刷新率
@@ -639,7 +641,7 @@ Android 目前没有提供直接的"帧率被覆盖"回调 API(如 `OnFrameRateO
 [已修正: 明确 FrameRateOverride 非公开 API,公开检测路径仍为间接推断]
 
 [已验证: 官方文档, developer.android.com/games/sdk/game-mode]
-[已验证: 官方文档, developer.android.com/reference/android/os/FrameRateOverride]
+[已修正: FrameRateOverride 为 DisplayEventReceiver 内部事件载荷,非公开 SDK;已移除无效公开文档链接]
 
 ## 扩展:LTPO 面板的工作原理与 Android 的适配
 

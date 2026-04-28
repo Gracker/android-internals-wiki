@@ -324,8 +324,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch03-03-gesture-navigation-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch03-03-gesture-navigation-external-review.md",
+      "completed_at": "2026-04-28T23:18:07+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added PRIORITY_SYSTEM_NAVIGATION_OBSERVER code example with埋点 usage, Android 16 device-level pilferPointers isolation by device ID"
     },
     {
       "section": "03.04",
@@ -348,8 +351,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch03-04-input-latency-prediction-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch03-04-input-latency-prediction-external-review.md",
+      "completed_at": "2026-04-28T23:18:07+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added HWC 4.0 actualPresentTime end-to-end latency measurement with SQL example, Snapdragon dynamic report rate scaling"
     },
     {
       "section": "03.05",
@@ -372,8 +378,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch03-05-input-interception-security-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch03-05-input-interception-security-external-review.md",
+      "completed_at": "2026-04-28T23:18:07+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added Android 17 password scene InputDispatcher physical cutoff, call-time anti-fraud permission blocking"
     },
     {
       "section": "04.01",
@@ -396,8 +405,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch04-01-memory-overview-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch04-01-memory-overview-external-review.md",
+      "completed_at": "2026-04-28T23:26:51+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added MTE hardware overhead (~5% PSS), 16KB page PSS inflation (5-10%), MemoryLimiter hard quota mechanism"
     },
     {
       "section": "04.02",
@@ -414,8 +426,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch04-02-linux-memory-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch04-02-linux-memory-external-review.md",
+      "completed_at": "2026-04-28T23:26:51+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added MGLRU GKI 6.12 default baseline, Android 17 madvise(MADV_COLD) kernel-GC synergy, Page Fault 75% reduction"
     },
     {
       "section": "04.03",
@@ -17566,7 +17581,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T10:30:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T23:33:43",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: removed false \"Android 16 standardized pixels_drawn\" claim; rewrote as device/driver-dependent GPU counter guidance"
     },
     {
       "section": "2.9",
@@ -17931,7 +17949,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T16:21:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T23:33:43",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: corrected fsync tracepoint names from *_sync_fs to *_sync_file_enter/exit; added block_rq complementary observation"
     },
     {
       "section": "2.2",
@@ -17952,8 +17973,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T22:57:00+08:00",
-      "status": "pending",
-      "source_file": "src/part1-fundamentals/ch02-rendering/02-framerate.md"
+      "status": "completed",
+      "source_file": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
+      "completed_at": "2026-04-28T23:33:43",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: removed invalid FrameRateOverride public docs link; corrected to AOSP internal class reference"
     },
     {
       "section": "11.4",
