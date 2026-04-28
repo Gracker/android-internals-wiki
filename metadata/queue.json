@@ -13312,36 +13312,37 @@
     },
     {
       "section": "2.2",
-      "section_title": "2.2",
-      "priority": 85,
-      "reason": "[External Review] 技术评分 4.6/5",
+      "section_title": "帧率与刷新率",
+      "priority": 95,
+      "reason": "[Deep Tech Review] FrameRateOverride 公开 API 与 RefreshRateSelector 源码锚点存在事实错误，且 HyperOS 高频 VSync 说法缺少一手证据",
       "review_issues": [
         {
-          "type": "P1重要缺失",
-          "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 帧率与刷新率 中某些深层机制的说明不够彻底。\n- 缺失内容：缺乏不同 Layer 间帧率不匹配时 SurfaceFlinger 的具体调优权重（VsyncModulator）分析。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n"
+          "type": "源码错误",
+          "location": "L244 RefreshRateSelector 评分算法",
+          "detail": "正文写作 `RefreshRateConfigs::getRankedFrameRates`。AOSP android-16.0.0_r1 中该路径下没有 `RefreshRateConfigs.cpp`，对应实现是 `frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp` 的 `RefreshRateSelector::getRankedFrameRates(...)` / `calculateLayerScoreLocked(...)`。",
+          "suggestion": "把类名/方法名改为 `RefreshRateSelector::getRankedFrameRates`，并把源码锚点落到 `RefreshRateSelector.cpp`；保留 0.95 non-seamless penalty 等结论时附对应函数。"
         },
         {
-          "type": "版本差异",
-          "location": "API 章节",
-          "detail": "Android 16 ARR 增强 API。。技术事实：引入 hasArrSupport() 和 getSuggestedFrameRate()，且 getSupportedRefreshRates() 取消弃用。应用可主动向系统对齐功耗与流畅度建议。",
-          "suggestion": "新增主动查询与自适应适配方案。"
+          "type": "源码错误",
+          "location": "L33 / L607-L653 FrameRateOverride",
+          "detail": "正文引用 `developer.android.com/reference/android/os/FrameRateOverride` 并写 Android 17 `Display.getFrameRateOverride()`。复核最新 `Display` 公开 API 页面与 AOSP android-16.0.0_r1 `Display.java` 均未发现该方法，`android.os.FrameRateOverride` 文档路径返回 404。",
+          "suggestion": "删除“Android 17 官方标准路径”表述和示例代码；若讨论系统内部 frame-rate override，应区分 SurfaceFlinger/DisplayEventReceiver 内部事件与公开 SDK，公开检测路径仍用 `DisplayListener`、`Display.getRefreshRate()`、`Choreographer.VsyncCallback` 或后续真实 API。"
         },
         {
           "type": "知识盲区",
-          "location": "OEM 差异章节",
-          "detail": "高频 VSync 注入 (HyperOS)。。技术事实：小米 HyperOS 2.0 通过注入 240Hz+ 虚拟信号使 Choreographer 即时处理输入，打破了硬件刷新率对响应速度的物理上限。",
-          "suggestion": "解析高频注入如何实现“零延迟”交互感。"
-        },
-        {
-          "type": "原理链完整性",
-          "location": "Override 章节",
-          "detail": "Android 17 直接限帧检测。。技术事实：Display.getFrameRateOverride() 成为 Android 17 检测热缓解或省电限帧的官方标准路径。",
-          "suggestion": "更新检测逻辑，替代间接监听法。"
+          "location": "L815 HyperOS 2.0 高频 VSync 注入",
+          "detail": "“驱动层注入 240Hz+ 虚拟 VSync，使 Choreographer 一个物理帧内多次处理输入”缺少 OEM 文档、源码或 trace 证据；公开检索没有命中该命名机制。",
+          "suggestion": "补 HyperOS 官方/逆向/Perfetto 证据；拿不到证据前标 `[待验证]`，或移到 17 章 OEM 差异作为待研究案例。"
         }
       ],
-      "added_by": "external-ai-review",
+      "added_by": "task9-deep-tech-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "material_paths": [
+        "intake/research-gaps.md"
+      ],
+      "added_at": "2026-04-28T09:21:00+08:00",
+      "source_file": "logs/deep-review/2026-04-28-09-deep-review.md"
     },
     {
       "section": "2.20",
@@ -13499,7 +13500,7 @@
     },
     {
       "section": "2.4",
-      "section_title": "2.4",
+      "section_title": "Choreographer 与渲染流水线",
       "priority": 85,
       "reason": "[External Review] 技术评分 4.8/5",
       "review_issues": [
@@ -13527,8 +13528,12 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-04-28T09:21:00+08:00",
+      "completed_by": "task9-deep-tech-review",
+      "resolution": "本轮复核：vsyncId / FRAME_TIMELINE_VSYNC_ID / Compose PausableComposition trace 已在正文覆盖；GPU_DURATION 设备可用性边界降级为 P2 suggestions。",
+      "source_file": "logs/deep-review/2026-04-28-09-deep-review.md"
     },
     {
       "section": "2.5",
@@ -13684,36 +13689,32 @@
     },
     {
       "section": "2.7",
-      "section_title": "2.7",
+      "section_title": "Hardware Layer",
       "priority": 85,
-      "reason": "[External Review] 技术评分 4.7/5",
+      "reason": "[Deep Tech Review] Android 16 自动建层评分与 16KB GPU layer 内存成本缺少可复核源码/数据，需回炉核实",
       "review_issues": [
         {
-          "type": "P1重要缺失",
-          "detail": "- [P1][原理链完整性][核心机制分析]\n- 原文问题：对 Hardware Layer 中某些深层机制的说明不够彻底。\n- 缺失内容：缺乏具体的 GPU 显存增加的定量计算公式或实例。\n- 运行原理说明：该部分需要结合底层硬件或更深层的 Framework 源码进行详述。\n- 为什么这是重要缺失：影响高阶开发者排查复杂渲染瓶颈时的思路。\n- 建议补充方向：补充不同分辨率下开启 Hardwar"
-        },
-        {
           "type": "版本差异",
-          "location": "RenderNode 章节",
-          "detail": "Android 16 指令复杂度评分。。技术事实：系统自动评估 drawPath/RenderEffect 等重型指令权重，对高成本静态节点执行自动升层，减少手动调用的必要。",
-          "suggestion": "介绍引擎如何实现自动化性能平衡。"
+          "location": "L266 / L342 Android 16 指令复杂度评分",
+          "detail": "正文把“drawPath/RenderEffect 权重 + 静态节点阈值自动升层”写成 Android 16 机制，并标注已验证。复核 `RenderNode.java` 只看到“useful for performance 或 alpha+hasOverlappingRendering 时内部提升”的泛化注释，未找到该评分表、阈值或 Android 16 新增锚点。",
+          "suggestion": "补具体 AOSP 函数/提交（libhwui 中的评分结构、阈值、触发条件）；如果找不到，改为“内部有自动 promotion 启发式”，删除 Android 16/权重/阈值的确定性说法。"
         },
         {
-          "type": "知识盲区",
-          "location": "内存代价章节",
-          "detail": "16KB 显存对齐碎片。。技术事实：由于最小分配单元提升，小面积硬件层会产生严重的“尾部浪费”，累积增加系统内存压力的约 9%。",
-          "suggestion": "加入显存空间换时间的权衡警告。"
-        },
-        {
-          "type": "版本差异",
-          "location": "Compose 章节",
-          "detail": "Compose 1.10 缓冲池化。。技术事实：改进了 graphicsLayer 的纹理复用，离屏缓冲池化显著提升了 LazyLayout 滑动时的零掉帧表现。",
-          "suggestion": "同步池化重用收益。"
+          "type": "数据缺失",
+          "location": "L177 16KB 页与 GPU layer 内存",
+          "detail": "“100×50 layer 可能占 48KB、多个小 layer 让系统内存压力增加约 9%”把 16KB 页的系统平均内存开销与 GPU layer/显存碎片直接绑定，正文没有 memtrack、gralloc、dumpsys 或官方图形内存数据。",
+          "suggestion": "补不同尺寸 layer 的实际分配口径（bytesPerPixel、stride、gralloc/ION/DMA-BUF 对齐、memtrack/GPU heap 统计）和测试设备；否则删除 9% 或改为“可能增加小分配尾部浪费，需实测”。"
         }
       ],
-      "added_by": "external-ai-review",
+      "added_by": "task9-deep-tech-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "added_at": "2026-04-28T09:21:00+08:00",
+      "source_file": "logs/deep-review/2026-04-28-09-deep-review.md"
     },
     {
       "section": "2.8",
