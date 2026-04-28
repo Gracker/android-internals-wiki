@@ -22,8 +22,8 @@ tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory'
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-28""2026-04-23"
-reviewed_by: "openclaw-task6"openclaw-task6
+reviewed_date: "2026-04-29"
+reviewed_by: openclaw-task6
 rework_date: "2026-04-21"
 rework_by: openclaw-task2b
 review_round: 6
@@ -31,9 +31,9 @@ last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、A
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: "reviewed"revisiting
-task6_result: "pass-light-edit"pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-28"
@@ -96,7 +96,7 @@ CPU 和 GPU 之间的分工经历了几个重要阶段的演进。在 Android 5.
 
 Vertex Shader 是 GPU 渲染管线的第一个可编程阶段，它负责处理图元中的每个顶点。在 Android UI 渲染中，顶点处理看起来简单——一个矩形只有四个顶点——但大量 UI 元素最终都会转换为三角形图元，复杂界面的顶点数量可能非常可观。
 
-当我们调用 `Canvas.drawRect()` 时，这个调用最终会触发 GPU 执行 Vertex Shader。其核心工作是三件事：首先，将模型的顶点从本地坐标转换到屏幕坐标，这个过程涉及矩阵变换（模型矩阵、视图矩阵、投影矩阵的组合）；其次，计算每个顶点的颜色、纹理坐标等插值属性，这些属性会在后续的 Fragment Shader 阶段被插值使用；最后，判断顶点是否在视口范围内，剔除不可见的图元，避免 GPU 在后续阶段做无用功。
+当我们调用 `Canvas.drawRect()` 时，这个调用最终会触发 GPU 执行 Vertex Shader。Vertex Shader 做三件事：将模型顶点从本地坐标转换到屏幕坐标（涉及模型矩阵、视图矩阵、投影矩阵的组合变换）；计算每个顶点的颜色、纹理坐标等插值属性，供 Fragment Shader 阶段插值使用；判断顶点是否在视口范围内，剔除不可见图元，避免后续阶段做无用功。
 
 ```java
 // frameworks/base/graphics/java/android/graphics/Canvas.java
@@ -491,7 +491,7 @@ adb devices
 
 ### 分析思路
 
-面对"滑动卡顿"这类问题，我们首先要区分瓶颈在 CPU 侧还是 GPU 侧。如果是 CPU 瓶颈，通常在 Perfetto 中会看到主线程在 measure/layout/doFrame 上花费大量时间，而 GPU track 相对空闲。如果是 GPU 瓶颈，则主线程和 RenderThread 的 CPU 工作很快完成，但 GPU track 显示渲染时间过长，导致帧无法在 VSync 周期内完成。
+面对"滑动卡顿"这类问题，第一步是区分瓶颈在 CPU 侧还是 GPU 侧。如果是 CPU 瓶颈，通常在 Perfetto 中会看到主线程在 measure/layout/doFrame 上花费大量时间，而 GPU track 相对空闲。如果是 GPU 瓶颈，则主线程和 RenderThread 的 CPU 工作很快完成，但 GPU track 显示渲染时间过长，导致帧无法在 VSync 周期内完成。
 
 ### 抓取与定位
 
