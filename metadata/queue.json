@@ -243,8 +243,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-17-frame-pacing-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-17-frame-pacing-external-review.md",
+      "completed_at": "2026-04-28T12:51:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added Vulkan 1.4 present_id section, Android 17 DeliQueue VSync precision improvement, comparison table"
     },
     {
       "section": "02.19",
@@ -267,8 +270,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-19-refresh-rate-switching-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-19-refresh-rate-switching-external-review.md",
+      "completed_at": "2026-04-28T12:51:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added VsyncModulator atomic phase switching, multi-screen frame drop isolation, version table updates"
     },
     {
       "section": "03.02",

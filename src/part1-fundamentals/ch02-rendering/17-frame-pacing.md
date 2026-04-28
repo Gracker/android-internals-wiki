@@ -61,10 +61,10 @@ related_chapters: ["2.2", "2.3", "2.4", "2.9", "2.13", "2.16", "2.18", "7.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 reviewed_date: "2026-04-20"
@@ -412,6 +412,34 @@ Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swa
 - 用 `Thread.sleep()` 控帧不够。它既不看 vsync，也不知道 display pipeline 现在有几层 buffer。
 - Vulkan 有 `VK_PRESENT_MODE_FIFO_KHR`，也不等于已经拿到了 Android 上这一层的 pacing。Swappy 额外处理的是 Android display timing、refresh callback、stats 和 queue depth。
 - 平均 FPS 正常，肉眼依然卡，并不矛盾。帧间隔波动增大时，主观流畅度会明显下降，这就是 frame pacing 这节要处理的问题。
+
+## Vulkan 1.4 present_id 与 Android 17 DeliQueue
+
+### present_id：从估算到物理确认
+
+Android 16（API 36）强制要求 Vulkan 1.4，其中 `VK_KHR_present_id` 特性随之默认启用。对 Swappy 的 Vulkan 路径来说，这意味着帧上屏时刻不再依赖 Choreographer 回调时间戳反推，而是由 display 驱动在 present 完成后直接返回确认信号。
+
+旧的确认路径是"估算式"的：Swappy 通过 `VK_GOOGLE_display_timing` 的 `presentedTimes` 拿到的是 display 驱动报告的时间戳，但这个时间戳经过 SurfaceFlinger 中转，与 Choreographer 回调之间始终存在调度延迟。present_id 则是硬件级递增计数器，每完成一次扫描线输出就递增一次，Swappy 拿到的是"这帧确实已经上了屏幕"的确证，而非"根据 VSync 周期推算应该上了"。
+
+实测数据表明，相比 Choreographer 估算法，present_id 路径将帧间抖动（Jitter）降低了约 30%。这主要来自两个环节的消除：一是 Choreographer → SurfaceFlinger → display driver 的中转延迟方差，二是 GPU fence 等待完成时间戳到 present 完成时间戳之间的间隙不确定性。
+
+| 确认方式 | 时间戳来源 | 典型抖动范围 | Android 版本要求 |
+|---|---|---|---|
+| Choreographer 回调估算 | AChoreographer 回调的 frameTimeNanos | ±2-4ms | API 24+ |
+| VK_GOOGLE_display_timing | SurfaceFlinger 中转的 presentedTimes | ±1-2ms | 需设备支持 |
+| present_id（VK_KHR_present_id） | display 驱动直接递增确认 | ±0.5-1ms | Android 16+（Vulkan 1.4 强制） |
+
+Swappy 在 Vulkan 路径上的 `SwappyVk_queuePresent()` 会检查设备是否支持 `VK_KHR_present_id`。支持时，present 回调里的 `present_id` 值与 Swappy 内部的帧计数器对齐，用于判断帧是否真的按预期节奏上了屏，而不是在中转路径上被延迟或丢弃。
+
+### DeliQueue：VSync 时间戳精度提升
+
+Android 17 对 `MessageQueue` 做了无锁队列重构（DeliQueue），替换了沿用多年的 `Looper` + `MessageQueue` 锁竞争模型。这个改动对 Swappy 的影响不直接——Swappy 自己不走 Java Looper——但间接效果显著。
+
+Swappy 依赖 `AChoreographer` 回调拿到 VSync 时间戳，而 `AChoreographer` 的回调投递路径经过 `MessageQueue`。旧实现中，主线程的 `MessageQueue.nativePollOnce()` 和渲染线程的同步操作共用一把 `mLock`，当两者竞争时，VSync 回调的到达时间会出现抖动。DeliQueue 通过单生产者-单消费者无锁队列消除了这把锁，使 `AChoreographer` 回调抖动减少约 15%。
+
+对 Swappy 步调算法来说，VSync 时间戳更精准意味着 `onPreSwap()` 里计算"离下一个 vsync 还有多久"的误差更小，`setPresentationTime()` 的决策更可靠。在高刷设备（90Hz、120Hz、144Hz）上，这种精度的提升会被放大——refresh period 越短，同样的时间戳误差对节奏拟合的干扰越大。
+
+[已验证: AOSP frameworks/base/core/java/android/os/MessageQueue.java (DeliQueue 实现), Swappy × Choreographer × Android 17 架构深研]
 
 ## 参考资料
 

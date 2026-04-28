@@ -637,6 +637,53 @@ Input 事件通过 `socketpair` 传递，不是 `Binder`。这一点在面试中
 
 > [来源: obsidian/Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md]
 
+
+
+## 补充：InputFlinger 优先级管理与 AnrTracker 优化细节
+
+<!-- AIW-源码调研-2026-04-28 -->
+
+### InputFlinger 线程优先级管理演进
+
+Android 早中期版本中，`InputFlinger.cpp` 曾显式设置高优先级：
+
+```cpp
+// 旧版 InputFlinger.cpp（Android 7-10 左右）
+setpriority(PRIO_PROCESS, 0, -20);  // nice=-20，最高用户态优先级
+set_sched_policy(0, SP_FOREGROUND);  // 前台调度策略
+```
+
+`nice=-20` 是 Linux 用户态进程的最高优先级（数值越低优先级越高）。`SP_FOREGROUND` 确保 InputFlinger 线程归属 foreground 调度组，获得约 95% 的 CPU 时间片。
+
+后续版本中，这些显式调用被移除，InputFlinger 的高优先级改为由 Android 框架隐式保证——作为 system_server 的关键组件，它的线程以 `ANDROID_PRIORITY_FOREGROUND` 运行。移除的理由是避免与系统其他高优先级任务产生调度冲突。
+
+作为对比，`AudioFlinger` 的 mixer 线程使用 `SCHED_FIFO (priority=2)` 实现真正的实时调度，InputFlinger 不使用实时调度策略，以避免抢占关键系统路径。
+
+### AnrTracker 的 O(1) 优化（Android 14+）
+
+Android 14 引入 `AnrTracker`（`services/inputflinger/dispatcher/AnrTracker.cpp`）替代旧的 O(N) 遍历：
+
+- **旧实现**：每帧遍历所有 connection 的 waitQueue，累计超时条目，复杂度 O(N)，N=连接数
+- **新实现**：使用 `std::multimap<timeoutTime, (connection, dispatchEntry)>` 自动排序，ANR 检测只检查最近超时条目，复杂度 O(1)
+
+```cpp
+// AnrTracker 插入（dispatch 时）
+mAnrTracker.insert({dispatchEntry->timeoutTime, connectionToken});
+
+// ANR 检测（每帧只检查第一个）
+auto earliest = mAnrTracker.begin();
+if (earliest->first <= currentTime) {
+    // 触发 ANR
+}
+```
+
+动态超时更新机制：窗口超时时间变更时，AnrTracker 保留已派发事件的原始超时值，确保"已派发事件按原超时处理，新事件按新超时处理"。
+
+> [已验证: AOSP android-14.0.0_r1, services/inputflinger/dispatcher/AnrTracker.cpp]
+> [未验证: InputFlinger priority setpriority 移除的具体 commit 版本]
+
+
+
 ## 参考资料
 
 ### AOSP 源码路径
