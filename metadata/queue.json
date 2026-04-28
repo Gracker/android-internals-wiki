@@ -2444,7 +2444,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T02:18:16.461948+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T16:21:00+08:00",
+      "completed_by": "openclaw-task9",
+      "task9_resolution": "Task9 复核：TestLooperManager 为 P2 补强；MQ.* Counter 与 Android 17 min-heap 说法缺少一手证据，转 research-gaps；另发现章节内 PTHREAD_STACK_MIN 源码错误，已新建 Task9 P95。"
     },
     {
       "section": "1.14",
@@ -2572,7 +2575,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T02:18:16.461948+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T16:21:00+08:00",
+      "completed_by": "openclaw-task9",
+      "task9_resolution": "Task9 复核：AF_VSOCK/RpcBinder 作为 P1 采纳；Binder 延迟外部数值未直接采纳，改为要求拆分 microbenchmark 与 framework service 口径；已新建 Task9 P85。"
     },
     {
       "section": "1.2",
@@ -15167,7 +15173,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T05:14:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T16:21:00+08:00",
+      "completed_by": "openclaw-task9",
+      "task9_resolution": "Task9 复核：AOSP main 仍可见 frameworks/base 的 StorageManagerService/SystemServer 路径；com.android.storage APEX、mcq_stats 节点未找到一手证据。无 P0/P1，P2 写入 suggestions。"
     },
     {
       "section": "6.2",
@@ -15205,7 +15214,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T05:14:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T16:21:00+08:00",
+      "completed_by": "openclaw-task9",
+      "task9_resolution": "Task9 复核：ZNS、EROFS sub-page compression、IncFS .prefetch_hints 未找到足够一手证据，转 research-gaps；另发现 fsync tracepoint 表述错误，已新建 Task9 P95。"
     },
     {
       "section": "6.3",
@@ -17388,8 +17400,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T01:20:33",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch06-01-storage-architecture-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch06-01-storage-architecture-external-review.md",
+      "completed_at": "2026-04-28T16:21:00+08:00",
+      "completed_by": "openclaw-task9",
+      "task9_resolution": "Task9 复核：AOSP main 仍可见 frameworks/base 的 StorageManagerService/SystemServer 路径；com.android.storage APEX、mcq_stats 节点未找到一手证据。无 P0/P1，P2 写入 suggestions。"
     },
     {
       "section": "06.02",
@@ -17418,8 +17433,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T01:20:33",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch06-02-filesystem-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch06-02-filesystem-external-review.md",
+      "completed_at": "2026-04-28T16:21:00+08:00",
+      "completed_by": "openclaw-task9",
+      "task9_resolution": "Task9 复核：ZNS、EROFS sub-page compression、IncFS .prefetch_hints 未找到足够一手证据，转 research-gaps；另发现 fsync tracepoint 表述错误，已新建 Task9 P95。"
     },
     {
       "section": "06.03",
@@ -17767,6 +17785,108 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T14:33:59+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-28 16:21 发现 P0 2，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-28-16-deep-review.md",
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L385-L405 PTHREAD_STACK_MIN 与 16KB Page Size 表格",
+          "detail": "正文把 PTHREAD_STACK_MIN 写成 16 × PAGE_SIZE，并在 4KB Page 系统列成 4KB。AOSP bionic/libc/include/pthread.h 中 LP64 为 16384，32-bit 为 8192；它不是 16 × PAGE_SIZE。",
+          "suggestion": "改为按 ABI 说明 PTHREAD_STACK_MIN；16KB page 只影响页大小、guard page 与分配粒度，不能把 PTHREAD_STACK_MIN 写成随 page size 线性变化。",
+          "evidence": [
+            "bionic/libc/include/pthread.h: PTHREAD_STACK_MIN 16384 / 8192"
+          ]
+        },
+        {
+          "type": "源码路径错误",
+          "location": "L387-L390 源码位置列表",
+          "detail": "正文列出 bionic/libc/pthread.c 与 runtime/thread.cc 的组合不准确。当前 bionic 无 libc/pthread.c；ART FixStackSize 在 art/runtime/thread.cc，pthread_attr 约束在 bionic/libc/bionic/pthread_attr.cpp，guard size 相关在 pthread_internal.h。",
+          "suggestion": "更新源码锚点，并把 ART 的 FixStackSize 与 bionic pthread_attr_setstacksize() 分开讲。",
+          "evidence": [
+            "art/runtime/thread.cc: FixStackSize",
+            "bionic/libc/bionic/pthread_attr.cpp"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T16:21:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.17",
+      "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1.17 IPC 全景 — 2026-04-28 16:21 发现 P1 3，需补 IPC 边界与数据口径",
+      "material_paths": [
+        "logs/deep-review/2026-04-28-16-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据边界",
+          "location": "L123-L138、L363-L376 Binder/Intent/AIDL 数据量上限",
+          "detail": "正文把 ≤1MB 写成多类 Binder 型机制的数据量上限，容易被读者理解成单次事务 payload 的硬上限。AOSP ProcessState.cpp 显示 Binder VM 区为 1MB 减 2 个 page，且由同进程并发事务共享。",
+          "suggestion": "改成“进程级 Binder transaction buffer 约 1MB 且共享”；单次事务建议值要低于该值，并说明 TransactionTooLargeException 的并发放大条件。",
+          "evidence": [
+            "frameworks/native/libs/binder/ProcessState.cpp: BINDER_VM_SIZE"
+          ]
+        },
+        {
+          "type": "知识盲区",
+          "location": "L123-L140 机制清单、L402-L424 选型树、L479-L493 版本演进",
+          "detail": "IPC 全景缺少 Android Virtualization Framework 场景下的 AF_VSOCK / RpcBinder。AVF/Microdroid 里 AIDL 可经 RpcBinder 走 vsock 或 UDS，不应只落在 Binder/UDS/FM Q/共享内存这几类。",
+          "suggestion": "在机制表加入 AF_VSOCK / RpcBinder，并说明 host ↔ VM、VM 内 UDS、virtmgr 通信三类边界。",
+          "evidence": [
+            "source.android.com AVF / Microdroid / RpcBinder docs"
+          ]
+        },
+        {
+          "type": "数据缺失",
+          "location": "L361-L376 定量对比表",
+          "detail": "表格写“2026 年主流设备典型值”，但 Binder 同步 0.5-2ms 与 FMQ μs 级没有设备、CPU 频率、调用对象、统计分位和 trace 口径。外部 review 的 32-42μs 也不能无源替换。",
+          "suggestion": "拆成 binder driver microbenchmark、空服务 RPC、framework service end-to-end 三个口径；每个数值补设备/版本/样本量/分位。",
+          "evidence": [
+            "logs/external-review/archive/2026-04-28-15-ch01-17-ipc-panorama-external-review.md"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T16:21:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "6.2",
+      "section_title": "文件系统",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 6.2 文件系统 — 2026-04-28 16:21 发现 P0 1，fsync tracepoint 需修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-28-16-deep-review.md",
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L404 Perfetto 中观察 fsync 行为",
+          "detail": "正文说通过 ext4_sync_fs、f2fs_sync_fs 可以直接看到每次 fsync 耗时。内核 tracepoint 中 per-file fsync 对应 ext4_sync_file_enter/exit、f2fs_sync_file_enter/exit；*_sync_fs 是 superblock sync 事件，不能代表每次 fsync。",
+          "suggestion": "改为 ext4_sync_file_* / f2fs_sync_file_*，并补充 block_rq_issue/complete 与 jbd2/f2fs checkpoint 对照观察。",
+          "evidence": [
+            "kernel/common/include/trace/events/ext4.h",
+            "kernel/common/include/trace/events/f2fs.h"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T16:21:00+08:00",
       "status": "pending"
     }
   ]

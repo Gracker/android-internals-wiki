@@ -11163,3 +11163,35 @@ Android 16/17 输入栈变化缺少总纲级验证矩阵。active external-revie
 - 3.5
 - 3.6
 
+## [2026-04-28] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 待验证外部技术线索
+
+### 盲区描述
+external-review 提到 Perfetto `MQ.Delivered` / `MQ.Backlog` / `MQ.Waiters` 计数器，以及 Android 17 最终实现改为 Treiber Stack + Min-heap。本轮复核未在官方行为变更页、公开 AOSP android-16.0.0_r1 源码或可访问文档中确认。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 查 Android 17 对应 tag 的 `frameworks/base/core/java/android/os/*MessageQueue*` 实现
+- 查 Perfetto proto / track event 中是否有 MQ.* counter 的正式 producer
+- 区分官方 public API、内部 trace label 与第三方文章二次概括
+
+### 关联章节
+1.13、3.1、13.1
+
+## [2026-04-28] 6.2 文件系统 — 待验证外部技术线索
+
+### 盲区描述
+external-review 提到 Android 16 F2FS ZNS、EROFS 16KB sub-page compression、Android 17 IncFS `.prefetch_hints`。本轮只能确认 F2FS 对 zoned block device 有上游能力、EROFS 官方文档有 in-place decompression / 镜像压缩数据；未确认这些说法已经成为 Android 16/17 平台行为。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 android16-6.12 GKI config、F2FS zoned device patch 与 Pixel/vendor kernel 开关
+- 查 EROFS 16KB page 场景下压缩簇、folio、sub-page 相关提交
+- 查 IncFS 文档、Play streaming install 实现和 `.prefetch_hints` 是否存在公开 AOSP 入口
+
+### 关联章节
+6.1、6.2、6.3、6.4
+

@@ -6288,3 +6288,27 @@
 - **问题**：“Mainline APEX”需要精确到 tracing 模块/包名/版本边界；AndroidX Tracing 2.0 alpha05 也应补官方 release notes，而不只依赖 DeepResearch 本地材料。
 - **建议**：补 perfetto.dev 架构文档、AndroidX release notes 与 AOSP module 路径；若无法确认 com.android.tracing 等模块名，正文保留为“系统侧 tracing 组件可独立演进”。
 
+## [Task9 Deep Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-28
+- **类型**：兼容性补强
+- **位置**：L304-L309 测试框架需要升级
+- **问题**：正文只写 Espresso 使用 `TestLooperManager`，但没有说明可用 API 与适用边界。
+- **建议**：补 `next()` / `execute()` / `recycle()` / `release()` / `peekWhen()` / `poll()` / `hasMessages()` 的最小示例，并说明它属于测试/Instrumentation 场景，不是线上 APM 任意窥探 MessageQueue 的替代口。
+
+## [Task9 Deep Review] 6.1 Android 存储架构 — 2026-04-28
+- **类型**：交叉引用
+- **位置**：L66-L80 存储栈全景图
+- **问题**：全景图只写 `ext4 / f2fs`，但同章与 6.2 都把 EROFS 作为只读分区主路径讨论。
+- **建议**：把文件系统层改成 `ext4 / f2fs / EROFS`，并在旁注里区分 `/data` 与只读系统分区。
+
+## [Task9 Deep Review] 6.1 Android 存储架构 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L112-L125 eMMC/UFS 性能表与 MCQ 说明
+- **问题**：UFS 4.0 随机 IOPS 与 MCQ 收益缺少 queue depth、block size、读写比例和厂商测试口径。
+- **建议**：补 JEDEC/Samsung/OPPO 原始指标口径；Trace 示例只引用 block slice 时，避免把硬件队列收益直接等同于 App 侧延迟收益。
+
+## [Task9 Deep Review] 6.2 文件系统 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L280-L284 EROFS 压缩与随机读性能
+- **问题**：官方 EROFS 文档能支撑“镜像约 25% smaller、最高约 45% smaller、随机/顺序访问更快”，但正文的 20%、300%、Pixel 启动 10%-15% 混用多来源，缺少测试设备和原文链接。
+- **建议**：把官方可证数据与厂商/媒体测试拆开；无法回源的百分比降级为案例摘要。
+
