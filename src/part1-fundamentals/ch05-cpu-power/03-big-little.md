@@ -4,8 +4,8 @@ chapter: "5.3"
 section: "5.3"
 status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-last_verified: "2026-03-31"
-last_verified_against: "ARM official documentation, Linux kernel 6.6"
+last_verified: "2026-04-29"
+last_verified_against: "ARM official documentation, Linux kernel 6.12, Snapdragon 8 Elite specs"
 confidence: high  # 架构原理和 schedutil 机制描述经过 AOSP 源码和 ARM 官方文档双重验证
 sources:
   - type: blog
@@ -32,9 +32,9 @@ polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-04-21T08:24:09+08:00"
 task2b_state: 'pending'
-task6_state: reviewed
-task9_state: 'reviewed'
-pipeline_stage: 'task2b_pending'
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: 'task6_pending'
 task9_result: 'needs-rework'
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: 'openclaw-task9'
@@ -88,6 +88,7 @@ DynamIQ 带来了几个关键优势：
 - **独立的核心控制**：每个核心可以独立控制频率、电压和休眠状态。在传统 big.LITTLE 中，同一集群内的核心通常共享同一个电压/频率域（DVFS 域），必须同步变频；DynamIQ 允许每个核心有不同的运行频率。
 - **更低迁移延迟**：由于大核和小核共享 L3 缓存，任务在核心间迁移时不再需要通过 CCI 互联搬运缓存行，迁移延迟从"跨集群级别"降低到"集群内级别"。
 - **更大的 L3 缓存**：DSU-120（配合 Armv9 世代的核心）支持最高 32MB L3 缓存，显著减少了核心访问主存的次数，对内存密集型任务的性能提升尤为明显。
+- **16KB 页协同优化**：DSU-120 支持通过硬件寄存器开启 16KB 页模式，修正 Snoop Filter 的哈希索引。在 4KB 页模式下，相邻物理页的哈希值容易集中到少数桶，多核共享缓存时产生探测冲突（probe collision），延迟跨核缓存一致性检查。16KB 模式扩大了哈希空间，减少了冲突概率，跨核缓存共享延迟显著降低。这是 16KB 页切换在硬件互联层的收益，与 TLB Reach 的软件层收益叠加。
 
 [已验证: ARM 官方文档, developer.arm.com — DynamIQ Shared Unit-120 (DSU-120)]
 
@@ -140,7 +141,7 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 
 **2+6（两个大核 + 六个性能核）**
 
-高通骁龙 8 Elite（2024 年底发布）采用了一种更激进的配置：2 个 Oryon Prime 核心（4.32GHz）+ 6 个 Oryon Performance 核心（3.53GHz）。它完全去掉了传统意义上的"小核"，所有核心都有较强的性能输出，但 Prime 核心在频率和微架构上仍然更激进。这种设计反映了厂商对"全大核"趋势的探索——随着工艺进步和功耗控制的改善，低性能小核的价值在下降。
+高通骁龙 8 Elite（2024 年底发布）采用了一种更激进的配置：2 个 Oryon Prime 核心（4.32GHz）+ 6 个 Oryon Performance 核心（3.53GHz）。它完全去掉了传统意义上的"小核"，所有核心都有较强的性能输出，但 Prime 核心在频率和微架构上仍然更激进。从 capacity 归一化标定看，Performance 核的算力约为 837（以 Prime 核 1024 为基准），级差只有约 18%。这使得 EAS 的迁核逻辑更倾向于负载均衡而非节能压制——核心之间的能效差异本身就小了，“跑错了核”的惩罚远低于传统大小核架构。这种设计反映了厂商对"全大核"趋势的探索——随着工艺进步和功耗控制的改善，低性能小核的价值在下降。
 
 **全大核设计**
 

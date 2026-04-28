@@ -2,9 +2,9 @@
 title: "EAS 能量感知调度"
 chapter: "5.2"
 section: "5.2"
-status: finalized
-applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
-last_verified: "2026-03-31"
+status: ready-for-review
+applicable_versions: "Android 9 (API 28) - Android 17 (API 37)"
+last_verified: "2026-04-29"
 last_verified_against: "Linux kernel 6.6, Documentation/scheduler/sched-energy.rst"
 confidence: high
 sources:
@@ -28,11 +28,9 @@ review2_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
@@ -240,6 +238,14 @@ EAS 对轻任务和重任务有不同的处理方式：
 
 **重任务（util_avg 接近或超过小核 capacity）**：这类任务如果硬放在小核上，会导致小核频率飙升（进入能效陡降区），反而更费电。EAS 会将这类任务提升到大核上，利用大核更高的 IPC 在更短时间内完成工作，然后让大核更快回到低功耗状态。典型的重任务包括视频编解码、大型游戏渲染线程、应用启动时的主线程等。
 
+### 全大核架构的调度边界
+
+骁龙 8 Elite（2+6 Oryon）和天玑 9400（All Big Core）这类设计模糊了大小核的传统分界：所有核心都有较强的性能输出，级差大幅收窄。骁龙 8 Elite 的 Performance 核算力约为 837（以 Prime 核 1024 为基准），Prime 与 Performance 之间的 capacity 差距只有约 18%，远小于传统 4+4 架构中小核与大核之间 3-5 倍的差距。
+
+这种架构下，EAS 的能耗优化空间变小——因为核心之间的能效差异本身就小了。调度器更倾向于负载均衡而非节能压制，迁核决策的容错窗口也变宽。在 Perfetto 中表现为：线程在不同核心间的分布更均匀，迁移更频繁但每次迁移的性能波动更小。
+
+排查这类设备时，重点关注的是频率和热约束，而不是选核。因为所有核心性能接近，“跑错了核”的惩罚比传统大小核架构轻得多。
+
 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md — EAS 选核逻辑与 Task Placement 部分]
 
 ### 负载均衡与任务迁移
@@ -271,6 +277,14 @@ EAS 对轻任务和重任务有不同的处理方式：
 ### Android 中的 uclamp 使用
 
 在 Android 里，调度提示不是应用自己去写 cgroup 文件。AMS / OomAdjuster 先根据进程状态给进程或线程分配 sched group，随后 `android.os.Process.setThreadGroup()`、`setThreadGroupAndCpuset()`、`setProcessGroup()` 进 JNI，JNI 再调用 `SetTaskProfiles()` / `SetProcessProfiles()`。libprocessgroup 读取 `system/core/libprocessgroup/profiles/task_profiles.json`，把 profile 展开成“加入哪个 cgroup”和“往哪个属性文件写值”两类动作。
+
+### UClamp Sum Aggregation（GKI 6.12）
+
+GKI 6.12（Android 16）对 UClamp 的聚合方式做了一次关键重构：当多个任务共享同一个 CPU 时，UClamp 的有效值从取最大值（max）改为求和（sum）。
+
+取最大值的问题是：三个 UCLAMP_MIN=200 的后台任务跑在同一个 CPU 上，调度器只按 200 来调频和选核。实际负载是三倍，但频率只按一份来。多任务并发时频率预测系统性偏低，导致卡顿。改为求和后，三个 200 相加得 600，schedutil 会把频率拉到更高档位，EAS 也更可能把这个 CPU 上的任务分散到其他核心。
+
+这个改动对多任务场景的能效和响应性都有改善，同时减少了频率在低位和高位之间的反复震荡。
 
 把 Android 10、11、12 的路径拆开看，更稳：
 
@@ -443,6 +457,7 @@ EAS 看的是“有效 util 信号 + capacity + EM”。SchedTune 或 uclamp 只
 | AOSP 用户态 | Android 10 | task_profiles 成型，cpu controller 暴露 `cpu.util.min/max`，默认性能档位仍大量依赖 `schedtune` + `cpuset` | 看 `/dev/stune/*` 和 `/dev/cpuset/*` |
 | AOSP 用户态 | Android 11 | `cpu.uclamp.min/max` 命名到位，默认 profile 仍保留 `schedtune` 分组 | 同时核对 `schedtune` 与 `cpu.uclamp.*` |
 | AOSP 用户态 | Android 12+ | 默认 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接进入 `cpu/{background,foreground,top-app}`，cpuset 继续控制可运行 CPU 集 | top-app / foreground / background 的默认提示链更直观 |
+| GKI 内核 | GKI 6.12 (Android 16) | UClamp 聚合从 max 改为 sum | 多任务场景频率预测更准确，减少震荡 |
 | 设备实现 | 厂商分支 | WALT、Power HAL boost、额外迁核策略按 SoC / kernel tree 变化 | Trace 结论必须落回具体设备 |
 
 ## 参考资料

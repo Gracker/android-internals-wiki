@@ -99,8 +99,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-02-eas-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-02-eas-external-review.md",
+      "completed_at": "2026-04-28T23:50:00Z",
+      "completed_reason": "UClamp Sum Aggregation已补充；全大核架构调度边界已添加"
     },
     {
       "section": "05.03",
@@ -123,8 +125,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-03-big-little-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-03-big-little-external-review.md",
+      "completed_at": "2026-04-28T23:50:00Z",
+      "completed_reason": "骁龙8 Elite算力归一化标定已添加；DSU-120 16KB页协同优化已补充"
     },
     {
       "section": "05.04",
