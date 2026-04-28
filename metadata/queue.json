@@ -6758,6 +6758,32 @@
       "added_at": "2026-04-29T03:25:00+08:00",
       "status": "pending",
       "source_file": "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+    },
+    {
+      "section": "11.5",
+      "section_title": "11.5 Wakelock 机制与功耗分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.5 Wakelock 仍有 PowerManager/AlarmManager API 版本事实错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L103-L110 Wakelock 类型表",
+          "detail": "SCREEN_BRIGHT_WAKE_LOCK 在 Android 3.2/API 13 的 PowerManager.java 中已经带 @Deprecated；SCREEN_DIM_WAKE_LOCK 与 FULL_WAKE_LOCK 才是 Android 4.2/API 17 废弃。正文仍把 SCREEN_BRIGHT_WAKE_LOCK 写成 API 17 废弃，API 级别不准确。",
+          "suggestion": "把表格拆成 SCREEN_BRIGHT_WAKE_LOCK：API 13 废弃；SCREEN_DIM_WAKE_LOCK / FULL_WAKE_LOCK：API 17 废弃。保留 FLAG_KEEP_SCREEN_ON 替代方案。"
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "L577-L601 Android 14+ 的 OnAlarmListener 进程内精确回调",
+          "detail": "AlarmManager.OnAlarmListener 与 setExact(int,long,String,OnAlarmListener,Handler) 并不是 Android 14 才公开，AOSP/SDK 从 Android 7.0/API 24 已提供。当前 AOSP 中 setExact(...,Executor,WorkSource,OnAlarmListener) 与 setExactAndAllowWhileIdle(...,Executor,WorkSource,OnAlarmListener) 仍是 @SystemApi 且需要 UPDATE_DEVICE_STATS；正文把 WorkSource overload 写成公开 SDK，并把免 SCHEDULE_EXACT_ALARM 的边界泛化，容易误导普通 App。",
+          "suggestion": "改成：API 24 已有公开 OnAlarmListener/Handler 版本；Android 14 起 listener exact alarm 的生命周期/权限口径变化；WorkSource + Executor overload 与 allowWhileIdle listener overload 保持系统 API，普通 App 不可直接调用。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T04:38:09+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

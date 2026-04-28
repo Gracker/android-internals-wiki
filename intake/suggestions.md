@@ -6344,3 +6344,9 @@
 - **位置**：L353 16KB page size 对 page_fault_user 的影响
 - **问题**：官方 16KB page size 文档可支撑 3.16% 平均启动、最高 30%、4.56% 启动功耗、相机/系统启动数据，但正文“page_fault_user 频率骤降约 75%”没有绑定公开原文、设备、trace 配置或 workload。
 - **建议**：补 LPC/官方/本地 trace 来源；找不到一手来源时把 75% 删除，保留“Page Fault 次数可能下降，需按设备和 workload 实测”。
+
+## [Task9 Deep Review] 13.10 Perfetto SQL 性能分析实战手册 — 2026-04-29
+- **类型**：交叉引用/版本差异
+- **位置**：L797 / L827（Monitor Contention 与 lock_name）
+- **问题**：正文一处按 Perfetto v54 口径说明 `android_monitor_contention` 不提供 `lock_name`，后文又要求从 `owner_thread` 和 `lock_name` 追根因。按 v54 口径会让读者寻找不存在列；如果按 Perfetto main 新表结构，又和章节尾部“基于 Perfetto v54.0”不一致。
+- **建议**：若保持 v54，删除 `lock_name` 追查口径，改用 `short_blocking_method`、`blocking_thread_name`、`blocking_src` 和 UI 轨道；若升级到新版 Perfetto，标注版本并在 SQL SELECT 中显式带出 `lock_name`。

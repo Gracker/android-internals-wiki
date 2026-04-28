@@ -4,14 +4,14 @@
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 110,
-    "ready-for-review": 108,
+    "finalized": 112,
+    "ready-for-review": 106,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-29T03:25:00+08:00",
+    "last_updated": "2026-04-29T04:40:03+08:00",
     "pipeline_stage_counts": {
       "None": 33,
-      "ready-to-publish": 110,
-      "task2b_pending": 83,
+      "ready-to-publish": 112,
+      "task2b_pending": 81,
       "task9_pending": 8,
       "task6_pending": 15,
       "'task2b_pending'": 1
@@ -30,8 +30,8 @@
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 120,
-      "pending": 85,
+      "fixed": 122,
+      "pending": 83,
       "idle": 4,
       "'pending'": 1
     },
@@ -41,8 +41,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 33,
-      "ready-to-publish": 110,
-      "task2b_pending": 83,
+      "ready-to-publish": 112,
+      "task2b_pending": 81,
       "task9_pending": 8,
       "task6_pending": 15,
       "'task2b_pending'": 1
@@ -61,12 +61,12 @@
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 120,
-      "pending": 85,
+      "fixed": 122,
+      "pending": 83,
       "idle": 4,
       "'pending'": 1
     },
-    "last_updated": "2026-04-29T03:25:00+08:00"
+    "last_updated": "2026-04-29T04:40:03+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -2923,25 +2923,25 @@
       "title": "Android 游戏性能与 Game Mode/State API",
       "chapter": "8.9",
       "section": "8.9",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-08",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
       "last_verified": "2026-04-27",
       "last_verified_against": "Android Developers Game SDK Performance Tuner + GameActivity text input docs, AOSP GameManagerService, Perfetto gpu.renderstages proto",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T05:29:35+08:00",
+      "last_task9_at": "2026-04-29T04:40:03+08:00",
       "last_task2b_at": "2026-04-27T12:54:09+08:00",
       "notes": "Task2B fixed P95 AGDK link issue and P85 External GPU Render Stages/Headroom issues; returned to Task6 pending.",
       "created_by": "task2a-knowledge-gap",
@@ -3452,9 +3452,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-26",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T06:20:00+08:00",
+      "last_task9_at": "2026-04-29T04:40:03+08:00",
       "last_task2b_at": "2026-04-27T19:40:00+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
@@ -4358,7 +4358,7 @@
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
       "title": "Perfetto SQL 性能分析实战手册",
       "chapter": "13.10",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-09",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
@@ -4367,17 +4367,17 @@
       "confidence": "medium",
       "section": "13.10",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
-      "pipeline_stage": "task2b_pending",
-      "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-28",
+      "pipeline_stage": "ready-to-publish",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T06:20:00+08:00",
+      "last_task9_at": "2026-04-29T04:40:03+08:00",
       "last_task2b_at": "2026-04-27T20:58:38+08:00",
       "rework_date": "2026-04-27",
       "rework_by": "openclaw-task2b",
@@ -7016,6 +7016,40 @@
         }
       ],
       "log": "logs/deep-review/2026-04-29-03-deep-review.md"
+    },
+    {
+      "date": "2026-04-29",
+      "time": "04:40",
+      "task": "task9-deep-tech-review",
+      "sections_reviewed": [
+        {
+          "section": "8.9",
+          "title": "Android 游戏性能与 Game Mode/State API",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 1,
+          "auto_promoted": true
+        },
+        {
+          "section": "11.5",
+          "title": "Wakelock 机制与功耗分析",
+          "result": "needs-rework",
+          "p0": 2,
+          "p1": 0,
+          "p2": 2
+        },
+        {
+          "section": "13.10",
+          "title": "Perfetto SQL 性能分析实战手册",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 2,
+          "auto_promoted": true
+        }
+      ],
+      "log": "logs/deep-review/2026-04-29-04-deep-review.md"
     }
   ],
   "progress": {
@@ -7571,17 +7605,21 @@
       },
       "13.10": {
         "reviewed_by": "openclaw-task9",
-        "reviewed_date": "2026-04-27",
-        "task9_result": "needs-rework",
+        "reviewed_date": "2026-04-29",
+        "task9_result": "pass-tech-review",
         "task9_state": "reviewed",
-        "pipeline_stage": "task2b_pending",
-        "status": "ready-for-review",
-        "issues_found": "major",
+        "pipeline_stage": "ready-to-publish",
+        "status": "finalized",
+        "issues_found": "minor",
         "task6_state": "reviewed",
         "task6_result": "pass-light-edit",
-        "task2b_state": "pending",
+        "task2b_state": "fixed",
         "task2b_result": "fixed",
-        "last_task9_at": "2026-04-27T20:35:19+08:00"
+        "p0": 0,
+        "p1": 0,
+        "p2": 2,
+        "last_task9_at": "2026-04-29T04:40:03+08:00",
+        "auto_promoted": true
       },
       "15.2": {
         "reviewed_by": "openclaw-task9",
@@ -7660,6 +7698,41 @@
         "p1": 1,
         "p2": 1,
         "last_task9_at": "2026-04-28T22:57:00+08:00"
+      },
+      "8.9": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-29",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "status": "finalized",
+        "issues_found": "minor",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed",
+        "p0": 0,
+        "p1": 0,
+        "p2": 1,
+        "last_task9_at": "2026-04-29T04:40:03+08:00",
+        "auto_promoted": true
+      },
+      "11.5": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-29",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "status": "ready-for-review",
+        "issues_found": "major",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "pending",
+        "task2b_result": "fixed",
+        "p0": 2,
+        "p1": 0,
+        "p2": 2,
+        "last_task9_at": "2026-04-29T04:40:03+08:00"
       }
     }
   },
@@ -7992,7 +8065,7 @@
       }
     }
   },
-  "last_updated": "2026-04-28T17:39:10+08:00",
+  "last_updated": "2026-04-29T04:40:03+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
