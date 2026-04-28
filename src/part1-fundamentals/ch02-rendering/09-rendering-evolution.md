@@ -53,20 +53,20 @@ related_chapters:
 - '2.10'
 - '3.1'
 - '8.2'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: '2026-04-28'
 task9_reviewed_by: openclaw-task9
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 review_notes: "2026-04-24 task6 re-review: pass-light-edit；2026-04-26 task2b 修复 Task9 TokenManager 源码路径、Choreographer 版本边界、SkiaVulkan 裸数字问题；2026-04-26 task6 revisiting review: pass-light-edit, 修复1处禁用词。；2026-04-27 task9 deep-review: needs-rework。P1 3，P2 1。"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 last_task2b_at: "2026-04-28T09:42:00+08:00"
-last_task9_at: "2026-04-27T01:20:00+08:00"
+last_task9_at: '2026-04-28T10:30:00+08:00'
 task2b_fixed_by: openclaw-task2b
 updated_date: '2026-04-26'
 updated_by: openclaw-task2b

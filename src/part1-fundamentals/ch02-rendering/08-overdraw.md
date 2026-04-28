@@ -54,15 +54,15 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '7.2'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 last_task2b_at: "2026-04-28T09:42:00+08:00"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-21'
-last_task9_at: '2026-04-21T07:38:43+08:00'
+task9_reviewed_date: '2026-04-28'
+last_task9_at: '2026-04-28T10:30:00+08:00'
 ---
 
 # 过度绘制
