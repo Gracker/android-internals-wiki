@@ -14141,9 +14141,9 @@
     },
     {
       "section": "3.2",
-      "section_title": "`src/part1-fundamentals/ch03-input/02-touch-performance.md`",
-      "priority": 85,
-      "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+      "section_title": "触摸响应的性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3.2 触摸响应存在 Android 16 源码/API 事实错误与未支撑数据，需回炉修正",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -14166,11 +14166,52 @@
           "location": "16KB 影响章节",
           "detail": "输入管道确定性提升。。技术事实：大页内存减少了 75% 的 Socket 映射缺页中断，使输入分发的微观时延更加确定（抖动减少 3%）。",
           "suggestion": "同步大页内存对实时交互的正面加成。"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L119-L131（InputReader.loopOnce 示例与 mEventBuffer=256 说明）",
+          "detail": "正文仍按旧实现写 mEventBuffer / EVENT_BUFFER_SIZE=256。AOSP android-16.0.0_r1 的 InputReader::loopOnce() 已改为 std::vector<RawEvent> events = mEventHub->getEvents(timeoutMillis)，随后用 events.data()/events.size() 交给 processEventsLocked；InputReader.cpp 中不存在本段所写 mEventBuffer 固定数组口径。",
+          "suggestion": "把代码片段换成 android-16.0.0_r1 的 vector getEvents() 实现；如果要讲历史实现，单独标注适用版本，不要放在 Android 16 已验证正文里。"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L394-L395（MotionEvent.FLAG_PREDICTED）",
+          "detail": "正文称开发者可通过 MotionEvent.FLAG_PREDICTED 识别预测事件。AOSP android-16.0.0_r1 的 MotionEvent.java 未定义 FLAG_PREDICTED；公开 MotionPredictor API 是 record(MotionEvent)、predict(long)、isPredictionAvailable(deviceId, source)。该 flag 会把读者带到不存在的 API。",
+          "suggestion": "删除 FLAG_PREDICTED 表述；改为说明预测事件由 MotionPredictor.predict(long) 返回，真实事件与预测事件应在应用自己的渲染层做来源标记。"
+        },
+        {
+          "level": "P1",
+          "type": "版本差异/原理断裂",
+          "location": "L385-L393（Android 16 AI 增强预测模型）",
+          "detail": "正文把 MotionPredictor 写成 Android 16 才进入 TFLite/TCN/NPU 阶段，并泛化到快速滑动、游戏操作。源码能确认的是 android-16.0.0_r1 native MotionPredictor 使用 TfLiteMotionPredictorModel，输入 r/phi/pressure/tilt/orientation，并通过 /system 或 /vendor 的 motion_predictor_model.tflite 加载模型；但本轮未在源码或公开文档中看到 TCN、NPU 加速、固定 30ms 稳健窗口。isPredictionAvailable() 还明确只支持 stylus source。",
+          "suggestion": "把本段改成“API 34+ 的 stylus MotionPredictor，Android 16 源码实现包含 TFLite 模型路径和 polar 输入”；删除 TCN/NPU/游戏操作/30ms 固定窗口，除非补充一手模型配置或官方说明。"
+        },
+        {
+          "level": "P1",
+          "type": "数据缺失/版本差异",
+          "location": "L103-L107（16KB 环境下的性能提升）",
+          "detail": "正文给出“Android 16+ 16KB 页面减少 75% Socket 映射缺页中断、输入抖动减少 3%”的精确数据，但没有来源、设备、内核分支、trace 或 benchmark 条件。公开 Android 16KB page 资料主要覆盖 app launch、boot、camera、功耗等宏观指标，不能直接推出 InputDispatcher/socketpair 微观收益。",
+          "suggestion": "删除这组精确数字，或补可复核的一手 benchmark/trace；若只想保留 16KB 背景，改写为“可能通过 TLB/page-table 开销影响部分路径，但触摸链路收益需实测”，并交叉引用 §4.7。"
+        },
+        {
+          "level": "P1",
+          "type": "数据缺失/原理断裂",
+          "location": "L55-L60（HCI 11ms/25ms 基准）",
+          "detail": "正文把 11ms 最小可觉差、25ms 操作性能分水岭写成触摸响应优化硬目标，并要求关键交互总延迟低于 11ms；当前只引用个人素材，未给原始论文、任务类型、显示设备、统计口径。后文总延迟表又给出 15-75ms，前后目标口径冲突。",
+          "suggestion": "补原始 HCI 论文和实验条件；把“可感知阈值/JND”与 Android 端到端 touch-to-display SLA 分开写。没有来源前，不要把 11ms 写成全链路优化目标。"
         }
       ],
-      "added_by": "external-ai-review",
+      "added_by": "task9-deep-tech-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_at": "2026-04-28T17:39:10+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-04-28T17:39:10+08:00"
     },
     {
       "section": "3.3",
