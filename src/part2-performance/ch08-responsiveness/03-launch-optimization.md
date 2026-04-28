@@ -1,7 +1,7 @@
 ---
 title: "启动优化策略"
 chapter: "8.3"
-status: ready-for-review
+status: finalized
 reviewed_date: "2026-04-27"
 reviewed_by: openclaw-task6-task6
 task6_result: pass-light-edit
@@ -34,18 +34,19 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: openclaw-task6-task9
-last_task9_at: "2026-04-27T10:02:28+08:00"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-04-28"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-28T11:41:58+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T10:44:00+08:00"
+review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 4 写入 suggestions。"
 ---
 
 # 启动优化策略
