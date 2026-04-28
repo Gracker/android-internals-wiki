@@ -6257,3 +6257,9 @@
 - **位置**：L510-L538 社交应用图片滚动案例
 - **问题**：案例写出 Snapdragon 8 Gen 2、GPU 18-25ms 降到 8-12ms、帧率 40-45fps 到 55-58fps，但正文仍标注 Trace 截图待补，缺少可复核 trace/AGI 数据。
 - **建议**：补 trace/AGI 截图与测试条件；若只是示意案例，删掉实测口吻并标成模拟数据。
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L308-L319 Perfetto 抓取命令与 FrameTimeline SQL
+- **问题**：命令只列 `sched freq idle am wm gfx view binder_driver hal` 等 category，后文 SQL 依赖 `actual_frame_timeline_slice` / `expected_frame_timeline_slice`。如果 trace 未启用 FrameTimeline 数据源，查询会为空；SurfaceView 游戏还需要保留 buffered frames / SwappyStats 路径。
+- **建议**：补一个明确启用 FrameTimeline 的 Perfetto config 或命令，并在命令旁标注 Android 12+、SurfaceView 不完全支持 FrameTimeline 的边界；旧系统退回 systrace SurfaceView channel 与 SwappyStats。

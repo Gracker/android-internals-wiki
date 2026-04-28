@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-28T11:41:58+08:00",
+  "generated_at": "2026-04-28T13:23:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 114,
     "ready-for-review": 104,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-28T07:40:26+08:00",
+    "last_updated": "2026-04-28T13:23:00+08:00",
     "pipeline_stage_counts": {
       "None": 33,
       "ready-to-publish": 114,
@@ -60,7 +60,7 @@
       "pending": 75,
       "idle": 4
     },
-    "last_updated": "2026-04-28T07:40:26+08:00"
+    "last_updated": "2026-04-28T13:23:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1242,7 +1242,7 @@
       "last_verified_against": "AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline, developer.android.com/games/sdk/frame-pacing",
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
@@ -1252,7 +1252,7 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T17:20:00+08:00"
+      "last_task9_at": "2026-04-28T13:23:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
       "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
