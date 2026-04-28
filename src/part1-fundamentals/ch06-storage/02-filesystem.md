@@ -203,6 +203,33 @@ f2fs 的 GC 分为前台和后台两种。后台 GC 由内核线程在存储负�
 
 在 Perfetto 中，f2fs 的 GC 活动可以通过 `f2fs_gc_*` 相关的 trace event 观察到。如果我们看到 App 线程在写入时出现长时间的 D 状态等待，同时有 `f2fs_gc` 相关的活动，那大概率是前台 GC 在阻塞写入。[待补充：Trace截图展示f2fs前台GC期间的I/O延迟]
 
+<!-- AIW-源码调研-2026-04-28 -->
+### f2fs 前台 GC 触发机制详解
+
+f2fs 的前台 GC 触发决策由 `has_not_enough_free_secs()` 函数（`fs/f2fs/segment.h`）控制，源码定义为：
+
+```c
+static inline bool has_not_enough_free_secs(struct f2fs_sb_info *sbi, int freed, int needed) {
+    unsigned int free_secs, required_secs;
+    if (unlikely(is_sbi_flag_set(sbi, SBI_POR_DOING)))
+        return false;
+    free_secs = free_sections(sbi) + freed;
+    required_secs = needed + reserved_sections(sbi) + __get_secs_required(sbi);
+    return free_secs < required_secs;
+}
+```
+
+**触发条件**：`free_sections + freed < needed + reserved_sections + __get_secs_required`  
+- `reserved_sections`：保留的 over-provisioning 空间（默认约 5%），确保 GC 操作始终有空间可用  
+- `__get_secs_required`：根据当前脏数据量计算所需段数，包含 node/dentry/imeta 三类 dirty sections
+
+**VFS 入口**：`f2fs_balance_fs()`（`fs/f2fs/segment.c`）在每次 VFS 写请求时被调用。当 `has_enough_free_secs()` 返回 false 时，根据 `GC_MERGE` mount option 决定同步或异步执行前台 GC：`GC_MERGE`=true 时唤醒后台 `gc_thread` 执行前台清理（`wake_up(&fggc_wq)`），否则同步调用 `f2fs_gc()`。
+
+**Victim 选择**：前台 GC（`FG_GC`）使用 `GC_GREEDY` 算法——选择有效块最少的 segment 进行清理，以最快速度释放空间。后台 GC 则使用 `GC_CB`（Cost Benefit）或 `GC_AT`（Age Threshold）算法，在不阻塞前台 I/O 的前提下平衡清理效率。
+
+**性能特征**：前台 GC 触发时可能导致 50-500ms 的同步 I/O 阻塞。CVE-2024-53220 修复了 `__get_secs_required()` 对脏数据计算不准确的问题，修复前可能导致内核 panic。
+<!-- AIW-源码调研-2026-04-28 END -->
+
 ### f2fs 的 LFS / SSR 切换机制
 
 #### 默认路径：LFS

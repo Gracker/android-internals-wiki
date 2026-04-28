@@ -62,11 +62,11 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-04-28"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -417,7 +417,7 @@ Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swa
 
 ### present_id：从估算到物理确认
 
-Android 16（API 36）强制要求 Vulkan 1.4，其中 `VK_KHR_present_id` 特性随之默认启用。对 Swappy 的 Vulkan 路径来说，这意味着帧上屏时刻不再依赖 Choreographer 回调时间戳反推，而是由 display 驱动在 present 完成后直接返回确认信号。
+Android 16（API 36）强制要求 Vulkan 1.4，其中 `VK_KHR_present_id` 特性随之默认启用。对 Swappy 的 Vulkan 路径来说，帧上屏时刻不再依赖 Choreographer 回调时间戳反推，而是由 display 驱动在 present 完成后直接返回确认信号。
 
 旧的确认路径是"估算式"的：Swappy 通过 `VK_GOOGLE_display_timing` 的 `presentedTimes` 拿到的是 display 驱动报告的时间戳，但这个时间戳经过 SurfaceFlinger 中转，与 Choreographer 回调之间始终存在调度延迟。present_id 则是硬件级递增计数器，每完成一次扫描线输出就递增一次，Swappy 拿到的是"这帧确实已经上了屏幕"的确证，而非"根据 VSync 周期推算应该上了"。
 

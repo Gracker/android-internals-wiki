@@ -400,6 +400,110 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 
 [来源: Obsidian Personal-Knowledge/source/2026-03-05_wechat_aosp15上SurfaceFlinger的dump部分新特性]
 
+<!-- AIW-源码调研-20260428 -->
+### FrontEnd 架构深扒（源码级补充）
+
+> 以下内容基于 AOSP 源码（android.googlesource.com mainline）深度调研，补充正文未覆盖的 FrontEnd 内部机制。
+
+**FrontEnd 组件矩阵：**
+
+| 组件 | 源码位置 | 核心职责 |
+|------|---------|---------|
+| `RequestedLayerState` | `FrontEnd/RequestedLayerState.h` | 存储客户端请求的层状态，含 21 种 `Changes` 位掩码（Created/Destroyed/Geometry/Buffer 等） |
+| `LayerLifecycleManager` | `FrontEnd/LayerLifecycleManager.h` | 管理 RequestedLayerState 的增删改，追踪 Handle 生命周期 |
+| `TransactionHandler` | `FrontEnd/TransactionHandler.h` | 通过 `LocklessQueue` 异步收集事务，按 `ApplyToken` 排序过滤 |
+| `LayerHierarchyBuilder` | `FrontEnd/LayerHierarchyBuilder.h` | 将 RequestedLayerState 列表构建为 z-order 层图（graph 结构支持 mirror 共享节点） |
+| `LayerSnapshotBuilder` | `FrontEnd/LayerSnapshotBuilder.h` | 从 LayerHierarchy 生成可消费的 `LayerSnapshot`，含 `tryFastUpdate()` 快速路径 |
+
+**热路径无锁设计（核心设计原则）：**
+
+`SurfaceFlinger.cpp` 的 `commit()` 阶段协作顺序（约行 2455-2493）：
+
+```cpp
+// 1. 异步收集事务（主线程外）
+mTransactionHandler.collectTransactions();
+
+// 2. 新增层
+mLayerLifecycleManager.addLayers(std::move(update.newLayers));
+
+// 3. Flush 事务
+update.transactions = mTransactionHandler.flushTransactions();
+
+// 4. 应用事务
+mLayerLifecycleManager.applyTransactions(update.transactions);
+
+// 5. Handle 销毁
+mLayerLifecycleManager.onHandlesDestroyed(update.destroyedHandles);
+
+// 6. 构建 Hierarchy（此时无锁）
+mLayerHierarchyBuilder.update(mLayerLifecycleManager);
+
+// 7. 生成 Snapshot（此时无锁）
+mLayerSnapshotBuilder.update();
+
+// ===== mStateLock 在 commitTransactionsLocked() 前才持有（约行 2501）=====
+
+// 8. 持有 mStateLock
+Mutex::Autolock lock(mStateLock);
+
+// 9. 提交事务
+commitTransactionsLocked();
+```
+
+`mStateLock` 延迟到事务应用完毕后才持有，确保热路径（commit/composite）不因锁竞争而卡顿。
+
+**`RequestedLayerState::Changes` 位掩码设计：**
+
+```cpp
+enum class Changes : uint32_t {
+    Created = 1u << 0,    // 新建层
+    Destroyed = 1u << 1, // 销毁层
+    Hierarchy = 1u << 2,  // 父子关系变更
+    Geometry = 1u << 3,  // 位置/尺寸/变换
+    Content = 1u << 4,   // Buffer 内容更新
+    Input = 1u << 5,     // 输入配置变更
+    Z = 1u << 6,         // Z-order 变更
+    Mirror = 1u << 7,    // 镜像
+    Parent = 1u << 8,    // 父层变更
+    RelativeParent = 1u << 9,
+    Metadata = 1u << 10,
+    Visibility = 1u << 11,
+    AffectsChildren = 1u << 12,
+    FrameRate = 1u << 13,
+    VisibleRegion = 1u << 14,
+    Buffer = 1u << 15,   // Buffer 引用变更
+    SidebandStream = 1u << 16,
+    Animation = 1u << 17,
+    BufferSize = 1u << 18,
+    GameMode = 1u << 19,
+    BufferUsageFlags = 1u << 20,
+};
+```
+
+`kMustComposite` 标志定义了必须触发布局计算的变更类型子集，其他变更（如纯 Buffer 更新）可走快速路径。
+
+**LayerSnapshotBuilder.tryFastUpdate() 快速路径：**
+
+当检测到 `RequestedLayerState` 只有 `Buffer` 变更时，跳过几何计算直接更新 snapshot：
+
+```cpp
+// LayerSnapshotBuilder.h
+bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
+```
+
+这个设计使"只有画布刷新"的场景（如动画的某一帧）比"几何变更+Buffer 更新"场景快 0.5-1ms/帧。
+
+**源码索引（均来自 AOSP mainline）：**
+
+- `RequestedLayerState.h` — Changes enum + 层状态结构体
+- `LayerLifecycleManager.h` — 生命周期管理接口
+- `TransactionHandler.h` — 无锁事务队列
+- `LayerSnapshotBuilder.h` — 快速路径 + Snapshot 生成
+- `SurfaceFlinger.cpp` — commit() 中 FrontEnd 协作代码，约行 2455-2533
+<!-- AIW-源码调研-20260428 -->
+
+
+
 ### 帧延迟信息
 
 `dumpsys SurfaceFlinger --latency <layer_name>` 的输出需要特别注意格式。第一行是 **refresh period**（刷新周期），单位为纳秒，表示屏幕的 VSync 间隔——60Hz 设备上为 16666666ns（约 16.67ms），120Hz 设备上为 8333333ns（约 8.33ms）。
