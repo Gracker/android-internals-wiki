@@ -37,12 +37,17 @@ review_round: 3
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 # task6_result: pass-light-edit  # reset after rework
-task9_state: pending
+task9_state: reviewed
 # task9_result: pass-tech-review  # reset after rework
-task2b_state: fixed
+task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-29"
+last_task9_at: "2026-04-29T05:30:17+08:00"
+task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 1。ASan/heapprofd/ApplicationStartInfo API 错误，API 34 onTrimMemory 差异未覆盖"
 ---
 
 # App 内存优化
