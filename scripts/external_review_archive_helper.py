@@ -64,6 +64,11 @@ def infer_section(path: Path) -> str | None:
     if m_sub:
         return f"{int(m_sub.group(1))}.{int(m_sub.group(2))}"
 
+    # HH-chXX-YY-slug → XX.YY (e.g. "15-ch02-03-vsync" → 02.03)
+    m_ch = re.fullmatch(r"\d+-ch(\d{2})-(\d{2})(?:-.+)?", value)
+    if m_ch:
+        return f"{int(m_ch.group(1))}.{int(m_ch.group(2))}"
+
     # HH-XX.YY → XX.YY (e.g. "06-15.6" → 15.6)
     m_dot = re.fullmatch(r"\d+-(\d+\.\d+)", value)
     if m_dot:
