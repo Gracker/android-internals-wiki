@@ -44,7 +44,7 @@ sources:
   - type: aosp
     path: "packages/modules/UprobeStats/src/Guardrail.cpp"
   - type: aosp
-    path: "packages/modules/UprobeStats/Android.bp"
+    path: "packages/modules/UprobeStats/src/Android.bp"
 tags: [eBPF, BPF, observability, tracing, sched_ext, simpleperf, kernel, performance]
 related_chapters: ["14.2", "13.1", "5.1", "1.14"]
 created_by: "task2a-knowledge-gap"
@@ -53,10 +53,10 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
@@ -291,8 +291,8 @@ UprobeStats 以 APEX 模块形式集成，设备上的挂载路径是 `/apex/com
 
 1. StatsD 检测到特定订阅触发，调用 `StartUprobeStats()`
 2. 配置写入 `/data/misc/uprobestats-configs/config`
-3. 通过系统属性 `uprobestats.start_with_config` 触发启动
-4. `uprobestats` 进程启动后读取配置，通过 `oatdump` 或 `DynamicInstrumentationManagerService` 解析目标方法在 OAT / ODEX 文件中的偏移地址
+3. 客户端库通过 `SetProperty("ctl.start", "uprobestats")` 启动 disabled/oneshot 的 init service（参见 `src/lib/uprobestats_client.cpp` 与 `apex/UprobeStats-mainline.rc`）
+4. `uprobestats` 进程启动后读取 `/data/misc/uprobestats-configs/config` 中的配置，通过 `oatdump` 或 `DynamicInstrumentationManagerService` 解析目标方法在 OAT / ODEX 文件中的偏移地址
 5. 对每个目标方法调用 `bpfPerfEventOpen()` attach BPF 程序并启用 uprobe
 6. collector 线程在 RINGBUF map 上 poll，读取 BPF 程序写入的数据
 7. 采集结果组装成 `AStatsEvent` 原子埋点上报给 StatsD

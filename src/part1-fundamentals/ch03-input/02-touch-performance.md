@@ -33,13 +33,12 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task2b_pending
-task6_result: revisiting
-task6_state: revising
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
 task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+task2b_rework_date: "2026-04-29"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-28
 last_task9_at: "2026-04-28T17:39:10+08:00"
@@ -82,11 +81,18 @@ task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 3 / 
 
 理解触摸响应延迟的组成，是优化所有"跟手性"问题的前提。不管我们在做滑动流畅度优化、启动速度优化还是 ANR 分析，Input 事件传递路径上的每一个环节都可能成为瓶颈。
 
-### HCI 科学基准：11ms 感知阈值
+### HCI 感知阈值研究
 
-微软研究院等 HCI 领域的科学研究确认：用户对拖拽操作的感知阈值为 11ms（最小可觉差），25ms 是操作性能的分水岭。这确立了 120Hz 高刷配合低延迟采样是实现"真实交互"的物理基础。低于 11ms 的延迟变化用户几乎无法察觉，11-25ms 范围内的延迟可能被感知但不影响操作流畅性，超过 25ms 的延迟会明显影响用户对"跟手性"的评价。这个科学基准为触摸响应优化提供了明确的目标：在关键交互路径上保持总延迟低于 11ms，或在不可控场景下确保延迟波动控制在 25ms 以内。
+HCI 领域对触摸延迟的感知研究有几个广泛引用的结论。多项研究确认用户对拖拽操作的端到端延迟感知阈值在 10-25ms 量级，低于这个范围的延迟变化更难被察觉。但具体数值依赖实验条件：任务类型（拖拽 vs 点击 vs 绘图）、显示设备刷新率、输入设备类型、统计口径（JND / 刚可感知 / 刚不可接受）都会影响结果。
 
-[来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md] [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]
+目前在公开文献中能确认的方向性结论：
+- 直接操作场景（拖拽、绘图）对延迟的敏感度明显高于离散点击
+- 120Hz 高刷配合低延迟采样在感知上优于 60Hz，但收益受总链路延迟制约
+- 具体阈值数值需要回到原始论文的实验条件，不能简单当作全链路优化目标
+
+这些研究为触摸优化提供了方向性参考，但 Android 端到端 touch-to-display 延迟（本节后文表格给出 15-75ms）与 HCI 实验室条件下的端到端延迟是不同口径。两者分开看，不要把实验室阈值直接写成产品 SLA。
+
+[来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md] [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md] [待验证: 原始 HCI 论文与实验条件需后续补齐]
 
 ## 触摸响应延迟的组成
 
@@ -110,9 +116,13 @@ task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 3 / 
 
 这一步的延迟通常很小（微秒级别），因为内核的中断处理和 EventHub 的 epoll 机制都是高效的。但在极端情况下，比如系统 I/O 负载极高，或者触控驱动与 SoC 之间的总线带宽被其他外设占用，这里可能引入额外的毫秒级延迟。
 
-#### 16KB 环境下的性能提升
+#### 16KB 页面大小的潜在影响
 
-在 Android 16+ 引入 16KB 页面大小后，内核处理路径获得了显著的性能提升。大页内存减少了 75% 的 Socket 映射缺页中断，使输入分发的微观时延更加确定（抖动减少 3%）。这是因为更大的页面尺寸提升了 TLB（Translation Lookaside Buffer）命中率，减少了缺页异常处理的开销。对于需要低延迟确定性的触控应用，这种底层架构优化带来了可量化的性能红利。
+Android 16+ 支持将内核页面大小从 4KB 切换到 16KB。更大的页面尺寸提升了 TLB 命中率、减少了缺页异常处理开销，在 app 启动、系统启动、摄像头延迟等宏观指标上有可量化的改善（参见 Android 官方 16KB page size 文档）。
+
+对输入分发包路径的影响，目前公开资料没有给出独立的 benchmark 数据。理论上的收益方向是减少 socketpair mmap 相关的缺页中断、降低 micro-timing jitter，但具体到 InputDispatcher → App 这条链路的收益幅度需要实测验证。如果要做 16KB 相关的触摸延迟分析，建议直接在两种页面大小的设备上对比 Perfetto trace，而不是引用未标明条件的精确百分比。
+
+16KB 页面大小的详细分析见 §4.7。
 
 ### 3. InputReader 读取和加工
 
@@ -121,20 +131,20 @@ InputReader 是运行在 `system_server` 进程中的 Native 线程。它从 Eve
 核心循环在 `InputReader.loopOnce()` 中：
 
 ```cpp
-// frameworks/native/services/inputflinger/reader/InputReader.cpp
+// frameworks/native/services/inputflinger/reader/InputReader.cpp (android-16.0.0_r1)
 void InputReader::loopOnce() {
-    // 从 EventHub 获取原始事件
-    size_t count = mEventHub->getEvents(timeoutMillis, mEventBuffer, EVENT_BUFFER_SIZE);
-    if (count) {
+    // 从 EventHub 获取原始事件，返回 std::vector<RawEvent>
+    std::vector<RawEvent> events = mEventHub->getEvents(timeoutMillis);
+    if (!events.empty()) {
         // 加工：RawEvent -> NotifyArgs
-        processEventsLocked(mEventBuffer, count);
+        processEventsLocked(events.data(), events.size());
     }
     // 将加工后的事件发送给 InputDispatcher
     mQueuedListener->flush();
 }
 ```
 
-注意这里 `mEventBuffer` 的大小是 256。在正常操作中，一次 `loopOnce` 调用会读取并处理一批事件（一次 MOVE 操作可能产生几十个采样点），所以 InputReader 的处理效率通常不会成为瓶颈。
+android-16.0.0_r1 已将 `getEvents()` 改为返回 `std::vector<RawEvent>`，不再使用固定大小的 `mEventBuffer` 数组。一次 `loopOnce` 调用会读取并处理一批事件（一次 MOVE 操作可能产生几十个采样点），所以 InputReader 的处理效率通常不会成为瓶颈。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/reader/InputReader.cpp] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
@@ -395,13 +405,19 @@ Android 系统有 **Input Boost** 这类输入提频机制：在检测到 Input 
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
 
-### Android 16 AI 增强预测模型
+### Android 16 MotionPredictor Native 实现
 
-Android 16 标志着输入系统从"线性外推"跨入了"特征感知预测"的新阶段。核心是 MotionPredictor 在 Native 层利用 TFLite 运行 TCN（Temporal Convolutional Network）模型，通过 NPU 加速处理极坐标序列，将预测窗口稳健扩展至 30ms。这一模型通过分析触摸轨迹的角度变化和速度模式，实现"路径不变性"的预测精度提升，显著减少因快速移动导致的触摸点丢失问题。
+android-16.0.0_r1 源码中，Native 层的 MotionPredictor 实现包含 TFLite 模型路径。`TfLiteMotionPredictorModel` 从 `/system/etc/motion_predictor_model.tflite` 或 `/vendor/etc/motion_predictor_model.tflite` 加载模型，输入为极坐标序列（r / phi / pressure / tilt / orientation），输出为预测坐标。
 
-在实现上，MotionPredictor 采用分层预测策略：首先提取轨迹的几何特征（曲率、速度变化率），然后通过 TCN 模型捕捉时序模式，最后结合设备特性输出预测点。相比传统的外推算法，AI 模型能够适应不同的使用场景（如快速滑动、精细绘图、游戏操作），为不同类型的交互提供更合理的预测结果。
+当前源码能确认的实现细节：
+- 模型加载路径：`TfLiteMotionPredictorModel`，支持 system 和 vendor 两个目录
+- 输入特征：极坐标（r、phi）+ pressure + tilt + orientation
+- API 可用性检查：`isPredictionAvailable(deviceId, source)` 目前只对 stylus source 返回 true
+- Framework API：`android.view.MotionPredictor`（Added in API 34）
 
-开发者可以通过 `MotionPredictor` API 配置预测参数，也可以通过 `MotionEvent.FLAG_PREDICTED` 标志识别预测事件，从而在应用层做出相应的优化处理。
+源码和公开文档中未确认的内容：TCN 架构、NPU 加速、30ms 固定预测窗口、对非 stylus 输入源的支持。这些在后续版本公开前不应写成已验证结论。
+
+开发者使用方式：调用 `MotionPredictor.isPredictionAvailable(deviceId, source)` 检查可用性，然后用 `record(MotionEvent)` 输入真实事件，`predict(long targetTimeNanos)` 获取预测事件。预测事件与真实事件在应用自己的渲染层做来源标记——当前 `MotionEvent` 中没有 `FLAG_PREDICTED` 字段。
 
 ### 5. GPU 渲染瓶颈
 
