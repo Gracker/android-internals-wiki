@@ -190,8 +190,27 @@
       "section": "02.16",
       "section_title": "2.16 Sync Fence 框架与帧同步机制",
       "priority": 85,
-      "reason": "[External Review] 2.16 Sync Fence 框架与帧同步机制 存在重要缺失，需回炉补强 2026 年最新特性",
-      "review_issues": [],
+      "reason": "[External Review] 02.16 Sync Fence 框架与帧同步机制 存在重要缺失，需回炉补强 2026 年最新特性",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "核心机制章节",
+          "detail": "Vulkan Timeline Semaphores 同步模型。技术事实：Android 16 强制要求新设备支持时间轴信号量，允许通过 64 位计数器实现跨进程\"提前提交等待\"，极大减少了 fd 资源开销和上下文切换。",
+          "suggestion": "解析从\"一次性 fd\"向\"长效计数器\"的范式转移。"
+        },
+        {
+          "type": "原理链完整性",
+          "location": "渲染路径章节",
+          "detail": "16KB 页对 Fence 延迟的优化。技术事实：16KB 页面显著提升了中断处理路径的 TLB 命中率，缩短了从 GPU 完成到 SF 唤醒的时间窗口。",
+          "suggestion": "在原理解析中加入底层架构性能红利。"
+        },
+        {
+          "type": "知识盲区",
+          "location": "演进章节",
+          "detail": "Android 17 去 fd 化政策。技术事实：API 37 计划通过强推 Timeline Semaphores 彻底解决因 fd 泄漏导致的图形栈卡死顽疾。",
+          "suggestion": "展望同步机制的标准化收口。"
+        }
+      ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
       "status": "pending",
@@ -7928,7 +7947,7 @@
       "section": "16.3",
       "section_title": "AOSP 编译与环境搭建",
       "priority": 85,
-      "reason": "[External Review] Cuttlefish 底层依赖 crosvm 和 virtio 机制未说明，读者不知为何推荐",
+      "reason": "[External Review] Cuttlefish 底层依赖 crosvm 和 virtio 机制未说明，读者不知为何推荐；[Deep Tech Review] Cuttlefish 只写“Linux 主机 + KVM 硬件加速”，没有解释其虚拟化栈; Cuttlefish host 安装流程写成 sudo apt install -y cuttlefish-common 后直接 launch_cvd",
       "review_issues": [
         {
           "type": "原理断裂",
@@ -7938,6 +7957,28 @@
           "evidence": [
             "device/google/cuttlefish",
             "source.android.com/devices/architecture/kernel/crosvm"
+          ]
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L162-L194",
+          "detail": "Cuttlefish 只写“Linux 主机 + KVM 硬件加速”，没有解释其虚拟化栈。External-review 已命中：缺少 crosvm 与 virtio，读者无法理解它为什么比普通 Emulator 更适合 AOSP/CI 工作流。",
+          "suggestion": "补一小段：Cuttlefish 基于 crosvm/VMM、KVM 和 virtio 设备模型，host 侧通过 WebRTC/ADB 暴露交互；再说明与 Android Emulator/QEMU 的适用边界。",
+          "evidence": [
+            "Task9 deep tech review 2026-04-28 10:30",
+            "AOSP/official docs/web复核，详见 deep-review log"
+          ]
+        },
+        {
+          "type": "源码错误",
+          "severity": "P1",
+          "location": "L168-L183",
+          "detail": "Cuttlefish host 安装流程写成 sudo apt install -y cuttlefish-common 后直接 launch_cvd。当前官方 get-started 流程要求安装依赖、构建/安装 cuttlefish-base 与 cuttlefish-user deb 包，或配置 artifact registry；运行预编译镜像时还要解压 cvd-host_package.tar.gz 和 device image，并用 ./bin/launch_cvd。直接 apt install cuttlefish-common 在干净 Ubuntu 上不具备可复现性。",
+          "suggestion": "把安装流程改为官方两条路径：AOSP 编译产物路径与 CI 预编译 artifact 路径；明确 cuttlefish-base/cuttlefish-user、cvd-host_package.tar.gz、HOME=$PWD ./bin/launch_cvd --daemon。",
+          "evidence": [
+            "Task9 deep tech review 2026-04-28 10:30",
+            "AOSP/official docs/web复核，详见 deep-review log"
           ]
         }
       ],
@@ -13726,7 +13767,7 @@
       "section": "2.8",
       "section_title": "2.8",
       "priority": 85,
-      "reason": "[External Review] 技术评分 4.6/5",
+      "reason": "[External Review] 技术评分 4.6/5；[Deep Tech Review] Compose 1.10“背景合并优化”被写成已验证的框架内部行为，但正文只给出“Compose 1.10 release notes”泛称，未给出具体 release note、issue、commit 或官方 API 说明; Skia Graphite + Front-to-Back + Early-Z 被归入 Android 16 版本演进，但正文没有给出 Android 16 AOSP/HWUI 默认启用条件、设备白名单或系统属性锚点",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -13749,11 +13790,34 @@
           "location": "Compose 章节",
           "detail": "Compose 1.10 背景合并优化。。技术事实：能够智能识别组件背景重叠，并自动跳过被遮挡父级的绘制指令提交。",
           "suggestion": "同步该框架层面的自动减负特性。"
+        },
+        {
+          "type": "知识盲区",
+          "severity": "P1",
+          "location": "L348-L354",
+          "detail": "Compose 1.10“背景合并优化”被写成已验证的框架内部行为，但正文只给出“Compose 1.10 release notes”泛称，未给出具体 release note、issue、commit 或官方 API 说明。当前可检索资料没有命名为 background merge 的公开特性。",
+          "suggestion": "补充准确 release note/CL/issue；无法核实时改为[待验证]或删除，保留 Compose overdraw 的通用排查边界。",
+          "evidence": [
+            "Task9 deep tech review 2026-04-28 10:30",
+            "AOSP/official docs/web复核，详见 deep-review log"
+          ]
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L321",
+          "detail": "Skia Graphite + Front-to-Back + Early-Z 被归入 Android 16 版本演进，但正文没有给出 Android 16 AOSP/HWUI 默认启用条件、设备白名单或系统属性锚点。外部资料可说明 Graphite 支持深度测试思路，但不足以证明 Android 16 应用 UI 默认获得该优化。",
+          "suggestion": "补充 AOSP HWUI/Skia 启用路径、设备条件与验证方法；否则把结论降级为“Graphite 方向能力/部分设备实验或部署”，避免写成 Android 16 通用行为。",
+          "evidence": [
+            "Task9 deep tech review 2026-04-28 10:30",
+            "AOSP/official docs/web复核，详见 deep-review log"
+          ]
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "added_at": "2026-04-28T10:30:00+08:00"
     },
     {
       "section": "2.9",
@@ -13798,7 +13862,7 @@
       "section": "2.9",
       "section_title": "2.9",
       "priority": 85,
-      "reason": "[External Review] 技术评分 4.8/5；[Deep Tech Review] BLASTBufferQueue 版本线与 ANGLE 自动启用边界存在 P1 技术缺口",
+      "reason": "[External Review] 技术评分 4.8/5；[Deep Tech Review] BLASTBufferQueue 版本线与 ANGLE 自动启用边界存在 P1 技术缺口；[Deep Tech Review] Graphite 在 Android 16“开始进入生产部署”、并“在完全不透明 UI 区域自动消除过度绘制，开发者不需要手动裁剪或移除背景”的表述过强",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -13839,6 +13903,17 @@
           "location": "时间轴节点",
           "detail": "16KB Page Size 里程碑。。技术事实：2024-2025 年落地的 16KB 页技术通过提升 TLB 命中率，为渲染管线带来了约 9% 的有效带宽增益。",
           "suggestion": "将其作为底层性能演进的关键节点插入。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L183-L191",
+          "detail": "Graphite 在 Android 16“开始进入生产部署”、并“在完全不透明 UI 区域自动消除过度绘制，开发者不需要手动裁剪或移除背景”的表述过强。当前正文没有给出 Android 16 AOSP 中 HWUI 选择 Graphite 的源码路径、属性开关、设备启用范围和 Perfetto 观察点。",
+          "suggestion": "改为带条件的描述，并补充 enablement 锚点、Skia/HWUI 源码路径、Trace/系统属性验证方式；不要把 Graphite 能力等同于所有 Android 16 设备默认行为。",
+          "evidence": [
+            "Task9 deep tech review 2026-04-28 10:30",
+            "AOSP/official docs/web复核，详见 deep-review log"
+          ]
         }
       ],
       "added_by": "external-ai-review",
@@ -13847,7 +13922,8 @@
       "material_paths": [
         "intake/research-gaps.md",
         "intake/suggestions.md"
-      ]
+      ],
+      "added_at": "2026-04-28T10:30:00+08:00"
     },
     {
       "section": "20",
@@ -17378,6 +17454,56 @@
       "added_at": "2026-04-28T01:20:33",
       "status": "pending",
       "source_file": "2026-04-28-15-ch06-04-storage-evolution-external-review.md"
+    },
+    {
+      "section": "2.8",
+      "section_title": "过度绘制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 正文写 Android 16 Perfetto 新增标准化 gpu.counters.pixels_drawn，并用 pixels_drawn / 屏幕像素数计算精确 Overdraw 倍率",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L148-L158 / L321",
+          "detail": "正文写 Android 16 Perfetto 新增标准化 gpu.counters.pixels_drawn，并用 pixels_drawn / 屏幕像素数计算精确 Overdraw 倍率。复核 external/perfetto 的 GpuCounterConfig 与 GpuCounterEvent 后，Perfetto 只通过 counter_ids 采样设备暴露的 GpuCounterSpec；未发现名为 pixels_drawn 的跨设备标准字段。AGI/Perfetto 的 GPU counter 名称仍依赖厂商与设备。",
+          "suggestion": "删除“Android 16 标准化 pixels_drawn”与自动化精确倍率公式，改为：可在 AGI/Perfetto 中查看设备支持的 GPU fragment/pixel 相关 counter；只有确认具体设备暴露等价 counter 后，才能用于 overdraw 量化。",
+          "evidence": [
+            "Task9 deep tech review 2026-04-28 10:30",
+            "AOSP/official docs/web复核，详见 deep-review log"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T10:30:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.9",
+      "section_title": "渲染机制的版本演进",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 正文写“Android 16：Vulkan 统一渲染堆栈”“Vulkan 正式成为 Android 官方图形 API”“Android 16 集成 ANGLE 作为系统级驱动，将 OpenGL ES 调用翻译为 Vulkan 调用”",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "severity": "P0",
+          "location": "L232-L241 / L462",
+          "detail": "正文写“Android 16：Vulkan 统一渲染堆栈”“Vulkan 正式成为 Android 官方图形 API”“Android 16 集成 ANGLE 作为系统级驱动，将 OpenGL ES 调用翻译为 Vulkan 调用”。Android 16 app-facing 官方特性页只列出 AGSL RuntimeColorFilter/RuntimeXfermode、ARR/headroom 等；VPA16 能证明新设备 Vulkan Profile 要求，不能证明所有 OpenGL ES App 自动经 ANGLE 系统级翻译。",
+          "suggestion": "拆开三件事：VPA16/新设备 Vulkan 要求；OpenGL ES 维护状态；ANGLE 是否系统启用。只有找到 Android 官方/CTS/系统属性/AOSP ANGLE 集成证据后，才保留“自动翻译”结论。",
+          "evidence": [
+            "Task9 deep tech review 2026-04-28 10:30",
+            "AOSP/official docs/web复核，详见 deep-review log"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T10:30:00+08:00",
+      "status": "pending"
     }
   ]
 }

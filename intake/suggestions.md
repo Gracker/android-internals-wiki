@@ -6136,3 +6136,16 @@
 - **问题**：正文把 Compose 1.10 纹理池化和 LazyLayout 零掉帧收益写成确定性结论，但未列 AndroidX release note、源码提交或测试数据。
 - **建议**：补 AndroidX release note / runtime 或 ui graphics 源码提交、测试设备和 Perfetto/gfxinfo 数据；拿不到证据时改为 `[待验证]` 或删去“显著提升/零掉帧”口径。
 
+
+## [External Review] 02.16 Sync Fence 框架与帧同步机制 — 2026-04-28
+- **类型**：数据/案例支撑
+- **位置**：多屏 Fence 章节
+- **问题**：缺少 FrameTargeter 在多屏异步场景下的 Fence Merge 细节
+- **建议**：提及 FrameTargeter 在多屏异步场景下利用 Fence Merge 缓解"副屏拖慢主屏"现象的细节
+- **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L463
+- **问题**：“16KB Page Size：TLB 命中率提升约 9%，渲染管线有效带宽增益”缺测试条件和来源。官方 16KB page size 资料可支持整体性能收益区间，但不能直接推出渲染管线带宽收益。
+- **建议**：补充官方 16KB page size 数据来源、测试条件和 workload；若没有渲染专项数据，改成“可能影响内存访问局部性”，不要写固定 9% 渲染收益。

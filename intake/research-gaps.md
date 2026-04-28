@@ -11040,3 +11040,51 @@ external-review 已命中 Android 16 自动建层与 16KB 页内存成本方向�
 - 4.7
 - 7.5
 
+
+## [2026-04-28] 2.8 过度绘制 — 知识盲区
+
+### 盲区描述
+Compose 1.10 是否存在公开的背景合并/遮挡跳过优化；external-review 已命中，但本轮未找到足够官方锚点。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 检索 Compose 1.10 release notes、AOSP/AndroidX commit、issue tracker 中与 Modifier.background、Surface、draw skipping 相关的条目
+- 确认该优化是否影响像素级 overdraw，还是只影响 composition/draw phase CPU 开销
+
+### 关联章节
+- 2.8
+- 2.5
+
+## [2026-04-28] 2.9 渲染机制的版本演进 — 知识盲区
+
+### 盲区描述
+Android 16 上 Skia Graphite/HWUI 的默认启用范围、ANGLE 系统级启用条件与 VPA16 的准确边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 AOSP android16-qpr2-release 中 HWUI 后端选择、Skia Graphite 开关、ANGLE 系统属性/feature flag
+- 核对 Android Vulkan Profile 2025 官方文档，区分 Vulkan Profile 要求与 OpenGL ES 运行时翻译
+
+### 关联章节
+- 2.9
+- 2.10
+- 2.14
+
+## [2026-04-28] 16.3 AOSP 源码编译与调试环境 — 知识盲区
+
+### 盲区描述
+Cuttlefish 的 crosvm/KVM/virtio 架构与官方安装路径；external-review 已命中 crosvm/virtio 盲区。
+
+### 重要程度
+中
+
+### 建议研究方向
+- 阅读 source.android.com Cuttlefish get-started 与 device/google/cuttlefish 文档
+- 补充 CI artifact 路径、host package、cuttlefish-base/cuttlefish-user 与 launch_cvd 的可复现步骤
+
+### 关联章节
+- 16.3
