@@ -11,9 +11,9 @@ last_verified: '2026-04-12'
 last_verified_against: AOSP android-16.0.0_r1
 drafted_date: '2026-03-30'
 confidence: high
-reviewed_date: "2026-04-28"'2026-04-20'
-reviewed_by: "openclaw-task6"openclaw-task6
-task6_result: "pass-light-edit"pass-light-edit
+reviewed_date: "2026-04-28"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
 task2b_result: fixed
 sources:
 - type: blog
@@ -54,15 +54,17 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '7.2'
-pipeline_stage: task2b_pending
-task6_state: "reviewed"revisiting
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 last_task2b_at: "2026-04-28T09:42:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-28'
 last_task9_at: '2026-04-28T10:30:00+08:00'
+status: ready-for-review
+task2b_result: fixed
 ---
 
 # 过度绘制
@@ -145,17 +147,19 @@ Perfetto 不会直接告诉我们“这里有 3x 过度绘制”。它给的是�
 
 如果设备能导出 GPU counter，再补看 GPU busy、fragment 相关计数或厂商 GPU counter 是否在同一时段一起抬高。没有这些 counter 也没关系，颜色图、柱状图和 FrameTimeline 已经足够先把问题归到 GPU 侧。
 
-### 标准化 GPU 计数器：数据驱动的 Overdraw 量化（Android 16+）
+### GPU 计数器辅助量化 Overdraw
 
-Android 16 的 Perfetto 新增了标准化的 `gpu.counters.pixels_drawn` 计数器，记录 GPU 在每帧实际写入的像素数。结合设备物理分辨率，可以直接算出精确的 Overdraw 倍率：
+Perfetto 支持采集设备/驱动暴露的 GPU counter，其中部分设备会提供 fragment/pixel 写入相关的计数器（如 fragment shading cycles、pixels rendered 等）。如果确认具体设备暴露了等价 counter，可以利用这些数据估算 Overdraw 倍率：
 
 ```
-Overdraw 倍率 = pixels_drawn / (screen_width × screen_height)
+Overdraw 倍率估算 ≈ GPU pixel counter 值 / (screen_width × screen_height)
 ```
 
-这种方法比颜色叠加图更精确，而且可以在自动化测试流水线中使用。比如一个 1080×2400 的设备，一帧 pixels_drawn 为 5,200,000，则 Overdraw 倍率约为 2.0x。
+但这不是一个跨设备通用的方案。Perfetto 的 GPU counter 采集依赖 `GpuCounterDescriptor`，counter ID、名称、语义完全由设备驱动决定，Android 没有强制标准化一个通用的 `pixels_drawn` counter。不同 GPU 厂商（Adreno、Mali、Xclipse）暴露的 counter 集合和语义各不相同，跨厂商对比需要先确认各自的 counter 定义。
 
-使用时注意两点：第一，不同 GPU 厂商对 `pixels_drawn` 的内部映射可能有差异，Perfetto 的标准化层负责归一化，但在跨厂商对比时仍然要确认数据源；第二，半透明层的混合操作会被计入 pixels_drawn，所以高 alpha 场景下的数值天然偏高，这属于正常混合开销而非过度绘制浪费。
+使用时注意两点：第一，先在目标设备上用 Perfetto 确认可用的 GPU counter 列表，确认是否有 fragment/pixel 写入相关的计数器可用；第二，半透明层的混合操作同样会被计入 pixel 写入，所以高 alpha 场景下的数值天然偏高，这属于正常混合开销而非过度绘制浪费。
+
+在设备不支持 GPU counter 的情况下，颜色叠加图（Debug GPU Overdraw）配合 FrameTimeline 仍然是最可靠的定位手段。
 
 [图：同一段滚动操作里，先用 Debug GPU Overdraw 标出列表区域的粉色块，再在 Perfetto 中对照该 Layer 的 Expected Timeline / Actual Timeline 与 App 进程 RenderThread slice]
 [待补充：真实 Perfetto FrameTimeline / AGI frame capture 截图]

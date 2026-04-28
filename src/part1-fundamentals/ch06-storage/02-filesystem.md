@@ -34,16 +34,17 @@ tags:
 - android
 - research
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-28
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: "2026-04-23T09:22:00+08:00"
 last_task9_at: 2026-04-28T16:21:00+08:00
+status: ready-for-review
 ---
 
 <!-- outline-start -->
@@ -401,7 +402,7 @@ EROFS 在 Android 上的布局通常是：
 
 **Room 的增量写入**：如果使用 Jetpack Room，可以利用 `@Transaction` 注解和批量操作 API 来减少隐式 `fsync` 的调用次数。
 
-在 Perfetto 中观察 `fsync` 行为时，可以通过 `systrace` 或 `perfetto` 的 `ftrace` 事件跟踪 `ext4_sync_fs`、`f2fs_sync_fs` 等 tracepoint，直接看到每次 `fsync` 的耗时。如果发现主线程上频繁出现超过 10ms 的 `fsync`，就需要排查是否是不必要的同步写入或者文件系统层面的瓶颈。
+在 Perfetto 中观察 `fsync` 行为时，可以通过 `ftrace` 事件跟踪 `ext4_sync_file_enter`/`ext4_sync_file_exit`、`f2fs_sync_file_enter`/`f2fs_sync_file_exit` 等 tracepoint，直接看到每次 `fsync` 的耗时。注意区分 `*_sync_file`（per-file fsync）和 `*_sync_fs`（superblock sync），前者才对应应用层调用的 `fsync()`。还可以结合 `block_rq_issue`/`block_rq_complete` 观察底层块设备 I/O 完成情况。如果发现主线程上频繁出现超过 10ms 的 `fsync`，就需要排查是否是不必要的同步写入或者文件系统层面的瓶颈。
 
 ## 扩展：各厂商的文件系统选型
 
