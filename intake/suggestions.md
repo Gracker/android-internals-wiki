@@ -6356,3 +6356,9 @@
 - **位置**：L169（GC 暂停 3ms / 掉帧率 3-5 倍）
 - **问题**：正文写“实测数据表明，将 GC 暂停从 5ms 降到 3ms，应用掉帧率通常下降 3-5 倍”，未给设备、刷新率、样本、Trace 或 benchmark 条件。
 - **建议**：补 Perfetto FrameTimeline + art_gc trace、测试设备和样本；没有数据前，保留帧预算推导，删除“通常下降 3-5 倍”。
+
+## [Task9 Deep Review] 2.2 帧率与刷新率 — 2026-04-29
+- **类型**：源码/资料链接
+- **位置**：L25 frontmatter sources
+- **问题**：`https://developer.android.com/develop/ui/views/layout/swinging-area` 当前返回 404，不能作为 2.2 帧率/刷新率章节的官方资料锚点。
+- **建议**：删除该链接，或替换为 Android 16 ARR 官方说明（`/about/versions/16/features#adaptive-refresh-rate`）及对应 `Display.hasArrSupport()` / `Display.getSuggestedFrameRate(int)` API 参考。

@@ -4855,8 +4855,8 @@
     {
       "section": "3.3",
       "section_title": "`src/part1-fundamentals/ch03-input/03-gesture-navigation.md`",
-      "priority": 85,
-      "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+      "priority": 95,
+      "reason": "[External Review] 技术评分 3.5/5，建议回炉；[Deep Tech Review] 3.3 SystemUI AOSP 源码路径缺 frameworks/base 前缀",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -4879,11 +4879,22 @@
           "location": "InputMonitor 章节",
           "detail": "设备级 pilferPointers 隔离。。技术事实：Android 16 能够精准识别并仅取消触发手势的特定设备流（如手指），而保留同一窗口内的其他设备（如手写笔）输入，支持复杂多模态操作。",
           "suggestion": "同步按设备 ID 隔离的新型指针窃取逻辑。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L29-L33、L113/L123/L146/L256、L353-L356 SystemUI 源码路径",
+          "detail": "正文和 frontmatter 多处写 packages/SystemUI/src/... 与 packages/SystemUI/shared/src/...。android-16.0.0_r1 中顶层 platform/packages/SystemUI 不存在；这些文件位于 frameworks/base/packages/SystemUI/...。",
+          "suggestion": "把 EdgeBackGestureHandler.java、BackPanelController.kt、BackPanel.kt、InputMonitorCompat.java 的路径统一改为 frameworks/base/packages/SystemUI/...，并保留 frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp 等非 SystemUI 路径不变。"
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-04-29T06:30:33+08:00",
+      "material_paths": [
+        "intake/suggestions.md"
+      ]
     },
     {
       "section": "3.4",
@@ -6871,6 +6882,46 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T05:30:17+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.2",
+      "section_title": "2.2 帧率与刷新率",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.2 Frame Rate Override 仍保留不存在的公开回调与错误包名",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API错误",
+          "location": "L610-L639 Frame Rate Override 小节",
+          "detail": "正文写“App 可以通过 FrameRateOverride 回调感知”，并把内部载荷写成 android.os.FrameRateOverride。AOSP android-16.0.0_r1 中不存在 frameworks/base/core/java/android/os/FrameRateOverride.java；实际内部载荷是 android.view.DisplayEventReceiver.FrameRateOverride，且不属于公开 SDK。",
+          "suggestion": "把“FrameRateOverride 回调”改为“只能通过 DisplayManager.DisplayListener / Choreographer.VsyncCallback 间接推断”；把 android.os.FrameRateOverride 改成 android.view.DisplayEventReceiver.FrameRateOverride，并明确它是 DisplayEventReceiver 内部事件载荷。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T06:30:33+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "3.2",
+      "section_title": "3.2 触摸响应的性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3.2 输入重采样调用链把 Resampler 放在 InputDispatcher 前，和 AOSP 实现不符",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理断裂",
+          "location": "L527-L550 输入重采样（Motion Resampling）机制",
+          "detail": "正文调用链写成 EventHub → InputReader → TouchInputMapper → LegacyResampler → InputDispatcher。AOSP android-16.0.0_r1 的 Resampler.h 明确写的是“inside InputConsumer's logic”；ViewRootImpl 通过 InputEventReceiver.consumeBatchedInputEvents(frameTimeNanos) 进入 NativeInputEventReceiver/InputConsumer.consume(... frameTime)，InputConsumer.cpp 再按 mResampleTouch、RESAMPLE_LATENCY 等逻辑重采样。",
+          "suggestion": "重写调用链为 EventHub/InputReader/TouchInputMapper → InputDispatcher → InputChannel → App 侧 NativeInputEventReceiver/InputConsumer.consume(..., frameTime) → resampleTouchState/Resampler → MotionEvent 分发；保留 5ms/2-20ms/8ms 等常量时标注来自 InputConsumer.cpp 或 Resampler.cpp 的具体版本。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T06:30:33+08:00",
       "status": "pending"
     }
   ],
