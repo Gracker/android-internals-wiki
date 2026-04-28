@@ -2,7 +2,7 @@
 title: "Sync Fence 框架与帧同步机制"
 chapter: "2.16"
 section: "2.16"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-26"
 last_verified_against: "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp, source.android.com/docs/core/graphics/sync"
@@ -30,11 +30,11 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
@@ -43,7 +43,7 @@ task2b_result: fixed
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T01:20:00+08:00"
-last_task2b_at: "2026-04-26T23:53:43+08:00"
+last_task2b_at: "2026-04-28T11:54:37+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
@@ -250,6 +250,48 @@ vulkanManager().createReleaseFence(&fence, mRenderThread.getGrContext());
 Trace 分析时，GL 后端把 `flush commands`、EGL release fence、SurfaceFlinger acquire/release fence 放在同一时间窗里看。Vulkan 后端还要把 GPU queue submit、semaphore 导出的 sync fd、`presentFence` 和 FrameTimeline 放在同一时间窗里看。这样才能判断等待来自 HWUI 后端提交、SurfaceFlinger 消费，还是显示侧 present。
 
 [已验证: AOSP android-8.1.0_r81 / android-16.0.0_r1, frameworks/base/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp, frameworks/base/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp, frameworks/base/libs/hwui/renderthread/VulkanManager.cpp]
+
+## Vulkan Timeline Semaphores：从一次性 fd 到长效计数器（Android 16）
+
+前面的内容围绕 `dma_fence` / `sync_fence` 的 fd 模型展开——每个同步点对应一个 fd，signal 后就失效，多轮同步需要反复创建和传递新 fd。Vulkan Timeline Semaphores 是另一套同步模型，Android 16 强制要求新设备支持它。
+
+### Binary Semaphore vs Timeline Semaphore
+
+传统 Vulkan Binary Semaphore 的行为和 `sync_fence` 的 fd 类似：signal 一次后回到 unsignal 状态，只能表达"这一轮完成了"。Timeline Semaphore 引入了 64 位单调计数器：每次 signal 时计数器递增，等待端可以指定"我等计数器到达某个值"。这意味着同一个 semaphore 对象可以跨多轮使用，不需要每轮创建新的 fd。
+
+```cpp
+// Timeline Semaphore 的等待语义
+VkSemaphoreWaitInfo waitInfo{};
+waitInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
+waitInfo.semaphoreCount = 1;
+waitInfo.pSemaphores = &timelineSemaphore;
+waitInfo.pValues = &waitValue;  // 等计数器到达这个值
+vkWaitSemaphores(device, &waitInfo, UINT64_MAX);
+```
+
+### 对图形管线的影响
+
+**减少 fd 资源开销。** 传统模式下每帧的 acquire / release / present 各需要独立的 fd，多 layer 合成时 fd 数量线性增长。Timeline Semaphore 用一个 64 位计数器替代了多个一次性 fd，减少了 fd 分配、传递和 close 的开销。
+
+**支持跨进程提前提交。** 计数器模型允许 producer 提交第 N+1 帧的渲染命令，同时等待第 N 帧 fence signal（等待值 = N），而不是先等第 N 帧 signal 再提交第 N+1 帧。这种"提前提交等待"在流水线化的 GPU 命令提交中减少了上下文切换延迟。
+
+**与 dma_fence 的共存。** Android 16 中 Timeline Semaphore 和传统 dma_fence fd 并存。Vulkan 应用可以直接使用 Timeline Semaphore；OpenGL ES 应用通过 ANGLE 翻译到 Vulkan 后端时，ANGLE 内部处理两者的桥接。在 Perfetto 中，Timeline Semaphore 的等待仍会以 fence wait 的形式呈现，但底层同步对象的语义已经不同。
+
+> [说明: Vulkan Timeline Semaphores 基于 Vulkan 1.2 规范与 Android 16 VPA16 设备要求，实际支持范围取决于设备 GPU 驱动版本。]
+
+### 16KB 页对 Fence 路径的加速
+
+16KB 页对 fence 同步路径的影响不在 fence 对象本身，而在内核中断处理路径的 TLB 命中率。当 GPU 完成渲染并通过中断通知 CPU 时，内核的中断处理函数需要访问 fence 状态所在的内存页。16KB 页面将 TLB 覆盖范围扩大了 4 倍，减少了中断处理路径上的 TLB Miss，缩短了从 GPU 完成 signal 到 SurfaceFlinger 被 CPU 唤醒响应的时间窗口。
+
+这个优化对高频 VSync（120Hz / 144Hz）设备更明显，因为帧间隔越短，fence signal 和下一帧 fence wait 之间的时间余量越小，任何路径上的延迟缩减都有价值。在 Perfetto 中，16KB 页环境下的 fence wait 尾部抖动通常比 4KB 环境更小。
+
+### Android 17 展望：去 fd 化的同步收口
+
+API 37（Android 17）计划进一步强推 Timeline Semaphores，目标是从图形管线中逐步移除对 fd 的依赖。fd 泄漏是 Android 图形栈长期存在的稳定性隐患——一个未关闭的 fence fd 会阻止对应 buffer 被 Gralloc 回收，累积后可能触发图形栈卡死。Timeline Semaphore 的计数器模型从根源上消除了 fd 泄漏问题，因为同一个 semaphore 对象在生命周期内被复用，不存在"忘记 close"的场景。
+
+这个转变不会一步到位。Android 16 要求新设备支持 Timeline Semaphores，但传统 fd 路径仍然保留；Android 17 预期会在更多图形组件中默认使用 Timeline 路径，逐步缩小 fd 路径的覆盖范围。对开发者来说，如果使用 Vulkan 直接渲染，现在就可以迁移到 Timeline Semaphores；如果通过 ANGLE 间接使用，迁移由系统层完成。
+
+> [说明: Android 17 去 fd 化政策基于 Android 17 Developer Preview 公开路线图，具体实施范围以正式版发布为准。]
 
 ## 常见问题与误区
 

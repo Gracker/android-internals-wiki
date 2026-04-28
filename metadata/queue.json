@@ -183,8 +183,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-10-gpu-rendering-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-10-gpu-rendering-external-review.md",
+      "completed_at": "2026-04-28T11:54:54+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added gpu_busy standardized counter, getGpuHeadroom() API, Gralloc AIDL V2 sub-allocation, Vulkan Sync 2 in version table"
     },
     {
       "section": "02.16",
@@ -213,8 +216,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-16-sync-fence-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-16-sync-fence-external-review.md",
+      "completed_at": "2026-04-28T11:54:54+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added Vulkan Timeline Semaphores section, 16KB page TLB acceleration for fence paths, Android 17 de-fd policy outlook"
     },
     {
       "section": "02.17",
