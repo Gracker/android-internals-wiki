@@ -6350,3 +6350,9 @@
 - **位置**：L797 / L827（Monitor Contention 与 lock_name）
 - **问题**：正文一处按 Perfetto v54 口径说明 `android_monitor_contention` 不提供 `lock_name`，后文又要求从 `owner_thread` 和 `lock_name` 追根因。按 v54 口径会让读者寻找不存在列；如果按 Perfetto main 新表结构，又和章节尾部“基于 Perfetto v54.0”不一致。
 - **建议**：若保持 v54，删除 `lock_name` 追查口径，改用 `short_blocking_method`、`blocking_thread_name`、`blocking_src` 和 UI 轨道；若升级到新版 Perfetto，标注版本并在 SQL SELECT 中显式带出 `lock_name`。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L169（GC 暂停 3ms / 掉帧率 3-5 倍）
+- **问题**：正文写“实测数据表明，将 GC 暂停从 5ms 降到 3ms，应用掉帧率通常下降 3-5 倍”，未给设备、刷新率、样本、Trace 或 benchmark 条件。
+- **建议**：补 Perfetto FrameTimeline + art_gc trace、测试设备和样本；没有数据前，保留帧预算推导，删除“通常下降 3-5 倍”。

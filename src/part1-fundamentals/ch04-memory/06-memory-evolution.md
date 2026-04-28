@@ -44,15 +44,18 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 4
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: pending
-last_task9_at: "2026-04-20T04:20:38+08:00"
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: "2026-04-29T05:30:17+08:00"
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-19T02:05:51+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-29"
+task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB 页内部碎片公式错误，RELRO 兼容模式安全断言缺源码闭环"
 ---
 
 
