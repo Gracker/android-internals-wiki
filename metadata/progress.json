@@ -1,45 +1,17 @@
 {
-  "generated_at": "2026-04-28T13:23:00+08:00",
+  "generated_at": "2026-04-29T03:25:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 111,
-    "ready-for-review": 107,
+    "finalized": 110,
+    "ready-for-review": 108,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-28T22:57:00+08:00",
+    "last_updated": "2026-04-29T03:25:00+08:00",
     "pipeline_stage_counts": {
       "None": 33,
-      "ready-to-publish": 115,
-      "task2b_pending": 76,
-      "task9_pending": 9,
-      "task6_pending": 17
-    },
-    "task6_state_counts": {
-      "None": 34,
-      "reviewed": 177,
-      "revisiting": 39
-    },
-    "task9_state_counts": {
-      "None": 38,
-      "reviewed": 197,
-      "pending": 14,
-      "fixed": 1
-    },
-    "task2b_state_counts": {
-      "None": 40,
-      "fixed": 128,
-      "pending": 78,
-      "idle": 4
-    },
-    "draft": 0,
-    "None": 32
-  },
-  "pipeline": {
-    "pipeline_stage_counts": {
-      "None": 33,
-      "ready-to-publish": 111,
-      "task2b_pending": 82,
+      "ready-to-publish": 110,
+      "task2b_pending": 83,
       "task9_pending": 8,
       "task6_pending": 15,
       "'task2b_pending'": 1
@@ -58,12 +30,43 @@
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 121,
-      "pending": 84,
+      "fixed": 120,
+      "pending": 85,
       "idle": 4,
       "'pending'": 1
     },
-    "last_updated": "2026-04-28T22:57:00+08:00"
+    "draft": 0,
+    "None": 32
+  },
+  "pipeline": {
+    "pipeline_stage_counts": {
+      "None": 33,
+      "ready-to-publish": 110,
+      "task2b_pending": 83,
+      "task9_pending": 8,
+      "task6_pending": 15,
+      "'task2b_pending'": 1
+    },
+    "task6_state_counts": {
+      "None": 34,
+      "reviewed": 177,
+      "revisiting": 38,
+      "revising": 1
+    },
+    "task9_state_counts": {
+      "None": 38,
+      "reviewed": 199,
+      "pending": 12,
+      "'reviewed'": 1
+    },
+    "task2b_state_counts": {
+      "None": 40,
+      "fixed": 120,
+      "pending": 85,
+      "idle": 4,
+      "'pending'": 1
+    },
+    "last_updated": "2026-04-29T03:25:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1535,28 +1538,32 @@
       "title": "输入延迟与预测输入技术",
       "chapter": "3.4",
       "section": "3.4",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
       "last_verified": "2026-04-11",
       "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com + perfetto stdlib docs",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-19",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_reviewed": "2026-04-29",
+      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-29T03:25:00+08:00"
     },
     "src/part1-fundamentals/ch03-input/05-input-interception-security.md": {
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
       "title": "输入事件拦截与安全机制",
-      "chapter": "'3.5'",
-      "section": "'3.5'",
+      "chapter": "3.5",
+      "section": "3.5",
       "status": "ready-for-review",
       "drafted_by": "openclaw-task",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
@@ -1568,7 +1575,11 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-19",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_reviewed": "2026-04-29",
+      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-29T03:25:00+08:00"
     },
     "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md": {
       "path": "src/part1-fundamentals/ch03-input/06-gesture-recognition-performance.md",
@@ -1658,9 +1669,10 @@
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T17:18:00+08:00"
+      "last_task9_at": "2026-04-29T03:25:00+08:00",
+      "task9_reviewed": "2026-04-29"
     },
     "src/part1-fundamentals/ch04-memory/03-art-memory.md": {
       "path": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
@@ -6972,6 +6984,38 @@
         }
       ],
       "log": "logs/deep-review/2026-04-28-22-deep-review.md"
+    },
+    {
+      "date": "2026-04-29",
+      "time": "03:25",
+      "task": "task9-deep-tech-review",
+      "sections_reviewed": [
+        {
+          "section": "3.4",
+          "title": "输入延迟与预测输入技术",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 1
+        },
+        {
+          "section": "3.5",
+          "title": "输入事件拦截与安全机制",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 2,
+          "p2": 1
+        },
+        {
+          "section": "4.2",
+          "title": "Linux 内核内存管理",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 1,
+          "p2": 1
+        }
+      ],
+      "log": "logs/deep-review/2026-04-29-03-deep-review.md"
     }
   ],
   "progress": {

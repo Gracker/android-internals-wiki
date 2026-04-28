@@ -4805,7 +4805,7 @@
 
 ## [Task9 Deep Review] 19.0 第 19 章：APM 工具与性能监控生态 — 2026-04-27
 - **类型**：版本差异
-- **位置**：L64 / L97 androidx.tracing 2.0 与 Perfetto 格式
+- **位置**：L64 / L100 androidx.tracing 2.0 与 Perfetto 格式
 - **问题**：正文写“Tracing SDK 2.0 支持 Perfetto 格式”，但缺少 2.0.0-alpha 版本边界和作用域说明。AndroidX Tracing 2.0 当前主要是 in-process tracing / tracing-wire / TraceSink 方向，不等同于稳定版 `Trace.beginSection` 或系统级 Perfetto 数据源。
 - **建议**：标注 2.0.0-alpha 的时间点、artifact（如 tracing-wire）和“不替代系统 trace”的边界；稳定接入仍区分 `androidx.tracing:tracing`、`tracing-perfetto`、平台 `android.os.Trace`。
 
@@ -6325,3 +6325,22 @@
 - **位置**：案例一/二/三/四/五效果对比表
 - **问题**：WakeLock、GPS、Radio、Alarm、JobScheduler 修复效果表包含耗电百分比、活跃比例和持有时长，但缺少测试条件、设备、网络制式、系统版本和样本范围。
 - **建议**：补 bugreport/Battery Historian/Power Profiler 采样条件；无法追溯来源的数字改为示意，并明确不作为通用基准。
+
+
+## [Task9 Deep Review] 3.4 输入延迟与预测输入技术 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L505-L511 Android 17 DeliQueue 对输入回调的间接收益
+- **问题**：15% lock contention、4% 应用掉帧、7.7% SystemUI/Launcher 掉帧这组 beta 数据缺少原始发布链接、测试设备、targetSdk 条件和统计口径。
+- **建议**：补官方 Android Developers / Google Blog 原文与测试边界；如果只来自二手材料，改成“公开 beta 数据显示”并保留待验证标记。
+
+## [Task9 Deep Review] 3.5 输入事件拦截与安全机制 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L303-L326 InputFilter / Accessibility 性能影响
+- **问题**：章节正确避免写固定 0.1ms/2ms 数值，但没有给出可跑的 Perfetto 或 microbenchmark 方案，Task2B 后续难以补证据。
+- **建议**：补空 InputFilter、轻量 filter、Accessibility key filter 三组对照 trace：InputDispatcher 前置处理、KeyEventDispatcher PendingKeyEvent 停留时间、服务进程 onKeyEvent 返回时间。
+
+## [Task9 Deep Review] 4.2 Linux 内核内存管理 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L353 16KB page size 对 page_fault_user 的影响
+- **问题**：官方 16KB page size 文档可支撑 3.16% 平均启动、最高 30%、4.56% 启动功耗、相机/系统启动数据，但正文“page_fault_user 频率骤降约 75%”没有绑定公开原文、设备、trace 配置或 workload。
+- **建议**：补 LPC/官方/本地 trace 来源；找不到一手来源时把 75% 删除，保留“Page Fault 次数可能下降，需按设备和 workload 实测”。

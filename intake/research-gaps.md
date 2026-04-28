@@ -11195,3 +11195,40 @@ external-review 提到 Android 16 F2FS ZNS、EROFS 16KB sub-page compression、A
 ### 关联章节
 6.1、6.2、6.3、6.4
 
+
+
+## [2026-04-29] 3.5 输入事件拦截与安全机制 — 知识盲区
+
+### 盲区描述
+InputMonitor / monitorGestureInput / pilferPointers 与 Android 14 accessibilityDataSensitive 没有进入章节主线。external-review 已命中 InputMonitor 隔离相关线索，但其“Android 17 密码场景物理切断”说法未完成回源；本轮能确认的是 AOSP android-14.0.0_r1 已存在 InputMonitor 监控输入流、MONITOR_INPUT 权限、pilferPointers，以及 View.accessibilityDataSensitive / isAccessibilityTool 边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `frameworks/base/core/java/android/view/InputMonitor.java`、`InputManagerService.monitorGestureInput()`、`InputDispatcher` spy window / pilferPointers 行为。
+- 核对 `View.accessibilityDataSensitive`、`ACCESSIBILITY_DATA_SENSITIVE_YES`、`AccessibilityServiceInfo.isAccessibilityTool` 对无障碍交互的限制。
+- 查 Android 15/16/17 是否有密码输入场景对非系统 InputMonitor 的新增限制；没有一手证据前不要写入正文。
+
+### 关联章节
+- 3.5
+- 9.1
+- 9.2
+
+## [2026-04-29] 4.2 Linux 内核内存管理 — 知识盲区
+
+### 盲区描述
+MGLRU 在 Android common kernel / GKI / Pixel 分支中的启用状态缺少版本矩阵。external-review 已命中“Android 16 GKI 6.12 默认开启 MGLRU”的线索，但本轮只能确认 MGLRU 已在 Linux 6.1 主线，不能把主线合入直接等同于 Android 10-16 设备默认行为。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 检查 android14-6.1、android15-6.6、android16-6.12 的 `CONFIG_LRU_GEN`、`CONFIG_LRU_GEN_ENABLED`、Pixel vendor defconfig 与运行态 `/sys/kernel/mm/lru_gen/enabled`。
+- 区分传统 LRU、MGLRU 可用、MGLRU 默认启用、OEM 二次调参四种状态。
+- 核对 Silk / GC-内核协同论文结论与 Android 平台实现边界，避免把研究原型写成系统默认能力。
+
+### 关联章节
+- 4.2
+- 4.3
+- 4.4
