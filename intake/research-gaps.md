@@ -11004,3 +11004,39 @@ Android 17 如何通过 SELinux 确保只有 vold 等关键路径能使用异步
 ### 关联章节
 19.26, 7.11, 18.13
 
+## [2026-04-28] 2.2 帧率与刷新率 — 知识盲区
+
+### 盲区描述
+external-review 已命中 HyperOS 高频 VSync 注入方向；Task9 复核发现正文已经写入“HyperOS 2.0 通过 240Hz+ 虚拟 VSync 注入让 Choreographer 一个物理帧内多次处理输入”，但缺少 OEM 文档、源码、Perfetto trace 或可复现实验。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查找 HyperOS / MIUI 渲染与输入延迟优化的一手材料，区分触控采样率、输入预测、虚拟 VSync 与 Choreographer 回调注入。
+- 用 Perfetto 对比物理刷新率、VSYNC-app、`Choreographer#doFrame`、InputDispatcher/InputReader 事件间隔，确认是否存在一个物理周期内多次 `CALLBACK_INPUT`。
+- 若只能获得二手信息，正文应标 `[待验证]` 并移到 OEM 差异案例。
+
+### 关联章节
+- 2.2
+- 2.4
+- 17.3
+
+## [2026-04-28] 2.7 Hardware Layer — 知识盲区
+
+### 盲区描述
+external-review 已命中 Android 16 自动建层与 16KB 页内存成本方向；Task9 复核未找到“drawPath/RenderEffect 权重 + 静态节点阈值自动升层”的明确 AOSP 锚点，也未找到 16KB 页对 GPU layer 小分配导致 9% 内存压力的图形内存专项数据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 在 `frameworks/base/libs/hwui` 与 `frameworks/base/graphics/java/android/graphics/RenderNode.java` 中定位自动 promotion 的真实条件、函数名、阈值和版本引入提交。
+- 用不同尺寸 View layer 采集 gralloc/DMA-BUF stride、memtrack、dumpsys SurfaceFlinger/GPU memory，确认 16KB page 下的实际对齐与尾部浪费。
+- 复核 Compose 1.10 `graphicsLayer` 离屏缓冲池化是否有 AndroidX release note 或源码提交，补 LazyLayout 快速滑动 trace 数据。
+
+### 关联章节
+- 2.7
+- 4.7
+- 7.5
+

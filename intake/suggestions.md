@@ -6118,3 +6118,21 @@
 - **问题**：frontmatter sources 只列 Samsung、Android ADPF/Game Mode、TikTok 等来源，未列 Xiaomi/OPPO/vivo 官方材料；正文对 Xiaomi Game Turbo 用户侧模式、OPPO/vivo vendor thermal / power stack 协作只给定性结论。
 - **建议**：补 Xiaomi/HyperOS Game Turbo 官方说明、OPPO/vivo 开发者文档或公开技术分享；若找不到一手资料，把这些段落降级为“设备侧模式入口/待按机型验证”，并在验证方法中要求记录机型、系统版本、perfservice/power HAL 可观测信号。
 
+## [Task9 Deep Review] 2.4 Choreographer 与渲染流水线 — 2026-04-28
+- **类型**：数据缺失 / API 可用性边界
+- **位置**：L353-L372 FrameMetrics.GPU_DURATION 示例
+- **问题**：示例说明了 API 31+ 可读 `GPU_DURATION`，但没有交代 `FrameMetrics.getMetric()` 对不可用指标返回 -1、不同设备 GPU 完成时间戳可用性存在差异。
+- **建议**：补一段边界：线上采集必须过滤 -1，并把 GPU_DURATION 与 Frame Timeline、RenderThread slice、GPU counter 交叉验证，避免把不可用值当作 0ms。
+
+## [Task9 Deep Review] 2.4 Choreographer 与渲染流水线 — 2026-04-28
+- **类型**：版本差异 / 元数据一致性
+- **位置**：frontmatter `applicable_versions` vs 正文“版本演进”
+- **问题**：frontmatter 写 Android 12-16，但正文覆盖 Choreographer 从 Android 4.1、FrameMetrics 从 API 24、Insets/Surface frame-rate 从 API 30 开始的版本演进。
+- **建议**：如果本节是完整 Choreographer 机制说明，把 `applicable_versions` 扩到 Android 4.1 (API 16) - Android 16 (API 36)；如果只服务现代 Frame Timeline，把旧版本内容移为背景并标明适用边界。
+
+## [Task9 Deep Review] 2.7 Hardware Layer — 2026-04-28
+- **类型**：数据缺失 / 版本差异
+- **位置**：L308 / L343 Compose 1.10 `graphicsLayer` 离屏缓冲池化
+- **问题**：正文把 Compose 1.10 纹理池化和 LazyLayout 零掉帧收益写成确定性结论，但未列 AndroidX release note、源码提交或测试数据。
+- **建议**：补 AndroidX release note / runtime 或 ui graphics 源码提交、测试设备和 Perfetto/gfxinfo 数据；拿不到证据时改为 `[待验证]` 或删去“显著提升/零掉帧”口径。
+

@@ -633,18 +633,18 @@
       "last_verified": "'2026-04-24'",
       "last_verified_against": "AOSP android-16.0.0_r1, 官方文档最新版本, Android 35 SDK sources",
       "confidence": "high",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "'pass-light-edit'",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-20'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T00:05:03+08:00"
+      "last_task9_at": "2026-04-28T09:21:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/03-vsync.md": {
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
@@ -689,9 +689,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T22:55:00+08:00"
+      "last_task9_at": "2026-04-28T09:21:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md": {
       "path": "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md",
@@ -803,7 +803,10 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-19",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-28T09:21:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/08-overdraw.md": {
       "path": "src/part1-fundamentals/ch02-rendering/08-overdraw.md",
@@ -6866,6 +6869,21 @@
       ],
       "result": "completed",
       "log": "logs/deep-review/2026-04-27-23-deep-review.md"
+    },
+    {
+      "key": "2026-04-28-09-task9",
+      "task": "deep-tech-review",
+      "sections": [
+        "2.2",
+        "2.4",
+        "2.7"
+      ],
+      "result": {
+        "p0": 2,
+        "p1": 3,
+        "p2": 3
+      },
+      "at": "2026-04-28T09:21:00+08:00"
     }
   ],
   "progress": {
