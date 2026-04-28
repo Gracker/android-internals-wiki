@@ -84,7 +84,7 @@ Linux 内核在用户进程和具体文件系统之间引入了 VFS 抽象层。
 
 [已验证: 官方文档, kernel.org/doc/html/latest/filesystems/vfs.html]
 
-这意味着，从 App 开发者的角度看，不需要关心底层用的是哪种文件系统；但从性能分析的角度，我们必须清楚——同一个 `fsync()` 调用，在 ext4 和 f2fs 上的行为完全不同。这也是为什么我们在 Perfetto 中看到 I/O 延迟异常时，需要先确认文件系统类型。
+从 App 开发者的角度看，不需要关心底层用的是哪种文件系统；但从性能分析的角度，同一个 `fsync()` 调用在 ext4 和 f2fs 上的行为完全不同。这也是为什么我们在 Perfetto 中看到 I/O 延迟异常时，需要先确认文件系统类型。
 
 VFS 层管理的另一个关键组件是 Page Cache（页缓存）。通过 `read()` 读取文件时，内核先检查 Page Cache 中是否已有对应数据——如果有，直接从内存返回，不触发磁盘 I/O；如果没有，才向文件系统发起实际的读请求。`write()` 也是类似，数据先写入 Page Cache，标记为"脏页"（dirty page），由内核的 `flush` 线程在后台异步写回磁盘。这种机制对读性能有巨大的提升——被频繁访问的文件数据几乎全部缓存在内存中，这也是为什么手机在内存充足时读操作通常很快，而写操作（尤其是同步写）更容易成为瓶颈。[已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md]
 
@@ -122,7 +122,7 @@ ext4 面向服务器和桌面场景设计，它的优化策略在 HDD 时代是�
 
 **问题二：原地更新与写放大**
 
-ext4 采用就地更新（in-place update）策略——修改文件时，直接覆盖原有的磁盘块。对于 HDD 来说，这不是问题，因为 HDD 的扇区可以无限次覆盖写入。但 NAND 闪存完全不同——它不能就地覆盖写，必须先擦除整个 block（通常 128KB-256KB），然后再写入。这意味着修改一个 4KB 的页面，实际需要：读取整个 block → 在内存中修改 → 擦除 block → 写回整个 block。4KB 的写入被放大成了 128KB+，这就是写放大（Write Amplification）。
+ext4 采用就地更新（in-place update）策略——修改文件时，直接覆盖原有的磁盘块。对于 HDD 来说，这不是问题，因为 HDD 的扇区可以无限次覆盖写入。但 NAND 闪存完全不同——它不能就地覆盖写，必须先擦除整个 block（通常 128KB-256KB），然后再写入。修改一个 4KB 的页面，实际需要：读取整个 block → 在内存中修改 → 擦除 block → 写回整个 block。4KB 的写入被放大成了 128KB+，这就是写放大（Write Amplification）。
 
 就地更新策略使得 ext4 无法有效利用闪存内部的并发能力，加速了存储芯片的磨损，也增加了垃圾回收（GC）的压力。
 
@@ -372,7 +372,7 @@ dm-verity 的 block-level 验证目前没有独立的 Trace slice。在 Perfetto
 
 ### EROFS 与 OTA 升级
 
-EROFS 完全支持 Android 13+ 的 Virtual A/B OTA 升级机制。OTA 包生成工具能够智能地解压 LZ4 流来生成增量包（delta），因此 EROFS 分区的 OTA 包大小与 ext4 分区相比几乎没有差异。这意味着切换到 EROFS 不会增加用户的 OTA 下载量和升级时间。[已验证: 官方文档, source.android.com/docs/core/ota]
+EROFS 完全支持 Android 13+ 的 Virtual A/B OTA 升级机制。OTA 包生成工具能够智能地解压 LZ4 流来生成增量包（delta），因此 EROFS 分区的 OTA 包大小与 ext4 分区相比几乎没有差异，切换到 EROFS 不会增加用户的 OTA 下载量和升级时间。[已验证: 官方文档, source.android.com/docs/core/ota]
 
 ### [图：ext4 vs EROFS system 分区布局对比]
 
@@ -388,7 +388,7 @@ EROFS 在 Android 上的布局通常是：
 
 在分析存储性能时，我们通常关注顺序读写和随机读写两大类指标。对于 Android 设备来说，**随机写性能几乎总是最薄弱的环节**。
 
-原因有两层。第一层在闪存硬件层面——NAND 闪存的写入粒度是 page（通常 4KB 或 8KB），但擦除粒度是 block（通常包含 128-512 个 page）。这意味着即使只修改一个 page，也需要读取整个 block → 在内存中修改 → 擦除 block → 写回整个 block。随机写入导致大量 block 被部分修改，产生大量的"读-改-写"操作。
+原因有两层。第一层在闪存硬件层面——NAND 闪存的写入粒度是 page（通常 4KB 或 8KB），但擦除粒度是 block（通常包含 128-512 个 page）。即使只修改一个 page，也需要读取整个 block → 在内存中修改 → 擦除 block → 写回整个 block。随机写入导致大量 block 被部分修改，产生大量的"读-改-写"操作。
 
 第二层在文件系统层面。ext4 的就地更新策略使得每次随机写入都可能触发上述的"读-改-写"循环。f2fs 的 CoW 策略通过把修改写到新位置来避免这个问题，但代价是需要维护复杂的映射表和定期执行 GC。
 
