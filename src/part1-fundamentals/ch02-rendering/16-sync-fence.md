@@ -30,24 +30,24 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task2b_result: fixed
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-04-28"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T01:20:00+08:00"
+last_task9_at: "2026-04-28T12:30:00+08:00"
 last_task2b_at: "2026-04-28T11:54:37+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
-
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 1。"
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制
