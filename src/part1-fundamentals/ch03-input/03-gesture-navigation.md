@@ -13,7 +13,7 @@ review_type: "post-polish-quality-gate"
 review_round: 3
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2a"
-reviewed_date: '2026-04-21'
+reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
@@ -59,8 +59,8 @@ sources:
     path: "https://developer.android.com/reference/androidx/activity/OnBackPressedCallback"
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: "pass-tech-review"
 task2b_state: fixed
