@@ -30,15 +30,18 @@ sources:
     path: "intake/research-feeds/2026-04-02-11-ch02-android17-deltique-lockfree-messagequeue.md"
 tags: [input, latency, touch, prediction, motioneventpredictor, front-buffer, kalman-filter, perfetto, input-latency]
 related_chapters: ["1.13", "3.1", "3.2", "2.3", "2.4", "2.5", "8.1", "13.3", "13.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: needs-rework
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
+task9_reviewed_date: "2026-04-29"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-29T03:25:00+08:00"
 ---
 
 # 3.4 输入延迟与预测输入技术

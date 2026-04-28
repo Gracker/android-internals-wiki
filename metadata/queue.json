@@ -4864,7 +4864,7 @@
         {
           "type": "SQL 鲁棒性/原理断裂",
           "severity": "P1",
-          "location": "L502-L508（ANR 前主线程长耗时查询）",
+          "location": "L505-L511（ANR 前主线程长耗时查询）",
           "detail": "SQL 用 JOIN thread ON slice.track_id IN (SELECT id FROM track WHERE thread.utid = (...))，没有通过 thread_track 把 slice.track_id 关联到 thread.utid。该写法会按 outer thread.utid 相关子查询选择 track，容易把目标主线程过滤退化成错误结果。",
           "suggestion": "改为 slice JOIN thread_track tt ON slice.track_id = tt.id JOIN thread t ON tt.utid = t.utid，并用 process/package 过滤目标进程；主线程识别优先使用 t.is_main_thread = 1，必要时用 t.tid = process.pid 兜底。"
         }
@@ -8062,7 +8062,7 @@
         {
           "type": "原理断裂/版本差异",
           "severity": "P1",
-          "location": "§io_uring multishot + zero-copy L97-L113",
+          "location": "§io_uring multishot + zero-copy L100-L113",
           "detail": "正文把 IORING_SETUP_NO_MMAP、fixed buffers、zero-copy、Bionic liburing 兼容层和 OkHttp/Cronet/SQLite 受益串成一条确定链，但没有 Android 用户态接入源码或默认启用证据；IORING_SETUP_NO_MMAP 也不能等同于应用 I/O zero-copy。",
           "suggestion": "拆开内核能力、bionic/liburing 暴露、framework/库是否采用三层；补 bionic/liburing、Cronet/SQLite/OkHttp 接入证据，未落地的只写“潜在收益”。"
         }
@@ -18006,6 +18006,83 @@
       "added_at": "2026-04-28T22:57:00+08:00",
       "status": "pending",
       "source_file": "src/part2-performance/ch11-power/04-case-studies.md"
+    },
+    {
+      "section": "3.4",
+      "section_title": "输入延迟与预测输入技术",
+      "priority": 95,
+      "reason": "[Deep Tech Review] requestUnbufferedDispatch/Game Mode 被写成可触发触控报点率或高性能输入模式，公开 API 与 AOSP 文档不支持该因果关系",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L100 动态报点率缩放段落",
+          "detail": "正文写应用可通过 Game Mode API 或 View.requestUnbufferedDispatch() 间接触发系统进入高性能输入模式并提高触控报点率。AOSP android-16.0.0_r1 的 View.requestUnbufferedDispatch() 只请求 MotionEvent 不被 batching，文档还提示多数流不会降低输入延迟，并会失去 resampling；Game Mode 公开文档也没有把触控 IC 报点率或 InputDispatcher 优先级作为 public contract。",
+          "suggestion": "把动态报点率写成 OEM 触控固件/驱动策略；requestUnbufferedDispatch 只放在 batching/resampling 取舍里；Game Mode 只保留“可能通过整体性能预算间接影响端到端延迟”的边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T03:25:00+08:00",
+      "status": "pending",
+      "source_file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md"
+    },
+    {
+      "section": "3.5",
+      "section_title": "输入事件拦截与安全机制",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 输入拦截安全边界遗漏 InputMonitor/monitorGestureInput 与 Android 14 accessibilityDataSensitive",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "L82-L93 InputFilter 定义与安全边界章节",
+          "detail": "章节把 InputFilter 写成最早的可编程拦截点，但未覆盖隐藏系统能力 InputMonitor/monitorGestureInput。AOSP InputMonitor.java 明确说明特权组件可在不是目标窗口时监控 InputEvent 流，pilferPointers() 还能拿走当前 pointer stream；InputManagerService.monitorGestureInput() 需要 MONITOR_INPUT 权限。",
+          "suggestion": "新增 InputMonitor / spy window / pilferPointers 小节，区分“旁路监控副本”“拿走 pointer stream”“InputFilter 消费/重发事件”三类能力，并写清 MONITOR_INPUT 权限和显示维度。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L361-L376 Android 14 权限边界",
+          "detail": "Android 14 已引入 View.accessibilityDataSensitive / ACCESSIBILITY_DATA_SENSITIVE_YES，非 isAccessibilityTool 的无障碍服务对敏感 View 的 accessibility interaction 会受限。正文版本表只保留 key filter / gesture injection，遗漏这个直接影响无障碍交互安全边界的版本点。",
+          "suggestion": "补 Android 14 accessibilityDataSensitive 与 AccessibilityServiceInfo.isAccessibilityTool 的关系，并说明它限制的是 accessibility interaction，不等同于 InputDispatcher 原始事件拦截。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T03:25:00+08:00",
+      "status": "pending",
+      "source_file": "src/part1-fundamentals/ch03-input/05-input-interception-security.md"
+    },
+    {
+      "section": "4.2",
+      "section_title": "Linux 内核内存管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Buddy order 大小把 4KB 页假设写成通用结论，且 MGLRU Android 版本/配置边界缺失",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L134 Buddy order 说明",
+          "detail": "正文写最高 order-10 等于 1024 页、4MB。Android 15+ 支持 16KB page size 时，同样 order-10 是 16MB；Android common kernel 6.1/6.6/6.12 中 MAX_ORDER/MAX_PAGE_ORDER 还受 CONFIG_ARCH_FORCE_MAX_ORDER 影响，不能把 4KB 页下的数值写成全版本通用结论。",
+          "suggestion": "改为公式：order-n = 2^n pages，字节数 = 2^n × PAGE_SIZE；举例分别写 4KB 页 order-10≈4MB、16KB 页 order-10≈16MB，并标注 MAX_ORDER/MAX_PAGE_ORDER 受内核配置影响。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L220-L239 MGLRU 小节",
+          "detail": "正文只写 MGLRU 自 Linux 6.1 合入主线和 Android 实测收益，没有交代 Android common kernel/GKI/Pixel 分支是否启用 CONFIG_LRU_GEN、是否默认开启，以及传统 LRU 与 MGLRU 在 Android 10-16 覆盖范围内的切换边界。external-review 已命中“Android 16 MGLRU 默认开启”线索，但本轮未找到足够一手证据可直接采用。",
+          "suggestion": "补一张版本/内核分支/CONFIG_LRU_GEN/默认状态/验证命令表；无法确认的 Android 16/17 结论保留为待验证，不要写成平台基线。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T03:25:00+08:00",
+      "status": "pending",
+      "source_file": "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
     }
   ]
 }
