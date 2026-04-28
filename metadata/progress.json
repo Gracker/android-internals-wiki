@@ -4,15 +4,15 @@
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 114,
-    "ready-for-review": 104,
+    "finalized": 115,
+    "ready-for-review": 103,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-28T13:23:00+08:00",
+    "last_updated": "2026-04-28T14:33:59+08:00",
     "pipeline_stage_counts": {
       "None": 33,
-      "ready-to-publish": 114,
-      "task2b_pending": 73,
-      "task9_pending": 13,
+      "ready-to-publish": 115,
+      "task2b_pending": 76,
+      "task9_pending": 9,
       "task6_pending": 17
     },
     "task6_state_counts": {
@@ -22,14 +22,14 @@
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 193,
-      "pending": 18,
+      "reviewed": 197,
+      "pending": 14,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 131,
-      "pending": 75,
+      "fixed": 128,
+      "pending": 78,
       "idle": 4
     },
     "draft": 0,
@@ -38,9 +38,9 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 33,
-      "ready-to-publish": 114,
-      "task2b_pending": 73,
-      "task9_pending": 13,
+      "ready-to-publish": 115,
+      "task2b_pending": 76,
+      "task9_pending": 9,
       "task6_pending": 17
     },
     "task6_state_counts": {
@@ -50,17 +50,17 @@
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 193,
-      "pending": 18,
+      "reviewed": 197,
+      "pending": 14,
       "fixed": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 131,
-      "pending": 75,
+      "fixed": 128,
+      "pending": 78,
       "idle": 4
     },
-    "last_updated": "2026-04-28T13:23:00+08:00"
+    "last_updated": "2026-04-28T14:33:59+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -588,14 +588,18 @@
       "last_verified": "2026-04-23",
       "last_verified_against": "src/SUMMARY.md, 2026-04-22 external review, Android 16 release cycle",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-28T14:33:59+08:00",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-28"
     },
     "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md": {
       "path": "src/part1-fundamentals/ch02-rendering/01-rendering-overview.md",
@@ -1421,14 +1425,18 @@
       "last_verified": "2026-04-23",
       "last_verified_against": "ch02-rendering 目录结构、AOSP android-16.0.0_r1 渲染流程说明、external review 资产",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-28T14:33:59+08:00",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-28"
     },
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md": {
       "path": "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
@@ -1585,14 +1593,18 @@
       "last_verified": "2026-04-23",
       "last_verified_against": "AOSP frameworks/native/services/inputflinger main 分支、Android 15 ARR / Predictive Back 文档、ch03 子章节",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-04-28T14:33:59+08:00",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-28"
     },
     "src/part1-fundamentals/ch04-memory/01-memory-overview.md": {
       "path": "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
@@ -4360,19 +4372,23 @@
       "title": "第 13 章：Perfetto",
       "chapter": "13.0",
       "section": "13.0",
-      "status": "ready-for-review",
+      "status": "finalized",
       "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
       "last_verified": "2026-04-21",
       "last_verified_against": "ch13 README + 13.1-13.10 目录 + DeepResearch/Perfetto 2026 与 AndroidX Tracing 2.0",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-04-28T14:33:59+08:00",
+      "task9_reviewed_by": "openclaw-task9",
+      "task9_reviewed_date": "2026-04-28"
     },
     "src/part3-tools/ch14-other-tools/01-as-profiler.md": {
       "path": "src/part3-tools/ch14-other-tools/01-as-profiler.md",
@@ -6885,6 +6901,37 @@
         "p2": 3
       },
       "at": "2026-04-28T09:21:00+08:00"
+    },
+    {
+      "date": "2026-04-28",
+      "task": "task9-deep-review",
+      "sections_reviewed": [
+        {
+          "section": "1.0",
+          "title": "第 1 章：系统架构全景",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "2.0",
+          "title": "渲染系统总纲",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "3.0",
+          "title": "第 3 章：输入系统",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "13.0",
+          "title": "第 13 章：Perfetto",
+          "result": "pass-tech-review",
+          "issues": 1,
+          "auto_promoted": true
+        }
+      ]
     }
   ],
   "progress": {
@@ -6898,12 +6945,14 @@
         "issues_found": "minor"
       },
       "2.0": {
-        "reviewed_by": "openclaw-task6",
-        "reviewed_date": "2026-04-23",
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-28",
         "task6_result": "pass-light-edit",
         "task6_state": "reviewed",
-        "pipeline_stage": "task9_pending",
-        "issues_found": "minor"
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed"
       },
       "2.21": {
         "reviewed_by": "openclaw-task6",
@@ -7463,6 +7512,30 @@
         "task2b_state": "fixed",
         "task2b_result": "fixed",
         "last_task9_at": "2026-04-27T20:35:19+08:00"
+      },
+      "1.0": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-28",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
+      },
+      "3.0": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-28",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "issues_found": "major"
+      },
+      "13.0": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-28",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "issues_found": "minor"
       }
     }
   },

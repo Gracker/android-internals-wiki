@@ -6263,3 +6263,28 @@
 - **位置**：L308-L319 Perfetto 抓取命令与 FrameTimeline SQL
 - **问题**：命令只列 `sched freq idle am wm gfx view binder_driver hal` 等 category，后文 SQL 依赖 `actual_frame_timeline_slice` / `expected_frame_timeline_slice`。如果 trace 未启用 FrameTimeline 数据源，查询会为空；SurfaceView 游戏还需要保留 buffered frames / SwappyStats 路径。
 - **建议**：补一个明确启用 FrameTimeline 的 Perfetto config 或命令，并在命令旁标注 Android 12+、SurfaceView 不完全支持 FrameTimeline 的边界；旧系统退回 systrace SurfaceView channel 与 SwappyStats。
+
+## [Task9 Deep Review] 1.0 第 1 章：系统架构全景 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：开头第二段
+- **问题**：“50+ 个系统模块”“Cloud Compilation”“Parallel Module Loading”“Generic Bootloader”等年度变化缺少明确一手来源锚点。
+- **建议**：补 APEX 模块清单/Android 16 release notes/对应子节链接；数字类表述标明统计口径。
+
+## [Task9 Deep Review] 2.0 渲染系统总纲 — 2026-04-28
+- **类型**：交叉引用
+- **位置**：frontmatter
+- **问题**：同类 chapter README 多数维护 related_chapters，2.0 目前没有 related_chapters；自动化交叉引用检查无法从 frontmatter 追踪 2.1-2.21。
+- **建议**：补 related_chapters: ["2.1" ... "2.21"]，并与 SUMMARY.md 保持一致。
+
+## [Task9 Deep Review] 3.0 第 3 章：输入系统 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：frontmatter sources
+- **问题**：正文提到 InputFlinger Rust 组件，但 frontmatter 没有 sources 列出 frameworks/native/services/inputflinger/rust 或官方 Android Rust 文档。
+- **建议**：补 AOSP path 与 Android Rust 官方文档，避免总纲只写 last_verified_against 而没有可点击来源。
+
+## [Task9 Deep Review] 13.0 第 13 章：Perfetto — 2026-04-28
+- **类型**：源码准确性
+- **位置**：“Mainline APEX”与 AndroidX Tracing 2.0 段落
+- **问题**：“Mainline APEX”需要精确到 tracing 模块/包名/版本边界；AndroidX Tracing 2.0 alpha05 也应补官方 release notes，而不只依赖 DeepResearch 本地材料。
+- **建议**：补 perfetto.dev 架构文档、AndroidX release notes 与 AOSP module 路径；若无法确认 com.android.tracing 等模块名，正文保留为“系统侧 tracing 组件可独立演进”。
+

@@ -11120,3 +11120,46 @@ Cuttlefish 的 crosvm/KVM/virtio 架构与官方安装路径；external-review �
 
 ### 关联章节
 - 2.16
+
+## [2026-04-28] 2.0 渲染系统总纲 — 知识盲区
+
+### 盲区描述
+Android 17 图形栈入口与外部 Review 候选结论未完成回源。active external-review 已命中 Present ID、Vulkan/ANGLE、Graphite、Impeller、Jank Isolation 等候选点，但 README 仍停留在 Android 12-16 的总括表达。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 AOSP / Android Developers 对 Vulkan/ANGLE/Graphite 的正式边界
+- 核对 Flutter Impeller Android 默认后端的版本与 API 条件
+- 核对 Frame Pacing / Present ID 的官方数据与适用设备条件
+
+### 关联章节
+- 2.10
+- 2.11
+- 2.14
+- 2.17
+- 2.20
+- 2.21
+
+## [2026-04-28] 3.0 第 3 章：输入系统 — 知识盲区
+
+### 盲区描述
+Android 16/17 输入栈变化缺少总纲级验证矩阵。active external-review 已命中 AOT Predictive Back、ML predictor、Impulse、DeliQueue、InputMonitor 隔离等候选点，需要先回源再决定写入哪些子节。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Predictive Back 版本/targetSdk/系统拦截边界
+- 核对 MotionPredictor、VelocityTracker 默认策略变化和可观测 trace 点
+- 核对 DeliQueue 对输入回调排队延迟的量化收益是否可公开引用
+
+### 关联章节
+- 3.1
+- 3.2
+- 3.3
+- 3.4
+- 3.5
+- 3.6
+

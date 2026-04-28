@@ -12571,7 +12571,7 @@
       "section": "2.0",
       "section_title": "`src/part1-fundamentals/ch02-rendering/README.md`",
       "priority": 85,
-      "reason": "[External Review] 技术评分 4.2/5",
+      "reason": "[External Review] 技术评分 4.2/5；[Deep Tech Review] 本轮复核仍有 P1 技术闭环项",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -12596,11 +12596,19 @@
         {
           "type": "P1重要缺失",
           "detail": "][版本差异覆盖][2.10 GPU 渲染深入]\n- 原文问题：描述提到“补上 Skia”。\n- 源码 / 一手资料锚点：AOSP `frameworks/base/libs/hwui/renderthread/CanvasContext.cpp` (Graphite 集成)。\n- 关键代码逻辑：Android 16/17 中 Skia Graphite (Vulkan 后端) 已成为 UI 渲染"
+        },
+        {
+          "type": "版本差异",
+          "location": "开头第二段 + 本章内容 2.10/2.11/2.14/2.17/2.20/2.21",
+          "detail": "frontmatter 标 Android 17，但正文仍写“Android 12-16 之后哪些渲染变化改变了分析方法”。当前 queue 与 active external-review 已给出 Android 17 图形栈候选变化；README 没有区分已验证事实与待回源候选，读者无法判断 Android 17 的渲染分析入口。",
+          "suggestion": "把 README 的版本锚点拆成已验证 Android 12-16、Android 17 已验证/待验证入口；Present ID、Vulkan/ANGLE、Graphite、Impeller、Jank Isolation 等外部结论逐条回源后再写入。"
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-04-28T14:33:59+08:00"
     },
     {
       "section": "2.1",
@@ -17717,6 +17725,48 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T13:23:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.0",
+      "section_title": "第 1 章：系统架构全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 第 1 章总纲仍标 Android 16，但多个子节已覆盖 Android 17/API 37，需统一版本边界和 Android 17 入口。",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "frontmatter applicable_versions + 开头第二段 + 本章内容 1.13/1.17",
+          "detail": "README 标注 Android 8-16，并在开头只列 Android 15/16；但同章 1.7、1.9、1.10、1.13、1.14、1.16、1.17 等子节已标到 Android 17/API 37，尤其 1.13 将 DeliQueue 默认启用边界写到 Android 17。总纲会低估本章覆盖范围。",
+          "suggestion": "将总纲 version boundary 升级到 Android 17，并在开头补 1-2 个 Android 17 入口；last_verified_against 同步补官方/子章节锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T14:33:59+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "3.0",
+      "section_title": "第 3 章：输入系统",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 第 3 章总纲标到 Android 17，但缺 Android 16/17 输入栈候选变化的回源入口与子节分配，需要回炉补验证矩阵。",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "开头第二段 + 阅读建议",
+          "detail": "frontmatter 标 Android 10-17，但正文只写 Android 15 之后关注 predictive input、Predictive Back、ARR 与 InputFlinger Rust；没有给 Android 16/17 输入栈候选变化的验证入口，也没有说明 Predictive Back、MotionPredictor/VelocityTracker、MessageQueue/DeliQueue、InputMonitor 安全边界分别落在哪些子节。",
+          "suggestion": "在总纲加 Android 16/17 输入主题索引；按 external-review 提到的 AOT Predictive Back、ML predictor、Impulse、DeliQueue、InputMonitor 隔离逐条回源，确认后分配到 3.1-3.6。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T14:33:59+08:00",
       "status": "pending"
     }
   ]
