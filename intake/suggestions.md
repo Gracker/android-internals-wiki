@@ -6149,3 +6149,99 @@
 - **位置**：L463
 - **问题**：“16KB Page Size：TLB 命中率提升约 9%，渲染管线有效带宽增益”缺测试条件和来源。官方 16KB page size 资料可支持整体性能收益区间，但不能直接推出渲染管线带宽收益。
 - **建议**：补充官方 16KB page size 数据来源、测试条件和 workload；若没有渲染专项数据，改成“可能影响内存访问局部性”，不要写固定 9% 渲染收益。
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：延迟初始化案例
+- **问题**：“30 个初始化任务分类后冷启动 2800ms → 1800ms”缺少设备、Android 版本、样本次数、冷/温启动条件。
+- **建议**：补测试环境与统计口径；如果无法补齐，改为“某中等复杂度应用的经验数据”，避免当成通用收益。
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：Baseline Profile 效果量化
+- **问题**：“简单应用 10%-20%、中等 20%-40%、复杂应用超过 40%”没有具体官方来源或实验条件。
+- **建议**：补 Google I/O / Android Developers 对应链接与测试背景，或降级为示例性范围。
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-04-28
+- **类型**：知识盲区
+- **位置**：Baseline Profile 章节
+- **问题**：已区分 baseline-prof.txt 与 startup-prof.txt，但没有解释 startup profile 影响 DEX layout 与启动期类加载 I/O 的机制，也没有串起 speed / speed-profile / quicken 编译模式差异。
+- **建议**：在本节补 1 段机制说明，或明确交叉引用 8.7 节，让读者知道 DEX layout 与 dex2oat 编译模式分别解决什么问题。
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-04-28
+- **类型**：版本差异
+- **位置**：profileable 要求变化
+- **问题**：“从 Android 15 开始 profileable 推荐行为有变化”没有说明变化前后差异，读者无法判断该结论怎样影响调试、Benchmark 与 Cloud Profile。
+- **建议**：补 Android 15 前后行为边界；同时保留 Cloud Profile 不依赖 release manifest profileable 的结论。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-28
+- **类型**：代码示例不完整
+- **位置**：点击响应 → performClick 代码块
+- **问题**：示例只处理 ACTION_UP；如果自定义 View 未设置 clickable 且 ACTION_DOWN 返回 false，ACTION_UP 不会送达，performClick 不会执行。
+- **建议**：补 ACTION_DOWN 分支返回 true，或在注释中明确前提是 View 已 clickable。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-28
+- **类型**：原理断裂
+- **位置**：点击响应 → 视觉反馈段落
+- **问题**：onClick → invalidate → VSync → doFrame 的链路跳过了 ViewRootImpl.scheduleTraversals() 与 Choreographer.postCallback()。
+- **建议**：补一句 invalidate 最终通过 ViewRootImpl.scheduleTraversals() 注册 traversal callback，VSync 到达后 FrameDisplayEventReceiver 触发 doFrame。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-28
+- **类型**：版本差异
+- **位置**：InputTransport 描述
+- **问题**：正文把 InputChannel native 实现写成 socketpair(AF_UNIX, SOCK_SEQPACKET, 0, ...)，但 applicable_versions 覆盖 Android 8-16；Android 13 及以前主要是 SOCK_STREAM，Android 14 起改为 SOCK_SEQPACKET。
+- **建议**：在 InputChannel 段补版本分界，避免把 Android 14+ 行为写成全版本行为。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-28
+- **类型**：知识盲区
+- **位置**：Fragment 切换优化
+- **问题**：实际项目高频使用 Jetpack Navigation Component；NavController.navigate() 仍走 FragmentTransaction，但 graph back stack、DeepLink、动画配置会影响切换耗时。
+- **建议**：补 Navigation Component 特有注意点，或在 8.4 标注“本节只讨论手写 FragmentTransaction”。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：多处耗时数据
+- **问题**：Binder 1-5ms、Activity 创建 5-15ms、inflate 30-100ms、首帧 16-33ms 均缺少设备、Android 版本、布局复杂度、样本数。
+- **建议**：补测试条件或统一标注为经验估算值。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：Trace 截图占位
+- **问题**：Activity 跳转、Tab 切换、四场景对比仍保留 Trace 截图待补。
+- **建议**：优先补 Activity 跳转和 Tab 切换 Perfetto 截图；搜索场景可后续补。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-28
+- **类型**：引用错误
+- **位置**：点击响应 → RAIL 100ms 引用
+- **问题**：RAIL 模型来源应为 web.dev/RAIL；当前链接指向 Android Vitals，引用归属不准。
+- **建议**：改为 web.dev/articles/rail 或去掉 RAIL 归属，仅保留 100ms 响应经验阈值。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-04-28
+- **类型**：交叉引用错误
+- **位置**：搜索响应 → throttleFirst
+- **问题**：上下文是 Kotlin Flow，但 throttleFirst 是 RxJava 常见操作符，不是 Flow 标准操作符。
+- **建议**：标注为 RxJava 方案，或改成 Flow/Coroutine 可运行实现。
+
+## [Task9 Deep Review] 18.6 SurfaceView 直出链路 — 2026-04-28
+- **类型**：源码准确性
+- **位置**：HWC Overlay 与合成策略 → 源码引用
+- **问题**：正文引用 frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp 的 validateLayerCompositionTypes；android-16.0.0_r1 中没有该精确方法名，composition type 变化通过 HWC getChangedCompositionTypes 等路径处理，compositionengine 也参与策略选择。
+- **建议**：标注旧版本对应方法，或改为 Android 16 源码锚点：HWComposer.cpp#getChangedCompositionTypes、Output/Display composition strategy、HWC2 validateDisplay。
+
+## [Task9 Deep Review] 18.6 SurfaceView 直出链路 — 2026-04-28
+- **类型**：原理链不完整
+- **位置**：BufferQueue 行为与 Triple Buffering
+- **问题**：“通常配置为 3 个 Slot”过于简化；实际 buffer count 受 maxDequeuedBufferCount、maxAcquiredBufferCount、async mode、producer 类型影响。
+- **建议**：区分视频解码、Camera、Canvas lockCanvas、游戏 EGL/Vulkan 等场景，并说明哪些参数决定实际 slot 数。
+
+## [Task9 Deep Review] 18.6 SurfaceView 直出链路 — 2026-04-28
+- **类型**：版本差异
+- **位置**：挖洞的实现 / BLAST 描述
+- **问题**：章节写 Android 11+ BLAST 改善同步，但没有覆盖 Android 12-13 期间 BufferStateLayer/BLAST 路径收敛对 SurfaceView 同步行为的影响。
+- **建议**：补 Android 12/13 的关键图形栈变化，说明它们如何影响 resize、move 与 buffer/geometry 同步。
+
+## [Task9 Deep Review] 18.6 SurfaceView 直出链路 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：常见性能问题与优化
+- **问题**：Buffer Starvation、Resize 闪烁、Overlay 失效、首帧延迟均为定性描述，缺少 Perfetto 截图或可复现实测范围。
+- **建议**：至少补 1-2 个 Perfetto 片段或典型数值范围，例如 dequeueBuffer 阻塞跨 VSync、首帧延迟分布。

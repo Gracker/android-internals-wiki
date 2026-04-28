@@ -17504,6 +17504,46 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T10:30:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "8.4",
+      "section_title": "8.4 其他响应速度场景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Binder 线程池 Android 16 待验证未闭环，需补源码结论后回炉",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码验证未闭环",
+          "location": "Activity 跳转 → Binder IPC 耗时段落",
+          "detail": "章节仍保留“[待验证：Android 16 中 Binder 线程池默认大小是否有变化]”。本轮复核 AOSP android-16.0.0_r1 frameworks/native/libs/binder/ProcessState.cpp 仍定义 DEFAULT_MAX_BINDER_THREADS 15；章节元数据又显示 Task2B 已 fixed，状态与正文不一致。",
+          "suggestion": "写入 Android 16 结论和源码锚点，删除待验证标记；如果讨论 system_server 线程池，还需区分 framework/native binder pool 与服务端自定义线程模型。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T11:41:58+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "18.6",
+      "section_title": "18.6 SurfaceView 直出链路",
+      "priority": 85,
+      "reason": "[Deep Tech Review] SurfaceView 现代 SurfaceControl/BLAST 创建链路缺失，旧 WMS 模型需标版本边界",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/原理断裂",
+          "location": "独立 Surface 与挖洞机制 / 完整渲染链路",
+          "detail": "正文把 SurfaceView 描述成“在 WMS 侧注册为独立 Layer”，但 Android 16 源码中关键链路是 SurfaceView.updateSurface() → createBlastSurfaceControls()，通过 SurfaceControl.Builder() 创建 SurfaceView container、BLAST layer、background layer，并 parent 到 ViewRootImpl.updateAndGetBoundsLayer()。当前缺少 Android 11+ SurfaceControl/BLAST 层级，容易把旧模型当成现代实现。",
+          "suggestion": "重写现代链路：ViewRoot bounds layer → SurfaceView container layer → BLAST layer → BLASTBufferQueue → Transaction → SurfaceFlinger；如果保留 WMS/独立窗口历史模型，必须标注版本边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T11:41:58+08:00",
+      "status": "pending"
     }
   ]
 }
