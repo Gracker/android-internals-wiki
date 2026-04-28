@@ -75,8 +75,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-05-main-render-thread-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-05-main-render-thread-external-review.md",
+      "completed_at": "2026-04-28T00:41:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added ADPF feedback loop, Adreno 830 parallel GPU submission, DeliQueue lock-free sync, Android 16/17 version entries"
     },
     {
       "section": "02.07",
@@ -99,8 +102,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-07-hardware-layer-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-07-hardware-layer-external-review.md",
+      "completed_at": "2026-04-28T00:41:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added 16KB memory fragmentation warning, Compose 1.10 buffer pooling, Android 16 auto-promotion scoring, version table updates"
     },
     {
       "section": "02.08",

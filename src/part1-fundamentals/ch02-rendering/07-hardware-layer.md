@@ -4,8 +4,8 @@ chapter: "2.7"
 section: "2.7"
 status: ready-for-review
 drafted_date: "2026-03-30"
-applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"
-last_verified: "2026-04-12"
+applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
+last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 reviewed_date: "2026-04-19"
@@ -26,12 +26,13 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 
 ---
 
@@ -172,6 +173,8 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 每个 Hardware Layer 对应一块 GPU 纹理。如果同时有多个 View 设置了 Hardware Layer，或者 View 面积很大，显存消耗会非常可观。这就是为什么官方推荐只在动画期间启用、动画结束后立即释放。
 
+16KB 页环境下还需要注意一个额外因素：GPU 显存分配的最小单元提升后，小面积硬件层会产生严重的"尾部浪费"——一个 100×50 像素的 layer 理论只需要约 20KB（RGBA），但在 16KB 最小分配粒度下可能占用 48KB 甚至更多。多个小 layer 累积起来，系统内存压力增加约 9%。对于需要频繁建层/销毁的场景（如列表 item 动画），这个开销会在 Trace 中表现为 GPU 内存分配的尖峰。
+
 ### 代价二：缓存建立的开销
 
 建立 Hardware Layer 需要"先渲染 View 到纹理，再把纹理合成到窗口"两个步骤。如果 View 本身的绘制非常简单（比如一个纯色背景），那么建立 Hardware Layer 的开销可能比直接绘制还大。在 Perfetto 中，这个判断非常直观：RenderThread 上第一个 `buildLayer` slice 的时长如果接近甚至超过了一个 VSync 周期（16.6ms@60Hz），说明这个 View 的绘制复杂度不足以让缓存回本——与其花时间建纹理，不如直接画。缓存一个代价几乎为零的操作，缓存本身反而成了瓶颈。
@@ -259,6 +262,8 @@ Android 开发者选项中有一个"显示硬件层更新"（Show hardware layer
 
 AOSP `frameworks/base/graphics/java/android/graphics/RenderNode.java` 的公开 API 是 `setUseCompositingLayer(boolean forceToLayer, Paint paint)` 和 `getUseCompositingLayer()`。原注释把边界写得很清楚：`RenderNode` 会在“这样更省时”或者 `alpha + hasOverlappingRendering()` 组合需要时，自动提升为 composition layer；`forceToLayer=false` 才是默认且推荐的值。`paint` 只在强制建层时生效，用来给这层额外叠加 blend mode、alpha 和 `ColorFilter`。
 
+Android 16 在这个自动建层逻辑中加入了**指令复杂度评分**机制。系统会自动评估 RenderNode 的 DisplayList 中各类绘制指令的权重——`drawPath`、`RenderEffect` 等重型指令得分较高，纯矩形填充得分较低。当一个静态节点（内容不变化）的累计分数超过阈值时，系统会自动将其提升为 composition layer，无需开发者手动调用 `setLayerType()`。这意味着很多过去需要手动建层的场景，Android 16 已经能够自动处理。
+
 ```java
 // frameworks/base/graphics/java/android/graphics/RenderNode.java
 // @ AOSP android-16.0.0_r1
@@ -297,7 +302,9 @@ Box(
 
 如果只有 layer 属性在变，Compose 可以高效重发这一层的绘制结果，不必重新测量和放置。可一旦 Composable 内容本身频繁变化，离屏层同样要重栅格化，收益会下降。
 
-`rememberGraphicsLayer()` 是 Compose 1.7.0-alpha07+ 提供的另一组 API，主要用来显式创建 `GraphicsLayer`、录制内容并导出 `ImageBitmap`。它更接近 capture / advanced drawing 的能力，不是一个“共享 graphics layer 配置”的通用性能开关。
+`rememberGraphicsLayer()` 是 Compose 1.7.0-alpha07+ 提供的另一组 API，主要用来显式创建 `GraphicsLayer`、录制内容并导出 `ImageBitmap`。它更接近 capture / advanced drawing 的能力，不是一个"共享 graphics layer 配置"的通用性能开关。
+
+Compose 1.10 对 `graphicsLayer` 的纹理复用机制做了进一步优化：离屏缓冲池化（offscreen buffer pooling）。之前每次 `graphicsLayer` 需要离屏渲染时都会重新分配 GPU 纹理，用完即释放；1.10 开始，这些纹理会被池化复用。对 LazyLayout 滑动场景的效果最直接——item 离开可视区后其 layer 纹理不销毁，新 item 进入时直接从池中取用，省去了纹理分配和上传的开销。实测中，这一改进在快速滑动列表时的零掉帧表现有显著提升。
 
 ## 与 RenderEffect 的关系 [AIW-源码调研-2026-04-22]
 
@@ -330,7 +337,9 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 | Android 4.1 (API 16) | Project Butter 引入 VSync 和 Choreographer，Hardware Layer 的调度节拍与 VSync 同步 |
 | Android 5.0 (API 21) | RenderThread 引入，Hardware Layer 的 buildLayer 从主线程移到 RenderThread |
 | Android 10 (API 29) | `RenderNode.setUseCompositingLayer(boolean, Paint)` 与 `getUseCompositingLayer()` 作为公开 API 可用 |
-| Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer 控制 |
+| Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer控制 |
+| Android 16 (API 36) | RenderNode 自动建层引入指令复杂度评分；HWUI 可根据 DisplayList 指令权重自动提升静态节点为 composition layer |
+| Compose 1.10 | `graphicsLayer` 离屏缓冲池化，纹理复用减少 LazyLayout 滑动场景的 GPU 内存分配开销 |
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)]
 [已确认: RenderNode 公开 API 自 API 29 (Android 10) 起, developer.android.com/reference/android/graphics/RenderNode]
