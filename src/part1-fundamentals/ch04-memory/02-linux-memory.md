@@ -12,7 +12,7 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_verified_against: "Linux kernel 6.6 (android14-6.6-lts)"
@@ -37,7 +37,7 @@ sources:
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
