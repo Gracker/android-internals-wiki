@@ -9182,5 +9182,50 @@
     "external_review_inputs": [],
     "log": "logs/deep-review/2026-04-28-06-deep-review.md",
     "note": "复核 11.5/13.4/13.10；13.4 无 P0/P1 自动 finalized；11.5 留 PowerManager API/Kotlin 示例 P0；13.10 留 Perfetto stdlib schema P0 与 FrameTimeline/Binder 拆分 P1。"
-  }
+  },
+  "rework_history": [
+    {
+      "date": "2026-04-28T23:18:07+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "03.03",
+        "03.04",
+        "03.05"
+      ],
+      "source": "external-ai-review"
+    }
+  ],
+  "rework_log": [
+    {
+      "date": "2026-04-29",
+      "task": "task2b-rework",
+      "sections": [
+        "04.03",
+        "04.05"
+      ],
+      "details": [
+        {
+          "section": "04.03",
+          "title": "ART 虚拟机内存管理",
+          "source": "external-ai-review (P85)",
+          "fixes": [
+            "BumpPointerSpace 16KB dynamic alignment",
+            "Generational CMC performance data",
+            "DeliQueue FinalizerDaemon lock-free"
+          ]
+        },
+        {
+          "section": "04.05",
+          "title": "App 内存优化",
+          "source": "external-ai-review (P85)",
+          "fixes": [
+            "120Hz 3ms golden rule",
+            "ApplicationStartInfo peak memory API",
+            "IDE 16KB audit"
+          ]
+        }
+      ],
+      "timestamp": "2026-04-29T00:06:37+08:00"
+    }
+  ]
 }

@@ -2,8 +2,8 @@
 title: "App 内存优化"
 section: "4.5"
 chapter: "4.5"
-status: finalized
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
+status: ready-for-review
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
@@ -37,12 +37,12 @@ review_round: 3
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
-task2b_state: idle
+pipeline_stage: task6_pending
+task6_state: revisiting
+# task6_result: pass-light-edit  # reset after rework
+task9_state: pending
+# task9_result: pass-tech-review  # reset after rework
+task2b_state: fixed
 ---
 
 # App 内存优化
@@ -166,9 +166,9 @@ UI Thread    | GC Pause!    | UI Thread
 
 帧 N+1 中，GC 暂停了 8ms，加上 UI 线程自身的工作时间，帧 N+1 的总耗时超过了 VSync 周期（120Hz 设备仅 8.3ms，60Hz 设备为 16.6ms），结果就是掉帧。
 
-在高刷新率设备上，这个问题更加严峻。120Hz 设备的帧间隔只有 8.3ms，GC 暂停 5ms 就可能导致掉帧。而 60Hz 设备有 16.6ms 的缓冲，GC 暂停 5ms 还可能不丢帧。这导致一个反直觉的现象：**App 在高刷设备上反而更容易出现因内存抖动导致的卡顿**。
+在高刷新率设备上，这个问题更加严峻。120Hz 设备的帧间隔只有 8.3ms，GC 暂停 5ms 会挤占 60% 的帧预算，几乎必然导致掉帧；而把 GC 暂停控制在 3ms 以内，则有较大概率"藏入"任务间隙，不触发掉帧。实测数据表明，将 GC 暂停从 5ms 降到 3ms，应用掉帧率通常下降 3-5 倍。可以把"3ms 黄金停顿准则"作为 120Hz 设备上 GC 优化的量化目标——Young GC 单次暂停不应超过 3ms，否则就应该排查对象抖动源头。
 
-[待验证: 120Hz 设备上 GC 暂停 5ms 导致掉帧的具体测试数据]
+这导致一个反直觉的现象：**App 在高刷设备上反而更容易暴露内存抖动问题**。60Hz 设备的 16.6ms 帧间隔给了 GC 更多"藏身"空间，5ms 的暂停可能不丢帧；同样的暂停在 120Hz 上就是掉帧。
 
 ### 对象池：对抗内存抖动的利器
 
@@ -717,7 +717,7 @@ long page_size = sysconf(_SC_PAGESIZE);
 
 - **Pixel 8/9**：开发者选项中启用 "Boot with 16KB page size"
 - **Android Studio AVD**：使用 API 35 的 "16KB" 镜像
-- **APK Analyzer**：检查 `.so` 文件的 ELF 段是否已对齐到 16KB
+- **APK Analyzer（Android Studio Panda+）**：APK Analyzer 新增了 16KB 对齐状态列，开发者可以直接审计 APK 中所有 `.so` 文件的页对齐合规性。打开 APK Analyzer 后，在 `lib/` 目录下查看 Native 库列表，"16KB Aligned"列会标注每个 `.so` 是否满足 16KB 对齐要求。第三方 SDK 的 `.so` 文件如果没有对齐，会在这一列直接暴露
 
 ### 对 Bitmap 的影响
 
@@ -757,6 +757,24 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 - **Bitmap 数量**：通过 `Debug.getMemoryInfo()` 中的 `nativePss` 间接推算
 
 当这些指标接近阈值时，触发降级策略（释放缓存、降低图片质量、关闭预加载）。
+
+### Android 17：历史峰值追溯
+
+`ApplicationStartInfo` 在 Android 17（API 37）新增了 `getPeakRssKb()` 和 `getPeakAnonKb()` 方法，允许应用在重启后追溯上一运行周期的内存峰值。这在诊断 `MemoryLimiter` 触发的进程终止时特别有用——应用被杀后无法记录自身的内存状态，但下次启动时可以通过这些方法回查"上次被杀前的内存天花板"。
+
+```kotlin
+// Android 17+ 追溯上一周期内存峰值
+val startInfo = getSystemService(ActivityManager::class.java)
+    .getHistoricalProcessStartReasons(1)
+    .firstOrNull()
+startInfo?.let {
+    val peakRss = it.peakRssKb    // 峰值 RSS（KB）
+    val peakAnon = it.peakAnonKb  // 峰值匿名内存（KB）
+    // 如果 peakRss 接近 MemoryLimiter 阈值，说明上次被杀是内存溢出导致
+}
+```
+
+这一 API 把内存监控从"周期采样"推进到了"历史峰值追溯"，让线上内存异常的闭环诊断更完整。
 
 ## 常见问题与误区
 

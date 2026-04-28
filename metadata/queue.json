@@ -453,8 +453,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch04-03-art-memory-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch04-03-art-memory-external-review.md",
+      "completed_at": "2026-04-29T00:06:03+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added BumpPointerSpace 16KB dynamic alignment (art::GetPageSize), Generational CMC performance data (PCMark +19.6%), DeliQueue FinalizerDaemon lock-free ReferenceQueue"
     },
     {
       "section": "04.05",
@@ -477,8 +480,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch04-05-app-memory-optimization-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch04-05-app-memory-optimization-external-review.md",
+      "completed_at": "2026-04-29T00:06:03+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added 120Hz 3ms golden rule, Android 17 ApplicationStartInfo getPeakRssKb/getPeakAnonKb API, Android Studio Panda APK Analyzer 16KB alignment column"
     },
     {
       "section": "04.06",
