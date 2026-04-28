@@ -4682,8 +4682,8 @@
     {
       "section": "2.8",
       "section_title": "2.8",
-      "priority": 85,
-      "reason": "[External Review] 技术评分 4.6/5；[Deep Tech Review] Compose 1.10“背景合并优化”被写成已验证的框架内部行为，但正文只给出“Compose 1.10 release notes”泛称，未给出具体 release note、issue、commit 或官方 API 说明; Skia Graphite + Front-to-Back + Early-Z 被归入 Android 16 版本演进，但正文没有给出 Android 16 AOSP/HWUI 默认启用条件、设备白名单或系统属性锚点",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.8 过度绘制仍存在 P0/P1 技术问题：pixels_drawn 标准化断言与 Graphite/Compose 版本边界未闭环",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -4728,12 +4728,31 @@
             "Task9 deep tech review 2026-04-28 10:30",
             "AOSP/official docs/web复核，详见 deep-review log"
           ]
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L325 / Graphite + Early-Z",
+          "detail": "把 Skia Graphite、Front-to-Back、Early-Z 写成 Android 16 UI 默认能力，缺 HWUI/Skia 启用路径、系统属性、设备范围和验证方法。外部资料能说明 Graphite 方向能力，不能证明 Android 16 通用行为。",
+          "suggestion": "补 AOSP HWUI 后端选择、Graphite flag/设备条件和验证方法；无法核实时降级为[待验证]。"
+        },
+        {
+          "type": "知识盲区",
+          "severity": "P1",
+          "location": "L352-L363 / Compose 1.10 背景合并",
+          "detail": "Compose 1.10 背景合并优化缺 AndroidX release note、源码 CL 或 issue 锚点，当前只能作为待验证候选。",
+          "suggestion": "补官方 release note/CL；无法闭环时删除该小节或改为待验证研究问题。"
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
       "date": "2026-04-26",
-      "added_at": "2026-04-28T10:30:00+08:00"
+      "added_at": "2026-04-28T10:30:00+08:00",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-04-29T07:30:41+08:00"
     },
     {
       "section": "2.9",
@@ -6922,6 +6941,27 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T06:30:33+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.10",
+      "section_title": "14.10 eBPF/BPF 在 Android 性能分析中的应用",
+      "priority": 95,
+      "reason": "[Deep Tech Review] simpleperf kprobe/uprobe 被误写成 eBPF 机制，需回炉修正工具原理边界",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理错误",
+          "severity": "P0",
+          "location": "L189-L239 / “Simpleperf 与 eBPF 的结合”",
+          "detail": "simpleperf 的 --kprobe/--uprobe 通过 tracefs 的 kprobe_events/uprobe_events 创建动态 probe，再通过 perf_event 采样；AOSP system/extras/simpleperf/ProbeEvents.cpp 中该路径没有加载 eBPF program/map。正文把 simpleperf probe 写成 eBPF 能力，属于工具机制归类错误。",
+          "suggestion": "把该节改为“perf_event 动态 probe，与 eBPF probe 共享挂点但不是 eBPF”；真正 eBPF 路径单独写 bpfloader/libbpf/UprobeStats。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T07:30:41+08:00",
       "status": "pending"
     }
   ],

@@ -6362,3 +6362,9 @@
 - **位置**：L25 frontmatter sources
 - **问题**：`https://developer.android.com/develop/ui/views/layout/swinging-area` 当前返回 404，不能作为 2.2 帧率/刷新率章节的官方资料锚点。
 - **建议**：删除该链接，或替换为 Android 16 ARR 官方说明（`/about/versions/16/features#adaptive-refresh-rate`）及对应 `Display.hasArrSupport()` / `Display.getSuggestedFrameRate(int)` API 参考。
+
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-29
+- **类型**：交叉引用/原理边界
+- **位置**：L491（与 Perfetto 的关系）
+- **问题**：正文说“Perfetto 的 tracepoint 数据源部分依赖 eBPF 采集的数据”，容易把 Perfetto ftrace 数据源与 eBPF tracepoint 混同。常规 Perfetto tracepoint 采集主线是 ftrace/tracefs，eBPF 是另一类可观测路径。
+- **建议**：改成“Perfetto 可与 eBPF 产物互补；常规 ftrace 数据源不依赖 eBPF”。
