@@ -13398,13 +13398,16 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "intake/research-gaps.md"
       ],
       "added_at": "2026-04-28T09:21:00+08:00",
-      "source_file": "logs/deep-review/2026-04-28-09-deep-review.md"
+      "source_file": "logs/deep-review/2026-04-28-09-deep-review.md",
+      "completed_at": "2026-04-28T13:48:08+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: corrected RefreshRateSelector class name, removed Display.getFrameRateOverride() public API claim, marked HyperOS 240Hz+ VSync as [待验证]"
     },
     {
       "section": "2.20",
@@ -17596,7 +17599,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T12:30:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-28T13:48:08+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: corrected SystemServer.main() code to main()->run() skeleton, fixed Zygote fork to LocalSocket (not Binder), added passthrough vs binderized HAL distinction, repositioned SurfaceFlinger as Native system service"
     },
     {
       "section": "2.10",
