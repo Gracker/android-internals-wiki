@@ -43,9 +43,9 @@ related_chapters: ["2.3", "2.5", "2.6", "2.9", "3.1", "8.2"]
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-status: ready-for-review
-pipeline_stage: task6_pending
-task6_state: revisiting
+status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 review7_date: "2026-04-19"
 review7_by: "openclaw-task6"

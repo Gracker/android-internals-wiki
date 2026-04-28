@@ -2,7 +2,7 @@
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
-status: ready-for-review
+status: finalized
 reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
 review_note: Task 6 复审：按 writing-guide / STYLE / content-quality-gate 完成 9 处 L1/L2
@@ -53,9 +53,9 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_result: 'pass-light-edit'
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-21"
