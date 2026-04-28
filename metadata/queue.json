@@ -129,8 +129,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-08-overdraw-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-08-overdraw-external-review.md",
+      "completed_at": "2026-04-28T09:42:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added Perfetto pixels_drawn counter quantification, Compose 1.10 background merge optimization, Skia Graphite Z-test auto-culling in version table"
     },
     {
       "section": "02.09",
@@ -153,8 +156,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-09-rendering-evolution-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-09-rendering-evolution-external-review.md",
+      "completed_at": "2026-04-28T09:42:00+08:00",
+      "completed_by": "openclaw-task2b",
+      "resolution": "fixed: added Skia Graphite Front-to-Back/Z-test section, VPA16 Vulkan 1.4 requirement, 16KB Page Size timeline entry"
     },
     {
       "section": "02.10",
