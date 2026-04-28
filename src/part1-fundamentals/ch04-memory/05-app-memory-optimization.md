@@ -30,7 +30,7 @@ tags: ['memory-optimization', 'bitmap', 'memory-leak', 'onTrimMemory', 'native-m
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "7.2", "7.3"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-15"
+reviewed_date: "2026-04-29"
 reviewed_by: "openclaw-task6"
 review_type: "draft-review"
 review_round: 3
@@ -38,7 +38,7 @@ polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 # task6_result: pass-light-edit  # reset after rework
 task9_state: reviewed
 # task9_result: pass-tech-review  # reset after rework
@@ -779,7 +779,7 @@ startInfo?.let {
 }
 ```
 
-这一 API 把内存监控从"周期采样"推进到了"历史峰值追溯"，让线上内存异常的诊断链路更完整。
+这一 API 把内存监控从"周期采样"推进到了"历史峰值追溯"，让线上内存异常的诊断流程更完整。
 
 ## 常见问题与误区
 
@@ -789,7 +789,7 @@ startInfo?.let {
 
 这个想法的出发点可以理解——内存不够了，那就主动告诉系统"来回收一下吧"。但 Android 明确不建议手动触发 GC，原因有两层。
 
-第一层原因是 **GC 本身有开销**。ART 的 Concurrent Copying Collector 虽然大部分工作是并发的，但仍然需要短暂的"暂停"阶段（Young Generation 暂停）来拷贝存活对象。调用 `System.gc()` 时，实际上是在主动制造一次 GC 周期，这会让正在运行的线程暂停——如果这个调用发生在主线程的渲染路径中，就是一次额外的掉帧风险。
+第一层原因是 **GC 本身有开销**。ART 的 Concurrent Copying Collector 虽然大部分工作是并发的，但仍然需要短暂的"暂停"阶段（Young Generation 暂停）来拷贝存活对象。调用 `System.gc()` 时，就是在主动制造一次 GC 周期，这会让正在运行的线程暂停——如果这个调用发生在主线程的渲染路径中，就是一次额外的掉帧风险。
 
 第二层原因是 **它掩盖了真正的问题**。内存紧张通常意味着存在泄漏或过度分配。调用 `System.gc()` 可能在短时间内"解决"了内存不足的症状（因为 GC 确实回收了一些可达但暂时未引用的对象），但它不会修复泄漏——泄漏的对象仍然有从 GC Root 到达的强引用链，GC 无法回收它们。正确的做法是用 Memory Profiler 或 LeakCanary 找到泄漏源头，而不是用 `System.gc()` 掩盖症状。
 
