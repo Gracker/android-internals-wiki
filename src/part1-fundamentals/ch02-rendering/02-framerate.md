@@ -233,6 +233,34 @@ SurfaceFlinger 会先拿到 Display policy 允许的候选刷新率，再按每�
 4. **DisplayManager 的策略边界**：系统会限定最低和最高刷新率范围，并过滤掉不允许参与的模式
 5. **省电模式与其他系统约束**：在 Battery Saver 等场景下，刷新率上限可能被进一步收窄
 
+### RefreshRateSelector 内部评分与投票合并算法
+
+上面提到 SurfaceFlinger 会"给候选模式打分"，具体怎么打分、投票怎么合并，源码中有明确的算法描述。
+
+**投票合并三规则**（`RefreshRateSelector` 层的顶层逻辑）：
+
+1. **倍数优先**：投票 30Hz + 90Hz → 选取 90Hz。原理是整数倍关系在 LCD 显示中可避免拍频（beat frequency）。
+2. **非倍数分类**：任意投票 > 60Hz → 归入 "HIGH" 类别；所有投票 ≤ 60Hz → "NORMAL" 类别。
+3. **混合类别**：60Hz vote + HIGH vote → 120Hz（任一 HIGH 即推高到设备最高档）；60Hz vote + 120Hz vote → 120Hz（倍数优先）。
+
+**评分算法**（`RefreshRateConfigs::getRankedFrameRates`）：对每个候选刷新率计算 score，分数由以下因素构成：
+
+| 因素 | 效果 |
+|------|------|
+| 匹配度（ratio = displayHz / desiredHz） | score 与 ratio² 成反比，偏差越大分数越低 |
+| 整数倍加分 | exact match 或 integer multiple 有额外加分 |
+| 无缝切换加成 | 同 Config Group 内的切换有约 5% 加成（seamless switch bonus） |
+| 功耗偏好 | 较低刷新率模式有轻微功耗加分 |
+
+**三种策略（Policy）**：`RefreshRateSelector` 实现三个策略层：
+
+1. **DisplayManagerPolicy**：DisplayManager 设置的硬性范围约束（min/max Hz）
+2. **OverridePolicy**：系统覆盖（如 Game Mode、开发者选项强制 120Hz），优先级最高
+3. **NoOverridePolicy**：纯内容驱动，依赖 LayerHistory 汇总的 vote 和应用显式请求
+
+**LayerHistory**（`services/surfaceflinger/Scheduler/LayerHistory.cpp`）：负责追踪每个活跃 Layer 的帧率请求。它通过统计 Layer 实际提交 Buffer 的时间戳来估算平均 FPS，并将汇总结果传递给 `RefreshRateSelector`。`LayerHistory::getSnapshot()` 在每一帧被 SurfaceFlinger 调用，返回当前所有活跃 Layer 的帧率需求摘要。
+
+<!-- AIW-源码调研-20260428: View投票冲突解决机制与RefreshRateSelector评分算法 -->
 ### App 如何参与刷新率选择
 
 从 Android 11 开始，App 可以通过两个 API 来影响刷新率决策：

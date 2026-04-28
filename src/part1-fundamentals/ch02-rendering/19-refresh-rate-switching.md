@@ -282,6 +282,18 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
+
+
+### VsyncModulator 原子化相位切换（Android 16）
+
+刷新率切换时，`VsyncModulator` 需要把新的 VSync phase offset 应用到调度器。在 Android 16 之前，这个操作依赖 `mVsyncConfigSet` 的互斥锁保护——Binder 线程提交 Transaction 时会触发 `setVsyncConfigSet()`，而 VSync 线程在每次唤醒时需要读取当前 config set 来计算唤醒偏移。两条线程竞争同一把锁，在刷新率切换的瞬间，VSync 线程可能拿到一个"半更新"的 config set，导致那一帧的唤醒时点偏离预期。
+
+Android 16 把 `mVsyncConfigSet` 的访问改成了 `std::atomic<std::shared_ptr<VsyncConfigSet>>`。写入侧（Binder 线程）通过 `atomic_store` 一次性替换整个 config set 指针；读取侧（VSync 线程）通过 `atomic_load` 拿到的要么是旧的完整 config，要么是新的完整 config，不存在中间状态。
+
+这消除了刷新率切换瞬间的锁等待，使相位切换的抖动从微秒级的锁持有时间方差降到了原子操作本身的纳秒级确定性。在 120Hz 设备上，一次 VSync 周期只有 8.33ms，相位偏移哪怕抖动 1ms 都会被用户感知为画面撕裂或跳帧。原子化切换把这个抖动压到了可以忽略的程度。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
+
 ### 精确 fps 请求、category 请求和 range 请求怎么选
 
 Android 11-14 的主入口还是 `Surface.setFrameRate(float, int)`。到 Android 15-QPR1+ 的 ARR 场景，App 侧更常见的做法是把“这是固定片源”“这是高刷动画”“这是随速度变化的滚动”分别交给不同 API，再让系统把它映射到当前设备可用的刷新率集合。
@@ -352,6 +364,8 @@ App 侧公开 API 没有直接暴露刷新率字段。`Choreographer.VsyncCallba
 | Android 11-14 | 多刷新率 mode switching 成为常见实现，`Surface.setFrameRate()` 用来表达固定帧源或显式 fps 提示 |
 | Android 15-QPR1+ | 支持对应 HAL API 的设备开始提供 ARR，刷新率可以在单一 mode 内跟随内容节奏变化 |
 | Android 16 公开接口 | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 让 App 能直接读取设备能力和系统建议值 |
+| Android 16 | `VsyncModulator` 采用 `std::atomic` 管理 VSync phase offset，消除 Binder 线程与 VSync 线程间的锁竞争，实现相位切换的确定性 |
+| Android 17 | 缩减 SurfaceFlinger `mGlobalLock` 范围并引入 DeliQueue，副屏刷新率切换不再干扰主屏渲染节奏，实现多屏"性能主权隔离" |
 | AndroidX / Compose | RecyclerView 1.4、AndroidX core 1.15、Compose `preferredFrameRate()` 把滚动和局部动画的 ARR 适配放到更高层 API 里 |
 
 ## 与其他机制的关系
