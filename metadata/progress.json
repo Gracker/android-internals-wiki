@@ -655,9 +655,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-20'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T22:57:00+08:00"
+      "last_task9_at": "2026-04-29T06:30:33+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/03-vsync.md": {
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
@@ -1504,33 +1504,33 @@
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-28",
-      "last_task9_at": "2026-04-28T17:39:10+08:00"
+      "task9_reviewed_date": "2026-04-29",
+      "last_task9_at": "2026-04-29T06:30:33+08:00"
     },
     "src/part1-fundamentals/ch03-input/03-gesture-navigation.md": {
       "path": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
       "title": "手势导航与系统交互",
       "chapter": "3.3",
       "section": "3.3",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-03-31",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
       "last_verified": "2026-03-31",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-21'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T22:55:00+08:00",
+      "last_task9_at": "2026-04-29T06:30:33+08:00",
       "review_round": "3"
     },
     "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md": {
@@ -7055,6 +7055,38 @@
         }
       ],
       "log": "logs/deep-review/2026-04-29-04-deep-review.md"
+    },
+    {
+      "date": "2026-04-29",
+      "time": "06:30",
+      "task": "task9-deep-tech-review",
+      "sections_reviewed": [
+        {
+          "section": "2.2",
+          "title": "帧率与刷新率",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 1
+        },
+        {
+          "section": "3.2",
+          "title": "触摸响应的性能分析",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0
+        },
+        {
+          "section": "3.3",
+          "title": "手势导航与系统交互",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0
+        }
+      ],
+      "log": "logs/deep-review/2026-04-29-06-deep-review.md"
     }
   ],
   "progress": {
