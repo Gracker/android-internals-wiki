@@ -13264,8 +13264,11 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-04-28T13:23:00+08:00",
+      "completed_by": "openclaw-task9",
+      "resolution": "superseded-by-task9-2026-04-28-13: external-review present_id/DeliQueue claims failed source verification; unresolved vote boundary carried into new P95 item"
     },
     {
       "section": "2.18",
@@ -17669,6 +17672,45 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T12:30:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.17",
+      "section_title": "2.17 Frame Pacing Library 与帧节奏控制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] present_id / DeliQueue / frame-rate vote 存在 P0/P1 技术问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L420-L432 `VK_KHR_present_id` / Swappy Vulkan 路径",
+          "detail": "正文写 Android 16 Vulkan 1.4 默认启用 `VK_KHR_present_id`，并称 SwappyVk_queuePresent 会检查该扩展、用 present_id 确认真实上屏。复核 AOSP `frameworks/opt/gamesdk/games-frame-pacing/vulkan/SwappyVk.cpp`、`SwappyVkBase.cpp` 与 `include/swappy/swappyVk.h`，当前 Swappy Vulkan 路径没有 `VK_KHR_present_id` 字符串，扩展分支仍围绕 `VK_GOOGLE_display_timing`；`VK_KHR_present_id` 本身也只是给 present 操作打 ID，不返回硬件时间戳。",
+          "suggestion": "删除“Swappy 已接入 present_id 硬件确认”的定论；如要保留，必须补 Vulkan spec、Android VPA/CDD、Swappy 对应 commit 与可运行验证。当前可写成：Swappy 主要依赖 `VK_GOOGLE_display_timing`、fence、Choreographer 与 SwappyStats；present_id 只作为待验证方向。"
+        },
+        {
+          "type": "数据缺失/版本差异",
+          "location": "L424-L430 present_id 抖动数据表",
+          "detail": "“Jitter 降低约 30%”、±2-4ms / ±1-2ms / ±0.5-1ms 三组抖动范围没有来源、设备、驱动、刷新率、样本数和测量方式；“Android 16+（Vulkan 1.4 强制）”也把 VPA16/设备要求与单个扩展启用状态混在一起。",
+          "suggestion": "没有一手 benchmark 时移除该表；若补表，至少给出测试设备、Android build、GPU/driver、swapchain present mode、是否启用 `VK_GOOGLE_display_timing` / present_wait / present_id，以及 trace 或日志样本。"
+        },
+        {
+          "type": "原理断裂/知识盲区",
+          "location": "L436-L442 Android 17 DeliQueue 与 AChoreographer",
+          "detail": "正文把 DeliQueue 写成已验证的 Android 17 AOSP 实现，并断言 `AChoreographer` 投递经过 `MessageQueue`、`nativePollOnce()` 与渲染线程同步共用 `mLock`、回调抖动减少 15%。现有 research-gaps 已记录“确认 DeliQueue 是否仅优化 Java MessageQueue，还是影响 NDK AChoreographer/ALooper”；正文不应把待验证链路写成定论。",
+          "suggestion": "拆成两段：Java Choreographer/MessageQueue 的变化与 NDK AChoreographer/ALooper 的待验证影响；补 exact AOSP branch/commit、类/方法路径和性能数据来源。无法定位前改为 `[待验证]`，并交叉引用 §1.13。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L408-L413 Swappy frame-rate vote 与 ARR 边界",
+          "detail": "正文只说 Swappy 负责 frame-rate vote、ARR 负责平台 policy，但没有说明 Swappy 当前 `setPreferredRefreshPeriod()` 在 `mANativeWindow_setFrameRate && mWindow` 成立时调用 `ANativeWindow_setFrameRate(mWindow, frameRate, ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_DEFAULT)`，否则走 DisplayManager mode id；也未说明与应用手动 `Surface.setFrameRate()` / `ANativeWindow_setFrameRate()`、SurfaceFlinger vote 合并和 §2.18 ARR 的边界。",
+          "suggestion": "补“Swappy vote vs 手动 vote”的边界小节：调用条件、compatibility 默认值、同一 ANativeWindow 上的覆盖/竞争风险、SurfaceFlinger 合并策略只给到边界并跳转 §2.18。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T13:23:00",
       "status": "pending"
     }
   ]
