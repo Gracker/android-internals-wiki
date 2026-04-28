@@ -1,7 +1,7 @@
 ---
 title: "内存相关的版本演进"
 chapter: "4.6"
-status: finalized
+status: ready-for-review
 section: "4.6"
 reviewed_date: "2026-04-19"
 reviewed_by: "openclaw-task6"
@@ -44,11 +44,11 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 4
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: pending
+task9_result: pending
 last_task9_at: "2026-04-20T04:20:38+08:00"
 task2b_state: fixed
 task2b_result: fixed
@@ -481,6 +481,8 @@ Google 官方测试给出的量化结果包括：
 - **相机冷启动**快 6.6%，热启动快 4.48%
 - **系统启动**快约 8%（约节省 950ms）
 
+截至 2026 年，16KB page size 仍处于开发者引领阶段。以 Pixel 10（Tensor G5）为例，虽然硬件已针对 16KB 做了优化，但出厂默认仍以 4KB 模式运行，主要原因是大量旧版 NDK 应用在 16KB 环境下会出现兼容性问题。Google Play 要求 2025 年 11 月起上架应用必须 16KB 兼容，但设备侧的全面切换仍需要更长的过渡期。开发者应确保 NDK 代码兼容 16KB，但不必期待短期内所有旗舰机都默认启用。
+
 这些性能提升的代价是**内部碎片**：原本只需要 4KB 的小内存分配（如 `mmap` 映射），现在实际占用 16KB。对于内存分配密集的应用，实际内存占用会更高。不过在 8GB+ 的大内存设备上，这个代价相对 TLB 收益来说是可以接受的。
 
 对于开发者的适配要求：纯 Java/Kotlin 应用自动兼容，无需修改；但使用 NDK/C++ 的应用需要用 NDK r28+ 重新编译，确保 ELF 段对齐到 16KB。硬编码 `PAGE_SIZE = 4096` 的代码必须改为 `sysconf(_SC_PAGESIZE)` 动态获取。可以通过 `adb shell getconf PAGE_SIZE` 检查设备当前的页面大小。
@@ -558,6 +560,17 @@ PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻�
 | `kernel/common/arch/arm64/Kconfig` | CONFIG_ARM64_16K_PAGES=y | ACK 6.6+ |
 
 
+
+
+### [自动发现] MGLRU 在 GKI 6.12 中基线化
+
+MGLRU（Multi-Gen LRU）在 Android 14 时期以内核配置选项的形式存在，部分厂商选择性启用。GKI 6.12（Android 16）正式将 MGLRU 设为强制默认特性，终结了传统 LRU 在高性能 Android 设备上的地位。
+
+MGLRU 的核心改进是把页回收决策从被动扫描变为按代分级。内核按访问时间将页分到不同 generation，回收时优先淘汰最老一代中的页。与传统 LRU 的线性链表扫描相比，MGLRU 的多代结构让回收精度更高，误杀活跃页的概率更低。
+
+在 Perfetto 中可以通过 `mm_vmscan_lru_shrink_inactive` 和相关 tracepoint 观察 MGLRU 的回收行为。Android 16 设备上，如果发现回收仍然过于激进，需要检查厂商是否覆盖了 MGLRU 的默认参数。
+
+[来源: GKI 6.12 kernel config, CONFIG_LRU_GEN_ENABLED=y by default]
 
 ## 版本演进速查表
 

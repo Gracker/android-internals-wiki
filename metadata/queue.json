@@ -21,8 +21,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch04-06-memory-evolution-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch04-06-memory-evolution-external-review.md",
+      "completed_at": "2026-04-29T04:43:48.394246",
+      "completed_reason": "MGLRU 基线化节点已补充；16KB 兼容过渡期现状已纠正"
     },
     {
       "section": "04.07",
@@ -972,7 +974,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T03:43:01+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T04:43:48.394246",
+      "completed_reason": "Photo Picker 版本错误已修复：拆分为 Android 13(API 33) 引入 + Android 14(API 34) Selected Photos Access"
     },
     {
       "section": "1.11",
