@@ -567,9 +567,13 @@ Android 12 的变化发生在 framework 内部。应用可见的公开 API 仍�
 
 [已验证:AOSP android-12.0.0_r1, `ContentResolver.getType()` 内部调用 `ActivityManager.getService().getProviderMimeTypeAsync(...)`;公开 SDK 无 `ContentResolver.getProviderMimeTypeAsync()`]
 
-### Android 14-15(API 34-35):Photo Picker
+### Android 13(API 33):Photo Picker
 
-Android 14 引入的 Photo Picker 逐步替代了直接访问 `MediaStore` Images ContentProvider 的场景。App 不再需要 `READ_MEDIA_IMAGES` 权限就能通过 Photo Picker 让用户选择照片--这是一种更安全、更用户友好的替代方案。
+系统 Photo Picker 在 Android 13 / API 33 引入，提供标准的照片/视频选择界面。App 通过 `ActivityResultContracts.PickVisualMedia` 启动，不需要 `READ_MEDIA_IMAGES` 等 media 权限。这是媒体访问从 ContentProvider 直连向系统中介模式的起点。
+
+### Android 14(API 34):Selected Photos Access
+
+Android 14 在 Photo Picker 基础上增加了 Selected Photos Access 能力。用户可以选择授权部分照片（而非全部），对应新权限 `READ_MEDIA_VISUAL_USER_SELECTED`。配合 Photo Picker 使用，App 可以在不持有完整 media 权限的情况下完成图片选择场景——这对权限最小化原则是一次实质推进。
 
 ### Android 16(API 36):超时口径继续沿用旧模型
 
