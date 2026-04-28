@@ -3,7 +3,7 @@ title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
 status: ready-for-review
-reviewed_date: '2026-04-20'
+reviewed_date: "2026-04-28"
 reviewed_by: openclaw-task6
 review_note: Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 9 处 L1/L2
   小修;Perfetto 证据链、版本/API 口径与扩展收束已转 Task 9 / Task 2B
@@ -53,16 +53,17 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: task6_pending
-task6_result: 'pass-light-edit'
-task6_state: revisiting
-task9_state: pending
-task9_result: pending
+pipeline_stage: task2b_pending
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: reviewed
+task9_result: needs-rework
 task9_reviewed_date: "2026-04-28"
 task2b_result: fixed
 task2b_state: pending
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-28T09:21:00+08:00"
+last_task9_at: "2026-04-28T22:57:00+08:00"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。需 Task2B 回炉。"
 ---
 
 # 帧率与刷新率

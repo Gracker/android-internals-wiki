@@ -4,10 +4,10 @@
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 115,
-    "ready-for-review": 103,
+    "finalized": 111,
+    "ready-for-review": 107,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-28T14:33:59+08:00",
+    "last_updated": "2026-04-28T22:57:00+08:00",
     "pipeline_stage_counts": {
       "None": 33,
       "ready-to-publish": 115,
@@ -38,29 +38,32 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "None": 33,
-      "ready-to-publish": 115,
-      "task2b_pending": 76,
-      "task9_pending": 9,
-      "task6_pending": 17
+      "ready-to-publish": 111,
+      "task2b_pending": 82,
+      "task9_pending": 8,
+      "task6_pending": 15,
+      "'task2b_pending'": 1
     },
     "task6_state_counts": {
       "None": 34,
       "reviewed": 177,
-      "revisiting": 39
+      "revisiting": 38,
+      "revising": 1
     },
     "task9_state_counts": {
       "None": 38,
-      "reviewed": 197,
-      "pending": 14,
-      "fixed": 1
+      "reviewed": 199,
+      "pending": 12,
+      "'reviewed'": 1
     },
     "task2b_state_counts": {
       "None": 40,
-      "fixed": 128,
-      "pending": 78,
-      "idle": 4
+      "fixed": 121,
+      "pending": 84,
+      "idle": 4,
+      "'pending'": 1
     },
-    "last_updated": "2026-04-28T14:33:59+08:00"
+    "last_updated": "2026-04-28T22:57:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -135,11 +138,14 @@
       "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-with-p1-notes",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-18",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-16"
+      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-28T22:57:00+08:00",
+      "auto_promoted": true
     },
     "src/part1-fundamentals/ch01-architecture/02-boot-process.md": {
       "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
@@ -631,8 +637,8 @@
       "path": "src/part1-fundamentals/ch02-rendering/02-framerate.md",
       "title": "帧率与刷新率",
       "chapter": "'2.2'",
-      "section": "'2.2'",
-      "status": "finalized",
+      "section": "2.2",
+      "status": "ready-for-review",
       "applicable_versions": "Android 4.1 (API 16) - Android 16 (API 36)",
       "last_verified": "'2026-04-24'",
       "last_verified_against": "AOSP android-16.0.0_r1, 官方文档最新版本, Android 35 SDK sources",
@@ -648,7 +654,7 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T09:21:00+08:00"
+      "last_task9_at": "2026-04-28T22:57:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/03-vsync.md": {
       "path": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
@@ -3400,14 +3406,18 @@
       "last_verified": "2026-04-03",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium-high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "fixed",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-22",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-28T22:57:00+08:00"
     },
     "src/part2-performance/ch11-power/05-wakelock.md": {
       "path": "src/part2-performance/ch11-power/05-wakelock.md",
@@ -6935,6 +6945,33 @@
           "auto_promoted": true
         }
       ]
+    },
+    {
+      "date": "2026-04-28",
+      "time": "22:57",
+      "task": "task9-deep-review",
+      "sections_reviewed": [
+        {
+          "section": "1.1",
+          "title": "Android 分层架构",
+          "result": "pass-tech-review",
+          "issues": 1,
+          "auto_promoted": true
+        },
+        {
+          "section": "2.2",
+          "title": "帧率与刷新率",
+          "result": "needs-rework",
+          "issues": 1
+        },
+        {
+          "section": "11.4",
+          "title": "案例集",
+          "result": "needs-rework",
+          "issues": 3
+        }
+      ],
+      "log": "logs/deep-review/2026-04-28-22-deep-review.md"
     }
   ],
   "progress": {
@@ -7539,6 +7576,46 @@
         "task9_state": "reviewed",
         "pipeline_stage": "ready-to-publish",
         "issues_found": "minor"
+      },
+      "1.1": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-28",
+        "task9_result": "pass-tech-review",
+        "task9_state": "reviewed",
+        "pipeline_stage": "ready-to-publish",
+        "status": "finalized",
+        "issues_found": "minor",
+        "p0": 0,
+        "p1": 0,
+        "p2": 1,
+        "last_task9_at": "2026-04-28T22:57:00+08:00",
+        "auto_promoted": true
+      },
+      "2.2": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-28",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "status": "ready-for-review",
+        "issues_found": "major",
+        "p0": 1,
+        "p1": 0,
+        "p2": 0,
+        "last_task9_at": "2026-04-28T22:57:00+08:00"
+      },
+      "11.4": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-28",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "status": "ready-for-review",
+        "issues_found": "major",
+        "p0": 1,
+        "p1": 1,
+        "p2": 1,
+        "last_task9_at": "2026-04-28T22:57:00+08:00"
       }
     }
   },
