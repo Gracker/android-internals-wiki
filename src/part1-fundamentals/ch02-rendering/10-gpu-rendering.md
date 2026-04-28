@@ -22,8 +22,8 @@ tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory'
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-23"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-04-28""2026-04-23"
+reviewed_by: "openclaw-task6"openclaw-task6
 rework_date: "2026-04-21"
 rework_by: openclaw-task2b
 review_round: 6
@@ -32,8 +32,8 @@ polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: "reviewed"revisiting
+task6_result: "pass-light-edit"pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-28"
