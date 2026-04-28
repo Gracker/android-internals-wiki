@@ -6105,3 +6105,16 @@
 - **位置**：控制变量 / 同网络
 - **问题**：Network Link Conditioner 是 Apple/macOS 工具链口径，直接写进 Android 竞品测试容易让读者误以为设备侧可用。
 - **建议**：说明它只能通过 Mac 侧网络/热点间接塑形；Android 侧优先写 Charles/Proxyman 代理限速、root 环境 tc/netem 或测试网关限速。
+
+## [Task9 Deep Review] 17.3 行业案例 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L256（折叠屏多窗口性能压力）
+- **问题**：正文写“120Hz 大屏同时运行两个 App，对系统性能的要求是普通场景的 2-3 倍”，并描述前台窗口获得更多 GPU 时间片、后台窗口降到 60fps 或更低。这里缺少 SurfaceFlinger/HWC/GPU counter 或厂商策略来源，且“GPU 时间片”不是 Android 公共机制口径。
+- **建议**：改成可观测口径：多窗口会增加 layer 数、composition 成本和内存带宽压力，是否降帧/调度偏置取决于 OEM 策略；补 FrameTimeline、SurfaceFlinger layer、GPU frequency/busy、刷新率切换的同机型 trace 数据，不保留 2-3 倍固定数字。
+
+## [Task9 Deep Review] 17.3 行业案例 — 2026-04-28
+- **类型**：数据缺失
+- **位置**：L105-L118（Xiaomi Game Turbo、OPPO/vivo ADPF 协作）
+- **问题**：frontmatter sources 只列 Samsung、Android ADPF/Game Mode、TikTok 等来源，未列 Xiaomi/OPPO/vivo 官方材料；正文对 Xiaomi Game Turbo 用户侧模式、OPPO/vivo vendor thermal / power stack 协作只给定性结论。
+- **建议**：补 Xiaomi/HyperOS Game Turbo 官方说明、OPPO/vivo 开发者文档或公开技术分享；若找不到一手资料，把这些段落降级为“设备侧模式入口/待按机型验证”，并在验证方法中要求记录机型、系统版本、perfservice/power HAL 可观测信号。
+

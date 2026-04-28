@@ -10987,3 +10987,20 @@ Android 17 如何通过 SELinux 确保只有 vold 等关键路径能使用异步
 
 ### 外部 review 来源
 - Gemini 外部 review
+
+## [2026-04-28] 19.26 混合栈与跨平台 APM — WebView 可见状态与白屏采样锚点
+
+### 盲区描述
+章节讨论 WebView 白屏检测时漏掉 `onPageCommitVisible()` 与 `WebView.postVisualStateCallback()`。需要明确它们和 `onPageFinished()`、业务 ready、`PixelCopy` 的先后关系，避免线上采样旧页面或未提交 visual state。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Android WebView API 23+ 官方文档中 `onPageCommitVisible()` 与 `postVisualStateCallback()` 的触发语义。
+- 设计一条可发布的白屏检测时序：navigation start → commit visible → visual state callback → PixelCopy / DOM / business ready。
+- 对比旧 WebView、跨进程 WebView renderer、Surface/TextureView 场景下 PixelCopy 的采样边界。
+
+### 关联章节
+19.26, 7.11, 18.13
+

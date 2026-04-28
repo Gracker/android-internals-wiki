@@ -17066,6 +17066,65 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T07:40:26+08:00",
       "status": "pending"
+    },
+    {
+      "section": "16.4",
+      "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] AutoFDO 量化数据与官方可核验口径不一致，需回源限定",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据缺失/版本差异",
+          "location": "L138-L144（AutoFDO 量化数据）",
+          "detail": "正文写“Google 在 Pixel 9 Pro 上实测”，并列出 P50 4.3%（1240ms→1187ms）、P95 6.8%、Binder-rpc 21.7%、binder-addints 37.7%、HwBinder 20%。当前可打开的官方博客《Boosting Android Performance: Introducing AutoFDO for the Kernel》正文只明确给出 userspace AutoFDO 约 4% cold app launch / 1% boot，以及 kernel AutoFDO 在 Pixel devices、6.1/6.6/6.12 kernels 上的改进；未在正文中出现 Pixel 9 Pro、1240/1187、binder-addints、HwBinder 等精确口径。",
+          "suggestion": "要么把本段改成官方正文可核验口径（约 4% cold launch、1% boot、Pixel devices across 6.1/6.6/6.12，并说明 kernel 具体结果见 android16-6.12/android15-6.6 profile 仓库），要么补充可复核的表格/截图/benchmark 链接，标清设备、内核分支、benchmark 名称和样本口径。",
+          "evidence": [
+            "https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html",
+            "AOSP kernel common android16-6.12 / android15-6.6 AutoFDO profile repository references"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T08:39:32+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "19.26",
+      "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "priority": 85,
+      "reason": "[Deep Tech Review] WebView 可见状态与跨时钟校准存在 P1 技术缺口",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "知识盲区",
+          "location": "L40 / L132-L169（H5 白屏检测与 PixelCopy 采样触发点）",
+          "detail": "章节只列 DOM、onPageFinished、PixelCopy，漏掉 Android 官方 WebView 可见状态锚点：onPageCommitVisible() 与 WebView.postVisualStateCallback()。官方文档说明 onPageCommitVisible 可判断旧页面内容不再绘制，postVisualStateCallback 提供更细粒度 visual state 更新。只在 onPageFinished 后延迟 PixelCopy，可能采到旧内容或未提交到渲染管线的状态。",
+          "suggestion": "补一段 API 23+ 可见状态链路：onPageStarted/onPageCommitVisible/postVisualStateCallback/PixelCopy 的职责边界；白屏采样建议先等 visual state callback，再做低频 PixelCopy 或 DOM/业务 ready 交叉判断。",
+          "evidence": [
+            "developer.android.com/reference/android/webkit/WebViewClient#onPageCommitVisible",
+            "developer.android.com/reference/android/webkit/WebView#postVisualStateCallback"
+          ]
+        },
+        {
+          "type": "原理断裂",
+          "location": "L78（JS timeOrigin 与 SystemClock.elapsedRealtime 的时钟映射）",
+          "detail": "正文写“注入脚本时同时记录 Native 时间和 JS timeOrigin，后续 H5 指标回传相对时间，服务端转换到同一时间轴”。这里混用了 Web Performance 时间基准与 Android elapsedRealtime 单调时钟；仅记录 timeOrigin 不能直接和 elapsedRealtime 对齐。",
+          "suggestion": "改成记录校准对：nativeElapsedRealtimeAtInjection、nativeWallClockAtInjection（可选）、jsPerformanceNowAtInjection。H5 entry.startTime 回传后用 nativeElapsedAtInjection + (entry.startTime - jsNowAtInjection) 归一到端侧单调时钟；若使用 timeOrigin 做服务端合并，还要保留 wall-clock offset 与 clock-skew 边界。",
+          "evidence": [
+            "MDN Performance.timeOrigin: high resolution timestamp baseline for performance-related timestamps",
+            "Android SystemClock.elapsedRealtime monotonic clock semantics"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T08:39:32+08:00",
+      "status": "pending"
     }
   ]
 }
