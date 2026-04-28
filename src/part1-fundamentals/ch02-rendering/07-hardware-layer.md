@@ -8,10 +8,11 @@ applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
 last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-28"
+review_notes: "2026-04-28 task6 re-review (revisiting→reviewed): pass-light-edit。1处轻修（去填充词）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 reviewed_by: openclaw-task6
-polish_count: 1
-polish_date: "2026-04-04"
+polish_count: 2
+polish_date: "2026-04-28"
 polish_by: "task2b-polish"
 sources:
   - type: blog
@@ -26,9 +27,9 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -171,7 +172,7 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 ### 代价一：额外的 GPU 内存
 
-每个 Hardware Layer 对应一块 GPU 纹理。如果同时有多个 View 设置了 Hardware Layer，或者 View 面积很大，显存消耗会非常可观。这就是为什么官方推荐只在动画期间启用、动画结束后立即释放。
+每个 Hardware Layer 对应一块 GPU 纹理。如果同时有多个 View 设置了 Hardware Layer，或者 View 面积很大，显存消耗会非常可观。官方推荐只在动画期间启用，动画结束后立即释放。
 
 16KB 页环境下还需要注意一个额外因素：GPU 显存分配的最小单元提升后，小面积硬件层会产生严重的"尾部浪费"——一个 100×50 像素的 layer 理论只需要约 20KB（RGBA），但在 16KB 最小分配粒度下可能占用 48KB 甚至更多。多个小 layer 累积起来，系统内存压力增加约 9%。对于需要频繁建层/销毁的场景（如列表 item 动画），这个开销会在 Trace 中表现为 GPU 内存分配的尖峰。
 
