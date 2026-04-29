@@ -1,8 +1,8 @@
 ---
-task9_result: pass-tech-review
-task9_reviewed_date: 2026-04-20
+task9_result: needs-rework
+task9_reviewed_date: '2026-04-29'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-20T10:22:00+08:00"
+last_task9_at: "2026-04-29T21:20:00+08:00"
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
@@ -11,7 +11,7 @@ applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
 reviewed_date: '2026-04-29'
 reviewed_by: openclaw-task6
-review_round: 6
+review_round: 7
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
@@ -70,11 +70,11 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '5.1'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 ---
 
