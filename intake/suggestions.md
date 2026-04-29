@@ -6474,3 +6474,98 @@
 - **位置**：L241-L243、L265-L299
 - **问题**：“几毫秒级别”“几十毫秒”以及 legacy / predictive 两条 Perfetto 判读顺序缺少真实 trace、trace_processor 查询或设备/负载条件支撑。
 - **建议**：补一个最小样例：设备型号、Android 版本、录制 category、一次 legacy cancel 与一次 predictive progress 的关键时间戳；若没有真实样例，把延迟量级改成待测条件下的观察项，不写成固定范围。
+
+## [External Review] 8.5 案例集 — 2026-04-29
+- **类型**：原理链
+- **位置**：ClassLoader 拦截技术
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-10-8.5-external-review.md)
+
+
+## [External Review] 8.6 Kotlin Coroutine 性能实践 — 2026-04-29
+- **类型**：内存画像
+- **位置**：Flow 操作符开销
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-10-8.6-external-review.md)
+
+
+## [External Review] 8.8 Android 多媒体管线性能 — 2026-04-29
+- **类型**：感知流畅性
+- **位置**：音量一致性
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-10-8.8-external-review.md)
+
+
+## [External Review] 8.10 ProfilingManager 系统触发式性能追踪 — 2026-04-29
+- **类型**：实战技巧
+- **位置**：Tag 语义应用
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-8.10-external-review.md)
+
+
+## [External Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-04-29
+- **类型**：工具链
+- **位置**：AGI 与 Perfetto 分工
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-8.9-external-review.md)
+
+
+## [External Review] 9.1 ANR 设计思想 — 2026-04-29
+- **类型**：底层接口
+- **位置**：Android 15 AnrController
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-9.1-external-review.md)
+
+
+## [External Review] 9.2 ANR 类型与触发条件 — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：No response to onStartJob
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-9.2-external-review.md)
+
+
+## [External Review] 9.3 ANR 分析方法 — 2026-04-29
+- **类型**：工具联动
+- **位置**：android.anr 轨道特征
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-9.3-external-review.md)
+
+
+## [External Review] 9.4 特殊场景的 ANR — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：Binder 线程池耗尽特征
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-9.4-external-review.md)
+
+
+## [External Review] 9.5 案例集 — 2026-04-29
+- **类型**：诊断深度
+- **位置**：120Hz 下的亚 5 秒卡顿
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-9.5-external-review.md)
+
+
+## [External Review] 9.6 Notification 性能与 ANR — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：dumpsys 流量分析
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-9.6-external-review.md)
+
+
+## [External Review] 9.7 ANR 非技术故障诊断 — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：WaitQueue 阶跃特征
+- **问题**：
+- **建议**：
+- **来源**：Gemini 外部 review (2026-04-29-11-9.7-external-review.md)

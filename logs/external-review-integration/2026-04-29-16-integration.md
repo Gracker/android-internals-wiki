@@ -1,0 +1,75 @@
+# External Review Integration Log — 2026-04-29 16:19
+
+## Summary
+- Scanned: 16 files
+- Queue entries: 15
+- Research gaps: 19
+- Suggestions: 12
+
+## Processed Files
+- 2026-04-29-10-8.2-external-review.md → 8.2 App 启动全流程
+  - P0: 0, P1: 2, P2: 0, Gaps: 3
+- 2026-04-29-10-8.3-external-review.md → 8.3 启动优化策略
+  - P0: 1, P1: 2, P2: 0, Gaps: 3
+- 2026-04-29-10-8.4-external-review.md → 8.4 其他响应速度场景
+  - P0: 0, P1: 0, P2: 0, Gaps: 3
+- 2026-04-29-10-8.5-external-review.md → 8.5 案例集
+  - P0: 1, P1: 1, P2: 1, Gaps: 3
+- 2026-04-29-10-8.6-external-review.md → 8.6 Kotlin Coroutine 性能实践
+  - P0: 0, P1: 2, P2: 1, Gaps: 3
+- 2026-04-29-10-8.7-external-review.md → 8.7 Baseline Profiles 与编译优化实践
+  - P0: 1, P1: 2, P2: 0, Gaps: 3
+- 2026-04-29-10-8.8-external-review.md → 8.8 Android 多媒体管线性能
+  - P0: 0, P1: 3, P2: 1, Gaps: 3
+- 2026-04-29-11-8.10-external-review.md → 8.10 ProfilingManager 系统触发式性能追踪
+  - P0: 0, P1: 2, P2: 1, Gaps: 3
+- 2026-04-29-11-8.9-external-review.md → 8.9 Android 游戏性能与 Game Mode/State API
+  - P0: 1, P1: 2, P2: 1, Gaps: 3
+- 2026-04-29-11-9.1-external-review.md → 9.1 ANR 设计思想
+  - P0: 1, P1: 1, P2: 1, Gaps: 3
+- 2026-04-29-11-9.2-external-review.md → 9.2 ANR 类型与触发条件
+  - P0: 1, P1: 2, P2: 1, Gaps: 3
+- 2026-04-29-11-9.3-external-review.md → 9.3 ANR 分析方法
+  - P0: 1, P1: 2, P2: 1, Gaps: 3
+- 2026-04-29-11-9.4-external-review.md → 9.4 特殊场景的 ANR
+  - P0: 1, P1: 2, P2: 1, Gaps: 3
+- 2026-04-29-11-9.5-external-review.md → 9.5 案例集
+  - P0: 1, P1: 1, P2: 1, Gaps: 3
+- 2026-04-29-11-9.6-external-review.md → 9.6 Notification 性能与 ANR
+  - P0: 1, P1: 2, P2: 1, Gaps: 3
+- 2026-04-29-11-9.7-external-review.md → 9.7 ANR 非技术故障诊断
+  - P0: 1, P1: 2, P2: 1, Gaps: 3
+
+## Knowledge Assets (preserved in external-review files)
+- [8.2] Android 15 标志着“启动黑盒”的终结，`ApplicationStartInfo` 补齐了从 Launcher 点击到主线程第一行代码之间的最后一块拼图。
+- [8.2] 16KB 内存分页不仅是内存管理的变化，更是 Android 应对现代大 Binary（如 WebView, ML Models）启动瓶颈的终极武器。
+- [8.3] 在 2026 年，如果你只用了 Baseline Profile 而没配置 Startup Profile，你只完成了一半的编译优化。
+- [8.3] Android 15 的启动优化是一场“与内核分页的赛跑”，任务编排的首要准则是：**只读优先，顺序加载**。
+- [8.4] Android 16 标志着“数据驱动内核”的成熟。通过 AutoFDO，Binder 这一 Android 性能最大的“变量”终于在内核层被收敛。
+- [8.4] 在 2026 年，点击响应的“极致跟手感”不再仅取决于主线程频率，而更多依赖于系统算法对交互意图的精准提前感知。
+- [8.5] 在 2026 年，性能复盘的第一证据不再是用户录屏，而是由 `ProfilingManager` 自动捕获的系统触发 Trace。
+- [8.5] R8 Full Mode 不是一种可选的文件配置，它是 AGP 8.x 的默认运行标准，不适配即意味着落后。
+- [8.6] Android 15 标志着协程调度的“半透明化”。通过 ADPF，开发者终于拥有了将“用户态并发意图”传递给“内核态调频器”的标准桥梁。
+- [8.6] 在 2026 年，协程优化的最高境界不再是“少写线程”，而是“让系统知道哪条线程在跑哪个协程”。
+- [8.7] Android 16 标志着“设备端编译时代”的终结。对于 Google Play 应用，安装后第一次打开即是 speed-profile 稳态。
+- [8.7] Startup Profile 的价值不仅在于加速加载，更在于它通过物理重排，将分散的执行路径“压缩”进了更少的物理内存页中。
+- [8.8] Android 15 标志着“高效 AV1”的平民化。dav1d 的引入使得软解不再是应急手段，而是可用的性能基准。
+- [8.8] 在 2026 年，衡量音频性能的最高标准不再是 44.1kHz 采样率，而是 **传感器到声场的动态对齐精度**。
+- [8.10] Android 17 的 `ProfilingManager` 不再是单纯的“采样器”，它是应用在系统惩罚降临前的 **“黑匣子记录仪”**。
+- [8.10] 在 2026 年，如果你收到一份来自系统的结果但 Perfetto 打不开，请先检查其后缀名是否为 `.hprof`。
+- [8.9] Android 16 实现了 **“帧对齐透明化”**。通过 Vsync Offset API，游戏终于可以停止盲目猜测 VSync 窗口。
+- [8.9] 在 2026 年，如果你的游戏在开启 Swappy 后反而更卡，第一怀疑项应是 **应用侧预测算法与系统侧 Vsync 曝光值的非线性叠加冲突**。
+- [9.1] Android 14+ 标志着“开放式 ANR 目录”的终结。开发者必须习惯于通过 **BugReport 的物理文件解压**（`FS/data/anr/`）来获取最原始的诊断证据。
+- [9.1] `AnrHelper` 不仅是排队器，更是系统的“断路器”，它通过 **Continuous ANR 抑制** 确保了诊断过程本身不会彻底搞垮内核 I/O。
+- [9.2] Android 16 标志着 **“公平计时”** 的到来。通过 Native 层集成 App Freezer，系统终于能区分“应用不响应”与“应用没机会响应”。
+- [9.2] 在 2026 年，处理 FGS 超时的第一优先级是重写 `onTimeout()`，而非仅仅优化 `onStartCommand()` 的执行速度。
+- [9.3] Android 14 标志着 ANR 诊断进入 **“实时镜像时代”**。不到 10ms 的偏差使得 traces.txt 终于可以承担“第一物证”的重任。
+- [9.3] 在 2026 年，如果 trace 显示 `nativePollOnce`，说明该 ANR 极大概率不是由于主线程执行慢，而是由于系统分发通道（InputChannel）阻塞。
+- [9.4] Android 15+ 的数据库优化准则：**16KB 分页需要 4 倍的 Checkpoint 关注度**。不调优阈值，就是在为未来的主线程 D 状态埋雷。
+- [9.4] 在 2026 年，如果你的 App 在 Android 16 上报了 ANR，那它一定是真的响应慢，不要再怀疑是系统“冻”了它。
+- [9.5] Android 16 标志着 **“ANR 归因自动化”** 的到来。通过 `WaitQueue length` 元数据，开发者可以在不阅读任何堆栈的情况下，直接定性故障是属于“单点卡死”还是“吞吐量不足”。
+- [9.5] 在 16KB 分页时代，I/O 治理必须从“逻辑次数”转向“物理吞吐”。不调整 SQLite 自动检查点阈值，高刷设备的流畅度将时刻受到磁盘背景噪音的威胁。
+- [9.6] Android 14 标志着通知栏进入 **“增量更新时代”**。只要布局尺寸保持稳定，Measure Cache 就能让高频更新接近“零成本”。
+- [9.6] 在 2026 年，如果你必须发送带大图的通知，**`Resource ID > Uri > Bitmap`** 依然是不可动摇的性能阶梯。
+- [9.7] Android 15+ 标志着 **“内核 VMA 锁竞争时代”的终结**。开发者从此可以将 90% 以上的 D 状态排查精力聚焦于真实的磁盘 I/O 或驱动层死锁。
+- [9.7] 在 2026 年，如果 ANR Reason 是 `no focused window`，第一分析动作是打开 `ProfilingManager` 的 Trace 寻找 **`input_focus` 阶跃信号**。

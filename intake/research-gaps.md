@@ -11286,3 +11286,344 @@ Android 16 `SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 与 `Powe
 2026-04-28-15-ch05-05-thermal-external-review.md
 
 ---
+
+## [2026-04-29] 8.2 App 启动全流程 — 知识盲区
+
+### 盲区描述
+Unfrozen Cached Process 竞合
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 14+ 缓存进程解冻对新进程 fork 时的 CPU 调度优先级干扰
+
+### 关联章节
+- 8.2
+
+### 外部 review 来源
+2026-04-29-10-8.2-external-review.md
+
+
+## [2026-04-29] 8.3 启动优化策略 — 知识盲区
+
+### 盲区描述
+Startup Profile 与重打包冲突
+
+### 重要程度
+高
+
+### 建议研究方向
+验证加固或重打包工具是否会破坏 Startup Profile 生成的物理 DEX 布局
+
+### 关联章节
+- 8.3
+
+### 外部 review 来源
+2026-04-29-10-8.3-external-review.md
+
+
+## [2026-04-29] 8.4 其他响应速度场景 — 知识盲区
+
+### 盲区描述
+AutoFDO 对自定义 HIDL 的增益
+
+### 重要程度
+中
+
+### 建议研究方向
+验证内核级优化是否同样覆盖了三方 OEM 定义的硬件接口 Binder
+
+### 关联章节
+- 8.4
+
+### 外部 review 来源
+2026-04-29-10-8.4-external-review.md
+
+
+## [2026-04-29] 8.4 其他响应速度场景 — 知识盲区
+
+### 盲区描述
+触摸预测在 240Hz 采样下的精度
+
+### 重要程度
+高
+
+### 建议研究方向
+研究高刷触控屏对 ML 预测算法准确率的影响
+
+### 关联章节
+- 8.4
+
+### 外部 review 来源
+2026-04-29-10-8.4-external-review.md
+
+
+## [2026-04-29] 8.5 案例集 — 知识盲区
+
+### 盲区描述
+R8 Full Mode 与 Kotlin 协程内联冲突
+
+### 重要程度
+中
+
+### 建议研究方向
+验证在激进模式下，协程 `Continuation` 状态机被 R8 合并后是否会影响 Method Trace 的可读性
+
+### 关联章节
+- 8.5
+
+### 外部 review 来源
+2026-04-29-10-8.5-external-review.md
+
+
+## [2026-04-29] 8.7 Baseline Profiles 与编译优化实践 — 知识盲区
+
+### 盲区描述
+SDM 文件签名绑定逻辑
+
+### 重要程度
+高
+
+### 建议研究方向
+研究云端生成的 `.odex` 如何与本地生成的 `base.apk` 保持签名一致性验证
+
+### 关联章节
+- 8.7
+
+### 外部 review 来源
+2026-04-29-10-8.7-external-review.md
+
+
+## [2026-04-29] 8.7 Baseline Profiles 与编译优化实践 — 知识盲区
+
+### 盲区描述
+16KB 下的 DEX 预读算法
+
+### 重要程度
+中
+
+### 建议研究方向
+验证 Android 15 内核读取 16KB 对齐的 DEX 时是否存在类似 fadvise 的提前加载策略
+
+### 关联章节
+- 8.7
+
+### 外部 review 来源
+2026-04-29-10-8.7-external-review.md
+
+
+## [2026-04-29] 8.8 Android 多媒体管线性能 — 知识盲区
+
+### 盲区描述
+BLE Audio 调度优先级
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 `audioserver` 如何在 BLE 链路下为空间音频分配实时调度配额
+
+### 关联章节
+- 8.8
+
+### 外部 review 来源
+2026-04-29-10-8.8-external-review.md
+
+
+## [2026-04-29] 8.8 Android 多媒体管线性能 — 知识盲区
+
+### 盲区描述
+Codec2 与 16KB 对齐的副作用
+
+### 重要程度
+中
+
+### 建议研究方向
+验证在 16KB 页面下，小分辨率（如 360p）预览流的内存碎片浪费情况
+
+### 关联章节
+- 8.8
+
+### 外部 review 来源
+2026-04-29-10-8.8-external-review.md
+
+
+## [2026-04-29] 8.10 ProfilingManager 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+ANOMALY 阈值的动态下发
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 `device_config` (Mainline Profiling namespace) 是否允许云端动态调整触发异常的 CPU/内存阈值
+
+### 关联章节
+- 8.10
+
+### 外部 review 来源
+2026-04-29-11-8.10-external-review.md
+
+
+## [2026-04-29] 8.10 ProfilingManager 系统触发式性能追踪 — 知识盲区
+
+### 盲区描述
+Redacted Heap Dump 的内容
+
+### 重要程度
+中
+
+### 建议研究方向
+验证系统触发的 Heap Dump 是否会剔除 String 值等敏感业务数据
+
+### 关联章节
+- 8.10
+
+### 外部 review 来源
+2026-04-29-11-8.10-external-review.md
+
+
+## [2026-04-29] 8.9 Android 游戏性能与 Game Mode/State API — 知识盲区
+
+### 盲区描述
+ARR 下的 Swappy 步进稳定性
+
+### 重要程度
+高
+
+### 建议研究方向
+验证在 60Hz 到 120Hz 的 ARR 跳变瞬间，Swappy 内部时间戳插值器的漂移率
+
+### 关联章节
+- 8.9
+
+### 外部 review 来源
+2026-04-29-11-8.9-external-review.md
+
+
+## [2026-04-29] 8.9 Android 游戏性能与 Game Mode/State API — 知识盲区
+
+### 盲区描述
+WebView 与 Game Mode 资源互斥
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 15 下 `DEFAULT_TO_WEB` 意图是否会抢占 Game Mode 预留的 CPU 大核核心
+
+### 关联章节
+- 8.9
+
+### 外部 review 来源
+2026-04-29-11-8.9-external-review.md
+
+
+## [2026-04-29] 9.2 ANR 类型与触发条件 — 知识盲区
+
+### 盲区描述
+AnrTimer 与 BPF 结合的预研
+
+### 重要程度
+中
+
+### 建议研究方向
+验证 Android 17 是否会利用 eBPF 在内核直接挂起超时的 SocketPair 发送
+
+### 关联章节
+- 9.2
+
+### 外部 review 来源
+2026-04-29-11-9.2-external-review.md
+
+
+## [2026-04-29] 9.3 ANR 分析方法 — 知识盲区
+
+### 盲区描述
+Redacted Trace 剥离逻辑
+
+### 重要程度
+高
+
+### 建议研究方向
+研究系统在生成 redacted 版本的 traces.txt 时，如何保护 method 名混淆后的原始映射
+
+### 关联章节
+- 9.3
+
+### 外部 review 来源
+2026-04-29-11-9.3-external-review.md
+
+
+## [2026-04-29] 9.4 特殊场景的 ANR — 知识盲区
+
+### 盲区描述
+ShortService 的 CPU 份额限制
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 15 下 `shortService` 触发 `onTimeout` 后，系统是否会立即对该进程执行 CPU Throttling
+
+### 关联章节
+- 9.4
+
+### 外部 review 来源
+2026-04-29-11-9.4-external-review.md
+
+
+## [2026-04-29] 9.5 案例集 — 知识盲区
+
+### 盲区描述
+freezer 对 ProfilingManager 的干扰
+
+### 重要程度
+高
+
+### 建议研究方向
+研究当应用被冻结时，ProfilingManager 是否能成功回传结果文件
+
+### 关联章节
+- 9.5
+
+### 外部 review 来源
+2026-04-29-11-9.5-external-review.md
+
+
+## [2026-04-29] 9.6 Notification 性能与 ANR — 知识盲区
+
+### 盲区描述
+NLS 进程的冻结豁免
+
+### 重要程度
+高
+
+### 建议研究方向
+验证活跃的 `NotificationListenerService` 是否会被 Android 14+ 的 Freezer 机制豁免冻结
+
+### 关联章节
+- 9.6
+
+### 外部 review 来源
+2026-04-29-11-9.6-external-review.md
+
+
+## [2026-04-29] 9.7 ANR 非技术故障诊断 — 知识盲区
+
+### 盲区描述
+BPF 针对 InputChannel 的监控
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 17 是否开放了基于 BPF 的 Input 事件全链路延迟监控给三方 App
+
+### 关联章节
+- 9.7
+
+### 外部 review 来源
+2026-04-29-11-9.7-external-review.md

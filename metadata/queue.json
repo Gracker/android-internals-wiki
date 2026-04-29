@@ -6119,6 +6119,18 @@
           "suggestion": "新增 ANOMALY 专段：先用公开契约写清 `ProfilingResult.getTag()` 与 artifact varies，再用 `[待验证]` 或源码锚点说明 MemoryLimiter / ProfilingService 可能给出的内存治理信号；补上多包同 UID 注册时可能不返回 artifact 的限制。",
           "confirmed_by": "task9-deep-tech-review",
           "confirmed_at": "2026-04-25T22:29:14+08:00"
+        },
+        {
+          "type": "产物模型",
+          "location": "ANOMALY 异构 Artifact",
+          "detail": "暗示所有触发器均返回 system trace。",
+          "suggestion": "在“trigger、产物和停止条件”表格中增加“Artifact 类型”列，并特别标注 ANOMALY 的动态性。"
+        },
+        {
+          "type": "诊断演进",
+          "location": "临终遗言机制",
+          "detail": "未提及触发器在系统惩罚动作前的“先验性”。",
+          "suggestion": "在“为什么要了解”章节强调其在“排查被杀根因”中的战略地位。"
         }
       ],
       "added_by": "external-ai-review",
@@ -6128,12 +6140,13 @@
       "material_paths": [
         "intake/suggestions.md",
         "intake/research-gaps.md"
-      ]
+      ],
+      "source_file": "2026-04-29-11-8.10-external-review.md"
     },
     {
       "section": "8.7",
       "section_title": "Baseline Profiles 与编译优化实践",
-      "priority": 85,
+      "priority": 95,
       "reason": "[Deep Tech Review] Baseline Profiles 与编译优化实践 仍有 P0/P1 技术问题需回炉",
       "review_issues": [
         {
@@ -6169,6 +6182,24 @@
           "suggestion": "在安装来源表加入 AGP 8.4 分界：AGP 8.4+ 的 Android Studio / Gradle 安装可走自动编译；AGP < 8.4 或其他 installer 要依赖 ProfileInstaller / 后台 dexopt / 手工 compile。",
           "confirmed_by": "task9-deep-tech-review",
           "confirmed_at": "2026-04-25T22:29:14+08:00"
+        },
+        {
+          "type": "工具链",
+          "location": "AGP 8.5 物理对齐起点",
+          "detail": "声称 AGP 8.3 开启了 16KB 优化的 DEX layout。",
+          "suggestion": "明确告知开发者：吃满 Android 15/16 内核红利的前提是升级 AGP 至 8.5 及以上。"
+        },
+        {
+          "type": "分发演进",
+          "location": "Android 16 Cloud Compilation",
+          "detail": "对云端编译标注为“待验证”。",
+          "suggestion": "在“安装时的编译流程”中增加“云端 AOT”路径，解释 Baseline Profile 如何演进为云端编译的输入规则。"
+        },
+        {
+          "type": "底层原理",
+          "location": "指令缓存局部性",
+          "detail": "未深入探讨 Profile 规则密度对硬件的影响。",
+          "suggestion": "在“Startup Profile 优势”部分增加对硬件 L1/L2 Cache 命中率提升的描述。"
         }
       ],
       "added_by": "external-ai-review",
@@ -6178,7 +6209,8 @@
       "material_paths": [
         "intake/suggestions.md",
         "intake/research-gaps.md"
-      ]
+      ],
+      "source_file": "2026-04-29-10-8.7-external-review.md"
     },
     {
       "section": "8.8",
@@ -6203,10 +6235,29 @@
           "evidence": [
             "MediaCodec FEATURE_LowLatency"
           ]
+        },
+        {
+          "type": "音频交互",
+          "location": "BLE Audio 空间音频",
+          "detail": "分析音频延迟时仅侧重于 Mixer 调度。",
+          "suggestion": "在“音频延迟的构成”中增加“交互式音频延迟”路径。"
+        },
+        {
+          "type": "视频演进",
+          "location": "dav1d 软解提速",
+          "detail": "将 AV1 软解视为低效路径。",
+          "suggestion": "在“视频播放卡顿”章节增加对 dav1d 的能力背书，修正对“软解必卡”的传统偏见。"
+        },
+        {
+          "type": "内核红利",
+          "location": "16KB Page 对 8K 的加成",
+          "detail": "未提及分页机制对大流量多媒体的收益。",
+          "suggestion": "说明 16KB 环境下编解码任务的“内存带宽亲和性”。"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "pending",
+      "source_file": "2026-04-29-10-8.8-external-review.md"
     },
     {
       "section": "9.1",
@@ -7670,6 +7721,336 @@
       "added_at": "2026-04-29T15:20:00+08:00",
       "status": "pending",
       "source_file": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md"
+    },
+    {
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "priority": 85,
+      "reason": "[External Review] 8.2 App 启动全流程 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "底层机制",
+          "location": "16KB Page Size 红利",
+          "detail": "分析启动开销时仅侧重于 SDK 初始化。",
+          "suggestion": "在“第一阶段：从点击到 fork 进程”中增加内核分页优化的视角，强调 16KB 对齐对启动 I/O 的削峰作用。"
+        },
+        {
+          "type": "诊断工具",
+          "location": "ApplicationStartInfo 深度应用",
+          "detail": "对该 API 的介绍仅停留在代码示例。",
+          "suggestion": "在“度量方法”中增加 ApplicationStartInfo 的字段解释表，特别是 `getStartTimestamp()` 与 `getLaunchType()` 的联动分析。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-10-8.2-external-review.md"
+    },
+    {
+      "section": "8.3",
+      "section_title": "启动优化策略",
+      "priority": 95,
+      "reason": "[External Review] 8.3 启动优化策略 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "编译优化",
+          "location": "Startup Profile 作用域",
+          "detail": "将 `startup-prof.txt` 描述为仅服务于 AOT 编译。",
+          "suggestion": "明确区分 Baseline Profile（提升执行效率）与 Startup Profile（减少加载 I/O）。"
+        },
+        {
+          "type": "内存机制",
+          "location": "16KB Page COW 风险",
+          "detail": "未提及大页面环境下异步初始化的副作用。",
+          "suggestion": "在“延迟初始化”部分增加“内存写克制”建议，推荐启动初期保持配置只读。"
+        },
+        {
+          "type": "架构适配",
+          "location": "WebView 首屏优化",
+          "detail": "优化策略未覆盖以 H5 为首屏的应用场景。",
+          "suggestion": "说明如何配合 `SplashScreen` 状态位，利用 Android 15 的渲染意图加速 WebView 容器的唤醒。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-10-8.3-external-review.md"
+    },
+    {
+      "section": "8.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[External Review] 8.5 案例集 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "工具链",
+          "location": "R8 Full Mode 配置权重",
+          "detail": "建议通过 `proguard-android-optimize.txt` 文件名来开启优化。",
+          "suggestion": "明确告知开发者：**Property 决定模式，文件名决定预设规则**。应优先核查 Gradle 属性设置。"
+        },
+        {
+          "type": "诊断演进",
+          "location": "ProfilingManager 系统触发",
+          "detail": "ProfilingManager 的介绍仅停留在 App 主动请求。",
+          "suggestion": "在“总结与扩展”中增加“自动化作战”章节，演示如何注册系统触发器，并指出 Android 17 将进一步支持 `TRIGGER_TYPE_OOM`。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-10-8.5-external-review.md"
+    },
+    {
+      "section": "8.6",
+      "section_title": "Kotlin Coroutine 性能实践",
+      "priority": 85,
+      "reason": "[External Review] 8.6 Kotlin Coroutine 性能实践 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "系统联动",
+          "location": "ADPF 动态负载感知",
+          "detail": "分析调度开销时仅侧重于用户态切替。",
+          "suggestion": "在“Dispatcher 选择”部分增加“ADPF 赋能”小节，指导如何利用协程拦截器（Interceptor）实现自动化的 TID 绑定与负载报告。"
+        },
+        {
+          "type": "功耗管理",
+          "location": "Android 15 能效开关",
+          "detail": "未提及协程任务对整机能效的影响。",
+          "suggestion": "在讨论 `CoroutineWorker` 或后台轮询协程时，建议开发者显式开启能效模式，以减少在多窗口或高刷环境下对大核的无效唤醒。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-10-8.6-external-review.md"
+    },
+    {
+      "section": "8.9",
+      "section_title": "Android 游戏性能与 Game Mode/State API",
+      "priority": 95,
+      "reason": "[External Review] 8.9 Android 游戏性能与 Game Mode/State API 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "渲染同步",
+          "location": "Android 16 系统级 Vsync 感知",
+          "detail": "将渲染同步完全描述为应用侧 Swappy 的职责。",
+          "suggestion": "明确指出在 Android 16 环境下，游戏优化的重心应从“计算同步”转向“订阅偏移并上报 Deadline”，让 ADPF 完成闭环调度。"
+        },
+        {
+          "type": "故障模式",
+          "location": "Swappy Tailspin 预警",
+          "detail": "未提及开启 Swappy 后可能出现的“反向卡顿”。",
+          "suggestion": "在“游戏卡顿分析”章节增加“同步反馈环路失效”场景，指导如何通过 Perfetto 识别 Vsync Offset 错位引发的 Tailspin。"
+        },
+        {
+          "type": "硬件演进",
+          "location": "Vulkan 1.3 动态渲染",
+          "detail": "GPU 分析仅侧重于频率和 Busy 程度。",
+          "suggestion": "在“GPU 渲染瓶颈”章节增加对现代 Vulkan 算力红利的定性描述，解释为何 Draw Call 数量不再是主要瓶颈。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-11-8.9-external-review.md"
+    },
+    {
+      "section": "9.1",
+      "section_title": "ANR 设计思想",
+      "priority": 95,
+      "reason": "[External Review] 9.1 ANR 设计思想 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "诊断路径",
+          "location": "Android 14 权限收紧",
+          "detail": "建议通过 `adb pull /data/anr/` 获取 trace 文件。",
+          "suggestion": "明确告知开发者：在 Android 14+ 上获取原始 trace 的唯一标准路径是执行 **`adb bugreport`**，或者使用 **`ApplicationExitInfo`** API 程序化提取。"
+        },
+        {
+          "type": "保护机制",
+          "location": "连续 ANR 抑制",
+          "detail": "未提及系统如何应对同一个 App 爆发式触发超时的场景。",
+          "suggestion": "在“核心流程”中增加“自我保护”环节，解释为何连续卡顿时可能只产生一份 trace 或合并 trace。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-11-9.1-external-review.md"
+    },
+    {
+      "section": "9.2",
+      "section_title": "ANR 类型与触发条件",
+      "priority": 95,
+      "reason": "[External Review] 9.2 ANR 类型与触发条件 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "运行时行为",
+          "location": "FGS 最后通牒",
+          "detail": "声称 Android 12+ FGS 超时会直接导致应用崩溃。",
+          "suggestion": "明确将 FGS 超时描述为“两段式”过程：先触发回调自救，后触发硬性惩罚。"
+        },
+        {
+          "type": "底层机制",
+          "location": "Android 16 Native AnrTimer",
+          "detail": "将 ANR 计时描述为 system_server 的普通 Handler 消息。",
+          "suggestion": "在“检测机制”章节增加 Native 计时引擎的优势分析，并引入 `trace-timer` 调试命令。"
+        },
+        {
+          "type": "状态持久化",
+          "location": "dataSync 累计运行限制",
+          "detail": "未说明 6 小时限制的跨生命周期特性。",
+          "suggestion": "明确告知开发者：通过重启进程或杀掉 App 无法重置该计时器，必须真实结束任务或等待 24 小时窗口滚动。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-11-9.2-external-review.md"
+    },
+    {
+      "section": "9.3",
+      "section_title": "ANR 分析方法",
+      "priority": 95,
+      "reason": "[External Review] 9.3 ANR 分析方法 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "诊断时效性",
+          "location": "SIGQUIT 响应延迟",
+          "detail": "认为 traces.txt 存在严重的滞后性（秒级偏移），需始终保持怀疑。",
+          "suggestion": "明确区分版本：Android 13 及以下需防范“替罪羊”堆栈；Android 14+ 应对主线程堆栈保持 90% 以上的信任度，优先分析当前执行的方法。"
+        },
+        {
+          "type": "采样策略",
+          "location": "Android 14 精准进程 Dump",
+          "detail": "声称系统会大面积 dump 多个无关进程，容易误导。",
+          "suggestion": "在“traces.txt 解读”章节说明：Android 14+ trace 中出现的非主进程堆栈通常具备明确的因果关联。"
+        },
+        {
+          "type": "诊断演进",
+          "location": "Android 17 时段采样画像",
+          "detail": "未提及“点快照”模型的局限性及现代对策。",
+          "suggestion": "作为“疑难杂症排查”的高阶手段引入。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-11-9.3-external-review.md"
+    },
+    {
+      "section": "9.4",
+      "section_title": "特殊场景的 ANR",
+      "priority": 95,
+      "reason": "[External Review] 9.4 特殊场景的 ANR 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "存储性能",
+          "location": "16KB Page 写放大",
+          "detail": "分析文件锁卡顿时仅侧重于逻辑锁，未提及物理分页变化。",
+          "suggestion": "在“文件锁竞争”章节增加“16KB 页面下的数据库挑战”专项，建议开发者手动调低 `wal_autocheckpoint` 至 250 页。"
+        },
+        {
+          "type": "自动诊断",
+          "location": "Freezer 感知豁免",
+          "detail": "将“应用被系统冻结导致的 ANR”视为仍需人工识别的 D 状态场景。",
+          "suggestion": "明确告知开发者：在 Android 16+ 设备上，若仍发生 ANR，可基本排除“系统由于功耗原因而导致应用强制无响应”的外部干扰。"
+        },
+        {
+          "type": "广播演进",
+          "location": "异步广播优先级反转",
+          "detail": "未提及 Modern Broadcast Queue 下异步任务的调度陷阱。",
+          "suggestion": "增加说明：若后台线程池由于整机负载过大导致 `nice` 值竞争失败，即使主线程空闲，应用也会被判定为 Broadcast ANR。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-11-9.4-external-review.md"
+    },
+    {
+      "section": "9.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[External Review] 9.5 案例集 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "存储性能",
+          "location": "16KB Page Checkpoint 冲击波",
+          "detail": "案例 1 仅定性描述了 I/O 压力，未涉及 Android 15/16 物理架构的变化。",
+          "suggestion": "在案例 1 增加“16KB 页面下的物理 IO 陷阱”说明，提供调优 `wal_autocheckpoint` 的具体实战收益。"
+        },
+        {
+          "type": "工具演进",
+          "location": "自描述诊断元数据",
+          "detail": "案例分析仍侧重于手动查找 EventLog。",
+          "suggestion": "在“分析方法总结”中增加“自动化判据”章节，将 `WaitQueue length` 提升为定性分析的第一步。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-11-9.5-external-review.md"
+    },
+    {
+      "section": "9.6",
+      "section_title": "Notification 性能与 ANR",
+      "priority": 95,
+      "reason": "[External Review] 9.6 Notification 性能与 ANR 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "跨进程 UI",
+          "location": "RemoteViews 缓存红利",
+          "detail": "暗示每次通知更新（如进度条 1% 的跳变）都需要 SystemUI 进行完整的重新 inflate 和测量。",
+          "suggestion": "在“RemoteViews 性能开销”章节明确指出：Android 14+ 已经极大地平抑了“进度条型”高频更新的 CPU 开销。"
+        },
+        {
+          "type": "内存机制",
+          "location": "HardwareBuffer 位图共享",
+          "detail": "图片通知的成本分析仅涉及了解码和序列化。",
+          "suggestion": "说明硬件缓冲区共享如何将通知图片的性能瓶颈从“序列化带宽”转移到“SystemUI GPU 合成”。"
+        },
+        {
+          "type": "底层机制",
+          "location": "Binder 缓冲区拥塞",
+          "detail": "未提及 `Icon` 对象对系统级 Binder 池的压力。",
+          "suggestion": "在“优化建议”中增加“Icon 构造避坑指南”。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-11-9.6-external-review.md"
+    },
+    {
+      "section": "9.7",
+      "section_title": "ANR 非技术故障诊断",
+      "priority": 95,
+      "reason": "[External Review] 9.7 ANR 非技术故障诊断 存在 P0/P1 技术问题，需回炉修正",
+      "review_issues": [
+        {
+          "type": "内核调度",
+          "location": "16KB Page 与 VMA 锁红利",
+          "detail": "将“内核锁竞争”视为在 Android 15+ 上依然高频的 D 状态诱因。",
+          "suggestion": "明确告知开发者：在 API 35+ 设备上，若主线程进入 D 状态且无密集 I/O 证据，应重点排查硬件驱动层锁而非内核 VMA 锁。"
+        },
+        {
+          "type": "自动诊断",
+          "location": "焦点缺失自动化闭环",
+          "detail": "将“no focused window”视为需人工比对 EventLog 的疑难场景。",
+          "suggestion": "在“躺枪场景 1”中增加“自动化定性”操作建议。"
+        },
+        {
+          "type": "厂商差异",
+          "location": "OEM 私有日志补强",
+          "detail": "分析 system_server 繁忙时仅推荐了 AOSP 的 `Slow operation`。",
+          "suggestion": "提供一份简单的“厂商私有 Slow Looper 日志关键词表”，帮助开发者在海量 Bugreport 中快速识别系统侧的异常。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T16:19:40.737307",
+      "status": "pending",
+      "source_file": "2026-04-29-11-9.7-external-review.md"
     }
   ],
   "completed": [
