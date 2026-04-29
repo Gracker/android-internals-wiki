@@ -74,14 +74,15 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-04-20T09:17:31+08:00"
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
+task2b_result: fixed
 ---
 
 # 系统启动全流程
@@ -142,6 +143,8 @@ Boot ROM → Bootloader → Linux Kernel → first-stage init → second-stage i
 
 这一段通常不在 Perfetto 里直接可见。要分析 Bootloader 本身的耗时，更多还是依赖厂商日志、串口和 bootstat 的外围里程碑。
 
+Android 16 引入了 Generic Bootloader (GBL) 标准化架构。GBL 定义了统一的 Bootloader 行为规范和指标口径，使 `boottime.bootloader.*` 系列属性在各厂商之间变得可比。以前不同 OEM 的 Bootloader 阶段耗时指标各自定义，跨设备对比基本没有意义；GBL 逐步拉齐后，`bootstat -l` 输出的 Bootloader 分段耗时可以作为横向基线使用。
+
 ### Linux Kernel：把调度器、驱动和最小用户态入口拉起来
 
 Kernel 阶段负责建立页表、初始化调度器、内存管理和关键驱动，然后创建 PID 1 的 `/init`。这里要把边界拆清楚：Kernel 会准备 rootfs / ramdisk 和最小设备节点，但 system、vendor、product 这些启动必需分区的 early mount，在现代 Android 里属于 first-stage init，不该写进 Kernel 阶段。
@@ -197,6 +200,7 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 - **Android 13**：Perfetto 的 boot trace 配置改进，增加了更多 init 阶段的 atrace hook。
 - **Android 15**：Cloud Profiles 作为 Mainline 模块推送给设备，首次启动时编译产物可能依赖云端下发的 profile，不再只依赖本地 Baseline Profile。OTA 后首启的 dex2oat 策略随之变化。[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]
 - **Android 16**：profileable build 配置的变化影响 Zygote 预加载的命中路径；AutoFDO（Automatic Feedback-Directed Optimization）与 Baseline Profile 协同优化，对冷启动有额外改善。具体数据参见 8.3 节。
+- **Android 16（Cloud Compilation）**：在 Baseline Profile 基础上进一步演进——设备 OTA 后不再需要本地执行 `dex2oat`，而是直接从 Google 服务器下载预编译的 `.odex` / `.vdex` 产物。这套机制彻底解决了 OTA 后首次开机"正在优化应用"的痛点。Cloud Compilation 的本质是用带宽换计算：下载编译产物的网络耗时远低于本地 `dex2oat` 的 CPU 开销，对低端设备的安装体验改善尤其明显。
 
 如果分析对象是 Android 12 之前的设备，`startApexServices()` 不存在，apex 组件的启动混在其他阶段里。
 
