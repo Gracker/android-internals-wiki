@@ -221,8 +221,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-07-cpu-evolution-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-07-cpu-evolution-external-review.md",
+      "completed_at": "2026-04-29T10:45:00+08:00",
+      "completed_reason": "Energy Limiter能量限额制已添加；sched_ext可编程调度蓝图已补充"
     },
     {
       "section": "07.05",
