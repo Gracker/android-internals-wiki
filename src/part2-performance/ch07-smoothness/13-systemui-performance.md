@@ -2,7 +2,7 @@
 title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - systemui
@@ -71,7 +71,7 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: "reviewed"
 task9_state: reviewed
 task9_result: pass-tech-review
@@ -201,6 +201,17 @@ AOSP main 当前可核对的相邻实现是 `scene/reveal/ContainerReveal.kt` �
 SystemUI 不是“所有系统 UI 的总包”。在 Android 12-17 里，SystemUI 更接近一组常驻窗口和控制器：状态栏、通知抽屉、锁屏相关视图、导航栏，以及围绕这些窗口的动画、输入、通知绑定过程。Overview / Recents 已经在 Launcher3 Quickstep 侧实现，本章分析 App 启动或最近任务切换时，至少要同时观察 `com.android.systemui`、`com.android.launcher3`、目标 App、SurfaceFlinger，有时还要把 WM Shell 单独拎出来看。
 
 这个边界直接决定排查顺序。通知抽屉掉帧，优先看 SystemUI。最近任务切换掉帧，Launcher3 Quickstep 和 WM Shell 往往比 SystemUI 更靠近根因。把问题一股脑归到 SystemUI，后面的 Trace 会很难读。
+
+### Android 16 桌面模式：SystemUI 的双重角色
+
+Android 16 引入了原生桌面窗口管理（Desktop Windowing）。在此模式下，SystemUI 不再只负责手机端单一的状态栏和通知——它需要同时渲染外部显示器的任务栏（Taskbar）、多桌面视图以及通用光标（Universal Cursor）。
+
+WM Shell 中的 `DesktopModeController` 与 SystemUI 频繁交互。连接外部显示器时，SystemUI 进程会出现 CPU 和显存的阶跃增长。在做性能基线和 Trace 分析时，需要区分两个场景：
+
+- **手机单屏模式**：SystemUI 的角色与传统 Android 一致，承担状态栏、通知、导航栏
+- **桌面模式**：SystemUI 额外承担 Taskbar 渲染、桌面切换动画、光标绘制，与 WM Shell 的交互频率大幅上升
+
+排查 SystemUI 性能问题时，如果设备处于桌面模式，Perfetto 中 SystemUI 进程的 CPU 和内存基线应单独建基，不能直接与单屏模式的数据对比。
 
 ## 窗口拓扑不要先入为主
 
@@ -333,6 +344,25 @@ App 启动、Overview 切换、返回桌面都可能碰到这个形态。Launche
 ### 看到手势事件到了但回馈慢
 
 把输入路径和 UI 路径拆开。Input monitor 已经收到了事件，问题多半不在“手势没识别到”，而在识别后的主线程处理、back animation 回调、窗口转场调度。这个时候继续盯 `NavigationBarView` 反而会浪费时间。
+
+### M3 Expressive 特效过载
+
+Flexiglass 默认集成了大量 Material 3 Expressive 效果（实时模糊、弹簧动画）。在 120Hz 下，大面积实时模糊会导致 RenderThread 的 `DrawFrame` 耗时显著增加，尤其是在折叠屏展开态（屏幕面积更大）下。
+
+排查方法：
+
+```bash
+# 临时禁用模糊视觉反馈，验证是否是模糊导致的瓶颈
+adb shell setprop debug.hwui.disable_blur_visual_feedback 1
+```
+
+如果在禁用模糊后掉帧消失或明显减少，说明实时模糊是瓶颈源。优化方向包括：缩小模糊区域、降低模糊半径、用预渲染的静态模糊图替代实时计算。
+
+### Compose 化后的内存基线偏移
+
+Android 15+ 的 SystemUI 切换到 Compose 和 Flexiglass 架构后，基础 RSS 占用比旧版 View 体系提升了约 30%。做内存分析时需要注意：这不是泄露，而是“架构换灵活性”的正常代价。Compose 的 SlotTable、Recomposition 记录和 Compose Node 树本身有内存开销；SceneContainer 状态管理也有额外代价。
+
+排查 SystemUI 内存问题时，先确认设备版本和 Flexiglass 是否启用，再建立对应版本的基线。直接用 Android 14 及以下的 SystemUI PSS 数据作为对比基线，会把架构差异误判为泄露。
 
 ## 与其他章节的关系
 
