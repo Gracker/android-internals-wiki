@@ -9533,5 +9533,19 @@
     "p1": 1,
     "p2": 2,
     "updated_at": "2026-04-29T13:20:00+08:00"
-  }
+  },
+  "rework_completed": [
+    {
+      "section": "5.7",
+      "date": "2026-04-29",
+      "fixed_by": "openclaw-task2b",
+      "issues_fixed": 2
+    },
+    {
+      "section": "2.9",
+      "date": "2026-04-29",
+      "fixed_by": "openclaw-task2b",
+      "issues_fixed": 1
+    }
+  ]
 }

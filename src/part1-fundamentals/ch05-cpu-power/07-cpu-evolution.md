@@ -60,12 +60,12 @@ related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-29T10:45:00+08:00"
+last_task2b_at: "2026-04-29T13:40:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-29
 last_task9_at: "2026-04-29T11:26:16+08:00"
@@ -144,7 +144,7 @@ JobScheduler 并没有强制禁止旧的后台工作方式,它只是一个"更�
 
 ## Android 6.0:Doze 模式--设备静止时的深度管控
 
-Android 6.0 引入了 Doze 模式,这是 Android 功耗管理的第一个里程碑。它的触发条件很明确:设备拔掉电源、屏幕关闭、保持静止(通过加速度传感器判断)、没有持有长时间 WakeLock。当这些条件同时满足一段时间后,设备进入 Doze 状态。
+Android 6.0 引入了 Doze 模式,这是 Android 功耗管理的第一个里程碑。它的触发条件是设备拔掉电源、屏幕关闭、保持静止(通过加速度传感器判断)。当这些条件同时满足一段时间后,设备进入 Doze 状态。
 
 在 Doze 状态下,系统的做法是:**尽可能让 CPU 保持休眠**。具体来说:
 
@@ -332,7 +332,9 @@ Android 17 (API 37) 引入了基于真实能耗监控的熔断机制--能量限�
 
 Energy Limiter 标志着 Android 功耗管理从"限制调度机会"向"限制物理能量消耗"的范式转移。配合 §5.6 的讨论,这条演进线把 Doze(限制调度)→ App Standby Buckets(限制资源配额)→ Energy Limiter(限制能量配额)串成了一个完整的管控链。
 
-[已验证: Android 17 Developer Preview 文档; source.android.com/docs/core/power]
+> ⚠️ **待验证**: 上述 Energy Limiter 描述基于 external review 信息,未在 Android 17 官方 behavior changes 中找到对应条目。已确认的 Android 17 功耗变化包括 App memory limits、Reduced Wakelocks for Idle Alarms、ProfilingManager KILL_EXCESSIVE_CPU_USAGE。如果 Energy Limiter 后续被官方确认,可合并此处内容。
+
+[已验证: Android 17 behavior changes (all apps / target 37); source.android.com/docs/core/power]
 
 ## GKI 对内核调度模块定制化的影响
 
@@ -379,7 +381,7 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 | 14 | FGS 类型化 + 后台 Activity opt-in | 应用层(类型化) |
 | 15 | GKI 6.6 常见化 + 后台网络受限 + Doze 进入更快 | 内核层 + 应用层 + 系统策略层 |
 | 16 | JobScheduler 配额优化 | 系统策略层（精细化） |
-| 17 | Energy Limiter 能量限额 + sched_ext 可编程调度实验 | 应用层（硬配额） + 内核层（可插拔） |
+| 17 | App memory limits + idle alarm wakelock 降低 + ProfilingManager KILL_EXCESSIVE_CPU_USAGE + sched_ext 实验方向 | 应用层（资源硬限制） + 内核层（可插拔） |
 
 这条演进线背后有三个趋势:
 
