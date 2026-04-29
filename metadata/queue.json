@@ -1945,6 +1945,31 @@
           "location": "L289-L303",
           "detail": "正文建议通过 CMake LINK_FLAGS \"-Wl,--strip-all\" 和 ANDROID_STRIP_DEBUG_SYMBOLS 控制 release 符号，但 Android 官方文档说明 AGP release 默认 strip native libraries；线上符号化应使用 ndk.debugSymbolLevel，保留符号应使用 packaging.jniLibs.keepDebugSymbols。",
           "suggestion": "把该节改为 AGP 8.x DSL 口径：默认 strip、Play 符号上传用 debugSymbolLevel=SYMBOL_TABLE/FULL、仅需保留指定 .so 调试符号时使用 packaging.jniLibs.keepDebugSymbols；删除未验证的 ANDROID_STRIP_DEBUG_SYMBOLS 作为主推荐。"
+        },
+        {
+          "type": "P0事实错误",
+          "source": "external-ai-review",
+          "location": "资源缩减章节",
+          "detail": "AGP 8.12+ Optimized Resource Shrinking 对 Resources.getIdentifier() 动态引用的资源判定为不可达并物理移除，需 keep.xml 白名单",
+          "suggestion": "增加红色警示：动态资源必须在 res/raw/keep.xml 中使用 @tools:keep 声明",
+          "evidence": [
+            "AGP 8.12 release notes",
+            "cs.android.com"
+          ]
+        },
+        {
+          "type": "P1重要缺失",
+          "source": "external-ai-review",
+          "location": "Native 库瘦身章节",
+          "detail": "Android 15 要求 ELF LOAD 段 16KB 对齐，SO 物理增量约 10-30KB，但 EROFS/F2FS 稀疏存储不占实际 Flash。不应为追求 APK 数值破坏 16KB 对齐",
+          "suggestion": "引入 16KB 虚胖 vs 实瘦模型，优先保住冷启动 +30% 物理红利"
+        },
+        {
+          "type": "P1重要缺失",
+          "source": "external-ai-review",
+          "location": "测量与分析章节",
+          "detail": "Android 16 Size Insights 支持在 build.gradle 中高亮显示导致包体积膨胀的传递依赖，并提供替代 SDK 建议",
+          "suggestion": "增加自动化治理工具链引入"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -9347,6 +9372,38 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "12.2",
+      "section_title": "网络性能优化",
+      "priority": 95,
+      "reason": "[External Review] 网络线程能效管理缺失 + BPF 带宽感知未覆盖",
+      "review_issues": [
+        {
+          "type": "P0事实错误",
+          "source": "external-ai-review",
+          "location": "网络 IO 线程优先级",
+          "detail": "Android 15 ADPF setPreferPowerEfficiency(true) 要求后台网络任务显式声明能效偏好，否则 CPU 频繁唤醒大核引发发热",
+          "suggestion": "区分交互式网络线程与能效式网络线程，将显式能效声明作为 2026 年网络层准入指标"
+        },
+        {
+          "type": "P1重要缺失",
+          "source": "external-ai-review",
+          "location": "网络性能监控",
+          "detail": "Android 16 BPF Network Bandwidth Estimator 精度提升 40%，可直接驱动 4K 动态码率",
+          "suggestion": "增加利用系统级带宽建议小节"
+        },
+        {
+          "type": "P1重要缺失",
+          "source": "external-ai-review",
+          "location": "16KB Page 与 Cronet",
+          "detail": "libcronet.so 在 16KB 分页下冷启动延迟缩短约 10%",
+          "suggestion": "说明大页面如何缩短无连接到首帧发出的冷启动间隔"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-30T06:16:05",
       "status": "pending"
     }
   ],
