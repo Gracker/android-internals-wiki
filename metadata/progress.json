@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-29T11:26:16+08:00",
+  "generated_at": "2026-04-29T13:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 107,
-    "ready-for-review": 111,
+    "finalized": 106,
+    "ready-for-review": 112,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-29T11:26:16+08:00",
+    "last_updated": "2026-04-29T13:20:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 33,
-      "ready-to-publish": 107,
-      "task2b_pending": 87,
+      "ready-to-publish": 106,
+      "task2b_pending": 88,
       "task9_pending": 8,
       "task6_pending": 15
     },
@@ -28,8 +28,8 @@
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 118,
-      "pending": 89,
+      "fixed": 117,
+      "pending": 90,
       "idle": 3
     },
     "draft": 0,
@@ -38,8 +38,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 33,
-      "ready-to-publish": 107,
-      "task2b_pending": 87,
+      "ready-to-publish": 106,
+      "task2b_pending": 88,
       "task9_pending": 8,
       "task6_pending": 15
     },
@@ -56,11 +56,11 @@
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 118,
-      "pending": 89,
+      "fixed": 117,
+      "pending": 90,
       "idle": 3
     },
-    "last_updated": "2026-04-29T12:29:31+08:00"
+    "last_updated": "2026-04-29T13:20:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1676,25 +1676,25 @@
       "title": "ART 虚拟机内存管理",
       "chapter": "4.3",
       "section": "4.3",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-03-31",
       "drafted_by": "openclaw-task2",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-23",
       "last_verified_against": "AOSP android-14.0.0_r1 / android-15.0.0_r1 + Android Developers Blog (Android 16 QPR2)",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T17:18:00+08:00"
+      "last_task9_at": "2026-04-29T13:20:00+08:00"
     },
     "src/part1-fundamentals/ch04-memory/04-lmk.md": {
       "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
@@ -8206,7 +8206,7 @@
       }
     }
   },
-  "last_updated": "2026-04-29T12:29:31+08:00",
+  "last_updated": "2026-04-29T13:20:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -9523,5 +9523,15 @@
         "05.07: +Energy Limiter配额制描述, +sched_ext可编程调度蓝图"
       ]
     }
-  ]
+  ],
+  "2026-04-29-13-task9": {
+    "section": "4.3",
+    "title": "ART 虚拟机内存管理",
+    "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "result": "needs-rework",
+    "p0": 4,
+    "p1": 1,
+    "p2": 2,
+    "updated_at": "2026-04-29T13:20:00+08:00"
+  }
 }
