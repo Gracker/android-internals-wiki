@@ -53,7 +53,7 @@ tags:
 
 polish_count: 1
 drafted_date: "2026-04-01"
-task6_reviewed_date: "2026-04-27"
+task6_reviewed_date: "2026-04-29"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 related_chapters:
@@ -61,7 +61,7 @@ related_chapters:
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
