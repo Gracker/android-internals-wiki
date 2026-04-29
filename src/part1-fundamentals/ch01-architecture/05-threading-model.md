@@ -6,7 +6,7 @@ last_task9_at: "2026-04-20T10:22:00+08:00"
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
 reviewed_date: '2026-04-20'
@@ -70,10 +70,10 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '5.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 ---
@@ -335,6 +335,8 @@ Linux 提供了多种调度策略，Android 中最常用的有两种：
 
 不过这种做法要谨慎：它可能和系统的 EAS（能量感知调度）策略冲突，而且不同 SoC 平台的核心布局不同。在做绑定之前，先在目标设备上用 Perfetto 对比绑定前后的帧耗时数据，确认确实有改善。
 
+Android 16 引入了 ADPF（Adaptive Performance Framework）的自动核心迁移机制：Performance Hint Manager 会根据渲染负载自动决定 RenderThread 是否需要上大核。手动 `sched_setaffinity` 可能与这套自动调度冲突——绑核后 ADPF 的 hint 信号不再能影响 RenderThread 的核心选择。在新设备上，优先使用 ADPF 的 `PerformanceHintManager` API 让系统做核心调度决策，而不是手动绑核。只有在不支持 ADPF 的旧设备上，或者 ADPF 调度效果经过实测确认不如手动绑核时，才考虑 `sched_setaffinity`。
+
 [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
 
 ## 从 AsyncTask 到 Kotlin Coroutine：异步编程的演进
@@ -463,6 +465,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 - **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间的 CPU 活动，说明 App 在响应跨进程调用。
 - **FinalizerDaemon**：执行对象 finalize 方法的守护线程。如果这个线程频繁活动，说明有大量对象在被 GC 回收时需要执行 finalize，这可能导致 GC 暂停时间变长。
 - **DefaultDispatcher-worker-\***：Kotlin Coroutine 的默认线程池线程。
+- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下新增的 `MQ.Delivered` 计数器，记录 MessageQueue 中消息的投递频率。它是识别 DeliQueue 无锁队列工作的关键签名——如果某个线程上 `MQ.Delivered` 频率很高但该线程没有常规 Handler slice，说明走的是 android-16 新的 ConcurrentMessageQueue 路径。
 
 ### 主线程状态解读
 
