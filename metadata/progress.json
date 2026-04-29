@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-30T05:20:00+08:00",
+  "generated_at": "2026-04-30T07:35:29+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -60,7 +60,7 @@
       "pending": 94,
       "idle": 3
     },
-    "last_updated": "2026-04-30T05:20:00+08:00"
+    "last_updated": "2026-04-30T07:35:29+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -2882,9 +2882,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-24'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T22:29:14+08:00",
+      "last_task9_at": "2026-04-30T07:35:29+08:00",
       "review_round": "5"
     },
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
@@ -3506,9 +3506,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T18:39:22+08:00"
+      "last_task9_at": "2026-04-30T07:35:29+08:00"
     },
     "src/part2-performance/ch12-apk-network/02-network-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",

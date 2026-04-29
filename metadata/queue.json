@@ -6359,7 +6359,7 @@
       "section": "8.7",
       "section_title": "Baseline Profiles 与编译优化实践",
       "priority": 95,
-      "reason": "[Deep Tech Review] Baseline Profiles 与编译优化实践 仍有 P0/P1 技术问题需回炉",
+      "reason": "[Deep Tech Review] 8.7 Baseline Profiles 与编译优化实践 仍有 P0/P1 技术问题需回炉",
       "review_issues": [
         {
           "type": "原理链完整性",
@@ -6412,6 +6412,24 @@
           "location": "指令缓存局部性",
           "detail": "未深入探讨 Profile 规则密度对硬件的影响。",
           "suggestion": "在“Startup Profile 优势”部分增加对硬件 L1/L2 Cache 命中率提升的描述。"
+        },
+        {
+          "type": "版本差异",
+          "location": "frontmatter L8、正文 L97-L111",
+          "detail": "章节把 applicable_versions 写成 Android 9+，正文也只明确 Cloud Profiles 覆盖 Android 9+；但官方 Baseline Profiles 支持 Android 7/API 24+，Android 7/8 正是“无 Cloud Profile、但可使用开发者 Baseline Profile”的关键边界。",
+          "suggestion": "把版本矩阵拆成 Baseline Profile(API 24+)、Cloud Profile(Android 9+ / Google Play)、AGP 8.4+ 自动编译三行；frontmatter 改为 Android 7/API 24 起，或在正文说明 Android 7/8 的渠道边界。",
+          "severity": "P1",
+          "confirmed_by": "task9-deep-tech-review",
+          "confirmed_at": "2026-04-30T07:35:29+08:00"
+        },
+        {
+          "type": "原理断裂/版本差异",
+          "location": "L160-L190 Android 14+ ART Service 与 Android 16 云端预编译",
+          "detail": "正文只写 ART Service 和“公开证据不足”，没有给出 Android 14+ artd / com.android.art Mainline 在 dexopt 编排中的源码锚点，也没有把 SDM、Cloud Profile、Baseline Profile、设备侧 dex2oat 的证据等级拆开。",
+          "suggestion": "至少补 AOSP `packages/modules/Art/artd/` 与 ART Service 的职责；Android 16 SDM 如无官方文档，保留待验证，但要说明哪些来自 AOSP、哪些来自 Play 分发公开材料。",
+          "severity": "P1",
+          "confirmed_by": "task9-deep-tech-review",
+          "confirmed_at": "2026-04-30T07:35:29+08:00"
         }
       ],
       "added_by": "external-ai-review",
@@ -9550,6 +9568,38 @@
       "added_at": "2026-04-30T07:23:31+08:00",
       "status": "pending",
       "source_file": "2026-04-29-11-12.4-external-review.md"
+    },
+    {
+      "section": "12.1",
+      "section_title": "APK 体积优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 12.1 APK 体积优化 存在 P0/P1 技术问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/API错误",
+          "location": "L450-L470 Android 16 Size Insights",
+          "detail": "未找到 Android 16 / AGP 8.12 通过 `buildFeatures.buildConfig = true` 启用 Size Insights 的官方依据；`buildConfig` 只控制 BuildConfig 类生成，和包体积依赖分析无关。Build Analyzer 主要分析构建耗时，不是正文描述的“传递依赖体积 + 替代 SDK 建议”入口。",
+          "suggestion": "删除该小节或改为已验证工具链：APK Analyzer / bundletool / Play Console app size / Ruler / CI size gate。若要写 Android Studio Narwhal，只能写已发布的 ProGuard inspections/16KB 检查等，并补官方 release notes。",
+          "severity": "P0",
+          "confirmed_by": "task9-deep-tech-review",
+          "confirmed_at": "2026-04-30T07:35:29+08:00"
+        },
+        {
+          "type": "版本差异/交叉不一致",
+          "location": "L444 FAQ 密度过滤",
+          "detail": "正文 L223-L256 已说明 AGP 8.8 后 `resConfigs` 只适合受控单 APK/非 Play 场景，但 FAQ 又无条件推荐用 `resConfigs` 过滤 density。读者只看 FAQ 会得到过时建议。",
+          "suggestion": "FAQ 改成：AAB/Google Play 路径优先依赖 density split；`resConfigs` density 只用于 sideload、企业分发、OEM 固定设备等受控单 APK。",
+          "severity": "P1",
+          "confirmed_by": "task9-deep-tech-review",
+          "confirmed_at": "2026-04-30T07:35:29+08:00"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T07:35:29+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

@@ -353,3 +353,51 @@
 - **问题**：未补充 16KB 物理分页对 TLS 握手阶段核心代码段的缓存收益
 - **建议**：补充说明 16KB 环境下 TLS 握手密集数学库调用的指令分支预测成功率约提升 5%，对高频短连接应用有稳定能效红利
 - **来源**：Gemini 外部 review
+
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-04-30 — L245 AGP 8.3 Startup Profile DEX layout
+- **类型**：版本差异
+- **位置**：L245 AGP 8.3 Startup Profile DEX layout
+- **问题**：只写“AGP 8.3 起默认开启”，未交代该优化依赖 Startup Profile + R8/D8 布局流程，也未说明库可以贡献 Baseline Profile、但不能直接贡献应用 Startup Profile。
+- **建议**：补一句：AGP 8.3 默认使用 Startup Profile 做 DEX layout，release 构建需确认 R8/minify 路径；Startup Profile 由应用启动测试生成，不能只依赖库 profile。
+- **review 日志**：logs/deep-review/2026-04-30-07-deep-review.md
+
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-04-30 — L241、L320-L322 Profile 覆盖率 / 规则数量阈值
+- **类型**：数据缺失
+- **位置**：L241、L320-L322 Profile 覆盖率 / 规则数量阈值
+- **问题**：“覆盖 80% 启动路径”“不超过几千条规则”缺少官方阈值、样本或本地 benchmark；profile 大小与编译时间的关系也没有量化口径。
+- **建议**：改为经验性建议并补验证方法：记录 `baseline.prof/.profm` 大小、`cmd package compile -m speed-profile` 耗时、安装后 oat/vdex 增量和 Macrobenchmark TTID/TTFD。
+- **review 日志**：logs/deep-review/2026-04-30-07-deep-review.md
+
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-04-30 — L56 与 L82 / L280 native libraries 解压路径
+- **类型**：版本差异
+- **位置**：L56 与 L82 / L280 native libraries 解压路径
+- **问题**：开头写 native libraries 被解压到磁盘，后文又说明 Android 6.0+ 可 direct loading 未压缩且 page-aligned 的 `.so`。同章存在新旧 packaging 行为不一致。
+- **建议**：开头改成“是否解压取决于 `jniLibs.useLegacyPackaging` / `extractNativeLibs` 和 page alignment”，避免把旧路径写成通用事实。
+- **review 日志**：logs/deep-review/2026-04-30-07-deep-review.md
+
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-04-30 — L100 命令行分析工具
+- **类型**：工具准确性
+- **位置**：L100 命令行分析工具
+- **问题**：`aapt dump badging` 主要输出 manifest/badging 信息，不适合作为 APK 结构与体积门禁工具。
+- **建议**：命令行体积分析改用 `apkanalyzer files list/summary`、`bundletool get-size total`、`aapt2 dump resources` 或 unzip/zipinfo 组合。
+- **review 日志**：logs/deep-review/2026-04-30-07-deep-review.md
+
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-04-30 — L327、L404-L421 Play Core Library
+- **类型**：版本差异
+- **位置**：L327、L404-L421 Play Core Library
+- **问题**：Dynamic Feature 运行时加载仍写成 “Play Core Library 1.6+”。当前官方分发口径应优先写 Play Feature Delivery 库；旧 monolithic Play Core 版本线容易误导新项目选型。
+- **建议**：改为 Play Feature Delivery API，并补当前 Gradle 依赖坐标/版本边界；旧 Play Core 只作为历史兼容说明。
+- **review 日志**：logs/deep-review/2026-04-30-07-deep-review.md
+
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-04-30 — L339、L482、L490-L492
+- **类型**：数据缺失
+- **位置**：L339、L482、L490-L492
+- **问题**：AAB 15%-40%、Baseline Profile 安装后 `.odex/.vdex` 增量 10%-30%、微信/抖音包体积实践均缺可复核来源或实验条件。
+- **建议**：补官方案例、公开技术文章链接或本地样本测量；无法核实时降级为“待验证示例”，不要作为通用结论。
+- **review 日志**：logs/deep-review/2026-04-30-07-deep-review.md
