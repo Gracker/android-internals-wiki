@@ -972,7 +972,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T14:49:30.972229+08:00",
+      "completed_reason": "P0 AnrHelper版本已正确(Android 11+); P0 FGS超时版本线已覆盖(5s→10s→30s); P1 ApplicationExitInfo实战用法已充实"
     },
     {
       "section": "1.10",
@@ -1094,7 +1096,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T02:18:16.461948+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T14:49:11.486819+08:00",
+      "completed_reason": "ART锁消除+SF/Input PI-futex+16KB Futex哈希冲突 三项P1已修复"
     },
     {
       "section": "1.15",
