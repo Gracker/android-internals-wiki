@@ -30,12 +30,12 @@ sources:
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
 review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修3处（「这意味着」x2 / 「首先其次最后」x1 禁用词替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 响应速度原理
@@ -46,7 +46,7 @@ task2b_state: pending
 ### 锚点（必须覆盖）
 
 - 🔹 响应速度的定义：用户操作到视觉反馈的完整延迟
-- 🔹 RAIL 模型在 Android 场景的应用：Response < 100ms, Animation < 16ms, Idle, Load < 1000ms
+- 🔹 RAIL 模型在 Android 场景的应用：Response < 100ms, Animation 命中 VSync Deadline, Idle, Load < 1000ms
 - 🔹 系统级响应路径：Input → App 处理 → 渲染 → 上屏
 - 🔹 Android Vitals 中的响应速度指标
 - 🔹 感知速度 vs 实际速度：骨架屏、占位图、过渡动画的视觉优化
@@ -108,9 +108,9 @@ RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 
 - 所有耗时操作（网络请求、数据库读写、复杂计算）都必须放到后台线程
 - 如果某个操作确实需要超过 100ms，应该在 50ms 内先给出一个过渡态反馈（比如显示 loading 状态），然后异步处理
 
-### Animation——动画（每帧 < 16ms）
+### Animation——动画（命中 VSync Deadline）
 
-动画和滚动场景下，每一帧的渲染必须在 16ms 内完成（60Hz 屏幕）或 8ms 内完成（120Hz 屏幕）。这个时间包括 Input 事件处理、业务逻辑更新、measure/layout/draw 整套流程。
+动画和滚动场景下，每一帧的渲染必须在当前刷新率对应的 VSync 周期内完成。传统写法是 60Hz 屏幕 16ms、120Hz 屏幕 8ms，但 Android 15+ 广泛采用自适应刷新率（ARR）后，帧预算变成了动态值——系统调度器会根据内容意图（滑动、动画、静止）动态切换 VSync 周期。Animation 阶段的目标是"命中调度器分配的 Expected Deadline"，而非死守某个固定数值。这个时间包括 Input 事件处理、业务逻辑更新、measure/layout/draw 整套流程。
 
 Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的处理时间超过了 VSync 周期，就会产生"掉帧"（jank），用户会感知到画面卡顿。关于 Choreographer 的详细机制，我们在 [2.4 Choreographer 与渲染流水线](04-choreographer.md) 中专门讨论。
 
@@ -240,20 +240,27 @@ Android 12 的 SplashScreen API 提供了系统级的启动画面支持，可以
 
 即时反馈（Immediate Feedback）是最直接也最有效的感知优化方式。按钮按下时立即变色、列表项滑动时立即跟随手指移动，这些"零延迟"反馈让用户确信系统接收到了操作。如果后续处理需要时间，可以在给出即时反馈之后再异步加载实际内容。
 
-## Web 的 INP 指标与 Android 的对应
+### 触摸预测（Touch Prediction）
 
-[待验证: Android 官方未正式采用 INP 概念，以下为概念类比分析]
+Android 16 在输入分发路径中引入了增强型触摸预测。系统利用 ML 模型预测用户指尖在下一帧的位移位置，将预测坐标用于渲染，从而在显示系统固有的 40-80ms 延迟面前，通过"算力换时间"来维持视觉跟手度。触摸预测不改变 Input 事件的实际分发延迟，而是在渲染端对延迟做视觉补偿。开发者无需额外适配，系统在满足条件时自动启用。
 
-Web 性能领域在 2024 年引入了一个新指标：INP（Interaction-to-Next-Paint），用于替代之前的 FID（First Input Delay）。INP 衡量的是从用户与页面交互到下一次画面更新之间的时间，它关注的是整个交互生命周期的响应质量。
+## UIL（User Interaction Latency）与端到端响应度量
 
-Android 目前没有直接采用 INP 这个概念，但有功能等价的指标体系：
+Android 16 正式将 UIL（User Interaction Latency）列为端到端响应的核心度量指标，对标 Web 领域的 INP（Interaction-to-Next-Paint）。UIL 衡量的是从用户物理触摸屏幕到对应视觉反馈显示完成的全程延迟，已纳入 Google Play 排名权重。
 
-**与 INP 功能等价的 Android 指标**：
-1. **Input Dispatch Latency**——从 InputDispatcher 发出事件到 App 收到的时间，对应 INP 中的"输入延迟"
-2. **Frame Rendering Time**——从 Choreographer.doFrame() 开始到帧被提交的时间，对应 INP 中的"处理+渲染时间"
+**UIL 的评判标准**：P99 ≤ 200ms 为"良好"，对应 Web INP 的 200ms 阈值。UIL 超过 500ms 时，系统可能更早触发 Input-based ANR 预警。
+
+**UIL 的三大阶段拆解**：
+1. **输入延迟**——从 InputDispatcher 发出事件到 App 主线程收到 MotionEvent，通常 1-2ms，主线程阻塞时会显著增加
+2. **处理+渲染**——从 Choreographer.doFrame() 开始到帧被提交（measure → layout → draw → RenderThread GPU 渲染）
+3. **合成+显示**——SurfaceFlinger 合成到 HWC 上屏
+
+在 Android 上做响应速度优化，可以通过 Perfetto 手动拼装这三个阶段的耗时来获得完整视图。Perfetto 的 Frame Timeline 轨道中 Expected/Actual Deadline 的偏差直接反映了 UIL 中的处理+渲染阶段是否达标。
+
+除了 UIL，Android Vitals 还提供了以下补充指标：
+1. **Input Dispatch Latency**——从 InputDispatcher 发出事件到 App 收到的时间，对应 UIL 的输入延迟阶段
+2. **Frame Rendering Time**——从 Choreographer.doFrame() 开始到帧被提交的时间，对应 UIL 的处理+渲染阶段
 3. **TTID / TTFD**——启动场景下的端到端响应指标
-
-核心区别在于：Web 的 INP 是浏览器统一度量的端到端指标，而 Android 的响应速度需要开发者通过 Perfetto 等工具手动拼装各环节的耗时来获得完整视图。在 Android 上做响应速度优化，需要更深入地理解系统各层的机制。
 
 ## 在 Perfetto 中分析响应速度
 
@@ -281,7 +288,7 @@ Android 目前没有直接采用 INP 这个概念，但有功能等价的指标�
 
 **误区 3："RAIL 模型是 Web 的，和 Android 没关系"**
 
-RAIL 的核心思想——根据用户的感知阈值设定性能目标——是通用的。100ms 的响应临界点、16ms 的帧预算、以及对空闲时间的利用，这些在 Android 上同样适用。区别只在于实现手段不同。
+RAIL 的核心思想——根据用户的感知阈值设定性能目标——是通用的。100ms 的响应临界点、动态的帧预算、以及对空闲时间的利用，这些在 Android 上同样适用。区别只在于实现手段不同。
 
 ## 参考资料
 

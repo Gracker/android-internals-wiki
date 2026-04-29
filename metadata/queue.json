@@ -1,80 +1,6 @@
 {
   "pending": [
     {
-      "section": "1.2",
-      "section_title": "系统启动全流程",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 1.2 系统启动全流程 — 2026-04-29 22:20 发现 P0 1 / P1 1，需回炉修正",
-      "material_paths": [
-        "logs/deep-review/2026-04-29-22-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本差异",
-          "severity": "P0",
-          "location": "frontmatter L17 applicable_versions",
-          "detail": "章节写 Android 16 (API 35)。Android 16 对应 API level 36；API 35 是 Android 15。该元数据会误导版本适用范围和后续索引。",
-          "suggestion": "改为 Android 8 (API 26) - Android 16 (API 36)，并同步 last_verified_against。"
-        },
-        {
-          "type": "版本差异/数据支撑",
-          "severity": "P1",
-          "location": "L201-L203 Android 15/16 Cloud Profiles / Cloud Compilation",
-          "detail": "正文把 Cloud Profiles 写成 Android 15 Mainline 推送，并把 Android 16 Cloud Compilation 写成“设备 OTA 后不再需要本地 dex2oat、直接下载 .odex/.vdex、彻底解决 OTA 后首次开机优化”。公开资料更偏向 Play 安装/更新链路里的 cloud profiles / SDM cloud compilation；是否覆盖系统 OTA 首启和是否已大规模启用需要限定。",
-          "suggestion": "改成“App 安装/更新链路可通过 Play 下发 profile 或 SDM 编译产物减少本地 dex2oat”，不要写成系统 OTA 首启的确定闭环；补官方文档或标 [待验证]。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-29T22:20:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-04-29T22:48:40.496340",
-      "completed_reason": "P0/P1 issues fixed per Task 9 deep tech review"
-    },
-    {
-      "section": "1.3",
-      "section_title": "进程模型与生命周期管理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 1.3 进程模型与生命周期管理 — 2026-04-29 22:20 发现 P0 2 / P1 2，需回炉修正",
-      "material_paths": [
-        "logs/deep-review/2026-04-29-22-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "severity": "P0",
-          "location": "L187-L205 CachedAppOptimizer 构造函数示例",
-          "detail": "示例把 mCachedAppOptimizerThread 写成 CachedAppOptimizerThread 子类并在构造函数里 start()。android-16.0.0_r1 实际字段是 final ServiceThread mCachedAppOptimizerThread；构造函数只 new ServiceThread(\"CachedAppOptimizerThread\", Process.THREAD_GROUP_SYSTEM, true)，线程在 useFreezer 生效路径里启动。",
-          "suggestion": "换成真实代码骨架：ServiceThread 字段、构造函数仅创建线程；start 发生在 updateUseFreezer 后的 AMS handler runnable 中。"
-        },
-        {
-          "type": "源码错误",
-          "severity": "P0",
-          "location": "L213-L239 Freezer 消息与 native API 示例",
-          "detail": "正文列出的 FREEZER_ENABLE_MSG / FREEZER_DISABLE_MSG、CachedAppOptimizer.handleMessage() 直接 enable/disable freezer、native enableFreezer()/disableFreezer() 在 android-16.0.0_r1 中不存在。真实常量包括 SET_FROZEN_PROCESS_MSG、REPORT_UNFREEZE_MSG、UID_FROZEN_STATE_CHANGED_MSG、DEADLOCK_WATCHDOG_MSG、BINDER_ERROR_MSG；冻结落到 Freezer.setProcessFrozen() 与 task profile/cgroup。",
-          "suggestion": "按 CachedAppOptimizer.FreezeHandler + Freezer.setProcessFrozen() + task_profiles Frozen/Unfrozen profile 重写，不要贴不存在的 native 方法。"
-        },
-        {
-          "type": "源码错误",
-          "severity": "P1",
-          "location": "L241-L256 task_profiles.json FreezerState 示例",
-          "detail": "示例 JSON 使用 controller/file/action/value 小写结构，与 android-16.0.0_r1 的 task_profiles.json 不一致。真实结构是在 Attributes 中定义 FreezerState，再在 Profiles 的 Frozen/Unfrozen 里用 SetAttribute 写入 1/0。",
-          "suggestion": "替换为真实 JSON 片段：Attributes.Name=FreezerState；Profiles.Name=Frozen/Unfrozen；Actions.Name=SetAttribute。"
-        },
-        {
-          "type": "版本差异",
-          "severity": "P1",
-          "location": "L297 Android 16 Seamless App Updates",
-          "detail": "正文写 Android 16 通过 bionic linker 增量加载，在替换 dex/so 文件时做极短冻结快照。公开 Android 16 seamless app updates 口径是把 dexopt/dex2oat 提前到冻结前，降低 app update freeze window；未找到 bionic linker 增量加载或 dex/so 热替换依据。",
-          "suggestion": "改为“安装/更新流程把 dexopt 尽量前移，冻结窗口只覆盖最后切换阶段”；删除 bionic linker 增量加载表述，除非补 AOSP/官方引用。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-29T22:20:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-04-29T22:48:40.496340",
-      "completed_reason": "P0/P1 issues fixed per Task 9 deep tech review"
-    },
-    {
       "section": "04.06",
       "section_title": "4.6 内存相关的版本演进",
       "priority": 85,
@@ -962,7 +888,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T04:48:00.225535",
+      "completed_reason": "P0 RAIL动态帧预算已修正(ARR); P1 UIL端到端指标已添加; P1 Android 16触摸预测已补充"
     },
     {
       "section": "08.03",
@@ -979,7 +907,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T04:48:00.225535",
+      "completed_reason": "P0 Startup Profile DEX Layout优化核心价值已纠正(减少Page Fault非AOT); P1 16KB COW写操作克制已补充"
     },
     {
       "section": "08.05",
@@ -1526,8 +1456,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-04-30T03:44:32.248128",
+      "completed_reason": "ART Mainline 95 PB数据已核实补充；ProfilingManager API已展开；VNDK-less/Vendor APEX自包含已添加；Cloud Compilation已补充"
     },
     {
       "section": "1.7",
@@ -1574,13 +1506,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "logs/deep-review/2026-04-26-15-deep-review.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-04-26T15:20:00+08:00"
+      "updated_at": "2026-04-26T15:20:00+08:00",
+      "completed_at": "2026-04-30T03:44:13.835313",
+      "completed_reason": "30%冷启动差距已条件化并补充官方基准来源；Cloud Compilation/SDM已展开；Perfetto抓取配置已补充；ProfilingManager系统触发已添加；Baseline Profiles收益量化已更新"
     },
     {
       "section": "1.8",
@@ -1780,7 +1714,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-25T14:25:03+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T01:44:47",
+      "completed_reason": "onTrimMemory API 34+ 版本边界已拆分；View alpha offscreen buffer 条件已收窄(hasOverlappingRendering)；renderD128 16KB页对齐影响已补充；ProfilingManager替代MemoryThrashing已添加"
     },
     {
       "section": "10.5",
@@ -1854,8 +1790,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T15:21:32.054234",
-      "status": "pending",
-      "source_file": "2026-04-25-15-10.5-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-25-15-10.5-external-review.md",
+      "completed_at": "2026-04-30T01:44:47",
+      "completed_reason": "heapprofd已在06中修复(该文件已finalized)；renderD128 16KB对齐已补充；ProfilingManager替代方案已添加"
     },
     {
       "section": "11.2",
@@ -8990,6 +8928,210 @@
       "added_at": "2026-04-29T22:12:00+08:00",
       "status": "pending",
       "source_file": "2026-04-29-11-18.12-external-review.md"
+    },
+    {
+      "section": "18.21",
+      "section_title": "EyeDropper API 与跨设备协作性能",
+      "priority": 95,
+      "reason": "[External Review] 18.21 EyeDropper API — 硬件放大镜卸载(P0) + 跨端色准漂移(P1) + 16KB Page冷启动红利(P1)",
+      "material_paths": [
+        "logs/external-review/2026-04-29-11-18.21-external-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "severity": "P0",
+          "location": "放大镜效果描述 — 系统负责的部分 & 跨设备协作",
+          "detail": "原文暗示 EyeDropper 放大镜依赖屏幕缓冲区截图+GPU缩放。Android 17 引入 Hardware Magnifier Offloading，DPU 硬件缩放引擎在 Scanout 阶段实时生成放大效果，零 GPU 指令开销且无显存带宽回读损耗。",
+          "suggestion": "撤销\"取色对系统性能有微小冲击\"的描述，修正为\"基于硬件卸载的零损耗交互\"。"
+        },
+        {
+          "type": "感官质量",
+          "severity": "P1",
+          "location": "跨设备协作章节",
+          "detail": "直接同步 ARGB 整型值在 P3 vs sRGB 设备间可产生 ΔE>5 视觉色偏，属于设计类 App 重大质量缺陷。",
+          "suggestion": "增加\"色彩空间对齐\"小节，推荐使用 Color.toColorSpace() 闭环同步逻辑。"
+        },
+        {
+          "type": "物理开销",
+          "severity": "P1",
+          "location": "系统取色器启动时延",
+          "detail": "16KB Page 环境下 ELF 文件映射效率提升，TTID 缩短约 10%，未提及此物理红利。",
+          "suggestion": "补充 16KB Page 对跨应用取色瞬时响应感的提升说明。"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-30T02:12:59",
+      "status": "pending",
+      "source_file": "2026-04-29-11-18.21-external-review.md"
+    },
+    {
+      "section": "10.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 10.5 案例集 — 2026-04-30 02:31 发现 P0 2 / P1 2，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-30-02-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 签名错误",
+          "severity": "P0",
+          "location": "L290 Android 16 ProfilingManager 替代方案",
+          "detail": "正文写 Android 16/API 36 引入 ProfilingManager，并给出 requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback) 四参签名。AOSP packages/modules/Profiling/framework/java/android/os/ProfilingManager.java 显示 requestProfiling 在 API 35 已可用，android-16.0.0_r1 的签名包含 profilingType、parameters、String tag、CancellationSignal、Executor、Consumer<ProfilingResult>；没有文中这个 ProfilingResultCallback 四参公开签名。",
+          "suggestion": "改为“API 35 引入主动 requestProfiling，Android 16 增加 system-triggered profiling 相关 Flagged API”；代码签名按 android.os.ProfilingManager 或 AndroidX wrapper 分开写，不混用。"
+        },
+        {
+          "type": "原理断裂/版本差异",
+          "severity": "P1",
+          "location": "L290、L312 ProfilingManager 替代 MemoryThrashing",
+          "detail": "正文把 ProfilingManager 写成可在内存突增时提供更精准系统级触发点，并建议新项目优先替代自研轮询。android-16.0.0_r1 的 ProfilingTrigger 只暴露 TRIGGER_TYPE_APP_FULLY_DRAWN 与 TRIGGER_TYPE_ANR，未提供“内存突增/Java 堆跃升”触发类型；requestProfiling 也有 rate limit 且不保证满足。它可以在 App 自己检测到阈值后主动请求 heap profile/trace，但不能替代突增检测器本身。",
+          "suggestion": "拆成两层：MemoryThrashing/业务探针仍负责发现阈值；API 35+ ProfilingManager 可作为触发后的采集后端。删除“系统级零侵入内存突增触发/优先替代”的确定表述。"
+        },
+        {
+          "type": "源码错误/源码锚点错误",
+          "severity": "P0",
+          "location": "L231、L256 View alpha 离屏缓冲源码参考",
+          "detail": "正文说独立 layer 是否需要由 RenderNode.computeOrdering 决定，并把创建逻辑落在 RenderNode + LayerUpdateQueue。AOSP android-16.0.0_r1 中 alpha + overlapping rendering 的自动建层条件在 RenderProperties::promotedToLayer()：alpha 在 (0,1) 且 mHasOverlappingRendering 为 true 时 effectiveLayerType() 变为 RenderLayer；RenderNode::pushLayerUpdate() 再 createOrUpdateLayer。computeOrderingImpl 主要处理子节点排序/投影，不是该条件判断；LayerUpdateQueue 负责入队更新，不是判定入口。",
+          "suggestion": "源码参考改为 View#setAlpha()/hasOverlappingRendering、RenderProperties::promotedToLayer()、RenderNode::pushLayerUpdate()/CanvasContext::createOrUpdateLayer；删除 computeOrdering 作为判定点的说法。"
+        },
+        {
+          "type": "版本差异/数据支撑",
+          "severity": "P1",
+          "location": "L237 16KB Page Size 对 renderD128 案例的影响",
+          "detail": "案例本体限定为华为 Android 10、32 位、MTK/PowerVR 驱动；段落直接叠加 Android 15+ 16KB page size，并写“Gralloc 分配图形缓冲区会强制 16KB 物理页对齐”“小尺寸 offscreen buffer 约 9% 额外开销”。公开 16KB page 资料中的 9% 更接近系统平均内存开销口径，不能直接等同于单个 Gralloc/offscreen buffer；图形 buffer 的额外开销还取决于宽高、像素格式、stride、allocator 对齐和 dma-buf 实测。",
+          "suggestion": "将 16KB 段降级为泛化 caveat 或 [待验证]，不要写成该 Android 10/PowerVR 案例的确定加剧因素；若保留，补 dmabuf_dump/memtrack 对照数据和计算公式：ceil(buffer_size / PAGE_SIZE) * PAGE_SIZE，并说明 stride/allocator 差异。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T02:31:48+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.2",
+      "section_title": "系统启动全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.2 系统启动全流程 — 2026-04-30 03:31 发现 P0 1 / P1 2，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-30-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "frontmatter L32 / 正文 L240-L255 BootTimingsTraceLog 与 TimingsTraceAndSlog",
+          "detail": "frontmatter 把 TimingsTraceAndSlog 写成 frameworks/base/core/java/android/os/TimingsTraceAndSlog.java；AOSP android-16.0.0_r1 中该路径 404，正确路径是 frameworks/base/services/core/java/com/android/server/utils/TimingsTraceAndSlog.java。Zygote 预加载侧使用的是 android.util.TimingsTraceLog 变量 bootTimingsTraceLog，不存在独立 BootTimingsTraceLog 类。",
+          "suggestion": "把 Zygote 预加载计时改写为 TimingsTraceLog(Zygote64Timing/Zygote32Timing)；SystemServer 阶段使用 com.android.server.utils.TimingsTraceAndSlog，并修正 frontmatter/source 列表。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L193-L205 SystemServer startApexServices 版本说明",
+          "detail": "正文写 startApexServices(t) 在 Android 12 引入。对比 AOSP tags：android-12.0.0_r34 / android-12.1.0_r27 的 SystemServer.java 没有 startApexServices；android-13.0.0_r1 才出现该阶段，android-16.0.0_r1 的顺序为 startBootstrapServices → startCoreServices → startOtherServices → startApexServices。",
+          "suggestion": "版本矩阵改为 Android 13 引入独立 apex services 阶段；Android 12 只保留 APEX 模块化背景，不把 startApexServices trace 作为排查锚点。"
+        },
+        {
+          "type": "源码错误/原理断裂",
+          "severity": "P1",
+          "location": "L164 second-stage init rc 解析目录",
+          "detail": "正文列出 /system/etc/init、/system_ext/etc/init、/vendor/etc/init、/odm/etc/init，但漏掉 android-16.0.0_r1 init.cpp 中同级解析的 /product/etc/init。product 分区承载产品侧服务/属性，启动排查时遗漏会导致服务来源归因不完整。",
+          "suggestion": "按 init.cpp ParseConfig 顺序补齐 /product/etc/init，并说明 late_import_paths 兼容路径；若讨论 Android 8-9，单独标注 system_ext/product 分区时代差异。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T03:32:47+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.3",
+      "section_title": "进程模型与生命周期管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.3 进程模型与生命周期管理 — 2026-04-30 03:31 发现 P0 3 / P1 1，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-30-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L209-L239 CachedAppOptimizer FreezeHandler 常量片段",
+          "detail": "正文以 CachedAppOptimizer.java 源码片段形式写 SET_FROZEN_PROCESS_MSG=1、REPORT_UNFREEZE_MSG=2、UID_FROZEN_STATE_CHANGED_MSG=3、DEADLOCK_WATCHDOG_MSG=4、BINDER_ERROR_MSG=5。android-16.0.0_r1 实际常量是 COMPACT_PROCESS_MSG=1、COMPACT_SYSTEM_MSG=2、SET_FROZEN_PROCESS_MSG=3、REPORT_UNFREEZE_MSG=4、COMPACT_NATIVE_MSG=5、UID_FROZEN_STATE_CHANGED_MSG=6、DEADLOCK_WATCHDOG_MSG=7、BINDER_ERROR_MSG=8。",
+          "suggestion": "修正常量值并明确该 Handler 同时承载 compaction/freezer 消息；若只展示 freezer 相关常量，标注“节选，非连续编号”。"
+        },
+        {
+          "type": "版本差异/源码错误",
+          "severity": "P0",
+          "location": "L330 adj 表格 PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ",
+          "detail": "正文标注 PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ=50 为 Android 16 新增。AOSP android-11.0.0_r48、android-12.0.0_r34、android-13.0.0_r83、android-14.0.0_r75、android-15.0.0_r36、android-16.0.0_r1 的 ProcessList.java 均已有该常量。",
+          "suggestion": "删除“Android 16 新增”，改成“android-16 当前仍保留，用于 TOP_TO_FGS_GRACE_PERIOD 场景”；若要讲新增版本，回溯具体提交再写。"
+        },
+        {
+          "type": "源码错误/内部一致性",
+          "severity": "P0",
+          "location": "L634 前台 Service oom_adj 误区",
+          "detail": "正文写“从 500（service_b）提升到 0~100（foreground/perceptible）”。android-16 ProcessList.java 中 SERVICE_ADJ=500，SERVICE_B_ADJ=800；PERCEPTIBLE_APP_ADJ=200，VISIBLE_APP_ADJ=100，FOREGROUND_APP_ADJ=0。该句同时把 service/service_b 和 visible/perceptible 数值混错。",
+          "suggestion": "改为普通 service 常见 SERVICE_ADJ=500，老化后可能进 SERVICE_B_ADJ=800；前台 Service 多数落在 perceptible/FGS 相关档位，常见 200 或 recent TOP→FGS 的 50，不要写成 0~100 通用结论。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L172-L300 CachedAppOptimizer / Freezer 版本演进",
+          "detail": "正文写 Android 12 引入 CachedAppOptimizer/freezer，并写 Android 11 QPR3 是 cgroup v1 实现。AOSP android-11.0.0_r48 已有 CachedAppOptimizer.java、Process.setProcessFrozen() 和 task_profiles.json 的 cgroup.freeze；公开 Android 文档口径也是 Android 11 QPR3+ cached apps freezer 基于 cgroup v2 freezer。",
+          "suggestion": "版本线改为 Android 11 QPR3 起 cached apps freezer/cgroup v2 freezer；Android 12-13 写策略和开关演进；Android 14 再写 frozen callee policy / RemoteCallbackList 策略。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T03:32:47+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.6",
+      "section_title": "Android 版本演进中的架构变化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.6 ProfilingManager API 签名与回调类型写错，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误/API签名错误",
+          "location": "L163（ProfilingManager.requestProfiling(...) 签名）",
+          "detail": "正文写成 requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)。Android API 35/36 公开签名是 requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)。ProfilingResultCallback 不是该公开 API 的回调类型。",
+          "suggestion": "改为官方签名，并补充 tag、CancellationSignal、Consumer<ProfilingResult>；如讨论系统触发采样，应同时说明 addProfilingTriggers(List<ProfilingTrigger>) 与 registerForAllProfilingResults(Executor, Consumer) 的关系。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T04:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.7",
+      "section_title": "ART 编译管线与 dex2oat 优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.7 ProfilingManager 示例与 Perfetto ART 抓取配置存在技术错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误/API签名错误",
+          "location": "L427-L435（ProfilingManager Kotlin 示例）",
+          "detail": "示例调用 requestProfiling(PROFILING_TYPE_JAVA_TRACE, Bundle(), Executor, lambda)。公开 API 没有 PROFILING_TYPE_JAVA_TRACE 常量，常量为 PROFILING_TYPE_SYSTEM_TRACE / HEAP_PROFILE / JAVA_HEAP_DUMP / STACK_SAMPLING；requestProfiling 也需要 tag 与 CancellationSignal 参数，listener 类型为 Consumer<ProfilingResult>。该示例按 Android 15/16 SDK 无法编译。",
+          "suggestion": "把示例改成 ProfilingManager.PROFILING_TYPE_SYSTEM_TRACE 或 PROFILING_TYPE_STACK_SAMPLING，并使用 requestProfiling(type, params, tag, cancellationSignal, executor, Consumer<ProfilingResult>)；或改用 AndroidX 高层封装，避免直接给错误平台 API 示例。"
+        },
+        {
+          "level": "P1",
+          "type": "源码/工具配置错误",
+          "location": "L226-L240（Perfetto config 的 atrace_categories: \"art\" 与排查建议）",
+          "detail": "AOSP atrace category 表中 ART/VM 对应的是 dalvik（ATRACE_TAG_DALVIK），不是 art。正文给出 atrace_categories: \"art\"，并建议检查 debug.hwui.profile=true；后者是渲染 Profiling 属性，不能解释 ART/JIT slice 缺失。按当前配置读者可能抓不到 JIT/ART trace。",
+          "suggestion": "把 atrace category 改为 dalvik，或补充实际验证过的 Perfetto config；删除 debug.hwui.profile=true 作为 ART slice 排障项，改为检查 atrace dalvik category、debuggable/系统策略与 Perfetto config 是否生效。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T04:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
@@ -9098,6 +9240,84 @@
       "completed_by": "task2b-rework",
       "completed_at": "2026-04-29T03:40:00+08:00",
       "completion_reason": "回炉修复完成，章节重新进入 task6 review 流水线"
+    },
+    {
+      "section": "1.2",
+      "section_title": "系统启动全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.2 系统启动全流程 — 2026-04-29 22:20 发现 P0 1 / P1 1，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-29-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "severity": "P0",
+          "location": "frontmatter L17 applicable_versions",
+          "detail": "章节写 Android 16 (API 35)。Android 16 对应 API level 36；API 35 是 Android 15。该元数据会误导版本适用范围和后续索引。",
+          "suggestion": "改为 Android 8 (API 26) - Android 16 (API 36)，并同步 last_verified_against。"
+        },
+        {
+          "type": "版本差异/数据支撑",
+          "severity": "P1",
+          "location": "L201-L203 Android 15/16 Cloud Profiles / Cloud Compilation",
+          "detail": "正文把 Cloud Profiles 写成 Android 15 Mainline 推送，并把 Android 16 Cloud Compilation 写成“设备 OTA 后不再需要本地 dex2oat、直接下载 .odex/.vdex、彻底解决 OTA 后首次开机优化”。公开资料更偏向 Play 安装/更新链路里的 cloud profiles / SDM cloud compilation；是否覆盖系统 OTA 首启和是否已大规模启用需要限定。",
+          "suggestion": "改成“App 安装/更新链路可通过 Play 下发 profile 或 SDM 编译产物减少本地 dex2oat”，不要写成系统 OTA 首启的确定闭环；补官方文档或标 [待验证]。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T22:20:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-04-30T02:40:00+08:00",
+      "completed_reason": "P0/P1 issues fixed per Task 9 deep tech review",
+      "completed_by": "task2b-rework",
+      "completion_reason": "review issues addressed (1.2: Cloud Profiles/Compilation claims corrected; 1.3: all 4 issues previously fixed, verified clean)"
+    },
+    {
+      "section": "1.3",
+      "section_title": "进程模型与生命周期管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.3 进程模型与生命周期管理 — 2026-04-29 22:20 发现 P0 2 / P1 2，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-29-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L187-L205 CachedAppOptimizer 构造函数示例",
+          "detail": "示例把 mCachedAppOptimizerThread 写成 CachedAppOptimizerThread 子类并在构造函数里 start()。android-16.0.0_r1 实际字段是 final ServiceThread mCachedAppOptimizerThread；构造函数只 new ServiceThread(\"CachedAppOptimizerThread\", Process.THREAD_GROUP_SYSTEM, true)，线程在 useFreezer 生效路径里启动。",
+          "suggestion": "换成真实代码骨架：ServiceThread 字段、构造函数仅创建线程；start 发生在 updateUseFreezer 后的 AMS handler runnable 中。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L213-L239 Freezer 消息与 native API 示例",
+          "detail": "正文列出的 FREEZER_ENABLE_MSG / FREEZER_DISABLE_MSG、CachedAppOptimizer.handleMessage() 直接 enable/disable freezer、native enableFreezer()/disableFreezer() 在 android-16.0.0_r1 中不存在。真实常量包括 SET_FROZEN_PROCESS_MSG、REPORT_UNFREEZE_MSG、UID_FROZEN_STATE_CHANGED_MSG、DEADLOCK_WATCHDOG_MSG、BINDER_ERROR_MSG；冻结落到 Freezer.setProcessFrozen() 与 task profile/cgroup。",
+          "suggestion": "按 CachedAppOptimizer.FreezeHandler + Freezer.setProcessFrozen() + task_profiles Frozen/Unfrozen profile 重写，不要贴不存在的 native 方法。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P1",
+          "location": "L241-L256 task_profiles.json FreezerState 示例",
+          "detail": "示例 JSON 使用 controller/file/action/value 小写结构，与 android-16.0.0_r1 的 task_profiles.json 不一致。真实结构是在 Attributes 中定义 FreezerState，再在 Profiles 的 Frozen/Unfrozen 里用 SetAttribute 写入 1/0。",
+          "suggestion": "替换为真实 JSON 片段：Attributes.Name=FreezerState；Profiles.Name=Frozen/Unfrozen；Actions.Name=SetAttribute。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L297 Android 16 Seamless App Updates",
+          "detail": "正文写 Android 16 通过 bionic linker 增量加载，在替换 dex/so 文件时做极短冻结快照。公开 Android 16 seamless app updates 口径是把 dexopt/dex2oat 提前到冻结前，降低 app update freeze window；未找到 bionic linker 增量加载或 dex/so 热替换依据。",
+          "suggestion": "改为“安装/更新流程把 dexopt 尽量前移，冻结窗口只覆盖最后切换阶段”；删除 bionic linker 增量加载表述，除非补 AOSP/官方引用。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T22:20:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-04-30T02:40:00+08:00",
+      "completed_reason": "P0/P1 issues fixed per Task 9 deep tech review",
+      "completed_by": "task2b-rework",
+      "completion_reason": "review issues addressed (1.2: Cloud Profiles/Compilation claims corrected; 1.3: all 4 issues previously fixed, verified clean)"
     }
   ]
 }

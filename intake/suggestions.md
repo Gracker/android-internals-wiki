@@ -231,3 +231,35 @@
 - **问题**：正文写 Perfetto v49+ 提供 `android.freezer` 模块和 `android_freezer_events` 表，但本轮未找到公开 Perfetto 文档中的稳定表 schema。若表名随 stdlib/Android trace_processor 版本变化，读者会直接查不到。
 - **建议**：补 trace_processor 版本、stdlib 文档或实际 `SELECT * FROM sqlite_master WHERE name LIKE '%freezer%'` 结果；未确认前改为 dumpsys/logcat/ftrace 的通用观察路径。
 
+
+## [External Review] 18.21 EyeDropper API 与跨设备协作性能 — 2026-04-30
+- **类型**：诊断技巧
+- **位置**：DisplayDataSpace 追踪
+- **问题**：补充在 Perfetto 中利用 Android 17 增强的 android.display.dataspace 计数器验证取色环境的方法
+- **建议**：开发者应据此判定当前系统返回的颜色值是否处于 DATASPACE_DISPLAY_P3 等高动态范围语境下，以决定后续色板的存储精度
+- **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 10.5 案例集 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L254、L312 renderD128 / MemoryThrashing 效果
+- **问题**：两个案例仍保留“[待补充：具体降幅百分比]”。章节锚点要求每个案例包含修复方案与量化效果；当前能证明趋势，但不能支撑精确效果闭环。
+- **建议**：补原始来源里的版本周期、设备/样本量、崩溃率口径；若公开材料没有百分比，改为“回落至基线/明显下降（原文未披露百分比）”，不要保留发布态占位。
+
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L316-L327 Pixel 8 / Android 16 参考基线表
+- **问题**：表格给出 Bootloader、Kernel、Zygote、SystemServer 等分段耗时和占比，但没有 bootstat 原始输出、build fingerprint、重启条件、样本次数。当前只能算估算，不足以作为“Pixel 8, Android 16”基线。
+- **建议**：补 bootstat -l、logcat events、Perfetto trace 截图或降级为“示例口径”；每个数字标注设备、版本、冷/热重启、是否首启/OTA 后首启。
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L430-L433 InputDispatcher SocketPair 线程数对比
+- **问题**：正文给出 Binder 方案会变成 2(N+1) 线程、Socket 是 N+1 线程的精确比较，但没有 InputChannel/InputDispatcher 源码锚点或设计文档支撑，也没有说明这是估算模型还是 AOSP 真实线程模型。
+- **建议**：补 InputChannel/SocketPair、InputDispatcher 与 app InputEventReceiver 的源码路径；如果没有源码证据，把精确公式降级为“SocketPair 避免为每个窗口额外占用 Binder 线程池”的定性描述。
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L178（JIT code cache 通常稳定在 4MB 左右）
+- **问题**：该数值仍标注为工程经验值，缺少设备、应用规模、Android/ART 版本和采样方法。
+- **建议**：补 dumpsys meminfo / perfetto counter / ART 日志的采样条件；如果暂无数据，删掉固定 4MB 数值或改为明确的待验证脚注。

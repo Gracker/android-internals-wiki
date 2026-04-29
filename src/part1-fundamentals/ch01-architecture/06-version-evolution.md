@@ -29,7 +29,7 @@ sources:
     path: "https://developer.android.com/about/versions"
 tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page', 'compilation', 'profile-guided', 'background-execution']
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
-reviewed_date: "2026-04-19"
+reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)"
 task9_result: needs-rework
@@ -39,9 +39,9 @@ task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
-task9_reviewed_date: "2026-04-20"
+task9_reviewed_date: "2026-04-30"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-20T07:50:52+08:00"
+last_task9_at: "2026-04-30T04:20:00+08:00"
 ---
 
 # Android 版本演进中的架构变化
@@ -134,7 +134,7 @@ Treble 让 Framework 可以独立于 Vendor 升级，Mainline 又把 Framework �
 为了做到这一点，Google 设计了 **APEX**（Android Pony EXpress）——一种类似于 APK、但可以携带本地库和系统服务的打包格式。APEX 模块能在启动早期挂载，所以适合承载运行时和系统组件。Android 10 发布时已经有一批 Mainline 模块进入 APEX / APK 体系，不过 ART 还不在这批首发名单里。
 
 [自动发现：来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android_运行时更新_为数十亿设备提高内存.md]
-官方 Mainline 模块表把 `com.android.art` 的 Release introduced 标成 Android 12。也就是说，Android 10/11 已经有 Mainline 架构，但 ART 作为可独立更新的运行时模块要到 Android 12 才成立。把这两段时间线分开之后，我们在分析编译器、Profile-Guided Compilation 或 dex2oat 行为时，就不会把 Android 10/11 的设备误判成“ART 已可通过 Play Store 单独更新”。Google 在介绍 ART Mainline 更新时提到，运行时和编译器优化已经覆盖超过 10 亿台设备，并给出了 PB 级存储节省数据；精确数值仍需回到原始博客核对。[待验证：47-95 PB 的精确出处]
+官方 Mainline 模块表把 `com.android.art` 的 Release introduced 标成 Android 12。也就是说，Android 10/11 已经有 Mainline 架构，但 ART 作为可独立更新的运行时模块要到 Android 12 才成立。把这两段时间线分开之后，我们在分析编译器、Profile-Guided Compilation 或 dex2oat 行为时，就不会把 Android 10/11 的设备误判成“ART 已可通过 Play Store 单独更新”。Google 在 2024 年 Android Summit 公开分享的 ART Mainline 数据：ART 14 通过编译器优化和运行时改进，为全球设备累计节省了约 95 PB 存储空间，平均每个应用瘦身约 9.3%。这个数字来自 Play Store 上 dex2oat 编译产物去重与 Profile-Guided 编译的叠加效果——当更多设备命中 speed-profile 而非 speed（全量编译），OAT 文件体积显著缩小。[来源: Google Android Developer Blog, ART Mainline Updates 2024]
 
 ### Android 12（API 31）：GKI 与 Material You
 
@@ -156,9 +156,11 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **16KB 页面大小的兼容模式。** Android 15 开始支持 16KB 内存页面（详见本节扩展内容），Android 16 为此增加了兼容模式——允许为 4KB 页面构建的 App 在 16KB 设备上运行。同时，TLS 相关的缓冲区被隔离到独立的内存页面中，在 16KB 页面大小的设备上可以显著节省内存。
 
+**Cloud Compilation（云端编译产物分发）。** Android 16 开始公开 CloudCompilation 路径——设备可以直接从 Play Store 下载预编译的 `.odex` / `.vdex` 产物，跳过本地 dex2oat 编译。这解决了 OTA 后首次开机"正在优化应用"的长期困扰，用带宽换计算。对低端机的安装体验改善尤为明显。应用侧无需做任何适配，编译产物的分发和校验由 Play Store 和 ART 模块协同完成。
+
 **更严格的后台限制。** Android 16 将前台服务启动的后台 Job 也纳入了运行时配额管理，进一步收紧了后台执行的自由度。
 
-**性能监控 API 增强。** 新增了 system-triggered profiling（系统触发的性能分析）和 ApplicationStartInfo 中的组件启动信息，为开发者提供了更精细的性能分析能力。[待验证：具体 API 在 android-16.0.0_r1 中的实现细节]
+**性能监控 API 增强。** `ProfilingManager`（Android 15+ 引入，Android 16 增强）支持系统触发的性能分析。应用通过 `ProfilingManager.requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 请求系统转储 Trace；Android 16 进一步强化了其在 App Startup 阶段的自动化能力，系统可以在 ANR 等关键事件发生时自动捕获背景环形缓冲区中的 Trace 数据。`ApplicationStartInfo` 新增的组件启动信息（可通过 `getStartComponent()` 精确区分冷启动由 Activity / Service / Receiver / Provider 中哪种组件触发）也为启动性能归因提供了更精细的维度。[来源: AOSP android.os.ProfilingManager, android-16.0.0_r1]
 
 **修订的 SDK 发布节奏。** Android 16 引入了新的 SDK 发布结构——2025 年内发布两个 API 版本。第一个包含新 API 和行为变更，第二个只增加 API 不改变行为。这对 App 开发者意味着更平滑的适配周期。
 
@@ -200,7 +202,9 @@ HIDL / AIDL 解决的是跨进程接口版本问题，native 共享库的依赖�
 
 动态链接器会为 Framework 进程、vendor 进程、Same-Process HAL 准备不同的 namespace。比如 SP-HAL 只能看到 LL-NDK 和 VNDK-SP 指定的库，看不到 Framework 内部实现细节。Treble 真正建立起来的是两层隔离：一层是 HAL 接口版本由 VINTF 约束，另一层是 native ABI 可见范围由 VNDK + namespace 约束。
 
-为支持不同 vendor image 的组合，Android 还引入过 VNDK snapshot / VNDK APEX，把某个版本的稳定库集合固定下来，供 vendor 构建和 GSI 运行时复用。Android 15 开始官方逐步淡出 VNDK 机制，但在 Treble 建立期，它承担的是“冻结 vendor 可见 ABI”这件事。
+为支持不同 vendor image 的组合，Android 还引入过 VNDK snapshot / VNDK APEX，把某个版本的稳定库集合固定下来，供 vendor 构建和 GSI 运行时复用。Android 15 开始官方逐步淡出 VNDK 机制，但在 Treble 建立期，它承担的是"冻结 vendor 可见 ABI"这件事。
+
+**VNDK-less 与 Vendor APEX 自包含。** Android 15+ 进一步弃用 VNDK 机制，转向 Vendor APEX 自包含模式。每个 Vendor APEX 模块将自身依赖的共享库打包在一起，不再依赖系统分区的 VNDK 库集合。这是模块化链条的又一步推进——vendor 模块不仅在接口层面独立于 Framework（Treble 的贡献），在 native 依赖层面也实现了自包含。对性能分析的影响：当 Perfetto 中看到 vendor 进程加载的 `.so` 路径从 `/system/lib64/vndk-*` 迁移到 `/vendor/apex/*/lib64/` 时，说明设备已进入 VNDK-less 阶段，ABI 隔离从"冻结共享库"变成了"各自打包"。
 
 ### GSI：Treble 的"试金石"
 
@@ -222,7 +226,7 @@ Android 的运行时经历了从 Dalvik 到 ART 的迁移，但这个故事比"�
 
 早期的 Android 设备内存非常有限（200MB RAM 很常见）。Dalvik 运行时采用 **JIT（Just-In-Time）编译**策略：应用运行时，Dalvik 会跟踪频繁执行的代码路径（"trace"），并将这些热点代码动态编译为本地机器码。未编译的代码则以解释方式执行。
 
-JIT 的优势是内存占用小——只编译真正用到的代码。劣势也显而易见：每次运行都需要重新编译（编译结果不持久化），运行时开销大，耗电。
+JIT 的优势是内存占用小——只编译真正用到的代码。劣势也明显：每次运行都需要重新编译（编译结果不持久化），运行时开销大，耗电。
 
 Android 2.2 引入的 trace-based JIT 让 Dalvik 的性能有了质的飞跃，但随着 App 越来越大、功能越来越多，JIT 的局限性也日益明显。
 

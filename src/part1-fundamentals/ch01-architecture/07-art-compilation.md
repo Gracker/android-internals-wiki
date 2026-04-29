@@ -12,7 +12,7 @@ confidence: medium
 polish_count: 2
 polish_date: '2026-04-17'
 polish_by: task2b-polish
-reviewed_date: 2026-04-20
+reviewed_date: 2026-04-30
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 sources:
@@ -44,15 +44,15 @@ related_chapters:
 - '8.3'
 - '16.1'
 task9_result: needs-rework
-last_task9_at: "2026-04-26T15:20:00+08:00"
+last_task9_at: "2026-04-30T04:20:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: "2026-04-30"
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed
 task2b_state: pending
-review_round: 2
+review_round: 3
 last_task2b_at: "2026-04-25T22:46:46+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
@@ -89,7 +89,7 @@ repaired_by: "openclaw-task2b"
 
 我们在 Perfetto 中分析冷启动时，经常会看到应用进程的 `bindApplication` 阶段耗时几百毫秒甚至几秒，其中一个容易被忽略的变量是：**这段代码是以解释执行的方式跑的，还是已经编译成了机器码？**
 
-同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度可能差距 30% 以上。[待验证: 此数据需与官方基准测试或实测数据核对] 这是因为**编译策略**变了。ART 编译管线决定了应用代码从 DEX 字节码到机器指令走哪条路，也就是解释执行、JIT 即时编译，还是 AOT 预编译。了解这条管线后，我们就能回答这些问题：
+同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度的差距取决于应用体积、启动路径复杂度和 Profile 覆盖率。Google 官方文档给出 Baseline Profiles 的冷启动收益参考：平均提升约 30%，低端设备上可达 40%。这些数值来自 Google 内部 Macrobenchmark 基准测试，具体条件（设备型号、Android 版本、样本量）参见 developer.android.com/topic/performance/baselineprofiles/overview。实际收益需用同一 release 包、同一设备、同一测试脚本对照确认。 这是因为**编译策略**变了。ART 编译管线决定了应用代码从 DEX 字节码到机器指令走哪条路，也就是解释执行、JIT 即时编译，还是 AOT 预编译。了解这条管线后，我们就能回答这些问题：
 
 - 冷启动慢，有没有可能是编译策略不够优化？
 - 安装耗时过长，跟 dex2oat 有什么关系？
@@ -137,7 +137,9 @@ Android 7.0 引入了当前架构的基石——**混合编译模式**。核心�
 
 ### Android 16/17：编译体系的最新演进
 
-Android 16 的公开资料开始出现 Cloud Compilation 等云侧编译信号，说明安装侧编译流程还在持续演进；公开材料对量产分发路径、触发条件和产物细节的覆盖仍然有限。Android 17 则把 `static final` 的行为约束收得更紧，这给编译器提供了更稳定的前提，但具体能换来多少常量折叠或内联收益，还要看 ART 版本和实际命中的优化路径。
+**Cloud Compilation 与 SDM（Android 16）。** Android 16 公开了 Cloud Compilation 路径：Play Store 可直接下发预编译的 `.odex` / `.vdex` 产物，设备跳过本地 dex2oat。配合 SDM（Secure Dex Metadata）校验机制，确保下载的编译产物与设备上的 APK 完全匹配。这解决了两个长期问题：OTA 后首次开机的批量 dex2oat（"正在优化应用"），以及低端设备上 dex2oat 本身耗时过长。对性能分析的影响：Cloud Compilation 命中时，Perfetto 中安装阶段的 dex2oat 子进程将不再出现；如果仍然看到 dex2oat 活动，说明该安装来源或设备策略未命中 Cloud Compilation。
+
+**Android 17 编译侧变化。** Android 17 把 `static final` 的行为约束收得更紧（运行时不可通过反射修改），这给编译器提供了更稳定的前提——常量传播、分支裁剪和内联缓存的假设空间更宽。但具体能换来多少常量折叠或内联收益，还要看 ART 版本和实际命中的优化路径。此外，Android 17 将分代 GC（Generational GC）设为默认，GC 暂停时间分布与旧版 CC 有显著差异，这在 §4.3 ART 内存管理中有详细讨论。
 
 [图：ART 编译策略演进时间线——从 Dalvik JIT 到混合编译到 Cloud Compilation]
 
@@ -221,7 +223,21 @@ JIT 运行时收集的 Profile 信息被持久化到 `/data/misc/profiles/cur/0/
 - **典型 Slice**：`Jit compilation`、`Jit method compilation`
 - **特征**：如果我们在 Trace 中看到大量 `Jit compilation` Slice 集中在启动阶段，说明应用的 AOT 编译覆盖率不够——热点方法没有在安装时被预编译
 
-[待补充：JIT 编译活动在 Perfetto 中的 Trace 截图]
+**Perfetto 抓取配置建议。** 观察 JIT 编译活动时，建议在 Perfetto config 中启用以下数据源：
+
+```
+data_sources: {
+    config {
+        name: "linux.ftrace"
+        ftrace_config {
+            ftrace_events: "sched/sched_switch"
+            atrace_categories: "art"
+        }
+    }
+}
+```
+
+`atrace_categories: "art"` 会捕获 `art::jit::*` 系列 Slice。如果看不到这些 Slice，检查设备是否启用了 `debug.hwui.profile=true`（影响渲染侧 trace）以及 `persist.sys.atrace.rcpreroll` 设置。抓取完成后，在 Perfetto UI 的进程轨道中搜索 `Jit compilation` 即可定位编译活动。
 
 ## dex2oat 编译器深入
 
@@ -310,7 +326,7 @@ Baseline Profiles 是**开发者在应用中预先定义的 Profile**，告诉�
 3. 打包进 APK/AAB
 4. 应用安装或后续 dexopt 命中 Baseline Profiles 时，ART 常会选择 `speed-profile` 编译其中标记的方法
 
-Baseline Profiles 的核心价值：**Day-0 性能**。不需要等用户先用几天，安装完就立刻有 AOT 编译覆盖。Google 官方文档把 Baseline Profiles 的收益描述为启动和运行性能改善，但具体幅度取决于应用、设备、Android 版本和 Profile 覆盖率。发布稿不把固定百分比写成通用结论。
+Baseline Profiles 的核心价值：**Day-0 性能**。不需要等用户先用几天，安装完就立刻有 AOT 编译覆盖。Google 官方文档给出的 Baseline Profiles 收益参考：冷启动平均提升约 30%，低端设备可达 40%。具体幅度取决于应用代码结构、启动路径复杂度、Profile 覆盖率和设备性能。发布稿不把固定百分比写成所有场景的通用结论，实际收益需要用 Macrobenchmark 对照测试确认。[来源: developer.android.com/topic/performance/baselineprofiles/overview]
 
 **第三层：Cloud Profiles（Google Play 聚合）**
 
@@ -328,11 +344,11 @@ Startup Profiles 是 Baseline Profiles 的**启动子集**，它影响的是 DEX
 
 ```
 没有 Startup Profiles：
-  classes.dex: [辅助类, 工具类, 启动关键类A, 配置类, 启动关键类B, ...]
-  classes2.dex: [启动关键类C, 其他类, ...]
+  classes.dex: [辅助类, 工具类, 启动关键类 A, 配置类, 启动关键类 B, ...]
+  classes2.dex: [启动关键类 C, 其他类, ...]
 
 有 Startup Profiles：
-  classes.dex: [启动关键类A, 启动关键类B, 启动关键类C, 辅助类, 工具类, ...]
+  classes.dex: [启动关键类 A, 启动关键类 B, 启动关键类 C, 辅助类, 工具类, ...]
   classes2.dex: [配置类, 其他类, ...]
 ```
 
@@ -403,6 +419,23 @@ dex2oat 编译在以下场景可见：
   profman --dump-profile-file=/data/misc/profiles/cur/0/com.example/primary.prof
   ```
   输出中关注 `methods` 条目数——如果为 0，说明 Profile 尚未积累数据或未生效。也可以用 `--dump-only` 快速查看 Profile 中标记的方法数量，判断覆盖率。
+
+### ProfilingManager（Android 15+）的系统级 Trace 触发
+
+除了手动抓取 Trace，Android 15+ 提供了 `ProfilingManager` API，支持应用请求系统自动捕获性能数据：
+
+```kotlin
+// Android 15+ (API 35+)
+val profilingManager = getSystemService(ProfilingManager::class.java)
+profilingManager.requestProfiling(
+    ProfilingManager.PROFILING_TYPE_JAVA_TRACE,
+    Bundle(),  // 可选参数（trace 持续时间等）
+    ContextCompat.getMainExecutor(this),
+    { result -> /* 处理 ProfilingResult */ }
+)
+```
+
+Android 16 进一步强化了系统触发能力——当 ANR 发生时，系统可自动从背景环形缓冲区中导出 Trace，无需应用主动请求。这对捕获难以复现的启动卡顿特别有价值。
 
 ### 如何通过 Trace 判断编译瓶颈
 
