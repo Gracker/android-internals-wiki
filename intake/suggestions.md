@@ -6407,3 +6407,10 @@
 - **问题**：正文写“30 分钟内帧率变化不超过 5%，且不能低于未开启模式时的水平”，但没有 CTS 用例名、API 文档链接或版本边界。
 - **建议**：补 CTS/官方文档原文和测试条件；无法确认时改为“厂商需声明支持，适合稳定长时间负载”。
 
+
+
+## [Task9 Deep Review] 15.6 性能测试最佳实践 — 2026-04-29
+- **类型**：源码/API准确性
+- **位置**：结果的自动分析 → JSON 字段说明
+- **问题**：正文说 Macrobenchmark JSON 可通过 androidx.benchmark:benchmark-junit4 库解析，并包含 metricName、median、minimum、maximum、p90、runs 字段。复核 ResultWriter/BenchmarkData.kt：输出文件为 <package>-benchmarkData.json；TestResult 下是 metrics 与 sampledMetrics 两个 map，指标名是 map key；SingleMetricResult 字段为 minimum/maximum/median/coefficientOfVariation/runs；SampledMetricResult 字段为 P50/P90/P95/P99/runs，大小写与结构都不同，也没有 metricName 顶层字段。相关数据类带 RestrictTo(LIBRARY_GROUP)，不应暗示有稳定公开解析 API。
+- **建议**：把这一段改成“读取 benchmarkData.json 并按当前 schema 解析”，给出 metrics/sampledMetrics 的真实结构；或建议 CI 用 jq/自定义脚本解析，并标注 schema 可能随 AndroidX 版本变化。
