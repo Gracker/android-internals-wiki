@@ -49,12 +49,13 @@ polish_by: "task2b-polish"
 rework_count: 2
 rework_date: "2026-04-27"
 rework_by: "task2b-rework"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-04-29T11:40:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-28
 last_task9_at: "2026-04-28T04:29:00+08:00"
@@ -245,12 +246,12 @@ View.setRenderEffect(effect)                      [frameworks/base/core/java/and
 
 这里没有 `RenderEffect::applyToTree()` 这条调用。源码锚点应落在 `graphics/java/android/graphics/RenderEffect.java`、`libs/hwui/jni/RenderEffect.cpp`，以及 RenderNode 属性的 `imageFilter` 写入路径。
 
-RenderEffect 和 Hardware Layer 都可能带来离屏渲染、临时纹理和 GPU 内存开销，但它们的目的不同：
+RenderEffect 和 Hardware Layer 的底层隔离层级不同，内存开销和 GPU 调度友好度也相应不同：
 
-- `RenderEffect` 是效果过滤器。blur、color filter、RuntimeShader 作为 `SkImageFilter` / shader 参与 RenderNode 绘制，适合给动态内容加视觉效果。
-- `LAYER_TYPE_HARDWARE` 是显式建层和缓存策略。它把 View 的绘制结果缓存为 layer texture，适合属性动画；内容频繁 invalidate 时，缓存重建会抵消收益。
+- `RenderEffect` 是 **Shader 级集成**。blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性，Skia 在绘制时能够对同一条链上的多个 filter 做**算子融合**（operator fusion），并复用内部的 Scratch Texture，避免每个 filter 各申请一块离屏缓冲区。对于动态内容（频繁 invalidate 的 View），RenderEffect 的内存开销通常更低，且更利于 GPU 连续执行。
+- `LAYER_TYPE_HARDWARE` 是 **Buffer 级隔离**。HWUI 强制为该 View 创建一个独立的 FBO（Framebuffer Object）并缓存渲染结果。属性动画阶段只需要在纹理上做矩阵变换，不重新执行 draw——这正是 Hardware Layer 的加速来源。但 FBO 是独占的 GPU 内存，内容每帧都变时缓存重建的开销会超过加速收益。
 
-处理 blur、阴影或 shader 效果时，优先用 `RenderEffect` 表达效果，再通过 Perfetto 的 GPU / FrameTimeline 观察帧时间和显存压力。只有在动画缓存场景里，才考虑手动打开 Hardware Layer。
+处理 blur、阴影或 shader 效果时，优先用 `RenderEffect` 表达效果，再通过 Perfetto 的 GPU / FrameTimeline 观察帧时间和显存压力。只有在属性动画需要缓存静态纹理的场景里，才考虑手动打开 Hardware Layer。对动态内容，RenderEffect 在内存占用和 GPU 调度效率上都优于 Hardware Layer。
 
 #### AGSL RuntimeShader（Android 13+, API 33）
 

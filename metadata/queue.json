@@ -197,8 +197,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-06-android-power-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-06-android-power-external-review.md",
+      "completed_at": "2026-04-29T11:45:12.919635+08:00",
+      "completed_reason": "HWC 4.0 onVsyncIdle 联动 Suspend 内容已在前轮修复中写入章节"
     },
     {
       "section": "05.07",
@@ -376,7 +378,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T11:45:12.919635+08:00",
+      "completed_reason": "RenderEffect vs Hardware Layer 对比已增强为 Shader 级集成 vs Buffer 级隔离，补充算子融合与 Scratch Texture 说明"
     },
     {
       "section": "07.07",
