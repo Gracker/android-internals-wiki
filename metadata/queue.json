@@ -5513,22 +5513,29 @@
     {
       "section": "5.7",
       "section_title": "CPU 相关的版本演进",
-      "priority": 85,
-      "reason": "[Deep Tech Review] Doze 触发条件把 WakeLock 写成进入前提，需按官方/AOSP 口径修正",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Android 17 Energy Limiter/µJ 能量配额属于未核实平台特性；Doze WakeLock 触发条件仍需修正",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
           "type": "原理断裂/源码行为",
-          "location": "L147",
-          "detail": "Doze 触发条件把“没有持有长时间 WakeLock”列为进入前提。官方 Doze 入口口径是 unplugged、screen off、stationary；进入 Doze 后系统会忽略 app wake locks。WakeLock 是 Doze 的限制对象，不是阻止进入 Doze 的普通前提。",
-          "suggestion": "移除触发条件中的 WakeLock 前提，改成“持有 partial WakeLock 也不能保证阻止 Doze；Doze 中 wake lock 会被忽略，只在维护窗口恢复工作”。"
+          "location": "L146「设备拔掉电源、屏幕关闭、保持静止、没有持有长时间 WakeLock」",
+          "detail": "Doze 触发条件仍把“没有持有长时间 WakeLock”列为进入前提。官方 Doze 入口口径是 unplugged、screen off、stationary/unused；进入 Doze 后系统会忽略 app wake locks。WakeLock 是 Doze 的限制对象，不是阻止进入 Doze 的普通前提。",
+          "suggestion": "移除触发条件中的 WakeLock 前提，改成“Doze 中 wake lock 会被忽略；只在维护窗口或豁免场景下恢复部分能力”。"
+        },
+        {
+          "type": "源码/版本事实错误",
+          "location": "L321-L334「Android 17:能量限额制 (Energy Limiter)」与 L381 时间线",
+          "detail": "Android 17 官方 behavior changes（all apps / target 37）和 release notes 未列出 Energy Limiter、ODPM/µJ 单 App 能量配额或超额强杀后台进程机制；当前官方可见的性能/功耗相关项是 App memory limits、Reduced Wakelocks for Idle Alarms、ProfilingManager 新 trigger 等。正文把未核实外部 review 结论写成“已验证”平台特性，会误导读者按不存在的硬配额做适配。",
+          "suggestion": "删除 Energy Limiter 作为 Android 17 平台能力的确定表述；如需保留，只能标为待验证研究线索并补一手来源。Android 17 段落建议改写为官方已发布项：App memory limits / MemoryLimiter、idle alarm wakelock 降低、ProfilingManager 的 KILL_EXCESSIVE_CPU_USAGE 等。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T02:30:00+08:00",
-      "status": "pending"
+      "status": "pending",
+      "updated_at": "2026-04-29T11:26:16+08:00"
     },
     {
       "section": "5.8",

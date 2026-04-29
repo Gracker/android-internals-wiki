@@ -6414,3 +6414,9 @@
 - **位置**：结果的自动分析 → JSON 字段说明
 - **问题**：正文说 Macrobenchmark JSON 可通过 androidx.benchmark:benchmark-junit4 库解析，并包含 metricName、median、minimum、maximum、p90、runs 字段。复核 ResultWriter/BenchmarkData.kt：输出文件为 <package>-benchmarkData.json；TestResult 下是 metrics 与 sampledMetrics 两个 map，指标名是 map key；SingleMetricResult 字段为 minimum/maximum/median/coefficientOfVariation/runs；SampledMetricResult 字段为 P50/P90/P95/P99/runs，大小写与结构都不同，也没有 metricName 顶层字段。相关数据类带 RestrictTo(LIBRARY_GROUP)，不应暗示有稳定公开解析 API。
 - **建议**：把这一段改成“读取 benchmarkData.json 并按当前 schema 解析”，给出 metrics/sampledMetrics 的真实结构；或建议 CI 用 jq/自定义脚本解析，并标注 schema 可能随 AndroidX 版本变化。
+
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-04-29 — sched_ext 版本绑定
+- **类型**：版本差异/源码锚点
+- **位置**：L349-L357、L381 `sched_ext` 段落与时间线
+- **问题**：正文写“Android 17 (GKI 6.12) 已具备 sched_ext 的内核基础设施”。本轮可直接核到的是 `android16-6.12/kernel/sched/ext.c` 存在，`android17-6.12` 分支未命中；Android 17 behavior/release notes 也没有把 sched_ext 列为应用可见行为变更。把它绑定到 Android 17 容易造成版本口径混乱。
+- **建议**：改成“Linux 6.12 / Android common kernel android16-6.12 已包含 sched_ext 基础设施，是否在具体 Android 17 量产设备启用取决于 GKI 分支和 OEM 策略”；时间线中不要把 sched_ext 写成 Android 17 应用侧确定适配项。
