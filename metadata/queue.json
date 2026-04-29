@@ -1380,7 +1380,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T02:18:16.461948+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T20:51:28.836996+08:00",
+      "completed_reason": "Android 16 android.binder interface_name/method_name 已补充；RemoteCallbackList.FrozenCalleePolicy 已添加；16KB Page Size Binder 吞吐量提升已补充"
     },
     {
       "section": "1.5",
@@ -1405,7 +1407,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T02:18:16.461948+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T20:51:28.836996+08:00",
+      "completed_reason": "ADPF 自动核心迁移机制已补充(替代手动绑核推荐)；MQ.Delivered 计数器已添加到 Perfetto 识别线程部分"
     },
     {
       "section": "1.6",
