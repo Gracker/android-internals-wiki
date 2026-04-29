@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-29T08:32:03+08:00",
+  "generated_at": "2026-04-29T09:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 109,
-    "ready-for-review": 109,
+    "finalized": 107,
+    "ready-for-review": 111,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-29T08:32:03+08:00",
+    "last_updated": "2026-04-29T09:20:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 33,
-      "ready-to-publish": 109,
-      "task2b_pending": 85,
+      "ready-to-publish": 107,
+      "task2b_pending": 87,
       "task9_pending": 8,
       "task6_pending": 15
     },
@@ -28,8 +28,8 @@
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 120,
-      "pending": 87,
+      "fixed": 118,
+      "pending": 89,
       "idle": 3
     },
     "draft": 0,
@@ -38,8 +38,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 33,
-      "ready-to-publish": 109,
-      "task2b_pending": 85,
+      "ready-to-publish": 107,
+      "task2b_pending": 87,
       "task9_pending": 8,
       "task6_pending": 15
     },
@@ -56,11 +56,11 @@
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 120,
-      "pending": 87,
+      "fixed": 118,
+      "pending": 89,
       "idle": 3
     },
-    "last_updated": "2026-04-29T08:32:03+08:00"
+    "last_updated": "2026-04-29T09:20:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1905,48 +1905,50 @@
       "title": "DVFS 与功耗管理",
       "chapter": "5.4",
       "section": "5.4",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-01",
       "drafted_by": "openclaw-task2",
       "applicable_versions": "Android 7.0 (API 24) - Android 16 (API 36)",
       "last_verified": "2026-04-01",
       "last_verified_against": "Linux kernel 6.6 (android16-6.6)",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-29",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-15"
+      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-29T09:20:00+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/05-thermal.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
       "title": "Thermal 管控",
       "chapter": "5.5",
       "section": "5.5",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-01",
       "drafted_by": "openclaw-task2",
       "applicable_versions": "Android 7.0 (API 24) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "last_verified_against": "PowerManager#getThermalHeadroom docs + ADPF fixed-performance-mode docs",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T05:33:55+08:00"
+      "last_task9_at": "2026-04-29T09:20:00+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/06-android-power.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",

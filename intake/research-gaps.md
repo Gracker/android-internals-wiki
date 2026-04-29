@@ -11266,3 +11266,23 @@ external-review 已命中 Proxy Execution、RTG、DSU-120 16KB 线索。本轮�
 ### 关联章节
 - 5.3
 
+## [2026-04-29] 5.5 Thermal 管控 — 知识盲区
+
+### 盲区描述
+Android 16 `SystemHealthManager.getCpuHeadroom()` / `getGpuHeadroom()` 与 `PowerManager.getThermalHeadroom()` 的组合策略还没有在章节中展开。external-review 已命中该方向，本轮 Task 9 已复核 AOSP android16-qpr2 中 API 存在，但仍需要补齐厂商支持范围、返回值稳定性和调优策略。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Android 16 API 文档与 AOSP `SystemHealthManager`、`CpuHeadroomParams`、`GpuHeadroomParams` 的边界条件。
+- 采样不同 SoC 上 [0,100] headroom 的含义、NaN/UnsupportedOperationException 出现场景、最小轮询间隔。
+- 建立 thermal headroom（热余量）与 CPU/GPU headroom（算力余量）的联合降载策略。
+
+### 关联章节
+5.4, 5.5, 5.9, 8.9
+
+### 外部 review 来源
+2026-04-28-15-ch05-05-thermal-external-review.md
+
+---

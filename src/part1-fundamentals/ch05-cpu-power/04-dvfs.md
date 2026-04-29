@@ -2,7 +2,7 @@
 title: "DVFS 与功耗管理"
 chapter: "5.4"
 section: "5.4"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Linux kernel 6.6 (android16-6.6)"
@@ -27,18 +27,20 @@ drafted_by: "openclaw-task2"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-task9_state: pending
-task9_result: pass-tech-review
+task9_state: reviewed
+task9_result: needs-rework
 task9_reviewed_date: "2026-04-29"
-task2b_state: fixed
+task2b_state: pending
 last_task2b_at: "2026-04-29T00:40:00+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-23T04:32:00+08:00"
 task6_state: reviewed
 task6_result: pass-light-edit
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-29T09:20:00+08:00"
 ---
 
 # DVFS 与功耗管理
