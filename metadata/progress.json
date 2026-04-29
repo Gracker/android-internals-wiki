@@ -1,72 +1,66 @@
 {
-  "generated_at": "2026-04-29T07:30:41+08:00",
+  "generated_at": "2026-04-29T08:32:03+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 112,
-    "ready-for-review": 106,
+    "finalized": 109,
+    "ready-for-review": 109,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-29T04:40:03+08:00",
+    "last_updated": "2026-04-29T08:32:03+08:00",
     "pipeline_stage_counts": {
-      "None": 33,
-      "ready-to-publish": 112,
-      "task2b_pending": 81,
+      "unknown": 33,
+      "ready-to-publish": 109,
+      "task2b_pending": 85,
       "task9_pending": 8,
-      "task6_pending": 15,
-      "'task2b_pending'": 1
+      "task6_pending": 15
     },
     "task6_state_counts": {
-      "None": 34,
+      "unknown": 34,
       "reviewed": 177,
       "revisiting": 38,
       "revising": 1
     },
     "task9_state_counts": {
-      "None": 38,
-      "reviewed": 199,
-      "pending": 12,
-      "'reviewed'": 1
+      "unknown": 38,
+      "reviewed": 200,
+      "pending": 12
     },
     "task2b_state_counts": {
-      "None": 40,
-      "fixed": 122,
-      "pending": 83,
-      "idle": 4,
-      "'pending'": 1
+      "unknown": 40,
+      "fixed": 120,
+      "pending": 87,
+      "idle": 3
     },
     "draft": 0,
     "None": 32
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "None": 33,
-      "ready-to-publish": 112,
-      "task2b_pending": 81,
+      "unknown": 33,
+      "ready-to-publish": 109,
+      "task2b_pending": 85,
       "task9_pending": 8,
-      "task6_pending": 15,
-      "'task2b_pending'": 1
+      "task6_pending": 15
     },
     "task6_state_counts": {
-      "None": 34,
+      "unknown": 34,
       "reviewed": 177,
       "revisiting": 38,
       "revising": 1
     },
     "task9_state_counts": {
-      "None": 38,
-      "reviewed": 199,
-      "pending": 12,
-      "'reviewed'": 1
+      "unknown": 38,
+      "reviewed": 200,
+      "pending": 12
     },
     "task2b_state_counts": {
-      "None": 40,
-      "fixed": 122,
-      "pending": 83,
-      "idle": 4,
-      "'pending'": 1
+      "unknown": 40,
+      "fixed": 120,
+      "pending": 87,
+      "idle": 3
     },
-    "last_updated": "2026-04-29T04:40:03+08:00"
+    "last_updated": "2026-04-29T08:32:03+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1863,24 +1857,24 @@
       "title": "EAS 能量感知调度",
       "chapter": "5.2",
       "section": "5.2",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-03-31",
       "applicable_versions": "Android 9 (API 28) - Android 16 (API 36)",
       "last_verified": "2026-03-31",
       "last_verified_against": "Linux kernel 6.6, Documentation/scheduler/sched-energy.rst",
       "confidence": "high",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-22",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-22T07:21:28+08:00"
+      "last_task9_at": "2026-04-29T08:31:09+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/03-big-little.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
@@ -1893,18 +1887,18 @@
       "last_verified": "2026-03-31",
       "last_verified_against": "ARM official documentation, Linux kernel 6.6",
       "confidence": "high  # 架构原理和 schedutil 机制描述经过 AOSP 源码和 ARM 官方文档双重验证",
-      "pipeline_stage": "'task2b_pending'",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "'reviewed'",
-      "task2b_state": "'pending'",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "'needs-rework'",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-22'",
-      "task9_reviewed_by": "'openclaw-task9'",
-      "last_task9_at": "'2026-04-22T11:30:00+08:00'"
+      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-29T08:31:09+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",

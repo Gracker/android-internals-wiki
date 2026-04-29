@@ -6368,3 +6368,24 @@
 - **位置**：L491（与 Perfetto 的关系）
 - **问题**：正文说“Perfetto 的 tracepoint 数据源部分依赖 eBPF 采集的数据”，容易把 Perfetto ftrace 数据源与 eBPF tracepoint 混同。常规 Perfetto tracepoint 采集主线是 ftrace/tracefs，eBPF 是另一类可观测路径。
 - **建议**：改成“Perfetto 可与 eBPF 产物互补；常规 ftrace 数据源不依赖 eBPF”。
+
+## [Task9 Deep Review] 5.2 EAS 能量感知调度 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L242-L250 全大核架构 capacity=837
+- **问题**：骁龙 8 Elite Performance 核 capacity≈837 的数值缺少一手来源或设备 sysfs/trace 证据。
+- **建议**：补 `/sys/devices/system/cpu/cpu*/cpu_capacity`、设备型号、内核版本；没有证据时改为“级差收窄”的定性描述。
+
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L144-L146 Snapdragon 8 Elite capacity≈837
+- **问题**：Performance 核 capacity≈837 缺少公开一手来源或设备 `cpu_capacity` 采样。
+- **建议**：补具体设备、kernel tag、`/sys/devices/system/cpu/cpu*/cpu_capacity` 输出；否则降级为“Prime 与 Performance 级差收窄”。
+
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-04-29
+- **类型**：知识盲区
+- **位置**：L163-L197 迁移机制
+- **问题**：GKI 6.12 已有 `CONFIG_SCHED_PROXY_EXEC`/`sched_proxy_exec` 入口，但章节未区分它与 RTG/vendor boost 的关系。
+- **建议**：补一段“Proxy Execution 解决锁持有者优先级反转，不等同于大小核选核；是否启用看 config/boot/sysfs”。
+

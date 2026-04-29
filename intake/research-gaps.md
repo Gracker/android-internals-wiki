@@ -11232,3 +11232,37 @@ MGLRU 在 Android common kernel / GKI / Pixel 分支中的启用状态缺少版�
 - 4.2
 - 4.3
 - 4.4
+
+## [2026-04-29] 5.2 EAS 能量感知调度 — 知识盲区
+
+### 盲区描述
+external-review 已命中 “GKI 6.12 改为 sum aggregation” 线索，但本轮复核 android16-6.12 common kernel 仍是 max aggregation。需要确认该说法是否来自 RFC、Pixel/vendor hook 或特定 OEM 分支。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 android16-6.12 tags、Pixel vendor kernel、`CONFIG_USE_VENDOR_GROUP_UTIL` / vendor hook 相关实现
+- 检索 uclamp sum aggregation RFC/patchset 与是否合入 mainline/GKI
+- 用目标设备 `/proc/sched_debug`、trace 和源码确认 rq 级 clamp 聚合口径
+
+### 关联章节
+- 5.2
+
+
+## [2026-04-29] 5.3 大小核架构 — 知识盲区
+
+### 盲区描述
+external-review 已命中 Proxy Execution、RTG、DSU-120 16KB 线索。本轮能确认 android16-6.12 有 `CONFIG_SCHED_PROXY_EXEC` 与 `sched_proxy_exec` 开关，但未确认 RTG 符号在 GKI common 存在，也未确认 DSU-120 存在 16KB page mode snoop-filter hash register。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Qualcomm/MediaTek/Pixel vendor kernel 中 RTG、`preferred_cluster`、`SCHED_BOOST_ON_BIG` 的具体分支
+- 核对 Proxy Execution 在 Android 16/17 设备上的 config、boot arg、sysfs enable 状态
+- 查 ARM DSU-120 TRM/whitepaper 是否公开 16KB page 与 snoop filter hash 相关寄存器
+
+### 关联章节
+- 5.3
+
