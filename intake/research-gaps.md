@@ -12133,3 +12133,75 @@ AVP 对硬件光追 (Ray Tracing) 的准入要求
 
 ### 外部 review 来源
 - 2026-04-29-11-18.9-external-review.md
+
+## [2026-04-29] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 知识盲区
+
+### 盲区描述
+ANGLE 针对 Vulkan 1.3 扩展的利用上限
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 Android 15 下 ANGLE 是否已开始利用 maintenance4 进一步精简资源绑定开销
+
+### 关联章节
+- 18.11
+
+### 外部 review 来源
+- 2026-04-29-11-18.11-external-review.md
+
+
+## [2026-04-29] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 知识盲区
+
+### 盲区描述
+AVP 16 对 ANGLE 版本的物理锁定
+
+### 重要程度
+高
+
+### 建议研究方向
+- 验证 Android 16 是否强制要求 com.android.angle 库必须具备特定的 NDK 兼容性标识
+
+### 关联章节
+- 18.11
+
+### 外部 review 来源
+- 2026-04-29-11-18.11-external-review.md
+
+
+## [2026-04-29] 18.12 Flutter 渲染管线 — 知识盲区
+
+### 盲区描述
+Impeller 针对 AVP 视频层的绕过
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究当 Flutter 页面包含视频内容时，Impeller 是否会主动退避以让出 HWC Overlay 名额给 AVP
+
+### 关联章节
+- 18.12
+
+### 外部 review 来源
+- 2026-04-29-11-18.12-external-review.md
+
+
+## [2026-04-29] 18.12 Flutter 渲染管线 — 知识盲区
+
+### 盲区描述
+16KB 下的 Skia 软渲染退化
+
+### 重要程度
+中
+
+### 建议研究方向
+- 验证在 16KB 环境下，低配设备回退到 Skia 软件后端后的物理页内存压力是否导致更频繁的 GC
+
+### 关联章节
+- 18.12
+
+### 外部 review 来源
+- 2026-04-29-11-18.12-external-review.md
+

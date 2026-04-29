@@ -197,3 +197,19 @@
 - **问题**：补充在 Perfetto 中利用 Android 15+ 增强的 `vulkan.submission` 轨道识别“Over-Synchronization”的方法。若看到密集的 Barrier 切片且 GPU 轨道出现大量空隙，即说明 App 的显式同步策略过于保守，扼杀了 GPU 的并行度。
 - **建议**：补充在 Perfetto 中利用 Android 15+ 增强的 `vulkan.submission` 轨道识别“Over-Synchronization”的方法。若看到密集的 Barrier 切片且 GPU 轨道出现大量空隙，即说明 App 的显式同步策略过于保守，扼杀了 GPU 的并行度。
 - **来源**：Gemini 外部 review (2026-04-29-11-18.9-external-review.md)
+
+## [External Review] 18.11 ANGLE（GLES-over-Vulkan 翻译层） — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：SPIR-V 轨道特征
+- **问题**：补充在 Perfetto 中利用 Android 16 增强的 vulkan.pipeline_cache 轨道识别 SDM 生效状态的方法。若 cache_hit 比例接近 100% 且无长耗时的 vkCreateGraphicsPipelines slice，即说明 SDM 预编译红利成功闭环。
+- **建议**：补充 Perfetto vulkan.pipeline_cache 轨道 SDM 识别方法
+- **来源**：Gemini 外部 review (2026-04-29-11-18.11-external-review.md)
+
+
+## [External Review] 18.12 Flutter 渲染管线 — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：Raster 轨道深度利用
+- **问题**：补充在 Perfetto 中利用 Android 15+ 增强的 EntityPass::* 轨道识别 Over-draw 的方法。若 Raster 线程出现密集 EntityPass 切片，即说明该帧正在处理极高复杂度的矢量路径，应引导优化 Widget 树层级。
+- **建议**：补充 Perfetto EntityPass::* 轨道 Over-draw 识别方法
+- **来源**：Gemini 外部 review (2026-04-29-11-18.12-external-review.md)
+

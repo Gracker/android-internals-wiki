@@ -8838,6 +8838,84 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T21:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "18.11",
+      "section_title": "18.11 ANGLE（GLES-over-Vulkan 翻译层）",
+      "priority": 95,
+      "reason": "[External Review] 18.11 ANGLE 存在P0性能模型偏置与P1重要缺失，需回炉修正",
+      "review_issues": [
+        {
+          "type": "P0 事实错误",
+          "location": "性能特征 & 核心架构",
+          "detail": "[P0][性能模型][动态渲染对冲收益] 认为ANGLE翻译损耗是不可避免的系统常数。Android 15 Vulkan 1.3动态渲染使ANGLE模拟FBO切换时CPU指令开销降低约25%，直接对冲翻译开销。",
+          "suggestion": "明确撤销\"性能更低\"的定性描述，更新为\"翻译开销已得到实质性对冲\"。",
+          "evidence": [
+            "2026-04-29-11-18.11-external-review.md"
+          ]
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "性能特征",
+          "detail": "[P1][分发演进][SDM云端编译红利] 未提及Android 16 SDM框架分发预编译SPIR-V缓存文件解决Shader编译抖动。",
+          "suggestion": "增加\"云端预热\"章节，告知开发者2026年ANGLE已支持即插即用流水线缓存。",
+          "evidence": [
+            "2026-04-29-11-18.11-external-review.md"
+          ]
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "性能特征",
+          "detail": "[P1][物理开销][16KB Page下的Namespace隔离] 仅侧重库文件体积，未提及16KB分页下多层Namespace导致RELRO段重复映射产生约4MB~8MB物理内存阶跃。",
+          "suggestion": "加入针对16KB设备的PSS成本预警。",
+          "evidence": [
+            "2026-04-29-11-18.11-external-review.md"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T22:12:00+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-11-18.11-external-review.md"
+    },
+    {
+      "section": "18.12",
+      "section_title": "18.12 Flutter 渲染管线",
+      "priority": 95,
+      "reason": "[External Review] 18.12 Flutter 渲染管线 存在P0性能评估偏置与P1重要缺失，需回炉修正",
+      "review_issues": [
+        {
+          "type": "P0 事实错误",
+          "location": "渲染管线全景 & Impeller 渲染后端",
+          "detail": "[P0][引擎演进][Impeller与动态渲染集成] 认为Impeller性能优势主要来自Shader预编译。Flutter 3.29+ Impeller已全面适配Vulkan 1.3动态渲染，CPU端Driver负载降低约20%，绘图指令提交效率已对齐Native C++。",
+          "suggestion": "明确指出Impeller领先地位是\"预编译Shader\"与\"动态渲染指令集\"双轮驱动，而非单一红利。",
+          "evidence": [
+            "2026-04-29-11-18.12-external-review.md"
+          ]
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "版本边界",
+          "detail": "[P1][底层加速][16KB Page对引擎加载的增益] 未提及分页机制对Flutter冷启动影响。16KB环境下libflutter.so页表条目减少75%，冷启动I/O阻塞缩短约10%-12%。",
+          "suggestion": "增加针对16KB设备的性能预期修正。",
+          "evidence": [
+            "2026-04-29-11-18.12-external-review.md"
+          ]
+        },
+        {
+          "type": "P1 重要缺失",
+          "location": "Platform Views 嵌入",
+          "detail": "[P1][同步演进][Merged Model消除撕裂感] 线程合并描述仅限于减少上下文切换。核心视觉收益是彻底解决Platform View滑动时的异步偏移抖动。",
+          "suggestion": "补充\"零抖动\"的技术背书。",
+          "evidence": [
+            "2026-04-29-11-18.12-external-review.md"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T22:12:00+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-11-18.12-external-review.md"
     }
   ],
   "completed": [
