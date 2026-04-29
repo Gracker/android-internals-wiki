@@ -213,3 +213,21 @@
 - **建议**：补充 Perfetto EntityPass::* 轨道 Over-draw 识别方法
 - **来源**：Gemini 外部 review (2026-04-29-11-18.12-external-review.md)
 
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L146 GBL 与 `boottime.bootloader.*`
+- **问题**：GBL 官方文档强调 UEFI App、AVB、Fastboot、slot selection 等标准化，但当前未看到它直接保证 `boottime.bootloader.*` 跨厂商可比的证据；bootstat 中 bootloader 分段事件也早于 GBL 存在。
+- **建议**：把 GBL 标准化与 bootstat bootloader 事件拆开写；若保留“跨厂商可比”，补 source.android.com 或 AOSP bootloader 指标规范引用。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L316-L328 Pixel 8 / Android 16 启动分段基线
+- **问题**：表格给出 Pixel 8 Android 16 典型冷启动各阶段耗时，但来源写“公开 bootstat 输出和 AOSP 默认配置估算”，缺少设备、构建号、采样次数、bootstat 原始输出和 Perfetto/日志对照。
+- **建议**：补 3-5 次冷启动 bootstat -l 原始数据、构建号、是否 OTA 后首启、是否已解锁/加密状态；没有实测前改成“示意分段”，不要绑定 Pixel 8。
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L264-L279 Perfetto `android_freezer_events` 查询
+- **问题**：正文写 Perfetto v49+ 提供 `android.freezer` 模块和 `android_freezer_events` 表，但本轮未找到公开 Perfetto 文档中的稳定表 schema。若表名随 stdlib/Android trace_processor 版本变化，读者会直接查不到。
+- **建议**：补 trace_processor 版本、stdlib 文档或实际 `SELECT * FROM sqlite_master WHERE name LIKE '%freezer%'` 结果；未确认前改为 dumpsys/logcat/ftrace 的通用观察路径。
+
