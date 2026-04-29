@@ -9509,5 +9509,19 @@
       ],
       "timestamp": "2026-04-29T00:06:37+08:00"
     }
+  ],
+  "task2b_history": [
+    {
+      "date": "2026-04-29T10:45:00+08:00",
+      "sections": [
+        "05.06",
+        "05.07"
+      ],
+      "action": "rework",
+      "details": [
+        "05.06: +HWC 4.0 onVsyncIdle极速挂起, +Energy Limiter能量限额制",
+        "05.07: +Energy Limiter配额制描述, +sched_ext可编程调度蓝图"
+      ]
+    }
   ]
 }
