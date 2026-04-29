@@ -6,7 +6,7 @@ status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
@@ -29,9 +29,9 @@ sources:
     path: "https://web.dev/articles/rail"
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
-review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修3处（「这意味着」x2 / 「首先其次最后」x1 禁用词替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
-pipeline_stage: task6_pending
-task6_state: revisiting
+review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。小修2处L1禁用词（「可以看到」x1/「其实」x1）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -73,7 +73,7 @@ task2b_result: fixed
 
 用户也许无法区分 500ms 和 600ms 的启动时间，但对触摸响应的延迟极其敏感。一个设备启动再快，如果触摸之后画面纹丝不动，用户会觉得这台机器"卡"。这就是为什么 Google 认为，在性能优先级排序中，**UI 渲染管线的流畅性高于一切**——包括应用启动速度。
 
-但站在用户体验治理角度，响应速度并不是和流畅性割裂的独立问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢其实是同一条体验链上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
+但站在用户体验治理角度，响应速度并不是和流畅性割裂的独立问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢就是同一条体验链上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
 
 了解响应速度的完整路径之后，我们就能在 Perfetto 中精准定位：延迟到底发生在 Input 分发阶段、App 主线程处理阶段、还是渲染合成阶段。每一种瓶颈的优化方向完全不同，搞清楚"慢在哪里"是解决问题的第一步。
 
@@ -159,7 +159,7 @@ VSync-app 信号到来后，Choreographer.doFrame() 被触发，主线程依次�
 
 最后，SurfaceFlinger 在 VSync-sf 信号到来时，将所有 Layer 的 GraphicBuffer 合成，通过 Hardware Composer（HWC）提交给显示控制器，最终显示在屏幕上。
 
-在 Perfetto 中，我们可以在对应的 App 进程里看到主线程的 "Choreographer#doFrame" slice，以及 RenderThread 的 GPU 渲染工作。SurfaceFlinger 进程中可以看到 "Commit" 和各 Layer 的合成操作。
+在 Perfetto 中，我们可以在对应的 App 进程里看到主线程的 "Choreographer#doFrame" slice，以及 RenderThread 的 GPU 渲染工作。SurfaceFlinger 进程中有 "Commit" 和各 Layer 的合成操作。
 
 [图：完整的响应路径时序图：触摸 → InputReader → InputDispatcher → Binder → App主线程 → Choreographer → RenderThread → SurfaceFlinger → 屏幕]
 
