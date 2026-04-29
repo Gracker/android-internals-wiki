@@ -46,16 +46,16 @@ tags:
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-rework_count: 2
-rework_date: "2026-04-27"
+rework_count: 3
+rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-29T11:40:00+08:00"
+last_task2b_at: "2026-04-30T07:43:21.194303"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T12:29:31+08:00"
@@ -247,7 +247,7 @@ View.setRenderEffect(effect)                      [frameworks/base/core/java/and
 
 RenderEffect 和 Hardware Layer 的底层隔离层级不同，内存开销和 GPU 调度友好度也相应不同：
 
-- `RenderEffect` 是 **Shader 级集成**。blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性，Skia 在绘制时能够对同一条链上的多个 filter 做**算子融合**（operator fusion），并复用内部的 Scratch Texture，避免每个 filter 各申请一块离屏缓冲区。对于动态内容（频繁 invalidate 的 View），RenderEffect 的内存开销通常更低，且更利于 GPU 连续执行。
+- `RenderEffect` 是 **Shader 级集成**。blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性（`RenderProperties::setImageFilter()`），Skia 在绘制时沿标准 `SkImageFilter` 管线处理。当 filter 链中的子类组合满足 Skia 内部的融合条件时，Skia 可能对相邻 filter 做算子融合并复用 Scratch Texture，减少中间缓冲区分配——但这取决于具体 filter 类型和参数组合，不是所有 RenderEffect 链都能自动触发。总体而言，对于动态内容（频繁 invalidate 的 View），RenderEffect 的内存开销通常低于 Hardware Layer，且更利于 GPU 连续执行。
 - `LAYER_TYPE_HARDWARE` 是 **Buffer 级隔离**。HWUI 强制为该 View 创建一个独立的 FBO（Framebuffer Object）并缓存渲染结果。属性动画阶段只需要在纹理上做矩阵变换，不重新执行 draw——这正是 Hardware Layer 的加速来源。但 FBO 是独占的 GPU 内存，内容每帧都变时缓存重建的开销会超过加速收益。
 
 处理 blur、阴影或 shader 效果时，优先用 `RenderEffect` 表达效果，再通过 Perfetto 的 GPU / FrameTimeline 观察帧时间和显存压力。只有在属性动画需要缓存静态纹理的场景里，才考虑手动打开 Hardware Layer。对动态内容，RenderEffect 在内存占用和 GPU 调度效率上都优于 Hardware Layer。
@@ -260,11 +260,13 @@ Android 13 引入 AGSL（Android Graphics Shading Language），底层是 SkSL�
 // AGSL shader 示例
 RuntimeShader shader = new RuntimeShader(
     "uniform shader inputNode;"
+    "uniform float2 resolution;"
     "half4 main(float2 fragCoord) {"
     "    float2 uv = fragCoord / resolution;"
     "    return inputNode.eval(uv * resolution);"
     "}"
 );
+shader.setColorUniform("resolution", Color.BLACK); // 示意：需通过 setInputShader 或 uniform 设置实际分辨率
 RenderEffect effect = RenderEffect.createRuntimeShaderEffect(shader, "inputNode");
 view.setRenderEffect(effect);
 ```
@@ -361,12 +363,16 @@ Compose 判断所有参数都是 stable 且值没变化时，就跳过重组。�
 @Composable
 fun ItemList(items: List<String>) { ... }
 
-// ✅ 标注 @Immutable 或使用 kotlinx.collections.immutable
+// ✅ 标注 @Immutable + 使用不可变集合
 @Immutable
-data class ItemListState(val items: List<String>)
+data class ItemListState(val items: ImmutableList<String>)
 
 @Composable
 fun ItemList(state: ItemListState) { ... }
+
+// ⚠️ 注意：@Immutable 是对编译器的承诺
+// 如果内部用了标准 List<String>，Compose 仍无法确认内容不变
+// 推荐使用 kotlinx.collections.immutable.ImmutableList
 ```
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/performance — Stable 类型和 Strong Skipping 模式]

@@ -37,17 +37,17 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: 2026-04-28T16:21:00+08:00
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-28
-task2b_state: pending
+task2b_state: fixed
 task2b_result: pending
-last_task2b_at: '2026-04-24T09:54:00+08:00'
+last_task2b_at: "2026-04-30T07:43:21.194303"
 ---
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化
@@ -385,12 +385,12 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 ### PTHREAD_STACK_MIN 与 FixStackSize（16KB Page Size 场景）
 
 **源码位置**：
-- `bionic/libc/include/pthread.h` — PTHREAD_STACK_MIN 定义
-- `bionic/libc/pthread.c` — FixStackSize 实现
-- `runtime/thread.cc` — ART 线程创建时调用 FixStackSize
+- `bionic/libc/include/pthread.h` — PTHREAD_STACK_MIN 定义（ARM64 固定为 16384）
+- `bionic/libc/bionic/pthread_create.cpp` — FixStackSize 实现
+- `art/runtime/thread.cc` — ART 线程创建时调用 FixStackSize
 
 **关键逻辑**：
-1. `PTHREAD_STACK_MIN` 在 ARM64 Android 上定义为 16KB（16 × PAGE_SIZE）
+1. `PTHREAD_STACK_MIN` 在 ARM64 Android 上定义为 `16384`（16KB），是固定常量而非 `PAGE_SIZE` 的倍数。4KB 页系统中 PTHREAD_STACK_MIN 仍然是 16KB，不是 4KB
 2. `pthread_attr_setstacksize()` 检查请求大小 < PTHREAD_STACK_MIN 时返回 EINVAL
 3. `FixStackSize()` 在 ART 创建线程时使用，确保栈大小满足 PTHREAD_STACK_MIN
 4. 默认线程栈大小为 1MB，仅活跃页面消耗物理内存
@@ -399,9 +399,9 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 | 方面 | 4KB Page 系统 | 16KB Page 系统 |
 |------|-------------|--------------|
-| PTHREAD_STACK_MIN | 4KB（系统 page size） | 16KB（系统 page size） |
+| PTHREAD_STACK_MIN | 16KB（固定常量 16384） | 16KB（固定常量 16384） |
 | 最小分配粒度 | 4KB | 16KB |
-| 小线程栈内部碎片 | 较低 | 较高（min 增加 4×） |
+| 小线程栈内部碎片 | 较低 | 较高（min 分配粒度增加 4×） |
 | 栈溢出检测 | 4KB guard page | 16KB guard page |
 | 页表内存（1GB 映射） | 2MB PTE | 0.5MB PTE（节省 75%） |
 
