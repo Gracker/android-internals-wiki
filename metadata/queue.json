@@ -7068,6 +7068,93 @@
       "added_at": "2026-04-29T08:31:09+08:00",
       "status": "pending",
       "updated_at": "2026-04-29T08:31:09+08:00"
+    },
+    {
+      "section": "5.4",
+      "section_title": "5.4 DVFS 与功耗管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.4 DVFS 与功耗管理存在源码基线、schedutil 代码、SCMI trace 与 Perfetto SQL 错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码路径/版本错误",
+          "location": "frontmatter L8-L14、L230（android16-6.6 / cpufreq_schedutil.c）",
+          "detail": "正文和 sources 把已验证内核写成 Linux 6.6 (android16-6.6)。复核 android.googlesource.com/kernel/common 公开分支可见 android15-6.6 与 android16-6.12，未发现 android16-6.6 分支。Android 16 口径应按 android16-6.12，或把 Linux 6.6 明确限定到 Android 15/GKI 6.6。",
+          "suggestion": "修正 last_verified_against 和 sources；按 android15-6.6、android16-6.12 分开写版本边界，不要把 6.6 写成 Android 16 基线。"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L209-L226（sugov_get_util 简化代码与 util_eff 公式）",
+          "detail": "代码片段 `cpu_util_cfs()` → `uclamp_rq_util_with()` → `sugov_apply_iowait_boost()` 不是 android15-6.6 或 android16-6.12 的实际实现。android15-6.6 的 `sugov_get_util(struct sugov_cpu*)` 使用 `cpu_util_cfs_boost()`、`cpu_bw_dl()`、`effective_cpu_util(..., FREQUENCY_UTIL, NULL)`；iowait 在 `sugov_update_single_common()` 中由 `sugov_iowait_apply()` 另行处理。android16-6.12 签名变为 `sugov_get_util(struct sugov_cpu*, unsigned long boost)`，还引入 `scx_cpuperf_target()`、`effective_cpu_util(..., &min, &max)` 和 `sugov_effective_cpu_perf()`。",
+          "suggestion": "替换为两段真实源码路径：android15-6.6 与 android16-6.12；说明 iowait boost 的调用顺序和 GKI 6.12 中 sched_ext/CPU performance path 的差异。"
+        },
+        {
+          "level": "P0",
+          "type": "Trace 事件错误",
+          "location": "L342-L358（scmi/scmi_perf_level_get）",
+          "detail": "android16-6.12 `include/trace/events/scmi.h` 没有 `scmi_perf_level_get` 事件，公开事件是 `scmi_fc_call`、`scmi_xfer_begin`、`scmi_xfer_response_wait`、`scmi_xfer_end`、`scmi_rx_done`、`scmi_msg_dump`。`drivers/firmware/arm_scmi/perf.c` 在 PERF_LEVEL_GET 快通道路径调用的是 `trace_scmi_fc_call(SCMI_PROTOCOL_PERF, PERF_LEVEL_GET, ...)`。当前 Perfetto 配置不可直接采集。",
+          "suggestion": "把事件改成 `scmi/scmi_fc_call` 并说明需要用 protocol_id/msg_id 过滤 PERF_LEVEL_GET；如果厂商分支有 `scmi_perf_level_get`，标注具体分支和 commit。"
+        },
+        {
+          "level": "P0",
+          "type": "工具查询错误",
+          "location": "L364-L386（Perfetto SQL `cpu_frequency_slices`）",
+          "detail": "Perfetto 标准库不直接提供 `cpu_frequency_slices` 表。CPU 频率通常通过 `INCLUDE PERFETTO MODULE linux.cpu.frequency;` 后查询 `cpu_frequency_counters`，或从 counter 数据自行派生持续区间。当前 SQL 复制到 trace_processor 会报表不存在。",
+          "suggestion": "改为 `cpu_frequency_counters(cpu, freq/value, dur...)` 的标准库查询；如需 `cpu_frequency_slices`，先在文中创建 view。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T09:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "5.5",
+      "section_title": "5.5 Thermal 管控",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.5 Thermal 管控存在 AOSP 路径、ProfilingManager thermal trigger 错误与 Android 16 headroom 缺失，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md",
+        "src/part1-fundamentals/ch05-cpu-power/05-thermal.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码路径错误",
+          "location": "frontmatter L13、L222、L630（ThermalManagerService.java）",
+          "detail": "Android 16 QPR2 frameworks/base 中 ThermalManagerService 的路径是 `services/core/java/com/android/server/power/thermal/ThermalManagerService.java`，正文写成 `services/core/java/com/android/server/power/ThermalManagerService.java`，缺少 `thermal/` 子目录。",
+          "suggestion": "按当前 AOSP 路径修正源码锚点；若兼容旧版本路径，单独列版本表。"
+        },
+        {
+          "level": "P0",
+          "type": "API/源码错误",
+          "location": "L381-L388（Android 16 热阈值触发 ProfilingTrace）",
+          "detail": "AOSP android16-qpr2 `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java` 中可请求的触发器包括 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANR`，以及带 flag 的 running trace / kill 类触发器；未发现 thermal trigger。Profiling 模块中也未检索到 thermal 触发实现。当前“跨越热阈值自动生成 ProfilingTrace / THERMAL_STATUS_MODERATE 自动触发”会把读者带到不存在的 AOSP API。",
+          "suggestion": "删除热阈值自动 ProfilingTrace 的确定表述；改为手动 Perfetto thermal/freq 采集，或仅在有 OEM 文档时标注厂商特性。"
+        },
+        {
+          "level": "P1",
+          "type": "版本差异/知识盲区",
+          "location": "L288-L307、L586-L600（Android 16 headroom 能力）",
+          "detail": "章节只讲 `PowerManager.getThermalHeadroom()`，没有覆盖 Android 16 `SystemHealthManager.getCpuHeadroom(CpuHeadroomParams)` / `getGpuHeadroom(GpuHeadroomParams)`。AOSP android16-qpr2 文档注释明确这些 API 用于估算 CPU/GPU capacity headroom，返回有效范围 [0,100]，可与 thermal status/headroom 一起判断降 CPU 还是 GPU 负载。",
+          "suggestion": "新增“热状态 vs 算力余量”的小节：`getThermalHeadroom()` 看接近 SEVERE 的热余量，`getCpu/GpuHeadroom()` 看近期 CPU/GPU 资源余量；补 UnsupportedOperationException、NaN、最小轮询间隔和不要在关键线程同步调用的边界。"
+        },
+        {
+          "level": "P1",
+          "type": "原理链断裂",
+          "location": "L220-L228、L441-L447（ThermalManagerService 执行系统级降温动作）",
+          "detail": "正文把限制 JobScheduler、降低亮度、关闭外设等动作归到 ThermalManagerService 直接执行。android16-qpr2 的 ThermalManagerService 主要负责接收 HAL 温度、计算 skin status、通知 status/event listener，并在 SHUTDOWN 状态走关机路径。其他系统动作需要分别指向具体订阅者或厂商 thermal engine，当前缺少调用链证据。",
+          "suggestion": "改成“ThermalManagerService 发布状态，系统组件/厂商策略再执行动作”；为 JobScheduler、Display、radio/charging 分别补源码锚点，无法验证的降为厂商策略示例。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T09:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
