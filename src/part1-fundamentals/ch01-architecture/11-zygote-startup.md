@@ -2,7 +2,7 @@
 title: "Zygote 机制与启动性能优化"
 chapter: "1.11"
 section: "1.11"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-18"
@@ -42,7 +42,7 @@ sources:
     path: "https://developer.android.com/reference/android/app/ZygotePreload"
 tags: [zygote, fork, startup, preload, cow, usap, app-zygote, webview]
 related_chapters: ["1.2", "1.3", "8.2", "8.3"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -54,7 +54,7 @@ task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-24T04:56:29+08:00"
+last_task2b_at: "2026-04-29T12:42:48.185623"
 ---
 
 # 1.11 Zygote 机制与启动性能优化
@@ -107,6 +107,8 @@ Android 不是传统 Linux 桌面那种“每个进程启动时从零加载运�
 Zygote 的思路很直接：把所有“几乎每个进程都会用到”的公共初始化工作前置到系统启动阶段做一次，然后让后续子进程继承这份状态。`init` 拉起 primary zygote 之后，Zygote 会先完成 preload，再 fork 出 `system_server`，后续普通 App 进程也都从它继续派生。这样做的核心收益有两个。
 
 第一个收益是启动速度。framework 层的常见类、基础资源、共享库已经在内存里，子进程不需要重新把它们装起来。第二个收益是内存效率。子进程刚 fork 出来时，和 Zygote 共享同一批只读页面，只有某个页面第一次被写入时，内核才会真的复制一份出去。这就是 COW（Copy-on-Write）的意义。
+
+在 16KB Page Size 的设备上，COW 的收益会进一步放大。页表条目数量减少约 75%，fork() 复制虚拟地址空间（`dup_mmap`）的耗时随之缩短。这个效果在高内存压力场景更明显——页表越精简，fork 期间需要遍历和复制的 VMA 链表条目就越少。
 
 这一点也决定了 Zygote 优化的边界。它擅长解决“公共初始化不要重复做”，但它解决不了 App 自己的业务初始化。你在 `Application.onCreate()` 里主动初始化十几个 SDK，Zygote 并不会替你背锅。
 
@@ -295,6 +297,8 @@ ZygoteServer() {
 ```
 
 `mUsapPoolSupported` 字段在 ZygoteServer 构造时即被固定，Child Zygote 的 `ZygoteServer()` 无参构造将 `mUsapPoolSupported` 设为 `false`，导致 poll 循环中 USAP socket 和 pipeFDs 的注册逻辑被完全跳过。源码路径：`frameworks/base/core/java/com/android/internal/os/ZygoteServer.java`，行 95-130。
+
+**USAP Pool 在 AOSP 16 中的默认状态：** 即使在 Primary Zygote 上，USAP Pool 也默认关闭（`mUsapPoolEnabled = false`）。OEM 可以通过 `persist.device_config.activity_manager_native_boot.usap_pool_enabled` 系统属性开启。此外，USAP 明确不支持 App Zygote、WebViewZygote 等 Child Zygote 派生的子孵化器——这些路径必须走传统 fork，不能从 USAP pool 拿现成进程。
 
 
 ## 版本演进里真正和 Zygote 相关的变化

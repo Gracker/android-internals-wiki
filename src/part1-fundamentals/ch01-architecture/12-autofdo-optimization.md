@@ -2,7 +2,7 @@
 title: "AutoFDO 反馈导向编译优化"
 chapter: "1.12"
 section: "1.12"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-20"
@@ -44,10 +44,11 @@ related_chapters:
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T20:20:00+08:00"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed
+last_task2b_at: "2026-04-29T12:42:48.185623"
 task2b_state: fixed
 task6_result: pass-light-edit
 task9_result: pass-tech-review
@@ -182,6 +183,8 @@ create_llvm_prof --profile perf_inject_kernel.data --profiler text --binary vmli
 这里有三个约束。
 
 第一，`create_llvm_prof` 的输入是 AutoFDO text profile，不是 `perf.data`，也不是还没拆分 binary 的原始 trace。第二，`vmlinux` 必须是未剥离版本，否则行号和符号映射会断。第三，内核场景要显式指定 `--format=extbinary` 和 `--prof_sym_list=false`，前者对应当前内核 AutoFDO 文档使用的输出格式，后者用来避免把未出现在 profile 里的内核函数一律当成冷函数。
+
+`--prof_sym_list=false` 这一步如果漏掉，后果比较严重：`create_llvm_prof` 默认会把未出现在 profile 中的函数标记为冷函数，编译器会对这些函数降低优化级别或重新排列代码位置。内核函数成千上万，采样覆盖率不可能 100%，如果未覆盖到的热点函数（如调度器关键路径、中断处理）被误降级，内核整体性能反而可能倒退。
 
 ### 编译器如何利用 Profile
 
@@ -369,6 +372,8 @@ simpleperf stat -e cycles,instructions,cache-misses,branch-misses --app com.exam
 | Android 15 / `android15-6.6` | kernel AutoFDO 进入 GKI `vmlinux`，profile 路径为 `android/gki/aarch64/afdo/` |
 | Android 16 / `android16-6.12` | kernel AutoFDO 扩展到 `gki/aarch64/afdo/`，官方 blog 公布了 Boot、Cold Launch、Binder RPC、HWBinder、`syscall_mmap` 等基准数据 |
 | 后续 roadmap | 官方 blog 提到 `android17-6.18`、GKI module、vendor module 和更多构建目标；这些计划还没进入本文的已验证适用范围 |
+
+Android 17 的一个重要演进方向是 **模块化 AutoFDO**：AFDO 覆盖范围从单体 `vmlinux` 扩展到独立编译的 GKI 内核模块（`*.ko`）。这意味着 vendor module 和 GKI module 也可以各自拥有独立的 AFDO profile，而不再依赖 `vmlinux` 全局 profile 的间接覆盖。OEM 可以针对自研模块单独采集、生成和应用 profile，粒度更细，收益更可控。
 
 Baseline Profiles / ART Service 的演进放在相关章节单独讨论，这里不再并表。
 
