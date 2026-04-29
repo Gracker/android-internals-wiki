@@ -554,7 +554,7 @@
     {
       "section": "07.12",
       "section_title": "07.12",
-      "priority": 85,
+      "priority": 95,
       "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
       "review_issues": [
         {
@@ -580,16 +580,35 @@
           "location": "07.12",
           "detail": "**：未覆盖 1.1.0 版本对 `AppCompat` 的支持。",
           "suggestion": ""
+        },
+        {
+          "type": "工具链",
+          "location": "AsyncLayoutInflater 限制",
+          "detail": "- [P0][工具链][AsyncLayoutInflater 限制]\n- **原文问题**：提到 `AsyncLayoutInflater 1.1.0` 改进了对复杂布局的支持，暗示 Fragment 兼容性提升。\n- **技术背景**：由于 `FragmentManager` 事务严格限制在 UI 线程，`<fragment>` 标签的解析是非线程安全的。\n- **核验结论**：在最新 AndroidX 源码中，遇到 `<fragment>` 会直接触发 `RuntimeException` 并被 `AsyncLayoutInflater` 捕获后回退到主线程同步加载。\n- **建议修正方向**：明确告知开发者：异步加载必须移除 `<fragment>`，改用 `FragmentContainerView` 配合主线程回调动态挂载。",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链",
+          "location": "ViewBinding 性能代价",
+          "detail": "- [P1][原理链][ViewBinding 性能代价]\n- **原文问题**：仅将 ViewBinding 视为“语法糖”，未提及初始化开销。\n- **技术背景**：ViewBinding 生成的 `bind()` 方法通过递归 `findViewById` 寻找所有带 ID 的 View。\n- **核验结论**：在复杂 View 树下，这笔开销与 `inflate` 本身相当。\n- **建议补充方向**：建议在高性能场景（如 RV 列表）下，优先使用 `LayoutInflater.Factory2` 直接 `new` 出核心控件，或通过基准测试评估 ViewBinding 的初始化占比。",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异",
+          "location": "Android 15 Stretch 优化",
+          "detail": "- [P1][版本差异][Android 15 Stretch 优化]\n- **原文问题**：未提及 Android 15 针对 View 树遍历的底层优化。\n- **技术背景**：Android 15 引入了更智能的渲染意图感知，减少了边缘回弹（OverScroll）时的额外 measure pass。\n- **建议补充方向**：在“量化关系”章节提及 Android 15 带来的回弹平滑度提升。",
+          "suggestion": ""
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "pending",
+      "source_file": "2026-04-29-10-7.12-external-review.md"
     },
     {
       "section": "07.13",
       "section_title": "07.13",
-      "priority": 85,
+      "priority": 95,
       "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
       "review_issues": [
         {
@@ -597,11 +616,30 @@
           "location": "原理链完整性",
           "detail": "",
           "suggestion": ""
+        },
+        {
+          "type": "架构演进",
+          "location": "Android 16 桌面模式",
+          "detail": "- [P1][架构演进][Android 16 桌面模式]\n- **原文问题**：默认 SystemUI 仅负责手机端单一状态栏和通知。\n- **技术背景**：Android 16 引入了原生的桌面窗口管理（Desktop Windowing），SystemUI 需同时渲染外部显示器的任务栏（Taskbar）、多桌面及通用光标（Universal Cursor）。\n- **核验结论**：WM Shell 中的 `DesktopModeController` 会与 SystemUI 频繁交互，导致连接显示器时 SystemUI 进程出现明显的 CPU/显存阶跃。\n- **建议修正方向**：在“组件边界”部分增加桌面模式说明，强调多显示器环境下 SystemUI 的双重角色。",
+          "suggestion": ""
+        },
+        {
+          "type": "渲染瓶颈",
+          "location": "M3 Expressive 特效",
+          "detail": "- [P1][渲染瓶颈][M3 Expressive 特效]\n- **原文问题**：分析卡顿时未提及实时模糊和弹簧动画的开销。\n- **技术背景**：Flexiglass 默认集成了大量 Material 3 Expressive 效果。\n- **核验结论**：在 120Hz 下，大面积实时模糊会导致 RenderThread 的 `DrawFrame` 耗时显著增加，尤其是在折叠屏展开态下。\n- **建议补充方向**：在“常见卡顿形态”中增加“特效过载”场景，指导开发者如何通过 `debug.hwui.disable_blur_visual_feedback` 验证瓶颈。",
+          "suggestion": ""
+        },
+        {
+          "type": "内存画像",
+          "location": "PSS 阶跃",
+          "detail": "- [P2][内存画像][PSS 阶跃]\n- **建议**：补充 Android 15/16 下 SystemUI 的内存基放数据。由于切换到 Compose 和 Flexiglass 架构，其基础 RSS 占用比旧版系统提升了约 30% 以上。应告知分析人员：这是“架构换灵活性”的正常代价，而非泄露。",
+          "suggestion": ""
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "pending",
+      "source_file": "2026-04-29-10-7.13-external-review.md"
     },
     {
       "section": "07.14",
@@ -5765,7 +5803,7 @@
     {
       "section": "7.10",
       "section_title": "图片与 Bitmap 性能",
-      "priority": 85,
+      "priority": 95,
       "reason": "[External Review] inSampleSize 取整逻辑陈旧；Coil 3.0 不使用 BitmapPool 原因未充分说明",
       "review_issues": [
         {
@@ -5785,15 +5823,34 @@
           "evidence": [
             "Coil 3.0 官方文档"
           ]
+        },
+        {
+          "type": "内存模型",
+          "location": "Ultra HDR Gainmap",
+          "detail": "- [P1][内存模型][Ultra HDR Gainmap]\n- **原文问题**：Bitmap 内存计算仅考虑 SDR 模式（ARGB_8888）。\n- **技术背景**：Android 14+ 默认支持 Gainmap。解码此类图时，GPU 需同时维护基础层和 Gainmap 掩码层。\n- **核验结论**：单张图片在显存中的真实开销比计算值高约 1.25x。在长列表中，这会导致显存水位（VRAM Usage）更早触顶。\n- **建议修正方向**：在“各 Bitmap.Config 内存开销”部分增加 Gainmap 特殊说明，建议在低端设备上显式通过 `setGainmap(null)` 剔除 HDR 层以保流畅。",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链",
+          "location": "ImageDecoder 优势",
+          "detail": "- [P1][原理链][ImageDecoder 优势]\n- **原文问题**：将 `setTargetSize` 简单描述为 `inSampleSize` 的替代。\n- **技术背景**：`ImageDecoder` 采用 Internal Sampling。\n- **核验结论**：它在单次解码流水线中完成缩放，避免了 `BitmapFactory` 常见的“大图缓冲区”分配。\n- **建议补充方向**：明确指出使用 `ImageDecoder` 可显著降低解码过程中的 **内存峰值 (Memory Spikes)**，这对减少 OOM 崩溃至关重要。",
+          "suggestion": ""
+        },
+        {
+          "type": "工具链",
+          "location": "Android 15 异步预取",
+          "detail": "- [P2][工具链][Android 15 异步预取]\n- **建议**：补充 Android 15 对 `Bitmap.prepareToDraw()` 的增强。在 120Hz 下，手动调用预取能更好地利用 RenderThread 的空闲窗口，建议配合 `Choreographer.CALLBACK_COMMIT` 使用。",
+          "suggestion": ""
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "pending",
+      "source_file": "2026-04-29-09-7.10-external-review.md"
     },
     {
       "section": "7.11",
       "section_title": "WebView 性能",
-      "priority": 85,
+      "priority": 95,
       "reason": "[External Review] Renderer 进程崩溃后恢复逻辑描述不完整",
       "review_issues": [
         {
@@ -5804,15 +5861,34 @@
           "evidence": [
             "WebViewClient.java"
           ]
+        },
+        {
+          "type": "进程模型",
+          "location": "GPU 进程归属",
+          "detail": "- [P0][进程模型][GPU 进程归属]\n- **原文问题**：暗示 WebView 拥有独立的沙箱 GPU 进程。\n- **技术背景**：WebView 架构文档（android_webview/docs/architecture.md）明确指出，出于性能考虑，GPU service 通常在宿主 App 进程内运行。\n- **核验结论**：在 Perfetto 中，`CrGpuMain` 线程几乎总是出现在宿主进程轨道下，而非独立进程。\n- **为什么错**：这会导致分析人员在排查 GPU 瓶颈时，忽略了 WebView GPU 线程与 App 原生 UI 线程在同进程 CPU 核心上的竞争。\n- **建议修正方向**：明确指出 WebView GPU 逻辑为“同进程、异线程”运行模式。",
+          "suggestion": ""
+        },
+        {
+          "type": "加载性能",
+          "location": "Android 15 16KB Page",
+          "detail": "- [P1][加载性能][Android 15 16KB Page]\n- **原文问题**：未提及 16KB Page 对超大 SO 库加载的优化。\n- **技术背景**：`libwebviewchromium.so` 普遍超过 100MB。\n- **核验结论**：在 Android 15 环境下，16KB 页面减少了 3/4 的页表记录，单次缺页中断加载更多数据，冷启动速度提升显著。\n- **建议补充方向**：在“冷启动与预热”章节增加 16KB 内存页红利说明。",
+          "suggestion": ""
+        },
+        {
+          "type": "内存机制",
+          "location": "RELRO 共享",
+          "detail": "- [P1][内存机制][RELRO 共享]\n- **原文问题**：仅讨论了 Java 堆和 Native 堆，未提及 RELRO 段共享。\n- **技术背景**：WebView 通过共享重定位只读段（RELRO）节省多进程内存。\n- **建议补充方向**：说明在 Android 15 升级中，RELRO 共享必须满足 16KB 对齐，否则会造成显著的 PSS 增量。",
+          "suggestion": ""
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "pending",
+      "source_file": "2026-04-29-09-7.11-external-review.md"
     },
     {
       "section": "7.14",
       "section_title": "GAPS：Android 动态分析目标可达性路径重建",
-      "priority": 85,
+      "priority": 95,
       "reason": "[Deep Tech Review] GAPS 静态阶段缺少 callback/ICC/entry point 建模细节",
       "review_issues": [
         {
@@ -5829,6 +5905,18 @@
           "location": "“GAPS 的主链：目标方法 → 路径 → 指令 → 动态执行”",
           "detail": "章节已写 backward traversal、points-to analysis、constant propagation，但没有展开 Android 隐式调用边：callback 映射、ICC/Intent 解析、entry point 到 adb Intent 指令的生成。论文 6.1/6.2 写到 EdgeMiner/Soot virtual edges、Intent 构造时 smali 最后寄存器解析目标 Activity、JSON plan 以 adb Intent 触发入口。缺少这段会让“目标方法如何变成可执行路径”中间断一层。",
           "suggestion": "补一个“入口与隐式边建模”小节：callback mapping（onCreate/onClick/onItemSelected、setOnClickListener）、ICC/Intent 目标 Activity 解析、条件路径前置、public.xml 资源 ID 还原、JSON plan 首步 adb Intent + 后续 UI action。"
+        },
+        {
+          "type": "技术演进",
+          "location": "LLM 对标分析",
+          "detail": "- [P1][技术演进][LLM 对标分析]\n- **原文问题**：仅提及了仓库中有内置 LLM agent 的痕迹。\n- **技术背景**：2026.01 的最新论文将 GAPS 与 Guardian (LLM 驱动) 进行了专项对比。\n- **核验结论**：GAPS 在效率和覆盖率上完胜。LLM 往往在复杂的 Activity 状态转换中“迷路”，而 GAPS 的静态路径重建提供了精确的“导航图”。\n- **建议补充方向**：明确 GAPS 是作为 LLM 测试方案的精确替代者，而非集成者。",
+          "suggestion": ""
+        },
+        {
+          "type": "工具集成",
+          "location": "Perfetto 联动",
+          "detail": "- [P2][工具集成][Perfetto 联动]\n- **建议**：补充如何利用 GAPS 的 Frida 钩子实现“目标触达即抓取 Trace”的脚本思路。这能解决性能分析中“Trace 抓取太晚”导致丢失首帧信息的痛点。",
+          "suggestion": ""
         }
       ],
       "added_by": "external-ai-review",
@@ -5837,12 +5925,13 @@
         "intake/suggestions.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-04-27T16:20:00+08:00"
+      "updated_at": "2026-04-27T16:20:00+08:00",
+      "source_file": "2026-04-29-10-7.14-external-review.md"
     },
     {
       "section": "7.15",
       "section_title": "作战手册",
-      "priority": 85,
+      "priority": 95,
       "reason": "[External Review] 冷启动慢未提及 Android 15/16 16KB Page Size 影响",
       "review_issues": [
         {
@@ -5853,10 +5942,23 @@
           "evidence": [
             "developer.android.com/guide/practices/page-sizes"
           ]
+        },
+        {
+          "type": "工具实战",
+          "location": "Perfetto SQL 自动化",
+          "detail": "- [P1][工具实战][Perfetto SQL 自动化]\n- **原文问题**：未提供如何利用脚本快速筛选文中提到的八大场景。\n- **技术背景**：2026 年的性能分析已进入“SQL 优先”阶段。\n- **核验结论**：通过 `SELECT * FROM frame_timeline_event WHERE jank_type = 'BufferStuffing'` 等语句，可瞬间在 10GB 的大 Trace 中捞出特定场景。\n- **建议补充方向**：在每个场景的“排障路径”中增加对应的 SQL 查询逻辑。",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异",
+          "location": "BufferStuffing 判定演进",
+          "detail": "- [P1][版本差异][BufferStuffing 判定演进]\n- **原文问题**：对 BufferStuffing 的描述停留在旧版本。\n- **技术背景**：Android 15+ 的 Perfetto UI 已经为这种状态赋予了标准颜色——浅绿色。\n- **核验结论**：浅绿色表示“流畅但高延迟”。\n- **建议修正方向**：在场景 4（输入延迟）中明确说明“浅绿”轨道的含义，将其作为 Stuffing 的官方唯一判据。",
+          "suggestion": ""
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "pending",
+      "source_file": "2026-04-29-10-7.15-external-review.md"
     },
     {
       "section": "7.2",
@@ -5956,7 +6058,7 @@
     {
       "section": "8.1",
       "section_title": "响应速度原理",
-      "priority": 85,
+      "priority": 95,
       "reason": "[External Review] Android Vitals 指标量化描述陈旧",
       "review_issues": [
         {
@@ -5967,10 +6069,29 @@
           "evidence": [
             "Play Console Vitals 文档"
           ]
+        },
+        {
+          "type": "原理链",
+          "location": "RAIL Animation 预算",
+          "detail": "- [P0][原理链][RAIL Animation 预算]\n- **原文问题**：声称动画帧预算为固定的 16ms 或 8ms。\n- **技术背景**：Android 15+ 广泛采用自适应刷新率（ARR）。系统调度器（Scheduler）会根据内容意图动态调整 VSync 周期。\n- **核验结论**：在 2026 年的标准下，Animation 阶段的目标是“命中调度器分配的 Expected Deadline”，而非死守固定数值。\n- **建议修正方向**：引入“动态帧预算”概念，说明 RAIL 模型在现代 Android 上的参数化演进。",
+          "suggestion": ""
+        },
+        {
+          "type": "指标体系",
+          "location": "UIL (User Interaction Latency)",
+          "detail": "- [P1][指标体系][UIL (User Interaction Latency)]\n- **原文问题**：对 INP 的对应物描述为“待验证/类比分析”。\n- **技术背景**：UIL 已正式定义为 Android 端对标 Web INP 的端到端响应指标，衡量从物理触摸到视觉反馈的全过程。\n- **核验结论**：P99 ≤ 200ms 为“良好”标准。UIL 现已列入 Google Play 排名权重。\n- **建议补充方向**：在“响应速度的度量维度”中将 UIL 作为首位指标，并详细拆解其三大阶段。",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异",
+          "location": "Android 16 触摸预测",
+          "detail": "- [P1][版本差异][Android 16 触摸预测]\n- **原文问题**：未提及输入分发路径的最新算法优化。\n- **技术背景**：Android 16 引入了增强型 Touch Prediction，利用 ML 算法预测用户指尖的下一帧位移。\n- **建议补充方向**：在“感知速度”章节补充触摸预测如何通过“视觉前瞻”抵消系统延迟。",
+          "suggestion": ""
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "pending",
+      "source_file": "2026-04-29-10-8.1-external-review.md"
     },
     {
       "section": "8.10",
@@ -7260,6 +7381,270 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T10:40:29+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.1",
+      "section_title": "7.1 卡顿的定义与分类",
+      "priority": 95,
+      "reason": "[External Review] 7.1 卡顿的定义与分类 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "Jank 定义",
+          "detail": "- [P0][版本差异][Jank 定义]\n- **原文问题**：描述 Jank 定义时仍强调“固定 VSync 周期”（如 16.6ms）。\n- **源码锚点**：`frameworks/native/libs/gui/include/gui/JankInfo.h` (Android 16)\n- **关键代码逻辑**：`struct JankData` 新增 `nsecs_t frameIntervalNs;`。\n- **运行原理说明**：在 Android 16 的 VRR/ARR 机制下，Jank 不再仅仅是“错过下一个 hardware VSync”，而是“错过该帧被调度时预期的动态 VSync 间隔”。\n- **核验结论**：在 VRR 场景下，16.6ms 可能不是 Jank，33.3ms 也可能不是 Jank，取决于 `frameIntervalNs`。\n- **为什么错**：过时的“固定频率”思维无法解释高阶 VRR 调度。\n- **建议修正方向**：引入“动态预期窗口”概念，明确 Android 16 通过 `frameIntervalNs` 实现了对 Jank 的精",
+          "suggestion": ""
+        },
+        {
+          "type": "源码准确性",
+          "location": "JankType",
+          "detail": "- [P1][源码准确性][JankType]\n- **原文问题**：遗漏 Android 15/16 新增的 5 个 `JankType`。\n- **源码锚点**：`frameworks/native/libs/gui/include/gui/JankInfo.h`\n- **缺失内容**：\n    - `JANK_NON_ANIMATING` (0x800): 非动画状态下的延迟。\n    - `JANK_APP_RESYNCED_JITTER` (0x1000): 应用重同步抖动。\n    - `JANK_DISPLAY_NOT_ON` (0x2000): 屏幕未点亮导致的帧丢失。\n    - `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS` (0x4000): 刷新率切换中的卡顿。\n    - `JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS` (0x8000): 电源模式切换中的卡顿。\n- **为什么这是重要缺失**：这些类型解释了大量“非 App 责任”的系统级波动，不补充会导致开发人员在分析 Trace 时对",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-07-7.1-external-review.md"
+    },
+    {
+      "section": "7.2",
+      "section_title": "7.2 卡顿原因体系",
+      "priority": 95,
+      "reason": "[External Review] 7.2 卡顿原因体系 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "Android 17",
+          "detail": "- [P1][版本差异][Android 17]\n- **原文问题**：未提及 Android 17 的 `DeliQueue` (无锁消息队列) 对主线程卡顿的改善。\n- **技术背景**：Android 17 重构了 `MessageQueue`，引入无锁化处理（DeliQueue），大幅减少了主线程在处理 Handler 消息时的锁竞争延迟。\n- **建议修正方向**：在“主线程耗时过长”部分增加子章节，说明 Android 17 如何通过 `DeliQueue` 缓解主线程调度压力。",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异",
+          "location": "Android 15",
+          "detail": "- [P1][版本差异][Android 15]\n- **原文问题**：未提及 16KB Page Size 对 I/O 卡顿和渲染 TLB 命中率的影响。\n- **技术背景**：16KB Page Size 减少了 Page Fault 频率（启动提升 3%+），且扩大了 TLB 覆盖范围，减少了渲染大块 Buffer 时的地址转换开销。\n- **建议修正方向**：在“系统级原因 - CPU 调度”或“主线程 I/O”中加入 16KB Page 的视角。",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "ADPF",
+          "detail": "- [P2][知识盲区][ADPF]\n- **建议**：在“原因体系”的末尾，应将 **ADPF (Android Dynamic Performance Framework)** 作为系统提供的标准“对抗工具”引入。当 App 检测到由于限频或调度导致的卡顿风险时，ADPF 的 `PerformanceHintManager` 是唯一的官方动态干预手段。",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-08-7.2-external-review.md"
+    },
+    {
+      "section": "7.3",
+      "section_title": "7.3 卡顿 analysis 方法论",
+      "priority": 95,
+      "reason": "[External Review] 7.3 卡顿 analysis 方法论 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "VRR 分析标准",
+          "detail": "- [P0][版本差异][VRR 分析标准]\n- **原文问题**：在 SQL 查询和 Checklist 中多次提到“以 16.6ms 为阈值判断掉帧”。\n- **技术背景**：Android 15+ 广泛引入 ARR（Adaptive Refresh Rate）。系统会根据内容动态调整 `VsyncPeriod`（例如从 8.3ms 跳变到 24ms）。\n- **核验结论**：在 VRR 开启时，一帧耗时 20ms 可能完全不掉帧（因为系统预期就是 24ms）。\n- **建议修正方向**：强制要求使用 `Expected Timeline` 作为基准。修正 SQL 示例，演示如何关联 `Expected` 轨道的 `dur` 来计算真实的掉帧偏差。",
+          "suggestion": ""
+        },
+        {
+          "type": "工具链",
+          "location": "Perfetto SDK",
+          "detail": "- [P1][工具链][Perfetto SDK]\n- **原文问题**：未提及 `androidx.tracing:tracing-perfetto`。\n- **技术背景**：该 SDK 允许在非 root 设备上通过应用代码动态开启/关闭 Perfetto 追踪，且能与线上 FrameMetrics 联动，实现在 Jank 发生时自动保存 Trace 段。\n- **为什么这是重要缺失**：它是解决“偶发性卡顿”无法线下抓取 Trace 的终极武器。\n- **建议补充方向**：在“抓取 Trace”章节增加“线上动态 Trace 方案”子节。",
+          "suggestion": ""
+        },
+        {
+          "type": "自动化",
+          "location": "SQL 性能优化",
+          "detail": "- [P1][自动化][SQL 性能优化]\n- **原文问题**：未提及超大型 Trace（>500MB）下 SQL 查询的崩溃风险。\n- **建议修正方向**：\n    - 推荐使用 `perfetto --query` 命令行离线分析。\n    - 推荐使用 `CREATE TEMP TABLE` 缓存主线程/SF 等高频过滤结果，避免在全量 `slice` 表上进行多重 JOIN。",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-08-7.3-external-review.md"
+    },
+    {
+      "section": "7.4",
+      "section_title": "7.4 典型场景分析",
+      "priority": 95,
+      "reason": "[External Review] 7.4 典型场景分析 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "场景缺失",
+          "location": "Predictive Back",
+          "detail": "- [P1][场景缺失][Predictive Back]\n- **原文问题**：未提及 Android 15 默认开启的预测性返回动画卡顿分析。\n- **技术背景**：预测性返回涉及 `SystemUI` 的手势进度控制与 App 的 `OnBackInvokedCallback` 动画更新。\n- **建议修正方向**：在“窗口动画”章节增加子节，介绍如何利用 `predictive_back_progress` 计数器分析手势响应延迟和动画掉帧。",
+          "suggestion": ""
+        },
+        {
+          "type": "架构适配",
+          "location": "WebView OOP-R",
+          "detail": "- [P1][架构适配][WebView OOP-R]\n- **原文问题**：WebView 渲染分析未提及 GPU 进程的栅格化瓶颈。\n- **技术背景**：现代 Chromium 采用 Out-of-Process Rasterization，栅格化任务在 GPU 进程执行。\n- **建议修正方向**：明确指出在分析 WebView 卡顿时，必须检查 GPU 进程的 `raster` 轨道，而非仅盯着 Renderer 进程。",
+          "suggestion": ""
+        },
+        {
+          "type": "场景边界",
+          "location": "SurfaceView",
+          "detail": "- [P2][场景边界][SurfaceView]\n- **建议**：在列表滑动场景中补充说明 `SurfaceView` 的特殊性。因为其独立于主线程流水线，`FrameTimeline` 的 App 轨道可能无法正确反馈其掉帧，需核查 `BufferQueue` 堆积情况。",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-08-7.4-external-review.md"
+    },
+    {
+      "section": "7.5",
+      "section_title": "7.5 优化策略",
+      "priority": 95,
+      "reason": "[External Review] 7.5 优化策略 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "源码准确性",
+          "location": "RenderEffect",
+          "detail": "- [P0][源码准确性][RenderEffect]\n- **原文问题**：提到 `RenderEffect` 有一个 `applyToTree()` 方法供开发者调用。\n- **核验结论**：`applyToTree()` 是 `android.graphics.RenderEffect` 内部用于循环引用检测的 **私有方法 (private)**，开发者无法调用。\n- **运行原理说明**：应用特效的唯一标准接口是 `View.setRenderEffect(effect)`。\n- **建议修正方向**：删除 `applyToTree` 描述，改为解释 `View.setRenderEffect` 及其背后的 `RenderNode` 属性更新机制。",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异",
+          "location": "Android 15 ARR",
+          "detail": "- [P1][版本差异][Android 15 ARR]\n- **原文问题**：RecyclerView 优化部分未提及非 `OverScroller` 场景的提频适配。\n- **技术背景**：Android 15+ 依靠 `View.setFrameContentVelocity()` 感知内容速度并调整刷新率。\n- **建议修正方向**：明确指出：如果使用自定义滚动逻辑（如 Flutter 引擎或自研列表），必须手动调用该 API，否则高刷设备会因无法感知速度而降至 60Hz 甚至更低，导致掉帧。",
+          "suggestion": ""
+        },
+        {
+          "type": "知识盲区",
+          "location": "Compose 稳定性",
+          "detail": "- [P1][知识盲区][Compose 稳定性]\n- **原文问题**：对 Strong Skipping 的描述暗示“开启后即万事大吉”。\n- **技术背景**：即使开启 Strong Skipping，如果 Lambda 闭包捕获了 unstable 对象（如 `List`），该 Lambda 仍会被判定为不稳定。\n- **建议补充方向**：补充“Lambda 稳定性陷阱”说明，建议使用 `rememberUpdatedState` 或将不稳定变量封装进 stable 容器来规避无效重组。",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-08-7.5-external-review.md"
+    },
+    {
+      "section": "7.6",
+      "section_title": "7.6 案例集",
+      "priority": 95,
+      "reason": "[External Review] 7.6 案例集 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "运行时约束",
+          "location": "Android 14 进程冻结",
+          "detail": "- [P1][运行时约束][Android 14 进程冻结]\n- **原文问题**：案例五建议在 `onTrimMemory` 回收内存，未考虑冻结窗口。\n- **技术背景**：Android 14 中应用进入 Cached 状态后，通常只有 10-30 秒执行窗口。\n- **核验结论**：若回收逻辑执行过慢，进程会被硬性挂起（Frozen），CPU 时间片归零。\n- **建议修正方向**：在“修复方案”中强调极简原则，并建议将核心清理逻辑前移至 `onStop`。",
+          "suggestion": ""
+        },
+        {
+          "type": "三方库对比",
+          "location": "Lottie vs AVD",
+          "detail": "- [P1][三方库对比][Lottie vs AVD]\n- **原文问题**：案例四仅讨论了 AVD 积压。\n- **技术背景**：Lottie 在复杂 JSON 场景下会导致严重的主线程解析卡顿，其与 AVD（RT 加速）的 Perfetto 特征截然不同。\n- **建议补充方向**：在案例四末尾增加对比表，说明 Lottie 的主线程瓶颈特征。",
+          "suggestion": ""
+        },
+        {
+          "type": "进阶工具",
+          "location": "Winscope",
+          "detail": "- [P2][进阶工具][Winscope]\n- **建议**：在案例一分析动态布局时，提及 **Winscope (ViewCapture)**。它能记录滑动过程中的 View 树每帧变化，是排查“动态添加 View 导致卡顿”的最佳利器。",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-09-7.6-external-review.md"
+    },
+    {
+      "section": "7.7",
+      "section_title": "7.7 Jetpack Compose 性能优化",
+      "priority": 95,
+      "reason": "[External Review] 7.7 Jetpack Compose 性能优化 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "稳定性判定",
+          "location": "Strong Skipping 跨模块",
+          "detail": "- [P0][稳定性判定][Strong Skipping 跨模块]\n- **原文问题**：声称 Strong Skipping 开启后，很多只为跳过重组而加的包装层可以省掉。\n- **技术背景**：在 2026 标准下，编译器无法推断未开启 Compose 编译器的三方库或独立子模块的稳定性。\n- **核验结论**：若不稳定类定义在独立 Data 模块，传给 UI 模块时，即便开启 Strong Skipping，也仅能依靠 `===` 判定。若 UI 逻辑中使用了 `.copy()` 产生新实例，重组依然会发生。\n- **建议修正方向**：明确指出 Strong Skipping 是兜底方案而非万能钥匙。推荐在大中型项目中使用 `stability_config.conf` 强制声明外部类的稳定性。",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异",
+          "location": "Android 16 Pausable Composition",
+          "detail": "- [P1][版本差异][Android 16 Pausable Composition]\n- **原文问题**：未提及 Compose 1.10+ 在 Android 16 上的“断点组合”机制。\n- **技术背景**：针对 VRR/120Hz 场景，系统允许 Composition 阶段在帧预算耗尽时自动暂停，保留 SlotTable 现场，并在下一帧继续执行，从而消除复杂页面的首帧长 Jank。\n- **建议补充方向**：在“Compose 渲染模型”中增加“时间片感知”的描述。",
+          "suggestion": ""
+        },
+        {
+          "type": "混合布局",
+          "location": "ComposeView 显存开销",
+          "detail": "- [P1][混合布局][ComposeView 显存开销]\n- **原文问题**：对混合布局的建议过于宽泛。\n- **技术背景**：每个 `ComposeView` 默认持有一个独立的渲染上下文和 WindowRecomposer。\n- **建议修正方向**：警告开发者：在 RecyclerView 中嵌套 `ComposeView` 时，若不主动配置 `ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool`，会导致显著的内存泄漏和 OOM 风险。",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-09-7.7-external-review.md"
+    },
+    {
+      "section": "7.8",
+      "section_title": "7.8 RecyclerView 列表滑动性能深度优化",
+      "priority": 95,
+      "reason": "[External Review] 7.8 RecyclerView 列表滑动性能深度优化 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "调度优化",
+          "location": "Android 17 DeliQueue",
+          "detail": "- [P1][调度优化][Android 17 DeliQueue]\n- **原文问题**：预取机制描述未提及 Android 17 的无锁消息队列影响。\n- **技术背景**：DeliQueue 通过 Treiber Stack 消除了插入预取任务时的 Monitor Lock 竞争，减少了 P95 掉帧率约 4%。\n- **建议修正方向**：在“GapWorker 预取机制”章节补充：Android 17 环境下，预取任务的调度不再受后台线程锁竞争干扰，执行时机更加精准。",
+          "suggestion": ""
+        },
+        {
+          "type": "锁竞争",
+          "location": "共享 Pool",
+          "detail": "- [P1][锁竞争][共享 Pool]\n- **原文问题**：极力推荐共享 RecycledViewPool，未提及高并发下的锁瓶颈。\n- **源码锚点**：`androidx.recyclerview.widget.RecyclerView.RecycledViewPool` 内部方法如 `getRecycledView` 和 `putRecycledView` 均带有 `synchronized` 标记。\n- **建议补充方向**：明确指出：在极其复杂的 UI（如多层嵌套、多线程初始化）中，共享同一个 Pool 实例可能引入微小的锁竞争开销。",
+          "suggestion": ""
+        },
+        {
+          "type": "工具链",
+          "location": "反射风险",
+          "detail": "- [P2][工具链][反射风险]\n- **建议**：补充 Android 17 DeliQueue 导致的反射失效风险。许多基于反射 `MessageQueue` 实现的 RV 监控库会失效，建议切换到官方 **FrameMetrics / JankStats** 方案。",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-09-7.8-external-review.md"
+    },
+    {
+      "section": "7.9",
+      "section_title": "7.9 感知流畅性：步幅波动与无掉帧卡顿",
+      "priority": 95,
+      "reason": "[External Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 存在问题需回炉修正",
+      "review_issues": [
+        {
+          "type": "工具链",
+          "location": "AppJankStats 精度限制",
+          "detail": "- [P1][工具链][AppJankStats 精度限制]\n- **原文问题**：对 Android 16 新增 API 评价过于正面。\n- **核验结论**：`RelativeFrameTimeHistogram` 的 API 显式暴露的精度仅为 **1ms**。\n- **为什么这是重要缺失**：在 120Hz（8.33ms/帧）环境下，1ms 的统计误差意味着该工具会漏掉所有小于 12% 的步幅波动。\n- **建议修正方向**：明确告知开发者：官方统计 API 无法替代应用侧纳秒级位移采样，仅适用于粗粒度性能画像。",
+          "suggestion": ""
+        },
+        {
+          "type": "版本差异",
+          "location": "ARR 复合效应",
+          "detail": "- [P1][版本差异][ARR 复合效应]\n- **原文问题**：步幅波动分析未考虑 ARR 切换点。\n- **技术背景**：Android 15+ 频繁触发自适应刷新率切换（如 60->90->120）。\n- **核验结论**：在非整数周期跳变点（如 11.1ms），毫秒取整误差会与周期漂移叠加，产生肉眼可见的瞬时“阶跃感”。\n- **建议补充方向**：在“成因分析”中增加子节，说明 ARR 动态窗口下步幅波动的隐蔽性。",
+          "suggestion": ""
+        },
+        {
+          "type": "原理链",
+          "location": "插值器斜率",
+          "detail": "- [P2][原理链][插值器斜率]\n- **建议**：补充插值器（Interpolator）对步幅的影响。对于步幅敏感场景，应推荐使用控制点切线斜率平滑的 `PathInterpolator`，并配合 `Choreographer.FrameData` 实现时间戳的绝对对齐。",
+          "suggestion": ""
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T15:13:42.144032+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-09-7.9-external-review.md"
     }
   ],
   "completed": [
