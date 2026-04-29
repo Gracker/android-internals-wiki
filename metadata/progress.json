@@ -60,7 +60,7 @@
       "pending": 89,
       "idle": 3
     },
-    "last_updated": "2026-04-29T11:26:16+08:00"
+    "last_updated": "2026-04-29T12:29:31+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -2433,9 +2433,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T07:20:00+08:00"
+      "last_task9_at": "2026-04-29T12:29:31+08:00"
     },
     "src/part2-performance/ch07-smoothness/06-case-studies.md": {
       "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
@@ -8206,7 +8206,7 @@
       }
     }
   },
-  "last_updated": "2026-04-29T04:40:03+08:00",
+  "last_updated": "2026-04-29T12:29:31+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [

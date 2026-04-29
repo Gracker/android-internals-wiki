@@ -6420,3 +6420,18 @@
 - **位置**：L349-L357、L381 `sched_ext` 段落与时间线
 - **问题**：正文写“Android 17 (GKI 6.12) 已具备 sched_ext 的内核基础设施”。本轮可直接核到的是 `android16-6.12/kernel/sched/ext.c` 存在，`android17-6.12` 分支未命中；Android 17 behavior/release notes 也没有把 sched_ext 列为应用可见行为变更。把它绑定到 Android 17 容易造成版本口径混乱。
 - **建议**：改成“Linux 6.12 / Android common kernel android16-6.12 已包含 sched_ext 基础设施，是否在具体 Android 17 量产设备启用取决于 GKI 分支和 OEM 策略”；时间线中不要把 sched_ext 写成 Android 17 应用侧确定适配项。
+
+
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-04-29 — L186-L188「RecyclerView 1.4.0 adaptive refresh rate」
+- **类型**：版本差异
+- **位置**：L186-L188「RecyclerView 1.4.0 adaptive refresh rate」
+- **问题**：章节写成 Android 15（API 35）提供 `View.setFrameContentVelocity()`，但没有补充 ARR 生效还依赖 Android 15 QPR1+ 支持设备、AndroidX 侧版本（RecyclerView 1.4.0 / core 1.15.0）以及该速度值只对下一次绘制帧有效。
+- **建议**：补一行版本边界：ARR 生效条件应写成 Android 15 QPR1+ 支持设备 + AndroidX RecyclerView 1.4.0/core 1.15.0；自定义滚动容器需要在 fling/smooth scroll 的每帧更新 `setFrameContentVelocity()`，因为 View 中该值会在下一帧后失效。
+
+
+## [Task9 Deep Review] 7.5 优化策略 — 2026-04-29 — L417-L419「Compose LazyColumn 预取」
+- **类型**：源码准确性
+- **位置**：L417-L419「Compose LazyColumn 预取」
+- **问题**：源码锚点写成 `LazyLayoutItemProvider`，但 AndroidX `LazyLayoutItemProvider.kt` 不包含 prefetch 逻辑；pausable composition in prefetch 的实现锚点在 `LazyLayoutPrefetchState.kt` 等 lazy layout prefetch 代码中。
+- **建议**：把源码锚点改为 `androidx.compose.foundation.lazy.layout.LazyLayoutPrefetchState` / LazyLayout prefetch scheduler，并保留 `LazyLayoutItemProvider` 只作为 item provider，不作为预取实现证据。
