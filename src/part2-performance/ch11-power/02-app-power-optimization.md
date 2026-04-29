@@ -8,12 +8,17 @@ drafted_by: "openclaw-task2a"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-rework_count: 1
-rework_date: "2026-04-20"
+rework_count: 2
+rework_date: "2026-04-29"
 rework_by: "task2b-rework"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service docs"
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: medium-high
 sources:
   - type: official
@@ -387,7 +392,11 @@ Android 14 要求前台服务同时满足三层约束：Manifest 里的 `android
 
 Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入了 6 小时 / 24 小时的后台预算。这个 budget 按 service type 统计，同一 App 的多个 `dataSync` 实例共享同一个窗口；用户把 App 带回前台后，对应计时器才会重置。
 
-到点后，系统会回调 `Service.onTimeout(int, int)`；服务有几秒钟调用 `stopSelf()` 自行结束。若没有及时停止，它不再被视为 foreground service，Logcat 会记录 `RemoteServiceException`，继续拖住主线程或 Binder 回调时还可能演化为 ANR。
+到点后，系统会回调 `Service.onTimeout(int, int)`（注意：这是双参数版本，区别于 `shortService` 的单参数 `onTimeout(int)`）；服务有几秒钟调用 `stopSelf()` 自行结束。若没有及时停止，`ActiveServices.onFgsCrashTimeout()` 会抛出 `ForegroundServiceDidNotStopInTimeException`，进程直接 crash（不是 ANR）。把这条路径和 `shortService` 的 ANR 路径分开看：
+
+- **shortService**（Android 14 引入）：约 3 分钟超时，回调 `onTimeout(int)`，未停止 → ANR。
+- **dataSync / mediaProcessing**（Android 15 引入）：6h / 24h budget 耗尽，回调 `onTimeout(int, int)`，未停止 → crash（`ForegroundServiceDidNotStopInTimeException`）。
+- **Android 14 及以下**：没有 `onTimeout(int, int)` 回调，不适用此 timeout 机制。
 
 `onTimeout()` 触发后，不适合再启动同类型的长时间 FGS 来延长预算。剩余收尾只做资源释放、进度持久化和替代任务调度；大文件上传或下载优先迁到 WorkManager、user-initiated data transfer job 或 DownloadManager。服务如果需要下一轮工作，等用户重新把 App 带到前台或系统重新给出预算，再由正常入口启动。
 
@@ -454,7 +463,7 @@ App 耗电优化不是孤立的话题，它与全书的多个章节形成上下�
 
 ### 误区四："前台服务有通知就不会被系统杀"
 
-Android 14 的 FGS Task Manager 让用户可以直接看到并停止前台服务。Android 15 又给 `dataSync` 和 `mediaProcessing` 加了 6 小时 / 24 小时 budget，到点后系统会回调 `Service.onTimeout(int, int)`。如果服务没有及时 `stopSelf()`，后面常见的是 `RemoteServiceException` 或 ANR；单靠通知栏常驻并不能换来无限时运行。
+Android 14 的 FGS Task Manager 让用户可以直接看到并停止前台服务。Android 15 又给 `dataSync` 和 `mediaProcessing` 加了 6 小时 / 24 小时 budget，到点后系统回调 `Service.onTimeout(int, int)`。如果服务没有及时 `stopSelf()`，进程会被 `ForegroundServiceDidNotStopInTimeException` crash 掉（不是 ANR——ANR 是 `shortService` 的超时路径）；单靠通知栏常驻并不能换来无限时运行。
 
 ### 误区五："用了 WorkManager 就不用关心功耗了"
 

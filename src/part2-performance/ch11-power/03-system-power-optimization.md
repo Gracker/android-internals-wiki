@@ -8,11 +8,16 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs"
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-rework_count: 1
-rework_date: "2026-04-20"
+rework_count: 2
+rework_date: "2026-04-29"
 rework_by: "task2b-rework"
 confidence: medium
 sources:
@@ -303,9 +308,12 @@ Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布�
 
 ### 自适应省电（Adaptive Battery Saver）
 
-Android 9 引入了自适应省电功能，系统会根据用户的充电习惯和电池消耗模式，在电量较低时自动启用省电模式，而不需要用户手动操作。这个功能在 Pixel 设备上默认开启，厂商可以自定义触发阈值。
+这里需要区分两个容易混淆的机制：
 
-自适应省电与 Adaptive Battery 是互补关系：Adaptive Battery 通过预测 App 使用频率来分配 Standby Bucket（微观调度），自适应省电则根据整体电量状况决定是否启用全局省电模式（宏观调控）。两者共享用户行为数据作为输入，但作用层面不同——前者影响单个 App 的后台配额，后者影响所有 App 的运行环境。
+- **Adaptive Battery**（Android 9 引入）：运行在本地的 ML 模型预测用户对各个 App 的使用频率，输出直接影响 App Standby Bucket 分配。它影响的是单个 App 的后台资源配额（Job、Alarm、网络），不是全局省电开关。
+- **Routine Battery Saver**（Android 10 引入）：根据用户的日常充电习惯（比如"每天晚上 11 点充电"），在电量低于阈值且用户不太可能使用设备时自动启用 Battery Saver。OEM 需要通过 `config_batterySaverScheduleProvider` 配置一个 provider app 来提供调度策略；AOSP 默认不提供这个 provider，所以是否默认开启取决于 OEM 实现而非 Android 版本。
+
+两者共享用户行为数据作为输入，但作用层面不同：Adaptive Battery 影响单个 App 的后台配额（微观），Routine Battery Saver 决定全局省电模式的开关（宏观）。
 
 ### 在 Perfetto 中观察省电模式
 
