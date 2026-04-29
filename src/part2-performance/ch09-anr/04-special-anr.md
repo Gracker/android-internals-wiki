@@ -2,7 +2,6 @@
 title: "特殊场景的 ANR"
 chapter: "9.4"
 section: "9.4"
-status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
@@ -26,26 +25,31 @@ sources:
     note: "高爷原创 ANR 分析系列"
 tags: ['anr', 'sharedpreferences', 'contentprovider', 'binder', 'broadcast', 'io-blocking', 'system-load']
 related_chapters: ['9.1', '9.2', '9.3', '1.4', '4.3', '4.4', '6.3']
-pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-27T19:10:48+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-28"
 rework_date: "2026-04-16"
 rework_by: "task2b-rework"
-task9_reviewed_date: "2026-04-28"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-28T05:29:35+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-updated_by: "openclaw-task2b"
-updated_date: "2026-04-27"
-review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2，P1 0，P2 1。"
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-29"
+last_task9_at: "2026-04-29T07:30:41+08:00"
+task2b_state: "fixed"
+p0: 0
+p1: 0
+p2: 1
+updated_by: "openclaw-task9"
+updated_date: "2026-04-29"
+review_notes: "2026-04-29 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。"
+auto_promoted: true
 ---
 
 # 特殊场景的 ANR

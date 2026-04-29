@@ -38,7 +38,7 @@ tags:
   - compatibility
   - research
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
@@ -87,7 +87,7 @@ ARM Cortex-X 系列处理器的 L1 TLB 通常有几十到上百个 entry，L2 TL
 
 Page Fault 分两种：Major（需要从磁盘读取）和 Minor（只需在内存中分配新页）。在 Android 上，由于采用 flash 存储，Major Page Fault 的延迟相对较低，但仍然远高于 TLB Hit 的延迟（微秒级 vs 纳秒级）。更常见的是 Minor Page Fault——App 启动时加载代码段、初始化数据段、mmap 文件时都会触发。
 
-16KB 页大小下，操作系统一次性分配 16KB 而非 4KB 的连续内存。虽然看起来"浪费"了（如果一个对象只有 1KB，16KB 页会浪费 15KB），但实际上内存访问有很强的局部性（Locality）——分配 16KB 后，附近的数据大概率很快也会被访问。结果是总的 Page Fault 次数减少，启动阶段的内核开销降低。
+16KB 页大小下，操作系统一次性分配 16KB 而非 4KB 的连续内存。虽然看起来"浪费"了（如果一个对象只有 1KB，16KB 页会浪费 15KB），但内存访问有很强的局部性（Locality）——分配 16KB 后，附近的数据大概率很快也会被访问。结果是总的 Page Fault 次数减少，启动阶段的内核开销降低。
 
 ### 量化性能数据
 
@@ -265,7 +265,7 @@ zipalign -c -P 16 -v 4 your_app.apk
 ./check_elf_alignment.sh your_app.apk
 ```
 
-Play Console 的 App Bundle Explorer 也提供了自动化的对齐检查。上传 AAB 后，在 "发布" → "设置" 中可以看到对齐状态。
+Play Console 的 App Bundle Explorer 也提供了自动化的对齐检查。上传 AAB 后，在 "发布" → "设置" 中查看对齐状态。
 
 ### 常见迁移问题
 

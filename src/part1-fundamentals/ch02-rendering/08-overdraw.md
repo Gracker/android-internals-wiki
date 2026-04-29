@@ -2,7 +2,6 @@
 title: 过度绘制
 chapter: '2.8'
 section: '2.8'
-status: ready-for-review
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
@@ -54,17 +53,23 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '7.2'
-pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
 last_task2b_at: "2026-04-28T09:42:00+08:00"
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-28'
-last_task9_at: '2026-04-28T10:30:00+08:00'
-status: ready-for-review
 task2b_result: fixed
+status: "ready-for-review"
+pipeline_stage: "task2b_pending"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-29"
+last_task9_at: "2026-04-29T07:30:41+08:00"
+task2b_state: "pending"
+p0: 1
+p1: 2
+p2: 0
+updated_by: "openclaw-task9"
+updated_date: "2026-04-29"
+review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 0。"
 ---
 
 # 过度绘制

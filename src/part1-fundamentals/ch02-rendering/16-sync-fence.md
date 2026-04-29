@@ -315,6 +315,14 @@ VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 produce
 
 ## 参考资料
 
+### Android Sync Fence 机制深度剖析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 Linux 内核 dma_fence 结构体出发,详述 sync_file uABI、libsync 兼容桥到 Android libui Fence 类的完整链路。覆盖 fence 的 signal/wait/add_callback 语义、signalling critical section、dma_fence_chain merge/merge 架构,以及 Android 16 从 Implicit Sync 向 Explicit Sync 迁移的内核侧(android_fence_tracker)与用户态变化。
+- 注入时间：2026-04-29
+- 价值：源码级贯通 Linux dma-fence 到 Android Sync Fence 的全链路,含 Android 16 Explicit Sync 迁移细节
+
+
 - AOSP 源码：`frameworks/native/libs/ui/Fence.cpp`
 - AOSP 源码：`frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
 - AOSP 源码：`system/core/libsync/sw_sync.h`、`system/core/libsync/sync.c`
