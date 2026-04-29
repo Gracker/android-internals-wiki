@@ -1,217 +1,42 @@
-{
-  "files": [
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md",
-      "title": "当 Perfetto 显示 Running 时,Android 程序到底在做什么?",
-      "summary": "从 Perfetto trace 中 Setup proxies slice 的 Running 状态出发,逐层拆解 Java→ART→Native→Binder→系统调用→Linux 内核→Arm CPU 微架构的全栈执行路径。详述 task_struct 状态机、sched_switch ftr",
-      "chapter": "ch13",
-      "processed_at": "2026-04-28T22:14:14.956848+00:00",
-      "type": "deepresearch"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md",
-      "title": "PSI 驱动的 Android LMKD 进程杀机制",
-      "summary": "源码级贯通分析 PSI(Pressure Stall Information)驱动 lmkd 的完整信号链:从 kernel/sched/psi.c 的 some/full 压力计算,经 memcg PSI monitor 的 threshold + window 滑动窗口机制,到 userspac",
-      "chapter": "ch04",
-      "processed_at": "2026-04-28T22:14:14.956848+00:00",
-      "type": "deepresearch"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md",
-      "title": "Android 14→17 Foreground Service Timeout / ANR 机制",
-      "summary": "AOSP 源码视角梳理 Android 14-17 前台服务超时与 ANR 触发的三段式语义:ShortService 3 分钟硬超时、TimeLimitedFgs 6h/24h 滚动窗口、以及 AnrTimer native handler 化。详述 ServiceRecord.ShortFgsI",
-      "chapter": "ch09",
-      "processed_at": "2026-04-28T22:14:14.956848+00:00",
-      "type": "deepresearch"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md",
-      "title": "Android Sync Fence 机制深度剖析",
-      "summary": "从 Linux 内核 dma_fence 结构体出发,详述 sync_file uABI、libsync 兼容桥到 Android libui Fence 类的完整链路。覆盖 fence 的 signal/wait/add_callback 语义、signalling critical sectio",
-      "chapter": "ch02",
-      "processed_at": "2026-04-28T22:14:14.956848+00:00",
-      "type": "deepresearch"
-    },
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md",
-      "title": "ARM Mali GPU TBR 架构原理与 Android 渲染性能影响",
-      "summary": "详述 ARM Mali GPU 从 Utgard 到第五代的 Tile-Based Rendering 演进:双阶段 Geometry+Fragment 流水线、on-chip tile memory 工作机制、AFBC 压缩、Transaction Elimination、Forward Pixe",
-      "chapter": "ch02",
-      "processed_at": "2026-04-28T22:14:14.956848+00:00",
-      "type": "deepresearch"
-    },
-    {
-      "title": "谷歌开发者：聚焦 Android 11: Android 开发者工具",
-      "path": "AndroidWeekly/#4/谷歌开发者：聚焦_Android_11:_Android_开发者工具",
-      "source_url": "https://zhuanlan.zhihu.com/p/248387576",
-      "weekly_issue": "#4",
-      "weekly_date": "2020-09-22",
-      "score": 12,
-      "quality": "medium",
-      "scores": {
-        "relevance": 3,
-        "depth": 1,
-        "timeliness": 3,
-        "verifiability": 5
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch01-工具",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "谷歌开发者：聚焦 Android 11: Android 开发者工具",
-      "scored_at": "2026-04-29T09:05:10.727246"
-    },
-    {
-      "title": "深入探索Android启动速度优化（下）",
-      "path": "AndroidWeekly/#4/深入探索Android启动速度优化（下）",
-      "source_url": "https://juejin.im/post/6870457006784774152",
-      "weekly_issue": "#4",
-      "weekly_date": "2020-09-22",
-      "score": 15,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 5,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch05-渲染",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch01-工具",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "深入探索Android启动速度优化（下）",
-      "scored_at": "2026-04-29T09:05:10.727255"
-    },
-    {
-      "title": "重学安卓：是让人 过目难忘 的 Android GUI 族谱解析啊！ － 小专栏",
-      "path": "AndroidWeekly/#4/重学安卓：是让人_过目难忘_的_Android_GUI_族谱解析啊！_－_小专栏",
-      "source_url": "https://xiaozhuanlan.com/topic/2073915486",
-      "weekly_issue": "#4",
-      "weekly_date": "2020-09-22",
-      "score": 10,
-      "quality": "medium",
-      "scores": {
-        "relevance": 3,
-        "depth": 1,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch01-工具",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "重学安卓：是让人 过目难忘 的 Android GUI 族谱解析啊！ － 小专栏",
-      "scored_at": "2026-04-29T09:05:10.727257"
-    },
-    {
-      "title": "Android 复习笔记（五）—— OutOfMemoryError 可以被 try catch 吗 ？",
-      "path": "AndroidWeekly/#4/Android_复习笔记（五）——_OutOfMemoryError_可以被_try_catch_吗_？",
-      "source_url": "https://mp.weixin.qq.com/s/SdP2wvLPf6LSizeCf0izlg",
-      "weekly_issue": "#4",
-      "weekly_date": "2020-09-22",
-      "score": 10,
-      "quality": "medium",
-      "scores": {
-        "relevance": 3,
-        "depth": 1,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch01-工具",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android 复习笔记（五）—— OutOfMemoryError 可以被 try catc...",
-      "scored_at": "2026-04-29T09:05:10.727259"
-    },
-    {
-      "title": "新课程上线 | 学习使用 Kotlin 进行 Android 开发的最佳时机！",
-      "path": "AndroidWeekly/#4/新课程上线_|_学习使用_Kotlin_进行_Android_开发的最佳时机！",
-      "source_url": "https://mp.weixin.qq.com/s/roM0NfkEF2ikhhP_XRrkDw",
-      "weekly_issue": "#4",
-      "weekly_date": "2020-09-22",
-      "score": 12,
-      "quality": "medium",
-      "scores": {
-        "relevance": 5,
-        "depth": 1,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch03-Java",
-          "confidence": "medium"
-        },
-        {
-          "chapter": "ch01-工具",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "新课程上线 | 学习使用 Kotlin 进行 Android 开发的最佳时机！",
-      "scored_at": "2026-04-29T09:05:10.727260"
-    },
-    {
-      "title": "Android 中为什么需要 Handler?",
-      "path": "AndroidWeekly/#4/Android_中为什么需要_Handler?",
-      "source_url": "https://www.zhihu.com/question/421330220/answer/1480860373",
-      "weekly_issue": "#4",
-      "weekly_date": "2020-09-22",
-      "score": 11,
-      "quality": "medium",
-      "scores": {
-        "relevance": 4,
-        "depth": 1,
-        "timeliness": 3,
-        "verifiability": 3
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch04-ANR",
-          "confidence": "high"
-        },
-        {
-          "chapter": "ch01-工具",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android 中为什么需要 Handler?",
-      "scored_at": "2026-04-29T09:05:10.727262"
-    },
-    {
-      "title": "Android Studio 中 System Trace 的新增功能",
-      "path": "AndroidWeekly/#4/Android_Studio_中_System_Trace_的新增功能",
-      "source_url": "https://mp.weixin.qq.com/s/yABygaF_KryHUsQNVhC2YA",
-      "weekly_issue": "#4",
-      "weekly_date": "2020-09-22",
-      "score": 12,
-      "quality": "medium",
-      "scores": {
-        "relevance": 3,
-        "depth": 1,
-        "timeliness": 3,
-        "verifiability": 5
-      },
-      "mapped_chapters": [
-        {
-          "chapter": "ch01-工具",
-          "confidence": "medium"
-        }
-      ],
-      "summary": "Android Studio 中 System Trace 的新增功能",
-      "scored_at": "2026-04-29T09:05:10.727263"
-    }
-  ]
-}
+[
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md",
+    "title": "当 Perfetto 显示 Running 时,Android 程序到底在做什么?",
+    "summary": "从 Perfetto Running 状态切片出发，逐层拆解 Linux task_struct、ftrace、ART、Binder、内核调度器、Arm CPU 微架构各层精确语义，给出完整诊断工作流。",
+    "chapter": "ch13",
+    "processed_at": "2026-04-30 06:10",
+    "type": "deepresearch-inject"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md",
+    "title": "PSI 驱动的 Android LMKD 进程杀机制",
+    "summary": "从 vmpressure 到 PSI 的范式转移全链路源码分析，覆盖 PSI 统计与门限、lmkd 迁移路径、per-UID 防护、swap+zRAM 策略及 Android 10-15 调优历史。",
+    "chapter": "ch04",
+    "processed_at": "2026-04-30 06:10",
+    "type": "deepresearch-inject"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md",
+    "title": "Android 14→17 Foreground Service Timeout ANR 机制深度解析",
+    "summary": "AOSP 源码视角的 FGS 超时与 ANR 触发机制全解析，覆盖 Android 14 ShortService 到 Android 17 AnrTimer 的完整演进与代码路径。",
+    "chapter": "ch09",
+    "processed_at": "2026-04-30 06:10",
+    "type": "deepresearch-inject"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md",
+    "title": "Android Sync Fence 机制深度剖析",
+    "summary": "从 Linux 内核 dma_fence/sync_file 到 Android libsync/libui 的完整同步栅栏机制源码剖析，含 Android 16 Explicit Sync 迁移分析。",
+    "chapter": "ch02",
+    "processed_at": "2026-04-30 06:10",
+    "type": "deepresearch-inject"
+  },
+  {
+    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md",
+    "title": "ARM Mali GPU TBR 架构原理与 Android 渲染性能影响",
+    "summary": "ARM Mali/Immortalis GPU TBR 架构全代际深度报告，从 Utgard 到第五代 GPU 核心机制详解及 Android 渲染栈交互方式。",
+    "chapter": "ch02",
+    "processed_at": "2026-04-30 06:10",
+    "type": "deepresearch-inject"
+  }
+]

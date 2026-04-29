@@ -294,3 +294,17 @@
 - **问题**：外部 review 提到 Android 15 `DEFAULT_TO_WEB` 意图用于 WebView 首屏，本轮检索未找到标准 Intent/API 或官方文档支持。
 - **建议**：不要按该线索直接补正文；如要覆盖 H5 首屏，改查 WebView 预热、renderer process、7.11/18.13 的可验证内容。
 - **review 日志**：logs/deep-review/2026-04-30-05-deep-review.md
+
+## [External Review] 12.1 APK 体积优化 — 2026-04-30
+- **类型**：分发策略
+- **位置**：AAB 与 16KB 对齐协同
+- **问题**：补充 Google Play AAB 分发在 2026 年的默认行为，Target SDK 35+ 的 AAB Play Console 自动确保 Split APK 符合 16KB 物理对齐
+- **建议**：开发者无需手动 zipalign -P 16，将精力聚焦于业务逻辑拆分
+- **来源**：Gemini 外部 review
+
+## [External Review] 12.2 网络性能优化 — 2026-04-30
+- **类型**：合规红线
+- **位置**：HTTP/3 降级审计
+- **问题**：HTTP/3 UDP 443 在部分企业网/公共 Wi-Fi 被劫持/限速，缺少审计策略
+- **建议**：在 EventListener 记录 alt-svc 握手失败率，作为判定是否应在当前 SSID 下强制退避至 HTTP/2 的线上准则
+- **来源**：Gemini 外部 review

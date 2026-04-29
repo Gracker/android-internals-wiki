@@ -75,10 +75,10 @@
 - [x] 18.18 PIP 与自由窗口渲染 (`src/part2-performance/ch18-rendering-pipelines/18-pip-freeform.md`)
 - [x] 18.19 可变刷新率渲染管线 (`src/part2-performance/ch18-rendering-pipelines/19-variable-refresh-rate.md`)
 - [x] 18.20 链路分析方法论 (`src/part2-performance/ch18-rendering-pipelines/20-pipeline-analysis-methodology.md`)
-- [ ] 18.21 EyeDropper API 与跨设备协作性能 (`src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md`)
+- [x] 18.21 EyeDropper API 与跨设备协作性能 (`src/part2-performance/ch18-rendering-pipelines/21-eyedropper-crossdevice.md`)
 
 ## 第 12 章：包体积与其他 (ch12-apk-network)
-- [ ] 12.1 APK 体积优化 (`src/part2-performance/ch12-apk-network/01-apk-size.md`)
+- [x] 12.1 APK 体积优化 (`src/part2-performance/ch12-apk-network/01-apk-size.md`)
 - [ ] 12.2 网络性能优化 (`src/part2-performance/ch12-apk-network/02-network-performance.md`)
 - [ ] 12.3 网络性能深入 (`src/part2-performance/ch12-apk-network/03-network-performance-deep.md`)
 - [ ] 12.4 Android 网络安全与 TLS 性能优化 (`src/part2-performance/ch12-apk-network/04-network-security-tls-performance.md`)

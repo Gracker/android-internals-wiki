@@ -12244,3 +12244,75 @@ Task9 deep review: logs/deep-review/2026-04-30-05-deep-review.md
 
 ### 来源
 Task9 deep review: logs/deep-review/2026-04-30-05-deep-review.md
+
+## [2026-04-30] 12.1 APK 体积优化 — 知识盲区
+
+### 盲区描述
+resources.arsc 16KB 映射对齐：在大页面环境下，资源表文件是否需要物理 16KB 对齐以实现零拷贝映射
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 16KB page 环境下 resources.arsc 的 mmap 行为
+- 对比 4KB/16KB 设备上的资源加载性能差异
+
+### 关联章节
+- 12.1
+
+### 外部 review 来源
+- 2026-04-29-11-12.1-external-review.md
+
+## [2026-04-30] 12.1 APK 体积优化 — 知识盲区
+
+### 盲区描述
+Startup Profile 与重打包冲突：加固工具是否会破坏 AGP 8.5+ 生成的针对 16KB 优化的物理 DEX 布局
+
+### 重要程度
+高
+
+### 建议研究方向
+- 验证主流加固方案（360、梆梆、乐固）对 Baseline/Startup Profile DEX 布局的兼容性
+- 测试加固后冷启动性能是否有回退
+
+### 关联章节
+- 12.1
+
+### 外部 review 来源
+- 2026-04-29-11-12.1-external-review.md
+
+## [2026-04-30] 12.2 网络性能优化 — 知识盲区
+
+### 盲区描述
+QUIC 连接迁移在 16KB 页表下的稳定性：IP 地址跳变触发内核页表重新映射时，Cronet 内部 Buffer 挂载是否存在微秒级阻塞
+
+### 重要程度
+中
+
+### 建议研究方向
+- 研究 16KB page 环境下 QUIC 连接迁移的时延特征
+- Perfetto 中观察 Cronet 内部 Buffer 状态
+
+### 关联章节
+- 12.2
+
+### 外部 review 来源
+- 2026-04-29-11-12.2-external-review.md
+
+## [2026-04-30] 12.2 网络性能优化 — 知识盲区
+
+### 盲区描述
+BPF 带宽估计在虚拟化网络（VPN）下的精度：VpnService 环境下物理带宽估计值是否会因封包开销产生虚高
+
+### 重要程度
+高
+
+### 建议研究方向
+- 验证 VpnService 环境下 getLinkDownstreamBandwidthKbps 返回值与实际带宽的关系
+- 设计 ABR 调度在 VPN 场景下的降级策略
+
+### 关联章节
+- 12.2
+
+### 外部 review 来源
+- 2026-04-29-11-12.2-external-review.md
