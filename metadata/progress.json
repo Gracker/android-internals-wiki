@@ -9528,6 +9528,15 @@
         }
       ],
       "timestamp": "2026-04-29T00:06:37+08:00"
+    },
+    {
+      "date": "2026-04-29T22:48:40.496340",
+      "sections": [
+        "1.2",
+        "1.3"
+      ],
+      "task": "task2b-rework",
+      "details": "Task 9 P0/P1 fixes: 1.2 version metadata + Cloud Compilation wording; 1.3 CachedAppOptimizer source code rewrite"
     }
   ],
   "task2b_history": [
