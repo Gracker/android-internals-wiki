@@ -499,7 +499,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T16:44:05.709118",
+      "completed_reason": "inSampleSize Skia采样灵活性已补充：解释2幂限制来源，对比ImageDecoder.setTargetSize的任意尺寸缩放"
     },
     {
       "section": "07.11",
@@ -549,7 +551,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T16:44:05.709129",
+      "completed_reason": "onRenderProcessGone完整恢复流程已在前轮AIW源码调研中写入章节（含调用链、代码示例、注意事项）"
     },
     {
       "section": "07.12",

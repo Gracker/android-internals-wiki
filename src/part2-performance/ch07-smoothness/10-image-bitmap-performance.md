@@ -2,7 +2,7 @@
 title: "图片加载与 Bitmap 性能优化"
 chapter: "7.10"
 section: "7.10"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [bitmap, image-decode, hardware-bitmap, glide, coil, image-loading, memory, jank]
 related_chapters: ["7.4", "7.5", "7.8", "4.5", "2.10", "14.1"]
@@ -37,12 +37,15 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review
-task2b_state: fixed
+task2b_state: fixed  # rework-2026-04-29
 task2b_result: fixed
+last_rework_date: "2026-04-29"
+last_rework_by: openclaw-task2b
+last_rework_reason: "P1 inSampleSize Skia采样灵活性补充"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T14:50:48+08:00"
@@ -94,7 +97,9 @@ BitmapFactory 是 Android 最早的图片解码 API，提供了 `decodeResource`
 
 **inJustDecodeBounds**——设为 `true` 时，只执行第 2 步（解析头部），不分配内存也不解码像素。这是预加载的标准操作：先用它拿到原始宽高，计算采样率，再正式解码。
 
-**inSampleSize**——采样率。设为 2 时，解码结果的宽高各缩小一半，像素数变为原来的 1/4，内存占用也降为 1/4。注意这个值必须是 2 的幂（1、2、4、8...），如果传了 3，内部会向下取整到 2。[已验证：AOSP `BitmapFactory.cpp` 中 `sk_sample_size` 的处理逻辑]
+**inSampleSize**——采样率。设为 2 时，解码结果的宽高各缩小一半，像素数变为原来的 1/4，内存占用也降为 1/4。这个值必须是 2 的幂（1、2、4、8...），如果传了 3，内部会向下取整到 2。这个限制来自 BitmapFactory 的 `sk_sample_size` 处理逻辑——它直接对宽高做整数除法，非 2 幂的值会导致图像像素不对齐。[已验证：AOSP `BitmapFactory.cpp` 中 `sk_sample_size` 的处理逻辑]
+
+Skia 的解码器内部其实支持任意整数采样（通过 `SkImageDecoder` 的采样管线），但 BitmapFactory 的 Java 层 API 只暴露了 2 幂约束。如果需要非 2 幂的精确降采样（比如原图 4000×3000 只需要 1200×900），`ImageDecoder.setTargetSize()` 是更合适的 API——它直接指定目标尺寸，Skia 内部通过 `SkSamplingOptions` 完成高质量缩放，不受 2 幂限制。
 
 **inPreferredConfig**——目标色彩格式。默认 `ARGB_8888`（每像素 4 字节）。如果图片不需要透明通道，用 `RGB_565`（每像素 2 字节）可以节省一半内存。
 
