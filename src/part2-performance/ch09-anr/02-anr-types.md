@@ -354,6 +354,14 @@ adb shell cat /data/anr/anr_* | tail -200
 
 ## 参考资料
 
+### Android 14→17 Foreground Service Timeout / ANR 机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
+- 类型：DeepResearch 调研结果
+- 摘要：AOSP 源码视角梳理 Android 14-17 前台服务超时与 ANR 触发的三段式语义:ShortService 3 分钟硬超时、TimeLimitedFgs 6h/24h 滚动窗口、以及 AnrTimer native handler 化。详述 ServiceRecord.ShortFgsInfo 的 mStartTime→getTimeoutTime→getProcStateDemoteTime→getAnrTime 时间线,ActiveServices 中 FGS timeout 的完整触发链路。
+- 注入时间：2026-04-29
+- 价值：首次系统梳理 FGS timeout 从 Android 14 到 17 的源码级演进,对 ANR 分析与前台服务优化有直接指导意义
+
+
 - AOSP 源码路径：
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — Input ANR 超时检测
   - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — Broadcast 超时常量定义

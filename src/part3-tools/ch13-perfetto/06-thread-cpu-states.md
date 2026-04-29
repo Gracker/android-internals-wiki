@@ -560,6 +560,14 @@ LIMIT 20;
 
 ## 参考资料
 
+### 当 Perfetto 显示 Running 时,Android 程序到底在做什么?
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md
+- 类型：DeepResearch 调研结果
+- 摘要：从 Perfetto trace 中 Setup proxies slice 的 Running 状态出发,逐层拆解 Java→ART→Native→Binder→系统调用→Linux 内核→Arm CPU 微架构的全栈执行路径。详述 task_struct 状态机、sched_switch ftrace 事件、Perfetto sched_slice 视图与 R/R+/S/D 状态的精确语义,涵盖 on_rq/on_cpu 字段、CPU 调度器内部状态迁移,以及如何从 Running 时长推断用户态/内核态时间分布。
+- 注入时间：2026-04-29
+- 价值：源码级贯通 Perfetto Running 状态的内核语义与调度器实现,对理解 Perfetto 线程状态分析极具参考价值
+
+
 - [Perfetto 官方文档 - CPU Scheduling](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - [高爷博客 - Android Perfetto 系列 9：CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/)
 - [高爷博客 - Systrace 线程 CPU 运行状态分析技巧 - Runnable 篇](https://www.androidperformance.com/2022/01/21/android-systrace-cpu-state-runnable/)

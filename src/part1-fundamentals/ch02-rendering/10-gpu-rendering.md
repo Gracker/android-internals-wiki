@@ -607,6 +607,14 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 ## 参考资料
 
+### ARM Mali GPU TBR 架构原理与 Android 渲染性能影响
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md
+- 类型：DeepResearch 调研结果
+- 摘要：详述 ARM Mali GPU 从 Utgard 到第五代的 Tile-Based Rendering 演进:双阶段 Geometry+Fragment 流水线、on-chip tile memory 工作机制、AFBC 压缩、Transaction Elimination、Forward Pixel Kill、IDVS/DVS、Fragment Prepass、CSF 命令流前端。覆盖 Android 渲染栈 HWUI/RenderThread/SurfaceFlinger/HWC 与 Mali TBR 的交互,以及 Vulkan Render Pass load/store op 到 tile load/writeback 的映射。
+- 注入时间：2026-04-29
+- 价值：最完整的 Mali GPU TBR 架构与 Android 渲染栈交互文档,对 GPU 渲染性能分析与调优极具价值
+
+
 ### AOSP 源码路径
 - `frameworks/native/libs/ui/include/ui/GraphicBuffer.h` — GraphicBuffer C++ 定义（AOSP）
 - `frameworks/native/libs/nativewindow/include/android/native_window.h` — ANativeWindowBuffer 定义

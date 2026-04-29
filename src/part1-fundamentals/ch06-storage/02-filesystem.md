@@ -2,7 +2,6 @@
 title: 文件系统
 chapter: '6.2'
 section: '6.2'
-status: ready-for-review
 applicable_versions: Android 10+
 last_verified: '2026-04-23'
 last_verified_against: AOSP EROFS docs + source.android 16KB page size docs + kernel/common android15-6.6 ext4 journal / f2fs segment,gc,uapi/linux/f2fs.h,include/linux/f2fs_fs.h + developer.android.com
@@ -16,8 +15,6 @@ reviewed_date: '2026-04-23'
 reviewed_by: openclaw-task6
 review_type: scheduled-review
 review_round: 4
-review_notes: '2026-04-15 task6 review (round 3): pass-light-edit。修复frontmatter格式（outline-start误入YAML块）。全文无禁用词命中，无B类大问题。评分:
-  结构5/5·措辞5/5·一致性5/5·验证4/5·元数据4/5。'
 sources:
 - type: blog
   path: Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md
@@ -34,17 +31,24 @@ tags:
 - android
 - research
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: 2026-04-28
-task9_reviewed_by: openclaw-task9
-task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-23T09:22:00+08:00"
-last_task9_at: 2026-04-28T16:21:00+08:00
-status: ready-for-review
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task6_state: "reviewed"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-29"
+last_task9_at: "2026-04-29T07:30:41+08:00"
+task2b_state: "fixed"
+p0: 0
+p1: 0
+p2: 1
+updated_by: "openclaw-task9"
+updated_date: "2026-04-29"
+review_notes: "2026-04-29 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。"
+auto_promoted: true
 ---
 
 <!-- outline-start -->
