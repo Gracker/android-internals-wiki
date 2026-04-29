@@ -10,7 +10,7 @@ last_verified: '2026-04-12'
 last_verified_against: AOSP android-16.0.0_r1
 drafted_date: '2026-03-30'
 confidence: high
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
@@ -53,7 +53,7 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '7.2'
-task6_state: revisiting
+task6_state: reviewed
 last_task2b_at: "2026-04-30T05:47:02+08:00"
 task2b_result: fixed
 status: "ready-for-review"
