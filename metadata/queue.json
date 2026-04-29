@@ -1789,7 +1789,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T11:47:04+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T19:44:25.103835",
+      "completed_reason": "dataSync/mediaProcessing timeout路径已拆分：shortService→ANR vs time-limited FGS→ForegroundServiceDidNotStopInTimeException crash"
     },
     {
       "section": "11.3",
@@ -1809,7 +1811,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T11:47:04+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T19:44:25.103835",
+      "completed_reason": "Adaptive Battery(Android 9)与Routine Battery Saver(Android 10)已区分；删除未验证的Pixel默认开启描述；补充config_batterySaverScheduleProvider"
     },
     {
       "section": "12",
