@@ -151,8 +151,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-04-dvfs-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-04-dvfs-external-review.md",
+      "completed_at": "2026-04-29T08:43:37.688737",
+      "completed_reason": "SCMI频率真值观测已补充；4GHz能效红线已添加"
     },
     {
       "section": "05.05",
@@ -175,8 +177,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T04:27:39",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-05-thermal-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-05-thermal-external-review.md",
+      "completed_at": "2026-04-29T08:43:37.688737",
+      "completed_reason": "16KB页对热平衡的底层加持已补充；Android 16热阈值自动Trace捕获已添加"
     },
     {
       "section": "05.06",

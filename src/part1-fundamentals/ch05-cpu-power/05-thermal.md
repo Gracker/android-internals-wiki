@@ -2,7 +2,7 @@
 title: "Thermal 管控"
 section: "5.5"
 chapter: "5.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待验证"
 last_verified: "2026-04-24"
@@ -41,13 +41,13 @@ tags:
   - cpu-frequency
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 last_task9_at: "2026-04-25T05:33:55+08:00"
 task2b_state: fixed
 task2b_result: fixed
@@ -378,6 +378,16 @@ data_sources: {
 
 [已验证: Perfetto 官方文档 ui.perfetto.dev, data source 配置参考]
 
+### Android 16：热阈值触发的自动 Trace 捕获
+
+Android 16 引入了一个对热性能分析极有价值的能力：当设备跨越热阈值时，系统可以自动生成 ProfilingTrace。这意味着开发者不需要提前手动抓 Trace——过热现场会被自动保留。
+
+典型的使用场景：用户反馈"玩了 10 分钟后游戏开始卡"。开发者无需复现，只要设备在过热时自动捕获了 Trace，就能直接看到过热瞬间的 CPU 频率、线程调度和 thermal zone 温度变化。自动捕获的 Trace 包含标准的 sched/freq/power 数据源，足以定位是哪个 thermal zone 触发了降频、降频前后的频率曲线变化、以及受影响最大的线程。
+
+这个功能需要在应用中通过 `ProfilingManager` 注册热相关的 profiling 请求，或者由系统在检测到 thermal status 跨越 `THERMAL_STATUS_MODERATE` 及以上等级时自动触发（具体触发策略因 OEM 配置而异）。
+
+[待验证: 自动触发阈值和 Trace 保留策略因 OEM 实现而异]
+
 ### DVFS 降频 vs Thermal 降频：怎么区分？
 
 这里有一个容易混淆的点。我们在 [5.4 DVFS 与功耗管理](04-dvfs.md) 中讨论过，schedutil governor 会根据 CPU utilization 主动调节频率。高负载时升频，低负载时降频——这是正常的 DVFS 行为，不涉及温控。
@@ -390,6 +400,14 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 - **Thermal 降频**：CPU utilization 高 → 频率反而降低。频率和负载"反着来"，这就是温度墙在起作用。
 
 如果我们看到高负载期间频率反而比空闲时低，基本可以确认是 thermal throttling。
+
+### 16KB Page Size 对热平衡的底层加持
+
+[自动发现] 16KB 大页内存对温控的贡献不直接体现在 thermal zone 的阈值上，而是从底层改变了热积累的斜率。大页使页表条目数量减少约 75%，MMU 的 TLB miss 率和页表遍历功耗随之下降。实测数据显示，MMU 功耗可降低约 4.5%，这在应用启动、大内存分配等场景中对整机功耗有可观测的优化。
+
+热积累斜率变缓意味着设备在相同工作负载下维持最高频率的时间窗更长——温控降频被推迟。这和 DVFS 降频形成了一个间接的正反馈：16KB 减缓了功耗产生，功耗减缓了温度上升，温度放缓又延迟了 thermal throttling。在对比 4KB 和 16KB 设备的性能稳定性时，这个底层因素容易被忽略。
+
+[待验证: MMU 功耗降低 4.5% 为社区实测估算值，具体数值因 SoC 和工作负载而异]
 
 ## Thermal Mitigation 策略：系统如何降温
 
