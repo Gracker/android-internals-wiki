@@ -11885,3 +11885,35 @@ Android 16 SkTaskGroup 软件渲染辅助线程与 cgroup 的绑定策略未研�
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-29)
+
+## [2026-04-29] 5.1 Linux 进程调度基础 — 知识盲区
+
+### 盲区描述
+EEVDF 的 vlag/lag 在 Android common 6.6/6.12 默认 ftrace 中没有直接暴露。章节当前把 `sched_eevdf_entity` 写成可直接采集的 Perfetto 事件，需要重新研究 stock 内核与厂商内核下可用的观测路径。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Android common `include/trace/events/sched.h` 与 vendor kernel 是否有私有 EEVDF tracepoint。
+- 如果没有 tracepoint，评估 BPF/kprobe/tracefs 自定义采集 vlag 的可行性与权限边界。
+- 建立退化方案：用 `sched_switch`、`sched_wakeup`、Runnable duration、priority、cpu frequency 近似判断调度不公。
+
+### 关联章节
+5.1, 5.2, 7.3
+
+## [2026-04-29] 9.5 案例集 — 知识盲区
+
+### 盲区描述
+ANR 案例集缺少 Android 15/16 Cached Apps Freezer 对 Gesture Monitor 的版本复核，也缺少 Android 11+ `ApplicationExitInfo#getTraceInputStream()` 在 APM 端侧采集中的位置。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Android 15/16 freezer、InputDispatcher、Gesture Monitor 相关源码或设备日志，确认该类冻结 ANR 是否仍可能出现。
+- 梳理 `ActivityManager#getHistoricalProcessExitReasons()`、`ApplicationExitInfo.REASON_ANR`、`getTraceInputStream()` 的版本、权限、返回内容和体积限制。
+- 对比官方退出信息、Looper 消息历史、event log、Perfetto trace 四类证据在聚合归因中的分工。
+
+### 关联章节
+9.3, 9.5, 19.x APM 端侧采集

@@ -131,3 +131,21 @@
 - **问题**：详细描述开启 LAYER_TYPE_SOFTWARE 后 RenderThread 轨道出现的 uploadToTexture 或 glTexImage2D 耗时特征。软件 Layer 代价不仅在于 CPU 算像素，更在于像素从内存搬运到 GPU 显存的同步开销
 - **建议**：补充 uploadToTexture 在 Perfetto Trace 中的识别方法与耗时归因
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 18.4 Android View 混合渲染链路 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L214 `dumpsys SurfaceFlinger` activeBuffer / latched buffer 观察点
+- **问题**：当前只写字段名，没有给 Android 版本、命令、示例输出或 Perfetto 对应事件，读者难以复现“哪几个 Layer latch 了新 buffer”的判断。
+- **建议**：补一段 Android 14-16 的 `dumpsys SurfaceFlinger --layers` / `--latency` 示例，或给 Perfetto SurfaceFlinger layer 事件的替代观察路径。
+
+## [Task9 Deep Review] 5.1 Linux 进程调度基础 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L296-L306 ARMv9.2 / 骁龙 8 Elite 跨核迁移延迟
+- **问题**：`1.5μs - 3.5μs` 没有给测试设备、内核版本、迁移类型、测量工具和样本范围。
+- **建议**：补充公开 benchmark 或自测 trace；如果暂时没有一手数据，改成 `[待验证]` 并只保留“新平台迁移成本可能降低，需实测判断绑核收益”的边界结论。
+
+## [Task9 Deep Review] 9.5 案例集 — 2026-04-29
+- **类型**：源码准确性
+- **位置**：L219-L227 SharedPreferences / QueuedWork 等待链路
+- **问题**：正文引用 `QueuedWork.waitToFinish()` 与 Activity 生命周期等待，但该段只标注 `SharedPreferencesImpl.java`，缺少直接方法所在的 `QueuedWork.java` 和生命周期入口 `ActivityThread`。
+- **建议**：补充 `frameworks/base/core/java/android/app/QueuedWork.java#waitToFinish()`、`ActivityThread.handlePauseActivity()` / stop 相关调用点，再说明 `SharedPreferencesImpl.apply()` 如何把 finisher 加入 QueuedWork。

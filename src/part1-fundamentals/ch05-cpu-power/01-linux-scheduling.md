@@ -1,7 +1,7 @@
 ---
-task9_reviewed_date: "2026-04-21"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-21T17:18:00+08:00"
+task9_reviewed_date: "2026-04-29"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-29T18:48:00+08:00"
 title: "Linux 进程调度基础"
 chapter: "5.1"
 section: "5.1"
@@ -39,12 +39,12 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
 review_round: 3
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: needs-rework
-task2b_state: fixed
+task9_result: "needs-rework"
+task2b_state: pending
 ---
 
 <!-- outline-start -->

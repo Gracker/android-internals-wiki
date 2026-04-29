@@ -8047,7 +8047,7 @@
       "section": "9.5",
       "section_title": "案例集",
       "priority": 95,
-      "reason": "[External Review] 9.5 案例集 存在 P0/P1 技术问题，需回炉修正",
+      "reason": "[External Review] 9.5 案例集 存在 P0/P1 技术问题，需回炉修正；[Deep Tech Review] Task9 复核新增 Android 15/16 freezer 与 ApplicationExitInfo 两处 P1",
       "review_issues": [
         {
           "type": "存储性能",
@@ -8060,6 +8060,20 @@
           "location": "自描述诊断元数据",
           "detail": "案例分析仍侧重于手动查找 EventLog。",
           "suggestion": "在“分析方法总结”中增加“自动化判据”章节，将 `WaitQueue length` 提升为定性分析的第一步。"
+        },
+        {
+          "level": "P1",
+          "type": "版本差异",
+          "location": "L273-L275 进程冻结案例",
+          "detail": "章节适用版本写到 Android 16，但案例 4 仍保留 `[待验证: Android 15/16 是否已修复此冻结策略]`。进程冻结与 Gesture Monitor 是否互斥会直接影响该案例在新系统上的可用性，不能作为 Android 15/16 结论发布。",
+          "suggestion": "复核 Android 15/16 的 Cached Apps Freezer、InputDispatcher / Gesture Monitor 相关豁免逻辑；若无法验证，将案例边界收窄为 Android 14 / 特定 OEM。"
+        },
+        {
+          "level": "P1",
+          "type": "知识盲区",
+          "location": "L442-L460 线上 ANR 聚合分析实践",
+          "detail": "线上聚合方案只写 Looper.Observer（隐藏 API）和 `Looper.setMessageLogging()`，缺少 Android 11+ 官方 `ApplicationExitInfo#getTraceInputStream()` 这条 ANR trace 获取路径。对 APM 场景来说，官方进程退出原因与 trace 流应是基础链路，隐藏 API 只能作为补充。",
+          "suggestion": "补充 `ActivityManager#getHistoricalProcessExitReasons()`、`ApplicationExitInfo.REASON_ANR`、`getTraceInputStream()` 的采集边界、版本要求、隐私/体积限制，并说明与 Looper 消息历史的互补关系。"
         }
       ],
       "added_by": "external-ai-review",
@@ -8561,6 +8575,62 @@
       "added_at": "2026-04-29T18:39:01",
       "status": "pending",
       "source_file": "2026-04-29-11-18.3-external-review.md"
+    },
+    {
+      "section": "18.4",
+      "section_title": "Android View 混合渲染链路",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 18.4 Android View 混合渲染链路 存在 public API 源码错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L177 跨 Surface 同步机制表格",
+          "detail": "`Surface#setNextFrameTimestamp` 不是 android-16.0.0_r1 的 Java `android.view.Surface` 公共 API；AOSP `Surface.java` 未定义该方法。相关但不同的机制是 native `Surface::setBuffersTimestamp()` / ANativeWindow buffer timestamp、EGL presentation time，以及 `SurfaceControl.Transaction#setDesiredPresentTimeNanos()`。",
+          "suggestion": "删除或改写该行：把 per-buffer timestamp 写成 producer/native/EGL 层能力，并明确它不是 Java `Surface` API，也不等价于 transaction desired present time。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T18:48:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "5.1",
+      "section_title": "Linux 进程调度基础",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.1 Linux 进程调度基础 存在 EEVDF/内核源码锚点事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L102 vruntime 源码锚点",
+          "detail": "正文标注 `[已验证: AOSP android-16.0.0_r1, kernel/sched/fair.c, __update_curr()]`。AOSP platform tag 不包含该 kernel 路径；Linux v6.6、Android common android15-6.6、android16-6.12 的 `fair.c` 也没有 `__update_curr()`，对应函数是 `update_curr()`，内部通过 `calc_delta_fair()` 更新 `se->vruntime`。",
+          "suggestion": "把锚点改为 Linux v6.6 或 Android common kernel 分支的 `kernel/sched/fair.c:update_curr()` / `calc_delta_fair()`，不要写成 AOSP platform `android-16.0.0_r1`。"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L448-L461 EEVDF vlag / Perfetto SQL",
+          "detail": "正文写内核 6.6+ 可启用 `sched_eevdf_entity` ftrace 事件，并在 Perfetto SQL 中 `FROM sched_eevdf_entity`。复核 Linux v6.6/v6.12 与 Android common android15-6.6/android16-6.12 的 `include/trace/events/sched.h`，未发现该 trace event，也没有 stock Perfetto 表 `sched_eevdf_entity`。",
+          "suggestion": "删除这段可直接查询 vlag 的写法，或改成“内部字段，默认 trace 不暴露”。实战观测仍应基于 `sched_switch`、`sched_wakeup`、`thread_state` 的 Runnable 等待；若要讲 vlag，需要提供 vendor tracepoint / BPF / kprobe 的真实采集方案。"
+        },
+        {
+          "level": "P1",
+          "type": "版本差异",
+          "location": "L552 SchedTune 源码锚点",
+          "detail": "正文用 `AOSP android-16.0.0_r1, kernel/sched/tune.c` 证明 SchedTune，但 Android common 6.1/6.6/6.12 均无该文件；SchedTune 属于旧 Android/vendor kernel 常见机制，Android 12+ / GKI 设备主路径已转向 cpu controller + UClamp。",
+          "suggestion": "把 SchedTune 放到“旧版本/厂商内核”小节，锚点改为目标 vendor kernel 或设备 `/dev/stune` 实测；Android 12+ 主线段落只保留 UClamp / task profiles / cpu cgroup 路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T18:48:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
