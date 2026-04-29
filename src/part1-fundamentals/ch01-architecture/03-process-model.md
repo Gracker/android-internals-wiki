@@ -189,18 +189,13 @@ Android 12 引入了 `CachedAppOptimizer` 机制，通过 cgroup v2 freezer 技�
 // 文件: frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java
 public class CachedAppOptimizer {
     private final ActivityManagerService mAm;
-    private CachedAppOptimizerThread mCachedAppOptimizerThread;
+    private final ServiceThread mCachedAppOptimizerThread;
     
     public CachedAppOptimizer(ActivityManagerService am) {
         mAm = am;
-        mCachedAppOptimizerThread = new CachedAppOptimizerThread();
-        mCachedAppOptimizerThread.start();
-    }
-    
-    private class CachedAppOptimizerThread extends ServiceThread {
-        public CachedAppOptimizerThread() {
-            super("CachedAppOptimizerThread", Process.THREAD_PRIORITY_BACKGROUND);
-        }
+        mCachedAppOptimizerThread = new ServiceThread(
+            "CachedAppOptimizerThread", Process.THREAD_GROUP_SYSTEM, /* allowBlocking= */ true);
+        // 线程在 updateUseFreezer() 生效后通过 AMS handler 启动，构造函数只负责创建
     }
 }
 ```
@@ -218,41 +213,52 @@ public class CachedAppOptimizer {
 
 ```java
 // 文件: frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java
-private static final int FREEZER_ENABLE_MSG = 1;
-private static final int FREEZER_DISABLE_MSG = 2;
+private static final int SET_FROZEN_PROCESS_MSG = 1;
+private static final int REPORT_UNFREEZE_MSG = 2;
+private static final int UID_FROZEN_STATE_CHANGED_MSG = 3;
+private static final int DEADLOCK_WATCHDOG_MSG = 4;
+private static final int BINDER_ERROR_MSG = 5;
 
-public void handleMessage(Message msg) {
-    switch (msg.what) {
-        case FREEZER_ENABLE_MSG:
-            enableFreezer();
-            break;
-        case FREEZER_DISABLE_MSG:
-            disableFreezer();
-            break;
-        case DEADLOCK_WATCHDOG_MSG:
-            handleFreezerDeadlock();
-            break;
+// 内部类 FreezeHandler 处理冻结/解冻消息
+private class FreezeHandler extends Handler {
+    @Override
+    public void handleMessage(Message msg) {
+        switch (msg.what) {
+            case SET_FROZEN_PROCESS_MSG:
+                handleFreezeProcess(msg);
+                break;
+            case REPORT_UNFREEZE_MSG:
+                handleReportUnfreeze(msg);
+                break;
+            case UID_FROZEN_STATE_CHANGED_MSG:
+                handleUidFrozenStateChanged(msg);
+                break;
+            case DEADLOCK_WATCHDOG_MSG:
+                handleFreezerDeadlock();
+                break;
+            case BINDER_ERROR_MSG:
+                handleBinderError(msg);
+                break;
+        }
     }
 }
 
-private native void enableFreezer();
-private native void disableFreezer();
+// 冻结操作通过 Freezer.setProcessFrozen() 落地（非 native 方法直接调用）
+// Freezer.setProcessFrozen() 内部写入 task profile Frozen/Unfrozen
 ```
 
 **cgroup 配置**：
 
 ```json
 // 文件: system/core/libprocessgroup/profiles/task_profiles.json
-{
-  "FreezerState": {
-    "controller": "freezer",
-    "file": "cgroup.freeze",
-    "action": "write",
-    "value": {
-      "frozen": "1",
-      "thawed": "0"
-    }
-  }
+// Attributes 定义冻结状态属性
+"Attributes": [
+  { "Name": "FreezerState", "Controller": "freezer", "File": "cgroup.freeze" }
+],
+// Profiles 使用 SetAttribute 写入冻结/解冻值
+"Profiles": {
+  "Frozen": [{ "Name": "SetAttribute", "Params": { "Name": "FreezerState", "Value": "1" } }],
+  "Unfrozen": [{ "Name": "SetAttribute", "Params": { "Name": "FreezerState", "Value": "0" } }]
 }
 ```
 
@@ -295,7 +301,7 @@ LIMIT 20;
 - **Android 13**: 重构 `enableFreezer()` API，从 `Process` 类迁移到 `ActivityManagerService`
 - **Android 14**: 引入 "Frozen-callee callback policy" for Binder
 - **Perfetto v49**: 新增 `frozen` 布尔字段和 `android.freezer` 事件表
-- **Android 16（Seamless App Updates）**: 应用更新时的进程冻结从秒级降至毫秒级。此前应用更新需要先杀掉旧进程、替换 APK、再重新启动，整个冻结窗口可能持续数秒。Android 16 利用 bionic linker 的增量加载能力，在替换 dex/so 文件时仅做极短的冻结快照，用户几乎感知不到更新导致的进程中断。
+- **Android 16（Seamless App Updates）**: 应用更新时的冻结窗口从秒级降至毫秒级。Android 16 将 dexopt 尽量前移到应用安装/更新流程中，冻结窗口只覆盖最后文件切换阶段。此前应用更新需要先杀掉旧进程、替换 APK、再重新启动，整个冻结窗口可能持续数秒。
 
 <!-- AIW-源码调研-2026-04-17 -->
 
