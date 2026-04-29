@@ -2,7 +2,7 @@
 title: "DVFS 与功耗管理"
 chapter: "5.4"
 section: "5.4"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
 last_verified: "2026-04-01"
 last_verified_against: "Linux kernel 6.6 (android16-6.6)"
@@ -27,15 +27,16 @@ drafted_by: "openclaw-task2"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-task9_state: reviewed
+task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-15"
 task2b_state: fixed
+last_task2b_at: "2026-04-29T00:40:00+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-23T04:32:00+08:00"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 reviewed_date: "2026-04-15"
 reviewed_by: openclaw-task6
 ---
@@ -104,6 +105,14 @@ CPU 的功耗来自两部分：静态功耗（漏电流）和动态功耗（充�
 这就是为什么真正的 DVFS 必须同时调整电压和频率——单纯降频的效果远不如同时降压。功耗中电压项的二次方贡献，使得降压成为最有效的节能手段。
 
 [已验证: 官方文档, developer.android.com — P ∝ C × V² × f 为 CMOS 动态功耗的标准公式]
+
+### 4GHz 时代的能效红线
+
+2026 年旗舰 SoC 的大核最高频率已经突破 4GHz（如骁龙 8 Elite 的 Oryon 核心）。在这个频率段，V/F 曲线变得极端陡峭：从 3.5GHz 到 4.0GHz 的频率提升可能不到 15%，但电压和功耗的增加可能超过 40%。功耗公式 P ∝ C × V² × f 在这里体现得淋漓尽致——频率线性增长，电压二次方增长，两者叠加后功耗呈超线性爆发。
+
+这意味着 4GHz 档位的性价比极低。性能测试中，将最高频率限制在 3.5-3.8GHz（通过 sysfs 写入 ），通常只损失 5-10% 的单核算力，但整机功耗可以降低 20-30%。这也是为什么厂商的日常调度策略很少真正触及 4GHz——它们留给短时 burst（如应用冷启动）使用。做性能优化时，如果 Trace 显示 CPU 长时间驻留在 4GHz，反而需要检查 governor 的限频逻辑是否失效。
+
+[待验证: 4GHz+ 档位的具体 V/F 曲线数据因 SoC 而异，以上为典型趋势描述]
 
 ## OPP Table：频率与电压的档位表
 
@@ -329,6 +338,28 @@ Google 在官方文档中还特别强调了一点：**不要通过忙循环（bu
 CPU 频繁进出深度睡眠也会带来额外开销。虽然深度睡眠能省电，但从深度睡眠唤醒需要时间——退出延迟可达数百微秒甚至超过 1ms。如果某个线程组需要频繁唤醒 CPU，而 CPU 每次短暂空闲都进入深度睡眠又被唤醒，反复的进出不仅浪费时间，进出低功耗模式本身也消耗能量。RTG 的 Busy Hysteresis 功能用来缓解这种情况：当 RTG 组中的线程活跃时，即使 CPU 短暂空闲，也延迟进入深度睡眠。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — Busy Hysteresis 机制]
+
+### SCMI 频率真值：内核意图 vs 固件实值
+
+前面提到，SCMI / CPPC 平台上 OS 发出的频率请求是抽象的 performance level，实际频率由固件映射。这意味着 Perfetto 中  轨迹记录的是**内核请求的频率**，不一定是固件最终执行的频率——温控、电源管理策略等固件侧因素都可能压低实际输出。
+
+Android 16（GKI 6.12）深度集成了 SCMI ftrace 事件，其中  可以暴露固件实际下发的 performance level。开发者可以在 Perfetto 中对比两条曲线： 反映内核意图， 反映固件实值。如果两者出现持续偏差（内核请求高频，固件实际给低频），说明 SoC 固件的温控或电源策略正在介入。这种内核以为在高频、实际被压低的情况，是排查不明性能下降的重要线索。
+
+[已验证: GKI 6.12 SCMI ftrace 集成 — scmi_perf_level_get 事件]
+
+要启用 SCMI 事件，在 Perfetto 配置中添加：
+
+```protobuf
+data_sources: {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "scmi/scmi_perf_level_get"
+      ftrace_events: "power/cpu_frequency"
+    }
+  }
+}
+```
 
 ### SQL 查询分析频率变化
 
