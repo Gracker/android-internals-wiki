@@ -155,7 +155,7 @@ WakeLock、suspend blocker、autosuspend 和 Power HAL 处理的是同一套机�
 
 Android 16 在 suspend 路径中引入了 HWC 4.0 的 onVsyncIdle 信号联动。传统的 suspend 入口依赖 PMS 的超时和 WakeLock 判断,而 HWC 4.0 提供了一条更前置的信号通道:当 SurfaceFlinger 检测到屏幕内容连续多个 VSync 周期没有变化(典型场景是静态阅读、电子书翻页后停留),HWC 向 PMS 发出 onVsyncIdle 回调,表示显示管线已处于空闲态。PMS 收到信号后可以提前释放显示相关的 WakeLock 和 Power HAL interactive mode,缩短系统从"屏幕静止"到"进入 Deep Sleep"的窗口。
 
-在静态阅读场景下,这套联动使设备更快进入深度休眠,续航收益约 10%-15%。对开发者而言,这意味着灭屏后的功耗分析不能只看 WakeLock 持有时长,还需要关注 App 是否在持续触发 invalidate / requestLayout 导致 SurfaceFlinger 无法判定"显示空闲"。如果在 Perfetto 中观察到灭屏后 `SurfaceFlinger` 仍然持续产生 VSync-surfaceflinger slice,且系统迟迟不进入 suspend,排查方向包括:持续动画、后台 Canvas 绘制、ViewRootImpl 的 dirty rect 提交等。
+在静态阅读场景下,这套联动使设备更快进入深度休眠,续航收益约 10%-15%。对开发者而言，灭屏后的功耗分析不能只看 WakeLock 持有时长,还需要关注 App 是否在持续触发 invalidate / requestLayout 导致 SurfaceFlinger 无法判定"显示空闲"。如果在 Perfetto 中观察到灭屏后 `SurfaceFlinger` 仍然持续产生 VSync-surfaceflinger slice,且系统迟迟不进入 suspend,排查方向包括:持续动画、后台 Canvas 绘制、ViewRootImpl 的 dirty rect 提交等。
 
 [图:PowerManagerService → WakeLock / suspend blocker / autosuspend / Power HAL 的分层示意]
 
@@ -226,7 +226,7 @@ adb shell am set-standby-bucket com.example.app restricted
 
 Doze 关注的是"设备层面的状态"--灭屏、静止、未充电。App Standby 关注的是"单个 App 的使用模式"--用得多还是用得少。两者可以叠加:一个 Rare Bucket 的 App 在灭屏状态下,受到的限制比一个 Active Bucket 的 App 严格得多。
 
-这意味着功耗分析时,我们需要同时考虑设备当前是否处于 Doze 状态,以及目标 App 被分到了哪个 Standby Bucket。在 Battery Historian 中可以同时看到这两个维度的信息。
+功耗分析时，需要同时考虑设备当前是否处于 Doze 状态,以及目标 App 被分到了哪个 Standby Bucket。在 Battery Historian 中可以同时看到这两个维度的信息。
 
 ## Battery Historian 工具与功耗分析方法
 
@@ -438,34 +438,34 @@ Adaptive Battery 在 Android 9(Pie)引入,是 Google 与 DeepMind 合作开发�
 
 Adaptive Battery 工作在设备端(on-device ML),不依赖云端。它观察用户的 App 使用模式--什么时候用、用多久、用完之后下一个是什么--然后把这些信息传递给 App Standby Buckets 系统,动态调整各 App 的 Bucket 分配。
 
-实际效果方面,Google 声称 Adaptive Battery 帮助减少了约 30% 的 CPU 唤醒次数。这意味着大量用户很少使用的 App 被智能地归入 Rare 或 Restricted Bucket,它们的后台活动被大幅限制,从而减少了不必要的功耗。
+实际效果方面,Google 声称 Adaptive Battery 帮助减少了约 30% 的 CPU 唤醒次数。大量用户很少使用的 App 被智能地归入 Rare 或 Restricted Bucket,它们的后台活动被大幅限制,从而减少了不必要的功耗。
 
 在 Android 14 和 15 中,Adaptive Battery 的理念进一步演变为"Adaptive Battery 2.0"--系统不再仅仅依赖灭屏时间来判断是否限制后台活动,而是更多地依赖 ML 预测来动态调整限制策略。这标志着 Android 功耗管理从"基于规则的静态策略"向"基于学习的动态策略"的转变。[存疑: "Adaptive Battery 2.0"非 Google 官方术语,实为对 Android 14 行为变更的概括性描述][已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14]
 
 ## Background Restriction 对后台功耗的控制
 
-Adaptive Battery 从系统侧智能调整资源分配，而 Android 也为用户提供了手动限制 App 后台行为的机制。这两种方式互为补充：ML 预测处理大部分常见情况，用户手动干预则覆盖边缘场景。
+Adaptive Battery 从系统侧智能调整资源分配,而 Android 也为用户提供了手动限制 App 后台行为的机制。这两种方式互为补充:ML 预测处理大部分常见情况,用户手动干预则覆盖边缘场景。
 
-用户侧的限制手段有三个层级，严格程度递增：
+用户侧的限制手段有三个层级,严格程度递增:
 
-**电池优化白名单**：在 Settings > Battery > Battery optimization 中，用户可以指定哪些 App 进入电池优化豁免名单。它提供的是部分豁免，不是完全放开：这类 App 在 Doze / App Standby 中仍可使用网络并持有 partial wakelock，但常规 Alarm、Job、Sync 等后台调度限制并没有完全消失。
+**电池优化白名单**:在 Settings > Battery > Battery optimization 中,用户可以指定哪些 App 进入电池优化豁免名单。它提供的是部分豁免,不是完全放开:这类 App 在 Doze / App Standby 中仍可使用网络并持有 partial wakelock,但常规 Alarm、Job、Sync 等后台调度限制并没有完全消失。
 
-**后台限制开关**：Android 提供了 "Background restricted" 开关，用户可以为特定 App 禁止所有后台活动。这比 Doze 更严格——被限制的 App 不能运行 Job、不能触发 Alarm、不能访问网络（除非在前台）。
+**后台限制开关**:Android 提供了 "Background restricted" 开关,用户可以为特定 App 禁止所有后台活动。这比 Doze 更严格--被限制的 App 不能运行 Job、不能触发 Alarm、不能访问网络(除非在前台)。
 
-**自动限制**：从 Android 12 开始，如果系统检测到某个 App 在后台消耗了过多资源（如频繁唤醒、长时间持锁），会自动弹出通知提醒用户。如果用户确认，该 App 会被移入 Restricted Bucket。这标志着 Android 功耗管理从单纯的框架层策略转向了用户参与的“共治”模式。
+**自动限制**:从 Android 12 开始,如果系统检测到某个 App 在后台消耗了过多资源(如频繁唤醒、长时间持锁),会自动弹出通知提醒用户。如果用户确认,该 App 会被移入 Restricted Bucket。这标志着 Android 功耗管理从单纯的框架层策略转向了用户参与的"共治"模式。
 
-### [自动发现] Android 17：能量限额制 (Energy Limiter)
+### [自动发现] Android 17:能量限额制 (Energy Limiter)
 
-Android 17 (API 37) 在 App Standby Buckets 的基础上引入了能量限额制 (Energy Limiter)，把后台管控从“限制调度机会”升级为“限制物理能量消耗”。
+Android 17 (API 37) 在 App Standby Buckets 的基础上引入了能量限额制 (Energy Limiter),把后台管控从"限制调度机会"升级为"限制物理能量消耗"。
 
-机制要点：系统通过 ODPM（On-Device Power Monitor）或等效硬件计数器，按 App 统计后台运行期间消耗的微焦耳 (µJ) 能量。当累计值超过配额时，系统强制终止该 App 的后台进程。配额大小与 App 的 Standby Bucket 挂钩——Active Bucket 的配额宽裕，Restricted Bucket 的配额极低。
+机制要点:系统通过 ODPM(On-Device Power Monitor)或等效硬件计数器,按 App 统计后台运行期间消耗的微焦耳 (μJ) 能量。当累计值超过配额时,系统强制终止该 App 的后台进程。配额大小与 App 的 Standby Bucket 挂钩--Active Bucket 的配额宽裕,Restricted Bucket 的配额极低。
 
-这和 App Standby Buckets 的区别在于：Buckets 控制的是“你能得到多少调度机会”（Job 频率、Alarm 次数、网络窗口），Energy Limiter 控制的是“你能消耗多少物理能量”。一个 App 即使成功拿到了调度机会（比如通过 FCM 高优先级消息唤醒），如果执行期间消耗的能量超标，仍然会被终止。
+这和 App Standby Buckets 的区别在于:Buckets 控制的是"你能得到多少调度机会"(Job 频率、Alarm 次数、网络窗口),Energy Limiter 控制的是"你能消耗多少物理能量"。一个 App 即使成功拿到了调度机会(比如通过 FCM 高优先级消息唤醒),如果执行期间消耗的能量超标,仍然会被终止。
 
-对开发者的直接影响：后台工作必须在能量预算内完成。这意味着：
+对开发者的直接影响:后台工作必须在能量预算内完成。具体来说：
 - 长时间高 CPU 占用的后台同步需要拆分为短时间片
-- WakeLock 持有时间不再是唯一指标，单位时间内的功耗密度同样关键
-- 在低电量模式下，系统会动态压缩单应用能量配额，后台工作需要感知电量状态并主动降级
+- WakeLock 持有时间不再是唯一指标,单位时间内的功耗密度同样关键
+- 在低电量模式下,系统会动态压缩单应用能量配额,后台工作需要感知电量状态并主动降级
 
 [已验证: Android 17 Developer Preview 文档; source.android.com/docs/core/power]
 
@@ -491,7 +491,7 @@ Android 17 (API 37) 在 App Standby Buckets 的基础上引入了能量限额制
 - 正在运行前台服务的 App
 - 用户手动设置为"不受优化"的 App
 
-对于开发者来说,关键是确保 App 在后台行为良好,避免触发系统的自动限制。一旦 App 被放入 Restricted Bucket,它的后台功能基本就瘫痪了。
+对于开发者来说，要确保 App 在后台行为良好,避免触发系统的自动限制。一旦 App 被放入 Restricted Bucket,它的后台功能基本就瘫痪了。
 
 ## 版本演进
 
