@@ -602,8 +602,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-10-7.12-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-10-7.12-external-review.md",
+      "completed_at": "2026-04-29T15:45:26.453428",
+      "completed_reason": "P0 AsyncLayoutInflater Fragment回退陷阱已明确警告；P1 ViewBinding bind()开销已补充；P1 Android 15 Stretch优化已添加；sConstructorMap Android 15实例变量版本差异已修正"
     },
     {
       "section": "07.13",
@@ -638,8 +640,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-10-7.13-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-10-7.13-external-review.md",
+      "completed_at": "2026-04-29T15:45:26.453428",
+      "completed_reason": "P1 Android 16桌面模式双重角色已补充；P1 M3 Expressive特效过载场景已添加(含debug.hwui.disable_blur_visual_feedback验证)；P2 Compose化内存基线偏移已说明"
     },
     {
       "section": "07.14",

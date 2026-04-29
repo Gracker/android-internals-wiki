@@ -2,7 +2,7 @@
 title: "View 体系性能优化：布局层级、inflate 与 measure/layout 开销"
 chapter: "7.12"
 section: "7.12"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
@@ -30,7 +30,7 @@ related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.5", "8.3"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task9_result: pass-tech-review
@@ -129,7 +129,9 @@ public final View createView(Context viewContext, String name,
 }
 ```
 
-这里省时间的是 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。截至 AOSP main / android-16.0.0_r1，这个缓存仍是进程内静态缓存；`verifyClassLoader()` 会在复用前校验缓存的 Constructor 是否来自当前 `Context` 可见的 ClassLoader，不匹配时移除并重新查找。动态特性模块、插件化或热更新场景要把 ClassLoader 生命周期纳入内存排查，避免旧 Constructor 被静态缓存延长存活时间。
+这里省时间的是 `sConstructorMap` 缓存了每个 View 类的 `Constructor` 对象。第一次遇到某个 View 类需要反射查找，后续遇到同类型 View 就直接用缓存。
+
+版本差异：Android 14 及以下，`sConstructorMap` 是 `LayoutInflater` 的静态变量（`private static final HashMap`），进程内所有 `LayoutInflater` 实例共享同一份缓存。Android 15 起（AOSP android-15.0.0_r1），`sConstructorMap` 改为实例变量，每个 `LayoutInflater` 持有独立缓存。`verifyClassLoader()` 会在复用前校验缓存的 Constructor 是否来自当前 `Context` 可见的 ClassLoader，不匹配时移除并重新查找。动态特性模块、插件化或热更新场景要把 ClassLoader 生命周期纳入内存排查，避免旧 Constructor 被缓存延长存活时间。
 
 [已验证: AOSP `frameworks/base/core/java/android/view/LayoutInflater.java`, `sConstructorMap` 与 `verifyClassLoader()`]
 
@@ -196,6 +198,8 @@ public View createView(View parent, String name, Context context, AttributeSet a
 - 12 层、200 个 View 左右的复杂布局，一旦和列表滚动、动画或首帧 inflate 叠在一起，布局阶段就可能吞掉大部分帧预算
 
 在 120Hz 设备上，帧预算只有 8.33ms。布局层级本身不是唯一问题，重复 measure、深层嵌套和不必要的 `requestLayout()` 更容易把预算挤空。
+
+Android 15 对 View 树遍历做了底层优化：引入了更智能的渲染意图感知，减少了 OverScroll（边缘回弹）效果触发时的额外 measure pass。在 120Hz 设备上，这项优化让回弹动画的帧率稳定性有可感知的提升。如果排查 OverScroll 场景时发现 Android 14 及以下有明显的 measure 尖峰，可以预期在 Android 15+ 上同一场景的开销会降低。
 
 ### RelativeLayout 的二次 measure 问题
 
@@ -313,6 +317,16 @@ Google 在 2017 support ConstraintLayout 时代做过一组公开测试 [已验�
 
 默认会按版本启用一组可用优化。收益大小取决于约束关系、子树规模和重复测量次数，最好用当前设备上的 Perfetto 或 FrameMetrics 验证。
 
+### ViewBinding 的初始化代价
+
+ViewBinding 常被理解为 `findViewById` 的语法糖。在初始化阶段，生成的 `bind()` 方法会遍历 View 树，对每个带 ID 的 View 调用 `findViewById`。在简单布局下这笔开销可以忽略，但在复杂 View 树（例如 200+ 节点、多层嵌套的列表项）中，`bind()` 的耗时可能和 `inflate` 本身处于同一量级。
+
+在 RecyclerView 列表这种高频 bind 场景中，可以考虑以下替代方案：
+
+- 手动缓存 `findViewById` 结果，只查找真正需要动态更新的 View
+- 通过 `LayoutInflater.Factory2` 直接实例化核心控件，跳过 XML 反射路径
+- 对特别复杂的列表项，用基准测试对比 ViewBinding bind 和手动 bind 的耗时占比
+
 ### 什么时候不该用 ConstraintLayout
 
 `ConstraintLayout` 也有边界。在以下场景，传统布局反而更合适：
@@ -399,8 +413,12 @@ new AsyncLayoutInflater(context).inflate(
 
 1. **parent 的 `generateLayoutParams(AttributeSet)` 必须线程安全**。如果父容器的这一步只能在主线程执行，后台 inflate 会失败并回退到 UI thread。
 2. **被创建的 View 不能在构造或初始化阶段创建 `Handler`，也不能依赖 `Looper.myLooper()`**。这类 View 在后台线程里构造时很容易抛异常。
-3. **默认 `BasicInflater` 不会复用 AppCompat 那套主线程 `Factory2` 链，也不支持包含 Fragment 的布局**。AndroidX `AsyncLayoutInflater 1.1.0` 增加了 `AsyncLayoutFactory` 构造入口；AppCompat 项目可以引入 `asynclayoutinflater-appcompat`，用 `AsyncAppCompatFactory` 让 AppCompatViewInflater 参与后台 inflate。
-4. **回退是常见结果，不是异常路径**。`AsyncLayoutInflater` 的后台线程只要抛 `RuntimeException`，就会记录日志并在 UI thread 重新 inflate。功能可能看起来正常，但主线程时间并没有省下来。
+3. **`<fragment>` 标签会触发回退到主线程同步加载**。由于 `FragmentManager` 事务严格限制在 UI 线程，`<fragment>` 的解析是非线程安全的。在最新 AndroidX 源码中，`AsyncLayoutInflater` 在后台线程遇到 `<fragment>` 时会触发 `RuntimeException`，被捕获后回退到 UI 线程同步 inflate。功能上结果正确，但主线程完全承担了这次 inflate，异步优化的目的落空。
+
+    如果布局中包含 Fragment，必须改用 `FragmentContainerView` 作为占位容器，在主线程回调中通过 `FragmentTransaction` 动态挂载 Fragment，不能指望 `AsyncLayoutInflater` 异步处理。
+
+4. **默认 `BasicInflater` 不会复用 AppCompat 那套主线程 `Factory2` 链**。AndroidX `AsyncLayoutInflater 1.1.0` 增加了 `AsyncLayoutFactory` 构造入口；AppCompat 项目可以引入 `asynclayoutinflater-appcompat`，用 `AsyncAppCompatFactory` 让 AppCompatViewInflater 参与后台 inflate。
+5. **回退是常见结果，不是异常路径**。`AsyncLayoutInflater` 的后台线程只要抛 `RuntimeException`，就会记录日志并在 UI thread 重新 inflate。功能可能看起来正常，但主线程时间并没有省下来。
 
 AppCompat 场景的最小接入形态如下：
 
