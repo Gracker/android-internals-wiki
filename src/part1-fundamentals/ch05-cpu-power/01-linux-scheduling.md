@@ -39,8 +39,8 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
 review_round: 3
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
@@ -522,7 +522,7 @@ Android 中使用 SCHED_FIFO 实时调度的场景主要集中在两个系统服
 
 **SurfaceFlinger 的部分关键路径**：虽然 SurfaceFlinger 的主循环使用 SCHED_NORMAL（CFS），但在某些厂商的实现中，与显示硬件直接交互的线程可能被设置为实时优先级。
 
-需要注意的是，实时线程如果失控（比如进入死循环），会导致整个系统无响应——因为实时优先级高于所有普通进程，连 watchdog 都抢不到 CPU。因此 Android 对 SCHED_FIFO 的使用非常谨慎，只在真正需要硬实时保证的场景使用。
+实时线程如果失控（比如进入死循环），会导致整个系统无响应——实时优先级高于所有普通进程，连 watchdog 都抢不到 CPU。因此 Android 对 SCHED_FIFO 的使用非常谨慎，只在真正需要硬实时保证的场景使用。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/av/services/audioflinger/Threads.cpp]
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
@@ -574,7 +574,7 @@ echo 256 > /proc/<pid>/task/<tid>/util_clamp_min
 echo 512 > /proc/<pid>/task/<tid>/util_clamp_max
 ```
 
-Android 产品机更常见的入口不是手写 `/proc`，而是 task profiles。
+Android 产品机上更常见的入口是 task profiles，而不是手写 `/proc`。
 
 ### Android userspace 到 cpuset / schedtune / uclamp 的控制链
 
@@ -609,7 +609,7 @@ Android 产品机更常见的入口不是手写 `/proc`，而是 task profiles�
 
 ### 在 Perfetto 中的观察方法
 
-UClamp/SchedTune 的效果在 Perfetto 中不是以独立 Track 呈现的，而是通过它们对调度行为的间接影响来观察。具体来说，我们需要关注两个 Track：
+UClamp/SchedTune 在 Perfetto 中没有独立 Track，它们的效果只能通过调度行为的间接影响来观察。具体来说，关注两个 Track：
 
 **CPU Frequency Track**：在 Perfetto 的 CPU 行下方，有一条显示频率变化的曲线。当一个前台应用开始渲染时，如果 UClamp_MIN 设置正确，我们应该看到 CPU 频率迅速提升到较高水平（比如从 300MHz 跳到 1.8GHz）。如果频率爬升缓慢，可能是 UClamp 配置不当或者调频器没有及时响应。
 

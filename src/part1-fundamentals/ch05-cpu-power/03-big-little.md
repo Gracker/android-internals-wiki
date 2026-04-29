@@ -32,9 +32,9 @@ polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-04-21T08:24:09+08:00"
 task2b_state: 'pending'
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: 'task6_pending'
+pipeline_stage: task9_pending
 task9_result: 'needs-rework'
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: 'openclaw-task9'
