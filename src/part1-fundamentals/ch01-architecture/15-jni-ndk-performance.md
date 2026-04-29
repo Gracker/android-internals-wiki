@@ -236,6 +236,23 @@ AOSP 自己的实现方式很能说明问题。`Binder.java`、`Parcel.java` 这
 
 这给我们的判断标准也很简单。如果调用发生在**同进程**里，而且 Java/Kotlin 的确需要借助现成的 C/C++ 库，JNI 是合适的桥。如果实际要做的是**跨进程通信**，那就应该老老实实用 Binder / AIDL，不要为了躲开 IPC 而硬把两个组件塞进一个进程再走 JNI。至于 `libbinder_ndk` 和 Java Binder 谁更快，不能脱离 payload、序列化路径和测试设备去写固定百分比。更可靠的结论是：native-only 的 Binder 栈可以减少 Java ↔ native 桥接和部分序列化层级，但具体收益必须结合 workload 单独测。
 
+## Post-Link 优化：Propeller
+
+NDK r28+ 引入了对 Propeller（Post-Link Optimization）的支持。Propeller 在 PGO 的基础上，通过重排二进制中的基本块（basic block）顺序，让 CPU 的分支预测和指令缓存命中率进一步提升。Google 内部测试显示，在已有 PGO 的基础上，Propeller 可以再带来最高 8% 的性能提升。
+
+Propeller 的工作流程分为三步：先用 instrumented binary 采集执行 profile，然后把 profile 反馈给 linker 进行基本块重排，最后输出优化后的 .so。它和 PGO 是互补关系——PGO 影响编译器的内联和代码生成决策，Propeller 影响 linker 的代码布局决策。
+
+在 NDK 构建中启用 Propeller 的最小配置：
+
+```cmake
+# CMakeLists.txt
+target_link_options(mylib PRIVATE
+    -Wl,--propeller-order=/path/to/order.txt
+)
+```
+
+完整的 profile 采集和构建流程，建议参照 NDK r28 的 `README.md` 中 Propeller 章节。这项技术目前更适合对启动时间或热路径有极致要求的场景，通用业务可以先确保 PGO / AutoFDO 落地后再考虑。
+
 ## 版本演进
 
 | Android 版本 | 与本节直接相关的变化 |
@@ -244,7 +261,7 @@ AOSP 自己的实现方式很能说明问题。`Binder.java`、`Parcel.java` 这
 | Android 12 (API 31) | 官方文档说明：内建 dynamic JNI linking 对这两类注解的支持从 Android 12+ 才完整可用 |
 | Android 14 (API 34) | `@FastNative` / `@CriticalNative` 成为 CTS-tested public API |
 | Android 15 (API 35) | 16KB page size 成为平台重点兼容项，Google Play 对 targeting Android 15+ 的 64 位提交提出强制支持要求 |
-| Android 16 (API 36) | 本轮核对未发现新的 public JNI annotation 语义变化，仍按 Android 15 的规则理解和验证 |
+| Android 16 (API 36) | 本轮核对未发现新的 public JNI annotation 语义变化；ARMv9 平台上 JNI transition 延迟进一步压短 |
 
 ## 常见误区
 

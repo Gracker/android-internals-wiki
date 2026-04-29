@@ -1176,7 +1176,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T02:18:16.461948+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T18:46:17.064009",
+      "completed_reason": "现代设备基准数据已补充(ARMv9)；@CriticalNative数组签名展开规则已添加；Propeller Post-Link优化已补充"
     },
     {
       "section": "1.16",
@@ -1208,7 +1210,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T02:18:16.461948+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T18:46:17.064009",
+      "completed_reason": "AAudio Power Saving Offloaded模式已添加；IConfig.aidl动态音频策略已补充；蓝牙LE Audio延迟数据已更新"
     },
     {
       "section": "1.2",
