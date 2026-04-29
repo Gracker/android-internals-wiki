@@ -29,13 +29,17 @@ sources:
     path: "https://web.dev/articles/rail"
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
-review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。小修2处L1禁用词（「可以看到」x1/「其实」x1）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
-pipeline_stage: task9_pending
+review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
+task9_result: needs-rework
+task9_reviewed_date: "2026-04-30"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-30T05:20:00+08:00"
 ---
 
 # 响应速度原理

@@ -12205,3 +12205,42 @@ Impeller 针对 AVP 视频层的绕过
 ### 外部 review 来源
 - 2026-04-29-11-18.12-external-review.md
 
+<!-- 8.1-2026-04-30-uil-motionpredictor -->
+## [2026-04-30] 8.1 响应速度原理 — 知识盲区
+
+### 盲区描述
+Android 端“UIL / User Interaction Latency”的官方状态、Android Vitals 归属、Play 排名影响，以及 MotionPredictor API 与系统级触摸预测的边界仍需一手资料确认。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查 developer.android.com / source.android.com 是否存在 UIL 正式指标定义、P99 200ms 口径和 Play Console 展示入口
+- 对比 API 34-37 `android.view.MotionPredictor` 文档、AOSP native MotionPredictor 实现、设备输入源支持范围
+- 用 Perfetto 验证真实事件与预测事件在 App/RenderThread/SurfaceFlinger 侧的可观测信号
+
+### 关联章节
+8.1, 3.4, 13.8, 18.19
+
+### 来源
+Task9 deep review: logs/deep-review/2026-04-30-05-deep-review.md
+
+<!-- 8.3-2026-04-30-16kb-cow-startup -->
+## [2026-04-30] 8.3 启动优化策略 — 知识盲区
+
+### 盲区描述
+16KB page size 对启动期 SDK 配置写入、Zygote 继承页 COW、minor/major page fault 和 PSS/RSS 的实际影响缺少可复核数据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 设计 4KB/16KB 页设备或模拟环境的冷启动对比，记录 minor faults、major faults、RSS/PSS、CPU time
+- 区分普通堆写入、Zygote 继承页首次写入、mmap 文件页写入、SharedPreferences/DataStore 写入
+- 结合 §4.7 16KB Page Size 与 §1.11 Zygote 机制补源码和实验条件
+
+### 关联章节
+8.3, 4.7, 1.11, 6.5
+
+### 来源
+Task9 deep review: logs/deep-review/2026-04-30-05-deep-review.md

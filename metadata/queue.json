@@ -6166,39 +6166,48 @@
       "section": "8.1",
       "section_title": "响应速度原理",
       "priority": 95,
-      "reason": "[External Review] Android Vitals 指标量化描述陈旧",
+      "reason": "[Deep Tech Review] 8.1 响应速度原理 — 2026-04-30 05:20 发现 P0 3 / P1 1，需回炉修正",
       "review_issues": [
         {
-          "type": "版本差异",
-          "location": "Android Vitals 指标",
-          "detail": "慢帧/冻结帧定义需更新，缺少 700ms 冻结帧阈值",
-          "suggestion": "明确冻结帧(>700ms, >0.1%)和慢帧(>16ms, >50%)的精确指标",
-          "evidence": [
-            "Play Console Vitals 文档"
-          ]
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L137 InputDispatcher 到 App 的传输机制",
+          "detail": "正文写 InputDispatcher 通过 Binder IPC 将事件发送给目标 App。AOSP android-16.0.0_r1 中事件数据由 InputDispatcher::publishMotionEvent() 调用 connection.inputPublisher.publishMotionEvent()，再进入 InputChannel::sendMessage()，底层使用 socket fd 的 send()。Binder 参与窗口/InputChannel 建立，不承载每个 MotionEvent 的分发。",
+          "suggestion": "改为“InputDispatcher 通过 InputChannel/socketpair 将事件写入目标窗口连接；App 主线程的 NativeInputEventReceiver 监听 fd 后消费事件”。如需提 Binder，只放在 WMS 创建/传回 InputChannel 的阶段。"
         },
         {
-          "type": "原理链",
-          "location": "RAIL Animation 预算",
-          "detail": "- [P0][原理链][RAIL Animation 预算]\n- **原文问题**：声称动画帧预算为固定的 16ms 或 8ms。\n- **技术背景**：Android 15+ 广泛采用自适应刷新率（ARR）。系统调度器（Scheduler）会根据内容意图动态调整 VSync 周期。\n- **核验结论**：在 2026 年的标准下，Animation 阶段的目标是“命中调度器分配的 Expected Deadline”，而非死守固定数值。\n- **建议修正方向**：引入“动态帧预算”概念，说明 RAIL 模型在现代 Android 上的参数化演进。",
-          "suggestion": ""
+          "severity": "P0",
+          "type": "版本差异/API 错误",
+          "location": "L243-L245 触摸预测（Touch Prediction）",
+          "detail": "正文写 Android 16 在输入分发路径中引入增强型触摸预测，并称开发者无需额外适配、系统自动启用。Android 公共 API MotionPredictor 是 API 34 引入，官方说明要求应用 record(MotionEvent) 后调用 predict(long)，并用 isPredictionAvailable(deviceId, source) 检查设备/输入源支持。未找到 Android 16 自动对所有触摸路径启用 ML 预测的官方依据。",
+          "suggestion": "把该段改成“API 34+ 提供 MotionPredictor 开发者 API；是否可用取决于设备和输入源”。如要写 Android 16 系统级预测，需补 AOSP 类名、开关、适用输入源和 trace 证据，否则标 [待验证]。"
         },
         {
-          "type": "指标体系",
-          "location": "UIL (User Interaction Latency)",
-          "detail": "- [P1][指标体系][UIL (User Interaction Latency)]\n- **原文问题**：对 INP 的对应物描述为“待验证/类比分析”。\n- **技术背景**：UIL 已正式定义为 Android 端对标 Web INP 的端到端响应指标，衡量从物理触摸到视觉反馈的全过程。\n- **核验结论**：P99 ≤ 200ms 为“良好”标准。UIL 现已列入 Google Play 排名权重。\n- **建议补充方向**：在“响应速度的度量维度”中将 UIL 作为首位指标，并详细拆解其三大阶段。",
-          "suggestion": ""
+          "severity": "P0",
+          "type": "指标体系事实错误",
+          "location": "L247-L252 UIL 与 Google Play 排名权重",
+          "detail": "正文称 Android 16 正式将 UIL 列为端到端响应核心指标，P99≤200ms 为良好，并已纳入 Google Play 排名权重。本轮复核 developer.android.com Android Vitals/Slow rendering/App startup 文档，只能确认 ANR、crash、slow rendering、frozen frames、app startup 等指标；未找到 UIL、P99 200ms、500ms 提前触发 input ANR 或 Play 排名权重的官方定义。",
+          "suggestion": "删除“正式/Play 排名权重/P99≤200ms”这类确定口径；改成“可借鉴 Web INP 的端到端交互延迟分析思路”，并标注 [待验证] 或补官方来源。"
         },
         {
-          "type": "版本差异",
-          "location": "Android 16 触摸预测",
-          "detail": "- [P1][版本差异][Android 16 触摸预测]\n- **原文问题**：未提及输入分发路径的最新算法优化。\n- **技术背景**：Android 16 引入了增强型 Touch Prediction，利用 ML 算法预测用户指尖的下一帧位移。\n- **建议补充方向**：在“感知速度”章节补充触摸预测如何通过“视觉前瞻”抵消系统延迟。",
-          "suggestion": ""
+          "severity": "P1",
+          "type": "指标口径不准",
+          "location": "L180-L185 Android Vitals 呈现速度",
+          "detail": "正文把“超过 50% 的用户会话中出现单帧>16ms”写成 Android Vitals 告警口径，且没有列出 frozen frames。官方 Slow rendering 文档明确 frozen frame 是单帧渲染超过 700ms，并说明 90Hz/120Hz 下帧预算分别约 11ms/8ms；游戏还另有 slow sessions 指标。",
+          "suggestion": "按官方指标拆开写：slow rendering/慢帧、frozen frames >700ms、games slow sessions、app startup。避免把 16ms 当成所有刷新率和所有 Vitals 场景的唯一阈值。"
         }
       ],
-      "added_by": "external-ai-review",
+      "added_by": "task9-deep-tech-review",
       "status": "pending",
-      "source_file": "2026-04-29-10-8.1-external-review.md"
+      "source_file": "2026-04-29-10-8.1-external-review.md",
+      "material_paths": [
+        "logs/deep-review/2026-04-30-05-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "added_at": "2026-04-30T05:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-04-30T05:20:00+08:00",
+      "external_review_source": "2026-04-29-10-8.1-external-review.md"
     },
     {
       "section": "8.10",
@@ -7852,32 +7861,35 @@
     {
       "section": "8.3",
       "section_title": "启动优化策略",
-      "priority": 95,
-      "reason": "[External Review] 8.3 启动优化策略 存在 P0/P1 技术问题，需回炉修正",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 8.3 启动优化策略 — 2026-04-30 05:20 发现 P1 2，需回炉修正",
       "review_issues": [
         {
-          "type": "编译优化",
-          "location": "Startup Profile 作用域",
-          "detail": "将 `startup-prof.txt` 描述为仅服务于 AOT 编译。",
-          "suggestion": "明确区分 Baseline Profile（提升执行效率）与 Startup Profile（减少加载 I/O）。"
+          "severity": "P1",
+          "type": "数据缺失/原理边界",
+          "location": "L132 16KB 页面下的启动期写操作克制",
+          "detail": "正文写“任何微小写操作都会触发 4 倍物理内存拷贝”并推导到“CPU 被 Page Fault 中断淹没”。16KB 页会把 COW 粒度从 4KB 扩到 16KB，但只在写入共享/COW 页时发生；普通堆对象写入、已私有页写入和文件映射写入的代价不同。该段缺少 Android 官方 16KB 文档、trace 或 benchmark 支撑，容易把“页粒度扩大”写成所有写操作 4 倍放大。",
+          "suggestion": "限定为“Zygote 继承页、共享映射、首次写入等 COW 场景”；补 Perfetto minor/major faults、RSS/PSS、CPU 时间对比，或降级成 [待验证] 建议。"
         },
         {
-          "type": "内存机制",
-          "location": "16KB Page COW 风险",
-          "detail": "未提及大页面环境下异步初始化的副作用。",
-          "suggestion": "在“延迟初始化”部分增加“内存写克制”建议，推荐启动初期保持配置只读。"
-        },
-        {
-          "type": "架构适配",
-          "location": "WebView 首屏优化",
-          "detail": "优化策略未覆盖以 H5 为首屏的应用场景。",
-          "suggestion": "说明如何配合 `SplashScreen` 状态位，利用 Android 15 的渲染意图加速 WebView 容器的唤醒。"
+          "severity": "P1",
+          "type": "版本边界/工具链归因",
+          "location": "L630-L633 Startup Profile 与 DEX layout",
+          "detail": "正文把 Startup Profile 的 DEX layout 优化写成 “Android 15+ 强化消费”。官方 Startup Profile 文档描述的是 build system/AGP 消费 `startup-prof.txt` 并改善 APK DEX 布局；这是构建工具链能力，不应归因成 Android 15+ 运行时行为，除非补 ART/AGP 版本矩阵。",
+          "suggestion": "改为“AGP/R8/D8 构建阶段消费 startup-prof.txt 做 DEX layout 优化”；另列表说明最低 AGP、Macrobenchmark、ProfileInstaller/运行时版本要求。"
         }
       ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-29T16:19:40.737307",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T05:20:00+08:00",
       "status": "pending",
-      "source_file": "2026-04-29-10-8.3-external-review.md"
+      "source_file": "2026-04-29-10-8.3-external-review.md",
+      "material_paths": [
+        "logs/deep-review/2026-04-30-05-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-04-30T05:20:00+08:00",
+      "external_review_source": "2026-04-29-10-8.3-external-review.md"
     },
     {
       "section": "8.5",

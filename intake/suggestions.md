@@ -263,3 +263,34 @@
 - **位置**：L178（JIT code cache 通常稳定在 4MB 左右）
 - **问题**：该数值仍标注为工程经验值，缺少设备、应用规模、Android/ART 版本和采样方法。
 - **建议**：补 dumpsys meminfo / perfetto counter / ART 日志的采样条件；如果暂无数据，删掉固定 4MB 数值或改为明确的待验证脚注。
+
+## [Task9 Deep Review] 8.1 响应速度原理 — 2026-04-30 — L115/L141/L277 章节链接
+- **类型**：交叉引用
+- **位置**：L115/L141/L277 章节链接
+- **问题**：`04-choreographer.md`、`01-input-dispatch.md`、`01-perfetto-intro.md` 都按当前目录解析，无法跳到真实章节。
+- **建议**：改成指向 `part1-fundamentals/ch02-rendering/04-choreographer.md`、`part1-fundamentals/ch03-input/01-input-dispatch.md`、`part3-tools/ch13-perfetto/01-perfetto-intro.md` 的相对路径。
+- **review 日志**：logs/deep-review/2026-04-30-05-deep-review.md
+
+
+## [Task9 Deep Review] 8.1 响应速度原理 — 2026-04-30 — L139 输入分发 1-2ms
+- **类型**：数据缺失
+- **位置**：L139 输入分发 1-2ms
+- **问题**：“从 InputDispatcher 发出到 App 收到通常 1-2ms”缺少设备、刷新率、负载和 trace 口径。
+- **建议**：补一段 Perfetto/TraceProcessor 量测方法，或把该数字改为示例值并标注测试条件。
+- **review 日志**：logs/deep-review/2026-04-30-05-deep-review.md
+
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-04-30 — L652-L658 Baseline Profile 效果量化
+- **类型**：数据缺失
+- **位置**：L652-L658 Baseline Profile 效果量化
+- **问题**：“简单应用 10%-20%、中等 20%-40%、复杂超过 40%”没有官方或案例来源，且与 Startup Profile 官方“通常比只用 Baseline Profile 再快 15%-30%”不是同一口径。
+- **建议**：补 Google I/O/case study/Macrobenchmark 数据来源；如果只是经验值，改成示例并写测试条件。
+- **review 日志**：logs/deep-review/2026-04-30-05-deep-review.md
+
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-04-30 — 2026-04-29-10-8.3-external-review.md WebView DEFAULT_TO_WEB
+- **类型**：external-review 核验
+- **位置**：2026-04-29-10-8.3-external-review.md WebView DEFAULT_TO_WEB
+- **问题**：外部 review 提到 Android 15 `DEFAULT_TO_WEB` 意图用于 WebView 首屏，本轮检索未找到标准 Intent/API 或官方文档支持。
+- **建议**：不要按该线索直接补正文；如要覆盖 H5 首屏，改查 WebView 预热、renderer process、7.11/18.13 的可验证内容。
+- **review 日志**：logs/deep-review/2026-04-30-05-deep-review.md

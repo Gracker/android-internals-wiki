@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-30T03:32:47+08:00",
+  "generated_at": "2026-04-30T05:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 105,
-    "ready-for-review": 113,
+    "finalized": 104,
+    "ready-for-review": 114,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-30T04:20:00+08:00",
+    "last_updated": "2026-04-30T05:20:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 33,
-      "ready-to-publish": 105,
-      "task2b_pending": 91,
+      "ready-to-publish": 104,
+      "task2b_pending": 92,
       "task9_pending": 8,
       "task6_pending": 13
     },
@@ -28,8 +28,8 @@
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 114,
-      "pending": 93,
+      "fixed": 113,
+      "pending": 94,
       "idle": 3
     },
     "draft": 0,
@@ -38,8 +38,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 33,
-      "ready-to-publish": 105,
-      "task2b_pending": 91,
+      "ready-to-publish": 104,
+      "task2b_pending": 92,
       "task9_pending": 8,
       "task6_pending": 13
     },
@@ -56,11 +56,11 @@
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 114,
-      "pending": 93,
+      "fixed": 113,
+      "pending": 94,
       "idle": 3
     },
-    "last_updated": "2026-04-30T04:20:00+08:00"
+    "last_updated": "2026-04-30T05:20:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -2714,7 +2714,11 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-15",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_reviewed_date": "2026-04-30",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-04-30T05:20:00+08:00",
+      "review_notes": "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
     },
     "src/part2-performance/ch08-responsiveness/02-app-launch.md": {
       "path": "src/part2-performance/ch08-responsiveness/02-app-launch.md",
@@ -2746,27 +2750,28 @@
       "title": "启动优化策略",
       "chapter": "8.3",
       "section": "8.3",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-01",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-27",
       "last_verified_against": "Android Developers Baseline Profiles/ProfileInstaller docs + Android Developers Blog AutoFDO kernel post + Task9 deep review 2026-04-27",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T11:41:58+08:00",
+      "last_task9_at": "2026-04-30T05:20:00+08:00",
       "last_task2b_at": "2026-04-27T10:44:00+08:00",
-      "notes": "Task9 pass-tech-review; Task6 passed; queue empty; auto promoted finalized."
+      "notes": "Task9 pass-tech-review; Task6 passed; queue empty; auto promoted finalized.",
+      "review_notes": "2026-04-30 task9 deep-review: needs-rework。P0 0，P1 2，P2 2。Startup Profile 原问题部分已覆盖；external DEFAULT_TO_WEB 线索未采纳。"
     },
     "src/part2-performance/ch08-responsiveness/04-other-scenarios.md": {
       "path": "src/part2-performance/ch08-responsiveness/04-other-scenarios.md",
