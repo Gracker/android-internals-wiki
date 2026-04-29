@@ -5835,9 +5835,9 @@
     },
     {
       "section": "7.10",
-      "section_title": "图片与 Bitmap 性能",
+      "section_title": "图片加载与 Bitmap 性能优化",
       "priority": 95,
-      "reason": "[External Review] inSampleSize 取整逻辑陈旧；Coil 3.0 不使用 BitmapPool 原因未充分说明",
+      "reason": "[Deep Tech Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-04-29 17:55 发现 P0 1 / P1 2，需回炉修正；合并 external-review Gainmap/ImageDecoder 问题单",
       "review_issues": [
         {
           "type": "源码准确性",
@@ -5886,11 +5886,37 @@
           "location": "L3内容深度检查",
           "detail": "缺少不同优化方案的性能量化对比",
           "suggestion": "补充内存占用、加载时间等性能指标的对比数据"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L104-L130 inSampleSize / BitmapFactory 源码锚点",
+          "detail": "正文写 BitmapFactory.cpp 存在 sk_sample_size 处理、非 2 幂会向下取整，并把宽高缩放代码标为 frameworks/base/graphics/java/android/graphics/BitmapFactory.java。复核 AOSP android-14/15/16：BitmapFactory.java 中没有这段宽高缩放代码；libs/hwui/jni/BitmapFactory.cpp 只是读取 inSampleSize，传给 SkAndroidCodec::getSampledDimensions(sampleSize) 和 codecOptions.fSampleSize，没有 sk_sample_size 符号，也没有 Java 层强制 2 幂 clamp。",
+          "suggestion": "重写为：官方 API 文档仍建议按 2 幂作为兼容安全口径；现代 AOSP native 路径由 SkAndroidCodec/SkCodec 按格式能力采样，必要时 fine scale。源码锚点改为 BitmapFactory.java Options 文档 + libs/hwui/jni/BitmapFactory.cpp doDecode()，代码块若保留需标为伪代码。"
+        },
+        {
+          "type": "知识盲区/版本差异",
+          "severity": "P1",
+          "location": "L171-L181 Bitmap.Config 内存表；L277-L301 大图内存公式",
+          "detail": "章节仍按 SDR ARGB_8888 公式计算图片内存，没有覆盖 Android 14+ Bitmap Gainmap/Ultra HDR。AOSP Bitmap.java 已有 hasGainmap()/getGainmap()/setGainmap()；BitmapFactory.cpp 会通过 getGainmapAndroidCodec()/decodeGainmap() 解码 gainmap，并按 sampleSize/scale 处理。含 Gainmap 的 JPEG 不能只用 宽×高×4 估算。",
+          "suggestion": "补“Ultra HDR / Gainmap 内存模型”：base bitmap 与 gainmap bitmap/metadata 分开估算，说明 PSS/GPU 显存/NativeAllocationRegistry 观测边界；低端机可在确认业务接受 SDR 降级后用 setGainmap(null) 移除。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L132-L157 ImageDecoder.setTargetSize",
+          "detail": "正文只把 setTargetSize 写成 inSampleSize 替代，没有解释 ImageDecoder 的采样/缩放决策。AOSP ImageDecoder.setTargetSize() 文档说明可 sample 或 scale 到任意尺寸；setTargetSampleSize() 会让解码器按可高效执行的方向取整。",
+          "suggestion": "补 ImageDecoder 与 BitmapFactory 的边界：setTargetSize 必须在 OnHeaderDecodedListener 内设置；它减少手写 bounds + 2 幂采样 + 二次缩放的误差和峰值风险，但不能无条件写成所有格式都避免大缓冲，需标注按 codec 能力决定。"
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
-      "source_file": "2026-04-29-09-7.10-external-review.md"
+      "source_file": "2026-04-29-09-7.10-external-review.md",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-04-29T17:55:36+08:00"
     },
     {
       "section": "7.11",
