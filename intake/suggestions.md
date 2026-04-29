@@ -103,3 +103,10 @@
 - **问题**：补充 Perfetto SQL 聚合 WakeLock 申请计数语句，替代 Battery Historian 处理 24h 级超长 Trace
 - **建议**：补充 Perfetto SQL 聚合 WakeLock 申请计数语句，替代 Battery Historian 处理 24h 级超长 Trace
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L421-L436 Perfetto 图示与 1080p upload 4-8ms
+- **问题**：Perfetto 图仍是占位描述，且 1080p RGBA Bitmap 上传 4-8ms 没有设备、刷新率、GPU、图片格式、trace slice 或 benchmark 来源。
+- **建议**：补一组固定设备的 Perfetto/benchmark：主线程 decode slice、RenderThread upload/DrawFrame、FrameTimeline jank 标记；没有数据前把 4-8ms 改为待验证或删除。
+

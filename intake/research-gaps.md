@@ -11806,3 +11806,23 @@ dataSync 预算在多用户模式下的隔离；16KB Page 对 BatteryStats 持�
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-29)
+
+## [2026-04-29] 7.10 图片加载与 Bitmap 性能优化 — 知识盲区
+
+### 盲区描述
+Ultra HDR / Gainmap 图片的内存与显存模型仍未闭环。AOSP Bitmap.java 已提供 hasGainmap()/getGainmap()/setGainmap()，BitmapFactory.cpp 会解码 gainmap；正文仍按 SDR `宽×高×4` 估算，缺少 gainmap bitmap、metadata、PSS/GPU 显存与回收时机的边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Android 14-16 BitmapFactory.cpp 中 getGainmapAndroidCodec()/decodeGainmap() 对 sampleSize、density scale、hardware allocator 的处理。
+- 设计 Perfetto/heapprofd/Graphics Memory 实测，比较同一 JPEG 在有/无 Gainmap、Hardware/Software Bitmap 下的 Native heap、PSS、GPU memory 与 fd 变化。
+- 明确 `Bitmap.setGainmap(null)` 的适用条件：只在业务接受 SDR 降级时作为低端机兜底。
+
+### 关联章节
+- 7.10
+
+### 外部 review 来源
+- external-review 已命中：logs/external-review/archive/2026-04-29-09-7.10-external-review.md
+

@@ -1,17 +1,17 @@
 {
-  "generated_at": "2026-04-29T13:20:00+08:00",
+  "generated_at": "2026-04-29T17:55:36+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
     "total_sections": 250,
-    "finalized": 106,
-    "ready-for-review": 112,
+    "finalized": 105,
+    "ready-for-review": 113,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-29T13:20:00+08:00",
+    "last_updated": "2026-04-29T17:55:36+08:00",
     "pipeline_stage_counts": {
       "unknown": 33,
-      "ready-to-publish": 106,
-      "task2b_pending": 88,
+      "ready-to-publish": 105,
+      "task2b_pending": 89,
       "task9_pending": 8,
       "task6_pending": 15
     },
@@ -28,8 +28,8 @@
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 117,
-      "pending": 90,
+      "fixed": 116,
+      "pending": 91,
       "idle": 3
     },
     "draft": 0,
@@ -38,8 +38,8 @@
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 33,
-      "ready-to-publish": 106,
-      "task2b_pending": 88,
+      "ready-to-publish": 105,
+      "task2b_pending": 89,
       "task9_pending": 8,
       "task6_pending": 15
     },
@@ -56,11 +56,11 @@
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 117,
-      "pending": 90,
+      "fixed": 116,
+      "pending": 91,
       "idle": 3
     },
-    "last_updated": "2026-04-29T13:20:00+08:00"
+    "last_updated": "2026-04-29T17:55:36+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -2544,25 +2544,26 @@
       "title": "图片加载与 Bitmap 性能优化",
       "chapter": "7.10",
       "section": "7.10",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-13",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
-      "task2b_result": "fixed",
+      "task9_result": "needs-rework",
+      "task2b_result": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T14:50:48+08:00"
+      "last_task9_at": "2026-04-29T17:55:36+08:00",
+      "task9_review_notes": "2026-04-29 task9 deep-review: needs-rework。P0 1；P1 2；P2 1。"
     },
     "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
@@ -8223,7 +8224,7 @@
       }
     }
   },
-  "last_updated": "2026-04-29T15:20:00+08:00",
+  "last_updated": "2026-04-29T17:55:36+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -9574,5 +9575,15 @@
     "p1": 0,
     "p2": 2,
     "updated_at": "2026-04-29T15:20:00+08:00"
+  },
+  "2026-04-29-17-task9": {
+    "section": "7.10",
+    "title": "图片加载与 Bitmap 性能优化",
+    "file": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
+    "result": "needs-rework",
+    "p0": 1,
+    "p1": 2,
+    "p2": 1,
+    "updated_at": "2026-04-29T17:55:36+08:00"
   }
 }
