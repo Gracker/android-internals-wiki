@@ -7645,6 +7645,27 @@
       "added_at": "2026-04-29T15:13:42.144032+08:00",
       "status": "pending",
       "source_file": "2026-04-29-09-7.9-external-review.md"
+    },
+    {
+      "section": "3.3",
+      "section_title": "手势导航与系统交互",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3.3 frontmatter SystemUI AOSP 路径重复 frameworks/base，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources L29-L33",
+          "detail": "三处 SystemUI AOSP 路径被写成 frameworks/base/frameworks/base/packages/SystemUI/...；android-16.0.0_r1 的实际路径是 frameworks/base/packages/SystemUI/...。正文与参考资料尾部已改对，但 frontmatter 元数据仍会生成错误源码锚点。",
+          "suggestion": "删除重复的 frameworks/base/ 前缀，把 EdgeBackGestureHandler.java、BackPanelController.kt、InputMonitorCompat.java 三条 sources 统一改为 frameworks/base/packages/SystemUI/...。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T15:20:00+08:00",
+      "status": "pending",
+      "source_file": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md"
     }
   ],
   "completed": [

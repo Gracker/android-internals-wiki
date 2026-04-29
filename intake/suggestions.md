@@ -6461,3 +6461,16 @@
 - **建议**：补充 Android 16 桌面模式及 ARR 开启后的“伪延迟”现象。由于系统会动态拉长显示周期，某些帧看起来像 Stuffing 实际上是系统在节能。
 - **来源**：Gemini 外部 review (2026-04-29-10-7.15-external-review.md)
 
+
+
+## [Task9 Deep Review] 3.3 手势导航与系统交互 — 2026-04-29
+- **类型**：版本差异
+- **位置**：L221、L233
+- **问题**：正文写到 Android 16 的 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 可用于 observer-only 回调，但没有补充 API 36 文档/AOSP 注释中的限制：同一时间只能注册一个 observer priority callback。对埋点 SDK、壳工程和业务模块同时注册的场景会产生误导。
+- **建议**：在 Android 16 行或性能影响列表中补一句边界：API 36 该 priority 只允许一个 callback，适合统一入口做日志分发，不能让多个模块各自注册。
+
+## [Task9 Deep Review] 3.3 手势导航与系统交互 — 2026-04-29
+- **类型**：数据缺失
+- **位置**：L241-L243、L265-L299
+- **问题**：“几毫秒级别”“几十毫秒”以及 legacy / predictive 两条 Perfetto 判读顺序缺少真实 trace、trace_processor 查询或设备/负载条件支撑。
+- **建议**：补一个最小样例：设备型号、Android 版本、录制 category、一次 legacy cancel 与一次 predictive progress 的关键时间戳；若没有真实样例，把延迟量级改成待测条件下的观察项，不写成固定范围。
