@@ -9476,6 +9476,80 @@
       "added_by": "external-ai-review",
       "added_at": "2026-04-30T06:16:05",
       "status": "pending"
+    },
+    {
+      "section": "12.3",
+      "section_title": "网络性能深入：连接池、TLS 与传输优化",
+      "priority": 95,
+      "reason": "[External Review] 12.3 网络性能深入 存在 P0 事实错误（0-RTT 反重放保护风险评估过时）与 P1 重要缺失（DNS 预测性解析、HTTPS Type 65 适配），需回炉修正",
+      "review_issues": [
+        {
+          "type": "P0事实错误",
+          "source": "external-ai-review",
+          "location": "TLS 握手性能与优化 / 0-RTT 安全评估段",
+          "detail": "原文认为 0-RTT 存在重放攻击风险，建议仅在非幂等请求上严格禁用。但 Android 15 (API 35) Conscrypt 已正式引入 TLS 1.3 Anti-replay 机制，通过单次性 Ticket 校验物理阻断重放。2026 年的 0-RTT 已非'带刺的玫瑰'。",
+          "suggestion": "修正安全风险评估，明确告知开发者 Android 15+ 的 0-RTT 已成为受控安全加速器，幂等接口应作为首选加速开关",
+          "evidence": [
+            "Android 15 Conscrypt Anti-replay",
+            "TLS 1.3 RFC 8446"
+          ]
+        },
+        {
+          "type": "P1重要缺失",
+          "source": "external-ai-review",
+          "location": "DNS 解析性能段",
+          "detail": "Android 16 (API 36) 强化了 DnsResolver 的 Predictive Prefetching，当用户手指悬停链接或 TalkBack 聚焦 URL 时静默发起查询，使'点击到建连'的 DNS 解析时间趋近于 0",
+          "suggestion": "增加'UI 焦点预解析'说明，建议开发者优先使用标准控件以享受此红利"
+        },
+        {
+          "type": "P1重要缺失",
+          "source": "external-ai-review",
+          "location": "DNS / 连接建立段",
+          "detail": "Android 16 系统级 resolver 已原生支持 DNS HTTPS Record (Type 65)，允许一次查询同时获得 IP、ALPN（HTTP/3）及 ECH 密钥，省去 1-2 个握手 RTT",
+          "suggestion": "说明 2026 年现代 DNS 查询已从'查地址'演进为'查配置包'"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-30T07:23:31+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-11-12.3-external-review.md"
+    },
+    {
+      "section": "12.4",
+      "section_title": "Android 网络安全与 TLS 性能优化",
+      "priority": 95,
+      "reason": "[External Review] 12.4 网络安全与 TLS 性能优化 存在 P0 事实错误（0-RTT 安全风险过时评估）与 P1 重要缺失（Android 17 高级保护模式强制 ECH、ECH 物理开销量化），需回炉修正",
+      "review_issues": [
+        {
+          "type": "P0事实错误",
+          "source": "external-ai-review",
+          "location": "TLS 握手与连接延迟段",
+          "detail": "原文认为 0-RTT 在 Android 上因安全风险而无法在生产环境大规模应用。但 Android 15 (API 35) 通过 Conscrypt + HttpEngine 实现了自动化 TLS 1.3 Anti-replay，利用单次性 Ticket 校验和 Ticket Age 限制，系统物理阻断了 0-RTT 包的重放可能。",
+          "suggestion": "明确告知开发者 2026 年的 0-RTT 已成为'受控的安全加速器'，GET 类静态配置、首屏元数据请求应通过 HttpEngine 显式开启 0-RTT",
+          "evidence": [
+            "Android 15 Conscrypt + HttpEngine Anti-replay",
+            "TLS 1.3 RFC 8446"
+          ]
+        },
+        {
+          "type": "P1重要缺失",
+          "source": "external-ai-review",
+          "location": "ECH 的性能影响段",
+          "detail": "Android 17 强化了 Advanced Protection Mode，在此模式下系统无视 App 的 Network Security Config 偏好，强制要求所有具备条件的域名必须走 ECH + DoH3 路径。若后端未适配 ECH，核心业务将断连。",
+          "suggestion": "增加兼容性预警，提醒开发者确保服务端支持 DNS Type 65 (HTTPS) 记录"
+        },
+        {
+          "type": "P1重要缺失",
+          "source": "external-ai-review",
+          "location": "ECH 性能影响段",
+          "detail": "ECH 握手涉及 HPKE 两阶段非对称加解密，实测在低端机上握手 CPU 占用约上升 12%。原文仅提及增加了 DNS 查询。",
+          "suggestion": "提供 ECH 相比普通 TLS 1.3 增加的 CPU 周期量化评估，帮助开发者在'极致隐私'与'低功耗建连'间做出平衡"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-30T07:23:31+08:00",
+      "status": "pending",
+      "source_file": "2026-04-29-11-12.4-external-review.md"
     }
   ],
   "completed": [
