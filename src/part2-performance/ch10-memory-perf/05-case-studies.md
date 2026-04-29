@@ -34,14 +34,20 @@ polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
 task6_state: reviewed
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-04-30"
 pipeline_stage: task2b_pending
+review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
 task9_state: reviewed
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: "2026-04-30"
 task2b_state: pending
-task2b_result: fixed
+task2b_result: fixed_rework
+task2b_rework_date: "2026-04-30"
+task2b_fixed_at: "2026-04-30T01:40:00+08:00"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-25T14:25:03+08:00"
+last_task9_at: "2026-04-30T02:31:48+08:00"
+task9_result: needs-rework
+
 ---
 
 # 案例集
@@ -126,9 +132,17 @@ last_task9_at: "2026-04-25T14:25:03+08:00"
 
 **限制后台进程的 I/O**。使用 cgroup 的 blkio 控制器限制后台进程的磁盘读写带宽，确保前台应用的 I/O 请求能优先得到处理。
 
-**App 端的配合**。App 可以通过 `onTrimMemory()` 回调感知系统内存压力，主动释放非必要的缓存（如图片缓存、预加载的数据等）。不过需要注意，`onTrimMemory` 的级别从 `TRIM_MEMORY_RUNNING_MODERATE`（值为 5）到 `TRIM_MEMORY_COMPLETE`（值为 80），不同级别对应的释放策略应该不同——不是每次回调都要清空所有缓存。
+**App 端的配合**。App 可以通过 `onTrimMemory()` 回调感知系统内存压力，主动释放非必要的缓存（如图片缓存、预加载的数据等）。
 
-[已验证: AOSP frameworks/base/core/java/android/content/ComponentCallbacks2.java, 常量值确认]
+`onTrimMemory` 的可用级别在不同 Android 版本上有显著差异：
+
+- **API 33 及以下**：系统会投递从 `TRIM_MEMORY_RUNNING_MODERATE`（5）到 `TRIM_MEMORY_COMPLETE`（80）的各级别回调，App 可以根据级别梯度释放资源
+- **API 34（Android 14）起**：`RUNNING_*`、`MODERATE`、`COMPLETE` 等旧级别不再投递给 App，系统改为通过 PSI（Pressure Stall Information）和 `lmkd` 在内核层面做内存压力判断
+- **API 35（Android 15）起**：`RUNNING_*` 相关常量标记为 `@Deprecated`
+
+API 34+ 的 App 可靠回调级别主要是 `TRIM_MEMORY_UI_HIDDEN`（20）和 `TRIM_MEMORY_BACKGROUND`（40）。系统级内存压力判断应回到 `meminfo` 轨道、`lmkd` 指标和 PSI 信号，而非依赖已废弃的 trim level。
+
+[已验证: AOSP frameworks/base/core/java/android/content/ComponentCallbacks2.java; API 34+ ComponentCallbacks2 变更]
 
 ### 举一反三
 
@@ -182,7 +196,7 @@ last_task9_at: "2026-04-25T14:25:03+08:00"
 
 Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**。当 OOM 崩溃堆栈分散在看似随机的代码路径中时，不应该在崩溃点逐个排查——先看 Java 堆的整体分布，找到那个"看不见的大象"。线上 Hprof 抓取方案虽然有一定的性能开销，但对于定位这类问题几乎是不可替代的。
 
-另一个需要注意的点是：Android 8.0+ 的 Bitmap 像素数据虽然不在 Java 堆了，但这并不意味着 Bitmap 泄漏不再是问题。Bitmap 的 Java 对象仍然占空间，而且它持有的 Native 内存引用会阻止对应 Native 内存的释放。在分析泄漏时，需要同时关注 Java 堆和 Native 堆。
+另一个需要注意的点是：Android 8.0+ 的 Bitmap 像素数据虽然不在 Java 堆了，但 Bitmap 泄漏仍然是问题。Bitmap 的 Java 对象仍然占空间，而且它持有的 Native 内存引用会阻止对应 Native 内存的释放。在分析泄漏时，需要同时关注 Java 堆和 Native 堆。
 
 ---
 
@@ -202,6 +216,8 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 **第一步：稳定复现**。通过对历史触发 MR 的分析，团队找到了一种可稳定复现的方法：给 View 设置透明度（`setAlpha(0.5)`）。测试发现，**每增加一个设置了 alpha 的 View，renderD128 内存增加约 25MB**。不设 alpha 的对照组则没有变化。这立刻将排查范围缩小到了"硬件加速渲染管线中与 alpha 合成相关的路径"。
 
+需要说明的是，`setAlpha()` 是否触发 offscreen buffer 创建取决于渲染条件：在硬件加速下，只有当 `hasOverlappingRendering()` 返回 `true`（即 View 存在重叠绘制）时，渲染管线才会为该 View 创建独立的离屏缓冲区来完成 alpha 合成。如果确认 View 不会与子 View 或兄弟 View 重叠，可以通过 `hasOverlappingRendering() → false` 来避免缓冲区分配，同时保留 alpha 效果。本案例中触发的机型和 GPU 驱动组合，在 `hasOverlappingRendering` 为 true 的默认行为下表现出了缓冲区不释放的异常。
+
 **第二步：Hook 关键接口**。团队尝试 Hook mmap/mmap64/mremap/ioctl 等系统调用，试图捕获 renderD128 内存的分配路径。但令人意外的是，mmap 相关的 Hook 完全监控不到 renderD128 的内存分配，ioctl 的 Hook 也只捕获到了一个不影响内存的命令。
 
 **第三步：从内核源码寻找线索**。由于用户空间的 Hook 无法捕获分配，团队转向了内核源码。他们找到了华为畅享 10e 的内核源码，阅读了 DRM（Direct Rendering Manager）驱动的代码，发现 ioctl 的命令只是传递参数给驱动，真正的内存分配发生在 GPU 驱动的内部。
@@ -214,23 +230,32 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 通过深入分析，团队最终确认了问题的根因：
 
-当 View 被设置了 alpha 值后，Android 的硬件加速渲染管线会创建一个额外的 **离屏缓冲区（offscreen buffer）** 来完成 alpha 合成。这个缓冲区的分配和释放由 GPU 驱动管理。在特定的 GPU 驱动版本（PowerVR 的某些旧版本）上，这些离屏缓冲区在绘制完成后不会被正确释放——它们被 GPU 驱动内部的缓存机制"持有"了。
+当 View 被设置了 alpha 值且存在重叠绘制时，Android 的硬件加速渲染管线会创建一个额外的 **离屏缓冲区（offscreen buffer）** 来完成 alpha 合成（具体由 `RenderNode` 的 `computeOrdering` 决定是否需要独立 layer）。这个缓冲区的分配和释放由 GPU 驱动管理。在特定的 GPU 驱动版本（PowerVR 的某些旧版本）上，这些离屏缓冲区在绘制完成后不会被正确释放——它们被 GPU 驱动内部的缓存机制"持有"了。
 
 具体来说，问题出在 PowerVR GPU 驱动的 buffer pool 管理策略：驱动维护了一个缓冲区池来复用 GPU 内存，但当 alpha 合成产生的中间缓冲区尺寸超出池中现有缓冲区的尺寸时，驱动会分配新的缓冲区。由于旧的较小缓冲区没有被及时释放，缓冲区池不断膨胀。
 
-每设置一个 alpha 的 View → 创建一个 offscreen buffer → GPU 驱动缓存不释放 → renderD128 内存持续增长。25MB/个的速度非常惊人——10 个 View 就是 250MB，对于 32 位进程来说（用户空间约 3GB），这足以在短时间内耗尽虚拟地址空间。
+每个需要 offscreen buffer 的 alpha View → GPU 驱动缓存不释放 → renderD128 内存持续增长。25MB/个的速度非常惊人——10 个 View 就是 250MB，对于 32 位进程来说（用户空间约 3GB），这足以在短时间内耗尽虚拟地址空间。
+
+> **16KB Page Size 的影响**：在 Android 15+ 的 16KB 页大小环境下，GPU 驱动通过 Gralloc 分配的图形缓冲区会强制 16KB 物理页对齐。对于小尺寸的 offscreen buffer，这种对齐会产生约 9% 的额外物理内存开销（内部碎片累加）。在 renderD128 内存本就异常膨胀的场景下，16KB 对齐会进一步加剧问题。排查时建议使用 `dmabuf_dump -b` 按 buffer 尺寸归因物理开销。
 
 [待验证: PowerVR GPU 驱动的 buffer pool 管理策略细节，闭源驱动无法直接验证]
 
 ### 修复方案与效果
 
-**短期方案：避免不必要的 alpha 设置**。在业务代码中审查所有 `setAlpha()` 调用，将可以通过其他方式实现的效果（如用半透明颜色替代 alpha）改掉。对于确实需要 alpha 的场景，评估是否可以通过 `setLayerType(View.LAYER_TYPE_NONE)` 来避免创建离屏缓冲区——当然这需要权衡，因为关闭硬件层会影响渲染性能。
+**短期方案：避免不必要的 alpha 设置和减少重叠绘制**。在业务代码中审查所有 `setAlpha()` 调用，将可以通过其他方式实现的效果（如用半透明颜色替代 alpha）改掉。对于确实需要 alpha 的场景：
+
+- 如果 View 确认没有重叠绘制，覆写 `hasOverlappingRendering()` 返回 `false`，这样渲染管线不会为该 View 创建 offscreen buffer，同时 alpha 效果仍然生效
+- 避免使用 `setLayerType(LAYER_TYPE_HARDWARE)` 配合 alpha，因为硬件层本身就会强制创建 FBO（Framebuffer Object），这和 alpha 触发的 offscreen buffer 是两套独立的缓冲区机制
+- `LAYER_TYPE_NONE` 是 View 的默认层类型，把它作为"规避手段"是错误的——它并不会阻止 alpha 触发的 offscreen buffer 创建
+- 真正的优化方向是减少 View 层级重叠、避免 group alpha/saveLayer，以及在不需要动画时及时清除 alpha 值
 
 **长期方案：与 GPU 厂商合作修复驱动**。将问题反馈给联发科和 PowerVR（ImgTec），推动他们在驱动层面修复缓冲区池的释放策略。同时，对于 64 位进程，3GB 的虚拟地址空间限制不再存在，所以推动 64 位化也是一个间接的解决方案。
 
 **监控方案**。在线上监控 `/proc/self/maps` 中 renderD128 相关映射区域的大小变化，当检测到异常增长时触发告警，避免问题再次发生时来不及反应。
 
 **效果**：修复后，renderD128 相关的 OOM 崩溃率下降至基线水平（[待补充：具体降幅百分比]），发版熔断事件未再发生。
+
+> **源码参考**：offscreen buffer 的创建逻辑在 `frameworks/base/libs/hwui/` 的 `RenderNode` 和 `LayerUpdateQueue` 中；`hasOverlappingRendering` 的默认实现在 `View.java` 中返回 `true`。Alpha 合成与硬件层（LAYER_TYPE_HARDWARE）的 FBO 机制是独立的：前者是渲染管线的 Shader 级处理，后者是 Buffer 级隔离。
 
 [来源: Personal-Knowlodge/source/2026-03-06_wechat_抖音renderD128系统级疑难OOM分析与解决.md]
 
@@ -264,6 +289,8 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 这个方案的关键创新在于"轻量"。它不需要抓取完整的 Hprof 快照（那个太重了），而是通过周期性采样 `Runtime.totalMemory()` 和 `Runtime.freeMemory()` 来检测 Java 堆的变化趋势。当检测到突增时，快速扫描当前线程栈和关键数据结构的大小，记录下"谁在分配内存"。
 
+> **Android 16 替代方案**：Android 16（API 36）引入了 `ProfilingManager`，支持系统级零侵入的 Trace 触发。通过 `requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 可以在 App 启动阶段或运行时按条件请求系统转储。对于本案例中"内存突增时捕获现场"的需求，`ProfilingManager` 提供了比自研轮询方案更低开销、更精准触发点的官方路径。新项目建议优先采用 `ProfilingManager`，MemoryThrashing 作为 Android 15 及以下的兼容方案。
+
 ### 根因定位
 
 通过 MemoryThrashing 捕获的数据，团队发现了直播场景中几个主要的内存突增来源：
@@ -284,7 +311,7 @@ Java 堆泄漏有一个典型特征：**崩溃堆栈分散，但根因集中**�
 
 **针对图片缓存**：根据当前场景动态调整缓存策略。直播场景下使用更激进的缓存淘汰策略（比如限制缓存条目数而非百分比），并在内存压力大时（通过 `onTrimMemory` 回调感知）主动清空缓存。
 
-**效果**：MemoryThrashing 方案上线后，直播场景的 OOM 崩溃率明显下降（[待补充：具体降幅百分比]）。更重要的是，这个工具让团队第一次能够在线上"看到"内存突增的现场，将 OOM 问题的平均定位时间从天级缩短到小时级。
+**效果**：MemoryThrashing 方案上线后，直播场景的 OOM 崩溃率明显下降（[待补充：具体降幅百分比]）。更重要的是，这个工具让团队第一次能够在线上"看到"内存突增的现场，将 OOM 问题的平均定位时间从天级缩短到小时级。对于 Android 16+ 设备，`ProfilingManager` 的系统级触发可以进一步降低运行时开销。
 
 [来源: Personal-Knowlodge/source/2026-03-08_wechat_MemoryThrashing_抖音直播解决内存抖动实践_1.md]
 

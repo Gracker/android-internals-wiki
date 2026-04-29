@@ -12,7 +12,6 @@ drafted_by: openclaw-task2a
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
-4
 polish_by: task2b-polish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-17"
@@ -74,15 +73,15 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-pipeline_stage: "task2b_pending"
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: "reviewed"
-task9_result: "needs-rework"
-last_task9_at: "2026-04-29T22:20:00+08:00"
-task2b_state: "pending"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-29"
-review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes (banned words rephrased)"
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: "2026-04-30T03:32:47+08:00"
+task2b_state: pending
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-30"
+review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1，P1 2，P2 1。"
 task2b_result: fixed
 ---
 
@@ -199,9 +198,9 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 
 - **Android 12**：引入 `startApexServices()` 独立阶段，APEX 模块（ART、Media 等）可以在开机阶段独立更新，不再随 system 分区整体升级。ART APEX 的更新会直接影响 Zygote 预加载的 dexpreopt 产物路径。
 - **Android 13**：Perfetto 的 boot trace 配置改进，增加了更多 init 阶段的 atrace hook。
-- **Android 15**：Cloud Profiles 作为 Mainline 模块推送给设备，首次启动时编译产物可能依赖云端下发的 profile，不再只依赖本地 Baseline Profile。OTA 后首启的 dex2oat 策略随之变化。[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]
+- **Android 15**：Cloud Profiles 通过 Play 安装/更新流程下发给设备，App 安装或更新时可以拿到云端聚合的 profile 指导本地 dex2oat 编译，减少对本地 Baseline Profile 的依赖。[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]
 - **Android 16**：profileable build 配置的变化影响 Zygote 预加载的命中路径；AutoFDO（Automatic Feedback-Directed Optimization）与 Baseline Profile 协同优化，对冷启动有额外改善。具体数据参见 8.3 节。
-- **Android 16（Cloud Compilation）**：在 Baseline Profile 基础上进一步演进——设备 OTA 后不再需要本地执行 `dex2oat`，而是直接从 Google 服务器下载预编译的 `.odex` / `.vdex` 产物。这套机制彻底解决了 OTA 后首次开机"正在优化应用"的等待。Cloud Compilation 用带宽换计算：下载编译产物的网络耗时远低于本地 `dex2oat` 的 CPU 开销，对低端设备的安装体验改善尤其明显。
+- **Android 16（Cloud Compilation / SDM）**：在 Cloud Profiles 基础上进一步演进——Play 安装/更新流程可以直接从 Google 服务器下载预编译的 `.odex` / `.vdex` 产物（通过 SDM, Software Download Manager），跳过本地 `dex2oat`。这套机制用带宽换计算，对低端设备的安装体验改善尤其明显。目前公开资料主要覆盖 App 安装/更新场景，系统 OTA 首启是否纳入需要进一步确认。[待验证：Cloud Compilation 是否已覆盖系统 OTA 首启场景]
 
 如果分析对象是 Android 12 之前的设备，`startApexServices()` 不存在，apex 组件的启动混在其他阶段里。
 

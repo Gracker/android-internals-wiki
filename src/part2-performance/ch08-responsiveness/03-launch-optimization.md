@@ -34,9 +34,9 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: pass-tech-review
@@ -128,6 +128,8 @@ TTFD 是从用户触发启动到应用内容完全就绪的时间。终点需要
 **可以异步初始化的任务**：不影响首帧显示的后台服务——推送、统计、热修复等。这些任务可以立即提交到后台线程执行，不阻塞主线程。
 
 **可以延迟到使用时再初始化的任务**：二级页面或特定功能才需要的模块——地图 SDK（只在用户打开地图页面时才需要）、支付 SDK（只在用户发起支付时才需要）等。这些任务用懒加载（Lazy Load）策略，第一次使用时才初始化。
+
+**16KB 页面下的启动期写操作克制**：在 16KB 页面设备上（Android 15+），任何微小的写操作都会触发 4 倍于传统 4KB 页面的物理内存拷贝（COW，Copy-on-Write）。启动瞬间执行大规模 SDK 配置写入，会导致 CPU 被 Page Fault 中断淹没。建议启动初期保持配置只读，延迟到首页显示后再执行写入操作。这一规则对 Zygote fork 后的 App 进程尤为明显——fork 继承的页表在首次写入时触发 COW，写操作越多，COW 开销越大。
 
 ### 异步初始化的正确姿势
 
@@ -628,7 +630,7 @@ class BaselineProfileGenerator {
 生成任务会产出 HRF 规则，常见落点是 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`；开启 Startup Profile 后，还会把启动路径写入 `startup-prof.txt`。两者用途不同：
 
 - `baseline-prof.txt`：描述需要 ART AOT 编译的热点类和方法，最终打包成 `assets/dexopt/baseline.prof`。
-- `startup-prof.txt`：服务于 DEX layout，把启动阶段更常用的类和方法排到更靠前的位置，减少启动期类加载 I/O。
+- `startup-prof.txt`：服务于 DEX layout。Android 15+ 强化了对 Startup Profile 的消费——R8/D8 在构建阶段会根据 `startup-prof.txt` 中的启动热点类，将这些类物理集中在 primary DEX 的起始扇区（DEX Layout Optimization）。其核心价值在于减少启动期的 Page Fault，而非单纯的 AOT 编译。如果只用了 Baseline Profile 而没配置 Startup Profile，DEX 布局优化这一层就缺失了。
 
 HRF 方法规则必须包含 flags、类描述符、完整方法签名和返回类型，例如：
 
