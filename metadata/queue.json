@@ -4835,9 +4835,9 @@
     },
     {
       "section": "2.8",
-      "section_title": "2.8",
+      "section_title": "过度绘制",
       "priority": 95,
-      "reason": "[Deep Tech Review] 2.8 过度绘制仍存在 P0/P1 技术问题：pixels_drawn 标准化断言与 Graphite/Compose 版本边界未闭环",
+      "reason": "[Deep Tech Review] 2.8 过度绘制复审仍有 P1：Android 16 Graphite/Early-Z 版本锚点不足，移动端 TBR 成本模型缺失",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -4896,19 +4896,39 @@
           "location": "L352-L363 / Compose 1.10 背景合并",
           "detail": "Compose 1.10 背景合并优化缺 AndroidX release note、源码 CL 或 issue 锚点，当前只能作为待验证候选。",
           "suggestion": "补官方 release note/CL；无法闭环时删除该小节或改为待验证研究问题。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L330 Android 16 Graphite / Early-Z",
+          "detail": "正文仍把 Skia Graphite + Front-to-Back + Early-Z 写成 Android 16 版本演进能力。本轮抽查 android-16.0.0_r1 的 frameworks/base/libs/hwui/pipeline/skia 目录，仅见 SkiaOpenGLPipeline、SkiaVulkanPipeline、SkiaGpuPipeline 等文件，HWUI 侧未检出 graphite 后端或启用路径。当前证据不足以证明 Android 16 应用 UI 默认获得该 overdraw 优化。",
+          "suggestion": "补 HWUI/Skia Graphite 启用路径、系统属性/flag、设备范围和验证方法；无法闭环时从 Android 16 版本演进中移除，或降级为 [待验证] 的 Skia 方向能力。",
+          "evidence": [
+            "AOSP android-16.0.0_r1 frameworks/base/libs/hwui/pipeline/skia directory listing",
+            "grep graphite in HWUI candidate files = no hit"
+          ]
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L112-L116 过度绘制性能影响",
+          "detail": "正文把过度绘制成本近似为“像素数线性增加 / 每一次像素写入都占用内存带宽”。这对移动端 tile-based renderer 不够准确：中间颜色/深度结果可能保留在 on-chip tile memory，不一定每一层都写回外部内存；但 fragment shading、texture fetch、blend、tile memory 带宽和最终 resolve 仍会消耗。",
+          "suggestion": "补 TBR/IMR 成本模型，区分外部内存带宽、tile memory、fragment 工作、半透明混合与 Early-Z/opaque 场景；避免把 3x overdraw 直接等同为 3 倍外存写入。",
+          "evidence": [
+            "Task9 2026-04-30 复审：正文未覆盖 TBR/on-chip memory 边界"
+          ]
         }
       ],
       "added_by": "external-ai-review",
-      "status": "completed",
+      "status": "pending",
       "date": "2026-04-26",
       "added_at": "2026-04-28T10:30:00+08:00",
       "material_paths": [
+        "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-04-29T07:30:41+08:00",
-      "completed_at": "2026-04-29T21:46:48.255529+00:00",
-      "completed_reason": "Task2B回炉修复完成"
+      "last_reviewed_at": "2026-04-30T06:37:43+08:00"
     },
     {
       "section": "2.9",
@@ -5282,7 +5302,7 @@
       "section": "4.3",
       "section_title": "ART 虚拟机内存管理",
       "priority": 95,
-      "reason": "[Deep Tech Review] 4.3 ART 虚拟机内存管理存在源码方法名、Android 16 QPR2 数据来源、Android 17 ReferenceQueue/DeliQueue 与 Generational CC 版本线错误，需回炉修正",
+      "reason": "[Deep Tech Review] 4.3 ART 虚拟机内存管理复审仍有 P0/P1：CMS 源码路径、16KB page-size 方法名和 ART 官方文档 URL 需修正",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -5335,17 +5355,50 @@
           "location": "L293-L299",
           "detail": "正文称 Android 17 DeliQueue 延伸到 `ReferenceQueue` 并消除 FinalizerDaemon 锁竞争。AOSP master 的 libcore `ReferenceQueue.java` 仍有 `private final Object lock`，ART `reference_processor.cc` 仍为 `kAsyncReferenceQueueAdd = false`，未见 DeliQueue 接入 ReferenceQueue/FinalizerDaemon 的源码证据。",
           "suggestion": "删除本小节，或改为待验证材料；如要写 Android 17 DeliQueue，应限定在 `android.os.MessageQueue`，不能扩展到 ART ReferenceQueue。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L194 CMS 源码路径",
+          "detail": "正文给出 `art/runtime/gc/collector/concurrent_mark_sweep.cc`，但 android-7.1.2_r39、android-8.0.0_r1、android-15.0.0_r1 的 `runtime/gc/collector/` 目录均无该文件；对应实现按 `mark_sweep.cc`、`partial_mark_sweep.cc`、`sticky_mark_sweep.cc` 等文件拆分。",
+          "suggestion": "把源码锚点改为实际存在的 MarkSweep/Partial/Sticky collector 文件，并标注对应 Android 5-7/8+ 版本边界；不要引用不存在的 concurrent_mark_sweep.cc。",
+          "evidence": [
+            "AOSP Gitiles directory listing: platform/art runtime/gc/collector for android-7.1.2_r39 / android-8.0.0_r1 / android-15.0.0_r1"
+          ]
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L122 Android 16 BumpPointerSpace / page size",
+          "detail": "正文写 Android 16 将 4KB 硬编码替换为 `art::GetPageSize()`。本轮抽查 android-16.0.0_r1 的 `art/runtime/gc/space/bump_pointer_space.cc`，`BumpPointerSpace::Create()` 使用 `RoundUp(capacity, gPageSize)`，文件内没有 `art::GetPageSize()`；动态页大小 helper 在 `libartbase/base/globals.h` 中是 `GetPageSizeSlow()` / `MemMap::GetPageSize()` 语义。",
+          "suggestion": "把方法名修正为实际源码路径：`gPageSize` + page-size-agnostic helper；“4KB 对齐导致地址空间不合法/缓存行效率下降”需要补一手 commit 或删除。",
+          "evidence": [
+            "AOSP android-16.0.0_r1 art/runtime/gc/space/bump_pointer_space.cc",
+            "AOSP android-16.0.0_r1 libartbase/base/globals.h"
+          ]
+        },
+        {
+          "type": "数据/来源错误",
+          "severity": "P1",
+          "location": "frontmatter sources 与多处 `[已验证: source.android.com/docs/core/perf/art-management]`",
+          "detail": "`https://source.android.com/docs/core/perf/art-management` 本轮访问返回 404。正文用该 URL 支撑 ART GC、CC、RegionTLAB、Generational CC 等关键结论，证据链不可复核。可访问且匹配的公开文档是 `https://source.android.com/docs/core/runtime/gc-debug`，其中明确 CC、RegionTLAB、read barrier、Android 10+ generational CC。",
+          "suggestion": "替换无效 URL；Android 8 的 32%/70%/85% 等数字若继续保留，应补 Android O/ART 官方来源或降级为有来源的历史性能数据。",
+          "evidence": [
+            "HTTP 404 for /docs/core/perf/art-management",
+            "HTTP 200 for /docs/core/runtime/gc-debug"
+          ]
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "status": "completed",
+      "status": "pending",
       "date": "2026-04-26",
       "material_paths": [
+        "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
       "added_at": "2026-04-29T13:20:00+08:00",
-      "completed_at": "2026-04-29T21:46:48.255529+00:00",
-      "completed_reason": "Task2B回炉修复完成"
+      "last_reviewed_at": "2026-04-30T06:37:43+08:00",
+      "last_reviewed_by": "task9-deep-tech-review"
     },
     {
       "section": "4.4",

@@ -12316,3 +12316,21 @@ BPF 带宽估计在虚拟化网络（VPN）下的精度：VpnService 环境下�
 
 ### 外部 review 来源
 - 2026-04-29-11-12.2-external-review.md
+
+## [2026-04-30] 2.8 过度绘制 — 移动端 TBR/On-Chip Memory 成本模型
+
+### 盲区描述
+当前章节把过度绘制成本主要写成像素数和外部内存带宽线性增加，缺少移动端 tile-based renderer 下 on-chip tile memory、fragment shading、texture fetch、blend、depth/stencil 与最终 resolve 的分层成本模型。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 ARM Mali / Qualcomm Adreno / Imagination PowerVR 的公开 overdraw、tile memory、Early-Z、alpha blending 文档。
+- 用 AGI / Perfetto GPU counter 在一台 Adreno 与一台 Mali 设备上对比不透明层、半透明层、复杂 shader 的 overdraw 成本。
+- 明确哪些成本会落到外部内存带宽，哪些只体现在 tile memory / fragment work / GPU busy。
+
+### 关联章节
+- 2.8
+- 2.10
+- 18.9

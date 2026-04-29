@@ -308,3 +308,34 @@
 - **问题**：HTTP/3 UDP 443 在部分企业网/公共 Wi-Fi 被劫持/限速，缺少审计策略
 - **建议**：在 EventListener 记录 alt-svc 握手失败率，作为判定是否应在当前 SSID 下强制退避至 HTTP/2 的线上准则
 - **来源**：Gemini 外部 review
+
+## [Task9 Deep Review] 2.8 过度绘制 — 2026-04-30 — L170 Perfetto / AGI 截图占位
+- **类型**：数据缺失
+- **位置**：L170 Perfetto / AGI 截图占位
+- **问题**：正文仍保留“[待补充：真实 Perfetto FrameTimeline / AGI frame capture 截图]”。当前观测链合理，但缺少可复核 trace/capture 证据。
+- **建议**：补一组滚动或半透明蒙层场景：Debug GPU Overdraw 截图、Perfetto FrameTimeline/RenderThread 对照、AGI frame capture 或厂商 GPU counter。
+- **review 日志**：logs/deep-review/2026-04-30-06-deep-review.md
+
+
+## [Task9 Deep Review] 2.8 过度绘制 — 2026-04-30 — L357-L365 Compose 背景合并优化
+- **类型**：来源标注
+- **位置**：L357-L365 Compose 背景合并优化
+- **问题**：小节已标 [待验证]，但段尾仍紧跟 `[已验证: 官方文档, compose graphics modifiers]`，容易让读者误以为官方文档验证了 background merge。
+- **建议**：把官方文档标注移到通用 Compose overdraw 段；背景合并小节只保留待验证说明，并指向 research-gaps 中的追踪项。
+- **review 日志**：logs/deep-review/2026-04-30-06-deep-review.md
+
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-04-30 — L466-L470 正常 vs 异常 GC 模式阈值
+- **类型**：数据缺失
+- **位置**：L466-L470 正常 vs 异常 GC 模式阈值
+- **问题**：Young GC 每 2-5 秒一次、Full GC 每几分钟一次、吞吐量 >98% 等阈值缺设备、应用规模、Android/ART 版本和 trace 口径。
+- **建议**：补 Perfetto/ART 日志样本，或改成“经验起点”并标注设备、版本、前后台状态、堆大小和采样时长。
+- **review 日志**：logs/deep-review/2026-04-30-06-deep-review.md
+
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-04-30 — L140-L143 Large Object Space 实现选择
+- **类型**：源码准确性
+- **位置**：L140-L143 Large Object Space 实现选择
+- **问题**：正文把 FreeListSpace / LargeObjectMapSpace 直接归因于 arm64 / 非 arm64。android-15.0.0_r1 的默认选择由 `USE_ART_LOW_4G_ALLOCATOR` 控制，架构只是常见结果，不应写成唯一条件。
+- **建议**：改成“默认由 `Heap::kDefaultLargeObjectSpaceType` 和 `USE_ART_LOW_4G_ALLOCATOR` 决定；常见设备上可能表现为某种实现”，并补 heap.h 源码锚点。
+- **review 日志**：logs/deep-review/2026-04-30-06-deep-review.md
