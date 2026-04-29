@@ -2,7 +2,7 @@
 title: SystemUI 性能分析
 chapter: '7.13'
 section: '7.13'
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 tags:
 - systemui
@@ -71,7 +71,9 @@ sources:
   path: https://developer.android.com/develop/ui/views/notifications
 - type: official
   path: https://developer.android.com/guide/topics/ui/splash-screen
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
+finalized_date: '2026-04-29'
+finalized_by: openclaw-task6-auto-promote
 task6_state: "reviewed"
 task9_state: reviewed
 task9_result: pass-tech-review
@@ -386,3 +388,75 @@ Android 15+ 的 SystemUI 切换到 Compose 和 Flexiglass 架构后，基础 RSS
 - AOSP：`packages/apps/Launcher3/quickstep/src/com/android/quickstep/views/RecentsView.java`
 - Android Developers：Notification 设计与性能相关文档 `https://developer.android.com/develop/ui/views/notifications`
 - Android Developers：Splash Screen API `https://developer.android.com/guide/topics/ui/splash-screen`
+
+## Foldable 设备多 Display 渲染模型源码分析 <!-- AIW-源码调研-2026-04-29 -->
+
+### 概述
+
+Foldable 设备上的 SystemUI 多 Display 渲染模型建立在 `DisplayId` 分片管理 + `NavigationBarController` 双映射架构之上。 StatusBar（通知侧）在 Foldable 场景下无多实例实现，仅支持 NavigationBar 和 Wallpaper 在 Secondary Display 上显示。
+
+### 核心源码架构
+
+#### 1. NavigationBarController - 多 Display 导航栏实例管理
+
+- **源码位置**：`packages/SystemUI/src/com/android/systemui/statusbar/phone/NavigationBarController.java`
+- **关键方法**：`getNavigationBarView(int displayId)`
+- **数据结构**：`mNavigationBarViews: HashMap<Int, NavigationBarView>`
+
+`NavigationBarController` 维护一个 `HashMap<Int, NavigationBarView>`，键为 `displayId`，值为该 Display 上的 `NavigationBarView` 实例。`getNavigationBarView(displayId)` 是多 Display 路由的核心方法，可实现不同物理 Display 的独立导航栏管理。
+
+调用链：
+```
+WindowManagerService → DisplayContent → StatusBar/NavigationBar → 
+NavigationBarController.getNavigationBarView(displayId) → NavigationBarView
+```
+
+#### 2. NavigationBarControllerImpl - Foldable 形态标志
+
+- **源码位置**：`packages/SystemUI/src/com/android/systemui/statusbar/phone/NavigationBarControllerImpl.java`
+- **关键字段**：
+  - `mIsLargeScreen: Boolean` — 包含 Foldable 展开态的大屏判定
+  - `mIsPhone: Boolean` — 区分标准手机与其他形态
+
+`NavigationBarControllerImpl` 在构造时根据 Display 属性初始化这两个标志，共同决定导航栏的布局策略。
+
+#### 3. DisplayContent - WindowManager 中的 Display 层级
+
+- **源码位置**：`services/core/java/com/android/server/wm/DisplayContent.java`
+- **关键方法**：`supportsSystemDecorations()`
+- **配置方法**：`DisplayWindowSettings.setShouldShowSystemDecorsLocked()`
+
+`DisplayContent` 代表 Display 的核心类，`supportsSystemDecorations()` 判断系统装饰支持。Secondary Display 在 Android 10 不支持 StatusBar（通知侧），仅支持 NavigationBar 和 Wallpaper。
+
+#### 4. CentralSurfacesImpl - Display 感知的核心 Surface 管理
+
+- **源码位置**：`packages/SystemUI/src/com/android/systemui/statusbar/phone/CentralSurfacesImpl.java`
+- **关键方法**：`onWallpaperVisibilityChanged(displayId, visible)`
+
+`CentralSurfacesImpl` 是 T+ 的核心 SystemUI 组件，持有 `displayId` 参数并据此区分不同 Display 上下文。
+
+#### 5. Android 10+ 多 Display 限制
+
+- **StatusBar**：始终仅显示在主 Display（Primary Display），不 Secondary Display
+- **NavigationBar**：支持 Secondary Display，由 `NavigationBarController.getNavigationBarView(displayId)` 管理
+- **Wallpaper**：支持 Secondary Display，由 `DisplayContent.shouldShowSystemDecors()` 控制
+
+#### 6. Android 15+ 增强特性
+
+- **Edge-to-Edge**：StatusBar 默认透明，应用默认在系统栏下方绘制
+- **Taskbar**：Pixel Fold 首发的功能合入 AOSP，支持 Foldable 展开态下固定/取消固定任务栏
+- **FoldingFeature**：通过 Jetpack WindowManager 向应用层发布折叠状态信息
+
+### 性能影响与观测点
+
+1. **多 NavigationBarView 实例内存占用**：每增加一个 Display，内存占用增加数百 KB 到数 MB
+2. **Display 切换时 View 重建**：Foldable 展开/折叠切换时，触发 `onMeasure`/`onLayout`
+3. **双 Display 同时亮屏**：总功耗显著增加，PowerManager 需管理两个显示电源轨
+
+### Perfetto 观测点
+
+- `WindowInsets` 变化信号
+- `performTraversals`（多 Display 各自触发）
+- PowerManager 的 `setDisplayPowerState` 调用链
+- `NavigationBarView` 的实例创建与销毁
+

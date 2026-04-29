@@ -47,7 +47,7 @@
   "task9_state": "reviewed",
   "task2b_state": "pending",
   "reviewed_by": "openclaw-task6",
-  "reviewed_date": "2026-04-24",
+  "reviewed_date": "2026-04-29",
   "task6_result": "pass-light-edit",
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-04-27",
@@ -57,7 +57,8 @@
   "last_task2b_at": "2026-04-25T09:40:00+08:00",
   "repaired_date": "2026-04-25",
   "repaired_by": "openclaw-task2b",
-  "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
+  "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1",
+  "task6_review_notes": "2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。"
 }
 ---
 
