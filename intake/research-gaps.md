@@ -11917,3 +11917,219 @@ ANR 案例集缺少 Android 15/16 Cached Apps Freezer 对 Gesture Monitor 的版
 
 ### 关联章节
 9.3, 9.5, 19.x APM 端侧采集
+
+
+## [2026-04-29] 18.10 18.10 SurfaceControl API 深入 — 知识盲区
+
+### 盲区描述
+ASurfaceControl_readFromParcel 的生命周期锁定
+
+### 重要程度
+高
+
+### 建议研究方向
+研究在反序列化后，若原进程释放了句柄，目标进程的引用是否能物理上锁住 SurfaceFlinger 侧的 Layer 内存
+
+### 关联章节
+- 18.10
+
+### 外部 review 来源
+- 2026-04-29-11-18.10-external-review.md
+
+
+## [2026-04-29] 18.10 18.10 SurfaceControl API 深入 — 知识盲区
+
+### 盲区描述
+InputTransferToken 在 NDK 的自动感知
+
+### 重要程度
+中
+
+### 建议研究方向
+验证 Android 16 针对跨进程 Layer 的触摸焦点转移是否实现了“事件自适应重路由”
+
+### 关联章节
+- 18.10
+
+### 外部 review 来源
+- 2026-04-29-11-18.10-external-review.md
+
+
+## [2026-04-29] 18.5 18.5 Android View 多窗口链路 — 知识盲区
+
+### 盲区描述
+TaskFragment 的 Transaction 频率限制
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 15 对 Activity Embedding 的窗口变换频率是否执行了系统级限流
+
+### 关联章节
+- 18.5
+
+### 外部 review 来源
+- 2026-04-29-11-18.5-external-review.md
+
+
+## [2026-04-29] 18.5 18.5 Android View 多窗口链路 — 知识盲区
+
+### 盲区描述
+跨进程多窗口的 Vsync 相位对齐
+
+### 重要程度
+高
+
+### 建议研究方向
+验证在 Desktop Mode 下，不同进程的 `Choreographer` 唤醒相位是否存在动态偏移以平抑 SF 负载
+
+### 关联章节
+- 18.5
+
+### 外部 review 来源
+- 2026-04-29-11-18.5-external-review.md
+
+
+## [2026-04-29] 18.6 18.6 SurfaceView 直出链路 — 知识盲区
+
+### 盲区描述
+Low Latency Input 与 ADPF 联动
+
+### 重要程度
+高
+
+### 建议研究方向
+研究开启直连输入后，系统是否会自动提升 Producer 线程的 cgroup 调度优先级
+
+### 关联章节
+- 18.6
+
+### 外部 review 来源
+- 2026-04-29-11-18.6-external-review.md
+
+
+## [2026-04-29] 18.6 18.6 SurfaceView 直出链路 — 知识盲区
+
+### 盲区描述
+16KB 下的像素重采样开销
+
+### 重要程度
+中
+
+### 建议研究方向
+验证当 SurfaceView 尺寸非 16 像素对齐时，HWC Scaler 是否会产生额外的线性过滤开销
+
+### 关联章节
+- 18.6
+
+### 外部 review 来源
+- 2026-04-29-11-18.6-external-review.md
+
+
+## [2026-04-29] 18.7 18.7 TextureView 合成链路 — 知识盲区
+
+### 盲区描述
+AVP 对 TextureView 采样的旁路优化
+
+### 重要程度
+高
+
+### 建议研究方向
+研究 Android 16 Advanced Video Pipeline 是否支持将 TextureView 的内容直接在合成侧进行 YUV-to-RGB 直出
+
+### 关联章节
+- 18.7
+
+### 外部 review 来源
+- 2026-04-29-11-18.7-external-review.md
+
+
+## [2026-04-29] 18.7 18.7 TextureView 合成链路 — 知识盲区
+
+### 盲区描述
+16KB 下的 EGLImage 映射抖动
+
+### 重要程度
+中
+
+### 建议研究方向
+验证在大页面环境下，跨进程共享 Buffer 的 `fd` 导入是否会引起更频繁的内核页表锁竞争
+
+### 关联章节
+- 18.7
+
+### 外部 review 来源
+- 2026-04-29-11-18.7-external-review.md
+
+
+## [2026-04-29] 18.8 18.8 OpenGL ES 渲染链路 — 知识盲区
+
+### 盲区描述
+HardwareBufferRenderer 与 GLES 共享上下文的锁竞争
+
+### 重要程度
+高
+
+### 建议研究方向
+研究当 UI 渲染与 GLES 渲染并发竞争同一个 GPU Context 时的内部互斥粒度
+
+### 关联章节
+- 18.8
+
+### 外部 review 来源
+- 2026-04-29-11-18.8-external-review.md
+
+
+## [2026-04-29] 18.8 18.8 OpenGL ES 渲染链路 — 知识盲区
+
+### 盲区描述
+ARR 下的 EGLSync 漂移
+
+### 重要程度
+中
+
+### 建议研究方向
+验证在 90Hz 到 120Hz 切换瞬间，`eglClientWaitSyncKHR` 的超时计算是否需要根据 `VsyncPeriod` 进行动态补偿
+
+### 关联章节
+- 18.8
+
+### 外部 review 来源
+- 2026-04-29-11-18.8-external-review.md
+
+
+## [2026-04-29] 18.9 18.9 Vulkan 原生渲染管线 — 知识盲区
+
+### 盲区描述
+Dynamic Rendering 与 ANGLE 的协作效率
+
+### 重要程度
+中
+
+### 建议研究方向
+研究 Android 15 下 ANGLE 翻译层利用动态渲染绕过旧版 GLES FBO 限制的性能增益
+
+### 关联章节
+- 18.9
+
+### 外部 review 来源
+- 2026-04-29-11-18.9-external-review.md
+
+
+## [2026-04-29] 18.9 18.9 Vulkan 原生渲染管线 — 知识盲区
+
+### 盲区描述
+AVP 对硬件光追 (Ray Tracing) 的准入要求
+
+### 重要程度
+高
+
+### 建议研究方向
+验证 Android 16 AVP 是否已将基本的光追 Extension 纳入 `minimums` 范畴
+
+### 关联章节
+- 18.9
+
+### 外部 review 来源
+- 2026-04-29-11-18.9-external-review.md

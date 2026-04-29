@@ -149,3 +149,51 @@
 - **位置**：L219-L227 SharedPreferences / QueuedWork 等待链路
 - **问题**：正文引用 `QueuedWork.waitToFinish()` 与 Activity 生命周期等待，但该段只标注 `SharedPreferencesImpl.java`，缺少直接方法所在的 `QueuedWork.java` 和生命周期入口 `ActivityThread`。
 - **建议**：补充 `frameworks/base/core/java/android/app/QueuedWork.java#waitToFinish()`、`ActivityThread.handlePauseActivity()` / stop 相关调用点，再说明 `SharedPreferencesImpl.apply()` 如何把 finisher 加入 QueuedWork。
+
+
+## [External Review] 18.10 18.10 SurfaceControl API 深入 — 2026-04-29
+- **类型**：物理开销
+- **位置**：全文相关段落
+- **问题**：补充说明 16KB 物理分页对包含海量 Layer 属性的 `AParcel` 编解码的影响。核实发现，在大页面环境下，跨进程 Transaction 的物理页对齐损耗在 120Hz 极速提交场景下约有 **5%-8%** 的响应提升（由于 TLB 命中率更高），应作为性能背景补充。
+- **建议**：补充说明 16KB 物理分页对包含海量 Layer 属性的 `AParcel` 编解码的影响。核实发现，在大页面环境下，跨进程 Transaction 的物理页对齐损耗在 120Hz 极速提交场景下约有 **5%-8%** 的响应提升（由于 TLB 命中率更高），应作为性能背景补充。
+- **来源**：Gemini 外部 review (2026-04-29-11-18.10-external-review.md)
+
+
+## [External Review] 18.5 18.5 Android View 多窗口链路 — 2026-04-29
+- **类型**：物理开销
+- **位置**：全文相关段落
+- **问题**：补充 16KB 分页对 `eglMakeCurrent` 的优化。核实发现，由于页表覆盖面扩大，多窗口频繁切换 EGLSurface 时的 TLB 刷新开销降低了约 **8%**。这意味着在 Android 15+ 设上，多窗口渲染切换 GL 状态机的硬件损耗有所回升，应作为性能背景补充。
+- **建议**：补充 16KB 分页对 `eglMakeCurrent` 的优化。核实发现，由于页表覆盖面扩大，多窗口频繁切换 EGLSurface 时的 TLB 刷新开销降低了约 **8%**。这意味着在 Android 15+ 设上，多窗口渲染切换 GL 状态机的硬件损耗有所回升，应作为性能背景补充。
+- **来源**：Gemini 外部 review (2026-04-29-11-18.5-external-review.md)
+
+
+## [External Review] 18.6 18.6 SurfaceView 直出链路 — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：全文相关段落
+- **问题**：补充在 Perfetto 中利用 Android 16 自动化元数据识别 SurfaceView 焦点状态的方法。由于 SurfaceView 拥有独立 InputChannel，其焦点切换在 `input_focus` 轨道中有独立表现，应指导开发者利用此点排查“游戏层有画面但点不动”的奇葩问题。
+- **建议**：补充在 Perfetto 中利用 Android 16 自动化元数据识别 SurfaceView 焦点状态的方法。由于 SurfaceView 拥有独立 InputChannel，其焦点切换在 `input_focus` 轨道中有独立表现，应指导开发者利用此点排查“游戏层有画面但点不动”的奇葩问题。
+- **来源**：Gemini 外部 review (2026-04-29-11-18.6-external-review.md)
+
+
+## [External Review] 18.7 18.7 TextureView 合成链路 — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：全文相关段落
+- **问题**：补充在 Perfetto 中识别“TextureView 过载”的特征信号——即 RenderThread 轨道出现密集的 `glEGLImageTargetTexture2DOES` 调用且紧随其后的 `drawDisplayList` 耗时显著拉长。这是判定“纹理重采样成为 GPU 瓶颈”的核心证据。
+- **建议**：补充在 Perfetto 中识别“TextureView 过载”的特征信号——即 RenderThread 轨道出现密集的 `glEGLImageTargetTexture2DOES` 调用且紧随其后的 `drawDisplayList` 耗时显著拉长。这是判定“纹理重采样成为 GPU 瓶颈”的核心证据。
+- **来源**：Gemini 外部 review (2026-04-29-11-18.7-external-review.md)
+
+
+## [External Review] 18.8 18.8 OpenGL ES 渲染链路 — 2026-04-29
+- **类型**：物理开销
+- **位置**：全文相关段落
+- **问题**：补充 16KB 分页对 `glBindTexture` 的优化表现。核实发现，在大页面环境下，显存映射的 TLB 命中率提升使高频纹理切换的 CPU 开销降低了约 **5%**。这对于拥有大量 Asset 的游戏来说是稳定的物理红利，应作为“性能特征”补充。
+- **建议**：补充 16KB 分页对 `glBindTexture` 的优化表现。核实发现，在大页面环境下，显存映射的 TLB 命中率提升使高频纹理切换的 CPU 开销降低了约 **5%**。这对于拥有大量 Asset 的游戏来说是稳定的物理红利，应作为“性能特征”补充。
+- **来源**：Gemini 外部 review (2026-04-29-11-18.8-external-review.md)
+
+
+## [External Review] 18.9 18.9 Vulkan 原生渲染管线 — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：全文相关段落
+- **问题**：补充在 Perfetto 中利用 Android 15+ 增强的 `vulkan.submission` 轨道识别“Over-Synchronization”的方法。若看到密集的 Barrier 切片且 GPU 轨道出现大量空隙，即说明 App 的显式同步策略过于保守，扼杀了 GPU 的并行度。
+- **建议**：补充在 Perfetto 中利用 Android 15+ 增强的 `vulkan.submission` 轨道识别“Over-Synchronization”的方法。若看到密集的 Barrier 切片且 GPU 轨道出现大量空隙，即说明 App 的显式同步策略过于保守，扼杀了 GPU 的并行度。
+- **来源**：Gemini 外部 review (2026-04-29-11-18.9-external-review.md)
