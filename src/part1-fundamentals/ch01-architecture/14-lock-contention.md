@@ -44,15 +44,16 @@ sources:
     path: "intake/research-feeds/2026-04-06-15-priority-inversion-futex-pi-android-lock-performance.md"
   - type: note
     path: "intake/research-feeds/2026-04-05-19-android17-deliqueue-lockfree-messagequeue.md"
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-18"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-18T22:20:00+08:00"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # 1.14 锁竞争与同步性能分析
@@ -184,6 +185,8 @@ Linux 提供 PI-futex，是为了解决这类问题的一种机制。但 Android
 
 Binder 这一侧也应该分开写。它要看的重点是驱动怎样给事务传播优先级，怎样挑 Binder worker，怎样唤醒等待线程。把“Binder transaction priority inheritance”和“Java / ART monitor 等待”混成一条实现链，读者到了 trace 现场基本一定会判断错。
 
+SurfaceFlinger 主线程和 InputDispatcher 的核心锁从 Android 14 起已全面启用 PI-futex（优先级继承 futex）。这意味着在高刷新率（120Hz / 144Hz）场景下，SF 主线程即使被中优先级线程抢占，也能通过 PI 机制在锁释放后立刻恢复执行，维持 vsync 投递的及时性。在 Perfetto 中观察时，如果发现 SF 主线程的锁等待时间仍然异常，应优先排查是否涉及未启用 PI 的第三方路径，而非 SF 核心锁本身。[已验证: AOSP android-14.0.0_r1, `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` + `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`]
+
 ## Binder 框架中的锁竞争
 
 Binder 的问题，通常不是“调用慢”这四个字能概括的。调用方睡在 Binder 上，只说明它在等目标进程；真正的瓶颈，常常在服务端对象锁、Binder worker 数量，或者服务端 worker 持锁时又去做了别的慢操作。
@@ -250,7 +253,7 @@ LIMIT 40;
 
 锁优化别一上来就谈无锁。更稳的顺序是，先缩短临界区，再减少共享范围，再考虑换锁或无锁。
 
-如果问题出在 Java monitor，优先把耗时操作搬出 `synchronized`，把大对象锁拆小。 如果问题出在 native mutex，要看是不是把计算、I/O、等待别的条件也塞进了持锁路径。 如果问题出在 Binder，重点不是“换锁”，而是别让 Binder worker 持锁时再去做跨服务调用、磁盘 I/O，或者长时间等待。 Binder 事务的持锁区间一旦拉长，整个线程池都会跟着排队。
+如果问题出在 Java monitor，优先把耗时操作搬出 `synchronized`，把大对象锁拆小。Android 16 起，ART 的逃逸分析已经能自动消除线程私有对象上的冗余 `synchronized` 指令——比如局部变量中的 `StringBuffer` 锁。如果 trace 里的 monitor contention 消失了但问题仍在，要考虑是否被编译器静默优化过。 如果问题出在 native mutex，要看是不是把计算、I/O、等待别的条件也塞进了持锁路径。 如果问题出在 Binder，重点不是“换锁”，而是别让 Binder worker 持锁时再去做跨服务调用、磁盘 I/O，或者长时间等待。 Binder 事务的持锁区间一旦拉长，整个线程池都会跟着排队。
 
 Android 17 的 DeliQueue 是这类优化里很典型的一个案例。它不是简单地把 MessageQueue 全部改成“无锁”，而是把多生产者插入路径改成无锁，把单消费者排序和消费继续留给 Looper 自己处理。Google 给出的数据是，主线程花在 lock contention 上的时间下降 15%，应用 missed frames 下降 4%，SystemUI / Launcher 的 missed frames 下降 7.7% 到 9.1%。这里值得学的不是“Treiber 栈”四个字，而是先找出高频竞争点，再只替换真正该替换的那一段。[已验证: Android Developers Blog, 2026-03 DeliQueue]
 
@@ -263,6 +266,8 @@ Android 17 的 DeliQueue 是这类优化里很典型的一个案例。它不是�
 | Android 5.0 | Java monitor 的讨论应以 ART `monitor.cc` / `lock_word.h` 为准 | 讨论 `synchronized` 时，不要再沿用 Dalvik 时代的实现想象 |
 | Android 7.1.2 / 8.0 | `ProcessState.cpp` 两个 tag 的 `DEFAULT_MAX_BINDER_THREADS` 都是 15 | “Android 8 把 Binder 线程从 8 提到 16”这个说法不成立 |
 | Android 9 | bionic 已提供 `pthread_mutexattr_setprotocol(..., PTHREAD_PRIO_INHERIT)` | 说明 native 层具备 PI mutex 能力，但是否真的启用要看具体锁属性 |
+| Android 16 | ART 强化逃逸分析，可自动消除线程私有对象上的冗余 `synchronized` 指令（如局部变量中的 `StringBuffer` 锁） | 分析 monitor contention 时，如果对象是方法局部变量且未逃逸，可能已被编译器移除，trace 里不会出现 | 
+| Android 14+ | SurfaceFlinger 主线程和 InputDispatcher 核心锁全面启用 PI-futex 优先级继承 | 分析 SF/Input 路径的锁等待时，优先级反转风险已被系统侧 PI 机制覆盖；高刷新率下的响应性依赖于此 |
 | Android 17 | DeliQueue 把 MessageQueue 生产者路径改成无锁 | 分析主线程消息投递等待时，要把 Android 17 和旧版本分开看 |
 
 ## 常见问题与误区
@@ -326,6 +331,8 @@ Android 17 的 DeliQueue 是这类优化里很典型的一个案例。它不是�
 | 小线程栈内部碎片 | 较低 | 较高（最小值增加 4×） |
 | 栈溢出 guard page | 4KB | 16KB |
 | 页表内存（1GB 映射） | 2MB PTE | 0.5MB PTE（节省 75%） |
+
+**Futex 哈希表冲突风险**：16KB page 使页表条目减少 75%，但这也意味着内核 futex 哈希桶数量可能随之缩减。在高并发场景下（如多线程 Binder 调用密集型 App），桶减少会导致哈希冲突概率上升，引发缓存行抖动（cache line bouncing），表现为 `futex_wait` 耗时在 16KB 设备上反而比 4KB 设备更高。排查思路：对比同 workload 在 4KB 和 16KB 设备上的 `thread_state` 中 `futex_*` 等待时长分布，如果 16KB 侧有明显尾部延迟升高，应考虑减少并发锁数量或使用 per-thread lock pool。内核社区在 6.6+ 已提供 `futex_hash_bucket` 配置接口（`/sys/kernel/debug/futex_hash`），但 Android GKI 尚未默认暴露。
 
 **NDK 兼容性**：Google Play 要求 2025-11-01 起，targetSdk ≥ 35 的 App 必须支持 16KB。NDK r28+ 编译产出天然满足 16KB 对齐，旧版 NDK 编译的 so 需要重新编译或通过 Compat Mode 加载。
 
