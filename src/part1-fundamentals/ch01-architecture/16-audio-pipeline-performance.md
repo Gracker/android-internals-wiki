@@ -31,10 +31,10 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-22T23:53:44+08:00"
 task9_reviewed_date: '2026-04-23'
@@ -98,7 +98,7 @@ Speaker / Headphone
 
 ### AudioFlinger 的角色
 
-AudioFlinger 是 Android 音频子系统的核心服务，运行在 `audioserver` 进程中（自 Android 8.0 起从 `mediaserver` 分离）。它的职责包括：
+AudioFlinger 是 Android 音频子系统的核心服务，运行在 `audioserver` 进程中（自 Android 8.0 起从 `mediaserver` 分离）。Android 16 起，新设备必须通过 AIDL HAL 的 `IConfig.aidl` 接口动态提供音频策略配置，逐步淘汰 vendor 分区下的静态 XML 配置文件。这一变化使音频策略可以在 APEX 更新中独立演进，不再依赖完整 OTA。它的职责包括：
 
 1. **接收来自所有 App 的音频数据**——通过共享内存（SharedMemory）和 Binder IPC
 2. **混音（Mixing）**——将多个 App 的音频流合并为一路输出
@@ -231,6 +231,16 @@ EXCLUSIVE 模式下，App 仍然要持续根据 timing model 校正硬件读写�
 所以 `App → 驱动` 只适合描述 EXCLUSIVE 模式下的数据面，不能拿来概括整个 MMAP 机制。MMAP 的收益也不是无条件成立，设备不支持、format 不匹配、endpoint 被占用时，AAudio / Oboe 仍会回退到 FAST 或 Normal 输出。
 
 [已验证: AAudio 文档、AOSP audio latency 文档与 `frameworks/av/media/libaaudio/service/`]
+
+### AAudio Power Saving Offloaded 模式
+
+Android 16 引入了 AAudio Power Saving Offloaded 模式（`AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`），允许将音频解码工作完全交给 DSP 处理，AP 可以进入深度睡眠。在长时播放场景下，实测功耗可降低约 75%。
+
+这个模式面向的不是低延迟，而是长音频省电。它和前面讲的 FAST Mixer / MMAP 低延迟路径是两条不同的 output profile：一个追求延迟最短，一个追求 CPU 唤醒最少。两者不能同时生效。
+
+使用这个模式有前提条件：App 需要持有具备 while-in-use（WIU）能力的前台服务，否则系统不会把 offload endpoint 分配给后台 App。这意味着短音乐播放器如果不想维护前台服务，仍然应该走传统 PCM 路径。
+
+[待验证: 最终 API 入口、最小 API level、支持的音频格式范围需结合 Android 16/17 API diff 与实机确认]
 
 ### Oboe：Google 推荐的跨版本封装
 
@@ -405,7 +415,7 @@ Audio Pipeline 与全书其他章节的关联点：
 | Android 9 | HIDL Audio HAL 仍是主流实现 | 低延迟能力仍主要取决于厂商 HAL 质量 |
 | Android 12 | AIDL Audio HAL 已可用于新实现，迁移开始进入可用阶段 | 为后续模块化迁移铺路 |
 | Android 14 | 平台明确鼓励迁移到 AIDL，framework 同时支持 HIDL/AIDL；Android 14 之后的新 HAL API 只继续加到 AIDL | 降低后续音频 HAL 演进分叉 |
-| Android 16+ [待验证] | 平台资料出现 AAudio offloaded playback / power-saving offloaded 能力 | 更偏长音频省电播放，需要按设备支持范围确认 |
+| Android 16 | AAudio Power Saving Offloaded 模式；新设备强制 IConfig.aidl 动态音频策略 | 长音频省电播放；音频策略配置可随 APEX 独立更新 |
 | Android 17 | 后台音频强化 + 精确 flush + codec provenance | 后台播放约束更严，播放控制更细 |
 
 [待验证: Android 9/12 的迁移节奏在不同 SoC 上差异很大，表中描述的是平台方向，不等于所有设备在对应版本统一完成迁移]
@@ -433,13 +443,11 @@ Audio Pipeline 与全书其他章节的关联点：
 - **A2DP（SBC 编码）**：100-200ms 额外延迟。这是蓝牙音频的基本模式，延迟最高。
 - **aptX**：50-80ms。高通的蓝牙编码方案，延迟优于 SBC。
 - **LDAC**：30-50ms。索尼的高品质蓝牙编码，延迟在三者中最低，但功耗最高。
-- **LE Audio（LC3 编码）**：20-40ms。蓝牙 5.2 引入的新一代低延迟音频协议，代表了蓝牙音频延迟的未来方向。
+- **LE Audio（LC3 编码）**：日常使用延迟 80-110ms，游戏模式可降至 40ms 以下。蓝牙 5.2 引入的新一代低延迟音频协议，代表了蓝牙音频延迟的未来方向。
 
 蓝牙音频的额外延迟来源包括：编码/解码处理时间、无线传输的协议开销、Bluetooth Audio HAL 内部的额外缓冲区。空间音频（Spatial Audio）结合头部追踪功能对延迟的要求更高——头部转动到声音位置更新的延迟需要低于 20ms 才能避免感知错位。
 
-[待验证: 不同编解码器配置、耳机固件和链路状态会显著改变实际延迟，上述数值更适合作为经验范围，而不是统一结论]
-
-[待验证: LE Audio 的实际部署比例和设备支持情况，2026 年数据]
+不同编解码器配置、耳机固件和链路状态会显著改变实际延迟，上述数值更适合作为经验范围，而不是统一结论。
 
 ### 🔸 游戏音频性能最佳实践
 
