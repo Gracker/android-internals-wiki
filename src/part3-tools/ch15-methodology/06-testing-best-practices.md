@@ -30,7 +30,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptJobService.java"
   - type: aosp
-    path: "platform/art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java"
+    path: "art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java"
 tags:
   - android
   - benchmark
@@ -41,19 +41,19 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-28"
 last_task9_at: "2026-04-28T07:40:26+08:00"
-last_task2b_at: "2026-04-27T21:44:26+08:00"
+last_task2b_at: "2026-04-29T09:46:49"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。"
@@ -221,7 +221,7 @@ adb shell setprop pm.dexopt.disable_bg_dexopt true 2>/dev/null || true
 adb shell cmd package bg-dexopt-job --disable 2>/dev/null || true
 ```
 
-`am kill-all` 只能杀掉后台 App 进程，拦不住系统维护任务。后台 dexopt 的控制面和执行面要按 Android 版本分开看。Android 14 中，`cmd package bg-dexopt-job` / `cancel-bg-dexopt-job` 的 shell 分发在 `PackageManagerShellCommand.java`，JobScheduler 调度在 `BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`。Android 16 中，`PackageManagerShellCommand.java` 仍保留 `bg-dexopt-job` / `cancel-bg-dexopt-job` 命令入口，ART Service 执行侧落在 `platform/art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`。设备空闲或充电时的 background dexopt 会带来 CPU 和 I/O 波动，启动、安装后首次运行、CI 基准测试都容易被影响。
+`am kill-all` 只能杀掉后台 App 进程，拦不住系统维护任务。后台 dexopt 的控制面和执行面要按 Android 版本分开看。Android 14 中，`cmd package bg-dexopt-job` / `cancel-bg-dexopt-job` 的 shell 分发在 `PackageManagerShellCommand.java`，JobScheduler 调度在 `BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`。Android 16 中，`PackageManagerShellCommand.java` 仍保留 `bg-dexopt-job` / `cancel-bg-dexopt-job` 命令入口，ART Service 执行侧落在 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`。设备空闲或充电时的 background dexopt 会带来 CPU 和 I/O 波动，启动、安装后首次运行、CI 基准测试都容易被影响。
 
 `bg-dexopt-job --cancel` / `--disable`、`cancel-bg-dexopt-job` 和 `pm.dexopt.disable_bg_dexopt` 的可用性会随系统版本、权限和厂商实现变化。CI 脚本要记录命令是否执行成功；执行失败时，把 ART 后台优化状态写进测试报告。测试结束后恢复 `pm.dexopt.disable_bg_dexopt=false`，避免长期影响设备的正常优化。
 
@@ -240,7 +240,7 @@ adb shell "echo 1785600 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq"
 
 [已验证: AOSP sysfs 接口, /sys/devices/system/cpu/cpu*/cpufreq/ 路径在 ARM64 内核中通用。具体频率值因 SoC 而异，可通过 `cat scaling_available_frequencies` 查询。]
 
-更常用的做法是使用 `adb shell settings put global low_power 0` 确保系统不进入低功耗模式，再配合 `adb shell cmd thermalservice override-status 0` 临时把热状态锁到 `THERMAL_STATUS_NONE`。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控，执行前先用 `adb shell cmd thermalservice help` 或 `adb shell dumpsys thermalservice` 确认设备是否开放了这组 shell 命令。[已验证: AOSP android-14.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 的 shell 命令为 `override-status` 与 `reset`]
+对于性能基准测试，更实际的做法是先用 `adb shell settings put global low_power 0` 确保系统不进入低功耗模式。`adb shell cmd thermalservice override-status 0` 可以把 framework 侧的 thermal status 锁到 `THERMAL_STATUS_NONE`，但要注意：这个命令只覆盖 `ThermalManagerService` 的 `mIsStatusOverride`，影响 framework 向 App 投递的 `ThermalStatusChanged` 回调；它不会关闭 vendor 侧的 Thermal HAL、kernel cpufreq/GPU throttling 或 vendor thermal engine。设备仍然会根据真实温度降频。因此这个命令适合用来测试 App 自身的 thermal callback 逻辑，不能当作"锁定 CPU/GPU 峰值性能"的工具。性能基准测试的稳定化应优先依靠温度控制（间隔冷却、物理散热、温度门控），再配合 CPU 频率锁定（需要 root）。测试结束后用 `adb shell cmd thermalservice reset` 恢复默认热控。[已验证: AOSP android-14.0.0_r1 & android-16.0.0_r1, `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 的 `override-status` 只设置 `mIsStatusOverride` 并覆盖 framework thermal status，不影响 HAL/kernel 侧温控]
 
 Macrobenchmark 库在内部会自动执行一些环境稳定化操作，它会在每次测量前设置设备为"适合测量"的状态，包括关闭多窗口模式、设置屏幕亮度为固定值等 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-overview]。
 
@@ -250,7 +250,7 @@ Macrobenchmark 库在内部会自动执行一些环境稳定化操作，它会�
 
 - 刷新率设置：`frameworks/base/services/core/java/com/android/server/display/mode/DisplayModeDirector.java` 监听 `Settings.System.PEAK_REFRESH_RATE` / `MIN_REFRESH_RATE`，再参与 display mode 选择。
 - 热状态 shell：`frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java` 暴露 `override-status` / `reset` shell 命令，用于实验环境下临时固定 thermal status。
-- 后台 dexopt：shell 命令入口在 `frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java`；Android 14 的 JobScheduler 调度代码在 `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`；Android 16 的 ART Service 执行入口在 `platform/art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`。不要沿用旧文中的过期路径。
+- 后台 dexopt：shell 命令入口在 `frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java`；Android 14 的 JobScheduler 调度代码在 `frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`；Android 16 的 ART Service 执行入口在 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`。不要沿用旧文中的过期路径。
 - Macrobenchmark：`androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/Macrobenchmark.kt` 中的 `MacrobenchmarkRule.measureRepeated(...)` 负责迭代、编译模式、启动模式和指标采集的编排。
 
 ### 屏幕亮度与显示设置
@@ -600,7 +600,7 @@ Firebase Performance Monitoring（FPM）是 Google 提供的线上性能监控�
 - AOSP 路径：`frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java`（`bg-dexopt-job` / `cancel-bg-dexopt-job` shell 命令分发）
 - AOSP 路径：`frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptService.java`（Android 14 后台 dexopt 服务调度）
 - AOSP 路径：`frameworks/base/services/core/java/com/android/server/pm/BackgroundDexOptJobService.java`（Android 14 JobService 调度入口）
-- AOSP 路径：`platform/art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`（Android 16 ART Service 优化执行入口）
+- AOSP 路径：`art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`（Android 16 ART Service 优化执行入口）
 - AOSP 路径：`frameworks/base/core/java/android/app/Activity.java`（`reportFullyDrawn()` / 启动时间相关 API）
 - AOSP 路径：`frameworks/base/core/java/android/view/Choreographer.java`（帧回调 API）
 - AndroidX 路径：`androidx-main/benchmark/benchmark-macro/src/main/java/androidx/benchmark/macro/CompilationMode.kt`（CompilationMode 定义）

@@ -26,11 +26,11 @@ sources:
   - type: blog
     path: "郭霖 - Android 15 新特性：预测性返回手势 (微信)"
   - type: aosp
-    path: "packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java"
+    path: "frameworks/base/frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java"
   - type: aosp
-    path: "packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt"
+    path: "frameworks/base/frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt"
   - type: aosp
-    path: "packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java"
+    path: "frameworks/base/frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: aosp
@@ -59,11 +59,11 @@ sources:
     path: "https://developer.android.com/reference/androidx/activity/OnBackPressedCallback"
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。需 Task2B 回炉。"
 ---
@@ -111,7 +111,7 @@ Android 13 引入了 Predictive Back 相关 API。到 Android 15，官方文档�
 
 `InputMonitorResource` 内部并没有自己发明一套输入通道，它只是用 `InputMonitorCompat("edge-swipe", displayId)` 包装 `InputManagerGlobal.monitorGestureInput()`，让 SystemUI 在当前屏幕上收到名为 `edge-swipe` 的 gesture monitor 事件流。视觉反馈这一侧，旧资料经常提 `NavigationBarEdgePanel`，但 android-16.0.0_r1 当前默认插件已经换成 `BackPanelController` / `BackPanel.kt`，并通过 `TYPE_NAVIGATION_BAR_PANEL` overlay window 显示边缘箭头和面板动画。去 AOSP 对照时，文件名这一层不能再沿用旧类名。
 
-[已验证: AOSP android-16.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java]
 
 ### InputMonitor 的工作原理
 
@@ -121,7 +121,7 @@ Android 13 引入了 Predictive Back 相关 API。到 Android 15，官方文档�
 
 legacy back path 里，一旦横向位移越过阈值且 `mBackAnimation == null`，`EdgeBackGestureHandler` 会调用 `pilferPointers()`。这一调用最终进入 `InputDispatcher::pilferPointersLocked()`，后者会对原目标窗口合成 `CANCEL_POINTER_EVENTS`。App 端收到的不是“完整滑到结束的一串 MotionEvent”，而是一条被系统夺走后的 cancel 结尾。边缘冲突里常见的“手指还在动，App 为什么突然不再收到后续 MOVE”，根因通常就在这里。
 
-[已验证: AOSP android-16.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp]
 
 ### 从边缘滑动到返回事件的完整流程
 
@@ -144,7 +144,7 @@ legacy back path 里，一旦横向位移越过阈值且 `mBackAnimation == null
 
 这个拆分直接影响性能分析。legacy path 里常见的现象，是 pointer 被 pilfer 之后 App 为什么突然收到 cancel；predictive path 里更常见的现象，是 back progress 动画、跨 Activity 预览和 App 自定义返回动画之间的配合是否掉帧。
 
-[已验证: AOSP android-16.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/window/OnBackInvokedCallback.java; frameworks/base/core/java/android/window/OnBackAnimationCallback.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/window/OnBackInvokedCallback.java; frameworks/base/core/java/android/window/OnBackAnimationCallback.java]
 
 ## 手势冲突处理：系统手势优先区域 vs App 的 WindowInsets
 
@@ -254,7 +254,7 @@ EdgeBackGestureHandler 中有一个 `mLongPressTimeout` 参数，它限制了从
 
 android-16.0.0_r1 默认的边缘反馈插件是 `BackPanelController` / `BackPanel.kt`，不再是很多旧资料里的 `NavigationBarEdgePanel`。它被挂到 `TYPE_NAVIGATION_BAR_PANEL` overlay window 上，手势跟随阶段会更新 panel 形态、阈值状态和返回动画进度。排查这一段的渲染成本时，更适合把 SystemUI 的 UI thread、RenderThread 和合成线程一起看，不要只盯着某个已经换掉的旧类名。
 
-[已验证: AOSP android-16.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanel.kt; packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanel.kt; frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java]
 
 ## 在 Perfetto 中的表现
 
@@ -351,10 +351,10 @@ Predictive Back 的关键区别，是提交阶段不一定再出现 injected `KE
 ## 参考资料
 
 - AOSP 源码路径：
-  - `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java` — 返回手势判定、`triggerBack()`、`dispatchToBackAnimation()`、`pilferPointers()`
-  - `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt` — 当前默认的边缘返回反馈插件
-  - `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanel.kt` — 边缘面板的绘制与动画实现
-  - `packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java` — `monitorGestureInput()` 的 SystemUI 包装层
+  - `frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java` — 返回手势判定、`triggerBack()`、`dispatchToBackAnimation()`、`pilferPointers()`
+  - `frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt` — 当前默认的边缘返回反馈插件
+  - `frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanel.kt` — 边缘面板的绘制与动画实现
+  - `frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java` — `monitorGestureInput()` 的 SystemUI 包装层
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — `pilferPointersLocked()` 与 `CANCEL_POINTER_EVENTS` 合成
   - `frameworks/base/core/java/android/window/OnBackInvokedCallback.java` — API 33 的 commit callback
   - `frameworks/base/core/java/android/window/OnBackAnimationCallback.java` — API 34 的 progress callback
