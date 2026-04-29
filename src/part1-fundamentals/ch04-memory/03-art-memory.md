@@ -34,12 +34,12 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-28T23:59:00+08:00"
+last_task2b_at: "2026-04-30T05:47:02+08:00"
 task6_result: pass-light-edit
 
 task9_result: needs-rework
@@ -131,7 +131,7 @@ Allocation Space 的实现和分代策略要按平台版本拆开看。Android 8
 
 ### Large Object Space：大对象的特殊处理
 
-如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-15.0.0_r1` 为例，`Heap::kMinLargeObjectThreshold` 的默认值是 `12 * KB`。`Heap::IsLargeObject(...)` 还明确要求对象类型是 primitive array 或 `String`。旧资料常把这个阈值写成 `3 * kPageSize`，但在 Android 15 的平台源码里它已经固定成 12KB。结合 16KB page size 的适配背景，更合适的理解是：AOSP 主动把 LOS 入口从页大小解耦，避免不同页大小设备出现不同的大对象分配边界。
+如果一个对象同时满足两个条件，大小达到大对象阈值，并且类型是基本类型数组或 `String`，ART 会把它分配到 Large Object Space，而不是 Allocation Space。以 `android-15.0.0_r1` 为例，`Heap::kMinLargeObjectThreshold`（定义在 `art/runtime/gc/heap.h`）的默认值是 `12 * KB`。大对象判断入口在 `Heap::ShouldAllocLargeObject(ObjPtr<mirror::Class>, size_t)`（定义在 `art/runtime/gc/heap-inl.h`），它会检查对象类型是否为 primitive array 或 `String`。旧资料常把这个阈值写成 `3 * kPageSize`，但在 Android 15 的平台源码里它已经固定成 12KB。结合 16KB page size 的适配背景，更合适的理解是：AOSP 主动把 LOS 入口从页大小解耦，避免不同页大小设备出现不同的大对象分配边界。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.h]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap-inl.h]
@@ -244,7 +244,7 @@ Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generatio
 
 这条时间线更适合记成：Android 8.0-13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 / Android 17 再谈 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
 
-Android 16 QPR2 默认启用的 Generational CMC 已经有了实测收益数据：PCMark 跑分提升 19.6%，年轻代回收保持在 1-3ms 的延迟水平，在 OpenCL 计算负载下能效提升 32.6%。这些数据说明分代策略配合 CMC 的压缩能力，在高刷新率环境和高计算负载场景下都能释放可观的 CPU 吞吐量。
+Generational CMC 的分代策略配合 CMC 的压缩能力，在高刷新率环境和高计算负载场景下有潜力释放可观的 CPU 吞吐量。官方博客确认了 ART includes Generational CMC and reduces CPU/battery 的定性描述，但博客原文未给出量化 benchmark 数字。如需引用具体性能数据（如 PCMark 跑分、Young GC 延迟、能效百分比），必须补充可公开访问的一手测试报告（含设备型号、系统版本、负载场景和采样条件）。
 
 [已验证: Android Developers Blog, Android 16 QPR2 is Released]
 
@@ -254,7 +254,7 @@ Android 16 QPR2 默认启用的 Generational CMC 已经有了实测收益数据�
 
 分代回收这件事，本身比底层 collector 更稳定。它依赖的判断很朴素：新分配对象大多活不久，先把回收工作集中在年轻对象上，通常能用更短的暂停时间拿到更高的回收收益。
 
-在 Android 8.0-14 的 CC 路径里，我们可以把它理解为 generational CC。新对象先进入年轻工作集，Young GC 主要扫描这部分对象，暂停时间通常只有 1-3ms；只有年轻对象晋升、老年代压力上来，才会触发更重的 full-heap 回收。到了 Android 16 QPR2 之后，官方开始把这一思路明确表述为 Generational CMC，但先回收年轻对象、再尽量少碰老对象的观察口径没有变。
+在 Android 8.0-9 的 CC 路径里，分代回收还处于早期阶段；Android 10-13/14 的 CC 路径才有了更成熟的 generational CC 实现，新对象先进入年轻工作集，Young GC 主要扫描这部分对象，暂停时间通常只有 1-3ms；只有年轻对象晋升、老年代压力上来，才会触发更重的 full-heap 回收。到了 Android 16 QPR2 之后，官方开始把这一思路明确表述为 Generational CMC，但先回收年轻对象、再尽量少碰老对象的观察口径没有变。
 
 在 Perfetto 中，我们仍然可以用相同的观察方式区分这两类活动：
 - **Young / minor collection**：持续时间短、频率更高，通常出现在对象快速创建和销毁的场景
@@ -293,13 +293,15 @@ GC 吞吐量指的是应用运行时间占总时间的比例。如果 GC 吞吐�
 
 [已验证: 官方文档, source.android.com/docs/core/perf/art-management]
 
-### Android 17：DeliQueue 消除 FinalizerDaemon 锁竞争
+### Android 17：DeliQueue 与 `MessageQueue` 无锁路径 [待验证]
+
+> **注意**：以下内容关于 DeliQueue 延伸到 `ReferenceQueue` 并消除 FinalizerDaemon 锁竞争的描述，经 AOSP master（2026-04）复核，`libcore ReferenceQueue.java` 仍有 `private final Object lock`，`reference_processor.cc` 仍为 `kAsyncReferenceQueueAdd = false`，未见 DeliQueue 接入 ReferenceQueue/FinalizerDaemon 的源码证据。以下已改为限定在 `android.os.MessageQueue` 范围，ReferenceQueue 部分标记为待验证。
 
 ART 的 FinalizerDaemon 线程负责处理对象的 `finalize()` 方法。在 Android 16 及之前，GC 完成标记后需要通过 `ReferenceQueue` 将待 finalize 对象传递给 FinalizerDaemon，这条路径涉及同步锁。当 GC 频率高、FinalizerDaemon 处理压力大时，锁竞争会导致 FinalizerDaemon 出现 `TimeoutException`，极端情况下引发 ANR。
 
-Android 17 的 DeliQueue 无锁消息队列机制延伸到了 `ReferenceQueue`，消除了 GC 与 FinalizerDaemon 之间的锁竞争。GC 标记完成后直接通过无锁队列投递引用对象，FinalizerDaemon 从队列中消费，双方互不阻塞。这从根本上降低了由同步阻塞导致的 `TimeoutException` 发生概率。
+Android 17 的 DeliQueue 是一种无锁消息队列机制，已在 `android.os.MessageQueue` 层面实现了无锁投递，消除了 Handler/Message 路径上的同步开销。至于 DeliQueue 是否已延伸到 ART 内部的 `ReferenceQueue` 并消除 FinalizerDaemon 的锁竞争，当前 AOSP 源码尚未提供明确证据，这一部分留作待验证。
 
-在 Perfetto 中，如果看到 `FinalizerDaemon` 线程出现长时间的 `Object.wait()` 或 `ReferenceQueue` 相关的阻塞 slice，通常是这条锁竞争路径的表征。升级到 Android 17 后这类 slice 应该消失。
+在 Perfetto 中，如果看到 `FinalizerDaemon` 线程出现长时间的 `Object.wait()` 或 `ReferenceQueue` 相关的阻塞 slice，通常是锁竞争路径的表征。
 
 ## 对象分配路径：从 TLAB 到 Full GC
 
@@ -323,7 +325,7 @@ Object allocate(size_t size) {
 
 TLAB 分配的速度比 Android 7.0 快 70%，比 Dalvik 时代快约 18 倍。这是 ART 内存分配的"快车道"——只要 TLAB 有空间，对象分配几乎是免费的。
 
-AOSP 源码路径：`art/runtime/gc/space/region_space.cc (AllocNewTLAB)`
+AOSP 源码路径：`art/runtime/gc/space/region_space.cc (AllocNewTlab)`、`kRegionSize = 256 * KB` 定义在 `region_space.h`
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/region_space.cc]
 
 ### Region 分配：TLAB 耗尽后
@@ -517,7 +519,7 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - RosAlloc：`art/runtime/gc/allocator/rosalloc.cc`
 - Image Space：`art/runtime/gc/space/image_space.cc`
 - Large Object Space：`art/runtime/gc/space/large_object_space.cc`
-- TLAB 分配：`art/runtime/gc/space/region_space.cc (AllocNewTLAB)`
+- TLAB 分配：`art/runtime/gc/space/region_space.cc (AllocNewTlab)`
 - Profile 管理：`art/runtime/jit/profile_saver.cc`
 
 ### 官方文档
