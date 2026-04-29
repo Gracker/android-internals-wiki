@@ -1,5 +1,5 @@
 ---
-last_task9_at: "2026-04-29T06:30:33+08:00"
+last_task9_at: "2026-04-29T15:20:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
 title: "手势导航与系统交互"
@@ -59,13 +59,13 @@ sources:
     path: "https://developer.android.com/reference/androidx/activity/OnBackPressedCallback"
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。需 Task2B 回炉。"
+task9_review_notes: "2026-04-29 15:20 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。frontmatter AOSP 路径重复 frameworks/base，需 Task2B 回炉。"
 ---
 
 # 3.3 手势导航与系统交互

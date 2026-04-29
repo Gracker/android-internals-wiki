@@ -1527,8 +1527,9 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T06:30:33+08:00",
-      "review_round": "3"
+      "last_task9_at": "2026-04-29T15:20:00+08:00",
+      "review_round": "3",
+      "task9_review_notes": "2026-04-29 15:20 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。frontmatter AOSP 路径重复 frameworks/base。"
     },
     "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md": {
       "path": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
@@ -7139,6 +7140,22 @@
         }
       ],
       "log": "logs/deep-review/2026-04-29-07-deep-review.md"
+    },
+    {
+      "date": "2026-04-29",
+      "time": "15:20",
+      "task": "task9-deep-tech-review",
+      "sections_reviewed": [
+        {
+          "section": "3.3",
+          "title": "手势导航与系统交互",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 2
+        }
+      ],
+      "log": "logs/deep-review/2026-04-29-15-deep-review.md"
     }
   ],
   "progress": {
@@ -8206,7 +8223,7 @@
       }
     }
   },
-  "last_updated": "2026-04-29T13:20:00+08:00",
+  "last_updated": "2026-04-29T15:20:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -9547,5 +9564,15 @@
       "fixed_by": "openclaw-task2b",
       "issues_fixed": 1
     }
-  ]
+  ],
+  "2026-04-29-15-task9": {
+    "section": "3.3",
+    "title": "手势导航与系统交互",
+    "file": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+    "result": "needs-rework",
+    "p0": 1,
+    "p1": 0,
+    "p2": 2,
+    "updated_at": "2026-04-29T15:20:00+08:00"
+  }
 }
