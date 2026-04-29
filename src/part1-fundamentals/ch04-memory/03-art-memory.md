@@ -1,7 +1,7 @@
 ---
-task9_reviewed_date: "2026-04-21"
+task9_reviewed_date: "2026-04-29"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-21T17:18:00+08:00"
+last_task9_at: "2026-04-29T13:20:00+08:00"
 title: "ART 虚拟机内存管理"
 chapter: "4.3"
 section: "4.3"
@@ -34,14 +34,17 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-28T23:59:00+08:00"
 task6_result: pass-light-edit
 
+task9_result: needs-rework
+task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 4 / P1 1 / P2 2。需 Task2B 回炉。"
+---
 # ART 虚拟机内存管理
 
 <!-- outline-start -->

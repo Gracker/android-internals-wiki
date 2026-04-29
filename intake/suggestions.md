@@ -6435,3 +6435,15 @@
 - **位置**：L417-L419「Compose LazyColumn 预取」
 - **问题**：源码锚点写成 `LazyLayoutItemProvider`，但 AndroidX `LazyLayoutItemProvider.kt` 不包含 prefetch 逻辑；pausable composition in prefetch 的实现锚点在 `LazyLayoutPrefetchState.kt` 等 lazy layout prefetch 代码中。
 - **建议**：把源码锚点改为 `androidx.compose.foundation.lazy.layout.LazyLayoutPrefetchState` / LazyLayout prefetch scheduler，并保留 `LazyLayoutItemProvider` 只作为 item provider，不作为预取实现证据。
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-04-29
+- **类型**：源码准确性
+- **位置**：L138-L139
+- **问题**：Large Object Space 实现被写成 FreeListSpace=arm64、MapSpace=非 arm64。android-15 heap.h 的选择条件是 `USE_ART_LOW_4G_ALLOCATOR ? kFreeList : kMap`，不是简单按 CPU 架构划分。
+- **建议**：改成“由 `USE_ART_LOW_4G_ALLOCATOR`/构建配置决定”，如果要举设备例子，需要给出对应 build flag。
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-04-29
+- **类型**：数据缺失/Trace 锚点
+- **位置**：L416-L456、L460-L464
+- **问题**：`art_gc`/`art_jit_*` track、SQL 查询和“正常 Young GC 每 2-5 秒、1-3ms”等阈值没有绑定真实 Perfetto trace、schema 或设备/负载。
+- **建议**：补一个可复现 trace：Android 版本、机型、trace config、实际 slice/counter 名称、SQL 输出和阈值来源；否则把阈值降级为经验观察并标注条件。

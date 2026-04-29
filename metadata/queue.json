@@ -5142,9 +5142,9 @@
     },
     {
       "section": "4.3",
-      "section_title": "`src/part1-fundamentals/ch04-memory/03-art-memory.md`",
-      "priority": 85,
-      "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 4.3 ART 虚拟机内存管理存在源码方法名、Android 16 QPR2 数据来源、Android 17 ReferenceQueue/DeliQueue 与 Generational CC 版本线错误，需回炉修正",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -5167,11 +5167,45 @@
           "location": "性能影响章节",
           "detail": "DeliQueue 终结 Finalizer 超时。",
           "suggestion": "补全无锁架构对虚拟机稳定性的正面贡献。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L131",
+          "detail": "正文写 `Heap::IsLargeObject(...)`，但 AOSP android-15.0.0_r1 中没有该方法；大对象判断入口在 `Heap::ShouldAllocLargeObject(ObjPtr<mirror::Class>, size_t)`（heap-inl.h），阈值定义在 heap.h 的 `kMinLargeObjectThreshold = 12 * KB`。",
+          "suggestion": "把方法名和源码锚点改成 `Heap::ShouldAllocLargeObject(...)` + `kMinLargeObjectThreshold`，避免读者按不存在的方法检索源码。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L323",
+          "detail": "TLAB 源码锚点写成 `RegionSpace::AllocNewTLAB`；android-15.0.0_r1 中实际方法名是 `RegionSpace::AllocNewTlab`，大小常量 `kRegionSize = 256 * KB` 在 region_space.h。",
+          "suggestion": "修正方法名大小写，并把 `kRegionSize` 常量锚到 `region_space.h`。"
+        },
+        {
+          "type": "数据/来源错误",
+          "location": "L244-L246",
+          "detail": "正文把 PCMark +19.6%、Young GC 1-3ms、OpenCL 能效 +32.6% 标成 Android Developers Blog 已验证；实际 Android 16 QPR2 官方博客只说明 ART includes Generational CMC and reduces CPU/battery，页面未给出这些数字。",
+          "suggestion": "删除这组三个量化数字，或补充可公开访问的一手 benchmark 链接、设备、版本、负载和采样条件；否则只保留官方博客能确认的定性表述。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L122、L254",
+          "detail": "正文把 Android 8.0-13/14 的 CC 路径整体写成“年轻对象优先 / generational CC”。Android 8.0 是 CC 默认化节点，Generational CC 是 Android 10+ 的版本线；Android 8/9 不应直接归入 generational CC。",
+          "suggestion": "改成 Android 8-9：Concurrent Copying；Android 10-13/14：Generational CC；Android 14/15：AOSP 出现 CMC/MarkCompact 路径；Android 16 QPR2+：官方明确 Generational CMC。"
+        },
+        {
+          "type": "源码/版本事实错误",
+          "location": "L293-L299",
+          "detail": "正文称 Android 17 DeliQueue 延伸到 `ReferenceQueue` 并消除 FinalizerDaemon 锁竞争。AOSP master 的 libcore `ReferenceQueue.java` 仍有 `private final Object lock`，ART `reference_processor.cc` 仍为 `kAsyncReferenceQueueAdd = false`，未见 DeliQueue 接入 ReferenceQueue/FinalizerDaemon 的源码证据。",
+          "suggestion": "删除本小节，或改为待验证材料；如要写 Android 17 DeliQueue，应限定在 `android.os.MessageQueue`，不能扩展到 ART ReferenceQueue。"
         }
       ],
-      "added_by": "external-ai-review",
+      "added_by": "task9-deep-tech-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_at": "2026-04-29T13:20:00+08:00"
     },
     {
       "section": "4.4",
