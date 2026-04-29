@@ -5857,22 +5857,36 @@
     {
       "section": "7.5",
       "section_title": "优化策略",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 示例把 `@Immutable data class ItemListState(val items: List<String>)` 放在「正确」路径里。Compose 官方稳定性规则中，标准 Kotlin `List/Map/Set` 默认按 unstable 处理；手工标 `@Immutable` 是对编译器作不可",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.5 优化策略仍存在 RenderEffect 机制描述与 AGSL 示例 P0 问题，并保留 Compose stability P1 问题",
       "material_paths": [
-        "intake/suggestions.md"
+        "intake/suggestions.md",
+        "src/part2-performance/ch07-smoothness/05-optimization.md"
       ],
       "review_issues": [
         {
+          "type": "源码错误",
+          "location": "L251-L254「RenderEffect / Blur 等特效的性能考量」",
+          "detail": "文中把 RenderEffect 概括为“Shader 级集成”，并写成 Skia 能对 filter 链做算子融合、复用 Scratch Texture、避免每个 filter 申请离屏缓冲区，进而推出“动态内容内存占用和 GPU 调度效率都优于 Hardware Layer”。AOSP android-16.0.0_r1 的 View.setRenderEffect()/RenderNode.setRenderEffect() Javadoc 对 blur 的描述是：View/RenderNode 内容会先绘制到 separate layer，再对该 layer 做 blur；RenderEffect.cpp 只证明 Java API 创建 SkImageFilter，不能证明无离屏层、算子融合或 Scratch Texture 复用保证。当前表述与一手源码/文档边界冲突。",
+          "suggestion": "改成：RenderEffect 是挂在 RenderNode 上的 SkImageFilter/imageFilter；blur 等 filter 可能触发临时离屏层，和 LAYER_TYPE_HARDWARE 的区别在于是否为 View 显式建立可复用的硬件层缓存，而不是“Shader 级 vs Buffer 级”绝对对立。删除“算子融合/Scratch Texture/动态内容都优于 Hardware Layer”的无证据结论，保留需要 Perfetto/GPU memory 验证的边界。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L262-L270「AGSL RuntimeShader 示例」",
+          "detail": "AGSL 示例中使用 `resolution` 变量，但 shader 字符串没有声明 `uniform float2 resolution;`，Java/Kotlin 侧也没有调用 `RuntimeShader#setFloatUniform(\"resolution\", ...)`。该示例不能作为可运行代码，读者复制后会遇到 AGSL 编译/运行错误。",
+          "suggestion": "若只是 passthrough 示例，改为 `return inputNode.eval(fragCoord);`；若保留归一化坐标，补 `uniform float2 resolution;` 并展示设置 uniform 的代码。"
+        },
+        {
           "type": "原理断裂",
-          "location": "L359-L366「Stable 类型」示例",
-          "detail": "示例把 `@Immutable data class ItemListState(val items: List<String>)` 放在「正确」路径里。Compose 官方稳定性规则中，标准 Kotlin `List/Map/Set` 默认按 unstable 处理；手工标 `@Immutable` 是对编译器作不可变承诺，但 `List` 背后仍可能是可变实现。这个示例会让读者用注解掩盖可变集合问题，导致跳过重组或状态一致性风险。",
-          "suggestion": "把正确示例改为 `kotlinx.collections.immutable.ImmutableList` / 持久化集合，或说明 stability configuration 只适用于能保证不可变语义的类型；不要把 `@Immutable + List` 单独写成推荐解。"
+          "location": "L365-L367「Stable 类型」示例",
+          "detail": "示例仍把 `@Immutable data class ItemListState(val items: List<String>)` 放在推荐路径中。Compose 稳定性规则中，标准 Kotlin `List/Map/Set` 不能保证底层不可变；`@Immutable` 只是向编译器作承诺，不会让可变 backing collection 变成不可变集合。",
+          "suggestion": "把正确示例改为 `kotlinx.collections.immutable.ImmutableList`/持久化集合；如果必须包装 `List`，明确这是人工稳定性契约，调用方必须保证不可变快照，不能作为默认推荐。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T04:29:00+08:00",
-      "status": "pending"
+      "status": "pending",
+      "updated_at": "2026-04-29T12:29:31+08:00"
     },
     {
       "section": "7.6",
