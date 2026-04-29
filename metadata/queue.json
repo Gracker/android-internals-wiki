@@ -1937,7 +1937,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T23:18:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T18:03:04.709973",
+      "completed_reason": "R8 optimizedResourceShrinking 开启后动态资源引用安全边界已补充：getIdentifier() 检查清单、keep.xml 审计、resources.txt 验证"
     },
     {
       "section": "12.2",
@@ -1957,7 +1959,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T23:18:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T18:03:04.709973",
+      "completed_reason": "QUIC 0-RTT 重放攻击风险已补充：前向安全性缺失警告、幂等请求约束、Cronet QuicOptions 配置建议"
     },
     {
       "section": "13",
