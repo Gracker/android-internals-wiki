@@ -2,7 +2,7 @@
 title: "网络性能优化"
 chapter: 12.2
 section: '12.2'
-status: finalized
+status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 reviewed_date: "2026-04-25"
@@ -11,6 +11,10 @@ polish_date: '2026-04-10'
 polish_by: task2b-polish
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+pipeline_stage: task6_pending
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-03'
 last_verified_against: OkHttp 4.12.x / Android 16
@@ -129,6 +133,8 @@ HTTP/2 通过**多路复用**（Multiplexing）解决了这个问题。在 HTTP/
 HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个架构变更带来了几个对移动网络场景尤为关键的改进：
 
 **零/一次 RTT 连接建立**：QUIC 将传输层握手和 TLS 1.3 加密握手合并为一次交互。首次连接只需 1-RTT，后续连接可以利用保存的会话信息实现 0-RTT，即第一个包就可以携带请求数据。在移动网络下，一个 RTT 可能是 50-100ms，省掉一次往返意味着白屏时间直接减少 50-100ms。
+
+> **⚠️ 0-RTT 安全边界**：0-RTT 数据不具备前向安全性（Forward Secrecy），且易受重放攻击（Replay Attack）（RFC 9001 §9.2）。业务层必须确保通过 0-RTT 发送的请求是幂等的（如 GET、PUT），或者携带服务端幂等键（Idempotency Key）来防止重复执行。对非幂等请求（POST、PATCH），应在 QUIC 配置中显式禁用 0-RTT，或在应用层降级到 1-RTT 发送。Cronet 的 `QuicOptions` 允许通过 `addAllowedQuicHost()` 控制哪些域名启用 QUIC，建议只对幂等读接口的域名启用 0-RTT。
 
 **独立的 Stream 丢包恢复**：QUIC 在自己的传输层实现了多路复用，每个 Stream 的丢包重传互不影响。一个 Stream 丢包不会阻塞其他 Stream 的数据传输——这正是 HTTP/2 over TCP 最大的薄弱环节。
 

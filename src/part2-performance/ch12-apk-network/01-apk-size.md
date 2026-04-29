@@ -177,6 +177,13 @@ android.r8.optimizedResourceShrinking=true
 
 这个开关只在 AGP 8.12.0 及以上版本生效。低版本仍然使用传统的资源缩减流程。
 
+> **⚠️ 动态资源引用的安全边界**：开启 `android.r8.optimizedResourceShrinking` 后，R8 的引用图分析会接管资源缩减逻辑。如果项目中有通过 `Resources.getIdentifier()` 动态获取资源的写法（常见于插件化框架、主题引擎、WebView 混合应用），R8 无法在编译期追踪这类动态引用，可能导致资源被误缩减。启用前的检查清单：
+> 1. 扫描代码中所有 `Resources.getIdentifier()` 调用点
+> 2. 检查反射式资源名拼接（如 `getIdentifier("icon_" + suffix, "drawable", packageName)`）
+> 3. 确认 `res/raw/keep.xml` 中用 `tools:keep` 声明了所有动态引用的资源匹配模式
+> 4. 构建后检查 `build/outputs/mapping/*/resources.txt`，确认没有误删
+> 5. 跑一轮资源路径回归测试，覆盖动态加载场景
+
 ## 资源瘦身：图片、布局和字符串的优化
 
 ### 图片格式替换：PNG → WebP
