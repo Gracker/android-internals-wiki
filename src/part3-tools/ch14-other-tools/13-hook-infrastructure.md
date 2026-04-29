@@ -577,6 +577,62 @@ bytehook_stub_t bytehook_hook_all(
 
 
 
+
+## 补充：Hook 库的 16KB Page Size 对齐实现细节
+
+<!-- AIW-源码调研-2026-04-30 -->
+
+### ByteHook 与 ShadowHook 的 CMakeLists.txt 16KB 对齐配置
+
+根据源码级调研（GitHub 一手源码），主流 Hook 库已在构建层面显式支持 16KB 对齐：
+
+**ByteHook v1.1.1** (`bytehook/src/main/cpp/CMakeLists.txt`)：
+```cmake
+if((${ANDROID_ABI} STREQUAL "arm64-v8a") OR (${ANDROID_ABI} STREQUAL "x86_64"))
+    set(ARCH_LINK_FLAGS "-Wl,-z,max-page-size=16384")
+else()
+    set(ARCH_LINK_FLAGS "")
+endif()
+target_link_options(bytehook PUBLIC ${ARCH_LINK_FLAGS})
+```
+arm64-v8a 和 x86_64 显式设置 16KB 对齐，armeabi-v7a 保持空（32位 arm 无强制要求）。
+
+**ShadowHook v2.0.0** (`shadowhook/src/main/cpp/CMakeLists.txt`)：
+```cmake
+if(${ANDROID_ABI} STREQUAL "arm64-v8a")
+    set(ARCH_LINK_FLAGS "-Wl,-z,max-page-size=16384")
+elseif(${ANDROID_ABI} STREQUAL "armeabi-v7a")
+    set(ARCH_LINK_FLAGS "")
+endif()
+target_link_options(shadowhook PRIVATE ${ARCH_LINK_FLAGS})
+```
+ShadowHook 仅对 arm64-v8a 强制 16KB 对齐。
+
+### ELF LOAD Segment p_align 与系统页大小匹配
+
+当系统页大小为 16KB 时，Bionic Linker 检查 ELF 的 min_palign：
+- `kPageSize == 16384 && min_palign == 4096` → 触发 compat mode（`bionic.linker.16kb.app_compat.enabled`）
+- `min_palign >= kPageSize` → 正常加载
+
+compat mode 允许 4KB 对齐的 .so 在 16KB 设备上运行，但会跳过 RELRO 段填充（安全退化）。Google Play 强制截止日期：2025-11-01。
+
+| NDK 版本 | 默认 p_align | 说明 |
+|----------|-------------|------|
+| r27 及以下 | 0x1000 (4KB) | 需手动加链接器参数 |
+| r28+ | 0x4000 (16KB) | 默认对齐 |
+| AGP 8.3-8.5 | 0x4000 (16KB) | App 默认对齐 |
+| AGP 8.5.1+ | 0x4000 (16KB) | 强烈推荐 |
+
+### mprotect 在 16KB 页面下的约束
+
+Inline Hook 修改被保护页面时：
+1. `mprotect(addr, size, PROT_READ|PROT_WRITE)` 去除写保护
+2. 修改指令（bl/jmp 等）
+3. `mprotect(addr, size, PROT_READ|PROT_EXEC)`
+4. `__builtin___clear_cache()` → ARM64: `dc cvau → dsb → ic ivau → isb`
+
+**关键约束**：16KB 页面下 `mprotect` 的 size 参数必须是 16KB 的倍数，否则返回 EINVAL（`EINVAL: size not multiple of page_size`）。
+
 ## 这一章在全书里的位置
 
 这一章不是孤立的底层技术补充,它和全书主线直接相连:

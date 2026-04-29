@@ -1,6 +1,7 @@
 ---
 title: "各 Android 版本性能变更追踪"
 chapter: "16.2"
+applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 drafted_date: "2026-04-04"
 last_verified: "2026-04-21"
 last_verified_against: "developer.android.com API reference + AOSP android-16.0.0_r1 SystemHealthManager / Display"

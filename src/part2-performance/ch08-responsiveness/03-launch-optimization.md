@@ -2,9 +2,6 @@
 title: "启动优化策略"
 chapter: "8.3"
 status: ready-for-review
-reviewed_date: "2026-04-27"
-reviewed_by: openclaw-task6-task6
-task6_result: pass-light-edit
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -34,8 +31,6 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-pipeline_stage: task2b_pending
-task6_state: revisiting
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
@@ -47,6 +42,12 @@ repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T10:44:00+08:00"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0，P1 2，P2 2。Startup Profile 原问题部分已覆盖；external DEFAULT_TO_WEB 线索未采纳。"
+task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-04-30"
+pipeline_stage: task2b_pending
+review_round: 3
 ---
 
 # 启动优化策略
