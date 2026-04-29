@@ -227,6 +227,83 @@ t->setBuffer(mSurfaceControl, buffer, fence, bufferItem.mFrameNumber, mProducerI
 
 <!-- AIW-源码调研-2026-04-19 -->
 
+### BufferQueue 内部锁架构:mCore->mMutex 是 producer-consumer 共享的唯一锁
+
+<!-- AIW-源码调研-2026-04-29 -->
+这一小节专门补齐 BufferQueue 内部的锁竞争架构,是 §7.2 "BufferQueue 内部的锁竞争机制"盲区的源码级答案。
+
+#### BufferQueueCore::mMutex 中心锁
+
+`BufferQueueCore` 是 producer 和 consumer 共享的底层队列核心,持有所有共享状态。`mMutex` 是这些状态的唯一保护锁:
+
+```cpp
+// platform/frameworks/native/libs/gui/BufferQueueCore.h (android14-release)
+class BufferQueueCore {
+    mutable Mutex mMutex; // 声明为 mutable,允许 const 方法内加锁
+
+    // 共享数据结构
+    BufferSlot mSlots[NUM_BUFFER_SLOTS]; // NUM_BUFFER_SLOTS = 64
+    std::set<int> mFreeSlots;     // FREE 态但无 GraphicBuffer 的 slot
+    std::list<int> mFreeBuffers;  // FREE 态且已有 GraphicBuffer 的 slot
+    int64_t mFrameCounter;
+    std::condition_variable mDequeueCondition; // producer 阻塞等待
+    // ...
+};
+```
+
+所有访问 `mSlots`、`mFrameCounter`、`mFreeSlots`、`mFreeBuffers` 的代码路径,必须先 `std::lock_guard<std::mutex> lock(mCore->mMutex)`。Producer 端和 Consumer 端通过同一个 `sp<BufferQueueCore>` 引用操作,因此竞争的是同一个 mutex 实例。
+
+#### Producer 端锁路径:BufferQueueProducer
+
+`BufferQueueProducer` 持有 `sp<BufferQueueCore> mCore`。以下操作均在 `mCore->mMutex` 保护下:
+
+| 方法 | 关键操作 | 锁内行为 |
+|------|---------|----------|
+| `dequeueBuffer()` | 选 slot → 状态置 DEQUEUED | 从 mFreeBuffers/mFreeSlots 找可用 slot;waitForFreeSlotThenRelock() 阻塞时释放锁 |
+| `queueBuffer()` | `++mCore->mFrameCounter` | 原子递增;状态置 QUEUED;mSlots[slot].mFrameNumber 赋值 |
+| `detachBuffer()` | slot 从 mActiveBuffers 移除 | 状态恢复 FREE;slot index 归还 mFreeSlots/mFreeBuffers |
+| `connect()` | `std::lock_guard<std::mutex> lock(mCore->mMutex)` | 设置 listener 和 api 版本 |
+
+`waitForFreeSlotThenRelock()` 的阻塞机制:AOSP 使用 `mDequeueCondition.wait(lock, predicate)` C++11 RAII 条件变量。Predicate 检查 `dequeuedCount >= mMaxDequeuedBufferCount` 或 `tooManyBuffers`。唤醒来自 `releaseBuffer()` 或 `cancelBuffer()` 的 `notify_all()`。
+
+#### Consumer 端锁路径:BufferQueueConsumer
+
+`BufferQueueConsumer` 同样持有 `sp<BufferQueueCore> mCore`:
+
+| 方法 | 关键操作 | 锁内行为 |
+|------|---------|----------|
+| `acquireBuffer()` | 从 mQueue(FIFO) 取 BufferItem | 状态置 ACQUIRED |
+| `releaseBuffer()` | 状态置 FREE | 归还到 mFreeBuffers/mFreeSlots;`mDequeueCondition.notify_all()` 唤醒 producer |
+
+#### BufferState 状态机(计数器版本)
+
+AOSP android-14+ 的 `BufferSlot::BufferState` 已从互斥 enum 演进为计数器:
+
+```cpp
+// frameworks/native/libs/gui/include/gui/BufferSlot.h
+struct BufferState {
+    uint32_t mDequeueCount;  // dequeue 次数
+    uint32_t mQueueCount;    // queue 次数
+    uint32_t mAcquireCount;  // acquire 次数
+    bool mShared;
+
+    inline bool isFree()    const { return !isAcquired() && !isDequeued() && !isQueued(); }
+    inline bool isDequeued() const { return mDequeueCount > 0; }
+    inline bool isQueued()  const { return mQueueCount > 0; }
+    inline bool isAcquired() const { return mAcquireCount > 0; }
+    inline bool isShared()  const { return mShared; }
+};
+```
+
+正常单生产者-单消费者路径呈现为互斥状态,但 shared buffer mode 下计数可叠加。判断应以 `isFree()` / `isDequeued()` 等方法为准,不能直接比较 `mBufferState == FREE`。
+
+#### Perfetto 观测点
+
+`libgui_bufferqueue_dequeueBuffer`、`libgui_bufferqueue_queueBuffer`、`libgui_bufferqueue_acquireBuffer`、`libgui_bufferqueue_releaseBuffer` slice 可直接观察各端持锁时间。`android.monitor_contention` 表通过 `lock_class_name` 可定位 `BufferQueueCore::mMutex` 争用。
+
+[已验证:AOSP android14-release `BufferQueueCore.h`、`BufferQueueProducer.cpp`、`BufferQueueConsumer.cpp`、`BufferSlot.h`]
+
+
 本节前面描述了 BLAST 的行为特征,这一小节专门对比 Legacy 路径和 Android 12+ 常规窗口默认 BLAST 路径在 **Consumer 端驻留位置** 这一维度上的差异。这是理解 BLAST 解决了什么问题的前提。
 
 ### Legacy 模式:Consumer 在 SurfaceFlinger 进程

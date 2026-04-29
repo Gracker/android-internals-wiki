@@ -53,7 +53,7 @@ related_chapters:
 - '2.10'
 - '3.1'
 - '8.2'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -229,16 +229,23 @@ Android 12（API 31，2021 年）引入了 **BLASTBufferQueue**（BLAST = Buffer
 
 > [已验证: L2 — source.android.com/devices/graphics, AOSP frameworks/native/libs/gui/BLASTBufferQueue.cpp]
 
-## Android 16：Vulkan 统一渲染堆栈
+## Android 16：图形 API 演进
 
-### Vulkan 成为官方图形 API
+### Vulkan 的地位提升
 
-Android 16 带来一个实质性的转变：**Vulkan 正式成为 Android 的官方图形 API**。OpenGL ES 不再接受新特性开发，进入维护模式。
+Android 16 在图形 API 方面有几个值得注意的变化,但需要把不同层面拆开看。
 
-但 App 不需要改代码。Android 16 集成了 **ANGLE**（Almost Native Graphics Layer Engine）作为系统级驱动，将 OpenGL ES 调用翻译为 Vulkan 调用。结果：
-- 使用 OpenGL ES 的 App 自动获得 ANGLE 翻译层带来的优化
-- 游戏和图形密集型应用应直接使用 Vulkan API 以获得最佳性能
-- 开发者可以使用 `Android Vulkan Profile 2025` 确保跨设备兼容性
+**Vulkan Profile 要求加严。** Android 16 对新设备提出了更高的 Vulkan 能力要求(Vulkan Profile Android 2025, VPA16),包括 Vulkan 1.4 支持和特定 feature/extension 集合。这是对新设备的能力门槛,不等于现有设备的 OpenGL ES App 自动切换到 Vulkan 后端。
+
+**OpenGL ES 进入维护模式。** Khronos 已明确 OpenGL ES 不再接受新特性开发。但"OpenGL ES 进入维护模式"和"ANGLE 系统级翻译已默认启用"是两件事。ANGLE 在 Android 上的部署状态取决于设备厂商和系统配置,不能写成 Android 16 的统一行为。
+
+**ANGLE 的实际部署情况。** ANGLE(Almost Native Graphics Layer Engine)确实是一个将 OpenGL ES 调用翻译为 Vulkan 的兼容层,Google 在多个版本中持续推动其集成。但截至 Android 16,ANGLE 的系统级启用仍受设备白名单和系统属性控制,不是所有 OpenGL ES App 的调用都默认经过 ANGLE 翻译。排查时可通过 `adb shell getprop persist.graphics.angle.enabled` 和 `adb shell dumpsys gfxinfo` 确认当前设备的 ANGLE 状态。
+
+对开发者的影响:
+- 新设备需要满足 VPA16 的 Vulkan 能力要求
+- 游戏和图形密集型应用应优先使用 Vulkan API
+- OpenGL ES App 不需要改代码,但不要假设系统已自动切换到 ANGLE/Vulkan 后端
+- 可通过 `Android Vulkan Profile 2025` 确保跨设备兼容性
 
 ### AGSL 图形着色能力增强
 
@@ -459,7 +466,7 @@ Unreal Engine 已集成 Swappy。
 | 12 | 2021 | BLASTBufferQueue + FrameTimeline | Buffer 管理 Track 变化；FrameTimeline 可精确对比预期/实际帧时间 |
 | 13 | 2022 | vsync-appSf 解耦 + AGSL 引入 | Choreographer 同步精度提升；自定义图形着色器可用 |
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
-| 16 | 2025 | Vulkan 官方图形 API + ANGLE + ARR 增强 + VPA16 强制 Vulkan 1.4 | 渲染堆栈统一；帧率动态切换更频繁；Graphite Front-to-Back 绘制 |
+| 16 | 2025 | VPA16 Vulkan Profile 加严 + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan 能力门槛提升；帧率动态切换更频繁；Graphite Front-to-Back 绘制 |
 | 16KB 页 | 2024-2025 | 16KB Page Size 在旗舰设备上落地 | TLB 命中率提升约 9%，渲染管线有效带宽增益 |
 
 > [已验证: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]

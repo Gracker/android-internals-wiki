@@ -5576,8 +5576,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T02:30:00+08:00",
-      "status": "pending",
-      "updated_at": "2026-04-29T11:26:16+08:00"
+      "status": "completed",
+      "updated_at": "2026-04-29T11:26:16+08:00",
+      "completed_at": "2026-04-29T13:45:03.565695",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "Doze WakeLock 触发条件已修正；Energy Limiter 已降级为待验证线索，补充已确认的 Android 17 功耗变化"
     },
     {
       "section": "5.8",
@@ -6503,7 +6506,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T10:30:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-29T13:45:03.565695",
+      "completed_by": "openclaw-task2b",
+      "completed_reason": "Vulkan/ANGLE 过度断言已修正，拆开 VPA16/OpenGL ES 维护/ANGLE 部署状态三个层面"
     },
     {
       "section": "8.4",
