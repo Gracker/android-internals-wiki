@@ -339,3 +339,17 @@
 - **问题**：正文把 FreeListSpace / LargeObjectMapSpace 直接归因于 arm64 / 非 arm64。android-15.0.0_r1 的默认选择由 `USE_ART_LOW_4G_ALLOCATOR` 控制，架构只是常见结果，不应写成唯一条件。
 - **建议**：改成“默认由 `Heap::kDefaultLargeObjectSpaceType` 和 `USE_ART_LOW_4G_ALLOCATOR` 决定；常见设备上可能表现为某种实现”，并补 heap.h 源码锚点。
 - **review 日志**：logs/deep-review/2026-04-30-06-deep-review.md
+
+## [External Review] 12.3 网络性能深入 — 2026-04-30
+- **类型**：物理开销
+- **位置**：16KB Page 对加密库的增益
+- **问题**：未补充 16KB 分页环境下 libcrypto.so 的 ELF 段物理对齐对 CPU 指令预取（Prefetching）的正面贡献
+- **建议**：补充说明大页面环境下高频加解密任务的 I-Cache 命中率约提升 5%，对 WebRTC 等大规模实时音视频网络层功耗优化有统计学意义
+- **来源**：Gemini 外部 review
+
+## [External Review] 12.4 Android 网络安全与 TLS — 2026-04-30
+- **类型**：物理开销
+- **位置**：16KB Page 对 libssl 的优化
+- **问题**：未补充 16KB 物理分页对 TLS 握手阶段核心代码段的缓存收益
+- **建议**：补充说明 16KB 环境下 TLS 握手密集数学库调用的指令分支预测成功率约提升 5%，对高频短连接应用有稳定能效红利
+- **来源**：Gemini 外部 review
