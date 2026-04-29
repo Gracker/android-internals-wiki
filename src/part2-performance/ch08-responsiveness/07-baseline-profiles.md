@@ -30,10 +30,10 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 review_round: 5
 task9_reviewed_date: "2026-04-25"
@@ -131,10 +131,12 @@ Google 官方给出的通用范围是 **15-30% 的启动速度提升**。实际�
 
 开发阶段最先看到的是 Human-Readable Format（HRF）文本文件，通常名为 `baseline-prof.txt`。使用 AGP 或 Baseline Profile plugin 生成时，结果会复制到 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`。这个文件适合进版本库，也适合人工审阅。
 
-构建阶段，AGP 会把 HRF 转成 ART 能直接消费的二进制 `baseline.prof`。检查打包结果时要把 AAB 和 APK 分开看：
+构建阶段，AGP 会把 HRF 转成 ART 能直接消费的二进制 `baseline.prof`，同时生成伴随的元数据文件 `baseline.profm`（Profile Metadata）。检查打包结果时要把 AAB 和 APK 分开看：
 
-- APK：`/assets/dexopt/baseline.prof`
-- AAB：`/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`
+- APK：`/assets/dexopt/baseline.prof`（规则文件）、`/assets/dexopt/baseline.profm`（元数据）
+- AAB：`/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`、`/BUNDLE-METADATA/com.android.tools.build.profiles/baseline.profm`
+
+`.profm` 文件存储的是 profile 规则与 DEX 编译单元的映射关系。手动 sideload 验证或生成 `.dm`（Dex Metadata）包时，`baseline.profm` 会被重命名为 `primary.profm`，需要和 `baseline.prof` 一起处理。
 
 这两个路径说的是构建产物里的位置。应用真正安装到设备后，编译产物不会再留在这些目录里，而是表现为 `/data/app/.../oat/arm64/base.odex` 一类 OAT / VDEX 文件。运行期和后台任务收集到的 Profile 数据则继续放在 `/data/misc/profiles/...` 下。
 
@@ -145,8 +147,11 @@ Google 官方给出的通用范围是 **15-30% 的启动速度提升**。实际�
 | 安装来源 | Profile 来源 | 常见触发时机 | 观察入口 |
 |----------|--------------|--------------|----------|
 | Google Play | APK 自带 Baseline Profile + Play 聚合的 Cloud Profiles | 安装期或后续后台设备更新 | `ProfileVerifier`、`dumpsys package dexopt` |
-| Android Studio / Gradle 安装的 non-debuggable build | APK 自带 Baseline Profile | 设备端自动编译，必要时可手工触发 `bg-dexopt` | `ProfileVerifier`、`dumpsys package dexopt` |
+| Android Studio / Gradle 安装的 non-debuggable build（AGP 8.4+） | APK 自带 Baseline Profile | 设备端自动编译，必要时可手工触发 `bg-dexopt` | `ProfileVerifier`、`dumpsys package dexopt` |
+| Android Studio / Gradle 安装的 non-debuggable build（AGP < 8.4） | APK 自带 Baseline Profile | 不会自动编译；需要 `ProfileInstaller` 入队或手工 `cmd package compile` | `ProfileVerifier`、`dumpsys package dexopt` |
 | 其他 installer / 侧载 | APK 自带 Baseline Profile，`ProfileInstaller` 负责把 profile 入队 | 常见为等待下一次 `bg-dexopt`；线下要立刻确认时，可手工执行 `cmd package compile -r bg-dexopt` 或 `cmd package compile -m speed-profile -f` | `ProfileVerifier`、`dumpsys package dexopt` |
+
+AGP 8.4 是自动编译的分界线。AGP 8.4+ 通过 Android Studio 或 Gradle 安装 non-debuggable build 时，设备端会自动触发 `speed-profile` 编译。AGP 8.4 之前的版本或其他 installer（如 `adb install`、第三方工具）不会自动编译，需要依赖 `ProfileInstaller` 库把 profile 入队，或手工执行 `cmd package compile`。
 
 无论哪条路径，`/data/misc/profiles/...` 放的是 Profile 数据，`/data/app/.../oat/arm64/base.odex` 放的是编译后的应用 OAT 产物。把这两类目录分开看，`dumpsys package dexopt` 的输出才不会读反。
 

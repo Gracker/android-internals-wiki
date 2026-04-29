@@ -403,7 +403,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "completed_at": "2026-04-30T06:59:28.906310+08:00",
+      "completed_reason": "review_issues 信息不足且无对应 external-review 文件，需人工确认具体问题后重新入队"
     },
     {
       "section": "07.08",
@@ -423,7 +425,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "completed_at": "2026-04-30T06:59:28.906310+08:00",
+      "completed_reason": "review_issues 信息不足且无对应 external-review 文件，需人工确认具体问题后重新入队"
     },
     {
       "section": "07.09",
@@ -443,7 +447,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "completed_at": "2026-04-30T06:59:28.906310+08:00",
+      "completed_reason": "review_issues 信息不足且无对应 external-review 文件，需人工确认具体问题后重新入队"
     },
     {
       "section": "07.10",
@@ -664,7 +670,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "completed_at": "2026-04-30T06:59:28.906310+08:00",
+      "completed_reason": "review_issues 信息不足且无对应 external-review 文件，需人工确认具体问题后重新入队"
     },
     {
       "section": "07.15",
@@ -681,7 +689,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "completed_at": "2026-04-30T06:59:28.906310+08:00",
+      "completed_reason": "review_issues 信息不足且无对应 external-review 文件，需人工确认具体问题后重新入队"
     },
     {
       "section": "08",
@@ -932,7 +942,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "completed_at": "2026-04-30T06:59:28.906310+08:00",
+      "completed_reason": "review_issues 信息不足且无对应 external-review 文件，需人工确认具体问题后重新入队"
     },
     {
       "section": "08.07",
@@ -955,7 +967,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T06:59:19.123373+08:00",
+      "completed_reason": "baseline.profm元数据文件已补充；Cloud Compilation + SDM + artd版本矩阵已添加；AGP 8.4自动编译分界线已写入安装来源表"
     },
     {
       "section": "08.08",
@@ -984,7 +998,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "completed_at": "2026-04-30T06:59:28.906310+08:00",
+      "completed_reason": "review_issues 信息不足且无对应 external-review 文件，需人工确认具体问题后重新入队"
     },
     {
       "section": "09",
@@ -1974,7 +1990,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-25T18:39:22+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T06:59:19.123373+08:00",
+      "completed_reason": "Strip符号表已改为AGP DSL口径(debugSymbolLevel/keepDebugSymbols)；16KB ELF对齐与so体积影响已补充；Android 16 Size Insights构建期体积治理已添加"
     },
     {
       "section": "12.1",

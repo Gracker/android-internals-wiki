@@ -605,6 +605,15 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 这是一个常见的误解。120Hz 屏幕意味着每帧的预算从 16.67ms 缩短到 8.33ms，但这并不意味着 GPU 的工作量翻倍了——GPU 每帧的工作量取决于画面复杂度，与刷新率无关。真正变化的是时间预算：GPU 必须在更短的时间内完成同样的工作。在 120Hz 下，原本在 60Hz 下不明显的 GPU 瓶颈会变得突出。反过来，如果一个应用在 60Hz 下有 10ms 的 GPU 余量（GPU 只需要 6.67ms 就能完成渲染），升级到 120Hz 后只要 GPU 能在 8.33ms 内完成就仍然流畅。
 
+
+
+### ARM Mali GPU TBR 架构原理与 Android 渲染性能影响
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md
+- 类型：DeepResearch 调研结果
+- 摘要：ARM Mali/Immortalis GPU Tile-Based Rendering 架构全代际深度报告。从 Utgard 到第五代 GPU 的 TBR 硬件演进，详解 Tile Memory、AFBC、Transaction Elimination、Forward Pixel Kill、IDVS/DVS、Fragment Prepass、CSF 等核心机制，以及 Android 渲染栈(HWUI/RenderThread/SurfaceFlinger/HWC)与 Mali TBR 的交互方式。
+- 注入时间：2026-04-30
+- 价值：ARM 官方架构级 GPU TBR 机制全解，对理解 Android 在 Mali GPU 上的渲染行为与优化有极高参考价值
+
 ## 参考资料
 
 ### ARM Mali GPU TBR 架构原理与 Android 渲染性能影响

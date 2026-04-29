@@ -558,6 +558,15 @@ LIMIT 20;
 - 注入时间：2026-04-28
 - 价值：源码级解释了 Perfetto thread state 的内核来源，对 ch13 的 CPU 状态分析章节是极好的补充参考
 
+
+
+### 当 Perfetto 显示 Running 时,Android 程序到底在做什么?
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md
+- 类型：DeepResearch 调研结果
+- 摘要：从 Perfetto trace 中 thread_state='Running' 切片出发，逐层拆解 Running 在 Linux task_struct、ftrace sched_switch、ART 虚拟机、native/Bionic、Binder、系统调用、内核调度器、Arm CPU 微架构各层的精确语义。涵盖 on_rq/on_cpu 区分、用户态/内核态 CPI 分析、cache/TLB miss 诊断方法，并给出从 Perfetto SQL 到 Streamline 的完整诊断工作流。
+- 注入时间：2026-04-30
+- 价值：源码级贯通 Perfetto Running 状态的完整技术栈，对理解 CPU 调度追踪与性能诊断有直接参考价值
+
 ## 参考资料
 
 ### 当 Perfetto 显示 Running 时,Android 程序到底在做什么?

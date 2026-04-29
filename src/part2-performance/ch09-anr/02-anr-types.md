@@ -352,6 +352,15 @@ adb shell cat /data/anr/anr_* | tail -200
 - 注入时间：2026-04-28
 - 价值：FGS timeout 是 Android 14+ 最重要的 ANR 新类型之一，ch09 章节目前对此覆盖不足
 
+
+
+### Android 14→17 Foreground Service Timeout ANR 机制深度解析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
+- 类型：DeepResearch 调研结果
+- 摘要：AOSP 源码视角的 FGS 超时与 ANR 触发机制全解析。覆盖 Android 14 ShortService 3分钟硬超时、Android 15 TimeLimitedFgs 6h/24h滚动窗口、Android 16/17 的 AnrTimer native handler 化演进，以及 ActiveServices/ServiceRecord 中超时判定、onTimeout 回调、ForegroundServiceDidNotStopInTimeException 投递的完整代码路径。
+- 注入时间：2026-04-30
+- 价值：AOSP 源码级拆解 FGS timeout→ANR 全链路，填补 ch09 ANR 类型分析的重要参考空白
+
 ## 参考资料
 
 ### Android 14→17 Foreground Service Timeout / ANR 机制

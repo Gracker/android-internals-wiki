@@ -313,6 +313,15 @@ VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 produce
 
 如果把这几章连起来看，逻辑会非常顺：VSync 管启动时机，MainThread / RenderThread 负责生产，BufferQueue 负责交接，Fence 负责同步，SurfaceFlinger / HWC 负责消费，present fence 则告诉我们“这帧到底什么时候真的显示出来了”。
 
+
+
+### Android Sync Fence 机制深度剖析
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 Linux 内核 dma_fence/sync_file 到 Android libsync/libui 的完整同步栅栏机制源码剖析。覆盖 dma_fence 核心数据结构、sync_file fd 生命周期、BufferQueue 中 acquire/release fence 流转、HWC3 AIDL fence 传递、以及 Android 16 Explicit Sync 迁移对图形管线的架构性影响。
+- 注入时间：2026-04-30
+- 价值：源码级贯通内核 dma_fence 到 Android 图形栈 fence 全链路，直接补充 ch02 Sync Fence 章节深度
+
 ## 参考资料
 
 ### Android Sync Fence 机制深度剖析

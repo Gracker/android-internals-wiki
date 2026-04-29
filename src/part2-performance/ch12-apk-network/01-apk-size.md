@@ -30,7 +30,7 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: "2026-04-25"
@@ -40,8 +40,8 @@ reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-24"
 task6_result: "pass-light-edit"
 task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task9_state: pending
+pipeline_stage: task6_pending
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-24T04:56:29+08:00"
@@ -279,35 +279,46 @@ android {
 
 ABI 过滤只解决“带了几份库”。`.so` 是否压缩是另一条轴：在支持 direct loading 的设备上，`useLegacyPackaging=false` 会让库保持未压缩并满足 page alignment，安装后不必再额外抽取一份；`true` 时才会更接近旧式 `extractNativeLibs=true` 的行为。分析下载体积和安装后磁盘占用时，这两条设置要分开看。
 
-### Strip 符号表
+### Strip 符号表与符号管理
 
-编译 so 库时，默认会包含调试符号表（symbol table）和部分调试信息。这些信息对 release 构建毫无用处，但可能让 so 体积膨胀数倍。
+AGP 在 release 构建中默认 strip native libraries，移除调试符号表。不需要手动配置 CMake `LINK_FLAGS` 或 `ANDROID_STRIP_DEBUG_SYMBOLS`。AGP 8.x 的标准 DSL 口径分两层：
 
-在 `CMakeLists.txt` 中确保设置了 strip 选项：
+**符号上传（Play Console 线上符号化）**
 
-```cmake
-set_target_properties(your-lib PROPERTIES
-    LINK_FLAGS "-Wl,--strip-all"
-)
-```
-
-或者在 Gradle 的 `externalNativeBuild` 配置中：
+在 `build.gradle.kts` 中控制保留多少符号信息用于 crash 崩溃栈还原：
 
 ```kotlin
 android {
     buildTypes {
         release {
-            externalNativeBuild {
-                cmake {
-                    arguments("-DANDROID_STRIP_DEBUG_SYMBOLS=ON")
-                }
-            }
+            // SYMBOL_TABLE: 仅保留函数级符号，体积最小
+            // FULL: 保留完整调试符号，支持源码行号还原
+            ndk.debugSymbolLevel = "SYMBOL_TABLE"
         }
     }
 }
 ```
 
-[待验证: ANDROID_STRIP_DEBUG_SYMBOLS 在 AGP 8.x 中是否仍然有效]
+Play Console 的 Native Crash Reporting 需要 `SYMBOL_TABLE` 或 `FULL` 才能还原 so 崩溃栈。如果不上传符号，线上 crash 只能看到十六进制地址。
+
+**选择性保留指定 so 的调试符号**
+
+当只需要保留部分 so 的调试符号时：
+
+```kotlin
+android {
+    packaging {
+        jniLibs {
+            keepDebugSymbols += listOf(
+                "**/libcore-engine.so",
+                "**/libFaceDetect.so"
+            )
+        }
+    }
+}
+```
+
+`keepDebugSymbols` 接受 glob 模式。只有匹配到的 so 会跳过 strip，其余 so 仍然走 release 默认 strip。
 
 ### 动态下发 so
 
@@ -435,6 +446,28 @@ bundletool get-size total --apks=app.apks \
 **「WebP 不如 PNG 清晰」**——这是过时的观念。对于照片类图片，WebP 有损压缩在 80% 质量以上时，人眼几乎无法察觉与 PNG 的差异；对于图标类图片，WebP 无损模式的压缩率也优于 PNG。alpha 通道需要单独看——某些带半透明效果的复杂图标，WebP 有损可能产生 artifact，这种情况用 WebP 无损即可。
 
 **「App Bundle 是强制性的，国内市场没法用」**——国内应用市场确实不支持 AAB 格式。但 App Bundle 的技术价值不限于 Google Play。可以在本地用 `bundletool` 生成针对特定 ABI 和密度的 APK，然后分渠道上传。这比「一个 APK 适配所有设备」高效得多。此外，Dynamic Feature Module 的按需加载思想，也可以通过自研的插件化框架在非 Google Play 渠道实现。
+
+## Android 16 Size Insights：构建期体积治理
+
+Android 16 在 AGP 中引入了 **Size Insights** 功能，在 `build.gradle` 构建配置中直接高亮显示导致包体积膨胀的传递依赖，并提供替代 SDK 建议。它集成在构建报告输出中，不需要额外工具。
+
+启用方式（AGP 8.12+ / Android Studio Narwhal Feature Drop+）：
+
+```kotlin
+android {
+    buildFeatures {
+        buildConfig = true
+    }
+}
+```
+
+构建完成后在 Android Studio 的 Build Analyzer 面板中查看 Size Insights 标签页，会列出：
+
+- 体积贡献最大的传递依赖及其占用的 dex / res / native 大小
+- 功能相近但体积更小的替代 SDK 建议
+- 最近几个版本的体积变化趋势
+
+Size Insights 解决的是"知道 APK 大了，但不知道是哪个依赖膨胀了"的问题。配合 CI 流水线的体积门禁（下一节），可以把体积治理从"发布前突击检查"变成"每次构建持续跟踪"。
 
 ## 与其他章节的关系
 

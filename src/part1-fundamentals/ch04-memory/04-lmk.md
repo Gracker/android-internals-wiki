@@ -468,6 +468,15 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 - 注入时间：2026-04-28
 - 价值：目前 AIW ch04-lmk 章节最缺的就是 PSI 机制的源码级分析，这篇直接填补核心空白
 
+
+
+### PSI 驱动的 Android LMKD 进程杀机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md
+- 类型：DeepResearch 调研结果
+- 摘要：从 vmpressure 到 PSI 的范式转移全链路源码分析。覆盖 kernel/sched/psi.c 的 PSI 统计与门限监控机制、lmkd.cpp 从 memcg vmpressure 迁移到 PSI 的完整演进路径、per-UID lmkd 防护、swap+zRAM 配合策略，以及 Android 10 至 15 的 LMKD 参数调优历史。
+- 注入时间：2026-04-30
+- 价值：源码级贯通 PSI→LMKD 完整信号链，是理解 Android 低内存杀进程机制的最佳参考资料
+
 ## 参考资料
 
 ### PSI 驱动的 Android LMKD 进程杀机制
