@@ -2,19 +2,24 @@
 title: "网络性能优化"
 chapter: 12.2
 section: '12.2'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-04-29"
 polish_count: 1
 polish_date: '2026-04-10'
 polish_by: task2b-polish
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task2b_result: fixed
+task6_state: reviewed
+task9_state: reviewed
 task2b_state: fixed
-task6_state: revisiting
-pipeline_stage: task6_pending
+task2b_result: fixed
+task9_result: pass-tech-review
+task9_reviewed_date: 2026-04-23
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-04-23T00:30:00+08:00"
+pipeline_stage: ready-to-publish
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-03'
 last_verified_against: OkHttp 4.12.x / Android 16
@@ -38,16 +43,6 @@ related_chapters:
 - '12.1'
 - '6.1'
 - '8.1'
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-task9_result: pass-tech-review
-task9_reviewed_date: 2026-04-23
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-23T00:30:00+08:00"
-
 ---
 
 # 网络性能优化
@@ -138,7 +133,7 @@ HTTP/3 使用 QUIC 作为传输层协议，而 QUIC 基于 UDP 实现。这个�
 
 **独立的 Stream 丢包恢复**：QUIC 在自己的传输层实现了多路复用，每个 Stream 的丢包重传互不影响。一个 Stream 丢包不会阻塞其他 Stream 的数据传输——这正是 HTTP/2 over TCP 最大的薄弱环节。
 
-**连接迁移**：QUIC 使用 Connection ID 而不是四元组（源 IP、源端口、目标 IP、目标端口）来标识连接。这意味着当用户的网络从 Wi-Fi 切换到 4G/5G 时（IP 地址改变），QUIC 连接可以无缝迁移，不需要重新建立连接。在 HTTP/2 下，这种网络切换会导致所有正在进行的请求失败并需要重试。
+**连接迁移**：QUIC 使用 Connection ID 而不是四元组（源 IP、源端口、目标 IP、目标端口）来标识连接。当用户的网络从 Wi-Fi 切换到 4G/5G 时（IP 地址改变），QUIC 连接可以无缝迁移，不需要重新建立连接。在 HTTP/2 下，这种网络切换会导致所有正在进行的请求失败并需要重试。
 
 实际性能数据也印证了 HTTP/3 在移动场景下的优势。Google 报告 YouTube 在移动设备上缓冲时间减少了 15%；Uber 在 Android/iOS 上采用 QUIC 后尾部延迟降低了 10-30%；Meta 在 Instagram 上观察到请求错误率降低 6%、尾部延迟降低 20%。 [已验证: 来源见 Uber Engineering Blog (eng.uber.com), Google Chromium Blog]
 
@@ -185,7 +180,7 @@ public class NetworkClient {
 }
 ```
 
-OkHttp 默认的 ConnectionPool 配置是：最多 5 个空闲连接，每个连接保持存活 5 分钟。这意味着在 5 分钟内有新请求到同一地址，可以直接复用连接——在移动端频繁切换页面的场景下，这个时间窗口足够覆盖大部分复用机会。
+OkHttp 默认的 ConnectionPool 配置是：最多 5 个空闲连接，每个连接保持存活 5 分钟。在 5 分钟内有新请求到同一地址，可以直接复用连接——在移动端频繁切换页面的场景下，这个时间窗口足够覆盖大部分复用机会。
 
 [已验证: OkHttp 官方文档, square.github.io/okhttp/connections/]
 
@@ -238,7 +233,7 @@ public final class PreconnectManager {
 
 ## 弱网优化策略：超时、重试与降级
 
-移动网络的不确定性远高于固定网络——电梯里信号突然消失、高铁上频繁切换基站、地下室完全无信号。弱网优化不是让网络变快，而是**让 App 在网络很差时依然可用或至少优雅降级**。
+移动网络的不确定性远高于固定网络——电梯里信号突然消失、高铁上频繁切换基站、地下室完全无信号。弱网优化的目标是**让 App 在网络很差时依然可用或至少优雅降级**。
 
 ### 超时策略：不要等太久，也不要放弃太快
 
