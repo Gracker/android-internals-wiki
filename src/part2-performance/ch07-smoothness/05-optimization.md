@@ -49,8 +49,8 @@ polish_by: "task2b-polish"
 rework_count: 2
 rework_date: "2026-04-27"
 rework_by: "task2b-rework"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
