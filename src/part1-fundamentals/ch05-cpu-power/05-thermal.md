@@ -39,9 +39,9 @@ tags:
   - throttling
   - dvfs
   - cpu-frequency
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
