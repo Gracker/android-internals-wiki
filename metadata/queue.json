@@ -1742,6 +1742,24 @@
             "BinderInternal.java (android-16.0.0_r1)",
             "addGcWatcher"
           ]
+        },
+        {
+          "type": "事实错误",
+          "location": "案例三：GPU 驱动导致内存异常",
+          "detail": "renderD128 内存增长计算未考虑 16KB 物理页强制对齐产生的内部碎片累加",
+          "suggestion": "增加 16KB 页面下物理开销微调专项，约 9% 增量，用 dmabuf_dump -b 准确归因",
+          "evidence": [
+            "Android 15+ Gralloc 16KB 强制对齐"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "案例四：直播场景内存突增",
+          "detail": "仍推荐 Runtime 轮询自研方案，未引入 Android 16 ProfilingManager 系统级零侵入触发",
+          "suggestion": "增加 ProfilingManager 替代 MemoryThrashing 的技术背书作为唯一推荐路径",
+          "evidence": [
+            "Android 16 ProfilingManager 自定义触发器 API"
+          ]
         }
       ],
       "added_by": "external-ai-review",
@@ -3874,22 +3892,29 @@
     {
       "section": "19.13",
       "section_title": "androidx.tracing（Tracing SDK）",
-      "priority": 85,
-      "reason": "[Deep Tech Review] async trace 示例异常/取消路径未保证 endAsyncSection 配对",
+      "priority": 90,
+      "reason": "[review回炉] L3内容深度不足：性能开销和版本兼容性细节未充分说明",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "原理断裂",
-          "location": "L248-L257 beginAsyncSection 示例",
-          "detail": "示例在 Trace.beginAsyncSection(\"Home#loadFirstFeed\", cookie) 后，只在 mainHandler.post 的成功路径调用 endAsyncSection。api.loadFirstFeed()、parser.parse(response)、mainHandler.post 或 UI 更新任一环节抛异常/取消时，async section 不会关闭，Perfetto 会出现未配对 span，且与正文“begin/end 必须配对”的规则冲突。",
-          "suggestion": "用 try/finally 包住完整异步生命周期，或在 success/failure/cancel 回调里统一关闭 async section；协程场景可使用已验证的 traceAsync/suspend 包装，并说明取消路径也要执行 finally。"
+          "type": "需补充素材",
+          "location": "L3内容深度检查",
+          "detail": "性能开销未充分说明，缺少tracing的性能开销（字符串创建、内存占用）和适用场景边界分析",
+          "suggestion": "补充性能开销量化数据，说明哪些场景不建议打trace"
+        },
+        {
+          "type": "需补充素材",
+          "location": "线上和线下的边界部分",
+          "detail": "API兼容性描述不够详细，缺少具体版本差异说明",
+          "suggestion": "补充版本对照表，说明各版本的关键差异"
         }
       ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-27T18:35:00+08:00",
-      "status": "pending"
+      "added_by": "task6-review",
+      "added_at": "2026-04-29T17:23:25.990357",
+      "status": "pending",
+      "source_file": "logs/review/2026-04-29-17-review.md"
     },
     {
       "section": "19.16",
@@ -5849,6 +5874,18 @@
           "location": "Android 15 异步预取",
           "detail": "- [P2][工具链][Android 15 异步预取]\n- **建议**：补充 Android 15 对 `Bitmap.prepareToDraw()` 的增强。在 120Hz 下，手动调用预取能更好地利用 RenderThread 的空闲窗口，建议配合 `Choreographer.CALLBACK_COMMIT` 使用。",
           "suggestion": ""
+        },
+        {
+          "type": "需补充素材",
+          "location": "L3内容深度检查",
+          "detail": "未对比Glide、Coil等主流图片库的设计理念和优化策略",
+          "suggestion": "补充不同图片库的架构对比和适用场景分析"
+        },
+        {
+          "type": "需补充素材",
+          "location": "L3内容深度检查",
+          "detail": "缺少不同优化方案的性能量化对比",
+          "suggestion": "补充内存占用、加载时间等性能指标的对比数据"
         }
       ],
       "added_by": "external-ai-review",
@@ -8055,6 +8092,357 @@
       "added_at": "2026-04-29T16:19:40.737307",
       "status": "pending",
       "source_file": "2026-04-29-11-9.7-external-review.md"
+    },
+    {
+      "section": "10.2",
+      "section_title": "内存泄漏",
+      "priority": 95,
+      "reason": "[External Review] 10.2 内存泄漏 存在事实错误与重要缺失，需回炉修正",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "LeakCanary 初始化",
+          "detail": "LeakCanary 2.x 零代码初始化在 Android 15+ 严格沙箱/多进程模式下可能因 ContentProvider Security Context 未建立而静默失败",
+          "suggestion": "明确告知开发者 Android 15+ 需通过 App Startup 或 Application.onCreate 显式调用 AppWatcher.manualInstall()",
+          "evidence": [
+            "Android 15+ ContentProvider 启动权限强化"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "LeakCanary 原理",
+          "detail": "未提及 Android 17 分代 GC 显著缩短弱引用入队延迟（分钟级→毫秒级）",
+          "suggestion": "补充 Android 17+ Minor GC 对检测效率的革命性提升说明",
+          "evidence": [
+            "Android 17 Generational GC Minor GC 特性"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "Compose 场景特征",
+          "detail": "对 Compose 泄漏仅限于 LaunchedEffect，忽视 rememberCoroutineScope 的作用域溢出泄漏",
+          "suggestion": "增加 rememberCoroutineScope 协程闭包捕获泄漏案例",
+          "evidence": [
+            "Compose CoroutineScope 生命周期管理"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-10.2-external-review.md"
+    },
+    {
+      "section": "10.3",
+      "section_title": "内存持续增长",
+      "priority": 95,
+      "reason": "[External Review] 10.3 内存持续增长 存在事实错误，需回炉修正",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "16KB Page 与碎片化",
+          "detail": "认为 16KB 全面加剧碎片化，实际是牺牲内部碎片（+9%）换取外部碎片大幅降低，提升伙伴分配器成功率",
+          "suggestion": "校准为'空间换稳定性'，明确 RSS 抬升是预期性能投资",
+          "evidence": [
+            "Android 15 16KB Page Size Buddy Allocator 行为"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "监控指标",
+          "detail": "推荐高频 Debug.getPss() 建立趋势，但 Android 14+ PSS 查询已被节流缓存，连续调用拿到同一缓存值",
+          "suggestion": "加入 PSS 节流预警，推荐 RSS 或 Native Heap Alloc Size 作为高频趋势主力指标",
+          "evidence": [
+            "Android 14+ PSS smaps 节流机制"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "匿名内存页累积",
+          "detail": "对 Unnamed/Private Other 增长仅停留在猜想，未引入 dmabuf_dump -b 工具",
+          "suggestion": "增加 dmabuf_dump -b 实战技巧实现归因闭环",
+          "evidence": [
+            "Android 12+ dmabuf_dump 增强"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-10.3-external-review.md"
+    },
+    {
+      "section": "10.4",
+      "section_title": "低内存对系统性能的影响",
+      "priority": 95,
+      "reason": "[External Review] 10.4 低内存对系统性能的影响 存在术语错误与重要缺失",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "内存规整",
+          "detail": "提到 Android 10 引入独立 compactd 守护进程，实际不存在此进程，应为内核 kcompactd + 用户态 CachedAppOptimizer",
+          "suggestion": "修正为内核规整线程 kcompactd 与 Framework CachedAppOptimizer.java",
+          "evidence": [
+            "AOSP CachedAppOptimizer.java 源码"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "ZRAM 调优",
+          "detail": "未提及 16KB 设备 vm.page-cluster=0 消除预读 I/O，App 切换性能反升 30%",
+          "suggestion": "增加 16KB 页面零延迟 Swap 收益分析，纠正大页必然慢的误区",
+          "evidence": [
+            "Android 15 16KB vm.page-cluster 设置"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "GC 与低内存",
+          "detail": "未考虑 Android 17 分代 GC Minor GC 与 kswapd0 回收窗口在 120Hz 高刷下的 CPU 累加掉帧",
+          "suggestion": "补充应用层回收与内核层回收双重 CPU 占用的累加效应分析",
+          "evidence": [
+            "Android 17 Generational CMC 与 kswapd 竞争"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-10.4-external-review.md"
+    },
+    {
+      "section": "10.6",
+      "section_title": "内存抖动与频繁 GC",
+      "priority": 95,
+      "reason": "[External Review] 10.6 内存抖动与频繁 GC 存在版本边界事实错误",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "ART GC 演进",
+          "detail": "声称 Android 16 默认开启分代 CMC，实际全量强制默认在 Android 17 (API 37)，16 仅为实验特性/QPR2 定向优化",
+          "suggestion": "明确 16（部分生效）与 17（标准配置）分界线",
+          "evidence": [
+            "ART Generational CMC 发布节奏"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "Kotlin 内联类",
+          "detail": "极力推荐 value class 但未提及泛型/接口场景下装箱回退导致内联失效",
+          "suggestion": "增加 Kotlin 内联失效预警，推荐高频循环中使用原生数组",
+          "evidence": [
+            "Kotlin value class Box 转换机制"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "Allocation Stall",
+          "detail": "大对象分配代价描述停留在全局锁，未提 Android 15+ CMC 集成 userfaultfd 降低 LOS Stall Time 约 15%",
+          "suggestion": "补充大对象分配的系统级优化背景",
+          "evidence": [
+            "Android 15+ userfaultfd 与 LOS 集成"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-10.6-external-review.md"
+    },
+    {
+      "section": "10.7",
+      "section_title": "SQLite/Room 数据库性能优化",
+      "priority": 95,
+      "reason": "[External Review] 10.7 SQLite/Room 存在事实错误与系统性 ANR 风险",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "PRAGMA 调优",
+          "detail": "16KB Page 下 wal_autocheckpoint 默认 1000 页产生 16MB 瞬时写入峰值，在 UFS 2.x/3.x 低端设备引发主线程 D 状态阻塞",
+          "suggestion": "增加 16KB 适配建议，推荐 PRAGMA wal_autocheckpoint = 250",
+          "evidence": [
+            "16KB Page Size SQLite 写放大 4 倍"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "Migration 性能风险",
+          "detail": "未提及 Android 16 getWritableDatabaseAsync() 作为 16KB 数据库页转换的官方安全入口",
+          "suggestion": "明确 Android 16+ 应弃用同步 open，拥抱 CompletableFuture 异步范式",
+          "evidence": [
+            "Android 16 SQLiteOpenHelper getWritableDatabaseAsync API"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "跨进程 Cursor",
+          "detail": "未提及 Android 15+ BulkCursorDescriptor Parcel 写操作重构减少 metadata 冗余",
+          "suggestion": "说明高版本跨进程查询首帧响应时间优化",
+          "evidence": [
+            "Android 15 BulkCursorDescriptor 序列化优化"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-10.7-external-review.md"
+    },
+    {
+      "section": "11.1",
+      "section_title": "Android 功耗模型",
+      "priority": 95,
+      "reason": "[External Review] 11.1 功耗模型存在架构代差事实错误",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "EAS 调度描述",
+          "detail": "将 EAS 描述为静态 EM 模型开环预测，实际 Android 15+ PAS 通过 Power HAL AIDL 实时订阅 ODPM 修正 EM 参数并触发任务重放置",
+          "suggestion": "区分静态 EAS 1.0 与动态 PAS 2.0，强调 ODPM 从诊断工具到调度中枢的身份转变",
+          "evidence": [
+            "Android 15+ Power-Aware Scheduling ODPM 反馈闭环"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "温控与功耗耦合",
+          "detail": "未提及 Android 16 ADPF 利用 ODPM 微秒级响应实现功耗预防性降频",
+          "suggestion": "增加实时反馈助力温控稳定性描述",
+          "evidence": [
+            "Android 16 ADPF 功耗密度感知"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "App 耗电归属",
+          "detail": "未引入 Android 15 PowerMonitor 公开 API 支持程序化查询实时能量消耗",
+          "suggestion": "增加 PowerMonitor API 介绍作为线上功耗自审计标准入口",
+          "evidence": [
+            "Android 15 PowerMonitor API (API 35)"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-11.1-external-review.md"
+    },
+    {
+      "section": "11.2",
+      "section_title": "App 耗电优化",
+      "priority": 95,
+      "reason": "[External Review] 11.2 App 耗电优化 存在 FGS 生存预算事实错误",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "FGS onTimeout 处理",
+          "detail": "认为 onTimeout 后可重启，实际 Android 15 配额耗尽后进入拒绝状态，重启会抛 ForegroundServiceStartNotAllowedException",
+          "suggestion": "明确 onTimeout 是最终判决，必须转向持久化进度并停止 FGS 尝试",
+          "evidence": [
+            "Android 15 dataSync/mediaProcessing 6h 硬性配额"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "WorkManager 最佳实践",
+          "detail": "未引入 Android 16 WorkManager setPowerEfficiencyHint(boolean) 能效标记",
+          "suggestion": "增加该标记实操建议，强制绑定低功耗小核并批处理对齐",
+          "evidence": [
+            "Android 16 WorkManager 能效调度 API"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "Geofencing 硬件红利",
+          "detail": "Geofencing 描述未涉及 Android 15+ GNSS 芯片硬件围栏卸载，CPU 深度睡眠下维持检测",
+          "suggestion": "补充 2026 年 Geofencing 量化功耗优势（可低至 2% 以下）",
+          "evidence": [
+            "Android 15+ Geofencing Hardware Offload"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-11.2-external-review.md"
+    },
+    {
+      "section": "11.3",
+      "section_title": "系统级功耗优化",
+      "priority": 95,
+      "reason": "[External Review] 11.3 系统级功耗优化 存在机制链条缺失",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "系统级限后台策略",
+          "detail": "最严厉手段止步于 Restricted 桶/厂商冻结，未提及 Android 15 App Archiving 物理清除（移除 APK、取消所有任务/通知权限）",
+          "suggestion": "增加应用存档章节，明确对后台执行能力的彻底抹除效果",
+          "evidence": [
+            "Android 15 App Archiving 系统特性"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "Job 延迟诊断",
+          "detail": "未提及 Android 16 PENDING_JOB_REASON_ENERGY_EFFICIENCY 能效熔断机制",
+          "suggestion": "增加该常量实操判据，区分欠费（配额完）与限购（功耗高）",
+          "evidence": [
+            "Android 16 ODPM 反馈能效熔断"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "App Standby Buckets",
+          "detail": "暗示 Active 桶无限后台权限，实际 Android 16 起 regular jobs 受 20min/60min 软上限",
+          "suggestion": "更新五桶定义表格加入 Android 16 Active 桶约束",
+          "evidence": [
+            "Android 16 Active 桶 Job 运行限额"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-11.3-external-review.md"
+    },
+    {
+      "section": "11.4",
+      "section_title": "案例集（功耗）",
+      "priority": 95,
+      "reason": "[External Review] 11.4 案例集 存在 FGS 崩溃特征缺失",
+      "review_issues": [
+        {
+          "type": "事实错误",
+          "location": "FGS 超时案例",
+          "detail": "未提及 Android 15 FGS 6h 配额耗尽后 ForegroundServiceDidNotStopInTimeException 硬性崩溃特征",
+          "suggestion": "增加配额超限案例含堆栈解析，帮助区分业务 Bug 与系统惩罚",
+          "evidence": [
+            "Android 15 RemoteServiceException FGS Timeout 标记"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "功耗异常自动化",
+          "detail": "仍依赖手动 bugreport，未引入 Android 16 ProfilingManager TRIGGER_TYPE_ANOMALY 自动采样",
+          "suggestion": "增加自动化预警流程，ProfilingManager 作为功耗排障第一信息源",
+          "evidence": [
+            "Android 16 ProfilingManager ANOMALY Trigger"
+          ]
+        },
+        {
+          "type": "重要缺失",
+          "location": "GPS 功耗案例",
+          "detail": "GPS 功耗定性仅基于传统模式，未涉及 Android 15+ GNSS 硬件下沉低功耗模式",
+          "suggestion": "补充 2026 年主流旗舰 Geofencing 功耗量化优势",
+          "evidence": [
+            "Android 15+ GNSS LP Hardware Offload"
+          ]
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T17:31:05",
+      "status": "pending",
+      "source_file": "2026-04-29-11-11.4-external-review.md"
     }
   ],
   "completed": [
