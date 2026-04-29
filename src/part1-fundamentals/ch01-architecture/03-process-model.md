@@ -3,11 +3,11 @@ title: "进程模型与生命周期管理"
 chapter: "1.3"
 section: "1.3"
 status: ready-for-review
-reviewed_date: "2026-04-18"
+reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
 task6_result: pass-light-edit
-review_round: 3
+4
 drafted_date: "2026-03-31"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-09"
@@ -54,14 +54,14 @@ sources:
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5", "4.4", "5.1", "5.8"]
 pipeline_stage: "task2b_pending"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
 task9_result: "needs-rework"
 task2b_state: "pending"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T22:20:00+08:00"
-review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 2，P1 2，P2 1。"
+review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes (banned words rephrased)"
 task2b_result: fixed
 ---
 
@@ -243,7 +243,7 @@ private class FreezeHandler extends Handler {
     }
 }
 
-// 冻结操作通过 Freezer.setProcessFrozen() 落地（非 native 方法直接调用）
+// 冻结操作通过 Freezer.setProcessFrozen() 执行（非 native 方法直接调用）
 // Freezer.setProcessFrozen() 内部写入 task profile Frozen/Unfrozen
 ```
 

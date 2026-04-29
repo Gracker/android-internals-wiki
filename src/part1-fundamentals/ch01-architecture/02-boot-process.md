@@ -3,7 +3,7 @@ title: "系统启动全流程"
 chapter: "1.2"
 status: ready-for-review
 section: "1.2"
-reviewed_date: "2026-04-18"
+reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
 task6_result: pass-light-edit
@@ -12,7 +12,7 @@ drafted_by: openclaw-task2a
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
-review_round: 3
+4
 polish_by: task2b-polish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-17"
@@ -75,14 +75,14 @@ related_chapters:
   - "1.11"
   - "8.3"
 pipeline_stage: "task2b_pending"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
 task9_result: "needs-rework"
 last_task9_at: "2026-04-29T22:20:00+08:00"
 task2b_state: "pending"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
-review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1，P1 1，P2 2。"
+review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes (banned words rephrased)"
 task2b_result: fixed
 ---
 
@@ -201,7 +201,7 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 - **Android 13**：Perfetto 的 boot trace 配置改进，增加了更多 init 阶段的 atrace hook。
 - **Android 15**：Cloud Profiles 作为 Mainline 模块推送给设备，首次启动时编译产物可能依赖云端下发的 profile，不再只依赖本地 Baseline Profile。OTA 后首启的 dex2oat 策略随之变化。[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]
 - **Android 16**：profileable build 配置的变化影响 Zygote 预加载的命中路径；AutoFDO（Automatic Feedback-Directed Optimization）与 Baseline Profile 协同优化，对冷启动有额外改善。具体数据参见 8.3 节。
-- **Android 16（Cloud Compilation）**：在 Baseline Profile 基础上进一步演进——设备 OTA 后不再需要本地执行 `dex2oat`，而是直接从 Google 服务器下载预编译的 `.odex` / `.vdex` 产物。这套机制彻底解决了 OTA 后首次开机"正在优化应用"的痛点。Cloud Compilation 的本质是用带宽换计算：下载编译产物的网络耗时远低于本地 `dex2oat` 的 CPU 开销，对低端设备的安装体验改善尤其明显。
+- **Android 16（Cloud Compilation）**：在 Baseline Profile 基础上进一步演进——设备 OTA 后不再需要本地执行 `dex2oat`，而是直接从 Google 服务器下载预编译的 `.odex` / `.vdex` 产物。这套机制彻底解决了 OTA 后首次开机"正在优化应用"的等待。Cloud Compilation 用带宽换计算：下载编译产物的网络耗时远低于本地 `dex2oat` 的 CPU 开销，对低端设备的安装体验改善尤其明显。
 
 如果分析对象是 Android 12 之前的设备，`startApexServices()` 不存在，apex 组件的启动混在其他阶段里。
 
