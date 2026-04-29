@@ -10,7 +10,7 @@ last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs"
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 pipeline_stage: task6_pending
 polish_count: 1
@@ -56,11 +56,11 @@ related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
-task9_reviewed_date: "2026-04-26"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-04-29"
+task9_reviewed_by: "openclaw-task6"
 last_task9_at: "2026-04-26T11:47:04+08:00"
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-24"
+reviewed_date: "2026-04-29"
 task6_result: "pass-light-edit"
 task6_state: reviewed
 task9_state: reviewed
@@ -68,6 +68,7 @@ pipeline_stage: task2b_pending
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+review_round: 4
 ---
 
 # 系统级功耗优化
@@ -406,7 +407,7 @@ OPPO 和 vivo 的策略类似：
 
 **与 App 耗电优化（§11.2）的关系**——§11.2 是"App 主动配合"，本节是"系统强制约束"。两者是互补关系：即便 App 做好了所有主动优化，系统策略仍然会限制它的后台行为。
 
-**与 Perfetto 工具（§13.1-13.7）的关系**——分析系统级功耗限制时，Perfetto 是最核心的工具。通过 Trace 能观察到进程调度状态、CPU 频率变化、网络活动窗口等信息，帮助我们区分问题是 App 自身造成的，还是系统策略导致的。
+**与 Perfetto 工具（§13.1-13.7）的关系**——分析系统级功耗限制时，Perfetto 是最核心的工具。通过 Trace 能观察到进程调度状态、CPU 频率变化、网络活动窗口等信息，帮助区分问题来自 App 自身还是系统策略。
 
 ## 版本演进
 
