@@ -6447,3 +6447,17 @@
 - **位置**：L416-L456、L460-L464
 - **问题**：`art_gc`/`art_jit_*` track、SQL 查询和“正常 Young GC 每 2-5 秒、1-3ms”等阈值没有绑定真实 Perfetto trace、schema 或设备/负载。
 - **建议**：补一个可复现 trace：Android 版本、机型、trace config、实际 slice/counter 名称、SQL 输出和阈值来源；否则把阈值降级为经验观察并标注条件。
+
+## [External Review] 7.5 7.5 优化策略 — 2026-04-29
+## 六、P2 问题（建议改进）
+- [P2][原理链][Baseline Profiles]
+- **建议**：在线程优化或总结部分，应提及 **Baseline Profiles**。它是目前解决 App 冷启动首帧及首轮滑动卡顿（JIT 编译开销）的最成熟方案。
+- **来源**：Gemini 外部 review (2026-04-29-08-7.5-external-review.md)
+
+
+## [External Review] 7.15 7.15 场景化性能作战手册 — 2026-04-29
+## 六、P2 问题（建议改进）
+- [P2][高阶调度][ARR 影响]
+- **建议**：补充 Android 16 桌面模式及 ARR 开启后的“伪延迟”现象。由于系统会动态拉长显示周期，某些帧看起来像 Stuffing 实际上是系统在节能。
+- **来源**：Gemini 外部 review (2026-04-29-10-7.15-external-review.md)
+
