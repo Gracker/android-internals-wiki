@@ -4874,14 +4874,16 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "added_at": "2026-04-28T10:30:00+08:00",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-04-29T07:30:41+08:00"
+      "last_reviewed_at": "2026-04-29T07:30:41+08:00",
+      "completed_at": "2026-04-29T21:46:48.255529+00:00",
+      "completed_reason": "Task2B回炉修复完成"
     },
     {
       "section": "2.9",
@@ -5311,12 +5313,14 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "intake/suggestions.md"
       ],
-      "added_at": "2026-04-29T13:20:00+08:00"
+      "added_at": "2026-04-29T13:20:00+08:00",
+      "completed_at": "2026-04-29T21:46:48.255529+00:00",
+      "completed_reason": "Task2B回炉修复完成"
     },
     {
       "section": "4.4",
@@ -9143,6 +9147,206 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T04:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.1 工具与基准测试",
+      "section_title": "14.1 工具与基准测试",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7596710680897863686"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2026年了，Android开发该如何调试布局 — Android开发工具介绍，使用Layout Inspector、AYA可以提升布局分析速度。其中AYA可以辅助排查UI问题。本文深入介绍了Android开发中调试布局的工具和方法，特别是使用Layo...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.1 工具与基准测试",
+      "section_title": "14.1 工具与基准测试",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7591309945511739392"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分 — App Performance Score：老板也能看懂的报告 测完一堆毫秒级数据，怎么跟非技术的上级汇报？。本文深入介绍了Android开发中调试布局的工具和方法，特别是使用Layout Inspe...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.1 工具与基准测试",
+      "section_title": "14.1 工具与基准测试",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7589903499599347766"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "聊聊2026年Android开发会是什么样 — 最近在思考Android开发的未来走向，正好现在是2026年初，不如就结合这两年的变化，聊聊我对今年Android开发趋势的一些看法。。本文深入介绍了Android开发中调试布局的工具和方法，特别是使...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "8.1 响应速度优化",
+      "section_title": "8.1 响应速度优化",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Android 高级工程师面试参考答案：Framework、生命周期、View 与 Binder-2026-04-30.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 高级工程师面试参考答案：Framework、生命周期、View 与 Binder — 深度解析Android面试核心问题，包括Activity启动流程、Handler机制、ANR分析、事件分发、View绘制、RecyclerView、Binder等关键技术的系统化解答。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "4.1 内存管理",
+      "section_title": "4.1 内存管理",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Linux Swap 机制解析：内存不足时系统如何使用磁盘-2026-04-29.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Linux Swap 机制解析：内存不足时系统如何使用磁盘 — 深度解析Linux Swap机制，包括内存回收路径、页面淘汰机制、Swap写入流程、系统卡死原因分析，以及实际优化建议。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.1 AOSP源码",
+      "section_title": "16.1 AOSP源码",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-29-binder-transaction-trace-analysis-perfetto.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "源码调研：Binder Transaction Trace 分析与 Perfetto 实战 — 深度解析Android Binder事务追踪分析技术，包括内核ftrace原始事件、Perfetto SQL解析、源码分析，以及Binder线程池饱和、TransactionTooLarge等典型异常...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.1 流畅度优化",
+      "section_title": "7.1 流畅度优化",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-29-bufferqueue-internal-locking-architecture.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "源码调研：BufferQueue 内部锁架构与生产者-消费者同步机制 — 深度解析Android BufferQueue内部锁架构，分析BufferQueueCore::mMutex作为单一竞争点的设计，生产者-消费者同步机制，以及高帧率场景下的锁争用性能影响。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "3.1 输入系统",
+      "section_title": "3.1 输入系统",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-29-inputdispatcher-stale-event-version-evolution.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "源码调研：InputDispatcher Stale Event 丢弃机制逐版本演进 — 深度解析Android输入系统InputDispatcher的Stale Event丢弃机制，分析Android 12-16版本演进、双线程模型、WindowInfosListener协作和ANR检测...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.1 AOSP源码",
+      "section_title": "16.1 AOSP源码",
+      "priority": 65,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-29-adpf-power-efficiency-mode-power-monitor-closed-loop.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "源码调研：ADPF 能效模式与 PowerMonitor 闭环 — 深度解析Android 15 ADPF能效模式与PowerMonitor闭环控制系统，包括PerformanceHintManager、IPower.hal底层机制、GameManager协同以及量化...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.1 工具与基准测试",
+      "section_title": "14.1 工具与基准测试",
+      "priority": 75,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-04-30-75899034-聊聊2026年Android开发会是什么.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "聊聊2026年Android开发会是什么样 — 深度分析2026年Android开发现状与未来趋势，包括AI集成、跨平台开发、HarmonyOS崛起、系统进化、开发工具变化等方向的全面展望。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-04-30T05:37:00",
       "status": "pending"
     }
   ],

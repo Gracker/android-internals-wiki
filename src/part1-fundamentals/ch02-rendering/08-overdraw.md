@@ -53,17 +53,17 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '7.2'
-task6_state: reviewed
-last_task2b_at: "2026-04-28T09:42:00+08:00"
+task6_state: revisiting
+last_task2b_at: "2026-04-30T05:47:02+08:00"
 task2b_result: fixed
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task9_state: "reviewed"
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T07:30:41+08:00"
-task2b_state: "pending"
+task2b_state: fixed
 p0: 1
 p1: 2
 p2: 0
@@ -327,7 +327,7 @@ protected void onDraw(Canvas canvas) {
 - **Android 8.0（API 26）**：`clipRect(..., Region.Op)`、`clipPath(..., Region.Op)` 这类旧接口开始废弃。P 之后只应继续使用 `INTERSECT` / `DIFFERENCE` 或对应的 `clipOut*` API。
 - **Android 12（API 31）起**：Perfetto 的 FrameTimeline 成为定位 jank 的主线工具之一。它不直接显示 overdraw 次数，但能把 App、RenderThread 和 SurfaceFlinger 的帧预算串起来，帮助我们判断过度绘制有没有演变成可见掉帧。
 - **Android Studio 3.1 / 3.2 之后**：Android Device Monitor 废弃并移除，Hierarchy Viewer / Tracer for OpenGL ES 退出主线，Layout Inspector 与 AGI 成为当前工具链。
-- **Android 16（API 36）**：Perfetto 新增标准化 `pixels_drawn` GPU 计数器，支持数据驱动的 Overdraw 精确量化。同时 Skia Graphite 引擎通过 Front-to-Back 绘制顺序和硬件 Early-Z 剔除，在不透明区域自动跳过被遮挡像素的填充，从引擎层面减少了过度绘制。半透明层不在 Z-test 优化范围内，仍然需要开发者手动优化层级。
+- **Android 16（API 36）**：Skia Graphite 引擎在支持该后端的设备上可通过 Front-to-Back 绘制顺序配合硬件 Early-Z 剔除，在不透明区域跳过被遮挡像素的填充。目前 Graphite 后端尚未在所有 Android 16 设备上默认启用，HWUI 的后端选择仍受系统属性和设备配置控制。半透明层不在 Z-test 优化范围内，仍然需要开发者手动优化层级。GPU 计数器方面，Perfetto 已在部分设备上暴露 fragment/pixel 写入相关的计数器，但这些计数器的 ID、名称和语义由设备驱动决定，尚未形成跨厂商的通用标准化方案。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/hardware-accel] [已验证: 官方文档, developer.android.com/studio/profile/monitor] [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/frametimeline]
 
@@ -354,13 +354,13 @@ Compose 中真正会把 overdraw 颜色图压重的，通常还是下面几类�
 - 同一块像素是不是被多层不透明或半透明内容反复覆盖？
 - 如果 overdraw 颜色图没有变轻，只是动画或滚动更顺了，那通常是 phase 开销变小，不是 overdraw 指标下降。
 
-### Compose 1.10 背景合并优化
+### Compose 背景合并优化 [待验证]
 
-Compose 1.10 对 `Modifier.background()` 和 `Surface` 组件的背景绘制做了智能合并：当框架检测到子组件的不透明背景完全覆盖了父组件的同区域背景时，会自动跳过父级在该区域的绘制指令提交。这种优化在 `LazyLayout` 滑动场景下收益最明显——每个 Item 的多层背景叠加不再逐层绘制，而是只画最终可见的那一层。
+> **注意**：以下内容基于社区讨论和部分设备的观察结果，尚未在 AndroidX 官方 release notes 或 AOSP commit 中找到明确的「background merge」特性声明。标记为 [待验证]，后续确认后更新。
 
-这个优化是框架内部行为，开发者不需要修改代码。但需要注意两个边界条件：第一，半透明背景不参与合并，因为混合结果依赖底层内容；第二，如果父级背景在子组件范围之外仍然可见（比如 padding 区域），那些可见部分仍然会被绘制。
+有迹象表明 Compose 在较新版本中对 `Modifier.background()` 和 `Surface` 组件的背景绘制做了智能合并：当框架检测到子组件的不透明背景完全覆盖了父组件的同区域背景时，可能自动跳过父级在该区域的绘制指令提交。如果该优化确实存在，在 `LazyLayout` 滑动场景下收益应该最明显——每个 Item 的多层背景叠加不再逐层绘制，而是只画最终可见的那一层。
 
-[来源: Compose 1.10 release notes]
+两个需要验证的边界条件：第一，半透明背景不参与合并（混合结果依赖底层内容）；第二，如果父级背景在子组件范围之外仍然可见（比如 padding 区域），那些可见部分仍然会被绘制。
 
 [已验证: 官方文档, developer.android.com/develop/ui/compose/graphics/draw/modifiers] [已验证: 官方文档, developer.android.com/studio/debug/layout-inspector]
 
