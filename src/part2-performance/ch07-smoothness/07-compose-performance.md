@@ -6,7 +6,7 @@ applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-01'
 last_verified_against: Android 16 Developer Preview
 confidence: medium
-reviewed_date: '2026-04-25'
+reviewed_date: '2026-04-30'
 last_task2b_at: '2026-04-25T13:47:46+08:00'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
@@ -248,7 +248,7 @@ val shouldShowButton by remember {
 
 前者的状态读取发生在 MainLayout 的 Scope 中，所以每滑过一个 item，整个 MainLayout 都会重组。后者把读取包装在 `derivedStateOf` 里，只有当 `firstVisibleItemIndex == 0` 的布尔结果发生变化时才会通知——也就是从 0 变成 1 和从 1 变成 0 的那两次。其余的滑动完全不会触发重组。
 
-
+**`derivedStateOf` 的滥用陷阱**：`derivedStateOf` 本身有对象创建和依赖追踪的开销。如果派生结果的变化频率和输入状态完全一样（比如 `derivedStateOf { scrollState.value * 2 }`），它并不能减少任何重组，反而增加了额外的计算层。只有当“输入高频变化，输出低频变化”时才有收益——典型的场景是把连续的滚动 offset 映射为离散的布尔值、索引值或分档结果。如果输入输出同频，直接读原始 State 即可。
 
 ### SnapshotStateObserver：三阶段失效的底层机制 [自动发现]
 
@@ -539,7 +539,7 @@ fun WebViewScreen(url: String) {
 
 前几节讨论了 Compose 的重组机制和常见的性能陷阱，这些优化手段已经能覆盖大部分场景。但还有一个特殊的性能敏感区域：动画。动画的特点是状态变化极为频繁（每秒 60 甚至 120 次），如果每一帧都走完整的 Composition → Layout → Draw 流程，开销会迅速累积。Compose 提供了三种层次的动画 API，性能特征各不相同：
 
-**`animate*AsState`**（如 `animateColorAsState`、`animateDpAsState`）：最简单的声明式动画 API。它内部通过 State 变化驱动重组，意味着每一帧动画都会触发重组。对于简单的属性变化（颜色、透明度），这个开销通常可以接受；但如果动画作用在复杂的 Composable 上，重组开销可能就不划算了。
+**`animate*AsState`**（如 `animateColorAsState`、`animateDpAsState`）：最简单的声明式动画 API。它返回一个 `State<T>` 对象，动画期间值会持续变化。是否触发重组取决于这个 State 在哪里被读取——如果在 Composable 参数中直接解包（`.value`），每一帧都会触发 Composition；如果延迟到 `Modifier.drawBehind` 或 `Modifier.graphicsLayer` 的 Draw 阶段才读取，则完全跳过 Composition 和 Layout，只触发重绘。区别的关键在于 State 读取的作用域，而不是 API 本身。
 
 **`Animatable`**：更底层的 API，可以在 Coroutine 中手动驱动动画。它的优势在于可以在不触发重组的情况下直接修改绘制属性——比如通过 `Modifier.drawBehind` 在 Draw 阶段直接读取 `Animatable` 的当前值，从而完全跳过 Composition 和 Layout 阶段。**这是 Android 官方推荐的高性能动画方式。**
 
@@ -550,6 +550,8 @@ fun WebViewScreen(url: String) {
 **优先使用 Draw 阶段动画。** 如果动画只影响绘制属性（颜色、透明度、位移），用 `Animatable` + `Modifier.graphicsLayer{}` 或 `drawBehind`，跳过 Composition 和 Layout。这种方式的开销最小，因为完全不涉及重组。
 
 **布局动画注意缩小重组范围。** 如果动画涉及布局变化（尺寸、位置），只能用 `animate*AsState` 或 `updateTransition`，此时要确保重组范围尽可能小——把动画状态的作用域限制在最小的 Composable 内。
+
+**区分 State 读取阶段。** `animate*AsState` 和 `Animatable` 都会产生高频变化的 State。关键区别在于读取时机：在 Composable 函数参数中读取 → 触发重组；在 `Modifier.drawBehind` / `Modifier.graphicsLayer` 的 lambda 中读取 → 只触发 Draw。如果动画只影响绘制属性（颜色、透明度、缩放），即使使用 `animate*AsState`，只要把 `.value` 的读取放到 Draw 阶段，也不会触发重组。
 
 **避免大范围动画重组。** 不要在动画的每一帧都触发整个页面的重组，这在 Perfetto 中表现为连续的长帧，帧耗时随动画进行不收敛。
 

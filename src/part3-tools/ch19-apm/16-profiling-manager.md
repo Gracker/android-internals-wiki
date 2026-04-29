@@ -41,7 +41,8 @@ repaired_by: "openclaw-task2b"
 
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"---
+reviewed_date: "2026-04-25"
+---
 
 # ProfilingManager
 
