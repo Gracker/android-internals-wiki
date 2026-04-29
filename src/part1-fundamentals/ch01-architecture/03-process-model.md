@@ -53,14 +53,15 @@ sources:
     path: "source.android.com/docs/core/perf/lmkd"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5", "4.4", "5.1", "5.8"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T09:17:31+08:00"
+task2b_result: fixed
 ---
 
 # 进程模型与生命周期管理
@@ -293,6 +294,7 @@ LIMIT 20;
 - **Android 13**: 重构 `enableFreezer()` API，从 `Process` 类迁移到 `ActivityManagerService`
 - **Android 14**: 引入 "Frozen-callee callback policy" for Binder
 - **Perfetto v49**: 新增 `frozen` 布尔字段和 `android.freezer` 事件表
+- **Android 16（Seamless App Updates）**: 应用更新时的进程冻结从秒级降至毫秒级。此前应用更新需要先杀掉旧进程、替换 APK、再重新启动，整个冻结窗口可能持续数秒。Android 16 利用 bionic linker 的增量加载能力，在替换 dex/so 文件时仅做极短的冻结快照，用户几乎感知不到更新导致的进程中断。
 
 <!-- AIW-源码调研-2026-04-17 -->
 
@@ -319,6 +321,7 @@ Empty process 连缓存 Activity 都没有，只剩一个已经建好的 Linux �
 | `PERSISTENT_PROC_ADJ` | -800 | 持久化系统进程 |
 | `PERSISTENT_SERVICE_ADJ` | -700 | 持久化系统服务 |
 | `FOREGROUND_APP_ADJ` | 0 | 当前 top / foreground 进程 |
+| `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ` | 50 | Android 16 新增：从 TOP 退到 FGS 的应用缓冲档，防止短暂切换场景下误杀 |
 | `VISIBLE_APP_ADJ` | 100 | 可见进程 |
 | `PERCEPTIBLE_APP_ADJ` | 200 | 用户可感知进程，foreground service 常落在这一档 |
 | `PERCEPTIBLE_MEDIUM_APP_ADJ` | 225 | 中间过渡档 |
@@ -500,6 +503,8 @@ Android 12 引入了一个新的限制机制：Phantom Process Killer。这里�
 在 AOSP 中，这个上限由 `ActivityManagerConstants.DEFAULT_MAX_PHANTOM_PROCESSES` 定义，默认值是 32。`PhantomProcessList.trimPhantomProcessesIfNecessary()` 比较的是系统当前追踪到的 `mPhantomProcesses.size()` 与 `MAX_PHANTOM_PROCESSES`，所以这里的 32 指的是系统级的 phantom process 总数，不是单个 App 固定拥有 32 个子进程。超过上限后，系统会按父进程的 `oom_adj` 顺序裁剪多出来的 phantom process。
 
 监控逻辑还受 `FeatureFlagUtils.SETTINGS_ENABLE_MONITOR_PHANTOM_PROCS` 控制，AOSP 默认值是 `true`。同时，`MAX_PHANTOM_PROCESSES` 可以通过 `DeviceConfig.NAMESPACE_ACTIVITY_MANAGER` 下的 `max_phantom_processes` 覆盖，所以不同设备上的实际门槛可能不同。正文里不宜把某条 adb 命令写成所有版本、所有 ROM 都成立的统一开关。
+
+Android 16 引入了 AVF (Android Virtualization Framework) Terminal，允许在受保护的虚拟机 (pVM) 中运行终端环境。pVM 内部的进程不受宿主 Phantom Process Killer 32 个名额的限制。对于需要运行大量子进程的场景（如构建工具链、测试框架），AVF Terminal 是一条官方规避路径。不过 pVM 的启动开销和资源隔离粒度都比直接 fork 子进程重，只适合真正需要隔离的高安全场景，不该当作绕过 PPK 的常规手段。
 
 [图：Perfetto 进程列表中，同一 UID 下出现父 App 进程和多个 phantom process，系统裁剪后多余子进程消失]
 
