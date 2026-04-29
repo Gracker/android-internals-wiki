@@ -45,17 +45,17 @@ related_chapters:
 - '7.2'
 - '8.2'
 - '9.1'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
-last_task9_at: "2026-04-20T09:17:31+08:00"
-task9_state: pending
-task2b_state: fixed
+last_task9_at: "2026-04-29T21:20:00+08:00"
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
-review_round: 4
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-20"
+review_round: 5
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-29'
 ---
 
 

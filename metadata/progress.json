@@ -196,8 +196,8 @@
     "src/part1-fundamentals/ch01-architecture/04-binder.md": {
       "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
       "title": "Binder IPC 机制与性能影响",
-      "chapter": "'1.4'",
-      "section": "'1.4'",
+      "chapter": "1.4",
+      "section": "1.4",
       "status": "ready-for-review",
       "drafted_date": "'2026-04-10'",
       "drafted_by": "openclaw-task2a",
@@ -213,35 +213,35 @@
       "task9_result": "needs-rework",
       "reviewed_date": "'2026-04-20'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T09:17:31+08:00",
+      "last_task9_at": "2026-04-29T21:20:00+08:00",
       "review_round": "2"
     },
     "src/part1-fundamentals/ch01-architecture/05-threading-model.md": {
       "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
       "title": "线程模型",
-      "chapter": "'1.5'",
-      "section": "'1.5'",
-      "status": "finalized",
+      "chapter": "1.5",
+      "section": "1.5",
+      "status": "ready-for-review",
       "drafted_date": "'2026-03-31'",
       "drafted_by": "openclaw-task2",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
       "last_verified": "'2026-04-24'",
       "last_verified_against": "AOSP android-16.0.0_r1, Android SDK android-Baklava stubs",
       "confidence": "high",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-20'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-20",
+      "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-20T10:22:00+08:00",
+      "last_task9_at": "2026-04-29T21:20:00+08:00",
       "review_round": "5"
     },
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md": {
@@ -8224,7 +8224,7 @@
       }
     }
   },
-  "last_updated": "2026-04-29T17:55:36+08:00",
+  "last_updated": "2026-04-29T21:20:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -9585,5 +9585,51 @@
     "p1": 2,
     "p2": 1,
     "updated_at": "2026-04-29T17:55:36+08:00"
+  },
+  "2026-04-29-21-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "1.4",
+      "1.5"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/04-binder.md",
+      "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+    ],
+    "timestamp": "2026-04-29T21:20:00+08:00",
+    "results": {
+      "1.4": {
+        "title": "Binder IPC 机制与性能影响",
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 1,
+        "p2": 0,
+        "scores": {
+          "source": 3,
+          "principle": 4,
+          "version": 3,
+          "gaps": 4,
+          "data": 2,
+          "xref": 4
+        }
+      },
+      "1.5": {
+        "title": "线程模型",
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 2,
+        "p2": 0,
+        "scores": {
+          "source": 2,
+          "principle": 3,
+          "version": 3,
+          "gaps": 4,
+          "data": 4,
+          "xref": 4
+        }
+      }
+    },
+    "auto_finalized": [],
+    "queue_added": 2
   }
 }
