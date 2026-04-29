@@ -11826,3 +11826,62 @@ Ultra HDR / Gainmap 图片的内存与显存模型仍未闭环。AOSP Bitmap.jav
 ### 外部 review 来源
 - external-review 已命中：logs/external-review/archive/2026-04-29-09-7.10-external-review.md
 
+
+
+## [2026-04-29] 18.1 渲染链路分类与选择矩阵 — 知识盲区
+
+### 盲区描述
+HardwareBufferRenderer 离屏渲染器产生的显存碎片归属与内存隔离机制未覆盖。AVP (Advanced Video Pipeline) 对渲染链路的选择影响未验证。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究离屏渲染器产生的显存碎片是否归入宿主进程的 smaps 统计
+- 验证 Android 16 AVP 是否会强制视频层脱离 BLAST 并行路径
+
+### 关联章节
+- 18.1
+- 18.2
+- 18.3
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-29)
+
+## [2026-04-29] 18.2 Android View 标准链路 — 知识盲区
+
+### 盲区描述
+Non-blocking Sync 的触发阈值机制未研究：HardwareRenderer 如何根据 ADPF Hint Session 动态决定是否开启非阻塞模式。AVP 事务优先级的内核保障未验证。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 HardwareRenderer 与 ADPF Hint Session 的交互决定非阻塞模式开启的阈值
+- 验证 Android 16 是否通过 cgroup 提升了视频解耦 Transaction 的 Binder 调度优先级
+
+### 关联章节
+- 18.1
+- 18.2
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-29)
+
+## [2026-04-29] 18.3 Android View 软件渲染链路 — 知识盲区
+
+### 盲区描述
+Android 16 SkTaskGroup 软件渲染辅助线程与 cgroup 的绑定策略未研究。16KB Page 环境下 copyBlt 带宽峰值的功耗影响未验证。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 研究 Android 16 软件渲染辅助线程是否被限制在特定能效核心（LITTLE Cores）运行
+- 验证大页面环境下 Dirty Rect 拷贝是否会触发更宽总线周期导致瞬时功耗尖峰
+
+### 关联章节
+- 18.2
+- 18.3
+
+### 外部 review 来源
+- Gemini 外部 review (2026-04-29)

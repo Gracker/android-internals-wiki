@@ -110,3 +110,24 @@
 - **问题**：Perfetto 图仍是占位描述，且 1080p RGBA Bitmap 上传 4-8ms 没有设备、刷新率、GPU、图片格式、trace slice 或 benchmark 来源。
 - **建议**：补一组固定设备的 Perfetto/benchmark：主线程 decode slice、RenderThread upload/DrawFrame、FrameTimeline jank 标记；没有数据前把 4-8ms 改为待验证或删除。
 
+
+## [External Review] 18.1 渲染链路分类与选择矩阵 — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：BLAST 事务原子性特征
+- **问题**：补充 Android 15 针对多 Layer 事务原子性（Atomic Commit）的提升特征。Perfetto 中若观察到跨窗口渲染切片共享同一 Transaction ID，即说明系统执行了原子提交
+- **建议**：补充 Atomic Commit 在 Perfetto 中的识别方法，预防画面错位诊断
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.2 Android View 标准链路 — 2026-04-29
+- **类型**：物理开销
+- **位置**：Triple Buffering 显存账本
+- **问题**：补充 16KB 分页环境下 Triple Buffering 的物理显存增量。由于 Gralloc Buffer 强制对齐，单帧 Buffer 的 RSS 驻留产生约 9% 溢出，多层 Layer 叠加时在内存受限设备上不可忽视
+- **建议**：补充 16KB 环境下 Triple Buffering 显存开销的量化分析
+- **来源**：Gemini 外部 review
+
+## [External Review] 18.3 Android View 软件渲染链路 — 2026-04-29
+- **类型**：诊断技巧
+- **位置**：uploadToTexture 归因
+- **问题**：详细描述开启 LAYER_TYPE_SOFTWARE 后 RenderThread 轨道出现的 uploadToTexture 或 glTexImage2D 耗时特征。软件 Layer 代价不仅在于 CPU 算像素，更在于像素从内存搬运到 GPU 显存的同步开销
+- **建议**：补充 uploadToTexture 在 Perfetto Trace 中的识别方法与耗时归因
+- **来源**：Gemini 外部 review

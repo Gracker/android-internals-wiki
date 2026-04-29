@@ -55,9 +55,9 @@
 - [x] 11.5 Wakelock 机制与功耗分析 (`src/part2-performance/ch11-power/05-wakelock.md`)
 
 ## 第 18 章：渲染链路全景 (ch18-rendering-pipelines)
-- [ ] 18.1 渲染链路分类与选择矩阵 (`src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md`)
-- [ ] 18.2 Android View 标准链路 (BLAST) (`src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md`)
-- [ ] 18.3 Android View 软件渲染链路 (`src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md`)
+- [x] 18.1 渲染链路分类与选择矩阵 (`src/part2-performance/ch18-rendering-pipelines/01-pipeline-overview.md`)
+- [x] 18.2 Android View 标准链路 (BLAST) (`src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md`)
+- [x] 18.3 Android View 软件渲染链路 (`src/part2-performance/ch18-rendering-pipelines/03-android-view-software.md`)
 - [ ] 18.4 Android View 混合渲染链路 (`src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md`)
 - [ ] 18.5 Android View 多窗口链路 (`src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md`)
 - [ ] 18.6 SurfaceView 直出链路 (`src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md`)

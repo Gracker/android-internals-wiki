@@ -8473,6 +8473,90 @@
       "added_at": "2026-04-29T17:31:05",
       "status": "pending",
       "source_file": "2026-04-29-11-11.4-external-review.md"
+    },
+    {
+      "section": "18.1",
+      "section_title": "渲染链路分类与选择矩阵",
+      "priority": 95,
+      "reason": "[External Review] 18.1 渲染链路分类与选择矩阵 存在 P0 事实错误（HardwareBufferRenderer 离屏链路缺失），需回炉修正",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "典型模式对比 & 版本与架构矩阵",
+          "detail": "矩阵分类中所有链路均隐含了'窗口容器'前提，缺失 Android 15 HardwareBufferRenderer 离屏 GPU 渲染链路。HardwareBufferRenderer 允许应用在不持有 Window 的情况下利用 RenderNode 构建渲染树并直接输出到 HardwareBuffer。",
+          "suggestion": "在对比表格中增加第七行'离屏渲染 (Offscreen)'，核心组件标记为 HardwareBufferRenderer + Matrix44；补充 Android 16 Display.getAppVsyncOffsetNanos() 赋能原生链路精准对齐",
+          "evidence": [
+            "Android 15 (API 35) HardwareBufferRenderer",
+            "Android 16 (API 36) Display.getAppVsyncOffsetNanos()"
+          ]
+        },
+        {
+          "type": "原理链完整性",
+          "location": "Flutter 渲染架构部分",
+          "detail": "对 Flutter 渲染架构补充仅停留在线程名，未涉及 Flutter 3.29+ 单线程同步对 Platform View 异步偏移抖动的消除价值",
+          "suggestion": "在 Flutter 概览部分增加'消除混合闪烁'的技术背书"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T18:39:01",
+      "status": "pending",
+      "source_file": "2026-04-29-11-18.1-external-review.md"
+    },
+    {
+      "section": "18.2",
+      "section_title": "Android View 标准链路（BLAST 深入）",
+      "priority": 95,
+      "reason": "[External Review] 18.2 Android View 标准链路 存在 P0 事实错误（Android 15 非阻塞同步），需回炉修正",
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "第二阶段：Sync — 移交蓝图 & 时序图",
+          "detail": "认为 syncFrameState() 始终导致 UI 线程同步阻塞等待。Android 15 引入 Non-blocking Sync，通过 RenderProxy 智能降级，允许主线程在提交绘制任务快照后立即返回。",
+          "suggestion": "明确区分版本行为，重构时序图中'阻塞线'为'异步通知线'；补充 AVP 视频场景下事务原子性例外说明",
+          "evidence": [
+            "Android 15 (API 35) Non-blocking Sync / RenderProxy",
+            "Android 16 AVP 事务解耦"
+          ]
+        },
+        {
+          "type": "原理链完整性",
+          "location": "Compose 补充章节",
+          "detail": "对 Compose 三阶段描述未涉及 Android 17 分代 GC 对状态快照创建与比对开销降低 20% 以上的加成",
+          "suggestion": "增加'系统底座演进'部分，解释为何在 Android 17 上复杂 DerivedState 运算不再是性能瓶颈"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T18:39:01",
+      "status": "pending",
+      "source_file": "2026-04-29-11-18.2-external-review.md"
+    },
+    {
+      "section": "18.3",
+      "section_title": "Android View 软件渲染链路",
+      "priority": 95,
+      "reason": "[External Review] 18.3 Android View 软件渲染链路 存在 P0 事实错误（Android 15 功耗熔断），需回炉修正",
+      "review_issues": [
+        {
+          "type": "合规风险",
+          "location": "性能特征与适用场景 & 全链路执行流程",
+          "detail": "认为软件渲染只是单纯的'慢'，未提及 Android 15+ Efficiency-aware Throttling 对持续软件渲染的激进降频策略。软件渲染每瓦性能不足 GPU 路径 1/10，系统会触发 Thermal Throttling 导致整机响应断崖式下跌。",
+          "suggestion": "将软件渲染明确定义为'受限的应急路径'，增加 2026 年能效审计合规性警示；引入 Android 16 Skia 多线程加速(SkTaskGroup)技术背书",
+          "evidence": [
+            "Android 15+ Efficiency-aware Throttling",
+            "Android 16 SkTaskGroup 多线程栅格化"
+          ]
+        },
+        {
+          "type": "物理开销",
+          "location": "内存映射章节",
+          "detail": "未提及 16KB Page 环境下 mmap 映射 GraphicBuffer 像素地址的页表项减少 75% 对 lockCanvas 首帧映射耗时的影响",
+          "suggestion": "补充 16KB 设备上 lockCanvas 首帧映射耗时及 Page Fault 频率的量化改善"
+        }
+      ],
+      "added_by": "external-ai-review",
+      "added_at": "2026-04-29T18:39:01",
+      "status": "pending",
+      "source_file": "2026-04-29-11-18.3-external-review.md"
     }
   ],
   "completed": [
