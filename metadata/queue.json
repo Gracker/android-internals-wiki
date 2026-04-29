@@ -7159,6 +7159,32 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T09:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "15.6",
+      "section_title": "15.6 性能测试最佳实践",
+      "priority": 85,
+      "reason": "[Deep Tech Review] P90/FPS 分位语义与 Macrobenchmark 自动稳定化描述存在 P1 技术风险，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据/原理断裂",
+          "location": "数据采样策略 → “同时关注 P90” 与测试报告示例的“首页帧率 P90”",
+          "detail": "正文把 P90 统一解释成“10% 用户最差情况”，并把 FPS 的 P90 下降当作退化。P90 对耗时/延迟这类越大越差的指标可以表示尾部慢样本；对 FPS/吞吐这类越大越好的指标，低分位（如 P10/P5）或掉帧率/slow frame、frame duration P90/P99 才能表达尾部差体验。当前写法混淆了指标方向，报告模板会诱导读者用错误分位判断帧率回归。",
+          "suggestion": "按指标方向拆开：启动耗时、帧耗时、TTID/TTFD 用 P90/P95/P99；FPS/吞吐用 P10/P5 或直接改成 frame duration / jank / slow frames。把示例表中的“首页帧率 P90”改为“首页帧耗时 P90/P99”或“首页帧率 P10”。"
+        },
+        {
+          "type": "源码/API准确性",
+          "location": "固定 CPU 频率（进阶）→ Macrobenchmark 自动稳定化描述",
+          "detail": "正文称 Macrobenchmark 每次测量前会关闭多窗口模式、固定屏幕亮度。复核 androidx-main：AndroidBenchmarkRunner 主要通过 IsolationActivity 降低窗口干扰，并在支持时使用 sustained performance mode；SideEffectRunListener 会 DisablePackages/DisableDexOpt；Shell.disableBackgroundDexOpt 使用 bg-dexopt-job --cancel/--disable。未在当前 AndroidX benchmark 源码中看到自动固定屏幕亮度或关闭多窗口的实现。",
+          "suggestion": "改为列出已能从源码确认的自动动作：IsolationActivity、sustained performance mode、可选 side effects（disable packages / background dexopt）和目标进程 kill/compile 编排。屏幕亮度、刷新率、网络、后台同步仍应作为测试脚本显式控制项，不要写成 Macrobenchmark 自动完成。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-29T10:40:29+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
