@@ -30,16 +30,16 @@ sources:
     path: "frameworks/native/libs/binder/ProcessState.cpp"
 tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
 related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-21"
-last_task9_at: "2026-04-21T09:26:24+08:00"
+task9_result: "needs-rework"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-29"
+last_task9_at: "2026-04-29T18:48:00+08:00"
 ---
 
 # 案例集
