@@ -2,7 +2,7 @@
 title: "AutoFDO 反馈导向编译优化"
 chapter: "1.12"
 section: "1.12"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-20"
@@ -44,7 +44,9 @@ related_chapters:
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T20:20:00+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
+finalized_date: '2026-04-29'
+finalized_by: openclaw-task6-auto-promote
 task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed

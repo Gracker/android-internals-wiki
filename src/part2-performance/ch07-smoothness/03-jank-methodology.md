@@ -481,6 +481,91 @@ LIMIT 20;
 
 这条查询统计的是线程进入 Runnable 后到真正 Running 之间的等待时长。`waker_id` 可以把当前 Runnable 片段回连到唤醒它的线程状态，再还原出唤醒源。如果要直接查询 raw `sched_wakeup` / `sched_waking` 事件，需要先展开 `ftrace_event` 表；不要把 `sched_wakeup` 当成 Trace Processor 默认就存在的 SQL 表。
 
+### 查询 Binder Transaction 耗时与异常诊断 [自动发现]
+
+Binder Transaction 是 Android IPC 的核心，也是主线程卡顿的常见根因。Perfetto 通过 `linux.ftrace` 捕获内核 `binder_transaction` 系列 tracepoint，再经 `android.binder` 标准库 SQL 模块解析，可实现精细的 IPC 耗时归因。
+
+数据链路为：**内核 ftrace 原始事件**（`binder_transaction` / `binder_transaction_received` / `binder_transaction_alloc_buf` / `binder_reply`） → **Perfetto Trace Processor** → **`android.binder` 标准库模块**（`INCLUDE PERFETTO MODULE android.binder;`）。其中 `android_binder_txns` 表是最核心的分析对象 [已验证: AOSP Perfetto 源码 `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`，内核 tracepoint 定义 `kernel/common/drivers/android/binder_trace.h`]。
+
+**关键 Duration 指标**：
+- `client_dur`：同步调用中客户端从发出请求到收到回复的 wall-clock 时长；oneway 调用中为 0
+- `server_dur`：服务端从处理开始到发送回复的 wall-clock 时长
+- `dispatch_dur`：`server_ts - client_ts`，反映请求在服务端队列中等待调度的时间
+
+**核心诊断 SQL**：
+
+```sql
+INCLUDE PERFETTO MODULE android.binder;
+
+-- 慢同步事务排序
+SELECT
+    aidl_name,
+    method_name,
+    client_process,
+    client_dur / 1e6    AS client_ms,
+    server_dur / 1e6    AS server_ms,
+    dispatch_dur / 1e6  AS dispatch_ms
+FROM android_binder_txns
+WHERE is_sync = 1
+ORDER BY client_dur DESC
+LIMIT 20;
+```
+
+**归因判断树**：
+- `client_dur` 长 + `server_dur` 短 → 问题在 **dispatch/queue**（服务端线程池饱和或调度延迟）
+- `server_dur` 很长 → 问题在 **服务端业务逻辑**（锁竞争、I/O 阻塞、深层 RPC）
+- `dispatch_dur` 持续 >5ms → **Binder 线程池饱和**，所有 worker thread busy
+
+**Binder 线程池饱和识别**：
+
+```sql
+SELECT client_process, server_process,
+       AVG(dispatch_dur / 1e6) AS avg_dispatch_ms,
+       AVG(server_dur / 1e6)    AS avg_server_ms,
+       COUNT(1)                AS txn_count
+FROM android_binder_txns
+WHERE is_sync = 1
+GROUP BY client_process, server_process
+HAVING avg_dispatch_ms > 5.0
+ORDER BY avg_dispatch_ms DESC;
+```
+
+**Oneway 事务 spam 识别**（Binder Spam）：
+
+```sql
+SELECT client_process, server_process,
+       COUNT(1) AS oneway_count
+FROM android_binder_txns
+WHERE is_sync = 0
+GROUP BY client_process, server_process
+ORDER BY oneway_count DESC
+LIMIT 10;
+```
+
+Perfetto UI 中，**Android Binder / Transactions** 轨道以 Flow 箭头连接客户端和服务端 Slice，同步事务显示完整往返 Flow，oneway 事务仅显示单向箭头。客户端线程在等待同步回复时通常处于 `S`（Sleeping）状态，`blocked_function` 为 `binder_thread_read` 或 `ioctl(BINDER_WRITE_READ)`。服务端则可通过 `Binder:xxx_y` 线程轨道判断线程池繁忙程度。
+
+抓取配置参考（Perfetto config）：
+```protobuf
+data_sources: {
+    config {
+        name: "linux.ftrace"
+        ftrace_config {
+            ftrace_events: "binder/binder_transaction"
+            ftrace_events: "binder/binder_transaction_received"
+            ftrace_events: "binder/binder_transaction_alloc_buf"
+            ftrace_events: "binder/binder_reply"
+            ftrace_events: "sched/sched_switch"
+            ftrace_events: "sched/sched_wakeup"
+        }
+    }
+}
+```
+atrace 等效命令：`adb shell atrace --async_start -b 20000 -c binder_driver am wm dalvik`
+
+核心数据源：内核 `TRACE_EVENT(binder_transaction)` 定义于 `kernel/common/drivers/android/binder_trace.h`，驱动层通过 `trace_binder_transaction()` 记录发起，通过 `trace_binder_transaction_received()` 记录服务端接收；Perfetto 标准库 `android_binder_txns` 表由 `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql` 定义。
+
+
+
 SQL 分析的好处是能快速处理整份 Trace 的数据，给出统计级别的结论。比如，可以用第一个查询快速统计出"这次 10 秒的滑动操作中，总共出现了 23 次卡顿帧，其中 5 次超过 32ms"——这种宏观信息是手动点击很难得到的。
 
 高爷在 Perfetto 系列 CPU 篇中也提到了 SQL 分析的重要性 [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]：通过 SQL 查询各线程的 CPU 时间占用，可以发现一些在 UI 中不容易注意到的异常——比如某个后台线程的 CPU 占用竟然超过了主线程，那它很可能在抢主线程的时间片。
@@ -525,7 +610,8 @@ Trace 不是越长越好。5-10 秒的精简 Trace 远比 60 秒的"大杂烩"�
   - [Android Perfetto 系列 9：CPU 信息解读](https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/) — CPU 调度分析、频率追踪、核心架构等
   - [Android 中的卡顿丢帧原因概述 - 方法论](https://www.androidperformance.com/2019/09/05/Android-Jank-Debug/)
 - 官方文档：
-  - [Perfetto Trace Processor SQL Documentation](https://perfetto.dev/docs/analysis/sql-tables) — SQL 查询 Trace 数据的完整参考
+  - [Perfetto Trace Processor SQL Documentation](https://perfetto.dev/docs/analysis/sql-tables)
+- [Perfetto Docs - Analyzing Android Binder Transactions](https://perfetto.dev/docs/analysis/binder) — 官方 Binder 分析指南，含 `android.binder` 模块用法 [AIW-源码调研-2026-04-29] — SQL 查询 Trace 数据的完整参考
   - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline) — FrameTimeline 的可用版本、轨道含义与 SurfaceView 使用边界
   - [Android FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics) — FrameMetrics 各指标的官方说明
   - [JankStats Library](https://developer.android.com/topic/performance/jankstats) — Google 官方的线上卡顿监控库
