@@ -3,7 +3,7 @@ title: Binder IPC 机制与性能影响
 chapter: '1.4'
 section: '1.4'
 status: ready-for-review
-reviewed_date: '2026-04-20'
+reviewed_date: '2026-04-29'
 reviewed_by: openclaw-task6
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 drafted_date: '2026-04-10'
@@ -45,15 +45,15 @@ related_chapters:
 - '7.2'
 - '8.2'
 - '9.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 last_task9_at: "2026-04-20T09:17:31+08:00"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-review_round: 3
+review_round: 4
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 ---

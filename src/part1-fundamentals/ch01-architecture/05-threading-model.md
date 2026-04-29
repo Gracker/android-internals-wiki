@@ -9,9 +9,9 @@ section: '1.5'
 status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
-reviewed_date: '2026-04-20'
+reviewed_date: '2026-04-29'
 reviewed_by: openclaw-task6
-review_round: 5
+review_round: 6
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
@@ -70,8 +70,8 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '5.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
