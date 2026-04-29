@@ -60,20 +60,21 @@ related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-29T10:45:00+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-28"
-last_task9_at: "2026-04-28T02:30:00+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。"
+task9_reviewed_date: 2026-04-29
+last_task9_at: "2026-04-29T11:26:16+08:00"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。；2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。需 Task2B 回炉。"
 last_task2b_at: "2026-04-27T05:45:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复(Task9/External 问题单)"
+task9_result: needs-rework
 ---
 
 
