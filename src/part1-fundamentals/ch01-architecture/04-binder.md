@@ -2,9 +2,9 @@
 title: Binder IPC 机制与性能影响
 chapter: '1.4'
 section: '1.4'
-status: ready-for-review
 reviewed_date: "2026-05-01"
-reviewed_by: openclaw-task6applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+reviewed_by: openclaw-task6
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 drafted_date: '2026-04-10'
 drafted_by: openclaw-task2a
 last_verified: '2026-04-19'
@@ -44,16 +44,21 @@ related_chapters:
 - '7.2'
 - '8.2'
 - '9.1'
-pipeline_stage: task9_pendingtask6_state: reviewedtask6_result: pass-light-edit
-task9_result: needs-rework
-last_task9_at: "2026-04-29T21:20:00+08:00"
-task9_state: pending
-task2b_state: fixed
+task6_state: reviewed
+task6_result: pass-light-edit
 task2b_result: fixed
-review_round: 5
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-29'
+review_round: 6
 task6_reviewed_date: "2026-05-01"
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-01'
+last_task9_at: "2026-05-01T03:20:00+08:00"
+task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 3，P2 0。Android 16 android.binder 字段/来源描述、Binder 风暴 SQL、16KB Binder 吞吐数据需回炉。"
+
 ---
 
 
