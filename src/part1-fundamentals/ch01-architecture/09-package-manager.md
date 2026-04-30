@@ -2,13 +2,13 @@
 title: "Package Manager Service 与应用安装性能"
 chapter: "1.9"
 section: "1.9"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-05"
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-18"
@@ -55,8 +55,8 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: pass-tech-review
@@ -289,13 +289,13 @@ adb shell cmd package compile -m speed-profile -f com.example.app
 
 | 安装场景 | 默认编译级别 | 原因 |
 |---------|------------|------|
-| 首次安装（无可用 profile，Android 12+ 常见） | verify | 安装更快，首次启动更多依赖解释执行和 JIT |
-| 首次安装（有 Baseline Profiles） | speed-profile | 安装即有 AOT 覆盖 |
-| 首次安装（有 Cloud Profiles） | speed-profile | 聚合 Profile 覆盖更广 |
-| 系统预装 | speed 或 speed-profile | OEM 配置决定 |
-| OTA 后首次启动 | verify | 优先快速开机 |
-| 后台空闲充电 | speed-profile | 使用本地 JIT Profile |
-| 存储空间不足 | verify 或降级 | 节省存储 |
+| 首次安装（无可用 profile，Android 12+ 常见） | `verify` | 安装更快，首次启动更多依赖解释执行和 JIT |
+| 首次安装（有 Baseline Profiles） | `speed-profile` | 安装即有 AOT 覆盖 |
+| 首次安装（有 Cloud Profiles） | `speed-profile` | 聚合 Profile 覆盖更广 |
+| 系统预装 | `speed` 或 `speed-profile` | OEM 配置决定 |
+| OTA 后首次启动 | `verify` | 优先快速开机 |
+| 后台空闲充电 | `speed-profile` | 使用本地 JIT Profile |
+| 存储空间不足 | `verify` 或降级 | 节省存储 |
 
 [已验证: AOSP frameworks/base/services/core/java/com/android/server/pm/, 编译策略; art/dex2oat/dex2oat_options.cc, 编译过滤器]
 
