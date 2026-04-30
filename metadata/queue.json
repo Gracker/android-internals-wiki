@@ -7667,8 +7667,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-07-7.1-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-07-7.1-external-review.md",
+      "completed_at": "2026-05-01T01:04:51.286646+08:00",
+      "completed_reason": "P0 VRR/ARR动态帧间隔说明已补充; P1 新增3个JankType已添加(带验证状态标注)"
     },
     {
       "section": "7.2",
@@ -7727,8 +7729,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-08-7.3-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-08-7.3-external-review.md",
+      "completed_at": "2026-05-01T01:04:51.286646+08:00",
+      "completed_reason": "P0 SQL查询已改为Expected Timeline基准(适配VRR); P1 Perfetto SDK线上动态Trace已添加; P1 大型Trace SQL性能优化已补充"
     },
     {
       "section": "7.4",
