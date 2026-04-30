@@ -34,16 +34,17 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "2.18", "1.5", "13.3"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-26"
-last_task9_at: "2026-04-26T22:20:00+08:00"
+task9_reviewed_date: "2026-05-01"
+last_task9_at: "2026-05-01T01:27:22+08:00"
+task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 原理断裂 约第103-123行，“第二步：抓取合适的 Trace” Perfetto 配置 / P0 源码错误 约第382-404行，“线上动态 Trace：Perfetto SDK 方案” Kotlin 示例 / P1 源码错误 约第418-443行，“查询掉帧统计” SQL"
 ---
 
 # 卡顿分析方法论

@@ -538,3 +538,24 @@
 - **位置**：为什么要了解输入延迟（约第84行）
 - **问题**：用户输入响应延迟“100ms/200ms 感知阈值”仍标为 `[待验证]`，但后文把它作为端到端延迟拆解的动机使用。
 - **建议**：补充 HCI/Android 官方或论文来源，写清实验条件；若找不到稳定来源，改成经验范围并避免作为精确阈值。
+## [Task9 Deep Review] 7.1 卡顿的定义与分类 — 2026-05-01
+- **类型**：版本差异
+- **位置**：约第206-214行，Dropped Frame
+- **问题**：当前写法像 Android 12+ FrameTimeline 都有 Dropped Frame；AOSP 12/13 tag 未见 `Dropped = 0x200`。
+- **建议**：给 Dropped Frame 增加版本边界：较新 AOSP tag / Perfetto 文档包含该类型，Android 12/13 或早期 Android 14 trace 不一定以 JankType 暴露。
+- **类型**：原理链完整性
+- **位置**：约第109-111行，Jank 标准定义前置描述
+- **问题**：“每一个 VSync 周期，系统预期 App 能渲染出一帧新内容”对静态界面、不产生 damage、不提交 buffer 的场景过强。
+- **建议**：改成“当 App 有内容更新并提交一帧时，系统会为这帧分配 expected timeline；实际 present 偏离预测 present time 时记为 jank”。
+- **类型**：版本差异
+- **位置**：约第267行，Slow Frame 16ms - 700ms 表格
+- **问题**：16ms 是 Android vitals 传统 60fps 口径，和前文 90/120Hz frame period 口径存在混用风险。
+- **建议**：补充说明 vitals slow rendering 是经典 >16ms 口径；FrameTimeline/JankStats 应按当前 refresh period 或 expected timeline 判断。
+- **类型**：版本差异
+- **位置**：约第269/313行，ANR >5s
+- **问题**：输入 ANR 典型 5s，但 broadcast/service/JobService 等阈值不统一。
+- **建议**：改为“ANR 超过对应场景 watchdog 阈值；输入事件典型为 5s”，具体阈值交给第 9 章。
+- **类型**：知识盲区
+- **位置**：约第229-249行，FrameTimeline 小节
+- **问题**：SurfaceView / 多 Surface / 视频层场景的 FrameTimeline 覆盖边界未说明。
+- **建议**：补充 SurfaceView、多 Surface、视频层需要结合 layer name、DisplayFrame、BufferQueue / HWC tracks，不能只看主 Activity App timeline。

@@ -6153,10 +6153,11 @@
     {
       "section": "7.3",
       "section_title": "卡顿分析方法论",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 配置只启用了 linux.ftrace/atrace categories，后文却把 FrameTimeline 的 Expected/Actual 作为 Android 12+ 的核心定位入口。FrameTimelin",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.3 卡顿分析方法论 — 2026-05-01 发现 P0 1 / P1 2，需回炉修正",
       "material_paths": [
-        "logs/deep-review/2026-04-26-22-deep-review.md"
+        "logs/deep-review/2026-04-26-22-deep-review.md",
+        "logs/deep-review/2026-05-01-01-deep-review.md"
       ],
       "review_issues": [
         {
@@ -6165,11 +6166,33 @@
           "detail": "配置只启用了 linux.ftrace/atrace categories，后文却把 FrameTimeline 的 Expected/Actual 作为 Android 12+ 的核心定位入口。FrameTimeline 不是 `gfx`/`view` atrace category 自动保证的数据，需要显式启用 `android.surfaceflinger.frametimeline` 数据源；否则读者按本节配置抓到的 trace 可能没有 FrameTimeline 轨道。",
           "suggestion": "在最小配置中增加 `data_sources { config { name: \"android.surfaceflinger.frametimeline\" } }`，并标注 Android 12+ 可用；Android 11- fallback 到 BufferQueue/SF 经典方法。",
           "severity": "P1"
+        },
+        {
+          "type": "原理断裂",
+          "location": "约第103-123行，“第二步：抓取合适的 Trace” Perfetto 配置",
+          "detail": "最小配置只启用 `linux.ftrace` 和 atrace categories，但后文把 FrameTimeline Expected/Actual 作为 Android 12+ 的主定位入口。Perfetto 官方 FrameTimeline 文档要求显式启用 `android.surfaceflinger.frametimeline` 数据源。",
+          "suggestion": "在配置中增加 `data_sources { config { name: \"android.surfaceflinger.frametimeline\" } }`，并说明 Android 12+ 走 FrameTimeline，Android 11- 回退 BufferQueue/SF 方法。",
+          "severity": "P1"
+        },
+        {
+          "type": "源码错误",
+          "location": "约第382-404行，“线上动态 Trace：Perfetto SDK 方案” Kotlin 示例",
+          "detail": "示例使用 `TraceConfiguration.Builder()`、`PerfettoTrace.start(config)`、`.addFtraceEvent()`、`.addAtraceCategory()` 等 API；AndroidX tracing-perfetto 官方公开 API 中没有这些类型/方法。`androidx.tracing:tracing-perfetto` 主要用于 App 内 trace sections/Perfetto SDK tracing，不等于运行时启动系统级 Perfetto 抓取并回溯最近 5 秒。",
+          "suggestion": "删除这段伪 API，改成可验证方案：持续运行 ring-buffer Perfetto session 后在触发时 stop/save，或使用平台/测试框架侧的 Perfetto CLI；若只讲 AndroidX tracing-perfetto，应改为 `PerfettoSdkTrace`/`Trace` 埋点能力及其边界。",
+          "severity": "P0"
+        },
+        {
+          "type": "源码错误",
+          "location": "约第418-443行，“查询掉帧统计” SQL",
+          "detail": "Perfetto 官方文档说明 FrameTimeline 数据在 `expected_frame_timeline_slice` 与 `actual_frame_timeline_slice` 两张表中；当前 SQL 从通用 `slice` 表按 `Expected%/Actual%` 名称和 `thread.name = mdss_fb0` 关联，既不符合官方表结构，也容易在真实 trace 中查空或误配。",
+          "suggestion": "改用 `expected_frame_timeline_slice` / `actual_frame_timeline_slice`，通过 `surface_frame_token`、`display_frame_token`、`upid/process` 关联，并保留 VRR/ARR 下以 expected dur 为基准的判断。",
+          "severity": "P1"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T22:20:00+08:00",
-      "status": "pending"
+      "status": "pending",
+      "updated_at": "2026-05-01T01:27:22+08:00"
     },
     {
       "section": "7.5",
@@ -9907,6 +9930,63 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T00:55:15+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.1",
+      "section_title": "卡顿的定义与分类",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 7.1 卡顿的定义与分类 — 2026-05-01 发现 P0 0 / P1 2，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-01-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "约第186-198行，“Android 15/16 新增 JankType”标题与主表",
+          "detail": "`SurfaceFlingerScheduling`、`BufferStuffing`、`Unknown`、`SurfaceFlingerStuffing` 并非 Android 15/16 才新增；AOSP android-12.0.0_r1 的 JankInfo.h 中已存在这些枚举。`Dropped = 0x200` 则在较新的 Android 14 QPR/15/16 tag 中出现，Android 12/13 不一定暴露。",
+          "suggestion": "把标题改成“Android 12+ 已有的扩展 JankType / 较新 tag 补充”，并单独标注 Dropped 的版本门槛，避免把不同版本的枚举混成 Android 15/16 新增。",
+          "severity": "P1"
+        },
+        {
+          "type": "版本差异",
+          "location": "约第200-204行，[自动发现] Android 15/16 新增 JankType",
+          "detail": "正文保留 `JANK_NON_ANIMATING`、`JANK_APP_RESYNCED_JITTER`、`JANK_DISPLAY_NOT_ON` 三个枚举并给出数值，但同段又说明在公开 android-15.0.0_r1 / android-16.0.0_r1 的 JankInfo.h 中未找到。当前写法把未验证/疑似不存在的枚举放进主表，容易被读者当成公开 AOSP 行为。",
+          "suggestion": "删除这三个未在公开 tag 复核到的枚举，或移到“厂商/内部分支待验证”附注；主表只保留公开 JankInfo.h 中的 None、DisplayHAL、SurfaceFlingerCpuDeadlineMissed、SurfaceFlingerGpuDeadlineMissed、AppDeadlineMissed、PredictionError、SurfaceFlingerScheduling、BufferStuffing、Unknown、SurfaceFlingerStuffing、Dropped。",
+          "severity": "P1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T01:27:22+08:00",
+      "status": "pending",
+      "updated_at": "2026-05-01T01:31:00+08:00"
+    },
+    {
+      "section": "14.3",
+      "section_title": "内存分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.3 内存分析工具 — 2026-05-01 发现 P0 2 / P1 0，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-01-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "约第265行，heapprofd 命令行示例",
+          "detail": "正文写 `adb shell heapprofd -n com.example.myapp`。Perfetto 官方 native heap profiler 文档推荐通过 `tools/heap_profile -n com.example.myapp` 或 Perfetto trace config 的 `android.heapprofd` 数据源启动；`heapprofd` 是系统 daemon/数据源，不是稳定面向开发者的 adb shell 命令入口。",
+          "suggestion": "把命令改为 `tools/heap_profile -n com.example.myapp`（或新版 `heap_profile android -n ...`），并保留 Perfetto config 方式作为可组合采集方案。",
+          "severity": "P0"
+        },
+        {
+          "type": "源码错误",
+          "location": "约第537行，malloc hooks 启用方式",
+          "detail": "正文写 `libc.debug.malloc.hooks=1` / `MALLOC_HOOKS=1`。AOSP bionic android-16.0.0_r1 `malloc_common_dynamic.cpp` 中 hooks 开关是 `libc.debug.hooks.enable` 和 `LIBC_HOOKS_ENABLE`；`libc.debug.malloc.options` 属于 malloc debug，不是 hooks 开关。",
+          "suggestion": "修正为 `adb shell setprop libc.debug.hooks.enable 1` 或环境变量 `LIBC_HOOKS_ENABLE=1`，并区分 malloc debug 的 `libc.debug.malloc.options`。",
+          "severity": "P0"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T01:27:22+08:00",
       "status": "pending"
     }
   ],
