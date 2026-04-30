@@ -7133,8 +7133,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T03:25:00+08:00",
-      "status": "pending",
-      "source_file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md"
+      "status": "completed",
+      "source_file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
+      "completed_at": "2026-04-30T16:47:13+08:00",
+      "completed_reason": "requestUnbufferedDispatch/Game Mode 与报点率因果关系已纠正：明确 requestUnbufferedDispatch 仅控制 batching，Game Mode 无公开 InputDispatcher 低延迟 contract"
     },
     {
       "section": "3.5",
@@ -7358,7 +7360,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T07:30:41+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T16:47:13+08:00",
+      "completed_reason": "Simpleperf probe 分类错误已修正（perf_event 路径非 eBPF）；BPF Loader 加载范围已补 vendor/APEX 边界；Perfetto-eBPF 关系已纠正"
     },
     {
       "section": "5.2",
@@ -9140,7 +9144,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T04:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T16:47:13+08:00",
+      "completed_reason": "ProfilingManager API 签名已修正为官方 API 35/36 签名（含 tag、CancellationSignal、Consumer<ProfilingResult>），补充 addProfilingTriggers/registerForAllProfilingResults 两条系统触发 API"
     },
     {
       "section": "1.7",
