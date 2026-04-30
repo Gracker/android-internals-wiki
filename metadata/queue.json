@@ -6050,13 +6050,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-09-7.10-external-review.md",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-04-29T17:55:36+08:00"
+      "updated_at": "2026-04-29T17:55:36+08:00",
+      "completed_at": "2026-04-30T09:48:02.576233",
+      "completed_reason": "P0 inSampleSize源码锚点/sk_sample_size修正；P0代码块标伪代码；P1 Gainmap/Ultra HDR内存模型已补充；P1 ImageDecoder内存峰值+边界说明已补充；P1 Coil BitmapPool移除原因已展开；P2 Android 15 prepareToDraw增强已补充"
     },
     {
       "section": "7.11",
@@ -6093,8 +6095,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "source_file": "2026-04-29-09-7.11-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-09-7.11-external-review.md",
+      "completed_at": "2026-04-30T09:48:02.576233",
+      "completed_reason": "P0 GPU进程归属已确认无误导性表述；P1 16KB内存页红利已补充；P1 RELRO段共享+16KB对齐已补充；onRenderProcessGone多WebView场景已有覆盖"
     },
     {
       "section": "7.14",
