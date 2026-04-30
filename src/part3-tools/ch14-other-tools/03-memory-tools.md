@@ -42,13 +42,13 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task9_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: "reviewed"
-task2b_state: "pending"
+task9_state: pending
+task2b_state: fixed
 task9_result: "needs-rework"
-task2b_result: rework-fixed
+task2b_result: fixed
 task2b_rework_date: '2026-04-20'
 task2b_fixed_at: '2026-04-20'
 task9_reviewed_date: "2026-04-30"
@@ -124,20 +124,41 @@ dependencies {
 
 只需要加在 `debugImplementation` 中——LeakCanary 是纯开发工具，绝不应该打包到 release 版本中。添加依赖后不需要任何初始化代码，LeakCanary 会通过 `ContentProvider` 自动完成初始化。
 
-如果需要自定义配置，可以在 `Application` 类中修改：
+如果需要自定义配置，需要区分两个配置入口：
+
+**堆转储与分析策略**（`LeakCanary.config`）：
 
 ```kotlin
-class MyApp : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        LeakCanary.config = LeakCanary.config.copy(
-            dumpHeap = true,                    // 是否自动 dump hprof
-            retainDelayMillis = 5000,           // 销毁后等待多久再检查
-            objectInspectors = ObjectInspectors.appDefaults  // 引用链分析策略
-        )
+LeakCanary.config = LeakCanary.config.copy(
+    dumpHeap = true,                    // 是否自动 dump hprof
+    objectInspectors = ObjectInspectors.appDefaults  // 引用链分析策略
+)
+```
+
+**观察等待时间**（`AppWatcher.manualInstall`）：
+
+`retainedDelayMillis`（组件销毁后等待多久再检查可达性）不在 `LeakCanary.Config` 上，需要通过 `AppWatcher` 的手动安装路径配置。使用前需先禁用自动安装：
+
+```kotlin
+// build.gradle: 禁用自动安装
+dependencies {
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14") {
+        exclude group: 'com.squareup.leakcanary', module: 'leakcanary-object-watcher-android'
+    }
+    debugImplementation("com.squareup.leakcanary:leakcanary-object-watcher-android:2.14") {
+        // 阻止 ContentProvider 自动初始化
+        isTransitive = false
     }
 }
+
+// Application.onCreate(): 手动安装并自定义等待时间
+AppWatcher.manualInstall(
+    application = this,
+    retainedDelayMillis = 5000  // 默认 5000ms，可按需调整
+)
 ```
+
+如果不需要修改 `retainedDelayMillis`，保持默认自动安装即可，不需要写任何配置代码。
 
 LeakCanary 2.x 还增强了对 Kotlin Coroutines 和 Jetpack Compose 的支持。对于 Coroutines，如果协程泄漏持有了 Activity 引用，LeakCanary 可以在引用链中标注出协程的挂起点。对于 Compose，它能够检测 Composable 函数中意外持有的长生命周期引用。
 
@@ -227,7 +248,7 @@ heapprofd 的基本思路是"采样分配调用栈"。当被监控的进程调�
 
 这样在采集结束后，heapprofd 就能告诉你：哪些调用栈路径分配了最多内存、哪些分配没有被释放（可能是泄漏）、内存分配的时间趋势是什么。
 
-这里有一个边界要分清。heapprofd 盯的是 `malloc` / `free` 一类分配；Graphic Buffer、`dma-buf`、Surface buffer 这类图形内存通常不走这条路，所以它看不到。
+heapprofd 盯的是 `malloc` / `free` 一类分配；Graphic Buffer、`dma-buf`、Surface buffer 这类图形内存通常不走这条路，所以它看不到。
 
 heapprofd 支持 Native 分配和 Java 分配两种模式。Native 分配模式从 Android 10 开始支持，监控 `malloc`/`free` 调用。Java 分配模式从 Android 12 开始支持，监控 ART 虚拟机的对象分配。但需要注意，Java 模式展示的是分配的调用栈，而不是对象之间的引用关系——它无法替代 MAT 的引用链分析。
 
@@ -405,13 +426,13 @@ libmeminfo 提供了以下能力：
 
 对于性能优化工程师来说，了解 libmeminfo 的意义在于：当我们需要自定义内存采集逻辑（比如写一个自动化测试脚本，定期采集特定进程的内存分布），可以参考 libmeminfo 的实现来编写你自己的采集工具，而不是反复调用 `dumpsys` 命令再解析文本输出。
 
-[已验证: AOSP, system/core/libmeminfo]
+[已验证: AOSP, system/memory/libmeminfo (Android 11+); 旧版路径 system/core/libmeminfo 已弃用]
 [已验证: 官方文档, https://source.android.com/docs/core/debug/eval-performance]
 [待验证: procrank 在 Android 14+ 设备上的可用性]
 
 ## Graphics / dma-buf 内存怎么查
 
-当 `dumpsys meminfo` 里的 `Graphics` 持续上涨，或者 `showmap` 里出现大块 `/dev/dmabuf` 映射时，先不要把它当成 `malloc` 泄漏。Bitmap 像素、SurfaceView / TextureView buffer、WebView 渲染缓存、视频解码输出，很多都落在 Graphic Buffer / dma-buf 上，heapprofd 看不到。
+当 `dumpsys meminfo` 里的 `Graphics` 持续上涨，或者 `showmap` 里出现大块 `/dev/dmabuf` 映射时，应该优先走图形内存排查路径。Bitmap 像素、SurfaceView / TextureView buffer、WebView 渲染缓存、视频解码输出，很多都落在 Graphic Buffer / dma-buf 上，heapprofd 看不到。
 
 ### 一条够用的排查顺序
 
@@ -474,26 +495,53 @@ adb logcat -s libmemunreachable
 
 malloc hooks 是更底层的 API，从 API 28 开始提供。它允许你注册自定义的回调函数，在每次 `malloc`/`free` 被调用时都会触发。这为构建自定义的内存分析工具提供了基础。
 
+bionic 的 malloc hooks 通过函数指针实现。需要在进程启动时（通常在 `.init_array` 或 `android_device_setup` 中）设置这些指针：
+
 ```c
 #include <malloc.h>
+#include <unistd.h>
 
-void* my_malloc_hook(size_t size, const void* caller) {
-    void* ptr = real_malloc(size);
-    // 自定义逻辑：记录分配、统计大小等
+// 保存原始函数指针
+static void* (*orig_malloc_hook)(size_t, const void*) = nullptr;
+static void  (*orig_free_hook)(void*, const void*)   = nullptr;
+
+// 自定义 hook 函数
+static void* my_malloc_hook(size_t size, const void* caller) {
+    // ⚠️ 注意：避免在 hook 中调用 malloc，会递归触发
+    void* ptr = orig_malloc_hook ? orig_malloc_hook(size, caller) : malloc(size);
     return ptr;
 }
 
-void my_free_hook(void* ptr, const void* caller) {
-    // 自定义逻辑
-    real_free(ptr);
+static void my_free_hook(void* ptr, const void* caller) {
+    if (orig_free_hook) {
+        orig_free_hook(ptr, caller);
+    } else {
+        free(ptr);
+    }
+}
+
+// 初始化：保存旧值并注册新 hook
+__attribute__((constructor))
+static void install_hooks() {
+    orig_malloc_hook = __malloc_hook;
+    orig_free_hook   = __free_hook;
+    __malloc_hook    = my_malloc_hook;
+    __free_hook      = my_free_hook;
 }
 ```
 
+关键注意事项：
+
+- **线程安全**：bionic 的 `__malloc_hook`/`__free_hook` 不是原子操作，多线程并发设置时存在竞态条件，应在启动早期（单线程阶段）完成注册
+- **递归风险**：hook 函数内部如果调用 `printf`、`std::string` 等会触发 `malloc` 的函数，会导致无限递归崩溃
+- **启用方式**：API 28+ 需要通过属性 `libc.debug.malloc.hooks=1` 或环境变量 `MALLOC_HOOKS=1` 启用
+- **API 限制**：`__malloc_hook` 等符号在 NDK 头文件中不可见（属于 bionic 内部 API），需要自行声明 `extern`
+
 malloc hooks 的典型应用场景包括：构建轻量级的内存分配追踪器、实现自定义的内存统计面板、集成到自动化测试中检测特定操作引入的内存分配。
 
-需要注意，malloc hooks 会拦截所有 native 分配调用，对性能有显著影响（通常 2-5 倍的分配延迟），不适合在 release 版本中启用。
+malloc hooks 会拦截所有 native 分配调用，对性能有显著影响（通常 2-5 倍的分配延迟），不适合在 release 版本中启用。
 
-[已验证: 官方文档, https://developer.android.com/ndk/guides/sanitizers]
+[已验证: AOSP bionic/libc/malloc_hooks/]
 [适用版本: malloc debug API 24+, malloc hooks API 28+]
 
 ## HWASAN 与 MTE：硬件辅助的内存安全检测
@@ -510,15 +558,14 @@ HWASAN 的原理是利用 ARM 的 Top Byte Ignore（TBI）特性：在 64 位地
 
 ### MTE：Memory Tagging Extension
 
-MTE（Memory Tagging Extension）是 ARM v9 架构引入的硬件级内存安全特性。它依赖硬件、内核和系统一起支持，近几代高端 SoC 与部分 Pixel 设备开始提供这项能力。
+MTE（Memory Tagging Extension）是 Armv8.5-A 架构引入的硬件级内存安全特性（部分文档和营销材料将其归入 ARM v9，但技术规范上从 Armv8.5-A 起可选）。它依赖硬件、内核和系统一起支持，近几代高端 SoC 与部分 Pixel 设备开始提供这项能力。
 
 MTE 与 HWASAN 的目标相同——检测内存安全错误——但实现方式完全不同。MTE 在硬件层面为每个内存块（通常是 16 字节粒度）分配一个标签（tag），同时在指针中嵌入相同的标签。CPU 在每次内存访问时自动检查标签是否匹配。如果不匹配，触发异常。
 
-MTE 相比 HWASAN 的优势在于：
+MTE 与 HWASAN 的适用场景不同：
 
-- **性能开销更低**：因为是硬件实现，MTE 的运行时开销通常在 1-5% 左右，而 HWASAN 在 10-20%。
-- **不需要重新编译**：可以在系统层面启用，对已有应用也有效。
-- **可以检测更多类型的错误**：硬件标签的粒度更细，覆盖更全面。
+- **MTE**：性能开销极低（1-5%），适合生产环境的抽样检测和异步监控。异步模式下只记录日志不崩溃，可用于线上灰度。检测粒度受 16 字节 tag 限制，对同一 tag 块内的越界访问可能漏报。
+- **HWASAN**：依赖编译器插桩，需要重新编译目标代码。性能开销较高（10-20%），但诊断信息更完整，能提供精确的分配/释放调用栈，适合测试阶段的深度排查。
 
 Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应用开发者来说，在支持 MTE 的设备上可以通过开发者选项启用异步 MTE 模式（async mode），这种模式通常记录错误日志而不是立刻让应用崩溃，适合测试阶段使用。
 

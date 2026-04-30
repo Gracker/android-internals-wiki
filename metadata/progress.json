@@ -7235,6 +7235,23 @@
         "4.3": "needs-rework"
       },
       "log": "logs/deep-review/2026-04-30-09-deep-review.md"
+    },
+    {
+      "date": "2026-04-30",
+      "task": "task6-review",
+      "time": "23:32",
+      "sections_reviewed": [
+        {
+          "section": "14.3",
+          "title": "内存分析工具",
+          "file": "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+          "result": "pass-light-edit",
+          "fixes": 2,
+          "issues_found": 0,
+          "mode": "revisiting-re-review",
+          "note": "回炉重审（Task 9 needs-rework → Task 2B fixed → Task 6 re-review）"
+        }
+      ]
     }
   ],
   "progress": {
@@ -9872,5 +9889,27 @@
     "auto_finalized": [],
     "queue_added": 2,
     "suggestions_added": 1
-  }
+  },
+  "task2b_rework_log": [
+    {
+      "timestamp": "2026-04-30T13:45:05.007806+00:00",
+      "sections": [
+        "1.13",
+        "7.5"
+      ],
+      "source": "task9-deep-tech-review",
+      "priority": 95,
+      "fixes": [
+        "1.13: SemiConcurrentMessageQueue 源码锚点删除，改用 CombinedMessageQueue/mUseConcurrent/allowlist",
+        "7.5: AGSL setColorUniform→setFloatUniform 修正；RenderEffect 绝对结论条件化"
+      ],
+      "auto_promoted": true,
+      "queue_remaining": {
+        "p95": 68,
+        "p85": 123,
+        "other": 25
+      }
+    }
+  ],
+  "task2b_last_run": "2026-04-30T13:45:05.007806+00:00"
 }
