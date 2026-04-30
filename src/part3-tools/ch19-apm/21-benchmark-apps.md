@@ -1,5 +1,5 @@
 ---
-title: Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）
+title: Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
 chapter: '19'
 section: '19.21'
 status: ready-for-review
