@@ -1,19 +1,25 @@
 ---
 title: 过度绘制
-chapter: '2.8'
-section: '2.8'
+chapter: 2.8
+section: 2.8
 polish_count: 1
-polish_date: '2026-04-05'
+polish_date: 2026-04-05
 polish_by: task2b-polish
 applicable_versions: Android 4.2 (API 17) - Android 16
-last_verified: '2026-04-12'
+last_verified: 2026-04-12
 last_verified_against: AOSP android-16.0.0_r1
-drafted_date: '2026-03-30'
+drafted_date: 2026-03-30
 confidence: high
-reviewed_date: "2026-04-30"
+reviewed_date: 2026-04-30
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
+last_task2b_at: "2026-04-30T08:40:00+08:00"
+task2b_state: fixed
+task9_state: pending
+task6_state: reviewed
+pipeline_stage: task9_pending
+status: ready-for-review
 sources:
 - type: blog
   path: Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md
@@ -49,23 +55,10 @@ tags:
 - LayoutInspector
 - AGI
 related_chapters:
-- '2.1'
-- '2.4'
-- '2.5'
-- '7.2'
-task6_state: reviewed
-last_task2b_at: "2026-04-30T05:47:02+08:00"
-task2b_result: fixed
-status: "ready-for-review"
-pipeline_stage: task2b_pending
-task9_state: reviewed
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-04-30T08:40:00+08:00"
-task6_state: revisiting
-pipeline_stage: task6_pending
-status: ready-for-review
+- 2.1
+- 2.4
+- 2.5
+- 7.2
 ---
 
 # 过度绘制
@@ -109,7 +102,7 @@ GPU 的 fill rate（像素填充率）是有上限的。当过度绘制严重时
 
 过度绘制带来的耗时也不是线性增加的，还要看 GPU 当时有没有余量。如果 GPU 本来就很快，渲染一帧只用了 5 ms，那即使有 3x 过度绘制，总耗时也可能只是 8 ms，仍然落在 16.6 ms 的 VSync 周期内，用户未必能感知到卡顿。真正危险的是 GPU 已经接近满负载的场景，比如低端设备，或者界面本身就包含大量透明混合、自定义绘制和复杂阴影。这时过度绘制可能把单帧耗时从 15 ms 推到 20 ms 以上，直接跨过当前刷新周期的预算，出现肉眼可见的掉帧。
 
-内存带宽是过度绘制性能影响中需要分场景讨论的维度。移动端 GPU 普遍采用 Tile-Based Rendering (TBR) 或 Tile-Based Deferred Rendering (TBDR) 架构，渲染时先把帧缓冲区划分为小块（tile），在 GPU 芯片内的 on-chip tile memory 中完成一个 tile 的所有 fragment 操作，再把最终结果写回外部内存。这意味着：对于**不透明场景**（从远到近绘制，前面的东西完全遮挡后面的），中间层的 fragment 结果可能只留在 tile memory 中，被后续覆盖后丢弃，不会每一层都产生外部内存写入。此时 3x overdraw 的外部内存写入量不一定等于 3 倍物理像素。
+内存带宽是过度绘制性能影响中需要分场景讨论的维度。移动端 GPU 普遍采用 Tile-Based Rendering (TBR) 或 Tile-Based Deferred Rendering (TBDR) 架构，渲染时先把帧缓冲区划分为小块（tile），在 GPU 芯片内的 on-chip tile memory 中完成一个 tile 的所有 fragment 操作，再把最终结果写回外部内存：对于**不透明场景**（从远到近绘制，前面的东西完全遮挡后面的），中间层的 fragment 结果可能只留在 tile memory 中，被后续覆盖后丢弃，不会每一层都产生外部内存写入。此时 3x overdraw 的外部内存写入量不一定等于 3 倍物理像素。
 
 但 TBR 并不能消除过度绘制的全部开销。每一层被覆盖像素的 **fragment shading 计算**（纹理采样、着色器执行）仍然消耗 GPU 算力；**半透明层的 alpha 混合**需要读取底层像素，即使在 tile memory 中完成也会消耗 tile memory 带宽和混合计算；当 tile 内的绘制指令超过 tile memory 容量时，GPU 会发生 tile spill，把中间结果临时写回外部内存，带来额外的带宽消耗和延迟。如果 GPU 没有 Early-Z 能力（或深度测试被半透明/丢弃指令禁用），被遮挡的 fragment 仍然会执行完整的着色计算，只是最终不写入颜色缓冲。
 

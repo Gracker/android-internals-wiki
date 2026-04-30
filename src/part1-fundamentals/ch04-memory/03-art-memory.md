@@ -36,8 +36,8 @@ task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-30T08:40:00+08:00"
-task6_state: revisiting
-pipeline_stage: task6_pending
+task6_state: reviewed
+pipeline_stage: task9_pending
 p1: 1
 p2: 2
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。"
