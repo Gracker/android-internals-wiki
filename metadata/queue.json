@@ -1565,8 +1565,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-04-30T18:45:28.156033",
+      "completed_reason": "Android 17 ADJ 225/950已添加；ModernBroadcastQueue架构已补充；getStartComponent()归因已添加；Trace截图待高爷补充"
     },
     {
       "section": "1.9",
@@ -2147,7 +2149,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T18:45:28.156033",
+      "completed_reason": "Blocked(红色)锁竞争状态已在章节颜色编码段落中存在，queue条目为历史残留"
     },
     {
       "section": "13.05",
