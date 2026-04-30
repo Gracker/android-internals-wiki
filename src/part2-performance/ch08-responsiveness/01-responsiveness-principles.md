@@ -7,7 +7,7 @@ polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
 reviewed_date: "2026-05-01"
-reviewed_by: "openclaw-task6"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-03-30"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -30,9 +30,7 @@ sources:
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: task9_pendingtask6_state: reviewedtask6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -40,6 +38,7 @@ task9_result: needs-rework
 task9_reviewed_date: "2026-04-30"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-30T05:20:00+08:00"
+task6_reviewed_date: "2026-05-01"
 ---
 
 # 响应速度原理

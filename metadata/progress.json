@@ -37,15 +37,16 @@
     "pipeline_stage_counts": {
       "unknown": 33,
       "ready-to-publish": 104,
-      "task2b_pending": 90,
-      "task9_pending": 9,
+      "task2b_pending": 87,
+      "task9_pending": 12,
       "task6_pending": 14
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 182,
-      "revisiting": 33,
-      "revising": 1
+      "reviewed": 180,
+      "revisiting": 35,
+      "revising": 1,
+      "pending": 0
     },
     "task9_state_counts": {
       "unknown": 38,
@@ -205,18 +206,19 @@
       "last_verified": "'2026-04-19'",
       "last_verified_against": "AOSP android-16.0.0_r1, source.android / developer.android",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "reviewed_date": "'2026-04-20'",
+      "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-29T21:20:00+08:00",
-      "review_round": "2"
+      "review_round": "2",
+      "task6_reviewed_date": "2026-05-01"
     },
     "src/part1-fundamentals/ch01-architecture/05-threading-model.md": {
       "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
