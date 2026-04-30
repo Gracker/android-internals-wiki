@@ -12374,3 +12374,23 @@ BPF 带宽估计在虚拟化网络（VPN）下的精度：VpnService 环境下�
 
 ### 外部 review 来源
 - Gemini 外部 review (2026-04-29-11-12.4-external-review.md)
+
+## [2026-04-30] 7.11 WebView 渲染性能与优化 — WebView 渲染提交路径与 16KB RELRO 边界
+
+### 盲区描述
+当前章节把 GLFunctor、独立 Layer、Viz、GPU service、SurfaceControl / ASurfaceControl、BufferQueue 与 SurfaceFlinger 的关系混在一起，缺少按 Android 版本、WebView provider 版本和设备 trace 区分的渲染提交路径。16KB page size 下 WebView RELRO 对齐 / PSS 共享失效也只有 [待验证] 结论，缺 AOSP 修复点和实测证据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Chromium `android_webview` 渲染相关源码与 release CL，区分 GLFunctor/HWUI 同窗口合成、SurfaceControl/BufferQueue 参与、renderer multiprocess 与 GPU service in-process 的边界。
+- 在 Android 10 / 11 / 14 / 16 设备上抓 WebView 滚动 trace，对比 App RenderThread、`CrRendererMain`、`VizCompositorThread`、`CrGpuMain`、SurfaceFlinger layer 列表和 FrameTimeline。
+- 对 4KB / 16KB page-size 设备分别测 WebView 首开 native load、major/minor fault、RELRO shared/private mapping、PSS 增量，确认是否存在可复现的 RELRO 对齐失效。
+
+### 关联章节
+- 7.11
+- 2.9
+- 2.10
+- 18.13
+- 13.7

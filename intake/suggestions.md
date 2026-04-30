@@ -415,3 +415,24 @@
 - **问题**：32% 堆大小下降、85% GC 暂停下降、70% 分配速度提升、Dalvik 18 倍等数字没有在当前标注的 `source.android.com/docs/core/runtime/gc-debug` 页面中出现。该页面能支撑 Android 8 默认 CC、RegionTLAB、Android 10+ generational CC，但不能支撑这些量化值。
 - **建议**：补 Android/ART 官方演讲、android.com 页面或可公开 benchmark 链接；如果只能保留二手材料，需标注来源、benchmark 名称、设备/版本和对比基线。
 - **review 日志**：logs/deep-review/2026-04-30-09-deep-review.md
+
+## [Task9 Deep Review] 7.11 WebView 渲染性能与优化 — 2026-04-30 — L135-L137 Android 15 16KB 内存页红利
+- **类型**：数据缺失
+- **位置**：L135-L137 Android 15 16KB 内存页红利
+- **问题**：`libwebviewchromium.so` >100MB、页表项减少 3/4 的算术成立，但“WebView 冷加载速度提升明显”缺少 WebView 专项 A/B 数据。正文虽保留 [待验证]，但标题和叙述已经给出强结论。
+- **建议**：补同设备/同 WebView provider 的 4KB vs 16KB trace：`WebViewFactory` native load、page fault、首帧可交互、PSS；没有数据时降级为“可能受益，需实测”。
+- **review 日志**：logs/deep-review/2026-04-30-10-deep-review.md
+
+## [Task9 Deep Review] 7.11 WebView 渲染性能与优化 — 2026-04-30 — L483-L486 Network Track 瀑布图
+- **类型**：数据缺失
+- **位置**：L483-L486 Network Track 瀑布图
+- **问题**：“WebView 发起的网络请求可以在 Perfetto 的 Network Track 中观察到”容易被理解成 Perfetto 默认能给出 Chrome DevTools 式资源瀑布图。实际需要明确采集的是网络栈指标、Chromium tracing categories，还是 DevTools/CDP 的 request timeline。
+- **建议**：补一段 trace 配置边界：系统 Network/Socket 轨只能看网络层活动；资源级 URL、阻塞 JS、首屏图片顺序应走 Chromium categories / DevTools Protocol，并给出最小可复现配置。
+- **review 日志**：logs/deep-review/2026-04-30-10-deep-review.md
+
+## [Task9 Deep Review] 7.11 WebView 渲染性能与优化 — 2026-04-30 — L493 与 frontmatter related_chapters
+- **类型**：交叉引用一致性
+- **位置**：L493 与 frontmatter related_chapters
+- **问题**：正文写“渲染机制版本演进（§2.10）”，但 `src/SUMMARY.md` 中 §2.10 是《GPU 渲染深入》，《渲染机制的版本演进》是 §2.9；frontmatter `related_chapters` 也写了 `2.10`。
+- **建议**：将交叉引用改为 §2.9；如果需要 GPU 细节，再单独保留 §2.10《GPU 渲染深入》。
+- **review 日志**：logs/deep-review/2026-04-30-10-deep-review.md

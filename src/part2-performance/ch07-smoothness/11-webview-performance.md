@@ -26,16 +26,17 @@ sources:
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_result: pass-tech-review
-task9_state: pending
-task2b_state: fixed
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-25"
-last_task9_at: "2026-04-25T05:33:55+08:00"
+task9_reviewed_date: "2026-04-30"
+last_task9_at: "2026-04-30T10:31:41+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-04-24T01:51:58+08:00"
+review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 2，P2 3。"
 ---
 
 # 7.11 WebView 渲染性能与优化

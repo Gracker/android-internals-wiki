@@ -9686,6 +9686,52 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T09:28:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.11",
+      "section_title": "WebView 渲染性能与优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] WebView tracing API、Viz/GPU 进程模型、DevTools 调试入口、混合渲染 SurfaceFlinger 边界、RELRO 生成流程存在 P0/P1 技术问题",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-04-30-10-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L631 ATrace `webview` 配置",
+          "detail": "正文写 `ATRACE_TAG_WEBVIEW` 为 `(0x10000000 << 2)`，并写通过 `WebView.isTracingEnabled()`（API 29+）控制。AOSP `android.os.Trace` 中 `TRACE_TAG_WEBVIEW = 1L << 4`；`android.webkit.WebView` 没有 `isTracingEnabled()`。应用侧 WebView tracing 应使用 `android.webkit.TracingController`（API 28+）的 `start/stop/isTracing()` 与 `TracingConfig`。",
+          "suggestion": "把常量改为 `Trace.TRACE_TAG_WEBVIEW = 1L << 4` / atrace category `webview`；API 示例改为 `TracingController.getInstance().start(new TracingConfig.Builder().addCategories(...).build())`，不要引用不存在的 `WebView.isTracingEnabled()`。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L614-L620、L664-L668 Viz / GPU / ASurfaceControl 版本表",
+          "detail": "正文把 `Viz` 写成独立进程，并把 Android 9-10 / 11+ 表述为“独立 Viz / ASurfaceControl”固定路径。Chromium `android_webview/docs/architecture.md` 明确 WebView 的 GPU service、Network Service 等服务在所有 OS 版本都 in-process 运行；正文同一章 L465 也写 `CrGpuMain` 通常在宿主进程内，前后矛盾。",
+          "suggestion": "将“Viz 进程”改为 Viz 组件 / compositor service / GPU service 参与的合成路径；版本表只保留已由 Chromium / AOSP 文档确认的 renderer multiprocess 边界。GLFunctor、SurfaceControl、BufferQueue、ASurfaceControl 需补具体 Chromium CL / 源码文件 / 设备 trace 后再下结论。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L371 Chrome DevTools Protocol 调试入口",
+          "detail": "正文写“通过 `webView.setWebChromeClient()` 配合远程调试，可以观察 V8 堆内存和 DOM 节点数量”。`setWebChromeClient()` 不负责开启远程调试；AOSP `WebView.java` 暴露的是静态方法 `WebView.setWebContentsDebuggingEnabled(boolean)`。",
+          "suggestion": "改为：调试前调用 `WebView.setWebContentsDebuggingEnabled(true)`，再用桌面 Chrome `chrome://inspect` / DevTools Memory/Performance 面板观察；`WebChromeClient` 只作为 JS dialog、console、file chooser 等回调补充说明。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L421-L429 WebView 与原生 View 叠加",
+          "detail": "正文把“WebView 上方覆盖原生浮层”直接写成 SurfaceFlinger 同时处理原生 View 渲染层与 WebView GPU 纹理层。普通 WebView 嵌入 View hierarchy 时，原生 View 叠加通常先在宿主窗口 / HWUI 侧合成，不一定产生独立 SurfaceFlinger layer；只有 SurfaceView、Popup/Window、SurfaceControl 或特定 WebView surface 路径才会增加 SF 层级。",
+          "suggestion": "拆成两类：GLFunctor/HWUI 同窗口合成路径与独立 Surface/SurfaceControl 路径。Perfetto 观察点也要分开写：前者看 App RenderThread/HWUI draw/functor 和 GPU busy，后者才看 SurfaceFlinger layer 数、composition strategy、present/compose 时长。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L295-L299 RELRO 生成与 16KB 对齐",
+          "detail": "正文写 WebView provider 在首次加载时生成 RELRO 段。AOSP 路径是 provider 变更时 `WebViewFactory.onWebViewProviderChanged()` 调 `WebViewLibraryLoader.prepareNativeLibraries()`，再由 isolated `RelroFileCreator` 创建 `/data/misc/shared_relro/libwebviewchromium{32,64}.relro`；应用加载时通过 `waitForAndGetProvider()` 等待准备结果并 `loadNativeLibrary()` 使用 relro 文件。它不是每个宿主 App 首次创建 WebView 时生成。16KB RELRO 对齐问题仍标 [待验证]，不能和已验证机制混写。",
+          "suggestion": "把 RELRO 机制改成“系统 WebViewUpdateService/provider-change 预创建 + App load 时等待/使用”的流程；16KB 对齐导致共享失效的说法另列待验证研究项，补 AOSP 修复版本或设备 meminfo 证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T10:31:41+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
