@@ -572,3 +572,10 @@
 - **位置**：L203 PeriodicWorkRequest 15 分钟原因
 - **问题**：正文把 WorkManager 周期任务 15 分钟最小间隔完全归因于系统 JobScheduler 最小调度窗口。WorkManager 在 API 23+ 走 JobScheduler，旧版本还有 AlarmManager/BroadcastReceiver 路径；章节适用范围从 API 21 开始，原因链应拆版本。
 - **建议**：改为 WorkManager 自身定义 15 分钟最小间隔；API 23+ 与 JobScheduler 约束对齐，API 21-22 通过兼容调度实现同一上层语义。
+
+
+## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：开头与 Doze 小节
+- **问题**：`整机功耗可以降到 1mA 以下`、`maintenance window 初始约 10 分钟，再到 30/60 分钟` 属于强数值断言，但没有设备、版本、测试条件或官方出处。
+- **建议**：补充来源和测试条件；没有可靠来源时改成定性描述，或标注为示例设备观测值。
