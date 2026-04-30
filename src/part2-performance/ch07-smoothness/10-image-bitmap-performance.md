@@ -14,7 +14,7 @@ drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-04-13"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: 2026-04-20
+reviewed_date: 2026-04-30
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 confidence: medium
@@ -37,8 +37,8 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -51,7 +51,7 @@ task9_reviewed_date: "2026-04-29"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-29"
 task6_result: "pass-light-edit"
-task6_review_notes: "2026-04-29 task6 revisiting review: pass-light-edit。无P0/P1；L3需补充图片库对比和性能基准数据，已写入Task 2B。"
+task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。"
 last_task9_at: "2026-04-29T17:55:36+08:00"
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1（BitmapFactory inSampleSize 源码锚点/取整逻辑错误）；P1 2（Gainmap 内存模型、ImageDecoder 采样与内存峰值）。"
 ---
