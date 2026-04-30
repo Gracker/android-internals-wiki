@@ -36,11 +36,12 @@ sources:
     path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 # Linux 内核内存管理
@@ -131,7 +132,19 @@ Linux 内核管理物理内存采用三级分配体系：Buddy System → Slab A
 
 Buddy 分配器是 Linux 物理内存管理的基础。它以页（通常 4KB）为最小单位，管理所有物理内存页。
 
-Buddy 的核心思想很直接：将空闲内存按 2 的幂次方组织成不同的阶（order）。order-0 对应 1 个页（4KB），order-1 对应 2 个连续页（8KB），order-2 对应 4 个连续页（16KB），依此类推，最高到 order-10（1024 个连续页，4MB）。
+Buddy 的核心思想很直接：将空闲内存按 2 的幂次方组织成不同的阶（order）。order-n 对应 2^n 个连续物理页，字节数 = 2^n × PAGE_SIZE。
+
+以常见的两种页大小为例：
+
+| order | 连续页数 | 4KB 页 | 16KB 页 |
+|-------|---------|--------|---------|
+| 0 | 1 | 4 KB | 16 KB |
+| 1 | 2 | 8 KB | 32 KB |
+| 2 | 4 | 16 KB | 64 KB |
+| ... | ... | ... | ... |
+| 10 | 1024 | 4 MB | 16 MB |
+
+最高 order 受 `CONFIG_ARCH_FORCE_MAX_ORDER`（或 `MAX_PAGE_ORDER`）控制，不同内核配置和架构下可能不同，不能把 4KB 页下的 order-10=4MB 写成全版本通用结论。
 
 分配时，如果请求的大小对应的 order 没有空闲块，就从更大的 order 拆分。比如请求 8KB（order-1），但 order-1 空闲列表为空，就从 order-2（16KB）拆成两个 8KB 的"伙伴"（buddy），分配一个，另一个放入 order-1 空闲列表。释放时反过来——如果被释放的块和它的"伙伴"都空闲，就合并成更大的块。这就是"伙伴"这个名字的由来：每一对相邻且大小相同的空闲块都是伙伴，它们可以合并。
 
@@ -234,6 +247,22 @@ MGLRU 在 Android 上的实测效果显著：kswapd CPU 使用率明显下降，
 1. **匿名页和文件页分布不均衡**：匿名页集中在最年轻的 2 个 generation，而文件页分散在多个 generation 且被过度回收，导致 16GB 设备上 MGLRU 可用内存比传统 LRU 少约 1GB。
 2. **回收量难以精确控制**：memcg 回收时容易超出预期回收量。
 3. **低端设备回收延迟**：在内存较少的设备上，单次回收可能耗时过长。
+
+#### Android 版本与 MGLRU 启用状态
+
+MGLRU 在 Linux 6.1 合入主线，但 Android 设备的实际启用状态取决于内核分支和 OEM 配置：
+
+| Android 版本 | 内核分支 | CONFIG_LRU_GEN | 默认状态 | 验证命令 |
+|-------------|---------|----------------|---------|---------|
+| Android 10-12 | common 4.14-4.19 | 未合入主线 | 不可用 | — |
+| Android 13 | common 5.10/5.15 | 可选 | OEM 自行决定是否开启 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
+| Android 14 | common 5.15/6.1 | 编译可用 | 多数旗舰 Pixel/高通平台已启用 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
+| Android 15 | GKI 6.1/6.6 | 编译可用 | 主流旗舰默认启用 | `zcat /proc/config.gz \| grep CONFIG_LRU_GEN` |
+| Android 16 | GKI 6.12 | 强制默认 | GKI 基线化，所有 GKI 设备必须启用 | `cat /sys/kernel/mm/lru_gen/enabled` |
+
+Android 16 (GKI 6.12) 是一个分水岭：MGLRU 成为 GKI 内核的强制基线特性，终结了传统双链表 LRU 在高性能 Android 设备上的地位。对于非 GKI 设备（部分低端机型使用旧内核），MGLRU 的可用性仍取决于 OEM 的内核配置。
+
+[待验证: Android 16/17 非 GKI 低端设备的 MGLRU 覆盖率]
 
 [已验证: 官方文档, kernel.org — MGLRU 自 Linux 6.1 合入主线]
 [来源: Cubox/荣耀在MGLRU内存回收上的发力或恰到好处-2026-02-25.md]

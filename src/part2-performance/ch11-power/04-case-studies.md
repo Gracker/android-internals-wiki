@@ -31,10 +31,10 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
 task2b_state: pending
 task9_result: needs-rework
@@ -634,11 +634,17 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 
 这个案例的关键线索是：JobScheduler 是正确使用的，但功耗仍然偏高。这引导我们去看 JobScheduler 内部的 WakeLock 行为——一个很多开发者不知道的细节。
 
-当 `JobService.onStartJob()` 返回 `true`（表示任务在后台线程执行）时，系统会为这个 Job 持有一个 WakeLock。这个 WakeLock 的**最大持有时长是 10 分钟**。如果任务完成后没有调用 `jobFinished()`，这个 WakeLock 会一直持有到 10 分钟超时被系统强制回收。
+当 `JobService.onStartJob()` 返回 `true`（表示任务在后台线程执行）时，系统会为这个 Job 持有一个 WakeLock。这个 WakeLock 的最大持有时长取决于 Job 类型：
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/job/JobServiceContext.java — EXECUTING_TIMESLICE_MILLIS = 10 * 60 * 1000]
+| Job 类型 | 最大执行时长 | 超时行为 |
+|---------|------------|---------|
+| Regular | 10 分钟（`DEFAULT_RUNTIME_MIN_GUARANTEE_MS`） | 超时后 `onStopJob()` 被调用，系统释放 WakeLock |
+| Expedited | 10 分钟 | 同上，但调度优先级更高 |
+| User-Initiated | 30 分钟（`DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS`） | 超时后 `onStopJob()` 被调用 |
 
-这意味着即使任务只执行了 3 秒，如果忘记调用 `jobFinished()`，系统也会白白保持 WakeLock 10 分钟。
+[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java — getMaxJobExecutionTimeMs() 根据 Job 级别返回不同超时值]
+
+如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。这意味着即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 10 分钟（Regular/Expedited）或 30 分钟（User-Initiated）。
 
 ### 逐步分析
 
@@ -700,7 +706,7 @@ public class CleanupJobService extends JobService {
 
 | 指标 | 修复前 | 修复后 |
 |------|--------|--------|
-| 单次 Job WakeLock 持有时长 | 10 分钟（超时） | 3 秒 |
+| 单次 Job WakeLock 持有时长 | 10 分钟（Regular 超时） | 3 秒 |
 | 每小时 WakeLock 活跃比例 | ~17% | ~0.5% |
 | 4 小时待机耗电 | ~8% | ~3% |
 
