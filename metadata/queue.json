@@ -9728,6 +9728,28 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T16:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "14.10",
+      "section_title": "14.10 eBPF/BPF 在 Android 性能分析中的应用",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Android eBPF 起始版本边界后移，需补 Android 9 网络 BPF 事实",
+      "material_paths": [
+        "intake/suggestions.md",
+        "src/part3-tools/ch14-other-tools/10-ebpf-performance-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "severity": "P1",
+          "location": "L84 / 开篇 Android eBPF 时间线",
+          "detail": "正文写“Android 从 10 开始在系统侧使用 eBPF”，但 source.android.com/docs/core/data/ebpf-traffic-monitor 明确说明 Android 9 起，搭载 kernel 4.9+ 且以 P release 首发的设备必须使用 eBPF-based network traffic monitoring accounting 替代 xt_qtaguid。当前写法把 Android 系统侧 eBPF 的起点后移了一代。",
+          "suggestion": "把时间线拆成两层：Android 9 / kernel 4.9+ 已用于网络流量监控与计费；Android 10+ 可作为本章主要讨论范围；Android 16 再引入 UprobeStats APEX。同步调整 applicable_versions 或在正文标注 Android 9 早期边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T17:30:08+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

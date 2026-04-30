@@ -480,3 +480,16 @@
 - **问题**：SystemUI 判定延迟“几毫秒级/几十毫秒”和 mLongPressTimeout “通常 400-500ms”缺少源码或设备设置锚点。mLongPressTimeout 来自 ViewConfiguration 长按超时，用户/厂商配置会变化。
 - **建议**：把长按超时绑定到 ViewConfiguration.getLongPressTimeout()/系统设置来源；性能延迟给出 Perfetto 示例或改为“需按目标设备 trace 验证”。
 
+
+
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-30
+- **类型**：交叉引用 / 源码锚点一致性
+- **位置**：L185、L312-L318
+- **问题**：AOSP 路径表列出 UprobeStats BPF 程序包含 `MalwareSignal.c`，但“预置的 BPF 程序”小节写成三类模板，只展开 `GenericInstrumentation.c`、`BitmapAllocation.c`、`ProcessManagement.c`，前后不一致。
+- **建议**：统一为四类，补 `MalwareSignal.c` 的用途与适用边界；如果不想展开，明确说明它不是本节主线，只在路径表中作为源码目录完整性列出。
+
+## [Task9 Deep Review] 14.10 eBPF/BPF 在 Android 性能分析中的应用 — 2026-04-30
+- **类型**：源码准确性 / 数据支撑
+- **位置**：L164
+- **问题**：正文写 `netd` 中的 eBPF 程序“统计每个 UID 的网络流量相关的功耗”。AOSP eBPF traffic monitoring 直接产物是 UID/tag/interface 维度的 byte/packet 统计与防火墙/计费数据；功耗归因通常由 BatteryStats/PowerProfile 等上层根据网络活动模型估算，不能写成 `netd` BPF 直接统计功耗。
+- **建议**：改成“netd/Connectivity BPF 提供 per-UID 网络流量计数，BatteryStats 等上层可用这些计数参与网络耗电归因”；如要保留功耗结论，需要补 BatteryStats 侧源码锚点。
