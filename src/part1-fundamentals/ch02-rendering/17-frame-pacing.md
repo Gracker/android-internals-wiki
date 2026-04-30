@@ -66,11 +66,12 @@ task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: "openclaw-task6"
+task6_reviewed_date: "2026-04-30"
 reviewed_date: "2026-04-28"
-reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_reviewed_date: 2026-04-28
+task9_task6_reviewed_date: "2026-04-30"
+reviewed_date: 2026-04-28
 task9_reviewed_by: openclaw-task9
 task2b_result: fixed
 last_task9_at: "2026-04-28T13:23:00+08:00"
