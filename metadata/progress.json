@@ -256,7 +256,7 @@
       "last_verified": "2026-03-31",
       "last_verified_against": "AOSP android-16.0.0_r1, 官方文档",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -267,7 +267,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-30T04:20:00+08:00"
+      "last_task9_at": "2026-04-30T04:20:00+08:00",
+      "task6_reviewed_date": "2026-04-30"
     },
     "src/part1-fundamentals/ch01-architecture/07-art-compilation.md": {
       "path": "src/part1-fundamentals/ch01-architecture/07-art-compilation.md",
@@ -1554,7 +1555,7 @@
       "last_verified": "2026-04-11",
       "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com + perfetto stdlib docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -1566,7 +1567,8 @@
       "task9_reviewed": "2026-04-29",
       "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T03:25:00+08:00"
+      "last_task9_at": "2026-04-29T03:25:00+08:00",
+      "task6_reviewed_date": "2026-04-30"
     },
     "src/part1-fundamentals/ch03-input/05-input-interception-security.md": {
       "path": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
@@ -4702,7 +4704,7 @@
       "last_verified": "2026-04-25",
       "last_verified_against": "AOSP android-16.0.0_r1 (googlesource direct check) + external review 2026-04-25 + Perfetto/BPF upstream docs + Android GKI release builds",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -4722,7 +4724,8 @@
       "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。",
       "p0": 1,
       "p1": 0,
-      "p2": 2
+      "p2": 2,
+      "task6_reviewed_date": "2026-04-30"
     },
     "src/part3-tools/ch14-other-tools/11-battery-historian.md": {
       "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",

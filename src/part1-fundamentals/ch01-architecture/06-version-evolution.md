@@ -33,8 +33,8 @@ reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)"
 task9_result: needs-rework
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "pending"
 task2b_state: "fixed"
@@ -242,7 +242,7 @@ ART 在 Android 5.0 取代 Dalvik 后，采取了截然不同的策略——**AO
 2. **存储空间占用大**：OAT 文件体积是原始 DEX 的数倍
 3. **系统更新后全部重编译**：OTA 更新后，所有 App 都需要重新 dex2oat，导致更新后首次启动极慢
 
-这恰恰说明了性能优化中没有银弹——AOT 解决了运行时性能问题，却引入了安装时间和空间的问题。
+这说明性能优化中没有银弹——AOT 解决了运行时性能问题，却引入了安装时间和空间的问题。
 
 ### Profile-Guided 混合编译（Android 7.0 至今）
 
