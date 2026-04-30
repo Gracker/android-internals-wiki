@@ -2,7 +2,7 @@
 title: "Package Manager Service 与应用安装性能"
 chapter: "1.9"
 section: "1.9"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-05"
 polish_count: 1
 polish_date: "2026-04-09"
@@ -55,10 +55,10 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: pass-tech-review
 last_task9_at: "2026-04-25T00:29:00+08:00"
 task9_reviewed_by: "openclaw-task9"
@@ -122,7 +122,9 @@ SystemServer 启动阶段（简化）:
     → InputManagerService
 ```
 
-PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。
+PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，`scanDirLI` 内部利用多线程并行处理多个 APEX 包。在包数量多的设备上，这一优化显著缩短了 PMS 初始化的耗时。
+
+[已验证: AOSP android-16.0.0_r1 `PackageManagerService.java` scanDirLI / parallel APEX scanning]
 
 ### PMS 管理的核心数据结构
 
@@ -150,6 +152,20 @@ PMS 维护包状态和安装策略，真正落到文件系统和应用数据目�
 因此，安装路径更适合按 `PackageInstallerSession -> InstallPackageHelper -> DexOptHelper -> ART Service -> artd -> dex2oat` 来看。`system_server` 里的 Slice 主要反映控制面决策，`dex2oat` 进程承接执行面里最重的编译开销。
 
 [已验证: AOSP android-16.0.0_r1 `Installer.java` / `DexOptHelper.java` / `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java` / `ArtShellCommand.java`]
+
+### Computer 模式与无锁读
+
+Android 14 对 PMS 的内部架构做了一次重要重构：引入 `Computer` 接口实现读写分离。此前 PMS 的所有操作（包扫描、查询、安装、更新）都共享同一把全局锁（`mPackages`），查询操作会被写操作阻塞。
+
+`Computer` 接口的工作方式是快照隔离：
+
+- **写操作**（安装、更新、卸载）持锁修改活跃的 `Computer` 实例，修改完成后生成新的快照
+- **读操作**（查询包信息、组件解析、权限检查）拿到的是快照引用，不与写操作竞争锁
+- 每个读请求持有的快照在该请求完成前保持一致视图，不会被中间的写操作影响
+
+这对性能分析有实际意义。在 Perfetto 中观察 PMS 活动时，如果看到 `PackageManagerService` 的查询 Slice（如 `getPackageInfo`）耗时较长，在 Android 14+ 的设备上通常不是因为写操作持锁——而是快照中需要遍历的数据量本身较大，或系统处于高负载状态。Android 13 及以下则仍然可能出现读写锁竞争导致的查询延迟。
+
+[已验证: AOSP android-14.0.0_r1 `frameworks/base/services/core/java/com/android/server/pm/Computer.java` / `PackageManagerService.java` 的 `mComputer` 字段]
 
 ## 应用安装全流程与性能关键路径
 
@@ -187,15 +203,25 @@ session commit 之后，安装器把 APK 放到 `/data/app/` 下的目标目录�
 
 PMS 解析 `AndroidManifest.xml`、校验签名、检查 sharedUserId / 权限 / ABI / split 关系，再决定能否把这个包正式纳入系统状态。升级安装还要检查新旧签名和 `versionCode` 规则。
 
-**4. 应用数据目录与 native 准备**
+**4. APK v4.1 签名与流式校验**
+
+Android 12 引入 APK Signature Scheme v4（merkle tree 签名），后续版本又在 v4.1 中增加了密钥轮转（key rotation）支持。流式校验允许安装过程中增量验证 APK 块，而非一次性读入全部内容做校验。
+
+在 Android 12+ 设备上，`IncrementalService` 配合 v4 签名实现了按需解密和校验：应用安装后不必等所有文件完整写入，先完成校验的部分就可以被访问。在 Perfetto 中，可以通过 `android.incremental` 相关的 Trace 事件观察这一过程。当设备使用 Incremental FS（`/data/incremental/` 挂载点）时，文件访问会经过 `IncrementalService` 的 ioctl 路径，触发按块的签名校验。
+
+这对大型游戏和应用商店的分发体验有直接影响：用户可以在"安装尚未完成"时就启动应用，已校验的部分可正常使用，未校验的部分按需下载和验证。
+
+[已验证: AOSP `system/incremental_delivery/` / `frameworks/base/services/core/java/com/android/server/os/IncrementalManagerService.java`]
+
+**5. 应用数据目录与 native 准备**
 
 `IInstalld` 负责应用数据目录、权限、SELinux 上下文、编译产物目录等底层操作。多用户设备在这里还会处理 user 维度的数据准备。
 
-**5. dexopt 调度**
+**6. dexopt 调度**
 
 现代 Android 把编译决策更多放到 `DexOptHelper` / ART Service。有没有 Baseline Profiles、Cloud Profiles、设备是否空闲、当前安装原因是什么，都会影响这里选用的编译过滤器。对 Android 12+ 的常见安装路径，没拿到可用 profile 时通常只做 `verify`；更早版本还存在 quicken 等历史行为，细节见 §1.7。
 
-**6. 状态发布与广播**
+**7. 状态发布与广播**
 
 包状态写回 `packages.xml` 等持久化信息，PMS 更新内存结构，随后发出 `ACTION_PACKAGE_ADDED` 等广播，Launcher 和其他系统组件才能看到这个应用。
 
@@ -499,7 +525,7 @@ Package Manager Service 与全书多个章节有交叉：
 | Android 10 | APEX / Mainline 基础设施引入，OTA 与 ART 更新开始解耦 | 后续 OTA 优化和 Virtual A/B 路径有了继续演进的基础 |
 | Android 12 | ART 模块化（Mainline） | 编译优化可通过 Play 系统更新推送 |
 | Android 14 | ART Service 取代直接 dex2oat 调用 | 编译管理更统一，后台 dexopt 更智能 |
-| Android 16 | 公开资料提到 Play 分发侧可能引入 Cloud Compilation / SDM | 命中时可减少本机 dexopt，设备侧细节需以实测为准 |
+| Android 16 | PMS 并行解析 APEX 模块（`scanDirLI` 并行化）；公开资料提到 Play 分发侧可能引入 Cloud Compilation / SDM | 开机扫描时长缩短；命中 Cloud Compilation 时可减少本机 dexopt |
 | Android 17 | static final 不可变 → 更激进的常量折叠 | 编译优化深度提升（与 §1.7 交叉） |
 
 ## 常见问题与误区

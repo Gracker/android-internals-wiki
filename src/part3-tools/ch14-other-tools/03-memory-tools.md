@@ -25,7 +25,7 @@ sources:
 - type: official
   path: https://developer.android.com/ndk/guides/sanitizers
 - type: aosp
-  path: system/core/libmeminfo
+  path: system/memory/libmeminfo  # Android 11+ 迁移至此路径
 - type: aosp
   path: system/extras/malloc_debug
 tags:
@@ -42,13 +42,13 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task6_result: "pass-light-edit"
-task9_state: reviewed
-task2b_state: pending
-task9_result: needs-rework
-task2b_result: fixed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task6_result: pass-light-edit
+task9_state: pending
+task2b_state: fixed
+task9_result: pass-tech-review
+task2b_result: rework-fixed
 task2b_rework_date: '2026-04-20'
 task2b_fixed_at: '2026-04-20'
 task9_reviewed_date: '2026-04-21'
@@ -392,7 +392,7 @@ procrank 在排查系统级内存压力时特别有用。当我们需要评估"�
 
 ### libmeminfo：内存信息的底层库
 
-`libmeminfo` 不是一个直接面向用户的命令行工具，而是 Android 系统内部用于收集内存信息的 C++ 库。它的源码位于 `system/core/libmeminfo/`。
+`libmeminfo` 不是一个直接面向用户的命令行工具，而是 Android 系统内部用于收集内存信息的 C++ 库。它的源码位于 `system/memory/libmeminfo/`（Android 11 起；更早版本在 `system/core/libmeminfo/`）。
 
 libmeminfo 提供了以下能力：
 
@@ -457,6 +457,17 @@ adb shell kill -45 <pid>
 adb shell kill -47 <pid>
 adb shell ls /data/local/tmp/backtrace_heap.<pid>.txt
 ```
+
+Android 14 新增 `SIGRTMAX-16`（信号值 48），用于触发 `libmemunreachable` 扫描并报告内存泄漏。这对 Native 内存泄漏的在线/离线快速诊断非常有价值：
+
+```bash
+# Android 14+: 触发 libmemunreachable 泄漏扫描
+adb shell kill -48 <pid>
+# 扫描结果写入 logcat，搜索 "LEAK" 关键字
+adb logcat -s libmemunreachable
+```
+
+[已验证: AOSP bionic/libc/malloc_debug/README.md, Android 14 signal table]
 
 ### malloc hooks
 
