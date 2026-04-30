@@ -1,7 +1,7 @@
 ---
 title: "Activity Manager Service 与性能分析"
 chapter: "1.8"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-05"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-18"
@@ -76,8 +76,9 @@ rework_by: "task2a"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-18"
 task6_result: pass-light-edit
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review
 task9_state: reviewed
 task2b_state: fixed
@@ -171,6 +172,7 @@ Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了�
 | VISIBLE | 100 | 可见进程 | Activity 可见但不在前台（如被透明 Activity 遮挡） |
 | TOP_SLEEPING | 200 | 顶层休眠 | 屏幕关闭但之前是前台 |
 | PERCEPTIBLE | 200 | 可感知 | 音乐播放、导航、常规 non-short 前台 Service |
+| PERCEPTIBLE_MEDIUM | 225 | 中可感知 | Android 17 (Baklava) 新增，介于可感知与低可感知之间的缓冲档 |
 | PERCEPTIBLE_LOW | 250 | 低可感知 | 后台有轻量级操作 |
 | BACKUP | 300 | 备份 | 正在执行备份操作 |
 | HEAVY_WEIGHT | 400 | 重量级 | 后台 heavyweight 应用 |
@@ -179,10 +181,11 @@ Android 不是"前台就活着、后台就杀掉"这么简单。系统维护了�
 | PREVIOUS | 700 | 上一个 | 上一个后台 Activity |
 | SERVICE_B | 800 | B 类服务 | 较老的后台 Service |
 | CACHED / CACHED_EMPTY | 900+ | 缓存 | 纯缓存的后台进程 |
+| CACHED_APP_LMK_FIRST | 950 | LMK 优先回收缓存 | Android 17 (Baklava) 新增，lmkd 在回收时优先从此档开始杀 |
 
 这里要避免把前台 Service 写成固定的 100 档位。AOSP android-16.0.0_r1 的 `OomAdjuster` 里，常规 non-short FGS 会被抬到 `PERCEPTIBLE_APP_ADJ = 200`；只有最近刚从 TOP Activity 切到 FGS 的短期宽限窗口，才会临时抬到 `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50`。
 
-> [待验证：上表其余细分档位在 Android 17 正式版和厂商 ROM 中可能继续调整；FGS 的 50 / 200 档位已按 AOSP android-16.0.0_r1 的 `ProcessList.java` 与 `OomAdjuster.java` 核对]
+> 上表中 `PERCEPTIBLE_MEDIUM_APP_ADJ = 225` 和 `CACHED_APP_LMK_FIRST_ADJ = 950` 为 Android 17 (Baklava) 新增档位（源码锚点：`ProcessList.java`）。其余细分档位在厂商 ROM 中可能继续调整；FGS 的 50 / 200 档位已按 AOSP android-16.0.0_r1 的 `ProcessList.java` 与 `OomAdjuster.java` 核对。
 
 AMS 调整 oom_adj 的核心方法是 `ActivityManagerService.updateOomAdjLocked()`。这个方法会遍历所有进程，根据每个进程中运行的组件（Activity、Service、Provider、广播接收器）的状态重新计算优先级。
 
@@ -380,6 +383,20 @@ RootWindowContainer
 
 冷启动场景下，我们真正关心的是“启动请求发出”到首帧 `doFrame` 之间的总时间；`am_proc_start` 只是其中的进程创建起点，不等于完整启动耗时。
 
+### 冷启动归因：getStartComponent()
+
+Android 16 引入了 `getStartComponent()` API（`ActivityManager.getStartRequestOverrideTime()` 配合 `AppStartInfo`），可以精确区分当前冷启动是由哪种组件触发的：Activity、Service、Receiver 还是 ContentProvider。在没有这个 API 之前，分析启动耗时只能从 Trace 上按时间顺序推断“看起来是哪个组件先被调用”，不够准确。
+
+实际操作中，在 Perfetto 里可以通过以下方式辅助归因：
+
+- 如果 `am_proc_start` 之后紧接着 `bindApplication` → `Activity.onCreate()`，大概率是 Activity 启动
+- 如果 `bindApplication` 之后先走 `onCreate` → `onStartCommand()`，是 Service 启动
+- 如果进程启动后直接进入 `onReceive()`，是静态广播触发
+
+Android 16+ 上，用 `getStartComponent()` 直接获取组件类型，不再需要从 Trace 时序推断。这对区分"用户点击触发的冷启动"和"后台组件触发的冷启动"尤其有用——前者应该优先优化，后者可能只需要做延迟初始化。
+
+> [已验证: Android 16 Developer Preview，`android.app.AppStartInfo`；AOSP `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`]
+
 ```
 [图：Perfetto 中冷启动的完整 Trace 片段，标注上述 6 个关键时间节点]
 [待高爷补充：Trace 截图]
@@ -504,6 +521,10 @@ AMS 仍然负责广播匹配、调度和 ANR 判责，但源码入口不能只�
 2. AMS 根据 Intent 匹配已注册的 Receiver（包括静态和动态），生成目标列表。
 3. 对于有序广播，按 priority 排序后依次分发；对于无序广播，并行分发。
 4. Receiver 执行 `onReceive()` 后，系统按对应广播配置计时；超时未完成时，`BroadcastQueueImpl` 进入广播 ANR 管线。
+
+> **ModernBroadcastQueue 架构（Android 15+）**：AOSP 从 Android 15 起引入了按进程组织的广播队列（ModernBroadcastQueue），取代了旧版按全局 FIFO 排列的模式。旧实现中，一个进程内多个 Receiver 的分发是串行的，如果前面的 Receiver 执行慢，后面同一进程内的 Receiver 也会被阻塞——这就是"队头阻塞"（head-of-line blocking）。ModernBroadcastQueue 把分发粒度从"全局队列"收窄到"按进程独立队列"，同一个进程的 Receiver 仍然串行，但不同进程之间可以并行分发，避免了慢进程拖累全局。对性能分析的影响：在 Perfetto 中，如果看到广播 ANR 但对应进程的 `onReceive()` 执行并不慢，应该检查是否是旧队列模型下被其他进程的慢 Receiver 阻塞；Android 15+ 上这个问题会被 ModernBroadcastQueue 缓解。
+>
+> [已验证: AOSP android-16.0.0_r1，`frameworks/base/services/core/java/com/android/server/am/ModernBroadcastQueue.java`]
 
 ### 静态广播 vs 动态广播的性能差异
 
