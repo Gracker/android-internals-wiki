@@ -7122,8 +7122,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T22:57:00+08:00",
-      "status": "pending",
-      "source_file": "src/part2-performance/ch11-power/04-case-studies.md"
+      "status": "completed",
+      "source_file": "src/part2-performance/ch11-power/04-case-studies.md",
+      "completed_at": "2026-04-30T19:40:00+08:00",
+      "completed_reason": "JobScheduler超时模型已重写：区分Regular/Expedited/User-Initiated三档超时(10min/10min/30min)，源码锚点更新为JobSchedulerService.java"
     },
     {
       "section": "3.4",
@@ -7201,8 +7203,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T03:25:00+08:00",
-      "status": "pending",
-      "source_file": "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+      "status": "completed",
+      "source_file": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+      "completed_at": "2026-04-30T19:40:00+08:00",
+      "completed_reason": "Buddy order 已改为公式+表格(4KB/16KB双列)；MGLRU 版本/内核分支/CONFIG/默认状态/验证命令表已补充"
     },
     {
       "section": "11.5",
