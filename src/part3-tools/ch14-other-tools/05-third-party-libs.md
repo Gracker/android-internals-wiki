@@ -45,20 +45,20 @@ related_chapters:
   - "14.13"
   - "15.5"
   - "15.9"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 review_round: 3
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: pending
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T23:29:25+08:00"
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-25T20:40:00+08:00"
+last_task2b_at: "2026-05-01T06:48:44"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 ---
@@ -121,7 +121,7 @@ Matrix 是腾讯微信团队开源的 Android 性能监控框架。它的价值�
 Matrix 的设计目标是低侵入接入，覆盖从采集到上报的完整监控流程。它通过 Gradle 插件在编译期完成字节码插桩，运行时通过 Hook 收集各类性能数据，最终将数据上报到监控平台。整个框架分为五个核心模块：
 
 - **Trace Canary**：卡顿、ANR、启动耗时、帧率监控
-- **Resource Canary**：Activity/Fragment 内存泄漏、冗余 Bitmap 检测
+- **Resource Canary**：Activity 泄漏检测、冗余 Bitmap 检测（Fragment 泄漏支持取决于具体分支和版本，上游主干公开能力以 Activity leak + duplicated bitmap 为核心；若项目需要 Fragment 级泄漏监控，需确认使用的分支是否包含 `FragmentLifecycleCallbacks` 注册逻辑和对应的 watcher 实现）
 - **IO Canary**：文件 I/O 性能问题检测、Closeable 泄漏监控
 - **SQLiteLint**：SQLite 使用规范检测
 - **Battery Canary**：耗电行为监控
@@ -142,7 +142,7 @@ Trace Canary 的核心能力是检测卡顿、慢函数、ANR、启动耗时和�
 
 ### Resource Canary：内存泄漏与冗余 Bitmap
 
-Resource Canary 采用弱引用（WeakReference）机制来检测 Activity 和 Fragment 的泄漏。它的做法是这样的：注册 ActivityLifecycleCallbacks，在每个 Activity 的 onDestroy 回调中，将该 Activity 实例包装成弱引用并存入观察队列。然后定期触发 GC 并轮询检查队列中的弱引用是否已被回收。如果在多次检查后仍然存活，就认为发生了泄漏。
+Resource Canary 采用弱引用（WeakReference）机制来检测 Activity 的泄漏（上游公开的监听入口主要是 `ActivityLifecycleCallbacks`，对应 `DestroyActivityLifecycleListener` 在 `onActivityDestroyed` 回调中执行入队）。它的做法是：将已销毁的 Activity 实例包装成弱引用并存入观察队列，然后定期触发 GC 并轮询检查队列中的弱引用是否已被回收。如果在多次检查后仍然存活，就认为发生了泄漏。Fragment 泄漏检测不在上游主干的默认路径中，Matrix 上游公开能力主要是 Activity leak 与 duplicated bitmap；如果团队确实需要 Fragment 级别监控，需要确认使用的 fork 是否自行注册了 `FragmentManager.FragmentLifecycleCallbacks` 并实现了对应的弱引用追踪。
 
 检测到泄漏后，Resource Canary 会 Dump 出 Hprof 文件，但它不会把整个文件上传——那样太大了。它会在客户端对 Hprof 进行裁剪，只保留泄漏 Activity 到 GC Root 的强引用链和 Bitmap 数据缓冲区，大幅压缩文件大小后再上报。服务端收到后进行解析，还原出完整的引用链。
 
@@ -216,7 +216,9 @@ Booster 的功能以模块化形式提供，我们可以按需引入。
 
 **性能检测模块**通过静态分析所有 .class 文件构建全局调用图（Call Graph），找出在主线程调用了 I/O 操作、SharedPreferences 读写、网络请求等可能阻塞的 API。它生成可视化报告帮助我们快速定位问题代码。这和 Trace Canary 的运行时检测形成互补——Trace Canary 发现的是实际发生了的卡顿，Booster 发现的是潜在可能卡顿的代码。
 
-**资源索引内联与常量清除**模块针对的是 Android 构建系统中一个经典的冗余问题。编译后，R 类（如 R.id.xxx、R.layout.xxx）是一组 static final int 常量。运行时访问这些字段需要一次字段查找（虽然 JIT 会优化，但首次访问仍有开销）。Booster 直接将这些字段访问替换为字面值常量，并从类中删除不再需要的常量字段，既减少了包体积，也略微提升了运行时性能。
+**资源索引内联与常量清除**模块针对的是 Android 构建系统中一个经典的冗余问题。在 AGP 7.x 及更早版本中，编译后 R 类（如 R.id.xxx、R.layout.xxx）是一组 `static final int` 常量。运行时访问这些字段需要一次字段查找（虽然 JIT 会优化，但首次访问仍有开销）。Booster 直接将这些字段访问替换为字面值常量，并从类中删除不再需要的常量字段，既减少了包体积，也略微提升了运行时性能。
+
+**AGP 8.0+ 的 R 字段变更**：AGP 8.0 起 `android.nonFinalResIds` 和 `nonTransitiveRClass` 默认开启，应用模块的 R 字段不再是 `static final`——编译器会为每个资源 ID 生成 `static int`（非 final）的内联赋值。这意味着 Booster 原有的"把 R 字段访问替换为字面值"的前提（字段是 final 常量）在 AGP 8.0+ 默认配置下不再成立。使用 Booster 这类优化时需要确认项目仍在使用旧版 AGP 或已手动关闭 `nonFinalResIds`；对于 AGP 8.0+ 项目，该优化的收益和适用条件需要重新评估，Booster 官方或 fork 是否已适配 non-final R 字段也需要验证。
 
 **系统 Bug 修复**模块展现了编译期优化的另一个优势。比如 Android API 25 中 Toast 的 BadTokenException 问题（在 Toast.show() 时如果 NotificationManagerService 还未来得及处理，会抛出异常导致崩溃）。Booster 通过字节码注入，在所有 Toast.show() 调用前后包裹 try-catch，一次性解决全局问题，而不需要每个调用点手动处理。
 

@@ -3127,7 +3127,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-25T23:29:25+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T06:48:44.037937",
+      "completed_reason": "Inline Hook 版本边界已拆分(Android 14 W^X vs Android 15+ 16KB)；ARM64 跳转描述已修正(不固定12字节，区分近跳/远跳)"
     },
     {
       "section": "14.2",
@@ -3298,7 +3300,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-25T23:29:25+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T06:48:44.037937",
+      "completed_reason": "Matrix Resource Canary 能力边界已收窄(Activity leak + duplicated bitmap)；Booster R 字段优化已补充 AGP 8.0+ nonFinalResIds 边界"
     },
     {
       "section": "14.9",
@@ -3623,7 +3627,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-26T16:12:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T06:48:44.037937",
+      "completed_reason": "Cuttlefish crosvm/virtio 架构已补充；安装流程已改为 AOSP 编译产物路径和 CI 预编译镜像路径两条线"
     },
     {
       "section": "16.5",
