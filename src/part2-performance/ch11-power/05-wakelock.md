@@ -745,6 +745,86 @@ Foreground Service 提高的是进程存活优先级，不是 CPU 的唤醒状�
 
 `dumpsys batterystats` 中看到 `PowerManagerService` 持有大量 wakelock 时间，常常会被误认为是系统 bug。很多时候 PowerManagerService 只是代理，它通过 WorkSource 代表其他 App 记账。需要进一步查看是哪个 App 的 wakelock 归因到了 PMS。
 
+
+### Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环
+
+Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应用通过 `PerformanceHintSession` 声明线程应优先节能而非峰值性能。结合 `android.os.PowerMonitor` API，可实现"提示系统→观察效果"的闭环验证。
+
+#### PerformanceHintManager 与 Power Efficiency Mode
+
+**源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java`（API 31+，Android 15 扩展）
+
+`PerformanceHintManager`（Android 12 引入）允许应用向系统发送性能提示，影响 CPU 频率和核心类型决策。Android 15 新增 Power Efficiency Mode，通过 hint session 声明关联线程应优先节能，适用于长时后台工作负载。
+
+核心 API：
+- `createHintSession(long[] tids, long initialTargetUs)` — 创建 hint session
+- `reportActualWorkDuration(long durationUs)` — 报告实际工作时长（Android 15 DP1 引入）
+- `updateTargetWorkDuration(long targetDurationUs)` — 更新目标工作时长
+
+Power Efficiency Mode 的语义：系统可更积极地将线程调度到节能核心、降低 CPU/GPU 频率，而非追求最低延迟。这解决了"busy loop"场景下 CPU 空转的高功耗问题——传统方式是应用自行 Sleep，但会引入调度延迟；Power Efficiency Mode 让系统理解工作负载特征，在保证性能需求的前提下主动降频。
+
+#### PowerMonitor API（API 35 新增）
+
+**源码位置**：`frameworks/base/core/java/android/os/PowerMonitor.java`
+
+`PowerMonitor`（API 35）代表两类功耗监控实体：
+- `POWER_MONITOR_TYPE_MEASUREMENT`（0x1）— 直接测量电源轨，设备特有，如 "S2S_VDD_G3D"
+- `POWER_MONITOR_TYPE_CONSUMER`（0x2）— 建模范畴，名称通用如 "GPU" / "MODEM"
+
+数据获取路径：
+```
+SystemHealthManager.getSupportedPowerMonitors() → List<PowerMonitor>
+SystemHealthManager.getPowerMonitorReadings(List<PowerMonitor>, OutcomeReceiver<PowerMonitorReadings>)
+PowerMonitorReadings.getConsumedEnergy(PowerMonitor) → 微瓦秒（μWs）累计值
+PowerMonitorReadings.getTimestampMillis(PowerMonitor) → 快照时刻的 elapsed realtime
+```
+
+`getConsumedEnergy()` 返回重启后累计能耗（μWs），不跨重启保留。测量的是 subsystem 级能耗，不受电池充放电状态影响。
+
+#### IPowerStats HAL（Android 10+）
+
+**源码位置**：`hardware/interfaces/power/stats/`（AOSP）
+
+`IPowerStats HAL` 是底层数据源，替代旧版 `IPower.hal` 的统计功能。核心 API：
+- `getRailInfo()` — 获取功耗轨元信息（名称、测量类型）
+- `getEnergyData()` — 获取自启动以来的累计能耗数据
+
+主要消费者：Statsd（功耗归因）、Perfetto（`android.power_rails` 数据源）、Batterystats（电池分析）。
+
+#### Perfetto 闭环观测
+
+Perfetto 通过 `android.power_rails` 数据源暴露 rail 级功耗：
+
+```protobuf
+android_power_config {
+  battery_counters: CAPACITY | CHARGE | CURRENT | VOLTAGE
+  power_rails: true
+}
+```
+
+数据落地为 PerfettoSQL 表 `android_power_rails_counters`。完整闭环：
+
+```
+应用调用 Power Efficiency Hint
+  ↓
+系统调整 CPU/GPU 频率策略
+  ↓
+IPowerStats HAL 累计能耗变化
+  ↓
+Perfetto android.power_rails 记录 rail 数据
+  ↓
+应用调用 SystemHealthManager.getPowerMonitorReadings()
+  ↓
+验证 Power Efficiency Mode 的实际效果
+```
+
+> 注意：USB 充电场景下电池计数器显示正向充电电流而非设备真实功耗。官方建议使用专用 USB Hub 切断充电电路以获得准确测量。
+
+[已验证: developer.android.com — ADPF Power Efficiency Mode 官方文档；PowerMonitor API Reference (API 35)；perfetto.dev/docs/analysis-sql/android-power-rails]
+
+<!-- AIW-源码调研-2026-04-30 -->
+
+
 ## 参考资料
 
 ### AOSP 源码路径

@@ -2,7 +2,7 @@
 title: "优化策略"
 section: "7.5"
 chapter: "7.5"
-status: ready-for-review
+status: finalized
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
@@ -49,12 +49,12 @@ polish_by: "task2b-polish"
 rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task9_result: pass-tech-review
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: "2026-04-30T07:43:21.194303"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
@@ -250,14 +250,14 @@ RenderEffect 和 Hardware Layer 的底层隔离层级不同，内存开销和 GP
 - `RenderEffect` 是 **Shader 级集成**。blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性（`RenderProperties::setImageFilter()`），Skia 在绘制时沿标准 `SkImageFilter` 管线处理。当 filter 链中的子类组合满足 Skia 内部的融合条件时，Skia 可能对相邻 filter 做算子融合并复用 Scratch Texture，减少中间缓冲区分配——但这取决于具体 filter 类型和参数组合，不是所有 RenderEffect 链都能自动触发。总体而言，对于动态内容（频繁 invalidate 的 View），RenderEffect 的内存开销通常低于 Hardware Layer，且更利于 GPU 连续执行。
 - `LAYER_TYPE_HARDWARE` 是 **Buffer 级隔离**。HWUI 强制为该 View 创建一个独立的 FBO（Framebuffer Object）并缓存渲染结果。属性动画阶段只需要在纹理上做矩阵变换，不重新执行 draw——这正是 Hardware Layer 的加速来源。但 FBO 是独占的 GPU 内存，内容每帧都变时缓存重建的开销会超过加速收益。
 
-处理 blur、阴影或 shader 效果时，优先用 `RenderEffect` 表达效果，再通过 Perfetto 的 GPU / FrameTimeline 观察帧时间和显存压力。只有在属性动画需要缓存静态纹理的场景里，才考虑手动打开 Hardware Layer。对动态内容，RenderEffect 在内存占用和 GPU 调度效率上都优于 Hardware Layer。
+处理 blur、阴影或 shader 效果时，优先用 `RenderEffect` 表达效果，再通过 Perfetto 的 GPU / FrameTimeline 观察帧时间和显存压力。只有在属性动画需要缓存静态纹理的场景里，才考虑手动打开 Hardware Layer。对动态内容，RenderEffect 通常比 Hardware Layer 更适合表达 blur/filter 效果，但"优于"不是无条件的——具体取决于 View 尺寸、blur radius、invalidate 频率、GPU/Skia 后端和 filter 链是否能触发算子融合。建议用 Perfetto FrameTimeline / GPU track 或 Macrobenchmark 在目标设备上验证。
 
 #### AGSL RuntimeShader（Android 13+, API 33）
 
 Android 13 引入 AGSL（Android Graphics Shading Language），底层是 SkSL（Skia Shading Language）。`RenderEffect.createRuntimeShaderEffect(shader, uniformName)` 允许用 AGSL shader 对输入内容做自定义像素处理。shader 代码由 HWUI / Skia 编译；输入节点以 `uniform shader inputNode` 的形式传入，`main(float2 fragCoord)` 对输入内容采样后输出颜色。
 
 ```java
-// AGSL shader 示例
+// AGSL shader 示例：在 View 尺寸可得后设置 uniform
 RuntimeShader shader = new RuntimeShader(
     "uniform shader inputNode;"
     "uniform float2 resolution;"
@@ -266,7 +266,9 @@ RuntimeShader shader = new RuntimeShader(
     "    return inputNode.eval(uv * resolution);"
     "}"
 );
-shader.setColorUniform("resolution", Color.BLACK); // 示意：需通过 setInputShader 或 uniform 设置实际分辨率
+// float2 uniform 用 setFloatUniform，不能用 setColorUniform
+shader.setFloatUniform("resolution", getWidth(), getHeight());
+// createRuntimeShaderEffect 的第二个参数 "inputNode" 已绑定输入 shader
 RenderEffect effect = RenderEffect.createRuntimeShaderEffect(shader, "inputNode");
 view.setRenderEffect(effect);
 ```
