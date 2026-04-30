@@ -7272,7 +7272,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T04:38:09+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T21:44:10.802163+00:00",
+      "completed_reason": "SCREEN_BRIGHT_WAKE_LOCK 废弃版本修正为 API 13；OnAlarmListener 公开 SDK 版本修正为 API 24，区分公开 API 与 @SystemApi 重载"
     },
     {
       "section": "4.5",
@@ -9270,7 +9272,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T04:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T21:44:10.802163+00:00",
+      "completed_reason": "ProfilingManager 示例修正为 PROFILING_TYPE_SYSTEM_TRACE + 正确签名；atrace category 从 art 修正为 dalvik，移除 debug.hwui.profile 误导"
     },
     {
       "section": "14.1 工具与基准测试",
@@ -10095,6 +10099,86 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T05:32:43+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "5.X",
+      "section_title": "章节 5 (待分配)",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-adpf-power-efficiency-mode-android-15.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监控闭环 — 源码调研：Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监控闭环。Android 15（API 35）在 ADPF 中引入 Power ...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-01T05:37:18.378854",
+      "status": "pending"
+    },
+    {
+      "section": "16.X",
+      "section_title": "章节 16 (待分配)",
+      "priority": 66,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-android-16kb-page-size-hook-library-compatibility.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 16KB Page Size 与 Hook 库的兼容性机制 — 源码调研：Android 16KB Page Size 与 Hook 库的兼容性机制。Android 16KB Page Size 强制要求 native 库的 ELF LOAD segment p_...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-01T05:37:18.396553",
+      "status": "pending"
+    },
+    {
+      "section": "14.X",
+      "section_title": "章节 14 (待分配)",
+      "priority": 64,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75913099-谷歌官方推荐Android 性能优化全.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分 — 谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分。Jetpack Macrobenchmark、UiAutomator 2.4、App Performance Sc...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-01T05:37:18.410660",
+      "status": "pending"
+    },
+    {
+      "section": "14.X",
+      "section_title": "章节 14 (待分配)",
+      "priority": 62,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75967106-2026年了Android开发该如何调.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2026年了，Android开发该如何调试布局 — 2026年了，Android开发该如何调试布局。Android Studio 2025.2.1 Layout Inspector 的改进，AYA 工具的元素抓取和绝对位置查看功能。...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-01T05:37:18.422697",
       "status": "pending"
     }
   ],

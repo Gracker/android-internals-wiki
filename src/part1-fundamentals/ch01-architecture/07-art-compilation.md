@@ -47,7 +47,10 @@ task9_result: needs-rework
 last_task9_at: "2026-04-30T04:20:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
+task2b_state: fixed
+task2b_result: fixed
+task6_state: revisiting
 task6_state: reviewed
 task9_state: reviewed
 task2b_result: fixed
@@ -231,13 +234,13 @@ data_sources: {
         name: "linux.ftrace"
         ftrace_config {
             ftrace_events: "sched/sched_switch"
-            atrace_categories: "art"
+            atrace_categories: "dalvik"
         }
     }
 }
 ```
 
-`atrace_categories: "art"` 会捕获 `art::jit::*` 系列 Slice。如果看不到这些 Slice，检查设备是否启用了 `debug.hwui.profile=true`（影响渲染侧 trace）以及 `persist.sys.atrace.rcpreroll` 设置。抓取完成后，在 Perfetto UI 的进程轨道中搜索 `Jit compilation` 即可定位编译活动。
+AOSP atrace category 表中 ART/VM 对应的是 `dalvik`（`ATRACE_TAG_DALVIK`），不是 `art`。使用 `atrace_categories: "dalvik"` 才能捕获 `art::jit::*` 系列 Slice。如果看不到这些 Slice，检查设备是否为 userdebug/eng 版本（user 版本可能限制了 atrace category），以及 `persist.sys.atrace.rcpreroll` 设置。抓取完成后，在 Perfetto UI 的进程轨道中搜索 `Jit compilation` 即可定位编译活动。
 
 ## dex2oat 编译器深入
 
@@ -427,13 +430,18 @@ dex2oat 编译在以下场景可见：
 ```kotlin
 // Android 15+ (API 35+)
 val profilingManager = getSystemService(ProfilingManager::class.java)
+val cancellationSignal = CancellationSignal()
 profilingManager.requestProfiling(
-    ProfilingManager.PROFILING_TYPE_JAVA_TRACE,
-    Bundle(),  // 可选参数（trace 持续时间等）
+    ProfilingManager.PROFILING_TYPE_SYSTEM_TRACE,  // 或 HEAP_PROFILE / STACK_SAMPLING
+    Bundle(),                                        // 可选参数（trace 持续时间等）
+    "my-trace-tag",                                  // tag，用于标识此次请求
+    cancellationSignal,
     ContextCompat.getMainExecutor(this),
-    { result -> /* 处理 ProfilingResult */ }
+    { result -> /* 处理 ProfilingResult: result.statusCode, result.resultFilePath */ }
 )
 ```
+
+公开 API 支持四种类型：`PROFILING_TYPE_SYSTEM_TRACE`、`PROFILING_TYPE_HEAP_PROFILE`、`PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_STACK_SAMPLING`。不存在 `PROFILING_TYPE_JAVA_TRACE` 常量。
 
 Android 16 进一步强化了系统触发能力——当 ANR 发生时，系统可自动从背景环形缓冲区中导出 Trace，无需应用主动请求。这对捕获难以复现的启动卡顿特别有价值。
 
