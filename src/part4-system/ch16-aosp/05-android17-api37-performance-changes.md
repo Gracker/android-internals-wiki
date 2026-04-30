@@ -36,14 +36,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-28T02:40:00+08:00"
+last_task2b_at: "2026-04-30T23:57:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-28"
 task9_reviewed_by: "openclaw-task9"
@@ -302,9 +302,9 @@ try {
 
 在 Perfetto 中,你可以在 Main Thread Track 中观察到 `Choreographer#doFrame` 下 `performTraversal` 的执行时间。如果配置变更后布局耗时明显增加,说明布局需要优化。
 
-**2. Configuration Change 的平滑过渡**
+**2. Configuration Change 的过渡路径**
 
-旧模式下,旋转屏幕会导致 Activity 销毁重建,在 Perfetto 中表现为一个明显的生命周期中断。新模式下通过 `onConfigurationChanged()` 处理,App 可以在不停顿的情况下完成布局切换。这在 Trace 中表现为一个连续的帧序列,而不是 Activity 生命周期回调导致的中断。
+屏幕方向或尺寸变化触发配置变更后，走哪条路径取决于 App 的 manifest 声明：如果 App 在 `<activity>` 中通过 `android:configChanges` 声明了 `screenSize|smallestScreenSize|screenLayout|orientation`，并在代码中正确处理 `onConfigurationChanged()`，可以在不销毁 Activity 的情况下完成布局切换——在 Perfetto 中表现为连续的帧序列。如果 App 没有声明对应的 configChanges，系统仍然会销毁并重建 Activity，在 Trace 中表现为生命周期中断。使用自适应布局（Jetpack WindowManager、`SlidingPaneLayout` 等）可以减少对 configChanges 声明的依赖，但前提是布局本身能响应尺寸变化。
 
 ### 适配建议
 
