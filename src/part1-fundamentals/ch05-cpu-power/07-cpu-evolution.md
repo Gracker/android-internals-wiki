@@ -70,8 +70,8 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-29
 last_task9_at: "2026-04-29T11:26:16+08:00"
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。；2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。需 Task2B 回炉。"
-last_task2b_at: "2026-04-27T05:45:00+08:00"
-repaired_date: "2026-04-27"
+last_task2b_at: "2026-04-30T10:46:19+08:00"
+repaired_date: "2026-04-30"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复(Task9/External 问题单)"
 task9_result: needs-rework
@@ -319,20 +319,17 @@ Android 16 继续对 JobScheduler 进行精细化管控。核心变化是 Job �
 
 [已验证: developer.android.com/about/versions/16/behavior-changes-all;developer.android.com/reference/android/app/job/JobScheduler]
 
-### [自动发现] Android 17:能量限额制 (Energy Limiter)
+### [自动发现] Android 17:已确认的功耗行为变更
 
-Android 17 (API 37) 引入了基于真实能耗监控的熔断机制--能量限额制 (Energy Limiter)。系统通过 ODPM 或等效硬件计数器,按 App 统计后台运行期间消耗的微焦耳 (μJ) 能量,当累计值超过配额时强制终止该 App 的后台进程。
+Android 17 (API 37) 在功耗管理方面的已确认变化(截至官方 behavior changes all-apps / target-37 页面):
 
-配额大小与 App 的 Standby Bucket 挂钩。这和 App Standby Buckets 的区别在于:Buckets 控制的是"你能得到多少调度机会",Energy Limiter 控制的是"你能消耗多少物理能量"。一个 App 即使成功拿到了调度机会,如果执行期间消耗的能量超标,仍然会被终止。
+- **App memory limits**:系统可按进程设置内存上限,超出即终止。这和之前的 `android:largeHeap` 不同,是一个强制硬限制。
+- **Reduced Wakelocks for Idle Alarms**:idle alarm 触发的 WakeLock 持有时间被进一步压缩,减少闹钟唤醒后的 CPU 活动窗口。
+- **ProfilingManager KILL_EXCESSIVE_CPU_USAGE**:`ProfilingManager` 新增 `KILL_EXCESSIVE_CPU_USAGE` trigger,系统可在检测到 App 长时间高 CPU 占用时主动终止进程。这是一个可观测性入口,也给了系统更强的干预手段。
 
-对开发者的直接影响:
-- 后台工作必须在能量预算内完成,长时间高 CPU 占用的后台同步需要拆分为短时间片
-- WakeLock 持有时间不再是唯一指标,单位时间内的功耗密度同样关键
-- 在低电量模式下,系统会动态压缩单应用能量配额
+这三项变化延续了前面版本的演进方向:逐步收紧 App 对 CPU 的自主使用权,同时提供更好的可观测性。
 
-Energy Limiter 标志着 Android 功耗管理从"限制调度机会"向"限制物理能量消耗"的范式转移。配合 §5.6 的讨论,这条演进线把 Doze(限制调度)→ App Standby Buckets(限制资源配额)→ Energy Limiter(限制能量配额)串成了一个完整的管控链。
-
-> ⚠️ **待验证**: 上述 Energy Limiter 描述基于 external review 信息,未在 Android 17 官方 behavior changes 中找到对应条目。已确认的 Android 17 功耗变化包括 App memory limits、Reduced Wakelocks for Idle Alarms、ProfilingManager KILL_EXCESSIVE_CPU_USAGE。如果 Energy Limiter 后续被官方确认,可合并此处内容。
+> ⚠️ **未核实研究线索**:有 external review 提到 Android 17 可能引入基于 ODPM/μJ 计量的"Energy Limiter"机制(按 App 统计后台能量消耗,超配额强杀)。该机制未在官方 behavior changes 页面中找到对应条目,目前不能作为确定平台特性。如果后续被官方确认,可在此处补充。
 
 [已验证: Android 17 behavior changes (all apps / target 37); source.android.com/docs/core/power]
 
