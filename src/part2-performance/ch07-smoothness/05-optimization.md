@@ -4,7 +4,7 @@ section: "7.5"
 chapter: "7.5"
 status: ready-for-review
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
@@ -49,8 +49,8 @@ polish_by: "task2b-polish"
 rework_count: 3
 rework_date: "2026-04-30"
 rework_by: "task2b-rework"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -97,7 +97,7 @@ task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 2 / P1 1 / 
 
 Android 的渲染管线在每一帧都需要执行 measure → layout → draw 三个阶段（参见 [2.4 Choreographer 与渲染流水线](04-choreographer.md)）。measure 和 layout 阶段的耗时与 View 树的深度直接相关——measure 是递归的，父 ViewGroup 需要先遍历所有子 View 确定尺寸，然后才能确定自己的尺寸。布局嵌套越深，递归层数越多。
 
-更糟糕的是某些 ViewGroup 需要**多次测量**。`RelativeLayout` 需要先做一遍测量确定各子 View 之间的依赖关系，然后再做一遍确定最终位置。`LinearLayout` 使用 `layout_weight` 时也有类似问题。
+某些 ViewGroup 还需要**多次测量**。`RelativeLayout` 需要先做一遍测量确定各子 View 之间的依赖关系，然后再做一遍确定最终位置。`LinearLayout` 使用 `layout_weight` 时也有类似问题。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/layout/constraint-layout — ConstraintLayout 通过消除嵌套来减少 measure/layout pass 次数]
 
@@ -350,7 +350,7 @@ val config by lazy(LazyThreadSafetyMode.NONE) { parseConfig() }
 
 ## Compose 性能优化：减少重组、stable 标记、remember/derivedStateOf
 
-传统 View 系统的优化到此基本覆盖了主要场景。但越来越多的项目正在迁移到 Jetpack Compose，它引入了一套全新的性能模型——不只有 measure/layout/draw，还多了一个 **composition** 阶段。Composition 阶段的开销取决于 Recomposition（重组）的频率和范围，这是 Compose 性能优化的核心战场。
+传统 View 系统的优化到此基本覆盖了主要场景。但越来越多的项目正在迁移到 Jetpack Compose，它引入了一套全新的性能模型——不只有 measure/layout/draw，还多了一个 **composition** 阶段。Composition 阶段的开销取决于 Recomposition（重组）的频率和范围，这是 Compose 性能优化的重点。
 
 ### 减少 Recomposition 的核心策略
 
