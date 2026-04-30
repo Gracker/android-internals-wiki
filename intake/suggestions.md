@@ -408,3 +408,10 @@
 - **位置**：文末 `16KB Page Size 对线程栈内存的影响` 补充段
 - **问题**：该段内容讨论 PTHREAD_STACK_MIN、ART 线程栈和 16KB page size，与本节 MessageQueue / DeliQueue 主线没有直接因果关系，容易把“队列并发结构”和“线程栈内存”两个主题混在一起。
 - **建议**：移到 4.7 `16KB Page Size 与 Android 性能` 或内存章节；本节只保留 DeliQueue 对测试框架、mMessages 反射和 Perfetto monitor contention 的影响。
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-04-30 — L214-L217 / L323 ART 8 性能数字
+- **类型**：数据缺失
+- **位置**：L214-L217、L323
+- **问题**：32% 堆大小下降、85% GC 暂停下降、70% 分配速度提升、Dalvik 18 倍等数字没有在当前标注的 `source.android.com/docs/core/runtime/gc-debug` 页面中出现。该页面能支撑 Android 8 默认 CC、RegionTLAB、Android 10+ generational CC，但不能支撑这些量化值。
+- **建议**：补 Android/ART 官方演讲、android.com 页面或可公开 benchmark 链接；如果只能保留二手材料，需标注来源、benchmark 名称、设备/版本和对比基线。
+- **review 日志**：logs/deep-review/2026-04-30-09-deep-review.md

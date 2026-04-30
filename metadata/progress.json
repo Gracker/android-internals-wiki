@@ -828,28 +828,30 @@
       "title": "过度绘制",
       "chapter": "'2.8'",
       "section": "2.8",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "'2026-03-30'",
       "applicable_versions": "Android 4.2 (API 17) - Android 16",
       "last_verified": "'2026-04-12'",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "high",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-20'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T07:30:41+08:00",
-      "p0": 1,
-      "p1": 2,
+      "last_task9_at": "2026-04-30T09:28:00+08:00",
+      "p0": 0,
+      "p1": 0,
       "p2": 0,
-      "last_task6_at": "2026-04-30T09:18:00+08:00"
+      "last_task6_at": "2026-04-30T09:18:00+08:00",
+      "review_notes": "2026-04-30 task9 deep-review: pass-tech-review。无 P0/P1；自动晋升 finalized。",
+      "p3": 1
     },
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
       "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
@@ -1702,10 +1704,14 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T13:20:00+08:00",
-      "last_task6_at": "2026-04-30T09:18:00+08:00"
+      "last_task9_at": "2026-04-30T09:28:00+08:00",
+      "last_task6_at": "2026-04-30T09:18:00+08:00",
+      "p1": 1,
+      "p2": 1,
+      "review_notes": "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。",
+      "p0": 0
     },
     "src/part1-fundamentals/ch04-memory/04-lmk.md": {
       "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
@@ -7202,6 +7208,19 @@
         }
       ],
       "log": "logs/deep-review/2026-04-30-08-deep-review.md"
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "at": "2026-04-30T09:28:00+08:00",
+      "sections": [
+        "2.8",
+        "4.3"
+      ],
+      "result": {
+        "2.8": "pass-tech-review",
+        "4.3": "needs-rework"
+      },
+      "log": "logs/deep-review/2026-04-30-09-deep-review.md"
     }
   ],
   "progress": {
