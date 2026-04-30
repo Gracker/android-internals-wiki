@@ -848,7 +848,8 @@
       "last_task9_at": "2026-04-29T07:30:41+08:00",
       "p0": 1,
       "p1": 2,
-      "p2": 0
+      "p2": 0,
+      "last_task6_at": "2026-04-30T09:18:00+08:00"
     },
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md": {
       "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
@@ -1703,7 +1704,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-29",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T13:20:00+08:00"
+      "last_task9_at": "2026-04-29T13:20:00+08:00",
+      "last_task6_at": "2026-04-30T09:18:00+08:00"
     },
     "src/part1-fundamentals/ch04-memory/04-lmk.md": {
       "path": "src/part1-fundamentals/ch04-memory/04-lmk.md",
