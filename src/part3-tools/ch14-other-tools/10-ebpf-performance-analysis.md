@@ -52,23 +52,23 @@ gap_source: "AOSP结构+官方文档+研究素材"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-task6_state: reviewed
+task6_state: "revisiting"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-29"
 task6_result: "pass-light-edit"
-task2b_result: fixed
+task2b_result: "fixed"
 last_task2b_at: "2026-04-27T03:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T07:30:41+08:00"
-task2b_state: "pending"
+task2b_state: "fixed"
 p0: 1
 p1: 0
 p2: 2
@@ -151,7 +151,7 @@ eBPF 还有两个系统级前提：
 
 ### BPF Loader 与系统级 eBPF 程序
 
-Android 在启动阶段会自动加载 `/system/etc/bpf/` 目录下的所有 eBPF 程序。这些程序是预编译的 `.o` 文件（ELF 格式），由 AOSP 构建系统从 C 源码编译。加载后，系统自动创建 eBPF maps 并将程序和 maps pin 到 BPF 文件系统（`/sys/fs/bpf/`）。
+Android 在启动阶段通过 BPF Loader（`system/bpf/`）加载 `/system/etc/bpf/` 目录下的核心平台 eBPF 程序。这些程序是预编译的 `.o` 文件（ELF 格式），由 AOSP 构建系统从 C 源码编译。加载后，系统自动创建 eBPF maps 并将程序和 maps pin 到 BPF 文件系统（`/sys/fs/bpf/`）。除核心平台路径外，APEX 模块（如 UprobeStats）、vendor 分区也可携带各自的 eBPF 程序和加载器。
 
 Android 已经在系统级使用 eBPF 的场景包括：
 
@@ -189,9 +189,11 @@ eBPF 程序长期受内核版本兼容性影响。结构体布局一变，硬编
 
 [已验证: AOSP android-16.0.0_r1]
 
-## Simpleperf 与 eBPF 的结合
+## Simpleperf 动态 Probe：perf_event 路径的 kprobe / uprobe
 
-我们在 14.2 节已经介绍过 Simpleperf 作为 Android 原生 CPU profiling 工具的基础用法。这里聚焦 Simpleperf 与 eBPF 相关的能力——uprobe 和 kprobe 动态追踪。
+Simpleperf 的 `--kprobe` / `--uprobe` 通过 tracefs 的 `kprobe_events` / `uprobe_events` 创建动态探针，再通过 `perf_event_open()` 采样。这条路径与 eBPF 探针共享内核中的 kprobe / uprobe 挂载点，但 Simpleperf 侧的实现在 `system/extras/simpleperf/ProbeEvents.cpp` 中并没有加载 eBPF program 或操作 BPF map——它走的是 perf_event 子系统，不是 eBPF 子系统。两者的区别在于：perf_event 路径以采样（sampling）为主，事件写入 ring buffer 后由用户态读取；eBPF 路径可以在内核态做过滤、聚合、map 更新等逻辑。本章前面介绍的 UprobeStats 才是 Android 上真正的 eBPF 动态埋点方案（由 bpfloader 加载 BPF 程序，通过 BPF map 输出统计结果）。
+
+下面先看 Simpleperf 的 perf_event 动态 probe 用法，再在下一节看 eBPF 路径的 UprobeStats。
 
 
 ### uprobe：追踪用户态函数
@@ -491,7 +493,7 @@ eBPF 程序运行在内核态，调试手段有限。不能像用户态程序那
 
 - **5.1 Linux 进程调度基础**：sched_ext 的 BPF 调度器是调度器架构演进的重要方向
 - **14.2 Simpleperf**：Simpleperf 的 uprobe/kprobe 功能是 eBPF 在性能分析中最直接的入口
-- **13.1 Perfetto 简介**：Perfetto 的 tracepoint 数据源部分依赖 eBPF 采集的数据
+- **13.1 Perfetto 简介**：Perfetto 可与 eBPF 产物互补；常规 ftrace 数据源不依赖 eBPF
 - **1.14 锁竞争**：eBPF 的 uprobe 可以用于追踪锁的获取和释放时序
 - **4.6 内存版本演进**：eBPF 的 `gpu_mem` 程序追踪 GPU 内存使用量，与内存管理直接关联
 - **16.4 Android 17 系统级优化**：sched_ext 是 Kernel 6.12 的核心特性，GKI 升级时间线直接影响 eBPF 在 Android 上的可用性

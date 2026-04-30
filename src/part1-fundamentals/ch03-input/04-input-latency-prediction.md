@@ -2,7 +2,7 @@
 title: "输入延迟与预测输入技术"
 chapter: "3.4"
 section: "3.4"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -30,13 +30,13 @@ sources:
     path: "intake/research-feeds/2026-04-02-11-ch02-android17-deltique-lockfree-messagequeue.md"
 tags: [input, latency, touch, prediction, motioneventpredictor, front-buffer, kalman-filter, perfetto, input-latency]
 related_chapters: ["1.13", "3.1", "3.2", "2.3", "2.4", "2.5", "8.1", "13.3", "13.5"]
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: fixed
+task2b_result: "fixed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-29"
 task9_reviewed_date: "2026-04-29"
@@ -97,7 +97,14 @@ UX 研究表明，用户对输入响应延迟的感知阈值大约在 100ms [待
 **阶段 1：硬件采样延迟**（触控 IC → 中断）
 触控 IC（Touch Panel Controller）以固定的采样率扫描屏幕电容变化，通常为 120Hz 或 240Hz（高端设备可达 480Hz）。当检测到触控事件后，IC 通过 I2C 或 SPI 总线向 CPU 发出中断。采样率决定了硬件层面的最小延迟粒度：120Hz 采样率下，最坏情况需要等待 8.33ms 才能采集到一次触控。
 
-部分 Snapdragon 平台支持动态报点率缩放。当系统检测到高频交互场景（如游戏或手写笔绘制），触控固件会自动将报点率从 120Hz 拉升到 240Hz 甚至 480Hz，把最坏采样延迟从 8.33ms 压缩到 2.08ms。这个切换由 OEM 的触控驱动和固件协同完成，应用层无法直接控制报点率，但可以通过 Game Mode API 或 `requestUnbufferedDispatch()` 间接触发系统进入高性能输入模式。动态报点的代价是功耗增加，所以桌面和静态场景下会自动回落到较低频率。
+部分 Snapdragon 平台支持动态报点率缩放。当系统检测到高频交互场景（如游戏或手写笔绘制），触控固件会自动将报点率从 120Hz 拉升到 240Hz 甚至 480Hz，把最坏采样延迟从 8.33ms 压缩到 2.08ms。这个切换由 OEM 的触控驱动和固件协同完成，应用层无法直接控制报点率。
+
+需要注意两点容易混淆的边界：
+
+- `View.requestUnbufferedDispatch(MotionEvent)` 请求的是取消 MotionEvent 的 batching（让事件不再攒批到下一个 VSync），不是提高触控 IC 的报点率。代价是失去系统 resampling 带来的平滑收益，文档也明确写了不适合大多数应用。
+- Game Mode API 提供的是整体性能/功耗/画质策略入口（如目标帧率、处理器资源预算调整），当前公开文档没有给出"Game Mode 直接通知 InputDispatcher 提高报点率或进入低延迟输入模式"的官方调用关系。Game Mode 可能通过整体调度预算间接改善端到端延迟，但它不是 InputDispatcher 的专用低延迟 API。
+
+动态报点的代价是功耗增加，所以桌面和静态场景下会自动回落到较低频率。
 
 **阶段 2：内核处理延迟**（中断 → /dev/input/eventX）
 CPU 响应中断后，内核的 input 子系统将原始数据解码为标准 Linux input_event 结构体，写入 `/dev/input/eventX` 设备节点。这个阶段通常在 1ms 以内，但受中断处理优先级和内核调度影响。在某些 SoC 上，如果触控中断被分配到大核上的高优先级 IRQ 线程，延迟可以压到亚毫秒级。

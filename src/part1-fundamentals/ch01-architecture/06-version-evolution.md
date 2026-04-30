@@ -2,7 +2,7 @@
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
 section: "1.6"
-status: ready-for-review
+status: "ready-for-review"
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -33,12 +33,12 @@ reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)"
 task9_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_reviewed_date: "2026-04-30"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-30T04:20:00+08:00"
@@ -160,7 +160,7 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **更严格的后台限制。** Android 16 将前台服务启动的后台 Job 也纳入了运行时配额管理，进一步收紧了后台执行的自由度。
 
-**性能监控 API 增强。** `ProfilingManager`（Android 15+ 引入，Android 16 增强）支持系统触发的性能分析。应用通过 `ProfilingManager.requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 请求系统转储 Trace；Android 16 进一步强化了其在 App Startup 阶段的自动化能力，系统可以在 ANR 等关键事件发生时自动捕获背景环形缓冲区中的 Trace 数据。`ApplicationStartInfo` 新增的组件启动信息（可通过 `getStartComponent()` 精确区分冷启动由 Activity / Service / Receiver / Provider 中哪种组件触发）也为启动性能归因提供了更精细的维度。[来源: AOSP android.os.ProfilingManager, android-16.0.0_r1]
+**性能监控 API 增强。** `ProfilingManager`（Android 15 / API 35 引入，Android 16 增强）支持应用主动请求和系统自动触发两种性能分析模式。应用侧通过 `ProfilingManager.requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)` 请求系统转储 Trace（参数包括分析类型、可选配置 Bundle、取消信号和结果回调）；系统侧可通过 `addProfilingTriggers(List<ProfilingTrigger>)` 注册自动触发条件，`registerForAllProfilingResults(Executor, Consumer)` 接收系统级 Profiling 结果。Android 16 进一步强化了其在 App Startup 阶段的自动化能力，系统可以在 ANR 等关键事件发生时自动捕获背景环形缓冲区中的 Trace 数据。`ApplicationStartInfo` 新增的组件启动信息（可通过 `getStartComponent()` 精确区分冷启动由 Activity / Service / Receiver / Provider 中哪种组件触发）也为启动性能归因提供了更精细的维度。[来源: AOSP android.os.ProfilingManager API 35/36, android-16.0.0_r1]
 
 **修订的 SDK 发布节奏。** Android 16 引入了新的 SDK 发布结构——2025 年内发布两个 API 版本。第一个包含新 API 和行为变更，第二个只增加 API 不改变行为。这对 App 开发者意味着更平滑的适配周期。
 
