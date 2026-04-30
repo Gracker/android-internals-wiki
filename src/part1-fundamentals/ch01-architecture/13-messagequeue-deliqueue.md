@@ -37,17 +37,18 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-last_task9_at: 2026-04-28T16:21:00+08:00
+last_task9_at: "2026-04-30T08:33:53+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-28
-task2b_state: fixed
+task9_reviewed_date: "2026-04-30"
+task2b_state: pending
 task2b_result: pending
 last_task2b_at: "2026-04-30T07:43:21.194303"
+task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P2 1。SemiConcurrentMessageQueue 路径不存在；16KB Page Size 附录与本节主题交叉引用不一致。"
 ---
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化

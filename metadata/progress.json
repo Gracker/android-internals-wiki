@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-30T07:35:29+08:00",
+  "generated_at": "2026-04-30T08:33:53+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 104,
     "ready-for-review": 114,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-30T05:20:00+08:00",
+    "last_updated": "2026-04-30T08:33:53+08:00",
     "pipeline_stage_counts": {
       "unknown": 33,
       "ready-to-publish": 104,
@@ -483,9 +483,15 @@
       "task2b_result": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T16:21:00+08:00"
+      "last_task9_at": "2026-04-30T08:33:53+08:00",
+      "p0": 1,
+      "p1": 0,
+      "p2": 1,
+      "issues_found": "major",
+      "updated_by": "openclaw-task9",
+      "updated_date": "2026-04-30"
     },
     "src/part1-fundamentals/ch01-architecture/14-lock-contention.md": {
       "path": "src/part1-fundamentals/ch01-architecture/14-lock-contention.md",
@@ -2433,12 +2439,18 @@
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
+      "task2b_result": "pending",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T12:29:31+08:00"
+      "last_task9_at": "2026-04-30T08:33:53+08:00",
+      "p0": 1,
+      "p1": 1,
+      "p2": 0,
+      "issues_found": "major",
+      "updated_by": "openclaw-task9",
+      "updated_date": "2026-04-30"
     },
     "src/part2-performance/ch07-smoothness/06-case-studies.md": {
       "path": "src/part2-performance/ch07-smoothness/06-case-studies.md",
@@ -7164,6 +7176,30 @@
         }
       ],
       "log": "logs/deep-review/2026-04-29-15-deep-review.md"
+    },
+    {
+      "date": "2026-04-30",
+      "time": "08:33",
+      "task": "task9-deep-tech-review",
+      "sections_reviewed": [
+        {
+          "section": "1.13",
+          "title": "MessageQueue 机制与 DeliQueue 无锁优化",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 1
+        },
+        {
+          "section": "7.5",
+          "title": "优化策略",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 1,
+          "p2": 0
+        }
+      ],
+      "log": "logs/deep-review/2026-04-30-08-deep-review.md"
     }
   ],
   "progress": {
@@ -7899,6 +7935,40 @@
         "updated_by": "openclaw-task9",
         "updated_date": "2026-04-29",
         "auto_promoted": true
+      },
+      "1.13": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-30",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "status": "ready-for-review",
+        "issues_found": "major",
+        "task2b_state": "pending",
+        "task2b_result": "pending",
+        "p0": 1,
+        "p1": 0,
+        "p2": 1,
+        "last_task9_at": "2026-04-30T08:33:53+08:00",
+        "updated_by": "openclaw-task9",
+        "updated_date": "2026-04-30"
+      },
+      "7.5": {
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-04-30",
+        "task9_result": "needs-rework",
+        "task9_state": "reviewed",
+        "pipeline_stage": "task2b_pending",
+        "status": "ready-for-review",
+        "issues_found": "major",
+        "task2b_state": "pending",
+        "task2b_result": "pending",
+        "p0": 1,
+        "p1": 1,
+        "p2": 0,
+        "last_task9_at": "2026-04-30T08:33:53+08:00",
+        "updated_by": "openclaw-task9",
+        "updated_date": "2026-04-30"
       }
     }
   },
