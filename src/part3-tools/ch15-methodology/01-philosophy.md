@@ -35,11 +35,11 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-27'
@@ -47,7 +47,7 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 last_task9_at: "2026-04-27T18:35:00+08:00"
-last_task2b_at: "2026-04-27T13:40:00+08:00"
+last_task2b_at: "2026-04-30T17:46:37.750688"
 task2b_fixed_at: "2026-04-27T13:40:00+08:00"
 task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
 ---
@@ -131,7 +131,8 @@ Perfetto 的 trace event 插桩会给每个被追踪的函数增加微秒级开�
 减少测量偏差的常见做法:
 
 - **预热轮次(warm-up)**:正式测量前先跑几轮,让 JIT 编译、缓存、CPU 调频都稳定下来再开始计时。
-- **控制热降频**:长时 benchmark 注意设备温度,必要时在两次采样之间加入冷却间隔,或者用 `adb shell settings put global always_finish_activities 1` 配合固定屏幕亮度减少变量。
+- **控制热降频**:长时 benchmark 注意设备温度,必要时在两次采样之间加入冷却间隔,配合固定屏幕亮度减少变量。
+- **统一编译状态**:Macrobenchmark 冷启动测量中更大的变量是编译状态。`CompilationMode.None` / `Partial` / `Full` / `DEFAULT` 会改变 JIT、AOT、Baseline Profile 的参与方式。`StartupMode.COLD` 本身会在迭代间处理进程冷启动。对比时应保持相同 `CompilationMode`、相同 profile 状态、同机型温控条件,而不是依赖 `always_finish_activities` 这样的旧版设置。
 - **对比不同采样率**:如果 Simpleperf 在 99Hz 和 999Hz 下给出一致的热点排名,说明采样干扰在可接受范围内。
 - **多次测量取分布**:不要只测一次。多次测量取中位数或 P50/P90/P99 分布,才能区分「真实性能差异」和「测量噪声」。
 

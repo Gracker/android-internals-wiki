@@ -28,15 +28,15 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-21T19:53:32+08:00"
+last_task2b_at: "2026-04-30T17:46:37.750688"
 task9_result: needs-rework
 last_task9_at: '2026-04-23T02:33:00+08:00'
 task9_reviewed_by: openclaw-task9
@@ -403,7 +403,7 @@ systemHealthManager.getPowerMonitorReadings(
     executor,
     object : OutcomeReceiver<PowerMonitorReadings, RuntimeException> {
         override fun onSuccess(result: PowerMonitorReadings) {
-            val energy = result.getConsumedEnergy(selectedMonitor) // 微瓦秒
+            val energy = result.getConsumedEnergy(selectedMonitor) // 微焦耳（μJ）
             val ts = result.getTimestampMillis(selectedMonitor)    // 毫秒
         }
         override fun onError(error: RuntimeException) { ... }
@@ -415,7 +415,7 @@ systemHealthManager.getPowerMonitorReadings(
 
 封装一次功耗快照，提供两个方法：
 
-- `getConsumedEnergy(PowerMonitor)`：设备启动以来累计能耗，单位微瓦秒（μWs），重启清零
+- `getConsumedEnergy(PowerMonitor)`：设备启动以来累计能耗，单位微焦耳（μJ），重启清零
 - `getTimestampMillis(PowerMonitor)`：快照采集时基于 `SystemClock.elapsedRealtime()` 的时间戳
 
 注意返回值是**累计值**而非瞬时功率，要计算瞬时功率需要取两次快照的差值。
@@ -436,6 +436,8 @@ systemHealthManager.getPowerMonitorReadings(
 ```
 
 底层都走 `IPowerStats HAL`，差异只是暴露给谁、以什么格式。Perfetto 录制的是系统级 Trace，应用层 API 是单次异步查询。
+
+Android 15 引入了 `PowerStatsService`（位于 `frameworks/base/services/core/java/com/android/server/power/stats/`），取代了旧版 `BatteryStatsImpl` 中耦合的功耗统计逻辑。`PowerStatsService` 通过 `PowerStatsProcessor` 接口为 CPU、GPU、Modem 等组件分别建立能耗模型，与 `SystemHealthManager` 对接后向应用层暴露标准查询接口。这套架构使得功耗统计从单一巨型类逐步解耦为可独立迭代的模块。
 
 **版本门槛**：应用层 PowerMonitor API 需要 API 35； Perfetto `android.power_rails` 从 Android 10 就存在，但需要设备支持 ODPM（Pixel 6+ 确认支持）。
 

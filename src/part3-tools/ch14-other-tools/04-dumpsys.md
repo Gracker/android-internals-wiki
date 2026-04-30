@@ -31,13 +31,13 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-26T00:45:50+08:00"
+last_task2b_at: "2026-04-30T17:46:37.750688"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
@@ -221,7 +221,7 @@ adb shell dumpsys gfxinfo <package_name> reset
 
 ### framestats：逐帧时间线
 
-`framestats` 输出最近 120 帧的逐帧时间戳。每一行是一帧，各列代表渲染管线中的关键时间节点：`IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`、`FrameStartTime`、`FrameInterval`、`WorkloadTarget`、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等。
+`framestats` 输出最近 120 帧的逐帧时间戳。每一行是一帧，各列代表渲染管线中的关键时间节点：`IntendedVsync`、`Vsync`、`InputEventId`、`HandleInputStart`、`AnimationStart`、`PerformTraversalsStart`、`DrawStart`、`FrameDeadline`（Android 14+ 新增）、`FrameStartTime`、`FrameInterval`（Android 14+ 新增）、`WorkloadTarget`（Android 14+ 新增）、`SyncQueued`、`SyncStart`、`IssueDrawCommandsStart`、`SwapBuffers`、`FrameCompleted`、`GpuCompleted` 等。
 
 所有时间戳均为纳秒（ns）。固定刷新率设备上可以用 60Hz 的 16667000ns（约 16.67ms）或 120Hz 的 8333000ns（约 8.33ms）做粗略基准；VRR / ARR 设备要读每行的 `FrameInterval` 和 `FrameDeadline`，不能把整段测试都按一个固定 VSync 周期判定。
 
@@ -514,7 +514,7 @@ bool tryFastUpdate(const Args& args);  // 返回 true 表示快速路径成功
 |---|---|---|
 | 第一列 | `desired_present_time` | 该帧期望的呈现时间 |
 | 第二列 | `actual_present_time` | 该帧实际呈现时间 |
-| 第三列 | `frame_ready_time` | 帧数据准备完成的时间 |
+| 第三列 | `frame_ready_time` | AOSP 记录的帧就绪时间，表示帧提交给 HWC 的时间点（非 GPU 完成时间） |
 
 判断掉帧的方法：计算 `actual_present_time - desired_present_time`，如果差值大于 refresh period（第一行的值），说明这一帧被延迟了至少一个 VSync 周期。如果 actual 频繁晚于 desired 超过一个 refresh period，说明这个 Layer 的生产者（App 端渲染线程）跟不上显示刷新率。
 
