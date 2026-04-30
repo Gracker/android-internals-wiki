@@ -30,11 +30,11 @@ sources:
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-30"
@@ -77,7 +77,7 @@ last_task9_at: "2026-04-30T05:20:00+08:00"
 
 用户也许无法区分 500ms 和 600ms 的启动时间，但对触摸响应的延迟极其敏感。一个设备启动再快，如果触摸之后画面纹丝不动，用户会觉得这台机器"卡"。这就是为什么 Google 认为，在性能优先级排序中，**UI 渲染管线的流畅性高于一切**——包括应用启动速度。
 
-但站在用户体验治理角度，响应速度并不是和流畅性割裂的独立问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢就是同一条体验链上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
+从用户体验治理角度看，响应速度和流畅性属于同一类问题。如果把 `7.1` 里提出的“广义流畅性”概念展开来看，响应慢就是同一条体验路径上的另一种失效形式：掉帧是“画面没按节奏到达”，响应慢是“反馈来得太晚”，ANR 是“晚到系统已经判定不可接受”。这也是为什么本章要和 `7.1`、`9.1`、`15.3`、`15.5` 一起看，才能形成完整判断。
 
 了解响应速度的完整路径之后，我们就能在 Perfetto 中精准定位：延迟到底发生在 Input 分发阶段、App 主线程处理阶段、还是渲染合成阶段。每一种瓶颈的优化方向完全不同，搞清楚"慢在哪里"是解决问题的第一步。
 
@@ -91,7 +91,7 @@ last_task9_at: "2026-04-30T05:20:00+08:00"
 
 在实际工程中，我们通常从以下几个维度度量响应速度：
 
-**1. 点击响应速度（Tap Response Time）**——用户点击屏幕到系统给出视觉反馈的时间。这是最直观的响应速度指标。Google Android Vitals 对此有明确的监控和告警机制。[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+**1. 点击响应速度（Tap Response Time）**——用户点击屏幕到系统给出视觉反馈的时间。这是最直观的响应速度指标。公开 Android Vitals 目前不单列 Tap Response Time 核心指标；排查时通常结合 Perfetto Input 轨道、慢帧、冻结帧和 ANR 数据判断。
 
 **2. 滑动响应速度（Swipe Response Time）**——用户手指滑动到画面开始跟随移动的时间。滑动的感知比点击更敏锐，因为用户的眼睛在跟踪手指运动，任何微小的延迟都会被捕捉到。
 
@@ -105,7 +105,7 @@ RAIL 是 Google 提出的以用户感知为中心的性能模型，最初用于 
 
 ### Response——响应（< 100ms）
 
-用户执行操作后，系统在 100ms 内必须给出可见的反馈。这个 100ms 不是凭空设定的——心理学研究表明，100ms 是人类感知"即时反馈"的临界点。操作和反馈之间的间隔超过 100ms，用户就会觉得"系统在处理"，而不是"系统在回应我"。
+用户执行操作后，系统在 100ms 内必须给出可见的反馈。这个 100ms 来自用户感知研究：100ms 是人类感知"即时反馈"的临界点。操作和反馈之间的间隔超过 100ms，用户就会觉得"系统在处理"，即时回应感会下降。
 
 在 Android 中的具体含义：
 - 主线程（UI Thread）的任何操作都不能阻塞超过 100ms
@@ -138,7 +138,7 @@ Android 通过 Choreographer 机制来同步 VSync 信号，如果某一帧的�
 
 当用户触摸屏幕时，硬件产生一个中断，内核的触摸驱动将其转换为输入事件。随后 InputReader（运行在 system_server 的 InputFlinger 线程中）读取这些事件，交给 InputDispatcher 进行分发。
 
-InputDispatcher 通过 Binder IPC 将事件发送给目标 App 进程。App 进程的 InputConsumer（在主线程的 NativeMessageQueue 中监听）接收到事件后，将其封装为 Java 层的 MotionEvent，投递到主线程的消息队列中。
+InputDispatcher 通过 InputChannel 将事件发送给目标 App 进程。AOSP android-16.0.0_r1 中，InputDispatcher::publishMotionEvent() 调用 connection->inputPublisher.publishMotionEvent()；InputPublisher 将 MotionEvent 序列化到 InputChannel 的共享消息缓冲区，再通过 Unix domain socket/socketpair 发送通知并传递输入消息。App 侧 NativeInputEventReceiver 监听 fd，InputConsumer 取出事件后封装为 Java 层 MotionEvent，投递到主线程消息队列。Binder 只参与窗口和 InputChannel 的创建、传递阶段，不承载每个 MotionEvent 的分发。
 
 这条路径在 Perfetto 中对应的是 Input Track 和对应 App 主线程上的 Input 事件处理 slice。从 InputDispatcher 发出到 App 收到，通常耗时在 1-2ms；如果主线程被阻塞（比如正在执行长时间的 measure/layout），这个时间会显著增加。
 
@@ -146,7 +146,7 @@ InputDispatcher 通过 Binder IPC 将事件发送给目标 App 进程。App 进�
 
 ### 第二步：App 主线程处理
 
-App 主线程收到 Input 事件后，工作按固定顺序依次展开。首先是事件处理——`View.onTouchEvent()` 被调用，如果设置了 `OnClickListener`，点击事件会传递到业务逻辑层，触发数据更新或界面跳转。接下来是 UI 状态的标记：如果这次操作需要重绘界面（绝大多数情况都是），系统会调用 `View.invalidate()` 或 `View.requestLayout()`，把对应的 View 标记为"需要重新绘制"或"需要重新布局"。最后，Choreographer 向 SurfaceFlinger 注册下一个 VSync-app 信号，告诉渲染管线"下一帧有新内容需要画"。
+App 主线程收到 Input 事件后，工作按固定顺序展开：事件处理、UI 状态标记、注册下一个 VSync-app。`View.onTouchEvent()` 被调用；如果设置了 `OnClickListener`，点击事件会传递到业务逻辑层，触发数据更新或界面跳转。需要重绘界面时，系统会调用 `View.invalidate()` 或 `View.requestLayout()`，把对应的 View 标记为"需要重新绘制"或"需要重新布局"。随后 Choreographer 向 SurfaceFlinger 注册下一个 VSync-app 信号，告诉渲染管线"下一帧有新内容需要画"。
 
 这一步是开发者最能控制的部分，也是最常见的性能瓶颈来源。如果在 onClick() 中执行了数据库查询、网络请求、或者复杂的 JSON 解析，主线程就会被阻塞，导致后续的渲染流程无法按时启动。
 
@@ -161,11 +161,11 @@ VSync-app 信号到来后，Choreographer.doFrame() 被触发，主线程依次�
 
 在 draw 阶段，主线程生成 DisplayList（绘制命令列表），然后交给 RenderThread（Android 5.0+）进行 GPU 渲染。RenderThread 通过 GPU 将 DisplayList 转换为像素数据，写入 GraphicBuffer。
 
-最后，SurfaceFlinger 在 VSync-sf 信号到来时，将所有 Layer 的 GraphicBuffer 合成，通过 Hardware Composer（HWC）提交给显示控制器，最终显示在屏幕上。
+SurfaceFlinger 在 VSync-sf 信号到来时，将所有 Layer 的 GraphicBuffer 合成，通过 Hardware Composer（HWC）提交给显示控制器，最终显示在屏幕上。
 
 在 Perfetto 中，我们可以在对应的 App 进程里看到主线程的 "Choreographer#doFrame" slice，以及 RenderThread 的 GPU 渲染工作。SurfaceFlinger 进程中有 "Commit" 和各 Layer 的合成操作。
 
-[图：完整的响应路径时序图：触摸 → InputReader → InputDispatcher → Binder → App主线程 → Choreographer → RenderThread → SurfaceFlinger → 屏幕]
+[图：完整的响应路径时序图：触摸 → InputReader → InputDispatcher → InputChannel → App 主线程 → Choreographer → RenderThread → SurfaceFlinger → 屏幕]
 
 ### 路径中的瓶颈分布
 
@@ -183,10 +183,11 @@ Android Vitals 是 Google Play 内置的应用质量监控系统，它会自动�
 
 ### 呈现速度（Render Time）
 
-Android Vitals 监控应用的帧渲染时间，当超过 50% 的用户会话中出现以下情况时，会标记为"呈现速度过慢"：
+Android Vitals/Play Console 的呈现速度指标主要关注慢帧和冻结帧：
 
-- 单帧渲染时间超过 16ms（对应 60fps 的帧预算）
-- 连续多帧渲染超时导致视觉卡顿
+- 慢帧（Slow rendering）：帧渲染时间超过当前刷新率对应的帧预算。60Hz 场景常用 16ms 作为参考；90Hz、120Hz 下预算约为 11ms、8ms。
+- 冻结帧（Frozen frames）：单帧渲染时间超过 700ms，用户通常会感知为明显停顿。
+- 游戏场景还会关注 slow sessions，用会话内慢帧占比评价玩家体验。
 
 ### 启动时间（App Startup Time）
 
@@ -216,7 +217,7 @@ ANR 是响应速度问题的极端表现。当主线程被阻塞超过一定时�
 
 ### 为什么感知速度更重要
 
-人类对"等待"的感知不是线性的。心理学研究表明：
+人类对"等待"的感知呈非线性变化。心理学研究表明：
 - 0-100ms：感觉"即时"，操作和反馈融为一体
 - 100-300ms：感觉"略有延迟"，但仍在可接受范围
 - 300-1000ms：感觉"正在处理"，需要某种反馈来维持信心
@@ -246,13 +247,15 @@ Android 12 的 SplashScreen API 提供了系统级的启动画面支持，可以
 
 ### 触摸预测（Touch Prediction）
 
-Android 16 在输入分发路径中引入了增强型触摸预测。系统利用 ML 模型预测用户指尖在下一帧的位移位置，将预测坐标用于渲染，从而在显示系统固有的 40-80ms 延迟面前，通过"算力换时间"来维持视觉跟手度。触摸预测不改变 Input 事件的实际分发延迟，而是在渲染端对延迟做视觉补偿。开发者无需额外适配，系统在满足条件时自动启用。
+Android 14（API 34）开始提供 MotionPredictor 公共 API。它用于根据历史 MotionEvent 预测未来触点位置，降低绘制与显示之间的视觉滞后。应用需要主动调用 `record(MotionEvent)` 记录输入历史，再调用 `predict(long predictionTimeNanos)` 获取预测事件；使用前还应通过 `isPredictionAvailable(deviceId, source)` 检查设备和输入源是否支持。
+
+触摸预测不改变 Input 事件的实际分发延迟，它是在渲染侧做位置补偿。Android 16 可继续关注预测算法和系统侧集成的变化，但公共 API 入口在 Android 14（API 34）已经存在，本节不把“系统自动对所有触摸路径启用 ML 预测”写成已验证结论。
 
 ## UIL（User Interaction Latency）与端到端响应度量
 
-Android 16 正式将 UIL（User Interaction Latency）列为端到端响应的核心度量指标，对标 Web 领域的 INP（Interaction-to-Next-Paint）。UIL 衡量的是从用户物理触摸屏幕到对应视觉反馈显示完成的全程延迟，已纳入 Google Play 排名权重。
+UIL（User Interaction Latency）适合作为端到端响应分析口径，用来衡量从用户物理触摸屏幕到对应视觉反馈显示完成的全程延迟。它可以借鉴 Web INP（Interaction-to-Next-Paint）的分析思路，但 Google 公开文档目前未确认 UIL 已成为 Android Vitals 官方核心指标，也未公开确认 UIL 与 Google Play 排序存在直接关系。
 
-**UIL 的评判标准**：P99 ≤ 200ms 为"良好"，对应 Web INP 的 200ms 阈值。UIL 超过 500ms 时，系统可能更早触发 Input-based ANR 预警。
+**UIL 的工程目标**：P99 ≤ 200ms 可以作为内部推荐目标，来源是对 Web INP 200ms 阈值的借鉴，不应写成 Android 官方标准。超过 500ms 的交互延迟需要优先排查，但公开文档没有把它定义为 Input-based ANR 的提前触发阈值。
 
 **UIL 的三大阶段拆解**：
 1. **输入延迟**——从 InputDispatcher 发出事件到 App 主线程收到 MotionEvent，通常 1-2ms，主线程阻塞时会显著增加
@@ -261,9 +264,9 @@ Android 16 正式将 UIL（User Interaction Latency）列为端到端响应的�
 
 在 Android 上做响应速度优化，可以通过 Perfetto 手动拼装这三个阶段的耗时来获得完整视图。Perfetto 的 Frame Timeline 轨道中 Expected/Actual Deadline 的偏差直接反映了 UIL 中的处理+渲染阶段是否达标。
 
-除了 UIL，Android Vitals 还提供了以下补充指标：
-1. **Input Dispatch Latency**——从 InputDispatcher 发出事件到 App 收到的时间，对应 UIL 的输入延迟阶段
-2. **Frame Rendering Time**——从 Choreographer.doFrame() 开始到帧被提交的时间，对应 UIL 的处理+渲染阶段
+除了 UIL 拆解，排查响应速度时还应结合以下指标和 trace 观察点：
+1. **Input dispatch delay**——从 InputDispatcher 发出事件到 App 收到 MotionEvent 的时间，可在 Perfetto Input 相关轨道和 App 主线程 slice 中观察
+2. **Frame rendering time / slow frames / frozen frames**——从 Choreographer.doFrame() 到帧提交与显示的耗时，可结合 Frame Timeline 和 Android Vitals 呈现速度指标判断
 3. **TTID / TTFD**——启动场景下的端到端响应指标
 
 ## 在 Perfetto 中分析响应速度
@@ -307,6 +310,6 @@ RAIL 的核心思想——根据用户的感知阈值设定性能目标——是
 
 ---
 
-> **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的源码路径已通过 L1 AOSP 源码确认。Android 16 的具体 VSync 优化细节标注为待验证，不做不确定的描述。
+> **验证状态**：本节核心内容（RAIL 模型、Android Vitals 指标、系统级响应路径）已通过 L2 官方文档验证。响应路径中的 InputChannel 描述已按 AOSP android-16.0.0_r1 源码修正。MotionPredictor 公共 API 入口按 Android 14（API 34）处理；Android 16 触摸预测系统侧变化和 UIL 官方地位不做未验证断言。
 >
 > **术语约定**：全文统一使用"响应速度"（Responsiveness）作为核心术语。"响应延迟"仅在引用外部指标定义时作为时间度量值使用，不作为独立术语。
