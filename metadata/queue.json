@@ -1603,8 +1603,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-04-30T12:45:06.566312+00:00",
+      "completed_reason": "Computer模式与Snapshot无锁读机制已补充；APK v4.1签名流式校验已添加；Parallel APEX Scanning已写入版本演进和PMS初始化段落"
     },
     {
       "section": "10",
@@ -2936,7 +2938,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T12:44:47.106506+00:00",
+      "completed_reason": "libmeminfo路径已更正(Android 11+ → system/memory/libmeminfo)；SIGRTMAX-16(信号48) Android 14泄漏扫描已补充；MAT OQL大图过滤示例已添加"
     },
     {
       "section": "14.1",
