@@ -53,10 +53,10 @@ sources:
     path: "source.android.com/docs/core/perf/lmkd"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5", "4.4", "5.1", "5.8"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task9_result: "needs-rework"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: pending
+task9_result: pending
 task2b_state: "pending"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
@@ -328,7 +328,7 @@ Empty process 连缓存 Activity 都没有，只剩一个已经建好的 Linux �
 | `PERSISTENT_PROC_ADJ` | -800 | 持久化系统进程 |
 | `PERSISTENT_SERVICE_ADJ` | -700 | 持久化系统服务 |
 | `FOREGROUND_APP_ADJ` | 0 | 当前 top / foreground 进程 |
-| `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ` | 50 | Android 16 新增：从 TOP 退到 FGS 的应用缓冲档，防止短暂切换场景下误杀 |
+| `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ` | 50 | 从 TOP 退到 FGS 的应用缓冲档，防止短暂切换场景下误杀。该常量自 Android 11 已存在于 ProcessList，后续版本逐步强化了 FGS 缓冲保护逻辑 |
 | `VISIBLE_APP_ADJ` | 100 | 可见进程 |
 | `PERCEPTIBLE_APP_ADJ` | 200 | 用户可感知进程，foreground service 常落在这一档 |
 | `PERCEPTIBLE_MEDIUM_APP_ADJ` | 225 | 中间过渡档 |
@@ -632,7 +632,7 @@ ORDER BY ts;
 
 ### 误区 3：后台 Service 设置为前台 Service 就万事大吉
 
-**不完全正确**。前台 Service 确实能将进程 oom_adj 从 500（service_b）提升到 0~100（foreground/perceptible）级别，但 Android 14 要求前台 Service 必须声明类型（如 `camera`, `location`, `mediaPlayback`），并且系统会检查这些类型是否与 App 实际行为匹配。滥用前台 Service 不仅违反 Play Store 政策，也会被系统检测并降级。
+**不完全正确**。前台 Service 确实能将进程 oom_adj 从 SERVICE_ADJ（500）提升到 0~100（foreground/perceptible）级别，但 Android 14 要求前台 Service 必须声明类型（如 `camera`, `location`, `mediaPlayback`），并且系统会检查这些类型是否与 App 实际行为匹配。滥用前台 Service 不仅违反 Play Store 政策，也会被系统检测并降级。
 
 ### 误区 4：进程被杀一定是因为内存不足
 

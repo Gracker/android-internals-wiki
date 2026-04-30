@@ -3483,7 +3483,7 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T22:57:00+08:00"
+      "last_task9_at": "2026-05-01T04:26:00+08:00"
     },
     "src/part2-performance/ch11-power/05-wakelock.md": {
       "path": "src/part2-performance/ch11-power/05-wakelock.md",
@@ -5269,7 +5269,7 @@
       "created_date": "2026-04-08",
       "gap_source": "官方文档+研究素材+AOSP结构+读者需求",
       "gap_score": 20,
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "task9_state": "reviewed",
@@ -5282,7 +5282,7 @@
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-04-28",
       "review_notes": "2026-04-28 task6 re-review-2 (revisiting→reviewed): pass-light-edit。Frontmatter去重整理。无新增L1/L2问题。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。",
-      "last_task9_at": "2026-04-28T03:43:01+08:00",
+      "last_task9_at": "2026-05-01T04:26:00+08:00",
       "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。",
       "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
       "section": "16.5"
@@ -7254,6 +7254,28 @@
           "note": "回炉重审（Task 9 needs-rework → Task 2B fixed → Task 6 re-review）"
         }
       ]
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "timestamp": "2026-05-01T04:26:00+08:00",
+      "sections": [
+        "11.4",
+        "16.5"
+      ],
+      "results": {
+        "11.4": {
+          "result": "needs-rework",
+          "p0": 2,
+          "p1": 0,
+          "p2": 1
+        },
+        "16.5": {
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 1,
+          "p2": 1
+        }
+      }
     }
   ],
   "progress": {
@@ -8355,7 +8377,7 @@
       }
     }
   },
-  "last_updated": "2026-04-30T04:20:00+08:00",
+  "last_updated": "2026-05-01T04:26:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -9709,6 +9731,27 @@
           ]
         }
       ]
+    },
+    {
+      "timestamp": "2026-05-01T04:47:54+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "1.3",
+        "1.9"
+      ],
+      "source": "task9-deep-tech-review",
+      "fixes": [
+        {
+          "section": "1.3",
+          "type": "版本差异/源码错误",
+          "detail": "PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ=50 非 Android 16 新增，自 Android 11 已存在；service_b 标签错误（500=SERVICE_ADJ）"
+        },
+        {
+          "section": "1.9",
+          "type": "源码错误/版本差异",
+          "detail": "APK v4 签名版本修正（Android 11 非Android 12引入）；scanDirLI并行化更正为独立并行扫描入口"
+        }
+      ]
     }
   ],
   "rework_log": [
@@ -9941,5 +9984,54 @@
       }
     }
   ],
-  "task2b_last_run": "2026-04-30T13:45:05.007806+00:00"
+  "task2b_last_run": "2026-04-30T13:45:05.007806+00:00",
+  "2026-05-01-04-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "11.4",
+      "16.5"
+    ],
+    "files": [
+      "src/part2-performance/ch11-power/04-case-studies.md",
+      "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+    ],
+    "timestamp": "2026-05-01T04:26:00+08:00",
+    "results": {
+      "11.4": {
+        "result": "needs-rework",
+        "p0": 2,
+        "p1": 0,
+        "p2": 1
+      },
+      "16.5": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 1
+      }
+    },
+    "auto_finalized": [],
+    "queue_added": 1,
+    "queue_merged": 1
+  },
+  "section_11_4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-05-01T04:26:00+08:00",
+    "path": "src/part2-performance/ch11-power/04-case-studies.md",
+    "title": "案例集"
+  },
+  "section_16_5": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-05-01T04:26:00+08:00",
+    "path": "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "title": "Android 17 (API 37) 性能行为变更与适配方法"
+  }
 }

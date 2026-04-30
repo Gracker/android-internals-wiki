@@ -55,11 +55,11 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
-task9_result: "needs-rework"
+task9_state: pending
+task9_result: pending
 last_task9_at: "2026-05-01T00:55:15+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-01"
@@ -123,9 +123,9 @@ SystemServer 启动阶段（简化）:
     → InputManagerService
 ```
 
-PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，`scanDirLI` 内部利用多线程并行处理多个 APEX 包。在包数量多的设备上，这一优化显著缩短了 PMS 初始化的耗时。
+PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，而是通过独立的并行扫描入口（如 `scanSystemApexPackagesPrivileged()`）在多线程中处理。在包数量多的设备上，这一优化显著缩短了 PMS 初始化的耗时。
 
-[已验证: AOSP android-16.0.0_r1 `PackageManagerService.java` scanDirLI / parallel APEX scanning]
+[已验证: AOSP android-16.0.0_r1 `PackageManagerService.java` parallel APEX scanning / scanSystemApexPackagesPrivileged]
 
 ### PMS 管理的核心数据结构
 
@@ -206,7 +206,7 @@ PMS 解析 `AndroidManifest.xml`、校验签名、检查 sharedUserId / 权限 /
 
 **4. APK v4.1 签名与流式校验**
 
-Android 12 引入 APK Signature Scheme v4（merkle tree 签名），后续版本又在 v4.1 中增加了密钥轮转（key rotation）支持。流式校验允许安装过程中增量验证 APK 块，而非一次性读入全部内容做校验。
+Android 11 引入 APK Signature Scheme v4（merkle tree 签名，服务于增量/流式安装的 .idsig 文件），后续版本又在 v4.1 中增加了密钥轮转（key rotation）支持。流式校验允许安装过程中增量验证 APK 块，而非一次性读入全部内容做校验。
 
 在 Android 12+ 设备上，`IncrementalService` 配合 v4 签名实现了按需解密和校验：应用安装后不必等所有文件完整写入，先完成校验的部分就可以被访问。在 Perfetto 中，可以通过 `android.incremental` 相关的 Trace 事件观察这一过程。当设备使用 Incremental FS（`/data/incremental/` 挂载点）时，文件访问会经过 `IncrementalService` 的 ioctl 路径，触发按块的签名校验。
 
@@ -526,7 +526,7 @@ Package Manager Service 与全书多个章节有交叉：
 | Android 10 | APEX / Mainline 基础设施引入，OTA 与 ART 更新开始解耦 | 后续 OTA 优化和 Virtual A/B 路径有了继续演进的基础 |
 | Android 12 | ART 模块化（Mainline） | 编译优化可通过 Play 系统更新推送 |
 | Android 14 | ART Service 取代直接 dex2oat 调用 | 编译管理更统一，后台 dexopt 更智能 |
-| Android 16 | PMS 并行解析 APEX 模块（`scanDirLI` 并行化）；公开资料提到 Play 分发侧可能引入 Cloud Compilation / SDM | 开机扫描时长缩短；命中 Cloud Compilation 时可减少本机 dexopt |
+| Android 16 | PMS 并行解析 APEX 模块（独立并行扫描入口）；公开资料提到 Play 分发侧可能引入 Cloud Compilation / SDM | 开机扫描时长缩短；命中 Cloud Compilation 时可减少本机 dexopt |
 | Android 17 | static final 不可变 → 更激进的常量折叠 | 编译优化深度提升（与 §1.7 交叉） |
 
 ## 常见问题与误区
