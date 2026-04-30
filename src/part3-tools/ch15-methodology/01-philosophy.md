@@ -2,7 +2,7 @@
 title: 性能优化的术、道、器
 chapter: '15.1'
 section: '15.1'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-04'
 drafted_by: openclaw-task2a
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
@@ -35,18 +35,18 @@ related_chapters:
 - '15.2'
 - '15.3'
 - '15.7'
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-27'
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-27"
-last_task9_at: "2026-04-27T18:35:00+08:00"
+task9_reviewed_date: 2026-04-30
+last_task9_at: "2026-04-30T18:33:37+08:00"
 last_task2b_at: "2026-04-30T17:46:37.750688"
 task2b_fixed_at: "2026-04-27T13:40:00+08:00"
 task9_review_notes: "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"

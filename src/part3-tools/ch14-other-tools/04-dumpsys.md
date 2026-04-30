@@ -2,7 +2,7 @@
 title: dumpsys 系列命令
 chapter: '14.4'
 section: '14.4'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
@@ -31,19 +31,19 @@ related_chapters:
 - '7.3'
 - '13.1'
 - '14.1'
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-30T17:46:37.750688"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
-task9_reviewed_date: 2026-04-27
+task9_reviewed_date: 2026-04-30
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-04-27T03:32:04+08:00
+last_task9_at: "2026-04-30T18:33:37+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
 ---
