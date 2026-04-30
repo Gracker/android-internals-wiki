@@ -2,7 +2,7 @@
 title: "MessageQueue 机制与 DeliQueue 无锁优化"
 chapter: "1.13"
 section: "1.13"
-status: ready-for-review
+status: finalized
 applicable_versions: "传统 MessageQueue：Android 1.0 (API 1)+；并发实现公开源码：Android 16；面向应用默认启用：Android 17 (API 37)"
 drafted_date: "2026-04-04"
 reviewed_date: "2026-04-30"
@@ -26,8 +26,6 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java (android-16.0.0_r1)"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/SemiConcurrentMessageQueue/MessageQueue.java (android-16.0.0_r1)"
-  - type: aosp
     path: "frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java (android-16.0.0_r1)"
   - type: wiki
     path: "https://en.wikipedia.org/wiki/Treiber_Stack"
@@ -37,16 +35,16 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: needs-rework
+task9_result: pass-tech-review
 last_task9_at: "2026-04-30T08:33:53+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: "2026-04-30T07:43:21.194303"
 task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P2 1。SemiConcurrentMessageQueue 路径不存在；16KB Page Size 附录与本节主题交叉引用不一致。"
 ---
@@ -346,7 +344,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 | Android 1.0 (API 1) | `MessageQueue` 和 `IdleHandler` 已存在 |
 | Android 4.1 (API 16) | `Choreographer` 开始大规模使用同步屏障 + 异步消息 |
 | Android 15 (API 35) | 公开 legacy 参考仍是单链表 + `synchronized` |
-| Android 16 (API 36) | 公开源码出现 `CombinedMessageQueue`，并同时放出 `LegacyMessageQueue`、`SemiConcurrentMessageQueue`、`ConcurrentMessageQueue` 多种实现；legacy 默认，concurrent 先给 system processes / SystemUI |
+| Android 16 (API 36) | 公开源码出现 `CombinedMessageQueue`，内部通过 `mUseConcurrent` 标志和 allowlist 选择 legacy 或 concurrent 实现；同时放出 `LegacyMessageQueue`、`ConcurrentMessageQueue` 多种实现；legacy 默认，concurrent 先给 system processes / SystemUI |
 | Android 17 (API 37) | `targetSdk 37` 的应用默认启用新的 lock-free MessageQueue |
 
 ## 常见误区
@@ -357,7 +355,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 ### “Android 16 已经把所有应用都切到 DeliQueue 了”
 
-没有。公开源码写的是 legacy 默认，并发实现先给 system processes 和 SystemUI，`SemiConcurrentMessageQueue` 也说明 Android 16 仍处在多变体 rollout 阶段。把 Android 16 的内部 rollout 和 Android 17 的 app-facing default 写成一条线，版本边界就会失真。
+没有。公开源码写的是 legacy 默认，并发实现先给 system processes 和 SystemUI。`CombinedMessageQueue` 内部的 `mUseConcurrent` allowlist 也说明 Android 16 仍处在受控 rollout 阶段。把 Android 16 的内部 rollout 和 Android 17 的 app-facing default 写成一条线，版本边界就会失真。
 
 ### “新实现里还是能从 `mMessages` 看见真实队列” 
 

@@ -9592,7 +9592,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T08:33:53+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T13:44:09.597603+00:00",
+      "completed_reason": "SemiConcurrentMessageQueue 源码锚点已删除；正文改用 CombinedMessageQueue/mUseConcurrent/allowlist 描述 Android 16 rollout"
     },
     {
       "section": "7.5",
@@ -9618,7 +9620,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T08:33:53+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T13:44:09.597603+00:00",
+      "completed_reason": "AGSL RuntimeShader setColorUniform→setFloatUniform 已修正；RenderEffect 绝对结论已改为条件化结论"
     },
     {
       "section": "4.3",
