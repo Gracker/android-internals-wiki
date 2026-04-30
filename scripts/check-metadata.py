@@ -66,9 +66,9 @@ def main():
         for f in files:
             if f.endswith('.md') and f != 'README.md' and f != 'SUMMARY.md':
                 filepath = os.path.join(root, f)
-                # 跳过 preface 和 appendix
+                # 跳过 preface / appendix，以及 graphify 生成报告
                 rel = os.path.relpath(filepath, src_dir)
-                if rel.startswith('preface/') or rel.startswith('appendix/'):
+                if rel.startswith(('preface/', 'appendix/', 'graphify-out/')):
                     continue
                 all_files.append(filepath)
 

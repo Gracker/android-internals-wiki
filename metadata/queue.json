@@ -3227,13 +3227,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "section_title": "内存分析工具",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-04-30T21:27:00+08:00"
+      "updated_at": "2026-04-30T21:27:00+08:00",
+      "completed_at": "2026-04-30T22:46:33.251923",
+      "completed_reason": "P0 LeakCanary retainedDelayMillis已拆分到AppWatcher.manualInstall；P0 libmeminfo验证锚点已统一；P0 malloc hooks已补全bionic入口(__malloc_hook/__free_hook)；P1 MTE版本已修正为Armv8.5-A+并与HWASAN对比场景化"
     },
     {
       "section": "14.4",
