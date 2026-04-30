@@ -3080,7 +3080,9 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T17:46:56.996512",
+      "completed_reason": "PowerMonitor API 单位从 μWs 修正为 μJ（微焦耳）；补充 PowerStatsService 架构演进说明"
     },
     {
       "section": "14.13",
@@ -3205,7 +3207,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T03:32:04+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T17:46:56.996512",
+      "completed_reason": "frame_ready_time 语义收窄为「帧提交给 HWC 的时间点」；FrameDeadline/FrameInterval/WorkloadTarget 标注 Android 14+ 新增"
     },
     {
       "section": "14.5",
@@ -3369,7 +3373,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T18:35:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T17:46:56.996512",
+      "completed_reason": "删除 always_finish_activities 旧版建议，补充 CompilationMode 与 StartupMode.COLD 的变量控制说明"
     },
     {
       "section": "15.10",

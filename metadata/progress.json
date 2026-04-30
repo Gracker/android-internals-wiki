@@ -9693,6 +9693,22 @@
         "05.06: +HWC 4.0 onVsyncIdle极速挂起, +Energy Limiter能量限额制",
         "05.07: +Energy Limiter配额制描述, +sched_ext可编程调度蓝图"
       ]
+    },
+    {
+      "timestamp": "2026-04-30T17:47:14.101465",
+      "task": "task2b-rework",
+      "processed": [
+        "14.4",
+        "14.11",
+        "15.1"
+      ],
+      "remaining_p85": 127,
+      "remaining_p60": 16,
+      "details": [
+        "14.4 dumpsys: frame_ready_time语义修正+framestats版本标注",
+        "14.11 battery-historian: PowerMonitor μJ单位修正+PowerStatsService架构",
+        "15.1 philosophy: CompilationMode变量控制替代always_finish_activities"
+      ]
     }
   ],
   "2026-04-29-13-task9": {
