@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-26"
+last_verified: "2026-04-30"
 last_verified_against: "AOSP android-16.0.0_r1 / main frameworks/native/cmds/atrace/atrace.cpp, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/"
 confidence: medium
 sources:
@@ -22,10 +22,10 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-26"
 rework_date: "2026-04-25"
@@ -37,7 +37,7 @@ last_task9_at: "2026-04-27T08:53:48+08:00"
 task9_reviewed_by: openclaw-task9
 review_notes: '2026-04-26 task6 re-review (revisiting): pass-light-edit. L1: 0 violations. 评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。'
 task9_reviewed_date: "2026-04-27"
-last_task2b_at: "2026-04-26T12:54:28+08:00"
+last_task2b_at: "2026-04-30T14:47:00+08:00"
 repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
@@ -120,7 +120,7 @@ Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个
 
 [已验证: AOSP android-17-beta3, available_events]
 
-每一个 tracepoint 在 Perfetto SQL 中都有对应的表或可以直接查询。例如 `sched_switch` 对应 `sched` 表，`cpu_frequency` 对应 `cpu_frequency_counters`。理解这种从 tracepoint 到 SQL 的映射关系，有助于我们在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
+Perfetto 对 ftrace 事件做了两层处理：**原始 ftrace 事件**保留在 `ftrace` 表中（可通过 `ftrace_events` 表按事件名过滤），**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图，`cpu_frequency` 进入 `cpu_frequency_counters` 表。不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace` 原始表中体现，查询时需要按事件名过滤。理解这种"原始事件 → 派生视图"的分层关系，有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
 
 ## atrace 用户空间追踪框架
 
@@ -149,7 +149,7 @@ Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接�
 具体流程是这样的：
 
 1. 应用调用 `android.os.Trace.beginSection("myTag")`
-2. 这最终调用到 `android.os.Trace.nativeBeginSection()` → JNI → `libcutils/Trace.cpp` 中的 `atrace_begin()`
+2. 这最终调用到 `android.os.Trace.nativeBeginSection()` → JNI 入口在 `frameworks/base/core/jni/android_os_Trace.cpp` → 通过 `cutils/trace.h` 接口调用 `system/core/libcutils/trace-dev.cpp` / `trace-dev.inc` 中的 `atrace_begin()`
 3. `atrace_begin()` 将追踪数据写入一个特殊的文件描述符——这个 fd 指向的是 `/sys/kernel/tracing/trace_marker`
 4. `trace_marker` 是 ftrace 提供的一个接口，允许用户空间程序向 per-CPU ring buffer 写入自定义事件
 
@@ -210,8 +210,8 @@ traced_probes 采集 ftrace 数据的核心步骤：
 
 `TraceConfig` 中几个容易忽略的 ftrace 相关配置：
 
-- `ftrace_drain_period_ms`：多久从 ring buffer 读一次数据。默认 250ms。设太大会导致 buffer 溢出丢数据，设太小会增加 CPU 唤醒频率
-- `ftrace_buffer_size_kb`：per-CPU ring buffer 大小。设备 8 核时设 32KB 意味着总共 256KB 的内核缓冲区，高负载场景下很容易溢出
+- `ftrace_config.drain_period_ms`：多久从 ring buffer 读一次数据。默认 250ms。设太大会导致 buffer 溢出丢数据，设太小会增加 CPU 唤醒频率。注意这是 `FtraceConfig` 消息内的字段名，不是顶层的 `TraceConfig` 字段
+- `ftrace_config.buffer_size_kb`：per-CPU ring buffer 大小。设备 8 核时设 32KB 意味着总共 256KB 的内核缓冲区，高负载场景下很容易溢出。32KB 是一个容易溢出的反例值，不是默认值；Perfetto v43+ 多数配置不显式设置该字段，默认值 / `buffer_size_lower_bound` 通常远大于 32KB
 - `ftrace_events`：要启用的 tracepoint 列表。Perfetto 文档有完整的事件列表
 
 traced_probes 读取 ftrace 数据的源码路径（AOSP main 组织方式）：
@@ -333,7 +333,8 @@ TRACE_EVENT(my_event,
     ),
     TP_fast_assign(
         __entry->value = value;
-        __assign_str(name, name);
+        __assign_str(name, name); // Linux < 6.10 使用双参数形式
+        // Linux 6.10+ 使用 __assign_str(name)，第二个参数被移除
     ),
     TP_printk("value=%d name=%s", __entry->value, __get_str(name))
 );
@@ -366,6 +367,8 @@ void my_path(void)
 Makefile 只负责把包含 `CREATE_TRACE_POINTS` 的源文件编进对应模块或内核目录，不在 `kernel/trace/Makefile` 里“注册” tracepoint。编译完成后，事件会出现在 tracefs 的 `available_events` 中，名称是 `my_custom:my_event`，Perfetto 配置里写成 `my_custom/my_event`。
 
 [已验证: Linux kernel tracepoint pattern, include/trace/events/*.h, include/trace/define_trace.h, CREATE_TRACE_POINTS]
+
+> **内核版本差异**：`__assign_str()` 宏在 Linux 6.10 发生了参数变更。旧内核（包括当前 GKI 6.6 分支）使用双参数写法 `__assign_str(dst, src)`；Linux 6.10+ 移除了第二个参数，改为 `__assign_str(dst)`，编译器自动从 `TP_STRUCT__entry` 中的 `__string()` 声明推导源字段。如果目标设备运行 Android 17 / Kernel 6.12，需确认内核版本后使用对应的写法。
 
 ### 在 Perfetto 中查看自定义追踪数据
 

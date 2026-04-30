@@ -2529,7 +2529,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T08:53:48+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T14:56:10.560524",
+      "completed_reason": "android.os.Trace native路径已修正(android_os_Trace.cpp→trace-dev.cpp/trace-dev.inc)；tracepoint→SQL映射已改为两层说明；ftrace_config字段名已纠正(drain_period_ms/buffer_size_kb)；__assign_str Linux 6.10版本边界已补充"
     },
     {
       "section": "14",
@@ -3992,8 +3994,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-04-29T17:23:25.990357",
-      "status": "pending",
-      "source_file": "logs/review/2026-04-29-17-review.md"
+      "status": "completed",
+      "source_file": "logs/review/2026-04-29-17-review.md",
+      "completed_at": "2026-04-30T14:56:10.560524",
+      "completed_reason": "性能开销量化数据已补充(字符串分配/ftrace write/单次耗时表格)；版本兼容性表格已扩展(API 18-35+)；androidx.tracing版本差异已补充(1.0→1.2→2.0.0-alpha)"
     },
     {
       "section": "19.16",
