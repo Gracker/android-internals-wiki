@@ -2,8 +2,8 @@
 title: 内存分析工具
 chapter: '14.3'
 section: '14.3'
-status: ready-for-review
-reviewed_date: "2026-04-23"
+status: finalized
+reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
@@ -42,8 +42,8 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -524,7 +524,6 @@ Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应�
 [已验证: 官方文档, https://developer.android.com/ndk/guides/sanitizers]
 [已验证: 官方文档, https://source.android.com/docs/security/test/memory-safety]
 
-<!-- AIW-源码调研-2026-04-26: MTE ASYMM 深度补充 -->
 ### [已验证 2026-04-26] MTE 三种模式与 Asymmetric（ASYMM）升级机制
 
 现有描述只涉及 sync 和 async 两种模式，实际硬件（Arm v8.7-A+）支持第三种——**Asymmetric（ASYMM）模式**，Android 系统对 App 透明使用：
