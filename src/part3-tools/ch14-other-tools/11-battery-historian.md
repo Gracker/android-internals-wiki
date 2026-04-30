@@ -29,10 +29,10 @@ sources:
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-22"
+reviewed_date: "2026-04-30"
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
@@ -40,7 +40,7 @@ last_task2b_at: "2026-04-30T17:46:37.750688"
 task9_result: needs-rework
 last_task9_at: "2026-04-30T18:33:37+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-30
+task9_reviewed_date: "2026-04-30"
 ---
 
 # 14.11 Battery Historian 与功耗分析工具
@@ -255,7 +255,7 @@ adb shell dumpsys batterystats | grep -A 10 "Package com.example.app"
 
 ### ODPM 的工作原理
 
-ODPM 这条能力从 Android 10 (API 29) 的 Power Stats HAL 开始进入平台。真正能不能在 Studio 里看到 power rail，取决于设备是否实现并暴露 `android.hardware.power.stats` HAL。Pixel 6 及后续 Pixel 设备是官方文档明确列出的现成支持样本，但这不是 Pixel 独占能力，其他 OEM 机型只要实现了同一套 HAL，也可以上报对应的 rail 数据。它直接测量电池下游各硬件子系统的功耗，不依赖估算模型，精度远高于 Energy Profiler 的 CPU/网络/GPS 估算。
+ODPM 这条能力从 Android 10 (API 29) 的 Power Stats HAL 开始进入平台。真正能不能在 Studio 里看到 power rail，取决于设备是否实现并暴露 `android.hardware.power.stats` HAL。Pixel 6 及后续 Pixel 设备是官方文档明确列出的支持样本。其他 OEM 机型只要实现了同一套 HAL，同样可以上报对应的 rail 数据。它直接测量电池下游各硬件子系统的功耗，不依赖估算模型，精度远高于 Energy Profiler 的 CPU/网络/GPS 估算。
 
 ODPM 测量的 Power Rail 包括：
 
@@ -375,7 +375,7 @@ class PowerBenchmark {
 ---
 
 
-### PowerMonitor API（API 35 应用层接口）
+## PowerMonitor API（API 35 应用层接口）
 
 Macrobenchmark `PowerMetric` 在 API 34+ 就能用，但 Android 35 (API 35) 进一步向应用层开放了直接查询功耗数据的接口：`android.os.PowerMonitor` + `SystemHealthManager` 组合。
 
@@ -509,9 +509,9 @@ Android 15 引入了 `PowerStatsService`（位于 `frameworks/base/services/core
 ---
 
 
-### ADPF Power Efficiency Mode 与 PowerMonitor 的闭环整合
+## ADPF Power Efficiency Mode 与 PowerMonitor 的协作方案
 
-API 35 为 ADPF 引入的 `setPreferPowerEfficiency(true)` 机制（NDK 侧：`APerformanceHint_setPreferPowerEfficiency`），与同在 API 35 开放的 `PowerMonitor` 功耗量化接口，共同构成了"诊断-干预-验证"闭环：
+API 35 为 ADPF 引入的 `setPreferPowerEfficiency(true)` 机制（NDK 侧：`APerformanceHint_setPreferPowerEfficiency`），与同在 API 35 开放的 `PowerMonitor` 功耗量化接口，共同构成了"诊断-干预-验证"反馈循环：
 
 ```
 PowerMonitor 采样 → 分析能耗特征 → 判断是否启用 power efficiency mode
