@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-30T10:31:41+08:00",
+  "generated_at": "2026-04-30T17:30:08+08:00",
   "state_machine_version": "v2",
   "total_sections": 211,
   "metrics": {
@@ -7,7 +7,7 @@
     "finalized": 104,
     "ready-for-review": 114,
     "ready-to-publish": 0,
-    "last_updated": "2026-04-30T10:31:41+08:00",
+    "last_updated": "2026-04-30T17:30:08+08:00",
     "pipeline_stage_counts": {
       "unknown": 33,
       "ready-to-publish": 104,
@@ -60,7 +60,7 @@
       "pending": 95,
       "idle": 3
     },
-    "last_updated": "2026-04-30T10:31:41+08:00"
+    "last_updated": "2026-04-30T17:30:08+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -4704,7 +4704,7 @@
       "last_verified": "2026-04-25",
       "last_verified_against": "AOSP android-16.0.0_r1 (googlesource direct check) + external review 2026-04-25 + Perfetto/BPF upstream docs + Android GKI release builds",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -4713,19 +4713,20 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T07:30:41+08:00",
+      "last_task9_at": "2026-04-30T17:30:08+08:00",
       "last_task2b_at": "2026-04-27T03:40:00+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
       "updated_by": "openclaw-task2b",
       "updated_date": "2026-04-26",
       "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。",
-      "p0": 1,
-      "p1": 0,
+      "p0": 0,
+      "p1": 1,
       "p2": 2,
-      "task6_reviewed_date": "2026-04-30"
+      "task6_reviewed_date": "2026-04-30",
+      "review_notes": "2026-04-30 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
     },
     "src/part3-tools/ch14-other-tools/11-battery-historian.md": {
       "path": "src/part3-tools/ch14-other-tools/11-battery-historian.md",
