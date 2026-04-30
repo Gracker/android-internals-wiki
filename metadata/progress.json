@@ -9585,6 +9585,32 @@
         "task9-deep-tech-review",
         "external-ai-review"
       ]
+    },
+    {
+      "date": "2026-04-30T08:47:04.227888",
+      "sections": [
+        "2.8",
+        "4.3"
+      ],
+      "details": [
+        {
+          "section": "2.8",
+          "fixes": [
+            "P1 TBR成本模型补充",
+            "P1 Graphite/Early-Z降级为待验证",
+            "P1 Compose背景合并标注强化",
+            "GPU计数器标准化澄清"
+          ]
+        },
+        {
+          "section": "4.3",
+          "fixes": [
+            "P0 concurrent_mark_sweep.cc→mark_sweep.cc",
+            "P0 GetPageSize→GetPageSizeSlow/MemMap::GetPageSize",
+            "P1 art-management 404→gc-debug"
+          ]
+        }
+      ]
     }
   ],
   "rework_log": [
