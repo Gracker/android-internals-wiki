@@ -866,14 +866,14 @@
       "last_verified": "'2026-04-23'",
       "last_verified_against": "AOSP android-16.0.0_r1 + external/perfetto + developer.android.com",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "'2026-04-24'",
+      "reviewed_date": "2026-04-30",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
@@ -881,7 +881,8 @@
       "last_task2b_at": "2026-04-26T01:40:00+08:00",
       "task2b_fixed_by": "openclaw-task2b",
       "updated_by": "openclaw-task2b",
-      "updated_date": "2026-04-26"
+      "updated_date": "2026-04-26",
+      "task6_reviewed_date": "2026-04-30"
     },
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
       "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
@@ -1235,11 +1236,11 @@
         "2.15"
       ],
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "reviewed_by": "openclaw-task6",
-      "reviewed_date": "2026-04-26",
+      "reviewed_date": "2026-04-30",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1249,7 +1250,8 @@
       "last_task2b_at": "2026-04-26T23:53:43+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
-      "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md"
+      "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
+      "task6_reviewed_date": "2026-04-30"
     },
     "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
@@ -1264,17 +1266,18 @@
       "last_verified_against": "AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline, developer.android.com/games/sdk/frame-pacing",
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-20",
+      "reviewed_date": "2026-04-30",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T13:23:00+08:00"
+      "last_task9_at": "2026-04-28T13:23:00+08:00",
+      "task6_reviewed_date": "2026-04-30"
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
       "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",

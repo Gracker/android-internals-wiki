@@ -5,6 +5,7 @@ section: '2.9'
 status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
+task6_reviewed_date: "2026-04-30"
 reviewed_date: "2026-04-28"
 reviewed_by: openclaw-task6
 applicable_versions: Android 3.0 (API 11) ~ Android 16 (API 36)
@@ -53,12 +54,13 @@ related_chapters:
 - '2.10'
 - '3.1'
 - '8.2'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: '2026-04-28'
+task9_task6_reviewed_date: "2026-04-30"
+reviewed_date: '2026-04-28'
 task9_reviewed_by: openclaw-task9
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
@@ -491,7 +493,7 @@ BLASTBufferQueue 替代的是 **App 端**与 SurfaceFlinger 之间的 Buffer 流
 
 在支持 ARR 的设备上（Android 15+），`VSYNC-app` 的间隔会随内容帧率动态调整。分析 Perfetto Trace 时，如果看到 `VSYNC-app` 间隔在 8.33ms 和 33.3ms 之间跳变，这不是异常，而是 ARR 在工作。需要结合 `FrameTimeline` Track 来判断帧是否准时完成，而非单纯看 VSync 间距。
 
-### "FrameMetrics 能分析系统级问题；2026-04-28 task6 re-review: pass-light-edit。无L1禁用词命中，L2可读性良好。技术问题已由task9标记，等待task2b处理。"——不能
+### "FrameMetrics 能分析系统级问题"——不能
 
 FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进程内某一帧的各阶段耗时。如果要分析 SurfaceFlinger 合成延迟、HWC 行为等系统级问题，必须使用 Perfetto Trace。两者的定位完全不同：FrameMetrics 用于 App 端自省，Perfetto 用于全系统分析。
 

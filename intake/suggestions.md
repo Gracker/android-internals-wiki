@@ -493,3 +493,11 @@
 - **位置**：L164
 - **问题**：正文写 `netd` 中的 eBPF 程序“统计每个 UID 的网络流量相关的功耗”。AOSP eBPF traffic monitoring 直接产物是 UID/tag/interface 维度的 byte/packet 统计与防火墙/计费数据；功耗归因通常由 BatteryStats/PowerProfile 等上层根据网络活动模型估算，不能写成 `netd` BPF 直接统计功耗。
 - **建议**：改成“netd/Connectivity BPF 提供 per-UID 网络流量计数，BatteryStats 等上层可用这些计数参与网络耗电归因”；如要保留功耗结论，需要补 BatteryStats 侧源码锚点。
+
+
+## [Task6 Review] 2.17 Frame Pacing Library — 2026-04-30
+- **类型**：需验证
+- **位置**：Vulkan 1.4 present_id 章节
+- **问题**：正文写"实测数据表明，相比 Choreographer 估算法，present_id 路径将帧间抖动（Jitter）降低了约 30%"，缺少测试设备、场景、样本量和数据来源。表格中 ±0.5-1ms / ±1-2ms / ±2-4ms 也无出处。
+- **建议**：标注 [待验证] 并补充测试条件，或改为定性描述
+- **review 日志**：logs/review/2026-04-30-18-review.md
