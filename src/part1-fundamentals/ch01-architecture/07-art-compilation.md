@@ -12,7 +12,7 @@ confidence: medium
 polish_count: 2
 polish_date: '2026-04-17'
 polish_by: task2b-polish
-reviewed_date: 2026-04-30
+reviewed_date: 2026-05-01
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 sources:
@@ -47,14 +47,11 @@ task9_result: needs-rework
 last_task9_at: "2026-04-30T04:20:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
 task6_state: reviewed
 task9_state: reviewed
-task2b_result: fixed
-task2b_state: pending
 review_round: 3
 last_task2b_at: "2026-04-25T22:46:46+08:00"
 repaired_date: "2026-04-25"
