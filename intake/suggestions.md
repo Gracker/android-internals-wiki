@@ -401,3 +401,10 @@
 - **问题**：AAB 15%-40%、Baseline Profile 安装后 `.odex/.vdex` 增量 10%-30%、微信/抖音包体积实践均缺可复核来源或实验条件。
 - **建议**：补官方案例、公开技术文章链接或本地样本测量；无法核实时降级为“待验证示例”，不要作为通用结论。
 - **review 日志**：logs/deep-review/2026-04-30-07-deep-review.md
+
+
+## [Task9 Deep Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-30
+- **类型**：交叉引用一致性
+- **位置**：文末 `16KB Page Size 对线程栈内存的影响` 补充段
+- **问题**：该段内容讨论 PTHREAD_STACK_MIN、ART 线程栈和 16KB page size，与本节 MessageQueue / DeliQueue 主线没有直接因果关系，容易把“队列并发结构”和“线程栈内存”两个主题混在一起。
+- **建议**：移到 4.7 `16KB Page Size 与 Android 性能` 或内存章节；本节只保留 DeliQueue 对测试框架、mMessages 反射和 Perfetto monitor contention 的影响。

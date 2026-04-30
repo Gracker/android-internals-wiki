@@ -7812,8 +7812,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-08-7.5-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-08-7.5-external-review.md",
+      "completed_at": "2026-04-30T08:33:53+08:00",
+      "completed_reason": "Task9 复核确认 external-review 中的 applyToTree、ARR、Compose stability 三项已在正文修复；本轮另发现 AGSL uniform API 与 RenderEffect 结论边界新问题，已转入 Deep Review 待办。"
     },
     {
       "section": "7.6",
@@ -9603,6 +9605,52 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T07:35:29+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — Android 16 SemiConcurrentMessageQueue 源码路径不存在，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources + Android 16 并发实现小节 + 版本演进表",
+          "detail": "`android-16.0.0_r1/core/java/android/os/` 下核验到 `CombinedMessageQueue/`、`ConcurrentMessageQueue/`、`LegacyMessageQueue/`，未发现 `SemiConcurrentMessageQueue/MessageQueue.java`。正文把不存在的路径作为 AOSP 证据，会导致版本演进结论失真。",
+          "suggestion": "删除 `SemiConcurrentMessageQueue/MessageQueue.java` 源码锚点；如需描述“中间态/受控 rollout”，改为引用 `CombinedMessageQueue/MessageQueue.java` 中 `mUseConcurrent`、allowlist 与 legacy/concurrent 分支逻辑，避免写成独立 SemiConcurrent 源文件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T08:33:53+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.5",
+      "section_title": "优化策略",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.5 优化策略 — AGSL RuntimeShader uniform API 示例错误，RenderEffect 性能结论需补边界",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "AGSL RuntimeShader 示例",
+          "detail": "示例声明 `uniform float2 resolution`，却用 `shader.setColorUniform(\"resolution\", Color.BLACK)` 赋值。`setColorUniform` 对应 color uniform；float2 应使用 `RuntimeShader#setFloatUniform(String, float, float)`。注释中提到 `setInputShader` 也容易误导：`RenderEffect.createRuntimeShaderEffect(shader, \"inputNode\")` 已由第二个参数绑定输入 shader。",
+          "suggestion": "改为在 View 尺寸可得后调用 `shader.setFloatUniform(\"resolution\", width.toFloat(), height.toFloat())`；采样示例可直接使用 `inputNode.eval(fragCoord)`，并删除 “setInputShader 或 uniform” 这类混合表述。"
+        },
+        {
+          "type": "数据缺失/原理边界",
+          "location": "RenderEffect / Blur 性能考量",
+          "detail": "正文写“对动态内容，RenderEffect 在内存占用和 GPU 调度效率上都优于 Hardware Layer”。该判断过于绝对。`RenderEffect` 仍可能触发离屏渲染、中间纹理与 filter 链开销，是否优于硬件层取决于 View 尺寸、blur radius、内容 invalidate 频率、GPU/Skia 后端和是否复用 filter。",
+          "suggestion": "把绝对结论改为条件化结论：RenderEffect 是 Android 12+ 表达 blur/filter 的优先 API，但需要用 Perfetto FrameTimeline/GPU track 或 Macrobenchmark 在目标设备验证；补一组动态内容 blur 与 hardware layer 的测试口径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T08:33:53+08:00",
       "status": "pending"
     }
   ],
