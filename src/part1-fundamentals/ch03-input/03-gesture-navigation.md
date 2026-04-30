@@ -26,11 +26,11 @@ sources:
   - type: blog
     path: "郭霖 - Android 15 新特性：预测性返回手势 (微信)"
   - type: aosp
-    path: "frameworks/base/frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java"
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java"
   - type: aosp
-    path: "frameworks/base/frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt"
+    path: "frameworks/base/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/BackPanelController.kt"
   - type: aosp
-    path: "frameworks/base/frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java"
+    path: "frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/system/InputMonitorCompat.java"
   - type: aosp
     path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
   - type: aosp
@@ -59,11 +59,11 @@ sources:
     path: "https://developer.android.com/reference/androidx/activity/OnBackPressedCallback"
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_review_notes: "2026-04-29 15:20 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。frontmatter AOSP 路径重复 frameworks/base，需 Task2B 回炉。"
 ---

@@ -33,11 +33,11 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 task2b_rework_date: "2026-04-29"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
@@ -544,11 +544,25 @@ Android Native 层实现了 **LegacyResampler**（`frameworks/native/libs/input/
 - `isResampled=true` 标记可供 App 层查询该坐标是否为重采样点
 - 开关：`ro.input.resampling` 系统属性（默认启用）
 
-**调用链：**
+**调用链（基于 AOSP android-16.0.0_r1）：**
+
+**系统侧：**
 ```
-evdev → EventHub → InputReader → TouchInputMapper → LegacyResampler → 
-InputDispatcher → ViewRootImpl → Choreographer → SurfaceFlinger
+evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
+    → InputChannel（通过 Unix socket 将 MotionEvent 批量发送给 App）
 ```
+
+**App 侧（重采样发生在这里）：**
+```
+ViewRootImpl → Choreographer.doFrame()
+    → NativeInputEventReceiver.consumeBatchedInputEvents(frameTimeNanos)
+        → InputConsumer.consume(..., frameTime)
+            → resampleTouchState() / Resampler
+                → 插值或外推生成重采样坐标
+    → MotionEvent 分发给 View 树
+```
+
+Resampler 位于 App 进程的 `InputConsumer` 内部（`frameworks/native/libs/input/InputConsumer.cpp`），不在系统侧的 InputReader/InputDispatcher 管线中。`Resampler.cpp` 定义在 `frameworks/native/libs/input/Resampler.cpp`。
 
 **性能影响：**
 - 正面：消除频率差带来的抖动，使触摸轨迹对齐 VSync 边界
