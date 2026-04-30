@@ -436,3 +436,16 @@
 - **问题**：正文写“渲染机制版本演进（§2.10）”，但 `src/SUMMARY.md` 中 §2.10 是《GPU 渲染深入》，《渲染机制的版本演进》是 §2.9；frontmatter `related_chapters` 也写了 `2.10`。
 - **建议**：将交叉引用改为 §2.9；如果需要 GPU 细节，再单独保留 §2.10《GPU 渲染深入》。
 - **review 日志**：logs/deep-review/2026-04-30-10-deep-review.md
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-04-30
+- **类型**：版本差异/数据缺失
+- **位置**：L286（Android 14+ AVIF 硬件能力）
+- **问题**：“Android 14+ 的设备有硬件加速的 AVIF 解码能力”仍偏宽。Android 14 CDD 更适合限定为对应设备类别的新 device implementation；升级设备、非 handheld/tablet 类设备和厂商实现差异不能一概而论。
+- **建议**：改成“Android 14 新出厂的对应设备类别要求支持 AVIF Baseline 硬件解码；工程上仍以 ImageDecoder/MediaCodec 能力探测和目标机实测为准”。
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L235（GC 通常 < 1ms）
+- **问题**：“GC 本身不耗时（通常 < 1ms）”没有限定 collector、堆规模、设备、内存压力和 trace 统计口径，容易被读者当成通用阈值。
+- **建议**：补固定场景的 Perfetto/Logcat GC pause 样本，或改成“轻量 GC 可能低于 1ms，但应按同机型同场景基线判断”。
+

@@ -37,23 +37,23 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 last_rework_date: "2026-04-30"
 last_rework_by: openclaw-task2b
 last_rework_reason: "P0 inSampleSize源码锚点修正+P1 Gainmap内存模型+ImageDecoder内存峰值"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-29"
+task9_reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-29"
 task6_result: "pass-light-edit"
 task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。"
-last_task9_at: "2026-04-29T17:55:36+08:00"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1（BitmapFactory inSampleSize 源码锚点/取整逻辑错误）；P1 2（Gainmap 内存模型、ImageDecoder 采样与内存峰值）。"
+last_task9_at: "2026-04-30T11:28:01+08:00"
+task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1（Choreographer CALLBACK_COMMIT/API 指导错误）；P1 3（Glide trimMemory 顺序、MemorySizeCalculator 公式、RecyclerView 回收取消语义）；P2 2。"
 ---
 
 # 7.10 图片加载与 Bitmap 性能优化

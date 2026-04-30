@@ -2582,10 +2582,10 @@
       "task2b_result": "pending",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T17:55:36+08:00",
-      "task9_review_notes": "2026-04-29 task9 deep-review: needs-rework。P0 1；P1 2；P2 1。"
+      "last_task9_at": "2026-04-30T11:28:01+08:00",
+      "task9_review_notes": "2026-04-30 task9 deep-review: needs-rework。P0 1；P1 3；P2 2。"
     },
     "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
