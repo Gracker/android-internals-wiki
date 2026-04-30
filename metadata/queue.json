@@ -9656,6 +9656,32 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T08:33:53+08:00",
       "status": "pending"
+    },
+    {
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 4.3 BumpPointerSpace / 16KB page-size 版本线仍有 P1：动态页大小切换应锚到 Android 15，不应写成 Android 16。",
+      "material_paths": [
+        "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码准确性",
+          "severity": "P1",
+          "location": "L118 BumpPointerSpace / 16KB page size 版本线",
+          "detail": "正文仍写 Android 16 才把 BumpPointerSpace 分配边界从 4KB 硬编码改为动态页大小。复核 AOSP 后，android-14.0.0_r1 的 bump_pointer_space.cc 使用 RoundUp(capacity, kPageSize)，android-15.0.0_r1 与 android-16.0.0_r1 已改为 RoundUp(capacity, gPageSize)。版本分界应落在 Android 15，而不是 Android 16。正文中“4KB 对齐会导致地址空间不合法、缓存行效率下降”也缺少一手 commit 或官方说明。",
+          "suggestion": "把版本线改为 android-15.0.0_r1 已切到 gPageSize；补 globals.h / mem_map.cc / bump_pointer_space.cc 的源码锚点。无法找到 commit 证据时，删除“地址空间不合法、缓存行效率下降”的因果表述，只保留 page-size-agnostic 分配边界。",
+          "evidence": [
+            "AOSP android-14.0.0_r1 art/runtime/gc/space/bump_pointer_space.cc: RoundUp(capacity, kPageSize)",
+            "AOSP android-15.0.0_r1 / android-16.0.0_r1 art/runtime/gc/space/bump_pointer_space.cc: RoundUp(capacity, gPageSize)"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T09:28:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
