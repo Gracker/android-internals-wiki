@@ -9677,6 +9677,34 @@
         "1.8 AMS: getStartComponent()冷启动归因API已添加到启动耗时分析章节"
       ],
       "status": "completed"
+    },
+    {
+      "date": "2026-05-01T01:05:05.201446+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "7.1",
+        "7.3"
+      ],
+      "details": [
+        {
+          "section": "7.1",
+          "source": "external-ai-review (P95)",
+          "fixes": [
+            "P0: 补充 VRR/ARR 动态帧间隔说明，frameIntervalNs 字段",
+            "P1: 新增 JANK_NON_ANIMATING(0x800)/JANK_APP_RESYNCED_JITTER(0x1000)/JANK_DISPLAY_NOT_ON(0x2000) 三个 JankType（带验证状态标注）"
+          ]
+        },
+        {
+          "section": "7.3",
+          "source": "external-ai-review (P95)",
+          "fixes": [
+            "P0: SQL 查询改为基于 Expected Timeline 对比（适配 VRR），旧固定阈值查询降级为辅助",
+            "P1: 补充 androidx.tracing:tracing-perfetto 线上动态 Trace 方案",
+            "P1: 补充大型 Trace SQL 性能优化（命令行离线分析、临时表缓存、LIMIT）",
+            "Checklist 增加 VRR/ARR 环境排查项"
+          ]
+        }
+      ]
     }
   ],
   "rework_log": [

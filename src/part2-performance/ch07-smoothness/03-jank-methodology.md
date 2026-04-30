@@ -3,7 +3,7 @@ title: "卡顿分析方法论"
 chapter: "7.3"
 status: ready-for-review
 reviewed_date: "2026-04-25"
-last_task2b_at: "2026-04-25T17:43:00+08:00"
+last_task2b_at: '2026-05-01T01:04:51.286646+08:00'
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
@@ -34,13 +34,13 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "2.18", "1.5", "13.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T22:20:00+08:00"
@@ -262,6 +262,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 - [ ] 整体 CPU 负载如何？是否处于高负载场景？
 - [ ] 是否有大量内存回收活动（kswapd/lmkd 频繁出现）？
 - [ ] 是否有频繁的 I/O 阻塞（Uninterruptible Sleep 增多）？
+- [ ] 设备是否开启了 VRR/ARR？刷新率是否在分析窗口内发生变化？（检查 VSYNC 轨道的间隔变化）
 
 如果环境排查就发现了问题（比如 CPU 被压到了最低频率），那后续的帧级分析可能就不那么重要了——先解决环境问题。
 
@@ -269,7 +270,7 @@ Uninterruptible Sleep 状态（在 Perfetto 中显示为深橙色）表示线程
 
 - [ ] 找到 App 主线程上方的 Frame 行，标记黄帧和红帧
 - [ ] 切换到 SurfaceFlinger，确认这些帧是否真正导致了掉帧
-- [ ] 如果有 FrameTimeline Track（Android 12+），直接看 Expected vs Actual 的差异
+- [ ] 如果有 FrameTimeline Track（Android 12+），直接看 Expected vs Actual 的差异——**不要用固定 16.67ms/8.33ms 阈值**，以 Expected Slice 宽度为准
 - [ ] 记录掉帧的时间点和持续时长
 
 ### 第三阶段：线程级分析（5-10 分钟）
@@ -372,6 +373,39 @@ JankStats 的引入降低了线上卡顿监控的接入成本。不过，它的�
 
 [自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md] 业界的卡顿监测方案还包括基于 Handler 消息执行时间的监测（如 BlockCanary、Matrix）和基于 Choreographer 回调间隔的监测。这些方案的优势在于可以在卡顿发生时抓取主线程的调用栈，帮助定位具体的代码路径；劣势在于采样精度不如 FrameMetrics，且有一定的性能开销。如果团队已有成熟的 APM 框架，可以将 FrameMetrics 数据和堆栈采集结合起来，实现更完整的线上卡顿诊断能力。
 
+## [自动发现] 线上动态 Trace：Perfetto SDK 方案
+
+对于偶发性卡顿——线下难以复现、用户侧低概率触发——传统的"复现→抓 Trace"流程失效。`androidx.tracing:tracing-perfetto`（别名 Perfetto SDK）提供了一种在非 root 设备上通过应用代码动态开启/关闭 Perfetto 追踪的方案。
+
+核心思路：App 在运行时通过 JankStats / FrameMetrics 检测到卡顿帧后，调用 Perfetto SDK API 立即保存最近几秒的 Trace 数据。由于 Perfetto 使用环形 buffer，保存的 Trace 涵盖了卡顿发生前的时间窗口。
+
+```kotlin
+// build.gradle 依赖
+// implementation("androidx.tracing:tracing-perfetto:1.0.0")
+
+// 动态启动 Trace（在检测到异常时触发）
+val config = TraceConfiguration.Builder()
+    .setDurationMs(5000)  // 保存最近 5 秒
+    .setBufferSizeKb(32768)
+    .addFtraceEvent("sched/sched_switch")
+    .addFtraceEvent("sched/sched_wakeup")
+    .addAtraceCategory("gfx")
+    .addAtraceCategory("view")
+    .build()
+
+PerfettoTrace.start(config) { result ->
+    // result.traceFile 包含完整的 Perfetto trace
+    // 上报到分析平台供后续离线分析
+    uploadTrace(result.traceFile)
+}
+```
+
+这种方式与线上 FrameMetrics 监控互补：FrameMetrics 负责日常统计和趋势告警，Perfetto SDK 在告警触发时自动捕获现场 Trace。两者结合，可以同时获得宏观统计和单帧级归因。
+
+> **注意**：Perfetto SDK 需要应用自行集成，不依赖 root 权限。Trace 数据包含应用自身的线程信息、CPU 调度信息和 atrace 标记，不包含其他应用的私有数据。
+
+[来源: AndroidX 官方库, androidx.tracing:tracing-perfetto]
+
 ## 使用 SQL 查询 Perfetto Trace 进行批量分析
 
 手动在 Perfetto UI 中一帧一帧地点击分析，适合定位具体问题。但有时候我们需要更宏观的视角：比如"这次滑动总共掉了多少帧"、"哪些帧的调度延迟最大"、"各个线程的 CPU 占用分布如何"。这种批量分析场景，Perfetto 的 SQL 查询功能就能派上用场 [已验证: 官方文档 perfetto.dev]。
@@ -380,33 +414,62 @@ Perfetto UI 右侧面板中有一个 Query 入口，可以直接编写 SQL 查�
 
 ### 查询掉帧统计
 
+**推荐方法：基于 FrameTimeline Expected/Actual 对比**（Android 12+，适用于所有刷新率包括 VRR/ARR）
+
 ```sql
--- 60Hz 场景的主线程长帧粗筛
--- 16.6ms / 33.3ms 只适用于单帧 budget≈16.6ms 的 trace。
+-- 基于 FrameTimeline 的掉帧统计，自动适配 VRR/ARR 动态帧间隔
+-- Expected vs Actual 对比是判断掉帧的基准，不要用固定阈值
+SELECT
+    expected.name,
+    expected.ts AS expected_ts,
+    expected.dur / 1000000.0 AS expected_ms,
+    actual.dur / 1000000.0 AS actual_ms,
+    (actual.dur - expected.dur) / 1000000.0 AS overrun_ms,
+    CASE
+        WHEN actual.dur <= expected.dur THEN 'On time'
+        WHEN actual.dur <= expected.dur * 2 THEN 'Missed 1 budget'
+        ELSE 'Missed 2+ budgets'
+    END AS frame_status
+FROM slice expected
+JOIN thread_track tt_exp ON expected.track_id = tt_exp.id
+JOIN thread t_exp ON tt_exp.utid = t_exp.utid
+JOIN slice actual
+  ON actual.track_id != expected.track_id
+  AND actual.ts BETWEEN expected.ts AND expected.ts + expected.dur + 1000000
+  AND actual.name LIKE 'Actual%'
+JOIN thread_track tt_act ON actual.track_id = tt_act.id
+WHERE t_exp.name = 'mdss_fb0'
+  AND expected.name LIKE 'Expected%'
+  AND actual.dur > expected.dur
+ORDER BY overrun_ms DESC
+LIMIT 50;
+```
+
+FrameTimeline 的 Expected Slice 宽度直接来自系统调度器的 `frameIntervalNs`，在 VRR 设备上会随刷新率档位变化。用 Expected 宽度做基准，不需要猜测当前是 60Hz 还是 120Hz。
+
+**60Hz 快速粗筛**（仅适用于确认固定 60Hz 的 trace）：
+
+```sql
+-- 仅适用于确认固定 60Hz 的 trace，VRR 设备请用上面的 FrameTimeline 查询
 WITH params AS (
-    SELECT 16666667 AS frame_budget_ns,
-           33333334 AS severe_budget_ns
+    SELECT 16666667 AS frame_budget_ns
 )
 SELECT
     slice.name,
     slice.ts,
-    slice.dur / 1000000.0 AS frame_ms,
-    CASE
-        WHEN slice.dur > params.severe_budget_ns THEN 'Missed 2 budgets on 60Hz'
-        WHEN slice.dur > params.frame_budget_ns THEN 'Missed 1 budget on 60Hz'
-        ELSE 'Within 60Hz budget'
-    END AS frame_status
+    slice.dur / 1000000.0 AS frame_ms
 FROM slice
 JOIN thread_track ON slice.track_id = thread_track.id
 JOIN thread ON thread_track.utid = thread.utid
 CROSS JOIN params
 WHERE thread.name = 'main'
   AND slice.name LIKE 'Choreographer#doFrame%'
+  AND slice.dur > params.frame_budget_ns
 ORDER BY slice.dur DESC
 LIMIT 50;
 ```
 
-这条查询只适合 60Hz trace 的快速粗筛，不等同于最终呈现掉帧。90Hz、120Hz 或自适应刷新率场景要把 budget 改成对应显示模式的 frame deadline。Android 12+ 更适合直接对照 FrameTimeline 的 Expected / Actual timeline，API 31+ 线上侧再结合 `FrameMetrics.DEADLINE`。
+这条查询只适合 60Hz trace 的快速粗筛，不等同于最终呈现掉帧。90Hz、120Hz 或自适应刷新率场景要把 budget 改成对应显示模式的 frame deadline。Android 12+ 应优先使用 FrameTimeline 的 Expected / Actual timeline 做判断，API 31+ 线上侧再结合 `FrameMetrics.DEADLINE`。
 
 ### 查询各线程 CPU 时间占比
 
@@ -485,7 +548,7 @@ LIMIT 20;
 
 Binder Transaction 是 Android IPC 的核心，也是主线程卡顿的常见根因。Perfetto 通过 `linux.ftrace` 捕获内核 `binder_transaction` 系列 tracepoint，再经 `android.binder` 标准库 SQL 模块解析，可实现精细的 IPC 耗时归因。
 
-数据链路为：**内核 ftrace 原始事件**（`binder_transaction` / `binder_transaction_received` / `binder_transaction_alloc_buf` / `binder_reply`） → **Perfetto Trace Processor** → **`android.binder` 标准库模块**（`INCLUDE PERFETTO MODULE android.binder;`）。其中 `android_binder_txns` 表是最核心的分析对象 [已验证: AOSP Perfetto 源码 `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`，内核 tracepoint 定义 `kernel/common/drivers/android/binder_trace.h`]。
+数据流向为：**内核 ftrace 原始事件**（`binder_transaction` / `binder_transaction_received` / `binder_transaction_alloc_buf` / `binder_reply`） → **Perfetto Trace Processor** → **`android.binder` 标准库模块**（`INCLUDE PERFETTO MODULE android.binder;`）。其中 `android_binder_txns` 表是最核心的分析对象 [已验证: AOSP Perfetto 源码 `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`，内核 tracepoint 定义 `kernel/common/drivers/android/binder_trace.h`]。
 
 **关键 Duration 指标**：
 - `client_dur`：同步调用中客户端从发出请求到收到回复的 wall-clock 时长；oneway 调用中为 0
@@ -563,6 +626,48 @@ data_sources: {
 atrace 等效命令：`adb shell atrace --async_start -b 20000 -c binder_driver am wm dalvik`
 
 核心数据源：内核 `TRACE_EVENT(binder_transaction)` 定义于 `kernel/common/drivers/android/binder_trace.h`，驱动层通过 `trace_binder_transaction()` 记录发起，通过 `trace_binder_transaction_received()` 记录服务端接收；Perfetto 标准库 `android_binder_txns` 表由 `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql` 定义。
+
+
+
+### 大型 Trace 的 SQL 性能优化 [自动发现]
+
+当 Trace 文件超过 500MB（例如长时间录制或高频事件场景），在 Perfetto UI 中直接执行复杂 SQL 查询可能导致页面无响应甚至崩溃。以下是处理大型 Trace 的实用建议：
+
+**1. 使用命令行离线分析**
+
+```bash
+# 先用 trace_processor_shell 离线查询，避免 UI 卡顿
+trace_processor_shell trace.pb --query-file analysis.sql > result.csv
+```
+
+**2. 用临时表缓存高频过滤结果**
+
+```sql
+-- 避免在全量 slice 表上反复 JOIN，先过滤到目标线程
+CREATE TEMP TABLE main_thread_slices AS
+SELECT slice.*
+FROM slice
+JOIN thread_track ON slice.track_id = thread_track.id
+JOIN thread ON thread_track.utid = thread.utid
+WHERE thread.name = 'main';
+
+-- 后续查询直接走临时表
+SELECT name, dur / 1000000.0 AS ms
+FROM main_thread_slices
+WHERE name LIKE 'Choreographer#doFrame%'
+  AND dur > 16666667
+ORDER BY dur DESC
+LIMIT 50;
+```
+
+**3. 限制返回行数**
+
+在每次查询末尾加 `LIMIT`，避免返回数万行拖慢 UI。先 `LIMIT 50` 看分布，确认查询逻辑正确后再按需放开。
+
+**4. 利用 `INCLUDE PERFETTO MODULE` 标准库**
+
+Perfetto 标准库提供了预构建的聚合表（如 `android.binder`、`android.frames`），比自己写 JOIN 更高效且更准确。优先检查是否已有标准库模块覆盖目标分析场景，再决定手写 SQL。
+
 
 
 

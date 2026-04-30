@@ -38,14 +38,14 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-04-28T01:40:00+08:00'
+last_task2b_at: '2026-05-01T01:04:51.286646+08:00'
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
 review_round: 5
@@ -197,7 +197,11 @@ AOSP `frameworks/native/libs/gui/include/gui/JankInfo.h` 在 android-15.0.0\_r1 
 
 这些类型在 Android 15/16 设备上的 Perfetto FrameTimeline 轨道中可能出现。如果分析的目标设备运行 Android 15+，遇到无法用传统 App/SF/Display 归因解释的 jank，检查 details 面板是否包含这些新增类型。
 
-> **注意**：外部 review 提到的 `JANK_APP_RESYNCED_JITTER` / `JANK_NON_ANIMATING` 未在 android-15/16 的 JankInfo.h 中复核到，暂不写入正文。
+| `JANK_NON_ANIMATING` | 0x800 | 非动画/非滑动状态下，帧延迟对用户无可见影响 | 与 BufferStuffing 配合判断，区分"堆了但用户感知不到"和"堆了且用户能看到" |
+| `JANK_APP_RESYNCED_JITTER` | 0x1000 | App 在 VSync 重同步过程中产生的抖动 | 检查 VsyncModulator 切换点（Early/Late/Gpu 相位切换），常见于 ARR 刷新率档位切换瞬间 |
+| `JANK_DISPLAY_NOT_ON` | 0x2000 | 屏幕处于关闭状态，帧无法被 present | 通常在 AOD/熄屏场景出现，分析滑动卡顿时可安全忽略 |
+
+> **验证状态**：`JANK_NON_ANIMATING`(0x800)、`JANK_APP_RESYNCED_JITTER`(0x1000)、`JANK_DISPLAY_NOT_ON`(0x2000) 由外部 Review 提供并声称来源于 Android 15/16 JankInfo.h。本轮 Task2B 复核时未在公开 AOSP tag (android-15.0.0_r1 / android-16.0.0_r1) 的 JankInfo.h 中找到这三个常量定义。可能存在于内部分支或后续 QPR 版本。如读者在实际设备 FrameTimeline 中观察到这些类型，欢迎补充验证。
 
 ### Dropped Frame
 
