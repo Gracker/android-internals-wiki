@@ -8584,7 +8584,7 @@
       "section": "11.4",
       "section_title": "案例集（功耗）",
       "priority": 95,
-      "reason": "[External Review] 11.4 案例集 存在 FGS 崩溃特征缺失",
+      "reason": "[External Review] 11.4 案例集 存在 FGS 崩溃特征缺失\n[Deep Tech Review] 11.4 案例集 — 2026-05-01 追加 2 个 P0/P1 技术问题",
       "review_issues": [
         {
           "type": "事实错误",
@@ -8612,6 +8612,20 @@
           "evidence": [
             "Android 15+ GNSS LP Hardware Offload"
           ]
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "L639-L647、L645、L799-L801",
+          "detail": "JobScheduler 案例仍把 android-16.0.0_r1 的 JobSchedulerService/JobServiceContext 锚点写在 frameworks/base/services/core/java/com/android/server/job/，实际公开 tag 位于 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/。同段运行时上限也仍写成 Regular 10min、User-Initiated 30min；android-16.0.0_r1 JobSchedulerService.java 中 DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS=30min、DEFAULT_RUNTIME_MIN_GUARANTEE_MS=10min、DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS>=6h、DEFAULT_RUNTIME_UI_LIMIT_MS>=12h，getMaxJobExecutionTimeMs() 对 regular/expedited/user-initiated 分支不同。",
+          "suggestion": "重写案例五：先修正 AOSP 路径，再按源码分支拆 regular / expedited / user-initiated 的 min guarantee、free quota max 与 UI limit，不要把“最小保障时间”写成统一最大执行时长。",
+          "severity": "P0"
+        },
+        {
+          "type": "版本差异/数据口径",
+          "location": "L91-L95",
+          "detail": "正文写 Stuck partial wake lock 的 Vitals 告警阈值是 1%。当前 Android Developers wake lock vitals 页可核到的是 excessive partial wake locks：24h 内非豁免 partial wakelock 累计 >=2h，且 28 天内超过 5% sessions 会影响 Play 可见性；页面未支撑“stuck partial wake lock=1% 阈值”。这里把 stuck 与 excessive 两个指标口径混在一起。",
+          "suggestion": "拆成两个指标：Stuck partial wake lock 只说明单个后台 partial wakelock >=1h 的判定；Excessive partial wake locks 说明累计 >=2h/24h 与 >5% sessions 的 Play 影响。删除或补证“1%”口径。",
+          "severity": "P0"
         }
       ],
       "added_by": "external-ai-review",
@@ -9183,7 +9197,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T03:32:47+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T04:47:15+08:00",
+      "completed_reason": "PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ版本标注已修正（非Android 16新增，自Android 11已存在）；service_b标签错误已纠正（500=SERVICE_ADJ非SERVICE_B_ADJ）"
     },
     {
       "section": "1.6",
@@ -9891,7 +9907,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T00:55:15+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T04:47:15+08:00",
+      "completed_reason": "APK v4版本已修正（Android 11引入非12）；scanDirLI并行化描述已更正为独立并行扫描入口scanSystemApexPackagesPrivileged"
     },
     {
       "section": "7.1",
@@ -10008,6 +10026,27 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T03:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.5",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-05-01 发现 P0 0 / P1 1，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/源码一致性",
+          "location": "L97-L104、L130-L137",
+          "detail": "DeliQueue 机制先按 Android Developers Blog 写成 “Treiber Stack + Looper 独占 min-heap”，后文又按 AOSP main 写 `ConcurrentMessageQueue/MessageQueue.java` 使用 `mPriorityQueue` / `mAsyncPriorityQueue` 两组并发有序集合。公开 main 源码中这两者是 `ConcurrentSkipListSet<MessageNode>`，并不是 min-heap；当前文本没有说明“blog 概念模型”和“当前源码实现”之间的差异，读者会误以为源码里能看到 min-heap。",
+          "suggestion": "把 DeliQueue 拆成两层：官方 blog 的设计口径仍可保留 Treiber + min-heap；源码复核段单独说明当前 main 的 Java 实现使用 ConcurrentSkipListSet，并标注是否为 preview/main 与最终 API 37 tag 的差异，避免把概念模型写成源码事实。",
+          "severity": "P1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T04:26:00+08:00",
       "status": "pending"
     }
   ],
