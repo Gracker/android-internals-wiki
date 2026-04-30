@@ -40,10 +40,10 @@ sources:
 reviewed_date: '2026-04-28'
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
@@ -106,7 +106,7 @@ Android 提供了以下 CPU/屏幕类 wake-lock level，后三种屏幕相关的
 |------|------|------|
 | `PARTIAL_WAKE_LOCK` | CPU 保持运行，屏幕可关闭 | 推荐使用 |
 | `SCREEN_DIM_WAKE_LOCK` | 屏幕保持暗亮 | API 17 废弃 |
-| `SCREEN_BRIGHT_WAKE_LOCK` | 屏幕保持全亮 | API 17 废弃 |
+| `SCREEN_BRIGHT_WAKE_LOCK` | 屏幕保持全亮 | API 13 废弃 |
 | `FULL_WAKE_LOCK` | CPU + 屏幕全亮 | API 17 废弃 |
 | `PROXIMITY_SCREEN_OFF_WAKE_LOCK` | 配合距离传感器控制屏幕开关 | 可用 |
 
@@ -578,7 +578,7 @@ AlarmManager 是 wakelock 的一个重要间接来源。当 Alarm 触发时：
 
 `OnAlarmListener` 这条 API 解决的是一类很具体的场景：调用方进程已经存活，只需要在本进程内收到一个精确回调，不需要系统替它冷启动组件，也不要求 alarm 在进程被杀后继续存在。
 
-`AlarmManager.OnAlarmListener` 接口和 `setExact(int, long, String, Executor, WorkSource, OnAlarmListener)` 在 Android 14（API 34）进入公开 SDK。更早的 Android 12/13 已经有对应的 `@SystemApi` 形态。
+`AlarmManager.OnAlarmListener` 接口和 `setExact(int, long, String, OnAlarmListener, Handler)` 从 Android 7.0（API 24）起已在公开 SDK 中。Android 14（API 34）的变化在于精确闹钟权限口径：`SCHEDULE_EXACT_ALARM` 权限不适用于 `OnAlarmListener` 路径，这个例外在 Android 14 文档中被明确写入。`setExact(..., Executor, WorkSource, OnAlarmListener)` 与 `setExactAndAllowWhileIdle(..., Executor, WorkSource, OnAlarmListener)` 仍为 `@SystemApi`，需要 `UPDATE_DEVICE_STATS` 权限，普通 App 不可直接调用。
 
 这条路径还有一个公开文档明确写出的权限例外：
 
