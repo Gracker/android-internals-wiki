@@ -21,12 +21,12 @@ sources:
   - type: repo
     path: "https://github.com/samudoria/GAPS"
     title: "samudoria/GAPS"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_date: "2026-04-22"
 reviewed_by: openclaw-task6
@@ -68,6 +68,14 @@ GAPS 的论文主线可以按下面这条链理解：
    - 这个目标方法能从哪个 entry point 进入
    - 哪些条件分支必须先满足
    - 哪个 `Activity` 里的哪个 GUI 元素会触发后续调用
+
+   **入口与隐式调用边的建模**是这一步的核心难点。Android 应用的调用图不像普通 Java 程序那样可以从 `main()` 出发。GAPS 在这一步要处理三类隐式边：
+
+   - **生命周期回调**：`Activity.onCreate()`、`Fragment.onResume()` 等入口由系统框架调用，不会出现在显式 call graph 里。GAPS 通过 AndroidManifest 解析和 Soot 框架的虚拟边（virtual edges）把它们接进调用图。
+   - **UI 回调**：`View.OnClickListener.onClick()`、`AdapterView.OnItemSelectedListener.onItemSelected()` 等通过 `setOnClickListener()` 注册的回调。GAPS 使用 EdgeMiner 的回调映射规则，把 `setOnClickListener(this)` 里的 `this` 绑定到对应的 `onClick()` 实现。
+   - **ICC（Inter-Component Communication）**：`startActivity(intent)`、`startService(intent)` 等。GAPS 在 smali 层分析 Intent 构造参数，结合 AndroidManifest 中的 intent-filter 声明推断目标 Component。对于隐式 Intent，需要匹配 action、category、data URI；对于显式 Intent，直接从 `setClassName()` 或 `setComponent()` 读取目标。
+
+   这三类隐式边解决的是同一个问题：从静态分析角度看，Android 应用的"入口"不是一个点，而是一组由系统框架和用户交互驱动的分散入口。GAPS 的静态阶段要把目标方法反向追溯到这些入口中的某一个，再把入口翻成运行期可执行的 `adb am start` 命令或 UI 操作指令。
 
 3. **把结果落成 JSON 指令**  
    静态阶段的输出会直接落成可以执行的高层指令。指令里会带上 entry point、Activity 名称、resource ID 和对应的调用序列。
@@ -123,6 +131,28 @@ GAPS 对性能工程有潜在价值，但这部分要按“衍生场景”来写
 - **Guardian**：偏 LLM 驱动的语义化界面探索。
 - **GoalExplorer**：先建 Screen Transition Graph，再引导 Stoat 做动态探索。
 - **GAPS**：把目标方法可达性当成第一目标，静态路径重建先于动态交互。
+
+### 🔸 GAPS 与 LLM 驱动测试的对比
+
+2026 年 1 月的最新论文将 GAPS 与 Guardian（LLM 驱动的 GUI 测试工具）做了专项对比：
+
+- GAPS 的动态触达率（57.44%）约为 Guardian（17.12%）的 3.4 倍。
+- LLM Agent 在复杂 Activity 状态转换中容易"迷路"：重复点击已访问的界面、跳过需要特定前置条件的入口、在深层嵌套的 Fragment 导航中失去方向。
+- GAPS 的静态路径重建提供的是精确的导航——每一步都有明确的 Activity、控件 ID 和操作类型。这种确定性在方法级触达场景中比 LLM 的语义化探索更有效。
+
+GAPS 仓库的 `run` 模式集成了 LLM Agent，但定位是 fallback：当静态阶段预期的控件不存在时，LLM 尝试替代性操作。论文基线实验不依赖 LLM 组件。
+
+这组对比的结论：在"指定目标方法并稳定触达"这个任务上，基于程序分析的路径重建仍然比大模型的界面探索更可靠。LLM 的优势在于适应性——面对 GAPS 无法建模的 Compose 界面或动态布局，LLM 有机会通过视觉理解绕过静态分析的限制。
+
+### 🔸 用 Frida hook 实现目标触达即抓 Trace
+
+GAPS 的 Frida hook 除了用于确认方法是否被执行，还可以扩展为"触达即抓 Trace"的触发器：
+
+1. 在目标方法上挂 Frida hook。
+2. Hook 触发时，通过 `Android.traceBegin()` / `Android.traceEnd()` 注入自定义 trace marker。
+3. 同时通过 Perfetto 的 `Tracing::Initialize()` 或 `atrace` 命令启动一段短窗口 trace 抓取。
+
+这样做的好处是避免"抓 Trace 太晚"。全量 trace 在长时段录制中容易遗漏首帧信息，而 GAPS 的路径触达 + Frida 触发可以把 trace 窗口精确压缩到目标方法执行前后。
 
 ### 🔸 论文验证环境与仓库边界
 
