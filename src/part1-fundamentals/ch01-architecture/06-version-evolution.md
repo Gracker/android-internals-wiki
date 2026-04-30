@@ -31,17 +31,17 @@ tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'backgro
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
 reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
-review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)"
-task9_result: needs-rework
-pipeline_stage: "task9_pending"
+review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)；2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
+task9_result: "needs-rework"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task6_result: pass-light-edit
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: "fixed"
-task9_reviewed_date: "2026-04-30"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-30T04:20:00+08:00"
+task9_reviewed_date: "2026-05-01"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-01T00:55:15+08:00"
 ---
 
 # Android 版本演进中的架构变化

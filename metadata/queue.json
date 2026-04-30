@@ -5183,7 +5183,7 @@
       "section": "3.4",
       "section_title": "`src/part1-fundamentals/ch03-input/04-input-latency-prediction.md`",
       "priority": 85,
-      "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+      "reason": "[External Review] 技术评分 3.5/5，建议回炉；Task9追加：[Deep Tech Review] InputReader/InputDispatcher Android 16 默认调度策略仍留待验证，需补 AOSP 源码锚点",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -5206,6 +5206,12 @@
           "location": "采样频率章节",
           "detail": "动态报点率缩放 (Snapdragon)。",
           "suggestion": "同步现代硬件对第一阶段延迟的极致压缩。"
+        },
+        {
+          "type": "版本差异/知识盲区",
+          "location": "InputReader/InputDispatcher 默认调度策略（约第272行）",
+          "detail": "章节仍保留“待验证 Android 16/17 默认调度策略是否有改进”。android-16.0.0_r1 可从 services/inputflinger/InputThread.cpp 验证：InputReader/InputDispatcher 的 InputThread 以 ANDROID_PRIORITY_URGENT_DISPLAY 启动；关键路径线程在 enable_input_policy_profile flag 打开时还会 SetTaskProfiles(..., {\"InputPolicy\"})。",
+          "suggestion": "补入 InputThread.cpp、InputDispatcher::start()、InputReader 启动路径的源码锚点，说明默认 priority 与 InputPolicy task profile 的版本边界，再区分 OEM SCHED_FIFO 调优。"
         }
       ],
       "added_by": "external-ai-review",
@@ -9845,6 +9851,58 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T18:33:37+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.6",
+      "section_title": "1.6 Android 版本演进中的架构变化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Android 16 Cloud Compilation 与 Android 15 后台网络限制边界写得过实，需回炉补版本/数据支撑",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/数据支撑",
+          "location": "Android 16 Baklava：Cloud Compilation（约第159行）",
+          "detail": "章节把 Cloud Compilation 写成 Android 16 已公开且设备可直接从 Play Store 下载 .odex/.vdex 的确定平台路径；但同书 §1.9 对该点已标注为公开资料有限、缺少可交叉核对的 AOSP/官方集成文档。两处边界不一致。",
+          "suggestion": "收窄为“Play 分发侧可能通过 SDM/Cloud Compilation 减少本机 dex2oat，需以 Play/ART dump 和安装 Trace 验证”；补官方或 AOSP 锚点后再写成确定机制。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "Privacy/后台限制时间线（约第292、312行）",
+          "detail": "“Android 15 后台 App 网络请求被限制/直接失败 UnknownHostException”写成了泛化规则，缺少触发条件。公开行为更接近特定后台/停止态、生命周期外网络访问、targetSdk 与 WorkManager/前台服务例外的组合约束。",
+          "suggestion": "补充触发条件、例外路径和可复现实验；不要把 Android 15 写成所有后台网络请求都会被系统直接阻断。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T00:55:15+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.9",
+      "section_title": "1.9 Package Manager Service 与应用安装性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] PMS APEX 并行解析源码锚点与 APK Signature Scheme 版本描述存在事实错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "PMS 初始化扫描（约第125、127行）",
+          "detail": "文中把 Android 16 APEX 并行解析锚到 PackageManagerService.scanDirLI，但 android-16.0.0_r1 的 PackageManagerService.java 中没有 scanDirLI；AOSP 中可验证的并行 APEX 解析入口在 InstallPackageHelper.scanApexPackages()，内部使用 ParallelPackageParser。",
+          "suggestion": "把源码锚点改为 frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java::scanApexPackages() + ParallelPackageParser；删除 scanDirLI 说法。"
+        },
+        {
+          "type": "版本差异/源码错误",
+          "location": "APK Signature Scheme v4（约第208行）",
+          "detail": "文中写“Android 12 引入 APK Signature Scheme v4，v4.1 增加 key rotation”。实际 v4 随 Android 11 引入，主要服务增量/流式安装的 detached idsig 与 Merkle 校验；key rotation 属于 v3/v3.1 体系，v3.1 对应 Android 13。",
+          "suggestion": "修正为“v4: Android 11 增量安装/流式校验；v3/v3.1: key rotation（Android 9/13）”，并补 developer.android.com APK Signature Scheme 官方来源。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T00:55:15+08:00",
       "status": "pending"
     }
   ],

@@ -2,7 +2,7 @@
 title: "Package Manager Service 与应用安装性能"
 chapter: "1.9"
 section: "1.9"
-status: finalized
+status: "ready-for-review"
 drafted_date: "2026-04-05"
 polish_count: 1
 polish_date: "2026-04-09"
@@ -55,16 +55,17 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: pass-tech-review
-last_task9_at: "2026-04-25T00:29:00+08:00"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+last_task9_at: "2026-05-01T00:55:15+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: "2026-05-01"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "pending"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
