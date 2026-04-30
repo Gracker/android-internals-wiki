@@ -9670,6 +9670,58 @@
       "source_file": "2026-04-30-11-deep-review.md",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-04-30T11:28:01+08:00"
+    },
+    {
+      "section": "2.2",
+      "section_title": "帧率与刷新率",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 2.2 帧率与刷新率 存在P1 技术口径断裂，需 Task2B 回炉",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L116-L148",
+          "detail": "正文把 Frame Time / frame interval 直接等同为 Perfetto 里的 Choreographer#doFrame 切片长度与相邻 doFrame 间隔。doFrame 只覆盖 App 主线程回调窗口，不能代表一帧从 intended vsync 到完成提交/呈现的完整耗时，也排除了 RenderThread、GPU、SurfaceFlinger 与 present 侧时间。",
+          "suggestion": "把这里拆成两个口径：Choreographer#doFrame 只能用于观察主线程帧回调间隔和主线程工作量；单帧耗时、Jank 与呈现偏差应优先用 Frame Timeline / FrameMetrics（TOTAL_DURATION、DEADLINE、GPU_DURATION）或 Perfetto frame_timeline 相关表。SQL 示例改为 Frame Timeline 口径，或明确标注当前 SQL 只是回调间隔。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L370-L397",
+          "detail": "正文写成 API 33+ App 可选择更晚 FrameTimeline 并通过 SurfaceControl.Transaction.setFrameTimeline() 告知 SurfaceFlinger。AOSP android-16.0.0_r1 中 Choreographer.FrameData / FrameTimeline 的观察入口来自 API 33，但 public Transaction.setFrameTimeline(long) 是 android-16.0.0_r1 中的 @FlaggedApi(FLAG_SDK_DESIRED_PRESENT_TIME) 能力；旧版本不能按 API 33 公开能力描述。",
+          "suggestion": "拆成“API 33 起可读取候选 FrameTimeline / vsyncId”和“Android 16/flag 开启后才有公开 setFrameTimeline(long) 目标呈现时间接口”。对 Android 13-15 保留内部/系统能力或 NDK/SurfaceControl 受限边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T16:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "3.2",
+      "section_title": "触摸响应的性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3.2 触摸响应的性能分析 存在P0 源码/API 错误，需 Task2B 回炉",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API签名错误",
+          "location": "L421、L456",
+          "detail": "正文把 MotionPredictor.isPredictionAvailable(deviceId, source) 写成类方法调用。android-16.0.0_r1 的 android.view.MotionPredictor 需要先构造实例 new MotionPredictor(Context)，isPredictionAvailable(int, int)、record(MotionEvent)、predict(long) 都是实例方法。",
+          "suggestion": "示例改为 MotionPredictor predictor = new MotionPredictor(context); if (predictor.isPredictionAvailable(deviceId, source)) { predictor.record(event); MotionEvent predicted = predictor.predict(targetTimeNanos); }。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L256",
+          "detail": "正文写“FLAG_RESAMPLED 的当前坐标”。android-16.0.0_r1 的 MotionEvent 中没有 FLAG_RESAMPLED 字段；重采样标记在 PointerCoords.isResampled() / isResampled 字段口径上，且源码说明 resampled coordinates are always added to batches。",
+          "suggestion": "删除 FLAG_RESAMPLED 说法，改为“重采样样本可通过 MotionEvent.PointerCoords.isResampled() 识别；普通 getX()/getY() 读到的是当前样本坐标，是否为重采样点要看对应 PointerCoords”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T16:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

@@ -449,3 +449,34 @@
 - **问题**：“GC 本身不耗时（通常 < 1ms）”没有限定 collector、堆规模、设备、内存压力和 trace 统计口径，容易被读者当成通用阈值。
 - **建议**：补固定场景的 Perfetto/Logcat GC pause 样本，或改成“轻量 GC 可能低于 1ms，但应按同机型同场景基线判断”。
 
+
+## [Task9 Deep Review] 2.2 帧率与刷新率 — 2026-04-30
+- **类型**：源码准确性
+- **位置**：L480
+- **问题**：FrameMetrics.TOTAL_DURATION 被描述为“从 VSync 到帧显示完成”。源码注释是 frame began 到 ended，以及 render and be issued to display subsystem；FrameMetrics 同时有 GPU_DURATION / DEADLINE，不能把 TOTAL_DURATION 等同为真实屏幕 present 完成。
+- **建议**：改成“从 intended vsync 到 frame completed / issued to display subsystem 的总时长”，并说明它不是显示面板实际扫描完成时间。
+
+## [Task9 Deep Review] 2.2 帧率与刷新率 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L725-L730
+- **问题**：120Hz 屏幕功耗通常高 20-40%、CPU/GPU 需要两倍频率渲染帧缺少设备、亮度、面板、内容、SoC 条件；且只有 App 目标帧率也提升到 120fps 时，渲染侧工作量才近似翻倍。
+- **建议**：补充测试条件或改成条件化表述：显示扫描功耗与渲染负载分别说明，避免把屏幕刷新率提升直接等同于 CPU/GPU 两倍工作。
+
+## [Task9 Deep Review] 3.2 触摸响应的性能分析 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L190-L201
+- **问题**：延迟全景图给出硬件采样、InputDispatcher、App 处理、渲染上屏和总计 15-75ms 的典型耗时，但没有设备刷新率、触摸采样率、是否开启 prediction/resampling、Trace 样本数量和统计口径。
+- **建议**：补一组 Perfetto trace 样本作为表格来源；至少标明 60/120Hz、采样率、设备、Android 版本、统计点（eventTime、dispatch、deliverInputEvent、GPU completion、present）的定义。
+
+## [Task9 Deep Review] 3.3 手势导航与系统交互 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L291-L309
+- **问题**：legacy / predictive back 的 Perfetto 判读给出了相对顺序，但没有绑定可复核的具体 track/slice 名或一段真实 trace 示例。WM Shell back animation、目标层预览、App progress 回调在不同版本/厂商 trace 中名字可能不同。
+- **建议**：补一段最小真实 trace 的观察清单：SystemUI edge-swipe InputMonitor、InputDispatcher cancel、WMShell/BackAnimation 相关 slice、当前 Activity surface 与 Launcher/目标 Activity surface 的 FrameTimeline 对齐方式。
+
+## [Task9 Deep Review] 3.3 手势导航与系统交互 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L241-L247
+- **问题**：SystemUI 判定延迟“几毫秒级/几十毫秒”和 mLongPressTimeout “通常 400-500ms”缺少源码或设备设置锚点。mLongPressTimeout 来自 ViewConfiguration 长按超时，用户/厂商配置会变化。
+- **建议**：把长按超时绑定到 ViewConfiguration.getLongPressTimeout()/系统设置来源；性能延迟给出 Perfetto 示例或改为“需按目标设备 trace 验证”。
+
