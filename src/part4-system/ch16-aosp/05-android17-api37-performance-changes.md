@@ -36,21 +36,21 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-30T23:57:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-01"
-task9_reviewed_by: "openclaw-task9"
+task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
 review_notes: "2026-05-01 task6 re-review-3 (revisiting→reviewed): pass-light-edit。Frontmatter修复stray 4。pipeline_stage同步更新。无新增L1/L2问题。无B类大问题。"
-last_task9_at: "2026-04-28T03:43:01+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
+last_task9_at: "2026-05-01T04:26:00+08:00"
+task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。需 Task2B 回炉。"
 ---
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法

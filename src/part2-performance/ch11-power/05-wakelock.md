@@ -37,11 +37,11 @@ sources:
     path: "hardware/libhardware_legacy/power.cpp"
   - type: aosp
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
-reviewed_date: '2026-04-28'
+reviewed_date: 2026-05-01
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
@@ -746,9 +746,9 @@ Foreground Service 提高的是进程存活优先级，不是 CPU 的唤醒状�
 `dumpsys batterystats` 中看到 `PowerManagerService` 持有大量 wakelock 时间，常常会被误认为是系统 bug。很多时候 PowerManagerService 只是代理，它通过 WorkSource 代表其他 App 记账。需要进一步查看是哪个 App 的 wakelock 归因到了 PMS。
 
 
-### Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗闭环
+### Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监测
 
-Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应用通过 `PerformanceHintSession` 声明线程应优先节能而非峰值性能。结合 `android.os.PowerMonitor` API，可实现"提示系统→观察效果"的闭环验证。
+Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应用通过 `PerformanceHintSession` 声明线程应优先节能而非峰值性能。结合 `android.os.PowerMonitor` API，可实现"提示系统→观察效果"的完整验证循环。
 
 #### PerformanceHintManager 与 Power Efficiency Mode
 
@@ -791,7 +791,7 @@ PowerMonitorReadings.getTimestampMillis(PowerMonitor) → 快照时刻的 elapse
 
 主要消费者：Statsd（功耗归因）、Perfetto（`android.power_rails` 数据源）、Batterystats（电池分析）。
 
-#### Perfetto 闭环观测
+#### Perfetto 端到端观测
 
 Perfetto 通过 `android.power_rails` 数据源暴露 rail 级功耗：
 
@@ -802,7 +802,7 @@ android_power_config {
 }
 ```
 
-数据落地为 PerfettoSQL 表 `android_power_rails_counters`。完整闭环：
+数据存储为 PerfettoSQL 表 `android_power_rails_counters`。完整链路：
 
 ```
 应用调用 Power Efficiency Hint

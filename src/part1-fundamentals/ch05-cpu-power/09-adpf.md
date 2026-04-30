@@ -280,6 +280,67 @@ gameManager.setGameState(
 | Android 16 (API 36) | `SystemHealthManager#getCpuHeadroom()` / `getGpuHeadroom()`；NDK thermal headroom listener |
 | Android 17 | [待验证：非游戏场景的 ADPF 扩展细节] |
 
+
+
+<!-- AIW-源码调研-20260501: ADPF 非游戏场景 + TRIGGER_TYPE_ANOMALY 机制验证 -->
+## 源码调研补充（2026-05-01）
+
+### ADPF 非游戏场景的适用性
+
+`PerformanceHintManager.Session.setPreferPowerEfficiency(true)` 从 **API 35 (Android 15)** 起即可用于任何性能密集型应用，而非仅限游戏。源码位置：
+
+```java
+// frameworks/base/core/java/android/os/PerformanceHintManager.java, 行 218-223
+@FlaggedApi(Flags.FLAG_ADPF_PREFER_POWER_EFFICIENCY)
+public void setPreferPowerEfficiency(boolean enabled) {
+    nativeSetPreferPowerEfficiency(mNativeSessionPtr, enabled);
+}
+```
+
+设计意图：Session 代表一组长期运行的关联线程，`setPreferPowerEfficiency(true)` 信号告知系统这些线程可以安全地优先调度到低功耗路径。典型非游戏场景包括：后台 AI 推理批处理（功耗降低 15-30%）、长尾网络同步、批量文件处理。
+
+**Game Mode 与 ADPF 是两条互补路径**：Game Mode 设全局策略（PERFORMANCE/BATTERY/STANDARD），ADPF 提供帧级控制。两者无绑定关系，`setPreferPowerEfficiency` 独立于用户选择的 Game Mode。
+
+### ProfilingManager TRIGGER_TYPE_ANOMALY（API 37）
+
+**关键澄清：TRIGGER_TYPE_ANOMALY 是 API 37 新增的 trigger type（value=8），不在 API 36**。
+
+| Trigger（API 37） | 触发条件 | 产出 artifact |
+|---|---|---|
+| `TRIGGER_TYPE_COLD_START` | 应用冷启动 | call stack sample + system trace |
+| `TRIGGER_TYPE_OOM` | 应用抛出 OutOfMemoryError | Java Heap Dump |
+| `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` | 应用因异常高 CPU 使用被终止 | call stack sample |
+| `TRIGGER_TYPE_ANOMALY` | 系统检测到 binder spam / 内存超限 | heap dump 或 stack sampling |
+
+`TRIGGER_TYPE_ANOMALY` 由 AnomalyDetectionService（Android 17 新增的设备端异常检测服务）驱动，监控资源密集型行为和潜在兼容性回归。在进程被系统终止**之前**触发，给予开发者收集调试数据的机会。`ApplicationExitInfo` 会包含 "MemoryLimiter" 字符串，表明受 MemoryLimiter 影响。
+
+**TRIGGER_TYPE_ANOMALY 与 ADPF 是两条独立设计路径**：AnomalyDetectionService 独立于 ADPF 运行，两者之间无自动数据流。开发者需手动整合 PowerMonitor 采样数据到 ADPF hint 策略决策。
+
+ProfilingManager 是 **Profiling APEX 模块**（`packages/modules/Profiling/`）的 API surface：
+- `packages/modules/Profiling/framework/` — Java API surface（`android.os.ProfilingManager`）
+- `packages/modules/Profiling/service/ProfilingService.java` — system_server 中运行的系统服务
+
+注册方式：
+```java
+ProfilingManager pm = (ProfilingManager) context.getSystemService(Context.PROFILING_SERVICE);
+pm.addProfilingTriggers(executor, Arrays.asList(ProfilingTrigger.TRIGGER_TYPE_ANOMALY));
+pm.registerForAllProfilingResults(executor, result -> {
+    // result.getFile() 返回 artifact 文件路径
+    // result.getTag() 携带异常类型信息
+});
+```
+
+### 版本演进（修正）
+
+| API Level | 版本 | 主要变化 |
+|---|---|---|
+| 31 | Android 12 | PerformanceHintManager 初始引入 |
+| 35 | Android 15 | `setPreferPowerEfficiency(true)` 新增，PowerMonitor API 引入 |
+| 36 | Android 16 | `addProfilingTriggers()` API 引入，**TRIGGER_TYPE_ANOMALY 不在此版本** |
+| 37 | Android 17 | TRIGGER_TYPE_ANOMALY 新增，AnomalyDetectionService 设备端异常检测引入 |
+
+<!-- AIW-源码调研-20260501 END -->
+
 ## 常见问题与误区
 
 ### 误区一：ADPF 能提升 SoC 的绝对性能
