@@ -2,7 +2,7 @@
 title: 内存分析工具
 chapter: '14.3'
 section: '14.3'
-status: finalized
+status: "ready-for-review"
 reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 drafted_date: '2026-04-03'
@@ -42,18 +42,19 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: ready-to-publish
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-task9_result: pass-tech-review
+task9_state: "reviewed"
+task2b_state: "pending"
+task9_result: "needs-rework"
 task2b_result: rework-fixed
 task2b_rework_date: '2026-04-20'
 task2b_fixed_at: '2026-04-20'
-task9_reviewed_date: '2026-04-21'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-21T22:00:33.103917+08:00'
+task9_reviewed_date: "2026-04-30"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-04-30T21:27:00+08:00"
+task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。LeakCanary 配置示例、libmeminfo 当前路径、malloc hooks 示例、MTE 版本/能力边界需回炉。"
 ---
 
 # 内存分析工具

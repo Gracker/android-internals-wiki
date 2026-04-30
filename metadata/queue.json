@@ -3142,8 +3142,8 @@
     },
     {
       "section": "14.3",
-      "priority": 85,
-      "reason": "[External Review] 外部 AI review 发现 9 个需回炉问题",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.3 内存分析工具仍有 P0/P1 技术问题，需 Task2B 回炉",
       "review_issues": [
         {
           "type": "P1-重要缺失",
@@ -3188,10 +3188,52 @@
         {
           "level": "P1",
           "detail": "- **建议修正方向**：同步最新 AOSP 目录结构，并补全信号量说明。"
+        },
+        {
+          "level": "P0",
+          "type": "源码/API错误",
+          "location": "L132-L135 LeakCanary 配置示例",
+          "detail": "`LeakCanary.config.copy(retainDelayMillis = 5000)` 与 LeakCanary 2.14 API 不匹配；retained delay 不在 `LeakCanary.Config` 上，主要通过 `AppWatcher.manualInstall(... retainedDelayMillis ...)` 配置。当前代码示例会误导读者按不可编译/不可生效的方式配置。",
+          "suggestion": "把 `dumpHeap` / `objectInspectors` 等保留在 `LeakCanary.config`，将 retain delay 单独写为 AppWatcher 手动安装路径，并说明需禁用自动安装后再手动配置。",
+          "source": "task9-deep-tech-review",
+          "reviewed_at": "2026-04-30T21:27:00+08:00"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L395-L407 libmeminfo 路径引用",
+          "detail": "正文 L395 已写 Android 11+ 路径为 `system/memory/libmeminfo/`，但 L407 仍标注 `[已验证: AOSP, system/core/libmeminfo]`。以 android-16.0.0_r1 为基准，当前路径应为 `system/memory/libmeminfo`，章节内部证据锚点互相冲突。",
+          "suggestion": "统一源码锚点为 `system/memory/libmeminfo`；如保留历史路径，需明确旧版本边界，不要把旧路径标成当前已验证路径。",
+          "source": "task9-deep-tech-review",
+          "reviewed_at": "2026-04-30T21:27:00+08:00"
+        },
+        {
+          "level": "P0",
+          "type": "源码/API错误",
+          "location": "L472-L488 malloc hooks 示例",
+          "detail": "示例只定义 `my_malloc_hook()` / `my_free_hook()`，没有展示 bionic 实际 hook 入口（如 `__malloc_hook` / `__free_hook` 函数指针）或启用方式；`real_malloc` / `real_free` 也未定义。读者照此无法构建可运行的 Android malloc hooks 示例。",
+          "suggestion": "改为 bionic malloc hooks 的最小可用示例：声明/赋值 `__malloc_hook`、`__free_hook` 等入口，并补充 API 28+、启用属性/环境变量、线程安全和递归调用风险。",
+          "source": "task9-deep-tech-review",
+          "reviewed_at": "2026-04-30T21:27:00+08:00"
+        },
+        {
+          "level": "P1",
+          "type": "版本差异",
+          "location": "L512-L520 MTE 版本与能力边界",
+          "detail": "MTE 被写成 ARM v9 引入，并称“可以检测更多类型的错误”。MTE 实际在 Armv8.5-A 引入；Android 上是否可用取决于 SoC、内核、进程 opt-in/compat 配置。其能力边界也不应笼统写成比 HWASAN 覆盖更多类型，至少要区分 heap tagging、stack/global instrumentation、同步/异步报告精度。",
+          "suggestion": "把硬件版本改为 Armv8.5-A+；将“更多类型”改为按场景比较：MTE 低开销、适合生产抽样/异步检测，HWASAN 依赖编译插桩、诊断信息更完整。",
+          "source": "task9-deep-tech-review",
+          "reviewed_at": "2026-04-30T21:27:00+08:00"
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "pending",
+      "section_title": "内存分析工具",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-04-30T21:27:00+08:00"
     },
     {
       "section": "14.4",
