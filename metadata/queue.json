@@ -6090,13 +6090,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "updated_by": "task9-deep-tech-review",
       "updated_at": "2026-04-27T16:20:00+08:00",
-      "source_file": "2026-04-29-10-7.14-external-review.md"
+      "source_file": "2026-04-29-10-7.14-external-review.md",
+      "completed_at": "2026-04-30T19:47:07.440772+00:00",
+      "completed_reason": "入口与隐式调用边建模已展开(生命周期回调/UI回调/ICC); LLM对标分析已添加; Frida触达即抓Trace已补充"
     },
     {
       "section": "7.15",
@@ -6127,8 +6129,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "source_file": "2026-04-29-10-7.15-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-10-7.15-external-review.md",
+      "completed_at": "2026-04-30T19:47:07.440772+00:00",
+      "completed_reason": "冷启动16KB页对齐检查已补充; BufferStuffing浅绿色判定已更新; Perfetto SQL场景化筛选表已添加"
     },
     {
       "section": "7.2",

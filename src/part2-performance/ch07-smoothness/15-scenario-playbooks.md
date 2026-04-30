@@ -20,7 +20,7 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [playbook, smoothness, startup, jank, anr, troubleshooting]
 related_chapters: ["7.1", "7.3", "8.2", "9.3", "13.3", "15.2", "15.5", "15.6"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
@@ -130,6 +130,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 2. 对照 TTID 和 TTFD，先分清“首帧慢”还是“可交互慢”。
 3. 抓一次完整冷启动 trace。
 4. 如果 TTID 正常但 TTFD 差，先查 Application 初始化、首屏数据和可交互边界。
+5. 如果应用以 4KB 页对齐编译但运行在 16KB 页设备上，冷启动的 `mmap` + page fault 开销会额外增加。检查 APK 内 `.so` 文件的 ELF 页对齐是否为 16KB（`readelf -l libxxx.so | grep LOAD`），非 16KB 对齐的库在 16KB 设备上会触发兼容模式拷贝，PSS 飙升且无法享受大页加速红利。
 
 这一类问题最容易掉进“感觉已经打开了，所以不算慢”的误区。对用户来说，画面出现只是第一步，能不能开始用才是第二步。  
 对应章节：`8.1`、`8.2`、`8.3`、`15.6`。
@@ -197,7 +198,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 
 - Input 事件到 `doFrame` 的时差
 - 主线程是否长时间 Runnable
-- 是否出现 BufferStuffing 或 high latency state
+- 是否出现 BufferStuffing 或 high latency state。Android 15+ 的 Perfetto UI 为 BufferStuffing 赋予了标准颜色——浅绿色（Light Green），表示“帧流畅但呈现延迟高”。在 FrameTimeline 轨道中，凡是 Actual Present 稳定落后 Expected Present 固定 N 个周期的帧，都按 BufferStuffing 处理，责任链在显示反馈链积压
 
 再排：
 
@@ -385,6 +386,21 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 - **把首帧出现误当成页面完成**：TTID 正常不代表 TTFD 正常。
 - **把“只有某些机型差”误当成偶现**：机型聚类往往说明这是结构性问题。
 - **把“线下复现不了”误当成无问题**：线上会话上下文常常比本地单次操作更重要。
+
+## 场景化 Perfetto SQL 快速筛选
+
+每个场景对应的关键 SQL 查询，可以配合 trace 数据做批量初筛：
+
+| 场景 | 关键 SQL | 说明 |
+|---|---|---|
+| 掉帧 / jank | `SELECT * FROM frame_timeline_event WHERE jank_type IS NOT NULL` | 捞出所有 jank 帧，按 jank_type 分类 |
+| BufferStuffing | `SELECT * FROM frame_timeline_event WHERE jank_type = 'BufferStuffing'` | Android 15+ Perfetto UI 中显示为浅绿色轨道 |
+| 冷启动 | `SELECT name, ts, dur FROM slice WHERE name LIKE '%ActivityManager%' AND name LIKE '%start%'` | 定位 AMS 启动调度链 |
+| ANR | `SELECT * FROM slice WHERE name LIKE '%ANR%'` | 结合 `ApplicationExitInfo` 时间线 |
+| Input 延迟 | `SELECT (doFrame_ts - input_ts) AS latency FROM ...` | 输入事件到 `doFrame` 的时差 |
+| GC 暂停 | `SELECT * FROM slice WHERE name LIKE '%GC%' AND name LIKE '%pause%'` | GC 暂停对帧预算的侵占 |
+
+使用建议：先跑对应 SQL 做场景初筛，确认命中后，再回到 Perfetto UI 做逐帧时间线分析。10GB 量级的大 trace 用 SQL 比人工滚动轨道效率高一个数量级。
 
 ## 这份手册怎么用
 
