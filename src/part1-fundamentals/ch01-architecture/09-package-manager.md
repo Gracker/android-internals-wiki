@@ -8,7 +8,7 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-30"
+reviewed_date: "2026-05-01"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-18"
@@ -55,8 +55,8 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task2b_pending"
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: pending
@@ -139,7 +139,7 @@ PMS 在内存中维护了几个关键的数据结构：
 
 ### PMS 与 installd 的协作关系
 
-PMS 维护包状态和安装策略，真正落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。android-16.0.0_r1 里的 `Installer.connect()` 已经不是连 `/dev/socket/installd`，而是通过 `ServiceManager.getService("installd")` 拿到 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。
+PMS 维护包状态和安装策略，真正落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。android-16.0.0_r1 里的 `Installer.connect()` 改为通过 `ServiceManager.getService("installd")` 获取 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。旧版 `/dev/socket/installd` 的 socket 路径已弃用。
 
 现代安装路径里，dexopt 的控制面和执行面还要再拆一层：
 
@@ -164,7 +164,7 @@ Android 14 对 PMS 的内部架构做了一次重要重构：引入 `Computer` �
 - **读操作**（查询包信息、组件解析、权限检查）拿到的是快照引用，不与写操作竞争锁
 - 每个读请求持有的快照在该请求完成前保持一致视图，不会被中间的写操作影响
 
-这对性能分析有实际意义。在 Perfetto 中观察 PMS 活动时，如果看到 `PackageManagerService` 的查询 Slice（如 `getPackageInfo`）耗时较长，在 Android 14+ 的设备上通常不是因为写操作持锁——而是快照中需要遍历的数据量本身较大，或系统处于高负载状态。Android 13 及以下则仍然可能出现读写锁竞争导致的查询延迟。
+这对性能分析有实际意义。在 Perfetto 中观察 PMS 活动时，如果看到 `PackageManagerService` 的查询 Slice（如 `getPackageInfo`）耗时较长，在 Android 14+ 的设备上，耗时较长通常是因为快照中需要遍历的数据量本身较大，或系统处于高负载状态。Android 13 及以下则仍然可能出现读写锁竞争导致的查询延迟。
 
 [已验证: AOSP android-14.0.0_r1 `frameworks/base/services/core/java/com/android/server/pm/Computer.java` / `PackageManagerService.java` 的 `mComputer` 字段]
 
