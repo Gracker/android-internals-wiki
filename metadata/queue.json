@@ -8908,7 +8908,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T21:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T02:45:34.000101",
+      "completed_reason": "Perfetto Binder字段口径已修正(client_dur/server_dur/is_sync)；12% Binder吞吐量声明降级为待验证"
     },
     {
       "section": "1.5",
@@ -9942,7 +9944,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T01:27:22+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T02:45:34.000101",
+      "completed_reason": "P0 heapprofd命令改为heap_profile；P0 malloc hooks属性名修正为libc.debug.hooks.enable"
     }
   ],
   "completed": [
