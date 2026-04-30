@@ -42,19 +42,19 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: "task9_pending"
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-task9_result: "needs-rework"
+task9_state: reviewed
+task2b_state: pending
+task9_result: needs-rework
 task2b_result: fixed
 task2b_rework_date: '2026-04-20'
 task2b_fixed_at: '2026-04-20'
-task9_reviewed_date: "2026-04-30"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-30T21:27:00+08:00"
-task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。LeakCanary 配置示例、libmeminfo 当前路径、malloc hooks 示例、MTE 版本/能力边界需回炉。"
+task9_reviewed_date: "2026-05-01"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-01T01:27:22+08:00"
+task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 源码错误 约第265行，heapprofd 命令行示例 / P0 源码错误 约第537行，malloc hooks 启用方式"
 ---
 
 # 内存分析工具
