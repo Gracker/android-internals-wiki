@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-01T02:13:24+08:00",
+  "generated_at": "2026-05-01T05:10:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -45,8 +45,7 @@
       "unknown": 34,
       "reviewed": 180,
       "revisiting": 35,
-      "revising": 1,
-      "pending": 0
+      "revising": 1
     },
     "task9_state_counts": {
       "unknown": 38,
@@ -180,19 +179,20 @@
       "last_verified": "2026-04-09",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "high",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "reviewed_date": "2026-04-18",
+      "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-30T03:32:47+08:00",
       "review_round": "3",
-      "review_notes": "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 1。"
+      "review_notes": "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 1。",
+      "task6_reviewed_date": "2026-05-01"
     },
     "src/part1-fundamentals/ch01-architecture/04-binder.md": {
       "path": "src/part1-fundamentals/ch01-architecture/04-binder.md",
@@ -346,12 +346,12 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-20",
+      "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-01",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-01T00:56:06+08:00",
-      "task6_reviewed_date": "2026-04-30"
+      "task6_reviewed_date": "2026-05-01"
     },
     "src/part1-fundamentals/ch01-architecture/10-content-provider.md": {
       "title": "ContentProvider 性能与优化",

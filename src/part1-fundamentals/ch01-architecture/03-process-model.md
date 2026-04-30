@@ -3,11 +3,10 @@ title: "进程模型与生命周期管理"
 chapter: "1.3"
 section: "1.3"
 status: ready-for-review
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-05-01"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
 task6_result: pass-light-edit
-4
 drafted_date: "2026-03-31"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-04-09"
@@ -53,8 +52,8 @@ sources:
     path: "source.android.com/docs/core/perf/lmkd"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5", "4.4", "5.1", "5.8"]
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: "task9_pending"
+task6_state: reviewed
 task9_state: pending
 task9_result: pending
 task2b_state: "pending"
