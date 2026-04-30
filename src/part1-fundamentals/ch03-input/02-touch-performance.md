@@ -7,7 +7,7 @@ drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
@@ -36,7 +36,8 @@ related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
 pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task2b_rework_date: "2026-04-29"
 task9_reviewed_by: openclaw-task9
@@ -87,8 +88,8 @@ HCI 领域对触摸延迟的感知研究有几个广泛引用的结论。多项�
 
 目前在公开文献中能确认的方向性结论：
 - 直接操作场景（拖拽、绘图）对延迟的敏感度明显高于离散点击
-- 120Hz 高刷配合低延迟采样在感知上优于 60Hz，但收益受总链路延迟制约
-- 具体阈值数值需要回到原始论文的实验条件，不能简单当作全链路优化目标
+- 120Hz 高刷配合低延迟采样在感知上优于 60Hz，但收益受端到端延迟制约
+- 具体阈值数值需要回到原始论文的实验条件，不能简单当作整条管线的优化目标
 
 这些研究为触摸优化提供了方向性参考，但 Android 端到端 touch-to-display 延迟（本节后文表格给出 15-75ms）与 HCI 实验室条件下的端到端延迟是不同口径。两者分开看，不要把实验室阈值直接写成产品 SLA。
 
@@ -120,7 +121,7 @@ HCI 领域对触摸延迟的感知研究有几个广泛引用的结论。多项�
 
 Android 16+ 支持将内核页面大小从 4KB 切换到 16KB。更大的页面尺寸提升了 TLB 命中率、减少了缺页异常处理开销，在 app 启动、系统启动、摄像头延迟等宏观指标上有可量化的改善（参见 Android 官方 16KB page size 文档）。
 
-对输入分发包路径的影响，目前公开资料没有给出独立的 benchmark 数据。理论上的收益方向是减少 socketpair mmap 相关的缺页中断、降低 micro-timing jitter，但具体到 InputDispatcher → App 这条链路的收益幅度需要实测验证。如果要做 16KB 相关的触摸延迟分析，建议直接在两种页面大小的设备上对比 Perfetto trace，而不是引用未标明条件的精确百分比。
+对输入分发包路径的影响，目前公开资料没有给出独立的 benchmark 数据。理论上的收益方向是减少 socketpair mmap 相关的缺页中断、降低 micro-timing jitter，但具体到 InputDispatcher → App 这条路径的收益幅度需要实测验证。如果要做 16KB 相关的触摸延迟分析，建议直接在两种页面大小的设备上对比 Perfetto trace，而不是引用未标明条件的精确百分比。
 
 16KB 页面大小的详细分析见 §4.7。
 
@@ -500,26 +501,6 @@ AndroidX `input-motionprediction` 更像兼容层和封装层。AndroidX release
 
 Input ANR 的触发条件是：InputDispatcher 将事件派发给 App 后，5 秒内没有收到 `finishInputEvent()` 的回调。这确实说明 App 主线程卡住了，但"卡住"的原因可能是多样的：死锁、Binder 调用阻塞、磁盘 I/O 等待、甚至是因为 GC 暂停了主线程。需要结合 Perfetto 或 ANR Trace 来具体分析，而不是笼统地认为"App 写得差"。
 
-## 参考资料
-
-- AOSP 源码路径：
-  - `frameworks/native/services/inputflinger/reader/InputReader.cpp`
-  - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
-  - `frameworks/base/core/java/android/view/ViewRootImpl.java`
-  - `frameworks/base/core/java/android/view/Choreographer.java`
-- [已验证: 官方文档, source.android.com/docs/core/interaction/input]
-- [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
-- [已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor]
-- [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
-- [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input]
-- [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]（高爷原创：Systrace 基础知识 - Input 解读）
-- [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]（高爷原创：Systrace 响应速度实战 1）
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
-- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md]
-- [引用: http://gityuan.com/2016/12/11/input-reader/]
-- [引用: http://gityuan.com/2016/12/17/input-dispatcher/]
-
-
 ## 输入重采样（Motion Resampling）机制
 
 ### 源码级细节（2026-04-25 调研补充）
@@ -570,4 +551,21 @@ Resampler 位于 App 进程的 `InputConsumer` 内部（`frameworks/native/libs/
 
 源码：`frameworks/native/libs/input/Resampler.cpp`（AOSP mainline）
 
-<!-- AIW-源码调研-2026-04-25 -->
+## 参考资料
+
+- AOSP 源码路径：
+  - `frameworks/native/services/inputflinger/reader/InputReader.cpp`
+  - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`
+  - `frameworks/base/core/java/android/view/ViewRootImpl.java`
+  - `frameworks/base/core/java/android/view/Choreographer.java`
+- [已验证: 官方文档, source.android.com/docs/core/interaction/input]
+- [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
+- [已验证: 官方文档, developer.android.com/reference/android/view/MotionPredictor]
+- [已验证: 官方文档, developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features]
+- [已验证: 官方文档, developer.android.com/jetpack/androidx/releases/input]
+- [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]（高爷原创：Systrace 基础知识 - Input 解读）
+- [来源: obsidian/Personal-Knowlodge/source/android-systrace-Responsiveness-in-action-1.md]（高爷原创：Systrace 响应速度实战 1）
+- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_从input响应性能差的issue演示perfetto_trace用法.md]
+- [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_响应时延的科学研究.md]
+- [引用: http://gityuan.com/2016/12/11/input-reader/]
+- [引用: http://gityuan.com/2016/12/17/input-dispatcher/]

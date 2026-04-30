@@ -3,10 +3,9 @@ title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
 status: ready-for-review
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
-review_note: Task 6 复审:按 writing-guide / STYLE / content-quality-gate 完成 9 处 L1/L2
-  小修;Perfetto 证据链、版本/API 口径与扩展收束已转 Task 9 / Task 2B
+review_note: Task 6 三审(2026-04-30):移除 AIW 编辑注释 3 处、frontmatter 去重 1 处;task9 仍 needs-rework
 rework_date: '2026-04-02'
 rework_by: openclaw-task2b
 polish_count: 1
@@ -55,7 +54,7 @@ related_chapters:
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
 pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-29"
@@ -64,8 +63,6 @@ task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-29T06:30:33+08:00"
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1。需 Task2B 回炉。"
-status: ready-for-review
-task2b_result: fixed
 ---
 
 # 帧率与刷新率
@@ -263,7 +260,6 @@ SurfaceFlinger 会先拿到 Display policy 允许的候选刷新率,再按每个
 
 **LayerHistory**(`services/surfaceflinger/Scheduler/LayerHistory.cpp`):负责追踪每个活跃 Layer 的帧率请求。它通过统计 Layer 实际提交 Buffer 的时间戳来估算平均 FPS,并将汇总结果传递给 `RefreshRateSelector`。`LayerHistory::getSnapshot()` 在每一帧被 SurfaceFlinger 调用,返回当前所有活跃 Layer 的帧率需求摘要。
 
-<!-- AIW-源码调研-20260428: View投票冲突解决机制与RefreshRateSelector评分算法 -->
 ### App 如何参与刷新率选择
 
 从 Android 11 开始,App 可以通过两个 API 来影响刷新率决策:
@@ -668,7 +664,6 @@ LTPO 面板的像素驱动电路中混合使用了两种 TFT 技术:
 
 [已验证: AOSP 源码 + 官方文档, 详见底部引用]
 
-<!-- AIW-源码调研-2026-04-18 -->
 ### 源码深度:VRR vs ARR 分层 + RefreshRateSelector 评分算法
 
 **VRR(Variable Refresh Rate)≠ ARR(Adaptive Refresh Rate)**,两者是不同层级的概念:
@@ -719,7 +714,6 @@ API 30 NDK callback 可能在回调触发后短时间内返回**过期的刷新�
 
 [已验证: AOSP RefreshRateSelector.cpp + RefreshRateSelector.h 源码 + Android Developer 官方文档]
 
-<!-- AIW-源码调研-2026-04-18 end -->
 
 
 [已验证: 研究素材, Android-Internal-Wiki/intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md]
