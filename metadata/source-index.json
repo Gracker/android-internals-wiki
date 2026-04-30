@@ -1,42 +1,133 @@
-[
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md",
-    "title": "当 Perfetto 显示 Running 时,Android 程序到底在做什么?",
-    "summary": "从 Perfetto Running 状态切片出发，逐层拆解 Linux task_struct、ftrace、ART、Binder、内核调度器、Arm CPU 微架构各层精确语义，给出完整诊断工作流。",
-    "chapter": "ch13",
-    "processed_at": "2026-04-30 06:10",
-    "type": "deepresearch-inject"
+{
+  "files": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md",
+      "title": "当 Perfetto 显示 Running 时,Android 程序到底在做什么?",
+      "summary": "从 Perfetto Running 状态切片出发，逐层拆解 Linux task_struct、ftrace、ART、Binder、内核调度器、Arm CPU 微架构各层精确语义，给出完整诊断工作流。",
+      "chapter": "ch13",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md",
+      "title": "PSI 驱动的 Android LMKD 进程杀机制",
+      "summary": "从 vmpressure 到 PSI 的范式转移全链路源码分析，覆盖 PSI 统计与门限、lmkd 迁移路径、per-UID 防护、swap+zRAM 策略及 Android 10-15 调优历史。",
+      "chapter": "ch04",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md",
+      "title": "Android 14→17 Foreground Service Timeout ANR 机制深度解析",
+      "summary": "AOSP 源码视角的 FGS 超时与 ANR 触发机制全解析，覆盖 Android 14 ShortService 到 Android 17 AnrTimer 的完整演进与代码路径。",
+      "chapter": "ch09",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md",
+      "title": "Android Sync Fence 机制深度剖析",
+      "summary": "从 Linux 内核 dma_fence/sync_file 到 Android libsync/libui 的完整同步栅栏机制源码剖析，含 Android 16 Explicit Sync 迁移分析。",
+      "chapter": "ch02",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md",
+      "title": "ARM Mali GPU TBR 架构原理与 Android 渲染性能影响",
+      "summary": "ARM Mali/Immortalis GPU TBR 架构全代际深度报告，从 Utgard 到第五代 GPU 核心机制详解及 Android 渲染栈交互方式。",
+      "chapter": "ch02",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "title": "Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监控闭环",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-adpf-power-efficiency-mode-android-15.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "AutoResearchClaw",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch11"
+    },
+    {
+      "title": "Android 16KB Page Size 与 Hook 库的兼容性机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-android-16kb-page-size-hook-library-compatibility.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "AutoResearchClaw",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch16"
+    },
+    {
+      "title": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75913099-谷歌官方推荐Android 性能优化全.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "juejin-android",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch07"
+    },
+    {
+      "title": "Luban 2：简洁高效的Android图片压缩库",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75922413-Luban 2简洁高效的Android.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "juejin-android",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch16"
+    },
+    {
+      "title": "2026年了，Android开发该如何调试布局",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75967106-2026年了Android开发该如何调.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "juejin-android",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch16"
+    }
+  ],
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-adpf-power-efficiency-mode-android-15.md": {
+    "chapter": "ch05-cpu-power",
+    "title": "Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监控闭环",
+    "added_date": "2026-05-01",
+    "score": 16
   },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md",
-    "title": "PSI 驱动的 Android LMKD 进程杀机制",
-    "summary": "从 vmpressure 到 PSI 的范式转移全链路源码分析，覆盖 PSI 统计与门限、lmkd 迁移路径、per-UID 防护、swap+zRAM 策略及 Android 10-15 调优历史。",
-    "chapter": "ch04",
-    "processed_at": "2026-04-30 06:10",
-    "type": "deepresearch-inject"
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-android-16kb-page-size-hook-library-compatibility.md": {
+    "chapter": "ch16-aosp",
+    "title": "Android 16KB Page Size 与 Hook 库的兼容性机制",
+    "added_date": "2026-05-01",
+    "score": 18
   },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md",
-    "title": "Android 14→17 Foreground Service Timeout ANR 机制深度解析",
-    "summary": "AOSP 源码视角的 FGS 超时与 ANR 触发机制全解析，覆盖 Android 14 ShortService 到 Android 17 AnrTimer 的完整演进与代码路径。",
-    "chapter": "ch09",
-    "processed_at": "2026-04-30 06:10",
-    "type": "deepresearch-inject"
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75913099-谷歌官方推荐Android 性能优化全.md": {
+    "chapter": "ch14-other-tools",
+    "title": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分",
+    "added_date": "2026-05-01",
+    "score": 16
   },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md",
-    "title": "Android Sync Fence 机制深度剖析",
-    "summary": "从 Linux 内核 dma_fence/sync_file 到 Android libsync/libui 的完整同步栅栏机制源码剖析，含 Android 16 Explicit Sync 迁移分析。",
-    "chapter": "ch02",
-    "processed_at": "2026-04-30 06:10",
-    "type": "deepresearch-inject"
-  },
-  {
-    "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md",
-    "title": "ARM Mali GPU TBR 架构原理与 Android 渲染性能影响",
-    "summary": "ARM Mali/Immortalis GPU TBR 架构全代际深度报告，从 Utgard 到第五代 GPU 核心机制详解及 Android 渲染栈交互方式。",
-    "chapter": "ch02",
-    "processed_at": "2026-04-30 06:10",
-    "type": "deepresearch-inject"
+  "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75967106-2026年了Android开发该如何调.md": {
+    "chapter": "ch14-other-tools",
+    "title": "2026年了，Android开发该如何调试布局",
+    "added_date": "2026-05-01",
+    "score": 14
   }
-]
+}

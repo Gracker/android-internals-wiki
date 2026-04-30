@@ -39,21 +39,21 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-25'
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-25T23:29:25+08:00"
-repaired_date: '2026-04-25'
+repaired_date: '2026-05-01'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: '2026-04-25T18:48:46+08:00'
+task2b_state: fixed
+last_task2b_at: '2026-05-01T06:48:44'
 ---
 
 
@@ -325,9 +325,9 @@ target_link_options(your_native_lib PRIVATE "-Wl,-z,max-page-size=16384")
 如果某个 Hook 库几年没维护,又默认假设 4KB 页,这在 Android 15/16 设备上就是上线前必须先排掉的兼容性红线。
 
 - Android API 版本变化
-- Android 14+ 对可写可执行内存的限制更严,Inline Hook 的写回窗口更窄
+- Android 14 (API 34) targetSdk 对可写可执行内存的限制更严,Inline Hook 的写回窗口更窄
 - linker / namespace 行为差异
-- Android 15+ 的 16KB Page Size 与构建链约束
+- Android 15+ (API 35+) 的 16KB Page Size 与构建链约束
 - ABI 与指令集差异
 - ROM 对 so 装载和安全策略的定制
 
@@ -363,7 +363,7 @@ Hook 到了,不代表结论就一定对。例如:
 
 <!-- AIW-源码调研-2026-04-24 -->
 
-Android 14 对 Inline Hook 的影响主要体现在两条线上：**W^X 内存保护策略限制了"同时可写可执行"的内存操作窗口**，以及 **16KB Page Size 改变了 `mprotect()` 的页边界假设**。
+Android 14 起对 Inline Hook 的影响需要按版本拆开看：**Android 14 (API 34) 的 W^X 内存保护策略限制了"同时可写可执行"的内存操作窗口**；**Android 15+ (API 35) 的 16KB Page Size 改变了 `mprotect()` 的页边界假设**。两条线发生时间不同，不能混在一起。
 
 ### W^X 在 Hook 场景里的三层约束
 
@@ -382,7 +382,7 @@ Inline Hook 的完整执行流程在现代 Android 上被拆解为五个阶段�
 ```
 1. 查询目标函数地址（从 /proc/self/maps 或 ELF 符号表）
 2. 用 mprotect(PROT_READ|PROT_WRITE) 使页面可写
-3. 覆盖目标函数入口机器码（通常为 12 字节的 BL/BLR 指令）
+3. 覆盖目标函数入口机器码（长度不固定，取决于架构、目标距离和框架实现；ARM64 近跳可用 4 字节 B/BL，远跳常见 16 字节级的 LDR/BR + literal stub）
 4. 用 mprotect(PROT_READ|PROT_EXEC) 恢复页面为只读+可执行
 5. 调用 __builtin___clear_cache() 刷新 icache
 ```

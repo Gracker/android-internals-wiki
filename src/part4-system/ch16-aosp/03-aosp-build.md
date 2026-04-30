@@ -7,15 +7,15 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-23"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
+task6_state: revisiting
+task9_state: pending
+task9_result: pending
 last_task9_at: '2026-04-28T10:30:00+08:00'
 task9_reviewed_date: '2026-04-28'
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 + source.android.com"
@@ -163,24 +163,38 @@ emulator -avd <avd_name> -system <path/to/system.img>
 
 Cuttlefish 是 Google 推荐的 AOSP 测试方案。它是一个运行在 Linux 主机上的虚拟 Android 设备，使用 KVM 硬件加速，对 AOSP 源码改动有更好的支持。
 
+与 Android Emulator（基于 QEMU）不同，Cuttlefish 基于 **crosvm**（Google 自研的 VMM）和 **virtio** 设备模型。crosvm 是一个轻量级虚拟机监视器，专门为 Chrome OS / Android 虚拟化场景设计；virtio 提供了标准化且低开销的半虚拟化 I/O 接口（网络、块设备、输入设备等）。这套架构使 Cuttlefish 比 QEMU 更轻量、启动更快，也因此被 AOSP CI 和 Android 仪表盘选作标准测试平台。Host 侧通过 WebRTC 暴露交互界面（浏览器 `https://localhost:8443`），同时通过 ADB 提供命令行访问。
+
+[已验证: source.android.com/docs/setup/create/avd, device/google/cuttlefish]
+
 [已验证: 官方文档, source.android.com/docs/setup/create/avd]
 
-Cuttlefish 的设置流程：
+Cuttlefish 的设置流程（以 AOSP 编译产物路径为例）：
 
 ```bash
 # 1. 编译 Cuttlefish 镜像
 lunch aosp_cf_x86_64_only_phone-trunk_staging-userdebug
 m -j$(nproc)
 
-# 2. 安装 Cuttlefish host 依赖
-sudo apt install -y cuttlefish-common
+# 2. 编译并安装 Cuttlefish host 包
+# 从 AOSP 源码编译 host 依赖（cuttlefish-base, cuttlefish-user）
+m -j$(nproc) cvd-host-package
+# 解压并安装 deb 包（或按官方 get-started 配置 artifact registry）
+sudo dpkg -i cuttlefish-base_*.deb cuttlefish-user_*.deb
+sudo apt-get install -f  # 修复依赖
 
 # 3. 添加用户组并重新登录
 sudo usermod -aG kvm,cvdnetwork,render $USER
+# 重新登录使组变更生效
 
-# 4. 启动
-launch_cvd
+# 4. 解压 host package 并启动
+tar -xvf cvd-host_package.tar.gz
+HOME=$PWD ./bin/launch_cvd --daemon
 ```
+
+对于不编译 AOSP 的场景（CI 预编译镜像路径），从 Android CI 下载 `cvd-host_package.tar.gz` 和目标设备 image，解压后用 `./bin/launch_cvd` 启动。`sudo apt install -y cuttlefish-common` 在干净 Ubuntu 上不保证具备可复现性，因为 `cuttlefish-common` 包的版本可能与当前 AOSP 分支不匹配。
+
+[已验证: source.android.com/docs/setup/create/avd, AOSP device/google/cuttlefish README]
 
 启动后，Cuttlefish 默认提供一个 Web 界面（`https://localhost:8443`），可以直接在浏览器里看到虚拟设备的画面。同时可以通过 ADB 连接：
 
