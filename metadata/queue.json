@@ -4938,7 +4938,7 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "added_at": "2026-04-28T10:30:00+08:00",
       "material_paths": [
@@ -4946,7 +4946,9 @@
         "intake/suggestions.md"
       ],
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-04-30T06:37:43+08:00"
+      "last_reviewed_at": "2026-04-30T06:37:43+08:00",
+      "completed_at": "2026-04-30T08:45:15.959308",
+      "completed_reason": "P1 TBR成本模型已补充(区分外部内存/tile memory/fragment shading/半透明混合); P1 Graphite/Early-Z降级为待验证(Skia方向能力非Android 16通用行为); P1 Compose背景合并待验证标注强化; GPU计数器标准化pixels_drawn不存在已澄清"
     },
     {
       "section": "2.9",
@@ -5408,7 +5410,7 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "intake/research-gaps.md",
@@ -5416,7 +5418,9 @@
       ],
       "added_at": "2026-04-29T13:20:00+08:00",
       "last_reviewed_at": "2026-04-30T06:37:43+08:00",
-      "last_reviewed_by": "task9-deep-tech-review"
+      "last_reviewed_by": "task9-deep-tech-review",
+      "completed_at": "2026-04-30T08:46:50.920904",
+      "completed_reason": "P0 concurrent_mark_sweep.cc路径已修正为mark_sweep.cc; P0 GetPageSize()已修正为GetPageSizeSlow()/MemMap::GetPageSize()/gPageSize; P1 source.android.com/docs/core/perf/art-management 404已替换为docs/core/runtime/gc-debug"
     },
     {
       "section": "4.4",

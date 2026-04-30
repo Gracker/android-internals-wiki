@@ -59,18 +59,13 @@ task2b_result: fixed
 status: "ready-for-review"
 pipeline_stage: task2b_pending
 task9_state: reviewed
-task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-30"
-last_task9_at: "2026-04-30T06:37:43+08:00"
-task2b_state: pending
-p0: 0
-p1: 2
-p2: 2
-updated_by: "openclaw-task9"
-updated_date: "2026-04-30"
-review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2。"
-task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2。"
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-04-30T08:40:00+08:00"
+task6_state: revisiting
+pipeline_stage: task6_pending
+status: ready-for-review
 ---
 
 # 过度绘制
@@ -114,7 +109,11 @@ GPU 的 fill rate（像素填充率）是有上限的。当过度绘制严重时
 
 过度绘制带来的耗时也不是线性增加的，还要看 GPU 当时有没有余量。如果 GPU 本来就很快，渲染一帧只用了 5 ms，那即使有 3x 过度绘制，总耗时也可能只是 8 ms，仍然落在 16.6 ms 的 VSync 周期内，用户未必能感知到卡顿。真正危险的是 GPU 已经接近满负载的场景，比如低端设备，或者界面本身就包含大量透明混合、自定义绘制和复杂阴影。这时过度绘制可能把单帧耗时从 15 ms 推到 20 ms 以上，直接跨过当前刷新周期的预算，出现肉眼可见的掉帧。
 
-内存带宽是另一个容易被忽视的瓶颈。每一次像素写入都要占用内存带宽，而移动设备的内存带宽是有限的。当过度绘制严重时，GPU 和 CPU 争抢内存带宽，可能连累 CPU 的性能表现，导致整个系统的响应变慢。
+内存带宽是过度绘制性能影响中需要分场景讨论的维度。移动端 GPU 普遍采用 Tile-Based Rendering (TBR) 或 Tile-Based Deferred Rendering (TBDR) 架构，渲染时先把帧缓冲区划分为小块（tile），在 GPU 芯片内的 on-chip tile memory 中完成一个 tile 的所有 fragment 操作，再把最终结果写回外部内存。这意味着：对于**不透明场景**（从远到近绘制，前面的东西完全遮挡后面的），中间层的 fragment 结果可能只留在 tile memory 中，被后续覆盖后丢弃，不会每一层都产生外部内存写入。此时 3x overdraw 的外部内存写入量不一定等于 3 倍物理像素。
+
+但 TBR 并不能消除过度绘制的全部开销。每一层被覆盖像素的 **fragment shading 计算**（纹理采样、着色器执行）仍然消耗 GPU 算力；**半透明层的 alpha 混合**需要读取底层像素，即使在 tile memory 中完成也会消耗 tile memory 带宽和混合计算；当 tile 内的绘制指令超过 tile memory 容量时，GPU 会发生 tile spill，把中间结果临时写回外部内存，带来额外的带宽消耗和延迟。如果 GPU 没有 Early-Z 能力（或深度测试被半透明/丢弃指令禁用），被遮挡的 fragment 仍然会执行完整的着色计算，只是最终不写入颜色缓冲。
+
+简单概括：TBR 架构让过度绘制的外部内存带宽成本低于直觉上的「层数 × 像素数」，但 fragment shading、纹理采样和 tile memory 内部操作的开销仍然存在，半透明混合场景下更不可忽略。过度绘制仍然是一个值得控制的性能指标，只是不能把「3x overdraw = 3 倍外存写入」当作准确的成本模型。
 
 [已验证: 官方文档, developer.android.com/topic/performance/rendering/overdraw] [来源: obsidian/Personal-Knowlodge/source/android-performance-optimization-overdraw-1.md]
 
@@ -161,7 +160,7 @@ Perfetto 支持采集设备/驱动暴露的 GPU counter，其中部分设备会�
 Overdraw 倍率估算 ≈ GPU pixel counter 值 / (screen_width × screen_height)
 ```
 
-但这不是一个跨设备通用的方案。Perfetto 的 GPU counter 采集依赖 `GpuCounterDescriptor`，counter ID、名称、语义完全由设备驱动决定，Android 没有强制标准化一个通用的 `pixels_drawn` counter。不同 GPU 厂商（Adreno、Mali、Xclipse）暴露的 counter 集合和语义各不相同，跨厂商对比需要先确认各自的 counter 定义。
+但需要注意，这依赖设备驱动暴露的具体 counter，跨设备通用性有限。Perfetto 的 GPU counter 采集依赖 `GpuCounterDescriptor`，counter ID、名称、语义完全由设备驱动决定，Android 没有强制标准化一个通用的 `pixels_drawn` counter。不同 GPU 厂商（Adreno、Mali、Xclipse）暴露的 counter 集合和语义各不相同，跨厂商对比需要先确认各自的 counter 定义。
 
 使用时注意两点：第一，先在目标设备上用 Perfetto 确认可用的 GPU counter 列表，确认是否有 fragment/pixel 写入相关的计数器可用；第二，半透明层的混合操作同样会被计入 pixel 写入，所以高 alpha 场景下的数值天然偏高，这属于正常混合开销而非过度绘制浪费。
 
@@ -328,7 +327,7 @@ protected void onDraw(Canvas canvas) {
 - **Android 8.0（API 26）**：`clipRect(..., Region.Op)`、`clipPath(..., Region.Op)` 这类旧接口开始废弃。P 之后只应继续使用 `INTERSECT` / `DIFFERENCE` 或对应的 `clipOut*` API。
 - **Android 12（API 31）起**：Perfetto 的 FrameTimeline 成为定位 jank 的主线工具之一。它不直接显示 overdraw 次数，但能把 App、RenderThread 和 SurfaceFlinger 的帧预算串起来，帮助我们判断过度绘制有没有演变成可见掉帧。
 - **Android Studio 3.1 / 3.2 之后**：Android Device Monitor 废弃并移除，Hierarchy Viewer / Tracer for OpenGL ES 退出主线，Layout Inspector 与 AGI 成为当前工具链。
-- **Android 16（API 36）**：Skia Graphite 引擎在支持该后端的设备上可通过 Front-to-Back 绘制顺序配合硬件 Early-Z 剔除，在不透明区域跳过被遮挡像素的填充。目前 Graphite 后端尚未在所有 Android 16 设备上默认启用，HWUI 的后端选择仍受系统属性和设备配置控制。半透明层不在 Z-test 优化范围内，仍然需要开发者手动优化层级。GPU 计数器方面，Perfetto 已在部分设备上暴露 fragment/pixel 写入相关的计数器，但这些计数器的 ID、名称和语义由设备驱动决定，尚未形成跨厂商的通用标准化方案。
+- **Android 16（API 36）**：Skia Graphite 是 Skia 的下一代 GPU 后端，其渲染管线支持 Front-to-Back 绘制顺序配合硬件 Early-Z 剔除，理论上可在不透明区域跳过被遮挡像素的填充。[待验证] 截至 android-16.0.0_r1，AOSP `frameworks/base/libs/hwui/pipeline/skia/` 目录下仍以 SkiaOpenGLPipeline / SkiaVulkanPipeline / SkiaGpuPipeline 为主，未发现 Graphite 后端的默认启用开关或设备白名单配置。Graphite 目前更适合定位为 Skia 方向上的能力储备，不能写成 Android 16 应用 UI 的通用优化行为。半透明层不在 Z-test 优化范围内，仍然需要开发者手动优化层级。GPU 计数器方面，Perfetto 在部分设备上暴露 fragment/pixel 写入相关计数器，但这些计数器完全由设备驱动决定（基于 `GpuCounterDescriptor`），ID、名称和语义各不相同，尚未形成跨厂商的通用标准化方案。所谓「标准化 pixels_drawn 数据源」在当前 Perfetto 版本中并不存在。
 
 [已验证: 官方文档, developer.android.com/develop/ui/views/graphics/hardware-accel] [已验证: 官方文档, developer.android.com/studio/profile/monitor] [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/frametimeline]
 
@@ -357,13 +356,14 @@ Compose 中真正会把 overdraw 颜色图压重的，通常还是下面几类�
 
 ### Compose 背景合并优化 [待验证]
 
-> **注意**：以下内容基于社区讨论和部分设备的观察结果，尚未在 AndroidX 官方 release notes 或 AOSP commit 中找到明确的「background merge」特性声明。标记为 [待验证]，后续确认后更新。
+> **注意**：以下内容基于社区讨论和部分设备的观察结果，尚未在 AndroidX Compose release notes、AOSP commit history 或 issue tracker 中找到命名为「background merge」的公开特性声明。标记为 [待验证]，后续确认后更新。下文引用的官方文档只覆盖 Compose graphics modifiers 的一般绘制行为和 Layout Inspector 的通用排查能力，不包含背景合并特性的官方描述。
 
 有迹象表明 Compose 在较新版本中对 `Modifier.background()` 和 `Surface` 组件的背景绘制做了智能合并：当框架检测到子组件的不透明背景完全覆盖了父组件的同区域背景时，可能自动跳过父级在该区域的绘制指令提交。如果该优化确实存在，在 `LazyLayout` 滑动场景下收益应该最明显——每个 Item 的多层背景叠加不再逐层绘制，而是只画最终可见的那一层。
 
 两个需要验证的边界条件：第一，半透明背景不参与合并（混合结果依赖底层内容）；第二，如果父级背景在子组件范围之外仍然可见（比如 padding 区域），那些可见部分仍然会被绘制。
 
-[已验证: 官方文档, developer.android.com/develop/ui/compose/graphics/draw/modifiers] [已验证: 官方文档, developer.android.com/studio/debug/layout-inspector]
+[待验证: Compose 背景合并优化，缺少 AndroidX release note / AOSP CL / issue 锚点]
+[已验证: 官方文档, developer.android.com/develop/ui/compose/graphics/draw/modifiers — 仅覆盖 graphics modifiers 通用行为] [已验证: 官方文档, developer.android.com/studio/debug/layout-inspector — 仅覆盖通用排查能力]
 
 ## 常见问题与误区
 

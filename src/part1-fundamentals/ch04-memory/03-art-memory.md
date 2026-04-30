@@ -17,7 +17,7 @@ last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 + Android Dev
 confidence: medium
 sources:
   - type: official
-    path: "https://source.android.com/docs/core/perf/art-management"
+    path: "https://source.android.com/docs/core/runtime/gc-debug"
   - type: blog
     path: "ART虚拟机内存分配原理浅析 (微信技术文章)"
   - type: blog
@@ -32,22 +32,12 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-30T05:47:02+08:00"
-
-task9_result: needs-rework
-task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。"
-task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-30"
-pipeline_stage: task2b_pending
-review_round: 2
-updated_by: "openclaw-task9"
-updated_date: "2026-04-30"
-p0: 2
+last_task2b_at: "2026-04-30T08:40:00+08:00"
+task6_state: revisiting
+pipeline_stage: task6_pending
 p1: 1
 p2: 2
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。"
@@ -86,13 +76,13 @@ review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2�
 
 理解 ART 的堆结构、GC 策略和对象分配机制，不是为了自己去实现垃圾回收器。我们的目标，是在拿到一份 Trace、看到 GC 暂停或 Allocation Stall 时，能快速判断这是正常波动，还是应用已经出现内存抖动，并知道该从哪里排查。读完这一节，我们应该能在 Perfetto 中识别 ART GC 的主要活动，理解它们对帧率和响应速度的影响，并掌握减少 GC 压力的基本方法。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
 ## ART 堆结构：五个 Space 各司其职
 
 ART 的 Heap 并不是一块单一的连续内存，而是由多个功能不同的 Space（空间）组合而成。每种 Space 有其特定的分配策略和 GC 行为，理解它们的分工是理解整个内存管理体系的基础。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 [来源: Cubox/【Android ART】Heap的内存布局-2024-07-23.md]
 
 ### Image Space：系统启动时就位的基础设施
@@ -125,7 +115,7 @@ Allocation Space 的具体实现取决于当前使用的 GC 策略：
 - 在 Android 8.0–14 中使用 CC（Concurrent Copying）GC 时，Allocation Space 的数据结构是 `RegionSpace`，堆被划分为 256KB 固定大小的 Region
 - 在 Android 15+ 使用 CMC（Concurrent Mark-Compact）GC 时，Allocation Space 的数据结构切换为 `BumpPointerSpace`，结构更简单，更有利于全局压缩。
 
-Android 16 针对 16KB 页环境进一步改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐——在 16KB 页设备上，4KB 对齐的分配会导致地址空间不合法、缓存行效率下降。Android 16 将这个硬编码替换为 `art::GetPageSize()` 动态获取当前页大小，实现了"页面无关（Page Agnostic）"分配。运行时根据内核实际配置的页大小自动调整分配粒度，不需要在 ART 层面区分 4KB 和 16KB 设备。
+Android 16 针对 16KB 页环境进一步改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐——在 16KB 页设备上，4KB 对齐的分配会导致地址空间不合法、缓存行效率下降。Android 16 将这个硬编码替换为动态获取当前页大小的机制。在 android-16.0.0_r1 中，ART 通过 `libartbase/base/globals.h` 的 `GetPageSizeSlow()` 和 `art/runtime/mem_map.cc` 的 `MemMap::GetPageSize()` 获取运行时页大小，而不是直接调用一个虚构的 `art::GetPageSize()` 方法。全局变量 `gPageSize` 在 ART 初始化阶段由 `InitPageSize()` 设置。
 
 这两种策略在后续的 GC 策略演进部分会详细展开。
 
@@ -187,7 +177,7 @@ Dalvik 虚拟机使用的是基于 `dlmalloc` 的标记-清除（Mark-Sweep）GC
 
 Dalvik 时代分配器 `dlmalloc` 的另一层限制，是全局内存锁。所有线程共享同一把锁来分配内存。在多线程场景下，锁争用会拉长分配延迟，这也是早期 Android 应用在多核设备上性能提升不明显的底层原因之一。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
 ### ART 初期（Android 5.0–7.0）：CMS 与 RosAlloc
 
@@ -197,7 +187,7 @@ ART 引入了 Concurrent Mark-Sweep（CMS）GC，将标记阶段的部分工作�
 
 但 CMS 仍然有一个根本性的缺陷：它是非移动式的（non-moving）。标记-清除不会整理内存碎片。长时间运行的应用，堆中的空闲空间可能很多但都是碎片化的，导致无法分配大对象而触发更频繁的 GC，形成恶性循环。
 
-AOSP 源码路径：`art/runtime/gc/collector/concurrent_mark_sweep.cc`
+ART 的 CMS 实现分布在多个文件中。核心标记-清除逻辑在 `art/runtime/gc/collector/mark_sweep.cc`（`MarkSweep` / `PartialMarkSweep` / `StickyMarkSweep`），而非 `concurrent_mark_sweep.cc`。`art/runtime/gc/collector/` 目录下没有名为 `concurrent_mark_sweep.cc` 的文件。
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/allocator/rosalloc.cc]
 
 ### Android 8.0：CC GC 的革命性突破
@@ -227,7 +217,7 @@ CC GC 引入后的关键性能提升：
 - **对象分配速度**：比 Android 7.0 快 70%
 
 AOSP 源码路径：`art/runtime/gc/collector/concurrent_copying.cc`
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 
 ### Android 14 / 15：UFFD 驱动的 Mark Compact / CMC 路径
@@ -257,7 +247,7 @@ Generational CMC 的分代策略配合 CMC 的压缩能力，在高刷新率环�
 
 ### 分代 GC：Young Generation 的快速回收
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
 分代回收这件事，本身比底层 collector 更稳定。它依赖的判断很朴素：新分配对象大多活不久，先把回收工作集中在年轻对象上，通常能用更短的暂停时间拿到更高的回收收益。
 
@@ -298,7 +288,7 @@ GC 吞吐量指的是应用运行时间占总时间的比例。如果 GC 吞吐�
 
 在 Perfetto 中可以通过 `art_gc_*` 相关的 counter track 来监控 GC 的吞吐量和频率。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
 ### Android 17：DeliQueue 与 `MessageQueue` 无锁路径 [待验证]
 
@@ -505,7 +495,7 @@ LIMIT 20;
 
 ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返回，通常 128-512MB）。更大的堆意味着 GC 需要扫描更多的对象，暂停时间会相应增长。此外，一个应用占用过多堆空间，会导致其他应用的可用内存减少，触发更频繁的 lmkd 进程回收。合理的内存使用比申请更大的堆更有价值。
 
-[已验证: 官方文档, source.android.com/docs/core/perf/art-management]
+[已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
 ## 与其他章节的关联
 
@@ -530,7 +520,7 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - Profile 管理：`art/runtime/jit/profile_saver.cc`
 
 ### 官方文档
-- [Manage device memory | source.android.com](https://source.android.com/docs/core/perf/art-management)
+- [Manage device memory | source.android.com](https://source.android.com/docs/core/runtime/gc-debug)
 - [Baseline Profiles | developer.android.com](https://developer.android.com/topic/performance/baselineprofiles)
 - [16KB Page Size | developer.android.com](https://developer.android.com/guide/practices/page-sizes)
 - [Android 16 QPR2 is Released | Android Developers Blog](https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html)
