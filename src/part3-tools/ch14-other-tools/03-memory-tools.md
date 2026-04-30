@@ -42,14 +42,14 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
-task2b_rework_date: '2026-04-20'
+task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-04-20'
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
@@ -110,7 +110,7 @@ LeakCanary 的检测流程可以概括为四个步骤。
 
 第三步，**堆转储与引用链分析**。确认疑似泄漏后，LeakCanary 调用 `Debug.dumpHprofData()` 抓取 Java 堆转储，然后使用自研的 Shark 库（不是 MAT）解析 hprof 文件，找出从 GC Root 到泄漏对象的最短引用链。
 
-第四步，**通知与展示**。分析完成后，LeakCanary 发送系统通知，点击后可以看到完整的泄漏路径。每条泄漏路径会生成一个"泄漏签名"（leak signature），相同签名的泄漏会被归类，避免重复报告。
+第四步，**通知与展示**。分析完成后，LeakCanary 发送系统通知，点击后会展示完整的泄漏路径。每条泄漏路径会生成一个"泄漏签名"（leak signature），相同签名的泄漏会被归类，避免重复报告。
 
 ### 集成与配置
 
@@ -260,10 +260,15 @@ heapprofd 支持 Native 分配和 Java 分配两种模式。Native 分配模式�
 
 **方式二：通过命令行**
 
+Perfetto 官方推荐使用 `heap_profile` 脚本（位于 Perfetto 仓库 `tools/` 目录）启动 native heap profiling：
+
 ```bash
-# 启动 heapprofd 对目标进程进行采样
-adb shell heapprofd -n com.example.myapp
+# 使用 Perfetto 的 heap_profile 工具启动采样
+# 脚本会自动配置 heapprofd 数据源并拉取结果
+tools/heap_profile -n com.example.myapp
 ```
+
+`heap_profile` 封装了 heapprofd daemon 的启停和 trace 结果拉取。`heapprofd` 本身是系统级 daemon / Perfetto 数据源，不是面向开发者的稳定 adb shell 入口，不建议直接调用。
 
 **方式三：通过 Perfetto 配置文件**
 
@@ -410,7 +415,7 @@ adb shell procrank
 
 procrank 在排查系统级内存压力时特别有用。当我们需要评估"低内存场景下系统会先杀谁"，或者"多个应用同时运行时内存是否够用"，procrank 提供的跨进程对比视角是 `dumpsys meminfo`（单进程视角）无法替代的。
 
-需要注意的是，procrank 的可用性取决于设备。有些厂商的 ROM 没有预装 procrank，需要自己编译推入设备。它的底层依赖 `libpagemap.so`，通过读取 `/proc/<pid>/pagemap` 来获取精确的页面级统计。
+procrank 的可用性取决于设备。有些厂商的 ROM 没有预装 procrank，需要自己编译推入设备。它的底层依赖 `libpagemap.so`，通过读取 `/proc/<pid>/pagemap` 来获取精确的页面级统计。
 
 ### libmeminfo：内存信息的底层库
 
@@ -534,7 +539,7 @@ static void install_hooks() {
 
 - **线程安全**：bionic 的 `__malloc_hook`/`__free_hook` 不是原子操作，多线程并发设置时存在竞态条件，应在启动早期（单线程阶段）完成注册
 - **递归风险**：hook 函数内部如果调用 `printf`、`std::string` 等会触发 `malloc` 的函数，会导致无限递归崩溃
-- **启用方式**：API 28+ 需要通过属性 `libc.debug.malloc.hooks=1` 或环境变量 `MALLOC_HOOKS=1` 启用
+- **启用方式**：API 28+ 需要通过属性 `adb shell setprop libc.debug.hooks.enable 1` 或环境变量 `LIBC_HOOKS_ENABLE=1` 启用。注意 `libc.debug.malloc.options` 属于 malloc debug 的开关，不是 hooks 的启用入口
 - **API 限制**：`__malloc_hook` 等符号在 NDK 头文件中不可见（属于 bionic 内部 API），需要自行声明 `extern`
 
 malloc hooks 的典型应用场景包括：构建轻量级的内存分配追踪器、实现自定义的内存统计面板、集成到自动化测试中检测特定操作引入的内存分配。

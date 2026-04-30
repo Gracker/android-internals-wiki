@@ -45,13 +45,13 @@ related_chapters:
 - '7.2'
 - '8.2'
 - '9.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
 last_task9_at: "2026-04-29T21:20:00+08:00"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 review_round: 5
 task9_reviewed_by: openclaw-task9
@@ -247,29 +247,32 @@ Perfetto 提供两层 Binder 数据源：
 
 **`linux.ftrace`（内核层）**：通过 `binder_transaction`、`binder_transaction_received` 等 tracepoint 记录事务的发起和到达。这是最通用的数据源，兼容所有 Android 版本。
 
-**`android.binder`（用户层，Android 14/15+ 完善）**：提供更丰富的语义信息，比如直接区分请求和回复、提供 `blocking_dur_ns`（客户端阻塞时长）等预计算指标。Android 16 的 `android.binder` 数据源进一步直接记录 `interface_name` 和 `method_name`，不再需要手动查事务码映射表——在 Perfetto Details 面板里就能直接看到调用的是哪个接口的哪个方法。
+**`android.binder`（用户层，Android 14/15+ 完善）**：通过 `android_binder_txns` 表提供结构化的 Binder 事务记录，包含 `client_dur`、`server_dur`、`is_sync`、`interface`、`method_name` 等字段。`interface` 和 `method_name` 是从 AIDL/HIDL slice 名称中拆分出来的，不是原生采集字段。Android 16 的 Perfetto 标准库（`android/binder.sql`）进一步完善了这些拆分逻辑。
 
 在 Perfetto UI 中搜索 "Binder" 并添加 **Android Binder / Transactions** 轨道后，会看到一条时间轴，每个条目代表一次 Binder 事务。选中一个事务后，Details 面板会显示关键字段：
 
 | 字段 | 说明 |
 |------|------|
-| `latency_ns` | 总耗时，从 Client 发出请求到收到回复 |
-| `server_latency_ns` | Server 端实际处理耗时 |
-| `blocking_dur_ns` | Client 端在内核等待的时间 |
+| `client_dur` | Client 端从发起请求到收到回复的总耗时（对应 Perfetto `android_binder_txns` 表的 `client_dur` 列） |
+| `server_dur` | Server 端实际处理请求的耗时 |
+| `is_sync` | 是否同步调用（1 = 同步阻塞，0 = oneway） |
+| `interface` | AIDL/HIDL 接口名称（从 slice 名称解析） |
+| `method_name` | 调用的方法名（从 slice 名称解析） |
+| `client_thread` / `server_thread` | 发起和处理事务的线程名 |
 
-看这三个字段，通常就能先判断问题更像服务端慢、驱动调度排队，还是客户端等待。
+`client_dur` 和 `server_dur` 的差值反映 Binder Driver 排队和上下文切换开销。`is_sync` 可以快速过滤出阻塞型调用。
 
-[已验证: Perfetto 文档, perfetto.dev/docs/data-sources/android-binder] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
+[已修正: Perfetto Binder 字段口径基于 AOSP android-16.0.0_r1 stdlib android/binder.sql 复核] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
 
 ### 三步分析流程
 
 **第一步：定位哪次 Binder 调用慢。** 先看主线程（或卡住的线程）的 `thread_state` 轨道，找到 Sleeping 状态持续时间较长的片段。放大后看这个时间段内关联的 Slice——通常是一个 Binder 调用。记下这次调用的接口名和方法。
 
-**第二步：区分"谁慢"。** 查看这次事务的 `latency_ns`、`server_latency_ns` 和 `blocking_dur_ns`：
+**第二步：区分"谁慢"。** 查看这次事务的 `client_dur`、`server_dur` 和 `is_sync`：
 
-- 如果 `server_latency_ns` 很长（比如 15ms），说明 Server 端处理本身就很慢。需要跳转到 Server 端线程看它到底在干什么。
-- 如果 `latency_ns` 很长但 `server_latency_ns` 很短，说明时间耗在 Binder Driver 调度或排队上——可能是线程池忙。
-- 如果 `blocking_dur_ns` 异常大，结合 Server 端线程状态进一步确认。
+- 如果 `server_dur` 很长（比如 15ms），说明 Server 端处理本身就很慢。需要跳转到 Server 端线程看它到底在干什么。
+- 如果 `client_dur` 很长但 `server_dur` 很短，说明时间耗在 Binder Driver 调度或排队上——可能是线程池忙。
+- 如果两者都正常但 Client 端 thread_state 显示长时间 Sleeping，结合 Server 端线程状态进一步确认是否存在调度延迟。
 
 **第三步：检查锁竞争。** 如果 Server 端线程在处理请求时出现了长时间 Sleeping，很可能是等 Java `synchronized` 锁。Perfetto 的 **Lock contention** 轨道会显示"谁持有锁"和"谁在等锁"。
 
@@ -353,7 +356,7 @@ Binder 在 Android 版本中持续优化，这里列出对性能分析有影响�
 - **Android 14/15（API 34/35）**：`android.binder` 数据源在 Perfetto 里更完整，事务语义和阻塞时长字段更容易直接消费。
 - **Android 16（API 36）**：`android.binder` 数据源直接记录 `interface_name` 和 `method_name`，省去了按事务码反查接口的步骤。同步 Binder 调用在 Perfetto 中的诊断效率因此显著提升。
 - **Android 16（API 36）**：`RemoteCallbackList` 引入 `FrozenCalleePolicy`，允许在客户端进程被冻结时自动丢弃高频数据回调，避免 oneway 队列在解冻后瞬间雪崩。此前开发者需要自行处理冻结态下的回调堆积问题。
-- **Android 16 + 16KB Page Size**：Binder mmap 缓冲区的页表开销在 16KB 页环境下降低，单次大数据量 Binder 事务（如跨进程传输大型配置数据）的吞吐量提升约 12%。这一红利来自物理页数量的减少和 TLB 命中率的改善，对高频 IPC 场景（如系统服务批量查询）有直接收益。
+- **Android 16 + 16KB Page Size**：Binder mmap 缓冲区大小为 `1MiB - 2 * page_size`（AOSP `ProcessState.cpp`），16KB 页确实减少了页表项数量。但"吞吐量提升约 12%"的数据缺乏公开 AOSP benchmark 或官方文档支撑，当前 Android 16 的 16KB Page Size 公开资料主要给出 app launch、boot、camera 等宏观收益。[待验证] 如需精确量化 Binder 吞吐量变化，应补充设备型号、Binder payload 大小、事务次数、对照组 trace 数据。
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/aidl/aidl-hals] [已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer] [已验证: 官方文档, source.android.com/docs/core/architecture/ipc/binder-freezer] [已验证: AOSP android-12.0.0_r1, frameworks/base/core/java/com/android/internal/os/BinderCallHeavyHitterWatcher.java]
 
@@ -395,7 +398,7 @@ oneway 调用避免了 Client 端的阻塞等待，但它不意味着"零成本"
   - `drivers/android/binder.c`（内核 Binder Driver 实现）
 - [已验证: 官方文档, developer.android.com/reference/android/os/IBinder]
 - [已验证: 官方文档, developer.android.com/guide/components/aidl]
-- [已验证: Perfetto 文档, perfetto.dev/docs/data-sources/android-binder]
+- [已修正: Perfetto Binder 字段口径基于 AOSP android-16.0.0_r1 stdlib android/binder.sql 复核]
 - [引用: https://source.android.com/docs/core/architecture/aidl/aidl-hals]
 - [引用: https://source.android.com/docs/core/architecture/ipc/priority-inheritance]
 - [引用: https://source.android.com/docs/core/architecture/ipc/binder-freezer]
