@@ -4,7 +4,7 @@ section: "4.4"
 chapter: "4.4"
 status: ready-for-review
 drafted_date: "2026-03-31"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-05-01"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -461,31 +461,14 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 [源码验证: libprocessgroup/task_profiles.json]
 
 
-### PSI 驱动的 Android LMKD 进程杀机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md
+### PSI 驱动的 Android LMKD 进程杀机制（DeepResearch 调研材料）
+- 来源：`DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md`
 - 类型：DeepResearch 调研结果
-- 摘要：从 vmpressure 到 PSI 的范式转移源码级贯通分析，覆盖 kernel/sched/psi.c → lmkd.cpp 完整信号链，包含 PSI stall threshold 配置、lmkd 事件订阅机制、进程选择策略、Android 10-15 演进编年史，以及 Google A/B 实测数据。
-- 注入时间：2026-04-28
-- 价值：目前 AIW ch04-lmk 章节最缺的就是 PSI 机制的源码级分析，这篇直接填补核心空白
-
-
-
-### PSI 驱动的 Android LMKD 进程杀机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 vmpressure 到 PSI 的范式转移全链路源码分析。覆盖 kernel/sched/psi.c 的 PSI 统计与门限监控机制、lmkd.cpp 从 memcg vmpressure 迁移到 PSI 的完整演进路径、per-UID lmkd 防护、swap+zRAM 配合策略，以及 Android 10 至 15 的 LMKD 参数调优历史。
-- 注入时间：2026-04-30
-- 价值：源码级贯通 PSI→LMKD 完整信号链，是理解 Android 低内存杀进程机制的最佳参考资料
+- 摘要：从 vmpressure 到 PSI 的范式转移全链路源码分析，覆盖 kernel/sched/psi.c → lmkd.cpp 完整信号链，包含 PSI stall threshold 配置、lmkd 事件订阅机制、进程选择策略、per-UID 防护、swap+zRAM 配合、Android 10-15 演进编年史，以及 Google A/B 实测数据。
+- 注入时间：2026-04-24（首次），后续 2026-04-28/29/30 追加摘要更新
+- 价值：源码级贯通 PSI→LMKD 完整信号链，填补 AIW ch04-lmk 的 PSI 机制源码分析空白
 
 ## 参考资料
-
-### PSI 驱动的 Android LMKD 进程杀机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md
-- 类型：DeepResearch 调研结果
-- 摘要：源码级贯通分析 PSI(Pressure Stall Information)驱动 lmkd 的完整信号链:从 kernel/sched/psi.c 的 some/full 压力计算,经 memcg PSI monitor 的 threshold + window 滑动窗口机制,到 userspace lmkd 的 psi 线程、mp_event_psi() 处理、进程选择与杀除策略。详述 vmpressure→PSI 的范式转移动机与 A/B 实测数据(25% fewer kills, 15% launch time improvement)。
-- 注入时间：2026-04-29
-- 价值：涵盖内核 PSI 实现到 AOSP lmkd 的完整源码链路,是理解 Android 内存管理演进的核心参考资料
-
 
 ### AOSP 源码
 - `system/core/lmkd/lmkd.c` — Android 8.1-10 userspace lmkd 旧路径
@@ -512,9 +495,4 @@ AOSP android-11.0.0_r1 已经有 `CachedAppOptimizer.java`、`KEY_USE_FREEZER` �
 - 第 1 章第 3 节「进程模型与生命周期管理」— 进程优先级的生命周期管理
 - 第 10 章第 4 节「低内存对系统性能的影响」— 低内存场景的深度分析
 
-### PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md
-- 类型：DeepResearch 调研结果
-- 摘要：从内核 `psi.c` 到 `system/memory/lmkd/lmkd.cpp` 串起 Android 10–15 的内存压力判定流程，解释 PSI 如何替代 vmpressure、怎样结合 thrashing 和 oom_score_adj 触发 userspace lmkd 杀进程，并给出 AOSP 与 LPC 实测依据。
-- 注入时间：2026-04-24
-- 价值：把 PSI→lmkd 的源码调用流程讲透了，适合补强 LMK 的现代实现细节。
+
