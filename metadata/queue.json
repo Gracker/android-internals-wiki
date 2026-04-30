@@ -2575,8 +2575,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T15:21:32.054234",
-      "status": "pending",
-      "source_file": "2026-04-25-15-14-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-25-15-14-external-review.md",
+      "completed_at": "2026-05-01T00:01:39.646739+08:00",
+      "completed_reason": "P1多进程Macrobenchmark已在正文中覆盖；P1 suppressErrors温控检查已在CI噪声段中警告。章节已finalized"
     },
     {
       "section": "14-other-tools",
@@ -3641,7 +3643,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T03:43:01+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T00:01:39.646739+08:00",
+      "completed_reason": "Configuration Change段落已修正为条件句：声明configChanges才能走onConfigurationChanged()，否则仍走destroy/recreate"
     },
     {
       "section": "17",
