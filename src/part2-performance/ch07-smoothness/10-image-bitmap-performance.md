@@ -38,14 +38,14 @@ sources:
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
 pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-last_rework_date: "2026-04-29"
+last_rework_date: "2026-04-30"
 last_rework_by: openclaw-task2b
-last_rework_reason: "P1 inSampleSize Skia采样灵活性补充"
+last_rework_reason: "P0 inSampleSize源码锚点修正+P1 Gainmap内存模型+ImageDecoder内存峰值"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
 reviewed_by: "openclaw-task6"
@@ -189,7 +189,7 @@ Bitmap 的 Java 对象一直在 Java 堆里，但像素数据放在哪里，Andr
 
 Android 14+ 默认支持 Ultra HDR（Gainmap）。解码含 Gainmap 的 JPEG 时，GPU 需要同时维护基础层（base bitmap）和 Gainmap 掩码层（gainmap bitmap + metadata）。AOSP `Bitmap.java` 提供了 `hasGainmap()` / `getGainmap()` / `setGainmap(null)` API；`BitmapFactory.cpp` 通过 `getGainmapAndroidCodec()` / `decodeGainmap()` 完成解码。
 
-内存估算不能只用 `宽 × 高 × 4`（ARGB_8888）。一张含 Gainmap 的 JPEG 在 GPU 显存中的真实开销约为 SDR 计算值的 1.25x：base bitmap + gainmap bitmap 各占一份像素空间，加上 metadata。在长列表场景中，这个额外开销会让显存水位（VRAM Usage）更早触顶。
+内存估算不能只用 `宽 × 高 × 4`（ARGB_8888）。含 Gainmap 的 JPEG 在 GPU 显存中的真实开销高于 SDR 计算值，因为 base bitmap 和 gainmap bitmap 各占一份像素空间，加上 metadata。具体倍率取决于 gainmap 的分辨率和格式配置，不能按固定系数估算。在长列表场景中，这份额外开销会让显存水位（VRAM Usage）更早触顶。[待验证：1.25x 倍率缺乏一手实测支撑，实际倍率需按设备 GPU 和 gainmap 参数实测确认]
 
 观测上，PSS / NativeAllocationRegistry 只登记 base bitmap 的 native 大小；Gainmap 部分的 GPU 显存通常不出现在 Java 堆统计里，需要结合 `dumpsys meminfo` 的 Graphics 类别和 `procfs` GPU memory 节点一起看。
 
