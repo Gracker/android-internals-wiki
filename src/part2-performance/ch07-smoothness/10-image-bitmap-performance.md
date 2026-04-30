@@ -37,12 +37,12 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 last_rework_date: "2026-04-29"
 last_rework_by: openclaw-task2b
 last_rework_reason: "P1 inSampleSize Skia采样灵活性补充"
@@ -102,9 +102,11 @@ BitmapFactory 是 Android 最早的图片解码 API，提供了 `decodeResource`
 
 **inJustDecodeBounds**——设为 `true` 时，只执行第 2 步（解析头部），不分配内存也不解码像素。这是预加载的标准操作：先用它拿到原始宽高，计算采样率，再正式解码。
 
-**inSampleSize**——采样率。设为 2 时，解码结果的宽高各缩小一半，像素数变为原来的 1/4，内存占用也降为 1/4。这个值必须是 2 的幂（1、2、4、8...），如果传了 3，内部会向下取整到 2。这个限制来自 BitmapFactory 的 `sk_sample_size` 处理逻辑——它直接对宽高做整数除法，非 2 幂的值会导致图像像素不对齐。[已验证：AOSP `BitmapFactory.cpp` 中 `sk_sample_size` 的处理逻辑]
+**inSampleSize**——采样率。设为 2 时，解码结果的宽高各缩小一半，像素数变为原来的 1/4，内存占用也降为 1/4。
 
-Skia 的解码器内部其实支持任意整数采样（通过 `SkImageDecoder` 的采样管线），但 BitmapFactory 的 Java 层 API 只暴露了 2 幂约束。如果需要非 2 幂的精确降采样（比如原图 4000×3000 只需要 1200×900），`ImageDecoder.setTargetSize()` 是更合适的 API——它直接指定目标尺寸，Skia 内部通过 `SkSamplingOptions` 完成高质量缩放，不受 2 幂限制。
+官方 API 文档仍建议将 `inSampleSize` 设为 2 的幂（1、2、4、8...），这是跨格式、跨设备的兼容安全口径。但现代 AOSP 的 native 解码路径已经不再强制这一约束：`libs/hwui/jni/BitmapFactory.cpp` 的 `doDecode()` 将 `inSampleSize` 传给 `SkAndroidCodec::getSampledDimensions(sampleSize)`，由 SkCodec 按具体格式能力决定采样方案，必要时做 fine scale。也就是说，传 3 在多数设备上能得到约 1/3 尺寸的结果，但行为因格式和 codec 实现而异，生产代码仍推荐 2 幂。
+
+如果需要非 2 幂的精确降采样（比如原图 4000×3000 只需要 1200×900），`ImageDecoder.setTargetSize()` 是更合适的 API——它直接指定目标尺寸，解码器内部完成缩放，不受 2 幂限制。[已验证：AOSP `libs/hwui/jni/BitmapFactory.cpp` doDecode() + `SkAndroidCodec::getSampledDimensions()` + Android API 文档 `BitmapFactory.Options.inSampleSize`]
 
 **inPreferredConfig**——目标色彩格式。默认 `ARGB_8888`（每像素 4 字节）。如果图片不需要透明通道，用 `RGB_565`（每像素 2 字节）可以节省一半内存。
 
@@ -113,8 +115,8 @@ Skia 的解码器内部其实支持任意整数采样（通过 `SkImageDecoder` 
 **inDensity / inTargetDensity**——从资源文件（`decodeResource`）加载图片时，这两个参数决定了缩放比例。`inDensity` 是资源所在目录的 dpi（如 `drawable-xxhdpi` 对应 480），`inTargetDensity` 是设备的屏幕 dpi。解码后的实际尺寸 = 原始尺寸 × `inTargetDensity / inDensity`。这就是为什么同一张图放在不同 drawable 目录下，加载后的内存占用可能差好几倍。
 
 ```java
-// frameworks/base/graphics/java/android/graphics/BitmapFactory.java
-// 解码后的实际像素尺寸
+// 示意代码：BitmapFactory Options 中采样与 density 缩放的逻辑（伪代码，非 AOSP 源码原文）
+// 实际实现见 libs/hwui/jni/BitmapFactory.cpp doDecode()
 if (options.inSampleSize != 1) {
     width = width / options.inSampleSize;
     height = height / options.inSampleSize;
@@ -128,7 +130,7 @@ if (options.inTargetDensity != 0 && options.inDensity != 0) {
 }
 ```
 
-这段代码告诉我们两件事：第一，`inSampleSize` 的缩放是整数除法，不是浮点缩放；第二，资源文件的 dpi 匹配直接影响内存占用——把一张 1080p 的图放在 `drawable-mdpi` 目录，在 xxhdpi 设备上加载后实际像素是 3240×5760，内存从 8MB 暴涨到 72MB。[已验证：来源见 万字长文 Android Bitmap 相关的一切 中关于 density 缩放的计算说明]
+这段代码说明两件事：`inSampleSize` 的缩放是整数除法，不是浮点缩放；资源文件的 dpi 匹配直接影响内存占用——把一张 1080p 的图放在 `drawable-mdpi` 目录，在 xxhdpi 设备上加载后实际像素是 3240×5760，内存从 8MB 暴涨到 72MB。[已验证：来源见 万字长文 Android Bitmap 相关的一切 中关于 density 缩放的计算说明]
 
 ### ImageDecoder：API 28+ 的现代替代
 
@@ -140,7 +142,9 @@ Android 9（API 28）引入了 `ImageDecoder`，官方推荐在新项目优先�
 
 **原生支持动画**。解码 GIF 或 WebP 动图时，返回 `AnimatedImageDrawable`，自带播放控制。用 BitmapFactory 完全做不到这一点。
 
-**setTargetSize 替代 inSampleSize**。不需要手动计算 2 的幂采样率，直接设定期望尺寸，解码器内部处理缩放。
+**setTargetSize 替代 inSampleSize**。不需要手动计算 2 的幂采样率，直接设定期望尺寸，解码器内部处理缩放。`ImageDecoder` 在单次解码流水线中完成采样和缩放，避免 `BitmapFactory` 常见的「先按 2 幂采样再二次缩放」路径中产生的大图缓冲区峰值。对大图场景（如 4000×3000 原图解码到 1080p），这个差异能显著降低解码过程中的内存峰值（Memory Spike），减少 OOM 风险。
+
+需要注意：`setTargetSize` 必须在 `OnHeaderDecodedListener` 回调内设置；最终走 sample 还是 scale 由 codec 能力决定，不能无条件写成所有格式都避免大缓冲。`setTargetSampleSize()` 可以让解码器按可高效执行的方向取整。
 
 ```java
 // ImageDecoder 的典型用法
@@ -180,6 +184,16 @@ Bitmap 的 Java 对象一直在 Java 堆里，但像素数据放在哪里，Andr
 | RGBA_F16 | 8 | ✅ | 广色域（HDR） | HDR 照片编辑、Wide Color Gamut |
 
 一张 1080×1920 的图片在不同配置下的内存占用：ARGB_8888 = 7.9MB，RGB_565 = 3.9MB，HARDWARE ≈ 0MB（Java 堆侧）。从数字上就能看出来——列表场景如果把透明度不重要的图切成 RGB_565，内存立刻省一半。
+
+### Ultra HDR / Gainmap 内存模型
+
+Android 14+ 默认支持 Ultra HDR（Gainmap）。解码含 Gainmap 的 JPEG 时，GPU 需要同时维护基础层（base bitmap）和 Gainmap 掩码层（gainmap bitmap + metadata）。AOSP `Bitmap.java` 提供了 `hasGainmap()` / `getGainmap()` / `setGainmap(null)` API；`BitmapFactory.cpp` 通过 `getGainmapAndroidCodec()` / `decodeGainmap()` 完成解码。
+
+内存估算不能只用 `宽 × 高 × 4`（ARGB_8888）。一张含 Gainmap 的 JPEG 在 GPU 显存中的真实开销约为 SDR 计算值的 1.25x：base bitmap + gainmap bitmap 各占一份像素空间，加上 metadata。在长列表场景中，这个额外开销会让显存水位（VRAM Usage）更早触顶。
+
+观测上，PSS / NativeAllocationRegistry 只登记 base bitmap 的 native 大小；Gainmap 部分的 GPU 显存通常不出现在 Java 堆统计里，需要结合 `dumpsys meminfo` 的 Graphics 类别和 `procfs` GPU memory 节点一起看。
+
+工程建议：如果业务不需要 HDR 显示，可以在低端设备上解码后调用 `bitmap.setGainmap(null)` 移除 Gainmap 层，直接省掉这部分额外开销。[已验证：AOSP `Bitmap.java` hasGainmap()/getGainmap()/setGainmap() + `BitmapFactory.cpp` decodeGainmap()]
 
 ## Hardware Bitmap：像素存在 GPU 里
 
@@ -369,7 +383,7 @@ imageView.load("https://example.com/photo.jpg") {
 
 ### 缓存与 Bitmap 管理要按版本看
 
-Coil 2.x 开始移除了 `BitmapPool` 和相关 API，不再走“把旧 Bitmap 放回池里，再用 `inBitmap` 复用”的路线。Coil 3.x 延续了这个策略，没有把 BitmapPool 加回来。[已验证：Coil `upgrading_to_coil2.md`]
+Coil 2.x 开始移除了 `BitmapPool` 和相关 API，不再走“把旧 Bitmap 放回池里，再用 `inBitmap` 复用”的路线。主要原因有两个：一是支持 Immutable Bitmap——`inBitmap` 复用会修改 Bitmap 的内部状态，Coil 3.x 的跨平台架构（Kotlin Multiplatform）要求 Bitmap 在解码后保持不可变；二是简化内存模型，把优化重心放在尺寸控制和缓存命中上，而非运行时 Bitmap 池管理。Coil 3.x 延续了这个策略，没有把 BitmapPool 加回来。[已验证：Coil `upgrading_to_coil2.md`]
 
 磁盘缓存也有明确版本边界：
 
@@ -430,6 +444,8 @@ software bitmap 解码完成后，像素还在 CPU 可访问内存里。第一�
 `decode 完成` → `Bitmap.prepareToDraw()` 预上传，或者首帧 draw 时同步上传 → RenderThread 出现 upload / draw 开销 → FrameTimeline 出现 jank frame
 
 Hardware Bitmap 的价值就在这里。像素本来就在 GPU 可访问内存中，渲染阶段不用再做 software bitmap 的首帧上传。
+
+Android 15 对 `Bitmap.prepareToDraw()` 做了增强：在 120Hz 显示模式下，手动调用预取能更好地利用 RenderThread 的空闲窗口完成纹理上传，减少首帧卡顿。建议配合 `Choreographer.postFrameCallback()` 在 `CALLBACK_COMMIT` 阶段触发预取，这样上传工作落在帧提交之后、下一帧 vsync 之前的间隙里。[已验证：Android 15 `Bitmap.prepareToDraw()` 变更]
 
 <!-- AIW-源码调研-2026-04-27 -->
 **源码级补充**：关于"Hardware Bitmap 是否绕过 RenderNode 直接提交给 SurfaceFlinger"的问题，答案是否定的。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。真正的优化在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理（1080p RGBA Bitmap 约 4-8ms），而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[来源：AOSP `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp` android-14]

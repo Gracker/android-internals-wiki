@@ -2,7 +2,7 @@
 title: "WebView 渲染性能与优化"
 chapter: "7.11"
 section: "7.11"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [WebView, Chromium, Blink, JS Bridge, 混合渲染, 硬件加速, ANR, jank, 内存优化]
 related_chapters: ["2.1", "2.5", "2.10", "7.1", "7.2", "8.1", "9.1"]
@@ -26,10 +26,10 @@ sources:
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_result: pass-tech-review
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
@@ -129,6 +129,12 @@ WebView 首次创建时，要先完成 WebView provider 装载和 Chromium 基�
 [图：首次实例化 WebView 的 Perfetto 片段，标出 MainThread 上的 provider 初始化、随后出现的 `WebViewChromium*` 与 `CrRendererMain`，并对比第二次创建的差异]
 
 ## WebView 冷启动与预热优化
+
+### Android 15 16KB 内存页红利
+
+Android 15 引入了对 16KB 内存页的支持。对 WebView 冷启动而言，这是一个不小的红利：`libwebviewchromium.so` 普遍超过 100MB，在传统 4KB 页面模式下需要映射约 25000 个页表项。切换到 16KB 页面后，页表项数量减少约 3/4，单次缺页中断加载更多数据，SO 库的冷加载速度提升明显。
+
+在 Perfetto 中，可以在 `mmap` / `page fault` 相关指标上观察到差异。对 WebView 首开场景做 A/B 对比（4KB vs 16KB 页面设备），`WebViewFactory` 装载 native 库到首帧可交互的总时长会有可测量的改善。[待验证：具体毫秒数需实测]
 
 ### 冷启动的完整时间线
 
@@ -285,6 +291,12 @@ WebView 相关的 ANR 通常有以下几种模式：
 ## WebView 内存管理
 
 ### Chromium 的内存模型
+
+#### RELRO 段共享
+
+WebView 通过共享重定位只读段（RELRO）节省多进程内存。`libwebviewchromium.so` 体积超过 100MB，如果每个使用 WebView 的进程都独立加载一次，PSS 开销会非常高。Android 的 WebView provider 在首次加载时生成 RELRO 段并共享给后续进程。
+
+Android 15 升级到 16KB 内存页后，RELRO 共享必须满足 16KB 对齐，否则共享页会失效，每个进程各自持有一份副本，造成显著的 PSS 增量。排查时可以通过 `dumpsys meminfo` 对比不同进程的 `.so` mapped / shared 比例，判断 RELRO 是否正常共享。[待验证：16KB 对齐问题的具体触发条件和 AOSP 修复版本]
 
 同一宿主 App 中的多个 WebView 共享同一份 browser-side provider 代码、data directory 和一部分 service 状态；页面自己的 DOM、JavaScript heap、图层和 tile 资源则可能分布在宿主进程与 renderer 进程两侧，是否落到独立 renderer 进程，取决于当前 provider 版本和 multiprocess 配置。
 
