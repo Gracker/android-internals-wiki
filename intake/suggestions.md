@@ -526,3 +526,9 @@
 - **位置**：L153 BLASTBufferQueue 描述
 - **问题**：正文仍写“Android 12 引入 BlastBufferQueue 替代 BufferQueue”。BLAST 改变的是 transaction/buffer 交接模型，底层 BufferQueue 机制仍然存在；“替代”会让读者误以为 BufferQueue 在 Android 12 后不再参与。
 - **建议**：改成“Android 12 引入 BLASTBufferQueue，改变 App 端 buffer 提交与窗口 transaction 同步模型；底层 BufferQueue 仍是缓冲区流转基础”。
+
+## [Task9 Deep Review] 14.3 内存分析工具 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L221 heapprofd 开销、L518-L537 MTE/HWASAN 开销
+- **问题**：heapprofd “通常不超过 2%”、HWASAN “约 1.5 倍”、MTE “1-5%/1-2%”等数字缺少设备、Android 版本、采样间隔、负载类型和来源边界；不同 malloc 频率、unwind 配置、MTE mode 下差异很大。
+- **建议**：保留数值时补实验来源与条件；否则降级为“低/中/高开销”并说明影响变量。
