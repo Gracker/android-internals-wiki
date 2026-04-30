@@ -566,3 +566,9 @@
 - **位置**：L118、L283，章节内 markdown 链接
 - **问题**：`04-choreographer.md` 和 `01-perfetto-intro.md` 以当前 `ch08-responsiveness/` 目录解析会落到不存在路径；正确目标分别在 `part1-fundamentals/ch02-rendering/04-choreographer.md` 与 `part3-tools/ch13-perfetto/01-perfetto-intro.md`。
 - **建议**：改成相对当前文件的 `../../part1-fundamentals/ch02-rendering/04-choreographer.md`、`../../part3-tools/ch13-perfetto/01-perfetto-intro.md`，或使用项目统一的章节编号引用方式。
+
+## [Task9 Deep Review] 11.2 App 耗电优化 — 2026-05-01
+- **类型**：版本差异/表述边界
+- **位置**：L203 PeriodicWorkRequest 15 分钟原因
+- **问题**：正文把 WorkManager 周期任务 15 分钟最小间隔完全归因于系统 JobScheduler 最小调度窗口。WorkManager 在 API 23+ 走 JobScheduler，旧版本还有 AlarmManager/BroadcastReceiver 路径；章节适用范围从 API 21 开始，原因链应拆版本。
+- **建议**：改为 WorkManager 自身定义 15 分钟最小间隔；API 23+ 与 JobScheduler 约束对齐，API 21-22 通过兼容调度实现同一上层语义。

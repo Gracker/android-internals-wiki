@@ -179,7 +179,7 @@
       "last_verified": "2026-04-09",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -189,7 +189,7 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-30T03:32:47+08:00",
+      "last_task9_at": "2026-05-01T05:32:43+08:00",
       "review_round": "3",
       "review_notes": "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 1。",
       "task6_reviewed_date": "2026-05-01"
@@ -3427,7 +3427,7 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T11:47:04+08:00",
+      "last_task9_at": "2026-05-01T05:32:43+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b"
@@ -3455,7 +3455,7 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T11:47:04+08:00",
+      "last_task9_at": "2026-05-01T05:32:43+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b"

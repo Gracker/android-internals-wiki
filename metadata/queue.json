@@ -8506,7 +8506,7 @@
       "section": "11.2",
       "section_title": "App 耗电优化",
       "priority": 95,
-      "reason": "[External Review] 11.2 App 耗电优化 存在 FGS 生存预算事实错误",
+      "reason": "[External Review] 11.2 App 耗电优化 存在 FGS 生存预算事实错误；[Deep Tech Review] 2026-05-01 追加 Task9 复核问题 P0:1 P1:0",
       "review_issues": [
         {
           "type": "事实错误",
@@ -8534,18 +8534,28 @@
           "evidence": [
             "Android 15+ Geofencing Hardware Offload"
           ]
+        },
+        {
+          "type": "源码/官方 API 错误",
+          "severity": "P0",
+          "location": "L342-L346 精确闹钟授权判断",
+          "detail": "正文把 setAlarmClock() 与 setExact()/setExactAndAllowWhileIdle() 一起写成应先调用 canScheduleExactAlarms()。Android 12+ 的 SCHEDULE_EXACT_ALARM special access 主要约束 exact alarm；setAlarmClock() 属于用户可见闹钟路径，不应被写成同一授权前置条件。",
+          "suggestion": "拆成两类：setExact()/setExactAndAllowWhileIdle() 先查 canScheduleExactAlarms()；setAlarmClock() 作为用户可见闹钟例外单独说明，并补官方 exact alarm 文档锚点。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
       "status": "pending",
-      "source_file": "2026-04-29-11-11.2-external-review.md"
+      "source_file": "2026-04-29-11-11.2-external-review.md",
+      "material_paths": [
+        "logs/deep-review/2026-05-01-05-deep-review.md"
+      ]
     },
     {
       "section": "11.3",
       "section_title": "系统级功耗优化",
       "priority": 95,
-      "reason": "[External Review] 11.3 系统级功耗优化 存在机制链条缺失",
+      "reason": "[External Review] 11.3 系统级功耗优化 存在机制链条缺失；[Deep Tech Review] 2026-05-01 追加 Task9 复核问题 P0:1 P1:0",
       "review_issues": [
         {
           "type": "事实错误",
@@ -8573,12 +8583,22 @@
           "evidence": [
             "Android 16 Active 桶 Job 运行限额"
           ]
+        },
+        {
+          "type": "源码路径错误",
+          "severity": "P0",
+          "location": "frontmatter sources / L217-L220 / L457-L460 JobScheduler APEX 路径",
+          "detail": "正文引用 apex/jobscheduler/service/java/... 作为 AOSP 平台根路径。按 android-16.0.0_r1 superproject 路径核对，apex/jobscheduler/... 不存在；对应源码在 frameworks/base/apex/jobscheduler/service/java/com/android/server/...。",
+          "suggestion": "将 DeviceIdleController、AppStandbyController、UsageStatsService、JobSchedulerService 的路径统一改为 frameworks/base/apex/jobscheduler/service/java/com/android/server/...。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
       "status": "pending",
-      "source_file": "2026-04-29-11-11.3-external-review.md"
+      "source_file": "2026-04-29-11-11.3-external-review.md",
+      "material_paths": [
+        "logs/deep-review/2026-05-01-05-deep-review.md"
+      ]
     },
     {
       "section": "11.4",
@@ -10047,6 +10067,34 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T04:26:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.3",
+      "section_title": "进程模型与生命周期管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.3 进程模型与生命周期管理 — 2026-05-01 发现 P0 1 / P1 1，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-01-05-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/内部一致性",
+          "severity": "P0",
+          "location": "L634 前台 Service oom_adj 描述",
+          "detail": "正文写前台 Service 可把 oom_adj 从 SERVICE_ADJ(500) 提升到 0~100。AOSP android-16.0.0_r1 ProcessList.java 中 FOREGROUND_APP_ADJ=0、VISIBLE_APP_ADJ=100、PERCEPTIBLE_APP_ADJ=200、PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ=50；前台 Service 常见落在 perceptible/FGS 相关档，不能写成 0~100 通用结论。",
+          "suggestion": "改为普通后台 service 常见 SERVICE_ADJ=500，老化后可能进入 SERVICE_B_ADJ=800；FGS 多数提升到 PERCEPTIBLE_APP_ADJ=200，短时 TOP→FGS 缓冲可能为 50，需按 OomAdjuster 条件判断。"
+        },
+        {
+          "type": "知识盲区/版本差异",
+          "severity": "P1",
+          "location": "L513 AVF Terminal 与 Phantom Process Killer",
+          "detail": "正文把 Android 16 AVF Terminal 写成运行大量子进程场景的“官方规避路径”。该结论需要拆清 pVM/Terminal 的产品边界、第三方 App 可用性、与宿主 AMS PhantomProcessList 统计之间的关系；不能直接等同为普通 App 子进程保活方案。",
+          "suggestion": "降级为待验证边界说明，补 AOSP/Android Developers 对 AVF Terminal、pVM、PhantomProcessList 的源码或官方文档锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T05:32:43+08:00",
       "status": "pending"
     }
   ],

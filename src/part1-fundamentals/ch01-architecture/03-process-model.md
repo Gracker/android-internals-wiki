@@ -52,16 +52,16 @@ sources:
     path: "source.android.com/docs/core/perf/lmkd"
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5", "4.4", "5.1", "5.8"]
-pipeline_stage: "task9_pending"
 task6_state: reviewed
-task9_state: pending
-task9_result: pending
-task2b_state: "pending"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T22:20:00+08:00"
 review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes (banned words rephrased)"
 task2b_result: fixed
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_date: "2026-05-01"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-01T05:32:43+08:00"
 ---
 
 # 进程模型与生命周期管理

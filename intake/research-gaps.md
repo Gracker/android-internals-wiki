@@ -12394,3 +12394,19 @@ BPF 带宽估计在虚拟化网络（VPN）下的精度：VpnService 环境下�
 - 2.10
 - 18.13
 - 13.7
+
+## [2026-05-01] 1.3 进程模型与生命周期管理 — 知识盲区
+
+### 盲区描述
+AVF Terminal / pVM 与 Phantom Process Killer 的边界尚未回源。章节把 Android 16 AVF Terminal 写成大量子进程场景的“官方规避路径”，但需要确认它是否只是 Terminal/pVM 产品形态不受宿主 phantom process quota 约束，还是可被普通第三方 App 作为通用子进程保活方案使用。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 16 AVF Terminal / Linux Terminal 的官方文档、feature flag 与公开 API 边界。
+- 核对 `PhantomProcessList` 对宿主 App fork 子进程的统计路径，确认 pVM 内部进程是否完全不可见，以及这是否能作为开发建议。
+- 给出“可用于开发者测试环境”和“可作为业务 App 方案”的边界判断。
+
+### 关联章节
+1.3、5.8、16.x
