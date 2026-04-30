@@ -9756,6 +9756,32 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T17:30:08+08:00",
       "status": "pending"
+    },
+    {
+      "section": "14.11",
+      "section_title": "Battery Historian 与功耗分析工具",
+      "priority": 85,
+      "reason": "[Deep Tech Review] PowerMetric 版本门槛冲突；PowerStats/BatteryStats 数据通路混写",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L373/L380 PowerMetric 版本门槛",
+          "detail": "正文一处写 `PowerMetric` 运行前提是 API 29+，另一处又写 Macrobenchmark `PowerMetric` 在 API 34+ 就能用，章节内部冲突；AndroidX `PowerMetric` 是库能力，平台下限应以 `@RequiresApi(29)`、ODPM/Power Stats HAL 和设备能力判断共同描述，不能写成 API 34+。",
+          "suggestion": "把 PowerMetric 矩阵改成：AndroidX Benchmark 版本、API 29+、Pixel 6+/其他实现 Power Stats HAL 的设备、高精度 rail 能力判断四列；删除“API 34+ 就能用”。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L426-L440 PowerMonitor / Perfetto / batterystats 数据通路图",
+          "detail": "图把 `batterystats / bugreport` 与 `PowerMonitor`、Perfetto power rails 都画成同一条 `IPowerStats HAL` 下游，容易把 UID 级 BatteryStats 统计、PowerStats HAL rail 读数、Perfetto counter 三种口径混为一谈。",
+          "suggestion": "拆成两条证据链：BatteryStatsService/BatteryStatsImpl 负责 UID 维度历史统计并进入 batterystats/bugreport；Power Stats HAL/PowerStatsService 提供 rail/energy consumer 读数，供 PowerMonitor、Perfetto power rails、Studio Power Profiler 等消费；说明二者可在 bugreport 中汇合但口径不同。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T18:33:37+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

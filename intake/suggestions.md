@@ -501,3 +501,28 @@
 - **问题**：正文写"实测数据表明，相比 Choreographer 估算法，present_id 路径将帧间抖动（Jitter）降低了约 30%"，缺少测试设备、场景、样本量和数据来源。表格中 ±0.5-1ms / ±1-2ms / ±2-4ms 也无出处。
 - **建议**：标注 [待验证] 并补充测试条件，或改为定性描述
 - **review 日志**：logs/review/2026-04-30-18-review.md
+
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L503-L513 `LayerSnapshotBuilder.tryFastUpdate()` 快速路径
+- **问题**：正文给出“快 0.5-1ms/帧”的量化收益，但没有标注测试设备、Layer 数量、刷新率、trace/benchmark 来源。该数字容易被读者当成 AOSP 通用保证。
+- **建议**：保留快速路径机制说明；量化收益改为 `[待验证]`，或补充可复现实验条件与 Perfetto 证据。
+
+## [Task9 Deep Review] 14.4 dumpsys 系列命令 — 2026-04-30
+- **类型**：源码准确性
+- **位置**：L541-L543 自定义 Service 的 dump 接口
+- **问题**：正文写“任何应用或服务都可以通过 `adb shell dumpsys <service_name>` 输出”，但普通应用 Service 不会自动注册成 ServiceManager 中的 dumpsys 服务；应用组件通常通过 `dumpsys activity service <package>/<service>` 触发 dump。只有注册到 ServiceManager 的 Binder/system service 才能直接 `dumpsys <service_name>`。
+- **建议**：把系统服务与应用 Service 两条路径拆开，并补一句普通应用场景的权限/入口限制。
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-04-30
+- **类型**：数据缺失
+- **位置**：L535 ADPF power efficiency mode 收益
+- **问题**：正文写启用后“功耗降低 15-30%”，但没有设备、负载、线程数、温控状态和采样工具来源。ADPF hint 的效果由厂商调度策略决定，不能作为通用收益。
+- **建议**：改为“可能降低功耗，需用 PowerMonitor/Perfetto power rails 做 A/B 验证”；若保留数字，必须给出来源和实验条件。
+
+## [Task9 Deep Review] 15.1 性能优化的术、道、器 — 2026-04-30
+- **类型**：版本差异
+- **位置**：L153 BLASTBufferQueue 描述
+- **问题**：正文仍写“Android 12 引入 BlastBufferQueue 替代 BufferQueue”。BLAST 改变的是 transaction/buffer 交接模型，底层 BufferQueue 机制仍然存在；“替代”会让读者误以为 BufferQueue 在 Android 12 后不再参与。
+- **建议**：改成“Android 12 引入 BLASTBufferQueue，改变 App 端 buffer 提交与窗口 transaction 同步模型；底层 BufferQueue 仍是缓冲区流转基础”。

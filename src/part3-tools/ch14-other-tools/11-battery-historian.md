@@ -28,19 +28,19 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-30T17:46:37.750688"
 task9_result: needs-rework
-last_task9_at: '2026-04-23T02:33:00+08:00'
+last_task9_at: "2026-04-30T18:33:37+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-23'
+task9_reviewed_date: 2026-04-30
 ---
 
 # 14.11 Battery Historian 与功耗分析工具
