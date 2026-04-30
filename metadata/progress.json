@@ -1735,13 +1735,13 @@
       "last_verified_against": "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1 ProcessList/lmkd socket, android-10 lmkd PSI, android-11/12/14/16 CachedAppOptimizer, Android 16 lmkd/reaper, developer.android.com 16KB Page Size",
       "confidence": "medium-high",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-21",
+      "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-28",
       "task9_reviewed_by": "openclaw-task9",
@@ -1753,7 +1753,9 @@
       "last_task2b_at": "2026-04-27T03:40:00+08:00",
       "task2b_fixed_by": "openclaw-task2b",
       "repaired_date": "2026-04-27",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "task6_reviewed_date": "2026-05-01",
+      "review_round": 4
     },
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md": {
       "path": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
@@ -4583,21 +4585,23 @@
       "last_verified": "2026-04-25",
       "last_verified_against": "external review + GitHub upstream READMEs + AndroidX/AGP docs + Inline Hook I-cache/16KB page-size check",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-24",
+      "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-25T23:29:25+08:00",
       "last_task2b_at": "2026-04-25T20:40:00+08:00",
       "repaired_date": "2026-04-25",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "task6_reviewed_date": "2026-05-01",
+      "review_round": 4
     },
     "src/part3-tools/ch14-other-tools/06-automation-tools.md": {
       "path": "src/part3-tools/ch14-other-tools/06-automation-tools.md",
@@ -5006,21 +5010,23 @@
       "last_verified": "2026-04-25",
       "last_verified_against": "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、frameworks/base/services/core/java/com/android/server/wm、system/core/libutils/include/utils/Trace.h、system/core/libcutils/include/cutils/trace.h、frameworks/native/services/surfaceflinger）",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-18",
+      "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-25",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-25T19:35:26+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b",
-      "last_task2b_at": "2026-04-25T19:43:07+08:00"
+      "last_task2b_at": "2026-04-25T19:43:07+08:00",
+      "task6_reviewed_date": "2026-05-01",
+      "review_round": 4
     },
     "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md": {
       "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
@@ -8377,7 +8383,7 @@
       }
     }
   },
-  "last_updated": "2026-05-01T04:26:00+08:00",
+  "last_updated": "2026-05-01",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
