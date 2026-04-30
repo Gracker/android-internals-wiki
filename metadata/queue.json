@@ -9615,6 +9615,51 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T10:31:41+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.10",
+      "section_title": "图片加载与 Bitmap 性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.10 图片加载与 Bitmap 性能优化仍存在 Glide 源码行为与 Choreographer/prepareToDraw API 指导错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误/API行为错误",
+          "location": "L448（Android 15 prepareToDraw + Choreographer CALLBACK_COMMIT 建议）",
+          "detail": "正文称 Android 15 对 Bitmap.prepareToDraw() 做了 120Hz 增强，并建议用 Choreographer.postFrameCallback() 在 CALLBACK_COMMIT 阶段触发预取。AOSP android-15.0.0_r1 与 android-16.0.0_r1 的 Bitmap.prepareToDraw() 注释仍是 Android N 起异步 upload，没有 120Hz/CALLBACK_COMMIT 版本变更；Choreographer.postFrameCallbackDelayed() 实际投递 CALLBACK_ANIMATION，postCallback(CALLBACK_COMMIT, ...) 又是 @hide/@TestApi，普通 App 不能按正文方式使用。",
+          "suggestion": "删除 Android 15/120Hz/CALLBACK_COMMIT 结论，或改成待验证；公开 API 建议保留为“在解码工作线程或图片即将显示前调用 prepareToDraw() 预上传”，不要承诺 commit 阶段调度。"
+        },
+        {
+          "level": "P1",
+          "type": "源码错误",
+          "location": "L263（Glide onTrimMemory 清理顺序）",
+          "detail": "正文写 Glide 收到 onTrimMemory 后“先清 BitmapPool，再清 LruResourceCache，再清 Active Resources”。Glide 4.16.0 的 Glide.trimMemory() 实际先遍历 RequestManager.onTrimMemory(level)，再依次调用 memoryCache.trimMemory(level)、bitmapPool.trimMemory(level)、arrayPool.trimMemory(level)；源码中没有把 ActiveResources 作为最后一级主动清理。",
+          "suggestion": "按 Glide.trimMemory() 源码重写清理顺序：RequestManager → MemoryCache → BitmapPool → ArrayPool；ActiveResources 只说明为正在使用资源，不写成 onTrimMemory 主动清理对象。"
+        },
+        {
+          "level": "P1",
+          "type": "源码错误",
+          "location": "L347（MemorySizeCalculator 公式）",
+          "detail": "正文把 LruResourceCache 大小概括为 maxMemory × 0.125。Glide 4.16.0 的 MemorySizeCalculator 默认按屏幕像素数计算：memoryCacheScreens=2，bitmapPoolScreens 在 O 以下为 4、O+ 为 1、低内存 O+ 可降为 0；二者总和再受 maxSizeMultiplier=0.4 / lowMemoryMaxSizeMultiplier=0.33 上限约束。1/8 不是当前源码公式。",
+          "suggestion": "改成“以若干屏 ARGB_8888 像素为目标，受 memory class 百分比上限裁剪”，并列出 2 screens / 4 or 1 screens / 0.4 / 0.33 这些源码常量。"
+        },
+        {
+          "level": "P1",
+          "type": "原理断裂/API语义错误",
+          "location": "L365（RecyclerView 中 Glide.with(itemView) 与请求取消）",
+          "detail": "正文称在 RecyclerView.Adapter 中使用 Glide.with(itemView) 可确保 item 被回收时请求也被取消。Glide.with(View) 的公开注释和 RequestManagerRetriever.get(View) 实现表明，它查找包含该 View 的 Fragment/Activity 并绑定其生命周期；RecyclerView item 回收不是 Activity/Fragment 生命周期事件。请求通常在同一 ImageView 重新 into() 时被替换取消，或需要在 onViewRecycled() 中显式 clear()。",
+          "suggestion": "改为“Glide.with(itemView) 只解决宿主生命周期绑定；RecyclerView 回收要在 onViewRecycled() 调用 Glide.with(itemView).clear(imageView)，或说明重新绑定时 into 同一 target 会替换旧请求”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T11:28:01+08:00",
+      "status": "pending",
+      "source_file": "2026-04-30-11-deep-review.md",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-04-30T11:28:01+08:00"
     }
   ],
   "completed": [
