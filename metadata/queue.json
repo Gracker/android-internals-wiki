@@ -6191,8 +6191,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T22:20:00+08:00",
-      "status": "pending",
-      "updated_at": "2026-05-01T01:27:22+08:00"
+      "status": "completed",
+      "updated_at": "2026-05-01T01:47:57+08:00",
+      "completed_at": "2026-05-01T01:47:57+08:00",
+      "completed_reason": "Task2B 回炉修复完成：补充 android.surfaceflinger.frametimeline 数据源；替换不存在的 Kotlin PerfettoTrace API 为 Perfetto C++ SDK/平台 ring buffer 说明；重写 FrameTimeline SQL 为 actual_frame_timeline_slice + expected_frame_timeline_slice/token 配对；顺手修正同节 SQL 小问题并完成禁用词扫描。"
     },
     {
       "section": "7.5",
@@ -6249,53 +6251,6 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T04:29:00+08:00",
       "status": "pending"
-    },
-    {
-      "section": "8.1",
-      "section_title": "响应速度原理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 8.1 响应速度原理 — 2026-04-30 05:20 发现 P0 3 / P1 1，需回炉修正",
-      "review_issues": [
-        {
-          "severity": "P0",
-          "type": "源码错误",
-          "location": "L137 InputDispatcher 到 App 的传输机制",
-          "detail": "正文写 InputDispatcher 通过 Binder IPC 将事件发送给目标 App。AOSP android-16.0.0_r1 中事件数据由 InputDispatcher::publishMotionEvent() 调用 connection.inputPublisher.publishMotionEvent()，再进入 InputChannel::sendMessage()，底层使用 socket fd 的 send()。Binder 参与窗口/InputChannel 建立，不承载每个 MotionEvent 的分发。",
-          "suggestion": "改为“InputDispatcher 通过 InputChannel/socketpair 将事件写入目标窗口连接；App 主线程的 NativeInputEventReceiver 监听 fd 后消费事件”。如需提 Binder，只放在 WMS 创建/传回 InputChannel 的阶段。"
-        },
-        {
-          "severity": "P0",
-          "type": "版本差异/API 错误",
-          "location": "L243-L245 触摸预测（Touch Prediction）",
-          "detail": "正文写 Android 16 在输入分发路径中引入增强型触摸预测，并称开发者无需额外适配、系统自动启用。Android 公共 API MotionPredictor 是 API 34 引入，官方说明要求应用 record(MotionEvent) 后调用 predict(long)，并用 isPredictionAvailable(deviceId, source) 检查设备/输入源支持。未找到 Android 16 自动对所有触摸路径启用 ML 预测的官方依据。",
-          "suggestion": "把该段改成“API 34+ 提供 MotionPredictor 开发者 API；是否可用取决于设备和输入源”。如要写 Android 16 系统级预测，需补 AOSP 类名、开关、适用输入源和 trace 证据，否则标 [待验证]。"
-        },
-        {
-          "severity": "P0",
-          "type": "指标体系事实错误",
-          "location": "L247-L252 UIL 与 Google Play 排名权重",
-          "detail": "正文称 Android 16 正式将 UIL 列为端到端响应核心指标，P99≤200ms 为良好，并已纳入 Google Play 排名权重。本轮复核 developer.android.com Android Vitals/Slow rendering/App startup 文档，只能确认 ANR、crash、slow rendering、frozen frames、app startup 等指标；未找到 UIL、P99 200ms、500ms 提前触发 input ANR 或 Play 排名权重的官方定义。",
-          "suggestion": "删除“正式/Play 排名权重/P99≤200ms”这类确定口径；改成“可借鉴 Web INP 的端到端交互延迟分析思路”，并标注 [待验证] 或补官方来源。"
-        },
-        {
-          "severity": "P1",
-          "type": "指标口径不准",
-          "location": "L180-L185 Android Vitals 呈现速度",
-          "detail": "正文把“超过 50% 的用户会话中出现单帧>16ms”写成 Android Vitals 告警口径，且没有列出 frozen frames。官方 Slow rendering 文档明确 frozen frame 是单帧渲染超过 700ms，并说明 90Hz/120Hz 下帧预算分别约 11ms/8ms；游戏还另有 slow sessions 指标。",
-          "suggestion": "按官方指标拆开写：slow rendering/慢帧、frozen frames >700ms、games slow sessions、app startup。避免把 16ms 当成所有刷新率和所有 Vitals 场景的唯一阈值。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "status": "pending",
-      "source_file": "2026-04-29-10-8.1-external-review.md",
-      "material_paths": [
-        "logs/deep-review/2026-04-30-05-deep-review.md",
-        "intake/suggestions.md"
-      ],
-      "added_at": "2026-04-30T05:20:00+08:00",
-      "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-04-30T05:20:00+08:00",
-      "external_review_source": "2026-04-29-10-8.1-external-review.md"
     },
     {
       "section": "8.10",
@@ -10294,6 +10249,57 @@
       "completed_reason": "P0 inSampleSize源码锚点/sk_sample_size修正；P0代码块标伪代码；P1 Gainmap/Ultra HDR内存模型已补充；P1 ImageDecoder内存峰值+边界说明已补充；P1 Coil BitmapPool移除原因已展开；P2 Android 15 prepareToDraw增强已补充",
       "completed_by": "openclaw-task2b",
       "completion_reason": "回炉修复完成"
+    },
+    {
+      "section": "8.1",
+      "section_title": "响应速度原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 8.1 响应速度原理 — 2026-04-30 05:20 发现 P0 3 / P1 1，需回炉修正",
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L137 InputDispatcher 到 App 的传输机制",
+          "detail": "正文写 InputDispatcher 通过 Binder IPC 将事件发送给目标 App。AOSP android-16.0.0_r1 中事件数据由 InputDispatcher::publishMotionEvent() 调用 connection.inputPublisher.publishMotionEvent()，再进入 InputChannel::sendMessage()，底层使用 socket fd 的 send()。Binder 参与窗口/InputChannel 建立，不承载每个 MotionEvent 的分发。",
+          "suggestion": "改为“InputDispatcher 通过 InputChannel/socketpair 将事件写入目标窗口连接；App 主线程的 NativeInputEventReceiver 监听 fd 后消费事件”。如需提 Binder，只放在 WMS 创建/传回 InputChannel 的阶段。"
+        },
+        {
+          "severity": "P0",
+          "type": "版本差异/API 错误",
+          "location": "L243-L245 触摸预测（Touch Prediction）",
+          "detail": "正文写 Android 16 在输入分发路径中引入增强型触摸预测，并称开发者无需额外适配、系统自动启用。Android 公共 API MotionPredictor 是 API 34 引入，官方说明要求应用 record(MotionEvent) 后调用 predict(long)，并用 isPredictionAvailable(deviceId, source) 检查设备/输入源支持。未找到 Android 16 自动对所有触摸路径启用 ML 预测的官方依据。",
+          "suggestion": "把该段改成“API 34+ 提供 MotionPredictor 开发者 API；是否可用取决于设备和输入源”。如要写 Android 16 系统级预测，需补 AOSP 类名、开关、适用输入源和 trace 证据，否则标 [待验证]。"
+        },
+        {
+          "severity": "P0",
+          "type": "指标体系事实错误",
+          "location": "L247-L252 UIL 与 Google Play 排名权重",
+          "detail": "正文称 Android 16 正式将 UIL 列为端到端响应核心指标，P99≤200ms 为良好，并已纳入 Google Play 排名权重。本轮复核 developer.android.com Android Vitals/Slow rendering/App startup 文档，只能确认 ANR、crash、slow rendering、frozen frames、app startup 等指标；未找到 UIL、P99 200ms、500ms 提前触发 input ANR 或 Play 排名权重的官方定义。",
+          "suggestion": "删除“正式/Play 排名权重/P99≤200ms”这类确定口径；改成“可借鉴 Web INP 的端到端交互延迟分析思路”，并标注 [待验证] 或补官方来源。"
+        },
+        {
+          "severity": "P1",
+          "type": "指标口径不准",
+          "location": "L180-L185 Android Vitals 呈现速度",
+          "detail": "正文把“超过 50% 的用户会话中出现单帧>16ms”写成 Android Vitals 告警口径，且没有列出 frozen frames。官方 Slow rendering 文档明确 frozen frame 是单帧渲染超过 700ms，并说明 90Hz/120Hz 下帧预算分别约 11ms/8ms；游戏还另有 slow sessions 指标。",
+          "suggestion": "按官方指标拆开写：slow rendering/慢帧、frozen frames >700ms、games slow sessions、app startup。避免把 16ms 当成所有刷新率和所有 Vitals 场景的唯一阈值。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "status": "completed",
+      "source_file": "2026-04-29-10-8.1-external-review.md",
+      "material_paths": [
+        "logs/deep-review/2026-04-30-05-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "added_at": "2026-04-30T05:20:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-04-30T05:20:00+08:00",
+      "external_review_source": "2026-04-29-10-8.1-external-review.md",
+      "completed_at": "2026-05-01T01:46:11+08:00",
+      "completed_reason": "Task 2B rework fixed P0 InputChannel transport, MotionPredictor API level, UIL/Play ranking claims, and Android Vitals slow/frozen frame wording.",
+      "completed_by": "task2b-rework",
+      "completion_reason": "Task 2B rework fixed P0 InputChannel transport, MotionPredictor API level, UIL/Play ranking claims, and Android Vitals slow/frozen frame wording."
     }
   ]
 }
