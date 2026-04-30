@@ -2,7 +2,6 @@
 title: "响应速度原理"
 chapter: "8.1"
 section: "8.1"
-status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -30,15 +29,21 @@ sources:
 tags: [responsiveness, TTID, TTFD, RAIL, input-latency, perceived-performance]
 related_chapters: ["2.3", "2.4", "3.1", "7.1", "8.2", "9.1", "15.3", "15.5", "15.9"]
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 1，P2 2。"
-pipeline_stage: task9_pendingtask6_state: reviewedtask6_result: pass-light-edit
-task9_state: pending
+task6_state: reviewed
+task6_result: pass-light-edit
 task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-30"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-30T05:20:00+08:00"
 task6_reviewed_date: "2026-05-01"
+review_round: 1
+status: finalized
+pipeline_stage: ready-to-publish
+task9_result: pass-tech-review
+task9_state: reviewed
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-01"
+last_task9_at: "2026-05-01T03:20:00+08:00"
+task9_review_notes: "2026-05-01 task9 deep-review: pass-tech-review。无 P0/P1；仅发现 P2 交叉引用路径问题，已写入 suggestions。自动晋升 finalized。"
+
 ---
 
 # 响应速度原理

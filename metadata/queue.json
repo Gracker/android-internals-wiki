@@ -9947,6 +9947,64 @@
       "status": "completed",
       "completed_at": "2026-05-01T02:45:34.000101",
       "completed_reason": "P0 heapprofd命令改为heap_profile；P0 malloc hooks属性名修正为libc.debug.hooks.enable"
+    },
+    {
+      "section": "1.4",
+      "section_title": "Binder IPC 机制与性能影响",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Binder / Perfetto 字段、SQL 和 16KB 吞吐数据存在重要技术问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码准确性",
+          "location": "L355 版本演进：Android 16 android.binder",
+          "detail": "正文写 Android 16 的 android.binder 数据源直接记录 interface_name 和 method_name；但 android-16.0.0_r1 / Perfetto stdlib android/binder.sql 暴露的是 aidl_name、interface、method_name，其中 interface/method_name 由 AIDL/HIDL slice 名称拆分得到，不是 interface_name 原生字段。且本节 L248 已写“从 slice 名称中拆分”，前后冲突。",
+          "suggestion": "把 L355 改为“Perfetto android.binder 标准库可从 AIDL/HIDL slice 拆出 interface/method_name；字段名以 android_binder_txns 的 interface/method_name 为准”，不要写成 interface_name 或直接采集字段。"
+        },
+        {
+          "type": "数据支撑",
+          "location": "L132、L357 16KB Page Size 与 Binder 吞吐",
+          "detail": "正文直接写大数据量 Binder 事务吞吐量约 12% 提升，但同节版本演进又标注该数字缺公开 AOSP benchmark 或官方文档支撑。AOSP ProcessState.cpp 只能验证 Binder mmap buffer 大小随 page size 改变，不能支撑 12% 性能结论。",
+          "suggestion": "删除 12% 量化结论，或补充设备型号、Android build、payload 大小、事务次数、4KB/16KB 对照组和 Perfetto/benchmark 数据。"
+        },
+        {
+          "type": "源码/API错误",
+          "location": "L321-L329 Binder 风暴统计 SQL",
+          "detail": "`WHERE s.name LIKE 'binder%' GROUP BY process.name` 会混合 client 侧 binder transaction、server 侧 binder reply / async receive 等 slice，不能等价于“按 Client 进程统计事务频率”，会把服务端处理和回复也计入调用发起方统计。",
+          "suggestion": "Android 16+ 优先用 `INCLUDE PERFETTO MODULE android.binder; SELECT client_process, count(*) FROM android_binder_txns GROUP BY client_process`；低版本则明确只过滤 client-side `binder transaction`，不要把 reply/receive slice 混进 Client 频率统计。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T03:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.3",
+      "section_title": "卡顿分析方法论",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Perfetto Binder SQL / trace config 存在字段和 tracepoint 错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/API错误",
+          "location": "L611、L627 Binder Transaction SQL",
+          "detail": "Perfetto stdlib android/binder.sql 的 android_binder_txns 表没有 dispatch_dur 列；示例直接 SELECT/AVG(dispatch_dur) 会查询失败。",
+          "suggestion": "在查询中显式计算 (server_ts - client_ts) AS dispatch_dur，或改用已存在的 client_dur/server_dur/server_ts/client_ts 字段，并说明该值是近似排队/调度等待时间。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L651-L665 Perfetto config：binder/binder_reply",
+          "detail": "kernel/common drivers/android/binder_trace.h 定义 binder_transaction、binder_transaction_received、binder_transaction_alloc_buf、binder_return、binder_command 等 tracepoint；没有 binder_reply。配置中写 binder/binder_reply 属于不存在的 ftrace event。",
+          "suggestion": "删除 binder/binder_reply，必要时补 binder/binder_return / binder/binder_command；同步回复语义通过 binder_transaction 的 reply flag、flow 和 android.binder 标准库分析。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T03:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

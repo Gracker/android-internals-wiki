@@ -559,3 +559,10 @@
 - **位置**：约第229-249行，FrameTimeline 小节
 - **问题**：SurfaceView / 多 Surface / 视频层场景的 FrameTimeline 覆盖边界未说明。
 - **建议**：补充 SurfaceView、多 Surface、视频层需要结合 layer name、DisplayFrame、BufferQueue / HWC tracks，不能只看主 Activity App timeline。
+
+
+## [Task9 Deep Review] 8.1 响应速度原理 — 2026-05-01
+- **类型**：交叉引用
+- **位置**：L118、L283，章节内 markdown 链接
+- **问题**：`04-choreographer.md` 和 `01-perfetto-intro.md` 以当前 `ch08-responsiveness/` 目录解析会落到不存在路径；正确目标分别在 `part1-fundamentals/ch02-rendering/04-choreographer.md` 与 `part3-tools/ch13-perfetto/01-perfetto-intro.md`。
+- **建议**：改成相对当前文件的 `../../part1-fundamentals/ch02-rendering/04-choreographer.md`、`../../part3-tools/ch13-perfetto/01-perfetto-intro.md`，或使用项目统一的章节编号引用方式。
