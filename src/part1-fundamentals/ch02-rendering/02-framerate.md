@@ -53,14 +53,14 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-29"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-29T06:30:33+08:00"
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1。需 Task2B 回炉。"
@@ -607,7 +607,7 @@ Android 14 引入了 Frame Rate Override 机制,系统可以直接覆盖 App 请
 - **热管理**时降帧以降低 SoC 温度
 - **Game Mode** 设为省电时限制游戏帧率
 
-App 可以通过 `FrameRateOverride` 回调感知到被覆盖的情况:
+App 没有直接的公开 API 获取帧率覆盖通知。以下两种方式可以间接推断:
 
 ```java
 // 方法一:通过 DisplayManager 监听刷新率变化(间接检测 Frame Rate Override)
@@ -636,7 +636,7 @@ Choreographer.getInstance().postVsyncCallback(frameData -> {
 
 Android 目前没有提供直接的"帧率被覆盖"回调 API(如 `OnFrameRateOverrideListener`)。上面两种方法都是间接检测:第一种通过显示刷新率变化推断,第二种通过实际帧间隔推断。如果只需要知道当前的显示刷新率,`Display.getRefreshRate()` 是最简单可靠的方式。
 
-> **注意**:`android.os.FrameRateOverride` 是系统内部类(`DisplayEventReceiver` 的事件载荷),不属于公开 SDK。检测帧率覆盖的公开路径仍然依赖 `DisplayManager.DisplayListener` 和 `Choreographer.VsyncCallback` 的间接推断。如果后续 Android 版本开放了公开 API,可以替换为直接检测方式。
+> **注意**:`android.view.DisplayEventReceiver.FrameRateOverride` 是系统内部类（`DisplayEventReceiver` 的事件载荷）,不属于公开 SDK。检测帧率覆盖的公开路径仍然依赖 `DisplayManager.DisplayListener` 和 `Choreographer.VsyncCallback` 的间接推断。如果后续 Android 版本开放了公开 API,可以替换为直接检测方式。
 
 [已修正: 明确 FrameRateOverride 非公开 API,公开检测路径仍为间接推断]
 

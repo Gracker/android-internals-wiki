@@ -7313,7 +7313,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T06:30:33+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T15:47:36.903224+08:00",
+      "completed_reason": "FrameRateOverride 回调描述已修正：改为间接推断方式；android.os.FrameRateOverride → android.view.DisplayEventReceiver.FrameRateOverride"
     },
     {
       "section": "3.2",
@@ -7333,7 +7335,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T06:30:33+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-04-30T15:47:36.903224+08:00",
+      "completed_reason": "输入重采样调用链已纠正：Resampler 从系统侧移至 App 侧 InputConsumer，补充完整系统侧/App 侧双链路"
     },
     {
       "section": "14.10",
@@ -7850,8 +7854,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T15:20:00+08:00",
-      "status": "pending",
-      "source_file": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md"
+      "status": "completed",
+      "source_file": "src/part1-fundamentals/ch03-input/03-gesture-navigation.md",
+      "completed_at": "2026-04-30T15:47:36.903224+08:00",
+      "completed_reason": "frontmatter SystemUI AOSP 路径去重：三处重复的 frameworks/base/ 前缀已修正"
     },
     {
       "section": "8.2",
