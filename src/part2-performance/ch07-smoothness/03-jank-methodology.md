@@ -3,7 +3,7 @@ title: "卡顿分析方法论"
 chapter: "7.3"
 status: ready-for-review
 reviewed_date: "2026-05-01"
-last_task2b_at: '2026-05-01T01:04:51.286646+08:00'
+last_task2b_at: '2026-05-01T01:46:41+08:00'
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
@@ -34,12 +34,12 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "2.18", "1.5", "13.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
@@ -119,9 +119,15 @@ data_sources: {
         }
     }
 }
+
+data_sources: {
+    config {
+        name: "android.surfaceflinger.frametimeline"
+    }
+}
 ```
 
-这里有几个要点。`gfx` category 涵盖了 SurfaceFlinger 和渲染相关的标记；`view` 涵盖了 Choreographer、doFrame 等 UI 渲染标记；`input` 涵盖了触摸事件的分发；`sched_switch` 和 `sched_wakeup` 则是分析 CPU 调度问题必不可少的 ftrace 事件。如果遗漏了 `sched` 相关事件，当主线程长时间处于 Sleep 状态时，就无法追踪唤醒路径，分析就断线了。
+这里有几个要点。`gfx` category 涵盖了 SurfaceFlinger 和渲染相关的 atrace 标记；`view` 涵盖了 Choreographer、doFrame 等 UI 渲染标记；`input` 涵盖了触摸事件的分发；`sched_switch` 和 `sched_wakeup` 则是分析 CPU 调度问题必不可少的 ftrace 事件。FrameTimeline 由 `android.surfaceflinger.frametimeline` 数据源提供，它不属于 `gfx` 或 `view` atrace category；后文要在 Perfetto UI 查看 Expected / Actual Timeline，或用 SQL 查询 `actual_frame_timeline_slice`、`expected_frame_timeline_slice`，trace 里必须包含这个数据源。如果遗漏了 `sched` 相关事件，当主线程长时间处于 Sleep 状态时，就无法追踪唤醒路径，分析就断线了。
 
 抓取时长也有讲究。如果问题容易复现，抓 5-10 秒就够了——太长的 Trace 反而增加定位的难度。如果问题偶尔出现，可以适当加长到 30 秒甚至更长，但要相应增大 buffer 大小。
 
@@ -376,36 +382,57 @@ JankStats 的引入降低了线上卡顿监控的接入成本。不过，它的�
 
 ## [自动发现] 线上动态 Trace：Perfetto SDK 方案
 
-对于偶发性卡顿——线下难以复现、用户侧低概率触发——传统的"复现→抓 Trace"流程失效。`androidx.tracing:tracing-perfetto`（别名 Perfetto SDK）提供了一种在非 root 设备上通过应用代码动态开启/关闭 Perfetto 追踪的方案。
+对于偶发性卡顿——线下难以复现、用户侧低概率触发——传统的"复现→抓 Trace"流程容易失效。`androidx.tracing:tracing-perfetto` 的边界是：它主要把 App 内的 trace section 写入 Perfetto，便于线下或平台侧 Trace 看到 App 自己标记的阶段；它不能替代平台侧 `perfetto` 进程去回溯系统 ftrace、atrace category 和 FrameTimeline。
 
-核心思路：App 在运行时通过 JankStats / FrameMetrics 检测到卡顿帧后，调用 Perfetto SDK API 立即保存最近几秒的 Trace 数据。由于 Perfetto 使用环形 buffer，保存的 Trace 涵盖了卡顿发生前的时间窗口。
+工程上常见做法分两层：线上用 JankStats / FrameMetrics 发现异常场景并记录页面、操作、版本、设备状态；需要现场 Trace 时，在可控测试包、dogfood 包或平台测试环境里保持一段 ring buffer Perfetto session，触发后 stop/save。App 自身要补充更细的业务阶段标记，可以接入 Perfetto C++ SDK 的 Track Event 数据源。最小模式如下：
 
-```kotlin
-// build.gradle 依赖
-// implementation("androidx.tracing:tracing-perfetto:1.0.0")
+```cpp
+#include <fstream>
+#include <memory>
+#include <string>
+#include <vector>
+#include <perfetto.h>
 
-// 动态启动 Trace（在检测到异常时触发）
-val config = TraceConfiguration.Builder()
-    .setDurationMs(5000)  // 保存最近 5 秒
-    .setBufferSizeKb(32768)
-    .addFtraceEvent("sched/sched_switch")
-    .addFtraceEvent("sched/sched_wakeup")
-    .addAtraceCategory("gfx")
-    .addAtraceCategory("view")
-    .build()
+PERFETTO_DEFINE_CATEGORIES(
+    perfetto::Category("android.jank")
+        .SetDescription("Jank capture points"));
+PERFETTO_TRACK_EVENT_STATIC_STORAGE();
 
-PerfettoTrace.start(config) { result ->
-    // result.traceFile 包含完整的 Perfetto trace
-    // 上报到分析平台供后续离线分析
-    uploadTrace(result.traceFile)
+void InitPerfettoTracing() {
+    perfetto::TracingInitArgs args;
+    // kSystemBackend 接入系统 tracing service；权限不足或只做进程内标记时用 kInProcessBackend。
+    args.backends = perfetto::kSystemBackend;
+    perfetto::Tracing::Initialize(args);
+    perfetto::TrackEvent::Register();
+}
+
+std::unique_ptr<perfetto::TracingSession> StartAppTraceSession() {
+    perfetto::TraceConfig config;
+    config.add_buffers()->set_size_kb(32768);
+
+    perfetto::TraceConfig::DataSource* data_source = config.add_data_sources();
+    data_source->mutable_config()->set_name("track_event");
+
+    auto session = perfetto::Tracing::NewTrace();
+    session->Setup(config);
+    session->StartBlocking();
+    return session;
+}
+
+void StopAndSaveTrace(perfetto::TracingSession* session,
+                      const std::string& path) {
+    session->StopBlocking();
+    std::vector<char> trace = session->ReadTraceBlocking();
+    std::ofstream output(path, std::ios::binary);
+    output.write(trace.data(), static_cast<std::streamsize>(trace.size()));
 }
 ```
 
-这种方式与线上 FrameMetrics 监控互补：FrameMetrics 负责日常统计和趋势告警，Perfetto SDK 在告警触发时自动捕获现场 Trace。两者结合，可以同时获得宏观统计和单帧级归因。
+使用时在关键路径加 `TRACE_EVENT("android.jank", "FeedBindViewHolder")` 这类标记。JankStats 发现异常后保存业务上下文；Trace 文件由测试框架或平台侧 session 导出，再和 FrameMetrics 的帧统计一起分析。
 
-> **注意**：Perfetto SDK 需要应用自行集成，不依赖 root 权限。Trace 数据包含应用自身的线程信息、CPU 调度信息和 atrace 标记，不包含其他应用的私有数据。
+> **注意**：ftrace 事件、atrace category、FrameTimeline 这些系统数据源由平台 tracing service 采集，第三方 App 不能假设自己能随时开启并回溯完整系统 Trace。实际 API 和权限边界以 Perfetto SDK 官方文档为准：https://perfetto.dev/docs/instrumentation/tracing-sdk 。
 
-[来源: AndroidX 官方库, androidx.tracing:tracing-perfetto]
+[来源: Perfetto SDK 官方文档, perfetto.dev/docs/instrumentation/tracing-sdk；AndroidX 官方库, androidx.tracing:tracing-perfetto]
 
 ## 使用 SQL 查询 Perfetto Trace 进行批量分析
 
@@ -418,35 +445,49 @@ Perfetto UI 右侧面板中有一个 Query 入口，可以直接编写 SQL 查�
 **推荐方法：基于 FrameTimeline Expected/Actual 对比**（Android 12+，适用于所有刷新率包括 VRR/ARR）
 
 ```sql
+INCLUDE PERFETTO MODULE android.frames.timeline;
+
 -- 基于 FrameTimeline 的掉帧统计，自动适配 VRR/ARR 动态帧间隔
 -- Expected vs Actual 对比是判断掉帧的基准，不要用固定阈值
+WITH frame_timeline AS (
+    SELECT
+        actual.upid,
+        process.name AS process_name,
+        actual.layer_name,
+        actual.display_frame_token,
+        actual.surface_frame_token,
+        actual.ts,
+        expected.dur AS expected_dur_ns,
+        actual.dur AS actual_dur_ns,
+        actual.present_type,
+        actual.jank_type,
+        actual.on_time_finish
+    FROM actual_frame_timeline_slice AS actual
+    LEFT JOIN expected_frame_timeline_slice AS expected
+      ON actual.display_frame_token = expected.display_frame_token
+     AND IFNULL(actual.surface_frame_token, -1) = IFNULL(expected.surface_frame_token, -1)
+    LEFT JOIN process
+      ON actual.upid = process.upid
+)
 SELECT
-    expected.name,
-    expected.ts AS expected_ts,
-    expected.dur / 1000000.0 AS expected_ms,
-    actual.dur / 1000000.0 AS actual_ms,
-    (actual.dur - expected.dur) / 1000000.0 AS overrun_ms,
-    CASE
-        WHEN actual.dur <= expected.dur THEN 'On time'
-        WHEN actual.dur <= expected.dur * 2 THEN 'Missed 1 budget'
-        ELSE 'Missed 2+ budgets'
-    END AS frame_status
-FROM slice expected
-JOIN thread_track tt_exp ON expected.track_id = tt_exp.id
-JOIN thread t_exp ON tt_exp.utid = t_exp.utid
-JOIN slice actual
-  ON actual.track_id != expected.track_id
-  AND actual.ts BETWEEN expected.ts AND expected.ts + expected.dur + 1000000
-  AND actual.name LIKE 'Actual%'
-JOIN thread_track tt_act ON actual.track_id = tt_act.id
-WHERE t_exp.name = 'mdss_fb0'
-  AND expected.name LIKE 'Expected%'
-  AND actual.dur > expected.dur
+    process_name,
+    layer_name,
+    display_frame_token,
+    surface_frame_token,
+    ts,
+    expected_dur_ns / 1000000.0 AS expected_ms,
+    actual_dur_ns / 1000000.0 AS actual_ms,
+    (actual_dur_ns - expected_dur_ns) / 1000000.0 AS overrun_ms,
+    present_type,
+    jank_type
+FROM frame_timeline
+WHERE (on_time_finish = 0 OR jank_type != 'None')
+  -- AND process_name = 'com.example.app'
 ORDER BY overrun_ms DESC
 LIMIT 50;
 ```
 
-FrameTimeline 的 Expected Slice 宽度直接来自系统调度器的 `frameIntervalNs`，在 VRR 设备上会随刷新率档位变化。用 Expected 宽度做基准，不需要猜测当前是 60Hz 还是 120Hz。
+这条查询直接使用 Perfetto FrameTimeline 表：`expected_frame_timeline_slice` 给出目标时间窗，`actual_frame_timeline_slice` 给出真实完成情况和 `jank_type`。配对同一帧时用 `display_frame_token`，Surface frame 再补 `surface_frame_token`；不要从通用 `slice` 表按 `Expected%` / `Actual%` 名称猜测，也不要把 `track_id` 当成帧标识。FrameTimeline 的 Expected Slice 宽度直接来自系统调度器的 `frameIntervalNs`，在 VRR/ARR 设备上会随刷新率档位变化。用 Expected 宽度做基准，不需要猜测当前是 60Hz 还是 120Hz。
 
 **60Hz 快速粗筛**（仅适用于确认固定 60Hz 的 trace）：
 
@@ -482,7 +523,7 @@ SELECT
     COUNT(*) as sched_count
 FROM sched
 JOIN thread ON sched.utid = thread.utid
-WHERE thread.name IN ('main', 'RenderThread', ' AsyncTask #1')
+WHERE thread.name IN ('main', 'RenderThread', 'AsyncTask #1')
 GROUP BY thread.name
 ORDER BY cpu_time_ms DESC;
 ```
@@ -495,7 +536,7 @@ ORDER BY cpu_time_ms DESC;
 SELECT
     sched.ts,
     sched.dur / 1000000.0 as runnable_ms,
-    thread.name as waker
+    thread.name as thread_name
 FROM sched
 JOIN thread ON sched.utid = thread.utid
 WHERE thread.name = 'main'
@@ -667,7 +708,7 @@ LIMIT 50;
 
 **4. 利用 `INCLUDE PERFETTO MODULE` 标准库**
 
-Perfetto 标准库提供了预构建的聚合表（如 `android.binder`、`android.frames`），比自己写 JOIN 更高效且更准确。优先检查是否已有标准库模块覆盖目标分析场景，再决定手写 SQL。
+Perfetto 标准库提供了预构建的模块和视图（如 `android.binder`、`android.frames.timeline` / `android_frames`），比自己写 JOIN 更高效且更准确。优先检查是否已有标准库模块覆盖目标分析场景，再决定手写 SQL。
 
 
 
