@@ -157,6 +157,34 @@ void renderHomeFeed(List<FeedItem> items) {
 
 抓 Perfetto 时，`HomeFeed#diffAndBind` 会显示在对应线程轨道上。这样分析慢帧或启动慢时，可以把系统调度和业务阶段放在一起读。
 
+## 性能开销与适用边界
+
+`Trace.beginSection()` / `Trace.endSection()` 的单次调用开销取决于平台和字符串长度，大致范围如下：
+
+| 操作 | 典型耗时 | 条件 |
+|---|---|---|
+| `beginSection`（短名称，<32 字符） | 200-500ns | API 31+，硬件加速启用 |
+| `beginSection`（长名称，>64 字符） | 500-1000ns | 字符串拷贝 + ftrace write 路径 |
+| `endSection` | 100-300ns | 无字符串参数 |
+| `beginAsyncSection` / `endAsyncSection` | 200-400ns | 含 int cookie 写入 |
+
+开销来自两部分：
+
+1. **字符串分配**：每次 `beginSection` 都会在 native 层做一次 `write(fd, ...)` 系统调用，把 `B|<pid>|<name>` 写入 `trace_marker`。字符串越长，系统调用耗时越高。
+2. **ftrace ring buffer 写入**：写入 per-CPU ring buffer 本身很快（约 100ns），但在高并发场景下 buffer 溢出会触发额外的锁竞争。
+
+基于这些数据，几个实用边界：
+
+- **热路径谨慎打标**：如果某段代码在一帧内被调用超过 1000 次（如 `onDraw` 内的循环），不要在里面放 `beginSection`。把 trace 提到循环外面，标注整体耗时即可。
+- **避免动态字符串拼接**：`"item_" + id` 这种写法会多一次字符串分配和拷贝。用固定名称或预分配好的静态常量。
+- **Release 包保留必要的 trace**：少量稳定的 trace slice（每帧 < 20 个）在 120Hz 下占用不到 0.5% 的帧预算，对用户无感知。
+
+不适合加 trace 的场景：
+
+- `onMeasure` / `onLayout` 内部的高频循环体。
+- JNI native 方法边界（native 侧已有 `ATrace_*` 可用）。
+- 任何频率超过 10kHz 的代码路径。
+
 ## 命名要稳定
 
 trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词、订单号。原因很直接：名称会进入 trace 文件，可能触发隐私问题，也会让分析视图变得不可聚合。
@@ -188,13 +216,26 @@ trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词�
 
 trace 标注代码可以留在 Release 包里，但能不能在 Perfetto 里看到自定义 slice，要按平台版本判断。
 
-| 平台 | 默认可见性 | 额外处理 |
-|---|---|---|
-| API 24-28 | 只有 debuggable 进程默认能记录 app trace | 非 debuggable 进程要在启动早期调用 `Trace.forceEnableAppTracing()` |
-| API 29-30 | debuggable 和 profileable 进程默认可见 | 非 debuggable 且未声明 `profileable` 的进程，仍要调用 `Trace.forceEnableAppTracing()` |
-| API 31+ | app tracing 在所有应用里默认开启 | `Trace.forceEnableAppTracing()` 在这一段没有实际效果 |
+| 平台 | 默认可见性 | 额外处理 | 关键差异 |
+|---|---|---|---|
+| API 18-23 | `beginSection` 可用，但只支持 debuggable 进程 | 非 debuggable 进程无法使用自定义 slice | `Trace.forceEnableAppTracing()` 在 API 18 加入，但实际效果依赖 ROM 实现 |
+| API 24-28 | 只有 debuggable 进程默认能记录 app trace | 非 debuggable 进程要在启动早期调用 `Trace.forceEnableAppTracing()` | `trace_marker` fd 访问权限受 SELinux 策略限制 |
+| API 29-30 | debuggable 和 profileable 进程默认可见 | 非 debuggable 且未声明 `profileable` 的进程，仍要调用 `Trace.forceEnableAppTracing()` | API 29 新增 `beginAsyncSection()` / `endAsyncSection()`，支持跨线程 trace 配对 |
+| API 31+ | app tracing 在所有应用里默认开启 | `Trace.forceEnableAppTracing()` 在这一段没有实际效果 | `androidx.tracing:tracing` 1.2.0+ 对 API 31+ 走内联优化路径，跳过 JNI |
+| API 33+ | 同上 | 无 | Perfetto 默认启用 `android.os.Trace` 数据源采集 |
+| API 35+ | 同上 | 无 | ProfilingManager 系统触发采样可在 App 不主动 trace 时自动抓取 |
 
 AndroidX `Trace.forceEnableAppTracing()` 的文档说明了两点：它用于在 non-debuggable process 中启用 app tracing；从 Android 12 开始，应用代码写入的 custom trace 在所有应用里都默认开启。用正式包抓性能数据时，优先使用 profileable 或接近发布态的构建，避免把 debuggable 包的调试开销带进结论。
+
+`androidx.tracing:tracing` 库的版本差异：
+
+| 版本 | 关键能力 |
+|---|---|
+| 1.0-1.1 | 纯兼容封装，API < 18 时降级为空操作 |
+| 1.2 | 修正 `beginSection` / `endSection` 在 API 31+ 的内联路径，减少一次 JNI 调用 |
+| 2.0.0-alpha | 新增 `traceCoroutine` API，支持协程上下文传播；引入可插拔 backend 接口（仍为 alpha） |
+
+生产包推荐使用 1.2 稳定版。2.0.0-alpha 的 coroutine tracing 需要单独验证 trace 体积和兼容性，不建议未经评估直接上线。
 
 还有两条约束：
 
