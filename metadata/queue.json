@@ -10180,6 +10180,44 @@
       "added_by": "task8-classifier",
       "added_at": "2026-05-01T05:37:18.422697",
       "status": "pending"
+    },
+    {
+      "section": "11.5",
+      "section_title": "Wakelock 机制与功耗分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.5 Wakelock 机制与功耗分析存在 ADPF/PowerMonitor/Perfetto/AlarmManager 源码与 API 事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "“Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监测”/PowerMonitor API 常量表",
+          "detail": "文中把 POWER_MONITOR_TYPE_MEASUREMENT 写成 0x1、POWER_MONITOR_TYPE_CONSUMER 写成 0x2。AOSP master core/java/android/os/PowerMonitor.java 中 CONSUMER=0，MEASUREMENT=1。",
+          "suggestion": "改为 CONSUMER=0、MEASUREMENT=1，并标注这些 API 受 power_monitor_api flag/API 35 边界约束。"
+        },
+        {
+          "type": "源码错误",
+          "location": "“PerformanceHintManager 与 Power Efficiency Mode”核心 API 列表",
+          "detail": "createHintSession(long[] tids, long initialTargetUs)、reportActualWorkDuration(long durationUs)、updateTargetWorkDuration(long targetDurationUs) 的参数类型/单位写错。AOSP PerformanceHintManager.java 使用 int[] tids，duration 单位是 nanoseconds；reportActualWorkDuration(long) 不是 Android 15 DP1 才引入，Android 15 新增/扩展的是 prefer power efficiency 与 WorkDuration/GPU duration 等 flagged API。",
+          "suggestion": "统一改为 createHintSession(int[] tids, long initialTargetWorkDurationNanos)、reportActualWorkDuration(long actualDurationNanos)、updateTargetWorkDuration(long targetDurationNanos)，并补 setPreferPowerEfficiency(boolean) 的 API 35/flag 边界。"
+        },
+        {
+          "type": "源码错误",
+          "location": "参考资料与 OnAlarmListener 小节中的 AlarmManager.java 路径/版本表",
+          "detail": "章节把 AlarmManager 源码路径写为 frameworks/base/core/java/android/app/AlarmManager.java；现代 AOSP master/Android 15+ 已在 frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java。版本演进表写“Android 14 OnAlarmListener 公开 SDK 化”也不准确，OnAlarmListener 和公开 setExact(...OnAlarmListener...) 自 API 24 起存在，Android 14 的变化是 exact alarm 权限口径中明确 OnAlarmListener 例外。",
+          "suggestion": "更新 AOSP 路径，并把版本表改为“Android 14：OnAlarmListener exact alarm 权限例外明确/SEA 默认拒绝策略变化”，不要写成公开 SDK 化。"
+        },
+        {
+          "type": "源码错误",
+          "location": "“Perfetto 端到端观测”配置片段",
+          "detail": "文中写“Perfetto 通过 android.power_rails 数据源暴露 rail 级功耗”，并使用 android_power_config { power_rails: true }。Perfetto 官方配置主路径是 data source name \"android.power\" + android_power_config.collect_power_rails: true；前文表格已写对，后文配置与数据源名不一致，示例可能无法直接运行。",
+          "suggestion": "统一为 name: \"android.power\"，字段使用 collect_power_rails: true；SQL 表仍可保留 android_power_rails_counters。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T06:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
