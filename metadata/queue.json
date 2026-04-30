@@ -3470,7 +3470,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T21:34:35+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T07:51:00.945524+08:00",
+      "completed_reason": "SurfaceFlinger trace示例已修正为Android 16 SFTRACE_*宏族；ATRACE_CALL()限制已说明；反查规则已改为按宏族区分"
     },
     {
       "section": "15.9",
@@ -4000,7 +4002,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T07:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T07:51:00.945524+08:00",
+      "completed_reason": "README本章内容已补19.23-19.27；SUMMARY.md已同步5个新章节；19.21标题已统一含Speedometer"
     },
     {
       "section": "19.08",

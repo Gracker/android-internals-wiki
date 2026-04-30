@@ -251,8 +251,13 @@ tags:
   - [19.18 商业 APM 平台（Sentry、APMPlus、Bugly）](part3-tools/ch19-apm/18-commercial-apm.md)
   - [19.19 PerfDog](part3-tools/ch19-apm/19-perfdog.md)
   - [19.20 SoloPi 与 Emmagee](part3-tools/ch19-apm/20-solopi-emmagee.md)
-  - [19.21 Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）](part3-tools/ch19-apm/21-benchmark-apps.md)
-  - [19.22 存储 Benchmark（AndroBench、A1 SD Bench）](part3-tools/ch19-apm/22-storage-benchmark.md)
+  - [19.21 Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）](part3-tools/ch19-apm/21-benchmark-apps.md)
+  - [19.22 存储 Benchmark（CPDT、PCMark Storage、历史 AndroBench / A1 SD Bench）](part3-tools/ch19-apm/22-storage-benchmark.md)
+  - [19.23 网络 APM 底层捕获原理](part3-tools/ch19-apm/23-network-apm-internals.md)
+  - [19.24 崩溃与 ANR 捕获机制](part3-tools/ch19-apm/24-crash-anr-internals.md)
+  - [19.25 耗电与发热监控 (Battery & Thermal)](part3-tools/ch19-apm/25-battery-thermal-apm.md)
+  - [19.26 混合栈与跨平台 APM (WebView / Flutter)](part3-tools/ch19-apm/26-hybrid-apm.md)
+  - [19.27 千万级 DAU 的 APM 端侧架构](part3-tools/ch19-apm/27-apm-client-architecture.md)
 
 ---
 

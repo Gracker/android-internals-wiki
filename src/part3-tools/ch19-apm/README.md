@@ -10,7 +10,7 @@ last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: pending
 task6_state: "reviewed"
@@ -122,6 +122,11 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 - 19.20 SoloPi 与历史 Emmagee
 - 19.21 Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
 - 19.22 存储 Benchmark（CPDT、PCMark Storage、历史 AndroBench / A1 SD Bench）
+- 19.23 网络 APM 底层捕获原理
+- 19.24 崩溃与 ANR 捕获机制
+- 19.25 耗电与发热监控 (Battery & Thermal)
+- 19.26 混合栈与跨平台 APM (WebView / Flutter)
+- 19.27 千万级 DAU 的 APM 端侧架构
 
 ## 阅读建议
 

@@ -18,7 +18,7 @@ sources:
     path: "https://mp.weixin.qq.com/s?__biz=MzI4NTk1NzYwNg==&mid=2247483668"
 tags: ['aosp', 'code-reading', 'cs.android.com', 'methodology']
 related_chapters: ["1.1", "2.4", "2.5", "13.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
@@ -226,21 +226,30 @@ Trace.traceEnd(Trace.TRACE_TAG_VIEW);
 
 `traceBegin` 的第二个参数 `"measure"` 就是在 Perfetto 中显示的 slice 名字。当我们在 Perfetto 中看到 `measure` 这个 slice，就可以在 cs.android.com 中搜索 `"measure"` 并结合 `TRACE_TAG_VIEW` 上下文，找到对应的源码位置。
 
-**Native 层**使用 `ATRACE_CALL()` 或 `ATRACE_NAME()` 宏。内部宏位于 `system/core/libutils/include/utils/Trace.h`，tag 常量在 `system/core/libcutils/include/cutils/trace.h`，NDK 公开入口则是 `frameworks/native/include/android/trace.h`。
+**Native 层**使用 `ATRACE_CALL()` 或 `ATRACE_NAME()` 宏。内部宏位于 `system/core/libutils/include/utils/Trace.h`，tag 常量在 `system/core/libcutils/include/cutils/trace.h`，NDK 公开入口则是 `frameworks/native/include/android/trace.h`。部分系统服务（如 SurfaceFlinger）在此基础上封装了专用宏族（`SFTRACE_NAME`、`SFTRACE_ASYNC_FOR_TRACK_BEGIN` 等），生成更丰富的 slice 信息。反查时需注意区分通用宏和服务专用宏。
 
 ```cpp
-// system/core/libutils/include/utils/Trace.h
+// frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
 // @ AOSP android-16.0.0_r1
-// ATRACE_CALL() 展开为以当前函数名为 slice 名的 trace 段
-void SurfaceFlinger::composite() {
-    ATRACE_CALL();  // Perfetto 中显示为 "SurfaceFlinger::composite"
-    // Several composition steps are omitted.
+// SurfaceFlinger 使用自定义 SFTRACE_* 宏族，不是通用 ATRACE_CALL()
+void SurfaceFlinger::composite(const CompositeArgs& args) {
+    // SFTRACE_NAME 展开为包含函数名的 slice，通常带 vsyncId 前缀
+    SFTRACE_NAME(ftl::Concat(__func__, vsyncId).c_str());
+    // 异步 trace 用 SFTRACE_ASYNC_FOR_TRACK_BEGIN / END
+    SFTRACE_ASYNC_FOR_TRACK_BEGIN("vsync", ...);
+    // 合成逻辑 ...
 }
 ```
 
-`ATRACE_CALL()` 会自动以当前函数名作为 slice 名。所以当我们在 Perfetto 中看到 `SurfaceFlinger::composite`，直接在 `frameworks/native/services/surfaceflinger/` 下搜索 `composite` 函数即可。
+> **注意**：`ATRACE_CALL()` 展开为 `ATRACE_NAME(__FUNCTION__)`，只能拿到函数名（如 `composite`），不包含类名。SurfaceFlinger 从 Android 12 起引入了自己的 `SFTRACE_*` 宏族（定义在 `SurfaceFlingerTrace.h`），用于生成带类名、带 vsyncId 的更丰富 slice 名。Perfetto 中看到的 `SurfaceFlinger::composite` 这类带类名的 slice，来源于 `SFTRACE_NAME` 而非通用 `ATRACE_CALL`。
 
-查找模式是：Perfetto 中的 slice 名如果是 `ClassName::methodName` 的格式，通常来自 `ATRACE_CALL()` 或 `ATRACE_NAME()`，直接在对应目录下搜索这个函数名。如果 slice 名是自定义字符串（如 `"measure"`、`"draw"`），则搜索 `traceBegin` 或 `ATRACE_BEGIN` 加上这个字符串。
+反查规则需要区分宏族。Perfetto 中看到的 slice 名来源取决于模块使用的宏：
+
+- **通用模块**（`ATRACE_CALL()` / `ATRACE_NAME()`）：只含函数名（`composite`），不含类名
+- **SurfaceFlinger**（`SFTRACE_NAME` / `SFTRACE_ASYNC_FOR_TRACK_BEGIN`）：可含类名 + vsyncId
+- **自定义字符串**（`Trace.traceBegin()` / `ATRACE_BEGIN()`）：slice 名就是传入的字符串
+
+查找步骤：先按 slice 名在 cs.android.com 搜索，确认对应的宏族（`ATRACE_*`、`SFTRACE_*`、`Trace.traceBegin` 等），再根据宏的展开方式找到源码位置。不要假设 slice 名的格式固定不变。
 
 **异步 Trace** 要按 name + cookie 配对。Java 层搜索 `Trace.asyncTraceBegin()` / `Trace.asyncTraceEnd()`，公共 API 场景还会看到 `Trace.beginAsyncSection()` / `Trace.endAsyncSection()`；Native 层搜索 `ATRACE_ASYNC_BEGIN` / `ATRACE_ASYNC_END`。Perfetto 中这类 slice 可能跨线程、跨时间段出现，不能只按相邻 begin/end 读，要看同名事件和同一个 cookie。
 
