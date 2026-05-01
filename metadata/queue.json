@@ -10212,6 +10212,26 @@
       "added_at": "2026-05-01T08:14:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-05-01-08-review.md"
+    },
+    {
+      "section": "14.13",
+      "section_title": "14.13 Hook 基础设施与性能工具实现原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] mprotect 16KB 页大小约束表述错误，需修正 Hook 适配逻辑",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md:L309-L315, L626-L634",
+          "detail": "正文把 mprotect 的约束写成“地址和长度都必须按页大小落在边界”“size 必须是 16KB 的倍数，否则 EINVAL”。Linux/Android mprotect 的硬约束是起始 addr 必须页对齐；len 会覆盖并按页范围处理，非页大小整数倍本身通常不会导致 EINVAL。这个错误会误导 Hook 库 16KB 适配检查，把真正需要修的 begin/page_start/page_span 计算写错。",
+          "suggestion": "改为：用 getpagesize()/sysconf(_SC_PAGESIZE) 计算 page_start = addr & ~(page_size-1)，page_end = align_up(addr+patch_len, page_size)，len = page_end - page_start；强调 addr 对齐与覆盖范围计算，不要声称 len 必须由调用方传入页大小整数倍。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T08:27:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
