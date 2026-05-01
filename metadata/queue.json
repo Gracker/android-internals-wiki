@@ -3335,7 +3335,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T08:53:48+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T10:46:10.516173",
+      "completed_reason": "FPS SQL已添加track过滤；queueBuffer已改为track_id参数化；5ms阈值已修正为流畅度风险信号；案例数据来源已拆分；CameraHal::openSession已标注vendor-specific并提供AOSP fallback；HAL 3.5版本边界已澄清；CamX/CHI管线观测点已补充"
     },
     {
       "section": "15",
@@ -4224,7 +4226,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T10:57:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T10:46:10.516173",
+      "completed_reason": "connectFailed懒创建attempt已修复(避免空attempt归因污染)；requestHeadersEnd回调已补充；TTFB起点已修正为requestHeadersEnd(无body)/requestBodyEnd(有body)；阶段表已拆分Headers/Body"
     },
     {
       "section": "19.27",

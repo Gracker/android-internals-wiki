@@ -10,11 +10,11 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 sources:
   - "https://square.github.io/okhttp/features/events/"
   - "https://square.github.io/okhttp/features/interceptors/"
@@ -122,6 +122,8 @@ private class NetworkMetricEventListener(
         var secureStartNs: Long? = null,
         var secureEndNs: Long? = null,
         var requestHeadersStartNs: Long? = null,
+        var requestHeadersEndNs: Long? = null,
+        var requestBodyStartNs: Long? = null,
         var requestBodyEndNs: Long? = null,
         var responseHeadersStartNs: Long? = null,
         var responseBodyEndNs: Long? = null,
@@ -147,6 +149,10 @@ private class NetworkMetricEventListener(
     }
 
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
+        // 懒创建：如果当前 attempt 已有 failure（上一次 connectFailed），创建新 attempt
+        if (currentAttempt().failure != null && currentAttempt().connectStartNs == null) {
+            attempts += Attempt()
+        }
         currentAttempt().connectStartNs = clock()
     }
 
@@ -175,11 +181,23 @@ private class NetworkMetricEventListener(
         ioe: IOException
     ) {
         currentAttempt().failure = ioe.javaClass.simpleName
-        attempts += Attempt()
+        // 不在这里创建新 attempt，等下一次 connectStart/dnsStart 时再懒创建
+        // 如果这是最后一次失败，callFailed 会把当前 attempt（含 failure 信息）记录下来
+        // 避免产生一个空 attempt 导致 attempt_count 多算、retry_overhead_ms 归因被污染
     }
 
     override fun requestHeadersStart(call: Call) {
         currentAttempt().requestHeadersStartNs = clock()
+    }
+
+    // OkHttp 3.11+ 提供 requestHeadersEnd 回调，用于精确分隔 header 写入与 body 写入
+    override fun requestHeadersEnd(call: Call, request: Request) {
+        currentAttempt().requestHeadersEndNs = clock()
+    }
+
+    // requestBodyStart 标记 body 写入开始（有请求体时才有）
+    override fun requestBodyStart(call: Call) {
+        currentAttempt().requestBodyStartNs = clock()
     }
 
     override fun requestBodyEnd(call: Call, byteCount: Long) {
@@ -200,7 +218,12 @@ private class NetworkMetricEventListener(
 
     override fun callFailed(call: Call, ioe: IOException) {
         currentAttempt().failure = ioe.javaClass.simpleName
-        sink.record(call.request(), callId, callStartNs, clock(), attempts)
+        // 过滤没有任何阶段时间的空 attempt，避免归因污染
+        val validAttempts = attempts.filter { att ->
+            att.dnsStartNs != null || att.connectStartNs != null ||
+            att.requestHeadersStartNs != null || att.failure != null
+        }
+        sink.record(call.request(), callId, callStartNs, clock(), validAttempts)
     }
 }
 ```
@@ -343,13 +366,14 @@ eBPF 在 Android 系统侧已经广泛用于网络统计，但普通应用通常
 | DNS | `dnsStart` | `dnsEnd` | 连接复用时通常为空 |
 | TCP 握手 | `connectStart` | `connectEnd` | 仅新建连接出现 |
 | TLS 握手 | `secureConnectStart` | `secureConnectEnd` | 仅 HTTPS 且新握手时出现 |
-| Request 发送 | `requestHeadersStart` | `requestBodyEnd` | 上传大包时这一段会被放大 |
-| Server Wait / TTFB | `requestBodyEnd` | `responseHeadersStart` | 只看同一次 attempt |
+| Request Headers | `requestHeadersStart` | `requestHeadersEnd` | header 写入耗时，通常很短 |
+| Request Body | `requestHeadersEnd` / `requestBodyStart` | `requestBodyEnd` | 无请求体时此段为空 |
+| Server Wait / TTFB | `requestHeadersEnd`（无 body）或 `requestBodyEnd`（有 body） | `responseHeadersStart` | 只看同一次 attempt |
 | Response 接收 | `responseHeadersStart` | `responseBodyEnd` | 下载大包、弱网抖动会放大 |
 
 几个实现细节要统一：
 
-- 没有请求体的场景，TTFB 可以从 `requestHeadersStart` 算到 `responseHeadersStart`。
+- 没有请求体的场景，TTFB 从 `requestHeadersEnd` 算到 `responseHeadersStart`（不包括客户端写 header 的时间）。有请求体时，TTFB 从 `requestBodyEnd` 算到 `responseHeadersStart`。
 - 连接复用时，DNS/TCP/TLS 应该记为 `null` 或 `0`，不能拿上一次连接的耗时回填。
 - HTTP/2 多路复用时，请求共享一条连接，阶段耗时和 socket 级事件不再一一对应。
 
