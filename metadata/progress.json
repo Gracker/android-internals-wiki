@@ -863,7 +863,7 @@
       "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
       "title": "渲染机制的版本演进",
       "chapter": "'2.9'",
-      "section": "'2.9'",
+      "section": "2.9",
       "status": "ready-for-review",
       "drafted_date": "2026-03-30",
       "drafted_by": "openclaw-task2a",
@@ -873,21 +873,22 @@
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-30",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-05-01",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T01:29:40+08:00",
+      "last_task9_at": "2026-05-01T11:20:00+08:00",
       "last_task2b_at": "2026-04-26T01:40:00+08:00",
       "task2b_fixed_by": "openclaw-task2b",
       "updated_by": "openclaw-task2b",
       "updated_date": "2026-04-26",
-      "task6_reviewed_date": "2026-04-30"
+      "task6_reviewed_date": "2026-04-30",
+      "task9_review_notes": "2026-05-01 task9 deep-review: needs-rework。P0 0 / P1 3 / P2 1。"
     },
     "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md": {
       "path": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
@@ -1240,23 +1241,24 @@
         "2.13",
         "2.15"
       ],
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-30",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-05-01",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T21:29:00+08:00",
+      "last_task9_at": "2026-05-01T11:20:00+08:00",
       "last_task2b_at": "2026-04-26T23:53:43+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
       "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
-      "task6_reviewed_date": "2026-04-30"
+      "task6_reviewed_date": "2026-04-30",
+      "task9_review_notes": "2026-05-01 task9 deep-review: needs-rework。P0 1 / P1 3 / P2 1。"
     },
     "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md": {
       "path": "src/part1-fundamentals/ch02-rendering/17-frame-pacing.md",
@@ -5003,30 +5005,31 @@
       "title": "AOSP 代码阅读",
       "chapter": "15.7",
       "section": "15.7",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-04",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-25",
       "last_verified_against": "AOSP android-16.0.0_r1（frameworks/base/core/java/android/app、frameworks/base/services/core/java/com/android/server/am、frameworks/base/services/core/java/com/android/server/wm、system/core/libutils/include/utils/Trace.h、system/core/libcutils/include/cutils/trace.h、frameworks/native/services/surfaceflinger）",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-05-01",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T19:35:26+08:00",
+      "last_task9_at": "2026-05-01T11:20:00+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b",
       "last_task2b_at": "2026-04-25T19:43:07+08:00",
       "task6_reviewed_date": "2026-05-01",
-      "review_round": 4
+      "review_round": 4,
+      "task9_review_notes": "2026-05-01 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
     },
     "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md": {
       "path": "src/part3-tools/ch15-methodology/08-empirical-performance-issues.md",
@@ -8395,7 +8398,7 @@
       }
     }
   },
-  "last_updated": "2026-05-01",
+  "last_updated": "2026-05-01T11:20:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10072,5 +10075,94 @@
       }
     ],
     "notes": "回炉重审通过，无 B 类大问题。task9 未通过，不可自动晋升。"
+  },
+  "section_2_9": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-05-01T11:20:00+08:00",
+    "title": "渲染机制的版本演进",
+    "section": "2.9",
+    "path": "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+    "task9_reviewed_date": "2026-05-01",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-05-01 task9 deep-review: needs-rework。P0 0 / P1 3 / P2 1。"
+  },
+  "section_2_16": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-05-01T11:20:00+08:00",
+    "title": "Sync Fence 框架与帧同步机制",
+    "section": "2.16",
+    "path": "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
+    "task9_reviewed_date": "2026-05-01",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-05-01 task9 deep-review: needs-rework。P0 1 / P1 3 / P2 1。"
+  },
+  "section_15_7": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "task2b_state": "fixed",
+    "last_task9_at": "2026-05-01T11:20:00+08:00",
+    "title": "AOSP 代码阅读",
+    "section": "15.7",
+    "path": "src/part3-tools/ch15-methodology/07-aosp-reading.md",
+    "task9_reviewed_date": "2026-05-01",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-05-01 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
+  },
+  "2026-05-01-11-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "2.9",
+      "2.16",
+      "15.7"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+      "src/part1-fundamentals/ch02-rendering/16-sync-fence.md",
+      "src/part3-tools/ch15-methodology/07-aosp-reading.md"
+    ],
+    "timestamp": "2026-05-01T11:20:00+08:00",
+    "results": {
+      "2.9": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 3,
+        "p2": 1
+      },
+      "2.16": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 3,
+        "p2": 1
+      },
+      "15.7": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 2
+      }
+    },
+    "auto_finalized": [
+      "15.7"
+    ],
+    "queue_added": [
+      "2.9",
+      "2.16"
+    ],
+    "suggestions_added": [
+      "2.9",
+      "2.16",
+      "15.7"
+    ],
+    "log": "logs/deep-review/2026-05-01-11-deep-review.md"
   }
 }
