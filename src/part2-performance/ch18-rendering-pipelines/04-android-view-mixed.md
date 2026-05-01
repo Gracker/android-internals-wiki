@@ -1,8 +1,16 @@
 ---
 title: "Android View 混合渲染链路"
 chapter: "18.4"
+section: "18.4"
 status: ready-for-review
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
+sources:
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp"
+  - type: aosp
+    path: "frameworks/native/libs/gui/SurfaceComposerClient.cpp"
+  - type: official
+    path: "https://developer.android.com/reference/android/view/SurfaceView"
 tags: ["hybrid-composition", "SurfaceView", "mixed-rendering", "parallel-pipeline", "video-playback"]
 related_chapters: ["2.1", "2.6", "18.2", "18.6"]
 created_by: "rendering-pipelines-merge"
@@ -12,10 +20,11 @@ task6_state: revisiting
 task9_state: "reviewed"
 task2b_state: "pending"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-17"
+reviewed_date: "2026-05-02"
 task6_result: pass-light-edit
+review_note: "Task 6 二审(2026-05-02):补 frontmatter section/sources;task9 仍 needs-rework"
 task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-01"
+task9_reviewed_date: "2026-05-02"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-01T18:51:19+08:00"
 ---
