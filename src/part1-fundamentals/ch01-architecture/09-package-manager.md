@@ -358,6 +358,36 @@ Startup Profiles 作用在 DEX 布局。它们告诉构建工具哪些启动关�
 
 公开资料把 Android 16 的一条安装优化路径称为 Cloud Compilation。当前能稳妥写下来的信息很有限，本节只保留和安装性能直接相关的边界，不把缺少一手佐证的实现细节写成定论。
 
+
+### App Archiving 机制（Android 15+）
+
+Android 15 引入 OS 级 App Archiving，通过 `PackageArchiver`（`services/core/java/com/android/server/pm/PackageArchiver.java`）实现。归档后的应用移除 APK 和缓存文件，但保留用户数据，Launcher 显示灰显图标。
+
+**ActivityStarter 拦截入口**（`ActivityStarter.java` 行 1155-1167）：当 `startActivity` 无法解析 Activity 类时（`err == START_CLASS_NOT_FOUND && aInfo == null`），若 `Flags.archiving()` 为 true，则调用 `PackageArchiver.isIntentResolvedToArchivedApp()` 检查 Intent 是否指向归档应用：
+
+```java
+if (isArchivingEnabled()) {
+    PackageArchiver packageArchiver = mService
+            .getPackageManagerInternalLocked()
+            .getPackageArchiver();
+    if (packageArchiver.isIntentResolvedToArchivedApp(intent, mRequest.userId)) {
+        err = packageArchiver
+                .requestUnarchiveOnActivityStart(
+                        intent, callingPackage, mRequest.userId, realCallingUid);
+    }
+}
+```
+
+**isIntentResolvedToArchivedApp 逻辑**（PackageArchiver.java 行 377-400）：检查 Intent 的 component 是否在 `ArchiveState.getActivityInfos()` 中出现过。若是，`requestUnarchiveOnActivityStart()` 向应用的 installer（Google Play 等）发送 `ACTION_UNARCHIVE_PACKAGE` Intent，完成下载恢复。
+
+**ArchiveState 数据结构**（`services/core/java/com/android/server/pm/pkg/ArchiveState.java`）：保存 `List<ArchiveActivityInfo>`（activity title、originalComponentName、iconBitmap）、`installerTitle`、`archiveTimeMillis`。
+
+**与 LMK 的关系**：App Archiving 与 LowMemoryKiller 无直接关联。归档操作通过 `DELETE_ARCHIVE | DELETE_KEEP_DATA` 标志位移除 APK，data 目录保留，归档 App 不直接触发 LMK。
+
+**SDM（Signature Delegation Mechanism）**：Android 16 引入的签名委托格式，`verifySdmSignatures()` 在安装时验证 `.sdm` 文件签名与 APK 一致性，与 App Archiving 是独立机制。
+
+[AIW-源码调研-2026-05-01: 基于 AOSP mainline PackageArchiver.java / ActivityStarter.java / ArchiveState.java 一手源码验证]
+
 ### 目前能确认的范围
 
 - **分发侧**：这条路径指向 Google Play 分发路径，普通侧载不在这个范围内。

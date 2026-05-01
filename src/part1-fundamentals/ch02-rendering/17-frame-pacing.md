@@ -61,10 +61,10 @@ related_chapters: ["2.2", "2.3", "2.4", "2.9", "2.13", "2.16", "2.18", "7.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-04-30"
 reviewed_date: "2026-04-28"
@@ -407,6 +407,8 @@ I/FrameStatistics: frame latency: <bucket histogram>
 版本边界最好按三条线一起记：一条是 Java / NDK Choreographer 的接入边界，一条是 `SwappyDisplayManager` 这条 Java helper 什么时候进入又什么时候退出，一条是 AGDK 文档和 AOSP 仓库现在分别放在哪里。把这三条线记住，排查时就不会把 API 级别、库形态和仓库位置混成一团。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp, frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.h, developer.android.com/games/sdk/frame-pacing]
 
 Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swappy 解决的是 app submit pacing 和 frame-rate vote，平台 ARR 解决的是硬件 mode switch、policy、SurfaceFlinger 如何跟随活跃内容。把这两层拆开看，trace 里的因果关系会干净很多。
+
+**Swappy 的 frame-rate vote 路径**：Swappy 内部通过 `setPreferredRefreshPeriod()` 计算目标帧率后，实际调用的是 `ANativeWindow_setFrameRate(mWindow, frameRate, ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_DEFAULT)`（条件是 `mANativeWindow_setFrameRate` 函数指针已加载且 `mWindow` 非 null），否则回退到通过 `SwappyDisplayManager` 设置 DisplayManager 的 preferred mode id。如果应用在同一个 `ANativeWindow` 上同时手动调用了 `Surface.setFrameRate()` 或 `ANativeWindow_setFrameRate()`，后调用的会覆盖先前的 vote。SurfaceFlinger 侧会对同一 layer 上来自不同来源的 frame-rate vote 做合并决策（具体策略见 §2.18），应用层不需要关心合并逻辑，但需要避免 Swappy vote 和手动 vote 互相覆盖导致的节奏不稳定。
 
 几条常见误区也顺手记在这里。
 

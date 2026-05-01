@@ -427,6 +427,58 @@ Android 17 DeliQueue 对工具链的具体影响：
 
 <!-- AIW-源码调研-2026-04-26 END -->
 
+<!-- AIW-源码调研-2026-05-01 -->
+## 补充：DeliQueue 反射失效后的 Idle 判断替代方案
+
+本节于 2026-05-01 通过源码调研补充以下发现，针对 §1.13 / §1.5 / §1.14 的盲区：
+
+### mMessages 反射失效的根因
+
+DeliQueue 的内部数据结构不再是链表，而是：
+- **Trebier Stack**（原子指针 mStack）：任何线程通过 CAS 无锁并发入队
+- **Min-Heap**（Looper 线程独享）：按 when 时间顺序出队
+
+mMessages 作为字段被保留用于二进制兼容性，但永远返回 null。官方文档明确说明：`mMessages` **always null** in the new implementation。
+
+### 反射失效影响的具体场景
+
+| 依赖方 | 影响 | 适配方式 |
+|--------|------|---------|
+| **Espresso** | 依赖反射检查消息队列状态 | ≥ 3.7.0，使用 TestLooperManager API |
+| **Robolectric** | 内部 MessageQueue 检查逻辑失效 | 4.17+，@LooperMode(PAUSED) |
+| **APM SDK** | 依赖反射采样消息队列判断 idle | 需适配 DeliQueue API |
+| **主线程 idle 判断脚本** | mMessages 永远为 null | 使用 IdleHandler 机制 |
+
+### IdleHandler：DeliQueue 下判断主线程 idle 的正确方式
+
+```java
+// 正确方式：使用 IdleHandler 回调
+Looper.myQueue().addIdleHandler(new IdleHandler() {
+    @Override
+    public boolean queueIdle() {
+        // 主线程当前处于 idle 状态
+        // 适合执行低优先级任务（GC、预加载等）
+        return false;  // false = 一次性触发，true = 保留重复触发
+    }
+});
+```
+
+IdleHandler 只在队列为空或最早消息尚未到期时触发。DeliQueue 的 Min-Heap 使 IdleHandler 判断更精确，不需要通过反射访问内部数据结构。
+
+### 与 SemiConcurrentMessageQueue / ConcurrentMessageQueue 的关系
+
+搜索结果未能确认这两个类作为独立公开类的存在。它们可能是 Android 16 内部测试版本的过渡命名，最终以 DeliQueue 为公开命名。版本演进应修正为：
+
+| 版本 | 实现 | 数据结构 |
+|------|------|----------|
+| Android 14 (Legacy) | 单链表 + monitor lock | 单向链表 |
+| Android 15-16 (内部试点) | 多种变体并行（allowlist 控制） | Treiber Stack + SkipList/PriorityQueue |
+| Android 17+ (默认) | DeliQueue（lock-free） | Treiber Stack + Min-Heap |
+
+> 注：关于 ConcurrentMessageQueue/SemiConcurrentMessageQueue 是否作为独立类存在于 AOSP，需进一步通过 cs.android.com 直接访问源码确认。本次调研结论基于搜索结果推断。
+
+<!-- AIW-源码调研-2026-05-01 END -->
+
 
 ## 参考资料
 

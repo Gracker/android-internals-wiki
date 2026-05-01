@@ -31,10 +31,10 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-04-21T08:24:09+08:00"
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-29"
 task9_reviewed_by: openclaw-task9
@@ -85,12 +85,12 @@ DSU 提供了集群内的共享 L3 缓存（最高可达 32MB）和一致性的�
 DynamIQ 带来了几个关键优势：
 
 - **更灵活的核心配置**：不再受限于对称的集群配置，可以在一个集群内自由组合大核、中核、小核。比如 1 个超大核 + 3 个大核 + 4 个小核，这种 1+3+4 的配置在旗舰 SoC 上非常常见。
-- **独立的核心控制**：每个核心可以独立控制频率、电压和休眠状态。在传统 big.LITTLE 中，同一集群内的核心通常共享同一个电压/频率域（DVFS 域），必须同步变频；DynamIQ 允许每个核心有不同的运行频率。
+- **独立的核心控制**：DynamIQ 架构支持每个核心独立的频率和休眠控制。传统 big.LITTLE 中同一集群内的核心共享同一个电压/频率域，必须同步变频；DynamIQ 在架构层面提供了 per-core DVFS 的能力。但需要注意，**架构能力不等于设备实现**——实际 SoC 出于功耗域设计和成本考量，仍可能把同类型核心归入同一个 cpufreq policy 组，在 Perfetto 中表现为同簇核心频率联动。区分"架构能力"和"实装策略"的方式是看 `/sys/devices/system/cpu/cpu<N>/cpufreq/related_cpus`，如果多个核心出现在同一列表中，说明它们共享一个 DVFS 域。
 - **更低迁移延迟**：由于大核和小核共享 L3 缓存，任务在核心间迁移时不再需要通过 CCI 互联搬运缓存行，迁移延迟从"跨集群级别"降低到"集群内级别"。
 - **更大的 L3 缓存**：DSU-120（配合 Armv9 世代的核心）支持最高 32MB L3 缓存，显著减少了核心访问主存的次数，对内存密集型任务的性能提升尤为明显。
-- **16KB 页协同优化**：DSU-120 支持通过硬件寄存器开启 16KB 页模式，修正 Snoop Filter 的哈希索引。在 4KB 页模式下，相邻物理页的哈希值容易集中到少数桶，多核共享缓存时产生探测冲突（probe collision），延迟跨核缓存一致性检查。16KB 模式扩大了哈希空间，减少了冲突概率，跨核缓存共享延迟显著降低。这是 16KB 页切换在硬件互联层的收益，与 TLB Reach 的软件层收益叠加。
+- **16KB 页与互联层的潜在收益**：理论上，更大的页粒度可能降低 DSU 内部 snoop filter 的探测频率——每个页表条目覆盖更大的物理地址范围，跨核缓存一致性事务的粒度也随之放大。但这一机制取决于 SoC 厂商对 DSU-120 的具体实装方式，公开 ARM TRM 目前未明确记载"16KB 页模式"作为 DSU 的可配置选项。16KB 页在 CPU 侧的确定性收益主要来自 TLB Reach 提升（§4.7 有展开），互联层的收益可作为性能分析的观察方向，但不应作为已验证事实引用。
 
-[已验证: ARM 官方文档, developer.arm.com — DynamIQ Shared Unit-120 (DSU-120)]
+[待验证: ARM DSU-120 TRM 中与页粒度相关的寄存器配置；如有确切证据再补实]
 
 ### 在 Perfetto 中识别核心类型
 
@@ -99,11 +99,16 @@ DynamIQ 带来了几个关键优势：
 不过不能完全依赖编号来判断核心类型——最可靠的方式是查看每个核心的 `cpuinfo_max_freq`。在 Perfetto 中，我们可以通过 SQL 查询获取：
 
 ```sql
--- 查看每个 CPU 的最大频率
-SELECT cpu, max_freq / 1000 as max_freq_mhz
-FROM cpu_frequency_limits
+-- 查看每个 CPU 在 trace 期间观测到的最高运行频率
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
+
+SELECT cpu, max(freq) / 1000.0 AS observed_max_freq_mhz
+FROM cpu_frequency_counters
+GROUP BY cpu
 ORDER BY cpu;
 ```
+
+> 注意：`cpu_frequency_counters` 返回的是 trace 期间实际观测到的频率，不等同于 sysfs 的 `cpuinfo_max_freq`。如果某个核心在 trace 期间没有跑到最高频，查询结果会偏低。需要完整频率上限时，仍应读取 `/sys/devices/system/cpu/cpu<N>/cpufreq/cpuinfo_max_freq`。
 
 或者在设备上直接读取 sysfs 节点：
 
@@ -188,13 +193,15 @@ $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
 
 [来源: Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md]
 
-Android 内核中有一个重要的客制化机制叫 **RTG（Related Thread Group）**。它的核心思想是：把一组有关联的线程（比如同一个 App 的主线程、RenderThread、Binder 线程）放在同一个 CPU 集群上，以利用集群内的共享缓存，减少缓存未命中。
+部分 Android 厂商内核（以 Qualcomm vendor 分支为代表）中有一个客制化机制叫 **RTG（Related Thread Group）**。它的核心思想是：把一组有关联的线程（比如同一个 App 的主线程、RenderThread、Binder 线程）放在同一个 CPU 集群上，以利用集群内的共享缓存，减少缓存未命中。
 
 RTG 维护了一个 `preferred_cluster`（偏好集群）字段，根据组内所有线程的累计负载来决定应该优先使用哪个集群。当组内某个线程被设置了 `SCHED_BOOST_ON_BIG` 属性时，整个组都会被"boost"到大核集群上。
 
 RTG 还有一个重要功能是**负载聚合（Colocation Boost）**：当 RTG 组内的高负载线程被调度到大核上时，schedutil governor 在计算大核的频率时，会把 RTG 组的累计负载也纳入考虑，而不仅仅是当前核心上的单个任务负载。大核频率会被适当拉高，以更好地服务整组线程。
 
-[已验证: L2 — AOSP/Android kernel 源码, kernel/sched/ 相关文件]
+> **注意：** RTG 并非 AOSP/GKI 主线机制，在 android16-6.12 common kernel 的 `kernel/sched/` 中未找到对应符号。它主要存在于 Qualcomm 等厂商的 vendor kernel 分支中。GKI 主线上实现类似效果的机制包括 task_profiles、cpuset、uclamp 和 Power HAL 提示链（§5.2、§5.4）。
+
+[来源: Personal-Knowlodge/source/2026-03-08_wechat_调度器分支之RTG.md — 可能基于 vendor kernel 分析]
 
 ### 迁移的性能影响
 
@@ -255,19 +262,23 @@ schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CP
 
 ```c
 // Linux kernel: kernel/sched/cpufreq_schedutil.c
-// @ linux-6.6
-static void sugov_get_util(struct sugov_cpu *sg_cpu)
+// @ android16-6.12（GKI）
+static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
 {
     struct rq *rq = cpu_rq(sg_cpu->cpu);
-    unsigned long util = cpu_util_cfs(rq);
+    // boost 由 schedutil 内部传入，用于 I/O boost 等场景的临时抬升
+    unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu) + boost;
     unsigned long max = arch_scale_cpu_capacity(sg_cpu->cpu);
 
     sg_cpu->max = max;
     sg_cpu->bw_dl = cpu_bw_dl(rq);
-    // effective_cpu_util() 内部会合并 CFS util + RT util + DL util，
+    // effective_cpu_util() 合并 CFS + RT + DL 的利用率，
     // 并根据 FREQUENCY_UTIL 类型应用 uclamp 的 clamp 范围
     sg_cpu->util = effective_cpu_util(sg_cpu->cpu, util,
                                       FREQUENCY_UTIL, NULL);
+    // Android 16 GKI 6.12 新增 sched_ext 性能提示
+    if (scx_cpuperf_target(sg_cpu->cpu))
+        sg_cpu->util = max(sg_cpu->util, *scx_cpuperf_target(sg_cpu->cpu));
 }
 ```
 
