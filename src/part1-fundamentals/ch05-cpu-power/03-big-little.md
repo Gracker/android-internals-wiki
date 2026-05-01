@@ -30,11 +30,11 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
-last_task2b_at: "2026-04-21T08:24:09+08:00"
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+last_task2b_at: "2026-05-01T23:43:12.673681"
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
@@ -262,30 +262,30 @@ schedutil 的调频决策可以简化为以下步骤：
 schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CPU 上所有调度类的利用率。Linux 6.6 中的实际签名如下（简化展示关键逻辑）：
 
 ```c
-// Linux kernel: kernel/sched/cpufreq_schedutil.c
-// @ android16-6.12（GKI）
+// android16-6.12（GKI）kernel/sched/cpufreq_schedutil.c
+// 简化展示核心路径，省略部分变量声明和边界处理
 static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
 {
-    struct rq *rq = cpu_rq(sg_cpu->cpu);
-    // boost 由 schedutil 内部传入，用于 I/O boost 等场景的临时抬升
+    unsigned long min, max;
     unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu) + boost;
-    unsigned long max = arch_scale_cpu_capacity(sg_cpu->cpu);
 
-    sg_cpu->max = max;
-    sg_cpu->bw_dl = cpu_bw_dl(rq);
-    // effective_cpu_util() 合并 CFS + RT + DL 的利用率，
-    // 并根据 FREQUENCY_UTIL 类型应用 uclamp 的 clamp 范围
-    sg_cpu->util = effective_cpu_util(sg_cpu->cpu, util,
-                                      FREQUENCY_UTIL, NULL);
-    // Android 16 GKI 6.12 新增 sched_ext 性能提示
-    if (scx_cpuperf_target(sg_cpu->cpu))
-        sg_cpu->util = max(sg_cpu->util, *scx_cpuperf_target(sg_cpu->cpu));
+    max = arch_scale_cpu_capacity(sg_cpu->cpu);
+    // effective_cpu_util 合并 CFS + RT + DL 利用率，
+    // 并根据 FREQUENCY_UTIL 类型应用 uclamp 约束
+    // 返回值即为用于频率选择的最终 util
+    util = effective_cpu_util(sg_cpu->cpu, util, &min, &max);
+
+    // bw_min: deadline 带宽的最低频率保障
+    sg_cpu->bw_min = min;
+    // sugov_effective_cpu_perf: 综合 util、max、boost，
+    // 计算最终的目标性能值
+    sg_cpu->util = sugov_effective_cpu_perf(sg_cpu->cpu, util, min, max);
 }
 ```
 
-这段代码有三个要点：第一，函数返回 `void`，结果直接写入 `sg_cpu` 结构体的 `max`、`bw_dl`、`util` 字段，而不是返回一个数值。第二，实际利用率汇总由 `effective_cpu_util()` 完成——它内部会把 CFS、RT、deadline 三类调度实体的利用率合并，并根据传入的 `FREQUENCY_UTIL` 类型应用 uclamp（utility clamping）的约束范围。第三，RT 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：当检测到 RT/DL 任务有带宽需求时，schedutil 会直接映射到最高频率，而不是按比例缩放。
+这段代码的要点：`effective_cpu_util()` 是核心汇总函数，把 CFS、RT、deadline 三类调度实体的利用率合并，并根据 uclamp 约束裁剪出最终的 `util` 和 `min/max` 范围。android16-6.12 与 Linux v6.6 mainline 的差异在于：mainline 的 `sugov_get_util` 使用 `FREQUENCY_UTIL` / `ENERGY_UTIL` 两个枚举区分调频与选核，而 android16-6.12 改为直接通过 `effective_cpu_util` + `sugov_effective_cpu_perf` 两个步骤完成，并引入了 `bw_min` 作为 deadline 带宽的下限保障。RT/DL 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：当检测到 RT/DL 有带宽需求时，schedutil 直接映射到最高频率。
 
-[已验证: Linux kernel 源码, kernel/sched/cpufreq_schedutil.c @ linux-6.6]
+[已验证: android16-6.12 kernel/sched/cpufreq_schedutil.c; Linux v6.6 mainline 同文件对比]
 
 ### schedutil 与 EAS 的配合
 

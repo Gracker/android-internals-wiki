@@ -10,7 +10,7 @@ last_verified_against: "PowerManager#getThermalHeadroom docs + ADPF fixed-perfor
 confidence: medium
 sources:
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+    path: "frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java"
   - type: aosp
     path: "hardware/interfaces/thermal/2.0/IThermal.hal"
   - type: aosp
@@ -41,19 +41,19 @@ tags:
   - cpu-frequency
 reviewed_date: 2026-05-01
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: "openclaw-task9"
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 last_task9_at: "2026-05-01T18:51:19+08:00"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: fixed
+task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-24T07:52:07+08:00"
+last_task2b_at: "2026-05-01T23:43:12.672839"
 ---
 
 
@@ -162,7 +162,7 @@ step_wise 的工作方式：每次温度采样周期，检查当前温度是否�
 
 内核的 thermal core 够用了，但 Android 有自己的需求——Framework 需要统一管理温控策略，而不同厂商的硬件差异很大。Thermal HAL 就是这层抽象。
 
-**Thermal HAL 1.0（Android 9 及更低版本）** 采用轮询（polling）方式获取温度，这是最早的标准化 Thermal HAL 版本。Framework 定期调用 HAL 的 `getTemperatures()` 方法来读取各传感器数据。这种方式简单但效率低，而且延迟大——两次轮询之间可能错过了温度的快速上升。
+**Thermal HAL 1.0（Android 8 引入）** 采用轮询（polling）方式获取温度，这是最早的标准化 Thermal HAL 版本。Framework 定期调用 HAL 的 `getTemperatures()` 方法来读取各传感器数据。这种方式简单但效率低，而且延迟大——两次轮询之间可能错过了温度的快速上升。
 
 **Thermal HAL 2.0（Android 10+）** 引入了事件驱动的接口。当温度跨越阈值时，HAL 主动向 Framework 上报 `ThrottlingSeverity` 变化，而不是等 Framework 来问。从 Android 14 开始，HAL 接口从 HIDL 迁移到 AIDL（`android.hardware.thermal.IThermal`），但核心模型不变。
 
@@ -308,7 +308,7 @@ float headroom5s = pm.getThermalHeadroom(5); // 预测5秒后的状态
 
 ### Android 16：CPU/GPU 算力余量（SystemHealthManager）
 
-`getThermalHeadroom()` 只反映距 SEVERE 阈值的热余量，不区分 CPU 和 GPU 各自的负载压力。Android 16 引入了 `SystemHealthManager`（`android.os.SystemHealthManager`），提供更细粒度的算力余量查询：
+`getThermalHeadroom()` 只反映距 SEVERE 阈值的热余量，不区分 CPU 和 GPU 各自的负载压力。Android 16 引入了 `SystemHealthManager`（`android.os.health.SystemHealthManager`），提供更细粒度的算力余量查询：
 
 - `getCpuHeadroom(CpuHeadroomParams)` — 估算近期 CPU 可用算力百分比，返回值范围 `[0, 100]`
 - `getGpuHeadroom(GpuHeadroomParams)` — 估算近期 GPU 可用算力百分比，返回值范围 `[0, 100]`
@@ -317,11 +317,13 @@ float headroom5s = pm.getThermalHeadroom(5); // 预测5秒后的状态
 
 边界条件：
 - 设备不支持时抛 `UnsupportedOperationException`
-- 参数无效或采样过密时返回 `Float.NaN`
+- 参数无效时抛 `IllegalArgumentException`
+- 暂时无法获取结果时返回 `Float.NaN`（如采样过密或数据尚未就绪）
 - 不要在主线程或关键渲染路径上同步调用，查询本身有 IPC 开销
-- 最小轮询间隔建议 ≥ 500ms
+- 最小轮询间隔应通过 `getCpuHeadroomMinIntervalMillis()` / `getGpuHeadroomMinIntervalMillis()` 查询，并非固定值
 
 ```java
+// import android.os.health.SystemHealthManager;
 SystemHealthManager shm = getSystemService(SystemHealthManager.class);
 float cpuHeadroom = shm.getCpuHeadroom(new CpuHeadroomParams.Builder().build());
 float gpuHeadroom = shm.getGpuHeadroom(new GpuHeadroomParams.Builder().build());
@@ -489,7 +491,7 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 
 充电本身会产生热量。当电池温度过高时，系统会降低充电电流甚至暂停充电。这个逻辑通常在充电 IC 的固件中实现，但也受 Thermal HAL 的控制。
 
-[已验证: AOSP ThermalManagerService.java @ android16-qpr2 (路径含 thermal/ 子目录), 官方文档 source.android.com/docs/core/thermal]
+[已验证: AOSP ThermalManagerService.java @ android16-qpr2, 官方文档 source.android.com/docs/core/thermal]
 
 ## 如何在性能测试中排除温控干扰
 
@@ -629,7 +631,7 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 | Android 版本 | 变化 | 影响 |
 |-------------|------|------|
 | 7.0 (API 24) | 引入 Sustained Performance Mode | 首次提供可预测持续性能的 API |
-| 9 (API 28) | Thermal HAL 1.0（轮询模式） | 标准化温度读取接口 |
+| 8 (API 26) | Thermal HAL 1.0（轮询模式） | 首个标准化温度读取接口 |
 | 10 (API 29) | Thermal HAL 2.0（事件驱动）+ PowerManager Thermal API | App 可感知温控状态 |
 | 11 (API 30) | `getThermalHeadroom()` API | 支持前瞻性热余量预测 |
 | 14 (API 34) | Thermal HAL 从 HIDL 迁移至 AIDL | 接口现代化，无功能变化 |
