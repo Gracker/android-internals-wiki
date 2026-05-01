@@ -27,11 +27,11 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-22"
 task9_result: needs-rework
@@ -234,9 +234,17 @@ Perfetto 自带的 Metric 涵盖了常见场景。一些常用的：
 
 ### 旧版 Metric vs Trace Summarization
 
-Perfetto 的 Metric 系统正在经历一次代际更替。上面讲的基于 `.sql` + `.proto` + `--run-metrics` 的工作方式是旧版（v1）Metric 系统。Perfetto 官方推荐新项目使用 **Trace Summarization** API——它是对旧版 Metric 的封装和升级，提供了更稳定的接口和更好的工具链支持。Trace Summarization 通过 Python API 的 `tp.trace_summary()` 调用，返回结构化的 protobuf 消息。在 Python API 一节中我们会详细讲到。
+Perfetto 的自动化分析能力分三层，由底到顶：
 
-如果团队已经在维护旧版 Metric，它们仍然完全可用，不需要立即迁移。但新写的 Metric 更适合直接基于 Trace Summarization 的框架来组织。
+1. **旧版 Metric（v1）**：基于 `.sql` + `.proto` + `--run-metrics`。完全可用，但 SQL 直接操作底层表结构，Trace 格式变化时可能需要调整。
+
+2. **Perfetto Standard Library**：官方维护的标准化 SQL 模块集合，通过 `referenced_modules` 引用。前面的 Trace Summarization 示例中 `referenced_modules: "linux.memory.process"` 就是引用了 Standard Library 的 `linux.memory.process` 模块，它提供了 `memory_rss_and_swap_per_process` 表等标准化视图。已有的官方模块包括 `android_cpu`、`android_startup`、`android_jank`、`linux.memory.process` 等。优先复用这些模块，避免从零写底层 SQL。
+
+3. **Trace Summarization（v2）**：基于 Standard Library 模块之上的结构化指标提取 API。通过 `metric_spec` + `referenced_modules` + `group_by` + `aggregates` 声明式定义指标，Python API 调用 `tp.trace_summary()` 返回结构化 `TraceSummary`。
+
+三层的关系是：**Standard Library 提供稳定的中间表和视图 → Trace Summarization 在这些表上声明聚合逻辑 → 旧版 Metric 是最底层的手写 SQL，仍有用但维护成本更高。** 实践中优先用 Standard Library 模块 + Trace Summarization，只有缺口指标才写自定义 PerfettoSQL 模块。
+
+如果团队已经在维护旧版 Metric，它们仍然完全可用，不需要立即迁移。但新写的 Metric 更适合直接基于 Standard Library + Trace Summarization 框架来组织。
 
 ## Perfetto 宏（Macros）与仪表板
 
@@ -340,7 +348,22 @@ print(results)
 
 `BatchTraceProcessor` 会并行加载和查询所有 Trace。它特别适合统计类分析，比如要看最近 100 次构建的冷启动时间分布，用 `query_and_flatten` 一条 SQL 就够了。
 
-需要注意的是，每个 Trace 加载后会完全驻留在内存中。如果 Trace 很大（几百 MB），同时加载几十个可能会撑爆内存。Perfetto 官方建议对于超大规模分析（数千个 Trace）使用 Bigtrace 方案，通过 Kubernetes 集群来分布式处理。
+需要注意的是，每个 Trace 加载后会完全驻留在内存中。如果 Trace 很大（几百 MB），同时加载几十个可能会撑爆内存。
+
+### BatchTraceProcessor vs Bigtrace
+
+当 Trace 数量超出单机内存能力时，有两个选择：
+
+| 维度 | BatchTraceProcessor | Bigtrace |
+|---|---|---|
+| 部署模式 | 单机多进程并行加载 | Kubernetes 集群分布式 |
+| 架构 | 本机并行加载多个 Trace | Orchestrator 分片调度 → Worker Pod 运行 TraceProcessor → 从 Object Store 读取 trace |
+| 适用规模 | 几十到几百个 Trace | 数千到数万个 Trace |
+| 内存约束 | 受单机内存限制 | 每个 Worker 独立内存，可水平扩展 |
+| 数据源 | 本地文件系统或 GCS | GCS / 本地 Object Store |
+| 适用场景 | CI 回归检测、团队级批量分析 | 大规模回归测试、云端 trace 仓库分析 |
+
+BatchTraceProcessor 的适用边界是本机内存能容纳所有待分析 Trace。当 Trace 数量增长到单机无法承载时，Bigtrace 通过 K8s 集群把 SQL 查询分发到多个 Worker Pod 上并行执行。Bigtrace 的部署细节参见 perfetto.dev/docs/deployment/deploying-bigtrace-on-kubernetes。
 
 ### Trace Summarization：结构化指标提取
 
@@ -623,12 +646,73 @@ void RenderFrame() {
 
 这条路径更适合游戏引擎、跨平台 runtime、系统服务或大型 Native 模块。App 业务代码只想补阶段耗时时，`android.os.Trace` / `ATrace_*` 通常更省事。
 
+### Custom Data Source：结构化二进制 Trace Packet
+
+TrackEvent 和 `TRACE_EVENT` 覆盖的是 slice / counter 这类通用标记。当需要向 Trace 里写入**结构化的二进制数据**（比如引擎级的渲染 pipeline 状态、自定义 schema 的性能采样、或系统服务的内部指标）时，Perfetto SDK 提供了 `perfetto::DataSource<T>` 这一更底层的抽象。
+
+**TrackEvent vs Custom Data Source 的定位差异：**
+
+| 维度 | TrackEvent / TRACE_EVENT | Custom Data Source |
+|---|---|---|
+| 数据格式 | Slice name + category + 可选 debug annotations | 自定义 protobuf schema |
+| 典型用途 | 阶段耗时标记、异步事件、counter | 结构化二进制 packet、自定义 schema |
+| 适用场景 | App 业务逻辑的阶段打点 | 引擎级采集、系统服务、自定义 counter/packet |
+| Trace Processor 支持 | 内置 slice/counter 表直接可查 | 需自定义 SQL 或在 Trace Processor 侧注册解析 |
+
+**最小 Custom Data Source 骨架：**
+
+```cpp
+// 1. 定义自定义 proto（如 render_pipeline.proto）
+// syntax = "proto2"; message RenderPassInfo { optional string pass_name = 1; optional int64 gpu_duration_ns = 2; }
+
+// 2. 注册 DataSource
+#include <perfetto.h>
+
+PERFETTO_DEFINE_DATA_SOURCE_STATIC_MEMBERS(my::RenderPassDataSource);
+
+// 3. 在代码中写 packet
+void RecordRenderPass(const char* name, int64_t gpu_ns) {
+  my::RenderPassDataSource::Trace([&](my::RenderPassDataSource::TraceContext ctx) {
+    auto packet = ctx.NewTracePacket();
+    auto* event = packet->set_render_pass_info();
+    event->set_pass_name(name);
+    event->set_gpu_duration_ns(gpu_ns);
+  });
+}
+```
+
+`DataSource<T>` 的生命周期通过 `OnSetup` / `OnStart` / `OnStop` 回调管理，适合需要知道 tracing session 何时启停的场景（比如按需开启高开销采集）。Trace Processor 侧需要对应的 proto 定义才能解析这些自定义 packet；如果只做离线分析，也可以用 `trace_processor.query("SELECT * FROM raw")` 读原始 packet。
+
+对于大多数 App 级打点需求，TrackEvent 已经够用。Custom Data Source 主要面向引擎开发者、系统服务作者、以及需要把 Trace 当结构化数据通道的进阶场景。
+
 ### Trace 点设计的几条使用规则
 
 - 名称保持稳定：同一条业务路径不要频繁改 section 名，否则跨版本对比会断。
 - 粒度贴着阶段边界放：初始化阶段、解码阶段、一次 Binder 往返，比给每个小函数都打点更容易读。
 - 高频循环少打点：每帧、每 item、每像素循环里密集插桩，很快就会把 Trace 噪声抬高。
 - 异步路径优先保留 request id：相机、下载、渲染任务跨线程流转时，没有 cookie 很难在 Perfetto 里串起来。
+
+### 生产包中的 Trace 点治理
+
+`android.os.Trace.beginSection()` 的字符串参数会进入 trace 输出和 DEX 文件。在 Release 包中大量使用自定义 trace point 需要注意几个问题：
+
+**体积与语义暴露。** 每个 `beginSection("...")` 调用点会在 DEX 中保留一个字符串常量。高频打点场景下，section name 的字符串总量不容忽视，且可能暴露业务逻辑细节（如 `"PaymentSubmit"`、`"LoginTokenRefresh"`）。
+
+**构建开关策略。** 对于高频或敏感 trace point，推荐通过构建开关或 R8/ProGuard 规则控制：
+
+```proguard
+# R8: 在 release 构建中移除自定义 Trace 调用
+-assumenosideeffects class android.os.Trace {
+  public static void beginSection(java.lang.String);
+  public static void endSection();
+}
+```
+
+`-assumenosideeffects` 让 R8 在 release 构建中判定 `beginSection` / `endSection` 无副作用并移除调用点。需要在 `proguard-rules.pro` 或 `consumer-rules.pro` 中配置，并确认 R8 版本支持该指令（AGP 7.0+ 的 R8 默认支持）。
+
+**保留必要线上诊断点。** 不是所有 trace point 都该被移除。对于线上问题定位的关键锚点（如启动阶段、核心交易路径），保留 trace 调用并确保 section name 稳定且粒度合理。建议团队明确哪些 trace point 是"线上常驻"，哪些是"仅开发期"，并在构建配置中分开管理。
+
+**NDK 侧 `ATrace_*` 的边界。** `ATrace_beginSection` 是平台 tracing API，Perfetto 在 Android 10+ 通过 `traced` 守护进程采集其输出。在 release native 库中保留 `ATrace_*` 调用的开销很低（单次约 50-100ns），但字符串常量同样会进入 .rodata 段。可通过 `#ifdef NDEBUG` 宏控制 release 构建中的 trace 输出。
 
 ## 参考资料
 
