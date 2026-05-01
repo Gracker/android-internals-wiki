@@ -30,12 +30,12 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-04-28"
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-27"
 task9_result: needs-rework
@@ -270,29 +270,47 @@ waitInfo.pValues = &waitValue;  // 等计数器到达这个值
 vkWaitSemaphores(device, &waitInfo, UINT64_MAX);
 ```
 
+### Vulkan Semaphore 与 Android Native Fence 的 Interop
+
+Vulkan 应用内部可以使用 Timeline Semaphore 管理队列间同步，但进入 Android 图形栈边界时，需要通过 fd export/import 衔接。最小路径：
+
+1. HWUI `VulkanManager::createReleaseFence()` 创建一个可导出的 `VkSemaphore`
+2. 通过 `GrFlushInfo` 把 semaphore 附加到 Skia flush 操作，GPU 完成后 signal
+3. 调用 `vkGetSemaphoreFdKHR` 导出 sync fd
+4. 这个 fd 随 buffer 通过 `queueBuffer()` 交给 BufferQueue → SurfaceFlinger
+5. SurfaceFlinger/HWC 侧拿到的就是标准 native fence fd，走正常 acquire/release 流程
+
+反向同理：`dequeueBuffer()` 返回的 acquire fence fd 通过 `vkImportSemaphoreFdKHR` 导入为 Vulkan semaphore，GPU 等待该 semaphore 后再开始写入 buffer。
+
+所以"Vulkan 用了 Timeline Semaphore"和"Android 图形栈还在用 fd"不矛盾——Timeline Semaphore 优化的是 Vulkan 队列内部，fd export/import 负责 Vulkan 与 Android 图形栈的桥接。
+
 ### 对图形管线的影响
 
-**减少 fd 资源开销。** 传统模式下每帧的 acquire / release / present 各需要独立的 fd，多 layer 合成时 fd 数量线性增长。Timeline Semaphore 用一个 64 位计数器替代了多个一次性 fd，减少了 fd 分配、传递和 close 的开销。
+**Vulkan 内部减少同步对象开销。** 传统 Vulkan Binary Semaphore 每轮 submit 都需要独立的 semaphore/fence 对象。Timeline Semaphore 用一个 64 位计数器替代了多轮 binary semaphore，减少了 Vulkan 队列内部的同步对象分配和等待开销。
 
-**支持跨进程提前提交。** 计数器模型允许 producer 提交第 N+1 帧的渲染命令，同时等待第 N 帧 fence signal（等待值 = N），而不是先等第 N 帧 signal 再提交第 N+1 帧。这种"提前提交等待"在流水线化的 GPU 命令提交中减少了上下文切换延迟。
+**支持 Vulkan 队列内提前提交。** 计数器模型允许 producer 提交第 N+1 帧的渲染命令，同时等待第 N 帧 fence signal（等待值 = N），而不是先等第 N 帧 signal 再提交第 N+1 帧。这种"提前提交等待"在流水线化的 GPU 命令提交中减少了上下文切换延迟。
 
-**与 dma_fence 的共存。** Android 16 中 Timeline Semaphore 和传统 dma_fence fd 并存。Vulkan 应用可以直接使用 Timeline Semaphore；OpenGL ES 应用通过 ANGLE 翻译到 Vulkan 后端时，ANGLE 内部处理两者的桥接。在 Perfetto 中，Timeline Semaphore 的等待仍会以 fence wait 的形式呈现，但底层同步对象的语义已经不同。
+**与 Android native fence fd 的边界。** Timeline Semaphore 是 Vulkan 同步模型内部的优化。Android 图形栈的跨进程/跨驱动边界——BufferQueue 的 `queueBuffer()` / `dequeueBuffer()`、SurfaceFlinger 的 `latchBuffer`、HWC 的 `setLayerBuffer` / `presentDisplay()`——仍然以 native fence / `sync_file` fd 作为交换格式。Vulkan 队列通过 `vkGetSemaphoreFdKHR`（`VK_KHR_external_semaphore_fd`）导出 sync fd 进入 Android 图形管线，或通过 `vkImportSemaphoreFdKHR` 导入外部 fence。HWUI 的 `SkiaVulkanPipeline` / `VulkanManager::createReleaseFence()` 正是走这条 export → import interop 路径。
 
-> [说明: Vulkan Timeline Semaphores 基于 Vulkan 1.2 规范与 Android 16 VPA16 设备要求，实际支持范围取决于设备 GPU 驱动版本。]
+**Perfetto 可观测性。** Perfetto 中的 `android.fence` / fence wait slice 观测的是 native fence fd（`dma_fence`）的 signal/wait 事件。Vulkan Timeline Semaphore 在导出为 sync fd 后，其等待行为可以被 Perfetto fence track 捕获。但 Vulkan 队列内部的纯 Timeline Semaphore 等待（未导出 fd）不会出现在 fence track 上，需要通过 GPU counter / Vulkan layer trace 观察。两者不能等同。
 
-### 16KB 页对 Fence 路径的加速
+> [说明: Vulkan Timeline Semaphores 基于 Vulkan 1.2 规范与 Android 16 VPA16 设备要求，实际支持范围取决于设备 GPU 驱动版本。进入 Android native fence 边界的 interop 依赖 `VK_KHR_external_semaphore_fd` / `VK_KHR_external_fence_fd` 扩展。]
 
-16KB 页对 fence 同步路径的影响不在 fence 对象本身，而在内核中断处理路径的 TLB 命中率。当 GPU 完成渲染并通过中断通知 CPU 时，内核的中断处理函数需要访问 fence 状态所在的内存页。16KB 页面将 TLB 覆盖范围扩大了 4 倍，减少了中断处理路径上的 TLB Miss，缩短了从 GPU 完成 signal 到 SurfaceFlinger 被 CPU 唤醒响应的时间窗口。
+### 16KB 页对 Fence 路径的潜在影响
 
-这个优化对高频 VSync（120Hz / 144Hz）设备更明显，因为帧间隔越短，fence signal 和下一帧 fence wait 之间的时间余量越小，任何路径上的延迟缩减都有价值。在 Perfetto 中，16KB 页环境下的 fence wait 尾部抖动通常比 4KB 环境更小。
+[待验证：以下为研究假设，尚缺同机 4KB/16KB 内核对比的 kernel ftrace（irq/dma_fence signal、sched wakeup）与 Perfetto fence wait 尾部抖动的实测证据。]
 
-### Android 17 展望：去 fd 化的同步收口
+16KB 页对 fence 同步路径的潜在影响不在 fence 对象本身，而在内核中断处理路径的 TLB 命中率。当 GPU 完成渲染并通过中断通知 CPU 时，内核的中断处理函数需要访问 fence 状态所在的内存页。16KB 页面将 TLB 覆盖范围扩大了 4 倍，理论上减少了中断处理路径上的 TLB Miss，可能缩短从 GPU 完成 signal 到 SurfaceFlinger 被 CPU 唤醒响应的时间窗口。
 
-API 37（Android 17）计划进一步强推 Timeline Semaphores，目标是从图形管线中逐步移除对 fd 的依赖。fd 泄漏是 Android 图形栈长期存在的稳定性隐患——一个未关闭的 fence fd 会阻止对应 buffer 被 Gralloc 回收，累积后可能触发图形栈卡死。Timeline Semaphore 的计数器模型从根源上消除了 fd 泄漏问题，因为同一个 semaphore 对象在生命周期内被复用，不存在"忘记 close"的场景。
+如果该假设成立，优化对高频 VSync（120Hz / 144Hz）设备会更明显，因为帧间隔越短，fence signal 和下一帧 fence wait 之间的时间余量越小。验证方式：同设备分别启动 4KB/16KB 内核，对比 GPU IRQ 到 SurfaceFlinger wakeup 延迟、TLB miss perf counter，以及 Perfetto fence wait 尾部抖动。
 
-这个转变不会一步到位。Android 16 要求新设备支持 Timeline Semaphores，但传统 fd 路径仍然保留；Android 17 预期会在更多图形组件中默认使用 Timeline 路径，逐步缩小 fd 路径的覆盖范围。对开发者来说，如果使用 Vulkan 直接渲染，现在就可以迁移到 Timeline Semaphores；如果通过 ANGLE 间接使用，迁移由系统层完成。
+### [待验证] 未来展望：Timeline Semaphore 与 fd 路径的演进
 
-> [说明: Android 17 去 fd 化政策基于 Android 17 Developer Preview 公开路线图，具体实施范围以正式版发布为准。]
+[待验证：以下为基于技术趋势的合理推测，当前未找到 Android 17 CDD、source.android.com 或 AOSP tag 中关于"强推 Timeline Semaphores"或"移除图形管线 fd 依赖"的公开依据。补到正式 API/CDD/AOSP 变更后再升级为确定内容。]
+
+fd 泄漏是 Android 图形栈长期存在的稳定性隐患——一个未关闭的 fence fd 会阻止对应 buffer 被 Gralloc 回收，累积后可能触发图形栈卡死。Timeline Semaphore 的计数器模型理论上可以缓解 fd 泄漏问题，因为同一个 semaphore 对象在生命周期内被复用。但 Android 图形管线从 fd 模型迁移到 Timeline Semaphore 需要内核驱动、Gralloc、BufferQueue、SurfaceFlinger、HWC 的端到端配合，不是单方面可以推动的。
+
+Android 16 要求新设备支持 Timeline Semaphores，但传统 fd 路径仍然保留。后续版本是否会在更多图形组件中默认使用 Timeline 路径，需要以正式 CDD / AOSP 变更为准。对开发者来说，如果使用 Vulkan 直接渲染，现在就可以迁移到 Timeline Semaphores；如果通过 ANGLE 间接使用，迁移由系统层完成。
 
 ## 常见问题与误区
 
