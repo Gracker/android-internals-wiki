@@ -39,8 +39,8 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-01'
 task6_result: pass-light-edit
@@ -81,7 +81,7 @@ last_task2b_at: '2026-05-01T09:40:00'
 
 当我们在项目中接入性能工具时,最常见的情况是直接集成 SDK 然后看它能采集哪些数据。这种用法对接入层面够用,但无法帮助我们判断工具的适用边界。当我们深入思考"这些数据是如何被采集的"问题时,就会发现所有性能工具都建立在 Hook、插桩或系统回调这些底层机制之上。
 
-这时候问题的维度就变了。它不再只是"这个工具支不支持某个功能",而是:
+这时候问题的维度就变了。问题的重心从"这个工具支不支持某个功能"移向了更具体的层面：
 
 - 为什么同样的功能,在一个项目里很稳定,换个项目就开始出现问题?
 - 为什么有些工具升级 Android Gradle Plugin 后需要大幅修改,有些几乎不用动?
@@ -112,11 +112,11 @@ last_task2b_at: '2026-05-01T09:40:00'
 
 典型例子包括:
 
-- `FrameMetrics`
-- `JankStats`
-- `ApplicationExitInfo`
-- `Choreographer.FrameCallback`
-- `JVMTI`(Android 8+,仅 debuggable 进程)
+- `FrameMetrics`：每帧渲染耗时、GPU 执行时间的结构化上报（Android 7+）
+- `JankStats`：基于 FrameMetrics 的卡顿检测与归因库（AndroidX）
+- `ApplicationExitInfo`：系统记录的进程退出原因（ANR、crash、LMK 等，Android 10+）
+- `Choreographer.FrameCallback`：VSync 回调接口，用于帧时间对齐和自定义帧调度
+- `JVMTI`：JVM Tool Interface，debuggable 进程可用的运行时诊断接口（Android 8+）
 
 这条路线的优点很直接:
 
@@ -137,8 +137,8 @@ last_task2b_at: '2026-05-01T09:40:00'
 
 典型代表是:
 
-- `Booster`
-- `Matrix Trace Canary` 的编译期能力
+- `Booster`：基于 AGP Transform/API 的编译期优化和代码注入框架
+- `Matrix Trace Canary`：微信团队的方法级编译期插桩 + 运行时主线程监控
 
 这条路线的优点是:
 
@@ -165,9 +165,9 @@ PLT Hook 更像是"在动态库边界拦一手"。
 
 代表工具包括:
 
-- `ByteHook`
-- `xHook`
-- `Matrix IO Canary` / `KOOM` 用到的部分 native 拦截能力
+- `ByteHook`：字节跳动开源的现代 PLT Hook 框架，支持 Android 4.1–15
+- `xHook`：爱奇艺开源的早期 PLT Hook 方案，不支持 Android 14+
+- `Matrix IO Canary` / `KOOM`：腾讯的 IO 监控和内存治理工具，底层用 PLT Hook 拦截 open/read/write 等系统调用
 
 这条路线的优点在于相对稳。因为它不去改目标函数的机器码,而是改动态链接层的指针引用,所以很多指令级兼容问题会轻一些。
 
@@ -187,7 +187,7 @@ Inline Hook 更激进。它直接改目标函数入口处的机器码,把执行�
 
 代表工具是:
 
-- `ShadowHook`
+- `ShadowHook`：字节跳动开源的 Inline Hook 框架，支持 ARM32/ARM64，覆盖 Android 4.1–16
 
 它的优点是覆盖面更广,很多 PLT Hook 够不到的场景,Inline Hook 可以继续往下走。
 但它的代价也会跟着一起上来:
