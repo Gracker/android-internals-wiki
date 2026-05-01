@@ -5800,13 +5800,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-01T17:20:00+08:00"
+      "updated_at": "2026-05-01T17:20:00+08:00",
+      "completed_at": "2026-05-01T23:43:12.678588",
+      "completed_reason": "P0 sugov_get_util()代码片段已替换为android16-6.12准确版本(消除混合签名); P1 EAS选核源码链已在sugov上下文中补入select_task_rq_fair/find_energy_efficient_cpu锚点"
     },
     {
       "section": "5.4",
@@ -5888,14 +5890,16 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
         "intake/suggestions.md"
       ],
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-01T18:51:19+08:00"
+      "last_reviewed_at": "2026-05-01T18:51:19+08:00",
+      "completed_at": "2026-05-01T23:43:12.678588",
+      "completed_reason": "P0 ThermalManagerService路径已统一为power/ThermalManagerService.java; P0 SystemHealthManager包名已修正为android.os.health; P1 headroom边界条件已纠正(exception/NaN/缓存分开写); P1 Thermal HAL 1.0版本已修正为Android 8"
     },
     {
       "section": "5.6",
