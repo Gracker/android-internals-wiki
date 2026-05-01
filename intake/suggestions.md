@@ -691,3 +691,21 @@
 - **位置**：L427-L430 线程优先级与大核选核
 - **问题**：正文说 Process.setThreadPriority() 会让调度器更积极地把高优先级线程放到大核。nice/priority 主要改变 CFS 权重和抢占机会，不是稳定的大核选择接口；现代 Android 更直接的输入是 task profile、cpuset、uclamp、Power HAL hint 和厂商调度策略。
 - **建议**：把 setThreadPriority 降级为“影响调度权重/延迟”的间接因素；大核倾向改写为 cpuset/uclamp/Power HAL/vendor policy 的结果。
+
+## [Task9 Deep Review] 5.5 Thermal 管控 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L290（getThermalHeadroom >1.0 解释）
+- **问题**：Android 文档只保证 1.0 对应 SEVERE 阈值，>1.0 没有到具体 thermal status 的映射，可能仍是 SEVERE，也可能是更重限频。
+- **建议**：把“表示已经超过阈值并处在更重限频状态”改为“超过 SEVERE 阈值，但不映射到具体状态；需要结合 thermal status/thresholds 判断”。
+
+## [Task9 Deep Review] 5.5 Thermal 管控 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L443-L447（16KB/MMU 功耗 4.5% 与延迟温控）
+- **问题**：4.5% MMU 功耗和“温控降频被推迟”仍缺设备、SoC、内核、负载、测量方法或原始链接；当前 `[待验证]` 不足以支撑“实测数据显示/可观测优化”。
+- **建议**：补可复核 benchmark/论文/厂商白皮书；补不上时删除精确数字和因果外推，仅保留“可能影响页表/TLB 开销，热收益需实测”。
+
+## [Task9 Deep Review] 18.4 Android View 混合渲染链路 — 2026-05-01
+- **类型**：数据缺失/观测路径
+- **位置**：L202、L226（dumpsys SurfaceFlinger 字段与合成类型）
+- **问题**：`activeBuffer` / `latched buffer` 与 `GLES/HWC/OVERLAY` 缺少 Android 版本化样例；现代 HWC2/CompositionEngine 输出常见口径是 `CLIENT` / `DEVICE` 等，直接写 `HWC/OVERLAY` 容易让排查命令对不上。
+- **建议**：补一段 Android 14-16 dumpsys 或 Perfetto SurfaceFlinger layer 示例，明确字段名和 composition type 在不同版本/OEM 上可能不同。
