@@ -7098,7 +7098,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T11:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T21:46:30.917623",
+      "completed_reason": "Timeline Semaphore与native fence边界已分层重写；16KB fence加速降级为待验证；Android 17去fd化降级为待验证展望；Vulkan/Android interop最小路径已补充；Perfetto可观测性区分已修复"
     },
     {
       "section": "2.17",
@@ -9868,7 +9870,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T10:31:41+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T21:46:30.917623",
+      "completed_reason": "ATRACE_TAG_WEBVIEW常量已修正(1L<<4)；TracingController API已替换isTracingEnabled；Viz组件不再写为独立进程；DevTools调试入口已更正(setWebContentsDebuggingEnabled)；混合渲染已拆分为HWUI同窗/独立Surface两路径；RELRO生成流程已更正为系统预创建"
     },
     {
       "section": "7.10",

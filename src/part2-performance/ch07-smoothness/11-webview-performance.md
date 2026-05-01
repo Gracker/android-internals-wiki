@@ -26,11 +26,11 @@ sources:
 reviewed_date: "2026-04-24"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
 last_task9_at: "2026-04-30T10:31:41+08:00"
@@ -295,7 +295,7 @@ WebView 相关的 ANR 通常有以下几种模式：
 
 #### RELRO 段共享
 
-WebView 通过共享重定位只读段（RELRO）节省多进程内存。`libwebviewchromium.so` 体积超过 100MB，如果每个使用 WebView 的进程都独立加载一次，PSS 开销会非常高。Android 的 WebView provider 在首次加载时生成 RELRO 段并共享给后续进程。
+WebView 通过共享重定位只读段（RELRO）节省多进程内存。`libwebviewchromium.so` 体积超过 100MB，如果每个使用 WebView 的进程都独立加载一次，PSS 开销会非常高。RELRO 的生成不是每个宿主 App 首次创建 WebView 时触发的——它由系统 WebViewUpdateService 在 provider 变更时预创建。AOSP 路径：`WebViewFactory.onWebViewProviderChanged()` 调用 `WebViewLibraryLoader.prepareNativeLibraries()`，再由 isolated `RelroFileCreator` 进程生成 `/data/misc/shared_relro/libwebviewchromium{32,64}.relro`。App 加载 WebView 时通过 `waitForAndGetProvider()` 等待准备结果，再在 `loadNativeLibrary()` 中使用已生成的 relro 文件。
 
 Android 15 升级到 16KB 内存页后，RELRO 共享必须满足 16KB 对齐，否则共享页会失效，每个进程各自持有一份副本，造成显著的 PSS 增量。排查时可以通过 `dumpsys meminfo` 对比不同进程的 `.so` mapped / shared 比例，判断 RELRO 是否正常共享。[待验证：16KB 对齐问题的具体触发条件和 AOSP 修复版本]
 
@@ -369,7 +369,7 @@ WebView 内存分析需要结合多个工具：
 
 1. **Perfetto 的内存计数器**：可以观察 App 进程的 `anon_rss` 和 `java_heap` 变化。创建 WebView 时这两个指标会有明显跳升。
 2. **`dumpsys meminfo`**：展示 WebView 相关的 native 内存分配（GPU 纹理、Skia 缓存等）。
-3. **Chrome DevTools Protocol**：通过 `webView.setWebChromeClient()` 配合远程调试，可以观察 V8 堆内存和 DOM 节点数量。
+3. **Chrome DevTools Protocol**：调用 `WebView.setWebContentsDebuggingEnabled(true)` 开启远程调试（静态方法，与 `WebChromeClient` 无关），再通过桌面 Chrome `chrome://inspect` 连接，使用 DevTools 的 Memory/Performance 面板观察 V8 堆内存和 DOM 节点数量。`WebChromeClient` 只负责 JS dialog、console message、file chooser 等回调，不控制调试开关。
 
 在 Perfetto 中，如果观察到 App 进程的内存在每次打开 WebView 页面后持续上升且不回落，就说明存在 WebView 内存泄漏。
 
@@ -421,13 +421,17 @@ element.addEventListener('touchmove', handler, { passive: true });
 
 ### 混合渲染场景：WebView 与原生 View 叠加
 
-当 WebView 和原生 View 在同一个页面中叠加显示时（如 WebView 上方覆盖一个原生浮层），会产生额外的合成开销。SurfaceFlinger 需要同时处理原生 View 的渲染层和 WebView 的 GPU 纹理层，这增加了 GPU 的合成负担。
+当 WebView 和原生 View 在同一个页面中叠加显示时（如 WebView 上方覆盖一个原生浮层），合成路径取决于 WebView 的 surface 模式：
 
-在 Perfetto 中，这种场景下可以观察到 SurfaceFlinger 的合成时间变长。如果 WebView 的内容是半透明的（alpha blending），GPU 合成开销会进一步增加。
+**路径一：同窗口 HWUI 合成（GLFunctor / in-process compositor）。** 普通 WebView 嵌入 View hierarchy 时，Chromium compositor 的输出通过 GLFunctor 或 in-process GPU service 绘制到宿主窗口的 RenderNode。原生 View 的叠加层先在 HWUI 侧合成，不产生独立的 SurfaceFlinger layer。Perfetto 观察点：看 App RenderThread 的 draw/functor slice 和 GPU busy，不一定会看到额外 SF layer。
+
+**路径二：独立 Surface / SurfaceControl 路径。** 如果 WebView 走独立 Surface（如特定 provider 版本的硬件加速路径、SurfaceView 包裹、或使用了独立 BufferQueue），WebView 的 GPU 纹理层和原生 View 渲染层会各自成为 SurfaceFlinger 的独立 layer。这时 SF 需要同时处理多个 layer 的合成，GPU 合成负担增加。
+
+在 Perfetto 中区分两种路径：路径一看 App RenderThread / HWUI 的 `draw`、`functor` 和 GPU busy；路径二才需要看 SurfaceFlinger 的 layer 数、composition strategy、present/compose 时长。如果 WebView 的内容是半透明的（alpha blending），无论走哪条路径，GPU 合成开销都会增加。
 
 优化建议：避免在 WebView 上叠加半透明的原生 View；如果必须叠加，尽量让覆盖区域小且不频繁变化。
 
-[图：混合渲染场景的 Perfetto Trace 片段，标出 SurfaceFlinger 合成时间增长、WebView GPU 纹理层与原生浮层叠加区域]
+[图：混合渲染场景的 Perfetto Trace 片段，标出两种合成路径的差异]
 
 ## WebView 版本演进与性能改善
 
@@ -489,7 +493,7 @@ WebView 发起的网络请求可以在 Perfetto 的 Network Track 中观察到�
 
 ## 与其他机制的关系
 
-- **渲染架构（§2.1）**：WebView 的渲染管线是 Android 原生渲染管线的「并行版本」，两者最终都通过 SurfaceFlinger 合成。理解 §2.1 的整体架构有助于定位 WebView 渲染问题是出在 Chromium 内部还是与 Android 体系的交互上。
+- **渲染架构（§2.1）**：WebView 的渲染管线是 Android 原生渲染管线的「并行版本」，两者最终都通过 SurfaceFlinger 合成。理解 §2.1 的整体架构有助于定位 WebView 渲染问题出在 Chromium 内部还是与 Android 体系的交互上。
 - **MainThread 与 RenderThread（§2.5）**：WebView 的 Java API 和一部分 browser-side 调度发生在宿主 App 进程里，最终显示又会和 App RenderThread、SurfaceFlinger 竞争 GPU 与合成时间。
 - **渲染机制版本演进（§2.10）**：WebView 的架构演进（单进程→多进程→Trichrome）与 Android 整体渲染演进并行，了解 §2.10 有助于理解 WebView 各版本的差异。
 - **卡顿原因体系（§7.2）**：WebView 相关的卡顿可以归类到 §7.2 的卡顿原因中：JS 长任务对应「主线程耗时操作」，GPU 合成竞争对应「GPU 渲染超时」，BufferQueue 竞争对应「缓冲区管理」。
@@ -629,7 +633,7 @@ WebView Perfetto 追踪需要**同时开启两类数据源**：
 **ATrace 系统注解**（Android Framework 层）：
 - 在 Perfetto UI 中选择 target=Android，启用 `webview` 分类
 - 或 `adb shell perfetto` 配置 `atrace_categories: "webview"`
-- ATrace 注入 `ATRACE_TAG_WEBVIEW`（0x10000000 << 2），通过 `WebView.isTracingEnabled()`（API 29+）控制
+- ATrace 注入 `Trace.TRACE_TAG_WEBVIEW`（`1L << 4`，对应 atrace category `webview`），应用侧通过 `TracingController.getInstance().start(new TracingConfig.Builder().addCategories(...).build())`（API 28+）控制 WebView 内部 tracing
 
 **Chromium TRACE_EVENT**（浏览器内部层）：
 | 分类 | 追踪内容 | 用途 |
@@ -662,14 +666,16 @@ Renderer 进程崩溃在 Perfetto 中的表现：
 
 #### 版本差异
 
-| 版本 | Renderer 进程 | Viz 进程 | GL 路径 |
-|------|-------------|---------|--------|
-| Android 7-8 (API 24-26) | In-process | 无独立 Viz | GLFunctor 直接渲染 |
-| Android 9-10 (API 28-29) | Out-of-process（部分设备） | 独立 Viz | Command Buffer |
-| Android 11+ (API 30) | 全部 out-of-process | 独立 Viz | ASurfaceControl |
-| Android 13+ (API 33) | Sandbox（加强隔离） | Viz + GPU Service | 优化 BufferQueue |
+| 版本 | Renderer 模型 | Surface / 合成路径 | 说明 |
+|------|--------------|-------------------|------|
+| Android 7-8 (API 24-26) | In-process renderer | GLFunctor / 硬件加速兼容层 | renderer 线程在宿主进程内 |
+| Android 8-10 (API 26-29) | Out-of-process renderer（低内存 32-bit 设备可能回退 in-process） | Command Buffer → 宿主窗口 | multiprocess 逐步铺开 |
+| Android 11+ (API 30) | 全部 out-of-process | ASurfaceControl / BufferQueue | renderer 崩溃隔离成为默认 |
+| Android 13+ (API 33) | Sandbox 加强隔离 | 优化 BufferQueue 交互 | 安全边界收紧 |
 
-> **源码依据**：Chromium `android_webview/docs/architecture.md`（多进程架构）、`chromium/src/base/trace_event/README.md`（TRACE_EVENT 宏）、`chromium/src/components/viz/`（Viz 进程）、`perfetto.dev/docs/analysis/webview-tracing`（Perfetto 配置）
+> **注意**：Viz（compositor service / GPU service）在 WebView 场景下通常以 in-process 方式运行在宿主 App 进程内，不是独立进程。Chromium `android_webview/docs/architecture.md` 明确 WebView 的 GPU service、Network Service 等非沙箱服务在各 OS 版本都 in-process。Perfetto 中看到的 `VizCompositorThread`、`CrGpuMain` 都是宿主进程内的线程。不要把 Viz 组件等同于"独立 Viz 进程"。
+
+> **源码依据**：Chromium `android_webview/docs/architecture.md`（多进程架构）、`chromium/src/base/trace_event/README.md`（TRACE_EVENT 宏）、`perfetto.dev/docs/analysis/webview-tracing`（Perfetto 配置）
 
 
 ## 参考资料
