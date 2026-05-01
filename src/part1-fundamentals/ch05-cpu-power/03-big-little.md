@@ -23,7 +23,7 @@ sources:
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
 related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: 2026-05-01
+reviewed_date: 2026-05-02
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 1
@@ -32,9 +32,9 @@ polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-05-01T23:43:12.673681"
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
