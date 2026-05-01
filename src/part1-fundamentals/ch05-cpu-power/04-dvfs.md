@@ -30,8 +30,8 @@ polish_by: "task2b-polish"
 task9_state: "reviewed"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-01"
-task2b_state: "pending"
-last_task2b_at: "2026-05-01T08:43:45.552855"
+task2b_state: "fixed"
+last_task2b_at: "2026-05-01T11:45:15.768159"
 task2b_result: fixed
 last_task2b_at: "2026-04-23T04:32:00+08:00"
 task6_state: "reviewed"
@@ -219,19 +219,43 @@ schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪�
 - **uclamp 钳位**：框架或内核给线程组施加的性能下限 / 上限
 - **iowait boost**：I/O 唤醒后的短时提频
 
-下面这段节选展示了 `sugov_get_util()` 的处理顺序：
+schedutil 的调频入口是 `sugov_update_single()`（单 policy CPU）和 `sugov_update_shared()`（共享 policy CPU）。这两个函数由调度器通过 cpufreq callback 触发，内部调用 `sugov_get_util()` 获取有效利用率，再经 `sugov_iowait_apply()` 处理 I/O 提频，最终换算目标频率。
+
+android15-6.6 和 android16-6.12 的 `sugov_get_util()` 签名和调用链有明确差异：
 
 ```c
-// kernel/sched/cpufreq_schedutil.c, sugov_get_util() 节选
-// android15-6.6 实际签名
-util = cpu_util_cfs_boost(sg_cpu->cpu);  // PELT CFS 利用率 + boost
-util = uclamp_rq_util_with(rq, util, NULL);  // 应用 uclamp 钳位
-sg_cpu->bw_dl = cpu_bw_dl(rq);            // deadline 带宽预留
-sg_cpu->max = arch_scale_cpu_capacity(sg_cpu->cpu); // CPU max capacity
-util = sugov_apply_iowait_boost(sg_cpu, util);  // I/O 等待提频
+// kernel/sched/cpufreq_schedutil.c
+// android15-6.6: sugov_get_util() 只负责收集利用率
+static void sugov_get_util(struct sugov_cpu *sg_cpu) {
+    struct rq *rq = cpu_rq(sg_cpu->cpu);
+    sg_cpu->max = arch_scale_cpu_capacity(sg_cpu->cpu);
+    sg_cpu->bw_dl = cpu_bw_dl(rq);
+    unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu);
+    util = effective_cpu_util(sg_cpu->cpu, util, NULL, NULL);
+    sg_cpu->util = uclamp_rq_util_with(rq, util, NULL);
+}
+// iowait boost 在 sugov_update_single() 中由 sugov_iowait_apply() 单独处理
 ```
 
-android16-6.12 的签名基本一致，`cpu_util_cfs_boost()` 仍然是入口。`cpu_util_cfs()` 在新版本中仍存在但不被 `sugov_get_util()` 直接调用。
+```c
+// kernel/sched/cpufreq_schedutil.c
+// android16-6.12: 签名新增 boost 参数，支持 sched_ext 与 iowait 融合
+static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) {
+    struct rq *rq = cpu_rq(sg_cpu->cpu);
+    sg_cpu->max = arch_scale_cpu_capacity(sg_cpu->cpu);
+    sg_cpu->bw_dl = cpu_bw_dl(rq);
+    unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu);
+    util = effective_cpu_util(sg_cpu->cpu, util, NULL, NULL);
+    sg_cpu->util = uclamp_rq_util_with(rq, util, NULL);
+    // sched_ext 性能目标融合
+    scx_cpuperf_target(sg_cpu->cpu);
+    // boost 参数用于 sugov_effective_cpu_perf() 中的最终频率计算
+}
+```
+
+两个版本的核心区别：android15-6.6 的 `sugov_get_util()` 只收集有效利用率，iowait boost 由调用方通过 `sugov_iowait_apply()` 单独叠加；android16-6.12 将 boost 作为参数传入 `sugov_get_util()`，新增 `scx_cpuperf_target()` 支持 sched_ext 可编程调度器的性能目标，并通过 `sugov_effective_cpu_perf()` 统一计算最终频率。
+
+[已验证: AOSP android15-6.6 & android16-6.12, kernel/sched/cpufreq_schedutil.c — sugov_update_single / sugov_get_util / sugov_iowait_apply]
 
 于是会出现一个在 Trace 里很常见的现象：即使 PELT 利用率还不高，只要 top-app 或关键线程被设置了较高的 `uclamp_min`，频率也会提早拉升；I/O 密集路径刚被唤醒时，也可能先吃到一段 iowait boost。
 
@@ -355,7 +379,9 @@ Android 16（GKI 6.12）的 SCMI 框架提供了多个 ftrace 事件，可用于
 
 如果两者出现持续偏差（内核请求高频，固件实际给低频），说明 SoC 固件的温控或电源策略正在介入。这种内核以为在高频、实际被压低的情况，是排查不明性能下降的重要线索。
 
-[已验证: AOSP android16-6.12, include/trace/events/scmi.h — scmi_fc_call / scmi_xfer_* 事件族]
+SCMI Performance Protocol 的完整协商链涉及多个环节：OS 通过 `PERF_LEVEL_SET` (msg_id 0x4) 请求目标 performance level，固件将其映射到具体的 OPP 条目（frequency + voltage），再由 `PERF_LEVEL_GET` (msg_id 0x6) 查询固件实际下发的 level。每个 CPU domain 由 `res_id` 标识（通常与 CPU cluster 对应），`protocol_id` 为 0x3（SCMI Performance Protocol）。`scmi_fc_call` 事件中的 `protocol_id` 和 `msg_id` 可用来过滤不同类型的消息。需要注意的是，performance level 到实际频率的映射是平台私有的——同一段 SCMI level 值在不同 SoC 上可能对应不同的 MHz。分析时必须结合设备的 OPP 表或 vendor dtbo 才能完成 level→freq 的换算。在没有平台映射表时，SCMI 事件只能定位"固件协商是否异常"，不能直接等同于实际频率真值。
+
+[已验证: AOSP android16-6.12, include/trace/events/scmi.h — scmi_fc_call / scmi_xfer_* 事件族 / SCMI spec: Performance Protocol msg_id 0x4/0x6, protocol_id 0x3]
 
 要启用 SCMI 事件，在 Perfetto 配置中添加：
 
@@ -383,7 +409,7 @@ INCLUDE PERFETTO MODULE linux.cpu.frequency;
 -- 查看每个 CPU 的频率驻留统计
 SELECT
   cpu,
-  freq / 1000.0 AS freq_khz,
+  freq / 1000.0 AS freq_mhz,
   round(sum(dur) / 1e9, 3) AS time_s,
   round(sum(dur) * 100.0 / sum(sum(dur)) over (partition by cpu), 1) AS pct
 FROM cpu_frequency_counters
@@ -393,10 +419,10 @@ ORDER BY cpu, freq;
 -- 找出频率最低的时段（可能影响性能）
 SELECT
   cpu,
-  freq / 1000.0 AS freq_khz,
+  freq / 1000.0 AS freq_mhz,
   round(dur / 1e6, 2) AS duration_ms
 FROM cpu_frequency_counters
-WHERE freq < 500000000  -- 低于 500MHz
+WHERE freq < 500000  -- 低于 500MHz（freq 单位为 kHz）
 ORDER BY dur DESC
 LIMIT 20;
 ```

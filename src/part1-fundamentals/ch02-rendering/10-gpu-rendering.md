@@ -41,7 +41,7 @@ task9_reviewed_by: openclaw-task9
 task2b_state: pending
 last_task9_at: "2026-04-28T12:30:00+08:00"
 task2b_result: fixed
-last_task2b_at: "2026-04-28T11:53:13+08:00"
+last_task2b_at: "2026-05-01T11:45:15.768159"
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 3 / P2 1。"
 ---
 
@@ -300,24 +300,31 @@ GPU 性能分析的第一步是搞清楚瓶颈在哪里。GPU 渲染的瓶颈大
 
 ### GPU Headroom：事前感知 GPU 负载（Android 16）
 
-传统 GPU 瓶颈分析是事后诊断——帧已经掉了，再去 Trace 里找原因。Android 16 引入的 `SystemConfigManager.getGpuHeadroom()` API 提供了一条事前感知路径。它返回一个 0.0-1.0 的浮点值，表示 GPU 当前的剩余能力比例。值越接近 0，说明 GPU 越接近满载。
+传统 GPU 瓶颈分析是事后诊断——帧已经掉了，再去 Trace 里找原因。Android 16 引入的 GPU Headroom API 提供了一条事前感知路径。该 API 通过 `android.os.health.SystemHealthManager`（通过 `Context.SYSTEM_HEALTH_SERVICE` 获取）暴露，核心方法是 `getGpuHeadroom(GpuHeadroomParams)`，返回值为 0-100 的浮点数或 `Float.NaN`（当 GPU 不支持 headroom 上报时返回 NaN）。值越接近 0，说明 GPU 越接近满载。
 
 实战中的使用模式：
 
 ```java
 // Android 16+ (API 36)
-float headroom = SystemConfigManager.getGpuHeadroom();
-if (headroom < 0.3f) {
-    // GPU 余量不足，考虑降级渲染质量
+SystemHealthManager shm = (SystemHealthManager)
+    context.getSystemService(Context.SYSTEM_HEALTH_SERVICE);
+GpuHeadroomParams params = new GpuHeadroomParams.Builder().build();
+float headroom = shm.getGpuHeadroom(params);  // 返回 0-100 或 NaN
+
+// 必须遵守最小采样间隔，否则调用会被节流
+long minInterval = shm.getGpuHeadroomMinIntervalMillis();
+
+if (!Float.isNaN(headroom) && headroom < 30f) {
+    // GPU 余量不足（headroom 范围 0-100），考虑降级渲染质量
     // 例如：减少实时模糊层级、降低动画粒子数、跳过非关键 Shader 特效
 }
 ```
 
-这个 API 适合在动画密集或滚动高频的场景中周期性轮询（建议间隔不低于一帧），根据返回值动态调整渲染复杂度。一个典型的降级策略是：headroom > 0.6 时全质量渲染，0.3-0.6 时关闭高开销后处理（模糊、阴影），< 0.3 时进一步简化动画。这比固定分辨率降级更精细，因为 GPU 负载是动态变化的——同一场景在不同温控状态下 headroom 可能完全不同。
+这个 API 适合在动画密集或滚动高频的场景中周期性轮询，但必须遵守 `getGpuHeadroomMinIntervalMillis()` 返回的最小间隔，否则调用会被系统节流。一个典型的降级策略是：headroom > 60 时全质量渲染，30-60 时关闭高开销后处理（模糊、阴影），< 30 时进一步简化动画。这比固定分辨率降级更精细，因为 GPU 负载是动态变化的——同一场景在不同温控状态下 headroom 可能完全不同。
 
-需要注意，调用该 API 本身会触发一次跨进程查询，开销在亚毫秒级，但不建议在每帧渲染路径中调用。适合在 Choreographer 回调中按固定间隔采样。
+调用该 API 本身会触发一次跨进程查询（Binder 同步），开销在亚毫秒级。严禁在渲染主线程中按帧轮询——在 120fps 下 1ms 的同步阻塞就消耗了 12% 的帧预算。建议在独立的监控线程中以 `minInterval` 为周期异步采样，或通过 Choreographer 回调按固定间隔查询。
 
-> [说明: getGpuHeadroom() API 基于 Android 16 Developer Preview 公开文档与社区验证，具体返回值语义以正式版 API 文档为准。]
+> [已验证: AOSP android-16.0.0_r1, android.os.health.SystemHealthManager — getGpuHeadroom(GpuHeadroomParams) / getGpuHeadroomMinIntervalMillis()]
 
 ### Fillrate Bound：像素处理瓶颈
 
@@ -426,7 +433,7 @@ Android 16 在 16KB 页模式下，Gralloc AIDL V2 引入了内部子分配（su
 
 这对 GPU 内存压力的影响是双重的：一方面减少了小纹理的显存浪费，降低系统总 GPU 内存占用；另一方面减少了页表条目数量，对 TLB 压力有间接缓解。在应用层面，这个优化是透明的——不需要修改任何代码。但在分析 GPU 内存占用时需要注意，16KB 页环境下 `dumpsys meminfo` 中的 Graphics 内存项可能比 4KB 环境下看起来更低，部分原因是 Gralloc 内部碎片减少了。
 
-> [说明: Gralloc AIDL V2 sub-allocation 机制基于 Android 16 GKI 内核变更与硬件接口定义，实际行为可能因 SoC 厂商实现而有差异。]
+> [说明: Gralloc AIDL V2 sub-allocation 机制基于 Android 16 GKI 内核变更与硬件接口定义方向（`hardware/interfaces/graphics/allocator/aidl/`），但当前缺少公开的 AIDL 接口方法签名、VTS/CTS 测试用例或 vendor 实现代码作为闭环证据。实际行为可能因 SoC 厂商实现而有差异。以上描述应视为基于设计意图的推断，而非已验证事实。具体实现细节待后续 AOSP 源码或厂商文档确认后补齐。]
 
 ### GPU 内存追踪和分析
 
@@ -451,9 +458,9 @@ ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉�
 
 ### ANGLE 在 Android 16 中的角色
 
-在 Android 16 中，ANGLE 的角色从"可选兼容层"升级为"默认渲染路径"。对于仍然使用 OpenGL ES 的应用，系统自动通过 ANGLE 将渲染调用转发到 Vulkan 后端；对于直接使用 Vulkan 的应用，则绕过 ANGLE 直接与 Vulkan 驱动交互；对于不支持 Vulkan 的极老旧设备，才会回退到原生的 OpenGL ES 驱动。
+Android 16 推进了 ANGLE 的覆盖范围，但"ANGLE 是否成为默认 GL 后端"取决于设备 launch policy 和厂商配置，不能一概而论。对于新出货的、满足 Vulkan 1.4 / VPA16 基线的 64 位设备，更多 OpenGL ES 应用会通过 ANGLE 将渲染调用翻译到 Vulkan 后端；对于已上市的旧设备，ANGLE 的启用策略可能仍然是渐进式的或按应用白名单控制；对于直接使用 Vulkan 的应用，始终绕过 ANGLE 直接与 Vulkan 驱动交互；不支持 Vulkan 的设备则回退到原生的 OpenGL ES 驱动。
 
-这个分层策略意味着 Android 16 上的绝大多数应用最终都运行在 Vulkan 上——要么是原生 Vulkan 应用直接使用，要么是 OpenGL ES 应用通过 ANGLE 间接使用。理解 Vulkan 的性能特征因此更加重要。
+这意味着在 Android 16 上分析 GPU 性能时，需要先确认目标设备上 OpenGL ES 应用是否走了 ANGLE 路径——可以通过 `adb shell dumpsys gfxinfo <package>` 或 Perfetto 中的 GPU driver 信息判断。不同路径下的性能特征和瓶颈分析方式有差异。
 
 ## GPU Profiling 工具：Snapdragon Profiler、ARM Streamline、AGI
 
@@ -563,9 +570,9 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 ### GPU 相关 Track
 
-**gpu_render_stages track。** 这是最核心的 GPU track，它显示了 GPU 在每个时间段执行的具体渲染阶段。在 Qualcomm Adreno 设备上，Vertex Shader、Fragment Shader 等阶段有明确标注。在 ARM Mali 设备上，对应的 track 可能以不同的名称出现，但核心信息相同。如果这个 track 显示某帧的 Fragment Shader 阶段特别长，就是 fillrate bound 的直接信号。
+**gpu_render_stages track。** 这是最核心的 GPU track，它显示了 GPU 在每个时间段执行的具体渲染阶段。在 Qualcomm Adreno 设备上，Vertex Shader、Fragment Shader 等阶段有明确标注；在 ARM Mali 设备上，对应的 track 可能以不同的名称出现。但需要注意，`gpu_render_stages` 的可用性和阶段粒度取决于设备 GPU 驱动是否暴露了 `GpuRenderStages` producer 数据——不是所有设备都能看到完整的 Vertex/Fragment 细分阶段。在 Perfetto 中如果该 track 为空或只显示笼统的"GPU"阶段，说明当前设备的驱动不支持 render stage 分级暴露。
 
-**gpu_busy 计数器（Android 16 标准化）。** Android 16 统一了 `gpu_busy` 计数器标签，开发者无需关心底层硬件是 Adreno 还是 Mali，即可直接读取准确的 GPU 利用率百分比。此前各厂商 GPU 计数器命名不统一，跨设备对比需要手动映射；标准化后，Perfetto 的 `gpu` track 上可以直接拖出 `gpu_busy` counter，用于快速判断 GPU 是否是当前帧的瓶颈。结合 `gpu_render_stages` 可以进一步定位到具体渲染阶段。
+**gpu_busy 计数器。** GPU 利用率计数器的可用性和命名因 GPU 厂商和驱动版本而异。Perfetto 通过 `GpuCounterDescriptor` 描述每个 GPU 的 counter 模型，具体的 counter ID、名称和语义由 GPU 驱动的 producer 决定。在 Adreno 设备上通常能看到 GPU Busy 百分比计数器，Mali 设备上对应 counter 的名称可能不同。如果设备支持，在 Perfetto 的 `gpu` track 上可以找到对应的利用率 counter，用于快速判断 GPU 是否是当前帧的瓶颈。结合 `gpu_render_stages`（如果可用）可以进一步定位到具体渲染阶段。
 
 **RenderThread track。** 虽然 RenderThread 是 CPU 侧的线程，但它的活动与 GPU 渲染直接相关。当 RenderThread 调用 `eglSwapBuffers()` 或 Vulkan 的 `vkQueuePresentKHR()` 提交帧时，如果 GPU 还没有完成上一帧的渲染，RenderThread 会被阻塞等待。在 Perfetto 中，这种等待表现为 RenderThread 上的长段 sleep/wait 状态——这通常意味着 GPU 是瓶颈。
 
