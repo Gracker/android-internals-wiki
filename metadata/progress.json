@@ -9858,6 +9858,18 @@
         "14.11 battery-historian: PowerMonitor μJ单位修正+PowerStatsService架构",
         "15.1 philosophy: CompilationMode变量控制替代always_finish_activities"
       ]
+    },
+    {
+      "date": "2026-05-01T14:40:00+08:00",
+      "sections": [
+        "4.5",
+        "4.6"
+      ],
+      "action": "rework-fixed",
+      "details": [
+        "4.6: formula fix + RELRO claim downgrade",
+        "4.5: ASan config + heapprofd + ApplicationStartInfo + onTrimMemory API34+ + Hardware Bitmap PSS"
+      ]
     }
   ],
   "2026-04-29-13-task9": {

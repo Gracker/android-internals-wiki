@@ -7380,7 +7380,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T05:30:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T14:47:19.267444",
+      "completed_reason": "P0 ASan Gradle配置已修正(CMake -fsanitize=address + wrap.sh); P0 heapprofd --java已替换为heap_profile --heaps com.android.art; P0 ApplicationStartInfo未验证API已删除并改为ApplicationExitInfo/ProfilingManager路径; P1 onTrimMemory API 34+版本拆分已完成; P1 Hardware Bitmap PSS口径已修正"
     },
     {
       "section": "4.6",
@@ -7408,7 +7410,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T05:30:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T14:47:19.267444",
+      "completed_reason": "16KB页碎片公式已修正(ceil/page ceil); RELRO兼容模式断言已降级为待验证"
     },
     {
       "section": "2.2",

@@ -50,8 +50,9 @@ task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
 last_task9_at: "2026-04-29T05:30:17+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_at: "2026-05-01T14:40:00+08:00"
 last_task2b_at: "2026-04-19T02:05:51+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
@@ -529,7 +530,11 @@ PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻�
 | 17KB | 20KB (5 页) | 3KB | 32KB (2 页) | 15KB | **+12KB (+60%)** |
 | 65KB | 68KB (17 页) | 3KB | 80KB (5 页) | 15KB | **+12KB (+18%)** |
 
-**公式**：`碎片开销增量 = max(0, allocation_size - 16KB) - max(0, allocation_size - 4KB)`
+**公式**：`碎片开销增量 = ceil(size / 16KB) × 16KB − ceil(size / 4KB) × 4KB`
+
+其中碎片本身分别为 `ceil(size / page) × page − size`。
+
+以 5KB 为例：`ceil(5/16) × 16 − ceil(5/4) × 4 = 16 − 8 = +8KB`，与表格一致。
 
 **结论**：小分配为主的 native workload（如 JNI 频繁分配小 buffer）在 16KB 系统下内存浪费显著增加。
 
@@ -540,7 +545,9 @@ PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻�
 ```cpp
 // 条件：kPageSize == 16384 && min_palign == 4096
 // 触发 bionic.linker.16kb.app_compat.enabled 属性检查
-// Compat Mode 代价：绕过 RELRO 段保护，牺牲安全性换取加载成功
+// Compat Mode 代价：需要额外的映射处理来适配 4KB 对齐的 ELF 段
+// [待验证] 是否存在 RELRO 保护绕过：需逐行核对 linker_phdr.cpp 中
+//   phdr_table_load_segments() 的 RELRO 处理分支
 // Commit fc89c8ae1dfc (2024-08-05) 改进错误提示
 ```
 

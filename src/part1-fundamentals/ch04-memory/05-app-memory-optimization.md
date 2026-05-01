@@ -42,7 +42,9 @@ task6_state: reviewed
 # task6_result: pass-light-edit  # reset after rework
 task9_state: reviewed
 # task9_result: pass-tech-review  # reset after rework
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-01T14:40:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
@@ -286,7 +288,7 @@ Android 8.0（API 26）引入了一种特殊的 Bitmap 配置：`Bitmap.Config.H
 
 硬件 Bitmap 的像素数据存储在 **GPU 内存**中，而不是系统 RAM 中。这意味着：
 
-- **不计入 App 的 PSS**：从内存统计的角度看，这张 Bitmap "不占内存"
+- **不计入 Java Heap**：从 dumpsys meminfo 角度看，像素常见于 Graphics/GL/memtrack/Other dev 等口径，是否归入单进程 PSS 取决于 OEM/memtrack 实现，设备差异大。不能写成"不占内存"——它仍然形成系统内存压力
 - **渲染更快**：GPU 直接使用自己的显存绘制，不需要从系统 RAM 拷贝到 GPU
 - **不能修改**：不能对硬件 Bitmap 使用 Canvas 绘制或 `setPixel()`——它是只读的
 - **不能跨进程**：硬件 Bitmap 不能通过 Binder 传递（比如不能直接传给 Remote Views）
@@ -542,21 +544,42 @@ ASan 是 LLVM/Clang 提供的内存错误检测工具，可以检测：
 - 使用已释放的内存（use-after-free）
 - 双重释放（double-free）
 
-在 Android 上启用 ASan：
+在 Android 上启用 ASan 需要通过 NDK/Clang 编译参数，而非 Gradle DSL。正确路径如下：
 
 ```gradle
-// build.gradle
+// build.gradle — 仅影响符号保留，不启用 ASan 插桩
 android {
-    defaultConfig {
-        ndk {
-            // 在 debug 构建中启用 ASan
+    buildTypes {
+        debug {
             packagingOptions {
-                doNotStrip "**/*.so"
+                doNotStrip "**/*.so" // 仅保留符号表，方便 crash 定位
             }
         }
     }
 }
 ```
+
+`doNotStrip` 只保留 .so 符号表，**不会启用 ASan**。启用 ASan 的正确方式是通过 NDK 编译参数：
+
+1. 在 `CMakeLists.txt` 或 `Android.mk` 中为目标库添加编译/链接参数：
+
+```cmake
+# CMakeLists.txt
+target_compile_options(my-native-lib PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+target_link_options(my-native-lib PRIVATE -fsanitize=address)
+```
+
+2. 准备 `wrap.sh` 包装脚本（Android 8.0+，用于 ASan 运行时加载）：
+
+```bash
+#!/system/bin/sh
+# app/src/main/resources/lib/arm64-v8a/wrap.sh
+ASAN_OPTIONS=alloc_dealloc_mismatch=0
+export ASAN_OPTIONS
+exec "$@"
+```
+
+3. 在 Manifest 中为 debug 构建开启 `android:debuggable`（ASan 仅在 debuggable 进程中生效）。
 
 ASan 会使 App 性能下降 2-5 倍，所以只在 debug 构建中使用。但它能捕获到 malloc debug 无法发现的越界访问和 use-after-free 问题。
 
@@ -572,8 +595,25 @@ ASan 会使 App 性能下降 2-5 倍，所以只在 debug 构建中使用。但�
 # 追踪特定进程的 Native 堆分配
 adb shell heapprofd --pid=<PID>
 
-# 同时追踪 Java 堆（Android 12+）
-adb shell heapprofd --pid=<PID> --java
+# Java 堆分配采样（Android 12+）：使用 Perfetto tools/heap_profile
+# 注意：heapprofd 没有 --java 稳定参数
+# 推荐：通过 Perfetto heap_profile 脚本指定 ART heap
+perfetto_heap_profile --name <package_name> --heaps com.android.art
+```
+
+或在 Perfetto TraceConfig 中配置：
+
+```protobuf
+data_sources {
+    config {
+        name: "linux.heapprofd"
+        heapprofd_config {
+            sampling_interval_bytes: 4096
+            heaps: "com.android.art"  # Java 堆分配采样
+            pid: <PID>
+        }
+    }
+}
 ```
 
 [图：Perfetto UI 中 heapprofd 的 Heap Profiles 面板，标注按分配大小排序的调用栈火焰图]
@@ -590,28 +630,41 @@ adb shell heapprofd --pid=<PID> --java
 
 [已验证: 官方文档, developer.android.com/reference/android/content/ComponentCallbacks2]
 
-`ComponentCallbacks2.onTrimMemory(int level)` 的回调级别分为三类：
+`ComponentCallbacks2.onTrimMemory(int level)` 的回调级别在 API 33 及以下和 API 34+ 存在显著差异：
 
-**进程在前台时的回调：**
+**API 33 及以下——全部回调可用：**
+
+前台回调：
 
 | 级别 | 值 | 含义 | 建议操作 |
-|------|---|------|---------|
+|------|---|------|----------|
 | `TRIM_MEMORY_RUNNING_LOW` | 10 | 系统内存开始紧张 | 释放非关键缓存 |
 | `TRIM_MEMORY_RUNNING_MODERATE` | 5 | 内存进一步紧张 | 释放更多缓存 |
 | `TRIM_MEMORY_RUNNING_CRITICAL` | 15 | 内存严重紧张，后台进程可能被杀 | 释放所有可释放的缓存 |
 
-[已验证: AOSP ComponentCallbacks2.java — RUNNING_MODERATE=5, RUNNING_LOW=10, RUNNING_CRITICAL=15, UI_HIDDEN=20, BACKGROUND=40, MODERATE=60, COMPLETE=80]
+注意：这些回调在进程**仍然在前台运行**时就会触发。及时响应可以降低系统进入更严重内存压力状态的概率。
 
-注意：这些回调在进程**仍然在前台运行**时就会触发。系统还没杀任何后台进程，但已经在预警了。及时响应这些回调，可以降低系统进入更严重内存压力状态的概率。
-
-**进程退到后台后的回调：**
+后台回调：
 
 | 级别 | 值 | 含义 | 建议操作 |
-|------|---|------|---------|
+|------|---|------|----------|
 | `TRIM_MEMORY_UI_HIDDEN` | 20 | UI 不可见了 | 释放 UI 相关资源（Bitmap 缓存等） |
 | `TRIM_MEMORY_BACKGROUND` | 40 | 进程进入 LRU 列表 | 释放所有可以重新创建的资源 |
 | `TRIM_MEMORY_MODERATE` | 60 | 进程在 LRU 列表中部 | 释放更多缓存 |
 | `TRIM_MEMORY_COMPLETE` | 80 | 进程即将被杀 | 释放一切，保存关键数据 |
+
+**API 34+——回调范围收窄：**
+
+`RUNNING_*`、`MODERATE`（60）、`COMPLETE`（80）等旧 level 已废弃或不再投递给 App。API 35 将相关常量标为 `@Deprecated`。API 34+ 仍有实际意义的是：
+
+| 级别 | 值 | 含义 | 建议操作 |
+|------|---|------|----------|
+| `TRIM_MEMORY_UI_HIDDEN` | 20 | UI 不可见 | 释放 UI 相关资源 |
+| `TRIM_MEMORY_BACKGROUND` | 40 | 进入 LRU 列表 | 释放可重建的资源 |
+
+在 API 34+ 设备上，系统内存压力判断应回到 PSI（`/proc/pressure/memory`）、`mm_vmscan` tracepoint、`lmkd` 指标等系统级信号，不要依赖不再投递的 `TRIM_MEMORY_COMPLETE` 作为"即将被杀"的信号。
+
+[已验证: AOSP ComponentCallbacks2.java — RUNNING_MODERATE=5, RUNNING_LOW=10, RUNNING_CRITICAL=15, UI_HIDDEN=20, BACKGROUND=40, MODERATE=60, COMPLETE=80]
 
 ### 正确的响应策略
 
@@ -765,21 +818,14 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 ### Android 17：历史峰值追溯
 
-`ApplicationStartInfo` 在 Android 17（API 37）新增了 `getPeakRssKb()` 和 `getPeakAnonKb()` 方法，允许应用在重启后追溯上一运行周期的内存峰值。这在诊断 `MemoryLimiter` 触发的进程终止时特别有用——应用被杀后无法记录自身的内存状态，但下次启动时可以通过这些方法回查"上次被杀前的内存天花板"。
+`ApplicationStartInfo` 在 Android 17（API 37）中可能与 MemoryLimiter 诊断产生关联。[待验证：本轮检索官方 API 未确认 `ApplicationStartInfo` 新增的峰值内存相关方法，以下保留为研究思路。]
 
-```kotlin
-// Android 17+ 追溯上一周期内存峰值
-val startInfo = getSystemService(ActivityManager::class.java)
-    .getHistoricalProcessStartReasons(1)
-    .firstOrNull()
-startInfo?.let {
-    val peakRss = it.peakRssKb    // 峰值 RSS（KB）
-    val peakAnon = it.peakAnonKb  // 峰值匿名内存（KB）
-    // 如果 peakRss 接近 MemoryLimiter 阈值，说明上次被杀是内存溢出导致
-}
-```
+当前已公开的诊断路径：
 
-这一 API 把内存监控从"周期采样"推进到了"历史峰值追溯"，让线上内存异常的诊断流程更完整。
+- **`ApplicationExitInfo`（Android 10+）**：通过 `getHistoricalProcessExitReasons()` 获取进程终止原因、状态、PSS/RSS 快照。如果 `reason == REASON_LOW_MEMORY`，说明进程被系统因内存压力终止
+- **`ProfilingManager`（Android 15/API 35+）**：可在内存水位达到阈值时触发系统级 Trace 采集，提供零侵入的内存异常捕获
+
+[待验证] Android 17 是否在 `ApplicationStartInfo` 中新增了上次运行周期的峰值内存回查方法。确认前可先用 `ApplicationExitInfo.getPss()` 和 `getRss()` 作为替代诊断数据源。
 
 ## 常见问题与误区
 
