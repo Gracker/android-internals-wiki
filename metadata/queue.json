@@ -5813,13 +5813,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "updated_by": "task9-deep-tech-review",
       "updated_at": "2026-05-01T09:26:13+08:00",
       "material_paths": [
         "intake/suggestions.md"
-      ]
+      ],
+      "completed_at": "2026-05-01T11:45:31.541695",
+      "completed_reason": "schedutil源码拆分为android15-6.6/android16-6.12两版；SQL单位/别名已修正(freq_mhz + WHERE freq<500000)；SCMI Performance Protocol msg_id/domain映射已补齐；sugov_update_single入口已补"
     },
     {
       "section": "5.5",
@@ -6973,7 +6975,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T12:30:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T11:45:31.541695",
+      "completed_reason": "GPU Headroom API已修正为SystemHealthManager.getGpuHeadroom(GpuHeadroomParams)+0-100范围+minInterval约束；gpu_render_stages/gpu_busy已加设备/驱动依赖声明；Gralloc sub-allocation已降级为待验证假设；ANGLE默认路径已改为按设备launch policy区分"
     },
     {
       "section": "2.16",
