@@ -30,7 +30,7 @@ sources:
   - type: aosp
     path: "frameworks/base/core/java/com/android/internal/os/ZygoteInit.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/TimingsTraceAndSlog.java @ android-16.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/utils/TimingsTraceAndSlog.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/services/java/com/android/server/SystemServer.java @ android-16.0.0_r1"
   - type: aosp
@@ -74,16 +74,16 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task9_result: "needs-rework"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: pending
+task9_result: "pending"
 last_task9_at: "2026-04-29T22:20:00+08:00"
-task2b_state: "pending"
+task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
 review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes (banned words rephrased)"
-task2b_result: fixed
+task2b_result: fixed  # 2026-05-01 rework: TimingsTraceAndSlog path, startApexServices version (13 not 12), /product/etc/init added
 ---
 
 # 系统启动全流程
@@ -162,7 +162,7 @@ Linux 侧最早的进程关系仍然成立：PID 0 是 swapper，`rest_init()` �
 - SELinux 策略文件从 `/sepolicy` 或 vendor/odm overlay 加载到内核，policy load 本身是 first-stage 之后的耗时操作之一，通常占用数十到数百毫秒，具体取决于策略规则数量和硬件 I/O 速度。这一步对开机时间的影响在启用大量 OEM 自定义 SELinux 策略时会更加明显 [待验证：具体设备上的分段耗时]
 - `SwitchRoot()` 到新根文件系统，再进入 second-stage init
 
-这一段完成后，second-stage init 才会开始解析 rc 配置。`init.cpp` 默认读取 `/system/etc/init/hw/init.rc`，并继续解析 `/system/etc/init`、`/system_ext/etc/init`、`/vendor/etc/init`、`/odm/etc/init`。随后 action queue 依次推进 `early-init`、`init`、`late-init`、`post-fs-data`、`zygote-start`、`boot` 等阶段。
+这一段完成后，second-stage init 才会开始解析 rc 配置。`init.cpp` 默认读取 `/system/etc/init/hw/init.rc`，并继续解析 `/system/etc/init`、`/system_ext/etc/init`、`/vendor/etc/init`、`/odm/etc/init`、`/product/etc/init`（按 `init.cpp` `ParseConfig` 顺序）。product 分区承载产品侧服务和属性配置，启动排查时遗漏会导致服务来源归因不完整。随后 action queue 依次推进 `early-init`、`init`、`late-init`、`post-fs-data`、`zygote-start`、`boot` 等阶段。
 
 `zygote-start` 也是一个独立节点。AOSP `rootdir/init.rc` 会在这个触发点先等待 `odsign.verification.done=1`，再执行 `start zygote` / `start zygote_secondary`。把 `post-fs-data`、`zygote-start`、`boot` 混写成一个“init 阶段”后，很多启动长尾问题就没法定位了。
 
@@ -191,19 +191,19 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 
 **Other services** 里才会启动 `InputManagerService`、`WindowManagerService`、`AlarmManagerService`、`JobSchedulerService`、`NotificationManagerService` 等更大一包服务。WMS 和 InputManagerService 属于这一段。`SensorService` 也不是这里直接 new 出来的 Java service，SystemServer 只是通过 `PHASE_WAIT_FOR_SENSOR_SERVICE` 等待相关前置条件，再继续启动 WMS。
 
-`startApexServices(t)` 在 Android 12 引入。APEX 模块化从 Android 10 开始，但独立的 apex services 启动阶段是 Android 12 才出现的。写文章时最好直接注明“本文按 android-16.0.0_r1 观察到的阶段顺序”，少做未经核对的版本断言。
+`startApexServices(t)` 在 Android 13 引入。APEX 模块化从 Android 10 开始，但独立的 apex services 启动阶段在 `SystemServer.java` 中直到 Android 13 才出现（对比 `android-12.0.0_r34` / `android-12.1.0_r27` 均无此方法）。写文章时最好直接注明“本文按 android-16.0.0_r1 观察到的阶段顺序”，少做未经核对的版本断言。
 
 **启动流程的版本差异（Android 12-16 关键变更）**
 
 启动链的主干在不同版本间是稳定的，但几个关键变化会影响分析方式：
 
-- **Android 12**：引入 `startApexServices()` 独立阶段，APEX 模块（ART、Media 等）可以在开机阶段独立更新，不再随 system 分区整体升级。ART APEX 的更新会直接影响 Zygote 预加载的 dexpreopt 产物路径。
+- **Android 13**：引入 `startApexServices()` 独立阶段，APEX 模块（ART、Media 等）可以在开机阶段独立更新，不再随 system 分区整体升级。ART APEX 的更新会直接影响 Zygote 预加载的 dexpreopt 产物路径。
 - **Android 13**：Perfetto 的 boot trace 配置改进，增加了更多 init 阶段的 atrace hook。
 - **Android 15**：Cloud Profiles 作为 Mainline 模块推送给设备，首次启动时编译产物可能依赖云端下发的 profile，不再只依赖本地 Baseline Profile。OTA 后首启的 dex2oat 策略随之变化。[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]
 - **Android 16**：profileable build 配置的变化影响 Zygote 预加载的命中路径；AutoFDO（Automatic Feedback-Directed Optimization）与 Baseline Profile 协同优化，对冷启动有额外改善。具体数据参见 8.3 节。
 - **Android 16（Cloud Compilation）**：在 Baseline Profile 基础上进一步演进——设备 OTA 后不再需要本地执行 `dex2oat`，而是直接从 Google 服务器下载预编译的 `.odex` / `.vdex` 产物。这套机制彻底解决了 OTA 后首次开机"正在优化应用"的等待。Cloud Compilation 用带宽换计算：下载编译产物的网络耗时远低于本地 `dex2oat` 的 CPU 开销，对低端设备的安装体验改善尤其明显。
 
-如果分析对象是 Android 12 之前的设备，`startApexServices()` 不存在，apex 组件的启动混在其他阶段里。
+如果分析对象是 Android 12 及之前的设备，`startApexServices()` 不存在，apex 组件的启动混在其他阶段里。
 
 ### Home 首帧可见、LOCKED_BOOT_COMPLETED、BOOT_COMPLETED 要拆开
 
@@ -240,9 +240,9 @@ adb shell bootstat -l
 
 ### BootTimingsTraceLog 与 TimingsTraceAndSlog：框架内置的两套秒表
 
-#### BootTimingsTraceLog：盯 Zygote 预加载
+#### TimingsTraceLog：盯 Zygote 预加载
 
-ZygoteInit 在预加载阶段会写 BootTimingsTraceLog。常见 slice 包括 `PreloadClasses`、`PreloadResources`、`PreloadSharedLibraries`、`PreloadOpenGL` 等。分析“开机还没到 SystemServer 就已经拖很久”的问题时，先看这里。
+ZygoteInit 在预加载阶段使用 `android.util.TimingsTraceLog`（Zygote 侧的计时工具，变量名 `bootTimingsTraceLog`，trace tag 如 `Zygote64Timing` / `Zygote32Timing`）。常见 slice 包括 `PreloadClasses`、`PreloadResources`、`PreloadSharedLibraries`、`PreloadOpenGL` 等。分析“开机还没到 SystemServer 就已经拖很久”的问题时，先看这里。
 
 如果 `PreloadClasses` 明显变宽，就去核对 preloaded-classes、ART APEX、odsign / dexpreopt 产物；如果 `PreloadResources` 变宽，再查资源包和字体加载。
 
@@ -492,6 +492,7 @@ init.zygote64.rc:  service zygote /system/bin/app_process64 ... --start-system-s
   - `system/core/rootdir/init.rc` — `zygote-start` 触发点与默认启动动作
   - `frameworks/base/config/preloaded-classes` — 当前分支预加载类列表
   - `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java` — Zygote 预加载与 `startSystemServer()`
+  - `frameworks/base/services/core/java/com/android/server/utils/TimingsTraceAndSlog.java` — SystemServer 阶段计时工具
   - `frameworks/base/services/java/com/android/server/SystemServer.java` — `BOOT_PROGRESS_SYSTEM_RUN`、四段 StartServices
   - `frameworks/base/services/core/java/com/android/server/EventLogTags.logtags` — `boot_progress_system_run` / PMS 相关里程碑
   - `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` — `boot_progress_ams_ready` / `boot_progress_enable_screen`

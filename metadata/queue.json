@@ -9238,7 +9238,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T03:32:47+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T12:44:50.911449",
+      "completed_reason": "P0 TimingsTraceAndSlog路径已修正；P1 startApexServices版本改为Android 13；P1 /product/etc/init已补充"
     },
     {
       "section": "1.3",
@@ -10162,7 +10164,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T05:32:43+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T12:44:50.911449",
+      "completed_reason": "P0 FGS oom_adj已修正为PERCEPTIBLE_APP_ADJ=200为主(非0~100)；P1 AVF Terminal边界已降级为待验证说明"
     },
     {
       "section": "5.X",

@@ -55,7 +55,7 @@ related_chapters: ["1.1", "1.2", "1.4", "1.5", "4.4", "5.1", "5.8"]
 task6_state: reviewed
 review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes (banned words rephrased)"
 task2b_result: fixed
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
@@ -510,7 +510,13 @@ Android 12 引入了一个新的限制机制：Phantom Process Killer。这里�
 
 监控逻辑还受 `FeatureFlagUtils.SETTINGS_ENABLE_MONITOR_PHANTOM_PROCS` 控制，AOSP 默认值是 `true`。同时，`MAX_PHANTOM_PROCESSES` 可以通过 `DeviceConfig.NAMESPACE_ACTIVITY_MANAGER` 下的 `max_phantom_processes` 覆盖，所以不同设备上的实际门槛可能不同。正文里不宜把某条 adb 命令写成所有版本、所有 ROM 都成立的统一开关。
 
-Android 16 引入了 AVF (Android Virtualization Framework) Terminal，允许在受保护的虚拟机 (pVM) 中运行终端环境。pVM 内部的进程不受宿主 Phantom Process Killer 32 个名额的限制。对于需要运行大量子进程的场景（如构建工具链、测试框架），AVF Terminal 是一条官方规避路径。不过 pVM 的启动开销和资源隔离粒度都比直接 fork 子进程重，只适合真正需要隔离的高安全场景，不该当作绕过 PPK 的常规手段。
+Android 16 引入了 AVF (Android Virtualization Framework) Terminal，允许在受保护的虚拟机 (pVM) 中运行终端环境。pVM 内部的进程不受宿主 Phantom Process Killer 32 个名额的限制。对于需要运行大量子进程的场景（如构建工具链、测试框架），AVF Terminal 提供了一种隔离化方案。但需要注意几个边界：
+
+1. **pVM 并非普通 App 子进程保活方案**：pVM 启动开销远大于 fork，资源隔离粒度也不同，只适合真正需要强隔离的场景。
+2. **第三方 App 可用性有限**：AVF Terminal 的产品边界和 API 开放程度仍在演进中，普通 App 能否直接创建 pVM 取决于系统权限和策略。
+3. **与 PhantomProcessList 的关系**：pVM 内部的进程对宿主 AMS 的 `PhantomProcessList` 不可见，因此不受其计数裁剪。但宿主进程自身的 oom_adj 仍会影响系统对整个 pVM 资源的回收决策。
+
+[待验证：AVF Terminal 在第三方 App 中的可用性边界和 API 37 的正式限制条件]
 
 [图：Perfetto 进程列表中，同一 UID 下出现父 App 进程和多个 phantom process，系统裁剪后多余子进程消失]
 
@@ -631,7 +637,7 @@ ORDER BY ts;
 
 ### 误区 3：后台 Service 设置为前台 Service 就万事大吉
 
-**不完全正确**。前台 Service 确实能将进程 oom_adj 从 SERVICE_ADJ（500）提升到 0~100（foreground/perceptible）级别，但 Android 14 要求前台 Service 必须声明类型（如 `camera`, `location`, `mediaPlayback`），并且系统会检查这些类型是否与 App 实际行为匹配。滥用前台 Service 不仅违反 Play Store 政策，也会被系统检测并降级。
+**不完全正确**。前台 Service 确实能把进程从 `SERVICE_ADJ`（500）甚至 `SERVICE_B_ADJ`（800）提上来，但实际 adj 值取决于 `OomAdjuster` 的综合判定。多数情况下，`startForeground()` 会把进程提升到 `PERCEPTIBLE_APP_ADJ = 200`（用户可感知档）；刚从 TOP 退下还带着 FGS 的应用，可能短暂落在 `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50` 这一缓冲档。但不能一概写成“提升到 0~100”——前台进程（`FOREGROUND_APP_ADJ = 0`）要求有 resumed Activity 或其他 top 条件，仅靠 FGS 本身通常达不到。此外，Android 14 要求前台 Service 必须声明类型（如 `camera`, `location`, `mediaPlayback`），并且系统会检查这些类型是否与 App 实际行为匹配。滥用前台 Service 不仅违反 Play Store 政策，也会被系统检测并降级。
 
 ### 误区 4：进程被杀一定是因为内存不足
 
