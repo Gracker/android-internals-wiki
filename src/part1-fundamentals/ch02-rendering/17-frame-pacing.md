@@ -62,16 +62,15 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-04-30"
+task6_reviewed_date: "2026-05-01"
 reviewed_date: "2026-04-28"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_task6_reviewed_date: "2026-04-30"
-reviewed_date: 2026-04-28
 task9_reviewed_by: openclaw-task9
 task2b_result: fixed
 last_task9_at: "2026-04-28T13:23:00+08:00"
