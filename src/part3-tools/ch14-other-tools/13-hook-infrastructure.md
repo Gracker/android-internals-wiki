@@ -40,9 +40,9 @@ related_chapters:
 - '15.5'
 - '15.9'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-25'
+reviewed_date: '2026-05-01'
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -370,7 +370,7 @@ Android 14 起对 Inline Hook 的影响需要按版本拆开看：**Android 14 (
 Inline Hook 修改的是已映射的代码页,不能只用一句“Bionic Linker 限制”解释。工程约束分三层:
 
 - `mprotect()` 是内核接口,页面权限变更最终要经过内核 VMA 检查和 SELinux 判定;直接请求 `PROT_WRITE | PROT_EXEC` 的 RWX 组合,在现代 Android 上不能作为可用路径。
-- SELinux 权限标签按内存来源区分:匿名可执行内存、JIT trampoline 更接近 `execmem`;文件映射代码页被改脏后再执行,会落到 `execmod` / text relocation 这类约束。原文把两者简单归到 `execmod`,会误导读者。
+- SELinux 权限标签按内存来源区分:匿名可执行内存、JIT trampoline 更接近 `execmem`;文件映射代码页被改脏后再执行,会落到 `execmod` / text relocation 这类约束。
 - Bionic Linker 在处理 text relocation 等场景时遵循 RX→RW→RX 的转换,不保留同时可写可执行的页面。`bionic/linker/linker_phdr.cpp` 的加载流程体现了这种约束。
 
 因此 Inline Hook 的工程做法要拆成三个动作:短时间切到可写、写完后恢复可执行、刷新 icache。Trampoline 如果放在匿名内存,也要单独确认分配、写入、转为可执行三个阶段是否满足 `execmem` 和设备 SELinux 策略。
