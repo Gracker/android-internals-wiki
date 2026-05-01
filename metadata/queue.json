@@ -10410,6 +10410,39 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T12:25:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.2",
+      "section_title": "系统启动全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.2 系统启动全流程 — 2026-05-01 13:20 发现 P0 1 / P1 2，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter L43 / 参考资料 L500",
+          "detail": "`frameworks/base/services/core/java/com/android/server/user/UserController.java` 在 AOSP android-16.0.0_r1 不存在；实际路径是 `frameworks/base/services/core/java/com/android/server/am/UserController.java`。该路径承载 LOCKED_BOOT_COMPLETED / BOOT_COMPLETED 相关用户生命周期逻辑。",
+          "suggestion": "同步修正 frontmatter sources 与参考资料路径；若正文要展开广播发送链，锚到 am/UserController.java 中 finishUserUnlocked / finishUserUnlockedCompleted / sendLockedBootCompleted 等方法。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L204 Android 16 Cloud Compilation",
+          "detail": "正文写成“设备 OTA 后不再需要本地执行 dex2oat，并彻底解决 OTA 后首次开机正在优化应用等待”。目前可核到的公开资料指向 Google Play / SDM 下发应用预编译产物，作用域是 App 安装与更新；未证明覆盖系统 OTA、odrefresh、odsign、系统包 dexopt 的完整首启路径。",
+          "suggestion": "把 Cloud Compilation 收敛到 App 安装/更新路径；OTA 首启仍保留 odrefresh / odsign / dexopt 兜底边界。若保留 OTA 结论，补官方文档、AOSP 代码路径和 Pixel 实测。"
+        },
+        {
+          "type": "知识盲区",
+          "location": "Kernel 阶段 L151-L154 / 开机性能优化 L331-L338",
+          "detail": "Kernel / first-stage init 段落缺少 Android 官方 boot-time optimization 中的 driver probe 与 module placement：选择性 asynchronous probing，以及把非 first-stage 必需模块移到 vendor / vendor_dlkm，由 second-stage init 并行隐藏模块加载耗时。该点会影响 Kernel、first-stage init、second-stage init 的耗时归因。",
+          "suggestion": "补一段内核模块启动优化边界：first-stage 只保留 console、flash storage、watchdog、reset、cpufreq 等必要驱动；慢 I2C、firmware loading、硬件初始化驱动可评估 async_probe；用 dmesg、init log、bootstat 对照验证。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T13:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

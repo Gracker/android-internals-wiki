@@ -74,15 +74,15 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task2b_pending"
 task6_state: revisiting
-task9_state: pending
-task9_result: "pending"
-last_task9_at: "2026-04-29T22:20:00+08:00"
-task2b_state: "fixed"
+task9_state: reviewed
+task9_result: "needs-rework"
+last_task9_at: "2026-05-01T13:20:00+08:00"
+task2b_state: "pending"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-29"
-review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes (banned words rephrased)"
+task9_reviewed_date: "2026-05-01"
+review_notes: "2026-05-01 task9 deep review: P0 UserController path; P1 Cloud Compilation OTA scope; P1 kernel async probing/module placement gap"
 task2b_result: fixed  # 2026-05-01 rework: TimingsTraceAndSlog path, startApexServices version (13 not 12), /product/etc/init added
 ---
 

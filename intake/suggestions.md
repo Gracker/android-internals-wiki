@@ -665,3 +665,16 @@
 - **位置**：L93 Interceptor 与 DNS/TCP 阶段
 - **问题**：正文说“拦截器看到请求链条，DNS 查询和 Socket 建连已经由 OkHttp 内部完成或复用了连接”。这对 network interceptor 更接近，但 application interceptor 的 chain.proceed() 会包住后续 ConnectInterceptor，能量到包含 DNS/建连的总耗时，只是拿不到阶段回调。
 - **建议**：拆成两句：application interceptor 可量到一次 proceed 的总耗时但不能拆 DNS/TCP/TLS；network interceptor 运行时通常已经有 connection，因此更不能提供 dnsStart/connectStart 阶段口径。
+
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L317-L330 参考基线数据表
+- **问题**：表格给出 Pixel 8 / Android 16 各阶段秒级耗时和占比，但没有 bootstat、dmesg、Perfetto 或复现实测条件。正文虽写“估算值”，仍使用了具体机型和具体区间，容易被读者当作基准数据引用。
+- **建议**：补一份真实 bootstat -l / dmesg / Perfetto 截图或原始文本；拿不到实测时，删除 Pixel 8 标签，改成“示意区间”，并避免给精确占比。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-05-01
+- **类型**：版本差异
+- **位置**：L408 dm-verity 适用版本
+- **问题**：正文写“Android 7.0 起 dm-verity 默认启用”。dm-verity / Verified Boot 支撑链在 Android 4.4 已出现，Android 7.0 关键变化是更严格的 verified boot enforcement 与 FEC 等能力。
+- **建议**：改成“Android 7.0 起进入强制 Verified Boot 语义更明确的阶段”；若只服务本书 Android 8-16 范围，直接写“在本书覆盖版本内默认按强制校验链分析”。
