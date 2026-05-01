@@ -645,3 +645,23 @@
 - **位置**：L302/L306 Choreographer 回调顺序
 - **问题**：正文只写 Input → Animation → Traversal 三类回调。对 Android 16 源码阅读来说，还应提醒现代 Choreographer 已包含 Insets Animation 与 Commit 阶段，否则读者对照当前 doFrame() 会漏掉回调队列。
 - **建议**：补一句：早期主链是 Input/Animation/Traversal；现代源码还要看 INSETS_ANIMATION 和 COMMIT。
+
+## [Task9 Deep Review] 3.2 触摸响应的性能分析 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L80 / L193-L196 延迟预算表
+- **问题**：30-80ms 总触摸延迟、InputReader <1ms、InputDispatcher 1-3ms 等数字缺少设备、刷新率、trace 场景、采样次数和统计口径。
+- **建议**：补一组 Perfetto 样例：设备型号、刷新率、触摸采样率、场景、p50/p95；没有样本时把数字改成经验范围并标注需按目标设备实测。
+
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L490 CameraX 冷启动额外 80-150ms
+- **问题**：“CameraX 首帧前常见额外 80-150ms 初始化开销”缺少测试条件、版本、设备和样本范围。CameraX 不同 use case、extension、device quirk 与预热策略差异很大。
+- **建议**：补 benchmark 条件，至少写清 CameraX/Camera2 版本、use case、设备、冷/热启动定义、p50/p95；没有一手数据时改成“可能引入额外初始化阶段，需按首帧 trace 实测”。
+
+
+## [Task9 Deep Review] 19.23 网络 APM 底层捕获原理 — 2026-05-01
+- **类型**：原理口径
+- **位置**：L93 Interceptor 与 DNS/TCP 阶段
+- **问题**：正文说“拦截器看到请求链条，DNS 查询和 Socket 建连已经由 OkHttp 内部完成或复用了连接”。这对 network interceptor 更接近，但 application interceptor 的 chain.proceed() 会包住后续 ConnectInterceptor，能量到包含 DNS/建连的总耗时，只是拿不到阶段回调。
+- **建议**：拆成两句：application interceptor 可量到一次 proceed 的总耗时但不能拆 DNS/TCP/TLS；network interceptor 运行时通常已经有 connection，因此更不能提供 dnsStart/connectStart 阶段口径。

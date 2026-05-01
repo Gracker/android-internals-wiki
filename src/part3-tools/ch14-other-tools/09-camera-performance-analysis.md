@@ -32,19 +32,20 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed 2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion."
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task9_result: needs-rework
-last_task9_at: "2026-04-27T08:53:48+08:00"
+last_task9_at: "2026-05-01T12:25:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+
 ---
 
 

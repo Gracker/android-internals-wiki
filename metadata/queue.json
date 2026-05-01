@@ -10326,6 +10326,86 @@
       "status": "completed",
       "completed_at": "2026-05-01T09:44:29.940871",
       "completed_reason": "mprotect 16KB页约束已修正：addr对齐而非len凑整；裸名词列表已补全描述"
+    },
+    {
+      "section": "3.2",
+      "section_title": "触摸响应的性能分析",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 3.2 触摸响应的性能分析仍存在 batching/WaitQueue 观测口径与 isResampled API 版本边界问题",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-01-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L279-L286 / L318-L323 Batching 的 Perfetto 观测",
+          "detail": "正文把 WaitQueue（wq）写成可直接观察 batching 的 Slice，并把一个 VSync 内多个 MOVE 等待解释为 App 在消费 batch。AOSP InputDispatcher 的 iq/oq/wq 更准确是 ATRACE_INT 队列长度计数；wq 表示已派发但等待 App finish/ACK 的事件，堆积能证明 App 侧处理慢或未 ACK，不能直接等同于 ViewRootImpl/InputConsumer 的 batched MotionEvent 消费。",
+          "suggestion": "把 Perfetto 观测口径拆开：InputDispatcher 侧看 iq/oq/wq counter 判断派发/ACK 背压；App 侧看 consumeBatchedInputEvents、deliverInputEvent/InputResponse 与 MotionEvent history 判断 batching。不要把 WaitQueue 多个 MOVE 写成 batching 的直接证据。"
+        },
+        {
+          "type": "版本差异/API边界",
+          "severity": "P1",
+          "location": "L255 / L526-L529 PointerCoords.isResampled",
+          "detail": "正文面向 Android 10-16，但直接写应用可通过 MotionEvent.PointerCoords.isResampled() 识别重采样坐标。公开 API 口径需要按 Android 15/API 35 以后说明；Android 10-14 不能把这个方法写成通用可用能力。",
+          "suggestion": "补版本边界：API 35+ 可用 PointerCoords.isResampled()；低版本只能依赖系统行为、trace/源码判断或避免在正文给出公共 API 调用建议。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T12:25:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.9",
+      "section_title": "Android Camera 性能与 Perfetto 分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.9 Camera SQL 与 GFXReconstruct 工具能力存在事实错误",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-01-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/SQL错误",
+          "severity": "P0",
+          "location": "L295-L303 cam2_frame Counter SQL",
+          "detail": "Perfetto Trace Processor 的 counter 表不带 name 字段，counter 名称在 counter_track/process_counter_track 等 track 表上。当前 SQL 使用 counter.name LIKE \"%cam2_frame%\" 会直接查询失败或无法按 track 名过滤。",
+          "suggestion": "改为从 counter JOIN process_counter_track pct ON counter.track_id=pct.id，再使用 pct.name LIKE \"%cam2_frame%\"；如目标 trace 使用通用 counter_track，也应先查 track 表确认具体 schema。"
+        },
+        {
+          "type": "工具能力事实错误",
+          "severity": "P0",
+          "location": "L518 GFXReconstruct 辅助检查花屏和 YUV 帧问题",
+          "detail": "正文写 GFXReconstruct 可在 Vulkan / OpenGL 导入 AHardwareBuffer 的路径上抓取图形 API 调用。GFXReconstruct 主要支持 Vulkan（以及部分平台的 D3D12）捕获/回放，不是 OpenGL 抓帧工具；把 OpenGL 写进去会误导排查路径。",
+          "suggestion": "改为“Vulkan 导入 AHardwareBuffer 的路径”；OpenGL/EGL 场景另行标注需要 AGI、厂商 GPU 工具或应用内 dump，不能归到 GFXReconstruct。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T12:25:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "19.23",
+      "section_title": "网络 APM 底层捕获原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 19.23 OkHttp EventListener 示例的 attempt 懒创建条件仍会覆盖失败重试样本",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-01-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "代码错误/原理断裂",
+          "severity": "P0",
+          "location": "L151-L156 connectStart 懒创建 attempt",
+          "detail": "代码注释说“当前 attempt 已有 failure 就创建新 attempt”，但条件写成 failure != null && connectStartNs == null。一次 connectFailed 后当前 attempt 通常已有 connectStartNs，下一次 connectStart 不会新建 attempt，反而覆盖同一 attempt 的 connectStartNs，导致弱网重试被合并，attempt_count、retry_overhead_ms、失败原因都会失真。dnsStart 也没有处理前一 attempt 已 failure 的场景。",
+          "suggestion": "在进入新 DNS/connect 阶段前判断当前 attempt 是否已结束或已有 failure；条件应类似 if (currentAttempt().failure != null || currentAttempt().connectEndNs != null) attempts += Attempt()，并在 dnsStart/connectStart 都统一调用 ensureActiveAttemptForNewRoute()。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T12:25:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
