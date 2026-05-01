@@ -1,21 +1,21 @@
 ---
 title: "AOSP 源码编译与调试环境"
 chapter: "16.3"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-01"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-task9_result: pending
-last_task9_at: '2026-04-28T10:30:00+08:00'
-task9_reviewed_date: '2026-04-28'
+task9_state: reviewed
+task9_result: pass-tech-review
+last_task9_at: "2026-05-01T08:27:00+08:00"
+task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 + source.android.com"

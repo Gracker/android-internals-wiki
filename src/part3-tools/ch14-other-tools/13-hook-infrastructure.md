@@ -39,20 +39,20 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-01'
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
+task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-25T23:29:25+08:00"
+last_task9_at: "2026-05-01T08:27:00+08:00"
 repaired_date: '2026-05-01'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 last_task2b_at: '2026-05-01T06:48:44'
 ---
 
