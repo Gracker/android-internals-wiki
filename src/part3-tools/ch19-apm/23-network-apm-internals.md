@@ -22,13 +22,13 @@ sources:
   - "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback"
   - "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo"
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T10:57:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-05-01"
 task6_result: pass-light-edit
-review_notes: "2026-04-25 task6 review: pass-light-edit. L1: no banned words. L2: good structure, clear progression. All 7 anchors covered. task2b_state inconsistency fixed (pending→fixed). Has task9 pending queue item, not eligible for auto-promotion."
+review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered. task9_result=needs-rework, not eligible for auto-promotion."
 
 last_task2b_at: "2026-04-27T09:42:00+08:00"
 ---
