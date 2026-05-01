@@ -45,11 +45,11 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
 task9_reviewed_by: openclaw-task9
@@ -739,6 +739,9 @@ data_sources {
         timestamp_clock: PERF_CLOCK_MONOTONIC
       }
       callstack_sampling {
+        scope {
+          target_cmdline: "com.example.myapp"
+        }
       }
     }
   }
@@ -746,6 +749,8 @@ data_sources {
 ```
 
 `frequency: 100` 表示每秒采样 100 次（10ms 间隔）。采样频率越高，结果越精确，但开销也越大。对于大多数分析场景，100-1000 Hz 是合理的范围。
+
+`scope.target_cmdline` 限定只对目标进程采样。如果不设 `scope`，`traced_perf` 会保留所有进程的样本，unwinder 队列容易过载，导致采样丢失和 `traced_perf` 内存暴涨。Android 13+ 的 `target_cmdline` 支持通配符（如 `com.example.*`）。
 
 在 Perfetto UI 中，调用栈采样数据显示为火焰图，可以直观地看到 CPU 时间花在了哪些函数调用上。
 
@@ -861,6 +866,9 @@ data_sources {
         timestamp_clock: PERF_CLOCK_MONOTONIC
       }
       callstack_sampling {
+        scope {
+          target_cmdline: "com.example.myapp"
+        }
       }
     }
   }
