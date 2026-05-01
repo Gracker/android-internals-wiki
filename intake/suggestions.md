@@ -678,3 +678,16 @@
 - **位置**：L408 dm-verity 适用版本
 - **问题**：正文写“Android 7.0 起 dm-verity 默认启用”。dm-verity / Verified Boot 支撑链在 Android 4.4 已出现，Android 7.0 关键变化是更严格的 verified boot enforcement 与 FEC 等能力。
 - **建议**：改成“Android 7.0 起进入强制 Verified Boot 语义更明确的阶段”；若只服务本书 Android 8-16 范围，直接写“在本书覆盖版本内默认按强制校验链分析”。
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-05-01
+- **类型**：原理口径
+- **位置**：L180 PELT 时间尺度
+- **问题**：正文把 PELT 32ms 写成“时间常数约 32ms（1024us × 32）”。Linux PELT 通常以 32ms half-life/半衰期描述，1024us 是采样周期量级；写成时间常数会误导读者理解衰减曲线。
+- **建议**：改为“PELT 的历史贡献约每 32ms 衰减一半”，不要写成时间常数。
+
+
+## [Task9 Deep Review] 5.3 大小核架构 — 2026-05-01
+- **类型**：原理口径
+- **位置**：L427-L430 线程优先级与大核选核
+- **问题**：正文说 Process.setThreadPriority() 会让调度器更积极地把高优先级线程放到大核。nice/priority 主要改变 CFS 权重和抢占机会，不是稳定的大核选择接口；现代 Android 更直接的输入是 task profile、cpuset、uclamp、Power HAL hint 和厂商调度策略。
+- **建议**：把 setThreadPriority 降级为“影响调度权重/延迟”的间接因素；大核倾向改写为 cpuset/uclamp/Power HAL/vendor policy 的结果。
