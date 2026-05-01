@@ -6,54 +6,56 @@
     "total_sections": 250,
     "last_updated": "2026-05-01",
     "pipeline_stage_counts": {
-      "unknown": 33,
-      "ready-to-publish": 106,
-      "task2b_pending": 90,
+      "unknown": 35,
+      "ready-to-publish": 107,
+      "task2b_pending": 88,
       "task9_pending": 11,
-      "task6_pending": 10
+      "task6_pending": 11
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 183,
-      "revisiting": 32,
-      "revising": 1
+      "reviewed": 186,
+      "revisiting": 29,
+      "revising": 1,
+      "done": 2
     },
     "task9_state_counts": {
-      "unknown": 38,
-      "reviewed": 203,
-      "pending": 9
+      "unknown": 40,
+      "reviewed": 204,
+      "pending": 8
     },
     "task2b_state_counts": {
-      "unknown": 40,
+      "unknown": 42,
       "fixed": 114,
       "pending": 93,
       "idle": 3
     },
     "unknown": 32,
-    "finalized": 105,
-    "ready-for-review": 113
+    "finalized": 108,
+    "ready-for-review": 112
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 33,
-      "ready-to-publish": 106,
-      "task2b_pending": 90,
+      "unknown": 35,
+      "ready-to-publish": 107,
+      "task2b_pending": 88,
       "task9_pending": 11,
-      "task6_pending": 10
+      "task6_pending": 11
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 183,
-      "revisiting": 32,
-      "revising": 1
+      "reviewed": 186,
+      "revisiting": 29,
+      "revising": 1,
+      "done": 2
     },
     "task9_state_counts": {
-      "unknown": 38,
-      "reviewed": 203,
-      "pending": 9
+      "unknown": 40,
+      "reviewed": 204,
+      "pending": 8
     },
     "task2b_state_counts": {
-      "unknown": 40,
+      "unknown": 42,
       "fixed": 114,
       "pending": 93,
       "idle": 3
@@ -1977,9 +1979,10 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-05-01",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T09:20:00+08:00"
+      "last_task9_at": "2026-05-01T18:51:19+08:00",
+      "review_notes": "2026-05-01 task9 deep-review: needs-rework。"
     },
     "src/part1-fundamentals/ch05-cpu-power/06-android-power.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/06-android-power.md",
@@ -3704,7 +3707,10 @@
       "task9_result": "needs-rework",
       "reviewed_date": "2026-04-17",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-18"
+      "task9_reviewed_date": "2026-05-01",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-05-01T18:51:19+08:00",
+      "review_notes": "2026-05-01 task9 deep-review: needs-rework。"
     },
     "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md",

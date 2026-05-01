@@ -5842,18 +5842,52 @@
     },
     {
       "section": "5.5",
-      "section_title": "`05-thermal.md`",
-      "priority": 85,
-      "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+      "section_title": "5.5 Thermal 管控",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.5 Thermal 管控仍存在 AOSP 路径、SystemHealthManager 包名/API 行为与 Thermal HAL 版本节点错误，需回炉修正",
       "review_issues": [
         {
           "type": "P1重要缺失",
           "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `温控机制 (Thermal)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`hardware/interfaces/thermal/2.0/default/Thermal.cpp` \n- 关键代码逻辑：在 Android 10/11 之后，逻辑主要流经 `getCurrentTemperatur"
+        },
+        {
+          "level": "P0",
+          "type": "源码路径错误",
+          "location": "frontmatter L13、正文 L222（ThermalManagerService.java）",
+          "detail": "章节把 ThermalManagerService 写成 `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java`。AOSP `android-16.0.0_r1` 实际路径是 `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`；正文参考资料 L669 又写成正确路径，前后自相矛盾。",
+          "suggestion": "统一改为 `frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`；如需讨论旧版路径，单独给版本表，不要把不存在的 `power/thermal/` 作为已验证路径。"
+        },
+        {
+          "level": "P0",
+          "type": "API/类路径错误",
+          "location": "L311、L325（SystemHealthManager 包名与代码示例）",
+          "detail": "正文写 `android.os.SystemHealthManager`。AOSP/SDK API 36 中 `SystemHealthManager` 的包名是 `android.os.health.SystemHealthManager`，`CpuHeadroomParams`/`GpuHeadroomParams` 仍在 `android.os`。当前写法会导致读者导入不存在的类。",
+          "suggestion": "改为 `android.os.health.SystemHealthManager`，代码块补 import 或全限定名；保留 `android.os.CpuHeadroomParams` / `android.os.GpuHeadroomParams` 的边界。"
+        },
+        {
+          "level": "P1",
+          "type": "API 行为边界错误",
+          "location": "L318-L322（CPU/GPU headroom 边界条件）",
+          "detail": "正文称“参数无效或采样过密时返回 Float.NaN”“最小轮询间隔建议 ≥500ms”。AOSP `SystemHealthManager#getCpuHeadroom/getGpuHeadroom` 对无效参数抛 `IllegalArgumentException`；过于频繁调用可返回缓存结果，最小间隔需通过 `getCpuHeadroomMinIntervalMillis()` / `getGpuHeadroomMinIntervalMillis()` 查询，并非固定 500ms。",
+          "suggestion": "把异常/NaN/缓存结果拆开：不支持抛 `UnsupportedOperationException`，参数无效抛 `IllegalArgumentException`，暂不可用返回 `Float.NaN`，轮询间隔读取 `get*HeadroomMinIntervalMillis()`。"
+        },
+        {
+          "level": "P1",
+          "type": "版本差异错误",
+          "location": "L165、L632（Thermal HAL 1.0 版本节点）",
+          "detail": "正文把 Thermal HAL 1.0 归到 Android 9/API 28。`hardware/interfaces/thermal/1.0/IThermal.hal` 在 `android-8.0.0_r1` 已存在，Android 7.1.2 对应 tag 下没有标准 Thermal HAL；Android 10 才同时出现 Thermal HAL 2.0。",
+          "suggestion": "版本演进改为 Android 7：无标准 Thermal HAL；Android 8/9：Thermal HAL 1.0 轮询；Android 10：Thermal HAL 2.0 + callback/PowerManager thermal API；Android 14：AIDL 化。"
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "material_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+        "intake/suggestions.md"
+      ],
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-01T18:51:19+08:00"
     },
     {
       "section": "5.6",
@@ -10503,6 +10537,35 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T17:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "18.4",
+      "section_title": "18.4 Android View 混合渲染链路",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 18.4 SurfaceSyncGroup/SurfaceView API 可见性与外部 Producer 同步边界需回炉补强",
+      "material_paths": [
+        "src/part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P1",
+          "type": "API 可见性/版本边界缺失",
+          "location": "L181、L186（SurfaceSyncGroup + SurfaceView）",
+          "detail": "正文把 `SurfaceSyncGroup` 写成可把 `SurfaceView` 直接包进同步组的 API。AOSP `android-16.0.0_r1` 中 `SurfaceSyncGroup.add(SurfaceView, Consumer<SurfaceViewFrameCallback>)`、`SurfaceViewFrameCallback` 和 `SurfaceView.syncNextFrame()` 均标注 `@hide`；公开 SDK 侧主要是 `AttachedSurfaceControl`、`SurfaceControlViewHost.SurfacePackage` 等受控入口。",
+          "suggestion": "把 SurfaceView 同步拆成“framework/internal @hide 路径”和“应用可用公开路径”；不要让读者以为普通 App 可直接调用 SurfaceView overload/frame callback。"
+        },
+        {
+          "level": "P1",
+          "type": "原理链断裂/边界冲突",
+          "location": "L184、L220（外部 Producer 与同一 Transaction）",
+          "detail": "L184 已说明 Camera/MediaCodec/Flutter 等外部 Producer 的下一块 buffer 不能被同步原语保证准时到达，但 L220 又写 Android 12+ 可把 SurfaceView 几何位置更新和 Buffer 内容更新放入同一个 Transaction。对 MediaCodec 这类外部 producer，App 通常不能把解码产出的下一帧 buffer 和 UI 几何更新放入同一公开 transaction；BLAST/SurfaceSyncGroup只能降低竞态或同步受控 transaction。",
+          "suggestion": "把 L220 改为“几何 transaction 可与受控 Surface 的下一帧同步；对 MediaCodec/Camera 仍要看 producer buffer 到达和 fence”，并和 L184 的边界保持一致。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T18:51:19+08:00",
       "status": "pending"
     }
   ],
