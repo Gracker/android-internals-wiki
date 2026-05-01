@@ -34,11 +34,11 @@ task2b_state: fixed
 last_task2b_at: "2026-05-01T08:43:45.552855"
 task2b_result: fixed
 last_task2b_at: "2026-04-23T04:32:00+08:00"
-task6_state: revisiting
-task6_result: pass-light-edit
-pipeline_stage: task6_pending
-reviewed_date: "2026-04-29"
-reviewed_by: openclaw-task6
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+pipeline_stage: "task9_pending"
+reviewed_date: "2026-05-01"
+reviewed_by: "openclaw-task6"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-29T09:20:00+08:00"
 ---
@@ -112,7 +112,7 @@ CPU 的功耗来自两部分：静态功耗（漏电流）和动态功耗（充�
 
 2026 年旗舰 SoC 的大核最高频率已经突破 4GHz（如骁龙 8 Elite 的 Oryon 核心）。在这个频率段，V/F 曲线变得极端陡峭：从 3.5GHz 到 4.0GHz 的频率提升可能不到 15%，但电压和功耗的增加可能超过 40%。功耗公式 P ∝ C × V² × f 在这里体现得淋漓尽致——频率线性增长，电压二次方增长，两者叠加后功耗呈超线性爆发。
 
-这意味着 4GHz 档位的性价比极低。性能测试中，将最高频率限制在 3.5-3.8GHz（通过 sysfs 写入 ），通常只损失 5-10% 的单核算力，但整机功耗可以降低 20-30%。这也是为什么厂商的日常调度策略很少真正触及 4GHz——它们留给短时 burst（如应用冷启动）使用。做性能优化时，如果 Trace 显示 CPU 长时间驻留在 4GHz，反而需要检查 governor 的限频逻辑是否失效。
+这意味着 4GHz 档位的性价比极低。性能测试中，将最高频率限制在 3.5-3.8GHz（通过 sysfs 写入 `scaling_max_freq`），通常只损失 5-10% 的单核算力，但整机功耗可以降低 20-30%。这也是为什么厂商的日常调度策略很少真正触及 4GHz——它们留给短时 burst（如应用冷启动）使用。做性能优化时，如果 Trace 显示 CPU 长时间驻留在 4GHz，反而需要检查 governor 的限频逻辑是否失效。
 
 [待验证: 4GHz+ 档位的具体 V/F 曲线数据因 SoC 而异，以上为典型趋势描述]
 
