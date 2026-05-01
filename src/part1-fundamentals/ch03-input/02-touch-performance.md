@@ -33,17 +33,18 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
 task2b_state: pending
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_rework_date: "2026-04-29"
-task9_reviewed_by: "openclaw-task9"
+task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
-last_task9_at: "2026-04-30T16:20:00+08:00"
-task9_result: pending
+last_task9_at: "2026-05-01T12:25:00+08:00"
+task9_result: needs-rework
+
 ---
 
 # 触摸响应的性能分析
