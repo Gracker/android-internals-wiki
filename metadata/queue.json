@@ -861,7 +861,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T20:48:28.811535",
+      "completed_reason": "ProfilingManager requestProfiling()代码示例已在05-case-studies.md中存在; gpu.renderstages数据源已在09-game-performance.md中覆盖; Headroom API 120Hz帧预算破坏性(12%+)已明确警告并建议异步轮询"
     },
     {
       "section": "08-art-generational-gc",
@@ -2481,13 +2483,15 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T09:17:47+08:00",
-      "status": "pending",
+      "status": "completed",
       "material_paths": [
         "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-04-27T15:34:11+08:00"
+      "updated_at": "2026-04-27T15:34:11+08:00",
+      "completed_at": "2026-05-01T20:47:36.850158",
+      "completed_reason": "Custom Data Source小节已新增; Bigtrace vs BatchTraceProcessor对比表已补充; Trace Summarization三层关系已澄清(Standard Library→Summary v2→旧版Metric); R8/ProGuard生产包trace点治理策略已添加"
     },
     {
       "section": "13.9",
