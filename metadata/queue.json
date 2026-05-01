@@ -7435,8 +7435,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T08:31:09+08:00",
-      "status": "pending",
-      "updated_at": "2026-04-29T08:31:09+08:00"
+      "status": "completed",
+      "updated_at": "2026-04-29T08:31:09+08:00",
+      "completed_at": "2026-05-01T08:43:58.715670",
+      "completed_reason": "em_pd_energy→em_cpu_energy已修正；UClamp sum聚合已降级为厂商/社区探索方向；overutilized已拆分6.6/6.12版本差异；find_energy_efficient_cpu已限定为wake-up placement"
     },
     {
       "section": "5.3",
@@ -7531,7 +7533,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T09:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T08:43:58.715670",
+      "completed_reason": "内核版本引用已修正(android16-6.6→android15-6.6/android16-6.12)；sugov_get_util代码已纠正(cpu_util_cfs_boost)；SCMI事件已修正(scmi_fc_call)；Perfetto SQL已改用cpu_frequency_counters标准库"
     },
     {
       "section": "5.5",
