@@ -7,10 +7,10 @@ tags: ["hybrid-composition", "SurfaceView", "mixed-rendering", "parallel-pipelin
 related_chapters: ["2.1", "2.6", "18.2", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-17"
 task6_result: pass-light-edit
@@ -176,14 +176,14 @@ sequenceDiagram
 |:---|:---|:---|
 | `SurfaceComposerClient::Transaction::merge` | 已有 `SurfaceControl.Transaction` | 把多个受控 Layer 的几何 / alpha / buffer 状态合并到同一个事务边界 |
 | `Transaction::setDesiredPresentTime` | per-transaction | 让 SF 在更合适的 vsync 周期 latch（**显示调度**，不消除 fence 等待） |
-| `Surface#setNextFrameTimestamp` | per-buffer | 单个 Surface 的下一帧期望 present 时间，与上一条互补 |
+| Native `Surface::setBuffersTimestamp()` / EGL `eglPresentationTimeANDROID` | per-buffer | 在 producer 端为单块 buffer 设置期望 present 时间戳（native/EGL 层能力，非 Java `Surface` 公共 API） |
 | `SurfaceControl.Transaction#addTransactionCommittedListener` | Android 13 / API 33+ | 通知 transaction 已提交（**不等于** buffer release，**不等于** present） |
 | `SurfaceSyncGroup` | Android 14 / API 34+ | 把多个受控 Surface 包进一个同步组（`AttachedSurfaceControl`、`SurfaceView`、`SurfaceControlViewHost.SurfacePackage`），SurfaceView 还需通过 frame callback 声明要同步的下一帧 |
 | `latch unsignaled buffer` | 单 Layer 局部优化 | 满足 AutoSingleLayer 等条件时把 fence 等待时机后移；**不是跨 Surface 同步** |
 
 **重要边界**：上面这些原语只能协调**受控 Surface / Transaction**，不能让外部 Producer（Camera / MediaCodec / Flutter Engine）的下一块 buffer 在期望帧准时到达。当跨进程 Producer 节奏不可控时，这些机制能**缓解**不同步压力，但**不会自动解决**它——最终仍然需要一个时刻让各条 Surface 同时满足"可以参与这一轮合成"的条件，等待时机可以后移，同步要求没有消失。
 
-[已验证: AOSP `frameworks/native/libs/gui/SurfaceComposerClient.cpp` `Transaction::merge` / `setDesiredPresentTime` + Android Developers `SurfaceSyncGroup` (API 34) / `addTransactionCommittedListener` (API 33)]
+[已验证: AOSP `frameworks/native/libs/gui/SurfaceComposerClient.cpp` `Transaction::merge` / `setDesiredPresentTime` + `frameworks/native/libs/gui/Surface.cpp` `Surface::setBuffersTimestamp()` + Android Developers `SurfaceSyncGroup` (API 34) / `addTransactionCommittedListener` (API 33)]
 
 ## SurfaceFlinger 在多 Layer 时的 latch 行为
 

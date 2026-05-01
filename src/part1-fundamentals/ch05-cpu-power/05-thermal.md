@@ -10,7 +10,7 @@ last_verified_against: "PowerManager#getThermalHeadroom docs + ADPF fixed-perfor
 confidence: medium
 sources:
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java"
+    path: "frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
   - type: aosp
     path: "hardware/interfaces/thermal/2.0/IThermal.hal"
   - type: aosp
@@ -41,15 +41,15 @@ tags:
   - cpu-frequency
 reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-29"
 task9_reviewed_by: openclaw-task9
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 last_task9_at: "2026-04-29T09:20:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
@@ -219,13 +219,13 @@ struct Temperature {
 
 ### ThermalManagerService：Framework 的温控中枢
 
-在 Framework 层，`ThermalManagerService`（`frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`）是温控系统的中枢。它做三件事：
+在 Framework 层，`ThermalManagerService`（`frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java`）是温控系统的中枢。它做三件事：
 
 1. **接收 HAL 上报的温控事件**。ThermalManagerService 通过 `IThermalEventListener` 回调接口接收 Thermal HAL 推送的 severity 变化。
 2. **将 severity 广播给系统组件和 App**。内部组件通过 `IThermalEventListener` 接收；App 通过 `IThermalStatusListener`（封装为 `PowerManager.OnThermalStatusChangedListener`）接收。
-3. **执行系统级降温动作**。当 severity 升高到一定程度时，ThermalManagerService 会触发一系列系统级行为，比如限制 JobScheduler 的执行、降低屏幕亮度、甚至触发 Framework 层的关机流程。
+3. **执行关机流程**。当 severity 达到 `SHUTDOWN` 时，ThermalManagerService 触发 Framework 层关机。
 
-整条路径可以概括为：**传感器感知温度 → 内核 thermal core 做第一道硬件级保护 → Thermal HAL 将温度状态抽象为 severity 级别 → ThermalManagerService 协调系统响应 → App 通过 API 感知并自适应。**
+整条路径可以概括为：**传感器感知温度 → 内核 thermal core 做第一道硬件级保护 → Thermal HAL 将温度状态抽象为 severity 级别 → ThermalManagerService 接收并广播状态 → 系统组件 / 厂商 thermal engine 执行具体降温动作 → App 通过 API 感知并自适应。**
 
 ## Android Thermal API：应用如何感知温度
 
@@ -306,6 +306,30 @@ float headroom5s = pm.getThermalHeadroom(5); // 预测5秒后的状态
 
 [已验证: 官方文档 developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)]
 
+### Android 16：CPU/GPU 算力余量（SystemHealthManager）
+
+`getThermalHeadroom()` 只反映距 SEVERE 阈值的热余量，不区分 CPU 和 GPU 各自的负载压力。Android 16 引入了 `SystemHealthManager`（`android.os.SystemHealthManager`），提供更细粒度的算力余量查询：
+
+- `getCpuHeadroom(CpuHeadroomParams)` — 估算近期 CPU 可用算力百分比，返回值范围 `[0, 100]`
+- `getGpuHeadroom(GpuHeadroomParams)` — 估算近期 GPU 可用算力百分比，返回值范围 `[0, 100]`
+
+这两个 API 与 `getThermalHeadroom()` 互补：thermal headroom 看的是整体接近 SEVERE 的程度，CPU/GPU headroom 看的是各计算单元本身的资源余量。在高负载场景下，可能出现 thermal headroom 还充裕但 GPU headroom 已经很低的情况——此时应该降的是 GPU 负载（分辨率、特效）而非 CPU。
+
+边界条件：
+- 设备不支持时抛 `UnsupportedOperationException`
+- 参数无效或采样过密时返回 `Float.NaN`
+- 不要在主线程或关键渲染路径上同步调用，查询本身有 IPC 开销
+- 最小轮询间隔建议 ≥ 500ms
+
+```java
+SystemHealthManager shm = getSystemService(SystemHealthManager.class);
+float cpuHeadroom = shm.getCpuHeadroom(new CpuHeadroomParams.Builder().build());
+float gpuHeadroom = shm.getGpuHeadroom(new GpuHeadroomParams.Builder().build());
+// 两者都是 [0, 100]，越低表示该计算单元余量越小
+```
+
+[已验证: AOSP android16-qpr2 SystemHealthManager.java / CpuHeadroomParams.java / GpuHeadroomParams.java]
+
 ## 温度墙对性能的影响：从 Trace 中看 Thermal Throttling
 
 了解完 API 层面，我们回到性能工程师的视角——在 Perfetto 中，温控介入是什么样子？
@@ -378,15 +402,28 @@ data_sources: {
 
 [已验证: Perfetto 官方文档 ui.perfetto.dev, data source 配置参考]
 
-### Android 16：热阈值触发的自动 Trace 捕获
+### Android 16：ProfilingManager 与热场景 Trace
 
-Android 16 引入了一个对热性能分析极有价值的能力：当设备跨越热阈值时，系统可以自动生成 ProfilingTrace。这意味着开发者不需要提前手动抓 Trace——过热现场会被自动保留。
+Android 16 的 `ProfilingManager` 支持通过 `ProfilingTrigger` 注册 profiling 请求，可用触发器包括 `TRIGGER_TYPE_APP_FULLY_DRAWN`、`TRIGGER_TYPE_ANR` 等（定义在 `packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java`）。截至 android16-qpr2，AOSP Profiling 模块中未提供 thermal 类型的触发器——热场景的 Trace 捕获仍需手动配置。
 
-典型的使用场景：用户反馈"玩了 10 分钟后游戏开始卡"。开发者无需复现，只要设备在过热时自动捕获了 Trace，就能直接看到过热瞬间的 CPU 频率、线程调度和 thermal zone 温度变化。自动捕获的 Trace 包含标准的 sched/freq/power 数据源，足以定位是哪个 thermal zone 触发了降频、降频前后的频率曲线变化、以及受影响最大的线程。
+对于热性能分析，推荐的手动采集方式：
 
-这个功能需要在应用中通过 `ProfilingManager` 注册热相关的 profiling 请求，或者由系统在检测到 thermal status 跨越 `THERMAL_STATUS_MODERATE` 及以上等级时自动触发（具体触发策略因 OEM 配置而异）。
+```python
+# Perfetto trace_config 示例：热场景专用
+thermal_trace = {
+  'buffers': [{'size_kb': 16384}],
+  'data_sources': [
+    {'config': {'name': 'linux.ftrace', 'ftrace_events': [
+      'thermal/thermal_temperature', 'thermal/thermal_zone_trip',
+      'power/cpu_frequency', 'sched/sched_switch'
+    ]}},
+  ]
+}
+```
 
-[待验证: 自动触发阈值和 Trace 保留策略因 OEM 实现而异]
+在过热复现场景中，提前启动上述配置的 Trace，就能捕获降频瞬间的 CPU 频率、thermal zone 温度变化和线程调度，定位触发降频的 thermal zone 和受影响最大的线程。
+
+[已验证: AOSP android16-qpr2 ProfilingTrigger.java — thermal trigger 不在 AOSP 定义的触发器列表中]
 
 ### DVFS 降频 vs Thermal 降频：怎么区分？
 
@@ -436,21 +473,23 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 
 屏幕是手机最大的发热源之一（尤其在高端 OLED 屏幕上）。当温度升高时，系统会降低屏幕亮度上限。我们可能遇到过这种情况：在大太阳底下用手机，突然屏幕变暗了而且拉不上去——这就是 thermal mitigation 在限制亮度。
 
-这个行为由 `DisplayManagerService` 配合 `ThermalManagerService` 实现。具体的亮度降低曲线因厂商而异。
+这个行为由 `DisplayManagerService` 订阅 thermal status 变化来实现。具体的亮度降低曲线因厂商而异。
 
 ### 关闭非必要功能
 
-在更高的 severity 级别，系统开始关闭非核心功能：
+在更高的 severity 级别，系统各组件根据订阅到的 thermal status 独立执行各自的降温策略：
 
-- **SEVERE**：限制后台 JobScheduler 任务执行频率
+- **SEVERE**：`JobScheduler` 限制后台任务执行频率（由 `JobSchedulerService` 根据 thermal status 自行调整）
 - **CRITICAL**：降低扫描频率（如 Wi-Fi 扫描、BLE 扫描），减少非必要唤醒
 - **EMERGENCY**：关闭调制解调器（radio）、停止充电、关闭 NFC 等外设
+
+这些动作并非 ThermalManagerService 直接执行，而是各系统组件订阅 thermal status 后各自响应。厂商 thermal engine 可能在 HAL 层独立执行更激进的策略（如直接限频/限核），绕过 Framework 层。
 
 ### 限制充电电流
 
 充电本身会产生热量。当电池温度过高时，系统会降低充电电流甚至暂停充电。这个逻辑通常在充电 IC 的固件中实现，但也受 Thermal HAL 的控制。
 
-[已验证: AOSP ThermalManagerService.java @ android-14.0.0_r1, 官方文档 source.android.com/docs/core/thermal]
+[已验证: AOSP ThermalManagerService.java @ android16-qpr2 (路径含 thermal/ 子目录), 官方文档 source.android.com/docs/core/thermal]
 
 ## 如何在性能测试中排除温控干扰
 

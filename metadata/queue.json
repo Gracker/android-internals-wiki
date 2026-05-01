@@ -7688,7 +7688,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T09:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T17:58:55.915894",
+      "completed_reason": "TMS路径修正/ProfilingTrace改为手动采集/SystemHealthManager headroom已补充/TMS职责边界已纠正"
     },
     {
       "section": "15.6",
@@ -8844,7 +8846,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T18:48:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T17:58:55.915894",
+      "completed_reason": "Surface#setNextFrameTimestamp 已修正为 Native Surface::setBuffersTimestamp()/EGL eglPresentationTimeANDROID"
     },
     {
       "section": "5.1",
