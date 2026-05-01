@@ -29,16 +29,17 @@ review2_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: pending
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T08:31:09+08:00"
-task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-01"
+last_task9_at: "2026-05-01T09:26:13+08:00"
+task9_result: "needs-rework"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 0，P1 1，P2 1。"
 ---
 
 # EAS 能量感知调度

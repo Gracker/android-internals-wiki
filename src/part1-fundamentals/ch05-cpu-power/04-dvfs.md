@@ -27,20 +27,21 @@ drafted_by: "openclaw-task2"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-29"
-task2b_state: fixed
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-01"
+task2b_state: "pending"
 last_task2b_at: "2026-05-01T08:43:45.552855"
 task2b_result: fixed
 last_task2b_at: "2026-04-23T04:32:00+08:00"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 reviewed_date: "2026-05-01"
 reviewed_by: "openclaw-task6"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-29T09:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-01T09:26:13+08:00"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。"
 ---
 
 # DVFS 与功耗管理
