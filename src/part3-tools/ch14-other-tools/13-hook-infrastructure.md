@@ -39,21 +39,21 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-01'
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-01"
+task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-01T08:27:00+08:00"
+last_task9_at: "2026-04-25"
 repaired_date: '2026-05-01'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: '2026-05-01T06:48:44'
+task2b_state: fixed
+last_task2b_at: '2026-05-01T09:40:00'
 ---
 
 
@@ -306,12 +306,12 @@ Hook 真正的价值,在于补上系统没直接暴露、但业务又确实需�
 
 #### Android 15 的 16KB Page Size 会直接改变 Hook 成败
 
-Native Hook 无论是改 GOT/PLT 还是改函数入口,收束到实现层时都绕不开 `mprotect()` 这类页权限修改。这里最容易被忽略的一条硬约束是:地址和长度都必须按系统页大小落在同一页边界。4KB 时代很多老框架把页大小硬编码成 `4096`;到了 Android 15 的 16KB 设备上,这类代码会在 `mprotect()` 时直接返回 `EINVAL`,表现成 Hook 失败,重则直接把进程带崩。
+Native Hook 无论是改 GOT/PLT 还是改函数入口,收束到实现层时都绕不开 `mprotect()` 这类页权限修改。`mprotect()` 的硬约束是起始地址 `addr` 必须按系统页大小对齐；`len` 参数指定覆盖范围，内核会自动按页粒度向上取整，不需要调用方手动传入页大小的整数倍。4KB 时代很多老框架把页大小硬编码成 `4096`，只影响 `addr` 对齐计算；到了 Android 15 的 16KB 设备上，如果 `addr` 仍按 4KB 对齐计算，`mprotect()` 会返回 `EINVAL`，表现成 Hook 失败，重则直接把进程带崩。
 
 工程上至少要补三件事:
 
-- 用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)` 在运行时读取真实页大小,不要写死 `4096`
-- 重新检查地址和长度的页边界计算,确保所有权限修改都按 16KB 边界展开
+- 用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)` 在运行时读取真实页大小，不要写死 `4096`
+- 按 `page_start = addr & ~(page_size - 1)` 计算对齐起始地址，`page_end = align_up(addr + patch_len, page_size)` 计算覆盖终止地址，`len = page_end - page_start`；不要假设 `len` 必须由调用方手动凑成页大小的整数倍
 - 重新构建 native 库时确认 ELF 满足 16KB 页边界要求;旧构建链通常还需要显式补 `-Wl,-z,max-page-size=16384`
 
 构建侧检查不能被运行时代码替代。`readelf -l libxxx.so` 里 `LOAD` 段的 `p_align` 要满足 16KB 设备的加载要求;旧 NDK/CMake 链接参数不足时,可以在目标库上补一条链接选项:
@@ -324,12 +324,12 @@ target_link_options(your_native_lib PRIVATE "-Wl,-z,max-page-size=16384")
 
 如果某个 Hook 库几年没维护,又默认假设 4KB 页,这在 Android 15/16 设备上就是上线前必须先排掉的兼容性红线。
 
-- Android API 版本变化
-- Android 14 (API 34) targetSdk 对可写可执行内存的限制更严,Inline Hook 的写回窗口更窄
-- linker / namespace 行为差异
-- Android 15+ (API 35+) 的 16KB Page Size 与构建链约束
-- ABI 与指令集差异
-- ROM 对 so 装载和安全策略的定制
+- **Android API 版本变化**：每个大版本的 Bionic Linker、SELinux 策略、execmem/execmod 判定逻辑都可能调整，Hook 库需要逐版本验证
+- **Android 14 (API 34) W^X 收紧**：targetSdk 34 对可写可执行内存的限制更严，Inline Hook 的写回窗口更窄
+- **linker / namespace 行为差异**：Android 7 起引入的 linker namespace 隔离，不同版本对 `dlopen` 路径和符号可见性的限制逐步收紧
+- **Android 15+ (API 35+) 的 16KB Page Size**：页大小变化直接影响 `mprotect` 的地址对齐要求和 ELF 加载兼容性
+- **ABI 与指令集差异**：ARM32/ARM64 的指令修补策略不同，Thumb/ARM 模式切换、分支距离限制都需要分别处理
+- **ROM 定制**：厂商可能修改 so 装载策略、SELinux 策略或 linker 行为，同一 Hook 库在不同 ROM 上的表现可能不一致
 
 ### 运维风险
 
@@ -390,7 +390,7 @@ Inline Hook 的完整执行流程在现代 Android 上被拆解为五个阶段�
 **关键约束**：
 - 不能尝试 `mprotect(PROT_WRITE|PROT_EXEC)`（违反 W^X,会被内核/SELinux/Linker 约束拦住）
 - 不能跳过 icache flush（ARM64 icache 和 dcache 是非一致性的，CPU 可能继续取旧指令）
-- 每次 `mprotect()` 调用的地址和长度必须按页对齐（`getpagesize()` 返回值，非 4096 硬编码）
+- 每次 `mprotect()` 调用的起始地址必须按页对齐（`getpagesize()` 返回值，非 4096 硬编码）；`len` 覆盖范围由内核自动按页取整，不需要手动凑整
 
 ### iCache 失效的 ARM64 实现
 
@@ -424,7 +424,7 @@ Android 15 引入的 16KB Page Size 对 Hook 框架有直接冲击：
 | 问题 | 4KB 时代 | 16KB 时代 |
 |------|----------|-----------|
 | `getpagesize()` 返回值 | 4096 | 16384 |
-| mprotect 地址/长度对齐 | 4KB 边界 | 16KB 边界 |
+| mprotect 起始地址对齐 | 4KB 边界 | 16KB 边界（len 由内核自动按页取整） |
 | 老框架硬编码 4096 | 正常工作 | 返回 EINVAL |
 | 旧 .so（ELF p_align=4096）在 16KB 设备 | 正常加载 | 触发 Compat Mode 或加载失败 |
 
@@ -631,7 +631,7 @@ Inline Hook 修改被保护页面时：
 3. `mprotect(addr, size, PROT_READ|PROT_EXEC)`
 4. `__builtin___clear_cache()` → ARM64: `dc cvau → dsb → ic ivau → isb`
 
-**关键约束**：16KB 页面下 `mprotect` 的 size 参数必须是 16KB 的倍数，否则返回 EINVAL（`EINVAL: size not multiple of page_size`）。
+**关键约束**：16KB 页面下 `mprotect` 的起始地址 `addr` 必须按 16KB 边界对齐（通过 `addr & ~(page_size - 1)` 计算）；`size` 参数指定覆盖范围，内核自动按页粒度向上取整，不需要调用方手动凑成页大小整数倍。如果 `addr` 没有按实际页大小对齐，`mprotect()` 会返回 `EINVAL`。
 
 ## 这一章在全书里的位置
 

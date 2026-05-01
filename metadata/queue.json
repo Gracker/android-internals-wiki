@@ -9842,7 +9842,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T16:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T09:44:29.940871",
+      "completed_reason": "MotionPredictor API调用已修正为实例方法；FLAG_RESAMPLED已改为PointerCoords.isResampled()"
     },
     {
       "section": "14.10",
@@ -10248,8 +10250,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-01T08:14:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-05-01-08-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-05-01-08-review.md",
+      "completed_at": "2026-05-01T09:44:29.940871",
+      "completed_reason": "兼容性风险裸名词列表已补全：每项增加具体技术描述"
     },
     {
       "section": "14.13",
@@ -10269,7 +10273,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T08:27:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T09:44:29.940871",
+      "completed_reason": "mprotect 16KB页约束已修正：addr对齐而非len凑整；裸名词列表已补全描述"
     }
   ],
   "completed": [

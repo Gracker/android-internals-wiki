@@ -33,18 +33,17 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: "pending"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: "reviewed"
+task6_state: revisiting
+task9_state: pending
 task2b_rework_date: "2026-04-29"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-30"
 last_task9_at: "2026-04-30T16:20:00+08:00"
-task9_review_notes: "2026-04-30 16:20 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。MotionPredictor API 与 resampling 标记需 Task2B 回炉。"
-task9_result: "needs-rework"
+task9_result: pending
 ---
 
 # 触摸响应的性能分析
@@ -253,7 +252,7 @@ float latestY = event.getY();
 
 Batching 解决的是“一帧里来了太多点，怎么一起交给应用”；真正让轨迹贴着帧时间走的，还有重采样。系统把 batched input 贴到 `CALLBACK_INPUT` 附近之后，Native 层 `InputConsumer` 会按照目标 frame time，在最近几个真实采样点之间做插值，补出一个更接近这一帧显示时刻的坐标。这样 120Hz 采样配 60Hz 显示仍然有价值，系统拿到的不只是“最新一个点”，而是“更接近这一帧该显示的位置”。
 
-对应用来说，这个补点通常表现为带 `FLAG_RESAMPLED` 的当前坐标。历史样本还在，但当前 `getX()` / `getY()` 更贴近帧时序，指尖轨迹也更稳。也因为这个原因，`requestUnbufferedDispatch()` 只能在笔迹、绘图、签名这类场景慎用；一旦关闭 batching 和系统重采样，MOVE 事件虽然更早送达，轨迹也更容易抖。
+对应用来说，重采样生成的坐标可通过 `MotionEvent.PointerCoords.isResampled()` 识别——`getX()` / `getY()` 读到的是当前样本坐标，是否为重采样点要看对应 PointerCoords 的 `isResampled` 字段。历史样本还在，但当前坐标更贴近帧时序，指尖轨迹也更稳。也因为这个原因，`requestUnbufferedDispatch()` 只能在笔迹、绘图、签名这类场景慎用；一旦关闭 batching 和系统重采样，MOVE 事件虽然更早送达，轨迹也更容易抖。
 
 在 Perfetto 里常见的现象是：一个 VSync 周期内先积累多个 MOVE 采样，App 在输入阶段一次性消费，然后这一帧的布局和绘制以最新状态为准。
 
@@ -418,7 +417,7 @@ android-16.0.0_r1 源码中，Native 层的 MotionPredictor 实现包含 TFLite 
 
 源码和公开文档中未确认的内容：TCN 架构、NPU 加速、30ms 固定预测窗口、对非 stylus 输入源的支持。这些在后续版本公开前不应写成已验证结论。
 
-开发者使用方式：调用 `MotionPredictor.isPredictionAvailable(deviceId, source)` 检查可用性，然后用 `record(MotionEvent)` 输入真实事件，`predict(long targetTimeNanos)` 获取预测事件。预测事件与真实事件在应用自己的渲染层做来源标记——当前 `MotionEvent` 中没有 `FLAG_PREDICTED` 字段。
+开发者使用方式：先构造 `new MotionPredictor(context)` 实例，调用实例方法 `isPredictionAvailable(deviceId, source)` 检查可用性，然后用 `record(MotionEvent)` 输入真实事件，`predict(long targetTimeNanos)` 获取预测事件。预测事件与真实事件在应用自己的渲染层做来源标记——当前 `MotionEvent` 中没有 `FLAG_PREDICTED` 字段。
 
 ### 5. GPU 渲染瓶颈
 
