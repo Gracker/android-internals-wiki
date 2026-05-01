@@ -9773,6 +9773,15 @@
           "detail": "APK v4 签名版本修正（Android 11 非Android 12引入）；scanDirLI并行化更正为独立并行扫描入口"
         }
       ]
+    },
+    {
+      "date": "2026-05-01T12:44:50.911449",
+      "sections": [
+        "1.2",
+        "1.3"
+      ],
+      "type": "task2b-rework",
+      "details": "1.2: TimingsTraceAndSlog路径+startApexServices版本+product分区; 1.3: FGS oom_adj+AVF Terminal边界"
     }
   ],
   "rework_log": [
