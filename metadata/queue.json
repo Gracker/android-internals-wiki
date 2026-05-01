@@ -5724,16 +5724,27 @@
       "section": "5.2",
       "section_title": "`02-eas.md`",
       "priority": 85,
-      "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+      "reason": "[External Review] 技术评分 3.5/5，建议回炉；[Deep Tech Review] EAS overutilized 版本口径在关系/FAQ段落仍与 android16-6.12 行为冲突",
       "review_issues": [
         {
           "type": "P1重要缺失",
           "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `EAS (Energy Aware Scheduling)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`kernel/sched/fair.c` \n- 关键代码逻辑：在 Android Kernel 4.14+ 之后，逻辑主要流经 `find_energy_efficient_cpu`，需要结"
+        },
+        {
+          "type": "版本差异/原理断裂/交叉引用一致性",
+          "location": "“与其他机制的关系 → EAS 与 CFS”及“常见问题” overutilized 描述（约 L411-L439）",
+          "detail": "正文前半部分已正确区分 Linux 6.6 与 android16-6.12：android16-6.12 的 find_energy_efficient_cpu() 不再以 rd->overutilized 短路。但后文仍写“在 overutilized 状态下，EAS 自动退让/暂时关闭”，会把 Android 16/17 读者带回旧口径。android16-6.12 kernel/sched/fair.c 中 find_energy_efficient_cpu() 只检查 pd，不再检查 READ_ONCE(rd->overutilized)。",
+          "suggestion": "把后文改成版本化表述：Linux 6.6 及更早可因 rd->overutilized 跳过能量估算；android16-6.12 起唤醒路径仍会做 EAS 能量估算，overutilized 主要影响 load_balance/misfit 等负载均衡路径。FAQ 中删除“只有系统过载时 EAS 才会被暂时关闭”的泛化结论。"
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-05-01T09:26:13+08:00",
+      "material_paths": [
+        "intake/suggestions.md"
+      ]
     },
     {
       "section": "5.3",
@@ -5753,17 +5764,40 @@
     {
       "section": "5.4",
       "section_title": "`04-dvfs.md`",
-      "priority": 85,
-      "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+      "priority": 95,
+      "reason": "[External Review] 技术评分 3.5/5，建议回炉；[Deep Tech Review] schedutil 源码节选、Perfetto 频率 SQL 单位、SCMI 真值观测仍有技术错误/断裂",
       "review_issues": [
         {
           "type": "P1重要缺失",
           "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `DVFS (动态电压频率调节)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`kernel/drivers/cpufreq/cpufreq_schedutil.c` \n- 关键代码逻辑：在 Android Kernel 4.19+ 之后，逻辑主要流经 `sugov_update_single`，"
+        },
+        {
+          "type": "源码错误",
+          "location": "“schedutil 的频率计算”代码节选（约 L211-L237）",
+          "detail": "代码块标注为 android15-6.6 实际签名，但 android15-6.6 的 sugov_get_util(struct sugov_cpu *sg_cpu) 只调用 cpu_util_cfs_boost() 与 effective_cpu_util()，iowait boost 在 sugov_get_util() 之后由 sugov_iowait_apply() 处理；android16-6.12 的签名才变为 sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)，且包含 scx_cpuperf_target() 与 sugov_effective_cpu_perf()。正文中的 sugov_apply_iowait_boost()/bw_dl/max 字段组合不匹配这两个源码版本。",
+          "suggestion": "拆成 android15-6.6 与 android16-6.12 两段源码锚点：15-6.6 写 sugov_get_util() + sugov_iowait_apply() 的调用顺序；16-6.12 写 boost 参数、scx_cpuperf_target()、effective_cpu_util()、sugov_effective_cpu_perf()。不要把简化公式标成实际源码节选。"
+        },
+        {
+          "type": "数据/SQL错误",
+          "location": "“SQL 查询分析频率变化”频率驻留与低频筛选 SQL（约 L379-L400）",
+          "detail": "Perfetto cpu_frequency_counters.freq 通常是 kHz。SQL 写 `freq / 1000.0 AS freq_khz`，别名与单位相反；`WHERE freq < 500000000` 等价于低于 500GHz，几乎会把所有 Android CPU 频点都选中，无法筛出低于 500MHz 的时段。",
+          "suggestion": "若展示 MHz，改为 `freq / 1000.0 AS freq_mhz`；低于 500MHz 的条件改为 `freq < 500000`。若保留 kHz，则不要除以 1000，直接 `freq AS freq_khz`。"
+        },
+        {
+          "type": "原理断裂/源码准确性",
+          "location": "“SCMI 频率真值：内核意图 vs 固件实值”（约 L349-L357）",
+          "detail": "段落把 `scmi_fc_call` 直接写成观察“固件实际返回 performance level/实际输出”的关键事件，但当前只给出 include/trace/events/scmi.h 事件字段，没有给出 SCMI performance protocol 的 msg_id 映射、PERF_LEVEL_GET/SET 常量、res_id 到 CPU domain 的映射，也没有说明 performance level 如何换算成频率。读者无法按文中描述复核“内核请求 vs 固件实值”。",
+          "suggestion": "补齐 SCMI Performance protocol 的消息 ID、domain/res_id 映射和 level→freq/OPP 对照；表述上区分“内核 cpufreq 轨迹”“SCMI 请求/响应 performance level”“硬件实际频率”。没有平台映射表时，只能说这是固件协商线索，不能直接当成实际频率真值。"
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-05-01T09:26:13+08:00",
+      "material_paths": [
+        "intake/suggestions.md"
+      ]
     },
     {
       "section": "5.5",
