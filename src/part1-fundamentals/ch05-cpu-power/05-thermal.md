@@ -39,9 +39,9 @@ tags:
   - throttling
   - dvfs
   - cpu-frequency
-reviewed_date: "2026-04-29"
+reviewed_date: 2026-05-01
 reviewed_by: openclaw-task6
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: "reviewed"
 task9_result: "needs-rework"
@@ -427,7 +427,7 @@ thermal_trace = {
 
 ### DVFS 降频 vs Thermal 降频：怎么区分？
 
-这里有一个容易混淆的点。我们在 [5.4 DVFS 与功耗管理](04-dvfs.md) 中讨论过，schedutil governor 会根据 CPU utilization 主动调节频率。高负载时升频，低负载时降频——这是正常的 DVFS 行为，不涉及温控。
+我们在 [5.4 DVFS 与功耗管理](04-dvfs.md) 中讨论过，schedutil governor 会根据 CPU utilization 主动调节频率。高负载时升频，低负载时降频——这是正常的 DVFS 行为，不涉及温控。
 
 Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。即使 CPU utilization 很高，thermal cooling 也会把频率限制在某个上限以下。
 

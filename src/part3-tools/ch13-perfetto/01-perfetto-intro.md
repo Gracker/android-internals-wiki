@@ -5,7 +5,7 @@ section: '13.1'
 status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-04-24'
+reviewed_date: 2026-05-01
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 2
@@ -39,7 +39,7 @@ related_chapters:
 - '2.1'
 - '7.1'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
