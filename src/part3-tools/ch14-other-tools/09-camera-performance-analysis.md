@@ -32,11 +32,11 @@ related_chapters:
 - '13.5'
 - '11.2'
 - '4.3'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-04-27T08:53:48+08:00"
@@ -115,7 +115,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **预览卡顿**是最常见的投诉。用户打开相机后，预览画面出现肉眼可见的掉帧或卡顿。这类问题的根因通常在 Buffer 流转环节——可能是 HAL 处理慢了，可能是 SurfaceFlinger 合成不及时，也可能是 BufferQueue 的 Buffer 被耗尽了。在 Perfetto 中，我们需要关注 `cameraserver` 进程中 `queueBuffer` 的时间间隔，以及 SurfaceFlinger 的 `BufferTX - SurfaceView` Counter。
 
-**预览卡顿的具体表现**：30fps 预览目标下，帧间隔波动超过 5ms 用户就能感知到卡顿。低端设备上，GPU 纹理上传可能额外增加 5-10ms 延迟，加剧卡顿问题。
+**预览卡顿的波动指标**：30fps 预览目标下，帧间隔标准差超过 5ms 属于流畅度风险信号，需要进一步排查。明显的预览卡顿通常表现为单帧间隔超过 40ms（连续丢一帧）或 50ms 以上。低端设备上，GPU 纹理上传可能额外增加 5-10ms 延迟，叠加后更容易触发可感知卡顿。结合 FrameTimeline 的 jank 检测和 RenderThread 耗时分布判断，比单独看标准差更可靠。
 
 **拍照延迟**指的是从用户点击快门到照片真正拍摄完成的时间。Camera HAL3 管线中，拍照的流程远比预览复杂：需要下发 CaptureRequest，经过 ISP 处理，可能还要做 ZSL（Zero Shutter Lag）缓冲区匹配和多帧降噪。在 Perfetto 中，我们可以用 `still capture` Slice 来追踪整个拍照耗时，把它拆解为 App 侧的 Request 提交耗时和 HAL 侧的处理耗时。
 
@@ -127,7 +127,7 @@ Camera 子系统的性能问题可以归纳为四个大类，每一类的排查�
 
 **内存压力**是 Camera 场景的隐形杀手。`CameraMetadataNative` 通过 JNI 在 Native 层持有 `camera_metadata_t` 内存，而 Java 层只暴露 `TotalCaptureResult`、`CaptureResult`、`CameraCharacteristics` 等包装对象。截至 AOSP android-16.0.0_r1，Java 实现仍保留 `mMetadataPtr`、private `close()` 和 `protected finalize()` → `close()` 释放路径，没有切到 `NativeAllocationRegistry` 或 `Cleaner`。只要结果对象被长时间强引用，metadata 仍会持续堆积。
 
-字节跳动西瓜视频团队曾报告过这类问题：`CameraMetadataNative` 对象积累到 6658 个，Native 内存达到 1.3 GB，最终因虚拟内存触顶而崩溃。这个案例说明的是结果对象积压会把 metadata 一起留在内存里；App 层并没有公开的 `CameraMetadataNative.close()` 接口。[来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`]
+据字节跳动西瓜视频团队公开报告，某次线上问题中 `CameraMetadataNative` 对象积累到 6658 个，Native 内存达到 1.3 GB，最终因虚拟内存触顶而崩溃（案例数字来自该团队报告，不代表通用基线）。这个案例说明的是结果对象积压会把 metadata 一起留在内存里；App 层并没有公开的 `CameraMetadataNative.close()` 接口。[案例数据来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；释放路径已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`，android-16.0.0_r1]
 
 ## Camera 管线的 Buffer 流转
 
@@ -189,6 +189,15 @@ EOF
 
 **厂商 Camera HAL 线程**：高通平台常见 `CamXWorker`、`CHI`、`ProcessCaptureRequest`、`ProcessCaptureResult`、`Flush` 等名字，MTK 平台可能出现 `MtkCam`、`P1Node`、`P2Node` 等标记。这些名字不属于 Android 公开 ABI，只能作为设备侧排查线索。排查时先按线程名和 slice 名筛出 HAL 进程里的长耗时段，再按时间戳和 `cameraserver` 的 `submitRequestList`、`frame capture`、`first full buffer` 比对。`ProcessCaptureRequest` 卡住通常指向 HAL 或算法接收请求慢；`ProcessCaptureResult` 或 worker 线程尾段变长，更像 ISP、3A、多帧算法或 buffer 归还慢。
 
+**高通 CamX/CHI 管线观测点**：高通平台的 Camera HAL 基于 CamX/CHI（Camera eXtension / Camera Hardware Interface）架构。在 Perfetto 中，以下 vendor slice 可以辅助定位管线瓶颈：
+
+- **Pipeline Node**：`RealtimePreview`、`Snapshot`、`Video` 等 pipeline node 名称直接反映当前处于哪个处理阶段
+- **CHI Override**：厂商通过 CHI override 挂载的自定义算法（如 HDR、美颜、AI 场景检测）会以独立 node 形式出现在管线中，耗时异常时可直接定位
+- **Preview / JPEG / ISP Stage**：`PreviewStage`、`JPEGStage`、`IPEStage`、`BPSStage` 等 slice 反映 ISP 后处理的具体环节
+- **YUV dump 入口**：当需要验证 HAL 输出帧内容时，可以在 `IPEStage` 或 `JPEGStage` 附近通过 vendor 调试接口 dump YUV 数据
+
+将 vendor slice 映射回 HAL3 request 的方法：记录 `submitRequestList` 的 frame number，然后在 HAL 进程中按时间戳找到对应的 `ProcessCaptureRequest` → pipeline node 处理链 → `ProcessCaptureResult`，用 frame number 关联。注意不同厂商的 CamX/CHI 版本和配置差异很大，slice 命名和 node 拓扑需要按具体设备确认。
+
 **App 进程**：包含 `deliverInputEvent`（用户点击事件）、CameraManager API 调用的 Slice。预览场景下还需要看 `queueBuffer` 的时间间隔。
 
 **SurfaceFlinger 进程**：`BufferTX - SurfaceView` Counter 可以追踪预览 Buffer 的到达时刻。
@@ -200,12 +209,27 @@ Perfetto Trace Processor 最强大的能力是用 SQL 量化一切。下面是�
 统计 CaptureRequest 处理帧率：
 
 ```sql
-SELECT COUNT(*)/((MAX(ts) - MIN(ts))/1e9) AS Request_FPS
+-- Step 1: 先列出 frame capture 所在的 track，确认有几个 stream
+SELECT
+  track_id,
+  process.name AS process_name,
+  COUNT(*) AS slice_count
 FROM slice
-WHERE name='frame capture'
+JOIN process_track ON slice.track_id = process_track.id
+JOIN process USING(upid)
+WHERE slice.name = 'frame capture'
+GROUP BY track_id, process.name
 ```
 
-这个查询统计 `frame capture` Slice 的频率，直接反映了 HAL 处理帧的速度。如果预览设定为 30fps 但 Request_FPS 只有 25，说明 HAL 处理能力不足。
+```sql
+-- Step 2: 按单个 track 计算 FPS（避免多 stream 合并导致虚高）
+SELECT COUNT(*)/((MAX(ts) - MIN(ts))/1e9) AS Request_FPS
+FROM slice
+WHERE name = 'frame capture'
+  AND track_id = <上一步查到的 track_id>
+```
+
+`frame capture` 是 process_track 级别的 Slice。如果设备同时开了预览流和录像流，同名 Slice 会出现在不同 track 上。直接按 `name` 聚合会把多个 stream 的帧数合并，导致 FPS 虚高。先查出 track 列表，再按 stream 单独统计。如果预览设定为 30fps 但 Request_FPS 只有 25，说明 HAL 处理能力不足。
 
 统计某路预览流的帧率和帧间隔抖动时，先在 `cameraserver` 进程里找到承载 `queueBuffer` 的线程，再按该线程单独计算帧间隔：
 
@@ -226,19 +250,19 @@ LIMIT 50
 拿到实际线程名后，再对同一线程计算相邻帧间隔：
 
 ```sql
+-- 用上一步查到的实际 track_id 参数化，不依赖线程名
 SELECT
   (slice.ts - LAG(slice.ts, 1) OVER (ORDER BY slice.ts ASC)) / 1e6 AS diff_ms
 FROM slice
 JOIN thread_track ON slice.track_id = thread_track.id
-JOIN thread USING(utid)
 WHERE slice.name LIKE '%queueBuffer%'
-  AND thread.name LIKE '%PreviewSpacer%'
+  AND track_id = <上一步查到的 track_id>
 LIMIT -1 OFFSET 1
 ```
 
 [已验证: 来源见 Cubox/如何利用 Perfetto 自动化分析 Android Camera 性能-2023-12-15.md]
 
-`PreviewSpacer` 的职责是做预览帧平滑。它会按照目标帧率预测下一次出帧时刻，必要时主动等待，把硬件侧不均匀的产帧节拍整理成更稳定的 `queueBuffer` 间隔。Perfetto 里看到它周期性 `Sleep`，通常说明它在做 Frame Pacing。这个线程名不是稳定的公开 ABI，有些版本会显示成 `PreviewFrameSpacer`，也可能落在别的 stream 线程上，所以实战里先用上一条查询确认实际 track。
+预览帧平滑线程（部分设备上叫 `PreviewSpacer` 或 `PreviewFrameSpacer-<streamId>`）的职责是按照目标帧率预测下一次出帧时刻，必要时主动等待，把硬件侧不均匀的产帧节拍整理成更稳定的 `queueBuffer` 间隔。Perfetto 里看到它周期性 `Sleep`，通常说明它在做 Frame Pacing。这个线程名不是稳定的公开 ABI，AOSP `Camera3OutputStream.cpp` 中线程名由 `PreviewSpacer-<streamId>` 拼出，设备和流类型会变化。实战里先用上一条查询按进程和 slice 名确认实际 track，再传 track_id 参数化后续计算，避免硬编码线程名导致查不到或查错。
 
 `LAG()` 窗口函数计算相邻帧的时间差。理想情况下 30fps 预览的 diff_ms 应该稳定在 33ms 左右。如果出现 40ms 甚至 50ms 的间隔，说明那一帧被延迟了，用户会感知到卡顿。更严重的是间隔的方差，如果平均 33ms 但标准差很大，说明管线不稳定。
 
@@ -367,8 +391,10 @@ Camera 启动（从用户点击相机图标到预览首帧出现）可以拆解�
 
 | 阶段 | 起始 Slice | 结束 Slice |
 |------|-----------|-----------|
-| App 点击 → openSession | `deliverInputEvent` | `CameraHal::openSession` 开始 |
-| HAL openSession | `CameraHal::openSession` 开始 | `CameraHal::openSession` 结束 |
+| App 点击 → openSession | `deliverInputEvent` | `connectDevice` / `CameraHal::openSession` 开始 |
+| HAL openSession | `connectDevice` / vendor `openSession` | `connectDevice` 结束 / vendor `openSession` 结束 |
+
+> `CameraHal::openSession` 是 Qualcomm CamX/CHI 侧的 vendor-specific 命名，在非高通设备上对应的 slice 名称可能不同。AOSP 通用入口是 `CameraService::connectDevice`，多数设备在 `cameraserver` 进程中可以找到。如果 vendor slice 名不可用，用 `connectDevice` 作为替代锚点。
 | App 配置 → beginConfigure | openSession 结束 | `beginConfigure` |
 | HAL configure | `beginConfigure` | `endConfigure` 结束 |
 | App → submitRequest | `endConfigure` 结束 | `submitRequestList` |
@@ -434,7 +460,7 @@ Camera 是移动设备上功耗最高的模块之一。Sensor 持续采集、ISP
 
 **Sensor 模式选择**：Camera Sensor 通常支持多种输出模式（不同分辨率、不同帧率上限）。选择最匹配使用场景的 Sensor 模式可以减少 ISP 的处理负担。例如预览时使用低分辨率模式，拍照时临时切换到全分辨率模式。
 
-**HAL Buffer 管理策略**：Android 10 引入了 Camera HAL 3.5 的 `requestStreamBuffers`/`returnStreamBuffers` API，允许 HAL 和 Framework 解耦 Buffer 分配。HAL 可以按需请求 Buffer，而不是在 Session 配置时一次性分配所有 Buffer。这减少了内存占用，也降低了因 Buffer 数量不足导致卡顿的风险。
+**HAL Buffer 管理策略**：Camera HAL 3.5 在 Android 10 分支定义了 `requestStreamBuffers`/`returnStreamBuffers` 接口，允许 HAL 和 Framework 解耦 Buffer 分配。HAL 可以按需请求 Buffer，而不是在 Session 配置时一次性分配所有 Buffer。这减少了内存占用，也降低了因 Buffer 数量不足导致卡顿的风险。Framework 侧完整调用路径和设备实际可用性以 Android 11+ 及 vendor HAL 实现为准，需确认目标设备的 camera provider 版本是否支持。
 
 这组 API 仍然会把取 Buffer 的等待暴露到请求时序里。HAL 在 `processCaptureRequest` 附近现取 Buffer 时，如果 Framework 侧没有空闲 Buffer、消费端持有过久或 BufferQueue 正在等待 release fence，`requestStreamBuffers` 会同步等待，后续 Request 下发也会抖动。排查时把 `requestStreamBuffers`、`returnStreamBuffers`、`dequeueBuffer` 的耗时放在同一张时间线上看；工程上保留少量预取 Buffer，或把取 Buffer 放到独立高优先级线程，避免每帧都在 Request 热路径上等空闲 Buffer。
 
