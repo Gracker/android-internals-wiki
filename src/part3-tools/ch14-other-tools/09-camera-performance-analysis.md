@@ -7,7 +7,7 @@ drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
 reviewed_by: openclaw-task6
 last_task2b_at: '2026-04-26T11:51:00+08:00'
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-05-01"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
 last_verified_against: AOSP android-16.0.0_r1
@@ -35,13 +35,14 @@ related_chapters:
 pipeline_stage: task6_pending
 task6_state: revisiting
 task6_result: pass-light-edit
+review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: fixed 2x 链路→路径, removed 虚假引导语. L2: good. All outline anchors covered. task9_result=needs-rework, not eligible for auto-promotion."
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-04-27T08:53:48+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-05-01"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 ---
@@ -143,7 +144,7 @@ Camera 硬件（Sensor）采集到原始数据后，经过 ISP（Image Signal Pr
 4. Framework 收到帧后，通过 `queueBuffer` 将 Buffer 推给 SurfaceFlinger
 5. SurfaceFlinger 在下一个 VSync-sf 时 latch 这个 Buffer 并合成上屏
 
-这里有一个容易忽视的细节：Camera 管线和 App 渲染管线共享了 BufferQueue 机制，但两者的时序约束完全不同。App 渲染管线由 VSync 驱动，Choreographer 在 VSYNC-app 到来时开始 doFrame；而 Camera 管线由 Sensor 帧率驱动，和 VSync 没有直接关系。当 Camera 的帧率和屏幕刷新率不同步时，就可能出现预览卡顿。
+Camera 管线和 App 渲染管线共享了 BufferQueue 机制，但两者的时序约束完全不同。App 渲染管线由 VSync 驱动，Choreographer 在 VSYNC-app 到来时开始 doFrame；而 Camera 管线由 Sensor 帧率驱动，和 VSync 没有直接关系。当 Camera 的帧率和屏幕刷新率不同步时，就可能出现预览卡顿。
 
 在 Native 层，cameraserver 进程是整个 Camera Native Framework 的核心。它对上通过 AIDL 接口与 Camera Java Framework 通信，对下通过 HIDL/AIDL 接口调用 Camera HAL。
 
@@ -504,7 +505,7 @@ HAL3 管线中，从 App 下发 CaptureRequest 到收到 CaptureResult，经历�
 6. HAL 输出处理完的帧到 Output Buffer，通过 `processCaptureResult` 回调
 7. cameraserver 的 FrameProcessor 线程收到 Result，通过 Binder 回调给 App
 
-整个链路的延迟取决于多个因素。其中 Sensor 曝光时间是物理限制——至少需要一个帧周期（30fps 时 33ms）。ISP 处理时间取决于图像分辨率和算法复杂度。Binder IPC 虽然单次延迟只有 1-2ms，但在 Request 和 Result 的传递中各有一次，加上 cameraserver 内部的队列等待时间，总延迟不可忽视。
+整条路径的延迟取决于多个因素。其中 Sensor 曝光时间是物理限制——至少需要一个帧周期（30fps 时 33ms）。ISP 处理时间取决于图像分辨率和算法复杂度。Binder IPC 虽然单次延迟只有 1-2ms，但在 Request 和 Result 的传递中各有一次，加上 cameraserver 内部的队列等待时间，总延迟不可忽视。
 
 **ZSL（Zero Shutter Lag）** 是一种优化拍照延迟的技术：HAL 维持一个环形缓冲区，持续采集帧。当用户按下快门时，直接从缓冲区中取出最近的一帧，省去了 Sensor 曝光等待。代价是持续的功耗和内存开销——环形缓冲区通常需要保存 3-5 帧全分辨率图像。
 
@@ -528,7 +529,7 @@ Perfetto 能告诉你哪一帧晚到、哪段处理慢，但不能直接看到 B
 
 排查和治理时，重点放在引用关系：不要把大量 `TotalCaptureResult` 长时间塞进队列、缓存或跨线程消息里；只提取需要的 metadata 字段，处理完就尽快丢掉结果对象；对长期统计场景，优先落成轻量结构体或自定义 DTO，再释放原始 result 引用。[来源: Cubox/Android Camera内存问题剖析-2024-02-04.md；已验证: AOSP `frameworks/base/core/java/android/hardware/camera2/impl/CameraMetadataNative.java`，android-14.0.0_r1 / android-16.0.0_r1]
 
-**误区四：Camera 性能问题不需要看 Binder。** Camera 管线中 App → cameraserver → HAL 链路至少各有一次 Binder IPC。如果系统负载高导致 Binder 线程池耗尽，或者 Binder 事务本身延迟大（如传输大块 metadata），Camera 性能就会受影响。在 Perfetto 中开启 `binder_driver` category 可以追踪 Binder 事务的延迟。
+**误区四：Camera 性能问题不需要看 Binder。** Camera 管线中 App → cameraserver → HAL 路径上至少各有一次 Binder IPC。如果系统负载高导致 Binder 线程池耗尽，或者 Binder 事务本身延迟大（如传输大块 metadata），Camera 性能就会受影响。在 Perfetto 中开启 `binder_driver` category 可以追踪 Binder 事务的延迟。
 
 ## 参考资料
 
