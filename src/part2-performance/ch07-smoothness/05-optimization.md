@@ -476,3 +476,129 @@ WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游�
 - [Compose Strong Skipping](https://medium.com/androiddevelopers/strong-skipping-in-compose-984c37e8e8be)
 - [FrameMetrics API](https://developer.android.com/reference/android/view/FrameMetrics)
 - [Compose 性能 Codelab](https://developer.android.com/codelabs/compose-performance)
+
+<!-- AIW-源码调研-2026-05-02 -->
+## RenderEffect GPU 渲染管线深度分析
+
+### Offscreen Buffer 双重机制
+
+RenderEffect 在 Android 12+ 的 GPU 渲染管线中实现了复杂的 Offscreen Buffer 机制，这是高性能视觉效果的基础。
+
+#### RenderEffect 与 RenderNode 的集成机制
+
+- **源码位置**：`frameworks/base/graphics/java/android/graphics/RenderNode.java` (API 31+)
+- **关键函数/类**：`RenderNode.setRenderEffect(RenderEffect)`
+- **调用链**：
+  1. `RenderNode.setRenderEffect(effect)` →
+  2. `mRenderEffect = effect` (标记效果属性) →
+  3. `RecordingCanvas` 重录时包含效果 →
+  4. `RenderThread.applyRenderEffect()` →
+  5. GPU管线处理
+- **关键代码段**：
+```java
+// 文件: frameworks/base/graphics/java/android/graphics/RenderNode.java
+public void setRenderEffect(@Nullable RenderEffect effect) {
+    mRenderEffect = effect;
+    // 标记需要重新录制显示列表
+    mNeedsDisplayListSync = true;
+}
+```
+
+#### Offscreen Buffer 的具体实现机制
+
+- **源码位置**：`frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`
+- **调用链**：
+  1. `setRenderEffect()` 触发 →
+  2. `RenderThread` 检查是否需要离屏缓冲区 →
+  3. GPU 渲染到离屏纹理 →
+  4. 应用着色器效果 →
+  5. 合回到主屏幕
+- **设计意图**：通过离屏渲染避免重复计算，实现高效的视觉效果处理
+
+### GPU 着色器在 RenderEffect 中的作用
+
+RenderEffect 的核心优势在于将复杂的视觉效果计算完全卸载到 GPU，通过 Skia 图像过滤器实现高性能处理。
+
+#### 底层渲染管线集成
+
+- **源码位置**：`frameworks/base/libs/hwui/jni/RenderEffect.cpp`
+- **关键函数/类**：`nativeCreateBlurEffect()`、`RenderEffect::createBlurEffect()`
+- **调用链**：
+  1. `RenderEffect.createBlurEffect()` →
+  2. `nativeCreateBlurEffect()` (JNI) →
+  3. `RenderEffect::createBlurEffect()` (C++) →
+  4. GPU 着色器编译 →
+  5. 返回着色器引用给 RenderThread
+- **关键代码段**：
+```cpp
+// 文件: frameworks/base/libs/hwui/jni/RenderEffect.cpp
+static jlong nativeCreateBlurEffect(JNIEnv* env, jclass clazz,
+                                   jfloat radiusX, jfloat radiusY,
+                                   jint edgeTreatment) {
+    // 创建模糊效果的GPU着色器
+    auto effect = RenderEffect::createBlurEffect(
+        radiusX, radiusY, 
+        static_cast<Shader::TileMode>(edgeTreatment));
+    // 将效果对象引用转换为long返回给Java层
+    return reinterpret_cast<jlong>(effect.release());
+}
+```
+
+#### RenderEffect vs Hardware Layer 的性能对比
+
+RenderEffect 和 Hardware Layer 是两种不同的 GPU 资源管理策略：
+
+**RenderEffect - Shader 级集成**：
+- blur、color filter、RuntimeShader 作为 `SkImageFilter` 写入 RenderNode 属性
+- Skia 在绘制时沿标准 Skia 图像过滤管线处理
+- 可能对相邻 filter 做算子融合并复用 Scratch Texture
+- 动态内容（频繁 invalidate）的内存开销通常低于 Hardware Layer
+
+**Hardware Layer - Buffer 级隔离**：
+- 为 View 创建独立的 FBO（Framebuffer Object）并缓存渲染结果
+- 属性动画阶段只需要在纹理上做矩阵变换，不重新执行 draw
+- FBO 是独占的 GPU 内存，内容每帧都变时缓存重建开销会超过加速收益
+
+### 低端设备上的回退机制
+
+RenderEffect 在低端设备上的性能表现需要特别关注，系统会根据 GPU 能力选择不同的渲染路径。
+
+#### 软件回退路径
+
+- **源码位置**：`frameworks/base/libs/hwui/renderthread/CanvasContext.cpp`
+- **关键函数/类**：`CanvasContext::drawRenderEffect()`
+- **调用链**：
+  1. 检查 GPU 能力 →
+  2. 不支持硬件加速时 →
+  3. 调用软件回退路径 →
+  4. CPU 模拟模糊效果 →
+  5. 渲染到内存缓冲区
+- **设计意图**：确保在低端设备上也能提供视觉效果，尽管性能较差
+
+### 性能影响与优化建议
+
+#### GPU Fillrate 压力
+- 复杂的RenderEffect会增加GPU填充率，特别是在高分辨率屏幕上
+- 大 View 上的 blur 需要更多中间渲染资源，显存和带宽开销都会上升
+- 模糊区域越小越好，性能影响呈几何级数下降
+
+#### 显存占用
+- Offscreen Buffer 会消耗额外的显存，复杂效果的纹理可能占用数百MB
+- 每个RenderEffect链可能需要多个中间纹理
+- 在低端设备上，软件回退会导致内存带宽消耗增加
+
+#### 版本演进差异
+- **Android 12 (API 31)**: 引入 RenderEffect，仅支持基本模糊效果
+- **Android 13 (API 33)**: 扩展支持RuntimeShader效果，引入AGSL自定义着色器
+- **Android 14 (API 34)**: 优化GPU内存管理，减少离屏缓冲区内存占用
+- **Android 15 (API 35)**: 增强低端设备优化，添加软件回退的智能选择机制
+
+#### 实际应用建议
+1. **效果对象复用**：参数不变时复用同一个 `RenderEffect`，避免每帧构造新对象
+2. **避免动态参数**：每帧修改 blur radius 会让 filter 和中间资源频繁变化
+3. **性能测试**：在低端设备上特别关注软件回退路径的性能影响
+4. **监控显存**：使用 Perfetto GPU track 观察显存使用情况
+5. **渐进增强**：为低端设备准备降级方案，避免用户体验急剧下降
+
+这个源码级分析表明，RenderEffect 虽然提供了现代化的 GPU 渲染管线，但在实际应用中需要考虑设备差异、显存占用和性能回退机制。复杂的视觉效果应当在性能监控工具的指导下谨慎使用。
+
