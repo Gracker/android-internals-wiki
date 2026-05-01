@@ -4,10 +4,10 @@ chapter: "16.3"
 status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-05-01"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: pending
 last_task9_at: '2026-04-28T10:30:00+08:00'

@@ -567,6 +567,18 @@
 - **问题**：`04-choreographer.md` 和 `01-perfetto-intro.md` 以当前 `ch08-responsiveness/` 目录解析会落到不存在路径；正确目标分别在 `part1-fundamentals/ch02-rendering/04-choreographer.md` 与 `part3-tools/ch13-perfetto/01-perfetto-intro.md`。
 - **建议**：改成相对当前文件的 `../../part1-fundamentals/ch02-rendering/04-choreographer.md`、`../../part3-tools/ch13-perfetto/01-perfetto-intro.md`，或使用项目统一的章节编号引用方式。
 
+## [Task9 Deep Review] 11.4 案例集 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L123-L127、L180-L184、L347-L351、L463-L467、L603-L607、L704-L708
+- **问题**：案例集要求每个案例有 Battery Historian 截图和耗电对比，但当前多处仍是 `[图]` / `[待补充]`，同时直接给出 40%→3%、25%→3%、15%→3% 等效果数字，缺设备、系统版本、网络类型、亮灭屏条件、样本数和原始 bugreport/trace。
+- **建议**：补原始 bugreport/Power Profiler/Perfetto 附件、设备与测试条件；拿不到证据的数字改成定性或示例占位，不要作为真实修复效果。
+
+## [Task9 Deep Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-05-01
+- **类型**：版本差异
+- **位置**：L225-L229
+- **问题**：`getPendingJobReasonStats(int)` 已能在 Android API reference 中查到 `Map<Integer, Duration>` 入口，正文仍标 `[待验证: API37 preview/reference]`，核验状态和 frontmatter 的“API 37 reference 已验证”不一致。
+- **建议**：将核验状态改为“API 37 reference 已检出；AOSP android-16.0.0_r1 未包含”，并保留最终源码 tag 待复核的边界。
+
 ## [Task9 Deep Review] 11.2 App 耗电优化 — 2026-05-01
 - **类型**：版本差异/表述边界
 - **位置**：L203 PeriodicWorkRequest 15 分钟原因
@@ -574,8 +586,16 @@
 - **建议**：改为 WorkManager 自身定义 15 分钟最小间隔；API 23+ 与 JobScheduler 约束对齐，API 21-22 通过兼容调度实现同一上层语义。
 
 
+
 ## [Task9 Deep Review] 11.5 Wakelock 机制与功耗分析 — 2026-05-01
 - **类型**：数据缺失
 - **位置**：开头与 Doze 小节
 - **问题**：`整机功耗可以降到 1mA 以下`、`maintenance window 初始约 10 分钟，再到 30/60 分钟` 属于强数值断言，但没有设备、版本、测试条件或官方出处。
 - **建议**：补充来源和测试条件；没有可靠来源时改成定性描述，或标注为示例设备观测值。
+
+## [Task6 Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-05-01
+- **类型**：需重写（局部）
+- **位置**：「兼容性风险」小节末尾的裸名词列表
+- **问题**：该列表包含 4 个无解释的裸名词项（"Android API 版本变化"、"linker / namespace 行为差异"、"ABI 与指令集差异"、"ROM 对 so 装载和安全策略的定制"），违反 writing-guide.md「列表不能是目录，必须是内容」规则。其中两项（Android 14 W^X、16KB Page Size）有简短解释但与下方「补充」章节大量重复；另外四项完全没有解释。
+- **建议**：选项一：为每个裸名词项补充 1-2 句解释。选项二：将此列表改为简短概述段落，指向下方「补充」章节的详细展开，消除三层重复。推荐选项二。
+- **review 日志**：logs/review/2026-05-01-08-review.md
