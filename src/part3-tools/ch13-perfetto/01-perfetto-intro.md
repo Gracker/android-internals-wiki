@@ -38,11 +38,11 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: '2026-04-27'
 task9_reviewed_by: openclaw-task9
@@ -178,7 +178,7 @@ Android 9 和 Android 10 的非 Pixel 设备上，Perfetto services 常常还需
 `traced_probes` 负责通用系统数据源，但 Perfetto 的 profiling 能力还有一组独立组件：
 
 - `heapprofd`：负责 Native heap sampling，抓 `malloc` / `free` 相关分配栈，源码位于 `external/perfetto/src/profiling/memory/`。
-- `java_hprof_producer`：负责 Java heap dump 和 retained graph 这类对象图数据，也在 `external/perfetto/src/profiling/memory/` 目录下。
+- `java_hprof_producer`：负责 Java heap dump 和 retained graph 这类对象图数据，也在 `external/perfetto/src/profiling/memory/` 目录下。Java heap dump 的完整触发链是：Consumer 在 TraceConfig 中配置 `android.java_hprof` 数据源（Android 11 引入） → `JavaHprofProducer` 收到启动指令后向目标进程发送 `__SIGRTMIN+6` 信号 → 目标进程内已注册的 ART 插件 `art/perfetto_hprof/perfetto_hprof.cc` 捕获信号，在进程内执行 heap 快照并写回 shared memory。目标 App 需要声明 `profileable` 或 `debuggable`，否则信号会被内核丢弃。[已验证: external/perfetto/src/profiling/memory/java_hprof_producer.cc, art/perfetto_hprof/perfetto_hprof.cc]
 - `traced_perf` / `perf_producer`：负责通过 Linux `perf_event_open` 做 CPU sampling 和调用栈采集，源码位于 `external/perfetto/src/profiling/perf/`。
 
 这些组件仍然通过 `traced` 管理的会话 buffer 汇聚数据，只是各自负责不同的 profiling 路径。后面看到 Native heap、Java heap 或 CPU profiling data source 时，先判断它属于哪类 producer 组件，再决定该查权限、配置还是设备支持。
@@ -198,6 +198,12 @@ Perfetto UI 是一个纯前端的 Web 应用，托管在 ui.perfetto.dev，但�
 ### Trace Processor：SQL 分析引擎
 
 Trace Processor 是 Perfetto 的分析核心。它把二进制的 trace 文件解析后加载为一个 SQLite 数据库，我们可以用标准 SQL 对其中的数据进行查询。这比在 UI 上手动点选更适合复杂分析。我们可以写脚本自动化分析流程，也可以批量处理大量 trace 文件。
+
+Trace Processor 的分析能力分为三层，从高层到底层依次是：
+
+1. **内置 Metrics**：`trace_processor_shell --run-metrics android_cpu,android_startup,android_jank` 可以一键输出 CPU、启动、jank 等维度的结构化指标报告。不需要手写 SQL，适合快速拿到结论。
+2. **Standard Library + Trace Summary v2**：PerfettoSQL Standard Library 封装了常用分析逻辑为可复用的 MODULE（如 `linux.memory.process`）。Trace Summary v2 通过 `referenced_modules` 字段声明依赖的官方模块，避免重复造轮子。优先复用官方模块，只有缺口指标才写自定义 PerfettoSQL。
+3. **原始 SQL 查询**：直接对 `slice`、`sched`、`counter` 等底层表写 SQL，灵活度最高，但需要熟悉表结构。
 
 例如，想统计某个 trace 中所有帧的耗时分布，一条 SQL 就能搞定：
 
@@ -388,8 +394,11 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 | Android 9 (P) | 服务已进 system image | binary protobuf | 非 Pixel 设备常见要手动 enable `persist.traced.enable=1` | 不是“只能用 Systrace”，只是文本 `--txt` 还不可用 |
 | Android 10 (Q) | 服务仍可能未默认 enable | binary protobuf + `--txt` | 非 Pixel 设备仍常见手动 enable | heapprofd 开始进入常用工作流 |
 | Android 11+ (R+) | 大多数设备默认启用 | binary protobuf + `--txt` | 一般不用再手动 enable | Perfetto 成为日常 Android 系统追踪主入口 |
+| Android 12 (S) | 默认启用 | binary protobuf + `--txt` | FrameTimeline 成为帧级 jank 分类的主入口 | `com.android.os.perfetto` APEX 使 Perfetto 可通过 Mainline 更新；实际包名和覆盖范围因设备而异 [待验证] |
+| Android 15 (V, API 35) | 默认启用 | binary protobuf + `--txt` | `ProfilingManager` (API 35) 允许 App 请求系统采集 trace；`com.android.profiling` APEX 部分组件 min_sdk 35 | 从"手动 adb 抓取"向"App 发起、系统执行"的触发式 profiling 演进 |
+| Android 16+ | 默认启用 | binary protobuf + `--txt` | System Triggered Profiling：ANR 等场景自动捕获背景 trace | Profiling 能力从"主动采集"扩展到"被动捕获" |
 
-如果只从流畅性角度看，Android 12 又是另一个分界点。FrameTimeline 从这一代开始成为帧级分析的主入口；Android 10/11 仍然要更多依赖 `Choreographer#doFrame`、`thread_state` 和 `SurfaceFlinger` 轨道做 fallback。
+注意：Perfetto 在 Android 12+ 通过 Mainline APEX 封装，运行时二进制位于 `/apex/com.android.os.perfetto/bin/`。AOSP 构建系统中部分组件对 `com.android.profiling` APEX 声明了 `apex_available`（`min_sdk_version 35`），但 `traced` / `traced_probes` 仍以平台二进制方式部署。具体设备上的 APEX 包名和可更新边界以实际 `/apex/` 目录为准。[已验证: external/perfetto/Android.bp, AOSP android-16.0.0_r1]
 
 ### 常见抓取入口对照表
 

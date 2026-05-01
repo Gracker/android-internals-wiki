@@ -2281,13 +2281,15 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T09:17:47+08:00",
-      "status": "pending",
+      "status": "completed",
       "material_paths": [
         "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-04-27T15:34:11+08:00"
+      "updated_at": "2026-04-27T15:34:11+08:00",
+      "completed_at": "2026-05-01T19:44:59.090449",
+      "completed_reason": "java_hprof触发链(__SIGRTMIN+6→ART perfetto_hprof.cc)已补充; Trace Processor三层(Metrics/StdLib+Summary v2/原始SQL)已补充; 版本对照表已扩展Android 12/15(API 35)/16+含com.android.profiling APEX"
     },
     {
       "section": "13.2",
@@ -2357,7 +2359,7 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T15:21:32.054234",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-25-15-13.2-external-review.md",
       "material_paths": [
         "logs/deep-review/2026-04-26-12-deep-review.md",
@@ -2365,7 +2367,9 @@
       ],
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-04-26T12:46:09+08:00",
-      "last_review_log": "logs/deep-review/2026-04-26-12-deep-review.md"
+      "last_review_log": "logs/deep-review/2026-04-26-12-deep-review.md",
+      "completed_at": "2026-05-01T19:44:47.416157",
+      "completed_reason": "callstack_sampling scope已补充"
     },
     {
       "section": "13.7",
