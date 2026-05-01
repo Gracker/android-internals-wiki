@@ -11,7 +11,7 @@ polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-26"
 last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs"
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-05-01"
 reviewed_by: openclaw-task6
 confidence: medium
 sources:
@@ -29,12 +29,13 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
+review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. No banned words, no AI fillers, format consistent. 2 pending queue entries block auto-promotion."
 
 task9_result: pass-tech-review
 last_task9_at: "2026-04-27T17:39:46+08:00"
