@@ -10567,6 +10567,90 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T18:51:19+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.9",
+      "section_title": "1.9 Package Manager Service 与应用安装性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] PMS APEX 并行扫描版本/源码锚点与 dex2oat 优先级描述仍有事实错误",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L126-L128 / L559",
+          "detail": "正文写 Android 16 对 PMS 开机扫描做了 APEX 并行解析，并把锚点写成 PackageManagerService.java 的 scanSystemApexPackagesPrivileged()。复核 android-16.0.0_r1 与 main 后，该方法不存在；APEX/system app 扫描入口在 InitAppsHelper.getApexScanPartitions()/scanSystemDirs()，并通过 ParallelPackageParser 的 ExecutorService 执行。相同结构在 Android 13/14/15/16 均已存在，不能写成 Android 16 新增。",
+          "suggestion": "删除 scanSystemApexPackagesPrivileged() 锚点；改为 InitAppsHelper.java 的 getApexScanPartitions()/scanSystemDirs()/ParallelPackageParser，并把版本演进从“Android 16 新增”降级为 Android 13+ 已有的扫描实现，除非能补到 Android 16 具体提交。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L322",
+          "detail": "正文写后台 dexopt 通过 sched_setscheduler 设置为 SCHED_BATCH。android-16.0.0_r1 frameworks/native/cmds/installd/dexopt.cpp 实际使用 setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_BACKGROUND)，未发现 sched_setscheduler/SCHED_BATCH 路径。",
+          "suggestion": "把 SCHED_BATCH 改为 ANDROID_PRIORITY_BACKGROUND/nice 背景优先级；如果要讨论调度类，需补对应源码锚点。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L159",
+          "detail": "正文写 Android 14 引入 Computer 接口。AOSP android-13.0.0_r1 已存在 services/core/java/com/android/server/pm/Computer.java；Android 14 更适合描述为默认读路径/架构稳定化，而不是首次引入。",
+          "suggestion": "改成 Android 13 已出现 Computer 抽象，Android 14 进一步稳定为 PMS 读操作路径，并说明 13/14 差异。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T19:38:39+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.3",
+      "section_title": "14.3 内存分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] heapprofd Perfetto pbtxt 命令与 malloc debug wrap 示例仍需修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "工具命令错误",
+          "location": "L275-L295",
+          "detail": "正文给出文本 protobuf 配置 config.pbtx，但启动命令是 adb shell perfetto -c config.pbtx -o ...。Perfetto CLI 在未传 --txt 时按二进制 TraceConfig 解析；external/perfetto/src/perfetto_cmd/perfetto_cmd.cc 会提示 Try adding --txt。该命令对 pbtxt 配置会失败。",
+          "suggestion": "改为 adb shell perfetto --txt -c config.pbtx -o /data/misc/perfetto-traces/trace，或使用 -c - --txt 从 stdin 传文本配置。"
+        },
+        {
+          "type": "源码错误/命令错误",
+          "location": "L469-L472",
+          "detail": "malloc debug 的 wrap.sh 示例写成 adb shell am start ... --wrap \"libc.debug.malloc.options=...\"。AOSP bionic/libc/malloc_debug/README.md 面向 App 的做法是 wrap.<APP> 属性或 wrap.sh，并使用环境变量 LIBC_DEBUG_MALLOC_OPTIONS，而不是把 libc.debug.malloc.options 作为 am start --wrap 参数。",
+          "suggestion": "改为 adb shell setprop wrap.com.example.myapp '\"LIBC_DEBUG_MALLOC_OPTIONS=backtrace_enable_on_signal logwrapper\"'，force-stop 后冷启动；或引用 NDK wrap.sh 文档。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T19:38:39+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.13",
+      "section_title": "14.13 Hook 基础设施与性能工具实现原理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Hook 章节 android_create_namespace 版本节点与 Android 14 W^X 口径需修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码错误",
+          "location": "L561 / L565",
+          "detail": "正文写 android_create_namespace() 在 Android 11 从 libdl.so 移除并移至 libc.so 内部。复核 bionic libdl.map.txt：Android 9 仍导出 android_create_namespace，Android 10 已不再导出；后续实现入口是 linker/dlfcn.cpp 中的 __loader_android_create_namespace，不是 libc.so 对外/内部入口。",
+          "suggestion": "版本表改为 Android 10 起不再从 libdl 导出 android_create_namespace；内部实现锚点写 linker/dlfcn.cpp::__loader_android_create_namespace/create_namespace。"
+        },
+        {
+          "type": "版本差异/原理口径",
+          "location": "L328 / L362-L410 / L435-L441",
+          "detail": "正文多处把 Android 14 写成 Inline Hook native mprotect/W^X 明显收紧节点。Android 14 面向 targetSdk 34 的公开行为变更主要是动态加载 DEX/JAR/APK 文件必须只读；native 代码页 mprotect、execmem/execmod、RELRO/text relocation 约束在更早版本已存在。当前版本表会让读者把 Java DCL 限制误解成 native Inline Hook 的新增限制。",
+          "suggestion": "把 Android 14 节点收敛为 Dynamic Code Loading 只读文件要求；native Inline Hook 的 W^X/SELinux 约束按 Android 8-13 已存在、Android 14 无新增通用 mprotect 禁令来写。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T19:38:39+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

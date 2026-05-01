@@ -709,3 +709,21 @@
 - **位置**：L202、L226（dumpsys SurfaceFlinger 字段与合成类型）
 - **问题**：`activeBuffer` / `latched buffer` 与 `GLES/HWC/OVERLAY` 缺少 Android 版本化样例；现代 HWC2/CompositionEngine 输出常见口径是 `CLIENT` / `DEVICE` 等，直接写 `HWC/OVERLAY` 容易让排查命令对不上。
 - **建议**：补一段 Android 14-16 dumpsys 或 Perfetto SurfaceFlinger layer 示例，明确字段名和 composition type 在不同版本/OEM 上可能不同。
+
+## [Task9 Deep Review] 14.3 内存分析工具 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L547
+- **问题**：malloc hooks “2-5 倍分配延迟”缺少 AOSP/实测来源。
+- **建议**：补测试条件或改成定性“显著增加分配开销”。
+
+## [Task9 Deep Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-05-01
+- **类型**：版本口径
+- **位置**：L418
+- **问题**：xHook 官方支持 Android 4.0-10/API 14-29，写“不支持 Android 14+”范围过宽且滞后。
+- **建议**：改为“不支持 Android 11+；官方支持范围 API 14-29”。
+
+## [Task9 Deep Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-05-01
+- **类型**：原理补充
+- **位置**：L178-L182
+- **问题**：PLT Hook 盲区只给结论，缺少同一 so 内直接 BL/B 调用不经 PLT 的例子。
+- **建议**：补一句同一 ELF 内部调用通常不走 PLT/GOT。
