@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-01T08:27:00+08:00",
+  "generated_at": "2026-05-01T17:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -8,25 +8,25 @@
     "pipeline_stage_counts": {
       "unknown": 33,
       "ready-to-publish": 106,
-      "task2b_pending": 88,
+      "task2b_pending": 90,
       "task9_pending": 11,
-      "task6_pending": 12
+      "task6_pending": 10
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 184,
-      "revisiting": 31,
+      "reviewed": 183,
+      "revisiting": 32,
       "revising": 1
     },
     "task9_state_counts": {
       "unknown": 38,
-      "reviewed": 201,
-      "pending": 11
+      "reviewed": 203,
+      "pending": 9
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 116,
-      "pending": 91,
+      "fixed": 114,
+      "pending": 93,
       "idle": 3
     },
     "unknown": 32,
@@ -37,25 +37,25 @@
     "pipeline_stage_counts": {
       "unknown": 33,
       "ready-to-publish": 106,
-      "task2b_pending": 88,
+      "task2b_pending": 90,
       "task9_pending": 11,
-      "task6_pending": 12
+      "task6_pending": 10
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 184,
-      "revisiting": 31,
+      "reviewed": 183,
+      "revisiting": 32,
       "revising": 1
     },
     "task9_state_counts": {
       "unknown": 38,
-      "reviewed": 201,
-      "pending": 11
+      "reviewed": 203,
+      "pending": 9
     },
     "task2b_state_counts": {
       "unknown": 40,
-      "fixed": 116,
-      "pending": 91,
+      "fixed": 114,
+      "pending": 93,
       "idle": 3
     },
     "last_updated": "2026-05-01"
@@ -1281,9 +1281,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-30",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-05-01",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T13:23:00+08:00",
+      "last_task9_at": "2026-05-01T17:20:00+08:00",
       "task6_reviewed_date": "2026-04-30"
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
@@ -1919,7 +1919,7 @@
       "last_verified_against": "ARM official documentation, Linux kernel 6.6",
       "confidence": "high  # 架构原理和 schedutil 机制描述经过 AOSP 源码和 ARM 官方文档双重验证",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
@@ -1927,9 +1927,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-05-01",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T08:31:09+08:00"
+      "last_task9_at": "2026-05-01T17:20:00+08:00"
     },
     "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",

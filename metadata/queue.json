@@ -5770,18 +5770,35 @@
     },
     {
       "section": "5.3",
-      "section_title": "`03-big-little.md`",
-      "priority": 85,
-      "reason": "[External Review] 技术评分 3.5/5，建议回炉",
+      "section_title": "大小核架构",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.3 大小核架构 回炉复审仍有 P0/P1 技术问题，需 Task2B 再修正",
       "review_issues": [
         {
           "type": "P1重要缺失",
           "detail": "- [P1][源码准确性][原理描述部分]\n- 原文问题：对 `大小核架构 (big.LITTLE / DynamIQ)` 机制的源码追踪不够深入，没有指明底层的真实流转逻辑。\n- 源码 / 一手资料锚点：`kernel/sched/core.c` \n- 关键代码逻辑：在 Android Kernel 5.4+ 之后，逻辑主要流经 `select_task_rq_fair`，需要结合状态机看。\n-"
+        },
+        {
+          "type": "源码错误",
+          "location": "L261-L287 schedutil sugov_get_util() 代码片段",
+          "detail": "正文标注 “Linux 6.6 实际签名” 且注释 @ android16-6.12（GKI），但片段与两个版本都没有完全对齐。Linux v6.6 的 sugov_get_util(struct sugov_cpu *sg_cpu) 没有 boost 参数；android16-6.12 的 sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) 使用 scx_cpuperf_target、effective_cpu_util(cpu, util, &min, &max)、bw_min 与 sugov_effective_cpu_perf()，没有 sg_cpu->max / bw_dl，也没有 FREQUENCY_UTIL 参数。",
+          "suggestion": "拆成 Linux v6.6 与 android16-6.12 两个源码锚点，或只保留一个真实版本；不要把混合片段标为实际源码。"
+        },
+        {
+          "type": "原理断裂/源码锚点缺失",
+          "location": "L176-L184 Wake-up Placement / EAS 选核",
+          "detail": "章节只用概念描述 EAS 会评估 util、capacity 和能量模型，但没有落到真实源码流转。上一轮 external-review 已要求补源码追踪；本轮复核后应把锚点修正为 kernel/sched/fair.c 的 select_task_rq_fair()、find_energy_efficient_cpu()、util_fits_cpu()/compute_energy() 等，而不是泛写“调度器会”。",
+          "suggestion": "补一段 wake-up 选核源码链：try_to_wake_up()/select_task_rq_fair() 进入 fair class，EAS 在 find_energy_efficient_cpu() 里结合 task util、CPU capacity、energy model 与 uclamp/task profile 决策；版本上区分 mainline/GKI/vendor hook。"
         }
       ],
       "added_by": "external-ai-review",
       "status": "pending",
-      "date": "2026-04-26"
+      "date": "2026-04-26",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-05-01T17:20:00+08:00"
     },
     {
       "section": "5.4",
@@ -10450,6 +10467,38 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T13:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.17",
+      "section_title": "Frame Pacing Library 与帧节奏控制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.17 Frame Pacing Library 与帧节奏控制 回炉复审仍有 P0/P1 技术问题，需 Task2B 再修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L422-L434 Vulkan 1.4 present_id / Swappy Vulkan 路径",
+          "detail": "正文断言 Android 16 Vulkan 1.4 使 VK_KHR_present_id 默认启用，且 SwappyVk_queuePresent 会检查该扩展并用 present_id 确认真实上屏。复核 AOSP frameworks/opt/gamesdk main：include/swappy/swappyVk.h、games-frame-pacing/vulkan/SwappyVk.cpp、SwappyVkBase.cpp 均未出现 VK_KHR_present_id / present_id，Vulkan 路径仍围绕 VK_GOOGLE_display_timing、fence、Choreographer 与 SwappyStats。VK_KHR_present_id 也只是给 present 操作打递增 ID，不等同于 display driver 返回完成时间戳。",
+          "suggestion": "删除“Swappy 已接入 present_id 硬件确认”的定论；如保留，只能作为待验证方向，并补 Vulkan spec、Android VPA/CDD、Swappy 对应 commit 与可运行验证。"
+        },
+        {
+          "type": "数据缺失/版本差异",
+          "location": "L426-L432 present_id 抖动数据与版本表",
+          "detail": "“Jitter 降低约 30%”以及 ±2-4ms / ±1-2ms / ±0.5-1ms 的抖动范围没有设备、驱动、刷新率、样本数、测量方法和原始 trace/log；“Android 16+（Vulkan 1.4 强制）”也把平台 Vulkan profile 要求、扩展可用性和 Swappy 是否使用扩展混在一起。",
+          "suggestion": "没有一手 benchmark 时移除该表；若补表，至少给出设备、Android build、GPU/driver、swapchain present mode、是否启用 VK_GOOGLE_display_timing / present_wait / present_id，以及 trace 或日志样本。"
+        },
+        {
+          "type": "原理断裂/知识盲区",
+          "location": "L438-L444 Android 17 DeliQueue 与 AChoreographer",
+          "detail": "正文把 DeliQueue 对 AChoreographer 回调路径的收益写成已验证事实，并称 DeliQueue 是“单生产者-单消费者无锁队列”、使 AChoreographer 回调抖动减少约 15%。现有 research-gaps 已记录“确认 DeliQueue 是否仅优化 Java MessageQueue，还是影响 NDK AChoreographer/ALooper”。当前证据不能把 Java MessageQueue 的 lock-free producer path 直接推导到 Swappy native 回调抖动。",
+          "suggestion": "拆成 Java Choreographer/MessageQueue 已知变化与 NDK AChoreographer/ALooper 待验证影响；无法定位 exact AOSP branch/commit 和性能数据前，改为 [待验证]，并交叉引用 §1.13 与 research-gaps。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-01T17:20:00+08:00",
       "status": "pending"
     }
   ],

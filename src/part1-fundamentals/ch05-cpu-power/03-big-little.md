@@ -31,14 +31,15 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-04-21T08:24:09+08:00"
-task2b_state: fixed
+task2b_state: pending
 task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task9_state: reviewed
+pipeline_stage: task2b_pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-29"
+task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-29T08:31:09+08:00"
+last_task9_at: "2026-05-01T17:20:00+08:00"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0 1，P1 1。"
 ---
 
 # 大小核架构
