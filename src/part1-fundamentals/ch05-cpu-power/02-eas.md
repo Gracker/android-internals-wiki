@@ -1,4 +1,5 @@
 ---
+last_task2b_at: "2026-05-01T08:43:45.551783"
 title: "EAS 能量感知调度"
 chapter: "5.2"
 section: "5.2"
@@ -28,11 +29,11 @@ review2_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
@@ -138,7 +139,7 @@ OPP 数据通常定义在 Device Tree（设备树）中，使用 `operating-poin
 
 ### 能量模型框架
 
-Linux 内核的 Energy Model（EM）是一个独立于调度器的子系统。它给每个 performance domain 维护一张 active power cost table，表项对应不同的 performance state / OPP，调度器通过 `em_pd_energy()` 这类接口估算“把任务放进这个簇后，活跃运行态大概要花多少能量”。
+Linux 内核的 Energy Model（EM）是一个独立于调度器的子系统。它给每个 performance domain 维护一张 active power cost table，表项对应不同的 performance state / OPP，调度器通过 `em_cpu_energy()` 接口估算“把任务放进这个簇后，活跃运行态大概要花多少能量”。调用链是 `kernel/sched/fair.c::compute_energy()` → `em_cpu_energy()` → EM performance state / power table。
 
 这里有个边界要拆开。EM 只描述活跃运行态的功耗成本，不负责 CPU idle state。C-State 进入多深、停留多久，属于 CPUIdle governor 和 driver 的职责，观测时要看 `cpu_idle` 轨、平台 idle 统计或内核 idle 数据。把 EM 和 CPUIdle 写成一张表，会把“频率点功耗”和“空闲驻留功耗”混成同一层概念。
 
@@ -217,7 +218,7 @@ Linux mainline 的 EAS 文档建立在 PELT 及其 frequency / CPU invariance �
 
 ### find_energy_efficient_cpu 的决策流程
 
-当一个任务被唤醒（wake-up）或迁移（migration）时，EAS 通过 `find_energy_efficient_cpu()` 为它选择目标 CPU。这个函数的核心流程如下：
+当一个 CFS 任务被唤醒时，`select_task_rq_fair()` 会调用 `find_energy_efficient_cpu()` 为它选择目标 CPU。注意这个函数只负责 **wake-up placement**——负载均衡迁移、newidle balance、misfit migration 等路径有各自的入口（`load_balance()`、`detach_tasks()` 等），不走能量估算。这个函数的核心流程如下：
 
 **第一步：寻找每个性能域中 spare capacity 最大的 CPU。** Spare capacity = CPU capacity - 当前 utilization。它表示这个 CPU 还有多少"余力"。在大小核系统中，也就是先在小核簇中找一个最空闲的小核，再在大核簇中找一个最空闲的大核。
 
@@ -254,9 +255,14 @@ EAS 对轻任务和重任务有不同的处理方式：
 
 除了唤醒时的选核，EAS 还参与系统运行时的负载均衡。当调度器发现某个 CPU 过载（utilization 接近或超过 capacity），会触发负载均衡，将部分任务迁移到其他 CPU。
 
-在 EAS 的场景下，负载均衡有一个特殊行为：**overutilized 标志**。当系统中任何一个 CPU 的 utilization 超过其 capacity 的 80%（默认阈值），系统会被标记为 "overutilized"，此时 EAS 的节能策略会被暂时关闭，调度器回到传统的性能优先模式。原因是：在系统负载很高的情况下，节能优化的空间已经很小，强行节能反而会导致严重的性能问题。
+在 EAS 的场景下，负载均衡有一个特殊行为：**overutilized 标志**。当系统中任何一个 CPU 的 utilization 超过其 capacity 的 80%（默认阈值），系统会被标记为 "overutilized"。
 
-这个机制意味着，如果发现 EAS 似乎"不工作了"——任务被随意分配，不再考虑能耗——很可能是因为系统处于 overutilized 状态。
+overutilized 对 EAS 的影响随内核版本有差异：
+
+- **Linux 6.6 及更早**：`find_energy_efficient_cpu()` 入口处检查 `rd->overutilized`，如果系统已 overutilized，直接跳过能量估算，回到传统选核路径。
+- **Linux 6.12 / GKI 6.12（Android 16）**：`find_energy_efficient_cpu()` 本身不再用 `rd->overutilized` 短路，但 overutilized 标志仍然存在，主要进入负载均衡判断（`load_balance()`、misfit migration 等路径），影响系统在高负载下的迁移策略。
+
+这意味着在 Android 16/17 设备上，即使系统 overutilized，唤醒路径仍会尝试能量估算；但负载均衡路径会因 overutilized 而更激进地做性能优先的迁移。排查时要按内核版本区分，不要把 6.6 的行为外推到 6.12。
 
 [已验证: 官方文档, Documentation/scheduler/sched-energy.rst — overutilized flag disables EAS energy-awareness]
 
@@ -280,13 +286,11 @@ EAS 对轻任务和重任务有不同的处理方式：
 
 在 Android 里，调度提示不是应用自己去写 cgroup 文件。AMS / OomAdjuster 先根据进程状态给进程或线程分配 sched group，随后 `android.os.Process.setThreadGroup()`、`setThreadGroupAndCpuset()`、`setProcessGroup()` 进 JNI，JNI 再调用 `SetTaskProfiles()` / `SetProcessProfiles()`。libprocessgroup 读取 `system/core/libprocessgroup/profiles/task_profiles.json`，把 profile 展开成“加入哪个 cgroup”和“往哪个属性文件写值”两类动作。
 
-### UClamp Sum Aggregation（GKI 6.12）
+### UClamp 聚合方式的演进
 
-GKI 6.12（Android 16）对 UClamp 的聚合方式做了一次关键重构：当多个任务共享同一个 CPU 时，UClamp 的有效值从取最大值（max）改为求和（sum）。
+主线内核（Linux 5.3 至 6.12）的 UClamp 聚合始终采用 max/bucket 策略——`kernel/sched/core.c` 的 clamp bucket 逻辑追踪每个 rq 上请求的最大 clamp 值。这意味着三个 UCLAMP_MIN=200 的后台任务跑在同一个 CPU 上，调度器只按 200 来调频和选核。多任务并发时，如果各任务的真实负载之和远大于单任务的 clamp 值，频率预测会系统性偏低。
 
-取最大值的问题是：三个 UCLAMP_MIN=200 的后台任务跑在同一个 CPU 上，调度器只按 200 来调频和选核。实际负载是三倍，但频率只按一份来。多任务并发时频率预测系统性偏低，导致卡顿。改为求和后，三个 200 相加得 600，schedutil 会把频率拉到更高档位，EAS 也更可能把这个 CPU 上的任务分散到其他核心。
-
-这个改动对多任务场景的能效和响应性都有改善，同时减少了频率在低位和高位之间的反复震荡。
+社区和部分厂商分支曾探索将聚合方式从 max 改为 sum，理论上能更准确反映多任务总负载。但截至 android16-6.12（GKI 6.12），公开源码中 `uclamp_rq_util_with()` 仍走 max 路径，sum 聚合尚未合入主线。如果某个厂商内核确实切换到了 sum 聚合，排查时要结合具体 kernel tree 和 commit 确认。
 
 把 Android 10、11、12 的路径拆开看，更稳：
 
@@ -459,7 +463,7 @@ EAS 看的是“有效 util 信号 + capacity + EM”。SchedTune 或 uclamp 只
 | AOSP 用户态 | Android 10 | task_profiles 成型，cpu controller 暴露 `cpu.util.min/max`，默认性能档位仍大量依赖 `schedtune` + `cpuset` | 看 `/dev/stune/*` 和 `/dev/cpuset/*` |
 | AOSP 用户态 | Android 11 | `cpu.uclamp.min/max` 命名到位，默认 profile 仍保留 `schedtune` 分组 | 同时核对 `schedtune` 与 `cpu.uclamp.*` |
 | AOSP 用户态 | Android 12+ | 默认 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接进入 `cpu/{background,foreground,top-app}`，cpuset 继续控制可运行 CPU 集 | top-app / foreground / background 的默认提示链更直观 |
-| GKI 内核 | GKI 6.12 (Android 16) | UClamp 聚合从 max 改为 sum | 多任务场景频率预测更准确，减少震荡 |
+| GKI 内核 | GKI 6.12 (Android 16) | UClamp 聚合仍为 max/bucket，sum 聚合为厂商分支/社区探索方向 | 排查时需按具体 kernel tree 确认聚合策略 |
 | 设备实现 | 厂商分支 | WALT、Power HAL boost、额外迁核策略按 SoC / kernel tree 变化 | Trace 结论必须落回具体设备 |
 
 ## 参考资料

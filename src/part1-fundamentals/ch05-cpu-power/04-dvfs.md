@@ -3,15 +3,15 @@ title: "DVFS 与功耗管理"
 chapter: "5.4"
 section: "5.4"
 status: ready-for-review
-applicable_versions: "Android 7.0 (API 24) - Android 16 (API 36)"
-last_verified: "2026-04-01"
-last_verified_against: "Linux kernel 6.6 (android16-6.6)"
+applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
+last_verified: "2026-05-01"
+last_verified_against: "Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)"
 confidence: medium
 sources:
   - type: aosp
-    path: "kernel/sched/cpufreq_schedutil.c @ android16-6.6"
+    path: "kernel/sched/cpufreq_schedutil.c @ android15-6.6, android16-6.12"
   - type: aosp
-    path: "drivers/opp/ @ android16-6.6"
+    path: "drivers/opp/ @ android15-6.6, android16-6.12"
   - type: official
     path: "developer.android.com/games/optimize/adpf/performance-hint-api"
   - type: blog
@@ -27,16 +27,16 @@ drafted_by: "openclaw-task2"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-29"
-task2b_state: pending
-last_task2b_at: "2026-04-29T00:40:00+08:00"
+task2b_state: fixed
+last_task2b_at: "2026-05-01T08:43:45.552855"
 task2b_result: fixed
 last_task2b_at: "2026-04-23T04:32:00+08:00"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
 task9_reviewed_by: openclaw-task9
@@ -166,7 +166,7 @@ cpu0_opp_table: opp-table-0 {
 };
 ```
 
-[已验证: AOSP android16-6.6, drivers/opp/, OPP 框架核心代码]
+[已验证: AOSP android15-6.6 & android16-6.12, drivers/opp/, OPP 框架核心代码]
 
 OPP 框架为上层子系统（如 cpufreq、devfreq）提供了统一的接口来查询可用的频率-电压对。当 cpufreq governor 决定将 CPU 调到某个频率时，它会从 OPP 表中选择对应的条目，再由底层驱动（clock framework + regulator framework）去设置实际的频率和电压。
 
@@ -208,7 +208,7 @@ schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪�
 
 #### schedutil 的频率计算
 
-对于 CFS 调度类管理的普通任务，schedutil 仍然沿着 `1.25 × f_max × util / max_capacity` 这一类比例关系换算目标频率，但这里的 `util` 已经不是“裸 PELT 值”。在 Android 16-6.6 内核里，真正参与计算的是 `sugov_get_util()` 整理过的有效利用率，可以写成下面这个简化关系：
+对于 CFS 调度类管理的普通任务，schedutil 仍然沿着 `1.25 × f_max × util / max_capacity` 这一类比例关系换算目标频率，但这里的 `util` 已经不是“裸 PELT 值”。在 android15-6.6 内核里，真正参与计算的是 `sugov_get_util()` 整理过的有效利用率，可以写成下面这个简化关系：
 
 **util_eff = apply_iowait_boost(uclamp(PELT_util))**
 
@@ -222,14 +222,19 @@ schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪�
 
 ```c
 // kernel/sched/cpufreq_schedutil.c, sugov_get_util() 节选
-util = cpu_util_cfs(sg_cpu->cpu);
-util = uclamp_rq_util_with(rq, util, NULL);
-util = sugov_apply_iowait_boost(sg_cpu, util);
+// android15-6.6 实际签名
+util = cpu_util_cfs_boost(sg_cpu->cpu);  // PELT CFS 利用率 + boost
+util = uclamp_rq_util_with(rq, util, NULL);  // 应用 uclamp 钳位
+sg_cpu->bw_dl = cpu_bw_dl(rq);            // deadline 带宽预留
+sg_cpu->max = arch_scale_cpu_capacity(sg_cpu->cpu); // CPU max capacity
+util = sugov_apply_iowait_boost(sg_cpu, util);  // I/O 等待提频
 ```
+
+android16-6.12 的签名基本一致，`cpu_util_cfs_boost()` 仍然是入口。`cpu_util_cfs()` 在新版本中仍存在但不被 `sugov_get_util()` 直接调用。
 
 于是会出现一个在 Trace 里很常见的现象：即使 PELT 利用率还不高，只要 top-app 或关键线程被设置了较高的 `uclamp_min`，频率也会提早拉升；I/O 密集路径刚被唤醒时，也可能先吃到一段 iowait boost。
 
-[已验证: AOSP android16-6.6, kernel/sched/cpufreq_schedutil.c — `sugov_get_util()` / 官方文档, kernel.org — schedutil 1.25 headroom]
+[已验证: AOSP android15-6.6 & android16-6.12, kernel/sched/cpufreq_schedutil.c — `sugov_get_util()` / 官方文档, kernel.org — schedutil 1.25 headroom]
 
 对于实时（RT）和 Deadline 调度类的任务，schedutil 的策略更简单粗暴：直接将频率拉到最高，确保实时任务的执行不受影响。
 
@@ -345,9 +350,11 @@ CPU 频繁进出深度睡眠也会带来额外开销。虽然深度睡眠能省�
 
 前面提到，SCMI / CPPC 平台上 OS 发出的频率请求是抽象的 performance level，实际频率由固件映射。这意味着 Perfetto 中  轨迹记录的是**内核请求的频率**，不一定是固件最终执行的频率——温控、电源管理策略等固件侧因素都可能压低实际输出。
 
-Android 16（GKI 6.12）深度集成了 SCMI ftrace 事件，其中  可以暴露固件实际下发的 performance level。开发者可以在 Perfetto 中对比两条曲线： 反映内核意图， 反映固件实值。如果两者出现持续偏差（内核请求高频，固件实际给低频），说明 SoC 固件的温控或电源策略正在介入。这种内核以为在高频、实际被压低的情况，是排查不明性能下降的重要线索。
+Android 16（GKI 6.12）的 SCMI 框架提供了多个 ftrace 事件，可用于观察固件侧的频率协商过程。android16-6.12 的 `include/trace/events/scmi.h` 中定义的事件包括 `scmi_fc_call`、`scmi_xfer_begin`、`scmi_xfer_response_wait`、`scmi_xfer_end` 等。其中 `scmi_fc_call`（Fastchannel call）是直接观察 performance level 请求的关键事件——通过 `protocol_id` 和 `msg_id` 过滤 `PERF_LEVEL_GET` 类消息，可以追踪固件实际返回的 performance level，再与 `power/cpu_frequency` 轨迹中的内核请求频率对比。
 
-[已验证: GKI 6.12 SCMI ftrace 集成 — scmi_perf_level_get 事件]
+如果两者出现持续偏差（内核请求高频，固件实际给低频），说明 SoC 固件的温控或电源策略正在介入。这种内核以为在高频、实际被压低的情况，是排查不明性能下降的重要线索。
+
+[已验证: AOSP android16-6.12, include/trace/events/scmi.h — scmi_fc_call / scmi_xfer_* 事件族]
 
 要启用 SCMI 事件，在 Perfetto 配置中添加：
 
@@ -356,7 +363,9 @@ data_sources: {
   config {
     name: "linux.ftrace"
     ftrace_config {
-      ftrace_events: "scmi/scmi_perf_level_get"
+      ftrace_events: "scmi/scmi_fc_call"
+      ftrace_events: "scmi/scmi_xfer_begin"
+      ftrace_events: "scmi/scmi_xfer_end"
       ftrace_events: "power/cpu_frequency"
     }
   }
@@ -368,25 +377,30 @@ data_sources: {
 Perfetto 的 Trace Processor 提供 SQL 接口，可以量化分析频率变化：
 
 ```sql
--- 查看每个 CPU 的频率变化统计
+INCLUDE PERFETTO MODULE linux.cpu.frequency;
+
+-- 查看每个 CPU 的频率驻留统计
 SELECT
   cpu,
-  COUNT(*) as freq_changes,
-  AVG(duration) / 1e6 as avg_duration_ms
-FROM cpu_frequency_slices
-GROUP BY cpu
-ORDER BY cpu;
+  freq / 1000.0 AS freq_khz,
+  round(sum(dur) / 1e9, 3) AS time_s,
+  round(sum(dur) * 100.0 / sum(sum(dur)) over (partition by cpu), 1) AS pct
+FROM cpu_frequency_counters
+GROUP BY cpu, freq
+ORDER BY cpu, freq;
 
 -- 找出频率最低的时段（可能影响性能）
 SELECT
   cpu,
-  freq / 1e6 as freq_mhz,
-  duration / 1e6 as duration_ms
-FROM cpu_frequency_slices
+  freq / 1000.0 AS freq_khz,
+  round(dur / 1e6, 2) AS duration_ms
+FROM cpu_frequency_counters
 WHERE freq < 500000000  -- 低于 500MHz
-ORDER BY duration DESC
+ORDER BY dur DESC
 LIMIT 20;
 ```
+
+`cpu_frequency_slices` 不是 Perfetto stdlib 标准表。频率分析应通过 `INCLUDE PERFETTO MODULE linux.cpu.frequency;` 引入 `cpu_frequency_counters` 模块后查询，列名是 `cpu`、`freq`、`dur`。如果环境未加载 stdlib，可退回原始 `counter` / `counter_track` 方案自行派生。
 
 ## GPU DVFS 机制
 
