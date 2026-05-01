@@ -10,10 +10,10 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 sources:
   - "https://square.github.io/okhttp/features/events/"
@@ -28,7 +28,7 @@ last_task9_at: "2026-04-27T10:57:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-01"
 task6_result: pass-light-edit
-review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered. task9_result=needs-rework, not eligible for auto-promotion."
+review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion."
 
 last_task2b_at: "2026-04-27T09:42:00+08:00"
 ---
