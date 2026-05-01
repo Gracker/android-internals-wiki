@@ -7078,7 +7078,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T13:23:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-01T08:46:17.751093+00:00",
+      "completed_reason": "P0: present_id接入声明已删除，改为\"Swappy尚未接入\"的正确状态; 抖动数据表已移除; P1: DeliQueue已拆分Java/NDK两层并标注待验证; Swappy vote vs手动vote边界已补充调用路径和覆盖风险"
     },
     {
       "section": "1.0",
@@ -7577,8 +7579,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T08:31:09+08:00",
-      "status": "pending",
-      "updated_at": "2026-04-29T08:31:09+08:00"
+      "status": "completed",
+      "updated_at": "2026-04-29T08:31:09+08:00",
+      "completed_at": "2026-05-01T08:46:17.751093+00:00",
+      "completed_reason": "P0: Perfetto SQL已修正为cpu_frequency_counters; schedutil代码片段已按GKI 6.12修正签名; DSU-120 16KB页声明已降级为待验证; P1: RTG已标注为vendor-specific机制; DynamIQ DVFS域矛盾已补充架构能力vs设备实现的边界"
     },
     {
       "section": "5.4",

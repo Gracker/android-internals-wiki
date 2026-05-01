@@ -9870,6 +9870,15 @@
         "4.6: formula fix + RELRO claim downgrade",
         "4.5: ASan config + heapprofd + ApplicationStartInfo + onTrimMemory API34+ + Hardware Bitmap PSS"
       ]
+    },
+    {
+      "timestamp": "2026-05-01T08:46:42.201341+00:00",
+      "sections": [
+        "5.3 大小核架构",
+        "2.17 Frame Pacing Library"
+      ],
+      "issues_fixed": 9,
+      "details": "5.3: Perfetto SQL修正, schedutil代码修正, DSU-120降级待验证, RTG标注vendor-specific, DVFS域矛盾修复; 2.17: present_id接入声明删除, 抖动数据表移除, DeliQueue拆分待验证, vote边界补充"
     }
   ],
   "2026-04-29-13-task9": {
