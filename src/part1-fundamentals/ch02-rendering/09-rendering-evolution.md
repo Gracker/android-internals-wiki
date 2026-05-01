@@ -68,10 +68,12 @@ review_notes: "2026-04-24 task6 re-review: pass-light-edit；2026-04-26 task2b �
 task2b_result: fixed
 task2b_state: pending
 last_task2b_at: "2026-04-28T09:42:00+08:00"
-last_task9_at: '2026-04-28T10:30:00+08:00'
+last_task9_at: "2026-05-01T11:20:00+08:00"
 task2b_fixed_by: openclaw-task2b
 updated_date: '2026-04-26'
 updated_by: openclaw-task2b
+task9_reviewed_date: "2026-05-01"
+task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 0 / P1 3 / P2 1。"
 
 ---
 

@@ -12410,3 +12410,36 @@ AVF Terminal / pVM 与 Phantom Process Killer 的边界尚未回源。章节把 
 
 ### 关联章节
 1.3、5.8、16.x
+
+
+## [2026-05-01] 2.9 渲染机制的版本演进 — 知识盲区
+
+### 盲区描述
+Graphite / Early-Z 在 Android 16 HWUI 中的真实启用路径、设备范围、系统属性或 feature flag、Perfetto/Skia backend 观测方法尚未建立。当前正文把 Graphite 部署与不透明过度绘制自动消除连成强结论，缺少 AOSP 与设备侧证据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 android-16.0.0_r1 与 main 中 HWUI / Skia Graphite 后端的源码入口、编译开关、运行时属性。
+- 在支持 Android 16 的参考设备上记录 Skia backend、RenderThread slice、GPU overdraw / Early-Z 可观测指标。
+- 明确 Graphite 与 SkiaVulkan / Ganesh 的关系，拆分“能力存在”“系统启用”“默认启用”三个层级。
+
+### 关联章节
+2.9, 2.10, 2.15, 18.9
+
+## [2026-05-01] 2.16 Sync Fence 框架与帧同步机制 — 知识盲区
+
+### 盲区描述
+Vulkan Timeline Semaphore 与 Android native fence / sync_file fd 的 interop 边界尚未写清。当前正文把 Vulkan 内部 timeline 计数器模型直接推导为 acquire / release / present fd 的替代方案，并进一步写到 Android 17 去 fd 化路线，证据链不足。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Vulkan timeline semaphore、external semaphore fd、native fence fd、sync_file fd 在 Android 图形栈中的转换关系。
+- 追踪 SkiaVulkanPipeline / VulkanManager createReleaseFence、ANativeWindow queueBuffer、SurfaceFlinger latchBuffer、HWC present/release fence 的端到端源码链。
+- 查 Android 17 CDD / source.android.com / AOSP tag 是否存在“去 fd 化”正式路线；没有公开依据时改成待验证展望。
+
+### 关联章节
+2.13, 2.16, 2.17, 18.9

@@ -617,3 +617,31 @@
 - **位置**：“4GHz 时代的能效红线”（约 L111-L117）
 - **问题**：“限到 3.5-3.8GHz 只损失 5-10% 单核算力、功耗降低 20-30%”是强量化结论，当前仅标待验证，缺测试条件、SoC、温控状态、benchmark 与功耗测量口径。
 - **建议**：补充实测条件或公开资料来源；如果短期无法补证据，应降级为定性描述，不保留具体百分比。
+
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L472 版本演进表 16KB 页
+- **问题**：“TLB 命中率提升约 9%，渲染管线有效带宽增益”没有给出设备、内核、负载、计数器或官方来源。16KB page size 的公开数据更多围绕启动、功耗、相机等宏观指标，不能直接推出渲染带宽收益。
+- **建议**：删除 9% 裸数字，或补充同机 4KB/16KB、GPU/CPU counter、fence/RenderThread trace 的可复现实验。
+
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-05-01
+- **类型**：数据缺失
+- **位置**：L278-L280 Timeline Semaphore 可观测性
+- **问题**：“在 Perfetto 中仍会以 fence wait 的形式呈现”缺少 producer、driver、Vulkan/Surface 边界前提。Vulkan 内部 timeline wait 不一定自动等价于 Android graphics fence wait slice。
+- **建议**：补 trace producer/driver 条件；区分 Vulkan 队列内部等待、sync_file fd 等待、SurfaceFlinger latch/present 等待。
+
+
+## [Task9 Deep Review] 15.7 AOSP 代码阅读 — 2026-05-01
+- **类型**：源码准确性
+- **位置**：L184-L186 Logcat 反查源码
+- **问题**：小节示例讲 `D/Choreographer: Skipping ...` 日志，但验证锚点写成 `frameworks/base/core/java/android/os/Trace.java`。该日志应回到 `frameworks/base/core/java/android/view/Choreographer.java`，Trace.java 与日志定位无直接对应。
+- **建议**：把该小节验证锚点改为 Choreographer.java；Trace.java 只保留在 Perfetto traceBegin/traceEnd 小节。
+
+
+## [Task9 Deep Review] 15.7 AOSP 代码阅读 — 2026-05-01
+- **类型**：版本差异
+- **位置**：L302/L306 Choreographer 回调顺序
+- **问题**：正文只写 Input → Animation → Traversal 三类回调。对 Android 16 源码阅读来说，还应提醒现代 Choreographer 已包含 Insets Animation 与 Commit 阶段，否则读者对照当前 doFrame() 会漏掉回调队列。
+- **建议**：补一句：早期主链是 Input/Animation/Traversal；现代源码还要看 INSETS_ANIMATION 和 COMMIT。

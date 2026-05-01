@@ -4997,7 +4997,7 @@
       "section": "2.9",
       "section_title": "2.9",
       "priority": 85,
-      "reason": "[External Review] 技术评分 4.8/5；[Deep Tech Review] BLASTBufferQueue 版本线与 ANGLE 自动启用边界存在 P1 技术缺口；[Deep Tech Review] Graphite 在 Android 16“开始进入生产部署”、并“在完全不透明 UI 区域自动消除过度绘制，开发者不需要手动裁剪或移除背景”的表述过强",
+      "reason": "[Deep Tech Review] 2.9 渲染机制的版本演进 存在技术审计 P0/P1，需要 Task2B 回炉修复",
       "review_issues": [
         {
           "type": "P1重要缺失",
@@ -5049,6 +5049,24 @@
             "Task9 deep tech review 2026-04-28 10:30",
             "AOSP/official docs/web复核，详见 deep-review log"
           ]
+        },
+        {
+          "type": "版本差异",
+          "location": "L218/L468/L534",
+          "detail": "正文把 BLASTBufferQueue 统一写成 Android 12 引入/取代 BufferQueue；AOSP Android 11 的 ViewRootImpl 已存在 mBlastBufferQueue 与 BLASTBufferQueue 迁移入口，Android 12 更适合写成范围扩大和后续稳定化。",
+          "suggestion": "拆成 Android 11 预迁移/主窗口路径与 Android 12+ 后续演进，避免把 BLAST 起点后移。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L222",
+          "detail": "“App 不再需要等待 SurfaceFlinger 释放 Buffer 才能获取新的 Buffer”过度绝对。BLAST 改进 Buffer+Transaction 的异步提交与同步边界，但 App 在 buffer slot 耗尽或 release fence 未 signal 时仍可能在 dequeue/复用旧 buffer 前被 back-pressure 卡住。",
+          "suggestion": "改为“BLAST 将 buffer 与 transaction 绑定并改善几何/内容同步；不能消除 release fence 与 slot 数量导致的反压”。"
+        },
+        {
+          "type": "版本差异/知识盲区",
+          "location": "L187-L193/L471",
+          "detail": "Graphite、Android 16 部署、Front-to-Back/Early-Z 与“自动消除不透明过度绘制”被连成强结论，但缺少 AOSP android-16 启用路径、系统属性/feature flag、设备范围和 Perfetto/Skia backend 验证方法。",
+          "suggestion": "补 Graphite 是否启用的判定方法、设备/OEM 边界和 Skia/HWUI 源码锚点；在证据不足前把“开发者不需要优化过度绘制”改成条件化描述。"
         }
       ],
       "added_by": "external-ai-review",
@@ -5058,7 +5076,7 @@
         "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
-      "added_at": "2026-04-28T10:30:00+08:00"
+      "added_at": "2026-05-01T11:20:00+08:00"
     },
     {
       "section": "3",
@@ -6961,7 +6979,7 @@
       "section": "2.16",
       "section_title": "2.16 Sync Fence 框架与帧同步机制",
       "priority": 95,
-      "reason": "[Deep Tech Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-04-28 12:30 发现 P0 1 / P1 2，需回炉修正",
+      "reason": "[Deep Tech Review] 2.16 Sync Fence 框架与帧同步机制 存在技术审计 P0/P1，需要 Task2B 回炉修复",
       "material_paths": [
         "logs/deep-review/2026-04-28-12-deep-review.md"
       ],
@@ -6989,10 +7007,34 @@
           "location": "L278 Perfetto 可观测性",
           "detail": "正文写 Timeline Semaphore 等待仍会以 fence wait 形式呈现。Perfetto 中是否呈现为 Android fence wait 取决于驱动、Vulkan layer、external sync fd 导出路径和 trace producer，不能与 dma_fence wait 画等号。",
           "suggestion": "区分 native fence wait、GPU queue wait、Vulkan semaphore/counter 事件；给出可观测性前提。"
+        },
+        {
+          "type": "源码错误/原理错误",
+          "location": "L274",
+          "detail": "正文写 Timeline Semaphore 用一个 64 位计数器替代 acquire / release / present 的多个一次性 fd，等同于替代 Android 图形管线 native fence。实际 BufferQueue / SurfaceFlinger / HWC 跨进程边界仍以 native fence / sync_file fd 交换；Vulkan timeline semaphore 属于 Vulkan 同步模型，需要通过 semaphore fd / sync fd interop 才能和 Android native fence 边界衔接。",
+          "suggestion": "把 Vulkan 内部 timeline semaphore 与 Android native fence fd 分层写清：应用/驱动内部可用 timeline；ANativeWindow、BufferQueue、HWC 边界仍要说明 acquire/release/present fence fd 的传递。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L256-L280",
+          "detail": "Android 16 Vulkan 1.4 / timeline semaphore 要求与 HWUI / SurfaceFlinger / HWC fence 传递链之间缺少 interop 解释，读者无法判断哪些等待来自 Vulkan queue，哪些等待来自 sync_file fd。",
+          "suggestion": "补充 VkSemaphore 可导出/导入 fd、EGL/Vulkan native fence interop、SkiaVulkanPipeline/VulkanManager createReleaseFence 与 BufferQueue 交接的最小链路。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L288-L294",
+          "detail": "Android 17 “去 fd 化”“逐步移除图形管线 fd 依赖”的路线图未找到公开 CDD、source.android.com 或 AOSP tag 依据，当前写成确定政策会误导版本判断。",
+          "suggestion": "降级为待验证展望；除非补到 Android 17 正式 CDD/API/AOSP 变更，否则不要写成平台路线。"
+        },
+        {
+          "type": "数据支撑/原理断裂",
+          "location": "L282-L286",
+          "detail": "16KB 页能缩短 fence signal 到 SurfaceFlinger 唤醒、并让 fence wait 尾部抖动更小，缺少 kernel ftrace/perf/TLB miss 或同机 A/B trace 证据。该结论把大页的通用 TLB 收益直接投射到 fence 路径。",
+          "suggestion": "保留为研究假设，补 irq/dma_fence signal、sched wakeup、TLB miss/perf counter 与 Perfetto fence wait 的同机 4KB/16KB 对比。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-28T12:30:00+08:00",
+      "added_at": "2026-05-01T11:20:00+08:00",
       "status": "pending"
     },
     {
