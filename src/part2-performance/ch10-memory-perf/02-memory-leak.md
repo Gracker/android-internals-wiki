@@ -27,15 +27,16 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: revisiting
-task9_state: pending
+task9_state: reviewed
 task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-03T02:35:48+08:00"
-task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 2 / P1 3 / P2 0。"
+last_task9_at: "2026-05-03T04:21:00+08:00"
+task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。"
+task9_result: needs-rework
 ---
 
 # 内存泄漏

@@ -10963,6 +10963,66 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T02:35:48+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.2",
+      "section_title": "卡顿原因体系",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.2 卡顿原因体系 复审仍有 P0/P2 技术问题需回炉（本轮 P0:2 P1:0 P2:1）",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L294-L302 DEVICE vs CLIENT 决策流程",
+          "detail": "正文写成 SurfaceFlinger.prepareImage() → HWComposer::prepare() → hwc2::Composer::validateDisplay()。在 AOSP android-15.0.0_r1 / main 的 SurfaceFlinger.cpp、HWComposer.cpp 中未找到 prepareImage()/HWComposer::prepare() 这条现代路径；HWComposer.cpp 的关键入口是 HWComposer::getDeviceCompositionChanges()，内部调用 presentOrValidate()/validate()、getChangedCompositionTypes()、acceptChanges()。",
+          "suggestion": "将流程改成现代 HWC2/HWC3 validate/present 流：SurfaceFlinger 准备每帧 layer state → HWComposer::getDeviceCompositionChanges() → HWC display presentOrValidate()/validate() → getChangedCompositionTypes()/getRequests() → acceptChanges()；如果要兼容旧版 HWC1/HWC2，请显式标注版本。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L456 ADPF 适用版本",
+          "detail": "正文写“ADPF 从 Android 11 (API 30) 开始可用”。官方 Performance Hint API / android.os.PerformanceHintManager 是 Android 12 (API 31) 引入；Android 11 对应的是 Thermal API 可用范围，不是 PerformanceHintManager。GameManager 是 API 31，GameState / setGameState 是 API 33。",
+          "suggestion": "拆成：Thermal API 多数 Android 11+ 设备可用；PerformanceHintManager / Performance Hint API 从 Android 12(API 31) 开始；Game Mode / GameManager 从 API 31；GameState API 从 Android 13(API 33)。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L382-L387 16KB Page Size 对 I/O 卡顿和渲染 TLB 的影响",
+          "detail": "Page Fault 频率下降 3-5%、mm_filemap_add_to_page_cache 频率下降、RenderThread 纹理上传 TLB Miss 下降仍缺本地 Perfetto / ftrace / perf counter 证据。该 P2 已在 2026-05-03-02 deep-review 写入 suggestions.md，本轮不重复追加。",
+          "suggestion": "补同设备 4KB/16KB kernel 与 trace config、page-fault / mmap / TLB 观察指标；否则降级为待验证研究假设。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T04:21:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "10.2",
+      "section_title": "内存泄漏",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 10.2 内存泄漏 复审仍有 P1 技术问题需回炉（本轮 P0:0 P1:2 P2:0）",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L109、L294 Android 17 分代 CMC / WeakReference 入队",
+          "detail": "正文把 Android 17(API 37) 分代 CMC 写成会让年轻代 WeakReference 在 Minor GC 即处理，并显著提升 LeakCanary 响应速度；但 AOSP GC debug 文档明确写 CC collector 在 Android 10+ 已默认 generational，当前章节没有给出 Android 17 对 ReferenceQueue/WeakReference 处理时机的源码提交或 benchmark。",
+          "suggestion": "删除确定性“显著提升/不再等待 Full GC”表述，或改为待验证研究点；若保留，补 ART reference processing / generational CMC 相关源码提交、logcat GC 类型样例，以及 LeakCanary watchDuration 前后的实测数据。"
+        },
+        {
+          "type": "源码准确性/版本差异",
+          "location": "L293 LeakCanary 2.0 / Android 15+ ContentProvider 自动初始化",
+          "detail": "正文写“Android 15+ ContentProvider 安全上下文收紧导致 AppWatcherInstaller 静默失败”。LeakCanary FAQ 的公开口径仍是通过非 exported ContentProvider 在 Application.onCreate() 前安装 Activity/Fragment watcher；本轮未找到 Android 15+ 安全上下文收紧导致静默失败的官方文档、LeakCanary issue 或可复现条件。",
+          "suggestion": "删除 Android 15+ 确定性版本结论；如要保留，降级为“多进程/direct boot/instant app/严格沙箱场景待验证”，并补 issue 链接、复现步骤和 manualInstall 的准确 API 版本边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T04:21:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

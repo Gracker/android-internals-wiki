@@ -12460,3 +12460,20 @@ Perfetto 抓取章节已经覆盖 heapprofd、java_hprof 与 linux.perf 配置�
 
 ### 关联章节
 13.2, 13.3, 13.5, 14.1
+
+
+## [2026-05-03] 10.2 内存泄漏 — 知识盲区
+
+### 盲区描述
+Android 17 / ART generational CMC 对 WeakReference、ReferenceQueue 入队时机与 LeakCanary 检测延迟的真实影响尚未建立一手证据；Android 15+ 是否存在 LeakCanary ContentProvider 自动初始化静默失败，也缺少官方文档、issue 或复现条件。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 阅读 ART reference processing / concurrent copying / generational CMC 相关提交，确认 Android 17 相比 Android 10+ generational CC 的真实变化。
+- 用同一测试 App 在 Android 15/16/17 设备或模拟器上对比 WeakReference 入队延迟、GC 类型日志、LeakCanary watchDuration 命中率。
+- 查证 LeakCanary AppWatcherInstaller 在 Android 15+、多进程、direct boot、instant app、严格沙箱场景下的已知 issue 与 manualInstall API 边界。
+
+### 关联章节
+10.2, 4.3, 10.1
