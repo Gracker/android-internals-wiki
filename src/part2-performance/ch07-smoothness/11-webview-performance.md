@@ -678,6 +678,50 @@ Renderer 进程崩溃在 Perfetto 中的表现：
 > **源码依据**：Chromium `android_webview/docs/architecture.md`（多进程架构）、`chromium/src/base/trace_event/README.md`（TRACE_EVENT 宏）、`perfetto.dev/docs/analysis/webview-tracing`（Perfetto 配置）
 
 
+
+
+<!-- AIW-源码调研-2026-05-02 -->
+
+### 🔍 WebView Renderer 进程崩溃恢复的源码机制
+
+基于 Chromium 的 WebView 独立进程架构，当 Renderer 进程崩溃或被系统 OOM Killer 杀死后，Android 8.0+ 通过 `onRenderProcessGone()` 回调让应用有机会优雅恢复。
+
+#### 关键调用链：
+1. **进程终止检测**：`AwBrowserTerminator.ProcessTerminationStatus()` 通过 SyncSocket pipe 判断是崩溃还是 SIGKILL
+2. **回调分发**：`OnRenderProcessGoneDetail()` 遍历所有关联的 WebView 实例
+3. **Android API 转换**：`AwContents.onRenderProcessGone()` → `AwContentsClient.onRenderProcessGone()` → `WebViewClient.onRenderProcessGone()`
+
+#### 设计意图：
+```java
+// frameworks/base/core/java/android/webkit/WebViewClient.java
+/**
+ * @return {@code true} if the host application handled the situation that process has
+ *         exited, otherwise, application will crash if render process crashed,
+ *         or be killed if render process was killed by the system.
+ */
+public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+    return false; // 默认返回 false，让 Chromium 处理（崩溃或杀死 App）
+}
+```
+
+#### 性能关键点：
+- **崩溃场景**：`didCrash() = true` → 调用 `LOG(FATAL)` 导致 App 崩溃
+- **OOM 场景**：`didCrash() = false` → 调用 `kill(getpid(), SIGKILL)` 杀死整个 App 进程
+- **正确处理**：检测 `didCrash()`，销毁并重建 WebView 实例，避免白屏或崩溃
+
+#### 优化策略：
+- 监听 `onRenderProcessGone()` 并设置超时重建机制
+- 使用 `setRendererPriorityPolicy()` 控制渲染优先级，减少被 OOM 杀死概率
+- 建立多 WebView 场景下的优先级竞争处理机制
+
+#### 源码位置关键文件：
+- `chromium/src/android_webview/browser/aw_browser_terminator.cc` - 进程终止检测
+- `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` - Java 层入口
+- `frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java` - 公开 API
+
+> 💡 **注意**：`onRenderProcessGone()` 在 Android 8.0 (API 26) 引入，默认实现会根据情况导致 App 崩溃或被杀死，必须主动重写实现。
+
+
 ## 参考资料
 
 - **AOSP 源码路径**：

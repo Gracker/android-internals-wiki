@@ -9,7 +9,7 @@ applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: 2026-04-16
+reviewed_date: 2026-05-02
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -29,6 +29,7 @@ tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
