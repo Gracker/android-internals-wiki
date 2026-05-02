@@ -30,7 +30,8 @@ related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
 pipeline_stage: task2b_pending
 task2b_result: fixed
 task2b_state: pending
-task6_state: revisiting
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: "openclaw-task9"
