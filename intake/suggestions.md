@@ -745,3 +745,32 @@
 - **位置**：L299-L307 16KB 页对 Fence 路径的潜在影响
 - **问题**：该段虽标注待验证，但仍把 16KB 页、TLB miss、GPU IRQ → dma_fence signal → SurfaceFlinger wakeup 延迟串成较具体因果链；目前缺同机 4KB/16KB kernel ftrace、perf counter 与 Perfetto fence wait 尾部抖动数据。
 - **建议**：在补齐 GPU IRQ 时间戳、dma_fence_signal、sched_wakeup、TLB miss/perf counter 对照前，建议保留在“待验证研究假设”附录，不放入版本演进主线。
+
+## [Task9 Deep Review] 7.2 卡顿原因体系 — 2026-05-03
+- **类型**：数据与案例支撑
+- **位置**：L380-L387
+- **问题**：16KB Page Size 段落把 Page Fault 频率下降 3-5%、`mm_filemap_add_to_page_cache` 频率下降写成已验证结论，但官方公开数据更接近“内存压力下启动平均 3.16% 改善”等口径，未见当前这组指标来源。
+- **建议**：改用官方 16KB page size 性能数据，或补本地 Perfetto 对比实验条件：设备、内核页大小、trace config、page-fault / mmap / TLB 观察指标。
+- **review 日志**：logs/deep-review/2026-05-03-02-deep-review.md
+
+## [Task9 Deep Review] 7.2 卡顿原因体系 — 2026-05-03
+- **类型**：交叉引用一致性
+- **位置**：frontmatter related_chapters / L180-L190
+- **问题**：正文新增 DeliQueue，但 related_chapters 未包含 1.13 `MessageQueue / DeliQueue`，读者无法跳到专章核对行为变更。
+- **建议**：补交叉引用 1.13，并在 DeliQueue 小节显式指向 1.13。
+- **review 日志**：logs/deep-review/2026-05-03-02-deep-review.md
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-05-03
+- **类型**：数据与案例支撑
+- **位置**：L250
+- **问题**：“Startup Profile 对冷启动贡献 40-60%”没有来源、样本和基线；官方只给 Startup Profiles 相比 Baseline Profiles alone 通常 15-30% 的启动改善口径。
+- **建议**：补 Macrobenchmark 对比或改成官方 15-30% 表述，并说明测试路径、设备、AGP 版本。
+- **review 日志**：logs/deep-review/2026-05-03-02-deep-review.md
+
+## [Task9 Deep Review] 8.7 Baseline Profiles 与编译优化实践 — 2026-05-03
+- **类型**：数据与案例支撑
+- **位置**：L340-L342
+- **问题**：“Google 建议不超过几千条规则”未给官方阈值。官方更可核验的是 binary profile 小于 1.5 MB 等限制和实际编译耗时。
+- **建议**：用 profile/profm 大小、`cmd package compile -m speed-profile` 耗时、oat/vdex 增量做可执行验证。
+- **review 日志**：logs/deep-review/2026-05-03-02-deep-review.md
+
