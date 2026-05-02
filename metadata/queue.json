@@ -10749,6 +10749,90 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-02T10:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "2.16",
+      "section_title": "2.16 Sync Fence 框架与帧同步机制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.16 Sync Fence 章节把 Android 16/VPA16 与 Timeline Semaphore 强制要求绑定，并把 HWUI native fence export 路径写进 Timeline 语境，存在版本口径与原理链风险",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L255-L297 Vulkan Timeline Semaphores",
+          "detail": "正文称“Android 16 强制要求新设备支持 Timeline Semaphores”以及“基于 Android 16 VPA16 设备要求”。复核 Khronos VP_ANDROID_16_minimums.json，VPA16 追加的是 VK_EXT_host_image_copy、maintenance6 等扩展/特性，未出现 timelineSemaphore 或 VK_KHR_timeline_semaphore；Android Developers 公开口径也只是 Android 10 新 64-bit 设备要求 Vulkan 1.1、VPA 每年定义 profile。该断言会把 Vulkan 1.2/timeline feature 与 Android 16 CDD/VPA 要求混同。",
+          "suggestion": "删除“Android 16 强制要求新设备支持 Timeline Semaphores”口径，改成“Timeline Semaphore 是 Vulkan 1.2 核心特性之一，实际可用性需查询 VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore；Android 16/VPA16 不应作为强制依据”。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L273-L295 Vulkan Semaphore 与 Android Native Fence 的 Interop",
+          "detail": "AOSP android-16.0.0_r1 的 VulkanManager::createReleaseFence()/finishFrame() 只创建带 VkExportSemaphoreCreateInfo(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT) 的 VkSemaphore，未设置 VkSemaphoreTypeCreateInfo，也没有 VK_SEMAPHORE_TYPE_TIMELINE。该路径是 binary external semaphore → sync fd/native fence 的桥，不是 Timeline Semaphore 的直接导出路径。Khronos 也明确 WSI API 仍不支持 timeline semaphore。",
+          "suggestion": "把“HWUI native fence export/import”独立成 Binary/External Semaphore 桥接小节；Timeline Semaphore 只描述 Vulkan 队列内部同步，并补充 WSI/native fence 边界不能直接用 timeline 替代。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T00:36:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.1",
+      "section_title": "13.1 Perfetto 简介与演进",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.1 Perfetto 简介与演进存在 Mainline/APEX 部署口径错误，以及 java_hprof profileable 拦截位置描述不符合源码",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L397-L401 Android 12+ Mainline APEX / com.android.os.perfetto",
+          "detail": "正文写“Android 12+ 通过 Mainline APEX 封装，运行时二进制位于 /apex/com.android.os.perfetto/bin/”。复核 AOSP android-16.0.0_r1：perfetto.rc 中 service traced /system/bin/traced、service traced_probes /system/bin/traced_probes；external/perfetto/Android.bp 的 traced/traced_probes cc_binary 也未声明 com.android.os.perfetto。当前能核实的是部分组件对 com.android.profiling APEX（min_sdk 35）可用，不能推出 Android 12 的 com.android.os.perfetto APEX 部署。",
+          "suggestion": "删除 /apex/com.android.os.perfetto/bin/ 断言；改写为“traced/traced_probes 仍按平台二进制部署，Android 15/API35 起 ProfilingManager 相关组件与 com.android.profiling APEX 需要单独描述；具体设备可用边界以 /system/bin、/apex 和 build manifest 实机核对为准”。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L181 java_hprof_producer 触发链",
+          "detail": "正文写目标 App 未 profileable/debuggable 时“信号会被内核丢弃”。源码并非如此：external/perfetto/src/profiling/memory/java_hprof_producer.cc 在 SendSignal() 中先调用 CanProfile(...)，失败时记录“not profileable”并 continue，不会执行 sigqueue(pid, __SIGRTMIN+6)。ART perfetto_hprof 插件接收该信号是后续路径，不是未授权时由内核丢弃。",
+          "suggestion": "把该句改为“JavaHprofProducer 侧在发送 __SIGRTMIN+6 前执行 profileable/debuggable/installer gate；不满足条件时不会向目标进程发信号”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T00:36:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.7",
+      "section_title": "13.7 Perfetto 的高级用法",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.7 Perfetto 高级用法的自定义 Metric、Trace Summary CLI 与 BatchTraceProcessor 示例存在当前官方 API/命令不匹配问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/命令错误",
+          "location": "L113-L187 自定义 Perfetto Metric 示例",
+          "detail": "官方 trace-based metrics 要求 SQL 文件名与 TraceMetrics extension 字段一致，并提供 {metric_name}_output view，view 中用 proto builder 函数（如 ColdStartMetric(...)）和 RepeatedField(...) 组装输出 proto。当前示例只 SELECT metric_name、SUM(duration_ns)，没有 cold_start_metric_output，也没有填充 repeated phases，无法按 --run-metrics 生成 TraceMetrics.cold_start_metric。",
+          "suggestion": "补成两段：先 CREATE VIEW cold_start_phases AS ...；再 CREATE VIEW cold_start_metric_output AS SELECT ColdStartMetric('phases', (SELECT RepeatedField(ColdStartPhase(...)) FROM cold_start_phases), 'total_duration_ns', ...)。同时说明 SQL 文件名必须是 cold_start_metric.sql。"
+        },
+        {
+          "type": "命令错误/版本差异",
+          "location": "L405-L410 Trace Summarization 命令行等价写法",
+          "detail": "当前 Perfetto Trace Summary 文档使用 trace_processor_shell summarize --metrics-v2 memory_per_process my_trace.pftrace spec.textproto。正文写成 trace_processor_shell --summary --summary-spec spec.textproto --summary-metrics-v2 memory_per_process my_trace.pftrace，与当前官方子命令和参数名不匹配，照抄会失败。",
+          "suggestion": "改为：trace_processor_shell summarize --metrics-v2 memory_per_process my_trace.pftrace spec.textproto；如果保留旧命令，必须标注适用 trace_processor 版本。"
+        },
+        {
+          "type": "源码准确性/API 准确性",
+          "location": "L324-L347 BatchTraceProcessor 示例",
+          "detail": "Perfetto 官方 Batch Trace Processor 文档当前导入路径是 from perfetto.batch_trace_processor.api import BatchTraceProcessor，并建议用 with BatchTraceProcessor(files) as btp；正文使用 from perfetto.batch_trace_processor import BatchTraceProcessor，且未说明 pandas 是 BTP 前置依赖，可能导致读者按当前 pip 包运行失败。",
+          "suggestion": "更新导入路径与 context manager 写法，并补充 pip3 install pandas / pip3 install perfetto；保留 query_and_flatten 作为聚合入口。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T00:36:00",
+      "status": "pending"
     }
   ],
   "completed": [

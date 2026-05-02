@@ -739,3 +739,9 @@
 - **位置**：Sustained Performance Mode API
 - **问题**：正文称 CTS 要求“帧率不能低于未开启模式时的水平”。AOSP 性能管理文档的核心要求是开启 sustained mode 后约 30 分钟内帧率变化 <5%；与未开启模式的比较口径需要按 CTS 原文复核，当前表述可能过强。
 - **建议**：补 CTS 原文链接或源码测试名，改成“稳定性 <5%”为主，避免写成绝对不低于普通模式。
+
+## [Task9 Deep Review] 2.16 Sync Fence 框架与帧同步机制 — 2026-05-03
+- **类型**：数据缺失
+- **位置**：L299-L307 16KB 页对 Fence 路径的潜在影响
+- **问题**：该段虽标注待验证，但仍把 16KB 页、TLB miss、GPU IRQ → dma_fence signal → SurfaceFlinger wakeup 延迟串成较具体因果链；目前缺同机 4KB/16KB kernel ftrace、perf counter 与 Perfetto fence wait 尾部抖动数据。
+- **建议**：在补齐 GPU IRQ 时间戳、dma_fence_signal、sched_wakeup、TLB miss/perf counter 对照前，建议保留在“待验证研究假设”附录，不放入版本演进主线。
