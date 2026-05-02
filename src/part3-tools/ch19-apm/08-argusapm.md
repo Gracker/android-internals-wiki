@@ -14,20 +14,20 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Qihoo360/ArgusAPM"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: "reviewed"
 task6_reviewed_date: "2026-05-01"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T22:33:32+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-27T04:40:00+08:00"
+last_task2b_at: "2026-05-03T05:40:00+08:00"
 review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Well-structured with practical migration guidance. 1 pending queue entry from task9."
 
 ---
@@ -152,7 +152,7 @@ flowchart LR
 
 ## AOP 织入适合哪些数据
 
-ArgusAPM 这类方案使用编译期织入，最适合处理有明确调用边界的数据。文中的 AOP 指 AspectJ 路径，主要覆盖 `TraceActivity`、`TraceNetTrafficMonitor` 这类切面；ASM 路径承担方法耗时、OkHttp3、WebView 等字节码适配。读源码时按这两条路径查，避免把 AOP / ASM 写成一个采集黑盒。
+ArgusAPM 这类方案使用编译期织入，最适合处理有明确调用边界的数据。文中的 AOP 指 AspectJ 路径，主要覆盖 `TraceActivity`、`TraceNetTrafficMonitor` 这类切面；ASM 路径的匹配范围比字面含义窄——`FuncClassAdapter` 仅在 `TypeUtil.isRunMethod()` 或 `TypeUtil.isOnReceiveMethod()` 成立时才插入 `FuncMethodAdapter`，也就是只织入 `Runnable.run()` 和 `BroadcastReceiver.onReceive()` 的入口/出口计时代码；`OkHttp3ClassAdapter` 只匹配 `OkHttpClient.Builder` 构建路径；`WebClassAdapter` 只匹配 `WebViewClient.onPageFinished()` 等固定入口。不要把 ASM 路径理解成泛化的「任意方法耗时」采集。
 
 - Activity 生命周期耗时。
 - OkHttp 请求开始、结束、失败。
