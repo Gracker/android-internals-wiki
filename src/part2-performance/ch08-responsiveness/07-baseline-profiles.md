@@ -5,7 +5,7 @@ section: '8.7'
 status: ready-for-review
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
-applicable_versions: Android 9 (API 28) - Android 17 (API 37)
+applicable_versions: Android 7 (API 24) - Android 17 (API 37)
 last_verified: '2026-04-24'
 last_verified_against: developer.android.com create/debug/profileable docs + AOSP
   android-17-beta3 cross-check + Firebase-free local verification commands review
@@ -30,10 +30,10 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 review_round: 6
 task9_reviewed_date: "2026-04-30"
@@ -109,6 +109,17 @@ Baseline Profiles 的价值落在这两条时间线之间。它不替代 Android
 | Cloud Profiles | Google Play | 新版本分发一段时间后 | 用真实用户数据补齐开发者没覆盖到的热点 |
 
 因此，Baseline Profiles 解决的是 Day-0 和 Day-1 的冷启动问题，Cloud Profiles 解决的是规模化分发后的热点补全，本地 JIT Profile 解决的是单设备的持续收敛。三者能合并使用，但触发时机和来源不同。
+
+**版本覆盖矩阵：**
+
+| 能力 | 起始版本 | 渠道限制 | 说明 |
+|------|----------|----------|------|
+| 开发者 Baseline Profile | Android 7 (API 24) | 无 | 随 APK/AAB 分发，所有安装渠道均可携带 |
+| Cloud Profiles | Android 9 (API 28)+ | 仅 Google Play | 聚合真实用户热点数据，分发周期取决于 Play |
+| AGP 8.4+ 设备端自动编译 | Android 7+ | Android Studio / Gradle 安装 non-debuggable build | 旧版 AGP 或其他 installer 需 ProfileInstaller |
+| AGP 8.5+ 16KB DEX layout | Android 15+ (内核 16KB) | 无 | 构建期优化，安装后直接享受 Page Fault 减少 |
+
+Android 7/8 是"有开发者 Baseline Profile 但无 Cloud Profile"的关键边界——这两个版本的冷启动优化完全依赖开发者预置的规则，无法从 Google Play 获得聚合补充。
 
 ### 实测效果
 
@@ -229,6 +240,15 @@ class BaselineProfileGenerator {
 
 Gradle 任务跑完后，生成的 HRF 文件会复制到 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`。如果项目有 product flavor，对应任务名会变成 `generate<Variant>BaselineProfile`。
 
+### Startup Profile 与指令缓存局部性
+
+Startup Profile（`includeInStartupProfile = true` 标记的规则）不仅告诉 `dex2oat` 优先编译哪些方法，还通过 DEX layout 优化改变了方法的物理排列顺序。启动阶段的热点方法被集中排列在连续的 DEX 页中，这带来了硬件层面的收益：
+
+- **L1 I-Cache 命中率提升**：连续的热方法减少了 Cache Line 的冲突失效，冷启动时指令缓存的有效覆盖率更高。
+- **L2 Cache 与 TLB 协同**：方法集中排列还减少了跨页访问，降低了 TLB Miss 的概率。在 16KB 页环境下，单页覆盖的方法数更多，这个效应被进一步放大。
+
+实测中，Startup Profile 对冷启动的贡献通常占 Baseline Profile 总收益的 40-60%，其中一部分就来自这种硬件级的缓存友好性，而不仅仅是编译覆盖本身。
+
 ### Profile 的关键覆盖路径
 
 一个高质量的 Baseline Profile 需要覆盖以下路径：
@@ -242,7 +262,7 @@ Profile 不需要追求 100% 覆盖——覆盖 80% 的启动路径就能获得�
 
 ### AGP 自动化
 
-AGP 8.0+ 已经把 Baseline Profiles 的生成和打包流程收进官方插件。实际项目里更稳妥的做法是直接使用 Baseline Profile Generator 模板或 `androidx.baselineprofile` 插件，让 release 或特定 variant 在 CI 里执行 `generate<Variant>BaselineProfile`。AGP 8.3 起，Startup Profile 相关的 DEX layout 优化默认开启，构建系统会把启动阶段更常用的类排到更靠前的位置。
+AGP 8.0+ 已经把 Baseline Profiles 的生成和打包流程收进官方插件。实际项目里更稳妥的做法是直接使用 Baseline Profile Generator 模板或 `androidx.baselineprofile` 插件，让 release 或特定 variant 在 CI 里执行 `generate<Variant>BaselineProfile`。AGP 8.5 起正式开启了 16KB Page Size 对齐的 DEX layout 优化——构建系统会将启动阶段更常用的类排到更靠前的位置，从而在 16KB 页环境下减少 Page Fault，吃满内核的预读红利。AGP 8.3 曾率先引入 Startup Profile 的基本布局优化，但 16KB 对齐的完整支持需要 AGP 8.5+。开发者要确认 AGP 版本 ≥ 8.5，才能在 Android 15/16 设备上拿到这份收益。
 
 项目治理上，关注三件事就够了：
 

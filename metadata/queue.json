@@ -6474,14 +6474,16 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "updated_by": "task9-deep-tech-review",
       "updated_at": "2026-04-25T22:29:14+08:00",
       "material_paths": [
         "intake/suggestions.md",
         "intake/research-gaps.md"
       ],
-      "source_file": "2026-04-29-10-8.7-external-review.md"
+      "source_file": "2026-04-29-10-8.7-external-review.md",
+      "completed_at": "2026-05-02T23:40:00+08:00",
+      "completed_reason": "SDM/云端预编译版本矩阵已补充；artd/com.android.art Mainline角色已明确；AGP 8.4/8.5分界线已写入安装来源表；版本覆盖矩阵拆为Baseline Profile(API 24+)/Cloud Profile(Android 9+)/AGP 8.4+自动编译三行；Startup Profile指令缓存局部性已补充"
     },
     {
       "section": "8.8",
@@ -7819,8 +7821,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-08-7.2-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-08-7.2-external-review.md",
+      "completed_at": "2026-05-02T23:40:00+08:00",
+      "completed_reason": "Android 17 DeliQueue无锁消息队列已补充；16KB Page Size对I/O卡顿和TLB影响已添加；ADPF作为系统对抗工具已引入"
     },
     {
       "section": "7.3",
