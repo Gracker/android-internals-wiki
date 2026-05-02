@@ -45,19 +45,21 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-task9_reviewed_date: "2026-04-26"
+task9_reviewed_date: 2026-05-02
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T12:46:09+08:00"
+last_task9_at: "2026-05-02T10:20:00+08:00"
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task2b_fixed_by: openclaw-task2b
 last_task2b_at: '2026-04-25T10:40:00+08:00'
+review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 0，P1 1，P2 0；问题已写入 queue/suggestions/research-gaps。"
+
 ---
 
 # Trace 抓取
