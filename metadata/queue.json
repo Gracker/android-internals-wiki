@@ -10667,6 +10667,84 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T19:38:39+08:00",
       "status": "pending"
+    },
+    {
+      "section": "5.3",
+      "section_title": "5.3 大小核架构",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.3 大小核架构 存在 P0/P1 技术问题，需回炉修正：cpufreq governor：schedutil 的工作原理 / sugov_get_util 代码块；schedutil 特殊处理：实时任务（RT/DL）",
+      "material_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/03-big-little.md",
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误 / 版本差异",
+          "location": "cpufreq governor：schedutil 的工作原理 / sugov_get_util 代码块",
+          "detail": "正文先称“Linux 6.6 中的实际签名如下”，代码注释又标为 android16-6.12；实际 Linux v6.6 的签名是 static void sugov_get_util(struct sugov_cpu *sg_cpu)，使用 effective_cpu_util(cpu, util, FREQUENCY_UTIL, NULL)。当前 android16-6.12 分支的 sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) 还包含 scx_cpuperf_target()/scx_switched_all()，并用 util = max(util, boost)，正文代码与两个版本都不完全一致。",
+          "suggestion": "拆成 Linux v6.6 mainline 与 android16-6.12 GKI 两个代码锚点，分别给出真实签名和差异；不要把 GKI 6.12 片段标成 Linux 6.6。"
+        },
+        {
+          "type": "源码错误",
+          "location": "schedutil 特殊处理：实时任务（RT/DL）",
+          "detail": "正文称 schedutil 对 SCHED_FIFO/SCHED_RR 任务“直接使用最高频率”。Linux v6.6 与 android16-6.12 的 cpufreq_schedutil.c 中已没有 SCHED_CPUFREQ_RT_DL 直接置顶路径；当前实现通过 effective_cpu_util()/bw_min、uclamp 与 deadline 带宽约束参与频率计算。",
+          "suggestion": "改为版本化描述：旧内核/vendor 分支可能有 RT/DL max boost；mainline v6.6 与 android16-6.12 应说明 RT/DL 通过有效 util、deadline 带宽下限和 uclamp 影响频率，不应写成无条件最高频。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-02T10:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "5.5",
+      "section_title": "5.5 Thermal 管控",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.5 Thermal 管控 存在 P0/P1 技术问题，需回炉修正：ThermalManagerService：Framework 的温控中枢；Thermal 管控路径总结",
+      "material_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "ThermalManagerService：Framework 的温控中枢",
+          "detail": "正文源码路径写为 frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java；AOSP main/android16 路径实际为 frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java，power/thermal 子目录不存在。",
+          "suggestion": "统一改为正确路径，并同步参考资料/正文中的所有路径锚点。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "Thermal 管控路径总结",
+          "detail": "正文把“ThermalManagerService 接收并广播状态 → 系统组件 / 厂商 thermal engine 执行具体降温动作”串成一条单向链路，容易误导。实际限频/限核通常由 kernel thermal core、cooling device、vendor thermal-engine 在 HAL 下方或并行执行；ThermalManagerService 主要负责接收 HAL 状态、广播给系统/App，并在 SHUTDOWN severity 时触发关机。",
+          "suggestion": "改成两条平面：mitigation plane（sensor/kernel thermal core/vendor thermal-engine/cooling device）与 reporting/API plane（Thermal HAL/ThermalManagerService/PowerManager API），再说明二者通过 severity/thermal zone 状态关联。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-02T10:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.2",
+      "section_title": "13.2 Trace 抓取",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 13.2 Trace 抓取 存在 P0/P1 技术问题，需回炉修正：Heap Profiling 与 Callstack Sampling",
+      "material_paths": [
+        "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异 / 知识盲区",
+          "location": "Heap Profiling 与 Callstack Sampling",
+          "detail": "章节适用范围写 Android 10-16，但 CPU callstack sampling 官方 quickstart 要求 Android T+，且需要 userdebug/eng 镜像或目标 App 在 manifest 中标记 profileable/debuggable；heapprofd 在 user build 上同样只能 profile debuggable/profileable App。正文只给 TraceConfig 示例，缺少版本与权限/构建类型前提，读者在量产 user 设备上会直接抓不到数据。",
+          "suggestion": "补一张 profiling 数据源支持矩阵：heapprofd Android 10+、Java heap sampling Android 12+、java_hprof Android 11+、linux.perf/cpu_profile Android 13+；逐项写清 userdebug/eng、profileable/debuggable、系统服务/第三方 App 的权限边界和失败表现。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-02T10:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

@@ -12443,3 +12443,20 @@ Vulkan Timeline Semaphore 与 Android native fence / sync_file fd 的 interop �
 
 ### 关联章节
 2.13, 2.16, 2.17, 18.9
+
+
+## [2026-05-02] 13.2 Trace 抓取 — Profiling 数据源权限与版本边界
+
+### 盲区描述
+Perfetto 抓取章节已经覆盖 heapprofd、java_hprof 与 linux.perf 配置，但缺少量产 user build、userdebug/eng、profileable/debuggable manifest 标记之间的权限差异说明。尤其是 CPU callstack sampling 官方 quickstart 要求 Android T+，且目标 App 需 profileable/debuggable 或设备为 userdebug/eng；heapprofd 在 user build 上也只能分析 debuggable/profileable App。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Perfetto heapprofd、java_hprof、linux.perf/cpu_profile 的 Android 版本下限与权限前提。
+- 补充量产 user 设备上抓取失败的典型错误表现、fallback 工具与推荐排查步骤。
+- 建立 TraceConfig 数据源支持矩阵，覆盖 Android 10-16。
+
+### 关联章节
+13.2, 13.3, 13.5, 14.1

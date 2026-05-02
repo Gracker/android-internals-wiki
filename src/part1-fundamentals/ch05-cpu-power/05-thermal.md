@@ -43,17 +43,19 @@ reviewed_date: 2026-05-02
 reviewed_by: openclaw-task6
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-01"
-task9_reviewed_by: "openclaw-task9"
-pipeline_stage: task9_pending
-last_task9_at: "2026-05-01T18:51:19+08:00"
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: 2026-05-02
+task9_reviewed_by: openclaw-task9
+pipeline_stage: task2b_pending
+last_task9_at: "2026-05-02T10:20:00+08:00"
+task2b_state: pending
 task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-01T23:43:12.672839"
+review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。"
+
 ---
 
 
