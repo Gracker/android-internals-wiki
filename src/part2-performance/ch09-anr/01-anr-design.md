@@ -3,7 +3,7 @@
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -29,7 +29,7 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -47,6 +47,8 @@ task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+auto_finalized_by: openclaw-task6
+auto_finalized_date: "2026-05-02"
 ---
 
 # ANR 设计思想
