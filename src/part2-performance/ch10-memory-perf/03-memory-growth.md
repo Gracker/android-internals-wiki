@@ -139,6 +139,13 @@ Bitmap 累积的典型路径有两条：一是前面说的缓存无淘汰，图�
 
 [自动发现] 16KB 页面设备上的 `meminfo` 粒度更粗，匿名映射尾页的浪费也更容易抬高 `Private Other` 一类条目。跨设备比对这类指标前，先确认页大小。
 
+排查 Unnamed / Private Other 增长时，`dmabuf_dump -b` 是归因闭环的关键工具。它能按 buffer 尺寸和进程归属列出当前系统中所有 DMA-BUF 的物理占用，直接回答"这些匿名页到底被谁拿了"。操作步骤：
+
+1. `adb shell dmabuf_dump -b` 获取全系统 DMA-BUF 快照
+2. 按进程名过滤目标 App，看其名下的 buffer 尺寸分布
+3. 如果发现大量 GPU 纹理 buffer（通常来自 `gralloc` 分配），结合 GPU 内存分析定位具体的纹理泄漏来源
+4. 如果发现大量 ion/cma buffer，检查是否有 Native 库的 mmap 未释放
+
 ## 与内存泄漏的区分方法
 
 内存持续增长和内存泄漏在 Perfetto 或 `dumpsys meminfo` 中的表现非常相似——都是 PSS 持续增长。但区分它们是选择正确治理策略的前提。

@@ -27,12 +27,12 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+task9_state: pending
+task9_result: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-04-30"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-30T01:20:00+08:00"
@@ -106,6 +106,8 @@ task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 ### 工作原理：WeakReference + ReferenceQueue
 
 LeakCanary 的检测机制巧妙地利用了 Java 引用体系中的一个特性：当一个对象只被 WeakReference 引用时，下次 GC 会回收它，同时 JVM 会把这个 WeakReference 对象放入它关联的 ReferenceQueue 中。
+
+Android 17（API 37）的分代 GC 对这一机制的延迟有显著改善。之前的分代 CC 下，WeakReference 入队可能延迟数分钟——因为只有 Full GC 才会处理老年代中的弱引用。分代 CMC 引入独立的 Minor GC 之后，年轻代对象在毫秒级就能完成入队，LeakCanary 检测泄漏的响应速度也随之大幅提升。
 
 工作流程：
 
@@ -288,7 +290,8 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 
 - **Android 8.0**：ASan 支持在非 root 设备上通过 wrap.sh 使用
 - **Android 10**：引入 heapprofd，集成在 Perfetto 中
-- **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化
+- **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化。但 Android 15+ 的 ContentProvider 安全上下文收紧后，多进程应用或严格沙箱模式下自动初始化可能静默失败——ContentProvider 的 Security Context 未建立时 `LeakCanary` 的 `AppWatcherInstaller` 不会触发。遇到这种情况，需要在 `Application.onCreate()` 中显式调用 `AppWatcher.manualInstall(application)`，或通过 Jetpack App Startup 声明依赖
+- **Android 17 (API 37)**：分代 CMC 的 Minor GC 使 WeakReference 入队延迟从分钟级缩短到毫秒级，LeakCanary 的泄漏检测响应速度随之大幅提升
 - **Android 16**：Perfetto 增强 heapprofd 的 Java 堆采样能力
 
 [待验证: Android 16 heapprofd Java heap sampling 的具体 API 变化]
@@ -308,6 +311,7 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 Jetpack Compose 引入了新的泄漏场景：
 
 - **LaunchedEffect 持有 Activity/Fragment 引用**：协程生命周期绑定到 Composition
+- **rememberCoroutineScope 闭包捕获泄漏**：通过 `rememberCoroutineScope()` 创建的协程作用域生命周期绑定到 Composition，如果协程体内捕获了 Activity 或 View 的引用，且协程未在 Composition 销毁时正确取消，这些引用会被一直持有。和 `LaunchedEffect` 不同，`rememberCoroutineScope` 需要开发者手动管理协程的取消时机，遗漏取消是更常见的泄漏来源
 - **remember 缓存了不该缓存的对象**：持有 Context 或 View 引用
 - **CompositionLocal 滥用**：跨 Activity 边界的 CompositionLocal
 
