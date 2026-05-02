@@ -226,6 +226,65 @@ Hardware Bitmap 的限制，不是“系统会自动降级成普通 Bitmap”，
 - 需要圆角、模糊、Palette、共享元素或软件 Canvas：直接用 `ARGB_8888`
 - 图片很多的 feed：顺手观察 `/proc/self/fd` 或图片库的 hardware bitmap 限额
 
+
+
+<!-- AIW-源码调研-2026-05-02 -->
+## 补充：Hardware Bitmap 与 RenderThread/SurfaceFlinger 合成管线
+
+> 以下内容来源于 2026-05-02 源码调研，补充了原章节未明确的 Hardware Bitmap 合成管线行为。
+
+**原盲区**：Hardware Bitmap 是否可以绕过 RenderThread 的某些流程，直接作为单独图层交给 SurfaceFlinger 合成，从而进一步省去 GPU 拷贝？
+
+**结论**：Hardware Bitmap **不能**绕过 RenderThread 和 GPU 合成管线。其优化点是省去 RenderThread 中同步 upload 的 4-8ms（1080p RGBA），而非跳过渲染管线直接交给 SurfaceFlinger。
+
+### 源码级证据
+
+`SkiaGpuPipeline::prepareToDraw()`（`frameworks/base/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp:137-151`）中：
+
+```cpp
+void SkiaGpuPipeline::prepareToDraw(const RenderThread& thread, Bitmap* bitmap) {
+    GrDirectContext* context = thread.getGrContext();
+    if (context && !bitmap->isHardware()) {
+        // 仅对 NON-hardware Bitmap 执行 upload
+        ATRACE_FORMAT("Bitmap#prepareToDraw %dx%d", ...);
+        auto image = bitmap->makeImage();
+        skgpu::ganesh::PinAsTexture(context, image.get());
+        skgpu::ganesh::UnpinTexture(context, image.get());
+        context->flushAndSubmit();
+    }
+    // Hardware Bitmap 此处为空操作
+}
+```
+
+`!bitmap->isHardware()` 分支明确表明 Hardware Bitmap 跳过 prepareToDraw 阶段的 upload 逻辑。但 RenderThread 本身依然参与（执行 draw 命令、GPU 渲染、Buffer 提交）。
+
+### 完整的渲染管线
+
+```
+App 主线程                      RenderThread                  SurfaceFlinger
+   |                                  |                              |
+View.onDraw(RecordingCanvas)         |                              |
+       |                              |                              |
+RenderNode.record()                   |                              |
+       |                              |                              |
+DisplayList 记录 drawBitmap 命令       |                              |
+       |                              |                              |
+                         syncFrameState()                              |
+                                    |                                 |
+                         DrawFrameTask.run()                          |
+                                    |                                 |
+                         SkiaCanvas::drawBitmap()                     |
+                                    |                                 |
+                         SkCanvas->drawImage(image from AHB)          |
+                                    |                                 |
+                         GPU 渲染命令执行 + context->flushAndSubmit()  |
+                                             BufferQueue/dequeueBuffer
+                                                                    |
+                                                                    HWC composition
+```
+
+Hardware Bitmap 的优化点：**省去 RenderThread 中同步 upload 的 4-8ms（1080p RGBA）**，但无法绕过渲染管线直接交给 SurfaceFlinger。
+
 ## inBitmap 复用机制与 BitmapPool
 
 ### 为什么需要复用
