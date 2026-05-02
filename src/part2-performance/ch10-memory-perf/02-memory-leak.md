@@ -9,7 +9,7 @@ applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: 2026-05-02
+reviewed_date: 2026-05-03
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -28,7 +28,7 @@ sources:
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
@@ -211,7 +211,7 @@ Android 10 引入的低开销 Native 堆分析器，集成在 Perfetto 中。通
 tools/heap_profile -n com.example.myapp
 ```
 
-在 Perfetto UI 中，数据以火焰图和表格展示。默认采样间隔 4096 字节（可通过 `-s` 参数调整），这意味着小于 4KB 的单次分配可能被跳过，但对于持续增长的大型泄漏，这个精度足够定位问题。如果"Total allocated"持续增长而"Total freed"几乎不变，就是 Native 泄漏的信号。
+在 Perfetto UI 中，数据以火焰图和表格展示。默认采样间隔 4096 字节（可通过 `-s` 参数调整），小于 4KB 的单次分配可能被跳过，但对于持续增长的大型泄漏，这个精度足够定位问题。如果"Total allocated"持续增长而"Total freed"几乎不变，就是 Native 泄漏的信号。
 
 ### Malloc Debug：全量的 Native 内存调试
 
