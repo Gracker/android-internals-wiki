@@ -34,12 +34,11 @@ tags:
   - perfetto
   - performance
   - smoothness
-related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1", "4.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-05-03T02:35:48+08:00"
@@ -180,15 +179,17 @@ RecyclerView 是 Android 中最常用的列表组件，也是卡顿的高发地�
 
 ### Android 17 DeliQueue：主线程消息队列的无锁化
 
-Android 17 对 `MessageQueue` 做了一次架构级重构，引入了 **DeliQueue**（无锁消息队列）。在传统实现中，`MessageQueue.enqueueMessage()` 和 `next()` 之间通过 `synchronized` 保护，多线程向主线程投递消息时存在锁竞争风险。DeliQueue 采用无锁化设计（基于 CAS / 单生产者单消费者环形缓冲区），大幅减少了主线程在处理 Handler 消息时的锁竞争延迟。
+Android 17 对 `MessageQueue` 做了一次架构级重构，引入了 **DeliQueue**（无锁消息队列）。在传统实现中，`MessageQueue.enqueueMessage()` 和 `next()` 之间通过 `synchronized` 保护，多线程向主线程投递消息时存在锁竞争风险。DeliQueue 采用无锁化设计：生产者侧通过 **Treiber stack** 处理并发入队（多线程 postMessage 不再争 monitor），Looper 侧通过 **min-heap** 按时间戳排序出队。这个架构把 `enqueueMessage()` 和 `next()` 之间的 synchronized 保护彻底消除，大幅减少了主线程在处理 Handler 消息时的锁竞争延迟。
+
+**生效边界**：DeliQueue 仅对 `targetSdkVersion >= 37` 的应用默认启用。`targetSdk < 37` 的应用即使在 Android 17 设备上运行，仍使用传统 synchronized MessageQueue。Debuggable build 可通过 `adb shell am compat enable USE_NEW_MESSAGEQUEUE <package>` 提前测试新队列行为。
 
 对卡顿分析的实际影响：
 
-- **主线程 `monitor contention` 减少**：在 Perfetto 中，Android 17 设备上的 `android.monitor_contention` 事件中，`MessageQueue` 相关的竞争会显著减少。
+- **主线程 `monitor contention` 减少**：在 Perfetto 中，启用了 DeliQueue 的应用，`android.monitor_contention` 事件中 `MessageQueue` 相关的竞争会显著减少。但业务锁（单例锁、Kotlin lazy 锁）、Binder 对端锁、native futex 等仍需正常排查。
 - **callback 分发延迟降低**：`Choreographer` 的 `doFrame` 回调、Input 事件分发等通过 Handler 投递的关键路径，受多线程并发投递的影响变小。
-- **分析注意事项**：在 Android 17+ 上排查主线程卡顿时，如果锁竞争 Slice 主要集中在 `MessageQueue`，应优先考虑其他原因——DeliQueue 已经把这条路径的锁开销压到了极低。
+- **分析注意事项**：排查 Android 17 上的主线程卡顿时，先确认应用是否启用了 DeliQueue（检查 `targetSdkVersion`），再判断 `MessageQueue` 锁竞争是否仍是瓶颈。
 
-[来源: AOSP android-17-beta3, frameworks/base/core/java/android/os/MessageQueue.java]
+[来源: AOSP android-17-beta3, frameworks/base/core/java/android/os/MessageQueue.java; Android Developers Blog 2026-02-17]
 
 ## RenderThread 瓶颈
 
@@ -280,13 +281,13 @@ enum class HWC2::Composition {
 Android 13+ 的 HWC3 (AIDL) 使用相同的语义但通过 AIDL 接口暴露：
 
 ```hal
-// hardware/interfaces/graphics/composer/IComposerClient.aidl
-enum CompositionType : int32 {
-    DEVICE = 1,      // 硬件 Overlay 合成
-    CLIENT = 2,      // GPU 回退合成
-    SOLID_COLOR = 3,
-    CURSOR = 4,
-    SIDEBAND = 5,
+// hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl
+enum Composition : int32 {
+    CLIENT = 1,      // GPU 回退合成，SurfaceFlinger 负责
+    DEVICE = 2,      // 硬件 Overlay 合成
+    SOLID_COLOR = 3, // 纯色层
+    CURSOR = 4,      // 光标层
+    SIDEBAND = 5,    // 视频流直通道
 };
 ```
 
@@ -446,12 +447,12 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 ### 系统提供的对抗工具：ADPF
 
-当 App 检测到由于限频或调度导致的卡顿风险时，**ADPF（Android Dynamic Performance Framework）** 是唯一的官方动态干预手段。ADPF 的核心 API `PerformanceHintManager` 允许 App 向系统报告当前的性能需求——比如告知系统"我接下来的渲染负载较重，需要更高的 CPU/GPU 频率"。
+当 App 检测到由于限频或调度导致的卡顿风险时，**ADPF（Android Dynamic Performance Framework）** 是唯一的官方动态干预手段。ADPF 的核心 API `PerformanceHintManager` 允许 App 向系统提交 CPU 资源提示——告知系统线程组的 workload deadline，由系统根据 SoC 状态和温控策略决定是否调整 CPU clock 或 core type。
 
 在卡顿原因体系的语境下，ADPF 的定位是：
 
-- **温控限频的主动对抗**：当 App 检测到帧时间逐渐增长、频率可能在下降时，通过 ADPF 提前告知系统，争取维持高频运行。这比被动接受温控降频要好得多。
-- **调度延迟的间接缓解**：ADPF 的 hint 不仅影响频率，还会影响调度器对目标线程的优先级感知，减少 Runnable → Running 的等待时间。
+- **温控限频的主动对抗**：当 App 检测到帧时间逐渐增长时，通过 ADPF 提交 deadline hint，系统会尽可能维持所需的 CPU 频率。这比被动接受温控降频要好。
+- **CPU 资源提示的边界**：`PerformanceHintManager` 的契约范围是 CPU 资源（频率、核心类型）。GPU 频率、线程优先级不在其直接控制范围内。GPU 相关的干预需要通过 Game Mode API、Fixed Performance Mode 等独立接口。
 - **适用版本**：ADPF 从 Android 11 (API 30) 开始可用，Android 13+ 的 Game Mode API 和 Game State API 进一步扩展了其能力边界。
 
 关于 ADPF 的具体接入方式和 API 用法，详见 5.9 节。
