@@ -1734,12 +1734,14 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "material_paths": [
         "logs/deep-review/2026-05-03-02-deep-review.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-03T02:35:48+08:00"
+      "updated_at": "2026-05-03T02:35:48+08:00",
+      "completed_at": "2026-05-03T03:43:19.474318",
+      "completed_reason": "P0 referenceQueue.contains已修正为poll(); P0 rememberCoroutineScope生命周期描述已纠正; P1 ContentProvider初始化降级为待验证; P1 applicable_versions扩展到Android 17; P1 WeakReference入队延迟添加条件化描述; P1 heapprofd Java采样版本边界待核; P1 ProfilingManager替代方案已补充"
     },
     {
       "section": "10.03",
@@ -6328,9 +6330,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-25T11:42:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-03T02:35:48+08:00"
+      "updated_at": "2026-05-03T02:35:48+08:00",
+      "completed_at": "2026-05-03T03:44:37.314418",
+      "completed_reason": "P0 DeliQueue算法从CAS/SPSC修正为Treiber stack+min-heap; P0 HWC3 AIDL枚举路径和值已修正(Composition.aidl, CLIENT=1, DEVICE=2); P1 ADPF边界收窄为CPU资源提示; P1 DeliQueue targetSdk>=37生效边界+compat flag已补; related_chapters补1.13/1.14"
     },
     {
       "section": "7.3",

@@ -5,7 +5,7 @@ section: "10.2"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
@@ -27,12 +27,11 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-03T02:35:48+08:00"
@@ -107,7 +106,7 @@ task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 2 / P1 3 / 
 
 LeakCanary 的检测机制巧妙地利用了 Java 引用体系中的一个特性：当一个对象只被 WeakReference 引用时，下次 GC 会回收它，同时 JVM 会把这个 WeakReference 对象放入它关联的 ReferenceQueue 中。
 
-Android 17（API 37）的分代 GC 对这一机制的延迟有显著改善。之前的分代 CC 下，WeakReference 入队可能延迟数分钟——因为只有 Full GC 才会处理老年代中的弱引用。分代 CMC 引入独立的 Minor GC 之后，年轻代对象在毫秒级就能完成入队，LeakCanary 检测泄漏的响应速度也随之大幅提升。
+Android 17（API 37）的分代 CMC 对这一机制的延迟有明显改善。分代 CMC 引入独立的 Minor GC，年轻代中只被 WeakReference 引用的对象可以在 Minor GC 阶段被处理，不再需要等待 Full GC。这使得年轻代场景下 LeakCanary 的泄漏检测响应速度显著提升。（老年代中 WeakReference 的处理仍依赖 Major GC，入队延迟取决于 GC 策略。）
 
 工作流程：
 
@@ -124,8 +123,9 @@ Android 17（API 37）的分代 GC 对这一机制的延迟有显著改善。之
 val weakRef = KeyedWeakReference(activity, referenceQueue, description)
 SystemClock.sleep(WAIT_DURATION)
 Runtime.getRuntime().gc()
-val isLeaking = !referenceQueue.contains(weakRef)
-if (isLeaking) { /* 触发 Heap Dump */ }
+// ReferenceQueue 没有 contains() 方法，需要 poll 取出已入队引用再判断
+val queued = generateSequence { referenceQueue.poll() }.any { it === weakRef }
+if (!queued) { /* 泄漏确认，触发 Heap Dump */ }
 ```
 
 ### 分析报告的阅读方法
@@ -290,11 +290,9 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 
 - **Android 8.0**：ASan 支持在非 root 设备上通过 wrap.sh 使用
 - **Android 10**：引入 heapprofd，集成在 Perfetto 中
-- **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化。但 Android 15+ 的 ContentProvider 安全上下文收紧后，多进程应用或严格沙箱模式下自动初始化可能静默失败——ContentProvider 的 Security Context 未建立时 `LeakCanary` 的 `AppWatcherInstaller` 不会触发。遇到这种情况，需要在 `Application.onCreate()` 中显式调用 `AppWatcher.manualInstall(application)`，或通过 Jetpack App Startup 声明依赖
-- **Android 17 (API 37)**：分代 CMC 的 Minor GC 使 WeakReference 入队延迟从分钟级缩短到毫秒级，LeakCanary 的泄漏检测响应速度随之大幅提升
-- **Android 16**：Perfetto 增强 heapprofd 的 Java 堆采样能力
-
-[待验证: Android 16 heapprofd Java heap sampling 的具体 API 变化]
+- **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化。但 Android 15+ 的 ContentProvider 安全上下文收紧后，多进程应用或严格沙箱模式下自动初始化可能静默失败——ContentProvider 的 Security Context 未建立时 `LeakCanary` 的 `AppWatcherInstaller` 不会触发。遇到自动初始化失败时，在 `Application.onCreate()` 中显式调用 `AppWatcher.manualInstall(application)` 即可
+- **Android 17 (API 37)**：分代 CMC 引入独立的 Minor GC，年轻代 WeakReference 入队延迟大幅缩短（[待验证：缺乏官方 benchmark，年轻代入队从“等待 Full GC”变为“Minor GC 即处理”，但具体延迟数据未公开]）
+- **heapprofd Java 堆采样**：Perfetto heapprofd 支持通过 `heaps: "com.android.art"` 配置 Java heap allocations 采样，具体成为默认可用能力的 Android 版本边界待核
 
 ## 常见问题与误区
 
@@ -311,7 +309,7 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 Jetpack Compose 引入了新的泄漏场景：
 
 - **LaunchedEffect 持有 Activity/Fragment 引用**：协程生命周期绑定到 Composition
-- **rememberCoroutineScope 闭包捕获泄漏**：通过 `rememberCoroutineScope()` 创建的协程作用域生命周期绑定到 Composition，如果协程体内捕获了 Activity 或 View 的引用，且协程未在 Composition 销毁时正确取消，这些引用会被一直持有。和 `LaunchedEffect` 不同，`rememberCoroutineScope` 需要开发者手动管理协程的取消时机，遗漏取消是更常见的泄漏来源
+- **rememberCoroutineScope 闭包捕获泄漏**：`rememberCoroutineScope()` 创建的协程作用域绑定到 Composition，离开 Composition 时自动取消。风险不在于 `rememberCoroutineScope` 本身，而在于把 Activity/View 引用放进超出 Composition 生命周期的外部作用域（单例、全局 callback、未清理的 Listener）——这些外部持有者不会随 Composition 销毁而释放引用
 - **remember 缓存了不该缓存的对象**：持有 Context 或 View 引用
 - **CompositionLocal 滥用**：跨 Activity 边界的 CompositionLocal
 
@@ -325,6 +323,8 @@ Jetpack Compose 引入了新的泄漏场景：
 2. **选择性 Heap Dump**：fork 子进程执行（快手 Koom 的核心优化）
 3. **服务端分析**：Shark 或自研引擎批量分析
 4. **SDK 集成**：腾讯 Matrix、快手 Koom、字节 MemoryLeakDetector
+
+Android 15+ 引入的 `ProfilingManager`（`android.os.ProfilingManager`）提供了系统级零侵入触发能力：应用可通过 `requestProfiling()` 请求系统按条件自动采集 Heap Dump 或 Perfetto Trace，无需自建监控框架即可获取内存现场。结合 `ProfilingResultCallback` 可在采集完成后获取结果路径。对于不需要自建 APM 的小中型项目，这是替代自研内存监控的官方路径。
 
 ## 参考资料
 
