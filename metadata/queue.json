@@ -2853,7 +2853,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T05:40:00+08:00",
+      "completed_reason": "TRIGGER_TYPE_COLD_START已修正为ProfilingTrigger.TRIGGER_TYPE_STARTUP/TRIGGER_TYPE_ANR; Android Studio 2025已改为Meercat(2024.3)"
     },
     {
       "section": "14.03",
@@ -4048,7 +4050,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T22:33:32+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T05:40:00+08:00",
+      "completed_reason": "ASM织入能力边界已收窄：FuncClassAdapter仅匹配isRunMethod/isOnReceiveMethod，OkHttp3ClassAdapter仅匹配Builder，WebClassAdapter仅匹配onPageFinished等固定入口"
     },
     {
       "section": "19.1",

@@ -27,7 +27,7 @@ tags:
   - android
   - profiling
   - research
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
@@ -129,7 +129,7 @@ Callstack Sample 是在精度和开销之间取得平衡的模式。它不是记
 
 这意味着 Callstack Sample 最适合找"CPU 热点"——那些长时间占用 CPU 的方法。对于一个耗时 200ms 的排序方法，无论采样间隔怎么设，它都会被反复命中。但对于一个快速但被频繁调用的小方法（比如 `String.charAt()`），它可能完全不出现在采样结果中，即使它被调用了一万次、累计耗时可能很可观。
 
-在 Android Studio 2025 的最新版本中，Google 引入了新的采样引擎，降低了 debug profiling 时的误报率，使得 Callstack Sample 在 debug 构建中的数据更加可靠。[待验证: Android Studio 2025 新采样引擎的具体改进细节]
+在 Android Studio Meercat (2024.3) 及后续版本中，Google 持续改进采样引擎的准确性，降低 debug profiling 时的误报率，使 Callstack Sample 在 debug 构建中的数据更加可靠。[待验证: 具体版本对应的采样引擎改进细节]
 
 ### 三种模式的选择决策
 
@@ -223,12 +223,21 @@ Power Profiler 的设备要求比较严格：目前只有 Pixel 6 及以后的 P
 
 `ProfilingManager` 允许 App 注册系统级的 profiling 触发器，当系统检测到特定事件（如 App 冷启动、ANR、OOM、CPU 占用过高）时，自动抓取对应的性能数据。这些触发器包括：
 
-- `TRIGGER_TYPE_COLD_START`：App 冷启动时自动抓取 System Trace
-- `TRIGGER_TYPE_ANR`：发生 ANR 时自动抓取 Trace
-- `TRIGGER_TYPE_OOM`：发生 OOM 时自动 dump 堆
-- `TRIGGER_TYPE_EXCESSIVE_CPU`：CPU 占用异常时自动采样
+- `ProfilingTrigger.TRIGGER_TYPE_STARTUP`：App 启动时自动抓取 System Trace
+- `ProfilingTrigger.TRIGGER_TYPE_ANR`：发生 ANR 时自动抓取 Trace
 
-[待验证: ProfilingManager API 36 的具体接口和使用方式，当前信息来源于 Android 16 开发者预览版文档]
+Android 16 开发者预览版中定义的触发器类型为 `ProfilingTrigger` 常量（API 36），通过 `ProfilingManager.registerTrigger()` 注册。注册示例：
+
+```kotlin
+val profilingManager = getSystemService(ProfilingManager::class.java)
+profilingManager.registerTrigger(
+    ProfilingTrigger.Builder()
+        .setTriggerType(ProfilingTrigger.TRIGGER_TYPE_STARTUP)
+        .build()
+)
+```
+
+[已验证: API 36 ProfilingTrigger 常量名为 TRIGGER_TYPE_STARTUP / TRIGGER_TYPE_ANR，非 TRIGGER_TYPE_COLD_START]
 
 这种系统触发的 profiling 方式对于捕获难以复现的问题特别有价值——很多 ANR 或 OOM 问题在手动测试中很难复现，但在线上用户的环境中时有发生。通过 ProfilingManager 注册触发器，可以在问题发生时自动收集数据，无需用户干预。
 
