@@ -7977,8 +7977,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-08-7.4-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-08-7.4-external-review.md",
+      "completed_at": "2026-05-03T07:44:57.113287",
+      "completed_reason": "P1 Predictive Back分析子节已添加; P1 WebView OOP-R GPU进程栅格化瓶颈已补充; P2 SurfaceView+FrameTimeline陷阱已添加"
     },
     {
       "section": "7.5",
@@ -8039,8 +8041,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-09-7.6-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-09-7.6-external-review.md",
+      "completed_at": "2026-05-03T07:44:57.113287",
+      "completed_reason": "P1 冻结窗口极简+onStop前移已强调; P1 Lottie vs AVD对比表已补充; P2 Winscope ViewCapture已推荐"
     },
     {
       "section": "7.7",

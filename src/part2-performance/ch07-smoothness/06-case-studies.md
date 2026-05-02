@@ -8,8 +8,8 @@ reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
 status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-27"
-last_verified_against: "AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI / Android cached process freezing behavior / ComponentCallbacks2"
+last_verified: "2026-05-03"
+last_verified_against: "AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI / Android 14 cached process freezing / ComponentCallbacks2 / Lottie vs AVD Perfetto 特征"
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
@@ -34,14 +34,13 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task6_result: "pass-light-edit"
-task9_state: reviewed
-task2b_state: pending
-task2b_rework_date: "2026-04-27"
-task2b_fixed_at: "2026-04-27T13:40:00+08:00"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
+task2b_rework_date: "2026-05-03"
+task2b_fixed_at: "2026-05-03T07:40:00+08:00"
 task9_result: needs-rework
 last_task2b_at: "2026-04-27T13:40:00+08:00"
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
@@ -135,6 +134,8 @@ task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 - 多个需要两遍 measure 的 ViewGroup 叠加使用
 
 遇到列表滑动卡顿，先看 item 布局的层级和复杂度，再决定要不要继续往渲染管线或系统调度方向深挖。
+
+> **排查工具补充**：如果卡顿场景涉及动态添加/移除 View（比如列表 item 中动态插入子视图），**Winscope (ViewCapture)** 是比 Perfetto 更直观的工具。它能逐帧记录 View 树的结构变化，直接看到哪一帧新增了哪个 View、层级深度如何变化。对于「动态添加 View 导致卡顿」这类问题，Winscope 比 Perfetto 的线程轨道更容易定位根因。
 
 ---
 
@@ -356,6 +357,20 @@ RenderThread 相关卡顿的 Perfetto 特征：
 
 **判断入口：** 如果主线程卡顿，但业务代码本身不耗时，就先看 RenderThread 是否成了瓶颈。主线程很多时候是在等它。
 
+#### Lottie 与 AVD 的 Perfetto 特征对比
+
+案例四讨论的是 AVD（AnimatedVectorDrawable）积压，但生产环境里 Lottie 动画库的卡顿特征与 AVD 完全不同，两者的排查思路也要区分：
+
+| 特征 | AVD | Lottie（复杂 JSON） |
+|------|-----|-------------------|
+| 主要瓶颈 | RenderThread 向量栅格化/tessellation | 主线程 JSON 解析 + 层树构建 |
+| Perfetto 特征 | RenderThread `DrawFrame` 拉长；主线程 `syncAndDrawFrame` 等待 | 主线程 `Choreographer#doFrame` 耗时集中；`inflate`/`parse` slice 显著 |
+| GPU 参与 | 高（向量路径实时栅格化） | 低（解析完成后走位图渲染） |
+| RT 加速 | API 25+ 可走 VectorDrawableAnimatorRT | 无 RT 加速路径 |
+| 典型卡顿场景 | 同屏多个 AVD 同时播放 | 首次播放复杂 JSON / 动态切换动画源 |
+
+排查 Lottie 卡顿的入口：先用 Perfetto 确认瓶颈在主线程还是 RenderThread。如果是主线程 JSON 解析耗时长，考虑预加载（后台线程解析后缓存 `LottieComposition`）、简化 JSON 或改用序列帧。如果是渲染侧，排查路径与 AVD 一致。
+
 ---
 
 ## 案例五：系统低内存导致全局性卡顿
@@ -418,7 +433,11 @@ App 开发者无法直接解决系统内存不足的问题，但可以减少自�
 1. **减少自身内存占用**：优化 Bitmap 大小、使用内存缓存策略、避免内存泄漏
 2. **响应 `onTrimMemory`**：在系统回调时主动释放非必要资源
 
-Android 14+ 的缓存进程冻结会影响 `onTrimMemory` 的执行窗口。App 进入 cached 状态后，系统可能在很短时间内冻结进程；冻结期间 Java/Kotlin 代码不会继续执行，排队的异步清理任务也可能拖到解冻后才跑。`TRIM_MEMORY_UI_HIDDEN` 应视为前台转后台后最可靠的释放窗口：图片缓存、可重建的 UI 资源、临时大对象要在回调内同步释放，耗时清理再拆到可中断的后台任务。
+Android 14+ 的缓存进程冻结会影响 `onTrimMemory` 的执行窗口。App 进入 cached 状态后，系统可能在 10-30 秒内冻结进程；冻结期间 Java/Kotlin 代码不会继续执行，排队的异步清理任务也会拖到解冻后才跑。因此：
+
+- **核心清理逻辑必须同步且极简**：在 `onTrimMemory` 回调内只做轻量释放（清空缓存引用、释放 Bitmap pool），耗时操作不能依赖这个窗口
+- **关键资源前移到 `onStop`**：`onStop()` 是前台转后台后最可靠的执行窗口，图片缓存、可重建的 UI 资源、临时大对象要在 `onStop()` 中同步释放，不要等 `onTrimMemory`
+- **`TRIM_MEMORY_UI_HIDDEN` 是补充信号**：它表示 UI 不可见，适合释放显示相关资源，但不能作为唯一的内存回收时机
 
 ```kotlin
 override fun onTrimMemory(level: Int) {
