@@ -16,13 +16,13 @@ related_chapters: ["2.1", "2.6", "18.2", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: "task2b_pending"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
 task2b_state: "pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-02"
 task6_result: pass-light-edit
-review_note: "Task 6 二审(2026-05-02):补 frontmatter section/sources;task9 仍 needs-rework"
+review_note: "Task 6 二审(2026-05-02):补 frontmatter section/sources; task6 三审(2026-05-02): re-review pass, task9 仍 needs-rework"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-02"
 task9_reviewed_by: "openclaw-task9"
