@@ -2,7 +2,7 @@
 title: "Baseline Profiles 与编译优化"
 chapter: "19"
 section: "19.15"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37);Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景,非 Play 安装需单独验证"
@@ -20,22 +20,23 @@ sources:
     path: "https://android.googlesource.com/platform/art/+/refs/heads/main/dex2oat/dex2oat.cc"
   - type: source
     path: "https://github.com/androidx/androidx/blob/androidx-main/profileinstaller/profileinstaller/src/main/AndroidManifest.xml"
-pipeline_stage: "task9_pending"
+pipeline_stage: ready-to-publish
 task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-28"
 task9_state: reviewed
-task9_result: needs-rework
+task9_result: pass-tech-review
 task2b_state: fixed
-task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T23:21:00+08:00"
+task9_reviewed_date: "2026-05-03"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-03T06:20:00+08:00"
 task6_result: "pass-light-edit"
 task2b_result: fixed
 last_task2b_at: "2026-04-27T22:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-review_notes: "2026-04-27 task2b: split R8 Startup Profile layout from ART speed-profile compilation, added profman/dex2oat flow, HSPL flags, ProfileInstaller/R8 checks, and dexopt verification command."
+review_notes: "2026-05-03 task9 deep-review: pass-tech-review；无 P0/P1；P2 1 写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+auto_promoted: true
 ---
 
 # Baseline Profiles 与编译优化

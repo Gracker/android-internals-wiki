@@ -774,3 +774,17 @@
 - **建议**：用 profile/profm 大小、`cmd package compile -m speed-profile` 耗时、oat/vdex 增量做可执行验证。
 - **review 日志**：logs/deep-review/2026-05-03-02-deep-review.md
 
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-05-03
+- **类型**：数据与版本口径支撑
+- **位置**：L140（Cloud Compilation 与 SDM）
+- **问题**：正文写 Android 16 Play Store 可直接下发预编译 `.odex` / `.vdex` 产物并由 SDM 校验，但当前 sources 只给了泛化 Google Blog 占位，没有能核验 Android 16 / SDM / 预编译产物格式的官方链接或源码锚点。
+- **建议**：补 developer.android.com / AOSP / Play delivery 官方锚点，标明 SDM 文件内容、适用安装来源、设备端校验和 fallback 到本地 dex2oat 的条件；补不到则降级为 `[待验证]` 或删除具体 `.odex/.vdex` 断言。
+- **review 日志**：logs/deep-review/2026-05-03-06-deep-review.md
+
+## [Task9 Deep Review] 19.15 Baseline Profiles 与编译优化 — 2026-05-03
+- **类型**：源码/API 口径
+- **位置**：L221-L226（ProfileVerifier result code 表）
+- **问题**：正文列出 `RESULT_CODE_NO_PROFILE`；AndroidX main 源码的 `ProfileVerifier.CompilationStatus` 当前为 `RESULT_CODE_NO_PROFILE_INSTALLED`，而 developer.android.com 调试示例仍出现 `RESULT_CODE_NO_PROFILE`。这是文档与源码口径不一致点，容易让读者复制到具体版本时编译失败。
+- **建议**：按实际依赖的 `androidx.profileinstaller` 版本核对常量名；正文注明“以项目依赖版本的 ProfileVerifier 为准”，或同时给出 docs 口径与 AndroidX main 源码口径。
+- **review 日志**：logs/deep-review/2026-05-03-06-deep-review.md

@@ -1,28 +1,28 @@
 {
-  "generated_at": "2026-05-02T10:20:00+08:00",
+  "generated_at": "2026-05-03T06:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 250,
-    "last_updated": "2026-05-01",
+    "last_updated": "2026-05-03",
     "pipeline_stage_counts": {
       "unknown": 35,
-      "ready-to-publish": 107,
-      "task2b_pending": 88,
+      "ready-to-publish": 110,
+      "task2b_pending": 86,
       "task9_pending": 11,
-      "task6_pending": 11
+      "task6_pending": 10
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 186,
-      "revisiting": 29,
+      "reviewed": 187,
+      "revisiting": 28,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
       "unknown": 40,
-      "reviewed": 204,
-      "pending": 8
+      "reviewed": 205,
+      "pending": 7
     },
     "task2b_state_counts": {
       "unknown": 42,
@@ -30,29 +30,29 @@
       "pending": 93,
       "idle": 3
     },
-    "unknown": 32,
-    "finalized": 108,
-    "ready-for-review": 112
+    "finalized": 111,
+    "ready-for-review": 109,
+    "unknown": 32
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 35,
-      "ready-to-publish": 109,
+      "ready-to-publish": 110,
       "task2b_pending": 86,
       "task9_pending": 11,
-      "task6_pending": 11
+      "task6_pending": 10
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 186,
-      "revisiting": 29,
+      "reviewed": 187,
+      "revisiting": 28,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
       "unknown": 40,
-      "reviewed": 204,
-      "pending": 8
+      "reviewed": 205,
+      "pending": 7
     },
     "task2b_state_counts": {
       "unknown": 42,
@@ -60,7 +60,7 @@
       "pending": 93,
       "idle": 3
     },
-    "last_updated": "2026-05-01"
+    "last_updated": "2026-05-03"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -281,7 +281,7 @@
       "drafted_date": "'2026-04-05'",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 7.0 (API 24) - Android 17 (API 37)",
-      "last_verified": "'2026-04-05'",
+      "last_verified": "2026-04-05",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
@@ -291,15 +291,16 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-20",
+      "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-30",
+      "task9_reviewed_date": "2026-05-03",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-30T04:20:00+08:00",
+      "last_task9_at": "2026-05-03T06:20:00+08:00",
       "review_round": "2",
       "last_task2b_at": "2026-04-25T22:46:46+08:00",
       "repaired_date": "2026-04-25",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "review_notes": "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
     },
     "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
@@ -5760,13 +5761,13 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-05-01",
+      "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-05-03",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T22:33:32+08:00",
-      "last_task2b_at": "2026-04-27T04:40:00+08:00",
-      "review_notes": "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. 1 pending queue entry."
+      "last_task9_at": "2026-05-03T06:20:00+08:00",
+      "last_task2b_at": "2026-05-03T05:40:00+08:00",
+      "review_notes": "2026-05-03 task9 deep-review: needs-rework。P0 1；源码路径需回炉修正，已写入 queue.json。"
     },
     "src/part3-tools/ch19-apm/20-solopi-emmagee.md": {
       "path": "src/part3-tools/ch19-apm/20-solopi-emmagee.md",
@@ -6127,29 +6128,31 @@
       "title": "Baseline Profiles 与编译优化",
       "chapter": "19",
       "section": "19.15",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
-      "applicable_versions": "Android 7 (API 24) - Android 17 (API 37)；Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景，非 Play 安装需单独验证",
+      "applicable_versions": "Android 7 (API 24) - Android 17 (API 37);Play Cloud Profiles 仅覆盖 Android 9+ / Google Play 场景,非 Play 安装需单独验证",
       "last_verified": "2026-04-27",
       "last_verified_against": "Android Developers Baseline Profiles docs + ProfileInstaller manifest/source + AOSP art/profman/profman.cc + art/dex2oat/dex2oat.cc",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
-      "task9_state": "pending",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
-      "task9_result": "needs-rework",
-      "reviewed_date": "2026-04-24",
+      "task9_result": "pass-tech-review",
+      "reviewed_date": "2026-04-28",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-05-03",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T07:20:23+08:00",
+      "last_task9_at": "2026-05-03T06:20:00+08:00",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-04-27T22:40:00+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
       "task6_result": "pass-light-edit",
-      "notes": "Task2B split R8 Startup Profiles from ART speed-profile compilation and added verification checks."
+      "notes": "Task2B split R8 Startup Profiles from ART speed-profile compilation and added verification checks.",
+      "review_notes": "2026-05-03 task9 deep-review: pass-tech-review；无 P0/P1；P2 1 写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。",
+      "auto_promoted": true
     },
     "src/part3-tools/ch19-apm/24-crash-anr-internals.md": {
       "path": "src/part3-tools/ch19-apm/24-crash-anr-internals.md",

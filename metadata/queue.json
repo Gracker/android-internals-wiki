@@ -11027,6 +11027,52 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T04:21:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.7",
+      "section_title": "ART 编译管线与 dex2oat 优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ART 编译章节存在寄存器分配算法事实错误，并把 Android 16 ProfilingManager 触发式采集写成无需应用注册的自动 ANR Trace",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L260（dex2oat 编译流程：寄存器分配）",
+          "detail": "正文写 ARM64 寄存器分配“通过图着色算法（graph coloring）”。AOSP ART 当前 optimizing compiler 的源码锚点是 compiler/optimizing/register_allocator_linear_scan.cc/.h，使用 live interval / linear scan 体系；当前 main 分支没有 register_allocator_graph_color.cc 这类图着色实现。",
+          "suggestion": "改成“ART optimizing compiler 使用 linear scan register allocation；通过活跃区间、寄存器约束和 spill heuristics 分配物理寄存器”。如果要讨论图着色，只能作为通用编译器背景，不能写成 ART/dex2oat 的实现。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L423-L443（ProfilingManager / Android 16 触发式采集）",
+          "detail": "正文写 Android 16 ANR 发生时系统可自动从背景环形缓冲区导出 Trace、无需应用主动请求。官方触发式 ProfilingManager 口径是 App 通过 addProfilingTriggers() 注册触发器，系统在时间窗内采样式启动后台 trace，触发包括 ANR / onFullyDrawn；不是所有 App 无注册即可拿到 ANR Trace。",
+          "suggestion": "补充 addProfilingTriggers()、ProfilingTrigger、采样时间窗、结果回调/文件交付条件，并把“无需应用主动请求”改成“无需在 ANR 当下同步抓取，但需要预先注册触发器”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T06:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "19.08",
+      "section_title": "ArgusAPM",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ArgusAPM ASM 适配器源码路径引用不准确，需按仓库真实目录修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L90-L94（架构表：ASM 代表入口）",
+          "detail": "正文把 FuncClassAdapter.kt、OkHttp3ClassAdapter.kt、WebClassAdapter.kt 直接挂在 argus-apm-gradle-asm/src/main/kotlin/com/argusapm/gradle/internal/asm/ 下。Qihoo360/ArgusAPM 仓库真实路径分别是 internal/asm/bytecode/func/FuncClassAdapter.kt、internal/asm/bytecode/okhttp3/OkHttp3ClassAdapter.kt、internal/asm/bytecode/webview/WebClassAdapter.kt。",
+          "suggestion": "修正三处源码路径；保留 ASM 匹配范围结论（Runnable.run、BroadcastReceiver.onReceive、OkHttpClient.Builder、WebViewClient.onPageFinished 等），但路径必须能直接定位到仓库文件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T06:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

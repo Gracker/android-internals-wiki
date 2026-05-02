@@ -44,11 +44,11 @@ related_chapters:
 - '8.3'
 - '16.1'
 task9_result: needs-rework
-last_task9_at: "2026-04-30T04:20:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-30"
-pipeline_stage: task9_pending
-task2b_state: fixed
+last_task9_at: "2026-05-03T06:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-03"
+pipeline_stage: task2b_pending
+task2b_state: pending
 task2b_result: fixed
 task6_state: reviewed
 task9_state: reviewed
@@ -56,6 +56,7 @@ review_round: 3
 last_task2b_at: "2026-04-25T22:46:46+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
+review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
 ---
 
 
