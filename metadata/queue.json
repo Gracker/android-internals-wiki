@@ -1658,7 +1658,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T01:44:20.838642",
+      "completed_reason": "heapprofd已改用tools/heap_profile推荐流程；CC/CMC版本演进路线已拆分；GcWatcher已指向BinderInternal.java（06-memory-churn.md已finalized）"
     },
     {
       "section": "10.01",
@@ -1944,7 +1946,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T01:44:20.838642",
+      "completed_reason": "R8资源缩减动态引用安全边界已在12.1补充；Cronet standalone provider体积成本已在12.2覆盖；CT验证targetSdk>=37范围已在12.4详细说明"
     },
     {
       "section": "12.1",
@@ -8446,8 +8450,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
-      "source_file": "2026-04-29-11-10.2-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-10.2-external-review.md",
+      "completed_at": "2026-05-03T01:44:20.838642",
+      "completed_reason": "LeakCanary Android 15+ ContentProvider初始化问题已补充；Android 17分代GC弱引用入队加速已添加；rememberCoroutineScope闭包泄漏案例已补充"
     },
     {
       "section": "10.3",
@@ -8485,8 +8491,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
-      "source_file": "2026-04-29-11-10.3-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-10.3-external-review.md",
+      "completed_at": "2026-05-03T01:44:20.838642",
+      "completed_reason": "PSS节流预警已在正文中覆盖；16KB碎片化描述已校准为空间换稳定性；dmabuf_dump -b归因工具已补充"
     },
     {
       "section": "10.4",
