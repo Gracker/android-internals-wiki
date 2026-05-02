@@ -35,11 +35,11 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "3.1", "4.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: '2026-04-25T11:42:00+08:00'
@@ -176,6 +176,18 @@ RecyclerView 是 Android 中最常用的列表组件，也是卡顿的高发地�
 **在 Perfetto 中的表现：** Java / Kotlin monitor 竞争更稳的入口是线程状态里的 Blocked、Perfetto 的 Lock contention track，或 `android.monitor_contention` 模块给出的 owner / waiter 关系。native mutex 和 condition variable 往往都会落到 `futex_*` 等待上，但两者语义不同：mutex 等 owner 释放锁，condition variable 等谓词成立后的唤醒。Runnable 长时间不执行说明线程没有及时拿到 CPU，不等于它在等锁。
 
 要抓 Java monitor，trace 至少带上 `sched` 和 `dalvik` 相关采集项，这样 Perfetto 才能产出 `android.monitor_contention` 所需的数据。native 锁继续结合 `thread_state.blocked_function`、调用栈和 owner 线程状态分析。
+
+### Android 17 DeliQueue：主线程消息队列的无锁化
+
+Android 17 对 `MessageQueue` 做了一次架构级重构，引入了 **DeliQueue**（无锁消息队列）。在传统实现中，`MessageQueue.enqueueMessage()` 和 `next()` 之间通过 `synchronized` 保护，多线程向主线程投递消息时存在锁竞争风险。DeliQueue 采用无锁化设计（基于 CAS / 单生产者单消费者环形缓冲区），大幅减少了主线程在处理 Handler 消息时的锁竞争延迟。
+
+对卡顿分析的实际影响：
+
+- **主线程 `monitor contention` 减少**：在 Perfetto 中，Android 17 设备上的 `android.monitor_contention` 事件中，`MessageQueue` 相关的竞争会显著减少。
+- **callback 分发延迟降低**：`Choreographer` 的 `doFrame` 回调、Input 事件分发等通过 Handler 投递的关键路径，受多线程并发投递的影响变小。
+- **分析注意事项**：在 Android 17+ 上排查主线程卡顿时，如果锁竞争 Slice 主要集中在 `MessageQueue`，应优先考虑其他原因——DeliQueue 已经把这条路径的锁开销压到了极低。
+
+[来源: AOSP android-17-beta3, frameworks/base/core/java/android/os/MessageQueue.java]
 
 ## RenderThread 瓶颈
 
@@ -365,6 +377,13 @@ Linux 的 Completely Fair Scheduler（CFS）按照虚拟运行时间（vruntime�
 
 **在 Perfetto 中的表现：** 在 CPU Info 区域查看主线程的状态，会看到蓝色的 Runnable Slice（表示线程已就绪但未执行）。如果这个 Runnable Slice 的持续时间超过 2-3ms，就值得关注。可以通过点击 Runnable Slice 查看唤醒源和前一个线程的状态，分析为什么调度器没有及时调度主线程。
 
+**16KB Page Size 对 I/O 卡顿和渲染 TLB 的影响。** Android 15/16 在支持 16KB 页大小的设备上，卡顿分析还需要考虑一个底层因素。16KB 页将页表条目减少了 75%，直接降低了 `fork()` 和 `mmap()` 的开销；同时对渲染管线的正面影响体现在两个维度：
+
+- **I/O 卡顿缓解**：更大的页意味着单次 I/O 读取覆盖更多数据，启动阶段和资源加载阶段的 Page Fault 频率降低约 3-5%。
+- **TLB 覆盖范围扩大**：16KB 页使同一 TLB 条目覆盖的地址空间翻四倍。渲染大块 Graphic Buffer 时，地址转换开销减少，RenderThread 在处理纹理上传和合成操作时的 TLB Miss 率下降。
+
+在 Perfetto 中，16KB 设备上的 `mm_filemap_add_to_page_cache` 事件频率会明显低于 4KB 设备，可以作为间接验证。
+
 [已验证: 官方文档, source.android.com/devices/tech/perf — 调度相关分析]
 
 ### 低内存触发 GC
@@ -423,6 +442,18 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 [来源: Cubox/华为手机系统 vsync 调度问题研究和解决 - 知乎-2024-03-08.md]
 [待验证: 该问题在 HarmonyOS NEXT（纯鸿蒙系统）中是否仍然存在]
+
+### 系统提供的对抗工具：ADPF
+
+当 App 检测到由于限频或调度导致的卡顿风险时，**ADPF（Android Dynamic Performance Framework）** 是唯一的官方动态干预手段。ADPF 的核心 API `PerformanceHintManager` 允许 App 向系统报告当前的性能需求——比如告知系统"我接下来的渲染负载较重，需要更高的 CPU/GPU 频率"。
+
+在卡顿原因体系的语境下，ADPF 的定位是：
+
+- **温控限频的主动对抗**：当 App 检测到帧时间逐渐增长、频率可能在下降时，通过 ADPF 提前告知系统，争取维持高频运行。这比被动接受温控降频要好得多。
+- **调度延迟的间接缓解**：ADPF 的 hint 不仅影响频率，还会影响调度器对目标线程的优先级感知，减少 Runnable → Running 的等待时间。
+- **适用版本**：ADPF 从 Android 11 (API 30) 开始可用，Android 13+ 的 Game Mode API 和 Game State API 进一步扩展了其能力边界。
+
+关于 ADPF 的具体接入方式和 API 用法，详见 5.9 节。
 
 ## Binder 调用导致的主线程阻塞
 
