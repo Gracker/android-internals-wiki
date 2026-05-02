@@ -2,7 +2,7 @@
 title: 典型场景分析
 chapter: '7.4'
 section: '7.4'
-status: finalized
+status: ready-for-review
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
@@ -12,8 +12,8 @@ reviewed_by: "openclaw-task6"
 rework_date: '2026-04-04'
 rework_by: openclaw-task2b
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-04-27'
-last_verified_against: "AOSP android-16.0.0_r1, AndroidX Fragment 1.8.x, Perfetto/Chromium docs"
+last_verified: '2026-05-03'
+last_verified_against: "AOSP android-16.0.0_r1, AndroidX Fragment 1.8.x, Perfetto/Chromium docs, Android 15 Predictive Back CDD"
 confidence: high
 sources:
 - type: blog
@@ -45,9 +45,11 @@ related_chapters:
 - '7.3'
 - '2.4'
 - '2.5'
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: "revisiting"
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task2b_state: fixed
 task2b_result: fixed
 task6_result: "pass-light-edit"
@@ -271,7 +273,24 @@ Android 12+ 的过渡发生在 `SurfaceControl` 级别。WMS 通过 `StartingSur
 - 查看 SurfaceFlinger 在过渡动画期间的合成耗时
 - 检查 App 主进程的 `ActivityThread.handleBindApplication` → `Activity.onCreate` 调用路径是否过长
 
-### 3.2 Dialog / PopupWindow 弹出动画
+### 3.2 预测性返回动画（Predictive Back）
+
+Android 15 将预测性返回动画（Predictive Back）设为默认行为。用户在边缘滑动或长按返回键时，系统会在手势进行中实时预览「返回后」的目标画面——这不是 App 自己画的动画，而是 SystemUI 手势进度控制器与 App 的 `OnBackInvokedCallback` 协作完成的。
+
+这引入了一类新的卡顿场景：
+
+- **手势进度更新不及时**：App 的 `onBackProgressed()` 回调如果在主线程做了耗时操作（比如重新计算布局），手势预览就会出现卡顿。Perfetto 中表现为 `predictive_back_progress` 计数器更新间隔不均匀
+- **动画回调与帧渲染争抢主线程**：如果 `OnBackInvokedCallback` 的动画更新（alpha/scale/translation）与 App 正在进行的列表滑动、图片加载等操作在同一个 VSync 周期内竞争主线程，帧预算会被压缩
+- **SystemUI 侧合成压力**：手势预览涉及两层内容的叠加合成——当前 Activity 和目标 Activity 的缩略图。如果 SurfaceFlinger 合成路径走了 GPU，帧耗时会明显增加
+
+Perfetto 分析要点：
+- 观察 `predictive_back_progress` 计数器的更新频率——稳定递增说明 SystemUI 手势侧正常，跳跃或停滞指向 App 回调阻塞
+- 检查 App 主线程在 `onBackProgressed()` 回调期间的 slice 耗时
+- 同时看 SurfaceFlinger 的 `composeModese` slice 是否因多层合成而拉长
+
+[已验证: Android 15 CDD Predictive Back 要求, developer.android.com/guide/navigation/custom-back/predictive-back-animation]
+
+### 3.3 Dialog / PopupWindow 弹出动画
 
 Dialog 的弹出过程涉及：
 1. 创建新的 Window（通过 WindowManager.addView）
@@ -435,6 +454,8 @@ Perfetto 中 WebView 掉帧根因可按以下分类定位：
 | BufferQueue 堵塞 | dequeue slot 等待 | ATrace `webview` |
 | SurfaceFlinger 合成 | `SurfaceFlinger` compose 超时 | ATrace |
 
+> **GPU 进程栅格化瓶颈**：现代 Chromium 采用 Out-of-Process Rasterization（OOP-R），栅格化任务在独立的 GPU 进程执行，而非 Renderer 进程。分析 WebView 卡顿时，不能只盯着 Renderer 进程的轨道——如果掉帧来自 GPU 进程的 `raster` 轨道过长（比如复杂 CSS 动画、大量 DOM 节点的重绘），根因在 GPU 进程而非 Renderer 进程。Perfetto 中需要同时检查 `gpu.` 前缀的轨道和 Renderer 进程的 `cc` 轨道。
+
 Renderer 进程崩溃或被 LMK 杀死时，应用侧入口是 `WebViewClient.onRenderProcessGone()` 和 `WebViewRenderProcessGoneDetail.didCrash()`。Perfetto / Chromium trace 中不要默认搜索 `render_process_gone`，除非应用自己用 `Trace.beginSection("render_process_gone")` 做了自定义 marker。系统 trace 更常见的证据是 Renderer 进程轨道结束、LMK / OOM 事件、Chromium 相关 slice 中断，以及应用回调附近的自定义 marker。
 
 > ⚠️ 旧说法「WebView 卡顿分析需要用 Chrome DevTools 而非 Perfetto」已过时。Perfetto UI 在 target=Android 时可同时采集 ATrace 和 Chromium TRACE_EVENT，二者组合覆盖系统层和浏览器内部管线。
@@ -464,6 +485,10 @@ RenderThread 卡顿同样会导致掉帧。在 GPU 密集型场景（复杂自�
 **"页面切换卡顿只要优化新页面的布局就行了"**
 
 Activity 转场动画涉及源 Activity 和目标 Activity 两个进程的帧同步。即使目标页面的布局优化得再好，如果源 Activity 的退出动画帧没按时渲染，动画仍然会掉帧。在分析时需要同时查看两个进程的帧序列，不能只看目标 Activity。
+
+**"SurfaceView 的列表滑动掉帧能在 FrameTimeline 的 App 轨道中看到"**
+
+不一定。SurfaceView 拥有独立的 Surface，其渲染管线不走主线程的 Traversal 流程。FrameTimeline 的 App 轨道可能无法正确反馈 SurfaceView 的掉帧——App 轨道显示正常帧，但 SurfaceView 对应的 BufferQueue 实际已堆积。遇到包含 SurfaceView 的列表场景（比如视频列表、地图列表），需要额外检查 SurfaceView 对应 BufferQueue 的 dequeue/acquire 状态。
 
 ---
 
