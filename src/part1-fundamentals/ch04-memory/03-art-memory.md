@@ -37,6 +37,9 @@ task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-30T08:40:00+08:00"
 task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-03"
 pipeline_stage: task2b_pending
 p1: 1
 p2: 1

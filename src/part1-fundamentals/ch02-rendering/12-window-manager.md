@@ -69,7 +69,7 @@ task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-04-27"
+task6_reviewed_date: "2026-05-03"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -463,7 +463,7 @@ WMS 在 system_server 内部横跨 Binder 线程、DisplayThread、UiThread / Wi
 
 ### 误区 2："Window 数量越多越卡"
 
-Window 数量本身不是问题。真正需要关注的是有多少 Window 参与 `performLayout()` 的计算。一个后台 App 的隐藏 Window 几乎不消耗 WMS 的资源。真正的性能瓶颈是"同时可见的、需要频繁 relayout 的 Window 数量"——这正是多窗口和 Desktop 模式下需要关注的。
+Window 数量本身不是问题。需要关注的是有多少 Window 参与 `performLayout()` 的计算。一个后台 App 的隐藏 Window 几乎不消耗 WMS 的资源。性能瓶颈是"同时可见的、需要频繁 relayout 的 Window 数量"——这正是多窗口和 Desktop 模式下需要关注的。
 
 ### 误区 3："StartingWindow 是 App 画的"
 
