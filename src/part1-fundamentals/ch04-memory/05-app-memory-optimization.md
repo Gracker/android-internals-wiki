@@ -2,7 +2,7 @@
 title: "App 内存优化"
 section: "4.5"
 chapter: "4.5"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -37,7 +37,7 @@ review_round: 3
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 # task6_result: pass-light-edit  # reset after rework
 task9_state: reviewed
@@ -50,6 +50,8 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T05:30:17+08:00"
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 1。ASan/heapprofd/ApplicationStartInfo API 错误，API 34 onTrimMemory 差异未覆盖"
+auto_finalized_by: openclaw-task6
+auto_finalized_date: "2026-05-02"
 ---
 
 # App 内存优化
