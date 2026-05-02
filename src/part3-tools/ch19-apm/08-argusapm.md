@@ -14,21 +14,21 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Qihoo360/ArgusAPM"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: "reviewed"
 task6_reviewed_date: "2026-05-01"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T22:33:32+08:00"
-task2b_state: fixed
+task9_reviewed_date: "2026-05-03"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-03T06:20:00+08:00"
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-03T05:40:00+08:00"
-review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Well-structured with practical migration guidance. 1 pending queue entry from task9."
+review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；源码路径需回炉修正，已写入 queue.json。"
 
 ---
 
