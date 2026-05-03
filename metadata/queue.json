@@ -4480,7 +4480,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T21:42:57.484855",
+      "completed_reason": "Vulkan HWUI默认后端口径已修正：use_vulkan/OEM配置决定，非平台统一切换"
     },
     {
       "section": "2.10",
@@ -4584,7 +4586,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T21:42:47.600381",
+      "completed_reason": "Predictive Back FAQ已修正：WindowAnimator→TransitionController/WM Shell BackAnimationController四段排查"
     },
     {
       "section": "2.12",

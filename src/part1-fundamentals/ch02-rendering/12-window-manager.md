@@ -63,9 +63,9 @@ related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: pending
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
@@ -475,7 +475,7 @@ StartingWindow 不是 App 主 Window 的第一帧。现代 Android 的边界是�
 
 ### 误区 5："Predictive Back 动画延迟是 Input 系统的问题"
 
-Predictive Back 动画涉及 Input 系统和 WMS 的协作。手势事件的分发是 Input 系统负责的，但动画的计算和 SurfaceControl 更新是 WMS 的 WindowAnimator 负责的。如果手势响应延迟，需要分别检查 Input 通道的延迟和 WindowAnimator 的帧调度情况。
+Predictive Back 动画涉及 Input 系统和 WMS 的协作。手势事件的分发由 Input 系统负责，但动画的计算和 SurfaceControl 更新**不是** WMS 的 `WindowAnimator` 在做——那是旧 AppTransition 架构的职责。Android 12+ 的 predictive back 主线路径是：ATMS/WMS 的 `TransitionController` / `Transition` 收集窗口状态变化，再由 WM Shell 的 `BackAnimationController` 或 transition handler 构建动画并提交 leash transaction。如果手势响应延迟，排查分四段：Input progress（事件是否及时到达 App）、ATMS/WMS transition 状态（是否已收集到状态变更）、WM Shell BackAnimationController / transition handler（动画是否在构建和执行）、SurfaceFlinger transaction/present（leash 变更是否在预期 VSync 落地）。
 
 ## 扩展
 
