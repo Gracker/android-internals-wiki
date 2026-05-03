@@ -8113,8 +8113,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-09-7.8-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-09-7.8-external-review.md",
+      "completed_at": "2026-05-03T11:42:59.981209+08:00",
+      "completed_reason": "DeliQueue预取调度影响已补充；共享Pool锁竞争边界已明确；反射失效风险已预警"
     },
     {
       "section": "7.9",
@@ -8143,8 +8145,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-09-7.9-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-09-7.9-external-review.md",
+      "completed_at": "2026-05-03T11:42:59.981209+08:00",
+      "completed_reason": "AppJankStats 1ms精度限制已警告；ARR动态刷新率对步幅波动的放大已补充；插值器斜率优化已添加"
     },
     {
       "section": "3.3",

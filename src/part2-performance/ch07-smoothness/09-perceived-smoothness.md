@@ -2,7 +2,7 @@
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -40,9 +40,9 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
@@ -247,6 +247,8 @@ Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFr
 
 这组 API 更适合 library / widget instrumentation，例如列表、播放器控件或复杂动画组件把自己的局部抖动统计上报给系统。它能补齐“哪个 widget 在什么状态下更容易抖”的视角，但不能替代 Perfetto 对整个显示栈的被动追踪。
 
+**精度限制**：`RelativeFrameTimeHistogram` 的 API 显式暴露的精度为 1ms。在 120Hz 设备上，一帧只有 8.33ms，1ms 统计误差意味着该工具会漏掉所有小于 12% 的步幅波动。对于步幅敏感场景（如列表 fling 滚动、跟手动画），官方统计 API 无法替代应用侧纳秒级位移采样，仅适用于粗粒度性能画像。如果需要检测细粒度步幅波动，仍应回到路径一的应用侧采样方案。
+
 ### 根因分型：不要把所有“无掉帧卡顿”都归到 OverScroller
 
 | 现象 | 重点看哪里 | 更像哪类问题 |
@@ -257,6 +259,15 @@ Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFr
 
 ## 优化策略
 
+### ARR 动态刷新率对步幅波动的放大
+
+Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态切换刷新率（如 60→90→120Hz）。在切换瞬问，VSync 周期发生变化，但 `AnimationUtils.currentAnimationTimeMillis()` 的毫秒取整误差仍以旧周期为基础。这会产生两类叠加误差：
+
+1. **周期跳变点**：从 60Hz（16.67ms）切到 120Hz（8.33ms）时，ms 取整从 16/17 跳到 8/9，相邻帧的位移差突变
+2. **非整数周期**：在 90Hz（11.11ms）等非整数毫秒周期下，取整误差与周期漂移叠加，产生肉眼可见的瞬时“阶跃感”
+
+在 ARR 切换频率高的场景（如列表先快速 fling 再减速，触发 120→90→60 的连续降频），这些瞬时阶跃会密集出现。在 Perfetto 中可以通过关联 `queueBuffer` 的 vsyncId 与 `Display mode` track 来定位切换点，确认步幅波动是否集中在频率切换附近。
+
 ### 策略一：App 侧动画使用同一套 VSync 时间基准
 
 当根因落在 `OverScroller` 或自定义动画时，首要目标是让位移计算和显示调度使用同一套时间基准。对可改造的动画逻辑，优先使用 `frameTimeNanos` 或 `VsyncCallback` 提供的 `FrameData`，不要在帧回调里额外采一次毫秒时钟。只有当位移采样已经证明“FrameTimeline 绿色，但 displacement variance 高”时，这类改造才值得做。
@@ -265,7 +276,11 @@ Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFr
 
 如果 Trace 显示 `Actual Timeline`、display mode 或 present fence 在抖，继续打磨 `OverScroller` 没什么用。这里更有效的是固定刷新率范围、减少 ARR 来回切换、检查 buffer stuffing 恢复，以及确认 SurfaceFlinger 合成负载是否在波动。判断依据是，App 侧位移采样相对平稳，但最终呈现时间不稳。
 
-### 策略三：跟手动画要同时看输入采样和位移采样
+### 策略三：插值器斜率与步幅均匀性
+
+步幅敏感场景（如 fling 减速段、回弹动画）中，插值器的控制点斜率会影响位移对时间误差的敏感度。`AccelerateDecelerateInterpolator` 在加速/减速段斜率变化剧烈，`1ms` 的时间误差在高速段会被斜率放大成更大的位移跳动。`PathInterpolator` 允许通过贝塞尔控制点定义更平滑的切线斜率，配合 `Choreographer.FrameData`（API 33+）拿到纳秒级时间戳做绝对对齐，可以减少插值器本身对时间量化的放大效应。
+
+### 策略四：跟手动画要同时看输入采样和位移采样
 
 触摸跟手场景里，平滑 `dt` 只是兜底手段。更常见的做法是先对比输入事件时间戳、resampling 后的位置和屏幕上的实际位移。如果问题集中在手指刚按下、即将抬起或快速变向，优先检查 velocity estimate 与 prediction，而不是直接给动画再包一层 EMA。EMA 会减小抖动，也会带来额外跟手延迟。
 
