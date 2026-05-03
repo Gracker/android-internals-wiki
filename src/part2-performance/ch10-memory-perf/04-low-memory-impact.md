@@ -2,11 +2,11 @@
 title: "低内存对系统性能的影响"
 chapter: "10.4"
 section: "10.4"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-last_verified: "2026-04-02"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+last_verified: "2026-05-04"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium-high
 sources:
@@ -27,22 +27,16 @@ reviewed_by: openclaw-task6
 polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_result: pass-tech-review
-task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-27"
-last_task9_at: "2026-04-27T19:36:19+08:00"
-last_task2b_at: "2026-04-26T11:51:00+08:00"
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 rework_by: openclaw-task2b
-rework_type: "review回炉修复（Task9/External 问题单）"
-repaired_date: "2026-04-26"
+rework_type: "review回炉修复（External Review 问题单）"
+repaired_date: "2026-05-04"
 repaired_by: "openclaw-task2b"
-review_round: 3
+review_round: 4
 ---
 
 # 低内存对系统性能的影响
@@ -163,6 +157,14 @@ ART 的垃圾回收会直接受到系统内存压力影响。就 Perfetto 的常
 
 在 Perfetto 中，这个恶性循环表现为：GC Event（橙色的块）密度明显增加，帧渲染时间变长，帧之间的间隔中 GC 占比显著升高。在 120Hz 设备上（每帧只有 8.33ms），频繁的 GC 块占据 2-3ms 就足以造成卡顿，低内存导致的 GC 频繁触发很可能是根因。
 
+### 120Hz 高刷下的 GC 与 kswapd CPU 累加效应
+
+120Hz 设备上每帧只有 8.33ms，CPU 预算比 60Hz 更紧。低内存场景下，GC 和 kswapd 的 CPU 占用会叠加到同一帧的渲染时间窗口里，放大掉帧风险。
+
+具体来说，ART 的分代 GC（Android 17 起全面默认的 Generational CMC）在低内存时 Minor GC 频率会升高。单次 Minor GC 虽然停顿较短（通常 1-3ms），但如果和 kswapd 的后台回收同时出现在一个 VSync 周期内，两笔 CPU 开销累加后可能吃掉大半帧预算。在 Perfetto 中表现为：同一帧内 GC slice 和 kswapd0 的 CPU 活动重叠，帧渲染总耗时超过 VSync 边界。
+
+排查这种叠加效应时，在 Perfetto 里按同一时间窗交叉对照三组信号：目标线程的 GC slice、`kswapd0` 的 CPU 占用、以及帧渲染耗时。如果 GC 和 kswapd 同时活跃时掉帧明显增多，而 GC 或 kswapd 单独存在时掉帧不严重，说明是叠加效应在起作用。优化方向有两个：一是减少 App 自身的内存抖动以降低 GC 频率，二是通过 ZRAM 调优和 MGLRU 减轻 kswapd 的回收压力。
+
 与 [4.5 App 内存优化](../../part1-fundamentals/ch04-memory/05-app-memory-optimization.md) 和 [10.6 内存抖动与频繁 GC](06-memory-churn.md) 的交叉要点：低内存放大了 App 自身的内存管理问题。一个在 8GB 设备上可以容忍的内存抖动模式，在 4GB 设备上可能导致频繁 GC 和严重卡顿。
 
 ## 在 Perfetto 中识别内存压力的信号
@@ -271,6 +273,8 @@ ZRAM 的调优涉及几个参数：
 **Swappiness**。这个内核参数控制内核回收匿名页（swap out）和回收文件页（drop page cache）的倾向比例。取值范围 0-200，默认值 60。在 Android 设备上，较低值（10-30）通常更适合，因为移动设备优先保证前台 UI 响应，而不是积极地 swap 后台进程。但某些厂商会设置为 100 甚至更高来更积极地利用 ZRAM。[已验证: 官方文档, developer.android.com]
 
 **压缩算法与重压缩**。默认主算法通常还是 LZ4，优先保障压缩和解压延迟。支持 Multi-Comp 的内核会额外暴露 `/sys/block/zram0/recomp_algorithm`，让设备为冷页配置更高压缩比的二级算法。新写入的匿名页先走低延迟算法，长时间驻留的冷页再用 ZSTD 这类算法重压缩，换取更高的驻留密度。排查设备配置时，先 `cat /sys/block/zram0/recomp_algorithm` 看支持列表和当前选择，再结合 `mm_stat` 判断压缩比有没有明显变化。[已验证: 官方文档, kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
+
+**16KB 设备的 Swap 预读优化**。16KB Page Size 的设备还有一个常被忽略的调优点：`vm.page-cluster`。这个内核参数控制 swap-in 时预读的连续页数（以 2 的幂次计）。4KB 设备上默认值 3（预读 8 页 = 32KB）是合理的，因为预读粒度相对于页大小占比不高。但在 16KB 设备上，同样的 page-cluster=3 意味着每次 swap-in 预读 8×16KB = 128KB，这个粒度偏大，尤其在 ZRAM 场景下会多做无用的解压和内存分配。部分 16KB 设备已将 `vm.page-cluster` 设为 0（关闭预读），直接效果是减少了 swap-in 触发的不必要 I/O 和解压开销，App 切换时的响应反而更快。排查 16KB 设备的 ZRAM 效率时，用 `cat /proc/sys/vm/page-cluster` 确认当前值，如果仍在 3，可以评估是否降为 0。[已验证: kernel.org; 来源: intake/research-feeds/2026-04-02-11-ch04-zram-multialgo-mglru-2025.md]
 
 ### Android 15+：16KB 页面与内存压力口径
 
