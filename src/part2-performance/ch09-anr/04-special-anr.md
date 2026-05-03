@@ -35,21 +35,21 @@ rework_date: "2026-04-16"
 rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-status: "finalized"
-pipeline_stage: "ready-to-publish"
+status: ready-for-review
+pipeline_stage: task6_pending
 task9_state: "reviewed"
 task9_result: "pass-tech-review"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T07:30:41+08:00"
-task2b_state: "fixed"
+task2b_state: fixed
 p0: 0
 p1: 0
 p2: 1
 updated_by: "openclaw-task9"
 updated_date: "2026-04-29"
-review_notes: "2026-04-29 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。"
-auto_promoted: true
+review_notes: "2026-05-04 task2b rework: 16KB Page写放大、Freezer感知豁免、异步广播优先级反转。P0 0 / P1 3 fixed。"
+rework_round_2: "2026-05-04"
 ---
 
 # 特殊场景的 ANR
@@ -95,6 +95,17 @@ CPU 饱和通常由以下因素造成：后台有大量进程同时运行（比�
 
 当整机 I/O 压力大时，以下看似无害的操作都可能变成 ANR 的导火索：主线程读取一个 SharedPreferences 文件；主线程通过 `open()` 打开一个文件；ContentResolver 执行一次 `query()`；甚至主线程执行一次 Binder 调用，而对端进程正好在做 I/O 无法响应。
 
+
+### 进程冻结导致的 ANR：Android 16+ 的诊断简化
+
+[来源: External Review — Android 16+ Freezer 豁免逻辑]
+
+在 Android 15 及以下，进程被系统冻结（Cached Apps Freezer）后，如果在该进程被冻结期间收到了 input event 或 broadcast，系统会等待进程解冻后再处理。解冻本身需要时间（从冻结到可调度通常需要几百毫秒到数秒），如果这个等待叠加到 ANR 超时窗口内，就会出现"应用什么都没做但还是 ANR 了"的情况。
+
+在 Perfetto 中，这类问题的特征是主线程在 ANR 时间窗内有 `__refrigerator` 或 `D (frozen)` 状态段，说明进程当时被系统冻结了。
+
+**Android 16+ 的变化**：系统优化了 Freezer 与 ANR 计时的交互——当进程处于冻结态时，ANR 超时计时会暂停（或者说系统会在解冻后才开始计时）。这意味着在 Android 16+ 设备上，如果仍然发生了 ANR，可以基本排除"系统因为功耗原因导致应用强制无响应"这个外部因素。ANR 的根因应该回归到应用自身的主线程耗时操作或系统负载问题，不需要再花时间去排查 Freezer 干扰。
+
 ### 在 Perfetto 中怎么分析
 
 先看 CPU 概览 track：确认在 ANR 发生的时间段，所有 CPU 核心的占用率是否接近 100%。
@@ -115,7 +126,7 @@ Android 的广播机制中，AMS 是**串行分发**有序广播的——必须�
 
 AOSP 会对每个 receiver 单独计时，不存在“前面排队太久，后面自动继承超时”的累计模型。`FLAG_RECEIVER_FOREGROUND` 广播在 Android 13 及以下通常按 10 秒算，后台广播按 60 秒算；Android 14 及以上如果进程明显拿不到 CPU，这两个窗口会放宽到 10-20 秒和 60-120 秒。判断边界别只看业务语义，直接看 ANR subject 里的 `flg=` 字段；带 `0x10000000` 就是 `FLAG_RECEIVER_FOREGROUND`。
 
-广播风暴仍然会打出一串 ANR，因为 system_server 串行分发有序广播时，大量 receiver 会一起争抢 CPU、I/O 和 Binder 线程池。某个 receiver 如果在 `onReceive()` 里做数据库写入、网络等待或跨进程同步调用，会把后面的分发起点整体往后推；等这些 App 真正拿到执行机会时，各自的超时窗口已经被系统负载吃掉了一大截。
+广播风暴仍然会打出一串 ANR，因为 system_server 串行分发有序广播时，大量 receiver 会一起争抢 CPU、I/O 和 Binder 线程池。某个 receiver 如果在 `onReceive()` 里做数据库写入、网络等待或跨进程同步调用，会把后面的分发起点整体往后推；等这些 App 拿到执行机会时，各自的超时窗口已经被系统负载吃掉了一大截。
 
 因此，这里的因果链要写成“每个 receiver 仍然按自己的窗口超时，但广播风暴把整机拖慢了”，不要写成“广播队列自己累计超时”。
 
@@ -124,6 +135,19 @@ AOSP 会对每个 receiver 单独计时，不存在“前面排队太久，后�
 在 Perfetto 中，广播风暴的典型表现是：system_server 的 Binder 线程中看到大量连续的 `broadcastIntent` 调用；多个 App 进程几乎同时出现主线程被阻塞；ANR traces 中多个 App 的主线程都停在 `ActivityThread.handleReceiver()`。
 
 [已验证: 来源见 AOSP ActivityManagerService 广播分发机制] [已验证: AOSP android-14.0.0_r1]
+
+
+### 异步广播的优先级反转陷阱
+
+[来源: External Review — Modern Broadcast Queue 调度陷阱]
+
+Android 14+ 引入了 `ModernBroadcastQueue`，将广播按进程组织成队列，解决了旧模型中的"队头阻塞"问题。但这个改进引入了一个新的调度陷阱。
+
+`ModernBroadcastQueue` 将广播的 `onReceive()` 回调投递到目标进程的一个内部线程池中异步执行。这个线程池的线程优先级（nice 值）与主线程不同——通常是普通优先级而非前台优先级。当整机负载很高时，这些线程池线程可能在与系统其他线程的 nice 值竞争中失败，导致 `onReceive()` 回调迟迟无法被调度执行。
+
+讽刺的是：**主线程此时可能是空闲的**——它什么都没做，只是等广播回调完成。但从系统的视角看，ANR 超时窗口仍在倒数，因为 ANR 计时的是广播从分发到 `onReceive()` 返回的完整时间，不管这个时间花在排队还是执行上。
+
+排查这类问题时，Perfetto 中会看到：广播的线程池线程处于 Runnable 状态但长时间拿不到 CPU（与 CPU 饥饿模式类似），而主线程在 `nativePollOnce` 或其他空闲状态。这时 ANR 的根因不是主线程阻塞，而是广播回调线程池被系统负载挤掉了 CPU 时间。
 
 ## ContentProvider 冷启动导致的 ANR
 
@@ -151,7 +175,7 @@ Google 推出了 Jetpack App Startup 库。核心思路是用一个 ContentProvi
 
 ### apply() 的危险点在组件边界等待
 
-`SharedPreferencesImpl.apply()` 会先把修改提交到内存，再通过 `enqueueDiskWrite()` 把真正的 XML 写盘放进 `QueuedWork`。单看调用点，它确实比 `commit()` 更像异步接口。
+`SharedPreferencesImpl.apply()` 会先把修改提交到内存，再通过 `enqueueDiskWrite()` 把 XML 写盘放进 `QueuedWork`。单看调用点，它确实比 `commit()` 更像异步接口。
 
 问题出在另一头：框架会在 BroadcastReceiver、Service，以及部分组件收尾路径上调用 `QueuedWork.waitToFinish()`，要求进程里尚未收口的 `QueuedWork` 先处理完。旧应用的 Activity pause 也会走这条路径，但 Android 8-16 的日常排查里，更常见的是 receiver 和 service 边界被慢刷盘拖住。
 
@@ -319,6 +343,17 @@ Android 还要区分 compatibility WAL 与 full WAL。Android 9+ framework 引�
 常见场景是同一 App 的多个进程访问同一个数据库文件。主进程的 ContentProvider 在主线程上执行 `query()`；后台进程持有长写事务，WAL 文件持续增长，checkpoint 又被某个长读事务挡住。此时主线程可能卡在连接池等待、写事务结束、checkpoint 或文件系统 I/O 上。ANR 根因不一定是“读被写直接挡住”，也可能是 WAL 积压、连接池耗尽和 checkpoint 放大了等待时间。
 
 Perfetto 中的表现要分两类看：如果主线程在 `SQLiteConnectionPool`、Java 锁或 native mutex 上等待，常见状态是 WAITING / futex；如果卡在 `fsync()`、`fcntl()`、checkpoint 或底层 I/O，才更容易看到 D 状态。只用一个“文件锁”标签归因，很容易漏掉连接池和 checkpoint。
+
+
+### 16KB Page Size 下的数据库写放大
+
+[来源: External Review — Android 16+ 物理分页对 SQLite 的影响]
+
+Android 16 在旗舰设备上强制 16KB 页面对齐后，数据库操作的物理 I/O 行为发生了变化。4KB 页时代，修改一个数据库页只需要写入 4KB；16KB 页时代，同一个修改需要写入 16KB——物理写放大 4 倍。对于 WAL 模式的 checkpoint 操作，影响尤为明显：checkpoint 需要把 WAL 中的脏页写回主数据库文件，每个页的物理写入代价从 4KB 涨到 16KB。
+
+具体影响链条：WAL 积累到一定量后触发 checkpoint → 每个 dirty page 的物理写入放大 4 倍 → checkpoint 耗时增加 → 持有写锁时间拉长 → 阻塞后续读写的等待时间增加。如果同时还有跨进程竞争（主进程读、后台进程写），锁等待和 I/O 等待叠加，主线程被卡住的时间可能从百毫秒级跳到秒级。
+
+**实战建议**：在 16KB 页环境下，建议将 `wal_autocheckpoint` 从默认值（通常 1000 页）手动调低到 250 页左右，让 checkpoint 更频繁但每次更轻量，减少单次 checkpoint 的写放大累积。通过 `PRAGMA wal_autocheckpoint = 250` 即可设置。同时监控 WAL 文件大小和 checkpoint 耗时，如果 WAL 文件持续增长超过几 MB，说明 checkpoint 频率仍然不够。
 
 ### 源码锚点与防御手段
 
