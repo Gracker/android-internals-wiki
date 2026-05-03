@@ -6651,7 +6651,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-27T17:39:46+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T09:43:40.727440+00:00",
+      "completed_reason": "200s后台Service版本错误已修正(非8.0引入);adb pull路径已更新为Android 14+正确方式;连续ANR抑制机制已补充"
     },
     {
       "section": "9.2",
@@ -6675,7 +6677,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T14:36:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T09:43:40.727440+00:00",
+      "completed_reason": "JobService callback \"几秒级\"已替换为AOSP实际常量(OP_TIMEOUT_MILLIS=8s×HW_TIMEOUT_MULTIPLIER)及handleOpTimeoutLocked调用链"
     },
     {
       "section": "9.3",
@@ -8272,8 +8276,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-11-9.1-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-9.1-external-review.md",
+      "completed_at": "2026-05-03T09:43:40.727440+00:00",
+      "completed_reason": "adb pull /data/anr/ 已补充Android 14+正确获取路径(adb bugreport/ApplicationExitInfo);连续ANR抑制(isContinuousAnr)机制已在核心流程中描述"
     },
     {
       "section": "9.2",
@@ -8302,8 +8308,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-11-9.2-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-9.2-external-review.md",
+      "completed_at": "2026-05-03T09:43:40.727440+00:00",
+      "completed_reason": "FGS超时已改为两段式描述(回调自救→硬性惩罚);Android 16 Native AnrTimer已添加;dataSync 6h跨生命周期不可重置已明确"
     },
     {
       "section": "9.3",
