@@ -9,11 +9,11 @@ related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-05-04"
 last_task9_at: "2026-05-04T04:33:00+08:00"
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -456,7 +456,7 @@ WebView 并不是每次都走独立 SurfaceControl 子 Layer。普通页面仍�
 
 这个场景里的常见瓶颈也很典型。如果 Chromium 提交 Transaction 的频率高于显示侧能稳定消费的频率，SurfaceFlinger 侧会出现事务堆积；如果网页内容依赖 GPU 结果，acquire fence 没及时 signal，就会在 `latchBuffer` 上等待；如果这个 child layer 还叠了圆角、alpha、缩放或视频，HWC 可能接不了，只能退回 GPU 合成。[待验证: 目标设备的 HWC 约束和 provider 实现差异]
 
-因此，WebView 场景里真正要比较的是两件事：宿主 RenderThread 的工作有没有明显减轻，以及 SurfaceFlinger 侧是否换来了更可控的独立 layer 合成。如果宿主仍要在每一帧里同步做网页绘制，问题还在 App 侧；如果宿主已经解耦，但 SurfaceFlinger 组合过重，问题就转到 Layer 数量、fence 和合成策略上了。
+因此，WebView 场景里要比较的是两件事：宿主 RenderThread 的工作有没有明显减轻，以及 SurfaceFlinger 侧是否换来了更可控的独立 layer 合成。如果宿主仍要在每一帧里同步做网页绘制，问题还在 App 侧；如果宿主已经解耦，但 SurfaceFlinger 组合过重，问题就转到 Layer 数量、fence 和合成策略上了。
 
 [图：WebView 独立合成示意图。宿主窗口只绘制原生控件和透明占位，Chromium 独立提交 Web 内容 buffer，SurfaceFlinger 在同一帧里合成两者。]
 
@@ -468,7 +468,7 @@ PiP 是 SurfaceControl 最适合观察的系统场景之一，因为进入小窗
 
 Perfetto 里可以沿着这个顺序看：WindowManager / shell transition 发起 PiP 进入，SurfaceFlinger 收到几何 Transaction，随后 `latchBuffer` 是否顺利跟上；如果 `latchBuffer` 之前有明显等待，通常是内容准备慢；如果几何变换很顺，但合成时间突然上升，通常是小窗的圆角、阴影或额外 overlay 让 HWC 直合成失败，掉回 GPU 合成。[待验证: 具体回退条件按设备而异]
 
-PiP 场景给 SurfaceControl API 的启示很直接：已有内容层尽量复用，几何变化尽量放在事务里完成，避免每次状态切换都回到“应用整页重绘”这条更重的路径。需要跨进程挂接时，App 也不能指望纯 NDK 把一个 `ASurfaceControl*` 直接交给系统 PiP 容器继续 `reparent`；真正的跨进程树调整通常还是走 WindowManager / shell 的 Java / Binder 路径。
+PiP 场景给 SurfaceControl API 的启示：已有内容层尽量复用，几何变化尽量放在事务里完成，避免每次状态切换都回到“应用整页重绘”这条更重的路径。需要跨进程挂接时，App 也不能指望纯 NDK 把一个 `ASurfaceControl*` 直接交给系统 PiP 容器继续 `reparent`；跨进程树调整通常还是走 WindowManager / shell 的 Java / Binder 路径。
 
 ### 自绘引擎
 
@@ -476,7 +476,7 @@ PiP 场景给 SurfaceControl API 的启示很直接：已有内容层尽量复�
 
 这种做法在两类场景里很有用。一类是主画面更新频率高，叠加层更新频率低，例如游戏画面 60fps，字幕和调试面板只在状态变化时更新；另一类是不同内容来源本来就在不同线程或不同进程里生产，例如视频轨和贴纸轨由不同模块生成。独立 layer 能减少“为了改一行字幕，整帧场景都重画一遍”的额外开销。
 
-风险也很直接。把每个按钮、每个装饰元素都做成独立 layer，SurfaceFlinger 的工作量会快速上升，HWC 名额也更容易耗尽。更稳妥的做法，是只把真正需要异步更新、真正有独立生命周期的部分拆出来，其余结构层继续留在同一个 buffer 或用 Container Layer 表示层级关系。[待验证: 目标设备上独立 layer 的合成成本]
+把每个按钮、每个装饰元素都做成独立 layer，SurfaceFlinger 的工作量会快速上升，HWC 名额也更容易耗尽。更稳妥的做法，是只把需要异步更新、有独立生命周期的部分拆出来，其余结构层继续留在同一个 buffer 或用 Container Layer 表示层级关系。[待验证: 目标设备上独立 layer 的合成成本]
 
 判断拆分是否过度，Perfetto 很直观。如果应用自己的渲染线程已经很稳定，但 SurfaceFlinger 侧的 `setTransactionState`、`latchBuffer`、合成耗时同步变重，通常是 layer 切得过细；如果合成耗时稳定，却频繁卡在 acquire / release fence，问题多半出在 buffer 池管理和生产者节奏上。
 
