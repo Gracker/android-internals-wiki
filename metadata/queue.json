@@ -8190,8 +8190,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-10-8.5-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-10-8.5-external-review.md",
+      "completed_at": "2026-05-03T15:43:50.078116",
+      "completed_reason": "R8 Full Mode配置维度已拆分(Property vs 文件名)；ProfilingManager系统触发自动化已加入总结"
     },
     {
       "section": "8.6",
@@ -8244,8 +8246,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-11-8.9-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-8.9-external-review.md",
+      "completed_at": "2026-05-03T15:43:50.078116",
+      "completed_reason": "ADPF闭环渲染同步架构视角已补充；Swappy Tailspin反向卡顿场景已添加；Vulkan现代GPU瓶颈分析已扩充(动态渲染/PSO/内存屏障)"
     },
     {
       "section": "9.1",

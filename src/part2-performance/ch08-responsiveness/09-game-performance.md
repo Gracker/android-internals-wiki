@@ -2,7 +2,7 @@
 title: "Android 游戏性能与 Game Mode/State API"
 chapter: "8.9"
 section: "8.9"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 17 (API 37)"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
@@ -45,15 +45,15 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: '2026-04-28'
 task6_result: pass-light-edit
-task9_result: pass-tech-review
+task9_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-29'
 last_task9_at: "2026-04-29T04:38:09+08:00"
@@ -216,7 +216,7 @@ Game Mode 解决的是"用户想要什么"的问题，但同一个 Game Mode 下
 - **过场动画**：视频解码，需要 GPU 但不需要 CPU
 - **激烈战斗**：全负载，CPU（AI/物理）和 GPU（渲染）都满载
 
-如果把整个游戏运行期间都按"PERFORMANCE 模式、需要全部资源"来请求，那在主菜单和过场动画阶段系统就在白白浪费功耗——CPU/GPU 高频运行但实际利用率很低，设备温度上升，等到真正需要资源的战斗阶段，反而因为温度过高开始降频。
+如果把整个游戏运行期间都按"PERFORMANCE 模式、需要全部资源"来请求，那在主菜单和过场动画阶段系统就在白白浪费功耗——CPU/GPU 高频运行但实际利用率很低，设备温度上升，等到需要资源的战斗阶段，反而因为温度过高开始降频。
 
 Game State API 经常和 Android 12 的 Game Mode 一起讨论，但公开 SDK 边界要分开看。`GameManager#getGameMode()` 从 Android 12 / API 31 可用；`GameManager#setGameState(GameState)` 和 `GameState` 本身在 Android 13 / API 33 才进入公开 SDK。调用入口仍在 `GameManager` 上，不是另一套独立 manager。`GameState` 只有两类公开信息：`isLoading` 表示当前是否处于加载状态，`mode` 表示当前内容类型；可选构造器还允许游戏补一个 `label` 和 `quality` 供系统侧记录。
 
@@ -357,6 +357,10 @@ EOF
 
 用了 Swappy，就把提交节奏、present 节奏和 display refresh 放到同一条时间轴里看。用了 ADPF，就看 `power.hint_session` 里 target duration 与 actual duration 的偏差，判断 hint 是否跟上场景变化。
 
+这里有一个架构视角的变化：Android 16 之前，渲染同步的重心更多落在应用侧——Swappy 管提交节奏，游戏自己算 VSync 偏移。Android 16 起，ADPF 形成闭环后，游戏的工作重心应该从"计算同步"转向"订阅 VSync 偏移 + 上报帧 deadline"，让系统根据 ADPF hint 自动完成调频和调度适配。Swappy 仍然是帧节奏控制的基础库，但它越来越像 ADPF 的信号源之一，而不是独立的同步方案。
+
+同时要注意 Swappy 配置不当可能引发"反向卡顿"：如果 Swappy 锁定的 VSync 偏移与系统实际的 ARR（自适应刷新率）切换窗口错位，就会出现"Swappy 按 60Hz 间隔提交，但显示器刚切到 120Hz"的帧节奏混乱——Perfetto 里表现为 Actual frame 周期性在 16ms 和 33ms 之间跳变，且跳变节奏与 VSync offset 切换同步。遇到这种形态，先检查 Swappy 的 swap interval 是否跟随了 display 的实际刷新率，再检查 ADPF hint session 的 target duration 是否和 Swappy 配置一致。
+
 **第四步：检查调度延迟**
 
 再检查主线程、RenderThread、渲染 worker 或 native game thread 的调度延迟。这里回答的是“CPU 有没有及时把这一帧跑起来”，不是“这一帧是否成功 present”。
@@ -368,6 +372,8 @@ EOF
 - 观察点：应用 Surface layer 的 Actual frame、Expected frame，外加 GPU counter
 - 常见形态：Actual frame 从 16.6ms 抬到 33.3ms，但 big cluster 频率和 thermal status 基本稳定
 - 判断：问题更像 GPU 侧瓶颈，例如 shader 编译、fill rate、后处理或分辨率过高；这时别把锅先甩给调度器
+
+现代 Vulkan 游戏的 GPU 瓶颈分析不能只看频率和 busy 程度。Vulkan 1.3+ 的动态渲染（`VK_DYNAMIC_STATE`）和管线状态对象（PSO）管理已经改变了传统的瓶颈分布：Draw Call 数量在 Vulkan 下不再是 CPU 侧的主要瓶颈——命令缓冲区批量提交把 driver overhead 大幅压缩；真正需要关注的是 render pass 之间的内存屏障、subpass 依赖、以及 render target 切换导致的 GPU 空闲气泡。在 Perfetto 中配合 `gpu.renderstages` 可以直接看到这些阶段的耗时分布，比单纯看 GPU busy 百分比更有诊断价值。
 
 [图：FrameTimeline 片段，Expected frame 仍维持 16.6ms，Actual frame 偶发拉到 33.3ms；CPU Frequency 基本平，GPU busy 上抬]
 
@@ -431,7 +437,7 @@ Game Mode Interventions 不是 Android 17 才出现的功能。官方文档的�
     android:allowGameFpsOverride="false" />
 ```
 
-开发阶段有两类命令需要分开看。`adb shell cmd game mode [standard|performance|battery] <PACKAGE_NAME>` 用来切换用户模式；真正给 interventions 下配置的是 `adb shell device_config put game_overlay <PACKAGE_NAME> ...`。把这两条命令混成一条，会把“选择模式”和“下发 OEM 配置”两件事写乱。
+开发阶段有两类命令需要分开看。`adb shell cmd game mode [standard|performance|battery] <PACKAGE_NAME>` 用来切换用户模式；给 interventions 下配置的是 `adb shell device_config put game_overlay <PACKAGE_NAME> ...`。把这两条命令混成一条，会把“选择模式”和“下发 OEM 配置”两件事写乱。
 
 [已验证: Android Developers Game Mode API / interventions / FPS throttling docs]
 
@@ -463,7 +469,7 @@ WHERE slice.name LIKE 'Choreographer#doFrame%'
 GROUP BY process.name;
 ```
 
-目标是 120Hz 时，要把 8.33ms 当预算；90Hz 是 11.11ms；60Hz 是 16.66ms。真正的 present miss 仍要回到 `FrameTimeline` 看 Actual frame 和 jank reason。
+目标是 120Hz 时，要把 8.33ms 当预算；90Hz 是 11.11ms；60Hz 是 16.66ms。present miss 仍要回到 `FrameTimeline` 看 Actual frame 和 jank reason。
 
 ### GC 对游戏帧的影响
 

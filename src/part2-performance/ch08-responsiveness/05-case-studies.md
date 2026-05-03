@@ -2,10 +2,10 @@
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 reviewed_date: "2026-04-27"
-rework_date: "2026-04-08"
+rework_date: "2026-05-03"
 rework_by: "task2b-rework"
 reviewed_by: "openclaw-task6"
 review_cycle: 4
@@ -34,13 +34,13 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-task9_result: pass-tech-review
+task9_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-28"
 last_task9_at: "2026-04-28T05:29:35+08:00"
@@ -130,7 +130,12 @@ dependencies {
 
 这里最容易写错的地方，是把 Baseline Profile plugin 当成普通 `implementation` 依赖。正确分工是：插件负责生成和维护 profile，Macrobenchmark 负责跑 CUJ，`profileinstaller` 负责本地安装场景的 profile 安装。
 
-**R8 优化配置方面**，默认规则文件应继续使用 `proguard-android-optimize.txt`。官方文档已经明确，`proguard-android.txt` 内含 `-dontoptimize`，会关闭优化；`proguard-android-optimize.txt` 才是当前推荐入口。
+**R8 优化配置方面**，需要区分两个独立的控制维度：
+
+- **规则文件**决定预设 keep/优化规则集：`proguard-android-optimize.txt` 是推荐入口（`proguard-android.txt` 内含 `-dontoptimize`，会关闭优化）
+- **Gradle 属性**决定是否启用 full mode：`gradle.properties` 中不要保留 `android.enableR8.fullMode=false` 这类 compat mode 开关；AGP 8.0+ 已默认走 full mode
+
+也就是说，文件名和属性各管各的——即使用了 `proguard-android-optimize.txt`，如果 `gradle.properties` 里还留着 `fullMode=false`，R8 仍然不会做深度优化。排查 R8 配置问题时，先查 Gradle 属性，再查规则文件。
 
 ```groovy
 android {
@@ -413,6 +418,8 @@ Google 的内部基准测试显示 [已验证: developer.android.com, Google Blo
 **第三，系统化 > 贴膏药。** 抖音的启动任务调度框架、Reddit 的 CUJ Profile 管理——它们把优化过程从"每次手动排查"变成了"系统自动处理"。这种投入的 ROI 是长期累积的。
 
 **第四，防劣化比优化更重要。** 抖音建立了 100ms 回退拦截机制，这说明他们最清楚一件事：优化成果的保持比取得优化更难。每次新功能迭代都可能引入新的启动耗时——没有防劣化机制，优化成果会在几个月内被逐渐蚕食。
+
+**第五，利用系统级自动采集减少人工排查。** Android 15+ 的 ProfilingManager 已支持系统触发式采集——App Startup、ANR 等系统事件可自动触发 system trace / heap dump。线上监控不需要在每个入口手动埋点，而是注册系统触发器让平台在关键事件发生时自动抓取现场。Android 17 进一步引入 `TRIGGER_TYPE_OOM`（内存超限）等触发类型，配合 `ProfilingResult.getTag()` 可以区分不同触发源产出的 trace 文件。接入时注意：系统触发受采样策略和设备版本约束，不能保证每次事件都产出 trace；线上仍需补充采样率控制和隐私脱敏。
 
 [自动发现] **ProfilingManager（Android 15+）** 对响应速度案例分析的辅助价值：Android 15 提供公开 `android.os.ProfilingManager`，应用可以通过 `requestProfiling()` 主动请求系统采集 system trace、heap dump、heap profile 或 stack sampling。Android 16 的 System Triggered Profiling 把触发源扩展到 App Startup、ANR 等系统事件；这类系统触发与 App 主动调用共用结果回调模型，但是否生成、保存和上报仍受采样策略、设备版本、权限边界和隐私策略约束。
 
