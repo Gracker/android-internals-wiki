@@ -788,3 +788,24 @@
 - **问题**：正文列出 `RESULT_CODE_NO_PROFILE`；AndroidX main 源码的 `ProfileVerifier.CompilationStatus` 当前为 `RESULT_CODE_NO_PROFILE_INSTALLED`，而 developer.android.com 调试示例仍出现 `RESULT_CODE_NO_PROFILE`。这是文档与源码口径不一致点，容易让读者复制到具体版本时编译失败。
 - **建议**：按实际依赖的 `androidx.profileinstaller` 版本核对常量名；正文注明“以项目依赖版本的 ProfileVerifier 为准”，或同时给出 docs 口径与 AndroidX main 源码口径。
 - **review 日志**：logs/deep-review/2026-05-03-06-deep-review.md
+
+## [Task9 Deep Review] 7.4 典型场景分析 — 2026-05-03
+- **类型**：数据/观测点支撑
+- **位置**：L282-L288（Predictive Back Perfetto 观察点）
+- **问题**：正文写 `predictive_back_progress` 计数器，但未给出 AOSP/Perfetto 官方数据源或 trace 字段来源；公开文档更稳定的是 OnBackInvokedCallback/OnBackAnimationCallback、Window/Shell/SystemUI 与 SurfaceFlinger 轨道，不能把该 counter 当成跨设备标准观察点。
+- **建议**：补真实 Android 15/16 trace 截图或 SQL 字段；补不上时改成“对 `onBackProgressed()` 自定义 Trace + SystemUI/Shell/SF 轨道联合判断”。
+- **review 日志**：logs/deep-review/2026-05-03-08-deep-review.md
+
+## [Task9 Deep Review] 7.4 典型场景分析 — 2026-05-03
+- **类型**：源码/Trace 锚点准确性
+- **位置**：L289（SurfaceFlinger `composeModese` slice）
+- **问题**：`composeModese` 不是稳定可核验的 SurfaceFlinger slice 名，且疑似拼写错误；不同 Android 版本/OEM 的 SF/CompositionEngine/HWC 轨道命名差异较大。
+- **建议**：改成可验证口径：FrameTimeline jank type、SurfaceFlinger expected/actual timeline、CompositionEngine/validateDisplay-presentDisplay、CLIENT/DEVICE composition type、present fence；若保留 slice 名，必须附 trace 样例版本。
+- **review 日志**：logs/deep-review/2026-05-03-08-deep-review.md
+
+## [Task9 Deep Review] 7.6 案例集 — 2026-05-03
+- **类型**：数据与案例支撑
+- **位置**：L79-L127、L156-L199、L228-L274、L301-L349、L390-L466（五个主案例）
+- **问题**：章节已声明数值为案例化示例且多处 `[待验证]`，但锚点要求每个案例包含 Trace 截图/关键数据、修复方案、效果对比。当前缺 trace 文件名、设备/系统版本、刷新率、脚本、采样窗口和前后对照，正式发布时支撑力不足。
+- **建议**：为每个案例补一份最小证据包：Perfetto trace 文件或截图、采集配置、设备/版本/刷新率、复现脚本、核心 SQL/指标、修复前后统计；补不上时将精确 Jank 率和耗时数字降级为“示例口径”。
+- **review 日志**：logs/deep-review/2026-05-03-08-deep-review.md
