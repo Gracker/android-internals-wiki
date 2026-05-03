@@ -869,3 +869,21 @@
 - **位置**：L400-L404（ANR trace 文件存储演进）
 - **问题**：Android 10 段已写“按时间和进程分别存储”，Android 13 段又写“改为按进程独立存储”，两个版本节点的差异边界重叠。
 - **建议**：重新核对 AOSP trace 文件命名/写入路径演进，把 Android 10 的 traces.txt→/data/anr/anr_* 与 Android 12/13 的可靠性或按进程改进拆清楚，避免重复归因。
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-05-04
+- **类型**：数据缺失
+- **位置**：L546 Vulkan CPU 效率段
+- **问题**：“OpenGL ES 驱动状态检查在复杂场景中可能占去数毫秒帧时间”缺少测试条件、设备、trace 或 benchmark 来源。该断言与 HWUI 后端选择强相关，不能脱离 SoC/驱动/场景写成通用成本。
+- **建议**：补充具体 benchmark/Perfetto/GPU driver trace，至少给出设备、API 后端、绘制负载、帧预算与 CPU submit 时间；没有数据时改成定性描述。
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-05-04
+- **类型**：原理链完整性
+- **位置**：L548 Vulkan 多线程能力与 HWUI 架构
+- **问题**：正文把 Vulkan 命令缓冲区可多线程构建，和 HWUI 的“主线程录制 DisplayList + RenderThread 回放”直接连成因果。UI 线程录制的是 View/DisplayList 指令，不是 Vulkan command buffer；是否利用 Vulkan 多线程提交取决于 SkiaVulkan/HWUI 内部实现与具体 workload。
+- **建议**：把该段边界收窄：Vulkan 的多线程命令构建主要适用于 native/game/自管 Vulkan renderer；HWUI 场景只说 SkiaVulkan 后端可能降低 CPU submit/driver 开销，避免暗示 UI 线程和 RenderThread 会并行构建 Vulkan command buffer。
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-05-04
+- **类型**：版本差异/源码准确性
+- **位置**：L383 / L456 Android 17 `recreateOnConfigChanges`
+- **问题**：正文把 API 37 `recreateOnConfigChanges` 归因到 Android 17 behavior changes 页面，但公开 `behavior-changes-all` 页主要写 IME 可见性恢复等行为；具体 flag 列表更直接的来源是 `android.R.attr#recreateOnConfigChanges`。同时“部分 uiMode”需要给出精确子场景或 AOSP/官方引用。
+- **建议**：把来源补到 `developer.android.com/reference/android/R.attr#recreateOnConfigChanges`，并用官方列出的 colorMode、keyboard、keyboardHidden、navigation、touchscreen 等 flag 做表；`uiMode` 若保留，标注具体触发场景和来源，否则删除。

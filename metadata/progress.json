@@ -1,23 +1,26 @@
 {
-  "generated_at": "2026-05-03T22:20:00+08:00",
+  "generated_at": "2026-05-04T00:30:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
-    "last_updated": "2026-05-03",
+    "last_updated": "2026-05-04",
     "pipeline_stage_counts": {
+      "unknown": 35,
       "ready-to-publish": 106,
       "task2b_pending": 90,
       "task9_pending": 11,
       "task6_pending": 10
     },
     "task6_state_counts": {
+      "unknown": 34,
       "reviewed": 199,
       "revisiting": 16,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
+      "unknown": 40,
       "reviewed": 205,
       "pending": 7
     },
@@ -27,38 +30,42 @@
       "pending": 96,
       "idle": 3
     },
-    "finalized": 108,
-    "ready-for-review": 112,
+    "finalized": 107,
+    "ready-for-review": 113,
     "unknown": 32,
     "status_counts": {
       "unknown": 32,
-      "finalized": 108,
-      "ready-for-review": 112
+      "finalized": 107,
+      "ready-for-review": 113
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
+      "unknown": 35,
       "ready-to-publish": 106,
       "task2b_pending": 90,
       "task9_pending": 11,
       "task6_pending": 10
     },
     "task6_state_counts": {
+      "unknown": 34,
       "reviewed": 199,
       "revisiting": 16,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
+      "unknown": 40,
       "reviewed": 205,
       "pending": 7
     },
     "task2b_state_counts": {
+      "unknown": 42,
       "fixed": 111,
       "pending": 96,
       "idle": 3
     },
-    "last_updated": "2026-05-03"
+    "last_updated": "2026-05-04"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -639,9 +646,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T06:20:00+08:00",
+      "last_task9_at": "2026-05-04T00:30:00+08:00",
       "review_round": "3",
       "review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
     },
@@ -1095,8 +1102,8 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-27",
-      "last_task9_at": "2026-04-27T06:20:00+08:00",
+      "task9_reviewed_date": "2026-05-04",
+      "last_task9_at": "2026-05-04T00:30:00+08:00",
       "last_task2b_at": "2026-04-27T02:40:00+08:00",
       "review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。",
       "review_log": "logs/review/2026-04-11-11-review.md"
