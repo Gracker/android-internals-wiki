@@ -44,11 +44,11 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-26T13:40:00+08:00"
 task9_reviewed_date: "2026-04-26"
@@ -221,7 +221,7 @@ Reason: executing service com.example.app/com.example.app.MyService
 - **Android 9-12：** AOSP 把这条宽限期提升到 10 秒
 - **Android 13-14+：** 默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS`，默认 30 秒，对应运行时字段 `mServiceStartForegroundTimeoutMs`
 
-超时后的后果也要分开看：Android 8-11 多表现为 ANR 或系统杀服务，Android 12+ 常见为 `ForegroundServiceDidNotStartInTimeException`。它与普通 Service 的执行超时、Android 15 `shortService` 约 3 分钟超时是三套不同机制。
+超时后的后果是两段式过程。以 Android 15+ 的 `shortService` 和 `dataSync` 为例：**第一阶段**是回调自救——系统通过 `Service.onTimeout()` 给应用一个窗口执行清理并调用 `stopSelf()`；**第二阶段**是硬性惩罚——如果应用在宽限期内没有主动停止，系统抛出 `ForegroundServiceDidNotStopInTimeException` 或直接杀进程。Android 12+ 的 `ForegroundServiceDidNotStartInTimeException` 也是同样的两段式语义：先给机会回调，再硬杀。它与普通 Service 的执行超时是两套不同机制。
 
 常见触发场景：
 
@@ -265,7 +265,7 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 | Service (后台) | 200s | ActiveServices (AMS) | `onCreate()` / `onStartCommand()` / `onBind()` 未完成 | 无感知 |
 | ContentProvider | 10s | AMS | Provider 未在时间内 publish | 间接感知（阻塞启动） |
 | startForeground | Android 8.0 5s / 9-12 10s / 13-14+ 默认 30s | AMS | `startForeground()` 未在宽限期内调用 | Android 12+ 常见直接崩溃 |
-| JobService callback (14+) | 几秒级 | JobScheduler / AMS | `onStartJob()` 或 `onStopJob()` 主线程未及时返回 | 多为后台无感知 |
+| JobService callback (14+) | 8s（`OP_TIMEOUT_MILLIS` × HW_TIMEOUT_MULTIPLIER） | JobScheduler / AMS | `onStartJob()` 或 `onStopJob()` 主线程未及时返回 | 多为后台无感知 |
 
 ## 在 Perfetto 中的表现
 
@@ -289,17 +289,19 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 
 **Android 14（API 34）：** BroadcastReceiver 的官方诊断口径更新为前台 10-20 秒、后台 60-120 秒，并把 CPU starvation 与 app startup 纳入超时窗口解释。targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 超时也会以显式 ANR 上报。
 
-**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 的累计运行时间限制（后台 24 小时内 6 小时），以及 `shortService` 类型约 3 分钟的超时直接触发机制 [待验证: shortService 具体超时阈值因 OEM 实现可能不同]。
+**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 的累计运行时间限制（后台 24 小时内 6 小时），以及 `shortService` 类型约 3 分钟的超时直接触发机制 [待验证: shortService 具体超时阈值因 OEM 实现可能不同]。`dataSync` 和 `mediaProcessing` 的 6 小时累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。这意味着开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
+
+**Android 16（API 36）：** ANR 计时引擎从 system_server 的 Java Handler 消息迁移到 Native 层的 `AnrTimer`。传统 Handler 计时受 AMS 主线程负载影响：如果 AMS 主线程在处理其他事务（比如同时处理多个应用的 ANR dump），超时消息可能延迟投递，导致 ANR 检测不准时。Native AnrTimer 在独立线程中运行，不受 Java 层调度抖动影响，计时精度更高。调试时可使用 `adb shell dumpsys activity anr-timer` 观察当前活跃的 ANR 计时器状态。
 
 [来源: intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md]
 
 ## JobService callback ANR 与 job 超时的边界 [扩展]
 
-Android 14 起，JobScheduler 不再只是长任务调度器。对 targetSdk 34+ 的应用，`JobService.onStartJob()` 和 `JobService.onStopJob()` 都运行在主线程；如果这两个 callback 在几秒内不返回，系统会直接报 ANR，Reason 常见为 `No response to onStartJob` 或 `No response to onStopJob`。Android 13 及以下这类 ANR 多为 silent ANR，不会显式回传给应用。
+Android 14 起，JobScheduler 不再只是长任务调度器。对 targetSdk 34+ 的应用，`JobService.onStartJob()` 和 `JobService.onStopJob()` 都运行在主线程；如果这两个 callback 在 8 秒内不返回（AOSP `JobServiceContext.OP_TIMEOUT_MILLIS = 8 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`，`handleOpTimeoutLocked()` 生成 `No response to onStartJob/onStopJob` 并调用 `ActivityManagerInternal.appNotResponding()`），系统会直接报 ANR。Android 13 及以下这类 ANR 多为 silent ANR，不会显式回传给应用。
 
 这里要把三条超时链分开看：
 
-- **JobService callback ANR**：`onStartJob()` / `onStopJob()` 主线程卡住，几秒内不返回，直接触发 ANR。
+- **JobService callback ANR**：`onStartJob()` / `onStopJob()` 主线程卡住，超过 `OP_TIMEOUT_MILLIS`（默认 8 秒 × `HW_TIMEOUT_MULTIPLIER`）不返回，`handleOpTimeoutLocked()` 调用 `appNotResponding()` 触发 ANR。
 - **Job 运行超时**：`onStartJob()` 已返回且返回 `true`，系统开始等待 `jobFinished()`。这条线通常是分钟级调度超时，超时后系统会停止 job 并回调 `onStopJob()`；它不等同于 ANR。
 - **普通 Service ANR**：`JobService` 作为 `Service` 子类，仍受 Service 生命周期与前台服务规则影响；但这条线针对的是 `onCreate()` / `onStartCommand()` / `onBind()` 或 `startForeground()` 宽限期，不等于 JobScheduler callback ANR。
 

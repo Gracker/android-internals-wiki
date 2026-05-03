@@ -3,7 +3,7 @@
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -29,10 +29,10 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. No banned words, no AI fillers, format consistent. 2 pending queue entries block auto-promotion."
@@ -181,6 +181,8 @@ private final class AnrRecord {
 [已验证: AOSP android-11.0.0_r1 / android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/AnrHelper.java, ProcessErrorStateRecord.java]
 
 注意 `startAnrConsumerIfNeeded()`——ANR 处理被放到了单独的 `AnrConsumerThread` 中执行，目标是避免 ANR 处理逻辑阻塞 AMS 主线程。系统处理一个应用无响应事件时，AMS 仍要继续服务其他进程，ANR dump 不能把调度线程拖住。
+
+**连续 ANR 抑制。** 当同一个 App 短时间内反复触发 ANR 时，系统不会对每一次都执行完整的 dump + 弹窗流程。`AnrHelper` 内部通过 `isContinuousAnr` 标记和 `firstPidDumpPromise` 机制，对连续 ANR 做合并处理：第一次 ANR 正常 dump 全量堆栈，后续连续 ANR 可能只 dump 自身进程（`onlyDumpSelf=true`）或跳过 dump 直接走杀进程逻辑。这个设计有两个目的：避免频繁 SIGQUIT 导致系统 I/O 飙升（dump 一个进程的堆栈可能耗时数百毫秒），以及防止 ANR 处理本身成为系统瓶颈。排查时要注意：如果 traces.txt 中只看到一个 ANR 记录但 event log 显示多次 `am_anr`，可能就是连续 ANR 被合并了。
 
 ### 第四阶段：弹窗或杀进程
 
@@ -355,7 +357,7 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 - **线程持有的锁信息**：如 `- locked <0x12345678>`，标明哪个线程持有哪些锁
 - **CPU 使用统计**：ANR 发生前一段时间的 CPU 负载信息
 
-在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。可以通过 `adb pull /data/anr/` 获取。
+在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ApplicationExitInfo`** API（`Process.getErrorStateMemoryRegion()` 或 `ActivityManager.getHistoricalProcessExitReasons()`）程序化读取 ANR 堆栈。`adb pull /data/anr/` 在 Android 13 及以下仍然有效。
 
 **traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时真正导致超时的代码可能已经执行完毕了。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程处于空闲状态——真正的问题在更早的消息处理中。
 
@@ -393,7 +395,7 @@ Dropbox 是 Android 系统的持久化日志存储机制，用于保存系统级
 
 ANR 机制自 Android 2.3 引入以来，基本框架没有大的变化，但几乎每个大版本都在细节上有所调整。我们梳理其中影响较大的几次变化。
 
-Android 8.0 引入了后台执行限制，后台 Service 的超时阈值从 20 秒调整到 200 秒。这个变化表面上看是"放松"了限制，实际意图是配合后台 Service 限制策略——系统更倾向于直接杀掉后台应用而不是弹 ANR 对话框。200 秒的超时更多是一个"保底"，绝大多数后台 Service 会在远早于 200 秒时被系统的后台限制策略回收。
+Android 8.0 引入了后台执行限制。后台 Service 的超时阈值一直是前台超时的 10 倍（`DEFAULT_SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_TIMEOUT * 10`），对应前台 20 秒、后台 200 秒——这不是 Android 8.0 才引入的值，早期 AOSP 的 `ActivityManagerConstants` 里就已经这样定义。Android 8.0 的主要变化是后台执行限制本身：系统更倾向于直接杀掉后台应用而不是等它触发 ANR。200 秒的后台超时更多是一个保底兜底值，绝大多数后台 Service 会在远早于 200 秒时被后台限制策略回收。
 
 Android 10 解决了一个长期困扰开发者的诊断难题：ANR trace 文件从单一的 `traces.txt` 改为按时间和进程分别存储在 `/data/anr/` 目录下。在此之前，如果一个 App 连续触发多次 ANR，后面的 traces 会覆盖前面的，导致丢失重要的诊断信息。按进程和时间分开存储后，每次 ANR 都有独立的 trace 文件，历史信息不再被覆盖。
 
