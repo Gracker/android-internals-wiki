@@ -9036,8 +9036,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T20:15:34.630443+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.10-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.10-external-review.md",
+      "completed_at": "2026-05-04T03:48:01.503396",
+      "completed_reason": "P0 跨进程通讯已修正：拆分Android 10-14与Android 15+两条路径；补充ASurfaceControl_writeToParcel/readFromParcel Parceling说明；添加ASurfaceControl_fromJava JNI互操作代码示例"
     },
     {
       "section": "18.5",
@@ -10553,7 +10555,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T12:25:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T03:48:01.503396",
+      "completed_reason": "P0 connectStart attempt懒创建条件已修正：提取ensureActiveAttemptForNewRoute()统一dnsStart/connectStart调用，条件改为failure!=null||connectEndNs!=null"
     },
     {
       "section": "1.2",

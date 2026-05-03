@@ -8413,7 +8413,8 @@
       "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback",
       "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo"
     ],
-    "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md"
+    "path": "src/part3-tools/ch19-apm/23-network-apm-internals.md",
+    "last_task2b_at": "2026-05-04"
   },
   "src/part3-tools/ch19-apm/24-crash-anr-internals.md": {
     "title": "崩溃与 ANR 捕获机制",
@@ -10528,5 +10529,19 @@
     "task9_result": "needs-rework",
     "status": "ready-for-review",
     "pipeline_stage": "task2b_pending"
+  },
+  "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md": {
+    "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+    "chapter": "18",
+    "section": "18.10",
+    "title": "SurfaceControl API 深入",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "task6_state": "revisiting",
+    "task9_state": "pending",
+    "last_task2b_at": "2026-05-04",
+    "created_by": "rendering-pipelines-merge"
   }
 }
