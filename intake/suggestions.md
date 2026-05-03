@@ -887,3 +887,9 @@
 - **位置**：L383 / L456 Android 17 `recreateOnConfigChanges`
 - **问题**：正文把 API 37 `recreateOnConfigChanges` 归因到 Android 17 behavior changes 页面，但公开 `behavior-changes-all` 页主要写 IME 可见性恢复等行为；具体 flag 列表更直接的来源是 `android.R.attr#recreateOnConfigChanges`。同时“部分 uiMode”需要给出精确子场景或 AOSP/官方引用。
 - **建议**：把来源补到 `developer.android.com/reference/android/R.attr#recreateOnConfigChanges`，并用官方列出的 colorMode、keyboard、keyboardHidden、navigation、touchscreen 等 flag 做表；`uiMode` 若保留，标注具体触发场景和来源，否则删除。
+
+## [Task9 Deep Review] 10.4 低内存对系统性能的影响 — 2026-05-04
+- **类型**：数据缺失
+- **位置**：L267-L277 ZRAM 压缩比、swappiness 与 16KB page-cluster
+- **问题**：正文给出 LZ4 典型 3:1 压缩比、Android 设备 swappiness 10-30 更适合、16KB page-cluster=0 可让 App 切换更快等判断，但没有给出设备配置、内核版本、算法、工作负载或 trace/benchmark 条件。
+- **建议**：补一组可复核证据：`/sys/block/zram0/mm_stat`、`/proc/swaps`、`/proc/sys/vm/page-cluster`、页大小、压缩算法、App 切换 trace 或厂商公开数据；无法补证据时把数字改成示例而非通用结论。

@@ -12477,3 +12477,19 @@ Android 17 / ART generational CMC 对 WeakReference、ReferenceQueue 入队时�
 
 ### 关联章节
 10.2, 4.3, 10.1
+
+## [2026-05-04] 11.2 App 耗电优化 — GNSS 硬件围栏卸载与功耗量化
+
+### 盲区描述
+正文涉及 Geofencing 的 GNSS hardware offload、Android 版本线和功耗收益，但当前缺少可复核的一手资料与实测条件。需要确认 API/能力暴露、HAL 实现、Play services FLP 路径和 vendor 芯片卸载之间的边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `android.location.GnssCapabilities.hasGeofencing()`、GNSS AIDL/HIDL geofence 接口与 Android 版本线。
+- 搜集 Pixel / Qualcomm / MediaTek / Broadcom 等公开资料中 hardware geofence 的功耗测试条件。
+- 梳理 `dumpsys location` 中 hardware/software geofence 的可观测字段，给出 user build 可复核路径。
+
+### 关联章节
+11.2, 5.6, 11.1

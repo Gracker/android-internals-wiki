@@ -28,15 +28,20 @@ polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
 task2b_result: fixed
-task2b_state: fixed
 task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External Review 问题单）"
 repaired_date: "2026-05-04"
 repaired_by: "openclaw-task2b"
 review_round: 4
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
+pipeline_stage: task2b_pending
+task9_reviewed_date: "2026-05-04"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-04T02:20:00+08:00"
+review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。"
 ---
 
 # 低内存对系统性能的影响
