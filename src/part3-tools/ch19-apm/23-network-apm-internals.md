@@ -10,9 +10,9 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 sources:
@@ -30,7 +30,7 @@ reviewed_date: "2026-05-01"
 task6_result: pass-light-edit
 review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion."
 
-last_task2b_at: "2026-04-27T09:42:00+08:00"
+last_task2b_at: "2026-05-04T03:40:00+08:00"
 
 ---
 
@@ -137,11 +137,20 @@ private class NetworkMetricEventListener(
 
     private fun currentAttempt(): Attempt = attempts.last()
 
+    // 当前 attempt 已结束（有 failure 或已 connectEnd），需要为新的路由尝试创建 attempt
+    private fun ensureActiveAttemptForNewRoute() {
+        val cur = currentAttempt()
+        if (cur.failure != null || cur.connectEndNs != null) {
+            attempts += Attempt()
+        }
+    }
+
     override fun callStart(call: Call) {
         callStartNs = clock()
     }
 
     override fun dnsStart(call: Call, domainName: String) {
+        ensureActiveAttemptForNewRoute()
         currentAttempt().dnsStartNs = clock()
     }
 
@@ -150,10 +159,8 @@ private class NetworkMetricEventListener(
     }
 
     override fun connectStart(call: Call, inetSocketAddress: InetSocketAddress, proxy: Proxy) {
-        // 懒创建：如果当前 attempt 已有 failure（上一次 connectFailed），创建新 attempt
-        if (currentAttempt().failure != null && currentAttempt().connectStartNs == null) {
-            attempts += Attempt()
-        }
+        // 确保 attempt 处于活跃状态：上一轮 connectFailed 或 connectEnd 后应创建新 attempt
+        ensureActiveAttemptForNewRoute()
         currentAttempt().connectStartNs = clock()
     }
 
