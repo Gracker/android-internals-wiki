@@ -225,6 +225,58 @@ RELRO 保护仍然存在。`soinfo::protect_relro()` 在 compat 分支调用 `ph
 正文中"需要在链接时添加 `-Wl,-z,max-page-size=16384`"的底层原理是：此 flag 告诉链接器将 ELF 的 `p_align` 设为 16384，使 `min_palign` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
 
 <!-- AIW-源码调研-2026-04-23 -->
+<!-- AIW-源码调研-2026-05-03 -->
+## 源码调研补充：Bionic Linker 16KB Compat Mode 核心常量与 mprotect 修复（2026-05-03）
+
+> 以下内容来自 2026-05-03 源码调研，补充正文未覆盖的 Compat 模式常量定义和 NDK r27 mprotect 修复细节。
+
+### kCompatPageSize 常量与 CompatMapSegment 双路径
+
+AOSP commit ce1c3cf77b8b08d402818dad10b804013f46722f 中新增了 `linker_phdr_16kib_compat.cpp`，定义关键常量：
+
+```cpp
+// bionic/linker/linker_phdr_16kib_compat.cpp, 行 48
+static constexpr size_t kCompatPageSize = 0x1000;  // 4KB
+```
+
+在 `phdr_table_load_segment()` 中根据 `should_use_16kib_app_compat_` 决定调用路径：
+
+```cpp
+if (should_use_16kib_app_compat_) {
+    if (!CompatMapSegment(i, file_length)) {
+        return false;
+    }
+} else {
+    if (!MapSegment(i, file_length)) {
+        return false;
+    }
+}
+```
+
+CompatMapSegment 内部使用 4KB (kCompatPageSize) 对齐映射，而原生 MapSegment 使用 16KB 对齐。
+
+### NDK r27 mprotect 对齐 Bug（GitHub android/ndk#2026）
+
+NDK r27 链接器生成的 ELF 文件 p_align=4096（4KB），在 16KB 页面设备上触发 mprotect 对齐错误：
+
+```
+Crash with WriteProtected mprotect 1 failed: Invalid argument.
+```
+
+mprotect(addr, size, PROT_READ|PROT_WRITE) 的 addr 参数必须页对齐，16KB 设备上 4KB 对齐的地址触发 EINVAL。该 bug 在 AOSP commit ce1c3cf77b8b08d402818dad10b804013f46722f（2024-10-11）中修复，NDK r28 已包含。
+
+### RELRO 保护在 Compat 模式下的差异
+
+Compat 模式使用 `phdr_table_protect_gnu_relro_16kib_compat()` 设置 PROT_READ | PROT_EXEC，而标准 RELRO 使用 PROT_READ：
+
+```cpp
+int phdr_table_protect_gnu_relro_16kib_compat(ElfW(Addr) start, ElfW(Addr) size) {
+    return mprotect(reinterpret_cast<void*>(start), size, PROT_READ | PROT_EXEC);
+}
+```
+
+这反映了对未重新链接的 ELF 的特殊处理逻辑。
+
 ### Google Play 兼容要求
 
 公开文档当前明确的一条时间线是：

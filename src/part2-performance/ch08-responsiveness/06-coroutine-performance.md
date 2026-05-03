@@ -4,7 +4,7 @@ chapter: "8.6"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-22"
+reviewed_date: "2026-05-03"
 reviewed_by: "openclaw-task6"
 reworked_date: "2026-04-06"
 reworked_by: "openclaw-task2b"
@@ -27,8 +27,9 @@ sources:
     path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
 tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
 related_chapters: ["1.5", "7.7", "8.1", "8.2"]
-pipeline_stage: task6_pending
+pipeline_stage: task6_complete
 task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_date: 2026-04-26
@@ -175,7 +176,7 @@ Dispatcher 的选择逻辑如下：
 
 ### withContext 的实际开销
 
-`withContext` 在 Kotlin 协程库中经过了高度优化。在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，很多情况下不会发生真正的线程切换。Kotlin 2.2 进一步优化了 coroutine 调度，减少了上下文切换的额外成本。根据社区的基准测试，在多个并发网络请求场景（5-10 个），Kotlin 2.2 的改进可以将响应聚合时间缩短约 15%。
+`withContext` 在 Kotlin 协程库中经过了高度优化。在 `Dispatchers.Default` 和 `Dispatchers.IO` 之间切换时，由于底层共享线程池，很多情况下不会发生线程切换。Kotlin 2.2 进一步优化了 coroutine 调度，减少了上下文切换的额外成本。根据社区的基准测试，在多个并发网络请求场景（5-10 个），Kotlin 2.2 的改进可以将响应聚合时间缩短约 15%。
 
 [已验证: 官方博客, Kotlin 2.2 release notes / kotlinx.coroutines changelog]
 
@@ -373,7 +374,7 @@ scope.launch {
 }
 ```
 
-这类写法把一次逻辑操作记成 async slice，再把真正不挂起的代码段拆成同步 slice。Perfetto 里看到的等待时间不会被错误地挂到 MainThread 的同步 section 上。API 29 以下如果还要兼容旧设备，可以改用 `androidx.tracing.Trace.beginAsyncSection()` / `endAsyncSection()`。
+这类写法把一次逻辑操作记成 async slice，再把不涉及挂起的代码段拆成同步 slice。Perfetto 里看到的等待时间不会被错误地挂到 MainThread 的同步 section 上。API 29 以下如果还要兼容旧设备，可以改用 `androidx.tracing.Trace.beginAsyncSection()` / `endAsyncSection()`。
 
 [已验证: android.os.Trace API, beginAsyncSection / endAsyncSection; androidx.tracing 文档]
 
@@ -498,7 +499,7 @@ Coroutine 的性能与本书其他章节有紧密联系：
 
 ### 误区 1："suspend 函数就是异步的，不会阻塞"
 
-`suspend` 只是表示"这个函数可以挂起"，并不意味着它不阻塞线程。如果在 `suspend` 函数内部调用了阻塞 API（如 `Thread.sleep`、阻塞 I/O），它仍然会阻塞当前线程。`suspend` 函数只有在正确使用 `withContext` 切换到合适的 Dispatcher 时才能实现真正的非阻塞。
+`suspend` 只是表示"这个函数可以挂起"，并不意味着它不阻塞线程。如果在 `suspend` 函数内部调用了阻塞 API（如 `Thread.sleep`、阻塞 I/O），它仍然会阻塞当前线程。`suspend` 函数只有在正确使用 `withContext` 切换到合适的 Dispatcher 时才能实现非阻塞。
 
 ### 误区 2："Dispatchers.IO 可以处理任何后台任务"
 
