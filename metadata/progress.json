@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-03T13:11:19+08:00",
+  "generated_at": "2026-05-03T16:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -2862,7 +2862,7 @@
       "last_verified_against": "Android multidex docs, Android 16KB page size docs, android.os.ProfilingManager docs, AOSP / Perfetto context",
       "confidence": "medium",
       "pipeline_stage": "ready-to-publish",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -2870,9 +2870,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-28",
+      "task9_reviewed_date": "2026-05-03",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-28T05:29:35+08:00",
+      "last_task9_at": "2026-05-03T16:20:00+08:00",
       "review_round": "4",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
@@ -2886,7 +2886,7 @@
       "polish_count": 1,
       "polish_date": "2026-04-06",
       "polish_by": "task2b-polish",
-      "review_notes": "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。"
+      "review_notes": "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
     },
     "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md": {
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
@@ -2990,31 +2990,31 @@
       "title": "Android 游戏性能与 Game Mode/State API",
       "chapter": "8.9",
       "section": "8.9",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-08",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
       "last_verified": "2026-04-27",
       "last_verified_against": "Android Developers Game SDK Performance Tuner + GameActivity text input docs, AOSP GameManagerService, Perfetto gpu.renderstages proto",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-27",
+      "reviewed_date": "2026-04-28",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-05-03",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T04:40:03+08:00",
+      "last_task9_at": "2026-05-03T16:20:00+08:00",
       "last_task2b_at": "2026-04-27T12:54:09+08:00",
       "notes": "Task2B fixed P95 AGDK link issue and P85 External GPU Render Stages/Headroom issues; returned to Task6 pending.",
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-04-08",
       "gap_source": "官方文档+读者需求+研究素材",
-      "review_notes": "2026-04-27 task6 re-review: pass-light-edit。；2026-04-28 task9 deep-review: needs-rework。P0 1，P1 0，P2 1。"
+      "review_notes": "2026-04-27 task6 re-review: pass-light-edit。；2026-04-28 task9 deep-review: needs-rework。P0 1，P1 0，P2 1。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 1，自动晋升 finalized。；2026-05-03 task9 deep-review: needs-rework。P0 1（Vulkan dynamic rendering/API 名称误写），P1 0，P2 1。"
     },
     "src/part2-performance/ch08-responsiveness/README.md": {
       "path": "src/part2-performance/ch08-responsiveness/README.md"
@@ -7350,6 +7350,31 @@
         }
       },
       "log": "logs/deep-review/2026-05-02-10-deep-review.md"
+    },
+    {
+      "date": "2026-05-03T16:20:00+08:00",
+      "task": "task9-deep-tech-review",
+      "sections_reviewed": [
+        {
+          "section": "8.5",
+          "title": "案例集",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 2,
+          "auto_promoted": true
+        },
+        {
+          "section": "8.9",
+          "title": "Android 游戏性能与 Game Mode/State API",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 1,
+          "auto_promoted": false
+        }
+      ],
+      "log": "logs/deep-review/2026-05-03-16-deep-review.md"
     }
   ],
   "progress": {
@@ -8451,7 +8476,7 @@
       }
     }
   },
-  "last_updated": "2026-05-03T13:11:19+08:00",
+  "last_updated": "2026-05-03T16:20:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -9205,12 +9230,12 @@
   },
   "section_8_9": {
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task6_state": "revisiting",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "task9_result": "needs-rework",
-    "task2b_state": "fixed",
+    "task2b_state": "pending",
     "task2b_result": "fixed",
     "last_task2b_at": "2026-04-27T12:54:09+08:00",
     "path": "src/part2-performance/ch08-responsiveness/09-game-performance.md",
@@ -9219,7 +9244,11 @@
     "section": "8.9",
     "last_verified": "2026-04-27",
     "last_verified_against": "Android Developers Game SDK Performance Tuner + GameActivity text input docs, AOSP GameManagerService, Perfetto gpu.renderstages proto",
-    "notes": "Task2B fixed P95 AGDK link issue and P85 External GPU Render Stages/Headroom issues; returned to Task6 pending."
+    "notes": "Task2B fixed P95 AGDK link issue and P85 External GPU Render Stages/Headroom issues; returned to Task6 pending.",
+    "last_task9_at": "2026-05-03T16:20:00+08:00",
+    "task9_reviewed_date": "2026-05-03",
+    "task9_reviewed_by": "openclaw-task9",
+    "review_notes": "2026-04-27 task6 re-review: pass-light-edit。；2026-04-28 task9 deep-review: needs-rework。P0 1，P1 0，P2 1。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 1，自动晋升 finalized。；2026-05-03 task9 deep-review: needs-rework。P0 1（Vulkan dynamic rendering/API 名称误写），P1 0，P2 1。"
   },
   "section_13_4": {
     "status": "finalized",
@@ -10378,5 +10407,49 @@
       }
     },
     "log": "logs/deep-review/2026-05-03-13-deep-review.md"
+  },
+  "section_8_5": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task9_at": "2026-05-03T16:20:00+08:00",
+    "path": "src/part2-performance/ch08-responsiveness/05-case-studies.md",
+    "title": "案例集",
+    "chapter": "8.5",
+    "section": "8.5",
+    "task9_reviewed_date": "2026-05-03",
+    "task9_reviewed_by": "openclaw-task9",
+    "last_verified": "2026-04-27",
+    "last_verified_against": "Android multidex docs, Android 16KB page size docs, android.os.ProfilingManager docs, AOSP / Perfetto context",
+    "review_notes": "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
+  },
+  "2026-05-03-16-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "8.5",
+      "8.9"
+    ],
+    "files": [
+      "src/part2-performance/ch08-responsiveness/05-case-studies.md",
+      "src/part2-performance/ch08-responsiveness/09-game-performance.md"
+    ],
+    "timestamp": "2026-05-03T16:20:00+08:00",
+    "results": {
+      "8.5": "pass-tech-review",
+      "8.9": "needs-rework"
+    },
+    "auto_finalized": [
+      "8.5"
+    ],
+    "queue_added": [
+      "8.9"
+    ],
+    "suggestions_added": 3,
+    "log": "logs/deep-review/2026-05-03-16-deep-review.md"
   }
 }

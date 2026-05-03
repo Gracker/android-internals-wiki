@@ -830,3 +830,22 @@
 - **问题**：`addRelativeFrameTimeMillis(int)` 的输入单位是整数毫秒，但 AOSP android-16 `RelativeFrameTimeHistogram` 预设 bucket 在 -20ms 到 20ms 附近是 2ms 一档，并非“显式暴露 1ms 精度”的完整统计分辨率。
 - **建议**：改成“输入以 ms 为单位，bucket 近 deadline 区域约 2ms 一档；它统计相对 deadline 的帧时间分布，不直接记录位移采样”。
 - **review 日志**：logs/deep-review/2026-05-03-13-deep-review.md
+
+
+## [Task9 Deep Review] 8.5 案例集 — 2026-05-03
+- **类型**：数据缺失
+- **位置**：L118-L170 Reddit / L249-L263 Disney+ R8 案例
+- **问题**：Reddit 与 Disney+ 指标已经能定位到 Android Developers Blog 原文，但正文仍以“Google Performance Spotlight Week 2025”概称承载数据；读者无法区分 Reddit 的线上发布指标、Google/Reddit 后续 macrobenchmark 分析，以及 Disney+ 的 `proguard-android.txt` → `proguard-android-optimize.txt` 配置迁移口径。
+- **建议**：补原始 URL：`how-reddit-used-the-r8-optimizer-for-high-impact-performance-improvements` 与 `use-r8-to-shrink-optimize-and-fast-track-your-app`；把 Reddit 的线上效果、Baseline/Startup Profile 深挖实验和 Disney+ 配置迁移拆成不同证据层。
+
+## [Task9 Deep Review] 8.5 案例集 — 2026-05-03
+- **类型**：数据缺失
+- **位置**：L370-L373 AutoFDO Android GKI / Pixel 表
+- **问题**：当前表写 App cold start `-2.1%`、Boot `1-2%`，但 AOSP `android16-6.12/gki/aarch64/afdo/README.md` 当前 6.12.69 profile / Pixel 8 口径为 Cold App launch `4.8%`、Boot `1.3%`、Binder-rpc `20.7%`、Hwbinder `26.4%`；`android-mainline` 汇总口径则是 Boot `2-3%`、Cold App launch `3-4%`、Binder-rpc `8-9%`、Hwbinder `12-18%`。现稿混用了旧冷启动数字和最新 HWBinder 数字。
+- **建议**：固定一个口径：要么用 android16-6.12 当前 profile 数字并标注 Pixel 8 / 6.12.69；要么用 android-mainline 汇总范围。不要把不同 profile 日期的数据放在同一行表里。
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-05-03
+- **类型**：知识盲区
+- **位置**：L406 OEM 游戏模式对 Trace 的干扰
+- **问题**：正文仍保留“各主要 OEM 厂商游戏模式的关闭方法列表”占位。该列表直接影响 Game Mode、interventions、ADPF 与 OEM 私有策略的归因实验。
+- **建议**：补 Pixel / Samsung / Xiaomi / OPPO / vivo 的关闭入口或最小核验清单；无法全量覆盖时，至少说明如何确认 OEM 面板、`game_overlay` 和系统省电模式没有污染基线。
