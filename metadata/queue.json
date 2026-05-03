@@ -8081,8 +8081,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T15:13:42.144032+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-09-7.7-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-09-7.7-external-review.md",
+      "completed_at": "2026-05-03T09:43:09.565779",
+      "completed_reason": "P0 Strong Skipping跨模块限制已补充; P1 Pausable Composition断点组合已添加; P1 ComposeView独立渲染上下文/显存警告+ViewCompositionStrategy已补充"
     },
     {
       "section": "7.8",
@@ -9043,7 +9045,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T18:48:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T09:43:09.565779",
+      "completed_reason": "P0 __update_curr锚点已修正为update_curr/calc_delta_fair+Linux内核路径说明; P0 sched_eevdf_entity伪tracepoint已删除,改为基于sched_switch/sched_wakeup的实战Runnable等待观测; P1 SchedTune源码锚点已修正为旧版厂商内核机制说明"
     },
     {
       "section": "18.10",
