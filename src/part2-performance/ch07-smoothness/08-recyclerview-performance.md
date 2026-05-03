@@ -36,15 +36,17 @@ sources:
     path: "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView"
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
-last_task9_at: "2026-04-19T23:59:59+08:00"
+last_task9_at: "2026-05-03T13:11:19+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-19"
+task9_reviewed_date: "2026-05-03"
+review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 2；P1 1；源码/API/数据口径需回炉，已写入 queue.json。"
+
 ---
 
 # 7.8 RecyclerView 列表滑动性能深度优化

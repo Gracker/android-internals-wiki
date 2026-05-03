@@ -809,3 +809,24 @@
 - **问题**：章节已声明数值为案例化示例且多处 `[待验证]`，但锚点要求每个案例包含 Trace 截图/关键数据、修复方案、效果对比。当前缺 trace 文件名、设备/系统版本、刷新率、脚本、采样窗口和前后对照，正式发布时支撑力不足。
 - **建议**：为每个案例补一份最小证据包：Perfetto trace 文件或截图、采集配置、设备/版本/刷新率、复现脚本、核心 SQL/指标、修复前后统计；补不上时将精确 Jank 率和耗时数字降级为“示例口径”。
 - **review 日志**：logs/deep-review/2026-05-03-08-deep-review.md
+
+## [Task9 Deep Review] 7.8 RecyclerView 列表滑动性能深度优化 — 2026-05-03
+- **类型**：API 语义
+- **位置**：L280、L415-L421 `setHasFixedSize(true)`
+- **问题**：`setHasFixedSize(true)` 的语义是 Adapter 内容变化不改变 RecyclerView 自身尺寸，可减少 RecyclerView 级 requestLayout；它不等于 item 内容变化时不重新 measure 子 View，也不能保证动态高度 item 的滚动范围一定正确。
+- **建议**：改为“仅当 RecyclerView 自身尺寸不随 adapter 内容变化时使用；动态高度/内容改变场景要实测 scroll range 与 child measure”。
+- **review 日志**：logs/deep-review/2026-05-03-13-deep-review.md
+
+## [Task9 Deep Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 2026-05-03
+- **类型**：版本差异
+- **位置**：L170-L189 `AnimationUtils.lockAnimationClock()` 代码片段
+- **问题**：正文引用双参数 `lockAnimationClock(vsyncMillis, expectedPresentationTimeNanos)`，但章节适用范围写 API 29-37；旧版本只有单参数/不含 expectedPresentationTimeNanos 的实现形态。核心毫秒截断结论成立，但源码片段需要按版本标注。
+- **建议**：补一句“Android 15/16/main 为双参数；早期版本只锁定 vsyncMillis，`frameTimeNanos / NANOS_PER_MS` 的毫秒截断行为仍是关键点”。
+- **review 日志**：logs/deep-review/2026-05-03-13-deep-review.md
+
+## [Task9 Deep Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 2026-05-03
+- **类型**：API 语义
+- **位置**：L244-L250 RelativeFrameTimeHistogram 精度限制
+- **问题**：`addRelativeFrameTimeMillis(int)` 的输入单位是整数毫秒，但 AOSP android-16 `RelativeFrameTimeHistogram` 预设 bucket 在 -20ms 到 20ms 附近是 2ms 一档，并非“显式暴露 1ms 精度”的完整统计分辨率。
+- **建议**：改成“输入以 ms 为单位，bucket 近 deadline 区域约 2ms 一档；它统计相对 deadline 的帧时间分布，不直接记录位移采样”。
+- **review 日志**：logs/deep-review/2026-05-03-13-deep-review.md
