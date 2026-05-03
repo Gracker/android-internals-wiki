@@ -8599,8 +8599,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
-      "source_file": "2026-04-29-11-10.4-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-10.4-external-review.md",
+      "completed_at": "2026-05-04T01:43:40.498562",
+      "completed_reason": "compactd已在当前版本修正；16KB ZRAM page-cluster=0调优已补充；120Hz GC+kswapd CPU累加效应已添加"
     },
     {
       "section": "10.6",
@@ -8762,11 +8764,13 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-11-11.2-external-review.md",
       "material_paths": [
         "logs/deep-review/2026-05-01-05-deep-review.md"
-      ]
+      ],
+      "completed_at": "2026-05-04T01:43:40.498562",
+      "completed_reason": "FGS onTimeout重启拒绝已强化；WorkManager setPowerEfficiencyHint已补充；GNSS硬件围栏卸载已添加；setAlarmClock()授权判断已拆分"
     },
     {
       "section": "11.3",

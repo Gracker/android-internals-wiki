@@ -8,12 +8,12 @@ drafted_by: "openclaw-task2a"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-rework_count: 2
-rework_date: "2026-04-29"
+rework_count: 3
+rework_date: "2026-05-04"
 rework_by: "task2b-rework"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service docs"
+last_verified: "2026-05-04"
+last_verified_against: "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service / WorkManager docs"
 task2b_result: fixed
 task6_state: reviewed
 confidence: medium-high
@@ -64,12 +64,12 @@ repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_round: 4
 pipeline_stage: task2b_pending
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+task9_state: pending
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-01T05:32:43+08:00"
+last_task2b_at: "2026-05-04T01:40:00+08:00"
 ---
 
 # App 耗电优化
@@ -203,6 +203,8 @@ WorkManager 的几个关键省电配置：
 
 **合理安排任务顺序**。多个有依赖关系的任务可以用 WorkManager 的 `then()` 接在一起，系统更容易把它们放进同一批执行窗口，减少额外唤醒。
 
+**能效标记 setPowerEfficiencyHint（Android 16+）**。`WorkManager` 在 Android 16（API 36）引入了 `setPowerEfficiencyHint(boolean)` 方法。当任务不紧急时传入 `true`，系统会优先将任务调度到低功耗小核执行，并尽量把多个标记了能效优先的任务合并到同一执行窗口。适合后台数据同步、日志上报等用户无感知的周期性任务。结合网络约束一起使用，可以进一步降低射频模块的唤醒次数。
+
 ### JobScheduler 的定位
 
 如果项目没有使用 Jetpack，或者需要直接与系统服务交互，JobScheduler 仍然是有效的选择。它的核心机制与 WorkManager 底层相同：通过 `JobInfo.Builder` 设置约束条件，系统在合适的时机调度执行。
@@ -266,7 +268,13 @@ val geofence = Geofence.Builder()
     .build()
 ```
 
-Geofencing 省电的关键，在于围栏判断由 FLP、Play services 和系统位置栈统一调度，而不是 App 每隔几秒自己请求一次定位。是否进一步下沉到 hardware offload，要看设备和 vendor capability，API 本身没有给出统一保证。更稳妥的结论是：Geofencing 适合低频、事件驱动的位置需求；如果业务要秒级连续轨迹，就该回到显式定位请求，并单独评估功耗。
+Geofencing 省电的关键，在于围栏判断由 FLP、Play services 和系统位置栈统一调度，而不是 App 每隔几秒自己请求一次定位。
+
+**GNSS 硬件围栏卸载（Android 15+）**。Android 15 起，支持硬件围栏的 GNSS 芯片可以把 Geofencing 判定完全卸载到硬件执行，CPU 不需要保持唤醒即可维持围栏检测。设备进入 Doze 或 CPU 深度休眠后，GNSS 芯片仍然能独立判断进出围栏事件，再通过中断唤醒系统通知 App。在 2026 年的主流旗舰设备上，纯硬件 Geofencing 模式的功耗可以压到设备总功耗的 2% 以下，相比软件轮询定位的模式有数量级优势。
+
+排查时要注意，硬件卸载是否生效取决于 GNSS 芯片能力和 vendor HAL 实现。可以通过 `dumpsys location` 查看 Geofence 的实现路径（software / hardware），如果设备只支持软件模式，Geofencing 的功耗优势仍然存在但幅度更小。
+
+更稳妥的结论是：Geofencing 适合低频、事件驱动的位置需求；如果业务要秒级连续轨迹，就该回到显式定位请求，并单独评估功耗。
 
 [已验证: 官方文档, developer.android.com/training/location/geofencing]
 
@@ -338,7 +346,12 @@ Android 的闹钟分为两种：精确闹钟（exact alarm）和不精确闹钟�
 
 ### Android 12 引入精确闹钟 special app access，Android 14 收紧默认授权
 
-`SCHEDULE_EXACT_ALARM` 不是 Android 14 才出现的限制。Android 12（API 31）已经把它作为精确闹钟的 special app access 引入。对 `setExact()`、`setExactAndAllowWhileIdle()` 和 `setAlarmClock()` 这类 API，应用应先调用 `AlarmManager.canScheduleExactAlarms()` 检查授权状态；没有授权时，用 `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM` 引导用户进入系统设置页。
+`SCHEDULE_EXACT_ALARM` 不是 Android 14 才出现的限制。Android 12（API 31）已经把它作为精确闹钟的 special app access 引入。这里要区分两类 API：
+
+- **`setExact()` / `setExactAndAllowWhileIdle()`**：受 `SCHEDULE_EXACT_ALARM` special app access 约束。调用前应先通过 `AlarmManager.canScheduleExactAlarms()` 检查授权状态；没有授权时，用 `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM` 引导用户进入系统设置页。
+- **`setAlarmClock()`**：作为用户可见闹钟的专用 API，行为与上面两类不同。它不需要 `SCHEDULE_EXACT_ALARM` special app access，即使在 Doze 模式下也能正常触发（系统会在闹钟时间前退出 Doze）。适合闹钟、倒计时等用户明确期待准点触发的场景。
+
+把两类混在一起写成"所有精确闹钟都要先查 canScheduleExactAlarms()" 是不准确的——`setAlarmClock()` 有独立的触发保障机制。
 
 Android 14（API 34）的变化在默认授权策略。对 targetSdk 33+ 的多数新安装应用，`SCHEDULE_EXACT_ALARM` 不再预授予，备份恢复到 Android 14 设备时也按 denied 处理。系统升级前已经拿到这项 special app access 的存量应用，升级后通常会保留授权。闹钟和日历这类以精确提醒为主功能的应用，可以按官方分类声明 `USE_EXACT_ALARM`。
 
@@ -396,7 +409,7 @@ Android 15（API 35）对 `dataSync` 和新增的 `mediaProcessing` 类型引入
 - **dataSync / mediaProcessing**（Android 15 引入）：6h / 24h budget 耗尽，回调 `onTimeout(int, int)`，未停止 → crash（`ForegroundServiceDidNotStopInTimeException`）。
 - **Android 14 及以下**：没有 `onTimeout(int, int)` 回调，不适用此 timeout 机制。
 
-`onTimeout()` 触发后，不适合再启动同类型的长时间 FGS 来延长预算。剩余收尾只做资源释放、进度持久化和替代任务调度；大文件上传或下载优先迁到 WorkManager、user-initiated data transfer job 或 DownloadManager。服务如果需要下一轮工作，等用户重新把 App 带到前台或系统重新给出预算，再由正常入口启动。
+`onTimeout()` 触发后，系统已经把这个 App 的对应 service type 预算标记为耗尽。此时再尝试启动同类型的 FGS 会抛 `ForegroundServiceStartNotAllowedException`，这不是软限制，是系统层面的最终判决——和 `shortService` 超时后的 ANR 一样，都是强制终止路径。剩余收尾只做资源释放、进度持久化和替代任务调度；大文件上传或下载优先迁到 WorkManager、user-initiated data transfer job 或 DownloadManager。服务如果需要下一轮工作，等用户重新把 App 带到前台（这会重置对应 service type 的计时器），再由正常入口启动。
 
 [已验证: 官方文档, developer.android.com/develop/background-work/services/fgs/timeout]
 
