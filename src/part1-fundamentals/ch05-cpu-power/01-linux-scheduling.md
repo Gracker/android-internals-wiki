@@ -99,7 +99,7 @@ delta_vruntime = delta_exec × (NICE_0_LOAD / weight)
 - **权重越高的进程**（nice 值越低），vruntime 增长越慢，越容易被再次选中运行——它获得了更多的 CPU 份额
 - **权重越低的进程**（nice 值越高），vruntime 增长越快，更容易被调度器换下 CPU
 
-[已验证: AOSP android-16.0.0_r1, kernel/sched/fair.c, __update_curr()]
+[已验证: Linux v6.6 kernel/sched/fair.c, update_curr() / calc_delta_fair()；注：AOSP platform tag 不包含内核源码，内核路径应以 Linux 或 Android common kernel 分支为准]
 
 ### 红黑树：O(log N) 的调度队列
 
@@ -445,21 +445,24 @@ CFS 的调度标准只有一个维度——vruntime 谁最小，不区分任务�
 
 ### vlag 的量化诊断（EEVDF 内核 6.6+）
 
-EEVDF 调度器中每个任务维护一个 vlag（virtual lag）值，表示该任务"被欠"或"透支"了多少 CPU 时间。在 Perfetto 中，如果内核 6.6+ 启用了 `sched_eevdf_entity` ftrace 事件，可以直接读取每个任务的 vlag 字段来量化调度公平性。
+EEVDF 调度器中每个任务维护一个 vlag（virtual lag）值，表示该任务"被欠"或"透支"了多少 CPU 时间。vlag > 0 表示任务还没用完公平份额（系统"欠"它 CPU 时间），vlag < 0 表示任务已经超支。vlag 的绝对值越大，说明该任务的调度时机越偏离理想状态。
 
-vlag > 0 表示任务还没用完公平份额（系统"欠"它 CPU 时间），vlag < 0 表示任务已经超支。vlag 的绝对值越大，说明该任务的调度时机越偏离理想状态。实战中可以用这个指标识别调度不公：
+需要注意的是，vlag 是 EEVDF 调度器的内部字段，Linux v6.6 / v6.12 的 `include/trace/events/sched.h` 中并没有暴露 `sched_eevdf_entity` 之类的 ftrace 事件。默认 trace 不提供 vlag 的直接读取入口。实战中要量化调度公平性，仍然应该基于已有的 `sched_switch`、`sched_wakeup`、`thread_state` 轨道来观察 Runnable 等待时间：
 
-- 如果主线程在关键路径（如 `doFrame`）期间 vlag 持续为负且绝对值大，说明它被其他任务"抢"了太多 CPU 时间
-- 如果后台线程 vlag 持续为正，说明它在大量占用 CPU 份额
+- 如果主线程在关键路径（如 `doFrame`）期间 Runnable 等待时间持续偏长，说明它被其他任务"抢"了太多 CPU 时间
+- 如果后台线程几乎不等待，说明它在大量占用 CPU 份额
+
+如果确实需要读取 vlag，需要通过 vendor tracepoint、BPF 程序或 kprobe 自行采集，这不是 Perfetto 默认支持的数据源。
 
 ```sql
--- EEVDF 内核下观察任务的 vlag 分布（需要启用 sched_eevdf_entity 事件）
--- 替换 '目标进程名' 和 '目标线程名'
+-- 观察 Runnable 等待时间分布（替代 vlag 的实战方法）
+-- 替换 '目标线程名'
 SELECT
   ts,
-  vlag / 1e6 AS vlag_ms
-FROM sched_eevdf_entity
+  dur / 1e6 AS runnable_ms
+FROM thread_state
 WHERE thread_name = '目标线程名'
+  AND state = 'R'
 ORDER BY ts
 LIMIT 100;
 ```
@@ -549,7 +552,7 @@ cat /dev/stune/top-app/schedtune.boost
 # 输出: 20
 ```
 
-[已验证: AOSP android-16.0.0_r1, kernel/sched/tune.c（厂商内核可能路径不同）]
+[注：SchedTune 不在主线 Linux 内核中，也不存在于 Android common kernel 6.1/6.6/6.12。它属于旧版厂商内核（Android 11 及更早）的专有机制。Android 12+ / GKI 设备的主路径已转向 UClamp + cpu controller。下文 SchedTune 描述适用于仍在维护旧版厂商内核的场景，或需要理解历史 boost 机制的读者。厂商内核中的实现路径可能为 `kernel/sched/tune.c` 或 `/dev/stune` cgroup 接口]
 
 boost 的效果体现在两个层面：
 
