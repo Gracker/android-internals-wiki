@@ -353,6 +353,85 @@ Firebase Performance 最大的优点，是上手快。
 
 这个顺序不够激进，但更容易推行。
 
+
+
+<!-- AIW-源码调研-2026-05-03 -->
+## 源码调研补充：AppExitInfoTracker 系统实现与 KOOM fork dump 机制
+
+> 本节补充内容基于 AOSP 源码（AppExitInfoTracker.java）和 KOOM GitHub 仓库源码研究。
+
+### AppExitInfoTracker 系统实现（源码级）
+
+`AppExitInfoTracker` 是 `ActivityManagerService` 内部的进程退出信息追踪组件，位于 `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`。
+
+**核心职责**：记录所有进程退出事件（含 Zygote 子进程 fork/exit、LMKD low-memory kill、ANR 等），持久化到 Proto 文件，支持 `ActivityManager.getHistoricalProcessExitReasons()` 查询。
+
+**关键设计**：
+- 持久化路径：`/data/system/proc_exit_store/proc_exit_info`（Proto 格式）
+- 持久化周期：30 分钟（`APP_EXIT_INFO_PERSIST_INTERVAL`）
+- 支持最多 8 条历史记录 per（package, UID）组合
+- Zygote 和 LMKD 作为两个独立外部来源，标记 `REASON_LOW_MEMORY` / `REASON_SIGNALED` 等
+
+**关键字段**（`ApplicationExitInfo`）：
+| 方法 | 含义 |
+|------|------|
+| `getReason()` | 退出原因：REASON_OTHER / REASON_LOW_MEMORY / REASON_SIGNALED / REASON_VETOED / ... |
+| `getStatus()` | 依赖 reason 的扩展状态码（如 `REASON_EXCESSIVE_RESOURCE_USAGE` 时含 WIFEXITED 等） |
+| `getImportance()` | 退出时进程优先级 |
+| `getPss() / getRss()` | 内存占用（KB） |
+| `getTraceFile()` | 关联的 ANR trace 文件路径（.gz 压缩） |
+| `getTimestamp()` | 退出时间戳 |
+
+**触发链**：
+```
+AMS.killProcess() / Zygote SIGCHLD
+  → scheduleNoteProcessDied()
+  → MSG_PROC_DIED (KillHandler)
+    → handleNoteProcessDiedLocked()
+      → AppExitInfoTracker.handleNoteProcessDiedLocked()
+        → 合并 Zygote/LMKD 来源的额外信息
+        → addExitInfoLocked() / updateExistingExitInfoRecordLocked()
+        → scheduleLogToStatsd()
+```
+
+### KOOM fork 子进程 dump Hprof 机制（源码级）
+
+KOOM（快手）解决传统 hprof dump 阻塞主进程 20 秒的核心思路：
+
+**传统方案问题**：`Debug.dumpHprofData()` 在主进程执行，整个 App 卡死约 20 秒。
+
+**KOOM 解决方案**：
+```
+主进程 Suspend ART VM → fork() → 主进程 Resume ART VM → 子进程独立 dump
+```
+
+**主进程实际阻塞：< 20ms**。子进程在后台完成 dump + strip + 分析。
+
+**关键 API 链**（`koom-java-leak` 模块）：
+```kotlin
+OOMMonitor.startLoop(loopInterval)
+  → dumpAndAnalysis()
+    → ForkStripHeapDumper.getInstance().dump(path)
+      // JNI 层：
+      // 1. art::Dbg::SuspendVM()
+      // 2. fork() 创建子进程
+      // 3. art::Dbg::ResumeVM()
+      // 4. 子进程：hprof 写入 → strip 裁剪 → 上报
+```
+
+**文件裁剪与补全**：KOOM 在子进程中对 hprof 进行裁剪以减小体积（约 50-70% 减小），使用 `koom-fill-crop.jar` 在 PC 端补全被裁剪的 STRING/CLASS/PROXY DUMP 段，使文件可被 AS Profiler / MAT 解析。
+
+**泄漏判定规则**：
+- Activity：`mFinished || mDestroyed == true` 且存在到 GC Root 的引用链
+- Fragment：`mFragmentManager == null && mCalled == true`（生命周期回调已完成）
+
+**版本支持**：minSdk 21，armeabi-v7a / arm64-v8a / x86 / x86-64，支持 `c++_shared` 或 `c++_static` 两种链接模式。
+
+**数据来源**：
+- `AppExitInfoTracker` 源码：AOSP `frameworks/base/services/core/java/com/android/server/am/AppExitInfoTracker.java`（约 2100 行）
+- KOOM 源码：`github.com/KwaiAppTeam/KOOM`（Apache 2.0）
+<!-- AIW-源码调研-2026-05-03 -->
+
 ## 这一章在全书里的位置
 
 这一章把工具能力放回治理体系里看：

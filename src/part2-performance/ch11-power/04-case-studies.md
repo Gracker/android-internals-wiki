@@ -12,7 +12,7 @@ confidence: medium-high
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-22"
+reviewed_date: "2026-05-03"
 reviewed_by: "openclaw-task6"
 sources:
   - type: aosp
@@ -32,7 +32,6 @@ sources:
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
 pipeline_stage: task6_pending
-task6_state: revisiting
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -239,7 +238,7 @@ public class SyncService extends Service {
 
 GPS 持续请求的定位（Location Updates）是一种典型的"忘了关"问题。分析路径是：
 
-1. 确认 GPS 确实在持续工作（通过 Battery Historian 和状态栏图标）
+1. 确认 GPS 在持续工作（通过 Battery Historian 和状态栏图标）
 2. 查看是哪个 App 在请求位置
 3. 定位到代码中请求/移除位置更新的配对问题
 
@@ -629,7 +628,7 @@ adb shell dumpsys alarm | grep -E "RTC_WAKEUP|ELAPSED_WAKEUP" | grep -v "android
 
 这个案例比较隐蔽。某工具类 App 使用了 JobScheduler 来执行后台数据清理任务（正确地选择了 JobScheduler 而不是 AlarmManager），但用户仍然反馈后台功耗偏高。
 
-Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超过 2 小时的 WakeLock），但待机功耗确实比同类 App 高。问题出在哪里？
+Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超过 2 小时的 WakeLock），但待机功耗比同类 App 高。问题出在哪里？
 
 ### 分析思路
 
@@ -763,7 +762,7 @@ Android 的位置服务是系统级的。App 可以在后台请求位置更新�
 
 ### 误区五："Doze 模式会自动解决所有后台功耗问题"
 
-Doze 模式确实会大幅限制后台活动，但它只在"设备静止不动、屏幕关闭、未充电"时才生效。如果用户把手机放在桌上但没关屏，或者在口袋里走来走去（运动传感器检测到移动），Doze 不会进入最深层次。此外，前台服务绑定的 App 在 Doze 期间不受网络限制。
+Doze 模式会大幅限制后台活动，但它只在"设备静止不动、屏幕关闭、未充电"时才生效。如果用户把手机放在桌上但没关屏，或者在口袋里走来走去（运动传感器检测到移动），Doze 不会进入最深层次。此外，前台服务绑定的 App 在 Doze 期间不受网络限制。
 
 ---
 
