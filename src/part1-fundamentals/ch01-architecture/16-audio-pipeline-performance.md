@@ -31,16 +31,17 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-22T23:53:44+08:00"
-task9_reviewed_date: '2026-04-23'
+task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-23T04:05:49+08:00'
+last_task9_at: "2026-05-04T04:33:00+08:00"
 section: "1.16"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
