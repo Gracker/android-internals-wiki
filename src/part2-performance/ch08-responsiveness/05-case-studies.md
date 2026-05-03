@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "8.5"
 section: "8.5"
-status: ready-for-review
+status: "finalized"
 drafted_date: "2026-04-02"
 reviewed_date: "2026-04-27"
 rework_date: "2026-05-03"
@@ -34,22 +34,22 @@ sources:
     path: "性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md"
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
-pipeline_stage: task6_pending
+pipeline_stage: "ready-to-publish"
 task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: pending
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
-task9_result: pending
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-28"
-last_task9_at: "2026-04-28T05:29:35+08:00"
+task9_result: "pass-tech-review"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-03"
+last_task9_at: "2026-05-03T16:20:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T19:10:48+08:00"
 updated_by: "openclaw-task2b"
 updated_date: "2026-04-27"
-review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。"
+review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
 ---
 
 # 案例集
