@@ -893,3 +893,9 @@
 - **位置**：L267-L277 ZRAM 压缩比、swappiness 与 16KB page-cluster
 - **问题**：正文给出 LZ4 典型 3:1 压缩比、Android 设备 swappiness 10-30 更适合、16KB page-cluster=0 可让 App 切换更快等判断，但没有给出设备配置、内核版本、算法、工作负载或 trace/benchmark 条件。
 - **建议**：补一组可复核证据：`/sys/block/zram0/mm_stat`、`/proc/swaps`、`/proc/sys/vm/page-cluster`、页大小、压缩算法、App 切换 trace 或厂商公开数据；无法补证据时把数字改成示例而非通用结论。
+
+## [Task9 Deep Review] 9.3 ANR 分析方法 — 2026-05-04
+- **类型**：可复现性/工具配置
+- **位置**：L183-L192 Perfetto 抓取与 `am_anr` 定位
+- **问题**：正文建议在 Perfetto 搜索 `am_anr`，但没有说明 trace config 必须采集 EventLog/logcat 或 `am` atrace。只抓 sched/binder/input/view 等数据源时，Perfetto 中可能没有 `am_anr` 事件。
+- **建议**：补最小抓取配置；或说明 fallback：从 bugreport / `logcat -b events` 定位 `am_anr` 时间，再跳回 Perfetto 分析主线程、binder 与调度状态。

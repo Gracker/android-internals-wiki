@@ -576,9 +576,10 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "'2026-04-23'",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "'2026-04-23T04:05:49+08:00'"
+      "last_task9_at": "2026-05-04T04:33:00+08:00",
+      "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。"
     },
     "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md": {
       "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
@@ -3097,10 +3098,11 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-26",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T14:36:59+08:00",
-      "review_round": "2"
+      "last_task9_at": "2026-05-04T04:33:00+08:00",
+      "review_round": "2",
+      "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
     },
     "src/part2-performance/ch09-anr/04-special-anr.md": {
       "path": "src/part2-performance/ch09-anr/04-special-anr.md",
@@ -3877,20 +3879,21 @@
       "title": "SurfaceControl API 深入",
       "chapter": "18.10",
       "section": "18.10",
-      "status": "finalized",
+      "status": "ready-for-review",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-24",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-24T14:40:03+08:00"
+      "last_task9_at": "2026-05-04T04:33:00+08:00",
+      "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0。"
     },
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
@@ -7402,6 +7405,36 @@
           "issues": 5
         }
       ]
+    },
+    {
+      "date": "2026-05-04",
+      "task": "task9-deep-tech-review",
+      "sections_reviewed": [
+        {
+          "section": "1.16",
+          "title": "Audio Pipeline 延迟与性能",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 1,
+          "p2": 0
+        },
+        {
+          "section": "9.3",
+          "title": "ANR 分析方法",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 1,
+          "p2": 1
+        },
+        {
+          "section": "18.10",
+          "title": "SurfaceControl API 深入",
+          "result": "needs-rework",
+          "p0": 2,
+          "p1": 0,
+          "p2": 0
+        }
+      ]
     }
   ],
   "progress": {
@@ -8504,7 +8537,7 @@
       }
     }
   },
-  "last_updated": "2026-05-03T22:20:00+08:00",
+  "last_updated": "2026-05-04T04:33:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10503,11 +10536,18 @@
     "section": "9.3",
     "title": "ANR 分析方法",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
+    "pipeline_stage": "task2b_pending",
     "task2b_result": "fixed",
     "task9_result": "needs-rework",
     "last_updated": "2026-05-04T00:54:34.380903",
-    "rework_reason": "P95 external review: SIGQUIT诊断可信度版本区分/android.anr track修正/frontmatter版本号"
+    "rework_reason": "P95 external review: SIGQUIT诊断可信度版本区分/android.anr track修正/frontmatter版本号",
+    "path": "src/part2-performance/ch09-anr/03-anr-analysis.md",
+    "task9_state": "reviewed",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-05-04T04:33:00+08:00",
+    "task9_reviewed_date": "2026-05-04",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
   },
   "9.4": {
     "section": "9.4",
@@ -10536,12 +10576,64 @@
     "section": "18.10",
     "title": "SurfaceControl API 深入",
     "status": "ready-for-review",
-    "pipeline_stage": "task6_pending",
-    "task2b_state": "fixed",
+    "pipeline_stage": "task2b_pending",
+    "task2b_state": "pending",
     "task2b_result": "fixed",
     "task6_state": "revisiting",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "last_task2b_at": "2026-05-04",
-    "created_by": "rendering-pipelines-merge"
+    "created_by": "rendering-pipelines-merge",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-04T04:33:00+08:00",
+    "task9_reviewed_date": "2026-05-04",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0。"
+  },
+  "2026-05-04-04-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "1.16",
+      "9.3",
+      "18.10"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+      "src/part2-performance/ch09-anr/03-anr-analysis.md",
+      "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md"
+    ],
+    "timestamp": "2026-05-04T04:33:00+08:00",
+    "results": {
+      "1.16": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 1,
+        "p2": 0
+      },
+      "9.3": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 1
+      },
+      "18.10": {
+        "result": "needs-rework",
+        "p0": 2,
+        "p1": 0,
+        "p2": 0
+      }
+    },
+    "auto_finalized": [],
+    "queue_added": [
+      "1.16",
+      "9.3",
+      "18.10"
+    ],
+    "suggestions_added": [
+      "9.3"
+    ],
+    "research_gaps_added": [
+      "1.16"
+    ],
+    "log": "logs/deep-review/2026-05-04-04-deep-review.md"
   }
 }

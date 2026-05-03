@@ -11300,6 +11300,85 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T02:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.16",
+      "section_title": "Audio Pipeline 延迟与性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.16 Audio Pipeline 延迟与性能 存在 P0/P1 技术问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-04-deep-review.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "线程模型/API语义错误",
+          "location": "L459-L460 游戏音频最佳实践（回调模式 / 音频回调线程）",
+          "detail": "正文写“回调模式由 AudioFlinger 在需要数据时主动拉取”，并进一步写“音频回调运行在 AudioFlinger 的高优先级线程上”。App 回调代码不应被描述为运行在 audioserver/AudioFlinger 线程内；AAudio/Oboe 的 data callback 在应用进程侧的回调线程执行，系统可提高该线程调度优先级，AudioFlinger/AAudioService 通过共享内存、timing model 与唤醒机制消费数据。当前写法会误导进程隔离、锁等待、文件 I/O 和崩溃影响面的判断。",
+          "suggestion": "改成“使用 AAudio/Oboe data callback 可减少 app 侧主动阻塞 write 带来的调度不确定性；callback 运行在应用进程的高优先级音频线程中，必须避免锁、I/O、分配和重计算”。不要写成 AudioFlinger 线程执行应用回调。",
+          "severity": "P0"
+        },
+        {
+          "type": "版本差异/数据支撑不足",
+          "location": "L237-L243 / L372 / L418 AAudio Power Saving Offloaded",
+          "detail": "正文把 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 写成 Android 16 已确定引入，并断言“音频解码工作完全交给 DSP”“实测功耗可降低约 75%”；同一段落又保留“最终 API 入口、最小 API level、支持格式范围待验证”。本轮复核本地 NDK r29 `aaudio/AAudio.h` 只说明该模式会走 offloaded audio path、可向 hardware buffer 写入数秒数据、让 framework data pipe 暂停并允许 CPU sleep；它不能支撑 75% 量化收益，也不足以把所有 payload 写成“解码完全交给 DSP”。",
+          "suggestion": "先把结论收窄为“请求省电型 offloaded output path，最终模式需用 `AAudioStream_getPerformanceMode()` / `dumpsys audio` / output profile 验证”。补 Android 16/17 API 文档、支持格式矩阵、设备能力与功耗测试条件后，再保留具体版本和 75% 数字。",
+          "severity": "P1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T04:33:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "9.3",
+      "section_title": "ANR 分析方法",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 9.3 ANR 分析方法 存在 P1 技术问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-04-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据缺失/诊断边界",
+          "location": "L143-L145 Android 14+ traces.txt 可信度“90% 以上”与 2 秒阈值",
+          "detail": "正文把 Android 14+ 的主线程堆栈可信度写成“90% 以上”，并给出“dumpStackTraces 与 ANR 触发时间差超过 2 秒才警惕”的硬阈值。AOSP android-16.0.0_r1 `AnrLatencyTracker` 可验证的是 `anrRecordPlacedOnQueue`、`anrProcessingStarted`、`dumpStackTracesStarted/Ended` 等 Perfetto/StatsLog 计时点；源码本身不提供 90% 可信度或 2 秒通用阈值。当前写法把可观测时延指标升级成未经证明的诊断概率。",
+          "suggestion": "删除“90% 以上”或补内部样本统计。把 2 秒改成经验阈值并绑定证据：列出应读取的 AnrLatencyTracker slice/StatsLog 字段、ANR trigger time、firstPids dump start/end 与 bugreport 时间线；在系统高负载、多进程 dump、目标进程已恢复时仍要降级 traces.txt 结论。",
+          "severity": "P1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T04:33:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "18.10",
+      "section_title": "SurfaceControl API 深入",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 18.10 SurfaceControl API 深入 存在 P0/P1 技术问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-04-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "NDK API 幻觉/源码错误",
+          "location": "L90 / L270-L276 `ASurfaceControl_fromJava()`",
+          "detail": "正文把 `ASurfaceControl_fromJava()` 写成 API 35+ 可用，并给出 JNI 示例。本轮复核 AOSP android-16.0.0_r1 与 main 的 `frameworks/native/include/android/surface_control.h`、本地 NDK r29 `android/surface_control.h`，均未发现 `ASurfaceControl_fromJava` 符号。该示例无法编译，且会误导读者以为 NDK 可直接从 Java `SurfaceControl` 转句柄。",
+          "suggestion": "删除 `ASurfaceControl_fromJava()` 路径与示例。保留可复核路径：`Surface` → `ANativeWindow_fromSurface()` → `ASurfaceControl_createFromWindow()`，或在 Java 层使用 `SurfaceControl.Transaction` 完成对应操作；若未来平台新增桥接 API，需补真实头文件签名和 API level。",
+          "severity": "P0"
+        },
+        {
+          "type": "NDK API 幻觉/跨进程能力边界错误",
+          "location": "L263-L270 `ASurfaceControl_writeToParcel()` / `ASurfaceControl_readFromParcel()`",
+          "detail": "正文声称 Android 15+ NDK 公开 `ASurfaceControl_writeToParcel()` / `ASurfaceControl_readFromParcel()`，可实现全 C++ 跨进程图层迁移。本轮复核 AOSP android-16.0.0_r1/main 与本地 NDK r29 `surface_control.h` 均未找到这两个函数。NDK 当前不能按正文示例直接 parcel `ASurfaceControl*`。",
+          "suggestion": "删除全 C++ Parceling 结论与代码。跨进程场景按 Java `android.view.SurfaceControl` Parcelable、WindowManager/Shell 托管或系统服务转交来讲，并标清普通应用可用性、权限边界和版本。",
+          "severity": "P0"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T04:33:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

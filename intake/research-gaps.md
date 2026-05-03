@@ -12493,3 +12493,19 @@ Android 17 / ART generational CMC 对 WeakReference、ReferenceQueue 入队时�
 
 ### 关联章节
 11.2, 5.6, 11.1
+
+## [2026-05-04] 1.16 Audio Pipeline 延迟与性能 — AAudio Power Saving Offloaded 边界
+
+### 盲区描述
+章节已写入 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`，但 API level、支持格式、设备覆盖、是否等价于 DSP 解码，以及 75% 功耗收益缺少可复核来源。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 16/17 `aaudio/AAudio.h`、developer.android.com NDK Audio reference 与 API diff，确认 enum 引入版本和公开文档语义。
+- 对照 `dumpsys audio` / output profile / `AAudioStream_getPerformanceMode()`，确认 offloaded path 的实际选路与回退条件。
+- 如保留功耗数字，补设备型号、音频格式、播放时长、AP sleep 时间、功耗采样方法和对照组。
+
+### 关联章节
+1.16、5.6、16.5
