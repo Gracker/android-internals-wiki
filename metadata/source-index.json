@@ -2604,6 +2604,136 @@
       "source": "incremental-scan",
       "date": "2026-05-02",
       "scored_at": "2026-05-03T05:47:28.027480"
+    },
+    {
+      "title": "Perfetto查看CPU 频率部分指导",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md",
+      "keywords": [
+        "Perfetto",
+        "CPU频率",
+        "Linux",
+        "Android",
+        "电源管理"
+      ],
+      "score": 19,
+      "relevance": "high",
+      "chapters": [
+        "ch13"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982667"
+    },
+    {
+      "title": "BufferQueue 堵塞与 Perfetto 特征识别",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-jank-perfetto.md",
+      "keywords": [
+        "BufferQueue",
+        "dequeueBuffer",
+        "SurfaceFlinger",
+        "渲染",
+        "Jank",
+        "Perfetto"
+      ],
+      "score": 20,
+      "relevance": "high",
+      "chapters": [
+        "ch02",
+        "ch07"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982677"
+    },
+    {
+      "title": "Input 事件分发全流程 — stale-event 判定",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-input-dispatcher-stale-event-versions.md",
+      "keywords": [
+        "InputDispatcher",
+        "stale-event",
+        "ANR",
+        "Input系统",
+        "WindowInfosListener"
+      ],
+      "score": 20,
+      "relevance": "high",
+      "chapters": [
+        "ch03",
+        "ch09"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982679"
+    },
+    {
+      "title": "sched_ext 在 Android OEM 的落地实况",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md",
+      "keywords": [
+        "sched_ext",
+        "BPF",
+        "CPU调度器",
+        "OEM",
+        "Linux 6.12"
+      ],
+      "score": 20,
+      "relevance": "high",
+      "chapters": [
+        "ch05"
+      ],
+      "date": "2026-05-04",
+      "scored_at": "2026-05-04T05:49:21.982680"
+    },
+    {
+      "title": "BufferQueue dequeueBuffer 阻塞机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md",
+      "keywords": [
+        "BufferQueue",
+        "dequeueBuffer",
+        "GraphicBuffer",
+        "同步",
+        "ANDROID 14"
+      ],
+      "score": 19,
+      "relevance": "high",
+      "chapters": [
+        "ch02"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982682"
+    },
+    {
+      "title": "WOOTdroid: Whole-system Online On-device Tracing",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2026-05-03-WOOTdroid/03-精读.md",
+      "keywords": [
+        "eBPF",
+        "ftrace",
+        "Binder",
+        "系统调用追踪",
+        "Android安全"
+      ],
+      "score": 19,
+      "relevance": "high",
+      "chapters": [
+        "ch13",
+        "ch15"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982683"
+    },
+    {
+      "title": "AppExitInfoTracker 与 KOOM fork dump Hprof",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md",
+      "keywords": [
+        "AppExitInfoTracker",
+        "KOOM",
+        "Hprof",
+        "ART VM",
+        "进程退出追踪"
+      ],
+      "score": 20,
+      "relevance": "high",
+      "chapters": [
+        "ch15"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982684"
     }
   ]
 }

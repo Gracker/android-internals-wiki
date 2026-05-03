@@ -74,6 +74,92 @@ sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开
 
 在 Android 17 的讨论里，sched_ext 的边界要单独写清。`android16-6.12/kernel/sched/ext/` 是可核验的源码锚点；这项能力提供给 OEM 和系统开发者做实验或定制，Google 官方构建仍以 fair scheduler / EEVDF 为主。若某个 ROM 启用了自定义 sched_ext 调度器并出现性能回退，排查方向是确认 sched_ext tracepoint 是否存在，再检查对应 BPF 调度器的行为。
 
+### sched_ext 源码级结构与 OEM 落地现状（2026-05-04 补充）
+
+以下内容基于一手源码验证（Linux 6.12 mainline + OnePlus SM8750 开源模块）。
+
+#### 核心数据结构：`struct sched_ext_ops`
+
+`kernel/sched/ext_internal.h` 定义了 BPF 调度器的入口表，所有调度回调均通过此结构注册：
+
+```c
+// kernel/sched/ext_internal.h, 行 248-298（简化）
+struct sched_ext_ops {
+    s32 (*select_cpu)(struct task_struct *p, s32 prev_cpu, u64 wake_flags);
+    void (*enqueue)(struct task_struct *p, u64 enq_flags);
+    void (*dequeue)(struct task_struct *p, u64 deq_flags);
+    void (*dispatch)(s32 cpu, struct task_struct *prev);
+    void (*tick)(struct task_struct *p);
+    void (*runnable)(struct task_struct *p, u64 enq_flags);
+    void (*running)(struct task_struct *p);
+    void (*stopping)(struct task_struct *p, bool runnable);
+    // ... 还有 cgroup、cpu_acquire/release、init_task、exit_task 等回调
+    const char *name;  // 唯一必填字段
+};
+```
+
+#### 任务所有权状态机
+
+`ext_internal.h` 定义了四状态机，解耦 SCX core 和 BPF 调度器的同步：
+
+| 状态 | 含义 | 拥有者 |
+|------|------|--------|
+| `SCX_OPSS_NONE` | 任务在 run queue 上或正在执行 | SCX core |
+| `SCX_OPSS_QUEUEING` | 过渡状态：正在从 SCX core 转移到 BPF 调度器 | SCX core（持有 rq lock） |
+| `SCX_OPSS_QUEUED` | 任务在 DSQ（dispatch queue）上 | BPF 调度器 |
+| `SCX_OPSS_DISPATCHING` | 过渡状态：正在从 BPF 调度器返回 SCX core | BPF 调度器 |
+
+这个状态机允许 BPF 程序随时分发任务，SCX core 安全地拒绝无效分发（比如任务已被 dequeue 但 BPF 侧不知道）。
+
+#### Dispatch Queue（DSQ）机制
+
+`include/linux/sched/ext.h` 定义了内置 DSQ ID：
+
+```c
+enum scx_dsq_id_flags {
+    SCX_DSQ_GLOBAL  = SCX_DSQ_FLAG_BUILTIN | 1,  // 全局 FIFO 队列，按节点分片
+    SCX_DSQ_LOCAL   = SCX_DSQ_FLAG_BUILTIN | 2,   // 每 CPU 本地队列
+    SCX_DSQ_BYPASS  = SCX_DSQ_FLAG_BUILTIN | 3,   // 绕过模式专用（5ms slice）
+    SCX_DSQ_LOCAL_ON = SCX_DSQ_FLAG_BUILTIN | SCX_DSQ_FLAG_LOCAL_ON, // 指定 CPU 本地队列
+};
+```
+
+调度周期：CPU 本地 DSQ → 全局 DSQ → `ops.dispatch()` 从 BPF 调度器取任务。
+
+#### OnePlus hmbird_sched proc 接口（已验证开源部分）
+
+OPPO/一加 SM8750 的 `vendor/oplus/kernel/cpu/sched_ext/main.c`（开源于 GitHub）提供了运行时调控接口：
+
+- `/proc/hmbird_sched/scx_enable` — sched_ext 主开关（`int scx_enable`）
+- `/proc/hmbird_sched/partial_enable` — 部分启用开关
+- `/proc/hmbird_sched/cpuctrl_high/low` — CPU 管控阈值（55/40）
+- `/proc/hmbird_sched/cpu7_tl` — CPU7 温度限流（70）
+- `/proc/hmbird_sched/scx_gov_ctrl` — 调度器与 freq gov 协同开关
+- `/proc/hmbird_sched/isolate_ctrl` — CPU 隔离控制
+- `/proc/hmbird_sched/sched_ravg_window_frame_per_sec` — 125Hz 帧率窗口
+
+这些参数暗示 OnePlus 使用 sched_ext 实现帧率稳定性优化（游戏场景）和 CPU 管控。BPF 调度策略主体可能以二进制固件分发，开源仓库仅含 proc 接口。
+
+#### 参考调度器：scx_simple
+
+`tools/sched_ext/scx_simple.bpf.c` 展示了两模式调度器实现：
+
+- **FIFO 模式**：`scx_bpf_dsq_insert(p, SHARED_DSQ, SCX_SLICE_DFL, enq_flags)` 直接入队
+- **vtime 模式**：`scx_bpf_dsq_insert_vtime(p, SHARED_DSQ, SCX_SLICE_DFL, vtime, enq_flags)` 按虚拟时间排序
+
+用户态加载器（`scx_simple.c`）通过 libbpf 调用 `SCX_OPS_OPEN`/`SCX_OPS_LOAD`/`SCX_OPS_ATTACH` 注册调度器。
+
+#### 排查要点
+
+如果设备启用了自定义 sched_ext 调度器并出现性能问题，Perfetto 追踪中应关注：
+
+1. `sched_ext_dump` tracepoint — BPF 调度器的退出信息和 debug dump
+2. `sched_ext::root/ops` sysfs — 查看当前注册的调度器名称和状态
+3. `/sys/kernel/sched_ext/state` — enabled/disabled 状态
+4. `/sys/kernel/sched_ext/root/events` — 各事件计数器（如 `SCX_EV_REFILL_SLICE_DFL`）
+
+<!-- AIW-源码调研-2026-05-04 -->
+
 与第 5 章（5.1 Linux 进程调度基础）的关系可以压缩成一句：EEVDF 继续使用虚拟时间体系，但调度决策从“vruntime 最小”转向“eligible entity 中 virtual deadline 最早”。
 
 ## 存储栈三重优化

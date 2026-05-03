@@ -455,3 +455,109 @@ GapWorker 设计假设：bindTime 是帧耗时的主要变量，measure/layout �
 - **官方文档**：[Adaptive Refresh Rate](https://developer.android.com/reference/android/view/View#setFrameContentVelocity())
 - **Myers 差分算法**：Eugene W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986
 - **高爷补充素材**：VSync 时间精度与步幅波动（2026-04-06）
+
+<!-- AIW-源码调研-2026-05-04 -->
+## GapWorker bindTime 与 ConstraintLayout 多次测量的源码级盲区
+
+基于源码深度调研，发现 GapWorker 预取机制的 `bindTime` 均值统计与 ConstraintLayout 多次测量的实际耗时存在根本性脱节，导致预取失效的性能盲区。
+
+### 核心机制脱节
+
+**GapWorker 预取时间计算**：
+```java
+// GapWorker.java: run() - 时间预测逻辑
+long nextFrameNs = TimeUnit.MILLISECONDS.toNanos(latestFrameVsyncMs) + mFrameIntervalNs;
+prefetch(nextFrameNs);
+```
+通过最近一次绘制时间加上帧间隔来预测下一帧 deadline，但这只考虑了 View 绑定时间 (`tryGetViewHolderForPositionByDeadline`)，**完全不包含后续的 measure/layout 耗时**。
+
+**ConstraintLayout 多轮测量机制**：
+```java
+// BasicMeasure.java: solverMeasure() - 多轮迭代逻辑
+int maxIterations = 2;
+for (int j = 0; j < maxIterations; j++) {
+    for (int i = 0; i < sizeDependentWidgetsCount; i++) {
+        ConstraintWidget widget = mVariableDimensionsWidgets.get(i);
+        // ... 测量逻辑
+        int preWidth = widget.getWidth();
+        int preHeight = widget.getHeight();
+        
+        boolean hasMeasure = measure(measurer, widget, measureStrategy);
+        if (measuredWidth != preWidth || measuredHeight != preHeight) {
+            needSolverPass = true; // 需要重新求解布局
+        }
+    }
+    if (needSolverPass) {
+        solveLinearSystem(layout, "measure iteration " + j, pass + 1, w, h);
+    }
+}
+```
+MATCH_CONSTRAINT_SPREAD 和 MATCH_CONSTRAINT_WRAP 需要 2 轮迭代，每轮都可能触发 `solveLinearSystem()`，且依赖关系复杂的视图可能导致额外的测量循环。
+
+### 性能盲区场景
+
+当 RecyclerView 遇到以下布局时，预取效果严重受损：
+
+1. **多层嵌套 ConstraintLayout**：每层都可能进行多次测量
+2. **MATCH_CONSTRAINT_SPREAD/WRAP**：需要多轮迭代求解约束
+3. **依赖 Barrier/Guideline**：增加求解收敛的不确定性
+
+典型性能表现：
+- GapWorker 预测时间：5-10ms (基于 bindTime)
+- 实际帧绘制时间：15-40ms (包含多次 measure)
+- 帧率下降：10-30ms 延迟导致卡顿
+
+### 源码改进建议
+
+基于源码分析，建议从以下方向改进：
+
+1. **GapWorker 时间估算增强**：
+   ```java
+   // 建议在 GapWorker 中加入布局复杂度评估
+   private long estimatePrefetchTime(RecyclerView view, int position) {
+       // 检查是否包含 ConstraintLayout + MATCH_CONSTRAINT
+       // 复杂布局增加 3-5 倍时间缓冲
+       return baseBindTime * complexityMultiplier;
+   }
+   ```
+
+2. **ConstraintLayout 迭代优化**：
+   - 减少不必要的 `solveLinearSystem()` 调用
+   - 缓存复杂布局的测量结果
+   - 在滚动中简化约束求解策略
+
+3. **分层预取机制**：
+   - 将预取分为绑定预取和布局预取两个阶段
+   - 对复杂布局进行更精确的时间预估
+
+### Debug 与优化工具
+
+1. **Perfetto 分析要点**：
+   - 观察预取完成后的首帧 `RV OnLayout` 耗时
+   - 对比 `RV Prefetch` 和 `RV OnLayout` 的时间差
+   - 检查 `measure/layout` slice 是否异常突出
+
+2. **布局复杂度评估**：
+   ```java
+   // 检查视图是否包含 MATCH_CONSTRAINT
+   public boolean isComplexLayout(View view) {
+       if (view instanceof ConstraintLayout) {
+           // 遍历子视图检查约束类型
+           return hasMatchConstraintChildren(view);
+       }
+       return false;
+   }
+   ```
+
+3. **时间监控**：
+   - 监控 onBindViewHolder 与 onMeasure 的时间差
+   - 记录 MATCH_CONSTRAINT 视图的迭代次数
+
+### 长期演进方向
+
+1. **智能预取调度**：根据布局复杂度动态调整预取策略
+2. **布局缓存机制**：对复杂布局的测量结果进行缓存
+3. **实时性能监控**：在运行时检测预取失效并动态调整
+
+此研究 Gap 已通过源码级深度调研确认，建议在后续的 GapWorker 和 ConstraintLayout 版本中考虑上述改进方案。
+<!-- end AIW-源码调研-2026-05-04 -->

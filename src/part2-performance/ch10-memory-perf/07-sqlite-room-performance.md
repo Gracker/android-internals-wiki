@@ -49,13 +49,13 @@ tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-05-04"
 task6_result: pass-light-edit
 last_task9_at: "2026-05-04T06:20:00+08:00"
 task9_reviewed_by: openclaw-task9
@@ -97,7 +97,7 @@ PRAGMA journal_mode=WAL;
 
 WAL 模式的收益主要来自两个更稳定的事实。
 
-第一，事务提交路径里的 `fsync()` 次数通常更少。回滚日志模式需要先回写原页，再提交事务；WAL 把改动追加到 `-wal` 文件，检查点再把脏页并回主库。收益幅度会受文件系统、闪存控制器、检查点策略和事务大小影响，这里更适合写成定性结论，不写固定倍数。
+第一，事务提交路径里的 `fsync()` 次数通常更少。回滚日志模式需要先回写原页，再提交事务；WAL 把改动追加到 `-wal` 文件，检查点再把脏页并回主库。收益幅度受文件系统、闪存控制器、检查点策略和事务大小影响，不宜用固定倍数概括。
 
 第二，WAL 把大部分写入变成 append-only I/O。它少了一次“先复制旧页再覆盖新页”的往返，对频繁小事务和批量写入都更友好。Room 在默认 `JournalMode.AUTOMATIC` 配置下，通常也会优先选择 WAL；最终行为仍然取决于 API 级别、低内存设备判定和具体打开配置。
 
