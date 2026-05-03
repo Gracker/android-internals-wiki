@@ -11383,6 +11383,48 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T04:33:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "10.6",
+      "section_title": "10.6 内存抖动与频繁 GC",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 内存抖动与频繁 GC 发现 版本差异，需 Task2B 回炉",
+      "material_paths": [
+        "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L92-L94 / L381-L391 ART GC 版本边界",
+          "detail": "正文把 Android 17（API 37）分代 CMC 写成“全量强制默认/默认基线”，但本章 last_verified_against 只覆盖 android-14.0.0_r1、android-15.0.0_r1、android-16.0.0_r1；复核 android.googlesource refs 未见公开 android-17 tag，AOSP android-16.0.0_r1/main 只能证明 CMC 与 generational GC 相关代码/开关存在，不能支撑 API 37 已全量强制默认。",
+          "suggestion": "将 Android 17 结论降级为 [待验证] 或删除；正文只保留 Android 14→16 可复核的 CC/CMC/分代能力边界。若要写 API 37，补官方 release notes、ART commit、runtime flag 或设备配置证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T06:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "10.7",
+      "section_title": "10.7 SQLite/Room 数据库性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] SQLite/Room 数据库性能优化 发现 源码错误，需 Task2B 回炉",
+      "material_paths": [
+        "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L145 SQLiteOpenHelper.getWritableDatabaseAsync()",
+          "detail": "正文称 Android 16（API 36）引入 getWritableDatabaseAsync() 并返回 CompletableFuture<SQLiteDatabase>。复核 AOSP android-16.0.0_r1、android-15.0.0_r1、main 的 frameworks/base/core/java/android/database/sqlite/SQLiteOpenHelper.java，以及 Android Developers SQLiteOpenHelper 文档，均未发现该方法。该 API 示例不可编译，也会误导读者把 Migration 后台化寄托在不存在的平台入口上。",
+          "suggestion": "删除 getWritableDatabaseAsync() 和“唯一安全入口”结论。改写为应用侧用 dedicated executor/协程/App Startup 做首次 open + migration 预热；如未来平台确有异步 open API，需补真实方法签名、API level、AOSP commit 与 fallback。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T06:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

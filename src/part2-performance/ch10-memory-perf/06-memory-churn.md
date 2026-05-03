@@ -31,19 +31,20 @@ word_count: "~7500"
 reviewed_date: '2026-04-24'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task2b_rework_date: "2026-05-04"
 task2b_fixed_at: "2026-05-04T05:40:00+08:00"
 last_task2b_at: "2026-05-04T05:40:00+08:00"
-task9_result: pending
-last_task9_at: "2026-04-25T14:25:03+08:00"
-task9_reviewed_date: "2026-04-25"
+task9_result: needs-rework
+last_task9_at: "2026-05-04T06:20:00+08:00"
+task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task9
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
 ---
 
 # 内存抖动与频繁 GC
