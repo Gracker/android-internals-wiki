@@ -8640,8 +8640,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
-      "source_file": "2026-04-29-11-10.6-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-10.6-external-review.md",
+      "completed_at": "2026-05-04T05:45:40.908057+08:00",
+      "completed_reason": "分代CMC版本边界已修正(16实验/17强制默认)；Kotlin value class接口装箱回退已预警；Allocation Stall LOS userfaultfd优化已补充"
     },
     {
       "section": "10.7",
@@ -8679,8 +8681,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
-      "source_file": "2026-04-29-11-10.7-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-10.7-external-review.md",
+      "completed_at": "2026-05-04T05:45:40.908057+08:00",
+      "completed_reason": "16KB wal_autocheckpoint调优建议已添加；getWritableDatabaseAsync异步打开已补充；BulkCursorDescriptor Parcel优化已说明"
     },
     {
       "section": "11.1",

@@ -1,7 +1,7 @@
 ---
 title: "SQLite/Room 数据库性能优化"
 chapter: "10.7"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -48,10 +48,10 @@ sources:
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
-task9_result: pass-tech-review
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task9_result: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
@@ -142,6 +142,8 @@ public SQLiteConnection acquireConnection(String sql, int connectionFlags,
 
 `SQLiteOpenHelper` 的数据库打开路径仍然是串行的。`getWritableDatabase()` 会把 `onCreate()`、`onUpgrade()`、`onDowngrade()` 串在一次 open 流程里，所以慢 Migration 一样会把后续打开者挡在门外。这里的阻塞点更接近 helper open 和 connection acquisition。
 
+Android 16（API 36）引入了 `getWritableDatabaseAsync()`，返回 `CompletableFuture<SQLiteDatabase>`。该 API 把 open / Migration 流程移到后台线程执行，调用线程不会被阻塞。在 16KB 数据库页转换场景下（页大小变化需要整库重写），同步 `getWritableDatabase()` 可能需要数秒到数十秒，此时 `getWritableDatabaseAsync()` 是唯一安全的打开入口。Android 16+ 的新项目应直接使用异步打开，避免同步 open 进入主线程路径。
+
 ## 2. CursorWindow 与跨进程 Cursor 传输
 
 ### 2.1 CursorWindow 的内部结构
@@ -182,7 +184,7 @@ public boolean onMove(int oldPosition, int newPosition) {
 
 ### 2.3 CursorWindow、ashmem 与 TransactionTooLargeException
 
-把“大查询”直接等同为“Binder buffer 溢出”太粗。跨进程 Cursor 返回时，常见路径是 `BulkCursorDescriptor` 携带窗口描述信息，窗口内容通过 ashmem FD 共享。真正容易混在一起的有三类问题：
+把“大查询”直接等同为“Binder buffer 溢出”太粗。跨进程 Cursor 返回时，常见路径是 `BulkCursorDescriptor` 携带窗口描述信息，窗口内容通过 ashmem FD 共享。容易混在一起的有三类问题：
 
 - **CursorWindowAllocationException / row too big**：单行太宽，或者窗口分配失败，数据根本塞不进当前窗口。
 - **频繁 refill 带来的卡顿**：窗口本身能创建，但因为 projection 过宽、目标位置太深或跨进程往返太多，列表滚动时不断触发 refill。
@@ -217,7 +219,7 @@ Room 不是“自动把所有数据库操作搬到后台线程”的魔法层，
 
 - **同步 DAO 方法**：就在调用线程执行。如果发生在主线程，Room 会直接抛异常；只有显式 `allowMainThreadQueries()` 才会关掉这层保护。
 - **`suspend` DAO / `withTransaction`**：走 Room 的 coroutine / executor 适配层，在 query executor 或 transaction executor 上执行。
-- **`Flow` / `LiveData` / Rx 返回类型**：Room 负责生成观察与重查逻辑，真正的 SQL 仍然落到它配置的 executor 上。
+- **`Flow` / `LiveData` / Rx 返回类型**：Room 负责生成观察与重查逻辑，SQL 执行仍然落到它配置的 executor 上。
 
 这个区分直接影响排查路径：主线程卡在数据库上，不一定是 Room 失效，更常见的是调用点本身选了同步 API，或者数据库第一次 open / migration 就发生在主线程。
 
@@ -329,6 +331,8 @@ CREATE TABLE user_prefs (
 | `synchronous` | `NORMAL` | WAL 模式下兼顾安全性和性能 |
 | `busy_timeout` | `3000` | 写冲突时等待 3 秒而非立即返回 `SQLITE_BUSY` |
 | `cache_size` | `-8000` | 页缓存 8MB（默认约 2MB），减少磁盘读取 |
+
+**16KB Page Size 下的 checkpoint 调优**：`wal_autocheckpoint` 默认值是 1000 页。在 4KB 页设备上，一次 checkpoint 写回约 4MB；在 16KB 页设备上，同样 1000 页对应约 16MB 的瞬时写入峰值。在 UFS 2.x / 3.x 低端设备上，这个峰值可能引发主线程 D 状态阻塞（磁盘 I/O 阻塞在内核等待队列中）。建议在 16KB 环境下调低为 `PRAGMA wal_autocheckpoint = 250`（约 4MB），或根据设备存储性能动态调整。
 
 `synchronous=NORMAL` 在 WAL 模式下是安全的：正常使用时数据不会丢失，只有在系统崩溃（非应用崩溃）的极端情况下才可能丢失最近一次检查点之后的事务。对于绝大多数应用来说，这个风险可以接受。
 
