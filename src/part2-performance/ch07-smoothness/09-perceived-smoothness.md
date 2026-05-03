@@ -108,7 +108,7 @@ last_task9_at: "2026-04-20T13:38:00+08:00"
 
 ### 成因一：OverScroller 的毫秒时间量化
 
-RecyclerView fling 常走 `OverScroller.computeScrollOffset()` 的 `FLING_MODE`。真正推进位置的是内部 `SplineOverScroller.update()`，它先读取 `AnimationUtils.currentAnimationTimeMillis()`，再按经过的时间推进当前位置。
+RecyclerView fling 常走 `OverScroller.computeScrollOffset()` 的 `FLING_MODE`。推进位置的是内部 `SplineOverScroller.update()`，它先读取 `AnimationUtils.currentAnimationTimeMillis()`，再按经过的时间推进当前位置。
 
 ```java
 // frameworks/base/core/java/android/widget/OverScroller.java
@@ -243,7 +243,7 @@ Perfetto 的价值在于分型。Perfetto 文档对 FrameTimeline 的定义很�
 
 ### 路径三：Android 16 的 AppJankStats 与 RelativeFrameTimeHistogram
 
-Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFrameTimeHistogram`，但它们不是“系统自动收集、零代码侵入”的全局 trace API。`AppJankStats` 用来描述单个 UI widget 在某个状态下的 jank 统计，`RelativeFrameTimeHistogram` 记录这些帧相对 deadline 的分布。真正把数据交给系统的入口是 `View.reportAppJankStats(AppJankStats)`。
+Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFrameTimeHistogram`，但它们不是“系统自动收集、零代码侵入”的全局 trace API。`AppJankStats` 用来描述单个 UI widget 在某个状态下的 jank 统计，`RelativeFrameTimeHistogram` 记录这些帧相对 deadline 的分布。把数据交给系统的入口是 `View.reportAppJankStats(AppJankStats)`。
 
 这组 API 更适合 library / widget instrumentation，例如列表、播放器控件或复杂动画组件把自己的局部抖动统计上报给系统。它能补齐“哪个 widget 在什么状态下更容易抖”的视角，但不能替代 Perfetto 对整个显示栈的被动追踪。
 
@@ -278,7 +278,7 @@ Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态
 
 ### 策略三：插值器斜率与步幅均匀性
 
-步幅敏感场景（如 fling 减速段、回弹动画）中，插值器的控制点斜率会影响位移对时间误差的敏感度。`AccelerateDecelerateInterpolator` 在加速/减速段斜率变化剧烈，`1ms` 的时间误差在高速段会被斜率放大成更大的位移跳动。`PathInterpolator` 允许通过贝塞尔控制点定义更平滑的切线斜率，配合 `Choreographer.FrameData`（API 33+）拿到纳秒级时间戳做绝对对齐，可以减少插值器本身对时间量化的放大效应。
+步幅敏感场景（如 fling 减速段、回弹动画）中，插值器的控制点斜率会影响位移对时间误差的敏感度。`AccelerateDecelerateInterpolator` 在加速/减速段斜率变化剧烈，`1ms` 的时间误差在高速段会被斜率放大成更大的位移跳动。`PathInterpolator` 允许通过贝塞尔控制点定义更平滑的切线斜率，配合 `Choreographer.FrameData`（API 33+）拿到纳秒级时间戳做时间同步，可以减少插值器本身对时间量化的放大效应。
 
 ### 策略四：跟手动画要同时看输入采样和位移采样
 
@@ -333,7 +333,7 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 1. 记录最近两个触摸事件样本（timestamp, x, y）
 2. 当 `currentTime - lastEventTime >= RESAMPLE_MIN_DELTA` 时触发重采样
 3. 对异步到达的触摸事件进行线性插值（Interpolation）和外推（Extrapolation）
-4. 将触摸坐标对齐到 VSync 信号，确保渲染新帧时使用尽可能当前的坐标
+4. 将触摸坐标同步到 VSync 信号，确保渲染新帧时使用尽可能当前的坐标
 
 **设计意图**：解决 100Hz 触摸采样率与 60Hz/90Hz/120Hz 显示刷新率不同步导致的"跳跃感"。通过预测下一 VSync 时刻的触摸位置，消除帧内抖动。
 
@@ -346,7 +346,7 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 - `frameworks/native/libs/input/InputTransport.h` — InputConsumer mResampleTouch 成员
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — 事件分发与 stale event 判定
 
-**与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本章讨论的步幅波动问题形成跨输入-渲染的完整闭环。
+**与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本章讨论的步幅波动问题形成跨输入-渲染的完整关联。
 <!-- AIW-源码调研-2026-05-01-end -->
 
 ## 参考资料
