@@ -16,7 +16,7 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-05-03"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 sources:
@@ -37,7 +37,7 @@ sources:
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
@@ -107,7 +107,7 @@ RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是�
 
 第二级是 **CachedViews**。这是一个默认大小为 2 的 ArrayList，存储刚滑出屏幕的 ViewHolder。CachedViews 的特点是：存在这里的 ViewHolder 不需要重新 bind——它们的 position 和数据都是有效的，直接拿来用就行。这就好比"刚放下的东西还没收起来"，拿起来最快。缓存大小可以通过 `setItemViewCacheSize()` 调整。对于频繁上下滑动的场景，适当增大这个值（比如设为 4-6）可以减少 bind 调用次数。
 
-第三级是 **ViewCacheExtension**。这是一个可选的、由开发者自定义的缓存层。Google 官方文档对它的定位是"给开发者留的扩展点"，但多数项目里用不到它。如果确实需要这一层缓存，要特别注意它和 RecycledViewPool 的查找顺序——ViewCacheExtension 在 Pool 之前被查询。
+第三级是 **ViewCacheExtension**。这是一个可选的、由开发者自定义的缓存层。Google 官方文档对它的定位是"给开发者留的扩展点"，但多数项目里用不到它。如果需要这一层缓存，要特别注意它和 RecycledViewPool 的查找顺序——ViewCacheExtension 在 Pool 之前被查询。
 
 第四级是 **RecycledViewPool**。这是最终的缓存池，默认每个 ViewType 缓存 5 个 ViewHolder。Pool 中的 ViewHolder 会被清除绑定状态（resetInternal），再次使用时必须重新 bind。Pool 的一个重要特性是可以跨 RecyclerView 共享——对于嵌套 RecyclerView 的场景（比如外层列表中每个 item 内部都有一个水平滑动列表），共享 Pool 可以大幅减少 inflate 开销。
 
@@ -281,7 +281,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 **图片加载回调触发的 requestLayout** 是一种隐性的性能问题。当图片异步加载完成后，如果在回调中修改了 ImageView 的尺寸（比如 `wrap_content` 导致从占位图切换到真实图片时大小变化），会触发整个 RecyclerView 的重新布局。解决方法是为 ImageView 设置固定的宽高，或者使用 `setHasFixedSize(true)` 告知 RecyclerView 不要因为 item 内容变化而重新测量自身大小。
 
-**VSync 时间精度问题** 是一个更隐蔽的根因。这个问题的来源是 Android 列表滑动在计算每帧位移时，使用的不是 VSync 的纳秒时间戳，而是取整后的毫秒值。在 120Hz 设备上（VSync 周期约 8.33ms），±1ms 的取整误差意味着约 12% 的帧间时间差异。这种微小的时间波动传递到 OverScroller 的位移计算后，会导致列表每帧滚动的像素数不均匀。用户在快速滑动时感知到"一顿一顿"的效果，但 Perfetto 的 FrameTimeline 不会标记为 Jank——因为帧确实在预算时间内完成了，只是步幅不均匀。
+**VSync 时间精度问题** 是一个更隐蔽的根因。这个问题的来源是 Android 列表滑动在计算每帧位移时，使用的不是 VSync 的纳秒时间戳，而是取整后的毫秒值。在 120Hz 设备上（VSync 周期约 8.33ms），±1ms 的取整误差意味着约 12% 的帧间时间差异。这种微小的时间波动传递到 OverScroller 的位移计算后，会导致列表每帧滚动的像素数不均匀。用户在快速滑动时感知到"一顿一顿"的效果，但 Perfetto 的 FrameTimeline 不会标记为 Jank——因为帧在预算时间内完成了，只是步幅不均匀。
 
 这是一种"无掉帧卡顿"，和我们在 §7.1 中讨论的帧率稳定性问题不同。帧率可能稳定在 120fps，但步幅波动仍会让用户感觉不流畅。
 
