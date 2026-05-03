@@ -14,20 +14,20 @@ related_chapters: ["19.0"]
 sources:
   - type: blog
     path: "https://github.com/Qihoo360/ArgusAPM"
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-01"
 task6_result: "pass-light-edit"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-25"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-03T06:20:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-03T05:40:00+08:00"
+last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；源码路径需回炉修正，已写入 queue.json。"
 
 ---
@@ -90,7 +90,7 @@ ArgusAPM 的整体结构可以看成两部分：
 | 路径 | 代表入口 | 适合的数据 | 代价 |
 |---|---|---|---|
 | AspectJ | `argus-apm/argus-apm-aop/src/main/java/com/argusapm/android/aop/TraceActivity.java`、`TraceNetTrafficMonitor.java`、`argus-apm-gradle/src/main/kotlin/com/argusapm/gradle/AspectJTransform.kt` | Activity 生命周期、网络流量切面等调用边界清楚、频率相对低的事件 | 接入简单，但编译慢、对 AspectJ 工具链依赖重 |
-| ASM | `argus-apm-gradle-asm/src/main/kotlin/com/argusapm/gradle/internal/asm/ASMWeaver.kt`、`FuncClassAdapter.kt`、`OkHttp3ClassAdapter.kt`、`WebClassAdapter.kt` | 方法耗时、OkHttp3、WebView 等更高频或需要直接改字节码的场景 | 控制更细，但强依赖类名、方法签名和旧 Transform 流程 |
+| ASM | `argus-apm-gradle-asm/…/asm/ASMWeaver.kt`、`bytecode/func/FuncClassAdapter.kt`、`bytecode/okhttp3/OkHttp3ClassAdapter.kt`、`bytecode/webview/WebClassAdapter.kt` | 方法耗时、OkHttp3、WebView 等更高频或需要直接改字节码的场景 | 控制更细，但强依赖类名、方法签名和旧 Transform 流程 |
 
 读 `@Aspect` 入口时看 `argus-apm-aop` 和 `argus-apm-gradle`，不要只在 `argus-apm-main` 里找采集任务。
 

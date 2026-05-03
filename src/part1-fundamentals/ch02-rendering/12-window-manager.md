@@ -43,7 +43,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/SurfaceAnimationRunner.java"
   - type: aosp
-    path: "frameworks/base/core/java/android/graphics/BLASTBufferQueue.java"
+    path: "frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java"
   - type: aosp
     path: "frameworks/base/core/jni/android_view_SurfaceControl.cpp"
   - type: official
@@ -63,10 +63,10 @@ related_chapters: ["2.1", "2.6", "3.1", "8.2", "8.4"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-04"
 gap_source: "AOSP结构+官方文档+读者需求"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-03"
@@ -75,7 +75,7 @@ task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
 last_task9_at: "2026-05-04T00:30:00+08:00"
-last_task2b_at: "2026-04-27T02:40:00+08:00"
+last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-04-27 task2b: fixed Task9 P95 issues for StartingWindow Shell boundary, modern transition path, and Predictive Back version line."
 review_log: "logs/review/2026-04-11-11-review.md"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1。需 Task2B 回炉。"
@@ -510,7 +510,7 @@ WMS 维护的 Window Z-order 和区域信息是 InputDispatcher 进行 hit-test 
 - [AOSP TransitionController 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/services/core/java/com/android/server/wm/TransitionController.java) ，WindowContainer transition 收集与调度入口
 - [AOSP ViewRootImpl 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/view/ViewRootImpl.java) ，App 侧 traversal、`relayout()` 判定和 `updateBlastSurfaceIfNeeded()`
 - [AOSP SurfaceControl JNI 路径](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/jni/android_view_SurfaceControl.cpp) ，native `createSurfaceChecked(...)` 入口
-- [AOSP BLASTBufferQueue 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/core/java/android/graphics/BLASTBufferQueue.java) ，客户端 surface materialization
+- [AOSP BLASTBufferQueue 源码](https://cs.android.com/android/platform/superproject/+/master:frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java) ，客户端 surface materialization
 - [Android 官方文档，SplashScreen API](https://developer.android.com/develop/ui/views/layout/splash-screen) ，StartingWindow 与统一启动体验
 - [Android 官方文档，Predictive Back](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture) ，返回手势动画与过渡回调
 - [Android 官方文档，Android 16 Features](https://developer.android.com/about/versions/16/features) ，Desktop Windowing 与 connected display 特性
