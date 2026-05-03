@@ -40,12 +40,13 @@ review_v2_by: "openclaw-task6"
 review_type: "post-polish-quality-gate"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
+task6_review_v2_date: "2026-05-03"
 task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
@@ -112,7 +113,7 @@ Input ANR 的检测不在 Java 层，而是在 Native 层的 InputDispatcher 中
 
 **第三步：超时检测。** InputDispatcher 将已发送但未确认的事件移入 waitQueue，并记录每个事件的发送时间。在每次处理循环中，InputDispatcher 检查 waitQueue 头部的事件——如果它已经等待超过 `DEFAULT_INPUT_DISPATCHING_TIMEOUT`（5 秒），就调用 `onAnrLocked()`。
 
-这里有一个重要的细节：**超时检测是针对 waitQueue 头部的事件**，而不是最新的事件。所以如果队列中有多个未确认事件，超时计算的是最老的那个。
+**超时检测是针对 waitQueue 头部的事件**，不是最新的事件。队列中有多个未确认事件时，超时计算的是最老的那个。
 
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
