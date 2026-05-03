@@ -10489,5 +10489,26 @@
     ],
     "suggestions_added": 2,
     "log": "logs/deep-review/2026-05-03-22-deep-review.md"
+  },
+  "9.3": {
+    "section": "9.3",
+    "title": "ANR 分析方法",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task2b_result": "fixed",
+    "task9_result": "needs-rework",
+    "last_updated": "2026-05-04T00:54:34.380903",
+    "rework_reason": "P95 external review: SIGQUIT诊断可信度版本区分/android.anr track修正/frontmatter版本号"
+  },
+  "9.4": {
+    "section": "9.4",
+    "title": "特殊场景的 ANR",
+    "status": "ready-for-review",
+    "pipeline_stage": "task6_pending",
+    "task2b_result": "fixed",
+    "task9_result": "pass-tech-review",
+    "last_updated": "2026-05-04T00:54:34.380903",
+    "rework_reason": "P95 external review: 16KB Page写放大/Freezer豁免/异步广播优先级反转",
+    "note": "从finalized降回ready-for-review，新增3处P1修复"
   }
 }

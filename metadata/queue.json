@@ -6715,7 +6715,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T14:36:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T00:54:21.506420",
+      "completed_reason": "android.anr track改为AnrLatencyTracker可验证表述;frontmatter API 37已修正;SIGQUIT诊断可信度版本区分已补充"
     },
     {
       "section": "?",
@@ -8344,8 +8346,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-11-9.3-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-9.3-external-review.md",
+      "completed_at": "2026-05-04T00:54:21.506420",
+      "completed_reason": "SIGQUIT诊断可信度版本区分已补充;android.anr track改为AnrLatencyTracker可验证表述;frontmatter API 37已修正;Android 14精准dump说明已添加;Android 17时段采样画像已补充"
     },
     {
       "section": "9.4",
@@ -8374,8 +8378,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-11-9.4-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-9.4-external-review.md",
+      "completed_at": "2026-05-04T00:54:21.506420",
+      "completed_reason": "16KB Page写放大数据库挑战已补充(wal_autocheckpoint建议);Freezer感知豁免Android 16+已说明;异步广播优先级反转已添加"
     },
     {
       "section": "9.5",
