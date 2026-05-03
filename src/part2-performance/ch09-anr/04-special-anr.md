@@ -35,13 +35,15 @@ rework_date: "2026-04-16"
 rework_by: "task2b-rework"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task9_state: "reviewed"
 task9_result: "pass-tech-review"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T07:30:41+08:00"
+auto_promoted_by: "openclaw-task6"
+auto_promoted_date: "2026-05-04"
 task2b_state: fixed
 p0: 0
 p1: 0

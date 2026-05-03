@@ -2535,7 +2535,9 @@
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-25T16:33:30+08:00",
       "review_round": "3",
-      "last_task2b_at": "2026-04-25T13:47:46+08:00"
+      "last_task2b_at": "2026-04-25T13:47:46+08:00",
+      "auto_promoted_by": "openclaw-task6",
+      "auto_promoted_date": "2026-05-04"
     },
     "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
@@ -2892,14 +2894,14 @@
       "path": "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
       "title": "Kotlin Coroutine 性能实践",
       "chapter": "8.6",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-02",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-02",
       "last_verified_against": "kotlinx.coroutines 1.9.x / Kotlin 2.1.x / Kotlin 2.2",
       "confidence": "medium-high",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
@@ -2909,7 +2911,9 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-26T17:20:00+08:00"
+      "last_task9_at": "2026-04-26T17:20:00+08:00",
+      "auto_promoted_by": "openclaw-task6",
+      "auto_promoted_date": "2026-05-04"
     },
     "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md": {
       "path": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
@@ -3136,7 +3140,9 @@
       "p0": 0,
       "p1": 0,
       "p2": 1,
-      "auto_promoted": true
+      "auto_promoted": true,
+      "auto_promoted_by": "openclaw-task6",
+      "auto_promoted_date": "2026-05-04"
     },
     "src/part2-performance/ch09-anr/05-case-studies.md": {
       "path": "src/part2-performance/ch09-anr/05-case-studies.md",
