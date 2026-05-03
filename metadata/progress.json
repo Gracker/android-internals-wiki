@@ -10518,5 +10518,15 @@
     "last_updated": "2026-05-04T00:54:34.380903",
     "rework_reason": "P95 external review: 16KB Page写放大/Freezer豁免/异步广播优先级反转",
     "note": "从finalized降回ready-for-review，新增3处P1修复"
+  },
+  "10.4": {
+    "task6_reviewed_date": "2026-05-04",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "task6_review_round": 4,
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending"
   }
 }
