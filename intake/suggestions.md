@@ -899,3 +899,21 @@
 - **位置**：L183-L192 Perfetto 抓取与 `am_anr` 定位
 - **问题**：正文建议在 Perfetto 搜索 `am_anr`，但没有说明 trace config 必须采集 EventLog/logcat 或 `am` atrace。只抓 sched/binder/input/view 等数据源时，Perfetto 中可能没有 `am_anr` 事件。
 - **建议**：补最小抓取配置；或说明 fallback：从 bugreport / `logcat -b events` 定位 `am_anr` 时间，再跳回 Perfetto 分析主线程、binder 与调度状态。
+
+## [Task9 Deep Review] 10.6 内存抖动与频繁 GC — 2026-05-04
+- **类型**：数据缺失
+- **位置**：L80 / L106 / L110 GC 暂停与 LOS stall 量化值
+- **问题**：Young GC 暂停 1-3ms、LOS 分配 Stall Time 降低约 15% 都是量化断言，但正文未给设备、ART 版本、刷新率、对象大小、样本数量或 trace/benchmark 来源；官方 memory 文档不能单独支撑这些固定数值。
+- **建议**：补 Perfetto/ART log 样本和测试条件；否则改为“毫秒级暂停”“部分场景下降低”，把 1-3ms、15% 放入待验证数据。
+
+## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-05-04
+- **类型**：源码准确性
+- **位置**：L297-L308 EXPLAIN QUERY PLAN 示例与解读
+- **问题**：对 `WHERE conversation_id = 42` 命中 `(conversation_id, date)` 索引的查询，SQLite 实际输出通常是 `SEARCH messages USING INDEX idx_msg_conv_date (conversation_id=?)`，不是正文写的 `SCAN messages USING INDEX...`。现代 SQLite 输出也不一定带 `TABLE` 字样。
+- **建议**：把示例输出改成可复现的 SEARCH 结果，并说明 SCAN USING INDEX 只是“按索引顺序扫描”，不等同于等值查找。
+
+## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-05-04
+- **类型**：数据缺失
+- **位置**：L245 / L461 批量事务与 SQLCipher 性能数字
+- **问题**：“批量插入速度提升 10x-100x”和“SQLCipher 写入降低 5-15%”缺少设备、数据量、page size、WAL/synchronous 配置、加密算法和测试脚本。
+- **建议**：补基准测试条件和来源；否则把固定区间改成定性结论，并标为待验证。
