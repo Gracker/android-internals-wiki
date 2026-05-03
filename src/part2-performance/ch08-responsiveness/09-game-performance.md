@@ -45,10 +45,10 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: '2026-04-28'
@@ -57,7 +57,7 @@ task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-03"
 last_task9_at: "2026-05-03T16:20:00+08:00"
-last_task2b_at: "2026-04-27T12:54:09+08:00"
+last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-04-27 task6 re-review: pass-light-edit。；2026-04-28 task9 deep-review: needs-rework。P0 1，P1 0，P2 1。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 1，自动晋升 finalized。；2026-05-03 task9 deep-review: needs-rework。P0 1（Vulkan dynamic rendering/API 名称误写），P1 0，P2 1。"
 ---
 
@@ -373,7 +373,7 @@ EOF
 - 常见形态：Actual frame 从 16.6ms 抬到 33.3ms，但 big cluster 频率和 thermal status 基本稳定
 - 判断：问题更像 GPU 侧瓶颈，例如 shader 编译、fill rate、后处理或分辨率过高；这时别把锅先甩给调度器
 
-现代 Vulkan 游戏的 GPU 瓶颈分析不能只看频率和 busy 程度。Vulkan 1.3+ 的动态渲染（`VK_DYNAMIC_STATE`）和管线状态对象（PSO）管理已经改变了传统的瓶颈分布：Draw Call 数量在 Vulkan 下不再是 CPU 侧的主要瓶颈——命令缓冲区批量提交把 driver overhead 大幅压缩；真正需要关注的是 render pass 之间的内存屏障、subpass 依赖、以及 render target 切换导致的 GPU 空闲气泡。在 Perfetto 中配合 `gpu.renderstages` 可以直接看到这些阶段的耗时分布，比单纯看 GPU busy 百分比更有诊断价值。
+现代 Vulkan 游戏的 GPU 瓶颈分析不能只看频率和 busy 程度。Vulkan 1.3 核心的动态渲染（`VK_KHR_dynamic_rendering`）和管线状态对象（PSO）管理已经改变了传统的瓶颈分布：Draw Call 数量在 Vulkan 下不再是 CPU 侧的主要瓶颈——命令缓冲区批量提交把 driver overhead 大幅压缩；真正需要关注的是 render pass 之间的内存屏障、subpass 依赖、以及 render target 切换导致的 GPU 空闲气泡。在 Perfetto 中配合 `gpu.renderstages` 可以直接看到这些阶段的耗时分布，比单纯看 GPU busy 百分比更有诊断价值。
 
 [图：FrameTimeline 片段，Expected frame 仍维持 16.6ms，Actual frame 偶发拉到 33.3ms；CPU Frequency 基本平，GPU busy 上抬]
 
