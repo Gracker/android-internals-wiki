@@ -11179,6 +11179,48 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T22:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "2.1",
+      "section_title": "Android 渲染架构全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 正文写成“android.graphics.RecordingCanvas 是一个空壳画布……大部分绘制方法都是空实现，开销极低”。AOSP android-16.0.0_r1 `frameworks/base/graphics/java/android/graphics/RecordingCanvas.java` 中 `drawRect()`、`drawT",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性/原理链完整性",
+          "location": "L464 RecordingCanvas 描述",
+          "detail": "正文写成“android.graphics.RecordingCanvas 是一个空壳画布……大部分绘制方法都是空实现，开销极低”。AOSP android-16.0.0_r1 `frameworks/base/graphics/java/android/graphics/RecordingCanvas.java` 中 `drawRect()`、`drawText()`、`drawPath()` 等方法会做参数/状态检查并调用 `nDraw*` native recorder，把绘制操作写入 DisplayList；它们不执行像素光栅化，但不是 no-op/空实现。该表述会低估 DisplayList 录制、JNI/native recorder、Paint/text/path 状态捕获的成本。",
+          "suggestion": "改成“RecordingCanvas 不直接光栅化像素，而是把 drawXXX 调用记录到 native DisplayList/RenderNode 指令流；录制阶段仍有 JNI/native 写入和对象状态采样成本”。同时删除“大部分绘制方法都是空实现，开销极低”的判断。",
+          "severity": "P1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T00:30:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.12",
+      "section_title": "Window Manager Service 与窗口管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 正文和 frontmatter 把 BLASTBufferQueue 写成 `frameworks/base/core/java/android/graphics/BLASTBufferQueue.java`。AOSP android-16.0.0_r1 与 main 中该路径不存在；实际路径是 `frameworks/base/graphics/java/",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Frontmatter sources L46 / 参考资料 L513 BLASTBufferQueue 路径",
+          "detail": "正文和 frontmatter 把 BLASTBufferQueue 写成 `frameworks/base/core/java/android/graphics/BLASTBufferQueue.java`。AOSP android-16.0.0_r1 与 main 中该路径不存在；实际路径是 `frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java`。`ViewRootImpl.updateBlastSurfaceIfNeeded()` 的客户端 materialization 论证依赖这个源码锚点，路径错误会让读者无法复核。",
+          "suggestion": "将 frontmatter sources 与参考资料中的 BLASTBufferQueue 链接统一改为 `frameworks/base/graphics/java/android/graphics/BLASTBufferQueue.java`，并在正文源码锚点处补上对应版本（android-16.0.0_r1 或 main）。",
+          "severity": "P0"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T00:30:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
