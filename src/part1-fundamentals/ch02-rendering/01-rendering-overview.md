@@ -24,15 +24,15 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
 review_round: 5
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: pending
 task9_reviewed_date: "2026-04-27"
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 last_task2b_at: "2026-04-25T05:47:52+08:00"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T06:20:00+08:00"
@@ -400,7 +400,7 @@ void OpenGLRenderer::drawRect(float left, float top, float right, float bottom,
 }
 ```
 
-#### 2. Skia Vulkan 后端（Android 13+）
+#### 2. Skia Vulkan 后端（按设备配置启用）
 
 Vulkan 是比 OpenGL ES 更现代的图形 API，它的核心优势在于提供了更好的 CPU/GPU 并行性和对复杂图形特性的原生支持。与 OpenGL ES 的隐式状态管理不同，Vulkan 要求开发者显式管理 GPU 资源和同步，这虽然增加了使用复杂度，但换来了更高的 CPU 提交效率和更精细的 GPU 控制。
 
@@ -543,7 +543,7 @@ HWUI 的一帧主链如下：
 
 ### Vulkan 在 Android 中的采用
 
-Vulkan 从 Android 7.0 开始被引入，但直到 Android 12 才作为主要渲染后端开始大规模推广，逐步替代 OpenGL ES。与 OpenGL ES 相比，Vulkan 最核心的设计差异是"显式"——开发者需要自己管理 GPU 资源的分配、同步和生命周期，而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率：OpenGL ES 的驱动层为了自动管理资源，需要在每次 API 调用时进行状态检查和验证，这个开销在复杂场景中可能占去数毫秒的帧时间；而 Vulkan 的显式设计省去了这些检查，CPU 可以用更少的时间提交同样数量的绘制命令。
+Vulkan 从 Android 7.0 开始被引入作为可选图形 API。HWUI 同时保留 SkiaOpenGLPipeline 和 SkiaVulkanPipeline 两条渲染管线；具体走哪条取决于设备上的 `use_vulkan` 属性、`debug.hwui.renderer` 设置以及 OEM 配置——不是某个 Android 版本统一切过去的平台行为。AOSP `frameworks/base/libs/hwui/Properties.cpp` 中 `peekRenderPipelineType()` 按 `use_vulkan` flag 在 `skiagl` / `skiavk` 间选择。Vulkan API/设备基线的提升（比如 Android 16 要求新设备支持 Vulkan 1.4）不等于 HWUI 默认使用 Vulkan 后端。与 OpenGL ES 相比，Vulkan 最核心的设计差异是"显式"——开发者需要自己管理 GPU 资源的分配、同步和生命周期，而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率：OpenGL ES 的驱动层为了自动管理资源，需要在每次 API 调用时进行状态检查和验证，这个开销在复杂场景中可能占去数毫秒的帧时间；而 Vulkan 的显式设计省去了这些检查，CPU 可以用更少的时间提交同样数量的绘制命令。
 
 Vulkan 还原生支持多线程渲染——不同的线程可以并行构建命令缓冲区（Command Buffer），最后统一提交给 GPU 执行。这对 Android 来说尤为重要，因为 HWUI 的架构本身就是多线程的（主线程录制 + RenderThread 回放），Vulkan 的多线程能力可以更好地利用这个架构。此外，Vulkan 提供了对 GPU 资源的更精细控制，减少了不必要的内存拷贝和状态切换。
 
@@ -618,7 +618,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"（"画一个按钮"、"绘�
 
 **Android 12（S，2021）** 引入了 BLASTBufferQueue，把 buffer 提交和 SurfaceControl transaction 放到同一事务节奏里，减少了 App 进程与 SurfaceFlinger 之间的时序错位。多窗口和频繁 resize 的场景受益更明显；后续版本里，这组事务流程又继续向 ASurfaceControl 侧的接口收敛。
 
-**Android 13（T，2022）** 进一步优化了 Vulkan 后端的支持，更多设备默认使用 Vulkan 进行 UI 渲染。
+**Android 13（T，2022）** 优化了 Vulkan 后端的稳定性，但 HWUI 默认走 OpenGL 还是 Vulkan 仍然取决于设备 `use_vulkan` 属性和 OEM 配置，不是平台级统一切换。
 
 **Android 16（2025）** 把图形栈的设备基线继续抬高：64 位新设备要求支持 Vulkan 1.4，Host Image Copy 让持续上传纹理和图像数据时少一次 staging copy；缓冲区排队和窗口事务侧继续沿着 BLASTBufferQueue / ASurfaceControl 路径演进，重点是把 buffer 与 transaction 的提交节奏继续同步。这里不把 `AsyncBufferQueue` 写成 Android 16 已正式发布的固定接口；如果后续拿到明确的 AOSP commit，再单独展开。面向应用层，AGSL 继续扩展 RuntimeColorFilter、RuntimeXfermode 这类可编程图形能力。
 
