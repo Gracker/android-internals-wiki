@@ -11100,6 +11100,45 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T16:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "9.2",
+      "section_title": "ANR 类型与触发条件",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ANR 类型与触发条件 存在 InputDispatcher 源码片段、FGS timeout 语义、Android 14/15/16 版本线与 dumpsys 命令问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-03-18-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L117-L121 InputDispatcher 常量片段",
+          "detail": "正文把 AOSP android-14.0.0_r1 的 DEFAULT_INPUT_DISPATCHING_TIMEOUT 写成 nsecs_t = 5000 * 1000000LL；实际实现是 std::chrono::duration，并通过 IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS * HwTimeoutMultiplier() 计算。当前片段会让读者误判类型、单位和 HW timeout multiplier 的影响。",
+          "suggestion": "改为 android-14.0.0_r1 的 std::chrono::milliseconds(...) 片段；补一句默认口径约 5s，但工程判断要保留 HwTimeoutMultiplier 边界。"
+        },
+        {
+          "type": "原理/源码错误",
+          "location": "L224 startForegroundService 超时后果",
+          "detail": "正文把 Android 12+ ForegroundServiceDidNotStartInTimeException 写成“先 Service.onTimeout() 自救，再硬杀”的两段式语义。AOSP android-14/15 的 did-not-call-startForeground 路径是 ActiveServices.serviceForegroundTimeout() → stopServiceLocked() → 延迟 SERVICE_FOREGROUND_TIMEOUT_ANR_MSG → appNotResponding()；Service.onTimeout() 对应 shortService / time-limited FGS 运行超时，不是 startForegroundService 启动宽限期超时。",
+          "suggestion": "把 startForegroundService 未及时调用 startForeground 与 shortService/dataSync/mediaProcessing 运行超时拆开：前者是 DidNotStartInTime/ANR 路径，后者才有 Service.onTimeout() 回调自救。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L292-L294 Android 15/16 版本演进",
+          "detail": "正文把 shortService 约 3 分钟超时放在 Android 15 新增项，并把 AnrTimer 迁移写成 Android 16；但官方 FGS type 文档中 shortService 是 Android 14/API 34 目标约束之一，AOSP android-15.0.0_r1 已有 com.android.server.utils.AnrTimer，ActiveServices 中也已使用 ServiceAnrTimer。",
+          "suggestion": "版本线改为：Android 14 引入 shortService 约 3 分钟语义；Android 15 增加 dataSync/mediaProcessing 6h/24h；AnrTimer 至少从 android-15.0.0_r1 开始验证，Android 16 只能写后续完善，不能写“迁移起点”。"
+        },
+        {
+          "type": "调试命令错误",
+          "location": "L294 dumpsys activity anr-timer",
+          "detail": "AOSP android-16.0.0_r1 的 ActivityManagerShellCommand 未暴露 anr-timer 子命令；AMS full dump 中会调用 AnrTimer.dump(pw, false)，但 `adb shell dumpsys activity anr-timer` 这个可操作命令未验证成立。",
+          "suggestion": "改成“可在 dumpsys activity 的完整输出中查 AnrTimer dump 段，具体过滤命令需以目标版本 dumpsys activity help/源码为准”，或补可验证命令。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T18:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
