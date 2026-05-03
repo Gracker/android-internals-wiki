@@ -3,7 +3,7 @@
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -29,8 +29,8 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -223,7 +223,7 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 
 ### 核心：AnrHelper 与 ProcessErrorStateRecord
 
-Android 11 起，`AnrHelper` 成为应用 ANR 请求的排队入口。它把一次 ANR 封装成内部 `AnrRecord`，再交给 `AnrConsumerThread` 串行处理。真正负责收集 trace、写 event log / dropbox、决定弹窗或杀进程的路径，在 `ProcessErrorStateRecord.appNotResponding()` 里继续展开。
+Android 11 起，`AnrHelper` 成为应用 ANR 请求的排队入口。它把一次 ANR 封装成内部 `AnrRecord`，再交给 `AnrConsumerThread` 串行处理。负责收集 trace、写 event log / dropbox、决定弹窗或杀进程的路径，在 `ProcessErrorStateRecord.appNotResponding()` 里继续展开。
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/AnrHelper.java
@@ -270,7 +270,7 @@ class AnrHelper {
 
 **堆栈收集使用 SIGQUIT 信号。** system_server 向目标进程发送 Signal 3（SIGQUIT），触发虚拟机的堆栈 dump。这也是为什么 ANR traces 文件中会包含所有线程的堆栈——因为 SIGQUIT 的处理函数会遍历虚拟机中的所有线程。
 
-**traces 的堆栈有滞后性。** 钉钉团队在 ANR 治理实践中将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈真正被捕获时，主线程上真正导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。我们在 9.3 节（ANR 分析方法）中会详细讨论如何应对这个挑战。
+**traces 的堆栈有滞后性。** 钉钉团队在 ANR 治理实践中将这个问题形象地描述为"刻舟求剑"：从超时检测到发送 SIGQUIT 再到堆栈 dump 完成，中间经历了一系列异步操作。等到堆栈被捕获时，主线程上导致超时的长耗时任务可能已经执行完毕，当前正在执行的是另一个完全无关的任务。我们在 9.3 节（ANR 分析方法）中会详细讨论如何应对这个挑战。
 
 **System Server 会向多个进程发送 SIGQUIT。** 不仅仅是对发生 ANR 的进程，系统可能会同时请求关联进程的堆栈信息。这意味着一个 App 收到 SIGQUIT 并不代表自己发生了 ANR，也可能是另一个 App 触发的。
 
@@ -359,7 +359,7 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 
 在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ApplicationExitInfo`** API（`Process.getErrorStateMemoryRegion()` 或 `ActivityManager.getHistoricalProcessExitReasons()`）程序化读取 ANR 堆栈。`adb pull /data/anr/` 在 Android 13 及以下仍然有效。
 
-**traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时真正导致超时的代码可能已经执行完毕了。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程处于空闲状态——真正的问题在更早的消息处理中。
+**traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时导致超时的代码可能已经执行完毕。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程处于空闲状态——问题出在更早的消息处理中。
 
 ### Event Log
 
@@ -438,15 +438,15 @@ Play Console 提供的 ANR 信息包括：
 
 我们在前面分析 `AnrHelper` 与 `ProcessErrorStateRecord` 时已经提到过堆栈捕获的滞后性。这里把这个问题的完整机制展开，因为它直接决定了我们后续分析 ANR 的方法论。
 
-**ANR trace 中主线程的堆栈，往往不是导致 ANR 的真正原因。** 这个现象的根本原因在于 ANR 机制的时序设计：超时检测发生在 system_server 中，而堆栈 dump 发生在超时检测之后。从"真正导致超时的代码开始执行"到"堆栈被 dump 下来"，中间经历了至少三个阶段：
+**ANR trace 中主线程的堆栈，往往不是导致 ANR 的直接原因。** 根源在于 ANR 机制的时序设计：超时检测发生在 system_server 中，而堆栈 dump 发生在超时检测之后。从"导致超时的代码开始执行"到"堆栈被 dump 下来"，中间经历了至少三个阶段：
 
 1. 超时计时器到期 → system_server 检测到超时
 2. system_server 的 AnrHelper 开始处理 → 创建 `AnrRecord` 并进入 `ProcessErrorStateRecord`
 3. 向目标进程发送 SIGQUIT → 目标进程 dump 堆栈
 
-在这整个过程中，应用的主线程并没有停止工作。真正导致超时的"长耗时消息"很可能已经执行完毕，主线程已经开始处理下一个消息，甚至进入了空闲状态（`nativePollOnce`）。
+在这整个过程中，应用的主线程并没有停止工作。导致超时的"长耗时消息"很可能已经执行完毕，主线程已经开始处理下一个消息，甚至进入了空闲状态（`nativePollOnce`）。
 
-钉钉团队在分析一个 ANR 问题时发现：BugReport 中的 traces.txt 显示主线程在处理传感器事件，真正导致 ANR 的是硬件渲染阶段的锁等待（耗时 68 秒）。传感器事件处理只用了 12 毫秒，但因为发生在超时检测之后，成了 traces.txt 中的"替罪羊"。
+钉钉团队在分析一个 ANR 问题时发现：BugReport 中的 traces.txt 显示主线程在处理传感器事件，导致 ANR 的实际原因是硬件渲染阶段的锁等待（耗时 68 秒）。传感器事件处理只用了 12 毫秒，但因为发生在超时检测之后，成了 traces.txt 中的"替罪羊"。
 
 这个认知直接决定了我们分析 ANR 的方式——不能简单地把 traces.txt 堆栈当作根因，而需要结合时间线和多种信息源交叉验证。这正是 9.3 节要讨论的核心主题。
 
@@ -457,7 +457,7 @@ Play Console 提供的 ANR 信息包括：
 
 ### 误区一："主线程堆栈就是 ANR 的根因"
 
-这是最常见的误区。拿到一份 traces.txt，看到主线程堆栈在某个方法上，就认定这个方法是 ANR 的罪魁祸首。但 traces.txt 中的堆栈是超时检测之后才 dump 的，真正导致超时的代码很可能已经执行完毕。我们在前面的"替罪羊"现象中已经详细解释了这个时序问题。正确的做法是：traces.txt 是线索之一，但必须结合 event log 中的时间戳、systrace/perfetto 中的主线程时间线来交叉验证。
+这是最常见的误区。拿到一份 traces.txt，看到主线程堆栈在某个方法上，就认定这个方法是 ANR 的罪魁祸首。但 traces.txt 中的堆栈是超时检测之后才 dump 的，导致超时的代码很可能已经执行完毕。我们在前面的"替罪羊"现象中已经详细解释了这个时序问题。正确的做法是：traces.txt 是线索之一，但必须结合 event log 中的时间戳、systrace/perfetto 中的主线程时间线来交叉验证。
 
 ### 误区二："ANR = CPU 高负载"
 
