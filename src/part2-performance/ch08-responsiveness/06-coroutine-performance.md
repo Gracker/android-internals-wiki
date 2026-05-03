@@ -1,7 +1,7 @@
 ---
 title: "Kotlin Coroutine 性能实践"
 chapter: "8.6"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-03"
@@ -27,7 +27,7 @@ sources:
     path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
 tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
 related_chapters: ["1.5", "7.7", "8.1", "8.2"]
-pipeline_stage: task6_complete
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -35,6 +35,8 @@ task9_result: pass-tech-review
 task9_reviewed_date: 2026-04-26
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T17:20:00+08:00"
+auto_promoted_by: "openclaw-task6"
+auto_promoted_date: "2026-05-04"
 task2b_state: fixed
 task2b_result: fixed
 ---
