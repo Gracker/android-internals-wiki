@@ -11093,6 +11093,64 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T06:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.8",
+      "section_title": "RecyclerView 列表滑动性能深度优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.8 RecyclerView 列表滑动性能深度优化 存在源码/API/版本口径问题需回炉（P0:2 P1:1）",
+      "material_paths": [
+        "logs/deep-review/2026-05-03-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L240-L246 共享 Pool 的锁竞争边界",
+          "detail": "正文称 AndroidX `RecyclerView.RecycledViewPool#getRecycledView()` / `putRecycledView()` 均为 `synchronized`，并据此推导共享 Pool 会出现锁竞争；但 AndroidX `androidx-main` 当前源码中这两个方法没有 `synchronized` 修饰，内部只是操作 `SparseArray<ScrapData>` / `ArrayList<ViewHolder>`，该段源码锚点与结论不成立。",
+          "suggestion": "删除“synchronized/锁竞争”结论；如要讨论共享 Pool 边界，改为主线程访问、Pool 默认每 viewType 5 个、create/bind running average 跨共享 Pool 聚合、不同 Adapter 共用 viewType 时可能污染 deadline 估计等可源码验证点。",
+          "severity": "P0"
+        },
+        {
+          "type": "API/源码错误",
+          "location": "L417-L422 GapWorker bindTime 盲区的应对策略",
+          "detail": "正文写“提前 `prepareToDraw()` 触发异步 measure”。AndroidX RecyclerView/ViewHolder 没有可用于 item 异步 measure 的 `prepareToDraw()` API；常见 `Bitmap.prepareToDraw()` 是纹理/GPU 上传预热，不是 View measure。该建议会把图片预上传和布局测量混为一谈。",
+          "suggestion": "删除该条，或改为可验证做法：固定 item 尺寸、降低 ConstraintLayout 约束复杂度、用 RecyclerView prefetch / LayoutPrefetchRegistry 覆盖 create/bind，measure 仍需通过 Trace 单独定位。",
+          "severity": "P0"
+        },
+        {
+          "type": "数据/版本口径错误",
+          "location": "L161-L167 Android 17 DeliQueue 对预取调度的影响",
+          "detail": "正文写“多层嵌套 RecyclerView + 高频数据更新场景 P95 掉帧率下降约 4%”，但未给设备、样本、trace 或 benchmark。Google 官方 DeliQueue 博客的口径是 apps targeting SDK 37+ 才启用新 MessageQueue，并给出 “-4% missed frames in apps / -7.7% System UI and Launcher / -9.1% time to first frame P95”，不是 RecyclerView 场景 P95 掉帧率。",
+          "suggestion": "补本地实验条件和原始数据，或改成官方口径：Android 17 + targetSdk 37+ 的 lock-free MessageQueue 可降低 MessageQueue monitor contention，官方观测为 app missed frames 约 -4%；不要把它写成 RecyclerView 专项 P95 数据。",
+          "severity": "P1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T13:11:19+08:00",
+      "status": "pending",
+      "source_file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+    },
+    {
+      "section": "7.9",
+      "section_title": "感知流畅性：步幅波动与无掉帧卡顿",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 存在源码/API/版本口径问题需回炉（P0:1 P1:0）",
+      "material_paths": [
+        "logs/deep-review/2026-05-03-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码路径/API 错误",
+          "location": "L323-L345 输入重采样 AIW-源码调研块",
+          "detail": "正文写触摸重采样由 `frameworks/native/libs/input/InputTransport.cpp` 的 `resampleTouchEvent()` 实现，并写 `ro.input.noresample=1` 禁用。AOSP android-15/16/main 中重采样逻辑已在 `frameworks/native/libs/input/InputConsumer.cpp`，关键函数是 `InputConsumer::resampleTouchState()` / `updateTouchState()`，`InputTransport.cpp` 只携带 `coords.isResampled` 等 transport 字段；配置属性为 `ro.input.resampling`，默认 true，设 0 禁用。",
+          "suggestion": "把源码锚点改为 `libs/input/InputConsumer.cpp`，方法改为 `InputConsumer::consume()`、`resampleTouchState()`、`updateTouchState()`；把属性改为 `ro.input.resampling=0` 禁用，并补 Android 14 及以前重采样曾在 `InputTransport.cpp` 的版本迁移说明。",
+          "severity": "P0"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T13:11:19+08:00",
+      "status": "pending",
+      "source_file": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
     }
   ],
   "completed": [
