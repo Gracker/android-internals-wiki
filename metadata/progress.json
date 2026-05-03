@@ -9828,6 +9828,32 @@
       ],
       "type": "task2b-rework",
       "details": "1.2: TimingsTraceAndSlog路径+startApexServices版本+product分区; 1.3: FGS oom_adj+AVF Terminal边界"
+    },
+    {
+      "date": "2026-05-03T11:43:08.509069+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "7.8",
+        "7.9"
+      ],
+      "details": [
+        {
+          "section": "7.8",
+          "fixes": [
+            "DeliQueue预取调度影响",
+            "共享Pool锁竞争边界",
+            "反射MessageQueue监控库兼容性"
+          ]
+        },
+        {
+          "section": "7.9",
+          "fixes": [
+            "AppJankStats 1ms精度限制",
+            "ARR动态刷新率对步幅波动的放大",
+            "插值器斜率与步幅均匀性"
+          ]
+        }
+      ]
     }
   ],
   "rework_log": [
