@@ -11231,6 +11231,71 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T00:30:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "10.4",
+      "section_title": "低内存对系统性能的影响",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 10.4 mm_events AOSP 锚点/官方链接不可复核；Android 17 Generational CMC 默认化断言需收窄",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-02-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/官方资料锚点错误",
+          "severity": "P0",
+          "location": "L174-L182 / L261 / 参考资料 L374 mm_events",
+          "detail": "正文标注 AOSP 源码锚点为 system/memory/mm_events/，参考资料链接到 https://source.android.com/docs/core/memory/mm-events；本轮复核该 source.android 链接返回 404，AOSP android-16.0.0_r1 也未找到 platform/system/memory/mm_events 路径。Android 16 lmkd 可见的是 system/memory/libmeminfo/libmemevents 与 BPF memevents。现写法会让读者无法复核 mm_events 采集链路，也可能混淆 device/vendor 侧 mm_events 配置与 AOSP libmemevents。",
+          "suggestion": "重新核对 mm_events 的真实项目/文档位置；若实际依赖 vendor mm_events.cfg 或 libmemevents/BPF memevents，应分别写清配置来源、AOSP 源码路径和 Perfetto 可见面；`mem.mm_events` 视图名在补到 perfetto.dev/trace_processor 证据前改为 [待验证]。"
+        },
+        {
+          "type": "版本差异/运行时开关",
+          "severity": "P1",
+          "location": "L164 Android 17 起全面默认 Generational CMC",
+          "detail": "章节 last_verified_against 仍是 AOSP android-16.0.0_r1，却把 Android 17 Generational CMC 写成“全面默认”。全书 §4.8 已把 Android 15+/17 CMC 分代实现描述为 AOSP main 可见且受 runtime flag / 内核能力 / 设备配置影响。当前断言超出已验证版本范围。",
+          "suggestion": "收窄为“Android 17 / AOSP main 可见 Generational CMC 路径，具体设备是否默认启用需看 runtime flag 与版本配置”；或补 Android 17 tag / 官方文档 / 设备配置证据后再保留默认化结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T02:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "11.2",
+      "section_title": "App 耗电优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.2 App 耗电优化存在精确闹钟权限与 WorkManager API 事实错误",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-02-deep-review.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/官方 API 错误",
+          "severity": "P0",
+          "location": "L351-L354 精确闹钟授权判断",
+          "detail": "正文把 setAlarmClock() 写成不需要 SCHEDULE_EXACT_ALARM special app access，且不应纳入 canScheduleExactAlarms() 前置判断。Android 14 官方 exact alarm 文档明确列出 setExact()、setExactAndAllowWhileIdle()、setAlarmClock() 都需要 SCHEDULE_EXACT_ALARM；Android 35 SDK AlarmManager.java 也在 setAlarmClock() 上标注 @RequiresPermission(SCHEDULE_EXACT_ALARM)，canScheduleExactAlarms() 文档同样列出 setAlarmClock()。",
+          "suggestion": "改为：setAlarmClock() 仍属于 exact alarm 能力并受 exact alarm 权限/豁免/USE_EXACT_ALARM 资格约束；它与 setExact* 的差异是 Doze 中用户可见闹钟会正常触发、系统会在触发前退出 Doze，而不是“不需要权限”。"
+        },
+        {
+          "type": "API 幻觉/版本差异",
+          "severity": "P0",
+          "location": "L206 WorkManager setPowerEfficiencyHint(boolean)",
+          "detail": "正文声称 WorkManager 在 Android 16/API 36 引入 setPowerEfficiencyHint(boolean)，并可调度到低功耗小核。本轮复核 developer.android.com 的 WorkRequest.Builder、Constraints.Builder、JobInfo.Builder 文档均未找到该 API；本地 Android SDK android-35/Baklava 也只找到 PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)，不是 WorkManager API。",
+          "suggestion": "删除 WorkManager setPowerEfficiencyHint 断言。若要讲能效提示，应改到 ADPF/PerformanceHintManager.Session.setPreferPowerEfficiency() 的适用边界；WorkManager/JobScheduler 仍按约束、quota、standby bucket、expedited/UIDT 等机制讲。"
+        },
+        {
+          "type": "版本差异/数据支撑",
+          "severity": "P1",
+          "location": "L273 GNSS 硬件围栏卸载 Android 15+ 与 2% 功耗",
+          "detail": "正文把 GNSS hardware geofencing 写成 Android 15+ 新能力，并给出“2026 主流旗舰 2% 以下”量化结论。AOSP/SDK 中 GnssCapabilities.hasGeofencing() 是 API 34 可见能力，GNSS geofence HAL/接口更早存在；“Android 15 起”与“2% 以下”均缺少官方或实测条件。",
+          "suggestion": "改为按设备能力描述：是否硬件卸载取决于 GnssCapabilities / GNSS HAL / vendor 实现；删除 Android 15+ 新增口径和 2% 数字，除非补芯片型号、测试场景、采样窗口、对比基线。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T02:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
