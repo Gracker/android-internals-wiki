@@ -11147,6 +11147,38 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T18:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "9.1",
+      "section_title": "ANR 设计思想",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 9.1 ANR 设计思想存在 P0 API/源码事实错误，需回炉修正完成通知线程模型、ContentProvider 超时常量与 ApplicationExitInfo trace API",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理错误",
+          "location": "L141-L146（完成通知接口与线程模型）",
+          "detail": "正文写 BroadcastReceiver 通过 IApplicationThread.finishReceiver() 向 AMS 发送完成通知，且“这些完成通知都运行在 Binder 线程上，与主线程异步”。AOSP android-14.0.0_r1 的 IApplicationThread.aidl 没有 finishReceiver；实际是 ActivityThread.handleReceiver() 在主线程执行 receiver.onReceive() 后调用 data.finish()/IActivityManager.finishReceiver。Service 的 serviceDoneExecuting() 与 ContentProvider 的 publishContentProviders() 也分别在 ActivityThread.handleServiceArgs()/installContentProviders() 主线程路径中发起 Binder 调用。",
+          "suggestion": "把本段改成“超时计时在 system_server 异步运行；应用侧完成回调通常在主线程完成组件回调后发起 Binder 调用（goAsync/异步 finish 另论），system_server 在 Binder 线程接收并取消超时”。同时将 IApplicationThread.finishReceiver 修正为 IActivityManager.finishReceiver。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L211-L213（ContentProvider 发布超时常量）",
+          "detail": "正文写 ContentProvider 发布超时常量是 ActivityManagerService.java 中的 CONTENT_PROVIDER_PUBLISH_TIMEOUT。AOSP android-14.0.0_r1 中 ActivityManagerService 定义的是 CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG，超时时长来自 ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS = 10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER；不存在文中这个常量名。",
+          "suggestion": "把源码锚点改为 ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG + ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS，并说明 AMS handler message 使用 ContentResolver 中的 10s 时长。"
+        },
+        {
+          "type": "API错误",
+          "location": "L360（ApplicationExitInfo 读取 ANR trace 的 API）",
+          "detail": "正文写可通过 Process.getErrorStateMemoryRegion() 或 ActivityManager.getHistoricalProcessExitReasons() 程序化读取 ANR 堆栈。AOSP android-14/15/16 的 android.os.Process 中未发现 getErrorStateMemoryRegion；ApplicationExitInfo 读取 trace 的公开入口是 ApplicationExitInfo.getTraceInputStream()，对象由 ActivityManager.getHistoricalProcessExitReasons() 返回。",
+          "suggestion": "删除 Process.getErrorStateMemoryRegion()；改为“ActivityManager.getHistoricalProcessExitReasons() 获取 ApplicationExitInfo，再通过 ApplicationExitInfo.getTraceInputStream() 读取关联 trace”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-03T22:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
