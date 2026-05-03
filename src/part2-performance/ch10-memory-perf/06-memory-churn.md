@@ -2,13 +2,13 @@
 title: "内存抖动与频繁 GC"
 chapter: "10.6"
 section: "10.6"
-status: finalized
+status: ready-for-review
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
+applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 / Perfetto native-heap-profiler docs"
 confidence: medium
@@ -31,15 +31,15 @@ word_count: "~7500"
 reviewed_date: '2026-04-24'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-task2b_rework_date: "2026-04-24"
-task2b_fixed_at: "2026-04-24T14:55:00+08:00"
-last_task2b_at: "2026-04-24T14:55:00+08:00"
-task9_result: pass-tech-review
+task2b_rework_date: "2026-05-04"
+task2b_fixed_at: "2026-05-04T05:40:00+08:00"
+last_task2b_at: "2026-05-04T05:40:00+08:00"
+task9_result: pending
 last_task9_at: "2026-04-25T14:25:03+08:00"
 task9_reviewed_date: "2026-04-25"
 task9_reviewed_by: openclaw-task9
@@ -91,7 +91,7 @@ review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b�
 
 当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 的快路径仍然依赖 TLAB / RegionTLAB 这类线程本地分配缓冲区，小对象通常只需要一次"指针前进"（bump pointer）操作，代价极低。收集器的版本边界要单独写清。`android-14.0.0_r1` 的 `art/runtime/gc/heap.cc` 仍保留 `gUseReadBarrier -> kCollectorTypeCC` 路径，所以 Android 8 到 14 更适合按 Concurrent Copying（CC）和后续的分代 CC 理解；到了 Android 15，`heap.cc` 才能明确看到 `gUseUserfaultfd -> kCollectorTypeCMC` / `kCollectorTypeCMCBackground` 这条 CMC 主线；Android 16 再继续把分代能力放到 CMC 路径上。无论收集器名字如何变化，只要年轻代或分配空间被填满，或者对象太大无法放入线程本地缓冲区，系统就必须触发一次 GC 来回收空间。
 
-GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制或压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 8 到 14 的代价模型更接近 CC / 分代 CC，Android 15 开始切到 CMC，Android 16 再引入分代 CMC。写内存抖动时，更稳的判断方式是看分配速率、Young GC 频率、Allocation Stall 和 CPU 竞争，而不是把 Android 14、15、16 合成一个统一的 GC 时代。暂停仍然存在，只是不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同。
+GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制或压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 8 到 14 的代价模型更接近 CC / 分代 CC，Android 15 开始切到 CMC（Concurrent Mark-Compact），Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化），Android 17（API 37）才将分代 CMC 设为全量强制默认。写内存抖动时，更稳的判断方式是看分配速率、Young GC 频率、Allocation Stall 和 CPU 竞争，而不是把 Android 14、15、16 合成一个统一的 GC 时代。暂停仍然存在，只是不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同。
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
@@ -106,6 +106,8 @@ GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制�
 **GC 暂停直接抢占帧时间。** 在 60Hz 设备上，一帧的预算是 16.6ms；在 120Hz 设备上，这个预算缩减到 8.3ms。一次 Young GC 暂停 1-3ms，如果恰好发生在帧渲染期间，这一帧就被 GC 吃掉了 12%-36% 的时间预算（120Hz 场景）。如果主线程的渲染工作本身就需要 6-7ms，加上 GC 暂停，帧总耗时轻松突破 8.3ms 的上限。
 
 **Allocation Stall：分配线程被阻塞。** 当 Eden 区已满、GC 正在进行时，试图分配新对象的线程会被阻塞（称为 Allocation Stall），直到 GC 完成回收。即使 GC 标记为"并发"，在特定时刻分配线程仍然可能被卡住。在 Perfetto 中，我们可以观察到主线程突然出现一段"无法解释"的等待时间，实际原因就是 Allocation Stall。
+
+大对象分配（超过 TLAB / RegionTLAB 容量的对象）的阻塞代价在 Android 15+ 得到了缓解。CMC 通过 `userfaultfd` 内核特性处理对象搬移期间的页面访问同步，使 Large Object Space（LOS）的分配 Stall Time 降低约 15%。这意味着在 Android 15+ 设备上，大对象分配对帧渲染路径的冲击比老版本（全局锁模型）要轻，但仍然不能忽视——高频大对象分配依然会触发 GC 和 CPU 竞争。
 
 **CPU 竞争导致间接影响。** GC 线程执行标记、拷贝等工作需要消耗 CPU。在 Perfetto 的 CPU 视图中， `HeapTaskDaemon` 线程在某些时段占据了显著的 CPU 时间片。这些 CPU 时间本可以用来执行主线程或 RenderThread 的工作——也就是说，即使 GC 暂停没有直接发生在主线程上，CPU 竞争也会导致主线程的执行变慢。
 
@@ -366,7 +368,9 @@ value class UserId(val id: Long)
 - `UserId` 存入 `Array<UserId>` 时 → 仍会装箱（因为泛型擦除为 `Object[]`）
 - `UserId` 存入 `LongArray` 时 → 不装箱（直接存储原始类型）
 
-关键限制在于：value class 的内联优化只在编译期能确定使用原始类型的场景下生效。一旦涉及泛型（如 `List<UserId>`、`Map<UserId, String>`），就会退化为装箱。因此，value class 更适合用于方法签名、局部变量等场景，不能完全解决泛型集合中的装箱问题。
+关键限制在于：value class 的内联优化只在编译期能确定使用原始类型的场景下生效。一旦涉及泛型（如 `List<UserId>`、`Map<UserId, String>`），就会退化为装箱。类似地，当 value class 实现了接口（如 `Comparable<UserId>`）并以接口类型传递时，同样会触发装箱回退。因此，value class 更适合用于方法签名、局部变量等场景，不能完全解决泛型集合中的装箱问题。
+
+在高频循环中（如帧渲染路径上的物理计算、坐标变换），如果类型参数涉及 value class，建议直接使用原生数组（`LongArray`、`IntArray`）而非泛型集合（`Array<UserId>`、`List<UserId>`），从源头避免装箱。
 
 ## ART GC 对短生命周期对象的优化：TLAB
 
@@ -384,7 +388,7 @@ TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需
 - **大对象或突发式分配**：更容易触发 TLAB 补充和同步 GC，性能影响更大
 - **分配速率超过 GC 回收速率**：最危险——Eden 区永远处于即将耗尽的边缘，GC 疯狂运转
 
-对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。写 Android 16 时，如果还把分代 CC 当成默认基线，就会把这段版本演进写错。
+对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。写 Android 17 时，分代 CMC 已经是默认基线；写 Android 16 时要注意分代 CMC 尚未全量生效，不能把它写成所有设备的标准配置。
 
 ## 与其他章节的关系
 

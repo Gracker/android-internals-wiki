@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-04T02:20:00+08:00",
+  "generated_at": "2026-05-04T05:45:52.608681+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,15 +7,15 @@
     "last_updated": "2026-05-04",
     "pipeline_stage_counts": {
       "unknown": 35,
-      "ready-to-publish": 105,
+      "ready-to-publish": 103,
       "task2b_pending": 91,
       "task9_pending": 11,
-      "task6_pending": 10
+      "task6_pending": 12
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 199,
-      "revisiting": 16,
+      "reviewed": 197,
+      "revisiting": 18,
       "revising": 1,
       "done": 2
     },
