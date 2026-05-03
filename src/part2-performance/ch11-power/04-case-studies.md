@@ -31,12 +31,13 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
@@ -642,7 +643,7 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 | Expedited | 10 分钟 | 同上，但调度优先级更高 |
 | User-Initiated | 30 分钟（`DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS`） | 超时后 `onStopJob()` 被调用 |
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java — getMaxJobExecutionTimeMs() 根据 Job 级别返回不同超时值]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java — getMaxJobExecutionTimeMs() 根据 Job 级别返回不同超时值]
 
 如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。这意味着即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 10 分钟（Regular/Expedited）或 30 分钟（User-Initiated）。
 
@@ -798,7 +799,7 @@ Doze 模式确实会大幅限制后台活动，但它只在"设备静止不动�
 
 - [AOSP PowerManager.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/os/PowerManager.java) — WakeLock acquire/release API
 - [AOSP AlarmManagerService.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/AlarmManagerService.java) — 闹钟调度实现
-- [AOSP JobServiceContext.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/job/JobServiceContext.java) — JobScheduler WakeLock 管理
+- [AOSP JobServiceContext.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java) — JobScheduler WakeLock 管理
 - [AOSP LocationManagerService.java](https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/LocationManagerService.java) — 位置服务实现
 - [Android Developers: Optimize for Battery Life](https://developer.android.com/topic/performance/power) — 官方功耗优化指南
 - [Android Developers: Battery Historian](https://developer.android.com/topic/performance/battery/battery-historian) — Battery Historian 使用文档
