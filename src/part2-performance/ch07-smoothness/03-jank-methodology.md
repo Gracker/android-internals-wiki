@@ -3,7 +3,7 @@ title: "卡顿分析方法论"
 chapter: "7.3"
 section: "7.3"
 reviewed_date: "2026-05-01"
-last_task2b_at: '2026-05-01T01:46:41+08:00'
+last_task2b_at: '2026-05-03T19:40:00+08:00'
 reviewed_by: openclaw-task6
 rework_date: "2026-04-04"
 rework_by: openclaw-task2b
@@ -40,10 +40,10 @@ task2b_result: fixed
 task6_reviewed_date: "2026-05-01"
 review_round: 1
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
 last_task9_at: "2026-05-01T03:20:00+08:00"
@@ -599,7 +599,7 @@ Binder Transaction 是 Android IPC 的核心，也是主线程卡顿的常见根
 **关键 Duration 指标**：
 - `client_dur`：同步调用中客户端从发出请求到收到回复的 wall-clock 时长；oneway 调用中为 0
 - `server_dur`：服务端从处理开始到发送回复的 wall-clock 时长
-- `dispatch_dur`：`server_ts - client_ts`，反映请求在服务端队列中等待调度的时间
+- **dispatch 延迟**（需手动计算）：`server_ts - client_ts`，反映请求在服务端队列中等待调度的时间。`android_binder_txns` 表不直接提供 `dispatch_dur` 列，需要用 `server_ts - client_ts` 计算获得 [已验证: AOSP Perfetto stdlib `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`]
 
 **核心诊断 SQL**：
 
@@ -611,9 +611,9 @@ SELECT
     aidl_name,
     method_name,
     client_process,
-    client_dur / 1e6    AS client_ms,
-    server_dur / 1e6    AS server_ms,
-    dispatch_dur / 1e6  AS dispatch_ms
+    client_dur / 1e6                AS client_ms,
+    server_dur / 1e6                AS server_ms,
+    (server_ts - client_ts) / 1e6   AS dispatch_ms
 FROM android_binder_txns
 WHERE is_sync = 1
 ORDER BY client_dur DESC
@@ -623,15 +623,15 @@ LIMIT 20;
 **归因判断树**：
 - `client_dur` 长 + `server_dur` 短 → 问题在 **dispatch/queue**（服务端线程池饱和或调度延迟）
 - `server_dur` 很长 → 问题在 **服务端业务逻辑**（锁竞争、I/O 阻塞、深层 RPC）
-- `dispatch_dur` 持续 >5ms → **Binder 线程池饱和**，所有 worker thread busy
+- `(server_ts - client_ts)` 持续 >5ms → **Binder 线程池饱和**，所有 worker thread busy
 
 **Binder 线程池饱和识别**：
 
 ```sql
 SELECT client_process, server_process,
-       AVG(dispatch_dur / 1e6) AS avg_dispatch_ms,
-       AVG(server_dur / 1e6)    AS avg_server_ms,
-       COUNT(1)                AS txn_count
+       AVG((server_ts - client_ts) / 1e6) AS avg_dispatch_ms,
+       AVG(server_dur / 1e6)              AS avg_server_ms,
+       COUNT(1)                            AS txn_count
 FROM android_binder_txns
 WHERE is_sync = 1
 GROUP BY client_process, server_process
@@ -662,7 +662,7 @@ data_sources: {
             ftrace_events: "binder/binder_transaction"
             ftrace_events: "binder/binder_transaction_received"
             ftrace_events: "binder/binder_transaction_alloc_buf"
-            ftrace_events: "binder/binder_reply"
+            ftrace_events: "binder/binder_return"
             ftrace_events: "sched/sched_switch"
             ftrace_events: "sched/sched_wakeup"
         }

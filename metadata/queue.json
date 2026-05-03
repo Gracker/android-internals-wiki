@@ -10243,7 +10243,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T03:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T11:45:30.295962+00:00",
+      "completed_reason": "P0: dispatch_dur改为(server_ts-client_ts)计算;binder/binder_reply修正为binder/binder_return"
     },
     {
       "section": "16.5",
@@ -10743,7 +10745,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-02T10:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-03T11:45:30.295962+00:00",
+      "completed_reason": "P0: sugov_get_util代码块标注修正为android16-6.12;RT/DL直接置顶频率改为bw_min带宽约束路径;cpu_frequency_limits已修正"
     },
     {
       "section": "5.5",
