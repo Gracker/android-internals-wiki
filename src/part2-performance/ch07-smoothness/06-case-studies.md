@@ -6,7 +6,7 @@ drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-05-03"
 last_verified_against: "AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI / Android 14 cached process freezing / ComponentCallbacks2 / Lottie vs AVD Perfetto 特征"
@@ -14,9 +14,9 @@ polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 confidence: medium-high
-task9_reviewed_date: 2026-04-28
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-28T04:29:00+08:00"
+task9_reviewed_date: "2026-05-03"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-03T08:25:39+08:00"
 sources:
   - type: blog
     path: "obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md"
@@ -34,16 +34,16 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: task6_pending
+pipeline_stage: "task2b_pending"
 task6_state: "revisiting"
-task9_state: pending
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: fixed
 task2b_rework_date: "2026-05-03"
 task2b_fixed_at: "2026-05-03T07:40:00+08:00"
-task9_result: needs-rework
+task9_result: "needs-rework"
 last_task2b_at: "2026-04-27T13:40:00+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
+task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1；P1 合并 queue.json，P2 写入 suggestions.md。"
 ---
 
 # 案例集

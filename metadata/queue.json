@@ -6426,9 +6426,10 @@
       "section": "7.6",
       "section_title": "案例集",
       "priority": 85,
-      "reason": "[Deep Tech Review] 章节锚点要求案例覆盖主线程阻塞、GC、调度、SurfaceFlinger 合成、温控。正文五个主案例实际覆盖 measure/layout、onBind Binder、GC、RenderThread sync、低内存；缺少独立的 SurfaceFlinger/HWC 合成案例和 thermal throttling 案",
+      "reason": "[Deep Tech Review] 7.6 案例集仍缺 SurfaceFlinger/HWC 合成、温控降频完整案例；Lottie/AVD 渲染瓶颈对比需回源修正",
       "material_paths": [
-        "intake/suggestions.md"
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
       ],
       "review_issues": [
         {
@@ -6436,11 +6437,18 @@
           "location": "L58 锚点 vs 五个案例主体",
           "detail": "章节锚点要求案例覆盖主线程阻塞、GC、调度、SurfaceFlinger 合成、温控。正文五个主案例实际覆盖 measure/layout、onBind Binder、GC、RenderThread sync、低内存；缺少独立的 SurfaceFlinger/HWC 合成案例和 thermal throttling 案例。后面的厂商/高刷/低端机段落不是完整案例，不能替代锚点。",
           "suggestion": "新增两个完整案例：① SF/HWC 合成路径（CLIENT/DEVICE composition、GPU completion fence、present deadline、FrameTimeline 关联）；② 温控降频路径（thermal HAL/PowerStats、CPU/GPU freq 下探、Runnable 等待和帧预算变化）。每个案例补 Trace 观察点、根因和修复/缓解策略。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L360-L372 Lottie 与 AVD 的 Perfetto 特征对比",
+          "detail": "表格把 Lottie 概括为“主线程 JSON 解析 + 位图渲染 / GPU 参与低”，容易误导。Lottie Android 的执行路径至少包含 composition 解析、每帧属性更新、Canvas 绘制；RenderMode 可在 AUTOMATIC/HARDWARE/SOFTWARE 间切换，软件路径会使用内部 bitmap，硬件路径可能受 mask/matte、path、textureUpload 等影响。不能把 Lottie 稳定写成低 GPU 或位图渲染。",
+          "suggestion": "按 Lottie 版本与 RenderMode 重写：解析/Composition 构建、每帧 update/draw、hardware/software path、mask/matte/merge path 的成本分开；Perfetto 观察点补主线程解析 slice、RenderThread/draw、GPU/textureUpload 与首帧/循环播放差异。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T04:29:00+08:00",
-      "status": "pending"
+      "status": "pending",
+      "updated_at": "2026-05-03T08:25:39+08:00"
     },
     {
       "section": "8.10",
