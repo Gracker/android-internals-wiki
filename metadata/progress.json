@@ -1,26 +1,23 @@
 {
-  "generated_at": "2026-05-03T16:20:00+08:00",
+  "generated_at": "2026-05-03T22:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
     "last_updated": "2026-05-03",
     "pipeline_stage_counts": {
-      "unknown": 35,
-      "ready-to-publish": 107,
-      "task2b_pending": 89,
+      "ready-to-publish": 106,
+      "task2b_pending": 90,
       "task9_pending": 11,
       "task6_pending": 10
     },
     "task6_state_counts": {
-      "unknown": 34,
       "reviewed": 199,
       "revisiting": 16,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
-      "unknown": 40,
       "reviewed": 205,
       "pending": 7
     },
@@ -41,26 +38,22 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 35,
-      "ready-to-publish": 107,
-      "task2b_pending": 89,
+      "ready-to-publish": 106,
+      "task2b_pending": 90,
       "task9_pending": 11,
       "task6_pending": 10
     },
     "task6_state_counts": {
-      "unknown": 34,
       "reviewed": 199,
       "revisiting": 16,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
-      "unknown": 40,
       "reviewed": 205,
       "pending": 7
     },
     "task2b_state_counts": {
-      "unknown": 42,
       "fixed": 111,
       "pending": 96,
       "idle": 3
@@ -3024,13 +3017,13 @@
       "title": "ANR 设计思想",
       "chapter": "9.1",
       "section": "9.1",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-02",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-26",
       "last_verified_against": "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -3039,9 +3032,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-05-03",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T17:39:46+08:00",
+      "last_task9_at": "2026-05-03T22:20:00+08:00",
       "last_task2b_at": "2026-04-26T15:45:22+08:00",
       "task2b_fixed_at": "2026-04-26T15:45:22+08:00",
       "repaired_date": "2026-04-26",
@@ -7381,6 +7374,19 @@
         }
       ],
       "log": "logs/deep-review/2026-05-03-16-deep-review.md"
+    },
+    {
+      "date": "2026-05-03",
+      "task": "task9-deep-review",
+      "time": "22:20",
+      "sections_reviewed": [
+        {
+          "section": "9.1",
+          "title": "ANR 设计思想",
+          "result": "needs-rework",
+          "issues": 5
+        }
+      ]
     }
   ],
   "progress": {
@@ -8482,7 +8488,7 @@
       }
     }
   },
-  "last_updated": "2026-05-03T16:20:00+08:00",
+  "last_updated": "2026-05-03T22:20:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10457,5 +10463,24 @@
     ],
     "suggestions_added": 3,
     "log": "logs/deep-review/2026-05-03-16-deep-review.md"
+  },
+  "2026-05-03-22-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "9.1"
+    ],
+    "files": [
+      "src/part2-performance/ch09-anr/01-anr-design.md"
+    ],
+    "timestamp": "2026-05-03T22:20:00+08:00",
+    "results": {
+      "9.1": "needs-rework"
+    },
+    "auto_finalized": [],
+    "queue_added": [
+      "9.1"
+    ],
+    "suggestions_added": 2,
+    "log": "logs/deep-review/2026-05-03-22-deep-review.md"
   }
 }

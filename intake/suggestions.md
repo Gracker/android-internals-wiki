@@ -857,3 +857,15 @@
 - **问题**：正文给出 Android 11+ `adb shell cat /data/anr/anr_*` 作为查看 trace 命令，但 Android 14+ 非 root 设备通常无法直接访问 /data/anr；同书 9.1 已写 bugreport / ApplicationExitInfo 路径，两个章节会造成实践口径不一致。
 - **建议**：命令旁标注“root/userdebug 或 Android 13- 可用”；Android 14+ 普通设备优先用 adb bugreport 或 ApplicationExitInfo.getTraceInputStream()。
 - **review 日志**：logs/deep-review/2026-05-03-18-deep-review.md
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-05-03
+- **类型**：版本差异
+- **位置**：L211（getProviderMimeTypeAsync 版本线）
+- **问题**：正文把 getProviderMimeType()/getProviderMimeTypeAsync 写成 API 31+ 的通用当前路径。AOSP android-12 的 IActivityManager 确有 getProviderMimeTypeAsync；android-14 的 ContentResolver.getType() 已走 IContentProvider.getTypeAsync() / ActivityManager.getMimeTypeFilterAsync() 等路径，原表述会把 Android 14+ 读者带到旧接口。
+- **建议**：拆成 Android 12 引入 getProviderMimeTypeAsync 的历史节点，以及 Android 14+ ContentResolver.getType()/getTypeAsync/getMimeTypeFilterAsync 的当前路径。
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-05-03
+- **类型**：版本差异/交叉一致性
+- **位置**：L400-L404（ANR trace 文件存储演进）
+- **问题**：Android 10 段已写“按时间和进程分别存储”，Android 13 段又写“改为按进程独立存储”，两个版本节点的差异边界重叠。
+- **建议**：重新核对 AOSP trace 文件命名/写入路径演进，把 Android 10 的 traces.txt→/data/anr/anr_* 与 Android 12/13 的可靠性或按进程改进拆清楚，避免重复归因。
