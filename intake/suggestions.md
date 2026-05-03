@@ -849,3 +849,11 @@
 - **位置**：L406 OEM 游戏模式对 Trace 的干扰
 - **问题**：正文仍保留“各主要 OEM 厂商游戏模式的关闭方法列表”占位。该列表直接影响 Game Mode、interventions、ADPF 与 OEM 私有策略的归因实验。
 - **建议**：补 Pixel / Samsung / Xiaomi / OPPO / vivo 的关闭入口或最小核验清单；无法全量覆盖时，至少说明如何确认 OEM 面板、`game_overlay` 和系统省电模式没有污染基线。
+
+
+## [Task9 Deep Review] 9.2 ANR 类型与触发条件 — 2026-05-03
+- **类型**：版本/调试路径
+- **位置**：L331-L332 /data/anr/anr_* 命令
+- **问题**：正文给出 Android 11+ `adb shell cat /data/anr/anr_*` 作为查看 trace 命令，但 Android 14+ 非 root 设备通常无法直接访问 /data/anr；同书 9.1 已写 bugreport / ApplicationExitInfo 路径，两个章节会造成实践口径不一致。
+- **建议**：命令旁标注“root/userdebug 或 Android 13- 可用”；Android 14+ 普通设备优先用 adb bugreport 或 ApplicationExitInfo.getTraceInputStream()。
+- **review 日志**：logs/deep-review/2026-05-03-18-deep-review.md
