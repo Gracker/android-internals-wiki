@@ -30,11 +30,11 @@ polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
-last_task2b_at: "2026-05-01T23:43:12.673681"
-task2b_state: pending
+last_task2b_at: "2026-05-03T19:40:00+08:00"
+task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-02
 task9_reviewed_by: openclaw-task9
@@ -257,10 +257,10 @@ schedutil 的调频决策可以简化为以下步骤：
 2. **线性映射到频率**：schedutil 使用一个简单的线性公式把利用率映射到频率：`target_freq = max_freq * util / capacity`。如果 CPU 上所有线程的总利用率是 capacity 的 60%，目标频率就是最高频率的 60%。
 3. **应用 rate_limit**：为了避免频率抖动（短时间内频繁升降频），schedutil 有一个 `rate_limit_us` 参数（通常为 1-2ms），限制两次调频之间的最小间隔。
 4. **特殊处理**：
-   - **实时任务（RT/DL）**：schedutil 对 SCHED_FIFO 和 SCHED_RR 类型的任务直接使用最高频率，不按利用率缩放。这是因为实时任务对延迟极其敏感，不能冒频率不够的风险。
+   - **实时任务（RT/DL）**：现代内核（v6.6/android16-6.12）中，schedutil 已不再对 RT/DL 任务直接置顶频率。实际路径是 `effective_cpu_util()` 将 RT/DL 带宽需求纳入 `bw_min` 计算，`sugov_update_single_freq()` / `sugov_update_shared()` 在检测到 `bw_min > 0` 时把频率下限锁定到满足带宽的最低值。当 RT/DL 带宽占满 CPU 时，频率自然会映射到最高，但这走的是带宽约束路径，不是“直接置顶”。
    - **I/O Boost**：当线程在进行 I/O 操作时（比如从磁盘读取数据），schedutil 会临时抬升其利用率估计，让频率更快地提上去。这是因为 I/O 操作通常与用户体验直接相关（比如加载页面、读取文件），需要更快的响应。
 
-schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CPU 上所有调度类的利用率。Linux 6.6 中的实际签名如下（简化展示关键逻辑）：
+schedutil 的核心调频函数是 `sugov_get_util()`，它负责汇总目标 CPU 上所有调度类的利用率。以下展示 android16-6.12 GKI 内核中的实际实现（简化展示关键逻辑）：
 
 ```c
 // android16-6.12（GKI）kernel/sched/cpufreq_schedutil.c
@@ -284,7 +284,7 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
 }
 ```
 
-这段代码的要点：`effective_cpu_util()` 是核心汇总函数，把 CFS、RT、deadline 三类调度实体的利用率合并，并根据 uclamp 约束裁剪出最终的 `util` 和 `min/max` 范围。android16-6.12 与 Linux v6.6 mainline 的差异在于：mainline 的 `sugov_get_util` 使用 `FREQUENCY_UTIL` / `ENERGY_UTIL` 两个枚举区分调频与选核，而 android16-6.12 改为直接通过 `effective_cpu_util` + `sugov_effective_cpu_perf` 两个步骤完成，并引入了 `bw_min` 作为 deadline 带宽的下限保障。RT/DL 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：当检测到 RT/DL 有带宽需求时，schedutil 直接映射到最高频率。
+这段代码的要点：`effective_cpu_util()` 是核心汇总函数，把 CFS、RT、deadline 三类调度实体的利用率合并，并根据 uclamp 约束裁剪出最终的 `util` 和 `min/max` 范围。android16-6.12 与 Linux v6.6 mainline 的差异在于：mainline 的 `sugov_get_util` 接受单个 `struct sugov_cpu *` 参数，内部使用 `FREQUENCY_UTIL` / `ENERGY_UTIL` 枚举区分调频与选核；android16-6.12 增加了 `unsigned long boost` 参数，改为直接通过 `effective_cpu_util` + `sugov_effective_cpu_perf` 两步完成，引入 `bw_min` 作为 deadline 带宽的下限保障，并预留了 `scx_cpuperf_target()` 接口用于 sched_ext 可编程调度。RT/DL 任务的频率映射在 `sugov_update_single_freq()` / `sugov_update_shared()` 中处理：`bw_min > 0` 时频率下限被锁定到带宽约束对应的最低频率，如果带宽需求接近 CPU 满载，最终频率自然会接近最高值。
 
 [已验证: android16-6.12 kernel/sched/cpufreq_schedutil.c; Linux v6.6 mainline 同文件对比]
 
