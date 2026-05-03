@@ -26,6 +26,7 @@ tags: ['perfetto', 'thread-state', 'sched-switch', 'running', 'runnable', 'sleep
 related_chapters: ["5.1", "13.1", "13.5"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework

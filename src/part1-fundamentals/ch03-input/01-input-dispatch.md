@@ -714,3 +714,80 @@ if (earliest->first <= currentTime) {
 - 摘要：材料围绕 InputChannel 的 NORMAL/BROKEN/ZOMBIE 三态、socketpair+token 设计、Android 15/16 六级 InputListener 链，以及 WindowInfosListenerInvoker 以 vsyncId 维持输入拓扑与显示一致性的机制展开。
 - 注入时间：2026-04-18
 - 价值：能补强 3.1 里最容易缺失的失败处理语义和 Input-SF 协同链路。
+
+<!-- AIW-源码调研-2026-05-03 -->
+## Input 事件分发全流程 — stale-event 与 WindowInfosListener 逐版本深化（2026-05-03 补核）
+
+> 本节为 2026-04-17 stale event 章节的进一步深化，结合 AOSP 12-16 源码对比，重点补充以下发现：
+
+### 1. stale-event 的版本演进路径（非突变，渐进演化）
+
+| 版本 | stale 判定位置 | 判定方式 |
+|------|--------------|----------|
+| Android 12 | `dispatcher/InputDispatcher.cpp` 静态函数 | `isStaleEvent(currentTime, entry)` — 直接比较 eventTime 与 currentTime 差值 vs `STALE_EVENT_TIMEOUT` |
+| Android 13/14 | `InputDispatcher::isStaleEvent()` 成员方法 | `mStaleEventTimeout` 成员变量，默认 10s * `HwTimeoutMultiplier()` |
+| Android 15/16 | `InputDispatcher::isStaleEvent()` → 委托 policy | `mPolicy.isStaleEvent(currentTime, entry.eventTime)` — 判定逻辑下沉到 Policy 层 |
+
+**关键结论**：stale event 机制在 Android 12-16 之间是渐进演化而非版本突变。Android 12 的静态函数版本到 Android 13/14 的成员方法版本，再到 Android 15/16 的 policy 委托版本，构成了清晰的演化链条。
+
+### 2. STALE_EVENT_TIMEOUT 常量对比
+
+```cpp
+// Android 12 (android-12.0.0_r1)
+constexpr nsecs_t STALE_EVENT_TIMEOUT = 10000 * 1000000LL; // 10 秒，固定值
+
+// Android 13/14/15/16 (android-14.0.0_r1+)
+static constexpr auto STALE_EVENT_TIMEOUT = std::chrono::seconds(10) * HwTimeoutMultiplier();
+```
+
+`HwTimeoutMultiplier()` 是 Android 14+ 引入的乘数机制，允许系统属性 `persist.input.timeout.multiplier` 动态调整超时阈值（设备级配置）。
+
+### 3. DropReason::STALE 在 dispatchOnceInnerLocked 中的判断位置
+
+stale 检查发生在 `dispatchOnceInnerLocked()` 内部、调用 `dispatchKeyLocked()` / `dispatchMotionLocked()` 之前，顺序为：
+
+1. `DROP_REASON_POLICY` — policy 消费
+2. `DROP_REASON_DISABLED` — 分发被禁用
+3. `DROP_REASON_STALE` — **stale 检查**（10 秒超时）
+4. `DROP_REASON_BLOCKED` — 事件被阻塞
+5. `DROP_REASON_APP_SWITCH` — app switch 待处理
+
+这意味着 stale 判定优先级**低于** policy 消费和 DISABLED，高于 BLOCKED 和 APP_SWITCH。
+
+### 4. AnrTracker 的完整调用链
+
+```
+processAnrsLocked()
+  → mAnrTracker.findExpired(currentTime)
+  → if found: mPolicy->inputDispatchingTimedOut(connectionInfo, ...)
+
+NativeInputDispatcherPolicy.inputDispatchingTimedOut()
+  → InputManagerService.notifyANR()
+  → InputMonitor.notifyANR()
+  → ActivityManagerService.inputDispatchingTimedOut()
+  → (ANR dialog 或 kill)
+```
+
+注意：stale event 丢弃（10 秒）和 ANR 触发（5 秒）是**并行独立运行**的两个机制。stale 丢弃在 InputDispatcher 内部完成，不触发 ANR dialog；ANR 由 AnrTracker 驱动，独立于 stale 机制。
+
+### 5. InputFlinger 线程模型（跨版本一致）
+
+| 线程 | 职责 | 运行位置 |
+|------|------|----------|
+| InputReaderThread | `EventHub::getEvents()` 读取原始事件，`InputReader::loopOnce()` 加工 | system_server |
+| InputDispatcherThread | `InputDispatcher::dispatchOnce()` 分发事件 | system_server |
+
+两者通过 `InputManager` 持有对方的 `sp<>` 智能指针，直接函数调用通信，不走 IPC。Android 12+ 的目录结构重组（reader/dispatcher 子目录）是代码组织变化，不是进程/线程模型变化。
+
+### 6. WindowInfosListener 补充说明（vs setInputWindows）
+
+Android 12 的 `setInputWindows()` 是 Pull 模式（InputDispatcher 主动查询）；Android 13+ 的 `addWindowInfosListener()` + `DispatcherWindowListener` 是 Push 模式（SurfaceFlinger 推送）。Push 模式降低了 InputDispatcher 查询窗口信息的延迟，提升了触摸分发的实时性。
+
+### 信息源（本次补核）
+
+1. [InputDispatcher.cpp - AOSP cs.android.com mainline](https://cs.android.com/android/platform/superproject/+/master:frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp) — `isStaleEvent()`, `STALE_EVENT_TIMEOUT`, `dropInboundEventLocked()` 源码
+2. [ANR detection in InputDispatcher - AOSP anr.md](https://android.googlesource.com/platform/frameworks/native/+/2f8fa1367c/services/inputflinger/docs/anr.md) — AnrTracker 机制官方说明
+3. [Input系统—InputDispatcher线程 - Gityuan](http://gityuan.com/2016/12/17/input-dispatcher/) — `dropInboundEventLocked()` 完整 switch-case，含 `DROP_REASON_STALE`
+4. [Android12 Input子系统解析 - FranzKafka Blog](https://blog.coderfan.org/en/android12-input-event-dispatch-progress.html) — Android 12 `dispatchKeyLocked` 中 `isStaleEvent` 调用序列
+5. [InputFlinger directory - cs.android.com](https://cs.android.com/android/platform/superproject/+/master:frameworks/native/services/inputflinger/) — Android 12+ 目录重组结构
+6. [Analyze AOSP input architecture - utzcoz](https://utzcoz.github.io/2020/05/06/Analyze-AOSP-input-architecture.html) — InputReaderThread / InputDispatcherThread 调用关系
