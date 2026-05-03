@@ -28,7 +28,7 @@ tags: [ipc, binder, socket, pipe, shared-memory, mmap, ashmem, intent, aidl, mes
 related_chapters: ["1.4", "1.10", "1.13", "2.15", "4.1", "9.1"]
 created_by: "manual-request"
 created_date: "2026-04-09"
-reviewed_date: 2026-04-20
+reviewed_date: "2026-05-04"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 review_log: "logs/review/2026-04-11-09-review.md"
@@ -264,7 +264,6 @@ InputDispatcher 这一行最容易写错。输入事件不是通过 `/data/syste
 
 
 
-<!-- AIW-源码调研-2026-04-28: memfd Sealing 与零拷贝安全 -->
 ### 3.4.1 F_SEAL_FUTURE_WRITE 与 Parcel::writeBlob 零拷贝机制
 
 在"共享内存、DMA-BUF 与 FMQ"讨论框架下，需要补充一个关键安全机制：memfd Sealing。
@@ -377,7 +376,7 @@ libartbase 的封装（`bionic/libartbase/base/memfd.cc`）提供 tmpfile fallba
 
 ### 4.2 Android 常见的“组合式 IPC”
 
-把 Binder、Socket、共享内存、FMQ 写成互斥的“单选题”，在 Android 里很容易把问题讲歪。真实系统更常见的做法是：**Binder / HwBinder 负责 control plane，fd 指向的共享内存、dmabuf、FMQ 或 socket 负责 data plane。** 前者做权限检查、生命周期管理、错误返回和小对象元数据，后者搬运真正的大数据。
+把 Binder、Socket、共享内存、FMQ 写成互斥的“单选题”，在 Android 里很容易把问题讲歪。真实系统更常见的做法是：**Binder / HwBinder 负责控制面，fd 指向的共享内存、dmabuf、FMQ 或 socket 负责数据面。** 前者做权限检查、生命周期管理、错误返回和小对象元数据，后者搬运大数据。
 
 fd 传递就是这两层之间的桥。Binder 路径里对应的是 `BINDER_TYPE_FD`，Java 层常见包装是 `ParcelFileDescriptor`；socket 路径里对应的是 `sendmsg(..., SCM_RIGHTS)`。大块数据之所以“看起来是 Binder 调用，实际没把数据塞进 Parcel”，原因就在这里。
 
