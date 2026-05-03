@@ -35,7 +35,8 @@ sources:
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
 pipeline_stage: "task2b_pending"
-task6_state: "revisiting"
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: "reviewed"
 task2b_state: "pending"
 task2b_result: fixed

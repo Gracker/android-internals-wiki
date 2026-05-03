@@ -2519,6 +2519,91 @@
       "relevance": "AI tools for Android development",
       "mapping": "ch16",
       "scored_at": "2026-05-02T05:47:03.094240"
+    },
+    {
+      "title": "Android 15 16KB page size NDK max-page-size",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-android-16kb-page-size-ndk-compatibility.md",
+      "type": "research",
+      "category": "ndk",
+      "quality": "high",
+      "tags": [
+        "android-15",
+        "16kb-page-size",
+        "ndk-compatibility",
+        "memory"
+      ],
+      "mapped_chapter": "ch08",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027465"
+    },
+    {
+      "title": "Hardware Bitmap RenderNode SurfaceFlinger composition",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-hardware-bitmap-rendernode-surfaceflinger-composition.md",
+      "type": "research",
+      "category": "rendering",
+      "quality": "high",
+      "tags": [
+        "hardware-bitmap",
+        "rendernode",
+        "surfaceflinger",
+        "gpu"
+      ],
+      "mapped_chapter": "ch02",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027475"
+    },
+    {
+      "title": "KOOM fork dump ApplicationExitInfo",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-koom-fork-dump-applicationexitinfo.md",
+      "type": "research",
+      "category": "apm",
+      "quality": "high",
+      "tags": [
+        "koom",
+        "oom-monitoring",
+        "fork-dump",
+        "apm"
+      ],
+      "mapped_chapter": "ch09",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027477"
+    },
+    {
+      "title": "sched_ext BPF extensible scheduler Android",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-sched-ext-bpf-extensible-scheduler-android.md",
+      "type": "research",
+      "category": "kernel",
+      "quality": "high",
+      "tags": [
+        "sched_ext",
+        "bpf",
+        "scheduler",
+        "kernel-6.12"
+      ],
+      "mapped_chapter": "ch05",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027479"
+    },
+    {
+      "title": "WebView render process recovery onRenderProcessGone",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-webview-render-process-recovery.md",
+      "type": "research",
+      "category": "webview",
+      "quality": "high",
+      "tags": [
+        "webview",
+        "render-process",
+        "crash-recovery",
+        "chromium"
+      ],
+      "mapped_chapter": "ch07",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027480"
     }
   ]
 }

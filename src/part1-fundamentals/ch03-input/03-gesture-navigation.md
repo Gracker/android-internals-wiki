@@ -60,7 +60,7 @@ sources:
 tags: [gesture-navigation, input-monitor, back-gesture, predictive-back, edge-swipe, systemui, windowinsets]
 related_chapters: ["3.1", "3.2", "2.3", "2.4", "1.5"]
 pipeline_stage: "ready-to-publish"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: "reviewed"
 task9_result: "pass-tech-review"
 task2b_state: fixed
