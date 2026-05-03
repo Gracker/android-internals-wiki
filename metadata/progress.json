@@ -3,19 +3,19 @@
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
-    "total_sections": 250,
+    "total_sections": 252,
     "last_updated": "2026-05-03",
     "pipeline_stage_counts": {
       "unknown": 35,
-      "ready-to-publish": 108,
-      "task2b_pending": 88,
+      "ready-to-publish": 107,
+      "task2b_pending": 89,
       "task9_pending": 11,
       "task6_pending": 10
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 187,
-      "revisiting": 28,
+      "reviewed": 199,
+      "revisiting": 16,
       "revising": 1,
       "done": 2
     },
@@ -26,31 +26,31 @@
     },
     "task2b_state_counts": {
       "unknown": 42,
-      "fixed": 114,
-      "pending": 93,
+      "fixed": 111,
+      "pending": 96,
       "idle": 3
     },
-    "finalized": 111,
-    "ready-for-review": 109,
+    "finalized": 108,
+    "ready-for-review": 112,
     "unknown": 32,
     "status_counts": {
       "unknown": 32,
-      "finalized": 109,
-      "ready-for-review": 111
+      "finalized": 108,
+      "ready-for-review": 112
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 35,
-      "ready-to-publish": 108,
-      "task2b_pending": 88,
+      "ready-to-publish": 107,
+      "task2b_pending": 89,
       "task9_pending": 11,
       "task6_pending": 10
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 187,
-      "revisiting": 28,
+      "reviewed": 199,
+      "revisiting": 16,
       "revising": 1,
       "done": 2
     },
@@ -61,8 +61,8 @@
     },
     "task2b_state_counts": {
       "unknown": 42,
-      "fixed": 114,
-      "pending": 93,
+      "fixed": 111,
+      "pending": 96,
       "idle": 3
     },
     "last_updated": "2026-05-03"
@@ -1927,7 +1927,7 @@
       "last_verified_against": "ARM official documentation, Linux kernel 6.6",
       "confidence": "high  # 架构原理和 schedutil 机制描述经过 AOSP 源码和 ARM 官方文档双重验证",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
@@ -3828,7 +3828,7 @@
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-25",
       "task6_result": "pass-light-edit",
@@ -4221,7 +4221,7 @@
       "last_verified_against": "perfetto.dev docs, google/perfetto main data_source_config/java_hprof_config/perf_event_config.proto, Android Trace API",
       "confidence": "high",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
@@ -4340,7 +4340,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T15:34:11+08:00"
+      "last_task9_at": "2026-04-27T15:34:11+08:00",
+      "task6_result": "pass-light-edit"
     },
     "src/part3-tools/ch13-perfetto/07-advanced-usage.md": {
       "path": "src/part3-tools/ch13-perfetto/07-advanced-usage.md",
@@ -4413,7 +4414,7 @@
       "last_verified_against": "AOSP android-16.0.0_r1 / main frameworks/native/cmds/atrace/atrace.cpp, external/perfetto/src/traced/probes/ftrace/, Linux include/trace/events/",
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "reviewed_by": "openclaw-task6",
@@ -4712,7 +4713,7 @@
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
@@ -5204,7 +5205,7 @@
       "reviewed_date": "2026-04-27",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-04-27T11:27:00+08:00",
@@ -5374,7 +5375,7 @@
       "last_verified_against": "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -5464,7 +5465,7 @@
       "last_verified_against": "Tencent Matrix README/wiki + Matrix.java Builder#pluginListener + AGP Transform API removal notes + external review AGP8/methodMapping assets",
       "confidence": "medium",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -5628,7 +5629,7 @@
       "last_verified_against": "Firebase Performance custom-code-traces / screen-traces / troubleshooting docs, Firebase Android SDK 20.1.0+ Fragment screen rendering boundary, external review 2026-04-25",
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task9_result": "needs-rework",
@@ -5735,7 +5736,7 @@
       "last_verified_against": "Geekbench 6 requirements / Benchmark Internals, Android Performance Class docs, 3DMark official docs, CPDT / PCMark / Vellamo public materials",
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
@@ -5845,14 +5846,15 @@
       "last_verified": "2026-04-24",
       "confidence": "high",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task2b_result": "fixed",
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T10:57:00+08:00"
+      "last_task9_at": "2026-04-27T10:57:00+08:00",
+      "task6_result": "pass-light-edit"
     },
     "src/part3-tools/ch19-apm/06-blockcanary.md": {
       "path": "src/part3-tools/ch19-apm/06-blockcanary.md",
@@ -6174,7 +6176,7 @@
       "last_verified": "2026-04-24",
       "confidence": "high",
       "pipeline_stage": "task6_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "pending",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
@@ -6184,7 +6186,10 @@
       "last_task9_at": "2026-04-25T02:02:05+08:00",
       "last_task2b_at": "2026-04-27T19:40:00+08:00",
       "repaired_date": "2026-04-27",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-05-03",
+      "reviewed_by": "openclaw-task6"
     },
     "src/part3-tools/ch19-apm/07-dokit.md": {
       "path": "src/part3-tools/ch19-apm/07-dokit.md",
@@ -6265,7 +6270,7 @@
       "last_verified": "2026-04-24",
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task2b_result": "fixed",
@@ -6275,7 +6280,8 @@
       "task9_result": "needs-rework",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T07:20:00+08:00"
+      "last_task9_at": "2026-04-27T07:20:00+08:00",
+      "task6_result": "pass-light-edit"
     },
     "14-9-camera-perfetto": {
       "last_review": "2026-05-01",
