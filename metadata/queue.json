@@ -7292,43 +7292,6 @@
       "status": "pending"
     },
     {
-      "section": "1.13",
-      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-28 16:21 发现 P0 2，需回炉修正",
-      "material_paths": [
-        "logs/deep-review/2026-04-28-16-deep-review.md",
-        "intake/suggestions.md",
-        "intake/research-gaps.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L385-L405 PTHREAD_STACK_MIN 与 16KB Page Size 表格",
-          "detail": "正文把 PTHREAD_STACK_MIN 写成 16 × PAGE_SIZE，并在 4KB Page 系统列成 4KB。AOSP bionic/libc/include/pthread.h 中 LP64 为 16384，32-bit 为 8192；它不是 16 × PAGE_SIZE。",
-          "suggestion": "改为按 ABI 说明 PTHREAD_STACK_MIN；16KB page 只影响页大小、guard page 与分配粒度，不能把 PTHREAD_STACK_MIN 写成随 page size 线性变化。",
-          "evidence": [
-            "bionic/libc/include/pthread.h: PTHREAD_STACK_MIN 16384 / 8192"
-          ]
-        },
-        {
-          "type": "源码路径错误",
-          "location": "L387-L390 源码位置列表",
-          "detail": "正文列出 bionic/libc/pthread.c 与 runtime/thread.cc 的组合不准确。当前 bionic 无 libc/pthread.c；ART FixStackSize 在 art/runtime/thread.cc，pthread_attr 约束在 bionic/libc/bionic/pthread_attr.cpp，guard size 相关在 pthread_internal.h。",
-          "suggestion": "更新源码锚点，并把 ART 的 FixStackSize 与 bionic pthread_attr_setstacksize() 分开讲。",
-          "evidence": [
-            "art/runtime/thread.cc: FixStackSize",
-            "bionic/libc/bionic/pthread_attr.cpp"
-          ]
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-28T16:21:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-04-30T07:43:21.194303",
-      "completed_reason": "PTHREAD_STACK_MIN已修正为固定16384而非16×PAGE_SIZE；源码路径已更新为bionic/libc/bionic/pthread_create.cpp"
-    },
-    {
       "section": "1.17",
       "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
       "priority": 85,
@@ -7368,30 +7331,6 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T16:21:00+08:00",
       "status": "pending"
-    },
-    {
-      "section": "11.4",
-      "section_title": "案例集",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 11.4 案例集 — 2026-04-28 22:57 发现 P0 1 / P1 1，需回炉修正",
-      "material_paths": [
-        "intake/suggestions.md",
-        "logs/deep-review/2026-04-28-22-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误/版本差异",
-          "location": "L632-L642, L665, L698, L790",
-          "detail": "章节引用 frameworks/base/services/core/java/com/android/server/job/JobServiceContext.java 和 EXECUTING_TIMESLICE_MILLIS=10min 解释 Android 16 JobScheduler 超时，但 android-16.0.0_r1 中 JobServiceContext 已在 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/，且执行上限由 JobSchedulerService.Constants / quota 决定：普通 Job 默认 free quota max 30min、min guarantee 10min，Expedited Job 通常按 10min 上限处理，User-initiated Job 还有更长限制。",
-          "suggestion": "重写案例五的超时模型：区分 regular / expedited / user-initiated Job，补 JobSchedulerService.java 中 DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS=30min、DEFAULT_RUNTIME_MIN_GUARANTEE_MS=10min、getMaxJobExecutionTimeMs() 的源码锚点；同步修正文中 10min/30min 图注不一致。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-28T22:57:00+08:00",
-      "status": "completed",
-      "source_file": "src/part2-performance/ch11-power/04-case-studies.md",
-      "completed_at": "2026-04-30T19:40:00+08:00",
-      "completed_reason": "JobScheduler超时模型已重写：区分Regular/Expedited/User-Initiated三档超时(10min/10min/30min)，源码锚点更新为JobSchedulerService.java"
     },
     {
       "section": "3.4",
@@ -9875,28 +9814,6 @@
       "status": "pending"
     },
     {
-      "section": "1.13",
-      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — Android 16 SemiConcurrentMessageQueue 源码路径不存在，需回炉修正",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "frontmatter sources + Android 16 并发实现小节 + 版本演进表",
-          "detail": "`android-16.0.0_r1/core/java/android/os/` 下核验到 `CombinedMessageQueue/`、`ConcurrentMessageQueue/`、`LegacyMessageQueue/`，未发现 `SemiConcurrentMessageQueue/MessageQueue.java`。正文把不存在的路径作为 AOSP 证据，会导致版本演进结论失真。",
-          "suggestion": "删除 `SemiConcurrentMessageQueue/MessageQueue.java` 源码锚点；如需描述“中间态/受控 rollout”，改为引用 `CombinedMessageQueue/MessageQueue.java` 中 `mUseConcurrent`、allowlist 与 legacy/concurrent 分支逻辑，避免写成独立 SemiConcurrent 源文件。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-30T08:33:53+08:00",
-      "status": "completed",
-      "completed_at": "2026-04-30T13:44:09.597603+00:00",
-      "completed_reason": "SemiConcurrentMessageQueue 源码锚点已删除；正文改用 CombinedMessageQueue/mUseConcurrent/allowlist 描述 Android 16 rollout"
-    },
-    {
       "section": "7.5",
       "section_title": "优化策略",
       "priority": 95,
@@ -11508,6 +11425,89 @@
       "completed_reason": "Task 2B rework fixed P0 InputChannel transport, MotionPredictor API level, UIL/Play ranking claims, and Android Vitals slow/frozen frame wording.",
       "completed_by": "task2b-rework",
       "completion_reason": "Task 2B rework fixed P0 InputChannel transport, MotionPredictor API level, UIL/Play ranking claims, and Android Vitals slow/frozen frame wording."
+    },
+    {
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — 2026-04-28 16:21 发现 P0 2，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-04-28-16-deep-review.md",
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L385-L405 PTHREAD_STACK_MIN 与 16KB Page Size 表格",
+          "detail": "正文把 PTHREAD_STACK_MIN 写成 16 × PAGE_SIZE，并在 4KB Page 系统列成 4KB。AOSP bionic/libc/include/pthread.h 中 LP64 为 16384，32-bit 为 8192；它不是 16 × PAGE_SIZE。",
+          "suggestion": "改为按 ABI 说明 PTHREAD_STACK_MIN；16KB page 只影响页大小、guard page 与分配粒度，不能把 PTHREAD_STACK_MIN 写成随 page size 线性变化。",
+          "evidence": [
+            "bionic/libc/include/pthread.h: PTHREAD_STACK_MIN 16384 / 8192"
+          ]
+        },
+        {
+          "type": "源码路径错误",
+          "location": "L387-L390 源码位置列表",
+          "detail": "正文列出 bionic/libc/pthread.c 与 runtime/thread.cc 的组合不准确。当前 bionic 无 libc/pthread.c；ART FixStackSize 在 art/runtime/thread.cc，pthread_attr 约束在 bionic/libc/bionic/pthread_attr.cpp，guard size 相关在 pthread_internal.h。",
+          "suggestion": "更新源码锚点，并把 ART 的 FixStackSize 与 bionic pthread_attr_setstacksize() 分开讲。",
+          "evidence": [
+            "art/runtime/thread.cc: FixStackSize",
+            "bionic/libc/bionic/pthread_attr.cpp"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T16:21:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-03T13:45:17.964269",
+      "completed_reason": "SemiConcurrentMessageQueue 不存在的路径引用已删除；PTHREAD_STACK_MIN 固定常量描述已在先前的修正中就绪"
+    },
+    {
+      "section": "11.4",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.4 案例集 — 2026-04-28 22:57 发现 P0 1 / P1 1，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-04-28-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L632-L642, L665, L698, L790",
+          "detail": "章节引用 frameworks/base/services/core/java/com/android/server/job/JobServiceContext.java 和 EXECUTING_TIMESLICE_MILLIS=10min 解释 Android 16 JobScheduler 超时，但 android-16.0.0_r1 中 JobServiceContext 已在 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/，且执行上限由 JobSchedulerService.Constants / quota 决定：普通 Job 默认 free quota max 30min、min guarantee 10min，Expedited Job 通常按 10min 上限处理，User-initiated Job 还有更长限制。",
+          "suggestion": "重写案例五的超时模型：区分 regular / expedited / user-initiated Job，补 JobSchedulerService.java 中 DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS=30min、DEFAULT_RUNTIME_MIN_GUARANTEE_MS=10min、getMaxJobExecutionTimeMs() 的源码锚点；同步修正文中 10min/30min 图注不一致。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-28T22:57:00+08:00",
+      "status": "completed",
+      "source_file": "src/part2-performance/ch11-power/04-case-studies.md",
+      "completed_at": "2026-05-03T13:45:17.964269",
+      "completed_reason": "JobScheduler AOSP 路径已从 services/core 修正为 apex/jobscheduler"
+    },
+    {
+      "section": "1.13",
+      "section_title": "MessageQueue 机制与 DeliQueue 无锁优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.13 MessageQueue 机制与 DeliQueue 无锁优化 — Android 16 SemiConcurrentMessageQueue 源码路径不存在，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter sources + Android 16 并发实现小节 + 版本演进表",
+          "detail": "`android-16.0.0_r1/core/java/android/os/` 下核验到 `CombinedMessageQueue/`、`ConcurrentMessageQueue/`、`LegacyMessageQueue/`，未发现 `SemiConcurrentMessageQueue/MessageQueue.java`。正文把不存在的路径作为 AOSP 证据，会导致版本演进结论失真。",
+          "suggestion": "删除 `SemiConcurrentMessageQueue/MessageQueue.java` 源码锚点；如需描述“中间态/受控 rollout”，改为引用 `CombinedMessageQueue/MessageQueue.java` 中 `mUseConcurrent`、allowlist 与 legacy/concurrent 分支逻辑，避免写成独立 SemiConcurrent 源文件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-04-30T08:33:53+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-03T13:45:17.964269",
+      "completed_reason": "SemiConcurrentMessageQueue 不存在的路径引用已删除；PTHREAD_STACK_MIN 固定常量描述已在先前的修正中就绪"
     }
   ]
 }
