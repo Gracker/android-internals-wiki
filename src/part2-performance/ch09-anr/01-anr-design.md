@@ -1,5 +1,6 @@
 ---
 
+
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
@@ -29,27 +30,27 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. No banned words, no AI fillers, format consistent. 2 pending queue entries block auto-promotion."
 
 task9_result: needs-rework
-last_task9_at: "2026-05-03T22:20:00+08:00"
+last_task9_at: "2026-05-04T16:20:00+08:00"
 last_task2b_at: "2026-04-26T15:45:22+08:00"
 task2b_fixed_at: "2026-04-26T15:45:22+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 问题单）"
-task9_reviewed_date: "2026-05-03"
+task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task9
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
-task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 3 / P1 0 / P2 2；API/源码事实错误已写入 queue，版本线建议写入 suggestions。"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。"
 ---
 
 # ANR 设计思想
