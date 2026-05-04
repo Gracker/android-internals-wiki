@@ -11775,10 +11775,12 @@
       "section": "7.2",
       "section_title": "卡顿原因体系",
       "priority": 95,
-      "reason": "[Deep Tech Review] 7.2 卡顿原因体系 存在 P0 源码路径错误，需 Task2B 回炉修正",
+      "reason": "[Deep Tech Review] 7.2 卡顿原因体系 存在 P0 源码路径错误，需 Task2B 回炉修正；[Task6 Review] 扩展小节存在待补充占位",
       "material_paths": [
         "logs/deep-review/2026-05-04-22-deep-review.md",
-        "src/part2-performance/ch07-smoothness/02-jank-causes.md"
+        "src/part2-performance/ch07-smoothness/02-jank-causes.md",
+        "intake/suggestions.md",
+        "logs/review/2026-05-04-22-review.md"
       ],
       "review_issues": [
         {
@@ -11786,6 +11788,12 @@
           "location": "L353 关键源码文件索引：HWC3 AIDL 接口",
           "detail": "表格仍写 `hardware/interfaces/graphics/composer/IComposer.aidl`。该路径不是公开 AOSP HWC3 AIDL 的实际路径；正文前面的 Composition 枚举已改成 `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl`，但索引未同步，读者按表格路径无法定位源码。",
           "suggestion": "把索引改为具体可核验路径：Composition 枚举用 `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl`；若要索引 composer 服务接口，则写 `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposer.aidl` / `IComposerClient.aidl`，不要保留缺目录的旧路径。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "WebView 渲染 / 多窗口分屏 / 动画与手势三个扩展小节",
+          "detail": "三个扩展小节目前仍是整段 [待补充] 占位。作为 ready-for-review 章节，正文出现连续占位会降低发布观感；如果保留这些小节，需要补充可复核素材、Trace 表现或删除占位标题。",
+          "suggestion": "Task2B 在处理 7.2 既有技术回炉时同步处理：有素材就补成 1-2 段可用内容；没有素材则把扩展标题移到后续规划，不留整段占位。"
         }
       ],
       "added_by": "task9-deep-tech-review",

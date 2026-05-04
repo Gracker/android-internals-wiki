@@ -5,7 +5,7 @@ status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-15.0.0_r1"
-reviewed_date: "2026-05-03"
+reviewed_date: "2026-05-04"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -36,7 +36,7 @@ tags:
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
@@ -100,7 +100,7 @@ VSync-app 信号到达
   → 显示上屏
 ```
 
-在这条路径上，任何一个环节超时，后续环节都会被顺延，最终导致这一帧错过 VSync-app 的截止时间，表现为掉帧。接下来我们就按环节逐一分析。
+在这条路径上，任何一个环节超时，后续环节都会被顺延，最终导致这一帧错过 VSync-app 的截止时间，表现为掉帧。后面的分类按这条路径逐段展开。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/render]
 
@@ -126,7 +126,7 @@ Layout 和 Measure 是 View 树遍历的核心阶段。当 View 层级过深、�
 
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
 
-**在 Perfetto 中的表现：** 在主线程的 doFrame Slice 中，可以看到 measure 和 layout 对应的子 Slice 耗时较长。如果开启了 view trace（`-a view`），可以分别看到 `measure` 和 `layout` 的具体耗时。
+**在 Perfetto 中的表现：** 在主线程的 doFrame Slice 中，measure 和 layout 对应的子 Slice 会明显拉长。如果开启了 view trace（`-a view`），还会出现 `measure` 和 `layout` 的具体耗时。
 
 [待补充：Trace 截图 — measure/layout 耗时过长的 Perfetto 片段]
 
@@ -142,7 +142,7 @@ RecyclerView 是 Android 中最常用的列表组件，也是卡顿的高发地�
 
 [来源: Personal-Knowlodge/source/2026-03-08_wechat_干货_从47_到80_携程酒店APP流畅度提升实践.md]
 
-**在 Perfetto 中的表现：** 在滑动场景的 Trace 中，可以看到主线程的 doFrame 内有一系列 `RV onBind` 或 `RV FullInflate` 的 Slice，如果这些 Slice 的总耗时加上 measure/layout 耗时超过了 VSync 周期，就会掉帧。
+**在 Perfetto 中的表现：** 滑动场景的 Trace 中，主线程 doFrame 内会出现一系列 `RV onBind` 或 `RV FullInflate` Slice；这些 Slice 的总耗时加上 measure/layout 耗时超过 VSync 周期，就会掉帧。
 
 [已验证: AndroidX androidx-main, recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java]
 
@@ -150,7 +150,7 @@ RecyclerView 是 Android 中最常用的列表组件，也是卡顿的高发地�
 
 在主线程上执行文件读写、SharedPreferences 的 apply/commit、数据库查询等 I/O 操作，是卡顿的另一个常见原因。I/O 操作本身是阻塞的，而文件系统（特别是 eMMC 或低端的 UFS 存储）的随机读写延迟可能达到数十毫秒。
 
-**SharedPreferences 的 commit。** commit 方法会将数据同步写入磁盘。如果存储的数据量较大或磁盘 I/O 繁忙，这个调用可能需要数十毫秒。在 Perfetto 中，可以看到主线程有一个 `SP.commit` 或类似的 Slice 占据了大部分帧时间。
+**SharedPreferences 的 commit。** commit 方法会将数据同步写入磁盘。如果存储的数据量较大或磁盘 I/O 繁忙，这个调用可能需要数十毫秒。Perfetto 中常见的信号是主线程上有一个 `SP.commit` 或类似 Slice 占据了大部分帧时间。
 
 **主线程读写文件。** 某些老旧代码或第三方库可能直接在主线程上使用 FileInputStream / FileOutputStream 进行读写，或者执行 SQLite 查询而没有使用异步接口。
 
@@ -180,7 +180,7 @@ RecyclerView 是 Android 中最常用的列表组件，也是卡顿的高发地�
 
 ### Android 17 DeliQueue：主线程消息队列的无锁化
 
-Android 17 对 `MessageQueue` 做了一次架构级重构，引入了 **DeliQueue**（无锁消息队列）。在传统实现中，`MessageQueue.enqueueMessage()` 和 `next()` 之间通过 `synchronized` 保护，多线程向主线程投递消息时存在锁竞争风险。DeliQueue 采用无锁化设计：生产者侧通过 **Treiber stack** 处理并发入队（多线程 postMessage 不再争 monitor），Looper 侧通过 **min-heap** 按时间戳排序出队。这个架构把 `enqueueMessage()` 和 `next()` 之间的 synchronized 保护彻底消除，大幅减少了主线程在处理 Handler 消息时的锁竞争延迟。
+Android 17 对 `MessageQueue` 做了一次架构级重构，引入了 **DeliQueue**（无锁消息队列）。在传统实现中，`MessageQueue.enqueueMessage()` 和 `next()` 之间通过 `synchronized` 保护，多线程向主线程投递消息时存在锁竞争风险。DeliQueue 采用无锁化设计：生产者侧通过 **Treiber stack** 处理并发入队（多线程 postMessage 不再争 monitor），Looper 侧通过 **min-heap** 按时间戳排序出队。这个架构移除了 `enqueueMessage()` 和 `next()` 之间的 synchronized 保护，减少了主线程在处理 Handler 消息时的锁竞争延迟。
 
 **生效边界**：DeliQueue 仅对 `targetSdkVersion >= 37` 的应用默认启用。`targetSdk < 37` 的应用即使在 Android 17 设备上运行，仍使用传统 synchronized MessageQueue。Debuggable build 可通过 `adb shell am compat enable USE_NEW_MESSAGEQUEUE <package>` 提前测试新队列行为。
 
@@ -208,7 +208,7 @@ GPU 过载是最常见的 RenderThread 瓶颈。当一帧需要 GPU 执行的绘
 
 **复杂的 Shader 效果。** 高斯模糊、色彩滤镜、复杂的混合模式等 Shader 效果，会显著增加 GPU 的计算量。在 Perfetto 中表现为 RenderThread 的 draw Slice 很长。
 
-**过度绘制（Overdraw）。** 当屏幕上的同一个像素被多次绘制时（详见 2.8 节），GPU 不得不做大量无用功。在开启了"显示 GPU 过度绘制"的开发者选项后，可以看到屏幕上大量红色区域，这通常意味着 GPU 正在做大量重复的像素填充。
+**过度绘制（Overdraw）。** 当屏幕上的同一个像素被多次绘制时（详见 2.8 节），GPU 不得不做大量无用功。开启"显示 GPU 过度绘制"开发者选项后，屏幕上大量红色区域通常说明 GPU 正在做重复的像素填充。
 
 [来源: Personal-Knowlodge/source/2026-03-08_wechat_干货_从47_到80_携程酒店APP流畅度提升实践.md — GPU 问题定位]
 
@@ -404,7 +404,7 @@ Linux 的 Completely Fair Scheduler（CFS）按照虚拟运行时间（vruntime�
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — 2.8 内存问题优化]
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_译文_ART虚拟机新一代GC算法原理介绍.md]
 
-**在 Perfetto 中的表现：** 在主线程或应用的 Track 中，可以看到 GC 相关的 Slice（如 `GC: Alloc`、`GC: Background`）。在 CPU Info 区域，可以看到应用线程被暂停的时段。通过 Perfetto SQL 也可以查询 GC 事件：
+**在 Perfetto 中的表现：** 主线程或应用 Track 中会出现 GC 相关 Slice（如 `GC: Alloc`、`GC: Background`）。CPU Info 区域会呈现应用线程被暂停的时段。通过 Perfetto SQL 也可以查询 GC 事件：
 
 ```sql
 -- 查询 GC 事件
@@ -421,9 +421,9 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 **温控限频的触发条件。** 不同的 SoC 平台和 OEM 厂商有不同的温控策略。一般来说，当 CPU 温度超过 45-50°C 时，系统开始逐步降低频率；超过 55-60°C 时，可能进入深度限频状态。在长时间游戏、视频录制、或夏季户外使用时，温控限频尤为常见。
 
-**温控限频对帧率的影响。** 温控限频不是突然发生的——它是一个渐进过程。在 Perfetto 中可以看到 CPU 频率逐渐下降的趋势。由于频率降低，原本能在 8.3ms（120Hz）内完成的帧渲染，可能需要 10-12ms，导致持续性的掉帧。
+**温控限频对帧率的影响。** 温控限频不是突然发生的——它是一个渐进过程。Perfetto 的 CPU Frequency Track 会呈现 CPU 频率逐渐下降的趋势。由于频率降低，原本能在 8.3ms（120Hz）内完成的帧渲染，可能需要 10-12ms，导致持续性的掉帧。
 
-**在 Perfetto 中的表现：** 在 CPU Info 区域，查看 CPU Frequency Track，可以看到各核心的运行频率随时间的变化。如果频率在测试过程中持续下降，且同时出现帧率下降，基本可以确认是温控限频导致的。
+**在 Perfetto 中的表现：** 在 CPU Info 区域检查 CPU Frequency Track，关注各核心运行频率随时间的变化。如果频率在测试过程中持续下降，且同时出现帧率下降，基本可以确认是温控限频导致的。
 
 [已验证: 官方文档, source.android.com/devices/tech/power — thermal management]
 
@@ -479,13 +479,13 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 [已验证: AOSP android-15.0.0_r1, frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp]
 [来源: Personal-Knowlodge/source/Android-Systrace-Binder.md]
 
-**在 Perfetto 中的表现：** 在主线程的 Track 中，可以看到 Binder 调用的 Slice（标记为 `binder txn` 或显示具体的接口方法名）。开启 Flow Events（在 Perfetto UI 中选择"Flow events"）可以看到 Binder 调用从 App 到目标进程的完整路径。如果 Binder Slice 的持续时间异常长，且目标进程当时有锁竞争或其他耗时操作，基本可以确认是 Binder 阻塞导致的卡顿。
+**在 Perfetto 中的表现：** 主线程 Track 中会出现 Binder 调用 Slice（标记为 `binder txn` 或显示具体的接口方法名）。开启 Flow Events（在 Perfetto UI 中选择"Flow events"）可以追踪 Binder 调用从 App 到目标进程的完整路径。如果 Binder Slice 的持续时间异常长，且目标进程当时有锁竞争或其他耗时操作，基本可以确认是 Binder 阻塞导致的卡顿。
 
 [待补充：Trace 截图 — Binder 阻塞导致的主线程卡顿 Perfetto 片段]
 
 ## 分析树：从现象到根因的分析决策路径
 
-前面按渲染管线的阶段，逐一梳理了主线程、RenderThread、SurfaceFlinger、系统级因素和 Binder 调用这五类卡顿原因。但在实际分析中，我们面对的不是「某个已知的原因」，而是一个掉帧的 Trace——需要从现象出发，逐步缩小范围，最终定位到具体的根因。这就需要一套系统化的分析决策路径——拿到一个掉帧的 Trace，应该从哪里开始看、按什么顺序排查、每一步看什么。这就是本节要建立的"分析树"。
+前面按渲染管线的阶段，逐一梳理了主线程、RenderThread、SurfaceFlinger、系统级因素和 Binder 调用这五类卡顿原因。但在实际分析中，我们面对的是一个掉帧的 Trace，需要从现象出发，逐步缩小范围，最终定位到具体的根因。分析树要回答的是：拿到一个掉帧的 Trace，应该从哪里开始看、按什么顺序排查、每一步看什么。
 
 ### 第一步：按系统版本选入口
 
