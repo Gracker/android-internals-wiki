@@ -15,6 +15,9 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
+rework_count: 1
+rework_date: "2026-05-04"
+rework_by: "task2b-rework"
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/widget/OverScroller.java"
@@ -40,11 +43,11 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
@@ -137,12 +140,12 @@ boolean update() {
 |--------|---------------------|-------------|---------|------|
 | 0 | 0 | 0ms | — | — |
 | 1 | 8,333,333 | 8ms | 8ms | -4% |
-| 2 | 16,666,666 | 17ms | 9ms | +8% |
-| 3 | 24,999,999 | 25ms | 8ms | -4% |
-| 4 | 33,333,332 | 33ms | 8ms | -4% |
-| 5 | 41,666,665 | 42ms | 9ms | +8% |
+| 2 | 16,666,666 | 16ms | 8ms | -4% |
+| 3 | 24,999,999 | 24ms | 8ms | -4% |
+| 4 | 33,333,332 | 33ms | 9ms | +8% |
+| 5 | 41,666,665 | 41ms | 8ms | -4% |
 
-ms 取整之后，时间推进不再是稳定的 8.33ms，而是在 8ms 和 9ms 之间跳。高速度 fling 段里，同样的 1ms 跳动会直接反映到位移采样。
+`8_333_333 × 4 = 33_333_332`，`floor(33_333_332 / 1_000_000) = 33`，比上一帧多了 9ms。这是因为累积的小数部分在第 4 帧超过了 1ms 阈值。ms 取整之后，时间推进以 8ms 为主、周期性出现 9ms 跳变。高速度 fling 段里，同样的 1ms 跳动会直接反映到位移采样。
 
 ### 成因二：常规 fling 走样条表，不是二次公式
 
@@ -340,9 +343,9 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 **设计意图**：解决 100Hz 触摸采样率与 60Hz/90Hz/120Hz 显示刷新率不同步导致的"跳跃感"。通过预测下一 VSync 时刻的触摸位置，消除帧内抖动。
 
-**性能影响**：`RESAMPLE_LATENCY = 5ms` 意味着最坏情况下触摸响应增加 5ms，但消除了 100Hz→60Hz 不同步造成的帧内抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.noresample=1` 系统属性禁用重采样。
+**性能影响**：`RESAMPLE_LATENCY = 5ms` 意味着最坏情况下触摸响应增加 5ms，但消除了 100Hz→60Hz 不同步造成的帧内抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.resampling=0` 系统属性禁用重采样。
 
-**配置接口**：`ro.input.noresample` 系统属性（设为 "1" 禁用）；DEBUG 开关 `log.tag.InputConsumerResampling=DEBUG`（对应 InputConsumer.cpp 中的 LOG_TAG）
+**配置接口**：`ro.input.resampling` 系统属性（`1` 启用 / `0` 禁用，定义于 `InputConsumer.cpp` 中的 `PROPERTY_RESAMPLING_ENABLED`）；DEBUG 开关 `log.tag.InputConsumerResampling=DEBUG`
 
 **关键源码文件**：
 - `frameworks/native/libs/input/InputConsumer.cpp` — `InputConsumer::consume()` 事件消费、`resampleTouchState()` 重采样算法、`updateTouchState()` 状态更新

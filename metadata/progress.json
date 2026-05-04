@@ -9996,6 +9996,37 @@
       ],
       "task": "task2b-rework",
       "details": "Task 9 P0/P1 fixes: 1.2 version metadata + Cloud Compilation wording; 1.3 CachedAppOptimizer source code rewrite"
+    },
+    {
+      "date": "2026-05-04",
+      "task": "task2b-rework",
+      "sections": [
+        "7.9",
+        "11.2"
+      ],
+      "details": [
+        {
+          "section": "7.9",
+          "section_title": "感知流畅性：步幅波动与无掉帧卡顿",
+          "source": "task9-deep-tech-review",
+          "priority": 95,
+          "fixes": [
+            "ro.input.noresample=1 → ro.input.resampling=0 属性名修正",
+            "120Hz ms 取整表格按 floor division 修正为 0/8/16/24/33/41，帧间时间和偏差同步更新"
+          ]
+        },
+        {
+          "section": "11.2",
+          "section_title": "App 耗电优化",
+          "source": "task9-deep-tech-review",
+          "priority": 95,
+          "fixes": [
+            "setAlarmClock() 权限说明纠正：所有精确闹钟 API 均受 SCHEDULE_EXACT_ALARM 约束",
+            "WorkManager setPowerEfficiencyHint(boolean) API 幻觉删除，替换为 ADPF PerformanceHintManager.Session.setPreferPowerEfficiency()",
+            "GNSS 硬件围栏卸载：删除 Android 15+ 版本口径和 2% 量化断言，改为按设备能力描述"
+          ]
+        }
+      ]
     }
   ],
   "task2b_history": [
