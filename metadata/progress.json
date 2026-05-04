@@ -1,33 +1,33 @@
 {
-  "generated_at": "2026-05-04T18:11:00+08:00",
+  "generated_at": "2026-05-04T21:38:56+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
     "last_updated": "2026-05-04",
     "pipeline_stage_counts": {
-      "unknown": 35,
+      "unknown": 34,
       "ready-to-publish": 107,
-      "task2b_pending": 89,
-      "task9_pending": 15,
+      "task2b_pending": 91,
+      "task9_pending": 14,
       "task6_pending": 6
     },
     "task6_state_counts": {
-      "unknown": 34,
-      "reviewed": 201,
-      "revisiting": 14,
+      "unknown": 33,
+      "reviewed": 200,
+      "revisiting": 16,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
-      "unknown": 40,
-      "reviewed": 204,
+      "unknown": 39,
+      "reviewed": 205,
       "pending": 8
     },
     "task2b_state_counts": {
-      "unknown": 42,
-      "fixed": 111,
-      "pending": 96,
+      "unknown": 41,
+      "fixed": 110,
+      "pending": 98,
       "idle": 3
     },
     "finalized": 109,
@@ -41,28 +41,28 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 35,
+      "unknown": 34,
       "ready-to-publish": 107,
-      "task2b_pending": 89,
-      "task9_pending": 15,
+      "task2b_pending": 91,
+      "task9_pending": 14,
       "task6_pending": 6
     },
     "task6_state_counts": {
-      "unknown": 34,
-      "reviewed": 201,
-      "revisiting": 14,
+      "unknown": 33,
+      "reviewed": 200,
+      "revisiting": 16,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
-      "unknown": 40,
-      "reviewed": 204,
+      "unknown": 39,
+      "reviewed": 205,
       "pending": 8
     },
     "task2b_state_counts": {
-      "unknown": 42,
-      "fixed": 111,
-      "pending": 96,
+      "unknown": 41,
+      "fixed": 110,
+      "pending": 98,
       "idle": 3
     },
     "last_updated": "2026-05-04"
@@ -5225,11 +5225,11 @@
       "section": "16.4",
       "chapter": "16.4",
       "status": "ready-for-review",
-      "reviewed_date": "2026-04-27",
+      "reviewed_date": "2026-05-04",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "pass-light-edit",
+      "task6_result": "needs-rework",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-04T10:37:13+08:00",
       "task9_reviewed_date": "2026-05-04",
@@ -5239,7 +5239,18 @@
       "pipeline_stage": "task2b_pending",
       "task2b_fixed_at": "2026-04-27T11:41:00+08:00",
       "last_task2b_at": "2026-04-27T11:41:00+08:00",
-      "applicable_versions": "Android 17 (API 37)"
+      "applicable_versions": "Android 17 (API 37)",
+      "drafted_date": "2026-04-07",
+      "drafted_by": "openclaw-task2a",
+      "last_task6_at": "2026-05-04T21:35:46+08:00",
+      "tags": [
+        "android",
+        "linux",
+        "research"
+      ],
+      "review_notes": "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径；2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修：修正禁用词、表格格式、边界措辞；B 类问题：sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。",
+      "task6_reviewed_date": "2026-05-04",
+      "review_log": "logs/review/2026-05-04-21-review.md"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "title": "Android 17 (API 37) 性能行为变更与适配方法",

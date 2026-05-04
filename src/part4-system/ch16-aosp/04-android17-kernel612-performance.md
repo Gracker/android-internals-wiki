@@ -5,26 +5,27 @@ chapter: "16.4"
 status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-05-04"
 reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
-task6_state: revisiting
+task6_result: needs-rework
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-04T10:37:13+08:00"
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: fixed
-task2b_result: fixed
-pipeline_stage: task6_pending
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-04-27T11:41:00+08:00"
+last_task6_at: "2026-05-04T21:35:46+08:00"
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
   - linux
   - research
-review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径"
+review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径；2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修：修正禁用词、表格格式、边界措辞；B 类问题：sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。"
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
@@ -58,9 +59,9 @@ review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17
 
 Linux fair scheduler 的 6.6 系列已经能看到 EEVDF 代码路径。复核 AOSP `kernel/common` 的 `android15-6.6/kernel/sched/fair.c`，`pick_eevdf()`、`entity_eligible()` 和 `place_entity()` 已存在；`android16-6.12/kernel/sched/fair.c` 继续保留这些路径。因此本章不能把 `android16-6.12` 写成 EEVDF 从“可选”走向“默认”的分界。
 
-这里把 CFS 当作 fair scheduler 子系统的历史名称使用；EEVDF 改的是 fair class 内部选择下一个 runnable entity 的策略。`update_curr()` 继续推进当前 entity 的 vruntime，`entity_lag()` / `entity_eligible()` 用实际服务时间与权重期望服务时间的差值判断 lag，`pick_eevdf()` 再从 eligible entity 中选择虚拟 deadline 最早的对象。正 lag 表示 entity 获得的 CPU 时间少于应得份额，负 lag 表示已经多拿了服务时间。
+本章把 CFS 当作 fair scheduler 子系统的历史名称使用；EEVDF 改的是 fair class 内部选择下一个 runnable entity 的策略。`update_curr()` 继续推进当前 entity 的 vruntime，`entity_lag()` / `entity_eligible()` 用实际服务时间与权重期望服务时间的差值判断 lag，`pick_eevdf()` 再从 eligible entity 中选择虚拟 deadline 最早的对象。正 lag 表示 entity 获得的 CPU 时间少于应得份额，负 lag 表示已经多拿了服务时间。
 
-这个模型对移动设备的价值在于延迟控制。短任务（例如 UI 线程的 `doFrame` 回调）运行时间短，lag 更容易回到 eligible 区间，deadline 也更容易排到前面；后台长任务执行时间更长，lag 变负后会暂时退出候选集合，等 lag 恢复后再参与选择。
+这个模型更利于移动设备的延迟控制。短任务（例如 UI 线程的 `doFrame` 回调）运行时间短，lag 更容易回到 eligible 区间，deadline 也更容易排到前面；后台长任务执行时间更长，lag 变负后会暂时退出候选集合，等 lag 恢复后再参与选择。
 
 [已验证: AOSP `kernel/common` `android15-6.6/kernel/sched/fair.c` 和 `android16-6.12/kernel/sched/fair.c` 均包含 `pick_eevdf()` / `entity_eligible()`；Kernel 6.12 changelog]
 
@@ -68,15 +69,15 @@ Linux fair scheduler 的 6.6 系列已经能看到 EEVDF 代码路径。复核 A
 
 sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开发者用 BPF（Berkeley Packet Filter）程序实现自定义调度策略，不需要修改内核代码。
 
-这个框架的价值在于：不同的使用场景对调度器的需求不同。游戏需要超低延迟，数据库需要高吞吐，Android 需要 UI 响应优先。一个"通用"调度器不可能同时满足所有需求。sched_ext 让 OEM 或系统开发者可以为特定场景定制调度策略。
+不同场景对调度器的目标不同：游戏更重视延迟，数据库更重视吞吐，Android 更重视 UI 响应。sched_ext 让 OEM 或系统开发者可以为特定场景定制调度策略，但这类策略仍需要按设备和负载单独验证。
 
 [已验证: AOSP android16-6.12, kernel/sched/ext/]
 
 在 Android 17 的讨论里，sched_ext 的边界要单独写清。`android16-6.12/kernel/sched/ext/` 是可核验的源码锚点；这项能力提供给 OEM 和系统开发者做实验或定制，Google 官方构建仍以 fair scheduler / EEVDF 为主。若某个 ROM 启用了自定义 sched_ext 调度器并出现性能回退，排查方向是确认 sched_ext tracepoint 是否存在，再检查对应 BPF 调度器的行为。
 
-### sched_ext 源码级结构与 OEM 落地现状（2026-05-04 补充）
+### sched_ext 源码级结构与 OEM 采用现状（2026-05-04 补充）
 
-以下内容基于一手源码验证（Linux 6.12 mainline + OnePlus SM8750 开源模块）。
+本段内容基于已有源码调研（Linux 6.12 mainline + OnePlus SM8750 开源模块）。
 
 #### 核心数据结构：`struct sched_ext_ops`
 
@@ -102,12 +103,10 @@ struct sched_ext_ops {
 
 `include/linux/sched/ext.h` 与 `kernel/sched/ext.c` 共同定义了任务状态标志，通过 `p->scx.flags` 位字段管理任务在 SCX core 与 BPF 调度器之间的归属：
 
-| 状态 | 含义 | 拥有者 |
-|------|------|--------|
 | 标志 | 含义 |
 |------|------|
 | `SCX_TASK_QUEUED` | 任务已被 BPF 调度器入队到某个 DSQ，等待 dispatch |
-| `SCX_TASK_IN_CUSTODY` | 任务正在被 BPF 调度器" custody"管理（已从 run queue 移除） |
+| `SCX_TASK_IN_CUSTODY` | 任务正由 BPF 调度器托管，已从 run queue 移除 |
 | `SCX_TASK_RESET_RUNNABLE_AT` | 任务即将重新变为 runnable 的过渡标记 |
 | `SCX_TASK_DEQD_FOR_SLEEP` | 任务因睡眠被 dequeue |
 
@@ -115,7 +114,9 @@ struct sched_ext_ops {
 
 #### Dispatch Queue（DSQ）机制
 
-`include/linux/sched/ext.h` 定义了内置 DSQ ID：
+`include/linux/sched/ext.h` 定义了内置 DSQ ID，具体集合需要以目标分支实际源码为准：
+
+[需确认: `SCX_DSQ_BYPASS` 是否属于 `android16-6.12` 通用内置 DSQ ID 仍需 Task 9 按目标分支源码复核；若只存在于后续 mainline 或厂商分支，应单列版本差异。]
 
 ```c
 enum scx_dsq_id_flags {
@@ -162,6 +163,8 @@ OPPO/一加 SM8750 的 `vendor/oplus/kernel/cpu/sched_ext/main.c`（开源于 Gi
 3. `/sys/kernel/sched_ext/state` — enabled/disabled 状态
 4. `/sys/kernel/sched_ext/root/events` — 各事件计数器（不同内核版本暴露的计数器名称不同，android16-6.12 中可能不包含 `SCX_EV_REFILL_SLICE_DFL`，需以实际 sysfs 输出为准）
 
+[需确认: `SCX_EV_REFILL_SLICE_DFL` 是否属于 `android16-6.12` 暴露的通用事件计数器仍需 Task 9 复核；若未命中，应从通用排查清单删除或改为版本差异说明。]
+
 <!-- AIW-源码调研-2026-05-04 -->
 
 与第 5 章（5.1 Linux 进程调度基础）的关系可以压缩成一句：EEVDF 继续使用虚拟时间体系，但调度决策从“vruntime 最小”转向“eligible entity 中 virtual deadline 最早”。
@@ -174,7 +177,7 @@ Kernel 6.12 对 Android 存储栈引入了三项相互配合的优化：减少�
 
 F2FS 是 Android 设备的主流文件系统（4.2 节）。它的 checkpoint 机制在每次 fsync()/sync() 时，需要将 NAT（Node Address Table）、SIT（Segment Information Table）、CURSEG（Current Segment）等元数据刷盘。如果多个线程同时调用 fsync()（这在 Android 中很常见——每个 ContentProvider 的写操作都走 SQLite WAL 模式），就会触发多次完整 checkpoint，产生大量冗余的元数据写入。
 
-在 `android16-6.12` 中，更稳的源码锚点是 `fs/f2fs/super.c`、`fs/f2fs/checkpoint.c` 和 `fs/f2fs/f2fs.h`。`checkpoint_merge` 挂载选项开启后，`f2fs_issue_checkpoint()` 会把并发的 `CP_SYNC` 请求挂到 `cprc->issue_list`，再由 `issue_checkpoint_thread` 统一执行；`struct ckpt_req_control` 里还能看到 `queued_ckpt`、`ckpt_wait_queue` 和 `ckpt_thread_ioprio` 这些配套字段。这里该把重点放在机制上：多个同步 checkpoint 请求会被串到同一个 checkpoint 线程里统一落盘，各个进程不再各自触发一轮完整 checkpoint。
+在 `android16-6.12` 中，可核验的源码锚点是 `fs/f2fs/super.c`、`fs/f2fs/checkpoint.c` 和 `fs/f2fs/f2fs.h`。`checkpoint_merge` 挂载选项开启后，`f2fs_issue_checkpoint()` 会把并发的 `CP_SYNC` 请求挂到 `cprc->issue_list`，再由 `issue_checkpoint_thread` 统一执行；`struct ckpt_req_control` 里还能看到 `queued_ckpt`、`ckpt_wait_queue` 和 `ckpt_thread_ioprio` 这些配套字段。机制上的关键点是：多个同步 checkpoint 请求会被串到同一个 checkpoint 线程里统一落盘，各个进程不再各自触发一轮完整 checkpoint。
 
 对 SQLite WAL 模式的 commit 性能影响最大（Android 中 SQLite 是最常见的同步 I/O 模式之一），因为每次 ContentProvider 写操作都走 SQLite WAL + fsync 路径。具体写放大下降比例需要补齐设备、内核分支、挂载参数和写入模型后再写入正文。
 
@@ -198,7 +201,7 @@ multishot 的稳定结论是减少重复提交 SQE 的开销；zero-copy 的稳�
 
 dm-verity 是 Android 用于验证系统分区完整性的内核模块。传统路径按块计算哈希，热点函数是 `verity_hash()`。在 `android16-6.12` 中，对应源码文件是 `drivers/md/dm-verity-target.c`，多块哈希路径落在 `verity_hash_mb()`，shash 分支会调用 `crypto_shash_finup_mb(desc, data, len, digests, num_blocks)`，ahash 分支则保留逐块 fallback。
 
-公开 patch 讨论把这组改动的收益表述为 dm-verity / fsverity 的 cold-cache read 吞吐提升，ARM64 场景约在 35% 左右。这里更稳的结论是：6.12 把哈希热点从单块计算扩展到多块交错计算，对安装、首读和 OTA 校验这类需要连续完整性验证的路径更敏感。
+公开 patch 讨论把这组改动的收益表述为 dm-verity / fsverity 的 cold-cache read 吞吐提升，ARM64 场景约在 35% 左右。可保留的结论是：6.12 把哈希热点从单块计算扩展到多块交错计算，对安装、首读和 OTA 校验这类需要连续完整性验证的路径更敏感。
 
 [已验证: AOSP android16-6.12, drivers/md/dm-verity-target.c; dm-verity multi-buffer hashing patch discussion]
 
@@ -253,7 +256,7 @@ AutoFDO 对内核的优化路径与用户空间相同：
 - **用户空间**：Cloud Compilation + Baseline Profiles → 优化 App 的 AOT 编译
 - **内核空间**：AutoFDO → 优化 GKI kernel 的代码布局
 
-两端同时优化，冷启动的"内核初始化 + App 进程创建 + App 代码执行"三个阶段全部受益。
+两端同时优化时，冷启动的"内核初始化 + App 进程创建 + App 代码执行"三个阶段都有机会受益，具体收益取决于设备是否拿到对应 profile / build。
 
 ## ART 运行时优化
 
@@ -284,9 +287,9 @@ DeliQueue 属于 Android 17 / API 37 平台行为，不属于 `android16-6.12` �
 
 这些数据不能直接外推到所有设备和所有 App。实际排查时，仍然要在 Perfetto 中搜索 `monitor contention with ...`，确认旧实现是否真的在 `MessageQueue` 上产生锁竞争。
 
-## MGLRU 默认启用
+## MGLRU 与页面回收优化
 
-Multi-Gen LRU（MGLRU）在 Kernel 6.1 引入，6.12 默认启用。它与 Android 的 LMK 机制（4.4 节）直接协同。
+Multi-Gen LRU（MGLRU）在 Kernel 6.1 引入。[需确认: “6.12 默认启用”需要区分 mainline Kconfig 与 Android GKI defconfig，补 `CONFIG_LRU_GEN` / `CONFIG_LRU_GEN_ENABLED` 锚点后再写成确定口径。] 它与 Android 的 LMK 机制（4.4 节）直接协同。
 
 ### 传统 LRU 的问题
 
@@ -296,14 +299,17 @@ Linux 内核的传统 LRU（Least Recently Used）用两条链表（active/inact
 
 MGLRU 将单一 active/inactive 链表拆分为多个 generation（代），每代有自己的时间窗口。页面的访问频率决定了它在哪一代——频繁访问的页面留在较新的 generation，很少访问的页面逐代下降直到被回收。
 
-Google 在 ChromeOS 和约百万 Android 设备上的测试数据：
+公开资料中常见的 MGLRU 测试口径包括：
+
+[需确认: 以下三项数据需要补具体公开来源、message-id、报告链接或测试口径；否则应降级为“公开测试显示有改善”的限定表述。]
+
 - `kswapd` CPU 使用减少 40%
 - 低内存杀死（LMK）事件减少 85%
 - 渲染延迟减少 18%
 
 对 Android 的影响：MGLRU 更准确地识别活跃页面，减少错误回收（把正在使用的页面回收导致后续 page fault）。在内存紧张的设备上，前台 App 被误杀的概率会随之下降。
 
-[已验证: lore.kernel.org, MGLRU patch series; Google ChromeOS/Android A/B test data]
+[待验证: MGLRU 数据与默认启用口径需补具体 lore message-id / Google 报告 / Android GKI defconfig 锚点]
 
 ### 与 LMK 的协同
 
@@ -354,7 +360,7 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度：
 
 **误区 2："EEVDF 进入 fair scheduler 是因为 CFS 有 bug"**
 
-CFS 的旧模型没有根本性缺陷，EEVDF 是 fair scheduler 在移动交互延迟上的一次策略调整。旧模型更强调按 vruntime 拉平 CPU 时间，EEVDF 更强调 eligible entity 与 virtual deadline。移动设备上的 UI 回调、输入响应和前台短任务更依赖低延迟调度。
+把 EEVDF 写成 CFS bug 的修复不准确；它是 fair scheduler 在移动交互延迟上的一次策略调整。旧模型更强调按 vruntime 拉平 CPU 时间，EEVDF 更强调 eligible entity 与 virtual deadline。移动设备上的 UI 回调、输入响应和前台短任务更依赖低延迟调度。
 
 **误区 3："sched_ext 意味着 Android 可以用任意调度器"**
 

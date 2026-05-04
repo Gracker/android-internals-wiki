@@ -11739,6 +11739,33 @@
       "status": "pending",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-04T20:26:00+08:00"
+    },
+    {
+      "section": "16.4",
+      "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "priority": 90,
+      "reason": "[review回炉] Task6 复核发现 sched_ext 版本边界与 MGLRU 数据来源仍需确认",
+      "material_paths": [
+        "intake/suggestions.md（含 Task6 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "Dispatch Queue（DSQ）机制 / 排查要点",
+          "detail": "正文仍把 `SCX_DSQ_BYPASS` 和 `SCX_EV_REFILL_SLICE_DFL` 放在 android16-6.12 通用口径附近；上轮 Task9 已提示这些符号/计数器在目标分支可能不匹配，需要按 `include/linux/sched/ext.h`、sysfs/trace 输出复核。",
+          "suggestion": "Task9 先复核 `android16-6.12` 目标分支；Task2B 按结论保留、删除，或单列为后续 mainline / 厂商分支版本差异。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "MGLRU 与页面回收优化",
+          "detail": "`kswapd` CPU -40%、LMK -85%、渲染延迟 -18% 以及“6.12 默认启用”口径只有泛化来源，缺具体 lore message-id、Google 报告链接或 Android GKI defconfig 锚点。",
+          "suggestion": "补可复核来源与 `CONFIG_LRU_GEN` / `CONFIG_LRU_GEN_ENABLED` 口径；补不齐时降级为限定表述。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-04T21:38:56+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-04-21-review.md"
     }
   ],
   "completed": [
