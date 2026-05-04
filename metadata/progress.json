@@ -3447,7 +3447,7 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service docs",
       "confidence": "medium-high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -3458,11 +3458,11 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-04T02:20:00+08:00",
+      "last_task9_at": "2026-05-04T17:20:00+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
-      "review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 1；setAlarmClock 精确闹钟权限、WorkManager setPowerEfficiencyHint API、GNSS hardware geofence 版本/数据需修复。",
+      "review_notes": "2026-05-04 17:20 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0 / P3 1；ADPF setPreferPowerEfficiency API 版本边界与调度语义需修正。",
       "task6_reviewed_date": "2026-05-04"
     },
     "src/part2-performance/ch11-power/03-system-power-optimization.md": {
@@ -5432,7 +5432,16 @@
     "11.2": {
       "task6_reviewed": "2026-04-24",
       "task6_result": "pass-light-edit",
-      "status": "ready-for-review"
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "task6_state": "reviewed",
+      "task9_reviewed_date": "2026-05-04",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-05-04T17:20:00+08:00",
+      "review_notes": "2026-05-04 17:20 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0 / P3 1；ADPF setPreferPowerEfficiency API 版本边界与调度语义需修正。"
     },
     "11.3": {
       "task6_reviewed": "2026-04-24",

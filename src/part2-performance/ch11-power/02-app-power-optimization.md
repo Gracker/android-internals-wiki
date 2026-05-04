@@ -46,13 +46,13 @@ repaired_by: "openclaw-task2b"
 review_round: 4
 last_task2b_at: "2026-05-04T01:40:00+08:00"
 task9_result: needs-rework
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_state: pending
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-04T02:20:00+08:00"
-review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 1;setAlarmClock 精确闹钟权限、WorkManager setPowerEfficiencyHint API、GNSS hardware geofence 版本/数据需修复。"
+last_task9_at: "2026-05-04T17:20:00+08:00"
+review_notes: "2026-05-04 17:20 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0 / P3 1；ADPF setPreferPowerEfficiency API 版本边界与调度语义需修正。"
 
 
 ---

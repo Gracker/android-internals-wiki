@@ -11638,6 +11638,34 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T16:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "11.2",
+      "section_title": "App 耗电优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 11.2 App 耗电优化存在 ADPF 版本边界与调度语义问题",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-17-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/API边界",
+          "location": "L191 能效提示 ADPF setPreferPowerEfficiency(Android 16+)",
+          "detail": "正文把 `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)` 标为 Android 16 / API 36+。本地 SDK `android-35/android.jar` 与 `/Users/gracker/Android/sources/android-35/android/os/PerformanceHintManager.java` 已包含该公开方法，源码注解为 `@FlaggedApi(Flags.FLAG_ADPF_PREFER_POWER_EFFICIENCY)`；跨章节 §5.9 也写为 Android 15 / API 35。",
+          "suggestion": "把版本边界改为 Android 15 / API 35+，并补一句受平台 flag / 设备实现影响；若要坚持 Android 16 口径，需要给出 API 36 才稳定开放的一手来源。",
+          "severity": "P1"
+        },
+        {
+          "type": "原理链/API语义",
+          "location": "L191 `系统调度器会优先将其置于低功耗核心执行`",
+          "detail": "AOSP API 文档只说这些 hint session 线程可以 “prefer power efficiency over performance”。公开 API 到 `HintManagerService` / vendor power HAL 后如何映射到 cpuset、uclamp、cluster placement 属厂商策略；不能直接保证“置于低功耗核心”。",
+          "suggestion": "改成“向系统声明这组线程可偏向能效；系统/OEM 策略可据此调整频率、放置或功耗策略”。不要把 ADPF hint 写成标准调度器强制绑核行为。",
+          "severity": "P1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T17:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
