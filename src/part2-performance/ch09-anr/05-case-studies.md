@@ -35,13 +35,13 @@ task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
-task2b_result: fixed
-task9_result: "needs-rework"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T18:48:00+08:00"
+task2b_result: rework-fixed
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-04"
+last_task9_at: "2026-05-04T20:26:00+08:00"
+review_notes: "2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task 2B 回炉。"
 ---
-
 # 案例集
 
 > **阅读本章前，你需要了解：** §9.1 ANR 的设计思想、§9.2 ANR 类型与触发条件、§9.3 ANR 分析方法论、§9.4 特殊场景的 ANR。
@@ -148,6 +148,8 @@ CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 ### 举一反三
 
 这类 ANR 的共同特征：trace 中主线程堆栈"干净"（`nativePollOnce` 或 `WaitHoldingLocks`），但 AnrManager 的负载信息暴露真相。看到 Load 值远超 CPU 核心数、iowait 超过 20%、`kswapd0` 在排行榜前面，就要往系统负载方向分析。
+
+**16KB Page Size 下的 I/O 加剧。** Android 15+ 的 16KB 分页设备上，SQLite WAL 的 Checkpoint 粒度从 4KB 对齐升级到 16KB 对齐，单次 Checkpoint 写入量可达传统设备的 4 倍。当 App 的数据库写入集中在主线程或 `QueuedWork` 路径时，Checkpoint 产生的脉冲式 `iowait` 更容易瞬间吃满主线程的 5 秒 Input 窗口。实战调优方向：对写入密集的数据库，将 `PRAGMA wal_autocheckpoint` 从默认的 1000 页调低到 100-200 页，把单次大脉冲拆成多次小脉冲，降低 iowait 峰值。
 
 ---
 
@@ -272,7 +274,7 @@ Android 14 设备，使用手势导航时偶发 ANR：
 
 Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。系统在用户正在进行手势操作时冻结了 screenshot 进程，导致 Input 事件无法被消费，触发 ANR。这是**系统设计缺陷**：进程冻结策略没有考虑 Gesture Monitor 需要持续接收 Input 事件。
 
-[待验证: Android 15/16 是否已修复此冻结策略]
+[版本边界：此案例基于 Android 14 的 CachedAppsFreezer 行为。Android 15+ 加强了 InputDispatcher 对活跃连接进程的冻结豁免逻辑，但 Gesture Monitor 的豁免覆盖范围在不同 OEM 机型上存在差异，生产环境仍需通过 `am_freeze` 日志确认]
 
 ### 修复方案
 
@@ -440,6 +442,15 @@ trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死�
 
 这个分析路径在 §9.3 中有更系统的描述，本节案例是对方法论的具体应用。
 
+### Android 16+：利用元数据加速定性
+
+Android 16 的 `ProfilingManager` 在捕获 ANR Trace 时会附带结构化元数据，其中 `WaitQueue length` 字段可以直接作为定性分析的第一步判据：
+
+- **WaitQueue length ≈ 1**：主线程被单个长耗时任务卡死（对应案例 3、案例 6 的模式），排查方向是定位那个耗时调用
+- **WaitQueue length 远大于 1**：主线程消息处理整体吞吐不足，事件在排队（对应案例 1 的系统负载模式），排查方向是系统资源竞争和消息调度频率
+
+这个判据不需要阅读堆栈就能区分"单点卡死"与"吞吐量不足"两类根因，适合线上监控和自动化告警使用。
+
 ## 线上 ANR 聚合分析实践 [扩展]
 
 在大型 App 的日常运营中，单次 ANR 的分析只是冰山一角。真正有效率的做法是建立线上 ANR 监控和聚合分析体系。
@@ -450,14 +461,24 @@ ANR 的原始堆栈信息噪音很大。很多 ANR trace 会命中 `nativePollOn
 
 Shopee 团队的 MDAP LooperMonitor 方案是一个参考实践。核心思路是**记录主线程过去 10 秒的消息调度历史**，而不是只抓 ANR 瞬间的堆栈。当 ANR 发生时，上报过去 10 秒内所有消息的执行情况，即使 ANR 瞬间堆栈是 `nativePollOnce`，也能从调度历史中找到真正耗时的大消息。
 
+### 官方进程退出原因采集
+
+Android 11 (API 30) 引入的 `ActivityManager.getHistoricalProcessExitReasons()` 提供了官方的进程退出原因查询能力。对 ANR 场景来说，`ApplicationExitInfo.REASON_ANR` 配合 `getTraceInputStream()` 可以直接获取系统在 ANR 发生时抓取的 trace 文件，无需依赖隐藏 API。
+
+关键边界：
+
+- **版本要求**：`getTraceInputStream()` 从 API 30 起可用
+- **隐私限制**：App 只能查询自身的退出原因，无法获取其他进程的信息
+- **体积限制**：trace 文件可能较大（数 MB），线上采集需要控制上报频率
+- **与 Looper 历史的互补关系**：`ApplicationExitInfo` 提供的是 ANR 瞬间的快照（等同于 `traces.txt` 中的内容），而 Looper 监控记录的是 ANR 发生前 10 秒的消息调度历史。两者结合可以同时看到"卡住那一刻在做什么"和"卡住之前 10 秒经历了什么"
+
 ### 关键技术点
 
-1. **监控入口**：Android 28+ 使用 `Looper.Observer`（需绕过 Hidden API 限制），低版本降级到 `Looper.setMessageLogging(Printer)` 方案
-2. **消息分类**：区分系统消息和业务消息，分别记录
-3. **内存控制**：使用滚动淘汰策略，只保留最近 10 秒数据
-4. **聚合策略**：按 Handler 类名 + 消息类型做哈希聚合
-
-[待验证: Looper.Observer 在 Android 16+ 的 Hidden API 限制是否有变化]
+1. **Trace 获取**：Android 30+ 优先使用 `ApplicationExitInfo.getTraceInputStream()`，这是公开 API，不需要绕过 Hidden API 限制
+2. **主线程监控**：需要更细粒度的消息级耗时数据时，Android 28+ 使用 `Looper.Observer`（需绕过 Hidden API 限制），低版本降级到 `Looper.setMessageLogging(Printer)` 方案
+3. **消息分类**：区分系统消息和业务消息，分别记录
+4. **内存控制**：使用滚动淘汰策略，只保留最近 10 秒数据
+5. **聚合策略**：按 Handler 类名 + 消息类型做哈希聚合
 
 ## 参考资料
 

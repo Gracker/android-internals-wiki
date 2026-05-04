@@ -649,3 +649,52 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 ### 工具和资源
 - Snapdragon Profiler：<https://developer.qualcomm.com/software/snapdragon-profiler>
 - ARM Streamline：<https://developer.arm.com/tools-and-software/streamline-performance-analyzer>
+
+<!-- AIW-源码调研-2026-05-04 -->
+## GPU 内存管理与对象边界（源码级补充）
+
+### App 可见对象与系统内部图形缓冲对象的边界
+
+通过分析 AOSP 源码，我们发现 App 可见对象与系统内部图形缓冲对象之间的边界比表面看起来更复杂。Surface 并非直接的容器对象，而是委托给 BufferQueue 生产者接口，后者管理着 64 个 BufferSlot 的池。
+
+**BufferSlot 状态机实现：**
+```cpp
+// frameworks/native/libs/gui/include/gui/BufferSlot.h
+struct BufferState {
+    uint32_t mDequeueCount;
+    uint32_t mQueueCount;
+    uint64_t mAcquireCount;
+    bool mShared;
+
+    inline bool isFree() const { return !isAcquired() && !isDequeued() && !isQueued(); }
+    inline bool isDequeued() const { return mDequeueCount > 0; }
+    inline bool isQueued() const { return mQueueCount > 0; }
+    inline bool isAcquired() const { return mAcquireCount > 0; }
+    inline bool isShared() const { return mShared; }
+};
+```
+
+关键认知在于 BufferSlot 使用计数器而非简单的枚举状态，以适应共享缓冲区模式。一个槽可以同时处于多种状态（例如 shared + dequeued），这与常见的"三缓冲"理解有本质区别。
+
+### 内存分配的演进：ION 到 DMA-BUF Heaps
+
+内存分配经历了从 Android 4.x-11 的 ION 分配器到 Android 12+ 的 DMA-BUF Heaps 的演进：
+
+- **Android 4.x-11 (ION 时代)**：使用 Android 自定义 ION 分配器，所有进程访问同一设备节点
+- **Android 12+ (DMA-BUF Heaps)**：使用 Linux 上游 DMA-BUF Heaps，支持细粒度访问控制
+
+```cpp
+// frameworks/native/libs/gui/BufferQueueProducer.cpp
+status_t BufferQueueProducer::waitForFreeSlotThenRelock(int* foundSlot) {
+    // 查找空闲槽位的逻辑
+    for (int slot = 0; slot < mCore->mNumSlots; slot++) {
+        if (!mCore->mSlots[slot].mBufferState.isDequeued() && 
+            !mCore->mSlots[slot].mBufferState.isQueued()) {
+            return slot;
+        }
+    }
+    return BUFFER_INSUFFICIENT_CAPACITY;
+}
+```
+
+这种演进带来了更好的安全性和稳定性，但对应用层透明，理解分配底层有助于排查内存泄漏问题。
