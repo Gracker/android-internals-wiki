@@ -933,11 +933,49 @@
 - **建议**：示例加 `GameManager gameManager = getSystemService(GameManager.class); if (gameManager == null) return;` 或等价保护，再进入 Game Mode / Game State 调用。
 - **review 日志**：logs/deep-review/2026-05-04-08-deep-review.md
 
+
+## [Task9 Deep Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-05-04
+- **类型**：数据缺失/版本边界
+- **位置**：L296-L303（MGLRU 量化数据）
+- **问题**：`kswapd` CPU -40%、LMK -85%、渲染延迟 -18% 只给了 `lore.kernel.org/all/` 空泛入口，没有 message-id、patch cover letter 或 Google 报告链接；`6.12 默认启用` 也需要区分 mainline Kconfig 与 Android GKI defconfig。
+- **建议**：补具体 lore/kernel message-id 或 Google 公开报告；把默认启用口径限定为 `android16-6.12` GKI defconfig（如 `CONFIG_LRU_GEN=y` / `CONFIG_LRU_GEN_ENABLED=y`），避免读者理解成所有 Linux 6.12 mainline 构建默认启用。
+
+## [Task9 Deep Review] 17.3 行业案例 — 2026-05-04
+- **类型**：版本差异/API 边界
+- **位置**：L154-L160（ADPF Thermal thresholds）
+- **问题**：`PowerManager#getThermalHeadroomThresholds()` 在 Android 16/Baklava 公开源码中是 `@FlaggedApi(FLAG_ALLOW_THERMAL_HEADROOM_THRESHOLDS)`；本节适用范围写 Android 12-16，但正文没有给旧版本 fallback 或 feature flag 边界。
+- **建议**：补 `Build.VERSION` / API 可用性守卫；Android 12-15 场景使用 `getThermalHeadroom()`、thermal status、同机型实测阈值作为 fallback。
+
+## [Task9 Deep Review] 17.3 行业案例 — 2026-05-04
+- **类型**：源码准确性/案例待验证
+- **位置**：L198-L200（FileProvider attachInfo 插桩）
+- **问题**：正文把抖音 FileProvider 优化写成“在 `attachInfo()` 临时把 `grantUriPermissions` 设为 false，使 `getPathStrategy()` XML 解析被跳过”。当前 AndroidX `FileProvider.attachInfo()` 已不在该路径解析 XML；旧 support-v4 版本可能不同，缺少库版本和字节原文锚点。
+- **建议**：补字节原文链接、目标 FileProvider 版本和源码片段；若无法回源，降级为“通过字节码插桩延迟 FileProvider 路径 XML 解析”，不要写死 `grantUriPermissions=false` 的异常链。
+
+## [Task9 Deep Review] 17.3 行业案例 — 2026-05-04
+- **类型**：数据缺失/厂商边界
+- **位置**：L254-L257（折叠屏多窗口 GPU 压力）
+- **问题**：“120Hz 大屏多窗口对系统性能要求是普通场景 2-3 倍”“前台窗口获得更多 GPU 时间片、后台窗口降帧”缺少公开数据或 trace；GPU 时间片/后台降帧也不是 Android 标准公开机制，容易把 OEM 私有策略写成平台事实。
+- **建议**：改成可观测口径：SurfaceFlinger layer 数、HWC/GPU 合成比例、FrameTimeline deadline miss、每窗口 `setFrameRate`/实际 present cadence；若保留 2-3 倍或前后台策略，补具体设备/系统版本/trace。
+
+## [Task9 Deep Review] 18.9 Vulkan 原生渲染管线 — 2026-05-04
+- **类型**：调试命令/API 边界
+- **位置**：L439-L443（Validation Layer 启用命令）
+- **问题**：Android 官方 validation layer 文档没有 `debug.vulkan.enable` 属性；该命令大概率无效，容易让读者以为设置成功但 layer 未加载。
+- **建议**：删除 `adb shell setprop debug.vulkan.enable 1`；按官方文档保留 `debug.vulkan.layers`，或补充 per-app `settings put global gpu_debug_layers` / `gpu_debug_layer_app` 流程。
+
+## [Task9 Deep Review] 18.9 Vulkan 原生渲染管线 — 2026-05-04
+- **类型**：术语准确性
+- **位置**：L84（GLES 错误处理）
+- **问题**：“GLSE”不是 GLES/OpenGL 常用术语或 API，疑似把 `glGetError` 写错。
+- **建议**：改为 `glGetError` 或 “GL error 状态码”，并说明 GLES 错误多为查询式错误状态而非 validation layer 式即时诊断。
+
 ## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-05-04
 - **类型**：版本差异/原理链
 - **位置**：L484-L490 WindowInsets 扩展节
 - **问题**：正文把 Insets 分发概括为“WMS 计算 → relayoutWindow 返回 → ViewRootImpl dispatchApplyWindowInsets”。这能覆盖 relayout 返回路径，但 IME Insets 动画、运行时 InsetsSourceControl/InsetsController 更新不一定每帧触发 relayout，容易让读者把 Insets 动画成本全归到 `relayoutWindow`。
 - **建议**：补一句 IME Insets 动画期间还要看 `InsetsController` / `InsetsSourceConsumer` / `ViewRootImpl` 的运行时分发路径，并在 Perfetto 中把 relayout 与 Insets animation 分开计时。
+
 
 ## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-05-04
 - **类型**：版本差异
@@ -945,8 +983,15 @@
 - **问题**：正文并列写 `finishDrawing` / `reportDrawFinished`，但没有说明 legacy drawing finish 与 BLAST/sync-seq 路径的版本边界。读者在不同 Android 版本 trace 中只看到其中一个名字时，可能误以为链路缺失。
 - **建议**：补一行版本说明：旧路径常见 `finishDrawing`，现代 BLAST/sync 场景更常看 `reportDrawFinished` / sync seq；两者都表示主 Window 首帧完成信号，但后续 starting surface 移除还要看 Shell 与 SurfaceFlinger。
 
+
 ## [Task9 Deep Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 2026-05-04
 - **类型**：版本差异/API 边界
 - **位置**：L174-L176 `AnimationUtils.lockAnimationClock(...)`
 - **问题**：正文使用 `lockAnimationClock(long, long)` 双参数示例，但章节适用范围写 Android 10-17。双参数版本用于 expected presentation time，旧版本只需要核对单参数动画时钟锁定路径；不标版本会让读者在 Android 10-13 源码中找不到同一签名。
 - **建议**：在代码块注释中标注“新版本双参数；旧版本单参数但同样存在 `frameTimeNanos / NANOS_PER_MS` 毫秒化路径”，避免把签名差异误判为机制差异。
+
+## [Task9 Deep Review] 5.5 Thermal 管控 — 2026-05-04
+- **类型**：源码/资料链接
+- **位置**：frontmatter L23、L500、L685（source.android.com/docs/core/thermal）
+- **问题**：该官方文档路径返回 404。本轮复核可打开的是 source.android.com/docs/core/power/thermal-mitigation；Sustained Performance Mode 对应 source.android.com/docs/core/power/performance。
+- **建议**：替换失效链接，并按“thermal mitigation / performance management”拆分参考资料。

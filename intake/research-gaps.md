@@ -12509,3 +12509,35 @@ Android 17 / ART generational CMC 对 WeakReference、ReferenceQueue 入队时�
 
 ### 关联章节
 1.16、5.6、16.5
+
+## [2026-05-04] 5.5 Thermal 管控 — 知识盲区
+
+### 盲区描述
+16KB page size 是否能在真实设备上延迟 thermal throttling，当前缺少一手 A/B trace 和功耗数据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 同 SoC / 同 ROM 条件下采集 4KB 与 16KB 模式的 thermal_zone、CPU/GPU freq、Frame Timeline、power rail 数据
+- 记录环境温度、散热条件、负载脚本、time-to-throttle 与稳定帧率，确认 4.5% MMU 功耗估算是否能转化为整机热收益
+- 区分应用启动、大内存分配、游戏持续负载三类场景，避免把单点功耗数据泛化到整机温控
+
+### 关联章节
+4.7, 5.4, 5.12, 8.9
+
+## [2026-05-04] 9.5 案例集 — 知识盲区
+
+### 盲区描述
+缺少可公开复核的 Binder 线程池耗尽 / 同步 Binder 回调导致 ANR 的完整案例素材。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 收集包含 am_anr、主线程栈、Binder 线程池栈、对端进程栈、binder transaction 线索的真实案例
+- 复核 DEFAULT_MAX_BINDER_THREADS、joinThreadPool、同步回调链路在 Android 14-16 的版本边界
+- 沉淀修复方案：异步化、拆分锁、超时降级、避免跨进程同步回调
+
+### 关联章节
+1.4, 9.2, 9.3, 9.4

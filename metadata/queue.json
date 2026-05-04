@@ -5376,11 +5376,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T01:28:54+08:00",
-      "status": "completed",
+      "status": "pending",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-04-29T05:30:17+08:00",
-      "completed_at": "2026-05-04T18:47:25.694130",
-      "completed_reason": "Stack虚拟保留vs物理占用已拆分；ZRAM指标口径已修正(physical used/in swap/total swap)"
+      "last_reviewed_at": "2026-04-29T05:30:17+08:00"
     },
     {
       "section": "4.1",
@@ -6853,11 +6851,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T08:39:32+08:00",
-      "status": "completed",
+      "status": "pending",
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-04T10:37:13+08:00",
-      "completed_at": "2026-05-04T18:47:25.694130",
-      "completed_reason": "P0 sched_ext源码锚点已修正(ext.c/SCX_TASK_*/scx_bpf_dispatch)；P1 AutoFDO量化数据已降级为官方博客可核验口径"
+      "updated_at": "2026-05-04T10:37:13+08:00"
     },
     {
       "section": "19.26",
@@ -8413,9 +8409,9 @@
     },
     {
       "section": "9.5",
-      "section_title": "案例集",
+      "section_title": "9.5 案例集",
       "priority": 95,
-      "reason": "[External Review] 9.5 案例集 存在 P0/P1 技术问题，需回炉修正；[Deep Tech Review] Task9 复核新增 Android 15/16 freezer 与 ApplicationExitInfo 两处 P1",
+      "reason": "[Deep Tech Review] 9.5 案例集 存在 P0:3 / P1:2 技术问题，需回炉修正；[External Review] 9.5 案例集 存在 P0/P1 技术问题，需回炉修正；[Deep Tech Review] Task9 复核新增 Android 15/16 freezer 与 ApplicationExitInfo 两处 P1",
       "review_issues": [
         {
           "type": "存储性能",
@@ -8442,14 +8438,53 @@
           "location": "L442-L460 线上 ANR 聚合分析实践",
           "detail": "线上聚合方案只写 Looper.Observer（隐藏 API）和 `Looper.setMessageLogging()`，缺少 Android 11+ 官方 `ApplicationExitInfo#getTraceInputStream()` 这条 ANR trace 获取路径。对 APM 场景来说，官方进程退出原因与 trace 流应是基础链路，隐藏 API 只能作为补充。",
           "suggestion": "补充 `ActivityManager#getHistoricalProcessExitReasons()`、`ApplicationExitInfo.REASON_ANR`、`getTraceInputStream()` 的采集边界、版本要求、隐私/体积限制，并说明与 Looper 消息历史的互补关系。"
+        },
+        {
+          "level": "P0",
+          "type": "API/源码错误",
+          "location": "L447-L450（Android 16 ProfilingManager + WaitQueue length）",
+          "detail": "正文称 ProfilingManager 在 ANR Trace 中附带结构化元数据 WaitQueue length，并可据此判断主线程单点卡死/吞吐不足。AOSP android-16.0.0_r1 的 ProfilingTrigger 只有 APP_FULLY_DRAWN 与 ANR 触发类型，ProfilingResult/ProfilingManager 未暴露 WaitQueue 字段；WaitQueue length 是 InputDispatcher connection dump / ATRACE 计数，表示 input dispatch waitQueue，不是 App 主线程 MessageQueue。",
+          "suggestion": "删除“ProfilingManager 结构化元数据”表述；如要使用 WaitQueue，只能写成 InputDispatcher dumpsys/Perfetto counter 观察点，并说明它不能直接替代主线程消息队列分析。"
+        },
+        {
+          "level": "P0",
+          "type": "机制错误/数据缺失",
+          "location": "L152（16KB Page Size 下 SQLite WAL Checkpoint 冲击）",
+          "detail": "正文称 Android 15+ 16KB 分页会让 SQLite WAL checkpoint 粒度从 4KB 升级到 16KB，单次写入量变为 4 倍。SQLite 的 wal_autocheckpoint 阈值按数据库 page 计数，AOSP SQLite 默认 SQLITE_DEFAULT_PAGE_SIZE=4096、SQLITE_DEFAULT_WAL_AUTOCHECKPOINT=1000；OS 物理页大小不会自动把已有数据库 page_size 改成 16KB。",
+          "suggestion": "删除“默认 4 倍 checkpoint”结论；只有在明确 PRAGMA page_size=16384 且重建数据库后才可讨论 16KB database page 的 WAL 影响，并需补 iowait/trace 实测。"
+        },
+        {
+          "level": "P0",
+          "type": "源码字段错误",
+          "location": "L239（反射替换 sPendingWorkFinishers）",
+          "detail": "AOSP Android 8-14 的 QueuedWork 字段为 private static final LinkedList<Runnable> sFinishers，未发现 sPendingWorkFinishers。当前修复方案指向不存在的字段，读者按此反射会失败。",
+          "suggestion": "移除该字段名；若保留字节历史方案，需要标注对应 Android 版本/厂商分支源码。通用建议应回到减少 SP、控制文件大小、迁移 DataStore/专用存储。"
+        },
+        {
+          "level": "P1",
+          "type": "源码行为边界",
+          "location": "L213-L225（QueuedWork.waitToFinish 与 Activity 生命周期）",
+          "detail": "正文用 handlePauseActivity 栈并概括为 onPause/onStop 都会等待。AOSP android-14.0.0_r1 中非 pre-Honeycomb Activity 的等待点在 handleStopActivity()；handlePauseActivity() 只有 r.isPreHoneycomb() 时才 waitToFinish。QueuedWork.waitToFinish() 也会在 BroadcastReceiver onReceive 之后、Service command/stop 之后执行。当前案例类型（Activity 切换 / Broadcast ANR）和版本边界没有拆清。",
+          "suggestion": "按 Android 版本和组件类型改写：现代 Activity 主要锚到 handleStopActivity；Broadcast/Service 分别给 ActivityThread 对应源码锚点；保留旧栈时说明来自旧版本或特定目标 SDK。"
+        },
+        {
+          "level": "P1",
+          "type": "知识盲区",
+          "location": "L55、L429-L431（Binder 超时覆盖）",
+          "detail": "大纲要求案例覆盖 Binder 超时，但正文只有“Binder 线程池被同步调用压满”的举一反三说明，没有完整 ANR 信息摘录、分析过程、根因定位和修复方案。当前不能算一个 Binder 超时案例闭环。",
+          "suggestion": "补一个完整 Binder 线程池耗尽/同步 Binder 回调导致 ANR 的真实案例；若暂无素材，移除大纲中的“Binder 超时”覆盖承诺或标为待补。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "completed",
+      "status": "pending",
       "source_file": "2026-04-29-11-9.5-external-review.md",
-      "completed_at": "2026-05-04T20:03:31.784066",
-      "completed_reason": "16KB Page Checkpoint I/O冲击已补充；Android 16 WaitQueue length自动定性判据已添加；Case 4版本边界已收窄；ApplicationExitInfo官方trace采集路径已补充"
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-04-20-deep-review.md"
+      ],
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-04T20:26:00+08:00"
     },
     {
       "section": "9.6",
@@ -8478,10 +8513,8 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "completed",
-      "source_file": "2026-04-29-11-9.6-external-review.md",
-      "completed_at": "2026-05-04T20:03:31.784066",
-      "completed_reason": "Android 14 Measure Cache + Action-diff增量更新优化已补充；HardwareBuffer零拷贝共享及Icon构造Binder缓冲区压力已添加；版本演进表已补Android 14条目"
+      "status": "pending",
+      "source_file": "2026-04-29-11-9.6-external-review.md"
     },
     {
       "section": "9.7",
@@ -11680,91 +11713,28 @@
       "status": "pending"
     },
     {
-      "section": "4.1",
-      "section_title": "Android 内存模型全景",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 4.1 Android 内存模型全景 存在 P0/P1 技术问题，需回炉修正",
+      "section": "5.5",
+      "section_title": "5.5 Thermal 管控",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 5.5 Thermal 管控 存在 P0:0 / P1:1 技术问题，需回炉修正",
       "material_paths": [
-        "logs/deep-review/2026-05-04-18-deep-review.md"
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-04-20-deep-review.md"
       ],
       "review_issues": [
-        {
-          "level": "P0",
-          "type": "源码错误/版本差异",
-          "location": "L117（Android 17 MemoryLimiter 硬限额）",
-          "detail": "正文写 Android 17/API 37 引入 MemoryLimiter，PSS 超配额会直接终止进程，ApplicationExitInfo 记录 MemoryLimiter 原因。复核 AOSP main 的 ApplicationExitInfo.java、ActivityManager.java、ProcessList.java 未发现 MemoryLimiter 字符串；ApplicationExitInfo 当前公开原因仍是 REASON_LOW_MEMORY / SUBREASON_OOM_KILL 等枚举。core/java/android/os/ 下也没有 ProfilingManager.java。该说法缺少源码锚点，不能作为 Android 17 平台事实发布。",
-          "suggestion": "若保留 Android 17 配额机制，补充具体 AOSP change、API 文档、类名/字段名和分支号；补不到则删除 MemoryLimiter 段，改回现有 lmkd/oom_score_adj/ApplicationExitInfo low-memory kill 口径，并把未来特性标为待验证。",
-          "evidence": [
-            "AOSP main ApplicationExitInfo.java: REASON_LOW_MEMORY / SUBREASON_OOM_KILL，无 MemoryLimiter",
-            "AOSP main ActivityManager.java / ProcessList.java / ComponentCallbacks2.java grep MemoryLimiter=0"
-          ]
-        },
         {
           "level": "P1",
-          "type": "数据缺失/版本边界",
-          "location": "L101（MTE 3%/PSS 5%）与 L360（16KB 页 PSS 5%-10%）",
-          "detail": "两处给出精确百分比：MTE 额外预留约 3% RAM、全系统 PSS 增量约 5%；16KB 页全系统总 PSS 普遍上涨 5%-10%。Android Developers 16KB 页文档只写 slightly more memory，并给出启动/功耗/相机/boot 性能数据，没有给 5%-10% PSS 区间；MTE 官方文档说明 16-byte granule 和低开销检测，也未支撑全系统 PSS +5% 的发布口径。",
-          "suggestion": "为这两组百分比补一手来源（Google/Android 官方报告、内核/AOSP 性能数据、设备实验条件）；否则降级为“会增加内存开销/页内碎片，跨设备需重新建基线”，不要写固定百分比。",
-          "evidence": [
-            "Android Developers 16KB page sizes: only says slightly more memory",
-            "Android MTE docs: no PSS percentage baseline found in official page"
-          ]
+          "type": "数据缺失/原理断裂",
+          "location": "L449-L455（16KB Page Size 对热平衡的底层加持）",
+          "detail": "正文把 16KB 页表项减少约 75%、MMU 功耗降低约 4.5% 继续推导为“热积累斜率变缓、thermal throttling 被推迟”。当前只标注“社区实测估算”，没有设备、SoC、内核页大小、工作负载、环境温度、thermal zone / CPU freq / power rail 对照数据；公开 16KB page size 资料也不能直接推出温控降频时间窗延长。",
+          "suggestion": "删除确定性因果链，或降级为待研究假设；若保留，需要补同设备 4KB/16KB A/B trace、温度曲线、频率上限变化、time-to-throttle 与功耗数据。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-04T18:55:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "7.14",
-      "section_title": "GAPS：Android 动态分析目标可达性路径重建",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 7.14 GAPS：Android 动态分析目标可达性路径重建 存在 P0/P1 技术问题，需回炉修正",
-      "material_paths": [
-        "logs/deep-review/2026-05-04-18-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "level": "P0",
-          "type": "源码错误/API 签名错误/原理断裂",
-          "location": "L151-L152（Frida hook 实现目标触达即抓 Trace）",
-          "detail": "正文写 Hook 触发时通过 Android.traceBegin()/Android.traceEnd() 注入 marker，并通过 Perfetto 的 Tracing::Initialize() 或 atrace 命令启动短窗口 trace。Android 没有 Android.traceBegin/traceEnd 这组公开 API；可用口径应是 Java android.os.Trace.beginSection()/endSection()、NDK ATrace_beginSection()/ATrace_endSection()，或应用集成 Perfetto SDK 后写 TrackEvent。Tracing::Initialize() 只是 SDK 初始化，不等价于启动系统 trace；atrace 是 shell 工具，Frida hook 中直接调用需要 root/shell 桥接，不能写成默认可执行路径。",
-          "suggestion": "把扩展示例改为：先由外部 perfetto/atrace 预启动 ring buffer 或短窗口 trace；Frida hook 内调用 android.os.Trace.beginSection/endSection（或 ATrace/Perfetto SDK marker）打点；hook 只负责 marker/触发信号，不直接假设能在应用进程里启动系统级 trace。",
-          "evidence": [
-            "Android public tracing API: android.os.Trace.beginSection/endSection；NDK ATrace_*",
-            "samudoria/GAPS 当前 Frida hook 仅 send(\"[Method] ... reached\")，未集成 traceBegin/Perfetto session"
-          ]
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-04T18:55:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "16.4",
-      "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 存在 P0 技术问题，需回炉修正",
-      "material_paths": [
-        "logs/deep-review/2026-05-04-19-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "level": "P0",
-          "type": "源码错误/版本差异",
-          "location": "L163-L166 sched_ext 排查要点；L349 版本演进表 sched_ext 路径",
-          "detail": "正文写 `/sys/kernel/sched_ext/root/events` 可查看事件计数器，并列举 `SCX_EV_DISPATCH_LOCAL`、`SCX_EV_ENQ_SKIP` 为 android16-6.12 已有事件；同时在版本表中把 sched_ext 锚点写成 `kernel/sched/ext/`。复核 android16-6.12：`Documentation/scheduler/sched-ext.rst` 只列 `/sys/kernel/sched_ext/state`、`/sys/kernel/sched_ext/root/ops`、`/sys/kernel/sched_ext/enable_seq`，未列 root/events；`include/trace/events/sched_ext.h` 仅公开 `sched_ext_dump` tracepoint；`kernel/sched/ext.c` 与 `include/linux/sched/ext.h` 未命中 `SCX_EV_*` 计数器；源码路径为 `kernel/sched/ext.c`。当前排查清单会让读者按不存在的 sysfs/符号定位。",
-          "suggestion": "把第 4 条改为 `/sys/kernel/sched_ext/enable_seq` 或 `tools/sched_ext/scx_show_state.py` / `/proc/<pid>/sched ext.enabled`；事件观测保留 `sched_ext_dump` tracepoint。版本表锚点改为 `kernel/sched/ext.c` + `include/linux/sched/ext.h`；若要讨论 events 计数器，需标注为后续 mainline/OEM 私有实现并给出分支。",
-          "evidence": [
-            "android16-6.12 Documentation/scheduler/sched-ext.rst: state/root/ops/enable_seq",
-            "android16-6.12 include/trace/events/sched_ext.h: sched_ext_dump only",
-            "android16-6.12 kernel/sched/ext.c/include/linux/sched/ext.h: no SCX_EV_* tokens"
-          ]
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-04T19:36:00+08:00",
-      "status": "pending"
+      "added_at": "2026-05-04T20:26:00+08:00",
+      "status": "pending",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-04T20:26:00+08:00"
     }
   ],
   "completed": [
