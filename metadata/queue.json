@@ -4592,33 +4592,25 @@
     },
     {
       "section": "2.12",
-      "section_title": "Window Manager Service 与窗口管理\n- **严重级别**：P1\n- **位置**：配置变更与布局逻辑小节\n- **问题描述**：未反映 Android 16/17 重建契约及局部布局优化。\n- **建议修正方向**：同步最新 Flag 列表并引入局部遍历算法说明。\n\n### 9.4 可复用知识资产\n- **性能锚点**：Android 16 局部遍历减少了 30% 布局开销。\n- **核心属性**：`android:recreateOnConfigChanges`。\n- **技术结论**：WMS 已实现了从“全量遍历”向“脏区感知遍历”的跨越。\n\n## 十一、落盘信息\n- 已写入文件：`logs/external-review/2026-04-28-15-ch02-12-window-manager-external-review.md`",
-      "priority": 85,
-      "reason": "[External Review] Window Manager Service 与窗口管理\n- **严重级别**：P1\n- **位置**：配置变更与布局逻辑小节\n- **问题描述**：未反映 Android 16/17 重建契约及局部布局优化。\n- **建议修正方向**：同步最新 Flag 列表并引入局部遍历算法说明。\n\n### 9.4 可复用知识资产\n- **性能锚点**：Android 16 局部遍历减少了 30% 布局开销。\n- **核心属性**：`android:recreateOnConfigChanges`。\n- **技术结论**：WMS 已实现了从“全量遍历”向“脏区感知遍历”的跨越。\n\n## 十一、落盘信息\n- 已写入文件：`logs/external-review/2026-04-28-15-ch02-12-window-manager-external-review.md` 存在重要缺失，需回炉补强 2026 年最新特性",
+      "section_title": "Window Manager Service 与窗口管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.12 recreateOnConfigChanges flag 范围写错，需回炉修正 Android 17 配置变化口径",
       "review_issues": [
         {
-          "type": "版本差异",
-          "location": "配置变更章节",
-          "detail": "Android 17 recreateOnConfigChanges 完整列表。。技术事实：API 37 默认不重启 keyboard、colorMode、uiMode（限桌面模式切换）等变更。开发者需显式声明方可恢复重启行为。",
-          "suggestion": "提供完整 Flag 对照表并解析其设计初衷。"
-        },
-        {
-          "type": "原理链完整性",
-          "location": "布局小节",
-          "detail": "局部层级遍历 (Partial Hierarchy Traversal)。。技术事实：Android 16 WMS 支持仅更新发生变化的 Task 或 Display 区域，跳过全量 RootWindowContainer 遍历，大幅优化多屏负载。",
-          "suggestion": "解析局部遍历对桌面模式性能的支撑。"
-        },
-        {
-          "type": "版本差异",
-          "location": "预测返回章节",
-          "detail": "三键导航支持预测返回。。技术事实：Android 16 将预测性预览扩展至物理返回键长按场景。",
-          "suggestion": "同步新场景下的状态机联动逻辑。"
+          "level": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L383（折叠屏与大屏配置变更）",
+          "detail": "正文把 Android 17 的 android:recreateOnConfigChanges 描述成可覆盖 keyboard、keyboardHidden、navigation、touchscreen、colorMode、uiMode 等配置变化。AOSP main 的 core/res/res/values/attrs_manifest.xml 中 recreateOnConfigChanges 只声明 mcc/mnc；configChanges 才包含 keyboard、navigation、screenSize、uiMode 等完整列表。Android 17 官方行为变更页也没有公开该属性扩展列表。",
+          "suggestion": "移除“recreateOnConfigChanges 覆盖 keyboard/colorMode/uiMode”等说法；改成 Android 17 大屏 orientation/resizability opt-out 移除会提高窗口尺寸与 configuration callback 频率。若要提 recreateOnConfigChanges，只保留 mcc/mnc 的历史语义，或补充可核验的 Android 17 源码锚点后再写。"
         }
       ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-28T03:49:02+08:00",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T08:42:32+08:00",
       "status": "pending",
-      "source_file": "2026-04-28-15-ch02-12-window-manager-external-review.md"
+      "source_file": "2026-04-28-15-ch02-12-window-manager-external-review.md",
+      "material_paths": [
+        "intake/suggestions.md"
+      ]
     },
     {
       "section": "2.13",
@@ -11430,6 +11422,27 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T06:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "8.9",
+      "section_title": "Android 游戏性能与 Game Mode/State API",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 8.9 Android 16 ADPF/VSync deadline 口径缺少公开 API 支撑，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P1",
+          "type": "版本差异/原理断裂",
+          "location": "L356-L362（Android 16 前后的 Swappy / ADPF 分工）",
+          "detail": "正文写“Android 16 起，游戏工作重心转向订阅 VSync 偏移 + 上报帧 deadline，让系统根据 ADPF hint 自动完成调频和调度适配”。Android 16 官方特性页公开的是 SystemHealthManager#getCpuHeadroom()/getGpuHeadroom()；公开 PerformanceHintManager / NDK ADPF 接口是 target/actual work duration、线程集合、native surface/graphics pipeline 关联等，并未公开“订阅 VSync 偏移”或“上报 frame deadline”的 API。",
+          "suggestion": "改成：Android 16 增加 CPU/GPU headroom，ADPF 仍通过 target/actual duration 与 surface/graphics pipeline 关联给系统调度提示；帧节奏仍由 Swappy、ANativeWindow_setFrameRate/SurfaceControl frame rate、FrameTimeline/ARR 共同验证。不要把不存在的 VSync offset 订阅写成 Android 16 平台能力。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T08:42:32+08:00",
       "status": "pending"
     }
   ],
