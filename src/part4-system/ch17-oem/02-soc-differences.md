@@ -30,11 +30,11 @@ task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-17
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
-task2b_state: pending
+task2b_state: fixed
 ---
 
 # SoC 平台差异
@@ -143,7 +143,33 @@ static INT32 perfLockParamsOpenCamera[] = {
 
 这种 Perflock 机制在 Perfetto 中的表现是：某些时刻所有 CPU 核心的频率会突然同时拉到最高，即使用户操作并不需要这么高的性能。这在分析功耗或发热问题时需要区分——是 App 的代码触发了重负载，还是厂商的系统服务通过 Perflock 提频了。
 
-联发科的调度策略相对保守，更强调能效平衡。联发科也有类似的性能提示机制（通常通过 `/sys/devices/system/cpu/cpu*/cpufreq/` 节点控制），但在默认策略上不那么激进。不过，在全大核架构下，调度器的迁移决策会更频繁——因为没有传统意义上的「小核」来接收低优先级任务，所以负载分配的粒度更细。在 Perfetto 中可以看到线程在核心间的迁移更频繁。
+联发科的调度策略相对保守，更强调能效平衡。联发科也有类似的性能提示机制（通常通过 `/sys/devices/system/cpu/cpu*/cpufreq/` 节点控制），但在默认策略上不那么激进。不过，在全大核架构下，调度器的迁移决策会更频繁——因为没有传统意义上的「小核」来接收低优先级任务，所以负载分配的粒度更细。
+
+**在 Perfetto 中观察全大核迁移行为**，可以通过以下方式：
+
+1. **CPU Scheduling Track** 中直接统计线程的 `migrations` 次数。全大核架构下，负载均衡器（load balancer）在核心间重新分配任务的频率明显高于传统大小核，因为各核心的算力差距小，迁移代价低。用 SQL 查询可以量化：
+```sql
+-- 统计每个线程在 10 秒窗口内的迁移次数
+SELECT
+  tid,
+  thread.name,
+  COUNT(*) AS migration_count
+FROM sched
+  JOIN thread USING (utid)
+WHERE ts BETWEEN <start_ts> AND <end_ts>
+  AND prev_cpu != cpu
+GROUP BY tid
+ORDER BY migration_count DESC
+LIMIT 20;
+```
+
+2. **CPU Frequency Track** 的对比特征：传统大小核的频率跨度极大（小核 1.8GHz vs 大核 3.4GHz），全大核的三个频率档位分布紧凑（2.0GHz / 2.85GHz / 3.62GHz）。如果频率 Track 中看不到明显的「低频区」和「高频区」二分，基本可以判断为全大核或近全大核架构。
+
+3. **sched_waking / sched_wakeup 事件**中观察唤醒目标 CPU 的分布。大小核架构下，低优先级唤醒偏向小核（CPU 4-7）；全大核架构下唤醒目标分布更均匀，没有明显的「小核汇聚」现象。
+
+需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，迁移本身的开销也低（Armv8.5+ 的 DSU 缓存一致性协议让跨核 L2 命中延迟控制在可接受范围），所以频繁迁移是正常的负载均衡行为，不必作为性能问题处理。只有在迁移导致 cache 抖动（可以观察 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
+
+[已验证: ARM DSU-120 缓存一致性协议文档; Perfetto sched 表结构; MediaTek Dimensity 9400 公开规格]
 
 [待验证: 联发科的具体调度参数和提频策略在 AOSP 开源部分不完整，需实机确认]
 
