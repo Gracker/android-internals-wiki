@@ -10851,5 +10851,23 @@
       "auto_finalized": []
     },
     "log": "logs/deep-review/2026-05-04-16-deep-review.md"
+  },
+  "task6_reviews": {
+    "1.5": {
+      "date": "2026-05-04",
+      "result": "pass-light-edit",
+      "round": 8,
+      "mode": "revisiting",
+      "fixes": 2,
+      "notes": "高频词真正→2处；queue.json仍有P1技术问题待task2b修复"
+    },
+    "9.1": {
+      "date": "2026-05-04",
+      "result": "pass-light-edit",
+      "round": 3,
+      "mode": "revisiting",
+      "fixes": 1,
+      "notes": "高频词根本→1处；queue.json仍有P0技术问题待task2b修复"
+    }
   }
 }
