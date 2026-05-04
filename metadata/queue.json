@@ -8446,8 +8446,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-11-9.5-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-9.5-external-review.md",
+      "completed_at": "2026-05-04T20:03:31.784066",
+      "completed_reason": "16KB Page Checkpoint I/O冲击已补充；Android 16 WaitQueue length自动定性判据已添加；Case 4版本边界已收窄；ApplicationExitInfo官方trace采集路径已补充"
     },
     {
       "section": "9.6",
@@ -8476,8 +8478,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-11-9.6-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-9.6-external-review.md",
+      "completed_at": "2026-05-04T20:03:31.784066",
+      "completed_reason": "Android 14 Measure Cache + Action-diff增量更新优化已补充；HardwareBuffer零拷贝共享及Icon构造Binder缓冲区压力已添加；版本演进表已补Android 14条目"
     },
     {
       "section": "9.7",
