@@ -11735,6 +11735,32 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T18:55:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "16.4",
+      "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 存在 P0 技术问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-19-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L163-L166 sched_ext 排查要点；L349 版本演进表 sched_ext 路径",
+          "detail": "正文写 `/sys/kernel/sched_ext/root/events` 可查看事件计数器，并列举 `SCX_EV_DISPATCH_LOCAL`、`SCX_EV_ENQ_SKIP` 为 android16-6.12 已有事件；同时在版本表中把 sched_ext 锚点写成 `kernel/sched/ext/`。复核 android16-6.12：`Documentation/scheduler/sched-ext.rst` 只列 `/sys/kernel/sched_ext/state`、`/sys/kernel/sched_ext/root/ops`、`/sys/kernel/sched_ext/enable_seq`，未列 root/events；`include/trace/events/sched_ext.h` 仅公开 `sched_ext_dump` tracepoint；`kernel/sched/ext.c` 与 `include/linux/sched/ext.h` 未命中 `SCX_EV_*` 计数器；源码路径为 `kernel/sched/ext.c`。当前排查清单会让读者按不存在的 sysfs/符号定位。",
+          "suggestion": "把第 4 条改为 `/sys/kernel/sched_ext/enable_seq` 或 `tools/sched_ext/scx_show_state.py` / `/proc/<pid>/sched ext.enabled`；事件观测保留 `sched_ext_dump` tracepoint。版本表锚点改为 `kernel/sched/ext.c` + `include/linux/sched/ext.h`；若要讨论 events 计数器，需标注为后续 mainline/OEM 私有实现并给出分支。",
+          "evidence": [
+            "android16-6.12 Documentation/scheduler/sched-ext.rst: state/root/ops/enable_seq",
+            "android16-6.12 include/trace/events/sched_ext.h: sched_ext_dump only",
+            "android16-6.12 kernel/sched/ext.c/include/linux/sched/ext.h: no SCX_EV_* tokens"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T19:36:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

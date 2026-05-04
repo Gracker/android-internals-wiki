@@ -9,14 +9,14 @@ reviewed_date: "2026-05-04"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-last_task9_at: "2026-05-04T10:37:13+08:00"
+last_task9_at: "2026-05-04T19:36:00+08:00"
 task9_reviewed_date: "2026-05-04"
-task9_reviewed_by: "openclaw-task9"
-task2b_state: fixed
+task9_reviewed_by: openclaw-task9
+task2b_state: pending
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task2b_fixed_at: "2026-05-04T18:43:00+08:00"
 last_task2b_at: "2026-05-04T18:43:00+08:00"
 last_task6_at: "2026-05-04T19:15:00+08:00"
@@ -26,7 +26,9 @@ tags:
   - linux
   - research
 review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b：P0 3 已修正（sched_ext_ops 源码锚点改为 ext.c、SCX_OPSS 改为 SCX_TASK_*、DSQ API 改为 6.12 口径 scx_bpf_dispatch）；P1 1 AutoFDO 量化数据已降级为官方博客可核验口径。；2026-05-04 Task6：清理 frontmatter 重复状态，修正 sched_ext 路径与若干文风问题，AutoFDO Binder 段落降级为 profile/benchmark 绑定口径。"
+task9_review_notes: "2026-05-04 19:36 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；sched_ext 排查要点引用不存在的 /sys/kernel/sched_ext/root/events 与 SCX_EV_* 计数器，需 Task2B 回炉。"
 ---
+
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
 
