@@ -11674,6 +11674,67 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T17:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "4.1",
+      "section_title": "Android 内存模型全景",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 4.1 Android 内存模型全景 存在 P0/P1 技术问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-18-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L117（Android 17 MemoryLimiter 硬限额）",
+          "detail": "正文写 Android 17/API 37 引入 MemoryLimiter，PSS 超配额会直接终止进程，ApplicationExitInfo 记录 MemoryLimiter 原因。复核 AOSP main 的 ApplicationExitInfo.java、ActivityManager.java、ProcessList.java 未发现 MemoryLimiter 字符串；ApplicationExitInfo 当前公开原因仍是 REASON_LOW_MEMORY / SUBREASON_OOM_KILL 等枚举。core/java/android/os/ 下也没有 ProfilingManager.java。该说法缺少源码锚点，不能作为 Android 17 平台事实发布。",
+          "suggestion": "若保留 Android 17 配额机制，补充具体 AOSP change、API 文档、类名/字段名和分支号；补不到则删除 MemoryLimiter 段，改回现有 lmkd/oom_score_adj/ApplicationExitInfo low-memory kill 口径，并把未来特性标为待验证。",
+          "evidence": [
+            "AOSP main ApplicationExitInfo.java: REASON_LOW_MEMORY / SUBREASON_OOM_KILL，无 MemoryLimiter",
+            "AOSP main ActivityManager.java / ProcessList.java / ComponentCallbacks2.java grep MemoryLimiter=0"
+          ]
+        },
+        {
+          "level": "P1",
+          "type": "数据缺失/版本边界",
+          "location": "L101（MTE 3%/PSS 5%）与 L360（16KB 页 PSS 5%-10%）",
+          "detail": "两处给出精确百分比：MTE 额外预留约 3% RAM、全系统 PSS 增量约 5%；16KB 页全系统总 PSS 普遍上涨 5%-10%。Android Developers 16KB 页文档只写 slightly more memory，并给出启动/功耗/相机/boot 性能数据，没有给 5%-10% PSS 区间；MTE 官方文档说明 16-byte granule 和低开销检测，也未支撑全系统 PSS +5% 的发布口径。",
+          "suggestion": "为这两组百分比补一手来源（Google/Android 官方报告、内核/AOSP 性能数据、设备实验条件）；否则降级为“会增加内存开销/页内碎片，跨设备需重新建基线”，不要写固定百分比。",
+          "evidence": [
+            "Android Developers 16KB page sizes: only says slightly more memory",
+            "Android MTE docs: no PSS percentage baseline found in official page"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T18:55:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.14",
+      "section_title": "GAPS：Android 动态分析目标可达性路径重建",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.14 GAPS：Android 动态分析目标可达性路径重建 存在 P0/P1 技术问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-18-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误/API 签名错误/原理断裂",
+          "location": "L151-L152（Frida hook 实现目标触达即抓 Trace）",
+          "detail": "正文写 Hook 触发时通过 Android.traceBegin()/Android.traceEnd() 注入 marker，并通过 Perfetto 的 Tracing::Initialize() 或 atrace 命令启动短窗口 trace。Android 没有 Android.traceBegin/traceEnd 这组公开 API；可用口径应是 Java android.os.Trace.beginSection()/endSection()、NDK ATrace_beginSection()/ATrace_endSection()，或应用集成 Perfetto SDK 后写 TrackEvent。Tracing::Initialize() 只是 SDK 初始化，不等价于启动系统 trace；atrace 是 shell 工具，Frida hook 中直接调用需要 root/shell 桥接，不能写成默认可执行路径。",
+          "suggestion": "把扩展示例改为：先由外部 perfetto/atrace 预启动 ring buffer 或短窗口 trace；Frida hook 内调用 android.os.Trace.beginSection/endSection（或 ATrace/Perfetto SDK marker）打点；hook 只负责 marker/触发信号，不直接假设能在应用进程里启动系统级 trace。",
+          "evidence": [
+            "Android public tracing API: android.os.Trace.beginSection/endSection；NDK ATrace_*",
+            "samudoria/GAPS 当前 Frida hook 仅 send(\"[Method] ... reached\")，未集成 traceBegin/Perfetto session"
+          ]
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T18:55:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
