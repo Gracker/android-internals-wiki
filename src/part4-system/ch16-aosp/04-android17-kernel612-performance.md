@@ -14,17 +14,19 @@ task9_result: needs-rework
 last_task9_at: "2026-05-04T10:37:13+08:00"
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
-task2b_fixed_at: "2026-04-27T11:41:00+08:00"
-last_task2b_at: "2026-04-27T11:41:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_fixed_at: "2026-05-04T18:43:00+08:00"
+last_task2b_at: "2026-05-04T18:43:00+08:00"
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
   - linux
   - research
-review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。"
+review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b：P0 3 已修正（sched_ext_ops 源码锚点改为 ext.c、SCX_OPSS 改为 SCX_TASK_*、DSQ API 改为 6.12 口径 scx_bpf_dispatch）；P1 1 AutoFDO 量化数据已降级为官方博客可核验口径。"
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
@@ -76,14 +78,14 @@ sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开
 
 ### sched_ext 源码级结构与 OEM 落地现状（2026-05-04 补充）
 
-以下内容基于一手源码验证（Linux 6.12 mainline + OnePlus SM8750 开源模块）。
+以下内容基于一手源码验证（Linux 6.12 mainline `kernel/sched/ext.c` + `include/linux/sched/ext.h` + OnePlus SM8750 开源模块）。
 
 #### 核心数据结构：`struct sched_ext_ops`
 
-`kernel/sched/ext_internal.h` 定义了 BPF 调度器的入口表，所有调度回调均通过此结构注册：
+`kernel/sched/ext.c` 定义了 BPF 调度器的入口表，所有调度回调均通过此结构注册（6.12 中 `ext_internal.h` 尚未从 `ext.c` 拆出，该拆分发生在后续 mainline 版本）：
 
 ```c
-// kernel/sched/ext_internal.h, 行 248-298（简化）
+// kernel/sched/ext.c（android16-6.12），简化
 struct sched_ext_ops {
     s32 (*select_cpu)(struct task_struct *p, s32 prev_cpu, u64 wake_flags);
     void (*enqueue)(struct task_struct *p, u64 enq_flags);
@@ -98,31 +100,35 @@ struct sched_ext_ops {
 };
 ```
 
-#### 任务所有权状态机
+#### 任务状态标记
 
-`ext_internal.h` 定义了四状态机，解耦 SCX core 和 BPF 调度器的同步：
+`include/linux/sched/ext.h` 和 `kernel/sched/ext.c` 使用 `SCX_TASK_*` flag 位来标记任务在 sched_ext 框架中的状态（6.12 口径）：
 
-| 状态 | 含义 | 拥有者 |
-|------|------|--------|
-| `SCX_OPSS_NONE` | 任务在 run queue 上或正在执行 | SCX core |
-| `SCX_OPSS_QUEUEING` | 过渡状态：正在从 SCX core 转移到 BPF 调度器 | SCX core（持有 rq lock） |
-| `SCX_OPSS_QUEUED` | 任务在 DSQ（dispatch queue）上 | BPF 调度器 |
-| `SCX_OPSS_DISPATCHING` | 过渡状态：正在从 BPF 调度器返回 SCX core | BPF 调度器 |
+| 标记 | 含义 |
+|------|------|
+| `SCX_TASK_QUEUED` | 任务已由 BPF 调度器的 `ops.enqueue()` 放入某个 DSQ |
+| `SCX_TASK_IN_CUSTODY` | 任务当前由 BPF 调度器管理（dispatch 后、yield 前） |
+| `SCX_TASK_RESET_RUNNABLE_AT` | 任务 runnable 时间戳需要重置 |
+| `SCX_TASK_DEQD_FOR_SLEEP` | 任务因睡眠被 dequeue |
 
-这个状态机允许 BPF 程序随时分发任务，SCX core 安全地拒绝无效分发（比如任务已被 dequeue 但 BPF 侧不知道）。
+任务所有权通过 `p->scx.flags` 中的这些 bit 位来跟踪，而不是独立的状态机枚举。`ops.enqueue()` 将任务交给 BPF 调度器，`ops.dispatch()` 从 BPF 调度器取回任务交给 CPU 执行。SCX core 在 dequeue 和 dispatch 路径中检查这些 flag 来防止无效操作（比如 dispatch 一个已被 dequeue 的任务）。
 
 #### Dispatch Queue（DSQ）机制
 
-`include/linux/sched/ext.h` 定义了内置 DSQ ID：
+`include/linux/sched/ext.h` 定义了内置 DSQ ID（6.12 口径）：
 
 ```c
+// include/linux/sched/ext.h（android16-6.12）
 enum scx_dsq_id_flags {
-    SCX_DSQ_GLOBAL  = SCX_DSQ_FLAG_BUILTIN | 1,  // 全局 FIFO 队列，按节点分片
-    SCX_DSQ_LOCAL   = SCX_DSQ_FLAG_BUILTIN | 2,   // 每 CPU 本地队列
-    SCX_DSQ_BYPASS  = SCX_DSQ_FLAG_BUILTIN | 3,   // 绕过模式专用（5ms slice）
+    SCX_DSQ_FLAG_BUILTIN  = 1U << 16,
+    SCX_DSQ_FLAG_LOCAL_ON = 1U << 17,
+    SCX_DSQ_GLOBAL  = SCX_DSQ_FLAG_BUILTIN | 0,  // 全局 FIFO 队列
+    SCX_DSQ_LOCAL   = SCX_DSQ_FLAG_BUILTIN | 1,  // 每 CPU 本地队列
     SCX_DSQ_LOCAL_ON = SCX_DSQ_FLAG_BUILTIN | SCX_DSQ_FLAG_LOCAL_ON, // 指定 CPU 本地队列
 };
 ```
+
+6.12 没有独立的 `SCX_DSQ_BYPASS`——绕过模式在 `scx_ops_bypass()` 中通过直接 dispatch 到 `SCX_DSQ_LOCAL` 实现。后续 mainline 版本可能新增专用 bypass DSQ。
 
 调度周期：CPU 本地 DSQ → 全局 DSQ → `ops.dispatch()` 从 BPF 调度器取任务。
 
@@ -142,10 +148,12 @@ OPPO/一加 SM8750 的 `vendor/oplus/kernel/cpu/sched_ext/main.c`（开源于 Gi
 
 #### 参考调度器：scx_simple
 
-`tools/sched_ext/scx_simple.bpf.c` 展示了两模式调度器实现：
+`tools/sched_ext/scx_simple.bpf.c` 展示了两模式调度器实现（6.12 口径）：
 
-- **FIFO 模式**：`scx_bpf_dsq_insert(p, SHARED_DSQ, SCX_SLICE_DFL, enq_flags)` 直接入队
-- **vtime 模式**：`scx_bpf_dsq_insert_vtime(p, SHARED_DSQ, SCX_SLICE_DFL, vtime, enq_flags)` 按虚拟时间排序
+- **FIFO 模式**：`scx_bpf_dispatch(p, SHARED_DSQ, SCX_SLICE_DFL, enq_flags)` 直接入队
+- **vtime 模式**：`scx_bpf_dispatch_vtime(p, SHARED_DSQ, SCX_SLICE_DFL, vtime, enq_flags)` 按虚拟时间排序
+
+注意：`scx_bpf_dsq_insert()` / `scx_bpf_dsq_insert_vtime()` 是后续 mainline 版本的 API 重命名（6.14+），在 android16-6.12 中对应函数名是 `scx_bpf_dispatch()` / `scx_bpf_dispatch_vtime()`。
 
 用户态加载器（`scx_simple.c`）通过 libbpf 调用 `SCX_OPS_OPEN`/`SCX_OPS_LOAD`/`SCX_OPS_ATTACH` 注册调度器。
 
@@ -156,7 +164,7 @@ OPPO/一加 SM8750 的 `vendor/oplus/kernel/cpu/sched_ext/main.c`（开源于 Gi
 1. `sched_ext_dump` tracepoint — BPF 调度器的退出信息和 debug dump
 2. `sched_ext::root/ops` sysfs — 查看当前注册的调度器名称和状态
 3. `/sys/kernel/sched_ext/state` — enabled/disabled 状态
-4. `/sys/kernel/sched_ext/root/events` — 各事件计数器（如 `SCX_EV_REFILL_SLICE_DFL`）
+4. `/sys/kernel/sched_ext/root/events` — 各事件计数器（如 `SCX_EV_DISPATCH_LOCAL`、`SCX_EV_ENQ_SKIP` 等 6.12 已有的事件）
 
 <!-- AIW-源码调研-2026-05-04 -->
 
@@ -221,15 +229,16 @@ dm-verity 是 Android 用于验证系统分区完整性的内核模块。传统�
 
 ### 量化数据
 
-Google 在 Pixel 9 Pro 上实测的 AutoFDO 覆盖 GKI 内核后的收益：
+Google 在官方博客《Boosting Android Performance: Introducing AutoFDO for GKI Kernel》中给出的可核验口径：
 
-- **冷启动 P50 延迟**：降低 4.3%（1240ms → 1187ms）
-- **冷启动 P95 延迟**：降低 6.8%
-- **Binder-rpc 调用**：优化 21.7%
-- **binder-addints**：优化 37.7%
-- **HwBinder**：优化 20%
+- **用户空间 AutoFDO**：cold app launch 约改善 4%，boot time 约改善 1%
+- **内核 AutoFDO**：在 Pixel 设备上跨 6.1/6.6/6.12 内核分支均有测得改进，具体 Binder 调用和启动分位数据随内核分支与 profile 质量变化
+
+此前正文中引用的 Pixel 9 Pro 冷启动 P50 4.3%（1240ms → 1187ms）、P95 6.8%、Binder-rpc 21.7%、binder-addints 37.7%、HwBinder 20% 等精确数字，在当前公开博客正文与图表中未能逐项核验到对应口径。这些数字可能来自内部 benchmark 或特定 GKI profile build，不应作为跨设备通用结论引用。
 
 Binder 调用的优化幅度显著。Android 的跨进程通信几乎全部走 Binder（1.4 节），冷启动过程中一个典型 App 会发起数百次 Binder 调用。AutoFDO 将内核中 Binder 热路径的代码布局优化后，每次调用的开销降低 20%+，累积效果就是整体冷启动延迟的降低。
+
+需要更精确数据时，可查阅 `android16-6.12` 和 `android15-6.6` 的 GKI AFDO profile 仓库，或在对应 GKI build 上自行 benchmark。
 
 ### 工作机制
 

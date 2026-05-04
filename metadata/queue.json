@@ -5376,9 +5376,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T01:28:54+08:00",
-      "status": "pending",
+      "status": "completed",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-04-29T05:30:17+08:00"
+      "last_reviewed_at": "2026-04-29T05:30:17+08:00",
+      "completed_at": "2026-05-04T18:47:25.694130",
+      "completed_reason": "Stack虚拟保留vs物理占用已拆分；ZRAM指标口径已修正(physical used/in swap/total swap)"
     },
     {
       "section": "4.1",
@@ -6851,9 +6853,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T08:39:32+08:00",
-      "status": "pending",
+      "status": "completed",
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-04T10:37:13+08:00"
+      "updated_at": "2026-05-04T10:37:13+08:00",
+      "completed_at": "2026-05-04T18:47:25.694130",
+      "completed_reason": "P0 sched_ext源码锚点已修正(ext.c/SCX_TASK_*/scx_bpf_dispatch)；P1 AutoFDO量化数据已降级为官方博客可核验口径"
     },
     {
       "section": "19.26",
