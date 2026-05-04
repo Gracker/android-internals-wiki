@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-04T05:45:52.608681+08:00",
+  "generated_at": "2026-05-04T10:37:13+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,45 +7,45 @@
     "last_updated": "2026-05-04",
     "pipeline_stage_counts": {
       "unknown": 35,
-      "ready-to-publish": 103,
-      "task2b_pending": 91,
-      "task9_pending": 11,
-      "task6_pending": 12
+      "ready-to-publish": 107,
+      "task2b_pending": 92,
+      "task9_pending": 12,
+      "task6_pending": 6
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 197,
-      "revisiting": 18,
+      "reviewed": 201,
+      "revisiting": 14,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
       "unknown": 40,
-      "reviewed": 205,
-      "pending": 7
+      "reviewed": 207,
+      "pending": 5
     },
     "task2b_state_counts": {
       "unknown": 42,
-      "fixed": 110,
-      "pending": 97,
+      "fixed": 108,
+      "pending": 99,
       "idle": 3
     },
-    "finalized": 107,
-    "ready-for-review": 113,
+    "finalized": 109,
+    "ready-for-review": 111,
     "unknown": 32,
     "status_counts": {
       "unknown": 32,
-      "finalized": 107,
-      "ready-for-review": 113
+      "finalized": 109,
+      "ready-for-review": 111
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 35,
-      "ready-to-publish": 105,
-      "task2b_pending": 91,
-      "task9_pending": 11,
-      "task6_pending": 10
+      "ready-to-publish": 107,
+      "task2b_pending": 92,
+      "task9_pending": 12,
+      "task6_pending": 6
     },
     "task6_state_counts": {
       "unknown": 34,
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 40,
-      "reviewed": 205,
-      "pending": 7
+      "reviewed": 207,
+      "pending": 5
     },
     "task2b_state_counts": {
       "unknown": 42,
-      "fixed": 110,
-      "pending": 97,
+      "fixed": 108,
+      "pending": 99,
       "idle": 3
     },
     "last_updated": "2026-05-04"
@@ -3816,9 +3816,9 @@
       "status": "ready-for-review",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T02:20:00+08:00",
+      "last_task9_at": "2026-05-04T10:37:13+08:00",
       "tags": [
         "Vulkan",
         "VkSwapchainKHR",
@@ -3838,14 +3838,14 @@
       ],
       "created_by": "rendering-pipelines-merge",
       "created_date": "2026-04-09",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-25",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
       "sources": [
         {
           "type": "official",
@@ -3873,7 +3873,8 @@
       "rework_type": "review回炉修复（Task9/External 问题单）",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
-      "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md"
+      "path": "src/part2-performance/ch18-rendering-pipelines/09-vulkan-native.md",
+      "section": "18.9"
     },
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
@@ -5218,14 +5219,14 @@
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-04-27T11:27:00+08:00",
-      "task9_reviewed_date": "2026-04-27",
+      "last_task9_at": "2026-05-04T10:37:13+08:00",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "task2b_state": "fixed",
-      "task2b_result": "fixed",
-      "pipeline_stage": "task6_pending",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "pipeline_stage": "task2b_pending",
       "task2b_fixed_at": "2026-04-27T11:41:00+08:00",
       "last_task2b_at": "2026-04-27T11:41:00+08:00",
       "applicable_versions": "Android 17 (API 37)"
@@ -5379,28 +5380,29 @@
       "title": "行业案例",
       "chapter": "17.3",
       "section": "17.3",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-04",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
       "last_verified": "2026-04-21",
       "last_verified_against": "Android Developers Game Mode/ADPF 文档, Samsung Support Game Booster, Samsung Developer SceneSDK, Android Developers Blog TikTok case study",
       "confidence": "medium",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-23",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T14:32:13+08:00",
+      "last_task9_at": "2026-05-04T10:37:13+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
-      "last_task2b_at": "2026-04-27T14:50:00+08:00"
+      "last_task2b_at": "2026-04-27T14:50:00+08:00",
+      "auto_promoted": true
     },
     "src/part4-system/ch17-oem/README.md": {
       "path": "src/part4-system/ch17-oem/README.md"
