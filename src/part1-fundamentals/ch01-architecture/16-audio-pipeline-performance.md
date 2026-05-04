@@ -1,7 +1,7 @@
 ---
 title: "Audio Pipeline 延迟与性能"
 chapter: "1.16"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [audio, audioflinger, aaudio, latency, perfetto, scheduling]
 related_chapters: ["1.4", "5.1", "5.6", "16.5"]
@@ -15,7 +15,7 @@ confidence: medium
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-04"
 task6_result: "pass-light-edit"
-task9_result: pass-tech-review
+task9_result: needs-rework
 sources:
   - type: official
     path: "https://source.android.com/docs/core/audio/latency"
@@ -31,20 +31,19 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: ready-to-publish
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-22T23:53:44+08:00"
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-04T19:36:00+08:00"
+last_task9_at: "2026-05-04T04:33:00+08:00"
 section: "1.16"
-task9_review_notes: "2026-05-04 19:36 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。"
 review_type: "task6-writing-quality-review"
 ---
-
 
 # 1.16 Audio Pipeline 延迟与性能
 

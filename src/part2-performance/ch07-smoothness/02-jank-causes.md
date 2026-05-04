@@ -35,17 +35,17 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-05-03T04:21:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-03"
-task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。"
+task9_review_notes: ""2026-05-03 04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。；2026-05-04 task2b: 修正 HWC 决策流程(prepareImage→getDeviceCompositionChanges)、ADPF 版本(Android 11→12/31)、16KB量化数据标注待验证"
 ---
 
 # 卡顿原因体系
@@ -295,14 +295,14 @@ enum Composition : int32 {
 **DEVICE vs CLIENT 决策流程（AOSP）：**
 
 ```
-SurfaceFlinger.prepareImage()
-  → HWComposer::prepare()
-  → for each layer: hwc2::Composer::validateDisplay()
-  → HWC vendor layer 返回 composition type
-  → SurfaceFlinger.acceptDisplayChanges()
+SurfaceFlinger 准备每帧 layer state（geometry + buffer）
+  → HWComposer::getDeviceCompositionChanges()
+  → HWC display presentOrValidate() / validate()
+  → getChangedCompositionTypes() / getRequests()
+  → SurfaceFlinger 处理 composition type 变更
 ```
 
-关键源码：`frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp`
+关键源码：`frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp`（合成主循环）与 `DisplayHardware/HWComposer.cpp`（HWC 封装）。AOSP android-15.0.0\_r1 中未找到 `SurfaceFlinger.prepareImage()` / `HWComposer::prepare()` 方法，现代 HWC2/HWC3 流程通过 `getDeviceCompositionChanges()` + `presentOrValidate()` 协商合成方式。
 
 **Qualcomm 私有优化技术：**
 
@@ -380,12 +380,14 @@ Linux 的 Completely Fair Scheduler（CFS）按照虚拟运行时间（vruntime�
 
 **在 Perfetto 中的表现：** 在 CPU Info 区域查看主线程的状态，会看到蓝色的 Runnable Slice（表示线程已就绪但未执行）。如果这个 Runnable Slice 的持续时间超过 2-3ms，就值得关注。可以通过点击 Runnable Slice 查看唤醒源和前一个线程的状态，分析为什么调度器没有及时调度主线程。
 
-**16KB Page Size 对 I/O 卡顿和渲染 TLB 的影响。** Android 15/16 在支持 16KB 页大小的设备上，卡顿分析还需要考虑一个底层因素。16KB 页将页表条目减少了 75%，直接降低了 `fork()` 和 `mmap()` 的开销；同时对渲染管线的正面影响体现在两个维度：
+**16KB Page Size 对 I/O 卡顿和渲染 TLB 的影响。** Android 15/16 在支持 16KB 页大小的设备上，卡顿分析还需要考虑一个底层因素。16KB 页将页表条目减少了 75%，直接降低了 `fork()` 和 `mmap()` 的开销；同时对渲染管线有正面影响：
 
-- **I/O 卡顿缓解**：更大的页意味着单次 I/O 读取覆盖更多数据，启动阶段和资源加载阶段的 Page Fault 频率降低约 3-5%。
-- **TLB 覆盖范围扩大**：16KB 页使同一 TLB 条目覆盖的地址空间翻四倍。渲染大块 Graphic Buffer 时，地址转换开销减少，RenderThread 在处理纹理上传和合成操作时的 TLB Miss 率下降。
+- **I/O 卡顿缓解**：更大的页意味着单次 I/O 读取覆盖更多数据，启动阶段和资源加载阶段的 Page Fault 频率理论上会降低。
+- **TLB 覆盖范围扩大**：16KB 页使同一 TLB 条目覆盖的地址空间翻四倍。渲染大块 Graphic Buffer 时，地址转换开销减少，RenderThread 在处理纹理上传和合成操作时的 TLB Miss 率预期下降。
 
-在 Perfetto 中，16KB 设备上的 `mm_filemap_add_to_page_cache` 事件频率会明显低于 4KB 设备，可以作为间接验证。
+> **待验证**：Page Fault 频率下降约 3-5%、TLB Miss 率下降等量化结论目前缺少同设备 4KB/16KB 对比的 Perfetto / ftrace / perf counter 实测证据。建议读者在自有设备上用相同 kernel config、trace config 和 page-fault / mmap / TLB 观察指标做 A/B 对比后，再采纳具体百分比。4.7 节对 16KB 页有更完整的机制说明。
+
+在 Perfetto 中，16KB 设备上的 `mm_filemap_add_to_page_cache` 事件频率可以作为间接验证指标。
 
 [已验证: 官方文档, source.android.com/devices/tech/perf — 调度相关分析]
 
@@ -454,7 +456,7 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 - **温控限频的主动对抗**：当 App 检测到帧时间逐渐增长时，通过 ADPF 提交 deadline hint，系统会尽可能维持所需的 CPU 频率。这比被动接受温控降频要好。
 - **CPU 资源提示的边界**：`PerformanceHintManager` 的契约范围是 CPU 资源（频率、核心类型）。GPU 频率、线程优先级不在其直接控制范围内。GPU 相关的干预需要通过 Game Mode API、Fixed Performance Mode 等独立接口。
-- **适用版本**：ADPF 从 Android 11 (API 30) 开始可用，Android 13+ 的 Game Mode API 和 Game State API 进一步扩展了其能力边界。
+- **适用版本**：Thermal API（`android.os.ThermalManager`）从 Android 11 (API 30) 开始可用；`PerformanceHintManager` / Performance Hint API 从 Android 12 (API 31) 引入；Game Mode / `GameManager` 从 API 31 开始；Game State API 从 Android 13 (API 33) 开始。日常说"ADPF 从 Android 12 可用"指的是 `PerformanceHintManager` 这条主线，Thermal 的温度监听则可以覆盖到 Android 11 设备。
 
 关于 ADPF 的具体接入方式和 API 用法，详见 5.9 节。
 
