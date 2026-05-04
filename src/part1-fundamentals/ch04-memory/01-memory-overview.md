@@ -42,15 +42,16 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T05:30:17+08:00"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。Stack 物理占用、ZRAM physical used 口径仍未修正；2026-05-04 task2b：P1 2 已修正（Stack 区分虚拟保留与物理占用；ZRAM 指标拆分为 physical used/in swap/total swap 三口径）。"
+task9_reviewed_date: 2026-05-04
+last_task9_at: "2026-05-04T18:55:00+08:00"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。Android 17 MemoryLimiter 说法缺少 AOSP/API 证据；MTE/16KB 页导致的百分比内存增量需要补一手数据来源。"
+task9_result: needs-rework
 ---
 
 # Android 内存模型全景

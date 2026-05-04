@@ -1,15 +1,15 @@
 {
-  "generated_at": "2026-05-04T18:11:00+08:00",
+  "generated_at": "2026-05-04T18:55:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
-    "last_updated": "2026-05-04",
+    "last_updated": "2026-05-04T18:55:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 35,
       "ready-to-publish": 107,
-      "task2b_pending": 89,
-      "task9_pending": 15,
+      "task2b_pending": 90,
+      "task9_pending": 14,
       "task6_pending": 6
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 40,
-      "reviewed": 204,
-      "pending": 8
+      "reviewed": 205,
+      "pending": 7
     },
     "task2b_state_counts": {
       "unknown": 42,
-      "fixed": 111,
-      "pending": 96,
+      "fixed": 110,
+      "pending": 97,
       "idle": 3
     },
     "finalized": 109,
@@ -1680,9 +1680,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T05:30:17+08:00"
+      "last_task9_at": "2026-05-04T18:55:00+08:00"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -2713,18 +2713,18 @@
       "last_verified": "2026-04-21",
       "last_verified_against": "arXiv 2511.23213 v2, ACM paper text, samudoria/GAPS README",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-04",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T16:20:00+08:00",
+      "last_task9_at": "2026-05-04T18:55:00+08:00",
       "task6_reviewed_date": "2026-05-04",
       "last_task6_at": "2026-05-04T18:11:00+08:00"
     },
@@ -7482,6 +7482,18 @@
           "issues": 2
         }
       ]
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "reviewed_at": "2026-05-04T18:55:00+08:00",
+      "sections": [
+        "4.1",
+        "7.14"
+      ],
+      "result": "needs-rework",
+      "p0": 2,
+      "p1": 1,
+      "p2": 0
     }
   ],
   "progress": {
