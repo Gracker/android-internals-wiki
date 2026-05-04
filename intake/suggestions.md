@@ -1008,3 +1008,10 @@
 - **问题**：`kswapd` CPU -40%、LMK -85%、渲染延迟 -18% 以及“6.12 默认启用”缺具体公开来源、message-id、报告链接或 Android GKI defconfig 锚点。
 - **建议**：补 `CONFIG_LRU_GEN` / `CONFIG_LRU_GEN_ENABLED` 与数据来源；补不齐时降级为限定表述。
 - **review 日志**：logs/review/2026-05-04-21-review.md
+
+## [Task6 Review] 7.2 卡顿原因体系 — 2026-05-04
+- **类型**：需补充素材
+- **位置**：WebView 渲染 / 多窗口分屏 / 动画与手势三个扩展小节
+- **问题**：三个扩展小节目前仍是整段 `[待补充]` 占位。作为 ready-for-review 章节，正文连续保留占位会影响发布观感。
+- **建议**：Task2B 在处理 7.2 既有技术回炉时同步处理：有素材就补成 1-2 段可用内容；没有素材则把扩展标题移到后续规划，不留整段占位。
+- **review 日志**：logs/review/2026-05-04-22-review.md
