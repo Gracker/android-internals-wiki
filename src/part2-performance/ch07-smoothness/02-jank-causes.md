@@ -35,17 +35,17 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: reviewed
+task2b_state: pending
+task2b_result: pending
 task9_result: needs-rework
-last_task9_at: "2026-05-03T04:21:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-03"
-task9_review_notes: ""2026-05-03 04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。；2026-05-04 task2b: 修正 HWC 决策流程(prepareImage→getDeviceCompositionChanges)、ADPF 版本(Android 11→12/31)、16KB量化数据标注待验证"
+last_task9_at: "2026-05-04T22:21:37+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-04"
+task9_review_notes: "2026-05-04 22 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1（P2 为既有 16KB 数据建议，未重复写入）。HWC3 AIDL 关键源码索引仍为旧错路径。"
 ---
 
 # 卡顿原因体系
