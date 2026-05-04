@@ -5,28 +5,27 @@ chapter: "16.4"
 status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-05-04"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-04T10:37:13+08:00"
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: "openclaw-task9"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: task9_pending
 task2b_fixed_at: "2026-05-04T18:43:00+08:00"
 last_task2b_at: "2026-05-04T18:43:00+08:00"
+last_task6_at: "2026-05-04T19:15:00+08:00"
 applicable_versions: "Android 17 (API 37)"
 tags:
   - android
   - linux
   - research
-review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b：P0 3 已修正（sched_ext_ops 源码锚点改为 ext.c、SCX_OPSS 改为 SCX_TASK_*、DSQ API 改为 6.12 口径 scx_bpf_dispatch）；P1 1 AutoFDO 量化数据已降级为官方博客可核验口径。"
+review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b：P0 3 已修正（sched_ext_ops 源码锚点改为 ext.c、SCX_OPSS 改为 SCX_TASK_*、DSQ API 改为 6.12 口径 scx_bpf_dispatch）；P1 1 AutoFDO 量化数据已降级为官方博客可核验口径。；2026-05-04 Task6：清理 frontmatter 重复状态，修正 sched_ext 路径与若干文风问题，AutoFDO Binder 段落降级为 profile/benchmark 绑定口径。"
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
@@ -37,7 +36,7 @@ review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17
 
 本章把两类事实分开写。第一类是 ACK / GKI 源码分支事实，例如 `android15-6.6`、`android16-6.12` 中 `kernel/sched/fair.c`、`fs/f2fs/`、`drivers/md/dm-verity-target.c` 的实现变化。第二类是 Android 17 / API 37 平台行为，例如 targetSdk 37 应用启用新的 lock-free `MessageQueue`。`android16-6.12` 是 GKI release branch 名称，不能直接等同于所有 Android 17 设备的内核状态。
 
-本章从调度器、存储栈、编译优化、内存管理四个维度拆解 Kernel 6.12 相关变化。凡是缺少官方公开数据或源码采用证据的性能数字，只保留为待验证线索，不写成确定收益。
+本章从调度器、存储栈、编译优化、内存管理四个维度说明 Kernel 6.12 相关变化。凡是缺少官方公开数据或源码采用证据的性能数字，只保留为待验证线索，不写成确定收益。
 
 ## Kernel 6.12 的性能全景
 
@@ -72,11 +71,11 @@ sched_ext 是 Kernel 6.12 合并的另一个调度器相关框架。它允许开
 
 这个框架的价值在于：不同的使用场景对调度器的需求不同。游戏需要超低延迟，数据库需要高吞吐，Android 需要 UI 响应优先。一个"通用"调度器不可能同时满足所有需求。sched_ext 让 OEM 或系统开发者可以为特定场景定制调度策略。
 
-[已验证: AOSP android16-6.12, kernel/sched/ext/]
+[已验证: AOSP android16-6.12, kernel/sched/ext.c]
 
-在 Android 17 的讨论里，sched_ext 的边界要单独写清。`android16-6.12/kernel/sched/ext/` 是可核验的源码锚点；这项能力提供给 OEM 和系统开发者做实验或定制，Google 官方构建仍以 fair scheduler / EEVDF 为主。若某个 ROM 启用了自定义 sched_ext 调度器并出现性能回退，排查方向是确认 sched_ext tracepoint 是否存在，再检查对应 BPF 调度器的行为。
+在 Android 17 的讨论里，sched_ext 的边界要单独写清。`android16-6.12/kernel/sched/ext.c` 是可核验的源码锚点；这项能力提供给 OEM 和系统开发者做实验或定制，Google 官方构建仍以 fair scheduler / EEVDF 为主。若某个 ROM 启用了自定义 sched_ext 调度器并出现性能回退，排查方向是确认 sched_ext tracepoint 是否存在，再检查对应 BPF 调度器的行为。
 
-### sched_ext 源码级结构与 OEM 落地现状（2026-05-04 补充）
+### sched_ext 源码级结构与 OEM 采用现状（2026-05-04 补充）
 
 以下内容基于一手源码验证（Linux 6.12 mainline `kernel/sched/ext.c` + `include/linux/sched/ext.h` + OnePlus SM8750 开源模块）。
 
@@ -236,7 +235,7 @@ Google 在官方博客《Boosting Android Performance: Introducing AutoFDO for G
 
 此前正文中引用的 Pixel 9 Pro 冷启动 P50 4.3%（1240ms → 1187ms）、P95 6.8%、Binder-rpc 21.7%、binder-addints 37.7%、HwBinder 20% 等精确数字，在当前公开博客正文与图表中未能逐项核验到对应口径。这些数字可能来自内部 benchmark 或特定 GKI profile build，不应作为跨设备通用结论引用。
 
-Binder 调用的优化幅度显著。Android 的跨进程通信几乎全部走 Binder（1.4 节），冷启动过程中一个典型 App 会发起数百次 Binder 调用。AutoFDO 将内核中 Binder 热路径的代码布局优化后，每次调用的开销降低 20%+，累积效果就是整体冷启动延迟的降低。
+Binder 是内核 AutoFDO 可能受益的热路径之一。Android 的跨进程通信几乎全部走 Binder（1.4 节），冷启动过程中一个典型 App 会发起大量 Binder 调用。若对应 GKI profile 覆盖 Binder 热路径，代码布局优化有机会降低累计开销；具体幅度需要绑定内核分支、profile 与 benchmark 口径。
 
 需要更精确数据时，可查阅 `android16-6.12` 和 `android15-6.6` 的 GKI AFDO profile 仓库，或在对应 GKI build 上自行 benchmark。
 
@@ -254,12 +253,12 @@ AutoFDO 对内核的优化路径与用户空间相同：
 
 ### 与 Cloud Compilation 的关系
 
-1.12 节介绍了 Android 16 的 Cloud Compilation——将 dex2oat 从设备端迁移到 Google Play 云端。AutoFDO for kernel 和 Cloud Compilation 形成了完整的编译优化链：
+1.12 节介绍了 Android 16 的 Cloud Compilation——将 dex2oat 从设备端迁移到 Google Play 云端。AutoFDO for kernel 和 Cloud Compilation 分别覆盖内核与用户空间的编译优化路径：
 
 - **用户空间**：Cloud Compilation + Baseline Profiles → 优化 App 的 AOT 编译
 - **内核空间**：AutoFDO → 优化 GKI kernel 的代码布局
 
-两端同时优化，冷启动的"内核初始化 + App 进程创建 + App 代码执行"三个阶段全部受益。
+两端同时优化时，冷启动里的"内核初始化 + App 进程创建 + App 代码执行"三个阶段都需要纳入观察。
 
 ## ART 运行时优化
 
@@ -360,7 +359,7 @@ Kernel 6.12 的优化在 Perfetto 中有多个可观测维度：
 
 **误区 2："EEVDF 进入 fair scheduler 是因为 CFS 有 bug"**
 
-CFS 的旧模型没有根本性缺陷，EEVDF 是 fair scheduler 在移动交互延迟上的一次策略调整。旧模型更强调按 vruntime 拉平 CPU 时间，EEVDF 更强调 eligible entity 与 virtual deadline。移动设备上的 UI 回调、输入响应和前台短任务更依赖低延迟调度。
+CFS 的旧模型没有明显缺陷；EEVDF 是 fair scheduler 面向移动交互延迟的一次策略调整。旧模型更强调按 vruntime 拉平 CPU 时间，EEVDF 更强调 eligible entity 与 virtual deadline。移动设备上的 UI 回调、输入响应和前台短任务更依赖低延迟调度。
 
 **误区 3："sched_ext 意味着 Android 可以用任意调度器"**
 
