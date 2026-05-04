@@ -13,7 +13,7 @@ last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com"
 confidence: medium
 reviewed_by: "openclaw-task6"
-reviewed_date: 2026-04-23
+reviewed_date: "2026-05-04"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 sources:
@@ -31,8 +31,8 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -42,6 +42,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-04T04:33:00+08:00"
 section: "1.16"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。"
+review_type: "task6-writing-quality-review"
 ---
 
 # 1.16 Audio Pipeline 延迟与性能
@@ -51,7 +52,7 @@ task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 ### 锚点（必须覆盖）
 
-- 🔹 Audio Pipeline 的整体链路，以及 AudioFlinger / AudioPolicyService 的角色分工
+- 🔹 Audio Pipeline 的整体数据流，以及 AudioFlinger / AudioPolicyService 的角色分工
 - 🔹 延迟分解：输出延迟、往返延迟与缓冲区大小
 - 🔹 FAST Mixer 的工作机制、进入条件与线程调度
 - 🔹 AAudio、MMAP 与 Oboe 的低延迟路径差异
@@ -143,7 +144,7 @@ AudioFlinger 负责「怎么播放」，AudioPolicyService 负责「播放到哪
 
 [已验证: 来源见 research-feeds/2026-04-08-15-audioflinger-fast-mixer-aaudio-mmap-pipeline-architecture.md，数据来自 Google 官方统计]
 
-### 缓冲区大小：延迟的根本决定因素
+### 缓冲区大小：延迟的主要决定因素
 
 音频延迟的核心公式很简单：
 
@@ -165,17 +166,17 @@ Android 4.1（Project Butter）引入了 FAST Mixer，这是 Android 音频低�
 
 FAST Mixer 是绑定在某个 output 上的低延迟混音线程。AudioFlinger 会先把普通 tracks 交给 Normal Mixer 混成一路 sub-mix，再由 FAST Mixer 把这路 sub-mix 和最多 7 条 client fast tracks 一起送进 HAL 缓冲区。
 
-FAST Mixer 真正省掉的是每条 fast track 的 sample rate conversion、per-track effects 和其他高开销处理，而不是把 mixing 这件事完全删掉。它保留最小必要的混音和音量衰减，把周期压到更短的 2-3ms 左右，所以低延迟播放听起来会更跟手。
+FAST Mixer 省掉的是每条 fast track 的 sample rate conversion、per-track effects 和其他高开销处理，而不是把 mixing 这件事完全删掉。它保留最小必要的混音和音量衰减，把周期压到更短的 2-3ms 左右，所以低延迟播放听起来会更跟手。
 
 [已验证: AOSP audio latency 文档与 `frameworks/av/services/audioflinger/FastMixer.cpp`]
 
 ### 进入 FAST Mixer 的条件
 
-`PERFORMANCE_MODE_LOW_LATENCY` 或 `AAUDIO_PERFORMANCE_MODE_LOW_LATENCY` 只是“请求低延迟”，不是保证一定拿到 fast path。真正的选路分成两步。
+`PERFORMANCE_MODE_LOW_LATENCY` 或 `AAUDIO_PERFORMANCE_MODE_LOW_LATENCY` 只是“请求低延迟”，不是保证一定拿到 fast path。选路分成两步。
 
 第一步是策略层。App 创建 `AudioTrack` 或 `AAudioStream` 时，framework 会把 usage、flags、sample rate、sharing mode 交给 AudioPolicyService / AudioPolicyManager 选 output profile。只有策略层给出的 output 带有 `AUDIO_OUTPUT_FLAG_FAST`，后面才有资格继续往 fast path 走。
 
-第二步是 AudioFlinger 在创建 track 时做最后筛选。常见的硬条件包括：这个 output 上确实存在 fast mixer thread；请求的 sample rate、format、channel mask 和设备 mix port 匹配；client 侧能用 callback 线程按时供数；track 的 frame count 落在 fast track 可接受的范围；fast track slot 还有空位。任何一个条件不满足，都会退回 Normal Mixer。
+第二步由 AudioFlinger 在创建 track 时完成筛选。常见的硬条件包括：这个 output 上存在 fast mixer thread；请求的 sample rate、format、channel mask 和设备 mix port 匹配；client 侧能用 callback 线程按时供数；track 的 frame count 落在 fast track 可接受的范围；fast track slot 还有空位。任何一个条件不满足，都会退回 Normal Mixer。
 
 这里的 slot 是硬约束。android-16.0.0_r1 的 `PlaybackThread` 构造里把 `mFastTrackAvailMask` 初始化为 `((1 << FastMixerState::sMaxFastTracks) - 1) & ~1`，源码注释直接写明 index 0 预留给 normal mixer 的 submix。也就是说 FastMixer 的槽位数是固定的，应用侧实际最多同时占用 7 个 fast track；槽位打满时，新流会直接降回 normal track，即使 sample rate 和 buffer 配置都匹配。
 
@@ -191,7 +192,7 @@ FAST Mixer 运行在一个专用线程上，使用 `SCHED_FIFO` 实时调度策�
 
 ### 从创建流到选路：为什么这条流没有进入 fast path
 
-如果我们只看输出侧，很容易把 round-trip latency 讲成半截。完整链路是：`AudioTrack` / `AAudio` 输出先经 AudioPolicyService 选 output profile，再由 `AudioFlinger::createTrack()` / `PlaybackThread::createTrack_l()` 决定是 normal track、fast track、direct/offload 还是 MMAP output；输入侧 `AudioRecord` / `AAudio` input 则先经 AudioPolicyService 选 input profile，再落到 `RecordThread`，设备支持时再进一步走 `FastCapture` 或 input MMAP。
+如果我们只看输出侧，很容易把 round-trip latency 讲成半截。完整路径是：`AudioTrack` / `AAudio` 输出先经 AudioPolicyService 选 output profile，再由 `AudioFlinger::createTrack()` / `PlaybackThread::createTrack_l()` 决定是 normal track、fast track、direct/offload 还是 MMAP output；输入侧 `AudioRecord` / `AAudio` input 则先经 AudioPolicyService 选 input profile，再落到 `RecordThread`，设备支持时再进一步走 `FastCapture` 或 input MMAP。
 
 所以 round-trip latency = input path + app processing + output path。输出侧已经拿到 FAST Mixer，只能说明扬声器这半边更快；如果输入侧还停留在普通 `RecordThread`，麦克风到 App 的这一半仍然会拖慢总延迟。分析乐器、KTV、视频会议这类场景时，我们要同时看 `AudioFlinger` 的 playback thread 和 `RecordThread` / `FastCapture` 的调度节奏，不能只盯着输出线程。
 
@@ -239,7 +240,7 @@ Android 16 引入了 AAudio Power Saving Offloaded 模式（`AAUDIO_PERFORMANCE_
 
 使用这个模式有前提条件：App 需要持有具备 while-in-use（WIU）能力的前台服务，短音乐播放器如果不想维护前台服务，仍然应该走传统 PCM 路径。
 
-[待验证：最终 API 入口、最小 API level、支持格式矩阵、设备覆盖范围需结合 Android 16/17 API diff 与实机确认。"解码完全交给 DSP"、"功耗降低 75%" 等量化结论需要补 AOSP 版本提交或独立功耗测试条件后方可写入正文。]
+[待验证：最终 API 入口、最小 API level、支持格式组合、设备覆盖范围需结合 Android 16/17 API diff 与实机确认。"解码完全交给 DSP"、"功耗降低 75%" 等量化结论需要补 AOSP 版本提交或独立功耗测试条件后方可写入正文。]
 
 ### Oboe：Google 推荐的跨版本封装
 
@@ -301,7 +302,7 @@ Android 17（API 37）对音频子系统引入了多项重要变更，对 App �
 
 ### 后台音频强化（Audio Hardening）
 
-Android 17 对后台音频播放实施了严格管控。这是 Android 持续收紧后台执行限制的又一举措，影响范围比以往更广：
+Android 17 对后台音频播放实施了严格管控。后台执行限制继续加强，影响范围比以往更广：
 
 **受影响的主线 API**：
 - 播放写入路径（以 `AudioTrack` 为代表）
@@ -339,7 +340,7 @@ adb dumpsys audio
 
 Android 17 新增 `flushWrittenFramesFromPosition(long, int)`。官方 API 文档在方法详情里直接写的是“only allowed in offload mode”，所以它只适用于显式调用 `Builder.setOffloadedPlayback(true)` 创建的 offload `AudioTrack`。调用前还要先用 `getFlushWrittenFramesFromPositionSupport(AudioFormat, AudioAttributes)` 查询设备支持度；这个静态探测接口查的也是“给定 format / attributes 创建的 offload track”是否支持该能力，返回 0 就不能用。`accuracy` 参数仍然只有 `FLUSH_FROM_ACCURACY_BEST_EFFORT` 和 `FLUSH_FROM_ACCURACY_EXACT` 两档。
 
-它适合的场景是 offload 播放中的 seek 或章节跳转：App 需要丢弃已经写进 DSP 或硬件队列、但还没真正播出的那部分数据，并尽量从指定 frame 重新开始。普通 PCM `AudioTrack` 不在这套语义里，不能把这个 API 当成通用 seek 工具直接套用。
+它适合的场景是 offload 播放中的 seek 或章节跳转：App 需要丢弃已经写进 DSP 或硬件队列、但还没播出的那部分数据，并尽量从指定 frame 重新开始。普通 PCM `AudioTrack` 不在这套语义里，不能把这个 API 当成通用 seek 工具直接套用。
 
 [已验证: `AudioTrack` API 37 参考文档，`flushWrittenFramesFromPosition()` / `getFlushWrittenFramesFromPositionSupport()`]
 
@@ -347,7 +348,7 @@ Android 17 新增 `flushWrittenFramesFromPosition(long, int)`。官方 API 文�
 
 `getCodecProvenance()` 返回的是配置阶段确定的 codec provenance，也就是编解码器实现来源字符串，例如系统组件名或厂商 codec 名。它表达的是“这条播放流最终绑定了哪套编解码器实现”，方便 framework 或 HAL 在空间音频、渲染策略这类场景里保留来源信息；它本身不直接给出“当前一定走硬解 / 软解 / offload”这类执行路径结论。
 
-如果我们真正想判断执行路径，是不是 offload、是不是 hardware decoder、DSP 有没有接管，应该另外看 offload 配置、`dumpsys audio`、播放器管线和设备能力。不能把 `getCodecProvenance()` 直接当成执行路径探针。
+如果要判断执行路径，是不是 offload、是不是 hardware decoder、DSP 有没有接管，应该另外看 offload 配置、`dumpsys audio`、播放器管线和设备能力。不能把 `getCodecProvenance()` 直接当成执行路径探针。
 
 [已验证: `AudioTrack.getCodecProvenance()` API 37 文档]
 
@@ -408,7 +409,7 @@ Audio Pipeline 与全书其他章节的关联点：
 | 版本 | 变更 | 性能影响 |
 |------|------|----------|
 | Android 4.1 | FAST Mixer 引入（Project Butter） | 低延迟播放第一次有了独立 fast path |
-| Android 5.0 | 采样率转换与混音链路持续优化 | Normal Mixer 的稳定性继续改善 |
+| Android 5.0 | 采样率转换与混音路径持续优化 | Normal Mixer 的稳定性继续改善 |
 | Android 8.0 | AAudio API 引入 | 原生低延迟 C API |
 | Android 8.1 | MMAP 模式 | 绕过部分 AudioServer 处理，延迟继续下降 |
 | Android 9 | HIDL Audio HAL 仍是主流实现 | 低延迟能力仍主要取决于厂商 HAL 质量 |
@@ -446,7 +447,7 @@ Audio Pipeline 与全书其他章节的关联点：
 
 蓝牙音频的额外延迟来源包括：编码/解码处理时间、无线传输的协议开销、Bluetooth Audio HAL 内部的额外缓冲区。空间音频（Spatial Audio）结合头部追踪功能对延迟的要求更高——头部转动到声音位置更新的延迟需要低于 20ms 才能避免感知错位。
 
-不同编解码器配置、耳机固件和链路状态会显著改变实际延迟，上述数值更适合作为经验范围，而不是统一结论。
+不同编解码器配置、耳机固件和连接状态会显著改变实际延迟，上述数值更适合作为经验范围，而不是统一结论。
 
 ### 🔸 游戏音频性能最佳实践
 

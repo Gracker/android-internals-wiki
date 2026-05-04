@@ -44,8 +44,8 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -55,6 +55,7 @@ task9_reviewed_date: "2026-05-04"
 last_task9_at: "2026-05-04T16:20:00+08:00"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；P1 0；源码/API/数据口径需回炉，已写入 queue.json。"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。"
+review_type: "task6-writing-quality-review"
 ---
 
 
@@ -110,7 +111,7 @@ task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 ## 步幅波动的技术成因
 
-上面描述的现象在 Trace 中不会标红，在 FrameTimeline 里也不会有 jank 标记，但它确确实实影响了用户体验。App 侧时间量化只是其中一类成因。先把 OverScroller 和 Choreographer 的时间模型讲清，再看怎样把它和显示侧、输入侧的问题分开。
+上面描述的现象在 Trace 中不会标红，在 FrameTimeline 里也不会有 jank 标记，但它会影响用户体验。App 侧时间量化只是其中一类成因。先把 OverScroller 和 Choreographer 的时间模型讲清，再看怎样把它和显示侧、输入侧的问题分开。
 
 ### 成因一：OverScroller 的毫秒时间量化
 
@@ -167,7 +168,7 @@ switch (mState) {
 }
 ```
 
-这段代码决定了常规 fling 的主要轨迹。`BALLISTIC` 和 `CUBIC` 只覆盖越界、回弹和 springback 等状态，不能拿来代表整段 fling。真正会受 8ms / 9ms 交替影响的，是样条进度 `t` 的采样点和由此得到的 `distanceCoef` / `velocityCoef`。在高速段，样条表相邻采样点之间的位移差更大，所以 1ms 量化更容易变成肉眼可见的步幅抖动。
+这段代码决定了常规 fling 的主要轨迹。`BALLISTIC` 和 `CUBIC` 只覆盖越界、回弹和 springback 等状态，不能拿来代表整段 fling。会受 8ms / 9ms 交替影响的是样条进度 `t` 的采样点，以及由此得到的 `distanceCoef` / `velocityCoef`。在高速段，样条表相邻采样点之间的位移差更大，所以 1ms 量化更容易变成肉眼可见的步幅抖动。
 
 ### 成因三：Choreographer 把时间同步到 VSync，但精度仍停在毫秒
 
@@ -200,7 +201,7 @@ public static long currentAnimationTimeMillis() {
 
 | | 步幅均匀 | 步幅不均匀 |
 |---|---|---|
-| **不掉帧** | 真正流畅 | 无掉帧卡顿（本章主题） |
+| **不掉帧** | 运动连续 | 无掉帧卡顿（本章主题） |
 | **掉帧** | 有规律的卡顿 | 最差体验 |
 
 "无掉帧卡顿"（no-jank stutter）是最容易被忽略的象限。传统工具报告"0 frames janky"，但用户仍然不满意。
@@ -239,7 +240,7 @@ class StepJitterProbe(
 }
 ```
 
-目标对象可以换成 `translationX`、`RecyclerView.computeVerticalScrollOffset()`、自定义动画值或 layer bounds。真正要算的是同一段轨迹上的 `displacement variance`、`velocity variance` 和 `dt variance`。其中 `dt variance` 只是辅助指标，不能替代位移采样。做对照实验时，可以保留同一条插值曲线，只把时间源切成 `frameTimeNanos`：`deltaSeconds = (frameTimeNanos - startNanos) / 1_000_000_000.0`，再用浮点时间推进位移。如果 FrameTimeline 形态不变、位移采样明显收敛，根因就更接近毫秒量化。
+目标对象可以换成 `translationX`、`RecyclerView.computeVerticalScrollOffset()`、自定义动画值或 layer bounds。要算的是同一段轨迹上的 `displacement variance`、`velocity variance` 和 `dt variance`。其中 `dt variance` 只是辅助指标，不能替代位移采样。做对照实验时，可以保留同一条插值曲线，只把时间源切成 `frameTimeNanos`：`deltaSeconds = (frameTimeNanos - startNanos) / 1_000_000_000.0`，再用浮点时间推进位移。如果 FrameTimeline 形态不变、位移采样明显收敛，根因就更接近毫秒量化。
 
 ### 路径二：用 FrameTimeline 判断呈现节奏是不是根因
 
@@ -272,7 +273,7 @@ Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态
 1. **VSync 周期跳变点**：从 60Hz（16.67ms）切到 120Hz（8.33ms）时，每帧的毫秒截断模式从 16/17 交替变为 8/9 交替，如果动画曲线正在高速段，样条进度的步长会发生一次突变
 2. **非整数周期**：90Hz（11.11ms）等周期下，毫秒截断落在 11/12 交替，与 60Hz 的 16/17 或 120Hz 的 8/9 有不同的误差分布模式
 
-这些扰动是否构成肉眼可见的阶跃感，目前缺少 AOSP 机制或 Perfetto + 位移采样证据。[待验证：需要一组 trace，将 Display mode track / vsyncId / App 侧 displacement sample 三者对齐，确认步幅波动是否集中在 ARR 切换窗口。]
+这些扰动是否构成肉眼可见的阶跃感，目前缺少 AOSP 机制或 Perfetto + 位移采样证据。[待验证：需要一组 trace，把 Display mode track / vsyncId / App 侧 displacement sample 放到同一时间轴，确认步幅波动是否集中在 ARR 切换窗口。]
 
 ### 策略一：App 侧动画使用同一套 VSync 时间基准
 
@@ -323,12 +324,11 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 缩短动画时间只改变了动画的总时长，不改变步幅的均匀性。一个 200ms 的动画和一个 300ms 的动画，如果每帧的位移分布都不均匀，用户感知到的不流畅程度是相似的。问题不在动画跑多快，而在相邻两帧的位移差了多少。
 
 
-## AIW-源码调研-2026-05-01：输入重采样（Motion Resampling）对跟手滑动的影响
+## 输入重采样（Motion Resampling）对跟手滑动的影响
 
-<!-- AIW-源码调研-2026-05-01-start -->
-**盲区来源**：§7.9 感知流畅性 / §3.2 触摸响应的性能分析——输入重采样（Motion Resampling）对跟手滑动的影响机制
+**关联章节**：§7.9 感知流畅性 / §3.2 触摸响应的性能分析。这里补充输入重采样（Motion Resampling）对跟手滑动的影响机制
 
-**核心发现**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心机制通过 `frameworks/native/libs/input/InputConsumer.cpp` 中的 `InputConsumer::consume()` → `resampleTouchState()` → `updateTouchState()` 实现。
+**机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心机制通过 `frameworks/native/libs/input/InputConsumer.cpp` 中的 `InputConsumer::consume()` → `resampleTouchState()` → `updateTouchState()` 实现。
 
 **关键常量**（AOSP mainline）：
 - `RESAMPLE_LATENCY = 5 * NANOS_PER_MS`（5ms 预期延迟，用于减少误预测影响）
@@ -353,7 +353,6 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — 事件分发与 stale event 判定
 
 **与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本章讨论的步幅波动问题形成跨输入-渲染的完整关联。
-<!-- AIW-源码调研-2026-05-01-end -->
 
 ## 参考资料
 
