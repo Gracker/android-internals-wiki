@@ -292,7 +292,7 @@ data_sources: {
 }
 ```
 
-然后用 `adb shell perfetto -c config.pbtx -o /data/misc/perfetto-traces/trace` 启动采集。
+然后用 `adb shell perfetto --txt -c config.pbtx -o /data/misc/perfetto-traces/trace` 启动采集。注意 `--txt` 参数是必需的——Perfetto CLI 默认按二进制 TraceConfig 解析配置文件，文本格式的 `.pbtxt` 必须显式声明。
 
 ### 分析结果
 
@@ -466,9 +466,12 @@ adb shell setprop libc.debug.malloc.program com.example.myapp
 adb shell setprop libc.debug.malloc.options "backtrace_enable_on_signal leak_track"
 # 重启应用后生效
 
-# 方式二：通过 wrap.sh
-adb shell am start -n com.example.myapp/.MainActivity \
-  --wrap "libc.debug.malloc.options=backtrace_enable_on_signal"
+# 方式二：通过 wrap 属性（推荐）
+# 设置 wrap 属性，应用冷启动时会加载环境变量
+adb shell setprop wrap.com.example.myapp '"LIBC_DEBUG_MALLOC_OPTIONS=backtrace_enable_on_signal logwrapper"'
+# force-stop 后冷启动应用
+adb shell am force-stop com.example.myapp
+adb shell am start -n com.example.myapp/.MainActivity
 ```
 
 `backtrace_enable_on_signal` 模式下，应用启动时默认不采集分配栈，收到实时信号后才切换状态。按 bionic `malloc_debug` README，这个开关信号是 `SIGRTMAX-19`（Android 上通常是 45）：

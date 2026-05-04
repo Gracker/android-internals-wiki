@@ -644,3 +644,87 @@ Inline Hook 修改被保护页面时：
 
 所以这章真正的价值,不在教读者自己写 Hook,而在让读者更成熟地判断:
 这个工具为什么能做到这些,它为什么会在这里出边界,它为什么不适合被随便拔高成"万能方案"。
+
+## 补充：ShadowHook 的 Trampoline 注入与 ARM32 Thumb 模式处理
+
+<!-- AIW-源码调研-2026-05-04 -->
+
+### ShadowHook 的 Trampoline 管理架构
+
+ShadowHook 在 `shadowhook/src/main/cpp/trampoline/` 下实现 Trampoline 生成和管理：
+
+| 文件 | 职责 |
+|------|------|
+| `trampoline_arm64.cpp` | ARM64 trampoline 生成（16字节 LDR/BR literal stub） |
+| `trampoline_arm.cpp` | ARM32 trampoline 生成（含 Thumb/ARM 模式判断） |
+| `trampoline_allocator.cpp` | 匿名可执行内存分配器（mmap MAP_ANONYMOUS） |
+| `trampoline_map.h` | Trampoline 页映射表管理 |
+
+**ARM64 近距离跳转的 16 字节 stub 格式**：
+
+```asm
+; 原函数入口被替换为：
+0x00: ldr x17, #0x08    ; 从 [pc+8] 加载 trampoline 地址
+0x04: br x17            ; 无条件跳转至 x17
+0x08: .quad <trampoline_addr>  ; literal pool
+0x10: ...(原始指令前 12 字节)
+```
+
+**ARM32 Thumb 模式的 4 字节跳转**：
+
+```asm
+; Thumb-2 LDR PC, [PC, #imm]
+0x00: 4801 ldr r0, [pc, #4]  ; 从 [pc+4] 加载地址到 r0
+0x02: 4710 bx r0             ; 跳转至 r0
+0x04: .word <trampoline_addr>
+```
+
+**模式判断逻辑**（源码示意）：
+```cpp
+static bool is_thumb_mode(uintptr_t addr) {
+    return (addr & 0x1);  // Bit[0] = 1 表示 Thumb 模式
+}
+```
+
+### 远距离跳转的居中 Trampoline 页策略
+
+当跳转距离超过 ±1GB（ARM64）或 32MB（ARM32）时：
+1. 通过 `mmap(NULL, 4096, PROT_READ|PROT_EXEC, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0)` 分配匿名可执行页
+2. Trampoline 页写入 `LDR X17, #offset` + `BR X17` 跳转到 proxy 函数
+3. 原入口处写入跳转指令（`b #offset` 或 `bl #offset`）
+4. 执行完整 icache flush 后生效
+
+**可执行内存的 SELinux 约束**：匿名 mmap 分配 PROT_READ|PROT_EXEC 需要 `execmem` 权限，平台应用和 untrusted_app 默认被 SELinux 策略禁止。ShadowHook 在 Android 8+ 通过 linker namespace 隔离规避部分限制，但特定厂商 ROM 可能加强此约束导致 Hook 失效。
+
+### ShadowHook v2.0.0 支持 intercept（断点级拦截）
+
+与 hook（全函数替换）不同，intercept 允许在任意指令位置拦截，类似调试器的断点功能：
+
+```c
+void artmethod_invoke_interceptor(shadowhook_cpu_context_t *ctx, void *data) {
+    // 可读取和修改寄存器值
+    if (ctx->regs[19] == 0) {
+        ctx->regs[20] = 1;   // 修改 x20 寄存器的值
+    }
+    // 拦截后继续执行原始指令
+}
+
+stub = shadowhook_intercept_instr_addr(
+    instr_addr,
+    artmethod_invoke_interceptor,
+    NULL,
+    SHADOWHOOK_INTERCEPT_WITH_FPSIMD_READ_WRITE);
+```
+
+intercept 支持 FPSIMD 寄存器读写（ARM64 的 `vregs[0].q` 等），可获取完整的向量寄存器状态。
+
+### ShadowHook 的模式选择（shared / multi / unique）
+
+| 模式 | 多 hook 共存 | 递归检测 | 性能 | 适用场景 |
+|------|-------------|---------|------|---------|
+| shared | ✅ 互不干扰 | ✅ 自动 | 略低 | 通用场景 |
+| multi | ✅ 互不干扰 | ❌ 需自行处理 | 最优 | 高频 hook 点 |
+| unique | ❌ 互斥 | ❌ 需自行处理 | 同 multi | 安全/隐私 SDK |
+
+shared 模式的 proxy 函数链自动避免递归/环形调用，每个 proxy 函数执行前会检测目标是否已在执行栈中。
+

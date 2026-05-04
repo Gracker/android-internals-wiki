@@ -4606,11 +4606,13 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T08:42:32+08:00",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-28-15-ch02-12-window-manager-external-review.md",
       "material_paths": [
         "intake/suggestions.md"
-      ]
+      ],
+      "completed_at": "2026-05-04T09:44:06.531090",
+      "completed_reason": "P0 recreateOnConfigChanges覆盖范围已修正：仅mcc/mnc，不包含keyboard/keyboardHidden/navigation/touchscreen/colorMode/uiMode"
     },
     {
       "section": "2.13",
@@ -10705,7 +10707,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T19:38:39+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T09:44:06.531090",
+      "completed_reason": "P0 perfetto pbtxt命令已补--txt参数；P1 malloc debug wrap.sh已改用setprop wrap.+LIBC_DEBUG_MALLOC_OPTIONS方式"
     },
     {
       "section": "14.13",
@@ -10789,7 +10793,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-02T10:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T09:44:06.531090",
+      "completed_reason": "P0 ThermalManagerService源码路径已修正(去除不存在的thermal/子目录)；P1 温控路径描述已拆分为mitigation平面和reporting/API平面"
     },
     {
       "section": "13.2",

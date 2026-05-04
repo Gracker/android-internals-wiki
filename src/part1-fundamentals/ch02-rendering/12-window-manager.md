@@ -380,7 +380,7 @@ WMS 的 `performLayout()` 需要处理的 Window 数量因此成倍增加，每�
 
 折叠、展开、拖到外接显示器，都会让 WMS 处理一次窗口边界和显示区域变化。路径通常是 DisplayManager / WindowOrganizer 通知 WMS，WMS 更新可见窗口的 frames、Insets 和 configuration，再把结果回送给 App。App 是否重建 Activity，取决于目标 API、compat 行为和自身声明的配置变化处理方式。
 
-Android 16 针对 `sw >= 600dp` 设备强化了 adaptive behavior。target API 36 的应用在大屏上更可能被系统忽略 `screenOrientation`、`resizeableActivity`、aspect ratio 等限制，窗口尺寸变化会更频繁地落到 WMS relayout 和 App configuration callback。Android 17 的 `android:recreateOnConfigChanges` 需要和传统 `android:configChanges` 分开读：`configChanges` 声明应用自行处理某类变化，避免系统重建；`recreateOnConfigChanges` 针对 API 37 Beta 中默认不重建的部分变化，允许应用显式请求重建。当前应按 keyboard、keyboardHidden、navigation、touchscreen、colorMode 和部分 uiMode 这类配置变化理解，不能外推到 `screenSize` / `orientation`。
+Android 16 针对 `sw >= 600dp` 设备强化了 adaptive behavior。target API 36 的应用在大屏上更可能被系统忽略 `screenOrientation`、`resizeableActivity`、aspect ratio 等限制，窗口尺寸变化会更频繁地落到 WMS relayout 和 App configuration callback。Android 17 的 `android:recreateOnConfigChanges` 需要和传统 `android:configChanges` 分开读：`configChanges` 声明应用自行处理某类变化（keyboard、navigation、screenSize、uiMode 等），避免系统重建；`recreateOnConfigChanges` 在 AOSP `attrs_manifest.xml` 中只声明了 `mcc` 和 `mnc`，是 API 37 Beta 中面向部分配置变化的重建策略信号，当前不能外推到其他配置类型。Android 17 对大屏的主要影响是 orientation / resizability opt-out 的移除——这会提高窗口尺寸变化和 configuration callback 的频率，而非扩展 `recreateOnConfigChanges` 的覆盖范围。
 
 ### Android 16 Desktop Windowing
 
@@ -453,7 +453,7 @@ WMS 不是一个孤立的系统服务，它的性能表现受到多个上下游�
 | Android 14 (API 34) | Predictive Back 跨 Activity / 自定义过渡能力继续完善 | 返回手势进入实时预览，Input、WMS transition 与 Shell transition 需要放在同一段时间轴内分析 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` |
 | Android 15 (API 35) | Predictive Back 系统动画不再依赖开发者选项；Edge-to-Edge enforcement 扩大覆盖面 | 已 opt-in 的应用 / Activity 会显示 back-to-home、cross-task、cross-activity 等系统动画；Insets 分发也更常见 | `developer.android.com/guide/navigation/custom-back/predictive-back-gesture` / `developer.android.com/about/versions/15/behavior-changes-15` |
 | Android 16 (API 36) | Desktop Windowing 与大屏 adaptive behavior | 自由窗口、caption bar、外接显示器和强制可调整窗口会提高 relayout / resize 频率 | `developer.android.com/about/versions/16/features` / `developer.android.com/about/versions/16/behavior-changes-all` |
-| Android 17 (API 37) | API 37 Beta 口径中的 `recreateOnConfigChanges` | keyboard、keyboardHidden、navigation、touchscreen、colorMode 和部分 uiMode 变化可显式请求 Activity 重建；本节只把它视为部分配置变化的重建策略信号，不能外推到 `screenSize` / `orientation` | `developer.android.com/about/versions/17/behavior-changes-all` |
+| Android 17 (API 37) | orientation / resizability opt-out 移除，窗口尺寸变化和 configuration callback 频率提高；`recreateOnConfigChanges` 仅覆盖 `mcc`/`mnc`，不能外推到其他配置类型 | `developer.android.com/about/versions/17/behavior-changes-all` |
 
 ## 常见问题与误区
 

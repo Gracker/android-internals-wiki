@@ -41,15 +41,15 @@ tags:
   - cpu-frequency
 reviewed_date: 2026-05-02
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-02
 task9_reviewed_by: openclaw-task9
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 last_task9_at: "2026-05-02T10:20:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
@@ -221,13 +221,19 @@ struct Temperature {
 
 ### ThermalManagerService：Framework 的温控中枢
 
-在 Framework 层，`ThermalManagerService`（`frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java`）是温控系统的中枢。它做三件事：
+在 Framework 层，`ThermalManagerService`（`frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java`）是温控系统的中枢。它做三件事：
 
 1. **接收 HAL 上报的温控事件**。ThermalManagerService 通过 `IThermalEventListener` 回调接口接收 Thermal HAL 推送的 severity 变化。
 2. **将 severity 广播给系统组件和 App**。内部组件通过 `IThermalEventListener` 接收；App 通过 `IThermalStatusListener`（封装为 `PowerManager.OnThermalStatusChangedListener`）接收。
 3. **执行关机流程**。当 severity 达到 `SHUTDOWN` 时，ThermalManagerService 触发 Framework 层关机。
 
-整条路径可以概括为：**传感器感知温度 → 内核 thermal core 做第一道硬件级保护 → Thermal HAL 将温度状态抽象为 severity 级别 → ThermalManagerService 接收并广播状态 → 系统组件 / 厂商 thermal engine 执行具体降温动作 → App 通过 API 感知并自适应。**
+温控路径实际运行在两条并行平面上：
+
+**Mitigation 平面（降温执行）**：传感器感知温度 → 内核 thermal core 做第一道硬件级保护（cpufreq cooling、CPU hotplug） → 厂商 thermal engine 在 HAL 层下方并行执行 PID 控制策略（限频、限核、降充电电流） → cooling device 按 governor 算法逐级响应。这条平面上的限频/限核动作通常不经过 ThermalManagerService，而是由内核 thermal core 和 vendor thermal-engine 直接执行。
+
+**Reporting / API 平面（状态上报）**：Thermal HAL 将温度状态抽象为 severity 级别 → ThermalManagerService 接收 HAL 上报并广播给系统组件和 App → 各组件根据 severity 独立响应（如 JobScheduler 限制后台频率、DisplayManagerService 降低亮度上限） → App 通过 PowerManager API 感知并自适应。当 severity 达到 SHUTDOWN 时，ThermalManagerService 触发关机。
+
+两个平面通过 severity / thermal zone 状态关联：内核 thermal core 和 vendor engine 在 mitigation 平面上执行降温，同时通过 HAL 将状态同步到 reporting 平面，让 Framework 和 App 能感知并配合。
 
 ## Android Thermal API：应用如何感知温度
 

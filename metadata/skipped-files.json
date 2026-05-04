@@ -6678,5 +6678,397 @@
     "title": "第052章-临界点突破",
     "total_score": 4,
     "reason": "Total score < 10"
+  },
+  {
+    "title": "编译系统入门篇-Android10.0编译系统（一）",
+    "url": "https://mp.weixin.qq.com/s/Ak0EmQoULAHH0TWtUvHbtA",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947740"
+  },
+  {
+    "title": "编译环境初始化-Android10.0编译系统（二）",
+    "url": "https://mp.weixin.qq.com/s/fF9GdWYT9z3vVwDtSGPo7g",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947752"
+  },
+  {
+    "title": "Android编译过程-Android10.0编译系统（三）",
+    "url": "https://mp.weixin.qq.com/s/pMg0TxGlqAWmZZ5TW-CzWA",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947755"
+  },
+  {
+    "title": "Image打包流程-Android10.0编译系统（四）",
+    "url": "https://mp.weixin.qq.com/s/vBEpG_jmjziaR3JiYuDdXg",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947756"
+  },
+  {
+    "title": "Kati详解-Android10.0编译系统（五）",
+    "url": "https://mp.weixin.qq.com/s/JbZAAVPCqthkB65AWvUF9w",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947758"
+  },
+  {
+    "title": "Blueprint简介-Android10.0编译系统（六）",
+    "url": "https://mp.weixin.qq.com/s/m0AzGu7Bbf-BVbbYkDM_eg",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947763"
+  },
+  {
+    "title": "Android 面试黑洞——当我按下 Home 键再切回来，会发生什么？",
+    "url": "https://mp.weixin.qq.com/s/DmjWbp7y87cxOEP75TCFTg",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947809"
+  },
+  {
+    "title": "是时候开始学习高频场景的 \"Android 任务模型\" 了",
+    "url": "https://mp.weixin.qq.com/s/Jo5xoijglvBfBfuy6a9T6A",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947824"
+  },
+  {
+    "title": "播放器性能优化干货",
+    "url": "https://mp.weixin.qq.com/s/aENZqsvA2PAzjIyMUTtpXA",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947826"
+  },
+  {
+    "title": "协程中的取消和异常 | 驻留任务详解",
+    "url": "https://mp.weixin.qq.com/s/0ZPzUeUiBlFhl3uIkgSQ7Q",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947828"
+  },
+  {
+    "title": "一文彻底搞懂 Kotlin 中的委托 | 开发者说·DTalk",
+    "url": "https://mp.weixin.qq.com/s/ndgbta94As02vMktNePBAg",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947830"
+  },
+  {
+    "title": "[Jetpack] 人生苦短，让脚手架为你节省时间",
+    "url": "https://juejin.im/post/6882949076267057166",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947832"
+  },
+  {
+    "title": "Flutter 组件的事件传递与数据控制 | 开发者说·DTalk",
+    "url": "https://mp.weixin.qq.com/s/mO2lT_s1s5a94KeirPpeVg",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947834"
+  },
+  {
+    "title": "透过Tracepoint理解内核 - 调度器框架和性能",
+    "url": "https://mp.weixin.qq.com/s/GqzwN1b_JpAwN8oJWuFzfQ",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947836"
+  },
+  {
+    "title": "快速理清 .dex、.odex、ART、AOT、OAT 逻辑关系",
+    "url": "https://mp.weixin.qq.com/s/lPFhnu2cXeDw19l0XE2GDQ",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947837"
+  },
+  {
+    "title": "Android 11 IORap --通过I / O预取来改善应用启动",
+    "url": "https://mp.weixin.qq.com/s/cpB-Wl7rlVi8wyJvDnUfMQ",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947838"
+  },
+  {
+    "title": "Linux 内核 / 进程管理 / 如何描述一个进程？",
+    "url": "https://mp.weixin.qq.com/s/m-R1Q8O9Saw1WuqSXdYfEQ",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947840"
+  },
+  {
+    "title": "嗯？动画还能在非UI 线程执行？",
+    "url": "https://mp.weixin.qq.com/s/mHqZYUOo-yrIgknFmOm0ag",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947841"
+  },
+  {
+    "title": "Android 黑科技 ｜Gradle Plugin的一些使用场景",
+    "url": "https://mp.weixin.qq.com/s/iQWQhtXlbj-elMgOhE-s1g",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947843"
+  },
+  {
+    "title": "用户态进程如何得到虚拟地址对应的物理地址？",
+    "url": "https://mp.weixin.qq.com/s/wqYyi2Yj2QFKgR8w8p3bjg",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947844"
+  },
+  {
+    "title": "https://link.medium.com/kSfne2GCAab",
+    "url": "https://link.medium.com/kSfne2GCAab",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947846"
+  },
+  {
+    "title": "Kotlin Coroutines in Android Summary: https://medium.com/swlh/kotlin-coroutines-in-android-summary-1ed3048f11c3",
+    "url": "https://medium.com/swlh/kotlin-coroutines-in-android-summary-1ed3048f11c3",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947847"
+  },
+  {
+    "title": "Understand the types of Launch Modes in an Android Activity: https://mohamedyousufmo.medium.com/understand-android-activity-launch-mode-c21fcecf04b8",
+    "url": "https://mohamedyousufmo.medium.com/understand-android-activity-launch-mode-c21fcecf04b8",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947848"
+  },
+  {
+    "title": "Android Developer should know these Data Structures for Next Interview : Android Developer should know these Data Structures for Next Interview",
+    "url": "https://blog.mindorks.com/android-developer-should-know-these-data-structures-for-next-interview",
+    "issue": "#6",
+    "date": "2020-10-19",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:05:22.947850"
+  },
+  {
+    "title": "深度：关于Linux内核最硬核的文章",
+    "url": "https://mp.weixin.qq.com/s/V1nOQIRYmuQvTF81aiVCFg",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426144"
+  },
+  {
+    "title": "Android Detail：站在 Window 视角理解 Activity 任务与返回栈 － 小专栏",
+    "url": "https://xiaozhuanlan.com/topic/3268795140",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426159"
+  },
+  {
+    "title": "Android Detail：工具篇 -- 进程状态全知道，adb 和 ps 命令 － 小专栏",
+    "url": "https://xiaozhuanlan.com/topic/4379658012",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426161"
+  },
+  {
+    "title": "文末福利 —「译」终结 Android 性能流言",
+    "url": "https://mp.weixin.qq.com/s/WGdVJ8wiVRJ5rcmAEsbefA",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426163"
+  },
+  {
+    "title": "深入详解 Jetpack Compose | 优化 UI 构建",
+    "url": "https://mp.weixin.qq.com/s/pRurO-7upTk4sRgJbJyUFw",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426164"
+  },
+  {
+    "title": "Android 存储空间的最佳实践",
+    "url": "https://juejin.im/post/6886618088826273800",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426166"
+  },
+  {
+    "title": "Android Detail：工具篇 -- Android 世界的活点地图 dumpsys － 小专栏",
+    "url": "https://xiaozhuanlan.com/topic/3860197542",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426167"
+  },
+  {
+    "title": "Kotlin StateFlow 搜索功能的实践 DB + NetWork",
+    "url": "https://juejin.im/post/6876990111113248775",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426168"
+  },
+  {
+    "title": "Android | View & Fragment & Window 的 getContext() 一定返回 Activity 吗？",
+    "url": "https://juejin.im/post/6886857116787687438",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426170"
+  },
+  {
+    "title": "在 Android 开发中使用协程 | 背景介绍",
+    "url": "https://mp.weixin.qq.com/s/LGP25rsdBl2mTpR3sDNE3A",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426171"
+  },
+  {
+    "title": "在 Android 开发中使用协程 | 上手指南",
+    "url": "https://mp.weixin.qq.com/s/kPvWOCkMjYRKJSTX4I5VKg",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426172"
+  },
+  {
+    "title": "在 Android 开发中使用协程 | 代码实战",
+    "url": "https://mp.weixin.qq.com/s/p5kp9WfkI_atVn9A2ePb3Q",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426174"
+  },
+  {
+    "title": "https://proandroiddev.com/android-studio-productivity-course-8d1bed88d99b",
+    "url": "https://proandroiddev.com/android-studio-productivity-course-8d1bed88d99b",
+    "issue": "#7",
+    "date": "2020-10-26",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:07:08.426175"
+  },
+  {
+    "title": "Steven Rostedt 教你用 Ftrace",
+    "url": "https://mp.weixin.qq.com/s/ip0Ukl1dxC13afAzcCg2Ew",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797259"
+  },
+  {
+    "title": "Linux的进程、线程、文件描述符是什么",
+    "url": "https://labuladong.gitbook.io/algo/di-wu-zhang-ji-shu-wen-zhang-xi-lie/linux-jin-cheng",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797273"
+  },
+  {
+    "title": "真棒！ 20 张图揭开内存管理的迷雾，瞬间豁然开朗",
+    "url": "https://juejin.im/post/6844904202720788493",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797276"
+  },
+  {
+    "title": "Matrix-TraceCanary的设计和原理分析手册",
+    "url": "https://linjiang.tech/2019/11/12/matrix-trace-canary/",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797278"
+  },
+  {
+    "title": "从一次日志丢失所想到的",
+    "url": "https://mp.weixin.qq.com/s/9YJMy0XVoqPeTghyDlGLxA",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797279"
+  },
+  {
+    "title": "他把闲鱼APP长列表流畅度翻了倍（良心教程）",
+    "url": "https://mp.weixin.qq.com/s/dlOQ3Hw_U3CFQM91vcTGWQ",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797281"
+  },
+  {
+    "title": "从ART视角看JNI调用",
+    "url": "https://juejin.im/post/6888987190857039885",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797283"
+  },
+  {
+    "title": "Android 面试回答技巧 14 问 | JVM篇",
+    "url": "https://mp.weixin.qq.com/s/1mC7_FLgW9yh0rf6O0Vemg",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797284"
+  },
+  {
+    "title": "FUSE文件系统",
+    "url": "https://mp.weixin.qq.com/s/-pXnmNqUkBWAhSGxKMNCog",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797286"
+  },
+  {
+    "title": "细数 2020 年官方对 Android 的那些重大更新！",
+    "url": "https://mp.weixin.qq.com/s/bh-lI7Ue5x_LmSfZBg_Hsg",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797287"
+  },
+  {
+    "title": "鸿蒙OS开源代码精要解读之—— 系统服务框架子系统(服务启动)",
+    "url": "https://mp.weixin.qq.com/s/MezTF3wS4gtqehA5V7054g",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797289"
+  },
+  {
+    "title": "Material Component 动画基础—Spring Animation",
+    "url": "https://mp.weixin.qq.com/s/jIdBg3RQvs0YvD1T-q0wbA",
+    "issue": "#8",
+    "date": "2020-11-03",
+    "reason": "fetch_blocked",
+    "attempted_at": "2026-05-04T09:08:42.797290"
   }
 ]
