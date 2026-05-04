@@ -29,7 +29,7 @@ pipeline_stage: task6_pending
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
-task2b_state: pending
+task2b_state: fixed
 ---
 
 # OEM 性能优化的通用思路
@@ -163,6 +163,12 @@ Android 的应用进程都是从 Zygote fork 出来的。Zygote 在系统启动�
 第一，**扩展预加载列表**。把常用 App 依赖的核心类加入预加载列表，让更多类在 Zygote 阶段就加载完毕。代价是 Zygote 进程本身的内存占用更大，以及系统启动时间变长（因为要加载更多的类）。这是一道经典的工程权衡题：用系统启动时间换 App 启动时间。
 
 第二，**预创建进程**。在系统启动阶段直接预创建若干应用进程（已经 fork 了 Zygote，但还没加载 App 代码），当用户点击图标启动 App 时，直接从预创建的进程中选一个，省掉 fork 的开销。这种方法在 Perfetto 中表现为启动 Trace 里没有 Zygote fork 阶段，`StartActivity` 直接进入 `bindApplication`。
+
+AOSP 本身提供了标准化的预热缓存池机制：USAP（Unspecialized App Process）Pool。Zygote 在空闲时预先 fork 一批「空白进程」放入池中（`ZygoteServer.fillUsapPool()`），当 AMS 需要启动新进程时，优先从池中取用而非重新 fork。关键配置属性是 `usap_pool_enabled`（默认值因版本而异，AOSP 16 中默认关闭）和 `usap_pool_size_max`（池容量上限）。厂商可以基于这套机制做自己的预热策略——比如根据用户习惯提前填充池、增大池容量、或者在内存紧张时清空池释放资源。
+
+在 Perfetto 中验证 USAP Pool 是否生效的方法：观察启动 Trace 中的 `Zygote` 线程 slice，如果出现 `usapReceive` 而非 `forkAndSpecialize`，说明进程来自预热池。需要额外注意的是，USAP Pool 目前不支持 App Zygote（Child Zygote）和 `android:useAppZygote` 场景，这类多进程架构的 App 仍走标准 fork 路径。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/com/android/internal/os/ZygoteServer.java, ZygoteConnection.java]
 
 第三，**预编译优化**。调整 dex2oat 的编译策略，让常用 App 在系统空闲时提前完成 AOT 编译，或者使用基于用户使用习惯的 Profile-Guided Optimization（PGO）策略，只编译用户经常用到的代码路径。三星的 App Booster 就是这个思路——它手动对已安装的 App 执行 profile-guided 编译，让代码针对实际使用模式优化。
 

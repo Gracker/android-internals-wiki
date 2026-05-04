@@ -3757,7 +3757,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-26T16:12:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T22:07:44.680448",
+      "completed_reason": "AOSP USAP Pool 机制(usap_pool_enabled/ZygoteServer.fillUsapPool)已补充；Perfetto验证方法(usapReceive vs forkAndSpecialize)已添加；USAP不支持App Zygote边界已说明"
     },
     {
       "section": "17.2",
@@ -3777,7 +3779,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-26T16:12:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T22:07:44.680448",
+      "completed_reason": "全大核架构Perfetto观察方法已补充(迁移SQL查询/频率Track对比/唤醒目标分布)；迁移频繁≠效率低的边界已说明"
     },
     {
       "section": "17.oem",
