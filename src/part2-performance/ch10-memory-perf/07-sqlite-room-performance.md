@@ -5,7 +5,7 @@ status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-06"
+last_verified: "2026-05-04"
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
 sources:
@@ -48,9 +48,9 @@ sources:
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
@@ -143,7 +143,7 @@ public SQLiteConnection acquireConnection(String sql, int connectionFlags,
 
 `SQLiteOpenHelper` 的数据库打开路径仍然是串行的。`getWritableDatabase()` 会把 `onCreate()`、`onUpgrade()`、`onDowngrade()` 串在一次 open 流程里，所以慢 Migration 一样会把后续打开者挡在门外。这里的阻塞点更接近 helper open 和 connection acquisition。
 
-Android 16（API 36）引入了 `getWritableDatabaseAsync()`，返回 `CompletableFuture<SQLiteDatabase>`。该 API 把 open / Migration 流程移到后台线程执行，调用线程不会被阻塞。在 16KB 数据库页转换场景下（页大小变化需要整库重写），同步 `getWritableDatabase()` 可能需要数秒到数十秒，此时 `getWritableDatabaseAsync()` 是唯一安全的打开入口。Android 16+ 的新项目应直接使用异步打开，避免同步 open 进入主线程路径。
+Android 16 没有提供 `getWritableDatabaseAsync()` 这样的异步打开 API。把 open / Migration 从主线程移走的做法是应用侧自己包装：用 dedicated executor、协程或 App Startup Initializer 在后台线程调用 `getWritableDatabase()`，拿到数据库句柄后再切回主线程。16KB 数据库页转换场景下（页大小变化需要整库重写），同步 `getWritableDatabase()` 可能需要数秒到数十秒，必须确保这条路径不进入主线程。
 
 ## 2. CursorWindow 与跨进程 Cursor 传输
 
