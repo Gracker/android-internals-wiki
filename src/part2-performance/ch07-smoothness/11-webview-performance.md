@@ -746,3 +746,63 @@ public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail)
   - §7.2 卡顿原因体系
   - §8.1 Android 功耗管理
   - §13.7 Perfetto 高级用法
+
+<!-- AIW-源码调研-2026-05-04 -->
+
+### WebView Renderer 进程崩溃恢复策略
+
+根据 AOSP 源码调研（2026-05-04），WebView 渲染进程崩溃恢复的关键机制：
+
+#### 核心机制（API 26+）
+
+`WebViewClient.onRenderProcessGone(WebView view, RenderProcessGoneDetail detail)` 是恢复的核心回调：
+
+```java
+// frameworks/base/core/java/android/webkit/WebViewClient.java (android14-release)
+public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+    return false; // 默认行为：崩溃或被杀
+}
+```
+
+返回值语义：
+- `return true`: 应用已处理，系统不杀死 App，WebView 可继续使用
+- `return false`: 默认行为，如果 `detail.didCrash() == true` 则 App 崩溃
+
+#### 关键约束
+
+**文档明确说明：**
+> "The given WebView cant be used, and should be removed from the view hierarchy, all references to it should be cleaned up"
+
+崩溃的 WebView 实例**完全不可用**，必须：
+1. 从父容器移除
+2. 清理所有引用
+3. 调用 `view.destroy()`
+
+#### 崩溃类型区分
+
+`RenderProcessGoneDetail` 提供两种退出原因：
+
+- **Crash（didCrash() = true）**：V8 fatal error、GPU 崩溃等进程内部异常
+- **Killed by system（didCrash() = false）**：系统低内存时 LMK 主动杀死
+
+#### 最佳实践
+
+```java
+@Override
+public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+    // 1. 保存状态
+    String lastUrl = view.getUrl();
+    
+    // 2. 移除和销毁
+    ViewGroup parent = (ViewGroup) view.getParent();
+    if parent is not None: parent.removeView(view);
+    view.destroy();
+    
+    // 3. 重建 WebView
+    WebView newWebView = new WebView(context);
+    newWebView.loadUrl(lastUrl);
+    container.addView(newWebView);
+    
+    return true; // 已处理，不触发系统崩溃
+}
+```
