@@ -1,24 +1,24 @@
 ---
 title: "Vulkan 原生渲染管线"
 chapter: "18.9"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-28"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-28T00:37:00+08:00"
+last_task9_at: "2026-05-04T10:37:13+08:00"
 tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
@@ -41,7 +41,7 @@ rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 P95 + 同章节链接修复）"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。"
+review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。"
 ---
 
 <!-- outline-start -->

@@ -9,14 +9,14 @@ reviewed_date: "2026-04-27"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: "reviewed"
-task9_result: "needs-rework"
-last_task9_at: "2026-04-28T08:39:32+08:00"
-task9_reviewed_date: "2026-04-28"
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: "2026-05-04T10:37:13+08:00"
+task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: "pending"
-task2b_result: fixed
-pipeline_stage: "task2b_pending"
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
 last_task2b_at: "2026-04-27T11:41:00+08:00"
 applicable_versions: "Android 17 (API 37)"
@@ -24,7 +24,7 @@ tags:
   - android
   - linux
   - research
-review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。"
+review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。"
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化

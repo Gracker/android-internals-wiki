@@ -10,7 +10,7 @@ last_verified: "2026-05-04"
 last_verified_against: "AOSP android-17-beta3"
 reviewed_date: "2026-05-04"
 reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
+task6_result: "pass-light-edit"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
@@ -43,9 +43,9 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
@@ -54,6 +54,7 @@ task9_reviewed_date: "2026-05-04"
 last_task9_at: "2026-05-04T12:41:40+08:00"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；P1 0；源码/API/数据口径需回炉，已写入 queue.json。"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；输入重采样属性名错误，120Hz ms 取整表格数学不一致。"
+
 
 ---
 
@@ -171,7 +172,7 @@ switch (mState) {
 
 ### 成因三：Choreographer 把时间同步到 VSync，但精度仍停在毫秒
 
-这里还有一个容易写错的地方。OverScroller 并没有完全绕开 `Choreographer`。`Choreographer.doFrame()` 在执行本帧回调前，会把当前线程的动画时钟锁到这一帧的 `frameTimeNanos`，同时记录期望呈现时间。
+OverScroller 并没有完全绕开 `Choreographer`。`Choreographer.doFrame()` 在执行本帧回调前，会把当前线程的动画时钟锁到这一帧的 `frameTimeNanos`，同时记录期望呈现时间。
 
 ```java
 // frameworks/base/core/java/android/view/Choreographer.java
