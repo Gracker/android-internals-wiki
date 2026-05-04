@@ -70,11 +70,12 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '5.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
+last_task2b_at: "2026-05-04T15:49:22"
 task2b_result: fixed
 ---
 
@@ -197,9 +198,9 @@ public static void loop() {
 
 1. 有新的 Java 消息入队（通过 `mWakeEventFd` 写入唤醒）
 2. 有 Native 层的定时消息到期
-3. 有被监控的 fd 变为可读状态（比如 Input 事件的 socket fd、VSync 信号的 fd、Binder 的 fd）
+3. 有通过 `MessageQueue.addOnFileDescriptorEventListener()` 注册的 fd 变为可读状态（Input 事件的 socket fd、VSync 信号的 fd 等均通过此接口注册）
 
-这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号、Binder 调用，这些看似不同的系统事件，最终都通过 fd 被 epoll 统一监控，通过回调机制被分发到各自的处理路径。
+这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池有自己独立的 epoll 循环处理跨进程调用。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/MessageQueue]
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-05_wechat_Looper到底在等什么.md]
@@ -335,7 +336,7 @@ Linux 提供了多种调度策略，Android 中最常用的有两种：
 
 不过这种做法要谨慎：它可能和系统的 EAS（能量感知调度）策略冲突，而且不同 SoC 平台的核心布局不同。在做绑定之前，先在目标设备上用 Perfetto 对比绑定前后的帧耗时数据，确认确实有改善。
 
-Android 16 引入了 ADPF（Adaptive Performance Framework）的自动核心迁移机制：Performance Hint Manager 会根据渲染负载自动决定 RenderThread 是否需要上大核。手动 `sched_setaffinity` 可能与这套自动调度冲突——绑核后 ADPF 的 hint 信号不再能影响 RenderThread 的核心选择。在新设备上，优先使用 ADPF 的 `PerformanceHintManager` API 让系统做核心调度决策，而不是手动绑核。只有在不支持 ADPF 的旧设备上，或者 ADPF 调度效果经过实测确认不如手动绑核时，才考虑 `sched_setaffinity`。
+Android 12 引入的 ADPF（Adaptive Performance Framework）通过 `PerformanceHintManager` 让应用向系统反馈工作负载目标。ADPF hint session 主要影响 CPU 频率决策——当 `reportActualWorkDuration()` 上报的耗时超过 `getTargetWorkDuration()` 的目标值时，系统会提高对应线程的运行频率。核心放置（哪个 CPU 核心执行线程）仍然由内核 EAS 调度器基于 load/capacity 信息决定，ADPF 不直接控制核心迁移。手动 `sched_setaffinity` 会锁定线程的核心选择范围，ADPF 的频率调整在绑核范围内仍然生效，但调度器无法再自由选择最优核心。在新设备上，优先使用 `PerformanceHintManager` 让系统做频率调度决策，而不是手动绑核。只有在不支持 ADPF 的旧设备上，或者 ADPF 调度效果经过实测确认不如手动绑核时，才考虑 `sched_setaffinity`。
 
 [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
 
@@ -465,7 +466,7 @@ Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程
 - **Binder 线程**：名字类似 `Binder:12345_1`，处理来自其他进程的 Binder 调用。如果这些线程有长时间的 CPU 活动，说明 App 在响应跨进程调用。
 - **FinalizerDaemon**：执行对象 finalize 方法的守护线程。如果这个线程频繁活动，说明有大量对象在被 GC 回收时需要执行 finalize，这可能导致 GC 暂停时间变长。
 - **DefaultDispatcher-worker-\***：Kotlin Coroutine 的默认线程池线程。
-- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下新增的 `MQ.Delivered` 计数器，记录 MessageQueue 中消息的投递频率。它是识别 DeliQueue 无锁队列工作的关键签名——如果某个线程上 `MQ.Delivered` 频率很高但该线程没有常规 Handler slice，说明走的是 android-16 新的 ConcurrentMessageQueue 路径。
+- **MQ.Delivered 计数器**：Perfetto 中 `mq` 类别下新增的 `MQ.Delivered` 计数器，记录 MessageQueue 中消息的投递频率。`LegacyMessageQueue`、`CombinedMessageQueue`、`ConcurrentMessageQueue` 三种实现都会记录该计数器，所以它不是 DeliQueue/ConcurrentMessageQueue 的独有签名。要区分队列实现，应结合 `MQ.DispatchBatches`（DeliQueue 的批量投递计数）或其他 DeliQueue 专有 Trace 片段一起判断。
 
 ### 主线程状态解读
 
