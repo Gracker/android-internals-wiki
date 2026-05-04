@@ -995,3 +995,16 @@
 - **位置**：frontmatter L23、L500、L685（source.android.com/docs/core/thermal）
 - **问题**：该官方文档路径返回 404。本轮复核可打开的是 source.android.com/docs/core/power/thermal-mitigation；Sustained Performance Mode 对应 source.android.com/docs/core/power/performance。
 - **建议**：替换失效链接，并按“thermal mitigation / performance management”拆分参考资料。
+
+## [Task6 Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-05-04
+- **类型**：需确认
+- **位置**：Dispatch Queue（DSQ）机制 / 排查要点
+- **问题**：正文仍把 `SCX_DSQ_BYPASS` 和 `SCX_EV_REFILL_SLICE_DFL` 放在 android16-6.12 通用口径附近；上轮 Task9 已提示这些符号/计数器在目标分支可能不匹配。
+- **建议**：Task9 按 `android16-6.12` 目标分支源码与 sysfs/trace 输出复核；Task2B 按结论保留、删除，或单列后续 mainline / 厂商分支差异。
+- **review 日志**：logs/review/2026-05-04-21-review.md
+
+- **类型**：需补充素材
+- **位置**：MGLRU 与页面回收优化
+- **问题**：`kswapd` CPU -40%、LMK -85%、渲染延迟 -18% 以及“6.12 默认启用”缺具体公开来源、message-id、报告链接或 Android GKI defconfig 锚点。
+- **建议**：补 `CONFIG_LRU_GEN` / `CONFIG_LRU_GEN_ENABLED` 与数据来源；补不齐时降级为限定表述。
+- **review 日志**：logs/review/2026-05-04-21-review.md
