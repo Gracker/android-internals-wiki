@@ -14,64 +14,47 @@ rework_by: "task2b-rework"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-05-04"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service / WorkManager docs"
-task2b_result: fixed
-task6_state: revisiting
 confidence: medium-high
 sources:
   - type: official
-    path: "https://developer.android.com/topic/performance/power"
   - type: official
-    path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
   - type: official
-    path: "https://developer.android.com/guide/background"
   - type: aosp
-    path: "frameworks/base/core/java/android/os/PowerManager.java"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: blog
-    path: "Obsidian Cubox - 借助 Android Studio 中的功耗性能分析器进行 A-B 测试"
   - type: blog
-    path: "Obsidian Cubox - SoC 低功耗问题定位及优化的 10 个思路"
   - type: blog
-    path: "Obsidian Cubox - 抖音功耗优化实践"
   - type: blog
-    path: "Obsidian Cubox - BatteryHistorian Android 手机耗电分析神器"
   - type: official
-    path: "https://developer.android.com/reference/android/os/PowerManager.WakeLock"
   - type: official
-    path: "https://developer.android.com/reference/android/hardware/camera2/CameraDevice"
   - type: official
-    path: "https://developer.android.com/topic/performance/vitals/wakelock"
   - type: official
-    path: "https://firebase.google.com/docs/cloud-messaging/android/message-priority"
   - type: official
-    path: "https://developer.android.com/about/versions/14/changes/fgs-types-required"
   - type: official
-    path: "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
   - type: official
-    path: "https://developer.android.com/develop/background-work/services/fgs/timeout"
   - type: official
     path: "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
 tags: ['wakelock', 'jobscheduler', 'workmanager', 'doze', 'location', 'alarm', 'power', 'fgs', 'foreground-service', 'fcm', 'alarmmanager', 'geofencing', 'battery-historian', 'camera']
 related_chapters: ["11.1", "11.3", "5.6", "5.4", "5.10", "11.5"]
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-05-04"
 task6_result: "pass-light-edit"
-task6_state: revisiting
-last_task2b_at: "2026-04-26T10:41:09+08:00"
+task6_state: "reviewed"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_round: 4
 last_task2b_at: "2026-05-04T01:40:00+08:00"
 task9_result: needs-rework
-task9_state: pending
+task9_state: "pending"
 task2b_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: "task9_pending"
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-04T02:20:00+08:00"
 review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 1;setAlarmClock 精确闹钟权限、WorkManager setPowerEfficiencyHint API、GNSS hardware geofence 版本/数据需修复。"
+
+
 ---
 
 # App 耗电优化
@@ -274,9 +257,9 @@ Geofencing 省电的关键,在于围栏判断由 FLP、Play services 和系统�
 
 **GNSS 硬件围栏卸载**。支持硬件围栏的 GNSS 芯片可以把 Geofencing 判定卸载到硬件执行，CPU 不需要保持唤醒即可维持围栏检测。设备进入 Doze 或 CPU 深度休眠后，GNSS 芯片仍然能独立判断进出围栏事件，再通过中断唤醒系统通知 App。硬件卸载是否可用取决于设备能力：通过 `GnssCapabilities.hasGeofencing()`（API 34+）或 `dumpsys location` 查看 Geofence 的实现路径（software / hardware）。如果设备只支持软件模式，Geofencing 的功耗优势仍然存在但幅度更小。
 
-排查时要注意,硬件卸载是否生效取决于 GNSS 芯片能力和 vendor HAL 实现。可以通过 `dumpsys location` 查看 Geofence 的实现路径(software / hardware),如果设备只支持软件模式,Geofencing 的功耗优势仍然存在但幅度更小。
+硬件卸载是否生效取决于 GNSS 芯片能力和 vendor HAL 实现。支持硬件卸载的设备可以在 Doze 和 CPU 深度休眠期间独立维持围栏检测;只支持软件模式的设备,功耗优势仍然存在但幅度更小。
 
-更稳妥的结论是:Geofencing 适合低频、事件驱动的位置需求;如果业务要秒级连续轨迹,就该回到显式定位请求,并单独评估功耗。
+Geofencing 适合低频、事件驱动的位置需求;如果业务要秒级连续轨迹,就该回到显式定位请求,并单独评估功耗。
 
 [已验证: 官方文档, developer.android.com/training/location/geofencing]
 

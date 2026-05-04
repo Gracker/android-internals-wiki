@@ -499,3 +499,145 @@ AOSP `android-16.0.0_r1` 中确认存在 `CombinedMessageQueue` 和 `ConcurrentM
   `frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java`
 - Treiber stack
   https://en.wikipedia.org/wiki/Treiber_Stack
+
+<!-- AIW-源码调研-2026-05-04 -->
+## 补充:CombinedDeliMessageQueue 三路合并实现细节
+
+本节于 2026-05-04 通过 AOSP mainline 源码补充以下发现，来源为 LineageOS 镜像（AOSP 同步分支 commit 536c021），对应 AOSP mainline Android 17 API 37 阶段：
+
+### CombinedDeliMessageQueue 是统一入口文件
+
+`core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java` 是 AOSP mainline 的实际生效文件。它在**同一个类**里同时保留 Legacy 字段和 DeliQueue 字段：
+
+```java
+/* These fields are only used in legacy message queue. */
+Message mMessages;          // 反射入口，DeliQueue 下永远 null
+private Message mLast;
+private boolean mQuitting;
+private boolean mBlocked;
+private int mAsyncMessageCount;
+
+/* These fields are only used in DeliQueue. */
+MessageStack mStack = new MessageStack();  // Treiber Stack，无锁入队容器
+```
+
+这解释了为什么旧反射代码不会直接 crash——类加载没问题，只是 `mMessages` 在 DeliQueue 模式下内容无意义。
+
+### DeliQueue 启用条件（`computeUseDeliQueue()`）
+
+```java
+private static boolean computeUseDeliQueue() {
+    // 1. 显式 flags 优先（允许应用进程通过 feature flag 开启）
+    if (Flags.useConcurrentMessageQueueInApps()) {
+        try {
+            Class.forName("org.robolectric.Robolectric");
+            return false;  // Robolectric 测试强制走 Legacy
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
+    }
+
+    // 2. 核心 UID（system_server / surfaceflinger 等系统进程）
+    if (UserHandle.isCore(Process.myUid())) {
+        if (processName.contains("test")) return false;  // 平台测试集走 Legacy
+        return true;
+    }
+
+    // 3. SystemUI 进程（性能敏感，被明确白名单）
+    if (processName.equals("com.android.systemui")
+            || processName.startsWith("com.android.systemui:")) {
+        return true;
+    }
+
+    return false;  // 普通 App 默认 Legacy，Android 17 targetSdk 37 默认走 DeliQueue
+}
+```
+
+关键细节：**普通应用进程在 API 37 仍默认走 Legacy**，只有 `targetSdk 37` 才默认启用。`Flags.useConcurrentMessageQueueInApps()` 是 feature flag，不是所有应用自动开启。
+
+### MessageStack：Treibier Stack + RCU 风格 Freelist
+
+```java
+// core/java/android/os/MessageStack.java
+public final class MessageStack {
+    private volatile Message mTopValue = null;         // 栈顶指针
+    private volatile Message mFreelistHeadValue = null; // RCU 风格 freelist
+
+    private final MessageHeap mSyncHeap = new MessageHeap();   // 同步消息 min-heap
+    private final MessageHeap mAsyncHeap = new MessageHeap();   // 异步消息 min-heap
+
+    // CAS 无锁入栈（acquire/release 语义）
+    public boolean pushMessage(Message m) {
+        Message current;
+        do {
+            current = mTopValue;
+            if (isQuittingMessage(current)) return false;
+            m.next = current;
+        } while (!sTop.weakCompareAndSetRelease(this, current, m));
+        return true;
+    }
+
+    // 批量回收（每轮 next() 调用时触发）
+    public void drainFreelist() {
+        Message current = (Message) sFreelistHead.getAndSetAcquire(this, null);
+        while (current != null) {
+            Message nextFree = current.nextFree;
+            maybeRemoveFromHeap(current);
+            removeFromStack(current);
+            current = nextFree;
+        }
+    }
+}
+```
+
+设计意图：freelist 的 `nextFree` 指针在入栈时被复用到 `Message.next`，避免了单独分配回收节点的开销。批量 `drainFreelist()` 在 `nextMessage()` 开头调用，不在 critical path 做逐个分配。
+
+### VarHandle 而非 Atomic*：性能关键
+
+```java
+// core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java
+static {
+    MethodHandles.Lookup l = MethodHandles.lookup();
+    sNextInsertSeq = l.findVarHandle(MessageQueue.class, "mNextInsertSeqValue", long.class);
+    sNextFrontInsertSeq = l.findVarHandle(MessageQueue.class, "mNextFrontInsertSeqValue", long.class);
+    sWaitState = l.findVarHandle(MessageQueue.class, "mWaitState", long.class);
+    sMptrRefCount = l.findVarHandle(MessageQueue.class, "mMptrRefCountValue", long.class);
+    sSyncBarrier = l.findVarHandle(MessageQueue.class, "mSyncBarrier", Message.class);
+}
+```
+
+注释说明（b/421437036）：VarHandle 在此场景比 `Atomic*` 性能更好，因为它允许针对不同操作选择最合适的内存排序语义（`compareAndSet` / `weakCompareAndSetRelease` / `getVolatile`），减少不必要的 CPU 缓存同步开销。
+
+### mPtr 引用计数：解决 quit 与 nativeWake 的 Race
+
+```java
+private static final long MPTR_TEARDOWN_MASK = 1L << 63;  // MSB
+
+private boolean incrementMptrRefs() {
+    while (true) {
+        final long oldVal = mMptrRefCountValue;
+        if ((oldVal & MPTR_TEARDOWN_MASK) != 0) return false;  // 正在退出
+        if (sMptrRefCount.compareAndSet(this, oldVal, oldVal + 1)) return true;
+    }
+}
+
+// 最后持有者退出时唤醒 looper 线程
+if (oldVal - 1 == MPTR_TEARDOWN_MASK) {
+    LockSupport.unpark(mLooperThread);
+}
+```
+
+TEARDOWN_MASK（MSB）与引用计数共用一个 `long`，零开销合并两个状态。`nativeWake()` 前必须先 `incrementMptrRefs()`，确保 quit 过程中没有其他线程仍在用 `mPtr`。
+
+### 三个目录的分工
+
+| 目录 | 性质 | TAG |
+|------|------|-----|
+| `core/java/android/os/LegacyMessageQueue/` | 纯旧实现（单向链表 + synchronized） | "LegacyMessageQueue" |
+| `core/java/android/os/DeliQueue/` | 纯新实现（无 Legacy 字段，TAG="DeliQueue"） | "DeliQueue" |
+| `core/java/android/os/CombinedDeliMessageQueue/` | **实际生效文件**：两套字段并存，静态开关选择 | "DeliQueue" / "LegacyMessageQueue" |
+| `core/java/android/os/SemiConcurrentMessageQueue/` | ROM fork 分支（非 AOSP 主线），各 ROM 独立维护 | "SemiConcurrentMessageQueue" |
+
+> 注：`SemiConcurrentMessageQueue` 是 BlissRoms / DroidX-UI 等 ROM fork 的内部分支，非 AOSP 主线。章节前版引用时已确认"不存在于公开源码"，此处补充其实际来源：多方 ROM fork 独立维护，非 AOSP 官方目录。
+
+<!-- AIW-源码调研-2026-05-04 END -->

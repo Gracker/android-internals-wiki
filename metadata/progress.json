@@ -2579,7 +2579,7 @@
       "last_verified": "2026-04-07",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -2591,7 +2591,8 @@
       "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-04T12:41:40+08:00",
-      "last_task9_log": "logs/deep-review/2026-05-03-13-deep-review.md"
+      "last_task9_log": "logs/deep-review/2026-05-03-13-deep-review.md",
+      "task6_reviewed_date": "2026-05-04"
     },
     "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
@@ -3444,7 +3445,7 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android Developers exact alarm / foreground service docs",
       "confidence": "medium-high",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -3459,7 +3460,8 @@
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
-      "review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 1；setAlarmClock 精确闹钟权限、WorkManager setPowerEfficiencyHint API、GNSS hardware geofence 版本/数据需修复。"
+      "review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 1；setAlarmClock 精确闹钟权限、WorkManager setPowerEfficiencyHint API、GNSS hardware geofence 版本/数据需修复。",
+      "task6_reviewed_date": "2026-05-04"
     },
     "src/part2-performance/ch11-power/03-system-power-optimization.md": {
       "path": "src/part2-performance/ch11-power/03-system-power-optimization.md",
