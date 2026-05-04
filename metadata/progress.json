@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-04T10:37:13+08:00",
+  "generated_at": "2026-05-04T18:11:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -8,8 +8,8 @@
     "pipeline_stage_counts": {
       "unknown": 35,
       "ready-to-publish": 107,
-      "task2b_pending": 92,
-      "task9_pending": 12,
+      "task2b_pending": 89,
+      "task9_pending": 15,
       "task6_pending": 6
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 40,
-      "reviewed": 207,
-      "pending": 5
+      "reviewed": 204,
+      "pending": 8
     },
     "task2b_state_counts": {
       "unknown": 42,
-      "fixed": 108,
-      "pending": 99,
+      "fixed": 111,
+      "pending": 96,
       "idle": 3
     },
     "finalized": 109,
@@ -43,8 +43,8 @@
     "pipeline_stage_counts": {
       "unknown": 35,
       "ready-to-publish": 107,
-      "task2b_pending": 92,
-      "task9_pending": 12,
+      "task2b_pending": 89,
+      "task9_pending": 15,
       "task6_pending": 6
     },
     "task6_state_counts": {
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 40,
-      "reviewed": 207,
-      "pending": 5
+      "reviewed": 204,
+      "pending": 8
     },
     "task2b_state_counts": {
       "unknown": 42,
-      "fixed": 108,
-      "pending": 99,
+      "fixed": 111,
+      "pending": 96,
       "idle": 3
     },
     "last_updated": "2026-05-04"
@@ -568,19 +568,21 @@
       "last_verified": "2026-04-22",
       "last_verified_against": "AOSP android-16.0.0_r1 + developer.android.com",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-23",
+      "reviewed_date": "2026-05-04",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-04T04:33:00+08:00",
-      "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。"
+      "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。",
+      "task6_reviewed_date": "2026-05-04",
+      "last_task6_at": "2026-05-04T18:11:00+08:00"
     },
     "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md": {
       "path": "src/part1-fundamentals/ch01-architecture/17-ipc-panorama.md",
@@ -2577,23 +2579,25 @@
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 10 (API 29) - Android 17 (API 37)",
-      "last_verified": "2026-04-07",
+      "last_verified": "2026-05-04",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-20",
+      "reviewed_date": "2026-05-04",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-04T16:20:00+08:00",
       "last_task9_log": "logs/deep-review/2026-05-04-16-deep-review.md",
-      "task6_reviewed_date": "2026-05-04"
+      "task6_reviewed_date": "2026-05-04",
+      "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。",
+      "last_task6_at": "2026-05-04T18:11:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md",
@@ -2709,18 +2713,20 @@
       "last_verified": "2026-04-21",
       "last_verified_against": "arXiv 2511.23213 v2, ACM paper text, samudoria/GAPS README",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-22",
+      "reviewed_date": "2026-05-04",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T16:20:00+08:00"
+      "last_task9_at": "2026-04-27T16:20:00+08:00",
+      "task6_reviewed_date": "2026-05-04",
+      "last_task6_at": "2026-05-04T18:11:00+08:00"
     },
     "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md": {
       "path": "src/part2-performance/ch07-smoothness/15-scenario-playbooks.md",
