@@ -31,10 +31,10 @@ sources:
     path: "intake/research-feeds/2026-04-08-15-android17-audiotrack-api-assistant-volume-stream.md"
   - type: aosp
     path: "frameworks/av/services/audioflinger/Threads.cpp (android-16.0.0_r1)"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-22T23:53:44+08:00"
 task9_reviewed_date: "2026-05-04"
@@ -235,13 +235,11 @@ EXCLUSIVE 模式下，App 仍然要持续根据 timing model 校正硬件读写�
 
 ### AAudio Power Saving Offloaded 模式
 
-Android 16 引入了 AAudio Power Saving Offloaded 模式（`AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`），允许将音频解码工作完全交给 DSP 处理，AP 可以进入深度睡眠。在长时播放场景下，实测功耗可降低约 75%。
+Android 16 引入了 AAudio Power Saving Offloaded 模式（`AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED`），请求省电型 offloaded output path。NDK r29 的 `aaudio/AAudio.h` 描述该模式会走 offloaded audio path，可向 hardware buffer 写入数秒数据、让 framework data pipe 暂停并允许 CPU sleep。该模式面向长音频省电，不是低延迟 MMAP 的替代方案。两者不能同时生效。
 
-这个模式面向的不是低延迟，而是长音频省电。它和前面讲的 FAST Mixer / MMAP 低延迟路径是两条不同的 output profile：一个追求延迟最短，一个追求 CPU 唤醒最少。两者不能同时生效。
+使用这个模式有前提条件：App 需要持有具备 while-in-use（WIU）能力的前台服务，短音乐播放器如果不想维护前台服务，仍然应该走传统 PCM 路径。
 
-使用这个模式有前提条件：App 需要持有具备 while-in-use（WIU）能力的前台服务，否则系统不会把 offload endpoint 分配给后台 App。这意味着短音乐播放器如果不想维护前台服务，仍然应该走传统 PCM 路径。
-
-[待验证: 最终 API 入口、最小 API level、支持的音频格式范围需结合 Android 16/17 API diff 与实机确认]
+[待验证：最终 API 入口、最小 API level、支持格式矩阵、设备覆盖范围需结合 Android 16/17 API diff 与实机确认。"解码完全交给 DSP"、"功耗降低 75%" 等量化结论需要补 AOSP 版本提交或独立功耗测试条件后方可写入正文。]
 
 ### Oboe：Google 推荐的跨版本封装
 
@@ -457,8 +455,8 @@ Audio Pipeline 与全书其他章节的关联点：
 1. **使用 Oboe 库**，而非直接调用 AAudio 或 OpenSL ES。Oboe 会自动选择最优路径。
 2. **设置 `PerformanceMode::LowLatency`**，同时设置 `SharingMode::Exclusive`（如果不需要混音）。
 3. **匹配设备原生采样率**。预判时可读取 `AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE`，打开流后再用 `AAudioStream_getSampleRate()` 或 Oboe 的 `stream->getSampleRate()` 读取实际采样率。不匹配的采样率会导致无法进入 FAST Mixer。
-4. **使用回调模式**（`setCallback`）而非阻塞写入。回调模式由 AudioFlinger 在需要数据时主动拉取，减少了 App 侧的调度延迟。
-5. **避免在音频回调中做重计算**。音频回调运行在 AudioFlinger 的高优先级线程上，任何阻塞操作（如内存分配、文件 I/O、锁等待）都会直接影响延迟。预分配所有需要的缓冲区，使用无锁数据结构。
+4. **使用回调模式**（`setCallback`）而非阻塞写入。AAudio/Oboe 的 data callback 运行在应用进程侧的高优先级音频线程中，系统会通过共享内存、timing model 与唤醒机制消费数据。相比 App 侧主动 `write()` 阻塞等待，callback 模式减少了调度延迟带来的不确定性。
+5. **避免在音频回调中做重计算**。音频 callback 运行在应用进程的高优先级音频线程中，必须避免锁等待、内存分配、文件 I/O 和重计算。任何阻塞操作都会直接影响该帧的音频数据交付，造成 underrun。预分配所有需要的缓冲区，使用无锁数据结构。
 6. **监控 underrun**。调用 `AAudioStream_getXRunCount()` 持续监控。如果 underrun 持续增加，说明缓冲区太小或 App 侧处理太慢——适当增大缓冲区是更务实的做法。
 
 [适用版本: Android 8.0+，Oboe 要求 minSdk 16+]

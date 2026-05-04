@@ -9992,6 +9992,18 @@
           ]
         }
       ]
+    },
+    {
+      "date": "2026-05-04",
+      "sections": [
+        "7.9",
+        "1.16"
+      ],
+      "source": "task2b-rework",
+      "details": [
+        "7.9: P0 RelativeFrameTimeHistogram精度修正; P1 ARR机制链收窄",
+        "1.16: P0 Audio callback线程模型纠正; P1 AAudio Offloaded模式收窄"
+      ]
     }
   ],
   "rework_log": [

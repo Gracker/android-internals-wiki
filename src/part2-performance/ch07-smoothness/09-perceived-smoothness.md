@@ -16,7 +16,7 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-rework_count: 1
+rework_count: 2
 rework_date: "2026-05-04"
 rework_by: "task2b-rework"
 sources:
@@ -44,11 +44,11 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task2b_pending
-task6_state: "reviewed"
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
@@ -253,7 +253,7 @@ Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFr
 
 这组 API 更适合 library / widget instrumentation，例如列表、播放器控件或复杂动画组件把自己的局部抖动统计上报给系统。它能补齐“哪个 widget 在什么状态下更容易抖”的视角，但不能替代 Perfetto 对整个显示栈的被动追踪。
 
-**精度限制**：`RelativeFrameTimeHistogram` 的 API 显式暴露的精度为 1ms。在 120Hz 设备上，一帧只有 8.33ms，1ms 统计误差意味着该工具会漏掉所有小于 12% 的步幅波动。对于步幅敏感场景（如列表 fling 滚动、跟手动画），官方统计 API 无法替代应用侧纳秒级位移采样，仅适用于粗粒度性能画像。如果需要检测细粒度步幅波动，仍应回到路径一的应用侧采样方案。
+**精度限制**：`RelativeFrameTimeHistogram` 使用预定义毫秒桶（bucket），不是 1ms 精度的连续采样。-20ms 到 20ms 区间内为 2ms 桶，外侧依次为 5ms、10ms、50ms、100ms 等更粗粒度。输入 `addRelativeFrameTimeMillis(int)` 虽然接受整数毫秒，但输出统计落到对应桶内。同时，该 histogram 记录的是帧时间相对 deadline 的偏差，不包含位移、`scrollY` 或动画值信息，因此不能直接判断步幅波动的大小。对于步幅敏感场景（如列表 fling 滚动、跟手动画），官方统计 API 适合粗粒度的 widget 级帧时间分布画像，不能替代应用侧纳秒级时间 + 位移采样。如果需要检测细粒度步幅波动，仍应回到路径一的应用侧采样方案。
 
 ### 根因分型：不要把所有“无掉帧卡顿”都归到 OverScroller
 
@@ -265,14 +265,14 @@ Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFr
 
 ## 优化策略
 
-### ARR 动态刷新率对步幅波动的放大
+### ARR 动态刷新率对步幅波动的可能影响
 
-Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态切换刷新率（如 60→90→120Hz）。在切换瞬间，VSync 周期发生变化，但 `AnimationUtils.currentAnimationTimeMillis()` 的毫秒取整误差仍以旧周期为基础。这会产生两类叠加误差：
+Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态切换刷新率（如 60→90→120Hz）。切换瞬间 VSync 周期变化，动画时间模型和样条进度同步换档。由于 `Choreographer` 每帧基于当前 `frameTimeNanos / NANOS_PER_MS` 重新计算动画时钟（见成因三），毫秒截断误差本身不会“继承旧周期”累加。但在 ARR 切换边界上有两类潜在扰动值得观察：
 
-1. **周期跳变点**：从 60Hz（16.67ms）切到 120Hz（8.33ms）时，ms 取整从 16/17 跳到 8/9，相邻帧的位移差突变
-2. **非整数周期**：在 90Hz（11.11ms）等非整数毫秒周期下，取整误差与周期漂移叠加，产生肉眼可见的瞬时“阶跃感”
+1. **VSync 周期跳变点**：从 60Hz（16.67ms）切到 120Hz（8.33ms）时，每帧的毫秒截断模式从 16/17 交替变为 8/9 交替，如果动画曲线正在高速段，样条进度的步长会发生一次突变
+2. **非整数周期**：90Hz（11.11ms）等周期下，毫秒截断落在 11/12 交替，与 60Hz 的 16/17 或 120Hz 的 8/9 有不同的误差分布模式
 
-在 ARR 切换频率高的场景（如列表先快速 fling 再减速，触发 120→90→60 的连续降频），这些瞬时阶跃会密集出现。在 Perfetto 中可以通过关联 `queueBuffer` 的 vsyncId 与 `Display mode` track 来定位切换点，确认步幅波动是否集中在频率切换附近。
+这些扰动是否构成肉眼可见的阶跃感，目前缺少 AOSP 机制或 Perfetto + 位移采样证据。[待验证：需要一组 trace，将 Display mode track / vsyncId / App 侧 displacement sample 三者对齐，确认步幅波动是否集中在 ARR 切换窗口。]
 
 ### 策略一：App 侧动画使用同一套 VSync 时间基准
 

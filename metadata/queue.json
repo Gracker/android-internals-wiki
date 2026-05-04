@@ -11386,7 +11386,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T04:33:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T17:55:45.035319",
+      "completed_reason": "P0 Audio callback线程模型已纠正(应用进程侧高优先级线程,非AudioFlinger线程); P1 AAudio Offloaded模式已收窄(NDK r29描述,移除DSP/75%量化断言)"
     },
     {
       "section": "9.3",
@@ -11608,7 +11610,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T16:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T17:55:45.035319",
+      "completed_reason": "P0 RelativeFrameTimeHistogram精度已修正(预定义毫秒桶+不含位移信息); P1 ARR放大机制链已收窄为待验证假设(Choreographer每帧重新计算动画时钟)"
     },
     {
       "section": "9.1",
