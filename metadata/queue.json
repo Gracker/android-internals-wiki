@@ -9251,7 +9251,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T21:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T15:49:35",
+      "completed_reason": "Binder fd默认监控错误已修正；ADPF核心迁移描述已纠正为频率决策非核心迁移；MQ.Delivered非DeliQueue独有签名已修正"
     },
     {
       "section": "18.11",
@@ -11242,7 +11244,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T22:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T15:49:35",
+      "completed_reason": "finishReceiver线程模型已修正(主线程同步Binder非异步)；ContentProvider超时常量位置已纠正(ActivityManager.java)；ApplicationExitInfo API已修正(getTraceInputStream API 33+)"
     },
     {
       "section": "2.1",

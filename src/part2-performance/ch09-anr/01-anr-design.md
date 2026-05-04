@@ -29,11 +29,11 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. No banned words, no AI fillers, format consistent. 2 pending queue entries block auto-promotion."
 
@@ -139,12 +139,12 @@ scheduleBroadcastsDispatchAndCheckTimeout(r, BROADCAST_FG_TIMEOUT);
 
 不同组件向 system_server 报告"操作已完成"的机制各不相同：
 
-- **BroadcastReceiver**：`onReceive()` 执行完毕后，应用通过 `IApplicationThread.finishReceiver()` 向 AMS 发送完成通知（运行在 Binder 线程上，与主线程异步）
-- **Service**：`onStartCommand()` 或 `onCreate()` 执行完毕后，`ActivityThread.handleServiceArgs()` 通过 Binder 回调通知 AMS
+- **BroadcastReceiver**：`onReceive()` 执行完毕后，`ActivityThread.handleReceiver()` 在主线程上直接调用 `IActivityManager.finishReceiver()` 通知 AMS——这是主线程上的同步 Binder 调用，不是异步 Binder 线程调用
+- **Service**：`onStartCommand()` 或 `onCreate()` 执行完毕后，`ActivityThread.handleServiceArgs()` 在主线程上通过 Binder 回调通知 AMS
 - **Input 事件**：应用通过 `InputConsumer.finishInputEvent()` 告知 InputDispatcher 事件已消费
 - **ContentProvider**：发布完成后通过 `IActivityManager.publishContentProviders()` 回调 AMS
 
-这些完成通知都运行在 Binder 线程上，与组件自身的执行（运行在主线程）是异步的。也就是说，主线程在执行 `onReceive()` 的过程中不需要同步等待 AMS 确认——AMS 的超时计时器在后台独立运行，只要 Binder 回调到达就会取消计时。
+BroadcastReceiver 和 Service 的完成通知都在主线程上发起，与组件的执行同属一个线程。主线程不需要额外等待 AMS 确认——AMS 的超时计时器在 system_server 的后台线程独立运行，Binder 调用发出即视为完成。
 
 超时检测和应用执行是异步关系。超时计时器运行在 system_server 的后台线程上，它不会检查应用主线程"在做什么"，只检查"结果有没有回来"。如果超时检测同步调用应用，应用自身的问题可能连检测机制一起拖死。
 
@@ -211,7 +211,7 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 
 **ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`，定义在 `ActivityManagerService.java` 中），与 Service/Activity ANR 一样是系统级强制约束。`getProviderMimeType()` 调用有独立的 1 秒超时（API 31+，可通过 `getProviderMimeTypeAsync()` 异步处理），但这个 1 秒超时仅适用于 MIME 类型查询，不是通用的 ContentProvider ANR 阈值。
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT = 10 * 1000]
+[已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT = 10 * 1000]
 
 
 **startForeground() 宽限期**：这条规则约束的是 `Context.startForegroundService()` 之后多久必须调用 `Service.startForeground()`。版本边界要分开记：Android 8.0 是 5 秒；Android 9-12 是 10 秒；Android 13/14/15 的默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`，运行时字段是 `mServiceStartForegroundTimeoutMs`，设备也可通过 DeviceConfig 覆盖。Android 12 的主要变化是超时后常见 `ForegroundServiceDidNotStartInTimeException`；5 秒只对应 Android 8.0 的初始宽限期。
@@ -358,7 +358,7 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 - **线程持有的锁信息**：如 `- locked <0x12345678>`，标明哪个线程持有哪些锁
 - **CPU 使用统计**：ANR 发生前一段时间的 CPU 负载信息
 
-在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ApplicationExitInfo`** API（`Process.getErrorStateMemoryRegion()` 或 `ActivityManager.getHistoricalProcessExitReasons()`）程序化读取 ANR 堆栈。`adb pull /data/anr/` 在 Android 13 及以下仍然有效。
+在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ActivityManager.getHistoricalProcessExitReasons()`** 获取 `ApplicationExitInfo` 列表，再调用 **`ApplicationExitInfo.getTraceInputStream()`**（API 33+）程序化读取 ANR 堆栈。`adb pull /data/anr/` 在 Android 13 及以下仍然有效。
 
 **traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时导致超时的代码可能已经执行完毕。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程处于空闲状态——问题出在更早的消息处理中。
 
