@@ -8,7 +8,7 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-04"
 last_verified_against: "AOSP android-17-beta3"
-reviewed_date: "2026-05-03"
+reviewed_date: "2026-05-04"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 confidence: medium
@@ -41,13 +41,13 @@ tags:
   - overScroller
   - research
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-04
+task9_reviewed_date: "2026-05-04"
 last_task9_at: "2026-05-04T12:41:40+08:00"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；P1 0；源码/API/数据口径需回炉，已写入 queue.json。"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；输入重采样属性名错误，120Hz ms 取整表格数学不一致。"
@@ -264,7 +264,7 @@ Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFr
 
 ### ARR 动态刷新率对步幅波动的放大
 
-Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态切换刷新率（如 60→90→120Hz）。在切换瞬问，VSync 周期发生变化，但 `AnimationUtils.currentAnimationTimeMillis()` 的毫秒取整误差仍以旧周期为基础。这会产生两类叠加误差：
+Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态切换刷新率（如 60→90→120Hz）。在切换瞬间，VSync 周期发生变化，但 `AnimationUtils.currentAnimationTimeMillis()` 的毫秒取整误差仍以旧周期为基础。这会产生两类叠加误差：
 
 1. **周期跳变点**：从 60Hz（16.67ms）切到 120Hz（8.33ms）时，ms 取整从 16/17 跳到 8/9，相邻帧的位移差突变
 2. **非整数周期**：在 90Hz（11.11ms）等非整数毫秒周期下，取整误差与周期漂移叠加，产生肉眼可见的瞬时“阶跃感”

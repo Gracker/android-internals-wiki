@@ -49,8 +49,8 @@
     },
     "task6_state_counts": {
       "unknown": 34,
-      "reviewed": 199,
-      "revisiting": 16,
+      "reviewed": 201,
+      "revisiting": 14,
       "revising": 1,
       "done": 2
     },
@@ -8540,7 +8540,7 @@
       }
     }
   },
-  "last_updated": "2026-05-04T12:41:40+08:00",
+  "last_updated": "2026-05-04T13:09:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10652,7 +10652,8 @@
     "task9_result": "needs-rework",
     "last_task9_at": "2026-05-04T12:41:40+08:00",
     "pipeline_stage": "task2b_pending",
-    "task2b_state": "pending"
+    "task2b_state": "pending",
+    "task6_reviewed_date": "2026-05-04"
   },
   "1.17": {
     "task6_review": "2026-05-04",
@@ -10737,5 +10738,14 @@
         "2.12"
       ]
     }
+  },
+  "2026-05-04-13-task6": {
+    "type": "task6-review",
+    "date": "2026-05-04T13:09:00+08:00",
+    "sections_reviewed": [
+      "7.9",
+      "10.7"
+    ],
+    "notes": "Revisiting chapters re-reviewed. Light edits only (typo fix, frontmatter update). Both chapters pending Task 9 rework."
   }
 }
