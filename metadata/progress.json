@@ -966,7 +966,7 @@
       "title": "Window Manager Service 与窗口管理",
       "chapter": "2.12",
       "section": "2.12",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-05",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 17 (API 37)",
@@ -1093,18 +1093,18 @@
       "created_by": "task2a-knowledge-gap",
       "created_date": "2026-04-04",
       "gap_source": "AOSP结构+官方文档+读者需求",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
       "reviewed_by": "openclaw-task6",
       "reviewed_date": "2026-04-27",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-04",
-      "last_task9_at": "2026-05-04T08:42:32+08:00",
+      "last_task9_at": "2026-05-04T12:41:40+08:00",
       "last_task2b_at": "2026-04-27T02:40:00+08:00",
       "review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。",
       "review_log": "logs/review/2026-04-11-11-review.md",
@@ -2588,9 +2588,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-03",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-03T13:11:19+08:00",
+      "last_task9_at": "2026-05-04T12:41:40+08:00",
       "last_task9_log": "logs/deep-review/2026-05-03-13-deep-review.md"
     },
     "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
@@ -3381,25 +3381,25 @@
       "title": "SQLite/Room 数据库性能优化",
       "chapter": "10.7",
       "section": "10.7",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-06",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-06",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "fixed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-20",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-21",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-21T12:29:00+08:00"
+      "last_task9_at": "2026-05-04T12:41:40+08:00"
     },
     "src/part2-performance/ch10-memory-perf/README.md": {
       "path": "src/part2-performance/ch10-memory-perf/README.md"
@@ -8540,7 +8540,7 @@
       }
     }
   },
-  "last_updated": "2026-05-04",
+  "last_updated": "2026-05-04T12:41:40+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10647,7 +10647,12 @@
   "10.7": {
     "task6_review": "2026-05-04",
     "task6_result": "pass-light-edit",
-    "task6_state": "reviewed"
+    "task6_state": "reviewed",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-04T12:41:40+08:00",
+    "pipeline_stage": "task2b_pending",
+    "task2b_state": "pending"
   },
   "1.17": {
     "task6_review": "2026-05-04",
@@ -10687,5 +10692,50 @@
       "19.08 ArgusAPM"
     ],
     "log": "logs/deep-review/2026-05-04-08-deep-review.md"
+  },
+  "2026-05-04-12-task9": {
+    "timestamp": "2026-05-04T12:41:40+08:00",
+    "sections": [
+      {
+        "section": "2.12",
+        "title": "Window Manager Service 与窗口管理",
+        "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 2,
+        "auto_finalized": true
+      },
+      {
+        "section": "7.9",
+        "title": "感知流畅性：步幅波动与无掉帧卡顿",
+        "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 1,
+        "p2": 1,
+        "auto_finalized": false
+      },
+      {
+        "section": "10.7",
+        "title": "SQLite/Room 数据库性能优化",
+        "path": "src/part2-performance/ch10-memory-perf/07-sqlite-room-performance.md",
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 1,
+        "auto_finalized": false
+      }
+    ],
+    "summary": {
+      "p0": 1,
+      "p1": 2,
+      "p2": 4,
+      "queue_added": 2,
+      "suggestions_added": 3,
+      "auto_finalized": [
+        "2.12"
+      ]
+    }
   }
 }

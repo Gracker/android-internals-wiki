@@ -11496,6 +11496,54 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T08:42:32+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.9",
+      "section_title": "感知流畅性：步幅波动与无掉帧卡顿",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.9 输入重采样属性名错误与 120Hz ms 取整证据表不一致，需 Task2B 回炉",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L342 AIW-源码调研块 ro.input.noresample",
+          "detail": "正文写 `ro.input.noresample=1` 可禁用重采样；AOSP main `frameworks/native/libs/input/InputConsumer.cpp` 实际定义 `PROPERTY_RESAMPLING_ENABLED = \"ro.input.resampling\"`，注释说明 `1` 启用、`0` 禁用。当前命令/属性名会误导读者。",
+          "suggestion": "改为 `ro.input.resampling=0` 禁用、`1` 启用，并标注验证版本；如需覆盖旧版本，单独说明旧属性名是否存在。"
+        },
+        {
+          "type": "数据/原理不一致",
+          "location": "L135-L142 120Hz ms 取整表格",
+          "detail": "表格从 0ns 开始按 8,333,333ns 递增，却把 16,666,666ns 写成 17ms、24,999,999ns 写成 25ms、41,666,665ns 写成 42ms；这与正文后面说明的 long 整数除法向下截断矛盾。",
+          "suggestion": "要么给 VSync 时间加入非零起始偏移，使 floor division 结果与 8/9ms 交替相符；要么把实际 ms 列修成 0/8/16/24/33/41 并同步修改帧间时间和偏差。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T12:41:40+08:00",
+      "status": "pending",
+      "completed_at": null
+    },
+    {
+      "section": "10.7",
+      "section_title": "SQLite/Room 数据库性能优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 10.7 批量事务 fsync 与 Room transaction executor 口径过度简化，需 Task2B 回炉",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L236-L246 批量插入事务示例；L428 单线程串行写入",
+          "detail": "正文把无事务批量插入写成“1000 次 fsync”，并说 Room `withTransaction` 内部就是单线程串行写入模式。AOSP 默认 WAL sync mode 为 `NORMAL`（`config.xml db_wal_sync_mode`），提交不等同每次都 fsync；Room 2.8.4 `withTransaction` 是从 `transactionExecutor` 取一个线程运行 transaction coroutine，默认 executor 可与 query executor 共用，并不等同固定单线程写队列。",
+          "suggestion": "把结论改成“1000 次独立事务会产生 1000 次锁获取、journal/WAL 提交和可能的同步/检查点成本”；单独说明 WAL `FULL`/`NORMAL` 差异。Room 部分改为“使用 transaction executor 执行并由 SQLite/连接池保证单写者约束”，不要写成固定专用单线程。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T12:41:40+08:00",
+      "status": "pending",
+      "completed_at": null
     }
   ],
   "completed": [
