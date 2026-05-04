@@ -1,9 +1,8 @@
 ---
-
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -44,19 +43,20 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
-last_task9_at: "2026-05-04T16:20:00+08:00"
+last_task9_at: "2026-05-04T19:36:00+08:00"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；P1 0；源码/API/数据口径需回炉，已写入 queue.json。"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。"
+task9_review_notes: "2026-05-04 19:36 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 lockAnimationClock 版本签名边界已在 suggestions.md 记录。"
 review_type: "task6-writing-quality-review"
 ---
+
 
 
 

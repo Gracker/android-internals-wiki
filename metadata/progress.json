@@ -1,69 +1,61 @@
 {
-  "generated_at": "2026-05-04T19:15:00+08:00",
+  "generated_at": "2026-05-04T19:36:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
-    "total_sections": 252,
-    "last_updated": "2026-05-04T19:15:00+08:00",
+    "total_sections": 204,
+    "last_updated": "2026-05-04T19:36:00+08:00",
     "pipeline_stage_counts": {
-      "unknown": 34,
-      "ready-to-publish": 107,
-      "task2b_pending": 91,
-      "task9_pending": 14,
-      "task6_pending": 6
+      "ready-to-publish": 111,
+      "task2b_pending": 73,
+      "task6_pending": 16,
+      "unknown": 1,
+      "task9_pending": 3
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 200,
-      "revisiting": 16,
-      "revising": 1,
-      "done": 2
+      "reviewed": 197,
+      "revisiting": 5,
+      "unknown": 2
     },
     "task9_state_counts": {
-      "unknown": 39,
-      "reviewed": 206,
-      "pending": 7
+      "reviewed": 202,
+      "unknown": 2
     },
     "task2b_state_counts": {
-      "unknown": 41,
-      "fixed": 110,
-      "pending": 98,
-      "idle": 3
+      "fixed": 123,
+      "pending": 77,
+      "unknown": 4
     },
-    "finalized": 109,
-    "ready-for-review": 111,
-    "unknown": 32,
+    "finalized": 112,
+    "ready-for-review": 91,
+    "unknown": 1,
     "status_counts": {
-      "unknown": 32,
-      "finalized": 109,
-      "ready-for-review": 111
+      "finalized": 112,
+      "ready-for-review": 91,
+      "unknown": 1
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 34,
-      "ready-to-publish": 107,
-      "task2b_pending": 91,
-      "task9_pending": 14,
-      "task6_pending": 6
+      "ready-to-publish": 111,
+      "task2b_pending": 73,
+      "task6_pending": 16,
+      "unknown": 1,
+      "task9_pending": 3
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 200,
-      "revisiting": 16,
-      "revising": 1,
-      "done": 2
+      "reviewed": 197,
+      "revisiting": 5,
+      "unknown": 2
     },
     "task9_state_counts": {
-      "unknown": 39,
-      "reviewed": 206,
-      "pending": 7
+      "reviewed": 202,
+      "unknown": 2
     },
     "task2b_state_counts": {
-      "unknown": 41,
-      "fixed": 110,
-      "pending": 98,
-      "idle": 3
+      "fixed": 123,
+      "pending": 77,
+      "unknown": 4
     },
     "last_updated": "2026-05-04"
   },
@@ -8612,7 +8604,7 @@
       }
     }
   },
-  "last_updated": "2026-05-04T19:15:00+08:00",
+  "last_updated": "2026-05-04T19:36:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10949,5 +10941,82 @@
       "16.4"
     ],
     "notes": "Revisiting chapters reviewed. Light edits only. No new Task6 queue item; 4.1 retains existing Task9 pending queue, 16.4 moves to Task9 pending."
+  },
+  "2026-05-04-19-task9": {
+    "task": "task9-deep-tech-review",
+    "sections": [
+      "1.16",
+      "7.9",
+      "16.4"
+    ],
+    "files": [
+      "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+      "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md"
+    ],
+    "timestamp": "2026-05-04T19:36:00+08:00",
+    "results": {
+      "1.16": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 0,
+        "auto_finalized": true
+      },
+      "7.9": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 1,
+        "auto_finalized": true,
+        "p2_note": "既有 suggestions 已记录，未重复追加"
+      },
+      "16.4": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 0,
+        "p2": 1,
+        "auto_finalized": false,
+        "p2_note": "既有 suggestions 已记录，未重复追加"
+      }
+    },
+    "auto_finalized": [
+      "1.16",
+      "7.9"
+    ],
+    "queue_added": [
+      "16.4"
+    ],
+    "suggestions_added": [],
+    "research_gaps_added": [],
+    "log": "logs/deep-review/2026-05-04-19-deep-review.md"
+  },
+  "1.16": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task9_at": "2026-05-04T19:36:00+08:00",
+    "file": "src/part1-fundamentals/ch01-architecture/16-audio-pipeline-performance.md",
+    "title": "Audio Pipeline 延迟与性能"
+  },
+  "7.9": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "last_task9_at": "2026-05-04T19:36:00+08:00",
+    "file": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+    "title": "感知流畅性：步幅波动与无掉帧卡顿"
+  },
+  "16.4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-04T19:36:00+08:00",
+    "file": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+    "title": "Android 17 + Kernel 6.12 系统级性能优化",
+    "task2b_state": "pending"
   }
 }
