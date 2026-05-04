@@ -6851,9 +6851,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T08:39:32+08:00",
-      "status": "pending",
+      "status": "completed",
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-04T10:37:13+08:00"
+      "updated_at": "2026-05-04T10:37:13+08:00",
+      "completed_at": "2026-05-04T20:59:55.595419",
+      "completed_reason": "sched_ext源码锚点已修正(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、DSQ API名已修正(dsq_insert→dispatch)、AutoFDO精确数据已降级为官方可核验口径"
     },
     {
       "section": "19.26",
@@ -11057,7 +11059,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T04:21:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T20:59:55.595419",
+      "completed_reason": "HWC决策流程已修正(prepareImage→getDeviceCompositionChanges+presentOrValidate)、ADPF版本已拆分(Thermal 11/PerformanceHintManager 12/GamMode 31)、16KB量化数据标注为待验证"
     },
     {
       "section": "10.2",

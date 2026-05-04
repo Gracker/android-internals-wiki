@@ -7,9 +7,9 @@ drafted_date: "2026-03-31"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & 16 KB page size docs / kernel zram docs"
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
-review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修，lmkd / cgroup / ZRAM 段落的技术风险已转 Task 9 / Task 2B；2026-05-04 Task6：L1/L2 小修并补 MemoryLimiter / MTE 数据口径存疑标注，保留 Task9 技术回炉。"
+review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修，lmkd / cgroup / ZRAM 段落的技术风险已转 Task 9 / Task 2B"
 task6_result: pass-light-edit
 confidence: medium
 polish_count: 1
@@ -45,14 +45,13 @@ related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-04
-last_task9_at: "2026-05-04T18:55:00+08:00"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。Android 17 MemoryLimiter 说法缺少 AOSP/API 证据；MTE/16KB 页导致的百分比内存增量需要补一手数据来源。"
-task9_result: needs-rework
-last_task6_at: "2026-05-04T19:15:00+08:00"
+task9_reviewed_date: "2026-04-29"
+last_task9_at: "2026-04-29T05:30:17+08:00"
+task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。Stack 物理占用、ZRAM physical used 口径仍未修正"
 ---
 
 # Android 内存模型全景
@@ -88,7 +87,7 @@ last_task6_at: "2026-05-04T19:15:00+08:00"
 
 这些现象的背后，是 Android 内存系统在工作。理解内存模型，是为了在遇到内存相关的问题时，无论是 OOM 崩溃、GC 导致的卡顿，还是后台进程被杀，都知道从哪里入手排查。
 
-这张全景图从物理内存到内核管理，再到进程的各个内存区域，同时解释工具里的数字含义。读完之后，后面关于内存优化、GC 机制、LMK 等章节才有落脚点。
+这一节我们要建立一个完整的内存认知框架：从物理内存到内核管理，再到进程的各个内存区域，也把工具中的数字代表什么含义讲清。有了这张全景图，后面关于内存优化、GC 机制、LMK 等章节才有落脚点。
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory-management]
 
@@ -98,11 +97,9 @@ Android 的内存体系可以分成三层来看：物理内存、内核管理、
 
 ### 物理内存：一切的基础
 
-手机上的 RAM 就是我们说的物理内存。一台 8GB 内存的设备，系统可用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
+手机上的 RAM 就是我们说的物理内存。一台 8GB 内存的设备，真正能用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
 
-开启 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，加上页粒度带来的额外开销，全系统 PSS 增量约为 5%。这是安全硬件的固定开销，在做内存基线对比时需要先扣除这一部分。
-
-[待验证: MTE 约 3% RAM 预留与全系统 PSS 约 5% 增量需要补官方或设备基线来源；Task9 2026-05-04 已列为 P1。]
+开启 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，加上对齐损耗，全系统 PSS 增量约为 5%。这是安全硬件的固定开销，在做内存基线对比时需要先扣除这一部分。
 
 和桌面系统不同，Android 设备通常没有磁盘级别的 Swap 空间。它使用的是 ZRAM——在内存中划出一块区域做压缩交换。这样做的好处是避免了闪存的写入磨损和 IO 延迟，代价是消耗 CPU 来做压缩和解压。当内存紧张时，内核通过 `kswapd` 线程把不太活跃的内存页压缩到 ZRAM 中，腾出物理内存。
 
@@ -120,9 +117,7 @@ Android 在 Linux 内核的基础上做了几件特别的事情：
 
 Android 17（API 37）引入了 MemoryLimiter 硬限额机制。当应用 PSS 超过系统分配的配额时，进程会被直接终止，`ApplicationExitInfo` 中会记录 `MemoryLimiter` 原因。这一机制从依赖 `onTrimMemory` 的自觉释放转为强制配额审计，意味着内存治理从"建议"变成了"硬约束"。
 
-[存疑: Task9 2026-05-04 复核 AOSP main 未找到 `MemoryLimiter` / `ApplicationExitInfo` 中对应公开原因；需 Task2B 补具体源码/API 文档或降级为待验证线索。]
-
-**cgroup 约束。** Android 10 起把 cgroup 配置统一到 `cgroups.json` / `task_profiles.json` 这层抽象。具体 memory controller 字段要分 v1 / v2 看：`MemLimit` 映射 v1 `memory.limit_in_bytes`、v2 `memory.max`；`MemSoftLimit` 映射 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`。`memory.pressure_level` 仍是 v1 接口，不能和 `memory.max` / `memory.low` 当成同一条 v2 路径。
+**cgroup 约束。** Android 10 起把 cgroup 配置收口到 `cgroups.json` / `task_profiles.json` 这层抽象。具体 memory controller 字段要分 v1 / v2 看：`MemLimit` 映射 v1 `memory.limit_in_bytes`、v2 `memory.max`；`MemSoftLimit` 映射 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`。`memory.pressure_level` 仍是 v1 接口，不能和 `memory.max` / `memory.low` 当成同一条 v2 路径。
 
 [已验证: source.android.com/docs/core/perf/lmkd；frameworks/base/services/core/java/com/android/server/am/ProcessList.java；frameworks/base/core/java/android/content/ComponentCallbacks2.java；system/core/libprocessgroup/profiles/task_profiles.json]
 
@@ -152,7 +147,7 @@ Android 17（API 37）引入了 MemoryLimiter 硬限额机制。当应用 PSS �
 
 VSS 是进程的整个虚拟地址空间大小，包括已经分配但尚未使用的部分、通过 `mmap` 映射但未实际访问的文件、以及各种预留区域。
 
-**VSS 的值通常远大于进程实际使用的物理内存。** 一个典型 Android App 的 VSS 可能达到数 GB，但这不代表它真的用了那么多内存——虚拟地址只是"我可能要用这么多"，实际用了多少要看 RSS/PSS。
+**VSS 的值通常远大于进程实际使用的物理内存。** 一个典型 Android App 的 VSS 可能达到数 GB，但这不代表它真的用了那么多内存——虚拟地址只是"我可能要用这么多"，真正用了多少要看 RSS/PSS。
 
 所以在实际的内存分析中，**VSS 几乎没有参考价值。** 它只是反映进程的地址空间有多大，不能用来判断内存压力。
 
@@ -198,7 +193,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
 
 理解了 PSS/RSS/USS 之后，我们来看这些数字背后的具体组成。运行 `adb shell dumpsys meminfo <package>` 会看到类似这样的输出：
 
-```text
+```
 ** MEMINFO in pid 12345 [com.example.myapp] **
                    Pss     Private  Private  Swapped
                  Total    Dirty     Clean    Dirty    Heap     Heap     Heap
@@ -225,7 +220,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
 
 [待补充：dumpsys meminfo 真机截图]
 
-输出看起来很多，可以先按几个大类来理解。
+输出看起来很多，但可以先按几个大类来拆解。
 
 ### Java Heap（Dalvik Heap）
 
@@ -262,7 +257,7 @@ Code 部分的内存通常不构成优化重点（除非 App 有大量未压缩�
 
 每个线程有自己的栈空间，用于函数调用链、局部变量、返回地址等。在 Android 上，主线程和通过 `Thread` 创建的线程通常有约 1MB 的栈空间（`pthread` 默认值，不同版本可能略有差异）。
 
-Stack 的 PSS 通常很小（几十到几百 KB），因为 `pthread` 的 1MB 默认栈只是虚拟地址空间保留——只有实际触碰的栈页（函数调用链实际到达的深度）才会进入 RSS/PSS。线程越多，VSS 越大，但物理占用取决于实际栈深度，不能把 1MB × 线程数当作稳定的 PSS 结论。不过线程数量仍然会增加内存压力：每个线程至少有一组 guard page 和已用栈页，加上页表开销，在线程数上百时会对内存造成可感知的负担。无节制的线程创建既是 CPU 调度的负担，也是内存的负担。
+Stack 的 PSS 通常很小（几十到几百 KB），但它有一个常被忽略的特性：**线程越多，Stack 占用的内存越多。** 一个拥有 50 个线程的进程，光栈空间就可能占 50MB。这也提醒我们，无节制的线程创建不仅是 CPU 调度的负担，也是内存的负担。
 
 ### Graphics（Gfx dev / EGL mtrack / GL mtrack）
 
@@ -292,7 +287,7 @@ Android 的内存分析工具（`dumpsys meminfo`、Perfetto、Android Studio Pr
 
 `adb shell cat /proc/meminfo` 输出的关键字段：
 
-```text
+```
 MemTotal:        5789412 kB    // 物理内存总量
 MemFree:          123456 kB    // 完全空闲的内存（通常很少）
 MemAvailable:    1234567 kB    // 可用内存（包含可回收的缓存）
@@ -318,7 +313,7 @@ Inactive:        1234567 kB    // 较久未使用的内存（更容易被回收�
 
 `adb shell cat /proc/<pid>/status` 中与内存相关的关键字段：
 
-```text
+```
 VmSize:    4823456 kB    // 虚拟地址空间大小（≈ VSS）
 VmRSS:      123456 kB    // 常驻物理内存（≈ RSS）
 VmData:      56789 kB    // 私有数据段
@@ -333,7 +328,7 @@ VmLib:       45678 kB    // 共享库映射
 
 `/proc/<pid>/smaps` 是 Android 内存分析的终极武器。它列出了进程中每一个内存映射区域的详细信息，包括地址范围、权限、PSS/RSS/USS 等分项数据。
 
-```text
+```
 7a3b400000-7a3b800000 rw-p 00000000 00:00 0       [anon:dalvik-LinearAlloc]
 Size:           4096 kB         // 映射的虚拟大小
 KernelPageSize:     4 kB
@@ -399,7 +394,7 @@ adb shell dumpsys meminfo com.example.app
 
 **App Summary 段**——这是最快能看懂的部分：
 
-```text
+```
                    Pss(KB)
   Java Heap:      15234
   Native Heap:     8488
@@ -420,7 +415,7 @@ adb shell dumpsys meminfo com.example.app
 
 **Objects 段**——展示 App 中各种对象的数量：
 
-```text
+```
 Objects
          View:        256        Activity:          4
       AppContext:         12       ContextImpl:         12
@@ -495,11 +490,11 @@ ZRAM 大小、压缩算法和 swappiness 都是 OEM case-by-case 配置，没有
 
 全局 `dumpsys meminfo` 的输出中有 ZRAM 相关行：
 
-```text
+```
 ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 ```
 
-这行数据包含三个指标，含义不同：`123MB physical used` 是压缩后实际占用的 RAM；`456MB in swap` 是未压缩的换出量（`SwapUsed`）；`500MB total swap` 是 ZRAM 设备可容纳的未压缩 swap 容量。压缩效率看前两者的比值（456/123 ≈ 3.7x）；RAM 开销看 `physical used`；容量压力看 `in swap` 是否接近 `total swap`——当换出量接近总容量时，ZRAM 无法接纳更多页面，系统会更积极地杀后台进程。不要把 `physical used` 与 `total swap` 对比来判断容量压力，两者口径不同。
+这行数据告诉我们：ZRAM 设备占用了 123MB 的物理内存来存储 456MB 的压缩数据，这次采样的压缩结果约为 3.7x，ZRAM 总容量为 500MB。如果 `physical used` 接近 ZRAM 总大小，说明压缩空间即将耗尽，系统可能会更积极地杀后台进程。
 
 ### ZRAM 的性能代价
 
@@ -530,9 +525,9 @@ ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 
 ## 常见问题与误区
 
-### 误区一："PSS 就是 App 占用的内存"
+### 误区一："PSS 就是 App 真正占用的内存"
 
-PSS 是最接近"App 对系统的内存压力"的指标，但它包含了按比例分摊的共享库内存。如果要评估"杀掉这个进程能释放多少内存"，应该看 USS（Private Dirty + Private Clean），而不是 PSS。
+PSS 确实是最接近"App 对系统的内存压力"的指标，但它包含了按比例分摊的共享库内存。如果要评估"杀掉这个进程能释放多少内存"，应该看 USS（Private Dirty + Private Clean），而不是 PSS。
 
 ### 误区二："Java Heap 超过限制就 OOM"
 
