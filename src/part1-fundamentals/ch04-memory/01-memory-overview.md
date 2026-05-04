@@ -42,16 +42,15 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T05:30:17+08:00"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。Stack 物理占用、ZRAM physical used 口径仍未修正"
+task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。Stack 物理占用、ZRAM physical used 口径仍未修正；2026-05-04 task2b：P1 2 已修正（Stack 区分虚拟保留与物理占用；ZRAM 指标拆分为 physical used/in swap/total swap 三口径）。"
 ---
 
 # Android 内存模型全景
@@ -257,7 +256,7 @@ Code 部分的内存通常不构成优化重点（除非 App 有大量未压缩�
 
 每个线程有自己的栈空间，用于函数调用链、局部变量、返回地址等。在 Android 上，主线程和通过 `Thread` 创建的线程通常有约 1MB 的栈空间（`pthread` 默认值，不同版本可能略有差异）。
 
-Stack 的 PSS 通常很小（几十到几百 KB），但它有一个常被忽略的特性：**线程越多，Stack 占用的内存越多。** 一个拥有 50 个线程的进程，光栈空间就可能占 50MB。这也提醒我们，无节制的线程创建不仅是 CPU 调度的负担，也是内存的负担。
+Stack 的 PSS 通常很小（几十到几百 KB），因为 `pthread` 的 1MB 默认栈只是虚拟地址空间保留——只有实际触碰的栈页（函数调用链实际到达的深度）才会进入 RSS/PSS。线程越多，VSS 越大，但物理占用取决于实际栈深度，不能把 1MB × 线程数当作稳定的 PSS 结论。不过线程数量仍然会增加内存压力：每个线程至少有一组 guard page 和已用栈页，加上页表开销，在线程数上百时会对内存造成可感知的负担。无节制的线程创建既是 CPU 调度的负担，也是内存的负担。
 
 ### Graphics（Gfx dev / EGL mtrack / GL mtrack）
 
@@ -494,7 +493,7 @@ ZRAM 大小、压缩算法和 swappiness 都是 OEM case-by-case 配置，没有
 ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 ```
 
-这行数据告诉我们：ZRAM 设备占用了 123MB 的物理内存来存储 456MB 的压缩数据，这次采样的压缩结果约为 3.7x，ZRAM 总容量为 500MB。如果 `physical used` 接近 ZRAM 总大小，说明压缩空间即将耗尽，系统可能会更积极地杀后台进程。
+这行数据包含三个指标，含义不同：`123MB physical used` 是压缩后实际占用的 RAM；`456MB in swap` 是未压缩的换出量（`SwapUsed`）；`500MB total swap` 是 ZRAM 设备可容纳的未压缩 swap 容量。压缩效率看前两者的比值（456/123 ≈ 3.7x）；RAM 开销看 `physical used`；容量压力看 `in swap` 是否接近 `total swap`——当换出量接近总容量时，ZRAM 无法接纳更多页面，系统会更积极地杀后台进程。不要把 `physical used` 与 `total swap` 对比来判断容量压力，两者口径不同。
 
 ### ZRAM 的性能代价
 
