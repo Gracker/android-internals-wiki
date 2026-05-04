@@ -10,7 +10,7 @@ section: '1.5'
 status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
-reviewed_date: '2026-04-29'
+reviewed_date: 2026-05-04
 reviewed_by: openclaw-task6
 review_round: 7
 polish_count: 2
@@ -72,7 +72,7 @@ related_chapters:
 - '2.5'
 - '5.1'
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
@@ -246,7 +246,7 @@ Android 5.0（Lollipop）引入了 RenderThread，将渲染工作从主线程分
 
 ### RenderThread 的创建时机
 
-RenderThread 不是在进程创建时就初始化的。它采用懒加载策略——在 App 第一次真正需要绘制内容时才会被创建。具体来说，当 Activity 第一次执行 `draw` 操作时，`ViewRootImpl` 会检测硬件加速渲染器（`ThreadedRenderer`）是否已经初始化，如果没有就创建它。
+RenderThread 不是在进程创建时就初始化的。它采用懒加载策略——在 App 第一次需要绘制内容时才会被创建。具体来说，当 Activity 第一次执行 `draw` 操作时，`ViewRootImpl` 会检测硬件加速渲染器（`ThreadedRenderer`）是否已经初始化，如果没有就创建它。
 
 ```java
 // frameworks/base/core/java/android/view/ViewRootImpl.java
@@ -274,7 +274,7 @@ int syncResult = syncAndDrawFrame(choreographer.mFrameInfo);
 因此，主线程和 RenderThread 的配合要拆成两个阶段看：
 
 1. **同步阶段**：主线程在 `syncAndDrawFrame()` 内等待 RenderThread 完成帧状态同步，并拿到 `syncResult`。
-2. **异步阶段**：主线程解阻塞后，RenderThread 继续执行真正的 `DrawFrame`，包括申请 Buffer、提交 GPU 命令、`queueBuffer()` 和通知 SurfaceFlinger。
+2. **异步阶段**：主线程解阻塞后，RenderThread 继续执行 `DrawFrame`，包括申请 Buffer、提交 GPU 命令、`queueBuffer()` 和通知 SurfaceFlinger。
 
 在 Perfetto 里，主线程上的 `syncAndDrawFrame` 不是“纯异步发包”的零成本 slice，它包含一段可见的同步等待；RenderThread 上更长的 `DrawFrame` slice 则对应后半段渲染开销。把这两段分开看，才能判断瓶颈是在主线程卡住，还是 RenderThread / GPU 把一帧拖长了。
 
