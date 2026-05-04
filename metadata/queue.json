@@ -10622,7 +10622,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T12:25:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T15:12:25.248999+00:00",
+      "completed_reason": "cam2_frame SQL已修正counter.name→process_counter_track.name; GFXReconstruct已移除OpenGL支持声明，标注仅Vulkan并补充AGI替代方案"
     },
     {
       "section": "19.23",
@@ -11690,7 +11692,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T16:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T15:12:25.248999+00:00",
+      "completed_reason": "CONTENT_PROVIDER_PUBLISH_TIMEOUT常量已修正为ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS; getTraceInputStream API级别已从33+修正为30+"
     },
     {
       "section": "11.2",

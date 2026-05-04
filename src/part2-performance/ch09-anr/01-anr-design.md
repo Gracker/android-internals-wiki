@@ -14,6 +14,11 @@ last_verified: "2026-04-26"
 last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs"
 reviewed_date: 2026-05-04
 reviewed_by: openclaw-task6
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: medium
 sources:
   - type: aosp
@@ -210,9 +215,9 @@ ANR 的触发点因组件类型而异，但最终都会汇聚到同一个处理�
 
 **Broadcast ANR**：由 `BroadcastQueue` 检测。`BroadcastQueue.broadcastTimeoutLocked()` 在超时到期时被触发。
 
-**ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`，定义在 `ActivityManagerService.java` 中），与 Service/Activity ANR 一样是系统级强制约束。`getProviderMimeType()` 调用有独立的 1 秒超时（API 31+，可通过 `getProviderMimeTypeAsync()` 异步处理），但这个 1 秒超时仅适用于 MIME 类型查询，不是通用的 ContentProvider ANR 阈值。
+**ContentProvider ANR**：由 `ContentProviderHelper`（Android 14+）检测。ContentProvider 发布超时为 10 秒，常量是 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`（`frameworks/base/core/java/android/content/ContentResolver.java`），值为 `10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；AMS 侧通过 `ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 消息编号触发超时回调。与 Service/Activity ANR 一样是系统级强制约束。`getProviderMimeType()` 调用有独立的 1 秒超时（API 31+，可通过 `getProviderMimeTypeAsync()` 异步处理），但这个 1 秒超时仅适用于 MIME 类型查询，不是通用的 ContentProvider ANR 阈值。
 
-[已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/app/ActivityManager.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT = 10 * 1000]
+[已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/content/ContentResolver.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS = 10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER; frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java, CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG]
 
 
 **startForeground() 宽限期**：这条规则约束的是 `Context.startForegroundService()` 之后多久必须调用 `Service.startForeground()`。版本边界要分开记：Android 8.0 是 5 秒；Android 9-12 是 10 秒；Android 13/14/15 的默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`，运行时字段是 `mServiceStartForegroundTimeoutMs`，设备也可通过 DeviceConfig 覆盖。Android 12 的主要变化是超时后常见 `ForegroundServiceDidNotStartInTimeException`；5 秒只对应 Android 8.0 的初始宽限期。
@@ -359,7 +364,7 @@ ANR 触发后，系统会产出多种诊断信息，这些是我们分析 ANR �
 - **线程持有的锁信息**：如 `- locked <0x12345678>`，标明哪个线程持有哪些锁
 - **CPU 使用统计**：ANR 发生前一段时间的 CPU 负载信息
 
-在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ActivityManager.getHistoricalProcessExitReasons()`** 获取 `ApplicationExitInfo` 列表，再调用 **`ApplicationExitInfo.getTraceInputStream()`**（API 33+）程序化读取 ANR 堆栈。`adb pull /data/anr/` 在 Android 13 及以下仍然有效。
+在 Android 10 及以上版本中，ANR trace 文件不再统一写入 `/data/anr/traces.txt`，而是以 `anr_*` 命名存放在 `/data/anr/` 目录下。Android 14 起访问 `/data/anr/` 需要 root 权限，开发者获取原始 trace 的标准路径有两条：执行 **`adb bugreport`** 从完整报告里提取，或在应用内通过 **`ActivityManager.getHistoricalProcessExitReasons()`** 获取 `ApplicationExitInfo` 列表，再调用 **`ApplicationExitInfo.getTraceInputStream()`**（API 30+，随 `ApplicationExitInfo` 在 Android 11 引入）程序化读取 ANR 堆栈。Android 14 起 `/data/anr/` 目录需要 root 权限，非 root 设备只能通过 `ApplicationExitInfo` 或 `adb bugreport` 获取。
 
 **traces.txt 中的主线程堆栈不一定是 ANR 的根因**。正如前面提到的"刻舟求剑"问题，堆栈捕获时导致超时的代码可能已经执行完毕。如果主线程堆栈显示 `Native (nativePollOnce)`，那说明 ANR 发生时主线程处于空闲状态——问题出在更早的消息处理中。
 
