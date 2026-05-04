@@ -932,3 +932,21 @@
 - **问题**：示例直接使用 `getSystemService(GameManager.class)` 返回值调用 `getGameMode()` / `setGameState()`。GameManager reference 明确要求对返回值做 null check；TV、Auto、ChromeOS 等设备类型可能不提供 GameManager。
 - **建议**：示例加 `GameManager gameManager = getSystemService(GameManager.class); if (gameManager == null) return;` 或等价保护，再进入 Game Mode / Game State 调用。
 - **review 日志**：logs/deep-review/2026-05-04-08-deep-review.md
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-05-04
+- **类型**：版本差异/原理链
+- **位置**：L484-L490 WindowInsets 扩展节
+- **问题**：正文把 Insets 分发概括为“WMS 计算 → relayoutWindow 返回 → ViewRootImpl dispatchApplyWindowInsets”。这能覆盖 relayout 返回路径，但 IME Insets 动画、运行时 InsetsSourceControl/InsetsController 更新不一定每帧触发 relayout，容易让读者把 Insets 动画成本全归到 `relayoutWindow`。
+- **建议**：补一句 IME Insets 动画期间还要看 `InsetsController` / `InsetsSourceConsumer` / `ViewRootImpl` 的运行时分发路径，并在 Perfetto 中把 relayout 与 Insets animation 分开计时。
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-05-04
+- **类型**：版本差异
+- **位置**：L171 / L189 StartingWindow 首帧完成信号
+- **问题**：正文并列写 `finishDrawing` / `reportDrawFinished`，但没有说明 legacy drawing finish 与 BLAST/sync-seq 路径的版本边界。读者在不同 Android 版本 trace 中只看到其中一个名字时，可能误以为链路缺失。
+- **建议**：补一行版本说明：旧路径常见 `finishDrawing`，现代 BLAST/sync 场景更常看 `reportDrawFinished` / sync seq；两者都表示主 Window 首帧完成信号，但后续 starting surface 移除还要看 Shell 与 SurfaceFlinger。
+
+## [Task9 Deep Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 2026-05-04
+- **类型**：版本差异/API 边界
+- **位置**：L174-L176 `AnimationUtils.lockAnimationClock(...)`
+- **问题**：正文使用 `lockAnimationClock(long, long)` 双参数示例，但章节适用范围写 Android 10-17。双参数版本用于 expected presentation time，旧版本只需要核对单参数动画时钟锁定路径；不标版本会让读者在 Android 10-13 源码中找不到同一签名。
+- **建议**：在代码块注释中标注“新版本双参数；旧版本单参数但同样存在 `frameTimeNanos / NANOS_PER_MS` 毫秒化路径”，避免把签名差异误判为机制差异。
