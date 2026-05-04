@@ -1104,7 +1104,7 @@
       "task9_result": "needs-rework",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-04",
-      "last_task9_at": "2026-05-04T00:30:00+08:00",
+      "last_task9_at": "2026-05-04T08:42:32+08:00",
       "last_task2b_at": "2026-04-27T02:40:00+08:00",
       "review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。",
       "review_log": "logs/review/2026-04-11-11-review.md"
@@ -3011,9 +3011,9 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-28",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-03",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-03T16:20:00+08:00",
+      "last_task9_at": "2026-05-04T08:42:32+08:00",
       "last_task2b_at": "2026-04-27T12:54:09+08:00",
       "notes": "Task2B fixed P95 AGDK link issue and P85 External GPU Render Stages/Headroom issues; returned to Task6 pending.",
       "created_by": "task2a-knowledge-gap",
@@ -5767,25 +5767,25 @@
       "title": "ArgusAPM",
       "chapter": "19",
       "section": "19.08",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "codex",
       "applicable_versions": "历史 APM 架构参考（公开 sample：compileSdk 27 / targetSdk 27 / Java 7）；现代 Android 版本需单独验证",
       "last_verified": "2026-04-27",
       "last_verified_against": "Qihoo360/ArgusAPM README + argus-apm-aop + argus-apm-gradle + argus-apm-gradle-asm",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-25",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-03",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-03T06:20:00+08:00",
+      "last_task9_at": "2026-05-04T08:42:32+08:00",
       "last_task2b_at": "2026-05-03T05:40:00+08:00",
       "review_notes": "2026-05-03 task9 deep-review: needs-rework。P0 1；源码路径需回炉修正，已写入 queue.json。"
     },
@@ -8537,7 +8537,7 @@
       }
     }
   },
-  "last_updated": "2026-05-04T04:33:00+08:00",
+  "last_updated": "2026-05-04",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10650,5 +10650,39 @@
     "task6_review": "2026-05-04",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed"
+  },
+  "2026-05-04-08-task9": {
+    "timestamp": "2026-05-04T08:42:32+08:00",
+    "sections": [
+      {
+        "section": "2.12",
+        "path": "src/part1-fundamentals/ch02-rendering/12-window-manager.md",
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 0,
+        "p2": 1
+      },
+      {
+        "section": "8.9",
+        "path": "src/part2-performance/ch08-responsiveness/09-game-performance.md",
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 2
+      },
+      {
+        "section": "19.08",
+        "path": "src/part3-tools/ch19-apm/08-argusapm.md",
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 0,
+        "auto_finalized": true
+      }
+    ],
+    "auto_finalized": [
+      "19.08 ArgusAPM"
+    ],
+    "log": "logs/deep-review/2026-05-04-08-deep-review.md"
   }
 }

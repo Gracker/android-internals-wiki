@@ -917,3 +917,18 @@
 - **位置**：L245 / L461 批量事务与 SQLCipher 性能数字
 - **问题**：“批量插入速度提升 10x-100x”和“SQLCipher 写入降低 5-15%”缺少设备、数据量、page size、WAL/synchronous 配置、加密算法和测试脚本。
 - **建议**：补基准测试条件和来源；否则把固定区间改成定性结论，并标为待验证。
+
+
+## [Task9 Deep Review] 2.12 Window Manager Service 与窗口管理 — 2026-05-04
+- **类型**：版本差异/数据支撑
+- **位置**：L367-L388 Android 16 Desktop Windowing 与大屏 adaptive behavior
+- **问题**：正文写“Android 16 把 connected display desktop windowing 作为正式特性公开 / GA”，但 frontmatter 使用的 `developer.android.com/about/versions/16/features` 页面没有 Desktop Windowing 条目；可核验的官方博客更偏“upcoming desktop windowing and connected displays in Android 16”与桌面体验设计指引。
+- **建议**：补官方博客或产品文档作为来源；如果只有 I/O/Blog 口径，避免写成 GA，改成“Android 16 路线中加入 desktop windowing / connected display，具体可用性取决于设备、QPR 和厂商实现”。
+- **review 日志**：logs/deep-review/2026-05-04-08-deep-review.md
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-05-04
+- **类型**：API 边界
+- **位置**：L164-L166 / L226-L227 GameManager 示例代码
+- **问题**：示例直接使用 `getSystemService(GameManager.class)` 返回值调用 `getGameMode()` / `setGameState()`。GameManager reference 明确要求对返回值做 null check；TV、Auto、ChromeOS 等设备类型可能不提供 GameManager。
+- **建议**：示例加 `GameManager gameManager = getSystemService(GameManager.class); if (gameManager == null) return;` 或等价保护，再进入 Game Mode / Game State 调用。
+- **review 日志**：logs/deep-review/2026-05-04-08-deep-review.md
