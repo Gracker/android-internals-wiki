@@ -46,20 +46,19 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
-reviewed_date: '2026-04-28'
+reviewed_date: 2026-05-04
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-04"
+task9_reviewed_date: 2026-05-04
 last_task9_at: "2026-05-04T08:42:32+08:00"
 last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
-review_notes: "2026-04-27 task6 re-review: pass-light-edit。；2026-04-28 task9 deep-review: needs-rework。P0 1，P1 0，P2 1。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 1，自动晋升 finalized。；2026-05-03 task9 deep-review: needs-rework。P0 1（Vulkan dynamic rendering/API 名称误写），P1 0，P2 1。；2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。ADPF/VSync deadline 口径需回炉。"
----
+review_notes: "2026-04-27 task6 re-review: pass-light-edit。；2026-04-28 task9 deep-review: needs-rework。P0 1，P1 0，P2 1。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: pass-tech-review，P0 0 / P1 0 / P2 1，自动晋升 finalized。；2026-05-03 task9 deep-review: needs-rework。P0 1（Vulkan dynamic rendering/API 名称误写），P1 0，P2 1。；2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。ADPF/VSync deadline 口径需回炉。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。L1 fix x1 (闭环→反馈链路完整建立)。---
 
 # 8.9 Android 游戏性能与 Game Mode/State API
 
@@ -357,7 +356,7 @@ EOF
 
 用了 Swappy，就把提交节奏、present 节奏和 display refresh 放到同一条时间轴里看。用了 ADPF，就看 `power.hint_session` 里 target duration 与 actual duration 的偏差，判断 hint 是否跟上场景变化。
 
-这里有一个架构视角的变化：Android 16 之前，渲染同步的重心更多落在应用侧——Swappy 管提交节奏，游戏自己算 VSync 偏移。Android 16 起，ADPF 形成闭环后，游戏的工作重心应该从"计算同步"转向"订阅 VSync 偏移 + 上报帧 deadline"，让系统根据 ADPF hint 自动完成调频和调度适配。Swappy 仍然是帧节奏控制的基础库，但它越来越像 ADPF 的信号源之一，而不是独立的同步方案。
+这里有一个架构视角的变化：Android 16 之前，渲染同步的重心更多落在应用侧——Swappy 管提交节奏，游戏自己算 VSync 偏移。Android 16 起，ADPF 反馈链路完整建立后，游戏的工作重心应该从"计算同步"转向"订阅 VSync 偏移 + 上报帧 deadline"，让系统根据 ADPF hint 自动完成调频和调度适配。Swappy 仍然是帧节奏控制的基础库，但它越来越像 ADPF 的信号源之一，而不是独立的同步方案。
 
 同时要注意 Swappy 配置不当可能引发"反向卡顿"：如果 Swappy 锁定的 VSync 偏移与系统实际的 ARR（自适应刷新率）切换窗口错位，就会出现"Swappy 按 60Hz 间隔提交，但显示器刚切到 120Hz"的帧节奏混乱——Perfetto 里表现为 Actual frame 周期性在 16ms 和 33ms 之间跳变，且跳变节奏与 VSync offset 切换同步。遇到这种形态，先检查 Swappy 的 swap interval 是否跟随了 display 的实际刷新率，再检查 ADPF hint session 的 target duration 是否和 Swappy 配置一致。
 
