@@ -1,33 +1,33 @@
 {
-  "generated_at": "2026-05-04T18:55:00+08:00",
+  "generated_at": "2026-05-04T19:15:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
-    "last_updated": "2026-05-04T18:55:00+08:00",
+    "last_updated": "2026-05-04T19:15:00+08:00",
     "pipeline_stage_counts": {
-      "unknown": 35,
+      "unknown": 34,
       "ready-to-publish": 107,
-      "task2b_pending": 90,
+      "task2b_pending": 91,
       "task9_pending": 14,
       "task6_pending": 6
     },
     "task6_state_counts": {
-      "unknown": 34,
-      "reviewed": 201,
-      "revisiting": 14,
+      "unknown": 33,
+      "reviewed": 200,
+      "revisiting": 16,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
-      "unknown": 40,
-      "reviewed": 205,
+      "unknown": 39,
+      "reviewed": 206,
       "pending": 7
     },
     "task2b_state_counts": {
-      "unknown": 42,
+      "unknown": 41,
       "fixed": 110,
-      "pending": 97,
+      "pending": 98,
       "idle": 3
     },
     "finalized": 109,
@@ -41,28 +41,28 @@
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 35,
+      "unknown": 34,
       "ready-to-publish": 107,
-      "task2b_pending": 89,
-      "task9_pending": 15,
+      "task2b_pending": 91,
+      "task9_pending": 14,
       "task6_pending": 6
     },
     "task6_state_counts": {
-      "unknown": 34,
-      "reviewed": 201,
-      "revisiting": 14,
+      "unknown": 33,
+      "reviewed": 200,
+      "revisiting": 16,
       "revising": 1,
       "done": 2
     },
     "task9_state_counts": {
-      "unknown": 40,
-      "reviewed": 204,
-      "pending": 8
+      "unknown": 39,
+      "reviewed": 206,
+      "pending": 7
     },
     "task2b_state_counts": {
-      "unknown": 42,
-      "fixed": 111,
-      "pending": 96,
+      "unknown": 41,
+      "fixed": 110,
+      "pending": 98,
       "idle": 3
     },
     "last_updated": "2026-05-04"
@@ -1678,11 +1678,13 @@
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-21",
+      "reviewed_date": "2026-05-04",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-04T18:55:00+08:00"
+      "last_task9_at": "2026-05-04T18:55:00+08:00",
+      "last_task6_at": "2026-05-04T19:15:00+08:00",
+      "task6_review_notes": "2026-05-04 Task6：L1/L2 小修并补 MemoryLimiter / MTE 数据口径存疑标注；现有 Task9 priority 95 queue 继续 pending。"
     },
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md": {
       "path": "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
@@ -5225,21 +5227,23 @@
       "section": "16.4",
       "chapter": "16.4",
       "status": "ready-for-review",
-      "reviewed_date": "2026-04-27",
+      "reviewed_date": "2026-05-04",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-04T10:37:13+08:00",
       "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "pipeline_stage": "task2b_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task9_pending",
       "task2b_fixed_at": "2026-04-27T11:41:00+08:00",
       "last_task2b_at": "2026-04-27T11:41:00+08:00",
-      "applicable_versions": "Android 17 (API 37)"
+      "applicable_versions": "Android 17 (API 37)",
+      "last_task6_at": "2026-05-04T19:15:00+08:00",
+      "task6_review_notes": "2026-05-04 Task6：清理 frontmatter 重复状态、文风小修，AutoFDO Binder 段落降级；待 Task9 复审。"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
@@ -7494,6 +7498,18 @@
       "p0": 2,
       "p1": 1,
       "p2": 0
+    },
+    {
+      "task": "task6-draft-review",
+      "reviewed_at": "2026-05-04T19:15:00+08:00",
+      "sections": [
+        "4.1",
+        "16.4"
+      ],
+      "result": "pass-light-edit",
+      "light_edits": 24,
+      "new_queue_items": 0,
+      "log": "logs/review/2026-05-04-19-review.md"
     }
   ],
   "progress": {
@@ -8596,7 +8612,7 @@
       }
     }
   },
-  "last_updated": "2026-05-04T16:20:00+08:00",
+  "last_updated": "2026-05-04T19:15:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10907,6 +10923,31 @@
       "mode": "revisiting",
       "fixes": 1,
       "notes": "高频词根本→1处；queue.json仍有P0技术问题待task2b修复"
+    },
+    "4.1": {
+      "date": "2026-05-04",
+      "result": "pass-light-edit",
+      "round": 2,
+      "mode": "revisiting",
+      "fixes": 15,
+      "notes": "L1/L2 小修；MemoryLimiter/MTE 存疑标注；queue.json 仍有 priority 95 技术回炉 pending"
+    },
+    "16.4": {
+      "date": "2026-05-04",
+      "result": "pass-light-edit",
+      "round": 2,
+      "mode": "revisiting",
+      "fixes": 9,
+      "notes": "frontmatter 去重；sched_ext 路径一致；AutoFDO Binder 收益降级；待 Task9 复审"
     }
+  },
+  "2026-05-04-19-task6": {
+    "type": "task6-review",
+    "date": "2026-05-04T19:15:00+08:00",
+    "sections_reviewed": [
+      "4.1",
+      "16.4"
+    ],
+    "notes": "Revisiting chapters reviewed. Light edits only. No new Task6 queue item; 4.1 retains existing Task9 pending queue, 16.4 moves to Task9 pending."
   }
 }
