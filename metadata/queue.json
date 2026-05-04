@@ -11551,6 +11551,93 @@
       "added_at": "2026-05-04T12:41:40+08:00",
       "status": "pending",
       "completed_at": null
+    },
+    {
+      "section": "1.5",
+      "section_title": "线程模型",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1.5 线程模型 — 技术审计需回炉（P0:0 P1:2）",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-16-deep-review.md",
+        "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码行为/原理断裂",
+          "severity": "P1",
+          "location": "L450-L453 Choreographer ThreadLocal",
+          "detail": "正文写“只有主线程的 Choreographer 会收到 VSync 信号并驱动渲染”。AOSP android-16.0.0_r1 `Choreographer` 的 `sThreadInstance.initialValue()` 对任何已有 Looper 的线程创建 `Choreographer`，构造函数会创建 `FrameDisplayEventReceiver(looper, VSYNC_SOURCE_APP, ...)`，`scheduleVsyncLocked()` 直接调用 `mDisplayEventReceiver.scheduleVsync()`。因此“只有主线程会收到 VSync”不准确；准确边界是主线程 Choreographer 驱动 ViewRootImpl traversal，其他 Looper 线程也可请求 VSync callback，但不会自动驱动 View 树渲染。",
+          "suggestion": "改成本章只讨论主线程 View 渲染路径；补一句“非主 Looper 线程也能持有 Choreographer/接收 VSync callback，但不参与默认 ViewRootImpl traversal”。"
+        },
+        {
+          "type": "技术选型错误",
+          "severity": "P1",
+          "location": "L415-L423 WorkManager 适用场景表",
+          "detail": "表格把“精确定时的重复任务”推荐为 `WorkManager（PeriodicWorkRequest）`。AndroidX WorkManager `PeriodicWorkRequest.kt` 文档明确写明 periodic work “willing to accept inexactness due to battery optimizations and doze mode”，最小周期 15 分钟，且“Work will almost never run at this exact time in the real world”。这会把 exact alarm / calendar alarm 类需求误导到非精确定时工具。",
+          "suggestion": "把该行改为“可延迟的周期后台任务 → WorkManager”；精确定时用户可见闹钟/日历类任务另指向 `AlarmManager.setExact*` / `setAlarmClock()`，并标注权限和省电限制。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T16:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.9",
+      "section_title": "感知流畅性：步幅波动与无掉帧卡顿",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.9 感知流畅性：步幅波动与无掉帧卡顿 — 技术审计需回炉（P0:1 P1:1）",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-16-deep-review.md",
+        "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+      ],
+      "review_issues": [
+        {
+          "type": "官方 API/源码事实错误",
+          "severity": "P0",
+          "location": "L251-L257 AppJankStats / RelativeFrameTimeHistogram 精度限制",
+          "detail": "正文写 `RelativeFrameTimeHistogram` “API 显式暴露的精度为 1ms”，并据此推导“会漏掉所有小于 12% 的步幅波动”。AOSP android-16.0.0_r1 `RelativeFrameTimeHistogram.java` 实际使用预定义 bucket：-20ms 到 20ms 区间为 2ms 桶，外侧为 5/10/50/100ms 等更粗粒度；`addRelativeFrameTimeMillis(int)` 的输入是整数毫秒，但输出统计不是 1ms 精度。同时该 histogram 统计的是 frame time relative to deadline，不记录 displacement / scrollY / translation，因此不能直接判断“步幅波动”大小。",
+          "suggestion": "把这段改成：AppJankStats 只适合 widget 级 frame-deadline 分布；`RelativeFrameTimeHistogram` 是预定义毫秒桶且不含位移信息，不能替代应用侧纳秒时间 + 位移采样。删除“小于 12% 步幅波动会被漏掉”的量化断言，除非补独立实验。"
+        },
+        {
+          "type": "原理链/数据支撑不足",
+          "severity": "P1",
+          "location": "L269-L276 ARR 动态刷新率对步幅波动的放大",
+          "detail": "正文把 ARR 切换点、`AnimationUtils.currentAnimationTimeMillis()` 毫秒取整和肉眼“阶跃感”串成确定因果链，但未给出 AOSP 机制或 Perfetto + 位移采样证据；其中“毫秒取整误差仍以旧周期为基础”也不符合 `Choreographer` 每帧基于当前 `frameTimeNanos / NANOS_PER_MS` 计算动画时钟的行为。",
+          "suggestion": "将该段收窄为待验证假设，或补一组 trace：Display mode track / vsyncId / App 侧 displacement sample 三者对齐，证明波动集中在 ARR 切换窗口。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T16:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "9.1",
+      "section_title": "ANR 设计思想",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 9.1 ANR 设计思想 — 技术审计需回炉（P0:2 P1:0）",
+      "material_paths": [
+        "logs/deep-review/2026-05-04-16-deep-review.md",
+        "src/part2-performance/ch09-anr/01-anr-design.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码路径/常量名错误",
+          "severity": "P0",
+          "location": "L212-L214 ContentProvider 发布超时常量",
+          "detail": "正文写 ContentProvider 发布超时常量是 `CONTENT_PROVIDER_PUBLISH_TIMEOUT`，定义在 `ActivityManagerService.java`；紧随其后的验证标注又写 `ActivityManager.java`。AOSP android-14.0.0_r1 中 AMS 只有 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 消息编号，真正的 10s 常量是 `frameworks/base/core/java/android/content/ContentResolver.java` 的 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS = 10 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`，AMS 在发送 timeout message 时引用该常量。",
+          "suggestion": "把源码锚点改为 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` + `ActivityManagerService.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG`；删除 `ActivityManager.java` 标注。"
+        },
+        {
+          "type": "API Level 错误",
+          "severity": "P0",
+          "location": "L361 ApplicationExitInfo.getTraceInputStream()",
+          "detail": "正文写 `ApplicationExitInfo.getTraceInputStream()` 是 API 33+。AOSP android-11.0.0_r1 已包含 `ApplicationExitInfo#getTraceInputStream()`，对应公开 API 随 `ApplicationExitInfo` 在 Android 11/API 30 引入。将其写成 API 33+ 会误导 Android 11/12 设备上的 ANR trace 获取方案。",
+          "suggestion": "改为 Android 11/API 30+；如要强调 Android 13/14 的访问限制，应单独说明 `/data/anr/` 权限变化与 bugreport/ApplicationExitInfo 两条获取路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-04T16:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

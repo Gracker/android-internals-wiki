@@ -248,10 +248,11 @@
       "task2b_result": "fixed",
       "reviewed_date": "'2026-04-20'",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T21:20:00+08:00",
-      "review_round": "5"
+      "last_task9_at": "2026-05-04T16:20:00+08:00",
+      "review_round": "5",
+      "last_task9_log": "logs/deep-review/2026-05-04-16-deep-review.md"
     },
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md": {
       "path": "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -2579,7 +2580,7 @@
       "last_verified": "2026-04-07",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
@@ -2590,8 +2591,8 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-04T12:41:40+08:00",
-      "last_task9_log": "logs/deep-review/2026-05-03-13-deep-review.md",
+      "last_task9_at": "2026-05-04T16:20:00+08:00",
+      "last_task9_log": "logs/deep-review/2026-05-04-16-deep-review.md",
       "task6_reviewed_date": "2026-05-04"
     },
     "src/part2-performance/ch07-smoothness/10-image-bitmap-performance.md": {
@@ -3046,14 +3047,15 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-03",
+      "task9_reviewed_date": "2026-05-04",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-03T22:20:00+08:00",
+      "last_task9_at": "2026-05-04T16:20:00+08:00",
       "last_task2b_at": "2026-04-26T15:45:22+08:00",
       "task2b_fixed_at": "2026-04-26T15:45:22+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
-      "review_notes": "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. 2 pending queue entries block auto-promotion."
+      "review_notes": "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. 2 pending queue entries block auto-promotion.",
+      "last_task9_log": "logs/deep-review/2026-05-04-16-deep-review.md"
     },
     "src/part2-performance/ch09-anr/02-anr-types.md": {
       "path": "src/part2-performance/ch09-anr/02-anr-types.md",
@@ -7440,6 +7442,31 @@
           "p2": 0
         }
       ]
+    },
+    {
+      "date": "2026-05-04",
+      "task": "task9-deep-review",
+      "time": "16:20",
+      "sections_reviewed": [
+        {
+          "section": "1.5",
+          "title": "线程模型",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "7.9",
+          "title": "感知流畅性：步幅波动与无掉帧卡顿",
+          "result": "needs-rework",
+          "issues": 2
+        },
+        {
+          "section": "9.1",
+          "title": "ANR 设计思想",
+          "result": "needs-rework",
+          "issues": 2
+        }
+      ]
     }
   ],
   "progress": {
@@ -8542,7 +8569,7 @@
       }
     }
   },
-  "last_updated": "2026-05-04T13:09:00+08:00",
+  "last_updated": "2026-05-04T16:20:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10780,5 +10807,49 @@
       "10.7"
     ],
     "notes": "Revisiting chapters re-reviewed. Light edits only (typo fix, frontmatter update). Both chapters pending Task 9 rework."
+  },
+  "2026-05-04-16-task9": {
+    "timestamp": "2026-05-04T16:20:00+08:00",
+    "sections": [
+      {
+        "section": "1.5",
+        "title": "线程模型",
+        "path": "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 2,
+        "p2": 0,
+        "auto_finalized": false
+      },
+      {
+        "section": "7.9",
+        "title": "感知流畅性：步幅波动与无掉帧卡顿",
+        "path": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 1,
+        "p2": 0,
+        "auto_finalized": false
+      },
+      {
+        "section": "9.1",
+        "title": "ANR 设计思想",
+        "path": "src/part2-performance/ch09-anr/01-anr-design.md",
+        "result": "needs-rework",
+        "p0": 2,
+        "p1": 0,
+        "p2": 0,
+        "auto_finalized": false
+      }
+    ],
+    "summary": {
+      "p0": 3,
+      "p1": 3,
+      "p2": 0,
+      "queue_added": 3,
+      "suggestions_added": 0,
+      "auto_finalized": []
+    },
+    "log": "logs/deep-review/2026-05-04-16-deep-review.md"
   }
 }

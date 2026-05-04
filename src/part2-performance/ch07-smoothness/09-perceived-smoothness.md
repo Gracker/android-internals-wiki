@@ -1,4 +1,5 @@
 ---
+
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
@@ -43,19 +44,17 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: "task9_pending"
+pipeline_stage: task2b_pending
 task6_state: "reviewed"
-task9_state: "pending"
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
-last_task9_at: "2026-05-04T12:41:40+08:00"
+last_task9_at: "2026-05-04T16:20:00+08:00"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；P1 0；源码/API/数据口径需回炉，已写入 queue.json。"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；输入重采样属性名错误，120Hz ms 取整表格数学不一致。"
-
-
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。"
 ---
 
 
