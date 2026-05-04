@@ -6804,8 +6804,8 @@
     {
       "section": "16.4",
       "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
-      "priority": 85,
-      "reason": "[Deep Tech Review] AutoFDO 量化数据与官方可核验口径不一致，需回源限定",
+      "priority": 95,
+      "reason": "[Deep Tech Review] sched_ext 源码级结构混入 android16-6.12 不存在/不匹配的路径、状态与 DSQ/API 符号，需回炉修正",
       "material_paths": [
         "intake/suggestions.md"
       ],
@@ -6819,11 +6819,41 @@
             "https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html",
             "AOSP kernel common android16-6.12 / android15-6.6 AutoFDO profile repository references"
           ]
+        },
+        {
+          "level": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L83-L99（sched_ext_ops 源码锚点）",
+          "detail": "`android16-6.12/kernel/sched/ext_internal.h` 不存在；`struct sched_ext_ops` 在 `kernel/sched/ext.c` 中定义。正文把后续版本或非目标分支的文件拆分写成 6.12 事实，读者无法按文中路径复核。",
+          "suggestion": "改为 `android16-6.12/kernel/sched/ext.c`，并标注对应版本；如要引用 mainline 后续拆分出的 `ext_internal.h`，需单列版本差异。"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L101-L112（SCX_OPSS_* 任务所有权状态机）",
+          "detail": "`SCX_OPSS_NONE/QUEUEING/QUEUED/DISPATCHING` 在 Linux 6.12 / AOSP android16-6.12 的 `kernel/sched/ext.c`、`include/linux/sched/ext.h` 中均未命中；6.12 使用 `SCX_TASK_*` 状态与 `SCX_TASK_QUEUED`、`SCX_TASK_IN_CUSTODY` 等 flag 表达任务状态/所有权。",
+          "suggestion": "按 6.12 实际 `SCX_TASK_*` / `p->scx.flags` 重写状态模型；若该命名来自 OnePlus 私有分支，必须标注为 OEM 分支实现，不能写成通用 sched_ext。"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "location": "L116-L150 / L156-L159（DSQ、scx_simple 与排查接口）",
+          "detail": "`SCX_DSQ_BYPASS`、`scx_bpf_dsq_insert()`、`scx_bpf_dsq_insert_vtime()`、`SCX_EV_REFILL_SLICE_DFL` 在 `android16-6.12` 未命中；`tools/sched_ext/scx_simple.bpf.c` 使用的是 `scx_bpf_dispatch()` / `scx_bpf_dispatch_vtime()`，DSQ enum 只有 `SCX_DSQ_GLOBAL/LOCAL/LOCAL_ON` 等。",
+          "suggestion": "以 `android16-6.12/include/linux/sched/ext.h` 和 `tools/sched_ext/scx_simple.bpf.c` 为准修正代码片段和排查路径；删除未核验的 events 计数器。"
+        },
+        {
+          "level": "P1",
+          "type": "数据缺失/版本差异",
+          "location": "L224-L232（AutoFDO 量化数据）",
+          "detail": "正文仍写 Pixel 9 Pro、P50 4.3%、P95 6.8%、binder-addints 37.7%、HwBinder 20% 等精确数字；既有队列问题指出公开博客正文未能核到这些精确口径。",
+          "suggestion": "要么补官方可复核表格/截图/benchmark 链接，标清设备、GKI branch、benchmark 名称和样本口径；要么降级为官方博客可核验的限定表述。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T08:39:32+08:00",
-      "status": "pending"
+      "status": "pending",
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-05-04T10:37:13+08:00"
     },
     {
       "section": "19.26",
@@ -9127,7 +9157,7 @@
       "section": "18.9",
       "section_title": "18.9 Vulkan 原生渲染管线",
       "priority": 95,
-      "reason": "[External Review] 18.9 18.9 Vulkan 原生渲染管线 存在P0 事实错误，需回炉修正",
+      "reason": "[Deep Tech Review] Vulkan Android WSI acquire 路径把 AOSP AcquireImageANDROID 写成公开 fd import API，需回炉修正",
       "review_issues": [
         {
           "type": "版本差异",
@@ -9137,12 +9167,24 @@
           "evidence": [
             "2026-04-29-11-18.9-external-review.md"
           ]
+        },
+        {
+          "level": "P0",
+          "type": "源码错误/API 机制",
+          "location": "L166-L171（vkAcquireNextImageKHR 与 Android BufferQueue 映射）",
+          "detail": "正文写 `vkAcquireNextImageKHR` 通过 `vkImportSemaphore/FenceFdKHR` 把 dequeue fence fd import 到 App 传入的同步对象。AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp::AcquireNextImageKHR` 实际路径是 `ANativeWindow::dequeueBuffer` 取得 fence fd，dup 后调用 driver hook `AcquireImageANDROID(device, image, fence_clone, semaphore, vk_fence)`；源码中没有调用公开 `vkImportSemaphoreFdKHR` / `vkImportFenceFdKHR`，且正文 API 名也少了 `Fd`。",
+          "suggestion": "改写为 “libvulkan 将 dequeue fence fd 交给驱动的 `AcquireImageANDROID`，驱动负责让应用传入的 semaphore/fence 在 buffer 可写时 signal”；不要把实现写成应用侧 fd import API。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T20:15:34.630443+08:00",
       "status": "pending",
-      "source_file": "2026-04-29-11-18.9-external-review.md"
+      "source_file": "2026-04-29-11-18.9-external-review.md",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-05-04T10:37:13+08:00"
     },
     {
       "section": "1.4",
@@ -11104,8 +11146,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T13:11:19+08:00",
-      "status": "pending",
-      "source_file": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md"
+      "status": "completed",
+      "source_file": "src/part2-performance/ch07-smoothness/09-perceived-smoothness.md",
+      "completed_at": "2026-05-04T11:42:57+08:00",
+      "completed_reason": "P0 输入重采样源码锚点已修正: InputTransport.cpp→InputConsumer.cpp, resampleTouchEvent()→resampleTouchState()/updateTouchState()"
     },
     {
       "section": "8.9",
@@ -11428,7 +11472,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-04T11:42:57+08:00",
+      "completed_reason": "P0 getWritableDatabaseAsync() API幻觉已删除，改写为应用侧异步打开方案"
     },
     {
       "section": "8.9",

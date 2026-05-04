@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-07"
+last_verified: "2026-05-04"
 last_verified_against: "AOSP android-17-beta3"
 reviewed_date: "2026-05-03"
 reviewed_by: "openclaw-task6"
@@ -40,9 +40,9 @@ tags:
   - frame-pacing
   - overScroller
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
@@ -324,7 +324,7 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 <!-- AIW-源码调研-2026-05-01-start -->
 **盲区来源**：§7.9 感知流畅性 / §3.2 触摸响应的性能分析——输入重采样（Motion Resampling）对跟手滑动的影响机制
 
-**核心发现**：Android Input 系统的触摸重采样位于 InputTransport 层，在 InputDispatcher 之前对触摸坐标进行处理。核心机制通过 `frameworks/native/libs/input/InputTransport.cpp` 中的 `resampleTouchEvent()` 实现。
+**核心发现**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心机制通过 `frameworks/native/libs/input/InputConsumer.cpp` 中的 `InputConsumer::consume()` → `resampleTouchState()` → `updateTouchState()` 实现。
 
 **关键常量**（AOSP mainline）：
 - `RESAMPLE_LATENCY = 5 * NANOS_PER_MS`（5ms 预期延迟，用于减少误预测影响）
@@ -339,13 +339,13 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 **设计意图**：解决 100Hz 触摸采样率与 60Hz/90Hz/120Hz 显示刷新率不同步导致的"跳跃感"。通过预测下一 VSync 时刻的触摸位置，消除帧内抖动。
 
-**性能影响**：`RESAMPLE_LATENCY = 5ms` 意味着最坏情况下触摸响应增加 5ms，但消除了 100Hz→60Hz 不同步造成的帧内抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.noresample=1` 禁用。
+**性能影响**：`RESAMPLE_LATENCY = 5ms` 意味着最坏情况下触摸响应增加 5ms，但消除了 100Hz→60Hz 不同步造成的帧内抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.noresample=1` 系统属性禁用重采样。
 
-**配置接口**：`ro.input.noresample` 系统属性（设为 "1" 禁用）；DEBUG 开关 `log.tag.InputTransportResampling=DEBUG`
+**配置接口**：`ro.input.noresample` 系统属性（设为 "1" 禁用）；DEBUG 开关 `log.tag.InputConsumerResampling=DEBUG`（对应 InputConsumer.cpp 中的 LOG_TAG）
 
 **关键源码文件**：
-- `frameworks/native/libs/input/InputTransport.cpp` — resampleTouchEvent() 重采样算法
-- `frameworks/native/libs/input/InputTransport.h` — InputConsumer mResampleTouch 成员
+- `frameworks/native/libs/input/InputConsumer.cpp` — `InputConsumer::consume()` 事件消费、`resampleTouchState()` 重采样算法、`updateTouchState()` 状态更新
+- `frameworks/native/libs/input/InputTransport.h` — InputConsumer 声明、mResampleTouchState 成员
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — 事件分发与 stale event 判定
 
 **与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本章讨论的步幅波动问题形成跨输入-渲染的完整关联。
