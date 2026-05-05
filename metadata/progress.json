@@ -10251,6 +10251,35 @@
       ],
       "issues_fixed": 9,
       "details": "5.3: Perfetto SQL修正, schedutil代码修正, DSU-120降级待验证, RTG标注vendor-specific, DVFS域矛盾修复; 2.17: present_id接入声明删除, 抖动数据表移除, DeliQueue拆分待验证, vote边界补充"
+    },
+    {
+      "timestamp": "2026-05-06T04:47:45+08:00",
+      "sections_processed": [
+        "2.17",
+        "12.1"
+      ],
+      "sections_detail": [
+        {
+          "section": "2.17",
+          "title": "Frame Pacing Library 与帧节奏控制",
+          "source": "task9-deep-tech-review",
+          "priority": 95,
+          "fixes": [
+            "P0: VK_KHR_present_id 版本断言从\"Vulkan 1.2 核心扩展\"修正为\"Vulkan 1.4 核心特性\"",
+            "P1: DeliQueue 描述从\"单生产者-单消费者\"修正为\"多生产者 lock-free Treiber stack + Looper 侧 min-heap\"，与 16.4 对齐"
+          ]
+        },
+        {
+          "section": "12.1",
+          "title": "APK 体积优化",
+          "source": "task9-deep-tech-review",
+          "priority": 85,
+          "fixes": [
+            "P1: 新增\"16KB Page Size 兼容不是体积优化项\"小节（AGP 8.5.1+、NDK r28+、readelf/zipalign 验证）",
+            "P2: R8 Optimized Resource Shrinking 版本边界补全（AGP 8.12/8.13 opt-in → AGP 9.0.0+ 默认）"
+          ]
+        }
+      ]
     }
   ],
   "2026-04-29-13-task9": {
@@ -10411,7 +10440,7 @@
       }
     }
   ],
-  "task2b_last_run": "2026-04-30T13:45:05.007806+00:00",
+  "task2b_last_run": "2026-05-06T04:47:45+08:00",
   "2026-05-01-04-task9": {
     "task": "task9-deep-tech-review",
     "sections": [

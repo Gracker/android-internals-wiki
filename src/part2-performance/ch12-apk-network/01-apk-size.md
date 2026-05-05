@@ -30,7 +30,7 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: 2026-05-05
@@ -39,12 +39,12 @@ last_task9_at: 2026-05-05T22:55:00+08:00
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-05"
 task6_result: "pass-light-edit"
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-24T04:56:29+08:00"
+last_task2b_at: "2026-05-06T04:41:00+08:00"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。"
 last_task6_at: "2026-05-05T23:26:00+08:00"
 review_notes: "2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9 已有 P1/P2 queue pending，等待 Task2B。"
@@ -176,9 +176,9 @@ AGP 8.0 开始，R8 Full Mode 成为默认行为。Full Mode 比 compatibility m
 android.r8.optimizedResourceShrinking=true
 ```
 
-[适用版本: AGP 8.12.0+]
+[适用版本: AGP 8.12/8.13 手动 opt-in；AGP 9.0.0+ 在 `isShrinkResources=true` 时默认使用 Optimized Resource Shrinking，不再需要设置该属性]
 
-这个开关只在 AGP 8.12.0 及以上版本生效。低版本仍然使用传统的资源缩减流程。
+AGP 8.12/8.13 需要手动开启这个开关。AGP 9.0.0 起只要 `isShrinkResources=true` 就自动使用优化版资源缩减。低版本仍然使用传统的资源缩减流程。
 
 > **⚠️ 动态资源引用的安全边界**：开启 `android.r8.optimizedResourceShrinking` 后，R8 的引用图分析会接管资源缩减逻辑。如果项目中有通过 `Resources.getIdentifier()` 动态获取资源的写法（常见于插件化框架、主题引擎、WebView 混合应用），R8 无法在编译期追踪这类动态引用，可能导致资源被误缩减。启用前的检查清单：
 > 1. 扫描代码中所有 `Resources.getIdentifier()` 调用点
@@ -281,6 +281,21 @@ android {
 对于 Google Play 分发的 App，更好的方案是使用 App Bundle（下一节讨论）——Play 会根据用户设备的 ABI 自动生成只包含对应架构的 APK，不需要手动过滤。
 
 ABI 过滤只解决“带了几份库”。`.so` 是否压缩是另一条轴：在支持 direct loading 的设备上，`useLegacyPackaging=false` 会让库保持未压缩并满足 page alignment，安装后不必再额外抽取一份；`true` 时才会更接近旧式 `extractNativeLibs=true` 的行为。分析下载体积和安装后磁盘占用时，这两条设置要分开看。
+
+### 16KB Page Size 兼容不是体积优化项
+
+Android 15+ 要求部分设备支持 16KB page size，这对 native library 产生了硬约束——不是“优化可选项”，而是“不满足就加载失败”。
+
+关键要求：
+
+- **AGP 8.5.1+**：使用未压缩 shared libraries（`useLegacyPackaging=false`），确保 `.so` 的 ZIP entry 对齐到 16KB 边界
+- **NDK r28+**：默认生成 16KB ELF alignment（`max-page-size=16384`）；NDK r27 及以下需在链接器 flags 中添加 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384`
+- **Prebuilt .so**：用 `readelf -l <lib>.so | grep LOAD` 检查所有 LOAD 段的 `Align` 是否 ≥ 2\*\*14（16384）
+- **APK 对齐验证**：`zipalign -P 16 4 <input.apk> <output.apk>` 或 `bundletool` 验证 ZIP entry 对齐
+
+常见踩坑：为了追求更小的 APK 数值，手动压缩 `.so` 或用第三方工具重打包，会破坏 ELF LOAD 段和 ZIP entry 对齐。16KB 设备上 `dlopen` 会因 alignment 不匹配而失败。
+
+[已验证: developer.android.com/guide/practices/page-sizes]
 
 ### Strip 符号表与符号管理
 
