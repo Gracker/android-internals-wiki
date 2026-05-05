@@ -2,7 +2,6 @@
 title: Frame Pacing Library 与帧节奏控制
 chapter: '2.17'
 section: '2.17'
-status: ready-for-review
 applicable_versions: Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API
   37)
 last_verified: '2026-04-19'
@@ -78,32 +77,27 @@ related_chapters:
 created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 官方文档 + 研究素材
-pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-05-06'
 reviewed_date: '2026-05-06'
 task6_result: pass-light-edit
-task9_result: needs-rework
 last_task2b_at: "2026-05-06T05:49:37+08:00"
 task9_task6_reviewed_date: '2026-04-30'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-06T05:30:00+08:00'
-task9_reviewed_date: '2026-05-06'
-review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0
-  1，P1 2。 | 2026-05-06 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；VK_KHR_present_id
-  核心版本断言错误，DeliQueue 实现模型与跨章口径不一致。 | 2026-05-06 Task6 02:06：复审 2.17 写作层；清理 L1 填充副词
-  3 处。章节仍有 Task9 P95 pending 队列，本轮不做技术裁决，保持 task2b_pending。 | 2026-05-06 Task6 05:05：revisiting
-  写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 05 task9
-  deep-review: needs-rework。P0 1 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。 | 2026-05-06 Task6 06:08：revisiting 写作复审；清理发布稿编辑痕迹、第一人称与结构性引导语 15 处。Task9 仍 pending，本轮不做技术裁决。'
-last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
 last_task6_at: '2026-05-06T06:08:00+08:00'
 last_task6_review_log: logs/review/2026-05-06-06-review.md
-task9_review_notes: '2026-05-06 05 task9 deep-review: needs-rework。P0 1 / P1 1 / P2
-  2。P0/P1 已写入 queue，等待 Task2B。'
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_date: "2026-05-06"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-06T06:23:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-06-06-deep-review.md"
+review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。"
+task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。"
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制

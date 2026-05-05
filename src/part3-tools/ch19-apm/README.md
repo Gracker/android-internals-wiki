@@ -2,7 +2,6 @@
 title: "第 19 章：APM 工具与性能监控生态"
 chapter: "19.0"
 section: "19.0"
-status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "openclaw"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -23,26 +22,28 @@ sources:
     path: https://github.com/Tencent/matrix
   - type: github
     path: https://github.com/KwaiAppTeam/KOOM
-pipeline_stage: task9_pending
 task2b_result: fixed
-task2b_state: fixed
 task6_state: reviewed
-task9_state: pending
 last_task2b_at: "2026-05-06T05:49:37+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
-task9_reviewed_date: "2026-05-05"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T14:20:00+08:00"
-task9_result: needs-rework
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
 last_task6_at: "2026-05-06T06:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-06-review.md"
-review_notes: "2026-05-06 Task6 06:08：章节总纲写作复审；补齐 sources frontmatter，无正文大改。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 Task2B 05:44：确认 P0 FrameMetrics 归属修正已在上一轮生效；P1 Tracing SDK 版本修正已生效。更新 pipeline_stage 推回 Task6 复审。 | 2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。 | 2026-05-05 Task2B 22:22：P0 FrameMetrics 归属修正（android.view.FrameMetrics API 24+）；P1 Tracing SDK 版本修正（1.3.0 稳定 / tracing-perfetto 2.0 alpha）。"
-last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
+task9_reviewed_date: "2026-05-06"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-06T06:23:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-06-06-deep-review.md"
+review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。"
+task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。"
 ---
 
 # 第 19 章：APM 工具与性能监控生态

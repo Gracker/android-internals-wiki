@@ -1126,3 +1126,15 @@
 - **位置**：L384
 - **问题**：`tracebox` 被称为“单文件可执行程序”，实际是自包含 Python 脚本。
 - **建议**：改为“单文件 Python 工具/自包含脚本”。
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 — 2026-05-06
+- **类型**：版本差异/扩展依赖
+- **位置**：L458 VK_KHR_present_id / VK_KHR_present_wait 待验证段
+- **问题**：正文已把 present_id 从 Swappy 当前实现中剥离出来，但待验证句仍把 VK_KHR_present_id / VK_KHR_present_wait 并列写成可选能力，未说明 present_wait 对 present_id 的依赖和独立 feature 查询边界。
+- **建议**：补一句：VK_KHR_present_wait depends on VK_KHR_present_id，设备侧还需查询/启用 VkPhysicalDevicePresentWaitFeaturesKHR；这仍只是未来接入方向，不代表当前 Swappy 使用。
+
+## [Task9 Deep Review] 19.0 第 19 章：APM 工具与性能监控生态 — 2026-05-06
+- **类型**：交叉引用一致性
+- **位置**：L141-L142 本章内容 / src/SUMMARY.md L254-L255 / 19.21 与 19.22 实际章节
+- **问题**：README 与 SUMMARY 已把 19.21/19.22 写成 Speedometer、CPDT、PCMark Storage 口径，但 19.21 H1 仍是“Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）”，19.22 frontmatter 与 H1 仍是“存储 Benchmark（AndroBench、A1 SD Bench）”。目录、章节标题和实际内容入口不一致。
+- **建议**：统一 19.21/19.22 的 frontmatter title、H1、SUMMARY 和 README；若 19.22 仍保留历史存储工具为主，应把 README/SUMMARY 改回历史口径，或先完成 CPDT/PCMark Storage 正文补强后再改标题。

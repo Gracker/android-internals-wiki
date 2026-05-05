@@ -8,8 +8,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 110,
-      "task2b_pending": 85,
-      "task9_pending": 22,
+      "task2b_pending": 87,
+      "task9_pending": 20,
       "task6_pending": 1
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 202,
-      "pending": 11
+      "reviewed": 204,
+      "pending": 9
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 116,
-      "pending": 92,
+      "fixed": 114,
+      "pending": 94,
       "idle": 3
     },
     "finalized": 111,
@@ -43,8 +43,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 110,
-      "task2b_pending": 85,
-      "task9_pending": 22,
+      "task2b_pending": 87,
+      "task9_pending": 20,
       "task6_pending": 1
     },
     "task6_state_counts": {
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 202,
-      "pending": 11
+      "reviewed": 204,
+      "pending": 9
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 116,
-      "pending": 92,
+      "fixed": 114,
+      "pending": 94,
       "idle": 3
     },
     "last_updated": "2026-05-06"
@@ -1292,10 +1292,10 @@
       "last_verified": "2026-04-19",
       "last_verified_against": "AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline, developer.android.com/games/sdk/frame-pacing",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1303,14 +1303,14 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T05:30:00+08:00",
+      "last_task9_at": "2026-05-06T06:23:00+08:00",
       "task6_reviewed_date": "2026-05-06",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-05-deep-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-06-deep-review.md",
       "last_task6_at": "2026-05-06T06:08:00+08:00",
-      "review_notes": "2026-05-06 Task6 06:08：revisiting 写作复审；清理发布稿编辑痕迹、第一人称与结构性引导语 15 处。Task9 仍 pending，本轮不做技术裁决。",
-      "p0": 1,
+      "review_notes": "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。",
+      "p0": 0,
       "p1": 1,
-      "p2": 2,
+      "p2": 1,
       "last_task6_review_log": "logs/review/2026-05-06-06-review.md"
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
@@ -6366,25 +6366,29 @@
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task2b_result": "fixed",
       "last_task2b_at": "2026-05-06T05:49:37+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-05-05",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-05T14:20:00+08:00",
+      "last_task9_at": "2026-05-06T06:23:00+08:00",
       "task6_result": "pass-light-edit",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task6_reviewed_date": "2026-05-06",
       "last_task6_at": "2026-05-06T06:08:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-06-review.md",
-      "review_notes": "2026-05-06 Task6 06:08：章节总纲写作复审；补齐 sources frontmatter，无正文大改。Task9 仍 pending，本轮不做技术裁决。"
+      "review_notes": "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-06-deep-review.md",
+      "p0": 0,
+      "p1": 1,
+      "p2": 1
     },
     "14-9-camera-perfetto": {
       "last_review": "2026-05-01",
@@ -8782,7 +8786,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T06:08:00+08:00",
+  "last_updated": "2026-05-06T06:23:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11318,5 +11322,30 @@
         "reason": "内容不充分：outline 后正文 1 行，有效内容 0 行"
       }
     ]
+  },
+  "2026-05-06-06-task9": {
+    "task": "deep-tech-review",
+    "timestamp": "2026-05-06T06:23:00+08:00",
+    "sections_reviewed": [
+      {
+        "section": "2.17",
+        "title": "Frame Pacing Library 与帧节奏控制",
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 1,
+        "auto_promoted": false
+      },
+      {
+        "section": "19.0",
+        "title": "第 19 章：APM 工具与性能监控生态",
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 1,
+        "auto_promoted": false
+      }
+    ],
+    "log": "logs/deep-review/2026-05-06-06-deep-review.md"
   }
 }
