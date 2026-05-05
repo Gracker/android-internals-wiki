@@ -1,7 +1,8 @@
 ---
 title: "卡顿原因体系"
 chapter: "7.2"
-status: ready-for-review
+section: "7.2"
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-15.0.0_r1"
@@ -35,18 +36,18 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:45+08:00"
-task9_result: needs-rework
-last_task9_at: "2026-05-04T22:21:37+08:00"
+task9_result: pass-tech-review
+last_task9_at: "2026-05-06T03:43:42+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-04"
-task9_review_notes: "2026-05-04 22 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1（P2 为既有 16KB 数据建议，未重复写入）。HWC3 AIDL 关键源码索引仍为旧错路径。"
+task9_reviewed_date: "2026-05-06"
+task9_review_notes: "2026-05-06 03 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task6_at: "2026-05-06T03:20:00+08:00"
 task6_reviewed_date: "2026-05-06"
 review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"

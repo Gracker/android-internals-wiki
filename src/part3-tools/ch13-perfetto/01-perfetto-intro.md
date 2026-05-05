@@ -38,18 +38,18 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 task2b_rework_date: "2026-05-06T02:43:33+08:00"
-task9_reviewed_date: "2026-05-03"
+task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。 评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。；2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 19 处；移动尾部注入块到正文/参考资料；无新增 B 类回炉问题，等待 Task 9 复审。"
-last_task9_at: "2026-05-03T00:36:00+08:00"
-task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0。"
+last_task9_at: "2026-05-06T03:43:42+08:00"
+task9_review_notes: "2026-05-06 03 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；Perfetto Mainline/APEX 部署口径仍残留 com.android.os.perfetto 错误。"
 last_task6_at: "2026-05-06T03:20:00+08:00"
 task6_reviewed_date: "2026-05-06"
 ---
