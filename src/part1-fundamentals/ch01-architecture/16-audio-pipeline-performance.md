@@ -37,14 +37,13 @@ task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-22T23:53:44+08:00"
-task9_reviewed_date: "2026-05-04"
+task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-04T19:36:00+08:00"
+last_task9_at: "2026-05-05T09:20:00+08:00"
 section: "1.16"
-task9_review_notes: "2026-05-04 19:36 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task9_review_notes: "2026-05-05 09:20 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2: IConfig.aidl 版本边界/段落位置、FastCapture 输入路径、LE Audio 数据边界。"
 review_type: "task6-writing-quality-review"
 ---
-
 
 # 1.16 Audio Pipeline 延迟与性能
 

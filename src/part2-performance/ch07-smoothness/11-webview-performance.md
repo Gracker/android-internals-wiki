@@ -554,6 +554,19 @@ android.webkit.WebViewClient.onRenderProcessGone(view, RenderProcessGoneDetail)
 |----------|---------|------|
 | `frameworks/base/core/java/android/webkit/WebViewClient.java` | `onRenderProcessGone()` 回调定义（行 597） | API 26+ |
 | `frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java` | `didCrash()` / `rendererPriorityAtExit()` 抽象方法 | API 26+ |
+
+<!-- AIW-源码调研-2026-05-05 -->
+> 📚 **源码调研补充（2026-05-05）**：本节的 `onRenderProcessGone()` 分析基于 AOSP master 分支的 Framework 层源码。完整的 Renderer 进程隔离架构、WebViewFactory Provider 加载机制和多进程判定逻辑，详见调研报告：
+> [`2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md`](https://github.com/gracker/AutoResearchClaw/tree/main/调研报告)（OpenClaw AutoResearchClaw 体系）。
+>
+> 核心发现：
+> - `WebViewDelegate.isMultiProcessEnabled()` 返回 true 表示多进程模式开启
+> - Provider 类名从 `WebViewChromiumFactoryProviderForT` (API 33-) 演变为 `WebViewChromiumFactoryProviderForB` (API 36+)
+> - `RenderProcessGoneDetail.didCrash()` 区分 crash vs OOM kill：true = crash，false = 系统 kill
+> - 多 WebView 共用同一 Renderer 时，一个 OOM 会对所有关联 WebView 触发 `onRenderProcessGone`
+>
+<!-- AIW-源码调研-2026-05-05 -->
+
 | `frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java` | 渲染器无响应回调体系 | API 29+ |
 | `frameworks/base/core/java/android/webkit/WebViewRenderProcess.java` | `terminate()` 方法 | API 29+ |
 | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | 渲染进程退出事件触发层 | Chromium mainline |
