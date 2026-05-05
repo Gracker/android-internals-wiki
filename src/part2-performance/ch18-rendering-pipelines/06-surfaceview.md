@@ -7,27 +7,27 @@ tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独�
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-task2b_state: fixed
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-28T11:41:58+08:00"
-task9_reviewed_date: "2026-04-28"
+task2b_state: "fixed"
+task9_result: "needs-rework"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-06T01:28:30+08:00"
+task9_reviewed_date: "2026-05-06"
 task2b_result: fixed
 task2b_rework_date: "2026-04-20"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
-last_task2b_at: "2026-05-05T13:51:05"
+last_task2b_at: "2026-05-06T01:46:24+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External 问题单）"
-status: ready-for-review
-pipeline_stage: task9_pending
-task6_state: reviewed
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: "pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
 last_task6_at: "2026-05-06T01:05:00+08:00"
-review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST 创建链路缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。"
+review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST 创建链路缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。Android 16 低延迟输入 API 断言未在 AOSP Window/ViewRootImpl 找到，现代 SurfaceView 首帧/WMS 链路仍有旧模型残留；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:46:24+08:00 Task2B：P0 删除不存在的 setPreferLowLatencyInput API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。"
 ---
 
 # SurfaceView 直出链路
@@ -136,7 +136,13 @@ SurfaceView 的渲染链路可以分为三个阶段，每个阶段对应不同�
    - **Vulkan 模式**：`vkCmdDraw()` → `vkQueuePresentKHR()`。高性能游戏引擎使用
 3. **queueBuffer**：绘制完成，将 Buffer 放回队列，通知 Consumer
 
-Producer Thread 的关键特征是**不受 Choreographer 调度**。它不等待 VSync-App 信号，而是按照自己的节奏（视频帧率、游戏帧率、Camera 采样率）生产帧。因此，SurfaceView 的帧率可以与 App UI 帧率完全不同——视频以 24fps 播放时，App UI 仍然以 60fps 流畅刷新。
+SurfaceView 解耦的是独立 Surface/BufferQueue 与 View hierarchy 的逐帧绘制——Producer Thread 不需要经过 App 主窗口的 RenderThread 采样。但 Producer 本身的帧节奏取决于内容类型：
+
+- **视频硬解**（MediaCodec）：按媒体时钟推帧，帧率由视频源决定（24/30/60fps），与 App 的 Choreographer 完全独立
+- **Camera 预览**：按 sensor/HAL cadence 输出（通常 30fps），同样独立于 App 的 VSync 节奏
+- **游戏/地图**（App 内 EGL/Vulkan Producer）：虽然不经过 App 主窗口 RenderThread，但 Producer 本身仍可由 Choreographer、AChoreographer、Swappy/Frame Pacing 或引擎内部时钟驱动——并非所有 Producer 都与 VSync 无关
+
+因此 SurfaceView 的帧率可以与 App UI 帧率不同（视频以 24fps 播放时，App UI 仍以 60fps 刷新），但「Producer 不受 Choreographer 调度」这个说法只对视频和 Camera 成立，对游戏类 Producer 过于绝对。
 
 ### 第二阶段：BLASTBufferQueue 与事务提交
 
@@ -354,19 +360,25 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 
 **现象**：SurfaceView 创建后到第一帧显示有明显延迟。
 
-**原因**：SurfaceView 的独立 Layer 创建需要经过 WMS 的跨进程调用，加上 BufferQueue 的初始化。
+**原因**（按版本拆开）：
+
+- **Android 10 及以下**：SurfaceView 的独立 Layer 注册和位置同步依赖 WMS 的 `WindowState` / `WindowSurfacePlacer` 跨进程协调。Layer 创建、BufferQueue 初始化、窗口位置同步分别由不同模块处理，容易错拍——首帧延迟主要来自这个跨进程窗口模型的协调开销
+- **Android 11+（BLAST/SurfaceControl）**：SurfaceView 通过 `updateSurface()` → `createBlastSurfaceControls()` 在 App 进程内创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。首帧延迟的构成变成：ViewRoot/window 就绪 → SurfaceControl/BLASTBufferQueue 初始化 → Transaction 提交到 SurfaceFlinger → Producer 第一帧 buffer/fence 就绪。每一步都有明确的边界，但 BLAST 模式下的同步协调比旧模型可靠得多
 
 **优化**：使用 `SurfaceView.getHolder().addCallback()` 监听 `surfaceCreated` 回调，在回调后才启动 Producer，避免在 Surface 就绪前就开始绘制。
 
-### 5. 输入延迟与低延迟模式
+### 5. 输入延迟分析
 
-SurfaceView 默认的输入事件路径要经过 InputDispatcher → App 主线程 → View 树遍历。对于 Camera 取景器、游戏等对触控响应敏感的场景，这个链路可能增加 10ms 以上的额外延迟。
+SurfaceView 本身不改变输入事件的基础路径——触控事件仍然走 InputDispatcher → App 主线程 → View 树遍历这条标准链路。SurfaceView 解耦的是渲染，不是输入。
 
-Android 16 引入 `Window.setPreferLowLatencyInput(true)`。开启后，系统会在 SurfaceView 所在窗口上优先使用低延迟输入通道，缩短从触控事件到 Surface 更新的端到端时间。这在 Camera 实时取景器场景下效果最明显——触摸对焦点的响应速度可提升约 10ms。
+但输入延迟最终会反映到画面更新上，这个端到端链路可以拆成四段来分析：
 
-注意事项：
-- 该 API 需要 Producer 端配合低延迟 buffer 流转策略（不能在 dequeueBuffer 上堆积）
-- 仅对用户可感知的交互场景有意义，后台播放不需要开启
+1. **InputDispatcher → App 主线程**：InputDispatcher 将触控事件分发到 App 的 InputConsumer，App 主线程从 NativeInputEventReceiver 读事件。这一段的延迟取决于 InputDispatcher 的 ANR 超时配置、App 主线程是否被阻塞、以及是否有其他窗口优先消费事件
+2. **App 主线程处理 → Producer 帧提交**：App 收到输入后更新状态（如游戏角色位置、Camera 对焦区域），Producer Thread 根据新状态生成下一帧。这一段的延迟取决于 Producer 的帧节奏和 App→Producer 的数据传递方式
+3. **Producer 帧节奏**：视频按媒体时钟、Camera 按 sensor/HAL cadence 推帧，这两类 Producer 与输入事件无直接关系——用户触控不会改变视频帧率或 Camera 输出节奏。但游戏/地图类 App 内的 EGL/Vulkan Producer 通常由 Choreographer 或引擎时钟驱动，输入事件可能触发下一帧提前提交
+4. **BufferQueue 堆积**：如果 Producer 生产速度超过 SurfaceFlinger 消费速度，队列中堆积的帧会增加「从 Producer 画完到用户看到」的延迟。Triple Buffering 缓解了 Producer 阻塞，但不会减少已有帧的等待时间
+
+排查 SurfaceView 场景下的输入延迟，应按这四段分别找瓶颈：主线程卡顿在 Perfetto 中看 doFrame 耗时，Producer 帧节奏看 queueBuffer 间隔，BufferQueue 堆积看 acquire fence signal 时间与 VSync-SF 的关系。
 
 ---
 

@@ -1,6 +1,68 @@
 {
   "pending": [
     {
+      "section": "5.4",
+      "section_title": "DVFS 与功耗管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.4 DVFS 与功耗管理 schedutil 源码节选和 SCMI Performance Protocol msg_id 仍存在事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L227-L259 schedutil 的频率计算",
+          "detail": "[P0] 正文给出的 android15-6.6 / android16-6.12 `sugov_get_util()` 代码片段仍不是对应分支源码。android15-6.6 实际没有 `sg_cpu->max`、没有 `uclamp_rq_util_with()`，`effective_cpu_util()` 调用为 `effective_cpu_util(cpu, util, FREQUENCY_UTIL, NULL)`；android16-6.12 实际从 `scx_cpuperf_target()` 起算，经 `effective_cpu_util(cpu, util, &min, &max)`、`max(util, boost)`、`sugov_effective_cpu_perf()` 计算，并设置 `bw_min`，不是文中这段 android15 形态加一行 `scx_cpuperf_target()`。",
+          "suggestion": "按 `kernel/common` refs/heads/android15-6.6 与 android16-6.12 的真实 `kernel/sched/cpufreq_schedutil.c` 改写；如果不贴完整源码，改成“简化伪代码”并显式标注省略项，避免把伪代码写成已验证源码片段。"
+        },
+        {
+          "type": "源码错误/Trace 配置错误",
+          "location": "L379-L385 SCMI Performance Protocol msg_id",
+          "detail": "[P0] 正文写 `PERF_LEVEL_SET (msg_id 0x4)`、`PERF_LEVEL_GET (msg_id 0x6)`。android16-6.12 `drivers/firmware/arm_scmi/perf.c` 中枚举为 `PERF_DESCRIBE_LEVELS=0x4`、`PERF_LIMITS_GET=0x6`、`PERF_LEVEL_SET=0x7`、`PERF_LEVEL_GET=0x8`。按正文过滤会把 level set/get 识别错。",
+          "suggestion": "将 SCMI Performance Protocol 的命令号修为 SET=0x7、GET=0x8，并补一句：`scmi_fc_call` 只在平台实现 Fastchannel get/set 地址时出现；没有 fastchannel 时需看 `scmi_xfer_*` 事件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T01:28:30+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-06T01:47:29+08:00",
+      "completed_reason": "P0 schedutil源码改为简化伪代码并标注省略项（effective_cpu_util签名、uclamp位置、scx_cpuperf_target/sugov_effective_cpu_perf调用链）；P0 SCMI PERF_LEVEL_SET/GET msg_id修正为0x7/0x8，补fastchannel事件说明"
+    },
+    {
+      "section": "18.6",
+      "section_title": "SurfaceView 直出链路",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 18.6 SurfaceView 低延迟输入 API 与现代 BLAST/SurfaceControl 创建链路存在事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "API 错误/版本差异",
+          "location": "L361-L369 输入延迟与低延迟模式",
+          "detail": "[P0] 正文称 Android 16 引入 `Window.setPreferLowLatencyInput(true)`。复核 AOSP `android-16.0.0_r1` 的 `android.view.Window`、`WindowManager`、`ViewRootImpl`，未找到该方法或同名 low-latency input API；该段“Camera 响应提升约 10ms”也缺少公开 API/测试条件支撑。",
+          "suggestion": "删除该 API 断言，或在找到正式 API/commit/官方文档后再恢复。可改写为“输入延迟需从 InputDispatcher、App 主线程处理、producer 帧节奏、BufferQueue 堆积四段分析”，不要给不存在的 Android 16 Window API。"
+        },
+        {
+          "type": "版本差异/源码错误",
+          "location": "L353-L358 首帧延迟",
+          "detail": "[P1] 正文仍把 SurfaceView 首帧延迟归因成“独立 Layer 创建需要经过 WMS 的跨进程调用”。Android 11+ / android16 的现代路径是 `SurfaceView.updateSurface()` → `createBlastSurfaceControls()`，在 App 进程用 `SurfaceControl.Builder()` 创建 container layer、BLAST layer、background layer，并 parent 到 ViewRootImpl bounds layer；不是旧 WMS 独立窗口模型。",
+          "suggestion": "按版本拆开：Android 10 及以下可讲旧窗口/异步位置模型；Android 11+ 首帧成本应写成 ViewRoot/window 就绪、SurfaceControl/BLASTBufferQueue 初始化、Transaction 到 SurfaceFlinger、producer 第一帧 buffer/fence 就绪。"
+        },
+        {
+          "type": "原理断裂/边界缺失",
+          "location": "L139、L315-L319 Producer Thread 与 Choreographer 关系",
+          "detail": "[P1] “Producer Thread 不受 Choreographer 调度 / 不等待 VSync-App”对视频硬解、Camera HAL 常成立，但对游戏/地图这类 App 内 EGL/Vulkan producer 过于绝对。SurfaceView 解耦的是独立 Surface/BufferQueue 与 View hierarchy 绘制；producer 本身仍可由 Choreographer、AChoreographer、Swappy/Frame Pacing 或引擎时钟驱动。",
+          "suggestion": "把 producer 节奏按视频、Camera、游戏三类拆开：视频按媒体 clock，Camera 按 sensor/HAL cadence，游戏常仍与 VSync/frame pacing 对齐，只是不必经 App 主窗口 RenderThread 采样。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T01:28:30+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-06T01:47:29+08:00",
+      "completed_reason": "P0 删除不存在的Window.setPreferLowLatencyInput API断言，改为四段输入延迟分析框架；P1 首帧延迟按Android 10-/11+版本拆开（WMS旧模型 vs BLAST/SurfaceControl新模型）；P1 Producer Thread按视频/Camera/游戏三类限定Choreographer关系"
+    },
+    {
       "section": "2.16",
       "section_title": "Sync Fence 框架与帧同步机制",
       "priority": 95,
