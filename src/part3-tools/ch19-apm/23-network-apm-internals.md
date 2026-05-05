@@ -10,11 +10,11 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 sources:
   - "https://square.github.io/okhttp/features/events/"
   - "https://square.github.io/okhttp/features/interceptors/"
@@ -26,12 +26,13 @@ task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-01T12:25:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-01"
+reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
-review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion."
+review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion. | 2026-05-05 task6 review: L1/L2 小修完成（术语换为“分解”，结束动作改成“请求结束”）；无新增 L3/L4 回炉项，等待 Task9 复审。"
 
 last_task2b_at: "2026-05-04T03:40:00+08:00"
-
+last_task6_at: "2026-05-05T14:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-14-review.md"
 ---
 
 # 网络 APM 底层捕获原理
@@ -41,11 +42,11 @@ last_task2b_at: "2026-05-04T03:40:00+08:00"
 
 ### 锚点（必须覆盖）
 
-- 🔹 [定位] 说明商业与开源 APM 是如何“无侵入”地拿到网络数据的，揭秘背后的黑魔法，而不仅仅是停留在看板展示。
-- 🔹 [OkHttp 捕获] 深度拆解 `EventListener` 与 `Interceptor` 在网络 APM 中的组合使用；说明为何只用 Interceptor 拿不到 DNS 和 TCP 耗时。
+- 🔹 [定位] 说明商业与开源 APM 如何“无侵入”地拿到网络数据，讲清背后的采集方式，而不是只停留在看板展示。
+- 🔹 [OkHttp 捕获] 详细分解 `EventListener` 与 `Interceptor` 在网络 APM 中的组合使用；说明为何只用 Interceptor 拿不到 DNS 和 TCP 耗时。
 - 🔹 [字节码插桩] 解释如何通过 ASM 或 Transform 无侵入地 Hook `HttpURLConnection` 和三方 SDK 内部封装的网络请求。
 - 🔹 [Native 网络捕获] 探讨对于基于 C/C++ 的底层网络库（如 Cronet、微信 Mars），APM 如何通过 PLT Hook 或 eBPF 获取流量与耗时。
-- 🔹 [指标拆解模型] 将一次网络请求拆解为 DNS、TCP 握手、TLS 握手、Request 发送、Server Wait (TTFB)、Response 接收。
+- 🔹 [指标分解模型] 将一次网络请求分解为 DNS、TCP 握手、TLS 握手、Request 发送、Server Wait (TTFB)、Response 接收。
 - 🔹 [弱网与重试识别] 说明 APM 如何在底层识别因弱网导致的多次建连重试，避免将重试耗时算入单次请求 Server 耗时。
 - 🔹 [隐私与安全] 规定端侧在捕获时如何进行 URL Pattern 聚类、Query 参数剥离、Body 截断以及 Header 过滤。
 
@@ -58,7 +59,7 @@ last_task2b_at: "2026-05-04T03:40:00+08:00"
 ### 流水线加工要求
 
 - 必须从架构师的视角解释“如何造轮子”，而不仅是“如何用轮子”。
-- 所有网络指标拆解必须符合真实的网络协议栈阶段。
+- 所有网络指标分解必须符合真实的网络协议栈阶段。
 - 强调插桩与拦截器引入的性能开销及防劣化方案。
 
 ### OpenClaw 加工指引
@@ -190,7 +191,7 @@ private class NetworkMetricEventListener(
     ) {
         currentAttempt().failure = ioe.javaClass.simpleName
         // 不在这里创建新 attempt，等下一次 connectStart/dnsStart 时再懒创建
-        // 如果这是最后一次失败，callFailed 会把当前 attempt（含 failure 信息）记录下来
+        // 如果这是终止前的失败，callFailed 会把当前 attempt（含 failure 信息）记录下来
         // 避免产生一个空 attempt 导致 attempt_count 多算、retry_overhead_ms 归因被污染
     }
 
@@ -249,7 +250,7 @@ private class NetworkMetricEventListener(
 - 响应语义：HTTP 状态码、业务错误码、重定向链条、缓存命中
 - 脱敏：Query 参数剥离、header 白名单、body 截断
 
-把两个接口混用时，稳妥的结构是：`Interceptor` 生成 request sample 外壳，`EventListener` 填充 attempt 级细项，收口时再合并。
+把两个接口混用时，稳妥的结构是：`Interceptor` 生成 request sample 外壳，`EventListener` 填充 attempt 级细项，请求结束时再合并。
 
 ## 3. `HttpURLConnection` 与三方 SDK：靠构建期插桩补入口
 
@@ -515,7 +516,7 @@ HTTP/3 之后，很多团队会继续沿用 DNS/TCP/TLS/TTFB 这套字段名，�
 - [已覆盖] OkHttp 捕获：拆分 `EventListener` 与 `Interceptor` 的职责，解释 DNS/TCP 盲区
 - [已覆盖] 字节码插桩：给出 ASM Hook `openConnection` 的伪代码与工程边界
 - [已覆盖] Native 网络捕获：说明 Cronet 指标、PLT Hook、eBPF 权限边界
-- [已覆盖] 指标拆解模型：给出 request / attempt 双层模型与阶段表
+- [已覆盖] 指标分解模型：给出 request / attempt 双层模型与阶段表
 - [已覆盖] 弱网与重试识别：拆分 `retry_overhead_ms` 与 `server_wait_ms`
 - [已覆盖] 隐私与安全：补齐 URL、Query、Header、Body、删除请求策略
 - [扩展已覆盖] `OkHttp EventListener` 核心代码
