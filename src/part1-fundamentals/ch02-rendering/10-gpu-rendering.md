@@ -31,17 +31,17 @@ last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、A
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: pending
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
+task2b_state: fixed
 last_task9_at: "2026-05-05T00:20:00+08:00"
 task2b_result: fixed
-last_task2b_at: "2026-05-01T11:45:15.768159"
+last_task2b_at: "2026-05-05T10:47:46.820460"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。P0 3 / P1 3 / P2 3。"
 
 ---
@@ -100,17 +100,23 @@ Vertex Shader 是 GPU 渲染管线的第一个可编程阶段，它负责处理�
 当我们调用 `Canvas.drawRect()` 时，这个调用最终会触发 GPU 执行 Vertex Shader。Vertex Shader 做三件事：将模型顶点从本地坐标转换到屏幕坐标（涉及模型矩阵、视图矩阵、投影矩阵的组合变换）；计算每个顶点的颜色、纹理坐标等插值属性，供 Fragment Shader 阶段插值使用；判断顶点是否在视口范围内，剔除不可见图元，避免后续阶段做无用功。
 
 ```java
-// frameworks/base/graphics/java/android/graphics/Canvas.java
+// frameworks/base/graphics/java/android/graphics/Canvas.java → BaseCanvas.java
 // @ AOSP android-16.0.0_r1
-public void drawRect(float left, float top, float right, float bottom, Paint paint) {
-    if (paint != null) {
-        native_drawRect(mNativeCanvasWrapper, left, top, right, bottom,
-                       paint.getNativeInstance()); 
-    }
+// Canvas.drawRect(float...) 委托给 super.drawRect → BaseCanvas.drawRect
+public void drawRect(float left, float top, float right, float bottom,
+                     @NonNull Paint paint) {
+    super.drawRect(left, top, right, bottom, paint);
+}
+
+// frameworks/base/graphics/java/android/graphics/BaseCanvas.java
+void drawRect(float left, float top, float right, float bottom, Paint paint) {
+    throwIfHasHwFeaturesInSwMode(paint);
+    nDrawRect(mNativeCanvasWrapper, left, top, right, bottom,
+              paint.getNativeInstance());
 }
 ```
 
-这个看似简单的 `drawRect()` 调用背后，Skia 会生成对应的顶点数据提交给 GPU。对于简单的矩形绘制，Vertex Shader 执行四个顶点的位置变换，开销很低。但如果矩形被缩放、旋转或倾斜——这在动画和自定义 View 中很常见——这些变换矩阵的复杂度会相应增加。
+这个调用链是 Canvas → BaseCanvas → nDrawRect(native)。Skia 在 native 侧接收到指令后，生成对应的顶点数据提交给 GPU。对于简单的矩形绘制，Vertex Shader 执行四个顶点的位置变换，开销很低。但如果矩形被缩放、旋转或倾斜——这在动画和自定义 View 中很常见——这些变换矩阵的复杂度会相应增加。
 
 在 Perfetto 中，我们可以在 GPU track 看到顶点处理时间。如果发现某个 UI 元素的 GPU 时间异常高，而界面又包含大量的自定义 Path 或复杂的 Canvas 变换，Vertex Shader 往往是第一个需要排查的方向。
 
@@ -222,11 +228,11 @@ Android 16 将 Vulkan 定为默认图形 API 的一个重要动机，就是利�
 
 ### Android 16 的重大转变：Vulkan 成为默认
 
-Android 16 把 Vulkan 推到更靠前的位置，但要把这句话拆开看。对应用开发者，系统默认优先按 Vulkan-first 的图形栈走；对仍使用 OpenGL ES 的应用，很多设备会通过 ANGLE 把 GL 调用翻译到 Vulkan；对设备厂商，新出货的 64 位设备还需要满足 Vulkan 1.4 / VPA16 这一层硬件基线。几个层次叠在一起，才构成“Android 16 默认走 Vulkan”的完整含义。
+Android 16 把 Vulkan 推到更靠前的位置，但要把这句话拆开看。对应用开发者，系统默认优先按 Vulkan-first 的图形栈走；对仍使用 OpenGL ES 的应用，**部分设备**会通过 ANGLE 把 GL 调用翻译到 Vulkan——ANGLE 是否启用取决于设备配置（`ro.hardware.egl`、全局 settings、平台 allowlist、ANGLE APK/system library 等条件），不能直接写成所有 GLES 应用都自动走 ANGLE。源码锚点：`GraphicsEnvironment.setupAngle()` / `queryAngleChoice()`。对设备厂商，新出货的 64 位设备还需要满足 Vulkan 1.4 / VPA16 这一层硬件基线。几个层次叠在一起，才构成“Android 16 的 Vulkan 推进”的完整含义。
 
 VPA16 里与性能关系最直接的一项是 Host Image Copy。它允许 CPU 侧把图像数据直接拷入 GPU image，省掉 staging buffer 和一次额外 copy。对滚动列表里的大图、视频帧上传、纹理流式加载这类持续上传场景，收益通常体现在峰值内存更低、提交抖动更小，而不只是 API 名字变化。
 
-这个转变背后的一个直接原因是 OpenGL ES 驱动实现质量长期参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异都不小。Google 通过 ANGLE 将大量 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，碎片化问题也随之收敛。
+这个转变背后的一个直接原因是 OpenGL ES 驱动实现质量长期参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异都不小。Google 通过 ANGLE 将大量 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，碎片化问题也随之收敛。但要注意：ANGLE 的启用取决于设备/应用级别的配置策略（`ro.hardware.egl`、Settings.Global、Angle APK allowlist），不是所有 GLES 应用在所有 Android 16 设备上都自动走 ANGLE。
 
 ### CPU 开销：一个数量级的差距
 
@@ -285,7 +291,7 @@ vkAllocateMemory(device, &allocInfo, nullptr, &memory);
 | 10 | 29 | **新出货的 64 位设备** 需要支持 Vulkan 1.1；ANGLE 可以作为可选的 OpenGL ES 系统驱动用于兼容与调试 |
 | 12-14 | 31-34 | ANGLE 覆盖范围继续扩大，Game Mode 与图形兼容性策略增多；是否由 ANGLE 接管仍取决于设备 launch policy 和厂商配置 |
 | 15 | 35 | Vulkan-first 路线继续推进，更多设备把 ANGLE 用在默认 GL 路径上，不能只按 OS 版本划线 |
-| 16 | 36 | **新设备默认按 Vulkan-first 图形栈设计**；新出货的 64 位设备基线提升到 Vulkan 1.4 / VPA16，包含 Host Image Copy；Vulkan Synchronization 2 减少了 RenderThread 指令提交中的同步开销；OpenGL ES 应用通常通过 ANGLE-on-Vulkan 运行 |
+| 16 | 36 | **新设备默认按 Vulkan-first 图形栈设计**；新出货的 64 位设备基线提升到 Vulkan 1.4 / VPA16，包含 Host Image Copy；Vulkan Synchronization 2 减少了 RenderThread 指令提交中的同步开销；OpenGL ES 应用**在配置了 ANGLE 的设备上**通过 ANGLE-on-Vulkan 运行，ANGLE 启用由 `GraphicsEnvironment.setupAngle()` 决定 |
 
 把这张表拆开后就不会把几件事混成一件事：Vulkan API 早在 Android 7.0 就出现；设备硬件门槛从 Android 10 的 Vulkan 1.1 一直推进到 Android 16 的 Vulkan 1.4 / VPA16；ANGLE 是否成为默认 GL 后端则是设备配置问题，不能直接写成单一 OS 版本边界。
 
@@ -323,7 +329,7 @@ if (!Float.isNaN(headroom) && headroom < 30f) {
 
 这个 API 适合在动画密集或滚动高频的场景中周期性轮询，但必须遵守 `getGpuHeadroomMinIntervalMillis()` 返回的最小间隔，否则调用会被系统节流。一个典型的降级策略是：headroom > 60 时全质量渲染，30-60 时关闭高开销后处理（模糊、阴影），< 30 时进一步简化动画。这比固定分辨率降级更精细，因为 GPU 负载是动态变化的——同一场景在不同温控状态下 headroom 可能完全不同。
 
-调用该 API 本身会触发一次跨进程查询（Binder 同步），开销在亚毫秒级。严禁在渲染主线程中按帧轮询——在 120fps 下 1ms 的同步阻塞就消耗了 12% 的帧预算。建议在独立的监控线程中以 `minInterval` 为周期异步采样，或通过 Choreographer 回调按固定间隔查询。
+调用该 API 本身会触发一次跨进程查询（Binder 同步），官方源码注释明确指出每次有效调用至少一次同步 Binder transaction，可能超过 1ms；首次调用或非默认 params 还可能因按需初始化更慢。严禁在渲染主线程中按帧轮询——在 120fps 下 1ms 的同步阻塞就消耗了 12% 的帧预算。建议在独立的监控线程中以 `minInterval` 为周期异步采样，或通过 Choreographer 回调按固定间隔查询。
 
 > [已验证: AOSP android-16.0.0_r1, android.os.health.SystemHealthManager — getGpuHeadroom(GpuHeadroomParams) / getGpuHeadroomMinIntervalMillis()]
 
@@ -394,17 +400,22 @@ Android 的 GPU 内存管理分成几层。App 平时直接接触的是 `Surface
 ```java
 // frameworks/base/graphics/java/android/graphics/GraphicBuffer.java
 // @ AOSP android-16.0.0_r1
-// [简化示意] 实际类通过 long mNativeObject 持有 native 侧的完整缓冲区描述
+// [简化示意] 实际类比这更复杂，这里只展示与内存排查相关的核心结构
 public class GraphicBuffer implements Parcelable {
-    // 唯一的字段：指向 native GraphicBuffer 对象的指针
-    // 宽度、高度、格式、usage 等属性通过 JNI 从 native 对象读取
-    long mNativeObject;
+    // Java 侧缓存的基本属性
+    private int mWidth;
+    private int mHeight;
+    private int mFormat;
+    private long mUsage;
 
-    // 便捷方法：从 native 对象获取属性
-    public native int getWidth();
-    public native int getHeight();
-    public native int getFormat();
-    public native int getUsage();
+    // 指向 native GraphicBuffer 对象的指针
+    private long mNativeObject;
+
+    // 这些 getter 是普通 Java getter，直接返回上述字段
+    public int getWidth()  { return mWidth; }
+    public int getHeight() { return mHeight; }
+    public int getFormat() { return mFormat; }
+    public long getUsage() { return mUsage; }
     // ...
 }
 ```
@@ -430,11 +441,11 @@ unlock(BufferHandle) -> release_fence
 
 ### 16KB 页环境下的 Gralloc 池化优化
 
-Android 16 在 16KB 页模式下，Gralloc AIDL V2 引入了内部子分配（sub-allocation）机制。传统模式下每个 GraphicBuffer 独立占用整数个物理页，小面积纹理（如 64x64 的图标缓冲区）在 16KB 页对齐后会产生大量页内碎片——一个 64x64 RGBA8888 缓冲区只需约 16KB 数据，但加上对齐和 metadata 开销，实际可能占用 32-48KB 物理页。子分配机制允许 Gralloc 在一个大物理页范围内管理多个小缓冲区，按实际数据大小而非整页粒度分配。
+Android 16 在 16KB 页模式下，Gralloc AIDL V2 **在设计方向上**引入了内部子分配（sub-allocation）机制。传统模式下每个 GraphicBuffer 独立占用整数个物理页，小面积纹理（如 64x64 的图标缓冲区）在 16KB 页对齐后会产生大量页内碎片——一个 64x64 RGBA8888 缓冲区只需约 16KB 数据，但加上对齐和 metadata 开销，实际可能占用 32-48KB 物理页。子分配机制的设计目标是允许 Gralloc 在一个大物理页范围内管理多个小缓冲区，按实际数据大小而非整页粒度分配。
 
-这对 GPU 内存压力的影响是双重的：一方面减少了小纹理的显存浪费，降低系统总 GPU 内存占用；另一方面减少了页表条目数量，对 TLB 压力有间接缓解。在应用层面，这个优化是透明的——不需要修改任何代码。但在分析 GPU 内存占用时需要注意，16KB 页环境下 `dumpsys meminfo` 中的 Graphics 内存项可能比 4KB 环境下看起来更低，部分原因是 Gralloc 内部碎片减少了。
+> [说明: Gralloc AIDL V2 sub-allocation 机制基于 Android 16 GKI 内核变更与硬件接口定义方向（`hardware/interfaces/graphics/allocator/aidl/`），但当前缺少公开的 AIDL 接口方法签名、VTS/CTS 测试用例或 vendor 实现代码作为验证证据。实际行为可能因 SoC 厂商实现而有差异。以上描述应视为基于设计意图的推断，而非已验证事实。具体实现细节待后续 AOSP 源码或厂商文档确认后补齐。]
 
-> [说明: Gralloc AIDL V2 sub-allocation 机制基于 Android 16 GKI 内核变更与硬件接口定义方向（`hardware/interfaces/graphics/allocator/aidl/`），但当前缺少公开的 AIDL 接口方法签名、VTS/CTS 测试用例或 vendor 实现代码作为闭环证据。实际行为可能因 SoC 厂商实现而有差异。以上描述应视为基于设计意图的推断，而非已验证事实。具体实现细节待后续 AOSP 源码或厂商文档确认后补齐。]
+在应用层面，如果该优化落地，效果是透明的——不需要修改任何代码。但在分析 GPU 内存占用时需要注意，16KB 页环境下 `dumpsys meminfo` 中的 Graphics 内存项可能比 4KB 环境下看起来更低，部分原因可能是 Gralloc 内部碎片减少。
 
 ### GPU 内存追踪和分析
 
@@ -686,15 +697,23 @@ struct BufferState {
 
 ```cpp
 // frameworks/native/libs/gui/BufferQueueProducer.cpp
-status_t BufferQueueProducer::waitForFreeSlotThenRelock(int* foundSlot) {
-    // 查找空闲槽位的逻辑
-    for (int slot = 0; slot < mCore->mNumSlots; slot++) {
-        if (!mCore->mSlots[slot].mBufferState.isDequeued() && 
-            !mCore->mSlots[slot].mBufferState.isQueued()) {
-            return slot;
-        }
-    }
-    return BUFFER_INSUFFICIENT_CAPACITY;
+// @ AOSP android-16.0.0_r1
+// [简化骨架] 实际函数签名：
+//   status_t waitForFreeSlotThenRelock(
+//       FreeSlotCaller caller,
+//       std::unique_lock<std::mutex>& lock,
+//       int* found) const
+// 返回 NO_ERROR / WOULD_BLOCK / TIMED_OUT；slot 通过 *found 输出
+status_t BufferQueueProducer::waitForFreeSlotThenRelock(
+        FreeSlotCaller caller, std::unique_lock<std::mutex>& lock,
+        int* found) const {
+    // 1. 统计当前 dequeued / acquired 数量
+    // 2. 检查是否超过 mMaxDequeuedBufferCount
+    // 3. 遍历 mSlots 找空闲 buffer 或可复用 slot
+    // 4. 无可用 slot → 根据调用者类型决定：
+    //    - dequeue 阻塞等待条件变量（支持超时）
+    //    - attach 直接返回 WOULD_BLOCK
+    // 5. 找到后通过 *found 输出 slot 索引，返回 NO_ERROR
 }
 ```
 
