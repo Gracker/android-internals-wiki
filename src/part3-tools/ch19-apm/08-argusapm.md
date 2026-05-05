@@ -15,11 +15,11 @@ sources:
   - type: blog
     path: "https://github.com/Qihoo360/ArgusAPM"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
-task6_reviewed_date: "2026-05-01"
-task6_result: "pass-light-edit"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-25"
+task6_state: reviewed
+task6_reviewed_date: "2026-05-05"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-05"
 task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-04"
@@ -29,12 +29,12 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-04T07:45:27.214044+08:00"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；源码路径需回炉修正，已写入 queue.json。；2026-05-04 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 0，Task6 已通过且 queue 无 pending，自动晋升 finalized。"
-
+last_task6_at: "2026-05-05T22:07:00+08:00"
 ---
-
 # ArgusAPM
 
 <!-- outline-start -->
+
 ## 本节要点大纲
 
 ### 锚点（必须覆盖）
@@ -78,6 +78,7 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；源码路径�
 ArgusAPM 是 360 开源的 Android 性能监控平台，仓库 README 把它定义为移动端可视化性能监控平台。它覆盖交互分析、网络、内存、进程、文件、卡顿、ANR 等指标，并提供 Gradle Plugin 做接入和 AOP 织入。
 
 截至 2026-04-24，仓库 README 仍保留一条公告：由于公司业务调整及成本原因，ArgusAPM 停止支持服务端免费新增接入，已接入产品不受影响。再往下看公开 sample，基线也停在较早期：`compileSdkVersion 27`、`targetSdkVersion 27`、`JavaVersion.VERSION_1_7`，示例里依赖的 OkHttp 还是 `3.10.0`。这个状态决定了它更适合作为架构参考或存量项目维护对象，不适合作为新项目默认选型。
+
 ## 架构分成采集模块和 Gradle Plugin
 
 ArgusAPM 的整体结构可以看成两部分：
@@ -111,6 +112,7 @@ README 中列出的监控模块覆盖面较广。把它们当架构样本看时�
 | ANR 分析 | ANR 现场抓取、主线程堆栈和进程状态快照 | ANR 现场样本、线程栈、版本聚类 |
 
 这些方向至今仍是移动 APM 的主干。变化主要发生在实现细节上：Android 版本提高、权限收紧、AGP 插件 API 变化、隐私审查变严，都会影响旧方案直接复用。
+
 ## 新项目使用要谨慎
 
 ArgusAPM 的主要风险来自维护状态和平台依赖。新项目直接采用会遇到几类风险：
@@ -130,6 +132,7 @@ ArgusAPM 的主要风险来自维护状态和平台依赖。新项目直接采�
 | 历史服务端字段口径 | 迁移后看板和告警容易断档 | 3：再处理字段兼容和历史数据映射 |
 
 如果已有项目还在用，建议先把采集模块、服务端依赖和构建插件分开评估。能保留的保留，无法适配的逐步替换成 AndroidX、Matrix、KOOM、Sentry、Firebase 或自研模块。
+
 ## 作为参考，它仍然有学习价值
 
 ArgusAPM 展示了一个完整移动 APM 早期形态：客户端模块化采集、编译期织入、网络库适配、多进程处理、服务端看板。这些设计问题今天仍然存在，只是工具和系统环境变了。
@@ -185,6 +188,7 @@ override fun onResume() {
 ```
 
 不适合用 AOP 解决所有问题。系统调度、RenderThread、GPU、native heap、Binder 对端都不在 Java 方法入口出口里。AOP 能补业务上下文，不能替代系统 trace。
+
 ## 多进程采集要单独设计
 
 README 提到 ArgusAPM 支持多进程采集。多进程 APM 的难点在三个地方：
@@ -209,6 +213,7 @@ README 提到 ArgusAPM 支持多进程采集。多进程 APM 的难点在三个�
 - 服务端按 `session_id + trace_id + stage` 聚合同一条操作链，把主进程页面事件和子进程 Crash / ANR 关联起来。
 
 多进程一刀切初始化，会增加启动成本，也会制造重复上报。
+
 ## 网络监控的现代适配
 
 ArgusAPM 里有 `argus-apm-okhttp` 这类网络采集模块。现代网络监控除了总耗时，还要区分：
@@ -219,7 +224,7 @@ ArgusAPM 里有 `argus-apm-okhttp` 这类网络采集模块。现代网络监控
 - 缓存命中和离线缓存。
 - URL pattern 脱敏。
 
-只靠 `Interceptor` 拿不到 DNS / connect / TLS 这些阶段，真正的阶段拆分要靠 `EventListener`；`Interceptor` 更适合补请求 ID、业务 code 和页面上下文。
+只靠 `Interceptor` 拿不到 DNS / connect / TLS 这些阶段，阶段拆分要靠 `EventListener`；`Interceptor` 更适合补请求 ID、业务 code 和页面上下文。
 
 这段 `EventListener` 示例属于迁移后的写法。OkHttp 的 `EventListener` 在 3.9 进入预览，3.11 才成为稳定 API；ArgusAPM sample 仍是 `okhttp:3.10.0`，存量工程不要直接复制这段阶段拆分。迁移顺序应先升级网络采集模块，再把旧 Interceptor / 流量包装改成 `EventListener + Interceptor` 分工。
 
@@ -263,6 +268,7 @@ class RequestContextInterceptor : Interceptor {
 ```
 
 如果平台只记录“接口耗时 1200ms”，定位价值有限。书稿级 APM 应该把网络请求拆成阶段指标，并和页面、用户操作、服务端 trace id 关联。
+
 ## 存量项目迁移建议
 
 已有 ArgusAPM 存量接入时，建议按模块拆迁，不要一次推倒：

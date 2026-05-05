@@ -34,9 +34,9 @@ sources:
   path: https://raw.githubusercontent.com/measure-sh/measure/main/docs/hosting/README.md
 pipeline_stage: ready-to-publish
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-24
+reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -46,11 +46,13 @@ task9_result: pass-tech-review
 task9_reviewed_date: '2026-04-24'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-24T17:50:00+08:00'
+task6_reviewed_date: "2026-05-05"
+last_task6_at: "2026-05-05T22:07:00+08:00"
 ---
-
 # Measure
 
 <!-- outline-start -->
+
 ## 本节要点大纲
 
 ### 锚点（必须覆盖）
@@ -93,7 +95,7 @@ last_task9_at: '2026-04-24T17:50:00+08:00'
 
 Measure 是一个开源移动监控方案，目标是把崩溃、ANR、启动、错误率、App 大小、用户点击、页面导航、HTTP 调用、CPU、内存等信息组织成可回查的会话时间线。它和 Matrix、KOOM 这类“客户端采集组件”不同，更接近“SDK + 后端 + 看板”的平台方案。
 
-如果团队不想从零搭服务端，又希望数据可自托管，Measure 值得评估。它的边界也要先定清：平台能帮你接住很多监控数据，但专项性能诊断仍然要回到 Perfetto、Profiler、heap dump 和业务日志。
+如果团队不想从零搭服务端，又希望数据可自托管，Measure 值得评估。它的边界也要先定清：平台能帮团队收集很多监控数据，但专项性能诊断仍然要回到 Perfetto、Profiler、heap dump 和业务日志。
 
 [已验证: 官方文档, GitHub README；docs/README.md；docs/sdk-integration-guide.md]
 
@@ -145,7 +147,7 @@ Firebase Performance 更偏 Google 生态里的低门槛性能监控；Sentry �
 2. 团队是否有维护后端服务的能力。
 3. 当前最缺的是崩溃治理、性能指标，还是会话级回查。
 
-如果只是想快速看到启动、网络、屏幕渲染和自定义 trace，Firebase 更轻。如果主要问题是崩溃、异常聚合和跨端错误追踪，Sentry 更成熟。如果希望把移动监控数据留在自有环境里，Measure 的开源形态更有吸引力。
+如果只是想快速看到启动、网络、屏幕渲染和自定义 trace，Firebase 更轻。如果主要处理崩溃、异常聚合和跨端错误追踪，Sentry 更成熟。如果希望把移动监控数据留在自有环境里，Measure 的开源形态更有吸引力。
 
 ## 使用建议
 
@@ -182,7 +184,7 @@ Measure 这类平台主要看数据模型，单个 SDK API 反而不是评估重
 00:10 anr: input dispatching timed out
 ```
 
-这组事件不能直接给根因，但能把复现路径变清楚：进入详情页、推荐接口超时、内存上涨、返回时 ANR。接下来才值得抓 Perfetto、看主线程和网络回调。
+这组事件不能直接给根因，但能把复现路径变清楚：进入详情页、推荐接口超时、内存上涨、返回时 ANR。之后再抓 Perfetto，看主线程和网络回调。
 
 ## 自定义 trace 的设计原则
 
