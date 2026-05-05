@@ -22,17 +22,17 @@ tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory'
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-21"
 rework_by: openclaw-task2b
-review_round: 6
+review_round: 7
 last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达"
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: pending
@@ -43,6 +43,9 @@ last_task9_at: "2026-05-05T00:20:00+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-05-05T10:47:46.820460"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。P0 3 / P1 3 / P2 3。"
+task6_reviewed_date: "2026-05-05"
+last_task6_at: "2026-05-05T11:05:00+08:00"
+review_notes: "2026-05-05 task6 revisit: L1/L2 小修完成；既有 queue pending 阻止自动晋升；待 Task9 复审。"
 
 ---
 
@@ -52,9 +55,9 @@ task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。P0 3 / P1 3 / 
 
 在 Perfetto Trace 中，我们经常看到这样的场景：主线程（MainThread）在很短时间内完成了 measure、layout、draw 操作，RenderThread 也快速完成了 draw command 的录制，但 UI 更新却明显滞后——下一帧的 VSync 到来了，上一帧还在 GPU 中处理。这种情况下，问题往往出在 GPU 渲染阶段：应用发送的绘制指令虽然不多，但 GPU 处理这些指令花费了大量时间，或者 GPU 本身遇到了内存带宽瓶颈。
 
-如果我们缺乏对 GPU 渲染管线的理解，遇到这类掉帧就只能停留在"主线程没问题，不知道什么原因"的阶段。理解了 GPU 渲染机制之后，我们就能做到三件事：把 GPU 渲染过程从看不见的"黑盒"变成可分析、可定位的链条；精准区分 CPU 瓶颈、GPU 瓶颈和内存带宽瓶颈，避免把力气花在错误的方向上；理解 Android 16 中 Vulkan 成为默认 API 这件事背后的真正含义，知道如何为未来做准备。
+如果我们缺乏对 GPU 渲染管线的理解，遇到这类掉帧就只能停留在"主线程没问题，不知道什么原因"的阶段。理解了 GPU 渲染机制之后，我们就能做到三件事：把 GPU 渲染过程从看不见的"黑盒"变成可分析、可定位的链条；精准区分 CPU 瓶颈、GPU 瓶颈和内存带宽瓶颈，避免把力气花在错误的方向上；理解 Android 16 中 Vulkan 成为默认 API 这件事背后的工程影响，知道后续系统版本需要提前准备什么。
 
-接下来的内容从 GPU 渲染管线的基本原理出发，逐步深入到性能瓶颈分析方法、GPU 内存管理机制，最后通过一个实战案例将所有知识点贯穿起来。
+本节从 GPU 渲染管线的基本原理切入，延伸到性能瓶颈分析、GPU 内存管理和实战案例，把这些知识点放回完整的渲染问题排查流程中。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -87,9 +90,9 @@ task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。P0 3 / P1 3 / 
 
 当我们调用 `View.invalidate()` 或 `View.draw()` 时，Android 的 GPU 渲染管线就开始启动。这个管线的核心任务是将应用的 2D/3D 绘制指令转换成屏幕上显示的像素，整个过程涉及 CPU 准备、GPU 指令生成、GPU 渲染、帧缓冲区管理、屏幕合成五个阶段。
 
-流程的起点在 CPU 侧：应用主线程执行 `View.onDraw()`，通过 Canvas API 绘制界面。这些 Canvas 调用被 Skia 图形库接收后，Skia 会根据运行环境将其转换为 OpenGL ES 或 Vulkan 调用——这是 GPU 指令生成阶段。接下来 GPU 接管工作，依次执行顶点处理、片段处理等计算任务，将渲染结果写入显存中的帧缓冲区。最后，SurfaceFlinger 将多个图层合成为最终图像，提交给显示硬件。
+流程的起点在 CPU 侧：应用主线程执行 `View.onDraw()`，通过 Canvas API 绘制界面。这些 Canvas 调用被 Skia 图形库接收后，Skia 会根据运行环境将其转换为 OpenGL ES 或 Vulkan 调用——这是 GPU 指令生成阶段。随后 GPU 接管工作，依次执行顶点处理、片段处理等计算任务，将渲染结果写入显存中的帧缓冲区。SurfaceFlinger 再将多个图层合成为最终图像，提交给显示硬件。
 
-CPU 和 GPU 之间的分工经历了几个重要阶段的演进。在 Android 5.0 之前，主线程包揽了所有渲染工作——measure/layout、DisplayList 录制、GPU 命令提交全部在同一线程完成。Android 5.0 引入了独立的 RenderThread，将 GPU 命令的提交和执行从主线程剥离出来，主线程只负责 measure/layout 和 DisplayList（draw 命令列表）的录制。从 Android 12 开始，Google 进一步优化了这一分工，RenderThread 承担了更多工作，使得主线程的渲染负担进一步减轻。我们在 Trace 中看到的"GPU 耗时"，对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
+CPU 和 GPU 之间的分工经历了几个重要阶段的演进。在 Android 5.0 之前，主线程包揽了所有渲染工作——measure/layout、DisplayList 录制、GPU 命令提交全部在同一线程完成。Android 5.0 引入了独立的 RenderThread，将 GPU 命令的提交和执行从主线程剥离出来，主线程只负责 measure/layout 和 DisplayList（draw 命令列表）的录制。从 Android 12 开始，Google 进一步优化了这一分工，RenderThread 处理了更多工作，使得主线程的渲染负担进一步减轻。我们在 Trace 中看到的"GPU 耗时"，对应的是 RenderThread 将命令提交到 GPU 直到 GPU 完成渲染的整个过程。
 
 [图：Android GPU 渲染管线全景图——从 CPU 准备到屏幕合成的完整数据流]
 
@@ -175,7 +178,7 @@ Framebuffer 的管理采用双缓冲（或多缓冲）机制：前缓冲区用�
 
 在 Perfetto Trace 中，我们有时会看到一种特定的掉帧模式：应用前 60fps 流畅运行，然后突然掉到 10-20fps 持续几百毫秒，之后又恢复到 60fps。这种"突然卡一下又恢复"的模式，很多时候就是 Shader Compilation Jank——当应用首次使用某个着色器时，GPU 需要将其从 GLSL/SkSL 源码编译成本地 GPU 指令，这个过程耗时可能从几毫秒到几十毫秒不等。
 
-为什么需要在运行时编译？根本原因是 Android 设备的 GPU 架构多样性。Qualcomm Adreno、ARM Mali、Imagination PowerVR 各有不同的指令集和优化策略，同一份 GLSL 着色器在不同 GPU 上编译出的机器码完全不同。开发者无法在 APK 中预编译所有平台的着色器二进制，只能在运行时根据实际 GPU 架构进行编译。
+为什么需要在运行时编译？原因在于 Android 设备的 GPU 架构多样性。Qualcomm Adreno、ARM Mali、Imagination PowerVR 各有不同的指令集和优化策略，同一份 GLSL 着色器在不同 GPU 上编译出的机器码完全不同。开发者无法在 APK 中预编译所有平台的着色器二进制，只能在运行时根据实际 GPU 架构进行编译。
 
 ```cpp
 // 示意性伪代码：着色器编译的概念流程
@@ -224,7 +227,7 @@ Android 16 将 Vulkan 定为默认图形 API 的一个重要动机，就是利�
 
 ## Vulkan vs OpenGL ES 在 Android 上的性能对比
 
-上面讨论的 Shader Compilation Jank 问题，其根源之一是 OpenGL ES 的运行时编译模型。Vulkan 使用 SPIR-V 预编译格式从根本上缓解了这个问题，但 Vulkan 相比 OpenGL ES 的优势远不止于此。理解两者的性能差异，是分析 Android 16 及以后版本 GPU 行为的基础。
+上面讨论的 Shader Compilation Jank 问题，其根源之一是 OpenGL ES 的运行时编译模型。Vulkan 使用 SPIR-V 预编译格式从运行时编译源头上缓解了这个问题，但 Vulkan 相比 OpenGL ES 的优势远不止于此。理解两者的性能差异，是分析 Android 16 及以后版本 GPU 行为的基础。
 
 ### Android 16 的重大转变：Vulkan 成为默认
 
@@ -252,7 +255,7 @@ vkQueueSubmit(queue, 1, &submitInfo, fence);
 
 [图：OpenGL ES 单线程提交 vs Vulkan 多线程命令缓冲区构建对比]
 
-OpenGL ES 的另一个架构限制是命令提交只能在单一上下文中进行，多线程无法并行构建渲染命令。Vulkan 引入了命令缓冲区（Command Buffer）的概念：不同的线程可以独立构建各自的命令缓冲区，最后在一个线程上统一提交到 GPU。对于 CPU 侧有大量渲染命令需要生成的场景——比如游戏引擎中不同线程分别处理场景渲染、UI 渲染和后处理——多线程构建命令缓冲区可以显著降低 CPU 瓶颈。
+OpenGL ES 的另一个架构限制是命令提交只能在单一上下文中进行，多线程无法并行构建渲染命令。Vulkan 引入了命令缓冲区（Command Buffer）的概念：不同的线程可以独立构建各自的命令缓冲区，再在一个线程上统一提交到 GPU。对于 CPU 侧有大量渲染命令需要生成的场景——比如游戏引擎中不同线程分别处理场景渲染、UI 渲染和后处理——多线程构建命令缓冲区可以显著降低 CPU 瓶颈。
 
 在 Android UI 渲染的场景中，多线程渲染的优势不如游戏场景明显，因为 UI 渲染的 draw call 数量通常不太多。但随着 Material Design 的效果越来越复杂（模糊、阴影、动画），这个优势在未来会越来越重要。
 
@@ -371,7 +374,7 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 ### TBR 的核心思路
 
-传统桌面 GPU 采用 Immediate Mode Rendering（IMR）：逐个处理 draw call，每个 draw call 直接向主显存写入像素数据。移动 GPU 不这样做。TBR 将一帧的渲染区域划分为若干个瓦片（tile，通常 16×16 或 32×32 像素），每个瓦片独立处理：先把该瓦片内所有 draw call 的几何数据收集起来，然后在 GPU 片上缓存（on-chip tile buffer）中完成该瓦片所有像素的着色计算，最后一次性写回主显存。
+传统桌面 GPU 采用 Immediate Mode Rendering（IMR）：逐个处理 draw call，每个 draw call 直接向主显存写入像素数据。移动 GPU 不这样做。TBR 将一帧的渲染区域划分为若干个瓦片（tile，通常 16×16 或 32×32 像素），每个瓦片独立处理：先把该瓦片内所有 draw call 的几何数据收集起来，然后在 GPU 片上缓存（on-chip tile buffer）中完成该瓦片所有像素的着色计算，再一次性写回主显存。
 
 这样做的原因是功耗和带宽。移动 GPU 的片上缓存访问速度接近寄存器，功耗极低；而访问主显存（即使是统一内存架构中的 LPDDR）需要经过总线，功耗和延迟都高一个量级。TBR 通过尽量减少主显存访问来降低功耗——这是移动设备的第一优先级。
 
@@ -379,7 +382,7 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 理解了 TBR 架构，以下几个现象就有了技术解释：
 
-**带宽消耗集中在 Tile 写回阶段。** 在 Perfetto 中看到的 GPU 活动，大部分时间 GPU 在片上缓存中计算，主显存访问发生在每个瓦片完成后。减少 overdraw 不只是减少"重复计算"，更是在减少 tile buffer 的写回次数。
+**带宽消耗集中在 Tile 写回阶段。** 在 Perfetto 中看到的 GPU 活动，大部分时间 GPU 在片上缓存中计算，主显存访问发生在每个瓦片完成后。减少 overdraw 会同时减少重复计算和 tile buffer 写回次数。
 
 **RenderTarget 切换代价高。** 每个 RenderTarget（在 Vulkan 中称为 RenderPass）需要先从主显存加载（load）现有内容到 tile buffer，处理完再写回（store）。如果一个 RenderPass 只做了很少的工作，load 和 store 的开销可能比实际渲染还大。这就是 Vulkan 中强调"合并 RenderPass"的原因。
 
@@ -393,9 +396,9 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 [图：Android GPU 内存管理层次图——App 可见对象（Surface / SurfaceTexture / HardwareBuffer / ANativeWindow）→ BufferQueue → GraphicBuffer / Gralloc / Mapper → GPU / HWC]
 
-Android 的 GPU 内存管理分成几层。App 平时直接接触的是 `Surface`、`SurfaceTexture`、`ANativeWindow`、`HardwareBuffer` 这类公开对象，用它们申请、提交或共享缓冲区；BufferQueue 负责在生产者和消费者之间周转 slot；系统的 framework/native 图形栈再用 `GraphicBuffer` 包装底层 handle，把 format、usage、stride、fence 等信息带给 SurfaceFlinger、RenderThread 和 HWC；真正的物理页分配与映射由 Gralloc / Mapper 完成。
+Android 的 GPU 内存管理分成几层。App 平时直接接触的是 `Surface`、`SurfaceTexture`、`ANativeWindow`、`HardwareBuffer` 这类公开对象，用它们申请、提交或共享缓冲区；BufferQueue 负责在生产者和消费者之间周转 slot；系统的 framework/native 图形栈再用 `GraphicBuffer` 包装底层 handle，把 format、usage、stride、fence 等信息带给 SurfaceFlinger、RenderThread 和 HWC；物理页分配与映射由 Gralloc / Mapper 完成。
 
-理解这个层次结构有一个关键前提：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，"GPU 内存"并不是独立的物理存储，而是从系统内存中划分出来的、具有特定对齐和访问属性的内存区域。GPU 的内存使用会直接影响系统的可用内存总量。在分析应用内存占用时，不能只看 Java heap——GPU 占用的内存同样重要。
+理解这个层次结构有一个关键前提：在移动设备上，CPU 和 GPU 共享同一块物理内存（统一内存架构，UMA）。这与 PC 上 CPU 内存和 GPU 显存分离的架构有本质区别。在 UMA 架构下，所谓 "GPU 内存" 没有独立的物理存储；它来自系统内存，只是带有特定对齐和访问属性。GPU 的内存使用会直接影响系统的可用内存总量。在分析应用内存占用时，不能只看 Java heap——GPU 占用的内存同样重要。
 
 ```java
 // frameworks/base/graphics/java/android/graphics/GraphicBuffer.java
@@ -426,7 +429,7 @@ public class GraphicBuffer implements Parcelable {
 
 Gralloc（Graphics Memory Allocator）是 Android HAL 层中专门负责图形缓冲区内存分配的模块。当应用或系统需要一块新的图形缓冲区时（比如创建一个新的 Surface，或者 Surface 需要更多的缓冲区），请求最终会到达 Gralloc HAL。
 
-Gralloc 分配内存时，调用者需要通过 `usage` 标志位来声明这块内存的用途——比如 `USAGE_HW_TEXTURE` 表示这块缓冲区将被 GPU 作为纹理读取，`USAGE_HW_RENDER` 表示 GPU 会向这块缓冲区写入渲染结果，`USAGE_SW_READ_OFTEN` 表示 CPU 会频繁读取这块内存。Gralloc 根据 usage 标志来决定内存的物理布局：应该分配在哪个内存区域、是否需要 cache 策略、对齐要求是什么。这些决策直接影响 GPU 访问这块内存的效率。
+Gralloc 分配内存时，调用者需要通过 `usage` 标志位来声明这块内存的用途——比如 `USAGE_HW_TEXTURE` 表示这块缓冲区将被 GPU 作为纹理读取，`USAGE_HW_RENDER` 表示 GPU 会向这块缓冲区写入渲染结果，`USAGE_SW_READ_OFTEN` 表示 CPU 会频繁读取这块内存。Gralloc 根据 usage 标志来决定内存的物理布局：应该分配在哪个内存区域、是否需要缓存策略、对齐要求是什么。这些决策直接影响 GPU 访问这块内存的效率。
 
 ```cpp
 // allocator / mapper 的职责示意
@@ -445,7 +448,7 @@ Android 16 在 16KB 页模式下，Gralloc AIDL V2 **在设计方向上**引入�
 
 > [说明: Gralloc AIDL V2 sub-allocation 机制基于 Android 16 GKI 内核变更与硬件接口定义方向（`hardware/interfaces/graphics/allocator/aidl/`），但当前缺少公开的 AIDL 接口方法签名、VTS/CTS 测试用例或 vendor 实现代码作为验证证据。实际行为可能因 SoC 厂商实现而有差异。以上描述应视为基于设计意图的推断，而非已验证事实。具体实现细节待后续 AOSP 源码或厂商文档确认后补齐。]
 
-在应用层面，如果该优化落地，效果是透明的——不需要修改任何代码。但在分析 GPU 内存占用时需要注意，16KB 页环境下 `dumpsys meminfo` 中的 Graphics 内存项可能比 4KB 环境下看起来更低，部分原因可能是 Gralloc 内部碎片减少。
+在应用层面，如果该优化进入实现并被厂商启用，效果是透明的——不需要修改任何代码。但在分析 GPU 内存占用时需要注意，16KB 页环境下 `dumpsys meminfo` 中的 Graphics 内存项可能比 4KB 环境下看起来更低，部分原因可能是 Gralloc 内部碎片减少。
 
 ### GPU 内存追踪和分析
 
@@ -462,9 +465,9 @@ Android 12 引入了改进的 GPU 内存追踪机制，使得开发者和性能�
 
 ### ANGLE 的设计目标
 
-ANGLE（Almost Native Graphics Layer Engine）是 Google 开发的兼容层，它将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标远不止"兼容"——根本目标是"统一"。在 Android 16 之前，不同 GPU 厂商各自实现 OpenGL ES 驱动，质量参差不齐，bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码（翻译到 Vulkan），Google 只需要维护这一套实现的质量，而不需要分别与三个厂商协调驱动修复。
+ANGLE（Almost Native Graphics Layer Engine）是 Google 开发的兼容层，它将 OpenGL ES API 调用翻译为 Vulkan 调用。ANGLE 的设计目标远不止"兼容"——主要目标是"统一"。在 Android 16 之前，不同 GPU 厂商各自实现 OpenGL ES 驱动，质量参差不齐，bug 各不相同。ANGLE 将 OpenGL ES 的实现统一为一套代码（翻译到 Vulkan），Google 只需要维护这一套实现的质量，而不需要分别与三个厂商协调驱动修复。
 
-ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉的 OpenGL ES API（glDrawArrays、glTexImage2D 等），ANGLE 在内部将这些调用翻译为对应的 Vulkan 操作（vkCmdDraw、vkCreateImage 等）。对于应用开发者来说，这个过程完全透明——不需要修改任何代码，应用就自动运行在 Vulkan 后端上。
+ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉的 OpenGL ES API（glDrawArrays、glTexImage2D 等），ANGLE 在内部将这些调用翻译为对应的 Vulkan 操作（vkCmdDraw、vkCreateImage 等）。对于应用开发者来说，在 ANGLE 被启用的设备上，这个过程通常是透明的——应用不需要修改代码，就可以通过 ANGLE 运行在 Vulkan 后端上。
 
 [图：ANGLE 架构图——OpenGL ES App → ANGLE 翻译层 → Vulkan Driver → GPU]
 
@@ -472,7 +475,7 @@ ANGLE 的架构可以理解为一个翻译层：上层应用仍然使用熟悉�
 
 Android 16 推进了 ANGLE 的覆盖范围，但"ANGLE 是否成为默认 GL 后端"取决于设备 launch policy 和厂商配置，不能一概而论。对于新出货的、满足 Vulkan 1.4 / VPA16 基线的 64 位设备，更多 OpenGL ES 应用会通过 ANGLE 将渲染调用翻译到 Vulkan 后端；对于已上市的旧设备，ANGLE 的启用策略可能仍然是渐进式的或按应用白名单控制；对于直接使用 Vulkan 的应用，始终绕过 ANGLE 直接与 Vulkan 驱动交互；不支持 Vulkan 的设备则回退到原生的 OpenGL ES 驱动。
 
-这意味着在 Android 16 上分析 GPU 性能时，需要先确认目标设备上 OpenGL ES 应用是否走了 ANGLE 路径——可以通过 `adb shell dumpsys gfxinfo <package>` 或 Perfetto 中的 GPU driver 信息判断。不同路径下的性能特征和瓶颈分析方式有差异。
+因此，在 Android 16 设备分析 GPU 性能时，需要先确认目标设备上 OpenGL ES 应用是否走了 ANGLE 路径——可以通过 `adb shell dumpsys gfxinfo <package>` 或 Perfetto 中的 GPU driver 信息判断。不同路径下的性能特征和瓶颈分析方式有差异。
 
 ## GPU Profiling 工具：Snapdragon Profiler、ARM Streamline、AGI
 
@@ -482,7 +485,7 @@ Android 16 推进了 ANGLE 的覆盖范围，但"ANGLE 是否成为默认 GL 后
 
 AGI 是 Google 官方的 Android GPU 性能分析工具，也是 Android 开发者最应该熟悉的第一款 GPU 工具。AGI 提供了帧分析器（逐帧分析 GPU 渲染时间）、系统分析器（CPU 和 GPU 交互分析）、内存分析器（GPU 内存使用分析）和着色器分析器（着色器性能分析）四个核心功能模块。
 
-在瓶颈定位的工作流中，AGI 的使用方式通常是：先用系统分析器确认问题确实出在 GPU 侧（而不是 CPU 侧），然后用帧分析器找到 GPU 时间最长的那一帧，最后对着色器和渲染状态进行分析，定位具体的瓶颈环节。AGI 的一个独特优势是它可以与 Perfetto Trace 结合使用——在 Perfetto 中看到 GPU 时间异常的帧后，可以用 AGI 对同一时间段进行深度分析。
+在瓶颈定位的工作流中，AGI 的使用方式通常是：先用系统分析器确认问题出在 GPU 侧（而不是 CPU 侧），然后用帧分析器找到 GPU 时间最长的那一帧，再对着色器和渲染状态进行分析，定位具体的瓶颈环节。AGI 的一个独特优势是它可以与 Perfetto Trace 结合使用——在 Perfetto 中看到 GPU 时间异常的帧后，可以用 AGI 对同一时间段进行深度分析。
 
 ### 平台专用工具
 
@@ -538,7 +541,7 @@ adb devices
 
 ### 根因与结论
 
-综合以上分析，卡顿的根因是三个因素的叠加：过度绘制导致像素被重复处理 3-4 次；Fragment Shader 中过多的纹理采样增加了每像素的计算量和内存带宽消耗；大尺寸未压缩纹理进一步加剧了带宽压力。三个因素共同作用，使得 GPU 在每个 VSync 周期内都无法完成所有像素的处理。
+把这几项放在一起，卡顿的根因是三个因素的叠加：过度绘制导致像素被重复处理 3-4 次；Fragment Shader 中过多的纹理采样增加了每像素的计算量和内存带宽消耗；大尺寸未压缩纹理进一步加剧了带宽压力。三个因素共同作用，使得 GPU 在每个 VSync 周期内都无法完成所有像素的处理。
 
 ### 修复方案
 
@@ -560,7 +563,7 @@ adb devices
 
 ### 举一反三
 
-这个案例揭示了一个通用的 GPU 性能优化规律：**GPU 瓶颈很少由单一的大问题导致，通常是多个小问题叠加的结果。** 每个单独的因素（过度绘制、多次纹理采样、未压缩纹理）可能只贡献了几毫秒的开销，但加在一起就超过了 16.67ms 的帧预算。因此 GPU 优化的思路不是"找一个最大的问题解决它"，而是"逐一消除所有小的性能浪费"。
+这个案例揭示了一个通用的 GPU 性能优化规律：**GPU 瓶颈很少由单一的大问题导致，通常是多个小问题叠加的结果。** 每个单独的因素（过度绘制、多次纹理采样、未压缩纹理）可能只贡献了几毫秒的开销，但加在一起就超过了 16.67ms 的帧预算。因此，GPU 优化更像是逐一消除所有小的性能浪费，而不是只找一个最大问题。
 
 另外，这个案例也说明了一个重要观点：GPU 性能优化不等于"减少代码"。很多时候，问题的根因对 GPU 工作方式的理解不足——比如不理解纹理压缩可以减少带宽消耗，不理解过度绘制会让 GPU 做大量无用功，不理解多个半透明叠加层的性能代价。
 
@@ -606,7 +609,7 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 ### "GPU 占用高 = 需要优化 GPU"？
 
-不一定。GPU 占用高可能是正常的——比如一个全屏的游戏或视频应用，GPU 持续工作就是它的本职。只有当 GPU 占用高导致了可感知的用户体验问题（卡顿、发热、耗电过快）时，才需要优化。很多时候，"GPU 占用高"恰恰说明 GPU 在努力工作、没有被闲置浪费——这反而是效率高的表现。真正需要关注的是"GPU 做了大量无用功"的场景，比如严重的过度绘制。
+不一定。GPU 占用高可能是正常的——比如一个全屏的游戏或视频应用，GPU 持续工作就是它的本职。只有当 GPU 占用高导致了可感知的用户体验问题（卡顿、发热、耗电过快）时，才需要优化。很多时候，"GPU 占用高"恰恰说明 GPU 在努力工作、没有被闲置浪费——这反而是效率高的表现。需要关注的是 "GPU 做了大量无用功" 的场景，比如严重的过度绘制。
 
 ### "过度绘制一定是问题"？
 
@@ -618,20 +621,12 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 ### "硬件加速解决一切渲染性能问题"？
 
-硬件加速确实将大部分渲染工作从 CPU 卸载到了 GPU，但它并不能自动解决所有性能问题。硬件加速解决的是"渲染效率"问题（GPU 并行处理像素比 CPU 串行处理快），但它不解决"渲染工作量"问题——如果界面设计本身导致大量不必要的绘制操作，硬件加速只是让 GPU 更快地做无用功。而且硬件加速引入了一些 CPU 侧的新开销（Canvas 状态管理、DisplayList 录制），在某些极端场景下反而可能比软件渲染慢。
+硬件加速将大部分渲染工作从 CPU 卸载到了 GPU，但它并不能自动解决所有性能问题。硬件加速解决的是"渲染效率"问题（GPU 并行处理像素比 CPU 串行处理快），但它不解决"渲染工作量"问题——如果界面设计本身导致大量不必要的绘制操作，硬件加速只是让 GPU 更快地做无用功。而且硬件加速引入了一些 CPU 侧的新开销（Canvas 状态管理、DisplayList 录制），在某些极端场景下反而可能比软件渲染慢。
 
 ### "120Hz 屏幕需要 GPU 性能翻倍"？
 
-这是一个常见的误解。120Hz 屏幕意味着每帧的预算从 16.67ms 缩短到 8.33ms，但这并不意味着 GPU 的工作量翻倍了——GPU 每帧的工作量取决于画面复杂度，与刷新率无关。真正变化的是时间预算：GPU 必须在更短的时间内完成同样的工作。在 120Hz 下，原本在 60Hz 下不明显的 GPU 瓶颈会变得突出。反过来，如果一个应用在 60Hz 下有 10ms 的 GPU 余量（GPU 只需要 6.67ms 就能完成渲染），升级到 120Hz 后只要 GPU 能在 8.33ms 内完成就仍然流畅。
+这是一个常见的误解。120Hz 屏幕意味着每帧的预算从 16.67ms 缩短到 8.33ms，但这并不意味着 GPU 的工作量翻倍了——GPU 每帧的工作量取决于画面复杂度，与刷新率无关。变化的是时间预算：GPU 必须在更短的时间内完成同样的工作。在 120Hz 下，原本在 60Hz 下不明显的 GPU 瓶颈会变得突出。反过来，如果一个应用在 60Hz 下有 10ms 的 GPU 余量（GPU 只需要 6.67ms 就能完成渲染），升级到 120Hz 后只要 GPU 能在 8.33ms 内完成就仍然流畅。
 
-
-
-### ARM Mali GPU TBR 架构原理与 Android 渲染性能影响
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md
-- 类型：DeepResearch 调研结果
-- 摘要：ARM Mali/Immortalis GPU Tile-Based Rendering 架构全代际深度报告。从 Utgard 到第五代 GPU 的 TBR 硬件演进，详解 Tile Memory、AFBC、Transaction Elimination、Forward Pixel Kill、IDVS/DVS、Fragment Prepass、CSF 等核心机制，以及 Android 渲染栈(HWUI/RenderThread/SurfaceFlinger/HWC)与 Mali TBR 的交互方式。
-- 注入时间：2026-04-30
-- 价值：ARM 官方架构级 GPU TBR 机制全解，对理解 Android 在 Mali GPU 上的渲染行为与优化有极高参考价值
 
 ## 参考资料
 
@@ -667,7 +662,7 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 ### App 可见对象与系统内部图形缓冲对象的边界
 
-通过分析 AOSP 源码，我们发现 App 可见对象与系统内部图形缓冲对象之间的边界比表面看起来更复杂。Surface 并非直接的容器对象，而是委托给 BufferQueue 生产者接口，后者管理着 64 个 BufferSlot 的池。
+通过分析 AOSP 源码，我们发现 App 可见对象与系统内部图形缓冲对象之间的边界比表面看起来更复杂。Surface 本身不直接保存这些缓冲，它委托给 BufferQueue 生产者接口，后者管理着 64 个 BufferSlot 的池。
 
 **BufferSlot 状态机实现：**
 ```cpp
