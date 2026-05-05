@@ -439,6 +439,78 @@ lock(BufferHandle, usage, region) -> mapped_ptr
 unlock(BufferHandle) -> release_fence
 ```
 
+
+<!-- AIW-源码调研-2026-05-06 -->
+### 源码级对象链：六层抽象的完整调用路径
+
+本节概述了各层对象的作用，以下从源码角度梳理跨越 App 层到硬件层的完整对象链，建立可验证的追溯链：
+
+**完整对象链**：
+
+```
+App (Java/Kotlin)
+    ├── android.graphics.Bitmap (HARDWARE)
+    │    mNativeBitmap = AHardwareBuffer*（无 Java heap，像素全在 GPU 显存）
+    │
+    └── android.graphics.SurfaceTexture
+         mProducer: IGraphicBufferProducer（跨进程 Binder 端点）
+              │
+ANativeWindow (C/C++ Layer)
+    └── Surface.cpp（frameworks/native/libs/gui/Surface.cpp）
+         mGraphicBufferProducer: IGBP
+              │
+BufferQueue（跨进程）
+    ├── BufferQueueProducer.cpp → dequeueBuffer() → waitForFreeSlotThenRelock()
+    │    （阻塞条件：dequeuedCount >= mMaxDequeuedBufferCount = 1）
+    ├── BufferQueueCore.h → mSlots[64] / mQueue / mFreeSlots / mFreeBuffers
+    └── BufferQueueConsumer.cpp → acquireBuffer()
+              │
+GraphicBuffer（frameworks/native/libs/gui/）
+    ├── mBufferHandle: buffer_handle_t（ashmem fd / dmabuf fd）
+    └── flatten/unflatten 跨进程传递句柄
+              │
+GraphicBufferMapper（frameworks/native/libs/gui/GraphicBufferMapper.cpp）
+    ├── importBuffer() → ION/DMABuf map → 进程地址空间
+    └── freeBuffer() → ION/DMABuf unmap
+              │
+Gralloc HAL（/vendor/lib/hw/gralloc.*.so）
+    ├── alloc() → ION heap / CMA / carveout 分配
+    └── free()
+              │
+Physical Memory（ION heap / CMA / GPU VRAM）
+```
+
+**关键源码位置**：
+
+| 层次 | 关键对象/函数 | 源码路径 |
+|------|--------------|----------|
+| App | Bitmap.Config.HARDWARE | `frameworks/base/graphics/java/android/graphics/Bitmap.java` |
+| App | SurfaceTexture.mProducer | `frameworks/base/graphics/java/android/graphics/SurfaceTexture.java` |
+| ANativeWindow | Surface::dequeueBuffer() | `frameworks/native/libs/gui/Surface.cpp`（ANativeWindow hook 路由） |
+| BufferQueue | BufferQueueCore.mSlots/mQueue | `frameworks/native/libs/gui/BufferQueueCore.h`（NUM_BUFFER_SLOTS=64） |
+| BufferQueue | waitForFreeSlotThenRelock() | `frameworks/native/libs/gui/BufferQueueProducer.cpp`（mDequeueCondition 条件变量） |
+| BufferQueue | releaseBuffer() → notify_all() | `frameworks/native/libs/gui/BufferQueueProducer.cpp` |
+| BufferQueue | acquireBuffer() | `frameworks/native/libs/gui/BufferQueueConsumer.cpp` |
+| GraphicBuffer | mBufferHandle 类型 | `frameworks/native/libs/gui/GraphicBuffer.h`（buffer_handle_t = native_handle_t*） |
+| Mapper | importBuffer/freeBuffer | `frameworks/native/libs/gui/GraphicBufferMapper.cpp`（ION/DMABuf map） |
+| Gralloc | gralloc_module_t | `hardware/libhardware/include/hardware/gralloc.h`（alloc/free 接口） |
+| HWC | HWC2::getRequests() | `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp`（DEVICE/CLIENT 决策） |
+
+**Buffer Stuffing 源码机制**：当 SurfaceFlinger/HWC release 延迟时，`mFreeBuffers` 为空，`mQueue.size()` 积压超过 `maxBufferCount`，`waitForFreeSlotThenRelock()` 进入无限期等待（无超时）。`mDequeueCondition.notify_all()` 在 `releaseBuffer()` 中被调用，Android 14 引入 `BUFFER_RELEASE_CHANNEL` 精确通知替代全局 `notify_all()`。
+
+**可观测性边界**：
+
+| 观测工具 | 可见 | 不可见 |
+|---------|------|--------|
+| Perfetto `android.surfaceflinger.sf_frames` | dequeueBuffer/queueBuffer/acquireBuffer slice 持续时间、HWC composition type（Device/Client） | GPU 显存物理占用 |
+| `dumpsys surfaceflinger --latency` | BufferQueue 各槽位状态、mSlots 列表 | ION/Gralloc 物理内存精确值 |
+| `/proc/<pid>/smaps` | ashmem 段（4KB page）或 dma_buf 映射（16KB page）大小 | GPU 内部显存池化部分 |
+| Perfetto `android.memory.pss` | Java heap PSS | GraphicBuffer buffer_handle_t 映射的物理内存（不在 PSS 中） |
+
+**Hardware Bitmap 特殊行为**：Bitmap.Config.HARDWARE（API 26+）创建的 Bitmap，像素数据完全不存在于 Java heap，全部存储在 GPU 显存中的 AHardwareBuffer。`/proc/<pid>/smaps` 中不反映其占用，必须通过 `dumpsys meminfo gfxinfo` 或厂商特定工具观测。
+
+> [已验证: AOSP mainline, frameworks/native/libs/gui/Surface.cpp, BufferQueueCore.h, BufferQueueProducer.cpp, GraphicBufferMapper.cpp]
+
 > [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/]
 
 ### 16KB 页环境下的 Gralloc 池化优化

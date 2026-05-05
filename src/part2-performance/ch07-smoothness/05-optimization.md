@@ -284,6 +284,26 @@ view.setRenderEffect(effect);
 [已验证: AOSP `frameworks/base/graphics/java/android/graphics/RenderEffect.java`; `frameworks/base/libs/hwui/jni/RenderEffect.cpp`; `frameworks/base/graphics/java/android/graphics/RenderNode.java`; RenderNode `imageFilter` 属性写入路径]
 [AIW-源码调研-2026-04-27]
 
+### RenderThread CPU 亲和性：Android AOSP 标准实现不包含 cgroup 大核绑定 🔸
+
+外部 review 指出的一个盲区是"Android 15+ 是否通过进程组（cgroup）对 RenderThread 进行了更激进的 CPU 大核绑定"。通过查阅 AOSP mainline 源码（android-14-release libs/hwui/renderthread/RenderThread.cpp:441），答案是否定的——AOSP 标准实现中 RenderThread 仅通过 `setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY)` 设置调度优先级，不使用 `sched_setaffinity()` 或 cgroup 接口绑定 CPU 核心。
+
+`PRIORITY_DISPLAY` 是 bionic libc 定义的负数 nice 值（约 -8 到 -10），使 RenderThread 在系统调度器中获得比普通进程更高的优先级，但不能保证其始终在特定 CPU 核心（尤其是大核）上执行。
+
+**源码锚点**：`platform_frameworks_base/android14-release/libs/hwui/renderthread/RenderThread.cpp:441-443`
+```cpp
+bool RenderThread::threadLoop() {
+    setpriority(PRIO_PROCESS, 0, PRIORITY_DISPLAY);
+    Looper::setForThread(mLooper);
+    ...
+}
+```
+
+**结论**：Android AOSP mainline 不包含 cgroup 级 CPU 亲和性配置。OEM 厂商（如高通、MTK）在 device-specific kernel/vendor branch 中实现的 RenderThread 大核绑定属于厂商定制优化，未合入 AOSP mainline，对 Perfetto 不可见，不属于 AOSP 标准可配置接口。
+
+[AIW-源码调研-2026-05-06]
+
+
 ## 线程优化：耗时操作异步化、Binder 调用、线程池
 
 前面讲的布局、列表、渲染三类优化，解决的是渲染管线内部的效率问题。但很多卡顿的根因不在渲染本身——主线程被耗时操作阻塞，根本没有时间完成一帧的渲染。这类问题需要从线程调度层面解决。

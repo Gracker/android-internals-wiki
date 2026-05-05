@@ -55,16 +55,16 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
 last_task9_at: "2026-05-01T19:38:39+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: "fixed"
 review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
 task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
 ---
@@ -124,9 +124,9 @@ SystemServer 启动阶段（简化）:
     → InputManagerService
 ```
 
-PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，而是通过并行扫描入口在多线程中处理。`PackageManagerService.java` 的 `scanSystemPackages()` / `scanExistingPackages()` 在处理 APEX 包时会利用内部线程池并发解析 Manifest 和签名，包数量多的设备上这一优化显著缩短了 PMS 初始化耗时。
+PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，而是通过 `InitAppsHelper.java` 的 `getApexScanPartitions()` / `scanSystemDirs()` 在多线程中处理，线程池由 `ParallelPackageParser` 提供。包数量多的设备上这一优化显著缩短了 PMS 初始化耗时。
 
-[已验证: AOSP android-16.0.0_r1 `PackageManagerService.java` parallel APEX scanning]
+[已验证: AOSP android-16.0.0_r1 `InitAppsHelper.java` parallel APEX scanning / `ParallelPackageParser`]
 
 ### PMS 管理的核心数据结构
 
@@ -320,7 +320,7 @@ adb shell cmd package compile -m speed-profile -f com.example.app
 
 后台 dexopt 设计得尽量不影响前台体验，但仍然存在资源竞争：
 
-**CPU 争用**：dex2oat 是 CPU 密集型操作，系统通过 `installd` 的 `set_sched_policy(tid, SP_BG)` 将后台编译线程归入后台调度组（cgroup `bg_non_interactive`），限制其 CPU 权重。在核心数量有限的设备上仍然可能抢占前台应用的 CPU 时间。
+**CPU 争用**：dex2oat 是 CPU 密集型操作，`dexopt.cpp` 通过 `setpriority(PRIO_PROCESS, 0, ANDROID_PRIORITY_BACKGROUND)` 将后台编译进程的 nice 值设为背景优先级，降低其 CPU 调度权重。在核心数量有限的设备上仍然可能抢占前台应用的 CPU 时间。
 
 **I/O 竞争**：dex2oat 需要读取 DEX 文件、写入 OAT 文件，这些都是密集的文件 I/O。如果前台应用同时在读写存储（如加载图片、写入数据库），I/O 带宽竞争可能导致前台应用卡顿。
 

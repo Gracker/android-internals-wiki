@@ -10939,7 +10939,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T19:38:39+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T03:52:27+08:00",
+      "completed_reason": "P0 APEX并行扫描源码锚点已改为InitAppsHelper.java/ParallelPackageParser；P0 dexopt调度策略已改为setpriority/ANDROID_PRIORITY_BACKGROUND；Computer版本描述已是Android 13引入+14稳定化，无需修改"
     },
     {
       "section": "14.3",
@@ -12277,7 +12279,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T03:43:42+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T03:52:27+08:00",
+      "completed_reason": "P0 com.android.os.perfetto APEX断言已删除；表格行和注意事项已修正为平台二进制部署描述，补充Android.bp无APEX模块的证据说明"
     }
   ],
   "completed": [
