@@ -23,20 +23,22 @@ sources:
     path: "frameworks/base/core/java/android/webkit/"
   - type: aosp
     path: "android_webview/docs/ (chromium.googlesource.com)"
-reviewed_date: "2026-05-01"
+reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-pipeline_stage: task6_pending
+task6_result: needs-rework
+pipeline_stage: task2b_pending
 task6_state: reviewed
+task2b_state: pending
+task2b_result: pending
+last_task6_at: "2026-05-05T15:17:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-15-review.md"
+review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 2，P2 3。 | 2026-05-05 Task6 15:17：L1 高频词与读者指向轻修；发现 AIW 源码调研区块堆叠与参考资料后追加正文，已写入 Task2B 回炉。"
 task9_result: needs-rework
 task9_state: reviewed
-task2b_state: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
 last_task9_at: "2026-04-30T10:31:41+08:00"
-task2b_result: fixed
 last_task2b_at: "2026-04-24T01:51:58+08:00"
-review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 2，P2 3。"
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -66,7 +68,7 @@ review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 2，P2 3�
 
 ## 为什么要了解 WebView 性能
 
-如果你的 App 里有页面用了 WebView，不管是内嵌的 H5 活动页、完整的混合开发模块，还是小程序容器，性能都会直接影响用户感受。WebView 的问题也很少是孤立的一次卡顿，往往是一处失控后，滚动、点击和页面切换都会一起变差。JS 执行慢会拖住整个页面，内存泄漏会让 App 越用越卡，WebView 初始化慢会让冷启动平白多出几百毫秒。
+如果 App 里有页面用了 WebView，不管是内嵌的 H5 活动页、完整的混合开发模块，还是小程序容器，性能都会直接影响用户感受。WebView 的问题也很少是孤立的一次卡顿，往往是一处失控后，滚动、点击和页面切换都会一起变差。JS 执行慢会拖住整个页面，内存泄漏会让 App 越用越卡，WebView 初始化慢会让冷启动平白多出几百毫秒。
 
 理解 WebView 性能，先要搞清楚两件事。第一，WebView 不是普通的 Android View，它内部跑着一个精简版的 Chromium 引擎，有自己的渲染管线、线程模型和内存管理。第二，WebView 会和 App 的原生渲染管线发生交互，两条管线叠在一起，形成了「双层渲染架构」，这正是很多性能问题的来源。
 
@@ -80,11 +82,11 @@ Android WebView 的渲染引擎是 Chromium 的 Blink。但 WebView 并不是一
 
 Blink 负责 HTML/CSS 解析、DOM 构建、JavaScript 执行、布局计算和绘制。但在 Android 上，Blink 的输出不会直接送显，而是通过 Chromium 的合成器（compositor，内部称为 cc）生成 GPU 纹理，再交给 Android 的 SurfaceFlinger 合成到屏幕上。
 
-这就是 WebView 和原生 View 渲染的根本差异所在：原生 View 的渲染路径是 View 树 → DisplayList → RenderThread → GPU → SurfaceFlinger；WebView 的渲染路径是 HTML/CSS → Blink 解析 → cc 合成 → GPU 纹理 → Android Surface → SurfaceFlinger。中间多了一层 Chromium 的合成管线。
+这就是 WebView 和原生 View 渲染的主要差异：原生 View 的渲染路径是 View 树 → DisplayList → RenderThread → GPU → SurfaceFlinger；WebView 的渲染路径是 HTML/CSS → Blink 解析 → cc 合成 → GPU 纹理 → Android Surface → SurfaceFlinger。中间多了一层 Chromium 的合成管线。
 
 ### 双层渲染架构
 
-WebView 确实带着一套 Chromium 渲染管线进入 App，但它不是“App 外面另起一个完整浏览器进程”。按照 Chromium `android_webview/docs/architecture.md` 的定义，WebView 的 browser code 运行在宿主 App 进程里，和 App 共享地址空间、权限与 data directory。GPU service、Network Service 这类非沙箱服务也在宿主进程内运行。只有 renderer 侧是否独立，要看当前设备和 WebView provider 的 multiprocess 配置。
+WebView 带着一套 Chromium 渲染管线进入 App，但它不是“App 外面另起一个完整浏览器进程”。按照 Chromium `android_webview/docs/architecture.md` 的定义，WebView 的 browser code 运行在宿主 App 进程里，和 App 共享地址空间、权限与 data directory。GPU service、Network Service 这类非沙箱服务也在宿主进程内运行。只有 renderer 侧是否独立，要看当前设备和 WebView provider 的 multiprocess 配置。
 
 因此，分析 WebView 性能时，至少要分清两层：
 
@@ -123,7 +125,7 @@ WebView 首次创建时，要先完成 WebView provider 装载和 Chromium 基�
 1. `WebViewFactory` 选择并装载当前 provider 的 native 库
 2. 建立 browser-side 基础线程和必要 service
 3. 准备 Blink / compositor / GPU 相关资源
-4. 在 multiprocess 模式下拉起 renderer，并在首次 `loadUrl()` 或 `loadData()` 后开始真正的页面解析与首帧构建
+4. 在 multiprocess 模式下拉起 renderer，并在首次 `loadUrl()` 或 `loadData()` 后开始页面解析与首帧构建
 
 这个阶段一定会增加主线程工作量，也常伴随 native / graphics 内存的第一次阶跃，但具体时长和内存增量强依赖设备 ABI、provider 版本、是否首次冷开、是否启用独立 renderer。这里不直接给固定毫秒数和 MB 数，实际分析要以同机同版本的首开 / 次开对比为准。
 
@@ -162,7 +164,7 @@ new WebView(context) / inflate 包含 WebView 的布局
 
 **方案一：不可见 WebView 实例**
 
-在 Application.onCreate() 或首屏空闲时机创建一个不挂到窗口上的 WebView，用公开 API 提前完成 provider / renderer 初始化。后续真正需要页面时，再创建正式实例；如果确实验证过复用策略稳定，也可以复用这个预热实例。
+在 Application.onCreate() 或首屏空闲时机创建一个不挂到窗口上的 WebView，用公开 API 提前完成 provider / renderer 初始化。后续需要页面时，再创建正式实例；如果已经验证复用策略稳定，也可以复用这个预热实例。
 
 ```java
 // 运行在主线程，调用方自己负责后续销毁
@@ -172,7 +174,7 @@ warmupView.loadUrl("about:blank");   // 公开 API，可触发基础初始化和
 
 如果目标只是尽早装载 WebView provider，而不是提前拉起一个完整页面，`WebSettings.getDefaultUserAgent(context)` 更轻，只会完成一部分初始化工作。这两种做法要分开看，不要混成同一条优化结论。
 
-这里的 `applicationContext` 只适合“预热但不展示”的场景。真正要加入 View 树显示的 WebView，仍然要由宿主页面自己管理 Context、attach 和销毁时机。
+这里的 `applicationContext` 只适合“预热但不展示”的场景。需要加入 View 树显示的 WebView，仍然要由宿主页面自己管理 Context、attach 和销毁时机。
 
 **方案二：Chrome Custom Tabs 替代**
 
@@ -314,7 +316,7 @@ WebView 的内存泄漏是 Android 开发中一个经典问题，主要原因是
 
 **原因一：把 Context 选择写成了通用泄漏解法**
 
-展示态 WebView 挂到窗口时，仍然应该使用 Activity 或带主题的 UI Context。文件选择器、对话框、Autofill、窗口 token 和主题资源都依赖这类上下文。`applicationContext` 更适合 provider 预热、Cookie 初始化、离屏预创建这类不加入窗口的场景，不能当成展示态 WebView 的通用做法。真正影响泄漏的是宿主生命周期是否收干净，WebView 是否从父容器移除，以及 `destroy()` 是否被调用。
+展示态 WebView 挂到窗口时，仍然应该使用 Activity 或带主题的 UI Context。文件选择器、对话框、Autofill、窗口 token 和主题资源都依赖这类上下文。`applicationContext` 更适合 provider 预热、Cookie 初始化、离屏预创建这类不加入窗口的场景，不能当成展示态 WebView 的通用做法。影响泄漏的是宿主生命周期是否收干净，WebView 是否从父容器移除，以及 `destroy()` 是否被调用。
 
 ```java
 // 展示态 WebView：使用 Activity 或带主题的 UI Context
@@ -454,7 +456,7 @@ Trichrome 和 Monochrome 这两段历史最好分开记。Android 7-9 不能简�
 
 ### 线程命名规律
 
-在 Perfetto 中，WebView 相关线程要先分清“宿主侧”与“renderer 侧”，否则很容易把管理线程当成真正渲染线程。
+在 Perfetto 中，WebView 相关线程要先分清“宿主侧”与“renderer 侧”，否则很容易把管理线程当成渲染线程。
 
 | 线程名模式 | 更稳妥的解释 | 关注点 |
 |-----------|--------------|--------|
@@ -512,12 +514,14 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
 
 ### 「WebView destroy() 会释放所有内存」
 
-`destroy()` 会释放当前 WebView 的 Java 层资源和大部分与实例绑定的 native 资源，但 browser-side 的共享 provider 状态不会因为销毁单个实例就完全回到“未初始化”状态。App 中只要还有其他 WebView 实例或共享资源存活，宿主进程里的 WebView provider / service 状态就会继续保留；`CookieManager`、HTTP cache 这类 provider 级共享服务的生命周期也长于单个 WebView。
+`destroy()` 会释放当前 WebView 的 Java 层资源和大部分与实例绑定的 native 资源，但 browser-side 的共享 provider 状态不会因为销毁单个实例就完全回到“未初始化”状态。App 中只要还有其他 WebView 实例或共享资源存活，宿主进程里的 WebView provider / service 状态就会继续保留；`CookieManager`、HTTP 缓存这类 provider 级共享服务的生命周期也长于单个 WebView。
 
 ### 「evaluateJavascript() 是同步的」
 
 这是一个常见误解。`evaluateJavascript()` 是异步 API——调用后立即返回，JS 执行结果通过 `ValueCallback` 异步回调。但由于它必须在 UI 线程调用且回调也在 UI 线程，很多开发者错误地用同步等待模式来使用它，导致 ANR。正确做法是完全基于回调/异步模式。
 
+
+[需重写: 以下 “AIW-源码调研” 区块仍是调研素材堆叠，且与前文“常见问题与误区”和“参考资料”存在重复。Task2B 需要把可用内容整合回主体小节或参考资料，删除编辑过程标题与重复段落。]
 
 ## AIW-源码调研-2026-04-25
 

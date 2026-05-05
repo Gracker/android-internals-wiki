@@ -3,27 +3,42 @@ title: "Android View 软件渲染路径"
 chapter: "18.3"
 status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
+section: "18.3"
+last_verified: "2026-05-05"
+last_verified_against: "Android Developers hardware acceleration docs + AOSP View/Surface/HWUI source references already cited in draft"
+confidence: medium
+sources:
+  - type: official
+    path: "https://developer.android.com/develop/ui/views/graphics/hardware-accel"
+  - type: aosp
+    path: "frameworks/base/core/java/android/view/View.java"
+  - type: aosp
+    path: "frameworks/native/libs/gui/Surface.cpp"
+  - type: aosp
+    path: "frameworks/base/libs/hwui/"
 tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"]
 related_chapters: ["2.1", "2.5", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
-task6_result: pass-light-edit
-task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
 task2b_state: fixed
 task2b_result: fixed
-last_task6_at: "2026-05-05T14:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-14-review.md"
-review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。"
 last_task9_at: "2026-05-05T14:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
+reviewed_date: "2026-05-05"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+last_task6_at: "2026-05-05T15:17:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-15-review.md"
+review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础 sources 元数据；修复读者指向、缓存术语和 L1 高频词；无新增 L3/L4 回炉项，转 Task9 复审。"
 ---
+
+# 18.3 Android View 软件渲染路径
 
 <!-- outline-start -->
 
@@ -47,7 +62,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 软件渲染在以下几种情况下会被激活：
 
 1. **View 层级关闭硬件加速**：在 AndroidManifest 中对特定 Activity 设置 `android:hardwareAccelerated="false"`，或在代码中调用 `View.setLayerType(LAYER_TYPE_SOFTWARE, null)` [已验证: Android Developer 文档]。
-2. **直接使用 `Surface.lockCanvas()`**：当你通过 `Surface.lockCanvas()` / `Surface.unlockCanvasAndPost()` 手动绘制时，走的是纯 CPU 路径。
+2. **直接使用 `Surface.lockCanvas()`**：当代码通过 `Surface.lockCanvas()` / `Surface.unlockCanvasAndPost()` 手动绘制时，走的是纯 CPU 路径。
 3. **系统降级**：极少数情况下，GPU 驱动崩溃或设备不支持硬件加速时，系统会自动降级到软件渲染。
 4. **小型 Overlay/Widget**：部分系统组件（如 Toast、部分 Notification）出于兼容性考虑使用软件渲染。
 
@@ -62,7 +77,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 | `android:hardwareAccelerated="false"` 或 GPU 不可用 | 整个窗口走软件渲染 | **完全看不到 `DrawFrame`**——`ThreadedRenderer` 不会被初始化 |
 | `View.setLayerType(LAYER_TYPE_SOFTWARE, null)` | 单个 View 子树走 software layer | `RenderThread` 仍在，`DrawFrame` 仍出现，但会额外伴随 Bitmap 分配 + `uploadToTexture` 纹理上传 slice |
 
-`View.buildDrawingCache()` 在 API 28 已经弃用且基本 no-op，现代 `LAYER_TYPE_SOFTWARE` 走的是 RenderNode 软件 layer 路径，不要再用旧 cache 语义解读相关 slice。
+`View.buildDrawingCache()` 在 API 28 已经弃用且基本 no-op，现代 `LAYER_TYPE_SOFTWARE` 走的是 RenderNode 软件 layer 路径，不要再用旧缓存语义解读相关 slice。
 
 ### LAYER_TYPE_SOFTWARE / LAYER_TYPE_HARDWARE / Canvas.saveLayer 的区别
 
@@ -86,16 +101,16 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 
 ### 第一阶段：Lock — 锁定画布
 
-1. **`Surface.lockCanvas()`**：App 向系统请求一块可写的内存区域。底层先调用 `dequeueBuffer()` 取回一个可写的 `GraphicBuffer`，同时拿到 consumer 侧返回的 `fenceFd`；随后 `Surface::lock()` 再调用 `GraphicBuffer::lockAsync(..., fenceFd)`，等这块 buffer 真正可写之后才把地址映射给 App。软件渲染没有 GPU 指令提交，但这里仍然会受 BufferQueue 槽位和 fence 等待影响。[已验证: `Surface.cpp::lock()`]
-2. **返回 Canvas**：这个 Canvas 直接指向 GraphicBuffer 的像素内存。你在上面调用的每一个 `draw` 方法，都会**立即**写入像素数据。
+1. **`Surface.lockCanvas()`**：App 向系统请求一块可写的内存区域。底层先调用 `dequeueBuffer()` 取回一个可写的 `GraphicBuffer`，同时拿到 consumer 侧返回的 `fenceFd`；随后 `Surface::lock()` 再调用 `GraphicBuffer::lockAsync(..., fenceFd)`，等这块 buffer 可写之后才把地址映射给 App。软件渲染没有 GPU 指令提交，但这里仍然会受 BufferQueue 槽位和 fence 等待影响。[已验证: `Surface.cpp::lock()`]
+2. **返回 Canvas**：这个 Canvas 直接指向 GraphicBuffer 的像素内存。Canvas 上调用的每一个 `draw` 方法，都会**立即**写入像素数据。
 
-在 Trace 中你会看到 `lockCanvas` slice，正常耗时很短（< 1ms），因为它只是内存映射操作。
+在 Trace 中会看到 `lockCanvas` slice，正常耗时很短（< 1ms），因为它只是内存映射操作。
 
 16KB Page Size 设备上，`lockCanvas` 首帧映射的开销会进一步降低。从 4KB 切到 16KB 后，单个页覆盖的地址空间扩大到 4 倍，同等大小的 GraphicBuffer 所需页表条目减少约 75%，`mmap` 映射像素地址时产生的 Page Fault 数量相应减少。首次 `lockAsync()` 的耗时和 CPU 微小卡顿都有改善，分辨率较高的设备（2K/4K）体感更明显。[理论推导，尚缺 AOSP 实测数据对照]
 
 ### 第二阶段：Draw — CPU 光栅化
 
-这是软件渲染最耗时的阶段。当你在 Canvas 上调用 `drawCircle()`、`drawText()`、`drawBitmap()` 时，底层是 Skia 库用 **CPU 指令**逐像素计算颜色值并写入内存。
+这是软件渲染最耗时的阶段。当代码在 Canvas 上调用 `drawCircle()`、`drawText()`、`drawBitmap()` 时，底层是 Skia 库用 **CPU 指令**逐像素计算颜色值并写入内存。
 
 ```mermaid
 graph LR
@@ -186,7 +201,7 @@ sequenceDiagram
 
 ### 识别特征
 
-1. **UI Thread 长条**：整个帧处理（包括像素填充）都在 UI Thread 上，你会看到一个很长的 `doFrame` 条，且内部没有 `syncFrameState`。
+1. **UI Thread 长条**：整个帧处理（包括像素填充）都在 UI Thread 上，会出现一个很长的 `doFrame` 条，且内部没有 `syncFrameState`。
 2. **RenderThread 闲置**：几乎看不到 `DrawFrame`、`dequeueBuffer`、`queueBuffer` 等 RenderThread 的 slice。
 3. **CPU 占用飙升**：UI Thread 的 CPU 使用率显著高于正常情况，可能接近 100%。
 4. **lockCanvas / unlockCanvasAndPost**：这两个 slice 是软件渲染的标志性锚点。
@@ -223,11 +238,11 @@ Dirty Rect 不是简单地"只画变化区域"。`Surface::lock()` 会先比较�
 
 一旦前一帧 buffer 不可用、尺寸变化、像素格式变化，或者 buffer 被丢弃，`Surface::lock()` 就会把 dirty region 扩成整屏，直接回到 full redraw。resize、surface 重建、buffer discard 之后 Dirty Rect 收益会明显下降。
 
-放到今天的系统里，Dirty Rect 仍然是 software Canvas 的一个能力，但它已经不是默认优化手段。现代硬件加速路径更常依赖 layer cache、RenderNode 复用和更稳定的 GPU 合成。
+放到今天的系统里，Dirty Rect 仍然是 software Canvas 的一个能力，但它已经不是默认优化手段。现代硬件加速路径更常依赖 layer 缓存、RenderNode 复用和更稳定的 GPU 合成。
 
 ### 什么时候会遇到软件渲染？
 
-在日常开发中，你遇到软件渲染的场景主要有：
+日常开发中常遇到软件渲染的场景主要有：
 
 1. **排查问题时故意关闭硬件加速**：某些绘制 Bug 只在软件渲染下复现，开发时会临时关闭。
 2. **第三方库或老代码**：部分使用 `Canvas` 直接绘制的老库可能没有适配硬件加速。
