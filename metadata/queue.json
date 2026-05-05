@@ -11129,7 +11129,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T00:36:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T02:44:05+08:00",
+      "completed_reason": "P0 APEX部署口径修正(traced/traced_probes为平台二进制，非/apex/com.android.os.perfetto)；P0 java_hprof_producer拦截机制修正(CanProfile检查→不发信号，非内核丢弃)"
     },
     {
       "section": "13.7",
@@ -11972,7 +11974,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T22:21:37+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T02:44:05+08:00",
+      "completed_reason": "P0 HWC3 AIDL源码索引修正为composer3/IComposer.aidl完整路径；P1 WebView/多窗口/动画三个[待补充]占位替换为可用内容段落并补交叉引用"
     },
     {
       "section": "13.9",
