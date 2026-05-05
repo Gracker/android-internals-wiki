@@ -124,9 +124,9 @@ SystemServer 启动阶段（简化）:
     → InputManagerService
 ```
 
-PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，而是通过独立的并行扫描入口（如 `scanSystemApexPackagesPrivileged()`）在多线程中处理。在包数量多的设备上，这一优化显著缩短了 PMS 初始化的耗时。
+PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，而是通过并行扫描入口在多线程中处理。`PackageManagerService.java` 的 `scanSystemPackages()` / `scanExistingPackages()` 在处理 APEX 包时会利用内部线程池并发解析 Manifest 和签名，包数量多的设备上这一优化显著缩短了 PMS 初始化耗时。
 
-[已验证: AOSP android-16.0.0_r1 `PackageManagerService.java` parallel APEX scanning / scanSystemApexPackagesPrivileged]
+[已验证: AOSP android-16.0.0_r1 `PackageManagerService.java` parallel APEX scanning]
 
 ### PMS 管理的核心数据结构
 
@@ -157,7 +157,7 @@ PMS 维护包状态和安装策略，真正落到文件系统和应用数据目�
 
 ### Computer 模式与无锁读
 
-Android 14 对 PMS 的内部架构做了一次重要重构：引入 `Computer` 接口实现读写分离。此前 PMS 的所有操作（包扫描、查询、安装、更新）都共享同一把全局锁（`mPackages`），查询操作会被写操作阻塞。
+Android 13 起引入 `Computer` 接口实现读写分离，到 Android 14 已成为 PMS 的核心架构模式。此前 PMS 的所有操作（包扫描、查询、安装、更新）都共享同一把全局锁（`mPackages`），查询操作会被写操作阻塞。
 
 `Computer` 接口的工作方式是快照隔离：
 
@@ -320,7 +320,7 @@ adb shell cmd package compile -m speed-profile -f com.example.app
 
 后台 dexopt 设计得尽量不影响前台体验，但仍然存在资源竞争：
 
-**CPU 争用**：dex2oat 是 CPU 密集型操作，即使系统会限制后台 dexopt 的 CPU 优先级（通过 `sched_setscheduler` 设置为 `SCHED_BATCH`），在核心数量有限的设备上仍然可能抢占前台应用的 CPU 时间。
+**CPU 争用**：dex2oat 是 CPU 密集型操作，系统通过 `installd` 的 `set_sched_policy(tid, SP_BG)` 将后台编译线程归入后台调度组（cgroup `bg_non_interactive`），限制其 CPU 权重。在核心数量有限的设备上仍然可能抢占前台应用的 CPU 时间。
 
 **I/O 竞争**：dex2oat 需要读取 DEX 文件、写入 OAT 文件，这些都是密集的文件 I/O。如果前台应用同时在读写存储（如加载图片、写入数据库），I/O 带宽竞争可能导致前台应用卡顿。
 
@@ -556,8 +556,9 @@ Package Manager Service 与全书多个章节有交叉：
 | Android 9.0 | 引入 Cloud Profiles（dex metadata） | 安装时有更全面的 Profile 覆盖 |
 | Android 10 | APEX / Mainline 基础设施引入，OTA 与 ART 更新开始解耦 | 后续 OTA 优化和 Virtual A/B 路径有了继续演进的基础 |
 | Android 12 | ART 模块化（Mainline） | 编译优化可通过 Play 系统更新推送 |
+| Android 13 | `Computer` 接口引入 PMS 读写分离 | 并发查询不再被写操作阻塞 |
 | Android 14 | ART Service 取代直接 dex2oat 调用 | 编译管理更统一，后台 dexopt 更智能 |
-| Android 16 | PMS 并行解析 APEX 模块（独立并行扫描入口）；公开资料提到 Play 分发侧可能引入 Cloud Compilation / SDM | 开机扫描时长缩短；命中 Cloud Compilation 时可减少本机 dexopt |
+| Android 16 | PMS 开机扫描并行化（APEX 模块并发解析）；Play 分发侧引入 SDM 预编译产物分发 | 开机扫描时长缩短；安装场景可减少本机 dexopt |
 | Android 17 | static final 不可变 → 更激进的常量折叠 | 编译优化深度提升（与 §1.7 交叉） |
 
 ## 常见问题与误区

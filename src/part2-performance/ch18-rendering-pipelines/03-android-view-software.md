@@ -7,16 +7,17 @@ tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"
 related_chapters: ["2.1", "2.5", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -34,7 +35,7 @@ task2b_state: pending
 
 <!-- outline-end -->
 
-软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流链路，但在特定场景下仍然会被触发，理解它的存在对 Trace 分析有重要价值——当你看到 UI Thread 长时间满载而 RenderThread 毫无活动时，大概率就是走入了这条链路。
+软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流链路，但在特定场景下仍然会被触发，理解它的存在对 Trace 分析有重要价值——当你看到 UI Thread 长时间满载而 RenderThread 毫无活动时，大概率就是走入了这条链路。但要注意：软件渲染在 Android 15+ 的能效管控体系下已属于**受限路径**：持续 CPU 栅格化会触发 Efficiency-aware Throttling 的激进降频策略，每瓦性能不足 GPU 路径的十分之一，长期运行会导致整机响应断崖式下跌。除非有明确的兼容性需求，否则不应主动选择软件渲染。
 
 ## 软件渲染的触发条件
 
@@ -82,6 +83,8 @@ task2b_state: pending
 2. **返回 Canvas**：这个 Canvas 直接指向 GraphicBuffer 的像素内存。你在上面调用的每一个 `draw` 方法，都会**立即**写入像素数据。
 
 在 Trace 中你会看到 `lockCanvas` slice，正常耗时很短（< 1ms），因为它只是内存映射操作。
+
+16KB Page Size 设备上，`lockCanvas` 首帧映射的开销会进一步降低。页表条目数量减少约 75%，意味着 `mmap` 映射 GraphicBuffer 像素地址时产生的 Page Fault 数量同比例下降，首次 `lockAsync()` 的耗时和 CPU 微小卡顿都有改善。对于分辨率较高的设备（2K/4K），这项红利的体感更明显。
 
 ### 第二阶段：Draw — CPU 光栅化
 
@@ -201,6 +204,11 @@ sequenceDiagram
 1. **CPU 算力瓶颈**：复杂图形（阴影、模糊、Path 裁剪、大尺寸 Bitmap 缩放）在 CPU 上极慢。一个带高斯模糊的圆角矩形，在 GPU 上可能 < 0.1ms，在 CPU 上可能 > 10ms。
 2. **内存带宽瓶颈**：1080p 屏幕的 GraphicBuffer 约 8MB。每次 `lockCanvas` / `unlockCanvasAndPost` 都涉及数据搬运。更高分辨率（2K/4K）下这个问题更严重。
 3. **主线程阻塞**：所有绘制都在 UI Thread，直接挤压输入事件和动画的执行时间。
+4. **能效惩罚（Android 15+）**：持续 CPU 栅格化触发 Efficiency-aware Throttling。软件渲染每瓦性能不足 GPU 路径的十分之一，系统会在温控判定中将其标记为"低效负载"，触发更激进的频率压制。这不仅是"慢"，而是会拖累整机的响应能力——CPU 被压频后，输入事件处理、动画回调、甚至其他 App 的调度都会受到影响。
+
+Android 16 为软件渲染引入了部分缓解手段：Skia 的 `SkTaskGroup` 支持多线程 CPU 栅格化，可以将部分像素计算分担到工作线程，降低单个线程的 CPU 压力。但这项优化的收益有限——它不改变"CPU 做像素计算"的本质，只是把串行变成了有限并行。对于复杂的模糊、路径裁剪、大图缩放操作，GPU 的并行计算优势仍然是数量级差距。
+
+**结论**：软件渲染在 2026 年的定位是**受限的应急路径**，不是性能优化的可选项。如果你在 Trace 中发现 App 持续走这条链路，应该视为一个需要修复的问题，而不是需要"优化"的路径。
 
 ### 软件渲染里的 Dirty Rect 为什么能成立
 

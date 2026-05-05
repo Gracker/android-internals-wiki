@@ -1,7 +1,7 @@
 ---
 title: ANR 非技术故障诊断
 chapter: '9.7'
-status: "finalized"
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - anr
@@ -56,21 +56,23 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ContentProviderHelper.java
   title: Content provider ANR entry
   date: android-16.0.0_r1
-pipeline_stage: "ready-to-publish"
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: "reviewed"
+task9_state: reviewed
 task2b_state: fixed
 section: '9.7'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
 task9_result: "pass-tech-review"
-task2b_result: fixed
+task2b_result: rework-fixed
 last_verified: '2026-04-14'
 last_verified_against: AOSP android-16.0.0_r1
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-21"
 last_task9_at: "2026-04-21T01:15:00+08:00"
+review_notes: "2026-05-05 task6 re-review: pass-light-edit。L1 禁用词零命中，L2 无需正文改写；task9_result=pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
+auto_promoted: true
 ---
 
 # ANR 非技术故障诊断
@@ -205,6 +207,15 @@ Perfetto 把单点 traces 变成时间线。做 9.7 这类问题时，建议至�
 
 输入侧的 `(server) is not responding` 和 `no focused window`，都很容易落到这一类。它们看上去是“某个前台 App 的 Input ANR”，证据链却常常指向 `system_server` 的窗口管理、输入回调、焦点切换、手势监控。遇到这种 subject，别只盯着 App trace。
 
+快速定性"no focused window"的操作路径：
+
+1. 从 `am_anr` 的 reason 字段拿到 ANR 时间点
+2. 在同时间段的 EventLog 里搜索 `wm_focus` 和 `am_focused_activity`，看焦点窗口在 ANR 前后是否发生了切换、丢失或延迟授予
+3. 在 Perfetto 的 `wm` 轨道或 `InputDispatcher` slice 里确认 InputDispatcher 的 `focusedWindow` 是否为空
+4. 如果焦点丢失和 `system_server` 主线程的锁争用 / 长操作时间重合，归因就指向系统侧
+
+Bugreport 里搜系统侧卡顿，AOSP 基线关键词是 `Slow Looper` 和 `Slow operation`（system_server 内置的 Looper 慢消息检测）。厂商定制的系统监控组件会使用各自的日志标签——在 Bugreport 的 `system_server` 线程栈附近搜索 `Slow`、`Block`、`Monitor`、`Watchdog`、`Looper` 等关键词族，可以快速定位系统侧慢操作或锁争用。如果只看 App 自己的 traces，对端证据会被完全漏掉。
+
 ### 2. Binder 线程池耗尽或远端进程卡死
 
 主线程同步发起 Binder 调用时，只要远端线程池空不出来，或者远端线程拿到请求后又被锁、I/O、CPU 饥饿卡住，调用方就会一起等。ContentProvider、媒体服务、定位、厂商服务都可能落进这条链。
@@ -222,6 +233,8 @@ Perfetto 把单点 traces 变成时间线。做 9.7 这类问题时，建议至�
 如果 Perfetto 里主线程长时间 Runnable，CPU 区域又一直满载，问题就从“线程做了什么”转成“线程为什么排不上”。这种场景下，系统负载、后台重活、频率受限、reclaim 都会放大超时风险。Broadcast、Service、冷启动型 ContentProvider ANR 特别容易被这类系统状态拖垮。
 
 `kswapd` 活跃、major fault 飙升、主线程或对端线程出现 D 状态，都说明系统在为内存或存储付账。Android 12+ 还多了一类 freezer 证据：事件本来该送达，目标进程却被冻结了，EventLog 里能看到 `am_freeze` / `unfreeze`。这类现象在手势监控、截图、后台辅助进程里并不罕见。
+
+Android 15+ 的 16KB 页大小把页表条目减少了 75%，`mmap`/`munmap` 路径上的 VMA 锁竞争频率随之降低。在 API 35+ 设备上，如果主线程进入 D 状态却没有密集 I/O 的证据（块层无 pending request、`iowait` 不高），排查方向应该优先转向硬件驱动层锁或厂商定制内核模块，而非传统的内核 VMA 锁。
 
 高负载不等于 App 自动免责。更稳妥的写法是：高负载会放大 App 侧耗时，也可能单独构成系统侧根因。要不要定成“系统问题”，回到 Wall/CPU、等待对象和对端状态一起看。这个归因边界在 [[如何区分系统问题和 App 问题|§15.2 如何区分系统问题和 App 问题]] 有完整展开。
 

@@ -32,17 +32,17 @@ task6_state: reviewed
 task6_result: pass-light-edit
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External Review 问题单）"
-repaired_date: "2026-05-04"
+repaired_date: "2026-05-05"
 repaired_by: "openclaw-task2b"
-review_round: 4
-task9_result: needs-rework
+review_round: 5
+task9_result: pending
 task9_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task6
 last_task9_at: "2026-05-04T02:20:00+08:00"
-review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。"
+review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。 | 2026-05-05 Task2B 09:56：P0 mm_events源码锚点已修正为system/memory/lmkd/mm_events.c+libmemevents/；官方链接改为AOSP仓库直链；mem.mm_events SQL视图标注待验证。P1 Generational CMC全面默认已收窄为AOSP main可见+runtime flag条件化。"
 ---
 
 # 低内存对系统性能的影响
@@ -167,7 +167,7 @@ ART 的垃圾回收会直接受到系统内存压力影响。就 Perfetto 的常
 
 120Hz 设备上每帧只有 8.33ms，CPU 预算比 60Hz 更紧。低内存场景下，GC 和 kswapd 的 CPU 占用会叠加到同一帧的渲染时间窗口里，放大掉帧风险。
 
-具体来说，ART 的分代 GC（Android 17 起全面默认的 Generational CMC）在低内存时 Minor GC 频率会升高。单次 Minor GC 虽然停顿较短（通常 1-3ms），但如果和 kswapd 的后台回收同时出现在一个 VSync 周期内，两笔 CPU 开销累加后可能吃掉大半帧预算。在 Perfetto 中表现为：同一帧内 GC slice 和 kswapd0 的 CPU 活动重叠，帧渲染总耗时超过 VSync 边界。
+具体来说，ART 的分代 GC（Android 17 / AOSP main 可见的 Generational CMC 路径，具体设备是否默认启用需看 runtime flag 与版本配置）在低内存时 Minor GC 频率会升高。单次 Minor GC 虽然停顿较短（通常 1-3ms），但如果和 kswapd 的后台回收同时出现在一个 VSync 周期内，两笔 CPU 开销累加后可能吃掉大半帧预算。在 Perfetto 中表现为：同一帧内 GC slice 和 kswapd0 的 CPU 活动重叠，帧渲染总耗时超过 VSync 边界。
 
 排查这种叠加效应时，在 Perfetto 里按同一时间窗交叉对照三组信号：目标线程的 GC slice、`kswapd0` 的 CPU 占用、以及帧渲染耗时。如果 GC 和 kswapd 同时活跃时掉帧明显增多，而 GC 或 kswapd 单独存在时掉帧不严重，说明是叠加效应在起作用。优化方向有两个：一是减少 App 自身的内存抖动以降低 GC 频率，二是通过 ZRAM 调优和 MGLRU 减轻 kswapd 的回收压力。
 
@@ -179,13 +179,15 @@ ART 的垃圾回收会直接受到系统内存压力影响。就 Perfetto 的常
 
 ### mm_events：内存压力触发的 Perfetto 记录
 
-`mm_events` 是 Android 12+ 的内存压力记录机制，和 `perf_event_open` 常驻订阅 tracepoint 的用户态守护进程模型不同。设备启用后，内存压力触发器会拉起一段受限采集窗口，按 `/vendor/etc/mm_events.cfg` 记录 vmstat 和 ftrace/mm_event 数据，用来保留压力发生前后的证据。
+`mm_events` 是 Android 12+ 的内存压力记录机制。它的 AOSP 实现分布在两个位置：配置解析和触发器逻辑在 `system/memory/lmkd/mm_events.c`（lmkd 进程内），BPF 侧的 memevents 程序在 `system/memory/libmemevents/`。设备启用后，内存压力触发器会拉起一段受限采集窗口，按 `/vendor/etc/mm_events.cfg` 记录 vmstat 和 ftrace/mm_event 数据，用来保留压力发生前后的证据。
 
 排查时先看 `persist.mm_events.enabled` 是否打开，再看触发器和限流配置。常见触发器是 `kmem_activity`，触发过密时会受 rate limit 限制；所以 trace 里没有 `mm_events` 记录，不等于设备没有发生内存压力。
 
-在 Perfetto 里，`mm_events` 要和 `linux.ftrace` 轨道一起读：前者给出压力窗口内的统计快照，后者用 `mm_vmscan_*`、`mm_compaction_*` 把时序补齐。Android 10/11 还没有这条路径，分析这两个版本时仍然回到 `vmscan` ftrace、PSI 和 lmkd 日志。
+在 Perfetto 里，`mm_events` 的统计快照要和 `linux.ftrace` 轨道一起读：前者给出压力窗口内的汇总计数，后者用 `mm_vmscan_*`、`mm_compaction_*` 把时序补齐。Android 10/11 还没有这条路径，分析这两个版本时仍然回到 `vmscan` ftrace、PSI 和 lmkd 日志。
 
-[已验证: 官方文档, source.android.com; 源码锚点: system/memory/mm_events/]
+> **待验证**：Perfetto SQL 层的 `mem.mm_events` 视图在部分设备/Perfetto 版本上可能不可用。如果 SQL 查询报"no such table"，回到上面的 ftrace slice 和线程状态做分析。
+
+[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/mm_events.c, system/memory/libmemevents/; 配置来源: /vendor/etc/mm_events.cfg]
 
 ### vmscan ftrace 事件
 
@@ -377,7 +379,8 @@ Android Go Edition 是面向低 RAM 设备的一组系统配置和产品策略�
 
 ## 参考资料
 
-- [AOSP mm_events 文档](https://source.android.com/docs/core/memory/mm-events) — Android 内存压力追踪机制
+- [lmkd mm_events 源码](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/heads/main/mm_events.c) — Android 内存压力记录机制（AOSP lmkd 仓库）
+- [libmemevents 源码](https://android.googlesource.com/platform/system/memory/libmemevents/) — BPF memevents 程序
 - [Linux Kernel PSI 文档](https://docs.kernel.org/accounting/psi.html) — Pressure Stall Information 机制说明
 - [lmkd 源码](https://android.googlesource.com/platform/system/memory/lmkd/) — Android Low Memory Killer Daemon
 - [Perfetto 文档 - Memory Tracking](https://perfetto.dev/docs/data-sources/memory) — Perfetto 内存追踪数据源

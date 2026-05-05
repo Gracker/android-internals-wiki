@@ -1,61 +1,40 @@
 ---
-
 title: "感知流畅性：步幅波动与无掉帧卡顿"
 chapter: "7.9"
 section: "7.9"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-05-04"
 last_verified_against: "AOSP android-17-beta3"
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-05-05"
 reviewed_by: "openclaw-task6"
+task6_reviewed_date: "2026-05-05"
 task6_result: "pass-light-edit"
+task6_state: reviewed
+review_type: "task6-writing-quality-review"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-rework_count: 2
-rework_date: "2026-05-04"
-rework_by: "task2b-rework"
+rework_count: 3
+rework_date: 2026-05-05
+rework_by: task2b-rework
 sources:
-  - type: aosp
-    path: "frameworks/base/core/java/android/widget/OverScroller.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/Choreographer.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/view/animation/AnimationUtils.java"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Choreographer#postVsyncCallback(android.view.Choreographer.VsyncCallback)"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/View#reportAppJankStats(android.app.jank.AppJankStats)"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/jank/AppJankStats"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/jank/RelativeFrameTimeHistogram"
   - type: official
     path: "https://perfetto.dev/docs/data-sources/frametimeline"
-tags:
-  - android
-  - jank
-  - perceived-smoothness
-  - step-jitter
-  - frame-pacing
-  - overScroller
-  - research
-pipeline_stage: task9_pending
-task6_state: reviewed
-task9_state: pending
-task9_result: needs-rework
+tags: [perceived-smoothness, step-jitter, frametimeline, overscroller, android-performance]
+task9_result: pass-tech-review
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
+pipeline_stage: ready-to-publish
+task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-04"
-last_task9_at: "2026-05-04T16:20:00+08:00"
-review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1；P1 0；源码/API/数据口径需回炉，已写入 queue.json。"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。"
-review_type: "task6-writing-quality-review"
+last_task9_at: "2026-05-05T02:37:46+08:00"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-01-deep-review.md。；2026-05-05 02:37 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。InputConsumer 路径、成员与重采样主链已闭环；自动晋升 finalized。"
+review_notes: "2026-05-05 Task6：修正 frontmatter 结构、章节称谓、结构性过渡和少量大小写/中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
 ---
 
 
@@ -89,7 +68,7 @@ review_type: "task6-writing-quality-review"
 
 用户的感觉没有错，我们衡量流畅性的维度少看了一项。传统的 jank 检测关注"这一帧有没有在规定时间内完成"，但用户的视觉系统更在意"相邻两帧之间的画面变化是否均匀"。
 
-本章讨论的就是这个被传统工具忽略的维度：**步幅波动（step-size jitter）**。即使不掉帧，帧与帧之间位移量不均匀，也会导致视觉上的不连贯。后面我们按成因、量化方法和优化方向依次展开。
+本节讨论的就是这个被传统工具忽略的维度：**步幅波动（step-size jitter）**。即使不掉帧，帧与帧之间位移量不均匀，也会导致视觉上的不连贯。排查这类问题时，先确认成因，再量化位移采样，之后选择对应的优化方向。
 
 ## 无掉帧卡顿的本质：帧率稳定 ≠ 步幅均匀
 
@@ -244,15 +223,15 @@ class StepJitterProbe(
 
 ### 路径二：用 FrameTimeline 判断呈现节奏是不是根因
 
-Perfetto 的价值在于分型。Perfetto 文档对 FrameTimeline 的定义很清楚：Android 12(S)+ 才有这组数据，`Expected Timeline` 是调度器分给 app 的渲染窗口，`Actual Timeline` 是 app 实际完成并提交给 SurfaceFlinger 的时间。
+Perfetto 的价值在于分型。Perfetto 文档对 FrameTimeline 的定义很清楚：Android 12(S)+ 才有这组数据，`Expected Timeline` 是调度器分给 App 的渲染窗口，`Actual Timeline` 是 App 实际完成并提交给 SurfaceFlinger 的时间。
 
 如果 displacement sample 明显波动，但 `Actual Timeline` 基本贴着 `Expected Timeline`，更像 App 侧的物理模型、插值或时间量化问题。如果位移采样相对平稳，`Actual Timeline` 到 SurfaceFlinger 的实际呈现时间仍有抖动，就要继续看合成、显示模式切换和 present fence。
 
 ### 路径三：Android 16 的 AppJankStats 与 RelativeFrameTimeHistogram
 
-Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFrameTimeHistogram`，但它们不是“系统自动收集、零代码侵入”的全局 trace API。`AppJankStats` 用来描述单个 UI widget 在某个状态下的 jank 统计，`RelativeFrameTimeHistogram` 记录这些帧相对 deadline 的分布。把数据交给系统的入口是 `View.reportAppJankStats(AppJankStats)`。
+Android 16 在 `android.app.jank` 包里提供了 `AppJankStats` 和 `RelativeFrameTimeHistogram`，但它们不是“系统自动收集、零代码侵入”的全局 Trace API。`AppJankStats` 用来描述单个 UI widget 在某个状态下的 jank 统计，`RelativeFrameTimeHistogram` 记录这些帧相对 deadline 的分布。把数据交给系统的入口是 `View.reportAppJankStats(AppJankStats)`。
 
-这组 API 更适合 library / widget instrumentation，例如列表、播放器控件或复杂动画组件把自己的局部抖动统计上报给系统。它能补齐“哪个 widget 在什么状态下更容易抖”的视角，但不能替代 Perfetto 对整个显示栈的被动追踪。
+这组 API 更适合 library / widget 插桩，例如列表、播放器控件或复杂动画组件把自己的局部抖动统计上报给系统。它能补齐“哪个 widget 在什么状态下更容易抖”的视角，但不能替代 Perfetto 对整个显示栈的被动追踪。
 
 **精度限制**：`RelativeFrameTimeHistogram` 使用预定义毫秒桶（bucket），不是 1ms 精度的连续采样。-20ms 到 20ms 区间内为 2ms 桶，外侧依次为 5ms、10ms、50ms、100ms 等更粗粒度。输入 `addRelativeFrameTimeMillis(int)` 虽然接受整数毫秒，但输出统计落到对应桶内。同时，该 histogram 记录的是帧时间相对 deadline 的偏差，不包含位移、`scrollY` 或动画值信息，因此不能直接判断步幅波动的大小。对于步幅敏感场景（如列表 fling 滚动、跟手动画），官方统计 API 适合粗粒度的 widget 级帧时间分布画像，不能替代应用侧纳秒级时间 + 位移采样。如果需要检测细粒度步幅波动，仍应回到路径一的应用侧采样方案。
 
@@ -303,11 +282,11 @@ Android 15+ 的 Adaptive Refresh Rate（ARR，见 §2.18）会根据内容动态
 
 ## 版本演进
 
-| Android 版本 | 变化 | 对本章分析的意义 |
+| Android 版本 | 变化 | 对本节分析的意义 |
 |-------------|------|------------------|
 | Android 12 (API 31) | Perfetto FrameTimeline / SurfaceFlinger FrameTimeline data source | 第一次能把 `Expected Timeline` 与 `Actual Timeline` 放到同一套 trace 里看 |
 | Android 13 (API 33) | `Choreographer.postVsyncCallback(VsyncCallback)` 与 `FrameData` 成为公开 API | App 侧可以拿到多条 frame timeline、deadline 和 expected presentation time |
-| Android 16 (API 36) | `View.reportAppJankStats(AppJankStats)`、`AppJankStats`、`RelativeFrameTimeHistogram` | 这是主动上报接口和数据容器，适合 library/widget 合并局部 jank 统计，不等于被动 trace |
+| Android 16 (API 36) | `View.reportAppJankStats(AppJankStats)`、`AppJankStats`、`RelativeFrameTimeHistogram` | 这是主动上报接口和数据容器，适合 library / widget 汇总局部 jank 统计，不等于被动 trace |
 
 ## 常见问题与误区
 
@@ -326,9 +305,9 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 
 ## 输入重采样（Motion Resampling）对跟手滑动的影响
 
-**关联章节**：§7.9 感知流畅性 / §3.2 触摸响应的性能分析。这里补充输入重采样（Motion Resampling）对跟手滑动的影响机制
+**关联章节**：§7.9 感知流畅性 / §3.2 触摸响应的性能分析。这里补充输入重采样（Motion Resampling）对跟手滑动的影响机制。
 
-**机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心机制通过 `frameworks/native/libs/input/InputConsumer.cpp` 中的 `InputConsumer::consume()` → `resampleTouchState()` → `updateTouchState()` 实现。
+**机制位置**：Android Input 系统的触摸重采样位于 InputConsumer 层，在事件到达 App 之前对触摸坐标进行处理。核心流程在 `frameworks/native/libs/input/InputConsumer.cpp` 中：`consume()` → `consumeBatch()` 计算采样时间点 → `updateTouchState()` 更新历史样本 → `resampleTouchState()` 执行插值/外推。声明位于 `frameworks/native/include/input/InputConsumer.h`。
 
 **关键常量**（AOSP mainline）：
 - `RESAMPLE_LATENCY = 5 * NANOS_PER_MS`（5ms 预期延迟，用于减少误预测影响）
@@ -336,23 +315,23 @@ FrameTimeline 只检测帧是否在 VSync 预算内完成。步幅波动不会�
 - `RESAMPLE_MAX_PREDICTION = 8 * NANOS_PER_MS`（最大预测窗口，8ms）
 
 **算法原理**：
-1. 记录最近两个触摸事件样本（timestamp, x, y）
-2. 当 `currentTime - lastEventTime >= RESAMPLE_MIN_DELTA` 时触发重采样
-3. 对异步到达的触摸事件进行线性插值（Interpolation）和外推（Extrapolation）
-4. 将触摸坐标同步到 VSync 信号，确保渲染新帧时使用尽可能当前的坐标
+1. `consumeBatch()` 计算采样时间点：`sampleTime = frameTime - RESAMPLE_LATENCY`，其中 `frameTime` 是目标 VSync 时间，`RESAMPLE_LATENCY = 5ms` 是重采样延迟补偿。
+2. `updateTouchState()` 将原始触摸事件记录为历史样本（next/history 两个样本窗口，保存 timestamp、x、y）。
+3. 当历史样本间的时间差 `>= RESAMPLE_MIN_DELTA`（2ms）时，`resampleTouchState()` 进入重采样逻辑：若 `sampleTime` 在两个历史样本之间，执行线性插值（Interpolation）；若 `sampleTime` 超出最新样本，执行外推（Extrapolation），外推量不超过 `RESAMPLE_MAX_PREDICTION`（8ms）。
+4. 重采样后的坐标同步到 VSync 时间点，确保渲染新帧时使用的是同步后的坐标。
 
-**设计意图**：解决 100Hz 触摸采样率与 60Hz/90Hz/120Hz 显示刷新率不同步导致的"跳跃感"。通过预测下一 VSync 时刻的触摸位置，消除帧内抖动。
+**设计意图**：解决触摸采样率（通常 100-240Hz）与显示刷新率（60/90/120Hz）不同步导致的坐标跳跃。`RESAMPLE_LATENCY` 的 5ms 不是固定最坏响应增量，而是重采样算法的延迟补偿参数——它控制的是采样时间点相对于目标 VSync 的回退量，使得插值/外推有足够的历史数据支撑，降低误预测概率。
 
 **性能影响**：`RESAMPLE_LATENCY = 5ms` 意味着最坏情况下触摸响应增加 5ms，但消除了 100Hz→60Hz 不同步造成的帧内抖动。关闭场景（延迟敏感游戏）可通过 `ro.input.resampling=0` 系统属性禁用重采样。
 
 **配置接口**：`ro.input.resampling` 系统属性（`1` 启用 / `0` 禁用，定义于 `InputConsumer.cpp` 中的 `PROPERTY_RESAMPLING_ENABLED`）；DEBUG 开关 `log.tag.InputConsumerResampling=DEBUG`
 
 **关键源码文件**：
-- `frameworks/native/libs/input/InputConsumer.cpp` — `InputConsumer::consume()` 事件消费、`resampleTouchState()` 重采样算法、`updateTouchState()` 状态更新
-- `frameworks/native/libs/input/InputTransport.h` — InputConsumer 声明、mResampleTouchState 成员
+- `frameworks/native/include/input/InputConsumer.h` — InputConsumer 类声明
+- `frameworks/native/libs/input/InputConsumer.cpp` — `consume()` / `consumeBatch()` 事件消费、`resampleTouchState()` 重采样算法、`updateTouchState()` 历史样本更新
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — 事件分发与 stale event 判定
 
-**与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本章讨论的步幅波动问题形成跨输入-渲染的完整关联。
+**与感知流畅性的关联**：输入重采样直接影响跟手滑动场景下的触摸坐标质量。当重采样算法误判速度方向或量级时，误预测的坐标会导致 RenderThread 在处理触摸触发的 UI 更新时产生视觉滞后感，与本节讨论的步幅波动问题形成跨输入-渲染的完整关联。
 
 ## 参考资料
 

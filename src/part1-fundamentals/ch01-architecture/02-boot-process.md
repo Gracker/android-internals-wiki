@@ -40,7 +40,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/user/UserController.java @ android-16.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/pm/UserController.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java @ android-16.0.0_r1"
   - type: aosp
@@ -83,7 +83,7 @@ last_task9_at: "2026-05-01T13:20:00+08:00"
 task2b_state: "pending"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-01"
-review_notes: "2026-05-01 task9 deep review: P0 UserController path; P1 Cloud Compilation OTA scope; P1 kernel async probing/module placement gap"
+review_notes: "2026-05-05 task2b rework: P0 UserController path fixed (user→pm); P1 Cloud Compilation OTA scope softened; P1 kernel async probe/module placement added"
 task2b_result: fixed  # 2026-05-01 rework: TimingsTraceAndSlog path, startApexServices version (13 not 12), /product/etc/init added
 ---
 
@@ -153,6 +153,8 @@ Kernel 阶段负责建立页表、初始化调度器、内存管理和关键驱�
 
 Linux 侧最早的进程关系仍然成立：PID 0 是 swapper，`rest_init()` 会拉起 PID 1 的 init 和 PID 2 的 kthreadd。对启动分析来说，Kernel 阶段的结束标志更适合看“控制权何时进入 `/init`”，而不是“system 分区何时挂好”。
 
+Android 官方的 boot-time optimization 文档强调两个 Kernel 阶段优化手段：选择性异步驱动探针（`async_probe` 属性标注非启动必需的驱动模块）和模块位置优化（`module.layout` 控制 ko 加载顺序）。GKI 6.12 的 defconfig 中 `CONFIG_MODULES=y` 已默认启用，OEM 可以通过 `/vendor/etc/init/hw/init.hardware.rc` 调整模块加载时机，将非关键驱动的 probe 推迟到 `boot` phase 之后。这两项手段在 dmesg 中可通过 `initcall_blacklist` / `async_pf` 关键词确认是否生效。
+
 ### init：分 first-stage 和 second-stage 两段看
 
 现代 Android 的 init 不能只写成一句“解析 init.rc”。android-16.0.0_r1 的 `init/first_stage_init.cpp` 在早期用户空间会先做几件事：
@@ -202,7 +204,7 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 - **Android 13**：Perfetto 的 boot trace 配置改进，增加了更多 init 阶段的 atrace hook。
 - **Android 15**：Cloud Profiles 作为 Mainline 模块推送给设备，首次启动时编译产物可能依赖云端下发的 profile，不再只依赖本地 Baseline Profile。OTA 后首启的 dex2oat 策略随之变化。[待验证：Cloud Profiles 对 Pixel 设备首启耗时的量化影响]
 - **Android 16**：profileable build 配置的变化影响 Zygote 预加载的命中路径；AutoFDO（Automatic Feedback-Directed Optimization）与 Baseline Profile 协同优化，对冷启动有额外改善。具体数据参见 8.3 节。
-- **Android 16（Cloud Compilation）**：在 Baseline Profile 基础上进一步演进——设备 OTA 后不再需要本地执行 `dex2oat`，而是直接从 Google 服务器下载预编译的 `.odex` / `.vdex` 产物。这套机制彻底解决了 OTA 后首次开机"正在优化应用"的等待。Cloud Compilation 用带宽换计算：下载编译产物的网络耗时远低于本地 `dex2oat` 的 CPU 开销，对低端设备的安装体验改善尤其明显。
+- **Android 16（Cloud Compilation / SDM）**：Google Play 在应用安装和更新场景下向设备分发预编译的 `.odex` / `.vdex` 产物（Software Distribution Manager, SDM），减少安装时本地 `dex2oat` 的 CPU 开销，对低端设备的安装体验改善明显。公开资料目前只覆盖应用侧的安装和更新流程；系统 OTA 后首次开机是否也走 SDM 通道，尚无公开 AOSP 或官方文档支撑，不应把 SDM 等同于"OTA 后全机免编译"。
 
 如果分析对象是 Android 12 及之前的设备，`startApexServices()` 不存在，apex 组件的启动混在其他阶段里。
 
@@ -498,7 +500,7 @@ init.zygote64.rc:  service zygote /system/bin/app_process64 ... --start-system-s
   - `frameworks/base/services/core/java/com/android/server/EventLogTags.logtags` — `boot_progress_system_run` / PMS 相关里程碑
   - `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` — `boot_progress_ams_ready` / `boot_progress_enable_screen`
   - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `systemReady()`、`startHomeOnAllDisplays()` 调用路径
-  - `frameworks/base/services/core/java/com/android/server/user/UserController.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED`
+  - `frameworks/base/services/core/java/com/android/server/pm/UserController.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED`
   - `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — `enableScreenAfterBoot()`
   - `hardware/interfaces/cas/aidl/default/cas-default-lazy.rc` — lazy AIDL service 的 rc 示例
 - 官方文档：

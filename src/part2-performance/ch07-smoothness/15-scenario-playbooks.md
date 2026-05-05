@@ -20,19 +20,22 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [playbook, smoothness, startup, jank, anr, troubleshooting]
 related_chapters: ["7.1", "7.3", "8.2", "9.3", "13.3", "15.2", "15.5", "15.6"]
-pipeline_stage: task6_pending
-task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-22"
-task6_result: pass-light-edit
 task9_state: reviewed
 repaired_date: "2026-04-21"
 repaired_by: "codex"
 task9_result: needs-rework
-task2b_state: pending
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-22"
-last_task9_at: "2026-04-22T10:14:00+08:00"
+task9_reviewed_date: "2026-05-05"
+last_task9_at: "2026-05-05T08:37:27+08:00"
+
+reviewed_date: "2026-05-05"
+reviewed_by: openclaw-task6
+task6_result: needs-rework
+task6_state: reviewed
+task2b_state: pending
+pipeline_stage: task2b_pending
+review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。"
+last_task6_at: "2026-05-05T07:30:00+08:00"
 ---
 
 # 场景化性能作战手册
@@ -43,7 +46,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 ### 锚点（必须覆盖）
 
 - 🔹 把常见性能投诉映射到统一排障入口：卡顿 / 响应慢 / ANR / 内存 / 功耗
-- 🔹 每类问题先看什么指标、抓什么 trace、优先排哪条链路
+- 🔹 每类问题先看什么指标、抓什么 trace、优先排哪条路径
 - 🔹 不同场景的第一嫌疑人：MainThread / RenderThread / SurfaceFlinger / Binder / IO / 调度
 - 🔹 常见误判：把系统负载当成 App 问题、把输入延迟当成掉帧、把 BufferStuffing 当成普通慢帧
 - 🔹 用章节跳转形成“现场排障导航”
@@ -54,17 +57,58 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 - 🔸 把作战手册转成团队内部 checklist / runbook
 <!-- outline-end -->
 
+## 版本边界：不同 Android 版本的可用观察入口
+
+本章引用的排障工具和指标，部分在 Android 12+ 才可用。在 Android 8-11 上排查时，需要回退到替代手段。
+
+### FrameTimeline：Android 12+
+
+`FrameTimeline` 是 Android 12（API 31）引入的 Perfetto 数据源，能直接在 trace 中标注每帧的 jank type（`AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerDeadlined` 等）。Android 8-11 没有 `FrameTimeline`，排查流畅性问题需要回退到以下入口：
+
+- **gfx/view trace tag**：`adb shell setprop debug.atrace.tags.enableflags 0x200` 开启 `gfx` + `view` tag，在 Perfetto 中观察 `Choreographer#doFrame` slice 的耗时和 RenderThread 的 `DrawFrame` 区间
+- **SurfaceFlinger slice**：观察 `SurfaceFlinger` 主线程的 `composeDisplay` / `handleMessageRefresh` slice，判断合成耗时是否超标
+- **sched 轨道**：主线程和 RenderThread 的调度状态（Runnable / Sleeping / Uninterruptible），排查调度延迟和 CPU 争抢
+- **FrameMetrics / JankStats**（Android 7.0+）：通过 `Window.OnFrameMetricsAvailableListener` 或 `JankStats` 库在应用内采集帧耗时分布，作为 `FrameTimeline` 的应用侧替代
+
+### ApplicationExitInfo：API 30+
+
+`ApplicationExitInfo` 在 Android 11（API 30）引入，能查询进程退出的原因、状态和堆栈。Android 8-10 需要回退到：
+
+- **traces.txt**：`adb pull /data/anr/traces.txt`，ANR 发生后系统写入的堆栈快照。注意这只记录 ANR 触发时刻的主线程栈，不含 ANR 前的时间线
+- **logcat / EventLog**：过滤 `ActivityManager` 和 `Process` 相关 tag，观察进程被杀的信号和原因（如 `Low Memory Killer`、`Background anr`）
+- **bugreport**：完整的系统状态转储，包含进程列表、内存分布、LMKD 记录。对内存压力导致的进程回收，bugreport 比单一 traces.txt 信息更全
+
+### BufferStuffing 识别
+
+`BufferStuffing` 作为 jank type 标注是 Android 12+ `FrameTimeline` 的能力。Android 8-11 没有 `BufferStuffing` 标签，但可以通过以下方式间接识别：
+
+- **帧间隔观察**：在 `Choreographer#doFrame` slice 中，连续帧的实际提交时间（Actual Present）稳定落后预期时间（Expected Present）固定 N 个周期，说明管线积压
+- **BufferQueue 状态**：`adb shell dumpsys SurfaceFlinger` 中查看对应 Layer 的 `BufferQueue` 槽位状态，如果多个 slot 处于 `QUEUED` 态，说明帧堆积
+- **Input → doFrame 延迟**：从 Input 事件时间戳到对应 `doFrame` 开始时间的差值异常增大，通常伴随输入延迟体感
+
+### 排障入口版本速查
+
+| 工具 / 指标 | 可用版本 | Android 8-11 替代 |
+|---|---|---|
+| FrameTimeline | Android 12+ | gfx/view/sched trace + FrameMetrics |
+| ApplicationExitInfo | API 30+ | traces.txt + logcat + bugreport |
+| BufferStuffing 标签 | Android 12+ | 帧间隔观察 + BufferQueue dump |
+| JankStats | Android 7.0+ | 直接可用（但不如 FrameTimeline 信息丰富） |
+| Perfetto `frame_timeline_event` 表 | Android 12+ | `slice` 表中过滤 `Choreographer` / `DrawFrame` |
+
+---
+
 ## 为什么单独写这一章
 
 前面几章把原理、工具和分析方法拆得很细。这种写法适合系统学习，但到了真实现场，读者最先遇到的问题往往不是“Choreographer 是怎么工作的”，而是“用户说卡，这次先从哪看起”。
 
 这两种需求并不冲突。前面的章节负责把问题讲透，这一章负责把它们重新接回真实工作流。它更像一张地图，告诉读者从投诉到结论之间，第一步该往哪里走。
 
-如果只会看单点知识，不会把问题放回场景，排障就很容易出现两种极端：要么见到一个长 slice 就一路追下去，要么因为线索太多，最后什么也没追出来。场景化手册的作用，就是先把问题压缩到一个足够小的范围里。
+如果只会看单点知识，不会把问题放回场景，排障就很容易出现两种极端：要么见到一个长 slice 就一路追下去，要么因为线索太多，到头来什么也没追出来。场景化手册的作用，就是先把问题压缩到一个足够小的范围里。
 
-## 排障前先分类，不要急着深入细节
+## 排障前先分类，再深入细节
 
-现场排障最容易犯的错误是分类没做就一头扎进了具体链路。
+现场排障最容易犯的错误是分类没做就一头扎进具体路径。
 
 用户的一句“卡”，背后可能是：
 
@@ -75,7 +119,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 - 内存压力
 - 接近 ANR
 
-如果第一步就把它当成某一种问题，后面抓 trace、看线程、找责任链路都可能一路跑偏。  
+如果第一步就把它当成某一种问题，后面抓 trace、看线程、找责任路径都可能一路跑偏。
 所以排障要先做分类，再做深入分析。
 
 ## 一个统一的四步框架
@@ -91,10 +135,10 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 3. **再定责任链**  
    MainThread、RenderThread、SurfaceFlinger、Binder、IO、调度，哪条路径最可疑？
 
-4. **最后才深入到具体代码和工具**  
+4. **深入到具体代码和工具**
    确定责任链后，再决定要不要继续上 SQL、heap dump、stack sampling 或 btrace。
 
-这四步看起来普通，但它背后的约束非常强：每一步都在缩小问题空间。真正的经验是知道应该先砍掉哪些不相关方向。
+这四步看起来普通，但它背后的约束非常强：每一步都在缩小问题空间。经验价值在于知道应该先砍掉哪些不相关方向。
 
 ## 用户的“卡”，先翻译成技术问题
 
@@ -104,18 +148,20 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 |---|---|---|
 | “滑动一卡一卡的” | 狭义流畅性 / jank | `FrameTimeline`、`doFrame`、`RenderThread` |
 | “点了没反应” | 输入延迟 / 响应慢 | Input → MainThread → Binder / IO |
-| “打开页面要等很久” | 启动或页面可交互时间过长 | TTID / TTFD、首屏数据链路 |
+| “打开页面要等很久” | 启动或页面可交互时间过长 | TTID / TTFD、首屏数据路径 |
 | “界面像死掉了一样” | ANR 或接近 ANR | 主线程栈、`ApplicationExitInfo`、`traces.txt` |
 | “越用越卡，回前台更慢” | 内存压力 / 进程回收 / page fault | PSS、GC、LMKD、冷 / 温 / 热启动切换 |
 
 这张表的价值在于逼着读者先问一句：**我现在看到的，到底是哪一类体验失效？**
+
+[需补充素材: 大纲要求覆盖“功耗”投诉入口，但正文没有独立说明耗电/发热场景的第一观察点、trace 配置和优先排查路径。建议 Task2B 补一段“耗电/发热伴随卡顿”的场景入口，至少覆盖 Battery Historian / Perfetto power rails、Thermal/CPU frequency、wakelock、JobScheduler/WorkManager 与网络重试。]
 
 ## 八类最常见的性能现场
 
 ### 1. 冷启动慢
 
 冷启动慢最常见的误判，是把“已经看到画面”误当成“启动结束”。  
-很多应用的 TTID 并不难看，真正拖慢体感的是 TTFD。
+很多应用的 TTID 并不难看，拖慢体感的是 TTFD。
 
 排这类问题时，先看四件事：
 
@@ -130,7 +176,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 2. 对照 TTID 和 TTFD，先分清“首帧慢”还是“可交互慢”。
 3. 抓一次完整冷启动 trace。
 4. 如果 TTID 正常但 TTFD 差，先查 Application 初始化、首屏数据和可交互边界。
-5. 如果应用以 4KB 页对齐编译但运行在 16KB 页设备上，冷启动的 `mmap` + page fault 开销会额外增加。检查 APK 内 `.so` 文件的 ELF 页对齐是否为 16KB（`readelf -l libxxx.so | grep LOAD`），非 16KB 对齐的库在 16KB 设备上会触发兼容模式拷贝，PSS 飙升且无法享受大页加速红利。
+5. 如果应用以 4KB page-alignment 编译但运行在 16KB 页设备上，冷启动的 `mmap` + page fault 开销会额外增加。检查 APK 内 `.so` 文件的 ELF LOAD segment alignment 是否为 16KB（`readelf -l libxxx.so | grep LOAD`），非 16KB alignment 的库在 16KB 设备上会触发兼容模式拷贝，PSS 飙升且无法享受大页加速红利。
 
 这一类问题最容易掉进“感觉已经打开了，所以不算慢”的误区。对用户来说，画面出现只是第一步，能不能开始用才是第二步。  
 对应章节：`8.1`、`8.2`、`8.3`、`15.6`。
@@ -163,7 +209,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 1. 先确认是持续性掉帧，还是偶发长帧。
 2. 先看 `FrameTimeline` 的 `Jank Type`，不要只看主线程颜色。
 3. 再分流到 MainThread、RenderThread、SurfaceFlinger。
-4. 最后才回到具体控件、图片、DiffUtil 和业务代码。
+4. 再回到具体控件、图片、DiffUtil 和业务代码。
 
 这里最常见的误判，是见到滑动卡，就默认问题一定在 UI 线程。实际工程里，图片线程抢 CPU、RenderThread 超时、SurfaceFlinger 合成变慢都很常见。  
 对应章节：`7.3`、`7.4`、`7.5`、`18.2`、`18.7`。
@@ -178,7 +224,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 这两类问题的责任链完全不同。前者更偏流畅性，后者更偏响应速度和数据就绪。
 
 排这类问题时，先做一个粗判断：  
-点击之后，页面是不是很快切过去了，只是内容空着？如果是，先别急着看动画。
+点击之后，页面是不是很快切过去了，只是内容空着？如果是，先看内容加载路径，再看动画。
 
 比较稳的顺序是：
 
@@ -187,7 +233,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 3. 如果页面很快出现但内容迟到，回到响应速度和数据加载路径。
 4. 如果动画本身掉帧，再回到 MainThread / RenderThread / SurfaceFlinger。
 
-很多“切页卡”最后都不是切页动画的问题，而是切页后数据、骨架屏、图片、路由初始化堆在一起，用户把它统称成“切页卡”。  
+很多“切页卡”往往不是切页动画的问题，而是切页后数据、骨架屏、图片、路由初始化堆在一起，用户把它统称成“切页卡”。
 对应章节：`7.4`、`8.4`、`1.4`、`1.5`。
 
 ### 4. 输入延迟高，但不一定掉帧
@@ -219,7 +265,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 
 ### 5. 视频列表、SurfaceView、TextureView 场景卡
 
-只要界面里出现独立 Surface，排障路径就要立刻切换。因为这时候 UI 帧和视频帧很可能已经不是同一条链路了。
+只要界面里出现独立 Surface，排障路径就要立刻切换。因为这时候 UI 帧和视频帧很可能已经不是同一条路径了。
 
 先看：
 
@@ -237,14 +283,14 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 
 - SurfaceView / TextureView 选型
 - BufferQueue 堵塞
-- 合成链路切换
+- 合成路径切换
 
 实际顺序通常是：
 
 1. 先确认是 UI 卡，还是视频画面卡。
 2. 看独立 Surface、Layer 数量和合成路径。
 3. 看 App 线程和 SurfaceFlinger 谁在超时。
-4. 最后再回到容器选型和播放器实现。
+4. 再回到容器选型和播放器实现。
 
 这类问题最典型的误判，就是把所有掉帧都归到 UI 线程。  
 对应章节：`18.4`、`18.6`、`18.7`、`18.15`。
@@ -270,7 +316,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 - JavaScript / 页面资源加载
 - 宿主侧布局
 
-这里最重要的一条经验是：不要默认“宿主应用的主线程 = 唯一瓶颈”。  
+这类问题的经验是：不要默认“宿主应用的主线程 = 唯一瓶颈”。
 对应章节：`2.11`、`7.11`、`18.12`、`18.13`。
 
 ### 7. 前后台切换后明显变慢
@@ -345,7 +391,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 | 低端机 / 小内存 | 调度、GC、page fault、图片解码 | 资源压力更容易放大 |
 | 高刷设备 | deadline 更紧、尾部延迟更显眼 | 120Hz 下 8.33ms 很容易超 |
 | 弱网 / 海外网络 | TTFD、页面切换、首屏骨架加载 | 先分离渲染问题和数据就绪问题 |
-| 多窗口 / 浮窗 / PIP | SurfaceFlinger、BufferQueue、合成链路 | 不要只盯 App 主线程 |
+| 多窗口 / 浮窗 / PIP | SurfaceFlinger、BufferQueue、合成路径 | 不要只盯 App 主线程 |
 | 游戏 / 视频场景 | GPU composition、独立 surface、thermal | UI 线程经常不是主瓶颈 |
 
 这张表的意义是提醒一件事：排障顺序应该跟着设备现实走，不要死背模板。
@@ -367,7 +413,7 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 |---|---|
 | 帧超时 | MainThread → RenderThread → SurfaceFlinger |
 | 点击后没反应 | Input → MainThread → Binder / Lock / IO |
-| 页面内容迟迟不出现 | 启动链路 / 数据加载 / TTFD |
+| 页面内容迟迟不出现 | 启动路径 / 数据加载 / TTFD |
 | 一切都慢 | 调度 / Thermal / 内存压力 / 系统负载 |
 | 只有特定渲染容器慢 | BufferQueue / Surface / GPU composition |
 
@@ -417,4 +463,4 @@ last_task9_at: "2026-04-22T10:14:00+08:00"
 - 哪类问题必须补抓 trace 才能继续
 - 哪类问题可以直接回到指标平台做聚类
 
-做到这一步，性能排障才真正从个人经验变成团队资产。
+做到这一步，性能排障才从个人经验变成团队资产。
