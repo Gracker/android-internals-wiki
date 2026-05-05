@@ -37,11 +37,11 @@ sources:
     path: "hardware/libhardware_legacy/power.cpp"
   - type: aosp
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
-reviewed_date: 2026-05-01
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-05"
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task9_result: needs-rework
@@ -54,6 +54,10 @@ repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 review_round: 3
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。"
+last_task6_at: "2026-05-05T17:19:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-17-review.md"
+review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
+
 ---
 
 # 11.5 Wakelock 机制与功耗分析
@@ -62,7 +66,7 @@ Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是
 
 2026 年 3 月起，Play Store 对过度持有 wakelock 的 App 实施搜索降权和耗电警告标签。这个惩罚政策已把 wakelock 优化从"建议"变成了"合规要求"。
 
-这篇文章我们要搞清楚几件事：Wakelock 的底层机制是什么？App 层的 wakelock 怎么映射到内核？出了问题怎么诊断？以及最重要的——怎么避免 wakelock 变成功耗灾难。
+这篇文章要搞清楚几件事：Wakelock 的底层机制是什么？App 层的 wakelock 怎么映射到内核？出了问题怎么诊断？以及怎么避免 wakelock 变成功耗灾难。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -92,7 +96,7 @@ Wakelock 是 Android 功耗分析中最常见的"嫌疑人"——它设计上是
 > 涉及版本差异、内核接口、功耗策略阈值的表述，优先保守表述，拿不准就标 `[待验证]`。
 <!-- outline-end -->
 
-## Wakelock 的本质：为什么 Android 需要"阻止睡眠"
+## Wakelock 为什么存在：Android 需要“阻止睡眠”的场景
 
 移动设备的 CPU 大部分时间应该处于低功耗状态。屏幕关闭后，如果没有任何工作要做，系统会在几百毫秒内依次进入浅度空闲、深度空闲，最终挂起（suspend）——此时 CPU 几乎不耗电，整机功耗可以降到 1mA 以下。
 
@@ -112,7 +116,7 @@ Android 提供了以下 CPU/屏幕类 wake-lock level，后三种屏幕相关的
 
 `PROXIMITY_SCREEN_OFF_WAKE_LOCK` 用于通话等场景：距离传感器检测到物体靠近时关闭屏幕，远离时重新点亮。它不参与 CPU 保活，走的是屏幕/传感器控制路径。屏幕类 wake-lock（`SCREEN_DIM`、`SCREEN_BRIGHT`、`FULL`）废弃的原因很简单：屏幕是否点亮应该由系统电源策略统一管理，而不是让 App 自行决定。现在如果需要保持屏幕常亮，正确做法是使用 `FLAG_KEEP_SCREEN_ON`（Window Flag）或 `android:keepScreenOn`（XML 属性），由 WindowManager 统一处理。
 
-真正需要开发者关注的只有 `PARTIAL_WAKE_LOCK`。它让 CPU 在屏幕关闭后仍然运行——这正是功耗问题的高发区，因为用户看不到屏幕亮着，不知道 App 还在消耗电量。
+开发者主要关注的是 `PARTIAL_WAKE_LOCK`。它让 CPU 在屏幕关闭后仍然运行——这正是功耗问题的高发区，因为用户看不到屏幕亮着，不知道 App 还在消耗电量。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/PowerManager#PARTIAL_WAKE_LOCK]
 
@@ -140,7 +144,7 @@ wl.release();
 4. 在构造函数中执行 `linkToDeath()`：对客户端传入的 lock（Binder）注册 DeathRecipient
 5. PowerManagerService 更新全局电源状态，根据所有活跃 wakelock 类型决定是否允许系统进入 suspend
 
-注意区分两个角色：客户端 `WakeLock` 的 `mToken` 在客户端创建后传入服务端；服务端的 `WakeLock`（PMS 内部类）才是 PMS 持有的记录，它对客户端传入的 IBinder 执行 linkToDeath()，从而在客户端进程死亡时自动清理记录。
+要区分两个角色：客户端 `WakeLock` 的 `mToken` 在客户端创建后传入服务端；服务端的 `WakeLock`（PMS 内部类）才是 PMS 持有的记录，它对客户端传入的 IBinder 执行 linkToDeath()，从而在客户端进程死亡时自动清理记录。
 
 [已验证: AOSP android-17-beta3, frameworks/base/core/java/android/os/PowerManager.java WakeLock 类构造函数；frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java WakeLock 内部类（line 5383-5438）+ acquireWakeLockInternal（line 1615-1659）]
 
@@ -186,7 +190,7 @@ wl.acquire(10 * 60 * 1000L); // 最多持有 10 分钟
 
 Android 的设备电源状态可以用一个简化的状态机来描述：
 
-```
+```text
 Awake（屏幕亮）
   ↓ 用户按电源键 / 超时
 Screen Dim
@@ -204,7 +208,7 @@ Sleep / Suspend（CPU 停止，功耗极低）
 - `CPU Idle` track：CPU 是否进入低功耗 idle 状态
 - `linux.ftrace` 的 `power/wakeup_source_activate` / `power/wakeup_source_deactivate`：是谁在什么时刻阻止了 suspend
 
-framework 层的 `PowerManagerService` 处理片段有时能在 system trace 的 slices 里看到，但真正稳定的 wakelock 原始事件仍以 ftrace 为准。
+framework 层的 `PowerManagerService` 处理片段有时能在 system trace 的 slices 里看到，但更稳定的 wakelock 原始事件仍以 ftrace 为准。
 
 ### Doze 模式对 Wakelock 的压制
 
@@ -283,7 +287,7 @@ Android 10 引入 `SystemSuspend` 服务（`system_suspend` HIDL/AIDL 服务）�
 - suspend 线程先读 `/sys/power/wakeup_count`，再拿锁并等待 counter 归零；随后把刚读到的 wakeup_count 原样写回，再写入 `"mem"` 到 `/sys/power/state`
 - 如果写回 wakeup_count 失败，说明这一小段窗口里出现了新的唤醒事件，本轮 suspend 会被放弃，线程回到循环起点重试
 
-这套 `wakeup_count` 握手机制就是为了避免"刚准备 suspend，硬件又来了一个 wakeup event"这种竞态。`SystemSuspend` 负责用户态 wakelock 的引用计数与进入 suspend 的时机协调，内核 `wakeup_source` 仍然继续记录真正阻止 suspend 的实体。
+这套 `wakeup_count` 握手机制就是为了避免"刚准备 suspend，硬件又来了一个 wakeup event"这种竞态。`SystemSuspend` 负责用户态 wakelock 的引用计数与进入 suspend 的时机协调，内核 `wakeup_source` 仍然继续记录最终阻止 suspend 的实体。
 
 排查时可以先看 SystemSuspend 服务状态：
 
@@ -348,7 +352,7 @@ const auto suspendService = getSystemSuspendServiceOnce();
 suspendService->acquireWakeLock(WakeLockType::PARTIAL, id, &wl);
 ```
 
-`SystemSuspend` 维护用户态 wakelock 计数。只要计数不为 0，suspend 线程就不会进入真正写 `/sys/power/state` 的阶段。一个 App 的 partial WakeLock 在 PMS 侧合并成 `PowerManagerService.WakeLocks`，再通过 `SystemSuspend` 阻止 deep suspend；屏幕相关的 display blocker 仍由另一条路径管理。
+`SystemSuspend` 维护用户态 wakelock 计数。只要计数不为 0，suspend 线程就不会进入写 `/sys/power/state` 的阶段。一个 App 的 partial WakeLock 在 PMS 侧合并成 `PowerManagerService.WakeLocks`，再通过 `SystemSuspend` 阻止 deep suspend；屏幕相关的 display blocker 仍由另一条路径管理。
 
 #### SystemSuspend 的 autosuspend 线程
 
@@ -567,7 +571,7 @@ AlarmManager 是 wakelock 的一个重要间接来源。当 Alarm 触发时：
 3. 系统持有 wakelock，直到 `BroadcastReceiver.onReceive()` 返回
 4. `onReceive()` 返回后，系统释放 wakelock
 
-这里有一个关键细节：`onReceive()` 在主线程执行，系统自动持有 wakelock 保证它运行完成。但如果 `onReceive()` 中启动了异步操作（如启动 Service），系统 wakelock 在 `onReceive()` 返回时就释放了，Service 可能还没来得及启动，CPU 就又睡了。
+`onReceive()` 的关键点是：它在主线程执行，系统自动持有 wakelock 保证它运行完成。但如果 `onReceive()` 中启动了异步操作（如启动 Service），系统 wakelock 在 `onReceive()` 返回时就释放了，Service 可能还没来得及启动，CPU 就又睡了。
 
 过去用 `WakefulBroadcastReceiver`（已废弃）来解决这个问题，现在推荐的做法是：
 
@@ -719,7 +723,7 @@ Wakelock 不是一个孤立的话题，它与全书多个章节紧密关联：
 |------|------|------|
 | Android 1.5 | 引入 PowerManager.WakeLock | 基础 API |
 | Android 6.0 (API 23) | Doze 模式 | maintenance window 外忽略 wakelock |
-| Android 9 (API 28) | App Standby Bucket | 后台任务 / Alarm 配额收紧；wakelock 受 Doze、单次超时和后台入口间接约束，无 Jobs 类累计配额 |
+| Android 9 (API 28) | App Standby Bucket | 后台任务 / Alarm 配额更严；wakelock 受 Doze、单次超时和后台入口间接约束，无 Jobs 类累计配额 |
 | Android 12 (API 31) | Foreground Service 限制 | FGS 启动受限，通知强制 |
 | Android 12 (API 31) | `SCHEDULE_EXACT_ALARM` 权限 | 精确闹钟需要声明权限 |
 | Android 14 (API 34) | 前台服务类型 | 必须声明服务类型 |
@@ -772,7 +776,7 @@ Power Efficiency Mode 的语义：系统可更积极地将线程调度到节能�
 - `POWER_MONITOR_TYPE_CONSUMER`（1）— 建模范畴，名称通用如 "GPU" / "MODEM"
 
 数据获取路径：
-```
+```text
 SystemHealthManager.getSupportedPowerMonitors() → List<PowerMonitor>
 SystemHealthManager.getPowerMonitorReadings(List<PowerMonitor>, OutcomeReceiver<PowerMonitorReadings>)
 PowerMonitorReadings.getConsumedEnergy(PowerMonitor) → 微瓦秒（μWs）累计值
@@ -802,9 +806,9 @@ android_power_config {
 }
 ```
 
-数据存储为 PerfettoSQL 表 `android_power_rails_counters`。完整链路：
+数据存储为 PerfettoSQL 表 `android_power_rails_counters`。完整路径：
 
-```
+```text
 应用调用 Power Efficiency Hint
   ↓
 系统调整 CPU/GPU 频率策略
@@ -818,7 +822,7 @@ Perfetto android.power_rails 记录 rail 数据
 验证 Power Efficiency Mode 的实际效果
 ```
 
-> 注意：USB 充电场景下电池计数器显示正向充电电流而非设备真实功耗。官方建议使用专用 USB Hub 切断充电电路以获得准确测量。
+> USB 充电场景下，电池计数器显示的是正向充电电流，不是设备真实功耗。官方建议使用专用 USB Hub 切断充电电路，以获得准确测量。
 
 [已验证: developer.android.com — ADPF Power Efficiency Mode 官方文档；PowerMonitor API Reference (API 35)；perfetto.dev/docs/analysis-sql/android-power-rails]
 

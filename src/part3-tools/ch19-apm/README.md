@@ -10,25 +10,26 @@ last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
+task2b_state: pending
+task6_state: reviewed
+task9_state: reviewed
 last_task2b_at: "2026-05-05T16:16:04+08:00"
 repaired_date: "2026-05-05"
 repaired_by: openclaw-task2b
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T14:20:00+08:00"
+last_task9_at: "2026-05-05T16:24:00+08:00"
 task9_result: needs-rework
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T14:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-14-review.md"
-review_notes: "2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
+last_task6_at: "2026-05-05T17:19:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-17-review.md"
+review_notes: "2026-05-05 17:19 Task6：章节总纲写作层复审通过；修复 2 处结构性元叙述。Task9 已登记 Tracing SDK / tracing-perfetto 版本线 P1 问题，保留 task2b_pending，不重复写入 queue。"
+last_task9_review_log: "logs/deep-review/2026-05-05-16-deep-review.md"
+task9_review_notes: "2026-05-05 16:24 Task9 deep-review: P1=1（Tracing SDK / tracing-perfetto 版本线错误），P2=1（19.21/19.22 目录标题不一致）；转 Task2B。"
 ---
 
 # 第 19 章：APM 工具与性能监控生态
@@ -37,7 +38,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 
 应用上线之后，卡顿、启动慢、ANR、内存泄漏、OOM 这些问题还会持续出现，但开发者不再能 adb 直连设备抓 trace。APM（Application Performance Monitoring）就是补这个缺口的：把线下能观察到的信号，用可控的开销搬到线上去。
 
-这一章不重复第 14 章"APM 选型"的分析框架，而是把视角降到每一个具体的工具和项目上——它解决了什么问题、怎么接入、架构是什么样的、线上跑起来有哪些工程约束。每个工具独立成篇，读者可以按需翻阅。
+第 14 章已经给出“APM 选型”的分析框架。这里把视角降到每一个具体的工具和项目上：它解决什么问题、怎么接入、架构是什么样的、线上跑起来有哪些工程约束。每个工具独立成篇，读者可以按需翻阅。
 
 ## 全景分类
 
@@ -99,7 +100,7 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 ## 与其他章节的关系
 
 - **第 13 章（Perfetto）**：Perfetto 是线下 trace 分析工具。btrace/RheaTrace 可以把方法调用写成可导入 Perfetto 的 trace 数据；Tracing SDK 用 `Trace.beginSection` / `androidx.tracing.trace {}` 给 Perfetto 添加进程内 slice；JankStats 不直接生成 Perfetto trace 文件，它通过 `OnFrameListener` / `FrameData` 输出帧级 jank 数据和 UI state，适合与 Perfetto、FrameTimeline、Tracing SDK 一起归因。
-- **第 14 章**：14.5 三方性能库做了概要介绍，14.12 APM 选型给了分层框架，14.13 Hook 基础设施讲底层原理。本章是这两个小节的展开版——每个工具独立深入。
+- **第 14 章**：14.5 三方性能库做了概要介绍，14.12 APM 选型给了分层框架，14.13 Hook 基础设施讲底层原理。这里承接这两个小节，按工具逐篇深入。
 - **第 15 章（方法论）**：15.5 线上监控、15.9 线上问题流转、15.10 治理工程化讲的是"怎么把这些工具用成体系"，本章讲的是"这些工具本身是什么"。
 
 ## 本章内容

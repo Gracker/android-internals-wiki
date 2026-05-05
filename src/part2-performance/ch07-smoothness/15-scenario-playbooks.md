@@ -30,13 +30,15 @@ last_task9_at: "2026-05-05T08:37:27+08:00"
 
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
-task6_result: needs-rework
-task6_state: revisiting
+task6_result: pass-light-edit
+task6_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
-review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。"
-last_task6_at: "2026-05-05T07:30:00+08:00"
+pipeline_stage: task9_pending
+review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。 | 2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 3 处 L1/L2 表达问题，未新增回炉项，转 Task9 复审。"
+last_task6_at: "2026-05-05T17:19:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-17-review.md"
+
 ---
 
 # 场景化性能作战手册
@@ -60,7 +62,7 @@ last_task6_at: "2026-05-05T07:30:00+08:00"
 
 ## 版本边界：不同 Android 版本的可用观察入口
 
-本章引用的排障工具和指标，部分在 Android 12+ 才可用。在 Android 8-11 上排查时，需要回退到替代手段。
+下面这些排障工具和指标，部分在 Android 12+ 才可用。在 Android 8-11 上排查时，需要回退到替代手段。
 
 ### FrameTimeline：Android 12+
 
@@ -75,7 +77,7 @@ last_task6_at: "2026-05-05T07:30:00+08:00"
 
 `ApplicationExitInfo` 在 Android 11（API 30）引入，能查询进程退出的原因、状态和堆栈。Android 8-10 需要回退到：
 
-- **traces.txt**：`adb pull /data/anr/traces.txt`，ANR 发生后系统写入的堆栈快照。注意这只记录 ANR 触发时刻的主线程栈，不含 ANR 前的时间线
+- **traces.txt**：`adb pull /data/anr/traces.txt`，ANR 发生后系统写入的堆栈快照。它只记录 ANR 触发时刻的主线程栈，不含 ANR 前的时间线
 - **logcat / EventLog**：过滤 `ActivityManager` 和 `Process` 相关 tag，观察进程被杀的信号和原因（如 `Low Memory Killer`、`Background anr`）
 - **bugreport**：完整的系统状态转储，包含进程列表、内存分布、LMKD 记录。对内存压力导致的进程回收，bugreport 比单一 traces.txt 信息更全
 
@@ -83,7 +85,7 @@ last_task6_at: "2026-05-05T07:30:00+08:00"
 
 `BufferStuffing` 作为 jank type 标注是 Android 12+ `FrameTimeline` 的能力。Android 8-11 没有 `BufferStuffing` 标签，但可以通过以下方式间接识别：
 
-- **帧间隔观察**：在 `Choreographer#doFrame` slice 中，连续帧的 `doFrame` 开始时间间隔不稳定——部分帧间隔远大于正常 VSync 周期（如 60Hz 下 >16.67ms），且差值接近 VSync 周期的整数倍，说明管线在积压。注意
+- **帧间隔观察**：在 `Choreographer#doFrame` slice 中，连续帧的 `doFrame` 开始时间间隔不稳定——部分帧间隔远大于正常 VSync 周期（如 60Hz 下 >16.67ms），且差值接近 VSync 周期的整数倍，说明管线在积压。
 - **BufferQueue 状态**：`adb shell dumpsys SurfaceFlinger` 中查看对应 Layer 的 `BufferQueue` 槽位状态，如果多个 slot 处于 `QUEUED` 态，说明帧堆积
 - **Input → doFrame 延迟**：从 Input 事件时间戳到对应 `doFrame` 开始时间的差值异常增大，通常伴随输入延迟体感
 
