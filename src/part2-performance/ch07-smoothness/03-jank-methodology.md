@@ -34,13 +34,13 @@ sources:
     path: "https://developer.android.com/reference/android/view/FrameMetrics"
 tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
 related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "2.18", "1.5", "13.3"]
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task2b_result: fixed
 task6_reviewed_date: "2026-05-05"
-review_round: 1
+review_round: 2
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: pending
 task9_state: pending
 task2b_state: fixed
@@ -48,8 +48,9 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
 last_task9_at: "2026-05-05T10:38:33+08:00"
 task9_review_notes: "2026-05-05 10:20 task9 deep-review: needs-rework；P0 2（LMK/Perfetto 追踪点、Binder binder_reply tracepoint），P1 2（FrameMetrics API 版本、JankStats 判定口径）。"
-last_task6_at: "2026-05-05T10:05:00+08:00"
-review_notes: "2026-05-05 task6 review: 高频填充词已压降，L1/L2 小修完成；待 Task9 复审。"
+last_task6_at: "2026-05-05T11:05:00+08:00"
+review_notes: "2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。"
+
 ---
 
 # 卡顿分析方法论
@@ -150,7 +151,7 @@ data_sources: {
 
 [已验证: Perfetto FrameTimeline 功能在 Android 12 (S) 及以上版本可用, developer.android.com]
 
-但这里有一个关键的认知——**单看主线程的帧颜色，不能确定是否产生用户可见掉帧**。在 [流畅性实战 3](https://www.androidperformance.com/2021/04/24/android-systrace-smooth-in-action-3/) 中，高爷详细解释了为什么会出现"黄帧但不掉帧"和"黄帧且掉帧"两种情况。原因是 Android 的多缓冲机制（Triple Buffer 或更多 Buffer）提供了缓冲空间——即使 App 某一帧画得慢了一点，只要 BufferQueue 中还有之前准备好但未消费的帧，屏幕上就不会出现空白，用户也就感知不到卡顿 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]。
+**单看主线程的帧颜色，不能确定是否产生用户可见掉帧**。在 [流畅性实战 3](https://www.androidperformance.com/2021/04/24/android-systrace-smooth-in-action-3/) 中，高爷详细解释了为什么会出现"黄帧但不掉帧"和"黄帧且掉帧"两种情况。原因是 Android 的多缓冲机制（Triple Buffer 或更多 Buffer）提供了缓冲空间——即使 App 某一帧画得慢了一点，只要 BufferQueue 中还有之前准备好但未消费的帧，屏幕上就不会出现空白，用户也就感知不到卡顿 [来源: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md]。
 
 所以，**判断掉帧是否会被用户感知，必须看 SurfaceFlinger**。
 
@@ -178,7 +179,7 @@ data_sources: {
 
 如果主线程和渲染线程看起来都不慢，但帧还是没画完，那就需要看**调度问题**——CPU 有没有及时把时间片分配给对应线程。这部分在后面"CPU 调度问题导致的 Jank"中详细展开。
 
-## Perfetto 中定位 Jank 帧的进阶方法
+## Perfetto 中定位 Jank 帧的方法：FrameTimeline、Expected vs Actual
 
 上面讲的是"看帧颜色 + 看 SurfaceFlinger"的经典方法。在 Android 12 及以上版本，Perfetto 提供了一个更精确的工具：**FrameTimeline**。
 
@@ -198,7 +199,7 @@ Actual Timeline 展示的是这一帧实际执行的过程。从 Choreographer �
 
 FrameTimeline 的核心价值是：它把"是否卡顿"的判断标准化了。不再需要人工去对比帧颜色和 BufferQueue 状态。FrameTimeline 直接展示每一帧有没有超时、在哪个环节超时、超了多少。它同时覆盖了 App 侧（doFrame + RenderThread）和 SurfaceFlinger 侧（合成），用同一个 token 关联起来，可以在 Perfetto 中通过点击 Slice 直接跳转到对应的 App 或 SF 帧 [已验证: perfetto.dev Trace Processor 文档]。
 
-### 没有 FrameTimeline 怎么办
+### Systrace 中关键标记的解读：doFrame、DrawFrame、SurfaceFlinger onMessageReceived
 
 如果分析的设备还在 Android 11 或更早的版本，没有 FrameTimeline Track，可以回到经典方法：看主线程上方的帧颜色标记 + SurfaceFlinger 的 BufferQueue 状态。这套方法虽然繁琐一些，但逻辑上是等价的——都是在回答"这一帧有没有在 VSync 周期内完成"这个问题。
 
@@ -363,7 +364,7 @@ FrameMetrics 常量按版本分批引入：
 | `DEADLINE` / `GPU_DURATION` | API 31 (Android 12) | 系统计算的帧截止时间 / GPU 渲染耗时 |
 | `FRAME_TIMELINE_VSYNC_ID` | API 36 (Android 16) | 帧与 Perfetto FrameTimeline token 的关联键，用于线上帧数据与 Trace 帧时间线对齐 |
 
-这里有一个版本兼容性的细节需要注意。`FrameMetrics.DEADLINE` 是 Android 12（API 31）才引入的常量。更早版本只能自己按刷新率估一个 budget，例如 60Hz≈16.6ms、90Hz≈11.1ms、120Hz≈8.3ms。这个估算只能拿来做粗筛，不能把它当成系统真实 deadline。原因有两点，一是系统侧的 `DEADLINE` 会把 VSync offset 和当前帧率策略算进去，二是多缓冲会在部分瞬时波动里留出缓冲空间。手工公式看不到这些边界，适合做趋势告警，不适合给单帧下绝对结论。[已确认: developer.android.com/reference/android/view/FrameMetrics, DEADLINE 从 API 31 引入]
+版本兼容性的边界需要写清楚。`FrameMetrics.DEADLINE` 是 Android 12（API 31）才引入的常量。更早版本只能自己按刷新率估一个 budget，例如 60Hz≈16.6ms、90Hz≈11.1ms、120Hz≈8.3ms。这个估算只能拿来做粗筛，不能把它当成系统真实 deadline。原因有两点，一是系统侧的 `DEADLINE` 会把 VSync offset 和当前帧率策略算进去，二是多缓冲会在部分瞬时波动里留出缓冲空间。手工公式看不到这些边界，适合做趋势告警，不适合给单帧下绝对结论。[已确认: developer.android.com/reference/android/view/FrameMetrics, DEADLINE 从 API 31 引入]
 
 关键指标说明：
 
