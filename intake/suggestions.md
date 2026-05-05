@@ -1022,6 +1022,19 @@
 - **问题**：示例已修正 `atrace_categories: "lmkd"`，但 `lowmemorykiller` ftrace event 在现代 GKI/设备上可能不存在；AOSP atrace memory category 中该事件是 optional，android16-6.12 kernel common 未核到通用 lowmemorykiller trace header。
 - **建议**：录制前补 `adb shell ls /sys/kernel/tracing/events/lowmemorykiller` 检查；不存在时依赖 `atrace_categories: "memory"`、logcat/statsd `lowmemorykiller`、`ProcessKilled` 和 lmkd 日志。
 
+
+## [Task9 Deep Review] 17.1 OEM 性能优化的通用思路 — 2026-05-06
+- **类型**：数据缺失
+- **位置**：L184-L188 OPPO Trinity Engine 启动提升数据
+- **问题**：正文引用“启动速度提升 28%、加载时间缩短 21%”，但只标注为待验证，缺少机型、系统版本、样本范围、测试口径和是否第三方复测。
+- **建议**：补 OPPO 原始发布页的测试条件；若没有条件，改成“厂商公开宣称”，不要作为可复现实测结论使用。
+
+## [Task9 Deep Review] 17.1 OEM 性能优化的通用思路 — 2026-05-06
+- **类型**：Trace 观察点待补证
+- **位置**：L171 USAP Pool 的 Perfetto 识别
+- **问题**：正文给出 `usapReceive` vs `forkAndSpecialize` 的 Trace 识别法，但当前源码锚点只覆盖 `ZygoteServer.fillUsapPool()` 与 USAP 支持边界，未给出该 slice 名称来自哪份 trace 或哪处 ATRACE 标记。
+- **建议**：补一张启动 trace 或 trace_processor 查询，确认 USAP 命中时的实际 slice / 线程名；否则改成“观察 Zygote/USAP pool socket 与启动路径是否绕过常规 fork”的泛化描述。
+
 ## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-05-06
 - **类型**：源码准确性
 - **位置**：L235-L241「kCompatPageSize 常量」
@@ -1051,3 +1064,65 @@
 - **位置**：Trace Canary 的工程边界 → AGP 兼容
 - **问题**：正文写了 AGP 8 Transform API 移除风险，但未给 Matrix 官方 release 支持范围；README 当前说明 Gradle 插件主要覆盖 AGP 3.5/4.0/4.1，AGP 7/8 需分支或自迁移验证。
 - **建议**：在 AGP 段落补 Matrix 版本/官方支持范围，并把 AGP 8+ 迁移路径限定为“官方新版、内部分支或社区 fork 已完成 instrumentation 迁移”的前提。
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-05-06
+- **类型**：一致性
+- **位置**：L196-L214
+- **问题**：正文说安装过程“六段”，实际编号 1-7。
+- **建议**：改为七段或合并 v4/Incremental 校验小节。
+
+
+## [Task9 Deep Review] 1.9 Package Manager Service 与应用安装性能 — 2026-05-06
+- **类型**：源码锚点
+- **位置**：L369-L384
+- **问题**：ActivityStarter / PackageArchiver 行号来自 mainline 调研，未标目标分支；Android 15/16 release 行号可能不同。
+- **建议**：保留类/方法名，删除固定行号或注明 AOSP main commit。
+
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 — 2026-05-06
+- **类型**：原理补充
+- **位置**：L434
+- **问题**：`VK_KHR_present_wait` 依赖 `VK_KHR_present_id`，正文把二者并列列出但未说明依赖关系。
+- **建议**：补一句 present_wait depends on present_id，减少读者把二者当独立能力的误解。
+
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 — 2026-05-06
+- **类型**：源码锚点
+- **位置**：L416
+- **问题**：“后调用覆盖先前 vote”对 Java Surface 语义清楚，但 native `ANativeWindow_setFrameRate()` 的 last-writer-wins 需补 `Surface.cpp` / native window 锚点。
+- **建议**：补 native setFrameRate 调用链或收窄为同一 surface 的 frame-rate vote 更新语义。
+
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-05-06
+- **类型**：版本差异
+- **位置**：L489
+- **问题**：Baseline Profile 写成 Android 7.0 开始的安装期 AOT 提示机制，容易混淆 Android 7-8.1 的 ProfileInstaller 首次运行安装、Android 9+ Play 安装期 profile、以及现代 AGP baseline profile 工作流。
+- **建议**：拆成 Android 7-8.1 / 9+ / 现代 AGP 三段边界。
+
+
+## [Task9 Deep Review] 12.1 APK 体积优化 — 2026-05-06
+- **类型**：数据缺失
+- **位置**：L491
+- **问题**：“OAT/VDEX 新增磁盘占用比 DEX 再大 10%-30%”缺测试条件、样本包、ABI、编译 filter 和 Android 版本。
+- **建议**：补实测表或改为定性描述；保留数字需给 baseline。
+
+
+## [Task9 Deep Review] 13.1 Perfetto 简介与演进 — 2026-05-06
+- **类型**：版本差异
+- **位置**：L413、L417
+- **问题**：核心 `traced`/`traced_probes` 已明确不是独立 APEX，但“Android 12+ 部分设备通过 Mainline 机制提供更新”仍偏模糊且带 `[待验证]`。
+- **建议**：拆开 core tracing platform binary 与 `com.android.profiling` APEX；不要把 OEM/Mainline 更新口径泛化到核心 tracing 服务。
+
+
+## [Task9 Deep Review] 13.1 Perfetto 简介与演进 — 2026-05-06
+- **类型**：架构口径
+- **位置**：L169-L172
+- **问题**：atrace 被列为与 ftrace 平级数据源；Perfetto 配置里 atrace category 实际通过 `linux.ftrace` 的 `ftrace_config.atrace_categories` 采集。
+- **建议**：把 atrace 改为 ftrace data source 下的用户态标注类别。
+
+
+## [Task9 Deep Review] 13.1 Perfetto 简介与演进 — 2026-05-06
+- **类型**：工具描述
+- **位置**：L384
+- **问题**：`tracebox` 被称为“单文件可执行程序”，实际是自包含 Python 脚本。
+- **建议**：改为“单文件 Python 工具/自包含脚本”。

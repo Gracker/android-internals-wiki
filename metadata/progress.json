@@ -348,20 +348,24 @@
       "last_verified": "2026-04-18",
       "last_verified_against": "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-01",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-01T00:56:06+08:00",
+      "last_task9_at": "2026-05-06T05:30:00+08:00",
       "task6_reviewed_date": "2026-05-06",
-      "last_task6_at": "2026-05-06T04:13:56+08:00"
+      "last_task6_at": "2026-05-06T04:13:56+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-05-deep-review.md",
+      "p0": 2,
+      "p1": 1,
+      "p2": 2
     },
     "src/part1-fundamentals/ch01-architecture/10-content-provider.md": {
       "title": "ContentProvider 性能与优化",
@@ -1288,10 +1292,10 @@
       "last_verified": "2026-04-19",
       "last_verified_against": "AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline, developer.android.com/games/sdk/frame-pacing",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1299,11 +1303,14 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T00:36:51+08:00",
+      "last_task9_at": "2026-05-06T05:30:00+08:00",
       "task6_reviewed_date": "2026-05-06",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-00-deep-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-05-deep-review.md",
       "last_task6_at": "2026-05-06T05:05:00+08:00",
-      "review_notes": "2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。"
+      "review_notes": "2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。",
+      "p0": 1,
+      "p1": 1,
+      "p2": 2
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
       "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
@@ -3580,28 +3587,32 @@
       "title": "APK 体积优化",
       "chapter": "12.1",
       "section": "12.1",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-24",
       "last_verified_against": "AGP 8.8 DSL deprecation docs + AGP 8.12.0 release notes + Android App Bundle docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-30",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-30T07:35:29+08:00",
+      "last_task9_at": "2026-05-06T05:30:00+08:00",
       "task6_reviewed_date": "2026-05-06",
       "last_task6_at": "2026-05-06T05:05:00+08:00",
-      "review_notes": "2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。"
+      "review_notes": "2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-05-deep-review.md",
+      "p0": 0,
+      "p1": 0,
+      "p2": 2
     },
     "src/part2-performance/ch12-apk-network/02-network-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
@@ -4240,31 +4251,32 @@
       "title": "Perfetto 简介与演进",
       "chapter": "13.1",
       "section": "13.1",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "'2026-04-03'",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 9 (API 28) - Android 17 (API 37, Beta)",
       "last_verified": "'2026-04-14'",
       "last_verified_against": "perfetto.dev docs, source.android.com/docs/core/debug/perfetto,",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T03:43:42+08:00",
+      "last_task9_at": "2026-05-06T05:30:00+08:00",
       "task6_reviewed_date": "2026-05-06",
       "last_task6_at": "2026-05-06T04:13:56+08:00",
       "review_notes": "2026-05-06 task9 deep-review: needs-rework；P0=1，Perfetto Mainline/APEX 口径需回炉。",
-      "p0": 1,
+      "p0": 0,
       "p1": 0,
-      "p2": 0
+      "p2": 3,
+      "last_task9_review_log": "logs/deep-review/2026-05-06-05-deep-review.md"
     },
     "src/part3-tools/ch13-perfetto/02-trace-capture.md": {
       "path": "src/part3-tools/ch13-perfetto/02-trace-capture.md",
@@ -8731,7 +8743,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T05:05:00+08:00",
+  "last_updated": "2026-05-06T05:30:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11170,5 +11182,48 @@
         "issues": 0
       }
     ]
+  },
+  "2026-05-06-05-task9": {
+    "task": "deep-tech-review",
+    "timestamp": "2026-05-06T05:30:00+08:00",
+    "sections_reviewed": [
+      {
+        "section": "1.9",
+        "title": "Package Manager Service 与应用安装性能",
+        "result": "needs-rework",
+        "p0": 2,
+        "p1": 1,
+        "p2": 2,
+        "auto_promoted": false
+      },
+      {
+        "section": "2.17",
+        "title": "Frame Pacing Library 与帧节奏控制",
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 1,
+        "p2": 2,
+        "auto_promoted": false
+      },
+      {
+        "section": "12.1",
+        "title": "APK 体积优化",
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 2,
+        "auto_promoted": true
+      },
+      {
+        "section": "13.1",
+        "title": "Perfetto 简介与演进",
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 3,
+        "auto_promoted": true
+      }
+    ],
+    "log": "logs/deep-review/2026-05-06-05-deep-review.md"
   }
 }

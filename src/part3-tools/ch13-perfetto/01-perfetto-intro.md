@@ -2,11 +2,11 @@
 title: Perfetto 简介与演进
 chapter: '13.1'
 section: '13.1'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-06"
-reviewed_by: "openclaw-task6"
+reviewed_date: '2026-05-06'
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 polish_count: 2
 polish_date: '2026-04-10'
@@ -38,20 +38,26 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
-task9_result: needs-rework
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
-task2b_rework_date: "2026-05-06T02:43:33+08:00"
-task9_reviewed_date: "2026-05-06"
+task2b_rework_date: '2026-05-06T02:43:33+08:00'
+task9_reviewed_date: '2026-05-06'
 task9_reviewed_by: openclaw-task9
-review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。 评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。；2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 19 处；移动尾部注入块到正文/参考资料；无新增 B 类回炉问题，等待 Task 9 复审。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。"
-last_task9_at: "2026-05-06T03:43:42+08:00"
-task9_review_notes: "2026-05-06 03 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；Perfetto Mainline/APEX 部署口径仍残留 com.android.os.perfetto 错误。"
-last_task6_at: "2026-05-06T04:13:56+08:00"
-task6_reviewed_date: "2026-05-06"
+review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。
+  评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。；2026-05-06 task6 re-review: pass-light-edit。L1/L2
+  小修 19 处；移动尾部注入块到正文/参考资料；无新增 B 类回炉问题，等待 Task 9 复审。；2026-05-06 04 task6 re-review:
+  pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06 05 task9 deep-review:
+  pass-tech-review。P0 0 / P1 0 / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
+last_task9_at: '2026-05-06T05:30:00+08:00'
+task9_review_notes: '2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0
+  / P2 3。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
+last_task6_at: '2026-05-06T04:13:56+08:00'
+task6_reviewed_date: '2026-05-06'
+last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
 ---
 
 # Perfetto 简介与演进

@@ -12304,6 +12304,64 @@
       "status": "completed",
       "completed_at": "2026-05-06T03:52:27+08:00",
       "completed_reason": "P0 com.android.os.perfetto APEX断言已删除；表格行和注意事项已修正为平台二进制部署描述，补充Android.bp无APEX模块的证据说明"
+    },
+    {
+      "section": "1.9",
+      "section_title": "Package Manager Service 与应用安装性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.9 Package Manager Service 与应用安装性能 回炉复审仍有 P0/P1 技术问题，需 Task2B 再修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L218",
+          "detail": "[P0] `frameworks/base/services/core/java/com/android/server/os/IncrementalManagerService.java` 在 Android 11-16 未找到；Incremental Service 入口应指向 `frameworks/base/services/incremental/IncrementalService.cpp` / `system/incremental_delivery/`。",
+          "suggestion": "改源码锚点；如果只讨论流式/增量安装，避免引用不存在的 Java service 路径。"
+        },
+        {
+          "type": "版本/事实错误",
+          "location": "L210-L212",
+          "detail": "[P0] “APK v4.1 签名增加 key rotation”未在 AOSP apksig/SigningInfo 中核到；key rotation 是 v3 proof-of-rotation 语义，v4 主要服务 idsig/IncFS 流式校验。",
+          "suggestion": "删除 v4.1 表述，改为 v3 支持 key rotation；v4 需 v2/v3 配套签名。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L129、L563",
+          "detail": "[P1] 把 PMS APEX/system app 并行扫描写成 Android 16 新增。`InitAppsHelper.getApexScanPartitions()` / `scanSystemDirs()` + `ParallelPackageParser` 在 Android 13/14/15/16 均存在。",
+          "suggestion": "改为“android-16 源码可见的并行扫描路径”，不要写成 Android 16 首次引入；如要说 16 优化，补具体 commit。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T05:30:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.17",
+      "section_title": "Frame Pacing Library 与帧节奏控制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.17 Frame Pacing Library 与帧节奏控制 回炉复审仍有 P0/P1 技术问题，需 Task2B 再修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/规范错误",
+          "location": "L428",
+          "detail": "[P0] `VK_KHR_present_id` 被写成 Vulkan 1.4 核心特性。Khronos `vk.xml` 中该能力仍是 ratified device extension，未出现在 `VK_VERSION_1_4` feature，也无 promotedto。",
+          "suggestion": "改为“独立 KHR device extension，需枚举扩展与 feature；截至 Vulkan 1.4 未进核心”。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L428-L434",
+          "detail": "[P1] “Android 16 要求 Vulkan 1.4”缺 CDD / compatibility matrix / Vulkan profile 锚点，且不能推出 `VK_KHR_present_id` 可用。",
+          "suggestion": "补 Android 16 CDD/VPA 证据；若只想讨论 Swappy，删除 Android 16 最低 Vulkan 版本断言。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T05:30:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

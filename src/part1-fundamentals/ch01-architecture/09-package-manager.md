@@ -1,74 +1,80 @@
 ---
-title: "Package Manager Service 与应用安装性能"
-chapter: "1.9"
-section: "1.9"
-status: "ready-for-review"
-drafted_date: "2026-04-05"
+title: Package Manager Service 与应用安装性能
+chapter: '1.9'
+section: '1.9'
+status: ready-for-review
+drafted_date: '2026-04-05'
 polish_count: 1
-polish_date: "2026-04-09"
-polish_by: "task2b-polish"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-06"
-reviewed_by: "openclaw-task6"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-04-18"
-last_verified_against: "AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper` / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles overview"
+polish_date: '2026-04-09'
+polish_by: task2b-polish
+drafted_by: openclaw-task2a
+reviewed_date: '2026-05-06'
+reviewed_by: openclaw-task6
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+last_verified: '2026-04-18'
+last_verified_against: AOSP android-16.0.0_r1 (`PackageManagerShellCommand` / `DexOptHelper`
+  / `ArtShellCommand` / `BackgroundDexoptJob`) + Android Developers Baseline Profiles
+  overview
 confidence: medium
 sources:
-  - type: aosp
-    path: "frameworks/base/services/java/com/android/server/SystemServer.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/Installer.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/InstallingSession.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java"
-  - type: aosp
-    path: "frameworks/native/cmds/installd/InstalldNativeService.cpp"
-  - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java"
-  - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/ArtShellCommand.java"
-  - type: aosp
-    path: "art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java"
-  - type: official
-    path: "https://developer.android.com/topic/performance/baselineprofiles/overview"
-  - type: official
-    path: "https://source.android.com/docs/core/perf/vm"
-  - type: blog
-    path: "Android Authority: Android 16 Cloud Compilation"
+- type: aosp
+  path: frameworks/base/services/java/com/android/server/SystemServer.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/Installer.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/PackageManagerShellCommand.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/InstallingSession.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/InstallPackageHelper.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/pm/DexOptHelper.java
+- type: aosp
+  path: frameworks/native/cmds/installd/InstalldNativeService.cpp
+- type: aosp
+  path: art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java
+- type: aosp
+  path: art/libartservice/service/java/com/android/server/art/ArtShellCommand.java
+- type: aosp
+  path: art/libartservice/service/java/com/android/server/art/BackgroundDexoptJob.java
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles/overview
+- type: official
+  path: https://source.android.com/docs/core/perf/vm
+- type: blog
+  path: 'Android Authority: Android 16 Cloud Compilation'
 tags:
-  - android
-  - pms
-  - package-manager
-  - dex2oat
-  - dexopt
-  - baseline-profiles
-  - cloud-compilation
-  - app-installation
-  - compilation
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
+- android
+- pms
+- package-manager
+- dex2oat
+- dexopt
+- baseline-profiles
+- cloud-compilation
+- app-installation
+- compilation
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: "pending"
-task9_result: "needs-rework"
-last_task9_at: "2026-05-01T19:38:39+08:00"
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: '2026-05-06T05:30:00+08:00'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-01"
+task9_reviewed_date: '2026-05-06'
 task2b_result: fixed
-task2b_state: "fixed"
-review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。"
-task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
-last_task6_at: "2026-05-06T04:13:56+08:00"
-task6_reviewed_date: "2026-05-06"
+task2b_state: pending
+review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06
+  04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06
+  05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。'
+task9_review_notes: '2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2
+  2。P0/P1 已写入 queue，等待 Task2B。'
+last_task6_at: '2026-05-06T04:13:56+08:00'
+task6_reviewed_date: '2026-05-06'
+last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
