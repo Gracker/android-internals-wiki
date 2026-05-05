@@ -2,12 +2,8 @@
 title: "OEM 性能优化的通用思路"
 chapter: "17.1"
 section: "17.1"
-status: ready-for-review
 drafted_date: "2026-04-04"
 drafted_by: "openclaw-task2a"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-26"
-task6_result: pass-light-edit
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-04"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -23,13 +19,19 @@ sources:
     path: "developer.android.com/topic/performance/background-optimization"
 tags: ['oem', 'performance', 'freezer', 'preloading', 'background-management']
 related_chapters: ["5.1", "5.5", "5.6", "4.4", "8.3", "17.2"]
-task6_state: reviewed
-review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修1处（「这意味着」x1 禁用词替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
-pipeline_stage: task6_pending
-task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
 task2b_state: fixed
+status: ready-for-review
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-06"
+task6_reviewed_date: "2026-05-06"
+last_task6_at: "2026-05-06T01:05:00+08:00"
+review_notes: "2026-04-26 task6 re-review: pass-light-edit。小修1处（「这意味着」x1 禁用词替换）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # OEM 性能优化的通用思路
@@ -73,13 +75,13 @@ task2b_state: fixed
 
 厂商做系统优化，核心围绕用户体验的五个维度展开。我们可以把这五个维度想象成一个金字塔：底部是稳定性和功耗，这是基本盘；中间是流畅性和启动速度，这是差异化竞争的核心；顶部是温控，它像一个天花板，限制了性能的极限。
 
-**启动速度**是用户对手机的第一印象。冷启动从按下图标到第一帧渲染，中间涉及 Zygote fork、ClassLoader 加载、Application 初始化、Activity 创建到渲染——整条链路上的每个环节都是优化点。厂商会在系统层面做预加载（让 Zygote 提前初始化常用类）、dex2oat 编译策略调整、甚至直接在 init 阶段预创建进程。我们在 §8.3 中详细讲过 App 层的启动优化思路，厂商的做法是把同样的思路往系统层推。
+**启动速度**是用户对手机的第一印象。冷启动从按下图标到第一帧渲染，中间涉及 Zygote fork、ClassLoader 加载、Application 初始化、Activity 创建到渲染——整段启动路径上的每个环节都是优化点。厂商会在系统层面做预加载（让 Zygote 提前初始化常用类）、dex2oat 编译策略调整，甚至直接在 init 阶段预创建进程。我们在 §8.3 中详细讲过 App 层的启动优化思路，厂商的做法是把同样的思路往系统层推。
 
 **流畅性**是用户日常感知最强的指标。厂商会从渲染管线的每个环节入手：调整 VSync offset 让 App 和 SurfaceFlinger 的配合更紧凑、优化 GPU 调度策略减少渲染延迟、在 SurfaceFlinger 中做图层合成的特殊优化。我们前面在 §2.3～§2.6 中拆解了渲染管线的每个环节，厂商的优化就是在这些环节上做加减法。
 
 **内存管理**在 Android 上永远是稀缺资源的争夺战。厂商的策略核心是「保证前台、压缩后台」：调整 LMK 的阈值参数（我们在 §4.4 中讲过 AOSP 的默认实现）、在内存紧张时更激进地回收后台进程、对系统进程做内存上限控制。国内厂商因为要应对更复杂的 App 生态（特别是各类保活方案），通常会比 AOSP 默认策略更激进。
 
-**功耗**直接决定用户要不要充电。厂商的优化覆盖了从 CPU 调度到网络管理的完整链路：基于 EAS 的调度器调优（§5.2）、DVFS 策略的精细化（§5.4）、后台网络请求的批量合并、GPS 等传感器的使用限制、以及 Doze 模式的增强。功耗优化的本质是「不该花的 CPU 周期一个都不花」，而厂商在系统层有完整的控制力来实现这个目标。
+**功耗**直接决定用户要不要充电。厂商的优化覆盖了从 CPU 调度到网络管理的完整路径：基于 EAS 的调度器调优（§5.2）、DVFS 策略的精细化（§5.4）、后台网络请求的批量合并、GPS 等传感器的使用限制，以及 Doze 模式的增强。功耗优化的目标是「不该花的 CPU 周期一个都不花」，而厂商在系统层有完整的控制力来实现这个目标。
 
 **温控**是性能的天花板。当 SoC 温度达到阈值，Thermal 机制会强制降频（我们在 §5.5 中分析过），这时候前面所有的性能优化都会打折扣。厂商的温控策略差异很大：有的激进，温度稍高就降频换取更低功耗；有的保守，宁可温度高一点也要维持性能。这种策略差异直接反映在游戏场景的长帧率稳定性上。
 
@@ -117,7 +119,7 @@ Android 厂商开始跟进类似的思路，但实现方式经历了几次迭代
 
 最直接的实现方式是给后台进程发送 SIGSTOP 信号。SIGSTOP 是 Unix 信号机制的一部分，被 SIGSTOP 的进程会被内核挂起，不再参与调度，直到收到 SIGCONT 信号恢复执行。
 
-这个方案的问题是，SIGSTOP 对应用是可观测的。虽然 App 无法捕获或忽略 SIGSTOP，但进程被挂起后，它持有的所有资源（锁、网络连接、Binder 引用）都会保持在挂起时的状态。这可能导致一些微妙的问题：比如一个 App 在持有 wake lock 的时候被 SIGSTOP，系统就无法进入休眠；或者在 Binder 调用中途被 SIGSTOP，调用方会一直阻塞。
+这个方案的风险在于，SIGSTOP 对应用是可观测的。虽然 App 无法捕获或忽略 SIGSTOP，但进程被挂起后，它持有的所有资源（锁、网络连接、Binder 引用）都会保持在挂起时的状态。这可能导致一些微妙的问题：比如一个 App 在持有 wake lock 的时候被 SIGSTOP，系统就无法进入休眠；或者在 Binder 调用中途被 SIGSTOP，调用方会一直阻塞。
 
 [已验证: Linux signal(7) man page, SIGSTOP 不能被捕获/忽略/阻塞]
 
@@ -125,7 +127,7 @@ Android 厂商开始跟进类似的思路，但实现方式经历了几次迭代
 
 Android 11 QPR3 引入了基于 cgroup v2 freezer 的 cached apps freezer 机制，这是 AOSP 官方认可的后台冻结方案。
 
-cgroup freezer 的工作方式是将目标进程迁移到冻结的 cgroup 中。与 SIGSTOP 的关键区别在于，cgroup freezer 是从 cgroup 层面统一控制一组进程的状态——它不是逐个进程发送信号，而是通过向 cgroup 的 `cgroup.freeze` 文件写入 `1` 来冻结整个组。这意味着一个 App 的所有进程（主进程、子进程、Content Provider 进程等）可以被原子性地冻结或恢复。
+cgroup freezer 的工作方式是将目标进程迁移到冻结的 cgroup 中。与 SIGSTOP 的关键区别在于，cgroup freezer 是从 cgroup 层面统一控制一组进程的状态——它不是逐个进程发送信号，而是通过向 cgroup 的 `cgroup.freeze` 文件写入 `1` 来冻结整个组。这样一来，一个 App 的所有进程（主进程、子进程、Content Provider 进程等）可以被原子性地冻结或恢复。
 
 在 AOSP 中，这个机制由 ActivityManager 的 `setProcessFrozen` 和 `enableFreezer` 两个隐藏 API 控制。设备可以通过 `activity_manager_native_boot_use_freezer` 配置标志来启用，也可以在开发者选项中通过「Suspend execution for cached apps」开关控制。
 
@@ -177,7 +179,7 @@ AOSP 本身提供了标准化的预热缓存池机制：USAP（Unspecialized App
 
 ### AI 预测启动
 
-更进阶的做法是基于用户行为预测来预加载 App。原理很简单：如果一个用户每天早上 8 点打开微信，那系统可以在 7:58 就开始预热微信的进程，等用户真正点击时，启动过程几乎瞬时完成。
+更进阶的做法是基于用户行为预测来预加载 App。原理很简单：如果一个用户每天早上 8 点打开微信，那系统可以在 7:58 就开始预热微信的进程，等用户实际点击时，启动过程几乎瞬时完成。
 
 ColorOS 的 Trinity Engine 就是这种思路的典型代表——它通过 AI 学习用户的使用习惯，预测用户下一步可能打开的 App，并提前做资源分配和进程预热。据 OPPO 公开的数据，Trinity Engine 可以将 App 启动速度提升 28%，加载时间缩短 21%。这种预测能力在 Perfetto 中很难直接观察到（因为预热过程发生在后台），但可以通过对比有无预测时 App 的冷启动 Trace 来间接验证。
 
@@ -271,7 +273,7 @@ OEM 优化策略随 Android 版本的演进经历了几个关键转折点：
 
 **误区三：「白名单是解决一切问题的办法。」**
 
-让 App 进入厂商的白名单确实能解决大部分后台限制问题，但这是一个短视的方案。白名单是厂商和头部 App 之间的博弈结果，普通 App 很难进入。正确的做法是使用 Android 标准的后台 API（Foreground Service、WorkManager），并在必要时接入厂商的推送通道。
+让 App 进入厂商的白名单能解决大部分后台限制问题，但这是一个短视的方案。白名单是厂商和头部 App 之间的博弈结果，普通 App 很难进入。正确的做法是使用 Android 标准的后台 API（Foreground Service、WorkManager），并在必要时接入厂商的推送通道。
 
 **误区四：「冻结等于杀进程。」**
 

@@ -2,7 +2,6 @@
 title: "DVFS 与功耗管理"
 chapter: "5.4"
 section: "5.4"
-status: ready-for-review
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 last_verified: "2026-05-01"
 last_verified_against: "Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)"
@@ -27,21 +26,23 @@ drafted_by: "openclaw-task2"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-task9_state: "reviewed"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-01"
 task2b_state: "fixed"
-last_task2b_at: "2026-05-01T11:45:15.768159"
 task2b_result: fixed
-last_task2b_at: "2026-04-23T04:32:00+08:00"
-task6_state: "reviewed"
-task6_result: "pass-light-edit"
-pipeline_stage: "task2b_pending"
-reviewed_date: "2026-05-01"
-reviewed_by: "openclaw-task6"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-01T09:26:13+08:00"
-review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。"
+status: ready-for-review
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-06"
+task6_reviewed_date: "2026-05-06"
+last_task6_at: "2026-05-06T01:05:00+08:00"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task2b_at: "2026-05-01T11:45:15.768159"
 ---
 
 # DVFS 与功耗管理
@@ -74,7 +75,7 @@ review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1�
 
 ## 为什么需要了解 DVFS
 
-在 Perfetto 中打开一段 Trace，我们会看到每个 CPU 下方都有一条「CPU Frequency」轨迹——它像一条心电图，忽高忽低。这条线的每一次跳动，背后都是 DVFS 子系统在决定：此刻的 CPU 应该跑多快。
+在 Perfetto 中打开一段 Trace，我们会看到每个 CPU 下方都有一条「CPU Frequency」轨迹，频率会随着负载和策略上下跳变。每一次跳变，背后都是 DVFS 子系统在决定：此刻的 CPU 应该跑多快。
 
 如果我们做过性能优化，一定遇到过这样的场景：明明代码逻辑没问题，但第一帧就是卡了一下。或者列表滑动时偶尔掉帧，抓 Trace 一看，发现掉帧那个瞬间 CPU 频率很低——原来 CPU 还没来得及升频，帧就被渲染了。这就是 DVFS 调频延迟导致的性能问题，和我们之前在 [5.1 Linux 进程调度基础](01-linux-scheduling.md) 中讨论的调度问题不同：调度决定「哪个任务跑在哪个核上」，DVFS 决定「这个核跑多快」。
 
@@ -105,7 +106,7 @@ CPU 的功耗来自两部分：静态功耗（漏电流）和动态功耗（充�
 - 功耗变为原来的 0.8² × 0.5 = 0.32 倍（约降 68%）
 - 如果只降频不降压（某些简单实现），功耗变为原来的 1 × 0.5 = 0.5 倍（只降 50%）
 
-这就是为什么真正的 DVFS 必须同时调整电压和频率——单纯降频的效果远不如同时降压。功耗中电压项的二次方贡献，使得降压成为最有效的节能手段。
+因此，DVFS 必须同时调整电压和频率——单纯降频的效果远不如同时降压。功耗中电压项的二次方贡献，使得降压成为最有效的节能手段。
 
 [已验证: 官方文档, developer.android.com — P ∝ C × V² × f 为 CMOS 动态功耗的标准公式]
 
@@ -113,7 +114,7 @@ CPU 的功耗来自两部分：静态功耗（漏电流）和动态功耗（充�
 
 2026 年旗舰 SoC 的大核最高频率已经突破 4GHz（如骁龙 8 Elite 的 Oryon 核心）。在这个频率段，V/F 曲线变得极端陡峭：从 3.5GHz 到 4.0GHz 的频率提升可能不到 15%，但电压和功耗的增加可能超过 40%。功耗公式 P ∝ C × V² × f 在这里体现得淋漓尽致——频率线性增长，电压二次方增长，两者叠加后功耗呈超线性爆发。
 
-这意味着 4GHz 档位的性价比极低。性能测试中，将最高频率限制在 3.5-3.8GHz（通过 sysfs 写入 `scaling_max_freq`），通常只损失 5-10% 的单核算力，但整机功耗可以降低 20-30%。这也是为什么厂商的日常调度策略很少真正触及 4GHz——它们留给短时 burst（如应用冷启动）使用。做性能优化时，如果 Trace 显示 CPU 长时间驻留在 4GHz，反而需要检查 governor 的限频逻辑是否失效。
+到 4GHz 这个档位，性价比会迅速下降。性能测试中，将最高频率限制在 3.5-3.8GHz（通过 sysfs 写入 `scaling_max_freq`），通常只损失 5-10% 的单核算力，但整机功耗可以降低 20-30%。厂商的日常调度策略通常很少触及 4GHz——它们留给短时 burst（如应用冷启动）使用。做性能优化时，如果 Trace 显示 CPU 长时间驻留在 4GHz，反而需要检查 governor 的限频逻辑是否失效。
 
 [待验证: 4GHz+ 档位的具体 V/F 曲线数据因 SoC 而异，以上为典型趋势描述]
 
@@ -145,7 +146,7 @@ CPU 并不能以任意频率运行。每个 SoC 在设计时，会为 CPU 定义
 
 Linux 内核通过 OPP 框架（`drivers/opp/`）管理这些档位信息。OPP 数据通常定义在设备树（Device Tree）中，以 `operating-points-v2` 属性描述：
 
-```
+```dts
 // 典型的设备树 OPP 定义（简化示例）
 cpu0: cpu@0 {
     operating-points-v2 = <&cpu0_opp_table>;
@@ -373,13 +374,13 @@ CPU 频繁进出深度睡眠也会带来额外开销。虽然深度睡眠能省�
 
 ### SCMI 频率真值：内核意图 vs 固件实值
 
-前面提到，SCMI / CPPC 平台上 OS 发出的频率请求是抽象的 performance level，实际频率由固件映射。这意味着 Perfetto 中  轨迹记录的是**内核请求的频率**，不一定是固件最终执行的频率——温控、电源管理策略等固件侧因素都可能压低实际输出。
+前面提到，SCMI / CPPC 平台上 OS 发出的频率请求是抽象的 performance level，实际频率由固件映射。因此，Perfetto 中的 CPU Frequency 轨迹记录的是**内核请求的频率**，不一定是固件最终执行的频率——温控、电源管理策略等固件侧因素都可能压低实际输出。
 
 Android 16（GKI 6.12）的 SCMI 框架提供了多个 ftrace 事件，可用于观察固件侧的频率协商过程。android16-6.12 的 `include/trace/events/scmi.h` 中定义的事件包括 `scmi_fc_call`、`scmi_xfer_begin`、`scmi_xfer_response_wait`、`scmi_xfer_end` 等。其中 `scmi_fc_call`（Fastchannel call）是直接观察 performance level 请求的关键事件——通过 `protocol_id` 和 `msg_id` 过滤 `PERF_LEVEL_GET` 类消息，可以追踪固件实际返回的 performance level，再与 `power/cpu_frequency` 轨迹中的内核请求频率对比。
 
 如果两者出现持续偏差（内核请求高频，固件实际给低频），说明 SoC 固件的温控或电源策略正在介入。这种内核以为在高频、实际被压低的情况，是排查不明性能下降的重要线索。
 
-SCMI Performance Protocol 的完整协商链涉及多个环节：OS 通过 `PERF_LEVEL_SET` (msg_id 0x4) 请求目标 performance level，固件将其映射到具体的 OPP 条目（frequency + voltage），再由 `PERF_LEVEL_GET` (msg_id 0x6) 查询固件实际下发的 level。每个 CPU domain 由 `res_id` 标识（通常与 CPU cluster 对应），`protocol_id` 为 0x3（SCMI Performance Protocol）。`scmi_fc_call` 事件中的 `protocol_id` 和 `msg_id` 可用来过滤不同类型的消息。需要注意的是，performance level 到实际频率的映射是平台私有的——同一段 SCMI level 值在不同 SoC 上可能对应不同的 MHz。分析时必须结合设备的 OPP 表或 vendor dtbo 才能完成 level→freq 的换算。在没有平台映射表时，SCMI 事件只能定位"固件协商是否异常"，不能直接等同于实际频率真值。
+SCMI Performance Protocol 的完整协商链涉及多个环节：OS 通过 `PERF_LEVEL_SET` (msg_id 0x4) 请求目标 performance level，固件将其映射到具体的 OPP 条目（frequency + voltage），再由 `PERF_LEVEL_GET` (msg_id 0x6) 查询固件实际下发的 level。每个 CPU domain 由 `res_id` 标识（通常与 CPU cluster 对应），`protocol_id` 为 0x3（SCMI Performance Protocol）。`scmi_fc_call` 事件中的 `protocol_id` 和 `msg_id` 可用来过滤不同类型的消息。这里要分清：performance level 到实际频率的映射是平台私有的——同一段 SCMI level 值在不同 SoC 上可能对应不同的 MHz。分析时必须结合设备的 OPP 表或 vendor dtbo 才能完成 level→freq 的换算。在没有平台映射表时，SCMI 事件只能定位"固件协商是否异常"，不能直接等同于实际频率真值。
 
 [已验证: AOSP android16-6.12, include/trace/events/scmi.h — scmi_fc_call / scmi_xfer_* 事件族 / SCMI spec: Performance Protocol msg_id 0x4/0x6, protocol_id 0x3]
 
@@ -481,7 +482,7 @@ DVFS 不是独立运行的，它和本书中讨论的多个机制密切相关：
 
 ### 误区 2：「固定最高频率就能解决所有卡顿」
 
-确实，将 CPU 固定在最高频率可以消除调频延迟导致的掉帧，但代价是巨大的功耗浪费和发热。长期来看，发热反而会触发 thermal throttling，导致更严重的性能下降。正确的做法是理解 DVFS 的行为，针对性地优化（如使用 ADPF），而不是一刀切地拉满频率。
+将 CPU 固定在最高频率可以消除调频延迟导致的掉帧，但代价是巨大的功耗浪费和发热。长期来看，发热反而会触发 thermal throttling，导致更严重的性能下降。正确的做法是理解 DVFS 的行为，针对性地优化（如使用 ADPF），而不是一刀切地拉满频率。
 
 ### 误区 3：「调频延迟只有几十微秒，对性能没影响」
 
