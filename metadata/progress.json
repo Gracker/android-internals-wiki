@@ -11225,5 +11225,20 @@
       }
     ],
     "log": "logs/deep-review/2026-05-06-05-deep-review.md"
-  }
+  },
+  "task2b_log": [
+    {
+      "timestamp": "2026-05-06T05:50:26.408992+08:00",
+      "sections": [
+        "2.17",
+        "19.0"
+      ],
+      "action": "rework",
+      "details": [
+        "2.17: P0 VK_KHR_present_id 修正为 ratified KHR 设备扩展（非 Vulkan 1.4 核心）；P1 Android 16 Vulkan 版本要求改为 VP_ANDROID_16_minimums profile 引用 + CDD 为准",
+        "19.0: 确认 P0 FrameMetrics 归属修正 + P1 Tracing SDK 版本修正已在前轮生效，更新 pipeline_stage 推回 Task6 复审"
+      ],
+      "queue_status": "2 completed"
+    }
+  ]
 }
