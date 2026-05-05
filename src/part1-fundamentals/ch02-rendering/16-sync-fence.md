@@ -2,7 +2,6 @@
 title: "Sync Fence 框架与帧同步机制"
 chapter: "2.16"
 section: "2.16"
-status: ready-for-review
 applicable_versions: "Android 7 (API 24) - Android 17 (API 37)"
 last_verified: "2026-04-26"
 last_verified_against: "AOSP android-16.0.0_r1 / android-8.1.0_r81 / android-7.0.0_r1, SkiaOpenGLPipeline.cpp / SkiaVulkanPipeline.cpp / renderthread/VulkanManager.cpp, source.android.com/docs/core/graphics/sync"
@@ -30,14 +29,7 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task6_pending
-task6_state: reviewed
-task6_reviewed_date: "2026-05-05"
-task6_result: pass-light-edit
-task9_state: reviewed
 task2b_state: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: 2026-05-05
@@ -46,9 +38,17 @@ last_task9_at: 2026-05-05T22:55:00+08:00
 last_task2b_at: "2026-05-05T23:51:15+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。"
-last_task6_at: "2026-05-05T23:26:00+08:00"
+status: ready-for-review
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-06"
+task6_reviewed_date: "2026-05-06"
+last_task6_at: "2026-05-06T01:05:00+08:00"
+review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制

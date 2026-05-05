@@ -2,19 +2,11 @@
 title: "SurfaceView 直出链路"
 section: "18.6"
 chapter: "18.6"
-status: ready-for-review
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
 tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独立Layer", "Overlay", "渲染链路"]
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST 创建链路缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-26"
-task9_state: reviewed
 task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -26,7 +18,19 @@ task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 last_task2b_at: "2026-05-05T13:51:05"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External 问题单）"
+status: ready-for-review
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-06"
+task6_reviewed_date: "2026-05-06"
+last_task6_at: "2026-05-06T01:05:00+08:00"
+review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST 创建链路缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
+
+# SurfaceView 直出链路
 
 <!-- outline-start -->
 
@@ -51,7 +55,7 @@ rework_type: "review回炉修复（External 问题单）"
 
 当你在 Perfetto 中看到 App 主线程卡了 50ms，但视频画面依然在流畅播放——你正在看的就是 SurfaceView 的效果。
 
-SurfaceView 是 Android 历史上最高效的视图组件之一，它的核心设计理念只有一个字：**去耦**。普通 View 的渲染必须经过 App 主线程的 Measure/Layout/Draw 流程，再由 RenderThread 提交给 SurfaceFlinger。这意味着如果主线程被阻塞——比如做了一次数据库查询或 JSON 解析——整帧画面都会卡住。
+SurfaceView 是 Android 历史上最高效的视图组件之一，它的核心设计目标只有一个字：**去耦**。普通 View 的渲染必须经过 App 主线程的 Measure/Layout/Draw 流程，再由 RenderThread 提交给 SurfaceFlinger。如果主线程被阻塞——比如做了一次数据库查询或 JSON 解析——整帧画面都会卡住。
 
 SurfaceView 打破了这个限制。它拥有独立的 Surface，Producer 线程把帧送进自己的 BufferQueue，App 主线程不参与逐帧绘制。现代 Android 上，这条路通常会先经过 App 进程内的 BLASTBufferQueue / BLASTBufferItemConsumer，再由 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这就是为什么视频播放器、游戏引擎、Camera 预览几乎清一色使用 SurfaceView。[已验证: AOSP SurfaceView 实现]
 
@@ -61,9 +65,9 @@ SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 Text
 
 SurfaceView 在 WMS（Window Manager Service）侧注册为一个**独立的图层（Layer）**，与 App 的主窗口并行存在。App 的主窗口会在 SurfaceView 所在区域"挖一个洞"（Punch Through），让 SurfaceView 的独立 Layer 从下面透出来。
 
-双 Layer 架构从 Android 1.0 就存在。早期版本里 Layer 注册和 Buffer 管理完全由 WMS 的 `WindowState` / `WindowSurfacePlacer` 控制。Android 11 起，SurfaceView 的 Layer 创建链路切换到 `SurfaceView.updateSurface()` → `createBlastSurfaceControls()`，通过 `SurfaceControl.Builder()` 创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。现代链路为：
+双 Layer 架构从 Android 1.0 就存在。早期版本里 Layer 注册和 Buffer 管理完全由 WMS 的 `WindowState` / `WindowSurfacePlacer` 控制。Android 11 起，SurfaceView 的 Layer 创建链路切换到 `SurfaceView.updateSurface()` → `createBlastSurfaceControls()`，通过 `SurfaceControl.Builder()` 创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。现代结构为：
 
-```
+```text
 ViewRootImpl bounds layer
   └─ SurfaceView container layer
        ├─ BLAST layer (SurfaceView 内容)
@@ -132,7 +136,7 @@ SurfaceView 的渲染链路可以分为三个阶段，每个阶段对应不同�
    - **Vulkan 模式**：`vkCmdDraw()` → `vkQueuePresentKHR()`。高性能游戏引擎使用
 3. **queueBuffer**：绘制完成，将 Buffer 放回队列，通知 Consumer
 
-Producer Thread 的关键特征是**不受 Choreographer 调度**。它不等待 VSync-App 信号，而是按照自己的节奏（视频帧率、游戏帧率、Camera 采样率）生产帧。这意味着 SurfaceView 的帧率可以与 App UI 帧率完全不同——视频以 24fps 播放时，App UI 仍然以 60fps 流畅刷新。
+Producer Thread 的关键特征是**不受 Choreographer 调度**。它不等待 VSync-App 信号，而是按照自己的节奏（视频帧率、游戏帧率、Camera 采样率）生产帧。因此，SurfaceView 的帧率可以与 App UI 帧率完全不同——视频以 24fps 播放时，App UI 仍然以 60fps 流畅刷新。
 
 ### 第二阶段：BLASTBufferQueue 与事务提交
 
@@ -182,7 +186,7 @@ sequenceDiagram
 
 ## BufferQueue 行为与 Triple Buffering
 
-SurfaceView 拥有独立的 BufferQueue，与 App 主窗口的 BufferQueue 完全分离。这意味着两者的 Buffer 流转互不影响——App 主线程卡顿不会占用 SurfaceView 的 Buffer，反之亦然。
+SurfaceView 拥有独立的 BufferQueue，与 App 主窗口的 BufferQueue 完全分离。两者的 Buffer 流转互不影响——App 主线程卡顿不会占用 SurfaceView 的 Buffer，反之亦然。
 
 ### Buffer 状态流转
 
@@ -211,7 +215,7 @@ Triple Buffering 的优势在于：当 Producer 生产速度偶尔超过 Display
 
 从数据流的角度，两者的核心差异可以用一句话概括：
 
-```
+```text
 SurfaceView:  Producer → BufferQueueProducer → BLASTBufferQueue / Transaction → SurfaceFlinger → HWC → Display
 TextureView:  Producer → SurfaceTexture → App RenderThread → App Window BufferQueue → SurfaceFlinger → HWC → Display
                                                                ↑
@@ -256,7 +260,7 @@ SurfaceView 能走 Overlay 需要同时满足下面这几条。视频和相机�
 3. **DRM / HDCP 保护内容**：必须走 secure overlay 或 secure composition 路径；路径错了会直接表现为黑屏或拒播。
 4. **Overlay plane 数量上限**：HWC 提供的 plane 通常 3-4 个，同屏活跃 layer 超过上限时多出来的会回退为 client composition。Status Bar / Navigation Bar 已经占用 slot 时，留给 SurfaceView 的余量更小。
 5. **缩放比例与旋转**：超出 HWC scaler 能力或不支持的旋转会触发回退。
-6. **色彩空间与 HDR**：不在 HWC 支持列表里的色域 / HDR 元数据会触发 GPU 端的 tone mapping，本质上也是回退到 client 合成。
+6. **色彩空间与 HDR**：不在 HWC 支持列表里的色域 / HDR 元数据会触发 GPU 端的 tone mapping，结果也是回退到 client 合成。
 
 [已验证: AOSP `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` `validateLayerCompositionTypes` 条件 + Android Graphics Architecture overlay 章节]
 
@@ -312,7 +316,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 
 **Camera 预览**：Producer Thread 以 Camera 采样率（通常 30fps）queueBuffer。如果 Camera 处理耗时突然增大（如自动对焦），你会看到 `dequeueBuffer` 的等待时间增大。
 
-**游戏渲染**：Producer Thread 通常以 60fps 运行，通过 EGL/Vulkan 提交。在 Perfetto 中可以看到 GLES 的 `eglSwapBuffers` 或 Vulkan 的 `vkQueuePresentKHR` 作为帧提交标记。
+**游戏渲染**：Producer Thread 通常以 60fps 运行，通过 EGL/Vulkan 提交。在 Perfetto 中，GLES 的 `eglSwapBuffers` 或 Vulkan 的 `vkQueuePresentKHR` 可以作为帧提交标记。
 
 ## 常见性能问题与优化
 
