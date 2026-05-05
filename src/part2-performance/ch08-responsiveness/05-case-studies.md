@@ -4,7 +4,7 @@ chapter: "8.5"
 section: "8.5"
 status: "finalized"
 drafted_date: "2026-04-02"
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-05-05"
 rework_date: "2026-05-03"
 rework_by: "task2b-rework"
 reviewed_by: "openclaw-task6"
@@ -49,7 +49,7 @@ repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T19:10:48+08:00"
 updated_by: "openclaw-task2b"
 updated_date: "2026-04-27"
-review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
+review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 3 写入 suggestions。；2026-05-03 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。；2026-05-05 task6 re-review (finalized revisiting): pass-light-edit；L1/L2 轻修并确认 finalized / ready-to-publish。"
 ---
 
 # 案例集
@@ -77,7 +77,7 @@ review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面的章节我们讨论了响应速度的原理、启动流程和优化策略。但原理归原理，实际做优化的时候，每个 App 面临的约束千差万别——有的受限于包体积，有的卡在第三方 SDK 初始化，有的则是历史代码的技术债。这一节我们来看几个真实的优化案例，看看不同团队在不同的约束下是怎么做的，以及最终取得了什么效果。
+前面的章节我们讨论了响应速度的原理、启动流程和优化策略。但原理归原理，动手做优化的时候，每个 App 面临的约束千差万别——有的受限于包体积，有的卡在第三方 SDK 初始化，有的则是历史代码的技术债。这一节我们来看几个真实的优化案例，看看不同团队在不同的约束下是怎么做的，以及最终取得了什么效果。
 
 需要说明的是，以下案例中的部分数据来自公开的技术分享和官方博客，而非本团队的实测。数据的准确性取决于原始报告的测试环境和度量方式，我们在每个案例中标注了数据来源和可信度。
 
@@ -93,7 +93,7 @@ Reddit 技术团队在 2025 年 Google Performance Spotlight Week 上分享了�
 
 ### 分析思路
 
-Reddit 的性能团队通过 Macrobenchmark 建立了启动耗时基线。他们发现冷启动的时间主要花在以下几个环节：
+Reddit 的性能团队先通过 Macrobenchmark 建立了启动耗时基线。他们发现冷启动的时间主要花在以下几个环节：
 
 Application.onCreate() 中的 SDK 初始化是大头：Reddit 集成了大量第三方服务（广告、分析、推送等），这些 SDK 几乎都在 onCreate 里同步初始化，占据了主线程约 800ms。首页 Feed 的数据加载也在占用时间——虽然是异步请求，但网络回调和 JSON 解析会回到主线程处理。首次渲染同样有开销，由于 View 层级较深（首页是复杂的 RecyclerView），measure/layout 阶段消耗了不少时间。
 
@@ -318,7 +318,7 @@ ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代�
 
 **阶段三：渲染优化（投入 1 周）**
 
-第三阶段解决 View 层级过深的问题：
+第三个阶段解决 View 层级过深的问题：
 
 - 使用 `ViewHolder` 模式减少 `findViewById()` 的重复调用
 - 将嵌套的 ScrollView + RecyclerView 改为单一 RecyclerView + 多 viewType
@@ -337,7 +337,7 @@ ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代�
 | 阶段三 | ~150ms | View 层级扁平化 + 硬件层 |
 | **最终** | **~150ms** | **总计投入约 2.5 周** |
 
-[待验证: 上述数据为综合多个电商 App 的典型优化经验归纳，非单一 App 的精确实测。具体数值因项目而异。]
+[待验证: 上述数据为综合多个电商 App 的典型优化经验归纳，非单一 App 的精确测试。具体数值因项目而异。]
 
 最终 150ms 的跳转时间在用户的感知阈值之内。值得一提的是，150ms 并不是极限——通过异步 inflate（AsyncLayoutInflater）和预先创建 Activity 的方案，还可以进一步缩短。但这些方案复杂度更高，需要根据实际情况权衡投入产出比。
 

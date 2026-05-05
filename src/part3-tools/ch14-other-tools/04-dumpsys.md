@@ -39,13 +39,14 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-30T17:46:37.750688"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
 task9_reviewed_date: 2026-04-30
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-30T18:33:37+08:00"
 repaired_date: "2026-04-26"
 repaired_by: openclaw-task2b
+review_notes: "2026-05-05 task6 re-review (finalized revisiting): pass-light-edit；L1/L2 轻修并确认 finalized / ready-to-publish。"
 ---
 
 # dumpsys 系列命令
@@ -78,13 +79,13 @@ repaired_by: openclaw-task2b
 
 ## 为什么需要 dumpsys
 
-在分析 Android 性能问题的过程中，我们经常需要快速了解系统某一时刻的"状态快照"——比如某个进程占用了多少内存、当前屏幕上叠加了多少个 Layer、哪个窗口持有焦点、最近 120 帧的渲染耗时分布如何。Perfetto 可以告诉我们"过程"（事情是怎么一步步发生的），但如果我们需要的是一个"截面"（此刻系统长什么样），dumpsys 就是最趁手的工具。
+在分析 Android 性能问题的过程中，我们经常需要快速了解系统某一时刻的"状态快照"——比如某个进程占用了多少内存、当前屏幕上叠加了多少个 Layer、哪个窗口持有焦点、最近 120 帧的渲染耗时分布如何。Perfetto 可以告诉我们"过程"（事情是怎么一步步发生的），但如果我们需要的是一个"截面"（此刻系统长什么样），dumpsys 更适合先取状态快照。
 
 dumpsys 会遍历 Android 系统中所有注册到 ServiceManager 的系统服务，调用每个服务的 `dump()` 方法，把服务内部状态以文本形式输出到终端。
 
 每个系统服务都实现了自己的 `dump()` 方法，因此 dumpsys 的输出覆盖了 Android 系统的多个关键面向，从 Activity 栈到电池统计，从内存分配到图形合成，都能拿到对应的状态快照。
 
-本节不打算穷举 dumpsys 支持的所有子命令（在设备上运行 `adb shell dumpsys -l` 就能列出完整列表），而是聚焦于性能分析中最常用的六个子命令，逐个讲清楚它的用途、输出结构、关键指标的含义，以及在实际性能分析中怎么用。
+在设备上运行 `adb shell dumpsys -l` 就能列出完整子命令列表；这里聚焦性能分析中最常用的六个子命令，逐个讲清楚它的用途、输出结构、关键指标的含义，以及在实际性能分析中怎么用。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/cmds/dumpsys/dumpsys.cpp]
 
@@ -329,7 +330,7 @@ adb shell dumpsys batterystats --enable full-wake-history
 
 ### 功耗分析工作流
 
-dumpsys batterystats 本身输出的是原始数据，要发挥作用，需要配合 Battery Historian 工具做可视化。标准工作流如下：
+dumpsys batterystats 本身输出的是原始数据，要发挥作用需要配合 Battery Historian 工具做可视化。标准工作流如下：
 
 第一步，重置统计。在开始测试前执行 `adb shell dumpsys batterystats --reset`，清除历史数据，确保接下来的测试数据是干净的。
 
@@ -405,7 +406,7 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 
 > 以下内容基于 AOSP 源码（android.googlesource.com mainline）深度调研，补充正文未覆盖的 FrontEnd 内部机制。
 
-**FrontEnd 组件表：**
+**FrontEnd 组件清单：**
 
 | 组件 | 源码位置 | 核心职责 |
 |------|---------|---------|
