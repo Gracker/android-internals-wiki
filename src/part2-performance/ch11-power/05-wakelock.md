@@ -40,23 +40,24 @@ sources:
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 task2b_result: fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-01"
-last_task9_at: "2026-05-01T06:20:00+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-05"
+last_task9_at: "2026-05-05T17:38:00+08:00"
 last_task2b_at: "2026-04-27T19:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 review_round: 3
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。"
 last_task6_at: "2026-05-05T17:19:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-17-review.md"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 
 ---
 
