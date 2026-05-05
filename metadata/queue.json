@@ -11475,7 +11475,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T02:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T00:36:51+08:00",
+      "resolved_by": "task9-deep-tech-review",
+      "resolution": "2026-05-06 复审通过：mm_events AOSP 锚点已收敛到 lmkd.cpp + libmeminfo/libmemevents；Android 17 Generational CMC 默认化断言已收窄；错误的 lmkd atrace category 已移除。仅保留 lowmemorykiller ftrace 存在性 P2 建议。"
     },
     {
       "section": "11.2",
@@ -12069,6 +12072,85 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T15:51:58+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.17",
+      "section_title": "Frame Pacing Library 与帧节奏控制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.17 present_id Vulkan 核心版本断言错误；DeliQueue 实现模型与跨章口径不一致",
+      "material_paths": [
+        "logs/deep-review/2026-05-06-00-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "severity": "P0",
+          "location": "L424-L430 Vulkan 帧确认路径",
+          "detail": "`VK_KHR_present_id` 被写成“Vulkan 1.2 核心扩展”。复核 Khronos Vulkan registry `vk.xml`，`VK_KHR_present_id` 是 device extension，依赖 `VK_KHR_swapchain+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)`，未标注 promotedto Vulkan 1.2/1.3/1.4；不能把 Android/Vulkan 版本要求推导成核心能力。",
+          "suggestion": "改为“可选 device extension；需通过扩展枚举与 `VkPhysicalDevicePresentIdFeaturesKHR.presentId` 判断”。保留“当前 Swappy 未使用 present_id”的结论，但删除“Vulkan 1.2 核心扩展”表述。"
+        },
+        {
+          "type": "交叉引用错误/原理断裂",
+          "severity": "P1",
+          "location": "L434-L442 DeliQueue 对 Java Choreographer 的影响",
+          "detail": "本节把 DeliQueue 写成“单生产者-单消费者无锁队列”，而 16.4 同一主题写成“生产者侧 lock-free Treiber stack + Looper 侧 min-heap”。两处实现模型不一致；同时本节引用的 `frameworks/base/core/java/android/os/MessageQueue.java` 未给出 Android 17 分支、具体子路径或 commit，无法复核 targetSdk 37 gating 与 Java/NDK 边界。",
+          "suggestion": "统一到可核验的 Android 17 MessageQueue 源码/官方博客口径：列出 `LockedMessageQueue`、`ConcurrentMessageQueue`、`CombinedMessageQueue` 或对应 commit；如果无法公开复核，正文只保留“Java MessageQueue lock contention 改善，NDK AChoreographer 影响待验证”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T00:36:51+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.4",
+      "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 16.4 sched_ext android16-6.12 源码锚点/符号/可观测性仍不匹配，MGLRU 量化数据待回源",
+      "material_paths": [
+        "logs/deep-review/2026-05-06-00-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L74-L76 / L350 sched_ext 源码锚点",
+          "detail": "正文把 `android16-6.12/kernel/sched/ext/` 写成已验证源码锚点。复核 android16-6.12，sched_ext core 在 `kernel/sched/ext.c`，不是 `kernel/sched/ext/` 目录；`include/linux/sched/ext.h` 才是 public constants/header。",
+          "suggestion": "将源码锚点改为 `kernel/sched/ext.c` + `include/linux/sched/ext.h`，工具样例另列 `tools/sched_ext/`。版本表中也不要写 `kernel/sched/ext/`。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L105-L111 任务所有权状态机",
+          "detail": "表格保留 `SCX_TASK_IN_CUSTODY`。复核 android16-6.12 `include/linux/sched/ext.h`，`enum scx_ent_flags` 中可见 `SCX_TASK_QUEUED`、`SCX_TASK_RESET_RUNNABLE_AT`、`SCX_TASK_DEQD_FOR_SLEEP` 以及 state bits；未见 `SCX_TASK_IN_CUSTODY`。",
+          "suggestion": "删除 `SCX_TASK_IN_CUSTODY`，改用 `SCX_TASK_STATE_MASK` / `SCX_TASK_NONE|INIT|READY|ENABLED` 和 `ops_state` 解释归属状态，避免混入旧分支或外部资料符号。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L119-L126 Dispatch Queue（DSQ）机制",
+          "detail": "代码块仍把 `SCX_DSQ_BYPASS = SCX_DSQ_FLAG_BUILTIN | 3` 放进 android16-6.12 的 `enum scx_dsq_id_flags`。复核目标分支 `include/linux/sched/ext.h`，内置 ID 只有 `SCX_DSQ_INVALID`、`SCX_DSQ_GLOBAL`、`SCX_DSQ_LOCAL`、`SCX_DSQ_LOCAL_ON` 和 `SCX_DSQ_LOCAL_CPU_MASK`；未见 `SCX_DSQ_BYPASS`。",
+          "suggestion": "从 android16-6.12 通用代码块删除 `SCX_DSQ_BYPASS`；若要保留，单列“后续 mainline/厂商分支待核验差异”，不要放在目标分支枚举里。"
+        },
+        {
+          "type": "源码错误/可观测性错误",
+          "severity": "P1",
+          "location": "L160-L166 排查要点",
+          "detail": "正文列出 `/sys/kernel/sched_ext/root/events` 与 `SCX_EV_REFILL_SLICE_DFL`。复核 android16-6.12 `kernel/sched/ext.c`，sysfs global attrs 为 `state`、`switch_all`、`nr_rejected`、`hotplug_seq`、`enable_seq`，root kobject attrs 仅见 `ops`；未核到 `root/events` 或 `SCX_EV_REFILL_SLICE_DFL` 通用计数器。",
+          "suggestion": "将通用排查清单收窄为 `/sys/kernel/sched_ext/state`、`/sys/kernel/sched_ext/enable_seq`、`/sys/kernel/sched_ext/root/ops`、`sched_ext_dump` tracepoint；事件计数器作为版本/厂商扩展待验证。"
+        },
+        {
+          "type": "数据缺失",
+          "severity": "P1",
+          "location": "L292-L303 MGLRU 与页面回收优化",
+          "detail": "正文仍列出 `kswapd` CPU -40%、LMK -85%、渲染延迟 -18% 三项数字，并标为需确认。该问题已在 Task6 queue 命中；本轮未能在正文引用中看到具体 lore message-id、Google 报告链接、设备/内核/负载口径或 Android GKI defconfig 锚点。",
+          "suggestion": "补具体来源和实验口径后再保留数字；补不齐时删除百分比，改为“公开测试/论文显示方向性改善”。同时补 `CONFIG_LRU_GEN` / `CONFIG_LRU_GEN_ENABLED` 与 `/sys/kernel/mm/lru_gen/enabled` 的版本边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T00:36:51+08:00",
       "status": "pending"
     }
   ],

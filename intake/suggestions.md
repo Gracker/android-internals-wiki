@@ -1015,3 +1015,9 @@
 - **问题**：三个扩展小节目前仍是整段 `[待补充]` 占位。作为 ready-for-review 章节，正文连续保留占位会影响发布观感。
 - **建议**：Task2B 在处理 7.2 既有技术回炉时同步处理：有素材就补成 1-2 段可用内容；没有素材则把扩展标题移到后续规划，不留整段占位。
 - **review 日志**：logs/review/2026-05-04-22-review.md
+
+## [Task9 Deep Review] 10.4 低内存对系统性能的影响 — 2026-05-06
+- **类型**：Trace 配置/可观测性
+- **位置**：L239-L250 TraceConfig `lowmemorykiller/lowmemorykiller`
+- **问题**：示例已修正 `atrace_categories: "lmkd"`，但 `lowmemorykiller` ftrace event 在现代 GKI/设备上可能不存在；AOSP atrace memory category 中该事件是 optional，android16-6.12 kernel common 未核到通用 lowmemorykiller trace header。
+- **建议**：录制前补 `adb shell ls /sys/kernel/tracing/events/lowmemorykiller` 检查；不存在时依赖 `atrace_categories: "memory"`、logcat/statsd `lowmemorykiller`、`ProcessKilled` 和 lmkd 日志。
