@@ -16,7 +16,7 @@ confidence: medium
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-reviewed_date: "2026-05-03"
+reviewed_date: "2026-05-05"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 sources:
@@ -37,7 +37,7 @@ sources:
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
@@ -45,7 +45,7 @@ task2b_result: fixed
 last_task9_at: "2026-05-05T19:34:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-05"
-review_notes: "2026-05-05 task9 deep-review: pass-tech-review。P0 0；P1 0；P2 0；P3 3。既有 2026-05-03 P0/P1 已复核闭环；自动晋升 finalized / ready-to-publish。"
+review_notes: "2026-05-05 task9 deep-review: pass-tech-review。P0 0；P1 0；P2 0；P3 3。既有 2026-05-03 P0/P1 已复核闭环；自动晋升 finalized / ready-to-publish。；2026-05-05 task6 re-review (finalized revisiting): pass-light-edit；L1/L2 轻修并确认 finalized / ready-to-publish。"
 ---
 
 # 7.8 RecyclerView 列表滑动性能深度优化
@@ -75,11 +75,11 @@ review_notes: "2026-05-05 task9 deep-review: pass-tech-review。P0 0；P1 0；P2
 
 列表滑动是 Android 用户最高频的操作之一，也是流畅性问题最集中的场景。RecyclerView 作为列表渲染的标准组件，内部涉及缓存复用、预取、嵌套滑动和增量更新，这几层机制都会直接影响滑动帧时间。
 
-这篇文章聚焦那些最容易在 Perfetto 里暴露出来的点，让我们在看到卡顿时，能更快判断问题落在布局、bind、缓存还是预取阶段。
+这篇文章聚焦那些最容易在 Perfetto 里暴露出来的点，目标是在看到卡顿时，更快判断问题落在布局、bind、缓存还是预取阶段。
 
 ## RecyclerView 的布局流程
 
-RecyclerView 的一次完整布局仍然由 `dispatchLayoutStep1()`、`dispatchLayoutStep2()`、`dispatchLayoutStep3()` 组成，但 Perfetto 不会直接把这三个阶段显示成同名 slice。当前 AndroidX 主线真正打点的是外层入口：`onLayout()` 对应 `RV OnLayout`，`consumePendingUpdateOperations()` 在整表失效时打 `RV FullInvalidate`，在局部更新路径上打 `RV PartialInvalidate`。因此，Trace 里看到的是外层布局切片，我们再结合调用栈和更新类型去判断 step1/2/3 落在什么位置。
+RecyclerView 的一次完整布局仍然由 `dispatchLayoutStep1()`、`dispatchLayoutStep2()`、`dispatchLayoutStep3()` 组成，但 Perfetto 不会直接把这三个阶段显示成同名 slice。当前 AndroidX 主线的打点落在外层入口：`onLayout()` 对应 `RV OnLayout`，`consumePendingUpdateOperations()` 在整表失效时打 `RV FullInvalidate`，在局部更新路径上打 `RV PartialInvalidate`。因此，Trace 里看到的是外层布局切片，我们再结合调用栈和更新类型去判断 step1/2/3 落在什么位置。
 
 `dispatchLayoutStep1()` 负责消费 Adapter 更新、决定是否运行 predictive animation、保存旧布局信息。列表收到 `notifyDataSetChanged()` 这类整表失效时，外层 slice 往往是 `RV FullInvalidate`。收到局部更新并且 `AdapterHelper` 能在一次 pass 里处理时，更常见的是 `RV PartialInvalidate`。
 
@@ -112,7 +112,7 @@ RecyclerView 的缓存体系分为四级，理解每一级的工作方式，是�
 
 缓存查找的顺序是：AttachedScrap → CachedViews → ViewCacheExtension → RecycledViewPool。如果在所有缓存中都没找到，才会调用 `onCreateViewHolder()` 创建新的。
 
-在 Perfetto 中，缓存命中率不能靠假想的 `RV OnBindView` 名字判断。当前 AndroidX 打点使用的是 `RV Prefetch`、`RV onCreateViewHolder type=0x%X` 和 `RV onBindViewHolder type=0x%X`。如果 fling 过程中频繁出现 create/bind slice，说明 CachedViews 或 RecycledViewPool 没接住；如果只有 `RV Prefetch`，没有后续 create/bind，就要继续看 GapWorker 的时间预算是不是提前放弃了这轮预取。
+在 Perfetto 中，缓存命中率不能靠假想的 `RV OnBindView` 名字判断。当前 AndroidX 打点使用的是 `RV Prefetch`、`RV onCreateViewHolder type=0x%X` 和 `RV onBindViewHolder type=0x%X`。如果 fling 过程中频繁出现 create/bind slice，说明 CachedViews 或 RecycledViewPool 没有命中；如果只有 `RV Prefetch`，没有后续 create/bind，就要继续看 GapWorker 的时间预算是不是提前放弃了这轮预取。
 
 [已验证: AndroidX androidx-main，`RecyclerView.java` `tryGetViewHolderForPositionByDeadline()` / Adapter trace sections]
 
@@ -136,7 +136,7 @@ void postFromTraversal(RecyclerView recyclerView, int prefetchDx, int prefetchDy
 }
 ```
 
-这段调用路径说明两件事。第一，GapWorker 跟随滚动事件调度，不挂在 `doFrame()` 的 COMMIT 回调里。第二，预取请求先记录滚动方向和距离，真正执行时再统一排序和消费。
+这段调用路径说明两件事。第一，GapWorker 跟随滚动事件调度，不挂在 `doFrame()` 的 COMMIT 回调里。第二，预取请求先记录滚动方向和距离，执行时再统一排序和消费。
 
 具体要预取哪些 position，由 `LayoutManager.collectAdjacentPrefetchPositions()` 和 `collectInitialPrefetchPositions()` 决定。前者服务滑动中的相邻 item，后者服务嵌套列表首次可见时的 initial prefetch。`setInitialPrefetchItemCount()` 调的就是这条 initial prefetch 路径。
 
@@ -174,13 +174,13 @@ DeliQueue 改变了 `MessageQueue` 的内部实现。部分基于反射访问 `M
 [已验证: AndroidX androidx-main，`RecyclerView.java` `scrollByInternal()` / `ViewFlinger.run()` / `tryGetViewHolderForPositionByDeadline()`，`GapWorker.java` `postFromTraversal()` / `run()` / `prefetchPositionWithDeadline()`]
 ## DiffUtil 与增量更新
 
-当列表数据发生变化时，最简单的做法是调用 `notifyDataSetChanged()`——但这会触发整个列表的重新布局，即使只有一个 item 发生了变化。DiffUtil 解决的就是这个问题：它通过计算新旧列表之间的最小差异集，只更新真正变化的 item。
+当列表数据发生变化时，最简单的做法是调用 `notifyDataSetChanged()`——但这会触发整个列表的重新布局，即使只有一个 item 发生了变化。DiffUtil 解决的就是这个问题：它通过计算新旧列表之间的最小差异集，只更新发生变化的 item。
 
 DiffUtil 的核心算法是 Eugene W. Myers 的差分算法。这个算法的时间复杂度是 O(N + D²)，其中 N 是两个列表的总长度，D 是编辑距离（插入/删除/修改的数量）。对于大多数实际场景（少量 item 变化），D 很小，算法非常快。但如果数据变化很大（比如清空后重新加载），D 接近 N，时间复杂度会退化到 O(N²)。
 
 `AsyncListDiffer` 将 diff 计算放到后台线程。它的 `submitList()` 方法会先在后台线程执行 `DiffUtil.calculateDiff()`，计算完成后在主线程分发更新通知。这是一个关键的性能优化——如果 diff 计算耗时超过 16ms（一帧的预算），放在主线程就会直接导致掉帧。
 
-DiffUtil 有两个核心回调需要正确实现。`areItemsTheSame()` 判断两个 item 是否代表同一个对象（通常比较 id），`areContentsTheSame()` 判断同一个对象的内容是否完全一致。这两个方法的实现直接影响 diff 的性能和正确性。
+DiffUtil 有两个核心回调，实现要写对。`areItemsTheSame()` 判断两个 item 是否代表同一个对象（通常比较 id），`areContentsTheSame()` 判断同一个对象的内容是否完全一致。这两个方法的实现直接影响 diff 的性能和正确性。
 
 一个经常被忽略的优化是 Payload 机制。当 `areItemsTheSame()` 返回 true 但 `areContentsTheSame()` 返回 false 时，DiffUtil 会调用 `getChangePayload()` 来获取变化的详情。如果返回了非 null 的 payload，Adapter 会收到 `onBindViewHolder(holder, position, payloads)` 而不是完全的重新绑定。这样我们只更新变化的部分（比如一个文字标签），而不需要重新绑定整个 item 的所有数据。
 
@@ -240,7 +240,7 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 ### 共享 Pool 的跨列表复用统计意义
 
-共享 `RecycledViewPool` 的核心收益不在锁竞争层面。`RecycledViewPool` 的 `getRecycledView()` 和 `putRecycledView()` 在 AndroidX 主线中不是 `synchronized` 方法——所有 RecyclerView 的缓存查找和回收默认在主线程完成，不涉及跨线程锁。真正的收益来自 **create/bind running average 的统计积累**：多个内层列表共享同一个 Pool 时，`ScrapData.mCreateRunningAverageNs` 和 `mBindRunningAverageNs` 由所有内层列表的 create/bind 操作共同回写。这意味着 GapWorker 的 `willCreateInTime()` / `willBindInTime()` 预算判断能拿到更准确的耗时均值，预取调度的 deadline 预测更稳定。
+共享 `RecycledViewPool` 的核心收益不在锁竞争层面。`RecycledViewPool` 的 `getRecycledView()` 和 `putRecycledView()` 在 AndroidX 主线中不是 `synchronized` 方法——所有 RecyclerView 的缓存查找和回收默认在主线程完成，不涉及跨线程锁。主要收益来自 **create/bind running average 的统计积累**：多个内层列表共享同一个 Pool 时，`ScrapData.mCreateRunningAverageNs` 和 `mBindRunningAverageNs` 由所有内层列表的 create/bind 操作共同回写。这样一来，GapWorker 的 `willCreateInTime()` / `willBindInTime()` 预算判断能拿到更准确的耗时均值，预取调度的 deadline 预测更稳定。
 
 源码锚点：`androidx.recyclerview.widget.RecyclerView.RecycledViewPool`，`getRecycledView()` / `putRecycledView()` 非 `synchronized`；`ScrapData.mCreateRunningAverageNs` / `mBindRunningAverageNs` 由 `factorInCreateTime()` / `factorInBindTime()` 维护。
 
@@ -397,7 +397,7 @@ boolean willBindInTime(int viewType, long approxCurrentNs, long deadlineNs) {
 
 ### ConstraintLayout double-measure 机制
 
-`MATCH_CONSTRAINT` 维度触发两段式测量（Pass 1 → Constraint Solver → Pass 2），每次 `onMeasure` 传入不同的 `widthMeasureSpec`。这意味着：
+`MATCH_CONSTRAINT` 维度触发两段式测量（Pass 1 → Constraint Solver → Pass 2），每次 `onMeasure` 传入不同的 `widthMeasureSpec`。结果是：
 - bindTime 历史均值 = 2ms（假设绑定很快）
 - 首帧 measure 实际耗时 = 15ms（ConstraintLayout 复杂子 view）
 - GapWorker 认为"赶得上 deadline"，但首帧 measure 把帧时间吃光
@@ -458,7 +458,7 @@ GapWorker 设计假设：bindTime 是帧耗时的主要变量，measure/layout �
 <!-- AIW-源码调研-2026-05-04 -->
 ## GapWorker bindTime 与 ConstraintLayout 多次测量的源码级盲区
 
-基于源码深度调研，发现 GapWorker 预取机制的 `bindTime` 均值统计与 ConstraintLayout 多次测量的实际耗时存在根本性脱节，导致预取失效的性能盲区。
+基于源码深度调研，发现 GapWorker 预取机制的 `bindTime` 均值统计与 ConstraintLayout 多次测量的实际耗时存在结构性脱节，导致预取失效的性能盲区。
 
 ### 核心机制脱节
 
