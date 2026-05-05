@@ -10,11 +10,11 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 sources:
   - "https://square.github.io/okhttp/features/events/"
   - "https://square.github.io/okhttp/features/interceptors/"
@@ -22,9 +22,9 @@ sources:
   - "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback"
   - "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo"
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-01"
+task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-01T12:25:00+08:00"
+last_task9_at: "2026-05-05T14:20:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
@@ -33,6 +33,7 @@ review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no 
 last_task2b_at: "2026-05-04T03:40:00+08:00"
 last_task6_at: "2026-05-05T14:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-14-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 ---
 
 # 网络 APM 底层捕获原理

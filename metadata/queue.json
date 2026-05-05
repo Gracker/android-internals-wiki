@@ -3961,21 +3961,44 @@
       "status": "pending"
     },
     {
-      "section": "18.03",
-      "section_title": "18.03",
-      "priority": 85,
-      "reason": "[External Review] 外部 AI review 发现需回炉修正的问题",
+      "section": "18.3",
+      "section_title": "Android View 软件渲染路径",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 18.3 Android View 软件渲染路径 存在技术审计未闭环问题（P0:1 P1:2）",
       "review_issues": [
         {
-          "type": "P1",
-          "location": "版本差异",
-          "detail": "",
-          "suggestion": ""
+          "level": "P0",
+          "type": "源码错误",
+          "dimension": "源码引用准确性",
+          "location": "L85、L135、L141（Surface.lockCanvas / unlockCanvasAndPost 时序图的 fence 命名）",
+          "detail": "正文把 dequeueBuffer 返回给 producer 等待写入的 fence 写成 acquire fence，又把 unlockAsync 后传给 queueBuffer 的 fence 写成 release fence。AOSP android-16.0.0_r1 中 Surface::lock() 在 L2730-L2793 调用 dequeueBuffer(&out,&fenceFd) 后把该 fd 传给 GraphicBuffer::lockAsync；Surface::unlockAndPost() 在 L2819-L2823 把 unlockAsync 产生的 fd 交给 queueBuffer。IGraphicBufferProducer::QueueBufferInput 注释说明该 fence 是 consumer 读 buffer 前必须等待的 fence。release fence 是 consumer/SF 用完 buffer 后再返回给 producer 的方向，不是 unlockAndPost 当下传出的 fence。",
+          "suggestion": "重画时序图中的 fence 方向：dequeue 返回的是 producer 写入前等待的上一轮释放 fence；queueBuffer 传出的是 consumer acquire/ready fence；releaseFence/presentFence 放在 SF/HWC 消费完成后返回。"
+        },
+        {
+          "level": "P1",
+          "type": "原理断裂",
+          "dimension": "原理链完整性",
+          "location": "L81-L105（“软件渲染没有 RenderThread / 每条 draw 立即产生像素”）",
+          "detail": "该描述只适用于整窗口关闭硬件加速或直接 Surface.lockCanvas 的 software Canvas。正文 L54-L63 同时讨论 View.setLayerType(LAYER_TYPE_SOFTWARE)，该路径在硬件加速窗口中仍会经过 RenderNode/RenderThread 合成，不能用“没有 RenderThread、没有 DisplayList”概括所有 software layer 场景。",
+          "suggestion": "把“整窗口 software Canvas / Surface.lockCanvas”和“单 View software layer”拆成两条执行链；后者单独说明软件离屏绘制、纹理上传与 RenderThread 合成边界。"
+        },
+        {
+          "level": "P1",
+          "type": "数据缺失/版本差异",
+          "dimension": "版本差异覆盖",
+          "location": "L41、L90、L210-L212（Android 15+ Efficiency-aware Throttling、16KB Page、Android 16 SkTaskGroup）",
+          "detail": "这些段落给出“每瓦性能不足 GPU 路径 1/10”“Page Fault 数量同比例下降 75%”“Android 16 SkTaskGroup 多线程 CPU 栅格化”等精确结论，但正文没有一手 AOSP commit、Android 官方文档、设备 trace 或 benchmark 条件。本轮只验证到 Surface.cpp lock/unlock 代码；未验证这些 Android 15/16 版本结论可直接用于 software Canvas。",
+          "suggestion": "补 Thermal/Skia/AOSP 版本锚点和可复现实测；没有证据前改为待验证假设，避免把外部 review 的推断写成已验证事实。"
         }
       ],
-      "added_by": "external-ai-review",
-      "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-05T14:20:00+08:00",
+      "status": "pending",
+      "material_paths": [
+        "logs/deep-review/2026-05-05-14-deep-review.md"
+      ],
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-05T14:20:00+08:00"
     },
     {
       "section": "19",
@@ -11833,6 +11856,62 @@
       "status": "completed",
       "completed_at": "2026-05-05T05:51:21Z",
       "completed_reason": "Perfetto SQL ftrace_events → ftrace_event 表名已全部修正；补充 EXTRACT_ARG 和派生表使用建议"
+    },
+    {
+      "section": "19.23",
+      "section_title": "网络 APM 底层捕获原理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 19.23 网络 APM 底层捕获原理 存在技术审计未闭环问题（P0:0 P1:1）",
+      "material_paths": [
+        "logs/deep-review/2026-05-05-14-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P1",
+          "type": "原理断裂",
+          "dimension": "原理链完整性",
+          "location": "L119-L237、L371-L420（EventListener attempt 建模与弱网重试归因）",
+          "detail": "示例用单个 Attempt 保存 requestHeaders/responseHeaders/body 字段；OkHttp EventListener 源码注释明确“Events and sequences of events may be repeated for retries and follow-ups”，requestHeadersStart/responseHeadersStart 可因 redirect/follow-up 在同一 Call 内多次触发。当前代码会覆盖前一次 request/response 阶段，无法区分 redirect、auth follow-up、缓存条件请求与连接重试。",
+          "suggestion": "在 request 与 attempt 之间增加 exchange/follow_up 记录，至少把 requestHeaders/responseHeaders/requestBody/responseBody 做成列表；同时记录 responseHeadersEnd、requestFailed/responseFailed、connectionAcquired/released，避免弱网归因只覆盖建连失败。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-05T14:20:00+08:00",
+      "status": "pending",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-05T14:20:00+08:00"
+    },
+    {
+      "section": "19.0",
+      "section_title": "第 19 章：APM 工具与性能监控生态",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 19.0 第 19 章：APM 工具与性能监控生态 存在技术审计未闭环问题（P0:1 P1:1）",
+      "material_paths": [
+        "logs/deep-review/2026-05-05-14-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误",
+          "dimension": "源码引用准确性",
+          "location": "L65-L67（Framework 层工具表：FrameMetrics / androidx.metrics / Tracing SDK）",
+          "detail": "表格把 FrameMetrics 归到 androidx.metrics。Android 官方 API 中 FrameMetrics 是 android.view.FrameMetrics（API 24）；AndroidX 包装入口是 androidx.core.app.FrameMetricsAggregator（androidx.core:core 1.1.0+）。androidx.metrics.performance 对应的是 JankStats，不是 FrameMetrics。",
+          "suggestion": "把 FrameMetrics 行改为“android.view.FrameMetrics / Window.OnFrameMetricsAvailableListener（API 24+）”，如需 AndroidX 聚合器另列 FrameMetricsAggregator；保留 JankStats 在 androidx.metrics.performance。"
+        },
+        {
+          "level": "P1",
+          "type": "版本差异",
+          "dimension": "版本差异覆盖",
+          "location": "L67（Tracing SDK：2.0 支持 Perfetto 格式）",
+          "detail": "AndroidX Tracing release 页面显示 2026-04-22 稳定版为 1.3.0，2.0.0-alpha06 仍是 alpha；Perfetto 相关能力分布在 tracing-perfetto / tracing-perfetto-common 等 artifact 中。当前写成“Tracing SDK 2.0 支持 Perfetto 格式”会让读者以为稳定 tracing 主 artifact 已统一支持 Perfetto 输出。",
+          "suggestion": "拆成“androidx.tracing:tracing 1.3.0 稳定进程内 trace”和“tracing-perfetto* / 2.0 alpha 能力需按 artifact 与版本标注”，并补 release 链接。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-05T14:20:00+08:00",
+      "status": "pending",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-05T14:20:00+08:00"
     }
   ],
   "completed": [
