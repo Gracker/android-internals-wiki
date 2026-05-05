@@ -9967,7 +9967,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T07:35:29+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-05T22:53:53.775115",
+      "completed_reason": "P0 Android 16 Size Insights buildConfig不实声明已删除，替换为已验证工具链(APK Analyzer/bundletool/Ruler)；P1 FAQ密度过滤已与正文对齐(AAB split vs resConfigs分场景)"
     },
     {
       "section": "7.5",
@@ -10975,7 +10977,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T00:36:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-05T22:53:53.775115",
+      "completed_reason": "P0 Timeline Semaphore'Android 16强制'口径已纠正为Vulkan 1.2核心特性+VPA16未强制；P1 Binary vs Timeline Semaphore Interop路径已分离，HWUI实际使用Binary Semaphore已明确"
     },
     {
       "section": "13.1",

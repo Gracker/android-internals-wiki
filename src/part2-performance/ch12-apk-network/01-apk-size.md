@@ -30,7 +30,7 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: "2026-04-30"
@@ -39,9 +39,9 @@ last_task9_at: "2026-04-30T07:35:29+08:00"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-02"
 task6_result: "pass-light-edit"
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-24T04:56:29+08:00"
@@ -447,27 +447,17 @@ bundletool get-size total --apks=app.apks \
 
 **「App Bundle 是强制性的，国内市场没法用」**——国内应用市场确实不支持 AAB 格式。但 App Bundle 的技术价值不限于 Google Play。可以在本地用 `bundletool` 生成针对特定 ABI 和密度的 APK，然后分渠道上传。这比「一个 APK 适配所有设备」高效得多。此外，Dynamic Feature Module 的按需加载思想，也可以通过自研的插件化框架在非 Google Play 渠道实现。
 
-## Android 16 Size Insights：构建期体积治理
+## 构建期体积治理：从测量到持续跟踪
 
-Android 16 在 AGP 中引入了 **Size Insights** 功能，在 `build.gradle` 构建配置中直接高亮显示导致包体积膨胀的传递依赖，并提供替代 SDK 建议。它集成在构建报告输出中，不需要额外工具。
+知道 APK 大了，但不知道是哪个依赖膨胀了——这是工程实践中最常见的排查难点。目前经过官方验证的工具链按场景分三层：
 
-启用方式（AGP 8.12+ / Android Studio Narwhal Feature Drop+）：
+**APK Analyzer**（手动排查）：上一节已介绍。适合定位体积大户、检查单个库的保留比例。
 
-```kotlin
-android {
-    buildFeatures {
-        buildConfig = true
-    }
-}
-```
+**bundletool + CI 门禁**（自动化基线）：在 CI 流水线中用 `bundletool get-size total` 对比每次构建的下载大小，超出阈值自动告警。这是体积治理从"发布前突击检查"变成"每次构建持续跟踪"的基础设施层。
 
-构建完成后在 Android Studio 的 Build Analyzer 面板中查看 Size Insights 标签页，会列出：
+**APK Analyzer / Ruler / Play Console App Size**（依赖审计）：如果需要分析传递依赖对 dex / res / native 体积的贡献，可以使用 Slack 开源的 [Ruler](https://github.com/slackhq/ruler) 或 Play Console 的 App Size 报告。Ruler 在编译期按模块和包名归集体积数据，适合大型多模块项目。
 
-- 体积贡献最大的传递依赖及其占用的 dex / res / native 大小
-- 功能相近但体积更小的替代 SDK 建议
-- 最近几个版本的体积变化趋势
-
-Size Insights 解决的是"知道 APK 大了，但不知道是哪个依赖膨胀了"的问题。配合 CI 流水线的体积门禁（下一节），可以把体积治理从"发布前突击检查"变成"每次构建持续跟踪"。
+> **⚠️ 关于 AGP 8.12 "Size Insights"**：截至 2026-05，AGP 8.12.0 的官方 release notes 中 `buildFeatures.buildConfig` 仅控制 `BuildConfig` 类的生成，与包体积依赖分析无关。Build Analyzer 主要用于构建耗时分析。如果后续 Android Studio Narwhal Feature Drop 提供了专门的体积分析入口，以官方 release notes 为准。
 
 ## 与其他章节的关系
 
