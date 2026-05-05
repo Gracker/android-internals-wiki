@@ -5,7 +5,7 @@ status: ready-for-review
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 last_verified: "2026-04-08"
 last_verified_against: "AOSP android-15.0.0_r1"
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-05-06"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -35,8 +35,8 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -47,6 +47,9 @@ last_task9_at: "2026-05-04T22:21:37+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
 task9_review_notes: "2026-05-04 22 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1（P2 为既有 16KB 数据建议，未重复写入）。HWC3 AIDL 关键源码索引仍为旧错路径。"
+last_task6_at: "2026-05-06T03:20:00+08:00"
+task6_reviewed_date: "2026-05-06"
+review_notes: "2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 11 处；无新增 B 类回炉问题，等待 Task 9 复审。"
 ---
 
 # 卡顿原因体系
@@ -107,7 +110,7 @@ VSync-app 信号到达
 
 ## 主线程耗时过长
 
-主线程（MainThread / UI Thread）是卡顿最常见的发生地。原因很简单：Android 的渲染管线中，Input 事件处理、Animation 计算、View 的 measure/layout/draw，都发生在主线程上。一旦主线程被某个操作阻塞了太久，超过了当前 VSync 周期的剩余时间，这一帧就注定要掉帧。
+主线程（MainThread / UI Thread）是卡顿最常见的发生地。在 Android 的渲染管线中，Input 事件处理、Animation 计算、View 的 measure/layout/draw 都发生在主线程上；一旦主线程被某个操作阻塞到超过当前 VSync 周期的剩余时间，这一帧就会掉帧。
 
 在 Perfetto 中，主线程耗时过长通常表现为：一个 doFrame 的绿色 Slice 明显拉长，或者在 doFrame 之前有一段很长的非渲染类 Slice（比如某个业务方法执行了很久）。
 
@@ -117,7 +120,7 @@ VSync-app 信号到达
 
 Layout 和 Measure 是 View 树遍历的核心阶段。当 View 层级过深、或者某个 ViewGroup 的 onMeasure/onLayout 逻辑过于复杂时，这两个阶段的耗时会显著增加。
 
-具体来说，以下几种情况最容易导致 Layout/Measure 耗时飙升：
+常见触发点主要有三类：
 
 **View 层级过深。** Android 的 measure 和 layout 是从根节点开始递归遍历整棵 View 树的。如果层级超过 10 层，每次 requestLayout 都需要遍历所有节点，耗时累加起来相当可观。在实际项目中，嵌套过多的 LinearLayout 或 RelativeLayout 是最常见的深层级来源。
 
@@ -197,7 +200,7 @@ Android 17 对 `MessageQueue` 做了一次架构级重构，引入了 **DeliQueu
 
 从 Android 5.0（Lollipop）开始，Android 引入了 RenderThread，将一部分渲染工作从主线程剥离出来，交给专门的渲染线程执行。主线程负责 measure/layout/draw（记录绘制命令到 DisplayList），RenderThread 负责将 DisplayList 中的命令通过 OpenGL/Vulkan 发送给 GPU 执行。
 
-这个分工的初衷是好的——主线程不再需要等待 GPU 完成渲染。但当 RenderThread 本身的执行时间超过预期时，它同样会成为卡顿的来源。
+这种分工降低了主线程等待 GPU 的概率。但当 RenderThread 本身的执行时间超过预期时，它同样会成为卡顿来源。
 
 [已验证: 官方文档, developer.android.com/topic/performance/rendering — RenderThread 介绍]
 
@@ -251,7 +254,7 @@ SurfaceFlinger 瓶颈导致的卡顿有一个特点：App 侧的 Trace 看起来
 
 ### HWC 能力限制
 
-不同 SoC 平台的 HWC（Hardware Composer）能力差异很大。SurfaceFlinger 每一帧都会先把 layer 列表交给 HWC 评估，能直接由显示硬件叠加的 layer 标成 **Device Composition**，HWC 接不住的 layer 才退回 **Client Composition**，由 SurfaceFlinger 里的 RenderEngine 走 GPU 合成。常见触发条件包括 plane 数量不够、缩放或旋转超出硬件能力、圆角或复杂混合效果无法处理。
+不同 SoC 平台的 HWC（Hardware Composer）能力差异很大。SurfaceFlinger 每一帧都会先把 layer 列表交给 HWC 评估，能直接由显示硬件叠加的 layer 标成 **Device Composition**，HWC 无法处理的 layer 才退回 **Client Composition**，由 SurfaceFlinger 里的 RenderEngine 走 GPU 合成。常见触发条件包括 plane 数量不够、缩放或旋转超出硬件能力、圆角或复杂混合效果无法处理。
 
 [来源: Personal-Knowlodge/source/2026-03-08_wechat_Google_为何把_SurfaceView_设计的这么难用.md — HWC Overlay 与 Layer 类型]
 
@@ -264,7 +267,7 @@ SurfaceFlinger 瓶颈导致的卡顿有一个特点：App 侧的 Trace 看起来
 
 > 以下内容基于 AOSP 源码和公开技术文档的一手研究。高通/联发科的 HWC 私有实现代码不在 AOSP 主线中，以下分析基于 AOSP HAL 接口定义和公开技术博客。
 
-**核心结论：高通与联发科的 HWC 具体决策算法属于厂商私有实现，不在 AOSP 主线源码中公开。两家厂商的核心差异体现在 Overlay 平面数量和分配策略、私有优化技术、以及功耗管理策略上。**
+**高通与联发科的 HWC 具体决策算法属于厂商私有实现，不在 AOSP 主线源码中公开。公开资料能确认的差异主要集中在 Overlay 平面数量、分配策略、私有优化技术和功耗管理策略上。**
 
 **HWC2 Composition 类型体系（AOSP 源码）：**
 
@@ -307,7 +310,7 @@ SurfaceFlinger 准备每帧 layer state（geometry + buffer）
 
 **Qualcomm 私有优化技术：**
 
-1. **"Solid Fill Planes"（固态填充平面）**：允许显示硬件直接渲染单色层，无需从内存读取像素数据，显著降低功耗
+1. **"Solid Fill Planes"（固态填充平面）**：允许显示硬件直接渲染单色层，无需从内存读取像素数据，减少内存读带宽和功耗
 2. **"Peripheral Tiny Overlap Removal (PTOR)"**：将小的重叠区域通过 Copybit 处理到渲染缓冲区，避免为微小重叠触发完整 GPU 合成
 
 **Qualcomm HWC 代码位置**（私有仓库，不在 AOSP 主线）：
@@ -365,7 +368,7 @@ Display 0 (Primary):
 
 ### CPU 调度延迟（Runnable 状态过长）
 
-CPU 调度延迟是最隐蔽、也最容易被忽略的卡顿原因之一。它表现为：线程已经就绪（Runnable），但 Linux 调度器没有及时把它调度到 CPU 上执行，导致线程在"等待被调度"的状态下白白消耗了宝贵的时间。
+CPU 调度延迟是最隐蔽、也最容易被忽略的卡顿原因之一。它表现为：线程已经就绪（Runnable），但 Linux 调度器没有及时把它调度到 CPU 上执行，帧预算被消耗在等待调度上。
 
 **为什么会发生调度延迟？**
 
@@ -432,7 +435,7 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 在分析系统级卡顿原因时，还有一个容易被忽略的来源：OEM 厂商对 Android 框架的自定义修改。不同厂商会根据自己的硬件和用户体验策略，对 AOSP 原生的渲染调度逻辑进行不同程度的修改。这些修改大多数情况下是透明的，但在某些场景下会引入与 AOSP 行为不一致的问题，导致 App 出现难以解释的卡顿。
 
-一个典型的案例是华为手机上的 VSync 调度异常。有开发者在实际项目中[发现]((https://zhuanlan.zhihu.com/p/450899407))，华为较新的系统版本中，`Choreographer.postFrameCallback` 和 `View.postOnAnimation` 的回调时机存在严重问题：在一个 VSync 周期内，系统会额外注入一个伪造的 VSync 信号，单独处理 `CALLBACK_ANIMATION` 类型的回调。
+一个典型的案例是华为手机上的 VSync 调度异常。有开发者在实际项目中[发现](https://zhuanlan.zhihu.com/p/450899407)，华为较新的系统版本中，`Choreographer.postFrameCallback` 和 `View.postOnAnimation` 的回调时机存在严重问题：在一个 VSync 周期内，系统会额外注入一个伪造的 VSync 信号，单独处理 `CALLBACK_ANIMATION` 类型的回调。
 
 这造成了三个问题：
 
@@ -451,11 +454,11 @@ SELECT * FROM slice WHERE name LIKE '%GC%' AND track_id IN (
 
 ### 系统提供的对抗工具：ADPF
 
-当 App 检测到由于限频或调度导致的卡顿风险时，**ADPF（Android Dynamic Performance Framework）** 是唯一的官方动态干预手段。ADPF 的核心 API `PerformanceHintManager` 允许 App 向系统提交 CPU 资源提示——告知系统线程组的 workload deadline，由系统根据 SoC 状态和温控策略决定是否调整 CPU clock 或 core type。
+当 App 检测到由于限频或调度导致的卡顿风险时，**ADPF（Android Dynamic Performance Framework）** 是官方 CPU 资源提示的主入口。ADPF 的核心 API `PerformanceHintManager` 允许 App 向系统提交线程组的 workload deadline，由系统根据 SoC 状态和温控策略决定是否调整 CPU clock 或 core type。
 
 在卡顿原因体系的语境下，ADPF 的定位是：
 
-- **温控限频的主动对抗**：当 App 检测到帧时间逐渐增长时，通过 ADPF 提交 deadline hint，系统会尽可能维持所需的 CPU 频率。这比被动接受温控降频要好。
+- **温控限频的主动对抗**：当 App 检测到帧时间逐渐增长时，通过 ADPF 提交 deadline hint，系统会尽可能维持所需的 CPU 频率，比完全被动等待限频更可控。
 - **CPU 资源提示的边界**：`PerformanceHintManager` 的契约范围是 CPU 资源（频率、核心类型）。GPU 频率、线程优先级不在其直接控制范围内。GPU 相关的干预需要通过 Game Mode API、Fixed Performance Mode 等独立接口。
 - **适用版本**：Thermal API（`android.os.ThermalManager`）从 Android 11 (API 30) 开始可用；`PerformanceHintManager` / Performance Hint API 从 Android 12 (API 31) 引入；Game Mode / `GameManager` 从 API 31 开始；Game State API 从 Android 13 (API 33) 开始。日常说"ADPF 从 Android 12 可用"指的是 `PerformanceHintManager` 这条主线，Thermal 的温度监听则可以覆盖到 Android 11 设备。
 
@@ -550,7 +553,7 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 [已验证: 官方文档, developer.android.com/topic/performance — 整体分析方法论]
 [来源: Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md — 方法与经验总结]
 
-这个分析树的核心思想是：**从现象出发，逐层缩小范围，最终定位到具体的根因。** 不要一开始就去看某个具体的方法耗时——先判断问题在渲染管线的哪个环节，再去深入那个环节的细节。
+分析树的用法是：**从现象出发，逐层缩小范围，最终定位到具体的根因。** 不要一开始就去看某个具体的方法耗时——先判断问题在渲染管线的哪个环节，再深入该环节的细节。
 
 ## WebView 渲染导致的 Jank
 
