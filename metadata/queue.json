@@ -12770,6 +12770,38 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T06:23:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "18.10",
+      "section_title": "SurfaceControl API 深入",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 18.10 SurfaceControl API 深入 附录 BufferQueue / native handle 源码锚点与 setBuffer usage 约束存在技术风险，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-06-07-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理链错误",
+          "location": "L531-L542、L589-L590 BufferQueue / BLAST 模式链路",
+          "detail": "[P0] 附录把通用图形缓冲链路写成 `IGraphicBufferConsumer ← GLConsumer (SurfaceTexture)` 后直接接 `SurfaceFlinger latchBuffer()`，又写 legacy 模式通过 `FramebufferSurface` 消费。`GLConsumer` 是 SurfaceTexture / texture consumer 路径，不是 SurfaceFlinger 普通应用 layer 的消费者；`FramebufferSurface` 属于显示输出 / client target 路径，不是 app layer 的 BufferQueue consumer。legacy app layer 应写为 App producer → BufferQueue → SurfaceFlinger 侧 Layer/BufferLayerConsumer；BLAST 路径再单独写 app 进程内 `BLASTBufferItemConsumer` 取 buffer 并随 Transaction 提交给 SurfaceFlinger。",
+          "suggestion": "把附录拆成三条链：①普通 app layer legacy：producer 在 app，consumer 在 SurfaceFlinger layer 侧；②SurfaceTexture：consumer 是 `GLConsumer`，消费到纹理，不直接进入 SF latchBuffer；③BLAST：`BLASTBufferQueue` / `BLASTBufferItemConsumer` 在 app 侧接收 BufferQueue item，再用 Transaction + `setBuffer` 交给 SurfaceFlinger。删除 `FramebufferSurface` 作为 app layer consumer 的表述。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L547-L559 buffer_handle_t 定义路径与 native_handle_t 结构",
+          "detail": "[P0] 正文写 `buffer_handle_t` 定义于 `system/core/include/system/graphics.h`，并贴出 `native_handle_t` 的简化结构。android-16.0.0_r1 中 `buffer_handle_t` 实际在 `system/core/libcutils/include/cutils/native_handle.h` 中 typedef 为 `const native_handle_t*`；结构字段为 `int data[0]`，不是当前正文路径里的 `data[]`。该路径会让读者按错误源码锚点查不到定义。",
+          "suggestion": "源码索引改为 `system/core/libcutils/include/cutils/native_handle.h`；如果保留代码片段，按真实 `native_handle_t` / `buffer_handle_t` 定义节选，并把 `system/graphics.h` 中的 pixel format/dataspace 常量与 native handle 定义分开。"
+        },
+        {
+          "type": "API 使用约束缺失",
+          "location": "L183-L186 Buffer Management / AHardwareBuffer 来源",
+          "detail": "[P1] `setBuffer` 小节没有写 `AHardwareBuffer` 的 usage 约束。android-16.0.0_r1 `android/surface_control.h` 明确说明传给 `ASurfaceTransaction_setBuffer()` / `setBufferWithRelease()` 的 buffer 必须带 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE`，因为该 layer 可能被 GPU 合成。正文只列来源，不列 usage flag，读者用 `AHardwareBuffer_allocate()` 自建 buffer 时容易按错误 usage 分配，后续在 GPU CLIENT 合成路径失败或出现兼容问题。",
+          "suggestion": "在 Buffer Management 中补 usage 约束：自建 `AHardwareBuffer` 至少要包含 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE`；若还需要 CPU/Vulkan/codec 写入，按生产端叠加对应 usage。补一句该约束来自 `surface_control.h` 的 `setBuffer` 注释。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T07:39:59+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
