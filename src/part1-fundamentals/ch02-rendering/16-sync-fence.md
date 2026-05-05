@@ -31,13 +31,13 @@ sources:
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
 pipeline_stage: task2b_pending
-task6_state: revisiting
-task6_reviewed_date: "2026-05-01"
+task6_state: reviewed
+task6_reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-05-05"
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: 2026-05-05
@@ -46,15 +46,16 @@ last_task9_at: 2026-05-05T22:55:00+08:00
 last_task2b_at: "2026-04-28T11:54:37+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。"
+review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。"
+last_task6_at: "2026-05-05T23:26:00+08:00"
 ---
 
 # 2.16 Sync Fence 框架与帧同步机制
 
-当我们在 Perfetto 里看到 `latchBuffer`、`presentDisplay()` 或 `dequeueBuffer()` 旁边挂着一段 `fence wait` 时，真正的问题不是“这里又卡了多少毫秒”，而是“这个 buffer 现在到底归谁用，什么时候才能安全换手”。Fence 就是这条换手协议。
+当我们在 Perfetto 里看到 `latchBuffer`、`presentDisplay()` 或 `dequeueBuffer()` 旁边挂着一段 `fence wait` 时，重点在于追清楚这个 buffer 现在归谁用、什么时候才能安全换手，而不是只记录这里卡了多少毫秒。Fence 就是这条换手协议。
 
-App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App 调完 `queueBuffer()`，不等于 GPU 已经把像素写完；`presentDisplay()` 返回了，也不等于屏幕已经把这一帧真正扫上去。如果没有显式同步，系统只能靠猜时机来复用 buffer，不是撕裂，就是白等。Fence 把“还没完成但迟早会完成”的状态封装成一个可传递、可等待、可调试的 fd，于是我们才能既避免读半成品，又把等待精确归因到 producer、consumer 或 display 侧。
+App、GPU、SurfaceFlinger、HWC、Display Controller 都在异步工作。App 调完 `queueBuffer()`，不等于 GPU 已经把像素写完；`presentDisplay()` 返回了，也不等于屏幕已经完成这一帧扫描显示。如果没有显式同步，系统只能靠猜时机来复用 buffer，不是撕裂，就是白等。Fence 把“还没完成但迟早会完成”的状态封装成一个可传递、可等待、可调试的 fd，于是我们才能既避免读半成品，又把等待精确归因到 producer、consumer 或 display 侧。
 
 <!-- outline-start -->
 ## 本节要点大纲
@@ -180,11 +181,11 @@ release fence 的方向正好相反。官方文档对它的定义是：它表示
 
 如果把这两个方向说反，后面分析 `dequeueBuffer()` 阻塞和 `latchBuffer` 等待时就一定会乱。一个常见误判是把 App 侧等待旧 buffer 可重用的时间，写成“等待 acquire fence”；它等的是 consumer 返回来的 release fence，只是 producer 拿到的字段名未必总把这个语义写在脸上。
 
-### Present fence（旧资料里也常叫 retire fence）：本帧真正上屏的时刻
+### Present fence（旧资料里也常叫 retire fence）：本帧上屏的时刻
 
 present fence 是每帧一个，它在 `presentDisplay()` 之后返回。对物理屏来说，它表示当前帧出现在屏幕上的时间点；对虚拟显示来说，它表示什么时候可以安全读取输出 buffer。HWC1 文档里常见 retire fence 这个名字，HWC2/HWC3 语境下更常用 present fence；读旧资料时要把协议版本和术语放在一起看。
 
-这条 fence 很适合用来理解端到端显示延迟。`queueBuffer()` 只能说明 producer 把帧交出来了，present fence 才更接近“用户什么时候真的看到这一帧”。如果我们在 SurfaceFlinger / HWC 侧做帧耗时分析，不把 present fence 连起来看，很容易把“已经提交”和“已经显示”混为一谈。
+这条 fence 很适合用来理解端到端显示延迟。`queueBuffer()` 只能说明 producer 把帧交出来了，present fence 才更接近“用户什么时候实际看到这一帧”。如果我们在 SurfaceFlinger / HWC 侧做帧耗时分析，不把 present fence 连起来看，很容易把“已经提交”和“已经显示”混为一谈。
 
 [已验证: source.android.com/docs/core/graphics/sync]
 
@@ -194,25 +195,25 @@ Fence wait 本身不是 bug。正常渲染里本来就会有同步等待。要�
 
 ### 正常 trace：先把三段时间线连起来
 
-先从 App / RenderThread 侧找到 `queueBuffer()` 或 `eglSwapBuffers()`，再去 SurfaceFlinger 侧看 `latchBuffer`、composition、`presentDisplay()`，最后结合 GPU busy 片段和 BufferQueue 状态。只要这三段能对上，我们就能回答两个关键问题：第一，producer 是不是按时把新帧交出来了；第二，consumer 有没有在合理时间内把旧 buffer 释放回去。
+从 App / RenderThread 侧找到 `queueBuffer()` 或 `eglSwapBuffers()`，再去 SurfaceFlinger 侧看 `latchBuffer`、composition、`presentDisplay()`，并结合 GPU busy 片段和 BufferQueue 状态。只要这三段能对上，我们就能回答两个关键问题：第一，producer 是不是按时把新帧交出来了；第二，consumer 有没有在合理时间内把旧 buffer 释放回去。
 
 [图：正常帧里的 Fence 流转。上半部分是 App/RenderThread 的 `queueBuffer()`，中间是 SurfaceFlinger 的 `latchBuffer` 与 composition，下半部分是 HWC `presentDisplay()` / present fence。标出 producer 写完成 fence、consumer release fence、present fence 三段时间关系。]
 
 ### 异常一：SurfaceFlinger 长时间等 acquire fence，根因通常在 producer 侧
 
-如果 `latchBuffer` 或 client composition 前面有长时间 wait，而同一时段 GPU 也很忙，通常说明 producer 交出来的 buffer 还没真正写完。此时瓶颈更像是 RenderThread / GPU 渲染慢，而不是 SurfaceFlinger 自己慢。SurfaceFlinger 只是在等一条“读之前先等我写完”的 acquire fence。
+如果 `latchBuffer` 或 client composition 前面有长时间 wait，而同一时段 GPU 也很忙，通常说明 producer 交出来的 buffer 还没有完成写入。此时瓶颈更像是 RenderThread / GPU 渲染慢，而不是 SurfaceFlinger 自己慢。SurfaceFlinger 只是在等一条“读之前先等我写完”的 acquire fence。
 
 [图：异常案例一，SurfaceFlinger `latchBuffer` 长时间等待 acquire fence。标出等待区间、对应 GPU busy slice，以及同一窗口的 BufferQueue 状态。]
 
 ### 异常二：App 长时间等 release fence，根因通常在 consumer 侧占着旧 buffer 不放
 
-如果 App 侧 `dequeueBuffer()` 明显变长，同时同一窗口的旧 buffer 很久没有回收，问题更可能出在 consumer 侧。要么 SurfaceFlinger / HWC 合成慢，要么 display 侧迟迟没有把旧 buffer 替换掉。这里 producer 等的不是“我自己写完没有”，而是“对方到底什么时候读完”。
+如果 App 侧 `dequeueBuffer()` 明显变长，同时同一窗口的旧 buffer 很久没有回收，问题更可能出在 consumer 侧。要么 SurfaceFlinger / HWC 合成慢，要么 display 侧迟迟没有把旧 buffer 替换掉。这里 producer 等的是“对方到底什么时候读完”，不是“我自己写完没有”。
 
 [图：异常案例二，BufferQueue 长时间满载。标出 App 侧 `dequeueBuffer()` 阻塞、SurfaceFlinger 侧 release fence 延迟，以及同一窗口多帧 `queued/acquired` 累积。]
 
 ### 不要背死阈值，要在同一条 trace 里做关联
 
-“60fps 时 `queued` 在 0-1 之间正常，持续到 2 就异常”这种口诀太容易误导。不同刷新率、BLAST 与非 BLAST、SurfaceView 与 TextureView、可用 slot 数量和厂商实现都可能改变这个形态。只在同一条 trace、同一个窗口类型、同一台设备上做关联判断：如果某个窗口连续多帧处于高占用状态，同时 App 侧 `dequeueBuffer()` 变长，或者 SurfaceFlinger `latchBuffer` wait 与 GPU busy 对齐，我们再把它当成 congestion signal。否则，单看一个数字没有太大意义。
+“60fps 时 `queued` 在 0-1 之间正常，持续到 2 就异常”这种口诀太容易误导。不同刷新率、BLAST 与非 BLAST、SurfaceView 与 TextureView、可用 slot 数量和厂商实现都可能改变这个形态。只在同一条 trace、同一个窗口类型、同一台设备上做关联判断：如果某个窗口连续多帧处于高占用状态，同时 App 侧 `dequeueBuffer()` 变长，或者 SurfaceFlinger `latchBuffer` wait 和 GPU busy 时间重合，我们再把它当成 congestion signal。否则，单看一个数字没有太大意义。
 
 ## 版本演进：变化的是谁负责什么
 
@@ -313,7 +314,7 @@ Timeline Semaphore 优化的是 Vulkan 队列内部的多帧同步——用一�
 
 [待验证：以下为基于技术趋势的合理推测，当前未找到 Android 17 CDD、source.android.com 或 AOSP tag 中关于"强推 Timeline Semaphores"或"移除图形管线 fd 依赖"的公开依据。补到正式 API/CDD/AOSP 变更后再升级为确定内容。]
 
-fd 泄漏是 Android 图形栈长期存在的稳定性隐患——一个未关闭的 fence fd 会阻止对应 buffer 被 Gralloc 回收，累积后可能触发图形栈卡死。Timeline Semaphore 的计数器模型理论上可以缓解 fd 泄漏问题，因为同一个 semaphore 对象在生命周期内被复用。但 Android 图形管线从 fd 模型迁移到 Timeline Semaphore 需要内核驱动、Gralloc、BufferQueue、SurfaceFlinger、HWC 的端到端配合，不是单方面可以推动的。
+fd 泄漏是 Android 图形栈长期存在的稳定性隐患：一个未关闭的 fence fd 会阻止对应 buffer 被 Gralloc 回收，累积后可能触发图形栈卡死。Timeline Semaphore 的计数器模型理论上可以缓解 fd 泄漏问题，因为同一个 semaphore 对象在生命周期内被复用。但 Android 图形管线从 fd 模型迁移到 Timeline Semaphore 需要内核驱动、Gralloc、BufferQueue、SurfaceFlinger、HWC 的端到端配合，不是单方面可以推动的。
 
 Android 16 要求新设备支持 Timeline Semaphores，但传统 fd 路径仍然保留。后续版本是否会在更多图形组件中默认使用 Timeline 路径，需要以正式 CDD / AOSP 变更为准。对开发者来说，如果使用 Vulkan 直接渲染，现在就可以迁移到 Timeline Semaphores；如果通过 ANGLE 间接使用，迁移由系统层完成。
 
@@ -325,7 +326,7 @@ Android 16 要求新设备支持 Timeline Semaphores，但传统 fd 路径仍然
 
 ### fd 泄漏和 buffer 长时间回不来，不是一回事
 
-拿到 fence fd 后忘记 close，确实会让进程 fd 数量持续上涨，这类问题适合先看 `/proc/<pid>/fd`。但“buffer 很久回不到 free pool”往往是另一类问题，它可能是 release fence 长时间不 signal，也可能是 consumer 生命周期没有结束，或者 BufferQueue 本身还持有 slot。前者该从进程 fd 和 fence 引用查起，后者该看 `dumpsys SurfaceFlinger`、BufferQueue 状态和对应窗口的 trace。把两类问题混成一句“fd 没关导致 buffer 永远不 free”，会把排查带偏。
+拿到 fence fd 后忘记 close，会让进程 fd 数量持续上涨，这类问题适合先看 `/proc/<pid>/fd`。但“buffer 很久回不到 free pool”往往是另一类问题，它可能是 release fence 长时间不 signal，也可能是 consumer 生命周期没有结束，或者 BufferQueue 本身还持有 slot。前者该从进程 fd 和 fence 引用查起，后者该看 `dumpsys SurfaceFlinger`、BufferQueue 状态和对应窗口的 trace。把两类问题混成一句“fd 没关导致 buffer 永远不 free”，会把排查带偏。
 
 ### Fence wait 是症状，不一定是根因
 
@@ -335,16 +336,8 @@ Android 16 要求新设备支持 Timeline Semaphores，但传统 fd 路径仍然
 
 VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 producer 和 consumer 之间什么时候可以安全换手”。Choreographer 在 VSync-app 到来时组织 MainThread / RenderThread 启动一帧，RenderThread 在 `queueBuffer()` 时把“我可能还没写完”的 fence 一起交出去，这个 fd 到了 SurfaceFlinger / HWC 一侧就叫 acquire fence。反过来，SurfaceFlinger / HWC 释放旧 buffer 后返回的 fence，会在 producer 下一次 `dequeueBuffer()` 时表现为 release fence。BufferQueue 是这两条方向相反的 fence 的邮局，DMA-BUF / Gralloc 则负责让同一个 GraphicBuffer 能在不同进程和硬件单元之间被共享。
 
-如果把这几章连起来看，逻辑会非常顺：VSync 管启动时机，MainThread / RenderThread 负责生产，BufferQueue 负责交接，Fence 负责同步，SurfaceFlinger / HWC 负责消费，present fence 则告诉我们“这帧到底什么时候真的显示出来了”。
+如果把这几章连起来看，逻辑会非常顺：VSync 管启动时机，MainThread / RenderThread 负责生产，BufferQueue 负责交接，Fence 负责同步，SurfaceFlinger / HWC 负责消费，present fence 则告诉我们“这帧到底什么时候实际显示出来了”。
 
-
-
-### Android Sync Fence 机制深度剖析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md
-- 类型：DeepResearch 调研结果
-- 摘要：从 Linux 内核 dma_fence/sync_file 到 Android libsync/libui 的完整同步栅栏机制源码剖析。覆盖 dma_fence 核心数据结构、sync_file fd 生命周期、BufferQueue 中 acquire/release fence 流转、HWC3 AIDL fence 传递、以及 Android 16 Explicit Sync 迁移对图形管线的架构性影响。
-- 注入时间：2026-04-30
-- 价值：源码级贯通内核 dma_fence 到 Android 图形栈 fence 全流程，直接补充 ch02 Sync Fence 章节深度
 
 ## 参考资料
 
