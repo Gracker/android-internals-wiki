@@ -10,10 +10,23 @@ last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
-pipeline_stage: task6_pending
+sources:
+  - type: official
+    path: https://developer.android.com/topic/performance
+  - type: official
+    path: https://developer.android.com/jetpack/androidx/releases/metrics
+  - type: official
+    path: https://developer.android.com/topic/performance/tracing
+  - type: official
+    path: https://firebase.google.com/docs/perf-mon
+  - type: github
+    path: https://github.com/Tencent/matrix
+  - type: github
+    path: https://github.com/KwaiAppTeam/KOOM
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 last_task2b_at: "2026-05-06T05:49:37+08:00"
 repaired_date: "2026-04-25"
@@ -24,10 +37,11 @@ last_task9_at: "2026-05-05T14:20:00+08:00"
 task9_result: needs-rework
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T14:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-14-review.md"
-review_notes: "2026-05-06 Task2B 05:44：确认 P0 FrameMetrics 归属修正已在上一轮生效；P1 Tracing SDK 版本修正已生效。更新 pipeline_stage 推回 Task6 复审。 | 2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。 | 2026-05-05 Task2B 22:22：P0 FrameMetrics 归属修正（android.view.FrameMetrics API 24+）；P1 Tracing SDK 版本修正（1.3.0 稳定 / tracing-perfetto 2.0 alpha）。"
+reviewed_date: "2026-05-06"
+task6_reviewed_date: "2026-05-06"
+last_task6_at: "2026-05-06T06:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-06-review.md"
+review_notes: "2026-05-06 Task6 06:08：章节总纲写作复审；补齐 sources frontmatter，无正文大改。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 Task2B 05:44：确认 P0 FrameMetrics 归属修正已在上一轮生效；P1 Tracing SDK 版本修正已生效。更新 pipeline_stage 推回 Task6 复审。 | 2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。 | 2026-05-05 Task2B 22:22：P0 FrameMetrics 归属修正（android.view.FrameMetrics API 24+）；P1 Tracing SDK 版本修正（1.3.0 稳定 / tracing-perfetto 2.0 alpha）。"
 last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 ---
 

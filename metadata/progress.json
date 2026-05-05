@@ -9,13 +9,13 @@
       "unknown": 34,
       "ready-to-publish": 110,
       "task2b_pending": 85,
-      "task9_pending": 20,
-      "task6_pending": 3
+      "task9_pending": 22,
+      "task6_pending": 1
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 204,
-      "revisiting": 12,
+      "reviewed": 206,
+      "revisiting": 10,
       "revising": 1,
       "done": 2
     },
@@ -44,13 +44,13 @@
       "unknown": 34,
       "ready-to-publish": 110,
       "task2b_pending": 85,
-      "task9_pending": 20,
-      "task6_pending": 3
+      "task9_pending": 22,
+      "task6_pending": 1
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 204,
-      "revisiting": 12,
+      "reviewed": 206,
+      "revisiting": 10,
       "revising": 1,
       "done": 2
     },
@@ -1292,10 +1292,10 @@
       "last_verified": "2026-04-19",
       "last_verified_against": "AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline, developer.android.com/games/sdk/frame-pacing",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1306,11 +1306,12 @@
       "last_task9_at": "2026-05-06T05:30:00+08:00",
       "task6_reviewed_date": "2026-05-06",
       "last_task9_review_log": "logs/deep-review/2026-05-06-05-deep-review.md",
-      "last_task6_at": "2026-05-06T05:05:00+08:00",
-      "review_notes": "2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。",
+      "last_task6_at": "2026-05-06T06:08:00+08:00",
+      "review_notes": "2026-05-06 Task6 06:08：revisiting 写作复审；清理发布稿编辑痕迹、第一人称与结构性引导语 15 处。Task9 仍 pending，本轮不做技术裁决。",
       "p0": 1,
       "p1": 1,
-      "p2": 2
+      "p2": 2,
+      "last_task6_review_log": "logs/review/2026-05-06-06-review.md"
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
       "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
@@ -6365,19 +6366,25 @@
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "last_task2b_at": "2026-04-25T02:45:50+08:00",
+      "last_task2b_at": "2026-05-06T05:49:37+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b",
       "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-05-05",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T07:20:00+08:00",
-      "task6_result": "pass-light-edit"
+      "last_task9_at": "2026-05-05T14:20:00+08:00",
+      "task6_result": "pass-light-edit",
+      "reviewed_date": "2026-05-06",
+      "reviewed_by": "openclaw-task6",
+      "task6_reviewed_date": "2026-05-06",
+      "last_task6_at": "2026-05-06T06:08:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-06-review.md",
+      "review_notes": "2026-05-06 Task6 06:08：章节总纲写作复审；补齐 sources frontmatter，无正文大改。Task9 仍 pending，本轮不做技术裁决。"
     },
     "14-9-camera-perfetto": {
       "last_review": "2026-05-01",
@@ -7611,6 +7618,38 @@
           "auto_promoted": false
         }
       ]
+    },
+    {
+      "date": "2026-05-06",
+      "task": "task6-review",
+      "time": "06:08",
+      "mode": "revisiting",
+      "review_log": "logs/review/2026-05-06-06-review.md",
+      "sections_reviewed": [
+        {
+          "section": "2.17",
+          "title": "Frame Pacing Library 与帧节奏控制",
+          "result": "pass-light-edit",
+          "fixes": 15,
+          "issues": 0,
+          "auto_promoted": false
+        },
+        {
+          "section": "19.0",
+          "title": "第 19 章：APM 工具与性能监控生态",
+          "result": "pass-light-edit",
+          "fixes": 1,
+          "issues": 0,
+          "auto_promoted": false
+        }
+      ],
+      "skipped": [
+        {
+          "section": "19.27",
+          "title": "千万级 DAU 的 APM 端侧架构",
+          "reason": "内容不充分（outline 后正文 1 行 / 有效内容 0 行）"
+        }
+      ]
     }
   ],
   "progress": {
@@ -8743,7 +8782,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T05:30:00+08:00",
+  "last_updated": "2026-05-06T06:08:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11084,10 +11123,10 @@
     },
     "2.17": {
       "date": "2026-05-06",
-      "time": "05:05",
+      "time": "06:08",
       "result": "pass-light-edit",
       "mode": "revisiting",
-      "fixes": 2,
+      "fixes": 15,
       "issues": 0,
       "notes": "L1/L2 小修；无新增 Task2B 回炉项；Task9 仍 pending。"
     },
@@ -11099,6 +11138,15 @@
       "fixes": 3,
       "issues": 0,
       "notes": "L1/L2 小修；无新增 Task2B 回炉项；Task9 仍 pending。"
+    },
+    "19.0": {
+      "date": "2026-05-06",
+      "time": "06:08",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "fixes": 1,
+      "issues": 0,
+      "notes": "补齐 sources frontmatter；无新增 Task2B 回炉项；Task9 仍 pending。"
     }
   },
   "2026-05-04-20-task9": {
@@ -11240,5 +11288,35 @@
       ],
       "queue_status": "2 completed"
     }
-  ]
+  ],
+  "2026-05-06-06-task6": {
+    "task": "task6-review",
+    "time": "2026-05-06T06:08:00+08:00",
+    "review_log": "logs/review/2026-05-06-06-review.md",
+    "sections": [
+      {
+        "section": "2.17",
+        "title": "Frame Pacing Library 与帧节奏控制",
+        "result": "pass-light-edit",
+        "fixes": 15,
+        "issues": 0,
+        "auto_promoted": false
+      },
+      {
+        "section": "19.0",
+        "title": "第 19 章：APM 工具与性能监控生态",
+        "result": "pass-light-edit",
+        "fixes": 1,
+        "issues": 0,
+        "auto_promoted": false
+      }
+    ],
+    "skipped": [
+      {
+        "section": "19.27",
+        "title": "千万级 DAU 的 APM 端侧架构",
+        "reason": "内容不充分：outline 后正文 1 行，有效内容 0 行"
+      }
+    ]
+  }
 }
