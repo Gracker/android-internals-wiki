@@ -3,6 +3,10 @@ title: "Vulkan 原生渲染管线"
 chapter: "18.9"
 status: ready-for-review
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+section: "18.9"
+last_verified: "2026-05-04"
+last_verified_against: "Android Vulkan NDK docs, Game SDK Frame Pacing docs, Vulkan spec, AOSP frameworks/native/vulkan"
+confidence: medium
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: "openclaw-task9"
@@ -11,12 +15,6 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: reviewed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-27"
-task6_result: "pass-light-edit"
-task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 sources:
@@ -41,8 +39,18 @@ rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 P95 + 同章节链接修复）"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。"
+reviewed_date: "2026-05-05"
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+last_task6_at: "2026-05-05T15:17:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-15-review.md"
+review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。"
 ---
+
+# 18.9 Vulkan 原生渲染管线
 
 <!-- outline-start -->
 
@@ -62,7 +70,7 @@ review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名�
 
 <!-- outline-end -->
 
-Vulkan 是 Android 的主低层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只做传达，不再替你猜。换来的是更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
+Vulkan 是 Android 的主要底层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只执行提交的命令，不再替应用推断状态。换来的是更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
 
 关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。本节聚焦 Vulkan 渲染管线的实战视角：从 Acquire 到 Present 的完整流程、Presentation Mode 的选择，以及如何在 Trace 中识别 Vulkan 调用路径。
 
@@ -70,7 +78,7 @@ Vulkan 是 Android 的主低层图形 API，Android 15+ 进一步推进了 AVP�
 
 ### GLES 的隐式模型问题
 
-GLES 驱动替你做了很多"聪明的猜测"——什么时候切换 Render Target、什么时候等待 GPU 完成、什么时候同步、内存什么时候释放。这些"猜测"让写代码变简单了，但代价是**CPU 端的 driver 开销巨大**——每次 GL 调用都可能触发驱动内部的同步逻辑。移动设备 GPU 驱动尤其如此，因为移动 GPU 的驱动通常比桌面端更激进地做隐式优化。
+GLES 驱动会做很多"聪明的猜测"——什么时候切换 Render Target、什么时候等待 GPU 完成、什么时候同步、内存什么时候释放。这些"猜测"让开发门槛降低，但代价是**CPU 端的 driver 开销巨大**——每次 GL 调用都可能触发驱动内部的同步逻辑。移动设备 GPU 驱动尤其如此，因为移动 GPU 的驱动通常比桌面端更激进地做隐式优化。
 
 ### Vulkan 的显式控制
 
@@ -89,7 +97,7 @@ Vulkan 要求 App 对一切负责：
 
 ### 代价
 
-Vulkan 的代价是**开发复杂度**。你需要自己管理：
+Vulkan 的代价是**开发复杂度**。应用需要自行管理：
 - 内存分配和绑定（VkDeviceMemory）
 - 同步原语（Fence、Semaphore、Barrier）
 - 命令缓冲区的生命周期
@@ -130,7 +138,7 @@ Android Vulkan Profile 的演进分成两类口径：
 
 工程上更稳的做法是分两步：
 
-1. 先用 baseline profile 检查目标设备是否满足你的兼容性下限
+1. 先用 baseline profile 检查目标设备是否满足应用的兼容性下限
 2. 如果产品明确瞄准 Android 15+ 新机，再额外检查对应的 `minimums` profile，确认能否依赖该代际要求的特性集合
 
 这样可以把“广覆盖兼容基线”和“新设备强制要求”分开处理，不会把 `VP_ANDROID_baseline_2022` 与 Android 15/16 的 `minimums` profile 混成一个名字。
@@ -155,7 +163,7 @@ VkResult result = vkAcquireNextImageKHR(
 ```
 
 - App 向 Swapchain 请求一个可写的 Image Index
-- 需要提供一个 `VkSemaphore`（ImageAvailable），当 Image 真正可用时 Signal
+- 需要提供一个 `VkSemaphore`（ImageAvailable），当 Image 可用时 Signal
 - **通常非阻塞**：在 Swapchain 未满时立即返回；满了才会等
 - 在 Trace 中，`vkAcquireNextImageKHR` 耗时短说明 Buffer 充足，耗时长说明 Buffer 压力大
 
@@ -206,7 +214,7 @@ vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
 - 同一个 `VkCommandBuffer` 在 begin / record / end / reset 过程中不能被多个线程同时修改
 - secondary command buffer 适合把 draw call 生成拆到 worker 线程；primary command buffer 负责执行它们并进入提交阶段
 - `vkQueueSubmit` 针对同一 `VkQueue` 也需要外部同步；多个线程提交同一 queue 时要加锁或集中到提交线程
-- `waitSemaphore` 确保 Image 真正可写后才开始绘制（GPU 端等待）
+- `waitSemaphore` 确保 Image 可写后才开始绘制（GPU 端等待）
 - `pWaitDstStageMask` 指定等待发生在哪个 pipeline stage。`waitSemaphoreCount > 0` 时必须提供同长度数组，否则会触发 Vulkan validation error
 - `signalSemaphore` 确保渲染完成后才允许 Present
 
@@ -256,7 +264,7 @@ sequenceDiagram
     SC->>SF: Transaction(Buffer)
 ```
 
-注意信号量（Semaphore）的流转：`S_ImgAvail` 在 Swapchain 端 Signal、在 GPU 端 Wait；`S_RenderDone` 在 GPU 端 Signal、在 Present 端 Wait。CPU 只负责提交指令和配置依赖关系，真正的同步由 GPU 硬件执行。
+注意信号量（Semaphore）的流转：`S_ImgAvail` 在 Swapchain 端 Signal、在 GPU 端 Wait；`S_RenderDone` 在 GPU 端 Signal、在 Present 端 Wait。CPU 只负责提交指令和配置依赖关系，同步由 GPU 硬件执行。
 
 ## Pipeline Barrier 与 Image Layout
 
@@ -395,7 +403,7 @@ SwappyVk_setAutoSwapInterval(true);
 
 Perfetto 里的默认诊断入口应先看三类证据：
 
-- **`vkQueuePresentKHR` / `vkAcquireNextImageKHR`**：确认应用确实走的是 Vulkan swapchain 路径，并观察 acquire/present 是否被 buffer 压力拉长
+- **`vkQueuePresentKHR` / `vkAcquireNextImageKHR`**：确认应用走的是 Vulkan swapchain 路径，并观察 acquire/present 是否被 buffer 压力拉长
 - **FrameTimeline**：Android 12+ 的 Expected / Actual Timeline 用来判断帧是否按目标节奏落屏
 - **graphics tracing / AGI / app-side ATrace**：当默认系统轨道不够细时，再补图形 tracing，或在 Swappy 调用附近写 trace marker
 
@@ -435,7 +443,7 @@ Perfetto 里的默认诊断入口应先看三类证据：
 
 - **RenderDoc**：抓帧神器，查看具体 DrawCall 和资源。支持 Vulkan 的完整抓帧分析
 - **AGI（Android GPU Inspector）**：Google 官方图形调试工具（GAPID 的继承者），对 Vulkan 支持最好
-- **Validation Layers**：开发阶段必须开启。Vulkan 出错通常直接 Crash 或黑屏，Validation Layer 是唯一的报错来源
+- **Validation Layers**：开发阶段必须开启。Vulkan 出错通常表现为崩溃、黑屏或 validation message，Validation Layer 是开发阶段最重要的诊断来源之一
 
 ```bash
 # 启用 Vulkan Validation Layer（debug 构建）

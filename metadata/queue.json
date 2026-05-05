@@ -11916,6 +11916,27 @@
       "status": "pending",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-05T14:20:00+08:00"
+    },
+    {
+      "section": "7.11",
+      "section_title": "WebView 渲染性能与优化",
+      "priority": 90,
+      "reason": "[review回炉] WebView 章节后半部存在 AIW 源码调研素材堆叠和参考资料后追加正文，需整合为发布稿结构",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "“AIW-源码调研-2026-04-25/04-27/05-02/05-04”及其后续参考资料区域",
+          "detail": "章节后半部仍保留 AIW 源码调研标题、HTML 注释和多段重复的 WebView Renderer 崩溃恢复材料，且部分正文出现在“参考资料”之后，属于编辑过程痕迹和素材堆叠。",
+          "suggestion": "Task2B 将可复用内容整合回“WebView 在 Perfetto 中的分析”“常见问题与误区”或参考资料；删除 AIW 日期标题、HTML 注释和重复段落，保留一个读者可直接发布的结构。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-05T15:17:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-05-15-review.md"
     }
   ],
   "completed": [
