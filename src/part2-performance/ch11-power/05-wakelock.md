@@ -40,10 +40,10 @@ sources:
 reviewed_date: 2026-05-01
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
@@ -52,7 +52,7 @@ last_task9_at: "2026-05-01T06:20:00+08:00"
 last_task2b_at: "2026-04-27T19:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-review_round: 2
+review_round: 3
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。"
 ---
 
@@ -723,7 +723,7 @@ Wakelock 不是一个孤立的话题，它与全书多个章节紧密关联：
 | Android 12 (API 31) | Foreground Service 限制 | FGS 启动受限，通知强制 |
 | Android 12 (API 31) | `SCHEDULE_EXACT_ALARM` 权限 | 精确闹钟需要声明权限 |
 | Android 14 (API 34) | 前台服务类型 | 必须声明服务类型 |
-| Android 14 (API 34) | `OnAlarmListener` 公开 SDK 化 | 进程内精确回调可免 `SCHEDULE_EXACT_ALARM`，但不持久化 |
+| Android 14 (API 34) | `OnAlarmListener` 精确闹钟权限例外明确写入文档 | `OnAlarmListener` 路径不需要 `SCHEDULE_EXACT_ALARM` 权限（API 24 即已存在），Android 14 在文档中正式明确了此例外；`setExactAndAllowWhileIdle` + `OnAlarmListener` 重载仍为 `@SystemApi` |
 | Android 16 (API 36) | 后台执行限制继续细化 | Alarm / Job / 网络等后台入口约束更细 |
 | 2026-03 | Play Store Wakelock 惩罚政策 | 2h/24h 阈值，搜索降权 |
 
@@ -757,9 +757,9 @@ Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应�
 `PerformanceHintManager`（Android 12 引入）允许应用向系统发送性能提示，影响 CPU 频率和核心类型决策。Android 15 新增 Power Efficiency Mode，通过 hint session 声明关联线程应优先节能，适用于长时后台工作负载。
 
 核心 API：
-- `createHintSession(long[] tids, long initialTargetUs)` — 创建 hint session
-- `reportActualWorkDuration(long durationUs)` — 报告实际工作时长（Android 15 DP1 引入）
-- `updateTargetWorkDuration(long targetDurationUs)` — 更新目标工作时长
+- `createHintSession(int[] tids, long initialTargetNanos)` — 创建 hint session，`tids` 为关联线程 ID 数组（`int[]`，非 `long[]`），目标时长单位为纳秒
+- `reportActualWorkDuration(long actualDurationNanos)` — 报告单次实际工作耗时（纳秒）
+- `updateTargetWorkDuration(long targetDurationNanos)` — 更新目标工作时长（纳秒）
 
 Power Efficiency Mode 的语义：系统可更积极地将线程调度到节能核心、降低 CPU/GPU 频率，而非追求最低延迟。这解决了"busy loop"场景下 CPU 空转的高功耗问题——传统方式是应用自行 Sleep，但会引入调度延迟；Power Efficiency Mode 让系统理解工作负载特征，在保证性能需求的前提下主动降频。
 
@@ -768,8 +768,8 @@ Power Efficiency Mode 的语义：系统可更积极地将线程调度到节能�
 **源码位置**：`frameworks/base/core/java/android/os/PowerMonitor.java`
 
 `PowerMonitor`（API 35）代表两类功耗监控实体：
-- `POWER_MONITOR_TYPE_MEASUREMENT`（0x1）— 直接测量电源轨，设备特有，如 "S2S_VDD_G3D"
-- `POWER_MONITOR_TYPE_CONSUMER`（0x2）— 建模范畴，名称通用如 "GPU" / "MODEM"
+- `POWER_MONITOR_TYPE_MEASUREMENT`（0）— 直接测量电源轨，设备特有，如 "S2S_VDD_G3D"
+- `POWER_MONITOR_TYPE_CONSUMER`（1）— 建模范畴，名称通用如 "GPU" / "MODEM"
 
 数据获取路径：
 ```
