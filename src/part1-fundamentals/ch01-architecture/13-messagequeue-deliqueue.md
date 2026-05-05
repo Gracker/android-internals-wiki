@@ -5,7 +5,7 @@ section: "1.13"
 status: finalized
 applicable_versions: "传统 MessageQueue:Android 1.0 (API 1)+;并发实现公开源码:Android 16;面向应用默认启用:Android 17 (API 37)"
 drafted_date: "2026-04-04"
-reviewed_date: "2026-04-30"
+reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 last_verified: "2026-04-24"
 last_verified_against: "AOSP android-15.0.0_r1 + android-16.0.0_r1 + Android Developers MessageQueue 行为变更页 + Android Developers Blog 2026-02-17"
@@ -35,8 +35,7 @@ tags:
   - messagequeue
   - deliqueue
 related_chapters: ["1.5", "1.14", "2.4", "2.5", "7.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -48,6 +47,9 @@ task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-30T07:43:21.194303"
 task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P2 1。SemiConcurrentMessageQueue 路径不存在;16KB Page Size 附录与本节主题交叉引用不一致。"
+task6_reviewed_date: "2026-05-05"
+last_task6_at: "2026-05-05T12:26:00+08:00"
+task6_review_notes: "2026-05-05 Task6 re-review: pass-light-edit。修复 frontmatter 重复状态、代码省略标注、源码调研段落编辑痕迹与 Treiber 拼写；Task9 已通过且 queue 无 pending，确认 ready-to-publish。"
 ---
 
 # 1.13 MessageQueue 机制与 DeliQueue 无锁优化
@@ -61,7 +63,7 @@ task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1 / P2 1。
 - 🔹 传统 `synchronized` 链表为什么会带来锁竞争
 - 🔹 `Looper.next()` 的工作机制,包括 epoll、同步屏障与 IdleHandler
 - 🔹 Android 16 公开源码里的 Combined/ConcurrentMessageQueue 与 Android 17 默认启用边界
-- 🔹 新实现里 barrier、async queue、取消路径如何配合,以及我们在 Perfetto 里该怎么看
+- 🔹 新实现里 barrier、async queue、取消路径如何配合，以及 Perfetto 中的观察方法
 
 ### 扩展(可选深入)
 
@@ -91,14 +93,14 @@ MessageQueue 就在这个位置上。Input 事件、`Handler.post()`、`Choreogr
 ```java
 // frameworks/base/core/java/android/os/Looper.java
 // @ AOSP android-16.0.0_r1
-private static boolean loopOnce(final Looper me, ...) {
-    Message msg = me.mQueue.next(); // 取消息,可能阻塞
+private static boolean loopOnce(final Looper me, /* 省略其他参数 */) {
+    Message msg = me.mQueue.next(); // 取消息，可能阻塞
     if (msg == null) {
         return false;
     }
-    ...
-    msg.target.dispatchMessage(msg); // 真正执行 Handler / Runnable
-    ...
+    // 省略日志、观察者回调等无关代码
+    msg.target.dispatchMessage(msg); // 分发 Handler / Runnable
+    // 省略消息回收等无关代码
 }
 ```
 
@@ -112,15 +114,15 @@ private static boolean loopOnce(final Looper me, ...) {
 // frameworks/base/core/java/android/os/MessageQueue.java
 // @ AOSP android-15.0.0_r1
 boolean enqueueMessage(Message msg, long when) {
-    ...
+    // 省略参数校验、消息标记等无关代码
     synchronized (this) {
-        ...
+        // 省略退出状态检查等无关代码
         Message p = mMessages;
         if (p == null || when == 0 || when < p.when) {
             msg.next = p;
             mMessages = msg;
         } else {
-            ... // 在链表中间按时间插入
+            // 省略在链表中间按时间插入的遍历代码
         }
         if (needWake) nativeWake(mPtr);
     }
@@ -155,7 +157,7 @@ boolean enqueueMessage(Message msg, long when) {
 // frameworks/base/core/java/android/os/MessageQueue.java
 // @ AOSP android-15.0.0_r1(节选)
 Message next() {
-    ...
+    // 省略空闲处理和超时计算等无关代码
     nativePollOnce(mPtr, nextPollTimeoutMillis);
     synchronized (this) {
         Message msg = mMessages;
@@ -165,7 +167,7 @@ Message next() {
                 msg = msg.next;
             } while (msg != null && !msg.isAsynchronous());
         }
-        ...
+        // 省略消息返回和 IdleHandler 调度等无关代码
     }
 }
 ```
@@ -223,7 +225,7 @@ Android 17 的行为变更页面把面向应用的边界写清楚了:
 
 这个结论能说明两件事:
 
-- 它确实不是 CLH 队列。
+- 它不是 CLH 队列。
 - "单指针 CAS 完全避免 ABA"这种表述不成立。Treiber stack 本来就是 ABA 讨论最常出现的对象。单指针让实现更直,生命周期、可见性和删除竞争仍然要靠额外设计处理。
 
 Android 的公开实现里,相关处理分散在 state node、取消路径、`nextMessage()` 的重试逻辑和消息生命周期管理里。源码没有支持"天然完全避免 ABA"这个结论。
@@ -330,7 +332,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 
 ### 2. 升到 Android 17 后,如果 contention 消失但帧还是慢,别再盯着 MessageQueue
 
-这时该回头看真正的慢路径:layout、draw、Binder、数据库、I/O、锁竞争、GPU backpressure。
+这时该回头看后续慢路径：layout、draw、Binder、数据库、I/O、锁竞争、GPU backpressure。
 
 ### 3. 迁移问题和性能问题要分开
 
@@ -380,7 +382,7 @@ adb am compat disable USE_NEW_MESSAGEQUEUE <your-package-name>
 <!-- AIW-源码调研-2026-04-26 -->
 ## 补充:16KB Page Size 对线程栈内存的影响
 
-本节于 2026-04-26 通过源码调研补充以下发现:
+这组补充核对线程栈、测试框架和 DeliQueue 性能三组边界：
 
 ### PTHREAD_STACK_MIN 与 FixStackSize(16KB Page Size 场景)
 
@@ -431,7 +433,7 @@ Android 17 DeliQueue 对工具链的具体影响:
 <!-- AIW-源码调研-2026-05-01 -->
 ## 补充:DeliQueue 反射失效后的 Idle 判断替代方案
 
-本节于 2026-05-01 通过源码调研补充以下发现,针对 §1.13 / §1.5 / §1.14 的盲区:
+这组源码核对补上 §1.13 / §1.5 / §1.14 的 Idle 判断边界：
 
 ### mMessages 反射失效的根因
 
@@ -503,7 +505,7 @@ AOSP `android-16.0.0_r1` 中确认存在 `CombinedMessageQueue` 和 `ConcurrentM
 <!-- AIW-源码调研-2026-05-04 -->
 ## 补充:CombinedDeliMessageQueue 三路合并实现细节
 
-本节于 2026-05-04 通过 AOSP mainline 源码补充以下发现，来源为 LineageOS 镜像（AOSP 同步分支 commit 536c021），对应 AOSP mainline Android 17 API 37 阶段：
+AOSP mainline 的 CombinedDeliMessageQueue 细节可以按下面几层看。来源为 LineageOS 镜像（AOSP 同步分支 commit 536c021），对应 AOSP mainline Android 17 API 37 阶段：
 
 ### CombinedDeliMessageQueue 是统一入口文件
 
@@ -555,7 +557,7 @@ private static boolean computeUseDeliQueue() {
 
 关键细节：**普通应用进程在 API 37 仍默认走 Legacy**，只有 `targetSdk 37` 才默认启用。`Flags.useConcurrentMessageQueueInApps()` 是 feature flag，不是所有应用自动开启。
 
-### MessageStack：Treibier Stack + RCU 风格 Freelist
+### MessageStack：Treiber Stack + RCU 风格 Freelist
 
 ```java
 // core/java/android/os/MessageStack.java
@@ -590,7 +592,7 @@ public final class MessageStack {
 }
 ```
 
-设计意图：freelist 的 `nextFree` 指针在入栈时被复用到 `Message.next`，避免了单独分配回收节点的开销。批量 `drainFreelist()` 在 `nextMessage()` 开头调用，不在 critical path 做逐个分配。
+设计意图：freelist 的 `nextFree` 指针在入栈时被复用到 `Message.next`，避免了单独分配回收节点的开销。批量 `drainFreelist()` 在 `nextMessage()` 开头调用，不在关键路径逐个分配。
 
 ### VarHandle 而非 Atomic*：性能关键
 

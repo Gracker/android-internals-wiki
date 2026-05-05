@@ -22,7 +22,7 @@ sources:
     path: "source.android.com - mm_events, PSI, lmkd"
 tags: ['low-memory', 'kswapd', 'direct-reclaim', 'lmkd', 'GC', 'memory-pressure', 'PSI', 'ZRAM', 'Perfetto', 'MGLRU', 'cgroup', 'mm-events', 'vmscan', 'oom-score-adj']
 related_chapters: ["4.1", "4.2", "4.4", "4.5", "4.8", "10.1", "10.6"]
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 polish_count: 5
 polish_date: "2026-04-22"
@@ -34,15 +34,17 @@ rework_by: openclaw-task2b
 rework_type: "review回炉修复（External Review 问题单）"
 repaired_date: "2026-05-05"
 repaired_by: "openclaw-task2b"
-review_round: 5
+review_round: 6
 task9_result: pending
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_reviewed_date: "2026-05-04"
-task9_reviewed_by: openclaw-task6
+task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-04T02:20:00+08:00"
-review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。 | 2026-05-05 Task2B 09:56：P0 mm_events源码锚点已修正为system/memory/lmkd/mm_events.c+libmemevents/；官方链接改为AOSP仓库直链；mem.mm_events SQL视图标注待验证。P1 Generational CMC全面默认已收窄为AOSP main可见+runtime flag条件化。"
+review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。 | 2026-05-05 Task2B 09:56：P0 mm_events源码锚点已修正为system/memory/lmkd/mm_events.c+libmemevents/；官方链接改为AOSP仓库直链；mem.mm_events SQL视图标注待验证。P1 Generational CMC全面默认已收窄为AOSP main可见+runtime flag条件化。 | 2026-05-05 Task6 12:26：revisiting 写作复审，清理第一人称、拟人化标题和少量填充词；L1/L2 通过，queue 无 pending，等待 Task9 复审。"
+task6_reviewed_date: "2026-05-05"
+last_task6_at: "2026-05-05T12:26:00+08:00"
 ---
 
 # 低内存对系统性能的影响
@@ -74,9 +76,9 @@ review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1�
 
 ## 为什么要了解低内存对性能的影响
 
-当我们在 Perfetto 里看到主线程长时间处于 D 状态（Uninterruptible Sleep），或者一个前台 App 突然被杀掉、用户重新打开后走了完整的冷启动流程，根因往往是系统整体进入了低内存状态。低内存的影响像一场连锁反应——从内核的内存回收机制被激活开始，到 I/O 被打满、GC 频繁触发、进程被杀、用户感知到系统卡顿——整个过程环环相扣。
+Perfetto 里如果看到主线程长时间处于 D 状态（Uninterruptible Sleep），或者前台 App 突然被杀掉、用户重新打开后走了完整冷启动流程，根因往往是系统整体进入了低内存状态。低内存的影响像一场连锁反应——从内核的内存回收机制被激活开始，到 I/O 被打满、GC 频繁触发、进程被杀、用户感知到系统卡顿——整个过程环环相扣。
 
-理解这条因果链，是我们在 Perfetto 中准确判断"这个卡顿到底是 App 问题还是系统问题"的关键。本节会从内核的内存回收机制出发，逐步展开低内存是如何一步步拖慢整个系统的，以及我们如何通过工具识别和定位这些问题。
+理解这条因果链，才能在 Perfetto 中准确判断“这个卡顿到底是 App 问题还是系统问题”。后面的内容从内核内存回收机制出发，展开低内存如何拖慢整个系统，以及如何通过工具识别和定位这些问题。
 
 ## 低内存的连锁反应：从 kswapd 到全局卡顿
 
@@ -90,9 +92,9 @@ kswapd 的核心工作函数是 `balance_pgdat()`。它会根据 `scan_control` 
 
 在 Perfetto 中，kswapd 作为一个内核线程会出现在进程列表中。正常情况下它是 sleeping 状态，只有在内存压力下才会活跃。在 Trace 中如果发现 `kswapd0` 长时间处于 Running 状态，说明系统在持续回收内存，这是内存紧张的早期信号。
 
-### Direct Reclaim：进程亲自下场回收
+### Direct Reclaim：分配线程同步回收
 
-当内存进一步紧张，空闲页面降到 MIN 水位线以下时，异步的 kswapd 已经来不及了。此时，发起内存分配的那个进程会被迫亲自执行内存回收——这就是 Direct Reclaim。
+当内存进一步紧张，空闲页面降到 MIN 水位线以下时，异步的 kswapd 已经来不及了。此时，发起内存分配的进程会同步执行内存回收——这就是 Direct Reclaim。
 
 Direct Reclaim 和 kswapd 走的是同一条回收路径（最终都调用 `shrink_node()`），但有一个关键区别：Direct Reclaim 是同步的。发起分配的进程会被阻塞，直到回收完成。因此，当 App 在主线程分配内存并触发 Direct Reclaim，主线程就被阻塞了——在 Perfetto 中表现为进入 D 状态（Uninterruptible Sleep），调用栈中可见 `__alloc_pages_slowpath` → `__perform_reclaim` 路径。
 
@@ -130,7 +132,7 @@ lmkd 收到内存压力信号后，会根据进程的 `oom_score_adj` 和当前�
 
 被杀进程通常从分数更高的一侧开始筛选：cached 进程（900+）优先，之后才可能进入 previous app（700）、服务进程（500）、perceptible 进程（200）、可见进程（100）和前台进程（0）。常见设备会把 `lowmem_min_oom_score` 放在 701 附近，用来避开 previous app；在压力继续升级或厂商策略更激进时，阈值才会继续下探。分析 lmkd 日志时要直接读事件里的 `oom_score_adj`、`min_score_adj`、kill reason 和释放内存，不能把 201 写成 `PREVIOUS_APP_ADJ`。
 
-在 Perfetto 中，lmkd 的杀进程事件会以 `ProcessKilled` 或 `lmk` 相关的 trace event 出现。我们可以在 Trace 中搜索 `lmk` 关键字，或者查看 `lowmemorykiller` 的日志来定位杀进程的时间点。
+在 Perfetto 中，lmkd 的杀进程事件会以 `ProcessKilled` 或 `lmk` 相关的 trace event 出现。排查时可以在 Trace 中搜索 `lmk` 关键字，或者查看 `lowmemorykiller` 日志定位杀进程时间点。
 
 ### 被杀后的冷启动代价
 
@@ -198,11 +200,11 @@ vmscan 是内核虚拟内存扫描子系统的 ftrace 事件。关键的 vmscan 
 - `mm_vmscan_direct_reclaim_begin` / `mm_vmscan_direct_reclaim_end`：Direct Reclaim 的开始和结束
 - `mm_vmscan_lru_shrink_inactive`：正在扫描 Inactive LRU 回收页面
 
-在 Perfetto 中，这些事件可以帮助我们精确判断内存压力开始的时间点、持续多久、触发了哪种级别的回收。[已验证: 官方文档, source.android.com]
+在 Perfetto 中，这些事件可以用来判断内存压力开始的时间点、持续多久、触发了哪种级别的回收。[已验证: 官方文档, source.android.com]
 
 ### lmk 事件
 
-lmkd 的杀进程事件在 Perfetto 中通常以 `lowmemorykiller` 标签出现。我们可以在 logcat 中搜索 `lowmemorykiller` 或 `lmk` 关键字，在 Perfetto 中搜索 `ProcessKilled` slice。每条 lmk 事件包含了被杀进程的 PID、UID、`oom_score_adj`、释放的内存大小以及触发原因（如 `device is low on swap`、`thrashing`）。
+lmkd 的杀进程事件在 Perfetto 中通常以 `lowmemorykiller` 标签出现。排查时可以在 logcat 中搜索 `lowmemorykiller` 或 `lmk` 关键字，在 Perfetto 中搜索 `ProcessKilled` slice。每条 lmk 事件包含了被杀进程的 PID、UID、`oom_score_adj`、释放的内存大小以及触发原因（如 `device is low on swap`、`thrashing`）。
 
 ### PSI 数据
 
@@ -357,7 +359,7 @@ Android Go Edition 是面向低 RAM 设备的一组系统配置和产品策略�
 
 **"低内存只是低端机的问题"** — 不对。即使是 8GB 或 12GB 的设备，如果用户打开了大量 App（尤其是 Chrome 这种吃内存的应用），或者某个 App 存在内存泄漏，系统同样会进入低内存状态。无论设备 RAM 多大，在 Perfetto 中分析性能问题时都应检查是否存在内存压力信号。
 
-**"kswapd 活跃就说明有问题"** — 不准确。kswapd 周期性地被唤醒和休眠是正常的内存管理行为。只有当 kswapd 持续活跃（长时间 Running 状态无法进入 Sleep），或者伴随大量 Direct Reclaim 事件时，才说明内存压力真正严重。
+**"kswapd 活跃就说明有问题"** — 不准确。kswapd 周期性地被唤醒和休眠是正常的内存管理行为。只有当 kswapd 持续活跃（长时间 Running 状态无法进入 Sleep），或者伴随大量 Direct Reclaim 事件时，才说明内存压力已经严重。
 
 **"手动调用 System.gc() 可以帮助缓解低内存"** — 恰恰相反。手动触发 GC 会干扰 ART 的自动回收策略，增加 GC 暂停次数。正确的做法是响应 `onTrimMemory()` 回调释放不必要的资源。
 
