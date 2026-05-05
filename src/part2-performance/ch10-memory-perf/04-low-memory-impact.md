@@ -2,7 +2,7 @@
 title: "低内存对系统性能的影响"
 chapter: "10.4"
 section: "10.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
@@ -35,16 +35,18 @@ rework_type: "review回炉修复（External Review 问题单）"
 repaired_date: "2026-05-05"
 repaired_by: "openclaw-task2b"
 review_round: 7
-task9_result: needs-rework
-task9_state: pending
+task9_result: pass-tech-review
+task9_state: reviewed
 task2b_state: fixed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T12:52:08+08:00"
+last_task9_at: "2026-05-05T16:24:00+08:00"
 review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。 | 2026-05-05 Task2B 09:56：P0 mm_events源码锚点已修正为system/memory/lmkd/mm_events.c+libmemevents/；官方链接改为AOSP仓库直链；mem.mm_events SQL视图标注待验证。P1 Generational CMC全面默认已收窄为AOSP main可见+runtime flag条件化。 | 2026-05-05 Task6 12:26：revisiting 写作复审，清理第一人称、拟人化标题和少量填充词；L1/L2 通过，queue 无 pending，等待 Task9 复审。 | 2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 1；mm_events 源码路径与 Android 12+ 版本线仍错误，lmkd PSI some/full 触发语义需修正，Trace 配置中的 lmkd atrace category 需校正。"
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T12:26:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-05-16-deep-review.md"
+task9_review_notes: "2026-05-05 16:24 Task9 deep-review: 无 P0/P1，task6 已通过且 queue 无 pending，自动晋升 finalized；P2 已写入/保留 suggestions。"
 ---
 
 # 低内存对系统性能的影响

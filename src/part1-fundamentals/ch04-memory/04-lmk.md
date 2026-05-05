@@ -38,7 +38,7 @@ pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: "pass-light-edit"
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task2b_state: pending
 task2b_result: fixed
 task9_reviewed_date: "2026-04-28"
@@ -226,12 +226,12 @@ PSI 是 Linux 内核在 4.20（主线合入）中引入的一个机制，Android
 - **`memory.some`**：部分进程因内存分配而等待（Page Fault 需要换入、需要回收内存页等）。这表示系统开始感到内存压力。
 - **`memory.full`**：所有进程都在等待内存。系统已经严重缺乏可用内存，前台 App 的响应也会受到影响。
 
-`lmkd` 通过两个属性来配置 PSI 阈值：
+`lmkd` 的 PSI 阈值配置存在版本差异：
 
-- **`ro.lmk.psi_partial_stall_ms`**（默认 70ms）：在时间窗口内，如果 `memory.some` 的 stall 时间累计超过这个值，触发"中等"内存压力
-- **`ro.lmk.psi_complete_stall_ms`**（默认 700ms）：`memory.full` 的 stall 时间累计超过这个值，触发"严重"内存压力
+- **Android 10**：PSI 阈值硬编码在 `lmkd.c` 中，`psi_thresholds` 数组为 some=70ms / some=100ms / full=70ms，不支持通过系统属性调整
+- **Android 11+**：引入 `ro.lmk.psi_partial_stall_ms`（默认 70ms）和 `ro.lmk.psi_complete_stall_ms`（默认 700ms）属性。低内存设备（`ro.config.low_ram=true`）的 partial stall 默认值为 200ms。AOSP `lmkd.cpp` 中定义为 `DEF_PARTIAL_STALL=70`、`DEF_COMPLETE_STALL=700`
 
-[已验证: AOSP system/memory/lmkd/lmkd.cpp]
+[已验证: AOSP android-10.0.0_r1 system/memory/lmkd/lmkd.c 硬编码阈值; android-11.0.0_r1 system/memory/lmkd/lmkd.cpp DEF_PARTIAL_STALL/DEF_COMPLETE_STALL]
 
 PSI 相比旧版 `vmpressure` 信号有本质区别。`vmpressure` 基于内存回收事件的数量来判断压力，但它经常产生误报——内核正常的后台内存回收也会触发信号，导致 `lmkd` 在没有真正压力时就启动杀进程。PSI 则直接度量了"任务被阻塞了多久"，这是一个更直接、更准确的压力指标。
 

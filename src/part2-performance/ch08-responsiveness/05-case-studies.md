@@ -4,7 +4,7 @@ chapter: "8.5"
 section: "8.5"
 status: "finalized"
 drafted_date: "2026-04-02"
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-04-27"
 rework_date: "2026-05-03"
 rework_by: "task2b-rework"
 reviewed_by: "openclaw-task6"
@@ -35,7 +35,7 @@ sources:
 tags: ['case-study', 'cold-start', 'response-optimization', 'baseline-profile', 'r8-full-mode', 'page-switch', 'macrobenchmark', 'auto-fdo', '16kb-page', 'dag-scheduler', 'aot-compilation']
 related_chapters: ["8.1", "8.2", "8.3", "8.4", "3.2"]
 pipeline_stage: "ready-to-publish"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
 task2b_state: fixed
@@ -77,7 +77,7 @@ review_notes: "2026-04-28 task9 deep-review: pass-tech-review。无 P0/P1；Task
 > 锚点内容需 L1/L2 验证，扩展内容至少 L2 验证，自动发现内容至少标注来源。
 <!-- outline-end -->
 
-前面的章节我们讨论了响应速度的原理、启动流程和优化策略。但原理归原理，实际做优化的时候，每个 App 面临的约束千差万别——有的受限于包体积，有的卡在第三方 SDK 初始化，有的则是历史代码的技术债。这一节我们来看几个真实的优化案例，看看不同团队在不同的约束下是怎么做的，以及最终取得了什么效果。
+前面的章节我们讨论了响应速度的原理、启动流程和优化策略。但原理归原理，真正做优化的时候，每个 App 面临的约束千差万别——有的受限于包体积，有的卡在第三方 SDK 初始化，有的则是历史代码的技术债。这一节我们来看几个真实的优化案例，看看不同团队在不同的约束下是怎么做的，以及最终取得了什么效果。
 
 需要说明的是，以下案例中的部分数据来自公开的技术分享和官方博客，而非本团队的实测。数据的准确性取决于原始报告的测试环境和度量方式，我们在每个案例中标注了数据来源和可信度。
 
@@ -93,7 +93,7 @@ Reddit 技术团队在 2025 年 Google Performance Spotlight Week 上分享了�
 
 ### 分析思路
 
-Reddit 的性能团队通过 Macrobenchmark 建立了启动耗时基线。他们发现冷启动的时间主要花在以下几个环节：
+Reddit 的性能团队首先通过 Macrobenchmark 建立了启动耗时基线。他们发现冷启动的时间主要花在以下几个环节：
 
 Application.onCreate() 中的 SDK 初始化是大头：Reddit 集成了大量第三方服务（广告、分析、推送等），这些 SDK 几乎都在 onCreate 里同步初始化，占据了主线程约 800ms。首页 Feed 的数据加载也在占用时间——虽然是异步请求，但网络回调和 JSON 解析会回到主线程处理。首次渲染同样有开销，由于 View 层级较深（首页是复杂的 RecyclerView），measure/layout 阶段消耗了不少时间。
 
@@ -179,13 +179,13 @@ Reddit 在 Google Play 上线后的 A/B 测试结果 [已验证: developer.andro
 
 ### 分析思路
 
-抖音团队面临的核心挑战是：App 规模庞大（Feature 模块上百个），启动路径上的同步操作极多。他们将问题分解为"主线程线性执行时间"这个核心指标——即从进程创建到首页可交互，主线程上所有同步执行的代码的总耗时。
+抖音团队面临的核心挑战是：App 规模庞大（Feature 模块上百个），启动路径上的同步操作极多。他们将问题拆解为"主线程线性执行时间"这个核心指标——即从进程创建到首页可交互，主线程上所有同步执行的代码的总耗时。
 
 分析工具方面，抖音自研了 Rhea 一体化性能分析平台。Rhea 覆盖启动速度、页面渲染、内存、网络、功耗等多个维度，支持毫秒级差异精细化分析。在低端设备上，Rhea 能够识别出主线程上的锁等待、阻塞和 IO 等待——这些在高端设备上不明显的问题，在低端设备上会被放大为肉眼可见的启动延迟。
 
 通过 Rhea 的分析，抖音团队将冷启动的主线程时间分解为三个主要阶段：
 
-1. **MultiDex 加载阶段**：由于方法数超过 65K，App 使用了 MultiDex。API 21 以下走 support multidex 路径，`MultiDex.install()` 会在启动早期处理 secondary dex 的解压、校验和 ClassLoader 安装；Dalvik 侧还要处理 dexopt 与类加载成本。API 21+ 才进入 ART 原生 multidex 路径，安装或后台编译阶段由 dex2oat / profile guided 编译处理多个 dex，启动时仍可能受类验证、首次类加载、profile 命中率和 I/O 影响。
+1. **MultiDex 加载阶段**：由于方法数超过 65K，App 使用了 MultiDex。API 21 以下走 support multidex 路径，`MultiDex.install()` 会在启动早期处理 secondary dex 的解压、校验和 ClassLoader 安装；Dalvik 侧还要承担 dexopt 与类加载成本。API 21+ 才进入 ART 原生 multidex 路径，安装或后台编译阶段由 dex2oat / profile guided 编译处理多个 dex，启动时仍可能受类验证、首次类加载、profile 命中率和 I/O 影响。
 
 2. **反序列化阶段**：抖音在启动时需要读取大量的配置数据和缓存数据（用户偏好、AB 实验配置、推荐策略参数等），这些数据以序列化形式存储在本地，启动时需要反序列化到内存。配置项越多，这个阶段的耗时越长。
 
@@ -318,7 +318,7 @@ ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代�
 
 **阶段三：渲染优化（投入 1 周）**
 
-第三阶段解决 View 层级过深的问题：
+最后一个阶段解决 View 层级过深的问题：
 
 - 使用 `ViewHolder` 模式减少 `findViewById()` 的重复调用
 - 将嵌套的 ScrollView + RecyclerView 改为单一 RecyclerView + 多 viewType
@@ -343,7 +343,7 @@ ANR 率降低 25% 可以从两个方向理解：一类收益来自未使用代�
 
 ### 本案例的关键启示
 
-页面切换优化的关键原则是"分而治之"：先用 Perfetto 精确定位时间花在了哪个阶段（消息处理 / IPC / Activity 创建 / 渲染），然后逐阶段优化。不要凭直觉猜测瓶颈在哪——在本案例中，团队最初以为是网络请求慢，但 trace 显示网络请求是异步的，瓶颈是 View 层级的 measure/layout。
+页面切换优化的关键原则是"分而治之"：先用 Perfetto 精确定位时间花在了哪个阶段（消息处理 / IPC / Activity 创建 / 渲染），然后逐阶段优化。不要凭直觉猜测瓶颈在哪——在本案例中，团队最初以为是网络请求慢，但 trace 显示网络请求是异步的，真正的瓶颈是 View 层级的 measure/layout。
 
 ---
 
@@ -455,7 +455,7 @@ fun requestStartupSystemTrace(context: Context) {
 
 **误区一：“启动优化就是减少 Application.onCreate() 的耗时。”**
 
-这是一个过于狭隘的认知。从本章的案例中，启动耗时分布在多个阶段——Reddit 的瓶颈是 JIT 编译，抖音的瓶颈是 MultiDex 和主线程同步消息，电商案例的瓶颈是 View 层级的 measure/layout。`Application.onCreate()` 只是一个环节。正确的做法是先用 Perfetto/Macrobenchmark 建立完整的耗时分布图，找到瓶颈再针对性优化，而不是一上来就砍 `onCreate()`。
+这是一个过于狭隘的认知。从本章的案例中，启动耗时分布在多个阶段——Reddit 的瓶颈是 JIT 编译，抖音的瓶颈是 MultiDex 和主线程同步消息，电商案例的瓶颈是 View 层级的 measure/layout。`Application.onCreate()` 只是一个环节。正确的做法是先用 Perfetto/Macrobenchmark 建立完整的耗时分布图，找到真正的瓶颈再针对性优化，而不是一上来就砍 `onCreate()`。
 
 **误区二：“Baseline Profiles 只对首次启动有效，之后就失效了。”**
 
@@ -467,7 +467,7 @@ fun requestStartupSystemTrace(context: Context) {
 
 **误区四：“页面切换慢就是网络请求慢。”**
 
-在电商案例中，团队最初的直觉也是网络请求慢。但 Perfetto trace 显示网络请求是异步的，阻塞首帧的是 View 层级的 measure/layout 和自定义 View 的 onDraw。凭直觉猜测瓶颈是性能优化中最大的时间浪费——先用工具定位，再动手。
+在电商案例中，团队最初的直觉也是网络请求慢。但 Perfetto trace 显示网络请求是异步的，真正阻塞首帧的是 View 层级的 measure/layout 和自定义 View 的 onDraw。凭直觉猜测瓶颈是性能优化中最大的时间浪费——先用工具定位，再动手。
 
 ---
 
