@@ -1,85 +1,108 @@
 ---
-title: "Frame Pacing Library 与帧节奏控制"
-chapter: "2.17"
-section: "2.17"
-status: "ready-for-review"
-applicable_versions: "Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API 37)"
-last_verified: "2026-04-19"
-last_verified_against: "AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline, developer.android.com/games/sdk/frame-pacing"
+title: Frame Pacing Library 与帧节奏控制
+chapter: '2.17'
+section: '2.17'
+status: ready-for-review
+applicable_versions: Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API
+  37)
+last_verified: '2026-04-19'
+last_verified_against: AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP
+  external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline,
+  developer.android.com/games/sdk/frame-pacing
 confidence: medium
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
+drafted_date: '2026-04-06'
+drafted_by: openclaw-task2a
 sources:
-  - type: official
-    path: "https://developer.android.com/games/sdk/frame-pacing"
-  - type: official
-    path: "https://developer.android.com/games/sdk/frame-pacing/opengl"
-  - type: official
-    path: "https://developer.android.com/games/sdk/frame-pacing/vulkan"
-  - type: official
-    path: "https://developer.android.com/games/sdk/frame-pacing/opengl/verify-improvement"
-  - type: official
-    path: "https://developer.android.com/games/sdk/frame-pacing/vulkan/verify-improvement"
-  - type: official
-    path: "https://developer.android.com/games/sdk/reference/frame-pacing"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/frametimeline"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Choreographer"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.h"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.cpp"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.h"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/common/FrameStatistics.cpp"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.cpp"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.h"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/include/swappy/swappy_common.h"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/include/swappy/swappyGL.h"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/include/swappy/swappyGL_extra.h"
-  - type: aosp
-    path: "frameworks/opt/gamesdk/include/swappy/swappyVk.h"
-  - type: aosp
-    path: "external/perfetto/src/trace_processor/metrics/sql/android/jank/frames.sql"
-  - type: aosp
-    path: "external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql"
-tags: [Frame Pacing, Swappy, AGDK, 游戏性能, 帧节奏, Choreographer]
-related_chapters: ["2.2", "2.3", "2.4", "2.9", "2.13", "2.16", "2.18", "7.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "官方文档 + 研究素材"
-pipeline_stage: "task9_pending"
-task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: "fixed"
+- type: official
+  path: https://developer.android.com/games/sdk/frame-pacing
+- type: official
+  path: https://developer.android.com/games/sdk/frame-pacing/opengl
+- type: official
+  path: https://developer.android.com/games/sdk/frame-pacing/vulkan
+- type: official
+  path: https://developer.android.com/games/sdk/frame-pacing/opengl/verify-improvement
+- type: official
+  path: https://developer.android.com/games/sdk/frame-pacing/vulkan/verify-improvement
+- type: official
+  path: https://developer.android.com/games/sdk/reference/frame-pacing
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://developer.android.com/reference/android/view/Choreographer
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.h
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.cpp
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.h
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/common/FrameStatistics.cpp
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.cpp
+- type: aosp
+  path: frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.h
+- type: aosp
+  path: frameworks/opt/gamesdk/include/swappy/swappy_common.h
+- type: aosp
+  path: frameworks/opt/gamesdk/include/swappy/swappyGL.h
+- type: aosp
+  path: frameworks/opt/gamesdk/include/swappy/swappyGL_extra.h
+- type: aosp
+  path: frameworks/opt/gamesdk/include/swappy/swappyVk.h
+- type: aosp
+  path: external/perfetto/src/trace_processor/metrics/sql/android/jank/frames.sql
+- type: aosp
+  path: external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql
+tags:
+- Frame Pacing
+- Swappy
+- AGDK
+- 游戏性能
+- 帧节奏
+- Choreographer
+related_chapters:
+- '2.2'
+- '2.3'
+- '2.4'
+- '2.9'
+- '2.13'
+- '2.16'
+- '2.18'
+- '7.1'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-05'
+gap_source: 官方文档 + 研究素材
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
-reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-06"
-reviewed_date: "2026-05-06"
-task6_result: "pass-light-edit"
+reviewed_by: openclaw-task6
+task6_reviewed_date: '2026-05-06'
+reviewed_date: '2026-05-06'
+task6_result: pass-light-edit
 task9_result: needs-rework
-last_task2b_at: "2026-05-06T04:41:00+08:00"
-task9_task6_reviewed_date: "2026-04-30"
+last_task2b_at: '2026-05-06T04:41:00+08:00'
+task9_task6_reviewed_date: '2026-04-30'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T00:36:51+08:00"
-task9_reviewed_date: "2026-05-06"
-review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0 1，P1 2。 | 2026-05-06 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；VK_KHR_present_id 核心版本断言错误，DeliQueue 实现模型与跨章口径不一致。 | 2026-05-06 Task6 02:06：复审 2.17 写作层；清理 L1 填充副词 3 处。章节仍有 Task9 P95 pending 队列，本轮不做技术裁决，保持 task2b_pending。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。"
-last_task9_review_log: "logs/deep-review/2026-05-06-00-deep-review.md"
-last_task6_at: "2026-05-06T05:05:00+08:00"
-
+last_task9_at: '2026-05-06T05:30:00+08:00'
+task9_reviewed_date: '2026-05-06'
+review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0
+  1，P1 2。 | 2026-05-06 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；VK_KHR_present_id
+  核心版本断言错误，DeliQueue 实现模型与跨章口径不一致。 | 2026-05-06 Task6 02:06：复审 2.17 写作层；清理 L1 填充副词
+  3 处。章节仍有 Task9 P95 pending 队列，本轮不做技术裁决，保持 task2b_pending。 | 2026-05-06 Task6 05:05：revisiting
+  写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 05 task9
+  deep-review: needs-rework。P0 1 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。'
+last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
+last_task6_at: '2026-05-06T05:05:00+08:00'
+task9_review_notes: '2026-05-06 05 task9 deep-review: needs-rework。P0 1 / P1 1 / P2
+  2。P0/P1 已写入 queue，等待 Task2B。'
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制

@@ -1,54 +1,74 @@
 ---
-title: "APK 体积优化"
-section: "12.1"
-chapter: "12.1"
-status: "ready-for-review"
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-task6_reviewed_date: "2026-05-06"
+title: APK 体积优化
+section: '12.1'
+chapter: '12.1'
+status: finalized
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+task6_reviewed_date: '2026-05-06'
 polish_count: 1
-polish_date: "2026-04-10"
-polish_by: "task2b-polish"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-24"
-last_verified_against: "AGP 8.8 DSL deprecation docs + AGP 8.12.0 release notes + Android App Bundle docs"
+polish_date: '2026-04-10'
+polish_by: task2b-polish
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-24'
+last_verified_against: AGP 8.8 DSL deprecation docs + AGP 8.12.0 release notes + Android
+  App Bundle docs
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/topic/performance/reduce-apk-size"
-  - type: official
-    path: "https://developer.android.com/build/shrink-code"
-  - type: official
-    path: "https://developer.android.com/build/app-bundle"
-  - type: official
-    path: "https://developer.android.com/reference/tools/gradle-api/8.8/com/android/build/api/dsl/ApplicationBaseFlavor#resourceConfigurations"
-  - type: official
-    path: "https://developer.android.com/reference/tools/gradle-api/8.8/com/android/build/api/dsl/ApplicationAndroidResources#localeFilters"
-  - type: official
-    path: "https://developer.android.com/guide/playcore/feature-delivery"
-  - type: blog
-    path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
-tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
-related_chapters: ["8.3", "14.1", "15.6"]
-task2b_state: "fixed"
-task9_result: needs-rework
+- type: official
+  path: https://developer.android.com/topic/performance/reduce-apk-size
+- type: official
+  path: https://developer.android.com/build/shrink-code
+- type: official
+  path: https://developer.android.com/build/app-bundle
+- type: official
+  path: https://developer.android.com/reference/tools/gradle-api/8.8/com/android/build/api/dsl/ApplicationBaseFlavor#resourceConfigurations
+- type: official
+  path: https://developer.android.com/reference/tools/gradle-api/8.8/com/android/build/api/dsl/ApplicationAndroidResources#localeFilters
+- type: official
+  path: https://developer.android.com/guide/playcore/feature-delivery
+- type: blog
+  path: 得物技术《包体积：Layout 二进制文件裁剪优化》2023-09
+tags:
+- apk
+- r8
+- proguard
+- app-bundle
+- resource-optimization
+- native-libs
+- dex
+- code-shrinking
+- webp
+- abi-filter
+- dynamic-feature
+- apk-analyzer
+related_chapters:
+- '8.3'
+- '14.1'
+- '15.6'
+task2b_state: fixed
+task9_result: pass-tech-review
 task2b_result: fixed
-task9_reviewed_date: 2026-05-05
+task9_reviewed_date: '2026-05-06'
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-05-05T22:55:00+08:00
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-06"
-task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
-repaired_date: "2026-04-24"
-repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-05-06T04:41:00+08:00"
-task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。"
-last_task6_at: "2026-05-06T05:05:00+08:00"
-review_notes: "2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9 已有 P1/P2 queue pending，等待 Task2B。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。"
-
+last_task9_at: '2026-05-06T05:30:00+08:00'
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-06'
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: ready-to-publish
+repaired_date: '2026-04-24'
+repaired_by: openclaw-task2b
+last_task2b_at: '2026-05-06T04:41:00+08:00'
+task9_review_notes: '2026-05-06 05 task9 deep-review: pass-tech-review。P0 0 / P1 0
+  / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
+last_task6_at: '2026-05-06T05:05:00+08:00'
+review_notes: '2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9
+  已有 P1/P2 queue pending，等待 Task2B。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2
+  结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。 | 2026-05-06 05 task9 deep-review:
+  pass-tech-review。P0 0 / P1 0 / P2 2。Task6 已通过且 queue 无 pending，自动晋升 finalized。'
+last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
 ---
 
 # APK 体积优化
