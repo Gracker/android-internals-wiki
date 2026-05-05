@@ -8,7 +8,7 @@ polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-01"
+reviewed_date: "2026-05-06"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-04-18"
@@ -55,8 +55,8 @@ tags:
   - cloud-compilation
   - app-installation
   - compilation
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "pending"
 task9_result: "needs-rework"
@@ -65,8 +65,10 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
 task2b_result: fixed
 task2b_state: "fixed"
-review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。"
 task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
+last_task6_at: "2026-05-06T04:13:56+08:00"
+task6_reviewed_date: "2026-05-06"
 ---
 
 # 1.9 Package Manager Service 与应用安装性能
@@ -124,7 +126,7 @@ SystemServer 启动阶段（简化）:
     → InputManagerService
 ```
 
-PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，而是通过 `InitAppsHelper.java` 的 `getApexScanPartitions()` / `scanSystemDirs()` 在多线程中处理，线程池由 `ParallelPackageParser` 提供。包数量多的设备上这一优化显著缩短了 PMS 初始化耗时。
+PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，而是通过 `InitAppsHelper.java` 的 `getApexScanPartitions()` / `scanSystemDirs()` 在多线程中处理，线程池由 `ParallelPackageParser` 提供。包数量多的设备上，这一优化可以缩短 PMS 初始化耗时。
 
 [已验证: AOSP android-16.0.0_r1 `InitAppsHelper.java` parallel APEX scanning / `ParallelPackageParser`]
 
@@ -140,7 +142,7 @@ PMS 在内存中维护了几个关键的数据结构：
 
 ### PMS 与 installd 的协作关系
 
-PMS 维护包状态和安装策略，真正落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。android-16.0.0_r1 里的 `Installer.connect()` 改为通过 `ServiceManager.getService("installd")` 获取 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。旧版 `/dev/socket/installd` 的 socket 路径已弃用。
+PMS 维护包状态和安装策略，具体落到文件系统和应用数据目录的操作由 `Installer` / `installd` 完成。android-16.0.0_r1 里的 `Installer.connect()` 改为通过 `ServiceManager.getService("installd")` 获取 Binder 服务，再用 `IInstalld.Stub.asInterface(...)` 发起远程调用。旧版 `/dev/socket/installd` 的 socket 路径已弃用。
 
 现代安装路径里，dexopt 的控制面和执行面还要再拆一层：
 
@@ -171,7 +173,7 @@ Android 13 起引入 `Computer` 接口实现读写分离，到 Android 14 已成
 
 ## 应用安装全流程与性能关键路径
 
-了解了 PMS 的架构位置后，拆解一个应用从"用户点击安装"到"可以启动"经历的完整阶段。安装流程根据触发方式有所不同（adb install / Google Play / PackageInstaller），但核心流水线是一样的。
+了解 PMS 的架构位置后，可以继续看一个应用从"用户点击安装"到"可以启动"经历的完整阶段。安装流程根据触发方式有所不同（adb install / Google Play / PackageInstaller），但核心流水线是一样的。
 
 ### 安装触发路径
 
@@ -187,7 +189,7 @@ Android 13 起引入 `Computer` 接口实现读写分离，到 Android 14 已成
 
 以 `adb install` 为例，现代 AOSP 的入口在 `PackageManagerShellCommand`。它先创建 session，再写入 APK 或 split，提交时进入 `PackageInstallerSession.commit()`。session 封存后，`InstallingSession.installStage()` 把安装任务交给 PMS 侧逻辑；包扫描和状态提交主要在 `InstallPackageHelper`，dexopt 决策在 `DexOptHelper`，编译请求再交给 ART Service，由 `artd` 拉起 `dex2oat` 执行。Perfetto 里看到的 `system_server`、`artd`、`dex2oat`，分别对应这条链上的控制面和执行面。
 
-这套 session 模型解决了两个实际问题。一个是 split APK、多包安装、staged install 都能共用同一套提交协议；另一个是“写入文件”和“真正生效”被拆成两个阶段，失败回滚、重试、后台安装都更容易做。
+这套 session 模型解决了两个实际问题。一个是 split APK、多包安装、staged install 都能共用同一套提交协议；另一个是“写入文件”和“正式生效”被拆成两个阶段，失败回滚、重试、后台安装都更容易做。
 
 ### 安装阶段分解
 
@@ -303,7 +305,7 @@ adb shell cmd package compile -m speed-profile -f com.example.app
 
 ## Background Dexopt 策略与系统性能影响
 
-后台 dexopt 是 Android 编译优化的"第二道防线"——安装时可能因为时间紧迫（用户在等安装完成）只能做 verify，但设备空闲充电时有充足的时间做更深度的编译。
+后台 dexopt 是安装后补足编译覆盖的机制。安装时可能因为用户在等待完成而只做 verify；设备空闲充电时，系统才有足够时间做更深的编译。
 
 ### 触发条件
 
@@ -422,7 +424,7 @@ if (isArchivingEnabled()) {
 
 **传统流程（Android 13 及以前）**：OTA 后首次启动时，系统对所有应用执行 mass dexopt，编译级别为 `verify`。用户在开机后会看到"正在优化应用 X/Y"的进度界面，这在大量应用的低端设备上可能需要很长时间。
 
-**现代流程（Android 14+ ART Service）**：ART Service 的策略更加智能：
+**现代流程（Android 14+ ART Service）**：ART Service 的策略更加细分：
 
 1. OTA 后首次启动，只对 primary DEX 文件做 `verify`，跳过 secondary DEX
 2. 如果已有可用的 VDEX 文件且 verify filter 可以容忍依赖不匹配，则跳过编译
@@ -573,11 +575,11 @@ JIT 在运行时动态编译，理论上可以覆盖更多热点方法。但 JIT
 
 **误区三："安装慢是 PMS 的问题"**
 
-安装慢最常见的原因是 dex2oat 编译，不是 PMS 本身的逻辑。PMS 解析 Manifest、管理权限这些操作通常在几百毫秒内完成。真正的瓶颈在 dex2oat 编译和文件 I/O。在分析安装性能时，应该先看 dex2oat 进程的 CPU 时间和 I/O 延迟。
+安装慢最常见的瓶颈是 dex2oat 编译和文件 I/O。PMS 解析 Manifest、管理权限这些操作通常在几百毫秒内完成；分析安装性能时，应该先看 dex2oat 进程的 CPU 时间和 I/O 延迟，再回到 PMS Slice 判断控制面是否异常。
 
 **误区四："OTA 后所有应用都要重新全量编译"**
 
-从 Android 14 开始，ART Service 在 OTA 后只做 `verify` 级别的编译，而且如果已有可用的 VDEX 文件且 verify filter 可以容忍依赖不匹配，则完全跳过编译。OTA 后首次启动比以前快了很多。
+从 Android 14 开始，ART Service 在 OTA 后只做 `verify` 级别的编译，而且如果已有可用的 VDEX 文件且 verify filter 可以容忍依赖不匹配，则完全跳过编译。OTA 后首次启动阶段减少了全量编译等待。
 
 **误区五："dumpsys package dexopt 显示 speed-profile，说明应用编译得很好"**
 

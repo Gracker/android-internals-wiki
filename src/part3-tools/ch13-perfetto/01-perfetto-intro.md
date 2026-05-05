@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-06"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 polish_count: 2
 polish_date: '2026-04-10'
@@ -38,8 +38,8 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task9_result: needs-rework
 task2b_state: fixed
@@ -47,10 +47,10 @@ task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:33+08:00"
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
-review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。 评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。；2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 19 处；移动尾部注入块到正文/参考资料；无新增 B 类回炉问题，等待 Task 9 复审。"
+review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2处否定纠正式句型已改为直接陈述；1处口水过渡词已删除。 评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。；2026-05-06 task6 re-review: pass-light-edit。L1/L2 小修 19 处；移动尾部注入块到正文/参考资料；无新增 B 类回炉问题，等待 Task 9 复审。；2026-05-06 04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。"
 last_task9_at: "2026-05-06T03:43:42+08:00"
 task9_review_notes: "2026-05-06 03 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；Perfetto Mainline/APEX 部署口径仍残留 com.android.os.perfetto 错误。"
-last_task6_at: "2026-05-06T03:20:00+08:00"
+last_task6_at: "2026-05-06T04:13:56+08:00"
 task6_reviewed_date: "2026-05-06"
 ---
 
@@ -131,7 +131,7 @@ Perfetto 从架构和数据模型两边一起改了这件事。Producer 先把�
 
 [已验证: 官方文档, perfetto.dev/docs/#systrace-vs-perfetto]
 
-还有一个重要的兼容性细节：Perfetto UI 可以直接打开 Systrace 格式的 trace 文件。之前积累的 Systrace 文件不需要丢弃，全部可以在 Perfetto UI 中继续分析。反过来，Perfetto 也提供了 `traceconv` 工具，可以把 Perfetto 格式的 trace 转换为 Systrace 文本格式。
+还有一个兼容性细节：Perfetto UI 可以直接打开 Systrace 格式的 trace 文件。之前积累的 Systrace 文件不需要丢弃，全部可以在 Perfetto UI 中继续分析。反过来，Perfetto 也提供了 `traceconv` 工具，可以把 Perfetto 格式的 trace 转换为 Systrace 文本格式。
 
 ## Perfetto 的架构
 
@@ -205,11 +205,11 @@ Trace Processor 是 Perfetto 的分析核心。它把二进制的 trace 文件�
 
 Trace Processor 的分析能力分为三层，从高层到底层依次是：
 
-1. **内置 Metrics**：`trace_processor_shell --run-metrics android_cpu,android_startup,android_jank` 可以一键输出 CPU、启动、jank 等维度的结构化指标报告。不需要手写 SQL，适合快速拿到结论。
-2. **Standard Library + Trace Summary v2**：PerfettoSQL Standard Library 封装了常用分析逻辑为可复用的 MODULE（如 `linux.memory.process`）。Trace Summary v2 通过 `referenced_modules` 字段声明依赖的官方模块，避免重复造轮子。优先复用官方模块，只有缺口指标才写自定义 PerfettoSQL。
+1. **内置 Metrics**：`trace_processor_shell --run-metrics android_cpu,android_startup,android_jank` 可以直接输出 CPU、启动、jank 等维度的结构化指标报告。不需要手写 SQL，适合快速拿到结论。
+2. **Standard Library + Trace Summary v2**：PerfettoSQL Standard Library 封装了常用分析逻辑为可复用的 MODULE（如 `linux.memory.process`）。Trace Summary v2 通过 `referenced_modules` 字段声明依赖的官方模块，避免重复实现同一套分析逻辑。优先复用官方模块；只有缺口指标才写自定义 PerfettoSQL。
 3. **原始 SQL 查询**：直接对 `slice`、`sched`、`counter` 等底层表写 SQL，灵活度最高，但需要熟悉表结构。
 
-例如，想统计某个 trace 中所有帧的耗时分布，一条 SQL 就能搞定：
+例如，想统计某个 trace 中所有帧的耗时分布，一条 SQL 就能完成：
 
 ```sql
 -- Perfetto 内部时间单位为纳秒（ns），除以 1e6 转为毫秒
@@ -227,7 +227,7 @@ Trace Processor 可以通过命令行工具（`trace_processor_shell`）使用�
 
 ## 核心概念
 
-在使用 Perfetto 之前，我们需要搞清楚几个核心概念。这些概念贯穿了 Perfetto 的采集、分析和可视化三个阶段。
+使用 Perfetto 前，需要先区分几个核心概念。这些概念贯穿了 Perfetto 的采集、分析和可视化三个阶段。
 
 ### TraceConfig：采集配置
 
@@ -333,7 +333,7 @@ Slice 是 Perfetto 中最常见的事件类型。它代表一个有开始、有�
 
 一个典型的例子是 `Choreographer#doFrame`。当主线程执行一帧的渲染工作时，这个 Slice 从 VSync 回调开始，到渲染完成结束。它的内部可能包含多个子 Slice：`measure`、`layout`、`draw`、`syncAndDrawFrame` 等，形成嵌套结构。
 
-```
+```text
 Choreographer#doFrame (16.2ms)
   ├── measure (2.1ms)
   ├── layout (1.8ms)
@@ -401,7 +401,7 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 
 ## 版本演进与抓取入口对照表 [自动发现]
 
-把 Android P / Q / R+ 的边界拆开，前面的命令和 data source 才不会说混。
+把 Android P / Q / R+ 的边界列清，前面的命令和 data source 才不会混。
 
 ### Android 版本对照表
 
@@ -427,7 +427,7 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 | Android Studio Profiler | Android Studio | Studio 预置配置 | Profiler session / trace | App 局部定位、开发期快速查看 | 方便，但设备级观测面不如直接用 Perfetto UI 全 |
 | tracebox | Linux 主机 | CLI / config file | Linux trace | Linux 桌面 / 服务器 tracing | 不是 Android 设备抓取入口 |
 
-用哪个入口，取决于这次要抓的是整机时序、单 App，还是 Linux 主机。搞清楚这件事，后面的命令、权限和结果文件格式就不会混。
+用哪个入口，取决于这次要抓的是整机时序、单 App，还是 Linux 主机。确认这一点，后面的命令、权限和结果文件格式就不会混。
 
 ## 常见问题与误区
 
