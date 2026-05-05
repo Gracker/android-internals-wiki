@@ -25,10 +25,10 @@ related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: pending
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T13:28:00+08:00"
@@ -39,7 +39,7 @@ last_task9_at: "2026-05-05T13:34:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
 task9_review_notes: "2026-05-05 13:34 task9 deep-review: needs-rework。P0 1：Perfetto SQL 原始 ftrace 表仍误写为 ftrace_events；正确表名是 ftrace_event。"
-last_task2b_at: "2026-04-30T14:47:00+08:00"
+last_task2b_at: "2026-05-05T13:50:28"
 repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
@@ -123,9 +123,9 @@ Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个
 
 [已验证: AOSP android-17-beta3, available_events]
 
-Perfetto 对 ftrace 事件做了两层处理：**原始 ftrace 事件**存放在 `ftrace_events` 表中（可按 `name` 列过滤事件类型），**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图，`cpu_frequency` 进入 `cpu_frequency_counters` 表。
+Perfetto 对 ftrace 事件做了两层处理：**原始 ftrace 事件**存放在 `ftrace_event` 表中（可按 `name` 列过滤事件类型），**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图，`cpu_frequency` 进入 `cpu_frequency_counters` 表。
 
-不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace_events` 原始表中体现，查询时需要按 `name` 过滤。`ftrace_events` 表主要用于调试和验证采集是否生效；生产分析应优先使用 Perfetto 提供的派生表（`sched`、`cpu_frequency_counters` 等），字段更丰富且经过类型转换。理解这种"原始事件 → 派生视图"的分层关系，有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
+不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace_event` 原始表中体现，查询时需要按 `name` 过滤。`ftrace_event` 表主要用于调试和验证采集是否生效；生产分析应优先使用 Perfetto 提供的派生表（`sched`、`cpu_frequency_counters` 等），字段更丰富且经过类型转换。理解这种"原始事件 → 派生视图"的分层关系，有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
 
 ## atrace 用户空间追踪框架
 
@@ -388,13 +388,13 @@ ftrace_events: "my_custom/my_event"
 在 SQL 中查询：
 
 ```sql
--- 调试用：从原始 ftrace_events 表查询自定义事件
+-- 调试用：从原始 ftrace_event 表查询自定义事件
 SELECT ts, name
-FROM ftrace_events
+FROM ftrace_event
 WHERE name = 'my_custom_my_event'
 ```
 
-> **注意**：`ftrace_events` 表是 Perfetto 对原始 ftrace ring buffer 数据的直接映射，字段较少。如果自定义事件携带的结构化参数需要在分析中反复使用，更好的做法是通过 Perfetto 的 `trace_processor_shell --metrics-v2` 或自定义 SQL view 做二次封装。
+> **注意**：`ftrace_event` 表是 Perfetto 对原始 ftrace ring buffer 数据的直接映射，字段较少。生产分析应优先使用 `sched`、`thread_state`、`counter`、`slice` 等派生表；结构化参数通过 `arg_set_id` / `EXTRACT_ARG()` 获取，查询前可先 `SELECT DISTINCT name FROM ftrace_event` 确认目标事件是否存在。如果自定义事件需要在分析中反复使用，推荐通过 Perfetto 的 `trace_processor_shell --metrics-v2` 或自定义 SQL view 做二次封装。
 
 ## Tracing 开销与性能影响
 
