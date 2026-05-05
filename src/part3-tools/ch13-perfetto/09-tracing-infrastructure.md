@@ -25,14 +25,17 @@ related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: pending
+task2b_result: fixed
 last_task9_at: "2026-05-05T07:19:11+08:00"
 task9_reviewed_by: "openclaw-task9"
 review_notes: "2026-05-05 task6 writing re-review: pass-light-edit。小修 1 处，清理翻译腔动词；无新增 B 类问题；转入 Task9 复审。"
@@ -122,7 +125,7 @@ Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个
 
 [已验证: AOSP android-17-beta3, available_events]
 
-Perfetto 对 ftrace 事件做了两层处理：**原始 ftrace 事件**保留在 `ftrace` 表中（可通过 `ftrace_events` 表按事件名过滤），**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图，`cpu_frequency` 进入 `cpu_frequency_counters` 表。不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace` 原始表中体现，查询时需要按事件名过滤。理解这种"原始事件 → 派生视图"的分层关系，有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
+Perfetto 对 ftrace 事件做了两层处理：**原始 ftrace 事件**存放在 `ftrace_events` 表中（可按 `name` 列过滤事件类型），**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图，`cpu_frequency` 进入 `cpu_frequency_counters` 表。不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace_events` 原始表中体现，查询时需要按 `name` 过滤。`ftrace_events` 表主要用于调试和验证采集是否生效；生产分析应优先使用 Perfetto 提供的派生表（`sched`、`cpu_frequency_counters` 等），字段更丰富且经过类型转换。理解这种"原始事件 → 派生视图"的分层关系，有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
 
 ## atrace 用户空间追踪框架
 
@@ -383,10 +386,13 @@ ftrace_events: "my_custom/my_event"
 在 SQL 中查询：
 
 ```sql
-SELECT ts, value, name
-FROM ftrace
+-- 调试用：从原始 ftrace_events 表查询自定义事件
+SELECT ts, name
+FROM ftrace_events
 WHERE name = 'my_custom_my_event'
 ```
+
+> **注意**：`ftrace_events` 表是 Perfetto 对原始 ftrace ring buffer 数据的直接映射，字段较少。如果自定义事件携带的结构化参数需要在分析中反复使用，更好的做法是通过 Perfetto 的 `trace_processor_shell --metrics-v2` 或自定义 SQL view 做二次封装。
 
 ## Tracing 开销与性能影响
 
