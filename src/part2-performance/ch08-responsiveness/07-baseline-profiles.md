@@ -12,7 +12,7 @@ last_verified_against: developer.android.com create/debug/profileable docs + AOS
 reviewed_date: '2026-04-24'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pending
 confidence: medium
 sources:
 - type: official
@@ -30,10 +30,10 @@ sources:
 tags:
 - android
 - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 review_round: 6
 task9_reviewed_date: "2026-05-03"
@@ -118,7 +118,8 @@ Baseline Profiles 的价值落在这两条时间线之间。它不替代 Android
 | 开发者 Baseline Profile | Android 7 (API 24) | 无 | 随 APK/AAB 分发，所有安装渠道均可携带 |
 | Cloud Profiles | Android 9 (API 28)+ | 仅 Google Play | 聚合真实用户热点数据，分发周期取决于 Play |
 | AGP 8.4+ 设备端自动编译 | Android 7+ | Android Studio / Gradle 安装 non-debuggable build | 旧版 AGP 或其他 installer 需 ProfileInstaller |
-| AGP 8.5+ 16KB DEX layout | Android 15+ (内核 16KB) | 无 | 构建期优化，安装后直接享受 Page Fault 减少 |
+| AGP 8.1+ Startup Profile / DEX layout | Android 7+ (DEX layout), Android 15+ (16KB 红利) | 无 | AGP 8.1 引入 Startup Profile 布局优化，8.3 默认启用；16KB 页环境下单页覆盖更多热方法，放大缓存友好效应 |
+| Android 15+ 16KB page-size 兼容 | Android 15+ | 无 | NDK r28+ 默认 16KB ELF 对齐、AGP 8.5.1+ 未压缩 .so、zipalign `-P 16`；属于构建对齐与 native 兼容，与 DEX layout 是两套机制 |
 
 Android 7/8 是"有开发者 Baseline Profile 但无 Cloud Profile"的关键边界——这两个版本的冷启动优化完全依赖开发者预置的规则，无法从 Google Play 获得聚合补充。
 
@@ -158,7 +159,7 @@ Google 官方给出的通用范围是 **15-30% 的启动速度提升**。实际�
 
 | 安装来源 | Profile 来源 | 常见触发时机 | 观察入口 |
 |----------|--------------|--------------|----------|
-| Google Play | APK 自带 Baseline Profile + Play 聚合的 Cloud Profiles | 安装期或后续后台设备更新 | `ProfileVerifier`、`dumpsys package dexopt` |
+| Google Play | APK 自带 Baseline Profile + Play 聚合的 Cloud Profiles | 后台设备更新/后续 dexopt（不是安装时立即编译） | `ProfileVerifier`、`dumpsys package dexopt` |
 | Android Studio / Gradle 安装的 non-debuggable build（AGP 8.4+） | APK 自带 Baseline Profile | 设备端自动编译，必要时可手工触发 `bg-dexopt` | `ProfileVerifier`、`dumpsys package dexopt` |
 | Android Studio / Gradle 安装的 non-debuggable build（AGP < 8.4） | APK 自带 Baseline Profile | 不会自动编译；需要 `ProfileInstaller` 入队或手工 `cmd package compile` | `ProfileVerifier`、`dumpsys package dexopt` |
 | 其他 installer / 侧载 | APK 自带 Baseline Profile，`ProfileInstaller` 负责把 profile 入队 | 常见为等待下一次 `bg-dexopt`；线下要立刻确认时，可手工执行 `cmd package compile -r bg-dexopt` 或 `cmd package compile -m speed-profile -f` | `ProfileVerifier`、`dumpsys package dexopt` |
@@ -169,7 +170,7 @@ AGP 8.4 是自动编译的分界线。AGP 8.4+ 通过 Android Studio 或 Gradle 
 
 ### ART Service 与 Profile 管理
 
-Android 14 之后，`dexopt` 管理更多由 ART Service 承担。写验证步骤时，命令口径最好和官方调试文档保持一致：
+Android 14 之后，`dexopt` 管理由 ART Mainline 模块内的 ART Service 承担。源码锚点在 `packages/modules/Art/artd/`，核心职责包括：接收 `cmd package compile` 请求、调度后台 dexopt job、管理编译状态与 Profile 数据。应用侧常用的入口有两个：`cmd package compile -r bg-dexopt` 触发后台编译语义，`cmd package compile -m speed-profile -f` 直接强制 speed-profile 编译。写验证步骤时，命令口径最好和官方调试文档保持一致：
 
 ```bash
 # 触发一次后台 dexopt 语义的编译
@@ -205,6 +206,7 @@ Cloud Profiles 用真实用户数据补齐 Baseline Profiles 没覆盖到的热�
 
 - 它属于 Google Play 分发增强能力，不是所有安装渠道都具备的通用机制。
 - 它和 Baseline Profiles、Cloud Profiles 同属 ART 编译优化体系，但公开证据还不够支撑更细的实现断言。
+- SDM（Secure Dex Metadata）的具体格式和签名绑定方式目前仍缺少可复核的 AOSP 或官方文档锚点，本段所有关于云端预编译的描述均为 `[待验证]` 状态。
 
 ## 生成与维护 Baseline Profiles
 
@@ -263,7 +265,11 @@ Profile 不需要追求 100% 覆盖——覆盖 80% 的启动路径就能获得�
 
 ### AGP 自动化
 
-AGP 8.0+ 已经把 Baseline Profiles 的生成和打包流程收进官方插件。实际项目里更稳妥的做法是直接使用 Baseline Profile Generator 模板或 `androidx.baselineprofile` 插件，让 release 或特定 variant 在 CI 里执行 `generate<Variant>BaselineProfile`。AGP 8.5 起正式开启了 16KB Page Size 对齐的 DEX layout 优化——构建系统会将启动阶段更常用的类排到更靠前的位置，从而在 16KB 页环境下减少 Page Fault，吃满内核的预读红利。AGP 8.3 曾率先引入 Startup Profile 的基本布局优化，但 16KB 对齐的完整支持需要 AGP 8.5+。开发者要确认 AGP 版本 ≥ 8.5，才能在 Android 15/16 设备上拿到这份收益。
+AGP 8.0+ 已经把 Baseline Profiles 的生成和打包流程收进官方插件。实际项目里更稳妥的做法是直接使用 Baseline Profile Generator 模板或 `androidx.baselineprofile` 插件，让 release 或特定 variant 在 CI 里执行 `generate<Variant>BaselineProfile`。
+
+Startup Profile 的 DEX layout 优化从 AGP 8.1 可用、8.3 默认启用。它把启动阶段的热点方法集中排列在连续的 DEX 页中，减少 Page Fault 并提高指令缓存命中率。16KB 页环境下单页覆盖更多热方法，这个缓存友好效应被进一步放大——但这是 16KB 内核页的被动红利，不是 AGP 版本决定的开关。
+
+16KB page-size 兼容是另一套机制：NDK r28+ 默认生成 16KB ELF 对齐的 .so、AGP 8.5.1+ 使用未压缩 shared libraries、zipalign `-P 16` / bundletool 验证 ZIP entry 对齐。它与 Startup Profile / DEX layout 优化是两个独立的构建能力，不要混在一起判断。
 
 项目治理上，关注三件事就够了：
 

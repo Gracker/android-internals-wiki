@@ -8,15 +8,15 @@ tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer
 related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-04"
 last_task9_at: "2026-05-04T04:33:00+08:00"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pending
 task2b_result: fixed
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task9
@@ -86,9 +86,9 @@ Transaction 只是在提交点声明“这组属性和这个 buffer 应一起生
 
 NDK 侧的根节点通常来自 Java 层已经创建好的 `SurfaceView` / `Surface`。常见桥接方式有两种：
 
-**方式 A（API 29+）**：Java 把 `Surface` 传进 JNI，native 侧用 `ANativeWindow_fromSurface()` 拿到 `ANativeWindow*`，再调用 `ASurfaceControl_createFromWindow()` 把这块 native window 变成 Layer 树的挂接点。[已验证: `android/native_window_jni.h` + Android NDK surface_control 文档]
+Java 层把 `Surface` 传进 JNI，native 侧用 `ANativeWindow_fromSurface()` 拿到 `ANativeWindow*`，再调用 `ASurfaceControl_createFromWindow()` 把这块 native window 变成 Layer 树的挂接点。[已验证: `android/native_window_jni.h` + Android NDK surface_control 文档]
 
-**方式 B（API 35+）**：如果 Java 层已经持有 `SurfaceControl` 对象（例如从 `SurfaceView.getSurfaceControl()` 获取），可以直接用 `ASurfaceControl_fromJava()` 把它转成 NDK `ASurfaceControl*`，省去 `ANativeWindow` 中间引用。[待验证: `ASurfaceControl_fromJava` 引入版本需核对 NDK 头文件]
+NDK `surface_control.h` 当前没有 `ASurfaceControl_fromJava()` 这类从 Java `SurfaceControl` 直接转 NDK 句柄的桥接函数。需要在 Java 层完成 `SurfaceControl` 操作、或在 native 侧从 `Surface` 出发走 `ANativeWindow_fromSurface()` → `ASurfaceControl_createFromWindow()` 路径。[已验证: AOSP android-16.0.0_r1 `frameworks/native/include/android/surface_control.h` 全文复核]
 
 ```java
 Surface surface = surfaceView.getHolder().getSurface();
@@ -206,26 +206,13 @@ ASurfaceTransaction_reparent(transaction, sc, newParent);
 
 #### 跨进程 Layer 共享
 
-跨进程场景分两条路径，按 Android 版本选择：
+NDK `surface_control.h` 当前没有公开的 Parceling 入口（`ASurfaceControl_writeToParcel` / `ASurfaceControl_readFromParcel` 在 NDK r29 及 AOSP android-16.0.0_r1 的 `surface_control.h` 中均不存在）。跨进程共享 `SurfaceControl` 句柄，需要回到 Java 层的 `android.view.SurfaceControl`，通过其 Parcelable 实现把句柄写入 `Parcel` 传给另一个进程；或者交给 WindowManager / Shell 维护跨进程树结构。[已验证: Android Framework `SurfaceControl` Parcelable 能力；AOSP android-16.0.0_r1 `frameworks/native/include/android/surface_control.h` 全文复核]
 
-**Android 10-14 (API 29-34)**：NDK 侧没有公开的 Parceling 入口。跨进程共享需要回到 Java 层的 `android.view.SurfaceControl`，通过其 Parcelable 实现把句柄写入 `Parcel` 传给另一个进程；或者交给 WindowManager / Shell 维护跨进程树结构。[已验证: Android Framework `SurfaceControl` Parcelable 能力]
+普通应用跨进程操作 Layer 树时，通常走以下几条路径之一：
 
-**Android 15+ (API 35+)**：NDK 侧公开了 `ASurfaceControl_writeToParcel()` / `ASurfaceControl_readFromParcel()`，可以直接把 `ASurfaceControl*` 序列化到 `AParcel` 对象，实现全 C++ 链路的跨进程图层树迁移。目标进程拿到反序列化后的句柄后可以直接 `reparent`，不再需要退回 Java 层中转。[待验证: `ASurfaceControl_writeToParcel` / `ASurfaceControl_readFromParcel` 具体函数签名及 API level 需核对 NDK 头文件 `<android/surface_control.h>`]
-
-#### JNI 互操作
-
-Android 15+ 还提供了 `ASurfaceControl_fromJava()`，允许从 Java 层的 `SurfaceControl` 对象直接获取 NDK `ASurfaceControl*`，替代通过 `ANativeWindow_fromSurface()` 间接桥接的方式。[待验证: `ASurfaceControl_fromJava` 具体函数签名及引入版本需核对 NDK 头文件] 这条路径适合已经在 Java 层持有 `SurfaceControl` 的场景（如从 `SurfaceView.getSurfaceControl()` 获取），可以避免额外的 `ANativeWindow` 中间引用：
-
-```c
-// Android 15+ (API 35): 从 Java SurfaceControl 直接获取 NDK 句柄
-// 替代 ANativeWindow_fromSurface + ASurfaceControl_createFromWindow 的两步路径
-ASurfaceControl* sc = ASurfaceControl_fromJava(env, javaSurfaceControlObj);
-
-// 之后正常使用 NDK Transaction API
-ASurfaceTransaction* txn = ASurfaceTransaction_create();
-ASurfaceTransaction_setBuffer(txn, sc, hwBuffer, fenceFd);
-ASurfaceTransaction_apply(txn);
-```
+1. **系统托管**：WindowManager / Shell transition 负责跨进程 Layer 树的调整（如画中画、分屏），应用只需提交内容 buffer
+2. **Java Parceling**：持有 `android.view.SurfaceControl` 的一方通过 `writeToParcel()` / `readFromParcel()` 序列化句柄，传递给另一个进程
+3. **系统服务中转**：通过 `WindowManagerService` 或 `ActivityTaskManagerService` 代理跨进程的 reparent / z-order 调整
 
 ### Color Layer
 
