@@ -5788,7 +5788,7 @@
       "section": "4.7",
       "section_title": "16KB Page Size 与 Android 性能",
       "priority": 85,
-      "reason": "[Deep Tech Review] 章节已写到 16KB base + THP 的 32MB PMD 粒度，但结尾仍停在「待验证 Android 16 默认启用状态」。本轮 external-review 明确提出 Android 16/16KB 内核下 THP 默认策略、mTHP/contpte 等线索；当前正文没有给出官方文档、kernel conf",
+      "reason": "[Deep Tech Review] 16KB THP/mTHP/contpte 默认策略仍未闭环，compat RELRO 的 PROT_READ|PROT_EXEC 安全边界未显式提示",
       "material_paths": [
         "intake/suggestions.md"
       ],
@@ -5804,6 +5804,18 @@
           "location": "L203-L220「兼容模式的加载方式与代价」",
           "detail": "正文已经写到 4KB 对齐 ELF 在 compat 下会走匿名映射和额外地址空间预留，但没有把这一步继续接到 PSS/共享页损失、启动收益消失和生产风险上。读者可能把 compat 当成长期可用方案，而不是过渡诊断开关。",
           "suggestion": "补充 smaps/PSS 观察点：同一 4KB 对齐 .so 在 compat 与 16KB 对齐重编译后的 Shared_Clean/Private_Dirty/PSS 对比；明确 compat 只用于临时兼容，不应作为发布态性能方案。"
+        },
+        {
+          "type": "版本差异/知识盲区",
+          "location": "L364-L382「与 Linux THP 的关系 / mTHP 与 contpte」",
+          "detail": "正文把 Android 16 contpte / mTHP 写成确定的平台能力，但参考资料仍保留“16KB 基础页 + THP 默认启用状态”待验证；缺少 CDD、source.android、common kernel config 或 /sys 实机证据。",
+          "suggestion": "把结论改为“内核启用 CONFIG_ARM64_CONTPTE / mTHP 时可获得该粒度收益”，或补 Pixel/common kernel 配置与 /sys/kernel/mm/transparent_hugepage、mTHP 证据后再写成确定行为。"
+        },
+        {
+          "type": "源码/安全边界",
+          "location": "L270-L282「RELRO 保护在 Compat 模式下的差异」",
+          "detail": "正文记录 compat RELRO 使用 PROT_READ | PROT_EXEC，但没有点出这相对标准 PROT_READ RELRO 的安全边界变化；读者可能只看到兼容加载成本，忽略发布态风险。",
+          "suggestion": "补一句 compat mode 会让 RELRO 区域带可执行权限，生产环境应重新链接 16KB 对齐 .so，而不是把 compat 当长期方案。"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -7255,9 +7267,9 @@
     },
     {
       "section": "8.4",
-      "section_title": "8.4 其他响应速度场景",
+      "section_title": "其他响应速度场景",
       "priority": 85,
-      "reason": "[Deep Tech Review] Binder 线程池 Android 16 待验证未闭环，需补源码结论后回炉",
+      "reason": "[Deep Tech Review] Activity 跳转段的 Android 16 Binder 线程池待验证仍未闭环",
       "material_paths": [
         "intake/suggestions.md"
       ],
@@ -7267,6 +7279,12 @@
           "location": "Activity 跳转 → Binder IPC 耗时段落",
           "detail": "章节仍保留“[待验证：Android 16 中 Binder 线程池默认大小是否有变化]”。本轮复核 AOSP android-16.0.0_r1 frameworks/native/libs/binder/ProcessState.cpp 仍定义 DEFAULT_MAX_BINDER_THREADS 15；章节元数据又显示 Task2B 已 fixed，状态与正文不一致。",
           "suggestion": "写入 Android 16 结论和源码锚点，删除待验证标记；如果讨论 system_server 线程池，还需区分 framework/native binder pool 与服务端自定义线程模型。"
+        },
+        {
+          "type": "源码验证未闭环",
+          "location": "L96「Binder IPC 往返」",
+          "detail": "正文仍保留“[待验证：Android 16 中 Binder 线程池默认大小是否有变化]”。复核 AOSP android-16.0.0_r1 frameworks/native/libs/binder/ProcessState.cpp，DEFAULT_MAX_BINDER_THREADS 仍为 15。",
+          "suggestion": "删除待验证标记，写入 Android 16 结论与源码锚点；若讨论 system_server 负载，区分 Binder 线程池上限与服务端自定义线程模型。"
         }
       ],
       "added_by": "task9-deep-tech-review",
