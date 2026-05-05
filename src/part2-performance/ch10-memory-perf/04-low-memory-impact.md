@@ -28,7 +28,7 @@ polish_count: 5
 polish_date: "2026-04-22"
 polish_by: "task6-review"
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External Review 问题单）"
@@ -36,15 +36,15 @@ repaired_date: "2026-05-05"
 repaired_by: "openclaw-task2b"
 review_round: 7
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pending
+task9_state: pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-05T12:52:08+08:00"
 review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；mm_events 源码/官方文档锚点需重核，Android 17 Generational CMC 默认化断言需收窄。 | 2026-05-05 Task2B 09:56：P0 mm_events源码锚点已修正为system/memory/lmkd/mm_events.c+libmemevents/；官方链接改为AOSP仓库直链；mem.mm_events SQL视图标注待验证。P1 Generational CMC全面默认已收窄为AOSP main可见+runtime flag条件化。 | 2026-05-05 Task6 12:26：revisiting 写作复审，清理第一人称、拟人化标题和少量填充词；L1/L2 通过，queue 无 pending，等待 Task9 复审。 | 2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 1；mm_events 源码路径与 Android 12+ 版本线仍错误，lmkd PSI some/full 触发语义需修正，Trace 配置中的 lmkd atrace category 需校正。"
 task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T12:26:00+08:00"
+last_task6_at: "2026-05-05T12:26:00+08:00" | 2026-05-05 Task2B 20:34：P0 mm_events源码路径已修正(lmkd.cpp+libmeminfo/libmemevents)；版本线收窄至Android 15+；PSI触发语义改为三档(LOW/MEDIUM→PSI some, CRITICAL→PSI full)
 ---
 
 # 低内存对系统性能的影响
@@ -122,9 +122,9 @@ I/O 阻塞进一步蔓延。等待 I/O 完成的进程持有各种内核锁（mu
 
 当内核层面的内存回收（kswapd 和 Direct Reclaim）仍然无法缓解内存压力时，Android 的 lmkd（Low Memory Killer Daemon）就会介入了。lmkd 运行在用户空间，通过 PSI（Pressure Stall Information）信号来感知系统内存紧张程度。
 
-PSI 是 Linux 内核从 4.20 开始提供的一种机制，它统计的是：因为内存（或 CPU、I/O）资源不足，有多少任务被迫等待，以及等待了多久。PSI 提供两种级别的统计：`some`（至少有一个任务在等待）和 `full`（所有非空闲任务都在等待）。lmkd 主要关注 `full` 级别的内存 PSI 信号，因为当所有任务都因为内存不足而等待时，说明系统已经到了必须杀进程的地步。
+PSI 是 Linux 内核从 4.20 开始提供的一种机制，它统计的是：因为内存（或 CPU、I/O）资源不足，有多少任务被迫等待，以及等待了多久。PSI 提供两种级别的统计：`some`（至少有一个任务在等待）和 `full`（所有非空闲任务都在等待）。lmkd 按压力等级注册不同的 PSI 监听器：LOW 和 MEDIUM 压力监听 `PSI_SOME`（部分阻塞），CRITICAL 压力监听 `PSI_FULL`（完全阻塞）。收到信号后，lmkd 还会结合 thrashing、swap 余量、file cache 水平和 `oom_score_adj` 等条件做综合判断，不是只看 PSI 就直接杀进程。
 
-lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置两个阈值：`psi_partial_stall_ms`（部分阻塞阈值）和 `psi_complete_stall_ms`（完全阻塞阈值）。当内核 PSI 机制检测到内存阻塞时间超过阈值时，会通过 epoll 通知 lmkd。从 Android 10 开始，PSI 已取代早期的 `vmpressure` 机制成为 lmkd 的默认信号来源（`use_psi` 属性默认为 true）。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
+lmkd 通过 `init_psi_monitors()` 注册 PSI 监听器，设置三档压力阈值：`psi_partial_stall_ms`（部分阻塞阈值，服务 LOW/MEDIUM 级别，监听 PSI some）和 `psi_complete_stall_ms`（完全阻塞阈值，服务 CRITICAL 级别，监听 PSI full）。当内核 PSI 机制检测到内存阻塞时间超过阈值时，会通过 epoll 通知 lmkd。从 Android 10 开始，PSI 已取代早期的 `vmpressure` 机制成为 lmkd 的默认信号来源（`use_psi` 属性默认为 true）。[已验证: 官方文档, source.android.com; 来源: Personal-Knowlodge/source/2026-03-06_wechat_Android帝国之进程杀手--lmkd.md]
 
 ### lmkd 的杀进程策略
 
@@ -181,15 +181,15 @@ ART 的垃圾回收会直接受到系统内存压力影响。就 Perfetto 的常
 
 ### mm_events：内存压力触发的 Perfetto 记录
 
-`mm_events` 是 Android 12+ 的内存压力记录机制。它的 AOSP 实现分布在两个位置：配置解析和触发器逻辑在 `system/memory/lmkd/mm_events.c`（lmkd 进程内），BPF 侧的 memevents 程序在 `system/memory/libmemevents/`。设备启用后，内存压力触发器会拉起一段受限采集窗口，按 `/vendor/etc/mm_events.cfg` 记录 vmstat 和 ftrace/mm_event 数据，用来保留压力发生前后的证据。
+`mm_events` 是 Android 15+ 的内存压力记录机制（AOSP android-15.0.0_r1 起可核到 `libmemevents` 路径）。它的 AOSP 实现分布在两个位置：mm_events 的配置解析和触发器逻辑在 `system/memory/lmkd/lmkd.cpp` 的 MemEventListener 部分（lmkd 进程内），BPF 侧的 memevents 程序在 `system/memory/libmeminfo/libmemevents/`（含 `memevents.cpp`、`bpfprogs/bpfMemEvents.c`、`include/memevents/bpf_types.h`）。设备启用后，内存压力触发器会拉起一段受限采集窗口，按 `/vendor/etc/mm_events.cfg` 记录 vmstat 和 ftrace/mm_event 数据，用来保留压力发生前后的证据。
 
 排查时先看 `persist.mm_events.enabled` 是否打开，再看触发器和限流配置。常见触发器是 `kmem_activity`，触发过密时会受 rate limit 限制；所以 trace 里没有 `mm_events` 记录，不等于设备没有发生内存压力。
 
-在 Perfetto 里，`mm_events` 的统计快照要和 `linux.ftrace` 轨道一起读：前者给出压力窗口内的汇总计数，后者用 `mm_vmscan_*`、`mm_compaction_*` 把时序补齐。Android 10/11 还没有这条路径，分析这两个版本时仍然回到 `vmscan` ftrace、PSI 和 lmkd 日志。
+在 Perfetto 里，`mm_events` 的统计快照要和 `linux.ftrace` 轨道一起读：前者给出压力窗口内的汇总计数，后者用 `mm_vmscan_*`、`mm_compaction_*` 把时序补齐。Android 10-14 还没有这条路径，分析这些版本时仍然回到 `vmscan` ftrace、PSI 和 lmkd 日志。
 
 > **待验证**：Perfetto SQL 层的 `mem.mm_events` 视图在部分设备/Perfetto 版本上可能不可用。如果 SQL 查询报"no such table"，回到上面的 ftrace slice 和线程状态做分析。
 
-[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/mm_events.c, system/memory/libmemevents/; 配置来源: /vendor/etc/mm_events.cfg]
+[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp (MemEventListener), system/memory/libmeminfo/libmemevents/; libmemevents 路径在 android-15.0.0_r1 起可见; 配置来源: /vendor/etc/mm_events.cfg]
 
 ### vmscan ftrace 事件
 
@@ -381,8 +381,8 @@ Android Go Edition 是面向低 RAM 设备的一组系统配置和产品策略�
 
 ## 参考资料
 
-- [lmkd mm_events 源码](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/heads/main/mm_events.c) — Android 内存压力记录机制（AOSP lmkd 仓库）
-- [libmemevents 源码](https://android.googlesource.com/platform/system/memory/libmemevents/) — BPF memevents 程序
+- [lmkd 源码](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/heads/main/lmkd.cpp) — Android Low Memory Killer Daemon（MemEventListener 与 mm_events 触发逻辑在此文件中）
+- [libmemevents 源码](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/heads/main/libmemevents/) — BPF memevents 程序（`system/memory/libmeminfo/libmemevents/`）
 - [Linux Kernel PSI 文档](https://docs.kernel.org/accounting/psi.html) — Pressure Stall Information 机制说明
 - [lmkd 源码](https://android.googlesource.com/platform/system/memory/lmkd/) — Android Low Memory Killer Daemon
 - [Perfetto 文档 - Memory Tracking](https://perfetto.dev/docs/data-sources/memory) — Perfetto 内存追踪数据源
