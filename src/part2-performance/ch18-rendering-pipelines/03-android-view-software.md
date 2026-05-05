@@ -1,5 +1,5 @@
 ---
-title: "Android View 软件渲染链路"
+title: "Android View 软件渲染路径"
 chapter: "18.3"
 status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
@@ -7,25 +7,28 @@ tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"
 related_chapters: ["2.1", "2.5", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: pending
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 task2b_state: fixed
 task2b_result: fixed
+last_task6_at: "2026-05-05T14:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-14-review.md"
+review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。"
 ---
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- [18.3.1 软件渲染的触发条件](#软件渲染的触发条件) — 什么时候会走这条链路
-- [18.3.2 全链路执行流程](#全链路执行流程) — 从 lockCanvas 到 unlockCanvasAndPost
-- [18.3.3 与硬件加速链路的核心差异](#与硬件加速链路的核心差异) — CPU vs GPU 的本质区别
+- [18.3.1 软件渲染的触发条件](#软件渲染的触发条件) — 什么时候会走这条路径
+- [18.3.2 完整执行流程](#完整执行流程) — 从 lockCanvas 到 unlockCanvasAndPost
+- [18.3.3 与硬件加速路径的核心差异](#与硬件加速路径的核心差异) — CPU vs GPU 的主要区别
 - [18.3.4 Trace 视角](#trace-视角) — Perfetto 中的识别特征
 - [18.3.5 性能特征与适用场景](#性能特征与适用场景) — 什么时候该用，什么时候不该用
 
@@ -35,7 +38,7 @@ task2b_result: fixed
 
 <!-- outline-end -->
 
-软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流链路，但在特定场景下仍然会被触发，理解它的存在对 Trace 分析有重要价值——当你看到 UI Thread 长时间满载而 RenderThread 毫无活动时，大概率就是走入了这条链路。但要注意：软件渲染在 Android 15+ 的能效管控体系下已属于**受限路径**：持续 CPU 栅格化会触发 Efficiency-aware Throttling 的激进降频策略，每瓦性能不足 GPU 路径的十分之一，长期运行会导致整机响应断崖式下跌。除非有明确的兼容性需求，否则不应主动选择软件渲染。
+软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流路径，但在特定场景下仍然会被触发。Trace 中如果出现 UI Thread 长时间满载、RenderThread 毫无活动，大概率就是走入了这条路径。但要注意：软件渲染在 Android 15+ 的能效管控体系下已属于**受限路径**：持续 CPU 栅格化会触发 Efficiency-aware Throttling 的激进降频策略，每瓦性能不足 GPU 路径的十分之一，长期运行会导致整机响应断崖式下跌。除非有明确的兼容性需求，否则不应主动选择软件渲染。
 
 ## 软件渲染的触发条件
 
@@ -73,7 +76,7 @@ task2b_result: fixed
 
 [已验证: AOSP `frameworks/base/core/java/android/view/View.java` `setLayerType()` + `frameworks/base/libs/hwui/Layer.h` + Android Developers Canvas API]
 
-## 全链路执行流程
+## 完整执行流程
 
 软件渲染的核心特征是**没有 RenderThread 参与**。所有操作都在 UI Thread 上完成，从锁定画布到像素填充到提交 Buffer，全流程串行。
 
@@ -99,7 +102,7 @@ graph LR
     style C fill:#ff9999
 ```
 
-关键点：这个过程中**每一条绘制指令都会立刻产生像素**。不存在"先记录再回放"的 DisplayList 机制——这是与硬件加速链路最本质的区别。
+关键点：这个过程中**每一条绘制指令都会立刻产生像素**。不存在"先记录再回放"的 DisplayList 机制——这是与硬件加速路径最主要的区别。
 
 **CPU 密集的原因**：复杂图形操作（路径裁剪、高斯模糊、大图缩放、文字排版）都需要大量浮点运算和内存读写。一张 1080p 的 Bitmap 有 207 万个像素，每个像素 4 字节（RGBA），意味着单次全屏填充就要读写 8MB 数据。
 
@@ -154,9 +157,9 @@ sequenceDiagram
     SF-->>BBQ: releaseFence
 ```
 
-## 与硬件加速链路的核心差异
+## 与硬件加速路径的核心差异
 
-理解软件渲染最好的方式是与标准硬件加速链路（[18.2](02-android-view-standard.md)）做对比：
+理解软件渲染，可以与标准硬件加速路径（[18.2](02-android-view-standard.md)）做对比：
 
 | 维度 | 软件渲染 | 硬件加速渲染 |
 |:---|:---|:---|
@@ -208,7 +211,7 @@ sequenceDiagram
 
 Android 16 为软件渲染引入了部分缓解手段：Skia 的 `SkTaskGroup` 支持多线程 CPU 栅格化，可以将部分像素计算分担到工作线程，降低单个线程的 CPU 压力。但这项优化的收益有限——它不改变"CPU 做像素计算"的本质，只是把串行变成了有限并行。对于复杂的模糊、路径裁剪、大图缩放操作，GPU 的并行计算优势仍然是数量级差距。
 
-**结论**：软件渲染在 2026 年的定位是**受限的应急路径**，不是性能优化的可选项。如果你在 Trace 中发现 App 持续走这条链路，应该视为一个需要修复的问题，而不是需要"优化"的路径。
+**结论**：软件渲染在 2026 年的定位是**受限的应急路径**，不是性能优化的可选项。如果 Trace 显示 App 持续走这条路径，应该视为一个需要修复的问题，而不是需要"优化"的路径。
 
 ### 软件渲染里的 Dirty Rect 为什么能成立
 
@@ -227,11 +230,11 @@ Dirty Rect 不是简单地"只画变化区域"。`Surface::lock()` 会先比较�
 3. **系统组件**：Toast、部分 Overlay 窗口可能在软件渲染下运行。
 4. **多进程共享 Surface**：某些 IPC 场景下通过 `Surface.lockCanvas()` 直接写入共享内存。
 
-**建议**：除非有明确的需求（如需要 Dirty Rect、需要兼容特殊硬件），否则不要主动使用软件渲染。如果 Trace 中意外发现 App 走了软件渲染链路，第一件事是检查 `hardwareAccelerated` 配置和 `setLayerType` 调用。
+**建议**：除非有明确的需求（如需要 Dirty Rect、需要兼容特殊硬件），否则不要主动使用软件渲染。如果 Trace 中意外发现 App 走了软件渲染路径，第一步是检查 `hardwareAccelerated` 配置和 `setLayerType` 调用。
 
 ---
 
 > **交叉引用**：
-> - 标准 BLAST 硬件加速链路详见 [18.2 Android View 标准链路](02-android-view-standard.md)
+> - 标准 BLAST 硬件加速路径详见 [18.2 Android View 标准路径](02-android-view-standard.md)
 > - BufferQueue 机制详见 [2.13 BufferQueue](13-buffer-queue.md)
 > - Skia 渲染引擎的内部机制详见 [2.14 图形 API 演进](14-graphics-api-evolution.md)
