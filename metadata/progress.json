@@ -2953,28 +2953,29 @@
     "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md": {
       "path": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
       "title": "Baseline Profiles 与编译优化实践",
-      "chapter": "'8.7'",
-      "section": "'8.7'",
-      "status": "ready-for-review",
+      "chapter": "8.7",
+      "section": "8.7",
+      "status": "finalized",
       "drafted_date": "'2026-04-06'",
       "drafted_by": "openclaw-task2a",
-      "applicable_versions": "Android 9 (API 28) - Android 17 (API 37)",
+      "applicable_versions": "Android 7 (API 24) - Android 17 (API 37)",
       "last_verified": "'2026-04-24'",
       "last_verified_against": "developer.android.com create/debug/profileable docs + AOSP",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "revisiting",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
-      "reviewed_date": "'2026-04-24'",
+      "reviewed_date": "2026-04-24",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-30",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-30T07:35:29+08:00",
-      "review_round": "5"
+      "last_task9_at": "2026-05-06T07:39:59+08:00",
+      "review_round": "5",
+      "task9_review_notes": "2026-05-06 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2（既有 suggestions，不阻塞）；自动晋升 finalized。"
     },
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md": {
       "path": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
@@ -3935,7 +3936,7 @@
       "status": "ready-for-review",
       "applicable_versions": "Android 10 (API 29) - Android 16 (API 36)",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
+      "task6_state": "revisiting",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
@@ -3943,10 +3944,10 @@
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-04",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-04",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-04T04:33:00+08:00",
-      "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0。"
+      "last_task9_at": "2026-05-06T07:39:59+08:00",
+      "task9_review_notes": "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。"
     },
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
@@ -8786,7 +8787,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T06:23:00+08:00",
+  "last_updated": "2026-05-06T07:39:59+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11347,5 +11348,64 @@
       }
     ],
     "log": "logs/deep-review/2026-05-06-06-deep-review.md"
+  },
+  "section_8_7": {
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "reviewed",
+    "task9_result": "pass-tech-review",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task9_at": "2026-05-06T07:39:59+08:00",
+    "path": "src/part2-performance/ch08-responsiveness/07-baseline-profiles.md",
+    "title": "Baseline Profiles 与编译优化实践",
+    "task9_reviewed_date": "2026-05-06"
+  },
+  "section_18_10": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task6_state": "revisiting",
+    "task6_result": "pass-light-edit",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "task2b_result": "fixed",
+    "last_task9_at": "2026-05-06T07:39:59+08:00",
+    "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+    "title": "SurfaceControl API 深入",
+    "task9_reviewed_date": "2026-05-06"
+  },
+  "2026-05-06-07-task9": {
+    "task": "task9-deep-tech-review",
+    "timestamp": "2026-05-06T07:39:59+08:00",
+    "sections_reviewed": [
+      "8.7",
+      "18.10"
+    ],
+    "log": "logs/deep-review/2026-05-06-07-deep-review.md",
+    "auto_finalized": [
+      "8.7"
+    ],
+    "queue_added": [
+      "18.10"
+    ],
+    "results": {
+      "8.7": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 2,
+        "auto_finalized": true
+      },
+      "18.10": {
+        "result": "needs-rework",
+        "p0": 2,
+        "p1": 1,
+        "p2": 0,
+        "auto_finalized": false
+      }
+    }
   }
 }
