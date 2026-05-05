@@ -35,12 +35,13 @@ tags:
   - performance
   - smoothness
 related_chapters: ["7.1", "2.3", "2.4", "2.5", "1.4", "1.5", "1.13", "1.14", "3.1", "4.3"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+task2b_rework_date: "2026-05-06T02:43:45+08:00"
 task9_result: needs-rework
 last_task9_at: "2026-05-04T22:21:37+08:00"
 task9_reviewed_by: openclaw-task9
@@ -350,7 +351,7 @@ Display 0 (Primary):
 | 文件路径 | 关键内容 | 版本 |
 |---------|---------|------|
 | `hardware/libhardware/include/hardware/hwcomposer2.h` | HWC2 Composition 枚举定义 | 全版本 |
-| `hardware/interfaces/graphics/composer/IComposer.aidl` | HWC3 AIDL 接口 | Android 13+ |
+| `hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposer.aidl` / `IComposerClient.aidl` | HWC3 AIDL 接口（含 Composition 枚举） | Android 13+ |
 | `frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp` | SurfaceFlinger HWC 封装 | 全版本 |
 | `platform/hardware/qcom/display/` | Qualcomm 私有 HWC 实现 | 厂商私有 |
 | `platform/external/drm_hwcomposer/` | DRM HWC 参考实现 | Linux mainline |
@@ -553,15 +554,15 @@ Binder 是 Android 进程间通信（IPC）的核心机制（详见 1.4 节）�
 
 ## WebView 渲染导致的 Jank
 
-[待补充：WebView 内部使用独立的渲染管线（Blink/Chromium），与 Android 原生渲染管线之间存在交互。当 WebView 内容更新时，需要通过 `onDraw` 将网页内容绘制到 Android 的 Surface 上，这个过程可能与主线程和 RenderThread 产生竞争。待收集更多素材后补充。]
+WebView 内部使用独立的渲染管线（Blink/Chromium），与 Android 原生渲染管线之间存在交互。WebView 内容更新时，通过 `onDraw` 将网页内容绘制到 Android 的 Surface 上，这个过程可能与主线程和 RenderThread 产生竞争。WebView 的 Renderer 进程崩溃恢复、`onRenderProcessGone` 处理流程等内容详见 7.11 节。
 
 ## 多窗口/分屏场景的特殊 Jank 问题
 
-[待补充：在分屏模式下，两个 App 同时可见，SurfaceFlinger 需要同时处理两个 App 的 Layer 合成。HWC 的 Overlay 数量是有限的，分屏模式下更容易触发 GPU 合成回退。此外，两个 App 的 RenderThread 会竞争 GPU 资源。待收集更多素材后补充。]
+分屏模式下，两个 App 同时可见，SurfaceFlinger 需要同时处理两个 App 的 Layer 合成。HWC 的 Overlay 数量有限，分屏更容易触发 GPU 合成回退（Client Composition），且两个 App 的 RenderThread 会竞争 GPU 资源。Perfetto 中可观察的现象是：分屏期间 SurfaceFlinger 的 `computeLayerBounds` / `handleMessageInvalidate` 耗时增加，以及 HWC `type=CLIENT` 的 Layer 数量上升。多窗口场景的完整渲染管线分析见 18.5 节。
 
 ## 动画与手势场景的 Jank 特征
 
-[待补充：动画场景的卡顿有其特殊性——即使单帧没有超时，帧与帧之间的耗时波动也可能导致动画不流畅。手势导航场景中，Input 事件处理的延迟直接影响触控反馈的及时性。待收集更多素材后补充。]
+动画场景的卡顿有两层特殊性：一是即使单帧没有超时，帧与帧之间的耗时波动（帧节奏不稳）也会导致动画不流畅，Perfetto 中可观察到 `doFrame` Slice 的持续时间呈锯齿形波动；二是手势导航场景中，Input 事件从 `InputDispatcher` 到 App 主线程回调的延迟直接影响触控反馈的及时性，在 Perfetto 中表现为 `delivered_millis` - `expected_delivery_millis` 偏差增大。帧节奏控制的详细机制见 2.17 节，Input 事件分发流程见 3.1 节。
 
 ## 常见问题与误区
 

@@ -10988,5 +10988,11 @@
         "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
       ]
     }
-  ]
+  ],
+  "rework_stats": {
+    "2026-05-06": {
+      "sections_reworked": 2,
+      "issues_fixed": 6
+    }
+  }
 }

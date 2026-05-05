@@ -38,12 +38,13 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
+task2b_rework_date: "2026-05-06T02:43:33+08:00"
 task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: openclaw-task9
 review_notes: '2026-04-24 task6 re-review (revisiting): pass-light-edit. L1 fix: 2x 不是X而是Y→直接陈述, 1x 口水过渡词(更准确的版本线是)删除. 评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。'
@@ -179,7 +180,7 @@ Android 9 和 Android 10 的非 Pixel 设备上，Perfetto services 常常还需
 `traced_probes` 负责通用系统数据源，但 Perfetto 的 profiling 能力还有一组独立组件：
 
 - `heapprofd`：负责 Native heap sampling，抓 `malloc` / `free` 相关分配栈，源码位于 `external/perfetto/src/profiling/memory/`。
-- `java_hprof_producer`：负责 Java heap dump 和 retained graph 这类对象图数据，也在 `external/perfetto/src/profiling/memory/` 目录下。Java heap dump 的完整触发链是：Consumer 在 TraceConfig 中配置 `android.java_hprof` 数据源（Android 11 引入） → `JavaHprofProducer` 收到启动指令后向目标进程发送 `__SIGRTMIN+6` 信号 → 目标进程内已注册的 ART 插件 `art/perfetto_hprof/perfetto_hprof.cc` 捕获信号，在进程内执行 heap 快照并写回 shared memory。目标 App 需要声明 `profileable` 或 `debuggable`，否则信号会被内核丢弃。[已验证: external/perfetto/src/profiling/memory/java_hprof_producer.cc, art/perfetto_hprof/perfetto_hprof.cc]
+- `java_hprof_producer`：负责 Java heap dump 和 retained graph 这类对象图数据，也在 `external/perfetto/src/profiling/memory/` 目录下。Java heap dump 的完整触发链是：Consumer 在 TraceConfig 中配置 `android.java_hprof` 数据源（Android 11 引入） → `JavaHprofProducer` 收到启动指令后向目标进程发送 `__SIGRTMIN+6` 信号 → 目标进程内已注册的 ART 插件 `art/perfetto_hprof/perfetto_hprof.cc` 捕获信号，在进程内执行 heap 快照并写回 shared memory。JavaHprofProducer 在发送 `__SIGRTMIN+6` 前会先调用 `CanProfile(...)` 检查目标 App 的 `profileable` / `debuggable` / installer gate 状态；不满足条件时不会向目标进程发信号，而非发送后由内核丢弃。[已验证: external/perfetto/src/profiling/memory/java_hprof_producer.cc SendSignal(), art/perfetto_hprof/perfetto_hprof.cc]
 - `traced_perf` / `perf_producer`：负责通过 Linux `perf_event_open` 做 CPU sampling 和调用栈采集，源码位于 `external/perfetto/src/profiling/perf/`。
 
 这些组件仍然通过 `traced` 管理的会话 buffer 汇聚数据，只是各自负责不同的 profiling 路径。后面看到 Native heap、Java heap 或 CPU profiling data source 时，先判断它属于哪类 producer 组件，再决定该查权限、配置还是设备支持。
@@ -399,7 +400,7 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 | Android 15 (V, API 35) | 默认启用 | binary protobuf + `--txt` | `ProfilingManager` (API 35) 允许 App 请求系统采集 trace；`com.android.profiling` APEX 部分组件 min_sdk 35 | 从"手动 adb 抓取"向"App 发起、系统执行"的触发式 profiling 演进 |
 | Android 16+ | 默认启用 | binary protobuf + `--txt` | System Triggered Profiling：ANR 等场景自动捕获背景 trace | Profiling 能力从"主动采集"扩展到"被动捕获" |
 
-注意：Perfetto 在 Android 12+ 通过 Mainline APEX 封装，运行时二进制位于 `/apex/com.android.os.perfetto/bin/`。AOSP 构建系统中部分组件对 `com.android.profiling` APEX 声明了 `apex_available`（`min_sdk_version 35`），但 `traced` / `traced_probes` 仍以平台二进制方式部署。具体设备上的 APEX 包名和可更新边界以实际 `/apex/` 目录为准。[已验证: external/perfetto/Android.bp, AOSP android-16.0.0_r1]
+注意：`traced` / `traced_probes` 仍以平台二进制方式部署（`/system/bin/traced`、`/system/bin/traced_probes`），不位于 `/apex/com.android.os.perfetto/`。Android 12+ 部分设备确实将 Perfetto 组件以 Mainline APEX 形式提供更新，但实际包名和覆盖范围因设备而异。Android 15 (API 35) 起 `ProfilingManager` 相关组件通过 `com.android.profiling` APEX 单独部署（`min_sdk 35`）。具体设备上的 APEX 包名和可更新边界以实际 `/apex/` 目录和 build manifest 核对为准。[已验证: external/perfetto/Android.bp, external/perfetto/src/traced/traced.rc, AOSP android-16.0.0_r1]
 
 ### 常见抓取入口对照表
 
