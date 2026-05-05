@@ -38,12 +38,12 @@ related_chapters:
 - '13.3'
 - '2.1'
 - '7.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 task2b_rework_date: "2026-05-06T02:43:33+08:00"
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
@@ -410,11 +410,11 @@ SDK 的使用方式是继承 `perfetto::DataSource` 类，定义自己的事件 
 | Android 9 (P) | 服务已进 system image | binary protobuf | 非 Pixel 设备常见要手动 enable `persist.traced.enable=1` | 不是“只能用 Systrace”，只是文本 `--txt` 还不可用 |
 | Android 10 (Q) | 服务仍可能未默认 enable | binary protobuf + `--txt` | 非 Pixel 设备仍常见手动 enable | heapprofd 开始进入常用工作流 |
 | Android 11+ (R+) | 大多数设备默认启用 | binary protobuf + `--txt` | 一般不用再手动 enable | Perfetto 成为日常 Android 系统追踪主入口 |
-| Android 12 (S) | 默认启用 | binary protobuf + `--txt` | FrameTimeline 成为帧级 jank 分类的主入口 | `com.android.os.perfetto` APEX 使 Perfetto 可通过 Mainline 更新；实际包名和覆盖范围因设备而异 [待验证] |
+| Android 12 (S) | 默认启用 | binary protobuf + `--txt` | FrameTimeline 成为帧级 jank 分类的主入口 | Perfetto 组件（`traced`/`traced_probes`）仍为平台二进制部署；部分设备通过 Mainline 机制提供更新，具体包名和覆盖范围因设备和 build 而异 [待验证] |
 | Android 15 (V, API 35) | 默认启用 | binary protobuf + `--txt` | `ProfilingManager` (API 35) 允许 App 请求系统采集 trace；`com.android.profiling` APEX 部分组件 min_sdk 35 | 从"手动 adb 抓取"向"App 发起、系统执行"的触发式 profiling 演进 |
 | Android 16+ | 默认启用 | binary protobuf + `--txt` | System Triggered Profiling：ANR 等场景自动捕获背景 trace | Profiling 能力从"主动采集"扩展到"被动捕获" |
 
-注意：`traced` / `traced_probes` 仍以平台二进制方式部署（`/system/bin/traced`、`/system/bin/traced_probes`），不位于 `/apex/com.android.os.perfetto/`。Android 12+ 部分设备将 Perfetto 组件以 Mainline APEX 形式提供更新，但实际包名和覆盖范围因设备而异。Android 15 (API 35) 起 `ProfilingManager` 相关组件通过 `com.android.profiling` APEX 单独部署（`min_sdk 35`）。具体设备上的 APEX 包名和可更新边界以实际 `/apex/` 目录和 build manifest 核对为准。[已验证: external/perfetto/Android.bp, external/perfetto/src/traced/traced.rc, AOSP android-16.0.0_r1]
+注意：`traced` / `traced_probes` 仍以平台二进制方式部署（`/system/bin/traced`、`/system/bin/traced_probes`），不在独立 APEX 包内。Android 12+ 部分设备将 Perfetto 组件通过 Mainline 机制提供更新，但 AOSP `external/perfetto/Android.bp` 中并未定义 `com.android.os.perfetto` APEX 模块——实际 Mainline 更新的载体和覆盖范围因设备 build 而异。Android 15 (API 35) 起 `ProfilingManager` 相关组件通过 `com.android.profiling` APEX 单独部署（`min_sdk 35`）。具体设备上的 APEX 包名和可更新边界以实际 `/apex/` 目录和 build manifest 核对为准。[已验证: external/perfetto/Android.bp, external/perfetto/src/traced/traced.rc, AOSP android-16.0.0_r1]
 
 ### 常见抓取入口对照表
 

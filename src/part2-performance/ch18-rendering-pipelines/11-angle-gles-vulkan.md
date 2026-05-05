@@ -322,3 +322,74 @@ ANGLE namespace 隔离保证 ANGLE 库不会污染 system 库命名空间，同�
 - AOSP `frameworks/base/core/java/android/os/GraphicsEnvironment.java`
 - AOSP `frameworks/native/opengl/libs/EGL/Loader.cpp`
 - AOSP `external/angle/`
+
+
+## ANGLE 同步机制：EGL Native Fence → Vulkan Semaphore 转换路径 🔸
+
+当 App 通过 ANGLE 使用 Vulkan 而非原生 GLES 时，Android native fence（来自 `EGL_ANDROID_native_fence_sync` 扩展）需要转换为 Vulkan Semaphore 才能在 Vulkan 命令队列中正确等待。ANGLE 的转换实现在 `external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp` 中。
+
+### 核心转换路径
+
+ANGLE 在 `SyncHelperNativeFence::initializeWithFd()` 中接收来自 EGL 层的 Android native fence fd（通过 `EGL_ANDROID_native_fence_sync` 扩展），直接将 fd 传递给 `ExternalFence::init()`，不做额外复制（fd 所有权由 EGL 规范定义：接收方必须在其不再需要时关闭它）。
+
+**关键函数**：`SyncHelperNativeFence::serverWait()` — 当 Vulkan command buffer 需要等待 native fence 信号时执行：
+
+```cpp
+// external/angle/src/libANGLE/renderer/vulkan/SyncVk.cpp:521-551
+angle::Result SyncHelperNativeFence::serverWait(ContextVk *contextVk)
+{
+    // 创建 Binary 类型 Vulkan Semaphore
+    DeviceScoped<Semaphore> waitSemaphore(device);
+    ANGLE_VK_TRY(contextVk, waitSemaphore.get().init(device, VK_SEMAPHORE_TYPE_BINARY));
+
+    // 将 Android sync fd 导入 Vulkan Semaphore
+    VkImportSemaphoreFdInfoKHR importFdInfo = {};
+    importFdInfo.sType       = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR;
+    importFdInfo.semaphore   = waitSemaphore.get().getHandle();
+    importFdInfo.flags       = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR;  // 临时语义
+    importFdInfo.handleType  = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR;
+    importFdInfo.fd          = dup(mExternalFence->getFenceFd());  // 复制 fd
+    ANGLE_VK_TRY(contextVk, waitSemaphore.get().importFd(device, importFdInfo));
+
+    // 添加到下一次 vkQueueSubmit 的等待列表
+    contextVk->addWaitSemaphore(waitSemaphore.get().getHandle(),
+                                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+    return angle::Result::Continue;
+}
+```
+
+**关键设计决策**：
+- `VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR`：导入的 fd 语义是临时的，不需要在 Vulkan API 外持久化
+- `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR`：明确指定 handle 类型为 Android native sync fd，确保跨进程语义正确
+- `dup()` 复制 fd：原始 fd 所有权已转移到 VkSemaphore，调用方需保留自己的副本
+
+### Perfetto 中的识别
+
+ANGLE Vulkan 路径下，同步相关 slice 名称变为：
+- `SyncVk::serverWait` 或 `SyncHelperNativeFence::waitForGpu`
+- 对应 `android.vulkan` 事件 track
+
+原生 GLES 路径的同步事件为：
+- `eglClientWaitSyncKHR`
+- `BufferQueue releaseFence` 相关 slice
+
+### Linux sync 用户态等待
+
+ANGLE 使用 `poll()` 实现用户态等待，不依赖内核 ioctl：
+
+```cpp
+// SyncVk.cpp:28-68 SyncWaitFd()
+VkResult SyncWaitFd(int fd, uint64_t timeoutNs, VkResult timeoutResult = VK_TIMEOUT) {
+    struct pollfd fds;
+    fds.fd     = fd;
+    fds.events = POLLIN;
+    int ret = poll(&fds, 1, timeoutMs);
+    // ret > 0 → POLLIN set → fence signaled → VK_SUCCESS
+    // ret == 0 → timeout → timeoutResult (VK_TIMEOUT)
+}
+```
+
+`poll()` 比 `sync_wait()` ioctl 更轻量，timeout 精度为毫秒级。
+
+[AIW-源码调研-2026-05-06]
+
