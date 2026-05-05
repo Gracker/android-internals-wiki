@@ -164,7 +164,7 @@ tags:
   - [18.3 Android View 软件渲染链路](part2-performance/ch18-rendering-pipelines/03-android-view-software.md)
   - [18.4 Android View 混合渲染链路](part2-performance/ch18-rendering-pipelines/04-android-view-mixed.md)
   - [18.5 Android View 多窗口链路](part2-performance/ch18-rendering-pipelines/05-android-view-multi-window.md)
-  - [18.6 SurfaceView 直出链路](part2-performance/ch18-rendering-pipelines/06-surfaceview.md)
+  - [18.6 SurfaceView 直出路径](part2-performance/ch18-rendering-pipelines/06-surfaceview.md)
   - [18.7 TextureView 合成链路](part2-performance/ch18-rendering-pipelines/07-textureview.md)
   - [18.8 OpenGL ES 渲染链路](part2-performance/ch18-rendering-pipelines/08-opengl-es.md)
   - [18.9 Vulkan 原生渲染链路](part2-performance/ch18-rendering-pipelines/09-vulkan-native.md)

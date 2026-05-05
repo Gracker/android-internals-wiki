@@ -354,6 +354,6 @@ eglSwapBuffers(display, surface);
 
 > **交叉引用**：
 > - Vulkan 原生链路详见 [18.9 Vulkan 原生渲染链路](09-vulkan-native.md)
-> - SurfaceView 直出链路详见 [18.6 SurfaceView 直出链路](06-surfaceview.md)
+> - SurfaceView 直出路径详见 [18.6 SurfaceView 直出路径](06-surfaceview.md)
 > - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)
 > - BufferQueue 与 Fence 机制详见 [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)

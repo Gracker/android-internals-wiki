@@ -211,7 +211,7 @@ sequenceDiagram
 | `opaque` | `RenderMode.surface` | `FlutterSurfaceView` | 不透明背景下 SurfaceView 直出最省事 |
 | `transparent` | `RenderMode.texture` | `FlutterTextureView` | SurfaceView 的挖洞机制不支持透明混合，只能走 TextureView |
 
-嵌入到其他 View 层级（`FlutterFragment` 或 `FlutterView` 直接使用）时，`RenderMode` 由调用方显式配置，不走这套默认推断。SurfaceView 模式下还存在 z-ordering 约束——`FlutterSurfaceView` 背后的 Surface 默认在 Window 下方，可通过 `setZOrderOnTop` / `setZOrderMediaOverlay` 调整，这会影响 SurfaceFlinger 侧的 layer 叠加关系（参见 [18.6 SurfaceView 直出链路](06-surfaceview.md#z-order-与图层结构)）。
+嵌入到其他 View 层级（`FlutterFragment` 或 `FlutterView` 直接使用）时，`RenderMode` 由调用方显式配置，不走这套默认推断。SurfaceView 模式下还存在 z-ordering 约束——`FlutterSurfaceView` 背后的 Surface 默认在 Window 下方，可通过 `setZOrderOnTop` / `setZOrderMediaOverlay` 调整，这会影响 SurfaceFlinger 侧的 layer 叠加关系（参见 [18.6 SurfaceView 直出路径](06-surfaceview.md#z-order-与图层结构)）。
 
 [已验证: Flutter engine `shell/platform/android/io/flutter/embedding/android/FlutterActivity.java` `getRenderMode()` + `FlutterSurfaceView.java` 默认 z-order 行为]
 

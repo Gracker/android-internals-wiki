@@ -2,7 +2,7 @@
 title: "Frame Pacing Library 与帧节奏控制"
 chapter: "2.17"
 section: "2.17"
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: "Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API 37)"
 last_verified: "2026-04-19"
 last_verified_against: "AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline, developer.android.com/games/sdk/frame-pacing"
@@ -61,22 +61,23 @@ related_chapters: ["2.2", "2.3", "2.4", "2.9", "2.13", "2.16", "2.18", "7.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
-pipeline_stage: task2b_pending
-task6_state: revisiting
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: "task2b_pending"
+task6_state: "reviewed"
+task9_state: "reviewed"
+task2b_state: "pending"
 reviewed_by: "openclaw-task6"
-task6_reviewed_date: "2026-05-01"
-reviewed_date: "2026-04-28"
-task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-06"
+reviewed_date: "2026-05-06"
+task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_task6_reviewed_date: "2026-04-30"
 task9_reviewed_by: openclaw-task9
 task2b_result: pending
 last_task9_at: "2026-05-06T00:36:51+08:00"
 task9_reviewed_date: "2026-05-06"
-review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0 1，P1 2。 | 2026-05-06 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；VK_KHR_present_id 核心版本断言错误，DeliQueue 实现模型与跨章口径不一致。"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0 1，P1 2。 | 2026-05-06 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；VK_KHR_present_id 核心版本断言错误，DeliQueue 实现模型与跨章口径不一致。 | 2026-05-06 Task6 02:06：复审 2.17 写作层；清理 L1 填充副词 3 处。章节仍有 Task9 P95 pending 队列，本轮不做技术裁决，保持 task2b_pending。"
 last_task9_review_log: "logs/deep-review/2026-05-06-00-deep-review.md"
+last_task6_at: "2026-05-06T02:06:00+08:00"
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制
@@ -129,7 +130,7 @@ Swappy 负责决定这一帧该什么时候等、什么时候交、要不要设�
 
 ## Swappy 的真实提交链
 
-当前 main 分支的 OpenGL 路径并不是文档里那种“单函数包住一切”的实现。`SwappyGL::swapInternal()` 负责把几个步骤串起来，真正的 fence、presentation time 和统计逻辑分散在 `SwappyGL.cpp`、`EGL.cpp`、`SwappyCommon.cpp` 里。
+当前 main 分支的 OpenGL 路径并不是文档里那种“单函数包住一切”的实现。`SwappyGL::swapInternal()` 负责把几个步骤串起来，fence、presentation time 和统计逻辑分散在 `SwappyGL.cpp`、`EGL.cpp`、`SwappyCommon.cpp` 里。
 
 按当前源码整理，提交顺序可以写成下面这段伪代码。这里特意标成“伪代码”，因为这不是任何一个 AOSP 文件里原样存在的函数体。
 
@@ -212,7 +213,7 @@ int SwappyCommon::calculateSwapInterval(nanoseconds frameTime,
 
 多刷新率选择也是动态过程。`setPreferredRefreshPeriod()` 会遍历 `mSupportedRefreshPeriods`，找“能装下当前 frame time 的最短 swap duration”，同时在满足条件的 refresh config 里尽量选更长的 refresh period 来省电。平台支持 `ANativeWindow_setFrameRate()` 时，Swappy 直接投票 frame rate；没有这条 native 能力时，才退回 DisplayManager 路径。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp]
 
-源码里确实有几个常量，但含义和上一版那张阈值表不是一回事：
+源码里有几个常量，但含义和上一版那张阈值表不是一回事：
 
 - `mAutoSwapIntervalThreshold` 默认是 `50ms`，慢到这个区间后，auto swap interval 不再主动 sleep，直接让应用尽快跑。
 - `REFRESH_RATE_MARGIN` 是 `500ns`，只用于 interval 取整边界。
@@ -388,7 +389,7 @@ LIMIT 30;
 - `offsetFromPreviousFrame`，相邻两帧之间隔了多少个 refresh periods。
 - `latencyFrames`，从 `recordFrameStart` 到实际 present 经过了多少个 refresh periods。
 
-源码里的 logcat label 是固定的。下面这几行就是 `FrameStatistics.cpp` 真正会打印的字段名，角括号里的值由运行时决定：
+源码里的 logcat label 是固定的。下面这几行就是 `FrameStatistics.cpp` 实际打印的字段名，角括号里的值由运行时决定：
 
 ```text
 I/FrameStatistics: == Frame statistics ==
