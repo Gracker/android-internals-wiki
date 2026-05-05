@@ -1,6 +1,64 @@
 {
   "pending": [
     {
+      "section": "2.16",
+      "section_title": "Sync Fence 框架与帧同步机制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.16 Sync Fence 未来展望残留 Android 16 强制 Timeline Semaphore 事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/事实错误",
+          "location": "L312-L318 [待验证] 未来展望：Timeline Semaphore 与 fd 路径的演进",
+          "detail": "[P0] 正文 L302 已说明 Android 16 / VPA16 并未将 Timeline Semaphore 列为强制设备要求，但 L318 又写“Android 16 要求新设备支持 Timeline Semaphores”。复核 Khronos VP_ANDROID_16_minimums.json：MUST 扩展包含 VK_EXT_host_image_copy、VK_KHR_maintenance6 等，未出现 timelineSemaphore / VK_KHR_timeline_semaphore；Timeline Semaphore 是 Vulkan 1.2 核心特性，实际可用性应通过 VkPhysicalDeviceTimelineSemaphoreFeatures.timelineSemaphore 查询，不能用 Android 16 / VPA16 作为强制依据。",
+          "suggestion": "删除或改写 L318 的“Android 16 要求新设备支持 Timeline Semaphores”。保留待验证展望时，改成“部分 Vulkan 设备可支持 timelineSemaphore；Android 图形栈 native fence / sync_file fd 边界是否演进，以正式 CDD / AOSP / source.android.com 为准”。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L304-L310 16KB 页对 Fence 路径的潜在影响",
+          "detail": "[P2] 该段已标注待验证，但仍把 16KB 页、TLB miss、GPU IRQ → dma_fence signal → SurfaceFlinger wakeup 延迟串成较具体因果链；当前仍缺同机 4KB/16KB kernel ftrace、perf counter 与 Perfetto fence wait 尾部抖动数据。该 P2 已在 intake/suggestions.md 2026-05-03 条目记录，本轮不重复追加。",
+          "suggestion": "Task2B 修 P0 时顺手将该段进一步压缩为研究假设，或补足同设备 A/B trace 与 perf counter 后再保留因果链。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-05T22:55:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "12.1",
+      "section_title": "APK 体积优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 12.1 APK 体积优化缺少 Android 15+ 16KB page-size native library 对齐边界，需回炉补强",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/知识盲区",
+          "location": "L274-L321 Native 库瘦身：ABI 过滤与 Strip 符号表",
+          "detail": "[P1] 章节讨论 .so 是否压缩、page alignment、direct loading、strip 与符号上传，但没有覆盖 Android 15+ 16KB page-size 对 native library 的硬约束。Android 官方 page-size 文档要求升级 AGP 8.5.1+ 并使用未压缩 shared libraries；NDK r28+ 默认生成 16KB ELF alignment，NDK r27 及以下需配置 -Wl,-z,max-page-size=16384 / -Wl,-z,common-page-size=16384；APK 还需用 zipalign -P 16 4 验证 ZIP entry 对齐。当前正文只写“page alignment”，读者可能为了体积继续压缩/重打包 .so 或保留旧构建链，导致 16KB 设备加载失败。",
+          "suggestion": "在 Native 库瘦身下补一个“16KB page-size 兼容不是体积优化项”的小节：列出 AGP 8.5.1+、NDK r28+、prebuilt .so 的 readelf -l LOAD align >= 2**14、zipalign -P 16 4 / bundletool 验证；明确不要为追求 APK 数值破坏 ELF LOAD 段和 ZIP entry 对齐。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L167-L178 R8 Full Mode 和新版资源缩减",
+          "detail": "[P2] 正文只写 AGP 8.12.0+ 可通过 android.r8.optimizedResourceShrinking=true 开启优化资源缩减，未补 AGP 8.12/8.13 opt-in 与 AGP 9.0+ 在 isShrinkResources=true 时默认应用的差异。官方 shrink-code 文档已明确 AGP 9.0.0+ 不需要再设置该属性。",
+          "suggestion": "把版本边界改成：AGP 8.12/8.13 手动 opt-in；AGP 9.0.0+ 在 isShrinkResources=true 时默认使用 optimized resource shrinking；动态资源引用仍需 tools:keep / resources.txt 验证。"
+        },
+        {
+          "type": "交叉引用一致性",
+          "location": "L444 常见问题“应该支持所有屏幕密度”",
+          "detail": "[P2] 正文 L225-L256 已说明 AAB 发布流程下 density / ABI split 应交给 Play，resConfigs 过滤 density 只适合受控单 APK / 非 Play 分发；FAQ 又无条件建议在 Gradle 中配置 resConfigs 过滤密度。读者只看 FAQ 会得到和主文相反的工程建议。",
+          "suggestion": "FAQ 改成与主文一致：AAB/Play 默认交给 split；只有 sideload、企业包、OEM 固定设备等受控单 APK 场景才考虑 density resConfigs。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-05T22:55:00+08:00",
+      "status": "pending"
+    },
+    {
       "section": "04.06",
       "section_title": "4.6 内存相关的版本演进",
       "priority": 85,
