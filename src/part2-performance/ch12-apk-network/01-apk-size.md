@@ -2,10 +2,10 @@
 title: "APK 体积优化"
 section: "12.1"
 chapter: "12.1"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-task6_reviewed_date: "2026-05-05"
+task6_reviewed_date: "2026-05-06"
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
@@ -30,35 +30,36 @@ sources:
     path: "得物技术《包体积：Layout 二进制文件裁剪优化》2023-09"
 tags: [apk, r8, proguard, app-bundle, resource-optimization, native-libs, dex, code-shrinking, webp, abi-filter, dynamic-feature, apk-analyzer]
 related_chapters: ["8.3", "14.1", "15.6"]
-task2b_state: fixed
+task2b_state: "fixed"
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_date: 2026-05-05
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-05-05T22:55:00+08:00
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-06"
 task6_result: "pass-light-edit"
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-06T04:41:00+08:00"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。"
-last_task6_at: "2026-05-05T23:26:00+08:00"
-review_notes: "2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9 已有 P1/P2 queue pending，等待 Task2B。"
+last_task6_at: "2026-05-06T05:05:00+08:00"
+review_notes: "2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9 已有 P1/P2 queue pending，等待 Task2B。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。"
+
 ---
 
 # APK 体积优化
 
 ## 为什么要关注 APK 体积
 
-当一个用户在地铁里用 4G 网络搜索一个 App，Google Play 页面显示「下载大小 156 MB」——这个数字很可能直接劝退了他。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%[待验证: Google 内部数据，引用自 Android Developers Blog]。在国内应用市场，这个数字只会更残酷——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
+当一个用户在地铁里用 4G 网络搜索一个 App，Google Play 页面显示「下载大小 156 MB」——这个数字很可能直接劝退了他。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%[待验证: Google 内部数据，引用自 Android Developers Blog]。在国内应用市场，这个数字可能更敏感——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
 
 体积问题不仅仅是下载体验。APK 安装后，dex 文件需要被解压、验证、编译（AOT/JIT）；resources.arsc 会被加载到内存；native libraries 被解压到磁盘。体积越大，安装时间越长，运行时的内存占用也越高。对于 MTK、高通这类平台上做性能优化的工程师来说，包体积和启动速度、内存占用之间存在一条不太显眼但会影响结果的因果链。
 
-本章不罗列优化技巧清单——那种清单任何博客上都能找到。这里要回答三件事：**一个 APK 里面到底装了什么，哪些东西占了多少空间，我们用什么工具能看清楚，以及从工程实践的角度，哪些优化手段投入产出比最高。**
+本章不罗列优化技巧清单——那种清单任何博客上都能找到。本章只回答三件事：**一个 APK 里面到底装了什么，哪些东西占了多少空间，我们用什么工具能看清楚，以及从工程实践的角度，哪些优化手段投入产出比最高。**
 
 ## APK 里面到底装了什么
 
@@ -288,12 +289,12 @@ Android 15+ 要求部分设备支持 16KB page size，这对 native library 产�
 
 关键要求：
 
-- **AGP 8.5.1+**：使用未压缩 shared libraries（`useLegacyPackaging=false`），确保 `.so` 的 ZIP entry 对齐到 16KB 边界
+- **AGP 8.5.1+**：使用未压缩 shared libraries（`useLegacyPackaging=false`），确保 `.so` 的 ZIP entry 按 16KB 边界排列
 - **NDK r28+**：默认生成 16KB ELF alignment（`max-page-size=16384`）；NDK r27 及以下需在链接器 flags 中添加 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384`
 - **Prebuilt .so**：用 `readelf -l <lib>.so | grep LOAD` 检查所有 LOAD 段的 `Align` 是否 ≥ 2\*\*14（16384）
-- **APK 对齐验证**：`zipalign -P 16 4 <input.apk> <output.apk>` 或 `bundletool` 验证 ZIP entry 对齐
+- **APK alignment 验证**：`zipalign -P 16 4 <input.apk> <output.apk>` 或 `bundletool` 验证 ZIP entry 是否按 16KB 边界排列
 
-常见踩坑：为了追求更小的 APK 数值，手动压缩 `.so` 或用第三方工具重打包，会破坏 ELF LOAD 段和 ZIP entry 对齐。16KB 设备上 `dlopen` 会因 alignment 不匹配而失败。
+常见踩坑：为了追求更小的 APK 数值，手动压缩 `.so` 或用第三方工具重打包，会破坏 ELF LOAD 段的 `p_align` 和 ZIP entry 边界布局。16KB 设备上 `dlopen` 会因 alignment 不匹配而失败。
 
 [已验证: developer.android.com/guide/practices/page-sizes]
 
