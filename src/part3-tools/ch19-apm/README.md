@@ -12,7 +12,7 @@ tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
 pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_state: reviewed
 task9_state: reviewed
 last_task2b_at: "2026-04-25T02:45:50+08:00"
@@ -27,7 +27,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T14:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-14-review.md"
-review_notes: "2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。"
+review_notes: "2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。 | 2026-05-05 Task2B 22:22：P0 FrameMetrics 归属修正（android.view.FrameMetrics API 24+）；P1 Tracing SDK 版本修正（1.3.0 稳定 / tracing-perfetto 2.0 alpha）。"
 last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 ---
 
@@ -64,8 +64,8 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 | 工具 | Jetpack / 平台模块 | 核心能力 | 状态 |
 |------|-------------------|----------|------|
 | JankStats | androidx.metrics | 帧级卡顿感知 | 主流 |
-| FrameMetrics | androidx.metrics | 帧耗时阶段细分 | 主流 |
-| Tracing SDK | androidx.tracing | 进程内 trace（2.0 支持 Perfetto 格式） | 主流 |
+| FrameMetrics | android.view.FrameMetrics / Window.OnFrameMetricsAvailableListener (API 24+) | 帧耗时阶段细分（AndroidX 聚合器：FrameMetricsAggregator） | 主流 |
+| Tracing SDK | androidx.tracing | 进程内 trace（1.3.0 稳定版；tracing-perfetto 2.0 alpha 支持 Perfetto 格式输出） | 主流 |
 | Microbenchmark | androidx.benchmark | 代码段 CPU 性能测量 | 主流 |
 | Macrobenchmark | androidx.benchmark | 端到端启动、滑动、复杂 UI 测量 | 主流 |
 | Baseline Profiles | Android Gradle Plugin / Jetpack | 编译优化 + 启动加速，和 Play Cloud Profiles / ART 编译策略一起影响首次启动 | 主流 |
