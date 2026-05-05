@@ -11223,7 +11223,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T02:35:48+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T07:23:53.209697",
+      "completed_reason": "P0 AGP 8.5+ 16KB DEX layout拆分为Startup Profile/DEX layout(AGP 8.1/8.3)和16KB page-size兼容(Android 15+); P1 Google Play消费时机改为后台设备更新; P1 ART Service源码锚点packages/modules/Art/artd/已补充; SDM标注为待验证"
     },
     {
       "section": "7.2",
@@ -11683,7 +11685,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T04:33:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T07:23:53.209697",
+      "completed_reason": "P0 ASurfaceControl_fromJava API幻觉已删除；P0 ASurfaceControl_writeToParcel/readFromParcel API幻觉已删除，跨进程路径改为Java Parcelable/系统托管"
     },
     {
       "section": "10.6",
