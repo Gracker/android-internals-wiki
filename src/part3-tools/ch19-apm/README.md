@@ -10,12 +10,12 @@ last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
-last_task2b_at: "2026-04-25T02:45:50+08:00"
+task6_state: revisiting
+task9_state: pending
+last_task2b_at: "2026-05-06T05:49:37+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 task9_reviewed_date: "2026-05-05"
@@ -27,7 +27,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T14:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-14-review.md"
-review_notes: "2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。 | 2026-05-05 Task2B 22:22：P0 FrameMetrics 归属修正（android.view.FrameMetrics API 24+）；P1 Tracing SDK 版本修正（1.3.0 稳定 / tracing-perfetto 2.0 alpha）。"
+review_notes: "2026-05-06 Task2B 05:44：确认 P0 FrameMetrics 归属修正已在上一轮生效；P1 Tracing SDK 版本修正已生效。更新 pipeline_stage 推回 Task6 复审。 | 2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。 | 2026-05-05 Task2B 22:22：P0 FrameMetrics 归属修正（android.view.FrameMetrics API 24+）；P1 Tracing SDK 版本修正（1.3.0 稳定 / tracing-perfetto 2.0 alpha）。"
 last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 ---
 

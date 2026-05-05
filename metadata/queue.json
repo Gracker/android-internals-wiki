@@ -12074,9 +12074,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T14:20:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-05T14:20:00+08:00"
+      "last_reviewed_at": "2026-05-05T14:20:00+08:00",
+      "completed_at": "2026-05-06T05:49:50.262458+08:00",
+      "completed_reason": "P0 FrameMetrics归属已确认修正为android.view.FrameMetrics(非androidx.metrics)；P1 Tracing SDK版本已修正为1.3.0稳定+tracing-perfetto 2.0 alpha。前轮Task2B修复已生效，本轮确认并推回Task6复审。"
     },
     {
       "section": "7.11",
@@ -12361,6 +12363,368 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T05:30:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-06T05:49:50.262458+08:00",
+      "completed_reason": "P0 VK_KHR_present_id修正为ratified KHR设备扩展(非Vulkan 1.4核心)；P1 Android 16 Vulkan版本要求改为VP_ANDROID_16_minimums profile引用+CDD为准"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "+86 手机号登录 TG 纸飞机提示 smsfee？这样就可以登录了。\n- **来源**：Gracker RSS 订阅\n- **时间**：2026-05-06 00:00\n- **链接**：https://w2solo.com/topics/7280\n- **摘要**：开发者在用Telegram做海外业务两年后，发现官方客户端存在网络配置复杂、英文界面、+86手机号登录提示smsfee等问题。找到了基于官方源码的中文版本客户端，解决了这些痛点。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术文章\n- **相关标签**：{#Android #开发工具} — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "GLM-5V-Turbo：面向多模态代理的原生基础模型\n- **来源**：ClawFeed 24小时高价值一览\n- **时间**：2026-05-06 04:03\n- **链接**：https://arxiv.org/abs/2604.26752\n- **摘要**：研究人员提出了 GLM-5V-Turbo 模型，这是一个专门为多模态代理任务设计的基础模型。模型通过整合视觉、语言和动作模态，实现了在复杂环境中的自主交互能力。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#AI #多模态AI #基础模型 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Docker Compose 在 2026 年生产环境中的适用性讨论\n- **来源**：ClawFeed 24小时高价值一览\n- **时间**：2026-05-06 04:03\n- **链接**：https://distr.sh/blog/running-docker-in-production/\n- **摘要**：文章深入分析了 Docker Compose 在 2026 年生产环境中的实际适用性，认为虽然仍有使用场景但已不再是默认选择。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#容器技术 #DevOps #架构设计 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7604694326518104115\n- **摘要**：Android 17 在 Canary 2601 中发现原生应用锁功能，支持长按应用图标直接锁定，解锁方式包括 PIN 码、密码和生物识别。最关键的是通知内容也会被「锁住」，解决了 Android 用户长期以来的隐私焦虑问题。\n- **推荐映射章节**：ch15-安全与隐私\n- **内容类型**：技术文章\n- **相关标签**：#安全 #隐私 #Android17 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 嵌入式照片选择器，让体验更加丝滑\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7599963665039081522\n- **摘要**：Google 推出的 Embedded Photo Picker 解决了传统照片选择器的隐私痛点，不需要申请存储权限就能在应用内直接选择照片，采用沙箱机制确保 App 只能访问用户主动选择的照片，避免了隐私风险。\n- **推荐映射章节**：ch14-用户界面\n- **内容类型**：技术文章\n- **相关标签**：#UI #权限管理 #照片选择器 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 动态加载 Activity\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7607078636965871659\n- **摘要**：动态加载Activity是插件化技术的核心问题，需要解决Manifest校验、资源访问和生命周期管理三大难题。主流解决方案包括代理Activity模式和Hook Activity启动流程两种方案，各有优缺点。\n- **推荐映射章节**：ch08-系统架构\n- **内容类型**：技术文章\n- **相关标签**：#插件化 #系统架构 #Activity — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "一个好的开发可能用不好 AI\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7600665529112150016\n- **摘要**：作者通过半年使用Cursor的实践发现，AI更像实习生而非资深开发者替代品，开发者需要成为\"AI经理\"而非简单使用者。问题不在于模型智能程度，而在于缺乏清晰的表达和需求规格说明能力。\n- **推荐映射章节**：ch17-开发工具与实践\n- **内容类型**：技术文章\n- **相关标签**：#AI开发 #工具使用 #开发效率 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Futter3 仿抖音我的页面or用户详情页\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7604395865335693364\n- **摘要**：作者提供了完整的Flutter3仿抖音个人主页实现代码，包含SliverAppBar拉伸效果、头像溢出显示、Tab切换等功能，并讨论了头像溢出效果的实现难点。\n- **推荐映射章节**：ch14-用户界面\n- **内容类型**：技术文章\n- **相关标签**：#Flutter #UI实现 #跨平台 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "# 险些酿成P0事故！我用 AI 打造了 Android 代码评审\"守门员\"\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7593252939709612068\n- **摘要**：作者因一次调试代码未清理险些酿成P0事故，意识到传统Lint工具的局限性，基于Node.js+LLM构建了支持Regex静态拦截+AI深度语义分析的混合式代码评审工具。\n- **推荐映射章节**：ch17-开发工具与实践\n- **内容类型**：技术文章\n- **相关标签**：#代码质量 #AI辅助开发 #自动化测试 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:39:11",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "+86 手机号登录 TG 纸飞机提示 smsfee？这样就可以登录了。\n- **来源**：Gracker RSS 订阅\n- **时间**：2026-05-06 00:00\n- **链接**：https://w2solo.com/topics/7280\n- **摘要**：开发者在用Telegram做海外业务两年后，发现官方客户端存在网络配置复杂、英文界面、+86手机号登录提示smsfee等问题。找到了基于官方源码的中文版本客户端，解决了这些痛点。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术文章\n- **相关标签**：{#Android #开发工具} — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "GLM-5V-Turbo：面向多模态代理的原生基础模型\n- **来源**：ClawFeed 24小时高价值一览\n- **时间**：2026-05-06 04:03\n- **链接**：https://arxiv.org/abs/2604.26752\n- **摘要**：研究人员提出了 GLM-5V-Turbo 模型，这是一个专门为多模态代理任务设计的基础模型。模型通过整合视觉、语言和动作模态，实现了在复杂环境中的自主交互能力。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#AI #多模态AI #基础模型 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Docker Compose 在 2026 年生产环境中的适用性讨论\n- **来源**：ClawFeed 24小时高价值一览\n- **时间**：2026-05-06 04:03\n- **链接**：https://distr.sh/blog/running-docker-in-production/\n- **摘要**：文章深入分析了 Docker Compose 在 2026 年生产环境中的实际适用性，认为虽然仍有使用场景但已不再是默认选择。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#容器技术 #DevOps #架构设计 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7604694326518104115\n- **摘要**：Android 17 在 Canary 2601 中发现原生应用锁功能，支持长按应用图标直接锁定，解锁方式包括 PIN 码、密码和生物识别。最关键的是通知内容也会被「锁住」，解决了 Android 用户长期以来的隐私焦虑问题。\n- **推荐映射章节**：ch15-安全与隐私\n- **内容类型**：技术文章\n- **相关标签**：#安全 #隐私 #Android17 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 嵌入式照片选择器，让体验更加丝滑\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7599963665039081522\n- **摘要**：Google 推出的 Embedded Photo Picker 解决了传统照片选择器的隐私痛点，不需要申请存储权限就能在应用内直接选择照片，采用沙箱机制确保 App 只能访问用户主动选择的照片，避免了隐私风险。\n- **推荐映射章节**：ch14-用户界面\n- **内容类型**：技术文章\n- **相关标签**：#UI #权限管理 #照片选择器 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 动态加载 Activity\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7607078636965871659\n- **摘要**：动态加载Activity是插件化技术的核心问题，需要解决Manifest校验、资源访问和生命周期管理三大难题。主流解决方案包括代理Activity模式和Hook Activity启动流程两种方案，各有优缺点。\n- **推荐映射章节**：ch08-系统架构\n- **内容类型**：技术文章\n- **相关标签**：#插件化 #系统架构 #Activity — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "一个好的开发可能用不好 AI\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7600665529112150016\n- **摘要**：作者通过半年使用Cursor的实践发现，AI更像实习生而非资深开发者替代品，开发者需要成为\"AI经理\"而非简单使用者。问题不在于模型智能程度，而在于缺乏清晰的表达和需求规格说明能力。\n- **推荐映射章节**：ch17-开发工具与实践\n- **内容类型**：技术文章\n- **相关标签**：#AI开发 #工具使用 #开发效率 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Futter3 仿抖音我的页面or用户详情页\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7604395865335693364\n- **摘要**：作者提供了完整的Flutter3仿抖音个人主页实现代码，包含SliverAppBar拉伸效果、头像溢出显示、Tab切换等功能，并讨论了头像溢出效果的实现难点。\n- **推荐映射章节**：ch14-用户界面\n- **内容类型**：技术文章\n- **相关标签**：#Flutter #UI实现 #跨平台 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem-OEM",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "# 险些酿成P0事故！我用 AI 打造了 Android 代码评审\"守门员\"\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7593252939709612068\n- **摘要**：作者因一次调试代码未清理险些酿成P0事故，意识到传统Lint工具的局限性，基于Node.js+LLM构建了支持Regex静态拦截+AI深度语义分析的混合式代码评审工具。\n- **推荐映射章节**：ch17-开发工具与实践\n- **内容类型**：技术文章\n- **相关标签**：#代码质量 #AI辅助开发 #自动化测试 — ",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-06T05:40:34",
       "status": "pending"
     }
   ],

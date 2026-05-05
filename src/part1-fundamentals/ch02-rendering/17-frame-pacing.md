@@ -78,17 +78,17 @@ related_chapters:
 created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 官方文档 + 研究素材
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-05-06'
 reviewed_date: '2026-05-06'
 task6_result: pass-light-edit
 task9_result: needs-rework
-last_task2b_at: '2026-05-06T04:41:00+08:00'
+last_task2b_at: "2026-05-06T05:49:37+08:00"
 task9_task6_reviewed_date: '2026-04-30'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-06T05:30:00+08:00'
@@ -448,7 +448,7 @@ Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swa
 
 ### present_id 与 VK_GOOGLE_display_timing：Swappy Vulkan 路径的真实确认方式
 
-Android 16（API 36）要求 Vulkan 1.4，`VK_KHR_present_id` 在 Vulkan 1.4 中成为核心特性（此前是 KHR 设备扩展）。但复核 `frameworks/opt/gamesdk` 当前 main 分支：`SwappyVk.cpp`、`SwappyVkBase.cpp` 和 `swappyVk.h` 中均未出现 `VK_KHR_present_id` 或 `present_id` 相关代码。Swappy Vulkan 路径的帧上屏确认仍围绕 `VK_GOOGLE_display_timing`、GPU fence、Choreographer 回调和 SwappyStats。
+Android 16 设备的 Vulkan 能力基线由 Khronos VP_ANDROID_16_minimums profile 定义（具体 Vulkan 版本要求以正式 CDD 16 为准）。`VK_KHR_present_id` 在 Khronos `vk.xml` 中仍是 ratified KHR 设备扩展，不属于 Vulkan 1.4 核心特性；设备支持时，应用需通过 `VkPhysicalDevicePresentIdFeaturesKHR` 查询并启用。复核 `frameworks/opt/gamesdk` 当前 main 分支：`SwappyVk.cpp`、`SwappyVkBase.cpp` 和 `swappyVk.h` 中均未出现 `VK_KHR_present_id` 或 `present_id` 相关代码。Swappy Vulkan 路径的帧上屏确认仍围绕 `VK_GOOGLE_display_timing`、GPU fence、Choreographer 回调和 SwappyStats。
 
 `VK_GOOGLE_display_timing` 提供的是 display 驱动报告的 `presentTimes` 时间戳，经过 SurfaceFlinger 中转。Swappy 用这些时间戳与内部统计做校准。这条路径与 Choreographer 回调路径之间存在调度延迟，但这正是 Swappy 通过 `onPreSwap()` / `onPostSwap()` 统计循环试图补偿的部分。
 
