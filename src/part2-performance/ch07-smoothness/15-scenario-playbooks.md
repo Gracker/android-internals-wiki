@@ -20,24 +20,26 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [playbook, smoothness, startup, jank, anr, troubleshooting]
 related_chapters: ["7.1", "7.3", "8.2", "9.3", "13.3", "15.2", "15.5", "15.6"]
-task9_state: pending
+task9_state: reviewed
 repaired_date: "2026-04-21"
 repaired_by: "codex"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
-last_task9_at: "2026-05-05T08:37:27+08:00"
+last_task9_at: "2026-05-05T17:38:00+08:00"
 
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。 | 2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 3 处 L1/L2 表达问题，未新增回炉项，转 Task9 复审。"
 last_task6_at: "2026-05-05T17:19:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-17-review.md"
+task9_review_notes: "2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。"
+last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 
 ---
 
