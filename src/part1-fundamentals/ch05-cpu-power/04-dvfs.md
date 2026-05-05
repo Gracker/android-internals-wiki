@@ -29,19 +29,19 @@ polish_by: "task2b-polish"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-06"
 task2b_state: "fixed"
-task2b_result: fixed
+task2b_result: "fixed"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-06T01:28:30+08:00"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "pending"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
-last_task6_at: "2026-05-06T01:05:00+08:00"
-review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。"
+last_task6_at: "2026-05-06T02:06:00+08:00"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task2b_at: "2026-05-06T01:45:17+08:00"
 ---
 
@@ -93,7 +93,7 @@ CPU 的功耗来自两部分：静态功耗（漏电流）和动态功耗（充�
 
 [已验证: 官方文档, developer.android.com/games/optimize/adpf/performance-hint-api — 功耗与电压平方成正比]
 
-这就是 DVFS 存在的根本原因。CPU 不需要时刻保持最高频率和最高电压——当负载较轻时，降低频率和电压可以大幅节省功耗，而对用户体验几乎没有影响。
+这就是 DVFS 存在的主要原因。CPU 不需要时刻保持最高频率和最高电压——当负载较轻时，降低频率和电压可以大幅节省功耗，而对用户体验几乎没有影响。
 
 但频率和电压之间存在一个约束：**更高的频率需要更高的电压来维持稳定运行**。这是因为更高的时钟频率意味着信号翻转更快，电路需要在更短的时间内完成充放电。如果电压不够，信号就无法在时钟周期内稳定到可识别的逻辑电平，导致计算错误。
 
@@ -210,7 +210,7 @@ schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪�
 
 #### schedutil 的频率计算
 
-对于 CFS 调度类管理的普通任务，schedutil 仍然沿着 `1.25 × f_max × util / max_capacity` 这一类比例关系换算目标频率，但这里的 `util` 已经不是“裸 PELT 值”。在 android15-6.6 内核里，真正参与计算的是 `sugov_get_util()` 整理过的有效利用率，可以写成下面这个简化关系：
+对于 CFS 调度类管理的普通任务，schedutil 仍然沿着 `1.25 × f_max × util / max_capacity` 这一类比例关系换算目标频率，但这里的 `util` 已经不是“裸 PELT 值”。在 android15-6.6 内核里，参与计算的是 `sugov_get_util()` 整理过的有效利用率，可以写成下面这个简化关系：
 
 **util_eff = apply_iowait_boost(uclamp(PELT_util))**
 
@@ -298,7 +298,7 @@ RTG 的「聚合调频」功能就是为了解决这个问题。当 Android 的 
 5. regulator framework 调整电压（如果需要）
 6. 等待电压稳定后切换到新频率
 
-整个过程的端到端延迟，从几十微秒到数百毫秒都有可能。单次 PLL / regulator 切换通常只占微秒到毫秒级，Google 官方文档里提到的约 **200ms** 主要来自上游信号建立：PELT 的指数平滑需要时间积累，`rate_limit_us` 会压住过密的切频，请求到固件或驱动后才轮到真正的硬件切换。Trace 里看到“频率升得晚”时，排查顺序通常先看负载估计和 governor 节流，再看底层时钟路径。
+整个过程的端到端延迟，从几十微秒到数百毫秒都有可能。单次 PLL / regulator 切换通常只占微秒到毫秒级，Google 官方文档里提到的约 **200ms** 主要来自上游信号建立：PELT 的指数平滑需要时间积累，`rate_limit_us` 会压住过密的切频，请求到固件或驱动后才轮到硬件切换。Trace 里看到“频率升得晚”时，排查顺序通常先看负载估计和 governor 节流，再看底层时钟路径。
 
 [已验证: 官方文档, developer.android.com/games/optimize/adpf/performance-hint-api — governor 升频可能需要约 200ms]
 

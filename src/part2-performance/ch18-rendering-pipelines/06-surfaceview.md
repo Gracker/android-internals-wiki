@@ -1,9 +1,9 @@
 ---
-title: "SurfaceView 直出链路"
+title: "SurfaceView 直出路径"
 section: "18.6"
 chapter: "18.6"
 applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
-tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独立Layer", "Overlay", "渲染链路"]
+tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独立Layer", "Overlay", "渲染路径"]
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
@@ -12,34 +12,34 @@ task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-06T01:28:30+08:00"
 task9_reviewed_date: "2026-05-06"
-task2b_result: fixed
+task2b_result: "fixed"
 task2b_rework_date: "2026-04-20"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 last_task2b_at: "2026-05-06T01:46:24+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External 问题单）"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
 task9_state: "pending"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
-last_task6_at: "2026-05-06T01:05:00+08:00"
-review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST 创建链路缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。Android 16 低延迟输入 API 断言未在 AOSP Window/ViewRootImpl 找到，现代 SurfaceView 首帧/WMS 链路仍有旧模型残留；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:46:24+08:00 Task2B：P0 删除不存在的 setPreferLowLatencyInput API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。"
+last_task6_at: "2026-05-06T02:06:00+08:00"
+review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST 创建路径缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。Android 16 低延迟输入 API 断言未在 AOSP Window/ViewRootImpl 找到，现代 SurfaceView 首帧/WMS 路径仍有旧模型残留；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:46:24+08:00 Task2B：P0 删除不存在的 setPreferLowLatencyInput API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；按技术写作词库统一术语为“路径”，清理夸张/填充表达 4 处；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
-# SurfaceView 直出链路
+# SurfaceView 直出路径
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
 - [18.6.1 为什么需要 SurfaceView](#为什么需要-surfaceview) — 去耦设计的核心动机
 - [18.6.2 独立 Surface 与挖洞机制](#独立-surface-与挖洞机制) — 双 Layer 架构
-- [18.6.3 完整渲染链路](#完整渲染链路) — Producer → BLAST → SurfaceFlinger → HWC
+- [18.6.3 完整渲染路径](#完整渲染路径) — Producer → BLAST → SurfaceFlinger → HWC
 - [18.6.4 BufferQueue 行为与 Triple Buffering](#bufferqueue-行为与-triple-buffering) — 独立队列的流转细节
-- [18.6.5 SurfaceView vs TextureView](#surfaceview-vs-textureview) — 链路级对比与选型
+- [18.6.5 SurfaceView vs TextureView](#surfaceview-vs-textureview) — 数据流对比与选型
 - [18.6.6 HWC Overlay 与合成策略](#hwc-overlay-与合成策略) — 零 GPU 参与的直出路径
 - [18.6.7 Trace 视角](#trace-视角) — Perfetto 中的识别方法
 - [18.6.8 常见性能问题与优化](#常见性能问题与优化) — 实战瓶颈分析
@@ -55,7 +55,7 @@ review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：现代 Surfac
 
 当你在 Perfetto 中看到 App 主线程卡了 50ms，但视频画面依然在流畅播放——你正在看的就是 SurfaceView 的效果。
 
-SurfaceView 是 Android 历史上最高效的视图组件之一，它的核心设计目标只有一个字：**去耦**。普通 View 的渲染必须经过 App 主线程的 Measure/Layout/Draw 流程，再由 RenderThread 提交给 SurfaceFlinger。如果主线程被阻塞——比如做了一次数据库查询或 JSON 解析——整帧画面都会卡住。
+SurfaceView 是 Android 里效率很高的视图组件之一，设计目标是 **去耦**。普通 View 的渲染必须经过 App 主线程的 Measure/Layout/Draw 流程，再由 RenderThread 提交给 SurfaceFlinger。如果主线程被阻塞——比如做了一次数据库查询或 JSON 解析——整帧画面都会卡住。
 
 SurfaceView 打破了这个限制。它拥有独立的 Surface，Producer 线程把帧送进自己的 BufferQueue，App 主线程不参与逐帧绘制。现代 Android 上，这条路通常会先经过 App 进程内的 BLASTBufferQueue / BLASTBufferItemConsumer，再由 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这就是为什么视频播放器、游戏引擎、Camera 预览几乎清一色使用 SurfaceView。[已验证: AOSP SurfaceView 实现]
 
@@ -65,7 +65,7 @@ SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 Text
 
 SurfaceView 在 WMS（Window Manager Service）侧注册为一个**独立的图层（Layer）**，与 App 的主窗口并行存在。App 的主窗口会在 SurfaceView 所在区域"挖一个洞"（Punch Through），让 SurfaceView 的独立 Layer 从下面透出来。
 
-双 Layer 架构从 Android 1.0 就存在。早期版本里 Layer 注册和 Buffer 管理完全由 WMS 的 `WindowState` / `WindowSurfacePlacer` 控制。Android 11 起，SurfaceView 的 Layer 创建链路切换到 `SurfaceView.updateSurface()` → `createBlastSurfaceControls()`，通过 `SurfaceControl.Builder()` 创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。现代结构为：
+双 Layer 架构从 Android 1.0 就存在。早期版本里 Layer 注册和 Buffer 管理完全由 WMS 的 `WindowState` / `WindowSurfacePlacer` 控制。Android 11 起，SurfaceView 的 Layer 创建路径切换到 `SurfaceView.updateSurface()` → `createBlastSurfaceControls()`，通过 `SurfaceControl.Builder()` 创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。现代结构为：
 
 ```text
 ViewRootImpl bounds layer
@@ -121,9 +121,9 @@ Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方�
 - **Android 10 及以下**：透明洞的绘制、窗口位置变化、Surface buffer 更新更容易错拍，resize / move 时更容易看到黑边、拉伸或短闪
 - **Android 11+（BLASTBufferQueue）**：App 进程内的 BLAST 层先 acquire buffer，再把 buffer、fence 和几何信息打进 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。SurfaceFlinger 侧的 BufferStateLayer/Layer 状态更新会在同一个事务边界里处理 buffer 与几何变化。它解决事务同步问题，`CLEAR` 挖洞仍保留
 
-## 完整渲染链路
+## 完整渲染路径
 
-SurfaceView 的渲染链路可以分为三个阶段，每个阶段对应不同的线程和系统组件。与标准 Android View 链路最大的区别在于：**Producer Thread 完全独立于 App UI Thread**。
+SurfaceView 的渲染路径可以分为三个阶段，每个阶段对应不同的线程和系统组件。与标准 Android View 路径最大的区别在于：**Producer Thread 完全独立于 App UI Thread**。
 
 ### 第一阶段：Producer Thread（生产者）
 
@@ -215,9 +215,9 @@ Triple Buffering 的优势在于：当 Producer 生产速度偶尔超过 Display
 
 ## SurfaceView vs TextureView
 
-这是性能分析中最常被问到的问题。理解两者的架构差异，就能理解为什么 SurfaceView 在大多数场景下性能更好。
+这是性能分析中的高频问题。理解两者的架构差异，就能理解为什么 SurfaceView 在大多数场景下性能更好。
 
-### 链路级对比
+### 数据流对比
 
 从数据流的角度，两者的核心差异可以用一句话概括：
 
@@ -255,7 +255,7 @@ Android 11+ BLAST 同步机制成熟后，SurfaceView 的同步问题已大幅�
 
 ## HWC Overlay 与合成策略
 
-SurfaceView 最强大的性能优势在于它可以走 **HWC Overlay** 路径——完全不经过 GPU 合成，直接由 Hardware Composer 将 SurfaceView Layer 输出到屏幕。
+SurfaceView 的主要性能优势在于它可以走 **HWC Overlay** 路径——完全不经过 GPU 合成，直接由 Hardware Composer 将 SurfaceView Layer 输出到屏幕。
 
 ### Overlay 的条件
 
@@ -293,9 +293,9 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 
 ## Trace 视角
 
-### 识别 SurfaceView 链路
+### 识别 SurfaceView 路径
 
-在 Perfetto 中确认 SurfaceView 链路，看两个信号：**独立的 BufferQueue** 和 **Producer Thread 的独立性**：
+在 Perfetto 中确认 SurfaceView 路径，看两个信号：**独立的 BufferQueue** 和 **Producer Thread 的独立性**：
 
 1. **多个 BufferQueue Track**：在 SurfaceFlinger 进程中，你会看到至少两个 Layer——一个是 App 主窗口，一个是 SurfaceView 的独立 Layer
 2. **Producer Thread 不在 App 主线程**：Producer 出现的进程取决于内容来源——
@@ -304,7 +304,7 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
    - **游戏引擎 / 地图 / 原生图形**：常见在应用进程内自己的渲染线程，也可能再分出引擎线程或 native 线程池
    
    排查时不要只盯应用主进程，要按 Producer 身份切到对应进程再看 `dequeueBuffer` / `queueBuffer` slice
-3. **App 主线程空闲不影响 SurfaceView**：这是最明显的特征——如果 App 主线程出现长时间阻塞（比如 GC 或 I/O 等待），但视频/Camera 画面仍在流畅更新，说明走的是 SurfaceView 的独立链路
+3. **App 主线程空闲不影响 SurfaceView**：这是典型特征——如果 App 主线程出现长时间阻塞（比如 GC 或 I/O 等待），但视频/Camera 画面仍在流畅更新，说明走的是 SurfaceView 的独立路径
 4. **Composition Type**：在 `dumpsys SurfaceFlinger` 中查看对应 Layer 的 Composition Type
 
 ### 关键 Slice
@@ -369,9 +369,9 @@ adb shell dumpsys SurfaceFlinger | grep -A 5 "SurfaceView"
 
 ### 5. 输入延迟分析
 
-SurfaceView 本身不改变输入事件的基础路径——触控事件仍然走 InputDispatcher → App 主线程 → View 树遍历这条标准链路。SurfaceView 解耦的是渲染，不是输入。
+SurfaceView 本身不改变输入事件的基础路径——触控事件仍然走 InputDispatcher → App 主线程 → View 树遍历这条标准路径。SurfaceView 解耦的是渲染，不是输入。
 
-但输入延迟最终会反映到画面更新上，这个端到端链路可以拆成四段来分析：
+但输入延迟最终会反映到画面更新上，这个端到端路径可以拆成四段来分析：
 
 1. **InputDispatcher → App 主线程**：InputDispatcher 将触控事件分发到 App 的 InputConsumer，App 主线程从 NativeInputEventReceiver 读事件。这一段的延迟取决于 InputDispatcher 的 ANR 超时配置、App 主线程是否被阻塞、以及是否有其他窗口优先消费事件
 2. **App 主线程处理 → Producer 帧提交**：App 收到输入后更新状态（如游戏角色位置、Camera 对焦区域），Producer Thread 根据新状态生成下一帧。这一段的延迟取决于 Producer 的帧节奏和 App→Producer 的数据传递方式
@@ -383,9 +383,9 @@ SurfaceView 本身不改变输入事件的基础路径——触控事件仍然�
 ---
 
 > **交叉引用**：
-> - TextureView 的 App 侧合成链路详见 [18.7 TextureView 合成链路](07-textureview.md)
-> - GLES 在 SurfaceView 上的集成详见 [18.8 OpenGL ES 渲染链路](08-opengl-es.md)
-> - Vulkan 在 SurfaceView 上的集成详见 [18.9 Vulkan 原生渲染链路](09-vulkan-native.md)
+> - TextureView 的 App 侧合成路径详见 [18.7 TextureView 合成路径](07-textureview.md)
+> - GLES 在 SurfaceView 上的集成详见 [18.8 OpenGL ES 渲染路径](08-opengl-es.md)
+> - Vulkan 在 SurfaceView 上的集成详见 [18.9 Vulkan 原生渲染路径](09-vulkan-native.md)
 > - BufferQueue 机制详解详见 [2.13 BufferQueue](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
 > - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
 > - 图形 API 演进历史详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)

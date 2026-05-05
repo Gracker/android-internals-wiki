@@ -331,7 +331,7 @@ TextureView 实际有两套 fence，用途不同不能混淆：
 ---
 
 > **交叉引用**：
-> - SurfaceView 直出链路（对比参考）详见 [18.6 SurfaceView 直出链路](06-surfaceview.md)
+> - SurfaceView 直出路径（对比参考）详见 [18.6 SurfaceView 直出路径](06-surfaceview.md)
 > - OpenGL ES 链路详见 [18.8 OpenGL ES 渲染链路](08-opengl-es.md)
 > - BufferQueue 与 SurfaceTexture 机制详见 [2.13 图形缓冲区管理（BufferQueue）](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
 > - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)

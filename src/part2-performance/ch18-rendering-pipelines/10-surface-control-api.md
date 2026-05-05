@@ -635,7 +635,7 @@ BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemCon
 
 > **交叉引用**：
 > - BLAST Buffer 生命周期详见 [18.2 Android View 标准链路（BLAST 深入）](02-android-view-standard.md)
-> - SurfaceView 的 SurfaceControl 集成详见 [18.6 SurfaceView 直出链路](06-surfaceview.md)
+> - SurfaceView 的 SurfaceControl 集成详见 [18.6 SurfaceView 直出路径](06-surfaceview.md)
 > - Vulkan Presentation 与 SurfaceControl 详见 [18.9 Vulkan 原生渲染链路](09-vulkan-native.md)
 > - WebView 的多种合成模式详见 [18.13 WebView 渲染链路](13-webview-rendering.md)
 > - BufferQueue 详见 [2.13 图形缓冲区管理 (BufferQueue)](13-buffer-queue.md)
