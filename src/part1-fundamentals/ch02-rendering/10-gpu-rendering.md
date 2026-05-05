@@ -26,27 +26,26 @@ reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-21"
 rework_by: openclaw-task2b
-review_round: 7
+review_round: 8
 last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达"
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: pending
+task9_state: reviewed
+task9_result: needs-rework
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-task2b_state: fixed
-last_task9_at: "2026-05-05T00:20:00+08:00"
+task2b_state: pending
+last_task9_at: "2026-05-05T11:20:00+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-05-05T10:47:46.820460"
-task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。P0 3 / P1 3 / P2 3。"
+task9_review_notes: "2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 4 / P2 2。"
 task6_reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T11:05:00+08:00"
 review_notes: "2026-05-05 task6 revisit: L1/L2 小修完成；既有 queue pending 阻止自动晋升；待 Task9 复审。"
-
 ---
 
 # GPU 渲染深入
