@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T02:06:00+08:00",
+  "generated_at": "2026-05-06T02:28:51+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -8,8 +8,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 109,
-      "task2b_pending": 86,
-      "task9_pending": 18,
+      "task2b_pending": 88,
+      "task9_pending": 16,
       "task6_pending": 5
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 202,
-      "pending": 11
+      "reviewed": 204,
+      "pending": 9
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 115,
-      "pending": 93,
+      "fixed": 113,
+      "pending": 95,
       "idle": 3
     },
     "finalized": 110,
@@ -43,8 +43,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 109,
-      "task2b_pending": 86,
-      "task9_pending": 18,
+      "task2b_pending": 88,
+      "task9_pending": 16,
       "task6_pending": 5
     },
     "task6_state_counts": {
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 202,
-      "pending": 11
+      "reviewed": 204,
+      "pending": 9
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 115,
-      "pending": 93,
+      "fixed": 113,
+      "pending": 95,
       "idle": 3
     },
     "last_updated": "2026-05-06"
@@ -1962,10 +1962,10 @@
       "last_verified": "2026-05-01",
       "last_verified_against": "Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1973,7 +1973,7 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T01:28:30+08:00",
+      "last_task9_at": "2026-05-06T02:28:51+08:00",
       "task6_reviewed_date": "2026-05-06",
       "last_task6_at": "2026-05-06T02:06:00+08:00",
       "review_notes": "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。",
@@ -3778,10 +3778,10 @@
       "section": "18.6",
       "status": "ready-for-review",
       "applicable_versions": "Android 1.0 (API 1) - Android 17 (API 37)",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -3789,7 +3789,7 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T01:28:30+08:00",
+      "last_task9_at": "2026-05-06T02:28:51+08:00",
       "notes": "Task9 deep review 2026-04-28: needs-rework; P0=0 P1=1.",
       "task2b_rework_date": "2026-04-20",
       "task2b_fixed_at": "2026-04-26T13:40:00+08:00",

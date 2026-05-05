@@ -12214,6 +12214,46 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T00:36:51+08:00",
       "status": "pending"
+    },
+    {
+      "section": "5.4",
+      "section_title": "DVFS 与功耗管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.4 DVFS 与功耗管理 schedutil android15/android16 简化伪代码仍与 kernel/common 源码不符，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L227-L258 schedutil 的频率计算 / sugov_get_util() 伪代码",
+          "detail": "[P0] 当前代码块虽标为简化伪代码，但仍保留与 android15-6.6 / android16-6.12 源码相矛盾的 C 级细节。android15-6.6 的 sugov_get_util() 只设置 bw_dl 与 util，实际没有 sg_cpu->max 字段/赋值；正文 L236 仍写“省略：sg_cpu->max 赋值”。android16-6.12 实际以 scx_cpuperf_target(cpu) 初始化 util，只有在 !scx_switched_all() 时才叠加 cpu_util_cfs_boost(cpu)，随后 effective_cpu_util(cpu, util, &min, &max)、util=max(util, boost)、sg_cpu->bw_min=min、sg_cpu->util=sugov_effective_cpu_perf(cpu, util, min, max)。正文 L246-L253 把 cpu_util_cfs_boost 写成起点，把 scx_cpuperf_target 写成无返回值语句，且 sugov_effective_cpu_perf() 的参数/返回值形态不对。",
+          "suggestion": "按 kernel/common refs/heads/android15-6.6 与 android16-6.12 重写这两个伪代码块：android15 删除 sg_cpu->max；android16 写清 scx_cpuperf_target 返回值、scx_switched_all() 分支、bw_min 赋值和 sugov_effective_cpu_perf(cpu, util, min, max) 返回值。若不想逐行贴源码，改成文字流程，避免使用近似 C 代码。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T02:28:51+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "18.6",
+      "section_title": "SurfaceView 直出路径",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 18.6 SurfaceView 版本分界仍写错：Android 11 并未走 createBlastSurfaceControls/BLASTBufferQueue，需按 pre-O / O-R / S+ 拆链路",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码错误",
+          "location": "L66-L77、L119-L123、L149-L156、L254、L363-L366 SurfaceView WMS / SurfaceControl / BLAST 版本边界",
+          "detail": "[P1] 正文多处把现代 SurfaceView 切换点写成“Android 11+ BLASTBufferQueue / createBlastSurfaceControls”，并把 Android 10 及以下归到 WMS WindowState / WindowSurfacePlacer 旧模型。复核 AOSP：android-11.0.0_r1 SurfaceView.java 不存在 BLASTBufferQueue/createBlastSurfaceControls，创建路径仍是 SurfaceControl.Builder(mSurfaceSession).setBufferSize(...).setParent(viewRoot.getBoundsLayer())；android-12.0.0_r1 起才出现 createBlastSurfaceControls() 与 BLASTBufferQueue。更早的 android-6/7 使用 IWindowSession.addToDisplayWithoutInputChannel 子窗口路径，android-8/9/10 已经转为 App 进程 SurfaceControl 路径。因此当前“Android 10-/11+”二分会误导读者判断首帧延迟、resize 同步和 trace 中该找哪类对象。",
+          "suggestion": "把版本链改成三段：Android 7 及以下：SurfaceView 子窗口 / IWindowSession 路径；Android 8-11：App 侧 SurfaceControl buffer layer，parent 到 ViewRoot bounds layer，但还不是 BLASTBufferQueue；Android 12+：createBlastSurfaceControls() 创建 container / BLAST / background layer，并由 BLASTBufferQueue 适配 buffer 与 Transaction。首帧延迟、挖洞同步和 Trace 观察点也按这三段重写。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T02:28:51+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
