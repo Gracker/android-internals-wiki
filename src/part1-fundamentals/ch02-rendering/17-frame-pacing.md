@@ -61,15 +61,17 @@ related_chapters: ["2.2", "2.3", "2.4", "2.9", "2.13", "2.16", "2.18", "7.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: fixed
 reviewed_by: "openclaw-task6"
 task6_reviewed_date: "2026-05-06"
 reviewed_date: "2026-05-06"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
+last_task2b_at: "2026-05-06T04:41:00+08:00"
 task9_task6_reviewed_date: "2026-04-30"
 task9_reviewed_by: openclaw-task9
 task2b_result: pending
@@ -423,7 +425,7 @@ Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swa
 
 ### present_id 与 VK_GOOGLE_display_timing：Swappy Vulkan 路径的真实确认方式
 
-Android 16（API 36）要求 Vulkan 1.4，`VK_KHR_present_id` 作为 Vulkan 1.2 核心扩展在支持设备上可用。但复核 `frameworks/opt/gamesdk` 当前 main 分支：`SwappyVk.cpp`、`SwappyVkBase.cpp` 和 `swappyVk.h` 中均未出现 `VK_KHR_present_id` 或 `present_id` 相关代码。Swappy Vulkan 路径的帧上屏确认仍围绕 `VK_GOOGLE_display_timing`、GPU fence、Choreographer 回调和 SwappyStats。
+Android 16（API 36）要求 Vulkan 1.4，`VK_KHR_present_id` 在 Vulkan 1.4 中成为核心特性（此前是 KHR 设备扩展）。但复核 `frameworks/opt/gamesdk` 当前 main 分支：`SwappyVk.cpp`、`SwappyVkBase.cpp` 和 `swappyVk.h` 中均未出现 `VK_KHR_present_id` 或 `present_id` 相关代码。Swappy Vulkan 路径的帧上屏确认仍围绕 `VK_GOOGLE_display_timing`、GPU fence、Choreographer 回调和 SwappyStats。
 
 `VK_GOOGLE_display_timing` 提供的是 display 驱动报告的 `presentTimes` 时间戳，经过 SurfaceFlinger 中转。Swappy 用这些时间戳与内部统计做校准。这条路径与 Choreographer 回调路径之间存在调度延迟，但这正是 Swappy 通过 `onPreSwap()` / `onPostSwap()` 统计循环试图补偿的部分。
 
@@ -435,7 +437,7 @@ Android 16（API 36）要求 Vulkan 1.4，`VK_KHR_present_id` 作为 Vulkan 1.2 
 
 Android 17 对 Java 侧 `MessageQueue` 做了无锁队列重构（DeliQueue），替换了沿用多年的 `Looper` + `MessageQueue` 锁竞争模型。
 
-**对 Java Choreographer 的影响已确认。** 主线程的 `MessageQueue.nativePollOnce()` 和其他线程的同步操作共用一把 `mLock`，锁竞争会导致 VSync 回调到达时间抖动。DeliQueue 通过单生产者-单消费者无锁队列消除了这把锁。使用 Java `Choreographer.FrameCallback` 的应用（非游戏场景）会直接受益。
+**对 Java Choreographer 的影响已确认。** 主线程的 `MessageQueue.nativePollOnce()` 和其他线程的同步操作共用一把 `mLock`，锁竞争会导致 VSync 回调到达时间抖动。DeliQueue 通过多生产者 lock-free Treiber stack + Looper 侧 min-heap 的无锁结构消除了这把锁（详见 §16.4）。使用 Java `Choreographer.FrameCallback` 的应用（非游戏场景）会直接受益。
 
 **对 Swappy 的 NDK AChoreographer 路径，影响需要分两层看。** Swappy 的 Vulkan/OpenGL 路径走的是 NDK `AChoreographer` 回调，不直接经过 Java `MessageQueue`。DeliQueue 改造的是 Java 层 `MessageQueue`，目前没有 AOSP commit 或公开文档证明 NDK `AChoreographer` / `ALooper` 的回调路径也做了同样的无锁改造。如果 NDK AChoreographer 的底层仍然走传统 `Looper` 管道，Delique 改善的是 Java 侧回调抖动，不直接传导到 Swappy native 回调。
 

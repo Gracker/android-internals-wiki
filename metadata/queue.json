@@ -120,7 +120,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T22:55:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T04:47:32+08:00",
+      "completed_reason": "P1 16KB page-size native library对齐约束已补强; P2 R8 Optimized Resource Shrinking AGP 9.0.0+默认已补充; P2 density FAQ已在Task6轮次对齐"
     },
     {
       "section": "04.06",
@@ -12187,7 +12189,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T00:36:51+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T04:47:32+08:00",
+      "completed_reason": "P0 VK_KHR_present_id版本断言修正(Vulkan 1.4核心非1.2); P1 DeliQueue描述与16.4对齐(多生产者Treibier stack+min-heap)"
     },
     {
       "section": "16.4",
