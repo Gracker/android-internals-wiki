@@ -11,14 +11,14 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-27"
 task6_result: "pass-light-edit"
 task9_state: reviewed
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
@@ -163,12 +163,12 @@ VkResult result = vkAcquireNextImageKHR(
 
 `VkSwapchainKHR` 在 Android 上**底层仍然基于 BufferQueue**，理解这套映射是排查"看似 CPU 很快、GPU 也不重"型卡顿的关键：
 
-- `vkAcquireNextImageKHR` 内部调用 `ANativeWindow::dequeueBuffer` 拿到一个 buffer 和对应的 fence fd，随后通过 `vkImportSemaphore/FenceFdKHR` 机制把这个 fd import 到 App 传入的 `VkSemaphore` / `VkFence` 中。这些同步对象 signal 的时机，对应 BufferQueue 里上一个消费者释放此 buffer 的时刻——显示路径里通常来自 HWC 在 `presentDisplay` 后通过 `getReleaseFences()` 返回、再经 SF / BufferQueue 回传的 **release fence**（per-layer，回答"上一帧 buffer 什么时候能被 Producer 安全复用"）。
+- `vkAcquireNextImageKHR` 内部调用 `ANativeWindow::dequeueBuffer` 拿到一个 buffer 和对应的 fence fd，随后将这个 fd 交给 GPU 驱动的 `AcquireImageANDROID` 钩子（`libvulkan` swapchain 内部实现，不是公开 API）。驱动负责在 buffer 可写时 signal App 传入的 `VkSemaphore` / `VkFence`。这个 fence fd 的来源是 BufferQueue 里上一个消费者释放此 buffer 时返回的 release fence——显示路径里通常来自 HWC 在 `presentDisplay` 后通过 `getReleaseFences()` 返回、再经 SF / BufferQueue 回传的 **release fence**（per-layer，回答"上一帧 buffer 什么时候能被 Producer 安全复用"）。
 - Android 上 swapchain image 数量由 driver 和 surface capability 协商，一般落在 2-3（double / triple buffering）。BufferQueue 的 `maxDequeueBufferCount` 和 `VkSwapchainCreateInfoKHR::minImageCount` 共同决定实际可用 image 数，没有哪一个参数单独定死。
 - App 通常选择 `VK_PRESENT_MODE_FIFO_KHR`（Vulkan 规范要求所有实现必须支持，对应 vsync 对齐）；Android 上 `MAILBOX` 和 `IMMEDIATE` 是否可用取决于设备驱动，部分设备会在驱动 / SurfaceFlinger / vendor policy 中把请求的 mode 降级为 FIFO。
 - **如果在 `vkAcquireNextImageKHR` 上看到长时间等待**，通常是前面某个 image 的 release fence 还没回来（BufferQueue 消费端没跟上）——和 GLES 路径上 `eglSwapBuffers` 长 slice 的成因等价：**不是 GPU 还在画**，而是内部等空闲 buffer。
 
-[已验证: AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp` `AcquireNextImage` 路径 + `frameworks/native/libs/gui/Surface.cpp` `dequeueBuffer` + Khronos Vulkan-Samples Android-specific notes]
+[已验证: AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp` `AcquireNextImageKHR` → `AcquireImageANDROID` 驱动钩子路径 + `frameworks/native/libs/gui/Surface.cpp` `dequeueBuffer`]
 
 ### 第二阶段：Record & Submit（录制与提交）
 
@@ -201,6 +201,7 @@ vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
 
 **观察点**：
 - Command Buffer 录制是纯 CPU 操作，不涉及 GPU
+- **Dynamic Rendering（Android 15+）**：Android 15 要求 Vulkan 1.3，Dynamic Rendering 成为核心特性。使用 `vkCmdBeginRendering` / `vkCmdEndRendering` 替代传统 `vkCmdBeginRenderPass` / `vkCmdEndRenderPass`，无需预先创建 `VkRenderPass` 和 `VkFramebuffer` 对象。上面代码示例保留传统 RenderPass 写法以保证向后兼容；面向 Android 15+ 的新项目可以直接采用 Dynamic Rendering，减少初始化复杂度。[已验证: Vulkan 1.3 spec + VP_ANDROID_15_minimums]
 - 多线程录制不等于共享同一个 command pool 并发录制；每个录制线程应使用自己的 `VkCommandPool` 和 command buffers
 - 同一个 `VkCommandBuffer` 在 begin / record / end / reset 过程中不能被多个线程同时修改
 - secondary command buffer 适合把 draw call 生成拆到 worker 线程；primary command buffer 负责执行它们并进入提交阶段

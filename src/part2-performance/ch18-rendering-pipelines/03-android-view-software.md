@@ -7,7 +7,7 @@ tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"
 related_chapters: ["2.1", "2.5", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
@@ -16,7 +16,7 @@ task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task6_at: "2026-05-05T14:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-14-review.md"
@@ -40,7 +40,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 
 <!-- outline-end -->
 
-软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流路径，但在特定场景下仍然会被触发。Trace 中如果出现 UI Thread 长时间满载、RenderThread 毫无活动，大概率就是走入了这条路径。但要注意：软件渲染在 Android 15+ 的能效管控体系下已属于**受限路径**：持续 CPU 栅格化会触发 Efficiency-aware Throttling 的激进降频策略，每瓦性能不足 GPU 路径的十分之一，长期运行会导致整机响应断崖式下跌。除非有明确的兼容性需求，否则不应主动选择软件渲染。
+软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流路径，但在特定场景下仍然会被触发。Trace 中如果出现 UI Thread 长时间满载、RenderThread 毫无活动，大概率就是走入了这条路径。但要注意：软件渲染在 Android 15+ 的能效管控体系下已属于**受限路径**：持续 CPU 栅格化会触发 Efficiency-aware Throttling 的激进降频策略，CPU 栅格化的能效远低于 GPU 路径，长期运行会导致整机响应断崖式下跌。除非有明确的兼容性需求，否则不应主动选择软件渲染。
 
 ## 软件渲染的触发条件
 
@@ -80,7 +80,9 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 
 ## 完整执行流程
 
-软件渲染的核心特征是**没有 RenderThread 参与**。所有操作都在 UI Thread 上完成，从锁定画布到像素填充到提交 Buffer，全流程串行。
+下面描述的是整窗口软件渲染或 `Surface.lockCanvas()` 的执行链。这条执行链的核心特征是**没有 RenderThread 参与**——所有操作都在 UI Thread 上完成，从锁定画布到像素填充到提交 Buffer，全流程串行。
+
+单 View 的 `LAYER_TYPE_SOFTWARE` 走的是另一条执行链：CPU 在离屏 Bitmap 上栅格化 → 纹理上传 → RenderThread 合成进 GPU 帧流。那条执行链在上一节“整窗口软件渲染 vs 单 View software layer”的表格里已经区分过，本节不再展开。
 
 ### 第一阶段：Lock — 锁定画布
 
@@ -89,7 +91,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 
 在 Trace 中你会看到 `lockCanvas` slice，正常耗时很短（< 1ms），因为它只是内存映射操作。
 
-16KB Page Size 设备上，`lockCanvas` 首帧映射的开销会进一步降低。页表条目数量减少约 75%，意味着 `mmap` 映射 GraphicBuffer 像素地址时产生的 Page Fault 数量同比例下降，首次 `lockAsync()` 的耗时和 CPU 微小卡顿都有改善。对于分辨率较高的设备（2K/4K），这项红利的体感更明显。
+16KB Page Size 设备上，`lockCanvas` 首帧映射的开销会进一步降低。从 4KB 切到 16KB 后，单个页覆盖的地址空间扩大到 4 倍，同等大小的 GraphicBuffer 所需页表条目减少约 75%，`mmap` 映射像素地址时产生的 Page Fault 数量相应减少。首次 `lockAsync()` 的耗时和 CPU 微小卡顿都有改善，分辨率较高的设备（2K/4K）体感更明显。[理论推导，尚缺 AOSP 实测数据对照]
 
 ### 第二阶段：Draw — CPU 光栅化
 
@@ -112,7 +114,7 @@ graph LR
 
 1. **`unlockCanvasAndPost()`**：通知系统"这块内存我写好了"。底层先执行 `GraphicBuffer::unlockAsync()`，拿到一个表示 CPU 写入完成的 fd，再把它交给 `queueBuffer()`。[已验证: `Surface.cpp::unlockAndPost()`]
 2. **提交路径要按版本看**：Android 9 仍是 Legacy BufferQueue 视角，`queueBuffer()` 把 buffer 交给传统 consumer 路径；Android 10-11 进入 BLAST / SurfaceControl 过渡期，设备上可能同时看到旧模型和新事务模型；Android 12+ 再把 BLASTBufferQueue + `SurfaceControl.Transaction` 当成主视角。
-3. **没有 GPU 渲染 fence，不等于没有 fence**：软件渲染不会生成 GPU completion fence，但 `dequeueBuffer()` 取回 buffer 时仍要接收 consumer 侧的 acquire fence，`unlockAsync()` 产出的 fd 也会继续传给 `queueBuffer()`。BufferQueue 槽位占满时，App 一样可能卡在 `dequeueBuffer()` 上。
+3. **没有 GPU 渲染 fence，不等于没有 fence**：软件渲染不会生成 GPU completion fence，但 `dequeueBuffer()` 取回 buffer 时仍要接收 consumer 侧的 **release fence**（消费者释放该 buffer 的信号），`unlockAsync()` 产出的 fd 经 `queueBuffer()` 传给下游消费者后，成为 consumer 侧的 **acquire fence**（消费者开始读取前需要等待的信号）。BufferQueue 槽位占满时，App 一样可能卡在 `dequeueBuffer()` 上。
 
 ### 时序图
 
@@ -134,13 +136,13 @@ sequenceDiagram
         Note over UI, CPU: 2. CPU 软件光栅化（全部在 UI Thread）
         activate UI
         UI->>BBQ: lockCanvas() → dequeueBuffer
-        BBQ-->>UI: GraphicBuffer + acquire fence
+        BBQ-->>UI: GraphicBuffer + release fence（上一轮消费者释放）
         
         UI->>CPU: Canvas.drawXxx()
         CPU->>CPU: 逐像素计算并写入内存
         
         UI->>BBQ: unlockCanvasAndPost()
-        Note right of BBQ: 传递 release fence
+        Note right of BBQ: 传递 CPU 写入完成 fence → consumer acquire fence
         BBQ->>SF: Transaction(Buffer)
         deactivate UI
     end
@@ -209,9 +211,9 @@ sequenceDiagram
 1. **CPU 算力瓶颈**：复杂图形（阴影、模糊、Path 裁剪、大尺寸 Bitmap 缩放）在 CPU 上极慢。一个带高斯模糊的圆角矩形，在 GPU 上可能 < 0.1ms，在 CPU 上可能 > 10ms。
 2. **内存带宽瓶颈**：1080p 屏幕的 GraphicBuffer 约 8MB。每次 `lockCanvas` / `unlockCanvasAndPost` 都涉及数据搬运。更高分辨率（2K/4K）下这个问题更严重。
 3. **主线程阻塞**：所有绘制都在 UI Thread，直接挤压输入事件和动画的执行时间。
-4. **能效惩罚（Android 15+）**：持续 CPU 栅格化触发 Efficiency-aware Throttling。软件渲染每瓦性能不足 GPU 路径的十分之一，系统会在温控判定中将其标记为"低效负载"，触发更激进的频率压制。这不仅是"慢"，而是会拖累整机的响应能力——CPU 被压频后，输入事件处理、动画回调、甚至其他 App 的调度都会受到影响。
+4. **能效惩罚（Android 15+）**：持续 CPU 栅格化触发 Efficiency-aware Throttling。CPU 栅格化的能效远低于 GPU 路径，系统会在温控判定中将其标记为"低效负载"，触发更激进的频率压制。这不仅是"慢"，而是会拖累整机的响应能力——CPU 被压频后，输入事件处理、动画回调、甚至其他 App 的调度都会受到影响。
 
-Android 16 为软件渲染引入了部分缓解手段：Skia 的 `SkTaskGroup` 支持多线程 CPU 栅格化，可以将部分像素计算分担到工作线程，降低单个线程的 CPU 压力。但这项优化的收益有限——它不改变"CPU 做像素计算"的本质，只是把串行变成了有限并行。对于复杂的模糊、路径裁剪、大图缩放操作，GPU 的并行计算优势仍然是数量级差距。
+Android 16 为软件渲染引入了部分缓解手段：Skia 的 `SkTaskGroup` 支持多线程 CPU 栅格化，可以将部分像素计算分担到工作线程，降低单个线程的 CPU 压力。但这项优化不改变"CPU 做像素计算"的本质，只是把串行变成了有限并行。[版本锚点：Android 16 / Skia m116+；尚缺 AOSP commit 级引用]对于复杂的模糊、路径裁剪、大图缩放操作，GPU 的并行计算优势仍然是数量级差距。
 
 **结论**：软件渲染在 2026 年的定位是**受限的应急路径**，不是性能优化的可选项。如果 Trace 显示 App 持续走这条路径，应该视为一个需要修复的问题，而不是需要"优化"的路径。
 
