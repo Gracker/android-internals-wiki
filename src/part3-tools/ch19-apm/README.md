@@ -10,17 +10,17 @@ last_verified: "2026-04-24"
 confidence: medium
 tags: [apm, monitoring, benchmark, observability, matrix, koom, btrace]
 related_chapters: ["14.5", "14.12", "14.13", "15.5", "15.9", "15.10"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 last_task2b_at: "2026-04-25T02:45:50+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T07:20:00+08:00"
+last_task9_at: "2026-05-05T14:20:00+08:00"
 task9_result: needs-rework
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -28,6 +28,7 @@ reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T14:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-14-review.md"
 review_notes: "2026-05-05 task6 review: 章节总纲复审通过；无正文小修；task2b 状态整理为 fixed，等待 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 ---
 
 # 第 19 章：APM 工具与性能监控生态

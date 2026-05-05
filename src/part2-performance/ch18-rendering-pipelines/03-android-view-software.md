@@ -7,20 +7,22 @@ tags: ["software-rendering", "CPU-rasterization", "Skia", "Canvas", "lockCanvas"
 related_chapters: ["2.1", "2.5", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: pending
-task9_reviewed_date: "2026-04-20"
-task9_reviewed_by: "openclaw-task9"
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-05"
+task9_reviewed_by: openclaw-task9
+task2b_state: pending
 task2b_result: fixed
 last_task6_at: "2026-05-05T14:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-14-review.md"
 review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。"
+last_task9_at: "2026-05-05T14:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 ---
 
 <!-- outline-start -->
