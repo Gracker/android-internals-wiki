@@ -9664,7 +9664,7 @@
       ]
     }
   ],
-  "last_task2b_run": "2026-05-06T01:47:43+08:00",
+  "last_task2b_run": "2026-05-06T07:51:39.988404",
   "2026-04-27-15-task9": {
     "task": "task9-deep-tech-review",
     "sections": [
@@ -11206,6 +11206,22 @@
       "files_modified": [
         "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
         "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+      ]
+    },
+    {
+      "date": "2026-05-06T07:51:39.988404",
+      "sections": [
+        "9.2",
+        "7.10"
+      ],
+      "issues_fixed": 5,
+      "source": "task9-deep-tech-review",
+      "details": [
+        "9.2: InputDispatcher常量std::chrono修正",
+        "9.2: startForegroundService vs FGS运行超时路径拆分",
+        "9.2: shortService版本修正为Android14+AnrTimer修正为android15",
+        "9.2: dumpsys anr-timer命令修正",
+        "7.10: Glide trimMemory RequestManager暂停语义修正"
       ]
     }
   ],

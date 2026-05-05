@@ -10255,10 +10255,12 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T11:28:01+08:00",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-30-11-deep-review.md",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-04-30T11:28:01+08:00"
+      "last_reviewed_at": "2026-04-30T11:28:01+08:00",
+      "completed_at": "2026-05-06T07:51:31.684596",
+      "completed_reason": "P1 Glide trimMemory RequestManager暂停语义修正：level>=TRIM_MEMORY_MODERATE才触发请求清理，更低level不做处理"
     },
     {
       "section": "2.2",
@@ -11456,7 +11458,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T18:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T07:51:31.684596",
+      "completed_reason": "P0 InputDispatcher常量改为std::chrono+HwTimeoutMultiplier；P0 startForegroundService超时与FGS运行超时两条路径拆开(DidNotStartInTime vs shortService/dataSync)；P0 shortService版本修正为Android 14+AnrTimer修正为android-15已存在；P0 dumpsys anr-timer命令改为dumpsys activity完整输出查找"
     },
     {
       "section": "9.1",
