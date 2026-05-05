@@ -9,13 +9,13 @@
       "unknown": 34,
       "ready-to-publish": 110,
       "task2b_pending": 85,
-      "task9_pending": 18,
-      "task6_pending": 5
+      "task9_pending": 20,
+      "task6_pending": 3
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 202,
-      "revisiting": 14,
+      "reviewed": 204,
+      "revisiting": 12,
       "revising": 1,
       "done": 2
     },
@@ -44,13 +44,13 @@
       "unknown": 34,
       "ready-to-publish": 110,
       "task2b_pending": 85,
-      "task9_pending": 18,
-      "task6_pending": 5
+      "task9_pending": 20,
+      "task6_pending": 3
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 202,
-      "revisiting": 14,
+      "reviewed": 204,
+      "revisiting": 12,
       "revising": 1,
       "done": 2
     },
@@ -1288,13 +1288,13 @@
       "last_verified": "2026-04-19",
       "last_verified_against": "AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline, developer.android.com/games/sdk/frame-pacing",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "pending",
+      "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
@@ -1302,8 +1302,8 @@
       "last_task9_at": "2026-05-06T00:36:51+08:00",
       "task6_reviewed_date": "2026-05-06",
       "last_task9_review_log": "logs/deep-review/2026-05-06-00-deep-review.md",
-      "last_task6_at": "2026-05-06T02:06:00+08:00",
-      "review_notes": "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0 1，P1 2。 | 2026-05-06 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；VK_KHR_present_id 核心版本断言错误，DeliQueue 实现模型与跨章口径不一致。 | 2026-05-06 Task6 02:06：复审 2.17 写作层；清理 L1 填充副词 3 处。章节仍有 Task9 P95 pending 队列，本轮不做技术裁决，保持 task2b_pending。"
+      "last_task6_at": "2026-05-06T05:05:00+08:00",
+      "review_notes": "2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。"
     },
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md": {
       "path": "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
@@ -3587,18 +3587,21 @@
       "last_verified": "2026-04-24",
       "last_verified_against": "AGP 8.8 DSL deprecation docs + AGP 8.12.0 release notes + Android App Bundle docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-24",
+      "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-30",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-30T07:35:29+08:00"
+      "last_task9_at": "2026-04-30T07:35:29+08:00",
+      "task6_reviewed_date": "2026-05-06",
+      "last_task6_at": "2026-05-06T05:05:00+08:00",
+      "review_notes": "2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。"
     },
     "src/part2-performance/ch12-apk-network/02-network-performance.md": {
       "path": "src/part2-performance/ch12-apk-network/02-network-performance.md",
@@ -7571,6 +7574,31 @@
           "p2": 0
         }
       ]
+    },
+    {
+      "date": "2026-05-06",
+      "task": "task6-review",
+      "time": "05:05",
+      "mode": "revisiting",
+      "review_log": "logs/review/2026-05-06-05-review.md",
+      "sections_reviewed": [
+        {
+          "section": "2.17",
+          "title": "Frame Pacing Library 与帧节奏控制",
+          "result": "pass-light-edit",
+          "fixes": 2,
+          "issues": 0,
+          "auto_promoted": false
+        },
+        {
+          "section": "12.1",
+          "title": "APK 体积优化",
+          "result": "pass-light-edit",
+          "fixes": 3,
+          "issues": 0,
+          "auto_promoted": false
+        }
+      ]
     }
   ],
   "progress": {
@@ -8703,7 +8731,7 @@
       }
     }
   },
-  "last_updated": "2026-05-04T20:26:00+08:00",
+  "last_updated": "2026-05-06T05:05:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11041,6 +11069,24 @@
       "mode": "revisiting",
       "fixes": 1,
       "notes": "高频词根本→1处；queue.json仍有P0技术问题待task2b修复"
+    },
+    "2.17": {
+      "date": "2026-05-06",
+      "time": "05:05",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "fixes": 2,
+      "issues": 0,
+      "notes": "L1/L2 小修；无新增 Task2B 回炉项；Task9 仍 pending。"
+    },
+    "12.1": {
+      "date": "2026-05-06",
+      "time": "05:05",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "fixes": 3,
+      "issues": 0,
+      "notes": "L1/L2 小修；无新增 Task2B 回炉项；Task9 仍 pending。"
     }
   },
   "2026-05-04-20-task9": {
@@ -11103,5 +11149,26 @@
       "sections_reworked": 2,
       "issues_fixed": 6
     }
+  },
+  "2026-05-06-05-task6": {
+    "task": "task6-review",
+    "time": "2026-05-06T05:05:00+08:00",
+    "review_log": "logs/review/2026-05-06-05-review.md",
+    "sections": [
+      {
+        "section": "2.17",
+        "title": "Frame Pacing Library 与帧节奏控制",
+        "result": "pass-light-edit",
+        "fixes": 2,
+        "issues": 0
+      },
+      {
+        "section": "12.1",
+        "title": "APK 体积优化",
+        "result": "pass-light-edit",
+        "fixes": 3,
+        "issues": 0
+      }
+    ]
   }
 }

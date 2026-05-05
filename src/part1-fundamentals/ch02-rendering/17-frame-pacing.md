@@ -61,8 +61,8 @@ related_chapters: ["2.2", "2.3", "2.4", "2.9", "2.13", "2.16", "2.18", "7.1"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-05"
 gap_source: "官方文档 + 研究素材"
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
 task2b_result: fixed
@@ -74,12 +74,12 @@ task9_result: needs-rework
 last_task2b_at: "2026-05-06T04:41:00+08:00"
 task9_task6_reviewed_date: "2026-04-30"
 task9_reviewed_by: openclaw-task9
-task2b_result: pending
 last_task9_at: "2026-05-06T00:36:51+08:00"
 task9_reviewed_date: "2026-05-06"
-review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0 1，P1 2。 | 2026-05-06 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；VK_KHR_present_id 核心版本断言错误，DeliQueue 实现模型与跨章口径不一致。 | 2026-05-06 Task6 02:06：复审 2.17 写作层；清理 L1 填充副词 3 处。章节仍有 Task9 P95 pending 队列，本轮不做技术裁决，保持 task2b_pending。"
+review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue；本轮 P0 1，P1 2。 | 2026-05-06 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；VK_KHR_present_id 核心版本断言错误，DeliQueue 实现模型与跨章口径不一致。 | 2026-05-06 Task6 02:06：复审 2.17 写作层；清理 L1 填充副词 3 处。章节仍有 Task9 P95 pending 队列，本轮不做技术裁决，保持 task2b_pending。 | 2026-05-06 Task6 05:05：revisiting 写作复审；清理 L1/L2 结构性引导语与术语一致性问题，写作层通过。Task9 仍 pending，本轮不做技术裁决。"
 last_task9_review_log: "logs/deep-review/2026-05-06-00-deep-review.md"
-last_task6_at: "2026-05-06T02:06:00+08:00"
+last_task6_at: "2026-05-06T05:05:00+08:00"
+
 ---
 
 # 2.17 Frame Pacing Library 与帧节奏控制
@@ -169,7 +169,7 @@ bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
 
 ## Choreographer / DisplayManager 的回退路径
 
-当前实现最容易被写错的地方，是把内部 `ChoreographerThread` 回退树直接当成 public API contract。这里要先分两层看。`SwappyGL_init(JNIEnv*, jobject)` 和 `SwappyVk_initAndGetRefreshCycleDuration(JNIEnv*, jobject, ...)` 的公开入口都要求 JNI env 和 Activity；`vm == nullptr` 这条分支描述的是内部线程选择策略，不是说应用可以把 Swappy 当成一套通用的 no-JVM、native-only 初始化 API。
+当前实现最容易被写错的地方，是把内部 `ChoreographerThread` 回退树直接当成 public API contract。公开入口和内部线程策略需要分开看。`SwappyGL_init(JNIEnv*, jobject)` 和 `SwappyVk_initAndGetRefreshCycleDuration(JNIEnv*, jobject, ...)` 的公开入口都要求 JNI env 和 Activity；`vm == nullptr` 这条分支描述的是内部线程选择策略，不是说应用可以把 Swappy 当成一套通用的 no-JVM、native-only 初始化 API。
 
 `ChoreographerThread::createChoreographerThread()` 本身的回退链还是很重要，因为它决定了初始化成功之后，Swappy 在内部到底靠哪条节拍源工作。
 
@@ -439,7 +439,7 @@ Android 17 对 Java 侧 `MessageQueue` 做了无锁队列重构（DeliQueue）�
 
 **对 Java Choreographer 的影响已确认。** 主线程的 `MessageQueue.nativePollOnce()` 和其他线程的同步操作共用一把 `mLock`，锁竞争会导致 VSync 回调到达时间抖动。DeliQueue 通过多生产者 lock-free Treiber stack + Looper 侧 min-heap 的无锁结构消除了这把锁（详见 §16.4）。使用 Java `Choreographer.FrameCallback` 的应用（非游戏场景）会直接受益。
 
-**对 Swappy 的 NDK AChoreographer 路径，影响需要分两层看。** Swappy 的 Vulkan/OpenGL 路径走的是 NDK `AChoreographer` 回调，不直接经过 Java `MessageQueue`。DeliQueue 改造的是 Java 层 `MessageQueue`，目前没有 AOSP commit 或公开文档证明 NDK `AChoreographer` / `ALooper` 的回调路径也做了同样的无锁改造。如果 NDK AChoreographer 的底层仍然走传统 `Looper` 管道，Delique 改善的是 Java 侧回调抖动，不直接传导到 Swappy native 回调。
+**对 Swappy 的 NDK AChoreographer 路径，影响需要分两层看。** Swappy 的 Vulkan/OpenGL 路径走的是 NDK `AChoreographer` 回调，不直接经过 Java `MessageQueue`。DeliQueue 改造的是 Java 层 `MessageQueue`，目前没有 AOSP commit 或公开文档证明 NDK `AChoreographer` / `ALooper` 的回调路径也做了同样的无锁改造。如果 NDK AChoreographer 的底层仍然走传统 `Looper` 管道，DeliQueue 改善的是 Java 侧回调抖动，不直接传导到 Swappy native 回调。
 
 [待验证：DeliQueue 的无锁路径是否已扩展到 NDK AChoreographer / ALooper 的回调投递机制。如果已扩展，Swappy 的 `onPreSwap()` 里"离下一个 vsync 还有多久"的计算精度会受益，高刷设备上 refresh period 越短，改善越明显。]
 
