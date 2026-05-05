@@ -37,21 +37,21 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_rework_date: "2026-05-05"
+last_rework_date: "2026-05-06"
 last_rework_by: openclaw-task2b
-last_rework_reason: "P95 Task9回炉：prepareToDraw/CALLBACK_COMMIT错误删除；Glide trimMemory顺序按源码重写；MemorySizeCalculator公式修正；RecyclerView回收取消语义纠正"
+last_rework_reason: "P95 Task9回炉(第二轮)：Glide trimMemory RequestManager暂停语义按源码修正为TRIM_MEMORY_MODERATE条件触发"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
 task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task9_at: "2026-05-05T09:20:00+08:00"
 task9_review_notes: "2026-05-05 09:20 task9 deep-review: needs-rework。P1 1：Glide trimMemory 的 RequestManager 暂停语义错误；P2 3。"
 last_task6_at: "2026-05-05T07:30:00+08:00"
-task9_result: needs-rework
+task9_result: pending
 ---
 
 # 7.10 图片加载与 Bitmap 性能优化
@@ -317,7 +317,7 @@ Glide 的内存缓存体系分成三层：
 2. **LruResourceCache**：LRU 内存缓存。图片不再被 Active 持有时进入这里。
 3. **LruBitmapPool**：Bitmap 复用池。解码新图片时优先从这里取可复用的 Bitmap。
 
-这三层协同工作：当系统内存紧张时，Glide 收到 `ComponentCallbacks2.onTrimMemory` 回调，会按源码顺序清理：先通知所有 `RequestManager`（暂停未完成请求），再清理 `MemoryCache`（即 `LruResourceCache`），然后清理 `BitmapPool`，再清理 `ArrayPool`。`ActiveResources` 不是 `onTrimMemory` 的主动清理目标——它用弱引用持有正在使用的资源，引用计数归零时自然移入 `LruResourceCache`。[已验证：Glide 4.16.0 `Glide.trimMemory()` 源码调用链]
+这三层协同工作：当系统内存紧张时，Glide 收到 `ComponentCallbacks2.onTrimMemory` 回调，会按源码顺序清理：先通知所有 `RequestManager`（`level >= TRIM_MEMORY_MODERATE` 时暂停并移除未完成请求，更低 level 不做处理），再清理 `MemoryCache`（即 `LruResourceCache`），然后清理 `BitmapPool`，再清理 `ArrayPool`。`ActiveResources` 不是 `onTrimMemory` 的主动清理目标——它用弱引用持有正在使用的资源，引用计数归零时自然移入 `LruResourceCache`。[已验证：Glide 4.16.0 `Glide.trimMemory()` + `RequestManager.onTrimMemory()` 源码调用链]
 
 ## 图片格式解码性能
 
