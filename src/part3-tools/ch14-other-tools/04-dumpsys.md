@@ -32,14 +32,14 @@ related_chapters:
 - '13.1'
 - '14.1'
 pipeline_stage: ready-to-publish
-task6_state: reviewed
+task6_state: revisiting
 task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-30T17:46:37.750688"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-04-26"
 task6_result: pass-light-edit
 task9_reviewed_date: 2026-04-30
 task9_reviewed_by: openclaw-task9
@@ -306,7 +306,7 @@ adb shell dumpsys input | grep -E 'FocusedWindow|FocusedApplication'
 
 **第一类是确认窗口焦点。** 当用户报告"点了没反应"或"触摸不灵敏"时，优先从 `adb shell dumpsys window displays` 看每个 `DisplayContent` 下的 `mCurrentFocus` 和 `mFocusedApp`。Android 15+ 的焦点状态已经明显转向显示器维度；多屏、投屏、车机、副屏场景下，直接在全局输出里 grep `mCurrentFocus` 容易拿到非目标显示器的窗口。它们不一定一致：比如用户拉下通知栏时，`mCurrentFocus` 会切换到 SystemUI 的通知面板，但 `mFocusedApp` 仍然是之前使用的 App。
 
-**第二类是排查 Input ANR。** `dumpsys window` 只能回答 WMS 视角的窗口状态，决定触摸事件去向的是 InputDispatcher。遇到窗口看起来有焦点、点击却没有反应的场景，要再执行 `adb shell dumpsys input`，联动查看 `FocusedWindow` 和 `FocusedApplication`。如果两边不一致，或者 InputDispatcher 指向了意料之外的窗口，再回头检查 `NOT_TOUCHABLE`、InputChannel 和覆盖层拦截。
+**第二类是排查 Input ANR。** `dumpsys window` 只能回答 WMS 视角的窗口状态，真正决定触摸事件去向的还是 InputDispatcher。遇到窗口看起来有焦点、点击却没有反应的场景，要再执行 `adb shell dumpsys input`，联动查看 `FocusedWindow` 和 `FocusedApplication`。如果两边不一致，或者 InputDispatcher 指向了意料之外的窗口，再回头检查 `NOT_TOUCHABLE`、InputChannel 和覆盖层拦截。
 
 `dumpsys window` 的输出还包含 Z-order 信息，窗口从上到下排列。在排查覆盖层问题时（比如 Dialog 没有正确 dismiss 导致遮挡了底下的 Activity），Z-order 列表可以直观看到哪些窗口叠加在目标窗口上面。
 
@@ -329,7 +329,7 @@ adb shell dumpsys batterystats --enable full-wake-history
 
 ### 功耗分析工作流
 
-dumpsys batterystats 本身输出的是原始数据，要发挥作用，需要配合 Battery Historian 工具做可视化。标准工作流如下：
+dumpsys batterystats 本身输出的是原始数据，真正发挥威力需要配合 Battery Historian 工具做可视化。标准工作流如下：
 
 第一步，重置统计。在开始测试前执行 `adb shell dumpsys batterystats --reset`，清除历史数据，确保接下来的测试数据是干净的。
 
@@ -405,7 +405,7 @@ AOSP android-16.0.0_r1 的公开 dumper 参数包括 `--frontend`、`--list`、`
 
 > 以下内容基于 AOSP 源码（android.googlesource.com mainline）深度调研，补充正文未覆盖的 FrontEnd 内部机制。
 
-**FrontEnd 组件表：**
+**FrontEnd 组件矩阵：**
 
 | 组件 | 源码位置 | 核心职责 |
 |------|---------|---------|

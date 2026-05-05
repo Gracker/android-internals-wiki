@@ -2,7 +2,7 @@
 title: "崩溃与 ANR 捕获机制"
 chapter: "19"
 section: "19.24"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "gemini"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -10,9 +10,9 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-05-03"
@@ -27,15 +27,15 @@ sources:
   - "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/signal_catcher.cc"
   - "https://android.googlesource.com/platform/system/core/+/refs/heads/main/debuggerd/proto/tombstone.proto"
   - "https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/include/signal.h"
-task9_result: pass-tech-review
+task9_result: needs-rework
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T00:20:00+08:00"
+last_task9_at: "2026-05-05T16:24:00+08:00"
 last_task2b_at: "2026-04-27T19:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-05-05 task9 deep-review: pass-tech-review。无 P0/P1，自动晋升 finalized。"
-
+last_task9_review_log: "logs/deep-review/2026-05-05-16-deep-review.md"
+task9_review_notes: "2026-05-05 16:24 Task9 deep-review: P1=1（GWP-ASan Android 14+ Recoverable 默认行为与 manifest 开关边界缺失）；转 Task2B。"
 ---
 
 # 崩溃与 ANR 捕获机制

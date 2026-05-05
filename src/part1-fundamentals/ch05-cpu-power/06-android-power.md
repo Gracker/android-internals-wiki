@@ -9,8 +9,8 @@ last_verified_against: "AOSP android-16.0.0_r1, android-17-beta3"
 confidence: medium
 drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
-reviewed_date: "2026-04-29"
-task6_reviewed_date: "2026-04-29"
+reviewed_date: "2026-05-05"
+task6_reviewed_date: "2026-05-05"
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -18,10 +18,10 @@ task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T16:20:00+08:00"
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-04-29T10:45:00+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 reviewed_by: openclaw-task6
 review_round: 4
 related_chapters:
@@ -57,6 +57,8 @@ tags:
   - suspend
   - jobscheduler
   - powermanager
+last_task6_at: "2026-05-05T10:05:00+08:00"
+review_notes: "2026-05-05 task6 review: L1/L2 小修完成；Task6 未新增回炉项，但 queue 中仍有 5.6 技术待办，保持 task2b_pending。"
 ---
 
 
@@ -92,7 +94,7 @@ tags:
 
 当我们打开 Perfetto,选中一段时间范围,看到某个进程在灭屏状态下仍然持续占用 CPU,或者在 Battery Historian 中发现一个 App 后台持锁时间远超预期--这些现象背后,都是 Android 功耗管理框架在工作(或者该工作的时候没有工作)。
 
-功耗管理不只是"省电"这么简单。它是一套覆盖硬件到软件的分层机制:从 Linux 内核的 Suspend/Resume(我们在 5.4 节讨论过 DVFS,5.5 节讨论过 Thermal),到 Android 框架层的 PowerManagerService,再到 Google 引入的 Doze 模式和 App Standby 分桶策略。理解这套机制,意味着我们在分析功耗问题时能准确定位:到底是 App 持了不该持的 WakeLock,还是后台任务调度不合理导致系统无法休眠,又或者是某个硬件器件被异常唤醒。
+功耗管理覆盖的范围远不止省电。它是一套从硬件到软件的分层机制：从 Linux 内核的 Suspend/Resume（5.4 节讨论过 DVFS，5.5 节讨论过 Thermal），到 Android 框架层的 PowerManagerService，再到 Google 引入的 Doze 模式和 App Standby 分桶策略。理解这套机制后，分析功耗问题时才能定位：到底是 App 持了不该持的 WakeLock，还是后台任务调度不合理导致系统无法休眠，又或者是某个硬件器件被异常唤醒。
 
 功耗和性能是一枚硬币的两面。我们在前面章节讨论的 CPU 调度(5.1)、大小核(5.3)、DVFS(5.4)、Thermal(5.5)都是从"怎么让系统跑得更快"的角度出发的。而这一节,我们从"怎么让系统在不该跑的时候停下来"的角度来看同一套硬件。
 
@@ -144,7 +146,7 @@ WakeLock、suspend blocker、autosuspend 和 Power HAL 处理的是同一套机�
 - **Auto-suspend**:允许内核在没有 blocker、没有待处理唤醒源时自动进入 suspend。PMS 通过 `nativeSetAutoSuspend()` 开关这一能力。
 - **Power HAL mode**:把交互态等高层状态通知到底层电源策略,例如 `Mode::INTERACTIVE`。它影响 SoC / 设备侧的功耗档位,不等同于 App 持有 WakeLock。
 
-系统准备进入 suspend 时,常见顺序是:显示配置进入 all-off / inactive,PMS 关闭 interactive mode,再打开 autosuspend。此后只要没有新的 WakeLock、native suspend blocker 或硬件唤醒事件,内核就会在合适时机真正 suspend。这个时点不是 PMS"直接写一个节点就睡下去",而是内核根据 autosuspend 条件自行落到 suspend。
+系统准备进入 suspend 时,常见顺序是:显示配置进入 all-off / inactive,PMS 关闭 interactive mode,再打开 autosuspend。此后只要没有新的 WakeLock、native suspend blocker 或硬件唤醒事件,内核就会在合适时机进入 suspend。这个时点不是 PMS"直接写一个节点就睡下去",而是内核根据 autosuspend 条件自行落到 suspend。
 
 唤醒路径也要反过来看:电源键、RTC、调制解调器、中断控制器等硬件事件先把 SoC 拉回运行态;内核恢复驱动;system_server 里的 suspend blocker 保证恢复流程走完;PMS 再更新显示、电源模式和上层服务状态。
 
@@ -166,7 +168,7 @@ Android 16 在 suspend 路径中引入了 HWC 4.0 的 onVsyncIdle 信号联动�
 
 如果我们发现灭屏后系统没有进入 Suspend(CPU 仍有活动),常见原因就是某个 App 持有了 PARTIAL_WAKE_LOCK 没有释放。通过 `adb shell dumpsys power` 可以查看当前所有活跃的 WakeLock:
 
-```
+```text
 Wake Locks: size=2
   PARTIAL_WAKE_LOCK  'AudioMix' (uid=10125, pid=23456, ws=WorkSource{10125})  activated
   PARTIAL_WAKE_LOCK  'myapp:background_sync' (uid=10102, pid=12345, ws=null)  activated
@@ -294,7 +296,7 @@ Battery Historian 中的常见场景案例也很有参考价值:充电慢可能�
 
 [自动发现: 来源 obsidian/Personal-Knowlodge/source/2026-03-08_wechat_抖音功耗优化实践.md - 器件功耗模型与 OEM 厂商 power_profile.xml]
 
-功耗分析的本质是把整机功耗拆解到各个器件(CPU、GPU、Display、WiFi、Audio 等),再按使用比例归因到各个 App。Google 在 AOSP 中提供了一套通用的器件耗电模型和配置方案(`power_profile.xml`),OEM 厂商根据自己的硬件参数校准。以 WiFi 为例,模型按状态(on/active/scan/rx/tx/idle)分别配置基准电流,运行时统计各状态时长再乘以对应电流值,就得到 WiFi 器件的功耗估算。不过这套通用模型的精度有限,各 OEM 厂商通常还有基于自身硬件的更精准功耗统计方案。
+功耗分析要把整机功耗拆到各个器件（CPU、GPU、Display、WiFi、Audio 等），再按使用比例归因到各个 App。Google 在 AOSP 中提供了一套通用的器件耗电模型和配置方案(`power_profile.xml`),OEM 厂商根据自己的硬件参数校准。以 WiFi 为例,模型按状态(on/active/scan/rx/tx/idle)分别配置基准电流,运行时统计各状态时长再乘以对应电流值,就得到 WiFi 器件的功耗估算。不过这套通用模型的精度有限,各 OEM 厂商通常还有基于自身硬件的更精准功耗统计方案。
 
 ## WakeLock 的种类与滥用检测
 
@@ -396,7 +398,7 @@ WorkManager 是 Jetpack 组件库中的后台任务调度方案,在底层根据 
 
 **链式任务**:可以把多个任务按先后顺序编排,依次执行。
 
-** Expedited Job(加急任务)**:WorkManager 2.7+ 引入的机制,允许 App 在前台时请求系统尽快执行一个任务,不受 App Standby Bucket 限制。
+**Expedited Job（加急任务）**：WorkManager 2.7+ 引入的机制，允许 App 在前台时请求系统尽快执行一个任务，不受 App Standby Bucket 限制。
 
 ```kotlin
 val constraints = Constraints.Builder()
@@ -524,7 +526,7 @@ Android 功耗管理框架经历了一个从"粗粒度管控"到"精细化、智
 
 ### 误区 4:"CPU 空闲时就不耗电了"
 
-CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只是当前没有任务可执行,但 CPU 仍然在运行,仍然在消耗电量(虽然比满负荷时低得多)。只有系统进入 Suspend 后,CPU 才真正停止执行,功耗降到最低。一个持有 PARTIAL_WAKE_LOCK 的 App 即使什么也不做,也阻止了系统进入 Suspend。
+CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只是当前没有任务可执行,但 CPU 仍然在运行,仍然在消耗电量(虽然比满负荷时低得多)。只有系统进入 Suspend 后，CPU 才停止执行，功耗降到最低。一个持有 PARTIAL_WAKE_LOCK 的 App 即使什么也不做,也阻止了系统进入 Suspend。
 
 ## 与其他章节的关联
 
@@ -539,7 +541,7 @@ CPU 空闲(idle)和系统休眠(suspend)是完全不同的状态。CPU idle 只�
 - **11.5 Wakelock 机制与功耗分析**:从 Perfetto 视角详细分析 WakeLock 的持有时长、滥用检测与系统限制机制
 - **11.1 Android 功耗模型** / **11.2 App 耗电优化**:从 App 视角更深入地讨论功耗优化策略
 
-本章的脉络是:从底层的 CPU 硬件架构和调度策略(5.1-5.3),到运行时的频率电压控制(5.4),再到热管理(5.5),最后到 Android 框架层的功耗管理(本节)--这是一个从硬件到软件、从微观到宏观的完整功耗管理技术栈。
+本章从底层 CPU 硬件架构和调度策略（5.1-5.3）讲到运行时频率电压控制（5.4）、热管理（5.5），再进入 Android 框架层的功耗管理（本节），构成一条从硬件到软件、从微观到宏观的功耗管理路径。
 
 ## 参考资料
 

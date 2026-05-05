@@ -5598,7 +5598,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T01:31:04+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-05T18:04:55.131488+08:00",
+      "completed_reason": "PSI阈值版本差异已补充：Android 10硬编码阈值(some=70/100/full=70) vs Android 11+属性配置(partial=70/complete=700, low-RAM partial=200)"
     },
     {
       "section": "4.4",
@@ -8510,14 +8512,16 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-11-9.5-external-review.md",
       "material_paths": [
         "intake/suggestions.md",
         "logs/deep-review/2026-05-04-20-deep-review.md"
       ],
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-04T20:26:00+08:00"
+      "last_reviewed_at": "2026-05-04T20:26:00+08:00",
+      "completed_at": "2026-05-05T18:04:03.742543+08:00",
+      "completed_reason": "P0 ProfilingManager WaitQueue虚假声明已删除（改为InputDispatcher WaitQueue观察点）；P0 16KB SQLite WAL 4倍写入错误已纠正（区分系统页与数据库页）；P0 sPendingWorkFinishers字段名已纠正为sFinishers；P1 QueuedWork.waitToFinish版本边界已修正；P1 ApplicationExitInfo已补充到主分析路径；P1 进程冻结版本边界已加强；P1 Binder超时案例覆盖状态已在大纲标注"
     },
     {
       "section": "9.6",

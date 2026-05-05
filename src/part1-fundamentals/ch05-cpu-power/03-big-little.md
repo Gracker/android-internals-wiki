@@ -23,24 +23,25 @@ sources:
 tags: ['big.LITTLE', 'DynamIQ', 'schedutil', 'cpufreq', 'capacity', 'cluster', 'DVFS', 'PELT', 'RTG', 'core-migration', 'EAS', 'HMP']
 related_chapters: ["5.1", "5.2", "5.4", "5.5", "5.6", "2.5"]
 drafted_date: "2026-03-31"
-reviewed_date: 2026-05-02
+reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+task6_result: needs-rework
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task2b_result: fixed
 last_task2b_at: "2026-05-03T19:40:00+08:00"
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-02
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-02T10:20:00+08:00"
-review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 2，P1 0，P2 1；问题已写入 queue/suggestions/research-gaps。"
-
+review_notes: "2026-05-05 task6 review: L1/L2 小修完成；GPU/NPU 协同调度扩展仍为空壳，已写入 queue/suggestions 回炉。"
+task6_reviewed_date: "2026-05-05"
+last_task6_at: "2026-05-05T10:05:00+08:00"
 ---
 
 # 大小核架构
@@ -52,7 +53,7 @@ review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 2，P1 0�
 
 现代手机 SoC 普遍采用大小核（big.LITTLE）异构多核架构，不同类型的核心在性能和功耗之间存在巨大的设计权衡。理解这种架构，是读懂 CPU Scheduling 轨道、判断调度器行为是否合理的基础。一个计算密集型任务如果长时间运行在小核上，它的耗时可能比在大核上慢 2-3 倍；反过来，一个后台同步任务如果被错误地调度到大核上，会白白浪费电量。
 
-本节我们来看大小核架构是怎么设计的、核心迁移的触发机制是什么、以及 cpufreq governor（尤其是 schedutil）如何根据负载动态调频——这些都是性能分析时"看懂 CPU 行为"的前提。
+这一节的任务是讲清大小核架构的设计方式、核心迁移的触发机制，以及 cpufreq governor（尤其是 schedutil）如何根据负载动态调频。读懂这些，后面分析 CPU Scheduling 轨道时才知道线程为什么跑在某个核心上。
 
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
 
@@ -114,7 +115,7 @@ ORDER BY cpu;
 
 或者在设备上直接读取 sysfs 节点：
 
-```
+```bash
 $ cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq
 1804800
 $ cat /sys/devices/system/cpu/cpu7/cpufreq/cpuinfo_max_freq
@@ -418,7 +419,7 @@ ORDER BY cpu;
 
 ### 误区 2："小核没用，应该全部用大核"
 
-从纯性能角度看，全大核确实更好（骁龙 8 Elite 就在尝试）。但从能效角度看，小核在处理大量低负载后台任务时比大核更省电。关键在于调度器能否正确地识别任务特征，把轻量任务留在小核上。如果调度策略合理，小核可以显著延长续航。
+从纯性能角度看，全大核有优势（骁龙 8 Elite 就在尝试）。但从能效角度看，小核在处理大量低负载后台任务时比大核更省电。关键在于调度器能否正确地识别任务特征，把轻量任务留在小核上。如果调度策略合理，小核可以显著延长续航。
 
 ### 误区 3："频率越高越好"
 
@@ -433,7 +434,7 @@ ORDER BY cpu;
 
 ### 误区 5："绑核（affinity）是万能的优化手段"
 
-绑核确实能解决"关键线程被调度到小核"的问题，但也有代价：一旦绑定了某个核心，即使那个核心被温控降频，线程也无法迁移到其他核心上。在实际优化中，绑核通常是"兜底手段"，更稳的做法是调整 RTG 策略或调度器 upmigrate 阈值，让调度器自己做出正确的选核决策。绑核适合用于经过充分验证的固定场景（比如已知 RenderThread 的负载特征稳定），但不适合负载波动大的场景。
+绑核能解决"关键线程被调度到小核"的问题，但也有代价：一旦绑定了某个核心，即使那个核心被温控降频，线程也无法迁移到其他核心上。在实际优化中，绑核通常是"兜底手段"，更稳的做法是调整 RTG 策略或调度器 upmigrate 阈值，让调度器自己做出正确的选核决策。绑核适合用于经过充分验证的固定场景（比如已知 RenderThread 的负载特征稳定），但不适合负载波动大的场景。
 
 [来源: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md]
 [来源: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md]
@@ -467,7 +468,7 @@ Cortex-X 系列的核心特点：
 
 ## 扩展：GPU + NPU 的协同调度概念
 
-[待补充：GPU + NPU 的协同调度与大小核架构的交互关系，包括任务卸载（offloading）策略、GPU/NPU 在异构计算中的角色，以及它们对 CPU 调度的影响]
+[需补充素材: GPU + NPU 与大小核架构的交互关系仍缺少可靠素材，需要补充任务卸载（offloading）策略、GPU/NPU 在异构计算中的角色、以及这些任务对 CPU 调度的影响。]
 
 ## 参考资料
 

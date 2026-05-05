@@ -30,12 +30,12 @@ sources:
     path: "frameworks/native/libs/binder/ProcessState.cpp"
 tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
 related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task2b_result: rework-fixed
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
@@ -52,7 +52,7 @@ review_notes: "2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术�
 ### 锚点（必须覆盖）
 
 - 🔹 提供 3-5 个真实 ANR 案例
-- 🔹 案例需覆盖：死锁、主线程 I/O、Binder 超时、系统负载、SharedPreferences
+- 🔹 案例需覆盖：死锁、主线程 I/O、系统负载、SharedPreferences、进程冻结（Binder 超时场景见案例 6"举一反三"中的分析，独立案例待补充）
 - 🔹 每个案例包含：ANR 信息摘录、分析过程、根因定位、修复方案
 
 ### 扩展（可选深入）
@@ -149,7 +149,7 @@ CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 
 这类 ANR 的共同特征：trace 中主线程堆栈"干净"（`nativePollOnce` 或 `WaitHoldingLocks`），但 AnrManager 的负载信息暴露真相。看到 Load 值远超 CPU 核心数、iowait 超过 20%、`kswapd0` 在排行榜前面，就要往系统负载方向分析。
 
-**16KB Page Size 下的 I/O 加剧。** Android 15+ 的 16KB 分页设备上，SQLite WAL 的 Checkpoint 粒度从 4KB 对齐升级到 16KB 对齐，单次 Checkpoint 写入量可达传统设备的 4 倍。当 App 的数据库写入集中在主线程或 `QueuedWork` 路径时，Checkpoint 产生的脉冲式 `iowait` 更容易瞬间吃满主线程的 5 秒 Input 窗口。实战调优方向：对写入密集的数据库，将 `PRAGMA wal_autocheckpoint` 从默认的 1000 页调低到 100-200 页，把单次大脉冲拆成多次小脉冲，降低 iowait 峰值。
+**16KB Page Size 下的 I/O 注意事项。** 需要区分两个概念：系统物理页大小（Android 15+ 新设备可能使用 16KB）和 SQLite 数据库页大小。AOSP SQLite 默认 `SQLITE_DEFAULT_PAGE_SIZE=4096`，**不受系统页大小影响**。只有显式执行 `PRAGMA page_size=16384` 并重建数据库后，WAL checkpoint 的单页写入量才会变为 16KB——此时默认 1000 页的 `wal_autocheckpoint` 阈值意味着单次 checkpoint 写入约 16MB（而非默认的 4MB），在 I/O 压力大的场景下脉冲更明显。实战调优方向：对写入密集的数据库，将 `PRAGMA wal_autocheckpoint` 从默认的 1000 页调低到 100-200 页，把单次大脉冲拆成多次小脉冲，降低 iowait 峰值。如果数据库使用默认 4KB page_size，16KB 系统页本身不会改变 checkpoint 行为。
 
 ---
 
@@ -222,7 +222,7 @@ Input ANR 中"(server) is not responding"子类型，根因几乎一定在 syste
 
 1. 先将数据写入内存缓存
 2. 将文件写入任务提交到后台线程
-3. 在 Activity 的 `onPause()` / `onStop()` 时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成
+3. 在 Activity 的生命周期切换时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成。AOSP android-14.0.0_r1 中，非 pre-Honeycomb Activity 的等待点在 `handleStopActivity()`（对应 `onStop()` 时机），`handlePauseActivity()` 只对 pre-Honeycomb Activity 调用 `waitToFinish()`。BroadcastReceiver 和 ContentProvider 的写入等待点分别在 `ActivityThread.handleReceiver()` 和 `ActivityThread.handleRelaunchActivity()` 中
 
 当 App 中存在大量 `apply()` 调用但后台写入还没完成时，主线程在生命周期切换时就会被卡住。
 
@@ -236,7 +236,7 @@ SharedPreferences 的 `apply()` 在设计上存在缺陷：它声称是异步的
 
 1. **减少 SP 使用量** — 严格控制每个 SP 文件大小，只存真正需要持久化的少量配置
 2. **预加载** — 在 Application 初始化阶段提前调用 `getSharedPreferences()` 触发加载
-3. **字节方案** — 通过反射替换 `sPendingWorkFinishers` 让 `poll()` 返回 null（有兼容性风险）
+3. **反射方案（高风险）** — AOSP 中 `QueuedWork` 的字段名为 `sFinishers`（`LinkedList<Runnable>`），通过反射替换该 List 让 `poll()` 返回 null。该方案依赖 AOSP 内部实现，不同 Android 版本和 OEM 分支可能有差异，生产环境不建议使用
 4. **迁移到 DataStore** — Google 推荐的替代方案，基于 Kotlin Flow 和 Protocol Buffers
 
 ### 举一反三
@@ -274,7 +274,7 @@ Android 14 设备，使用手势导航时偶发 ANR：
 
 Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。系统在用户正在进行手势操作时冻结了 screenshot 进程，导致 Input 事件无法被消费，触发 ANR。这是**系统设计缺陷**：进程冻结策略没有考虑 Gesture Monitor 需要持续接收 Input 事件。
 
-[版本边界：此案例基于 Android 14 的 CachedAppsFreezer 行为。Android 15+ 加强了 InputDispatcher 对活跃连接进程的冻结豁免逻辑，但 Gesture Monitor 的豁免覆盖范围在不同 OEM 机型上存在差异，生产环境仍需通过 `am_freeze` 日志确认]
+[版本边界：此案例基于 Android 14 MTK 平台的 CachedAppsFreezer 行为。Android 15+ 加强了 InputDispatcher 对活跃连接进程的冻结豁免逻辑，通过 `InputDispatcher::setFrozen` 检查连接状态避免冻结活跃 Input 连接的进程。但 Gesture Monitor 的豁免覆盖范围在不同 OEM 机型上仍存在差异——部分厂商的定制 Freezer 策略可能绕过 AOSP 默认豁免逻辑。生产环境排查冻结 ANR 时，应通过 `am_freeze` / `am_cached_process_freeze_status` 日志确认目标进程的冻结状态]
 
 ### 修复方案
 
@@ -435,21 +435,26 @@ trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死�
 通过这六个案例，提炼出高效的分析路径：
 
 1. **判断 ANR 类型** — 从 `am_anr` 确认是 Input/Service/Broadcast/ContentProvider ANR
-2. **看主线程 trace** — 有明确业务堆栈 → App 自身问题；`nativePollOnce` → 可能在系统侧
+2. **看主线程 trace** — 有明确业务堆栈 → App 自身问题；`nativePollOnce` → 可能在系统侧。Android 11+ 还可通过 `ActivityManager.getHistoricalProcessExitReasons()` + `ApplicationExitInfo.getTraceInputStream()` 获取官方 ANR trace 文件，无需依赖隐藏 API（详见下方"线上 ANR 聚合分析"一节）
 3. **看负载** — Load、CPU、iowait、memory/IO pressure 判断系统健康度
 4. **看 Event log 焦点和进程变化** — 追踪 `input_focus`、`am_proc_start`、`am_kill` 时间线
 5. **看进程冻结日志** — 以上都正常时，搜索 `am_freeze`
 
 这个分析路径在 §9.3 中有更系统的描述，本节案例是对方法论的具体应用。
 
-### Android 16+：利用元数据加速定性
+### InputDispatcher WaitQueue 观察点
 
-Android 16 的 `ProfilingManager` 在捕获 ANR Trace 时会附带结构化元数据，其中 `WaitQueue length` 字段可以直接作为定性分析的第一步判据：
+InputDispatcher 内部维护了每个连接（connection）的 WaitQueue，存放已分发但尚未被消费（finish）的 Input 事件。这个队列长度可以通过以下途径观察：
+
+- **dumpsys input**：`dumpsys input` 输出中每个 Connection 的 `WaitQueue` 字段直接显示队列中待确认的事件数量
+- **Perfetto counter**：`android.input.input_event_waiting_duration` track 可以观察事件等待时长
+
+WaitQueue 长度作为定性判据的用法：
 
 - **WaitQueue length ≈ 1**：主线程被单个长耗时任务卡死（对应案例 3、案例 6 的模式），排查方向是定位那个耗时调用
 - **WaitQueue length 远大于 1**：主线程消息处理整体吞吐不足，事件在排队（对应案例 1 的系统负载模式），排查方向是系统资源竞争和消息调度频率
 
-这个判据不需要阅读堆栈就能区分"单点卡死"与"吞吐量不足"两类根因，适合线上监控和自动化告警使用。
+这个判据不需要阅读堆栈就能区分"单点卡死"与"吞吐量不足"两类根因。注意 WaitQueue 是 InputDispatcher 内部状态，不是 ProfilingManager 或 ANR trace 的结构化字段。
 
 ## 线上 ANR 聚合分析实践 [扩展]
 
@@ -467,10 +472,9 @@ Android 11 (API 30) 引入的 `ActivityManager.getHistoricalProcessExitReasons()
 
 关键边界：
 
-- **版本要求**：`getTraceInputStream()` 从 API 30 起可用
-- **隐私限制**：App 只能查询自身的退出原因，无法获取其他进程的信息
-- **体积限制**：trace 文件可能较大（数 MB），线上采集需要控制上报频率
-- **与 Looper 历史的互补关系**：`ApplicationExitInfo` 提供的是 ANR 瞬间的快照（等同于 `traces.txt` 中的内容），而 Looper 监控记录的是 ANR 发生前 10 秒的消息调度历史。两者结合可以同时看到"卡住那一刻在做什么"和"卡住之前 10 秒经历了什么"
+
+- **ANR trace 获取**：`ApplicationExitInfo.getTraceInputStream()` 从 API 30 起可用。返回的 trace 文件内容等同于系统在 ANR 时写入 `/data/anr/traces.txt` 的快照。App 只能查询自身的退出原因（`REASON_ANR`），无法获取其他进程信息。trace 文件可能较大（数 MB），线上采集需控制上报频率和体积
+- **与 Looper 历史的互补关系**：`ApplicationExitInfo` 提供的是 ANR 瞬间的快照（等同于 `traces.txt` 中的内容），而 Looper 监控记录的是 ANR 发生前 10 秒的消息调度历史。两者结合可以同时看到"卡住那一刻在做什么"和"卡住之前 10 秒经历了什么"。建议优先使用 `ApplicationExitInfo`（公开 API），Looper.Observer 作为补充（需绕过 Hidden API 限制）
 
 ### 关键技术点
 
