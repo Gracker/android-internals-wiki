@@ -9822,7 +9822,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-30T06:16:05",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-05T04:01:42.302266+00:00",
+      "completed_reason": "P0 ADPF网络线程能效分档已添加；P1 BPF带宽估算精度提升已补充；P1 16KB Cronet冷启动收益已写入"
     },
     {
       "section": "12.3",
@@ -9858,8 +9860,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-30T07:23:31+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-12.3-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-12.3-external-review.md",
+      "completed_at": "2026-05-05T04:01:42.302266+00:00",
+      "completed_reason": "P0 0-RTT Anti-replay安全评估已更新(Android 15 Conscrypt)；P1 DNS Predictive Prefetching已添加；P1 DNS HTTPS Record Type 65已补充"
     },
     {
       "section": "12.4",
