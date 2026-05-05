@@ -9503,25 +9503,7 @@
       ]
     }
   ],
-  "last_task2b_run": {
-    "at": "2026-04-27T22:40:00+08:00",
-    "task": "task2b-content-processing-rework",
-    "sections": [
-      "19.02",
-      "19.09",
-      "19.15"
-    ],
-    "files": [
-      "src/part3-tools/ch19-apm/02-tencent-matrix.md",
-      "src/part3-tools/ch19-apm/15-baseline-profiles.md"
-    ],
-    "queue_items": [
-      60,
-      61,
-      188,
-      199
-    ]
-  },
+  "last_task2b_run": "2026-05-06T01:47:43+08:00",
   "2026-04-27-15-task9": {
     "task": "task9-deep-tech-review",
     "sections": [
@@ -10983,5 +10965,26 @@
       "auto_finalized": []
     },
     "log": "logs/deep-review/2026-05-04-20-deep-review.md"
-  }
+  },
+  "task2b_rework_history": [
+    {
+      "date": "2026-05-06T01:47:43+08:00",
+      "sections": [
+        "5.4",
+        "18.6"
+      ],
+      "source": "task9-deep-tech-review",
+      "fixes": [
+        "5.4 P0: schedutil android15/16源码改为简化伪代码+标注省略项",
+        "5.4 P0: SCMI PERF_LEVEL_SET 0x4→0x7, PERF_LEVEL_GET 0x6→0x8, 补fastchannel说明",
+        "18.6 P0: 删除不存在的Window.setPreferLowLatencyInput API, 改为四段输入延迟分析",
+        "18.6 P1: 首帧延迟按Android 10-/11+版本拆开",
+        "18.6 P1: Producer Thread按视频/Camera/游戏三类限定Choreographer关系"
+      ],
+      "files_modified": [
+        "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+        "src/part2-performance/ch18-rendering-pipelines/06-surfaceview.md"
+      ]
+    }
+  ]
 }
