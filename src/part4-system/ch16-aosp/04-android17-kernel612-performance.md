@@ -9,11 +9,11 @@ reviewed_date: "2026-05-04"
 reviewed_by: "openclaw-task6"
 task6_result: needs-rework
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-last_task9_at: "2026-05-04T10:37:13+08:00"
-task9_reviewed_date: "2026-05-04"
-task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-06T00:36:51+08:00"
+task9_reviewed_date: "2026-05-06"
+task9_reviewed_by: openclaw-task9
 task2b_state: pending
 task2b_result: pending
 pipeline_stage: task2b_pending
@@ -25,7 +25,8 @@ tags:
   - android
   - linux
   - research
-review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径；2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修：修正禁用词、表格格式、边界措辞；B 类问题：sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。"
+review_notes: "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径；2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修：修正禁用词、表格格式、边界措辞；B 类问题：sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。 | 2026-05-06 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 0；sched_ext 路径/符号/sysfs 与 android16-6.12 不匹配，MGLRU 量化数据仍需回源。"
+last_task9_review_log: "logs/deep-review/2026-05-06-00-deep-review.md"
 ---
 
 # 16.4 Android 17 + Kernel 6.12 系统级性能优化
