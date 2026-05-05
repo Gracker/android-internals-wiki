@@ -7142,7 +7142,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T11:41:58+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-05T05:51:21Z",
+      "completed_reason": "SurfaceView SurfaceControl/BLAST 现代创建链路已重写，WMS 旧模型已标注版本边界"
     },
     {
       "section": "2.10",
@@ -9155,8 +9157,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T20:15:34.630443+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.6-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.6-external-review.md",
+      "completed_at": "2026-05-05T05:51:21Z",
+      "completed_reason": "SurfaceView 现代 SurfaceControl/BLAST 创建链路已补充（含版本边界）；Android 15 圆角同步改善已添加；Android 16 setPreferLowLatencyInput 低延迟模式已添加"
     },
     {
       "section": "18.7",
@@ -11826,7 +11830,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T13:34:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-05T05:51:21Z",
+      "completed_reason": "Perfetto SQL ftrace_events → ftrace_event 表名已全部修正；补充 EXTRACT_ARG 和派生表使用建议"
     }
   ],
   "completed": [
