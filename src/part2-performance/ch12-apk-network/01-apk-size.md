@@ -5,7 +5,7 @@ chapter: "12.1"
 status: ready-for-review
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
-task6_reviewed_date: "2026-04-16"
+task6_reviewed_date: "2026-05-05"
 polish_count: 1
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
@@ -37,15 +37,17 @@ task9_reviewed_date: 2026-05-05
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-05-05T22:55:00+08:00
 reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-02"
+reviewed_date: "2026-05-05"
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 pipeline_stage: task2b_pending
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-24T04:56:29+08:00"
 task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12.1 P1 1；P2 3 随队列记录。"
+last_task6_at: "2026-05-05T23:26:00+08:00"
+review_notes: "2026-05-05 Task6 23:26：revisiting 写作复审，清理填充词/元叙述，并让 density FAQ 与正文口径一致；写作层通过。Task9 已有 P1/P2 queue pending，等待 Task2B。"
 ---
 
 # APK 体积优化
@@ -54,9 +56,9 @@ task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12
 
 当一个用户在地铁里用 4G 网络搜索一个 App，Google Play 页面显示「下载大小 156 MB」——这个数字很可能直接劝退了他。Google 在 2018 年的一项内部研究中发现，APK 体积每增加 6 MB，安装转化率就下降约 1%[待验证: Google 内部数据，引用自 Android Developers Blog]。在国内应用市场，这个数字只会更残酷——很多用户还在按流量计费，或者手机存储已经捉襟见肘。
 
-体积问题不仅仅是下载体验。APK 安装后，dex 文件需要被解压、验证、编译（AOT/JIT）；resources.arsc 会被加载到内存；native libraries 被解压到磁盘。体积越大，安装时间越长，运行时的内存占用也越高。对于 MTK、高通这类平台上做性能优化的工程师来说，包体积和启动速度、内存占用之间存在一条不那么显眼但确实存在的因果链。
+体积问题不仅仅是下载体验。APK 安装后，dex 文件需要被解压、验证、编译（AOT/JIT）；resources.arsc 会被加载到内存；native libraries 被解压到磁盘。体积越大，安装时间越长，运行时的内存占用也越高。对于 MTK、高通这类平台上做性能优化的工程师来说，包体积和启动速度、内存占用之间存在一条不太显眼但会影响结果的因果链。
 
-本章的目标不是罗列一堆优化技巧——那种清单任何博客上都能找到。我们想回答的核心问题是：**一个 APK 里面到底装了什么，哪些东西占了多少空间，我们用什么工具能看清楚，以及从工程实践的角度，哪些优化手段投入产出比最高。**
+本章不罗列优化技巧清单——那种清单任何博客上都能找到。这里要回答三件事：**一个 APK 里面到底装了什么，哪些东西占了多少空间，我们用什么工具能看清楚，以及从工程实践的角度，哪些优化手段投入产出比最高。**
 
 ## APK 里面到底装了什么
 
@@ -94,7 +96,7 @@ task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。2.16 P0 1；12
 
 **Total Size** 给出了整个 APK 的大小概览。如果这个数字和预期差距很大，说明构建配置可能有问题（比如 debug 构建没开混淆，或者意外包含了一个大型 SDK）。
 
-**Dex 文件分析**：点击 classes.dex，APK Analyzer 会展示一个类列表，按包名组织。我们可以看到每个包（也就是每个库或模块）贡献了多少方法和多少字节。这一步通常能立即暴露问题——比如某个只用了其中一个工具方法的工具库，却带着 20000 个方法和 5 MB 的 dex 代码。
+**Dex 文件分析**：点击 classes.dex，APK Analyzer 会展示一个类列表，按包名组织。这里能看到每个包（也就是每个库或模块）贡献了多少方法和多少字节。这一步通常能立即暴露问题——比如某个只用了其中一个工具方法的工具库，却带着 20000 个方法和 5 MB 的 dex 代码。
 
 **资源对比**：APK Analyzer 的另一个实用功能是**对比两个 APK**。把优化前后的两个 APK 拖进去，它会把差异高亮出来，确认优化是否生效、有没有意外引入新的资源。
 
@@ -149,7 +151,7 @@ R8 的静态分析有一个盲区：**通过反射调用的代码，R8 看不到
 -keep class com.example.MyModelClass { *; }
 ```
 
-但这里有一个常见的工程陷阱：**keep 规则写得越宽，R8 能优化的空间就越小**。一条 `-keep class com.example.** { *; }` 就可能让整个包名下的所有类逃过优化。Android 官方推荐的做法是尽量使用 `@Keep` 注解，精确标注需要保留的类和成员：
+keep 规则常见的工程陷阱是：**规则写得越宽，R8 能优化的空间就越小**。一条 `-keep class com.example.** { *; }` 就可能让整个包名下的所有类逃过优化。Android 官方推荐的做法是尽量使用 `@Keep` 注解，精确标注需要保留的类和成员：
 
 ```kotlin
 @Keep
@@ -333,11 +335,11 @@ android {
 
 ### App Bundle 解决了什么问题
 
-传统 APK 分发模式有一个根本性的问题：**一个 APK 必须适配所有设备**。结果是，同一个 APK 里同时装着 hdpi 和 xxxhdpi 的图片、arm64 和 x86 的 so 库、中文和斯瓦希里语的字符串。用户在 arm64 设备上下载了这个 APK，其中 70% 的资源对他毫无用处——但他不得不下载。
+传统 APK 分发模式的限制很直接：**一个 APK 必须适配所有设备**。结果是，同一个 APK 里同时装着 hdpi 和 xxxhdpi 的图片、arm64 和 x86 的 so 库、中文和斯瓦希里语的字符串。用户在 arm64 设备上下载了这个 APK，其中 70% 的资源对他毫无用处——但他不得不下载。
 
-Android App Bundle（AAB）是 Google 在 2018 年推出的发布格式，它改变了这个模型。开发者上传一个 AAB 到 Google Play，Play 的服务器会根据每个用户的设备配置（屏幕密度、CPU 架构、语言）自动生成一个**最小化的 APK**（称为 Split APK）。结果是：用户只下载他设备真正需要的那部分资源。
+Android App Bundle（AAB）是 Google 在 2018 年推出的发布格式，它改变了这个模型。开发者上传一个 AAB 到 Google Play，Play 的服务器会根据每个用户的设备配置（屏幕密度、CPU 架构、语言）自动生成一个**最小化的 APK**（称为 Split APK）。结果是：用户只下载他设备实际需要的那部分资源。
 
-从 APK 切换到 AAB，通常可以看到下载大小减小 **15%-40%**，不需要改一行业务代码。这也是 Google Play 自 2021 年 8 月起强制要求新 App 使用 AAB 发布的原因。
+从 APK 切换到 AAB，通常能把下载大小减小 **15%-40%**，不需要改一行业务代码。这也是 Google Play 自 2021 年 8 月起强制要求新 App 使用 AAB 发布的原因。
 
 ### Dynamic Feature Module：按需加载功能
 
@@ -421,7 +423,7 @@ splitInstallManager.startInstall(request)
 
 [适用版本: Play Core Library 1.6+ / Android 5.0 (API 21)+]
 
-使用 Dynamic Feature Module 时，有几个工程上的注意点。第一，模块之间的代码依赖需要仔细规划——feature module 可以依赖 base module，但两个 feature module 之间不能直接依赖。第二，导航需要特殊处理——因为目标 Activity 在下载前根本不存在于设备上，标准的 `startActivity()` 会崩溃。Android Navigation Component 提供了 Dynamic Feature Module 的原生支持来处理这个问题。
+使用 Dynamic Feature Module 时，有几个工程上的注意点。第一，模块之间的代码依赖需要仔细规划——feature module 可以依赖 base module，但两个 feature module 之间不能直接依赖。第二，导航需要特殊处理——因为目标 Activity 在下载前还不存在于设备上，标准的 `startActivity()` 会崩溃。Android Navigation Component 提供了 Dynamic Feature Module 的原生支持来处理这个问题。
 
 ### bundletool：在本地验证 AAB 的效果
 
@@ -442,11 +444,11 @@ bundletool get-size total --apks=app.apks \
 
 **「开启 minifyEnabled 就够了」**——这是最常见的误区。R8 的代码缩减只能删掉静态不可达的代码。如果项目里有大量通过反射调用的代码、插件化框架、或者 Gson/Jackson 反序列化的 Model 类，没有配置正确的 keep 规则，R8 要么删错（运行时 ClassNotFoundException），要么不敢删（keep 范围过大）。正确的做法是：开启 R8 后跑一遍完整的回归测试，结合 APK Analyzer 检查每个库的保留比例，逐步收窄 keep 规则。
 
-**「应该支持所有屏幕密度」**——Android 的资源缩放机制可以在缺失某一密度资源时自动从最近的高密度资源缩放。对于大多数 App，提供 xxhdpi 资源即可覆盖主流设备，系统会自动处理其他密度的缩放。在 Gradle 中配置 `resConfigs` 过滤掉不需要的密度，可以减小资源体积。
+**「应该支持所有屏幕密度」**——Android 的资源缩放机制可以在缺失某一密度资源时自动从最近的高密度资源缩放。AAB / Google Play 分发时，density split 应交给 App Bundle；只有 sideload、企业包、OEM 固定设备等受控单 APK 场景，才考虑用 `resConfigs` 过滤密度资源。
 
 **「WebP 不如 PNG 清晰」**——这是过时的观念。对于照片类图片，WebP 有损压缩在 80% 质量以上时，人眼几乎无法察觉与 PNG 的差异；对于图标类图片，WebP 无损模式的压缩率也优于 PNG。alpha 通道需要单独看——某些带半透明效果的复杂图标，WebP 有损可能产生 artifact，这种情况用 WebP 无损即可。
 
-**「App Bundle 是强制性的，国内市场没法用」**——国内应用市场确实不支持 AAB 格式。但 App Bundle 的技术价值不限于 Google Play。可以在本地用 `bundletool` 生成针对特定 ABI 和密度的 APK，然后分渠道上传。这比「一个 APK 适配所有设备」高效得多。此外，Dynamic Feature Module 的按需加载思想，也可以通过自研的插件化框架在非 Google Play 渠道实现。
+**「App Bundle 是强制性的，国内市场没法用」**——国内应用市场不支持 AAB 格式。但 App Bundle 的技术价值不限于 Google Play。可以在本地用 `bundletool` 生成针对特定 ABI 和密度的 APK，然后分渠道上传。这比「一个 APK 适配所有设备」高效得多。此外，Dynamic Feature Module 的按需加载思想，也可以通过自研的插件化框架在非 Google Play 渠道实现。
 
 ## 构建期体积治理：从测量到持续跟踪
 
