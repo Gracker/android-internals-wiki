@@ -22,31 +22,29 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-task6_state: revisiting
 task9_state: pending
-pipeline_stage: task6_pending
+task2b_state: fixed
+task6_result: pass-light-edit
+task9_result: pending
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
+last_task6_at: "2026-05-05T13:28:00+08:00"
+last_task6_review_log: "logs/review/2026-05-05-13-review.md"
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
-task6_result: pass-light-edit
-task9_result: needs-rework
-task2b_result: fixed
 last_task9_at: "2026-05-05T07:19:11+08:00"
 task9_reviewed_by: "openclaw-task9"
-review_notes: "2026-05-05 task6 writing re-review: pass-light-edit。小修 1 处，清理翻译腔动词；无新增 B 类问题；转入 Task9 复审。"
 task9_reviewed_date: "2026-05-05"
+task9_review_notes: "2026-05-05 07:19 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 5。Perfetto SQL 原始 ftrace 表名/查询示例错误；若照抄 SELECT ... FROM ftrace 将无法运行。"
 last_task2b_at: "2026-04-30T14:47:00+08:00"
 repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
-last_task6_at: "2026-05-05T06:09:00+08:00"
-task9_review_notes: "2026-05-05 07:19 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 5。Perfetto SQL 原始 ftrace 表名/查询示例错误；若照抄 SELECT ... FROM ftrace 将无法运行。"
+review_notes: "2026-05-05 task6 revisit: pass-light-edit。清理 frontmatter 重复字段、验证路径与段落节奏；无新增 B 类问题；转入 Task9 复审。"
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
@@ -125,7 +123,9 @@ Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个
 
 [已验证: AOSP android-17-beta3, available_events]
 
-Perfetto 对 ftrace 事件做了两层处理：**原始 ftrace 事件**存放在 `ftrace_events` 表中（可按 `name` 列过滤事件类型），**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图，`cpu_frequency` 进入 `cpu_frequency_counters` 表。不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace_events` 原始表中体现，查询时需要按 `name` 过滤。`ftrace_events` 表主要用于调试和验证采集是否生效；生产分析应优先使用 Perfetto 提供的派生表（`sched`、`cpu_frequency_counters` 等），字段更丰富且经过类型转换。理解这种"原始事件 → 派生视图"的分层关系，有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
+Perfetto 对 ftrace 事件做了两层处理：**原始 ftrace 事件**存放在 `ftrace_events` 表中（可按 `name` 列过滤事件类型），**派生表/视图**则对原始事件做结构化解析后生成更易查询的形式。例如 `sched_switch` 参与生成 `sched` 表的调度切片视图，`cpu_frequency` 进入 `cpu_frequency_counters` 表。
+
+不是每个 tracepoint 都有独立的派生表——部分事件只在 `ftrace_events` 原始表中体现，查询时需要按 `name` 过滤。`ftrace_events` 表主要用于调试和验证采集是否生效；生产分析应优先使用 Perfetto 提供的派生表（`sched`、`cpu_frequency_counters` 等），字段更丰富且经过类型转换。理解这种"原始事件 → 派生视图"的分层关系，有助于在 Perfetto 中遇到数据异常时快速定位是采集层面的问题还是分析层面的问题。
 
 ## atrace 用户空间追踪框架
 
@@ -145,7 +145,7 @@ ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户
 
 [已验证: AOSP android-16.0.0_r1 / main, frameworks/native/cmds/atrace/atrace.cpp k_categories]
 
-Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。这也是为什么 Perfetto 比 atrace 更灵活——我们可以精确指定需要哪些 tracepoint，而不受 atrace 预设分类的限制。
+Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。它比 atrace 更灵活：可以精确指定需要哪些 tracepoint，不受 atrace 预设分类限制。
 
 ### 用户空间 Trace tag 的底层实现
 
@@ -160,7 +160,7 @@ Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接�
 
 `trace_marker` 常见写入格式包括 `B|<pid>|<name>`（begin）、`E|<pid>`（end）和 `C|<pid>|<name>|<value>`（counter）。Counter 用于记录随时间变化的数值，例如队列长度、缓存大小或业务侧自定义计数。Perfetto 解析 Trace 时，会把这些用户空间 tag 转成对应进程的 slice 或 counter Track。
 
-[已验证: AOSP android-17-beta3, system/core/libcutils/Trace.cpp, kernel/trace/trace.c trace_marker_write()]
+[已验证: AOSP android-17-beta3, frameworks/base/core/jni/android_os_Trace.cpp, system/core/libcutils/trace-dev.cpp / trace-dev.inc, kernel/trace/trace.c trace_marker_write()]
 
 这就是为什么 Perfetto 中的用户空间追踪事件能和内核的 `sched_switch` 等事件出现在同一根时间线上——它们共用同一个 ring buffer。
 
@@ -281,14 +281,16 @@ try {
 }
 ```
 
-在 Perfetto 中，这些 section 会出现在**调用该方法的线程 Track** 中（不限于主线程），名称为 `loadUserData`。需要注意：
+在 Perfetto 中，这些 section 会出现在**调用该方法的线程 Track** 中（不限于主线程），名称为 `loadUserData`。约束有三点：
 - `beginSection` 和 `endSection` 必须在同一线程配对调用
 - section 可以嵌套，但不能交叉
 - section 名称在 Perfetto SQL 的 `slice` 表中，可按名称过滤
 
 如果需要跨线程追踪异步操作，API 29+ 提供了 `Trace.beginAsyncSection()` / `Trace.endAsyncSection()`，用 cookie 关联起止端。
 
-`androidx.tracing` 库（`androidx.tracing:tracing`）提供了两个价值：一是向后兼容（API < 18 时自动降级为空操作）；二是通过 `TraceCompat`（已 deprecated，新代码直接用 `androidx.tracing.Trace`）统一 `beginSection` / `beginAsyncSection` 的调用入口。1.x 版本主要做兼容封装；2.0.0-alpha 引入了新的低开销 in-process tracing API，支持 Coroutine context 传播和可插拔 backend。
+`androidx.tracing` 库（`androidx.tracing:tracing`）提供两个价值：一是向后兼容（API < 18 时自动降级为空操作），二是通过 `TraceCompat`（已 deprecated，新代码直接用 `androidx.tracing.Trace`）统一 `beginSection` / `beginAsyncSection` 的调用入口。
+
+1.x 版本主要做兼容封装；2.0.0-alpha 引入了新的低开销 in-process tracing API，支持协程上下文传播和可插拔后端。
 
 [已验证: developer.android.com/reference/androidx/tracing/Trace, androidx.tracing:tracing:1.2.0]
 
@@ -412,7 +414,7 @@ WHERE name = 'my_custom_my_event'
 
 ### ftrace buffer 与数据丢失
 
-ftrace 使用 per-CPU ring buffer 存储事件。当事件产生速度超过消费者（traced_probes）的读取速度时，旧事件会被覆盖。这就是为什么 Perfetto 中有时会发现某个时间段的数据突然消失——ring buffer 溢出了。
+ftrace 使用 per-CPU ring buffer 存储事件。当事件产生速度超过消费者（traced_probes）的读取速度时，旧事件会被覆盖。Perfetto 中某个时间段的数据突然消失，通常就是 ring buffer 溢出造成的。
 
 缓解方法：
 - 增大 buffer（`buffer_size_kb`），但会占用更多内核内存
@@ -424,7 +426,7 @@ ftrace 使用 per-CPU ring buffer 存储事件。当事件产生速度超过消�
 1. **最小化启用的事件集**：不要"全选"。只启用分析目标相关的事件
 2. **控制 Trace 时长**：30-60 秒足够大多数分析场景，超过 5 分钟的 Trace 文件会很大且难以分析
 3. **避免高频自定义 tag**：如果在一个循环里调用 `Trace.beginSection()`，频率超过每秒 1000 次时，tag 本身就会成为性能负担
-4. **注意 buffer 大小**：在低内存设备上，大 buffer 可能导致内存压力
+4. **控制 buffer 大小**：在低内存设备上，大 buffer 可能导致内存压力
 
 ## 与 eBPF 的关系
 
@@ -450,10 +452,10 @@ Android 16 引入的 UprobeStats 就是基于 eBPF uprobe 机制的动态埋点�
 ```
 
 理解这个链条后：
-- 遇到 Trace 数据缺失，我们知道要去检查 ftrace buffer 配置
-- 需要自定义追踪点，我们知道在哪一层用什么 API
-- 想评估 Tracing 对测试结果的影响，我们知道不同模式的精确开销范围
-- 对于 OEM/系统开发者，我们知道了从内核到 Perfetto 的完整扩展路径
+- 遇到 Trace 数据缺失，先检查 ftrace buffer 配置
+- 需要自定义追踪点，按 App、Framework、Kernel 三层选择入口
+- 评估 Tracing 对测试结果的影响时，对照不同模式的开销范围
+- OEM/系统开发者可以沿着内核 tracepoint 到 Perfetto 的路径扩展观测能力
 
 ## 延伸阅读
 
@@ -467,7 +469,7 @@ Android 16 引入的 UprobeStats 就是基于 eBPF uprobe 机制的动态埋点�
 ### btrace (bytedance/btrace) 深度调研报告
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace (bytedance:btrace) 深度调研报告.md
 - 类型：DeepResearch 调研结果
-- 摘要：围绕 btrace 1.0→3.0 演进，说明从编译期插桩转向 Runtime Hook + 同步抓栈的设计原因，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及与 Perfetto、异步采样方案的取舍边界。
+- 摘要：围绕 btrace 1.0→3.0 演进，说明从编译期插桩转向运行时 Hook + 同步抓栈的设计原因，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及与 Perfetto、异步采样方案的取舍边界。
 - 注入时间：2026-04-21
 - 价值：把第三方 tracing 工具的架构取舍讲透，适合补强 Android tracing 生态的横向对比。
 
