@@ -38,19 +38,18 @@ task6_state: reviewed
 task6_result: pass-light-edit
 task2b_result: fixed
 task6_reviewed_date: "2026-05-05"
-review_round: 2
+review_round: 3
 status: ready-for-review
-pipeline_stage: task9_pending
-task9_result: pending
-task9_state: pending
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
-last_task9_at: "2026-05-05T10:38:33+08:00"
-task9_review_notes: "2026-05-05 10:20 task9 deep-review: needs-rework；P0 2（LMK/Perfetto 追踪点、Binder binder_reply tracepoint），P1 2（FrameMetrics API 版本、JankStats 判定口径）。"
+last_task9_at: "2026-05-05T11:20:00+08:00"
+task9_review_notes: "2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1 / P2 1。"
 last_task6_at: "2026-05-05T11:05:00+08:00"
 review_notes: "2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。"
-
 ---
 
 # 卡顿分析方法论
