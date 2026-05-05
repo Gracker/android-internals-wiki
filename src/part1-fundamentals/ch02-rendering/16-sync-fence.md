@@ -30,12 +30,12 @@ sources:
     path: "https://source.android.com/docs/core/graphics/architecture"
 tags: [sync-fence, fence, hwui, rendering, synchronization, timeline]
 related_chapters: ["2.4", "2.5", "2.6", "2.13", "2.15"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 task9_result: needs-rework
@@ -43,7 +43,7 @@ task2b_result: fixed
 task9_reviewed_date: 2026-05-05
 task9_reviewed_by: openclaw-task9
 last_task9_at: 2026-05-05T22:55:00+08:00
-last_task2b_at: "2026-04-28T11:54:37+08:00"
+last_task2b_at: "2026-05-05T23:51:15+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-04-27 task9 deep-review: pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。P2 2 写入 suggestions。 | 2026-05-05 Task6 23:26：revisiting 写作复审，清理 fence 章节 L1/L2 表达（填充词、否定纠正式、参考资料重复块）；写作层通过。Task9 已有 P0 queue pending，等待 Task2B。"
@@ -306,9 +306,9 @@ Timeline Semaphore 优化的是 Vulkan 队列内部的多帧同步——用一�
 
 [待验证：以下为研究假设，尚缺同机 4KB/16KB 内核对比的 kernel ftrace（irq/dma_fence signal、sched wakeup）与 Perfetto fence wait 尾部抖动的实测证据。]
 
-16KB 页对 fence 同步路径的潜在影响不在 fence 对象本身，而在内核中断处理路径的 TLB 命中率。当 GPU 完成渲染并通过中断通知 CPU 时，内核的中断处理函数需要访问 fence 状态所在的内存页。16KB 页面将 TLB 覆盖范围扩大了 4 倍，理论上减少了中断处理路径上的 TLB Miss，可能缩短从 GPU 完成 signal 到 SurfaceFlinger 被 CPU 唤醒响应的时间窗口。
+16KB 页对 fence 同步路径的潜在影响不在 fence 对象本身，而在内核中断处理路径的 TLB 命中率。假设链条：GPU 完成渲染 → 通过中断通知 CPU → 内核中断处理函数访问 fence 状态所在内存页 → 16KB 页面扩大 TLB 覆盖范围 → 理论上减少中断路径 TLB Miss → 可能缩短 GPU signal 到 SurfaceFlinger wakeup 的延迟。
 
-如果该假设成立，优化对高频 VSync（120Hz / 144Hz）设备会更明显，因为帧间隔越短，fence signal 和下一帧 fence wait 之间的时间余量越小。验证方式：同设备分别启动 4KB/16KB 内核，对比 GPU IRQ 到 SurfaceFlinger wakeup 延迟、TLB miss perf counter，以及 Perfetto fence wait 尾部抖动。
+这条链条目前没有同机 4KB/16KB kernel ftrace（irq/dma_fence signal、sched wakeup）、perf counter（TLB miss）或 Perfetto fence wait 尾部抖动的实测对照。如果假设成立，高频 VSync（120Hz / 144Hz）设备受益更明显，因为帧间隔越短，fence signal 和下一帧 fence wait 之间的余量越小。验证方式：同设备分别启动 4KB/16KB 内核，对比 GPU IRQ 到 SurfaceFlinger wakeup 延迟、TLB miss perf counter，以及 Perfetto fence wait 尾部抖动。
 
 ### [待验证] 未来展望：Timeline Semaphore 与 fd 路径的演进
 
@@ -316,7 +316,7 @@ Timeline Semaphore 优化的是 Vulkan 队列内部的多帧同步——用一�
 
 fd 泄漏是 Android 图形栈长期存在的稳定性隐患：一个未关闭的 fence fd 会阻止对应 buffer 被 Gralloc 回收，累积后可能触发图形栈卡死。Timeline Semaphore 的计数器模型理论上可以缓解 fd 泄漏问题，因为同一个 semaphore 对象在生命周期内被复用。但 Android 图形管线从 fd 模型迁移到 Timeline Semaphore 需要内核驱动、Gralloc、BufferQueue、SurfaceFlinger、HWC 的端到端配合，不是单方面可以推动的。
 
-Android 16 要求新设备支持 Timeline Semaphores，但传统 fd 路径仍然保留。后续版本是否会在更多图形组件中默认使用 Timeline 路径，需要以正式 CDD / AOSP 变更为准。对开发者来说，如果使用 Vulkan 直接渲染，现在就可以迁移到 Timeline Semaphores；如果通过 ANGLE 间接使用，迁移由系统层完成。
+部分 Vulkan 设备可支持 timelineSemaphore（通过 VkPhysicalDeviceTimelineSemaphoreFeatures 查询）；Android 图形栈 native fence / sync_file fd 边界是否向 Timeline Semaphore 演进，以正式 CDD / AOSP / source.android.com 为准。对开发者来说，如果使用 Vulkan 直接渲染，现在就可以迁移到 Timeline Semaphores；如果通过 ANGLE 间接使用，迁移由系统层完成。
 
 ## 常见问题与误区
 
@@ -341,13 +341,12 @@ VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 produce
 
 ## 参考资料
 
-### Android Sync Fence 机制深度剖析
+### Android Sync Fence 机制深度剖析：从 dma-fence 到 Android 16 Explicit Sync
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md
 - 类型：DeepResearch 调研结果
-- 摘要：从 Linux 内核 dma_fence 结构体出发,详述 sync_file uABI、libsync 兼容桥到 Android libui Fence 类的完整流程。覆盖 fence 的 signal/wait/add_callback 语义、signalling critical section、dma_fence_chain merge/merge 架构,以及 Android 16 从 Implicit Sync 向 Explicit Sync 迁移的内核侧(android_fence_tracker)与用户态变化。
-- 注入时间：2026-04-29
-- 价值：源码级贯通 Linux dma-fence 到 Android Sync Fence 的全流程，含 Android 16 Explicit Sync 迁移细节
-
+- 摘要：从 Linux 内核 dma_fence 结构体出发，详述 sync_file uABI、libsync 兼容桥到 Android libui Fence 类的完整流程。覆盖 fence 的 signal/wait/add_callback 语义、signalling critical section、dma_fence_chain merge/merge 架构、acquire/release/present fence 在 BufferQueue/SurfaceControl/HWC3 中的流转，以及 Android 16 explicit sync 与可观测性工具。
+- 注入时间：2026-04-24（更新 2026-04-29）
+- 价值：源码级贯通 Linux dma_fence 到 Android Sync Fence 的全流程，含 Android 16 Explicit Sync 迁移细节
 
 - AOSP 源码：`frameworks/native/libs/ui/Fence.cpp`
 - AOSP 源码：`frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.h`
@@ -357,10 +356,3 @@ VSync 决定“一帧什么时候开始”，Fence 决定“这一帧在 produce
 - AOSP 源码：`frameworks/base/libs/hwui/renderthread/VulkanManager.cpp`
 - 官方文档：<https://source.android.com/docs/core/graphics/sync>
 - 官方文档：<https://source.android.com/docs/core/graphics/architecture>
-
-### Android Sync Fence 机制深度剖析：从 dma-fence 到 Android 16 Explicit Sync
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md
-- 类型：DeepResearch 调研结果
-- 摘要：围绕 Linux `dma_fence`、`sync_file`、Android `libsync` 与 `Fence` 类，解释 acquire/release/present fence 在 BufferQueue、SurfaceControl、HWC3 中的流转，并把 Android 16 explicit sync 与可观测性工具串起来。
-- 注入时间：2026-04-24
-- 价值：把 fence 的内核原语、Android 封装和 trace 观察方法一次讲清。
