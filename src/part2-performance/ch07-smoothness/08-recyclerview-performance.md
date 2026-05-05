@@ -2,7 +2,7 @@
 title: "RecyclerView 列表滑动性能深度优化"
 chapter: "7.8"
 section: "7.8"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: [recyclerview, scrolling, jank, prefetch, diffutil, nested-scrolling, arr, viewholder, viewcache, gapworker]
 related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.18", "9.4"]
@@ -36,17 +36,16 @@ sources:
     path: "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView"
   - type: official
     path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: revisiting
-task9_state: pending
-task9_result: needs-rework
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-05-03T13:11:19+08:00"
+last_task9_at: "2026-05-05T19:34:00+08:00"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-03"
-review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 2；P1 1；源码/API/数据口径需回炉，已写入 queue.json。"
-
+task9_reviewed_date: "2026-05-05"
+review_notes: "2026-05-05 task9 deep-review: pass-tech-review。P0 0；P1 0；P2 0；P3 3。既有 2026-05-03 P0/P1 已复核闭环；自动晋升 finalized / ready-to-publish。"
 ---
 
 # 7.8 RecyclerView 列表滑动性能深度优化
