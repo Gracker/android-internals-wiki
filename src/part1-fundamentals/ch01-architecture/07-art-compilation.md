@@ -47,8 +47,8 @@ task9_result: needs-rework
 last_task9_at: "2026-05-03T06:20:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-03"
-pipeline_stage: task2b_pending
-task2b_state: pending
+pipeline_stage: task6_pending
+task2b_state: fixed
 task2b_result: fixed
 task6_state: reviewed
 task9_state: reviewed
@@ -258,7 +258,7 @@ dex2oat 的输入是 DEX 文件（APK 中的 classes.dex），输出是 OAT 文�
    - **逃逸分析**：判断对象是否"逃逸"出方法范围。未逃逸的对象可以在栈上分配而非堆上，减少 GC 压力
    - **去虚化（Devirtualization）**：将虚方法调用（`invoke-virtual`）转换为直接调用，基于类型信息或 Profile 中的内联缓存
    - **边界检查消除**：数组访问的边界检查在能证明索引安全时被移除
-5. **寄存器分配**：将虚拟寄存器映射到物理寄存器。ARM64 有 31 个通用寄存器，溢出（spill）到栈的操作代价较高，编译器通过图着色算法（graph coloring）尽量减少溢出
+5. **寄存器分配**：将虚拟寄存器映射到物理寄存器。ARM64 有 31 个通用寄存器，溢出（spill）到栈的操作代价较高。ART optimizing compiler 使用 linear scan register allocation（线性扫描寄存器分配），通过活跃区间分析、寄存器约束和 spill heuristics 分配物理寄存器——源码锚点为 `compiler/optimizing/register_allocator.cc`。编译时间复杂度低于图着色算法，适合移动设备上 dex2oat 的编译预算
 6. **代码生成**：将优化后的 H 图 lowering 为目标架构的机器码（ARM64/x86_64）
 7. **输出 OAT**：将编译结果写入 OAT 文件（ELF 格式），同时生成 VDEX 文件（存储原始 DEX 的快速验证信息）
 
@@ -441,7 +441,7 @@ profilingManager.requestProfiling(
 
 公开 API 支持四种类型：`PROFILING_TYPE_SYSTEM_TRACE`、`PROFILING_TYPE_HEAP_PROFILE`、`PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_STACK_SAMPLING`。不存在 `PROFILING_TYPE_JAVA_TRACE` 常量。
 
-Android 16 进一步强化了系统触发能力——当 ANR 发生时，系统可自动从背景环形缓冲区中导出 Trace，无需应用主动请求。这对捕获难以复现的启动卡顿特别有价值。
+Android 16 进一步强化了系统触发能力——应用通过 `addProfilingTriggers()` 预先注册触发条件（如 ANR），当触发条件满足时系统自动从背景环形缓冲区中导出 Trace，无需在 ANR 当下同步抓取。触发条件注册后，采样结果通过 `ProfilingResult` 回调或文件交付，存在采样时间窗限制。这对捕获难以复现的启动卡顿特别有价值。
 
 ### 如何通过 Trace 判断编译瓶颈
 

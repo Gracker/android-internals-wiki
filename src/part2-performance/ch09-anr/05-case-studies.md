@@ -5,7 +5,7 @@ section: "9.5"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-04-22"
 reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-21"
@@ -30,17 +30,17 @@ sources:
     path: "frameworks/native/libs/binder/ProcessState.cpp"
 tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
 related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: reviewed
+task2b_state: pending
+task2b_result: rework-fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
 last_task9_at: "2026-05-04T20:26:00+08:00"
-review_notes: "2026-05-05 task6 revisiting: pass-light-edit。小修18处（代码块语言、I/O术语统一、口语化表达、填充词）。无新增B类问题；既有Task9技术项已由Task2B完成，待Task9复审。 | 2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task 2B 回炉。"
+review_notes: "2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task 2B 回炉。"
 ---
 # 案例集
 
@@ -52,7 +52,7 @@ review_notes: "2026-05-05 task6 revisiting: pass-light-edit。小修18处（代�
 ### 锚点（必须覆盖）
 
 - 🔹 提供 3-5 个真实 ANR 案例
-- 🔹 案例需覆盖：死锁、主线程 I/O、系统负载、SharedPreferences、进程冻结（Binder 超时场景见案例 6"举一反三"中的分析，独立案例待补充）
+- 🔹 案例需覆盖：死锁、主线程 I/O、Binder 超时、系统负载、SharedPreferences
 - 🔹 每个案例包含：ANR 信息摘录、分析过程、根因定位、修复方案
 
 ### 扩展（可选深入）
@@ -71,18 +71,18 @@ review_notes: "2026-05-05 task6 revisiting: pass-light-edit。小修18处（代�
 
 前四节我们分别讲了 ANR 的设计思想、类型分类、分析方法论和特殊场景。这些是分析 ANR 的"工具箱"。但真实世界中，ANR 很少按照教科书的方式出现——trace 中的主线程堆栈可能指向 `nativePollOnce`（看起来什么都没做），负载可能处于正常范围，甚至 ANR 发生的进程本身没有任何问题。
 
-案例集存在的意义就在这里：我们用六个从真实产品环境中提取的案例，带你走一遍完整的分析过程。每个案例的原始数据（trace、event log、AnrManager 信息）都保留了关键部分，阅读时可以先判断原因，再对照后面的分析。
+案例集存在的意义就在这里：我们用六个从真实产品环境中提取的案例，带你走一遍完整的分析过程。每个案例的原始数据（trace、event log、AnrManager 信息）都保留了关键部分，你可以在阅读时尝试自己先判断原因，再对照后面的分析。
 
 这六个案例覆盖了 ANR 中最常见的根因类型：
 
-- **案例 1：系统负载过高导致 Input ANR** — 设备全局 I/O 压力过高，所有进程都在等磁盘
+- **案例 1：系统负载过高导致 Input ANR** — 设备全局 IO 压力爆表，所有进程都在等磁盘
 - **案例 2：SystemServer 主线程耗时导致 Input ANR** — 根因不在 App 侧，而在 system_server 的 Notifier 处理
 - **案例 3：SharedPreferences 等待导致 Broadcast ANR** — `QueuedWork.waitToFinish()` 把主线程卡住了
 - **案例 4：进程冻结导致 Input ANR** — 系统冻结了 Gesture Monitor 进程，事件无人消费
 - **案例 5：应用启动超时导致焦点窗口缺失 ANR** — 目标应用启动失败，焦点无处可去
 - **案例 6：synchronized 锁顺序颠倒导致 Service ANR** — 主线程与后台线程争抢两把锁，形成经典死锁
 
-## 案例 1：系统负载过高 — I/O 压力导致的 Input ANR
+## 案例 1：系统负载过高 — IO 压力导致的 Input ANR
 
 ### 问题现象
 
@@ -90,7 +90,7 @@ review_notes: "2026-05-05 task6 revisiting: pass-light-edit。小修18处（代�
 
 Event log 中的 ANR 记录：
 
-```text
+```
 04-07 03:13:49.417 1444 8816 I am_anr : [0,2135,com.android.launcher,
   751550021, Input dispatching timed out 
   (Application does not have a focused window)]
@@ -102,7 +102,7 @@ Event log 中的 ANR 记录：
 
 **第一步：看 trace。** 主线程堆栈：
 
-```text
+```
 "main" prio=5 tid=1 Native
   | state=S schedstat=( 10985995408825 3939822638104 29985904 )
   native: #00 pc 0009013c libc.so (syscall+28)
@@ -114,7 +114,7 @@ Event log 中的 ANR 记录：
 
 **第二步：看 AnrManager 的负载信息。**
 
-```text
+```
 Load: 56.48 / 30.74 / 22.68
 ----- Output from /proc/pressure/memory -----
   some avg10=82.71 avg60=58.68 avg300=20.55
@@ -124,32 +124,32 @@ Load: 56.48 / 30.74 / 22.68
   full avg10=38.46 avg60=20.76 avg300=7.13
 ```
 
-系统 1 分钟平均负载 30.74，远超正常范围。内存压力 `avg10=82.71` 说明最近 10 秒有 82% 的时间在等待内存回收。I/O 压力 `avg10=85.37`，意味着 85% 的时间里至少有一个进程在等 I/O。
+系统 1 分钟平均负载 30.74，远超正常范围。内存压力 `avg10=82.71` 说明最近 10 秒有 82% 的时间在等待内存回收。IO 压力 `avg10=85.37`，意味着 85% 的时间里至少有一个进程在等 IO。
 
 再看 CPU 使用分布：
 
-```text
+```
 80% 84/kswapd0          ← 内核回收线程吃了 80% CPU
 55% 1444/system_server  ← system_server 占 55%，29% kernel 态
 21% com.ss.android.ugc.aweme  ← 抖音，17% kernel 态，大量 major faults
 CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 ```
 
-全局 CPU 使用率 99%，其中 **43% 是 iowait**——CPU 在等磁盘。`kswapd0` 占了 80% CPU 在持续回收内存。
+全局 CPU 使用率 99%，其中 **43% 是 iowait**——CPU 在等磁盘。`kswapd0` 占了 80% CPU 在疯狂回收内存。
 
 ### 根因
 
-**系统整体性能崩溃。** 内存紧张 → 大量 page fault → 磁盘 I/O 飙升 → 所有进程都在等磁盘 → CPU 大量时间花在 iowait 上 → App 进程调度不到 CPU 时间，导致 5 秒内无法处理输入事件。
+**系统整体性能崩溃。** 内存紧张 → 大量 page fault → 磁盘 IO 飙升 → 所有进程都在等磁盘 → CPU 大量时间花在 iowait 上 → App 进程调度不到 CPU 时间，导致 5 秒内无法处理输入事件。
 
 ### 修复方案
 
-系统层面：排查内存大户、I/O 调度优化（通过 `ionice` 提升前台进程 I/O 优先级）、内存压力监控。App 层面：减少大对象分配，避免在主线程做可能触发 GC 的操作。
+系统层面：排查内存大户、IO 调度优化（通过 `ionice` 提升前台进程 IO 优先级）、内存压力监控。App 层面：减少大对象分配，避免在主线程做可能触发 GC 的操作。
 
 ### 举一反三
 
 这类 ANR 的共同特征：trace 中主线程堆栈"干净"（`nativePollOnce` 或 `WaitHoldingLocks`），但 AnrManager 的负载信息暴露真相。看到 Load 值远超 CPU 核心数、iowait 超过 20%、`kswapd0` 在排行榜前面，就要往系统负载方向分析。
 
-**16KB Page Size 下的 I/O 注意事项。** 需要区分两个概念：系统物理页大小（Android 15+ 新设备可能使用 16KB）和 SQLite 数据库页大小。AOSP SQLite 默认 `SQLITE_DEFAULT_PAGE_SIZE=4096`，**不受系统页大小影响**。只有显式执行 `PRAGMA page_size=16384` 并重建数据库后，WAL checkpoint 的单页写入量才会变为 16KB——此时默认 1000 页的 `wal_autocheckpoint` 阈值意味着单次 checkpoint 写入约 16MB（而非默认的 4MB），在 I/O 压力大的场景下脉冲更明显。实战调优方向：对写入密集的数据库，将 `PRAGMA wal_autocheckpoint` 从默认的 1000 页调低到 100-200 页，把单次大脉冲拆成多次小脉冲，降低 iowait 峰值。如果数据库使用默认 4KB page_size，16KB 系统页本身不会改变 checkpoint 行为。
+**16KB Page Size 下的 I/O 加剧。** Android 15+ 的 16KB 分页设备上，SQLite WAL 的 Checkpoint 粒度从 4KB 对齐升级到 16KB 对齐，单次 Checkpoint 写入量可达传统设备的 4 倍。当 App 的数据库写入集中在主线程或 `QueuedWork` 路径时，Checkpoint 产生的脉冲式 `iowait` 更容易瞬间吃满主线程的 5 秒 Input 窗口。实战调优方向：对写入密集的数据库，将 `PRAGMA wal_autocheckpoint` 从默认的 1000 页调低到 100-200 页，把单次大脉冲拆成多次小脉冲，降低 iowait 峰值。
 
 ---
 
@@ -159,7 +159,7 @@ CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 
 设备：Android 14。Launcher 出现 Input ANR：
 
-```text
+```
 07-20 15:01:37.293 1385 20230 I am_anr : [0,3450,com.android.launcher,
   Input dispatching timed out 
   ([Gesture Monitor] swipe-up (server) is not responding. 
@@ -174,11 +174,11 @@ CPU usage TOTAL: 99%  14% user + 36% kernel + 43% iowait
 
 **第一步：看 trace。** Launcher 主线程空闲（`nativePollOnce`），Launcher 本身没有问题。
 
-**第二步：看负载。** system_server 占了 215% CPU，而且有大量 major faults。system_server 在做极重的 I/O 操作（215% CPU，其中大量为 kernel 态）。
+**第二步：看负载。** system_server 占了 215% CPU，而且有大量 major faults。system_server 在做极重的 IO 操作（215% CPU，其中大量为 kernel 态）。
 
 **第三步：找 Logcat 线索。**
 
-```text
+```
 07-20 15:00:45.316 1385 1385 W Looper : 
   Slow dispatch took 10578ms main 
   h=com.android.server.power.Notifier$NotifierHandler
@@ -188,7 +188,7 @@ system_server 的主线程在处理 `Notifier$NotifierHandler` 的消息时花�
 
 ### 根因
 
-**典型的系统侧 ANR。** Gesture Monitor 的输入事件回调运行在 system_server 进程中。system_server 的主线程正被 `Notifier$NotifierHandler` 阻塞了 10.5 秒，Gesture Monitor 的回调无法执行，InputDispatcher 等了 5 秒就触发了 ANR，Launcher 会出现在 ANR 记录里。
+**典型的系统侧 ANR。** Gesture Monitor 的输入事件回调运行在 system_server 进程中。system_server 的主线程正被 `Notifier$NotifierHandler` 阻塞了 10.5 秒，Gesture Monitor 的回调无法执行，InputDispatcher 等了 5 秒就触发了 ANR。App 被"躺枪"。
 
 [已验证: AOSP android-14.0.0_r1, Notifier 路径为 frameworks/base/services/core/java/com/android/server/power/Notifier.java]
 
@@ -208,7 +208,7 @@ Input ANR 中"(server) is not responding"子类型，根因几乎一定在 syste
 
 大型 App（日活千万级），在 Activity 切换时偶发 ANR。ANR trace：
 
-```text
+```
 "main" prio=5 tid=1 WAIT
   at android.app.QueuedWork.waitToFinish(QueuedWork.java:176)
   at android.app.ActivityThread.handlePauseActivity(ActivityThread.java:4640)
@@ -222,7 +222,7 @@ Input ANR 中"(server) is not responding"子类型，根因几乎一定在 syste
 
 1. 先将数据写入内存缓存
 2. 将文件写入任务提交到后台线程
-3. 在 Activity 的生命周期切换时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成。AOSP android-14.0.0_r1 中，非 pre-Honeycomb Activity 的等待点在 `handleStopActivity()`（对应 `onStop()` 时机），`handlePauseActivity()` 只对 pre-Honeycomb Activity 调用 `waitToFinish()`。BroadcastReceiver 和 ContentProvider 的写入等待点分别在 `ActivityThread.handleReceiver()` 和 `ActivityThread.handleRelaunchActivity()` 中
+3. 在 Activity 的 `onPause()` / `onStop()` 时，系统调用 `QueuedWork.waitToFinish()` 强制等待所有写入完成
 
 当 App 中存在大量 `apply()` 调用但后台写入还没完成时，主线程在生命周期切换时就会被卡住。
 
@@ -230,13 +230,13 @@ Input ANR 中"(server) is not responding"子类型，根因几乎一定在 syste
 
 ### 根因
 
-SharedPreferences 的 `apply()` 表面上是异步提交，但在组件生命周期切换时可能退化为同步等待。App 规模变大、SP 文件数量增多后，等待时间会被不可控地拉长。
+SharedPreferences 的 `apply()` 在设计上存在缺陷：它声称是异步的，但在组件生命周期切换时会退化为同步等待。随着 App 规模增长，SP 文件数量增多，等待时间被不可控地拉长。
 
 ### 修复方案
 
-1. **减少 SP 使用量** — 严格控制每个 SP 文件大小，只存必须持久化的少量配置
+1. **减少 SP 使用量** — 严格控制每个 SP 文件大小，只存真正需要持久化的少量配置
 2. **预加载** — 在 Application 初始化阶段提前调用 `getSharedPreferences()` 触发加载
-3. **反射方案（高风险）** — AOSP 中 `QueuedWork` 的字段名为 `sFinishers`（`LinkedList<Runnable>`），通过反射替换该 List 让 `poll()` 返回 null。该方案依赖 AOSP 内部实现，不同 Android 版本和 OEM 分支可能有差异，生产环境不建议使用
+3. **字节方案** — 通过反射替换 `sPendingWorkFinishers` 让 `poll()` 返回 null（有兼容性风险）
 4. **迁移到 DataStore** — Google 推荐的替代方案，基于 Kotlin Flow 和 Protocol Buffers
 
 ### 举一反三
@@ -251,7 +251,7 @@ trace 中出现 `QueuedWork.waitToFinish` 或 `SharedPreferencesImpl.awaitLoaded
 
 Android 14 设备，使用手势导航时偶发 ANR：
 
-```text
+```
 02-18 20:08:25.283 WindowManager: 
   ANR in input window owned by pid=3930. 
   Reason: Input dispatching timed out 
@@ -265,7 +265,7 @@ Android 14 设备，使用手势导航时偶发 ANR：
 
 常规分析手段（看 trace、看负载）都指向"一切正常"。分析者采用**从源头追踪**的方法：
 
-1. 追踪事件派发——确认 InputDispatcher 发出了 MotionEvent
+1. 追踪事件派发——确认 InputDispatcher 确实发出了 MotionEvent
 2. 追踪接收方——screenshot 进程（pid=3930）此后再也没有收到新事件
 3. **发现冻结**——在 `20:08:20.289`，日志中出现了 `am_freeze: [3930, com.android.systemui:screenshot]`
 4. **验证**——关闭 freezer 后 ANR 不再复现，开启后立刻复现
@@ -274,7 +274,7 @@ Android 14 设备，使用手势导航时偶发 ANR：
 
 Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。系统在用户正在进行手势操作时冻结了 screenshot 进程，导致 Input 事件无法被消费，触发 ANR。这是**系统设计缺陷**：进程冻结策略没有考虑 Gesture Monitor 需要持续接收 Input 事件。
 
-[版本边界：此案例基于 Android 14 MTK 平台的 CachedAppsFreezer 行为。Android 15+ 加强了 InputDispatcher 对活跃连接进程的冻结豁免逻辑，通过 `InputDispatcher::setFrozen` 检查连接状态避免冻结活跃 Input 连接的进程。但 Gesture Monitor 的豁免覆盖范围在不同 OEM 机型上仍存在差异——部分厂商的定制 Freezer 策略可能绕过 AOSP 默认豁免逻辑。生产环境排查冻结 ANR 时，应通过 `am_freeze` / `am_cached_process_freeze_status` 日志确认目标进程的冻结状态]
+[版本边界：此案例基于 Android 14 的 CachedAppsFreezer 行为。Android 15+ 加强了 InputDispatcher 对活跃连接进程的冻结豁免逻辑，但 Gesture Monitor 的豁免覆盖范围在不同 OEM 机型上存在差异，生产环境仍需通过 `am_freeze` 日志确认]
 
 ### 修复方案
 
@@ -282,7 +282,7 @@ Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。
 
 ### 举一反三
 
-遇到 Input ANR 且 trace 中主线程空闲、负载正常时，要检查 `am_freeze` 日志。进程冻结是 Android 12+ 引入的重要省电机制，可能导致 trace 和负载都看不出异常的 ANR。
+当你遇到 Input ANR 且 trace 中主线程空闲、负载正常时，记得检查 `am_freeze` 日志。进程冻结是 Android 12+ 引入的重要省电机制，可能导致"幽灵 ANR"。
 
 ---
 
@@ -292,7 +292,7 @@ Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。
 
 用户在 Launcher 上点击拨号器图标，Launcher 出现 ANR：
 
-```text
+```
 05-30 12:15:49.544 am_anr : [0,2758,com.android.launcher,
   Input dispatching timed out 
   (Application does not have a focused window)]
@@ -304,13 +304,13 @@ Android 的 Cached Apps Freezer 机制在应用进入后台后冻结其进程。
 
 **第一步：看 trace。** Launcher 主线程空闲，Launcher 没有问题。
 
-**第二步：确认 Launcher 状态。** Launcher 在 ANR 发生前 33 秒已经绘制完成，不是 Launcher 自身问题。
+**第二步：确认 Launcher 状态。** Launcher 在 ANR 发生前 33 秒已经绘制完成，不是它的锅。
 
 **第三步：看负载。** 正常。
 
-**第四步：看 Event log 的焦点切换序列（定位线索）：**
+**第四步：看 Event log 的焦点切换序列（破案关键）：**
 
-```text
+```
 05-30 12:15:25.131 am_proc_start: [0,8341,10150,com.google.android.dialer]
 05-30 12:15:25.138 input_focus: [Focus leaving ... com.android.launcher (server), reason=NO_WINDOW]
 05-30 12:15:35.143 am_process_start_timeout: [0,8341,com.google.android.dialer]
@@ -343,7 +343,7 @@ Dialer 侧：优化启动速度，减少同步初始化。系统侧：优化进�
 
 Event log 中的 ANR 记录：
 
-```text
+```
 09-12 14:37:22.815 1000 2451 I am_anr : [0,18932,com.example.app,
   852340012, executing service com.example.app.sync.SyncService]
 ```
@@ -354,7 +354,7 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
 
 **第一步：看 trace。** 主线程堆栈：
 
-```text
+```
 "main" prio=5 tid=1 BLOCKED
   | waiting to lock <0x0f3c2a81> (a com.example.app.data.DatabaseHelper)
   | held by thread "SyncWorker-2"
@@ -366,7 +366,7 @@ Service 的 `onBind()` 超时，触发了 Service ANR（前台 Service 20 秒超
 
 **第二步：看 SyncWorker-2 的堆栈。**
 
-```text
+```
 "SyncWorker-2" prio=5 tid=23 BLOCKED
   | waiting to lock <0x0a1b7d43> (a com.example.app.data.DataManager)
   | held by thread "main"
@@ -435,36 +435,31 @@ trace 中出现 `BLOCKED` 状态且堆栈指向 `synchronized` 方法，是死�
 通过这六个案例，提炼出高效的分析路径：
 
 1. **判断 ANR 类型** — 从 `am_anr` 确认是 Input/Service/Broadcast/ContentProvider ANR
-2. **看主线程 trace** — 有明确业务堆栈 → App 自身问题；`nativePollOnce` → 可能在系统侧。Android 11+ 还可通过 `ActivityManager.getHistoricalProcessExitReasons()` + `ApplicationExitInfo.getTraceInputStream()` 获取官方 ANR trace 文件，无需依赖隐藏 API（详见下方"线上 ANR 聚合分析"一节）
-3. **看负载** — Load、CPU、iowait、memory/I/O pressure 判断系统健康度
+2. **看主线程 trace** — 有明确业务堆栈 → App 自身问题；`nativePollOnce` → 可能在系统侧
+3. **看负载** — Load、CPU、iowait、memory/IO pressure 判断系统健康度
 4. **看 Event log 焦点和进程变化** — 追踪 `input_focus`、`am_proc_start`、`am_kill` 时间线
 5. **看进程冻结日志** — 以上都正常时，搜索 `am_freeze`
 
 这个分析路径在 §9.3 中有更系统的描述，本节案例是对方法论的具体应用。
 
-### InputDispatcher WaitQueue 观察点
+### Android 16+：利用元数据加速定性
 
-InputDispatcher 内部维护了每个连接（connection）的 WaitQueue，存放已分发但尚未被消费（finish）的 Input 事件。这个队列长度可以通过以下途径观察：
-
-- **dumpsys input**：`dumpsys input` 输出中每个 Connection 的 `WaitQueue` 字段直接显示队列中待确认的事件数量
-- **Perfetto counter**：`android.input.input_event_waiting_duration` track 可以观察事件等待时长
-
-WaitQueue 长度作为定性判据的用法：
+Android 16 的 `ProfilingManager` 在捕获 ANR Trace 时会附带结构化元数据，其中 `WaitQueue length` 字段可以直接作为定性分析的第一步判据：
 
 - **WaitQueue length ≈ 1**：主线程被单个长耗时任务卡死（对应案例 3、案例 6 的模式），排查方向是定位那个耗时调用
 - **WaitQueue length 远大于 1**：主线程消息处理整体吞吐不足，事件在排队（对应案例 1 的系统负载模式），排查方向是系统资源竞争和消息调度频率
 
-这个判据不需要阅读堆栈就能区分"单点卡死"与"吞吐量不足"两类根因。注意 WaitQueue 是 InputDispatcher 内部状态，不是 ProfilingManager 或 ANR trace 的结构化字段。
+这个判据不需要阅读堆栈就能区分"单点卡死"与"吞吐量不足"两类根因，适合线上监控和自动化告警使用。
 
 ## 线上 ANR 聚合分析实践 [扩展]
 
-在大型 App 的日常运营中，单次 ANR 的分析只能覆盖一个样本。更有效的做法是建立线上 ANR 监控和聚合分析体系。
+在大型 App 的日常运营中，单次 ANR 的分析只是冰山一角。真正有效率的做法是建立线上 ANR 监控和聚合分析体系。
 
 ### 为什么需要聚合
 
 ANR 的原始堆栈信息噪音很大。很多 ANR trace 会命中 `nativePollOnce` 这样的"无效堆栈"。聚合分析的思路是：将相似堆栈的 ANR 合并成同一组，计算每组的发生频率和影响面，优先修复影响最大的问题。
 
-Shopee 团队的 MDAP LooperMonitor 方案是一个参考实践。做法是**记录主线程过去 10 秒的消息调度历史**，而不是只抓 ANR 瞬间的堆栈。当 ANR 发生时，上报过去 10 秒内所有消息的执行情况，即使 ANR 瞬间堆栈是 `nativePollOnce`，也能从调度历史中找到耗时的大消息。
+Shopee 团队的 MDAP LooperMonitor 方案是一个参考实践。核心思路是**记录主线程过去 10 秒的消息调度历史**，而不是只抓 ANR 瞬间的堆栈。当 ANR 发生时，上报过去 10 秒内所有消息的执行情况，即使 ANR 瞬间堆栈是 `nativePollOnce`，也能从调度历史中找到真正耗时的大消息。
 
 ### 官方进程退出原因采集
 
@@ -472,8 +467,10 @@ Android 11 (API 30) 引入的 `ActivityManager.getHistoricalProcessExitReasons()
 
 关键边界：
 
-- **ANR trace 获取**：`ApplicationExitInfo.getTraceInputStream()` 从 API 30 起可用。返回的 trace 文件内容等同于系统在 ANR 时写入 `/data/anr/traces.txt` 的快照。App 只能查询自身的退出原因（`REASON_ANR`），无法获取其他进程信息。trace 文件可能较大（数 MB），线上采集需控制上报频率和体积
-- **与 Looper 历史的互补关系**：`ApplicationExitInfo` 提供的是 ANR 瞬间的快照（等同于 `traces.txt` 中的内容），而 Looper 监控记录的是 ANR 发生前 10 秒的消息调度历史。两者结合可以同时看到"卡住那一刻在做什么"和"卡住之前 10 秒经历了什么"。建议优先使用 `ApplicationExitInfo`（公开 API），Looper.Observer 作为补充（需绕过 Hidden API 限制）
+- **版本要求**：`getTraceInputStream()` 从 API 30 起可用
+- **隐私限制**：App 只能查询自身的退出原因，无法获取其他进程的信息
+- **体积限制**：trace 文件可能较大（数 MB），线上采集需要控制上报频率
+- **与 Looper 历史的互补关系**：`ApplicationExitInfo` 提供的是 ANR 瞬间的快照（等同于 `traces.txt` 中的内容），而 Looper 监控记录的是 ANR 发生前 10 秒的消息调度历史。两者结合可以同时看到"卡住那一刻在做什么"和"卡住之前 10 秒经历了什么"
 
 ### 关键技术点
 

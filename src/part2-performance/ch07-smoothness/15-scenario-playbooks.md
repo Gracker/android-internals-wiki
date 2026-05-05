@@ -26,21 +26,16 @@ repaired_by: "codex"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
-last_task9_at: "2026-05-05T17:38:00+08:00"
+last_task9_at: "2026-05-05T08:37:27+08:00"
 
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+task6_result: needs-rework
 task6_state: reviewed
 task2b_state: pending
-task2b_result: fixed
 pipeline_stage: task2b_pending
-review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。 | 2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 3 处 L1/L2 表达问题，未新增回炉项，转 Task9 复审。"
-last_task6_at: "2026-05-05T17:19:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-17-review.md"
-task9_review_notes: "2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。"
-last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
-
+review_notes: "2026-05-05 Task2B：补充版本边界专节（FrameTimeline 12+/ApplicationExitInfo API 30+/BufferStuffing fallback），Android 8-11 替代观察入口。 | 2026-05-05 Task6 07:30：revisiting 写作复审，清理禁用词并统一路径表达，修复重复 frontmatter；发现大纲要求的功耗排障入口正文缺失，已写入 Task2B queue。 | 2026-05-05 Task9 08:37：Task9 深审发现 Android 8-11 fallback 的 atrace tag 与 FrameTimeline SQL/BufferStuffing 判据仍有技术错误；功耗入口缺失已有 queue pending。"
+last_task6_at: "2026-05-05T07:30:00+08:00"
 ---
 
 # 场景化性能作战手册
@@ -64,13 +59,13 @@ last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 
 ## 版本边界：不同 Android 版本的可用观察入口
 
-下面这些排障工具和指标，部分在 Android 12+ 才可用。在 Android 8-11 上排查时，需要回退到替代手段。
+本章引用的排障工具和指标，部分在 Android 12+ 才可用。在 Android 8-11 上排查时，需要回退到替代手段。
 
 ### FrameTimeline：Android 12+
 
 `FrameTimeline` 是 Android 12（API 31）引入的 Perfetto 数据源，能直接在 trace 中标注每帧的 jank type（`AppDeadlineMissed`、`BufferStuffing`、`SurfaceFlingerDeadlined` 等）。Android 8-11 没有 `FrameTimeline`，排查流畅性问题需要回退到以下入口：
 
-- **gfx/view trace tag**：在 Perfetto 配置中通过 `atrace_categories: "gfx"` 和 `atrace_categories: "view"` 启用，观察 `Choreographer#doFrame` slice 的耗时和 RenderThread 的 `DrawFrame` 区间。如果使用旧版 `setprop` 方式，`gfx`（`TRACE_TAG_GRAPHICS = 1L << 4`）和 `view`（`TRACE_TAG_VIEW = 1L << 5`）的组合值为 `0x30`，不是 `0x200`
+- **gfx/view trace tag**：`adb shell setprop debug.atrace.tags.enableflags 0x200` 开启 `gfx` + `view` tag，在 Perfetto 中观察 `Choreographer#doFrame` slice 的耗时和 RenderThread 的 `DrawFrame` 区间
 - **SurfaceFlinger slice**：观察 `SurfaceFlinger` 主线程的 `composeDisplay` / `handleMessageRefresh` slice，判断合成耗时是否超标
 - **sched 轨道**：主线程和 RenderThread 的调度状态（Runnable / Sleeping / Uninterruptible），排查调度延迟和 CPU 争抢
 - **FrameMetrics / JankStats**（Android 7.0+）：通过 `Window.OnFrameMetricsAvailableListener` 或 `JankStats` 库在应用内采集帧耗时分布，作为 `FrameTimeline` 的应用侧替代
@@ -79,7 +74,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 
 `ApplicationExitInfo` 在 Android 11（API 30）引入，能查询进程退出的原因、状态和堆栈。Android 8-10 需要回退到：
 
-- **traces.txt**：`adb pull /data/anr/traces.txt`，ANR 发生后系统写入的堆栈快照。它只记录 ANR 触发时刻的主线程栈，不含 ANR 前的时间线
+- **traces.txt**：`adb pull /data/anr/traces.txt`，ANR 发生后系统写入的堆栈快照。注意这只记录 ANR 触发时刻的主线程栈，不含 ANR 前的时间线
 - **logcat / EventLog**：过滤 `ActivityManager` 和 `Process` 相关 tag，观察进程被杀的信号和原因（如 `Low Memory Killer`、`Background anr`）
 - **bugreport**：完整的系统状态转储，包含进程列表、内存分布、LMKD 记录。对内存压力导致的进程回收，bugreport 比单一 traces.txt 信息更全
 
@@ -87,7 +82,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 
 `BufferStuffing` 作为 jank type 标注是 Android 12+ `FrameTimeline` 的能力。Android 8-11 没有 `BufferStuffing` 标签，但可以通过以下方式间接识别：
 
-- **帧间隔观察**：在 `Choreographer#doFrame` slice 中，连续帧的 `doFrame` 开始时间间隔不稳定——部分帧间隔远大于正常 VSync 周期（如 60Hz 下 >16.67ms），且差值接近 VSync 周期的整数倍，说明管线在积压。
+- **帧间隔观察**：在 `Choreographer#doFrame` slice 中，连续帧的实际提交时间（Actual Present）稳定落后预期时间（Expected Present）固定 N 个周期，说明管线积压
 - **BufferQueue 状态**：`adb shell dumpsys SurfaceFlinger` 中查看对应 Layer 的 `BufferQueue` 槽位状态，如果多个 slot 处于 `QUEUED` 态，说明帧堆积
 - **Input → doFrame 延迟**：从 Input 事件时间戳到对应 `doFrame` 开始时间的差值异常增大，通常伴随输入延迟体感
 
@@ -99,7 +94,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 | ApplicationExitInfo | API 30+ | traces.txt + logcat + bugreport |
 | BufferStuffing 标签 | Android 12+ | 帧间隔观察 + BufferQueue dump |
 | JankStats | Android 7.0+ | 直接可用（但不如 FrameTimeline 信息丰富） |
-| Perfetto `actual_frame_timeline_slice` 表 | Android 12+ | `slice` 表中过滤 `Choreographer` / `DrawFrame` |
+| Perfetto `frame_timeline_event` 表 | Android 12+ | `slice` 表中过滤 `Choreographer` / `DrawFrame` |
 
 ---
 
@@ -156,9 +151,10 @@ last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 | “打开页面要等很久” | 启动或页面可交互时间过长 | TTID / TTFD、首屏数据路径 |
 | “界面像死掉了一样” | ANR 或接近 ANR | 主线程栈、`ApplicationExitInfo`、`traces.txt` |
 | “越用越卡，回前台更慢” | 内存压力 / 进程回收 / page fault | PSS、GC、LMKD、冷 / 温 / 热启动切换 |
-| “手机发热 / 掉电特别快” | 功耗异常 / 后台持续唤醒 / thermal 降频 | Battery Historian、Perfetto power rails、wakelock 持有时长、thermal 状态 |
 
 这张表的价值在于逼着读者先问一句：**我现在看到的，到底是哪一类体验失效？**
+
+[需补充素材: 大纲要求覆盖“功耗”投诉入口，但正文没有独立说明耗电/发热场景的第一观察点、trace 配置和优先排查路径。建议 Task2B 补一段“耗电/发热伴随卡顿”的场景入口，至少覆盖 Battery Historian / Perfetto power rails、Thermal/CPU frequency、wakelock、JobScheduler/WorkManager 与网络重试。]
 
 ## 八类最常见的性能现场
 
@@ -386,34 +382,6 @@ last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 这一类问题最容易犯的错，是只看 ANR 对话框弹出后的堆栈，不去看 ANR 前面的时间线。  
 对应章节：`9.1`、`9.2`、`9.3`、`15.5`。
 
-### 9. 耗电快或发热伴随卡顿
-
-这类问题通常不是用户主动投诉“卡”，而是先说“手机发烫”“电量掉得快”，排查过程中发现功耗异常还引发了 thermal 降频，导致伴随性卡顿。
-
-先看：
-
-- Battery Historian 时间线上的 wakelock / alarm / GPS / 网络活跃区间
-- Perfetto power rails 各子系统的功耗采样
-- thermal 状态轨道（`ThermalController` / `power.thermal_*` ftrace 事件）
-- CPU 频率轨道，看是否有因温控导致的降频
-
-再排：
-
-- **wakelock 泄漏**：`dumpsys batterystats` 中哪个 App 的 partial wakelock 时间异常长
-- **后台任务滥用**：JobScheduler / WorkManager / AlarmManager 的触发频率
-- **网络重试风暴**：弱网场景下业务层重试策略导致的持续唤醒
-- **thermal 降频**：功耗异常 → 芯片温度升高 → thermal throttling → CPU/GPU 频率被压制 → 卡顿
-
-比较稳的顺序是：
-
-1. 先用 Battery Historian 确认耗电来源是哪个子系统（CPU / GPS / 网络 / 屏幕）。
-2. 再用 Perfetto power rails + CPU 频率轨道确认是否出现了 thermal 降频。
-3. 如果 CPU 频率被压低，看是哪个工作负载触发了升温——往往是后台 wakelock + 持续计算。
-4. 如果不是 thermal 导致的卡顿，单独回到流畅性或内存路径。
-
-这类问题最容易被忽略的关联是：功耗和卡顿经常互为因果。后台长时间运行导致发热，发热触发降频，降频导致帧超时。只看帧率会漏掉根因。
-对应章节：`5.5`、`11.1`、`11.2`、`11.5`。
-
 ## 同一个现象，在不同设备上的第一怀疑点不同
 
 同样是“卡”，在不同设备和场景里，第一怀疑点并不一样。
@@ -471,8 +439,8 @@ last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
 
 | 场景 | 关键 SQL | 说明 |
 |---|---|---|
-| 掉帧 / jank | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type IS NOT NULL` | 捞出所有 jank 帧，按 jank_type 分类；`jank_type` 为分号分隔的多值字段，精确匹配用 `LIKE '%目标类型%'` |
-| BufferStuffing | `SELECT * FROM actual_frame_timeline_slice WHERE jank_type LIKE '%BufferStuffing%'` | Android 15+ Perfetto UI 中显示为浅绿色轨道 |
+| 掉帧 / jank | `SELECT * FROM frame_timeline_event WHERE jank_type IS NOT NULL` | 捞出所有 jank 帧，按 jank_type 分类 |
+| BufferStuffing | `SELECT * FROM frame_timeline_event WHERE jank_type = 'BufferStuffing'` | Android 15+ Perfetto UI 中显示为浅绿色轨道 |
 | 冷启动 | `SELECT name, ts, dur FROM slice WHERE name LIKE '%ActivityManager%' AND name LIKE '%start%'` | 定位 AMS 启动调度链 |
 | ANR | `SELECT * FROM slice WHERE name LIKE '%ANR%'` | 结合 `ApplicationExitInfo` 时间线 |
 | Input 延迟 | `SELECT (doFrame_ts - input_ts) AS latency FROM ...` | 输入事件到 `doFrame` 的时差 |

@@ -37,21 +37,20 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_rework_date: "2026-05-05"
 last_rework_by: openclaw-task2b
 last_rework_reason: "P95 Task9回炉：prepareToDraw/CALLBACK_COMMIT错误删除；Glide trimMemory顺序按源码重写；MemorySizeCalculator公式修正；RecyclerView回收取消语义纠正"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-05"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-04-30"
 task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-last_task9_at: "2026-05-05T09:20:00+08:00"
-task9_review_notes: "2026-05-05 09:20 task9 deep-review: needs-rework。P1 1：Glide trimMemory 的 RequestManager 暂停语义错误；P2 3。"
+last_task9_at: "2026-04-30T11:28:01+08:00"
+task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 1（Choreographer CALLBACK_COMMIT/API 指导错误）；P1 3（Glide trimMemory 顺序、MemorySizeCalculator 公式、RecyclerView 回收取消语义）；P2 2。"
 last_task6_at: "2026-05-05T07:30:00+08:00"
-task9_result: needs-rework
 ---
 
 # 7.10 图片加载与 Bitmap 性能优化

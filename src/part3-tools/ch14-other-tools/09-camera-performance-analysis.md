@@ -11,6 +11,11 @@ reviewed_date: "2026-05-01"
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-04-06'
 last_verified_against: AOSP android-16.0.0_r1
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: medium
 sources:
 - type: blog
@@ -298,9 +303,9 @@ Camera 分析中经常需要用 `cam2_frame` Counter 来追踪帧到达：
 ```sql
 SELECT counter.value, process.pid, process.name
 FROM counter
-JOIN process_counter_track ON counter.track_id = process_counter_track.id
+JOIN process_counter_track pct ON counter.track_id = pct.id
 JOIN process USING(upid)
-WHERE counter.name LIKE '%cam2_frame%'
+WHERE pct.name LIKE '%cam2_frame%'
 ORDER BY counter.ts
 LIMIT 20
 ```
@@ -516,7 +521,7 @@ HAL3 管线中，从 App 下发 CaptureRequest 到收到 CaptureResult，经历�
 
 ## GFXReconstruct 辅助检查花屏和 YUV 帧问题
 
-Perfetto 能告诉你哪一帧晚到、哪段处理慢，但不能直接看到 Buffer 内容。遇到花屏、颜色错乱、UV 平面顺序错误这类问题，GFXReconstruct 可以作为补充工具：在使用 Vulkan / OpenGL 导入 `AHardwareBuffer` 的路径上抓取图形 API 调用，再用 `gfxrecon-convert --include-binaries` 导出 capture 中的二进制资源，离线检查 YUV 平面、stride、crop 和色彩格式。
+Perfetto 能告诉你哪一帧晚到、哪段处理慢，但不能直接看到 Buffer 内容。遇到花屏、颜色错乱、UV 平面顺序错误这类问题，GFXReconstruct 可以作为补充工具：在使用 Vulkan 导入 `AHardwareBuffer` 的路径上抓取图形 API 调用，再用 `gfxrecon-convert --include-binaries` 导出 capture 中的二进制资源，离线检查 YUV 平面、stride、crop 和色彩格式。OpenGL/EGL 场景需要使用 AGI（Android GPU Inspector）、厂商 GPU 工具（如 Adreno Profiler）或应用内 dump，GFXReconstruct 不支持 OpenGL 抓帧。
 
 这个方法有边界。Camera 预览如果走 `SurfaceView` 直送 SurfaceFlinger 或 HWC overlay，GFXReconstruct 可能抓不到最终预览帧；它也看不到 Sensor 和 ISP 内部状态。它适合回答“进入图形 API 后 Buffer 内容是否已经错了”，不适合替代 HAL trace、vendor log 或原始帧 dump。
 
