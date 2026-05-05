@@ -22,26 +22,28 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-05-05"
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: fixed
-last_task9_at: "2026-04-27T08:53:48+08:00"
-task9_reviewed_by: openclaw-task9
-review_notes: '2026-04-26 task6 re-review (revisiting): pass-light-edit. L1: 0 violations. 评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。'
-task9_reviewed_date: "2026-04-27"
+task2b_result: pending
+last_task9_at: "2026-05-05T07:19:11+08:00"
+task9_reviewed_by: "openclaw-task9"
+review_notes: "2026-05-05 task6 writing re-review: pass-light-edit。小修 1 处，清理翻译腔动词；无新增 B 类问题；转入 Task9 复审。"
+task9_reviewed_date: "2026-05-05"
 last_task2b_at: "2026-04-30T14:47:00+08:00"
 repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
+last_task6_at: "2026-05-05T06:09:00+08:00"
+task9_review_notes: "2026-05-05 07:19 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 5。Perfetto SQL 原始 ftrace 表名/查询示例错误；若照抄 SELECT ... FROM ftrace 将无法运行。"
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
@@ -459,7 +461,7 @@ Android 16 引入的 UprobeStats 就是基于 eBPF uprobe 机制的动态埋点�
 ### btrace (bytedance/btrace) 深度调研报告
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/btrace (bytedance:btrace) 深度调研报告.md
 - 类型：DeepResearch 调研结果
-- 摘要：围绕 btrace 1.0→3.0 演进，拆解从编译期插桩转向 Runtime Hook + 同步抓栈的设计原因，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及与 Perfetto、异步采样方案的取舍边界。
+- 摘要：围绕 btrace 1.0→3.0 演进，说明从编译期插桩转向 Runtime Hook + 同步抓栈的设计原因，覆盖 ShadowHook、StackVisitor hack、ART method pointer 批量符号化，以及与 Perfetto、异步采样方案的取舍边界。
 - 注入时间：2026-04-21
 - 价值：把第三方 tracing 工具的架构取舍讲透，适合补强 Android tracing 生态的横向对比。
 

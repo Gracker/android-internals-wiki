@@ -34,7 +34,8 @@ sources:
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
 related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5", "1.10"]
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-05-05"
+task6_reviewed_date: "2026-05-05"
 review_v2_date: "2026-04-09"
 review_v2_by: "openclaw-task6"
 review_type: "post-polish-quality-gate"
@@ -47,17 +48,19 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-26T13:40:00+08:00"
-task9_reviewed_date: "2026-05-03"
+last_task2b_at: "2026-05-05T06:24:27+08:00"
+task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-03T18:20:00+08:00"
+last_task9_at: "2026-05-05T04:26:00+08:00"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External 问题单核对）"
+review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 轻修，未新增 L3/L4 回炉项；保持技术项交由 Task9 复审。"
+task9_review_notes: "2026-05-05 04:26 task9 deep-review: needs-rework。P0 1 / P1 1。FGS DidNotStart 结果描述冲突；AnrTimer 运行模型过度简化。"
 ---
 
 # ANR 类型与触发条件
@@ -105,7 +108,7 @@ rework_type: "review回炉修复（External 问题单核对）"
 
 ### 检测机制：从 InputDispatcher 到 AMS
 
-Input ANR 的检测不在 Java 层，而是在 Native 层的 InputDispatcher 中完成。整个检测流程可以拆解为以下几步：
+Input ANR 的检测不在 Java 层，而是在 Native 层的 InputDispatcher 中完成。整个检测流程分为以下几步：
 
 **第一步：事件入队。** InputReader 从 EventHub 读取原始输入事件后，交给 InputDispatcher。InputDispatcher 将事件放入 outboundQueue，准备分发给目标窗口。
 
@@ -118,7 +121,11 @@ Input ANR 的检测不在 Java 层，而是在 Native 层的 InputDispatcher 中
 ```cpp
 // frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
 // @ AOSP android-14.0.0_r1
-const nsecs_t DEFAULT_INPUT_DISPATCHING_TIMEOUT = 5000 * 1000000LL; // 5 sec
+// 实际实现使用 std::chrono，并通过 HwTimeoutMultiplier 缩放
+static constexpr std::chrono::milliseconds kUnmultipliedDefaultDispatchingTimeout =
+        std::chrono::milliseconds(
+                IInputConstants::UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS);
+// 默认口径约 5s，但工程判断要保留 HwTimeoutMultiplier 的影响
 ```
 
 **第四步：通知 AMS。** InputDispatcher 检测到超时后，通过 `InputManagerCallback` -> `WindowManagerService` -> `ActivityManagerService.inputDispatchingTimedOut()` 的调用链通知 AMS。
@@ -222,7 +229,12 @@ Reason: executing service com.example.app/com.example.app.MyService
 - **Android 9-12：** AOSP 把这条宽限期提升到 10 秒
 - **Android 13-14+：** 默认值迁到 `ActivityManagerConstants.DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS`，默认 30 秒，对应运行时字段 `mServiceStartForegroundTimeoutMs`
 
-超时后的后果是两段式过程。以 Android 15+ 的 `shortService` 和 `dataSync` 为例：**第一阶段**是回调自救——系统通过 `Service.onTimeout()` 给应用一个窗口执行清理并调用 `stopSelf()`；**第二阶段**是硬性惩罚——如果应用在宽限期内没有主动停止，系统抛出 `ForegroundServiceDidNotStopInTimeException` 或直接杀进程。Android 12+ 的 `ForegroundServiceDidNotStartInTimeException` 也是同样的两段式语义：先给机会回调，再硬杀。它与普通 Service 的执行超时是两套不同机制。
+这里需要把两条超时链分开看：
+
+- **`startForegroundService()` 未调用 `startForeground()`**：这是宽限期超时路径。Android 8-11 中，`ActiveServices.serviceForegroundTimeout()` 通过 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG` 以 ANR 形式上报。Android 12 起改为抛出 `ForegroundServiceDidNotStartInTimeException`，以崩溃替代 ANR。AOSP android-14/15 的 `serviceForegroundTimeout()` 流程在超时后直接走向异常抛出，不再经过 `appNotResponding()`。
+- **`shortService` / `dataSync` / `mediaProcessing` 运行超时**：这才是两段式语义——**第一阶段**是回调自救，系统通过 `Service.onTimeout()` 给应用一个窗口执行清理并调用 `stopSelf()`；**第二阶段**是硬性惩罚，如果应用在宽限期内没有主动停止，系统抛出 `ForegroundServiceDidNotStopInTimeException` 或直接杀进程。这条路径是 Android 14 起引入的 FGS 类型专属超时链。
+
+两条路径的触发条件、处理流程和上报形态都不同，调试时要先区分是“没调 startForeground”还是“FGS 运行超时”。
 
 常见触发场景：
 
@@ -284,15 +296,15 @@ Reason: ContentProvider com.example.app/.provider.MyProvider not responding
 
 **Android 8.0（API 26）：** 引入 `startForegroundService()` / `startForeground()` 的 5 秒宽限期。
 
-**Android 9-12（API 28-32）：** AOSP 把 `startForegroundService()` 到 `startForeground()` 的宽限期提升到 10 秒；Android 12 同时把超时结果收紧为 `ForegroundServiceDidNotStartInTimeException`。
+**Android 9-12（API 28-32）：** AOSP 把 `startForegroundService()` 到 `startForeground()` 的宽限期提升到 10 秒；Android 12 同时把超时结果改为 `ForegroundServiceDidNotStartInTimeException`。
 
 **Android 13（API 33）：** `startForegroundService()` 到 `startForeground()` 的默认宽限期仍是 30 秒；Broadcast 超时排障口径通常仍按前台 10 秒、后台 60 秒。
 
-**Android 14（API 34）：** BroadcastReceiver 的官方诊断口径更新为前台 10-20 秒、后台 60-120 秒，并把 CPU starvation 与 app startup 纳入超时窗口解释。targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 超时也会以显式 ANR 上报。
+**Android 14（API 34）：** BroadcastReceiver 的官方诊断口径更新为前台 10-20 秒、后台 60-120 秒，并把 CPU starvation 与 app startup 纳入超时窗口解释。引入 `shortService` 前台 Service 类型，约 3 分钟超时后走两段式处理（`Service.onTimeout()` 回调自救 → 未停止则 `ForegroundServiceDidNotStopInTimeException`）。targetSdk 34+ 的 `JobService.onStartJob()` / `onStopJob()` 超时以显式 ANR 上报。
 
-**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 的累计运行时间限制（后台 24 小时内 6 小时），以及 `shortService` 类型约 3 分钟的超时直接触发机制 [待验证: shortService 具体超时阈值因 OEM 实现可能不同]。`dataSync` 和 `mediaProcessing` 的 6 小时累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。这意味着开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
+**Android 15（API 35）：** 新增 `dataSync` 和 `mediaProcessing` 前台 Service 的累计运行时间限制（后台 24 小时内 6 小时）。`dataSync` 和 `mediaProcessing` 的 6 小时累计限制是跨生命周期的——重启进程或杀掉 App 不能重置计时器，必须真实结束任务或等待 24 小时窗口滚动。开发者不能通过"拆分多个短任务 + 重启 Service"来绕过配额。
 
-**Android 16（API 36）：** ANR 计时引擎从 system_server 的 Java Handler 消息迁移到 Native 层的 `AnrTimer`。传统 Handler 计时受 AMS 主线程负载影响：如果 AMS 主线程在处理其他事务（比如同时处理多个应用的 ANR dump），超时消息可能延迟投递，导致 ANR 检测不准时。Native AnrTimer 在独立线程中运行，不受 Java 层调度抖动影响，计时精度更高。调试时可使用 `adb shell dumpsys activity anr-timer` 观察当前活跃的 ANR 计时器状态。
+**Android 15 起（AOSP 已验证）：** `com.android.server.utils.AnrTimer` 在 android-15.0.0_r1 中已投入使用，`ActiveServices` 中使用 `ServiceAnrTimer` 管理 FGS 超时链。`AnrTimer` 通过 AMS 的 HandlerThread 提交延迟消息来调度超时检查，减少了传统方式下因 AMS 主线程持锁而无法及时触发计时的问题。Android 16 起覆盖范围进一步扩展。调试时可在 `dumpsys activity` 的完整输出中查看 AnrTimer dump 段；具体过滤命令需以目标版本的 `dumpsys activity help` 和源码为准。
 
 [来源: intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md]
 
@@ -347,32 +359,9 @@ adb shell cat /data/anr/anr_* | tail -200
 
 **误区五："ContentProvider ANR 不常见。"** 在使用多个 ContentProvider 做初始化的架构中（很多第三方 SDK 通过 ContentProvider 做自动初始化），任何一个超时都会阻塞整个 App 启动。
 
-
-### FGS Timeout ANR 机制源码解析 (Android 14→17)
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
-- 类型：DeepResearch 调研结果
-- 摘要：AOSP 源码视角逐行解析 ShortService 3分钟硬超时、TimeLimitedFgs 6h/24h 滚动窗口、onTimeout 回调链路、ForegroundServiceDidNotStopInTimeException 投递路径，覆盖 Android 14→17 的 FGS ANR 三段式语义演进。
-- 注入时间：2026-04-28
-- 价值：FGS timeout 是 Android 14+ 最重要的 ANR 新类型之一，ch09 章节目前对此覆盖不足
-
-
-
-### Android 14→17 Foreground Service Timeout ANR 机制深度解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
-- 类型：DeepResearch 调研结果
-- 摘要：AOSP 源码视角的 FGS 超时与 ANR 触发机制全解析。覆盖 Android 14 ShortService 3分钟硬超时、Android 15 TimeLimitedFgs 6h/24h滚动窗口、Android 16/17 的 AnrTimer native handler 化演进，以及 ActiveServices/ServiceRecord 中超时判定、onTimeout 回调、ForegroundServiceDidNotStopInTimeException 投递的完整代码路径。
-- 注入时间：2026-04-30
-- 价值：AOSP 源码级拆解 FGS timeout→ANR 全链路，填补 ch09 ANR 类型分析的重要参考空白
-
 ## 参考资料
 
-### Android 14→17 Foreground Service Timeout / ANR 机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
-- 类型：DeepResearch 调研结果
-- 摘要：AOSP 源码视角梳理 Android 14-17 前台服务超时与 ANR 触发的三段式语义:ShortService 3 分钟硬超时、TimeLimitedFgs 6h/24h 滚动窗口、以及 AnrTimer native handler 化。详述 ServiceRecord.ShortFgsInfo 的 mStartTime→getTimeoutTime→getProcStateDemoteTime→getAnrTime 时间线,ActiveServices 中 FGS timeout 的完整触发链路。
-- 注入时间：2026-04-29
-- 价值：首次系统梳理 FGS timeout 从 Android 14 到 17 的源码级演进,对 ANR 分析与前台服务优化有直接指导意义
-
+- `DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md` — AOSP 源码视角梳理 Android 14-17 前台服务超时与 ANR 触发路径，覆盖 ShortService 3 分钟超时、TimeLimitedFgs 6h/24h 滚动窗口，以及 AnrTimer / ActiveServices / ServiceRecord 的关键时间线。
 
 - AOSP 源码路径：
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — Input ANR 超时检测

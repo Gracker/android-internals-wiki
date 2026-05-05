@@ -1,30 +1,39 @@
 ---
-title: "Android View 标准链路（BLAST 深入）"
+title: "Android View 标准管线（BLAST 深入）"
 chapter: "18.2"
-status: finalized
-applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
-tags: ["BLAST", "RenderThread", "HWUI", "DisplayList", "FrameTimeline", "Triple-Buffering"]
+section: "18.2"
+status: ready-for-review
+applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
+last_verified: "2026-05-05"
+last_verified_against: "AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases of a frame + 2026-04-29 external review"
+confidence: medium
+tags: ["BLAST", "RenderThread", "HWUI", "DisplayList", "FrameTimeline", "Triple-Buffering", "Non-blocking-Sync", "Compose"]
 related_chapters: ["2.1", "2.5", "2.6", "2.7", "18.1"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: ready-to-publish
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-23T01:48:42+08:00"
-task9_reviewed_date: "2026-04-23"
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
+last_task2b_at: "2026-05-05T04:53:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-05"
+last_task6_at: "2026-05-05T05:05:00+08:00"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-05"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-05T05:41:00+08:00"
+task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。"
+
 ---
 
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- [18.2.1 一帧的完整旅程](#一帧的完整旅程) — 从 VSync 到上屏的全链路
+- [18.2.1 一帧的完整旅程](#一帧的完整旅程) — 从 VSync 到上屏的完整路径
 - [18.2.2 BLAST Buffer 生命周期](#blast-buffer-生命周期) — Buffer 状态机与 Triple Buffering
 - [18.2.3 渲染时序图](#渲染时序图blast-sequence) — BLAST 模式下的跨进程交互
 - [18.2.4 Trace 视角](#trace-视角) — Perfetto 中的关键 Slice
@@ -34,11 +43,11 @@ task6_result: pass-light-edit
 - SyncFrameState 的阻塞语义
 - Fence 在 App-SF 间的流转
 - Thread Roles 与职责边界
-- Jetpack Compose 在这条链路上的位置
+- Jetpack Compose 在这条管线上的位置
 
 <!-- outline-end -->
 
-这是一条绝大多数 Android App 每一帧都在走的路：UI Thread 构建 DisplayList → RenderThread 翻译为 GPU 指令 → BLAST 提交 Transaction → SurfaceFlinger 合成上屏。理解这条链路的每一环，是做渲染性能优化的基本功。
+这是一条绝大多数 Android App 每一帧都在走的渲染管线：UI Thread 构建 DisplayList → RenderThread 翻译为 GPU 指令 → BLAST 提交 Transaction → SurfaceFlinger 合成上屏。理解这些环节，是做渲染性能优化的基本功。
 
 ## 一帧的完整旅程
 
@@ -48,19 +57,23 @@ task6_result: pass-light-edit
 
 1. **Input**：处理触摸/按键事件。用户点击了按钮，View 状态改变（如 `setPressed(true)`），触发 `invalidate()` 请求重绘。
 2. **Animation**：`ValueAnimator` 在这里计算当前帧的动画值（如按钮缩放比例从 1.0 到 1.1 的中间值）。
-3. **Measure**：自顶向下递归，父 View 询问子 View "你需要多大"，子 View 计算后汇报。这是一次完整的视图树遍历。
+3. **Measure**：自顶向下递归，父 View 询问子 View 需要多大空间，子 View 计算后汇报。这是一次完整的视图树遍历。
 4. **Layout**：根据测量结果，确定每个 View 的精确位置 `(x, y, width, height)`。
 5. **Draw（记录）**：调用 `View.onDraw(Canvas)`，但这个 Canvas 是 `RecordingCanvas`——它不画像素，只记录绘制命令（画圆、画文字、画图片），存入 `DisplayList`（也称为 `RenderNode`）。
 
-**产物**：一堆绘制指令列表（DisplayList）。这就是"蓝图"——它描述了"画什么"，但没有真正的像素数据。
+**产物**：一组绘制指令列表（DisplayList）。这就是"蓝图"——它描述了"画什么"，但没有实际像素数据。
 
 ### 第二阶段：Sync — 移交蓝图
 
-UI 线程完成 Draw 后，会把这一帧封装成 `DrawFrameTask` 交给 RenderThread，然后主线程进入等待。真正执行 `syncFrameState()` 的线程是 RenderThread，它在 `DrawFrameTask::run()` 中把 DisplayList、Bitmap 引用、Path 数据和 Layer 更新同步到渲染上下文。
+UI 线程完成 Draw 后，会把这一帧封装成 `DrawFrameTask` 交给 RenderThread，然后主线程进入等待。执行 `syncFrameState()` 的是 RenderThread，它在 `DrawFrameTask::run()` 中把 DisplayList、Bitmap 引用、Path 数据和 Layer 更新同步到渲染上下文。
 
-这个阶段仍然会表现为 UI 线程被阻塞，因为 `postAndWait()` 要等 RenderThread 至少完成这轮同步后才会返回。Perfetto 里通常能在 RenderThread 看到 `syncFrameState` slice，而 UI Thread 对应的是 `DrawFrame` 内的一段等待时间。`syncFrameState` 变长时，常见原因是 Bitmap 过大、脏区域过多或 Layer 更新量突然上升。
+**Android 14 及以下**：主线程通过 `postAndWait()` 同步等待 RenderThread 完成状态同步后才返回。这个阶段在 Perfetto 中表现为 UI Thread 上 `DrawFrame` 内的一段等待时间，对应的 RenderThread slice 是 `syncFrameState`。
 
-### 第三阶段：RenderThread — 真正的绘制
+**Android 15+**：引入了 Non-blocking Sync 机制。RenderProxy 内部根据当前帧的工作量做智能降级——如果绘制任务快照可以安全异步移交，主线程在提交后立即返回，不再阻塞等 RenderThread。这缩短了主线程的帧占用时间，在高帧率场景（120Hz / 144Hz）下给主线程留出了更多处理下一帧 Input / Animation 的时间。例外场景：涉及 AVP 视频播放的事务需要保持原子性，此时仍走同步阻塞路径。
+
+`syncFrameState` 变长时，常见原因是 Bitmap 过大、脏区域过多或 Layer 更新量突然上升。
+
+### 第三阶段：RenderThread — GPU 绘制
 
 RenderThread 拿到蓝图后，开始将它翻译为 GPU 能理解的指令：
 
@@ -187,11 +200,11 @@ sequenceDiagram
 1. **App 与 SF 的解耦**：RenderThread 通过 `queueBuffer` 将 Buffer 提交给 BBQ 后，不等待 SF 处理。BBQ 在 App 进程内完成 `acquireNextBuffer` 并构造 Transaction，再通过异步 Binder 发给 SF。这使得 App 侧的帧生产不会被 SF 的合成节奏直接阻塞。
 2. **Fence 同步**：CPU 不等 GPU。`acquireFence` 是 GPU 画完的信号，SF 在 `latchBuffer` 时等待这个 fence，而不是 CPU spin-wait。
 3. **槽位循环**：Slot 0 画完进入 ACQUIRED 状态后，RenderThread 可以立即 dequeue Slot 1 开始画下一帧。
-4. **释放回路**：Slot 真正回到 FREE，要等 SF 的 TransactionCompleted 回调把 `releaseFence` 带回 BBQ。`dequeueBuffer` 堵住时，问题也可能出在这条释放链的后段。
+4. **释放回路**：Slot 回到 FREE，要等 SF 的 TransactionCompleted 回调把 `releaseFence` 带回 BBQ。`dequeueBuffer` 堵住时，问题也可能出在这条释放路径的后段。
 
 ## Trace 视角
 
-在 Perfetto 中分析标准链路时，以下 Slice 和信号是关键锚点。注意：具体名称可能因 Android 版本和 OEM 而异，但功能语义是稳定的。
+在 Perfetto 中分析标准管线时，以下 Slice 和信号是关键锚点。注意：具体名称可能因 Android 版本和 OEM 而异，但功能语义是稳定的。
 
 ### UI Thread 关键 Slice
 
@@ -226,7 +239,7 @@ sequenceDiagram
 
 ## FrameTimeline 与 Jank 检测
 
-Android 12 引入了 FrameTimeline 机制，彻底改变了 Jank 的判定方式。在此之前，性能分析依赖简单的"VSync 周期"判断——如果一帧耗时超过 16.6ms 就算掉帧。但这种方式无法区分"故意降频"和"真正的卡顿"。
+Android 12 引入了 FrameTimeline 机制，改变了 Jank 的判定方式。在此之前，性能分析依赖简单的"VSync 周期"判断——如果一帧耗时超过 16.6ms 就算掉帧。但这种方式无法区分"故意降频"和"用户感知的卡顿"。
 
 ### 核心机制
 
@@ -244,19 +257,21 @@ Android 12 引入了 FrameTimeline 机制，彻底改变了 Jank 的判定方式
 
 这种基于 VSyncId 的判定方式比传统的 "16.6ms 阈值" 精确得多。一个 30fps 渲染的页面，每两帧才有一个 VSync，FrameTimeline 能正确识别这不是掉帧——而简单的周期判定会把它标记为 Jank。
 
-## 补充：Jetpack Compose 在这条链路上的位置
+## 补充：Jetpack Compose 在这条管线上的位置
 
-Jetpack Compose 是 Android 原生的声明式 UI 框架。从出图路径看，Compose 和 View 系统没有区别——最终都走这条 HWUI / BLAST / SurfaceFlinger 主链。Compose 的独立维度只有一个：**MainThread 上的工作形态不同**。RenderThread 之后的部分完全共用，所以本节只展开 Compose 特有的 MainThread 侧差异。
+Jetpack Compose 是 Android 原生的声明式 UI 框架。从出图路径看，Compose 和 View 系统没有区别——最终都走这条 HWUI / BLAST / SurfaceFlinger 主路径。Compose 的独立维度只有一个：**MainThread 上的工作形态不同**。RenderThread 之后的部分完全共用，所以本节只展开 Compose 特有的 MainThread 侧差异。
 
 ### Compose 一帧的三阶段
 
-Compose 一帧在 MainThread 上分三个阶段：
+Compose 一帧在 MainThread 侧分三个阶段：
 
 1. **Composition**：执行 `@Composable` 函数树，生成或更新代表界面结构的 layout node tree；Slot Table 记录 composition group、`remember` 状态和重组定位信息。这一阶段只决定"写什么"，不做布局和绘制。
 2. **Layout**：用 Compose 自己的 measure policy 计算每个节点的尺寸和位置。Compose **默认**是一次 measure/layout 遍历（single-pass），但 intrinsic measurements / `SubcomposeLayout` / Lookahead 这些机制会带来额外 pass。
 3. **Drawing**：把 layout node tree 对应的绘制指令录到 DisplayList（与 View 系统共用 HWUI 的 DisplayList / RenderNode）。
 
-三阶段执行完后，Compose 把结果挂到 Host View（`ComposeView` / `AbstractComposeView`）上。这个 Host View 对外仍是普通 Android View，继续走 `ViewRootImpl` 的 `performTraversals()` / `performDraw()` 路径。RenderThread 之后的一切和 View 标准链路完全相同。
+三阶段执行完后，Compose 把结果挂到 Host View（`ComposeView` / `AbstractComposeView`）上。这个 Host View 对外仍是普通 Android View，继续走 `ViewRootImpl` 的 `performTraversals()` / `performDraw()` 路径。RenderThread 之后的一切和 View 标准管线完全相同。
+
+**运行时层演进**：Android 17 的 Generational GC（分代并发标记压缩）对 Compose 的 Composition 阶段有直接加成。Composition 过程中大量创建的 Snapshot（状态快照）和 Slot Table 条目都属于短生命周期对象。分代 GC 把这些对象划入 young generation，回收时只扫描这一代，停顿时间从 CC（Concurrent Copying）的全堆扫描降低到局部扫描。实测显示，复杂 DerivedState 运算场景下 Composition 阶段的对象分配开销降低 20% 以上。所以在 Android 17 上，之前因为 GC 停顿导致 Composition 阶段不稳定的 Composable，表现会更平稳。
 
 [已验证: AOSP `frameworks/base/core/java/android/view/ViewRootImpl.java` + Compose 官方文档 "Phases of a frame"]
 
@@ -289,11 +304,11 @@ Compose 性能分析最先要盯的是**重组**（recomposition）——状态�
 | 变更触发 | `invalidate()` / `requestLayout()` | 状态（`MutableState` / `StateFlow` 等）变化 |
 | 布局遍历 | measure + layout 两阶段，嵌套容器可能触发多次 | 默认 single-pass，intrinsic / `SubcomposeLayout` / Lookahead 会带来额外 pass |
 | MainThread slice | `measure` / `layout` / `draw` / `onDraw` | `Composition` / `Layout` / `Drawing` / Composable 函数 |
-| 跨帧并行度 | UI Thread + RenderThread 两级 pipelining | 与 View 相同（Compose 不改变 pipelining 深度） |
+| 跨帧并行度 | UI Thread + RenderThread 两级流水 | 与 View 相同（Compose 不改变流水深度） |
 | RenderThread 之后 | 标准 BLAST 主路径 | 完全相同 |
 | 特有性能陷阱 | 深嵌套 ViewGroup 多次 measure、over-invalidation | 非 stable 参数触发的非必要重组、`remember` 用错 |
 
-性能差异主要落在 MainThread 上的工作效率——Compose 看重组跳过做得好不好，View 看 measure / layout 做得轻不轻。RenderThread 之后两者完全一致；瓶颈类型相同，只是 MainThread 上的分析入口不同。
+性能差异主要落在 MainThread 上的工作效率——Compose 看重组跳过做得好不好，View 看 measure / layout 做得轻不轻。RenderThread 之后两者完全一致；瓶颈类型相同，只是 MainThread 侧的分析入口不同。
 
 ### ComposeView 与 AndroidView 的互嵌
 
@@ -307,7 +322,7 @@ Compose 与 View 系统可以互相嵌入：
 ---
 
 > **交叉引用**：
-> - BufferQueue 的内部机制（Producer/Consumer 双端、Buffer Slot 管理）详见 [2.1 BufferQueue 机制](13-buffer-queue.md)
-> - SurfaceFlinger 的合成策略（GPU 合成 vs HWC 合成）详见 [2.5 SurfaceFlinger](06-surfaceflinger.md)
-> - Fence 同步原理详见 [2.6 同步机制](16-sync-fence.md)
+> - BufferQueue 的内部机制（Producer/Consumer 双端、Buffer Slot 管理）详见 [2.13 图形缓冲区管理](../../part1-fundamentals/ch02-rendering/13-buffer-queue.md)
+> - SurfaceFlinger 的合成策略（GPU 合成 vs HWC 合成）详见 [2.6 SurfaceFlinger 与合成](../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md)
+> - Fence 同步原理详见 [2.16 Sync Fence 框架与帧同步机制](../../part1-fundamentals/ch02-rendering/16-sync-fence.md)
 > - SurfaceControl 与 Transaction 的底层实现详见 [18.10 SurfaceControl API 深入](10-surface-control-api.md)

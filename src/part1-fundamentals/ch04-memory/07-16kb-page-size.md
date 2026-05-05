@@ -4,7 +4,7 @@ chapter: "4.7"
 section: "4.7"
 status: ready-for-review
 drafted_date: "2026-04-06"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -37,11 +37,12 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
+task6_reviewed_date: "2026-05-05"
 task9_state: reviewed
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: 2026-04-28
@@ -52,6 +53,7 @@ task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / 
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
+review_notes: "2026-05-05 task6 re-confirm: fixed L1 wording; task9_result=needs-rework, pipeline kept task2b_pending."
 ---
 # 4.7 16KB Page Size 与 Android 性能
 
@@ -145,7 +147,7 @@ Google 的测试表明，16KB 页大小下系统平均内存使用量增加约 5
 - AAB 产物要再用 `bundletool dump config --bundle <your.aab> | grep alignment` 检查是否为 `PAGE_ALIGNMENT_16K`
 - AGP 8.3-8.5 虽然默认会生成 16KB 页边界 ELF，但 `bundletool` 默认不会替你补齐 APK zip alignment；只升级到这几个版本，Play 产物仍可能安装失败
 
-**代码中的页大小假设：** 真正会出错的是把页大小写死成 `4096`，例如 `#define PAGE_SIZE 4096`。`sysconf(_SC_PAGESIZE)` 和 `getpagesize()` 都属于运行时查询，应该保留：
+**代码中的页大小假设：** 容易出错的是把页大小写死成 `4096`，例如 `#define PAGE_SIZE 4096`。`sysconf(_SC_PAGESIZE)` 和 `getpagesize()` 都属于运行时查询，应该保留：
 
 ```c
 // 错误：把页大小写死成 4096
@@ -207,11 +209,11 @@ RELRO 保护仍然存在。`soinfo::protect_relro()` 在 compat 分支调用 `ph
 
 ### 兼容模式不具备性能红利
 
-兼容模式的目标是**让旧 4KB ELF 不崩溃**，不是让它在 16KB 系统上获得 TLB 收益。`CompatMapSegment()` 把按 4KB 边界组织的 LOAD segment 读入匿名 RW 映射，而不是走 `mmap64()` 直接映射文件。加载 4KB 对齐的 `.so` 时，Bionic 因权限对齐冲突被迫将本可共享的 `.so` 内容执行匿名拷贝——原本可被多个进程共享的 `.so` 库变为每个进程独占一份，PSS 随之飙升，且无法享受 16KB 页带来的启动加速红利。
+兼容模式的目标是**让旧 4KB ELF 继续加载**，不是让它在 16KB 系统上获得 TLB 收益。`CompatMapSegment()` 把按 4KB 边界组织的 LOAD segment 读入匿名 RW 映射，而不是走 `mmap64()` 直接映射文件。加载 4KB 对齐的 `.so` 时，Bionic 因权限对齐冲突被迫将本可共享的 `.so` 内容执行匿名拷贝——原本可被多个进程共享的 `.so` 库变为每个进程独占一份，PSS 随之飙升，且无法享受 16KB 页带来的启动加速红利。
 
 在 Perfetto 中对比同一 App 的 compat 模式和非 compat 模式，compat 模式下 `mmap` 命中的文件映射更少、匿名页更多，启动耗时通常不会改善。对于有性能要求的 App，正确做法仍然是重新编译 `.so` 使其 16KB 对齐，不要依赖 compat 模式。
 
-### 控制接口矩阵
+### 控制接口总览
 
 | 控制方式 | 属性/API | 作用域 |
 |----------|---------|--------|
@@ -367,7 +369,7 @@ TLB miss 后的 page-table walk 主要由 ARM64 hardware page-table walker 完�
 
 **16KB 基础页** 是更底层的改变。它不需要物理连续内存（每个 16KB 页独立分配），没有 khugepaged 的开销，收益更确定。缺点是需要重新编译 Native 代码。
 
-两者**可以叠加使用**：16KB 基础页 + THP 合并为 32MB 大页。ARM64 的 PMD_SIZE（PMD 级别的 block size）随基础页大小变化：4KB base → 2MB THP，16KB base → 32MB THP。这意味着 TLB entry 可以覆盖 16KB（普通页）或 32MB（大页），TLB Reach 进一步扩大。不过在实际的 Android 设备上，THP 默认配置通常是 `madvise` 模式（只对显式请求的内存区域启用），对大多数 App 的实际影响有限。
+两者**可以叠加使用**：16KB 基础页 + THP 合并为 32MB 大页。ARM64 的 PMD_SIZE（PMD 级别的 block size）随基础页大小变化：4KB base → 2MB THP，16KB base → 32MB THP。在这种组合下，TLB entry 可以覆盖 16KB（普通页）或 32MB（大页），TLB Reach 进一步扩大。不过在实际的 Android 设备上，THP 默认配置通常是 `madvise` 模式（只对显式请求的内存区域启用），对大多数 App 的实际影响有限。
 
 对于性能分析来说，16KB 基础页的收益比 THP 更直接、更稳定。在分析 App 的 TLB 相关性能问题时，优先确认设备是否启用了 16KB 页。
 
@@ -394,7 +396,7 @@ Android 16、Android 17 会不会把 16KB 写成更强的设备侧要求，要�
 
 OEM 的适配进度取决于 SoC 厂商的内核支持。高通（Snapdragon）和联发科（Dimensity）从 2024 年开始在 BSP 中提供 16KB 页大小选项。实际启用还需要 OEM 验证所有 HAL 模块和驱动程序的兼容性——特别是 Camera HAL、GPU 驱动、安全模块（TrustZone）这些包含大量 Native 代码的组件。
 
-从 Perfetto 分析的角度，这意味着同一款 App 在不同 OEM 的 16KB 设备上可能有不同的性能表现——因为 OEM 可以调整页大小相关的内核参数（如 THP 策略、zRAM 块大小等）。在跨设备对比性能数据时，需要先确认底层页大小是否一致。
+从 Perfetto 分析的角度，同一款 App 在不同 OEM 的 16KB 设备上可能有不同的性能表现——因为 OEM 可以调整页大小相关的内核参数（如 THP 策略、zRAM 块大小等）。在跨设备对比性能数据时，需要先确认底层页大小是否一致。
 
 ```bash
 # 快速检查设备页大小
@@ -405,7 +407,7 @@ adb shell getconf PAGE_SIZE
 
 ### "16KB 页会让 App 占用更多内存"
 
-这个说法过于简化。页表本身变小了（节省内存），内部碎片确实增加了（浪费内存）。最终效果取决于 App 的分配模式：大量小对象的 App 内存增长更多，以大块分配为主的 App 几乎没有增长。Google 的平均数据是 5-10%，但对于 8GB+ 设备来说，这个增长在整体内存预算中占比不大。
+这个说法过于简化。页表本身变小了（节省内存），内部碎片会增加（浪费内存）。最终效果取决于 App 的分配模式：大量小对象的 App 内存增长更多，以大块分配为主的 App 几乎没有增长。Google 的平均数据是 5-10%，但对于 8GB+ 设备来说，这个增长在整体内存预算中占比不大。
 
 ### "纯 Java App 不需要关心 16KB"
 

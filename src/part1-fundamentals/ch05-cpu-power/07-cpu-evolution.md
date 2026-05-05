@@ -53,28 +53,30 @@ tags:
 
 polish_count: 1
 drafted_date: "2026-04-01"
-task6_reviewed_date: "2026-04-29"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
 related_chapters:
   - "5.2 EAS 能量感知调度"
   - "5.6 Android 功耗管理"
   - "5.8 后台执行限制与优化"
-pipeline_stage: task6_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-last_task2b_at: "2026-04-29T13:40:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-29
-last_task9_at: "2026-04-29T11:26:16+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。；2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。需 Task2B 回炉。"
-last_task2b_at: "2026-04-30T10:46:19+08:00"
 repaired_date: "2026-04-30"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复(Task9/External 问题单)"
+
+reviewed_date: "2026-05-05"
+reviewed_by: openclaw-task6
+task6_reviewed_date: "2026-05-05"
+task6_result: pass-light-edit
+task6_state: reviewed
+last_task2b_at: "2026-04-30T10:46:19+08:00"
+review_notes: "2026-05-05 Task6：去重 frontmatter，修正 L1 填充词/元引导与少量中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
 task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
+task2b_result: pending
+pipeline_stage: task2b_pending
+task9_reviewed_date: "2026-05-05"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-05T01:36:09+08:00"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。；2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。需 Task2B 回炉。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；详见 logs/deep-review/2026-05-05-01-deep-review.md。"
 ---
 
 
@@ -112,7 +114,7 @@ task9_result: needs-rework
 
 从 Android 5.0 到 Android 16,Google 围绕 CPU 和功耗管理做了一系列层层递进的改动。这些改动覆盖了三个层面:
 
-1. **内核调度层面**:从传统 CFS 到 EAS(Energy Aware Scheduling),再到 GKI 对调度定制化的约束
+1. **内核调度层面**:从传统 CFS 到 EAS (Energy Aware Scheduling),再到 GKI 对调度定制化的约束
 2. **系统策略层面**:Doze 模式、App Standby Buckets、Adaptive Battery--系统越来越"聪明"地决定哪些 App 可以用 CPU,哪些必须等着
 3. **应用约束层面**:JobScheduler 引入 → 后台服务限制 → 精确闹钟管控 → 前台服务类型化--App 能做的事情越来越受限
 
@@ -126,7 +128,7 @@ task9_result: needs-rework
 
 在 Android 5.0 之前,开发者要做后台工作,主要有两个选择:用 `AlarmManager` 定时唤醒,或者直接起一个 `Service` 在后台跑。这两种方式有个共同的问题:每个 App 各自为政,系统无法协调。结果就是十个 App 可能在同一时刻被闹钟唤醒,CPU 从深度休眠中醒来,一起抢 CPU 时间片,忙完之后各自又进入空闲,CPU 再次休眠。这种"集体醒来又集体睡觉"的模式,对电池的消耗远大于把这些任务合并处理。
 
-Android 5.0 引入了 `JobScheduler`(API 21),它的核心思路是让系统来决定后台任务什么时候跑。开发者只需要告诉系统:"我有个任务,需要在充电时、网络连接时执行",系统就会在合适的时机把多个 App 的任务打包在一起执行。
+Android 5.0 引入了 `JobScheduler`（API 21），它的核心思路是让系统来决定后台任务什么时候跑。开发者只需要告诉系统:"我有个任务,需要在充电时、网络连接时执行",系统就会在合适的时机把多个 App 的任务打包在一起执行。
 
 ```java
 // 示例:通过 JobScheduler 注册一个后台任务
@@ -138,7 +140,7 @@ JobInfo job = new JobInfo.Builder(JOB_ID, service)
     .build();
 ```
 
-JobScheduler 并没有强制禁止旧的后台工作方式,它只是一个"更好的选择"。但在后续的版本中,Google 逐步封堵了旧的路径,让 JobScheduler(以及后来基于它的 WorkManager)成为后台工作的唯一正规途径。
+JobScheduler 并没有强制禁止旧的后台工作方式,它只是一个"更好的选择"。但在后续的版本中,Google 逐步封堵了旧的路径,让 JobScheduler（以及后来基于它的 WorkManager）成为后台工作的唯一正规途径。
 
 [已验证: 官方文档, developer.android.com/reference/android/app/job/JobScheduler]
 
@@ -180,7 +182,7 @@ Android 8.0 对后台行为的管控上了一个台阶。它引入了"后台执�
 
 第二,**隐式广播接收器被大幅限制**。除了少数例外,App 无法再在 Manifest 中静态注册大部分隐式广播。像"网络变化"、"拍照完成"这类事件,不再能唤醒 App。需要在 App 正在运行时动态注册,或者使用 JobScheduler 来响应。
 
-这两个变化让 JobScheduler 从"推荐使用"逐渐变成了"基本必选"。如果要做后台工作,JobScheduler(以及后来基于它的 WorkManager)成了更稳妥的途径。
+这两个变化让 JobScheduler 从"推荐使用"逐渐变成了"基本必选"。如果要做后台工作,JobScheduler（以及后来基于它的 WorkManager）成了更稳妥的途径。
 
 [已验证: 官方文档, developer.android.com/about/versions/oreo/background]
 
@@ -243,7 +245,7 @@ ARMv9 进入手机后,Android App 主要受到两类硬件能力分化影响:向
 
 SVE2 面向 native 热点路径,典型受益场景是图像处理、音频 DSP、加解密、ML 前后处理这类循环密集代码。它不是 Java / Kotlin 层直接调用的 Android API;NDK 代码要做运行时能力检测,并保留 NEON 或标量 fallback。不同 SoC 是否暴露 SVE / SVE2 能力差异很大,不能按 Android 版本直接判断。
 
-MTE(Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设备上通过 `android:memtagMode` 控制 App 或进程的 native 内存标记检查。`sync` 模式更适合调试,能在 tag mismatch 附近给出精确崩溃;`async` / `asymm` 更偏低开销监控,但崩溃点可能滞后到后续 kernel entry。MTE 的目标是内存安全,不应被当成性能优化开关;开启前要在目标机型上用 Perfetto / simpleperf 复测 CPU、启动耗时和 native 崩溃率。
+MTE (Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设备上通过 `android:memtagMode` 控制 App 或进程的 native 内存标记检查。`sync` 模式更适合调试,能在 tag mismatch 附近给出精确崩溃;`async` / `asymm` 更偏低开销监控,但崩溃点可能滞后到后续 kernel entry。MTE 的目标是内存安全,不应被当成性能优化开关;开启前要在目标机型上用 Perfetto / simpleperf 复测 CPU、启动耗时和 native 崩溃率。
 
 这条演进和调度策略不是同一层。Perfetto 能帮助观察 MTE 开启后的线程时序、崩溃前后 CPU 状态和启动耗时变化;tag mismatch 的直接证据仍然来自 tombstone / logcat / crash report。SVE2 的收益则要通过 native benchmark、simpleperf 热点和硬件能力检测一起确认。
 
@@ -257,7 +259,7 @@ MTE(Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设�
 
 这段演进把 §5.2 和 §5.9 串了起来。§5.2 讲的是 EAS 怎么做 CPU 选择,§5.9 讲的是 ADPF / PerformanceHint 怎么让 App 报告自己的工作节奏。它们之间还隔着一层系统策略,hint session、task profile、uclamp、cpuset。PerformanceHintManager / ADPF 提供的是 work duration hint,本身不等于调度参数。系统或厂商策略需要把这些 hint 转成更低层的线程分组、uclamp 调整或 cpuset 选择,调度器才会真正看到差异。
 
-对排查工作也有直接帮助。如果一个线程明明负载不高,却总被放在大核上,或者一直被压在小核,别只盯着 EAS 算法。先看它当前属于什么 task profile,再看对应 profile 有没有给 `cpu.uclamp.min`、`cpu.uclamp.max` 或 cpuset 施加限制。很多"调度器好像失灵了"的问题,最后都不是 `fair.c` 算错,而是策略层先把范围框好了。
+对排查工作也有直接帮助。如果一个线程明明负载不高,却总被放在大核上,或者一直被压在小核,别只盯着 EAS 算法。先看它当前属于什么 task profile,再看对应 profile 有没有给 `cpu.uclamp.min`、`cpu.uclamp.max` 或 cpuset 施加限制。很多"调度器好像失灵了"的问题，通常不是 `fair.c` 算错，而是策略层先把范围框好了。
 
 [已验证: source.android.com/docs/core/perf/cgroups;AOSP android-16.0.0_r1 platform/system/core/libprocessgroup/profiles/task_profiles.json]
 
@@ -269,7 +271,7 @@ MTE(Memory Tagging Extension)由 Armv8.5-A 引入,Android 在支持硬件的设�
 
 Android 12 把精确闹钟纳入 "Alarms & reminders" 特殊访问。走 `PendingIntent` 形态的 exact alarm,比如 `setExact()`、`setExactAndAllowWhileIdle()`、`setAlarmClock()`,通常需要声明 `SCHEDULE_EXACT_ALARM`,并在运行时确认 `canScheduleExactAlarms()` 为 `true`。缺少这项访问时,相关调用会失败。
 
-这里有一个容易漏掉的边界。官方文档明确写到,如果 exact alarm 走 `OnAlarmListener` 形态,例如 `setExact()` 的 listener 变体,则不需要 `SCHEDULE_EXACT_ALARM`。排查权限问题时,要先区分调用形态,再看权限状态。
+一个容易漏掉的边界是，官方文档明确写到，如果 exact alarm 走 `OnAlarmListener` 形态，例如 `setExact()` 的 listener 变体，则不需要 `SCHEDULE_EXACT_ALARM`。排查权限问题时，要先区分调用形态，再看权限状态。
 
 Android 13 起,闹钟类、日历类这类场景还可以声明 `USE_EXACT_ALARM`。它是普通权限,安装时授予,但受 Google Play 政策限制,只适用于少数类别,不能当成通用替代方案。
 
@@ -371,7 +373,7 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 | 7.0 | Doze on the Go + 移除隐式广播 | 系统策略层 |
 | 8.0 | 后台执行限制 | 应用层(强制) |
 | 9.0 | Adaptive Battery + App Standby Buckets | 系统策略层(ML 驱动) |
-| 10 | EAS 成为主流路线(取决于 EM + kernel 支持)+ 后台 Activity 限制 | 内核层 + 应用层 |
+| 10 | EAS 成为主流路线（取决于 EM + kernel 支持）+ 后台 Activity 限制 | 内核层 + 应用层 |
 | 11 | task profiles 开始统一 cgroup / 调度策略入口 | Framework ↔ kernel |
 | 12 | Performance Hint API 引入 + 精确闹钟权限化 | API 层 + 应用层 |
 | 13 | 精确闹钟默认拒绝 + FGS Task Manager | 应用层(用户可见) |
@@ -382,7 +384,7 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 
 这条演进线背后有三个趋势:
 
-1. **约束越来越严格**:从推荐使用 JobScheduler(5.0),到限制后台服务(8.0),到限制精确闹钟(12-13),到限制后台网络(15)。每一步都在封堵"App 自己控制 CPU"的路径。
+1. **约束越来越严格**:从推荐使用 JobScheduler（5.0）,到限制后台服务(8.0),到限制精确闹钟(12-13),到限制后台网络(15)。每一步都在封堵"App 自己控制 CPU"的路径。
 2. **策略越来越智能**:从静态的 Doze(6.0),到 ML 驱动的 Adaptive Battery(9.0),再到按 Standby Bucket、前后台状态和 Job 配额做动态控制(16)。系统越来越擅长根据用户行为和设备状态做决策。
 3. **用户可见性越来越高**:前台服务通知(8.0)→ FGS Task Manager(13)→ Play listing / Vitals 警告。Android 15 的后台网络限制属于平台约束,常见表现是 App 侧 `UnknownHostException` 或 socket `IOException`,不写成通用用户提示。
 
@@ -392,7 +394,7 @@ sched_ext 的潜在价值在于:厂商或场景化优化方案可以通过 BPF �
 
 1. **Doze 状态**:在设备空闲时段,检查 CPU 是否有长时间的无活动期(对应 Doze 深度休眠)。Android 15 的 Doze 加速意味着这个无活动期开始得更早。
 
-2. **任务迁移模式**:对比不同 Android 版本上同一 App 的 CPU 调度 Track。在 EAS 启用前(Android 9 及更早),任务迁移更"随机";EAS 启用后(Android 10+),会更常看到"把轻量任务集中到小核"的规律性模式。
+2. **任务迁移模式**:对比不同 Android 版本上同一 App 的 CPU 调度 Track。在 EAS 启用前（Android 9 及更早），任务迁移更“随机”；EAS 启用后（Android 10+），会更常看到"把轻量任务集中到小核"的规律性模式。
 
 3. **JobScheduler 执行**:在 Android 12+ 上,Job 的执行间隔明显更不规律,特别是 Rare 桶的 App。Perfetto 里要把两类数据分开:`android_job_scheduler_states` 来自 statsd atom,适合看 constraint、bucket 和 pending 状态;`android_job_scheduler_events` 来自 system_server 的 atrace `ss` 类别,适合看 schedule / execute 事件。
 

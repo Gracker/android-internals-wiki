@@ -3,7 +3,7 @@ title: "进程模型与生命周期管理"
 chapter: "1.3"
 section: "1.3"
 status: ready-for-review
-reviewed_date: "2026-05-01"
+reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
 task6_result: pass-light-edit
@@ -53,11 +53,12 @@ sources:
 tags: [process, ams, oom_adj, lmkd, zygote, process-lifecycle, binder]
 related_chapters: ["1.1", "1.2", "1.4", "1.5", "4.4", "5.1", "5.8"]
 task6_state: reviewed
-review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes (banned words rephrased)"
+review_notes: "2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes. | 2026-05-05 task6 re-confirm: fixed L1/L2 wording and punctuation; task9_result=needs-rework, pipeline kept task2b_pending."
 task2b_result: fixed
-pipeline_stage: "task6_pending"
+pipeline_stage: task2b_pending
 task9_state: reviewed
 task9_result: needs-rework
+task6_reviewed_date: "2026-05-05"
 task2b_state: pending
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
@@ -141,7 +142,7 @@ public static void main(String[] argv) {
 
 ## Android 进程的常用优先级 buckets
 
-Android 官方文档常把进程分成 foreground、visible、service、cached 这些大类。AOSP 真正落到回收决策时，bucket 会再细一层。排查内存回收时，最常用的是六类：**foreground → visible → perceptible → service → cached → empty**。
+Android 官方文档常把进程分成 foreground、visible、service、cached 这些大类。AOSP 用于回收决策的 bucket 会再细一层。排查内存回收时，最常用的是六类：**foreground → visible → perceptible → service → cached → empty**。
 
 [图：Android 进程优先级 buckets 示意——从上到下依次为 foreground→visible→perceptible→service→cached→empty，旁边标出 android-16 中常见 `adj` 值区间]
 
@@ -171,7 +172,7 @@ Cached process 没有前台组件，只是保留在内存里加快下一次切�
 
 ## CachedAppOptimizer / Freezer 机制（Android 12+）
 
-Android 12 引入了 `CachedAppOptimizer` 机制，通过 cgroup v2 freezer 技术冻结缓存的进程，这是比传统优先级调整更彻底的进程管理方式。
+Android 12 引入了 `CachedAppOptimizer` 机制，通过 cgroup v2 freezer 技术冻结缓存的进程，这是比传统优先级调整更强的进程管理方式。
 
 ### 架构设计
 
@@ -263,7 +264,7 @@ private class FreezeHandler extends Handler {
 
 ### 在 Perfetto 中的表现
 
-被冻结进程的线程 slice 会彻底消失，与被 LMK 杀死的进程表现完全不同：
+被冻结进程的线程 slice 会长时间不再出现，与被 LMK 杀死的进程表现完全不同：
 - **被杀进程**：进程直接消失，所有线程停止
 - **被冻结进程**：进程仍然存在，但线程 slice 消失，CPU 占用率为 0
 
@@ -300,7 +301,7 @@ LIMIT 20;
 - **Android 13**: 重构 `enableFreezer()` API，从 `Process` 类迁移到 `ActivityManagerService`
 - **Android 14**: 引入 "Frozen-callee callback policy" for Binder
 - **Perfetto v49**: 新增 `frozen` 布尔字段和 `android.freezer` 事件表
-- **Android 16（Seamless App Updates）**: 应用更新时的冻结窗口从秒级降至毫秒级。Android 16 将 dexopt 尽量前移到应用安装/更新流程中，冻结窗口只覆盖最后文件切换阶段。此前应用更新需要先杀掉旧进程、替换 APK、再重新启动，整个冻结窗口可能持续数秒。
+- **Android 16（Seamless App Updates）**: 应用更新时的冻结窗口从秒级降至毫秒级。Android 16 将 dexopt 尽量前移到应用安装/更新流程中，冻结窗口只覆盖最终文件切换阶段。此前应用更新需要先杀掉旧进程、替换 APK、再重新启动，整个冻结窗口可能持续数秒。
 
 <!-- AIW-源码调研-2026-04-17 -->
 
@@ -352,7 +353,7 @@ Empty process 连缓存 Activity 都没有，只剩一个已经建好的 Linux �
 - **谁可杀**：看每个进程当前的 `oom_score_adj`
 - **何时杀**：看系统此刻的内存压力信号
 
-`oom_score_adj` 只负责排序，不负责告诉系统“现在已经该杀了”。真正决定时机的是 `vmpressure`、PSI、watermark、file cache 和 thrashing 这些信号。
+`oom_score_adj` 只负责排序，不负责告诉系统“现在已经该杀了”。决定回收时机的是 `vmpressure`、PSI、watermark、file cache 和 thrashing 这些信号。
 
 ### userspace `lmkd` 的时间线
 
@@ -373,9 +374,9 @@ Android 9 把 userspace `lmkd` 引入主线，但它的启用条件仍然带着 
 [已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
 [已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
 
-### AMS 入口和真正的计算路径不在同一层
+### AMS 入口和计算路径不在同一层
 
-组件状态一变化，AMS 就会触发一轮优先级重算。android-16.0.0_r1 里，`ActivityManagerService.updateOomAdjLocked()` 更像入口包装，后面会委托给 `mProcessStateController.runUpdate(...)`，再进入 `OomAdjuster.updateOomAdjLSP()` / `computeOomAdjLSP()` 做真正的 `adj`、`procstate` 和调度组计算。
+组件状态一变化，AMS 就会触发一轮优先级重算。android-16.0.0_r1 里，`ActivityManagerService.updateOomAdjLocked()` 更像入口包装，后面会委托给 `mProcessStateController.runUpdate(...)`，再进入 `OomAdjuster.updateOomAdjLSP()` / `computeOomAdjLSP()` 完成最终的 `adj`、`procstate` 和调度组计算。
 
 进程的绑定关系、前后台可见性、Provider 依赖、service connection，都会在这条路径上抬高或压低分数。排查“后台进程为什么没被杀”时，只看 AMS 入口还不够，还得顺到 `OomAdjuster` 才能看到最终决策。
 
@@ -383,7 +384,7 @@ Android 9 把 userspace `lmkd` 引入主线，但它的启用条件仍然带着 
 
 ## 四大组件与进程的对应关系
 
-Android 的进程模型是**组件驱动**的——进程的存在是因为里面有组件在运行。。
+Android 的进程模型是**组件驱动**的——进程的存在是因为里面有组件在运行。
 
 ### 默认情况：单进程
 
@@ -469,7 +470,7 @@ binder.linkToDeath(new IBinder.DeathRecipient() {
 
 当目标进程死亡时，Binder 驱动会通知所有持有其代理的客户端进程，触发 `binderDied()` 回调。系统服务里也大量依赖这个机制，在对端消失后清理代理对象并重新建立连接。
 
-`binderDied()` 本身不是系统自动写入 Trace 的固定事件。要在 Perfetto 里稳定定位它，抓取时至少打开 `android.log`，并在客户端的 `binderDied()` 回调里补一条 log 或 `Trace.beginSection("binderDied")`。复现后先查系统侧的 `am_kill` / `am_proc_died`，再看客户端是否在同一时间窗里进入 `binderDied()`。这样能把真正的对端进程死亡，和普通的 Binder 调用超时区分开。
+`binderDied()` 本身不是系统自动写入 Trace 的固定事件。要在 Perfetto 里稳定定位它，抓取时至少打开 `android.log`，并在客户端的 `binderDied()` 回调里补一条 log 或 `Trace.beginSection("binderDied")`。复现后先查系统侧的 `am_kill` / `am_proc_died`，再看客户端是否在同一时间窗里进入 `binderDied()`。这样能把对端进程死亡和普通的 Binder 调用超时区分开。
 
 ```sql
 SELECT ts, tag
@@ -489,7 +490,7 @@ LIMIT 20;
 
 Android 官方推荐的"保活"方式只有一种：**做用户需要的事情**。如果 Service 在做用户能感知到的工作（比如播放音乐、导航），就调用 `startForeground()` 把它变成前台 Service。如果不是，就让系统在需要时回收它。
 
-以下是 Android 逐步收紧后台限制的历程：
+以下是 Android 逐步强化后台限制的历程：
 
 - **Android 8.0（Oreo）**：限制后台 Service 的创建，引入 `Context.startForegroundService()`
 - **Android 9.0（Pie）**：进一步限制后台 App 访问传感器、麦克风、摄像头
@@ -512,7 +513,7 @@ Android 12 引入了一个新的限制机制：Phantom Process Killer。这里�
 
 Android 16 引入了 AVF (Android Virtualization Framework) Terminal，允许在受保护的虚拟机 (pVM) 中运行终端环境。pVM 内部的进程不受宿主 Phantom Process Killer 32 个名额的限制。对于需要运行大量子进程的场景（如构建工具链、测试框架），AVF Terminal 提供了一种隔离化方案。但需要注意几个边界：
 
-1. **pVM 并非普通 App 子进程保活方案**：pVM 启动开销远大于 fork，资源隔离粒度也不同，只适合真正需要强隔离的场景。
+1. **pVM 并非普通 App 子进程保活方案**：pVM 启动开销远大于 fork，资源隔离粒度也不同，只适合需要强隔离的场景。
 2. **第三方 App 可用性有限**：AVF Terminal 的产品边界和 API 开放程度仍在演进中，普通 App 能否直接创建 pVM 取决于系统权限和策略。
 3. **与 PhantomProcessList 的关系**：pVM 内部的进程对宿主 AMS 的 `PhantomProcessList` 不可见，因此不受其计数裁剪。但宿主进程自身的 oom_adj 仍会影响系统对整个 pVM 资源的回收决策。
 
@@ -629,15 +630,15 @@ ORDER BY ts;
 
 ### 误区 1：App 在前台就不会被回收
 
-**错误**。前台进程确实是最不容易被回收的，但在极端内存压力下（比如设备物理内存很小又运行了大型游戏），LMK 仍然可能杀掉前台进程。此外，这里的“前台”指的是“有前台 Activity 或前台 Service”，不是单纯指“屏幕上能看到这个 App”。如果一个 App 的 Activity 在前台但进程意外被杀，系统会重建 Activity（如果有 savedInstanceState）。
+**错误**。前台进程是最不容易被回收的一类，但在极端内存压力下（比如设备物理内存很小又运行了大型游戏），LMK 仍然可能杀掉前台进程。此外，这里的“前台”指的是“有前台 Activity 或前台 Service”，不是单纯指“屏幕上能看到这个 App”。如果一个 App 的 Activity 在前台但进程意外被杀，系统会重建 Activity（如果有 savedInstanceState）。
 
 ### 误区 2：多进程方案能解决所有内存问题
 
-**不完整**。多进程确实可以把大内存操作隔离出去，但每个进程都要消耗额外的内存（ART 虚拟机、资源副本），而且进程间通信有额外开销。在低端设备上，多进程反而可能导致更频繁的 LMK 回收。
+**不完整**。多进程可以把大内存操作隔离出去，但每个进程都要消耗额外的内存（ART 虚拟机、资源副本），而且进程间通信有额外开销。在低端设备上，多进程反而可能导致更频繁的 LMK 回收。
 
 ### 误区 3：后台 Service 设置为前台 Service 就万事大吉
 
-**不完全正确**。前台 Service 确实能把进程从 `SERVICE_ADJ`（500）甚至 `SERVICE_B_ADJ`（800）提上来，但实际 adj 值取决于 `OomAdjuster` 的综合判定。多数情况下，`startForeground()` 会把进程提升到 `PERCEPTIBLE_APP_ADJ = 200`（用户可感知档）；刚从 TOP 退下还带着 FGS 的应用，可能短暂落在 `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50` 这一缓冲档。但不能一概写成“提升到 0~100”——前台进程（`FOREGROUND_APP_ADJ = 0`）要求有 resumed Activity 或其他 top 条件，仅靠 FGS 本身通常达不到。此外，Android 14 要求前台 Service 必须声明类型（如 `camera`, `location`, `mediaPlayback`），并且系统会检查这些类型是否与 App 实际行为匹配。滥用前台 Service 不仅违反 Play Store 政策，也会被系统检测并降级。
+**不完全正确**。前台 Service 能把进程从 `SERVICE_ADJ`（500）甚至 `SERVICE_B_ADJ`（800）提上来，但实际 adj 值取决于 `OomAdjuster` 的综合判定。多数情况下，`startForeground()` 会把进程提升到 `PERCEPTIBLE_APP_ADJ = 200`（用户可感知档）；刚从 TOP 退下还带着 FGS 的应用，可能短暂落在 `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50` 这一缓冲档。但不能一概写成“提升到 0~100”——前台进程（`FOREGROUND_APP_ADJ = 0`）要求有 resumed Activity 或其他 top 条件，仅靠 FGS 本身通常达不到。此外，Android 14 要求前台 Service 必须声明类型（如 `camera`, `location`, `mediaPlayback`），并且系统会检查这些类型是否与 App 实际行为匹配。滥用前台 Service 不仅违反 Play Store 政策，也会被系统检测并降级。
 
 ### 误区 4：进程被杀一定是因为内存不足
 
@@ -654,7 +655,7 @@ ORDER BY ts;
 - **4.4 Low Memory Killer**：`lmkd`、PSI、thrashing、watermark 的现代策略在那一节展开
 - **5.1 Linux 进程调度基础**：sched group、cgroup、top-app / background 资源档位要回到那一节
 - **5.8 后台执行限制与优化**：App Standby Buckets、后台限制、freezer 相关影响在那一节继续展开
-- **9.1 ANR 设计思想**：ANR 触发后 AMS 和进程状态的收口行为在那一节补齐
+- **9.1 ANR 设计思想**：ANR 触发后 AMS 和进程状态的处理行为在那一节补齐
 
 ## 参考资料
 

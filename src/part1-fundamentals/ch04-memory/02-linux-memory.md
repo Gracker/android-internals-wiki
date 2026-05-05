@@ -12,7 +12,7 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_verified_against: "Linux kernel 6.6 (android14-6.6-lts)"
@@ -36,12 +36,14 @@ sources:
     path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
+task6_reviewed_date: "2026-05-05"
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
+review_notes: "2026-05-05 task6 re-confirm: fixed L1 wording; task9_result=needs-rework, pipeline kept task2b_pending."
 ---
 
 # Linux 内核内存管理
@@ -87,7 +89,7 @@ task2b_result: fixed
 
 ### 从虚拟地址到物理地址
 
-现代操作系统都采用虚拟内存管理。CPU 访问的每一个内存地址都是虚拟地址，它需要经过 MMU（Memory Management Unit，内存管理单元）翻译成物理地址后，才能真正访问 DRAM 中的数据。
+现代操作系统都采用虚拟内存管理。CPU 访问的每一个内存地址都是虚拟地址，它需要经过 MMU（Memory Management Unit，内存管理单元）翻译成物理地址后，才能访问 DRAM 中的数据。
 
 这个翻译过程依赖页表（Page Table）。页表是内核维护的一种数据结构，记录了虚拟页（Virtual Page）到物理页（Physical Page，也叫 Page Frame）的映射关系。在 64 位 Linux 系统上，为了高效管理巨大的地址空间，内核使用多级页表结构。ARM64 在 Linux 中默认使用四级页表（PGD → PUD → PMD → PTE），Linux 4.11 引入了五级页表支持。每一级页表就像一层目录索引，逐级缩小查找范围，最终定位到具体的物理页。
 
@@ -107,7 +109,7 @@ TLB 的命中率直接影响程序的执行效率。当 TLB miss 发生时，CPU
 
 Page Fault 在 Android 上有几类典型场景：
 
-- **首次访问新分配的内存**：进程调用 `mmap()` 或 `malloc()` 时，内核只记录了虚拟地址的分配，并没有真正分配物理页。等到进程第一次读写这块内存时，触发 Page Fault，内核此时才分配物理页并建立映射。这就是为什么我们在 Perfetto 中看到应用启动初期会有密集的 page fault。
+- **首次访问新分配的内存**：进程调用 `mmap()` 或 `malloc()` 时，内核只记录了虚拟地址的分配，还没有分配物理页。等到进程第一次读写这块内存时，触发 Page Fault，内核此时才分配物理页并建立映射。这就是为什么我们在 Perfetto 中看到应用启动初期会有密集的 page fault。
 - **页面被回收后再次访问**：当内存紧张时，内核可能回收了一些页面的物理内存。进程再次访问这些页面时，会触发 Page Fault——如果是文件页（File-backed Page），内核会从磁盘重新读入；如果是匿名页（Anonymous Page），且之前被写入了 swap/zRAM，则从压缩存储中解压恢复。
 - **写时复制（Copy-on-Write）**：`fork()` 创建子进程时，内核只复制父进程的页表，两个进程指向相同的物理页。当其中一方尝试写入时，触发 Page Fault，内核此时才复制那个页面。Android 的 Zygote 进程正是利用这个机制——所有从 Zygote fork 出来的应用进程共享同一份物理内存页，直到它们需要修改时才各自持有副本。
 
@@ -217,7 +219,7 @@ kswapd 被唤醒后，会持续回收页面，直到空闲内存恢复到 High W
 
 针对这类问题，一些 OEM 厂商采用了"冷热文件分离"策略：区分前台应用的热文件和后台应用的冷文件，优先回收后台冷文件的页面，保护前台应用的 Page Cache。
 
-另一种思路是常态化少量回收——每分钟定时少量回收页面，避免内存不足时 kswapd 的突发性高开销。这本质上是用可预测的低开销替代不可预测的高开销，与渲染优化中"分帧加载"的思路类似。
+另一种思路是常态化少量回收——每分钟定时少量回收页面，避免内存不足时 kswapd 的突发性高开销。这种做法用可预测的低开销替代不可预测的高开销，与渲染优化中"分帧加载"的思路类似。
 
 [已验证: L4 交叉验证, Nubia案例 + OPPO内存反碎片优化 + 荣耀MGLRU实践经验]
 [来源: Cubox/Android 系统 内存不足时，kswapd 导致的性能问题之冷热文件回收方案-2025-05-31.md]
@@ -226,7 +228,7 @@ kswapd 被唤醒后，会持续回收页面，直到空闲内存恢复到 High W
 
 当内存分配请求发现空闲内存已经低于 Min Watermark 时，分配请求的进程会被迫自己执行页面回收——这就是 Direct Reclaim。与 kswapd 的异步回收不同，Direct Reclaim 是同步的：发出内存分配请求的进程必须等待回收完成才能继续执行。
 
-如果前台应用在渲染帧的过程中触发 Direct Reclaim，这一帧的渲染时间就会被拉长，掉帧风险也会随之上升。在 Perfetto 中，Direct Reclaim 通常表现为进程长时间处于不可中断睡眠状态（`D` 状态），调用栈中可以看到 `__alloc_pages_direct_reclaim` 相关函数。
+如果前台应用在渲染帧的过程中触发 Direct Reclaim，这一帧的渲染时间就会被拉长，掉帧风险也会随之上升。在 Perfetto 中，Direct Reclaim 通常表现为进程长时间处于不可中断睡眠状态（`D` 状态），调用栈中通常会出现 `__alloc_pages_direct_reclaim` 相关函数。
 
 [已验证: 官方文档, kernel.org — Direct reclaim 在内存分配路径中同步执行]
 
@@ -235,7 +237,7 @@ kswapd 被唤醒后，会持续回收页面，直到空闲内存恢复到 High W
 传统的双链表 LRU 在 Android 场景下有一些固有缺陷：
 
 - **粒度太粗**：只有 active 和 inactive 两个层级，难以精确区分页面的热度。
-- **GC 干扰**：ART 虚拟机的 GC 线程在遍历对象时会访问大量页面，导致内核误以为这些页面是"热的"（pseudo-hot），即使 GC 访问后这些页面可能很长时间不会再被访问。
+- **GC 干扰**：ART 虚拟机的 GC 线程在遍历对象时会访问大量页面，导致内核把这些页面判断为"热的"（pseudo-hot），即使 GC 访问后这些页面可能很长时间不会再被访问。
 - **前台保护不足**：传统 LRU 不区分前台和后台进程的页面，可能错误地回收前台应用的热页面。
 
 Google 为 Linux 内核开发了 MGLRU（Multi-Generational LRU），用多代（generation）模型替代了传统的双链表。页面按访问时间被分配到不同的 generation 中，越年轻的 generation 表示越近被访问过。回收时优先从最老的 generation 开始。
@@ -435,7 +437,7 @@ Google 在 LPC 2025 上分享了为 16KB 页面适配旧 ELF 库的技术探索�
 Linux 内核内存管理不是孤立的，它与 Android 系统的其他层面有密切关联：
 
 - **与 ART 虚拟机（4.3 节）**：ART 的 GC 和内核的页面回收相互影响。Silk 论文展示了 GC 行为对内核 LRU 判断的干扰，说明两个层面需要协同优化。
-- **与 Low Memory Killer（4.4 节）**：LMK 是页面回收的最后一道防线——当 kswapd 和 direct reclaim 都无法满足需求时，LMK 会杀掉后台进程释放内存。
+- **与 Low Memory Killer（4.4 节）**：LMK 是页面回收失败后的兜底机制——当 kswapd 和 direct reclaim 都无法满足需求时，LMK 会杀掉后台进程释放内存。
 - **与 SurfaceFlinger（2.6 节）**：SurfaceFlinger 的图形缓冲区通过 DMA-BUF 管理，是系统内存的大户。
 - **与 CPU 调度（5.1 节）**：kswapd 和 kcompactd 都是内核线程，它们的 CPU 使用会影响前台应用的调度。
 - **与存储 I/O（6.3 节）**：页面回收中的脏页回写会产生 I/O 压力，影响前台应用的文件读写性能。
