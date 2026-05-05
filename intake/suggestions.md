@@ -1021,3 +1021,33 @@
 - **位置**：L239-L250 TraceConfig `lowmemorykiller/lowmemorykiller`
 - **问题**：示例已修正 `atrace_categories: "lmkd"`，但 `lowmemorykiller` ftrace event 在现代 GKI/设备上可能不存在；AOSP atrace memory category 中该事件是 optional，android16-6.12 kernel common 未核到通用 lowmemorykiller trace header。
 - **建议**：录制前补 `adb shell ls /sys/kernel/tracing/events/lowmemorykiller` 检查；不存在时依赖 `atrace_categories: "memory"`、logcat/statsd `lowmemorykiller`、`ProcessKilled` 和 lmkd 日志。
+
+## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-05-06
+- **类型**：源码准确性
+- **位置**：L235-L241「kCompatPageSize 常量」
+- **问题**：正文把 `kCompatPageSize` 定义位置写成 `linker_phdr_16kib_compat.cpp` 行 48；AOSP main / android-16.0.0_r1 中该常量定义在 `linker/linker_phdr.h:49`，compat cpp 只是引用。
+- **建议**：把源码锚点改为 `bionic/linker/linker_phdr.h:49`，`linker_phdr_16kib_compat.cpp` 只保留为使用路径。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-05-06
+- **类型**：源码准确性
+- **位置**：点击响应 → InputDispatcher 分发延迟
+- **问题**：“应用侧端点通常绑定到主线程 Looper”表述偏粗。AOSP 路径是 `ViewRootImpl.WindowInputEventReceiver` / native `InputEventReceiver` 把 InputChannel fd 注册到主线程 Native Looper/epoll。
+- **建议**：改成“fd 注册到主线程 Native Looper，事件到达后回调进入 ViewRootImpl 分发”，与 §3.1 的 Input 章节保持一致。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-05-06
+- **类型**：原理边界
+- **位置**：搜索防抖 → `flatMapLatest` 说明
+- **问题**：正文写旧搜索请求“会被自动取消”，但实际取消取决于 `repository.search()` 是否响应协程取消；阻塞式调用或不支持取消的网络层仍可能继续执行。
+- **建议**：补一句：只有 suspend/CallAdapter 能把协程取消传递到底层请求时，旧请求才会真正取消；否则还需请求 id 丢弃过期结果。
+
+## [Task9 Deep Review] 19.02 Tencent Matrix — 2026-05-06
+- **类型**：源码/API 边界
+- **位置**：接入结构 → `pluginListener(...)` 源码锚点
+- **问题**：正文按 `Matrix.java` 写 `pluginListener(...)` 是正确的，但 Matrix 官方 README 的 Android 示例仍出现 `builder.patchListener(...)`，会让读者对照 README 时困惑。
+- **建议**：补充说明：README 示例是旧 API 名残留，当前 `Matrix.Builder` 以源码为准使用 `pluginListener(...)`。
+
+## [Task9 Deep Review] 19.02 Tencent Matrix — 2026-05-06
+- **类型**：版本差异
+- **位置**：Trace Canary 的工程边界 → AGP 兼容
+- **问题**：正文写了 AGP 8 Transform API 移除风险，但未给 Matrix 官方 release 支持范围；README 当前说明 Gradle 插件主要覆盖 AGP 3.5/4.0/4.1，AGP 7/8 需分支或自迁移验证。
+- **建议**：在 AGP 段落补 Matrix 版本/官方支持范围，并把 AGP 8+ 迁移路径限定为“官方新版、内部分支或社区 fork 已完成 instrumentation 迁移”的前提。

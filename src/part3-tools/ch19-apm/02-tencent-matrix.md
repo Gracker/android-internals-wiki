@@ -26,12 +26,13 @@ task6_result: pass-light-edit
 task2b_result: fixed
 last_task2b_at: "2026-04-27T22:40:00+08:00"
 task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-27"
+task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T23:21:00+08:00"
+last_task9_at: "2026-05-06T04:36:19+08:00"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-review_notes: "2026-04-27 task2b: fixed Matrix.Builder pluginListener API usage and added Matrix.java source anchor for Builder/plugin registration."
+review_notes: "2026-05-06 task9 deep-review: pass-tech-review。P1 0 / P2 2；无 P0/P1，记录 Matrix README/API 与 AGP 版本边界建议。"
+
 ---
 
 # Tencent Matrix

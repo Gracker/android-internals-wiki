@@ -35,14 +35,15 @@ task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: reviewed
 task2b_state: pending
-task9_reviewed_date: "2026-04-28"
+task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-28T11:41:58+08:00"
+last_task9_at: "2026-05-06T04:36:19+08:00"
 task2b_result: pending
 last_task2b_at: "2026-04-27T10:44:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：Binder 线程池 Android 16 待验证未闭环；P2 8 写入 suggestions。"
+review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 1 / P2 2；Android 16 Binder 线程池待验证仍未删。"
+
 ---
 
 # 其他响应速度场景
