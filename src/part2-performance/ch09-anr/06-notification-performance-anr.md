@@ -34,18 +34,19 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T13:39:29+08:00"
+last_task2b_at: "2026-05-06T13:46:45+08:00"
 last_task6_at: "2026-05-06T13:13:29+08:00"
 last_task2b_at: "2026-05-06T13:04:10+08:00"
 last_task6_review_log: "logs/review/2026-05-06-13-review.md"
@@ -242,9 +243,7 @@ reapply 跳过了 inflate,但仍然会执行新 `RemoteViews` 的所有 action--
 
 1. **`Icon.createWithResource(resId)`**：只传资源 ID 引用，SystemUI 侧按自己 context 解码。跨进程开销最低，推荐优先使用
 2. **`Icon.createWithUri(uri)`**：传 URI，SystemUI 侧打开 ContentProvider 或文件流解码。跨进程开销是 URI 字符串本身，但 SystemUI 解码耗时取决于图片来源和尺寸
-3. **`Icon.createWithBitmap(bitmap)`**：`Icon.writeToParcel()` 在写入侧先调用 `Bitmap.asHardwareBuffer()` 把 Bitmap 转成 `HardwareBuffer`，再把 `HardwareBuffer` 的文件描述符写入 Parcel；SystemUI 侧从 FD 重建 `HardwareBuffer`，再转回 `Bitmap` 供渲染使用。这条路径在 Binder 传输层走的是 FD 共享内存，不是像素序列化，但应用侧 `Bitmap.asHardwareBuffer()` 的格式转换和 SystemUI 侧的重建仍有开销
-
-如果传入的 Bitmap 格式不支持 HardwareBuffer 转换（如某些 ALPHA_8 或非 GPU 兼容配置），会回退到像素数据写入 Parcel，大图会挤占进程的 Binder 内核缓冲区配额。实战中优先用 `createWithResource`，次选 `createWithUri`，`createWithBitmap` 只在前面两条走不通时使用，且应确保 Bitmap 为 GPU 兼容格式（ARGB_8888）并已缩放到通知实际显示尺寸。
+3. **`Icon.createWithBitmap(bitmap)`**：AOSP `Icon.writeToParcel()` 对 `TYPE_BITMAP` / `TYPE_ADAPTIVE_BITMAP` 先调用 `Bitmap.asShared()` 生成不可变的共享内存 backed bitmap，再通过 `Bitmap.writeToParcel()` 以共享内存 FD 传递。SystemUI 侧从 Parcel 重建 bitmap 对象并绑定渲染。这条路径绕过了像素数据整体拷贝进 Parcel 缓冲区，但 `asShared()` 的格式准备和 SystemUI 侧的解码绑定仍有开销。可变 Bitmap 或不兼容格式会回退到像素数据写 Parcel，大图此时会挤占 Binder 内核缓冲区配额。实战中优先用 `createWithResource`，次选 `createWithUri`，`createWithBitmap` 只在前面两条走不通时使用，且应确保 Bitmap 为 ARGB_8888 格式并已缩放到通知实际显示尺寸。
 
 ## NotificationListenerService 与性能
 
@@ -482,7 +481,6 @@ adb shell dumpsys notification
 | 版本 | 当前能确认的变化 | 性能含义 |
 |------|------------------|----------|
 | Android 12 (API 31) | NMS update path 存在包级通知速率限制 | 高频 `notify()` 更新更容易被 shed,进度型通知需要主动压频 |
-| Android 14 (API 34) | `RemoteViews` 引入 Measure Cache 和 Action-diff | 高频更新(如进度条)的 CPU 开销显著降低,前提是布局结构保持稳定 |
 | Android 13 (API 33) | `POST_NOTIFICATIONS` 成为 runtime permission | 被拒绝的普通通知不会进入常规发布路径,系统总体通知负载会下降 |
 | Android 16 (API 36) | `Notification.ProgressStyle` 新增,promoted ongoing / Live Update 文档可用 | 进度型通知更适合走系统模板,减少自定义 `RemoteViews` 的必要性 |
 
@@ -508,9 +506,7 @@ Android 12+ 的通知限流是静默丢弃,超过频率限制的通知会被 NMS
 
 ### 「Icon 构造方式对性能没影响」
 
-`Icon.createWithBitmap()` 会把 Bitmap 的像素数据序列化进 Parcel,通过 Binder 传给 system_server。大图场景下,单个 `Icon` 就可能消耗数百 KB 的序列化空间。而所有应用的同步 Binder 调用共享同一块约 1MB 的内核缓冲区,一个大图 `Icon` 就可能让后续的同步调用排队等待缓冲区释放。
-
-实践建议:通知图标优先使用 `Icon.createWithResource(resId)`(只传资源 ID 引用,不传像素数据)。必须用 Bitmap 时,先按通知显示尺寸缩放到 64x64dp 以内再构造 `Icon`,避免在通知路径上引入不必要的内存拷贝和 Binder 缓冲区压力。
+`Icon.createWithBitmap()` 在 `writeToParcel()` 时会尝试通过 `Bitmap.asShared()` 把 Bitmap 转为共享内存 backed 不可变副本，以 FD 形式跨进程传递，不走像素序列化。但 `asShared()` 本身有格式转换开销，可变 Bitmap 或不兼容格式会回退到像素数据写 Parcel——后者在 Binder 内核缓冲区有限时会造成排队。通知图标优先用 `Icon.createWithResource(resId)`（只传资源 ID 引用）。必须用 Bitmap 时，先按通知显示尺寸缩放并确保 ARGB_8888 格式，降低回退风险。
 
 ## 参考资料
 

@@ -8708,14 +8708,14 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-11-9.6-external-review.md",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "updated_at": "2026-05-06T13:39:29+08:00",
-      "completed_at": "2026-05-06T13:04:10+08:00",
-      "completed_reason": "P0 RemoteViews增量更新已修正为reapply机制（删除Measure Cache/Action-diff）；P0 Icon图片通知成本模型已重写（HardwareBuffer FD共享路径+三档成本阶梯）",
+      "completed_at": "2026-05-06T13:46:45.985669",
+      "completed_reason": "P0 Android 14 Measure Cache/Action-diff 版本事实已删除; P0 Icon.createWithBitmap 传输路径改为 Bitmap.asShared() 共享内存/FD; FAQ Icon 条目与主文对齐",
       "reopened_by": "task6-review",
       "reopened_at": "2026-05-06T13:13:29+08:00",
       "original_review_log": "logs/review/2026-05-06-13-review.md"
@@ -8747,8 +8747,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-11-9.7-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-9.7-external-review.md",
+      "completed_at": "2026-05-06T13:46:45.985669",
+      "completed_reason": "三个 review issues 均已在当前正文中覆盖: 16KB VMA锁→驱动层排查(no focused window 4步自动化定性;OEM关键词族 Slow/Block/Monitor/Watchdog/Looper);章节已 finalized"
     },
     {
       "section": "10.2",
