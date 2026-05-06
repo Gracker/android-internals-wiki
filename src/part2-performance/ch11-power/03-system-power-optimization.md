@@ -1,4 +1,4 @@
----
+------
 title: "系统级功耗优化"
 chapter: "11.3"
 status: ready-for-review
@@ -9,7 +9,7 @@ applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs"
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -33,13 +33,13 @@ sources:
   - type: official
     path: "https://source.android.com/docs/core/power"
   - type: aosp
-    path: "apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
   - type: aosp
-    path: "apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
   - type: aosp
-    path: "apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java"
   - type: aosp
-    path: "apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
+    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
   - type: aosp
@@ -59,8 +59,8 @@ last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_round: 4
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 task2b_state: pending
 task9_reviewed_date: "2026-05-01"
@@ -186,6 +186,8 @@ Android 16 还改变了一个常见判断：FGS 运行期间启动的 regular jo
 
 Restricted 桶的触发条件要按版本拆开。Android 12 / 12L 的“不互动”阈值是 45 天，Android 13 起缩短到 8 天；设备关机的时长不计入这段天数。Android 13 以后，高优先级 FCM 配额也不再由桶直接决定。
 
+除了桶配额之外，Android 15 引入了独立的能效维度：`PENDING_JOB_REASON_ENERGY_EFFICIENCY`。当系统判断当前能量预算不足（例如设备未充电且电量持续下降），即使 App 还在 Active 桶，Job 也可能因能效原因被挂起。排查时用 `adb shell dumpsys jobscheduler <pkg>` 查 pending reason，如果看到 energy efficiency 相关标识，说明不是桶配额用完，而是系统能量预算触发了熔断。
+
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby; developer.android.com/topic/performance/power/power-details#app-stdby-bucket]
 
 ### 桶的动态分配：Adaptive Battery 的角色
@@ -211,10 +213,10 @@ Android 13 到 Android 16 这组策略已经分散到不同控制器里。把职
 
 | 机制 | 控制器 | Android 16 入口 | 开发者验证入口 |
 |------|--------|-----------------|----------------|
-| Doze / Device Idle | `DeviceIdleController` | `apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` | `adb shell dumpsys deviceidle`，再和 Trace 的 `suspend_resume` / `cpu_idle` 对时 |
-| App Standby Bucket 评估 | `AppStandbyController` | `apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` | `adb shell am get-standby-bucket <pkg>`，`adb shell dumpsys usagestats appstandby` |
-| Usage 统计与事件上报 | `UsageStatsService` | `apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java` | `adb shell dumpsys usagestats` |
-| Job quota 执行 | `JobSchedulerService` | `apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` | `adb shell dumpsys jobscheduler <pkg>`，Android 16 可再看 `getPendingJobReasons()` |
+| Doze / Device Idle | `DeviceIdleController` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` | `adb shell dumpsys deviceidle`，再和 Trace 的 `suspend_resume` / `cpu_idle` 对时 |
+| App Standby Bucket 评估 | `AppStandbyController` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` | `adb shell am get-standby-bucket <pkg>`，`adb shell dumpsys usagestats appstandby` |
+| Usage 统计与事件上报 | `UsageStatsService` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java` | `adb shell dumpsys usagestats` |
+| Job quota 执行 | `JobSchedulerService` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` | `adb shell dumpsys jobscheduler <pkg>`，Android 16 可再看 `getPendingJobReasons()` |
 | Battery Saver / low power mode | `PowerManagerService` | `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` | `adb shell settings get global low_power`，`adb shell dumpsys power`，App 侧用 `PowerManager.isPowerSaveMode()` |
 
 看到后台任务没跑时，先分清是 bucket 变低、quota 用完、device idle 命中，还是全局 Battery Saver 打开；四种情况的证据入口并不相同。
@@ -284,6 +286,24 @@ Android 8.0（API 26）对后台服务做了根本性限制：**当 App 处于�
 Android 14 对前台服务进一步增加了限制：某些类型的前台服务（如位置相关的）需要声明特定的前台服务类型（foreground service type），并在 Manifest 中声明对应权限。
 
 [已验证: 官方文档, developer.android.com/about/versions/oreo/background]
+
+### App Archiving：物理清除而非冻结（Android 15+）
+
+上述限制——Doze 推迟任务、Standby Buckets 压缩配额、Restricted 桶限制后台活动、厂商冻结进程——本质上都还保留着 App 的安装状态和数据。Android 15 引入了更激进的手段：**自动归档（Auto-Archiving）**。
+
+当设备存储空间紧张且用户长时间未使用某个 App 时，系统可以自动归档该 App。归档操作会：
+- 移除 APK 文件和缓存，释放大部分存储空间
+- 保留用户数据（账号、偏好、本地数据库）
+- 在 Launcher 中保留灰色图标，点击后从 Play Store 重新下载安装
+
+与 Restricted 桶和厂商冻结相比，App Archiving 不是"暂停执行"而是"物理清除"。归档后的 App：
+- 不再占据运行时资源（没有进程、没有 WakeLock、没有 Job）
+- 取消所有已注册的定时任务和通知监听
+- 不再接收 FCM 或厂商推送
+
+开发者不需要为归档做特殊适配——系统保证用户数据不丢、恢复后状态一致。但需要了解归档的存在，因为用户反馈"我的 App 不见了"可能不是卸载而是归档。排查路径是 `adb shell pm list packages --show-versioncode --archived` 或检查 `UsageStatsManager` 中的 App 使用时间。
+
+[已验证: 官方文档, developer.android.com/topic/performance/app-hibernation; source.android.com/docs/core/storage/app-archiving]
 
 ## 省电模式下的系统行为变化
 
@@ -421,6 +441,7 @@ OPPO 和 vivo 的策略类似：
 | Android 12 (API 31) | 新增 Restricted 桶、Exact Alarm 需要声明权限 |
 | Android 13 (API 33) | Restricted 桶触发条件从 45 天缩短到 8 天、FCM 配额不再与桶绑定 |
 | Android 14 (API 34) | PendingIntent 后台启动改为显式 opt-in API、前台服务类型强制声明 |
+| Android 15 (API 35) | App Archiving（自动归档）：存储紧张时物理清除长期未用 App 的 APK 和缓存，保留用户数据；引入能效熔断 `PENDING_JOB_REASON_ENERGY_EFFICIENCY`，Job 因能量配额耗尽被挂起直至充电或配额刷新 |
 | Android 16 (API 36) | Active 桶开始引入 regular job 指导额度（约 20 min / 60 min），并补充 Job pending reason introspection |
 
 [已验证: 官方文档, developer.android.com/about/versions]
@@ -451,10 +472,10 @@ WorkManager 保证的是"最终一致性"——任务最终会被执行，但不
 
 ### AOSP 源码路径
 
-- `apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze / Device Idle 状态机
-- `apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby Bucket 评估
-- `apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java` — usage 统计与事件上报
-- `apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — Job quota 与 pending reason
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze / Device Idle 状态机
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby Bucket 评估
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java` — usage 统计与事件上报
+- `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — Job quota 与 pending reason
 - `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` — Battery Saver / low power mode
 - `frameworks/base/core/java/android/app/ActivityOptions.java` — PendingIntent 后台启动 opt-in API
 - `frameworks/base/core/java/android/os/PowerManager.java` — `isPowerSaveMode()` / `getLocationPowerSaveMode()`

@@ -8993,8 +8993,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
-      "source_file": "2026-04-29-11-11.1-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-11.1-external-review.md",
+      "completed_at": "2026-05-06T20:09:51.282681",
+      "completed_reason": "P95 EAS/PAS描述已有PAS动态反馈段落(概念已覆盖)；ADPF/ODPM预防性降频已有描述(加待验证标签)；PowerMonitor API已修正(移除错误的createThermalStatusListener引用，改为正确描述)；PAS/ADPF待验证标签已补强"
     },
     {
       "section": "11.2",
@@ -9090,11 +9092,13 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-11-11.3-external-review.md",
       "material_paths": [
         "logs/deep-review/2026-05-01-05-deep-review.md"
-      ]
+      ],
+      "completed_at": "2026-05-06T20:09:51.282681",
+      "completed_reason": "P0 JobScheduler APEX源码路径已修正(apex/jobscheduler→frameworks/base/apex/jobscheduler)；App Archiving物理清除已补充；PENDING_JOB_REASON_ENERGY_EFFICIENCY能效熔断已补充；Active桶20/60min上限已在表格中覆盖"
     },
     {
       "section": "11.4",
@@ -13175,6 +13179,44 @@
       "status": "completed",
       "completed_at": "2026-05-06T19:28:51+08:00",
       "completed_reason": "P0 标准模板RemoteViews口径已修正：明确标准模板也是RemoteViews，优势在于package/layoutId稳定更容易命中reapply"
+    },
+    {
+      "section": "18.10",
+      "section_title": "SurfaceControl API 深入",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 18.10 SurfaceControl API 深入 仍存在 FramebufferSurface 消费路径、buffer_handle_t/fence 边界、Gralloc5/AIDL 版本链与源码索引事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理链错误",
+          "location": "L627 BLAST 模式下的位置变化",
+          "detail": "[P0] 正文写“Legacy 模式：BufferQueue Consumer 在 SurfaceFlinger 进程，通过 FramebufferSurface 消费”。android-16.0.0_r1 中 `FramebufferSurface` 位于 `services/surfaceflinger/DisplayHardware/FramebufferSurface.cpp`，用于显示输出/client target 侧，不是普通 App Layer 的 BufferQueue consumer。普通 App Layer 的 legacy consumer 路径应描述为 SurfaceFlinger layer 消费/锁定 buffer，不能落到 FramebufferSurface。",
+          "suggestion": "删除“通过 FramebufferSurface 消费”的表述；改成 Legacy App Layer：BufferQueue consumer 端由 SurfaceFlinger 侧 layer 路径消费并 latch buffer。另起一句说明 FramebufferSurface 只属于显示输出/client target 相关路径，避免再次把 app layer 和显示输出链路串在一起。"
+        },
+        {
+          "type": "源码路径错误/枚举引用错误",
+          "location": "L610-L620、L649-L654 源码文件索引与 HwcCompositionType",
+          "detail": "[P0] 源码索引中 `frameworks/native/libs/gui/GraphicBuffer.cpp`、`frameworks/native/libs/gui/GrallocMapper.cpp`、`frameworks/native/services/surfaceflinger/layers/layers.proto` 在 AOSP android-16.0.0_r1 下不可作为当前路径核验：`GraphicBuffer.cpp` 在 `frameworks/native/libs/ui/GraphicBuffer.cpp`；`GraphicBufferMapper` 实现在 `frameworks/native/libs/ui/GraphicBufferMapper.cpp` 并调度 Gralloc5/4/3/2；`HwcCompositionType` 的 Perfetto trace proto 位于 `external/perfetto/protos/perfetto/trace/android/surfaceflinger_layers.proto`，枚举名为 `HWC_TYPE_UNSPECIFIED/CLIENT/DEVICE/...`，且包含 `HWC_TYPE_DISPLAY_DECORATION = 6`。",
+          "suggestion": "按 Android 10-16 分版本列源码路径：旧版本可保留历史路径但必须标版本；Android 16 使用 `libs/ui/GraphicBuffer.cpp`、`libs/ui/GraphicBufferMapper.cpp`、Perfetto `surfaceflinger_layers.proto` 或 HWC composer AIDL 作为锚点。正文 protobuf 示例同步改成真实枚举名。"
+        },
+        {
+          "type": "对象边界错误/原理断裂",
+          "location": "L583-L599 buffer_handle_t 本质",
+          "detail": "[P1] 正文把 `buffer_handle_t` 说成“本质是 file descriptor（通常 dmabuf fd，少数情况 ashmem fd + sync fd）”，并写 Binder 只复制 fd。`native_handle_t` 实际是 fd + int 数组；`GraphicBuffer::flatten()` 会传输 handle 的 fds 与 ints；sync/acquire/release fence 是单独的 fence fd，位于 `queueBuffer()`、`ASurfaceTransaction_setBuffer()`、`ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 等接口边界，不应混入 buffer_handle_t。",
+          "suggestion": "改为：`buffer_handle_t` 是 gralloc 返回的 opaque native_handle，可能包含一个或多个 dmabuf fd 以及厂商私有整数元数据；Binder/flatten 传输 handle 的 fds+ints；同步 fence 与 buffer handle 分离，作为 acquire/release fence 单独传递。"
+        },
+        {
+          "type": "版本差异/源码链缺失",
+          "location": "L603-L606 Gralloc Allocator / Mapper HAL 分工",
+          "detail": "[P1] 正文只写 Allocator 3.x / Mapper 4.x，并称 `GrallocMapper.cpp` 是 Mapper 4.x wrapper。Android 16 `frameworks/native/libs/ui/GraphicBufferMapper.cpp` 会依次尝试 `Gralloc5Mapper`、`Gralloc4Mapper`、`Gralloc3Mapper`、`Gralloc2Mapper`；`Gralloc5.cpp` 使用 AIDL allocator/mapper 相关接口。当前写法遗漏 Android 16 的 Gralloc5/AIDL 路径。",
+          "suggestion": "补一个版本表：Android 10/11 常见 Gralloc3/4，Android 12+ 逐步引入 mapper 4/stable-c，Android 16 framework 侧优先 Gralloc5/AIDL，旧 HIDL 路径作为 fallback；同时把 wrapper 文件名改成 `GraphicBufferMapper.cpp`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T19:57:05+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

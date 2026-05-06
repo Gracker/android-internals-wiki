@@ -1,42 +1,37 @@
 {
-  "generated_at": "2026-05-06T17:26:00+08:00",
+  "generated_at": "2026-05-06T19:57:05+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
     "last_updated": "2026-05-06",
     "pipeline_stage_counts": {
-      "unknown": 34,
-      "ready-to-publish": 118,
-      "task2b_pending": 80,
-      "task9_pending": 17,
-      "task6_pending": 3
+      "unknown": 2,
+      "ready-to-publish": 124,
+      "task2b_pending": 83,
+      "task6_pending": 1
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 201,
-      "revisiting": 15,
-      "revising": 1,
-      "done": 2
+      "unknown": 3,
+      "reviewed": 206,
+      "revisiting": 1
     },
     "task9_state_counts": {
-      "unknown": 39,
-      "reviewed": 205,
-      "pending": 8
+      "unknown": 3,
+      "reviewed": 207
     },
     "task2b_state_counts": {
-      "unknown": 41,
-      "fixed": 121,
-      "pending": 87,
-      "idle": 3
+      "unknown": 5,
+      "fixed": 124,
+      "pending": 81
     },
     "finalized": 119,
     "ready-for-review": 101,
     "unknown": 32,
     "status_counts": {
-      "unknown": 32,
-      "finalized": 119,
-      "ready-for-review": 101
+      "unknown": 2,
+      "finalized": 124,
+      "ready-for-review": 84
     }
   },
   "pipeline": {
@@ -3241,30 +3236,30 @@
       "title": "Notification 性能与 ANR",
       "chapter": "9.6",
       "section": "9.6",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-09",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 12 (API 31) - Android 16 (API 36)",
       "last_verified": "2026-04-13",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T18:45:44+08:00",
+      "last_task9_at": "2026-05-06T19:57:05+08:00",
       "last_task6_at": "2026-05-06T17:26:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-17-review.md",
       "task6_review_notes": "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1/L2 轻修 2 组（RemoteViews reapply 段和 Icon 成本阶梯标点/术语间距）；无新增 L3/L4 回炉项，转 Task9 复审。",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-18-deep-review.md",
-      "task9_review_notes": "2026-05-06 18:45 Task9：needs-rework。P0 1 / P1 0 / P2 0。L504 “标准模板不需要 RemoteViews inflate” 与 android-16 Notification.Builder/NotificationContentInflater 源码矛盾。",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-19-deep-review.md",
+      "task9_review_notes": "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。",
       "last_task2b_at": "2026-05-06T14:51:22+08:00"
     },
     "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
@@ -3985,14 +3980,15 @@
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
+      "task2b_result": "pending",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T07:39:59+08:00",
-      "task9_review_notes": "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。",
-      "last_task6_at": "2026-05-06T08:15:00+08:00"
+      "last_task9_at": "2026-05-06T19:57:05+08:00",
+      "task9_review_notes": "2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。",
+      "last_task6_at": "2026-05-06T08:15:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-19-deep-review.md"
     },
     "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md": {
       "path": "src/part2-performance/ch18-rendering-pipelines/11-angle-gles-vulkan.md",
@@ -7819,6 +7815,32 @@
           "auto_promoted": false
         }
       ]
+    },
+    {
+      "date": "2026-05-06",
+      "time": "19:57",
+      "task": "task9-deep-review",
+      "review_log": "logs/deep-review/2026-05-06-19-deep-review.md",
+      "sections_reviewed": [
+        {
+          "section": "9.6",
+          "title": "Notification 性能与 ANR",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 2,
+          "auto_promoted": true
+        },
+        {
+          "section": "18.10",
+          "title": "SurfaceControl API 深入",
+          "result": "needs-rework",
+          "p0": 2,
+          "p1": 2,
+          "p2": 1,
+          "auto_promoted": false
+        }
+      ]
     }
   ],
   "progress": {
@@ -8974,7 +8996,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T18:45:44+08:00",
+  "last_updated": "2026-05-06",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -10398,6 +10420,37 @@
         "7.9: P0 RelativeFrameTimeHistogram精度修正; P1 ARR机制链收窄",
         "1.16: P0 Audio callback线程模型纠正; P1 AAudio Offloaded模式收窄"
       ]
+    },
+    {
+      "date": "2026-05-06T20:10:09.669150",
+      "task": "task2b-rework",
+      "sections": [
+        "11.1",
+        "11.3"
+      ],
+      "details": [
+        {
+          "section": "11.1",
+          "title": "Android 功耗模型",
+          "source": "external-ai-review + task9-deep-tech-review",
+          "fixes": [
+            "PowerMonitor API引用修正：移除错误的createThermalStatusListener()，改为正确描述android.os.PowerMonitor",
+            "PAS动态反馈声明加待验证标签：缺少公开AOSP源码逐行支撑",
+            "ADPF/ODPM预防性降频声明加待验证标签：缺少公开AOSP源码逐行支撑"
+          ]
+        },
+        {
+          "section": "11.3",
+          "title": "系统级功耗优化",
+          "source": "external-ai-review + task9-deep-tech-review",
+          "fixes": [
+            "P0 源码路径修正：apex/jobscheduler/ → frameworks/base/apex/jobscheduler/",
+            "App Archiving (Android 15+) 物理清除机制补充",
+            "PENDING_JOB_REASON_ENERGY_EFFICIENCY 能效熔断机制补充",
+            "版本演进表补充 Android 15 行"
+          ]
+        }
+      ]
     }
   ],
   "rework_log": [
@@ -11128,16 +11181,17 @@
     "status": "ready-for-review",
     "pipeline_stage": "task2b_pending",
     "task2b_state": "pending",
-    "task2b_result": "fixed",
-    "task6_state": "revisiting",
+    "task2b_result": "pending",
+    "task6_state": "reviewed",
     "task9_state": "reviewed",
     "last_task2b_at": "2026-05-04",
     "created_by": "rendering-pipelines-merge",
     "task9_result": "needs-rework",
-    "last_task9_at": "2026-05-04T04:33:00+08:00",
-    "task9_reviewed_date": "2026-05-04",
+    "last_task9_at": "2026-05-06T19:57:05+08:00",
+    "task9_reviewed_date": "2026-05-06",
     "task9_reviewed_by": "openclaw-task9",
-    "task9_review_notes": "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0。"
+    "task9_review_notes": "2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。",
+    "last_task9_review_log": "logs/deep-review/2026-05-06-19-deep-review.md"
   },
   "2026-05-04-04-task9": {
     "task": "task9-deep-tech-review",
@@ -11612,16 +11666,19 @@
   "section_18_10": {
     "status": "ready-for-review",
     "pipeline_stage": "task2b_pending",
-    "task6_state": "revisiting",
+    "task6_state": "reviewed",
     "task6_result": "pass-light-edit",
     "task9_state": "reviewed",
     "task9_result": "needs-rework",
     "task2b_state": "pending",
-    "task2b_result": "fixed",
-    "last_task9_at": "2026-05-06T07:39:59+08:00",
+    "task2b_result": "pending",
+    "last_task9_at": "2026-05-06T19:57:05+08:00",
     "path": "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
     "title": "SurfaceControl API 深入",
-    "task9_reviewed_date": "2026-05-06"
+    "task9_reviewed_date": "2026-05-06",
+    "task9_reviewed_by": "openclaw-task9",
+    "last_task9_review_log": "logs/deep-review/2026-05-06-19-deep-review.md",
+    "task9_review_notes": "2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。"
   },
   "2026-05-06-07-task9": {
     "task": "task9-deep-tech-review",
@@ -11676,17 +11733,19 @@
     }
   },
   "section_9_6": {
-    "status": "ready-for-review",
-    "pipeline_stage": "task2b_pending",
+    "status": "finalized",
+    "pipeline_stage": "ready-to-publish",
     "task9_state": "reviewed",
-    "task9_result": "needs-rework",
+    "task9_result": "pass-tech-review",
     "task2b_state": "pending",
-    "last_task9_at": "2026-05-06T14:37:25+08:00",
+    "last_task9_at": "2026-05-06T19:57:05+08:00",
     "task9_reviewed_date": "2026-05-06",
     "task9_reviewed_by": "openclaw-task9",
-    "last_task9_review_log": "logs/deep-review/2026-05-06-14-deep-review.md",
+    "last_task9_review_log": "logs/deep-review/2026-05-06-19-deep-review.md",
     "path": "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
-    "title": "Notification 性能与 ANR"
+    "title": "Notification 性能与 ANR",
+    "task6_state": "reviewed",
+    "task9_review_notes": "2026-05-06 19:57 Task9：pass-tech-review。P0 0 / P1 0 / P2 2。旧 P0 已闭环；仅余 RemoteViews reapply flag 与 RankingMap 可见性过滤两个 P2，已写 suggestions；自动晋升 finalized。"
   },
   "section_17_2": {
     "status": "ready-for-review",
@@ -11798,5 +11857,45 @@
         "auto_finalized": false
       }
     }
+  },
+  "2026-05-06-19-task9": {
+    "task": "task9-deep-tech-review",
+    "timestamp": "2026-05-06T19:57:05+08:00",
+    "sections_reviewed": [
+      "9.6",
+      "18.10"
+    ],
+    "log": "logs/deep-review/2026-05-06-19-deep-review.md",
+    "auto_finalized": [
+      "9.6"
+    ],
+    "queue_added": [
+      "18.10"
+    ],
+    "suggestions_added": 3,
+    "research_gaps_added": 0,
+    "results": {
+      "9.6": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 2,
+        "p3": 0,
+        "auto_finalized": true
+      },
+      "18.10": {
+        "result": "needs-rework",
+        "p0": 2,
+        "p1": 2,
+        "p2": 1,
+        "p3": 1,
+        "auto_finalized": false
+      }
+    }
+  },
+  "queue_summary": {
+    "pending": 178,
+    "completed": 211,
+    "updated_at": "2026-05-06T20:10:09.669150"
   }
 }
