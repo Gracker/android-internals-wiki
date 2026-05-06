@@ -1,69 +1,69 @@
 {
-  "generated_at": "2026-05-06T11:39:00+08:00",
+  "generated_at": "2026-05-06T12:42:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
     "last_updated": "2026-05-06",
     "pipeline_stage_counts": {
-      "unknown": 34,
-      "ready-to-publish": 113,
-      "task2b_pending": 86,
-      "task9_pending": 20,
-      "task6_pending": -1
+      "ready-to-publish": 117,
+      "task2b_pending": 82,
+      "task6_pending": 3,
+      "task9_pending": 16,
+      "unknown": 34
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 208,
-      "revisiting": 8,
+      "done": 2,
+      "reviewed": 201,
       "revising": 1,
-      "done": 2
+      "revisiting": 15,
+      "unknown": 33
     },
     "task9_state_counts": {
-      "unknown": 39,
+      "pending": 7,
       "reviewed": 206,
-      "pending": 7
+      "unknown": 39
     },
     "task2b_state_counts": {
-      "unknown": 41,
-      "fixed": 115,
-      "pending": 93,
-      "idle": 3
+      "fixed": 119,
+      "idle": 3,
+      "pending": 89,
+      "unknown": 41
     },
-    "finalized": 114,
-    "ready-for-review": 106,
+    "finalized": 118,
+    "ready-for-review": 102,
     "unknown": 32,
     "status_counts": {
-      "unknown": 32,
-      "finalized": 114,
-      "ready-for-review": 106
+      "finalized": 118,
+      "ready-for-review": 102,
+      "unknown": 32
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
-      "unknown": 34,
-      "ready-to-publish": 113,
-      "task2b_pending": 86,
-      "task9_pending": 20,
-      "task6_pending": -1
+      "ready-to-publish": 117,
+      "task2b_pending": 82,
+      "task6_pending": 3,
+      "task9_pending": 16,
+      "unknown": 34
     },
     "task6_state_counts": {
-      "unknown": 33,
-      "reviewed": 208,
-      "revisiting": 8,
+      "done": 2,
+      "reviewed": 201,
       "revising": 1,
-      "done": 2
+      "revisiting": 15,
+      "unknown": 33
     },
     "task9_state_counts": {
-      "unknown": 39,
+      "pending": 7,
       "reviewed": 206,
-      "pending": 7
+      "unknown": 39
     },
     "task2b_state_counts": {
-      "unknown": 41,
-      "fixed": 115,
-      "pending": 93,
-      "idle": 3
+      "fixed": 119,
+      "idle": 3,
+      "pending": 89,
+      "unknown": 41
     },
     "last_updated": "2026-05-06"
   },
@@ -2634,29 +2634,36 @@
       "title": "图片加载与 Bitmap 性能优化",
       "chapter": "7.10",
       "section": "7.10",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-13",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T09:20:00+08:00",
-      "task9_review_notes": "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决；HEIC 案例对 AVIF 的支撑需收窄。",
+      "last_task9_at": "2026-05-06T12:42:00+08:00",
+      "task9_review_notes": "2026-05-06 12:42 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；AVIF fallback 实现名与 Perfetto 调用栈采集条件写入 suggestions；无 active queue pending，自动晋升 finalized。",
       "last_task6_at": "2026-05-06T10:10:00+08:00",
       "task6_review_notes": "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理 frontmatter 禁用词、口语化表达、绝对化措辞和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。",
-      "last_task6_review_log": "logs/review/2026-05-06-10-review.md"
+      "last_task6_review_log": "logs/review/2026-05-06-10-review.md",
+      "auto_promoted": true,
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "updated_by": "openclaw-task9",
+      "updated_date": "2026-05-06",
+      "issues_found": "minor"
     },
     "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
@@ -7721,6 +7728,23 @@
           "auto_promoted": false
         }
       ]
+    },
+    {
+      "date": "2026-05-06",
+      "time": "12:42",
+      "task": "task9-deep-review",
+      "review_log": "logs/deep-review/2026-05-06-12-deep-review.md",
+      "sections_reviewed": [
+        {
+          "section": "7.10",
+          "title": "图片加载与 Bitmap 性能优化",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 2,
+          "auto_promoted": true
+        }
+      ]
     }
   ],
   "progress": {
@@ -8520,6 +8544,29 @@
         "last_task9_at": "2026-05-06T03:43:42+08:00",
         "updated_by": "openclaw-task9",
         "updated_date": "2026-05-06"
+      },
+      "7.10": {
+        "status": "finalized",
+        "pipeline_stage": "ready-to-publish",
+        "task9_state": "reviewed",
+        "task9_result": "pass-tech-review",
+        "task9_reviewed_date": "2026-05-06",
+        "task9_reviewed_by": "openclaw-task9",
+        "last_task9_at": "2026-05-06T12:42:00+08:00",
+        "task9_review_notes": "2026-05-06 12:42 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2；AVIF fallback 实现名与 Perfetto 调用栈采集条件写入 suggestions；无 active queue pending，自动晋升 finalized。",
+        "auto_promoted": true,
+        "p0": 0,
+        "p1": 0,
+        "p2": 2,
+        "updated_by": "openclaw-task9",
+        "updated_date": "2026-05-06",
+        "issues_found": "minor",
+        "reviewed_by": "openclaw-task9",
+        "reviewed_date": "2026-05-06",
+        "task6_state": "reviewed",
+        "task6_result": "pass-light-edit",
+        "task2b_state": "fixed",
+        "task2b_result": "fixed"
       }
     }
   },
