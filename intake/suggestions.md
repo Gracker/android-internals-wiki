@@ -1244,3 +1244,10 @@
 - **问题**：正文把 `boottime.bootloader.*` 写成“系列属性”。复核 `system/core/bootstat/bootstat.cpp`：bootloader 通过 `ro.boot.boottime` 提供 `stage:time` 列表，bootstat 再记录 `boottime.bootloader.<stage>` / `boottime.bootloader.total` boot event；这些不是直接可 `getprop boottime.bootloader.*` 的系统属性。
 - **建议**：改成“bootloader 上报 `ro.boot.boottime`；bootstat 展开为 `boottime.bootloader.*` 事件/指标”。GBL 只写成 Android 16 起推荐的 boot firmware 标准化方向，不要暗示这些 bootstat event 是 GBL 才引入或天然跨厂商可比。
 
+## [Task6 Review] 11.5 Wakelock 机制与功耗分析 — 2026-05-06
+- **类型**：需确认 / 需重写
+- **位置**：`IPowerStats HAL` 与 `Perfetto 端到端观测`；参考资料之后的 `AIW-源码调研-2026-05-06` 段落
+- **问题**：Task6 复审发现正文仍把 `android.power_rails` 写成 Perfetto 数据源口径，和前轮 Task9 关于 `android.power` + `collect_power_rails` 的结论不一致；同时新增 ADPF 非游戏场景源码调研被追加在参考资料之后，没有融入正文，并且 `setPreferredPowerEfficiency` / `setPreferPowerEfficiency` 命名不一致。
+- **建议**：Task2B 先按 Task9 结论统一 Perfetto power rail 口径；再判断 ADPF 源码调研是否值得整合进前文 ADPF/PowerMonitor 小节，API 命名与 `GPU_LOAD_UP` 等常量交 Task9 复核。
+- **review 日志**：logs/review/2026-05-06-17-review.md
+

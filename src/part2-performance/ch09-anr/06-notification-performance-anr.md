@@ -34,12 +34,12 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
 task2b_state: fixed
@@ -47,12 +47,11 @@ task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T14:37:25+08:00"
 last_task2b_at: "2026-05-06T14:51:22+08:00"
-last_task6_at: "2026-05-06T14:11:35+08:00"
-last_task6_review_log: "logs/review/2026-05-06-14-review.md"
-task6_review_notes: "2026-05-06 Task6 14:11：回炉后写作复审；L1/L2 轻修 10 处（清理正文编辑痕迹、结构性元叙述、frontmatter 重复键）；无新增 L3/L4 回炉项，转入 Task9 复审。"
+last_task6_at: "2026-05-06T17:26:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-17-review.md"
+task6_review_notes: "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1/L2 轻修 2 组（RemoteViews reapply 段和 Icon 成本阶梯标点/术语间距）；无新增 L3/L4 回炉项，转 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-06-14-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 14:37：needs-rework。P0 2 / P1 0 / P2 1。L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述；L518 NotificationListeners.java 源码路径不存在；L504 标准模板 RemoteViews 口径沿用既有 P2。"
-
 ---
 
 # 9.6 Notification 性能与 ANR
@@ -223,11 +222,11 @@ private View apply(...) {
 
 ### RemoteViews 的 reapply 机制
 
-SystemUI 在渲染通知时有一条复用路径:如果新旧通知的 `package` 和 `layoutId` 没变,`NotificationContentInflater.canReapplyRemoteView()` 返回 true,SystemUI 不重新 inflate,而是调用 `RemoteViews.reapply()` 或 `reapplyAsync()` 把新的动作列表应用到已有 View 上。
+SystemUI 在渲染通知时有一条复用路径：如果新旧通知的 `package` 和 `layoutId` 没变，`NotificationContentInflater.canReapplyRemoteView()` 返回 true，SystemUI 不重新 inflate，而是调用 `RemoteViews.reapply()` 或 `reapplyAsync()` 把新的动作列表应用到已有 View 上。
 
-reapply 跳过了 inflate,但仍然会执行新 `RemoteViews` 的所有 action--setText、setImageViewBitmap 等。成本从「inflate + 全部 action」降到了「全部 action」,action 数量不变时收益有限。实际收益需要用 SystemUI 侧的 Perfetto trace 验证:对比 `inflate` slice 与 `reapply` slice 的耗时差。
+reapply 跳过了 inflate，但仍然会执行新 `RemoteViews` 的所有 action（如 setText、setImageViewBitmap 等）。成本从「inflate + 全部 action」降到了「全部 action」，action 数量不变时收益有限。实际收益需要用 SystemUI 侧的 Perfetto trace 验证：对比 `inflate` slice 与 `reapply` slice 的耗时差。
 
-对进度条型通知来说,如果布局结构不变、只有进度数字在变,reapply 能省掉 inflate 开销,但 setText 等 action 仍然逐条执行。保持 `package` 和 `layoutId` 稳定、避免每次 update 都换布局文件,是让 reapply 生效的前提。
+对进度条型通知来说，如果布局结构不变、只有进度数字在变，reapply 能省掉 inflate 开销，但 setText 等 action 仍然逐条执行。保持 `package` 和 `layoutId` 稳定、避免每次 update 都换布局文件，是让 reapply 生效的前提。
 
 ### 图片通知的开销落在三段
 
@@ -241,9 +240,9 @@ reapply 跳过了 inflate,但仍然会执行新 `RemoteViews` 的所有 action--
 
 **图片通知的成本阶梯。** 通知图片有三条传入路径,成本各不相同:
 
-1. **`Icon.createWithResource(resId)`**:只传资源 ID 引用,SystemUI 侧按自己的 `Context` 解码。跨进程开销最低,推荐优先使用
-2. **`Icon.createWithUri(uri)`**:传 URI,SystemUI 侧打开 ContentProvider 或文件流解码。跨进程开销是 URI 字符串本身,但 SystemUI 解码耗时取决于图片来源和尺寸
-3. **`Icon.createWithBitmap(bitmap)`**:AOSP `Icon.writeToParcel()` 对 `TYPE_BITMAP` / `TYPE_ADAPTIVE_BITMAP` 调用 `Bitmap.asShared()` 生成不可变的 shared-memory backed bitmap,再通过 `Bitmap.writeToParcel()` 以共享内存 FD 传递。SystemUI 侧从 Parcel 重建 bitmap 对象并绑定渲染。`Bitmap.asShared()` 的行为是:如果源 bitmap 已经是 shared-memory backed 的不可变 bitmap 则直接返回;否则创建一份 ashmem 副本;无法创建时抛异常。这条路径不走像素数据序列化,但 `asShared()` 的格式准备和 SystemUI 侧的解码绑定仍有开销。实战中优先用 `createWithResource`,次选 `createWithUri`,`createWithBitmap` 只在前面两条走不通时使用,且应确保 Bitmap 为 ARGB_8888 格式并已缩放到通知实际显示尺寸。
+1. **`Icon.createWithResource(resId)`**：只传资源 ID 引用，SystemUI 侧按自己的 `Context` 解码。跨进程开销最低，推荐优先使用
+2. **`Icon.createWithUri(uri)`**：传 URI，SystemUI 侧打开 ContentProvider 或文件流解码。跨进程开销是 URI 字符串本身，但 SystemUI 解码耗时取决于图片来源和尺寸
+3. **`Icon.createWithBitmap(bitmap)`**：AOSP `Icon.writeToParcel()` 对 `TYPE_BITMAP` / `TYPE_ADAPTIVE_BITMAP` 调用 `Bitmap.asShared()` 生成不可变的 shared-memory backed bitmap，再通过 `Bitmap.writeToParcel()` 以共享内存 FD 传递。SystemUI 侧从 Parcel 重建 bitmap 对象并绑定渲染。`Bitmap.asShared()` 的行为是：如果源 bitmap 已经是 shared-memory backed 的不可变 bitmap 则直接返回；否则创建一份 ashmem 副本；无法创建时抛异常。这条路径不走像素数据序列化，但 `asShared()` 的格式准备和 SystemUI 侧的解码绑定仍有开销。实战中优先用 `createWithResource`，次选 `createWithUri`，`createWithBitmap` 只在前面两条走不通时使用，且应确保 Bitmap 为 ARGB_8888 格式并已缩放到通知实际显示尺寸。
 
 ## NotificationListenerService 与性能
 
