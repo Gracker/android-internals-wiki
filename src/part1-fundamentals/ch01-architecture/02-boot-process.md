@@ -3,7 +3,7 @@ title: "系统启动全流程"
 chapter: "1.2"
 section: "1.2"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-06"
@@ -12,13 +12,13 @@ review_type: task6-writing-quality-review
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-06"
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-06"
-last_task9_at: "2026-05-06T09:20:00+08:00"
+last_task9_at: "2026-05-06T15:23:00+08:00"
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -84,7 +84,7 @@ related_chapters:
   - "1.11"
   - "8.3"
 review_notes: "2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。"
-task9_review_notes: "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 3；UserController 广播发送路径、GBL/boottime 口径、async_probe 观测口径需回炉。"
+task9_review_notes: "2026-05-06 15:23 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 4；Kernel 模块加载顺序配置 `module.layout` 为错误锚点，需改为 modules.load / BOARD_*_KERNEL_MODULES_LOAD；既有 Zygote slice、Pixel 8 数据、dm-verity 版本边界 P2 沿用 suggestions。"
 ---
 # 系统启动全流程
 
