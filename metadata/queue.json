@@ -9139,12 +9139,14 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-11-11.4-external-review.md",
       "material_paths": [
         "intake/suggestions.md"
       ],
-      "updated_at": "2026-05-06T11:39:00+08:00"
+      "updated_at": "2026-05-06T11:39:00+08:00",
+      "completed_at": "2026-05-07T05:45:52+08:00",
+      "completed_reason": "P0 Vitals WakeLock 1%阈值已删除，拆分stuck/excessive两个指标；P0 JobScheduler表格改为最小保障/实际上限/超时行为三列+getMaxJobExecutionTimeMs()源码引用；P1 新增Android 15+ FGS超时崩溃案例；P1 GPS案例补GNSS geofencing/offload边界；P1 线上功耗监控体系已从占位改为完整内容（Play Vitals/Battery Historian/Perfetto Power Rails/自建监控边界/ProfilingManager展望）"
     },
     {
       "section": "18.1",
@@ -13482,7 +13484,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T05:27:07+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T05:43:28+08:00",
+      "completed_reason": "P0 SkTaskGroup \"Android 16引入\"断言已删除（改为自Android 9已存在的模块说明）；P1 Efficiency-aware Throttling具名断言已删除，改为通用温控压力描述"
     },
     {
       "section": "18.5",
@@ -13515,6 +13519,68 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T05:27:07+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-07T05:43:28+08:00",
+      "completed_reason": "P0 Android 12 push模式断言已删除（改为postAndWait同步机制说明+DrawFrameTask.cpp源码引用）；P1 同进程/跨进程Choreographer泛化已拆开（跨App分屏已是跨进程）；P1 EGLContext讨论已限定为OpenGL后端并补Vulkan边界"
+    },
+    {
+      "section": "02-performance",
+      "section_title": "章节 ch02-performance",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7612812060795093002"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "- **来源**：掘金Android技术文章抓取 — Android 的消息机制，从第一个版本到 Android 16，核心实现没怎么变过。一个 synchronized 锁，守着一条单链表，所有线程排队等着往里塞消息。跑了二十年，终于在 Android",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-07T05:36:27",
+      "status": "pending"
+    },
+    {
+      "section": "02-performance",
+      "section_title": "章节 ch02-performance",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7610233341305389099"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "- **来源**：掘金Android技术文章抓取 — Android 官方已经发布了 Android 17 的相关适配文档，其中有不少值得提前关注的内容，另外在去年谷歌也发布过 Android 开发者认证的通告，没认证的应用将无法安装，而时间节点也正好是",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-07T05:36:27",
+      "status": "pending"
+    },
+    {
+      "section": "02-performance",
+      "section_title": "章节 ch02-performance",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7604694326518104115"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "- **来源**：掘金Android技术文章抓取 — 借手机给朋友看个照片，心里却在默念『千万别乱翻』——这种焦虑，Android 用户应该都体会过。小米、三星等厂商早就给出了答案：应用锁。但原生 Android？一直缺席。现在，Android 17该文",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-07T05:36:27",
       "status": "pending"
     }
   ],

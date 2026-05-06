@@ -11,10 +11,10 @@ tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "se
 related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
@@ -63,7 +63,7 @@ last_task9_review_log: "logs/deep-review/2026-05-07-05-deep-review.md"
 4. **PopupWindow**：虽然不是独立 Window，但在某些实现中会有独立的 Surface。
 5. **Desktop Windowing（Android 16+）**：Android 16 引入的原生桌面窗口管理，允许在同一屏幕上同时显示多个应用窗口。与分屏不同，桌面窗口数量可变、尺寸自由，SystemUI 需同时渲染 Taskbar 和 Universal Cursor。连接外部显示器时，SystemUI 进程的 CPU 和显存会出现明显阶跃。对 App 侧来说，桌面模式下的多窗口同时可见时间更长，渲染压力从"短暂共存"变成了"持续并存"，需要更关注后台 Activity 的持续渲染成本。
 
-这些场景的共同特征是：**两个窗口共享同一个进程内的渲染资源**——一个 UI Thread、一个 RenderThread、一个 EGLContext。
+这些场景在同进程情况下共享渲染资源——一个 UI Thread、一个 RenderThread、一个 EGLContext（OpenGL 后端）。跨进程场景（如不同 App 的分屏）各自拥有独立的渲染资源，瓶颈转移到 SurfaceFlinger 合成侧（见下文“同进程 vs 跨进程”）。
 
 ## 同进程 vs 跨进程：两类完全不同的问题
 
@@ -124,7 +124,7 @@ doFrame() {
 3. **Sync Window B**：同步 Window B 的 DisplayList
 4. **Draw Window B**：生成 GPU 指令 → `queueBuffer` (Surface B)
 
-而且，RenderThread 中**共享同一个 EGLContext**，但每个 Window 有独立的 EGLSurface。切换窗口时需要调用 `eglMakeCurrent` 绑定不同的 EGLSurface，这意味着 GL 状态机的切换和资源绑定开销不可避免 [已验证: EGL 规范]。
+OpenGL 后端下，RenderThread 共享同一个 `EGLContext`，每个 Window 有独立的 `EGLSurface`，切换窗口时调用 `eglMakeCurrent` 绑定不同的 EGLSurface，GL 状态机的切换和资源绑定开销不可避免 [已验证: EGL 规范]。Vulkan 后端走不同的资源模型（`VkSurface` / Swapchain / `vkQueueSubmit`），没有 EGLContext 切换成本，但 surface 切换本身仍有代价，需要从 VulkanManager 路径单独观察。
 
 ```mermaid
 graph LR
@@ -152,9 +152,9 @@ graph LR
 因为共享了关键资源：
 - **UI Thread** 是单线程的，VSync 回调只能串行执行
 - **RenderThread** 也是单线程的，GPU 命令只能串行生成
-- **EGLContext** 不是线程安全的，不能同时被两个线程使用
+- **EGLContext**（OpenGL 后端）不是线程安全的，不能同时被两个线程使用
 
-要并行，就需要创建第二个进程——这正是 Android 多进程架构的设计意图，但 Dialog 和分屏场景做不到这一点。
+要并行，就需要拆到不同进程。不同 App 的分屏、PiP、桌面窗口本身已经跨进程，帧绘制互不干扰；瓶颈转移到了 SurfaceFlinger 合成侧。只有同进程内的多窗口（Dialog、同 App 多 Activity、Activity Embedding）才受制于上述串行约束，无法通过进程隔离来解耦。
 
 ## 完整执行流程
 
@@ -179,7 +179,7 @@ graph LR
 
 注意：UI Thread 在 Sync A 时会被 `syncFrameState` 阻塞，直到 RenderThread 完成同步。Window B 的 Traversal 需要等 Window A 的 Sync 完成后才能开始——形成了更深的串行依赖链。
 
-`syncFrameState` 的阻塞粒度在不同 Android 版本中有差异。在 Android 9-10 中，UI Thread 会在 `syncFrameState` 处阻塞到 RenderThread 完成 DisplayList 同步和资源更新后才释放；从 Android 12 开始，RenderThread 引入了更轻量的 "push" 模式，UI Thread 只需短暂等待 DisplayList 引用交换即可返回，实际阻塞时间通常在 1-2ms 以内。如果需要精确判断阻塞时长，直接看 Trace 中 `syncFrameState` slice 的持续时间 [待验证: Android 13-16 具体优化细节]。
+`syncFrameState` 的阻塞时长因 Android 版本和帧内容而异。`DrawFrameTask::drawFrame()` 通过 `postAndWait()` 向 RenderThread 发起绘制请求，UI Thread 的阻塞时长取决于 RenderThread 完成引用交换和资源同步的速度。不同版本的内部实现会有调整，但 AOSP `DrawFrameTask.cpp` 中未发现 "push 模式" 架构变更——`postAndWait()` 在 android-16.0.0\_r1 中仍然是主要同步机制。判断阻塞时长不要依赖固定数值，直接看 Trace 中 `syncFrameState` / `postAndWait` slice 的持续时间。[已验证: AOSP `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp`]
 
 ### 时序图
 

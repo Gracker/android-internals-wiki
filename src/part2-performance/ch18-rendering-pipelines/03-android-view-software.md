@@ -23,16 +23,16 @@ created_date: "2026-04-09"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: "openclaw-task9"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: "fixed"
 last_task9_at: "2026-05-07T05:27:07+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-07-05-deep-review.md"
 reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 last_task6_at: "2026-05-07T05:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-05-review.md"
 review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础 sources 元数据；修复读者指向、缓存术语和 L1 高频词；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Android 15/16 软件渲染能效与 SkTaskGroup 缺 AOSP/实测锚点。 | 2026-05-07 task6 review 05:05：压缩流程段落的结构性元叙述，清理主观强化句；L1/L2 通过，无新增回炉项，转 Task9 复审。"
@@ -55,7 +55,7 @@ review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语�
 
 <!-- outline-end -->
 
-软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流路径，但在特定场景下仍然会被触发。Trace 中如果出现 UI Thread 长时间满载、RenderThread 毫无活动，大概率就是走入了这条路径。但要注意：持续 CPU 栅格化的能效远低于 GPU 路径，长时间高负载运行会加速温控触发，导致 CPU 频率压制，拖累整机响应。[待验证：Android 15+ 是否存在针对软件渲染的专用能效降频策略（Efficiency-aware Throttling）] 除非有明确的兼容性需求，否则不应主动选择软件渲染。
+软件渲染是 Android 最古老的绘制方式，全程由 CPU 完成所有像素计算。在硬件加速成为默认选项的今天，它已不再是主流路径，但在特定场景下仍然会被触发。Trace 中如果出现 UI Thread 长时间满载、RenderThread 毫无活动，大概率就是走入了这条路径。但要注意：持续 CPU 栅格化的能效远低于 GPU 路径，长时间高负载运行会加速温控触发，导致 CPU 频率压制，拖累整机响应。除非有明确的兼容性需求，否则不应主动选择软件渲染。
 
 ## 软件渲染的触发条件
 
@@ -226,9 +226,9 @@ sequenceDiagram
 1. **CPU 算力瓶颈**：复杂图形（阴影、模糊、Path 裁剪、大尺寸 Bitmap 缩放）在 CPU 上极慢。一个带高斯模糊的圆角矩形，在 GPU 上可能 < 0.1ms，在 CPU 上可能 > 10ms。
 2. **内存带宽瓶颈**：1080p 屏幕的 GraphicBuffer 约 8MB。每次 `lockCanvas` / `unlockCanvasAndPost` 都涉及数据搬运。更高分辨率（2K/4K）下这个问题更严重。
 3. **主线程阻塞**：所有绘制都在 UI Thread，直接挤压输入事件和动画的执行时间。
-4. **能效代价**：CPU 栅格化的每瓦性能远低于 GPU 路径，长时间运行会加速温控触发，导致更激进的频率压制。高负载 CPU 绘制不仅自身慢，频率压制后还会拖累整机的输入响应、动画流畅度和其他进程的调度。[待验证：Android 15+ 是否有专用 Efficiency-aware Throttling 策略将 CPU 绘制标记为低效负载]
+4. **能效代价**：CPU 栅格化的每瓦性能远低于 GPU 路径，长时间运行会加速温控触发，导致更激进的频率压制。高负载 CPU 绘制不仅自身慢，频率压制后还会拖累整机的输入响应、动画流畅度和其他进程的调度。
 
-Android 16 为软件渲染引入了部分缓解手段：Skia 的 `SkTaskGroup` 支持多线程 CPU 栅格化，可以将部分像素计算分担到工作线程，降低单个线程的 CPU 压力。但这项优化不改变"CPU 做像素计算"的本质，只是把串行变成了有限并行。[待验证：SkTaskGroup 多线程栅格化在 Android 16 软件渲染路径中的默认启用状态、公开 API 可用性及实际性能收益数据] 对于复杂的模糊、路径裁剪、大图缩放操作，GPU 的并行计算优势仍然是数量级差距。
+Skia 内部长期提供 `SkTaskGroup` 用于并行任务分发（`external/skia/src/core/SkTaskGroup.cpp` 自 Android 9 起已存在），但 View software Canvas 路径是否默认走多线程 CPU 栅格化，取决于 HWUI 对 Skia 的集成配置。截至 Android 16，AOSP 中未找到 View software Canvas 默认启用并行栅格化的证据——软件渲染仍然以单线程 CPU 串行为主。即便未来启用多线程，也不改变"CPU 做像素计算"的本质；对于复杂的模糊、路径裁剪、大图缩放操作，GPU 的并行计算优势仍然是数量级差距。
 
 **工程判断**：软件渲染在 2026 年的定位是能效劣势明显的应急路径，不是性能优化的可选项。如果 Trace 显示 App 持续走这条路径，应该视为一个需要修复的问题，而不是需要"优化"的路径。
 
