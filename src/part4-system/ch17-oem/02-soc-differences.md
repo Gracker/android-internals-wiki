@@ -30,11 +30,11 @@ task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-07"
-task2b_state: pending
+task2b_state: fixed
 last_task6_at: "2026-05-06T23:21:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-23-review.md"
 task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。 | 2026-05-06 task6 review 23:21：清理结构性元叙述和编辑标记，修正频率轨道措辞，补 SQL 代码块解释，统一缓存/唤醒路径术语；无新增 Task2B 回炉项，待 Task9 复审。"
@@ -43,7 +43,7 @@ last_task9_at: "2026-05-07T00:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-07-00-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。 | 2026-05-07 Task9 00:20：needs-rework。P0 1 / P1 1 / P2 1；Dimensity 9400 频率口径、Oryon cache 一手资料边界、Perfetto PMU 数据源需回炉。"
 
-task2b_result: pending
+task2b_result: fixed
 last_task2b_at: "2026-05-06T23:02:59"
 ---
 
@@ -112,7 +112,7 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 高通在 Snapdragon 8 Gen 3 上采用了 1+3+2+2 的四集群设计（1 个 Cortex-X4 超大核 + 3 个 Cortex-A720 大核 + 2 个 A720 中核 + 2 个 A520 小核），到了 8 Elite（搭载自研 Oryon 核心）则简化为 2+6 的双集群设计。这种简化策略背后的思路是：减少集群间迁移的机会，降低调度器做迁移决策时的开销。在 Perfetto 中分析 Oryon 设备时，应重点看线程是否在两个集群之间来回迁移，而不是直接套用四集群大小核的判断。
 
-联发科的策略最为激进。Dimensity 9300 和 9400 采用了「全大核」设计：Dimensity 9400 配置为 1×Cortex-X925（3.62GHz）+ 3×Cortex-X4（2.85GHz）+ 4×Cortex-A720（2.0GHz）。联发科认为，随着工艺进步，A720 的能效已经足够好，没有必要再使用 A5xx 系列的小核心。这种设计带来的直接影响是：在 Perfetto 的 CPU Track 中，所有核心都有较高的基础性能，即使任务被调度到所谓「能效核」上，也不会出现性能断崖式下降的情况。
+联发科的策略最为激进。Dimensity 9300 和 9400 采用了「全大核」设计：Dimensity 9400 配置为 1×Cortex-X925 + 3×Cortex-X4 + 4×Cortex-A720 的全大核架构。联发科官方只公布核心型号、不公布具体频率；公开渠道引用的频率数字（如 X925 约 3.6GHz、X4 约 2.8-3.3GHz、A720 约 2.0-2.4GHz）来自评测拆解和 GeekBoard/AnTuTu 等工具读数，未获 MediaTek 官方确认，不同渠道的数字存在差异。这种设计带来的直接影响是：在 Perfetto 的 CPU Track 中，所有核心都有较高的基础性能，即使任务被调度到所谓「能效核」上，也不会出现性能断崖式下降的情况。
 
 三星 Exynos 2500 则保持相对传统的大小核配置，使用 ARM 公版核心搭配标准的 DynamIQ 集群。Google Tensor G4 也是类似思路，使用三星代工的 ARM 公版核心，但核心频率通常设得比同代骁龙和天玑低一些，以换取更好的功耗和散热表现。
 

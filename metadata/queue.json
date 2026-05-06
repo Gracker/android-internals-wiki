@@ -13343,7 +13343,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T00:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T02:46:25",
+      "completed_reason": "P0 Dimensity 9400频率数据改为来源不确定性标注（MediaTek官方不公布频率，引用数字来自评测拆解工具）；P1 Oryon cache拓扑已有[待验证]标注，边界适当"
     },
     {
       "section": "4.6",
@@ -13427,7 +13429,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T02:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T02:46:25",
+      "completed_reason": "P0 NativeAllocationRegistry路径从libcore/ojluni修正为libcore/luni；P0 Scudo MTE路径从bionic/linker/scudo/scudo_memtag.h修正为compiler-rt/lib/scudo/ + bionic/linker/linker_mte.cpp；P0 16KB linker compat函数名从phdr_table_load_segments()修正为ElfReader::LoadSegments()并补充源码验证"
     }
   ],
   "completed": [
