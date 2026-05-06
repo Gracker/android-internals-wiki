@@ -13342,6 +13342,56 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T00:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "4.6",
+      "section_title": "内存相关的版本演进",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 4.6 内存版本演进复审仍有 largeHeap 后台堆上限与 MGLRU 版本边界问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-01-deep-review.md",
+        "src/part1-fundamentals/ch04-memory/06-memory-evolution.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L337-L340 largeHeap 后台策略",
+          "detail": "正文写 Android 10+ 后台进程“即使声明 largeHeap，退到后台后可用堆空间会被压缩”。AOSP android-35 ActivityManager.staticGetMemoryClass()/staticGetLargeMemoryClass() 只读取 dalvik.vm.heapgrowthlimit/dalvik.vm.heapsize，堆上限是设备配置与 manifest largeHeap 决定；后台态主要影响 oom_adj/lmkd 被杀优先级，不会动态压缩 Java heap cap。",
+          "suggestion": "删除“后台后可用堆空间被压缩”的因果；改为“后台进程更容易因 oom_adj / lmkd 策略被回收，largeHeap 只扩大 Java heap 上限，不提高后台存活优先级”。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L575-L583 MGLRU 在 GKI 6.12 中基线化",
+          "detail": "正文称 GKI 6.12(Android 16) 正式将 MGLRU 设为强制默认。复核 kernel/common android14-6.1、android15-6.6、android16-6.12 的 arch/arm64/configs/gki_defconfig，三者均包含 CONFIG_LRU_GEN=y 与 CONFIG_LRU_GEN_ENABLED=y；因此“Android 16/GKI 6.12 才默认、终结传统 LRU”版本边界过窄。",
+          "suggestion": "按 GKI 6.1/6.6/6.12 拆开：Android 14/15 GKI 已可核到默认启用配置，Android 16 可作为延续或厂商参数差异讨论；若要写“强制”，需补 CDD/GKI release note 一手证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T01:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.9",
+      "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 13.9 UprobeStats 开销与 Perfetto/StatsD 数据出口口径缺一手证据，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-01-deep-review.md",
+        "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据缺失/交叉引用不一致",
+          "location": "L439 UprobeStats 与 eBPF uprobe 开销",
+          "detail": "正文写 Android 16 UprobeStats 可对任意用户态函数做耗时统计且性能开销 <1%。同书 §14.10 已把 uprobe/uretprobe 开销限定为与命中频率、map 更新、ring buffer、栈回溯强相关，简单 uprobe 常见也到微秒级；“任意函数 <1%”缺少一手基准与调用频率边界。",
+          "suggestion": "收窄为“低频诊断点/受 Guardrail 约束场景下可控”，补 packages/modules/UprobeStats、StatsD atom/数据出口与基准来源；未核到前删除 <1% 或标 [待验证]。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T01:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

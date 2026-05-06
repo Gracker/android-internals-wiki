@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "10.5"
 section: "10.5"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-02"
@@ -36,18 +36,18 @@ related_chapters: ["10.1", "10.2", "10.3", "10.4", "10.6"]
 task6_state: reviewed
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-04-30"
-pipeline_stage: task2b_pending
-review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。"
+pipeline_stage: ready-to-publish
+review_notes: "2026-04-30 task6 revisiting review: pass-light-edit。修复1处禁用词(意味着)。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证3/5·元数据4/5。 | 2026-05-07 Task9 01:20：pass-tech-review。无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2：ProfilingTrigger API37 版本边界、案例效果量化占位仍建议补。"
 task9_state: reviewed
-task9_reviewed_date: "2026-04-30"
+task9_reviewed_date: "2026-05-07"
 task2b_state: fixed
 task2b_result: fixed
 rework_fixed_at: "2026-05-06T21:43:37+08:00"
 task2b_rework_date: "2026-04-30"
 task2b_fixed_at: "2026-04-30T01:40:00+08:00"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-30T02:31:48+08:00"
-task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-07T01:20:00+08:00"
+task9_result: pass-tech-review
 
 ---
 

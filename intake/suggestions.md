@@ -1311,3 +1311,9 @@
 - **建议**：改成“Perfetto 需配置 perf_event/linux.perf 或设备支持的 perf/PMU 数据源；ftrace 只覆盖调度、freq、thermal 等 trace events”。
 - **review 日志**：logs/deep-review/2026-05-07-00-deep-review.md
 
+## [Task9 Deep Review] 10.5 案例集 — 2026-05-07
+- **类型**：版本差异/数据支撑
+- **位置**：L293 ProfilingManager / ProfilingTrigger
+- **问题**：正文写 `ProfilingTrigger` 目前只暴露 `TRIGGER_TYPE_APP_FULLY_DRAWN` 和 `TRIGGER_TYPE_ANR`。Android API 37 文档已新增 OOM、Cold Start、Kill、App Request Running Trace 等触发类型；但这些仍不是“内存突增阈值”触发，OOM 触发也是事后 Java heap dump。
+- **建议**：把该段限定为 Android 15/16 口径，并补 Android 17/API 37 更新：OOM trigger 可辅助事后取证，但不能替代 MemoryThrashing 这类前置阈值探针；业务仍需自行判断内存突增。
+

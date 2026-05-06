@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-07T00:20:00+08:00",
+  "generated_at": "2026-05-07T01:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -1835,12 +1835,14 @@
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
+      "task2b_result": "pending",
       "reviewed_date": "2026-04-19",
       "reviewed_by": "openclaw-task6",
-      "last_task9_at": "2026-04-29T05:30:17+08:00",
+      "last_task9_at": "2026-05-07T01:20:00+08:00",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-29"
+      "task9_reviewed_date": "2026-05-07",
+      "last_task9_review_log": "logs/deep-review/2026-05-07-01-deep-review.md",
+      "task9_review_notes": "2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。"
     },
     "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md": {
       "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
@@ -3398,24 +3400,26 @@
       "title": "案例集",
       "chapter": "10.5",
       "section": "10.5",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-02",
       "applicable_versions": "Android 8.0 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-02",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-04-21",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-30",
+      "task9_reviewed_date": "2026-05-07",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-30T02:31:48+08:00"
+      "last_task9_at": "2026-05-07T01:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-07-01-deep-review.md",
+      "task9_review_notes": "2026-05-07 Task9 01:20：pass-tech-review。无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2：ProfilingTrigger API37 版本边界、案例效果量化占位仍建议补。"
     },
     "src/part2-performance/ch10-memory-perf/06-memory-churn.md": {
       "path": "src/part2-performance/ch10-memory-perf/06-memory-churn.md",
@@ -4546,15 +4550,17 @@
       "reviewed_date": "'2026-04-24'",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "last_task9_at": "2026-04-27T08:53:48+08:00",
+      "task2b_result": "pending",
+      "last_task9_at": "2026-05-07T01:20:00+08:00",
       "task9_reviewed_by": "openclaw-task9",
-      "task9_reviewed_date": "2026-04-27",
+      "task9_reviewed_date": "2026-05-07",
       "last_task2b_at": "2026-04-26T12:54:28+08:00",
       "updated_by": "openclaw-task2b",
       "updated_date": "2026-04-26",
       "repaired_date": "2026-04-26",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "last_task9_review_log": "logs/deep-review/2026-05-07-01-deep-review.md",
+      "task9_review_notes": "2026-05-07 Task9 01:20：needs-rework。P0 0 / P1 1 / P2 0；ftrace_event 表名已修正，但 UprobeStats “任意用户态函数 <1%”与 Perfetto/StatsD 数据出口口径仍缺一手证据。"
     },
     "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md": {
       "path": "src/part3-tools/ch13-perfetto/10-perfetto-sql-cookbook.md",
@@ -7912,6 +7918,41 @@
           "section": "19.27",
           "title": "千万级 DAU 的 APM 端侧架构",
           "reason": "内容不充分：outline 后正文 1 行，有效内容 0 行"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-07",
+      "time": "01:20",
+      "task": "task9-deep-review",
+      "review_log": "logs/deep-review/2026-05-07-01-deep-review.md",
+      "sections_reviewed": [
+        {
+          "section": "4.6",
+          "title": "内存相关的版本演进",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 1,
+          "p2": 0,
+          "auto_promoted": false
+        },
+        {
+          "section": "13.9",
+          "title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 1,
+          "p2": 0,
+          "auto_promoted": false
+        },
+        {
+          "section": "10.5",
+          "title": "案例集",
+          "result": "pass-tech-review",
+          "p0": 0,
+          "p1": 0,
+          "p2": 2,
+          "auto_promoted": true
         }
       ]
     }
@@ -12004,10 +12045,10 @@
     }
   },
   "queue_summary": {
-    "pending": 176,
+    "pending": 178,
     "completed": 226,
     "blocked": 8,
-    "updated_at": "2026-05-07T00:20:00+08:00"
+    "updated_at": "2026-05-07T01:20:00+08:00"
   },
   "2026-05-06-20-task6": {
     "task": "task6-review",
@@ -12157,5 +12198,73 @@
     },
     "queue_added": 2,
     "suggestions_added": 1
+  },
+  "2026-05-07-01-task9": {
+    "task": "task9-deep-review",
+    "timestamp": "2026-05-07T01:20:00+08:00",
+    "sections_reviewed": [
+      {
+        "section": "4.6",
+        "title": "内存相关的版本演进",
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 1,
+        "p2": 0,
+        "auto_promoted": false
+      },
+      {
+        "section": "13.9",
+        "title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 0,
+        "auto_promoted": false
+      },
+      {
+        "section": "10.5",
+        "title": "案例集",
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 2,
+        "auto_promoted": true
+      }
+    ],
+    "files": [
+      "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+      "src/part3-tools/ch13-perfetto/09-tracing-infrastructure.md",
+      "src/part2-performance/ch10-memory-perf/05-case-studies.md"
+    ],
+    "log": "logs/deep-review/2026-05-07-01-deep-review.md",
+    "auto_finalized": [
+      "10.5"
+    ],
+    "results": {
+      "4.6": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 1,
+        "p2": 0
+      },
+      "13.9": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 0
+      },
+      "10.5": {
+        "result": "pass-tech-review",
+        "p0": 0,
+        "p1": 0,
+        "p2": 2
+      }
+    },
+    "queue_added": [
+      "4.6",
+      "13.9"
+    ],
+    "suggestions_added": 1,
+    "research_gaps_added": 1
   }
 }

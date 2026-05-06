@@ -12574,3 +12574,19 @@ PAS/Power-aware scheduling、ADPF/CPU-GPU headroom 与 ODPM/PowerStats 是否存
 ### 关联章节
 5.2, 5.9, 11.1
 
+## [2026-05-07] 13.9 Android Tracing 基础设施 — UprobeStats 开销与数据出口
+
+### 盲区描述
+UprobeStats 在 Android 16/17 的真实数据出口与开销边界缺少一手证据。正文写“任意用户态函数耗时统计、性能开销 <1%”，但 uprobe/uretprobe 开销受命中频率、map 更新、ring buffer 写出、参数提取和栈回溯影响，不能脱离场景给固定比例。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `packages/modules/UprobeStats/` 中 statsd 触发、BPF 程序加载、RingBuf/Map 输出与 Guardrail 限制。
+- 确认 Perfetto 是否有标准数据源/SQL 表接收 UprobeStats，还是主要经 StatsD/自定义消费链路。
+- 补低频诊断点与热点函数两类基准，给出调用频率、是否采栈、map/ringbuf 写出配置。
+
+### 关联章节
+13.9, 14.10
+
