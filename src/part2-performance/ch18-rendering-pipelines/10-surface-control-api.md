@@ -8,15 +8,16 @@ tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer
 related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+last_task2b_at: "2026-05-06T19:28:51+08:00"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 last_task9_at: "2026-05-06T07:39:59+08:00"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pending
 task2b_result: fixed
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: "openclaw-task9"
@@ -184,7 +185,7 @@ ASurfaceTransaction_setBuffer(
 
 `setBuffer` / `setBufferWithRelease` 把 `AHardwareBuffer` 和 acquire fence 绑定到某个 Layer 上。[已验证: Android NDK surface_control 文档] acquire fence 表示“生产者对这个 buffer 的写入何时完成”；SurfaceFlinger 只有在 fence signal 后才会读取它。[已验证: Android sync fence 文档]
 
-- **`AHardwareBuffer` 来源**：可以来自 `AHardwareBuffer_allocate()`、Vulkan Image 导出、MediaCodec 输出 buffer，或者其他本地图形组件
+- **`AHardwareBuffer` 来源与 usage 约束**：可以来自 `AHardwareBuffer_allocate()`、Vulkan Image 导出、MediaCodec 输出 buffer，或者其他本地图形组件。传给 `setBuffer` 的 buffer 至少需要包含 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE` usage flag——SurfaceFlinger 用 GPU 采样 buffer 内容时依赖这个标记。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBuffer()` 的注释] 如果生产端还需要 CPU 写入（调试预览）、Vulkan 渲染或 MediaCodec 编码，按生产端叠加对应 usage
 - **release callback 的作用**：`ASurfaceTransaction_setBufferWithRelease()` 从 API 36 可用。它会在 buffer 可复用时触发 `ASurfaceTransaction_OnBufferRelease` 回调，回调给出的 release fence fd 由调用方负责等待并关闭；这条路径适合直接接 buffer pool 回收逻辑。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的 API level 注释]
 - **Android 10-15 的处理方式**：API 29 起已经可以在 `ASurfaceTransaction_setOnComplete()` 回调里，通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取到“上一块 buffer 何时释放”的 per-layer release fence。`OnComplete` 只是回调边界，是否能复用上一块 buffer 仍要看这个 fd；若返回值大于等于 0，需要等待 signal 并关闭，返回 `-1` 才表示上一块 buffer 已可直接复用。[已验证: `android/surface_control.h` 中 `ASurfaceTransactionStats_getPreviousReleaseFenceFd()` 的 API level 注释]
 - **不要把 `apply()` 当成释放信号**：只调用 `setBuffer` 时，`apply()` 返回不能代表 buffer 已经安全可写。[已验证: Android NDK transaction apply 语义]
@@ -531,33 +532,69 @@ adb shell dumpsys SurfaceFlinger | grep -A 20 "<package>"
 
 ### 关键调用链
 
+Android 图形缓冲有三种典型消费路径，混在一起容易产生误解：
+
+**① 普通 App Layer（Legacy / BLAST）**
+
 ```
 App (Surface.lockCanvas() / RenderNode.draw() / HBR.draw())
   ↓
 ANativeWindow (Surface.cpp 持有 IGraphicBufferProducer)
-  ↓ dequeueBuffer()
+  ↓ dequeueBuffer() / queueBuffer()
 BufferQueueCore slot pool
-  ↓ queueBuffer()
-IGraphicBufferConsumer ← GLConsumer (SurfaceTexture)
   ↓
-SurfaceFlinger latchBuffer() — HWC 决定合成类型
-  ├─ DEVICE: HWC overlay 直接合成
-  └─ CLIENT: GLES 合成到 client target buffer → HWC
+  ├─ Legacy: IGraphicBufferConsumer 在 SurfaceFlinger 进程
+  │     → SurfaceFlinger latchBuffer() → HWC 合成
+  └─ BLAST: BLASTBufferItemConsumer 在 App 进程
+        → acquire buffer → Transaction.apply() → SurfaceFlinger
+```
+
+SurfaceFlinger 收到 buffer 后由 HWC 决定合成类型：
+- DEVICE：HWC overlay 直接合成
+- CLIENT：GLES 合成到 client target buffer → HWC
+
+**② SurfaceTexture / GLConsumer（纹理消费）**
+
+```
+App (Camera / Video 解码器 / EGL Producer)
+  ↓
+BufferQueueCore
+  ↓
+GLConsumer (SurfaceTexture)
+  → updateTexImage() 把 buffer 转为 GL 纹理
+  → 不进入 SurfaceFlinger latchBuffer
+```
+
+GLConsumer 消费 buffer 后转为 GPU 纹理，供 App 自己渲染使用，不直接进入 SurfaceFlinger 的合成管线。
+
+**③ BLAST 模式（Android 11+）**
+
+```
+App 进程内 BLASTBufferQueue
+  → BLASTBufferItemConsumer acquire buffer
+  → 构造 SurfaceControl.Transaction
+     (setBuffer + setGeometry + setAcquireFence)
+  → Transaction.apply() 原子提交到 SurfaceFlinger
+  → SurfaceFlinger 收到完整帧后 latchBuffer + HWC 合成
 ```
 
 ### buffer_handle_t 本质
 
-`buffer_handle_t`（定义于 `system/core/include/system/graphics.h`）是 opaque handle，本质是 file descriptor（通常是 dmabuf fd，少数情况是 ashmem fd + sync fd）：
+`buffer_handle_t`（定义于 `system/core/libcutils/include/cutils/native_handle.h`）是 opaque handle，本质是 file descriptor（通常是 dmabuf fd，少数情况是 ashmem fd + sync fd）：
 
 ```c
+// system/core/libcutils/include/cutils/native_handle.h
 typedef struct native_handle {
-    int version;
-    int numFds;   // 通常为 1（dmabuf）或 2（ashmem + sync）
+    int version;   /* sizeof(native_handle_t) */
+    int numFds;
     int numInts;
-    int data[];    // [fd, fd, ...]
+    int data[0];   /* fd[numFds] + int[numInts] */
 } native_handle_t;
-typedef native_handle_t* buffer_handle_t;
+
+typedef const native_handle_t* buffer_handle_t;
 ```
+
+`system/core/include/system/graphics.h` 中定义的是 pixel format、dataspace 等图形常量，不包含 `native_handle_t` / `buffer_handle_t` 的结构定义。
 
 Binder 跨进程传递时只复制 fd，接收进程通过 `GraphicBufferMapper::importBuffer()` 把 fd 映射到本地虚拟地址。
 
@@ -610,7 +647,7 @@ BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemCon
 | `frameworks/native/libs/gui/BLASTBufferQueue.cpp` | App 进程内 BufferQueue（BLAST 模式） |
 | `frameworks/native/libs/gui/GLConsumer.cpp` | SurfaceTexture 消费者端实现 |
 | `frameworks/native/libs/gui/GraphicBuffer.cpp` | Framework 层 buffer 对象封装 |
-| `system/core/include/system/graphics.h` | `buffer_handle_t` / `native_handle_t` 定义 |
+| `system/core/libcutils/include/cutils/native_handle.h` | `native_handle_t` / `buffer_handle_t` 定义 |
 | `hardware/interfaces/graphics/allocator/3.0/IAllocator.hal` | Gralloc Allocator HAL 3.0 |
 | `hardware/interfaces/graphics/mapper/4.0/IMapper.hal` | Gralloc Mapper HAL 4.0 |
 | `frameworks/native/libs/gui/GrallocMapper.cpp` | `GraphicBufferMapper` 实现 |

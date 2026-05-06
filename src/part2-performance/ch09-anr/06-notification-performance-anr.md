@@ -34,19 +34,19 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T18:45:44+08:00"
-last_task2b_at: "2026-05-06T14:51:22+08:00"
+last_task2b_at: "2026-05-06T19:28:51+08:00"
 last_task6_at: "2026-05-06T17:26:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-17-review.md"
 task6_review_notes: "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1/L2 轻修 2 组（RemoteViews reapply 段和 Icon 成本阶梯标点/术语间距）；无新增 L3/L4 回炉项，转 Task9 复审。"
@@ -502,7 +502,7 @@ Android 12+ 的通知限流是静默丢弃,超过频率限制的通知会被 NMS
 
 ### 「自定义通知布局比标准模板性能更好」
 
-相反,标准通知模板(如 `NotificationCompat.BigTextStyle`)在 SystemUI 中有专门的优化渲染路径,不需要通用的 RemoteViews inflate 流程。自定义布局走的是通用 inflate 路径,每次通知更新都需要完整的反序列化和 View 重建。
+标准模板（如 `NotificationCompat.BigTextStyle`）也是系统生成的 RemoteViews——`Notification.Builder.createContentView()` 对标准模板调用 `applyStandardTemplate()` 返回 RemoteViews 对象，`NotificationContentInflater` 仍通过 RemoteViews 管线渲染。但标准模板的布局与 action 集合受系统控制，`package`/`layoutId` 稳定，更容易命中 `canReapplyRemoteView()` 走 `reapply` 路径，避免完整 inflate。自定义布局同样走 RemoteViews 管线，但布局嵌套更深、图片和 action 更多时 inflate 与 reapply 的成本都更高。
 
 ### 「Icon 构造方式对性能没影响」
 
