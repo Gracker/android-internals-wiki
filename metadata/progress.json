@@ -3544,23 +3544,24 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-26",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-01T05:32:43+08:00",
+      "last_task9_at": "2026-05-06T22:41:22+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
       "last_task6_at": "2026-05-06T22:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-06-22-review.md"
+      "last_task6_review_log": "logs/review/2026-05-06-22-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-22-deep-review.md"
     },
     "src/part2-performance/ch11-power/04-case-studies.md": {
       "path": "src/part2-performance/ch11-power/04-case-studies.md",
@@ -5577,9 +5578,14 @@
       "task6_result": "pass-light-edit",
       "status": "ready-for-review",
       "task6_state": "reviewed",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "last_task6_at": "2026-05-06T22:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-06-22-review.md"
+      "last_task6_review_log": "logs/review/2026-05-06-22-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task9_at": "2026-05-06T22:41:22+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-22-deep-review.md"
     },
     "12.1": {
       "task6_reviewed": "2026-04-24",
@@ -9060,7 +9066,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T20:13:00+08:00",
+  "last_updated": "2026-05-06T22:41:22+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -12033,5 +12039,29 @@
       }
     ],
     "auto_finalized": []
+  },
+  "2026-05-06-22-task9": {
+    "task": "task9-deep-tech-review",
+    "timestamp": "2026-05-06T22:41:22+08:00",
+    "sections_reviewed": [
+      "11.3"
+    ],
+    "log": "logs/deep-review/2026-05-06-22-deep-review.md",
+    "auto_finalized": [],
+    "queue_added": [
+      "11.3"
+    ],
+    "suggestions_added": 1,
+    "research_gaps_added": 0,
+    "results": {
+      "11.3": {
+        "result": "needs-rework",
+        "p0": 3,
+        "p1": 2,
+        "p2": 1,
+        "p3": 0,
+        "auto_finalized": false
+      }
+    }
   }
 }

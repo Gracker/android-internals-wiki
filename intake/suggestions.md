@@ -1297,3 +1297,9 @@
 - **问题**：参考链接 `https://perfetto.dev/docs/data-sources/power` 当前返回 404；正文的 `android.hardware.power.stats` Perfetto 配置仍标 `[待验证]`，缺少可访问的一手文档或 AOSP proto/source 锚点支撑。
 - **建议**：替换为可访问的 Perfetto power rails / Android power data source 文档、Perfetto proto 或 AOSP 数据源实现链接；配置示例需绑定 Android/Perfetto 版本并验证字段名。
 
+## [Task9 Deep Review] 11.3 系统级功耗优化 — 2026-05-06
+- **类型**：数据缺失 / OEM 行为口径
+- **位置**：L371-L405 厂商级功耗管理
+- **问题**：MIUI/HyperOS 默认自启动、`com.miui.powerkeeper` “通常 10 分钟左右”冻结、OPPO/vivo 默认自启动限制、以及“电池消耗报告差 3-5 倍”等断言缺少机型、ROM 版本、设置项截图、公开来源或本地 Trace/功耗实验条件。`dontkillmyapp.com` 可作为现象入口，但不足以单独支撑具体数值和默认策略。
+- **建议**：为每个厂商策略绑定 ROM 版本与证据来源；没有来源的时间/倍数改成待验证或删除。若要保留性能分析结论，补 Pixel 对照机与至少 1 台国产 ROM 的 WorkManager/Alarm/Trace 案例。
+- **review 日志**：logs/deep-review/2026-05-06-22-deep-review.md
