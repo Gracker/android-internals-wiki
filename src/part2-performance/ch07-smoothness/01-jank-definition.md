@@ -384,3 +384,45 @@ JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直
   - [来源: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md](腾讯音乐:Android 深入卡顿分析与实践)
   - [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md](高爷:Android Perfetto 系列 6 - 为什么是 120Hz)
   - [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md](高爷:Android Perfetto 系列 5 - Choreographer 渲染流程)
+
+<!-- AIW-源码调研-2026-05-06 -->
+### **Binder Transaction Trace 在卡顿分析中的应用（新增 2026-05-06）**
+
+**Binder 卡顿的具体表现形式**
+基于 Perfetto 源码分析，Binder 相关卡顿在卡顿分析体系中有明确的技术路径：
+
+**内核层触发点**：
+- `binder_transaction` tracepoint：Client 发起 BC_TRANSACTION，驱动开始处理
+- `binder_transaction_received` tracepoint：Server 端收到 BR_TRANSACTION
+- 线程状态转换：`binder_thread_read` / `binder_thread_write` 对应不同阻塞场景
+
+**Perfetto 诊断层**：
+- **客户端阻塞**：主线程显示 `binder transaction` Slice + `thread_state: Sleeping` + `blocked_function: binder_thread_read`
+- **服务端阻塞**：`binder reply` Slice + 服务端线程长时间等待锁或处理慢
+- **Flow 关联**：通过 Flow 箭头连接 Client 端的 Sleeping 和 Server 端的 Running 状态
+
+**BinderTracker 状态机异常处理**：
+当出现事务失败（如 BR_DEAD_REPLY），BinderTracker 会根据当前状态决定是否手动终止悬空 Slice，避免 Slice 持续到 Trace 结尾造成误导性分析。
+
+**SQL 诊断能力**：
+```sql
+-- 识别耗时最长的 binder 事务
+SELECT client_process, server_process, client_dur/1e6 AS client_ms,
+       server_dur/1e6 AS server_ms, aidl_name, is_main_thread
+FROM android_binder_txns 
+WHERE client_dur > 10000000  -- >10ms
+ORDER BY client_dur DESC;
+
+-- 按 reason 分组统计 binder 延迟原因
+SELECT reason, count(*) AS count, sum(dur)/1e6 AS total_ms
+FROM android_binder_client_breakdown
+WHERE reason = 'binder'
+GROUP BY reason;
+```
+
+**与卡顿类型的对应关系**：
+- **AppDeadlineMissed**：客户端 binder transaction 超时
+- **SurfaceFlingerCpuDeadlineMissed**：服务端处理慢导致 SF 延迟
+- **BufferStuffing**：binder 调用频率过高导致 BufferQueue 堆积
+
+[一手：Perfetto mainline 源码]

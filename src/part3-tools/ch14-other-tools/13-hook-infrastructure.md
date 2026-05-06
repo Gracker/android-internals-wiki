@@ -634,6 +634,164 @@ Inline Hook 修改被保护页面时：
 
 **关键约束**：16KB 页面下 `mprotect` 的起始地址 `addr` 必须按 16KB 边界对齐（通过 `addr & ~(page_size - 1)` 计算）；`size` 参数指定覆盖范围，内核自动按页粒度向上取整，不需要调用方手动凑成页大小整数倍。如果 `addr` 没有按实际页大小对齐，`mprotect()` 会返回 `EINVAL`。
 
+
+## 补充：Bionic Linker Namespace 隔离机制与 Hook 库绕过手段源码深度分析
+
+<!-- AIW-源码调研-2026-05-07 -->
+
+### Linker Namespace 隔离的校验逻辑
+
+**源码位置**：`bionic/linker/linker_namespaces.cpp:android_namespace_t::is_accessible`
+
+Android 7 引入的 Linker Namespace 机制通过 `android_namespace_t` 结构管理独立库空间搜索路径。`is_accessible()` 是 dlopen 时的核心校验函数：
+
+```cpp
+bool android_namespace_t::is_accessible(const std::string& file) {
+  if (!is_isolated_) {
+    return true;  // 非隔离命名空间直接放行
+  }
+  if (!allowed_libs_.empty()) {
+    const char *lib_name = basename(file.c_str());
+    if (std::find(allowed_libs_.begin(), allowed_libs_.end(), lib_name) == allowed_libs_.end()) {
+      return false;  // 不在白名单，拒绝
+    }
+  }
+  // ld_library_paths → default_library_paths → permitted_paths 顺序查找
+  for (const auto& dir : ld_library_paths_) {
+    if (file_is_in_dir(file, dir)) return true;
+  }
+  for (const auto& dir : default_library_paths_) {
+    if (file_is_in_dir(file, dir)) return true;
+  }
+  for (const auto& dir : permitted_paths_) {
+    if (file_is_under_dir(file, dir)) return true;
+  }
+  return false;
+}
+```
+
+当 `is_isolated_ == true` 时，dlopen 加载库必须满足以下条件之一：
+1. 库文件名在 `allowed_libs_` 白名单中
+2. 库路径在 `ld_library_paths_` 目录下
+3. 库路径在 `default_library_paths_` 目录下
+4. 库路径在 `permitted_paths_` 目录下
+
+Android 8+ 通过 `/system/etc/ld.config.txt` 配置隔离规则，Android 11+ 进一步私有化 `android_create_namespace()` API，外部应用无法直接创建自定义 namespace。
+
+**符号可见性**：`is_accessible(soinfo*)` 判断符号查找权限时，允许 secondary namespace 成员参与查找，但不含传递依赖：
+
+```cpp
+bool android_namespace_t::is_accessible(soinfo* s) {
+  if (si->get_primary_namespace() == this) return true;  // 直接成员
+  const android_namespace_list_t& secondary = si->get_secondary_namespaces();
+  if (secondary.contains(this)) return true;  // secondary 成员（不含传递依赖）
+  // 递归检查父 namespace
+  return !s->get_parents().visit([&](soinfo* si) {
+    return !is_accessible_ftor(si, false);
+  });
+}
+```
+
+### 16KB Compat Mode 加载逻辑（4KB ELF 在 16KB 设备）
+
+**kCompatPageSize 常量**（`linker_phdr.h:44`）：
+```cpp
+static constexpr size_t kCompatPageSize = 0x1000;  // 4096
+```
+
+**CompatMapSegment** 核心实现（`linker_phdr_16kib_compat.cpp`）：
+```cpp
+bool ElfReader::CompatMapSegment(size_t seg_idx, size_t len) {
+  const ElfW(Phdr)* phdr = &phdr_table_[seg_idx];
+  // 4KB 对齐段起始（不是 16KB）
+  void* start = reinterpret_cast<void*>(
+      __builtin_align_down(phdr->p_vaddr + load_bias_, kCompatPageSize));
+  // 从 ELF 文件读取内容到匿名映射（mmap 16KB 对齐无法直接用于 4KB ELF）
+  const ElfW(Addr) offset = file_offset_ + __builtin_align_down(phdr->p_offset, kCompatPageSize);
+  if (TEMP_FAILURE_RETRY(pread64(fd_, start, len, offset)) == -1) {
+    return false;
+  }
+  return true;
+}
+```
+
+**段布局兼容性判断** `IsEligibleFor16KiBAppCompat`：
+```cpp
+// 兼容布局：RO|RX* + (RELRO prefix)? + RW*
+// 非兼容布局：多个非相邻 RW 段、RELRO 不在首个 RW 段内
+bool ElfReader::IsEligibleFor16KiBAppCompat(ElfW(Addr)* vaddr) {
+  // 1. 至多一个 RELRO segment
+  if (!HasAtMostOneRelroSegment(&relro_phdr)) return false;
+  // 2. 检查 RW 段连续性（多个非相邻 RW → 不兼容）
+  // 3. RELRO 必须在第一个 RW 段内
+  if (relro_phdr && !segment_contains_prefix(first_rw, relro_phdr)) return false;
+  *vaddr = __builtin_align_up(end, kCompatPageSize);  // 计算 RX|RW 边界
+  return true;
+}
+```
+
+触发条件：`linker_phdr.cpp` — `kPageSize == 16384 && min_align_ == 4096`。
+
+### ShadowHook Gap Trampoline 机制（绕过 Namespace 限制）
+
+**核心设计**：利用 ELF PT_LOAD 段末尾未使用内存空间（gap）作为 trampoline 存储区，不调用 dlopen，直接向已映射内存区域写入代码。
+
+**gap 发现算法**（`sh_elf.c:sh_elf_get_gaps_from_phdr`）：
+```cpp
+// ARM: SH_ELF_UNIT_SIZE=8, ARM64: SH_ELF_UNIT_SIZE=4
+// 计算段末尾到下一页起始的未使用空间
+uintptr_t cur_end = base + cur_phdr->p_vaddr + cur_phdr->p_memsz;
+uintptr_t cur_page_end = page_end(cur_end);
+uintptr_t next_page_start = page_start(base + next_phdr->p_vaddr);
+
+if (cur_phdr->p_flags & PF_X) {
+  gap_start = align_end(cur_end);
+  gap_end = next_page_start;
+} else if (cur_page_end > cur_file_page_end) {
+  // .bss 段（无文件后端）
+  gap_start = align_end(cur_end);
+  gap_end = next_page_start;
+} else if (next_page_start > cur_page_end) {
+  // 整页未使用空间
+  gap_start = cur_page_end;
+  gap_end = next_page_start;
+}
+```
+
+**useless symbol 策略**：对 linker 等特殊库，转而利用 `__linker_init` 等无用符号的内存空间：
+```cpp
+void* sym_addr = xdl_sym(handle, sym->sym_name, &sym_sz);
+uintptr_t gap_start = align_end(sym_addr);
+uintptr_t gap_end = align_start((uintptr_t)sym_addr + sym_sz);
+```
+
+**load_bias 重新获取**（绕过 dladdr 限制）：
+```cpp
+// 使用 getauxval(AT_PHDR) 重新计算 load_bias
+uintptr_t base = (AT_PHDR == type ? sh_util_page_start(val) : val);
+ElfW(Ehdr) *ehdr = (ElfW(Ehdr) *)base;
+uintptr_t min_vaddr = UINTPTR_MAX;
+for (size_t i = 0; i < dlpi_phnum; i++) {
+  if (PT_LOAD == phdr[i].p_type && min_vaddr > phdr[i].p_vaddr) {
+    min_vaddr = phdr[i].p_vaddr;
+  }
+}
+uintptr_t load_bias = base - min_vaddr;
+```
+
+**为何能绕过 Namespace 限制**：ShadowHook 不调用 dlopen 加载目标库，而是直接向已映射的内存区域写入 trampoline 代码。目标 so 已经在进程地址空间（由系统 linker 加载），Namespace 限制仅对 dlopen() 新加载生效，对已加载 so 的内存区域写入不适用。
+
+### 主流 Hook 库 Namespace 绕过能力对比
+
+| 库 | 类型 | dlopen 拦截 | Gap Trampoline | 符号查询 |
+|----|------|------------|---------------|---------|
+| ByteHook | PLT Hook | ✅ hook dlopen | ❌ | ❌ |
+| ShadowHook | Inline Hook | ✅ hook do_dlopen | ✅ | ✅ bypass namespace |
+| xHook | PLT Hook | ❌ 不支持 API 29+ | ❌ | ❌ |
+
+**关键差异**：ShadowHook 支持绕过 namespace 限制查询任意 ELF 的 `.dynsym` 和 `.symtab`，而 ByteHook 仅在 PLT 层面工作，不涉及 namespace 访问限制。
+
+
 ## 这一章在全书里的位置
 
 这一章不是孤立的底层技术补充,它和全书主线直接相连:
