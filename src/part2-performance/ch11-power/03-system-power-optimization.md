@@ -9,7 +9,6 @@ applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs"
 task2b_result: fixed
-task6_state: revisiting
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -54,7 +53,7 @@ task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-29"
 task6_result: "pass-light-edit"
-task6_state: reviewed
+task6_state: revisiting
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
@@ -62,7 +61,7 @@ review_round: 4
 pipeline_stage: task6_pending
 task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-01T05:32:43+08:00"
