@@ -8,17 +8,17 @@ drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-06"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-07T00:20:00+08:00"
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
-task2b_state: pending
-task2b_result: pending
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: task6_pending
 task2b_fixed_at: "2026-04-27T11:41:00+08:00"
-last_task2b_at: "2026-05-06T23:02:59"
+last_task2b_at: "2026-05-07T01:44:08+08:00"
 last_task6_at: "2026-05-06T23:21:00+08:00"
 applicable_versions: "Android 17 (API 37)"
 tags:
@@ -132,14 +132,16 @@ struct sched_ext_ops {
 `include/linux/sched/ext.h` 定义了内置 DSQ ID，具体集合需要以目标分支实际源码为准：
 
 ```c
-// android16-6.12 include/linux/sched/ext.h
+// android16-6.12 include/linux/sched/ext.h — 简化示意，仅列出常用内置 DSQ
 enum scx_dsq_id_flags {
-    SCX_DSQ_INVALID = 0,                              // 无效 DSQ
-    SCX_DSQ_GLOBAL  = SCX_DSQ_FLAG_BUILTIN | 1,       // 全局 FIFO 队列
-    SCX_DSQ_LOCAL   = SCX_DSQ_FLAG_BUILTIN | 2,       // 每 CPU 本地队列
-    SCX_DSQ_LOCAL_ON = SCX_DSQ_FLAG_BUILTIN | SCX_DSQ_FLAG_LOCAL_ON, // 指定 CPU 本地队列
-    SCX_DSQ_LOCAL_CPU_MASK = 0x000FFFFF,               // LOCAL_ON 的 CPU 编码掩码
+    SCX_DSQ_INVALID = SCX_DSQ_FLAG_BUILTIN | 0,  // 含 BUILTIN flag
+    SCX_DSQ_GLOBAL  = SCX_DSQ_FLAG_BUILTIN | 1,  // 全局 FIFO 队列
+    SCX_DSQ_LOCAL   = SCX_DSQ_FLAG_BUILTIN | 2,  // 每 CPU 本地队列
+    SCX_DSQ_LOCAL_ON = SCX_DSQ_FLAG_BUILTIN | SCX_DSQ_FLAG_LOCAL_ON,
 };
+// 注意：LOCAL_ON 的 CPU 编码通过 SCX_DSQ_FLAG_LOCAL_ON 与 CPU 编码组合实现，
+// 具体掩码定义以目标分支源码为准，此处省略。
+// 省略项：SCX_DSQ_LOCAL_CPU_MASK 等，完整定义见源码。
 ```
 
 > **版本差异**：`SCX_DSQ_BYPASS` 出现在后续 mainline(6.14+)和部分厂商分支，不属于 `android16-6.12` 通用内置 ID。如果在非 GKI 标准分支上看到 `SCX_DSQ_BYPASS`，说明该分支基于更新的 mainline。
@@ -189,11 +191,11 @@ Kernel 6.12 对 Android 存储栈引入了三项相互配合的优化：减少�
 
 ### F2FS Checkpoint Merge：减少重复 checkpoint 写入
 
-F2FS 是 Android 设备的主流文件系统(4.2 节)。它的 checkpoint 机制在每次 fsync()/sync() 时，需要将 NAT(Node Address Table)、SIT(Segment Information Table)、CURSEG(Current Segment)等元数据刷盘。如果多个线程同时调用 fsync()(这在 Android 中很常见--每个 ContentProvider 的写操作都走 SQLite WAL 模式)，就会触发多次完整 checkpoint，产生大量冗余的元数据写入。
+F2FS 是 Android 设备的主流文件系统(4.2 节)。它的 checkpoint 机制在 fsync()/sync() 路径需要 checkpoint 时，将 NAT(Node Address Table)、SIT(Segment Information Table)、CURSEG(Current Segment)等元数据刷盘——但并非每次 fsync 都触发完整 checkpoint，`f2fs_do_sync_file()` 会根据脏数据量和内部状态决定是否执行 checkpoint。如果多个线程同时触发需要 checkpoint 的 fsync，就会产生多次完整 checkpoint，带来冗余的元数据写入。
 
 在 `android16-6.12` 中，可核验的源码锚点是 `fs/f2fs/super.c`、`fs/f2fs/checkpoint.c` 和 `fs/f2fs/f2fs.h`。`checkpoint_merge` 挂载选项开启后，`f2fs_issue_checkpoint()` 会把并发的 `CP_SYNC` 请求挂到 `cprc->issue_list`，再由 `issue_checkpoint_thread` 统一执行；`struct ckpt_req_control` 里还能看到 `queued_ckpt`、`ckpt_wait_queue` 和 `ckpt_thread_ioprio` 这些配套字段。机制上的关键点是：多个同步 checkpoint 请求会被串到同一个 checkpoint 线程里统一落盘，各个进程不再各自触发一轮完整 checkpoint。
 
-对 SQLite WAL 模式的 commit 性能影响最大(Android 中 SQLite 是最常见的同步 I/O 模式之一)，因为每次 ContentProvider 写操作都走 SQLite WAL + fsync 路径。具体写放大下降比例需要补齐设备、内核分支、挂载参数和写入模型后再写入正文。
+对 SQLite WAL 模式的 commit 性能有潜在影响（Android 中 SQLite 是最常见的同步 I/O 模式之一）。ContentProvider 写操作走 SQLite WAL + fsync 路径，当 fsync 触发 checkpoint 时，`checkpoint_merge` 可以将并发的 `CP_SYNC` 请求合并到 `issue_checkpoint_thread` 统一执行。具体写放大下降比例需要补齐设备、内核分支、挂载参数和写入模型后再写入正文。
 
 [已验证: AOSP android16-6.12， fs/f2fs/super.c + fs/f2fs/checkpoint.c + fs/f2fs/f2fs.h； Linux F2FS checkpoint_merge mount option]
 
@@ -327,7 +329,7 @@ MGLRU 将单一 active/inactive 链表拆分为多个 generation(代)，每代�
 
 ### 与 LMK 的协同
 
-在 4.4 节中我们讨论过 LMK 的机制：`lmkd` 守护进程根据内存压力杀死后台进程。MGLRU 让 `lmkd` 的决策更准确：内核更清楚哪些页面仍在活跃使用，`lmkd` 可以减少过度杀进程。
+在 4.4 节中我们讨论过 LMK 的机制：`lmkd` 守护进程根据 PSI/vmpressure 信号、内存水位和 `oom_score_adj` 做杀进程决策，不直接读取 MGLRU 的 generation 信息。MGLRU 的作用落在内核回收层——更准确地识别活跃页面、减少误回收，从而降低内存压力信号的触发频率。`lmkd` 收到的压力信号减少，杀进程的频率自然下降。如果要写"kill 频率下降 N%"，需要补同设备前后 trace 或统计。
 
 ## 在 Perfetto 中的可观测性
 

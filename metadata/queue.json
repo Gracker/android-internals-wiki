@@ -13314,7 +13314,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T00:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T01:44:08+08:00",
+      "completed_reason": "P0 DSQ enum摘录改为简化示意并补省略说明；P0 F2FS fsync/checkpoint口径修正为非每次触发；P1 MGLRU与LMKD协同改为间接关系(内核回收层降低压力→lmkd kill减少)"
     },
     {
       "section": "17.2",
@@ -13369,7 +13371,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T01:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T01:44:08+08:00",
+      "completed_reason": "P0 largeHeap后台堆压缩事实错误已修正(Java堆上限不因前后台变化)；P1 MGLRU版本边界已修正(GKI 6.1/6.6已默认启用，非Android 16首次)"
     },
     {
       "section": "13.9",

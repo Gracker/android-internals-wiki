@@ -44,14 +44,14 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 4
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-07T01:20:00+08:00"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: "2026-05-01T14:40:00+08:00"
 last_task2b_at: "2026-04-19T02:05:51+08:00"
 task9_reviewed_by: "openclaw-task9"
@@ -336,7 +336,7 @@ Google 在不同版本中对 largeHeap 的策略做了一些调整：
 
 - **Android 5.0–7.0**：largeHeap 的上限主要由 OEM 在设备配置中决定，不同设备差异很大。
 - **Android 8.0+**：Bitmap 像素数据迁移到 Native 堆后，Java 堆的内存压力大幅降低。很多之前依赖 largeHeap 的图片类 App，在 Android 8.0+ 上即使不开 largeHeap 也不会 OOM。这在客观上降低了 largeHeap 的"刚需"程度。
-- **Android 10+**：系统更积极地限制后台进程的内存使用。后台进程的堆增长被更严格地控制，即使声明了 largeHeap，退到后台后可用的堆空间也会被压缩。
+- **Android 10+**：系统更积极地限制后台进程的存活优先级。`ActivityManager.staticGetMemoryClass()` 和 `staticGetLargeMemoryClass()` 读取的是编译期设备配置（`SystemProperties`），运行时不区分前后台——Java 堆上限不会因为进程退到后台而被压缩。后台进程更容易被杀的原因是 `oom_adj` 升高后 lmkd 回收优先级上升，`largeHeap` 只扩大 Java heap 上限，不提高后台存活优先级。
 
 [已验证: 官方文档 developer.android.com/topic/performance/memory — largeHeap 使用建议]
 
@@ -574,7 +574,7 @@ PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻�
 
 ### [自动发现] MGLRU 在 GKI 6.12 中基线化
 
-MGLRU（Multi-Gen LRU）在 Android 14 时期以内核配置选项的形式存在，部分厂商选择性启用。GKI 6.12（Android 16）正式将 MGLRU 设为强制默认特性，终结了传统 LRU 在高性能 Android 设备上的地位。
+MGLRU（Multi-Gen LRU）在 GKI 6.1（Android 14）和 GKI 6.6（Android 15）的 `defconfig` 中已可核验到 `CONFIG_LRU_GEN=y` 默认启用，不是 Android 16 才首次出现的配置变化。GKI 6.12（Android 16）延续了这一默认配置。如果某台设备的 GKI 分支对应 `android16-6.12`，它沿用的是 6.1/6.6 已建立的 MGLRU 基线，不能写成"Android 16 首次强制开启"。厂商覆盖默认参数的可能性仍然存在，但那是具体设备的行为，不是版本分界。
 
 MGLRU 的核心改进是把页回收决策从被动扫描变为按代分级。内核按访问时间将页分到不同 generation，回收时优先淘汰最老一代中的页。与传统 LRU 的线性链表扫描相比，MGLRU 的多代结构让回收精度更高，误杀活跃页的概率更低。
 
