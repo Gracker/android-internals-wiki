@@ -39,22 +39,14 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-last_task9_at: "2026-05-07T06:27:13+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-07"
 task2b_result: fixed
-last_task2b_at: "2026-05-07T03:43:33+08:00"
-repaired_date: "2026-04-26"
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-05-07T06:40:00+08:00"
+repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
-task6_reviewed_date: "2026-05-07"
-last_task6_at: "2026-05-07T04:08:50+08:00"
-last_task6_review_log: "logs/review/2026-05-07-04-review.md"
-review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 轻修，未新增 L3/L4 回炉项；保持技术项交由 Task9 复审。 | 2026-05-05 Task9 08:37：Task9 深审发现 PowerMonitor API 调用对象写错，PAS/ADPF+ODPM 反馈路径缺少公开源码/官方文档支撑。 | 2026-05-06 Task6 20:13：完成 L1/L2 小修；发现 PowerMonitor API 获取方式与 PAS/ADPF+ODPM 公开依据仍有风险信号，已写入 queue 交 Task2B/Task9。 | 2026-05-06 Task9 20:37：深审复核 PowerMonitor API 入口、GPU power_profile 标准键、PAS/ADPF+ODPM 动态反馈证据链；仍有 P0/P1，已合并 queue。 | 2026-05-07 Task6 04:08：revisiting 后复审；完成 L1/L2 小修 2 处（GPU 归属句式、frontmatter 去重），无新增 L3/L4 回炉项；转入 Task9 复审。 | 2026-05-07 Task9 06:20：深审复核发现 P0 2，P2 0；已写入 queue/suggestions，转 Task2B 回炉。"
-last_task9_review_log: "logs/deep-review/2026-05-07-06-deep-review.md"
 ---
 
 
@@ -442,7 +434,10 @@ buffers: {
 }
 data_sources: {
     config {
-        name: "android.hardware.power.stats"
+        name: "android.power"
+        android_power_config {
+            collect_power_rails: true
+        }
         target_buffer: 0
     }
 }
@@ -450,15 +445,15 @@ duration_ms: 60000
 EOF
 ```
 
-[待验证: Perfetto 中 power.stats 数据源的具体配置格式可能因 Android 版本而异]
+Perfetto 的 Android power probe 注册的数据源名是 `android.power`，不是 HAL 语义的 `android.hardware.power.stats`。power rail 数据通过 `android_power_config` 的 `collect_power_rails` 字段启用；按需还可以开启 `battery_poll_ms`、energy breakdown、entity residency 等子项。[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/probes/android_power/android_power_data_source.cc]
 
 **Android Studio Power Profiler**：从 Hedgehog 版本开始集成，在 System Trace 视图中直接显示 ODPM 电源轨数据，与 CPU、线程、Frame 时间线同步展示。适合 App 开发者做日常功耗分析。
 
-**PowerMonitor API（Android 15+）**：Android 15 引入了公开的 `android.os.health.PowerMonitor` 与 `SystemHealthManager`，允许 App 在运行时程序化查询实时能量消耗。这套 API 不依赖 bugreport 或离线分析，适合构建线上功耗自审计能力。
+**PowerMonitor API（Android 15+）**：Android 15 引入了公开的 `android.os.PowerMonitor`、`android.os.PowerMonitorReadings` 与 `android.os.health.SystemHealthManager`，允许 App 在运行时程序化查询实时能量消耗。这套 API 不依赖 bugreport 或离线分析，适合构建线上功耗自审计能力。
 
-入口路径：`context.getSystemService(Context.SYSTEM_HEALTH_SERVICE)` 获取 `SystemHealthManager`，然后调用 `getSupportedPowerMonitors(executor, Consumer<List<PowerMonitor>>)` 查询设备支持哪些 monitor，再按需调用 `getPowerMonitorReadings(List<PowerMonitor>, Executor, OutcomeReceiver<PowerMonitorReadings, RuntimeException>)` 读取能量快照。`getConsumedEnergy()` 返回值单位为 microwatt-hours。
+入口路径：`context.getSystemService(Context.SYSTEM_HEALTH_SERVICE)` 获取 `SystemHealthManager`，然后调用 `getSupportedPowerMonitors(executor, Consumer<List<PowerMonitor>>)` 查询设备支持哪些 monitor，再按需调用 `getPowerMonitorReadings(List<PowerMonitor>, Executor, OutcomeReceiver<PowerMonitorReadings, RuntimeException>)` 读取能量快照。`PowerMonitorReadings.getConsumedEnergy()` 返回值单位为 microwatt-seconds（uWs），表示从开机到当前时刻的累积能量，不是 microwatt-hours。
 
-这套 API 读取的是能量快照（snapshot），不是实时订阅流。App 需要自行按时间间隔轮询，前后两次快照做差值计算区间功耗。适合构建线上功耗自审计、热管理辅助判断等场景。[已验证: AOSP android-16.0.0_r1, android.os.health.SystemHealthManager / PowerMonitor / PowerMonitorReadings]
+这套 API 读取的是能量快照（snapshot），不是实时订阅流。App 需要自行按时间间隔轮询，前后两次快照的 `getConsumedEnergy()` 做差值，才得到区间功耗。适合构建线上功耗自审计、热管理辅助判断等场景。[已验证: AOSP android-16.0.0_r1, android.os.PowerMonitor / android.os.PowerMonitorReadings / android.os.health.SystemHealthManager]
 
 ## 与其他机制的关系
 
