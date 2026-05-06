@@ -37,20 +37,20 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_rework_date: "2026-05-06"
 last_rework_by: openclaw-task2b
-last_rework_reason: "P95 Task9回炉(第二轮)：Glide trimMemory RequestManager暂停语义按源码修正为TRIM_MEMORY_MODERATE条件触发"
+last_rework_reason: "P95 Task9回炉(第三轮)：P0 inBitmap像素转移语义修正（非回收而是transfer）；P1 AVIF硬件加速边界收窄为SoC AV1 still image子集依赖"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-06"
 task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task9_at: "2026-05-06T08:35:28+08:00"
-task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。"
-last_task6_at: "2026-05-06T08:15:00+08:00"
+task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄"
+last_task6_at: "2026-05-06T08:45:00+08:00"
 task9_result: needs-rework
 ---
 
@@ -295,7 +295,7 @@ BitmapFactory.Options options = new BitmapFactory.Options();
 options.inBitmap = reusableBitmap;  // 复用这个 Bitmap 的像素内存
 options.inSampleSize = 2;
 Bitmap newBitmap = BitmapFactory.decodeResource(res, resId, options);
-// reusableBitmap 被回收，其像素内存被 newBitmap 接管
+// reusableBitmap 的像素内存被转移给 newBitmap 复用；源 Bitmap 对象仍存在但像素存储已清空（getByteCount() = 0）
 ```
 
 API 19+ 的规则：复用 Bitmap 的内存必须 ≥ 新 Bitmap 需要的内存（按 `getAllocationByteCount()` 判断，而非 `getByteCount()`），可以用一个大的 Bitmap 复用来解码更小的图片。
@@ -335,7 +335,7 @@ Glide 的内存缓存体系分成三层：
 
 ### AVIF：压缩率的新天花板
 
-Android 12（API 31）引入了对 AVIF 的基础支持，Android 14 对新设备强制要求支持 AV1 硬件解码（包括 AVIF Baseline Profile），Android 14+ 的设备有硬件加速的 AVIF 解码能力。
+Android 12（API 31）引入了对 AVIF 的基础支持。Android 14 对部分新设备要求支持 AV1 硬件解码，但 AVIF 的硬件加速取决于 SoC 的 AV1 解码器是否支持 still image 子集（SUBPEL 精度和 single tile 限制）；不满足条件的设备退回软件解码（libdav1d）。
 
 AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下文件体积减少约 50%。对于带宽敏感的场景（图片 CDN、社交信息流），这是明显的带宽成本优势。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。[来源：抖音 Android 端图片优化实践]
 

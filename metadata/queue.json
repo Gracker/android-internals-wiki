@@ -10866,7 +10866,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T13:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T08:48:28.941567",
+      "completed_reason": "P0 UserController→UserManagerService源码路径修正（AOSP android-16.0.0_r1）；P1 Cloud Compilation范围已在前轮收窄为App安装/更新SDM；P1 Kernel阶段driver probe/module placement已在前轮补充"
     },
     {
       "section": "2.17",
@@ -12834,7 +12836,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T08:35:28+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T08:48:28.941567",
+      "completed_reason": "P0 inBitmap像素转移语义修正（非回收而是transfer，源Bitmap对象仍存在getByteCount()=0）；P1 AVIF硬件加速边界收窄为SoC AV1 still image子集依赖，不满足退回libdav1d"
     }
   ],
   "completed": [
