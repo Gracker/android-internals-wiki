@@ -8686,12 +8686,14 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-11-9.6-external-review.md",
       "material_paths": [
         "intake/suggestions.md"
       ],
-      "updated_at": "2026-05-06T11:39:00+08:00"
+      "updated_at": "2026-05-06T11:39:00+08:00",
+      "completed_at": "2026-05-06T13:04:10+08:00",
+      "completed_reason": "P0 RemoteViews增量更新已修正为reapply机制（删除Measure Cache/Action-diff）；P0 Icon图片通知成本模型已重写（HardwareBuffer FD共享路径+三档成本阶梯）"
     },
     {
       "section": "9.7",
@@ -11180,7 +11182,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T00:36:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T13:04:10+08:00",
+      "completed_reason": "P0 自定义Metric SQL已改为官方两阶段写法（中间视图+proto builder+RepeatedField+_output后缀）；P0 BatchTraceProcessor导入路径已更新为api子模块+context manager；P0 Trace Summary CLI命令已修正为summarize子命令"
     },
     {
       "section": "8.7",
