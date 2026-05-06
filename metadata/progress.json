@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T19:57:05+08:00",
+  "generated_at": "2026-05-06T20:37:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -51,8 +51,8 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 205,
-      "pending": 8
+      "reviewed": 206,
+      "pending": 7
     },
     "task2b_state_counts": {
       "unknown": 41,
@@ -3484,22 +3484,22 @@
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-05",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-05T08:37:27+08:00",
+      "last_task9_at": "2026-05-06T20:37:00+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
       "last_task6_at": "2026-05-06T20:13:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-20-review.md",
-      "last_task9_review_log": "logs/deep-review/2026-05-05-08-deep-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-20-deep-review.md",
       "task6_review_notes": "2026-05-06 Task6 20:13：L1/L2 小修；技术风险信号已写入 queue.json 与 suggestions.md，交 Task2B/Task9。"
     },
     "src/part2-performance/ch11-power/02-app-power-optimization.md": {

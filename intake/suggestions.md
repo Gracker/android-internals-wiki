@@ -1251,6 +1251,25 @@
 - **建议**：Task2B 先按 Task9 结论统一 Perfetto power rail 口径；再判断 ADPF 源码调研是否值得整合进前文 ADPF/PowerMonitor 小节，API 命名与 `GPU_LOAD_UP` 等常量交 Task9 复核。
 - **review 日志**：logs/review/2026-05-06-17-review.md
 
+
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-05-06
+- **类型**：源码边界 / RemoteViews reapply
+- **位置**：L226 RemoteViews 的 reapply 机制
+- **问题**：`canReapplyRemoteView()` 的条件只写了 package 和 layoutId 相同，遗漏 `!oldView.hasFlags(RemoteViews.FLAG_REAPPLY_DISALLOWED)`。android-16 SystemUI `NotificationContentInflater.canReapplyRemoteView()` 还会检查旧 RemoteViews 是否禁止 reapply。
+- **建议**：补一句边界：package/layoutId 稳定只是必要条件；旧 `RemoteViews` 带 `FLAG_REAPPLY_DISALLOWED` 时仍会重新 apply/inflate，排查时要以 SystemUI 实际分支为准。
+
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-05-06
+- **类型**：源码边界 / RankingMap 可见性过滤
+- **位置**：L297 大量通知场景下的 RankingMap 重建
+- **问题**：正文写 NMS 对“所有活跃通知”生成完整 `RankingMap` 并分发给所有监听器。android-16 `makeRankingUpdateLocked(info)` 会按 listener 可见性过滤：lockdown、listener filter、敏感内容可见性都会影响进入 `NotificationRankingUpdate` 的记录。
+- **建议**：改成“对该 listener 可见的活跃通知集合生成 RankingMap”；性能判断仍看可见通知数和 listener 数，但不要写成全局所有活跃通知无条件下发。
+
+## [Task9 Deep Review] 18.10 SurfaceControl API 深入 — 2026-05-06
+- **类型**：交叉引用
+- **位置**：L666-L668 底部交叉引用
+- **问题**：`13-buffer-queue.md`、`06-surfaceflinger.md`、`16-sync-fence.md` 按当前文件所在目录解析均不存在；实际章节在 `src/part1-fundamentals/ch02-rendering/` 下。
+- **建议**：改成正确相对路径（例如 `../../part1-fundamentals/ch02-rendering/13-buffer-queue.md` 等），或使用项目统一章节链接格式。
+
 ## [Task6 Review] 11.1 Android 功耗模型 — 2026-05-06
 - **类型**：需确认
 - **位置**：PowerMonitor API（Android 15+）段落
@@ -1271,4 +1290,10 @@
 - **问题**：正文仍写 Oryon 核心“与苹果 M 系列同源”，与 Task9 11:39 已指出的风险项重叠；后文已改成“Nuvia 背景、创始成员有 Apple CPU 经历”，两处口径不一致。
 - **建议**：Task9/Task2B 统一为更稳妥口径：开发团队背景来自 Nuvia，创始成员有 Apple CPU 经历；删除或标注“同源”表述，除非补到 Qualcomm 白皮书或权威拆解锚点。
 - **review 日志**：logs/review/2026-05-06-20-review.md
+
+## [Task9 Deep Review] 11.1 Android 功耗模型 — 2026-05-06
+- **类型**：交叉引用/数据缺失
+- **位置**：参考资料与 Perfetto + ODPM 配置示例
+- **问题**：参考链接 `https://perfetto.dev/docs/data-sources/power` 当前返回 404；正文的 `android.hardware.power.stats` Perfetto 配置仍标 `[待验证]`，缺少可访问的一手文档或 AOSP proto/source 锚点支撑。
+- **建议**：替换为可访问的 Perfetto power rails / Android power data source 文档、Perfetto proto 或 AOSP 数据源实现链接；配置示例需绑定 Android/Perfetto 版本并验证字段名。
 

@@ -12557,3 +12557,20 @@ Snapdragon 8 Elite Oryon 的 L1/L2 cache 拓扑、共享层级与访问延迟缺
 
 ### 关联章节
 17.2, 5.1, 5.2, 5.3
+
+## [2026-05-06] 11.1 Android 功耗模型 — 知识盲区
+
+### 盲区描述
+PAS/Power-aware scheduling、ADPF/CPU-GPU headroom 与 ODPM/PowerStats 是否存在公开的一手耦合链路仍未确认。当前 AOSP 可确认的公开路径是 PowerStats/PowerMonitor 能量 snapshot、Power HAL headroom、PerformanceHintManager hint session；尚未找到 ODPM → ADPF/HintManagerService → kernel sched EM/PAS 的公开调用链。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 CDD / source.android.com 是否定义 PAS、CPU/GPU headroom、PowerStats/ODPM 之间的兼容性要求。
+- 对照 AOSP android-15/16 的 PowerStatsService、SystemHealthManager、HintManagerService、PerformanceHintManager、Power HAL AIDL 与 kernel sched/EAS/PAS 相关分支，确认是否存在公开桥接。
+- 如只存在 vendor 私有实现，正文应按“可能的 OEM 扩展/待验证”处理，不写成 Android 15/16 平台通用能力。
+
+### 关联章节
+5.2, 5.9, 11.1
+
