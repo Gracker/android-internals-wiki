@@ -13632,6 +13632,53 @@
       "status": "completed",
       "completed_at": "2026-05-07T06:43:07.190664+08:00",
       "completed_reason": "P0 FGS超时崩溃签名修正：拆清配额超时(did not stop within its timeout)与启动后未提升前台(did not call startForeground)两类不同错误"
+    },
+    {
+      "section": "11.1",
+      "section_title": "Android 功耗模型",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.1 Android 功耗模型 Perfetto ODPM data source 名称和源码路径仍有 P0 错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/Trace 配置错误",
+          "location": "L424 Perfetto + ODPM 数据源说明",
+          "detail": "正文仍写 Perfetto 可以采集 `android.hardware.power.stats` 数据源；但 external/perfetto 的 Android power probe 注册名为 `android.power`，并通过 `android_power_config.collect_power_rails` 启用 power rails。正文后面的配置示例是正确的，前一句仍会误导读者配置失败。",
+          "suggestion": "把 L424 的数据源名改成 `android.power`，并说明 `android.hardware.power.stats` 是 HAL 语义/接口族，不是 Perfetto data source name。"
+        },
+        {
+          "type": "源码路径错误",
+          "location": "L448 Perfetto 源码锚点",
+          "detail": "正文 `[已验证]` 写成 `external/perfetto/src/traced/probes/android_power/android_power_data_source.cc`；本地 Perfetto 源码实际路径为 `src/traced/probes/power/android_power_data_source.cc`，AOSP external/perfetto 下也应对应 `external/perfetto/src/traced/probes/power/android_power_data_source.cc`。",
+          "suggestion": "修正源码路径；同时保留 `android.power` 与 `collect_power_rails` 两个可核验锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T07:28:39+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.2",
+      "section_title": "SoC 平台差异",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 17.2 Oryon L1/L2 cache 一手资料边界仍未闭合，需回炉修正",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "知识盲区/版本差异",
+          "location": "L127 Oryon L1/L2 cache 描述",
+          "detail": "正文仍写“公开产品页显示 Oryon 采用大容量 L1 缓存和共享 L2 缓存设计”，但紧接着又标注“公开产品页未披露具体数字”。当前可见资料主要来自二手微架构文章，缺 Qualcomm 白皮书、Hot Chips/ISSCC、芯片拆解或可信 benchmark 锚点；容易把 Snapdragon X Elite 与 8 Elite cache 拓扑混用。",
+          "suggestion": "删除“公开产品页显示”的确定表述，改为“二手微架构分析称……，待一手资料确认”；保留现有 research-gaps.md 中 Oryon 微架构资料边界，不重复新增盲区。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T07:28:39+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

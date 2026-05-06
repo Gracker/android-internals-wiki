@@ -2,7 +2,7 @@
 title: "案例集"
 chapter: "11.4"
 section: "11.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -31,16 +31,19 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task2b_at: "2026-05-07T06:40:00+08:00"
+last_task9_at: "2026-05-07T07:28:39+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-07-07-deep-review.md"
+task9_review_notes: "2026-05-07 Task9 07:20：pass-tech-review。P0 0 / P1 0 / P2 1；FGS timeout 修正已闭环，仅 Android Vitals Excessive Wakeups 链接为 404（suggestions.md 已有同项记录，本轮不重复追加）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # 案例集

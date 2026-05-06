@@ -40,13 +40,18 @@ sources:
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: task2b_pending
 last_task2b_at: "2026-05-07T06:40:00+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
+task9_reviewed_date: "2026-05-07"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-07T07:28:39+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-07-07-deep-review.md"
+task9_review_notes: "2026-05-07 Task9 07:20：needs-rework。P0 2 / P1 0 / P2 0；Perfetto ODPM data source 名称仍写成 HAL 名，Perfetto 源码路径也不匹配。"
 ---
 
 
