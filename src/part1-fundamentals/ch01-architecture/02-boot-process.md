@@ -3,22 +3,23 @@ title: "系统启动全流程"
 chapter: "1.2"
 section: "1.2"
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-06"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-06"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-06"
 last_task9_at: "2026-05-06T15:23:00+08:00"
+last_task2b_at: "2026-05-06T16:04:00+08:00"
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
@@ -83,7 +84,7 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-review_notes: "2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。"
+review_notes: "2026-05-06T16:04 Task2B：P0 module.layout 修正为 modules.load / BOARD_VENDOR_KERNEL_MODULES_LOAD / BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD + MODULE_SOFTDEP() + async_probe=1。送 Task6 复审。 | 2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。"
 task9_review_notes: "2026-05-06 15:23 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 4；Kernel 模块加载顺序配置 `module.layout` 为错误锚点，需改为 modules.load / BOARD_*_KERNEL_MODULES_LOAD；既有 Zygote slice、Pixel 8 数据、dm-verity 版本边界 P2 沿用 suggestions。"
 ---
 # 系统启动全流程
@@ -152,7 +153,7 @@ Kernel 阶段负责建立页表、初始化调度器、内存管理和关键驱�
 
 Linux 侧最早的进程关系仍然成立：PID 0 是 swapper，`rest_init()` 会拉起 PID 1 的 init 和 PID 2 的 kthreadd。对启动分析来说，Kernel 阶段的结束标志更适合看“控制权何时进入 `/init`”，而不是“system 分区何时挂好”。
 
-Android 官方的 boot-time optimization 文档强调两个 Kernel 阶段优化手段：选择性异步驱动探针（`async_probe` 属性标注非启动必需的驱动模块）和模块位置优化（`module.layout` 控制 ko 加载顺序）。GKI 6.12 的 defconfig 中 `CONFIG_MODULES=y` 已默认启用，OEM 可以通过 `/vendor/etc/init/hw/init.hardware.rc` 调整模块加载时机，将非关键驱动的 probe 推迟到 `boot` phase 之后。这两项手段可以通过 dmesg 中驱动的 probe 日志和模块 init/load 顺序确认是否生效，也可以用 ftrace 的 `initcall` / `module` 事件追踪具体驱动的 probe 耗时。
+Android 官方的 boot-time optimization 文档强调两个 Kernel 阶段优化手段：选择性异步驱动探针（`module_name.async_probe=1` 通过 kernel cmdline 或模块参数标注非启动必需的驱动模块）和模块加载顺序控制（由 `modules.load`、`BOARD_VENDOR_KERNEL_MODULES_LOAD`、`BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD` 配合 `MODULE_SOFTDEP()` 声明的模块依赖关系共同决定 ko 加载顺序）。GKI 6.12 的 defconfig 中 `CONFIG_MODULES=y` 已默认启用，OEM 可以通过 `/vendor/etc/init/hw/init.hardware.rc` 调整模块加载时机，将非关键驱动的 probe 推迟到 `boot` phase 之后。这两项手段可以通过 dmesg 中驱动的 probe 日志和模块 init/load 顺序确认是否生效，也可以用 ftrace 的 `initcall` / `module` 事件追踪具体驱动的 probe 耗时。
 
 ### init：分 first-stage 和 second-stage 两段看
 
