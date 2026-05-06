@@ -2,11 +2,16 @@
 title: "系统启动全流程"
 chapter: "1.2"
 status: ready-for-review
+pipeline_stage: task6_pending
 section: "1.2"
 reviewed_date: "2026-05-01"
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
 task6_result: pass-light-edit
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
@@ -145,7 +150,7 @@ Boot ROM → Bootloader → Linux Kernel → first-stage init → second-stage i
 
 这一段通常不在 Perfetto 里直接可见。要分析 Bootloader 本身的耗时，更多还是依赖厂商日志、串口和 bootstat 的外围里程碑。
 
-Android 16 引入了 Generic Bootloader (GBL) 标准化架构。GBL 定义了统一的 Bootloader 行为规范和指标口径，使 `boottime.bootloader.*` 系列属性在各厂商之间变得可比。以前不同 OEM 的 Bootloader 阶段耗时指标各自定义，跨设备对比基本没有意义；GBL 逐步拉齐后，`bootstat -l` 输出的 Bootloader 分段耗时可以作为横向基线使用。
+Android 16 起强烈建议 ARM64 设备部署 Google 审计的 GBL（Generic Bootloader）参考实现。GBL 定义了统一的 Bootloader 行为规范，`bootstat` 支持的 `boottime.bootloader.*` 系列属性是 Bootloader 上报的耗时项。跨设备比较前仍需确认 Bootloader 是否按 GBL 规范上报——未采用 GBL 的设备上，这些属性的口径可能仍然不同。
 
 ### Linux Kernel：把调度器、驱动和最小用户态入口拉起来
 
@@ -153,7 +158,7 @@ Kernel 阶段负责建立页表、初始化调度器、内存管理和关键驱�
 
 Linux 侧最早的进程关系仍然成立：PID 0 是 swapper，`rest_init()` 会拉起 PID 1 的 init 和 PID 2 的 kthreadd。对启动分析来说，Kernel 阶段的结束标志更适合看“控制权何时进入 `/init`”，而不是“system 分区何时挂好”。
 
-Android 官方的 boot-time optimization 文档强调两个 Kernel 阶段优化手段：选择性异步驱动探针（`async_probe` 属性标注非启动必需的驱动模块）和模块位置优化（`module.layout` 控制 ko 加载顺序）。GKI 6.12 的 defconfig 中 `CONFIG_MODULES=y` 已默认启用，OEM 可以通过 `/vendor/etc/init/hw/init.hardware.rc` 调整模块加载时机，将非关键驱动的 probe 推迟到 `boot` phase 之后。这两项手段在 dmesg 中可通过 `initcall_blacklist` / `async_pf` 关键词确认是否生效。
+Android 官方的 boot-time optimization 文档强调两个 Kernel 阶段优化手段：选择性异步驱动探针（`async_probe` 属性标注非启动必需的驱动模块）和模块位置优化（`module.layout` 控制 ko 加载顺序）。GKI 6.12 的 defconfig 中 `CONFIG_MODULES=y` 已默认启用，OEM 可以通过 `/vendor/etc/init/hw/init.hardware.rc` 调整模块加载时机，将非关键驱动的 probe 推迟到 `boot` phase 之后。这两项手段可以通过 dmesg 中驱动的 probe 日志和模块 init/load 顺序确认是否生效，也可以用 ftrace 的 `initcall` / `module` 事件追踪具体驱动的 probe 耗时。
 
 ### init：分 first-stage 和 second-stage 两段看
 
@@ -224,7 +229,7 @@ Home 真正首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFli
 
 ### boot completed 广播
 
-`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都是 UserManagerService 这一侧的用户生命周期广播，不是 Launcher 的 UI 里程碑。
+`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都是 `UserController` 这一侧的用户生命周期广播，不是 Launcher 的 UI 里程碑。
 
 - `ACTION_LOCKED_BOOT_COMPLETED`：用户进入 running locked 阶段后发送，Direct Boot aware 组件可以在这里开始工作。
 - `ACTION_BOOT_COMPLETED`：用户真正解锁、CE storage 可用后发送。
@@ -500,7 +505,7 @@ init.zygote64.rc:  service zygote /system/bin/app_process64 ... --start-system-s
   - `frameworks/base/services/core/java/com/android/server/EventLogTags.logtags` — `boot_progress_system_run` / PMS 相关里程碑
   - `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` — `boot_progress_ams_ready` / `boot_progress_enable_screen`
   - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `systemReady()`、`startHomeOnAllDisplays()` 调用路径
-  - `frameworks/base/services/core/java/com/android/server/pm/UserManagerService.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED`
+  - `frameworks/base/services/core/java/com/android/server/am/UserController.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED` 广播发送
   - `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — `enableScreenAfterBoot()`
   - `hardware/interfaces/cas/aidl/default/cas-default-lazy.rc` — lazy AIDL service 的 rc 示例
 - 官方文档：
