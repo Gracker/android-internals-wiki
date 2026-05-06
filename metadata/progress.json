@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T16:24:00+08:00",
+  "generated_at": "2026-05-06T16:39:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,9 +7,9 @@
     "last_updated": "2026-05-06",
     "pipeline_stage_counts": {
       "unknown": 34,
-      "ready-to-publish": 117,
-      "task2b_pending": 76,
-      "task9_pending": 22,
+      "ready-to-publish": 118,
+      "task2b_pending": 77,
+      "task9_pending": 20,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -21,30 +21,30 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 199,
-      "pending": 14
+      "reviewed": 201,
+      "pending": 12
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 125,
-      "pending": 83,
+      "fixed": 124,
+      "pending": 84,
       "idle": 3
     },
-    "finalized": 118,
-    "ready-for-review": 102,
+    "finalized": 119,
+    "ready-for-review": 101,
     "unknown": 32,
     "status_counts": {
       "unknown": 32,
-      "finalized": 118,
-      "ready-for-review": 102
+      "finalized": 119,
+      "ready-for-review": 101
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 34,
-      "ready-to-publish": 117,
-      "task2b_pending": 76,
-      "task9_pending": 22,
+      "ready-to-publish": 118,
+      "task2b_pending": 77,
+      "task9_pending": 20,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 199,
-      "pending": 14
+      "reviewed": 201,
+      "pending": 12
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 125,
-      "pending": 83,
+      "fixed": 124,
+      "pending": 84,
       "idle": 3
     },
     "last_updated": "2026-05-06"
@@ -154,32 +154,33 @@
       "title": "系统启动全流程",
       "chapter": "1.2",
       "section": "1.2",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-03-30",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 8 (API 26) - Android 16 (API 36)",
       "last_verified": "2026-04-17",
       "last_verified_against": "AOSP android-16.0.0_r1, source.android.com 官方文档",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T15:23:00+08:00",
+      "last_task9_at": "2026-05-06T16:39:00+08:00",
       "review_round": "4",
       "review_notes": "2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。",
-      "task9_review_notes": "2026-05-06 15:23 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 4；Kernel 模块加载顺序配置 `module.layout` 为错误锚点，需改为 modules.load / BOARD_*_KERNEL_MODULES_LOAD；既有 Zygote slice、Pixel 8 数据、dm-verity 版本边界 P2 沿用 suggestions。",
+      "task9_review_notes": "2026-05-06 16:39 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 4（沿用既有 suggestions：Zygote slice、bootstat/GBL、Pixel 8 数据、dm-verity 版本边界）。Kernel 模块加载顺序已由 module.layout 修为 modules.load / BOARD_*_KERNEL_MODULES_LOAD；Task6 已通过且 queue 无 pending，自动晋升 finalized。",
       "task6_reviewed_date": "2026-05-06",
       "task2b_result": "fixed",
       "last_task6_at": "2026-05-06T16:24:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-16-review.md",
-      "task6_review_notes": "2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。"
+      "task6_review_notes": "2026-05-06 16:24 Task6：Task2B 修复后写作复审；清理大纲口语化表述，无新增 L3/L4 回炉项，送 Task9 复审。",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-16-deep-review.md"
     },
     "src/part1-fundamentals/ch01-architecture/03-process-model.md": {
       "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
@@ -1982,10 +1983,10 @@
       "last_verified": "2026-05-01",
       "last_verified_against": "Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1993,15 +1994,15 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T13:39:29+08:00",
+      "last_task9_at": "2026-05-06T16:39:00+08:00",
       "task6_reviewed_date": "2026-05-06",
       "last_task6_at": "2026-05-06T16:24:00+08:00",
       "review_notes": "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。",
       "last_task2b_at": "2026-05-06T16:04:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-16-review.md",
       "task6_review_notes": "2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-13-deep-review.md",
-      "task9_review_notes": "2026-05-06 Task9 13:39：needs-rework。P0 2 / P1 1 / P2 0。"
+      "last_task9_review_log": "logs/deep-review/2026-05-06-16-deep-review.md",
+      "task9_review_notes": "2026-05-06 16:39 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。L255-L271 第二个 sugov_get_util() 伪代码块仍是旧的 android16 错误形态，未替换为 android15-6.6 真实调用链。"
     },
     "src/part1-fundamentals/ch05-cpu-power/05-thermal.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
