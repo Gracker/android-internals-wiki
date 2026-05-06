@@ -40,11 +40,11 @@ sources:
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
-last_task2b_at: "2026-05-07T06:40:00+08:00"
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-05-07T07:47:17+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
 task9_reviewed_date: "2026-05-07"
@@ -426,7 +426,7 @@ adb shell dumpsys batterystats --reset
 adb shell dumpsys batterystats > batterystats.txt
 ```
 
-**Perfetto + ODPM**：在支持 ODPM 的设备上，Perfetto 可以采集 `android.hardware.power.stats` 数据源，将电源轨的功耗数据与 CPU 调度、线程活动等 Trace 信息同步展示。这是目前最精确的功耗分析手段。
+**Perfetto + ODPM**：在支持 ODPM 的设备上，Perfetto 通过 `android.power` 数据源采集电源轨功耗数据，与 CPU 调度、线程活动等 Trace 信息同步展示。这是目前最精确的功耗分析手段。
 
 ```bash
 # Perfetto 配置示例：采集 ODPM 数据
@@ -450,7 +450,7 @@ duration_ms: 60000
 EOF
 ```
 
-Perfetto 的 Android power probe 注册的数据源名是 `android.power`，不是 HAL 语义的 `android.hardware.power.stats`。power rail 数据通过 `android_power_config` 的 `collect_power_rails` 字段启用；按需还可以开启 `battery_poll_ms`、energy breakdown、entity residency 等子项。[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/probes/android_power/android_power_data_source.cc]
+Perfetto 的 Android power probe 注册的数据源名是 `android.power`，不是 HAL 语义的 `android.hardware.power.stats`。power rail 数据通过 `android_power_config` 的 `collect_power_rails` 字段启用；按需还可以开启 `battery_poll_ms`、energy breakdown、entity residency 等子项。[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/probes/power/android_power_data_source.cc]
 
 **Android Studio Power Profiler**：从 Hedgehog 版本开始集成，在 System Trace 视图中直接显示 ODPM 电源轨数据，与 CPU、线程、Frame 时间线同步展示。适合 App 开发者做日常功耗分析。
 

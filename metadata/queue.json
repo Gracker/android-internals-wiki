@@ -12166,8 +12166,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-05T15:17:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-05-05-15-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-05-05-15-review.md",
+      "completed_at": "2026-05-07T07:47:17+08:00",
+      "completed_reason": "AIW源码调研区块整合为两个正式小节（Renderer崩溃恢复+渲染管线与Perfetto追踪），删除4个AIW标记块、重复代码示例和HTML注释，参考资料区补充aw_browser_terminator.cc"
     },
     {
       "section": "17.2",
@@ -13657,7 +13659,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T07:28:39+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T07:47:17+08:00",
+      "completed_reason": "P0 Perfetto ODPM数据源名从android.hardware.power.stats修正为android.power；P0 源码路径从probes/android_power修正为probes/power/android_power_data_source.cc"
     },
     {
       "section": "17.2",

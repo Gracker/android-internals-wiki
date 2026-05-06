@@ -26,19 +26,19 @@ sources:
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task2b_state: pending
-task2b_result: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task2b_state: fixed
+task2b_result: fixed
 last_task6_at: "2026-05-05T15:17:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-15-review.md"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 2，P2 3。 | 2026-05-05 Task6 15:17：L1 高频词与读者指向轻修；发现 AIW 源码调研区块堆叠与参考资料后追加正文，已写入 Task2B 回炉。"
 task9_result: needs-rework
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
 last_task9_at: "2026-04-30T10:31:41+08:00"
-last_task2b_at: "2026-04-24T01:51:58+08:00"
+last_task2b_at: "2026-05-07T07:47:17+08:00"
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -520,112 +520,87 @@ Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展
 
 这是一个常见误解。`evaluateJavascript()` 是异步 API——调用后立即返回，JS 执行结果通过 `ValueCallback` 异步回调。但由于它必须在 UI 线程调用且回调也在 UI 线程，很多开发者错误地用同步等待模式来使用它，导致 ANR。正确做法是完全基于回调/异步模式。
 
+## WebView Renderer 进程崩溃恢复
 
-[需重写: 以下 “AIW-源码调研” 区块仍是调研素材堆叠，且与前文“常见问题与误区”和“参考资料”存在重复。Task2B 需要把可用内容整合回主体小节或参考资料，删除编辑过程标题与重复段落。]
+当 WebView 的 Renderer 进程因 OOM 或 crash 退出时，宿主 App 进程不会崩溃，但 WebView 会显示白屏。`WebViewClient.onRenderProcessGone()` 是恢复的核心回调（API 26+）。
 
-## AIW-源码调研-2026-04-25
+### 调用链
 
-<!-- AIW-源码调研-2026-04-25 -->
-
-### Render 进程崩溃恢复（onRenderProcessGone）
-
-当 WebView 的渲染进程因 OOM 或 crash 退出时，宿主 App 进程不会崩溃，但 WebView 会显示白屏。正确处理 `WebViewClient.onRenderProcessGone()` 是恢复用户体验的关键。
-
-**完整调用链：**
+Renderer 进程退出后，事件通过以下路径传递到应用层：
 
 ```
 Native Renderer Process (Chromium)
   ↓ crash / OOM-killed
+AwBrowserTerminator.ProcessTerminationStatus()
+  → SyncSocket pipe 判断是崩溃还是 SIGKILL
 AwContents.onRenderProcessGone(crashed, effectivePriority)
   ↓
 AwContentsClient.onRenderProcessGone(AwRenderProcessGoneDetail)
-  ↓ JNI/native bridge
-WebViewContentsClientAdapter (framework internal)
-  ↓ 适配层包装
-android.webkit.WebViewClient.onRenderProcessGone(view, RenderProcessGoneDetail)
+  ↓
+WebViewClient.onRenderProcessGone(view, RenderProcessGoneDetail)
   ↓ 应用实现
-  - 返回 true：应用已处理，WebView 实例作废，白屏
-  - 返回 false：App 进程崩溃（crash）或被杀死（killed）
+  - return true：应用已处理，WebView 实例作废，白屏
+  - return false（默认）：App 崩溃（crash）或被杀死（killed）
 ```
 
-**关键源码文件：**
+### 崩溃类型区分
 
-| 文件路径 | 关键内容 | 版本 |
-|----------|---------|------|
-| `frameworks/base/core/java/android/webkit/WebViewClient.java` | `onRenderProcessGone()` 回调定义（行 597） | API 26+ |
-| `frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java` | `didCrash()` / `rendererPriorityAtExit()` 抽象方法 | API 26+ |
+`RenderProcessGoneDetail` 提供两种退出原因：
 
-<!-- AIW-源码调研-2026-05-05 -->
-> 📚 **源码调研补充（2026-05-05）**：本节的 `onRenderProcessGone()` 分析基于 AOSP master 分支的 Framework 层源码。完整的 Renderer 进程隔离架构、WebViewFactory Provider 加载机制和多进程判定逻辑，详见调研报告：
-> [`2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md`](https://github.com/gracker/AutoResearchClaw/tree/main/调研报告)（OpenClaw AutoResearchClaw 体系）。
->
-> 核心发现：
-> - `WebViewDelegate.isMultiProcessEnabled()` 返回 true 表示多进程模式开启
-> - Provider 类名从 `WebViewChromiumFactoryProviderForT` (API 33-) 演变为 `WebViewChromiumFactoryProviderForB` (API 36+)
-> - `RenderProcessGoneDetail.didCrash()` 区分 crash vs OOM kill：true = crash，false = 系统 kill
-> - 多 WebView 共用同一 Renderer 时，一个 OOM 会对所有关联 WebView 触发 `onRenderProcessGone`
->
-<!-- AIW-源码调研-2026-05-05 -->
+- **Crash（`didCrash()` 返回 true）**：V8 fatal error、GPU 崩溃等进程内部异常
+- **Killed by system（`didCrash()` 返回 false）**：系统低内存时 LMK 主动杀死
 
-| `frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java` | 渲染器无响应回调体系 | API 29+ |
-| `frameworks/base/core/java/android/webkit/WebViewRenderProcess.java` | `terminate()` 方法 | API 29+ |
-| `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | 渲染进程退出事件触发层 | Chromium mainline |
+崩溃的 WebView 实例完全不可用，必须从父容器移除、清理所有引用、调用 `view.destroy()`。
 
-**RenderProcessGoneDetail 关键方法：**
-
-```java
-// 文件: frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java
-public abstract class RenderProcessGoneDetail {
-    @Deprecated
-    public RenderProcessGoneDetail() {}
-
-    // 返回 true：渲染进程崩溃；返回 false：被系统杀死（通常因 OOM）
-    public abstract boolean didCrash();
-
-    // 返回退出时的渲染器优先级：RENDERER_PRIORITY_WAIVED/BOUND/IMPORTANT
-    @WebView.RendererPriority
-    public abstract int rendererPriorityAtExit();
-}
-```
-
-**正确恢复流程（应用层）：**
+### 正确恢复流程
 
 ```java
 webView.setWebViewClient(new WebViewClient() {
     @Override
     public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-        // 1. 移除旧 WebView
+        // 1. 保存当前状态
+        String lastUrl = view.getUrl();
+        // 2. 从父容器移除
         ViewGroup parent = (ViewGroup) view.getParent();
         if (parent != null) parent.removeView(view);
-        // 2. 清空引用（将 mWebView = null）
-        // 3. 销毁
+        // 3. 销毁旧实例
         view.destroy();
         // 4. 重建新实例
-        mWebView = new WebView(context);
-        mWebView.setWebViewClient(this);
-        container.addView(mWebView);
-        mWebView.loadUrl(mCurrentUrl);
-        return true; // 已处理，防止 App 崩溃
+        WebView newWebView = new WebView(context);
+        newWebView.setWebViewClient(this);
+        container.addView(newWebView);
+        newWebView.loadUrl(lastUrl);
+        return true; // 已处理，不触发 App 崩溃
     }
 });
 ```
 
-**特别注意：**
-- `chrome://crash` 可触发渲染器崩溃用于测试（影响所有共享渲染器的 WebView）
-- 多个 WebView 共享同一渲染器时，`onRenderProcessGone` 会针对**每个**受影响 WebView 分别调用
-- 每次调用只能清理对应的 `view` 参数，不能假设其他 WebView 也受影响
-- API 29+ 新增 `WebViewRenderProcessClient` 提供 `onRenderProcessUnresponsive` 回调，可在进程被杀前主动终止
+注意几点：
 
+- `onRenderProcessGone()` 在 Android 8.0 (API 26) 引入，默认实现（返回 false）会导致 App 崩溃或被杀死，必须主动重写
+- 多个 WebView 共享同一 Renderer 时，`onRenderProcessGone` 会针对每个受影响 WebView 分别调用，每次只能清理 `view` 参数对应的实例
+- `chrome://crash` 可触发渲染器崩溃用于测试（会影响所有共享该渲染器的 WebView）
+- `WebViewDelegate.isMultiProcessEnabled()` 返回 true 表示多进程模式开启，Provider 类名从 `WebViewChromiumFactoryProviderForT` (API 33-) 演变为 `WebViewChromiumFactoryProviderForB` (API 36+)
 
-## AIW-源码调研-2026-04-27
+### WebViewRenderProcessClient（API 29+）
 
-<!-- AIW-源码调研-2026-04-27 -->
+API 29 新增 `WebViewRenderProcessClient`，提供 `onRenderProcessUnresponsive()` 回调，可在进程被杀前主动终止无响应的 Renderer。配套的 `WebViewRenderProcess.terminate()` 方法允许应用主动终止渲染进程。
 
-### WebView / Chromium 渲染管线与 Perfetto 追踪配置
+### 关键源码文件
 
-**背景补充（2026-04-27 调研）**：旧说法「WebView 卡顿分析需要用 Chrome DevTools 而非 Perfetto」已过时。Perfetto UI 在 target=Android 时可同时采集 ATrace 和 Chromium TRACE_EVENT，二者组合覆盖系统层和浏览器内部管线。
+| 文件路径 | 关键内容 | 版本 |
+|----------|---------|------|
+| `frameworks/base/core/java/android/webkit/WebViewClient.java` | `onRenderProcessGone()` 回调定义 | API 26+ |
+| `frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java` | `didCrash()` / `rendererPriorityAtExit()` 抽象方法 | API 26+ |
+| `frameworks/base/core/java/android/webkit/WebViewRenderProcessClient.java` | 渲染器无响应回调体系 | API 29+ |
+| `frameworks/base/core/java/android/webkit/WebViewRenderProcess.java` | `terminate()` 方法 | API 29+ |
+| `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | 渲染进程退出事件触发层 | Chromium mainline |
 
-#### Chromium 多进程架构源码路径
+[已验证: 来源见 AOSP `frameworks/base/core/java/android/webkit/WebViewClient.java`、`RenderProcessGoneDetail.java`、`WebViewRenderProcessClient.java`]
+
+## WebView 渲染管线与 Perfetto 追踪
+
+### Chromium 多进程架构
 
 Android WebView 的渲染引擎源码位于 `chromium/src/android_webview/`（AOSP external 仓库分支），核心组件：
 
@@ -635,7 +610,7 @@ Android WebView 的渲染引擎源码位于 `chromium/src/android_webview/`（AO
 | `AwGLFunctor.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwGLFunctor.java` | 原生 GL 渲染器，管理 GL 资源 |
 | Viz 进程 | `chromium/src/components/viz/` | GPU 组合器，聚合多 Renderer 帧 |
 
-**渲染调用链（从 JS 到屏幕）：**
+从 JS 到屏幕的完整渲染路径：
 
 ```
 V8 (JS 执行) → Blink (Layout/Paint) → CompositorThread → CompositorFrame
@@ -643,16 +618,19 @@ V8 (JS 执行) → Blink (Layout/Paint) → CompositorThread → CompositorFrame
   → SurfaceFlinger (系统合成) → Display
 ```
 
-#### Perfetto 追踪配置
+Viz（compositor service / GPU service）在 WebView 场景下通常以 in-process 方式运行在宿主 App 进程内，不是独立进程。Chromium `android_webview/docs/architecture.md` 明确 WebView 的 GPU service、Network Service 等非沙箱服务在各 OS 版本都 in-process。Perfetto 中看到的 `VizCompositorThread`、`CrGpuMain` 都是宿主进程内的线程。
 
-WebView Perfetto 追踪需要**同时开启两类数据源**：
+### Perfetto 追踪配置
+
+WebView Perfetto 追踪需要同时开启两类数据源：
 
 **ATrace 系统注解**（Android Framework 层）：
 - 在 Perfetto UI 中选择 target=Android，启用 `webview` 分类
 - 或 `adb shell perfetto` 配置 `atrace_categories: "webview"`
-- ATrace 注入 `Trace.TRACE_TAG_WEBVIEW`（`1L << 4`，对应 atrace category `webview`），应用侧通过 `TracingController.getInstance().start(new TracingConfig.Builder().addCategories(...).build())`（API 28+）控制 WebView 内部 tracing
+- ATrace 注入 `Trace.TRACE_TAG_WEBVIEW`（`1L << 4`），应用侧通过 `TracingController.getInstance().start(new TracingConfig.Builder().addCategories(...).build())`（API 28+）控制 WebView 内部 tracing
 
 **Chromium TRACE_EVENT**（浏览器内部层）：
+
 | 分类 | 追踪内容 | 用途 |
 |------|---------|------|
 | `blink` | Blink 渲染引擎（DOM/CSS/Layout/Paint） | JS → 像素内部管线 |
@@ -663,7 +641,7 @@ WebView Perfetto 追踪需要**同时开启两类数据源**：
 | `navigation` | 页面导航 IPC | 加载时间分解 |
 | `loading` | 资源加载 | 网络 → 渲染流水线 |
 
-#### 掉帧根因 Perfetto 定位表
+### 掉帧根因 Perfetto 定位表
 
 | 根因 | Perfetto Slice 特征 | 分类 |
 |------|-------------------|------|
@@ -674,14 +652,9 @@ WebView Perfetto 追踪需要**同时开启两类数据源**：
 | BufferQueue 堵塞 | dequeue slot 等待 | ATrace `webview` |
 | SurfaceFlinger 合成超时 | `SurfaceFlinger` compose 过长 | ATrace |
 
-#### 渲染进程崩溃的 Perfetto 识别
+Renderer 进程崩溃在 Perfetto 中的表现：Renderer 进程所有 slice 在 `perfetto.process_track` 中突然消失，对应 `render_process_gone` 事件出现在 `android_webview.timeline` 分类下，SurfaceFlinger 侧 WebView 图层消失。
 
-Renderer 进程崩溃在 Perfetto 中的表现：
-- Renderer 进程所有 slice 在 `perfetto.process_track` 中突然消失
-- 对应 `render_process_gone` 事件出现在 `android_webview.timeline` 分类下
-- SurfaceFlinger 侧：`SurfaceFlinger::onLayerUpdate` 停止触发，WebView 图层消失
-
-#### 版本差异
+### Renderer 模型版本差异
 
 | 版本 | Renderer 模型 | Surface / 合成路径 | 说明 |
 |------|--------------|-------------------|------|
@@ -690,53 +663,7 @@ Renderer 进程崩溃在 Perfetto 中的表现：
 | Android 11+ (API 30) | 全部 out-of-process | ASurfaceControl / BufferQueue | renderer 崩溃隔离成为默认 |
 | Android 13+ (API 33) | Sandbox 加强隔离 | 优化 BufferQueue 交互 | 安全边界收紧 |
 
-> **注意**：Viz（compositor service / GPU service）在 WebView 场景下通常以 in-process 方式运行在宿主 App 进程内，不是独立进程。Chromium `android_webview/docs/architecture.md` 明确 WebView 的 GPU service、Network Service 等非沙箱服务在各 OS 版本都 in-process。Perfetto 中看到的 `VizCompositorThread`、`CrGpuMain` 都是宿主进程内的线程。不要把 Viz 组件等同于"独立 Viz 进程"。
-
-> **源码依据**：Chromium `android_webview/docs/architecture.md`（多进程架构）、`chromium/src/base/trace_event/README.md`（TRACE_EVENT 宏）、`perfetto.dev/docs/analysis/webview-tracing`（Perfetto 配置）
-
-
-
-
-<!-- AIW-源码调研-2026-05-02 -->
-
-### 🔍 WebView Renderer 进程崩溃恢复的源码机制
-
-基于 Chromium 的 WebView 独立进程架构，当 Renderer 进程崩溃或被系统 OOM Killer 杀死后，Android 8.0+ 通过 `onRenderProcessGone()` 回调让应用有机会优雅恢复。
-
-#### 关键调用链：
-1. **进程终止检测**：`AwBrowserTerminator.ProcessTerminationStatus()` 通过 SyncSocket pipe 判断是崩溃还是 SIGKILL
-2. **回调分发**：`OnRenderProcessGoneDetail()` 遍历所有关联的 WebView 实例
-3. **Android API 转换**：`AwContents.onRenderProcessGone()` → `AwContentsClient.onRenderProcessGone()` → `WebViewClient.onRenderProcessGone()`
-
-#### 设计意图：
-```java
-// frameworks/base/core/java/android/webkit/WebViewClient.java
-/**
- * @return {@code true} if the host application handled the situation that process has
- *         exited, otherwise, application will crash if render process crashed,
- *         or be killed if render process was killed by the system.
- */
-public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-    return false; // 默认返回 false，让 Chromium 处理（崩溃或杀死 App）
-}
-```
-
-#### 性能关键点：
-- **崩溃场景**：`didCrash() = true` → 调用 `LOG(FATAL)` 导致 App 崩溃
-- **OOM 场景**：`didCrash() = false` → 调用 `kill(getpid(), SIGKILL)` 杀死整个 App 进程
-- **正确处理**：检测 `didCrash()`，销毁并重建 WebView 实例，避免白屏或崩溃
-
-#### 优化策略：
-- 监听 `onRenderProcessGone()` 并设置超时重建机制
-- 使用 `setRendererPriorityPolicy()` 控制渲染优先级，减少被 OOM 杀死概率
-- 建立多 WebView 场景下的优先级竞争处理机制
-
-#### 源码位置关键文件：
-- `chromium/src/android_webview/browser/aw_browser_terminator.cc` - 进程终止检测
-- `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` - Java 层入口
-- `frameworks/base/core/java/android/webkit/RenderProcessGoneDetail.java` - 公开 API
-
-> 💡 **注意**：`onRenderProcessGone()` 在 Android 8.0 (API 26) 引入，默认实现会根据情况导致 App 崩溃或被杀死，必须主动重写实现。
+[已验证: 来源见 Chromium `android_webview/docs/architecture.md`、`chromium/src/base/trace_event/README.md`、`perfetto.dev/docs/analysis/webview-tracing`]
 
 
 ## 参考资料
@@ -746,6 +673,7 @@ public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail)
   - `frameworks/base/core/java/android/webkit/WebViewFactory.java` — Chromium 引擎加载
   - `frameworks/base/core/java/android/webkit/WebSettings.java` — WebView 配置
   - `android_webview/` (chromium.googlesource.com) — Chromium WebView 实现
+  - `chromium/src/android_webview/browser/aw_browser_terminator.cc` — Renderer 进程终止检测
 
 - **官方文档**：
   - [developer.android.com — WebView 概览](https://developer.android.com/develop/ui/views/layout/webapps/webview)
@@ -763,63 +691,3 @@ public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail)
   - §7.2 卡顿原因体系
   - §8.1 Android 功耗管理
   - §13.7 Perfetto 高级用法
-
-<!-- AIW-源码调研-2026-05-04 -->
-
-### WebView Renderer 进程崩溃恢复策略
-
-根据 AOSP 源码调研（2026-05-04），WebView 渲染进程崩溃恢复的关键机制：
-
-#### 核心机制（API 26+）
-
-`WebViewClient.onRenderProcessGone(WebView view, RenderProcessGoneDetail detail)` 是恢复的核心回调：
-
-```java
-// frameworks/base/core/java/android/webkit/WebViewClient.java (android14-release)
-public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-    return false; // 默认行为：崩溃或被杀
-}
-```
-
-返回值语义：
-- `return true`: 应用已处理，系统不杀死 App，WebView 可继续使用
-- `return false`: 默认行为，如果 `detail.didCrash() == true` 则 App 崩溃
-
-#### 关键约束
-
-**文档明确说明：**
-> "The given WebView cant be used, and should be removed from the view hierarchy, all references to it should be cleaned up"
-
-崩溃的 WebView 实例**完全不可用**，必须：
-1. 从父容器移除
-2. 清理所有引用
-3. 调用 `view.destroy()`
-
-#### 崩溃类型区分
-
-`RenderProcessGoneDetail` 提供两种退出原因：
-
-- **Crash（didCrash() = true）**：V8 fatal error、GPU 崩溃等进程内部异常
-- **Killed by system（didCrash() = false）**：系统低内存时 LMK 主动杀死
-
-#### 最佳实践
-
-```java
-@Override
-public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
-    // 1. 保存状态
-    String lastUrl = view.getUrl();
-    
-    // 2. 移除和销毁
-    ViewGroup parent = (ViewGroup) view.getParent();
-    if parent is not None: parent.removeView(view);
-    view.destroy();
-    
-    // 3. 重建 WebView
-    WebView newWebView = new WebView(context);
-    newWebView.loadUrl(lastUrl);
-    container.addView(newWebView);
-    
-    return true; // 已处理，不触发系统崩溃
-}
-```
