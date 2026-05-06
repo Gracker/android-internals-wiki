@@ -3475,28 +3475,32 @@
       "title": "Android 功耗模型",
       "chapter": "11.1",
       "section": "11.1",
-      "status": "finalized",
+      "status": "ready-for-review",
       "drafted_date": "2026-04-03",
       "drafted_by": "openclaw-task2a",
       "applicable_versions": "Android 5.0 (API 21) - Android 16 (API 36)",
       "last_verified": "2026-04-23",
       "last_verified_against": "AOSP android-16.0.0_r1 + BatteryStatsImpl.shouldResetOnUnplugLocked()",
       "confidence": "medium",
-      "pipeline_stage": "ready-to-publish",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "fixed",
-      "task6_result": "pass-light-edit",
-      "task9_result": "pass-tech-review",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "task6_result": "needs-rework",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-23",
+      "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_reviewed_date": "2026-05-05",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T15:31:06+08:00",
+      "last_task9_at": "2026-05-05T08:37:27+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "last_task6_at": "2026-05-06T20:13:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-20-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-05-08-deep-review.md",
+      "task6_review_notes": "2026-05-06 Task6 20:13：L1/L2 小修；技术风险信号已写入 queue.json 与 suggestions.md，交 Task2B/Task9。"
     },
     "src/part2-performance/ch11-power/02-app-power-optimization.md": {
       "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
@@ -5489,14 +5493,14 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
-      "task6_result": "pass-light-edit",
+      "task6_result": "needs-rework",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
-      "last_task6_at": "2026-05-06T11:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-06-11-review.md",
-      "task6_review_notes": "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。",
+      "last_task6_at": "2026-05-06T20:13:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-20-review.md",
+      "task6_review_notes": "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T11:39:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-06-11-deep-review.md",
@@ -7841,6 +7845,37 @@
           "auto_promoted": false
         }
       ]
+    },
+    {
+      "date": "2026-05-06",
+      "time": "20:13",
+      "task": "task6-review",
+      "review_log": "logs/review/2026-05-06-20-review.md",
+      "sections_reviewed": [
+        {
+          "section": "11.1",
+          "title": "Android 功耗模型",
+          "result": "needs-rework",
+          "fixes": 9,
+          "issues": 2,
+          "auto_promoted": false
+        },
+        {
+          "section": "17.2",
+          "title": "SoC 平台差异",
+          "result": "needs-rework",
+          "fixes": 8,
+          "issues": 1,
+          "auto_promoted": false
+        }
+      ],
+      "skipped": [
+        {
+          "section": "19.27",
+          "title": "千万级 DAU 的 APM 端侧架构",
+          "reason": "内容不充分"
+        }
+      ]
     }
   ],
   "progress": {
@@ -8996,7 +9031,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06",
+  "last_updated": "2026-05-06T20:13:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11436,6 +11471,24 @@
       "fixes": 1,
       "issues": 0,
       "notes": "补齐 sources frontmatter；无新增 Task2B 回炉项；Task9 仍 pending。"
+    },
+    "11.1": {
+      "date": "2026-05-06",
+      "time": "20:13",
+      "result": "needs-rework",
+      "mode": "revisiting",
+      "fixes": 9,
+      "issues": 2,
+      "notes": "L1/L2 小修；技术风险信号已写入 queue.json 与 suggestions.md，交 Task2B/Task9。"
+    },
+    "17.2": {
+      "date": "2026-05-06",
+      "time": "20:13",
+      "result": "needs-rework",
+      "mode": "revisiting",
+      "fixes": 8,
+      "issues": 1,
+      "notes": "L1/L2 小修；技术风险信号已写入 queue.json 与 suggestions.md，交 Task2B/Task9。"
     }
   },
   "2026-05-04-20-task9": {
@@ -11894,8 +11947,39 @@
     }
   },
   "queue_summary": {
-    "pending": 178,
-    "completed": 211,
-    "updated_at": "2026-05-06T20:10:09.669150"
+    "pending": 180,
+    "completed": 219,
+    "blocked": 8,
+    "updated_at": "2026-05-06T20:13:00+08:00"
+  },
+  "2026-05-06-20-task6": {
+    "task": "task6-review",
+    "time": "2026-05-06T20:13:00+08:00",
+    "review_log": "logs/review/2026-05-06-20-review.md",
+    "sections": [
+      {
+        "section": "11.1",
+        "title": "Android 功耗模型",
+        "result": "needs-rework",
+        "fixes": 9,
+        "issues": 2,
+        "auto_promoted": false
+      },
+      {
+        "section": "17.2",
+        "title": "SoC 平台差异",
+        "result": "needs-rework",
+        "fixes": 8,
+        "issues": 1,
+        "auto_promoted": false
+      }
+    ],
+    "skipped": [
+      {
+        "section": "19.27",
+        "title": "千万级 DAU 的 APM 端侧架构",
+        "reason": "内容不充分：outline 后正文 0 行，有效内容 0 行"
+      }
+    ]
   }
 }

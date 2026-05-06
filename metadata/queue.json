@@ -8961,7 +8961,7 @@
       "section": "11.1",
       "section_title": "Android 功耗模型",
       "priority": 95,
-      "reason": "[External Review] 11.1 功耗模型存在架构代差事实错误",
+      "reason": "[review回炉] Task6 复审发现仍有技术风险信号需 Task2B/Task9 处理",
       "review_issues": [
         {
           "type": "事实错误",
@@ -8989,14 +8989,32 @@
           "evidence": [
             "Android 15 PowerMonitor API (API 35)"
           ]
+        },
+        {
+          "type": "需确认",
+          "location": "PowerMonitor API（Android 15+）段落",
+          "detail": "上一轮 Task9 已提示 PowerMonitor API 调用对象存在风险；正文仍写“App 通过 PowerManager 获取 PowerMonitor 实例”，Task6 已降级为待验证，但不裁决 API 入口真伪。",
+          "suggestion": "Task9 对照 Android 15/API 35 SDK 与官方文档确认 PowerMonitor 获取入口；Task2B 按确认结果修正文案和验证标注。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "与其他机制的关系 / 版本演进：PAS、ADPF 与 ODPM 动态反馈",
+          "detail": "PAS 通过 Power HAL AIDL 订阅 ODPM 修正 EM、ADPF 利用 ODPM 预防性降频等表述仍缺公开 AOSP/官方文档逐行支撑；正文已有待验证标注，但版本表仍属于高风险技术断言。",
+          "suggestion": "补 CDD/source.android.com/AOSP 公开锚点；无法确认时降级表述，避免把推测写成确定机制。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "completed",
+      "status": "pending",
       "source_file": "2026-04-29-11-11.1-external-review.md",
       "completed_at": "2026-05-06T20:09:51.282681",
-      "completed_reason": "P95 EAS/PAS描述已有PAS动态反馈段落(概念已覆盖)；ADPF/ODPM预防性降频已有描述(加待验证标签)；PowerMonitor API已修正(移除错误的createThermalStatusListener引用，改为正确描述)；PAS/ADPF待验证标签已补强"
+      "completed_reason": "P95 EAS/PAS描述已有PAS动态反馈段落(概念已覆盖)；ADPF/ODPM预防性降频已有描述(加待验证标签)；PowerMonitor API已修正(移除错误的createThermalStatusListener引用，改为正确描述)；PAS/ADPF待验证标签已补强",
+      "reopened_by": "task6-review",
+      "reopened_at": "2026-05-06T20:13:00+08:00",
+      "original_review_log": "logs/review/2026-05-06-20-review.md",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ]
     },
     {
       "section": "11.2",
@@ -12147,10 +12165,11 @@
       "section": "17.2",
       "section_title": "SoC 平台差异",
       "priority": 95,
-      "reason": "[Deep Tech Review] 17.2 SoC 平台差异 仍有 P0/P1 技术问题，需回炉修正",
+      "reason": "[review回炉] Task6 复审发现仍有技术风险信号需 Task2B/Task9 处理",
       "material_paths": [
         "intake/research-gaps.md",
-        "intake/suggestions.md"
+        "intake/suggestions.md",
+        "intake/suggestions.md（含 review 意见）"
       ],
       "review_issues": [
         {
@@ -12170,14 +12189,23 @@
           "location": "L171-L173 DSU 与迁移成本解释",
           "detail": "正文用“Armv8.5+ DSU 缓存一致性协议让跨核 L2 命中延迟可接受”解释全大核迁移成本低。DSU/DynamIQ 提供一致性与共享系统缓存/DSU 侧缓存能力，不等于跨核复用另一个核心的私有 L2；任务迁移仍会损失 L1/私有 L2 locality。",
           "suggestion": "把迁移成本解释改为实机 trace + PMU 观察问题：核心性能差距缩小可能改变负载均衡，但是否低成本要看 cache miss、uclamp、cluster policy、wakeup path 和 workload；DSU 只能作为 coherency/shared cache 背景，不能写成跨核私有 L2 命中。"
+        },
+        {
+          "type": "需确认",
+          "location": "主流 SoC 平台概览：高通 Snapdragon 段",
+          "detail": "正文仍写 Oryon 核心“与苹果 M 系列同源”，与 Task9 11:39 已指出的风险项重叠；后文已改成“Nuvia 背景、创始成员有 Apple CPU 经历”，两处口径不一致。",
+          "suggestion": "Task9/Task2B 统一为更稳妥口径：开发团队背景来自 Nuvia，创始成员有 Apple CPU 经历；删除或标注“同源”表述，除非补到 Qualcomm 白皮书或权威拆解锚点。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T15:51:58+08:00",
-      "status": "completed",
+      "status": "pending",
       "updated_at": "2026-05-06T11:39:00+08:00",
       "completed_at": "2026-05-06T17:58:56+08:00",
-      "completed_reason": "P0 Perfetto迁移SQL改用LAG(ucpu)窗口函数替代不存在的prev_cpu；P1 Oryon缓存/延迟数字降级为方向性描述+待验证；P1 DSU解释修正为'DSU提供一致性但不等于跨核复用对方私有L2'"
+      "completed_reason": "P0 Perfetto迁移SQL改用LAG(ucpu)窗口函数替代不存在的prev_cpu；P1 Oryon缓存/延迟数字降级为方向性描述+待验证；P1 DSU解释修正为'DSU提供一致性但不等于跨核复用对方私有L2'",
+      "reopened_by": "task6-review",
+      "reopened_at": "2026-05-06T20:13:00+08:00",
+      "original_review_log": "logs/review/2026-05-06-20-review.md"
     },
     {
       "section": "18.3",

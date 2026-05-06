@@ -3,9 +3,9 @@ title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
 status: ready-for-review
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-06"
 reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+task6_result: needs-rework
 task9_result: needs-rework
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -39,10 +39,10 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 last_task9_at: "2026-05-05T08:37:27+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
@@ -50,8 +50,10 @@ task2b_result: fixed
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-task6_reviewed_date: "2026-05-05"
-review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 轻修，未新增 L3/L4 回炉项；保持技术项交由 Task9 复审。 | 2026-05-05 Task9 08:37：Task9 深审发现 PowerMonitor API 调用对象写错，PAS/ADPF+ODPM 反馈闭环缺少公开源码/官方文档支撑。"
+task6_reviewed_date: "2026-05-06"
+last_task6_at: "2026-05-06T20:13:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-20-review.md"
+review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 轻修，未新增 L3/L4 回炉项；保持技术项交由 Task9 复审。 | 2026-05-05 Task9 08:37：Task9 深审发现 PowerMonitor API 调用对象写错，PAS/ADPF+ODPM 反馈路径缺少公开源码/官方文档支撑。 | 2026-05-06 Task6 20:13：完成 L1/L2 小修；发现 PowerMonitor API 获取方式与 PAS/ADPF+ODPM 公开依据仍有风险信号，已写入 queue 交 Task2B/Task9。"
 
 ---
 
@@ -64,7 +66,7 @@ review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 
 ### 锚点（必须覆盖）
 
 - 🔹 Android 功耗模型：power_profile.xml 定义各硬件模块的功耗参数
-- 🔹 功耗组成拆解：CPU、Display、GPU、Cellular、WiFi、GPS、Audio、Camera
+- 🔹 功耗组成：CPU、Display、GPU、Cellular、WiFi、GPS、Audio、Camera
 - 🔹 BatteryStats 的工作原理与数据采集
 - 🔹 Coulomb Counter / Fuel Gauge 与功耗估算的区别
 - 🔹 App 耗电量的归属算法
@@ -87,7 +89,7 @@ review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 
 
 当用户抱怨某个 App 太耗电时，开发者往往很难直接回答原因。App 本身没有显式的"耗电接口"，耗电也不是单个进程自己就能决定的事。Android 会把电池消耗拆到各个硬件模块，再按使用时间和资源占用归属到不同 App。不了解这套模型，我们就很难判断"设置 → 电池 → 电池使用情况"里的百分比是怎么来的，也很难判断该从哪里优化。
 
-理解功耗模型的核心价值在于：它决定了我们能获取到哪些功耗数据，以及这些数据有多可信。当我们打开 Battery Historian 看到一个 App 的 CPU 耗电占比异常时，我们需要知道这个数字是来自硬件实测还是软件估算，误差范围有多大，哪些场景下数据可信、哪些场景下需要额外验证。
+理解功耗模型之后，我们能判断哪些功耗数据可用，以及这些数据有多可信。当我们打开 Battery Historian 看到一个 App 的 CPU 耗电占比异常时，我们需要知道这个数字是来自硬件实测还是软件估算，误差范围有多大，哪些场景下数据可信、哪些场景下需要额外验证。
 
 我们在前几章已经讨论了 CPU 调度（§5.1）、DVFS（§5.4）、热管理（§5.5）和 Android 功耗管理机制（§5.6）。那些章节讲的是系统如何"省电"，本章讨论的是系统怎么判断谁"费了电"，以及这个判断有多准确。
 
@@ -95,7 +97,7 @@ review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 
 
 Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。它位于 AOSP 的 `frameworks/base/core/res/res/xml/power_profile.xml`，定义了设备上每个硬件模块在各种工作状态下的电流消耗值（单位 mA）。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/res/res/xml/power_profile.xml]
 
-这个文件的定位非常明确：当系统无法从硬件直接获取实际功耗数据时，就用这个文件里的预设值来估算。它不是精确的仪器测量结果，而是一张"查表"——系统记录某个硬件模块工作了多长时间，然后乘以这个模块在对应状态下的电流值，得到一个估算的电量消耗。
+`power_profile.xml` 的作用是给回退估算提供参数：当系统无法从硬件直接获取实际功耗数据时，就用文件里的预设值来估算。系统记录某个硬件模块工作了多长时间，再乘以这个模块在对应状态下的电流值，得到估算电量。
 
 [已验证: 官方文档, source.android.com/docs/core/power]
 
@@ -161,7 +163,7 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 第三，AOSP 中默认的 `power_profile.xml` 包含的都是占位值（通常是 0.1mA）。OEM 厂商必须在出货前用实际硬件测量填充真实数据。如果厂商没有按实测结果更新这些参数，或者直接沿用了默认值，后续的功耗归属结果就会出现系统性偏差。
 
-## 功耗组成拆解
+## 功耗组成
 
 了解了 power_profile.xml 的结构之后，我们再拆开看 Android 设备的主要功耗组成。只有先看清这些模块，我们才能理解为什么有些 App 看起来什么都没做却很费电，而有些 App 明明很忙却不怎么耗电。
 
@@ -177,7 +179,7 @@ CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经�
 
 把这套模型写成近似公式，会更接近源码：
 
-```
+```text
 CPU charge ≈ cpu.active × activeTime
           + Σ(policyPower × policyRunningTime)
           + Σ(freqStepPower × freqStepTime)
@@ -207,7 +209,7 @@ GPU 的功耗在 power_profile 中的定义相对简单，通常只有 `gpu.acti
 - **空闲态（radio.on）**：维持连接但不传输，电流较低但持续存在（3-10mA，信号弱时更高）。
 - **休眠态**：完全关闭，几乎不耗电。
 
-Radio 的状态切换不是瞬间完成的。从休眠态到连接态需要几百毫秒到几秒不等，期间消耗的电量也算在 Radio 活跃时间里。Android 通过一个"Radio Active Timeout"机制来管理这个问题——数据传输结束后，Radio 不会立即进入休眠，而是等待一个超时时间（通常 5 秒），如果在超时时间内有新数据需要传输，就复用已有的连接，避免频繁的状态切换开销。
+Radio 从休眠态切到连接态需要几百毫秒到几秒不等，期间消耗的电量也算在 Radio 活跃时间里。Android 通过一个"Radio Active Timeout"机制来管理这个问题——数据传输结束后，Radio 不会立即进入休眠，而是等待一个超时时间（通常 5 秒），如果在超时时间内有新数据需要传输，就复用已有连接，避免频繁的状态切换开销。
 
 [已验证: 官方文档, source.android.com/docs/core/power/networks]
 
@@ -270,7 +272,7 @@ Fuel Gauge 建立在 Coulomb Counter 之上。它不仅做电流积分，还会�
 
 ### 软件估算 vs 硬件测量：各自的局限
 
-这两种方式并不是互相替代的关系，而是互补的：
+这两条路径互补，各自解决不同问题：
 
 **软件估算的优势**是粒度细——它可以明确展示"App A 的 CPU 耗电 50mAh，WiFi 耗电 20mAh"。这种按 App、按模块拆分的能力是硬件测量做不到的，因为 Coulomb Counter 只能量到电池总出口的电流，无法区分这个电流是被谁消耗的。
 
@@ -446,7 +448,7 @@ EOF
 
 **Android Studio Power Profiler**：从 Hedgehog 版本开始集成，在 System Trace 视图中直接显示 ODPM 电源轨数据，与 CPU、线程、Frame 时间线同步展示。适合 App 开发者做日常功耗分析。
 
-**PowerMonitor API（Android 15+）**：Android 15 引入了公开的 `android.os.PowerMonitor` API，允许 App 在运行时程序化查询实时能量消耗。这套 API 不依赖 bugreport 或离线分析，适合构建线上功耗自审计能力。App 通过 `PowerManager` 获取 `PowerMonitor` 实例后，可以订阅指定组件的能量消耗更新，在运行中检测功耗异常并主动调整行为（如降低渲染分辨率、切换低功耗编解码器）。这为"App 级功耗自治"提供了标准入口，不再需要自建轮询脚本或依赖第三方 APM SDK。[已验证: Android 15 API 35 android.os.PowerMonitor]
+**PowerMonitor API（Android 15+）**：Android 15 引入了公开的 `android.os.PowerMonitor` API，允许 App 在运行时程序化查询实时能量消耗。这套 API 不依赖 bugreport 或离线分析，适合构建线上功耗自审计能力。App 通过 `PowerManager` 获取 `PowerMonitor` 实例后，可以订阅指定组件的能量消耗更新，在运行中检测功耗异常并主动调整行为（如降低渲染分辨率、切换低功耗编解码器）。这为"App 级功耗自治"提供了标准入口，不再需要自建轮询脚本或依赖第三方 APM SDK。[待验证: PowerMonitor API 获取入口需对照 Android 15 API 35 SDK；上一轮 Task9 提示调用对象存在风险]
 
 ## 与其他机制的关系
 
@@ -475,8 +477,8 @@ Android 功耗模型不是一个孤立的系统，它与本书多个章节讨论
 | Android 12 (API 31) | AIDL `android.hardware.power.stats.IPowerStats` 加入，拆成 `EnergyConsumer` 与 `Channel` / `EnergyMeasurement` 两组对象 |
 | Android 13 (API 33) | Framework 侧继续通过 `BatteryUsageStats` / `UidBatteryConsumer` 输出归属结果，方便 Settings 和 bugreport 读取 |
 | Android 14 (API 34) | `CpuPowerCalculator`、`ScreenPowerCalculator` 等继续优先使用 hardware energy data，缺失时回退到 power-profile 估算 |
-| Android 15 (API 35) | `PowerMonitor` 公开 API 引入，支持 App 程序化查询实时能量消耗；PAS 通过 Power HAL AIDL 实时订阅 ODPM 修正 EM 参数，EAS 从静态开环预测演进为动态反馈调度 |
-| Android 16 (API 36) | ADPF 利用 ODPM 微秒级响应实现功耗预防性降频；Framework 仍是 `BatteryStatsImpl -> BatteryUsageStatsProvider -> *PowerCalculator -> BatteryUsageStats / UidBatteryConsumer` 这套归属结构；ODPM 从诊断工具升级为调度和功耗动态反馈的中枢信号源 |
+| Android 15 (API 35) | `PowerMonitor` 公开 API 引入，支持 App 程序化查询实时能量消耗；PAS 通过 Power HAL AIDL 实时订阅 ODPM 修正 EM 参数，EAS 从静态开环预测演进为动态反馈调度（待验证：公开 AOSP / 官方文档支撑不足） |
+| Android 16 (API 36) | ADPF 利用 ODPM 微秒级响应实现功耗预防性降频（待验证：公开 AOSP / 官方文档支撑不足）；Framework 仍是 `BatteryStatsImpl -> BatteryUsageStatsProvider -> *PowerCalculator -> BatteryUsageStats / UidBatteryConsumer` 这套归属结构；ODPM 从诊断工具升级为调度和功耗动态反馈的中枢信号源 |
 
 ## 常见问题与误区
 
