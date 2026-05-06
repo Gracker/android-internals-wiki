@@ -1138,3 +1138,16 @@
 - **位置**：L141-L142 本章内容 / src/SUMMARY.md L254-L255 / 19.21 与 19.22 实际章节
 - **问题**：README 与 SUMMARY 已把 19.21/19.22 写成 Speedometer、CPDT、PCMark Storage 口径，但 19.21 H1 仍是“Benchmark 应用（Geekbench、安兔兔、3DMark、PCMark、Vellamo）”，19.22 frontmatter 与 H1 仍是“存储 Benchmark（AndroBench、A1 SD Bench）”。目录、章节标题和实际内容入口不一致。
 - **建议**：统一 19.21/19.22 的 frontmatter title、H1、SUMMARY 和 README；若 19.22 仍保留历史存储工具为主，应把 README/SUMMARY 改回历史口径，或先完成 CPDT/PCMark Storage 正文补强后再改标题。
+
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-05-06
+- **类型**：数据缺失
+- **位置**：L231/L279 Hardware Bitmap 省去 4-8ms upload
+- **问题**：正文给出“1080p RGBA 首帧 upload 4-8ms”的固定数值，但未绑定设备、GPU、图片格式、trace slice 或 benchmark。
+- **建议**：补目标设备 Perfetto/benchmark 数据，或改为 `[待验证]`/经验区间并注明测试条件。
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-05-06
+- **类型**：数据缺失
+- **位置**：L547 WebP 有损替代 JPEG 体积小 25-35%
+- **问题**：检查清单给出固定压缩收益区间，但正文没有测试样本、质量指标或来源。
+- **建议**：补来源/实测表；若无固定样本，改成按业务图片集和质量目标实测。
