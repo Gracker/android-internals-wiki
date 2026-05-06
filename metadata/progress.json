@@ -4,7 +4,7 @@
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
-    "last_updated": "2026-05-07T03:07:54+08:00",
+    "last_updated": "2026-05-07T04:08:50+08:00",
     "pipeline_stage_counts": {
       "unknown": 2,
       "ready-to-publish": 124,
@@ -60,7 +60,7 @@
       "pending": 85,
       "idle": 3
     },
-    "last_updated": "2026-05-07T02:05:00+08:00"
+    "last_updated": "2026-05-07T04:08:50+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -3489,25 +3489,25 @@
       "last_verified": "2026-04-23",
       "last_verified_against": "AOSP android-16.0.0_r1 + BatteryStatsImpl.shouldResetOnUnplugLocked()",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "task6_result": "needs-rework",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-05-06",
+      "reviewed_date": "2026-05-07",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T20:37:00+08:00",
-      "last_task2b_at": "2026-04-26T10:41:09+08:00",
+      "last_task2b_at": "2026-05-07T03:43:33+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
-      "last_task6_at": "2026-05-06T20:13:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-06-20-review.md",
+      "last_task6_at": "2026-05-07T04:08:50+08:00",
+      "last_task6_review_log": "logs/review/2026-05-07-04-review.md",
       "last_task9_review_log": "logs/deep-review/2026-05-06-20-deep-review.md",
-      "task6_review_notes": "2026-05-06 Task6 20:13：L1/L2 小修；技术风险信号已写入 queue.json 与 suggestions.md，交 Task2B/Task9。"
+      "task6_review_notes": "2026-05-07 Task6 04:08：L1/L2 小修；无新增 Task2B 回炉项；转入 Task9 复审。"
     },
     "src/part2-performance/ch11-power/02-app-power-optimization.md": {
       "path": "src/part2-performance/ch11-power/02-app-power-optimization.md",
@@ -3733,7 +3733,7 @@
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
       "pipeline_stage": "ready-to-publish",
-      "task6_state": "revisiting",
+      "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
@@ -3745,9 +3745,12 @@
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-04-26T10:43:00+08:00",
       "review_round": "2",
-      "last_task2b_at": "2026-04-25T22:46:46+08:00",
+      "last_task2b_at": "2026-05-07T03:43:33+08:00",
       "repaired_date": "2026-04-25",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "finalized_date": "2026-05-07",
+      "finalized_by": "openclaw-task6-auto-promote",
+      "task6_auto_promotion_note": "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
     },
     "src/part2-performance/ch12-apk-network/README.md": {
       "path": "src/part2-performance/ch12-apk-network/README.md"
@@ -9136,7 +9139,7 @@
       }
     }
   },
-  "last_updated": "2026-05-07",
+  "last_updated": "2026-05-07T04:08:50+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11588,13 +11591,13 @@
       "notes": "补齐 sources frontmatter；无新增 Task2B 回炉项；Task9 仍 pending。"
     },
     "11.1": {
-      "date": "2026-05-06",
-      "time": "20:13",
-      "result": "needs-rework",
+      "date": "2026-05-07",
+      "time": "04:08",
+      "result": "pass-light-edit",
       "mode": "revisiting",
-      "fixes": 9,
-      "issues": 2,
-      "notes": "L1/L2 小修；技术风险信号已写入 queue.json 与 suggestions.md，交 Task2B/Task9。"
+      "fixes": 2,
+      "issues": 0,
+      "notes": "清理 GPU 归属段禁用句式，frontmatter 去重并更新 Task6 状态；无新增 Task2B 回炉项；转入 Task9 复审。"
     },
     "17.2": {
       "date": "2026-05-06",
@@ -12357,5 +12360,34 @@
       }
     ],
     "auto_finalized": []
+  },
+  "2026-05-07-04-task6": {
+    "task": "task6-review",
+    "time": "2026-05-07T04:08:50+08:00",
+    "review_log": "logs/review/2026-05-07-04-review.md",
+    "sections": [
+      {
+        "section": "11.1",
+        "title": "Android 功耗模型",
+        "result": "pass-light-edit",
+        "fixes": 2,
+        "issues": 0,
+        "auto_promoted": false
+      }
+    ],
+    "skipped": [
+      {
+        "section": "19.27",
+        "title": "千万级 DAU 的 APM 端侧架构",
+        "reason": "内容不充分：outline 后正文 1 行，有效内容 0 行"
+      }
+    ],
+    "auto_finalized": [
+      {
+        "section": "12.4",
+        "title": "Android 网络安全与 TLS 性能优化",
+        "reason": "task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目"
+      }
+    ]
   }
 }

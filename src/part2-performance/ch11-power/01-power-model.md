@@ -3,9 +3,9 @@ title: "Android 功耗模型"
 section: "11.1"
 chapter: "11.1"
 status: ready-for-review
-reviewed_date: "2026-05-06"
+reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
-task6_result: needs-rework
+task6_result: pass-light-edit
 task9_result: needs-rework
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -39,8 +39,8 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 last_task9_at: "2026-05-06T20:37:00+08:00"
@@ -48,15 +48,13 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-05-06
 task2b_result: fixed
 last_task2b_at: "2026-05-07T03:43:33+08:00"
-last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
-task6_reviewed_date: "2026-05-06"
-last_task6_at: "2026-05-06T20:13:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-20-review.md"
-review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 轻修，未新增 L3/L4 回炉项；保持技术项交由 Task9 复审。 | 2026-05-05 Task9 08:37：Task9 深审发现 PowerMonitor API 调用对象写错，PAS/ADPF+ODPM 反馈路径缺少公开源码/官方文档支撑。 | 2026-05-06 Task6 20:13：完成 L1/L2 小修；发现 PowerMonitor API 获取方式与 PAS/ADPF+ODPM 公开依据仍有风险信号，已写入 queue 交 Task2B/Task9。 | 2026-05-06 Task9 20:37：深审复核 PowerMonitor API 入口、GPU power_profile 标准键、PAS/ADPF+ODPM 动态反馈证据链；仍有 P0/P1，已合并 queue。"
+task6_reviewed_date: "2026-05-07"
+last_task6_at: "2026-05-07T04:08:50+08:00"
+last_task6_review_log: "logs/review/2026-05-07-04-review.md"
+review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 轻修，未新增 L3/L4 回炉项；保持技术项交由 Task9 复审。 | 2026-05-05 Task9 08:37：Task9 深审发现 PowerMonitor API 调用对象写错，PAS/ADPF+ODPM 反馈路径缺少公开源码/官方文档支撑。 | 2026-05-06 Task6 20:13：完成 L1/L2 小修；发现 PowerMonitor API 获取方式与 PAS/ADPF+ODPM 公开依据仍有风险信号，已写入 queue 交 Task2B/Task9。 | 2026-05-06 Task9 20:37：深审复核 PowerMonitor API 入口、GPU power_profile 标准键、PAS/ADPF+ODPM 动态反馈证据链；仍有 P0/P1，已合并 queue。 | 2026-05-07 Task6 04:08：revisiting 后复审；完成 L1/L2 小修 2 处（GPU 归属句式、frontmatter 去重），无新增 L3/L4 回炉项；转入 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-06-20-deep-review.md"
-
 ---
 
 
@@ -201,7 +199,7 @@ CPU charge ≈ cpu.active × activeTime
 
 AOSP 标准 `power_profile.xml` 和 `BatteryUsageStats` / `BatteryConsumer` 体系没有独立的 GPU power component。`PowerProfile.java` 没有 `POWER_GPU` / `gpu.active` 标准键，`android.os.BatteryConsumer` 的 `POWER_COMPONENT_*` 枚举也没有 GPU。`PowerStats` AIDL 的 `EnergyConsumerType` 枚举里同样没有 GPU 专有类型。
 
-这意味着 Framework 层的功耗归属链不会把 GPU 拆出来单独统计。GPU 功耗通常需要通过以下间接路径分析：
+Framework 层的功耗归属链不会把 GPU 拆出来单独统计。GPU 功耗通常需要通过以下间接路径分析：
 
 - 厂商 vendor rail / Channel：在 Perfetto power rails 视图中找 GPU 相关的电源轨（如 `GPU-VDD`），读取微焦耳累加值
 - GPU 频率 + 利用率 × 场景归因：结合 `gpu_frequency` / `gpu_busy` counter 与当前前台 App 推算

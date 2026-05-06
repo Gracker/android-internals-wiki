@@ -2,7 +2,7 @@
 title: "Android 网络安全与 TLS 性能优化"
 chapter: "12.4"
 section: "12.4"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
@@ -25,7 +25,10 @@ created_date: "2026-04-08"
 gap_source: "官方文档+AOSP结构"
 gap_score: 14
 task6_state: reviewed
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
+task6_auto_promotion_note: "2026-05-07 Task6 auto-promotion：finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目。"
+finalized_by: openclaw-task6-auto-promote
+finalized_date: "2026-05-07"
 task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
