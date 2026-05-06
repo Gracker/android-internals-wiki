@@ -34,11 +34,11 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
-task6_result: needs-rework
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
@@ -47,10 +47,9 @@ task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T13:39:29+08:00"
 last_task2b_at: "2026-05-06T13:46:45+08:00"
-last_task6_at: "2026-05-06T13:13:29+08:00"
-last_task2b_at: "2026-05-06T13:04:10+08:00"
-last_task6_review_log: "logs/review/2026-05-06-13-review.md"
-task6_review_notes: "2026-05-06 Task6 13:13：回炉后写作复审；L1/L2 轻修 1 处（标题匹配锚点）；发现 Task9 P0 技术问题残留（RemoteViews 版本表、Icon.createWithBitmap/HardwareBuffer/Binder buffer 口径），已重开 queue P95 交 Task2B。"
+last_task6_at: "2026-05-06T14:11:35+08:00"
+last_task6_review_log: "logs/review/2026-05-06-14-review.md"
+task6_review_notes: "2026-05-06 Task6 14:11：回炉后写作复审；L1/L2 轻修 10 处（清理正文编辑痕迹、结构性元叙述、frontmatter 重复键）；无新增 L3/L4 回炉项，转入 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-06-13-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 13:39：needs-rework。P0 2 / P1 0 / P2 1。L485 版本演进表 Android 14 行；L245-L247、L511-L513 Icon.createWithBitmap()/Bitmap 传输路径"
 ---
@@ -116,7 +115,7 @@ return true;
 - Binder 过进程和 NMS 入口的权限校验、建档、入队
 - system_server 入口处的锁竞争或 Binder 线程繁忙
 
-下面这些环节默认不在 `notify()` 的同步返回时间里:
+这些环节默认不在 `notify()` 的同步返回时间里:
 
 - `EnqueueNotificationRunnable` 之后的排序、记录更新、listener fan-out
 - `INotificationListener` 回调
@@ -156,9 +155,9 @@ android-16 的 `checkDisqualifyingFeatures()` 走的是包级 update 限流,不�
 
 ### NMS 的执行上下文
 
-这一章不再把 system_server 里的执行线程写死成 `notif-handler`。AOSP 当前实现至少能确认两件事:`notify()` 的 Binder 入口会把发布任务 post 到 NMS 的 Handler 路径,后续还有 ranking / listener 相关的异步工作;OEM 机型上的线程名、trace slice 名和是否打桩,可能与 AOSP 不同。
+AOSP 当前实现里,`notify()` 的 Binder 入口会把发布任务 post 到 NMS 的 Handler 路径,后续 ranking / listener 相关工作继续异步执行。OEM 机型上的线程名、trace slice 名和打桩粒度可能与 AOSP 不同。
 
-做排查时,建议把"线程名"降级为辅证,把下面三类信号当主证据:
+做排查时,建议把"线程名"降级为辅证,主证据放在三类信号上:
 
 - App 调用线程的 `slice` 和 `thread_state`
 - system_server 中与 `NotificationManagerService` 相关的方法调用或调度片段
@@ -168,7 +167,7 @@ android-16 的 `checkDisqualifyingFeatures()` 走的是包级 update 限流,不�
 
 通知发布后,NMS 需要更新 `NotificationRecord`,执行拦截与排序,再把变化分发给 listener 和状态栏。通知数量很多、通知对象很重、监听器很多时,system_server 的 CPU 时间会明显上升。
 
-这里不再写"Android 14 起并行分发""Android 15 起增量排序"这类确定性版本结论。公开文档和当前 AOSP 分支不足以把这些变化逐版钉死。诊断时更实用的做法,是直接看当前 build 上 `system_server` 的实际调度和 listener 分发耗时。
+公开文档和当前 AOSP 分支不足以把"Android 14 起并行分发""Android 15 起增量排序"这类变化逐版钉死。诊断时更实用的做法,是直接看当前 build 上 `system_server` 的实际调度和 listener 分发耗时。
 
 ### 通知限流策略
 
@@ -209,11 +208,11 @@ private View apply(...) {
 }
 ```
 
-旧稿把 `mActions` 写成 `Parcel` 字段,再把示意代码包装成 AOSP 真实实现,这两处都会误导读者。更准确的理解是:`RemoteViews` 在跨进程传输时会被 parcelize;到 SystemUI 侧后,再把动作列表应用到真实 View 上。
+`mActions` 是内存中的动作列表,不是源码里的 `Parcel` 字段;示意代码也不能当作 AOSP 实现引用。更准确的理解是:`RemoteViews` 在跨进程传输时会被 parcelize;到 SystemUI 侧后,再把动作列表应用到真实 View 上。
 
 ### 布局复杂度会放大 SystemUI 的工作量
 
-自定义通知布局越深、子 View 越多、图片越大,SystemUI 侧的 inflate、measure 和图片处理成本越高。这里不再给 `1-2ms`、`10-20ms`、`10-50ms`、`100ms+` 这类脱离设备和负载条件的固定数字。
+自定义通知布局越深、子 View 越多、图片越大,SystemUI 侧的 inflate、measure 和图片处理成本越高。没有设备、图片尺寸、SystemUI 负载和测试条件时,`1-2ms`、`10-20ms`、`10-50ms`、`100ms+` 这类固定数字没有参考价值。
 
 更稳妥的经验规则有三条:
 
@@ -239,11 +238,11 @@ reapply 跳过了 inflate,但仍然会执行新 `RemoteViews` 的所有 action--
 
 排查时不要只盯着 `notify()`。如果应用侧主线程已经很轻,但用户还是感觉通知晚到,问题更可能在 SystemUI 侧的 decode / render,而不是调用方的 Binder 返回时间。
 
-**图片通知的成本阶梯。** 通知图片有三条传入路径，成本各不相同：
+**图片通知的成本阶梯。** 通知图片有三条传入路径,成本各不相同:
 
-1. **`Icon.createWithResource(resId)`**：只传资源 ID 引用，SystemUI 侧按自己 context 解码。跨进程开销最低，推荐优先使用
-2. **`Icon.createWithUri(uri)`**：传 URI，SystemUI 侧打开 ContentProvider 或文件流解码。跨进程开销是 URI 字符串本身，但 SystemUI 解码耗时取决于图片来源和尺寸
-3. **`Icon.createWithBitmap(bitmap)`**：AOSP `Icon.writeToParcel()` 对 `TYPE_BITMAP` / `TYPE_ADAPTIVE_BITMAP` 先调用 `Bitmap.asShared()` 生成不可变的共享内存 backed bitmap，再通过 `Bitmap.writeToParcel()` 以共享内存 FD 传递。SystemUI 侧从 Parcel 重建 bitmap 对象并绑定渲染。这条路径绕过了像素数据整体拷贝进 Parcel 缓冲区，但 `asShared()` 的格式准备和 SystemUI 侧的解码绑定仍有开销。可变 Bitmap 或不兼容格式会回退到像素数据写 Parcel，大图此时会挤占 Binder 内核缓冲区配额。实战中优先用 `createWithResource`，次选 `createWithUri`，`createWithBitmap` 只在前面两条走不通时使用，且应确保 Bitmap 为 ARGB_8888 格式并已缩放到通知实际显示尺寸。
+1. **`Icon.createWithResource(resId)`**:只传资源 ID 引用,SystemUI 侧按自己的 `Context` 解码。跨进程开销最低,推荐优先使用
+2. **`Icon.createWithUri(uri)`**:传 URI,SystemUI 侧打开 ContentProvider 或文件流解码。跨进程开销是 URI 字符串本身,但 SystemUI 解码耗时取决于图片来源和尺寸
+3. **`Icon.createWithBitmap(bitmap)`**:AOSP `Icon.writeToParcel()` 对 `TYPE_BITMAP` / `TYPE_ADAPTIVE_BITMAP` 先调用 `Bitmap.asShared()` 生成不可变的 shared-memory backed bitmap,再通过 `Bitmap.writeToParcel()` 以共享内存 FD 传递。SystemUI 侧从 Parcel 重建 bitmap 对象并绑定渲染。这条路径绕过了像素数据整体拷贝进 Parcel 缓冲区,但 `asShared()` 的格式准备和 SystemUI 侧的解码绑定仍有开销。可变 Bitmap 或不兼容格式会回退到像素数据写 Parcel,大图此时会挤占 Binder 内核缓冲区配额。实战中优先用 `createWithResource`,次选 `createWithUri`,`createWithBitmap` 只在前面两条走不通时使用,且应确保 Bitmap 为 ARGB_8888 格式并已缩放到通知实际显示尺寸。
 
 ## NotificationListenerService 与性能
 
@@ -270,7 +269,7 @@ public class MyNotificationListener extends NotificationListenerService {
 
 在 Perfetto 中,这类 ANR 的表现是主线程出现一段长时间 Running 或 Sleeping(如果等待数据库锁),stack trace 指向 `onNotificationPosted()` 内部的代码。如果 ANR 发生时主线程没有处理 UI 交互,`InputDispatcher` 的超时倒计时就会启动,5 秒后触发 ANR。
 
-### 正确的做法:回调转发到后台线程
+### 推荐做法:回调转发到后台线程
 
 ```java
 // ✅ 将耗时操作移到后台线程
@@ -331,9 +330,9 @@ SystemUI 忙于锁屏动画、面板刷新或大量图片通知时,用户会感�
 
 ## Android 17 通知性能变更
 
-### 这一轮能确认的边界
+### 可确认的版本边界
 
-本轮回炉只保留能从官方文档或 `android-16.0.0_r1` 直接核对的结论。旧稿里把 Android 14 并行分发、Android 15 排名优化、Android 17 后台 NLS 限频都写成了确定事实,这一轮全部降回保守表述。
+能从官方文档或 `android-16.0.0_r1` 直接核对的结论只有三类:Android 13 的通知权限、Android 16 的 `ProgressStyle` / promoted ongoing 相关文档,以及当前 AOSP 下的 NMS / `RemoteViews` 行为。Android 14 并行分发、Android 15 排名优化、Android 17 后台 NLS 限频都缺少足够一手材料,不适合作为固定版本事实。
 
 ### POST_NOTIFICATIONS 在 Android 13,不在 Android 12
 
@@ -351,7 +350,7 @@ SystemUI 忙于锁屏动画、面板刷新或大量图片通知时,用户会感�
 
 ## 在 Perfetto 中诊断通知 ANR
 
-这一节只保留可复现的方法,不再依赖 `notif-handler`、`enqueueNotificationInternal`、`onNotificationPosted` 这类在不同 build 上不稳定的线程名或 slice 名。
+诊断通知 ANR 时,优先使用可复现的方法;不要依赖 `notif-handler`、`enqueueNotificationInternal`、`onNotificationPosted` 这类在不同 build 上不稳定的线程名或 slice 名。
 
 ### 采集策略:先埋应用自己的 Trace 标记
 
@@ -378,7 +377,7 @@ override fun onNotificationPosted(sbn: StatusBarNotification, rankingMap: Rankin
 }
 ```
 
-抓 trace 时,至少把 `sched`、`binder_driver`、`am`、`wm`、`gfx`、`view` 打开,并把目标 App 加到 atrace app 列表。下面这份 Perfetto text config 可以直接作为最小模板:
+抓 trace 时,至少把 `sched`、`binder_driver`、`am`、`wm`、`gfx`、`view` 打开,并把目标 App 加到 atrace app 列表。这份 Perfetto text config 可以直接作为最小模板:
 
 ```textproto
 buffers: {
@@ -484,7 +483,7 @@ adb shell dumpsys notification
 | Android 13 (API 33) | `POST_NOTIFICATIONS` 成为 runtime permission | 被拒绝的普通通知不会进入常规发布路径,系统总体通知负载会下降 |
 | Android 16 (API 36) | `Notification.ProgressStyle` 新增,promoted ongoing / Live Update 文档可用 | 进度型通知更适合走系统模板,减少自定义 `RemoteViews` 的必要性 |
 
-Android 14 / 15 / 17 的分发、排序和后台 listener 行为,本轮没有足够的一手材料,不写成固定版本结论。
+Android 14 / 15 / 17 的分发、排序和后台 listener 行为目前缺少足够一手材料,不写成固定版本结论。
 
 ## 常见问题与误区
 
