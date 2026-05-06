@@ -26,25 +26,26 @@ sources:
     path: "多来源综合（web search 验证）"
 tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
-task6_result: pass-light-edit
-pipeline_stage: task6_pending
+task6_result: needs-rework
+pipeline_stage: task2b_pending
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-06"
-task2b_state: fixed
-last_task6_at: "2026-05-06T11:12:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-11-review.md"
-task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
+task2b_state: pending
+last_task6_at: "2026-05-06T20:13:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-20-review.md"
+task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T11:39:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。"
 
 task2b_result: fixed
-last_task2b_at: "2026-05-06T17:59:16+08:00"---
+last_task2b_at: "2026-05-06T17:59:16+08:00"
+---
 
 # SoC 平台差异
 
@@ -75,11 +76,11 @@ last_task2b_at: "2026-05-06T17:59:16+08:00"---
 
 ## 为什么要了解 SoC 平台差异
 
-如果你做过 Android 性能优化，一定遇到过这种情况：同一款 App 在骁龙设备上流畅运行，到了联发科 Dimensity 或 Exynos 设备上却莫名其妙掉帧。打开 Perfetto 一看，同样的代码路径，CPU 调度行为不一样了，GPU 渲染耗时也不一样了，甚至内存带宽的瓶颈出现在不同的位置。
+做 Android 性能优化时，经常会遇到这种情况：同一款 App 在骁龙设备上流畅运行，到了联发科 Dimensity 或 Exynos 设备上却莫名其妙掉帧。打开 Perfetto 一看，同样的代码路径，CPU 调度行为不一样了，GPU 渲染耗时也不一样了，甚至内存带宽的瓶颈出现在不同的位置。
 
-这不是你的 App 有 bug，而是不同 SoC 平台在硬件架构上存在关键差异——CPU 核心的拓扑结构不同、GPU 的渲染管线不同、内存控制器的带宽和延迟不同，厂商的调度策略也不同。这些差异会直接影响我们在 Perfetto 中看到的现象，如果不了解它们，就很容易把平台特性误判为代码问题。
+问题往往出在不同 SoC 平台的硬件架构差异上：CPU 核心的拓扑结构不同、GPU 的渲染管线不同、内存控制器的带宽和延迟不同，厂商的调度策略也不同。这些差异会直接影响我们在 Perfetto 中看到的现象，如果不了解它们，就很容易把平台特性误判为代码问题。
 
-了解 SoC 平台差异的核心价值在于：**当你在 Perfetto 中看到一段异常的 CPU 调度、GPU 耗时或内存行为时，能判断这是你的代码问题还是平台特性导致的现象。** 这种判断能力在做跨设备性能优化和线上问题定位时尤其重要——你不可能在每个平台上都做一遍完整分析，但你需要知道不同平台上同一个现象的含义可能完全不同。
+了解 SoC 平台差异之后，**我们在 Perfetto 中看到一段异常的 CPU 调度、GPU 耗时或内存行为时，能判断这是代码问题还是平台特性导致的现象。** 这种判断能力在做跨设备性能优化和线上问题定位时尤其重要——团队不可能在每个平台上都做一遍完整分析，但需要知道不同平台上同一个现象的含义可能完全不同。
 
 本节不会事无巨细地对比每款芯片的参数——那更像是产品评测的内容。我们的重点是：那些会直接影响性能分析结论的架构差异，以及它们在 Perfetto 中分别长什么样。
 
@@ -89,7 +90,7 @@ last_task2b_at: "2026-05-06T17:59:16+08:00"---
 
 Android 生态中的旗舰 SoC 主要来自四家公司，每家的设计哲学和技术路线都有明显差异。我们先对这四个平台建立一个整体认知，然后再逐个维度深入。
 
-**高通 Snapdragon** 是 Android 生态中使用最广泛的旗舰 SoC 系列。从 Snapdragon 8 Gen 3 到 8 Elite，高通一直保持着综合性能的领先地位，尤其在 GPU 渲染和游戏性能方面。高通的独特之处在于它几乎实现了全自研：CPU 方面，从 8 Elite 开始采用收购 Nuvia 后自研的 Oryon 核心（与苹果 M 系列同源），不再使用 ARM 公版 Cortex 核心；GPU 方面的 Adreno 系列一直是自研的；基带更是高通的传统优势。这种全自研策略意味着高通能更深度地优化各组件之间的协同。
+**高通 Snapdragon** 是 Android 生态中使用最广泛的旗舰 SoC 系列。从 Snapdragon 8 Gen 3 到 8 Elite，高通一直保持着综合性能的领先地位，尤其在 GPU 渲染和游戏性能方面。高通的独特之处在于它几乎实现了全自研：CPU 方面，从 8 Elite 开始采用收购 Nuvia 后自研的 Oryon 核心（与苹果 M 系列同源），不再使用 ARM 公版 Cortex 核心；GPU 方面的 Adreno 系列一直是自研的；基带更是高通的传统优势。这种全自研策略让高通可以更深入地优化各组件之间的协同。
 
 **联发科 Dimensity** 近几年在旗舰市场的进步非常显著。Dimensity 9300 和 9400 采用了激进的「全大核」策略——取消传统的小核心，全部使用 Cortex-X 系列和 A720 等性能核心。这种设计在多核性能上有明显优势，但也对功耗管理和散热提出了更高要求。联发科使用 ARM 公版 CPU 核心，GPU 则采用 ARM 的 Immortalis 系列（高端）或 Mali 系列（中端）。联发科的芯片通常在性价比方面有优势，在中端市场的份额尤其高。
 
@@ -123,13 +124,13 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 同样是 ARMv9 指令集，不同核心的微架构设计会导致 IPC（Instructions Per Cycle）有显著差异。这直接影响我们在 Perfetto 中分析 CPU 利用率时的判断。
 
-高通的 Oryon 核心是自研微架构，开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历。公开产品页显示 Oryon 采用大容量 L1 缓存和共享 L2 缓存设计，但缓存拓扑的具体参数（容量、延迟周期）尚未有官方白皮书或芯片分析报告确认。当前能确认的方向性特征是：大容量 L1 带来更好的命中率，而共享 L2 的访问延迟可能高于 ARM 公版核心的私有 L2 设计。在 Perfetto 中，这意味着 Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
+高通的 Oryon 核心是自研微架构，开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历。公开产品页显示 Oryon 采用大容量 L1 缓存和共享 L2 缓存设计，但缓存拓扑的具体参数（容量、延迟周期）尚未有官方白皮书或芯片分析报告确认。当前能确认的方向性特征是：大容量 L1 带来更好的命中率，而共享 L2 的访问延迟可能高于 ARM 公版核心的私有 L2 设计。在 Perfetto 中，Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
 
 [待验证: Oryon L1 容量、L2 拓扑和访问延迟周期——公开产品页未披露具体数字，待 Qualcomm 白皮书或 AnandTech/Chipworks 芯片分析报告]
 
 ARM 的 Cortex-X925 是 ARM 最高性能的公版核心，10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心，IPC 虽然不如 X 系列，但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用，其基础性能仍远超传统的 A5xx 系列小核心。
 
-Google Tensor 使用的通常是三星定制的 ARM 核心，微架构上可能与同时期的 Cortex-A7xx 系列接近，但频率设置更为保守。这意味着在 Perfetto 中，同一时间段内 Tensor 的 CPU 利用率数值可能看起来更高（因为频率低、单周期处理能力低），但这不代表性能差，只是基准不同。
+Google Tensor 使用的通常是三星定制的 ARM 核心，微架构上可能与同时期的 Cortex-A7xx 系列接近，但频率设置更为保守。在 Perfetto 中，同一时间段内 Tensor 的 CPU 利用率数值可能看起来更高（因为频率低、单周期处理能力低），但这不代表性能差，只是基准不同。
 
 ### 厂商调度策略差异
 

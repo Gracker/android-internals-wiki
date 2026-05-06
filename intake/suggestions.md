@@ -1251,3 +1251,24 @@
 - **建议**：Task2B 先按 Task9 结论统一 Perfetto power rail 口径；再判断 ADPF 源码调研是否值得整合进前文 ADPF/PowerMonitor 小节，API 命名与 `GPU_LOAD_UP` 等常量交 Task9 复核。
 - **review 日志**：logs/review/2026-05-06-17-review.md
 
+## [Task6 Review] 11.1 Android 功耗模型 — 2026-05-06
+- **类型**：需确认
+- **位置**：PowerMonitor API（Android 15+）段落
+- **问题**：上一轮 Task9 已提示 PowerMonitor API 调用对象存在风险；正文仍写“App 通过 PowerManager 获取 PowerMonitor 实例”。Task6 已把验证标注降级为待验证，但不裁决 API 入口真伪。
+- **建议**：Task9 对照 Android 15/API 35 SDK 与官方文档确认 PowerMonitor 获取入口；Task2B 按确认结果修正文案和验证标注。
+- **review 日志**：logs/review/2026-05-06-20-review.md
+
+## [Task6 Review] 11.1 Android 功耗模型 — 2026-05-06
+- **类型**：需补充素材
+- **位置**：与其他机制的关系 / 版本演进：PAS、ADPF 与 ODPM 动态反馈
+- **问题**：PAS 通过 Power HAL AIDL 订阅 ODPM 修正 EM、ADPF 利用 ODPM 预防性降频等表述仍缺公开 AOSP/官方文档逐行支撑。正文已有待验证标注，版本表也已补待验证提示，但仍需技术复核。
+- **建议**：补 CDD/source.android.com/AOSP 公开锚点；无法确认时降级表述，避免把推测写成确定机制。
+- **review 日志**：logs/review/2026-05-06-20-review.md
+
+## [Task6 Review] 17.2 SoC 平台差异 — 2026-05-06
+- **类型**：需确认
+- **位置**：主流 SoC 平台概览：高通 Snapdragon 段
+- **问题**：正文仍写 Oryon 核心“与苹果 M 系列同源”，与 Task9 11:39 已指出的风险项重叠；后文已改成“Nuvia 背景、创始成员有 Apple CPU 经历”，两处口径不一致。
+- **建议**：Task9/Task2B 统一为更稳妥口径：开发团队背景来自 Nuvia，创始成员有 Apple CPU 经历；删除或标注“同源”表述，除非补到 Qualcomm 白皮书或权威拆解锚点。
+- **review 日志**：logs/review/2026-05-06-20-review.md
+
