@@ -13229,6 +13229,51 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T19:57:05+08:00",
       "status": "pending"
+    },
+    {
+      "section": "11.3",
+      "section_title": "系统级功耗优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.3 系统级功耗优化仍有 AOSP 路径/API 常量/归档命令 P0 事实错误，并缺 Android 6-8 App Standby 与 location FGS 版本边界。",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-06-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "frontmatter L38 / 机制归属表 L219 / 参考资料 L478 UsageStatsService 路径",
+          "detail": "[P0] 章节把 UsageStatsService 放在 frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java。复核 AOSP android-16.0.0_r1，apex/jobscheduler/service/java/com/android/server/usage/ 下只有 AppIdleHistory.java、AppStandbyController.java、TEST_MAPPING；UsageStatsService.java 实际在 frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java。",
+          "suggestion": "将 frontmatter、机制归属表和参考资料中的 UsageStatsService 路径统一修为 frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java；AppStandbyController 继续保留在 jobscheduler APEX 路径。"
+        },
+        {
+          "type": "源码错误/API 常量错误",
+          "location": "L190 App Standby pending reason；L445 版本演进 Android 15 行",
+          "detail": "[P0] `PENDING_JOB_REASON_ENERGY_EFFICIENCY` 在 android-15.0.0_r1/r36 与 android-16.0.0_r1 的 JobScheduler.java 中均不存在。Android 16 公开常量包含 PENDING_JOB_REASON_DEVICE_STATE、PENDING_JOB_REASON_JOB_SCHEDULER_OPTIMIZATION、PENDING_JOB_REASON_QUOTA 等；JobSchedulerService 中强制合批时写入的是 PENDING_JOB_REASON_JOB_SCHEDULER_OPTIMIZATION。",
+          "suggestion": "删除 `PENDING_JOB_REASON_ENERGY_EFFICIENCY`；将“能效熔断”改成“系统优化/设备状态/配额约束可能导致 pending”，并分别对应 `PENDING_JOB_REASON_JOB_SCHEDULER_OPTIMIZATION`、`PENDING_JOB_REASON_DEVICE_STATE` 或 `PENDING_JOB_REASON_QUOTA`。如果保留 energy efficiency 说法，必须标成 dumpsys 文本现象而非 public API 常量。"
+        },
+        {
+          "type": "源码错误/命令错误",
+          "location": "L305 App Archiving 排查路径",
+          "detail": "[P0] `adb shell pm list packages --show-versioncode --archived` 不是 android-16.0.0_r1 PackageManagerShellCommand 支持的参数；`list packages` 帮助中没有 `--archived`，源码只提供 `get-archived-package-metadata [--user USER] PACKAGE` 与 `install-archived` 等归档相关子命令。",
+          "suggestion": "把排查命令改为按包名查询 `adb shell pm get-archived-package-metadata [--user USER] <package>`，或说明 `pm list packages -u --show-versioncode` 只能覆盖未安装/保留数据包，不等价于列出 archived 包。补 AOSP `services/core/java/com/android/server/pm/PackageManagerShellCommand.java` 作为命令锚点。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L172-L188 App Standby Buckets；L436-L439 版本演进",
+          "detail": "[P1] 章节适用范围写 Android 6-16，但 App Standby 段只展开 Android 9+ Buckets。Android 6-8 已有二元 idle App Standby：idle App 的网络、Job、Sync 会被限制/延后，充电时释放；Android 9 才演进为 buckets。当前正文容易让读者误以为 Android 9 前没有 App Standby 行为。",
+          "suggestion": "在 Buckets 表前补一段“API 23-27 的 App Standby 是 idle/active 二元状态，限制网络、Job、Sync；API 28 起扩展为 Active/Working/Frequent/Rare，API 31 增加 Restricted”，并把版本表的 Android 6/9 两行对应起来。"
+        },
+        {
+          "type": "版本差异/位置权限边界",
+          "location": "L273 Android 11 后台定位限制",
+          "detail": "[P1] “应用退到后台后，如果没有始终允许，location access 仍然拿不到”过宽。官方 location 权限文档把可见 Activity 和正在运行的 location FGS 都归为 foreground location；从可见状态启动的 location FGS 在退到后台后仍可使用 while-in-use location。受限的是后台状态下创建/启动需要 while-in-use 权限的 FGS，Android 14 起创建阶段直接抛 SecurityException。",
+          "suggestion": "改成“Android 11 主要改变后台位置权限申请流程；location FGS 若从前台可见状态启动，仍按 foreground location 处理。后台创建 location FGS 且只有 while-in-use 权限的路径，在 Android 14 起创建阶段失败；真正持续后台定位才要求 ACCESS_BACKGROUND_LOCATION。”"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T22:41:22+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

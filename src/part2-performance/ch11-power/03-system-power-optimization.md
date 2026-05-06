@@ -60,13 +60,14 @@ last_task6_at: "2026-05-06T22:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-22-review.md"
 review_notes: "2026-05-06 task6 re-review (revisiting): pass-light-edit。修复 frontmatter 分隔符、L1 禁用/高风险词与中英文术语；无新增 L3/L4 回炉项，等待 Task9 复审。"
 review_round: 4
-pipeline_stage: task9_pending
-task9_state: pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task9_reviewed_date: "2026-05-01"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-01T05:32:43+08:00"
+task2b_state: pending
+task9_reviewed_date: "2026-05-06"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-06T22:41:22+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-06-22-deep-review.md"
 ---
 
 # 系统级功耗优化
