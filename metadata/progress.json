@@ -10350,6 +10350,37 @@
           ]
         }
       ]
+    },
+    {
+      "timestamp": "2026-05-06T12:20:08+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "7.8",
+        "5.4"
+      ],
+      "details": [
+        {
+          "section": "7.8",
+          "title": "RecyclerView 列表滑动性能深度优化",
+          "priority": 95,
+          "source": "task9-deep-tech-review",
+          "fixes": [
+            "P0: 删除 RecycledViewPool synchronized/锁竞争结论（AndroidX 源码无 synchronized）",
+            "P0: 删除 prepareToDraw() 触发异步 measure 错误建议，替换为可验证做法",
+            "P1: DeliQueue 数据改为 Google 官方口径（targetSdk 37+，app missed frames -4%）"
+          ]
+        },
+        {
+          "section": "5.4",
+          "title": "DVFS 与功耗管理",
+          "priority": 95,
+          "source": "task9-deep-tech-review",
+          "fixes": [
+            "P0: android15 伪代码删除 sg_cpu->max 引用（android15-6.6 无此字段）",
+            "P0: android16 伪代码补全 scx_switched_all() 分支和 effective_cpu_util(cpu,util,&min,&max) 调用链"
+          ]
+        }
+      ]
     }
   ],
   "task2b_history": [

@@ -9,12 +9,8 @@
     5,
     6,
     7,
-    8,
-    9
+    8
   ],
-  "indexed_links": 33,
-  "skipped_links": 111,
-  "fetch_failures": 88,
   "attempted_issues": [
     6,
     6,
@@ -23,6 +19,9 @@
     9
   ],
   "last_attempted_issue": 9,
-  "last_attempt_date": "2026-05-05",
-  "access_issues_count": 4
+  "last_attempt_date": "2026-05-06",
+  "access_issues_count": 5,
+  "indexed_links": 33,
+  "skipped_links": 94,
+  "fetch_failures": 72
 }
