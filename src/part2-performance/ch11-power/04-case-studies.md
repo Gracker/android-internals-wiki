@@ -31,12 +31,12 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
@@ -92,7 +92,7 @@ last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
 
 ### 问题现象
 
-某社交类 App 在 Google Play Console 的 Android Vitals 报告中出现了异常：部分 WakeLock 卡住的会话比例达到了 3.7%（Vitals 的告警阈值是 1%）。用户投诉集中在"晚上充满电放桌上，早上起来只剩 60%"这种纯待机场景。
+某社交类 App 在 Google Play Console 的 Android Vitals 报告中出现了异常：部分 WakeLock 卡住的会话比例达到了 3.7%。用户投诉集中在"晚上充满电放桌上，早上起来只剩 60%"这种纯待机场景。
 
 收到这个反馈时，我们首先做了一件事：确认问题的范围。Android Vitals 的 "Stuck partial wake lock" 指标衡量的是 App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。3.7% 的会话触发这个阈值，说明不是偶发问题，而是代码中存在系统性的 WakeLock 管理缺陷。
 
@@ -290,6 +290,8 @@ public class RunningActivity extends AppCompatActivity {
 ### 根因与结论
 
 根因是 **位置请求的生命周期没有和 Activity/Service 的生命周期绑定**。这看似是一个低级错误，但在实际项目中非常常见，原因有三：
+
+> **Geofencing 与 GNSS 硬件卸载**：持续 1Hz GPS 定位是最粗放的用法。如果需求是"进入/离开某个区域时触发"，`GeofencingClient` 可以将围栏下沉到 GNSS 硬件执行，App 不需要持续持有 GPS 请求，功耗可降低一个数量级。`FusedLocationProviderClient` 的低功耗模式（`PRIORITY_BALANCED_POWER_ACCURACY` / `PRIORITY_LOW_POWER`）通过 WiFi + 基站辅助定位降低 GPS 芯片激活频率，精度从米级放宽到街区级。通过 `adb shell dumpsys location` 可以区分硬件 geofence 和软件 geofence 的注册状态。不同设备的 GNSS 硬件 geofencing 能力不同，部分低端设备不支持硬件卸载，此时仍依赖软件轮询。[待验证：各主流 SoC 的 GNSS hardware geofencing 支持情况]
 
 1. **跑步 App 通常会启动一个前台服务来保持追踪**，开发者在 Service 中注册了位置请求，但"结束跑步"的 UI 操作只停止了 Service 的业务逻辑，没有调用 `removeLocationUpdates`。
 2. **Android 8.0+ 的后台位置限制**给开发者一种虚假的安全感——以为系统会自动限制后台位置。但这个限制只影响没有前台服务的后台 App。跑步类 App 通常持有前台服务，因此不受此限制。后台位置权限在后续版本持续变严：Android 10 引入了 `ACCESS_BACKGROUND_LOCATION` 权限（需单独声明，之前 `ACCESS_FINE_LOCATION` 同时覆盖前后台）；Android 11 进一步限制，需要单独弹窗授权后台位置且默认拒绝，用户需主动在设置中开启；Android 12 要求使用后台位置的前台服务必须声明 `foregroundServiceType="location"`。
@@ -640,15 +642,17 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 
 当 `JobService.onStartJob()` 返回 `true`（表示任务在后台线程执行）时，系统会为这个 Job 持有一个 WakeLock。这个 WakeLock 的最大持有时长取决于 Job 类型：
 
-| Job 类型 | 最大执行时长 | 超时行为 |
-|---------|------------|---------|
-| Regular | 10 分钟（`DEFAULT_RUNTIME_MIN_GUARANTEE_MS`） | 超时后 `onStopJob()` 被调用，系统释放 WakeLock |
-| Expedited | 10 分钟 | 同上，但调度优先级更高 |
-| User-Initiated | 30 分钟（`DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS`） | 超时后 `onStopJob()` 被调用 |
+| Job 类型 | 最小保障时长（源码常量） | 实际上限 | 超时行为 |
+|---------|----------------------|---------|----------|
+| Regular | 10 分钟（`DEFAULT_RUNTIME_MIN_GUARANTEE_MS`） | `getMaxJobExecutionTimeMs()` 返回值，取决于 standby bucket 和当前 quota | 超时后 `onStopJob()` 被调用，系统释放 WakeLock |
+| Expedited | 10 分钟（同 Regular 保障下限） | 同 Regular，但调度优先级更高 | 同 Regular |
+| User-Initiated | 30 分钟（`DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS`） | `getMaxJobExecutionTimeMs()` 返回值 | 同 Regular |
+
+10 分钟和 30 分钟是系统承诺的**最小保障时长**，不是统一最大执行时长。实际运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 App 的 standby bucket、当前电量策略和 quota 降级状态影响。低电量或受限状态下，实际上限可能远低于最小保障值。[已验证: AOSP android-16.0.0\_r1 `JobSchedulerService.Constants` + `getMaxJobExecutionTimeMs()`]
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java — getMaxJobExecutionTimeMs() 根据 Job 级别返回不同超时值]
 
-如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。这意味着即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 10 分钟（Regular/Expedited）或 30 分钟（User-Initiated）。
+如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长不是固定值，取决于 `getMaxJobExecutionTimeMs()` 的返回值——正常状态下 Regular/Expedited 至少 10 分钟、User-Initiated 至少 30 分钟，但 quota 降级后可能更短。这意味着即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。
 
 ### 逐步分析
 
@@ -770,6 +774,33 @@ Doze 模式会大幅限制后台活动，但它只在"设备静止不动、屏�
 
 ---
 
+## Android 15+ 前台服务超时与崩溃
+
+Android 15（API 35）引入了前台服务（FGS）超时机制，并在 Android 16 进一步收紧。几类 FGS 有明确的时间配额：
+
+| FGS 类型 | 配额 | 超时回调 |
+|---------|------|---------|
+| `dataSync` | 后台 24 小时内总计 6 小时 | `Service.onTimeout(int, int)` |
+| `mediaProcessing` | 后台 24 小时内总计 6 小时 | `Service.onTimeout(int, int)` |
+| `shortService` | 约 3 分钟 | `Service.onTimeout(int, int)` |
+
+超时后如果服务没有调用 `stopSelf()`，系统会抛出 `RemoteServiceException` 导致 App 崩溃。Logcat 中会看到类似：
+
+```text
+Fatal Exception: android.app.RemoteServiceException
+  Context.startForegroundService() did not call Service.stopForeground()
+```
+
+排查路径：
+
+1. 在 Logcat 中搜索 `onTimeout` 或 `RemoteServiceException` + 服务类名
+2. 检查 FGS 的 `foregroundServiceType` 是否选对——如果用 `dataSync` 做长时间同步，6 小时配额用完后就会超时
+3. 评估是否可以用 WorkManager、`User-initiated data transfer`（Android 14+）或分区存储 API 替代 FGS
+
+[已验证: 官方文档 developer.android.com/about/versions/15/behavior-changes-15#fgs-timeout + AOSP `ActiveServices.java`]
+
+---
+
 ## 厂商功耗检测工具
 
 除了 Google 官方的工具链，各手机厂商也提供了功耗分析工具，但这些工具通常只在对应品牌的设备上可用：
@@ -785,16 +816,55 @@ Doze 模式会大幅限制后台活动，但它只在"设备静止不动、屏�
 
 ---
 
-## 线上功耗监控体系 [待补充]
+## 线上功耗监控体系
 
-本节计划补充一个线上功耗监控体系的搭建案例，涵盖：
+线上功耗监控目前没有单一的银弹方案，需要根据目标 Android 版本和业务场景组合使用。
 
-- 如何通过 `BatteryStats` 和 `UsageStatsManager` 在 App 内部采集功耗数据
-- 如何区分前台/后台、亮屏/灭屏场景的功耗
-- 如何设置功耗异常的告警阈值
-- 如何将采集数据上报到服务端进行聚合分析
+### Play Console Android Vitals（覆盖面最广）
 
-[待补充: 需要补充完整的监控体系搭建案例]
+Google Play Console 的 Android Vitals 面板提供以下功耗相关指标，无需 App 端接入任何 SDK：
+
+- **Stuck partial wake lock**：后台 `PARTIAL_WAKE_LOCK` 持续 ≥1 小时的会话比例
+- **Excessive partial wake locks**：24 小时内累计持有时长 >2 小时且影响 >5% 会话
+- **Excessive wakeups**：1 小时内唤醒设备 >10 次
+- **Background ANR / crashed**：可间接反映功耗相关崩溃
+
+这些指标直接影响 App 的 Play 搜索排名和推荐权重。排查时注意区分 stuck（单次长时间）和 excessive（24 小时累计）两个 WakeLock 指标。
+
+### Battery Historian / bugreport 分析
+
+对于用户远程反馈的功耗问题，收集 `adb bugreport` 后上传 Battery Historian 是最直接的分析方法：
+
+```bash
+# 重置电池统计后复现问题，再导出
+adb shell dumpsys batterystats --reset
+# 复现问题...
+adb bugreport > bugreport_power_case.zip
+```
+
+Battery Historian 可以查看 WakeLock 持有时长、GPS/Radio 活跃时段、CPU 唤醒频率等时间线数据，适合定位具体是哪个子系统的功耗异常。
+
+### Perfetto Power Rails 分析（Pixel 6+）
+
+Pixel 6 及更新设备支持 Power Rails 数据源，Perfetto 可以直接读取 SoC 级别的功耗传感器数据（ODPM），精度远高于电池百分比估算：
+
+- 在 Perfetto 配置中启用 `android.power` 数据源
+- 通过 `power_rails` track 观察各子系统（CPU/GPU/DDR/Display）的实时功耗
+- 配合 CPU/GPU track 做关联分析，定位功耗异常的具体代码路径
+
+线下开发阶段推荐使用 Android Studio Power Profiler（图形化界面），线上问题用命令行 Perfetto 抓取。
+
+### 自建监控的边界
+
+自建线上功耗监控需要注意：
+- `BatteryManager` 返回的电量百分比精度较低（约 ±5%），只能用于粗粒度趋势分析
+- `UsageStatsManager` 提供的是使用时长统计，不直接反映功耗
+- 高频轮询电池状态本身会引入功耗，采样间隔建议 ≥5 分钟
+- Android 9+ 限制后台 App 读取电池信息的频率
+
+### 展望：ProfilingManager 自动触发（API 35+，Android 17 强化）
+
+Android 15 引入 `ProfilingManager`（API 35），支持 App 请求系统抓取性能 trace。Android 17（API 37）进一步引入 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，允许在系统检测到性能/功耗异常时自动触发 trace 抓取，帮助捕获导致过热的真实负载现场。这两个 API 面向 Android 15+ 和 Android 17+，不属于 Android 8-16 的主要监控路径，但值得作为后续演进方向关注。[已验证: AOSP `android.os.ProfilingManager` (API 35) + Android 17 API reference]
 
 ---
 
