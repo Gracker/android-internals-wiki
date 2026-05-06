@@ -1151,3 +1151,28 @@
 - **位置**：L547 WebP 有损替代 JPEG 体积小 25-35%
 - **问题**：检查清单给出固定压缩收益区间，但正文没有测试样本、质量指标或来源。
 - **建议**：补来源/实测表；若无固定样本，改成按业务图片集和质量目标实测。
+
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-05-06
+- **类型**：源码准确性
+- **位置**：L248 Zygote TimingsTraceLog slice 列表
+- **问题**：正文列出 `PreloadSharedLibraries`、`PreloadOpenGL` 作为 android-16.0.0_r1 常见 slice；复核 `ZygoteInit.java`，该版本核心 trace 名称包括 `BeginPreload`、`PreloadClasses`、`CacheNonBootClasspathClassLoaders`、`PreloadResources`、`PreloadAppProcessHALs` 等，未见这两个 slice。
+- **建议**：按 android-16.0.0_r1 实际 slice 名称改写，并把旧版本/旧资料中的名称单独标注为历史口径。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-05-06
+- **类型**：数据缺失
+- **位置**：L320-L332 Pixel 8 / Android 16 参考基线表
+- **问题**：表格给出 Pixel 8、Android 16、典型冷启动分段耗时和占比，但来源说明是“公开 bootstat 输出和 AOSP 默认配置的估算值”，没有原始 bootstat、Perfetto、dmesg、测试条件或样本次数。
+- **建议**：补 Pixel 8 实测 `bootstat -l` / Perfetto / dmesg 截图和测试条件；如果暂时没有一手数据，把表格改成非机型化的阶段成本示意，避免给出具体秒数和占比。
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-05-06
+- **类型**：版本差异
+- **位置**：L399-L411 dm-verity / AVB 段
+- **问题**：正文写“Android 7.0 起 dm-verity 默认启用”，但官方 Verified Boot 文档给出的演进是 Android 4.4 支持 Verified Boot + dm-verity，Android 7.0 开始严格强制 Verified Boot 并加入 FEC，Android 8.0+ 是 AVB 参考实现。另，“每次读取系统分区数据块都验证 hash”未区分页缓存/块缓存后的重复读取成本。
+- **建议**：把版本边界改成 4.4 支持、7.0 严格强制、8.0+ AVB；启动耗时影响写成“块首次从 verified block device 读取时需要 hash tree 校验，缓存命中不会重复产生同等校验成本”。
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-05-06
+- **类型**：数据与案例支撑
+- **位置**：L340 AVIF 段引用 HEIC 降本案例
+- **问题**：正文在 AVIF 小节引用“抖音 JPEG 转 HEIC 带宽成本降低超过 80%”作为相邻案例。HEIC 与 AVIF 都是高压缩静态图格式，但编码工具链、硬件解码覆盖和兼容性不同，不能直接作为 AVIF 体积/解码收益证据。
+- **建议**：把该案例明确收窄为 HEIC 工程案例，或替换成 AVIF 的同源 benchmark / 业务图片集实测数据。
