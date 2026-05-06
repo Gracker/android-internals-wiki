@@ -10724,7 +10724,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T14:51:49.073063",
+      "completed_reason": "P0 PowerMonitor常量已修正(CONSUMER=0,MEASUREMENT=1); P0 Perfetto config已修正(battery_poll_ms/collect_power_rails/android.power); P1 setPreferPowerEfficiency API已补充; AlarmManager路径已更新"
     },
     {
       "section": "14.13",
@@ -13045,7 +13047,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T14:37:25+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T14:51:49.073063",
+      "completed_reason": "P0 Icon.createWithBitmap()回退描述已修正(asShared()无像素回退分支); P0 NotificationListeners.java路径已修正为NMS内部类"
     }
   ],
   "completed": [

@@ -34,7 +34,7 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
@@ -42,11 +42,11 @@ task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T14:37:25+08:00"
-last_task2b_at: "2026-05-06T13:46:45+08:00"
+last_task2b_at: "2026-05-06T14:51:22+08:00"
 last_task6_at: "2026-05-06T14:11:35+08:00"
 last_task6_review_log: "logs/review/2026-05-06-14-review.md"
 task6_review_notes: "2026-05-06 Task6 14:11：回炉后写作复审；L1/L2 轻修 10 处（清理正文编辑痕迹、结构性元叙述、frontmatter 重复键）；无新增 L3/L4 回炉项，转入 Task9 复审。"
@@ -243,7 +243,7 @@ reapply 跳过了 inflate,但仍然会执行新 `RemoteViews` 的所有 action--
 
 1. **`Icon.createWithResource(resId)`**:只传资源 ID 引用,SystemUI 侧按自己的 `Context` 解码。跨进程开销最低,推荐优先使用
 2. **`Icon.createWithUri(uri)`**:传 URI,SystemUI 侧打开 ContentProvider 或文件流解码。跨进程开销是 URI 字符串本身,但 SystemUI 解码耗时取决于图片来源和尺寸
-3. **`Icon.createWithBitmap(bitmap)`**:AOSP `Icon.writeToParcel()` 对 `TYPE_BITMAP` / `TYPE_ADAPTIVE_BITMAP` 先调用 `Bitmap.asShared()` 生成不可变的 shared-memory backed bitmap,再通过 `Bitmap.writeToParcel()` 以共享内存 FD 传递。SystemUI 侧从 Parcel 重建 bitmap 对象并绑定渲染。这条路径绕过了像素数据整体拷贝进 Parcel 缓冲区,但 `asShared()` 的格式准备和 SystemUI 侧的解码绑定仍有开销。可变 Bitmap 或不兼容格式会回退到像素数据写 Parcel,大图此时会挤占 Binder 内核缓冲区配额。实战中优先用 `createWithResource`,次选 `createWithUri`,`createWithBitmap` 只在前面两条走不通时使用,且应确保 Bitmap 为 ARGB_8888 格式并已缩放到通知实际显示尺寸。
+3. **`Icon.createWithBitmap(bitmap)`**:AOSP `Icon.writeToParcel()` 对 `TYPE_BITMAP` / `TYPE_ADAPTIVE_BITMAP` 调用 `Bitmap.asShared()` 生成不可变的 shared-memory backed bitmap,再通过 `Bitmap.writeToParcel()` 以共享内存 FD 传递。SystemUI 侧从 Parcel 重建 bitmap 对象并绑定渲染。`Bitmap.asShared()` 的行为是:如果源 bitmap 已经是 shared-memory backed 的不可变 bitmap 则直接返回;否则创建一份 ashmem 副本;无法创建时抛异常。这条路径不走像素数据序列化,但 `asShared()` 的格式准备和 SystemUI 侧的解码绑定仍有开销。实战中优先用 `createWithResource`,次选 `createWithUri`,`createWithBitmap` 只在前面两条走不通时使用,且应确保 Bitmap 为 ARGB_8888 格式并已缩放到通知实际显示尺寸。
 
 ## NotificationListenerService 与性能
 
@@ -506,7 +506,7 @@ Android 12+ 的通知限流是静默丢弃,超过频率限制的通知会被 NMS
 
 ### 「Icon 构造方式对性能没影响」
 
-`Icon.createWithBitmap()` 在 `writeToParcel()` 时会尝试通过 `Bitmap.asShared()` 把 Bitmap 转为共享内存 backed 不可变副本，以 FD 形式跨进程传递，不走像素序列化。但 `asShared()` 本身有格式转换开销，可变 Bitmap 或不兼容格式会回退到像素数据写 Parcel——后者在 Binder 内核缓冲区有限时会造成排队。通知图标优先用 `Icon.createWithResource(resId)`（只传资源 ID 引用）。必须用 Bitmap 时，先按通知显示尺寸缩放并确保 ARGB_8888 格式，降低回退风险。
+`Icon.createWithBitmap()` 在 `writeToParcel()` 时通过 `Bitmap.asShared()` 把 Bitmap 转为共享内存 backed 不可变副本，以 FD 形式跨进程传递，不走像素序列化。`asShared()` 的行为是:已 shared 的不可变 bitmap 直接返回，否则创建 ashmem 副本，无法创建时抛异常。`asShared()` 本身有格式转换和 ashmem 拷贝开销。通知图标优先用 `Icon.createWithResource(resId)`（只传资源 ID 引用，跨进程开销最低）。必须用 Bitmap 时，先按通知显示尺寸缩放并确保 ARGB_8888 格式，降低 `asShared()` 的拷贝开销。
 
 ## 参考资料
 
@@ -516,7 +516,7 @@ Android 12+ 的通知限流是静默丢弃,超过频率限制的通知会被 NMS
   - `frameworks/base/core/java/android/widget/RemoteViews.java` - `RemoteViews` 的动作列表、inflate 与 apply
   - `frameworks/base/core/java/android/service/notification/NotificationListenerService.java` - NLS 回调线程模型
   - `frameworks/base/core/java/android/service/notification/INotificationListener.aidl` - listener 回调的 `oneway` 边界
-  - `frameworks/base/services/core/java/com/android/server/notification/NotificationListeners.java` - 监听器管理
+  - `frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java` — 监听器管理（`NotificationListeners` 为内部类）
 
 - **官方文档**:
   - [developer.android.com/develop/ui/views/notifications](https://developer.android.com/develop/ui/views/notifications) - 通知开发指南

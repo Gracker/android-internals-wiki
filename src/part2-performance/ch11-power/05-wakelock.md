@@ -40,16 +40,16 @@ sources:
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
 last_task9_at: "2026-05-05T17:38:00+08:00"
-last_task2b_at: "2026-04-27T19:40:00+08:00"
+last_task2b_at: "2026-05-06T14:51:22+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 review_round: 3
@@ -543,7 +543,7 @@ data_sources: {
     config {
         name: "android.power"
         android_power_config {
-            battery_polls_ms: 1000
+            battery_poll_ms: 1000
             collect_power_rails: true
         }
     }
@@ -765,6 +765,7 @@ Android 15（API 35）在 ADPF 中引入 **Power Efficiency Mode**，允许应�
 - `createHintSession(int[] tids, long initialTargetNanos)` — 创建 hint session，`tids` 为关联线程 ID 数组（`int[]`，非 `long[]`），目标时长单位为纳秒
 - `reportActualWorkDuration(long actualDurationNanos)` — 报告单次实际工作耗时（纳秒）
 - `updateTargetWorkDuration(long targetDurationNanos)` — 更新目标工作时长（纳秒）
+- `setPreferPowerEfficiency(boolean preferEfficiency)` — API 35 / `FLAG_ADPF_PREFER_POWER_EFFICIENCY`，声明会话线程应优先节能；系统可更积极地将线程调度到效率核、降低 CPU/GPU 频率。适用于后台长时工作负载（如同步、上传、压缩），不适合前台交互场景
 
 Power Efficiency Mode 的语义：系统可更积极地将线程调度到节能核心、降低 CPU/GPU 频率，而非追求最低延迟。这解决了"busy loop"场景下 CPU 空转的高功耗问题——传统方式是应用自行 Sleep，但会引入调度延迟；Power Efficiency Mode 让系统理解工作负载特征，在保证性能需求的前提下主动降频。
 
@@ -773,8 +774,8 @@ Power Efficiency Mode 的语义：系统可更积极地将线程调度到节能�
 **源码位置**：`frameworks/base/core/java/android/os/PowerMonitor.java`
 
 `PowerMonitor`（API 35）代表两类功耗监控实体：
-- `POWER_MONITOR_TYPE_MEASUREMENT`（0）— 直接测量电源轨，设备特有，如 "S2S_VDD_G3D"
-- `POWER_MONITOR_TYPE_CONSUMER`（1）— 建模范畴，名称通用如 "GPU" / "MODEM"
+- `POWER_MONITOR_TYPE_CONSUMER`（0）— 建模范畴，名称通用如 "GPU" / "MODEM"
+- `POWER_MONITOR_TYPE_MEASUREMENT`（1）— 直接测量电源轨，设备特有，如 "S2S_VDD_G3D"
 
 数据获取路径：
 ```text
@@ -798,12 +799,12 @@ PowerMonitorReadings.getTimestampMillis(PowerMonitor) → 快照时刻的 elapse
 
 #### Perfetto 端到端观测
 
-Perfetto 通过 `android.power_rails` 数据源暴露 rail 级功耗：
+Perfetto 通过 `android.power` 数据源暴露 rail 级功耗（trace processor SQL 表名为 `android_power_rails_counters`）：
 
 ```protobuf
 android_power_config {
-  battery_counters: CAPACITY | CHARGE | CURRENT | VOLTAGE
-  power_rails: true
+  battery_poll_ms: 1000
+  collect_power_rails: true
 }
 ```
 
@@ -839,7 +840,7 @@ Perfetto android.power_rails 记录 rail 数据
 - `frameworks/base/core/java/android/os/PowerManager.java` — WakeLock API 定义
 - `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` — 服务端实现
 - `frameworks/base/core/java/android/os/WorkSource.java` — 功耗归因
-- `frameworks/base/core/java/android/app/AlarmManager.java` — `OnAlarmListener` 与 exact alarm 重载
+- `frameworks/base/core/java/android/app/AlarmManager.java` — `OnAlarmListener` 与 exact alarm 重载（Android 15+ 路径 `frameworks/base/apex/jobscheduler/framework/java/android/app/AlarmManager.java`）
 - `frameworks/base/services/core/java/com/android/server/AlarmManagerService.java` — Alarm 触发与 wakelock
 - `kernel/power/wakelock.c` — 内核 wakelock 实现（旧版）
 - `kernel/drivers/base/power/wakeup.c` — 内核 wakeup_source 实现（当前）
