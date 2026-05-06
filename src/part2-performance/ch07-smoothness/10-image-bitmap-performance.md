@@ -37,8 +37,8 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -47,10 +47,10 @@ last_rework_by: openclaw-task2b
 last_rework_reason: "P95 Task9回炉(第三轮)：P0 inBitmap像素转移语义修正（非回收而是transfer）；P1 AVIF硬件加速边界收窄为SoC AV1 still image子集依赖"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-06"
-task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
+task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task9_at: "2026-05-06T08:35:28+08:00"
 task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄"
-last_task6_at: "2026-05-06T08:45:00+08:00"
+last_task6_at: "2026-05-06T09:07:00+08:00"
 task9_result: needs-rework
 ---
 
@@ -81,9 +81,9 @@ task9_result: needs-rework
 
 打开一份 Perfetto trace，发现主线程有一帧花了 200ms。展开调用栈，主要耗时来自 `BitmapFactory.decodeResource`——一张 4000×3000 的照片被原尺寸解码到内存，吃掉了 48MB，GC 被触发，界面就卡了。
 
-图片解码是 Android 上最"昂贵"的常规操作之一。一张手机拍的照片，磁盘上可能只有 5MB，但解码后在内存中占用的空间是 `宽 × 高 × 4` 字节（ARGB_8888 格式），轻松突破 20MB。列表滑动场景中，如果在主线程连续解码十几张这样的图，GC 频繁触发，掉帧几乎是必然的。
+图片解码是 Android 上资源开销很高的常规操作之一。一张手机拍的照片，磁盘上可能只有 5MB，但解码后在内存中占用的空间是 `宽 × 高 × 4` 字节（ARGB_8888 格式），轻松突破 20MB。列表滑动场景中，如果在主线程连续解码十几张这样的图，GC 频繁触发，掉帧几乎是必然的。
 
-本节拆解图片加载和 Bitmap 管理的完整过程：从 BitmapFactory 的内部机制到 Hardware Bitmap 的 GPU 内存模型，从 Glide/Coil 的管线架构到如何在 Perfetto 中定位图片解码导致的卡顿。读完后，读者能独立分析图片相关的性能问题，并给出针对性的优化方案。
+本节说明图片加载和 Bitmap 管理的完整过程：从 BitmapFactory 的内部机制到 Hardware Bitmap 的 GPU 内存模型，从 Glide/Coil 的管线架构到如何在 Perfetto 中定位图片解码导致的卡顿。读完后，读者能独立分析图片相关的性能问题，并给出针对性的优化方案。
 
 ## BitmapFactory 与 ImageDecoder：解码的两代方案
 
@@ -140,7 +140,7 @@ Android 9（API 28）引入了 `ImageDecoder`，官方推荐在新项目优先�
 
 **原生支持动画**。解码 GIF 或 WebP 动图时，返回 `AnimatedImageDrawable`，自带播放控制。用 BitmapFactory 完全做不到这一点。
 
-**setTargetSize 替代 inSampleSize**。不需要手动计算 2 的幂采样率，直接设定期望尺寸，解码器内部处理缩放。`ImageDecoder` 在单次解码流水线中完成采样和缩放，避免 `BitmapFactory` 常见的「先按 2 幂采样再二次缩放」路径中产生的大图缓冲区峰值。对大图场景（如 4000×3000 原图解码到 1080p），这个差异能显著降低解码过程中的内存峰值（Memory Spike），减少 OOM 风险。
+**setTargetSize 替代 inSampleSize**。不需要手动计算 2 的幂采样率，直接设定期望尺寸，解码器内部处理缩放。`ImageDecoder` 在单次解码流水线中完成采样和缩放，避免 `BitmapFactory` 常见的「先按 2 幂采样再二次缩放」路径中产生的大图缓冲区峰值。对大图场景（如 4000×3000 原图解码到 1080p），这个差异能降低解码过程中的内存峰值（Memory Spike），减少 OOM 风险。
 
 这两个边界要分清：`setTargetSize` 必须在 `OnHeaderDecodedListener` 回调内设置；最终走 sample 还是 scale 由 codec 能力决定，不能无条件写成所有格式都避免大缓冲。`setTargetSampleSize()` 可以让解码器按可高效执行的方向取整。
 
@@ -191,7 +191,7 @@ Android 14+ 默认支持 Ultra HDR（Gainmap）。解码含 Gainmap 的 JPEG 时
 
 观测上，PSS / NativeAllocationRegistry 只登记 base bitmap 的 native 大小；Gainmap 部分的 GPU 显存通常不出现在 Java 堆统计里，需要结合 `dumpsys meminfo` 的 Graphics 类别和 `procfs` GPU memory 节点一起看。
 
-工程建议：如果业务不需要 HDR 显示，可以在低端设备上解码后调用 `bitmap.setGainmap(null)` 移除 Gainmap 层，直接省掉这部分额外开销。[已验证：AOSP `Bitmap.java` hasGainmap()/getGainmap()/setGainmap() + `BitmapFactory.cpp` decodeGainmap()]
+工程建议：如果业务不需要 HDR 显示，可以在低端设备上解码后调用 `bitmap.setGainmap(null)` 移除 Gainmap 层，去掉这部分额外开销。[已验证：AOSP `Bitmap.java` hasGainmap()/getGainmap()/setGainmap() + `BitmapFactory.cpp` decodeGainmap()]
 
 ## Hardware Bitmap：像素存在 GPU 里
 
@@ -228,7 +228,7 @@ Hardware Bitmap 的限制，不是“系统会自动降级成普通 Bitmap”，
 
 ## Hardware Bitmap 与 RenderThread/SurfaceFlinger 合成管线
 
-Hardware Bitmap 仍要经过 RenderThread 和 GPU 合成管线，不会直接作为独立图层交给 SurfaceFlinger。它省掉的是 RenderThread 中同步 upload 的 4-8ms（1080p RGBA），不是整条渲染管线。
+Hardware Bitmap 仍要经过 RenderThread 和 GPU 合成管线，不会直接作为独立图层交给 SurfaceFlinger。它省掉的是 software bitmap 首次绘制前的同步 upload 成本，不是整条渲染管线。
 
 ### 源码级证据
 
@@ -276,7 +276,7 @@ DisplayList 记录 drawBitmap 命令       |                              |
                                                                     HWC composition
 ```
 
-Hardware Bitmap 的优化点：**省去 RenderThread 中同步 upload 的 4-8ms（1080p RGBA）**，但无法绕过渲染管线直接交给 SurfaceFlinger。
+Hardware Bitmap 的优化点：**省去 software bitmap 首次绘制前的同步 upload 成本**，但无法绕过渲染管线直接交给 SurfaceFlinger。
 
 ## inBitmap 复用机制与 BitmapPool
 
@@ -284,7 +284,7 @@ Hardware Bitmap 的优化点：**省去 RenderThread 中同步 upload 的 4-8ms�
 
 Bitmap 的创建和销毁是内存抖动的主要来源之一。一次 `BitmapFactory.decodeResource` 会分配几十 KB 到几十 MB 不等的 Native 内存。当这个 Bitmap 不再使用被 GC 回收时，Native 内存释放。如果在列表滑动中反复执行这个过程——分配 → 使用 → 回收 → 分配 → 使用 → 回收——内存分配曲线会呈锯齿状，GC 被频繁触发。
 
-GC 本身不耗时（通常 < 1ms），但 GC 期间会暂停所有线程（在 ART 的部分 GC 模式下）。如果 GC 频率达到每秒几十次，累积的暂停时间就足以导致掉帧。
+单次 GC 不一定很长，但 GC 期间会暂停所有线程（在 ART 的部分 GC 模式下）。如果 GC 频率达到每秒几十次，累积的暂停时间就足以导致掉帧。
 
 ### inBitmap 的工作原理
 
@@ -333,11 +333,11 @@ Glide 的内存缓存体系分成三层：
 
 [待验证：如果要给出具体毫秒数，需要固定设备、分辨率、图片样本、解码器实现，再用 Macrobenchmark 或自建基准实测]
 
-### AVIF：压缩率的新天花板
+### AVIF：更高压缩率与解码代价
 
 Android 12（API 31）引入了对 AVIF 的基础支持。Android 14 对部分新设备要求支持 AV1 硬件解码，但 AVIF 的硬件加速取决于 SoC 的 AV1 解码器是否支持 still image 子集（SUBPEL 精度和 single tile 限制）；不满足条件的设备退回软件解码（libdav1d）。
 
-AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下文件体积减少约 50%。对于带宽敏感的场景（图片 CDN、社交信息流），这是明显的带宽成本优势。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。[来源：抖音 Android 端图片优化实践]
+AVIF 基于 AV1 视频编码的帧内压缩，相比 JPEG 在同等画质下通常能用更小文件换取相近画质；具体比例取决于图片内容、编码参数和解码器。对于带宽敏感的场景（图片 CDN、社交信息流），它能减少网络流量和 CDN 成本。抖音的技术团队通过将 JPEG 转为 HEIC（类似思路的格式），带宽成本降低超过 80%。[来源：抖音 Android 端图片优化实践]
 
 但 AVIF 的软件解码比较慢，在低端设备上可能成为瓶颈。如果应用的 minSdk 低于 31，还需要考虑软件解码兜底。常见工程做法是把 `libavif` 一类 JNI 解码库随 App 打包，在 Android 12 以下走软件解码，再按系统版本和 ABI 做能力分流。代价是包体、CPU 开销和 Native 维护成本都会上升。
 
@@ -410,7 +410,7 @@ Glide 在解码时会自动根据 `ImageView` 的尺寸计算采样率。流程�
 
 ### 常见配置误区
 
-**误区 1：禁用缓存**。`DiskCacheStrategy.NONE` 看似减少磁盘占用，但每次加载都需要重新从网络或磁盘读取原始数据并解码。对于频繁显示的图片（列表中的头像、封面），这会显著增加 CPU 负担和耗电。
+**误区 1：禁用缓存**。`DiskCacheStrategy.NONE` 看似减少磁盘占用，但每次加载都需要重新从网络或磁盘读取原始数据并解码。对于频繁显示的图片（列表中的头像、封面），这会增加 CPU 负担和耗电。
 
 **误区 2：错误的线程池大小**。Glide 默认的 `ExecutorService` 大小根据 CPU 核心数自动计算。手动设置过大的线程池会导致过多的并发解码，争抢 CPU 和内存带宽，反而降低帧率。
 
@@ -458,7 +458,7 @@ Hardware Bitmap 也不能写成一句“默认开启”就完事。Coil Android 
 
 如果项目是纯 Kotlin、使用 Compose，Coil 更顺手。如果项目历史较长、有大量 Java 代码，或者已经深度依赖 Glide 的扩展点，继续用 Glide 更稳妥。
 
-[自动发现] 抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 显著降低，大盘帧率正向提升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。[来源：抖音 Android 端图片优化实践、抖音 Android 端图片优化最佳实践]
+抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 数量下降，大盘帧率上升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。[来源：抖音 Android 端图片优化实践、抖音 Android 端图片优化最佳实践]
 
 ## 在 Perfetto 中定位图片解码卡顿
 
@@ -499,7 +499,7 @@ Hardware Bitmap 的价值就在这里。像素本来就在 GPU 可访问内存�
 
 `Bitmap.prepareToDraw()` 从 Android 7.0 起就在 RenderThread 上异步触发纹理上传，公开 API 行为未在 Android 15 发生变更。工程实践上，在解码完成后的工作线程或图片即将显示前调用 `prepareToDraw()` 即可预上传；不需要额外配合 `Choreographer` 的 `CALLBACK_COMMIT` 阶段——`Choreographer.postFrameCallback()` 投递的是 `CALLBACK_ANIMATION` 类型，不等于 `CALLBACK_COMMIT`。[已验证：AOSP `Bitmap.java` prepareToDraw() 注释在 android-15.0.0_r1 和 android-16.0.0_r1 未变；Choreographer 回调类型见 AOSP `Choreographer.java`]
 
-源码路径上，Hardware Bitmap 不能绕过 RenderNode 直接提交给 SurfaceFlinger。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理（1080p RGBA Bitmap 约 4-8ms），而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[来源：AOSP `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp` android-14]
+源码路径上，Hardware Bitmap 不能绕过 RenderNode 直接提交给 SurfaceFlinger。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理，而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[来源：AOSP `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp` android-14]
 
 [图：Perfetto RenderThread 片段。`Bitmap.prepareToDraw` 或首帧 `DrawFrame` 前后出现长 slice，并且能看到同一帧的 jank frame。旁边补一张使用 Hardware Bitmap 的正常帧，说明少掉了首帧 texture upload。]
 
@@ -544,9 +544,9 @@ LIMIT 50;
 
 ### 格式选择
 
-8. **WebP 有损替代 JPEG**：同等画质下体积小 25-35%，解码速度可接受。
-9. **AVIF 前瞻**：带宽优势很明显，但解码成本和硬件能力要按设备确认；minSdk 31 以下要准备软件解码兜底。
-10. **避免 PNG 大图**：PNG 无损压缩，文件大、解码慢。照片类内容永远不要用 PNG。
+8. **WebP 有损替代 JPEG**：同等画质下通常能减小文件体积，但要用业务图片集确认画质、体积和解码成本。
+9. **AVIF 前瞻**：带宽收益要和解码成本一起评估，硬件能力要按设备确认；minSdk 31 以下要准备软件解码兜底。
+10. **避免 PNG 大图**：PNG 无损压缩，文件大、解码慢。照片类内容通常不要用 PNG。
 
 ### 工具链
 
