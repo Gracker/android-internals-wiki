@@ -7,10 +7,10 @@ tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "se
 related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-23"
 task6_result: pass-light-edit
@@ -30,7 +30,7 @@ task9_reviewed_date: 2026-04-20
 - [18.5.1 多窗口场景分析](#多窗口场景分析) — 什么时候会出现双窗口
 - [18.5.2 同进程 vs 跨进程](#同进程-vs-跨进程两类完全不同的问题) — 拓扑决定瓶颈位置
 - [18.5.3 核心瓶颈：串行化](#核心瓶颈串行化) — UI Thread 与 RenderThread 的争抢
-- [18.5.4 全链路执行流程](#全链路执行流程) — 双窗口的完整时序
+- [18.5.4 完整执行流程](#完整执行流程) — 双窗口的完整时序
 - [18.5.5 Trace 视角](#trace-视角) — 识别多窗口瓶颈
 - [18.5.6 优化策略](#优化策略) — 减少串行开销
 
@@ -50,6 +50,7 @@ task9_reviewed_date: 2026-04-20
 2. **分屏/多窗口模式**：Android 10+ 支持 Multi-resume，两个 Activity 同时处于 `RESUMED` 状态，都在持续绘制。
 3. **悬浮窗（System Alert Window）**：通过 `WindowManager.addView()` 添加的 Overlay 窗口，覆盖在 Activity 之上。
 4. **PopupWindow**：虽然不是独立 Window，但在某些实现中会有独立的 Surface。
+5. **Desktop Windowing（Android 16+）**：Android 16 引入的原生桌面窗口管理，允许在同一屏幕上同时显示多个应用窗口。与分屏不同，桌面窗口数量可变、尺寸自由，SystemUI 需同时渲染 Taskbar 和 Universal Cursor。连接外部显示器时，SystemUI 进程的 CPU 和显存会出现明显阶跃。对 App 侧来说，桌面模式下的多窗口同时可见时间更长，渲染压力从"短暂共存"变成了"持续并存"，需要更关注后台 Activity 的持续渲染成本。
 
 这些场景的共同特征是：**两个窗口共享同一个进程内的渲染资源**——一个 UI Thread、一个 RenderThread、一个 EGLContext。
 
@@ -85,6 +86,8 @@ task9_reviewed_date: 2026-04-20
 ## 核心瓶颈：串行化
 
 多窗口的性能瓶颈不在于"画的东西多了一倍"，而在于**串行化执行**。两个窗口的绘制任务不能并行，只能排队。
+
+**先澄清一点**：SurfaceFlinger 合成侧已经并行化了——多个 Layer 可以由 HWC 硬件同时合成，跨进程多窗口的帧率互不干扰（见 [18.2](02-android-view-standard.md)）。所以多窗口性能问题的压力几乎全在生产侧——App 进程内部的串行化才是瓶颈所在。下面的分析聚焦同进程场景。
 
 ### UI Thread 争抢
 
@@ -142,7 +145,7 @@ graph LR
 
 要并行，就需要创建第二个进程——这正是 Android 多进程架构的设计意图，但 Dialog 和分屏场景做不到这一点。
 
-## 全链路执行流程
+## 完整执行流程
 
 ### 阶段一：VSync 唤醒与分发
 
@@ -224,7 +227,7 @@ sequenceDiagram
 | 现象 | 根因 | 优化方向 |
 |:---|:---|:---|
 | Window B 的 Traversal 开始时间晚 | Window A 的 Traversal 耗时过长 | 简化 Window A 的布局 |
-| doFrame 总时长 > 16ms | 两个 Traversal 串联超出预算 | 合并窗口（见下文优化策略） |
+| doFrame 总时长 > 16ms | 两个 Traversal 串行超出预算 | 合并窗口（见下文优化策略） |
 | RenderThread 中两次 DrawFrame 总时长 > 8ms | 两个窗口的 GPU 负担过重 | 减少背景窗口的绘制 |
 | eglMakeCurrent 耗时过长 | EGL Surface 切换开销 | — |
 
@@ -241,7 +244,7 @@ RenderThread:  |--Sync A--|--Draw A (4ms)--|--Sync B--|--Draw B (3ms)--|
 
 ### 策略一：合并窗口
 
-**最有效的优化**。如果可能，用 View 的方式实现（如 Fragment、BottomSheetBehavior），而不是真正的 Window Dialog。这样两个窗口会合并到同一个 Surface，`doFrame` 中只有一次 Traversal、一次 SyncFrameState、一次 DrawFrame。
+**最有效的优化**。如果可能，用 View 的方式实现（如 Fragment、BottomSheetBehavior），避免创建独立 Window Dialog。这样两个窗口会合并到同一个 Surface，`doFrame` 中只有一次 Traversal、一次 SyncFrameState、一次 DrawFrame。
 
 ```java
 // 避免：真正的 Window Dialog（创建独立 Window/Surface）
@@ -252,7 +255,7 @@ dialog.show();
 // 注意：BottomSheetDialogFragment 继承自 AppCompatDialogFragment，
 // 仍然创建独立 Window 和 Surface，只是布局上模拟了 BottomSheet 效果
 
-// 推荐：真正无额外 Window 的方案——BottomSheetBehavior + CoordinatorLayout
+// 推荐：无额外 Window 的方案——BottomSheetBehavior + CoordinatorLayout
 // 在 Activity 的布局 XML 中嵌入 BottomSheet 容器
 // <CoordinatorLayout>
 //   <FrameLayout android:id="@+id/bottom_sheet"
