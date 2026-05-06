@@ -12,7 +12,7 @@ confidence: medium
 polish_count: 2
 polish_date: '2026-04-17'
 polish_by: task2b-polish
-reviewed_date: 2026-05-01
+reviewed_date: "2026-05-06"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 sources:
@@ -47,16 +47,19 @@ task9_result: fixed
 last_task9_at: "2026-05-03T06:20:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-03"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-review_round: 3
+review_round: 4
 last_task2b_at: "2026-05-06T09:49:49.432169"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
+last_task6_at: "2026-05-06T10:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-10-review.md"
+task6_review_notes: "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理第一人称、未标语言代码块和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 ---
 
 
@@ -80,7 +83,7 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1�
   区分本地 JIT Profile、Baseline Profiles、Cloud Profiles 和 Startup Profiles 分别解决的启动与运行时问题。
 
 - 🔹 **在 Perfetto 和命令行工具中的观测方式**：[待补充: 真实 Trace 截图]
-  说明 `art::jit::*`、`dex2oat` 进程、`oatdump`、`profman` 等观测入口，帮助我们判断编译是否成为性能瓶颈。
+  说明 `art::jit::*`、`dex2oat` 进程、`oatdump`、`profman` 等观测入口，用于判断编译是否成为性能瓶颈。
 
 - 🔹 **应用侧实践与常见误区**：[已验证: developer.android.com + source.android.com]
   结合 Baseline Profiles、Startup Profiles、CI 自动生成流程和常见误区，把编译知识落到启动优化实践中。
@@ -88,16 +91,16 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1�
 
 ## 为什么要了解 ART 编译管线
 
-我们在 Perfetto 中分析冷启动时，经常会看到应用进程的 `bindApplication` 阶段耗时几百毫秒甚至几秒，其中一个容易被忽略的变量是：**这段代码是以解释执行的方式跑的，还是已经编译成了机器码？**
+在 Perfetto 中分析冷启动时，经常会看到应用进程的 `bindApplication` 阶段耗时几百毫秒甚至几秒，其中一个容易被忽略的变量是：**这段代码是以解释执行的方式跑的，还是已经编译成了机器码？**
 
-同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度的差距取决于应用体积、启动路径复杂度和 Profile 覆盖率。Google 官方文档给出 Baseline Profiles 的冷启动收益参考：平均提升约 30%，低端设备上可达 40%。这些数值来自 Google 内部 Macrobenchmark 基准测试，具体条件（设备型号、Android 版本、样本量）参见 developer.android.com/topic/performance/baselineprofiles/overview。实际收益需用同一 release 包、同一设备、同一测试脚本对照确认。 这是因为**编译策略**变了。ART 编译管线决定了应用代码从 DEX 字节码到机器指令走哪条路，也就是解释执行、JIT 即时编译，还是 AOT 预编译。了解这条管线后，我们就能回答这些问题：
+同一个 APK，在首次安装（没有 Profile）和经过几天使用后（积累了 JIT Profile），冷启动速度的差距取决于应用体积、启动路径复杂度和 Profile 覆盖率。Google 官方文档给出 Baseline Profiles 的冷启动收益参考：平均提升约 30%，低端设备上可达 40%。这些数值来自 Google 内部 Macrobenchmark 基准测试，具体条件（设备型号、Android 版本、样本量）参见 developer.android.com/topic/performance/baselineprofiles/overview。实际收益需用同一 release 包、同一设备、同一测试脚本对照确认。背后的变量是**编译策略**：ART 编译管线决定了应用代码从 DEX 字节码到机器指令走哪条路，也就是解释执行、JIT 即时编译，还是 AOT 预编译。了解这条管线后，可以回答这些问题：
 
 - 冷启动慢，有没有可能是编译策略不够优化？
 - 安装耗时过长，跟 dex2oat 有什么关系？
 - Baseline Profiles 和 Startup Profiles 到底做了什么？
 - 在 Perfetto 中看到 `art::jit::*` 相关的 Slice，该怎么解读？
 
-这篇文章把 ART 的编译策略从历史演进到当前架构梳理一遍，目标是读完之后，我们能在 Trace 中定位编译相关的性能问题，并知道如何通过 Profile 体系优化应用的编译路径。
+这篇文章把 ART 的编译策略从历史演进到当前架构梳理一遍，目标是读完之后，读者能在 Trace 中定位编译相关的性能问题，并知道如何通过 Profile 体系优化应用的编译路径。
 
 ## ART 编译策略的演进史
 
@@ -125,7 +128,7 @@ Android 7.0 引入了当前架构的基石——**混合编译模式**。核心�
 2. **运行时用 JIT 编译热点方法**，同时记录 Profile（哪些方法被频繁调用）。
 3. **设备空闲充电时**，后台 dex2oat 根据 Profile 做 AOT 编译，只编译 Profile 中标记的热点方法。
 
-这个架构的核心原则是"**按需编译**"——只编译用户真正用到的代码路径。大部分应用有大量冷门功能，全量 AOT 浪费了大量编译时间和存储空间。
+这个架构的核心原则是"**按需编译**"——只编译用户实际用到的代码路径。大部分应用有大量冷门功能，全量 AOT 浪费了大量编译时间和存储空间。
 
 ### Android 12+：ART 模块化与持续优化
 
@@ -222,11 +225,11 @@ JIT 运行时收集的 Profile 信息被持久化到 `/data/misc/profiles/cur/0/
 
 - **Track**：应用进程下的 `art::jit::*` 相关 Slice
 - **典型 Slice**：`Jit compilation`、`Jit method compilation`
-- **特征**：如果我们在 Trace 中看到大量 `Jit compilation` Slice 集中在启动阶段，说明应用的 AOT 编译覆盖率不够——热点方法没有在安装时被预编译
+- **特征**：如果 Trace 中出现大量 `Jit compilation` Slice 集中在启动阶段，说明应用的 AOT 编译覆盖率不够——热点方法没有在安装时被预编译
 
 **Perfetto 抓取配置建议。** 观察 JIT 编译活动时，建议在 Perfetto config 中启用以下数据源：
 
-```
+```protobuf
 data_sources: {
     config {
         name: "linux.ftrace"
@@ -262,7 +265,7 @@ dex2oat 的输入是 DEX 文件（APK 中的 classes.dex），输出是 OAT 文�
 6. **代码生成**：将优化后的 H 图 lowering 为目标架构的机器码（ARM64/x86_64）
 7. **输出 OAT**：将编译结果写入 OAT 文件（ELF 格式），同时生成 VDEX 文件（存储原始 DEX 的快速验证信息）
 
-```
+```text
 DEX bytecode
     ↓ verify
     ↓ H-Graph construction
@@ -314,7 +317,7 @@ ART 的编译优化核心是 **Profile-Guided Optimization**——用真实的�
 
 **第一层：本地 JIT Profile**
 
-设备在运行应用时，JIT 编译器自动收集的热点方法信息。存储在 `/data/misc/profiles/cur/0/{pkg}/primary.prof`。这是我们前面提到的——应用用了几天之后，后台 dex2oat 会根据这个 Profile 做编译。
+设备在运行应用时，JIT 编译器自动收集的热点方法信息。存储在 `/data/misc/profiles/cur/0/{pkg}/primary.prof`。前文已经提到，应用用了几天之后，后台 dex2oat 会根据这个 Profile 做编译。
 
 限制：需要用户实际使用过应用才能积累，冷启动路径在首次安装时没有覆盖。
 
@@ -343,7 +346,7 @@ Startup Profiles 是 Baseline Profiles 的**启动子集**，它影响的是 DEX
 
 类加载器按顺序从 classes.dex 开始加载类。如果启动路径上的类散落在 DEX 文件的不同位置（甚至不同的 DEX 文件中），类加载器需要更多的 I/O 操作和内存映射。Startup Profiles 的作用是告诉 R8/D8 编译器：**把这些启动类排列到 classes.dex 的前部**。
 
-```
+```text
 没有 Startup Profiles：
   classes.dex: [辅助类, 工具类, 启动关键类 A, 配置类, 启动关键类 B, ...]
   classes2.dex: [启动关键类 C, 其他类, ...]
@@ -377,7 +380,7 @@ AutoFDO 在 Pixel 设备上的量化效果：
 
 ## 在 Perfetto 和工具中的表现
 
-了解 ART 编译管线后，我们需要知道在 Trace 中怎么观察编译相关的活动。
+了解 ART 编译管线后，还要知道在 Trace 中怎么观察编译相关的活动。
 
 ### JIT 编译活动
 
@@ -397,7 +400,7 @@ dex2oat 编译在以下场景可见：
 - **后台优化**：后台编译服务（Android 13 及以下为 `bg-dexopt`，Android 14+ 为 ART Service `MaintenanceJobs`）
 - **OTA 后**：系统更新后的批量 recompile
 
-在 Perfetto 中，dex2oat 会作为一个独立进程出现，我们可以直接观察它的 CPU 使用率和线程活动。
+在 Perfetto 中，dex2oat 会作为一个独立进程出现，可以直接观察它的 CPU 使用率和线程活动。
 
 ### art::jit::* 相关 Slice 含义
 
@@ -447,16 +450,16 @@ Android 16 进一步强化了系统触发能力——应用通过 `ProfilingMana
 
 ### 如何通过 Trace 判断编译瓶颈
 
-当我们怀疑编译策略影响了应用性能时，可以按以下步骤排查：
+怀疑编译策略影响应用性能时，可以按以下步骤排查：
 
 1. **检查当前编译状态**：通过 `cmd package art dump` 或 `dumpsys package dexopt` 查看应用当前落下来的 compiler filter
 2. **对比首次安装 vs 使用后的启动 Trace**：首次安装通常会看到更多 JIT 活动
-3. **检查 Profile 是否命中**：如果安装后仍停在 `verify`，需要继续看 Baseline / 本地 Profile 是否真正生效
+3. **检查 Profile 是否命中**：如果安装后仍停在 `verify`，需要继续看 Baseline / 本地 Profile 是否生效
 4. **观察后台编译时间线**：空闲维护窗口里，后台编译服务（`bg-dexopt` / ART Service `MaintenanceJobs`）是否正常运行
 
 ## 实战：优化 App 的编译性能
 
-了解了 ART 编译管线的工作原理，接下来我们看看如何在实际工作中应用这些知识来优化应用的编译路径。
+了解 ART 编译管线的工作原理后，实际优化要落到应用的编译路径上。
 
 ### 如何为应用添加 Baseline Profiles
 
@@ -515,7 +518,7 @@ Startup Profiles 的文件名通常是 `startup-prof.txt`，放在 `src/main/` �
 
 ### 编译优化与其他启动优化手段的协同
 
-编译优化不是孤立的。在 §8.3 启动优化策略 中我们会更详细地讨论，但这里需要指出几个协同点：
+编译优化要和其他启动优化一起看。§8.3 启动优化策略会更完整展开，本章保留三个直接相关的边界：
 
 - **Startup Profiles + DEX Layout** 解决的是类加载 I/O 的问题，跟代码本身的耗时无关
 - **Baseline Profiles** 解决的是代码执行效率的问题，把解释执行/JIT 热身变成 AOT 机器码
@@ -557,7 +560,7 @@ Baseline Profiles、ProfileInstaller 和 Play Cloud Profiles 属于应用分发�
 
 #### Android 17 `static final` 行为变化的编译边界
 
-Android 17 公开确认的是 `static final` 的行为约束进一步收紧，运行时可变性比旧版本更小。对编译器来说，这确实提供了更稳定的前提，常量传播、分支裁剪和内联缓存的假设空间也会更宽。
+Android 17 公开确认的是 `static final` 的行为约束进一步收紧，运行时可变性比旧版本更小。对编译器来说，这提供了更稳定的前提，常量传播、分支裁剪和内联缓存的假设空间也会更宽。
 
 正文把这一点落成“dex2oat 一定会更激进地做常量折叠和内联”就写过头了。更稳妥的表述是：
 
