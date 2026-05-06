@@ -9171,8 +9171,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T18:39:01",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.1-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.1-external-review.md",
+      "completed_at": "2026-05-07T04:45:05.414772+08:00",
+      "completed_reason": "章节已 finalized (task6 pass-light-edit + task9 pass-tech-review)；HardwareBufferRenderer离屏行已存在，Flutter 3.29+ 单线程描述已存在"
     },
     {
       "section": "18.2",
@@ -9199,8 +9201,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T18:39:01",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.2-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.2-external-review.md",
+      "completed_at": "2026-05-07T04:45:05.414772+08:00",
+      "completed_reason": "章节内容已覆盖两个 external review 问题：(1) Android 15+ Non-blocking Sync 已在第二阶段详述含版本分界和AVP例外 (2) Android 17 Generational GC 对 Compose 加成已在运行时层演进城落；task9_result 仍为 needs-rework 有其他独立技术问题需后续 task9 复审"
     },
     {
       "section": "18.3",
@@ -9227,8 +9231,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T18:39:01",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.3-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.3-external-review.md",
+      "completed_at": "2026-05-07T04:46:46.586114+08:00",
+      "completed_reason": "Efficiency-aware Throttling 强断言已软化并标[待验证]；16KB Page 映射段保留理论推导标注"
     },
     {
       "section": "18.4",
@@ -9331,8 +9337,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T20:15:34.630443+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.5-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.5-external-review.md",
+      "completed_at": "2026-05-07T04:46:46.586114+08:00",
+      "completed_reason": "Android 16 Desktop Windowing 已补充为多窗口场景；SurfaceFlinger合成侧已并行化背景已加入核心瓶颈章节"
     },
     {
       "section": "18.6",
@@ -9375,8 +9383,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T20:15:34.630443+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.7-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.7-external-review.md",
+      "completed_at": "2026-05-07T04:45:05.414772+08:00",
+      "completed_reason": "章节已 finalized (task6 pass-light-edit + task9 pass-tech-review)；EGLImage缓存和HardwareBufferRenderer离屏采样已在前轮修复中覆盖"
     },
     {
       "section": "18.8",
@@ -9396,8 +9406,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T20:15:34.630443+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.8-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.8-external-review.md",
+      "completed_at": "2026-05-07T04:45:05.414772+08:00",
+      "completed_reason": "章节已 finalized (task6 pass-light-edit + task9 pass-tech-review)；HardwareBufferRenderer集成路径和Vsync Offset对齐已在前轮修复中覆盖"
     },
     {
       "section": "18.9",
@@ -9539,8 +9551,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T22:12:00+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.11-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.11-external-review.md",
+      "completed_at": "2026-05-07T04:45:05.414772+08:00",
+      "completed_reason": "章节已 finalized (task6 pass-light-edit + task9 pass-tech-review)；ANGLE性能模型和重要缺失已在前轮修复中覆盖"
     },
     {
       "section": "18.12",
@@ -9578,8 +9592,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T22:12:00+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.12-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.12-external-review.md",
+      "completed_at": "2026-05-07T04:45:05.414772+08:00",
+      "completed_reason": "章节已 finalized (task6 pass-light-edit + task9 pass-tech-review)；Flutter渲染管线性能评估已在前轮修复中覆盖"
     },
     {
       "section": "18.21",
@@ -9614,8 +9630,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-30T02:12:59",
-      "status": "pending",
-      "source_file": "2026-04-29-11-18.21-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-18.21-external-review.md",
+      "completed_at": "2026-05-07T04:45:05.414772+08:00",
+      "completed_reason": "章节已 finalized (task6 pass-light-edit + task9 pass-tech-review)；EyeDropper硬件放大镜和跨端色准已在前轮修复中覆盖"
     },
     {
       "section": "10.5",
@@ -12214,7 +12232,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T15:51:58+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T04:46:46.586114+08:00",
+      "completed_reason": "P1 Efficiency-aware Throttling/SkTaskGroup 缺 AOSP 锚点问题已修正：删除强断言，统一标[待验证]，保留合理的技术推导框架"
     },
     {
       "section": "18.9",
