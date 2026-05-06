@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-05-07T01:20:00+08:00",
+  "generated_at": "2026-05-07T02:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
-    "last_updated": "2026-05-07T00:20:00+08:00",
+    "last_updated": "2026-05-07T02:05:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 2,
       "ready-to-publish": 124,
@@ -38,8 +38,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 118,
-      "task2b_pending": 80,
-      "task9_pending": 17,
+      "task2b_pending": 78,
+      "task9_pending": 19,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -51,16 +51,16 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 206,
-      "pending": 7
+      "reviewed": 204,
+      "pending": 9
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 121,
-      "pending": 87,
+      "fixed": 123,
+      "pending": 85,
       "idle": 3
     },
-    "last_updated": "2026-05-07T00:20:00+08:00"
+    "last_updated": "2026-05-07T02:05:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -1829,20 +1829,23 @@
       "last_verified": "2026-03-31",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "task2b_result": "pending",
-      "reviewed_date": "2026-04-19",
+      "task2b_result": "fixed",
+      "reviewed_date": "2026-05-07",
       "reviewed_by": "openclaw-task6",
       "last_task9_at": "2026-05-07T01:20:00+08:00",
       "task9_reviewed_by": "openclaw-task9",
       "task9_reviewed_date": "2026-05-07",
       "last_task9_review_log": "logs/deep-review/2026-05-07-01-deep-review.md",
-      "task9_review_notes": "2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。"
+      "task9_review_notes": "2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。",
+      "last_task6_at": "2026-05-07T02:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-07-02-review.md",
+      "task6_review_notes": "2026-05-07 Task6：pass-light-edit。小修 13 处；无新增 Task2B 回炉项。因 Task9 pending 且 queue 有既有 pending 条目，未自动晋升。"
     },
     "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md": {
       "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
@@ -5333,24 +5336,24 @@
       "section": "16.4",
       "chapter": "16.4",
       "status": "ready-for-review",
-      "reviewed_date": "2026-05-06",
+      "reviewed_date": "2026-05-07",
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-07T00:20:00+08:00",
       "task9_reviewed_date": "2026-05-07",
       "task9_reviewed_by": "openclaw-task9",
-      "task2b_state": "pending",
-      "task2b_result": "pending",
-      "pipeline_stage": "task2b_pending",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed",
+      "pipeline_stage": "task9_pending",
       "task2b_fixed_at": "2026-04-27T11:41:00+08:00",
       "last_task2b_at": "2026-04-27T11:41:00+08:00",
       "applicable_versions": "Android 17 (API 37)",
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a",
-      "last_task6_at": "2026-05-06T23:21:00+08:00",
+      "last_task6_at": "2026-05-07T02:05:00+08:00",
       "tags": [
         "android",
         "linux",
@@ -5360,8 +5363,8 @@
       "task6_reviewed_date": "2026-05-04",
       "review_log": "logs/review/2026-05-04-21-review.md",
       "last_task9_review_log": "logs/deep-review/2026-05-07-00-deep-review.md",
-      "last_task6_review_log": "logs/review/2026-05-06-23-review.md",
-      "task6_review_notes": "L1/L2 小修；补齐 sources，清理编辑痕迹，MGLRU 数字降级为方向性表述；无新增 Task2B 回炉项；待 Task9 复审。"
+      "last_task6_review_log": "logs/review/2026-05-07-02-review.md",
+      "task6_review_notes": "2026-05-07 Task6：pass-light-edit。小修 6 处；无新增 Task2B 回炉项，待 Task9 复审。"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "title": "Android 17 (API 37) 性能行为变更与适配方法",

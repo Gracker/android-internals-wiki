@@ -3,7 +3,7 @@ title: "内存相关的版本演进"
 chapter: "4.6"
 status: ready-for-review
 section: "4.6"
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-05-07"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -43,17 +43,19 @@ tags: ['memory-evolution', 'art', 'dalvik', 'gc', 'bitmap', 'scudo', 'mte', 'lar
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
-review_count: 4
-pipeline_stage: task6_pending
-task6_state: revisiting
+review_count: 5
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
+last_task6_at: "2026-05-07T02:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-02-review.md"
+task6_review_notes: "2026-05-07 Task6：pass-light-edit。小修 13 处：压低高频填充词，清理 Bitmap 统计口径标题和 MTE 引导句，去除重复 last_task2b_at；无新增 Task2B 回炉项。因 Task9 仍为 pending 且 queue 有既有 pending 条目，未自动晋升。"
 task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-07T01:20:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-01T14:40:00+08:00"
-last_task2b_at: "2026-04-19T02:05:51+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-07"
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB 页内部碎片公式错误，RELRO 兼容模式安全断言缺源码闭环 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。"
@@ -91,21 +93,21 @@ task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 如果我们在日常工作中需要分析来自不同 Android 版本设备的 Trace，我们会发现一个让人困惑的现象：同样的内存分配模式，在 Android 8.0 的设备上 GC 暂停可能只有 2ms，但在 Android 6.0 的设备上却高达 30ms。同样是加载一张大图，在 Android 7.1 上 Java 堆直接爆了，在 Android 8.0 上却风平浪静。
 
-这不是魔法，是 Android 在每个大版本中都对内存管理做了或多或少的改动。有些改动是底层架构级的（比如 ART 替代 Dalvik），有些是分配策略级的（比如 Bitmap 像素数据搬家），有些是安全增强型的（比如 Scudo 和 MTE）。如果你不了解这些变化的脉络，拿到一份旧设备的 Trace 时可能会做出错误的判断——把系统行为误认为是应用问题，或者反过来。
+原因在于 Android 在每个大版本中都持续调整内存管理。有些改动是底层架构级的（比如 ART 替代 Dalvik），有些是分配策略级的（比如 Bitmap 像素数据搬家），有些是安全增强型的（比如 Scudo 和 MTE）。如果你不了解这些变化的脉络，拿到一份旧设备的 Trace 时可能会做出错误的判断——把系统行为误认为是应用问题，或者反过来。
 
-本节的目标是把这些散落在各版本中的内存相关变更串成一条清晰的演进线。读完之后，我们应该能回答：给定一个 Android 版本和一种内存现象，这是该版本的正常行为还是异常？这个版本的内存子系统与更新版本相比有什么本质区别？以及，升级到新版本后，App 需要做哪些适配？
+本节的目标是把这些散落在各版本中的内存相关变更串成一条清晰的演进线。读完之后，我们应该能回答：给定一个 Android 版本和一种内存现象，这是该版本的正常行为还是异常？这个版本的内存子系统与更新版本相比有哪些关键差异？以及，升级到新版本后，App 需要做哪些适配？
 
 [已验证: 官方文档 source.android.com/docs/core/perf/art-management]
 
 ## Android 5.0：ART 替代 Dalvik，GC 效率大幅提升
 
-Android 5.0 Lollipop 是 Android 内存管理史上最重大的一个版本分水岭——ART（Android Runtime）正式替代了自 Android 诞生以来一直使用的 Dalvik 虚拟机。这个替换影响的不仅仅是"运行速度"这么简单，它从根本上改变了 Java 堆的分配策略和垃圾回收机制。
+Android 5.0 Lollipop 是 Android 内存管理的一次重要分水岭：ART（Android Runtime）正式替代了自 Android 诞生以来一直使用的 Dalvik 虚拟机。这个替换影响的不只是"运行速度"，还改变了 Java 堆的分配策略和垃圾回收机制。
 
 ### Dalvik 的 GC 有多慢
 
 Dalvik 虚拟机使用的是基于 `dlmalloc` 的标记-清除（Mark-Sweep）垃圾回收器。整个 GC 过程需要暂停所有应用线程（stop-the-world），在堆中扫描所有可达对象，然后清除不可达的。在早期 Android 设备（1GB 以下内存）上，一次 Full GC 可能暂停 50-100ms。以 60fps 的标准来看，一帧只有 16.6ms，一次 Full GC 就意味着丢掉 3-6 帧。用户感知到的就是"突然卡了一下"。
 
-`dlmalloc` 作为通用内存分配器还有另一个致命问题——全局内存锁。所有线程共享一个锁来分配内存，在多线程场景下，锁争用导致分配延迟，这是早期 Android 应用在多核设备上性能提升不明显的底层原因之一。即使硬件从双核升级到四核、八核，`dlmalloc` 的全局锁仍然拖了后腿。
+`dlmalloc` 作为通用内存分配器还有另一个严重问题：全局内存锁。所有线程共享一个锁来分配内存，在多线程场景下，锁争用导致分配延迟，这是早期 Android 应用在多核设备上性能提升不明显的底层原因之一。即使硬件从双核升级到四核、八核，`dlmalloc` 的全局锁仍然拖了后腿。
 
 [已验证: 官方文档 source.android.com/docs/core/perf/art-management]
 
@@ -113,13 +115,13 @@ Dalvik 虚拟机使用的是基于 `dlmalloc` 的标记-清除（Mark-Sweep）�
 
 ART 的 GC 设计从一开始就瞄准了 Dalvik 的两个核心问题：暂停时间长和全局锁争用。
 
-在分配器层面，ART 引入了 RosAlloc（Runs-of-Slots Allocator）替代 `dlmalloc`。RosAlloc 将内存组织为由相同大小 slot 组成的 run，这些 run 以 page 为单位聚集。不同线程可以在不同的 run 上并行分配，通过分片锁定（sharded locking）策略显著减少了全局锁争用。这个改进让多核设备终于能真正发挥并行优势。
+在分配器层面，ART 引入了 RosAlloc（Runs-of-Slots Allocator）替代 `dlmalloc`。RosAlloc 将内存组织为由相同大小 slot 组成的 run，这些 run 以 page 为单位聚集。不同线程可以在不同的 run 上并行分配，通过分片锁定（sharded locking）策略显著减少了全局锁争用。这个改进让多核设备能发挥并行优势。
 
 在编译策略层面，ART 从 Dalvik 的纯 JIT（Just-In-Time）编译切换到 AOT（Ahead-Of-Time）编译，安装时就将 DEX 字节码编译为本地机器码。虽然 AOT 本身不直接改变 GC 行为，但它改变了对象分配的模式——编译后的代码执行路径更短，某些热点路径上的临时对象分配可以被优化掉，间接降低了 GC 压力。
 
 在 GC 策略层面，ART 引入了 Concurrent Mark-Sweep（CMS）GC，将标记阶段的部分工作与应用线程并发执行。前台应用使用 CMS，后台应用使用更激进的压缩策略来节省内存。CMS 的引入让 GC 暂停时间从 Dalvik 时代的 50-100ms 降到了 10-20ms 的量级。
 
-不过 CMS 仍然有一个根本性的缺陷：它是非移动式的（non-moving）。标记-清除不会整理内存碎片。长时间运行的应用，堆中的空闲空间可能很多但都是碎片化的，导致无法分配大对象而触发更频繁的 GC，形成恶性循环。这个问题直到 Android 8.0 引入 Concurrent Copying GC 才彻底解决。
+不过 CMS 仍然有一个关键缺陷：它是非移动式的（non-moving）。标记-清除不会整理内存碎片。长时间运行的应用，堆中的空闲空间可能很多但都是碎片化的，导致无法分配大对象而触发更频繁的 GC，形成恶性循环。Android 8.0 引入 Concurrent Copying GC 后，这个问题才有了系统级解决路径。
 
 关于 ART 内存管理的完整细节（堆结构、GC 策略、对象分配路径），我们在 4.3 节「ART 虚拟机内存管理」中已经深入展开，这里不再重复。本节重点关注的是"版本之间的变化"本身。
 
@@ -137,7 +139,7 @@ AOSP 源码路径：
 
 在 Android 3.0 到 Android 7.1 的时代，Bitmap 的像素数据存储在 Java 堆中，用一个 `byte[]` 数组持有。一张 1080×1920 的 ARGB_8888 图片占 `1080 × 1920 × 4 ≈ 8MB` 的 Java 堆空间。一个信息流 App 的列表页同时缓存十几张图片，仅图片就占了上百 MB 的 Java 堆——而 Java 堆的上限通常只有 128-512MB。
 
-这导致了一个常见的问题：App 的 Java 堆被 Bitmap 填满，抛出 `OutOfMemoryError`，但此时 Native 内存和系统整体内存明明还有大量空闲。Bitmap 占了 Java 堆的最大头，但它只是一个"数据搬运工"——像素数据本身不需要 GC 管理，它们只是放在那里等待 GPU 读取。把像素数据放在 Java 堆里，让 GC 每次都要扫描这些不需要 GC 管理的大块数据，既浪费了 GC 的时间，又挤占了真正需要 GC 管理的 Java 对象的空间。
+这导致了一个常见的问题：App 的 Java 堆被 Bitmap 填满，抛出 `OutOfMemoryError`，但此时 Native 内存和系统整体内存明明还有大量空闲。Bitmap 占了 Java 堆的最大头，但像素数据本身不需要 Java GC 管理，主要等待 CPU/GPU 后续读取。把像素数据放在 Java 堆里，会让 GC 反复处理这些大块数据，既增加 GC 工作量，又挤占普通 Java 对象的空间。
 
 [图：Bitmap 像素数据从 Java Heap 迁移到 Native Heap 的内存布局对比（Android 7.1 vs 8.0）]
 
@@ -149,7 +151,7 @@ AOSP 源码路径：
 
 **Java 堆的"天花板"变了。** 之前 Bitmap 像素数据计入 `dalvikHeapSize`，受 `Runtime.getRuntime().maxMemory()` 限制。迁移后，Bitmap 不再占用 Java 堆配额。同样大小的 Java 堆，可以容纳更多的 Java 对象（或者说，不容易因为 Bitmap 而触发 Java OOM）。
 
-**内存统计的"作弊"问题。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看，我们会发现 `Native Heap` 部分增大了。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果 App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
+**内存统计口径变了。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看，我们会发现 `Native Heap` 部分增大了。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果 App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
 
 **回收机制的变更。** Native 堆的 Bitmap 不再由 Java GC 直接回收。Android 8.0 引入了 `NativeAllocationRegistry` 机制：创建 Bitmap 时，将一个 Native 回收函数注册到 Java 层的 Cleaner（基于虚引用）。当 Java Bitmap 对象被 GC 回收时，Cleaner 触发 Native 回收函数，最终通过 `free()` 释放像素数据。这比 Android 7.0 之前使用的 Finalizer 机制更稳定、更可预测。
 
@@ -188,7 +190,7 @@ AOSP 源码路径：
 
 Android 8.0 Oreo 将 Concurrent Copying（CC）GC 设为默认策略。CC GC 的核心是用两个 Space 交替使用，GC 时将存活对象拷贝并紧凑排列，天然解决了碎片问题。
 
-CC GC 引入了一个关键技术——Read Barrier（读屏障）。当 GC 正在移动一个对象时，如果应用线程试图读取该对象的引用，Read Barrier 会拦截这次读取，确保线程拿到的是移动后的正确地址。这让大部分 GC 工作可以真正与应用线程并发执行。
+CC GC 引入了一个关键技术——Read Barrier（读屏障）。当 GC 正在移动一个对象时，如果应用线程试图读取该对象的引用，Read Barrier 会拦截这次读取，确保线程拿到的是移动后的正确地址。这让大部分 GC 工作可以与应用线程并发执行。
 
 CC GC 在关键指标上的具体改善：
 
@@ -206,7 +208,7 @@ CC GC 还引入了 RegionTLAB（Thread Local Allocation Buffer）分配策略。
 
 ### Android 10：分代 CC GC 的成熟
 
-Android 10 在 CC GC 的基础上进一步完善了分代垃圾回收。ART 将 Allocation Space 划分为 Young Generation（新生代）和 Old Generation（老年代），新对象首先进入 Young Generation。当 Young Generation 空间不足时，触发一次 Young GC（Partial GC），只扫描新生代对象，暂停时间通常只有 1-3ms。经历过多次 Young GC 仍然存活的对象被提升到 Old Generation。只有当 Old Generation 空间也不足时，才触发 Full GC。
+Android 10 在 CC GC 的基础上进一步完善了分代垃圾回收。ART 将 Allocation Space 划分为 Young Generation（新生代）和 Old Generation（老年代），新对象先进入 Young Generation。当 Young Generation 空间不足时，触发一次 Young GC（Partial GC），只扫描新生代对象，暂停时间通常只有 1-3ms。经历过多次 Young GC 仍然存活的对象被提升到 Old Generation。只有当 Old Generation 空间也不足时，才触发 Full GC。
 
 分代策略大幅减少了 Full GC 的频率。在 120Hz 设备上，帧间隔只有 8.3ms，1-3ms 的 Young GC 暂停通常不会导致丢帧。即使偶尔发生，也只是丢一帧，用户几乎感知不到。但 Android 7.0 时代的 CMS GC 在同样的场景下，Full GC 可能暂停 10-50ms，在 120Hz 设备上意味着连续丢 6 帧以上。
 
@@ -287,7 +289,7 @@ Scudo 引入后，部分系统厂商（特别是国内的手机厂商）对它�
 
 Google 在后续版本中对 Scudo 做了大量优化，主要集中在三个方面：
 
-**减少页归还的频率和开销。** Scudo 释放内存后需要将空闲页归还给系统（通过 `madvise(MADV_DONTNEED)`），这个操作本身比较耗时。Google 发现对小内存的 Region（如 32B），即使 90% 的内存已释放，真正能整页归还的比例也很低。因此对 256B 以下的 Region 设定了更高的归还阈值，避免无意义的遍历和系统调用。同时增加了时间限制（一秒内只允许一次页归还）和增量限制（两次归还之间必须有足够的新释放量）。
+**减少页归还的频率和开销。** Scudo 释放内存后需要将空闲页归还给系统（通过 `madvise(MADV_DONTNEED)`），这个操作本身比较耗时。Google 发现对小内存的 Region（如 32B），即使 90% 的内存已释放，能整页归还的比例也很低。因此对 256B 以下的 Region 设定了更高的归还阈值，避免无意义的遍历和系统调用。同时增加了时间限制（一秒内只允许一次页归还）和增量限制（两次归还之间必须有足够的新释放量）。
 
 **优化碎片管理。** Scudo 没有堆压缩能力，但它在分配时尽量让请求集中在同一个 Group（256KB）内，减少碎片化。Group 内部的分配仍然保持随机性以满足安全需求。
 
@@ -324,7 +326,7 @@ Android 系统为每个进程设定了 Java 堆的大小上限。这个上限不
 
 ### largeHeap 的设计意图与滥用风险
 
-Android 在 Manifest 中提供了 `android:largeHeap="true"` 选项，允许 App 请求更大的堆空间。这个设计的初衷是为少数确实需要大量内存的 App（如图片编辑器、地图应用）提供一个"逃生出口"。
+Android 在 Manifest 中提供了 `android:largeHeap="true"` 选项，允许 App 请求更大的堆空间。这个设计的初衷是为少数需要大量内存的 App（如图片编辑器、地图应用）提供一个"逃生出口"。
 
 但 largeHeap 有一个经常被误解的点：**它不是免费的**。更大的堆带来三个直接影响：
 
@@ -367,7 +369,7 @@ adb shell dumpsys meminfo <package_name> --checkin
 
 ## 扩展：MTE 在 Android 13+ 的平台边界
 
-MTE（Memory Tagging Extension）是 ARM 提供的硬件级内存安全能力，用来检测 Native 代码中的越界访问和 use-after-free。这里要把 ARM ISA 的能力演进和 Android 平台真正向 App 暴露的能力边界分开看。
+MTE（Memory Tagging Extension）是 ARM 提供的硬件级内存安全能力，用来检测 Native 代码中的越界访问和 use-after-free。审查 MTE 时，要把 ARM ISA 的能力演进和 Android 平台向 App 暴露的能力边界分开看。
 
 ### MTE 的工作原理
 
@@ -501,7 +503,7 @@ Google 官方测试给出的量化结果包括：
 
 ### [自动发现] 16KB Page Size 下的 PSS 计算与内部碎片量化
 
-上节的 16KB Page Size 概述缺少源码级的 PSS 计算机制说明和内部碎片的量化数据，以下是补充。
+16KB Page Size 对 PSS 的影响需要分成计算口径和最小分配粒度两层看。
 
 #### PSS 计算机制：数据源头 `/proc/<pid>/smaps`
 
@@ -654,6 +656,6 @@ Scudo 能检测很多内存安全错误，但它是"检测"而不是"预防"。�
 - [Scudo内存分配器介绍](https://cubox.pro/web/card/6881531810761673398)（内核工匠，2022）
 - [【Android 15】内存分配器Scudo在这些年的优化](https://cubox.pro/web/card/7201166401090880497)（2024）
 - [不同版本上 Bitmap 内存分配与回收原理对比](https://cubox.pro/web/card/7017381197579814489)（JsonChao，2023）
-- [四年之后，重新审视 MTE：从硬件架构到工程落地](https://cubox.pro/web/card/7401290052359161649)（2025）
+- [四年之后，重新审视 MTE](https://cubox.pro/web/card/7401290052359161649)（2025）
 - [研究] ART 内存分配器演进（dlmalloc → RosAlloc → RegionTLAB）
 - [研究] ART 分代 GC 架构（Young/Old Generation + Concurrent Copying）
