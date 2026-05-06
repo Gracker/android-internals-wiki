@@ -37,8 +37,8 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -47,10 +47,11 @@ last_rework_by: openclaw-task2b
 last_rework_reason: "P95 Task9回炉(第四轮)：P0 inBitmap返回对象语义修正（reinitBitmap→return javaBitmap，返回值即inBitmap同一对象）"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-06"
-task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
+task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理 frontmatter 禁用词、口语化表达、绝对化措辞和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task9_at: "2026-05-06T09:20:00+08:00"
-task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未闭环。"
-last_task6_at: "2026-05-06T09:07:00+08:00"
+task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决。"
+last_task6_at: "2026-05-06T10:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-10-review.md"
 task9_result: needs-rework
 ---
 # 7.10 图片加载与 Bitmap 性能优化
@@ -80,7 +81,7 @@ task9_result: needs-rework
 
 打开一份 Perfetto trace，发现主线程有一帧花了 200ms。展开调用栈，主要耗时来自 `BitmapFactory.decodeResource`——一张 4000×3000 的照片被原尺寸解码到内存，吃掉了 48MB，GC 被触发，界面就卡了。
 
-图片解码是 Android 上资源开销很高的常规操作之一。一张手机拍的照片，磁盘上可能只有 5MB，但解码后在内存中占用的空间是 `宽 × 高 × 4` 字节（ARGB_8888 格式），轻松突破 20MB。列表滑动场景中，如果在主线程连续解码十几张这样的图，GC 频繁触发，掉帧几乎是必然的。
+图片解码是 Android 上资源开销很高的常规操作之一。一张手机拍的照片，磁盘上可能只有 5MB，但解码后在内存中占用的空间是 `宽 × 高 × 4` 字节（ARGB_8888 格式），很容易超过 20MB。列表滑动场景中，如果在主线程连续解码十几张这样的图，GC 频繁触发，就很容易掉帧。
 
 本节说明图片加载和 Bitmap 管理的完整过程：从 BitmapFactory 的内部机制到 Hardware Bitmap 的 GPU 内存模型，从 Glide/Coil 的管线架构到如何在 Perfetto 中定位图片解码导致的卡顿。读完后，读者能独立分析图片相关的性能问题，并给出针对性的优化方案。
 
@@ -221,7 +222,7 @@ Hardware Bitmap 的限制，不是“系统会自动降级成普通 Bitmap”，
 
 - 纯展示、无像素访问：可以保留 Hardware Bitmap
 - 需要圆角、模糊、Palette、共享元素或软件 Canvas：直接用 `ARGB_8888`
-- 图片很多的 feed：顺手观察 `/proc/self/fd` 或图片库的 hardware bitmap 限额
+- 图片很多的 feed：同时观察 `/proc/self/fd` 或图片库的 hardware bitmap 限额
 
 
 
@@ -446,7 +447,7 @@ Coil 2.x 开始移除了 `BitmapPool` 和相关 API，不再走“把旧 Bitmap 
 2. **Coil 2.x**：切到自带 `DiskCache`，官方明确不建议再把 OkHttp `Cache` 当成图片磁盘缓存
 3. **Coil 3.x**：继续使用自带 `DiskCache`，但缓存格式和 2.x 不兼容；升级时通常要准备清缓存。同时，3.x 把网络加载拆成独立模块，只有引入 `coil-network-okhttp` 等网络 artifact，才具备网络图片加载能力。[已验证：Coil `upgrading_to_coil2.md` / `upgrading_to_coil3.md`]
 
-Hardware Bitmap 也不能写成一句“默认开启”就完事。Coil Android 侧的 `allowHardware` 默认值是 `true`，但如果目标 View 不是硬件加速，或者请求配置与硬件位图不兼容，Coil 会把 `Bitmap.Config.HARDWARE` 回退成 `ARGB_8888`。[已验证：Coil `imageRequests.android.kt` / `RequestService.android.kt`]
+Hardware Bitmap 也不能只写成“默认开启”。Coil Android 侧的 `allowHardware` 默认值是 `true`，但如果目标 View 不是硬件加速，或者请求配置与硬件位图不兼容，Coil 会把 `Bitmap.Config.HARDWARE` 回退成 `ARGB_8888`。[已验证：Coil `imageRequests.android.kt` / `RequestService.android.kt`]
 
 ### Coil vs Glide 的选择
 
@@ -459,13 +460,13 @@ Hardware Bitmap 也不能写成一句“默认开启”就完事。Coil Android 
 | Hardware Bitmap | 按请求条件决定，必要时 `disallowHardwareConfig()` | `allowHardware(true)` 默认允许，不兼容请求会回退 |
 | 适合场景 | 历史 Java 项目、定制化 `ModelLoader`、成熟插件生态 | 纯 Kotlin / Compose 项目，希望 API 更轻 |
 
-如果项目是纯 Kotlin、使用 Compose，Coil 更顺手。如果项目历史较长、有大量 Java 代码，或者已经深度依赖 Glide 的扩展点，继续用 Glide 更稳妥。
+如果项目是纯 Kotlin、使用 Compose，Coil 的接入成本更低。如果项目历史较长、有大量 Java 代码，或者已经深度依赖 Glide 的扩展点，继续用 Glide 更稳妥。
 
 抖音的 BDFresco 框架在 Fresco 基础上做了多层优化，包括动静图缓存拆分、HEIF 软解码、按需缩放等。抖音的实验数据表明：动静图缓存拆分后，OOM 数量下降，大盘帧率上升；将不携带透明通道的图片从 ARGB_8888 降级为 RGB_565，内存占用减少近一半。这些是大型 App 在图片优化上的工程实践，思路值得借鉴。[来源：抖音 Android 端图片优化实践、抖音 Android 端图片优化最佳实践]
 
 ## 在 Perfetto 中定位图片解码卡顿
 
-### 先分清两类耗时
+### 两类耗时要分开看
 
 图片相关 jank 常见有两段：
 
@@ -524,7 +525,7 @@ LIMIT 50;
 
 这个查询只覆盖手工标过的 slice，它不会自动识别所有 `BitmapFactory.decode*` 调用。
 
-### StrictMode 在这里能做什么
+### StrictMode 能做什么
 
 `StrictMode` 只能观测显式标记的慢调用。调试构建里，如果线程策略开启 `detectCustomSlowCalls()`，业务代码又在解码包装层调用了 `StrictMode.noteSlowCall("Bitmap decode on main thread")`，日志里就会出现对应告警。[已验证：AOSP `StrictMode.java`] 它不会自动把所有 `BitmapFactory.decode*` 抓出来，所以排查主线程解码，还是要靠自定义 Trace、调用栈或 benchmark。
 

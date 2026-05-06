@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T09:07:00+08:00",
+  "generated_at": "2026-05-06T10:10:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -8,8 +8,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 111,
-      "task2b_pending": 85,
-      "task9_pending": 22,
+      "task2b_pending": 83,
+      "task9_pending": 24,
       "task6_pending": 0
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 203,
-      "pending": 10
+      "reviewed": 201,
+      "pending": 12
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 116,
-      "pending": 92,
+      "fixed": 118,
+      "pending": 90,
       "idle": 3
     },
     "finalized": 112,
@@ -43,8 +43,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 111,
-      "task2b_pending": 85,
-      "task9_pending": 22,
+      "task2b_pending": 83,
+      "task9_pending": 24,
       "task6_pending": 0
     },
     "task6_state_counts": {
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 203,
-      "pending": 10
+      "reviewed": 201,
+      "pending": 12
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 116,
-      "pending": 92,
+      "fixed": 118,
+      "pending": 90,
       "idle": 3
     },
     "last_updated": "2026-05-06"
@@ -291,23 +291,26 @@
       "last_verified": "2026-04-05",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "fixed",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-05-01",
+      "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-03",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-03T06:20:00+08:00",
-      "review_round": "2",
+      "review_round": "4",
       "last_task2b_at": "2026-04-25T22:46:46+08:00",
       "repaired_date": "2026-04-25",
       "repaired_by": "openclaw-task2b",
-      "review_notes": "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
+      "review_notes": "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。",
+      "last_task6_at": "2026-05-06T10:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-10-review.md",
+      "task6_review_notes": "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理第一人称、未标语言代码块和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
     },
     "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
@@ -2637,10 +2640,10 @@
       "last_verified": "2026-04-13",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -2649,9 +2652,10 @@
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T09:20:00+08:00",
-      "task9_review_notes": "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未闭环；HEIC 案例对 AVIF 的支撑需收窄。",
-      "last_task6_at": "2026-05-06T09:07:00+08:00",
-      "task6_review_notes": "2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
+      "task9_review_notes": "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未解决；HEIC 案例对 AVIF 的支撑需收窄。",
+      "last_task6_at": "2026-05-06T10:10:00+08:00",
+      "task6_review_notes": "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理 frontmatter 禁用词、口语化表达、绝对化措辞和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。",
+      "last_task6_review_log": "logs/review/2026-05-06-10-review.md"
     },
     "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
