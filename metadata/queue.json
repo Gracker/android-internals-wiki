@@ -8961,60 +8961,40 @@
       "section": "11.1",
       "section_title": "Android 功耗模型",
       "priority": 95,
-      "reason": "[review回炉] Task6 复审发现仍有技术风险信号需 Task2B/Task9 处理",
+      "reason": "[Deep Tech Review] 11.1 Android 功耗模型仍有 PowerMonitor API、GPU power_profile 标准键、PAS/ADPF+ODPM 证据链问题，需回炉修正",
       "review_issues": [
         {
-          "type": "事实错误",
-          "location": "EAS 调度描述",
-          "detail": "将 EAS 描述为静态 EM 模型开环预测，实际 Android 15+ PAS 通过 Power HAL AIDL 实时订阅 ODPM 修正 EM 参数并触发任务重放置",
-          "suggestion": "区分静态 EAS 1.0 与动态 PAS 2.0，强调 ODPM 从诊断工具到调度中枢的身份转变",
-          "evidence": [
-            "Android 15+ Power-Aware Scheduling ODPM 反馈闭环"
-          ]
-        },
-        {
-          "type": "重要缺失",
-          "location": "温控与功耗耦合",
-          "detail": "未提及 Android 16 ADPF 利用 ODPM 微秒级响应实现功耗预防性降频",
-          "suggestion": "增加实时反馈助力温控稳定性描述",
-          "evidence": [
-            "Android 16 ADPF 功耗密度感知"
-          ]
-        },
-        {
-          "type": "重要缺失",
-          "location": "App 耗电归属",
-          "detail": "未引入 Android 15 PowerMonitor 公开 API 支持程序化查询实时能量消耗",
-          "suggestion": "增加 PowerMonitor API 介绍作为线上功耗自审计标准入口",
-          "evidence": [
-            "Android 15 PowerMonitor API (API 35)"
-          ]
-        },
-        {
-          "type": "需确认",
+          "type": "源码错误/API 入口错误",
           "location": "PowerMonitor API（Android 15+）段落",
-          "detail": "上一轮 Task9 已提示 PowerMonitor API 调用对象存在风险；正文仍写“App 通过 PowerManager 获取 PowerMonitor 实例”，Task6 已降级为待验证，但不裁决 API 入口真伪。",
-          "suggestion": "Task9 对照 Android 15/API 35 SDK 与官方文档确认 PowerMonitor 获取入口；Task2B 按确认结果修正文案和验证标注。"
+          "detail": "[P0] 正文仍写 App 通过 PowerManager 获取 PowerMonitor 实例，并可订阅组件能量更新。android-15/16 AOSP 的公开入口在 android.os.health.SystemHealthManager：getSupportedPowerMonitors(executor, Consumer<List<PowerMonitor>>) 与 getPowerMonitorReadings(List<PowerMonitor>, Executor, OutcomeReceiver<PowerMonitorReadings, RuntimeException>)；PowerManager 中没有 PowerMonitor 获取入口。PowerMonitorReadings 返回的是 since boot 累积能量和时间戳快照，不是订阅式实时更新。该 API 在 current.txt 中仍带 @FlaggedApi(\"com.android.server.power.optimization.power_monitor_api\")，可用性需标注 feature flag/设备支持边界。",
+          "suggestion": "把入口改为 Context.SYSTEM_HEALTH_SERVICE / SystemHealthManager；示例改成先 getSupportedPowerMonitors，再按需调用 getPowerMonitorReadings 读取 snapshot。删除“通过 PowerManager 获取”和“订阅更新”的表述；补充 getConsumedEnergy 单位为 microwatt-seconds、since boot、不跨 reboot，以及 ODPM 不支持时可能返回空列表/能力受设备实现限制。"
         },
         {
-          "type": "需补充素材",
-          "location": "与其他机制的关系 / 版本演进：PAS、ADPF 与 ODPM 动态反馈",
-          "detail": "PAS 通过 Power HAL AIDL 订阅 ODPM 修正 EM、ADPF 利用 ODPM 预防性降频等表述仍缺公开 AOSP/官方文档逐行支撑；正文已有待验证标注，但版本表仍属于高风险技术断言。",
-          "suggestion": "补 CDD/source.android.com/AOSP 公开锚点；无法确认时降级表述，避免把推测写成确定机制。"
+          "type": "源码错误/power_profile 标准键错误",
+          "location": "GPU：隐藏的耗电源",
+          "detail": "[P0] 正文称 GPU 在 power_profile 中通常只有 gpu.active 一个条目。复核 android-16.0.0_r1：frameworks/base/core/res/res/xml/power_profile.xml 无 gpu.active；com.android.internal.os.PowerProfile.java 无 POWER_GPU / gpu.active 标准键；android.os.BatteryConsumer 的标准 POWER_COMPONENT_* 也没有 GPU；PowerStats AIDL EnergyConsumerType 枚举包含 OTHER/BLUETOOTH/CPU_CLUSTER/DISPLAY/GNSS/MOBILE_RADIO/WIFI/CAMERA，同样没有标准 GPU 类型。GPU 可能作为 vendor ODPM Channel/rail 或 OTHER/custom 观测点出现，但不能写成 Android 标准 power_profile 组件。",
+          "suggestion": "将该段改为：AOSP 标准 BatteryUsageStats/power_profile 没有独立 GPU power component；GPU 功耗通常需要通过 vendor rail/Channel、Perfetto power rails、GPU 频率/利用率与场景归因间接分析。不要给出 gpu.active 作为标准字段。"
+        },
+        {
+          "type": "原理断裂/版本差异",
+          "location": "与 §5.2 / §5.9 的关系、版本演进表 Android 15/16",
+          "detail": "[P1] PAS 通过 Power HAL AIDL 实时订阅 ODPM 修正 EM 参数、ADPF 直接利用 ODPM 微秒级响应做预防性降频，仍缺公开 AOSP/官方文档支撑。复核 android-16.0.0_r1：PowerStats HAL 只提供 getEnergyConsumed/readEnergyMeter 等读取接口；SystemHealthManager/PowerMonitor 暴露的是能量 snapshot；Power HAL IPower.aidl 暴露 getCpuHeadroom/getGpuHeadroom，注释为 based on past history；HintManagerService 直接调用 mPowerHal.getCpuHeadroom/getGpuHeadroom；PerformanceHintManager 负责 target/actual work duration 与 hint session。未发现 PowerStats/ODPM → ADPF/HintManagerService → kernel sched EM/PAS 的公开调用链。",
+          "suggestion": "在拿到 CDD/source.android.com/AOSP/kernel 一手链路前，删除“订阅 ODPM 修正 EM”“ODPM 成为调度中枢”“微秒级预防性降频”等确定性表述，改为研究假设或更保守的边界描述：ADPF/CPU-GPU headroom 走 Power HAL headroom/PerformanceHint 路径，PowerMonitor/PowerStats 是能量观测路径，两者是否在 vendor 实现中耦合需另证。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
       "status": "pending",
       "source_file": "2026-04-29-11-11.1-external-review.md",
-      "completed_at": "2026-05-06T20:09:51.282681",
-      "completed_reason": "P95 EAS/PAS描述已有PAS动态反馈段落(概念已覆盖)；ADPF/ODPM预防性降频已有描述(加待验证标签)；PowerMonitor API已修正(移除错误的createThermalStatusListener引用，改为正确描述)；PAS/ADPF待验证标签已补强",
       "reopened_by": "task6-review",
       "reopened_at": "2026-05-06T20:13:00+08:00",
       "original_review_log": "logs/review/2026-05-06-20-review.md",
       "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
-      ]
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-05-06T20:37:00+08:00"
     },
     {
       "section": "11.2",
