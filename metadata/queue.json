@@ -9655,7 +9655,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T02:31:48+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T21:46:34+08:00",
+      "completed_reason": "P0 ProfilingManager API版本/签名/scope修正(API35非36,签名改为真实签名,MemoryThrashing仍为检测层); P0 alpha View源码锚点修正(computeOrdering→promotedToLayer+pushLayerUpdate); P1 16KB Page Size降级为待验证caveat"
     },
     {
       "section": "1.2",
@@ -13137,8 +13139,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-06T17:26:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-05-06-17-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-05-06-17-review.md",
+      "completed_at": "2026-05-06T21:46:34+08:00",
+      "completed_reason": "Perfetto数据源名统一为android.power(android_power_rails_counters仅作SQL表名); AIW源码调研附录整合为正式'非游戏场景ADPF应用'小节并移除编辑注释"
     },
     {
       "section": "5.4",
