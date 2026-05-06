@@ -12008,8 +12008,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-04T21:38:56+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-05-04-21-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-05-04-21-review.md",
+      "completed_at": "2026-05-06T23:02:59",
+      "completed_reason": "DSQ enum与MGLRU数据来源问题已在task9条目修复中一并处理"
     },
     {
       "section": "7.2",
@@ -12181,10 +12183,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T15:51:58+08:00",
-      "status": "pending",
+      "status": "completed",
       "updated_at": "2026-05-06T11:39:00+08:00",
-      "completed_at": "2026-05-06T17:58:56+08:00",
-      "completed_reason": "P0 Perfetto迁移SQL改用LAG(ucpu)窗口函数替代不存在的prev_cpu；P1 Oryon缓存/延迟数字降级为方向性描述+待验证；P1 DSU解释修正为'DSU提供一致性但不等于跨核复用对方私有L2'",
+      "completed_at": "2026-05-06T23:02:59",
+      "completed_reason": "概览段Oryon\"与苹果M系列同源\"改为\"开发团队背景来自Nuvia，创始成员有Apple CPU团队经历\"，与微架构段口径统一",
       "reopened_by": "task6-review",
       "reopened_at": "2026-05-06T20:13:00+08:00",
       "original_review_log": "logs/review/2026-05-06-20-review.md"
@@ -12310,7 +12312,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T00:36:51+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T23:02:59",
+      "completed_reason": "P0 sched_ext源码锚点从kernel/sched/ext/改为ext.c+ext.h；P0 SCX_TASK_IN_CUSTODY替换为SCX_TASK_STATE_MASK/ops_state生命周期模型；P0 SCX_DSQ_BYPASS从android16-6.12枚举移至版本差异注释；P1 sysfs排查清单收窄为state/enable_seq/root/ops/nr_rejected；P1 MGLRU量化数据降级为方向性表述+补CONFIG_LRU_GEN锚点"
     },
     {
       "section": "5.4",
