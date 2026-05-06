@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T13:39:29+08:00",
+  "generated_at": "2026-05-06T14:11:35+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -8,8 +8,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 117,
-      "task2b_pending": 80,
-      "task9_pending": 18,
+      "task2b_pending": 79,
+      "task9_pending": 19,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 203,
-      "pending": 10
+      "reviewed": 202,
+      "pending": 11
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 121,
-      "pending": 87,
+      "fixed": 122,
+      "pending": 86,
       "idle": 3
     },
     "finalized": 118,
@@ -43,8 +43,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 117,
-      "task2b_pending": 80,
-      "task9_pending": 18,
+      "task2b_pending": 79,
+      "task9_pending": 19,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 203,
-      "pending": 10
+      "reviewed": 202,
+      "pending": 11
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 121,
-      "pending": 87,
+      "fixed": 122,
+      "pending": 86,
       "idle": 3
     },
     "last_updated": "2026-05-06"
@@ -3242,11 +3242,11 @@
       "last_verified": "2026-04-13",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
-      "task6_result": "needs-rework",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
@@ -3254,9 +3254,9 @@
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T13:39:29+08:00",
-      "last_task6_at": "2026-05-06T13:13:29+08:00",
-      "last_task6_review_log": "logs/review/2026-05-06-13-review.md",
-      "task6_review_notes": "2026-05-06 Task6 13:13：回炉后写作复审；L1/L2 轻修 1 处（标题匹配锚点）；发现 Task9 P0 技术问题残留（RemoteViews 版本表、Icon.createWithBitmap/HardwareBuffer/Binder buffer 口径），已重开 queue P95 交 Task2B。",
+      "last_task6_at": "2026-05-06T14:11:35+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-14-review.md",
+      "task6_review_notes": "2026-05-06 Task6 14:11：回炉后写作复审；L1/L2 轻修 10 处（清理正文编辑痕迹、结构性元叙述、frontmatter 重复键）；无新增 L3/L4 回炉项，转入 Task9 复审。",
       "last_task9_review_log": "logs/deep-review/2026-05-06-13-deep-review.md",
       "task9_review_notes": "2026-05-06 Task9 13:39：needs-rework。P0 2 / P1 0 / P2 1。"
     },
