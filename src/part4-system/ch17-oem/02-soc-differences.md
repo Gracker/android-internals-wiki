@@ -27,17 +27,17 @@ sources:
 tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
 task6_state: reviewed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-06"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task9_state: reviewed
+pipeline_stage: task9_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-07"
 task2b_state: fixed
-last_task6_at: "2026-05-06T23:21:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-23-review.md"
-task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。 | 2026-05-06 task6 review 23:21：清理结构性元叙述和编辑标记，修正频率轨道措辞，补 SQL 代码块解释，统一缓存/唤醒路径术语；无新增 Task2B 回炉项，待 Task9 复审。"
+last_task6_at: "2026-05-07T05:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-05-review.md"
+task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。 | 2026-05-06 task6 review 23:21：清理结构性元叙述和编辑标记，修正频率轨道措辞，补 SQL 代码块解释，统一缓存/唤醒路径术语；无新增 Task2B 回炉项，待 Task9 复审。 | 2026-05-07 task6 review 05:05：复查 L1/L2 与锚点覆盖，正文无需改写；无新增回炉项，转 Task9 复审。"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T00:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-07-00-deep-review.md"
