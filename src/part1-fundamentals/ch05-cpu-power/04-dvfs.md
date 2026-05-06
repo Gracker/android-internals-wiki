@@ -28,23 +28,23 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-06
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T13:39:29+08:00"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
 last_task6_at: "2026-05-06T13:13:29+08:00"
 review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task2b_at: "2026-05-06T01:45:17+08:00"
+last_task2b_at: "2026-05-06T16:04:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-13-review.md"
-task6_review_notes: "2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-06-13-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 13:39：needs-rework。P0 2 / P1 1 / P2 0。L391-L393 SCMI Performance Protocol protocol_id；L247-L260 android16-6.12 sugov_get_util() 伪代码；L225 schedutil 调频入口函数名"
 ---
@@ -224,28 +224,32 @@ schedutil 解决这个问题的方法是直接挂钩到调度器的负载追踪�
 - **uclamp 钳位**：框架或内核给线程组施加的性能下限 / 上限
 - **iowait boost**：I/O 唤醒后的短时提频
 
-schedutil 的调频入口是 `sugov_update_single()`（单 policy CPU）和 `sugov_update_shared()`（共享 policy CPU）。这两个函数由调度器通过 cpufreq callback 触发，内部调用 `sugov_get_util()` 获取有效利用率，再经 `sugov_iowait_apply()` 处理 I/O 提频，最终换算目标频率。
+schedutil 的调频入口是 `sugov_update_single_freq()` / `sugov_update_single_perf()`（单 policy CPU 的两种模式）和 `sugov_update_shared()`（共享 policy CPU），公共逻辑由 `sugov_update_single_common()` 承载。这几个函数由调度器通过 cpufreq callback 触发，内部调用 `sugov_get_util()` 获取有效利用率，再经 `sugov_iowait_apply()` 处理 I/O 提频，最终换算目标频率。
 
 android15-6.6 和 android16-6.12 的 `sugov_get_util()` 签名和调用链有明确差异：
 
 ```c
 // kernel/sched/cpufreq_schedutil.c（简化伪代码，省略部分字段和分支）
-// android15-6.6: sugov_get_util() 核心调用链
-static void sugov_get_util(struct sugov_cpu *sg_cpu) {
-    unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu);
-    // effective_cpu_util 传入 FREQUENCY_UTIL 类型，内核内部完成 uclamp 钳位
-    util = effective_cpu_util(cpu, util, FREQUENCY_UTIL, NULL);
-    sg_cpu->util = util;
-    sg_cpu->bw_dl = cpu_bw_dl(cpu_rq(cpu));
-    // 省略：DL/RT 带宽余量判断等细节
-}
-// iowait boost 由 sugov_update_single()/sugov_update_shared() 中的
-// sugov_iowait_apply() 在调用 sugov_get_util() 之后单独叠加
-```
-
-```c
-// kernel/sched/cpufreq_schedutil.c（简化伪代码，省略部分字段和分支）
 // android16-6.12: sched_ext 性能目标 + 统一频率计算
+static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) {
+    unsigned long min = 0, max = 0;
+    unsigned long util;
+    // 始终从 sched_ext 性能目标起算
+    util = scx_cpuperf_target(cpu);
+    // 非 scx 独占模式时，叠加 CFS 负载
+    if (!scx_switched_all())
+        util += cpu_util_cfs_boost(cpu);
+    // effective_cpu_util 返回钳位后的有效利用率，同时输出 min/max 约束
+    util = effective_cpu_util(cpu, util, &min, &max);
+    // boost（来自 iowait）与 util 取大值
+    util = max(util, boost);
+    // bw_min 保存带宽约束下限
+    sg_cpu->bw_min = min;
+    // 统一计算最终频率目标，返回值赋给 sg_cpu->util
+    sg_cpu->util = sugov_effective_cpu_perf(cpu, util, min, max);
+    // 省略：uclamp 钳位、bw_dl 计算、其他 sg_cpu 字段赋值等细节
+}
+```
 static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) {
     unsigned long min = 0, max = 0;
     unsigned long util;
@@ -264,7 +268,7 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) {
 }
 ```
 
-两个版本的核心区别：android15-6.6 的 `sugov_get_util()` 只收集有效利用率，iowait boost 由调用方通过 `sugov_iowait_apply()` 单独叠加；android16-6.12 将 boost 作为参数传入 `sugov_get_util()`，新增 `scx_cpuperf_target()` 支持 sched_ext 可编程调度器的性能目标，并通过 `sugov_effective_cpu_perf()` 统一计算最终频率。上方代码块为简化伪代码，展示了核心调用链和关键差异点，省略了部分字段赋值和边界分支。
+两个版本的核心区别：android15-6.6 的 `sugov_get_util()` 只收集有效利用率，iowait boost 由调用方通过 `sugov_iowait_apply()` 单独叠加；android16-6.12 将 boost 作为参数传入 `sugov_get_util()`，始终从 `scx_cpuperf_target(cpu)` 起算（非 scx 独占时叠加 `cpu_util_cfs_boost()`），`effective_cpu_util()` 返回值赋给 util 并输出 min/max 约束，最终由 `sugov_effective_cpu_perf(cpu, util, min, max)` 计算频率目标并赋给 `sg_cpu->util`，`sg_cpu->bw_min = min` 保存带宽下限。上方代码块为简化伪代码，展示了核心调用链和关键差异点，省略了部分字段赋值和边界分支。
 
 [已验证: AOSP android15-6.6 & android16-6.12, kernel/sched/cpufreq_schedutil.c — sugov_update_single / sugov_get_util / sugov_iowait_apply / sugov_effective_cpu_perf（代码块为简化伪代码，非逐行源码复刻）]
 
@@ -386,13 +390,13 @@ CPU 频繁进出深度睡眠也会带来额外开销。虽然深度睡眠能省�
 
 前面提到，SCMI / CPPC 平台上 OS 发出的频率请求是抽象的 performance level，实际频率由固件映射。因此，Perfetto 中的 CPU Frequency 轨迹记录的是**内核请求的频率**，不一定是固件最终执行的频率——温控、电源管理策略等固件侧因素都可能压低实际输出。
 
-Android 16（GKI 6.12）的 SCMI 框架提供了多个 ftrace 事件，可用于观察固件侧的频率协商过程。android16-6.12 的 `include/trace/events/scmi.h` 中定义的事件包括 `scmi_fc_call`、`scmi_xfer_begin`、`scmi_xfer_response_wait`、`scmi_xfer_end` 等。其中 `scmi_fc_call`（Fastchannel call）是直接观察 performance level 请求的关键事件——通过 `protocol_id` 和 `msg_id` 过滤 `PERF_LEVEL_GET` 类消息，可以追踪固件实际返回的 performance level，再与 `power/cpu_frequency` 轨迹中的内核请求频率对比。注意：`scmi_fc_call` 只在平台实现了 Fastchannel 地址时才会出现；没有 fastchannel 的平台需观察 `scmi_xfer_begin` / `scmi_xfer_end` 事件来追踪请求与响应。
+Android 16（GKI 6.12）的 SCMI 框架提供了多个 ftrace 事件，可用于观察固件侧的频率协商过程。android16-6.12 的 `include/trace/events/scmi.h` 中定义的事件包括 `scmi_fc_call`、`scmi_xfer_begin`、`scmi_xfer_response_wait`、`scmi_xfer_end` 等。其中 `scmi_fc_call`（Fastchannel call）是直接观察 performance level 请求的关键事件——通过 `protocol_id`（0x13）和 `msg_id` 过滤 `PERF_LEVEL_GET` 类消息，可以追踪固件实际返回的 performance level，再与 `power/cpu_frequency` 轨迹中的内核请求频率对比。注意：`scmi_fc_call` 只在平台实现了 Fastchannel 地址时才会出现；没有 fastchannel 的平台需观察 `scmi_xfer_begin` / `scmi_xfer_end` 事件来追踪请求与响应。
 
 如果两者出现持续偏差（内核请求高频，固件实际给低频），说明 SoC 固件的温控或电源策略正在介入。这种内核以为在高频、实际被压低的情况，是排查不明性能下降的重要线索。
 
-SCMI Performance Protocol 的完整协商链涉及多个环节：OS 通过 `PERF_LEVEL_SET` (msg_id 0x7) 请求目标 performance level，固件将其映射到具体的 OPP 条目（frequency + voltage），再由 `PERF_LEVEL_GET` (msg_id 0x8) 查询固件实际下发的 level。每个 CPU domain 由 `res_id` 标识（通常与 CPU cluster 对应），`protocol_id` 为 0x3（SCMI Performance Protocol）。`scmi_fc_call` 事件中的 `protocol_id` 和 `msg_id` 可用来过滤不同类型的消息。这里要分清：performance level 到实际频率的映射是平台私有的——同一段 SCMI level 值在不同 SoC 上可能对应不同的 MHz。分析时必须结合设备的 OPP 表或 vendor dtbo 才能完成 level→freq 的换算。在没有平台映射表时，SCMI 事件只能定位"固件协商是否异常"，不能直接等同于实际频率真值。
+SCMI Performance Protocol 的完整协商链涉及多个环节：OS 通过 `PERF_LEVEL_SET` (msg_id 0x7) 请求目标 performance level，固件将其映射到具体的 OPP 条目（frequency + voltage），再由 `PERF_LEVEL_GET` (msg_id 0x8) 查询固件实际下发的 level。每个 CPU domain 由 `res_id` 标识（通常与 CPU cluster 对应），`protocol_id` 为 0x13（SCMI_PROTOCOL_PERF，定义在 include/linux/scmi_protocol.h；注意 0x10 是 Base Protocol，不要混淆）。`scmi_fc_call` 事件中的 `protocol_id` 和 `msg_id` 可用来过滤不同类型的消息。这里要分清：performance level 到实际频率的映射是平台私有的——同一段 SCMI level 值在不同 SoC 上可能对应不同的 MHz。分析时必须结合设备的 OPP 表或 vendor dtbo 才能完成 level→freq 的换算。在没有平台映射表时，SCMI 事件只能定位"固件协商是否异常"，不能直接等同于实际频率真值。
 
-[已验证: AOSP android16-6.12, include/trace/events/scmi.h — scmi_fc_call / scmi_xfer_* 事件族 / SCMI spec: Performance Protocol msg_id 0x7(PERF_LEVEL_SET)/0x8(PERF_LEVEL_GET), protocol_id 0x3]
+[已验证: AOSP android16-6.12, include/trace/events/scmi.h — scmi_fc_call / scmi_xfer_* 事件族 / SCMI spec: Performance Protocol msg_id 0x7(PERF_LEVEL_SET)/0x8(PERF_LEVEL_GET), protocol_id 0x13]
 
 要启用 SCMI 事件，在 Perfetto 配置中添加：
 
