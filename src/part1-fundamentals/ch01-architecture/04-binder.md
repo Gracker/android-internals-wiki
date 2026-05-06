@@ -411,3 +411,82 @@ oneway 调用避免了 Client 端的阻塞等待，但它不意味着"零成本"
 - [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_Binder驱动中的流程详解.md]（OPPO 内核工匠：Binder 驱动中的流程详解）
 - [引用: https://paul.pub/android-binder-driver/]
 - [引用: https://perfetto.dev/docs/data-sources/android-binder]
+
+<!-- AIW-源码调研-2026-05-06 -->
+### **Perfetto Binder Transaction Trace 深度分析（新增 2026-05-06）**
+
+基于最新 Perfetto 源码分析，Binder Transaction 在 Perfetto 中的表现比传统理解更为精细。以下是源码级的技术细节：
+
+**内核 ftrace 事件体系**
+Android kernel 通过 12 种 binder tracepoint 记录事务流转。关键事件包括：
+- `binder_transaction`（ID=514）：记录 BC_TRANSACTION 命令、目标进程/线程、flags、code
+- `binder_transaction_received`（ID=513）：记录 BR_TRANSACTION 命令到达
+- `binder_transaction_alloc_buf`（ID=508）：记录内存分配，data_size 字段反映传输负载
+
+**源码位置**：`kernel/drivers/android/binder.c`（5.10+）/ `src/traced/probes/ftrace/test/data/*/events/binder/binder_transaction/format`
+
+**Perfetto BinderTracker：ftrace → Slice/Flow 转换**
+**源码位置**：`src/trace_processor/importers/ftrace/binder_tracker.cc`
+
+BinderTracker 维护每线程事务栈 `utid_stacks_`，实现 8 状态状态机：
+1. `kSndAfterBC_TRANSACTION` → 发起 BC_TRANSACTION，等待 binder_transaction
+2. `kSndAfterTransaction` → 已发 binder_transaction，等待 BR_TRANSACTION_COMPLETE  
+3. `kSndAfterBR_TRANSACTION_COMPLETE` → 已收 BR_TRANSACTION_COMPLETE，等待 BR_REPLY
+4. `kSndAfterTransactionReceived` → 已收 reply，等待 BR_REPLY
+5. `kRcvAfterTransactionReceived` → 已收 binder_transaction_received，等待 BR_TRANSACTION
+6. `kRcvAfterBR_TRANSACTION` → 已收 BR_TRANSACTION，等待 BC_REPLY
+7. `kRcvAfterBC_REPLY` → 已发 BC_REPLY，等待 binder_transaction(is_reply=true)
+8. `kRcvAfterTransaction` → 已收 binder_transaction(is_reply=true)
+
+**Slice 命名规则**：
+- 同步发起：`"binder transaction"`
+- 同步回复：`"binder reply"`  
+- 异步发起：`"binder transaction async"`
+- 异步接收：`"binder async rcv"`
+
+**关键修复机制**：当事务失败（BR_DEAD_REPLY/BR_FAILED_REPLY/BR_FROZEN_REPLY）时，根据当前状态决定是否手动终止悬空 Slice，解决 issue b/295124679。
+
+**Flow 构建**：
+```cpp
+// binder_tracker.cc, TransactionReceived()
+if (transaction.send_slice_id && recv_slice_id) {
+  context_->flow_tracker->InsertFlow(*transaction.send_slice_id, *recv_slice_id);
+}
+```
+
+**SQL 查询接口**
+**源码位置**：`src/trace_processor/perfetto_sql/stdlib/android/binder.sql`
+
+核心表 `android_binder_txns` 提供完整事务数据，包含：
+- client/server 双端信息：`client_dur`、`server_dur`、`is_main_thread`
+- 事务元数据：`aidl_name`、`interface`、`method_name`、`is_sync`、`is_oneway`
+- 归因字段：`client_oom_score`、`server_oom_score`、`package_version_code`、`debuggable`
+
+**延迟归因函数**：`_binder_reason()` 将线程状态 + Slice 名称映射为语义化原因：
+```sql
+WHEN $name = 'mm_vmscan_direct_reclaim' THEN 'kernel_memory_reclaim'
+WHEN $state = 'S' AND ($name = 'binder transaction' OR $name = 'binder reply') THEN 'binder'
+WHEN $state = 'S' AND ($name GLOB 'Lock contention*') THEN 'lock_contention'
+```
+
+**实际分析应用**：
+```sql
+-- 最慢 10 个同步 binder 事务
+SELECT client_process, server_process, client_dur/1e6 AS client_ms, 
+       server_dur/1e6 AS server_ms, aidl_name
+FROM android_binder_txns WHERE is_sync = 1
+ORDER BY client_dur DESC LIMIT 10;
+
+-- Binder 延迟 breakdown
+SELECT reason, sum(dur) AS total_dur
+FROM android_binder_client_breakdown
+UNION ALL
+SELECT reason, sum(dur) FROM android_binder_server_breakdown;
+```
+
+**异常识别模式**：
+- Slice 悬空到 trace 结束：事务失败但 BR_DEAD_REPLY 未触发正确状态跳转
+- `client_dur == -1`：事务失败切片被排除（`_binder_txn_merged` 中过滤）
+- 只有发起侧无 reply：server 进程崩溃或冻结
+
+[一手：Perfetto mainline 源码]
