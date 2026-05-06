@@ -13094,6 +13094,33 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T16:39:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "11.5",
+      "section_title": "Wakelock 机制与功耗分析",
+      "priority": 90,
+      "reason": "[review回炉] Task6 复审发现 11.5 仍有 Perfetto power rail 口径残留和 ADPF 源码调研素材未融入正文",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "“IPowerStats HAL（Android 10+）”/“Perfetto 端到端观测”",
+          "detail": "前轮 Task9 已判定 Perfetto power rail 配置主路径应使用 data source name `android.power` + `android_power_config.collect_power_rails: true`。正文仍出现 `Perfetto（android.power_rails 数据源）` 和 `Perfetto android.power_rails 记录 rail 数据`，与 Task9 结论不一致。",
+          "suggestion": "按 Task9 结论统一为 `android.power` 数据源；`android_power_rails_counters` 只作为 Trace Processor SQL 表名/计数器表述，不写成 Perfetto data source name。"
+        },
+        {
+          "type": "需重写",
+          "location": "参考资料之后的 `<!-- AIW-源码调研-2026-05-06 -->` 段落",
+          "detail": "新增 ADPF 非游戏场景源码调研以编辑附录形式追加在参考资料之后，和前文 ADPF/PowerMonitor 小节重复，且 `setPreferredPowerEfficiency` 与正文 `setPreferPowerEfficiency` 命名不一致。",
+          "suggestion": "由 Task2B 判断可用素材后整合进前文 ADPF 小节，或改为正式附录；同时交 Task9 复核 API 命名与 `GPU_LOAD_UP` 等常量是否成立。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-06T17:26:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-06-17-review.md"
     }
   ],
   "completed": [

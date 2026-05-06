@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T16:39:00+08:00",
+  "generated_at": "2026-05-06T17:26:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -8,8 +8,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 118,
-      "task2b_pending": 77,
-      "task9_pending": 20,
+      "task2b_pending": 80,
+      "task9_pending": 17,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 201,
-      "pending": 12
+      "reviewed": 205,
+      "pending": 8
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 124,
-      "pending": 84,
+      "fixed": 121,
+      "pending": 87,
       "idle": 3
     },
     "finalized": 119,
@@ -43,8 +43,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 118,
-      "task2b_pending": 77,
-      "task9_pending": 20,
+      "task2b_pending": 80,
+      "task9_pending": 17,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 201,
-      "pending": 12
+      "reviewed": 205,
+      "pending": 8
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 124,
-      "pending": 84,
+      "fixed": 121,
+      "pending": 87,
       "idle": 3
     },
     "last_updated": "2026-05-06"
@@ -3248,10 +3248,10 @@
       "last_verified": "2026-04-13",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -3260,11 +3260,12 @@
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T14:37:25+08:00",
-      "last_task6_at": "2026-05-06T14:11:35+08:00",
-      "last_task6_review_log": "logs/review/2026-05-06-14-review.md",
-      "task6_review_notes": "2026-05-06 Task6 14:11：回炉后写作复审；L1/L2 轻修 10 处（清理正文编辑痕迹、结构性元叙述、frontmatter 重复键）；无新增 L3/L4 回炉项，转入 Task9 复审。",
+      "last_task6_at": "2026-05-06T17:26:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-17-review.md",
+      "task6_review_notes": "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1/L2 轻修 2 组（RemoteViews reapply 段和 Icon 成本阶梯标点/术语间距）；无新增 L3/L4 回炉项，转 Task9 复审。",
       "last_task9_review_log": "logs/deep-review/2026-05-06-14-deep-review.md",
-      "task9_review_notes": "2026-05-06 Task9 14:37：needs-rework。P0 2 / P1 0 / P2 1。L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述；L518 NotificationListeners.java 源码路径不存在；L504 标准模板 RemoteViews 口径沿用既有 P2。"
+      "task9_review_notes": "2026-05-06 Task9 14:37：needs-rework。P0 2 / P1 0 / P2 1。L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述；L518 NotificationListeners.java 源码路径不存在；L504 标准模板 RemoteViews 口径沿用既有 P2。",
+      "last_task2b_at": "2026-05-06T14:51:22+08:00"
     },
     "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
       "path": "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md",
@@ -3606,19 +3607,23 @@
       "task6_state": "reviewed",
       "task9_state": "reviewed",
       "task2b_state": "pending",
-      "task6_result": "pass-light-edit",
+      "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "fixed",
-      "reviewed_date": "2026-04-26",
+      "task2b_result": "pending",
+      "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-04-29",
+      "task9_reviewed_date": "2026-05-05",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-29T04:40:03+08:00",
-      "last_task2b_at": "2026-04-27T19:40:00+08:00",
+      "last_task9_at": "2026-05-05T17:38:00+08:00",
+      "last_task2b_at": "2026-05-06T14:51:22+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
-      "review_round": "2",
-      "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。"
+      "review_round": 4,
+      "task9_review_notes": "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。",
+      "last_task6_at": "2026-05-06T17:26:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-17-review.md",
+      "task6_review_notes": "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1 轻修 3 处（闭环禁用词、AI 中英文空格）；发现 2 个 L3/L4/技术边界问题，已写入 queue.json 交 Task2B。",
+      "last_task9_review_log": "logs/deep-review/2026-05-05-17-deep-review.md"
     },
     "src/part2-performance/ch11-power/README.md": {
       "path": "src/part2-performance/ch11-power/README.md"

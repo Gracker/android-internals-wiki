@@ -37,28 +37,28 @@ sources:
     path: "hardware/libhardware_legacy/power.cpp"
   - type: aosp
     path: "hardware/interfaces/power/aidl/android/hardware/power/IPower.aidl"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-06"
 reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-pipeline_stage: task6_pending
+task6_result: needs-rework
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task9_result: needs-rework
-task2b_result: fixed
+task2b_result: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
 last_task9_at: "2026-05-05T17:38:00+08:00"
 last_task2b_at: "2026-05-06T14:51:22+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-review_round: 3
+review_round: 4
 task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2。；2026-04-28 task6 re-review: pass-light-edit，L1/L2 通过，代码块语言标签系统性缺失已记录；2026-04-29 task9 re-review: needs-rework，P0 2 / P1 0 / P2 2。；2026-05-01 task9 re-review: needs-rework，P0 4 / P1 0 / P2 1。；2026-05-05 17:38 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0；详见 logs/deep-review/2026-05-05-17-deep-review.md。"
-last_task6_at: "2026-05-05T17:19:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-17-review.md"
+last_task6_at: "2026-05-06T17:26:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-17-review.md"
 review_notes: "2026-05-05 17:19 Task6：revisiting 写作复审通过；修复 14 处 L1/L2 表达/代码围栏问题，未新增回炉项，转 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-05-17-deep-review.md"
-
+task6_review_notes: "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1 轻修 3 处（闭环禁用词、AI 中英文空格）；发现 2 个 L3/L4/技术边界问题，已写入 queue.json 交 Task2B。"
 ---
 
 # 11.5 Wakelock 机制与功耗分析
@@ -795,6 +795,8 @@ PowerMonitorReadings.getTimestampMillis(PowerMonitor) → 快照时刻的 elapse
 - `getRailInfo()` — 获取功耗轨元信息（名称、测量类型）
 - `getEnergyData()` — 获取自启动以来的累计能耗数据
 
+[需确认: 前轮 Task9 已判定 Perfetto 配置主路径应使用 `android.power` 数据源和 `collect_power_rails` 配置；正文此处仍出现 `android.power_rails` 数据源口径，且后文流程图也写成 `Perfetto android.power_rails`，需 Task2B 按 Task9 结论统一。]
+
 主要消费者：Statsd（功耗归因）、Perfetto（`android.power_rails` 数据源）、Batterystats（电池分析）。
 
 #### Perfetto 端到端观测
@@ -858,3 +860,53 @@ Perfetto android.power_rails 记录 rail 数据
 
 ### 研究素材
 - `intake/research-feeds/2026-04-06-07-android17-power-management-wakelock-policy-aod-minmode.md` — Android 17 功耗新特性 + Play Store 政策
+
+
+<!-- AIW-源码调研-2026-05-06 -->
+
+[需重写: 这段源码调研素材目前作为编辑附录追加在参考资料之后，与前文 ADPF 小节重复，且 `setPreferredPowerEfficiency` / `setPreferPowerEfficiency` 命名不一致。请 Task2B 判断是否整合到“Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监测”小节，或改成正式附录；Task6 不做大段重组和 API 真伪裁决。]
+
+#### 非游戏场景的 ADPF 应用策略源码发现
+
+通过分析 AOSP 源码发现，ADPF 在非游戏场景的应用可通过以下方式实现：
+
+**1. GameManager.GameState.MODE_CONTENT 状态通知**（API 33+）：
+非游戏应用（如视频剪辑、AI 推理）可调用 `GameManager.setGameState(GameState)` 传递 `GameState.MODE_CONTENT`（值4），向系统声明当前内容类型。系统侧根据此状态决定是否应用 Game Mode 优化策略。
+
+```java
+// frameworks/base/core/java/android/app/GameState.java - API 33+
+public static final int MODE_CONTENT = 4;  // 非游戏内容（广告/网页/视频）
+
+// 应用调用示例
+GameManager gameManager = context.getSystemService(GameManager.class);
+GameState gameState = new GameState(false, GameState.MODE_CONTENT, -1, -1);
+gameManager.setGameState(gameState);
+```
+
+**2. PerformanceHintManager.Session 的非游戏场景使用**：
+- 创建 hint session：`createHintSession(tids, initialTargetWorkDurationNanos)`
+- 对于 CPU 密集任务：`sendHint(CPU_LOAD_UP)` 确保资源预留
+- 对于长时后台任务：`setPreferredPowerEfficiency(true)` (API 35+) 声明节能优先
+- 实际工作时长反馈：`reportActualWorkDuration(actualNanos)` 将耗时反馈给系统
+
+```java
+// frameworks/base/core/java/android/os/PerformanceHintManager.java
+public void setPreferredPowerEfficiency(boolean enabled) {
+    nativeSetPreferredPowerEfficiency(mNativeSessionPtr, enabled);
+}
+
+// 常量定义（API 31+）
+public static final int CPU_LOAD_UP = 0;     // 需要更多 CPU 资源
+public static final int CPU_LOAD_DOWN = 1;   // 可降低 CPU 资源
+public static final int CPU_LOAD_RESET = 2;  // 工作负载完全改变
+```
+
+**3. ADPF 与 Game Mode 的协同机制**：
+- `PerformanceHintManager` 专注于**线程级**的精细频率控制
+- `GameManager` 影响**进程级**的调度优先级和 OOM 策略
+- 双重使用时系统可形成"性能→功耗"的更完整调度决策
+
+**4. 场景适配策略**：
+- 视频导出：`CPU_LOAD_UP` + `reportActualWorkDuration` + `MODE_CONTENT`
+- 实时 AI 推理：`CPU_LOAD_UP` + `GPU_LOAD_UP` + `MODE_CONTENT`
+- 后台批处理：`setPreferredPowerEfficiency(true)` + `MODE_NONE`
