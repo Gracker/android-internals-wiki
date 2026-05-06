@@ -39,14 +39,15 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 last_task9_at: "2026-05-06T20:37:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: 2026-05-06
 task2b_result: fixed
+last_task2b_at: "2026-05-07T03:43:33+08:00"
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
@@ -198,9 +199,15 @@ CPU charge ≈ cpu.active × activeTime
 
 ### GPU：隐藏的耗电源
 
-GPU 的功耗在 power_profile 中的定义相对简单，通常只有 `gpu.active` 一个条目，不像 CPU 那样有频率-电流对照表。这导致 GPU 功耗的估算精度比 CPU 低得多——系统很难区分 GPU 是在满负荷渲染游戏还是在轻度合成 UI。
+AOSP 标准 `power_profile.xml` 和 `BatteryUsageStats` / `BatteryConsumer` 体系没有独立的 GPU power component。`PowerProfile.java` 没有 `POWER_GPU` / `gpu.active` 标准键，`android.os.BatteryConsumer` 的 `POWER_COMPONENT_*` 枚举也没有 GPU。`PowerStats` AIDL 的 `EnergyConsumerType` 枚举里同样没有 GPU 专有类型。
 
-在实际分析中，GPU 功耗常被归入"硬件"类别或与 CPU 合并统计。如果我们在做游戏或视频播放类 App 的功耗分析，需要特别注意 GPU 这个隐藏变量。
+这意味着 Framework 层的功耗归属链不会把 GPU 拆出来单独统计。GPU 功耗通常需要通过以下间接路径分析：
+
+- 厂商 vendor rail / Channel：在 Perfetto power rails 视图中找 GPU 相关的电源轨（如 `GPU-VDD`），读取微焦耳累加值
+- GPU 频率 + 利用率 × 场景归因：结合 `gpu_frequency` / `gpu_busy` counter 与当前前台 App 推算
+- `dumpsys gfxinfo` 帧耗时与 GPU time 占比，间接判断 GPU 负载是否为功耗瓶颈
+
+做游戏或视频播放类 App 的功耗分析时，GPU 是不可忽略的隐藏变量，但分析手段要跳出 `power_profile` / BatteryStats 的框架。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/res/res/xml/power_profile.xml / PowerProfile.java / BatteryConsumer.java]
 
 ### Cellular / WiFi / GPS：通信模块三兄弟
 
@@ -449,18 +456,22 @@ EOF
 
 **Android Studio Power Profiler**：从 Hedgehog 版本开始集成，在 System Trace 视图中直接显示 ODPM 电源轨数据，与 CPU、线程、Frame 时间线同步展示。适合 App 开发者做日常功耗分析。
 
-**PowerMonitor API（Android 15+）**：Android 15 引入了公开的 `android.os.PowerMonitor` API，允许 App 在运行时程序化查询实时能量消耗。这套 API 不依赖 bugreport 或离线分析，适合构建线上功耗自审计能力。App 通过 `PowerManager` 获取 `PowerMonitor` 实例后，可以订阅指定组件的能量消耗更新，在运行中检测功耗异常并主动调整行为（如降低渲染分辨率、切换低功耗编解码器）。这为"App 级功耗自治"提供了标准入口，不再需要自建轮询脚本或依赖第三方 APM SDK。[待验证: PowerMonitor API 获取入口需对照 Android 15 API 35 SDK；上一轮 Task9 提示调用对象存在风险]
+**PowerMonitor API（Android 15+）**：Android 15 引入了公开的 `android.os.health.PowerMonitor` 与 `SystemHealthManager`，允许 App 在运行时程序化查询实时能量消耗。这套 API 不依赖 bugreport 或离线分析，适合构建线上功耗自审计能力。
+
+入口路径：`context.getSystemService(Context.SYSTEM_HEALTH_SERVICE)` 获取 `SystemHealthManager`，然后调用 `getSupportedPowerMonitors(executor, Consumer<List<PowerMonitor>>)` 查询设备支持哪些 monitor，再按需调用 `getPowerMonitorReadings(List<PowerMonitor>, Executor, OutcomeReceiver<PowerMonitorReadings, RuntimeException>)` 读取能量快照。`getConsumedEnergy()` 返回值单位为 microwatt-hours。
+
+这套 API 读取的是能量快照（snapshot），不是实时订阅流。App 需要自行按时间间隔轮询，前后两次快照做差值计算区间功耗。适合构建线上功耗自审计、热管理辅助判断等场景。[已验证: AOSP android-16.0.0_r1, android.os.health.SystemHealthManager / PowerMonitor / PowerMonitorReadings]
 
 ## 与其他机制的关系
 
 Android 功耗模型不是一个孤立的系统，它与本书多个章节讨论的机制紧密关联：
 
 - **CPU 调度（§5.1）**：调度器决定哪个进程在哪个核心上运行多久，直接影响 BatteryStats 中 CPU 时间的归属计算。EEVDF/CFS 的调度决策最终都会反映在功耗统计中。
-- **EAS / PAS（§5.2）**：早期 EAS 使用静态 Energy Model（EM）做开环预测——根据 EM 表估算任务迁移的能耗代价，选择最优核。Android 15+ 的 PAS（Power-Aware Scheduling）开始引入 ODPM 动态反馈：通过 Power HAL AIDL 订阅 ODPM 的功耗采样，修正 EM 参数并影响任务放置决策。[待验证: PAS 动态订阅 ODPM 并实时修正 EM 参数的完整调用链，目前缺少公开 AOSP 源码或官方文档的逐行支撑；ODPM 作为调度中枢信号的定位需以 CDD 或 source.android.com 为准]
+- **EAS / PAS（§5.2）**：早期 EAS 使用静态 Energy Model（EM）做开环预测——根据 EM 表估算任务迁移的能耗代价，选择最优核。PAS（Power-Aware Scheduling）理论上可以引入功耗动态反馈来修正调度决策，但截至目前公开的 AOSP 源码（android-16.0.0_r1）中，调度器路径（`find_energy_efficient_cpu` / `sched_energy_util`）仍走 EM 静态表计算，没有找到从 ODPM / PowerStats HAL 实时读取功耗并反馈到调度决策的确定调用链。ADPF / CPU-GPU headroom 走的是 `Power HAL` 的 `getCpuHeadroom` / `getGpuHeadroom` 接口和 `PerformanceHintManager` hint session 路径，PowerMonitor / PowerStats 是能量观测路径。两条路径目前在公开源码层面暂未看到对接。[待验证: 如后续 CDD / source.android.com 或新 AOSP tag 补充了 ODPM→EAS 反馈链，可重新修订]
 - **DVFS（§5.4）**：CPU 频率是 power_profile 中最详细的参数之一。DVFS 决定了 CPU 在哪个频率点运行，直接决定了该时刻的功耗估算值。
 - **大小核架构（§5.3）**：异构 CPU 的功耗建模比同构 CPU 复杂得多，power_profile 中需要为每个集群提供独立的频率-电流对照表。
 - **热管理（§5.5）**：热节流会强制降低 CPU 频率，间接降低功耗。但功耗估算系统本身不感知热状态——如果设备因过热而降频，power_profile 中对应高频的参数就不会被使用，导致估算的"总功耗"低于实际值。
-- **ADPF（§5.9）与 ODPM 的动态反馈**：Android 16 的 ADPF（Adaptive Performance Framework）可以利用 ODPM 的功耗响应能力辅助功耗管理决策。公开 API 层面，ADPF 通过 `PerformanceHintManager` 向系统上报帧负载和 deadlines；当 ODPM 监测到功耗上升趋势时，ADPF 可以配合热管理策略调整 CPU/GPU 频率。[待验证: ADPF 直接读取 ODPM rail 数据并触发预防性降频的完整调用链，目前缺少公开 AOSP 源码或官方文档支撑；具体行为需以 CDD 或 source.android.com 为准]
+- **ADPF（§5.9）**：Android 16 的 ADPF 通过 `PerformanceHintManager` 向系统上报帧负载和 deadlines；系统侧根据 hint 调整 CPU/GPU 频率和核心迁移。公开 API 层面，ADPF 与 ODPM / PowerStats 是两条独立路径：ADPF 走 `PerformanceHint` session，ODPM 走 `SystemHealthManager` / `PowerMonitor` 快照读取。两者是否在内核或 vendor 层面存在联动，目前缺少公开 AOSP 源码或官方文档支撑。[待验证: ADPF hint session 是否间接利用 ODPM 数据做预防性降频，需后续 CDD / source.android.com 确认]
 - **Android 功耗管理机制（§5.6）**：Doze、App Standby 等机制通过限制后台活动来降低功耗。这些限制的效果最终都会体现在 BatteryStats 的统计数据中。
 - **Perfetto 工具链（§13.1）**：Perfetto 是功耗分析最重要的可视化工具之一，特别是配合 ODPM 数据源使用时。
 
@@ -478,8 +489,8 @@ Android 功耗模型不是一个孤立的系统，它与本书多个章节讨论
 | Android 12 (API 31) | AIDL `android.hardware.power.stats.IPowerStats` 加入，拆成 `EnergyConsumer` 与 `Channel` / `EnergyMeasurement` 两组对象 |
 | Android 13 (API 33) | Framework 侧继续通过 `BatteryUsageStats` / `UidBatteryConsumer` 输出归属结果，方便 Settings 和 bugreport 读取 |
 | Android 14 (API 34) | `CpuPowerCalculator`、`ScreenPowerCalculator` 等继续优先使用 hardware energy data，缺失时回退到 power-profile 估算 |
-| Android 15 (API 35) | `PowerMonitor` 公开 API 引入，支持 App 程序化查询实时能量消耗；PAS 通过 Power HAL AIDL 实时订阅 ODPM 修正 EM 参数，EAS 从静态开环预测演进为动态反馈调度（待验证：公开 AOSP / 官方文档支撑不足） |
-| Android 16 (API 36) | ADPF 利用 ODPM 微秒级响应实现功耗预防性降频（待验证：公开 AOSP / 官方文档支撑不足）；Framework 仍是 `BatteryStatsImpl -> BatteryUsageStatsProvider -> *PowerCalculator -> BatteryUsageStats / UidBatteryConsumer` 这套归属结构；ODPM 从诊断工具升级为调度和功耗动态反馈的中枢信号源 |
+| Android 15 (API 35) | `PowerMonitor` / `SystemHealthManager` 公开 API 引入，支持 App 程序化查询能量快照；PAS 动态反馈路径目前缺少公开 AOSP 调用链证据（待验证） |
+| Android 16 (API 36) | ADPF 与 ODPM 是否存在调度层联动，目前缺少公开 AOSP 源码或官方文档支撑（待验证）；Framework 仍是 `BatteryStatsImpl -> BatteryUsageStatsProvider -> *PowerCalculator -> BatteryUsageStats / UidBatteryConsumer` 这套归属结构 |
 
 ## 常见问题与误区
 
