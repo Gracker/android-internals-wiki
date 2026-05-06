@@ -8669,7 +8669,7 @@
       "section": "9.6",
       "section_title": "Notification 性能与 ANR",
       "priority": 95,
-      "reason": "[Deep Tech Review] 9.6 Notification 性能与 ANR 仍有 P0 技术问题，需回炉修正",
+      "reason": "[Task6 Review] 9.6 Notification 性能与 ANR 仍有 Task9 P0 技术问题残留，需回炉修正",
       "review_issues": [
         {
           "type": "源码错误/版本差异",
@@ -8682,18 +8682,27 @@
           "location": "L241、L505-L507 HardwareBuffer / Icon.createWithBitmap()",
           "detail": "正文写 Android 12+ 通知图片通过 HardwareBuffer 零拷贝共享，并称 Icon.createWithBitmap() 会把像素数据序列化进 Parcel、挤占进程约 1MB Binder buffer。android-16.0.0_r1 Icon.writeToParcel() 对 TYPE_BITMAP/TYPE_ADAPTIVE_BITMAP 先调用 Bitmap.asShared()；Bitmap.asShared() 的 API 注释是 immutable shared-memory backed bitmap，可通过 Parcelable 高效跨进程传递。Icon/RemoteViews 通知路径未形成正文所述的 HardwareBuffer 专用链路，当前把 shared memory/ashmem、HardwareBuffer 和 Binder buffer 口径混在一起。",
           "suggestion": "重写图片通知成本模型：资源 ID/URI/Bitmap 分别讨论引用传递、解码、共享内存副本/FD、SystemUI 绑定与 GPU 合成成本；不要写通知图片默认 HardwareBuffer 零拷贝，也不要把 createWithBitmap 简化成像素整体进入 Binder buffer。"
+        },
+        {
+          "type": "需确认/技术问题残留",
+          "location": "版本演进表 Android 14 行；图片通知成本阶梯；常见问题「Icon 构造方式对性能没影响」",
+          "detail": "[Task6 复审] Task9 2026-05-06 已判定 RemoteViews Measure Cache/Action-diff 与 Icon.createWithBitmap/HardwareBuffer/Binder buffer 口径不成立。Task2B 标记 completed 后，正文仍保留 Android 14 Measure Cache / Action-diff 版本事实，以及 `Icon.createWithBitmap()` 像素序列化进 Parcel / HardwareBuffer 相关表述，需再次回炉。Task6 不裁决技术真伪，仅按 Task9 已有结论重开问题单。",
+          "suggestion": "按 Task9 原建议删除 Measure Cache / Action-diff 的版本事实；图片通知成本模型改为资源 ID / URI / Bitmap 三类路径的引用、解码、共享内存/FD、SystemUI 绑定与 GPU 合成成本，不再写通知图片默认 HardwareBuffer 零拷贝或像素整体进入 Binder buffer。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "completed",
+      "status": "pending",
       "source_file": "2026-04-29-11-9.6-external-review.md",
       "material_paths": [
         "intake/suggestions.md"
       ],
-      "updated_at": "2026-05-06T11:39:00+08:00",
+      "updated_at": "2026-05-06T13:13:29+08:00",
       "completed_at": "2026-05-06T13:04:10+08:00",
-      "completed_reason": "P0 RemoteViews增量更新已修正为reapply机制（删除Measure Cache/Action-diff）；P0 Icon图片通知成本模型已重写（HardwareBuffer FD共享路径+三档成本阶梯）"
+      "completed_reason": "P0 RemoteViews增量更新已修正为reapply机制（删除Measure Cache/Action-diff）；P0 Icon图片通知成本模型已重写（HardwareBuffer FD共享路径+三档成本阶梯）",
+      "reopened_by": "task6-review",
+      "reopened_at": "2026-05-06T13:13:29+08:00",
+      "original_review_log": "logs/review/2026-05-06-13-review.md"
     },
     {
       "section": "9.7",
