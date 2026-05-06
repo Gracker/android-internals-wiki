@@ -28,21 +28,21 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-06
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T16:39:00+08:00"
 status: ready-for-review
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
 last_task6_at: "2026-05-06T16:24:00+08:00"
 review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task2b_at: "2026-05-06T16:04:00+08:00"
+last_task2b_at: "2026-05-06T17:59:16+08:00"
 last_task6_review_log: "logs/review/2026-05-06-16-review.md"
 task6_review_notes: "2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: logs/deep-review/2026-05-06-16-deep-review.md
@@ -253,25 +253,17 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) {
 ```
 
 ```c
-static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) {
-    unsigned long min = 0, max = 0;
-    unsigned long util;
-    // sched_ext 可编程调度器的性能目标，仅在 scx_switched_all() 时生效
-    if (scx_switched_all())
-        util = scx_cpuperf_target(cpu);
-    else
-        util = cpu_util_cfs_boost(cpu);
-    // 签名变化：effective_cpu_util 输出 min/max 约束
-    effective_cpu_util(cpu, util, &min, &max);
-    // boost 与 util 取大值，再统一计算
-    util = max(util, boost);
-    // sugov_effective_cpu_perf 返回最终频率目标，bw_min 用于带宽约束
-    sugov_effective_cpu_perf(cpu, util, max, &bw_min);
-    // 省略：uclamp 钳位、bw_dl 计算、sg_cpu 字段赋值等细节
+// kernel/sched/cpufreq_schedutil.c（简化伪代码，省略部分字段和分支）n// android15-6.6: 纯 CFS 负载，无 sched_ext，boost 由调用方处理
+static void sugov_get_util(struct sugov_cpu *sg_cpu) {
+    unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu);
+    sg_cpu->bw_dl = cpu_bw_dl(cpu_rq(sg_cpu->cpu));
+    // effective_cpu_util 以 FREQUENCY_UTIL 模式计算有效利用率，无 min/max 输出
+    sg_cpu->util = effective_cpu_util(sg_cpu->cpu, util, FREQUENCY_UTIL, NULL);
+    // 省略：uclamp 钳位、其他 sg_cpu 字段赋值等细节
 }
 ```
 
-两个版本的核心区别：android15-6.6 的 `sugov_get_util()` 只收集有效利用率，iowait boost 由调用方通过 `sugov_iowait_apply()` 单独叠加；android16-6.12 将 boost 作为参数传入 `sugov_get_util()`，始终从 `scx_cpuperf_target(cpu)` 起算（非 scx 独占时叠加 `cpu_util_cfs_boost()`），`effective_cpu_util()` 返回值赋给 util 并输出 min/max 约束，最终由 `sugov_effective_cpu_perf(cpu, util, min, max)` 计算频率目标并赋给 `sg_cpu->util`，`sg_cpu->bw_min = min` 保存带宽下限。上方代码块为简化伪代码，展示了核心调用链和关键差异点，省略了部分字段赋值和边界分支。
+两个版本的核心区别：android15-6.6 的 `sugov_get_util()` 只收集有效利用率（`cpu_util_cfs_boost()` → `effective_cpu_util(..., FREQUENCY_UTIL, NULL)`），iowait boost 由调用方 `sugov_iowait_apply()` 单独叠加；android16-6.12 将 boost 作为参数传入 `sugov_get_util()`，始终从 `scx_cpuperf_target(cpu)` 起算（非 scx 独占时叠加 `cpu_util_cfs_boost()`），`effective_cpu_util()` 返回值赋给 util 并输出 min/max 约束，最终由 `sugov_effective_cpu_perf(cpu, util, min, max)` 计算频率目标并赋给 `sg_cpu->util`，`sg_cpu->bw_min = min` 保存带宽下限。上方代码块为简化伪代码，展示了核心调用链和关键差异点，省略了部分字段赋值和边界分支。
 
 [已验证: AOSP android15-6.6 & android16-6.12, kernel/sched/cpufreq_schedutil.c — sugov_update_single / sugov_get_util / sugov_iowait_apply / sugov_effective_cpu_perf（代码块为简化伪代码，非逐行源码复刻）]
 
