@@ -13456,6 +13456,66 @@
       "status": "completed",
       "completed_at": "2026-05-07T02:46:25",
       "completed_reason": "P0 NativeAllocationRegistry路径从libcore/ojluni修正为libcore/luni；P0 Scudo MTE路径从bionic/linker/scudo/scudo_memtag.h修正为compiler-rt/lib/scudo/ + bionic/linker/linker_mte.cpp；P0 16KB linker compat函数名从phdr_table_load_segments()修正为ElfReader::LoadSegments()并补充源码验证"
+    },
+    {
+      "section": "18.3",
+      "section_title": "Android View 软件渲染路径",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 18.3 Android View 软件渲染路径仍有 Android 16 SkTaskGroup 与 Android 15+ 软件渲染能效策略证据链问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码边界",
+          "location": "L231 Android 16 SkTaskGroup 多线程 CPU 栅格化",
+          "detail": "[P0] 正文写“Android 16 为软件渲染引入 Skia 的 SkTaskGroup 支持多线程 CPU 栅格化”。复核 AOSP tag：`external/skia/src/core/SkTaskGroup.cpp` 在 android-9.0.0_r1 已存在，文件版权年份为 2014；本轮未找到 android-16.0.0_r1 中 View software Canvas 默认经 SkTaskGroup 工作线程栅格化的公开 HWUI/Skia 调用链。不能把 SkTaskGroup 写成 Android 16 新引入的软件渲染缓解手段。",
+          "suggestion": "删除“Android 16 引入”断言；若保留并行 CPU 栅格化，只能写成待研究主题，并补 Skia/HWUI 调用链、线程名/trace slice、默认启用条件和收益数据。"
+        },
+        {
+          "type": "数据缺失/知识盲区",
+          "location": "L58、L229 Android 15+ Efficiency-aware Throttling 待验证段",
+          "detail": "[P1] 正文仍保留“Android 15+ 是否存在针对软件渲染的专用能效降频策略（Efficiency-aware Throttling）”这个具名平台能力，但 sources/frontmatter 没有 AOSP Thermal/Power HAL/HWUI/Skia commit 或官方文档锚点。通用 thermal throttling 可成立；“专门识别软件渲染低效负载”的 Android 15+ 平台机制尚无证据。",
+          "suggestion": "发布稿中先降级为“持续 CPU 栅格化会抬高 CPU/thermal 压力”，删除具名 Efficiency-aware Throttling；若要恢复，需补公开源码/文档或实机 trace。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T05:27:07+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "18.5",
+      "section_title": "Android View 多窗口链路",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 18.5 Android View 多窗口链路仍有 DrawFrameTask 同步、分屏拓扑和 HWUI 后端边界错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L180 Android 12+ syncFrameState “push 模式”",
+          "detail": "[P0] 正文写 Android 12 起 RenderThread 引入更轻量 “push” 模式，UI Thread 只短暂等待引用交换且通常 1-2ms。复核 android-16.0.0_r1 `libs/hwui/renderthread/DrawFrameTask.cpp`：`DrawFrameTask::drawFrame()` 仍调用 `postAndWait()`；RenderThread `run()` 中执行 `syncFrameState(info)` 后才在 `canUnblockUiThread` 为真时 `unblockUiThread()`。这不是可按 Android 12+ 概括的非阻塞 push 模式，1-2ms 也没有版本/设备数据。",
+          "suggestion": "删除 Android 12+ push 模式断言；改成“UI Thread 等待时长以 Trace 中 `syncFrameState` / `postAndWait` 为准，不同版本和帧内容会变化”，并引用 `DrawFrameTask.cpp` 真实路径。"
+        },
+        {
+          "type": "原理断裂/拓扑边界",
+          "location": "L62、L155、L303-L305 分屏/多窗口共享 Choreographer 的泛化",
+          "detail": "[P1] 正文把分屏场景概括为两个 Activity 同时 RESUMED、底层仍是同一个 Choreographer 串行分发，并写“要并行就需要第二个进程，但 Dialog 和分屏做不到”。这只适用于同 App / 同进程 / 同主线程的多可见 Activity 或 Activity Embedding；跨 App split-screen、PiP、freeform/desktop windowing 各进程有各自 Choreographer、RenderThread 和 BufferQueue，瓶颈主要转到 SurfaceFlinger 合成、调度和内存/GPU 资源竞争。",
+          "suggestion": "把分屏/桌面按“同进程同 App”与“跨进程多 App”拆开；优化建议也分别写应用内串行竞争、SF 合成侧与系统资源侧观察点。"
+        },
+        {
+          "type": "版本差异/渲染后端边界",
+          "location": "L64、L125、L148-L154 单 EGLContext / eglMakeCurrent",
+          "detail": "[P1] 正文把 Android 9-16 多窗口渲染统一写成“一个 EGLContext、多个 EGLSurface，切换时 eglMakeCurrent”。这只覆盖 HWUI OpenGL 后端；AOSP android-16.0.0_r1 同目录已有 `VulkanManager.cpp`、`VulkanSurface.cpp`，Vulkan 后端没有 EGLContext / eglMakeCurrent 这条成本模型。",
+          "suggestion": "限定为“OpenGL/HWUI 后端”；补 Vulkan 后端的边界说明（VkSurface/Swapchain/queue submit、surface 切换成本另看 Vulkan path），避免把 EGL 术语覆盖全部 Android 9-16。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T05:27:07+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
