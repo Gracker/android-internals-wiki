@@ -1317,3 +1317,11 @@
 - **问题**：正文写 `ProfilingTrigger` 目前只暴露 `TRIGGER_TYPE_APP_FULLY_DRAWN` 和 `TRIGGER_TYPE_ANR`。Android API 37 文档已新增 OOM、Cold Start、Kill、App Request Running Trace 等触发类型；但这些仍不是“内存突增阈值”触发，OOM 触发也是事后 Java heap dump。
 - **建议**：把该段限定为 Android 15/16 口径，并补 Android 17/API 37 更新：OOM trigger 可辅助事后取证，但不能替代 MemoryThrashing 这类前置阈值探针；业务仍需自行判断内存突增。
 
+
+
+## [Task9 Deep Review] 16.4 Android 17 + Kernel 6.12 系统级性能优化 — 2026-05-07 — Perfetto dm-verity 观察口径
+- **类型**：工具口径/数据缺失
+- **位置**：L237/L346 dm-crypt/dm-verity track
+- **问题**：[P2] 正文写 Perfetto 中看 `dm-crypt/dm-verity track` 或“dm-verity track：哈希验证耗时”。复核 `android16-6.12/drivers/md/dm-verity-target.c` 未见专用 `TRACE_EVENT`；标准 Perfetto/Ftrace 更稳定的观察面是 block tracepoint、CPU scheduling、相关 kworker/crypto CPU slice，或在工程环境中显式打开 function/kprobe/dynamic ftrace。把它写成固定 track 容易误导读者到 UI 里找不存在的数据轨道。
+- **建议**：改成“dm-verity 相关耗时需通过 block I/O 延迟、CPU/crypto 热点和可选动态探针间接定位；默认 Perfetto 不保证存在专用 dm-verity track”。
+- **review 日志**：logs/deep-review/2026-05-07-02-deep-review.md

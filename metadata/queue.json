@@ -13396,6 +13396,38 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T01:20:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "4.6",
+      "section_title": "内存相关的版本演进",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 4.6 仍有 3 处 AOSP 源码锚点/函数名错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L164/L642 NativeAllocationRegistry 源码路径",
+          "detail": "[P0] 正文两处写 `libcore/ojluni/src/main/java/libcore/util/NativeAllocationRegistry.java`。复核 AOSP `platform/libcore` main 与 `android-15.0.0_r1`，该路径 404；实际路径是 `libcore/luni/src/main/java/libcore/util/NativeAllocationRegistry.java`。",
+          "suggestion": "把 NativeAllocationRegistry 源码锚点统一改为 `libcore/luni/src/main/java/libcore/util/NativeAllocationRegistry.java`；如按 AOSP 根目录写，可标为 `libcore/luni/...`。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L435/L440 Scudo MTE tag 源码路径",
+          "detail": "[P0] 正文写 Scudo MTE tag 逻辑在 `bionic/linker/scudo/scudo_memtag.h`，并把该路径列为来源。复核 AOSP bionic main，`linker/scudo/` 不存在；Scudo 的 MTE tag 辅助逻辑在 `external/scudo/standalone/memtag.h`，Android 集成还涉及 `external/scudo/standalone/wrappers_c_bionic.cpp` 与 bionic 的 `libc/platform/bionic/mte.h`。",
+          "suggestion": "删除不存在的 `bionic/linker/scudo/scudo_memtag.h`，改为 `external/scudo/standalone/memtag.h`；如果要讲 bionic 平台接口，再补 `bionic/libc/platform/bionic/mte.h`。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L545-L552 16KB linker compat 函数名",
+          "detail": "[P0] 正文写 `bionic/linker/linker_phdr.cpp` 中 `phdr_table_load_segments()` 处理 4KB 对齐 ELF。复核 bionic `android-15.0.0_r1` 与 main，未找到 `phdr_table_load_segments()`；当前代码使用 `ElfReader::Read()` / `ElfReader::LoadSegments()`，16KB app compat 逻辑拆在 `linker/linker_phdr.cpp` 与 `linker/linker_phdr_16kib_compat.cpp`（如 `Setup16KiBAppCompat()`、`IsEligibleFor16KiBAppCompat()`）中。",
+          "suggestion": "把函数名改为当前 bionic 的 `ElfReader::LoadSegments()` / `Setup16KiBAppCompat()` 口径，并在源码索引中补 `linker/linker_phdr_16kib_compat.cpp`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T02:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
