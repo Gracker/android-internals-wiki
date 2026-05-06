@@ -27,15 +27,15 @@ task2b_state: "fixed"
 task2b_result: "fixed"
 last_task9_at: "2026-05-05T15:51:58+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-05-15-deep-review.md"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: "task6_pending"
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: "reviewed"
-last_task6_at: "2026-05-05T15:17:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-15-review.md"
-review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础 sources 元数据；修复读者指向、缓存术语和 L1 高频词；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Android 15/16 软件渲染能效与 SkTaskGroup 缺 AOSP/实测锚点。"
+task9_state: pending
+last_task6_at: "2026-05-07T05:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-05-review.md"
+review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语换为“路径”，标题改为“完整执行流程”）；无新增 L3/L4 回炉项；task9_result 仍待复审。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础 sources 元数据；修复读者指向、缓存术语和 L1 高频词；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Android 15/16 软件渲染能效与 SkTaskGroup 缺 AOSP/实测锚点。 | 2026-05-07 task6 review 05:05：压缩流程段落的结构性元叙述，清理主观强化句；L1/L2 通过，无新增回炉项，转 Task9 复审。"
 ---
 
 # 18.3 Android View 软件渲染路径
@@ -95,9 +95,9 @@ review_notes: "2026-05-05 task6 review: L1 用词与标题锚点轻修（术语�
 
 ## 完整执行流程
 
-下面描述的是整窗口软件渲染或 `Surface.lockCanvas()` 的执行链。这条执行链的核心特征是**没有 RenderThread 参与**——所有操作都在 UI Thread 上完成，从锁定画布到像素填充到提交 Buffer，全流程串行。
+整窗口软件渲染或 `Surface.lockCanvas()` 的执行链没有 RenderThread 参与。所有操作都在 UI Thread 上完成，从锁定画布到像素填充再到提交 Buffer，全流程串行。
 
-单 View 的 `LAYER_TYPE_SOFTWARE` 走的是另一条执行链：CPU 在离屏 Bitmap 上栅格化 → 纹理上传 → RenderThread 合成进 GPU 帧流。那条执行链在上一节“整窗口软件渲染 vs 单 View software layer”的表格里已经区分过，本节不再展开。
+单 View 的 `LAYER_TYPE_SOFTWARE` 走另一条执行链：CPU 在离屏 Bitmap 上栅格化 → 纹理上传 → RenderThread 合成进 GPU 帧流。上一节“整窗口软件渲染 vs 单 View software layer”的表格已经把两类路径区分开，后文提到的 `lockCanvas`、`unlockCanvasAndPost` 和 BufferQueue 等待，指的是整窗口软件渲染或 `Surface.lockCanvas()` 路径。
 
 ### 第一阶段：Lock — 锁定画布
 
@@ -121,7 +121,7 @@ graph LR
     style C fill:#ff9999
 ```
 
-关键点：这个过程中**每一条绘制指令都会立刻产生像素**。不存在"先记录再回放"的 DisplayList 机制——这是与硬件加速路径最主要的区别。
+这个阶段的特征是：**每一条绘制指令都会立刻产生像素**。不存在"先记录再回放"的 DisplayList 机制——这是与硬件加速路径最主要的区别。
 
 **CPU 密集的原因**：复杂图形操作（路径裁剪、高斯模糊、大图缩放、文字排版）都需要大量浮点运算和内存读写。一张 1080p 的 Bitmap 有 207 万个像素，每个像素 4 字节（RGBA），意味着单次全屏填充就要读写 8MB 数据。
 
@@ -191,13 +191,13 @@ sequenceDiagram
 | **部分更新** | 支持 Dirty Rect | Android 12+ 逐步废弃 |
 | **复杂图形** | 极慢（阴影、模糊、大图） | GPU 并行计算，快几个数量级 |
 
-最核心的差异在于"谁在做光栅化"。GPU 天生适合并行计算——一张 1080p 的图片有 207 万个像素，GPU 可以同时在成百上千个核心上计算；CPU 只能串行处理，哪怕主频再高，像素数摆在那里。
+两条路径的差异落在"谁在做光栅化"。GPU 天生适合并行计算——一张 1080p 的图片有 207 万个像素，GPU 可以同时在成百上千个核心上计算；CPU 只能串行处理，哪怕主频再高，像素数摆在那里。
 
 同步模型也不同。软件渲染没有 RenderThread，因此看不到 `SyncFrameState`；等待点主要落在 `dequeueBuffer()`、`lockAsync()`、`queueBuffer()` 和 BufferQueue 槽位背压上。分析 Trace 时，不能因为没有 GPU slice 就把所有卡顿都归到 CPU 计算。先看 UI Thread 的 `draw` 段，再看 `lockCanvas` / `unlockCanvasAndPost` 前后有没有等待。
 
 ## Trace 视角
 
-软件渲染在 Perfetto 中的识别特征非常鲜明，几乎是"一眼可辨"：
+软件渲染在 Perfetto 中有几个稳定特征：
 
 ### 识别特征
 
@@ -230,7 +230,7 @@ sequenceDiagram
 
 Android 16 为软件渲染引入了部分缓解手段：Skia 的 `SkTaskGroup` 支持多线程 CPU 栅格化，可以将部分像素计算分担到工作线程，降低单个线程的 CPU 压力。但这项优化不改变"CPU 做像素计算"的本质，只是把串行变成了有限并行。[待验证：SkTaskGroup 多线程栅格化在 Android 16 软件渲染路径中的默认启用状态、公开 API 可用性及实际性能收益数据] 对于复杂的模糊、路径裁剪、大图缩放操作，GPU 的并行计算优势仍然是数量级差距。
 
-**结论**：软件渲染在 2026 年的定位是能效劣势明显的应急路径，不是性能优化的可选项。如果 Trace 显示 App 持续走这条路径，应该视为一个需要修复的问题，而不是需要"优化"的路径。
+**工程判断**：软件渲染在 2026 年的定位是能效劣势明显的应急路径，不是性能优化的可选项。如果 Trace 显示 App 持续走这条路径，应该视为一个需要修复的问题，而不是需要"优化"的路径。
 
 ### 软件渲染里的 Dirty Rect 为什么能成立
 

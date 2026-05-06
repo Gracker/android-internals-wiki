@@ -1,18 +1,22 @@
 ---
 title: "Android View 多窗口链路"
 chapter: "18.5"
+section: "18.5"
 status: ready-for-review
 applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
+last_verified: "2026-05-07"
+last_verified_against: "AOSP Choreographer/ViewRootImpl/RenderThread references + EGL 1.5 Specification"
+confidence: medium
 tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "serial-rendering"]
 related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
 sources:
   - "AOSP frameworks/base/core/java/android/view/Choreographer.java"
@@ -22,7 +26,12 @@ sources:
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-20
+last_task6_at: "2026-05-07T05:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-05-review.md"
+task6_review_notes: "2026-05-07 task6 review 05:05：补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词；L1/L2 通过，无新增回炉项，转 Task9 复审。"
 ---
+
+# 18.5 Android View 多窗口链路
 
 <!-- outline-start -->
 
@@ -60,7 +69,7 @@ task9_reviewed_date: 2026-04-20
 
 | 拓扑类型 | 典型场景 | 主要瓶颈位置 | 对应分析章节 |
 |:---|:---|:---|:---|
-| **同进程多窗口** | Dialog、PopupWindow、同 App 多可见 Activity、Activity Embedding（Android 12L+） | 应用进程内的串行竞争（同一个 MainThread、同一个 RenderThread 进程单例） | 本章主体（下一节起） |
+| **同进程多窗口** | Dialog、PopupWindow、同 App 多可见 Activity、Activity Embedding（Android 12L+） | 应用进程内的串行竞争（同一个 MainThread、同一个 RenderThread 进程单例） | 本章主体 |
 | **跨进程多窗口** | split-screen、PiP、freeform / desktop windowing、不同 App 同屏 | SurfaceFlinger 合成侧（各 App 帧率可能不同，SF 要在每轮 `vsync-sf` 协调多份不同节奏的 Surface） | 见 [18.2](02-android-view-standard.md) + 本章末尾 |
 
 ### 同进程：串行挤占同一段调度时间
@@ -72,7 +81,7 @@ task9_reviewed_date: 2026-04-20
 跨进程多窗口里，每个进程独立订阅 `vsync-app`，独立跑自己的 MainThread / RenderThread / `BLASTBufferQueue`。Perfetto 里能看到不同进程的 `Choreographer#doFrame` 各自独立出现，不挤在同一个线程里。问题几乎不会表现为"主线程互相挤"，而集中在：
 
 - 各窗口帧率可能不同（比如主窗口 120 Hz、PiP 30 Hz）；
-- 各窗口的 `BufferTX` / `acquire fence` 节奏不对齐；
+- 各窗口的 `BufferTX` / `acquire fence` 节奏不同步；
 - SF 每一轮 `vsync-sf` 要在多份窗口状态里选出可以一起合成的一组（per-layer latch，详见 [18.4 混合渲染](04-android-view-mixed.md#surfaceflinger-在多-layer-时的-latch-行为)）。
 
 读跨进程多窗口 trace 时，应用进程内部的 slice 可能都很健康——问题要到 SurfaceFlinger 进程里去找。
@@ -87,13 +96,13 @@ task9_reviewed_date: 2026-04-20
 
 多窗口的性能瓶颈不在于"画的东西多了一倍"，而在于**串行化执行**。两个窗口的绘制任务不能并行，只能排队。
 
-**先澄清一点**：SurfaceFlinger 合成侧已经并行化了——多个 Layer 可以由 HWC 硬件同时合成，跨进程多窗口的帧率互不干扰（见 [18.2](02-android-view-standard.md)）。所以多窗口性能问题的压力几乎全在生产侧——App 进程内部的串行化才是瓶颈所在。下面的分析聚焦同进程场景。
+SurfaceFlinger 合成侧已经并行化了——多个 Layer 可以由 HWC 硬件同时合成，跨进程多窗口的帧率互不干扰（见 [18.2](02-android-view-standard.md)）。因此，同进程多窗口的压力主要落在生产侧：App 进程内部的 UI Thread 和 RenderThread 排队。
 
 ### UI Thread 争抢
 
 Android 的 `Choreographer` 是线程单例的。当 VSync-App 信号到来时，主线程收到**一次**回调，但它必须串行处理**所有**活跃窗口的 Input → Animation → Traversal：
 
-```
+```text
 doFrame() {
     处理 Window A 的 Input/Animation/Traversal  // 可能 8ms
     处理 Window B 的 Input/Animation/Traversal  // 可能 5ms
@@ -233,7 +242,7 @@ sequenceDiagram
 
 ### 典型 Trace 模式
 
-```
+```text
 UI Thread:     |--Traversal A (10ms)--|--Traversal B (5ms)--|
 RenderThread:  |--Sync A--|--Draw A (4ms)--|--Sync B--|--Draw B (3ms)--|
 ```
@@ -244,10 +253,10 @@ RenderThread:  |--Sync A--|--Draw A (4ms)--|--Sync B--|--Draw B (3ms)--|
 
 ### 策略一：合并窗口
 
-**最有效的优化**。如果可能，用 View 的方式实现（如 Fragment、BottomSheetBehavior），避免创建独立 Window Dialog。这样两个窗口会合并到同一个 Surface，`doFrame` 中只有一次 Traversal、一次 SyncFrameState、一次 DrawFrame。
+首选方案是把 Dialog 这类浮层合并进现有 View 层级。可以用 Fragment、BottomSheetBehavior 这类方式实现，避免创建独立 Window Dialog。这样两个窗口会合并到同一个 Surface，`doFrame` 中只有一次 Traversal、一次 SyncFrameState、一次 DrawFrame。
 
 ```java
-// 避免：真正的 Window Dialog（创建独立 Window/Surface）
+// 避免：独立 Window Dialog（创建独立 Window/Surface）
 Dialog dialog = new Dialog(this);
 dialog.setContentView(R.layout.dialog_layout);
 dialog.show();
