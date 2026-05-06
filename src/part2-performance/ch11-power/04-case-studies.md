@@ -12,8 +12,8 @@ confidence: medium-high
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-05-03"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-06"
+reviewed_by: openclaw-task6
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/os/PowerManager.java"
@@ -31,10 +31,10 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
 task2b_state: fixed
 task9_result: needs-rework
@@ -42,6 +42,9 @@ task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-01T04:26:00+08:00"
 task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。需 Task2B 回炉。"
+last_task6_at: "2026-05-06T11:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-11-review.md"
+task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
 ---
 
 # 案例集
@@ -71,7 +74,7 @@ task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2 / P1 0 / 
 
 ## 为什么要看这些案例
 
-前面的 11.1 讲了功耗模型，11.2 讲了 App 端的优化策略，11.3 讲了系统级的省电机制。道理都懂了，但真正拿到一个"用户反馈手机发烫、半天就没电"的问题时，从哪里下手？该看什么工具？怎么从一堆数据中找到耗电的元凶？
+前面的 11.1 讲了功耗模型，11.2 讲了 App 端的优化策略，11.3 讲了系统级的省电机制。道理都懂了，但拿到一个"用户反馈手机发烫、半天就没电"的问题时，从哪里下手？该看什么工具？怎么从一堆数据中找到耗电的元凶？
 
 这也是案例集的目的：带读者走完几个真实的分析过程——从发现问题、定位根因，到验证修复效果。每个案例都对应一个常见的功耗陷阱，走完一遍之后，下次遇到类似现象心里就有谱了。
 
@@ -288,12 +291,12 @@ public class RunningActivity extends AppCompatActivity {
 根因是 **位置请求的生命周期没有和 Activity/Service 的生命周期绑定**。这看似是一个低级错误，但在实际项目中非常常见，原因有三：
 
 1. **跑步 App 通常会启动一个前台服务来保持追踪**，开发者在 Service 中注册了位置请求，但"结束跑步"的 UI 操作只停止了 Service 的业务逻辑，没有调用 `removeLocationUpdates`。
-2. **Android 8.0+ 的后台位置限制**给开发者一种虚假的安全感——以为系统会自动限制后台位置。但这个限制只影响没有前台服务的后台 App。跑步类 App 通常持有前台服务，因此不受此限制。后台位置权限在后续版本持续收紧：Android 10 引入了 `ACCESS_BACKGROUND_LOCATION` 权限（需单独声明，之前 `ACCESS_FINE_LOCATION` 同时覆盖前后台）；Android 11 进一步限制，需要单独弹窗授权后台位置且默认拒绝，用户需主动在设置中开启；Android 12 要求使用后台位置的前台服务必须声明 `foregroundServiceType="location"`。
+2. **Android 8.0+ 的后台位置限制**给开发者一种虚假的安全感——以为系统会自动限制后台位置。但这个限制只影响没有前台服务的后台 App。跑步类 App 通常持有前台服务，因此不受此限制。后台位置权限在后续版本持续变严：Android 10 引入了 `ACCESS_BACKGROUND_LOCATION` 权限（需单独声明，之前 `ACCESS_FINE_LOCATION` 同时覆盖前后台）；Android 11 进一步限制，需要单独弹窗授权后台位置且默认拒绝，用户需主动在设置中开启；Android 12 要求使用后台位置的前台服务必须声明 `foregroundServiceType="location"`。
 3. **测试环境的盲区**：开发时通常用模拟器或短距离测试，GPS 不会长时间运行，问题不容易暴露。
 
 ### 修复方案
 
-修复的关键是：**位置请求必须和它的使用场景绑定生命周期**。如果只在 Activity 可见时需要，就在 `onPause`/`onStop` 中移除；如果是通过前台服务持续追踪，就在 Service 的 `onDestroy` 或业务逻辑结束时移除。
+修复方式是：**位置请求必须和它的使用场景绑定生命周期**。如果只在 Activity 可见时需要，就在 `onPause`/`onStop` 中移除；如果是通过前台服务持续追踪，就在 Service 的 `onDestroy` 或业务逻辑结束时移除。
 
 ```java
 // 修复后 — 生命周期绑定
@@ -319,7 +322,7 @@ public class RunningActivity extends AppCompatActivity {
 }
 ```
 
-如果确实需要在后台持续追踪（如跑步记录 App），更好的方案是：
+如果需要在后台持续追踪（如跑步记录 App），更好的方案是：
 
 ```java
 // 后台追踪场景：在 Service 中管理
@@ -395,7 +398,7 @@ Battery Historian 的 "Mobile Network" 行在整个使用期间都是绿色的�
 
 通过 `adb shell dumpsys netstats` 可以看到目标 App 的网络活动统计：
 
-```
+```text
 Network stats for uid=10085 (com.example.chat):
   Mobile bytes: rx=2.4MB tx=1.8MB
   Network sessions: 127 in 60 minutes
@@ -528,7 +531,7 @@ adb shell dumpsys alarm | grep -A 3 "com.example.news"
 
 输出中可以看到目标 App 设置了一个精确重复闹钟（`RTC_WAKEUP`），间隔 60000ms（60 秒）：
 
-```
+```text
 RTC_WAKEUP #0: Alarm{... type=RTC_WAKEUP when=... com.example.news}
   triggerAtTime: 2026-04-02 14:31:00.000
   interval: 60000  // 60 秒
@@ -564,7 +567,7 @@ alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
 
 根因是 **用 AlarmManager 的精确闹钟来实现定期后台同步，而不是使用 WorkManager 或 JobScheduler**。AlarmManager 的设计初衷是"在特定时间点执行操作"（如闹钟提醒），不是"定期后台任务"。后者的正确工具是 WorkManager，它会和系统其他 App 的任务一起批处理，减少总唤醒次数。
 
-Android 14（API 34）进一步收紧了精确闹钟的权限：只有闹钟类 App 和用户明确授权的 App 才能使用 `SCHEDULE_EXACT_ALARM`。如果 App 不是闹钟，用精确闹钟做后台同步在新系统上会直接失效。
+Android 14（API 34）进一步限制了精确闹钟权限：只有闹钟类 App 和用户明确授权的 App 才能使用 `SCHEDULE_EXACT_ALARM`。如果 App 不是闹钟，用精确闹钟做后台同步在新系统上会直接失效。
 
 [已验证: 官方文档, developer.android.com/about/versions/14/behavior-changes-14#precision-scheduled-alarms]
 
@@ -748,7 +751,7 @@ WorkManager 帮我们管理了 WakeLock 的获取和释放、任务的批处理�
 
 ### 误区二："Battery Historian 已经过时了，不需要学"
 
-Google 确实已经停止维护 Battery Historian，推荐使用 Android Studio 的 Power Profiler（Pixel 6+ 设备支持 Power Rails 数据）。但 Battery Historian 的独特价值在于：它可以分析 `bugreport` 数据，不需要实机连接，适合分析用户远程反馈的功耗问题。对于线下开发阶段，Android Studio Power Profiler 更实时、更精确；对于线上用户问题，Battery Historian 仍然实用。
+Google 已经停止维护 Battery Historian，推荐使用 Android Studio 的 Power Profiler（Pixel 6+ 设备支持 Power Rails 数据）。但 Battery Historian 的独特价值在于：它可以分析 `bugreport` 数据，不需要实机连接，适合分析用户远程反馈的功耗问题。对于线下开发阶段，Android Studio Power Profiler 更实时、更精确；对于线上用户问题，Battery Historian 仍然实用。
 
 [已验证: 官方文档, developer.android.com/topic/performance/power]
 

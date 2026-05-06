@@ -34,18 +34,21 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: pending
 task9_result: needs-rework
 task2b_result: rework-fixed
 task2b_state: fixed
 task9_reviewed_date: "2026-04-20"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-20T20:06:23+08:00"
+last_task6_at: "2026-05-06T11:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-11-review.md"
+task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
 ---
 
 # 9.6 Notification 性能与 ANR
@@ -113,14 +116,14 @@ return true;
 
 - `EnqueueNotificationRunnable` 之后的排序、记录更新、listener fan-out
 - `INotificationListener` 回调
-- SystemUI 中的 `RemoteViews.apply()`、图片解码和真正上屏
+- SystemUI 中的 `RemoteViews.apply()`、图片解码和完成上屏
 
 `INotificationListener.aidl` 在 android-16 中声明为 `oneway interface`。SystemUI 和其他通知监听器属于异步消费者，不能把它们的耗时直接记成调用方 `notify()` 的同步阻塞。
 
 ### ANR 的三种核心触发场景
 
 **场景一：`startForegroundService()` 到 `Service.startForeground()` 的预算被通知构造吃掉。**  
-官方故障文案是 `Context.startForegroundService() did not then call Service.startForeground()`。超时窗口发生在启动前台服务之后、服务真正调用 `startForeground()` 之前。复杂通知构造、图片解码、磁盘读图如果都放在这段路径里，预算会很快耗尽。
+官方故障文案是 `Context.startForegroundService() did not then call Service.startForeground()`。超时窗口发生在启动前台服务之后、服务调用 `startForeground()` 之前。复杂通知构造、图片解码、磁盘读图如果都放在这段路径里，预算会很快耗尽。
 
 更稳妥的写法，是先发一个简单通知满足时限，再异步补全完整版：
 
@@ -188,7 +191,7 @@ if (isUpdate && !r.getNotification().hasCompletedProgress() && !isAutogroup) {
 
 ### 跨进程 inflate 的工作原理
 
-`RemoteViews` 存的不是一棵已经 inflate 好的 View 树，而是“要对哪一个布局做哪些操作”的描述。android-16 的类定义里，动作集合是 `ArrayList<Action> mActions`；真正应用到目标 View 树上时，走的是 `inflateView()` + `performApply()`。
+`RemoteViews` 存的不是一棵已经 inflate 好的 View 树，而是“要对哪一个布局做哪些操作”的描述。android-16 的类定义里，动作集合是 `ArrayList<Action> mActions`；应用到目标 View 树上时，走的是 `inflateView()` + `performApply()`。
 
 ```java
 // frameworks/base/core/java/android/widget/RemoteViews.java
@@ -221,7 +224,7 @@ Android 14 (API 34) 在 `RemoteViews` 的 SystemUI 侧渲染路径引入了两�
 1. **Measure Cache**：当根布局尺寸固定、仅局部文本或图片发生变化时，系统会复用上一轮的测量结果，跳过完整的 layout pass
 2. **Action-diff**：NMS 在分发通知更新时，会对新旧两份 `RemoteViews` 的动作列表做差异比较，只把变化的部分发给 SystemUI 重新应用
 
-对进度条型通知来说，这两层优化意味着：如果布局结构不变、只有进度数字和进度条百分比在变，SystemUI 侧的 CPU 开销可以从"每次完整 inflate + measure"降到"局部文本更新"，实测 CPU 占用下降 30-40%。
+对进度条型通知来说，这两层优化意味着：如果布局结构不变、只有进度数字和进度条百分比在变，SystemUI 侧的 CPU 开销可以从“每次完整 inflate + measure”降到“局部文本更新”。具体收益取决于设备、SystemUI 实现和通知布局复杂度。
 
 注意：这两层优化依赖 SystemUI 侧的实现配合。使用自定义 `RemoteViews` 时，保持根布局尺寸稳定、避免每次 update 都改变布局结构，才能让 Measure Cache 和 Action-diff 生效。
 
@@ -495,7 +498,7 @@ Android 12+ 的通知限流是静默丢弃，超过频率限制的通知会被 N
 
 ### 「自定义通知布局比标准模板性能更好」
 
-恰恰相反。标准通知模板（如 `NotificationCompat.BigTextStyle`）在 SystemUI 中有专门的优化渲染路径，不需要通用的 RemoteViews inflate 流程。自定义布局走的是通用 inflate 路径，每次通知更新都需要完整的反序列化和 View 重建。
+相反，标准通知模板（如 `NotificationCompat.BigTextStyle`）在 SystemUI 中有专门的优化渲染路径，不需要通用的 RemoteViews inflate 流程。自定义布局走的是通用 inflate 路径，每次通知更新都需要完整的反序列化和 View 重建。
 
 ### 「Icon 构造方式对性能没影响」
 
