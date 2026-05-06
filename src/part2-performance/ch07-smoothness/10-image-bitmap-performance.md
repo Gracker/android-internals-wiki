@@ -37,21 +37,21 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_rework_date: "2026-05-06"
 last_rework_by: openclaw-task2b
 last_rework_reason: "P95 Task9回炉(第二轮)：Glide trimMemory RequestManager暂停语义按源码修正为TRIM_MEMORY_MODERATE条件触发"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-05"
+task9_reviewed_date: "2026-05-06"
 task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-last_task9_at: "2026-05-05T09:20:00+08:00"
-task9_review_notes: "2026-05-05 09:20 task9 deep-review: needs-rework。P1 1：Glide trimMemory 的 RequestManager 暂停语义错误；P2 3。"
+last_task9_at: "2026-05-06T08:35:28+08:00"
+task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。"
 last_task6_at: "2026-05-06T08:15:00+08:00"
-task9_result: pending
+task9_result: needs-rework
 ---
 
 # 7.10 图片加载与 Bitmap 性能优化

@@ -12806,6 +12806,35 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T07:39:59+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.10",
+      "section_title": "图片加载与 Bitmap 性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.10 图片加载与 Bitmap 性能优化存在 inBitmap 复用对象语义错误与 AVIF/AV1 硬件能力边界过度外推，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-06-08-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API行为错误",
+          "severity": "P0",
+          "location": "L293-L301 inBitmap 示例注释",
+          "detail": "正文注释写“reusableBitmap 被回收，其像素内存被 newBitmap 接管”。复核 AOSP android-16.0.0_r1 `libs/hwui/jni/BitmapFactory.cpp`：当 `javaBitmap != nullptr` 时，native 侧对复用 Bitmap 执行 `bitmap::reinitBitmap(...)`，随后 `return javaBitmap`；也就是 decode 成功时返回的通常就是 `options.inBitmap` 指向的同一个 Java Bitmap 对象，并不存在旧对象被 recycle、像素内存被另一个新对象接管的语义。",
+          "suggestion": "把示例注释改成“decode 成功时返回值通常与 `options.inBitmap` 是同一对象；其底层像素缓冲被重配置/复用，旧引用不能再当作独立旧图使用”。同时补一句：复用失败会导致 decode 失败/返回 null，不应假设一定能接管。"
+        },
+        {
+          "type": "版本差异/硬件能力边界",
+          "severity": "P1",
+          "location": "L338-L342 AVIF Android 14 硬件加速表述",
+          "detail": "正文把 Android 14 的 AV1/AVIF 能力写成“新设备强制支持 AV1 硬件解码（包括 AVIF Baseline Profile），Android 14+ 设备有硬件加速的 AVIF 解码能力”。公开 Android supported formats 的口径是：Android 12 引入 AVIF 支持；Android 14 起 AVIF baseline profile encoder/decoder mandatory。CDD 中 AV1 hardware decoder 是视频解码能力要求，不能直接等同于 `ImageDecoder`/Bitmap 路径的 AVIF 静态图硬件加速。",
+          "suggestion": "改成“Android 12 支持 AVIF；Android 14 起 baseline profile 的 AVIF 编解码成为平台强制能力。是否硬件加速、解码延迟和功耗表现仍需按设备/解码路径实测，不能把 AV1 视频硬解直接等同为 AVIF 图片硬解”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T08:35:28+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
