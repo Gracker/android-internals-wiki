@@ -1223,3 +1223,17 @@
 - **问题**：Task9 2026-05-06 已判定 RemoteViews Measure Cache/Action-diff 与 Icon.createWithBitmap/HardwareBuffer/Binder buffer 口径不成立。Task2B 标记 completed 后，正文仍保留这些表述。Task6 不裁决技术真伪，仅按 Task9 已有结论重开问题单。
 - **建议**：删除 Measure Cache / Action-diff 版本事实；按资源 ID / URI / Bitmap 三类路径重写图片通知成本模型，避免写成通知图片默认 HardwareBuffer 零拷贝或像素整体进入 Binder buffer。
 - **review 日志**：logs/review/2026-05-06-13-review.md
+
+## [Task9 Deep Review] 13.7 Perfetto 的高级用法 — 2026-05-06 — L178-L192 cold_start_metric_output
+- **类型**：Metric 输出边界
+- **位置**：L178-L192 cold_start_metric_output
+- **问题**：输出 view 外层使用 FROM cold_start_phases LIMIT 1。当 cold_start_phases 为空时，整个 metric 输出 0 行；官方 trace-based metrics walkthrough 的惯用写法是无外层 FROM 的 SELECT TopMetric(...)，这样 repeated 字段为空时仍能输出 proto。
+- **建议**：改成无 FROM 的 SELECT ColdStartMetric(...) AS cold_start_metric；内部 RepeatedField 子查询继续 FROM cold_start_phases。
+- **review 日志**：logs/deep-review/2026-05-06-13-deep-review.md
+
+## [Task9 Deep Review] 13.7 Perfetto 的高级用法 — 2026-05-06 — L678-L698 packet->set_render_pass_info()
+- **类型**：Custom DataSource 示例可执行性
+- **位置**：L678-L698 packet->set_render_pass_info()
+- **问题**：packet->set_render_pass_info() 不是 Perfetto SDK 默认 TracePacket API；它要求自定义 proto 扩展、生成代码并让 Trace Processor 侧能导入/解析。正文虽提到“定义自定义 proto”，但最小骨架没有交代 TracePacket 字段扩展和解析注册，读者复制会编译失败。
+- **建议**：要么改用官方 set_for_testing() 最小示例；要么补全自定义 TracePacket proto 扩展、生成代码、Trace Processor 解析/SQL 查询边界。
+- **review 日志**：logs/deep-review/2026-05-06-13-deep-review.md
