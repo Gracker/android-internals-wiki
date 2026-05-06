@@ -8984,7 +8984,7 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-11-11.1-external-review.md",
       "reopened_by": "task6-review",
       "reopened_at": "2026-05-06T20:13:00+08:00",
@@ -8994,7 +8994,9 @@
         "intake/research-gaps.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-06T20:37:00+08:00"
+      "updated_at": "2026-05-06T20:37:00+08:00",
+      "completed_at": "2026-05-07T03:43:33+08:00",
+      "completed_reason": "P0 PowerMonitor API入口改为SystemHealthManager; P0 GPU power_profile gpu.active标准键不存在已修正为间接分析路径; P1 PAS/ADPF+ODPM证据链降级为研究假设"
     },
     {
       "section": "11.2",
@@ -10100,8 +10102,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-30T07:23:31+08:00",
-      "status": "pending",
-      "source_file": "2026-04-29-11-12.4-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-11-12.4-external-review.md",
+      "completed_at": "2026-05-07T03:43:33+08:00",
+      "completed_reason": "P0 0-RTT安全风险描述已更新(Android 15 Anti-replay机制); P1 ECH Advanced Protection Mode强制化已补充; P1 ECH HPKE CPU开销量化已添加"
     },
     {
       "section": "12.1",
