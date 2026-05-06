@@ -43,17 +43,17 @@ related_chapters:
 - '8.2'
 - '8.3'
 - '16.1'
-task9_result: needs-rework
+task9_result: fixed
 last_task9_at: "2026-05-03T06:20:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-03"
 pipeline_stage: task6_pending
 task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 review_round: 3
-last_task2b_at: "2026-04-25T22:46:46+08:00"
+last_task2b_at: "2026-05-06T09:49:49.432169"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
@@ -441,7 +441,9 @@ profilingManager.requestProfiling(
 
 公开 API 支持四种类型：`PROFILING_TYPE_SYSTEM_TRACE`、`PROFILING_TYPE_HEAP_PROFILE`、`PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_STACK_SAMPLING`。不存在 `PROFILING_TYPE_JAVA_TRACE` 常量。
 
-Android 16 进一步强化了系统触发能力——应用通过 `addProfilingTriggers()` 预先注册触发条件（如 ANR），当触发条件满足时系统自动从背景环形缓冲区中导出 Trace，无需在 ANR 当下同步抓取。触发条件注册后，采样结果通过 `ProfilingResult` 回调或文件交付，存在采样时间窗限制。这对捕获难以复现的启动卡顿特别有价值。
+Android 16 进一步强化了系统触发能力——应用通过 `ProfilingManager.addProfilingTriggers()` 预先注册触发条件（如 ANR、`onFullyDrawn`），系统在触发条件满足时从背景环形缓冲区导出 Trace。关键前提：**应用必须预先注册触发器**，系统不会对所有 App 自动采集 ANR Trace。注册后，系统在采样时间窗内启动后台 trace，结果通过 `ProfilingResult` 回调或文件交付。这对捕获难以复现的启动卡顿特别有价值，但它不是“无需应用参与”的自动机制——开发者需要在代码中完成触发器注册。
+
+触发式采集与手动 `requestProfiling()` 的区别：`requestProfiling()` 是一次性请求，调用后立即开始采样；`addProfilingTriggers()` 注册的是持续监听条件，系统在后续运行中满足条件时自动触发，不需要在 ANR 当下同步抓取。[已验证：AOSP `ProfilingManager.java` / `ProfilingTrigger.java` android-16.0.0_r1]
 
 ### 如何通过 Trace 判断编译瓶颈
 
