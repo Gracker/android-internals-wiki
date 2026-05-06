@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T08:15:00+08:00",
+  "generated_at": "2026-05-06T09:07:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -9,13 +9,13 @@
       "unknown": 34,
       "ready-to-publish": 111,
       "task2b_pending": 85,
-      "task9_pending": 21,
-      "task6_pending": 1
+      "task9_pending": 22,
+      "task6_pending": 0
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 207,
-      "revisiting": 9,
+      "reviewed": 208,
+      "revisiting": 8,
       "revising": 1,
       "done": 2
     },
@@ -44,13 +44,13 @@
       "unknown": 34,
       "ready-to-publish": 111,
       "task2b_pending": 85,
-      "task9_pending": 21,
-      "task6_pending": 1
+      "task9_pending": 22,
+      "task6_pending": 0
     },
     "task6_state_counts": {
       "unknown": 33,
-      "reviewed": 207,
-      "revisiting": 9,
+      "reviewed": 208,
+      "revisiting": 8,
       "revising": 1,
       "done": 2
     },
@@ -2636,10 +2636,10 @@
       "last_verified": "2026-04-13",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -2648,8 +2648,9 @@
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T08:35:28+08:00",
-      "task9_review_notes": "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2。",
-      "last_task6_at": "2026-05-06T08:15:00+08:00"
+      "task9_review_notes": "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄",
+      "last_task6_at": "2026-05-06T09:07:00+08:00",
+      "task6_review_notes": "2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
     },
     "src/part2-performance/ch07-smoothness/11-webview-performance.md": {
       "path": "src/part2-performance/ch07-smoothness/11-webview-performance.md",
