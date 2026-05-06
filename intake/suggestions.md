@@ -1204,3 +1204,15 @@
 - **问题**：正文把 Oryon “双集群”写成“只有两个频率档位”，并把 Dimensity 全大核写成“三个频率档位分布紧凑”。Perfetto 中更准确的观察对象是 cpufreq policy/cluster 轨道；每个 policy 内仍有多个频点。当前也缺 8 Elite 与 Dimensity 9400 同场景 sched/cpufreq trace。
 - **建议**：改成“两组/三组 cpufreq policy 或 cluster 轨道，每组包含多个频点”；保留迁移次数/频率曲线判断时补同场景 Perfetto 数据，否则标 [待验证]。
 - **review 日志**：logs/deep-review/2026-05-06-11-deep-review.md
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-05-06
+- **类型**：源码准确性/版本边界
+- **位置**：L342 AVIF 硬件能力 fallback 描述
+- **问题**：正文把系统软件解码 fallback 具体写成 `libdav1d`。AOSP android-16.0.0_r1 的 Skia Android target 使用 `SkCrabbyAvifCodec.cpp`，依赖 `libcrabbyavif_ffi` / `libheif` / `libmediandk`；同 tag 下没有 `platform/external/dav1d`。`libdav1d` 不能作为平台默认口径。
+- **建议**：改成“退回系统软件 AVIF 解码路径”，或按具体版本写 `SkCrabbyAvifCodec` / `libcrabbyavif_ffi`；除非引用厂商或 App 自带解码库，不指定 `libdav1d`。
+
+## [Task9 Deep Review] 7.10 图片加载与 Bitmap 性能优化 — 2026-05-06
+- **类型**：Trace 观察条件
+- **位置**：L490 Perfetto “看调用栈”方法
+- **问题**：默认 `sched` / FrameTimeline / atrace 抓取通常不会自动带 Java/Native 方法调用栈，读者不能直接从主线程 CPU slice 展开到 `BitmapFactory.nativeDecode*`。
+- **建议**：补充采集前提：需要开启 callstack sampling、simpleperf/Perfetto CPU profiler、method tracing，或在业务解码包装层加自定义 Trace；默认调度 trace 只能定位线程长时间运行。
