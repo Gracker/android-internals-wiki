@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-05-07T02:05:00+08:00",
+  "generated_at": "2026-05-07T03:07:54+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
-    "last_updated": "2026-05-07T02:05:00+08:00",
+    "last_updated": "2026-05-07T03:07:54+08:00",
     "pipeline_stage_counts": {
       "unknown": 2,
       "ready-to-publish": 124,
@@ -1843,9 +1843,9 @@
       "task9_reviewed_date": "2026-05-07",
       "last_task9_review_log": "logs/deep-review/2026-05-07-02-deep-review.md",
       "task9_review_notes": "2026-05-07 Task9 02:20：needs-rework。P0 3 / P1 0 / P2 0；NativeAllocationRegistry、Scudo MTE、16KB linker compat 三处源码锚点/函数名错误。",
-      "last_task6_at": "2026-05-07T02:05:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-07-02-review.md",
-      "task6_review_notes": "2026-05-07 Task6：pass-light-edit。小修 13 处；无新增 Task2B 回炉项。因 Task9 pending 且 queue 有既有 pending 条目，未自动晋升。"
+      "last_task6_at": "2026-05-07T03:07:54+08:00",
+      "last_task6_review_log": "logs/review/2026-05-07-03-review.md",
+      "task6_review_notes": "2026-05-07 Task6 03:07：pass-light-edit。小修 6 处；无新增 Task2B 回炉项。Task9 仍 needs-rework，且 queue.json 有既有 pending 条目，未自动晋升。"
     },
     "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md": {
       "path": "src/part1-fundamentals/ch04-memory/07-16kb-page-size.md",
@@ -7958,6 +7958,29 @@
           "auto_promoted": true
         }
       ]
+    },
+    {
+      "date": "2026-05-07",
+      "time": "03:07",
+      "task": "task6-review",
+      "review_log": "logs/review/2026-05-07-03-review.md",
+      "sections_reviewed": [
+        {
+          "section": "4.6",
+          "title": "内存相关的版本演进",
+          "result": "pass-light-edit",
+          "fixes": 6,
+          "issues": 0,
+          "auto_promoted": false
+        }
+      ],
+      "skipped": [
+        {
+          "section": "19.27",
+          "title": "千万级 DAU 的 APM 端侧架构",
+          "reason": "内容不充分：outline 后正文 1 行，有效内容 0 行"
+        }
+      ]
     }
   ],
   "progress": {
@@ -11590,6 +11613,15 @@
       "fixes": 18,
       "issues": 0,
       "notes": "L1/L2 小修；补齐 sources，清理编辑痕迹，MGLRU 数字降级为方向性表述；无新增 Task2B 回炉项；待 Task9 复审。"
+    },
+    "4.6": {
+      "date": "2026-05-07",
+      "time": "03:07",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "fixes": 6,
+      "issues": 0,
+      "notes": "补充代码块用途句，补齐 PSS 公式代码块语言标记，清理 ASYMM 段禁用句式；无新增 Task2B 回炉项；Task9 仍 needs-rework，queue.json 仍有既有 pending。"
     }
   },
   "2026-05-04-20-task9": {
@@ -12302,5 +12334,28 @@
       "16.4 Android 17 + Kernel 6.12 系统级性能优化"
     ],
     "notes": "候选池仅 4.6/16.4 两节；4.6 仍有源码锚点错误，16.4 无 P0/P1 自动晋升。"
+  },
+  "2026-05-07-03-task6": {
+    "task": "task6-review",
+    "time": "2026-05-07T03:07:54+08:00",
+    "review_log": "logs/review/2026-05-07-03-review.md",
+    "sections": [
+      {
+        "section": "4.6",
+        "title": "内存相关的版本演进",
+        "result": "pass-light-edit",
+        "fixes": 6,
+        "issues": 0,
+        "auto_promoted": false
+      }
+    ],
+    "skipped": [
+      {
+        "section": "19.27",
+        "title": "千万级 DAU 的 APM 端侧架构",
+        "reason": "内容不充分：outline 后正文 1 行，有效内容 0 行"
+      }
+    ],
+    "auto_finalized": []
   }
 }

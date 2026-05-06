@@ -43,22 +43,22 @@ tags: ['memory-evolution', 'art', 'dalvik', 'gc', 'bitmap', 'scudo', 'mte', 'lar
 related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
-review_count: 5
-pipeline_stage: task6_pending
-task6_state: revisiting
+review_count: 6
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: "2026-05-07T02:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-02-review.md"
-task6_review_notes: "2026-05-07 Task6：pass-light-edit。小修 13 处：压低高频填充词，清理 Bitmap 统计口径标题和 MTE 引导句，去除重复 last_task2b_at；无新增 Task2B 回炉项。因 Task9 仍为 pending 且 queue 有既有 pending 条目，未自动晋升。"
+last_task6_at: "2026-05-07T03:07:54+08:00"
+last_task6_review_log: "logs/review/2026-05-07-03-review.md"
+task6_review_notes: "2026-05-07 Task6 03:07：pass-light-edit。小修 6 处：补充代码块用途句，补齐 PSS 公式代码块语言标记，清理 ASYMM 段禁用句式与 frontmatter 禁用词；无新增 Task2B 回炉项。因 Task9 仍为 needs-rework 且 queue 有既有 pending 条目，未自动晋升。"
 task9_state: reviewed
 task9_result: needs-rework
 last_task9_at: "2026-05-07T02:20:00+08:00"
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: "2026-05-01T14:40:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-07"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB 页内部碎片公式错误，RELRO 兼容模式安全断言缺源码闭环 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。 | 2026-05-07 Task9 02:20：needs-rework。P0 3 / P1 0 / P2 0；NativeAllocationRegistry、Scudo MTE、16KB linker compat 三处源码锚点/函数名错误，写入 queue。"
+task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB 页内部碎片公式错误，RELRO 兼容模式安全断言缺源码证据链 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。 | 2026-05-07 Task9 02:20：needs-rework。P0 3 / P1 0 / P2 0；NativeAllocationRegistry、Scudo MTE、16KB linker compat 三处源码锚点/函数名错误，写入 queue。"
 last_task9_review_log: "logs/deep-review/2026-05-07-02-deep-review.md"
 ---
 
@@ -351,6 +351,8 @@ Android 8.0 Bitmap 迁移到 Native 堆后，进程整体内存的构成发生�
 
 ### 如何查看设备的内存配置
 
+这些命令分别对应系统属性和单进程内存快照。检查时先看 heap 配置，再看 `dumpsys meminfo` 中的 Java / Native / Graphics 分布。
+
 ```bash
 # 查看堆大小配置
 adb shell getprop dalvik.vm.heapstartsize
@@ -408,6 +410,8 @@ ISA 时间线说明的是硬件能力在扩展，不等于同一时间 Android �
 
 **Asynchronous（异步模式）**：tag 不匹配后会在下一次内核入口结算，报 `SIGSEGV`（`SEGV_MTEAERR`）。诊断信息更粗，但运行开销更低，更接近发布阶段的使用方式。
 
+Manifest 中启用异步模式时，只需要在 `application` 上声明 `memtagMode`：
+
 ```xml
 <!-- 在 Manifest 中启用 MTE 异步模式 -->
 <application android:memtagMode="async" ... />
@@ -418,7 +422,7 @@ Stack Tagging 属于另一条能力线。它要求 JNI / NDK 代码重新用 MTE
 <!-- AIW-源码调研-2026-04-26: MTE ASYMM 深度补充 -->
 ### [自动发现] Asymmetric（ASYMM）模式：生产环境推荐方案
 
-在「App 侧只看 sync / async」的框架下，文档只暴露了 sync 和 async 两个模式。但从 Arm v8.7-A 开始，硬件层面存在第三个模式——**Asymmetric（ASYMM）**，它对读取执行同步检查，对写入执行异步检查。这意味着：
+在「App 侧只看 sync / async」的框架下，文档只暴露了 sync 和 async 两个模式。但从 Arm v8.7-A 开始，硬件层面存在第三个模式——**Asymmetric（ASYMM）**，它对读取执行同步检查，对写入执行异步检查。具体表现为：
 
 - **读取越界（如 use-after-free read）**：立即触发 `SEGV_MTESERR`，提供精确错误位置
 - **写入越界**：延迟到下次内核入口触发 `SEGV_MTEAERR`，开销与 async 相当
@@ -510,9 +514,9 @@ Google 官方测试给出的量化结果包括：
 
 PSS 的计算与页大小无关，它的本质是"按共享进程数分摊"：
 
-```
+```text
 PSS = Private_Clean + Private_Dirty
-    + (Shared_Clean / N_sharers) 
+    + (Shared_Clean / N_sharers)
     + (Shared_Dirty / N_sharers)
 ```
 
