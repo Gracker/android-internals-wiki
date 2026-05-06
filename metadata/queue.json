@@ -8669,7 +8669,7 @@
       "section": "9.6",
       "section_title": "Notification 性能与 ANR",
       "priority": 95,
-      "reason": "[Task6 Review] 9.6 Notification 性能与 ANR 仍有 Task9 P0 技术问题残留，需回炉修正",
+      "reason": "[Deep Tech Review] 9.6 Notification 性能与 ANR 本轮复审仍有技术问题：P0 L485 版本演进表 Android 14 行；P0 L245-L247、L511-L513 Icon.createWithBitmap()/Bitmap 传输路径",
       "review_issues": [
         {
           "type": "源码错误/版本差异",
@@ -8688,6 +8688,22 @@
           "location": "版本演进表 Android 14 行；图片通知成本阶梯；常见问题「Icon 构造方式对性能没影响」",
           "detail": "[Task6 复审] Task9 2026-05-06 已判定 RemoteViews Measure Cache/Action-diff 与 Icon.createWithBitmap/HardwareBuffer/Binder buffer 口径不成立。Task2B 标记 completed 后，正文仍保留 Android 14 Measure Cache / Action-diff 版本事实，以及 `Icon.createWithBitmap()` 像素序列化进 Parcel / HardwareBuffer 相关表述，需再次回炉。Task6 不裁决技术真伪，仅按 Task9 已有结论重开问题单。",
           "suggestion": "按 Task9 原建议删除 Measure Cache / Action-diff 的版本事实；图片通知成本模型改为资源 ID / URI / Bitmap 三类路径的引用、解码、共享内存/FD、SystemUI 绑定与 GPU 合成成本，不再写通知图片默认 HardwareBuffer 零拷贝或像素整体进入 Binder buffer。"
+        },
+        {
+          "level": "P0",
+          "type": "版本差异/源码错误",
+          "location": "L485 版本演进表 Android 14 行",
+          "detail": "正文仍写 Android 14 引入 RemoteViews Measure Cache 和 Action-diff。复核 android-16.0.0_r1 SystemUI NotificationContentInflater.canReapplyRemoteView() 只按 package/layoutId/FLAG_REAPPLY_DISALLOWED 判断是否复用 View，applyRemoteView() 在复用时调用 RemoteViews.reapply()/reapplyAsync()；未见 NMS 或 SystemUI 做 action 级 diff 分发，也不是 Android 14 首次引入的版本事实。",
+          "suggestion": "删除 Android 14 Measure Cache / Action-diff 版本结论；改为“SystemUI 在 package/layoutId 不变时可复用 View 并 reapply，但仍会执行新 RemoteViews 的 actions”。",
+          "evidence": "AOSP android-16.0.0_r1 packages/SystemUI/.../NotificationContentInflater.java canReapplyRemoteView/applyRemoteView。"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误/内存机制错误",
+          "location": "L245-L247、L511-L513 Icon.createWithBitmap()/Bitmap 传输路径",
+          "detail": "正文写 Icon.writeToParcel() 先调用 Bitmap.asHardwareBuffer() 转 HardwareBuffer 并写 FD，FAQ 又写像素数据序列化进 Parcel。AOSP android-16.0.0_r1 Icon.writeToParcel() 对 TYPE_BITMAP/TYPE_ADAPTIVE_BITMAP 调用的是 ((Bitmap)mObj1).asShared()，随后 getBitmap().writeToParcel()；Bitmap.asShared() 创建 immutable shared-memory backed bitmap。通知 Icon 路径不是默认 HardwareBuffer，也不能简单写成大图像素整体进入 Binder buffer。",
+          "suggestion": "按 Resource/URI/Bitmap 三类路径重写成本模型：Bitmap 路径写 shared memory/ashmem-backed bitmap、FD/Parcelable 传递、SystemUI 解码/绑定/渲染成本；删除 asHardwareBuffer、HardwareBuffer 零拷贝和“大图像素整体进 Binder buffer”的确定性描述。",
+          "evidence": "AOSP android-16.0.0_r1 graphics/java/android/graphics/drawable/Icon.java writeToParcel(); graphics/java/android/graphics/Bitmap.java asShared()。"
         }
       ],
       "added_by": "external-ai-review",
@@ -8697,7 +8713,7 @@
       "material_paths": [
         "intake/suggestions.md"
       ],
-      "updated_at": "2026-05-06T13:13:29+08:00",
+      "updated_at": "2026-05-06T13:39:29+08:00",
       "completed_at": "2026-05-06T13:04:10+08:00",
       "completed_reason": "P0 RemoteViews增量更新已修正为reapply机制（删除Measure Cache/Action-diff）；P0 Icon图片通知成本模型已重写（HardwareBuffer FD共享路径+三档成本阶梯）",
       "reopened_by": "task6-review",
@@ -12940,6 +12956,68 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T10:38:04+08:00",
       "status": "pending"
+    },
+    {
+      "section": "5.4",
+      "section_title": "DVFS 与功耗管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.4 DVFS 与功耗管理 本轮复审仍有技术问题：P0 L391-L393 SCMI Performance Protocol protocol_id；P0 L247-L260 android16-6.12 sugov_get_util() 伪代码；P1 L225 schedutil 调频入口函数名",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误/Trace 过滤错误",
+          "location": "L391-L393 SCMI Performance Protocol protocol_id",
+          "detail": "正文写 SCMI Performance Protocol 的 protocol_id 为 0x3。kernel/common android16-6.12 的 include/linux/scmi_protocol.h 定义 SCMI_PROTOCOL_PERF = 0x13；drivers/firmware/arm_scmi/perf.c 中 trace_scmi_fc_call 传入的也是 SCMI_PROTOCOL_PERF。按 0x3 过滤 Perfetto scmi_fc_call 会匹配不到 Performance Protocol。",
+          "suggestion": "将 protocol_id 修为 0x13，并补一句 0x10 是 SCMI Base Protocol；Perfetto 过滤条件应使用 protocol_id=0x13 + msg_id=0x7/0x8。",
+          "evidence": "kernel/common android16-6.12 include/linux/scmi_protocol.h: SCMI_PROTOCOL_PERF = 0x13; drivers/firmware/arm_scmi/perf.c trace_scmi_fc_call(SCMI_PROTOCOL_PERF, PERF_LEVEL_SET/GET, ...)。"
+        },
+        {
+          "level": "P0",
+          "type": "源码错误/API 签名错误",
+          "location": "L247-L260 android16-6.12 sugov_get_util() 伪代码",
+          "detail": "正文伪代码把 android16-6.12 写成 scx_switched_all() 时才取 scx_cpuperf_target、effective_cpu_util() 不接返回值、sugov_effective_cpu_perf(cpu, util, max, &bw_min)。实际源码是 util = scx_cpuperf_target(cpu) 起算；!scx_switched_all() 时叠加 cpu_util_cfs_boost(cpu)；util = effective_cpu_util(cpu, util, &min, &max)；sg_cpu->bw_min = min；sg_cpu->util = sugov_effective_cpu_perf(cpu, util, min, max)。",
+          "suggestion": "按 android16-6.12 真实调用链重写伪代码；如果只保留抽象流程，不要写成接近 C 源码的函数签名。",
+          "evidence": "kernel/common refs/heads/android16-6.12 kernel/sched/cpufreq_schedutil.c lines around sugov_get_util/sugov_effective_cpu_perf。"
+        },
+        {
+          "level": "P1",
+          "type": "源码锚点不精确",
+          "location": "L225 schedutil 调频入口函数名",
+          "detail": "正文写入口是 sugov_update_single() 和 sugov_update_shared()；android15-6.6/android16-6.12 中单 CPU policy 入口实际拆为 sugov_update_single_freq() / sugov_update_single_perf()，公共逻辑在 sugov_update_single_common()。读者按 sugov_update_single() 搜源码会找不到函数定义。",
+          "suggestion": "改为 sugov_update_single_freq()/sugov_update_single_perf()/sugov_update_shared()，并说明 sugov_update_single_common() 承载公共逻辑。",
+          "evidence": "kernel/common android15-6.6 与 android16-6.12 kernel/sched/cpufreq_schedutil.c。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T13:39:29+08:00",
+      "status": "pending",
+      "updated_at": "2026-05-06T13:39:29+08:00"
+    },
+    {
+      "section": "13.7",
+      "section_title": "Perfetto 的高级用法",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 13.7 Perfetto 的高级用法 本轮复审仍有技术问题：P1 L255 Perfetto Standard Library 模块列表",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P1",
+          "type": "API/模块名错误",
+          "location": "L255 Perfetto Standard Library 模块列表",
+          "detail": "正文把 android_cpu、android_startup、android_jank 列为 Perfetto Standard Library 模块。官方 stdlib 模块使用点分命名，例如 android.cpu.cpu_per_uid/android.cpu.cluster_type、android.startup.startups/android.startup.startup_breakdowns、android.frames.jank_type/android.frames.per_frame_metrics；android_cpu/android_startup/android_jank 是旧版 v1 metric 名称口径，不应作为 referenced_modules 或 INCLUDE PERFETTO MODULE 的模块名。",
+          "suggestion": "把示例模块改成点分 stdlib 模块名，并明确 v1 metric id 与 Standard Library module name 是两套命名。",
+          "evidence": "Perfetto repo src/trace_processor/perfetto_sql/stdlib/android/cpu、android/startup、android/frames；perfetto.dev Trace Summary referenced_modules 示例。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T13:39:29+08:00",
+      "status": "pending",
+      "updated_at": "2026-05-06T13:39:29+08:00"
     }
   ],
   "completed": [

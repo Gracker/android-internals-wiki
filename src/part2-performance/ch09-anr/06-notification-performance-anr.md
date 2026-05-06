@@ -39,19 +39,19 @@ task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task2b_result: fixed
 task2b_state: pending
-task9_reviewed_date: "2026-05-06"
+task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T11:39:00+08:00"
+last_task9_at: "2026-05-06T13:39:29+08:00"
 last_task6_at: "2026-05-06T13:13:29+08:00"
 last_task2b_at: "2026-05-06T13:04:10+08:00"
 last_task6_review_log: "logs/review/2026-05-06-13-review.md"
 task6_review_notes: "2026-05-06 Task6 13:13：回炉后写作复审；L1/L2 轻修 1 处（标题匹配锚点）；发现 Task9 P0 技术问题残留（RemoteViews 版本表、Icon.createWithBitmap/HardwareBuffer/Binder buffer 口径），已重开 queue P95 交 Task2B。"
-last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
-task9_review_notes: "2026-05-06 Task9 11:39:needs-rework。P0 2:Android 14 Measure Cache/Action-diff 与通知 HardwareBuffer 零拷贝/Binder buffer 口径不成立;P2 1:标准模板仍经 SystemUI apply/reapply,已有优化路径但不能写成不走 RemoteViews。"
+last_task9_review_log: "logs/deep-review/2026-05-06-13-deep-review.md"
+task9_review_notes: "2026-05-06 Task9 13:39：needs-rework。P0 2 / P1 0 / P2 1。L485 版本演进表 Android 14 行；L245-L247、L511-L513 Icon.createWithBitmap()/Bitmap 传输路径"
 ---
 
 # 9.6 Notification 性能与 ANR

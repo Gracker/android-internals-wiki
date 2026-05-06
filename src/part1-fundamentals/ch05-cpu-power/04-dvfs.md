@@ -26,17 +26,17 @@ drafted_by: "openclaw-task2"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-06"
-task2b_state: fixed
+task9_result: needs-rework
+task9_reviewed_date: 2026-05-06
+task2b_state: pending
 task2b_result: fixed
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-06T02:28:51+08:00"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-06T13:39:29+08:00"
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
@@ -45,6 +45,8 @@ review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1�
 last_task2b_at: "2026-05-06T01:45:17+08:00"
 last_task6_review_log: "logs/review/2026-05-06-13-review.md"
 task6_review_notes: "2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-06-13-deep-review.md"
+task9_review_notes: "2026-05-06 Task9 13:39：needs-rework。P0 2 / P1 1 / P2 0。L391-L393 SCMI Performance Protocol protocol_id；L247-L260 android16-6.12 sugov_get_util() 伪代码；L225 schedutil 调频入口函数名"
 ---
 
 # DVFS 与功耗管理
