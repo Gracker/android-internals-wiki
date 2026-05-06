@@ -13020,6 +13020,32 @@
       "added_at": "2026-05-06T13:39:29+08:00",
       "status": "pending",
       "updated_at": "2026-05-06T13:39:29+08:00"
+    },
+    {
+      "section": "9.6",
+      "section_title": "Notification 性能与 ANR",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 9.6 Notification 性能与 ANR 仍存在 Icon Bitmap 传输路径和 NotificationListeners 源码路径事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述",
+          "detail": "[P0] 正文写 Icon.createWithBitmap(bitmap) 在可变 Bitmap 或不兼容格式下会回退到像素数据写 Parcel，并进一步挤占 Binder 内核缓冲区。复核 AOSP android-16.0.0_r1：Icon.writeToParcel() 对 TYPE_BITMAP / TYPE_ADAPTIVE_BITMAP 会在 !mCachedAshmem 时无条件调用 ((Bitmap)mObj1).asShared()，随后 getBitmap().writeToParcel()；Bitmap.asShared() 要么返回已有 immutable shared-memory backed bitmap，要么 createAshmemBitmap()，创建失败时抛 RuntimeException，并不存在通知 Icon 路径下“回退到像素数据写 Parcel”的分支。",
+          "suggestion": "删除“可变 Bitmap / 不兼容格式会回退像素写 Parcel、挤占 Binder buffer”的确定性描述。改成：Icon Bitmap 路径的主要成本是 asShared() 可能触发的 shared memory 副本、FD/Parcelable 传递、SystemUI 侧 bitmap 对象重建与渲染/纹理上传；普通 Bitmap.writeToParcel() 的非 Icon 场景不要外推到通知 Icon。"
+        },
+        {
+          "type": "源码路径错误",
+          "location": "L518 参考资料 NotificationListeners.java",
+          "detail": "[P0] 参考资料列出 frameworks/base/services/core/java/com/android/server/notification/NotificationListeners.java。复核 AOSP android-16.0.0_r1 的 services/core/java/com/android/server/notification/ 目录没有该文件；NotificationListeners 是 NotificationManagerService.java 内部类（class NotificationListeners extends ManagedServices，约在 android-16.0.0_r1 第 12997 行）。读者按当前路径无法定位源码。",
+          "suggestion": "将参考资料改为 frameworks/base/services/core/java/com/android/server/notification/NotificationManagerService.java — 内部类 NotificationListeners；如需要单独说明 listener 管理，可标注 “NotificationManagerService.NotificationListeners”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T14:37:25+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
