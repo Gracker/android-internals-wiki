@@ -26,15 +26,15 @@ sources:
     path: "多来源综合（web search 验证）"
 tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-task6_state: reviewed
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: needs-rework
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-06"
-task2b_state: pending
+task2b_state: fixed
 last_task6_at: "2026-05-06T20:13:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-20-review.md"
 task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。"
@@ -44,7 +44,7 @@ last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。"
 
 task2b_result: fixed
-last_task2b_at: "2026-05-06T17:59:16+08:00"
+last_task2b_at: "2026-05-06T23:02:59"
 ---
 
 # SoC 平台差异
@@ -90,7 +90,7 @@ last_task2b_at: "2026-05-06T17:59:16+08:00"
 
 Android 生态中的旗舰 SoC 主要来自四家公司，每家的设计哲学和技术路线都有明显差异。我们先对这四个平台建立一个整体认知，然后再逐个维度深入。
 
-**高通 Snapdragon** 是 Android 生态中使用最广泛的旗舰 SoC 系列。从 Snapdragon 8 Gen 3 到 8 Elite，高通一直保持着综合性能的领先地位，尤其在 GPU 渲染和游戏性能方面。高通的独特之处在于它几乎实现了全自研：CPU 方面，从 8 Elite 开始采用收购 Nuvia 后自研的 Oryon 核心（与苹果 M 系列同源），不再使用 ARM 公版 Cortex 核心；GPU 方面的 Adreno 系列一直是自研的；基带更是高通的传统优势。这种全自研策略让高通可以更深入地优化各组件之间的协同。
+**高通 Snapdragon** 是 Android 生态中使用最广泛的旗舰 SoC 系列。从 Snapdragon 8 Gen 3 到 8 Elite，高通一直保持着综合性能的领先地位，尤其在 GPU 渲染和游戏性能方面。高通的独特之处在于它几乎实现了全自研：CPU 方面，从 8 Elite 开始采用收购 Nuvia 后自研的 Oryon 核心（开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历），不再使用 ARM 公版 Cortex 核心；GPU 方面的 Adreno 系列一直是自研的；基带更是高通的传统优势。这种全自研策略让高通可以更深入地优化各组件之间的协同。
 
 **联发科 Dimensity** 近几年在旗舰市场的进步非常显著。Dimensity 9300 和 9400 采用了激进的「全大核」策略——取消传统的小核心，全部使用 Cortex-X 系列和 A720 等性能核心。这种设计在多核性能上有明显优势，但也对功耗管理和散热提出了更高要求。联发科使用 ARM 公版 CPU 核心，GPU 则采用 ARM 的 Immortalis 系列（高端）或 Mali 系列（中端）。联发科的芯片通常在性价比方面有优势，在中端市场的份额尤其高。
 

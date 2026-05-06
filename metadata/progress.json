@@ -10738,6 +10738,16 @@
       "date": "2026-04-29",
       "fixed_by": "openclaw-task2b",
       "issues_fixed": 1
+    },
+    {
+      "section": "16.4",
+      "date": "2026-05-06T23:02:59",
+      "round": "task2b-rework"
+    },
+    {
+      "section": "17.2",
+      "date": "2026-05-06T23:02:59",
+      "round": "task2b-rework"
     }
   ],
   "2026-04-29-15-task9": {
