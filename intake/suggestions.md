@@ -1191,3 +1191,16 @@
 - **建议**：改为“默认 timeout 60s；Watchdog 按半程约 30s 做中间检查，满 60s 未完成才判定超时”。
 - **review 日志**：logs/deep-review/2026-05-06-10-deep-review.md
 
+## [Task9 Deep Review] 9.6 Notification 性能与 ANR — 2026-05-06 — L501 标准模板 RemoteViews 口径
+- **类型**：源码准确性
+- **位置**：L501 标准通知模板性能误区
+- **问题**：正文写标准通知模板“不需要通用的 RemoteViews inflate 流程”。AOSP/SystemUI 仍会生成并 apply/reapply RemoteViews，只是系统模板布局稳定、缓存/复用和 SystemUI 专用处理更可控。
+- **建议**：改成“标准模板通常布局更稳定、SystemUI 适配更成熟，可减少自定义 RemoteViews 带来的布局复杂度和图片绑定风险”，不要写成完全不走 RemoteViews。
+- **review 日志**：logs/deep-review/2026-05-06-11-deep-review.md
+
+## [Task9 Deep Review] 17.2 SoC 平台差异 — 2026-05-06 — L106-L112/L169 cpufreq policy 与实机数据
+- **类型**：数据缺失
+- **位置**：L106-L112、L169 CPU Frequency Track / “两个频率档位”
+- **问题**：正文把 Oryon “双集群”写成“只有两个频率档位”，并把 Dimensity 全大核写成“三个频率档位分布紧凑”。Perfetto 中更准确的观察对象是 cpufreq policy/cluster 轨道；每个 policy 内仍有多个频点。当前也缺 8 Elite 与 Dimensity 9400 同场景 sched/cpufreq trace。
+- **建议**：改成“两组/三组 cpufreq policy 或 cluster 轨道，每组包含多个频点”；保留迁移次数/频率曲线判断时补同场景 Perfetto 数据，否则标 [待验证]。
+- **review 日志**：logs/deep-review/2026-05-06-11-deep-review.md

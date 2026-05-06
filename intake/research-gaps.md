@@ -12541,3 +12541,19 @@ Android 17 / ART generational CMC 对 WeakReference、ReferenceQueue 入队时�
 
 ### 关联章节
 1.4, 9.2, 9.3, 9.4
+
+## [2026-05-06] 17.2 SoC 平台差异 — Oryon 微架构资料边界
+
+### 盲区描述
+Snapdragon 8 Elite Oryon 的 L1/L2 cache 拓扑、共享层级与访问延迟缺少可复核的一手资料。当前正文存在把 Nuvia/前 Apple CPU 团队背景写成“与苹果 M 系列同源”，并可能把 Snapdragon X Elite 缓存拓扑误用于手机 8 Elite 的风险。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 查 Qualcomm 官方白皮书、Hot Chips/ISSCC、芯片拆解或可信微架构 benchmark，区分 Snapdragon X Elite 与 Snapdragon 8 Elite。
+- 如只能使用二手博客，删除具体 cache/latency 数字，保留为 [待验证] 背景。
+- 用实机 PMU / perf / Perfetto 对缓存 miss、迁移前后 IPC 和频率策略做对照。
+
+### 关联章节
+17.2, 5.1, 5.2, 5.3

@@ -30,14 +30,18 @@ task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
-task9_state: pending
+pipeline_stage: task2b_pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-21"
-task2b_state: fixed
+task9_reviewed_date: "2026-05-06"
+task2b_state: pending
 last_task6_at: "2026-05-06T11:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-11-review.md"
 task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-06T11:39:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
+task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。"
 ---
 
 # SoC 平台差异
