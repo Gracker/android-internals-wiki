@@ -12854,7 +12854,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T07:39:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T19:28:51+08:00",
+      "completed_reason": "P0 调用链拆为三条(普通Legacy/BLAST、SurfaceTexture/GLConsumer、BLAST模式)；P0 buffer_handle_t定义路径改为cutils/native_handle.h；P1 setBuffer AHardwareBuffer usage约束已补充(GPU_SAMPLED_IMAGE)"
     },
     {
       "section": "7.10",
@@ -13170,9 +13172,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T18:45:44+08:00",
-      "status": "pending",
-      "completed_at": null,
-      "completed_reason": null
+      "status": "completed",
+      "completed_at": "2026-05-06T19:28:51+08:00",
+      "completed_reason": "P0 标准模板RemoteViews口径已修正：明确标准模板也是RemoteViews，优势在于package/layoutId稳定更容易命中reapply"
     }
   ],
   "completed": [
