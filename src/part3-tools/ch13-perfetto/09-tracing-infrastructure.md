@@ -25,20 +25,20 @@ related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: fixed
+task2b_result: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-05"
 last_task6_at: "2026-05-05T13:28:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-13-review.md"
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
-last_task9_at: "2026-05-05T13:34:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-05"
-task9_review_notes: "2026-05-05 13:34 task9 deep-review: needs-rework。P0 1：Perfetto SQL 原始 ftrace 表仍误写为 ftrace_events；正确表名是 ftrace_event。"
+last_task9_at: "2026-05-07T01:20:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-07"
+task9_review_notes: "2026-05-05 13:34 task9 deep-review: needs-rework。P0 1：Perfetto SQL 原始 ftrace 表仍误写为 ftrace_events；正确表名是 ftrace_event。 | 2026-05-07 Task9 01:20：needs-rework。P0 0 / P1 1 / P2 0；ftrace_event 表名已修正，但 UprobeStats “任意用户态函数 <1%”与 Perfetto/StatsD 数据出口口径仍缺一手证据。"
 last_task2b_at: "2026-05-05T13:50:28"
 repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
