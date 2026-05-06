@@ -2,7 +2,6 @@
 title: ART 编译管线与 dex2oat 优化
 chapter: '1.7'
 section: '1.7'
-status: ready-for-review
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
@@ -43,15 +42,8 @@ related_chapters:
 - '8.2'
 - '8.3'
 - '16.1'
-task9_result: fixed
-last_task9_at: "2026-05-03T06:20:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-03"
-pipeline_stage: task9_pending
-task2b_state: fixed
 task2b_result: fixed
 task6_state: reviewed
-task9_state: pending
 review_round: 4
 last_task2b_at: "2026-05-06T09:49:49.432169"
 repaired_date: "2026-04-25"
@@ -60,6 +52,15 @@ review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1�
 last_task6_at: "2026-05-06T10:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-10-review.md"
 task6_review_notes: "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理第一人称、未标语言代码块和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_result: needs-rework
+task9_state: reviewed
+task2b_state: pending
+task9_reviewed_date: 2026-05-06
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-06T10:38:04+08:00"
+task9_review_notes: "2026-05-06 Task9 10:24：needs-rework。P1 1：dex2oat Trace 进程归属写成 system_server 子进程；P2 1（Cloud Compilation/SDM 官方锚点）沿用既有 suggestions，不重复新增。"
 ---
 
 

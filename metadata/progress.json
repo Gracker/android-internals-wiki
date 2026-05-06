@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-06T10:10:00+08:00",
+  "generated_at": "2026-05-06T10:38:04+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
@@ -7,10 +7,10 @@
     "last_updated": "2026-05-06",
     "pipeline_stage_counts": {
       "unknown": 34,
-      "ready-to-publish": 111,
+      "ready-to-publish": 113,
       "task2b_pending": 83,
-      "task9_pending": 24,
-      "task6_pending": 0
+      "task9_pending": 23,
+      "task6_pending": -1
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -21,8 +21,8 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 201,
-      "pending": 12
+      "reviewed": 203,
+      "pending": 10
     },
     "task2b_state_counts": {
       "unknown": 41,
@@ -30,22 +30,22 @@
       "pending": 90,
       "idle": 3
     },
-    "finalized": 112,
-    "ready-for-review": 108,
+    "finalized": 114,
+    "ready-for-review": 106,
     "unknown": 32,
     "status_counts": {
       "unknown": 32,
-      "finalized": 112,
-      "ready-for-review": 108
+      "finalized": 114,
+      "ready-for-review": 106
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
       "unknown": 34,
-      "ready-to-publish": 111,
+      "ready-to-publish": 113,
       "task2b_pending": 83,
-      "task9_pending": 24,
-      "task6_pending": 0
+      "task9_pending": 23,
+      "task6_pending": -1
     },
     "task6_state_counts": {
       "unknown": 33,
@@ -56,8 +56,8 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 201,
-      "pending": 12
+      "reviewed": 203,
+      "pending": 10
     },
     "task2b_state_counts": {
       "unknown": 41,
@@ -291,18 +291,18 @@
       "last_verified": "2026-04-05",
       "last_verified_against": "AOSP android-17-beta3",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
-      "task9_result": "fixed",
+      "task9_result": "needs-rework",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-03",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-03T06:20:00+08:00",
+      "last_task9_at": "2026-05-06T10:38:04+08:00",
       "review_round": "4",
       "last_task2b_at": "2026-04-25T22:46:46+08:00",
       "repaired_date": "2026-04-25",
@@ -310,7 +310,8 @@
       "review_notes": "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。",
       "last_task6_at": "2026-05-06T10:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-10-review.md",
-      "task6_review_notes": "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理第一人称、未标语言代码块和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
+      "task6_review_notes": "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理第一人称、未标语言代码块和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。",
+      "task9_review_notes": "2026-05-06 Task9 10:24：needs-rework。P1 1：dex2oat Trace 进程归属写成 system_server 子进程；P2 1（Cloud Compilation/SDM 官方锚点）沿用既有 suggestions，不重复新增。"
     },
     "src/part1-fundamentals/ch01-architecture/08-activity-manager.md": {
       "path": "src/part1-fundamentals/ch01-architecture/08-activity-manager.md",
@@ -3071,30 +3072,31 @@
       "title": "ANR 设计思想",
       "chapter": "9.1",
       "section": "9.1",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-02",
       "applicable_versions": "Android 8.0 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-26",
       "last_verified_against": "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
-      "task9_result": "needs-rework",
+      "task9_result": "pass-tech-review",
       "task2b_result": "fixed",
       "reviewed_date": "2026-05-01",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-04",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-04T16:20:00+08:00",
+      "last_task9_at": "2026-05-06T10:38:04+08:00",
       "last_task2b_at": "2026-04-26T15:45:22+08:00",
       "task2b_fixed_at": "2026-04-26T15:45:22+08:00",
       "repaired_date": "2026-04-26",
       "repaired_by": "openclaw-task2b",
       "review_notes": "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. 2 pending queue entries block auto-promotion.",
-      "last_task9_log": "logs/deep-review/2026-05-04-16-deep-review.md"
+      "last_task9_log": "logs/deep-review/2026-05-04-16-deep-review.md",
+      "task9_review_notes": "2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
     },
     "src/part2-performance/ch09-anr/02-anr-types.md": {
       "path": "src/part2-performance/ch09-anr/02-anr-types.md",
@@ -6278,27 +6280,28 @@
       "title": "崩溃与 ANR 捕获机制",
       "chapter": "19",
       "section": "19.24",
-      "status": "ready-for-review",
+      "status": "finalized",
       "drafted_date": "2026-04-24",
       "drafted_by": "gemini",
       "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
       "last_verified": "2026-04-24",
       "confidence": "high",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "fixed",
       "task2b_result": "fixed",
-      "task9_result": "needs-rework",
-      "task9_reviewed_date": "2026-04-25",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-25T02:02:05+08:00",
+      "last_task9_at": "2026-05-06T10:38:04+08:00",
       "last_task2b_at": "2026-04-27T19:40:00+08:00",
       "repaired_date": "2026-04-27",
       "repaired_by": "openclaw-task2b",
       "task6_result": "pass-light-edit",
       "reviewed_date": "2026-05-03",
-      "reviewed_by": "openclaw-task6"
+      "reviewed_by": "openclaw-task6",
+      "task9_review_notes": "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
     },
     "src/part3-tools/ch19-apm/07-dokit.md": {
       "path": "src/part3-tools/ch19-apm/07-dokit.md",

@@ -1,10 +1,7 @@
 ---
-
-
 title: "ANR 设计思想"
 chapter: "9.1"
 section: "9.1"
-status: ready-for-review
 drafted_date: "2026-04-02"
 polish_count: 1
 polish_date: "2026-04-07"
@@ -14,11 +11,6 @@ last_verified: "2026-04-26"
 last_verified_against: "AOSP android-11.0.0_r1 / android-13.0.0_r1 / android-14.0.0_r1, Android Vitals ANR docs"
 reviewed_date: 2026-05-04
 reviewed_by: openclaw-task6
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
 confidence: medium
 sources:
   - type: aosp
@@ -35,27 +27,28 @@ sources:
     path: "https://developer.android.com/topic/performance/vitals/anr"
 tags: [anr, watchdog, traces, dropbox, activitymanagerservice, input-dispatcher, anrhelper, sigquit]
 related_chapters: ["9.2", "9.3", "1.5", "7.1", "8.1", "15.3", "15.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed
 review_notes: "2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. No banned words, no AI fillers, format consistent. 2 pending queue entries block auto-promotion."
 
-task9_result: needs-rework
-last_task9_at: "2026-05-04T16:20:00+08:00"
 last_task2b_at: "2026-04-26T15:45:22+08:00"
 task2b_fixed_at: "2026-04-26T15:45:22+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 问题单）"
-task9_reviewed_date: "2026-05-04"
-task9_reviewed_by: openclaw-task9
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 auto_finalized_by: openclaw-task6
 auto_finalized_date: "2026-05-02"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。"
+status: finalized
+pipeline_stage: ready-to-publish
+task9_result: pass-tech-review
+task9_state: reviewed
+task2b_state: fixed
+task2b_result: fixed
+task9_reviewed_date: 2026-05-06
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-06T10:38:04+08:00"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。；2026-05-06 Task9 10:24：pass-tech-review。P0/P1 0；P2 2 写入 suggestions（ANR 2.3 版本口径、Watchdog 60s/30s 半程检查）；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task6_state: reviewed
+task6_result: pass-light-edit
 ---
 
 # ANR 设计思想

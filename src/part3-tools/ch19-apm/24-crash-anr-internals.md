@@ -2,7 +2,6 @@
 title: "崩溃与 ANR 捕获机制"
 chapter: "19"
 section: "19.24"
-status: ready-for-review
 drafted_date: "2026-04-24"
 drafted_by: "gemini"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -10,14 +9,10 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, crash, anr, stability, crashpad]
 related_chapters: ["19.0", "19.03", "19.16"]
-pipeline_stage: task9_pending
-task2b_result: fixed
-task2b_state: fixed
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_date: "2026-05-03"
 reviewed_by: openclaw-task6
-task9_state: reviewed
 sources:
   - "https://developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler"
   - "https://developer.android.com/reference/android/app/ApplicationExitInfo"
@@ -27,13 +22,19 @@ sources:
   - "https://android.googlesource.com/platform/art/+/refs/heads/main/runtime/signal_catcher.cc"
   - "https://android.googlesource.com/platform/system/core/+/refs/heads/main/debuggerd/proto/tombstone.proto"
   - "https://android.googlesource.com/platform/bionic/+/refs/heads/main/libc/include/signal.h"
-task9_result: needs-rework
-task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T23:21:00+08:00"
 last_task2b_at: "2026-04-27T19:40:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
+status: finalized
+pipeline_stage: ready-to-publish
+task9_result: pass-tech-review
+task9_state: reviewed
+task2b_state: fixed
+task2b_result: fixed
+task9_reviewed_date: 2026-05-06
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-06T10:38:04+08:00"
+task9_review_notes: "2026-05-06 Task9 10:24：pass-tech-review。复核 Java Crash handler 链、Crashpad/sigaction、SIGQUIT/SignalCatcher、ApplicationExitInfo API30/API31 边界、LMK 静态 API；无 P0/P1/P2。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # 崩溃与 ANR 捕获机制
