@@ -12,7 +12,7 @@ confidence: medium-high
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-05-06"
+reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 sources:
   - type: aosp
@@ -31,8 +31,8 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_result: fixed
@@ -42,9 +42,9 @@ task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T11:39:00+08:00"
 task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 2：Vitals stuck/excessive wakelock 阈值混用、JobScheduler 运行时上限仍把 min guarantee 写成 max；P1 3：Android 15 FGS 超时崩溃、GNSS/Geofencing 低功耗边界、线上功耗监控/API 版本边界仍未闭合。"
-last_task6_at: "2026-05-06T11:12:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-11-review.md"
-task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
+last_task6_at: "2026-05-07T06:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-06-review.md"
+task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-07 task6 review 06:10：清理观察提示腔和顺序提示腔，收紧 JobScheduler 运行上限表述；L1/L2 通过，无新增 L3/L4 回炉项，转 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
 ---
 
@@ -94,7 +94,7 @@ last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
 
 某社交类 App 在 Google Play Console 的 Android Vitals 报告中出现了异常：部分 WakeLock 卡住的会话比例达到了 3.7%。用户投诉集中在"晚上充满电放桌上，早上起来只剩 60%"这种纯待机场景。
 
-收到这个反馈时，我们首先做了一件事：确认问题的范围。Android Vitals 的 "Stuck partial wake lock" 指标衡量的是 App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。3.7% 的会话触发这个阈值，说明不是偶发问题，而是代码中存在系统性的 WakeLock 管理缺陷。
+收到这个反馈时，第一步是确认问题范围。Android Vitals 的 "Stuck partial wake lock" 指标衡量的是 App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。3.7% 的会话触发这个阈值，说明问题已经呈现系统性的 WakeLock 管理缺陷。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/wakelock]
 
@@ -110,7 +110,7 @@ last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
 
 ### 抓取与定位
 
-首先重置电池统计数据，然后让手机在纯待机状态下放 4 个小时（不插电、不开屏），最后导出 bugreport 上传到 Battery Historian：
+重置电池统计数据后，让手机在纯待机状态下放 4 个小时（不插电、不开屏），再导出 bugreport 上传到 Battery Historian：
 
 ```bash
 # 重置电池统计
@@ -122,7 +122,7 @@ adb bugreport > bugreport_wakelock_case.zip
 
 在 Battery Historian 的报告中，我们重点关注两个区域：
 
-**时间线视图**中，可以看到一排深蓝色的 "Wake Lock" 条带。正常情况下，这些条带应该是短促的、间歇性的——每次后台同步触发时亮一下，几秒后熄灭。但在这个案例中，从凌晨 1:30 到 6:00（将近 4.5 个小时），"Wake Lock" 条带几乎一直是亮着的。
+**时间线视图**里，深蓝色的 "Wake Lock" 条带贯穿了主要待机时段。正常情况下，这些条带应该是短促的、间歇性的——每次后台同步触发时亮一下，几秒后熄灭。但在这个案例中，从凌晨 1:30 到 6:00（将近 4.5 个小时），"Wake Lock" 条带几乎一直是亮着的。
 
 [图：Battery Historian 时间线视图，展示 WakeLock 持续 4.5 小时的深蓝色条带]
 
@@ -138,7 +138,7 @@ adb bugreport > bugreport_wakelock_case.zip
 adb shell dumpsys power | grep -A 5 "Wake Locks"
 ```
 
-输出中可以看到目标 App 持有一个名为 `SyncService-heartbeat` 的 `PARTIAL_WAKE_LOCK`，持续了数小时。
+输出显示目标 App 持有一个名为 `SyncService-heartbeat` 的 `PARTIAL_WAKE_LOCK`，持续了数小时。
 
 回到代码中搜索 `SyncService-heartbeat`，很快找到了问题所在：
 
@@ -252,7 +252,7 @@ Battery Historian 报告中，"GPS" 行在整个时间线上都是绿色的—�
 
 [图：Battery Historian GPS 行——持续绿色条带 vs 正常的间歇性条带]
 
-同时，在 "Network" 行也可以看到对应的网络活动——App 在持续将位置数据上传到服务器。后台不仅有 GPS 定位，还有持续的网络请求，两个高功耗组件叠加。
+同时，"Network" 行也有对应的网络活动——App 在持续将位置数据上传到服务器。后台不仅有 GPS 定位，还有持续的网络请求，两个高功耗组件叠加。
 
 通过 `adb shell dumpsys location` 可以确认是哪个 App 在请求位置：
 
@@ -260,7 +260,7 @@ Battery Historian 报告中，"GPS" 行在整个时间线上都是绿色的—�
 adb shell dumpsys location | grep -A 10 "Requests"
 ```
 
-输出中可以看到目标 App 注册了一个 `PRIORITY_HIGH_ACCURACY` 的位置请求，间隔 1000ms（每秒更新一次），而且从未被移除。
+输出显示目标 App 注册了一个 `PRIORITY_HIGH_ACCURACY` 的位置请求，间隔 1000ms（每秒更新一次），而且从未被移除。
 
 ### 逐步分析
 
@@ -399,7 +399,7 @@ Battery Historian 的 "Mobile Network" 行在整个使用期间都是绿色的�
 
 [图：Battery Historian Mobile Network 行——连续绿色条带，对比正常场景的间歇性]
 
-通过 `adb shell dumpsys netstats` 可以看到目标 App 的网络活动统计：
+通过 `adb shell dumpsys netstats` 查看目标 App 的网络活动统计：
 
 ```text
 Network stats for uid=10085 (com.example.chat):
@@ -415,7 +415,7 @@ Network stats for uid=10085 (com.example.chat):
 
 [图：Perfetto 中目标 App 的网络线程活动——每 20-30 秒有一次短暂的 CPU burst]
 
-可以看到网络线程（`OkHttp Dispatcher`）大约每 20-30 秒被唤醒一次，每次执行 1-2 秒的网络 I/O。单独看每一次请求都是合理的（数据量很小，耗时很短），但累加起来，Radio 就没有机会进入低功耗状态。
+网络线程（`OkHttp Dispatcher`）大约每 20-30 秒被唤醒一次，每次执行 1-2 秒的网络 I/O。单独看每一次请求都是合理的（数据量很小，耗时很短），但累加起来，Radio 就没有机会进入低功耗状态。
 
 代码层面，问题出在多个模块各自维护独立的轮询定时器：
 
@@ -522,7 +522,7 @@ CPU 频繁唤醒的排查和 WakeLock 不同。WakeLock 是"持续持有"导致 
 
 ### 抓取与定位
 
-Battery Historian 报告中，"Wake Lock" 行不是一条长线，而是密集的短线段——大约每 60 秒一段。同时 "Kernel Wakeup Reasons" 行显示了大量的 `alarm` 类型唤醒源。
+Battery Historian 报告中，"Wake Lock" 行呈现密集短线段，大约每 60 秒一段；这和 WakeLock 泄漏的连续长条不同。同时 "Kernel Wakeup Reasons" 行显示了大量的 `alarm` 类型唤醒源。
 
 [图：Battery Historian — 密集的短 WakeLock 条带，间距约 60 秒]
 
@@ -532,7 +532,7 @@ Battery Historian 报告中，"Wake Lock" 行不是一条长线，而是密集�
 adb shell dumpsys alarm | grep -A 3 "com.example.news"
 ```
 
-输出中可以看到目标 App 设置了一个精确重复闹钟（`RTC_WAKEUP`），间隔 60000ms（60 秒）：
+输出显示目标 App 设置了一个精确重复闹钟（`RTC_WAKEUP`），间隔 60000ms（60 秒）：
 
 ```text
 RTC_WAKEUP #0: Alarm{... type=RTC_WAKEUP when=... com.example.news}
@@ -642,17 +642,17 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 
 当 `JobService.onStartJob()` 返回 `true`（表示任务在后台线程执行）时，系统会为这个 Job 持有一个 WakeLock。这个 WakeLock 的最大持有时长取决于 Job 类型：
 
-| Job 类型 | 最小保障时长（源码常量） | 实际上限 | 超时行为 |
+| Job 类型 | 最小保障时长（源码常量） | 运行上限 | 超时行为 |
 |---------|----------------------|---------|----------|
 | Regular | 10 分钟（`DEFAULT_RUNTIME_MIN_GUARANTEE_MS`） | `getMaxJobExecutionTimeMs()` 返回值，取决于 standby bucket 和当前 quota | 超时后 `onStopJob()` 被调用，系统释放 WakeLock |
 | Expedited | 10 分钟（同 Regular 保障下限） | 同 Regular，但调度优先级更高 | 同 Regular |
 | User-Initiated | 30 分钟（`DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS`） | `getMaxJobExecutionTimeMs()` 返回值 | 同 Regular |
 
-10 分钟和 30 分钟是系统承诺的**最小保障时长**，不是统一最大执行时长。实际运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 App 的 standby bucket、当前电量策略和 quota 降级状态影响。低电量或受限状态下，实际上限可能远低于最小保障值。[已验证: AOSP android-16.0.0\_r1 `JobSchedulerService.Constants` + `getMaxJobExecutionTimeMs()`]
+10 分钟和 30 分钟是系统承诺的**最小保障时长**，不是统一最大执行时长。运行上限由 `getMaxJobExecutionTimeMs()` 动态计算，受 App 的 standby bucket、当前电量策略和 quota 降级状态影响。低电量或受限状态下，上限可能远低于最小保障值。[已验证: AOSP android-16.0.0\_r1 `JobSchedulerService.Constants` + `getMaxJobExecutionTimeMs()`]
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java — getMaxJobExecutionTimeMs() 根据 Job 级别返回不同超时值]
 
-如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长不是固定值，取决于 `getMaxJobExecutionTimeMs()` 的返回值——正常状态下 Regular/Expedited 至少 10 分钟、User-Initiated 至少 30 分钟，但 quota 降级后可能更短。这意味着即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。
+如果任务完成后没有调用 `jobFinished()`，WakeLock 会一直持有到超时才被系统强制回收。超时时长不是固定值，取决于 `getMaxJobExecutionTimeMs()` 的返回值——正常状态下 Regular/Expedited 至少 10 分钟、User-Initiated 至少 30 分钟，但 quota 降级后可能更短。即使任务只执行了 3 秒，忘记调用 `jobFinished()` 也会白白保持 WakeLock 直到超时。
 
 ### 逐步分析
 
@@ -766,7 +766,7 @@ Android 的位置服务是系统级的。App 可以在后台请求位置更新�
 
 ### 误区四："网络请求的数据量决定功耗"
 
-决定 Radio 功耗的不是数据量，而是 **Radio 的状态转换次数**。一次 1MB 的下载和 1000 次各 1KB 的请求，传输的数据量相同，但后者的功耗可能是前者的 10 倍以上。因为每次请求都要把 Radio 从 Standby 拉到 Full Power，而状态转换过程本身就需要大量能量。
+Radio 功耗主要由 **Radio 的状态转换次数**决定，数据量只是次要因素。一次 1MB 的下载和 1000 次各 1KB 的请求，传输的数据量相同，但后者的功耗可能是前者的 10 倍以上。因为每次请求都要把 Radio 从 Standby 拉到 Full Power，而状态转换过程本身就需要大量能量。
 
 ### 误区五："Doze 模式会自动解决所有后台功耗问题"
 
