@@ -1,23 +1,27 @@
 ---
 title: "系统启动全流程"
 chapter: "1.2"
-status: ready-for-review
-pipeline_stage: task6_pending
 section: "1.2"
-reviewed_date: "2026-05-01"
-reviewed_by: openclaw-task6
-review_type: task6-writing-quality-review
-task6_result: pass-light-edit
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
+status: ready-for-review
+pipeline_stage: task9_pending
 drafted_date: "2026-03-30"
 drafted_by: openclaw-task2a
+reviewed_date: "2026-05-06"
+reviewed_by: openclaw-task6
+review_type: task6-writing-quality-review
+task6_state: reviewed
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-06"
+task2b_state: fixed
+task2b_result: fixed
+task9_state: pending
+task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-06"
+last_task9_at: "2026-05-06T09:20:00+08:00"
 review_v2_fix: "误区 section boot_completed 事件描述修正 + 事件排序修正"
 polish_count: 1
 polish_date: "2026-04-05"
-4
 polish_by: task2b-polish
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-17"
@@ -45,7 +49,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/UserManagerService.java @ android-16.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/am/UserController.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java @ android-16.0.0_r1"
   - type: aosp
@@ -79,17 +83,7 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_reviewed_date: "2026-05-01"
-task9_state: reviewed
-task9_result: needs-rework
-last_task9_at: "2026-05-06T09:20:00+08:00"
-task2b_state: pending
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-06"
-review_notes: "2026-05-05 task2b rework: P0 UserController path fixed (user→pm); P1 Cloud Compilation OTA scope softened; P1 kernel async probe/module placement added | 2026-05-06 task2b rework(第三轮): P0 UserController→UserManagerService源码路径修正（AOSP android-16.0.0_r1 无 UserController.java，广播发送由 UserManagerService 负责）"
-task2b_result: fixed  # 2026-05-01 rework: TimingsTraceAndSlog path, startApexServices version (13 not 12), /product/etc/init added
+review_notes: "2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。"
 task9_review_notes: "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 3；UserController 广播发送路径、GBL/boottime 口径、async_probe 观测口径需回炉。"
 ---
 # 系统启动全流程
@@ -103,7 +97,7 @@ task9_review_notes: "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P
 - 🔹 init 进程的职责：解析 init.rc、启动关键 native 服务（servicemanager、surfaceflinger 等）
 - 🔹 Zygote 预加载机制：preloadClasses / preloadResources，对首次 App 启动的影响
 - 🔹 SystemServer 启动的核心服务顺序及依赖关系（AMS、WMS、PMS 等）
-- 🔹 启动时间的度量：boot_completed 广播、BootTimingsTraceLog
+- 🔹 启动时间的度量：boot_completed 广播、TimingsTraceLog
 - 🔹 开机性能优化的常见手段（task_profiles、lazy HAL、odsign / dexpreopt、启动长尾治理）
 
 ### 扩展（可选深入）
@@ -195,7 +189,7 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 
 **Bootstrap services** 里有最重的一批基础框架服务，包括 `ActivityTaskManagerService`、`ActivityManagerService`、`PowerManagerService`、`LightsService`、`DisplayManagerService`、`PackageManagerService`。AMS / ATMS 属于这里，不属于 other。
 
-**Core services** 里是第二层基础服务，典型例子有 `BatteryService`、`UsageStatsService`、`WebViewUpdateService`。这些服务依赖前面的基座，但还没到窗口和输入这一层。
+**Core services** 里是第二层基础服务，典型例子有 `BatteryService`、`UsageStatsService`、`WebViewUpdateService`。这些服务依赖前一层基础服务，但还没到窗口和输入这一层。
 
 **Other services** 里才会启动 `InputManagerService`、`WindowManagerService`、`AlarmManagerService`、`JobSchedulerService`、`NotificationManagerService` 等更大一包服务。WMS 和 InputManagerService 属于这一段。`SensorService` 也不是这里直接 new 出来的 Java service，SystemServer 只是通过 `PHASE_WAIT_FOR_SENSOR_SERVICE` 等待相关前置条件，再继续启动 WMS。
 
@@ -217,7 +211,7 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 
 系统服务就绪后，`ActivityManagerService.systemReady()` 会在 system user 路径里调用 `mAtmInternal.startHomeOnAllDisplays(currentUserId, "systemReady")`，把 Home Activity 拉起来。这个节点对应“系统开始尝试显示桌面”。
 
-Home 真正首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFlinger 合成。用户此时已经能看到桌面，但广播尾声还没结束。
+Home 首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFlinger 合成。用户此时已经能看到桌面，但广播尾声还没结束。
 
 `ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都由 `UserController`（`frameworks/base/services/core/java/com/android/server/am/UserController.java`）负责发送。前者发生在用户进入 running locked 阶段，适合 Direct Boot aware 组件；后者要等用户解锁、CE storage 可用之后才发。`UserManagerService` 只负责用户信息与状态管理，不承担 boot completed 广播。这两个广播都不等同于 Launcher 首帧，更不等同于“SystemServer 启动完自动同步收尾”。
 
@@ -232,7 +226,7 @@ Home 真正首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFli
 `ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都是 `UserController` 这一侧的用户生命周期广播，不是 Launcher 的 UI 里程碑。
 
 - `ACTION_LOCKED_BOOT_COMPLETED`：用户进入 running locked 阶段后发送，Direct Boot aware 组件可以在这里开始工作。
-- `ACTION_BOOT_COMPLETED`：用户真正解锁、CE storage 可用后发送。
+- `ACTION_BOOT_COMPLETED`：用户解锁、CE storage 可用后发送。
 
 所以“桌面已经出现”并不等于 `BOOT_COMPLETED`。如果我们关心的是用户第一次看到可操作桌面，应该盯 Home 首帧和 `boot_progress_enable_screen` 附近的事件；如果我们关心的是系统广播长尾和应用收尾初始化，才去看 `LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED`。
 
@@ -246,7 +240,7 @@ adb shell bootstat -l
 
 这一步适合先做粗定位：Bootloader / Kernel 慢，还是 Framework 慢，还是用户解锁后的广播尾部长。
 
-### BootTimingsTraceLog 与 TimingsTraceAndSlog：框架内置的两套秒表
+### TimingsTraceLog 与 TimingsTraceAndSlog：框架内置的两套秒表
 
 #### TimingsTraceLog：盯 Zygote 预加载
 
@@ -274,7 +268,7 @@ SystemServer 用的是 `TimingsTraceAndSlog`。在 Perfetto 里，`StartServices
 - `boot_progress_ams_ready`：`ActivityManagerService.systemReady()` 开始。
 - `boot_progress_enable_screen`：`ActivityTaskManagerService` 调用 `enableScreenAfterBoot()`，随后让 WMS 去 enable screen。它不等于 Launcher 首帧完成。
 
-因此，`boot_progress_enable_screen` 到桌面真正稳定可交互之间，仍然可能隔着 Launcher 绑定、首帧渲染、Widget 恢复和广播尾部处理。
+因此，`boot_progress_enable_screen` 到桌面稳定可交互之间，仍然可能隔着 Launcher 绑定、首帧渲染、Widget 恢复和广播尾部处理。
 
 ### dmesg 与 logcat
 
@@ -292,7 +286,7 @@ adb logcat -b events | grep boot_progress
 直接在 adb shell 里启动 perfetto，tracing 会从 adb 会话建立之后才开始。用这种方式抓 Trace，目标应该写成“second-stage init 之后，尤其是 Zygote / SystemServer / Launcher 这段”，不要把它写成覆盖 Boot ROM、Bootloader 和整个 Kernel early boot 的完整开机 Trace。
 
 ```bash
-adb shell perfetto   -c - --txt   -o /data/misc/perfetto-traces/boot-userspace.pftrace <<'EOF'
+adb shell perfetto -c - --txt -o /data/misc/perfetto-traces/boot-userspace.pftrace <<'EOF'
 buffers: {
   size_kb: 65536
 }
@@ -379,7 +373,7 @@ CPU 和 I/O 调度也别只盯着老文章里的 cpuset。新分支更常见的�
 
 桌面可见只是“用户已经能看到东西”，还不是“启动链已经全部结束”。`LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED`、Widget 恢复、首次账号同步、包扫描补尾都可能拖在后面。
 
-如果用户主观感知已经变快，但 boot completed 相关指标仍然长，就把这段单独看：哪些工作必须跟着广播走，哪些可以延到用户第一次真正点开某个功能时再做。
+如果用户主观感知已经变快，但 boot completed 相关指标仍然长，就把这段单独看：哪些工作必须跟着广播走，哪些可以延到用户第一次打开某个功能时再做。
 
 ### 厂商经验单独写，不要冒充平台事实
 
@@ -444,7 +438,7 @@ init 是用户空间所有进程的鼻祖。PID 0 的 swapper 才是 Linux 侧�
 - `ACTION_LOCKED_BOOT_COMPLETED`
 - `ACTION_BOOT_COMPLETED`
 
-如果把它们全都算成“开机完成”，不同版本、不同机型、不同测试脚本的结果根本没法比较。
+如果把它们全都算成“开机完成”，不同版本、不同机型、不同测试脚本的结果就没法比较。
 
 ### 误区：“App 冷启动慢，只要多预加载一点类就行”
 
