@@ -28,13 +28,16 @@ tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
 task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-17
+reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task9_state: reviewed
+pipeline_stage: task9_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-21"
 task2b_state: fixed
+last_task6_at: "2026-05-06T11:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-11-review.md"
+task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
 ---
 
 # SoC 平台差异
@@ -68,7 +71,7 @@ task2b_state: fixed
 
 如果你做过 Android 性能优化，一定遇到过这种情况：同一款 App 在骁龙设备上流畅运行，到了联发科 Dimensity 或 Exynos 设备上却莫名其妙掉帧。打开 Perfetto 一看，同样的代码路径，CPU 调度行为不一样了，GPU 渲染耗时也不一样了，甚至内存带宽的瓶颈出现在不同的位置。
 
-这不是你的 App 有 bug，而是不同 SoC 平台在硬件架构上存在根本差异——CPU 核心的拓扑结构不同、GPU 的渲染管线不同、内存控制器的带宽和延迟不同、厂商的调度策略更不同。这些差异会直接影响我们在 Perfetto 中看到的现象，如果不了解它们，就很容易把平台特性误判为代码问题。
+这不是你的 App 有 bug，而是不同 SoC 平台在硬件架构上存在关键差异——CPU 核心的拓扑结构不同、GPU 的渲染管线不同、内存控制器的带宽和延迟不同，厂商的调度策略也不同。这些差异会直接影响我们在 Perfetto 中看到的现象，如果不了解它们，就很容易把平台特性误判为代码问题。
 
 了解 SoC 平台差异的核心价值在于：**当你在 Perfetto 中看到一段异常的 CPU 调度、GPU 耗时或内存行为时，能判断这是你的代码问题还是平台特性导致的现象。** 这种判断能力在做跨设备性能优化和线上问题定位时尤其重要——你不可能在每个平台上都做一遍完整分析，但你需要知道不同平台上同一个现象的含义可能完全不同。
 
@@ -114,7 +117,7 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 同样是 ARMv9 指令集，不同核心的微架构设计会导致 IPC（Instructions Per Cycle）有显著差异。这直接影响我们在 Perfetto 中分析 CPU 利用率时的判断。
 
-高通的 Oryon 核心是自研微架构，与苹果 M 系列同源（都来自 Nuvia 团队）。它的特点是超大 L1 Cache（192KB 指令缓存 + 96KB 数据缓存）和共享的 L2 Cache 设计（四核共享 12MB）。这种设计的好处是缓存容量大、命中率好，但 L1 到 L2 的访问延迟（15-20 cycles）比 ARM 公版核心的私有 L2 延迟（约 8-12 cycles）更高。在 Perfetto 中，这意味着 Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
+高通的 Oryon 核心是自研微架构，与苹果 M 系列同源（都来自 Nuvia 团队）。它的特点是超大 L1 缓存（192KB 指令缓存 + 96KB 数据缓存）和共享 L2 缓存设计（四核共享 12MB）。这种设计的好处是缓存容量大、命中率好，但 L1 到 L2 的访问延迟（15-20 cycles）比 ARM 公版核心的私有 L2 延迟（约 8-12 cycles）更高。在 Perfetto 中，这意味着 Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
 
 ARM 的 Cortex-X925 是 ARM 最高性能的公版核心，10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心，IPC 虽然不如 X 系列，但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用，其基础性能仍远超传统的 A5xx 系列小核心。
 
@@ -122,7 +125,7 @@ Google Tensor 使用的通常是三星定制的 ARM 核心，微架构上可能�
 
 ### 厂商调度策略差异
 
-硬件只是基础，真正影响我们分析结论的是各家的软件调度策略。同样是基于 EAS（Energy Aware Scheduler）的 Android 内核，不同厂商的参数调优会导致 Perfetto 中看到完全不同的调度行为。
+硬件只是基础，直接影响分析结论的是各家的软件调度策略。同样是基于 EAS（Energy Aware Scheduler）的 Android 内核，不同厂商的参数调优会导致 Perfetto 中看到完全不同的调度行为。
 
 高通的调度策略通常偏向性能——在检测到重负载时会快速将任务迁移到大核并拉高频率。高通还有一套独有的 Perflock 机制（封装在 `libqti-perfd-client.so` 中），允许系统服务或应用直接请求锁定 CPU 频率。例如打开相机时，系统会通过 Perflock 将所有核心频率拉到最高，同时关闭 Power Collapse：
 
@@ -167,7 +170,7 @@ LIMIT 20;
 
 3. **sched_waking / sched_wakeup 事件**中观察唤醒目标 CPU 的分布。大小核架构下，低优先级唤醒偏向小核（CPU 4-7）；全大核架构下唤醒目标分布更均匀，没有明显的「小核汇聚」现象。
 
-需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，迁移本身的开销也低（Armv8.5+ 的 DSU 缓存一致性协议让跨核 L2 命中延迟控制在可接受范围），所以频繁迁移是正常的负载均衡行为，不必作为性能问题处理。只有在迁移导致 cache 抖动（可以观察 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
+需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，迁移本身的开销也低（Armv8.5+ 的 DSU 缓存一致性协议让跨核 L2 命中延迟控制在可接受范围），所以频繁迁移是正常的负载均衡行为，不必作为性能问题处理。只有在迁移导致缓存抖动（可以观察 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
 
 [已验证: ARM DSU-120 缓存一致性协议文档; Perfetto sched 表结构; MediaTek Dimensity 9400 公开规格]
 
@@ -243,7 +246,7 @@ Perfetto 目前没有直接的「内存带宽利用率」Track。但我们可以
 
 - GPU 渲染帧耗时出现周期性波动，且波动频率与 CPU 负载变化相关——可能是 CPU 和 GPU 争用内存带宽导致的
 - 在 Perfetto 的 `memmgr` Track 中观察 GPU 内存压力事件
-- 对比有和没有 GPU 密集渲染时，CPU 的 cache miss 指标（如果设备支持 PMU 计数器采集）
+- 对比有和没有 GPU 密集渲染时，CPU 的缓存未命中指标（如果设备支持 PMU 计数器采集）
 
 [待补充: 不同 SoC 在高负载游戏场景下的 Perfetto 内存带宽间接指标对比]
 
@@ -259,7 +262,7 @@ Perfetto 目前没有直接的「内存带宽利用率」Track。但我们可以
 
 **实时监控模式**可以展示 150+ 个硬件性能计数器的实时数据，包括 CPU 各核心的频率和利用率、Adreno GPU 的详细性能指标、Hexagon DSP 的负载等。这些计数器数据是 Perfetto 无法直接获取的。
 
-**Trace 捕获模式**类似 Perfetto 的 timeline 视图，但可以叠加高通特有的硬件事件（如 GPU 的 Vertex/Fragment 阶段耗时、Cache 命中率等）。
+**Trace 捕获模式**类似 Perfetto 的时间线视图，但可以叠加高通特有的硬件事件（如 GPU 的 Vertex/Fragment 阶段耗时、缓存命中率等）。
 
 **快照捕获模式**专门用于 GPU 调试，可以捕获一帧的完整渲染状态（Framebuffer、Shader、Draw Call），对分析 GPU 渲染问题非常有用。
 
@@ -271,9 +274,9 @@ Snapdragon Profiler 的局限在于：只支持高通设备，且需要通过 US
 
 ARM Streamline 是面向所有使用 ARM CPU 和 GPU（Mali/Immortalis）的设备的分析工具。它的适用范围更广——联发科和三星的部分 Exynos 设备都可以使用。
 
-Streamline 的核心优势在于它对 ARM Mali GPU 的深度分析能力。它可以展示 Mali GPU 的着色器核心利用率、Pipeline Stall 原因分解、L2 Cache 命中率等详细信息。如果我们在 Perfetto 中发现 Mali GPU 上有渲染耗时异常，但无法确定瓶颈位置，Streamline 可以帮助精确定位。
+Streamline 的核心优势在于它对 ARM Mali GPU 的深度分析能力。它可以展示 Mali GPU 的着色器核心利用率、Pipeline Stall 原因分解、L2 缓存命中率等详细信息。如果我们在 Perfetto 中发现 Mali GPU 上有渲染耗时异常，但无法确定瓶颈位置，Streamline 可以帮助精确定位。
 
-Streamline 还支持采集 ARM CPU 的 PMU（Performance Monitoring Unit）事件，包括 Cache Miss、Branch Mispredict、TLB Miss 等微架构级指标。这些指标在 Perfetto 中需要额外配置 `linux.ftrace` 的 `pmu` 事件才能部分获取，而 Streamline 可以直接采集。
+Streamline 还支持采集 ARM CPU 的 PMU（Performance Monitoring Unit）事件，包括缓存未命中（Cache Miss）、分支预测失败（Branch Mispredict）、TLB Miss 等微架构级指标。这些指标在 Perfetto 中需要额外配置 `linux.ftrace` 的 `pmu` 事件才能部分获取，而 Streamline 可以直接采集。
 
 [已验证: 官方文档, developer.arm.com/Tools%20and%20Software/ARM%20Streamline%20Performance%20Analyzer]
 
@@ -297,7 +300,7 @@ SoC 平台差异不是一个独立的机制，它影响着本书前面讲过的�
 
 与 **§5.1 Linux 进程调度** 的关系：EAS 调度器的核心决策依据是每个 CPU 核心的算力和能效比。不同 SoC 的核心拓扑（双集群 vs 三集群 vs 全大核）直接决定了 EAS 的迁移策略。联发科的全大核架构让 EAS 的负载均衡更频繁，高通的 Oryon 双集群让迁移更简洁。
 
-与 **§5.3 大小核架构** 的关系：联发科的全大核策略是对传统大小核架构的一次根本性挑战。它改变了我们分析 Perfetto 时对「小核」的预期——在传统架构上，任务在小核上执行慢是正常的；在全大核架构上，任何核心上的性能都不应该太差。
+与 **§5.3 大小核架构** 的关系：联发科的全大核策略明显改变了传统大小核架构的分析前提。它改变了我们分析 Perfetto 时对「小核」的预期——在传统架构上，任务在小核上执行慢是正常的；在全大核架构上，任何核心上的性能都不应该太差。
 
 与 **§5.4 DVFS** 的关系：各厂商的 DVFS 策略差异巨大。高通的 Perflock 允许直接锁定频率，联发科的调频更依赖 EAS 的建议。在分析功耗或发热时，同样的 Perfetto 数据在不同平台上的含义不同。
 
@@ -307,7 +310,7 @@ SoC 平台差异不是一个独立的机制，它影响着本书前面讲过的�
 
 ## 常见问题与误区
 
-**「骁龙一定比天玑流畅」**——这是最常见的误解。SoC 的峰值性能确实有差异，但实际用户体验更多取决于 OEM 的调度策略、散热设计和软件优化。一款调度激进的天玑设备可能比调度保守的骁龙设备更流畅，也可能因为散热不足更快降频。在做性能分析时，我们不能预设哪个平台一定更好，而要看 Perfetto 中的实际数据。
+**「骁龙一定比天玑流畅」**——这是最常见的误解。SoC 的峰值性能存在差异，但实际用户体验更多取决于 OEM 的调度策略、散热设计和软件优化。一款调度激进的天玑设备可能比调度保守的骁龙设备更流畅，也可能因为散热不足更快降频。在做性能分析时，我们不能预设哪个平台一定更好，而要看 Perfetto 中的实际数据。
 
 **「GPU 跑分高 = 渲染性能好」**——跑分测量的是峰值性能，但日常使用中的渲染性能更多取决于持续性能输出和驱动优化。Adreno GPU 在持续性能和驱动成熟度上的优势可能比峰值跑分的差异更重要。
 
@@ -315,7 +318,7 @@ SoC 平台差异不是一个独立的机制，它影响着本书前面讲过的�
 
 **「全大核架构一定更省电」**——不一定。联发科的全大核设计消除了小核，但 A720「能效核」的功耗仍然高于传统的 A5xx 小核。在轻负载场景下（如待机、听音乐），全大核的功耗可能反而更高。全大核的优势在于中高负载场景下没有性能断崖。
 
-**「Google Tensor 性能差」**——这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中确实不如骁龙和天玑，但它的设计目标是端侧 AI 体验，而不是通用峰值性能。在 Pixel 设备上，语音识别、实时翻译和计算摄影的响应速度可能优于其他平台，因为这些工作负载被 TPU 加速了。评估 Tensor 需要看你关心的场景是什么。
+**「Google Tensor 性能差」**——这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中不如骁龙和天玑，但它的设计目标是端侧 AI 体验，而不是通用峰值性能。在 Pixel 设备上，语音识别、实时翻译和计算摄影的响应速度可能优于其他平台，因为这些工作负载被 TPU 加速了。评估 Tensor 需要看你关心的场景是什么。
 
 ## 参考资料
 
