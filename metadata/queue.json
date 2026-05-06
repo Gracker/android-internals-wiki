@@ -12170,8 +12170,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T15:51:58+08:00",
-      "status": "pending",
-      "updated_at": "2026-05-06T11:39:00+08:00"
+      "status": "completed",
+      "updated_at": "2026-05-06T11:39:00+08:00",
+      "completed_at": "2026-05-06T17:58:56+08:00",
+      "completed_reason": "P0 Perfetto迁移SQL改用LAG(ucpu)窗口函数替代不存在的prev_cpu；P1 Oryon缓存/延迟数字降级为方向性描述+待验证；P1 DSU解释修正为'DSU提供一致性但不等于跨核复用对方私有L2'"
     },
     {
       "section": "18.3",
@@ -13093,7 +13095,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T16:39:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T17:58:56+08:00",
+      "completed_reason": "P0 第二个 sugov_get_util() 伪代码块替换为 android15-6.6 正确调用链（cpu_util_cfs_boost→effective_cpu_util(FREQUENCY_UTIL,NULL)），删除 scx/bw_min/min-max 等不属于 android15 的元素"
     },
     {
       "section": "11.5",

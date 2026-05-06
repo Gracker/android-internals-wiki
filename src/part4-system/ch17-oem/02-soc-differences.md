@@ -26,15 +26,15 @@ sources:
     path: "多来源综合（web search 验证）"
 tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-task6_state: reviewed
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task9_state: reviewed
+pipeline_stage: task6_pending
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-06"
-task2b_state: pending
+task2b_state: fixed
 last_task6_at: "2026-05-06T11:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-11-review.md"
 task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
@@ -42,7 +42,9 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T11:39:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。"
----
+
+task2b_result: fixed
+last_task2b_at: "2026-05-06T17:59:16+08:00"---
 
 # SoC 平台差异
 
@@ -121,7 +123,9 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 同样是 ARMv9 指令集，不同核心的微架构设计会导致 IPC（Instructions Per Cycle）有显著差异。这直接影响我们在 Perfetto 中分析 CPU 利用率时的判断。
 
-高通的 Oryon 核心是自研微架构，与苹果 M 系列同源（都来自 Nuvia 团队）。它的特点是超大 L1 缓存（192KB 指令缓存 + 96KB 数据缓存）和共享 L2 缓存设计（四核共享 12MB）。这种设计的好处是缓存容量大、命中率好，但 L1 到 L2 的访问延迟（15-20 cycles）比 ARM 公版核心的私有 L2 延迟（约 8-12 cycles）更高。在 Perfetto 中，这意味着 Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
+高通的 Oryon 核心是自研微架构，开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历。公开产品页显示 Oryon 采用大容量 L1 缓存和共享 L2 缓存设计，但缓存拓扑的具体参数（容量、延迟周期）尚未有官方白皮书或芯片分析报告确认。当前能确认的方向性特征是：大容量 L1 带来更好的命中率，而共享 L2 的访问延迟可能高于 ARM 公版核心的私有 L2 设计。在 Perfetto 中，这意味着 Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
+
+[待验证: Oryon L1 容量、L2 拓扑和访问延迟周期——公开产品页未披露具体数字，待 Qualcomm 白皮书或 AnandTech/Chipworks 芯片分析报告]
 
 ARM 的 Cortex-X925 是 ARM 最高性能的公版核心，10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心，IPC 虽然不如 X 系列，但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用，其基础性能仍远超传统的 A5xx 系列小核心。
 
@@ -157,14 +161,22 @@ static INT32 perfLockParamsOpenCamera[] = {
 1. **CPU Scheduling Track** 中直接统计线程的 `migrations` 次数。全大核架构下，负载均衡器（load balancer）在核心间重新分配任务的频率明显高于传统大小核，因为各核心的算力差距小，迁移代价低。用 SQL 查询可以量化：
 ```sql
 -- 统计每个线程在 10 秒窗口内的迁移次数
+-- Perfetto sched 表没有 prev_cpu 字段，需要用窗口函数从上一条调度记录取上一次所在的 CPU
+WITH sched_with_prev AS (
+  SELECT
+    *,
+    LAG(ucpu) OVER (PARTITION BY utid ORDER BY ts) AS prev_ucpu
+  FROM sched
+)
 SELECT
   tid,
   thread.name,
   COUNT(*) AS migration_count
-FROM sched
+FROM sched_with_prev
   JOIN thread USING (utid)
 WHERE ts BETWEEN <start_ts> AND <end_ts>
-  AND prev_cpu != cpu
+  AND prev_ucpu IS NOT NULL
+  AND prev_ucpu != ucpu
 GROUP BY tid
 ORDER BY migration_count DESC
 LIMIT 20;
@@ -174,7 +186,9 @@ LIMIT 20;
 
 3. **sched_waking / sched_wakeup 事件**中观察唤醒目标 CPU 的分布。大小核架构下，低优先级唤醒偏向小核（CPU 4-7）；全大核架构下唤醒目标分布更均匀，没有明显的「小核汇聚」现象。
 
-需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，迁移本身的开销也低（Armv8.5+ 的 DSU 缓存一致性协议让跨核 L2 命中延迟控制在可接受范围），所以频繁迁移是正常的负载均衡行为，不必作为性能问题处理。只有在迁移导致缓存抖动（可以观察 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
+需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，迁移本身的开销也较低（Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存，但任务迁移仍然会损失私有 L1/L2 的 locality）。实际迁移成本要看 cache miss、uclamp、cluster policy、wakeup path 和具体工作负载——不能简单用 DSU 的存在推论“跨核迁移成本低”。在 Perfetto 中，只有迁移导致缓存抖动（观察 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
+
+[已验证: ARM DSU-120 架构手册——DSU 提供一致性协议和可选共享缓存，但不等于跨核复用对方私有 L2]
 
 [已验证: ARM DSU-120 缓存一致性协议文档; Perfetto sched 表结构; MediaTek Dimensity 9400 公开规格]
 
