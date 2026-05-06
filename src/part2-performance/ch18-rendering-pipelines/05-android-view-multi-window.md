@@ -1,5 +1,5 @@
 ---
-title: "Android View 多窗口链路"
+title: "Android View 多窗口渲染路径"
 chapter: "18.5"
 section: "18.5"
 status: ready-for-review
@@ -11,8 +11,8 @@ tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "se
 related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
@@ -26,14 +26,14 @@ sources:
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-07"
-last_task6_at: "2026-05-07T05:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-05-review.md"
-task6_review_notes: "2026-05-07 task6 review 05:05：补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词；L1/L2 通过，无新增回炉项，转 Task9 复审。"
+last_task6_at: "2026-05-07T06:10:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-06-review.md"
+task6_review_notes: "2026-05-07 task6 review 05:05：补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词；L1/L2 通过，无新增回炉项，转 Task9 复审。 | 2026-05-07 task6 review 06:10：清理标题术语与正文提示腔，统一为多窗口渲染路径；L1/L2 通过，无新增回炉项，转 Task9 复审。"
 last_task9_at: "2026-05-07T05:27:07+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-07-05-deep-review.md"
 ---
 
-# 18.5 Android View 多窗口链路
+# 18.5 Android View 多窗口渲染路径
 
 <!-- outline-start -->
 
@@ -51,7 +51,7 @@ last_task9_review_log: "logs/deep-review/2026-05-07-05-deep-review.md"
 
 <!-- outline-end -->
 
-这是一个在性能分析中极易被忽视的场景：同一个 App 进程同时显示两个窗口。表面上看起来只是"弹了个 Dialog"，但在底层渲染链路中，这意味着同一个 UI Thread 和同一个 RenderThread 需要串行处理两套完全独立的绘制任务。理解这个瓶颈，是排查"为什么弹 Dialog 后 Activity 也卡了"这类问题的关键。
+这是一个在性能分析中极易被忽视的场景：同一个 App 进程同时显示两个窗口。表面上看起来只是"弹了个 Dialog"，底层渲染路径里却变成同一个 UI Thread 和同一个 RenderThread 串行处理两套独立绘制任务。理解这个瓶颈，是排查"为什么弹 Dialog 后 Activity 也卡了"这类问题的关键。
 
 ## 多窗口场景分析
 
@@ -314,6 +314,6 @@ getWindow().getDecorView().post(() -> {
 ---
 
 > **交叉引用**：
-> - 标准 BLAST 链路中的 Choreographer 和 SyncFrameState 详见 [18.2 Android View 标准链路](02-android-view-standard.md)
+> - 标准 BLAST 管线中的 Choreographer 和 SyncFrameState 详见 [18.2 Android View 标准管线](02-android-view-standard.md)
 > - EGLContext 与 EGLSurface 的管理详见 [2.14 图形 API 演进](../../part1-foundation/ch02-graphics-foundation/)
 > - SurfaceFlinger 多 Layer 合成详见 [2.5 SurfaceFlinger](../../part1-foundation/ch02-graphics-foundation/)
