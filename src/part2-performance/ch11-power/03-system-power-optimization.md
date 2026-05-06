@@ -11,8 +11,8 @@ last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / locati
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-rework_count: 2
-rework_date: "2026-04-29"
+rework_count: 3
+rework_date: "2026-05-07"
 rework_by: "task2b-rework"
 confidence: medium
 sources:
@@ -35,7 +35,7 @@ sources:
   - type: aosp
     path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
   - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java"
+    path: "frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java"
   - type: aosp
     path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
   - type: aosp
@@ -166,11 +166,13 @@ Doze 的取证不要依赖某个固定名字的 Track。更稳的做法，是把
 
 [已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby]
 
-## App Standby Buckets：基于使用频率的分层调度
+## App Standby：从二元状态到分桶调度
 
-Doze 模式解决的是"设备空闲"场景的功耗问题。但很多时候，设备并不是空闲的——用户正在刷微博，但后台还有一个从来不用的购物 App 在频繁拉取数据。这就是 App Standby Buckets 要解决的问题。
+Doze 模式解决的是"设备空闲"场景的功耗问题。但很多时候，设备并不是空闲的——用户正在刷微博，但后台还有一个从来不用的购物 App 在频繁拉取数据。这就是 App Standby 要解决的问题。
 
-Android 9（API 28）引入了 App Standby Buckets 机制，根据用户对每个 App 的使用频率，将它们分为五个优先级桶，每个桶拥有不同的后台资源配额。与 Doze 不同，App Standby 不需要设备处于空闲状态，它随时都在工作。
+**Android 6-8（API 23-27）** 已经有 App Standby 机制，但只有 idle / active 两个状态：被判定为 idle 的 App，后台网络访问、Job 和 Sync 会被推迟，充电时释放。判定依据是 App 是否有前台进程、是否最近被用过、是否被用户显式豁免。这时的限制相对粗粒度——要么限制，要么不限制。
+
+**Android 9（API 28）** 把二元模型扩展为 App Standby Buckets，根据用户对每个 App 的使用频率，将它们分为五个优先级桶，每个桶拥有不同的后台资源配额。与 Doze 不同，App Standby 不需要设备处于空闲状态，它随时都在工作。API 31 新增了 Restricted 桶，进一步收紧长期不互动 App 的后台配额。
 
 ### 五个桶的定义与调度差异
 
@@ -188,7 +190,7 @@ Android 16 还改变了一个常见判断：FGS 运行期间启动的 regular jo
 
 Restricted 桶的触发条件要按版本拆开。Android 12 / 12L 的“不互动”阈值是 45 天，Android 13 起缩短到 8 天；设备关机的时长不计入这段天数。Android 13 以后，高优先级 FCM 配额也不再由桶直接决定。
 
-除了桶配额之外，Android 15 引入了独立的能效维度：`PENDING_JOB_REASON_ENERGY_EFFICIENCY`。当系统判断当前能量预算不足（例如设备未充电且电量持续下降），即使 App 还在 Active 桶，Job 也可能因能效原因被挂起。排查时用 `adb shell dumpsys jobscheduler <pkg>` 查 pending reason，如果看到 energy efficiency 相关标识，说明不是桶配额用完，而是系统能量预算触发了熔断。
+除了桶配额之外，Android 15 引入了独立的能效维度。当系统判断当前能量预算不足（例如设备未充电且电量持续下降），即使 App 还在 Active 桶，Job 也可能因能效原因被挂起。排查时用 `adb shell dumpsys jobscheduler <pkg>` 查看 pending reason，可关注 `PENDING_JOB_REASON_DEVICE_STATE`（设备状态不适宜执行）、`PENDING_JOB_REASON_JOB_SCHEDULER_OPTIMIZATION`（系统优化决策）和 `PENDING_JOB_REASON_QUOTA`（配额耗尽）三类标识。不要把这些 pending 直接等同于"桶配额用完"——它们对应的是不同层面的约束。
 
 [已验证: 官方文档, developer.android.com/topic/performance/appstandby; developer.android.com/topic/performance/power/power-details#app-stdby-bucket]
 
@@ -217,7 +219,7 @@ Android 13 到 Android 16 这组策略已经分散到不同控制器里。把职
 |------|--------|-----------------|----------------|
 | Doze / Device Idle | `DeviceIdleController` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` | `adb shell dumpsys deviceidle`，再和 Trace 的 `suspend_resume` / `cpu_idle` 对时 |
 | App Standby Bucket 评估 | `AppStandbyController` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` | `adb shell am get-standby-bucket <pkg>`，`adb shell dumpsys usagestats appstandby` |
-| Usage 统计与事件上报 | `UsageStatsService` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java` | `adb shell dumpsys usagestats` |
+| Usage 统计与事件上报 | `UsageStatsService` | `frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java` | `adb shell dumpsys usagestats` |
 | Job quota 执行 | `JobSchedulerService` | `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` | `adb shell dumpsys jobscheduler <pkg>`，Android 16 可再看 `getPendingJobReasons()` |
 | Battery Saver / low power mode | `PowerManagerService` | `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` | `adb shell settings get global low_power`，`adb shell dumpsys power`，App 侧用 `PowerManager.isPowerSaveMode()` |
 
@@ -303,7 +305,7 @@ Android 14 对前台服务进一步增加了限制：某些类型的前台服务
 - 取消所有已注册的定时任务和通知监听
 - 不再接收 FCM 或厂商推送
 
-开发者不需要为归档做特殊适配——系统保证用户数据不丢、恢复后状态一致。但需要了解归档的存在，因为用户反馈"我的 App 不见了"可能不是卸载而是归档。排查路径是 `adb shell pm list packages --show-versioncode --archived` 或检查 `UsageStatsManager` 中的 App 使用时间。
+开发者不需要为归档做特殊适配——系统保证用户数据不丢、恢复后状态一致。但需要了解归档的存在，因为用户反馈"我的 App 不见了"可能不是卸载而是归档。排查路径是按包名查询 `adb shell pm get-archived-package-metadata <package>`（Android 15+），或用 `adb shell pm list packages -u --show-versioncode` 查看已卸载但保留数据的应用。后者不等于 archived 列表，但能覆盖未安装/保留数据的包。
 
 [已验证: 官方文档, developer.android.com/topic/performance/app-hibernation; source.android.com/docs/core/storage/app-archiving]
 
@@ -443,7 +445,7 @@ OPPO 和 vivo 的策略类似：
 | Android 12 (API 31) | 新增 Restricted 桶、Exact Alarm 需要声明权限 |
 | Android 13 (API 33) | Restricted 桶触发条件从 45 天缩短到 8 天、FCM 配额不再与桶绑定 |
 | Android 14 (API 34) | PendingIntent 后台启动改为显式 opt-in API、前台服务类型强制声明 |
-| Android 15 (API 35) | App Archiving（自动归档）：存储紧张时物理清除长期未用 App 的 APK 和缓存，保留用户数据；引入能效熔断 `PENDING_JOB_REASON_ENERGY_EFFICIENCY`，Job 因能量配额耗尽被挂起直至充电或配额刷新 |
+| Android 15 (API 35) | App Archiving（自动归档）：存储紧张时物理清除长期未用 App 的 APK 和缓存，保留用户数据；能效维度纳入 Job 调度决策（`PENDING_JOB_REASON_DEVICE_STATE` / `JOB_SCHEDULER_OPTIMIZATION`），Job 因能量预算不足被挂起直至条件改善 |
 | Android 16 (API 36) | Active 桶开始引入 regular job 指导额度（约 20 min / 60 min），并补充 Job pending reason introspection |
 
 [已验证: 官方文档, developer.android.com/about/versions]
@@ -476,7 +478,7 @@ WorkManager 保证的是"最终一致性"——任务最终会被执行，但不
 
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java` — Doze / Device Idle 状态机
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java` — App Standby Bucket 评估
-- `frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/UsageStatsService.java` — usage 统计与事件上报
+- `frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java` — usage 统计与事件上报
 - `frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java` — Job quota 与 pending reason
 - `frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java` — Battery Saver / low power mode
 - `frameworks/base/core/java/android/app/ActivityOptions.java` — PendingIntent 后台启动 opt-in API

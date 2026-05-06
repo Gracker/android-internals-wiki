@@ -13232,7 +13232,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T19:57:05+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T23:45:10+08:00",
+      "completed_reason": "P0 FramebufferSurface消费路径已修正（Layer latchBuffer非FramebufferSurface）；P0 源码索引已按Android 16更新路径；P1 buffer_handle_t描述已展开（native_handle含fd+ints，fence分离）；P1 Gralloc版本链已扩展（Android 10-16 Gralloc3→5/AIDL）"
     },
     {
       "section": "11.3",
@@ -13277,7 +13279,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T22:41:22+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T23:45:10+08:00",
+      "completed_reason": "P0 UsageStatsService路径已修正(services/usage/非apex/jobscheduler)；P0 PENDING_JOB_REASON_ENERGY_EFFICIENCY已删除(该常量不存在)，改为实际常量；P0 pm --archived命令已修正为pm get-archived-package-metadata；P1 Android 6-8二元App Standby已补充；P1 Android 11定位限制已收窄(foreground location FGS)"
     }
   ],
   "completed": [

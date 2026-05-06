@@ -9,21 +9,23 @@ related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 last_task2b_at: "2026-05-06T19:28:51+08:00"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
-last_task9_at: "2026-05-06T07:39:59+08:00"
+last_task9_at: "2026-05-06T19:57:05+08:00"
 task6_result: pass-light-edit
-task9_result: pending
-task2b_result: fixed
+task9_result: needs-rework
+task2b_result: pending
 task9_reviewed_date: "2026-05-06"
-task9_reviewed_by: "openclaw-task9"
-task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。"
+task9_reviewed_by: openclaw-task9
+task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。 | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。"
 last_task6_at: "2026-05-06T08:15:00+08:00"
 task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。"
+last_task9_review_log: "logs/deep-review/2026-05-06-19-deep-review.md"
+review_notes: "2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。"
 ---
 
 <!-- outline-start -->
@@ -580,7 +582,7 @@ App 进程内 BLASTBufferQueue
 
 ### buffer_handle_t 本质
 
-`buffer_handle_t`（定义于 `system/core/libcutils/include/cutils/native_handle.h`）是 opaque handle，本质是 file descriptor（通常是 dmabuf fd，少数情况是 ashmem fd + sync fd）：
+`buffer_handle_t`（定义于 `system/core/libcutils/include/cutils/native_handle.h`）是 gralloc 返回的 opaque handle，实际结构是 `native_handle_t`：包含一个或多个 fd（通常是 dmabuf fd）以及厂商私有整数元数据：
 
 ```c
 // system/core/libcutils/include/cutils/native_handle.h
@@ -596,14 +598,21 @@ typedef const native_handle_t* buffer_handle_t;
 
 `system/core/include/system/graphics.h` 中定义的是 pixel format、dataspace 等图形常量，不包含 `native_handle_t` / `buffer_handle_t` 的结构定义。
 
-Binder 跨进程传递时只复制 fd，接收进程通过 `GraphicBufferMapper::importBuffer()` 把 fd 映射到本地虚拟地址。
+Binder 跨进程传递时，`GraphicBuffer::flatten()` 会传输 handle 的 fds 和 ints 数组；接收进程通过 `GraphicBufferMapper::importBuffer()` 把 fd 映射到本地虚拟地址。同步 fence 与 buffer handle 分离——acquire / release fence 作为独立的 fd 在 BufferQueue 传递（对应 fence 对象），不包含在 `native_handle_t` 的 fd 数组中。
 
 ### Gralloc Allocator / Mapper HAL 分工
 
-- **Allocator 3.x** (`IAllocator.hal`)：分配物理内存，返回 `buffer_handle_t`
-- **Mapper 4.x** (`IMapper.hal`)：把 `buffer_handle_t` 导入进程地址空间（`importBuffer`）、映射供 CPU 访问（`lock`）、失效缓存同步（`flush`/`invalidate`）、释放（`freeBuffer`）
+Gralloc HAL 分为 Allocator（分配物理内存）和 Mapper（导入进程地址空间）两个接口，版本随 Android 演进逐步更新：
 
-`GraphicBufferMapper`（`GrallocMapper.cpp`）是 Mapper 4.x 在 framework 层的 wrapper，App 层面操作 buffer 时不会直接调用它，但它是 CPU 访问 graphic buffer 的必经之路。
+| Android 版本 | 常见版本 | 说明 |
+|:---|:---|:---|
+| Android 10 / 11 | Gralloc 3 / 4 | HIDL 接口，Allocator 3.x / Mapper 4.x |
+| Android 12+ | 逐步引入 stable-C / mapper 4 | 开始向 AIDL 过渡 |
+| Android 16 | Gralloc 5 / AIDL | Framework 侧 `GraphicBufferMapper` 优先尝试 `Gralloc5Mapper`（AIDL），再 fallback 到 `Gralloc4Mapper`、`Gralloc3Mapper`（HIDL） |
+
+Mapper 的核心操作：`importBuffer`（导入进程地址空间）、`lock`（映射供 CPU 访问）、`flush`/`invalidate`（缓存同步）、`freeBuffer`（释放）。
+
+Framework 层入口是 `GraphicBufferMapper`（`libs/ui/GraphicBufferMapper.cpp`），App 层面操作 buffer 时不会直接调用它，但它是 CPU 访问 graphic buffer 的必经之路。
 
 ### HWC 合成类型判断
 
@@ -624,7 +633,7 @@ enum HwcCompositionType {
 
 ### BLAST 模式下的位置变化
 
-Legacy 模式：BufferQueue Consumer 在 SurfaceFlinger 进程，通过 `FramebufferSurface` 消费。  
+Legacy 模式：BufferQueue Consumer 在 SurfaceFlinger 进程侧的 Layer 路径中，由 `Layer::onBufferAvailable` → `latchBuffer` 消费 buffer 并参与合成。注意 `FramebufferSurface` 属于显示输出 / client target 路径（用于 HWC CLIENT 合成结果写回），不参与 App layer 的 buffer 消费。
 BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemConsumer` 持有 Consumer 端，`BBQBufferQueueProducer` 继承 `BufferQueueProducer`，通过异步 ProducerListener 回调同步。Buffer + Geometry 原子提交解决了帧内不一致问题。
 
 ### Perfetto / dumpsys 观测点
@@ -640,18 +649,20 @@ BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemCon
 
 ### 源码文件索引
 
+以下路径基于 AOSP android-16.0.0_r1；旧版本部分路径可能不同，已标注。
+
 | 文件 | 关键内容 |
 |:---|:---|
 | `frameworks/native/libs/gui/Surface.cpp` | ANativeWindow 实现，`dequeueBuffer`/`queueBuffer` |
 | `frameworks/native/libs/gui/BufferQueue.cpp` | `createBufferQueue()` 工厂方法 |
 | `frameworks/native/libs/gui/BLASTBufferQueue.cpp` | App 进程内 BufferQueue（BLAST 模式） |
 | `frameworks/native/libs/gui/GLConsumer.cpp` | SurfaceTexture 消费者端实现 |
-| `frameworks/native/libs/gui/GraphicBuffer.cpp` | Framework 层 buffer 对象封装 |
+| `frameworks/native/libs/ui/GraphicBuffer.cpp` | Framework 层 buffer 对象封装（旧版本在 `libs/gui/`） |
 | `system/core/libcutils/include/cutils/native_handle.h` | `native_handle_t` / `buffer_handle_t` 定义 |
-| `hardware/interfaces/graphics/allocator/3.0/IAllocator.hal` | Gralloc Allocator HAL 3.0 |
-| `hardware/interfaces/graphics/mapper/4.0/IMapper.hal` | Gralloc Mapper HAL 4.0 |
-| `frameworks/native/libs/gui/GrallocMapper.cpp` | `GraphicBufferMapper` 实现 |
-| `frameworks/native/services/surfaceflinger/layers/layers.proto` | `HwcCompositionType` enum |
+| `hardware/interfaces/graphics/allocator/3.0/IAllocator.hal` | Gralloc Allocator HAL 3.0（HIDL） |
+| `hardware/interfaces/graphics/mapper/4.0/IMapper.hal` | Gralloc Mapper HAL 4.0（HIDL） |
+| `frameworks/native/libs/ui/GraphicBufferMapper.cpp` | `GraphicBufferMapper` 实现，Android 16 优先 Gralloc5/AIDL（旧版本在 `libs/gui/GrallocMapper.cpp`） |
+| Perfetto `protos/perfetto/trace/android/surfaceflinger_layers.proto` | `HwcCompositionType` enum（替代旧版 `layers.proto` 路径） |
 
 ---
 
