@@ -219,7 +219,7 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 
 Home 真正首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFlinger 合成。用户此时已经能看到桌面，但广播尾声还没结束。
 
-`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都由 `UserManagerService` 负责发。前者发生在用户进入 running locked 阶段，适合 Direct Boot aware 组件；后者要等用户解锁、CE storage 可用之后才发。它们都不等同于 Launcher 首帧，更不等同于“SystemServer 启动完自动同步收尾”。
+`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都由 `UserController`（`frameworks/base/services/core/java/com/android/server/am/UserController.java`）负责发送。前者发生在用户进入 running locked 阶段，适合 Direct Boot aware 组件；后者要等用户解锁、CE storage 可用之后才发。`UserManagerService` 只负责用户信息与状态管理，不承担 boot completed 广播。这两个广播都不等同于 Launcher 首帧，更不等同于“SystemServer 启动完自动同步收尾”。
 
 [待补充：一张同时标出 systemReady、Home 首帧、LOCKED_BOOT_COMPLETED、BOOT_COMPLETED 的 Trace / logcat 对照图]
 
@@ -424,7 +424,7 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 | Zygote 预加载 | zygote / zygote64 上出现 `PreloadClasses`、`PreloadResources` 等 slice | preloaded-classes、ART APEX、odsign / dexpreopt |
 | SystemServer 启动 | `StartServices` 下嵌套 bootstrap / core / other / apex services | 具体 service 的初始化和依赖 |
 | Home 首帧 | Launcher bindApplication、首帧提交、SurfaceFlinger 合成 | Launcher 自身初始化、WMS、SF |
-| 广播长尾 | UI 已经稳定，events buffer 里还在推进 `LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED` | UserManagerService、广播接收器、后台收尾任务 |
+| 广播长尾 | UI 已经稳定，events buffer 里还在推进 `LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED` | UserController、广播接收器、后台收尾任务 |
 
 [待补充：一张按阶段标注的开机 Trace，总结从 init 到 Home 首帧的关键 slice]
 
