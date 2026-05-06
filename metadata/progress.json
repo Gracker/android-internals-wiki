@@ -5327,24 +5327,24 @@
       "section": "16.4",
       "chapter": "16.4",
       "status": "ready-for-review",
-      "reviewed_date": "2026-05-04",
+      "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
       "last_task9_at": "2026-05-06T00:36:51+08:00",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
       "task2b_state": "pending",
       "task2b_result": "pending",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task2b_fixed_at": "2026-04-27T11:41:00+08:00",
       "last_task2b_at": "2026-04-27T11:41:00+08:00",
       "applicable_versions": "Android 17 (API 37)",
       "drafted_date": "2026-04-07",
       "drafted_by": "openclaw-task2a",
-      "last_task6_at": "2026-05-04T21:35:46+08:00",
+      "last_task6_at": "2026-05-06T23:21:00+08:00",
       "tags": [
         "android",
         "linux",
@@ -5353,7 +5353,9 @@
       "review_notes": "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径；2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修：修正禁用词、表格格式、边界措辞；B 类问题：sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。",
       "task6_reviewed_date": "2026-05-04",
       "review_log": "logs/review/2026-05-04-21-review.md",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-00-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-06-00-deep-review.md",
+      "last_task6_review_log": "logs/review/2026-05-06-23-review.md",
+      "task6_review_notes": "L1/L2 小修；补齐 sources，清理编辑痕迹，MGLRU 数字降级为方向性表述；无新增 Task2B 回炉项；待 Task9 复审。"
     },
     "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md": {
       "title": "Android 17 (API 37) 性能行为变更与适配方法",
@@ -5492,18 +5494,18 @@
       "last_verified": "2026-04-04",
       "last_verified_against": "公开资料",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task2b_state": "pending",
-      "task6_result": "needs-rework",
+      "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
-      "last_task6_at": "2026-05-06T20:13:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-06-20-review.md",
-      "task6_review_notes": "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。",
+      "last_task6_at": "2026-05-06T23:21:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-23-review.md",
+      "task6_review_notes": "L1/L2 小修；修正频率轨道措辞、补 SQL 解释、归化缓存/唤醒路径术语；无新增 Task2B 回炉项；待 Task9 复审。",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T11:39:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-06-11-deep-review.md",
@@ -9066,7 +9068,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T22:41:22+08:00",
+  "last_updated": "2026-05-06",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11528,12 +11530,21 @@
     },
     "17.2": {
       "date": "2026-05-06",
-      "time": "20:13",
-      "result": "needs-rework",
+      "time": "23:21",
+      "result": "pass-light-edit",
       "mode": "revisiting",
       "fixes": 8,
-      "issues": 1,
-      "notes": "L1/L2 小修；技术风险信号已写入 queue.json 与 suggestions.md，交 Task2B/Task9。"
+      "issues": 0,
+      "notes": "L1/L2 小修；修正频率轨道措辞、补 SQL 解释、归化缓存/唤醒路径术语；无新增 Task2B 回炉项；待 Task9 复审。"
+    },
+    "16.4": {
+      "date": "2026-05-06",
+      "time": "23:21",
+      "result": "pass-light-edit",
+      "mode": "revisiting",
+      "fixes": 18,
+      "issues": 0,
+      "notes": "L1/L2 小修；补齐 sources，清理编辑痕迹，MGLRU 数字降级为方向性表述；无新增 Task2B 回炉项；待 Task9 复审。"
     }
   },
   "2026-05-04-20-task9": {
@@ -12073,5 +12084,30 @@
         "auto_finalized": false
       }
     }
+  },
+  "2026-05-06-23-task6": {
+    "task": "task6-review",
+    "time": "2026-05-06T23:21:00+08:00",
+    "review_log": "logs/review/2026-05-06-23-review.md",
+    "sections": [
+      {
+        "section": "16.4",
+        "title": "Android 17 + Kernel 6.12 系统级性能优化",
+        "result": "pass-light-edit",
+        "fixes": 18,
+        "issues": 0,
+        "auto_promoted": false
+      },
+      {
+        "section": "17.2",
+        "title": "SoC 平台差异",
+        "result": "pass-light-edit",
+        "fixes": 8,
+        "issues": 0,
+        "auto_promoted": false
+      }
+    ],
+    "skipped": [],
+    "auto_finalized": []
   }
 }
