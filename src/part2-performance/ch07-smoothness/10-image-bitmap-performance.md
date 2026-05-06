@@ -14,7 +14,7 @@ drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-04-13"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-06"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 confidence: medium
@@ -37,8 +37,8 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -47,10 +47,10 @@ last_rework_by: openclaw-task2b
 last_rework_reason: "P95 Task9回炉(第二轮)：Glide trimMemory RequestManager暂停语义按源码修正为TRIM_MEMORY_MODERATE条件触发"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-05"
-task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
+task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 last_task9_at: "2026-05-05T09:20:00+08:00"
 task9_review_notes: "2026-05-05 09:20 task9 deep-review: needs-rework。P1 1：Glide trimMemory 的 RequestManager 暂停语义错误；P2 3。"
-last_task6_at: "2026-05-05T07:30:00+08:00"
+last_task6_at: "2026-05-06T08:15:00+08:00"
 task9_result: pending
 ---
 
@@ -142,7 +142,7 @@ Android 9（API 28）引入了 `ImageDecoder`，官方推荐在新项目优先�
 
 **setTargetSize 替代 inSampleSize**。不需要手动计算 2 的幂采样率，直接设定期望尺寸，解码器内部处理缩放。`ImageDecoder` 在单次解码流水线中完成采样和缩放，避免 `BitmapFactory` 常见的「先按 2 幂采样再二次缩放」路径中产生的大图缓冲区峰值。对大图场景（如 4000×3000 原图解码到 1080p），这个差异能显著降低解码过程中的内存峰值（Memory Spike），减少 OOM 风险。
 
-需要注意：`setTargetSize` 必须在 `OnHeaderDecodedListener` 回调内设置；最终走 sample 还是 scale 由 codec 能力决定，不能无条件写成所有格式都避免大缓冲。`setTargetSampleSize()` 可以让解码器按可高效执行的方向取整。
+这两个边界要分清：`setTargetSize` 必须在 `OnHeaderDecodedListener` 回调内设置；最终走 sample 还是 scale 由 codec 能力决定，不能无条件写成所有格式都避免大缓冲。`setTargetSampleSize()` 可以让解码器按可高效执行的方向取整。
 
 ```java
 // ImageDecoder 的典型用法
@@ -226,14 +226,9 @@ Hardware Bitmap 的限制，不是“系统会自动降级成普通 Bitmap”，
 
 
 
-<!-- AIW-源码调研-2026-05-02 -->
-## 补充：Hardware Bitmap 与 RenderThread/SurfaceFlinger 合成管线
+## Hardware Bitmap 与 RenderThread/SurfaceFlinger 合成管线
 
-> 以下内容来源于 2026-05-02 源码调研，补充了原章节未明确的 Hardware Bitmap 合成管线行为。
-
-**原盲区**：Hardware Bitmap 是否可以绕过 RenderThread 的某些流程，直接作为单独图层交给 SurfaceFlinger 合成，从而进一步省去 GPU 拷贝？
-
-**结论**：Hardware Bitmap **不能**绕过 RenderThread 和 GPU 合成管线。其优化点是省去 RenderThread 中同步 upload 的 4-8ms（1080p RGBA），而非跳过渲染管线直接交给 SurfaceFlinger。
+Hardware Bitmap 仍要经过 RenderThread 和 GPU 合成管线，不会直接作为独立图层交给 SurfaceFlinger。它省掉的是 RenderThread 中同步 upload 的 4-8ms（1080p RGBA），不是整条渲染管线。
 
 ### 源码级证据
 
@@ -504,8 +499,7 @@ Hardware Bitmap 的价值就在这里。像素本来就在 GPU 可访问内存�
 
 `Bitmap.prepareToDraw()` 从 Android 7.0 起就在 RenderThread 上异步触发纹理上传，公开 API 行为未在 Android 15 发生变更。工程实践上，在解码完成后的工作线程或图片即将显示前调用 `prepareToDraw()` 即可预上传；不需要额外配合 `Choreographer` 的 `CALLBACK_COMMIT` 阶段——`Choreographer.postFrameCallback()` 投递的是 `CALLBACK_ANIMATION` 类型，不等于 `CALLBACK_COMMIT`。[已验证：AOSP `Bitmap.java` prepareToDraw() 注释在 android-15.0.0_r1 和 android-16.0.0_r1 未变；Choreographer 回调类型见 AOSP `Choreographer.java`]
 
-<!-- AIW-源码调研-2026-04-27 -->
-**源码级补充**：关于"Hardware Bitmap 是否绕过 RenderNode 直接提交给 SurfaceFlinger"的问题，答案是否定的。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理（1080p RGBA Bitmap 约 4-8ms），而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[来源：AOSP `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp` android-14]
+源码路径上，Hardware Bitmap 不能绕过 RenderNode 直接提交给 SurfaceFlinger。Hardware Bitmap 仍需经过 Display List 录制 → `syncFrameState` 同步 → `DrawFrame` 执行的完整 RenderNode 流程。优化点在于 **upload 时机的转移**：普通 Bitmap 在首帧 `syncFrameState` 期间同步 upload 纹理（1080p RGBA Bitmap 约 4-8ms），而 Hardware Bitmap 在创建时已完成 GPU 内存分配，首帧无需 upload。`Bitmap.prepareToDraw()` 对 `Config.HARDWARE` 是 no-op（因为 upload 已完成）。SurfaceFlinger 的 HWC 合成决策（DEVICE Overlay vs CLIENT Composition）不受 Hardware Bitmap 影响，仍按标准 BufferQueue → validate → compose 流程执行。[来源：AOSP `Bitmap.java`、`DrawFrameTask.cpp`、`SkiaRecordingCanvas.cpp` android-14]
 
 [图：Perfetto RenderThread 片段。`Bitmap.prepareToDraw` 或首帧 `DrawFrame` 前后出现长 slice，并且能看到同一帧的 jank frame。旁边补一张使用 Hardware Bitmap 的正常帧，说明少掉了首帧 texture upload。]
 
