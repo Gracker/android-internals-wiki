@@ -11,10 +11,10 @@ tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "se
 related_chapters: ["2.1", "18.2"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
@@ -24,11 +24,13 @@ sources:
   - "AOSP frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
   - "EGL 1.5 Specification"
 task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-20
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-07"
 last_task6_at: "2026-05-07T05:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-05-review.md"
 task6_review_notes: "2026-05-07 task6 review 05:05：补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词；L1/L2 通过，无新增回炉项，转 Task9 复审。"
+last_task9_at: "2026-05-07T05:27:07+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-07-05-deep-review.md"
 ---
 
 # 18.5 Android View 多窗口链路

@@ -12590,3 +12590,18 @@ UprobeStats 在 Android 16/17 的真实数据出口与开销边界缺少一手�
 ### 关联章节
 13.9, 14.10
 
+## [2026-05-07] 18.3 Android View 软件渲染路径 — 软件渲染多线程与能效策略证据链
+
+### 盲区描述
+正文仍引用 Android 15+ `Efficiency-aware Throttling` 与 Android 16 `SkTaskGroup` 软件渲染多线程作为潜在机制，但本轮复核只确认 `SkTaskGroup` 在 android-9.0.0_r1 已存在，未确认 Android 16 View software Canvas 默认启用 SkTaskGroup 工作线程，也未找到公开 AOSP/官方文档证明系统会专门识别软件渲染低效负载并降频。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对照 `external/skia/src/core/SkTaskGroup.*`、HWUI software Canvas 路径和 `Canvas.cpp` / `Surface.cpp`，确认是否存在默认并行 CPU 栅格化调用链。
+- 采集 software Canvas 场景的 Perfetto trace：UI Thread、Skia worker 线程、CPU freq、thermal、power rail，确认是否有专门策略而非通用 thermal throttling。
+- 若只能证明通用热管理，正文应删除 Android 15+/16 的具名机制，只保留 CPU 栅格化能效劣势与实测边界。
+
+### 关联章节
+18.3, 5.5, 11.1

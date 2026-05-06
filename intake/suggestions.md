@@ -1325,3 +1325,32 @@
 - **问题**：[P2] 正文写 Perfetto 中看 `dm-crypt/dm-verity track` 或“dm-verity track：哈希验证耗时”。复核 `android16-6.12/drivers/md/dm-verity-target.c` 未见专用 `TRACE_EVENT`；标准 Perfetto/Ftrace 更稳定的观察面是 block tracepoint、CPU scheduling、相关 kworker/crypto CPU slice，或在工程环境中显式打开 function/kprobe/dynamic ftrace。把它写成固定 track 容易误导读者到 UI 里找不存在的数据轨道。
 - **建议**：改成“dm-verity 相关耗时需通过 block I/O 延迟、CPU/crypto 热点和可选动态探针间接定位；默认 Perfetto 不保证存在专用 dm-verity track”。
 - **review 日志**：logs/deep-review/2026-05-07-02-deep-review.md
+
+## [Task9 Deep Review] 18.3 Android View 软件渲染路径 — 2026-05-07
+- **类型**：数据缺失/性能口径
+- **位置**：L107-L109 lockCanvas <1ms 与 16KB Page 推导
+- **问题**：`lockCanvas` 已被正文写成会受 `dequeueBuffer()` / release fence / BufferQueue 背压影响，但后文又说“正常 <1ms，因为只是内存映射”；16KB Page “Page Fault 数减少约 75%、首帧映射开销降低”也缺实测。
+- **建议**：把 `<1ms` 和 75% 页表推导标成示例/理论边界；补 Perfetto slice、page-fault/minflt、分辨率、buffer 格式和 4KB/16KB A/B 条件后再给数字。
+- **review 日志**：logs/deep-review/2026-05-07-05-deep-review.md
+
+## [Task9 Deep Review] 18.3 Android View 软件渲染路径 — 2026-05-07
+- **类型**：交叉引用
+- **位置**：L258-L259 BufferQueue / 图形 API 链接
+- **问题**：`13-buffer-queue.md`、`14-graphics-api-evolution.md` 按当前 ch18 目录解析不存在。
+- **建议**：改为 `../../part1-fundamentals/ch02-rendering/13-buffer-queue.md` 与 `../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md`，或使用项目统一章节链接。
+- **review 日志**：logs/deep-review/2026-05-07-05-deep-review.md
+
+## [Task9 Deep Review] 18.5 Android View 多窗口链路 — 2026-05-07
+- **类型**：源码边界
+- **位置**：L58-L61 Dialog / PopupWindow 是否独立 Window
+- **问题**：正文写 Dialog / PopupWindow “不是独立 Window（某些实现中）”。android-16 `Dialog.java` 构造 `PhoneWindow` 并在 `show()` 中 `mWindowManager.addView(mDecor,l)`；`PopupWindow.java` 也通过 `mWindowManager.addView(decorView,p)` 挂窗。
+- **建议**：改成“Dialog/PopupWindow 会创建独立 ViewRoot/WindowManager entry，通常会有独立 Surface；具体 Surface/Layer 行为以窗口类型、硬件加速和平台版本为准”。
+- **review 日志**：logs/deep-review/2026-05-07-05-deep-review.md
+
+## [Task9 Deep Review] 18.5 Android View 多窗口链路 — 2026-05-07
+- **类型**：交叉引用
+- **位置**：L316-L317 图形 API / SurfaceFlinger 链接
+- **问题**：`../../part1-foundation/ch02-graphics-foundation/` 路径不存在；实际目录为 `src/part1-fundamentals/ch02-rendering/`。且 SurfaceFlinger 实际是 2.6 `06-surfaceflinger.md`，不是 2.5。
+- **建议**：改为 `../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md` 和 `../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md`。
+- **review 日志**：logs/deep-review/2026-05-07-05-deep-review.md
+
