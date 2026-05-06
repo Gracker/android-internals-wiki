@@ -9,11 +9,11 @@ related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
 pipeline_stage: task2b_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-05-06"
 last_task9_at: "2026-05-06T07:39:59+08:00"
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -21,6 +21,8 @@ task2b_result: fixed
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: "openclaw-task9"
 task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。"
+last_task6_at: "2026-05-06T08:15:00+08:00"
+task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。"
 ---
 
 <!-- outline-start -->
@@ -416,9 +418,9 @@ ASurfaceControl_release(sc);
 
 ### AHardwareBuffer 生命周期
 
-如果应用自己管理 `AHardwareBuffer` 池，API 36 起可以把“何时可复用”直接绑定到 `ASurfaceTransaction_setBufferWithRelease()` 的 release callback。回调拿到的 release fence fd 如果大于等于 0，表示系统还没彻底放开这块 buffer；调用方负责等待并关闭这个 fd。返回 `-1` 时，buffer 已经可直接复用。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
+如果应用自己管理 `AHardwareBuffer` 池，API 36 起可以把“何时可复用”直接绑定到 `ASurfaceTransaction_setBufferWithRelease()` 的 release callback。回调拿到的 release fence fd 如果大于等于 0，表示这块 buffer 还没有释放完成；调用方负责等待并关闭这个 fd。返回 `-1` 时，buffer 已经可直接复用。[已验证: `android/surface_control.h` 中 `ASurfaceTransaction_setBufferWithRelease()` 的说明]
 
-Android 10-15 没有专用的 NDK release callback，但不是没有官方回收路径。做法是继续用 `ASurfaceTransaction_setBuffer()` 提交，再在 `OnComplete` 里通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取回上一块 buffer 的 release fence。拿到 fd 后的处理规则和 API 36 一样：大于等于 0 就等待并关闭，返回 `-1` 表示可直接复用。
+Android 10-15 没有专用的 NDK release callback，但仍然有官方回收路径。做法是继续用 `ASurfaceTransaction_setBuffer()` 提交，再在 `OnComplete` 里通过 `ASurfaceTransactionStats_getPreviousReleaseFenceFd(stats, sc)` 取回上一块 buffer 的 release fence。拿到 fd 后的处理规则和 API 36 一样：大于等于 0 就等待并关闭，返回 `-1` 表示可直接复用。
 
 实际工程里通常不会在 callback 里立刻销毁 buffer，而是把它归还到 buffer pool。这样既能保证时序安全，也能避免频繁分配 / 释放硬件 buffer 带来的额外抖动。
 
@@ -428,7 +430,7 @@ Android 10-15 没有专用的 NDK release callback，但不是没有官方回收
 
 WebView 并不是每次都走独立 SurfaceControl 子 Layer。普通页面仍可能走 GL Functor 或其他宿主参与度更高的模式；只有 provider、feature 和场景条件满足时，Chromium 才会把网页合成结果放到独立的 child layer，再由宿主窗口在对应区域留出透明占位。[已验证: Chromium WebView 架构文档对多种渲染模式的划分；待验证: 具体 feature flag 和默认启用条件按 provider 版本而异]
 
-这个模式的价值，是把网页重绘和宿主窗口绘制拆开。信息流页面最常见的现象，是顶部原生 Toolbar 和底部原生输入条都很轻，但页面主体是复杂 H5。只要网页里有大面积重排、Canvas 动画或视频贴片，宿主 App 的 RenderThread 就会跟着被拖慢。若 WebView 仍在宿主绘制过程中同步执行那一大段网页绘制，原生按钮和网页会一起掉帧。把网页内容放进独立 SurfaceControl layer 后，宿主窗口只保留原生控件和透明占位，网页内容由 Chromium 自己的合成线程按自己的节奏产出 buffer，SurfaceFlinger 在合成阶段把两边拼在一起。[已确认: 与 §18.13 WebView 渲染链路对 WebView 多模式的描述一致]
+这个模式的价值，是把网页重绘和宿主窗口绘制拆开。信息流页面最常见的现象，是顶部原生 Toolbar 和底部原生输入条都很轻，但页面主体是复杂 H5。只要网页里有大面积重排、Canvas 动画或视频贴片，宿主 App 的 RenderThread 就会跟着被拖慢。若 WebView 仍在宿主绘制过程中同步执行那一大段网页绘制，原生按钮和网页会一起掉帧。把网页内容放进独立 SurfaceControl layer 后，宿主窗口只保留原生控件和透明占位，网页内容由 Chromium 自己的合成线程按自己的节奏产出 buffer，SurfaceFlinger 在合成阶段把两边拼在一起。[已确认: 与 §18.13 WebView 渲染模式对 WebView 多模式的描述一致]
 
 排查时，重点看三处证据。第一，看 `dumpsys SurfaceFlinger`，宿主窗口下面是否多出一个属于 WebView 的 child layer。第二，看 Perfetto，是否能看到 Viz / Compositor 相关线程在提交独立 buffer，而不是所有网页绘制都堆在宿主 RenderThread 的 `DrawFrame` 里。第三，看 SurfaceFlinger 侧的 `setTransactionState`、`latchBuffer` 和 FrameTimeline，如果网页内容单独更新，宿主窗口的产帧节奏和网页 layer 的产帧节奏通常不会完全重合。
 
@@ -449,7 +451,7 @@ WebView 并不是每次都走独立 SurfaceControl 子 Layer。普通页面仍�
 
 ### 画中画（Picture-in-Picture）
 
-PiP 是 SurfaceControl 最适合观察的系统场景之一，因为进入小窗的过程，本质上就是“同一块视频内容在新的父节点、位置和裁剪范围下继续显示”。系统侧并不想让应用在每一步动画里重画整棵 View 树，它更倾向于拿着已经存在的视频 layer，配合 `reparent`、位置、裁剪和 alpha 这类 Transaction 做连续动画。[已验证: WMS / SurfaceControl 动画模型]
+PiP 是 SurfaceControl 最适合观察的系统场景之一。进入小窗时，同一块视频内容需要在新的父节点、位置和裁剪范围下继续显示。系统侧并不想让应用在每一步动画里重画整棵 View 树，它更倾向于拿着已经存在的视频 layer，配合 `reparent`、位置、裁剪和 alpha 这类 Transaction 做连续动画。[已验证: WMS / SurfaceControl 动画模型]
 
 分析 PiP 卡顿时，可以把问题拆成两段。第一段是窗口几何变化是否比内容更新更快。若 WindowManager 先把小窗边界改了，应用的新尺寸内容还没准备好，SurfaceFlinger 就可能短暂看到旧 buffer 配新边界，表现为黑边、拉伸或一帧空洞。第二段是视频 layer 本身是否稳定供帧。PiP 期间 decoder、渲染线程和 SurfaceFlinger 仍然要保持稳定节奏；只要 acquire fence 或 decoder 输出迟到，小窗动画也会显得顿挫。
 
@@ -509,10 +511,9 @@ adb shell dumpsys SurfaceFlinger | grep -A 20 "<package>"
 ```
 
 
-<!-- AIW-源码调研-2026-04-23 -->
 ## 附录：图形缓冲体系对象边界与 BufferQueue 流转链（源码级）
 
-> 本节补充 §2.10 盲区调研成果，建立 Surface / ANativeWindow / HardwareBuffer / GraphicBuffer / Gralloc / HWC 的完整对象边界与流转链。
+> 本附录用于明确 Surface / ANativeWindow / HardwareBuffer / GraphicBuffer / Gralloc / HWC 的对象边界与流转路径。
 
 ### 对象边界总览
 
@@ -591,7 +592,7 @@ BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemCon
 
 ### Perfetto / dumpsys 观测点
 
-| 工具 | 可见对象 | 链路位置 |
+| 工具 | 可见对象 | 所在位置 |
 |:---|:---|:---|
 | `dumpsys SurfaceFlinger` | Layer name / CompositionType / frame 信息 | HWC 决策层 |
 | `dumpsys meminfo <pid>` | Graphics 项（GraphicBuffer / ashmem / dmabuf 占用） | buffer_handle_t 内存 |
@@ -621,10 +622,10 @@ BLAST 模式（Android 11+）：Consumer 移入 App 进程，`BLASTBufferItemCon
 ---
 
 > **交叉引用**：
-> - BLAST Buffer 生命周期详见 [18.2 Android View 标准链路（BLAST 深入）](02-android-view-standard.md)
+> - BLAST Buffer 生命周期详见 [18.2 Android View 标准路径（BLAST 深入）](02-android-view-standard.md)
 > - SurfaceView 的 SurfaceControl 集成详见 [18.6 SurfaceView 直出路径](06-surfaceview.md)
-> - Vulkan Presentation 与 SurfaceControl 详见 [18.9 Vulkan 原生渲染链路](09-vulkan-native.md)
-> - WebView 的多种合成模式详见 [18.13 WebView 渲染链路](13-webview-rendering.md)
+> - Vulkan Presentation 与 SurfaceControl 详见 [18.9 Vulkan 原生渲染路径](09-vulkan-native.md)
+> - WebView 的多种合成模式详见 [18.13 WebView 渲染路径](13-webview-rendering.md)
 > - BufferQueue 详见 [2.13 图形缓冲区管理 (BufferQueue)](13-buffer-queue.md)
 > - SurfaceFlinger 合成策略详见 [2.6 SurfaceFlinger 与合成](06-surfaceflinger.md)
 > - Fence 所有权与同步模型详见 [2.16 Sync Fence 框架与帧同步机制](16-sync-fence.md)

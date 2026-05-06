@@ -2,7 +2,7 @@
 title: "ANR 类型与触发条件"
 section: "9.2"
 chapter: "9.2"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -34,7 +34,7 @@ sources:
     path: "intake/research-feeds/2026-04-01-07-ch09-binder-anr-android15-16-17.md"
 tags: [anr, input-dispatching, broadcast, service, contentprovider, timeout]
 related_chapters: ["9.1", "9.3", "9.4", "1.4", "1.5", "1.10"]
-reviewed_date: "2026-04-26"
+reviewed_date: "2026-05-06"
 review_v2_date: "2026-04-09"
 review_v2_by: "openclaw-task6"
 review_type: "post-polish-quality-gate"
@@ -45,10 +45,10 @@ task6_review_date: "2026-04-16"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task9_result: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-06T07:51:16+08:00"
@@ -59,6 +59,9 @@ task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "Task9 Deep Tech Review 回炉修复（4项源码/版本/命令错误）"
 task9_review_notes: "2026-05-05 09:20 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending，自动晋升 finalized。P2: FGS targetSdk 边界、BroadcastQueueModernImpl 明确化、Perfetto 观察点。"
+last_task6_at: "2026-05-06T08:15:00+08:00"
+auto_promoted: true
+task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理重复 DeepResearch 注入块与引用元信息；Task9 复审已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # ANR 类型与触发条件
@@ -360,31 +363,10 @@ adb shell cat /data/anr/anr_* | tail -200
 **误区五："ContentProvider ANR 不常见。"** 在使用多个 ContentProvider 做初始化的架构中（很多第三方 SDK 通过 ContentProvider 做自动初始化），任何一个超时都会阻塞整个 App 启动。
 
 
-### FGS Timeout ANR 机制源码解析 (Android 14→17)
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
-- 类型：DeepResearch 调研结果
-- 摘要：AOSP 源码视角逐行解析 ShortService 3分钟硬超时、TimeLimitedFgs 6h/24h 滚动窗口、onTimeout 回调链路、ForegroundServiceDidNotStopInTimeException 投递路径，覆盖 Android 14→17 的 FGS ANR 三段式语义演进。
-- 注入时间：2026-04-28
-- 价值：FGS timeout 是 Android 14+ 最重要的 ANR 新类型之一，ch09 章节目前对此覆盖不足
-
-
-
-### Android 14→17 Foreground Service Timeout ANR 机制深度解析
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
-- 类型：DeepResearch 调研结果
-- 摘要：AOSP 源码视角的 FGS 超时与 ANR 触发机制全解析。覆盖 Android 14 ShortService 3分钟硬超时、Android 15 TimeLimitedFgs 6h/24h滚动窗口、Android 16/17 的 AnrTimer native handler 化演进，以及 ActiveServices/ServiceRecord 中超时判定、onTimeout 回调、ForegroundServiceDidNotStopInTimeException 投递的完整代码路径。
-- 注入时间：2026-04-30
-- 价值：AOSP 源码级拆解 FGS timeout→ANR 全链路，填补 ch09 ANR 类型分析的重要参考空白
-
 ## 参考资料
 
-### Android 14→17 Foreground Service Timeout / ANR 机制
-- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md
-- 类型：DeepResearch 调研结果
-- 摘要：AOSP 源码视角梳理 Android 14-17 前台服务超时与 ANR 触发的三段式语义:ShortService 3 分钟硬超时、TimeLimitedFgs 6h/24h 滚动窗口、以及 AnrTimer native handler 化。详述 ServiceRecord.ShortFgsInfo 的 mStartTime→getTimeoutTime→getProcStateDemoteTime→getAnrTime 时间线,ActiveServices 中 FGS timeout 的完整触发链路。
-- 注入时间：2026-04-29
-- 价值：首次系统梳理 FGS timeout 从 Android 14 到 17 的源码级演进,对 ANR 分析与前台服务优化有直接指导意义
-
+### 研究素材
+- Android 14→17 Foreground Service Timeout / ANR 机制（DeepResearch，2026-04-29）：AOSP 源码视角梳理 ShortService 3 分钟超时、TimeLimitedFgs 6h / 24h 滚动窗口、AnrTimer 演进，以及 ActiveServices / ServiceRecord 中的超时判定路径。
 
 - AOSP 源码路径：
   - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — Input ANR 超时检测
