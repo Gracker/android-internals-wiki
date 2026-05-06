@@ -40,7 +40,7 @@ sources:
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java @ android-16.0.0_r1"
   - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/pm/UserController.java @ android-16.0.0_r1"
+    path: "frameworks/base/services/core/java/com/android/server/pm/UserManagerService.java @ android-16.0.0_r1"
   - type: aosp
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java @ android-16.0.0_r1"
   - type: aosp
@@ -74,16 +74,16 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-01"
-task9_state: reviewed
+task9_state: pending
 task9_result: "needs-rework"
 last_task9_at: "2026-05-01T13:20:00+08:00"
-task2b_state: "pending"
+task2b_state: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-01"
-review_notes: "2026-05-05 task2b rework: P0 UserController path fixed (user→pm); P1 Cloud Compilation OTA scope softened; P1 kernel async probe/module placement added"
+review_notes: "2026-05-05 task2b rework: P0 UserController path fixed (user→pm); P1 Cloud Compilation OTA scope softened; P1 kernel async probe/module placement added | 2026-05-06 task2b rework(第三轮): P0 UserController→UserManagerService源码路径修正（AOSP android-16.0.0_r1 无 UserController.java，广播发送由 UserManagerService 负责）"
 task2b_result: fixed  # 2026-05-01 rework: TimingsTraceAndSlog path, startApexServices version (13 not 12), /product/etc/init added
 ---
 
@@ -214,7 +214,7 @@ fork 之后依赖的仍然是 Copy-on-Write。共享页不写就不复制，所�
 
 Home 真正首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFlinger 合成。用户此时已经能看到桌面，但广播尾声还没结束。
 
-`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都由 `UserController` 负责发。前者发生在用户进入 running locked 阶段，适合 Direct Boot aware 组件；后者要等用户解锁、CE storage 可用之后才发。它们都不等同于 Launcher 首帧，更不等同于“SystemServer 启动完自动同步收尾”。
+`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都由 `UserManagerService` 负责发。前者发生在用户进入 running locked 阶段，适合 Direct Boot aware 组件；后者要等用户解锁、CE storage 可用之后才发。它们都不等同于 Launcher 首帧，更不等同于“SystemServer 启动完自动同步收尾”。
 
 [待补充：一张同时标出 systemReady、Home 首帧、LOCKED_BOOT_COMPLETED、BOOT_COMPLETED 的 Trace / logcat 对照图]
 
@@ -224,7 +224,7 @@ Home 真正首帧可见，要再往后看 Launcher 自己的渲染和 SurfaceFli
 
 ### boot completed 广播
 
-`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都是 UserController 这一侧的用户生命周期广播，不是 Launcher 的 UI 里程碑。
+`ACTION_LOCKED_BOOT_COMPLETED` 和 `ACTION_BOOT_COMPLETED` 都是 UserManagerService 这一侧的用户生命周期广播，不是 Launcher 的 UI 里程碑。
 
 - `ACTION_LOCKED_BOOT_COMPLETED`：用户进入 running locked 阶段后发送，Direct Boot aware 组件可以在这里开始工作。
 - `ACTION_BOOT_COMPLETED`：用户真正解锁、CE storage 可用后发送。
@@ -419,7 +419,7 @@ dm-verity（Device Mapper Verity）是 Android 用于验证系统分区完整性
 | Zygote 预加载 | zygote / zygote64 上出现 `PreloadClasses`、`PreloadResources` 等 slice | preloaded-classes、ART APEX、odsign / dexpreopt |
 | SystemServer 启动 | `StartServices` 下嵌套 bootstrap / core / other / apex services | 具体 service 的初始化和依赖 |
 | Home 首帧 | Launcher bindApplication、首帧提交、SurfaceFlinger 合成 | Launcher 自身初始化、WMS、SF |
-| 广播长尾 | UI 已经稳定，events buffer 里还在推进 `LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED` | UserController、广播接收器、后台收尾任务 |
+| 广播长尾 | UI 已经稳定，events buffer 里还在推进 `LOCKED_BOOT_COMPLETED` / `BOOT_COMPLETED` | UserManagerService、广播接收器、后台收尾任务 |
 
 [待补充：一张按阶段标注的开机 Trace，总结从 init 到 Home 首帧的关键 slice]
 
@@ -500,7 +500,7 @@ init.zygote64.rc:  service zygote /system/bin/app_process64 ... --start-system-s
   - `frameworks/base/services/core/java/com/android/server/EventLogTags.logtags` — `boot_progress_system_run` / PMS 相关里程碑
   - `frameworks/base/services/core/java/com/android/server/am/EventLogTags.logtags` — `boot_progress_ams_ready` / `boot_progress_enable_screen`
   - `frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java` — `systemReady()`、`startHomeOnAllDisplays()` 调用路径
-  - `frameworks/base/services/core/java/com/android/server/pm/UserController.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED`
+  - `frameworks/base/services/core/java/com/android/server/pm/UserManagerService.java` — `ACTION_LOCKED_BOOT_COMPLETED` / `ACTION_BOOT_COMPLETED`
   - `frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java` — `enableScreenAfterBoot()`
   - `hardware/interfaces/cas/aidl/default/cas-default-lazy.rc` — lazy AIDL service 的 rc 示例
 - 官方文档：
