@@ -161,20 +161,20 @@
       "last_verified": "2026-04-17",
       "last_verified_against": "AOSP android-16.0.0_r1, source.android.com 官方文档",
       "confidence": "high",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T09:20:00+08:00",
+      "last_task9_at": "2026-05-06T15:23:00+08:00",
       "review_round": "4",
       "review_notes": "2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。",
-      "task9_review_notes": "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 3；UserController 广播发送路径、GBL/boottime 口径、async_probe 观测口径需回炉。",
+      "task9_review_notes": "2026-05-06 15:23 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 4；Kernel 模块加载顺序配置 `module.layout` 为错误锚点，需改为 modules.load / BOARD_*_KERNEL_MODULES_LOAD；既有 Zygote slice、Pixel 8 数据、dm-verity 版本边界 P2 沿用 suggestions。",
       "task6_reviewed_date": "2026-05-06",
       "task2b_result": "fixed"
     },
@@ -7773,6 +7773,17 @@
           "auto_promoted": false
         }
       ]
+    },
+    {
+      "task": "task9-deep-tech-review",
+      "section": "1.2",
+      "path": "src/part1-fundamentals/ch01-architecture/02-boot-process.md",
+      "result": "needs-rework",
+      "p0": 1,
+      "p1": 0,
+      "p2": 4,
+      "at": "2026-05-06T15:23:00+08:00",
+      "log": "logs/deep-review/2026-05-06-15-deep-review.md"
     }
   ],
   "progress": {

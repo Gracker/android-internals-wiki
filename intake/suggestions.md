@@ -1237,3 +1237,10 @@
 - **问题**：packet->set_render_pass_info() 不是 Perfetto SDK 默认 TracePacket API；它要求自定义 proto 扩展、生成代码并让 Trace Processor 侧能导入/解析。正文虽提到“定义自定义 proto”，但最小骨架没有交代 TracePacket 字段扩展和解析注册，读者复制会编译失败。
 - **建议**：要么改用官方 set_for_testing() 最小示例；要么补全自定义 TracePacket proto 扩展、生成代码、Trace Processor 解析/SQL 查询边界。
 - **review 日志**：logs/deep-review/2026-05-06-13-deep-review.md
+
+## [Task9 Deep Review] 1.2 系统启动全流程 — 2026-05-06
+- **类型**：数据口径/源码准确性
+- **位置**：L147 Bootloader / GBL / bootstat 段
+- **问题**：正文把 `boottime.bootloader.*` 写成“系列属性”。复核 `system/core/bootstat/bootstat.cpp`：bootloader 通过 `ro.boot.boottime` 提供 `stage:time` 列表，bootstat 再记录 `boottime.bootloader.<stage>` / `boottime.bootloader.total` boot event；这些不是直接可 `getprop boottime.bootloader.*` 的系统属性。
+- **建议**：改成“bootloader 上报 `ro.boot.boottime`；bootstat 展开为 `boottime.bootloader.*` 事件/指标”。GBL 只写成 Android 16 起推荐的 boot firmware 标准化方向，不要暗示这些 bootstat event 是 GBL 才引入或天然跨厂商可比。
+

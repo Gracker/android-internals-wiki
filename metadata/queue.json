@@ -13050,6 +13050,27 @@
       "status": "completed",
       "completed_at": "2026-05-06T14:51:49.073063",
       "completed_reason": "P0 Icon.createWithBitmap()回退描述已修正(asShared()无像素回退分支); P0 NotificationListeners.java路径已修正为NMS内部类"
+    },
+    {
+      "section": "1.2",
+      "section_title": "系统启动全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.2 系统启动全流程 Kernel 模块加载顺序配置仍存在事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-06-15-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/配置口径错误",
+          "location": "L155 Kernel async probe / module placement 段",
+          "detail": "[P0] 正文写 `module.layout` 控制 ko 加载顺序。复核 source.android.com Kernel Boot time optimization 与 vendor/odm_dlkm 分区文档：Android GKI 模块加载顺序由 `modules.load`、`BOARD_*_KERNEL_MODULES_LOAD`、模块依赖/softdep、init/modprobe/insmod 顺序影响；未见 `module.layout` 作为 Android 模块加载顺序配置。该文件名错误会让读者按不存在的锚点排查。",
+          "suggestion": "将 `module.layout` 改为 `modules.load` / `BOARD_VENDOR_KERNEL_MODULES_LOAD` / `BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD`，并补充 `MODULE_SOFTDEP()`、`module_name.async_probe=1`（kernel cmdline 或模块参数）的边界；观测侧使用 dmesg probe 时间、init/modprobe 日志、ftrace `initcall` / module 事件。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T15:23:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
