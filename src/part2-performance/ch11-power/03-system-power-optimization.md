@@ -1,4 +1,4 @@
-------
+---
 title: "系统级功耗优化"
 chapter: "11.3"
 status: ready-for-review
@@ -8,7 +8,6 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
 last_verified: "2026-04-20"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs"
-task2b_result: fixed
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -50,15 +49,18 @@ sources:
 tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
 related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
 task2b_result: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-29"
-task6_result: "pass-light-edit"
-task6_state: revisiting
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-06"
+task6_result: pass-light-edit
+task6_state: reviewed
 last_task2b_at: "2026-04-26T10:41:09+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
+last_task6_at: "2026-05-06T22:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-22-review.md"
+review_notes: "2026-05-06 task6 re-review (revisiting): pass-light-edit。修复 frontmatter 分隔符、L1 禁用/高风险词与中英文术语；无新增 L3/L4 回炉项，等待 Task9 复审。"
 review_round: 4
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -237,7 +239,7 @@ Android 13 到 Android 16 这组策略已经分散到不同控制器里。把职
 
 ## 系统级限后台策略
 
-Doze 和 Standby Buckets 会根据设备状态和用户行为动态收紧后台活动。除此之外，Android 还有一类更直接的后台限制，不管设备状态如何，都会生效。这些限制从 Android 8.0 开始逐步收紧，到 Android 14 已经形成了一套比较完整的后台管控体系。
+Doze 和 Standby Buckets 会根据设备状态和用户行为限制后台活动。除此之外，Android 还有一类更直接的后台限制，不管设备状态如何，都会生效。这些限制从 Android 8.0 开始逐步加强，到 Android 14 已经形成了一套比较完整的后台管控体系。
 
 ### Background Activity Starts 限制
 
@@ -247,7 +249,7 @@ Doze 和 Standby Buckets 会根据设备状态和用户行为动态收紧后台�
 
 如果 App 是 `PendingIntent` 的创建方，targetSdk 35+ 也不能再默认把这项能力连同 `PendingIntent` 一起交出去。需要在 `PendingIntent.getActivity()` 等创建点通过 `setPendingIntentCreatorBackgroundActivityStartMode(...)` 明确授予。
 
-这里没有新增 manifest 权限，也不是 runtime permission。变化点是 `ActivityOptions` 的显式授权模式。
+这里没有新增 manifest 权限，也不是运行时权限。变化点是 `ActivityOptions` 的显式授权模式。
 
 常见豁免场景包括：
 
@@ -278,9 +280,9 @@ Doze 和 Standby Buckets 会根据设备状态和用户行为动态收紧后台�
 
 ### 后台服务限制（Android 8.0+）
 
-Android 8.0（API 26）对后台服务做了根本性限制：**当 App 处于后台超过几分钟，系统不再允许它创建后台服务**。已有的后台服务会在几分钟内被停止。
+Android 8.0（API 26）对后台服务做了关键限制：**当 App 处于后台超过几分钟，系统不再允许它创建后台服务**。已有的后台服务会在几分钟内被停止。
 
-这直接推动了 `JobScheduler` 和后来的 `WorkManager` 成为后台任务的首选方案。如果 App 确实需要在后台持续执行任务，必须使用前台服务（Foreground Service），它会显示一个持续通知告知用户。但这也会增加功耗和用户的感知负担。
+这让 `JobScheduler` 和后来的 `WorkManager` 成为后台任务的首选方案。如果 App 需要在后台持续执行任务，必须使用前台服务（Foreground Service），它会显示一个持续通知告知用户。但这也会增加功耗和用户的感知负担。
 
 Android 14 对前台服务进一步增加了限制：某些类型的前台服务（如位置相关的）需要声明特定的前台服务类型（foreground service type），并在 Manifest 中声明对应权限。
 
@@ -288,7 +290,7 @@ Android 14 对前台服务进一步增加了限制：某些类型的前台服务
 
 ### App Archiving：物理清除而非冻结（Android 15+）
 
-上述限制——Doze 推迟任务、Standby Buckets 压缩配额、Restricted 桶限制后台活动、厂商冻结进程——本质上都还保留着 App 的安装状态和数据。Android 15 引入了更激进的手段：**自动归档（Auto-Archiving）**。
+上述限制——Doze 推迟任务、Standby Buckets 压缩配额、Restricted 桶限制后台活动、厂商冻结进程——都仍然保留着 App 的安装状态和数据。Android 15 引入了更激进的手段：**自动归档（Auto-Archiving）**。
 
 当设备存储空间紧张且用户长时间未使用某个 App 时，系统可以自动归档该 App。归档操作会：
 - 移除 APK 文件和缓存，释放大部分存储空间
@@ -310,7 +312,7 @@ Android 14 对前台服务进一步增加了限制：某些类型的前台服务
 
 ### 省电模式的核心行为
 
-Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布状态，各子系统再决定要不要收紧自己的策略。它不会把所有 App 的桶标签改写成 Rare，也不等于“后台一律断网”。
+Battery Saver 是全局 low power mode，由 `PowerManagerService` 统一发布状态，各子系统再决定要不要限制对应能力。它不会把所有 App 的桶标签改写成 Rare，也不等于“后台一律断网”。
 
 在 AOSP 这层，能稳定确认的影响主要有四类：
 
@@ -417,7 +419,7 @@ OPPO 和 vivo 的策略类似：
 
 系统级功耗管理并非孤立存在，它和全书讨论的多个机制都有交叉：
 
-**与进程管理（§1.3）的关系**——LMK（Low Memory Killer）杀进程和厂商的后台杀进程策略是两套独立的机制，但它们会叠加影响。一个 App 可能先被厂商冻结，然后因为内存压力被 LMK 彻底回收。
+**与进程管理（§1.3）的关系**——LMK（Low Memory Killer）杀进程和厂商的后台杀进程策略是两套独立的机制，但它们会叠加影响。一个 App 可能先被厂商冻结，然后因为内存压力被 LMK 回收。
 
 **与 CPU 调度与功耗管理（§5.6）的关系**——§5.6 讨论的是 CPU 调度层面的功耗优化（EAS、UClamp、Doze 底层的 Idle 状态管理）。本节讨论的是应用框架层的功耗策略，是 §5.6 底层机制的上层体现。当本节提到的省电模式导致 CPU 降频时，实际的频率限制通过 §5.6 中讨论的 cpufreq 机制执行；Doze 模式下 CPU 进入深度 Idle 状态，对应的也是 §5.6 中介绍的 CPU Idle 状态管理。
 
@@ -461,11 +463,11 @@ WorkManager 保证的是"最终一致性"——任务最终会被执行，但不
 
 ### "Doze 只在晚上才会生效"
 
-不完全准确。Deep Doze 确实需要设备静止，但 Light Doze 只要屏幕关闭且未充电就会触发。如果用户习惯性地锁屏但不充电（比如开会时），Light Doze 在白天也会频繁生效。
+不完全准确。Deep Doze 需要设备静止，但 Light Doze 只要屏幕关闭且未充电就会触发。如果用户习惯性地锁屏但不充电（比如开会时），Light Doze 在白天也会频繁生效。
 
 ### "国产厂商的后台管控都是负面的"
 
-厂商的激进后台管控确实给开发者带来了适配负担，但从用户角度看，它也在换取更长的续航。更实际的做法是理解这些策略，并告诉用户如何在系统设置里放行我们的 App。
+厂商的激进后台管控会给开发者带来适配负担，但从用户角度看，它也在换取更长的续航。更实际的做法是理解这些策略，并告诉用户如何在系统设置里放行我们的 App。
 
 ## 参考资料
 

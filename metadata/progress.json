@@ -3544,21 +3544,23 @@
       "last_verified": "2026-04-20",
       "last_verified_against": "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-24",
+      "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-26",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-01T05:32:43+08:00",
       "last_task2b_at": "2026-04-26T10:41:09+08:00",
       "repaired_date": "2026-04-26",
-      "repaired_by": "openclaw-task2b"
+      "repaired_by": "openclaw-task2b",
+      "last_task6_at": "2026-05-06T22:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-22-review.md"
     },
     "src/part2-performance/ch11-power/04-case-studies.md": {
       "path": "src/part2-performance/ch11-power/04-case-studies.md",
@@ -5571,9 +5573,13 @@
       "review_notes": "2026-05-04 17:20 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0 / P3 1；ADPF setPreferPowerEfficiency API 版本边界与调度语义需修正。"
     },
     "11.3": {
-      "task6_reviewed": "2026-04-24",
+      "task6_reviewed": "2026-05-06",
       "task6_result": "pass-light-edit",
-      "status": "ready-for-review"
+      "status": "ready-for-review",
+      "task6_state": "reviewed",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-06T22:05:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-22-review.md"
     },
     "12.1": {
       "task6_reviewed": "2026-04-24",
@@ -7874,6 +7880,29 @@
           "section": "19.27",
           "title": "千万级 DAU 的 APM 端侧架构",
           "reason": "内容不充分"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-06",
+      "time": "22:05",
+      "task": "task6-review",
+      "review_log": "logs/review/2026-05-06-22-review.md",
+      "sections_reviewed": [
+        {
+          "section": "11.3",
+          "title": "系统级功耗优化",
+          "result": "pass-light-edit",
+          "fixes": 12,
+          "issues": 0,
+          "auto_promoted": false
+        }
+      ],
+      "skipped": [
+        {
+          "section": "19.27",
+          "title": "千万级 DAU 的 APM 端侧架构",
+          "reason": "内容不充分：outline 后正文 1 行，有效内容 0 行"
         }
       ]
     }
@@ -11981,5 +12010,28 @@
         "reason": "内容不充分：outline 后正文 0 行，有效内容 0 行"
       }
     ]
+  },
+  "2026-05-06-22-task6": {
+    "task": "task6-review",
+    "time": "2026-05-06T22:05:00+08:00",
+    "review_log": "logs/review/2026-05-06-22-review.md",
+    "sections": [
+      {
+        "section": "11.3",
+        "title": "系统级功耗优化",
+        "result": "pass-light-edit",
+        "fixes": 12,
+        "issues": 0,
+        "auto_promoted": false
+      }
+    ],
+    "skipped": [
+      {
+        "section": "19.27",
+        "title": "千万级 DAU 的 APM 端侧架构",
+        "reason": "内容不充分：outline 后正文 1 行，有效内容 0 行"
+      }
+    ],
+    "auto_finalized": []
   }
 }
