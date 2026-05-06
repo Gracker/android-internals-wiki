@@ -13607,7 +13607,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T06:27:13+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T06:43:07.190664+08:00",
+      "completed_reason": "P0 PowerMonitor API路径修正(android.os.PowerMonitor/android.os.PowerMonitorReadings/android.os.health.SystemHealthManager) + 单位uWh→uWs + 快照差值说明; P0 Perfetto数据源名修正(android.hardware.power.stats→android.power) + android_power_config补齐"
     },
     {
       "section": "11.4",
@@ -13627,7 +13629,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T06:27:13+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T06:43:07.190664+08:00",
+      "completed_reason": "P0 FGS超时崩溃签名修正：拆清配额超时(did not stop within its timeout)与启动后未提升前台(did not call startForeground)两类不同错误"
     }
   ],
   "completed": [

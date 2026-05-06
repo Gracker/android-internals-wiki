@@ -31,21 +31,16 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-07T06:27:13+08:00"
-task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 2：Vitals stuck/excessive wakelock 阈值混用、JobScheduler 运行时上限仍把 min guarantee 写成 max；P1 3：Android 15 FGS 超时崩溃、GNSS/Geofencing 低功耗边界、线上功耗监控/API 版本边界仍未闭合。 | 2026-05-07 Task9 06:20：深审复核发现 P0 1，P2 1；已写入 queue/suggestions，转 Task2B 回炉。"
-last_task6_at: "2026-05-07T06:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-06-review.md"
-task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-07 task6 review 06:10：清理观察提示腔和顺序提示腔，收紧 JobScheduler 运行上限表述；L1/L2 通过，无新增 L3/L4 回炉项，转 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-07-06-deep-review.md"
+last_task2b_at: "2026-05-07T06:40:00+08:00"
 ---
 
 # 案例集
@@ -784,17 +779,28 @@ Android 15（API 35）引入了前台服务（FGS）超时机制，并在 Androi
 | `mediaProcessing` | 后台 24 小时内总计 6 小时 | `Service.onTimeout(int, int)` |
 | `shortService` | 约 3 分钟 | `Service.onTimeout(int, int)` |
 
-超时后如果服务没有调用 `stopSelf()`，系统会抛出 `RemoteServiceException` 导致 App 崩溃。Logcat 中会看到类似：
+超时后如果服务没有调用 `stopSelf()`，系统会抛出 `RemoteServiceException` 导致 App 崩溃。Logcat 中的签名取决于超时类型：
+
+**dataSync / mediaProcessing 配额耗尽**（6 小时配额用完且 `onTimeout` 后未 stopSelf）：
 
 ```text
 Fatal Exception: android.app.RemoteServiceException
-  Context.startForegroundService() did not call Service.stopForeground()
+  A foreground service of type dataSync did not stop within its timeout: com.example/.SyncService
 ```
+
+**startForegroundService 后未及时调用 startForeground**（这是另一类问题，与配额超时无关）：
+
+```text
+Fatal Exception: android.app.RemoteServiceException
+  Context.startForegroundService() did not call Service.startForeground()
+```
+
+两类崩溃的根因不同：第一类是 FGS 运行超时后未在 `onTimeout` 回调中 `stopSelf()`；第二类是启动 FGS 后未在 5 秒内提升为前台状态。排查时注意区分。
 
 排查路径：
 
-1. 在 Logcat 中搜索 `onTimeout` 或 `RemoteServiceException` + 服务类名
-2. 检查 FGS 的 `foregroundServiceType` 是否选对——如果用 `dataSync` 做长时间同步，6 小时配额用完后就会超时
+1. 在 Logcat 中搜索 `onTimeout`、`did not stop within its timeout` 或 `RemoteServiceException` + 服务类名
+2. 检查 FGS 的 `foregroundServiceType` 是否选对——如果用 `dataSync` 做长时间同步，6 小时配额用完后就会触发 `onTimeout`，服务必须在回调中 `stopSelf()`
 3. 评估是否可以用 WorkManager、`User-initiated data transfer`（Android 14+）或分区存储 API 替代 FGS
 
 [已验证: 官方文档 developer.android.com/about/versions/15/behavior-changes-15#fgs-timeout + AOSP `ActiveServices.java`]
