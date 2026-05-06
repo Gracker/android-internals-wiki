@@ -13282,6 +13282,66 @@
       "status": "completed",
       "completed_at": "2026-05-06T23:45:10+08:00",
       "completed_reason": "P0 UsageStatsService路径已修正(services/usage/非apex/jobscheduler)；P0 PENDING_JOB_REASON_ENERGY_EFFICIENCY已删除(该常量不存在)，改为实际常量；P0 pm --archived命令已修正为pm get-archived-package-metadata；P1 Android 6-8二元App Standby已补充；P1 Android 11定位限制已收窄(foreground location FGS)"
+    },
+    {
+      "section": "16.4",
+      "section_title": "Android 17 + Kernel 6.12 系统级性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 16.4 DSQ enum 摘录与 android16-6.12 源码不匹配，F2FS checkpoint_merge/fsync 口径过度外推，MGLRU 与 LMKD 协同描述需回炉",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L134-L142 Dispatch Queue(DSQ) 代码块",
+          "detail": "[P0] 正文标注为 android16-6.12 `include/linux/sched/ext.h`，但代码块与目标分支不一致：`SCX_DSQ_INVALID` 实际为 `SCX_DSQ_FLAG_BUILTIN | 0`，`SCX_DSQ_LOCAL_CPU_MASK` 实际为 `0xffffffffLLU`，正文写成 `0` 与 `0x000FFFFF`。这会误导读者理解 DSQ ID 高位标志和 LOCAL_ON CPU 编码范围。",
+          "suggestion": "按 `android16-6.12/include/linux/sched/ext.h` 原样替换 enum 摘录；若保留简化代码，标题需改成“简化示意”并删除目标分支源码标注。"
+        },
+        {
+          "type": "源码错误/原理断裂",
+          "location": "L190-L196 F2FS Checkpoint Merge 与 SQLite WAL",
+          "detail": "[P0] 正文把 fsync()/sync() 写成每次都会触发完整 checkpoint，并进一步外推到每次 ContentProvider/SQLite WAL commit。复核 android16-6.12：`f2fs_do_sync_file()` 只有在 `need_do_checkpoint()` 返回 `cp_reason` 时才走 `f2fs_sync_fs()` → `f2fs_issue_checkpoint()`；否则主要走 node page fsync/flush。`checkpoint_merge` 合并的是 CP_SYNC checkpoint 请求，不等于所有 fsync。",
+          "suggestion": "改写为“当 fsync 路径需要 checkpoint 时，checkpoint_merge 可将并发 CP_SYNC 请求合并到 issue_checkpoint_thread”；SQLite WAL 影响需补具体触发条件或降级为待验证场景。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L324-L330 MGLRU 与 LMK 的协同",
+          "detail": "[P1] 正文写“MGLRU 让 lmkd 的决策更准确”。AOSP lmkd 主要基于 PSI/vmpressure、内存水位、oom_score_adj 等信号做 kill 决策，未直接读取 MGLRU generation 信息。MGLRU能通过更准确回收降低压力和 major fault，进而间接减少 kill 触发，不能写成 lmkd 决策本身更准确。",
+          "suggestion": "把协同关系改成“内核回收层先降低压力，lmkd 仍按 PSI/vmpressure 与 adj 选择进程”；如要写 kill 频率下降，补同设备前后 trace/统计。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T00:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "17.2",
+      "section_title": "SoC 平台差异",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 17.2 Dimensity 9400 频率口径疑似混用 9300+，Oryon cache 一手资料边界未闭合，Perfetto PMU 数据源表述需修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/数据错误",
+          "location": "L115 Dimensity 9400 CPU 配置",
+          "detail": "[P0] 正文写 Dimensity 9400 为 `1×Cortex-X925（3.62GHz）+ 3×Cortex-X4（2.85GHz）+ 4×Cortex-A720（2.0GHz）`。MediaTek 官方 Dimensity 9400 页面公开的是 1×X925 up to 3.62GHz、3×X4、4×A720 及 L2/L3/SLC 信息，未给 X4/A720 频率；2.85GHz/2.0GHz 更像 Dimensity 9300+ 的公开频率口径。",
+          "suggestion": "删除 9400 中 X4/A720 的具体频率，或补官方/权威规格锚点；若引用 9300+，单独列版本并避免和 9400 混写。"
+        },
+        {
+          "type": "版本差异/知识盲区",
+          "location": "L127-L129 Oryon cache 拓扑",
+          "detail": "[P1] 正文一边写“公开产品页显示 Oryon 采用大容量 L1 和共享 L2”，一边标注 L1/L2 容量、拓扑、延迟待验证。当前仍缺 Qualcomm 白皮书、Hot Chips/ISSCC 或可信芯片分析锚点，容易把 Snapdragon X Elite / 8 Elite 的 cache 拓扑混用。",
+          "suggestion": "删除“产品页显示”的确定句，保留为待验证方向；沿用 research-gaps.md 中已有 Oryon 微架构资料边界，补到一手资料后再恢复确定表述。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T00:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
