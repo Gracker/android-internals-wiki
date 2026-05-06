@@ -31,20 +31,21 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-01"
+task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-01T04:26:00+08:00"
-task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。需 Task2B 回炉。"
+last_task9_at: "2026-05-06T11:39:00+08:00"
+task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 2：Vitals stuck/excessive wakelock 阈值混用、JobScheduler 运行时上限仍把 min guarantee 写成 max；P1 3：Android 15 FGS 超时崩溃、GNSS/Geofencing 低功耗边界、线上功耗监控/API 版本边界仍未闭合。"
 last_task6_at: "2026-05-06T11:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-11-review.md"
 task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
 ---
 
 # 案例集

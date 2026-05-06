@@ -8669,31 +8669,29 @@
       "section": "9.6",
       "section_title": "Notification 性能与 ANR",
       "priority": 95,
-      "reason": "[External Review] 9.6 Notification 性能与 ANR 存在 P0/P1 技术问题，需回炉修正",
+      "reason": "[Deep Tech Review] 9.6 Notification 性能与 ANR 仍有 P0 技术问题，需回炉修正",
       "review_issues": [
         {
-          "type": "跨进程 UI",
-          "location": "RemoteViews 缓存红利",
-          "detail": "暗示每次通知更新（如进度条 1% 的跳变）都需要 SystemUI 进行完整的重新 inflate 和测量。",
-          "suggestion": "在“RemoteViews 性能开销”章节明确指出：Android 14+ 已经极大地平抑了“进度条型”高频更新的 CPU 开销。"
+          "type": "源码错误/版本差异",
+          "location": "L222-L229、L479 Android 14+ RemoteViews 增量更新",
+          "detail": "正文把 Android 14+ RemoteViews 优化写成 Measure Cache + Action-diff，并称 NMS 会比较新旧 RemoteViews actions、只把变化部分分发给 SystemUI。复核 android-16.0.0_r1：SystemUI NotificationContentInflater.canReapplyRemoteView() 只按 package/layoutId/FLAG_REAPPLY_DISALLOWED 判断是否复用现有 View，applyRemoteView() 在可复用时调用 RemoteViews.reapplyAsync()；NMS checkDisqualifyingFeatures() 负责权限、数量、速率等入口约束，未见动作级 diff 分发。该复用/reapply 路径也不是 Android 14 首次引入。",
+          "suggestion": "删除 Measure Cache / Action-diff 的版本事实；改为“SystemUI 可在 package/layoutId 不变时复用现有 View 并调用 RemoteViews.reapply/reapplyAsync，但仍会应用 RemoteViews actions，收益需用 SystemUI trace 验证”。"
         },
         {
-          "type": "内存机制",
-          "location": "HardwareBuffer 位图共享",
-          "detail": "图片通知的成本分析仅涉及了解码和序列化。",
-          "suggestion": "说明硬件缓冲区共享如何将通知图片的性能瓶颈从“序列化带宽”转移到“SystemUI GPU 合成”。"
-        },
-        {
-          "type": "底层机制",
-          "location": "Binder 缓冲区拥塞",
-          "detail": "未提及 `Icon` 对象对系统级 Binder 池的压力。",
-          "suggestion": "在“优化建议”中增加“Icon 构造避坑指南”。"
+          "type": "源码错误/内存机制",
+          "location": "L241、L505-L507 HardwareBuffer / Icon.createWithBitmap()",
+          "detail": "正文写 Android 12+ 通知图片通过 HardwareBuffer 零拷贝共享，并称 Icon.createWithBitmap() 会把像素数据序列化进 Parcel、挤占进程约 1MB Binder buffer。android-16.0.0_r1 Icon.writeToParcel() 对 TYPE_BITMAP/TYPE_ADAPTIVE_BITMAP 先调用 Bitmap.asShared()；Bitmap.asShared() 的 API 注释是 immutable shared-memory backed bitmap，可通过 Parcelable 高效跨进程传递。Icon/RemoteViews 通知路径未形成正文所述的 HardwareBuffer 专用链路，当前把 shared memory/ashmem、HardwareBuffer 和 Binder buffer 口径混在一起。",
+          "suggestion": "重写图片通知成本模型：资源 ID/URI/Bitmap 分别讨论引用传递、解码、共享内存副本/FD、SystemUI 绑定与 GPU 合成成本；不要写通知图片默认 HardwareBuffer 零拷贝，也不要把 createWithBitmap 简化成像素整体进入 Binder buffer。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
       "status": "pending",
-      "source_file": "2026-04-29-11-9.6-external-review.md"
+      "source_file": "2026-04-29-11-9.6-external-review.md",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "updated_at": "2026-05-06T11:39:00+08:00"
     },
     {
       "section": "9.7",
@@ -9071,56 +9069,49 @@
     },
     {
       "section": "11.4",
-      "section_title": "案例集（功耗）",
+      "section_title": "案例集",
       "priority": 95,
-      "reason": "[External Review] 11.4 案例集 存在 FGS 崩溃特征缺失\n[Deep Tech Review] 11.4 案例集 — 2026-05-01 追加 2 个 P0/P1 技术问题",
+      "reason": "[Deep Tech Review] 11.4 案例集 仍有 P0/P1 技术问题，需回炉修正",
       "review_issues": [
         {
-          "type": "事实错误",
-          "location": "FGS 超时案例",
-          "detail": "未提及 Android 15 FGS 6h 配额耗尽后 ForegroundServiceDidNotStopInTimeException 硬性崩溃特征",
-          "suggestion": "增加配额超限案例含堆栈解析，帮助区分业务 Bug 与系统惩罚",
-          "evidence": [
-            "Android 15 RemoteServiceException FGS Timeout 标记"
-          ]
-        },
-        {
-          "type": "重要缺失",
-          "location": "功耗异常自动化",
-          "detail": "仍依赖手动 bugreport，未引入 Android 16 ProfilingManager TRIGGER_TYPE_ANOMALY 自动采样",
-          "suggestion": "增加自动化预警流程，ProfilingManager 作为功耗排障第一信息源",
-          "evidence": [
-            "Android 16 ProfilingManager ANOMALY Trigger"
-          ]
-        },
-        {
-          "type": "重要缺失",
-          "location": "GPS 功耗案例",
-          "detail": "GPS 功耗定性仅基于传统模式，未涉及 Android 15+ GNSS 硬件下沉低功耗模式",
-          "suggestion": "补充 2026 年主流旗舰 Geofencing 功耗量化优势",
-          "evidence": [
-            "Android 15+ GNSS LP Hardware Offload"
-          ]
+          "type": "版本差异/数据口径",
+          "location": "L94-L98、L170-L172 Android Vitals WakeLock 指标",
+          "detail": "正文仍写 Stuck partial wake lock 的 Vitals 告警阈值是 1%，并把 3.7% 会话描述成触发阈值。官方 stuck partial wake lock 页面可核到的是：后台 partial wake lock 至少持续 1 小时即计入 stuck；excessive partial wake locks 页面可核到的是 24h 内非豁免 partial wakelock 累计过长，且 28 天内超过 5% sessions 会影响 Play 可见性。当前仍把 stuck 与 excessive 两个指标的判定和 Play 影响口径混用。",
+          "suggestion": "删除“1% 阈值”或补 Play Console 一手来源；拆成 stuck（单次后台 partial wakelock >=1h）与 excessive（24h 累计口径、>5% sessions 影响 Play 可见性）两个指标。"
         },
         {
           "type": "源码错误/版本差异",
-          "location": "L639-L647、L645、L799-L801",
-          "detail": "JobScheduler 案例仍把 android-16.0.0_r1 的 JobSchedulerService/JobServiceContext 锚点写在 frameworks/base/services/core/java/com/android/server/job/，实际公开 tag 位于 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/。同段运行时上限也仍写成 Regular 10min、User-Initiated 30min；android-16.0.0_r1 JobSchedulerService.java 中 DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS=30min、DEFAULT_RUNTIME_MIN_GUARANTEE_MS=10min、DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS>=6h、DEFAULT_RUNTIME_UI_LIMIT_MS>=12h，getMaxJobExecutionTimeMs() 对 regular/expedited/user-initiated 分支不同。",
-          "suggestion": "重写案例五：先修正 AOSP 路径，再按源码分支拆 regular / expedited / user-initiated 的 min guarantee、free quota max 与 UI limit，不要把“最小保障时间”写成统一最大执行时长。",
-          "severity": "P0"
+          "location": "L640-L650 JobScheduler WakeLock 最大持有时长",
+          "detail": "正文仍把 Regular 写成 10min 最大执行时长、User-Initiated 写成 30min 最大执行时长。android-16.0.0_r1 JobSchedulerService 位于 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/，Constants 中 DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS=30min、DEFAULT_RUNTIME_MIN_GUARANTEE_MS=10min、DEFAULT_RUNTIME_MIN_EJ_GUARANTEE_MS=3min、DEFAULT_RUNTIME_MIN_UI_GUARANTEE_MS>=6h、DEFAULT_RUNTIME_UI_LIMIT_MS>=12h；getMinJobExecutionGuaranteeMs()/getMaxJobExecutionTimeMs() 会按 regular / expedited / user-initiated、权限和 quota 分支计算。",
+          "suggestion": "重写表格为“最小保障时间 / 正常上限 / quota 降级后上限”三列；regular、expedited、user-initiated 分支分别给源码常量和 getMaxJobExecutionTimeMs() 判断，不要把 min guarantee 写成统一最大时长。"
         },
         {
-          "type": "版本差异/数据口径",
-          "location": "L91-L95",
-          "detail": "正文写 Stuck partial wake lock 的 Vitals 告警阈值是 1%。当前 Android Developers wake lock vitals 页可核到的是 excessive partial wake locks：24h 内非豁免 partial wakelock 累计 >=2h，且 28 天内超过 5% sessions 会影响 Play 可见性；页面未支撑“stuck partial wake lock=1% 阈值”。这里把 stuck 与 excessive 两个指标口径混在一起。",
-          "suggestion": "拆成两个指标：Stuck partial wake lock 只说明单个后台 partial wakelock >=1h 的判定；Excessive partial wake locks 说明累计 >=2h/24h 与 >5% sessions 的 Play 影响。删除或补证“1%”口径。",
-          "severity": "P0"
+          "type": "重要缺失/版本差异",
+          "location": "全章 / L721 ForegroundService 收尾建议",
+          "detail": "章节仍没有 Android 15+ time-limited FGS 的崩溃/ANR 案例。官方 FGS timeout 文档明确：dataSync/mediaProcessing FGS 在后台 24h 内总计 6h 后触发 Service.onTimeout(int,int)，未 stopSelf() 会抛 RemoteServiceException；shortService 约 3min 后未停止会触发 ANR/timeout。当前只写“任务完成后调用 stopForeground()+stopSelf()”，不能帮助读者区分业务 Bug、ANR 和系统超时惩罚。",
+          "suggestion": "新增一个 FGS 超时案例：dataSync/mediaProcessing 6h quota、shortService 约 3min、Service.onTimeout()、Logcat/stack trace 关键字、修复流程（停止服务、拆到 WorkManager/UIDT/API 替代方案）。"
+        },
+        {
+          "type": "知识盲区/数据支撑",
+          "location": "L230-L358 GPS 功耗案例",
+          "detail": "GPS 案例仍只覆盖高频持续定位泄漏，未区分 continuous tracking、geofencing、Fused Location Provider 低功耗路径、GNSS hardware geofencing/offload 的能力边界，也没有 dumpsys location 中硬件/软件 geofence 的可观测字段。对 2026 年主流设备，后台地理围栏和持续 1Hz GNSS 是不同功耗模型，不能用同一组 50-100mA 量级泛化。",
+          "suggestion": "保留持续定位泄漏案例，但单独补 geofencing/offload 边界：API/能力来源、dumpsys location 观察点、硬件下沉可用性和功耗数字的测试条件；没有一手资料时标 [待验证]。"
+        },
+        {
+          "type": "知识盲区/API 版本边界",
+          "location": "L787-L796 线上功耗监控体系",
+          "detail": "“线上功耗监控体系”仍是占位。若沿用 external-review 的 ProfilingManager/TRIGGER_TYPE_ANOMALY 方向，需要先修正版本边界：ProfilingManager.requestProfiling() 是 API 35，ProfilingTrigger.TRIGGER_TYPE_ANOMALY 在当前 Android API reference 中标为 API 37，不属于本章 frontmatter 的 Android 8-16 范围。",
+          "suggestion": "本章 Android 8-16 范围内先写 Play Vitals、Battery Historian/bugreport、Perfetto/power rails/thermal 的可用路径；Android 17+ ProfilingTrigger.TRIGGER_TYPE_ANOMALY 可作为展望，必须标 API 37。"
         }
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T17:31:05",
       "status": "pending",
-      "source_file": "2026-04-29-11-11.4-external-review.md"
+      "source_file": "2026-04-29-11-11.4-external-review.md",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "updated_at": "2026-05-06T11:39:00+08:00"
     },
     {
       "section": "18.1",
@@ -12115,24 +12106,37 @@
     },
     {
       "section": "17.2",
-      "section_title": "17.2 SoC 平台差异",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 17.2 SoC 平台差异 仍有 P1 技术问题，需回炉修正",
+      "section_title": "SoC 平台差异",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 17.2 SoC 平台差异 仍有 P0/P1 技术问题，需回炉修正",
       "material_paths": [
         "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
       "review_issues": [
         {
+          "type": "源码错误/Perfetto SQL",
+          "location": "L153-L167 迁移次数 SQL",
+          "detail": "SQL 使用 prev_cpu != cpu，但 Perfetto sched 表没有 prev_cpu 字段；当前文档中 CPU 维度列为 ucpu。prev_cpu/prev_ucpu 需要用 lag(ucpu) over(partition by utid order by ts) 从上一条 sched slice 推导。当前 SQL 直接执行会报列不存在。",
+          "suggestion": "改成窗口函数先生成 prev_ucpu，再统计 prev_ucpu IS NOT NULL AND prev_ucpu != ucpu；或使用 thread_state / metrics 派生表。"
+        },
+        {
           "type": "知识盲区/数据支撑",
-          "location": "L111-L125",
-          "detail": "Oryon 段仍把“来自 Nuvia/前 Apple CPU 团队”写成“与苹果 M 系列同源”，并给出“四核共享 12MB L2、15-20 cycles”等微架构数字；当前 sources 只有公开产品页和本地博客，缺 Qualcomm/芯片白皮书/拆解级资料，且该表述容易把 Snapdragon X Elite 的缓存拓扑误用于 8 Elite。",
-          "suggestion": "降级为“团队背景来自 Nuvia，创始成员有 Apple CPU 经历”；缓存拓扑与延迟数字必须补 Qualcomm/权威拆解锚点，否则删除或标 `[待验证]`。"
+          "location": "L106-L120 Oryon 微架构与缓存数字",
+          "detail": "Oryon 段仍把“来自 Nuvia/前 Apple CPU 团队”写成“与苹果 M 系列同源”，并给出 192KB I-cache、96KB D-cache、四核共享 12MB L2、15-20 cycles 等数字；当前 sources 只有公开产品页和本地博客，缺 Qualcomm 白皮书、芯片实测或权威拆解锚点，且容易把 Snapdragon X Elite 的缓存拓扑误用于 8 Elite。",
+          "suggestion": "降级为“团队背景来自 Nuvia，创始成员有 Apple CPU 经历”；缓存拓扑和延迟数字必须补权威锚点，否则删除或标 [待验证]。"
+        },
+        {
+          "type": "原理断裂/缓存层级",
+          "location": "L171-L173 DSU 与迁移成本解释",
+          "detail": "正文用“Armv8.5+ DSU 缓存一致性协议让跨核 L2 命中延迟可接受”解释全大核迁移成本低。DSU/DynamIQ 提供一致性与共享系统缓存/DSU 侧缓存能力，不等于跨核复用另一个核心的私有 L2；任务迁移仍会损失 L1/私有 L2 locality。",
+          "suggestion": "把迁移成本解释改为实机 trace + PMU 观察问题：核心性能差距缩小可能改变负载均衡，但是否低成本要看 cache miss、uclamp、cluster policy、wakeup path 和 workload；DSU 只能作为 coherency/shared cache 背景，不能写成跨核私有 L2 命中。"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T15:51:58+08:00",
-      "status": "pending"
+      "status": "pending",
+      "updated_at": "2026-05-06T11:39:00+08:00"
     },
     {
       "section": "18.3",

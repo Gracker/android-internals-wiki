@@ -34,21 +34,23 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task2b_result: rework-fixed
-task2b_state: fixed
-task9_reviewed_date: "2026-04-20"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-20T20:06:23+08:00"
+task2b_state: pending
+task9_reviewed_date: "2026-05-06"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-06T11:39:00+08:00"
 last_task6_at: "2026-05-06T11:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-11-review.md"
 task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
+task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 2：Android 14 Measure Cache/Action-diff 与通知 HardwareBuffer 零拷贝/Binder buffer 口径不成立；P2 1：标准模板仍经 SystemUI apply/reapply，已有优化路径但不能写成不走 RemoteViews。"
 ---
 
 # 9.6 Notification 性能与 ANR
