@@ -34,24 +34,25 @@ sources:
     path: "intake/research-feeds/2026-04-03-11-android16-live-updates-progressstyle.md"
 tags: [notification, anr, notificationmanagerservice, remoteviews, performance, notificationlistenerservice, foreground-service]
 related_chapters: ["9.2", "9.3", "9.4", "1.4", "9.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task2b_result: fixed
-task2b_state: fixed
-task9_reviewed_date: 2026-05-06
+task2b_state: pending
+task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T13:39:29+08:00"
+last_task9_at: "2026-05-06T14:37:25+08:00"
 last_task2b_at: "2026-05-06T13:46:45+08:00"
 last_task6_at: "2026-05-06T14:11:35+08:00"
 last_task6_review_log: "logs/review/2026-05-06-14-review.md"
 task6_review_notes: "2026-05-06 Task6 14:11：回炉后写作复审；L1/L2 轻修 10 处（清理正文编辑痕迹、结构性元叙述、frontmatter 重复键）；无新增 L3/L4 回炉项，转入 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-06-13-deep-review.md"
-task9_review_notes: "2026-05-06 Task9 13:39：needs-rework。P0 2 / P1 0 / P2 1。L485 版本演进表 Android 14 行；L245-L247、L511-L513 Icon.createWithBitmap()/Bitmap 传输路径"
+last_task9_review_log: "logs/deep-review/2026-05-06-14-deep-review.md"
+task9_review_notes: "2026-05-06 Task9 14:37：needs-rework。P0 2 / P1 0 / P2 1。L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述；L518 NotificationListeners.java 源码路径不存在；L504 标准模板 RemoteViews 口径沿用既有 P2。"
+
 ---
 
 # 9.6 Notification 性能与 ANR
