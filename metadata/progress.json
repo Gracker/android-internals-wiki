@@ -8,8 +8,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 117,
-      "task2b_pending": 79,
-      "task9_pending": 19,
+      "task2b_pending": 78,
+      "task9_pending": 20,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -21,13 +21,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 202,
-      "pending": 11
+      "reviewed": 201,
+      "pending": 12
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 122,
-      "pending": 86,
+      "fixed": 123,
+      "pending": 85,
       "idle": 3
     },
     "finalized": 118,
@@ -43,8 +43,8 @@
     "pipeline_stage_counts": {
       "unknown": 34,
       "ready-to-publish": 117,
-      "task2b_pending": 79,
-      "task9_pending": 19,
+      "task2b_pending": 78,
+      "task9_pending": 20,
       "task6_pending": 3
     },
     "task6_state_counts": {
@@ -56,13 +56,13 @@
     },
     "task9_state_counts": {
       "unknown": 39,
-      "reviewed": 202,
-      "pending": 11
+      "reviewed": 201,
+      "pending": 12
     },
     "task2b_state_counts": {
       "unknown": 41,
-      "fixed": 122,
-      "pending": 86,
+      "fixed": 123,
+      "pending": 85,
       "idle": 3
     },
     "last_updated": "2026-05-06"
@@ -161,20 +161,22 @@
       "last_verified": "2026-04-17",
       "last_verified_against": "AOSP android-16.0.0_r1, source.android.com 官方文档",
       "confidence": "high",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
-      "reviewed_date": "2026-04-18",
+      "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T09:20:00+08:00",
-      "review_round": "3",
-      "review_notes": "2026-05-01 task9 deep review: P0 UserController path; P1 Cloud Compilation OTA scope; P1 kernel async probing/module placement gap",
-      "task9_review_notes": "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 3；UserController 广播发送路径、GBL/boottime 口径、async_probe 观测口径需回炉。"
+      "review_round": "4",
+      "review_notes": "2026-05-06 task6 re-review: frontmatter 去重并修复 YAML；UserController source 与正文/参考资料一致；完成 L1/L2 轻量文风修订；task9 待复审 task2b 修复后的技术问题。",
+      "task9_review_notes": "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 3；UserController 广播发送路径、GBL/boottime 口径、async_probe 观测口径需回炉。",
+      "task6_reviewed_date": "2026-05-06",
+      "task2b_result": "fixed"
     },
     "src/part1-fundamentals/ch01-architecture/03-process-model.md": {
       "path": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
@@ -8926,7 +8928,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T14:37:25+08:00",
+  "last_updated": "2026-05-06T15:05:00+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
