@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-05-06T20:37:00+08:00",
+  "generated_at": "2026-05-07T00:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
-    "last_updated": "2026-05-06",
+    "last_updated": "2026-05-07T00:20:00+08:00",
     "pipeline_stage_counts": {
       "unknown": 2,
       "ready-to-publish": 124,
@@ -60,7 +60,7 @@
       "pending": 87,
       "idle": 3
     },
-    "last_updated": "2026-05-06"
+    "last_updated": "2026-05-07T00:20:00+08:00"
   },
   "issues": {
     "duplicate_chapter_ids": {},
@@ -5331,14 +5331,14 @@
       "reviewed_by": "openclaw-task6",
       "task6_result": "pass-light-edit",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task9_result": "needs-rework",
-      "last_task9_at": "2026-05-06T00:36:51+08:00",
-      "task9_reviewed_date": "2026-05-06",
+      "last_task9_at": "2026-05-07T00:20:00+08:00",
+      "task9_reviewed_date": "2026-05-07",
       "task9_reviewed_by": "openclaw-task9",
       "task2b_state": "pending",
       "task2b_result": "pending",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task2b_fixed_at": "2026-04-27T11:41:00+08:00",
       "last_task2b_at": "2026-04-27T11:41:00+08:00",
       "applicable_versions": "Android 17 (API 37)",
@@ -5350,10 +5350,10 @@
         "linux",
         "research"
       ],
-      "review_notes": "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径；2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修：修正禁用词、表格格式、边界措辞；B 类问题：sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。",
+      "review_notes": "2026-04-27 Task2B：修正 EEVDF 版本分界，拆开 Android 17/API37 与 android16-6.12 GKI branch，补 DeliQueue 源码锚点并降级 io_uring 用户态采用结论；2026-04-28 task9 deep-review: needs-rework。P1 1（AutoFDO 量化数据需回源限定）。；2026-05-04 task9 deep-review: needs-rework。P0 3 / P1 1 / P2 1。sched_ext 源码级补充混入 `android16-6.12` 不存在/不匹配的路径与符号；AutoFDO 量化数据仍需回源限定。；2026-05-04 task2b: 修正 sched_ext 源码锚点(ext_internal.h→ext.c)、SCX_OPSS_*→SCX_TASK_*、scx_bpf_dsq_insert→scx_bpf_dispatch、AutoFDO 精确数据降级为官方可核验口径；2026-05-04 Task6 revisiting: needs-rework。L1/L2 小修：修正禁用词、表格格式、边界措辞；B 类问题：sched_ext DSQ enum/version 边界与 MGLRU 数据来源/默认启用口径需 Task9/Task2B 复核。 | 2026-05-07 Task9 00:20：needs-rework。P0 2 / P1 1 / P2 0；DSQ enum 摘录、F2FS checkpoint_merge/fsync 口径、MGLRU 与 LMKD 协同需回炉。",
       "task6_reviewed_date": "2026-05-04",
       "review_log": "logs/review/2026-05-04-21-review.md",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-00-deep-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-07-00-deep-review.md",
       "last_task6_review_log": "logs/review/2026-05-06-23-review.md",
       "task6_review_notes": "L1/L2 小修；补齐 sources，清理编辑痕迹，MGLRU 数字降级为方向性表述；无新增 Task2B 回炉项；待 Task9 复审。"
     },
@@ -5494,22 +5494,23 @@
       "last_verified": "2026-04-04",
       "last_verified_against": "公开资料",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
-      "task9_reviewed_date": "2026-05-06",
+      "task9_reviewed_date": "2026-05-07",
       "last_task6_at": "2026-05-06T23:21:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-23-review.md",
       "task6_review_notes": "L1/L2 小修；修正频率轨道措辞、补 SQL 解释、归化缓存/唤醒路径术语；无新增 Task2B 回炉项；待 Task9 复审。",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T11:39:00+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-11-deep-review.md",
-      "task9_review_notes": "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。"
+      "last_task9_at": "2026-05-07T00:20:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-07-00-deep-review.md",
+      "task9_review_notes": "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。 | 2026-05-07 Task9 00:20：needs-rework。P0 1 / P1 1 / P2 1；Dimensity 9400 频率口径、Oryon cache 一手资料边界、Perfetto PMU 数据源需回炉。",
+      "task2b_result": "pending"
     },
     "src/part4-system/ch17-oem/03-industry-cases.md": {
       "path": "src/part4-system/ch17-oem/03-industry-cases.md",
@@ -9068,7 +9069,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06",
+  "last_updated": "2026-05-07",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11862,10 +11863,10 @@
     "task9_state": "reviewed",
     "task9_result": "needs-rework",
     "task2b_state": "pending",
-    "last_task9_at": "2026-05-06T11:39:00+08:00",
-    "task9_reviewed_date": "2026-05-06",
+    "last_task9_at": "2026-05-07T00:20:00+08:00",
+    "task9_reviewed_date": "2026-05-07",
     "task9_reviewed_by": "openclaw-task9",
-    "last_task9_review_log": "logs/deep-review/2026-05-06-11-deep-review.md",
+    "last_task9_review_log": "logs/deep-review/2026-05-07-00-deep-review.md",
     "path": "src/part4-system/ch17-oem/02-soc-differences.md",
     "title": "SoC 平台差异"
   },
@@ -12003,10 +12004,10 @@
     }
   },
   "queue_summary": {
-    "pending": 180,
-    "completed": 219,
+    "pending": 176,
+    "completed": 226,
     "blocked": 8,
-    "updated_at": "2026-05-06T20:13:00+08:00"
+    "updated_at": "2026-05-07T00:20:00+08:00"
   },
   "2026-05-06-20-task6": {
     "task": "task6-review",
@@ -12109,5 +12110,52 @@
     ],
     "skipped": [],
     "auto_finalized": []
+  },
+  "section_16_4": {
+    "status": "ready-for-review",
+    "pipeline_stage": "task2b_pending",
+    "task9_state": "reviewed",
+    "task9_result": "needs-rework",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-05-07T00:20:00+08:00",
+    "task9_reviewed_date": "2026-05-07",
+    "task9_reviewed_by": "openclaw-task9",
+    "last_task9_review_log": "logs/deep-review/2026-05-07-00-deep-review.md",
+    "path": "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+    "title": "Android 17 + Kernel 6.12 系统级性能优化"
+  },
+  "2026-05-07-00-task9": {
+    "task": "deep-tech-review",
+    "timestamp": "2026-05-07T00:20:00+08:00",
+    "sections_reviewed": [
+      "16.4 Android 17 + Kernel 6.12 系统级性能优化",
+      "17.2 SoC 平台差异"
+    ],
+    "files": [
+      "src/part4-system/ch16-aosp/04-android17-kernel612-performance.md",
+      "src/part4-system/ch17-oem/02-soc-differences.md"
+    ],
+    "log": "logs/deep-review/2026-05-07-00-deep-review.md",
+    "auto_finalized": [],
+    "results": {
+      "16.4": {
+        "result": "needs-rework",
+        "P0": 2,
+        "P1": 1,
+        "P2": 0,
+        "P3": 0,
+        "score": "3.2/5"
+      },
+      "17.2": {
+        "result": "needs-rework",
+        "P0": 1,
+        "P1": 1,
+        "P2": 1,
+        "P3": 0,
+        "score": "3.3/5"
+      }
+    },
+    "queue_added": 2,
+    "suggestions_added": 1
   }
 }

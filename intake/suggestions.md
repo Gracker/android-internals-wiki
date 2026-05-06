@@ -1303,3 +1303,11 @@
 - **问题**：MIUI/HyperOS 默认自启动、`com.miui.powerkeeper` “通常 10 分钟左右”冻结、OPPO/vivo 默认自启动限制、以及“电池消耗报告差 3-5 倍”等断言缺少机型、ROM 版本、设置项截图、公开来源或本地 Trace/功耗实验条件。`dontkillmyapp.com` 可作为现象入口，但不足以单独支撑具体数值和默认策略。
 - **建议**：为每个厂商策略绑定 ROM 版本与证据来源；没有来源的时间/倍数改成待验证或删除。若要保留性能分析结论，补 Pixel 对照机与至少 1 台国产 ROM 的 WorkManager/Alarm/Trace 案例。
 - **review 日志**：logs/deep-review/2026-05-06-22-deep-review.md
+
+## [Task9 Deep Review] 17.2 SoC 平台差异 — 2026-05-07 — Perfetto PMU 数据源口径
+- **类型**：数据缺失/工具口径
+- **位置**：L300 ARM Streamline 与 Perfetto PMU 对比
+- **问题**：[P2] 正文写 Perfetto 通过 `linux.ftrace` 的 `pmu` 事件部分获取 PMU 指标。Perfetto 的 PMU 采样/计数通常走 perf_event / linux.perf 数据源；ftrace 主要用于 tracepoint/function/systrace 类事件。
+- **建议**：改成“Perfetto 需配置 perf_event/linux.perf 或设备支持的 perf/PMU 数据源；ftrace 只覆盖调度、freq、thermal 等 trace events”。
+- **review 日志**：logs/deep-review/2026-05-07-00-deep-review.md
+
