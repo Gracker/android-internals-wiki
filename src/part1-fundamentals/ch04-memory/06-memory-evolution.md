@@ -44,8 +44,8 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 5
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-07T02:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-02-review.md"
@@ -53,8 +53,8 @@ task6_review_notes: "2026-05-07 Task6：pass-light-edit。小修 13 处：压低
 task9_state: reviewed
 task9_result: needs-rework
 last_task9_at: "2026-05-07T02:20:00+08:00"
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 last_task2b_at: "2026-05-01T14:40:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-07"
@@ -162,7 +162,7 @@ AOSP 源码路径：
 
 AOSP 源码路径：
 - Android 8.0 Bitmap 创建：`frameworks/base/graphics/java/android/graphics/Bitmap.java`
-- NativeAllocationRegistry：`libcore/ojluni/src/main/java/libcore/util/NativeAllocationRegistry.java`
+- NativeAllocationRegistry：`libcore/luni/src/main/java/libcore/util/NativeAllocationRegistry.java`
 - Native Bitmap 分配：`frameworks/base/libs/hwui/Bitmap.cpp`（`allocateHeapBitmap` 使用 `calloc`）
 
 [已验证: AOSP android-15.0.0_r1, frameworks/base/libs/hwui/Bitmap.cpp]
@@ -433,12 +433,12 @@ Stack Tagging 属于另一条能力线。它要求 JNI / NDK 代码重新用 MTE
 
 **Scudo + MTE 协作**：Android 默认堆分配器 Scudo（Android 11+）通过 `IRG`（生成随机 tag）和 `STG`（存储 tag 到内存 granule）指令与 MTE 协作。仅 Primary 分配（< 0x10000 字节）支持 MTE tag，Secondary 大块分配通过 mmap 不使用 MTE tag。
 
-**源码锚点**：`frameworks/base/core/java/com/android/internal/os/Zygote.java` 中 `memtagModeToZygoteMemtagLevel()` 将 App 请求映射到内部 `MEMORY_TAG_LEVEL_ASYNC`（Zygote 本身始终 ASYNC）。Scudo MTE tag 逻辑在 `bionic/linker/scudo/scudo_memtag.h`。
+**源码锚点**：`frameworks/base/core/java/com/android/internal/os/Zygote.java` 中 `memtagModeToZygoteMemtagLevel()` 将 App 请求映射到内部 `MEMORY_TAG_LEVEL_ASYNC`（Zygote 本身始终 ASYNC）。Scudo 分配器的 MTE tag 逻辑在 LLVM 上游 `compiler-rt/lib/scudo/`（Scudo Primary 分配路径），bionic linker 侧的 MTE 初始化走 `bionic/linker/linker_mte.cpp`。
 
 [来源: arxiv:2405.02735 - ARM MTE Performance in Practice (Extended Version)]
 [来源: developer.android.com - Memory Tagging Extension]
 [来源: AOSP frameworks/base/core/java/com/android/internal/os/Zygote.java]
-[来源: AOSP bionic/linker/scudo/scudo_memtag.h]
+[来源: AOSP compiler-rt/lib/scudo/ + bionic/linker/linker_mte.cpp]
 
 
 [已验证: 官方文档 developer.android.com/ndk/guides/arm-mte]
@@ -543,15 +543,20 @@ PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻�
 
 #### Bionic Linker 16KB Compat Mode
 
-`bionic/linker/linker_phdr.cpp` 中的 `phdr_table_load_segments()` 处理 4KB 对齐 ELF 在 16KB 系统上的兼容加载：
+`bionic/linker/linker_phdr.cpp` 中 `ElfReader::LoadSegments()` 处理 4KB 对齐 ELF 在 16KB 系统上的兼容加载。当 `kPageSize == 16384` 且 ELF 段 `min_palign == 4096` 时，linker 检查 `bionic.linker.16kb.app.compat.enabled` 系统属性，决定是否启用 compat 模式：
 
 ```cpp
-// 条件：kPageSize == 16384 && min_palign == 4096
-// 触发 bionic.linker.16kb.app_compat.enabled 属性检查
-// Compat Mode 代价：需要额外的映射处理来适配 4KB 对齐的 ELF 段
-// [待验证] 是否存在 RELRO 保护绕过：需逐行核对 linker_phdr.cpp 中
-//   phdr_table_load_segments() 的 RELRO 处理分支
-// Commit fc89c8ae1dfc (2024-08-05) 改进错误提示
+// bionic/linker/linker_phdr.cpp (android-16.0.0_r1)
+// ElfReader::LoadSegments() 内部判断：
+if (kPageSize == 16*1024 && min_palign == 4096) {
+  // 检查 compat 属性（不能缓存，开发者可动态切换）
+  should_use_16kib_app_compat_ =
+    GetBoolProperty("bionic.linker.16kb.app.compat.enabled", false);
+}
+// Compat 模式代价：
+//   1. 初始映射使用 RW（而非标准 RO），需额外 kPageSize 预留空间
+//   2. RELRO 使用 PROT_READ | PROT_EXEC（比标准 PROT_READ 的保护更弱）
+//   3. 4KB ELF 的共享页变为进程独占（PSS 上升）
 ```
 
 #### 页表内存节省
@@ -640,7 +645,7 @@ Scudo 能检测很多内存安全错误，但它是"检测"而不是"预防"。�
 - RosAlloc：`art/runtime/gc/allocator/rosalloc.cc`
 - RegionSpace：`art/runtime/gc/space/region_space.cc`
 - Bitmap 分配（Android 8.0+）：`frameworks/base/libs/hwui/Bitmap.cpp`
-- NativeAllocationRegistry：`libcore/ojluni/src/main/java/libcore/util/NativeAllocationRegistry.java`
+- NativeAllocationRegistry：`libcore/luni/src/main/java/libcore/util/NativeAllocationRegistry.java`
 - Scudo：`compiler-rt/lib/scudo/`（LLVM 上游）
 - ActivityManager（getMemoryClass）：`frameworks/base/core/java/android/app/ActivityManager.java`
 
