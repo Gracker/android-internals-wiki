@@ -26,18 +26,18 @@ sources:
     path: "多来源综合（web search 验证）"
 tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-task6_state: revisiting
-reviewed_by: openclaw-task6
+task6_state: reviewed
+reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-06"
-task6_result: needs-rework
-pipeline_stage: task6_pending
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-06"
 task2b_state: fixed
-last_task6_at: "2026-05-06T20:13:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-20-review.md"
-task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。"
+last_task6_at: "2026-05-06T23:21:00+08:00"
+last_task6_review_log: "logs/review/2026-05-06-23-review.md"
+task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。 | 2026-05-06 task6 review 23:21：清理结构性元叙述和编辑标记，修正频率轨道措辞，补 SQL 代码块解释，统一缓存/唤醒路径术语；无新增 Task2B 回炉项，待 Task9 复审。"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T11:39:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-06-11-deep-review.md"
@@ -82,13 +82,13 @@ last_task2b_at: "2026-05-06T23:02:59"
 
 了解 SoC 平台差异之后，**我们在 Perfetto 中看到一段异常的 CPU 调度、GPU 耗时或内存行为时，能判断这是代码问题还是平台特性导致的现象。** 这种判断能力在做跨设备性能优化和线上问题定位时尤其重要——团队不可能在每个平台上都做一遍完整分析，但需要知道不同平台上同一个现象的含义可能完全不同。
 
-本节不会事无巨细地对比每款芯片的参数——那更像是产品评测的内容。我们的重点是：那些会直接影响性能分析结论的架构差异，以及它们在 Perfetto 中分别长什么样。
+本节不会事无巨细地对比每款芯片的参数——那更像是产品评测的内容。本节重点放在那些会直接影响性能分析结论的架构差异，以及它们在 Perfetto 中分别长什么样。
 
 [已验证: 多来源综合，包括 Qualcomm 官方产品页、MediaTek 官方产品页、ARM 官方架构文档]
 
 ## 主流 SoC 平台概览
 
-Android 生态中的旗舰 SoC 主要来自四家公司，每家的设计哲学和技术路线都有明显差异。我们先对这四个平台建立一个整体认知，然后再逐个维度深入。
+Android 生态中的旗舰 SoC 主要来自四家公司，每家的设计哲学和技术路线都有明显差异。先看四个平台的定位，再进入 CPU、GPU、专用处理器和内存带宽这些会影响分析结论的维度。
 
 **高通 Snapdragon** 是 Android 生态中使用最广泛的旗舰 SoC 系列。从 Snapdragon 8 Gen 3 到 8 Elite，高通一直保持着综合性能的领先地位，尤其在 GPU 渲染和游戏性能方面。高通的独特之处在于它几乎实现了全自研：CPU 方面，从 8 Elite 开始采用收购 Nuvia 后自研的 Oryon 核心（开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历），不再使用 ARM 公版 Cortex 核心；GPU 方面的 Adreno 系列一直是自研的；基带更是高通的传统优势。这种全自研策略让高通可以更深入地优化各组件之间的协同。
 
@@ -110,13 +110,13 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 我们在 §5.3 中讲过 ARM big.LITTLE 和 DynamIQ 的大小核架构——这是 Android SoC 的经典设计：几个高性能核心负责重负载，几个低功耗核心处理后台任务。但最近两代芯片中，各家开始出现明显分化。
 
-高通在 Snapdragon 8 Gen 3 上采用了 1+3+2+2 的四集群设计（1 个 Cortex-X4 超大核 + 3 个 Cortex-A720 大核 + 2 个 A720 中核 + 2 个 A520 小核），到了 8 Elite（搭载自研 Oryon 核心）则简化为 2+6 的双集群设计。这种简化策略背后的思路是：减少集群间的迁移频率，降低调度器做迁移决策时的开销。在 Perfetto 中，我们可以观察到 Oryon 架构上线程的 CPU 迁移次数明显少于多集群设计。
+高通在 Snapdragon 8 Gen 3 上采用了 1+3+2+2 的四集群设计（1 个 Cortex-X4 超大核 + 3 个 Cortex-A720 大核 + 2 个 A720 中核 + 2 个 A520 小核），到了 8 Elite（搭载自研 Oryon 核心）则简化为 2+6 的双集群设计。这种简化策略背后的思路是：减少集群间迁移的机会，降低调度器做迁移决策时的开销。在 Perfetto 中分析 Oryon 设备时，应重点看线程是否在两个集群之间来回迁移，而不是直接套用四集群大小核的判断。
 
 联发科的策略最为激进。Dimensity 9300 和 9400 采用了「全大核」设计：Dimensity 9400 配置为 1×Cortex-X925（3.62GHz）+ 3×Cortex-X4（2.85GHz）+ 4×Cortex-A720（2.0GHz）。联发科认为，随着工艺进步，A720 的能效已经足够好，没有必要再使用 A5xx 系列的小核心。这种设计带来的直接影响是：在 Perfetto 的 CPU Track 中，所有核心都有较高的基础性能，即使任务被调度到所谓「能效核」上，也不会出现性能断崖式下降的情况。
 
 三星 Exynos 2500 则保持相对传统的大小核配置，使用 ARM 公版核心搭配标准的 DynamIQ 集群。Google Tensor G4 也是类似思路，使用三星代工的 ARM 公版核心，但核心频率通常设得比同代骁龙和天玑低一些，以换取更好的功耗和散热表现。
 
-在 Perfetto 中识别不同 SoC 的核心拓扑，最直接的方法是看 CPU Frequency Track：高通 Oryon 的双集群只有两个频率档位；联发科全大核的三个频率档位分布相对紧凑；传统大小核的频率跨度则非常大（比如小核 1.8GHz 对比大核 3.4GHz）。
+在 Perfetto 中识别不同 SoC 的核心拓扑，最直接的方法是看 CPU Frequency Track：高通 Oryon 的双集群通常体现为两个主要频率策略组；联发科全大核的几个集群频率跨度相对紧凑；传统大小核的频率跨度则非常大（比如小核 1.8GHz 对比大核 3.4GHz）。
 
 [已验证: 公开产品规格 + ARM 官方架构文档]
 
@@ -183,11 +183,13 @@ ORDER BY migration_count DESC
 LIMIT 20;
 ```
 
-2. **CPU Frequency Track** 的对比特征：传统大小核的频率跨度极大（小核 1.8GHz vs 大核 3.4GHz），全大核的三个频率档位分布紧凑（2.0GHz / 2.85GHz / 3.62GHz）。如果频率 Track 中看不到明显的「低频区」和「高频区」二分，基本可以判断为全大核或近全大核架构。
+这个查询只统计同一线程连续两次运行所在 CPU 不同的次数。窗口太短或包含大量后台线程时，结果会被调度噪声放大，实战中要和前台线程、频率轨道一起看。
+
+2. **CPU Frequency Track** 的对比特征：传统大小核的频率跨度极大（小核 1.8GHz vs 大核 3.4GHz），全大核的几个集群频率区间更紧凑（例如 2.0GHz / 2.85GHz / 3.62GHz）。如果频率 Track 中看不到明显的「低频区」和「高频区」二分，基本可以判断为全大核或近全大核架构。
 
 3. **sched_waking / sched_wakeup 事件**中观察唤醒目标 CPU 的分布。大小核架构下，低优先级唤醒偏向小核（CPU 4-7）；全大核架构下唤醒目标分布更均匀，没有明显的「小核汇聚」现象。
 
-需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，迁移本身的开销也较低（Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存，但任务迁移仍然会损失私有 L1/L2 的 locality）。实际迁移成本要看 cache miss、uclamp、cluster policy、wakeup path 和具体工作负载——不能简单用 DSU 的存在推论“跨核迁移成本低”。在 Perfetto 中，只有迁移导致缓存抖动（观察 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
+需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，迁移本身的开销也较低（Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存，但任务迁移仍然会损失私有 L1 / L2 的局部性）。实际迁移成本要看缓存未命中、`uclamp`、集群策略、唤醒路径和具体工作负载——不能简单用 DSU 的存在推论“跨核迁移成本低”。在 Perfetto 中，只有迁移导致缓存抖动（例如 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
 
 [已验证: ARM DSU-120 架构手册——DSU 提供一致性协议和可选共享缓存，但不等于跨核复用对方私有 L2]
 
@@ -245,7 +247,7 @@ Google 的 TPU 是 Tensor 芯片的核心卖点。TPU 专门针对 Google 的 AI
 
 ISP 负责相机图像处理，是影响相机启动速度和拍照延迟的关键组件。各家的 ISP 都在持续加强 AI 摄影能力（夜景增强、人像虚化、HDR+ 等），这些计算量的增加直接影响相机 App 的启动速度和拍照响应——这也正是 §8.4 中讲响应速度时需要考虑的跨平台因素。
 
-[自动发现] 高通、联发科和三星在 ISP 架构上的差异主要影响相机的计算摄影流水线。高计算量的 AI 后处理（如夜景合成）在内存带宽需求大的场景下可能与前台 App 的渲染竞争带宽，导致潜在的帧率波动。这在 Perfetto 中可能表现为渲染帧耗时的偶发性波动。
+高通、联发科和三星在 ISP 架构上的差异主要影响相机的计算摄影流水线。高计算量的 AI 后处理（如夜景合成）在内存带宽需求大的场景下可能与前台 App 的渲染竞争带宽，导致潜在的帧率波动。这在 Perfetto 中可能表现为渲染帧耗时的偶发性波动。
 
 [已验证: 公开产品规格，来源见各厂商官方文档]
 
@@ -261,7 +263,7 @@ ISP 负责相机图像处理，是影响相机启动速度和拍照延迟的关�
 
 ### 内存带宽争用在 Perfetto 中的间接观察
 
-Perfetto 目前没有直接的「内存带宽利用率」Track。但我们可以通过间接方式判断带宽争用：
+Perfetto 目前没有直接的「内存带宽利用率」Track。判断带宽争用时，通常看三类间接信号：
 
 - GPU 渲染帧耗时出现周期性波动，且波动频率与 CPU 负载变化相关——可能是 CPU 和 GPU 争用内存带宽导致的
 - 在 Perfetto 的 `memmgr` Track 中观察 GPU 内存压力事件
