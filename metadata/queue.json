@@ -13074,6 +13074,26 @@
       "status": "completed",
       "completed_at": "2026-05-06T16:22:05+08:00",
       "updated_at": "2026-05-06T16:22:05+08:00"
+    },
+    {
+      "section": "5.4",
+      "section_title": "DVFS 与功耗管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.4 DVFS 与功耗管理仍保留错误的 android15/android16 schedutil 伪代码块，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L255-L271 第二个 sugov_get_util() 伪代码块",
+          "detail": "[P0] 第一段 android16-6.12 伪代码已接近真实源码，但第二个代码块仍保留上一轮指出的错误形态：写成 scx_switched_all() 时才取 scx_cpuperf_target()、effective_cpu_util() 无返回值、sugov_effective_cpu_perf(cpu, util, max, &bw_min)。复核 kernel/common android15-6.6：sugov_get_util(struct sugov_cpu *sg_cpu) 实际是 cpu_util_cfs_boost() → cpu_bw_dl(rq) → effective_cpu_util(cpu, util, FREQUENCY_UTIL, NULL)，没有 boost 参数、没有 scx_cpuperf_target()、没有 min/max 输出。正文现在出现“正确说明 + 错误代码块”互相矛盾。",
+          "suggestion": "将第二个代码块替换为 android15-6.6 的简化伪代码：util = cpu_util_cfs_boost(cpu); sg_cpu->bw_dl = cpu_bw_dl(rq); sg_cpu->util = effective_cpu_util(cpu, util, FREQUENCY_UTIL, NULL)。或删除第二个代码块，改成列表对比 android15/android16 差异；保留“代码块为简化伪代码，非逐行源码复刻”的边界说明。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T16:39:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
