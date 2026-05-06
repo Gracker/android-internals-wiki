@@ -39,13 +39,13 @@ sources:
     path: "https://developer.android.com/topic/performance/power"
 tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Counter', 'Fuel Gauge', 'IPowerStats', '功耗归属']
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
-last_task9_at: "2026-05-06T20:37:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-05-06
+task9_state: reviewed
+task2b_state: pending
+last_task9_at: "2026-05-07T06:27:13+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-07"
 task2b_result: fixed
 last_task2b_at: "2026-05-07T03:43:33+08:00"
 repaired_date: "2026-04-26"
@@ -53,8 +53,8 @@ repaired_by: "openclaw-task2b"
 task6_reviewed_date: "2026-05-07"
 last_task6_at: "2026-05-07T04:08:50+08:00"
 last_task6_review_log: "logs/review/2026-05-07-04-review.md"
-review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 轻修，未新增 L3/L4 回炉项；保持技术项交由 Task9 复审。 | 2026-05-05 Task9 08:37：Task9 深审发现 PowerMonitor API 调用对象写错，PAS/ADPF+ODPM 反馈路径缺少公开源码/官方文档支撑。 | 2026-05-06 Task6 20:13：完成 L1/L2 小修；发现 PowerMonitor API 获取方式与 PAS/ADPF+ODPM 公开依据仍有风险信号，已写入 queue 交 Task2B/Task9。 | 2026-05-06 Task9 20:37：深审复核 PowerMonitor API 入口、GPU power_profile 标准键、PAS/ADPF+ODPM 动态反馈证据链；仍有 P0/P1，已合并 queue。 | 2026-05-07 Task6 04:08：revisiting 后复审；完成 L1/L2 小修 2 处（GPU 归属句式、frontmatter 去重），无新增 L3/L4 回炉项；转入 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-06-20-deep-review.md"
+review_notes: "2026-05-05 Task6 08:21：执行四层写作质检；完成 L1/L2 轻修，未新增 L3/L4 回炉项；保持技术项交由 Task9 复审。 | 2026-05-05 Task9 08:37：Task9 深审发现 PowerMonitor API 调用对象写错，PAS/ADPF+ODPM 反馈路径缺少公开源码/官方文档支撑。 | 2026-05-06 Task6 20:13：完成 L1/L2 小修；发现 PowerMonitor API 获取方式与 PAS/ADPF+ODPM 公开依据仍有风险信号，已写入 queue 交 Task2B/Task9。 | 2026-05-06 Task9 20:37：深审复核 PowerMonitor API 入口、GPU power_profile 标准键、PAS/ADPF+ODPM 动态反馈证据链；仍有 P0/P1，已合并 queue。 | 2026-05-07 Task6 04:08：revisiting 后复审；完成 L1/L2 小修 2 处（GPU 归属句式、frontmatter 去重），无新增 L3/L4 回炉项；转入 Task9 复审。 | 2026-05-07 Task9 06:20：深审复核发现 P0 2，P2 0；已写入 queue/suggestions，转 Task2B 回炉。"
+last_task9_review_log: "logs/deep-review/2026-05-07-06-deep-review.md"
 ---
 
 

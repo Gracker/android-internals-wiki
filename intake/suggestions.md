@@ -1354,3 +1354,8 @@
 - **建议**：改为 `../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md` 和 `../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md`。
 - **review 日志**：logs/deep-review/2026-05-07-05-deep-review.md
 
+## [Task9 Deep Review] 11.4 案例集 — 2026-05-07
+- **类型**：交叉引用错误
+- **位置**：参考资料 Android Vitals: Excessive Wakeups
+- **问题**：链接 `https://developer.android.com/topic/performance/vitals/wakeups` 当前返回 404。
+- **建议**：改为官方当前路径 `https://developer.android.com/topic/performance/vitals/wakeup`。
