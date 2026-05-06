@@ -1359,3 +1359,10 @@
 - **位置**：参考资料 Android Vitals: Excessive Wakeups
 - **问题**：链接 `https://developer.android.com/topic/performance/vitals/wakeups` 当前返回 404。
 - **建议**：改为官方当前路径 `https://developer.android.com/topic/performance/vitals/wakeup`。
+
+
+## [Task9 Deep Review] 17.2 SoC 平台差异 — 2026-05-07
+- **类型**：工具口径/数据缺失
+- **位置**：L300 ARM PMU 与 Perfetto 数据源
+- **问题**：正文写 PMU 指标需要配置 `linux.ftrace` 的 `pmu` 事件；Perfetto 配置 proto 中 perf_event 采样/计数对应 data source name `linux.perf` 和 `perf_event_config`。
+- **建议**：改成“Perfetto 需配置 `linux.perf` / `perf_event_config`（或设备支持的 perf/PMU 数据源）；ftrace 只覆盖调度、freq、thermal 等 trace events”。
