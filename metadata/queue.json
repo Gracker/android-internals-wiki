@@ -13582,6 +13582,52 @@
       "added_by": "task8-classifier",
       "added_at": "2026-05-07T05:36:27",
       "status": "pending"
+    },
+    {
+      "section": "11.1",
+      "section_title": "Android 功耗模型",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.1 Android 功耗模型 仍有技术事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 入口与单位错误",
+          "location": "PowerMonitor API（Android 15+）段",
+          "detail": "[P0] 正文写 `android.os.health.PowerMonitor`，且写 `getConsumedEnergy()` 返回 microwatt-hours。android-16.0.0_r1 中 `PowerMonitor` / `PowerMonitorReadings` 位于 `android.os`，入口 `SystemHealthManager` 位于 `android.os.health`；`PowerMonitorReadings.getConsumedEnergy()` 注释为 since boot 的 microwatt-seconds（uWs），不是 uWh。",
+          "suggestion": "改为 `android.os.PowerMonitor`、`android.os.PowerMonitorReadings`、`android.os.health.SystemHealthManager`；能量单位改为 uWs，并说明前后两次 snapshot 相减才是区间能量。"
+        },
+        {
+          "type": "Trace/Perfetto 配置错误",
+          "location": "Perfetto + ODPM 配置示例",
+          "detail": "[P0] 正文配置 `data_sources.config.name = \"android.hardware.power.stats\"`。android-16.0.0_r1 external/perfetto 中 Android power probe 注册的数据源名是 `android.power`，power rail / energy breakdown 通过 `AndroidPowerConfig` 的 `collect_power_rails`、`collect_energy_estimation_breakdown` 等字段启用。`android.hardware.power.stats` 是 HAL/服务语义，不是 Perfetto trace config 的 data source name。",
+          "suggestion": "把 Perfetto 示例改为 `name: \"android.power\"`，并补 `android_power_config { collect_power_rails: true }`（按需要再开 battery_poll_ms / energy breakdown / entity residency）。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T06:27:13+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "11.4",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 11.4 案例集 仍有技术事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/崩溃签名错误",
+          "location": "Android 15+ 前台服务超时与崩溃 Logcat 示例",
+          "detail": "[P0] 正文在 FGS timeout 段给出的 `Context.startForegroundService() did not call Service.stopForeground()` 不是 Android 15 dataSync/mediaProcessing 配额超时的崩溃签名，而是 startForegroundService 后未及时调用 startForeground/stopSelf 的另一类错误。官方 Android 15 行为变更给出的 timeout 日志为 `RemoteServiceException: \"A foreground service of type dataSync did not stop within its timeout: [component name]\"`。",
+          "suggestion": "替换 Logcat 示例，并拆清两类问题：FGS 启动后未及时提升前台 vs dataSync/mediaProcessing 6h/24h 配额耗尽后 onTimeout 未 stopSelf。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T06:27:13+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
