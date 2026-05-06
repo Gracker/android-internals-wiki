@@ -44,21 +44,22 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 5
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_at: "2026-05-07T02:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-02-review.md"
 task6_review_notes: "2026-05-07 Task6：pass-light-edit。小修 13 处：压低高频填充词，清理 Bitmap 统计口径标题和 MTE 引导句，去除重复 last_task2b_at；无新增 Task2B 回炉项。因 Task9 仍为 pending 且 queue 有既有 pending 条目，未自动晋升。"
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-last_task9_at: "2026-05-07T01:20:00+08:00"
-task2b_state: fixed
-task2b_result: fixed
+last_task9_at: "2026-05-07T02:20:00+08:00"
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: "2026-05-01T14:40:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-07"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB 页内部碎片公式错误，RELRO 兼容模式安全断言缺源码闭环 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。"
+task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB 页内部碎片公式错误，RELRO 兼容模式安全断言缺源码闭环 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。 | 2026-05-07 Task9 02:20：needs-rework。P0 3 / P1 0 / P2 0；NativeAllocationRegistry、Scudo MTE、16KB linker compat 三处源码锚点/函数名错误，写入 queue。"
+last_task9_review_log: "logs/deep-review/2026-05-07-02-deep-review.md"
 ---
 
 
