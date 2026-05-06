@@ -1216,3 +1216,10 @@
 - **位置**：L490 Perfetto “看调用栈”方法
 - **问题**：默认 `sched` / FrameTimeline / atrace 抓取通常不会自动带 Java/Native 方法调用栈，读者不能直接从主线程 CPU slice 展开到 `BitmapFactory.nativeDecode*`。
 - **建议**：补充采集前提：需要开启 callstack sampling、simpleperf/Perfetto CPU profiler、method tracing，或在业务解码包装层加自定义 Trace；默认调度 trace 只能定位线程长时间运行。
+
+## [Task6 Review] 9.6 Notification 性能与 ANR — 2026-05-06
+- **类型**：需确认 / 技术问题残留
+- **位置**：版本演进表 Android 14 行；图片通知成本阶梯；常见问题「Icon 构造方式对性能没影响」
+- **问题**：Task9 2026-05-06 已判定 RemoteViews Measure Cache/Action-diff 与 Icon.createWithBitmap/HardwareBuffer/Binder buffer 口径不成立。Task2B 标记 completed 后，正文仍保留这些表述。Task6 不裁决技术真伪，仅按 Task9 已有结论重开问题单。
+- **建议**：删除 Measure Cache / Action-diff 版本事实；按资源 ID / URI / Bitmap 三类路径重写图片通知成本模型，避免写成通知图片默认 HardwareBuffer 零拷贝或像素整体进入 Binder buffer。
+- **review 日志**：logs/review/2026-05-06-13-review.md

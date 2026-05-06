@@ -1,69 +1,69 @@
 {
-  "generated_at": "2026-05-06T12:42:00+08:00",
+  "generated_at": "2026-05-06T13:13:29+08:00",
   "state_machine_version": "v2",
   "total_sections": 250,
   "metrics": {
     "total_sections": 252,
     "last_updated": "2026-05-06",
     "pipeline_stage_counts": {
+      "unknown": 34,
       "ready-to-publish": 117,
-      "task2b_pending": 82,
-      "task6_pending": 3,
-      "task9_pending": 16,
-      "unknown": 34
+      "task2b_pending": 80,
+      "task9_pending": 18,
+      "task6_pending": 3
     },
     "task6_state_counts": {
-      "done": 2,
+      "unknown": 33,
       "reviewed": 201,
-      "revising": 1,
       "revisiting": 15,
-      "unknown": 33
+      "revising": 1,
+      "done": 2
     },
     "task9_state_counts": {
-      "pending": 7,
-      "reviewed": 206,
-      "unknown": 39
+      "unknown": 39,
+      "reviewed": 203,
+      "pending": 10
     },
     "task2b_state_counts": {
-      "fixed": 119,
-      "idle": 3,
-      "pending": 89,
-      "unknown": 41
+      "unknown": 41,
+      "fixed": 121,
+      "pending": 87,
+      "idle": 3
     },
     "finalized": 118,
     "ready-for-review": 102,
     "unknown": 32,
     "status_counts": {
+      "unknown": 32,
       "finalized": 118,
-      "ready-for-review": 102,
-      "unknown": 32
+      "ready-for-review": 102
     }
   },
   "pipeline": {
     "pipeline_stage_counts": {
+      "unknown": 34,
       "ready-to-publish": 117,
-      "task2b_pending": 82,
-      "task6_pending": 3,
-      "task9_pending": 16,
-      "unknown": 34
+      "task2b_pending": 80,
+      "task9_pending": 18,
+      "task6_pending": 3
     },
     "task6_state_counts": {
-      "done": 2,
+      "unknown": 33,
       "reviewed": 201,
-      "revising": 1,
       "revisiting": 15,
-      "unknown": 33
+      "revising": 1,
+      "done": 2
     },
     "task9_state_counts": {
-      "pending": 7,
-      "reviewed": 206,
-      "unknown": 39
+      "unknown": 39,
+      "reviewed": 203,
+      "pending": 10
     },
     "task2b_state_counts": {
-      "fixed": 119,
-      "idle": 3,
-      "pending": 89,
-      "unknown": 41
+      "unknown": 41,
+      "fixed": 121,
+      "pending": 87,
+      "idle": 3
     },
     "last_updated": "2026-05-06"
   },
@@ -1977,10 +1977,10 @@
       "last_verified": "2026-05-01",
       "last_verified_against": "Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1990,9 +1990,11 @@
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T02:28:51+08:00",
       "task6_reviewed_date": "2026-05-06",
-      "last_task6_at": "2026-05-06T02:06:00+08:00",
+      "last_task6_at": "2026-05-06T13:13:29+08:00",
       "review_notes": "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。",
-      "last_task2b_at": "2026-05-06T01:45:17+08:00"
+      "last_task2b_at": "2026-05-06T01:45:17+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-13-review.md",
+      "task6_review_notes": "2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "src/part1-fundamentals/ch05-cpu-power/05-thermal.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
@@ -3240,19 +3242,19 @@
       "confidence": "medium",
       "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "task2b_state": "pending",
-      "task6_result": "pass-light-edit",
+      "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "task2b_result": "rework-fixed",
+      "task2b_result": "fixed",
       "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
       "last_task9_at": "2026-05-06T11:39:00+08:00",
-      "last_task6_at": "2026-05-06T11:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-06-11-review.md",
-      "task6_review_notes": "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。",
+      "last_task6_at": "2026-05-06T13:13:29+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-13-review.md",
+      "task6_review_notes": "2026-05-06 Task6 13:13：回炉后写作复审；L1/L2 轻修 1 处（标题匹配锚点）；发现 Task9 P0 技术问题残留（RemoteViews 版本表、Icon.createWithBitmap/HardwareBuffer/Binder buffer 口径），已重开 queue P95 交 Task2B。",
       "last_task9_review_log": "logs/deep-review/2026-05-06-11-deep-review.md",
       "task9_review_notes": "2026-05-06 Task9 11:39：needs-rework。P0 2：Android 14 Measure Cache/Action-diff 与通知 HardwareBuffer 零拷贝/Binder buffer 口径不成立；P2 1：标准模板仍经 SystemUI apply/reapply，已有优化路径但不能写成不走 RemoteViews。"
     },
@@ -4456,18 +4458,21 @@
       "last_verified": "2026-04-22",
       "last_verified_against": "perfetto.dev/docs/analysis/metrics, perfetto.dev/docs/analysis/trace-summary, perfetto.dev/docs/instrumentation/tracing-sdk",
       "confidence": "medium",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "task6_state": "reviewed",
-      "task9_state": "reviewed",
-      "task2b_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "fixed",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
-      "reviewed_date": "2026-04-22",
+      "reviewed_date": "2026-05-06",
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-04-27",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-04-27T15:34:11+08:00"
+      "last_task9_at": "2026-04-27T15:34:11+08:00",
+      "last_task6_at": "2026-05-06T13:13:29+08:00",
+      "last_task6_review_log": "logs/review/2026-05-06-13-review.md",
+      "task6_review_notes": "2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理禁用词/填充词 2 处与第一人称漂移 10 处；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
     },
     "src/part3-tools/ch13-perfetto/08-input-latency-sql.md": {
       "path": "src/part3-tools/ch13-perfetto/08-input-latency-sql.md",

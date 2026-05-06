@@ -28,24 +28,23 @@ polish_date: "2026-04-07"
 polish_by: "task2b-polish"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-06"
-task2b_state: "pending"
-task2b_result: "fixed"
+task2b_state: fixed
+task2b_result: fixed
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-06T02:28:51+08:00"
-status: "ready-for-review"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task6_result: "pass-light-edit"
-task9_state: "reviewed"
-reviewed_by: "openclaw-task6"
+status: ready-for-review
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
-last_task6_at: "2026-05-06T02:06:00+08:00"
+last_task6_at: "2026-05-06T13:13:29+08:00"
 review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task2b_at: "2026-05-06T01:45:17+08:00"
-task2b_result: fixed
-task2b_state: fixed
-pipeline_stage: task6_pending
+last_task6_review_log: "logs/review/2026-05-06-13-review.md"
+task6_review_notes: "2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # DVFS 与功耗管理
