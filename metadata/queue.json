@@ -12895,6 +12895,26 @@
       "status": "completed",
       "completed_at": "2026-05-06T09:49:49.437511",
       "completed_reason": "P0 inBitmap返回对象语义修正：decodeResource返回值即options.inBitmap同一Java对象（reinitBitmap后return javaBitmap），注释和正文已同步修正"
+    },
+    {
+      "section": "1.7",
+      "section_title": "ART 编译管线与 dex2oat 优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1.7 dex2oat Trace 进程归属写成 system_server 子进程，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/Trace 观测错误",
+          "location": "L397-L403 dex2oat 编译过程",
+          "detail": "[P1] 正文写安装时 dex2oat 是 system_server 进程中的子进程。AOSP android-14/16 中 PackageDexOptimizer/ART Service 发起 dexopt 请求后，经 Installer/installd 进入 native dexopt.cpp，installd fork/exec dex2oat；Perfetto 中 dex2oat 是独立进程，父进程通常是 installd/artd 这类 dexopt 执行侧，不应写成 system_server 下的子进程。",
+          "suggestion": "改为“system_server/ART Service 发起 dexopt 请求，经 Installer/installd（或新版 ART Service/artd 路径）触发 dex2oat；Trace 中直接搜索 dex2oat 进程及线程/CPU”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T10:38:04+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

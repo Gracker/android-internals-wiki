@@ -1176,3 +1176,18 @@
 - **位置**：L340 AVIF 段引用 HEIC 降本案例
 - **问题**：正文在 AVIF 小节引用“抖音 JPEG 转 HEIC 带宽成本降低超过 80%”作为相邻案例。HEIC 与 AVIF 都是高压缩静态图格式，但编码工具链、硬件解码覆盖和兼容性不同，不能直接作为 AVIF 体积/解码收益证据。
 - **建议**：把该案例明确收窄为 HEIC 工程案例，或替换成 AVIF 的同源 benchmark / 业务图片集实测数据。
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-05-06 — L401-L405 各版本 ANR 机制演进
+- **类型**：版本差异
+- **位置**：L401-L405 各版本 ANR 机制演进
+- **问题**：正文写“ANR 机制自 Android 2.3 引入以来”。AOSP android-1.6_r1 的 ActivityManagerService.java 已有 appNotResponding 路径，2.3 不能写成 ANR 机制起点。
+- **建议**：改为“ANR 机制早期版本已存在，Android 8+ 本章只追踪诊断与触发条件变化”；若要保留 2.3，必须指向某个具体实现变化。
+- **review 日志**：logs/deep-review/2026-05-06-10-deep-review.md
+
+## [Task9 Deep Review] 9.1 ANR 设计思想 — 2026-05-06 — L300-L302 Watchdog 检测机制
+- **类型**：源码准确性
+- **位置**：L300-L302 Watchdog 检测机制
+- **问题**：正文写 Watchdog 默认每 60 秒发送一次心跳。AOSP android-14 Watchdog.DEFAULT_TIMEOUT=60s，但 run() 中 checkIntervalMillis=watchdogTimeoutMillis/2；默认约 30s 半程检查/WAITED_HALF dump，满 60s 才进入 OVERDUE/重启决策。
+- **建议**：改为“默认 timeout 60s；Watchdog 按半程约 30s 做中间检查，满 60s 未完成才判定超时”。
+- **review 日志**：logs/deep-review/2026-05-06-10-deep-review.md
+
