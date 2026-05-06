@@ -132,7 +132,7 @@ SystemServer 启动阶段（简化）:
     → InputManagerService
 ```
 
-PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。Android 16 对 PMS 的开机扫描做了并行化：APEX 模块的解析不再串行排队，而是通过 `InitAppsHelper.java` 的 `getApexScanPartitions()` / `scanSystemDirs()` 在多线程中处理，线程池由 `ParallelPackageParser` 提供。包数量多的设备上，这一优化可以缩短 PMS 初始化耗时。
+PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。android-16 源码中 PMS 开机扫描可见并行路径：APEX 模块的解析不再串行排队，而是通过 `InitAppsHelper.java` 的 `getApexScanPartitions()` / `scanSystemDirs()` 在多线程中处理，线程池由 `ParallelPackageParser` 提供。`ParallelPackageParser` 本身在更早版本已存在，android-16 的优化集中在 APEX 模块的并发解析。包数量多的设备上，这一优化可以缩短 PMS 初始化耗时。
 
 [已验证: AOSP android-16.0.0_r1 `InitAppsHelper.java` parallel APEX scanning / `ParallelPackageParser`]
 
@@ -213,11 +213,11 @@ session commit 之后，安装器把 APK 放到 `/data/app/` 下的目标目录�
 
 PMS 解析 `AndroidManifest.xml`、校验签名、检查 sharedUserId / 权限 / ABI / split 关系，再决定能否把这个包正式纳入系统状态。升级安装还要检查新旧签名和 `versionCode` 规则。
 
-**4. APK v4.1 签名与流式校验**
+**4. APK 签名与流式校验**
 
-Android 11 引入 APK Signature Scheme v4（merkle tree 签名，服务于增量/流式安装的 .idsig 文件），后续版本又在 v4.1 中增加了密钥轮转（key rotation）支持。流式校验允许安装过程中增量验证 APK 块，而非一次性读入全部内容做校验。
+APK v3 签名支持密钥轮转（key rotation，proof-of-rotation 机制），允许应用在签名密钥变更时保持更新链。Android 11 引入 APK Signature Scheme v4（merkle tree 签名，服务于增量/流式安装的 .idsig 文件），v4 需要与 v2/v3 配套使用。流式校验允许安装过程中增量验证 APK 块，而非一次性读入全部内容做校验。
 
-在 Android 12+ 设备上，`IncrementalService` 配合 v4 签名实现了按需解密和校验：应用安装后不必等所有文件完整写入，先完成校验的部分就可以被访问。在 Perfetto 中，可以通过 `android.incremental` 相关的 Trace 事件观察这一过程。当设备使用 Incremental FS（`/data/incremental/` 挂载点）时，文件访问会经过 `IncrementalService` 的 ioctl 路径，触发按块的签名校验。
+在 Android 12+ 设备上，`IncrementalService`（`system/incremental_delivery/service/java/`）配合 v4 签名实现了按需解密和校验：应用安装后不必等所有文件完整写入，先完成校验的部分就可以被访问。在 Perfetto 中，可以通过 `android.incremental` 相关的 Trace 事件观察这一过程。当设备使用 Incremental FS（`/data/incremental/` 挂载点）时，文件访问会经过 `IncrementalService` 的 ioctl 路径，触发按块的签名校验。
 
 这对大型游戏和应用商店的分发体验有直接影响：用户可以在"安装尚未完成"时就启动应用，已校验的部分可正常使用，未校验的部分按需下载和验证。
 

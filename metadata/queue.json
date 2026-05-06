@@ -12349,7 +12349,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T05:30:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T10:44:02+08:00",
+      "completed_reason": "P0 APK v4.1签名描述已修正(v3支持key rotation，v4需配合v2/v3); P0 IncrementalService源码路径已修正; P1 PMS并行扫描版本边界已改为android-16源码可见而非Android 16首次引入"
     },
     {
       "section": "2.17",
@@ -12872,7 +12874,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T09:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T10:44:02+08:00",
+      "completed_reason": "P0 UserController广播发送路径已修正(UserManagerService→UserController+源码路径); P1 GBL标准化描述已收窄为推荐实现; P1 initcall_blacklist/async_pf关键词已替换为ftrace initcall/module事件"
     },
     {
       "section": "7.10",
