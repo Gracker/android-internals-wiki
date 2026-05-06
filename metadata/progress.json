@@ -10508,6 +10508,15 @@
           ]
         }
       ]
+    },
+    {
+      "date": "2026-05-06T13:04:10+08:00",
+      "sections": [
+        "9.6",
+        "13.7"
+      ],
+      "action": "rework",
+      "details": "9.6: RemoteViews reapply修正+Icon成本模型重写; 13.7: Metric SQL两阶段写法+BatchTraceProcessor导入+Trace Summary CLI修正"
     }
   ],
   "2026-04-29-13-task9": {

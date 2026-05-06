@@ -27,17 +27,17 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-02"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: openclaw-task9
-last_task2b_at: '2026-04-22T13:06:00+08:00'
+last_task2b_at: "2026-05-06T13:04:10+08:00"
 task2b_result: fixed
 last_task9_at: "2026-05-03T00:36:00+08:00"
 task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。"
@@ -154,32 +154,42 @@ extend TraceMetrics {
 -- cold_start_metric.sql
 -- 查询冷启动各阶段耗时
 
--- 提取关键阶段的 slice
-WITH startup_phases AS (
-  SELECT
-    s.name AS phase_name,
-    s.dur AS duration_ns
-  FROM slice s
-  JOIN thread_track tt ON s.track_id = tt.id
-  JOIN thread t ON tt.utid = t.utid
-  WHERE s.name IN (
-    'activityStart',
-    'activityResume',
-    'Choreographer#doFrame',
-    'DrawFrame'
-  )
-  AND t.name = 'main'
-  ORDER BY s.ts
-)
-
--- 生成最终结果
+-- 第一步：提取关键阶段的 slice，生成中间视图
+CREATE VIEW cold_start_phases AS
 SELECT
-  'cold_start_metric' AS metric_name,
-  SUM(duration_ns) AS total_duration_ns
-FROM startup_phases;
+  s.name AS phase_name,
+  s.dur AS duration_ns
+FROM slice s
+JOIN thread_track tt ON s.track_id = tt.id
+JOIN thread t ON tt.utid = t.utid
+WHERE s.name IN (
+  'activityStart',
+  'activityResume',
+  'Choreographer#doFrame',
+  'DrawFrame'
+)
+AND t.name = 'main'
+ORDER BY s.ts;
+
+-- 第二步：用 proto builder 函数组装输出
+CREATE VIEW cold_start_metric_output AS
+SELECT
+  ColdStartMetric(
+    'phases',
+    (SELECT RepeatedField(
+      ColdStartPhase(
+        'phase_name', phase_name,
+        'duration_ns', duration_ns
+      )
+    ) FROM cold_start_phases),
+    'total_duration_ns',
+    (SELECT SUM(duration_ns) FROM cold_start_phases)
+  ) AS cold_start_metric
+FROM cold_start_phases
+LIMIT 1;
 ```
 
-实际工程里，这段 SQL 往往会更复杂，比如要处理多次启动、区分冷启动和热启动、排除异常值等。但核心思路不变，用 SQL 从 Trace 的表中提取关注的数据，再按 proto 定义的结构组织输出。
+这里有三个要点。第一，SQL 文件名（`cold_start_metric`）必须和 proto 中 `extend TraceMetrics` 的字段名一致，这是 Perfetto 的注册约定。第二，中间视图 `cold_start_phases` 负责提取和过滤数据，输出视图 `cold_start_metric_output` 负责用 `ColdStartMetric(...)` proto builder 把结果组装成 proto 消息。`RepeatedField(...)` 用来构造 `repeated` 字段。第三，输出视图必须以 `_output` 结尾，Trace Processor 扫描这个后缀来找到最终输出。
 
 **第三步：运行 Metric。**
 
@@ -268,7 +278,7 @@ Perfetto UI 的宏（Macros）是一种可复用的分析自动化脚本。简�
 
 ### 用宏构建团队分析流程
 
-宏的真正威力在于团队协作。通过 Perfetto 的 Extension Server 机制，团队可以把一套共享的宏部署到内部服务器上，所有团队成员打开 Perfetto UI 时自动加载这些宏。
+宏的核心价值在于团队协作。通过 Perfetto 的 Extension Server 机制，团队可以把一套共享的宏部署到内部服务器上，所有团队成员打开 Perfetto UI 时自动加载这些宏。
 
 典型的团队级宏方案可能包括：
 
@@ -327,24 +337,24 @@ print(df.describe())
 当我们需要分析一批 Trace 时（比如 CI/CD 中每次构建产出的 Trace），`BatchTraceProcessor` 比循环调用 `TraceProcessor` 高效得多：
 
 ```python
-from perfetto.batch_trace_processor import BatchTraceProcessor
+from perfetto.batch_trace_processor.api import BatchTraceProcessor
 
-# 加载多个 Trace
+# 加载多个 Trace，推荐用 context manager 自动释放资源
 traces = [
     'traces/build_001.perfetto-trace',
     'traces/build_002.perfetto-trace',
     'traces/build_003.perfetto-trace',
 ]
 
-batch = BatchTraceProcessor(traces=traces)
+# 依赖安装：pip3 install perfetto pandas
+with BatchTraceProcessor(traces=traces) as batch:
+    # 对所有 Trace 执行同一个查询
+    results = batch.query_and_flatten(
+        'SELECT name, dur FROM slice WHERE name = "activityStart"'
+    )
 
-# 对所有 Trace 执行同一个查询
-results = batch.query_and_flatten(
-    'SELECT name, dur FROM slice WHERE name = "activityStart"'
-)
-
-# results 是一个合并后的 DataFrame，带有一列标识来源 Trace
-print(results)
+    # results 是一个合并后的 DataFrame，带有一列标识来源 Trace
+    print(results)
 ```
 
 `BatchTraceProcessor` 会并行加载和查询所有 Trace。它特别适合统计类分析，比如要看最近 100 次构建的冷启动时间分布，用 `query_and_flatten` 一条 SQL 就够了。
@@ -412,11 +422,11 @@ with TraceProcessor(trace='my_trace.pftrace') as tp:
 命令行等价写法是：
 
 ```bash
-trace_processor_shell --summary \
-  --summary-spec spec.textproto \
-  --summary-metrics-v2 memory_per_process \
-  my_trace.pftrace
+trace_processor_shell summarize --metrics-v2 memory_per_process \
+  my_trace.pftrace spec.textproto
 ```
+
+`summarize` 是 `trace_processor_shell` 的子命令，`--metrics-v2` 指定要跑的 metric id，后面跟 trace 文件和 spec 文件。如果需要多版本兼容，保留旧命令时须标注 trace_processor 版本。
 
 如果要把 summary 结果和 Python 数据处理链串起来，可以先在 Trace Processor 里产出稳定的 `TraceSummary`，再把其中的指标字段转成 DataFrame。这样比直接依赖临时 SQL 表结构更稳。
 
