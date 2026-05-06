@@ -37,23 +37,22 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_rework_date: "2026-05-06"
 last_rework_by: openclaw-task2b
 last_rework_reason: "P95 Task9回炉(第三轮)：P0 inBitmap像素转移语义修正（非回收而是transfer）；P1 AVIF硬件加速边界收窄为SoC AV1 still image子集依赖"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-06"
 task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-last_task9_at: "2026-05-06T08:35:28+08:00"
-task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄"
+last_task9_at: "2026-05-06T09:20:00+08:00"
+task9_review_notes: "2026-05-06 08:30 task9 deep-review: needs-rework。P0 1：inBitmap 复用示例把返回对象语义写错；P1 1：AVIF/AV1 硬件能力边界过度外推；P2 2：Hardware Bitmap upload 与 WebP 压缩率缺少数据支撑。 | 2026-05-06 08:45 task2b rework(第三轮): P0 inBitmap像素转移语义修正；P1 AVIF硬件加速边界收窄 | 2026-05-06 09:20 task9 回归审计: needs-rework。P0 1 / P1 0 / P2 1；inBitmap 复用对象语义仍未闭环。"
 last_task6_at: "2026-05-06T09:07:00+08:00"
 task9_result: needs-rework
 ---
-
 # 7.10 图片加载与 Bitmap 性能优化
 
 <!-- outline-start -->

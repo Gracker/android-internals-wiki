@@ -74,19 +74,19 @@ related_chapters:
   - "8.2"
   - "1.11"
   - "8.3"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task6_reviewed_date: "2026-05-01"
-task9_state: pending
-task9_result: "needs-rework"
-last_task9_at: "2026-05-01T13:20:00+08:00"
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+last_task9_at: "2026-05-06T09:20:00+08:00"
+task2b_state: pending
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-01"
+task9_reviewed_date: "2026-05-06"
 review_notes: "2026-05-05 task2b rework: P0 UserController path fixed (user→pm); P1 Cloud Compilation OTA scope softened; P1 kernel async probe/module placement added | 2026-05-06 task2b rework(第三轮): P0 UserController→UserManagerService源码路径修正（AOSP android-16.0.0_r1 无 UserController.java，广播发送由 UserManagerService 负责）"
 task2b_result: fixed  # 2026-05-01 rework: TimingsTraceAndSlog path, startApexServices version (13 not 12), /product/etc/init added
+task9_review_notes: "2026-05-06 09:20 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 3；UserController 广播发送路径、GBL/boottime 口径、async_probe 观测口径需回炉。"
 ---
-
 # 系统启动全流程
 
 <!-- outline-start -->

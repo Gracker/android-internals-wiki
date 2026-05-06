@@ -12839,6 +12839,58 @@
       "status": "completed",
       "completed_at": "2026-05-06T08:48:28.941567",
       "completed_reason": "P0 inBitmap像素转移语义修正（非回收而是transfer，源Bitmap对象仍存在getByteCount()=0）；P1 AVIF硬件加速边界收窄为SoC AV1 still image子集依赖，不满足退回libdav1d"
+    },
+    {
+      "section": "1.2",
+      "section_title": "系统启动全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.2 系统启动全流程仍存在 UserController 广播发送路径 P0，以及 GBL/boottime、async_probe 观测口径 P1，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L217 / L227-L230 / 参考资料 L503",
+          "detail": "正文和参考资料把 ACTION_LOCKED_BOOT_COMPLETED / ACTION_BOOT_COMPLETED 的发送责任写成 UserManagerService。复核 AOSP android-16.0.0_r1：frameworks/base/services/core/java/com/android/server/am/UserController.java 存在，sendLockedBootCompletedBroadcast() 构造并发送 ACTION_LOCKED_BOOT_COMPLETED；finishUserUnlockedCompleted() 构造 ACTION_BOOT_COMPLETED 并通过 FgThread 调用 mInjector.broadcastIntent()。UserManagerService 不是广播发送路径。",
+          "suggestion": "把正文和参考资料改回 UserController 路径；可补充 UserManagerService 只提供用户信息/状态管理，不承担 boot completed 广播发送。"
+        },
+        {
+          "type": "版本差异/数据支撑",
+          "location": "L148 Bootloader / GBL 段",
+          "detail": "正文称 Android 16 引入 GBL 后使 boottime.bootloader.* 指标跨厂商可比。复核 source.android.com GBL 文档：Android 16 起强烈建议 ARM64 设备部署 Google-certified GBL；复核 bootstat.cpp：boottime.bootloader.* 键在 android-8.0.0_r1、12、14、16 均已存在。当前文本把“GBL 推荐部署”和“bootstat 既有 bootloader 耗时键”建立了未证实因果。",
+          "suggestion": "拆成两句：GBL 是 Android 16 起的推荐 boot firmware 标准化方向；boottime.bootloader.* 是 bootstat 支持的 bootloader 上报耗时项，跨设备比较前仍需确认 bootloader 是否按同一口径填充。"
+        },
+        {
+          "type": "原理断裂/API 观测错误",
+          "location": "L156 Kernel async probe / module placement 段",
+          "detail": "正文建议在 dmesg 中用 initcall_blacklist / async_pf 关键词确认 async probe 和 module.layout 是否生效。initcall_blacklist 是禁用指定 initcall 的调试/绕过参数；async_pf 通常指 KVM async page fault，和 Android 启动期 driver asynchronous probing 不是同一机制。该观测口径会把排查方向带偏。",
+          "suggestion": "改为核对具体驱动 probe 日志、module init/load 顺序、ftrace/initcall/module 相关事件，或给出官方 boot-time optimization 文档中的可验证命令；不要用 async_pf 作为 async probe 证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T09:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.10",
+      "section_title": "图片加载与 Bitmap 性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.10 图片加载与 Bitmap 性能优化 inBitmap 复用对象语义仍错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API行为错误",
+          "location": "L293-L299 inBitmap 示例注释",
+          "detail": "正文注释仍写“reusableBitmap 的像素内存被转移给 newBitmap 复用；源 Bitmap 对象仍存在但像素存储已清空”。复核 AOSP android-16.0.0_r1 frameworks/base/libs/hwui/jni/BitmapFactory.cpp：javaBitmap != nullptr 时执行 bitmap::reinitBitmap(env, javaBitmap, outputBitmap.info(), ...) 后 return javaBitmap，返回对象通常就是 options.inBitmap 传入的同一个 Java Bitmap，并不是把像素转移给另一个新对象后清空源对象。",
+          "suggestion": "示例注释改为“decodeResource 返回值通常与 options.inBitmap 指向同一个 Bitmap 对象，底层像素缓冲被重新配置并复用；调用方应使用返回值作为后续引用，不要继续按旧尺寸/旧内容使用 reusableBitmap”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T09:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
