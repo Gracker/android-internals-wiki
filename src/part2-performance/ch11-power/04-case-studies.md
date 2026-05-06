@@ -31,8 +31,8 @@ sources:
     path: "https://developer.android.com/topic/performance/battery/battery-historian"
 tags: ['power', 'case-study', 'wakelock', 'location', 'network-polling', 'cpu-wakeup', 'battery-historian', 'workmanager']
 related_chapters: ["11.1", "11.2", "11.3", "5.6", "5.10", "13.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_result: fixed
@@ -70,9 +70,9 @@ last_task2b_at: "2026-05-07T06:40:00+08:00"
 
 ## 为什么要看这些案例
 
-前面的 11.1 讲了功耗模型，11.2 讲了 App 端的优化策略，11.3 讲了系统级的省电机制。道理都懂了，但拿到一个"用户反馈手机发烫、半天就没电"的问题时，从哪里下手？该看什么工具？怎么从一堆数据中找到耗电的元凶？
+前面的 11.1 讲了功耗模型，11.2 讲了 App 端的优化策略，11.3 讲了系统级的省电机制。机制讲完之后，难点会落到现场：拿到一个"用户反馈手机发烫、半天就没电"的问题时，从哪里下手？该看什么工具？怎么从一堆数据中找到耗电的元凶？
 
-这也是案例集的目的：带读者走完几个真实的分析过程——从发现问题、定位根因，到验证修复效果。每个案例都对应一个常见的功耗陷阱，走完一遍之后，下次遇到类似现象心里就有谱了。
+本节的目的，是带读者走完几个分析过程——从发现问题、定位根因，到验证修复效果。每个案例都对应一个常见功耗陷阱，走完一遍之后，下次遇到类似现象就知道该先看哪条线索。
 
 在开始之前，我们假设读者已经了解以下内容（如果还不熟悉，可以先回去看对应章节）：
 
@@ -155,13 +155,13 @@ public class SyncService extends Service {
 }
 ```
 
-问题一目了然：`doSyncInBackground` 的回调只处理了 `onSuccess`，没有处理 `onFailure`。当网络请求失败或超时时，回调走了另一个分支，WakeLock 永远不会被释放。
+问题集中在回调分支不完整：`doSyncInBackground` 的回调只处理了 `onSuccess`，没有处理 `onFailure`。当网络请求失败或超时时，回调走了另一个分支，WakeLock 永远不会被释放。
 
 [已验证: 来源见 obsidian/Android/技术文档库/知乎-赵君敏/18-Android-应用程序一些功耗技巧.md]
 
 ### 根因与结论
 
-根因是 **WakeLock 的获取-释放不对称**。开发者在 `acquire()` 后只考虑了正常路径的 `release()`，忽略了异常路径。这在单元测试中很难发现（测试环境网络稳定），但在用户设备上，网络不稳定、服务器超时、DNS 解析失败都是家常便饭。
+根因是 **WakeLock 的获取-释放不对称**。开发者在 `acquire()` 后只考虑了正常路径的 `release()`，忽略了异常路径。这在单元测试中很难发现（测试环境网络稳定），但在用户设备上，网络不稳定、服务器超时、DNS 解析失败都很常见。
 
 Android Vitals 对这个问题的度量维度是 "Stuck partial wake lock"：App 在后台持有 `PARTIAL_WAKE_LOCK` 持续超过 1 小时的会话比例。Google Play Console 还有一个相关指标 "Excessive partial wake locks"，衡量 24 小时周期内累计 WakeLock 持有时长超过 2 小时且影响超过 5% 会话的情况。两个指标含义不同，排查时注意区分。这个数字直接影响 App 在 Google Play 的搜索排名和推荐权重——功耗问题不只是体验问题，还是分发问题。
 
@@ -327,7 +327,7 @@ public class RunningActivity extends AppCompatActivity {
 public class TrackingService extends Service {
     @Override
     public void onCreate() {
-        // 使用更大的间隔（10s）而不是 1s，减少 GPS 功耗
+        // 使用更大的间隔（10s 替代 1s），减少 GPS 功耗
         LocationRequest request = new LocationRequest.Builder(
                 Priority.PRIORITY_BALANCED_POWER_ACCURACY, 10_000L)  // 10 秒间隔
             .setMaxUpdateDelayMillis(30_000L)  // 允许批处理，减少唤醒次数 [已验证: 官方文档]
@@ -353,7 +353,7 @@ public class TrackingService extends Service {
 
 ### 举一反三
 
-不只是 GPS，所有"用完要关"的资源都有类似的陷阱：Camera、Bluetooth 扫描、Sensor 监听器、NFC。检查 App 中是否有在 `onResume`/`onStart` 中获取资源，但没有在对应的 `onPause`/`onStop` 中释放的情况。
+GPS 之外，所有"用完要关"的资源都有类似的陷阱：Camera、Bluetooth 扫描、Sensor 监听器、NFC。检查 App 中是否有在 `onResume`/`onStart` 中获取资源，但没有在对应的 `onPause`/`onStop` 中释放的情况。
 
 一个实用的排查命令：
 
@@ -402,7 +402,7 @@ Network stats for uid=10085 (com.example.chat):
   Network sessions: 127 in 60 minutes
 ```
 
-60 分钟内 127 次网络会话，平均每 28 秒一次——和用户反馈的"半小时发一次心跳"的设计初衷严重不符。原因是 App 实际发送的不只是心跳包，还包括：未读消息轮询、在线状态更新、群消息同步，这些请求分散在不同模块中，各自独立发起网络请求。
+60 分钟内 127 次网络会话，平均每 28 秒一次——和用户反馈的"半小时发一次心跳"的设计初衷严重不符。原因是 App 实际发送的内容包括心跳包、未读消息轮询、在线状态更新、群消息同步，这些请求分散在不同模块中，各自独立发起网络请求。
 
 ### 逐步分析
 
@@ -438,7 +438,7 @@ class GroupSyncManager {
 }
 ```
 
-每个模块的轮询间隔看起来都"还行"，但三个定时器不同步，导致实际的网络请求频率远高于预期。
+每个模块的轮询间隔单独看都不高，但三个定时器不同步，导致实际的网络请求频率远高于预期。
 
 ### 根因与结论
 
@@ -459,7 +459,7 @@ class NetworkScheduler {
         // 将所有网络请求集中在一个窗口中执行
         executor.execute(() -> {
             messageManager.pollMessages();     // 批量执行
-            presenceManager.updatePresence();  // 而不是各自轮询
+            presenceManager.updatePresence();  // 避免各自轮询
             groupSyncManager.syncGroups();     // 让 Radio 一次唤醒即可
         });
         handler.postDelayed(this::scheduleSync, SYNC_INTERVAL);
@@ -494,7 +494,7 @@ class MyFirebaseMessagingService extends FirebaseMessagingService {
 
 ### 举一反三
 
-这个案例的通用规律是：**评估网络功耗时，关注 Radio 唤醒次数而不是传输数据量**。100 次各 1KB 的请求，比 1 次 100KB 的请求耗电得多。
+这个案例的通用规律是：**评估网络功耗时，优先看 Radio 唤醒次数，数据量只放在第二层判断**。100 次各 1KB 的请求，比 1 次 100KB 的请求耗电得多。
 
 在 Battery Historian 中，如果看到 "Mobile Radio" 行几乎不中断地亮着，而 "WiFi" 行是间歇性的，说明 App 在蜂窝网络上的请求太频繁。解决方向：拉长间隔、合并请求、或者换用 Push。
 
@@ -504,7 +504,7 @@ class MyFirebaseMessagingService extends FirebaseMessagingService {
 
 ### 问题现象
 
-某新闻类 App 的用户反馈："装了这个 App 之后，手机明显变热，续航缩短了 30%"。问题不在于 App 使用时的高功耗，而是**即使 App 在后台，手机也经常微微发热**。
+某新闻类 App 的用户反馈："装了这个 App 之后，手机明显变热，续航缩短了 30%"。高功耗发生在后台：**即使 App 不在前台，手机也经常微微发热**。
 
 这个症状指向一个特定的机制：**频繁的 CPU 唤醒**。设备在不使用时，CPU 应该处于深度睡眠状态（功耗仅几 mA）。但如果某个 App 通过 AlarmManager 设置了频繁的精确闹钟，CPU 会反复被唤醒，每次唤醒需要几十到几百 mA 的电流，持续几秒后才能重新入睡。
 
@@ -563,7 +563,7 @@ alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(),
 
 ### 根因与结论
 
-根因是 **用 AlarmManager 的精确闹钟来实现定期后台同步，而不是使用 WorkManager 或 JobScheduler**。AlarmManager 的设计初衷是"在特定时间点执行操作"（如闹钟提醒），不是"定期后台任务"。后者的正确工具是 WorkManager，它会和系统其他 App 的任务一起批处理，减少总唤醒次数。
+根因是 **把定期后台同步交给了 AlarmManager 的精确闹钟，没有交给 WorkManager 或 JobScheduler**。AlarmManager 的设计初衷是"在特定时间点执行操作"（如闹钟提醒），不是"定期后台任务"。后者的正确工具是 WorkManager，它会和系统其他 App 的任务一起批处理，减少总唤醒次数。
 
 Android 14（API 34）进一步限制了精确闹钟权限：只有闹钟类 App 和用户明确授权的 App 才能使用 `SCHEDULE_EXACT_ALARM`。如果 App 不是闹钟，用精确闹钟做后台同步在新系统上会直接失效。
 
@@ -627,13 +627,13 @@ adb shell dumpsys alarm | grep -E "RTC_WAKEUP|ELAPSED_WAKEUP" | grep -v "android
 
 ### 问题现象
 
-这个案例比较隐蔽。某工具类 App 使用了 JobScheduler 来执行后台数据清理任务（正确地选择了 JobScheduler 而不是 AlarmManager），但用户仍然反馈后台功耗偏高。
+这个案例容易被误判。某工具类 App 使用了 JobScheduler 来执行后台数据清理任务（正确地选择了 JobScheduler，没有使用 AlarmManager），但用户仍然反馈后台功耗偏高。
 
 Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超过 2 小时的 WakeLock），但待机功耗比同类 App 高。问题出在哪里？
 
 ### 分析思路
 
-这个案例的关键线索是：JobScheduler 是正确使用的，但功耗仍然偏高。这引导我们去看 JobScheduler 内部的 WakeLock 行为——一个很多开发者不知道的细节。
+这个案例的关键线索是：JobScheduler 是正确使用的，但功耗仍然偏高。这引导我们去看 JobScheduler 内部的 WakeLock 行为——一个容易被忽略的细节。
 
 当 `JobService.onStartJob()` 返回 `true`（表示任务在后台线程执行）时，系统会为这个 Job 持有一个 WakeLock。这个 WakeLock 的最大持有时长取决于 Job 类型：
 
@@ -651,9 +651,9 @@ Android Vitals 的 WakeLock 报告中没有出现 "Stuck WakeLock"（没有超�
 
 ### 逐步分析
 
-Battery Historian 中，我们看到一种规律性的模式：每隔一段时间（取决于 JobScheduler 的调度频率），就会出现一段约 10 分钟的 WakeLock 条带——和 JobScheduler 的执行时间片长度吻合。这不是巧合，这是 JobScheduler 的超时时间。
+Battery Historian 中，我们看到一种规律性的模式：每隔一段时间（取决于 JobScheduler 的调度频率），就会出现一段约 10 分钟的 WakeLock 条带。这个时长和 JobScheduler 的执行时间片直接相关。
 
-[图：Battery Historian — 周期性出现的 30 分钟 WakeLock 条带]
+[图：Battery Historian — 周期性出现的约 10 分钟 WakeLock 条带]
 
 代码中的问题：
 
@@ -705,7 +705,7 @@ public class CleanupJobService extends JobService {
 }
 ```
 
-修复后，每次 Job 执行只持有 WakeLock 3 秒（而不是 30 分钟），待机功耗回到了正常水平。
+修复后，每次 Job 执行只持有 WakeLock 3 秒，原来约 10 分钟的待机占用消失了。
 
 | 指标 | 修复前 | 修复后 |
 |------|--------|--------|
@@ -824,7 +824,7 @@ Fatal Exception: android.app.RemoteServiceException
 
 ## 线上功耗监控体系
 
-线上功耗监控目前没有单一的银弹方案，需要根据目标 Android 版本和业务场景组合使用。
+线上功耗监控没有单一方案能覆盖所有场景，需要根据目标 Android 版本和业务场景组合使用。
 
 ### Play Console Android Vitals（覆盖面最广）
 

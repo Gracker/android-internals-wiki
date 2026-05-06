@@ -41,9 +41,9 @@ tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Cou
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-05-07T06:40:00+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
@@ -159,7 +159,7 @@ Android 功耗模型的核心是一个叫 `power_profile.xml` 的 XML 文件。�
 
 了解了 power_profile.xml 的结构之后，我们再拆开看 Android 设备的主要功耗组成。只有先看清这些模块，我们才能理解为什么有些 App 看起来什么都没做却很费电，而有些 App 明明很忙却不怎么耗电。
 
-### CPU：功耗的大头
+### CPU：功耗敏感项
 
 CPU 仍然是功耗统计里最敏感的一项，但 Android 16 的模型已经不是一句“频率时间 × 电流”能讲清的。`CpuPowerCalculator` 在 power-profile 模式下把 CPU 功耗拆成三层：`PowerProfile.POWER_CPU_ACTIVE` 表示 CPU 进入 active 状态后的基础电量；`getAveragePowerForCpuScalingPolicy()` 表示某个 scaling policy 被点亮时的附加电量；`getAveragePowerForCpuScalingStep()` 表示具体频点带来的增量。对应的时间来源也分成 `getCpuActiveTime()`、policy running time 和 `getCpuFreqTimes()`。很多设备上 scaling policy 和 cluster 接近，但 Android 16 的源码口径已经按 policy 组织。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/CpuPowerCalculator.java]
 
@@ -199,7 +199,7 @@ Framework 层的功耗归属链不会把 GPU 拆出来单独统计。GPU 功耗�
 
 做游戏或视频播放类 App 的功耗分析时，GPU 是不可忽略的隐藏变量，但分析手段要跳出 `power_profile` / BatteryStats 的框架。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/res/res/xml/power_profile.xml / PowerProfile.java / BatteryConsumer.java]
 
-### Cellular / WiFi / GPS：通信模块三兄弟
+### Cellular / WiFi / GPS：通信模块
 
 通信模块的功耗有一个共同特点：它们的状态切换本身就很费电。以蜂窝网络为例：
 
