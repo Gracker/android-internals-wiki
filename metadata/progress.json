@@ -1983,10 +1983,10 @@
       "last_verified": "2026-05-01",
       "last_verified_against": "Linux kernel 6.6 (android15-6.6), Linux kernel 6.12 (android16-6.12)",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -1994,15 +1994,15 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T16:39:00+08:00",
+      "last_task9_at": "2026-05-06T18:45:44+08:00",
       "task6_reviewed_date": "2026-05-06",
       "last_task6_at": "2026-05-06T18:18:36+08:00",
       "review_notes": "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量 L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。",
       "last_task2b_at": "2026-05-06T17:59:16+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-18-review.md",
       "task6_review_notes": "2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 16:24 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 围栏，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 18:18 Task6：Task2B 修复后写作复审；修复 schedutil 伪代码块 Markdown 断行、统一数值单位空格和少量 L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-16-deep-review.md",
-      "task9_review_notes": "2026-05-06 16:39 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。L255-L271 第二个 sugov_get_util() 伪代码块仍是旧的 android16 错误形态，未替换为 android15-6.6 真实调用链。"
+      "last_task9_review_log": "logs/deep-review/2026-05-06-18-deep-review.md",
+      "task9_review_notes": "2026-05-06 18:45 Task9：needs-rework。P0 0 / P1 1 / P2 0。L275 RT/Deadline 任务并非在 Android 15/16 schedutil 中无条件拉到最高频；需按 effective_cpu_util()、uclamp 与 DL bandwidth 重新表述。"
     },
     "src/part1-fundamentals/ch05-cpu-power/05-thermal.md": {
       "path": "src/part1-fundamentals/ch05-cpu-power/05-thermal.md",
@@ -3248,10 +3248,10 @@
       "last_verified": "2026-04-13",
       "last_verified_against": "AOSP android-16.0.0_r1",
       "confidence": "medium",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
-      "task2b_state": "fixed",
+      "task9_state": "reviewed",
+      "task2b_state": "pending",
       "task6_result": "pass-light-edit",
       "task9_result": "needs-rework",
       "task2b_result": "fixed",
@@ -3259,12 +3259,12 @@
       "reviewed_by": "openclaw-task6",
       "task9_reviewed_date": "2026-05-06",
       "task9_reviewed_by": "openclaw-task9",
-      "last_task9_at": "2026-05-06T14:37:25+08:00",
+      "last_task9_at": "2026-05-06T18:45:44+08:00",
       "last_task6_at": "2026-05-06T17:26:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-06-17-review.md",
       "task6_review_notes": "2026-05-06 17:26 Task6：Task2B 修复后写作复审；L1/L2 轻修 2 组（RemoteViews reapply 段和 Icon 成本阶梯标点/术语间距）；无新增 L3/L4 回炉项，转 Task9 复审。",
-      "last_task9_review_log": "logs/deep-review/2026-05-06-14-deep-review.md",
-      "task9_review_notes": "2026-05-06 Task9 14:37：needs-rework。P0 2 / P1 0 / P2 1。L245、L508 Icon.createWithBitmap()/Bitmap.asShared() 回退描述；L518 NotificationListeners.java 源码路径不存在；L504 标准模板 RemoteViews 口径沿用既有 P2。",
+      "last_task9_review_log": "logs/deep-review/2026-05-06-18-deep-review.md",
+      "task9_review_notes": "2026-05-06 18:45 Task9：needs-rework。P0 1 / P1 0 / P2 0。L504 “标准模板不需要 RemoteViews inflate” 与 android-16 Notification.Builder/NotificationContentInflater 源码矛盾。",
       "last_task2b_at": "2026-05-06T14:51:22+08:00"
     },
     "src/part2-performance/ch09-anr/07-non-technical-anr-diagnosis.md": {
@@ -7793,6 +7793,32 @@
       "p2": 4,
       "at": "2026-05-06T15:23:00+08:00",
       "log": "logs/deep-review/2026-05-06-15-deep-review.md"
+    },
+    {
+      "date": "2026-05-06",
+      "time": "18:45",
+      "task": "task9-deep-review",
+      "review_log": "logs/deep-review/2026-05-06-18-deep-review.md",
+      "sections_reviewed": [
+        {
+          "section": "5.4",
+          "title": "DVFS 与功耗管理",
+          "result": "needs-rework",
+          "p0": 0,
+          "p1": 1,
+          "p2": 0,
+          "auto_promoted": false
+        },
+        {
+          "section": "9.6",
+          "title": "Notification 性能与 ANR",
+          "result": "needs-rework",
+          "p0": 1,
+          "p1": 0,
+          "p2": 0,
+          "auto_promoted": false
+        }
+      ]
     }
   ],
   "progress": {
@@ -8948,7 +8974,7 @@
       }
     }
   },
-  "last_updated": "2026-05-06T15:05:00+08:00",
+  "last_updated": "2026-05-06T18:45:44+08:00",
   "2026-04-25-17-task2b": {
     "task": "task2b-rework",
     "sections": [
@@ -11735,6 +11761,40 @@
         "p0": 2,
         "p1": 0,
         "p2": 1,
+        "auto_finalized": false
+      }
+    }
+  },
+  "2026-05-06-18-task9": {
+    "task": "task9-deep-tech-review",
+    "timestamp": "2026-05-06T18:45:44+08:00",
+    "sections_reviewed": [
+      "5.4",
+      "9.6"
+    ],
+    "log": "logs/deep-review/2026-05-06-18-deep-review.md",
+    "auto_finalized": [],
+    "queue_added": [
+      "5.4",
+      "9.6"
+    ],
+    "suggestions_added": 0,
+    "research_gaps_added": 0,
+    "results": {
+      "5.4": {
+        "result": "needs-rework",
+        "p0": 0,
+        "p1": 1,
+        "p2": 0,
+        "p3": 0,
+        "auto_finalized": false
+      },
+      "9.6": {
+        "result": "needs-rework",
+        "p0": 1,
+        "p1": 0,
+        "p2": 0,
+        "p3": 0,
         "auto_finalized": false
       }
     }

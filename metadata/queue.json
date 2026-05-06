@@ -13125,6 +13125,54 @@
       "added_at": "2026-05-06T17:26:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-05-06-17-review.md"
+    },
+    {
+      "section": "5.4",
+      "section_title": "DVFS 与功耗管理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 5.4 L275 RT/DL schedutil 频率策略与 android15/android16 effective_cpu_util() 实现不符，需回炉修正",
+      "material_paths": [
+        "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
+        "logs/deep-review/2026-05-06-18-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码准确性/版本差异",
+          "location": "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md:L275",
+          "detail": "正文写“RT 和 Deadline 调度类直接将频率拉到最高”。android15-6.6 的 effective_cpu_util() 只在 !uclamp_is_used() && type == FREQUENCY_UTIL && rt_rq_is_runnable(&rq->rt) 时直接返回 max；否则会汇总 CFS/RT utilization、uclamp 与 cpu_bw_dl。android16-6.12 也改为 min/max 输出路径：min = max(irq + cpu_bw_dl, uclamp_min)，RT 只有在未启用 uclamp 时才强制 max。DL 提供带宽下限/饱和判断，不等同于所有 DL 场景无条件 fmax。",
+          "suggestion": "改为当前 GKI 分支口径：schedutil 通过 effective_cpu_util 汇总 CFS/RT/DL/IRQ；Android 常见 uclamp 启用路径下 RT 受 uclamp min/max 影响；DL 通过 cpu_bw_dl/带宽下限和饱和判断影响目标频率，只有满足饱和或特定条件时才到 max。补源码锚点：android15-6.6 kernel/sched/core.c:7605-7679；android16-6.12 kernel/sched/fair.c:8380-8414。",
+          "severity": "P1"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T18:45:44+08:00",
+      "status": "pending",
+      "completed_at": null,
+      "completed_reason": null
+    },
+    {
+      "section": "9.6",
+      "section_title": "Notification 性能与 ANR",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 9.6 L504 标准通知模板渲染路径与 AOSP android-16 SystemUI/Notification.Builder 实现矛盾，需回炉修正",
+      "material_paths": [
+        "src/part2-performance/ch09-anr/06-notification-performance-anr.md",
+        "logs/deep-review/2026-05-06-18-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理矛盾",
+          "location": "src/part2-performance/ch09-anr/06-notification-performance-anr.md:L504",
+          "detail": "正文写“标准通知模板在 SystemUI 中有专门优化渲染路径，不需要通用 RemoteViews inflate 流程”。android-16.0.0_r1 中 Notification.Builder.createContentView() 对标准模板仍返回 RemoteViews（applyStandardTemplate）；SystemUI NotificationContentInflater.createRemoteViews() 生成 newContentView 后，通过 RemoteViews.apply()/applyAsync() 或 reapply()/reapplyAsync() 应用；canReapplyRemoteView() 仅以 package/layoutId/FLAG_REAPPLY_DISALLOWED 判断复用。标准模板可减少自定义布局复杂度，但不能说绕过 RemoteViews inflate/apply。",
+          "suggestion": "改成“标准模板也是系统生成的 RemoteViews，但布局与 action 集合受系统控制，package/layoutId 稳定时更容易走 reapply；相对自定义 RemoteViews，它减少深层布局、图片和 action 数量带来的 SystemUI 成本。”补源码锚点：Notification.java:6773-6788；NotificationContentInflater.java:450-457、799-895、1178-1186。",
+          "severity": "P0"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-06T18:45:44+08:00",
+      "status": "pending",
+      "completed_at": null,
+      "completed_reason": null
     }
   ],
   "completed": [
