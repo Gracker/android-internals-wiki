@@ -37,14 +37,14 @@ sources:
     path: "抖音 Android 端图片优化最佳实践（AndroidPub，2024-12-19）"
   - type: research
     path: "intake/research-feeds/2026-03-31-19-ch04-app-bitmap-pool-optimization.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_rework_date: "2026-05-06"
 last_rework_by: openclaw-task2b
-last_rework_reason: "P95 Task9回炉(第三轮)：P0 inBitmap像素转移语义修正（非回收而是transfer）；P1 AVIF硬件加速边界收窄为SoC AV1 still image子集依赖"
+last_rework_reason: "P95 Task9回炉(第四轮)：P0 inBitmap返回对象语义修正（reinitBitmap→return javaBitmap，返回值即inBitmap同一对象）"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-06"
 task6_review_notes: "2026-04-30 task6 revisiting review (post-task2b fix): pass-light-edit。task2b已修正P0 inSampleSize源码锚点+P1 Gainmap内存模型+ImageDecoder内存峰值。L1/L2全通过，无B类大问题。task9需复审。 | 2026-05-05 task6 revisiting review 07:30: pass-light-edit。清理重复 frontmatter、未标语言代码块、高频填充词和第一人称；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理编辑痕迹、虚假引导语和中英文格式；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。 | 2026-05-06 task6 revisiting review 09:07: pass-light-edit。移除未支撑的 upload/WebP/AVIF 量化口径，清理发布稿编辑痕迹和夸张标题；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
@@ -293,11 +293,15 @@ Bitmap 的创建和销毁是内存抖动的主要来源之一。一次 `BitmapFa
 BitmapFactory.Options options = new BitmapFactory.Options();
 options.inBitmap = reusableBitmap;  // 复用这个 Bitmap 的像素内存
 options.inSampleSize = 2;
-Bitmap newBitmap = BitmapFactory.decodeResource(res, resId, options);
-// reusableBitmap 的像素内存被转移给 newBitmap 复用；源 Bitmap 对象仍存在但像素存储已清空（getByteCount() = 0）
+Bitmap resultBitmap = BitmapFactory.decodeResource(res, resId, options);
+// decodeResource 返回值通常与 options.inBitmap 指向同一个 Bitmap 对象，
+// 底层像素缓冲被重新配置并复用；调用方应使用返回值作为后续引用，
+// 不要继续按旧尺寸/旧内容使用 reusableBitmap。
+// [已验证：AOSP android-16.0.0_r1 BitmapFactory.cpp doDecode() —
+//  javaBitmap != null 时执行 bitmap::reinitBitmap() 后 return javaBitmap]
 ```
 
-API 19+ 的规则：复用 Bitmap 的内存必须 ≥ 新 Bitmap 需要的内存（按 `getAllocationByteCount()` 判断，而非 `getByteCount()`），可以用一个大的 Bitmap 复用来解码更小的图片。
+关键细节：`decodeResource` 返回的 Bitmap 通常就是 `options.inBitmap` 传入的那个 Java 对象（不是新建对象）。底层像素缓冲被重新配置以容纳新解码的图片数据。调用方必须使用返回值作为后续引用——`reusableBitmap` 变量在解码后仍指向同一个对象，但其尺寸和内容已经改变，不应再按旧参数使用。[已验证：AOSP `BitmapFactory.cpp` `doDecode()` 中 `javaBitmap != nullptr` 分支执行 `bitmap::reinitBitmap()` 后 `return javaBitmap`]
 
 ### Glide 的 BitmapPool 实现
 

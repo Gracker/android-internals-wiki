@@ -11317,7 +11317,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T09:49:49.437511",
+      "completed_reason": "P0寄存器分配已在前轮修正为linear scan（本轮确认无残留）；P1 ProfilingManager触发式采集已收紧：补充addProfilingTriggers()前置注册要求、ProfilingTrigger触发条件、采样时间窗、与requestProfiling()的区别"
     },
     {
       "section": "19.08",
@@ -12890,7 +12892,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T09:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T09:49:49.437511",
+      "completed_reason": "P0 inBitmap返回对象语义修正：decodeResource返回值即options.inBitmap同一Java对象（reinitBitmap后return javaBitmap），注释和正文已同步修正"
     }
   ],
   "completed": [
