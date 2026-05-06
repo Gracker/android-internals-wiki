@@ -43,6 +43,9 @@ task6_reviewed_date: "2026-05-06"
 last_task6_at: "2026-05-06T02:06:00+08:00"
 review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。schedutil android15/16 源码节选仍与 kernel/common 不符，SCMI Performance Protocol msg_id 错误；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:45:17+08:00 Task2B：P0 schedutil 源码改为简化伪代码并标注省略项；P0 SCMI PERF_LEVEL_SET/GET msg_id 修正为 0x7/0x8，补 fastchannel 事件说明。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；清理 L1 填充词 3 处，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task2b_at: "2026-05-06T01:45:17+08:00"
+task2b_result: fixed
+task2b_state: fixed
+pipeline_stage: task6_pending
 ---
 
 # DVFS 与功耗管理
@@ -233,7 +236,7 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu) {
     util = effective_cpu_util(cpu, util, FREQUENCY_UTIL, NULL);
     sg_cpu->util = util;
     sg_cpu->bw_dl = cpu_bw_dl(cpu_rq(cpu));
-    // 省略：sg_cpu->max 赋值、DL/RT 带宽余量判断等细节
+    // 省略：DL/RT 带宽余量判断等细节
 }
 // iowait boost 由 sugov_update_single()/sugov_update_shared() 中的
 // sugov_iowait_apply() 在调用 sugov_get_util() 之后单独叠加
@@ -241,15 +244,20 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu) {
 
 ```c
 // kernel/sched/cpufreq_schedutil.c（简化伪代码，省略部分字段和分支）
-// android16-6.12: 新增 boost 参数 + sched_ext 性能目标
+// android16-6.12: sched_ext 性能目标 + 统一频率计算
 static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost) {
-    unsigned long util = cpu_util_cfs_boost(sg_cpu->cpu);
+    unsigned long min = 0, max = 0;
+    unsigned long util;
+    // sched_ext 可编程调度器的性能目标，仅在 scx_switched_all() 时生效
+    if (scx_switched_all())
+        util = scx_cpuperf_target(cpu);
+    else
+        util = cpu_util_cfs_boost(cpu);
     // 签名变化：effective_cpu_util 输出 min/max 约束
     effective_cpu_util(cpu, util, &min, &max);
-    // sched_ext 可编程调度器的性能目标
-    scx_cpuperf_target(cpu);
     // boost 与 util 取大值，再统一计算
     util = max(util, boost);
+    // sugov_effective_cpu_perf 返回最终频率目标，bw_min 用于带宽约束
     sugov_effective_cpu_perf(cpu, util, max, &bw_min);
     // 省略：uclamp 钳位、bw_dl 计算、sg_cpu 字段赋值等细节
 }

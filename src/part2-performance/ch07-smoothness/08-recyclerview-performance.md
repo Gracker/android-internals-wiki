@@ -164,9 +164,9 @@ if (deadlineNs != FOREVER_NS
 
 Android 17 引入的 DeliQueue（无锁消息队列）改变了 GapWorker 的执行环境。`GapWorker` 通过 `recyclerView.post(this)` 把自己投到主线程 `MessageQueue`；在传统 `MessageQueue` 里，`post()` 和 `next()` 都由 `synchronized` 保护。当后台线程也在往同一个队列投消息时（比如 `AsyncListDiffer` 的 diff 结果回调、`Handler.post()` 调度），`GapWorker` 的执行时机会被 Monitor Lock 阻塞，导致预取任务的发起和执行出现几毫秒的随机偏移。
 
-DeliQueue 用 Treiber Stack 替代了 `synchronized` 块，消除了 `post()` 路径上的锁竞争。实测在多层嵌套 RecyclerView + 高频数据更新场景下，P95 掉帧率下降约 4%。预取任务的调度不再受后台线程锁竞争干扰，`willCreateInTime()` / `willBindInTime()` 的 deadline 判断也更准确——因为 GapWorker 被唤醒到开始执行的间隔缩短了。
+DeliQueue 用 Treiber Stack 替代了 `synchronized` 块，消除了 `post()` 路径上的锁竞争。Google 官方观测数据（需 `targetSdk 37+`）：应用 missed frames 降低约 4%，System UI 和 Launcher 降低约 7.7%，首帧 P95 耗时降低约 9.1%。这个收益不限于 RecyclerView，而是 `MessageQueue` Monitor Contention 减少后整个主线程调度的改善——预取任务的调度不再受后台线程锁竞争干扰，`willCreateInTime()` / `willBindInTime()` 的 deadline 判断也更准确，因为 GapWorker 被唤醒到开始执行的间隔缩短了。
 
-这对开发者的实际意义：在 Android 17 设备上，`setInitialPrefetchItemCount()` 的调优收益会比旧版本更稳定。之前可能因为锁延迟导致预取超时的情况，在 DeliQueue 环境下更容易在 deadline 内完成。
+这对开发者的实际意义：在 Android 17 + `targetSdk 37+` 设备上，`setInitialPrefetchItemCount()` 的调优收益会比旧版本更稳定。之前可能因为锁延迟导致预取超时的情况，在 DeliQueue 环境下更容易在 deadline 内完成。注意：DeliQueue 仅在应用 `targetSdk >= 37` 时生效，低于该版本的应用仍使用传统 `synchronized` 消息队列。
 
 ### 反射 MessageQueue 的监控库兼容性
 
@@ -239,13 +239,13 @@ public void onBindViewHolder(@NonNull ParentViewHolder holder, int position) {
 
 `setMaxRecycledViews()` 仍然需要按 viewType 单独调。数值过小，create/bind 会频繁回到滑动路径；数值过大，则只是在拿内存换命中率。起步值可以略高于同屏可见 item 数，再用 Trace 看 create/bind 是否明显下降。
 
-### 共享 Pool 的锁竞争边界
+### 共享 Pool 的边界
 
-`RecycledViewPool` 的 `getRecycledView()` 和 `putRecycledView()` 都标记了 `synchronized`。在单 RecyclerView 场景下，这些调用都跑在主线程，锁开销可忽略。但在多层嵌套 + 多线程初始化场景下（比如后台线程预构建 ViewHolder、多个内层 RecyclerView 同时回收），共享同一个 Pool 实例会引入锁竞争。具体表现为 `RV onBindViewHolder` slice 前有一段无法归因的等待时间。
+`RecycledViewPool` 内部用 `SparseArray<ScrapData>` 按 viewType 分组，每组维护一个 `ArrayList<ViewHolder>`。`getRecycledView()` 和 `putRecycledView()` 直接操作这些集合，没有 `synchronized` 修饰——方法本身不是线程安全的。
 
-源码锚点：`androidx.recyclerview.widget.RecyclerView.RecycledViewPool`，`getRecycledView()` / `putRecycledView()` 均为 `synchronized` 方法。
+单 RecyclerView 场景下，这些调用都跑在主线程，没有并发问题。但在多线程初始化场景下（比如后台线程预构建 ViewHolder），需要外部同步；否则并发 `putRecycledView()` 可能导致 `ArrayList` 内部状态不一致。共享 Pool 的另一个边界是不同 Adapter 共用 viewType 时，`create/bind` running average 会被互相污染，导致 `willCreateInTime()` / `willBindInTime()` 的 deadline 估计失准。
 
-应对方式：在极其复杂的嵌套 UI（如三层以上嵌套 RecyclerView + 多线程 inflate）中，可以按外层 item 粒度拆分 Pool 实例，降低单把锁的争用频率。大多数场景下锁竞争不构成瓶颈，不需要为此放弃共享 Pool。
+源码锚点：`androidx.recyclerview.widget.RecyclerView.RecycledViewPool`，`getRecycledView()` / `putRecycledView()` 非 synchronized 方法，内部操作 `ScrapData.mScrapHeap`（`ArrayList<ViewHolder>`）。
 ## 嵌套滑动的性能影响
 
 嵌套滑动（NestedScrolling）是 Android 处理嵌套可滑动容器之间协作的协议。RecyclerView 通过 `NestedScrollingChild3` 接口参与这个协议，允许父 View 在子 View 滑动之前或之后拦截滑动事件。
@@ -420,8 +420,9 @@ GapWorker 设计假设：bindTime 是帧耗时的主要变量，measure/layout �
 
 1. **避免在 item 内层使用复杂的 `match_constraint`**：尤其是多层嵌套 ConstraintLayout
 2. **`setHasFixedSize(true)` + 固定 item 高度**：让 measure 结果可预测
-3. **提前 `prepareToDraw()`**：触发异步 measure（如果 item 支持）
-4. **Trace 优先看 measure 而非 bind**：当 bindTime 均值正常但帧仍超时，问题在 measure
+3. **降低 ConstraintLayout 约束复杂度**：减少两段式测量的触发频率
+4. **RecyclerView prefetch / LayoutPrefetchRegistry 覆盖 create/bind**：让 GapWorker 提前完成 create/bind，但 measure 仍需通过 Trace 单独定位
+5. **Trace 优先看 measure 而非 bind**：当 bindTime 均值正常但帧仍超时，问题在 measure
 
 
 ## 扩展

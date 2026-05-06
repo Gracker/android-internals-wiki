@@ -310,34 +310,69 @@ Android 17 的 DeliQueue 是这类优化里很典型的一个案例。它不是�
 
 ## 小结
 
-锁竞争分析真正难的地方在于，不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，我们再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才不是碰运气，而是有目标地改。 
+锁竞争分析真正难的地方在于，不同等待路径长得太像，特别容易被混写。把 Java monitor、native mutex、Binder driver wait queue、MessageQueue 这四类路径拆开，我们再回到 Perfetto 里看线程状态、owner / waiter、Binder worker 和关键线程预算，很多原本糊成一团的问题就会变得非常具体。到这一步，优化才不是碰运气，而是有目标地改。
 
+<!-- AIW-源码调研-2026-05-06 -->
+## 补充：AMS mGlobalLock / mProcLock 双锁架构与 Perfetto 识别
 
-<!-- AIW-源码调研-2026-04-26 -->
-## 补充：16KB Page Size 对线程栈内存的影响
+本节于 2026-05-06 通过源码调研补充，聚焦 Android 10+ 双锁架构及其在 Perfetto 中的识别路径。
 
-本节于 2026-04-26 通过源码调研补充，发现以下内容与锁竞争分析相关（线程栈溢出导致的 lock overhead 也属于锁竞争范畴）：
+### 双锁架构演进
 
-### PTHREAD_STACK_MIN 与 16KB Page Size
+| 版本 | 锁配置 | 关键变化 |
+|------|--------|---------|
+| Android 9- | 单一全局锁（AMS.this） | 所有组件竞争同一锁 |
+| Android 10-11 | mGlobalLock + mProcLock | 读写分离，ENABLE_PROC_LOCK 可能为 false |
+| Android 12+ | mGlobalLock + mProcLock | ENABLE_PROC_LOCK 恒为 true，双锁完全并行 |
 
-**源码位置**：
-- `bionic/libc/include/pthread.h` — PTHREAD_STACK_MIN 定义（16KB on 16KB page systems）
-- `bionic/libc/pthread.c` — FixStackSize 栈大小调整逻辑
-- `runtime/thread.cc` — ART 线程创建时调用 FixStackSize
+**源码锚点**：`ActivityManagerService.java` 行 668-707（android14-release）
+```java
+final ActivityManagerGlobalLock mGlobalLock = ActivityManagerService.this;
+private static final boolean ENABLE_PROC_LOCK = true;
+final ActivityManagerProcLock mProcLock = ENABLE_PROC_LOCK
+        ? new ActivityManagerProcLock() : mGlobalLock;
+```
 
-**16KB Page 系统下的关键差异**：
+### @CompositeRWLock 读写语义
 
-| 方面 | 4KB Page 系统 | 16KB Page 系统 |
-|------|-------------|--------------|
-| 最小栈分配粒度 | 4KB | 16KB |
-| 小线程栈内部碎片 | 较低 | 较高（最小值增加 4×） |
-| 栈溢出 guard page | 4KB | 16KB |
-| 页表内存（1GB 映射） | 2MB PTE | 0.5MB PTE（节省 75%） |
+```java
+@CompositeRWLock({"this", "mProcLock"})
+int getUidState(int uid) { ... }
+```
+- **读取**：持有 `this`（mGlobalLock）或 `mProcLock` 任一即可
+- **写入**：需同时持有两者
 
-**Futex 哈希表冲突风险**：16KB page 使页表条目减少 75%，但这也意味着内核 futex 哈希桶数量可能随之缩减。在高并发场景下（如多线程 Binder 调用密集型 App），桶减少会导致哈希冲突概率上升，引发缓存行抖动（cache line bouncing），表现为 `futex_wait` 耗时在 16KB 设备上反而比 4KB 设备更高。排查思路：对比同 workload 在 4KB 和 16KB 设备上的 `thread_state` 中 `futex_*` 等待时长分布，如果 16KB 侧有明显尾部延迟升高，应考虑减少并发锁数量或使用 per-thread lock pool。内核社区在 6.6+ 已提供 `futex_hash_bucket` 配置接口（`/sys/kernel/debug/futex_hash`），但 Android GKI 尚未默认暴露。
+### mGlobalLock 热区函数
 
-**NDK 兼容性**：Google Play 要求 2025-11-01 起，targetSdk ≥ 35 的 App 必须支持 16KB。NDK r28+ 编译产出天然满足 16KB 对齐，旧版 NDK 编译的 so 需要重新编译或通过 Compat Mode 加载。
+| 函数 | 行号 | 触发场景 |
+|------|------|----------|
+| `updateOomAdjLocked()` | 567 | OomAdjuster 回调，每帧可达多次 |
+| `attachApplicationLocked()` | 4920 | 进程绑定/启动 |
+| `serviceTimeoutLocked()` | ~1810 | Service ANR 判定 |
+| `processStartTimedOutLocked()` | ~3425 | App 启动超时 |
 
-> 本补充调研同步更新至 §1.13 MessageQueue 机制与 DeliQueue 无锁优化章节。
+### mProcLock 职责
 
-<!-- AIW-源码调研-2026-04-26 END -->
+`mProcLock` 主要保护进程状态读取（LRU list、ProcessRecord 读写），由 `OomAdjuster.updateOomAdjLSP()` 使用：
+```java
+// OomAdjuster.java 行 574-595
+mProcessList.forEachLruProcessesLOSP(false, process -> {
+    // mProcLock 保护的遍历
+});
+```
+
+### Perfetto 识别模式
+
+```
+binder_transaction (thread: system_server binder #N, duration: >16ms)
+  → android.os.Binder.execTransact()
+    → ActivityManagerService.onTransact()
+      → updateOomAdjLocked() 或 attachApplicationLocked()
+        → [synchronized(mGlobalLock/mProcLock) 持锁等待]
+```
+当 `binder_transaction` duration 超过单帧（>16.67ms@60Hz）且 call stack 包含 AMS 内部同步块，即为锁竞争根因。关键 trace points：`binder_transaction`、`ActivityManagerService.updateOomAdjLocked`、`ActivityManagerService.attachApplicationLocked`。
+
+> 本调研同步更新至 §1.8 AMS 章节原始素材。
+
+<!-- AIW-源码调研-2026-05-06 END -->
+

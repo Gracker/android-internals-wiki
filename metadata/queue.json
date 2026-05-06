@@ -11367,8 +11367,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T13:11:19+08:00",
-      "status": "pending",
-      "source_file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md"
+      "status": "completed",
+      "source_file": "src/part2-performance/ch07-smoothness/08-recyclerview-performance.md",
+      "completed_at": "2026-05-06T12:19:33+08:00",
+      "completed_reason": "P0 synchronized锁竞争已删除（RecycledViewPool无synchronized）；P0 prepareToDraw()错误建议已替换为可验证做法；P1 DeliQueue数据已改为Google官方口径（targetSdk 37+，-4% missed frames）"
     },
     {
       "section": "7.9",
@@ -12279,7 +12281,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T02:28:51+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-06T12:19:33+08:00",
+      "completed_reason": "P0 android15伪代码已删除sg_cpu->max引用；P0 android16伪代码已补全scx_switched_all()分支和effective_cpu_util(cpu,util,&min,&max)调用链"
     },
     {
       "section": "18.6",
