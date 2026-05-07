@@ -2,7 +2,6 @@
 title: "Android 渲染架构全景"
 chapter: "2.1"
 section: "2.1"
-status: ready-for-review
 applicable_versions: "Android 3.0 (API 11) - Android 16 (API 36)"  # 版本演进从 3.0 开始,核心内容覆盖 API 11-36
 last_verified: "2026-04-09"
 last_verified_against: "AOSP android-16.0.0_r1, 官方文档最新版本"
@@ -11,8 +10,6 @@ drafted_date: "2026-03-30"
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-05-07"
-reviewed_by: openclaw-task6
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/graphics/overview"
@@ -24,30 +21,30 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task6_pending
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-task6_state: reviewed
-task6_result: pass-light-edit
 review_round: 6
-task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-07"
-task2b_result: fixed
-task2b_state: pending
 last_task2b_at: "2026-04-25T05:47:52+08:00"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T15:27:55+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
-review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
+review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 禁用短语修复 1 处；AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
 task9_review_notes: "2026-05-07 Task9 15:27：needs-rework。P0 0 / P1 2 / P2 1。Top: L282-L318 BufferQueue 生产者-消费者图与消费者说明"
-task6_review_notes: "2026-05-07 Task6 14:05：Task2B 修复后写作复审；清理结构性元叙述/冗余因果句/顺序口吻 3 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task6_at: "2026-05-07T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-14-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-07-15-deep-review.md"
+
+status: ready-for-review
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-07"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
+task2b_state: fixed
+last_task6_at: "2026-05-07T17:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-17-review.md"
+task2b_result: fixed
+task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补齐 11 个示意代码围栏语言，清理禁用词/冗余强调 5 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # Android 渲染架构全景
@@ -94,7 +91,7 @@ Android 渲染管线是一条从 View 树到屏幕像素的完整流水线。XML
 
 #### 1. Measure 过程:决定每个 View 的大小
 
-```
+```text
 ViewRootImpl.performTraversals()
 ├── ViewRootImpl.measureHierarchy()
 │   └── View.measure()
@@ -131,7 +128,7 @@ public static int getDefaultSize(int size, int measureSpec) {
 
 #### 2. Layout 过程:确定每个 View 的位置
 
-```
+```text
 ViewRootImpl.performTraversals()
 └── ViewRootImpl.performLayout()
     └── host.layout(0, 0, host.getMeasuredWidth(), host.getMeasuredHeight())
@@ -150,7 +147,7 @@ Layout 过程还会进行边界检查,确保子 View 不会意外地渲染到父
 
 这是渲染管线中最关键的一步,将 View 的视觉外观转换为绘图命令。
 
-```
+```text
 ViewRootImpl.performTraversals()
 ├── ViewRootImpl.draw()
 │   └── View.draw()
@@ -168,7 +165,7 @@ ViewRootImpl.performTraversals()
 
 #### 4. VSync 同步:等待屏幕刷新信号
 
-```
+```text
 Choreographer.doFrame(...)
 ├── doCallbacks(CALLBACK_INPUT, frameIntervalNanos)
 ├── doCallbacks(CALLBACK_ANIMATION, frameIntervalNanos)
@@ -186,7 +183,7 @@ VSYNC_APP 先唤醒 App 侧 `Choreographer`,App 完成渲染后通过 BufferQueu
 
 #### 5. GPU 渲染:将绘图命令转换为像素
 
-```
+```text
 RenderThread.drawFrame()
 ├── RenderThread.invokeDrawCallbacks()
 ├── HardwareRenderer.draw()
@@ -205,7 +202,7 @@ GPU 渲染管线是一条高度并行的流水线。管线的起点是顶点着�
 
 #### 6. SurfaceFlinger 合成:合并多个表面
 
-```
+```text
 HWC / display HAL 发出硬件 VSync
 └── SurfaceFlinger::onComposerHalVsync()
     └── Scheduler 选定本轮 frame
@@ -221,7 +218,7 @@ SurfaceFlinger 合成的核心逻辑是按 Z-Order(Z 轴顺序)从后到前逐�
 
 #### 7. 显示输出:最终呈现到屏幕
 
-```
+```text
 CompositionEngine::present()
 └── HWComposer / display HAL 提交本帧
     ├── 返回 present fence / release fences
@@ -246,7 +243,7 @@ CompositionEngine::present()
 
 三缓冲引入第三个缓冲区,形成流水线:
 
-```
+```text
 时间轴:
 T0: VSync 1 → 显示缓冲区 1
 T1: GPU 开始填充缓冲区 2
@@ -292,7 +289,7 @@ Trace 中验证三缓冲,打开 FrameTimeline、gfx / view / sched / freq、Surf
 
 BufferQueue 是 Android 图形系统的核心组件,实现了生产者-消费者模式的缓冲区管理:
 
-```
+```text
 生产者 (Producer)           BufferQueue                消费者 (Consumer)
 App进程                    系统进程                   SurfaceFlinger
 ├── dequeueBuffer()         ├── 队列管理               ├── acquireBuffer()
@@ -333,7 +330,7 @@ SurfaceFlinger 是 Android 中最重要的 BufferQueue 消费者——它通过 
 
 ### 生产-消费时序
 
-```
+```text
 时间线:
 T0: 生产者 dequeueBuffer() → 获得缓冲区 A
 T1: 生产者在缓冲区 A 中绘制
@@ -351,7 +348,7 @@ T6: 生产者 dequeueBuffer() → 获得缓冲区 A(重用)
 // acquire fence:生产者把 buffer 交给消费者时附带的完成信号
 sp<Fence> acquireFence;
 
-// 消费者在真正读取 / 合成前等待 fence 完成
+// 消费者在实际读取 / 合成前等待 fence 完成
 acquireFence->waitForever("BufferQueueConsumer::acquireBuffer");
 
 // release fence:消费者处理完 buffer 后再随 buffer 生命周期返回
@@ -458,7 +455,7 @@ HWUI 的核心设计思想是把 UI 渲染拆分为"录制"和"回放"两个阶�
 ### Canvas 架构
 
 **Canvas 架构(Android 10+)**:
-```
+```text
 RecordingCanvas (UI 线程使用 - 录制绘制指令)
     ↓ DisplayList
 SkiaPipeline (RenderThread 使用 - 回放指令)
@@ -560,7 +557,7 @@ HWUI 的一帧主链如下:
 
 Vulkan 从 Android 7.0 开始被引入作为可选图形 API。HWUI 同时保留 SkiaOpenGLPipeline 和 SkiaVulkanPipeline 两条渲染管线;具体走哪条取决于设备上的 `use_vulkan` 属性、`debug.hwui.renderer` 设置以及 OEM 配置--不是某个 Android 版本统一切过去的平台行为。AOSP `frameworks/base/libs/hwui/Properties.cpp` 中 `peekRenderPipelineType()` 按 `use_vulkan` flag 在 `skiagl` / `skiavk` 间选择。Vulkan API/设备基线的提升(比如 Android 16 要求新设备支持 Vulkan 1.4)不等于 HWUI 默认使用 Vulkan 后端。与 OpenGL ES 相比,Vulkan 最核心的设计差异是"显式"--开发者需要自己管理 GPU 资源的分配、同步和生命周期,而不是像 OpenGL ES 那样由驱动层自动处理。这带来了更高的 CPU 效率:OpenGL ES 的驱动层为了自动管理资源,需要在每次 API 调用时进行状态检查和验证,这个开销在复杂场景中可能占去数毫秒的帧时间;而 Vulkan 的显式设计省去了这些检查,CPU 可以用更少的时间提交同样数量的绘制命令。
 
-Vulkan 还原生支持多线程渲染--不同的线程可以并行构建命令缓冲区(Command Buffer),最后统一提交给 GPU 执行。这对 Android 来说尤为重要,因为 HWUI 的架构本身就是多线程的(主线程录制 + RenderThread 回放),Vulkan 的多线程能力可以更好地利用这个架构。此外,Vulkan 提供了对 GPU 资源的更精细控制,减少了不必要的内存拷贝和状态切换。
+Vulkan 还原生支持多线程渲染--不同的线程可以并行构建命令缓冲区(Command Buffer),再统一提交给 GPU 执行。这对 Android 来说尤为重要,因为 HWUI 的架构本身就是多线程的(主线程录制 + RenderThread 回放),Vulkan 的多线程能力可以更好地利用这个架构。此外,Vulkan 提供了对 GPU 资源的更精细控制,减少了不必要的内存拷贝和状态切换。
 
 ```cpp
 // Vulkan vs OpenGL ES 开销对比
@@ -641,11 +638,11 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 **误区一:"硬件加速一定能提升性能"**。硬件加速并非万能药。对于非常简单的 UI(比如只有几个纯色矩形的页面),OpenGL/Vulkan 的 API 调用开销可能比 CPU 直接写像素还大。另外,如果 View 的 onDraw 实现中频繁创建新对象(比如 Paint、Path),硬件加速反而会加重 DisplayList 的录制负担。关键不在于是否开启硬件加速,而在于理解它的适用场景。
 
-**误区二:"三缓冲越多越好"**。三缓冲确实能减少卡顿,但它增加了一帧的显示延迟。对于对延迟极度敏感的场景(如触控绘图、游戏),额外的缓冲区意味着用户的手指动作到屏幕响应之间多了一帧的延迟。在一些需要极低延迟的场景中,可能反而需要减少缓冲区数量。
+**误区二:"三缓冲越多越好"**。三缓冲能减少卡顿,但它增加了一帧的显示延迟。对于对延迟极度敏感的场景(如触控绘图、游戏),额外的缓冲区意味着用户的手指动作到屏幕响应之间多了一帧的延迟。在一些需要极低延迟的场景中,可能反而需要减少缓冲区数量。
 
-**误区三:"GPU 渲染一定比 CPU 快"**。GPU 的优势在于大规模并行计算,处理复杂图形时确实远快于 CPU。但对于少量简单的绘制操作,GPU 的固定开销(API 调用、状态切换、命令提交)可能反而比 CPU 直接计算更慢。这也是为什么 Android 在某些场景下仍然保留软件渲染路径的原因。
+**误区三:"GPU 渲染一定比 CPU 快"**。GPU 的优势在于大规模并行计算,处理复杂图形时通常远快于 CPU。但对于少量简单的绘制操作,GPU 的固定开销(API 调用、状态切换、命令提交)可能反而比 CPU 直接计算更慢。这也是为什么 Android 在某些场景下仍然保留软件渲染路径的原因。
 
-**误区四:"invalidate() 和 requestLayout() 效果差不多"**。这是性能优化中常见的坑。invalidate() 只触发 Draw 过程,开销较小;requestLayout() 会触发完整的 Measure → Layout → Draw 流程,可能导致整棵 View 树被重新测量。如果只是视觉外观变了(比如颜色、文字内容),应该用 invalidate();只有大小或位置确实变了才用 requestLayout()。
+**误区四:"invalidate() 和 requestLayout() 效果差不多"**。这是性能优化中常见的坑。invalidate() 只触发 Draw 过程,开销较小;requestLayout() 会触发完整的 Measure → Layout → Draw 流程,可能导致整棵 View 树被重新测量。如果只是视觉外观变了(比如颜色、文字内容),应该用 invalidate();只有大小或位置发生变化才用 requestLayout()。
 
 **误区五:"SurfaceFlinger 在 App 进程中"**。SurfaceFlinger 是一个独立的系统服务进程,不运行在任何 App 进程中。它通过 BufferQueue 与 App 进程通信--App 渲染完一帧后通过 queueBuffer() 把缓冲区交给 BufferQueue,SurfaceFlinger 从 BufferQueue 中 acquireBuffer() 取出缓冲区进行合成。理解这一点对分析跨进程渲染问题很重要。
 

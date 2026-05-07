@@ -2,7 +2,6 @@
 title: "WebView 渲染性能与优化"
 chapter: "7.11"
 section: "7.11"
-status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 tags: [WebView, Chromium, Blink, JS Bridge, 混合渲染, 硬件加速, ANR, jank, 内存优化]
 related_chapters: ["2.1", "2.5", "2.10", "7.1", "7.2", "8.1", "9.1"]
@@ -23,24 +22,27 @@ sources:
     path: "frameworks/base/core/java/android/webkit/"
   - type: aosp
     path: "android_webview/docs/ (chromium.googlesource.com)"
-reviewed_date: "2026-05-07"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-pipeline_stage: ready-for-review
-task6_state: reviewed
-task2b_state: fixed
-task2b_result: fixed
-last_task6_at: "2026-05-07T09:06:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-09-review.md"
 review_notes: "2026-05-07 Task6 09:06：pass-light-edit。Task2B 已将后半部调研补丁移入发布稿收束前；本轮小修 6 处（代码围栏语言、16KB 边界术语、Viz/GPU service 表述），L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 task9_result: needs-rework
-task9_state: reviewed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-07
 last_task9_at: "2026-05-07T09:35:55+08:00"
 last_task2b_at: "2026-05-07T09:42:00+08:00"
 review_round: 3
 task9_review_notes: "2026-05-07 Task9 09:34：needs-rework。P0 1：Chromium WebView `AwGLFunctor.java` 源码路径不存在；P1 1：底部渲染路径重新把 WebView 写成固定 ASurfaceControl/BufferQueue → SF 路径，与 GLFunctor/HWUI 路径边界冲突；P2 1：render_process_gone Perfetto 事件待验证。"
+
+status: ready-for-review
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-07"
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: pending
+pipeline_stage: task9_pending
+task2b_state: fixed
+last_task6_at: "2026-05-07T17:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-17-review.md"
+task2b_result: fixed
+task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补充 render_process_gone Perfetto 事件待验证标注 1 处，frontmatter 更新；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -646,7 +648,7 @@ WebView Perfetto 追踪需要同时开启两类数据源：
 | BufferQueue 堵塞 | dequeue slot 等待 | ATrace `webview` |
 | SurfaceFlinger 合成超时 | `SurfaceFlinger` compose 过长 | ATrace |
 
-Renderer 进程崩溃在 Perfetto 中的表现：Renderer 进程所有 slice 在 `perfetto.process_track` 中突然消失，对应 `render_process_gone` 事件出现在 `android_webview.timeline` 分类下，SurfaceFlinger 侧 WebView 图层消失。
+Renderer 进程崩溃在 Perfetto 中的表现需要按 WebView provider 和 tracing 配置核对：Renderer 进程的 slice 会在 trace 中断开，SurfaceFlinger 侧 WebView 图层可能消失；`android_webview.timeline` 分类下是否稳定出现 `render_process_gone` 事件仍需实测。[待验证：`render_process_gone` 事件在当前 WebView provider 与 Perfetto 配置中的可见性]
 
 ### Renderer 模型版本差异
 
