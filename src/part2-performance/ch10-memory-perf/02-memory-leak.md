@@ -9,7 +9,7 @@ applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: 2026-05-03
+reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -27,10 +27,10 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_reviewed_date: "2026-05-03"
@@ -38,6 +38,8 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-03T04:21:00+08:00"
 task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。"
 task9_result: needs-rework
+last_task6_at: "2026-05-07T23:13:13+08:00"
+task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。"
 ---
 
 # 内存泄漏
@@ -67,17 +69,17 @@ task9_result: needs-rework
 
 ## 为什么要了解内存泄漏
 
-做过 Android 性能优化的工程师，大概率都遇到过这样的场景：应用用着用着就越来越卡，最终 OOM 崩溃；打开 Android Studio 的 Memory Profiler，看到内存曲线像台阶一样只升不降。尝试分析 OOM 时的堆栈日志，却发现堆栈指向的可能只是一次普通的字符串分配——真正"吃掉"内存的那些泄漏对象，早已在之前无数次的页面跳转和配置变更中悄悄积累。
+做过 Android 性能优化的工程师，大概率都遇到过这样的场景：应用用着用着就越来越卡，最终 OOM 崩溃；打开 Android Studio 的 Memory Profiler，看到内存曲线像台阶一样只升不降。尝试分析 OOM 时的堆栈日志，却发现堆栈指向的可能只是一次普通的字符串分配——持续占用内存的那些泄漏对象，早已在之前无数次页面跳转和配置变更中积累。
 
-内存泄漏的可怕之处在于：它不是"轰"的一声炸掉应用，而是像水龙头漏水一样，一滴一滴地耗尽可用内存。等到问题暴露时，面前是一堆积累了几十分钟的泄漏，从中找出第一个"凶手"极其困难。
+内存泄漏通常不会立刻把应用打崩，而是让可用内存在长时间运行中持续减少。等到问题暴露时，面前是一批积累了几十分钟的泄漏对象，要从中找出最早失效的引用链很难。
 
 了解内存泄漏的核心目的只有一个：**在泄漏发生的瞬间就捕获它，而不是等到 OOM 时再回头找。**
 
-## 内存泄漏的本质
+## 内存泄漏的定义
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory]
 
-所谓内存泄漏，用一句话概括就是：**一个对象已经不再被程序使用了，但由于存在一条从 GC Root 到该对象的引用链，垃圾回收器无法判定它为垃圾，因此不会回收它。**
+所谓内存泄漏，就是：**一个对象已经不再被程序使用了，但由于存在一条从 GC Root 到该对象的引用链，垃圾回收器无法判定它为垃圾，因此不会回收它。**
 
 在 ART 虚拟机中，垃圾回收器判定对象是否存活的方法是"可达性分析"（Reachability Analysis）。从一组被称为 GC Root 的特殊对象出发，沿着引用链向下追踪。如果一个对象到任何一个 GC Root 之间没有任何引用链相连，那这个对象就是不可达的，可以被回收。
 
@@ -94,11 +96,11 @@ task9_result: needs-rework
 
 [图：GC Root → 引用链 → 泄漏对象 的示意图]
 
-需要注意的是，内存泄漏有两种不同的语境。开发者常说的"内存泄漏"一般是指 Java 堆上的泄漏。而在 Native 层，内存泄漏指的是通过 `malloc`/`new` 分配的内存没有被 `free`/`delete` 释放——这和 GC 无关，纯粹是开发者的手动管理失误。两种泄漏的症状相似（内存持续增长），但排查方法完全不同。
+内存泄漏有两种不同的语境。开发者常说的"内存泄漏"一般是指 Java 堆上的泄漏。而在 Native 层，内存泄漏指的是通过 `malloc`/`new` 分配的内存没有被 `free`/`delete` 释放——这和 GC 无关，纯粹是开发者的手动管理失误。两种泄漏的症状相似（内存持续增长），但排查方法完全不同。
 
-理解了泄漏的成因，下一个问题自然就是：怎么发现它？在 Java 堆上，答案几乎是唯一的——LeakCanary。这个库在开发阶段的内存泄漏检测方面几乎是行业标准，后续各大厂自研的线上检测方案，底层思路也都脱胎于此。
+理解泄漏的成因后，接下来要解决的是发现时机。在 Java 堆上，开发阶段最常用的工具是 LeakCanary。这个库在开发阶段的内存泄漏检测方面已经接近行业标准，后续不少线上检测方案也沿用了类似思路。
 
-## LeakCanary：开发阶段的自动检测利器
+## LeakCanary：开发阶段的自动检测
 
 [已验证: LeakCanary 2.x 源码, square.github.io/leakcanary]
 [已验证: 来源见 Personal-Knowlodge/source/2026-03-07_wechat_为什么各大厂自研的内存泄漏检测框架都要参考_LeakCanary_因为它是真强啊.md]
@@ -134,7 +136,7 @@ if (!queued) { /* 泄漏确认，触发 Heap Dump */ }
 
 LeakCanary 输出的分析报告中，最关键的信息是**引用链**（Reference Chain）：
 
-```
+```text
 ┬───
 │ GC Root: Local variable in native code
 ├─ dalvik.system.PathClassLoader instance
@@ -236,7 +238,7 @@ AddressSanitizer 和 Hardware ASan 不仅能检测泄漏，还能检测越界读
 
 [适用版本]：ASan 支持 Android 8.0+，HWASan 需要 Android 10+ 且硬件支持
 
-Native 泄漏排查依赖系统工具（heapprofd、Malloc Debug），而 Java 泄漏的终极分析手段是 Heap Dump——拿到进程某一时刻的完整堆快照，然后逐层追踪引用链。LeakCanary 在检测到泄漏后会自动触发 Heap Dump，但当需要在生产环境或手动排查时，我们需要独立完成这个过程。
+Native 泄漏排查依赖系统工具（heapprofd、Malloc Debug），而 Java 泄漏的主要分析手段是 Heap Dump——拿到进程某一时刻的完整堆快照，然后逐层追踪引用链。LeakCanary 在检测到泄漏后会自动触发 Heap Dump，但当需要在生产环境或手动排查时，我们需要独立完成这个过程。
 
 ## Heap Dump 深度分析
 
@@ -276,7 +278,7 @@ LeakCanary 检测到泄漏后，会在系统通知栏弹出提示，同时在 Lo
 
 Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Perfetto UI 中打开 Native Heap Track，重点看两个指标：**Total allocated**（累计分配）和 **Total freed**（累计释放）。如果 Total allocated 持续增长而 Total freed 几乎不变，两者的差值（即"当前在用"）不断扩大，就是 Native 泄漏的信号。
 
-火焰图视图能直观展示哪些调用栈贡献了最多的未释放分配。点击火焰图中最大的色块，可以看到具体的调用栈和对应的源码位置。
+火焰图视图能直观展示哪些调用栈贡献了最多的未释放分配。点击火焰图中最大的色块，会展开具体调用栈和对应的源码位置。
 
 [图：Perfetto heapprofd 火焰图示例——Total allocated vs Total freed 的差距持续扩大]
 
@@ -298,7 +300,7 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 
 ## 常见问题与误区
 
-**"调 System.gc() 能解决内存泄漏"** — 不能。泄漏的根本原因是有引用链阻止回收，GC 运行也无法回收。手动触发 GC 反而增加卡顿。
+**"调 System.gc() 能解决内存泄漏"** — 不能。泄漏的原因是有引用链阻止回收，GC 运行也无法回收。手动触发 GC 反而增加卡顿。
 
 **"Android 8.0+ 不需要 recycle Bitmap"** — Bitmap 像素数据移到了 Native 堆，但放在静态变量中的 Bitmap 仍会导致 Native 内存泄漏。
 
@@ -319,10 +321,10 @@ Jetpack Compose 引入了新的泄漏场景：
 
 ## [自动发现] 线上内存泄漏的自动检测方案
 
-各大厂开发的线上方案核心思路：
+线上方案常见思路：
 
 1. **监控指标**：通过 `Runtime.getRuntime()` 监控堆使用量
-2. **选择性 Heap Dump**：fork 子进程执行（快手 Koom 的核心优化）
+2. **选择性 Heap Dump**：fork 子进程执行（快手 Koom 的主要优化）
 3. **服务端分析**：Shark 或自研引擎批量分析
 4. **SDK 集成**：腾讯 Matrix、快手 Koom、字节 MemoryLeakDetector
 

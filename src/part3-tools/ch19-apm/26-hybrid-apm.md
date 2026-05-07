@@ -11,10 +11,10 @@ last_verified_against: "Android PixelCopy / WebViewRenderProcess APIs, Flutter F
 confidence: high
 tags: [apm, webview, flutter, hybrid]
 related_chapters: ["19.0", "19.01"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-07"
 task6_result: "pass-light-edit"
@@ -30,8 +30,8 @@ task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-07T22:24:50+08:00"
 review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 2（WebView 可见状态 API 与跨时钟校准）。"
-last_task6_at: "2026-05-07T22:11:39+08:00"
-task6_review_notes: "2026-05-07 22:10 task6 revisiting-review: pass-light-edit。统一中英文标点与轻量措辞；Task9 技术复审仍 pending，未自动晋升。"
+last_task6_at: "2026-05-07T23:13:13+08:00"
+task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。复核 Task9 回炉后的写作层，修复 PixelCopy 段动词翻译腔；Task9 needs-rework 记录未由 Task6 裁决，未自动晋升。"
 task9_review_notes: "2026-05-07 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；WebView.postVisualStateCallback requestId 语义与 AOSP API 文档不一致。"
 ---
 
@@ -142,7 +142,7 @@ LCP 在部分旧 WebView 中不可用。没有 `supportedEntryTypes` 检查和 `
 
 `onPageFinished` 之外还有两个官方可见状态锚点。API 23+ 的 `WebViewClient.onPageCommitVisible()` 在当前导航的新内容首次绘制到屏幕时回调，表示旧页面内容不再可见，适合作为"页面已切换"的判据。`WebView.postVisualStateCallback(long requestId, VisualStateCallback)` 提供更细粒度的 visual state 更新通知：requestId 是调用方自定义的标识（例如自增序号），用于匹配请求和回调；回调触发时表示当前 DOM 更新已在下一次 draw 中可见（不含 video tag 状态）。白屏采样建议先等 `onPageCommitVisible` 或 `postVisualStateCallback` 确认渲染管线就绪，再做低频 `PixelCopy` 或 DOM/业务 ready 交叉判断，避免采到旧内容或未提交到渲染管线的中间状态。
 
-API 26+ 的 Android 应优先使用 `PixelCopy` 从 Window 或 Surface 异步复制像素。它比在 UI 线程调用 `WebView.draw(Canvas)` 更适合线上采样，原因是 WebView 使用硬件加速和 Chromium 渲染管线，同步 `draw()` 会让主线程承担额外绘制成本，还可能拿不到视频、GL 或硬件层的真实像素。`PixelCopy.request()` 通过回调返回结果，采样区域也能限制在首屏或关键区域。
+API 26+ 的 Android 应优先使用 `PixelCopy` 从 Window 或 Surface 异步复制像素。它比在 UI 线程调用 `WebView.draw(Canvas)` 更适合线上采样，原因是 WebView 使用硬件加速和 Chromium 渲染管线，同步 `draw()` 会增加主线程的绘制成本，还可能拿不到视频、GL 或硬件层的真实像素。`PixelCopy.request()` 通过回调返回结果，采样区域也能限制在首屏或关键区域。
 
 这段 Kotlin 示例用于说明 API 26+ 的白屏像素采样。重点看 `srcRect` 限定采样范围，以及回调线程不做重计算。
 
