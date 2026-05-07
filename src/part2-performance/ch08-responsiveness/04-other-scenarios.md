@@ -29,8 +29,8 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
@@ -42,7 +42,7 @@ task2b_result: fixed
 last_task2b_at: "2026-05-07T17:40:00+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
-review_notes: "2026-05-07 task2b rework R2: P0 Activity 启动路径改为 Android 9+ ClientTransaction 模型（含 8.x 旧路径说明）；P0 Binder 线程池常量改为 15；P1 删除 ViewPager2 自定义 LayoutManager prefetch 建议，补公开 API 限制说明。"
+review_notes: "2026-05-07 task2b rework R2: P0 Activity 启动路径改为 Android 9+ ClientTransaction 模型（含 8.x 旧路径说明）；P0 Binder 线程池常量改为 15；P1 删除 ViewPager2 自定义 LayoutManager prefetch 建议，补公开 API 限制说明；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9。"
 task9_review_notes: "2026-05-07 Task9 18:28：needs-rework。P0 2 / P1 1 / P2 1。Top: L93 Android 9+ 启动事务入口仍写 scheduleLaunchActivity；L97 DEFAULT_MAX_BINDER_THREADS 写成 16，android-16.0.0_r1 实际为 15；L222 ViewPager2 不支持公开自定义 LayoutManager 微调 prefetch。→ 2026-05-07 Task2B R2 已全部修复。"
 ---
 
@@ -271,7 +271,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/InputTransport.cpp; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/view/ViewRootImpl.java]
 
-**3. 主线程事件处理（变化最大）**：事件到达 App 进程后，进入主线程 Looper 的消息队列。如果此时主线程正在执行上一帧的 `doFrame()`、或者被某个同步 Binder 调用阻塞、或者在做密集的 GC，事件就必须排队等待。这是点击响应优化最核心的战场。
+**3. 主线程事件处理（变化最大）**：事件到达 App 进程后，进入主线程 Looper 的消息队列。如果此时主线程正在执行上一帧的 `doFrame()`、或者被某个同步 Binder 调用阻塞、或者在做密集的 GC，事件就必须排队等待。这是点击响应优化最主要的环节。
 
 **4. View 层级的事件分发（~1-5ms）**：从 DecorView 开始，经过 `dispatchTouchEvent()` → `onInterceptTouchEvent()` → `onTouchEvent()` 的分发路径，最终到达目标 View 的 `onClickListener`。View 层级越深，分发路径越长。
 
@@ -327,11 +327,11 @@ Trace.endSection();
 
 ## 搜索响应速度：实时搜索的防抖与预加载
 
-「边输入边搜索」（Search-as-you-type）是现代 App 的标配功能。但它也是最容易做错的响应速度场景之一：如果每次按键都触发一次搜索请求，轻则浪费流量，重则压垮服务端，更不要说在弱网环境下大量请求排队导致的卡顿。
+「边输入边搜索」（Search-as-you-type）是现代 App 的标配功能。但它也是最容易做错的响应速度场景之一：如果每次按键都触发一次搜索请求，轻则浪费流量，重则给服务端带来过高压力，更不要说在弱网环境下大量请求排队导致的卡顿。
 
-### 防抖（Debounce）：搜索响应的基石
+### 防抖（Debounce）：搜索响应的基础策略
 
-防抖的规则是：**用户连续输入时，只有停下来之后的最后一次输入才触发搜索。** 实现方式是给输入事件流加一个时间窗口——在这个窗口内如果有新的输入，计时器就重置。
+防抖的规则是：**用户连续输入时，只有停下来后的那次输入才触发搜索。** 实现方式是给输入事件流加一个时间窗口——在这个窗口内如果有新的输入，计时器就重置。
 
 以 Kotlin Flow 为例：
 
@@ -433,7 +433,7 @@ debounce 的目的是减少无效搜索，不是加快搜索速度。设太短�
 
 **误区 5：「onClick 里做少量 IO 没关系」**
 
-这是最常见的响应速度杀手。即使在 onClick 里只做了 20ms 的同步 SharedPreferences 写入，在 120Hz 设备上（帧间隔 8.33ms），这也意味着至少丢掉 2-3 帧。用户会明显感知到点击后的卡顿。把所有 IO 操作移到后台线程是零成本的优化。
+这是最常见的响应速度问题来源。即使在 onClick 里只做了 20ms 的同步 SharedPreferences 写入，在 120Hz 设备上（帧间隔 8.33ms），这也意味着至少丢掉 2-3 帧。用户会明显感知到点击后的卡顿。把所有 IO 操作移到后台线程是零成本的优化。
 
 ---
 
