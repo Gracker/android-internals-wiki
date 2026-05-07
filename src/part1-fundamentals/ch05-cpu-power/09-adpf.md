@@ -341,6 +341,131 @@ pm.registerForAllProfilingResults(executor, result -> {
 
 <!-- AIW-源码调研-20260501 END -->
 
+<!-- AIW-源码调研-20260507: ADPF Hint 信号体系 + 非游戏语义 + JNI 实现细节 -->
+## 源码调研补充（2026-05-07）
+
+### Hint 信号体系：sendHint() 的完整语义
+
+`PerformanceHintManager.Session` 提供两类 hint 信号：**周期性反馈**（`reportActualWorkDuration()`）和**即时信号**（`sendHint()`）。后者专为负载突变设计，跳过周期等待，在下一个调度窗口立即响应。
+
+**源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java`（AOSP master）
+
+Hint 信号定义（全部 `@TestApi`，对外 `@hide`）：
+
+```java
+// 行 ~125-175，Session 类内嵌类
+public static class Session implements Closeable {
+    // CPU 类 hints
+    public static final int CPU_LOAD_UP = 0;        // 突发增加，立即需要额外 CPU 资源
+    public static final int CPU_LOAD_DOWN = 1;      // 负载降低，可减少 CPU 资源  
+    public static final int CPU_LOAD_RESET = 2;     // 负载完全变化，需重置到已知基准线
+    public static final int CPU_LOAD_RESUME = 3;    // 从非活跃恢复，恢复之前资源分配
+
+    // GPU 类 hints（API 36+，需 FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION）
+    public static final int GPU_LOAD_UP = 5;
+    public static final int GPU_LOAD_DOWN = 6;
+    public static final int GPU_LOAD_RESET = 7;
+}
+
+// sendHint() 方法签名
+@TestApi
+public void sendHint(@Hint int hint) {
+    Preconditions.checkArgumentNonNegative(hint, "the hint ID should be at least zero.");
+    try {
+        nativeSendHint(mNativeSessionPtr, hint);
+    } finally {
+        Reference.reachabilityFence(this);
+    }
+}
+```
+
+**设计意图**：`sendHint()` 提供比 `reportActualWorkDuration()` 更快的信号通道。以视频编码场景为例：I-frame 到 P-frame 的切换（负载突变），可以在报告 actual duration 之前先发 `CPU_LOAD_RESET`，让调度器立即重置到基准再预测。
+
+**与 reportActualWorkDuration 的关系**：两者可以组合使用——`sendHint()` 提供快速预信号，`reportActualWorkDuration()` 提供周期精确反馈。在大多数场景下单独使用 `reportActualWorkDuration()` 足够，`sendHint()` 是针对"突变"的优化路径。
+
+### WorkDuration 分拆版本：CPU/GPU 分别计时
+
+Android 16 (API 36+) 通过 `WorkDuration` 结构将 CPU 和 GPU 耗时分别上报。
+
+**源码位置**：`frameworks/base/core/java/android/os/PerformanceHintManager.java` JNI 签名
+
+```java
+// 行 ~255-270
+@FlaggedApi(Flags.FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION)
+public void reportActualWorkDuration(@NonNull WorkDuration workDuration) {
+    // 校验：workPeriodStartTimestamp > 0
+    // 校验：actualTotalDuration > 0
+    // 校验：actualCpuDuration >= 0 && actualGpuDuration >= 0
+    // 校验：(actualCpu + actualGpu) > 0
+    nativeReportActualWorkDuration(mNativeSessionPtr,
+            workDuration.mWorkPeriodStartTimestampNanos,
+            workDuration.mActualTotalDurationNanos,
+            workDuration.mActualCpuDurationNanos,
+            workDuration.mActualGpuDurationNanos);
+}
+```
+
+WorkDuration 四字段（从 JNI 签名推断）：
+- `mWorkPeriodStartTimestampNanos`：工作周期开始时间戳（`SystemClock.uptimeNanos()`）
+- `mActualTotalDurationNanos`：总实际耗时
+- `mActualCpuDurationNanos`：CPU 耗时
+- `mActualGpuDurationNanos`：GPU 耗时
+
+这对 GPU-bound 场景至关重要：只报 CPU 耗时，系统只能调 CPU 频率；如果瓶颈在 GPU，调 CPU 频率完全打偏。
+
+### JNI 实现：dlopen libandroid.so
+
+**源码位置**：`frameworks/base/core/jni/android_os_PerformanceHintManager.cpp`（AOSP master）
+
+```cpp
+// 行 46-58
+void ensureAPerformanceHintBindingInitialized() {
+    if (gAPerformanceHintBindingInitialized) return;
+    
+    void* handle_ = dlopen("libandroid.so", RTLD_NOW | RTLD_NODELETE);
+    LOG_ALWAYS_FATAL_IF(handle_ == nullptr, "Failed to dlopen libandroid.so!");
+    
+    // 函数指针通过 dlsym 绑定
+    gAPH_getManagerFn = (APH_getManager)dlsym(handle_, "APerformanceHint_getManager");
+    gAPH_createSessionFn = (APH_createSession)dlsym(handle_, 
+        "APerformanceHint_createSessionFromJava");
+    gAPH_setPreferPowerEfficiencyFn = (APH_setPreferPowerEfficiency)dlsym(handle_,
+        "APerformanceHint_setPreferPowerEfficiency");
+    // ... 其他函数指针
+    gAPerformanceHintBindingInitialized = true;
+}
+```
+
+所有 `APerformanceHint_*` 函数实现在 `libandroid.so`（非公开源码），通过 `dlopen + dlsym` 延迟绑定。这意味着 native 层的性能优化不会因为 Java API 的变化而受影响——两者通过稳定的 C 接口解耦。
+
+### GameState.MODE_CONTENT：非游戏应用的语义锚点
+
+虽然类名是 `GameState`，但 `MODE_CONTENT = 4` 的语义定义覆盖了非游戏场景：
+
+```java
+// frameworks/base/core/java/android/app/GameState.java, 行 48
+/**
+ * Indicates that the current content shown is not gameplay related.
+ * For example it can be an ad, a web page, a text, or a video.
+ */
+public static final int MODE_CONTENT = 4;
+```
+
+**非游戏场景到 GameState 的映射**：
+
+| 非游戏场景 | GameState 模式 | 原因 |
+|-----------|---------------|------|
+| 视频播放（内容为主） | `MODE_CONTENT` | 明确为视频内容设计 |
+| 视频通话（实时交互） | `MODE_GAMEPLAY_UNINTERRUPTIBLE` | 不可中断的实时通信 |
+| AR 应用（空间追踪） | `MODE_GAMEPLAY_INTERRUPTIBLE` | 可被系统中断的 AR 处理 |
+| 地图导航 | `MODE_CONTENT` | 展示内容为主 |
+| 音乐播放（后台） | `MODE_NONE` | 非活跃状态 |
+
+GameState 通过 `GameManager.setGameState()` 报告，传入 `GameState(isLoading, mode)` 即可。无需在意 GameState 的命名——语义匹配比命名更重要。
+
+<!-- AIW-源码调研-20260507 END -->
+
+
 ## 常见问题与误区
 
 ### 误区一：ADPF 能提升 SoC 的绝对性能

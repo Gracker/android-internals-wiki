@@ -27,12 +27,12 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_reviewed_date: "2026-05-03"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-03T04:21:00+08:00"
@@ -108,7 +108,7 @@ task9_result: needs-rework
 
 LeakCanary 的检测机制巧妙地利用了 Java 引用体系中的一个特性：当一个对象只被 WeakReference 引用时，下次 GC 会回收它，同时 JVM 会把这个 WeakReference 对象放入它关联的 ReferenceQueue 中。
 
-Android 17（API 37）的分代 CMC 对这一机制的延迟有明显改善。分代 CMC 引入独立的 Minor GC，年轻代中只被 WeakReference 引用的对象可以在 Minor GC 阶段被处理，不再需要等待 Full GC。这使得年轻代场景下 LeakCanary 的泄漏检测响应速度显著提升。（老年代中 WeakReference 的处理仍依赖 Major GC，入队延迟取决于 GC 策略。）
+Android 17（API 37）引入分代 CMC（Concurrent Mark-Compact），理论上对年轻代 WeakReference 入队延迟有改善空间——分代 GC 允许在 Minor GC 阶段处理年轻代中的弱引用对象，减少等待 Major GC 的概率。但当前缺乏 ART reference processing 的源码提交或官方 benchmark 支撑具体延迟数据；CC collector 在 Android 10+ 已默认 generational，Android 17 分代 CMC 对 ReferenceQueue/WeakReference 处理时机的增量效果尚待验证。（[待验证：Android 17 分代 CMC 是否显著缩短 LeakCanary watchDuration 前后的响应时间]）
 
 工作流程：
 
@@ -292,8 +292,8 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 
 - **Android 8.0**：ASan 支持在非 root 设备上通过 wrap.sh 使用
 - **Android 10**：引入 heapprofd，集成在 Perfetto 中
-- **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化。但 Android 15+ 的 ContentProvider 安全上下文收紧后，多进程应用或严格沙箱模式下自动初始化可能静默失败——ContentProvider 的 Security Context 未建立时 `LeakCanary` 的 `AppWatcherInstaller` 不会触发。遇到自动初始化失败时，在 `Application.onCreate()` 中显式调用 `AppWatcher.manualInstall(application)` 即可
-- **Android 17 (API 37)**：分代 CMC 引入独立的 Minor GC，年轻代 WeakReference 入队延迟大幅缩短（[待验证：缺乏官方 benchmark，年轻代入队从“等待 Full GC”变为“Minor GC 即处理”，但具体延迟数据未公开]）
+- **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化。多进程应用、direct boot、instant app 或严格沙箱模式下自动初始化可能受影响——这些边界场景下 ContentProvider 的初始化时机和 Security Context 与普通单进程应用不同。遇到自动初始化问题时，在 `Application.onCreate()` 中显式调用 `AppWatcher.manualInstall(application)` 即可
+- **Android 17 (API 37)**：分代 CMC 引入独立的 Minor GC，年轻代 WeakReference 入队延迟理论上可缩短，但具体增量效果待验证（[待验证：缺乏官方 benchmark 和 ART reference processing 源码提交；CC collector 在 Android 10+ 已默认 generational，分代 CMC 的增量收益需同设备 A/B trace 对照]）
 - **heapprofd Java 堆采样**：Perfetto heapprofd 支持通过 `heaps: "com.android.art"` 配置 Java heap allocations 采样，具体成为默认可用能力的 Android 版本边界待核
 
 ## 常见问题与误区

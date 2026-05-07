@@ -11392,7 +11392,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-03T04:21:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T22:42:00+08:00",
+      "completed_reason": "P1 Android 17 CMC/WeakReference确定性表述已降级为待验证研究点；P1 LeakCanary ContentProvider静默失败已改为边界场景条件化描述"
     },
     {
       "section": "1.7",
@@ -14208,7 +14210,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T22:24:50+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T22:42:00+08:00",
+      "completed_reason": "P0 postVisualStateCallback requestId语义已修正：从loadUrl请求标识改为调用方自定义标识；callback语义从该请求视觉状态改为当前DOM更新在draw中可见"
     }
   ],
   "completed": [
