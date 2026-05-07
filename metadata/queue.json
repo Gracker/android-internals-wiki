@@ -14428,6 +14428,27 @@
       "status": "completed",
       "completed_at": "2026-05-08T03:44:19.133582",
       "completed_reason": "P0 contpte 16KB 覆盖粒度改为 2MB（CONT_PTES=128）；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 -Wl,-z,common-page-size=16384"
+    },
+    {
+      "section": "5.5",
+      "section_title": "Thermal 管控",
+      "priority": 90,
+      "reason": "[review回炉] AIW 16KB thermal 残留段落仍为确定性结论，与已降级研究假设口径冲突",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认/需补充素材",
+          "location": "AIW-源码调研-2026-05-07 / 16KB page size 对 thermal throttling 的延迟影响",
+          "detail": "残留段落仍把 16KB page size 对 thermal throttling 的收益写成确定性结论，并包含 `thermal_monitor_notify()`、Android 16/17 thermal 管理等未在本节证据中补齐来源的断言；与前文已降级为研究假设的口径冲突。",
+          "suggestion": "由 Task2B/Task9 按同设备 4KB/16KB A/B trace、AOSP 路径和官方文档复核；证据不足则删除该 AIW 段落或整体降级为研究假设。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-08T05:05:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-08-05-review.md"
     }
   ],
   "completed": [

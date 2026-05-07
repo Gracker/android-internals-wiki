@@ -13,29 +13,36 @@ last_verified: "2026-04-24"
 last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 / Perfetto native-heap-profiler docs"
 verified_note: "Android 17/API 37 分代 CMC 全量默认结论降级为待验证，公开 AOSP 无 android-17 tag"
 confidence: medium
-sources: 
-- type: blog
-path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
-tags: ['memory', 'gc', 'churn', 'object-pool', 'tlab', 'autoboxing', 'heapprofd']
+sources:
+  - type: "blog"
+    path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
+  - type: "official"
+    path: "developer.android.com/topic/performance/memory"
+  - type: "official"
+    path: "perfetto.dev/docs/data-sources/native-heap-profiler"
+tags: ["memory", "gc", "churn", "object-pool", "tlab", "autoboxing", "heapprofd"]
 related_chapters: ["4.3", "7.1", "7.2", "10.1", "10.4"]
 word_count: "~7500"
-reviewed_date: "2026-05-04"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+reviewed_date: "2026-05-08"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T05:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-05-review.md"
+pipeline_stage: "task9_pending"
 task9_state: "pending"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-04"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-04T06:20:00+08:00"
+task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
 task2b_state: "fixed"
 task2b_result: "fixed"
-task2b_rework_date: "2026-05-04"
-task2b_fixed_at: "2026-05-04T05:40:00+08:00"
-last_task2b_at: "2026-05-04T05:40:00+08:00"
-task9_result: needs-rework
-last_task9_at: "2026-05-04T06:20:00+08:00"
-task9_reviewed_date: "2026-05-04"
-task9_reviewed_by: openclaw-task9
-review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
+task2b_rework_date: "2026-05-08"
+task2b_fixed_at: "2026-05-08T04:51:42.168874+08:00"
+last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
+review_notes: "2026-04-24 task6 re-review (revisiting): pass-light-edit. Task2b修复heapprofd命令和版本边界后内容无新L1/L2问题。GC版本拆分准确，代码示例规范，优化建议实用。Task9仍有needs-rework待重审。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML、无语言围栏和禁用/口语化表述，无新增 L3/L4 回炉项，待 Task9 复审。"
 ---
 
 # 内存抖动与频繁 GC
@@ -69,7 +76,7 @@ task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 
 在 Perfetto 中打开一段有明显卡顿的 Trace，我们可能会看到这样的画面：主线程的帧渲染时间一会儿 8ms、一会儿 25ms，毫无规律地波动。如果仔细观察 CPU 行程，会注意到在这些帧耗时的尖峰附近，`HeapTaskDaemon` 线程正忙着执行 GC。与此同时，Java Heap 的使用曲线像锯齿一样忽上忽下——这就是典型的内存抖动（Memory Churn）。
 
-内存抖动不是一种独立的" bug"，而是一种性能反模式。它的可怕之处在于：分配本身几乎不花时间，但后续的 GC 代价会在最不希望被打断的时刻兑现。在 120Hz 设备上，一帧的预算只有 8.3ms，而一次 Young GC 暂停可能就要 1-3ms [已验证: 官方文档, developer.android.com/topic/performance/memory]。看似正常的代码，在帧渲染路径上高频分配对象，就可能在关键时刻累积出一次 GC 暂停，导致掉帧。
+内存抖动不是一种独立的 bug，而是一种性能反模式。问题在于：分配本身几乎不花时间，但后续的 GC 代价会在最不希望被打断的时刻出现。在 120Hz 设备上，一帧的预算只有 8.3ms，而一次 Young GC 暂停可能就要 1-3ms [已验证: 官方文档, developer.android.com/topic/performance/memory]。看似正常的代码，在帧渲染路径上高频分配对象，就可能在关键时刻累积出一次 GC 暂停，导致掉帧。
 
 了解内存抖动，就是学会从"分配源头"来预防 GC 干扰帧渲染的问题。
 
@@ -87,7 +94,7 @@ GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制�
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
-用一个类比来理解：内存分配就像信用卡消费，每次消费都很轻松，但到了还款日（GC），代价必须一次性偿还。正常消费没问题，但如果天天刷爆卡再还款，生活节奏就会被打乱。
+更适合把它看成一笔延迟结算的成本：分配发生在前面，GC 代价在后面的某个时刻集中出现。分配速率越高，越容易把这笔成本推到帧渲染路径上。
 
 ## 内存抖动对性能的影响
 
@@ -103,7 +110,7 @@ GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制�
 
 **CPU 竞争导致间接影响。** GC 线程执行标记、拷贝等工作需要消耗 CPU。在 Perfetto 的 CPU 视图中， `HeapTaskDaemon` 线程在某些时段占据了显著的 CPU 时间片。这些 CPU 时间本可以用来执行主线程或 RenderThread 的工作——也就是说，即使 GC 暂停没有直接发生在主线程上，CPU 竞争也会导致主线程的执行变慢。
 
-```
+```text
 Memory Churn 在 Perfetto 中的表现:
 
 Frame N     | Frame N+1       | Frame N+2
@@ -122,7 +129,7 @@ UI Thread   | GC Pause!       | UI Thread
 
 ## 常见的内存抖动场景
 
-了解内存抖动的原理后，我们来看看实际开发中哪些写法最容易触发这个问题。
+实际开发中，最容易触发内存抖动的写法集中在几类。
 
 ### onDraw / onMeasure 中创建对象
 
@@ -195,7 +202,7 @@ fun buildLog(items: List<String>): String {
 }
 ```
 
-这里有一个容易忽略的细节：日志方法的参数在方法调用时就计算了——即使方法内部做了 `if (isDebug)` 判断，参数中的字符串拼接仍然会执行 [已验证: 来源见 Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]。这是一个很容易被忽略的问题。
+一个容易忽略的细节是：日志方法的参数在方法调用时就计算了——即使方法内部做了 `if (isDebug)` 判断，参数中的字符串拼接仍然会执行 [已验证: 来源见 Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]。
 
 ### Autoboxing
 
@@ -378,7 +385,7 @@ TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需
 
 - **大量小对象、均匀分配**：大部分分配在 TLAB 中完成，GC 压力较小
 - **大对象或突发式分配**：更容易触发 TLAB 补充和同步 GC，性能影响更大
-- **分配速率超过 GC 回收速率**：最危险——Eden 区永远处于即将耗尽的边缘，GC 疯狂运转
+- **分配速率超过 GC 回收速率**：Eden 区长期处于即将耗尽的边缘，GC 持续高频运行
 
 对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。Android 17 据公开信息计划将分代 CMC 设为默认基线，但截至当前尚无正式 AOSP tag 支撑，需以 release notes 为准。[待验证：Android 17 分代 CMC 默认状态] Android 16 的分代 CMC 尚未全量生效，不能当作所有设备的标准配置。
 
@@ -399,13 +406,13 @@ TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需
 
 **"内存抖动只发生在低端设备上。"**
 
-恰恰相反，高刷新率设备因为帧预算更短（120Hz = 8.3ms），反而更容易暴露内存抖动问题。同样的 GC 暂停在 60Hz 设备上可能只占总预算的 6%（1ms/16.6ms），在 120Hz 设备上则占 12%（1ms/8.3ms）。[已验证: 来源见 intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
+高刷新率设备因为帧预算更短（120Hz = 8.3ms），反而更容易暴露内存抖动问题。同样的 GC 暂停在 60Hz 设备上可能只占总预算的 6%（1ms/16.6ms），在 120Hz 设备上则占 12%（1ms/8.3ms）。[已验证: 来源见 intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
 
 **"手动调用 System.gc() 可以缓解内存抖动。"**
 
 这是一个非常危险的做法。`System.gc()` 触发的是一次显式 GC，它会打断 ART 自身的 GC 调度策略，可能在不合适的时机执行 Full GC，导致更长的暂停。Android 官方明确不建议手动触发 GC [已验证: 官方文档, developer.android.com/reference/java/lang/System#gc()]。正确的做法是减少分配，而不是干预 GC 调度。
 
-**"对象池是万能解药。"**
+**"对象池是万能方案。"**
 
 对象池有自己的代价：状态重置的遗漏会导致 bug，池过大会浪费内存，多线程环境下的同步控制增加复杂度。应该优先考虑"避免分配"（预分配、使用原始类型），只在分配确实无法避免时才使用对象池。
 
