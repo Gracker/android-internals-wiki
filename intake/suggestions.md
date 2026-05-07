@@ -1366,3 +1366,10 @@
 - **位置**：L300 ARM PMU 与 Perfetto 数据源
 - **问题**：正文写 PMU 指标需要配置 `linux.ftrace` 的 `pmu` 事件；Perfetto 配置 proto 中 perf_event 采样/计数对应 data source name `linux.perf` 和 `perf_event_config`。
 - **建议**：改成“Perfetto 需配置 `linux.perf` / `perf_event_config`（或设备支持的 perf/PMU 数据源）；ftrace 只覆盖调度、freq、thermal 等 trace events”。
+
+## [Task6 Review] 7.11 WebView 渲染性能与优化 — 2026-05-07
+- **类型**：需重写
+- **位置**：“常见问题与误区”之后的“WebView Renderer 进程崩溃恢复”“WebView 渲染管线与 Perfetto 追踪”
+- **问题**：两节内容技术密度高，但现在放在常见误区之后，读感像把 AIW 源码调研材料追加到正文尾部；“Perfetto 分析”已经在前文出现一次，后文又以更底层口径重开一节，发布稿收束顺序被打断。
+- **建议**：保留现有技术内容，不做技术裁决；请 Task2B 做结构整合：Renderer 崩溃恢复并入多进程/版本演进或常见误区之前；WebView tracing API 与渲染管线内容并入“WebView 在 Perfetto 中的分析”；“常见问题与误区”与“参考资料”放回全文收束位置。
+- **review 日志**：logs/review/2026-05-07-08-review.md
