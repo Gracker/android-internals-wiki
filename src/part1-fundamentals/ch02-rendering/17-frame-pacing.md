@@ -3,82 +3,21 @@ title: Frame Pacing Library 与帧节奏控制
 chapter: '2.17'
 section: '2.17'
 applicable_versions: Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API
-  37)
 last_verified: '2026-04-19'
 last_verified_against: AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP
-  external/perfetto refs/heads/main, perfetto.dev/docs/data-sources/frametimeline,
-  developer.android.com/games/sdk/frame-pacing
 confidence: medium
 drafted_date: '2026-04-06'
 drafted_by: openclaw-task2a
-sources:
-- type: official
-  path: https://developer.android.com/games/sdk/frame-pacing
-- type: official
-  path: https://developer.android.com/games/sdk/frame-pacing/opengl
-- type: official
-  path: https://developer.android.com/games/sdk/frame-pacing/vulkan
-- type: official
-  path: https://developer.android.com/games/sdk/frame-pacing/opengl/verify-improvement
-- type: official
-  path: https://developer.android.com/games/sdk/frame-pacing/vulkan/verify-improvement
-- type: official
-  path: https://developer.android.com/games/sdk/reference/frame-pacing
-- type: official
-  path: https://perfetto.dev/docs/data-sources/frametimeline
-- type: official
-  path: https://developer.android.com/reference/android/view/Choreographer
+sources: 
 - type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp
-- type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp
-- type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.h
-- type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.cpp
-- type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.h
-- type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/common/FrameStatistics.cpp
-- type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp
-- type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.cpp
-- type: aosp
-  path: frameworks/opt/gamesdk/games-frame-pacing/opengl/EGL.h
-- type: aosp
-  path: frameworks/opt/gamesdk/include/swappy/swappy_common.h
-- type: aosp
-  path: frameworks/opt/gamesdk/include/swappy/swappyGL.h
-- type: aosp
-  path: frameworks/opt/gamesdk/include/swappy/swappyGL_extra.h
-- type: aosp
-  path: frameworks/opt/gamesdk/include/swappy/swappyVk.h
-- type: aosp
-  path: external/perfetto/src/trace_processor/metrics/sql/android/jank/frames.sql
-- type: aosp
-  path: external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql
-tags:
-- Frame Pacing
-- Swappy
-- AGDK
-- 游戏性能
-- 帧节奏
-- Choreographer
-related_chapters:
-- '2.2'
-- '2.3'
-- '2.4'
-- '2.9'
-- '2.13'
-- '2.16'
-- '2.18'
-- '7.1'
+path: external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql
+tags: 
+related_chapters: 
 created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 官方文档 + 研究素材
-task6_state: reviewed
-task2b_result: fixed
+task6_state: "revisiting"
+task2b_result: "fixed"
 reviewed_by: openclaw-task6
 task6_reviewed_date: '2026-05-06'
 reviewed_date: '2026-05-06'
@@ -87,11 +26,11 @@ last_task2b_at: "2026-05-06T05:49:37+08:00"
 task9_task6_reviewed_date: '2026-04-30'
 last_task6_at: '2026-05-06T06:08:00+08:00'
 last_task6_review_log: logs/review/2026-05-06-06-review.md
-status: ready-for-review
-pipeline_stage: task2b_pending
-task9_state: reviewed
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: "fixed"
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T06:23:00+08:00"
@@ -455,7 +394,7 @@ Android 16 设备的 Vulkan 能力基线由 Khronos VP_ANDROID_16_minimums profi
 
 Android 17 对 Java 侧 `MessageQueue` 做了无锁队列重构（DeliQueue），替换了沿用多年的 `Looper` + `MessageQueue` 锁竞争模型。
 
-**对 Java Choreographer 的影响已确认。** 主线程的 `MessageQueue.nativePollOnce()` 和其他线程的同步操作共用一把 `mLock`，锁竞争会导致 VSync 回调到达时间抖动。DeliQueue 通过多生产者 lock-free Treiber stack + Looper 侧 min-heap 的无锁结构消除了这把锁（详见 §16.4）。使用 Java `Choreographer.FrameCallback` 的应用（非游戏场景）会直接受益。
+**对 Java Choreographer 的影响（targetSdk 37+）。** Android 17 behavior changes 明确限定：apps targeting Android 17 (API 37) or higher 才会收到 DeliQueue 的无锁 `MessageQueue` 实现。主线程的 `MessageQueue.nativePollOnce()` 和其他线程的同步操作共用一把 `mLock`，锁竞争会导致 VSync 回调到达时间抖动。DeliQueue 通过多生产者 lock-free Treiber stack + Looper 侧 min-heap 的无锁结构消除了这把锁（详见 §16.4）。只有 targetSdk ≥ 37 且运行在 Android 17+ 设备上的应用，使用 Java `Choreographer.FrameCallback` 时才会直接受益。targetSdk < 37 的应用即使跑在 Android 17 上，MessageQueue 仍走原有锁路径。
 
 **对 Swappy 的 NDK AChoreographer 路径，影响需要分两层看。** Swappy 的 Vulkan/OpenGL 路径走的是 NDK `AChoreographer` 回调，不直接经过 Java `MessageQueue`。DeliQueue 改造的是 Java 层 `MessageQueue`，目前没有 AOSP commit 或公开文档证明 NDK `AChoreographer` / `ALooper` 的回调路径也做了同样的无锁改造。如果 NDK AChoreographer 的底层仍然走传统 `Looper` 管道，DeliQueue 改善的是 Java 侧回调抖动，不直接传导到 Swappy native 回调。
 

@@ -174,7 +174,10 @@ KOOM（Kwai OOM）是快手团队开源的内存监控方案。它最适合解�
 
 KOOM 的 Java 堆泄漏检测采用"阈值触发 + Hprof 裁剪"的方案。它通过 Runtime.totalMemory() 和 maxMemory() 计算当前 Java 堆使用率，当使用率超过阈值（如 80%）时触发 Dump。Dump 出的 Hprof 文件会在客户端进行裁剪——KOOM 实现了一套高效的 Hprof 文件解析和裁剪机制，能够只保留泄漏分析所需的关键数据（如 GC Root 引用链），将文件大小压缩到原来的 10%~20%。
 
-一个关键优化是：KOOM 使用了 Fork 子进程来执行 Hprof Dump，避免在主进程中执行耗时的 Dump 操作导致卡顿或 ANR。这在 Perfetto 中的体现是：Dump 期间主线程不会出现长时间的阻塞，用户感知不到监控本身的存在。
+一个关键优化是：KOOM 使用了 Fork 子进程来执行 Hprof Dump，避免在主进程中执行耗时的 Dump 操作导致卡顿或 ANR。
+<!-- AIW-源码调研-2026-05-08 -->
+> **深度研究补充**：KOOM FastDump 的 Suspend-Fork-Resume 机制有更完整的源码级分析，见 [[DeepResearch/2026-05-08-koom-fastdump-suspend-fork-resume-mechanism|2026-05-08: KOOM FastDump Suspend-Fork-Resume 机制]]。核心发现：主进程冻结 <20ms 依赖 Suspend VM → fork → Resume 三步；koom-fast-dump.so（闭源）是核心实现，hprof_dump.cpp 等 6 个 native 源文件构建该 so；OOMMonitor 组合 5 个 OOMTracker（HeapOOMTracker/ThreadOOMTracker/FdOOMTracker/PhysicalMemoryOOMTracker/FastHugeMemoryOOMTracker）；hprof_strip.cpp 直接解析 Hprof 二进制格式裁剪 system heap，体积减少 50-70%。
+这在 Perfetto 中的体现是：Dump 期间主线程不会出现长时间的阻塞，用户感知不到监控本身的存在。
 
 [已验证: github.com/KwaiAppTeam/KOOM]
 
