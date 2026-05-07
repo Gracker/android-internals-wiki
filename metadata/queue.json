@@ -4634,8 +4634,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-07T17:29:52+08:00",
+      "completed_reason": "Task9 复核：外部 Review 条目中 Vulkan/延迟/AsyncBufferQueue 等 P1 断言缺少可验证源码或数据锚点；现稿已按已验证边界覆盖 BufferQueue/BLAST/Vulkan 1.4，不作为阻断项。"
     },
     {
       "section": "2.1",
