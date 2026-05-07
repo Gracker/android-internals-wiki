@@ -27,13 +27,14 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_result: pass-light-edit
-task6_state: "reviewed"
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: "fixed"
+last_task2b_at: "2026-05-07T15:44:35+08:00"
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T15:27:55+08:00"
@@ -86,7 +87,7 @@ Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启
 
 **Hardware Layer** 指的是在硬件加速开启时，把某个 View 子树的绘制结果放进一块离屏 GPU render target，后续以纹理的形式参与合成。官方文档把它描述为 hardware layer 或 hardware texture。它解决的是“同一批绘制结果要被连续复用”的问题，例如 alpha、translation、scale、rotation 这些变换持续发生，但内容本身没有变化的场景。
 
-Hardware Layer 能减少的是这棵子树反复重录 DisplayList、反复执行 draw 和反复光栅化的成本，它本身不是 measure/layout 的跳过开关。布局能不能跳过，取决于这一帧有没有新的 layout request、尺寸约束有没有变化；内容一旦 `invalidate()`，layer 缓存仍然会失效并重建。
+Hardware Layer 能减少的是 RenderThread 侧对这棵子树 DisplayList 的重复 replay 和光栅化成本——现代 HWUI 是 retained DisplayList/RenderNode 模型，translation、scale、rotation、alpha 等属性动画通常不会让 UI 线程每帧重录 DisplayList。它本身不是 measure/layout 的跳过开关。布局能不能跳过，取决于这一帧有没有新的 layout request、尺寸约束有没有变化；内容一旦 `invalidate()`，layer 缓存仍然会失效并重建。
 
 为了不把几个层级混在一起，我们把三个场景分开看：
 
@@ -150,7 +151,7 @@ Software Layer 的适用场景比较有限。最常见的情况是 App 没有开
 
 在 Android 10 之后的 HWUI 里，手动 `setLayerType(LAYER_TYPE_HARDWARE)` 已经不是属性动画的默认动作。`RenderNode` 自己就有 compositing layer 机制：当 `alpha` 与 `hasOverlappingRendering()` 的组合需要离屏缓冲，或者系统判断这样更省时，它会自动提升为 composition layer。手动强制建层更适合两类场景：
 
-- **Trace 已经看到复杂子树在动画期间被反复重绘**：内容本身没变，但每帧都在重录 DisplayList 或重做光栅化
+- **Trace 已经看到复杂子树在动画期间被反复 replay/光栅化**：内容本身没变，但 RenderThread 每帧都在 replay 子树绘制命令并重新光栅化
 - **需要稳定的离屏合成语义**：例如大 View 子树的 alpha 混合、ColorFilter，或者多帧连续复用同一批绘制结果
 
 如果 View 很简单，或者动画过程中内容一直在变，手动强制建层只会多一层缓存维护成本。
@@ -272,7 +273,7 @@ Android 开发者选项中有一个"显示硬件层更新"（Show hardware layer
 
 AOSP `frameworks/base/graphics/java/android/graphics/RenderNode.java` 的公开 API 是 `setUseCompositingLayer(boolean forceToLayer, Paint paint)` 和 `getUseCompositingLayer()`。原注释把边界写得很清楚：`RenderNode` 会在“这样更省时”或者 `alpha + hasOverlappingRendering()` 组合需要时，自动提升为 composition layer；`forceToLayer=false` 才是默认且推荐的值。`paint` 只在强制建层时生效，用来给这层额外叠加 blend mode、alpha 和 `ColorFilter`。
 
-Android 16 中 `RenderProperties::promotedToLayer()` 的自动升层条件是可验证的：functor 需要隔离、RenderNode 有 ImageFilter、StretchEffect 要求建层、alpha 不在 (0,1) 区间且 `hasOverlappingRendering()` 为 true，并且尺寸满足 `fitsOnLayer()`。这些条件是确定性的布尔组合，不是绘制指令复杂度评分。满足条件时 HWUI 自动为该 RenderNode 分配离屏缓冲，应用无需手动 `setLayerType`。
+Android 16 中 `RenderProperties::promotedToLayer()` 的自动升层条件是可验证的：functor 需要隔离、RenderNode 有 ImageFilter、StretchEffect 要求建层、alpha 在 (0,1) 区间（源码条件 `!MathUtils::isZero(mAlpha) && mAlpha < 1`）且 `hasOverlappingRendering()` 为 true，并且尺寸满足 `fitsOnLayer()`。这些条件是确定性的布尔组合，不是绘制指令复杂度评分。满足条件时 HWUI 自动为该 RenderNode 分配离屏缓冲，应用无需手动 `setLayerType`。
 
 [已验证: AOSP android-16.0.0_r1, RenderProperties::promotedToLayer() 条件]
 
