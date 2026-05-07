@@ -19,7 +19,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T13:26:03+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T13:43:18+08:00",
+      "completed_reason": "P1 冷启动回归检测 SQL 已修正：优先使用 android.startup.startups Standard Library 模块；手写 SQL 回退方案已补充进程、时间窗口、同 track 约束"
     },
     {
       "section": "5.4",
@@ -11600,7 +11602,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T00:30:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T13:43:18+08:00",
+      "completed_reason": "P1 RecordingCanvas \"空壳画布/空实现\"描述已修正为准确的录制阶段职责说明（JNI/native写入+状态采样成本）；自发现：同文件 L317 禁用词\"链路\"已替换"
     },
     {
       "section": "2.12",

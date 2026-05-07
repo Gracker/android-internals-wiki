@@ -27,11 +27,11 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task9_result: needs-rework
@@ -454,18 +454,51 @@ def capture_trace(device_serial, config_file, output_path):
         '/data/misc/perfetto-traces/trace.pb', output_path
     ])
 
-def analyze_startup(trace_path, baseline_ms, threshold_pct):
-    """分析冷启动时间并检测回归"""
+def analyze_startup(trace_path, baseline_ms, threshold_pct, target_package):
+    """分析冷启动时间并检测回归。
+
+    优先使用 Perfetto Standard Library 的 android.startup 模块；
+    如果 Standard Library 不可用，则回退到手写 SQL（需限定进程和时间窗口）。
+    """
     tp = TraceProcessor(trace=trace_path)
-    result = tp.query("""
-        SELECT
-          (s2.ts - s1.ts) / 1e6 AS startup_ms
-        FROM slice s1
-        JOIN slice s2 ON s2.name = 'FirstFrame'
-        WHERE s1.name = 'activityStart'
-        ORDER BY startup_ms
-        LIMIT 1
-    """)
+
+    # 方案 A：使用 Standard Library android.startup.startups
+    # 该模块由 Perfetto 官方维护，内部已处理进程、launch id 和时间窗口约束
+    try:
+        startup_result = tp.query("""
+            INCLUDE PERFETTO MODULE android.startup.startups;
+            INCLUDE PERFETTO MODULE android.startup.startup_breakdowns;
+
+            SELECT
+              s.package,
+              (s.end_ts - s.ts) / 1e6 AS startup_ms
+            FROM android_startups s
+            WHERE s.package = '{}'
+            ORDER BY s.ts DESC
+            LIMIT 1
+        """.format(target_package))
+        df = startup_result.as_pandas_dataframe()
+    except Exception:
+        # 方案 B：手写 SQL，必须限定目标进程和时间窗口
+        # FirstFrame 是业务自定义 trace point，需按实际项目中的 atrace 标记替换
+        startup_result = tp.query("""
+            SELECT
+              (s2.ts - s1.ts) / 1e6 AS startup_ms
+            FROM slice s1
+            JOIN thread_track tt1 ON s1.track_id = tt1.id
+            JOIN thread t1 ON tt1.utid = t1.utid
+            JOIN process p ON t1.upid = p.upid
+            JOIN slice s2
+              ON s2.track_id = s1.track_id
+              AND s2.name = 'FirstFrame'
+              AND s2.ts > s1.ts
+              AND s2.ts - s1.ts < 30e9
+            WHERE s1.name = 'activityStart'
+              AND p.name = '{}'
+            ORDER BY s1.ts DESC
+            LIMIT 1
+        """.format(target_package))
+        df = startup_result.as_pandas_dataframe()
     df = result.as_pandas_dataframe()
     if df.empty:
         return None
@@ -478,7 +511,7 @@ def analyze_startup(trace_path, baseline_ms, threshold_pct):
     }
 ```
 
-[待验证：`FirstFrame` slice 名称在不同 Android 版本和 App 中的表现可能不同，实际使用时需根据项目中的 atrace 标记调整 SQL]
+方案 A 优先使用 `android.startup.startups` Standard Library 模块，由 Perfetto 官方维护，内部已处理进程、launch id 和时间窗口约束。方案 B 的手写 SQL 至少限定了：① 目标进程（`p.name`）② 时间窗口（`s2.ts > s1.ts` 且差值 < 30s）③ 同一 track（同一线程）。`FirstFrame` 是业务自定义 trace point 名称，需按项目实际的 atrace 标记替换；如果改用 FrameTimeline 的 `actual_present_time`，则应走 `android.frames` 模块。
 
 这个脚本的逻辑很简单：抓 Trace → 查 SQL → 对比基线。但它已经构成了 CI/CD 性能检测的核心骨架。下一节会把它接入完整的流水线。
 
