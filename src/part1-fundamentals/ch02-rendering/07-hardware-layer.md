@@ -9,7 +9,7 @@ last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 reviewed_date: "2026-05-07"
-review_notes: "2026-05-07 task6 review (revisiting→reviewed): pass-light-edit。Task2B 修复后复审，轻修措辞/引导语 5 处；L1/L2 通过，无新增 B 类回炉项，送 Task9 复审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
+review_notes: "2026-05-07 16:08 task6 review (Task2B 修复后复审): pass-light-edit。轻修 4 处（16KB 分配粒度/数据描述/Compose offscreen 用词）；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 reviewed_by: openclaw-task6
 polish_count: 2
 polish_date: "2026-04-28"
@@ -27,9 +27,9 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -38,9 +38,9 @@ last_task2b_at: "2026-05-07T15:44:35+08:00"
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T15:27:55+08:00"
-last_task6_at: "2026-05-07T13:09:20+08:00"
-last_task6_review_log: "logs/review/2026-05-07-13-review.md"
-task6_review_notes: "2026-05-07 Task6 13:09：Task2B 修复后写作复审；轻修措辞/引导语 5 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-07T16:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-16-review.md"
+task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理 L1/L2 用词 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-07-15-deep-review.md"
 task9_review_notes: "2026-05-07 Task9 15:27：needs-rework。P0 1 / P1 1 / P2 2。Top: L273 RenderProperties::promotedToLayer() alpha 条件"
 ---
@@ -182,7 +182,7 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 每个 Hardware Layer 对应一块 GPU 纹理。如果同时有多个 View 设置了 Hardware Layer，或者 View 面积很大，显存消耗会非常可观。官方推荐只在动画期间启用，动画结束后立即释放。
 
-16KB 页环境还有一个额外因素：GPU 显存分配的最小对齐单元提升后，小面积硬件层可能产生更多的对齐填充浪费。例如一个 100×50 像素的 layer 理论需要约 20KB（RGBA_8888），在 16KB 页粒度下可能因对齐要求占用更多空间。多个小 layer 累积起来的影响取决于 GPU 驱动的分配策略（sub-allocator、tile-based 渲染的内部缓冲管理等）。对于需要频繁建层/销毁的场景（如列表 item 动画），建议通过 `dumpsys gfxinfo` 和 `adb shell dumpsys meminfo <pkg>` 观察实际的 GPU 内存变化，不要仅凭理论估算做判断。
+16KB 页环境还有一个额外因素：GPU 显存分配粒度提升后，小面积硬件层可能产生更多填充浪费。例如一个 100×50 像素的 layer 理论需要约 20KB（RGBA_8888），在 16KB 页粒度下可能因为分配粒度占用更多空间。多个小 layer 累积起来的影响取决于 GPU 驱动的分配策略（sub-allocator、tile-based 渲染的内部缓冲管理等）。对于需要频繁建层/销毁的场景（如列表 item 动画），建议通过 `dumpsys gfxinfo` 和 `adb shell dumpsys meminfo <pkg>` 观察实际的 GPU 内存变化，不要仅凭理论估算做判断。
 
 [待验证: 16KB 页对 GPU 纹理分配的实际影响需在具体设备上用 memtrack/gralloc 统计数据确认]
 
@@ -198,7 +198,7 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 ## 何时提升性能，何时反而劣化
 
-高爷通过一个完整的实验（使用 gfxinfo 统计数据）对比了六种场景下的性能表现，数据非常清晰地展示了 Hardware Layer 的正反两面。
+高爷通过一个完整的实验（使用 gfxinfo 统计数据）对比了六种场景下的性能表现，数据展示了 Hardware Layer 的正反两面。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 
@@ -230,7 +230,7 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 ### 规律总结
 
-把两组实验数据放在一起，规律非常清晰：
+两组实验数据放在一起，规律是：
 
 **不修改内容时**：Hardware Layer ≥ Software Layer > No Layer
 
@@ -296,7 +296,7 @@ Jetpack Compose 没有直接暴露 `setLayerType`，对应概念是 `Modifier.gr
 这里需要分清两个概念：
 
 - **draw layer**：把一组绘制指令隔离出来，便于单独做 translation、scale、rotation、alpha、shadow 等变换
-- **offscreen compositing**：真的分配一块离屏 texture/bitmap，把输出先画进去，再把这块 buffer 合成回目标 surface
+- **offscreen compositing**：实际分配一块离屏 texture/bitmap，把输出先画进去，再把这块 buffer 合成回目标 surface
 
 `graphicsLayer` 默认只是给出 draw layer 语义，不等于“每次都会创建离屏缓存”。Compose 文档对 `CompositingStrategy` 的描述比较清楚：
 

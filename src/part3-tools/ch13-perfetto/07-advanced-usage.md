@@ -27,8 +27,8 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -41,9 +41,9 @@ last_task2b_at: "2026-05-07T15:44:35+08:00"
 task2b_result: fixed
 last_task9_at: "2026-05-07T15:27:55+08:00"
 task9_review_notes: "2026-05-07 Task9 15:27：needs-rework。P0 1 / P1 1 / P2 1。Top: L471-L474 android.startup.startups 查询"
-last_task6_at: "2026-05-07T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-14-review.md"
-task6_review_notes: "2026-05-07 Task6 14:05：Task2B 修复后写作复审；修复冷启动示例中遗留的 result 未定义变量 1 处，frontmatter 更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-07T16:08:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-16-review.md"
+task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理结构性元叙述/承接句 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-07-15-deep-review.md"
 ---
 
@@ -382,7 +382,7 @@ BatchTraceProcessor 的适用边界是本机内存能容纳所有待分析 Trace
 
 ### Trace Summarization：结构化指标提取
 
-前面提到 Trace Summarization 是新版 Metric API。它要求先提供 `specs`，再用 `metric_ids` 指定要生成的指标；返回对象是 `TraceSummary`，只包含这次请求到的 summary metric，不是旧版 `TraceMetrics` 的无参替代。
+Trace Summarization 是新版 Metric API。它要求先提供 `specs`，再用 `metric_ids` 指定要生成的指标；返回对象是 `TraceSummary`，只包含这次请求到的 summary metric，不是旧版 `TraceMetrics` 的无参替代。
 
 这组示例直接对应官方文档：
 
@@ -436,7 +436,7 @@ trace_processor_shell summarize --metrics-v2 memory_per_process \
 
 ### 一个实用的自动化示例：冷启动回归检测
 
-把上面的能力组合起来，可以写一个实用的自动化脚本——每次构建后自动抓 Trace、分析冷启动时间、判断是否有回归：
+把 Metric、Python API 和 SQL 查询组合起来，可以写一个实用的自动化脚本——每次构建后自动抓 Trace、分析冷启动时间、判断是否有回归：
 
 ```python
 import subprocess
@@ -511,7 +511,7 @@ def analyze_startup(trace_path, baseline_ms, threshold_pct, target_package):
 
 方案 A 优先使用 `android.startup.startups` Standard Library 模块，由 Perfetto 官方维护，内部已处理进程、launch id 和时间窗口约束。方案 B 的手写 SQL 至少限定了：① 目标进程（`p.name`）② 时间窗口（`s2.ts > s1.ts` 且差值 < 30s）③ 同一 track（同一线程）。`FirstFrame` 是业务自定义 trace point 名称，需按项目实际的 atrace 标记替换；如果改用 FrameTimeline 的 `actual_present_time`，则应走 `android.frames` 模块。
 
-这个脚本的逻辑很简单：抓 Trace → 查 SQL → 对比基线。但它已经构成了 CI/CD 性能检测的核心骨架。下一节会把它接入完整的流水线。
+这个脚本的逻辑很简单：抓 Trace → 查 SQL → 对比基线。但它还需要接入完整流水线，才能在每次提交时自动收集指标并比较基线。
 
 ## 将 Perfetto 集成到 CI/CD
 
@@ -756,7 +756,7 @@ void RecordRenderPass(const char* name, int64_t gpu_ns) {
 }
 ```
 
-上面是一个可编译的最小骨架，完整项目还需要：proto 文件经 protoc 生成 C++ 头文件并加入构建；`set_render_pass_info()` 依赖 TracePacket proto 扩展注册。Trace Processor 侧查询自定义 packet 需要 `SELECT * FROM raw` 或注册对应的 proto 解析逻辑。
+这个骨架只覆盖最小可编译路径，完整项目还需要：proto 文件经 protoc 生成 C++ 头文件并加入构建；`set_render_pass_info()` 依赖 TracePacket proto 扩展注册。Trace Processor 侧查询自定义 packet 需要 `SELECT * FROM raw` 或注册对应的 proto 解析逻辑。
 
 对于大多数 App 级打点需求，TrackEvent 已经够用。Custom Data Source 主要面向引擎开发者、系统服务作者、以及需要把 Trace 当结构化数据通道的进阶场景。
 

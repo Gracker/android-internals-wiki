@@ -110,6 +110,20 @@
         }
       ],
       "review_log": "logs/review/2026-05-07-15-review.md"
+    },
+    {
+      "timestamp": "2026-05-07T16:08:00+08:00",
+      "sections": [
+        "2.7",
+        "13.7"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 8,
+      "rework_count": 0,
+      "skipped": [],
+      "review_log": "logs/review/2026-05-07-16-review.md"
     }
   ]
 }
