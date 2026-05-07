@@ -14221,6 +14221,82 @@
       "status": "completed",
       "completed_at": "2026-05-07T22:42:00+08:00",
       "completed_reason": "P0 postVisualStateCallback requestId语义已修正：从loadUrl请求标识改为调用方自定义标识；callback语义从该请求视觉状态改为当前DOM更新在draw中可见"
+    },
+    {
+      "section": "10.2",
+      "section_title": "内存泄漏",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 10.2 内存泄漏 技术复审仍有 P0/P1 问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L235-L239 ASan / HWASan",
+          "detail": "[P0] 正文写 ASan / HWASan “不仅能检测泄漏”且 ASan 支持 Android 8.0+。Android NDK ASan 文档明确为 API 27（Android 8.1/O MR1）开始支持，检测项是栈/堆越界、heap use-after-free、stack use-after-scope、double/wild free；HWASan 主要检测 tag-mismatch 类内存安全错误。二者不能作为 Native malloc 泄漏的一线检测器。",
+          "suggestion": "把 ASan / HWASan 从“泄漏检测”段改成“Native 内存安全错误检测”。版本写成 ASan API 27+，HWASan Android 10+/arm64/硬件与系统镜像支持；Native 泄漏仍以 heapprofd、malloc debug、libmemunreachable 或明确可用的 LSan/工具链能力为主。"
+        },
+        {
+          "type": "数据准确性/诊断方法",
+          "location": "L271-L274 dumpsys meminfo Activities / Views",
+          "detail": "[P1] 正文把 `Activities` 数量大于当前可见 Activity（通常 1）直接作为泄漏信号。`dumpsys meminfo` 的 Activities 会包含进程内仍处于 back stack、stopped、multi-window/多 Activity 场景中的合法实例；只和“当前屏幕可见数”比较会产生大量误报。",
+          "suggestion": "改成受控复现口径：完成目标页面关闭/finish 后，等待一次 GC 与主线程空闲，再观察 Activities/Views 是否随重复进出单调增长；需要结合 LeakCanary 或 Heap Dump 的 GC Root path 才能确认泄漏。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T00:28:41+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "19.13",
+      "section_title": "androidx.tracing（Tracing SDK）",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 19.13 androidx.tracing（Tracing SDK） 技术复审仍有 P1 问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码准确性",
+          "location": "L231-L240 线上和线下的边界版本表",
+          "detail": "[P1] 表格把 API 18-23 写成 non-debuggable 进程无法使用自定义 slice，并把跨线程 async trace 能力放到 API 29 才出现。AndroidX Tracing 1.3.0 源码/文档显示：API 18-28 的 non-debuggable 进程可通过 `Trace.forceEnableAppTracing()` 启用；`androidx.tracing.Trace.beginAsyncSection()` 从 1.0.0 起提供，API <29 走 reflection fallback，API 29+ 才是平台公开 `android.os.Trace.beginAsyncSection()`。",
+          "suggestion": "把表格拆成“平台公开 API 边界”和“AndroidX compat 行为”两列：API 18-28 非 debuggable 需启动早期调用 `forceEnableAppTracing()`；API 29/30 可用 profileable 或 forceEnable；API 31+ 默认启用但受 profileable manifest 限制；async trace 在 AndroidX 下需注明 pre-29 fallback 与 ROM 验证边界。"
+        },
+        {
+          "type": "原理断裂/异常闭环",
+          "location": "L306-L326 协程 async trace 示例",
+          "detail": "[P1] 示例在 `viewModelScope.launch {}` 之前调用 `Trace.beginAsyncSection()`，再依赖协程体内 `finally` 关闭。如果 scope 已取消或 launch 后 block 没有实际开始执行，`finally` 不会运行，async span 会遗留，仍未覆盖协程取消/未启动路径。",
+          "suggestion": "把 begin/end 放进协程实际执行区间，或用 `val job = viewModelScope.launch { ... }` 后配合 `invokeOnCompletion` 和原子标记确保 end 只执行一次；示例应显式覆盖 scope canceled、launch 未启动、withContext 取消三条路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T00:28:41+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "19.26",
+      "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 19.26 混合栈与跨平台 APM (WebView / Flutter) 技术复审仍有 P1 问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-08-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "知识盲区/时钟归一",
+          "location": "L218-L241 Flutter FrameTiming 示例；L245-L260 Session Timeline",
+          "detail": "[P1] Flutter 段只上报 `buildDuration` / `rasterDuration` / `totalSpan`，但 Session Timeline 要求事件落到 `elapsed_realtime_ms`。`FrameTiming.timestampInMicroseconds(FramePhase)` 返回的是 Flutter 内部同一 epoch 下的 raw timestamp，官方说明不保证等于 `DateTime` epoch；正文没有给 Flutter 时间戳到 Native `elapsedRealtime` 的校准方法，无法把 UI/Raster jank 与 Native ANR、网络、WebView 事件放到同一时间轴。",
+          "suggestion": "补充 Flutter 帧时间戳字段（frameNumber、vsyncStart/buildStart/rasterStart/rasterFinish 的 raw timestamp）和一次 Dart/Native 校准事件；如果只用 MethodChannel 接收时刻近似，要标注批量回调延迟与误差范围。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T00:28:41+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
