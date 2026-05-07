@@ -14432,10 +14432,12 @@
     {
       "section": "5.5",
       "section_title": "Thermal 管控",
-      "priority": 90,
-      "reason": "[review回炉] AIW 16KB thermal 残留段落仍为确定性结论，与已降级研究假设口径冲突",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 5.5 AIW 16KB thermal 残留段存在不存在源码/API 与无证据版本断言，需回炉删除或降级",
       "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
+        "intake/suggestions.md（含 review 意见）",
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-08-05-deep-review.md"
       ],
       "review_issues": [
         {
@@ -14443,6 +14445,18 @@
           "location": "AIW-源码调研-2026-05-07 / 16KB page size 对 thermal throttling 的延迟影响",
           "detail": "残留段落仍把 16KB page size 对 thermal throttling 的收益写成确定性结论，并包含 `thermal_monitor_notify()`、Android 16/17 thermal 管理等未在本节证据中补齐来源的断言；与前文已降级为研究假设的口径冲突。",
           "suggestion": "由 Task2B/Task9 按同设备 4KB/16KB A/B trace、AOSP 路径和官方文档复核；证据不足则删除该 AIW 段落或整体降级为研究假设。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L689-L694 AIW 源码调研 / Thermal 监控反馈机制",
+          "detail": "[P0] 残留段写 `bionic/linker/linker.cpp` 存在 `update_libcache_stats()`，并通过 `thermal_monitor_notify()` 把 16KB page size 的效率变化反馈给 thermal 监控系统。复核 AOSP bionic main：`linker.cpp` 与 `linker_phdr.cpp` 均无 `thermal_monitor_notify()` / `update_libcache_stats()`；`linker_phdr.cpp` 只存在 16KB app compat 段映射逻辑，不能推出 thermal 反馈链。",
+          "suggestion": "删除“Thermal 监控反馈机制”小节及 `thermal_monitor_notify()` / `update_libcache_stats()`；16KB 与 thermal 的关系只保留前文研究假设，交给 research-gaps 的 A/B trace 验证。"
+        },
+        {
+          "type": "数据缺失/版本差异",
+          "location": "L665-L717 16KB page size 对 thermal throttling 的延迟影响",
+          "detail": "[P1] 残留段仍把 16KB page size 能延迟 thermal throttling、MMU 功耗降低约 4.5%、可延迟 2-3 个 thermal 周期、Android 16/17 引入 16KB thermal 管理/预测写成确定性结论；没有同设备 4KB/16KB A/B trace、power rail、thermal zone、CPU/GPU freq 或官方 Android 16/17 文档支撑。",
+          "suggestion": "删除该 AIW 残留段，或整体改写为“待验证研究假设”；若保留任何数字，必须补设备、SoC、ROM、页大小、环境温度、负载脚本、采样窗口与原始 trace/log。"
         }
       ],
       "added_by": "task6-review",
