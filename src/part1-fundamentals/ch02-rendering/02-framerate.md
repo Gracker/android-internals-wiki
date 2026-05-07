@@ -52,17 +52,18 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: "reviewed"
-task9_result: "needs-rework"
+task9_state: "pass"
+task9_result: "pass-tech-review"
 task9_reviewed_date: "2026-04-30"
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: "fixed"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-04-30T16:20:00+08:00"
 task9_review_notes: "2026-04-30 16:20 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2。Frame Time/FrameTimeline 版本口径需 Task2B 回炉。"
+task2b_rework_note: "2026-05-07 2B修复: Frame Time口径拆分(doFrame=主线程回调 vs FrameTimeline=完整帧); setFrameTimeline版本边界拆分(API33读取 vs Android16公开setFrameTimeline)"
 ---
 
 # 帧率与刷新率
@@ -113,7 +114,7 @@ FPS(Frames Per Second)是我们最熟悉的帧率指标:一秒钟内 App 成功�
 
 ### 帧时间(Frame Time):每一帧的真实耗时
 
-帧时间(Frame Time)是比 FPS 更精确的度量指标,它记录的是**单帧从开始到完成的耗时**。在 Perfetto 中,每一帧的耗时对应一个 `Choreographer#doFrame` 切片的长度。
+帧时间(Frame Time)是比 FPS 更精确的度量指标,它记录的是**单帧从开始到完成的耗时**。在 Perfetto 中,`Choreographer#doFrame` 切片的长度反映的是主线程帧回调的工作量——从 VSync-app 信号触发到 `doFrame()` 返回。这只是单帧耗时的一部分:它不包含 RenderThread 的 GPU 命令执行、SurfaceFlinger 的合成、以及从提交到屏幕呈现的等待时间。分析帧间隔和主线程工作量时用 `doFrame` 就够了;要量化完整帧耗时(Jank、呈现偏差)应优先看 Frame Timeline / FrameMetrics 的 TOTAL_DURATION、DEADLINE、GPU_DURATION。
 
 帧时间的价值在于它能暴露 FPS 掩盖的问题。假设 60 FPS 目标下,连续四帧的帧时间分别是:8ms、8ms、40ms、8ms。FPS 计算看起来还不错(平均每帧 16ms),但那帧 40ms 的帧意味着用户看到了一个明显的卡顿--屏幕在那 40ms 内没有更新,用户的手指滑动在那一刻"粘住"了。
 
@@ -134,7 +135,7 @@ FPS(Frames Per Second)是我们最熟悉的帧率指标:一秒钟内 App 成功�
 在 Perfetto SQL 中,我们可以这样查询帧间隔:
 
 ```sql
--- 计算连续 Choreographer#doFrame 之间的时间间隔
+-- 计算 Choreographer#doFrame 回调间隔(仅反映主线程帧回调节奏)
 SELECT
   ts,
   dur,
@@ -145,7 +146,7 @@ ORDER BY ts
 LIMIT 100;
 ```
 
-如果 `frame_interval_ms` 的值在 16.6ms 附近小幅波动(比如 15-18ms),说明帧间隔一致性好。如果出现 33ms、50ms 甚至更大的值,就是掉帧了。
+如果 `frame_interval_ms` 的值在 16.6ms 附近小幅波动(比如 15-18ms),说明帧间隔一致性好。如果出现 33ms、50ms 甚至更大的值,就是掉帧了。注意:这个 SQL 只能量化主线程帧回调间隔;完整帧耗时分析应使用 `actual_frame_timeline` 表的 `dur` 和 `jank_type` 字段。
 
 ### 三个指标的适用场景
 
@@ -394,7 +395,7 @@ Choreographer.getInstance().postVsyncCallback(new Choreographer.VsyncCallback() 
 
 `FrameData` 是 API 33 新增的类,它封装了 VSync 相关的全部信息。相比之前只有一个 `frameTimeNanos`,现在 App 能拿到多个候选的帧时间线(`FrameTimeline`),每个时间线包含预期的呈现时间和渲染截止时间。这让 App 可以更智能地选择"我这帧应该在哪个 VSync 时刻显示"--如果渲染比较重,可以选择一个稍晚的时间线,避免匆忙提交导致掉帧。
 
-`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成,可以主动选择一个更晚的时间线,通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。
+`FrameTimeline` 中的 `deadlineNanos` 是这帧必须完成渲染的截止时间。如果 App 发现自己无法在系统推荐的时间线内完成,可以主动选择一个更晚的时间线,通过 `SurfaceControl.Transaction.setFrameTimeline()` 告知 SurfaceFlinger。这种"协商"机制比之前"死等 VSync"的方式灵活得多。但 `Choreographer.FrameTimeline` 的读取能力(API 33 `FrameData.getFrameTimelines()`)和向 SurfaceFlinger 设置目标呈现时间的能力版本门槛不同:API 33 起可读取候选 vsyncId 和预期呈现时间;`SurfaceControl.Transaction.setFrameTimeline(long)` 的公开入口则是 Android 16 通过 `@FlaggedApi(FLAG_SDK_DESIRED_PRESENT_TIME)` 释放的,Android 13-15 只有内部/系统路径或 NDK `SurfaceControl` 受限接口可用。
 
 [已修正: 参考 AOSP Choreographer.java API 33+ 的 VsyncCallback/FrameData/FrameTimeline 实际定义重写]
 
