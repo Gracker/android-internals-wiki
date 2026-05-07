@@ -7,9 +7,9 @@ drafted_date: "2026-03-31"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & 16 KB page size docs / kernel zram docs"
-reviewed_date: "2026-04-21"
+reviewed_date: "2026-05-07"
 reviewed_by: "openclaw-task6"
-review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack 物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in swap/total swap）"
+review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack 物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in swap/total swap）；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9"
 task6_result: pass-light-edit
 confidence: medium
 polish_count: 1
@@ -42,8 +42,8 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -97,9 +97,9 @@ Android 的内存体系可以分成三层来看：物理内存、内核管理、
 
 ### 物理内存：一切的基础
 
-手机上的 RAM 就是我们说的物理内存。一台 8GB 内存的设备，真正能用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
+手机上的 RAM 就是我们说的物理内存。一台 8GB 内存的设备，实际可用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
 
-开启 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，加上对齐损耗，全系统 PSS 增量约为 5%。这是安全硬件的固定开销，在做内存基线对比时需要先扣除这一部分。
+开启 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，再加上粒度开销，全系统 PSS 增量约为 5%。这是安全硬件的固定开销，在做内存基线对比时需要先扣除这一部分。
 
 和桌面系统不同，Android 设备通常没有磁盘级别的 Swap 空间。它使用的是 ZRAM——在内存中划出一块区域做压缩交换。这样做的好处是避免了闪存的写入磨损和 IO 延迟，代价是消耗 CPU 来做压缩和解压。当内存紧张时，内核通过 `kswapd` 线程把不太活跃的内存页压缩到 ZRAM 中，腾出物理内存。
 
@@ -147,7 +147,7 @@ Android 17（API 37）引入了 MemoryLimiter 硬限额机制。当应用 PSS �
 
 VSS 是进程的整个虚拟地址空间大小，包括已经分配但尚未使用的部分、通过 `mmap` 映射但未实际访问的文件、以及各种预留区域。
 
-**VSS 的值通常远大于进程实际使用的物理内存。** 一个典型 Android App 的 VSS 可能达到数 GB，但这不代表它真的用了那么多内存——虚拟地址只是"我可能要用这么多"，真正用了多少要看 RSS/PSS。
+**VSS 的值通常远大于进程实际使用的物理内存。** 一个典型 Android App 的 VSS 可能达到数 GB，但这不代表它已经用了那么多内存——虚拟地址只是"我可能要用这么多"，实际用了多少要看 RSS/PSS。
 
 所以在实际的内存分析中，**VSS 几乎没有参考价值。** 它只是反映进程的地址空间有多大，不能用来判断内存压力。
 
@@ -155,7 +155,7 @@ VSS 是进程的整个虚拟地址空间大小，包括已经分配但尚未使�
 
 RSS 是进程当前占用的物理内存总量，包括私有页面和共享页面。
 
-RSS 比 VSS 有用得多，因为它反映的是"实实在在占用了多少物理内存"。但 RSS 有一个致命的问题：**共享内存被重复计算了。** 如果系统框架的代码被 50 个进程共享，RSS 会把这份数据在每个进程里都完整算一次，导致所有进程的 RSS 加起来远大于实际物理内存总量。
+RSS 比 VSS 有用得多，因为它反映的是"实实在在占用了多少物理内存"。但 RSS 有一个明显的问题：**共享内存被重复计算了。** 如果系统框架的代码被 50 个进程共享，RSS 会把这份数据在每个进程里都完整算一次，导致所有进程的 RSS 加起来远大于实际物理内存总量。
 
 因此，RSS 适合观察**单个进程**的内存变化趋势，不适合评估**系统整体**的内存消耗。
 
@@ -193,7 +193,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
 
 理解了 PSS/RSS/USS 之后，我们来看这些数字背后的具体组成。运行 `adb shell dumpsys meminfo <package>` 会看到类似这样的输出：
 
-```
+```text
 ** MEMINFO in pid 12345 [com.example.myapp] **
                    Pss     Private  Private  Swapped
                  Total    Dirty     Clean    Dirty    Heap     Heap     Heap
@@ -224,7 +224,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
 
 ### Java Heap（Dalvik Heap）
 
-Java Heap 是所有 Java/Kotlin 对象的栖息地。写 `val list = mutableListOf<String>()` 时，这个 list 对象和它里面的元素就分配在 Java Heap 上。ART 虚拟机通过垃圾回收（GC）来管理这片区域——不再被引用的对象会被自动回收。
+Java Heap 存放 Java/Kotlin 对象。写 `val list = mutableListOf<String>()` 时，这个 list 对象和它里面的元素就分配在 Java Heap 上。ART 虚拟机通过垃圾回收（GC）来管理这片区域——不再被引用的对象会被自动回收。
 
 Java Heap 有一个硬性上限，这个上限因设备的总内存大小和 Android 版本而异。通过 `ActivityManager.getMemoryClass()` 可以查到常规上限（通常 128-256MB），通过 `getLargeMemoryClass()` 查到 `largeHeap` 模式下的上限。如果 App 的 Java Heap 分配量超过上限，就会抛出 `OutOfMemoryError`。
 
@@ -287,7 +287,7 @@ Android 的内存分析工具（`dumpsys meminfo`、Perfetto、Android Studio Pr
 
 `adb shell cat /proc/meminfo` 输出的关键字段：
 
-```
+```text
 MemTotal:        5789412 kB    // 物理内存总量
 MemFree:          123456 kB    // 完全空闲的内存（通常很少）
 MemAvailable:    1234567 kB    // 可用内存（包含可回收的缓存）
@@ -313,7 +313,7 @@ Inactive:        1234567 kB    // 较久未使用的内存（更容易被回收�
 
 `adb shell cat /proc/<pid>/status` 中与内存相关的关键字段：
 
-```
+```text
 VmSize:    4823456 kB    // 虚拟地址空间大小（≈ VSS）
 VmRSS:      123456 kB    // 常驻物理内存（≈ RSS）
 VmData:      56789 kB    // 私有数据段
@@ -326,9 +326,9 @@ VmLib:       45678 kB    // 共享库映射
 
 ### /proc/<pid>/smaps：最详尽的内存映射
 
-`/proc/<pid>/smaps` 是 Android 内存分析的终极武器。它列出了进程中每一个内存映射区域的详细信息，包括地址范围、权限、PSS/RSS/USS 等分项数据。
+`/proc/<pid>/smaps` 是 Android 内存分析中最细的进程映射视图。它列出了进程中每一个内存映射区域的详细信息，包括地址范围、权限、PSS/RSS/USS 等分项数据。
 
-```
+```text
 7a3b400000-7a3b800000 rw-p 00000000 00:00 0       [anon:dalvik-LinearAlloc]
 Size:           4096 kB         // 映射的虚拟大小
 KernelPageSize:     4 kB
@@ -394,7 +394,7 @@ adb shell dumpsys meminfo com.example.app
 
 **App Summary 段**——这是最快能看懂的部分：
 
-```
+```text
                    Pss(KB)
   Java Heap:      15234
   Native Heap:     8488
@@ -415,7 +415,7 @@ adb shell dumpsys meminfo com.example.app
 
 **Objects 段**——展示 App 中各种对象的数量：
 
-```
+```text
 Objects
          View:        256        Activity:          4
       AppContext:         12       ContextImpl:         12
@@ -490,7 +490,7 @@ ZRAM 大小、压缩算法和 swappiness 都是 OEM case-by-case 配置，没有
 
 全局 `dumpsys meminfo` 的输出中有 ZRAM 相关行：
 
-```
+```text
 ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 ```
 
@@ -525,9 +525,9 @@ ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 
 ## 常见问题与误区
 
-### 误区一："PSS 就是 App 真正占用的内存"
+### 误区一："PSS 就是 App 占用的全部内存"
 
-PSS 确实是最接近"App 对系统的内存压力"的指标，但它包含了按比例分摊的共享库内存。如果要评估"杀掉这个进程能释放多少内存"，应该看 USS（Private Dirty + Private Clean），而不是 PSS。
+PSS 接近"App 对系统的内存压力"这个口径，但它包含了按比例分摊的共享库内存。如果要评估"杀掉这个进程能释放多少内存"，应该看 USS（Private Dirty + Private Clean），而不是 PSS。
 
 ### 误区二："Java Heap 超过限制就 OOM"
 

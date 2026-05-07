@@ -42,12 +42,12 @@
       "path": "https://developer.android.com/jetpack/androidx/releases/tracing"
     }
   ],
-  "pipeline_stage": "task6_pending",
-  "task6_state": "revisiting",
-  "task9_state": "reviewed",
+  "pipeline_stage": "task9_pending",
+  "task6_state": "reviewed",
+  "task9_state": "pending",
   "task2b_state": "fixed",
   "reviewed_by": "openclaw-task6",
-  "reviewed_date": "2026-05-01",
+  "reviewed_date": "2026-05-07",
   "task6_result": "pass-light-edit",
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-04-27",
@@ -58,7 +58,7 @@
   "repaired_date": "2026-04-25",
   "repaired_by": "openclaw-task2b",
   "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1",
-  "task6_review_notes": "2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion."
+  "task6_review_notes": "2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion. | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由 Task9 复审。"
 }
 ---
 
@@ -105,7 +105,7 @@
 
 ## Tracing SDK 给代码区间命名
 
-`androidx.tracing` 是 AndroidX 对平台 tracing API 的封装。它的作用很简单：让应用在代码里标记某段工作，之后在 Perfetto 或 Systrace 里看到对应 slice。
+`androidx.tracing` 是 AndroidX 对平台 tracing API 的封装。它只做一件事：让应用在代码里标记某段工作，之后在 Perfetto 或 Systrace 里看到对应 slice。
 
 它不采集性能指标，也不自动分析慢在哪里。它只负责把“这段时间应用在做什么”写进 trace。对性能分析来说，这个能力很有用，因为系统 trace 里最缺的往往是业务语义。
 
@@ -124,7 +124,7 @@
 
 ## 基本用法
 
-下面这段代码展示 Kotlin 扩展函数的写法，重点是把业务区间命名清楚。
+Kotlin 扩展函数适合标记一个同步业务区间，重点是把区间名称写稳定。
 
 ```kotlin
 import androidx.tracing.trace
@@ -137,7 +137,7 @@ fun renderHomeFeed(items: List<FeedItem>) {
 }
 ```
 
-Java 侧没有 `trace {}` 的语法保护，`beginSection()` / `endSection()` 要用 `try-finally` 配对。下面的示例重点看 `finally`：无论 diff 计算是否抛异常，当前线程上的 trace 栈都会被关闭。
+Java 侧没有 `trace {}` 的语法保护，`beginSection()` / `endSection()` 要用 `try-finally` 配对。示例里要重点检查 `finally`：无论 diff 计算是否抛异常，当前线程上的 trace 栈都会被关闭。
 
 ```java
 import androidx.tracing.Trace;
@@ -282,7 +282,7 @@ trace("Home#loadFirstFeed") {
 
 协程里也有同样边界，且更容易写错。不要把包含 `delay()`、`withContext()` 或其他挂起点的 `suspend` 块直接包进同步 `trace {}`。挂起后线程会去跑别的任务，但这个同步 slice 还没结束，Perfetto 里会留下很长的错误区间。未引入 AndroidX Tracing 2.0.0 alpha 的 coroutine tracing API 前，包含挂起点的业务跨度用 async trace 显式配对；线程内真实工作仍用同步 slice。
 
-下面是一段会在 Perfetto 里产生"视图污染"的错误写法，以及对应的修正方案：
+这类写法会在 Perfetto 里产生"视图污染"，可以改成按线程和异步跨度分层标记：
 
 **❌ 错误：同步 `trace {}` 包裹含挂起点的协程块**
 
@@ -294,7 +294,7 @@ trace("Home#loadData") {
 }
 ```
 
-Perfetto 中这条 slice 会从调用开始一直延伸到协程恢复后执行完毕。挂起期间主线程去跑了其他任务（measure、draw、input handling），但这些工作全部被包在 `Home#loadData` 这条 slice 内。读 trace 的人会误以为"加载耗时 200ms"，实际上网络请求只占 50ms，剩下的 150ms 是主线程在挂起期间执行的无关工作。
+Perfetto 中这条 slice 会从调用开始一直延伸到协程恢复后执行完毕。挂起期间主线程去跑了其他任务（measure、draw、input handling），但这些工作全部被包在 `Home#loadData` 这条 slice 内。读 trace 的人会误以为"加载耗时 200ms"，网络请求只占 50ms，剩下的 150ms 是主线程在挂起期间执行的无关工作。
 
 **✅ 修正：每个线程的同步工作单独标记，跨线程逻辑用 async trace 配对**
 
@@ -359,7 +359,7 @@ fun loadFirstFeed() {
 
 `androidx.tracing` 本身不上传数据，但 trace 名称应该和线上 APM 的事件名保持一致。比如线上启动事件叫 `startup.first_draw`，Perfetto slice 可以叫 `Startup#firstDraw`。这样线上指标、日志和线下 trace 能互相对应。
 
-JankStats 的 `PerformanceMetricsState` 也要使用同一套阶段命名。下面的代码把线上 jank 状态和线下 trace slice 放进同一张阶段表：线上样本看 `screen=Home` 与 `phase=feed_render`，Perfetto 里读 `Home#feedRender`。
+JankStats 的 `PerformanceMetricsState` 也要使用同一套阶段命名。这段代码把线上 jank 状态和线下 trace slice 放进同一张阶段表：线上样本看 `screen=Home` 与 `phase=feed_render`，Perfetto 里读 `Home#feedRender`。
 
 ```kotlin
 val holder = PerformanceMetricsState.getHolderForHierarchy(rootView)
