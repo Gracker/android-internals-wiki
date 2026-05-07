@@ -14488,6 +14488,27 @@
       "added_at": "2026-05-08T06:05:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-05-08-06-review.md"
+    },
+    {
+      "section": "7.1",
+      "section_title": "卡顿的定义与分类",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 7.1 Binder Transaction Trace 新增块把 Binder 阻塞与 FrameTimeline JankType 一一映射，缺少 deadline/BufferQueue 因果条件，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-06-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L425-L428 Binder 与 JankType 对应关系",
+          "detail": "[P1] 新增块把“客户端 binder transaction 超时→AppDeadlineMissed”“服务端处理慢→SurfaceFlingerCpuDeadlineMissed”“binder 调用频率过高→BufferStuffing”写成直接对应。FrameTimeline 的 AppDeadlineMissed 需要证明 App frame 的 actualQueue/acquire fence 超过 expected deadline；SurfaceFlingerCpuDeadlineMissed 只指 SF/HWC CPU deadline miss；BufferStuffing 是前一帧占用当前 expected vsync 导致后续 buffer stuffed，不能由 binder 调用频率直接推出。",
+          "suggestion": "如果保留该块，先把 Binder 阻塞定位为 App 主线程/RenderThread frame critical path 的证据，再说明如何用 android_binder_txns、thread_state、flow 与 FrameTimeline token 佐证 AppDeadlineMissed；SF 与 BufferStuffing 只在能连接到 SF 线程或 BufferQueue 堆积证据时描述。更推荐迁移到 7.3。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T06:28:09+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

@@ -1623,3 +1623,10 @@
 - **问题**：新增 Binder Trace 块仍是资料摘录形态，放在 `## 参考资料` 之后，破坏章节收束；内容未接回本节“卡顿定义与分类”的 FrameTimeline / JankType 主线，更像 7.3 分析方法论素材。
 - **建议**：Task2B 先判断归属；若保留在 7.1，压缩为 1-2 段并接到 AppDeadlineMissed / 响应慢边界；更推荐迁移到 7.3，改写为“Binder 阻塞如何佐证 AppDeadlineMissed/响应慢”的实操段。
 - **review 日志**：logs/review/2026-05-08-06-review.md
+
+## [Task9 Deep Review] 5.5 Thermal 管控 — 2026-05-08
+- **类型**：技术审计/P2 建议
+- **位置**：L346-L349 Thermal Throttling Trace 现象
+- **问题**：[P2] 正文把“SurfaceFlinger 的 VSYNC-app 和 VSYNC-sf 间距变大”写成温控导致的 trace 特征。VSYNC-app / VSYNC-sf 是调度 phase / 唤醒时序，不会仅因为 App 或 SurfaceFlinger 工作变慢就自动拉大；温控导致的直接证据应是 CPU/GPU 频率上限被压低、thermal zone / trip 事件、FrameTimeline Actual 超出 Expected deadline。
+- **建议**：把该 bullet 改成“App / SurfaceFlinger Actual Timeline 越过 expected deadline；JankType 转为 AppDeadlineMissed / SurfaceFlinger*DeadlineMissed；同时 CPU freq 在高负载下受 thermal cap 下探”，不要把 phase offset 写成因果证据。
+- **review 日志**：logs/deep-review/2026-05-08-06-deep-review.md

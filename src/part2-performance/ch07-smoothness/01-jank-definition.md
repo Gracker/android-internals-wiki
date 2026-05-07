@@ -41,7 +41,7 @@ related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: "needs-rework"
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
@@ -50,13 +50,14 @@ repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
 review_round: 7
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-01"
-last_task9_at: "2026-05-01T01:27:22+08:00"
-task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 2（JankType 版本边界、未验证枚举）/ P2 5"
+task9_reviewed_date: "2026-05-08"
+last_task9_at: "2026-05-08T06:28:09+08:00"
+task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 2（JankType 版本边界、未验证枚举）/ P2 5 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-06-review.md"
-review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。"
+last_task9_review_log: "logs/deep-review/2026-05-08-06-deep-review.md"
+review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。"
 ---
 
 # 卡顿的定义与分类
