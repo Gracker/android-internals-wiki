@@ -38,14 +38,14 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-05-01T01:04:51.286646+08:00'
+last_task2b_at: '2026-05-08T05:42:56+08:00'
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
 review_round: 6
@@ -136,7 +136,7 @@ VSync 是渲染管线的基本时钟，每一帧必须在分配给自己的 VSyn
 
 举个极端的例子:一秒内渲染了 50 帧。如果这 50 帧是均匀分布的(每 20ms 一帧),用户看到的是稳定的 50fps 体验,虽然不是最流畅,但不会觉得"卡"。但如果前 200ms 只渲染了 1 帧,后 800ms 突然渲染了 49 帧,FPS 同样是 50,但用户会感受到明显的卡顿--因为那 200ms 的空白期打破了视觉惯性。
 
-腾讯音乐技术团队在分析里特别强调过这一点:**帧率不能直接代表是否卡顿**。Google 之所以把重点放在"每一帧是否按时到达",而不是"平均帧率是多少",原因就在这里。用户真正感知到的,是节奏稳定不稳定,而不是统计意义上的总产量。
+腾讯音乐技术团队在分析里特别强调过这一点:**帧率不能直接代表是否卡顿**。Google 之所以把重点放在"每一帧是否按时到达",而不是"平均帧率是多少",原因就在这里。用户感知到的,是节奏稳定不稳定,而不是统计意义上的总产量。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md]
 
@@ -174,7 +174,7 @@ Trace 里先点 App 的 `Actual Timeline` slice,再顺 token 回到 `Choreograph
 
 ### PredictionError
 
-`PredictionError` 不是 App 或 SurfaceFlinger 真正"干慢了",而是 scheduler 对 hardware vsync 的预测漂移了。Perfetto 文档里的例子是:系统预计 20ms present,实际硬件 vsync 到了 23ms,预测自己偏了 3ms。scheduler 会周期性修正,所以这类 jank 往往成片出现后又自己收敛。
+`PredictionError` 不是 App 或 SurfaceFlinger "干慢了",而是 scheduler 对 hardware vsync 的预测漂移了。Perfetto 文档里的例子是:系统预计 20ms present,实际硬件 vsync 到了 23ms,预测自己偏了 3ms。scheduler 会周期性修正,所以这类 jank 往往成片出现后又自己收敛。
 
 碰到 `PredictionError`,先看 `Present Type` 和 `Valid Prediction`,判断是不是调度预测漂移,不要直接把责任记到 App 线程上。
 
@@ -184,25 +184,21 @@ Trace 里先点 App 的 `Actual Timeline` slice,再顺 token 回到 `Choreograph
 
 这类问题先看 FrameTimeline 的 `Jank Type` 和 high latency state,再用 BufferQueue 轨道、dequeue blocking、SurfaceFlinger 侧 flow event 做佐证。不要把 `queued > 1` 这类经验信号写成唯一判据。
 
-### [自动发现] Android 15/16 新增 JankType
+### 扩展 JankType：Android 12+ 已有与较新 tag 补充
 
-AOSP `frameworks/native/libs/gui/include/gui/JankInfo.h` 在 android-15.0.0\_r1 和 android-16-release 中新增了以下 JankType,用于更精细的归因:
+AOSP `frameworks/native/libs/gui/include/gui/JankInfo.h` 中定义了除 `None` / `DisplayHAL` / `SurfaceFlingerCpuDeadlineMissed` / `SurfaceFlingerGpuDeadlineMissed` / `AppDeadlineMissed` / `PredictionError` / `BufferStuffing` 之外的其他 JankType。下表列出 Android 12 (android-12.0.0_r1) 已存在的枚举：
 
 | JankType | 值 | 触发条件 | 排查入口 |
 |----------|------|----------|----------|
 | `SurfaceFlingerScheduling` | 0x20 | SurfaceFlinger 唤醒/调度时机偏差导致 present early/late | 检查 SF 唤醒时序、VsyncModulator 配置、HWC vsync 偏移 |
-| `SurfaceFlingerStuffing` | 0x100 | 上一帧占用了当前 expected vsync 的窗口,把当前帧推向下一个 vsync | 检查 BufferQueue 堆积、前一帧 GPU composition 是否超时 |
 | `Unknown` | 0x80 | 归因条件无法匹配任何已知类型 | 通常伴随其他 JankType 出现,需结合 FrameTimeline details 面板综合判断 |
+| `SurfaceFlingerStuffing` | 0x100 | 上一帧占用了当前 expected vsync 的窗口,把当前帧推向下一个 vsync | 检查 BufferQueue 堆积、前一帧 GPU composition 是否超时 |
 
-[已验证: AOSP android-15.0.0\_r1 / android-16.0.0\_r1, frameworks/native/libs/gui/include/gui/JankInfo.h]
+[已验证: AOSP android-12.0.0_r1 ~ android-16.0.0_r1, frameworks/native/libs/gui/include/gui/JankInfo.h]
 
-这些类型在 Android 15/16 设备上的 Perfetto FrameTimeline 轨道中可能出现。如果分析的目标设备运行 Android 15+,遇到无法用传统 App/SF/Display 归因解释的 jank,检查 details 面板是否包含这些新增类型。
+另外，`Dropped` (值 0x200) 在 Android 14 QPR 及后续 tag (android-15.0.0_r1、android-16.0.0_r1) 的 JankInfo.h 中出现，Android 12/13 的公开 tag 中不一定暴露。在分析 Android 14 以下设备的 FrameTimeline 时，如果看到 `Dropped Frame` 归因，以实际 Perfetto details 面板输出为准。
 
-| `JANK_NON_ANIMATING` | 0x800 | 非动画/非滑动状态下,帧延迟对用户无可见影响 | 与 BufferStuffing 配合判断,区分"堆了但用户感知不到"和"堆了且用户能看到" |
-| `JANK_APP_RESYNCED_JITTER` | 0x1000 | App 在 VSync 重同步过程中产生的抖动 | 检查 VsyncModulator 切换点(Early/Late/Gpu 相位切换),常见于 ARR 刷新率档位切换瞬间 |
-| `JANK_DISPLAY_NOT_ON` | 0x2000 | 屏幕处于关闭状态,帧无法被 present | 通常在 AOD/熄屏场景出现,分析滑动卡顿时可安全忽略 |
-
-> **验证状态**:`JANK_NON_ANIMATING`(0x800)、`JANK_APP_RESYNCED_JITTER`(0x1000)、`JANK_DISPLAY_NOT_ON`(0x2000) 由外部 Review 提供并声称来源于 Android 15/16 JankInfo.h。本轮 Task2B 复核时未在公开 AOSP tag (android-15.0.0_r1 / android-16.0.0_r1) 的 JankInfo.h 中找到这三个常量定义。可能存在于内部分支或后续 QPR 版本。如读者在实际设备 FrameTimeline 中观察到这些类型,欢迎补充验证。
+> **待验证**：外部 Review 提供了 `JANK_NON_ANIMATING`(0x800)、`JANK_APP_RESYNCED_JITTER`(0x1000)、`JANK_DISPLAY_NOT_ON`(0x2000) 三个枚举，声称来源于 Android 15/16 JankInfo.h。复核公开 AOSP tag (android-15.0.0_r1 / android-16.0.0_r1) 的 JankInfo.h 未找到这三个常量定义。可能存在于厂商内部分支或后续 QPR 版本。如读者在实际设备 FrameTimeline 中观察到这些类型，欢迎补充验证。
 
 ### Dropped Frame
 
@@ -350,7 +346,7 @@ JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直
 
 ### 误区 3:「掉帧率必须做到 0%」
 
-工程上真正要清理的是稳定重现的 jank 峰值、Frozen Frame 和高延迟状态,不是盯着一个抽象的 0%。列表高速滑动、复杂动画、启动首帧、高刷设备,容忍区间都不同。把所有场景压成一个全局掉帧率数字,既不利于定位,也不利于版本回归。更实用的做法是按交互路径、刷新率和统计窗口分别设预算。
+工程上要清理的是稳定重现的 jank 峰值、Frozen Frame 和高延迟状态,不是盯着一个抽象的 0%。列表高速滑动、复杂动画、启动首帧、高刷设备,容忍区间都不同。把所有场景压成一个全局掉帧率数字,既不利于定位,也不利于版本回归。更实用的做法是按交互路径、刷新率和统计窗口分别设预算。
 
 ### 误区 4:「120Hz 设备不需要优化,因为帧预算变小了」
 
