@@ -29,12 +29,12 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T18:28:30+08:00"
@@ -42,8 +42,8 @@ task2b_result: fixed
 last_task2b_at: "2026-05-07T17:40:00+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
-review_notes: "2026-05-07 task2b rework: P1 Binder 线程池待验证项已处理完成（Android 16 默认 16 线程，mmap 约 1MB 不变）。"
-task9_review_notes: "2026-05-07 Task9 18:28：needs-rework。P0 2 / P1 1 / P2 1。Top: L93 Android 9+ 启动事务入口仍写 scheduleLaunchActivity；L97 DEFAULT_MAX_BINDER_THREADS 写成 16，android-16.0.0_r1 实际为 15；L222 ViewPager2 不支持公开自定义 LayoutManager 微调 prefetch。"
+review_notes: "2026-05-07 task2b rework R2: P0 Activity 启动路径改为 Android 9+ ClientTransaction 模型（含 8.x 旧路径说明）；P0 Binder 线程池常量改为 15；P1 删除 ViewPager2 自定义 LayoutManager prefetch 建议，补公开 API 限制说明。"
+task9_review_notes: "2026-05-07 Task9 18:28：needs-rework。P0 2 / P1 1 / P2 1。Top: L93 Android 9+ 启动事务入口仍写 scheduleLaunchActivity；L97 DEFAULT_MAX_BINDER_THREADS 写成 16，android-16.0.0_r1 实际为 15；L222 ViewPager2 不支持公开自定义 LayoutManager 微调 prefetch。→ 2026-05-07 Task2B R2 已全部修复。"
 ---
 
 # 其他响应速度场景
@@ -90,11 +90,11 @@ task9_review_notes: "2026-05-07 Task9 18:28：needs-rework。P0 2 / P1 1 / P2 1�
 
 当我们调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这是一条跨进程的 Binder IPC 通信路径：
 
-**调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → 向 **system_server** 发起 Binder 请求。在 Android 10（API 29）及以上版本，调用入口是 `ActivityTaskManager.getService().startActivity()`；Android 8-9（API 26-28）使用的是 `ActivityManager.getService().startActivity()`。ActivityTaskManager 从 Android 10 开始独立出来，专门负责 Activity 生命周期管理，此前这部分逻辑在 ActivityManagerService 中。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送 `scheduleLaunchActivity()`。目标进程的 `ActivityThread.handleLaunchActivity()` 收到消息后，执行 `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。
+**调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → 向 **system_server** 发起 Binder 请求。在 Android 10（API 29）及以上版本，调用入口是 `ActivityTaskManager.getService().startActivity()`；Android 8-9（API 26-28）使用的是 `ActivityManager.getService().startActivity()`。ActivityTaskManager 从 Android 10 开始独立出来，专门负责 Activity 生命周期管理，此前这部分逻辑在 ActivityManagerService 中。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送启动事务。Android 9（API 28）起，入口从旧版 `IApplicationThread.scheduleLaunchActivity()` 改为 `ClientTransaction` 模型：`ApplicationThread.scheduleTransaction(ClientTransaction)`，事务内携带 `LaunchActivityItem` 等生命周期回调项。目标进程的 `TransactionExecutor.execute()` 拆解事务后，经 `ActivityThread.handleLaunchActivity()` → `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。Android 8.x（API 26-27）仍使用 `scheduleLaunchActivity()` 直接传递启动参数。
 
 整个流程涉及的耗时环节包括：
 
-- **Binder IPC 往返**：两次跨进程调用（调用方→system_server→目标进程），每次约 1-5ms，在 system_server 负载高时会显著增加。Android 16 的 `ProcessState.cpp` 默认线程池上限仍为 16（`DEFAULT_MAX_BINDER_THREADS`），与历史版本一致；Binder mmap buffer 也维持约 1MB（`BINDER_VM_SIZE`，减 2 个 page 的 guard）。[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp]
+- **Binder IPC 往返**：两次跨进程调用（调用方→system_server→目标进程），每次约 1-5ms，在 system_server 负载高时会显著增加。Android 16 的 `ProcessState.cpp` 默认线程池上限为 15（`DEFAULT_MAX_BINDER_THREADS`），与历史版本一致；Binder mmap buffer 也维持约 1MB（`BINDER_VM_SIZE`，减 2 个 page 的 guard）。[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp]
 - **Activity 对象创建**：涉及类加载、构造函数、`attach()` 中创建 Window/PhoneWindow 等，通常 5-15ms。
 - **布局膨胀（Layout Inflate）**：这是最大的变量。一个复杂的布局可能需要 30-100ms 甚至更多。[已验证: 官方文档, developer.android.com/topic/performance]
 - **首帧渲染**：从 `onResume()` 完成到 VSync 信号触发 `doFrame()`，再到 RenderThread 完成绘制，通常需要 1-2 个 VSync 周期（16-33ms @60Hz）。
@@ -219,7 +219,7 @@ class MyFragment : Fragment() {
 
 ### ViewPager2 切换的性能优化
 
-**预加载（Prefetch）。** RecyclerView 内置了 prefetch 机制。当用户快速滑动到下一页时，RecyclerView 会在布局过程中预测下一个将要出现的 Item，并提前创建 ViewHolder。ViewPager2 继承了这个能力。我们可以通过 `setOffscreenPageLimit()` 控制预加载范围，也可以通过自定义 `RecyclerView.LayoutManager` 微调 prefetch 策略。
+**预加载（Prefetch）。** RecyclerView 内置了 prefetch 机制。当用户快速滑动到下一页时，RecyclerView 会在布局过程中预测下一个将要出现的 Item，并提前创建 ViewHolder。ViewPager2 继承了这个能力。我们可以通过 `setOffscreenPageLimit()` 控制预加载范围。ViewPager2 内部创建了 `LinearLayoutManagerImpl`（`LinearLayoutManager` 的子类）并通过 `setLayoutManager()` 绑定到内部 `RecyclerView`，公开 API 不提供替换 LayoutManager 的入口，因此无法通过自定义 LayoutManager 微调 prefetch 策略。可用的优化路径是 `setOffscreenPageLimit()` 控制保留范围、`OnPageChangeCallback.onPageSelected()` 中预取数据、简化页面布局、以及 Fragment 生命周期懒加载。
 
 **布局简化。** 每个 Tab 页的 Fragment 布局越简单，切换越快。关键优化手段包括：
 - 用 `ConstraintLayout` 替代多层嵌套的 `LinearLayout` + `RelativeLayout`
