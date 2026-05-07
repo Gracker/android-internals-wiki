@@ -476,5 +476,23 @@
         "19.21"
       ]
     }
+  ],
+  "task2b_rework_log": [
+    {
+      "timestamp": "2026-05-08T01:43:33+08:00",
+      "sections": [
+        "10.2",
+        "19.17"
+      ],
+      "items_processed": 2,
+      "fixes": [
+        "10.2 P0: ASan/HWASan 重新定位为内存安全检测器，ASan版本修正为API 27+",
+        "10.2 P1: dumpsys meminfo Activities/Views 改为受控复现口径",
+        "10.2 P2: ProfilingManager补充限流、不保证执行、redaction约束",
+        "19.17 P0: attribute key上限32->40，补reserved prefix与首字母规则",
+        "19.17 P0: Cronet兜底从FirebasePerfUrlConnection改为HttpMetric manual trace",
+        "19.17 P1: 删除OkHttp EventListener全局槽位无证据断言"
+      ]
+    }
   ]
 }

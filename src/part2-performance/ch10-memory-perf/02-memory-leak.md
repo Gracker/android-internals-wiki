@@ -27,17 +27,17 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task2b_result: fixed
-task2b_state: "pending"
-task6_state: reviewed
+task2b_state: "fixed"
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-08T00:28:41+08:00"
-task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。Top: ASan/HWASan 被误写成泄漏检测工具且 ASan 版本边界错到 API 26。"
-task9_result: "needs-rework"
+task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束"
+task9_result: "pending"
 last_task6_at: "2026-05-07T23:13:13+08:00"
 task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。"
 ---
@@ -232,11 +232,11 @@ adb shell setprop libc.debug.malloc.program com.example.myapp
 
 轻量级 Native 内存泄漏检测器。对 Native 堆执行一次不精确的 mark-and-sweep，未被标记的块报告为可能的泄漏。零开销但精度较低，作为第一步筛查工具。
 
-### ASan / HWASan：编译期内存错误检测
+### ASan / HWASan：编译期 Native 内存安全错误检测
 
-AddressSanitizer 和 Hardware ASan 不仅能检测泄漏，还能检测越界读写、Use-After-Free 等内存安全问题。通过编译器插桩实现，需要重新编译且增加内存占用和运行开销。
+AddressSanitizer（ASan）和 Hardware ASan（HWASan）是编译期插桩的 Native 内存安全错误检测工具，能检测栈/堆越界读写、heap use-after-free、stack use-after-scope、double/wild free 等；HWASan 通过硬件内存标签（memory tagging）检测 tag-mismatch 类错误。二者**不是** Native malloc 泄漏的一线检测器——泄漏排查仍以 heapprofd、malloc debug、libmemunreachable 为主。ASan/HWASan 通过编译器插桩实现，需要重新编译且增加内存占用和运行开销。
 
-[适用版本]：ASan 支持 Android 8.0+，HWASan 需要 Android 10+ 且硬件支持
+[适用版本]：ASan 从 API 27（Android 8.1）开始支持；HWASan 需要 Android 10+、arm64 架构且硬件与系统镜像同时支持
 
 Native 泄漏排查依赖系统工具（heapprofd、Malloc Debug），而 Java 泄漏的主要分析手段是 Heap Dump——拿到进程某一时刻的完整堆快照，然后逐层追踪引用链。LeakCanary 在检测到泄漏后会自动触发 Heap Dump，但当需要在生产环境或手动排查时，我们需要独立完成这个过程。
 
@@ -270,7 +270,7 @@ Shark 可以独立使用，优势在于内存占用低、解析速度快。对�
 
 在 Android Studio Memory Profiler 中，泄漏的典型表现是内存曲线呈阶梯状上升——每次打开一个 Activity 后，内存跳上一个台阶，返回后不回落。如果连续进出同一个页面 5 次，Java Heap 增长了 5 个"台阶"且长时间不降，几乎可以确定该页面存在泄漏。
 
-在命令行中，`dumpsys meminfo <package_name>` 是最快的确认手段。重点关注两个数字：**Views** 和 **Activities**。如果 Activities 数量大于当前屏幕上实际可见的 Activity 数（通常应为 1），说明有 Activity 实例未被释放。同理，Views 数量持续增长也暗示 View 层存在泄漏。
+在命令行中，`dumpsys meminfo <package_name>` 是快速辅助手段。重点关注 **Views** 和 **Activities** 两个数字——但判断逻辑不能简单比较"当前屏幕可见数"。`dumpsys meminfo` 的 Activities 包含 back stack、stopped、multi-window 等合法实例，直接和"屏幕可见数（通常 1）"比较会产生大量误报。正确做法是受控复现：完成目标页面的关闭/finish 操作后，等待一次 GC 与主线程空闲，再观察 Activities 和 Views 是否随重复进出单调增长。确认泄漏仍需结合 LeakCanary 或 Heap Dump 的 GC Root 引用链。
 
 LeakCanary 检测到泄漏后，会在系统通知栏弹出提示，同时在 Logcat 中以 `LeakCanary` tag 输出完整的引用链分析日志。开发阶段建议保持 LeakCanary 开启，每个 leak 都不应被忽略。
 
@@ -292,7 +292,7 @@ Native 泄漏在 Perfetto 中通过 heapprofd 采集的数据来观察。在 Per
 
 ## 版本演进
 
-- **Android 8.0**：ASan 支持在非 root 设备上通过 wrap.sh 使用
+- **Android 8.1（API 27）**：ASan 支持在非 root 设备上通过 wrap.sh 使用
 - **Android 10**：引入 heapprofd，集成在 Perfetto 中
 - **LeakCanary 2.0 (2020)**：从 HAHA 迁移到 Shark，零代码初始化。多进程应用、direct boot、instant app 或严格沙箱模式下自动初始化可能受影响——这些边界场景下 ContentProvider 的初始化时机和 Security Context 与普通单进程应用不同。遇到自动初始化问题时，在 `Application.onCreate()` 中显式调用 `AppWatcher.manualInstall(application)` 即可
 - **Android 17 (API 37)**：分代 CMC 引入独立的 Minor GC，年轻代 WeakReference 入队延迟理论上可缩短，但具体增量效果待验证（[待验证：缺乏官方 benchmark 和 ART reference processing 源码提交；CC collector 在 Android 10+ 已默认 generational，分代 CMC 的增量收益需同设备 A/B trace 对照]）
@@ -328,7 +328,9 @@ Jetpack Compose 引入了新的泄漏场景：
 3. **服务端分析**：Shark 或自研引擎批量分析
 4. **SDK 集成**：腾讯 Matrix、快手 Koom、字节 MemoryLeakDetector
 
-Android 15+ 引入的 `ProfilingManager`（`android.os.ProfilingManager`）提供了系统级零侵入触发能力：应用可通过 `requestProfiling()` 请求系统按条件自动采集 Heap Dump 或 Perfetto Trace，无需自建监控框架即可获取内存现场。结合 `ProfilingResultCallback` 可在采集完成后获取结果路径。对于不需要自建 APM 的小中型项目，这是替代自研内存监控的官方路径。
+Android 15（API 35）+ 引入的 `ProfilingManager`（`android.os.ProfilingManager`）提供了系统级按需触发能力：应用通过 `requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 请求系统采集。支持的类型包括 `PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_HEAP_PROFILE`、`PROFILING_TYPE_SYSTEM_TRACE`。采集完成后通过 `ProfilingResultCallback` 获取结果路径。
+
+需要注意：请求受系统限流，不保证一定执行；结果落在应用数据目录且可能被 redaction 处理。ProfilingManager 适合按条件采样和诊断入口，不能替代常驻泄漏监控（LeakCanary、Koom 等）。对于不需要自建 APM 的中小型项目，这是获取内存现场的官方路径。
 
 ## 参考资料
 
