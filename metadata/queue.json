@@ -1,6 +1,27 @@
 {
   "pending": [
     {
+      "section": "13.7",
+      "section_title": "Perfetto 的高级用法",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 13.7 冷启动回归检测 SQL 示例缺少同进程/时间窗口/launch 约束，CI 指标可能误判，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/数据准确性",
+          "location": "L456-L467 analyze_startup() SQL",
+          "detail": "[P1] 示例用 `JOIN slice s2 ON s2.name = 'FirstFrame'` 只按名称把 `activityStart` 与 `FirstFrame` 关联，缺少 `s2.ts > s1.ts`、同一 app/process、同一次启动窗口或 launch id 约束。多 app、多次启动或 trace 中已有其他 FirstFrame 时，`ORDER BY startup_ms LIMIT 1` 可能选到负值或不属于本次启动的帧，CI 回归检测会得到错误基线。",
+          "suggestion": "优先改用官方 `android_startup` v1 metric 或 Standard Library `android.startup.startups` / `startup_breakdowns`；若保留手写 SQL，至少限定目标进程、启动开始 slice、结束帧在启动窗口之后，并明确 `FirstFrame` 是业务自定义 trace point 还是 FrameTimeline/应用标记。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T13:26:03+08:00",
+      "status": "pending"
+    },
+    {
       "section": "5.4",
       "section_title": "DVFS 与功耗管理",
       "priority": 95,

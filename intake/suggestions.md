@@ -1406,3 +1406,17 @@
 - **位置**：L84、L148、L207-L235 属性动画收益判断
 - **问题**：正文多处把 Hardware Layer 收益概括为减少“反复重录 DisplayList”，并写“不修改内容时几乎一定能提升性能”。现代 HWUI/RenderNode 的 translation/scale/rotation/alpha 属性动画本身也可能只更新 RenderNode 属性，不必每帧重录 DisplayList；手动 layer 的收益主要来自避免重复光栅化/处理重叠 alpha/offscreen 语义，不应泛化成 DisplayList 重录或必然收益。
 - **建议**：补版本/动画类型边界：区分 ViewPropertyAnimator/RenderNode property、普通 invalidate、复杂 alpha overlap/offscreen；把“几乎一定”改成“需用 trace 验证 buildLayer 首帧成本、后续 raster/flush 是否下降”。
+
+## [Task9 Deep Review] 13.7 Perfetto 的高级用法 — 2026-05-07 — L344-L361 BatchTraceProcessor query_and_flatten
+- **类型**：Python API 边界
+- **位置**：L344-L361 `BatchTraceProcessor.query_and_flatten()` 示例说明
+- **问题**：正文写 `query_and_flatten` 的结果“带有一列标识来源 Trace”。复核官方 Batch Trace Processor 文档和 `perfetto` Python 包 0.16.0 源码：只有 URI resolver / custom resolver 提供 metadata 时，flatten 后才会追加来源列；正文示例传入的是普通文件路径列表，默认 metadata 为空，不保证有来源 Trace 列。
+- **建议**：改成条件描述：`query_and_flatten` 会把多条 trace 的结果拼成一个 DataFrame；若通过 resolver 提供 `_path` / build id 等 metadata，结果会追加这些来源列。需要稳定来源列时，示例应展示 resolver 或显式维护 trace id。
+- **review 日志**：logs/deep-review/2026-05-07-13-deep-review.md
+
+## [Task9 Deep Review] 13.7 Perfetto 的高级用法 — 2026-05-07 — frontmatter source visualization/macros
+- **类型**：资料链接准确性
+- **位置**：frontmatter L18-L19 `https://perfetto.dev/docs/visualization/macros`
+- **问题**：该 URL 当前返回 404；Perfetto 官方“Commands and Macros”文档路径是 `https://perfetto.dev/docs/visualization/ui-automation`，Extension Server 文档路径是 `https://perfetto.dev/docs/visualization/extension-servers`。
+- **建议**：把 source 链接改成 `ui-automation`；如果正文继续讨论团队共享宏，再补 `extension-servers` 作为第二个来源。
+- **review 日志**：logs/deep-review/2026-05-07-13-deep-review.md

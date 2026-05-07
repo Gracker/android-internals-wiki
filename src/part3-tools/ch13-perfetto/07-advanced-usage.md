@@ -27,24 +27,25 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task9_result: needs-rework
-task9_reviewed_date: 2026-05-06
+task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task2b_at: "2026-05-06T13:04:10+08:00"
 task2b_result: fixed
-last_task9_at: "2026-05-06T13:39:29+08:00"
-task9_review_notes: "2026-05-06 Task9 13:39：needs-rework。P0 0 / P1 1 / P2 2。L255 Perfetto Standard Library 模块列表"
+last_task9_at: "2026-05-07T13:26:03+08:00"
+task9_review_notes: "2026-05-07 Task9 13:20：needs-rework。P0 0 / P1 1 / P2 4。L456-L467 冷启动回归检测 SQL 缺少同进程/时间窗口/launch 约束。"
 last_task6_at: "2026-05-07T13:09:20+08:00"
 last_task6_review_log: "logs/review/2026-05-07-13-review.md"
 task6_review_notes: "2026-05-07 Task6 13:09：Task2B 修复后写作复审；清理元叙述/英文术语/引用摘要措辞 8 处；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-06-13-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-07-13-deep-review.md"
+
 ---
 
 
