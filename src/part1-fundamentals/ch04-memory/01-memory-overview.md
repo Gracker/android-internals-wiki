@@ -9,7 +9,7 @@ last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & 16 KB page size docs / kernel zram docs"
 reviewed_date: "2026-05-07"
 reviewed_by: "openclaw-task6"
-review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack 物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in swap/total swap）；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9"
+review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack 物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in swap/total swap）；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9；2026-05-07 20:08 Task6 复审：L1/L2 小修 12 处，锚点覆盖完整，无新增回炉项，交回 Task9"
 task6_result: pass-light-edit
 confidence: medium
 polish_count: 1
@@ -42,8 +42,8 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -83,11 +83,11 @@ task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P
 
 ## 为什么要了解 Android 内存模型
 
-如果我们用 Perfetto 抓 Trace，可能注意过这样一个场景：一个列表滑得好好的，突然连续出现几帧耗时飙升，Trace 里对应的位置是几条长长的绿色 GC 条目。或者更隐蔽一些——App 没有明显的卡顿，但 `dumpsys meminfo` 显示 PSS 在几分钟内从 80MB 缓慢爬到了 200MB。
+用 Perfetto 抓 Trace 时，可能注意过这样一个场景：一个列表滑得好好的，突然连续出现几帧耗时飙升，Trace 里对应的位置是几条长长的绿色 GC 条目。或者更隐蔽一些——App 没有明显的卡顿，但 `dumpsys meminfo` 显示 PSS 在几分钟内从 80MB 缓慢爬到了 200MB。
 
 这些现象的背后，是 Android 内存系统在工作。理解内存模型，是为了在遇到内存相关的问题时，无论是 OOM 崩溃、GC 导致的卡顿，还是后台进程被杀，都知道从哪里入手排查。
 
-这一节我们要建立一个完整的内存认知框架：从物理内存到内核管理，再到进程的各个内存区域，也把工具中的数字代表什么含义讲清。有了这张全景图，后面关于内存优化、GC 机制、LMK 等章节才有落脚点。
+这一节建立一张完整的内存全景图：从物理内存到内核管理，再到进程的各个内存区域，也把工具中的数字代表什么含义讲清。有了这张全景图，后面关于内存优化、GC 机制、LMK 等章节才有落脚点。
 
 [已验证: 官方文档, developer.android.com/topic/performance/memory-management]
 
@@ -97,7 +97,7 @@ Android 的内存体系可以分成三层来看：物理内存、内核管理、
 
 ### 物理内存：一切的基础
 
-手机上的 RAM 就是我们说的物理内存。一台 8GB 内存的设备，实际可用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
+手机上的 RAM 就是物理内存。一台 8GB 内存的设备，实际可用的并不是完整的 8GB——GPU 会占用一部分（通常几百 MB 到 1GB 不等），内核本身也要占用一些。剩下才是系统服务和各个 App 可以使用的部分。
 
 开启 MTE（Memory Tagging Extension，ARMv8.5+）的设备会额外预留约 3% 的物理 RAM 用于存储内存标签，再加上粒度开销，全系统 PSS 增量约为 5%。这是安全硬件的固定开销，在做内存基线对比时需要先扣除这一部分。
 
@@ -111,7 +111,7 @@ Linux 内核是内存管理的核心执行者。它通过页表把虚拟地址�
 
 Android 在 Linux 内核的基础上做了几件特别的事情：
 
-**进程优先级与内存回收绑定。** Framework 在 `ProcessList.java` 里维护 `adj` / procstate 这一组进程重要性分层，最终会映射到 `/proc/<pid>/oom_score_adj`。`lmkd` 处理内存回收时，先看系统是否进入压力区间，再结合 `oom_score_adj` 选择更容易被杀的进程。前台进程的 `oom_score_adj` 更低，缓存进程更高。这个机制我们在 [4.4 Low Memory Killer](04-lmk.md) 中会详细展开。
+**进程优先级与内存回收绑定。** Framework 在 `ProcessList.java` 里维护 `adj` / procstate 这一组进程重要性分层，最终会映射到 `/proc/<pid>/oom_score_adj`。`lmkd` 处理内存回收时，先看系统是否进入压力区间，再结合 `oom_score_adj` 选择更容易被杀的进程。前台进程的 `oom_score_adj` 更低，缓存进程更高。这个机制会在 [4.4 Low Memory Killer](04-lmk.md) 中详细展开。
 
 **App 侧 trim 回调和系统侧杀进程是两条路径。** `onTrimMemory()` 属于 `ComponentCallbacks2` 回调，由 framework 在合适的生命周期和内存压力点通知 `Application`、`Activity`、`Service` 等组件，让 App 主动释放缓存。`lmkd` 不会直接向 App 调 `onTrimMemory()`；当回收压力继续升高时，它会按 kill 策略直接结束目标进程。API 34 起，`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这些等级已经不再投递给 App。
 
@@ -191,7 +191,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
 
 ## 进程内存组成详解
 
-理解了 PSS/RSS/USS 之后，我们来看这些数字背后的具体组成。运行 `adb shell dumpsys meminfo <package>` 会看到类似这样的输出：
+理解 PSS/RSS/USS 之后，可以从 `adb shell dumpsys meminfo <package>` 开始看这些数字背后的具体组成：
 
 ```text
 ** MEMINFO in pid 12345 [com.example.myapp] **
@@ -220,7 +220,7 @@ USS 的实用价值在于：**如果一个进程被杀掉，USS 就是被释放�
 
 [待补充：dumpsys meminfo 真机截图]
 
-输出看起来很多，但可以先按几个大类来拆解。
+输出字段很多，可以先按几个大类理解。
 
 ### Java Heap（Dalvik Heap）
 
@@ -247,7 +247,7 @@ Native Heap 的内存泄漏比 Java Heap 更难排查，因为没有自动的 GC
 代码段是 App 的可执行代码和资源通过 `mmap` 映射到内存的区域：
 
 - **`.dex mmap`**：DEX 字节码文件。这是 Java/Kotlin 代码编译后的产物。这部分大多是 Private Clean 的——意味着它可以从原始的 APK 文件中重新加载，内存紧张时内核可以轻松回收这些页面。
-- **`.so mmap`**：Native 共享库。包括系统的 `libc.so`、`libandroid_runtime.so` 以及 App 自带的 `.so` 文件。共享库的一个显著特点是——多个进程的 PSS 只分摊少量，因为 `.so` 的只读代码页是被所有使用该库的进程共享的。
+- **`.so mmap`**：Native 共享库。包括系统的 `libc.so`、`libandroid_runtime.so` 以及 App 自带的 `.so` 文件。多个进程可以共同映射同一批 `.so` 只读代码页，每个进程的 PSS 只分摊其中一部分。
 - **`.apk mmap`**：APK 文件中的资源（布局、图片、字符串等）通过 mmap 映射。和 `.dex` 类似，未修改的部分是 Clean 的。
 - **`.ttf mmap`**：字体文件映射。
 
@@ -303,7 +303,7 @@ Inactive:        1234567 kB    // 较久未使用的内存（更容易被回收�
 
 [已验证: Linux kernel documentation, kernel.org/doc/Documentation/filesystems/proc.txt]
 
-有几个常见的误区需要注意：
+有几个常见误区会影响判断：
 
 **MemFree 很小不代表内存紧张。** Linux 会尽量把空闲内存用作文件缓存（Cached），因为缓存可以加速文件访问，且在需要时可以立即回收。所以看 `MemAvailable`（它包含了可回收的缓存）比看 `MemFree` 更有意义。
 
@@ -322,7 +322,7 @@ VmExe:          24 kB    // 代码段
 VmLib:       45678 kB    // 共享库映射
 ```
 
-这个接口比 `smaps` 轻量，适合快速查看一个进程的内存概况。其中 `VmRSS` 就是我们之前说的 RSS。
+这个接口比 `smaps` 轻量，适合快速查看一个进程的内存概况。其中 `VmRSS` 就是前文提到的 RSS。
 
 ### /proc/<pid>/smaps：最详尽的内存映射
 
@@ -354,11 +354,11 @@ SwapPss:            0 kB
 Locked:             0 kB
 ```
 
-上面这个片段按 4 KB page 设备展示。Android 15 开始，AOSP 支持 16 KB page size 设备。到这类设备上，`KernelPageSize`、`MMUPageSize` 以及很多 `Rss` / `Pss` 增量都会按 16 KB 粒度出现，`mmap` offset 粒度和 native 库页面边界要求也会跟着变化。
+上面这个片段按 4 KB page 设备展示。Android 15 开始，AOSP 支持 16 KB page size 设备。到这类设备上，`KernelPageSize`、`MMUPageSize` 以及很多 `Rss` / `Pss` 增量都会按 16 KB 粒度出现，`mmap` offset 粒度和 native 库页面边界要求也会变化。
 
 smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 `dumpsys meminfo` 的分类无法定位具体原因时，逐项查看 smaps 来找到那个异常大的映射区域。**跨设备比对 `smaps`、Perfetto 内存曲线或 native 崩溃现场时，用 `adb shell getconf PAGE_SIZE` 或 `smaps` 里的页大小字段确认当前页大小，再解释页粒度带来的页内碎片、页表开销和 PSS / RSS 跳变。
 
-16KB 页环境下页内碎片显著增加——一个只使用 1KB 的对象也要占用整个 16KB 页面，全系统总 PSS 普遍上涨 5%-10%。这是架构层面的正常开销，不代表应用存在泄漏。跨版本或跨设备对比 PSS 基线时，需要先确认页大小，再判断增量是否在合理范围内。
+16 KB 页环境下页内碎片会增加——一个只使用 1 KB 的对象也要占用整个 16 KB 页面，全系统总 PSS 通常上涨 5% 到 10%。这是架构层面的正常开销，不代表应用存在泄漏。跨版本或跨设备对比 PSS 基线时，需要先确认页大小，再判断增量是否在合理范围内。
 
 读取 `/proc/<pid>/smaps` 需要足够的权限（通常是 root，或者目标 App 是 debuggable 的），且读取操作本身有性能开销（内核需要遍历所有页表），不建议在高频循环中调用。
 
@@ -366,7 +366,7 @@ smaps 的实际使用场景通常是：**当发现进程的 PSS 异常高，但 
 
 ## dumpsys meminfo：日常内存分析的主力工具
 
-前面已经零散提到了 `dumpsys meminfo` 的输出，这里我们把它的用法系统地过一遍。
+前面已经多次用到 `dumpsys meminfo` 的输出，这里把它的用法系统地过一遍。
 
 ### 全局模式：查看系统内存概况
 
@@ -390,7 +390,7 @@ adb shell dumpsys meminfo
 adb shell dumpsys meminfo com.example.app
 ```
 
-单进程模式是我们最常用的形式。输出的关键区域：
+单进程模式是日常排查里最常用的形式。输出的关键区域：
 
 **App Summary 段**——这是最快能看懂的部分：
 
@@ -478,7 +478,7 @@ cgroup（Control Group）是 Linux 内核提供的资源隔离机制。Android �
 
 ## ZRAM：在内存中做 Swap
 
-Android 不使用传统磁盘 Swap，原因很简单：闪存的写入寿命有限，且 IO 延迟高。ZRAM 的思路是在内存中创建一个压缩块设备——把不活跃的内存页压缩存储，腾出更多可用空间。
+Android 不使用传统磁盘 Swap，主要原因是闪存写入寿命有限，且 IO 延迟高。ZRAM 的思路是在内存中创建一个压缩块设备——把不活跃的内存页压缩存储，腾出更多可用空间。
 
 ### ZRAM 的工作方式
 
