@@ -38,12 +38,12 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: "needs-rework"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-08T05:42:56+08:00'
 repaired_date: '2026-04-22'
@@ -386,46 +386,46 @@ JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直
   - 高爷：Android Perfetto 系列 6 - 为什么是 120Hz（来源：obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md）
   - 高爷：Android Perfetto 系列 5 - Choreographer 渲染流程（来源：obsidian/Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md）
 
-[需重写: `AIW-源码调研-2026-05-06` 中的 Binder Transaction Trace 新增块仍是资料摘录形态，且放在参考资料之后；需要 Task2B 判断是否整合进 7.3 分析方法，或改写后嵌入本节的 FrameTimeline 分类脉络。]
+## Binder 阻塞如何佐证 AppDeadlineMissed
 
-<!-- AIW-源码调研-2026-05-06 -->
-### **Binder Transaction Trace 在卡顿分析中的应用（新增 2026-05-06）**
+Binder 调用出现在 App 主线程或 RenderThread 的帧关键路径上时，会造成 App 侧交帧延迟。但 Binder 阻塞本身不等于某一类 JankType——需要回到 FrameTimeline 的 deadline 体系里做因果连接。
 
-**Binder 卡顿的具体表现形式**
-基于 Perfetto 源码分析，Binder 相关卡顿在卡顿分析体系中有明确的技术路径：
+### Binder 阻塞定位为帧关键路径证据
 
-**内核层触发点**：
-- `binder_transaction` tracepoint：Client 发起 BC_TRANSACTION，驱动开始处理
-- `binder_transaction_received` tracepoint：Server 端收到 BR_TRANSACTION
-- 线程状态转换：`binder_thread_read` / `binder_thread_write` 对应不同阻塞场景
+排查 AppDeadlineMissed 时，如果 `Actual Timeline` 超出 `Expected Timeline`，沿 token 回到 App 线程后，常见的一条证据链是：
 
-**Perfetto 诊断层**：
-- **客户端阻塞**：主线程显示 `binder transaction` Slice + `thread_state: Sleeping` + `blocked_function: binder_thread_read`
-- **服务端阻塞**：`binder reply` Slice + 服务端线程长时间等待锁或处理慢
-- **Flow 关联**：通过 Flow 箭头连接 Client 端的 Sleeping 和 Server 端的 Running 状态
+1. FrameTimeline 标记 `AppDeadlineMissed`，`On time finish = false`。
+2. App 主线程或 RenderThread 在该帧的 `doFrame` / `DrawFrame` 区间内出现 `binder transaction` slice。
+3. 同一时段 `thread_state: Sleeping`，`blocked_function: binder_thread_read`。
 
-**BinderTracker 状态机异常处理**：
-当出现事务失败（如 BR_DEAD_REPLY），BinderTracker 会根据当前状态决定是否手动终止悬空 Slice，避免 Slice 持续到 Trace 结尾造成误导性分析。
+此时 Binder 阻塞是 AppDeadlineMissed 的直接原因——App 线程在帧周期内花时间等 Binder 返回，导致 `queueBuffer` 超出 deadline。
 
-**SQL 诊断能力**：
+### 不要把 Binder 直接映射到 SF 或 BufferStuffing
+
+Binder 阻塞出现在 SurfaceFlinger 线程上时，需要额外证据才能指向 `SurfaceFlingerCpuDeadlineMissed`：SF 主线程在 `onMessageReceived` 里等 Binder 返回，导致合成超时。仅凭"服务端处理慢"不能跳过 FrameTimeline 的 SF deadline 判定。
+
+`BufferStuffing` 的因果条件是 BufferQueue 堆积。Binder 调用频率高可能间接导致堆积，但 BufferStuffing 的判定依据是 FrameTimeline 的 `Jank Type` + `Present Type` + BufferQueue 轨道的 dequeued/queued 计数，不是 Binder 调用次数。
+
+### Perfetto SQL 佐证
+
+确认 FrameTimeline 归因后，用 `android_binder_txns` 定位具体 Binder 调用：
+
 ```sql
--- 识别耗时最长的 binder 事务
+-- 找到帧周期内耗时最长的 binder 事务
 SELECT client_process, server_process, client_dur/1e6 AS client_ms,
        server_dur/1e6 AS server_ms, aidl_name, is_main_thread
-FROM android_binder_txns 
-WHERE client_dur > 10000000  -- >10ms
+FROM android_binder_txns
+WHERE client_dur > 10000000  -- > 10ms
 ORDER BY client_dur DESC;
+```
 
--- 按 reason 分组统计 binder 延迟原因
+再用 `android_binder_client_breakdown` 按 reason 拆分延迟来源：
+
+```sql
 SELECT reason, count(*) AS count, sum(dur)/1e6 AS total_ms
 FROM android_binder_client_breakdown
 WHERE reason = 'binder'
 GROUP BY reason;
 ```
 
-**与卡顿类型的对应关系**：
-- **AppDeadlineMissed**：客户端 binder transaction 超时
-- **SurfaceFlingerCpuDeadlineMissed**：服务端处理慢导致 SF 延迟
-- **BufferStuffing**：binder 调用频率过高导致 BufferQueue 堆积
-
-[一手：Perfetto mainline 源码]
+排查顺序：**先看 FrameTimeline 归因 → 确认哪条线程在帧周期内阻塞 → 再用 Binder SQL 定位具体调用**。不要跳过 FrameTimeline 直接从 Binder 调用反推 JankType。

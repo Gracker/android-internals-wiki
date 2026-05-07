@@ -228,14 +228,21 @@ trace 名称不要带高基数字段，比如用户 id、完整 URL、搜索词�
 
 trace 标注代码可以留在 Release 包里，但能不能在 Perfetto 里看到自定义 slice，要按平台版本判断。
 
-| 平台 | 默认可见性 | 额外处理 | 关键差异 |
+### 平台公开 API 边界
+
+| API 版本 | 自定义 slice 可见性 | 异步 trace (`beginAsyncSection`) | 其他关键变化 |
 |---|---|---|---|
-| API 18-23 | `beginSection` 可用，但只支持 debuggable 进程 | 非 debuggable 进程无法使用自定义 slice | `Trace.forceEnableAppTracing()` 在 API 18 加入，但实际效果依赖 ROM 实现 |
-| API 24-28 | 只有 debuggable 进程默认能记录 app trace | 非 debuggable 进程要在启动早期调用 `Trace.forceEnableAppTracing()` | `trace_marker` fd 访问权限受 SELinux 策略限制 |
-| API 29-30 | debuggable 和 profileable 进程默认可见 | 非 debuggable 且未声明 `profileable` 的进程，仍要调用 `Trace.forceEnableAppTracing()` | API 29 新增 `beginAsyncSection()` / `endAsyncSection()`，支持跨线程 trace 配对 |
-| API 31+ | app tracing 在所有应用里默认开启 | `Trace.forceEnableAppTracing()` 在这一段没有实际效果 | `androidx.tracing` 直接调用平台 `android.os.Trace`；`<profileable enabled=false/>` 的进程可能仍有限制 |
-| API 33+ | 同上 | 无 | Perfetto 默认启用 `android.os.Trace` 数据源采集 |
-| API 35+ | 同上 | 无 | ProfilingManager 系统触发采样可在 App 不主动 trace 时自动抓取 |
+| API 18-28 | 仅 debuggable 进程默认可见 | 不可用 | 非 debuggable 进程需在启动早期调用 `Trace.forceEnableAppTracing()`，效果依赖 ROM 对 `trace_marker` fd 的 SELinux 策略 |
+| API 29-30 | debuggable + profileable 进程默认可见 | API 29 引入 `beginAsyncSection()` / `endAsyncSection()` | 非 debuggable 且未声明 `profileable` 的进程仍需 `forceEnableAppTracing()` |
+| API 31+ | 所有应用默认开启 | 可用 | `androidx.tracing` 直接调用平台 API；`<profileable enabled=false/>` 可能仍有限制 |
+| API 33+ | 同上 | 可用 | Perfetto 默认启用 `android.os.Trace` 数据源 |
+| API 35+ | 同上 | 可用 | ProfilingManager 可在 App 不主动 trace 时自动抓取 |
+
+### AndroidX Tracing compat 行为
+
+AndroidX `Trace.forceEnableAppTracing()` 在 API 18-30 上为 non-debuggable 进程尝试打开 app tracing 通道。从 API 31 起，平台默认开启 app tracing，该调用不再有实际效果。
+
+`androidx.tracing` 的 `trace {}` 和 `traceAsync {}` Kotlin 扩展函数从 1.2.0 起可用，内部根据 API 版本走平台 `Trace` 或 `NoOp` 降级。异步 trace 配对 (`beginAsyncSection`/`endAsyncSection`) 在 API 29+ 走平台原生实现，API 28 及以下由 AndroidX 提供 compat 实现（基于 `TraceEventCache`）。
 
 AndroidX `Trace.forceEnableAppTracing()` 的文档说明了两点：它用于在 non-debuggable process 中启用 app tracing；从 Android 12 开始，应用代码写入的 custom trace 在所有应用里都默认开启。用正式包抓性能数据时，优先使用 profileable 或接近发布态的构建，避免把 debuggable 包的调试开销带进结论。
 
@@ -305,9 +312,8 @@ Perfetto 中这条 slice 会从调用开始一直延伸到协程恢复后执行�
 
 ```kotlin
 val cookie = nextCookie.getAndIncrement()
-Trace.beginAsyncSection("Home#loadData", cookie)
-
-viewModelScope.launch {
+val spanClosed = java.util.concurrent.atomic.AtomicBoolean(false)
+val job = viewModelScope.launch {
     try {
         // 切到 I/O 线程，同步 slice 只包住该线程内的阻塞工作
         val data = withContext(Dispatchers.IO) {
@@ -320,13 +326,29 @@ viewModelScope.launch {
             adapter.submitList(data)
         }
     } finally {
-        // 无论成功、异常、取消都关闭 async span
+        if (spanClosed.compareAndSet(false, true)) {
+            Trace.endAsyncSection("Home#loadData", cookie)
+        }
+    }
+}
+// scope 已取消或 launch 后 block 未实际执行时，finally 不会运行
+// invokeOnCompletion 在 job 终止时触发，覆盖取消/取消前/失败/完成所有状态
+job.invokeOnCompletion {
+    if (spanClosed.compareAndSet(false, true)) {
         Trace.endAsyncSection("Home#loadData", cookie)
     }
 }
+Trace.beginAsyncSection("Home#loadData", cookie)
 ```
 
 修正后，`withContext(Dispatchers.IO)` 保证 `trace("Home#fetchData")` 在 I/O 线程内部执行，不跨挂起点；主线程的 `trace("Home#renderData")` 只覆盖 `submitList` 的同步部分。async trace 把两端串成同一个业务 span，不会出现同步 slice 跨挂起点导致的视图污染。
+
+`invokeOnCompletion` + `AtomicBoolean` 保证 async span 只关闭一次，覆盖三条路径：
+- 协程正常完成或异常：`finally` 块关闭 span。
+- 协程 body 因 scope 取消而未执行：`invokeOnCompletion` 关闭 span。
+- 协程 body 已启动后被 `withContext` 内取消：`finally` 块关闭 span。
+
+`beginAsyncSection` 放在 `invokeOnCompletion` 注册之后调用，确保无论哪条路径都能找到关闭回调。
 
 跨线程任务要分两层标注：
 
