@@ -11,14 +11,14 @@ last_verified_against: "Android PixelCopy / WebViewRenderProcess APIs, Flutter F
 confidence: high
 tags: [apm, webview, flutter, hybrid]
 related_chapters: ["19.0", "19.01"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task2b_result: fixed
-task2b_state: "fixed"
+task2b_state: "pending"
 task6_state: "reviewed"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-07"
 task6_result: "pass-light-edit"
-task9_state: "pending"
+task9_state: "reviewed"
 sources:
   - "https://developer.android.com/reference/android/view/PixelCopy"
   - "https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)"
@@ -26,12 +26,13 @@ sources:
   - "https://api.flutter.dev/flutter/dart-ui/FrameTiming-class.html"
   - "https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addTimingsCallback.html"
 task9_result: "needs-rework"
-task9_reviewed_date: "2026-04-28"
+task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-28T08:39:32+08:00"
+last_task9_at: "2026-05-07T22:24:50+08:00"
 review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 2（WebView 可见状态 API 与跨时钟校准）。"
 last_task6_at: "2026-05-07T22:11:39+08:00"
 task6_review_notes: "2026-05-07 22:10 task6 revisiting-review: pass-light-edit。统一中英文标点与轻量措辞；Task9 技术复审仍 pending，未自动晋升。"
+task9_review_notes: "2026-05-07 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；WebView.postVisualStateCallback requestId 语义与 AOSP API 文档不一致。"
 ---
 
 # 混合栈与跨平台 APM (WebView / Flutter)

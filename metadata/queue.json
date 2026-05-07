@@ -14168,6 +14168,47 @@
       "status": "completed",
       "completed_at": "2026-05-07T21:47:07+08:00",
       "completed_reason": "P0 API31+ JNI/inline路径断言已删除，改为分层调用链说明；P1 开销表改为定性量级+复测指引；P1 协程示例修正为withContext(Dispatchers.IO)内同步slice+async trace；P1 executor示例补try/finally/post返回值检查"
+    },
+    {
+      "section": "7.6",
+      "section_title": "案例集",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 7.6 案例集仍缺 SurfaceFlinger/HWC 合成与温控降频完整案例，需补齐锚点闭环",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-07-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "知识盲区/原理断裂",
+          "location": "L59-L61 锚点；L74-L84 五个案例范围；L510-L544 方法论入口",
+          "detail": "[P1] 锚点要求案例覆盖 SurfaceFlinger（SF）合成和温控，但正文五个完整案例只覆盖主线程布局、onBindViewHolder/Binder、GC/内存、RenderThread/AVD、系统低内存。后文只在方法论列表里出现 SurfaceFlinger、CPU 频率和调度入口，没有按“现象→Trace→根因→修复→效果”形成完整案例。",
+          "suggestion": "补两个短而完整的系统侧案例：1）SF/HWC 合成案例，围绕 CLIENT/GPU fallback、overlay plane 不足、HWC validate/present、SurfaceFlinger/FrameTimeline/Layer trace 给出判断链；2）温控降频案例，围绕 thermal status、CPU/GPU freq、PowerHAL/ADPF hint、帧耗时劣化给出 trace 与修复边界。若素材不足，至少明确该锚点未完成，不能把厂商概览或方法论列表当作案例替代。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T22:24:50+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "19.26",
+      "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 19.26 WebView.postVisualStateCallback requestId 语义写错，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-07-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 语义",
+          "location": "L142 WebView.postVisualStateCallback 说明",
+          "detail": "[P0] 正文称 `postVisualStateCallback(long requestId, ...)` 的 requestId “对应 loadUrl() 时的请求标识”。AOSP API 文档实际说明 requestId 只是调用 `postVisualStateCallback` 时传入、并在 callback 中原样返回的 caller id，用于匹配请求和回调；它不来自 `loadUrl()`，也不是导航请求标识。API 保证的是 callback 发布时点之前的 DOM 更新在下一次 draw 中可见（不含 video tag 状态），不是某个 loadUrl 请求的视觉状态天然绑定。",
+          "suggestion": "把 requestId 改成“调用方自定义的采样/请求 id（例如自增序号），用于匹配回调”。白屏采样链路应写成：在 `onPageCommitVisible()`、`onPageFinished()` 后或关键 JS/DOM 操作后发布 VisualStateCallback，等待 onComplete 后再做低频 PixelCopy/DOM/ready 交叉判断；不要描述成 loadUrl requestId。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T22:24:50+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
