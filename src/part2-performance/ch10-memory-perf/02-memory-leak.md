@@ -27,17 +27,17 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task2b_result: fixed
-task2b_state: "fixed"
+task2b_state: "pending"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: "pending"
+task9_state: "reviewed"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-08T00:28:41+08:00"
-task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束"
-task9_result: "pending"
+last_task9_at: "2026-05-08T02:30:38+08:00"
+task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
+task9_result: "needs-rework"
 last_task6_at: "2026-05-08T02:09:46+08:00"
 task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 7 处 L1/L2 表达与格式问题；Task9 仍为 pending，未自动晋升。"
 ---

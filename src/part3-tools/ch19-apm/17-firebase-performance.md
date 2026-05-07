@@ -2,7 +2,7 @@
 title: "Firebase Performance"
 chapter: "19"
 section: "19.17"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-24"
 drafted_by: "codex"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
@@ -22,24 +22,24 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/network-traces"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: "reviewed"
 task2b_state: fixed
 task2b_result: fixed
-task9_result: "pending"
-task9_reviewed_by: openclaw-task9
+task9_result: "pass-tech-review"
+task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-08"
-last_task9_at: "2026-05-08T01:32:37+08:00"
-reviewed_by: openclaw-task6
+last_task9_at: "2026-05-08T02:30:38+08:00"
+reviewed_by: openclaw-task9
 reviewed_date: "2026-05-08"
 last_task2b_at: "2026-05-07T23:47:13+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 last_task6_at: "2026-05-08T02:09:46+08:00"
 task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result=pending 等待 Task9 复审。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。修复 YAML 引号、重复验证句和 8 处 L1/L2 表达问题；Task9 仍为 pending，未自动晋升。"
-task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 attribute key 32->40 + reserved prefix；P0 Cronet 改为 HttpMetric manual trace；P1 EventListener 删除无证据断言"
+task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 attribute key 32->40 + reserved prefix；P0 Cronet 改为 HttpMetric manual trace；P1 EventListener 删除无证据断言 | 2026-05-08 02 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 # Firebase Performance
 

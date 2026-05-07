@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-05-08T01:32:37+08:00",
+  "generated_at": "2026-05-08T02:30:38+08:00",
   "state_machine_version": "v2",
   "total_sections": 210,
   "metrics": {
     "total_sections": 210,
-    "last_updated": "2026-05-08T02:09:46+08:00",
+    "last_updated": "2026-05-08T02:30:38+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
-      "ready-to-publish": 136,
-      "task2b_pending": 72,
+      "ready-to-publish": 137,
+      "task2b_pending": 71,
       "task6_pending": 1
     },
     "task6_state_counts": {
@@ -22,13 +22,13 @@
       "unknown": 1
     },
     "task2b_state_counts": {
-      "fixed": 136,
-      "pending": 71,
+      "fixed": 137,
+      "pending": 70,
       "unknown": 3
     },
     "status_counts": {
-      "finalized": 136,
-      "ready-for-review": 74
+      "finalized": 137,
+      "ready-for-review": 73
     }
   },
   "task2b_rework_history": [
@@ -456,6 +456,24 @@
       "queue_items_added": 1,
       "auto_finalized": [],
       "review_log": "logs/deep-review/2026-05-08-01-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T02:30:38+08:00",
+      "sections": [
+        "10.2",
+        "19.17"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "mixed",
+      "p0": 1,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0,
+      "queue_items_added": 1,
+      "auto_finalized": [
+        "19.17"
+      ],
+      "review_log": "logs/deep-review/2026-05-08-02-deep-review.md"
     }
   ],
   "rework_history": [
