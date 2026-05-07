@@ -4,8 +4,8 @@ chapter: "4.7"
 section: "4.7"
 status: ready-for-review
 drafted_date: "2026-04-06"
-reviewed_date: "2026-05-05"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-08"
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
@@ -37,14 +37,14 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_reviewed_date: "2026-05-05"
-task9_state: pending
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_reviewed_date: "2026-05-08"
+task9_state: "pending"
 task2b_result: fixed
 task2b_state: fixed
-task6_result: pass-light-edit
-task9_result: needs-rework
+task6_result: "pass-light-edit"
+task9_result: "pending"
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T04:36:19+08:00"
@@ -55,6 +55,9 @@ repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
 review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 2 / P2 1；THP/mTHP/contpte 与 compat RELRO 边界仍需回炉。"
 
+last_task6_at: "2026-05-08T03:09:01+08:00"
+review_log: "logs/review/2026-05-08-03-review.md"
+task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 26 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。"
 ---
 # 4.7 16KB Page Size 与 Android 性能
 
@@ -70,7 +73,7 @@ review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 2 / P2 1；THP/mT
 
 ### TLB 与页大小的关系
 
-要理解 16KB 页为什么能提升性能，我们需要先理解 TLB（Translation Lookaside Buffer）在内存访问中的角色。
+TLB（Translation Lookaside Buffer）是理解 16KB 页收益的入口。
 
 CPU 访问内存时，使用的是虚拟地址。虚拟地址需要翻译成物理地址才能访问实际的内存芯片，这个翻译过程通过页表（Page Table）完成。页表本身存储在内存中，如果每次内存访问都要先查页表，性能会下降一倍以上——因为每次实际的数据访问都需要额外的页表访问。
 
@@ -133,20 +136,20 @@ Google 的测试表明，16KB 页大小下系统平均内存使用量增加约 5
 
 ### 纯 Java/Kotlin App
 
-如果 App 没有任何 Native 代码（C/C++），好消息是：通常不需要修改。ART 运行时和 Android 框架已经适配了 16KB 页，Java/Kotlin 层的内存分配由 ART 堆管理器处理，不需要关心底层页大小。
+如果 App 没有任何 Native 代码（C/C++），通常不需要修改。ART 运行时和 Android 框架已经适配了 16KB 页，Java/Kotlin 层的内存分配由 ART 堆管理器处理，不需要关心底层页大小。
 
 ### Native 代码（NDK）
 
-如果 App 包含 `.so` 文件——无论是自己写的还是通过第三方 SDK 引入的——就需要确保这些 `.so` 文件的 ELF 段（segment）按 16KB 边界对齐。
+如果 App 包含 `.so` 文件——无论是自己写的还是通过第三方 SDK 引入的——就需要确保这些 `.so` 文件的 ELF 段（segment）满足 16KB 边界要求。
 
-为什么？Linux 加载 ELF 共享库时，通过 `mmap()` 将文件映射到内存。`mmap()` 按页大小对齐映射区域。如果 `.so` 文件的 ELF 段只按 4KB 对齐，在 16KB 页系统上，一个段可能跨越两个页——加载器需要额外处理跨页对齐，甚至可能导致段内容被部分截断或错误映射，引发 SIGBUS 或 SIGSEGV 崩溃。
+原因在于：Linux 加载 ELF 共享库时，通过 `mmap()` 将文件映射到内存。`mmap()` 要求映射区域落在页大小边界上。如果 `.so` 文件的 ELF 段只按 4KB 边界组织，在 16KB 页系统上，一个段可能跨越两个页——加载器需要额外处理跨页边界，甚至可能导致段内容被部分截断或错误映射，引发 SIGBUS 或 SIGSEGV 崩溃。
 
 **构建工具链要求：**
-- NDK r28+：默认输出 16KB 对齐的 `.so` 文件
+- NDK r28+：默认输出满足 16KB 边界要求的 `.so` 文件
 - NDK r27：需要在链接时添加 `-Wl,-z,max-page-size=16384`
 - AGP 8.5.1+：对使用 uncompressed shared libraries 的 App，可以正确请求 16KB zip 布局
 - AAB 产物要再用 `bundletool dump config --bundle <your.aab> | grep alignment` 检查是否为 `PAGE_ALIGNMENT_16K`
-- AGP 8.3-8.5 虽然默认会生成 16KB 页边界 ELF，但 `bundletool` 默认不会替你补齐 APK zip alignment；只升级到这几个版本，Play 产物仍可能安装失败
+- AGP 8.3-8.5 虽然默认会生成满足 16KB 页边界要求的 ELF，但 `bundletool` 默认不会补齐 APK zip alignment；只升级到这几个版本，Play 产物仍可能安装失败
 
 **代码中的页大小假设：** 容易出错的是把页大小写死成 `4096`，例如 `#define PAGE_SIZE 4096`。`sysconf(_SC_PAGESIZE)` 和 `getpagesize()` 都属于运行时查询，应该保留：
 
@@ -159,13 +162,10 @@ long page_size = sysconf(_SC_PAGESIZE);
 int page_size2 = getpagesize();
 ```
 
-这类 bug 通常不会在 4KB 设备上暴露，只在 16KB 设备上才崩溃。Google Play 已经在 Play Console 中增加了检测机制，会警告使用了 4KB 对齐 `.so` 的 App。
+这类 bug 通常不会在 4KB 设备上暴露，只在 16KB 设备上才崩溃。Google Play 已经在 Play Console 中增加了检测机制，会警告使用了 4KB 边界 `.so` 的 App。
 
 
-<!-- AIW-源码调研-2026-04-23 -->
-## 源码调研补充：Bionic Linker 16KB 兼容模式内部机制
-
-> 以下内容来自 2026-04-23 源码调研，补充正文未覆盖的 Linker 层实现细节。
+## Bionic Linker 16KB 兼容模式内部机制
 
 ### Bionic 中的页大小来源与 Linker 分支
 
@@ -192,7 +192,7 @@ bool ElfReader::Read(...) {
 
 ### 错误消息改进（commit fc89c8ae，2024-08-05）
 
-在此次提交之前，ELF 对齐不符合系统页大小时 Linker 报错模糊（通用 segfault）。提交后改为明确报错：
+在此次提交之前，ELF program alignment 不符合系统页大小时 Linker 报错模糊（通用 segfault）。提交后改为明确报错：
 
 ```
 program alignment (4096) cannot be smaller than system page size (16384)
@@ -210,15 +210,15 @@ RELRO 保护仍然存在。`soinfo::protect_relro()` 在 compat 分支调用 `ph
 
 ### 兼容模式不具备性能红利
 
-兼容模式的目标是**让旧 4KB ELF 继续加载**，不是让它在 16KB 系统上获得 TLB 收益。`CompatMapSegment()` 把按 4KB 边界组织的 LOAD segment 读入匿名 RW 映射，而不是走 `mmap64()` 直接映射文件。加载 4KB 对齐的 `.so` 时，Bionic 因权限对齐冲突被迫将本可共享的 `.so` 内容执行匿名拷贝——原本可被多个进程共享的 `.so` 库变为每个进程独占一份，PSS 随之飙升，且无法享受 16KB 页带来的启动加速红利。
+兼容模式的目标是**让旧 4KB ELF 继续加载**，不是让它在 16KB 系统上获得 TLB 收益。`CompatMapSegment()` 把按 4KB 边界组织的 LOAD segment 读入匿名 RW 映射，而不是走 `mmap64()` 直接映射文件。加载以 4KB 边界组织的 `.so` 时，Bionic 因权限边界冲突被迫将本可共享的 `.so` 内容执行匿名拷贝——原本可被多个进程共享的 `.so` 库变为每个进程独占一份，PSS 随之升高，且无法享受 16KB 页带来的启动加速红利。
 
 在 Perfetto 中对比同一 App 的 compat 模式和非 compat 模式，compat 模式下 `mmap` 命中的文件映射更少、匿名页更多，启动耗时通常不会改善。具体的 Perfetto/proc 观察方法：
 
 - **smaps 对比**：同一 `.so` 在 compat 模式下 `Shared_Clean` 会降低或归零（因为匿名拷贝不共享），`Private_Dirty` 和 `PSS` 相应升高。用 `adb shell cat /proc/<pid>/smaps | grep -A 20 <libname>` 分别在两种模式下抓取对比
-- **Perfetto `mem.mm.min_flt`**：compat 模式下 minor fault 计数与 16KB 对齐版本相当或更多，说明页分配粒度没有改善
+- **Perfetto `mem.mm.min_flt`**：compat 模式下 minor fault 计数与满足 16KB 要求的版本相当或更多，说明页分配粒度没有改善
 - **启动耗时**：用 `am start -W` 或 Perfetto 的 cold launch slice 对比；compat 模式下冷启动不会获得 16KB 页的 TLB 收益
 
-compat 只用于临时兼容验证，不应作为发布态性能方案。对于有性能要求的 App，正确做法仍然是重新编译 `.so` 使其 16KB 对齐，不要依赖 compat 模式。
+compat 只用于临时兼容验证，不应作为发布态性能方案。对于有性能要求的 App，正确做法仍然是重新编译 `.so` 使其满足 16KB 边界要求，不要依赖 compat 模式。
 
 ### 控制接口总览
 
@@ -233,11 +233,7 @@ compat 只用于临时兼容验证，不应作为发布态性能方案。对于�
 
 正文中"需要在链接时添加 `-Wl,-z,max-page-size=16384`"的底层原理是：此 flag 告诉链接器将 ELF 的 `p_align` 设为 16384，使 `min_palign` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
 
-<!-- AIW-源码调研-2026-04-23 -->
-<!-- AIW-源码调研-2026-05-03 -->
-## 源码调研补充：Bionic Linker 16KB Compat Mode 核心常量与 mprotect 修复（2026-05-03）
-
-> 以下内容来自 2026-05-03 源码调研，补充正文未覆盖的 Compat 模式常量定义和 NDK r27 mprotect 修复细节。
+## Bionic Linker 16KB Compat Mode 常量与 mprotect 修复
 
 ### kCompatPageSize 常量与 CompatMapSegment 双路径
 
@@ -262,17 +258,17 @@ if (should_use_16kib_app_compat_) {
 }
 ```
 
-CompatMapSegment 内部使用 4KB (kCompatPageSize) 对齐映射，而原生 MapSegment 使用 16KB 对齐。
+CompatMapSegment 内部使用 4KB (kCompatPageSize) 边界映射，原生 MapSegment 使用 16KB 边界映射。
 
-### NDK r27 mprotect 对齐 Bug（GitHub android/ndk#2026）
+### NDK r27 mprotect alignment Bug（GitHub android/ndk#2026）
 
-NDK r27 链接器生成的 ELF 文件 p_align=4096（4KB），在 16KB 页面设备上触发 mprotect 对齐错误：
+NDK r27 链接器生成的 ELF 文件 p_align=4096（4KB），在 16KB 页面设备上触发 mprotect 边界错误：
 
 ```
 Crash with WriteProtected mprotect 1 failed: Invalid argument.
 ```
 
-mprotect(addr, size, PROT_READ|PROT_WRITE) 的 addr 参数必须页对齐，16KB 设备上 4KB 对齐的地址触发 EINVAL。该 bug 在 AOSP commit ce1c3cf77b8b08d402818dad10b804013f46722f（2024-10-11）中修复，NDK r28 已包含。
+mprotect(addr, size, PROT_READ|PROT_WRITE) 的 addr 参数必须落在页边界上，16KB 设备上 4KB 边界地址会触发 EINVAL。该 bug 在 AOSP commit ce1c3cf77b8b08d402818dad10b804013f46722f（2024-10-11）中修复，NDK r28 已包含。
 
 ### RELRO 保护在 Compat 模式下的差异
 
@@ -313,9 +309,9 @@ adb shell getconf PAGE_SIZE
 
 Pixel 8/8 Pro/8a 和 Pixel 9 系列在 Android 15 QPR1+ 上支持开发者选项中的 "Boot with 16KB page size"。启用后重启设备即可。
 
-### 验证 APK 对齐
+### 验证 APK alignment
 
-Google 提供了 `check_elf_alignment.sh` 脚本，可以检查 APK 中所有 `.so` 文件是否满足 16KB 对齐：
+Google 提供了 `check_elf_alignment.sh` 脚本，可以检查 APK 中所有 `.so` 文件是否满足 16KB 边界要求：
 
 ```bash
 # 方法 1：使用 zipalign 工具验证
@@ -326,13 +322,13 @@ zipalign -c -P 16 -v 4 your_app.apk
 ./check_elf_alignment.sh your_app.apk
 ```
 
-Play Console 的 App Bundle Explorer 也提供了自动化的对齐检查。上传 AAB 后，在 "发布" → "设置" 中查看对齐状态。
+Play Console 的 App Bundle Explorer 也提供了自动化的边界检查。上传 AAB 后，在 "发布" → "设置" 中查看 alignment 状态。
 
 ### 常见迁移问题
 
-**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果 App 依赖的第三方 SDK 还没有适配 16KB，你需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新对齐（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
+**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果 App 依赖的第三方 SDK 还没有适配 16KB，需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新处理 ELF/ZIP 边界（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
 
-**构建缓存问题**：升级 AGP/NDK 后，记得 clean build。Gradle 的增量编译缓存可能保留旧的 4KB 对齐产物。
+**构建缓存问题**：升级 AGP/NDK 后，记得 clean build。Gradle 的增量编译缓存可能保留旧的 4KB 边界产物。
 
 ## 在 Perfetto 中的表现
 
@@ -428,15 +424,15 @@ adb shell getconf PAGE_SIZE
 
 ### "纯 Java App 不需要关心 16KB"
 
-大体正确，但有一个例外：如果你的 App 通过 JNI 调用了系统库（如 `libandroid_runtime.so`、`libnativehelper.so`），而这些系统库在某些老设备上还没有 16KB 对齐——这种情况下 App 本身不需要修改，但可能遇到系统级兼容性问题。Android 15+ 的系统库已经全部 16KB 对齐，所以这只影响老设备。
+大体正确，但有一个例外：如果 App 通过 JNI 调用了系统库（如 `libandroid_runtime.so`、`libnativehelper.so`），而这些系统库在某些老设备上还没有满足 16KB 边界要求——这种情况下 App 本身不需要修改，但可能遇到系统级兼容性问题。Android 15+ 的系统库已经全部满足 16KB 边界要求，所以这只影响老设备。
 
 ### "16KB 页大小只影响启动速度"
 
-不对。16KB 页影响所有涉及内存访问的场景——不只是启动。滑动时的大量 Bitmap 解码、WebView 的页面渲染、视频解码的 buffer 管理都会受益。只是启动阶段的收益最容易量化（因为 page fault 最密集），所以 Google 在官方文档中重点展示了启动数据。从 Perfetto 分析的实际案例来看，列表滑动场景中 Bitmap 频繁 mmap/unmmap 导致的 Minor Page Fault 也是一个可观测的改善点（参见 §7.8「RecyclerView 列表滑动性能深度优化」中的内存访问模式分析）。
+这个判断不完整。16KB 页影响所有涉及内存访问的场景，不只影响启动。滑动时的大量 Bitmap 解码、WebView 的页面渲染、视频解码的 buffer 管理都会受益。只是启动阶段的收益最容易量化（因为 page fault 最密集），所以 Google 在官方文档中重点展示了启动数据。从 Perfetto 分析的实际案例来看，列表滑动场景中 Bitmap 频繁 mmap/unmmap 导致的 Minor Page Fault 也是一个可观测的改善点（参见 §7.8「RecyclerView 列表滑动性能深度优化」中的内存访问模式分析）。
 
 ### "我需要在代码中硬编码 16384"
 
-绝对不要。正确的做法是用 `sysconf(_SC_PAGESIZE)` 运行时查询。这不仅是为了兼容 4KB 和 16KB 设备，也是为了应对未来可能出现的 64KB 页大小。
+不要这样做。正确的做法是用 `sysconf(_SC_PAGESIZE)` 运行时查询。这样才能同时兼容 4KB、16KB 设备，以及未来可能出现的 64KB 页大小。
 
 ## 参考资料
 
