@@ -14358,6 +14358,64 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T02:30:38+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.17",
+      "section_title": "IPC 全景：Android 进程间通信机制对比与性能选型",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-05-08 发现 P0/P1 技术问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-08-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L160 Binder transaction buffer / BINDER_VM_SIZE",
+          "detail": "[P0] 正文把 AOSP main `ProcessState.cpp` 的 `BINDER_VM_SIZE` 写成 `(1*1024*1024) - (4096 * 2)`。当前源码为 `((1 * 1024 * 1024) - sysconf(_SC_PAGE_SIZE) * 2)`；在 16KB page size 设备上可用映射区约为 1MB - 32KB，不是固定减 8KB。",
+          "suggestion": "按源码改为 `sysconf(_SC_PAGE_SIZE) * 2`，并补一句版本边界：4KB 与 16KB 设备的 Binder transaction buffer 可用空间不同，`约 1MB` 只能作口径化描述。"
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "L271-L298 `Parcel::writeBlob()` / memfd sealing",
+          "detail": "[P0] 正文写 `BLOB_INPLACE_LIMIT` 是 16 machine words（64 位约 128B），并给出 `memfd_create` + `ftruncate` + `write` + `fcntl(F_SEAL_FUTURE_WRITE)` 的直接调用链。AOSP main `Parcel.cpp` 当前为 `BLOB_INPLACE_LIMIT = 16 * 1024`；大 blob 路径调用 `ashmem_create_region(\"Parcel Blob\", len)`，memfd/fallback 与 `F_SEAL_FUTURE_WRITE` 在 `system/core/libcutils/ashmem-dev.cpp` 的 ashmem-compatible 层完成；`art/libartbase/base/memfd.cc` 路径也不是正文写的 `bionic/libartbase/base/memfd.cc`。",
+          "suggestion": "重写这一节源码链：`Parcel::writeBlob()` 只负责阈值判断、`ashmem_create_region`、`mmap`、immutable 时 `ashmem_set_prot_region(PROT_READ)` 和 fd 写入 Parcel；memfd/seal 作为 libcutils ashmem-compatible 实现细节单独说明，阈值改为 16KB。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T03:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "4.7",
+      "section_title": "16KB Page Size 与 Android 性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 4.7 16KB Page Size 与 Android 性能 — 2026-05-08 发现 P0/P1 技术问题，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-08-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "事实错误/版本差异",
+          "location": "L391-L393 mTHP 与 contpte",
+          "detail": "[P0] 正文写 16KB 基础页下 contpte 是 16 个 16KB 页组成 256KB，并说单个 TLB entry 覆盖 256KB。Linux arm64 当前 `ARM64_CONT_PTE_SHIFT` 在 `PAGE_SIZE_16KB` 下默认 7，`CONT_PTES = 1 << 7 = 128`，`CONT_PTE_SIZE = 128 * 16KB = 2MB`；LWN/内核讨论也把 16K/64K contpte size 描述为 2MB。",
+          "suggestion": "把 16KB contpte 覆盖粒度改为 2MB，并区分 mTHP 可分配的多种 folio size 与 arm64 contiguous PTE hint 的硬件压缩粒度；不要把 64KB/256KB mTHP 直接等同于 contpte TLB entry 覆盖范围。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L240-L247 `kCompatPageSize` 与加载分支源码锚点",
+          "detail": "[P0] 正文称 `kCompatPageSize` 定义在 `bionic/linker/linker_phdr_16kib_compat.cpp` 行 48，并称分支在 `phdr_table_load_segment()`。AOSP main 当前 `kCompatPageSize = 0x1000` 定义在 `bionic/linker/linker_phdr.h`；调用分支位于 `ElfReader::LoadSegments()`，函数名不是 `phdr_table_load_segment()`。",
+          "suggestion": "按当前 AOSP main 改源码锚点：常量引用 `linker_phdr.h`，分支引用 `linker_phdr.cpp` 的 `ElfReader::LoadSegments()`；如保留 commit 历史，需要注明该 commit 对应的历史文件布局。"
+        },
+        {
+          "type": "迁移步骤缺失",
+          "location": "L149 / L234 NDK r27 linker flags",
+          "detail": "[P1] 正文只给 `-Wl,-z,max-page-size=16384`。Android 官方 16KB 迁移文档对 NDK r27 及更低版本给出的 linker flags 是 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384`；少写 `common-page-size` 会让读者的 ndk-build/CMake 修复步骤不完整。",
+          "suggestion": "构建工具链要求与底层原理两处都补上 `-Wl,-z,common-page-size=16384`，并说明 NDK r28+ 默认满足 16KB ELF alignment，预编译 `.so` 仍需单独替换。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T03:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
