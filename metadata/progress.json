@@ -34,5 +34,23 @@
       "ready-for-review": 73,
       "unknown": 1
     }
-  }
+  },
+  "task2b_rework_history": [
+    {
+      "timestamp": "2026-05-07T12:49:16+08:00",
+      "sections": [
+        "2.7",
+        "13.7"
+      ],
+      "source": "task9-deep-tech-review",
+      "issues_fixed": 5,
+      "details": [
+        "2.7 P0: RenderEffect source anchor corrected",
+        "2.7 P1: Android 16 auto-layer heuristic → promotedToLayer()",
+        "2.7 P1: SF relationship View layer vs SF layer clarified",
+        "2.7 P1: Cache invalidation narrowed to dirty+redraw",
+        "13.7 P1: Standard Library module names corrected to dot-separated"
+      ]
+    }
+  ]
 }
