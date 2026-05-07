@@ -13704,6 +13704,26 @@
       "added_at": "2026-05-07T08:20:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-05-07-08-review.md"
+    },
+    {
+      "section": "18.5",
+      "section_title": "Android View 多窗口渲染路径",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 18.5 Android View 多窗口渲染路径仍有分屏/桌面多窗口同进程泛化问题，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/拓扑边界",
+          "location": "L58-L66、L305-L309 分屏/桌面多窗口与同进程多窗口边界",
+          "detail": "[P1] 正文开头把“分屏/多窗口模式”和 Desktop Windowing 放进“同一进程内同时存在两个活跃窗口”的列表，末尾又写“分屏模式下两个 Activity 同时 RESUMED，底层仍然是同一个 Choreographer 串行分发”。这只适用于同 App / 同进程 / 同主线程的多可见 Activity 或 Activity Embedding；不同 App 的 split-screen、PiP、freeform / desktop windowing 各自拥有独立进程、Choreographer 和 RenderThread，瓶颈主要转移到 SurfaceFlinger / HWC / WindowManager 侧。",
+          "suggestion": "把“多窗口场景分析”和“分屏模式的特殊考虑”拆成同进程与跨进程两类：同 App 多 Activity / Activity Embedding 才能沿用共享 UI Thread、共享 RenderThread 的串行判断；不同 App 分屏、PiP、桌面窗口必须改写为跨进程拓扑，并把诊断入口改到 pid、SurfaceFlinger layer、per-layer latch、HWC composition 和外显/SystemUI 负载。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T08:36:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
