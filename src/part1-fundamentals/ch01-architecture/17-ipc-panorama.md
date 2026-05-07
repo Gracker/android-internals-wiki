@@ -32,12 +32,12 @@ reviewed_date: "2026-05-04"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 review_log: "logs/review/2026-04-11-09-review.md"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_result: needs-rework
-task9_state: reviewed
-task2b_result: pending
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 last_task2b_at: "2026-04-24T09:54:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-28
@@ -122,21 +122,22 @@ Android 的安全模型基于进程隔离：每个应用运行在独立进程中
 
 | 机制 | 传输方向 | 数据量 | 拷贝次数 | 安全模型 | 主要使用场景 |
 |------|---------|--------|---------|---------|-------------|
-| **Binder（同步）** | 双向 | ≤1MB | 1（mmap） | UID/GID + SELinux | 系统服务调用 |
-| **Binder（oneway）** | 单向异步 | ≤1MB | 1 | UID/GID + SELinux | 异步通知、回调 |
-| **HIDL / HwBinder** | 双向 | ≤1MB | 1 | SELinux + HAL 域 | Treble 早期/存量 HAL 控制调用 |
-| **Stable AIDL HAL / Binder** | 双向 | ≤1MB | 1 | SELinux + 稳定接口约束 | 新 HAL 控制调用 |
+| **Binder（同步）** | 双向 | ≤进程级 buffer 约 1MB | 1（mmap） | UID/GID + SELinux | 系统服务调用 |
+| **Binder（oneway）** | 单向异步 | ≤进程级 buffer 约 1MB | 1 | UID/GID + SELinux | 异步通知、回调 |
+| **HIDL / HwBinder** | 双向 | ≤进程级 buffer 约 1MB | 1 | SELinux + HAL 域 | Treble 早期/存量 HAL 控制调用 |
+| **Stable AIDL HAL / Binder** | 双向 | ≤进程级 buffer 约 1MB | 1 | SELinux + 稳定接口约束 | 新 HAL 控制调用 |
 | **Unix Domain Socket** | 双向 | 无硬限制 | 2（send+recv） | 文件系统权限 | logd、input、本地服务 |
 | **Pipe** | 单向 | 受内核缓冲限制 | 2 | fd 继承/传递 | 子进程标准流、少量控制流 |
 | **共享内存 / DMA-BUF** | 双向 | 大块数据 | 0（零拷贝） | fd 传递 + SELinux | SharedMemory、CursorWindow、GraphicBuffer |
 | **mmap 文件映射** | 双向 | 文件大小 | 0 | 文件权限 | 配置共享、数据库 WAL |
 | **Signal** | 单向 | 无数据 | 0 | 内核级 | ANR SIGQUIT、进程杀死 |
 | **eventfd / epoll** | 单向事件 | 8 字节 | 0 | fd 继承 | 线程/进程事件通知 |
-| **Intent** | 双向（底层Binder） | ≤1MB | 1 | UID + 权限 | 组件间通信 |
+| **Intent** | 双向（底层Binder） | ≤进程级 buffer 约 1MB | 1 | UID + 权限 | 组件间通信 |
 | **ContentProvider** | 双向（Binder+shm） | 大块 | 0~1 | UID + 权限 | 数据共享 |
-| **AIDL** | 双向（Binder） | ≤1MB | 1 | UID/GID + SELinux | 自定义服务接口 |
-| **Messenger** | 单向队列（Binder） | ≤1MB | 1 | UID/GID | 轻量消息传递 |
+| **AIDL** | 双向（Binder） | ≤进程级 buffer 约 1MB | 1 | UID/GID + SELinux | 自定义服务接口 |
+| **Messenger** | 单向队列（Binder） | ≤进程级 buffer 约 1MB | 1 | UID/GID | 轻量消息传递 |
 | **FMQ（Fast Message Queue）** | 双向 | 可配置 | 0（零拷贝） | HAL 进程 | 高吞吐 HAL 数据流 |
+| **AF_VSOCK / RpcBinder** | 双向 | 与 Binder 同量级 | 1 | SELinux + VM 域 | AVF/Microdroid VM 间通信 |
 
 ## 3. 核心机制详解
 
@@ -150,10 +151,10 @@ Android 上约 **90%+ 的 IPC 调用** 走 Binder 路径。四大组件的生命
 
 **性能关键指标：**
 
-- 单次同步调用延迟：**~0.5-2ms**（同设备进程间）
+- 单次同步调用延迟：**~0.5-2ms**（同设备进程间，空服务 RPC 参考；调用 framework 服务时由于服务端处理逻辑，实际延迟通常更高）
 - oneway 调用延迟：**~0.2-0.8ms**
 - 默认 worker 上限约 15 线程（`DEFAULT_MAX_BINDER_THREADS = 15`）；很多人口语里说的“16 线程”通常把发起调用的 caller 线程也算进去了
-- 单次事务数据上限：**1MB**（`BINDER_MAX_TRANSACTION_SIZE`）
+- 单次事务数据上限：受进程级 Binder transaction buffer 约束（约 1MB 减 2 个 page，由同进程并发事务共享）。AOSP `ProcessState.cpp` 中 `BINDER_VM_SIZE` 为 `(1*1024*1024) - (4096 * 2)`。`TransactionTooLargeException` 的实际触发条件受并发事务放大影响——多个线程同时发起 Binder 调用时，buffer 空间是共享的
 - 优化：一次 mmap 拷贝（vs 传统 IPC 的两次）
 
 [已验证: AOSP main, frameworks/native/libs/binder/ProcessState.cpp — `DEFAULT_MAX_BINDER_THREADS = 15`]
@@ -355,16 +356,30 @@ libartbase 的封装（`bionic/libartbase/base/memfd.cc`）提供 tmpfile fallba
 
 [已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》— Android 8 将 vendor IPC 隔离到 `/dev/hwbinder`；Android 10 Stable AIDL 允许 HAL 使用 `/dev/binder`]
 
+### 3.7.1 AVF 场景下的 IPC：AF_VSOCK 与 RpcBinder
+
+Android Virtualization Framework (AVF) 引入了虚拟机（pVM/Microdroid）场景。在这种场景下，host 和 VM 之间的通信不再走传统的 `/dev/binder`，而是通过 `AF_VSOCK`——一种基于 virtio-socket 的虚拟化 IPC 机制。AIDL 在 VM 场景下使用 `RpcBinder`（也称为 `libbinder_ndk_rpc`），底层可以绑定到 `AF_VSOCK` 或 Unix Domain Socket。
+
+三类边界要分清：
+
+| 场景 | IPC 路径 | 说明 |
+|------|---------|------|
+| **host ↔ pVM** | AIDL via RpcBinder → AF_VSOCK | host 的 `virtmgr` 管理 VM 生命周期，AIDL 接口经 RpcBinder 序列化后走 vsock |
+| **pVM 内部** | Unix Domain Socket / 共享内存 | VM 内部组件间的 IPC 走标准 UDS 或共享内存 |
+| **VM 间** | 无直接 IPC | pVM 之间不直接通信，需经 host 中转 |
+
+RpcBinder 的性能特征与标准 Binder 类似（序列化/反序列化 + 一次数据拷贝），但底层传输从 binder 驱动换成了 vsock。在 Perfetto 中，VM 间 IPC 的开销更多体现在 vsock 的数据传输延迟上，而非 binder driver 的调度。
+
 ## 4. 性能对比表
 
 ### 4.1 定量对比
 
 | 机制 | 典型延迟 | 吞吐量 | 数据量上限 | 拷贝次数 | CPU 开销 |
 |------|---------|--------|-----------|---------|---------|
-| Binder 同步 | 0.5-2ms | 中等 | 1MB | 1 | 中（序列化） |
-| Binder oneway | 0.2-0.8ms | 中等 | 1MB | 1 | 中 |
-| HIDL / HwBinder | 与 Binder 同量级 | 中等 | 1MB | 1 | 中 |
-| Stable AIDL HAL / Binder | 与 Binder 同量级 | 中等 | 1MB | 1 | 中 |
+| Binder 同步 | 0.5-2ms | 中等 | 进程级约 1MB（共享） | 1 | 中（序列化） |
+| Binder oneway | 0.2-0.8ms | 中等 | 进程级约 1MB（共享） | 1 | 中 |
+| HIDL / HwBinder | 与 Binder 同量级 | 中等 | 进程级约 1MB（共享） | 1 | 中 |
+| Stable AIDL HAL / Binder | 与 Binder 同量级 | 中等 | 进程级约 1MB（共享） | 1 | 中 |
 | Unix Socket | 0.1-0.5ms | 高 | 无限制 | 2 | 低 |
 | Pipe | 0.05-0.1ms | 中 | 受内核缓冲限制 | 2 | 极低 |
 | 共享内存 | 首次 0.5-2ms，后续 ns | 极高 | 受物理内存限制 | 0 | 极低（需同步） |
@@ -372,7 +387,13 @@ libartbase 的封装（`bionic/libartbase/base/memfd.cc`）提供 tmpfile fallba
 | Signal | 即时 | N/A | 0 字节 | 0 | 无 |
 | FMQ | ~μs 级 | 极高 | 配置决定 | 0 | 极低 |
 
-> **注：** 延迟数据为 2026 年主流设备上的典型值，受 CPU 频率、调度策略、系统负载影响。具体数据应通过 Perfetto 实测确认 [待验证]。
+> **注：** 延迟数据为方向性参考，受以下条件影响：
+> - Binder 延迟：空服务 RPC（无业务逻辑），同设备进程间，ARMv9 旗舰 SoC，主频 2-4GHz
+> - Unix Socket / Pipe：本地回环，无 SELinux policy miss
+> - 共享内存：首次映射开销，后续为 ns 级内存读写
+> - FMQ：零拷贝环形队列读写，不含控制面 Binder 开销
+>
+> 不同测试口径给出的数字差异很大（binder driver microbenchmark vs framework service end-to-end vs 应用层 AIDL 调用），横向对比时要注意口径一致。具体数据应通过 Perfetto 在目标设备上实测确认。
 
 ### 4.2 Android 常见的“组合式 IPC”
 
@@ -488,6 +509,7 @@ IPC 的版本演进，重点不是“又多了一个名词”，而是控制面�
 | Android 13 | GraphicBuffer 等图形内存路径进一步统一到 dmabuf | 图形类大数据更典型地表现为“Binder 控制 + dmabuf 数据面”；应用通用共享内存仍单独看 |
 | Android 14+ | 持续鼓励 HIDL → AIDL 迁移，而不是一刀切“全面完成” | 同一设备上可能长期共存两套 HAL IPC |
 | Android 16-17 | AIDL HAL 与 Rust HAL 覆盖面继续扩大 | 实现语言会变，但 control plane / data plane 的组合模式不变 |
+| Android 13+ (AVF) | AF_VSOCK + RpcBinder 用于 host ↔ VM 通信 | VM 场景下 IPC 走 vsock 而非 binder 驱动；分析 VM trace 时要区分 vsock 和传统 binder 延迟 |
 
 [已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》；Android 图形 allocator 的 ION → dmabuf-heaps 迁移与通用共享内存 API 是两条独立演进线]
 
