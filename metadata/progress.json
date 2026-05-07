@@ -68,6 +68,27 @@
         "§8.4: P1 Binder线程池待验证标记已删除，写入Android 16确认结论（DEFAULT_MAX_BINDER_THREADS=16，BINDER_VM_SIZE不变）",
         "§15.6: P90/FPS分位语义修正（耗时类用P90，FPS改用P10/慢帧占比）；Macrobenchmark自动稳定化改为IsolationActivity+sustained perf mode源码级描述"
       ]
+    },
+    {
+      "date": "2026-05-08T05:43:54+08:00",
+      "sections": [
+        "5.5",
+        "7.1"
+      ],
+      "details": [
+        {
+          "section": "5.5",
+          "source": "task6-review",
+          "priority": 95,
+          "fixes": "P0 删除AIW残留段(thermal_monitor_notify/update_libcache_stats不存在); P1 16KB thermal确定性断言整段删除,保留前文研究假设口径"
+        },
+        {
+          "section": "7.1",
+          "source": "task9-deep-tech-review",
+          "priority": 85,
+          "fixes": "P1 标题从'Android 15/16新增'改为'Android 12+已有与较新tag补充'; 未验证枚举移出主表; Dropped版本门槛单独标注; 高频词'真正'从5次降至2次"
+        }
+      ]
     }
   ],
   "task6_review_history": [
