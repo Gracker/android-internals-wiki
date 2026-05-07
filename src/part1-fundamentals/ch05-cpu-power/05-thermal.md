@@ -24,11 +24,11 @@ polish_date: "2026-04-08"
 polish_by: "task2b-polish"
 reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
-task6_state: revisiting
-task6_result: "needs-rework"
+task6_state: reviewed
+task6_result: "pass-light-edit"
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T05:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-08-05-review.md"
+last_task6_at: "2026-05-08T06:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-06-review.md"
 task9_state: pending
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-08"
@@ -37,11 +37,11 @@ last_task9_at: "2026-05-08T05:27:25+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-08-05-deep-review.md"
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: '2026-05-08T05:42:56+08:00'
-review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。 | 2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。"
+review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。 | 2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。 | 2026-05-08 Task6 06:05：回炉复审通过。L1/L2 无新增问题，16KB thermal 段已保持研究假设口径；切回 Task9 复审。"
 task9_review_notes: "2026-05-08 Task9 05:27：needs-rework。P0 1 / P1 1；AIW 16KB thermal 残留段仍包含不存在的 `thermal_monitor_notify()` / `update_libcache_stats()` 与无证据 Android 16/17 thermal 预测断言，已合并 queue。"
 ---
 # Thermal 管控
