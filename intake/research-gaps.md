@@ -12605,3 +12605,20 @@ UprobeStats 在 Android 16/17 的真实数据出口与开销边界缺少一手�
 
 ### 关联章节
 18.3, 5.5, 11.1
+
+
+## [2026-05-08] 19.26 混合栈与跨平台 APM (WebView / Flutter) — 知识盲区
+
+### 盲区描述
+Flutter `FrameTiming` 只上报 build/raster/total duration 还不够。要进入 Native / WebView / Flutter 统一 Session Timeline，还需要把 Flutter raw timestamp（`timestampInMicroseconds(FramePhase)`，同一 Flutter epoch，但不保证等于 wall-clock/DateTime epoch）校准到 Android `elapsedRealtime` 轴，否则 UI/Raster jank 无法和 ANR、网络、WebView FCP/LCP、PixelCopy 采样对齐。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 Flutter `FrameTiming` / `FramePhase` 官方 API，确认各 phase timestamp 的 epoch、单调性和批量回调延迟。
+- 设计 Dart ↔ Native 校准事件：同一时刻记录 Flutter raw timestamp、Native `SystemClock.elapsedRealtimeNanos()`、MethodChannel 接收时间，并估算桥接误差。
+- 给出线上样本字段：`frameNumber`、`vsyncStart/buildStart/rasterStart/rasterFinish` raw timestamp、校准 offset、采样模式和误差范围。
+
+### 关联章节
+19.26、19.0、7.1、13.5

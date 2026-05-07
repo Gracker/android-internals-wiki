@@ -1489,3 +1489,27 @@
 - **位置**：L221、L272、L460、L526
 - **问题**：章节仍以 `[待补充]` 占位承载 dumpsys meminfo 真机输出、Graphics 内存、Perfetto 内存曲线和内存压力 Trace，缺少设备版本、page size、TraceConfig 数据源、采样周期与操作步骤。当前机制描述可读，但关键工具段还不能支撑读者复现实验。
 - **建议**：补一组同设备、同包名的 `dumpsys meminfo` 前后快照 + Perfetto TraceConfig（至少 `linux.process_stats`、`linux.sys_stats`，必要时加 `kmem/rss_stat`、lmkd/ActivityManager 事件），标注 Android 版本、页大小、采样周期、触发操作与 SQL/UI 观察点。
+
+## [Task9 Deep Review] 10.2 内存泄漏 — 2026-05-08
+- **类型**：版本差异/数据缺失
+- **位置**：L331 ProfilingManager 线上采集
+- **问题**：正文把 Android 15+ `ProfilingManager.requestProfiling()` 描述成“系统级零侵入触发能力”，但缺少 API 35 边界、rate limit、不保证一定执行、结果只落在应用数据目录/会被 redaction 的约束。
+- **建议**：补充 `PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_HEAP_PROFILE`、`PROFILING_TYPE_SYSTEM_TRACE` 的类型边界，并写明请求有系统限流与失败路径，线上只能作为按条件采样/诊断入口，不能替代常驻泄漏监控。
+
+## [Task9 Deep Review] 19.13 androidx.tracing（Tracing SDK） — 2026-05-08
+- **类型**：数据缺失
+- **位置**：L163-L179 Trace 调用开销表
+- **问题**：表格给出“亚微秒级/百纳秒级/6-14μs”等具体量级，但没有设备、Android 版本、AndroidX 版本、trace 配置、benchmark 脚本和重复次数；ftrace/atrace 写入成本受 SoC、buffer、trace session 状态影响很大。
+- **建议**：要么降级为定性描述（disabled fast path 低、enabled path 包含 tag check/JNI/ftrace write），要么附 `androidx.benchmark` Microbenchmark 条件与 raw result，再把数字限定在测试设备范围内。
+
+## [Task9 Deep Review] 19.26 混合栈与跨平台 APM (WebView / Flutter) — 2026-05-08
+- **类型**：数据支撑/监控开销
+- **位置**：L149-L178 PixelCopy 白屏采样示例
+- **问题**：示例每次创建全宽、最高 480px 的 ARGB_8888 bitmap，没有检查 WebView 宽高/attach/window 状态，也没有复用或回收 bitmap；线上低频采样仍可能带来 Native heap 抖动或在宽高为 0 时抛异常。
+- **建议**：补充 `width/height > 0`、`isAttachedToWindow`、window token/可见性检查；使用下采样区域或 bitmap pool，分析后 `recycle()`/复用，并记录 PixelCopy result code 以区分采样失败和“非白屏”。
+
+## [Task9 Deep Review] 19.26 混合栈与跨平台 APM (WebView / Flutter) — 2026-05-08
+- **类型**：原理边界
+- **位置**：L143 postVisualStateCallback 可见性说明
+- **问题**：`postVisualStateCallback` 只保证当前 WebView visual state 已准备好在后续 draw 中呈现，不保证已经显示到屏幕；WebView 被遮挡、未 attach、窗口不可见时也可能触发回调。正文用于白屏采样锚点时缺少这层边界。
+- **建议**：补一句：它只能作为渲染管线就绪信号，最终屏幕可见性仍要结合 View attach/visibility/window focus 和 PixelCopy/DOM/业务 ready 交叉判断。
