@@ -37,12 +37,12 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-05"
-task9_state: reviewed
-task2b_result: pending
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-06"
@@ -212,7 +212,13 @@ RELRO 保护仍然存在。`soinfo::protect_relro()` 在 compat 分支调用 `ph
 
 兼容模式的目标是**让旧 4KB ELF 继续加载**，不是让它在 16KB 系统上获得 TLB 收益。`CompatMapSegment()` 把按 4KB 边界组织的 LOAD segment 读入匿名 RW 映射，而不是走 `mmap64()` 直接映射文件。加载 4KB 对齐的 `.so` 时，Bionic 因权限对齐冲突被迫将本可共享的 `.so` 内容执行匿名拷贝——原本可被多个进程共享的 `.so` 库变为每个进程独占一份，PSS 随之飙升，且无法享受 16KB 页带来的启动加速红利。
 
-在 Perfetto 中对比同一 App 的 compat 模式和非 compat 模式，compat 模式下 `mmap` 命中的文件映射更少、匿名页更多，启动耗时通常不会改善。对于有性能要求的 App，正确做法仍然是重新编译 `.so` 使其 16KB 对齐，不要依赖 compat 模式。
+在 Perfetto 中对比同一 App 的 compat 模式和非 compat 模式，compat 模式下 `mmap` 命中的文件映射更少、匿名页更多，启动耗时通常不会改善。具体的 Perfetto/proc 观察方法：
+
+- **smaps 对比**：同一 `.so` 在 compat 模式下 `Shared_Clean` 会降低或归零（因为匿名拷贝不共享），`Private_Dirty` 和 `PSS` 相应升高。用 `adb shell cat /proc/<pid>/smaps | grep -A 20 <libname>` 分别在两种模式下抓取对比
+- **Perfetto `mem.mm.min_flt`**：compat 模式下 minor fault 计数与 16KB 对齐版本相当或更多，说明页分配粒度没有改善
+- **启动耗时**：用 `am start -W` 或 Perfetto 的 cold launch slice 对比；compat 模式下冷启动不会获得 16KB 页的 TLB 收益
+
+compat 只用于临时兼容验证，不应作为发布态性能方案。对于有性能要求的 App，正确做法仍然是重新编译 `.so` 使其 16KB 对齐，不要依赖 compat 模式。
 
 ### 控制接口总览
 
@@ -370,17 +376,27 @@ TLB miss 后的 page-table walk 主要由 ARM64 hardware page-table walker 完�
 
 **16KB 基础页** 是更底层的改变。它不需要物理连续内存（每个 16KB 页独立分配），没有 khugepaged 的开销，收益更确定。缺点是需要重新编译 Native 代码。
 
-两者**可以叠加使用**：16KB 基础页 + THP 合并为 32MB 大页。ARM64 的 PMD_SIZE（PMD 级别的 block size）随基础页大小变化：4KB base → 2MB THP，16KB base → 32MB THP。在这种组合下，TLB entry 可以覆盖 16KB（普通页）或 32MB（大页），TLB Reach 进一步扩大。不过在实际的 Android 设备上，THP 默认配置通常是 `madvise` 模式（只对显式请求的内存区域启用），对大多数 App 的实际影响有限。
+两者**可以叠加使用**：16KB 基础页 + THP 合并为 32MB 大页。ARM64 的 PMD_SIZE（PMD 级别的 block size）随基础页大小变化：4KB base → 2MB THP，16KB base → 32MB THP。在这种组合下，TLB entry 可以覆盖 16KB（普通页）或 32MB（大页），TLB Reach 进一步扩大。不过在实际的 Android 设备上，THP 默认配置通常是 `madvise` 模式（只对显式请求的内存区域启用），对大多数 App 的实际影响有限。验证设备上 THP 默认策略的方法：
+
+```bash
+# 查看 THP 当前模式（always / madvise / never）
+adb shell cat /sys/kernel/mm/transparent_hugepage/enabled
+
+# 查看内核配置是否编译了 THP
+adb shell zcat /proc/config.gz | grep CONFIG_TRANSPARENT_HUGEPAGE
+```
+
+不同 OEM/SoC 可能使用不同默认值；分析时要先确认目标设备的 THP 状态，不要假设所有 Android 16 设备行为一致。
 
 对于性能分析来说，16KB 基础页的收益比 THP 更直接、更稳定。在分析 App 的 TLB 相关性能问题时，优先确认设备是否启用了 16KB 页。
 
 ### mTHP 与 contpte：16KB 环境下的二次优化
 
-在 16KB 基础页之上，Android 16 利用内核的 contpte（contiguous page table entries）机制实现了进一步的 TLB 优化。contpte 将 16 个物理连续的 16KB 页组成一个 256KB 的连续块，ARM MMU 硬件可以将这个连续块合并为单个 TLB entry 覆盖 256KB——相当于在 TLB 容量不变的前提下，单个 entry 的覆盖范围从 16KB 扩大到 256KB。
+在 16KB 基础页之上，如果内核启用了 `CONFIG_ARM64_CONTPTE` 和 mTHP 框架，可以获得进一步的 TLB 优化。contpte（contiguous page table entries）将 16 个物理连续的 16KB 页组成一个 256KB 的连续块，ARM MMU 硬件可以将这个连续块合并为单个 TLB entry 覆盖 256KB——相当于在 TLB 容量不变的前提下，单个 entry 的覆盖范围从 16KB 扩大到 256KB。这些能力依赖内核配置和 SoC 支持，不是所有 Android 16 设备都会启用。
 
 这个机制与 THP 的区别在于：THP 需要物理连续的 2MB（4KB base）或 32MB（16KB base）大块内存，对碎片化敏感；contpte 在更小的粒度（256KB）上工作，内存分配器更容易满足连续性要求，碎片化风险更低。
 
-同时，Android 16 也集成了 mTHP（Multi-size Transparent Huge Pages）框架，允许内核在 16KB 基础页上按需组装多种大小的中间页（如 64KB、256KB），兼顾 TLB 收益和碎片控制。在 Perfetto 中，mTHP 的效果仍然通过 page fault 减少和启动耗时缩短来间接观测。
+同时，mTHP（Multi-size Transparent Huge Pages）框架允许内核在 16KB 基础页上按需组装多种大小的中间页（如 64KB、256KB），兼顾 TLB 收益和碎片控制。在 Perfetto 中，mTHP 的效果仍然通过 page fault 减少和启动耗时缩短来间接观测。验证内核是否启用 mTHP：`adb shell cat /sys/kernel/mm/transparent_hugepage/hpage_pmd_size` 以及查看 `/sys/kernel/mm/transparent_hugepage/` 目录下是否存在 multi-size 相关配置。
 
 ## 版本演进与 OEM 适配
 
@@ -428,4 +444,4 @@ adb shell getconf PAGE_SIZE
 - [已验证: source.android.com/docs/architecture/16kb-page-size — AOSP 架构文档]
 - [已验证: ARM Architecture Reference Manual — TLB 结构与页大小]
 - [已标注边界: Google 官方 16KB 性能数据缺少完整样本与 build 细节，本章只作方向性参考]
-- [待验证: 16KB 基础页 + THP 在 Android 16 设备上的默认启用状态]
+- [待验证: 16KB 基础页 + THP 在各 Android 16/17 OEM 设备上的默认策略需逐设备核验 /sys/kernel/mm/transparent_hugepage/enabled；contpte/mTHP 依赖内核配置 CONFIG_ARM64_CONTPTE]
