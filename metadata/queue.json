@@ -13831,6 +13831,87 @@
       "status": "completed",
       "completed_at": "2026-05-07T12:49:16+08:00",
       "completed_reason": "P0 RenderEffect源码锚点修正(drawFrames→renderFrame/renderLayersImpl/RenderNodeDrawable); P1 Android16自动建层启发式修正为verified promotedToLayer()布尔条件; P1 SF关系修正(View layer vs SF layer层级澄清); P1 缓存失效描述收窄(标脏重绘 vs 销毁重建)"
+    },
+    {
+      "section": "2.1",
+      "section_title": "Android 渲染架构全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 2.1 Android 渲染架构全景 本轮复审仍有技术问题：P1 2。[P1] 正文把消费者写成 `SurfaceFlinger/HWC`，并把 HWC 放进 acquire/dequeue/release fence 这一侧。AOSP/官方图形架构中，BufferQueue 的消费者是 SurfaceFlinger、GLConsumer、ImageReader 等 IGraphicBufferConsumer 端；HWC/C",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-15-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/BufferQueue 边界",
+          "location": "L282-L318 BufferQueue 生产者-消费者图与消费者说明",
+          "detail": "[P1] 正文把消费者写成 `SurfaceFlinger/HWC`，并把 HWC 放进 acquire/dequeue/release fence 这一侧。AOSP/官方图形架构中，BufferQueue 的消费者是 SurfaceFlinger、GLConsumer、ImageReader 等 IGraphicBufferConsumer 端；HWC/Composer HAL 是 SurfaceFlinger acquire/latch buffer 后的合成决策与 present 通道，不是 BufferQueue consumer。L215 也把 HWC 简化成“SoC 专用硬件单元、几乎不消耗 CPU/GPU”，容易混淆 HWC HAL、display controller/DPU 与 GPU fallback 的边界。",
+          "suggestion": "把图改成 App/Surface(IGraphicBufferProducer) → BufferQueue → SurfaceFlinger(IGraphicBufferConsumer)，HWC 单独放在 SurfaceFlinger 之后：validateDisplay / acceptDisplayChanges / presentDisplay。说明 HWC 是 HAL/硬件能力抽象，具体合成由 display pipeline/DPU 等实现，SF/HWC 交互仍有 CPU 调度、带宽和 fence 成本。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L620 版本演进：Android 12 引入 BLASTBufferQueue",
+          "detail": "[P1] BLASTBufferQueue 源码在 AOSP android-11.0.0_r1 已存在（`frameworks/native/libs/gui/BLASTBufferQueue.cpp`，copyright 2019）。正文写成 Android 12 才“引入”会把 Android 11/12 的窗口事务演进边界写错。",
+          "suggestion": "改为“Android 11 已出现 BLASTBufferQueue；Android 12 之后在窗口/SurfaceControl transaction 路径中更广泛承担 buffer 与 transaction 同步”。若要写默认启用范围，需要补具体 AOSP commit 或版本说明。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T15:27:55+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.7",
+      "section_title": "Hardware Layer",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.7 Hardware Layer 本轮复审仍有技术问题：P0 1, P1 1。[P0] 正文写成“alpha 不在 (0,1) 区间且 hasOverlappingRendering() 为 true”。AOSP android-16.0.0_r1 `frameworks/base/libs/hwui/RenderProperties.h` 实际条件是 `!MathUtils::isZero(mAlpha) && mAlpha < 1",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-15-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L273 RenderProperties::promotedToLayer() alpha 条件",
+          "detail": "[P0] 正文写成“alpha 不在 (0,1) 区间且 hasOverlappingRendering() 为 true”。AOSP android-16.0.0_r1 `frameworks/base/libs/hwui/RenderProperties.h` 实际条件是 `!MathUtils::isZero(mAlpha) && mAlpha < 1 && mHasOverlappingRendering`，也就是 alpha 在 (0,1) 区间时才因半透明重叠自动升层。当前文字把布尔条件反了。",
+          "suggestion": "改为“alpha 在 (0,1) 且 hasOverlappingRendering() 为 true，并且 fitsOnLayer() 成立时，会因半透明重叠触发 promotedToLayer()”。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L87、L151、L238 Hardware Layer 收益描述",
+          "detail": "[P1] 正文多处把 Hardware Layer 的收益写成减少“反复重录 DisplayList”。现代 HWUI 是 retained DisplayList/RenderNode 模型；translation/scale/rotation/alpha 等属性动画通常不会让 UI 线程每帧重录 DisplayList。Hardware Layer 主要减少的是 RenderThread 侧对子树 DisplayList 的重复 replay/光栅化/离屏合成成本。",
+          "suggestion": "把收益链改成：内容不变 → DisplayList 可复用 → 无 layer 时仍可能每帧 replay 子树绘制命令 → hardware/compositing layer 先栅格化为离屏 render target，后续按纹理/quad 做变换；不要把“未 invalidate”场景说成每帧重录 DisplayList。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T15:27:55+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.7",
+      "section_title": "Perfetto 的高级用法",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.7 Perfetto 的高级用法 本轮复审仍有技术问题：P0 1, P1 1。[P0] SQL 使用 `(s.end_ts - s.ts)`，但 Perfetto Standard Library `android_startups` 表字段是 `ts`、`ts_end`、`dur`、`package`、`startup_type`，没有 `end_ts`。这会导致方案 A 查询失败并落入 fallback，官方 startup 模块",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-15-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/API 错误",
+          "location": "L471-L474 android.startup.startups 查询",
+          "detail": "[P0] SQL 使用 `(s.end_ts - s.ts)`，但 Perfetto Standard Library `android_startups` 表字段是 `ts`、`ts_end`、`dur`、`package`、`startup_type`，没有 `end_ts`。这会导致方案 A 查询失败并落入 fallback，官方 startup 模块路径实际不可用。",
+          "suggestion": "改为 `s.dur / 1e6 AS startup_ms`，或 `(s.ts_end - s.ts) / 1e6 AS startup_ms`；日志里标注依据：perfetto.dev stdlib docs → android.startup.startups → android_startups columns。"
+        },
+        {
+          "type": "源码/API 缺失",
+          "location": "L711-L728 Custom Data Source 最小骨架",
+          "detail": "[P1] 示例直接调用 `my::RenderPassDataSource::Trace` 和 `packet->set_render_pass_info()`，但没有定义继承 `perfetto::DataSource<T>` 的类、`PERFETTO_DECLARE/DEFINE_DATA_SOURCE_STATIC_MEMBERS` 配对、Tracing 初始化与 DataSource 注册，也没有说明 `render_pass_info` 必须是 TracePacket proto 扩展/生成代码。按当前代码读者无法编译或写入可解析 packet。",
+          "suggestion": "补一个可编译的最小骨架：DataSource 类定义、static members declare/define、`perfetto::Tracing::Initialize`、`Register()`、packet proto 扩展/生成代码边界；如果不想展开，明确标为伪代码并列出省略项。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T15:27:55+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
