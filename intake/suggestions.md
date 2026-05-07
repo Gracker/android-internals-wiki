@@ -1587,3 +1587,11 @@
 - **问题**：[P2] 正文写 heapprofd 可通过 `heaps: "com.android.art"` 采 Java heap allocations，但版本边界“待核”。Perfetto 文档已经标注 Java allocation profiling available on Android 12 or higher，并说明它是 allocation samples，不是 heap dump/retention graph。
 - **建议**：补 Android 12+ 边界，并明确它只能看到对象创建调用栈样本，不能证明对象仍被引用；泄漏确认仍要 Heap Dump/LeakCanary/Shark。
 - **review 日志**：logs/deep-review/2026-05-08-04-deep-review.md
+
+
+## [Task6 Review] 5.5 Thermal 管控 — 2026-05-08
+- **类型**：需确认/需补充素材
+- **位置**：AIW-源码调研-2026-05-07 / 16KB page size 对 thermal throttling 的延迟影响
+- **问题**：残留段落仍把 16KB page size 对 thermal throttling 的收益写成确定性结论，并包含 `thermal_monitor_notify()`、Android 16/17 thermal 管理等未在本节证据中补齐来源的断言；与前文已降级为研究假设的口径冲突。
+- **建议**：由 Task2B/Task9 按同设备 4KB/16KB A/B trace、AOSP 路径和官方文档复核；证据不足则删除该 AIW 段落或整体降级为研究假设。
+- **review 日志**：logs/review/2026-05-08-05-review.md

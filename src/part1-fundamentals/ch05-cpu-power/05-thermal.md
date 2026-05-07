@@ -1,40 +1,46 @@
 ---
 title: "Thermal 管控"
-section: "5.5"
 chapter: "5.5"
+section: "5.5"
 status: "ready-for-review"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待验证"
 last_verified: "2026-04-24"
 last_verified_against: "PowerManager#getThermalHeadroom docs + ADPF fixed-performance-mode docs"
 confidence: medium
-sources: 
-- type: official
-path: "developer.android.com/games/optimize/adpf"
+sources:
+  - type: "official"
+    path: "developer.android.com/games/optimize/adpf"
+  - type: "official"
+    path: "source.android.com/docs/core/thermal"
+  - type: "official"
+    path: "developer.android.com/reference/android/os/PowerManager"
+tags: ["thermal", "power", "adpf", "perfetto", "cpu"]
 related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "5.9", "5.12", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 polish_count: 2
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-tags: 
-reviewed_date: 2026-05-04
-reviewed_by: openclaw-task6
-task6_state: "revisiting"
-task6_result: pass-light-edit
+reviewed_date: "2026-05-08"
+reviewed_by: "openclaw-task6"
+task6_state: "reviewed"
+task6_result: "needs-rework"
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T05:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-05-review.md"
 task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: "openclaw-task9"
-pipeline_stage: "task6_pending"
 last_task9_at: "2026-05-05T21:00:00+08:00"
-task2b_state: "fixed"
-task2b_result: "fixed"
+last_task9_review_log: "logs/deep-review/2026-05-05-21-deep-review.md"
+task2b_state: "pending"
+pipeline_stage: "task2b_pending"
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-05-01T23:43:12.672839"
-review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据闭环；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。"
-last_task9_review_log: "logs/deep-review/2026-05-05-21-deep-review.md"
+last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
+review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据证据；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。 | 2026-05-08 Task6 05:05：发现 AIW 16KB thermal 残留确定性断言与已降级研究假设口径冲突，已标注并写入 Task2B queue；同步完成 L1/L2 小修。"
 ---
 # Thermal 管控
 
@@ -96,7 +102,7 @@ Android 的温控是一个分层架构：从底层硬件传感器一直到上层
 
 在 Linux 内核中，这些传感器通过 `sysfs` 接口暴露，路径通常在 `/sys/class/thermal/` 下。每个 `thermal_zone` 对应一个传感器，其中 `temp` 文件保存当前温度值（单位通常是毫摄氏度）。
 
-```
+```bash
 # 查看 SoC 上所有 thermal zone 的温度
 $ cat /sys/class/thermal/thermal_zone*/temp
 45000    # 45.0°C — CPU cluster 0
@@ -385,7 +391,7 @@ data_sources: {
 }
 ```
 
-`thermal_zone_trip` 事件会告诉我们哪个 thermal zone 跨越了哪个 trip point——这是确认温控介入的"实锤"。
+`thermal_zone_trip` 事件会告诉我们哪个 thermal zone 跨越了哪个 trip point，这是确认温控介入的直接证据。
 
 [已验证: Perfetto 官方文档 ui.perfetto.dev, data source 配置参考]
 
@@ -631,7 +637,7 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 
 ### 误区 1："手机发烫是 App 的 bug"
 
-手机发烫是 SoC 在高负载下的物理必然。App 能做的是减少不必要的计算，但只要用户在玩游戏、看高码率视频、用 AR 应用，SoC 就会发热。真正的"bug"是后台偷偷跑高负载（如死循环、频繁 GC、持续定位），这些可以通过 Trace 分析定位。
+手机发烫是 SoC 在高负载下的物理必然。App 能做的是减少不必要的计算，但只要用户在玩游戏、看高码率视频、用 AR 应用，SoC 就会发热。需要排查的 bug 是后台偷偷跑高负载（如死循环、频繁 GC、持续定位），这些可以通过 Trace 分析定位。
 
 ### 误区 2："Root 后关掉温控就能一直满血"
 
@@ -653,6 +659,8 @@ Thermal 管控在 Android 各版本中有几项关键变化，这里做一个梳
 - **[7.3 卡顿分析方法论](03-jank-methodology.md)**：卡顿分析中，温控导致的掉帧需要和代码缺陷导致的掉帧区分开来。
 
 <!-- AIW-源码调研-2026-05-07 -->
+> [需确认: 以下 AIW 源码调研段落仍把 16KB page size 对 thermal throttling 的收益写成确定性结论，且包含 `thermal_monitor_notify()`、Android 16/17 thermal 管理等未在本节证据中补齐来源的断言；需要 Task2B/Task9 按同设备 4KB/16KB A/B trace、AOSP 路径和官方文档复核后，再决定保留、降级或删除。]
+
 ### 16KB page size 对 thermal throttling 的延迟影响
 
 16KB page size 通过减少内存碎片化和提高内存访问效率，能够在真实设备上延迟 thermal throttling 约 4.5% 的 MMU 功耗。这一效果在持续内存负载场景下尤为明显，但对短时任务影响有限。
@@ -686,10 +694,10 @@ void CompatMapSegment(...) {
 
 #### 实际性能影响
 
-- **MMU功耗降低**: 约4.5%的内存访问功耗减少
-- **thermal throttling延迟**: 在持续内存负载场景下可延迟2-3个thermal周期
-- **CPU频率稳定性**: 16KB模式下CPU频率波动更小，减少频繁的频率调整
-- **场景适配**: 对游戏、视频编辑等持续内存负载效果明显，对短时任务影响有限
+- **MMU 功耗降低**：约 4.5% 的内存访问功耗减少
+- **thermal throttling 延迟**：在持续内存负载场景下可延迟 2-3 个 thermal 周期
+- **CPU 频率稳定性**：16KB 模式下 CPU 频率波动更小，减少频繁的频率调整
+- **场景适配**：对游戏、视频编辑等持续内存负载效果明显，对短时任务影响有限
 
 #### 验证方法
 
@@ -703,9 +711,9 @@ void CompatMapSegment(...) {
 
 #### 版本演进
 
-- **Android 15**: 初步支持16KB page size，thermal throttling 优化有限
-- **Android 16**: 增强16KB page size的thermal管理，引入更精细的MMU功耗监控
-- **Android 17**: 进一步优化thermal预测，结合16KB page size的访问模式进行预判
+- **Android 15**：初步支持 16KB page size，thermal throttling 优化有限
+- **Android 16**：增强 16KB page size 的 thermal 管理，引入更精细的 MMU 功耗监控
+- **Android 17**：进一步优化 thermal 预测，结合 16KB page size 的访问模式进行预判
 
 
 

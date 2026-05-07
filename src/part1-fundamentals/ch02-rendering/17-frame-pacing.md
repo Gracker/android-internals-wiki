@@ -1,41 +1,43 @@
 ---
-title: Frame Pacing Library 与帧节奏控制
-chapter: '2.17'
-section: '2.17'
-applicable_versions: Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API
-last_verified: '2026-04-19'
-last_verified_against: AOSP platform/frameworks/opt/gamesdk refs/heads/main, AOSP
-confidence: medium
-drafted_date: '2026-04-06'
-drafted_by: openclaw-task2a
-sources: 
-- type: aosp
-path: external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql
-tags: 
-related_chapters: 
-created_by: task2a-knowledge-gap
-created_date: '2026-04-05'
-gap_source: 官方文档 + 研究素材
-task6_state: "revisiting"
-task2b_result: "fixed"
-reviewed_by: openclaw-task6
-task6_reviewed_date: '2026-05-06'
-reviewed_date: '2026-05-06'
-task6_result: pass-light-edit
-last_task2b_at: "2026-05-06T05:49:37+08:00"
-task9_task6_reviewed_date: '2026-04-30'
-last_task6_at: '2026-05-06T06:08:00+08:00'
-last_task6_review_log: logs/review/2026-05-06-06-review.md
+title: "Frame Pacing Library 与帧节奏控制"
+chapter: "2.17"
+section: "2.17"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+applicable_versions: "Android 4.1 (API 16, Java Choreographer 路径) - Android 17 (API 37)"
+last_verified: "2026-04-19"
+last_verified_against: "AOSP platform/frameworks/opt/gamesdk refs/heads/main; Perfetto FrameTimeline SQL; developer.android.com frame-pacing docs"
+confidence: medium
+drafted_date: "2026-04-06"
+drafted_by: "openclaw-task2a"
+sources:
+  - type: "aosp"
+    path: "external/perfetto/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql"
+  - type: "official"
+    path: "developer.android.com/games/sdk/frame-pacing"
+tags: ["rendering", "frame-pacing", "swappy", "perfetto", "vulkan"]
+related_chapters: ["2.3", "2.6", "2.13", "2.18", "16.4"]
+created_by: "task2a-knowledge-gap"
+created_date: "2026-04-05"
+gap_source: "官方文档 + 研究素材"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task6_reviewed_date: "2026-05-08"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T05:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-05-review.md"
+pipeline_stage: "task9_pending"
 task9_state: "pending"
-task9_result: needs-rework
-task2b_state: "fixed"
+task9_result: "needs-rework"
+task9_task6_reviewed_date: "2026-04-30"
 task9_reviewed_date: "2026-05-06"
-task9_reviewed_by: openclaw-task9
+task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-06T06:23:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-06-06-deep-review.md"
-review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。"
+task2b_state: "fixed"
+task2b_result: "fixed"
+last_task2b_at: "2026-05-08T04:51:42.168874+08:00"
+review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。 | 2026-05-08 Task6 05:05：revisiting→reviewed；修复 frontmatter/source YAML 与轻量措辞，无新增 L3/L4 回炉项，待 Task9 复审。"
 task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 DeliQueue targetSdk 37 边界未收紧；P2 present_wait 依赖说明待补。"
 ---
 
@@ -120,7 +122,7 @@ bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
 
 一件是 `onPreSwap()` / `onPostSwap()`。这部分在 `SwappyCommon` 里处理等待、统计 frame duration、决定 auto swap interval、更新 presentation time，还会在合适的时候向平台投票新的 frame rate。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/SwappyCommon.cpp]
 
-还有一件是 `setPresentationTime()`。`SwappyGL.cpp` 里没有无脑调用 `eglPresentationTimeANDROID()`，它会先比较“离下一个 vsync 还有多久”和当前 display timing，再决定要不要真的设置 presentation time。离 vsync 太近时，源码直接返回 `EGL_TRUE`，不再额外设置。[已验证: frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp]
+还有一件是 `setPresentationTime()`。`SwappyGL.cpp` 不会直接调用 `eglPresentationTimeANDROID()`，而是先比较“离下一个 vsync 还有多久”和当前 display timing，再决定要不要设置 presentation time。离 vsync 太近时，源码直接返回 `EGL_TRUE`，不再额外设置。[已验证: frameworks/opt/gamesdk/games-frame-pacing/opengl/SwappyGL.cpp]
 
 把这几步合在一起看，Swappy 做的事就清楚了：它同时在管 fence、submit 时机、presentation time 和 refresh-rate vote。
 
@@ -368,7 +370,7 @@ I/FrameStatistics: frame latency: <bucket histogram>
 
 版本边界最好按三条线一起记：一条是 Java / NDK Choreographer 的接入边界，一条是 `SwappyDisplayManager` 这条 Java helper 什么时候进入又什么时候退出，一条是 AGDK 文档和 AOSP 仓库现在分别放在哪里。把这三条线记住，排查时就不会把 API 级别、库形态和仓库位置混成一团。[已验证: frameworks/opt/gamesdk/games-frame-pacing/common/ChoreographerThread.cpp, frameworks/opt/gamesdk/games-frame-pacing/common/SwappyDisplayManager.h, developer.android.com/games/sdk/frame-pacing]
 
-Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swappy 解决的是 app submit pacing 和 frame-rate vote，平台 ARR 解决的是硬件 mode switch、policy、SurfaceFlinger 如何跟随活跃内容。把这两层拆开看，trace 里的因果关系会干净很多。
+Swappy 和 §2.18 的 Adaptive Refresh Rate 有关系，但不是同一层。Swappy 解决的是 app submit pacing 和 frame-rate vote，平台 ARR 解决的是硬件 mode switch、policy、SurfaceFlinger 如何跟随活跃内容。把这两层拆开看，trace 里的因果关系更容易区分。
 
 **Swappy 的 frame-rate vote 路径**：Swappy 内部通过 `setPreferredRefreshPeriod()` 计算目标帧率后，实际调用的是 `ANativeWindow_setFrameRate(mWindow, frameRate, ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_DEFAULT)`（条件是 `mANativeWindow_setFrameRate` 函数指针已加载且 `mWindow` 非 null），否则回退到通过 `SwappyDisplayManager` 设置 DisplayManager 的 preferred mode id。如果应用在同一个 `ANativeWindow` 上同时手动调用了 `Surface.setFrameRate()` 或 `ANativeWindow_setFrameRate()`，后调用的会覆盖先前的 vote。SurfaceFlinger 侧会对同一 layer 上来自不同来源的 frame-rate vote 做合并决策（具体策略见 §2.18），应用层不需要关心合并逻辑，但需要避免 Swappy vote 和手动 vote 互相覆盖导致的节奏不稳定。
 
