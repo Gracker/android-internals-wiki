@@ -14357,7 +14357,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T02:30:38+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T03:44:19.133582",
+      "completed_reason": "P0 ProfilingManager requestProfiling API 签名已修正：补 tag/CancellationSignal/Consumer<ProfilingResult>，说明 global listener 路径"
     },
     {
       "section": "1.17",
@@ -14383,7 +14385,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T03:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T03:44:19.133582",
+      "completed_reason": "P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2 + 16KB 设备差异说明；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，重写为 ashmem_create_region 路径"
     },
     {
       "section": "4.7",
@@ -14415,7 +14419,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T03:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T03:44:19.133582",
+      "completed_reason": "P0 contpte 16KB 覆盖粒度改为 2MB（CONT_PTES=128）；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 -Wl,-z,common-page-size=16384"
     }
   ],
   "completed": [

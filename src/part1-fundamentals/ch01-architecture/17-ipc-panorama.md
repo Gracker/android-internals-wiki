@@ -32,12 +32,12 @@ reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-05-08-03-review.md"
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_result: "needs-rework"
-task9_state: "reviewed"
+task9_state: pending
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: fixed
 last_task2b_at: "2026-04-24T09:54:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-08"
@@ -45,7 +45,7 @@ last_task9_at: "2026-05-08T03:20:00+08:00"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T03:09:01+08:00"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 18 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。"
-task9_review_notes: "2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
+task9_review_notes:  | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写"2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
@@ -158,7 +158,7 @@ Android 框架内的大多数系统服务调用走 Binder 路径。四大组件�
 - 单次同步调用延迟：**~0.5-2ms**（同设备进程间，空服务 RPC 参考；调用 framework 服务时由于服务端处理逻辑，实际延迟通常更高）
 - oneway 调用延迟：**~0.2-0.8ms**
 - 默认 worker 上限约 15 线程（`DEFAULT_MAX_BINDER_THREADS = 15`）；很多人口语里说的“16 线程”通常把发起调用的 caller 线程也算进去了
-- 单次事务数据上限：受进程级 Binder transaction buffer 约束（约 1MB 减 2 个 page，由同进程并发事务共享）。AOSP `ProcessState.cpp` 中 `BINDER_VM_SIZE` 为 `(1*1024*1024) - (4096 * 2)`。`TransactionTooLargeException` 的实际触发条件受并发事务放大影响——多个线程同时发起 Binder 调用时，buffer 空间是共享的
+- 单次事务数据上限：受进程级 Binder transaction buffer 约束（约 1MB 减 2 个 page，由同进程并发事务共享）。AOSP `ProcessState.cpp` 中 `BINDER_VM_SIZE` 为 `((1*1024*1024) - sysconf(_SC_PAGE_SIZE) * 2)`；4KB 设备约 1MB - 8KB，16KB 设备约 1MB - 32KB。`TransactionTooLargeException` 的实际触发条件受并发事务放大影响——多个线程同时发起 Binder 调用时，buffer 空间是共享的
 - 优化：一次 mmap 拷贝（vs 传统 IPC 的两次）
 
 [已验证: AOSP main, frameworks/native/libs/binder/ProcessState.cpp — `DEFAULT_MAX_BINDER_THREADS = 15`]
@@ -269,34 +269,29 @@ InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/syste
 
 
 
-### 3.4.1 F_SEAL_FUTURE_WRITE 与 Parcel::writeBlob 零拷贝机制
+### 3.4.1 Parcel::writeBlob 零拷贝与 ashmem/memfd 演进
 
-在"共享内存、DMA-BUF 与 FMQ"讨论框架下，需要补充一个关键安全机制：memfd Sealing。
-
-Android 的 `Parcel::writeBlob()` 对大于 `BLOB_INPLACE_LIMIT`（16 machine words ≈ 128B on 64-bit）的大数据使用 memfd 实现零拷贝：
+Android 的 `Parcel::writeBlob()` 对大于 `BLOB_INPLACE_LIMIT`（`16 * 1024 = 16KB`）的大数据使用共享内存 fd 实现零拷贝：
 
 ```cpp
-// frameworks/native/libs/binder/Parcel.cpp (AOSP mainline)
-// 完整调用链
+// frameworks/native/libs/binder/Parcel.cpp (AOSP main)
+// 简化调用链
 Parcel::writeBlob(size, data)
-  ├─ if (size <= BLOB_INPLACE_LIMIT)
-  │    writeInplace(data)  // 直接写入 Parcel 内部 buffer
+  ├─ if (size <= BLOB_INPLACE_LIMIT)   // 16KB
+  │    writeInplace(data)              // 直接写入 Parcel 内部 buffer
   └─ else
-       memfd_create("Parcel Blob", MFD_ALLOW_SEALING)  // 创建匿名内存文件
-       ftruncate(fd, size)
-       write(fd, data, data_size)              // 发送者写入数据
-       fcntl(fd, F_ADD_SEALS, F_SEAL_FUTURE_WRITE)  // 应用 Seal
+       ashmem_create_region("Parcel Blob", size)  // 申请匿名共享内存
+       mmap(MAP_SHARED)                            // 发送者映射
+       memcpy(data)                                 // 写入数据
+       if (immutable)
+         ashmem_set_prot_region(fd, PROT_READ)     // 设为只读
+       writeFileDescriptor(fd)                      // fd 写入 Parcel
        // Binder 事务中只传 fd，不传数据本身
 ```
 
-`F_SEAL_FUTURE_WRITE`（定义值 `0x0010`）的安全语义：
-- **允许**：发送者继续写入已存在的内存映射
-- **阻止**：未来任何 `mmap(PROT_WRITE)` 和 `write()` 尝试（包括接收者和未来映射）
-- **设计意图**：典型场景是 `CursorWindow`——发送者（ContentProvider）持续填充数据，接收者只需读取
+`ashmem_create_region` 在新设备上由 `libcutils/ashmem-dev.cpp` 的 ashmem-compatible 层实现，底层可能走 `memfd_create`；`F_ADD_SEALS` / `F_SEAL_FUTURE_WRITE` 是 memfd 路径的实现细节，对 Parcel 调用者不可见。`art/libartbase/base/memfd.cc` 提供 memfd 的封装和 tmpfile fallback。
 
-libartbase 的封装（`bionic/libartbase/base/memfd.cc`）提供 tmpfile fallback 以兼容不支持 memfd_create 的老内核。
-
-[源码验证: AOSP mainline frameworks/native/libs/binder/Parcel.cpp（writeBlob 零拷贝路径）；bionic/libartbase/base/memfd.cc（memfd_create 封装）；man7.org linux/man-pages/man2/memfd_create.2.html（F_SEAL_FUTURE_WRITE）]
+[源码验证: AOSP main frameworks/native/libs/binder/Parcel.cpp（writeBlob 阈值判断与 ashmem 路径）；system/core/libcutils/ashmem-dev.cpp（ashmem-compatible memfd 实现）；art/libartbase/base/memfd.cc（memfd 封装）]
 
 ### 3.5 mmap 文件映射
 

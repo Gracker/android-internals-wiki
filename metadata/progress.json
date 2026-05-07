@@ -568,5 +568,11 @@
         "19.17 P1: 删除OkHttp EventListener全局槽位无证据断言"
       ]
     }
+  ],
+  "task2b_last_rework": "2026-05-08",
+  "task2b_last_sections": [
+    "10.2",
+    "1.17",
+    "4.7"
   ]
 }
