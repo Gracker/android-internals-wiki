@@ -11,14 +11,14 @@ last_verified_against: "Android PixelCopy / WebViewRenderProcess APIs, Flutter F
 confidence: high
 tags: [apm, webview, flutter, hybrid]
 related_chapters: ["19.0", "19.01"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: "pending"
-task6_state: "reviewed"
+task2b_state: fixed
+task6_state: revisiting
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-07"
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
+task9_state: pending
 sources:
   - "https://developer.android.com/reference/android/view/PixelCopy"
   - "https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)"
@@ -140,7 +140,7 @@ LCP 在部分旧 WebView 中不可用。没有 `supportedEntryTypes` 检查和 `
 
 白屏检测常见三类信号：DOM 信号、生命周期信号、像素信号。DOM 节点数量、首屏可见节点面积、业务 ready 事件适合低成本采样；`onPageFinished` 只能说明主文档加载结束，无法证明首屏已经有有效内容；像素采样能观察最终显示结果，但实现不当会把监控本身变成卡顿来源。
 
-`onPageFinished` 之外还有两个官方可见状态锚点。API 23+ 的 `WebViewClient.onPageCommitVisible()` 在当前导航的新内容首次绘制到屏幕时回调，表示旧页面内容不再可见，适合作为"页面已切换"的判据。`WebView.postVisualStateCallback(long requestId, VisualStateCallback)` 提供更细粒度的 visual state 更新通知：传入的 requestId 对应 `loadUrl()` 时的请求标识，回调触发时表示该请求对应的视觉状态已提交到渲染管线。白屏采样建议先等 `onPageCommitVisible` 或 `postVisualStateCallback` 确认渲染管线就绪，再做低频 `PixelCopy` 或 DOM/业务 ready 交叉判断，避免采到旧内容或未提交到渲染管线的中间状态。
+`onPageFinished` 之外还有两个官方可见状态锚点。API 23+ 的 `WebViewClient.onPageCommitVisible()` 在当前导航的新内容首次绘制到屏幕时回调，表示旧页面内容不再可见，适合作为"页面已切换"的判据。`WebView.postVisualStateCallback(long requestId, VisualStateCallback)` 提供更细粒度的 visual state 更新通知：requestId 是调用方自定义的标识（例如自增序号），用于匹配请求和回调；回调触发时表示当前 DOM 更新已在下一次 draw 中可见（不含 video tag 状态）。白屏采样建议先等 `onPageCommitVisible` 或 `postVisualStateCallback` 确认渲染管线就绪，再做低频 `PixelCopy` 或 DOM/业务 ready 交叉判断，避免采到旧内容或未提交到渲染管线的中间状态。
 
 API 26+ 的 Android 应优先使用 `PixelCopy` 从 Window 或 Surface 异步复制像素。它比在 UI 线程调用 `WebView.draw(Canvas)` 更适合线上采样，原因是 WebView 使用硬件加速和 Chromium 渲染管线，同步 `draw()` 会让主线程承担额外绘制成本，还可能拿不到视频、GL 或硬件层的真实像素。`PixelCopy.request()` 通过回调返回结果，采样区域也能限制在首屏或关键区域。
 
