@@ -27,13 +27,13 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-06"
+reviewed_date: "2026-05-07"
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
@@ -41,9 +41,9 @@ last_task2b_at: "2026-05-06T13:04:10+08:00"
 task2b_result: fixed
 last_task9_at: "2026-05-06T13:39:29+08:00"
 task9_review_notes: "2026-05-06 Task9 13:39：needs-rework。P0 0 / P1 1 / P2 2。L255 Perfetto Standard Library 模块列表"
-last_task6_at: "2026-05-06T13:13:29+08:00"
-last_task6_review_log: "logs/review/2026-05-06-13-review.md"
-task6_review_notes: "2026-05-06 Task6 13:13：Task2B 修复后写作复审；清理禁用词/填充词 2 处与第一人称漂移 10 处；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-07T13:09:20+08:00"
+last_task6_review_log: "logs/review/2026-05-07-13-review.md"
+task6_review_notes: "2026-05-07 Task6 13:09：Task2B 修复后写作复审；清理元叙述/英文术语/引用摘要措辞 8 处；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-06-13-deep-review.md"
 ---
 
@@ -99,7 +99,7 @@ Perfetto 自带了 `android_cpu`、`android_mem`、`android_startup` 等内置 M
 
 Track 和 Event 之间的关系是通过 `track_id` 关联的。每个 slice 或 counter 都有一个 `track_id`，指向它所属的 Track。Track 又通过 `thread_track` 或 `process_track` 中的 `utid`/`upid` 关联到具体的线程或进程。
 
-这里有个细节：Trace Processor 没有直接用 PID/TID 做标识，而是引入了 `utid`（unique tid）和 `upid`（unique pid）。原因是 Android/Linux 系统中 PID/TID 会被复用，一个进程退出后，它的 PID 可能被另一个完全不相干的进程拿走。如果直接用 PID 做 JOIN，可能会把不同进程的数据错误地关联到一起。`utid`/`upid` 是 Trace Processor 分配的单调递增 ID，保证了唯一性。
+Trace Processor 没有直接用 PID/TID 做标识，而是引入了 `utid`（unique tid）和 `upid`（unique pid）。原因是 Android/Linux 系统中 PID/TID 会被复用，一个进程退出后，它的 PID 可能被另一个完全不相干的进程拿走。如果直接用 PID 做 JOIN，可能会把不同进程的数据错误地关联到一起。`utid`/`upid` 是 Trace Processor 分配的单调递增 ID，保证了唯一性。
 
 查看当前 Trace 有哪些表，可以执行：
 
@@ -148,7 +148,7 @@ extend TraceMetrics {
 }
 ```
 
-这里有几个要点。`extend TraceMetrics` 用来把自定义 Metric 注册到 Perfetto 的 Metric 体系中，字段号在 450–500 范围内用于本地开发。字段名 `cold_start_metric` 会作为 SQL 输出表的表名和最终 proto 中的字段名。
+`extend TraceMetrics` 用来把自定义 Metric 注册到 Perfetto 的 Metric 体系中，字段号在 450–500 范围内用于本地开发。字段名 `cold_start_metric` 会作为 SQL 输出表的表名和最终 proto 中的字段名。
 
 **第二步：编写 SQL 查询。**
 
@@ -193,7 +193,7 @@ FROM cold_start_phases
 LIMIT 1;
 ```
 
-这里有三个要点。第一，SQL 文件名（`cold_start_metric`）必须和 proto 中 `extend TraceMetrics` 的字段名一致，这是 Perfetto 的注册约定。第二，中间视图 `cold_start_phases` 负责提取和过滤数据，输出视图 `cold_start_metric_output` 负责用 `ColdStartMetric(...)` proto builder 把结果组装成 proto 消息。`RepeatedField(...)` 用来构造 `repeated` 字段。第三，输出视图必须以 `_output` 结尾，Trace Processor 扫描这个后缀来找到最终输出。
+SQL 文件名（`cold_start_metric`）必须和 proto 中 `extend TraceMetrics` 的字段名一致，这是 Perfetto 的注册约定。中间视图 `cold_start_phases` 负责提取和过滤数据，输出视图 `cold_start_metric_output` 负责用 `ColdStartMetric(...)` proto builder 把结果组装成 proto 消息。`RepeatedField(...)` 用来构造 `repeated` 字段。输出视图必须以 `_output` 结尾，Trace Processor 扫描这个后缀来找到最终输出。
 
 **第三步：运行 Metric。**
 
@@ -343,7 +343,7 @@ print(df.describe())
 ```python
 from perfetto.batch_trace_processor.api import BatchTraceProcessor
 
-# 加载多个 Trace，推荐用 context manager 自动释放资源
+# 加载多个 Trace，推荐用上下文管理器自动释放资源
 traces = [
     'traces/build_001.perfetto-trace',
     'traces/build_002.perfetto-trace',
@@ -384,7 +384,7 @@ BatchTraceProcessor 的适用边界是本机内存能容纳所有待分析 Trace
 
 前面提到 Trace Summarization 是新版 Metric API。它要求先提供 `specs`，再用 `metric_ids` 指定要生成的指标；返回对象是 `TraceSummary`，只包含这次请求到的 summary metric，不是旧版 `TraceMetrics` 的无参替代。
 
-下面这组示例直接对应官方文档：
+这组示例直接对应官方文档：
 
 ```textproto
 // spec.textproto
@@ -507,7 +507,7 @@ def analyze_startup(trace_path, baseline_ms, threshold_pct):
 
 ### 实战配置示例
 
-下面是一个基于 GitHub Actions 的配置示例，演示如何在 PR 中自动检测启动性能回归：
+一个基于 GitHub Actions 的配置示例，可以在 PR 中自动检测启动性能回归：
 
 ```yaml
 # .github/workflows/perf-regression.yml
@@ -563,7 +563,7 @@ jobs:
 
 ### 降低误报率的几个实践
 
-先把阈值和测试环境绑在一起，再谈告警线。下面这组建议适合“同一台真机 + 同一 OS 版本 + release / non-debuggable build + Macrobenchmark”这一类固定实验室环境；如果换成共享设备池或模拟器，建议只做趋势告警，不直接拦截合并。
+阈值和测试环境要先绑定，再设置告警线。下面这组建议适合“同一台真机 + 同一 OS 版本 + release / non-debuggable build + Macrobenchmark”这一类固定实验室环境；如果换成共享设备池或模拟器，建议只做趋势告警，不直接拦截合并。
 
 | 环境 | 适合看的指标 | 适合的动作 | 失效边界 |
 |---|---|---|---|
@@ -659,7 +659,7 @@ void RenderFrame() {
 }
 ```
 
-这条路径更适合游戏引擎、跨平台 runtime、系统服务或大型 Native 模块。App 业务代码只想补阶段耗时时，`android.os.Trace` / `ATrace_*` 通常更省事。
+这条路径更适合游戏引擎、跨平台运行时、系统服务或大型 Native 模块。App 业务代码只想补阶段耗时时，`android.os.Trace` / `ATrace_*` 通常更省事。
 
 ### Custom Data Source：结构化二进制 Trace Packet
 
@@ -740,7 +740,7 @@ void RecordRenderPass(const char* name, int64_t gpu_ns) {
 ### AndroidX Tracing 2.0 架构级深度技术分析
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/AndroidX Tracing 2.0 架构级深度技术分析 .md
 - 类型：DeepResearch 调研结果
-- 摘要：围绕 AndroidX Tracing 2.0 alpha05，拆解 Tracer、TraceDriver、TraceSink 新对象模型、协程上下文传播、纯 Kotlin Perfetto TracePacket 发射路径，以及与 1.x、Benchmark、Studio Profiler 的边界。
+- 摘要：围绕 AndroidX Tracing 2.0 alpha05，分析 Tracer、TraceDriver、TraceSink 新对象模型、协程上下文传播、纯 Kotlin Perfetto TracePacket 发射路径，以及与 1.x、Benchmark、Studio Profiler 的边界。
 - 注入时间：2026-04-19
 - 价值：补齐应用侧自定义 tracing 与协程归因的新范式。
 

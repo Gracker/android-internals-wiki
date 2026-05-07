@@ -9,7 +9,7 @@ last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 reviewed_date: "2026-05-07"
-review_notes: "2026-05-07 task6 review (revisiting→reviewed): pass-light-edit。多处轻修（去填充词、术语统一、代码省略标注与验证措辞）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
+review_notes: "2026-05-07 task6 review (revisiting→reviewed): pass-light-edit。Task2B 修复后复审，轻修措辞/引导语 5 处；L1/L2 通过，无新增 B 类回炉项，送 Task9 复审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 reviewed_by: openclaw-task6
 polish_count: 2
 polish_date: "2026-04-28"
@@ -27,9 +27,9 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task6_result: pass-light-edit
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task9_result: needs-rework
 task2b_state: "fixed"
@@ -37,6 +37,9 @@ task2b_result: "fixed"
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T12:23:00+08:00"
+last_task6_at: "2026-05-07T13:09:20+08:00"
+last_task6_review_log: "logs/review/2026-05-07-13-review.md"
+task6_review_notes: "2026-05-07 Task6 13:09：Task2B 修复后写作复审；轻修措辞/引导语 5 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # Hardware Layer
@@ -81,7 +84,7 @@ Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启
 
 **Hardware Layer** 指的是在硬件加速开启时，把某个 View 子树的绘制结果放进一块离屏 GPU render target，后续以纹理的形式参与合成。官方文档把它描述为 hardware layer 或 hardware texture。它解决的是“同一批绘制结果要被连续复用”的问题，例如 alpha、translation、scale、rotation 这些变换持续发生，但内容本身没有变化的场景。
 
-这里要收窄一点。Hardware Layer 能减少的是这棵子树反复重录 DisplayList、反复执行 draw 和反复光栅化的成本，它本身不是 measure/layout 的跳过开关。布局能不能跳过，取决于这一帧有没有新的 layout request、尺寸约束有没有变化；内容一旦 `invalidate()`，layer 缓存仍然会失效并重建。
+Hardware Layer 能减少的是这棵子树反复重录 DisplayList、反复执行 draw 和反复光栅化的成本，它本身不是 measure/layout 的跳过开关。布局能不能跳过，取决于这一帧有没有新的 layout request、尺寸约束有没有变化；内容一旦 `invalidate()`，layer 缓存仍然会失效并重建。
 
 为了不把几个层级混在一起，我们把三个场景分开看：
 
@@ -176,13 +179,13 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 每个 Hardware Layer 对应一块 GPU 纹理。如果同时有多个 View 设置了 Hardware Layer，或者 View 面积很大，显存消耗会非常可观。官方推荐只在动画期间启用，动画结束后立即释放。
 
-16KB 页环境下需要注意一个额外因素：GPU 显存分配的最小对齐单元提升后，小面积硬件层可能产生更多的对齐填充浪费。例如一个 100×50 像素的 layer 理论需要约 20KB（RGBA_8888），在 16KB 页粒度下可能因对齐要求占用更多空间。多个小 layer 累积起来的影响取决于 GPU 驱动的分配策略（sub-allocator、tile-based 渲染的内部缓冲管理等）。对于需要频繁建层/销毁的场景（如列表 item 动画），建议通过 `dumpsys gfxinfo` 和 `adb shell dumpsys meminfo <pkg>` 观察实际的 GPU 内存变化，不要仅凭理论估算做判断。
+16KB 页环境还有一个额外因素：GPU 显存分配的最小对齐单元提升后，小面积硬件层可能产生更多的对齐填充浪费。例如一个 100×50 像素的 layer 理论需要约 20KB（RGBA_8888），在 16KB 页粒度下可能因对齐要求占用更多空间。多个小 layer 累积起来的影响取决于 GPU 驱动的分配策略（sub-allocator、tile-based 渲染的内部缓冲管理等）。对于需要频繁建层/销毁的场景（如列表 item 动画），建议通过 `dumpsys gfxinfo` 和 `adb shell dumpsys meminfo <pkg>` 观察实际的 GPU 内存变化，不要仅凭理论估算做判断。
 
 [待验证: 16KB 页对 GPU 纹理分配的实际影响需在具体设备上用 memtrack/gralloc 统计数据确认]
 
 ### 代价二：缓存建立的开销
 
-建立 Hardware Layer 需要"先渲染 View 到纹理，再把纹理合成到窗口"两个步骤。如果 View 本身的绘制非常简单（比如一个纯色背景），那么建立 Hardware Layer 的开销可能比直接绘制还大。在 Perfetto 中，这个判断非常直观：RenderThread 上第一个 `buildLayer` slice 的时长如果接近甚至超过了一个 VSync 周期（16.6ms@60Hz），说明这个 View 的绘制复杂度不足以让缓存回本——与其花时间建纹理，不如直接画。缓存一个代价几乎为零的操作，缓存本身反而成了瓶颈。
+建立 Hardware Layer 需要"先渲染 View 到纹理，再把纹理合成到窗口"两个步骤。如果 View 本身的绘制非常简单（比如一个纯色背景），那么建立 Hardware Layer 的开销可能比直接绘制还大。在 Perfetto 中可以直接看 RenderThread 上第一个 `buildLayer` slice：如果时长接近甚至超过一个 VSync 周期（16.6ms@60Hz），说明这个 View 的绘制复杂度不足以让缓存回本——与其花时间建纹理，不如直接画。缓存一个代价几乎为零的操作，缓存本身反而成了瓶颈。
 
 ### 代价三：缓存失效与重建
 
@@ -242,7 +245,7 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 ### Software Layer 缓存失效
 
-在主线程（MainThread）的 slice 中看到重复出现的 `buildDrawingCache/SW Layer for XXXView`，说明 Software Layer 每帧都在重建。这时候应该检查：这个 View 是不是每帧都在调用 `invalidate()` 或者修改内容？
+在主线程（MainThread）的 slice 中看到重复出现的 `buildDrawingCache/SW Layer for XXXView`，说明 Software Layer 每帧都在重建。排查重点是：这个 View 是不是每帧都在调用 `invalidate()` 或者修改内容？
 
 [待补充：Trace 截图——Software Layer 缓存失效的 Perfetto 表现]
 
@@ -279,7 +282,7 @@ public boolean setUseCompositingLayer(boolean forceToLayer, @Nullable Paint pain
 public boolean getUseCompositingLayer();
 ```
 
-这能帮我们厘清边界：`View.setLayerType()` 是 View 侧 API，操作对象是整个 View 子树；`RenderNode.setUseCompositingLayer(...)` 是更底层的 RenderNode API，用来显式要求中间缓冲并附带合成用的 `Paint`。二者谈的是同一类机制，但现代 HWUI 已经会自己做一部分自动建层，不需要应用把每个动画都手动改成 `LAYER_TYPE_HARDWARE`。
+边界可以这样划分：`View.setLayerType()` 是 View 侧 API，操作对象是整个 View 子树；`RenderNode.setUseCompositingLayer(...)` 是更底层的 RenderNode API，用来显式要求中间缓冲并附带合成用的 `Paint`。二者谈的是同一类机制，但现代 HWUI 已经会自己做一部分自动建层，不需要应用把每个动画都手动改成 `LAYER_TYPE_HARDWARE`。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java]
 
