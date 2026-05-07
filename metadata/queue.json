@@ -14288,7 +14288,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T00:28:41+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T07:11:09",
+      "completed_reason": "版本表已拆分为平台API边界+AndroidX compat两列；协程async示例已修正(invokeOnCompletion+AtomicBoolean覆盖取消/未启动路径)"
     },
     {
       "section": "19.26",
@@ -14486,8 +14488,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-08T06:05:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-05-08-06-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-05-08-06-review.md",
+      "completed_at": "2026-05-08T07:11:09",
+      "completed_reason": "Binder Transaction Trace块已重写：移入正文、移除JankType直接映射、改为FrameTimeline deadline因果链+SQL佐证"
     },
     {
       "section": "7.1",
@@ -14508,6 +14512,88 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T06:28:09+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-08T07:11:09",
+      "completed_reason": "Binder-JankType直接映射已修正：Binder阻塞定位为帧关键路径证据，需FrameTimeline deadline判定+BufferQueue佐证"
+    },
+    {
+      "section": "2.6 SurfaceFlinger",
+      "section_title": "BufferQueue 内部锁竞争机制",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到ch02章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-bufferqueue-internal-lock-contention.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "BufferQueue 内部锁竞争机制 — BufferQueue 采用单一 mutex + 多 condition variable 方案保护共享状态，核心竞争路径包括 dequeueBuffer 等待 free slot、ActiveBuf",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-08T06:32:42.009919+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "19.3 KOOM",
+      "section_title": "KOOM FastDump Suspend-Fork-Resume 机制",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到ch19章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-koom-fastdump-suspend-fork-resume-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "KOOM FastDump Suspend-Fork-Resume 机制 — KOOM FastDump 采用 Suspend VM → Fork → Resume → 子进程 dump 机制，将主进程冻结时间缩短到 <20ms。闭源 koom-fast-dump.so 通过 ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-08T06:32:42.009919+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "5.9 ADPF 自适应性能框架",
+      "section_title": "ADPF 非游戏场景应用策略",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到ch05章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-adpf-non-gaming-application-strategy.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "ADPF 非游戏场景应用策略 — ADPF PerformanceHintManager 对所有应用开放，非游戏可通过 Session 建立 hint 反馈闭环。setPreferPowerEfficiency(API 35)是非游戏",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-08T06:32:42.009919+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.2 卡顿原因体系",
+      "section_title": "BufferQueue 堵塞的 Perfetto 直观特征识别",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到ch07章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-bufferqueue-blocking-perfetto-patterns.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "BufferQueue 堵塞的 Perfetto 直观特征识别 — BufferQueue 堵塞在 Perfetto 中有三类特征：Producer 侧 dequeueBuffer 在 mDequeueCondition 等待导致 slice 拉长；Consumer ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-08T06:32:42.009919+08:00",
       "status": "pending"
     }
   ],
