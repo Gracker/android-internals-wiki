@@ -1,16 +1,15 @@
 {
-  "generated_at": "2026-05-08T01:09:14+08:00",
+  "generated_at": "2026-05-08T01:32:37+08:00",
   "state_machine_version": "v2",
   "total_sections": 210,
   "metrics": {
     "total_sections": 210,
-    "last_updated": "2026-05-08T01:09:14+08:00",
+    "last_updated": "2026-05-08T01:32:37+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 136,
-      "task2b_pending": 71,
-      "task6_pending": 1,
-      "task9_pending": 1
+      "task2b_pending": 72,
+      "task6_pending": 1
     },
     "task6_state_counts": {
       "reviewed": 208,
@@ -19,13 +18,12 @@
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 1,
-      "reviewed": 206,
+      "reviewed": 207,
       "unknown": 1
     },
     "task2b_state_counts": {
-      "fixed": 137,
-      "pending": 70,
+      "fixed": 136,
+      "pending": 71,
       "unknown": 3
     },
     "status_counts": {
@@ -423,6 +421,21 @@
       "queue_items_added": 3,
       "auto_finalized": [],
       "review_log": "logs/deep-review/2026-05-08-00-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T01:32:37+08:00",
+      "sections": [
+        "19.17"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "needs-rework",
+      "p0": 2,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0,
+      "queue_items_added": 1,
+      "auto_finalized": [],
+      "review_log": "logs/deep-review/2026-05-08-01-deep-review.md"
     }
   ],
   "rework_history": [

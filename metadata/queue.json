@@ -14297,6 +14297,39 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T00:28:41+08:00",
       "status": "pending"
+    },
+    {
+      "section": "19.17",
+      "section_title": "Firebase Performance",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 19.17 Firebase Performance Android attribute 限制与网络自动采集兜底方案存在事实错误，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-08-01-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "API/源码错误",
+          "location": "L151 自定义 trace 的命名规则",
+          "detail": "[P0] 正文写 attribute key 最多 32 个字符。当前 Firebase Android SDK 源码 `Constants.MAX_ATTRIBUTE_KEY_LENGTH` 与 Android API reference `HttpMetric.MAX_ATTRIBUTE_KEY_LENGTH` 均为 40；value 上限为 100，每个 Trace/HttpMetric 最多 5 个 attribute。继续写 32 会把合法 Android 端 key 误判为非法。",
+          "suggestion": "把 Android 端限制改为：trace/metric 名最多 100；attribute key 最多 40、value 最多 100、每个 trace/http metric 最多 5 个；补充 key 不能使用 `firebase_`/`google_`/`ga_` 前缀且需以字母开头。"
+        },
+        {
+          "type": "API/源码错误",
+          "location": "L170 Cronet / 非标准网络栈兜底方案",
+          "detail": "[P0] 正文称 Cronet 需要用 `FirebasePerfUrlConnection` 包装或手动添加拦截器。公开 Firebase Android SDK 源码中 `FirebasePerfUrlConnection.instrument()` 只包装 `HttpsURLConnection` / `HttpURLConnection`；Cronet `UrlRequest` 不是 URLConnection，无法用该 wrapper 直接覆盖。",
+          "suggestion": "将 Cronet/native/自研网络栈的兜底方案改为 `FirebasePerformance.getInstance().newHttpMetric(url, method)` / `HttpMetric` 手工 network trace，并显式 set response code、payload size、content type、start/stop；不要写 FirebasePerfUrlConnection 可包装 Cronet。"
+        },
+        {
+          "type": "源码准确性/待验证结论",
+          "location": "L171 OkHttp EventListener 冲突",
+          "detail": "[P1] 正文称自定义 OkHttp `EventListener` 占据全局槽位会导致 Firebase 网络采集静默失败。当前公开 SDK 源码里 OkHttp 自动采集通过 `FirebasePerfOkHttpClient.execute/enqueue()` 与 `InstrumentOkHttpEnqueueCallback` 包装 `Call`，未发现依赖 OkHttp EventListener 的证据；该因果不能作为确定结论。",
+          "suggestion": "删除 EventListener 全局槽位断言，或标注 `[待验证]` 并补真实复现/commit。保留已验证的排查路径：确认 Gradle plugin 插桩、Logcat `FirebasePerformance` 日志、completed request、Content-Type 与自定义网络栈是否需要 HttpMetric。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T01:32:37+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
