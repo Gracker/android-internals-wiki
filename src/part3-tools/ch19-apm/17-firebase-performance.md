@@ -22,8 +22,8 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/network-traces"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -37,8 +37,8 @@ reviewed_date: "2026-05-08"
 last_task2b_at: "2026-05-07T23:47:13+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
-last_task6_at: "2026-05-08T01:09:14+08:00"
-task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result: "pending" 等待 Task9 复审。"
+last_task6_at: "2026-05-08T02:09:46+08:00"
+task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result=pending 等待 Task9 复审。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。修复 YAML 引号、重复验证句和 8 处 L1/L2 表达问题；Task9 仍为 pending，未自动晋升。"
 task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 attribute key 32->40 + reserved prefix；P0 Cronet 改为 HttpMetric manual trace；P1 EventListener 删除无证据断言"
 ---
 # Firebase Performance
@@ -136,13 +136,13 @@ Firebase 的自动采集很多，但边界也很明确：
 | 能力 | 采集方式 | 稳妥边界 | 局限 |
 | --- | --- | --- | --- |
 | App start / foreground / background | 自动 | 跟随当前 Android SDK 接入；API 24+ 可用系统进程启动时间作为冷启动起点 | 适合看版本趋势，不等于完整首屏 |
-| Screen rendering | 自动 | Activity 自动 screen trace；Firebase Performance Android SDK 20.1.0+ 支持 Fragment screen rendering trace | 能看 Activity / Fragment 聚合，不能替代 JankStats 的逐帧 UI state |
+| Screen rendering | 自动 | Activity 自动 screen trace；Firebase Performance Android SDK 20.1.0+ 支持 Fragment screen rendering trace | 能看 Activity / Fragment 聚合，不能替代 JankStats 的逐帧界面状态 |
 | HTTP/S request | 自动 + 手工补点 | 官方只承诺“多数 network requests” | 不同网络库覆盖不一样，未完成请求可能漏掉 |
 | Custom trace | 手工 | 跟随 SDK 接入 | 适合登录、图片解码、数据库查询这类业务路径 |
 
 启动 trace 的起点要按版本看。API 24+ 设备可以用 `Process.getStartUptimeMillis()` 拿到进程启动时间；低版本或特殊启动路径仍会受 SDK 初始化时机影响。控制台里的 `_app_start` 还会做后台启动过滤，避免非用户触发的进程唤醒污染冷启动样本。
 
-Screen rendering 也要区分粒度。SDK 20.1.0+ 已经能自动记录 Fragment 级 screen rendering trace，这对单 Activity / Navigation 架构有用；它仍然是控制台聚合指标，缺少 JankStats 那种逐帧 UI state 和业务动作上下文。
+Screen rendering 也要区分粒度。SDK 20.1.0+ 已经能自动记录 Fragment 级 screen rendering trace，这对单 Activity / Navigation 架构有用；它仍然是控制台聚合指标，缺少 JankStats 那种逐帧界面状态和业务动作上下文。
 
 到 Android 17，官方 get-started 和 troubleshooting 文档没有列出单独的 API 37 变更。本章按“使用最新 Firebase Android BoM，能力边界沿当前文档执行”来写，不额外编造 Android 17 专属行为。
 
@@ -157,7 +157,7 @@ Screen rendering 也要区分粒度。SDK 20.1.0+ 已经能自动记录 Fragment
 | 图片解码 | `image_decode_list` | `image_count`、`decode_ms` | `source=disk|network` | 图片 hash、CDN 签名 |
 | 数据库查询 | `db_query_user` | `row_count`、`query_ms` | `source=room` | SQL 原文、主键 id |
 
-下面这类写法就不合适：把订单号、实验桶 id、SQL 文本、完整搜索词写进 attribute，或者把 trace 名拼成 `login_user_12345`。这会同时破坏聚合效果和隐私边界。
+这类写法不合适：把订单号、实验桶 id、SQL 文本、完整搜索词写进 attribute，或者把 trace 名拼成 `login_user_12345`。这会同时破坏聚合效果和隐私边界。
 
 ## 网络请求聚合和 URL pattern
 
@@ -168,14 +168,14 @@ URL pattern 必须做归一化。像 `/api/item/10001/detail`、`/api/item/10002
 官方文档给了几条实操边界：
 
 - Gradle plugin 通过字节码插桩拦截 OkHttp，但覆盖范围有限：自研网络库、Cronet、native 网络栈或非常规封装可能漏掉。Cronet、native 网络栈、自研网络库需要用 `HttpMetric` 手工 network trace：通过 `FirebasePerformance.getInstance().newHttpMetric(url, method)` 创建 metric，手动调用 `start()` / `stop()`，并设置 `setHttpResponseCode()`、`setRequestPayloadSize()` / `setResponsePayloadSize()`、`setContentType()`。不支持的协议会静默缺失
-- 如果项目中使用了复杂 AOP 框架（自定义 Transformer 顺序不当），Firebase 的字节码插桩可能失败。排查路径：在 `build.log` 中搜索 `firebase-perf` 插件输出确认插桩生效，检查 Logcat `FirebasePerformance` 日志中是否有 completed request 和正确的 Content-Type。接入后应在 `build.log` 中搜索 `firebase-perf` 插件输出确认插桩生效，并在 Logcat 中开启 `firebase_performance_logcat_enabled` 验证 trace 是否正常上报
+- 如果项目中使用了复杂 AOP 框架（自定义 Transformer 顺序不当），Firebase 的字节码插桩可能失败。排查路径：在 `build.log` 中搜索 `firebase-perf` 插件输出确认插桩生效；在 Logcat 中开启 `firebase_performance_logcat_enabled`，确认 `FirebasePerformance` 日志里出现 completed request 和正确的 Content-Type
 - 只完成了一半、长时间不结束的连接，控制台不一定会形成稳定样本；`Content-Type` 非法的请求也可能不展示
 
 线上要拆阶段时，还是要回到应用日志、服务端 trace 和 Perfetto。
 
 ## 采样、时效和排查边界
 
-Firebase Performance 的控制台时效必须单独写出来。官方 troubleshooting 文档明确给了版本边界：Android SDK `v19.0.10+`，或 Firebase Android BoM `v26.1.0+`，才进入 near real-time 路径；旧 SDK 的控制台展示通常会落后大约 36 小时。
+Firebase Performance 的控制台时效会直接影响排查方式。官方 troubleshooting 文档明确给了版本边界：Android SDK `v19.0.10+`，或 Firebase Android BoM `v26.1.0+`，才进入 near real-time 路径；旧 SDK 的控制台展示通常会落后大约 36 小时。
 
 | SDK 情况 | 控制台时效 | 适合做什么 |
 | --- | --- | --- |
@@ -184,7 +184,7 @@ Firebase Performance 的控制台时效必须单独写出来。官方 troublesho
 
 采样也不是无限上报。官方文档写明：设备侧对 code trace 和 network trace 有 10 分钟 300 事件的限流，还会做按项目动态采样。结果就是：控制台上的数据是“采样后的聚合盘”，不是每一条请求、每一帧卡顿都原样保留。
 
-这直接决定了排查边界：Firebase 适合发布回归、版本比较、趋势监控，不适合秒级 incident 排查。
+采样和时效决定了排查边界：Firebase 适合发布回归、版本比较、趋势监控，不适合秒级 incident 排查。
 
 近实时 SDK 的几分钟延迟叠加采样过滤，可能导致事故发生时控制台仍然显示正常。不要把 Firebase Performance 作为唯一的故障发现工具——线上告警体系必须有独立的实时业务错误码监控、自建 APM 或日志告警作为主要告警路径，Firebase 只做补充验证和趋势观察。
 
@@ -195,7 +195,7 @@ Firebase Performance 的控制台时效必须单独写出来。官方 troublesho
 | 工具 | 主要样本 | 长处 | 不足 |
 | --- | --- | --- | --- |
 | Firebase Performance | Activity / Fragment screen 聚合、network 聚合、自定义 trace | 接入快，控制台能直接看版本和设备分布 | 逐帧上下文弱，延迟高，原始样本少 |
-| JankStats | 端侧逐帧数据 + UI state | 能把卡顿和页面状态、实验桶、业务动作关联起来 | 需要自己存储和上报 |
+| JankStats | 端侧逐帧数据 + 界面状态 | 能把卡顿和页面状态、实验桶、业务动作关联起来 | 需要自己存储和上报 |
 | FrameMetrics | 端侧阶段耗时 | 适合做渲染阶段拆分和本地诊断 | 平台 API，字段更底层 |
 | Android Vitals | Play 分发真实用户质量数据 | 适合看发布质量门槛、慢帧和 ANR 风险 | 只覆盖 Play 分发用户，业务上下文少 |
 
@@ -209,10 +209,10 @@ Firebase Performance 适合下面这类团队：
 - 产品主要面向 Google 生态可用地区
 - 团队缺少平台建设时间，也能接受聚合盘的延迟和采样限制
 
-只靠 Firebase 不够的场景也很清楚：
+这些场景不能只靠 Firebase：
 
 - 需要秒级事故排查和实时告警
 - 需要自托管、私有化或更严格的数据所有权控制
 - 需要还原原始 network stage、逐帧上下文、ANR 线程或 native 现场
 
-把它放在“第一层聚合盘”的位置最合适。深度诊断还是要靠 JankStats、Perfetto、服务端 trace 和更细的内部字段契约。
+它适合作为“第一层聚合盘”。深度诊断还是要靠 JankStats、Perfetto、服务端 trace 和更细的内部字段契约。

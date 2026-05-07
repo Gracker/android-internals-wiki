@@ -4,7 +4,7 @@
   "total_sections": 210,
   "metrics": {
     "total_sections": 210,
-    "last_updated": "2026-05-08T01:32:37+08:00",
+    "last_updated": "2026-05-08T02:09:46+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 136,
@@ -282,6 +282,26 @@
         }
       ],
       "review_log": "logs/review/2026-05-08-01-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T02:09:46+08:00",
+      "sections": [
+        "10.2",
+        "19.17"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 16,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分（outline 后正文 0 行）"
+        }
+      ],
+      "review_log": "logs/review/2026-05-08-02-review.md"
     }
   ],
   "task9_review_history": [
