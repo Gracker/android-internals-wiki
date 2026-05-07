@@ -1483,3 +1483,9 @@
 - **问题**：[P2] 正文写 API 31+ app tracing 在所有应用里默认开启，但 AndroidX Trace 源码注释还列出 `<profileable enabled=false/>` 或 `<profileable shell=false/>` 例外。
 - **建议**：补 profileable manifest 例外，避免把“默认开启”写成无条件成立。
 - **review 日志**：logs/deep-review/2026-05-07-19-deep-review.md
+
+## [Task9 Deep Review] 4.1 Android 内存模型全景 — 2026-05-07
+- **类型**：数据缺失/Trace 观察点
+- **位置**：L221、L272、L460、L526
+- **问题**：章节仍以 `[待补充]` 占位承载 dumpsys meminfo 真机输出、Graphics 内存、Perfetto 内存曲线和内存压力 Trace，缺少设备版本、page size、TraceConfig 数据源、采样周期与操作步骤。当前机制描述可读，但关键工具段还不能支撑读者复现实验。
+- **建议**：补一组同设备、同包名的 `dumpsys meminfo` 前后快照 + Perfetto TraceConfig（至少 `linux.process_stats`、`linux.sys_stats`，必要时加 `kmem/rss_stat`、lmkd/ActivityManager 事件），标注 Android 版本、页大小、采样周期、触发操作与 SQL/UI 观察点。
