@@ -27,19 +27,21 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: "task9_pending"
+pipeline_stage: task2b_pending
 task6_result: pass-light-edit
 task6_state: "reviewed"
-task9_state: "pending"
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: "fixed"
+task2b_state: pending
 task2b_result: "fixed"
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-07T12:23:00+08:00"
+last_task9_at: "2026-05-07T15:27:55+08:00"
 last_task6_at: "2026-05-07T13:09:20+08:00"
 last_task6_review_log: "logs/review/2026-05-07-13-review.md"
 task6_review_notes: "2026-05-07 Task6 13:09：Task2B 修复后写作复审；轻修措辞/引导语 5 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-07-15-deep-review.md"
+task9_review_notes: "2026-05-07 Task9 15:27：needs-rework。P0 1 / P1 1 / P2 2。Top: L273 RenderProperties::promotedToLayer() alpha 条件"
 ---
 
 # Hardware Layer

@@ -27,11 +27,11 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task9_result: needs-rework
@@ -39,12 +39,12 @@ task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task2b_at: "2026-05-06T13:04:10+08:00"
 task2b_result: fixed
-last_task9_at: "2026-05-07T13:26:03+08:00"
-task9_review_notes: "2026-05-07 Task9 13:20：needs-rework。P0 0 / P1 1 / P2 4。L456-L467 冷启动回归检测 SQL 缺少同进程/时间窗口/launch 约束。"
+last_task9_at: "2026-05-07T15:27:55+08:00"
+task9_review_notes: "2026-05-07 Task9 15:27：needs-rework。P0 1 / P1 1 / P2 1。Top: L471-L474 android.startup.startups 查询"
 last_task6_at: "2026-05-07T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-14-review.md"
 task6_review_notes: "2026-05-07 Task6 14:05：Task2B 修复后写作复审；修复冷启动示例中遗留的 result 未定义变量 1 处，frontmatter 更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-07-13-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-07-15-deep-review.md"
 ---
 
 

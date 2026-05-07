@@ -1420,3 +1420,31 @@
 - **问题**：该 URL 当前返回 404；Perfetto 官方“Commands and Macros”文档路径是 `https://perfetto.dev/docs/visualization/ui-automation`，Extension Server 文档路径是 `https://perfetto.dev/docs/visualization/extension-servers`。
 - **建议**：把 source 链接改成 `ui-automation`；如果正文继续讨论团队共享宏，再补 `extension-servers` 作为第二个来源。
 - **review 日志**：logs/deep-review/2026-05-07-13-deep-review.md
+
+## [Task9 Deep Review] 2.1 Android 渲染架构全景 — 2026-05-07
+- **类型**：数据缺失/Vulkan 性能边界
+- **位置**：L547-L549 Vulkan 后端性能描述
+- **问题**：[P2] “OpenGL ES 状态检查可能占数毫秒帧时间”“Vulkan 多线程能力可以更好利用 HWUI 架构”缺少设备、trace 或 benchmark 支撑；HWUI 是否实际并行构建 Vulkan command buffer 也没有源码锚点。
+- **建议**：保留 backend 选择逻辑，但把性能判断改成有条件表述；补 Skia/HWUI Vulkan trace、CPU submit 耗时对比，或删除“数毫秒”和“更好利用”这类量化/因果断言。
+- **review 日志**：logs/deep-review/2026-05-07-15-deep-review.md
+
+## [Task9 Deep Review] 2.7 Hardware Layer — 2026-05-07
+- **类型**：源码准确性/后端边界
+- **位置**：L327 RenderEffect 与 FBO 描述
+- **问题**：[P2] “二者底层都依赖 FBO”是 OpenGL 术语；HWUI 也可能走 SkiaVulkanPipeline，RenderEffect/ImageFilter 应描述为 backend-dependent offscreen render target/layer。当前还只写 `SkiaOpenGLPipeline::draw()`，与前文 OpenGL/Vulkan 双后端不一致。
+- **建议**：改成“离屏 render target / layer surface”，并分别标注 OpenGL 下可能对应 FBO，Vulkan 下对应 Skia/Vulkan render target；源码锚点保留 RenderProperties/RenderNodeDrawable/SkiaPipeline，避免只锚 OpenGL。
+- **review 日志**：logs/deep-review/2026-05-07-15-deep-review.md
+
+## [Task9 Deep Review] 2.7 Hardware Layer — 2026-05-07
+- **类型**：数据缺失
+- **位置**：L182-L184 16KB 页与 GPU layer 内存
+- **问题**：[P2] 已标 `[待验证]`，但正文仍先断言 GPU 显存分配最小对齐单元提升会让小 layer 有更多填充浪费。该影响依赖 gralloc/GPU driver/sub-allocator，不能由 Android 16KB page size 直接推出。
+- **建议**：改成研究假设，要求用 memtrack/gralloc/dumpsys gfxinfo 在具体设备上验证；不要把 16KB 页粒度等同于纹理实际分配粒度。
+- **review 日志**：logs/deep-review/2026-05-07-15-deep-review.md
+
+## [Task9 Deep Review] 13.7 Perfetto 的高级用法 — 2026-05-07
+- **类型**：数据缺失
+- **位置**：L762 NDK ATrace_* 开销
+- **问题**：[P2] “单次约 50-100ns”没有来源、设备、构建类型、是否 tracing enabled/disabled、字符串长度等条件。Trace 点治理章节给出精确数值但缺测试边界，会误导生产包开销评估。
+- **建议**：补 microbenchmark/官方来源；至少拆成 tracing disabled fast path、enabled path，并写明 SoC/Android 版本/编译优化条件。
+- **review 日志**：logs/deep-review/2026-05-07-15-deep-review.md

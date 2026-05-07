@@ -24,25 +24,26 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 review_round: 6
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-04"
+task9_reviewed_date: "2026-05-07"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 last_task2b_at: "2026-04-25T05:47:52+08:00"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-04T00:30:00+08:00"
+last_task9_at: "2026-05-07T15:27:55+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。需 Task2B 回炉。"
+task9_review_notes: "2026-05-07 Task9 15:27：needs-rework。P0 0 / P1 2 / P2 1。Top: L282-L318 BufferQueue 生产者-消费者图与消费者说明"
 task6_review_notes: "2026-05-07 Task6 14:05：Task2B 修复后写作复审；清理结构性元叙述/冗余因果句/顺序口吻 3 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_at: "2026-05-07T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-14-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-07-15-deep-review.md"
 ---
 
 # Android 渲染架构全景
