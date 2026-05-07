@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-05-08T06:28:09+08:00",
+  "generated_at": "2026-05-08T07:24:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total_sections": 209,
-    "last_updated": "2026-05-08T06:28:09+08:00",
+    "last_updated": "2026-05-08T07:24:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 142,
@@ -392,6 +392,25 @@
       "auto_finalized": [],
       "skipped": [],
       "review_log": "logs/review/2026-05-08-06-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T07:24:00+08:00",
+      "sections": [
+        "7.1"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 5,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分（outline 后正文 0 行）"
+        }
+      ],
+      "review_log": "logs/review/2026-05-08-07-review.md"
     }
   ],
   "task9_review_history": [

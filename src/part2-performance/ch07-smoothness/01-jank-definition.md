@@ -38,9 +38,9 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: "needs-rework"
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: "pass-light-edit"
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
@@ -48,16 +48,16 @@ task2b_result: fixed
 last_task2b_at: '2026-05-08T05:42:56+08:00'
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
-review_round: 7
+review_round: 8
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T06:28:09+08:00"
 task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 2（JankType 版本边界、未验证枚举）/ P2 5 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。"
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T06:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-08-06-review.md"
+last_task6_at: "2026-05-08T07:24:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-07-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-08-06-deep-review.md"
-review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。"
+review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。"
 ---
 
 # 卡顿的定义与分类
@@ -137,7 +137,7 @@ VSync 是渲染管线的基本时钟，每一帧必须在分配给自己的 VSyn
 
 ### 一个关键区分：FPS 不等于流畅度
 
-很多人喜欢先看 FPS，但 FPS 最容易把人带偏。它只回答"一秒里总共画了多少帧"，不回答"这些帧是不是均匀到达"。
+工程排查里常先看 FPS，但 FPS 最容易把人带偏。它只回答"一秒里总共画了多少帧"，不回答"这些帧是不是均匀到达"。
 
 举个极端的例子：一秒内渲染了 50 帧。如果这 50 帧是均匀分布的（每 20ms 一帧），用户看到的是稳定的 50fps 体验，虽然不是最流畅，但不会觉得"卡"。但如果前 200ms 只渲染了 1 帧，后 800ms 突然渲染了 49 帧，FPS 同样是 50，但用户会感受到明显的卡顿——因为那 200ms 的空白期打破了视觉惯性。
 
@@ -210,7 +210,7 @@ AOSP `frameworks/native/libs/gui/include/gui/JankInfo.h` 中定义了除 `None` 
 `Dropped Frame` 表示这一帧被直接跳过了。Perfetto 文档把两侧含义分开写得很清楚：
 
 - 对 SurfaceFlinger 来说，是跳过当前 frame，优先显示更新的 frame。
-- 对 App 来说，是 UI 线程的 state update 没来得及推到 RenderThread，RenderThread 用旧状态把这一帧画完了。
+- 对 App 来说，是 UI 线程的状态更新没来得及推到 RenderThread，RenderThread 用旧状态把这一帧画完了。
 
 用户看到的结果都是"内容跳了一下"，但根因路径不同。
 
@@ -256,6 +256,50 @@ Android 12 之前没有 FrameTimeline。那时只能靠 `Choreographer#doFrame`�
 
 [已验证: Perfetto 文档, https://perfetto.dev/docs/data-sources/frametimeline]
 
+### Binder 阻塞如何佐证 AppDeadlineMissed
+
+Binder 调用出现在 App 主线程或 RenderThread 的帧关键路径上时，会造成 App 侧交帧延迟。但 Binder 阻塞本身不等于某一类 JankType——需要回到 FrameTimeline 的 deadline 体系里做因果连接。
+
+#### Binder 阻塞定位为帧关键路径证据
+
+排查 AppDeadlineMissed 时，如果 `Actual Timeline` 超出 `Expected Timeline`，沿 token 回到 App 线程后，常见的一条证据链是：
+
+1. FrameTimeline 标记 `AppDeadlineMissed`，`On time finish = false`。
+2. App 主线程或 RenderThread 在该帧的 `doFrame` / `DrawFrame` 区间内出现 `binder transaction` slice。
+3. 同一时段 `thread_state: Sleeping`，`blocked_function: binder_thread_read`。
+
+此时 Binder 阻塞是 AppDeadlineMissed 的直接原因——App 线程在帧周期内花时间等 Binder 返回，导致 `queueBuffer` 超出 deadline。
+
+#### 不要把 Binder 直接映射到 SF 或 BufferStuffing
+
+Binder 阻塞出现在 SurfaceFlinger 线程上时，需要额外证据才能指向 `SurfaceFlingerCpuDeadlineMissed`：SF 主线程在 `onMessageReceived` 里等 Binder 返回，导致合成超时。仅凭"服务端处理慢"不能跳过 FrameTimeline 的 SF deadline 判定。
+
+`BufferStuffing` 的因果条件是 BufferQueue 堆积。Binder 调用频率高可能间接导致堆积，但 BufferStuffing 的判定依据是 FrameTimeline 的 `Jank Type` + `Present Type` + BufferQueue 轨道的 dequeued/queued 计数，不是 Binder 调用次数。
+
+#### Perfetto SQL 佐证
+
+确认 FrameTimeline 归因后，用 `android_binder_txns` 定位具体 Binder 调用：
+
+```sql
+-- 找到帧周期内耗时最长的 binder 事务
+SELECT client_process, server_process, client_dur/1e6 AS client_ms,
+       server_dur/1e6 AS server_ms, aidl_name, is_main_thread
+FROM android_binder_txns
+WHERE client_dur > 10000000  -- > 10ms
+ORDER BY client_dur DESC;
+```
+
+再用 `android_binder_client_breakdown` 按 reason 拆分延迟来源：
+
+```sql
+SELECT reason, count(*) AS count, sum(dur)/1e6 AS total_ms
+FROM android_binder_client_breakdown
+WHERE reason = 'binder'
+GROUP BY reason;
+```
+
+排查顺序：**先看 FrameTimeline 归因 → 确认哪条线程在帧周期内阻塞 → 再用 Binder SQL 定位具体调用**。不要跳过 FrameTimeline 直接从 Binder 调用反推 JankType。
+
 ## 掉帧率、连续掉帧与卡顿率
 
 逐帧归因回答的是"这一帧为什么晚了"；项目交付还要回答"整体体验差到什么程度"。这时会用到慢帧、Frozen Frame、Janky Frame Rate 一类聚合指标。
@@ -292,7 +336,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 ## 用户感知与技术指标的映射
 
-了解了各种技术指标之后，我们还得回答一个更实际的问题：这些数字对应的用户感受是什么?用户不会看 Perfetto Trace，他们只会说"这个列表滑起来不顺手"或"这个动画一卡一卡的"。
+了解了各种技术指标之后，我们还得回答一个更实际的问题：这些数字对应的用户感受是什么？用户不会看 Perfetto Trace，他们只会说"这个列表滑起来不顺手"或"这个动画一卡一卡的"。
 
 ### 视觉惯性与帧率稳定性
 
@@ -314,7 +358,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 对于 Android 的 UI 渲染来说，一个 VSync 周期（60Hz 下 16.67ms）的延迟通常不会让用户直接感知到——因为单帧的微小波动被前后帧的连续性"平滑"掉了。但如果连续多帧都 Jank，累积的延迟很快就会超过 100ms 的感知阈值。比如连续 3 个 VSync 周期没有新画面（约 50ms 的空白），在滑动场景下用户就能感知到"不跟手"。
 
-[已验证: 官方文档, developer.android.com/topic/performance/vitals]
+[已验证: 官方文档, https://developer.android.com/topic/performance/vitals]
 [引用: https://www.nngroup.com/articles/response-times-3-important-limits/]
 
 ### 不同场景下的感知差异
@@ -331,7 +375,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 JankStats 适合在测试环境或线上埋点里回答"哪一段 UI 状态更容易出 jank"。它基于 `FrameMetrics` / 平台帧信息收集每帧数据，能够把 Activity、页面状态、交互上下文一起带出来。FrameTimeline 更适合离线 trace 里做单帧归因，两者分工不同。
 
-JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直接：阈值等于 `current refresh period × multiplier`，默认 multiplier 是 `2`。默认阈值是当前刷新周期的 2 倍，超过才报告 jank。注意这和"超过 1 个 VSync 就算 jank"不同"。
+JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直接：阈值等于 `current refresh period × multiplier`，默认 multiplier 是 `2`。默认阈值是当前刷新周期的 2 倍，超过才报告 jank。注意这和"超过 1 个 VSync 就算 jank"不同。
 
 在 Android 12+ 上，`frameOverrunNanos` 可以补"超了多少时间"；在旧版本上，JankStats 仍然能给出较粗的运行时 jank 统计，但归因粒度不如 FrameTimeline。用法上，JankStats 用来找"哪里经常卡"；Perfetto / FrameTimeline 用来查"这一帧为什么卡"。
 
@@ -385,47 +429,3 @@ JankStats 里有一个 `jankHeuristicMultiplier`。官方 reference 写得很直
   - 腾讯音乐：Android 深入卡顿分析与实践（来源：obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md）
   - 高爷：Android Perfetto 系列 6 - 为什么是 120Hz（来源：obsidian/Personal-Knowlodge/source/Android-Perfetto-06-Why-120Hz.md）
   - 高爷：Android Perfetto 系列 5 - Choreographer 渲染流程（来源：obsidian/Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md）
-
-## Binder 阻塞如何佐证 AppDeadlineMissed
-
-Binder 调用出现在 App 主线程或 RenderThread 的帧关键路径上时，会造成 App 侧交帧延迟。但 Binder 阻塞本身不等于某一类 JankType——需要回到 FrameTimeline 的 deadline 体系里做因果连接。
-
-### Binder 阻塞定位为帧关键路径证据
-
-排查 AppDeadlineMissed 时，如果 `Actual Timeline` 超出 `Expected Timeline`，沿 token 回到 App 线程后，常见的一条证据链是：
-
-1. FrameTimeline 标记 `AppDeadlineMissed`，`On time finish = false`。
-2. App 主线程或 RenderThread 在该帧的 `doFrame` / `DrawFrame` 区间内出现 `binder transaction` slice。
-3. 同一时段 `thread_state: Sleeping`，`blocked_function: binder_thread_read`。
-
-此时 Binder 阻塞是 AppDeadlineMissed 的直接原因——App 线程在帧周期内花时间等 Binder 返回，导致 `queueBuffer` 超出 deadline。
-
-### 不要把 Binder 直接映射到 SF 或 BufferStuffing
-
-Binder 阻塞出现在 SurfaceFlinger 线程上时，需要额外证据才能指向 `SurfaceFlingerCpuDeadlineMissed`：SF 主线程在 `onMessageReceived` 里等 Binder 返回，导致合成超时。仅凭"服务端处理慢"不能跳过 FrameTimeline 的 SF deadline 判定。
-
-`BufferStuffing` 的因果条件是 BufferQueue 堆积。Binder 调用频率高可能间接导致堆积，但 BufferStuffing 的判定依据是 FrameTimeline 的 `Jank Type` + `Present Type` + BufferQueue 轨道的 dequeued/queued 计数，不是 Binder 调用次数。
-
-### Perfetto SQL 佐证
-
-确认 FrameTimeline 归因后，用 `android_binder_txns` 定位具体 Binder 调用：
-
-```sql
--- 找到帧周期内耗时最长的 binder 事务
-SELECT client_process, server_process, client_dur/1e6 AS client_ms,
-       server_dur/1e6 AS server_ms, aidl_name, is_main_thread
-FROM android_binder_txns
-WHERE client_dur > 10000000  -- > 10ms
-ORDER BY client_dur DESC;
-```
-
-再用 `android_binder_client_breakdown` 按 reason 拆分延迟来源：
-
-```sql
-SELECT reason, count(*) AS count, sum(dur)/1e6 AS total_ms
-FROM android_binder_client_breakdown
-WHERE reason = 'binder'
-GROUP BY reason;
-```
-
-排查顺序：**先看 FrameTimeline 归因 → 确认哪条线程在帧周期内阻塞 → 再用 Binder SQL 定位具体调用**。不要跳过 FrameTimeline 直接从 Binder 调用反推 JankType。
