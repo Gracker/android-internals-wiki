@@ -2,7 +2,7 @@
 title: "IPC 全景：Android 进程间通信机制对比与性能选型"
 chapter: "1.17"
 section: "1.17"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-11"
 last_verified_against: "AOSP main（ProcessState.cpp、Looper.cpp、InputTransport.cpp、InputChannel.java）, source.android.com"
@@ -32,20 +32,20 @@ reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-05-08-04-review.md"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_result: "needs-rework"
-task9_state: pending
+task9_result: "pass-tech-review"
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-04-24T09:54:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-08"
-last_task9_at: "2026-05-08T03:20:00+08:00"
+last_task9_at: "2026-05-08T04:31:55+08:00"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T04:05:00+08:00"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 18 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、数据口径示意与代码块语言标注；无新增回炉项，送 Task9 复审。"
-task9_review_notes: "2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
+task9_review_notes: "2026-05-08 04 Task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 仅建议；无 queue pending，Task6 已通过，自动晋升 finalized / ready-to-publish；详见 logs/deep-review/2026-05-08-04-deep-review.md。 | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
