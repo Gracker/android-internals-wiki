@@ -22,11 +22,11 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/network-traces"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
@@ -34,7 +34,7 @@ task9_reviewed_date: "2026-04-27"
 last_task9_at: "2026-04-27T22:33:32+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-25"
-last_task2b_at: "2026-04-25T07:48:00+08:00"
+last_task2b_at: "2026-05-07T23:47:13+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 
@@ -163,9 +163,10 @@ Firebase 自动网络 trace 更像聚合盘，不是抓包器。它擅长回答�
 
 URL pattern 必须做归一化。像 `/api/item/10001/detail`、`/api/item/10002/detail` 这一类路径，在盘面上应该收敛成 `/api/item/{id}/detail`。query 参数里的 token、签名、搜索词、实验参数也不要直接进聚合维度。
 
-官方文档还给了两条实操边界：
+官方文档给了几条实操边界：
 
-- Gradle plugin 的自动网络插桩主要覆盖常见 HTTP/S 路径；自研网络库、Cronet、native 网络栈或非常规封装可能漏掉，要在统一网络封装层补 custom network trace 或等价埋点
+- Gradle plugin 通过字节码插桩拦截 OkHttp，但覆盖范围有限：自研网络库、Cronet、native 网络栈或非常规封装可能漏掉。Cronet 需要用 `FirebasePerfUrlConnection` 包装或手动添加拦截器，否则网络 trace 会静默缺失
+- 如果项目中使用了复杂 AOP 框架（自定义 Transformer 顺序不当），或者 OkHttp 的自定义 `EventListener` 占据了全局槽位，Firebase 的网络采集也会静默失败。接入后应在 `build.log` 中搜索 `firebase-perf` 插件输出确认插桩生效，并在 Logcat 中开启 `firebase_performance_logcat_enabled` 验证 trace 是否正常上报
 - 只完成了一半、长时间不结束的连接，控制台不一定会形成稳定样本；`Content-Type` 非法的请求也可能不展示
 
 线上要拆阶段时，还是要回到应用日志、服务端 trace 和 Perfetto。
@@ -181,7 +182,9 @@ Firebase Performance 的控制台时效必须单独写出来。官方 troublesho
 
 采样也不是无限上报。官方文档写明：设备侧对 code trace 和 network trace 有 10 分钟 300 事件的限流，还会做按项目动态采样。结果就是：控制台上的数据是“采样后的聚合盘”，不是每一条请求、每一帧卡顿都原样保留。
 
-这直接决定了排查边界：Firebase 适合发布回归、版本比较、趋势监控，不适合秒级 incident 排查。遇到线上突发故障，要切到日志、实时告警、自建 APM 或 Perfetto 样本。
+这直接决定了排查边界：Firebase 适合发布回归、版本比较、趋势监控，不适合秒级 incident 排查。
+
+近实时 SDK 的几分钟延迟叠加采样过滤，可能导致事故发生时控制台仍然显示正常。不要把 Firebase Performance 作为唯一的故障发现工具——线上告警体系必须有独立的实时业务错误码监控、自建 APM 或日志告警作为主链路，Firebase 只做补充验证和趋势观察。
 
 ## 和 JankStats、FrameMetrics、Android Vitals 的分工
 
