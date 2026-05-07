@@ -4,7 +4,7 @@ chapter: "7.6"
 section: "7.6"
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-27"
+reviewed_date: "2026-05-07"
 reviewed_by: "openclaw-task6"
 status: "ready-for-review"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
@@ -34,17 +34,19 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: "task6_pending"
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: "pending"
+task2b_state: "fixed"
 task2b_result: fixed
 task2b_rework_date: "2026-05-03"
 task2b_fixed_at: "2026-05-03T07:40:00+08:00"
 task9_result: "needs-rework"
 last_task2b_at: "2026-04-27T13:40:00+08:00"
 task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1；P1 合并 queue.json，P2 写入 suggestions.md。"
+last_task6_at: "2026-05-07T22:11:39+08:00"
+task6_review_notes: "2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；Task9 技术复审仍 pending，未自动晋升。"
 ---
 
 # 案例集
@@ -71,7 +73,7 @@ task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 0 / P1 2 / 
 
 ## 为什么要用案例来学分析
 
-前面四章已经把卡顿的定义、原因体系、分析方法和典型场景拆开讲过了。真正难的部分，是把这些知识放回真实问题里，判断哪一层先出手，哪一层只是结果。一个看似简单的列表滑动卡顿，根因可能是主线程里的 Binder 调用碰上系统服务繁忙；一个偶发掉帧，也可能一路追到内存压力带来的 GC 暂停。
+前面四章已经把卡顿的定义、原因体系、分析方法和典型场景拆开讲过了。难的是把这些知识放回真实问题里，判断哪一层先出手，哪一层只是结果。一个看似简单的列表滑动卡顿，根因可能是主线程里的 Binder 调用碰上系统服务繁忙；一个偶发掉帧，也可能一路追到内存压力带来的 GC 暂停。
 
 这一节用五个真实案例把这套分析过程走一遍。每个案例都从用户感知到的现象出发，沿着“抓取 Trace → 定位异常 → 逐层分析 → 找到根因 → 验证修复”的顺序推进。读这五个案例时，先盯分析过程。下次再遇到类似 Trace，能直接复用同一套排查顺序。
 
@@ -103,7 +105,7 @@ task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 0 / P1 2 / 
 
 ### 逐步分析
 
-**第一步：确认是 View 树的 measure 问题。** Perfetto 中主线程的橙色条（对应 Choreographer#doFrame → Traversal → performTraversals）持续超过一帧。对比正常帧和异常帧，异常帧的 measure 步骤占比显著偏高。
+**第一步：确认是 View 树的 measure 问题。** Perfetto 中主线程的橙色条（对应 Choreographer#doFrame → Traversal → performTraversals）持续超过一帧。对比正常帧和异常帧，异常帧的 measure 步骤占比更高。
 
 **第二步：看 View 层级。** 通过 `adb shell dumpsys activity top` 获取当前 Activity 的 View 树。发现联系人列表的 item 布局嵌套了 6 层：`LinearLayout → RelativeLayout → FrameLayout → LinearLayout → TextView + ImageView`。
 
@@ -113,7 +115,7 @@ task9_review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 0 / P1 2 / 
 
 ### 根因
 
-列表 item 布局嵌套过深（6层），且使用了需要多次 measure 的 ViewGroup（`RelativeLayout` + `LinearLayout` with `layout_weight`）。滑动时每个 item 被频繁 inflate 和 measure，放大了布局开销。
+列表 item 布局嵌套过深（6 层），且使用了需要多次 measure 的 ViewGroup（`RelativeLayout` + `LinearLayout` with `layout_weight`）。滑动时每个 item 被频繁 inflate 和 measure，放大了布局开销。
 
 ### 修复方案
 
@@ -394,7 +396,7 @@ RenderThread 相关卡顿的 Perfetto 特征：
 
 通过 `adb shell dumpsys meminfo` 查看系统内存状态。下面是示例输出，正式结论需要补设备型号、系统版本和采样时间：
 
-```
+```text
 Total RAM: 3,842,060K (status moderate)
  Free RAM:   350,200K
  Used RAM: 3,718,091K
@@ -415,7 +417,7 @@ Total RAM: 3,842,060K (status moderate)
 - `kswapd0` 线程持续活跃（正常情况下大部分时间在 sleep）
 - 多个 App 进程被 lmkd 杀掉（进程消失）
 - 所有前台 App 的主线程出现更多 involuntary context switch（被调度器切出）
-- 前台 App 的 `GC` 事件频率显著升高
+- 前台 App 的 `GC` 事件频率升高
 
 **第三步：量化影响。** 在示例内存压力场景下，一帧的执行时间分布可能变为：
 - GC 暂停：5-20ms（正常 <5ms）
@@ -520,7 +522,7 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层的多层优化策略�
 
 ### 低端机的"调度惩罚"问题
 
-在低端设备（如 4 核 CPU、4GB 以下内存）上，CPU 调度延迟会显著影响前台 App。主线程可能在 `Runnable` 状态等待 CPU 调度 3-5ms，再加上 GC 和 IO 延迟，留给业务逻辑的时间几乎为零。
+在低端设备（如 4 核 CPU、4GB 以下内存）上，CPU 调度延迟会直接挤压前台 App 的帧预算。主线程可能在 `Runnable` 状态等待 CPU 调度 3-5ms，再加上 GC 和 IO 延迟，留给业务逻辑的时间几乎为零。
 
 [已验证: 来源见 obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md — 低端机内存紧张场景下的性能表现]
 
