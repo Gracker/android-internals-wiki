@@ -26,20 +26,21 @@ sources:
 reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task6_at: "2026-05-07T09:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-09-review.md"
 review_notes: "2026-05-07 Task6 09:06：pass-light-edit。Task2B 已将后半部调研补丁移入发布稿收束前；本轮小修 6 处（代码围栏语言、16KB 边界术语、Viz/GPU service 表述），L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 task9_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-30"
-last_task9_at: "2026-04-30T10:31:41+08:00"
+task9_reviewed_date: 2026-05-07
+last_task9_at: "2026-05-07T09:35:55+08:00"
 last_task2b_at: "2026-05-07T08:42:28"
 review_round: 3
+task9_review_notes: "2026-05-07 Task9 09:34：needs-rework。P0 1：Chromium WebView `AwGLFunctor.java` 源码路径不存在；P1 1：底部渲染路径重新把 WebView 写成固定 ASurfaceControl/BufferQueue → SF 路径，与 GLFunctor/HWUI 路径边界冲突；P2 1：render_process_gone Perfetto 事件待验证。"
 ---
 
 # 7.11 WebView 渲染性能与优化

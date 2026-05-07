@@ -1373,3 +1373,17 @@
 - **问题**：两节内容技术密度高，但现在放在常见误区之后，读感像把 AIW 源码调研材料追加到正文尾部；“Perfetto 分析”已经在前文出现一次，后文又以更底层口径重开一节，发布稿收束顺序被打断。
 - **建议**：保留现有技术内容，不做技术裁决；请 Task2B 做结构整合：Renderer 崩溃恢复并入多进程/版本演进或常见误区之前；WebView tracing API 与渲染管线内容并入“WebView 在 Perfetto 中的分析”；“常见问题与误区”与“参考资料”放回全文收束位置。
 - **review 日志**：logs/review/2026-05-07-08-review.md
+
+## [Task9 Deep Review] 1.7 ART 编译管线与 dex2oat 优化 — 2026-05-07 — AutoFDO 量化数字口径
+- **类型**：数据缺失/版本口径
+- **位置**：L371-L381 AutoFDO 在 Pixel 设备上的量化效果
+- **问题**：当前数字（冷启动 3.0%-4.3%、Binder-rpc 19.5%-21.7%、binder-addints 12.3%-37.7%、HwBinder 11.7%-20%、开机 2%）混用了不同 profile/分支口径。AOSP `android16-6.12/gki/aarch64/afdo/README.md` 当前 6.12.69 profile / Pixel 8 口径为 Boot 1.3%、Cold App launch 4.8%、Binder-rpc 20.7%、Binder-addints 17.0%、Hwbinder 26.4%；`android-mainline` 汇总口径则是 Pixel 6 上 Boot 2-3%、Cold App launch 3-4%、Binder-rpc 8-9%、Binder-addints 12-25%、Hwbinder 12-18%。
+- **建议**：固定一个证据口径：要么用 android16-6.12 当前 Pixel 8 / 6.12.69 profile 数字，要么用 android-mainline Pixel 6 汇总范围；不要把不同 profile 日期、设备和分支的数字合并成一组。
+- **review 日志**：logs/deep-review/2026-05-07-09-deep-review.md
+
+## [Task9 Deep Review] 7.11 WebView 渲染性能与优化 — 2026-05-07 — render_process_gone Trace 事件
+- **类型**：Trace 锚点待验证
+- **位置**：L638 Renderer 进程崩溃在 Perfetto 中的表现
+- **问题**：正文写 `render_process_gone` 事件会出现在 `android_webview.timeline` 分类下。当前可核验的 Chromium `aw_browser_terminator.cc` / `AwContents.java` 路径能确认 Java 回调与 UMA histogram（`Android.WebView.OnRenderProcessGoneResult2`），但本轮未在这些源码锚点中确认稳定的 `android_webview.timeline` / `render_process_gone` Trace 事件名。
+- **建议**：补真实 trace 样例、Chromium trace category 定义或 Perfetto 文档锚点；补不到时改为“通过 renderer 进程结束、`onRenderProcessGone()` 回调、logcat/UMA 线索联合判断”，不要写成稳定 Perfetto 事件。
+- **review 日志**：logs/deep-review/2026-05-07-09-deep-review.md
