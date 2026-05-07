@@ -8,8 +8,8 @@ applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
 last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
-reviewed_date: "2026-04-28"
-review_notes: "2026-04-28 task6 re-review (revisiting→reviewed): pass-light-edit。1处轻修（去填充词）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
+reviewed_date: "2026-05-07"
+review_notes: "2026-05-07 task6 review (revisiting→reviewed): pass-light-edit。多处轻修（去填充词、术语统一、代码省略标注与验证措辞）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
 reviewed_by: openclaw-task6
 polish_count: 2
 polish_date: "2026-04-28"
@@ -27,9 +27,9 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task6_result: pass-light-edit
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task9_result: needs-rework
 task2b_state: "fixed"
@@ -73,7 +73,7 @@ Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启
 
 ## 硬件加速 ≠ Hardware Layer
 
-在讲 Hardware Layer 之前，我们需要把两个容易混淆的概念彻底区分开。
+在讲 Hardware Layer 之前，我们需要把两个容易混淆的概念区分清楚。
 
 **硬件加速（Hardware Acceleration）** 指的是 Android 的渲染管线使用 GPU 来完成图形绘制，而不是用 CPU 调用 Skia 软件渲染。从 Android 4.0 开始，硬件加速默认开启。开启后，App 的渲染工作由主线程（记录 DisplayList）和 RenderThread（将 DisplayList 提交给 GPU 执行）协同完成。
 
@@ -114,7 +114,7 @@ Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启
 // @ AOSP android-16.0.0_r1
 public void buildLayer() {
     if (mLayerType == LAYER_TYPE_NONE) return;
-    // ...
+    // 省略与本节无关的 attachInfo、尺寸和缓存状态检查
     switch (mLayerType) {
         case LAYER_TYPE_HARDWARE:
             updateDisplayListIfDirty();
@@ -129,13 +129,13 @@ public void buildLayer() {
 }
 ```
 
-这里先看硬件层分支。`updateDisplayListIfDirty()` 先把当前 View 子树的绘制命令同步到 `RenderNode`，随后再用 `mRenderNode.hasDisplayList()` 判断这个节点是否已经持有可复用的 DisplayList。`buildLayer()` 依赖的是“已经有 DisplayList 可以建层”，不是泛化的“节点有效”。
+硬件层分支里，`updateDisplayListIfDirty()` 先把当前 View 子树的绘制命令同步到 `RenderNode`，随后再用 `mRenderNode.hasDisplayList()` 判断这个节点是否已经持有可复用的 DisplayList。`buildLayer()` 依赖的是“已经有 DisplayList 可以建层”，不是泛化的“节点有效”。
 
 `LAYER_TYPE_SOFTWARE` 则走 `buildDrawingCache()` 路径，最终生成一个 Bitmap 缓存。这个操作发生在主线程。
 
 Software Layer 的适用场景比较有限。最常见的情况是 App 没有开启硬件加速时，需要给 View 应用颜色过滤器、混合模式或半透明效果——此时 Software Layer 是唯一能提供离屏缓冲的方式。在硬件加速模式下，如果某个 View 使用了不被硬件渲染管线支持的 API（这类 API 列表可以在官方文档中查到），Software Layer 也可以作为一种降级方案，让该 View 用 CPU 渲染后以 Bitmap 形式参与后续合成。
 
-有一个重要限制：**如果 View 的内容频繁变化，不要使用 Software Layer。** 因为每次内容变化都会导致 Bitmap 缓存失效，需要重新在主线程执行 `buildDrawingCache`，这个过程比较耗时——尤其是硬件加速开启时，每次重建后还需要把 Bitmap 上传到 GPU 纹理。
+限制是：**如果 View 的内容频繁变化，不要使用 Software Layer。** 因为每次内容变化都会导致 Bitmap 缓存失效，需要重新在主线程执行 `buildDrawingCache`，这个过程比较耗时——尤其是硬件加速开启时，每次重建后还需要把 Bitmap 上传到 GPU 纹理。
 
 ### LAYER_TYPE_HARDWARE
 
@@ -143,14 +143,14 @@ Software Layer 的适用场景比较有限。最常见的情况是 App 没有开
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)]
 
-在 Android 10 之后的 HWUI 里，手动 `setLayerType(LAYER_TYPE_HARDWARE)` 已经不是属性动画的默认动作。`RenderNode` 自己就有 compositing layer 机制：当 `alpha` 与 `hasOverlappingRendering()` 的组合需要离屏缓冲，或者系统判断这样更省时，它会自动提升为 composition layer。手动 forcing layer 更适合下面两类场景：
+在 Android 10 之后的 HWUI 里，手动 `setLayerType(LAYER_TYPE_HARDWARE)` 已经不是属性动画的默认动作。`RenderNode` 自己就有 compositing layer 机制：当 `alpha` 与 `hasOverlappingRendering()` 的组合需要离屏缓冲，或者系统判断这样更省时，它会自动提升为 composition layer。手动强制建层更适合两类场景：
 
 - **Trace 已经看到复杂子树在动画期间被反复重绘**：内容本身没变，但每帧都在重录 DisplayList 或重做光栅化
 - **需要稳定的离屏合成语义**：例如大 View 子树的 alpha 混合、ColorFilter，或者多帧连续复用同一批绘制结果
 
-如果 View 很简单，或者动画过程中内容一直在变，手动 forcing layer 只会多一层缓存维护成本。
+如果 View 很简单，或者动画过程中内容一直在变，手动强制建层只会多一层缓存维护成本。
 
-如果 Trace 已经确认 forcing layer 有收益，可以只在动画窗口内短暂启用：
+如果 Trace 已经确认强制建层有收益，可以只在动画窗口内短暂启用：
 
 ```java
 // 动画开始前启用 Hardware Layer
@@ -230,7 +230,7 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 **修改内容时**：No Layer > Software Layer ≈ Hardware Layer
 
-这条规律的核心逻辑是：**缓存的价值取决于命中率。** 内容不变时缓存一直有效，收益巨大；内容频繁变化时缓存一直失效，维护缓存的开销反而成了负担。
+这条规律背后的判断是：**缓存的价值取决于命中率。** 内容不变时缓存一直有效，收益巨大；内容频繁变化时缓存一直失效，维护缓存的开销反而成了负担。
 
 在性能优化的实际工作中，这条规律可以转化为一条操作原则：在考虑对某个 View 使用 Hardware Layer 之前，先问自己一个问题——动画期间这个 View 的内容会变吗？如果答案是不会，Hardware Layer 几乎一定能提升性能；如果答案是会，优先考虑把内容变化和动画分离到不同的 View 上，再评估是否使用 Hardware Layer。
 
@@ -267,15 +267,16 @@ Android 开发者选项中有一个"显示硬件层更新"（Show hardware layer
 
 AOSP `frameworks/base/graphics/java/android/graphics/RenderNode.java` 的公开 API 是 `setUseCompositingLayer(boolean forceToLayer, Paint paint)` 和 `getUseCompositingLayer()`。原注释把边界写得很清楚：`RenderNode` 会在“这样更省时”或者 `alpha + hasOverlappingRendering()` 组合需要时，自动提升为 composition layer；`forceToLayer=false` 才是默认且推荐的值。`paint` 只在强制建层时生效，用来给这层额外叠加 blend mode、alpha 和 `ColorFilter`。
 
-Android 16 在这个自动建层逻辑中加入了内部启发式判断。HWUI 会综合考虑 RenderNode DisplayList 的绘制复杂度——绘制指令越多、涉及的 path/effect/shader 越复杂，自动提升为 composition layer 的可能性越高；纯矩形填充等简单内容则不会被提升。当一个静态节点（内容不变化）被判定为"建层收益大于成本"时，系统会自动将其提升为 composition layer，无需开发者手动调用 `setLayerType()`。这意味着很多过去需要手动建层的场景，Android 16 已经能够自动处理。
+Android 16 在这个自动建层逻辑中加入了内部启发式判断。HWUI 会综合考虑 RenderNode DisplayList 的绘制复杂度——绘制指令越多、涉及的 path/effect/shader 越复杂，自动提升为 composition layer 的可能性越高；纯矩形填充等简单内容则不会被提升。静态节点（内容不变化）被判定为“建层收益大于成本”时，系统会自动将其提升为 composition layer；过去部分需要手动建层的场景，可以交给 HWUI 自动处理。
 
 [待验证: 具体评分函数与阈值位于 libhwui 内部实现，未在公开 RenderNode API 中暴露；当前描述基于 HWUI 行为推断，具体权重/阈值待 AOSP 源码确认]
 
 ```java
 // frameworks/base/graphics/java/android/graphics/RenderNode.java
 // @ AOSP android-16.0.0_r1
-public boolean setUseCompositingLayer(boolean forceToLayer, @Nullable Paint paint) { ... }
-public boolean getUseCompositingLayer() { ... }
+// 这里只保留公开 API 签名，省略实现。
+public boolean setUseCompositingLayer(boolean forceToLayer, @Nullable Paint paint);
+public boolean getUseCompositingLayer();
 ```
 
 这能帮我们厘清边界：`View.setLayerType()` 是 View 侧 API，操作对象是整个 View 子树；`RenderNode.setUseCompositingLayer(...)` 是更底层的 RenderNode API，用来显式要求中间缓冲并附带合成用的 `Paint`。二者谈的是同一类机制，但现代 HWUI 已经会自己做一部分自动建层，不需要应用把每个动画都手动改成 `LAYER_TYPE_HARDWARE`。
@@ -286,7 +287,7 @@ public boolean getUseCompositingLayer() { ... }
 
 Jetpack Compose 没有直接暴露 `setLayerType`，对应概念是 `Modifier.graphicsLayer`。官方文档把它描述为“让内容绘制进一个 draw layer”。这个 layer 先提供绘制隔离，再决定是否要栅格化成 offscreen buffer。
 
-先把两个概念分开：
+这里需要分清两个概念：
 
 - **draw layer**：把一组绘制指令隔离出来，便于单独做 translation、scale、rotation、alpha、shadow 等变换
 - **offscreen compositing**：真的分配一块离屏 texture/bitmap，把输出先画进去，再把这块 buffer 合成回目标 surface
@@ -311,18 +312,18 @@ Box(
 
 `rememberGraphicsLayer()` 是 Compose 1.7.0-alpha07+ 提供的另一组 API，主要用来显式创建 `GraphicsLayer`、录制内容并导出 `ImageBitmap`。它更接近 capture / advanced drawing 的能力，不是一个"共享 graphics layer 配置"的通用性能开关。
 
-Compose 1.10 对 `graphicsLayer` 的纹理复用机制做了进一步优化：离屏缓冲池化（offscreen buffer pooling）。之前每次 `graphicsLayer` 需要离屏渲染时都会重新分配 GPU 纹理，用完即释放；1.10 开始，这些纹理会被池化复用。对 LazyLayout 滑动场景的效果最直接——item 离开可视区后其 layer 纹理不销毁，新 item 进入时直接从池中取用，省去了纹理分配和上传的开销。实测中，这一改进在快速滑动列表时的零掉帧表现有显著提升。
+Compose 1.10 对 `graphicsLayer` 的纹理复用机制做了进一步优化：离屏缓冲池化（offscreen buffer pooling）。之前每次 `graphicsLayer` 需要离屏渲染时都会重新分配 GPU 纹理，用完即释放；1.10 开始，这些纹理会被池化复用。对 LazyLayout 滑动场景，item 离开可视区后其 layer 纹理不销毁，新 item 进入时直接从池中取用，省去了纹理分配和上传的开销；收益需要用掉帧率、GPU 纹理分配次数和 RenderThread 耗时一起确认。
 
 ## 与 RenderEffect 的关系 [AIW-源码调研-2026-04-22]
 
-RenderEffect（API 31, Android 12+）与 Hardware Layer 本质上是 **同一套 offscreen rendering 机制的两套 API**。
+RenderEffect（API 31, Android 12+）与 Hardware Layer 都会用到 **offscreen rendering**，但它们服务的语义不同。
 
 - **Hardware Layer**（`View.setLayerType(LAYER_TYPE_HARDWARE)`）：手动强制建立 offscreen GPU texture
 - **RenderEffect**（`View.setRenderEffect(createBlurEffect(...))`）：自动建立 offscreen texture 并施加特效
 
-二者底层都依赖 FBO（Framebuffer Object）在 GPU 显存中分配离屏渲染目标。当 RenderNode 有非 null 的 RenderEffect 时，HWUI 的 SkiaPipeline 会自动为其创建 offscreen FBO，渲染节点内容，执行 blur/color filter/AGSL shader 等特效，最后将结果合成到主帧缓冲区。这个过程在 `SkiaOpenGLPipeline::drawFrames()` 中实现。
+二者底层都依赖 FBO（Framebuffer Object）在 GPU 显存中分配离屏渲染目标。当 RenderNode 有非 null 的 RenderEffect 时，HWUI 的 SkiaPipeline 会自动为其创建 offscreen FBO，渲染节点内容，执行 blur/color filter/AGSL shader 等特效，再将结果合成到主帧缓冲区。这个过程在 `SkiaOpenGLPipeline::drawFrames()` 中实现。
 
-关键区别在于语义：Hardware Layer 解决的场景是"同一批绘制结果要被连续复用（动画/变换）"，RenderEffect 解决的场景是"要对绘制结果施加视觉特效"。当 RenderEffect 作用在一个内容不变的 View 上时，二者的性能收益类似——offscreen texture 建立一次，后续每帧只需要对纹理做操作。
+两者的区别在语义上：Hardware Layer 解决的场景是"同一批绘制结果要被连续复用（动画/变换）"，RenderEffect 解决的场景是"要对绘制结果施加视觉特效"。当 RenderEffect 作用在一个内容不变的 View 上时，二者的性能收益类似——offscreen texture 建立一次，后续每帧只需要对纹理做操作。
 
 详见 [7.5 优化策略](file:///Users/gracker/Library/Mobile%20Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part2-performance/ch07-smoothness/05-optimization.md)。
 
@@ -344,7 +345,7 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 | Android 4.1 (API 16) | Project Butter 引入 VSync 和 Choreographer，Hardware Layer 的调度节拍与 VSync 同步 |
 | Android 5.0 (API 21) | RenderThread 引入，Hardware Layer 的 buildLayer 从主线程移到 RenderThread |
 | Android 10 (API 29) | `RenderNode.setUseCompositingLayer(boolean, Paint)` 与 `getUseCompositingLayer()` 作为公开 API 可用 |
-| Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer控制 |
+| Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer 控制 |
 | Android 16 (API 36) | HWUI 自动建层引入基于绘制复杂度的内部启发式；静态节点可被自动提升为 composition layer，无需手动 setLayerType |
 | Compose 1.10 | `graphicsLayer` 离屏缓冲池化，纹理复用减少 LazyLayout 滑动场景的 GPU 内存分配开销 |
 
@@ -359,7 +360,7 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 
 ### 误区二："属性动画一定要手动开 Hardware Layer"
 
-现代 HWUI 下，translation、scale、rotation、alpha 这类动画经常已经能吃到 RenderNode 的自动 composition layer。手动 `setLayerType(LAYER_TYPE_HARDWARE)` 只有在 Trace 已经证明存在重复重绘，或者确实需要稳定离屏合成语义时才值得加。如果 View 很简单，或者动画过程中内容一直在变，手动 forcing layer 只会增加缓存维护成本。
+现代 HWUI 下，translation、scale、rotation、alpha 这类动画经常已经能吃到 RenderNode 的自动 composition layer。手动 `setLayerType(LAYER_TYPE_HARDWARE)` 只有在 Trace 已经证明存在重复重绘，或者需要稳定离屏合成语义时才值得加。如果 View 很简单，或者动画过程中内容一直在变，手动强制建层只会增加缓存维护成本。
 
 ### 误区三："设置 Hardware Layer 后就不用管了"
 
