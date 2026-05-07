@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-07T20:24:00+08:00",
+  "generated_at": "2026-05-07T21:28:11+08:00",
   "state_machine_version": "v2",
   "total_sections": 210,
   "metrics": {
@@ -311,6 +311,21 @@
       "queue_items_closed": 1,
       "auto_finalized": [],
       "review_log": "logs/deep-review/2026-05-07-20-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-07T21:28:11+08:00",
+      "sections": [
+        "19.13"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "needs-rework",
+      "p0": 1,
+      "p1": 3,
+      "p2": 0,
+      "p3": 0,
+      "queue_items_added": 1,
+      "auto_finalized": [],
+      "review_log": "logs/deep-review/2026-05-07-21-deep-review.md"
     }
   ],
   "rework_history": [
