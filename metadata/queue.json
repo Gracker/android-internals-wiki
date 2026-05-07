@@ -13764,6 +13764,44 @@
       "status": "completed",
       "completed_at": "2026-05-07T09:49:46+08:00",
       "completed_reason": "P0 AwGLFunctor.java源码路径改为AwDrawFnImpl.java/aw_draw_fn_impl.cc实际路径；P1 渲染提交路径从固定ASurfaceControl/BufferQueue拆为GLFunctor路径和SurfaceControl独立子Surface路径两条，版本表同步修正"
+    },
+    {
+      "section": "2.7",
+      "section_title": "Hardware Layer",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 2.7 Hardware Layer 仍有 RenderEffect 源码锚点、Android 16 自动建层、View layer/SF layer 边界等技术问题需回炉",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L324 RenderEffect 实现锚点",
+          "detail": "[P0] 正文写 RenderEffect/offscreen FBO 流程“在 SkiaOpenGLPipeline::drawFrames() 中实现”。AOSP android-16.0.0_r1 中没有 SkiaOpenGLPipeline::drawFrames()；OpenGL 管线入口是 SkiaOpenGLPipeline::draw(...)，随后进入 SkiaPipeline::renderFrame(...)。RenderEffect/ImageFilter 的关键处理在 RenderNodeDrawable.cpp 与 RenderNode::updateSnapshotIfRequired() 一带，不应把实现锚到不存在的方法。",
+          "suggestion": "把源码锚点改为 SkiaOpenGLPipeline::draw(...) → SkiaPipeline::renderFrame()/renderLayersImpl() → RenderNodeDrawable/RenderNode::updateSnapshotIfRequired()；如果不展开源码链，删除 drawFrames() 和“在该方法实现”的确定性说法。"
+        },
+        {
+          "type": "版本差异/源码准确性",
+          "location": "L270-L272、L349 Android 16 自动建层启发式",
+          "detail": "[P1] 正文把“基于 DisplayList 绘制复杂度、path/effect/shader 权重、静态节点收益阈值自动升层”写成 Android 16 机制。复核 android-16.0.0_r1 的 RenderProperties::promotedToLayer()，触发条件是 functor 需要隔离、ImageFilter、StretchEffect.requiresLayer()、alpha(0,1)+hasOverlappingRendering，并要求 fitsOnLayer()；未看到绘制指令复杂度评分或静态节点阈值。",
+          "suggestion": "删除 Android 16 版本表中的复杂度启发式断言；正文改为源码可验证的 promotedToLayer() 条件。若确有新机制，补 libhwui 具体文件、函数、提交号和触发条件。"
+        },
+        {
+          "type": "原理断裂/交叉引用错误",
+          "location": "L336 与 SurfaceFlinger 的关系",
+          "detail": "[P1] “Hardware Layer 产生的 GPU 纹理最终由 SurfaceFlinger 合成到屏幕上”把 View 级 HWUI layer 和 SurfaceFlinger 的窗口 layer 混在一起。View 的 hardware layer 在 app 进程/HWUI 内先合成进 window buffer；SurfaceFlinger 看到的是应用窗口 Surface/BufferQueue 对应的 layer，不会把单个 View hardware layer 当成独立 SF layer 合成。",
+          "suggestion": "改为“Hardware Layer 先由 HWUI 合成进应用窗口 buffer，窗口 buffer 再交给 SurfaceFlinger/HWC 做跨窗口合成”；交叉引用 2.6 时明确 View layer 与 SF layer 不是同一层级。"
+        },
+        {
+          "type": "原理准确性",
+          "location": "L189-L191 缓存失效与重建",
+          "detail": "[P1] 正文说内容变化会“销毁旧纹理并重新渲染建立新纹理”、每帧“销毁缓存”。android-16.0.0_r1 中 RenderNode::pushLayerUpdate() 在仍是 RenderLayer 且尺寸/可渲染条件满足时，会 createOrUpdateLayer 并把 damage 加入 LayerUpdateQueue；SkiaPipeline::renderLayerImpl() 用现有 layer surface 重绘受损内容。销毁发生在不再是 layer、不可渲染、尺寸非法、资源销毁等场景，不等同于每次 invalidate 都释放/重建纹理。",
+          "suggestion": "把“销毁旧纹理/每帧销毁缓存”收窄为“layer 内容被标脏并重绘/更新，必要时才重新分配 layer surface”；性能代价描述聚焦重绘、同步和 GPU 命令，而不是必然释放纹理。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T12:23:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

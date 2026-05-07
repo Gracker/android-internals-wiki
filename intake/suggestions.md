@@ -1387,3 +1387,22 @@
 - **问题**：正文写 `render_process_gone` 事件会出现在 `android_webview.timeline` 分类下。当前可核验的 Chromium `aw_browser_terminator.cc` / `AwContents.java` 路径能确认 Java 回调与 UMA histogram（`Android.WebView.OnRenderProcessGoneResult2`），但本轮未在这些源码锚点中确认稳定的 `android_webview.timeline` / `render_process_gone` Trace 事件名。
 - **建议**：补真实 trace 样例、Chromium trace category 定义或 Perfetto 文档锚点；补不到时改为“通过 renderer 进程结束、`onRenderProcessGone()` 回调、logcat/UMA 线索联合判断”，不要写成稳定 Perfetto 事件。
 - **review 日志**：logs/deep-review/2026-05-07-09-deep-review.md
+
+
+## [Task9 Deep Review] 2.7 Hardware Layer — 2026-05-07
+- **类型**：版本差异/数据缺失
+- **位置**：L315、L350 Compose 1.10 graphicsLayer 池化
+- **问题**：正文把 “Compose 1.10 离屏缓冲池化、LazyLayout item 离开后纹理不销毁并复用”写成确定性版本变化，但正文没有 androidx 源码、release note、commit 或 benchmark 锚点；公开 Compose UI 1.10 release notes 能看到 LayerOutsets 等 graphicsLayer 变更，未能直接支撑该池化描述。
+- **建议**：补 androidx 具体 commit/类名/函数与实测指标；找不到证据时从版本表删除，正文改为 [待验证] 研究方向。
+
+## [Task9 Deep Review] 2.7 Hardware Layer — 2026-05-07
+- **类型**：数据缺失
+- **位置**：L179-L181 16KB 页与 GPU layer 内存
+- **问题**：正文已经加了 [待验证]，但仍保留“GPU 显存分配的最小对齐单元提升”这一机制判断；缺 memtrack/gralloc/DMA-BUF/stride 数据，无法判断 16KB page size 对具体 GPU layer texture 的分配影响。
+- **建议**：补一组同设备 4KB/16KB 或同 SoC 不同 page size 的 layer 尺寸矩阵，至少包含理论 bytes、stride、memtrack GPU heap、dumpsys meminfo graphics/memtrack 口径；否则改成更弱的风险提示。
+
+## [Task9 Deep Review] 2.7 Hardware Layer — 2026-05-07
+- **类型**：原理链边界
+- **位置**：L84、L148、L207-L235 属性动画收益判断
+- **问题**：正文多处把 Hardware Layer 收益概括为减少“反复重录 DisplayList”，并写“不修改内容时几乎一定能提升性能”。现代 HWUI/RenderNode 的 translation/scale/rotation/alpha 属性动画本身也可能只更新 RenderNode 属性，不必每帧重录 DisplayList；手动 layer 的收益主要来自避免重复光栅化/处理重叠 alpha/offscreen 语义，不应泛化成 DisplayList 重录或必然收益。
+- **建议**：补版本/动画类型边界：区分 ViewPropertyAnimator/RenderNode property、普通 invalidate、复杂 alpha overlap/offscreen；把“几乎一定”改成“需用 trace 验证 buildLayer 首帧成本、后续 raster/flush 是否下降”。
