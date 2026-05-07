@@ -1539,3 +1539,51 @@
 - **问题**：`pm.16kb.app_compat.disabled` 被写成“安装时预检”。官方文档把它作为强制开启/关闭 16KB backcompat 的设备属性；Android 17 还支持 `bionic.linker.16kb.app_compat.enabled=fatal` 使不兼容 binary 立即 abort。
 - **建议**：把该行改为“设备级强制关闭 compat / 配合 linker 属性控制 backcompat”，并补 Android 17 `fatal` 模式；不要把它归类为安装时预检。
 
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-05-08
+- **类型**：技术审计/P2 建议
+- **位置**：L144/L360-L370 AF_VSOCK / RpcBinder 数据量与拷贝次数
+- **问题**：[P2] 表格把 AF_VSOCK / RpcBinder 的数据量写成“与 Binder 同量级”、拷贝次数写成 1，容易让读者误以为 Binder driver 的进程级 transaction buffer 约束也适用于 RpcBinder over vsock。AVF 文档把 host↔VM 主通道描述为 virtio-socket/vsock，数据上限与性能边界应按 vsock/libbinder_rpc framing、socket buffer 和协议实现单独说明。
+- **建议**：把该行改成“无 Binder transaction buffer 约束，受 vsock/socket buffer 与 RpcBinder framing 影响；大 payload 仍应另走共享内存/文件/流式协议”，拷贝次数改为“取决于 vsock/virtio 路径，需实测”。
+- **review 日志**：logs/deep-review/2026-05-08-04-deep-review.md
+
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-05-08
+- **类型**：技术审计/P2 建议
+- **位置**：L274-L291 Parcel::writeBlob 零拷贝表述
+- **问题**：[P2] 当前源码链已修正为 16KB 阈值与 ashmem-compatible fd，但标题和说明直接写“实现零拷贝”。AOSP `Parcel::writeBlob()` 对大 blob 是把 fd 写入 Binder transaction，并让调用方写入映射区域；它避免 payload 经过 Binder buffer，不等于所有场景端到端零拷贝。
+- **建议**：改成“对 Binder 事务而言只传 fd，不把大 payload 塞进 Parcel buffer；调用方仍可能需要把已有数据写入/拷入共享区域”。
+- **review 日志**：logs/deep-review/2026-05-08-04-deep-review.md
+
+## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-05-08
+- **类型**：技术审计/P2 建议
+- **位置**：L126-L139 内部碎片的 5KB 对象例子
+- **问题**：[P2] 正文用“App 分配 5KB 对象，16KB 页浪费 11KB”解释内部碎片，容易把 Java/Native 小对象说成直接占一个内核页。ART、malloc/scudo 会在 page/span 内做子分配，小对象通常不会一对象一页；页大小带来的浪费主要体现在页粒度映射、allocator span/class、mmap 大小与 RSS 结算上。
+- **建议**：把例子限定为“单独 mmap 或页级分配区域”，并补一句：普通 Java/Native 小对象会被运行时/allocator 打包到页内，内存增长要用 RSS/PSS 和 allocator class 实测。
+- **review 日志**：logs/deep-review/2026-05-08-04-deep-review.md
+
+## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-05-08
+- **类型**：技术审计/P2 建议
+- **位置**：L263-L271 NDK r27 mprotect alignment bug 口径
+- **问题**：[P2] 正文写“NDK r27 链接器生成的 ELF 文件 p_align=4096”，口径过宽。官方迁移文档说明 NDK r27 及更低版本可通过 `-z,max-page-size=16384` 与 `-z,common-page-size=16384` 生成 16KB-aligned 产物；如果引用 android/ndk#2026，应限定为未正确设置 flags 或特定 r27 linker/RELRO 场景。
+- **建议**：改成“NDK r27 及以下默认/未加完整 flags 的产物可能仍是 4KB alignment；android/ndk#2026 对应的 mprotect 失败需按 issue 的复现条件描述”。
+- **review 日志**：logs/deep-review/2026-05-08-04-deep-review.md
+
+## [Task9 Deep Review] 10.2 内存泄漏 — 2026-05-08
+- **类型**：技术审计/P2 建议
+- **位置**：L121-L124 LeakCanary retained 与 leak confirmation
+- **问题**：[P2] 流程把“GC 后 WeakReference 没进 ReferenceQueue”直接写成“发生了泄漏”。LeakCanary 更精确的状态是对象被判定 retained；最终 leak 结论依赖 heap dump 后从 GC Root 到 watched object 的引用链分析。`Runtime.getRuntime().gc()` 也是触发请求而非规范保证。
+- **建议**：把第三步改成“标记为 retained / suspected leak”，第四步再写“Heap Dump 中找到有效 GC Root 引用链后确认泄漏”。
+- **review 日志**：logs/deep-review/2026-05-08-04-deep-review.md
+
+## [Task9 Deep Review] 10.2 内存泄漏 — 2026-05-08
+- **类型**：技术审计/P2 建议
+- **位置**：L233-L236 libmemunreachable 零开销表述
+- **问题**：[P2] `libmemunreachable` 被写成“零开销的泄漏检测”。它没有常驻插桩开销，但触发扫描时仍有暂停、遍历和误报/漏报成本；更适合作为 on-demand native leak sweep，而不是生产环境持续零成本检测。
+- **建议**：改成“无持续插桩开销；触发时有扫描成本，结果是不精确的 suspected unreachable blocks”。
+- **review 日志**：logs/deep-review/2026-05-08-04-deep-review.md
+
+## [Task9 Deep Review] 10.2 内存泄漏 — 2026-05-08
+- **类型**：技术审计/P2 建议
+- **位置**：L301 heapprofd Java heap allocation 版本边界
+- **问题**：[P2] 正文写 heapprofd 可通过 `heaps: "com.android.art"` 采 Java heap allocations，但版本边界“待核”。Perfetto 文档已经标注 Java allocation profiling available on Android 12 or higher，并说明它是 allocation samples，不是 heap dump/retention graph。
+- **建议**：补 Android 12+ 边界，并明确它只能看到对象创建调用栈样本，不能证明对象仍被引用；泄漏确认仍要 Heap Dump/LeakCanary/Shark。
+- **review 日志**：logs/deep-review/2026-05-08-04-deep-review.md
