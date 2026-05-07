@@ -9,7 +9,7 @@ last_verified: "2026-04-21"
 last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & 16 KB page size docs / kernel zram docs"
 reviewed_date: "2026-04-21"
 reviewed_by: "openclaw-task6"
-review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修，lmkd / cgroup / ZRAM 段落的技术风险已转 Task 9 / Task 2B"
+review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack 物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in swap/total swap）"
 task6_result: pass-light-edit
 confidence: medium
 polish_count: 1
@@ -42,11 +42,11 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
@@ -117,7 +117,7 @@ Android 在 Linux 内核的基础上做了几件特别的事情：
 
 Android 17（API 37）引入了 MemoryLimiter 硬限额机制。当应用 PSS 超过系统分配的配额时，进程会被直接终止，`ApplicationExitInfo` 中会记录 `MemoryLimiter` 原因。这一机制从依赖 `onTrimMemory` 的自觉释放转为强制配额审计，意味着内存治理从"建议"变成了"硬约束"。
 
-**cgroup 约束。** Android 10 起把 cgroup 配置收口到 `cgroups.json` / `task_profiles.json` 这层抽象。具体 memory controller 字段要分 v1 / v2 看：`MemLimit` 映射 v1 `memory.limit_in_bytes`、v2 `memory.max`；`MemSoftLimit` 映射 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`。`memory.pressure_level` 仍是 v1 接口，不能和 `memory.max` / `memory.low` 当成同一条 v2 路径。
+**cgroup 约束。** Android 10 起把 cgroup 配置统一归到 `cgroups.json` / `task_profiles.json` 这层抽象。具体 memory controller 字段要分 v1 / v2 看：`MemLimit` 映射 v1 `memory.limit_in_bytes`、v2 `memory.max`；`MemSoftLimit` 映射 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`。`memory.pressure_level` 仍是 v1 接口，不能和 `memory.max` / `memory.low` 当成同一条 v2 路径。
 
 [已验证: source.android.com/docs/core/perf/lmkd；frameworks/base/services/core/java/com/android/server/am/ProcessList.java；frameworks/base/core/java/android/content/ComponentCallbacks2.java；system/core/libprocessgroup/profiles/task_profiles.json]
 

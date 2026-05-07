@@ -5556,9 +5556,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-26T01:28:54+08:00",
-      "status": "pending",
+      "status": "completed",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-04-29T05:30:17+08:00"
+      "last_reviewed_at": "2026-04-29T05:30:17+08:00",
+      "completed_at": "2026-05-07T18:45:04+08:00",
+      "completed_reason": "Stack物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used口径已修正为三指标分读（physical used/in swap/total swap）"
     },
     {
       "section": "4.1",
@@ -13998,7 +14000,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T18:28:30+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T18:45:04+08:00",
+      "completed_reason": "P0 Activity启动路径改为Android 9+ ClientTransaction模型（含8.x旧路径说明）；P0 Binder线程池常量改为15；P1 删除ViewPager2自定义LayoutManager prefetch建议，补公开API限制说明"
     }
   ],
   "completed": [
