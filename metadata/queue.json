@@ -14334,6 +14334,26 @@
       "status": "completed",
       "completed_at": "2026-05-08T01:43:00+08:00",
       "completed_reason": "P0 attribute key 32->40 补 reserved prefix 规则；P0 Cronet 兜底改为 HttpMetric manual trace；P1 删除 OkHttp EventListener 无证据断言"
+    },
+    {
+      "section": "10.2",
+      "section_title": "内存泄漏",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 10.2 内存泄漏 ProfilingManager requestProfiling API 签名错误，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-08-02-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "API错误/源码错误",
+          "location": "L331 ProfilingManager 线上采集",
+          "detail": "[P0] 正文写 `ProfilingManager.requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)`。Android API 35+ 公开签名是 `requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)`；结果也可通过 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 注册全局 listener。当前写法会误导读者按不存在的 `ProfilingResultCallback` 接口接入。",
+          "suggestion": "按 Android API reference / AOSP 当前签名改写：补 `tag`、`CancellationSignal`、`Consumer<ProfilingResult>`，说明 request-specific listener 与 global listener 两条结果回调路径；保留 Java heap dump、heap profile、system trace、stack sampling 类型和限流/不保证执行约束。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T02:30:38+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
