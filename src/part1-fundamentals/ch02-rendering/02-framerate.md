@@ -2,7 +2,7 @@
 title: 帧率与刷新率
 chapter: '2.2'
 section: '2.2'
-status: ready-for-review
+status: finalized
 reviewed_date: "2026-04-30"
 reviewed_by: openclaw-task6
 review_note: Task 6 三审(2026-04-30):移除 AIW 编辑注释 3 处、frontmatter 去重 1 处;task9 仍 needs-rework
@@ -52,7 +52,7 @@ related_chapters:
 - '2.9'
 - '7.1'
 re-review-result: 已纳入1条素材(部分纳入:OEM VSync修改误区+交叉引用),0处修正,待正常review质检
-pipeline_stage: "task6_pending"
+pipeline_stage: ready-to-publish
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: "pass"
