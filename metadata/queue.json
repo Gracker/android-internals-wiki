@@ -10334,7 +10334,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T16:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T10:47:10",
+      "completed_reason": "P1 Frame Time口径已拆分(doFrame=主线程回调 vs FrameTimeline=完整帧耗时); P1 setFrameTimeline版本边界已拆分(API33读取 vs Android16公开setFrameTimeline)"
     },
     {
       "section": "3.2",
@@ -10384,7 +10386,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T17:30:08+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T10:47:10",
+      "completed_reason": "P1 Android eBPF起始版本已修正为Android 9/kernel 4.9(网络流量监控);applicable_versions已更新为API 28起"
     },
     {
       "section": "14.11",
@@ -12384,7 +12388,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T02:28:51+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T09:49:46+08:00",
+      "completed_reason": "P1 BLAST版本边界从Android 11修正为Android 12(S)起createBlastSurfaceControls，Android 11仍用旧SurfaceControl.Builder路径；挖洞同步按Android 11/12+拆开；第二阶段描述版本同步修正"
     },
     {
       "section": "13.1",
@@ -13753,7 +13759,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T09:35:55+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T09:49:46+08:00",
+      "completed_reason": "P0 AwGLFunctor.java源码路径改为AwDrawFnImpl.java/aw_draw_fn_impl.cc实际路径；P1 渲染提交路径从固定ASurfaceControl/BufferQueue拆为GLFunctor路径和SurfaceControl独立子Surface路径两条，版本表同步修正"
     }
   ],
   "completed": [
