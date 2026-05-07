@@ -27,17 +27,17 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
-last_task2b_at: "2026-05-06T13:04:10+08:00"
+last_task2b_at: "2026-05-07T15:44:35+08:00"
 task2b_result: fixed
 last_task9_at: "2026-05-07T15:27:55+08:00"
 task9_review_notes: "2026-05-07 Task9 15:27：needs-rework。P0 1 / P1 1 / P2 1。Top: L471-L474 android.startup.startups 查询"
@@ -470,7 +470,7 @@ def analyze_startup(trace_path, baseline_ms, threshold_pct, target_package):
 
             SELECT
               s.package,
-              (s.end_ts - s.ts) / 1e6 AS startup_ms
+              s.dur / 1e6 AS startup_ms
             FROM android_startups s
             WHERE s.package = '{}'
             ORDER BY s.ts DESC
@@ -709,18 +709,46 @@ TrackEvent 和 `TRACE_EVENT` 覆盖的是 slice / counter 这类通用标记。�
 **最小 Custom Data Source 骨架：**
 
 ```cpp
-// 1. 定义自定义 proto（如 render_pipeline.proto）
-// syntax = "proto2"; message RenderPassInfo { optional string pass_name = 1; optional int64 gpu_duration_ns = 2; }
+// render_pipeline.proto — 定义自定义 packet schema
+// syntax = "proto2";
+// package my.protos;
+// message RenderPassInfo {
+//   optional string pass_name = 1;
+//   optional int64 gpu_duration_ns = 2;
+// }
 
-// 2. 注册 DataSource
+// render_pass_data_source.h — DataSource 类定义与 static members 声明
 #include <perfetto.h>
 
-PERFETTO_DEFINE_DATA_SOURCE_STATIC_MEMBERS(my::RenderPassDataSource);
+// 1. 继承 perfetto::DataSource<T> 定义数据源类
+class RenderPassDataSource : public perfetto::DataSource<RenderPassDataSource> {
+ public:
+  void OnSetup(const SetupArgs&) override {}
+  void OnStart(const StartArgs&) override {}
+  void OnStop(const StopArgs&) override {}
+};
 
-// 3. 在代码中写 packet
+// 2. 声明 static members（头文件中）
+PERFETTO_DECLARE_DATA_SOURCE_STATIC_MEMBERS(RenderPassDataSource);
+
+// render_pass_data_source.cc — static members 定义（源文件中，仅一处）
+PERFETTO_DEFINE_DATA_SOURCE_STATIC_MEMBERS(RenderPassDataSource);
+
+// main.cc — 初始化与注册
+void InitTracing() {
+  perfetto::TracingInitArgs args;
+  args.backends = perfetto::kInProcessBackend;
+  perfetto::Tracing::Initialize(args);
+  perfetto::TrackEvent::Register();   // 如需 TrackEvent
+  RenderPassDataSource::Register();   // 注册自定义 DataSource
+}
+
+// 业务代码中写 packet
 void RecordRenderPass(const char* name, int64_t gpu_ns) {
-  my::RenderPassDataSource::Trace([&](my::RenderPassDataSource::TraceContext ctx) {
+  RenderPassDataSource::Trace([&](RenderPassDataSource::TraceContext ctx) {
     auto packet = ctx.NewTracePacket();
+    // set_render_pass_info() 由 protoc 生成的代码提供
+    // 对应 render_pipeline.proto 中的 RenderPassInfo
     auto* event = packet->set_render_pass_info();
     event->set_pass_name(name);
     event->set_gpu_duration_ns(gpu_ns);
@@ -728,7 +756,7 @@ void RecordRenderPass(const char* name, int64_t gpu_ns) {
 }
 ```
 
-`DataSource<T>` 的生命周期通过 `OnSetup` / `OnStart` / `OnStop` 回调管理，适合需要知道 tracing session 何时启停的场景（比如按需开启高开销采集）。Trace Processor 侧需要对应的 proto 定义才能解析这些自定义 packet；如果只做离线分析，也可以用 `trace_processor.query("SELECT * FROM raw")` 读原始 packet。
+上面是一个可编译的最小骨架，完整项目还需要：proto 文件经 protoc 生成 C++ 头文件并加入构建；`set_render_pass_info()` 依赖 TracePacket proto 扩展注册。Trace Processor 侧查询自定义 packet 需要 `SELECT * FROM raw` 或注册对应的 proto 解析逻辑。
 
 对于大多数 App 级打点需求，TrackEvent 已经够用。Custom Data Source 主要面向引擎开发者、系统服务作者、以及需要把 Trace 当结构化数据通道的进阶场景。
 

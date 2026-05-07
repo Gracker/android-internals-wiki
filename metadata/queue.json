@@ -13884,7 +13884,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T15:27:55+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T15:44:35+08:00",
+      "completed_reason": "P0 promotedToLayer() alpha条件修正为(0,1)区间内；P1 Hardware Layer收益描述改为RenderThread侧重播/光栅化成本，不再误写为反复重录DisplayList"
     },
     {
       "section": "13.7",
@@ -13911,7 +13913,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T15:27:55+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T15:44:35+08:00",
+      "completed_reason": "P0 android_startups SQL字段名修正：end_ts→dur；P1 Custom Data Source骨架补全为可编译最小示例（DataSource类定义、static members声明/定义、Tracing初始化、注册）"
     }
   ],
   "completed": [
