@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-05-07T13:09:20+08:00",
+  "generated_at": "2026-05-07T14:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 205,
   "metrics": {
     "total_sections": 205,
-    "last_updated": "2026-05-07T13:09:20+08:00",
+    "last_updated": "2026-05-07T14:05:00+08:00",
     "pipeline_stage_counts": {
-      "ready-for-review": 2,
       "ready-to-publish": 131,
-      "task2b_pending": 69,
+      "task2b_pending": 67,
+      "unknown": 1,
       "task6_pending": 1,
-      "task9_pending": 1,
-      "unknown": 1
+      "task9_pending": 3,
+      "ready-for-review": 2
     },
     "task6_state_counts": {
       "reviewed": 202,
-      "revisiting": 1,
-      "unknown": 2
+      "unknown": 2,
+      "revisiting": 1
     },
     "task9_state_counts": {
+      "reviewed": 198,
       "pass": 2,
-      "pending": 1,
-      "reviewed": 200,
-      "unknown": 2
+      "unknown": 2,
+      "pending": 3
     },
     "task2b_state_counts": {
-      "fixed": 133,
-      "pending": 68,
+      "fixed": 135,
+      "pending": 66,
       "unknown": 4
     },
     "status_counts": {
@@ -72,6 +72,25 @@
         }
       ],
       "review_log": "logs/review/2026-05-07-13-review.md"
+    },
+    {
+      "timestamp": "2026-05-07T14:05:00+08:00",
+      "sections": [
+        "2.1",
+        "13.7"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 4,
+      "rework_count": 0,
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分，outline 后正文 0 行"
+        }
+      ],
+      "review_log": "logs/review/2026-05-07-14-review.md"
     }
   ]
 }
