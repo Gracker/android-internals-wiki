@@ -29,20 +29,20 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T04:36:19+08:00"
-task2b_result: pending
-last_task2b_at: "2026-04-27T10:44:00+08:00"
-repaired_date: "2026-04-27"
+task2b_result: fixed
+last_task2b_at: "2026-05-07T17:40:00+08:00"
+repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
-review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 1 / P2 2；Android 16 Binder 线程池待验证仍未删。"
+review_notes: "2026-05-07 task2b rework: P1 Binder线程池待验证已闭环（Android 16 默认16线程，mmap ~1MB 不变）。"
 
 ---
 
@@ -94,7 +94,7 @@ review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 1 / P2 2；Androi
 
 整个流程涉及的耗时环节包括：
 
-- **Binder IPC 往返**：两次跨进程调用（调用方→system_server→目标进程），每次约 1-5ms，在 system_server 负载高时会显著增加。[待验证：Android 16 中 Binder 线程池默认大小是否有变化]
+- **Binder IPC 往返**：两次跨进程调用（调用方→system_server→目标进程），每次约 1-5ms，在 system_server 负载高时会显著增加。Android 16 的 `ProcessState.cpp` 默认线程池上限仍为 16（`DEFAULT_MAX_BINDER_THREADS`），与历史版本一致；Binder mmap buffer 也维持约 1MB（`BINDER_VM_SIZE`，减 2 个 page 的 guard）。[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/binder/ProcessState.cpp]
 - **Activity 对象创建**：涉及类加载、构造函数、`attach()` 中创建 Window/PhoneWindow 等，通常 5-15ms。
 - **布局膨胀（Layout Inflate）**：这是最大的变量。一个复杂的布局可能需要 30-100ms 甚至更多。[已验证: 官方文档, developer.android.com/topic/performance]
 - **首帧渲染**：从 `onResume()` 完成到 VSync 信号触发 `doFrame()`，再到 RenderThread 完成绘制，通常需要 1-2 个 VSync 周期（16-33ms @60Hz）。
