@@ -32,19 +32,20 @@ reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 review_log: "logs/review/2026-05-08-03-review.md"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
-task9_result: "pending"
-task9_state: "pending"
+task9_result: "needs-rework"
+task9_state: "reviewed"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "pending"
 last_task2b_at: "2026-04-24T09:54:00+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-28
-last_task9_at: 2026-04-28T16:21:00+08:00
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-08"
+last_task9_at: "2026-05-08T03:20:00+08:00"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T03:09:01+08:00"
 task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 18 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。"
+task9_review_notes: "2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型

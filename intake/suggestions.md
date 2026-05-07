@@ -1527,3 +1527,15 @@
 - **问题**：正文把 API 24+ 平台进程启动时间和 Firebase Performance 当前 `_app_start` 口径放在同一段，容易让读者以为控制台 `_app_start` 直接使用 `Process.getStartUptimeMillis()`。当前 Firebase Android SDK `AppStartTrace` 保存 process-start 时使用 `Process.getStartElapsedRealtime()`，实验 TTID 走 `getStartTimerCompat()`；公开 `_app_start` 的 `logAppStartTrace()` 仍以 `getClassLoadTimeCompat()` 作为 clientStartTime。
 - **建议**：拆成两句写：平台 API 24+ 提供进程启动时间锚点；Firebase 当前指标要按 SDK 源码区分 `_app_start` 与 `_experiment_app_start_ttid`，低版本/兼容路径仍可能退回 Firebase class-load time。
 
+## [Task9 Deep Review] 1.17 IPC 全景：Android 进程间通信机制对比与性能选型 — 2026-05-08
+- **类型**：数据缺失
+- **位置**：L415-L419 使用频率统计
+- **问题**：“Binder ~90% 的 IPC 调用、Unix Socket ~5%”缺少统计口径：没有限定设备、进程集合、采样窗口、trace 配置或统计 SQL，容易被读者当成 AOSP 通用事实。
+- **建议**：改成“示意图/经验估计”并标注 `[待验证]`，或补一组可复现统计方法：例如基于 binder driver trace、socket syscall trace 和目标系统进程列表给出采样窗口与 SQL/脚本。
+
+## [Task9 Deep Review] 4.7 16KB Page Size 与 Android 性能 — 2026-05-08
+- **类型**：版本差异/源码准确性
+- **位置**：L225-L230 控制接口总览
+- **问题**：`pm.16kb.app_compat.disabled` 被写成“安装时预检”。官方文档把它作为强制开启/关闭 16KB backcompat 的设备属性；Android 17 还支持 `bionic.linker.16kb.app_compat.enabled=fatal` 使不兼容 binary 立即 abort。
+- **建议**：把该行改为“设备级强制关闭 compat / 配合 linker 属性控制 backcompat”，并补 Android 17 `fatal` 模式；不要把它归类为安装时预检。
+

@@ -37,19 +37,19 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task6_reviewed_date: "2026-05-08"
-task9_state: "pending"
+task9_state: "reviewed"
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "pending"
 task6_result: "pass-light-edit"
-task9_result: "pending"
-task9_reviewed_date: "2026-05-06"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T04:36:19+08:00"
+task9_result: "needs-rework"
+task9_reviewed_date: "2026-05-08"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-08T03:20:00+08:00"
 last_task2b_at: "2026-04-27T05:45:00+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。"
+task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
