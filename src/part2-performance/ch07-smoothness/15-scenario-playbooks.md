@@ -295,6 +295,49 @@ last_task6_at: "2026-05-05T07:30:00+08:00"
 这类问题最典型的误判，就是把所有掉帧都归到 UI 线程。  
 对应章节：`18.4`、`18.6`、`18.7`、`18.15`。
 
+
+
+<!-- AIW-源码调研-20260507: BufferQueue 堵塞 Perfetto 特征 -->
+### 5.1 BufferQueue 堵塞的 Perfetto 源码级特征
+
+"视频列表、SurfaceView 场景卡"的根因，经常落在 `BufferQueueProducer::dequeueBuffer()` 的锁等待上。通过 AOSP 源码（android14-release）可以精确定位以下四类 Perfetto 特征：
+
+#### 特征 1：dequeueBuffer 线程 slice 拉长
+
+`BufferQueueProducer::dequeueBuffer()` 在 Perfetto 中有对应的 `ATRACE_CALL()` 函数级 slice。正常情况下该 slice 应小于 1ms；超过 5ms 说明发生了锁等待。
+
+源码位置：`frameworks/native/libs/gui/BufferQueueProducer.cpp, 行 389-630`
+
+关键等待路径（行 452）：
+```cpp
+status_t status = waitForFreeSlotThenRelock(FreeSlotCaller::Dequeue, lock, &found);
+```
+
+`waitForFreeSlotThenRelock()`（行 283-389）在 `mCore->mDequeueCondition` 上等待，默认为无限等待（`mDequeueTimeout = -1`），这是 SurfaceView 卡顿的根因之一。
+
+#### 特征 2：mDequeueCondition 条件变量等待
+
+`mDequeueCondition.wait()`（行 381）是 pthread condition variable 等待。当 SurfaceFlinger来不及 `acquireBuffer()` 消费队列时，Producer 线程会在此阻塞，状态变为 `Sleeping` 或 `Uninterruptible`。
+
+#### 特征 3：mQueue.size() > 1（队列积压）
+
+`NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND` 查询（行 1239）返回 `true` 时，`mQueue.size() > 1`，说明 Consumer 消费速度跟不上 Producer 生产速度。Perfetto 中搜索 `BufferQueueConsumer::acquireBuffer` 的 `PRESENT_LATER` 返回值频率可判断积压程度。
+
+#### 特征 4：TIMED_OUT 返回值
+
+当 `mDequeueTimeout >= 0`（应用设置过超时）时，`waitForFreeSlotThenRelock()` 在超时后返回 `TIMED_OUT`（行 376-378）。SurfaceView 默认无限等待，不会出现此返回值；但 Camera preview 等场景会设置超时。
+
+**Perfetto 中的实际搜索关键词**：
+- `BufferQueueProducer::dequeueBuffer` — Producer 侧取 buffer 耗时 slice
+- `BufferQueueConsumer::acquireBuffer` — Consumer 侧取 buffer 耗时 slice
+- `PRESENT_LATER` — Consumer 主动推迟的 trace 事件
+- `NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND` — 来自 `query()` 的状态值
+- `graphics.frametimeline` 数据源中的 `dequeue_time` 元数据
+
+详情见调研报告：[2026-05-07-bufferqueue-blocking-perfetto-patterns.md](https://github.com/gracker/DeepResearch/blob/main/2026-05-07-bufferqueue-blocking-perfetto-patterns.md)
+<!-- AIW-源码调研-20260507 END -->
+
+
 ### 6. WebView、Flutter、混合栈场景卡
 
 这一类问题的难点在于：宿主和引擎经常不在同一条线程里。只看宿主主线程，结论经常不完整。

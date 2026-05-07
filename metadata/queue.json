@@ -13857,7 +13857,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T15:27:55+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T16:46:32",
+      "completed_reason": "P1 BufferQueue 消费者图与 HWC 边界已修正（HWC 不是 BufferQueue consumer）；P1 BLASTBufferQueue 版本修正为 Android 11 已出现、Android 12 后更广泛承担同步"
     },
     {
       "section": "2.7",
@@ -13955,7 +13957,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T16:29:05+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T16:46:32",
+      "completed_reason": "P0 Custom Data Source Register() 已补 DataSourceDescriptor 参数、稳定 data source name、TraceConfig 启用片段"
     }
   ],
   "completed": [

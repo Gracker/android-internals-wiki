@@ -143,5 +143,28 @@
       "auto_finalized": [],
       "review_log": "logs/deep-review/2026-05-07-16-deep-review.md"
     }
+  ],
+  "rework_history": [
+    {
+      "date": "2026-05-07T16:48:02+0800",
+      "sections": [
+        "13.7",
+        "2.1"
+      ],
+      "items_processed": 2,
+      "source": "task9-deep-tech-review",
+      "details": [
+        {
+          "section": "13.7",
+          "priority": 95,
+          "fix": "P0 Custom Data Source Register() 补 DataSourceDescriptor 参数 + TraceConfig 启用片段"
+        },
+        {
+          "section": "2.1",
+          "priority": 85,
+          "fix": "P1 BufferQueue 消费者图与 HWC 边界修正；P1 BLASTBufferQueue 版本从 Android 12 改为 Android 11"
+        }
+      ]
+    }
   ]
 }

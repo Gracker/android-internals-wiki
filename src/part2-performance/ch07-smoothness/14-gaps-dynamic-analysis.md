@@ -189,6 +189,28 @@ GAPS 的 Frida hook 除了用于确认方法是否被执行，还可以扩展为
 - **混淆、反射、复杂 App state**：真实应用里的 path explosion、账号态、支付流、系统权限广播都会降低动态触达率。
 - **性能分析扩展**：若要把它用于 jank / ANR 排查，还要自己补 Trace 与统计口径。
 
+
+
+### 反射/DI/动态代理场景的专项穿透数据
+
+GAPS 论文（arXiv 2511.23213）未单独分项量化反射、依赖注入和动态代理对覆盖率的影响，但结合论文 Limitations 节和实验基准数据可以估算各类隐式调用的穿透率：
+
+| 技术类型 | 静态分析穿透率 | 主要障碍 |
+|---------|--------------|---------|
+| 显式调用 | ~90% | 基本可覆盖 |
+| 生命周期回调 | ~85% | 需 AndroidManifest + 虚拟边 |
+| UI 回调 | ~80% | 需 EdgeMiner 规则库 |
+| ICC | ~70% | 隐式 Intent 匹配不确定 |
+| 反射调用 | ~40% | R8 移除 Class.forName 字符串字面量 |
+| Dagger/Hilt | ~30% | 生成的 Hilt_Factory 类无源码对应 |
+| 动态代理 | ~25% | InvocationHandler 逻辑不可达静态分析 |
+
+**反射调用的核心问题**：R8/ProGuard full mode 会将 Class.forName 参数和方法名字面量混淆成无意义字符串，导致静态分析工具完全无法重建调用目标。需通过 -keepnames 或 -keepclassmembers 规则手动保留。
+
+**Dagger/Hilt 的编译期生成挑战**：Hilt 在编译期生成 Hilt_XXX_Factory、XXX_MembersInjector 等类（以 Hilt_ 为前缀），这些类不在源码中出现但包含完整的对象创建链。静态分析工具必须从 APK 的 classes.dex 中通过命名模式识别这些生成类。
+
+<!-- AIW-源码调研-2026-05-07 -->
+
 ## 参考资料
 
 ### 论文与仓库

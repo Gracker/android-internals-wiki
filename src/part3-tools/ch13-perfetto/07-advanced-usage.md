@@ -27,7 +27,11 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
@@ -740,7 +744,11 @@ void InitTracing() {
   args.backends = perfetto::kInProcessBackend;
   perfetto::Tracing::Initialize(args);
   perfetto::TrackEvent::Register();   // 如需 TrackEvent
-  RenderPassDataSource::Register();   // 注册自定义 DataSource
+
+  // 注册自定义 DataSource，必须提供 DataSourceDescriptor
+  perfetto::DataSourceDescriptor dsd;
+  dsd.set_name("com.example.render_pass");
+  RenderPassDataSource::Register(dsd);
 }
 
 // 业务代码中写 packet
@@ -757,6 +765,20 @@ void RecordRenderPass(const char* name, int64_t gpu_ns) {
 ```
 
 这个骨架只覆盖最小可编译路径，完整项目还需要：proto 文件经 protoc 生成 C++ 头文件并加入构建；`set_render_pass_info()` 依赖 TracePacket proto 扩展注册。Trace Processor 侧查询自定义 packet 需要 `SELECT * FROM raw` 或注册对应的 proto 解析逻辑。
+
+注册时 DataSourceDescriptor 中的 `name` 必须与 TraceConfig 中的 `data_sources.config.name` 一致，否则 Trace 启动时无法激活该数据源。对应的 TraceConfig 启用片段：
+
+```protobuf
+# trace_config.proto 片段
+buffers {
+  size_kb: 65536
+}
+data_sources {
+  config {
+    name: "com.example.render_pass"
+  }
+}
+```
 
 对于大多数 App 级打点需求，TrackEvent 已经够用。Custom Data Source 主要面向引擎开发者、系统服务作者、以及需要把 Trace 当结构化数据通道的进阶场景。
 

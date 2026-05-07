@@ -7,19 +7,19 @@ tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独�
 related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-task2b_state: "pending"
+task2b_state: "fixed"
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-06T02:28:51+08:00"
 task9_reviewed_date: "2026-05-06"
-task2b_result: "fixed"
+task2b_result: fixed
 task2b_rework_date: "2026-04-20"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
-last_task2b_at: "2026-05-06T01:46:24+08:00"
+last_task2b_at: "2026-05-07T09:42:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External 问题单）"
 status: "ready-for-review"
-pipeline_stage: "task2b_pending"
+pipeline_stage: ready-for-review
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
 task9_state: "reviewed"
@@ -65,7 +65,7 @@ SurfaceView 的代价也很明确。它在 View 树里的能力一直弱于 Text
 
 SurfaceView 在 WMS（Window Manager Service）侧注册为一个**独立的图层（Layer）**，与 App 的主窗口并行存在。App 的主窗口会在 SurfaceView 所在区域"挖一个洞"（Punch Through），让 SurfaceView 的独立 Layer 从下面透出来。
 
-双 Layer 架构从 Android 1.0 就存在。早期版本里 Layer 注册和 Buffer 管理完全由 WMS 的 `WindowState` / `WindowSurfacePlacer` 控制。Android 11 起，SurfaceView 的 Layer 创建路径切换到 `SurfaceView.updateSurface()` → `createBlastSurfaceControls()`，通过 `SurfaceControl.Builder()` 创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。现代结构为：
+双 Layer 架构从 Android 1.0 就存在。早期版本里 Layer 注册和 Buffer 管理完全由 WMS 的 `WindowState` / `WindowSurfacePlacer` 控制。Android 12（S）起，SurfaceView 的 Layer 创建路径切换到 `SurfaceView.updateSurface()` → `createBlastSurfaceControls()`，通过 `SurfaceControl.Builder()` 创建 container layer、BLAST layer 和 background layer，并 parent 到 ViewRootImpl 的 bounds layer。Android 11 虽然为 ViewRootImpl 引入了 BLASTBufferQueue，但 SurfaceView 在 Android 11 上仍使用旧窗口模型创建 Layer——WMS 侧的 `WindowState` 仍然参与 SurfaceView 的 Surface 分配。现代结构为：
 
 ```text
 ViewRootImpl bounds layer
@@ -74,7 +74,7 @@ ViewRootImpl bounds layer
        └─ background layer (挖洞背景色)
 ```
 
-BLASTBufferQueue 在 App 进程内 acquire buffer，再通过 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这种模式下 Layer 的创建和 buffer 流转都在 SurfaceControl 框架内完成，不再依赖 WMS 的独立窗口模型。[已验证: AOSP `android-16.0.0_r1` SurfaceView.updateSurface / createBlastSurfaceControls]
+BLASTBufferQueue 在 App 进程内 acquire buffer，再通过 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。这种模式下 Layer 的创建和 buffer 流转都在 SurfaceControl 框架内完成，不再依赖 WMS 的独立窗口模型。[已验证: AOSP `android-12.0.0_r1` SurfaceView.updateSurface / createBlastSurfaceControls；`android-11.0.0_r1` SurfaceView 仍使用旧 Window 模型]
 
 ### Z-Order 与图层结构
 
@@ -118,8 +118,8 @@ Z-Order 的位置决定了 HWC Overlay 的可行性。如果 SurfaceView 上方�
 
 挖洞这件事本身一直没有消失。`SurfaceView` 在宿主 window 的绘制阶段仍会用 `CLEAR` 模式把对应矩形区域清成透明，让独立 surface 从下面露出来。版本差异主要在“洞”和 surface 内容怎么同步：
 
-- **Android 10 及以下**：透明洞的绘制、窗口位置变化、Surface buffer 更新更容易错拍，resize / move 时更容易看到黑边、拉伸或短闪
-- **Android 11+（BLASTBufferQueue）**：App 进程内的 BLAST 层先 acquire buffer，再把 buffer、fence 和几何信息打进 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。SurfaceFlinger 侧的 BufferStateLayer/Layer 状态更新会在同一个事务边界里处理 buffer 与几何变化。它解决事务同步问题，`CLEAR` 挖洞仍保留
+- **Android 11（R）**：ViewRootImpl 已引入 BLASTBufferQueue，但 SurfaceView 仍通过 WMS 的 `WindowState` 分配 Surface；透明洞和 Buffer 更新错拍问题改善有限
+- **Android 12+（S，BLASTBufferQueue）**：SurfaceView 正式采用 `createBlastSurfaceControls()` 在 App 进程内创建 container layer / BLAST layer / background layer。App 进程内的 BLAST 层先 acquire buffer，再把 buffer、fence 和几何信息打进 `SurfaceControl.Transaction` 提交给 SurfaceFlinger。SurfaceFlinger 侧的 BufferStateLayer/Layer 状态更新会在同一个事务边界里处理 buffer 与几何变化。它解决事务同步问题，`CLEAR` 挖洞仍保留
 
 ## 完整渲染路径
 
@@ -146,7 +146,7 @@ SurfaceView 解耦的是独立 Surface/BufferQueue 与 View hierarchy 的逐帧�
 
 ### 第二阶段：BLASTBufferQueue 与事务提交
 
-在现代 Android 设备上（Android 11+），`queueBuffer()` 之后的流转通常会经过 BLASTBufferQueue：
+在现代 Android 设备上（Android 12+，SurfaceView BLAST 路径），`queueBuffer()` 之后的流转会经过 BLASTBufferQueue：
 
 1. **queueBuffer 到 BufferQueueProducer**：Producer 把刚画好的 Buffer 连同 `acquireFence` 送回队列
 2. **BLASTBufferItemConsumer acquireNextBuffer**：App 进程内的 BLAST consumer 先取出最新 Buffer

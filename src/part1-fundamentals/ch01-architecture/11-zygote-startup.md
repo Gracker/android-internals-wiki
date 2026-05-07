@@ -62,6 +62,67 @@ last_task2b_at: "2026-04-29T12:42:48.185623"
 # 1.11 Zygote 机制与启动性能优化
 
 <!-- outline-start -->
+
+<!-- AIW-源码调研-2026-05-07 -->
+### PreloadAppProcessHALs 与 PreloadGraphicsDriver（Android 13+）
+
+ZygoteInit.preload() 包含两条关键预加载路径，分别对应 HAL 和 GPU 驱动的 zygote 期初始化：
+
+#### nativePreloadAppProcessHALs()
+
+- **源码**：`core/jni/com_android_internal_os_ZygoteInit.cpp` 行 19-22
+- **当前实现**：`GraphicBufferMapper::preloadHal()` —— 预加载 IGBP (Ion Buffer Posting) HAL
+- **设计意图**：在 fork 前建立 ashmem/dmabuf fd 映射，子进程继承已映射的图形缓冲区地址空间，避免重复映射开销
+
+```cpp
+void android_internal_os_ZygoteInit_nativePreloadAppProcessHALs(JNIEnv* env, jclass) {
+    android::GraphicBufferMapper::preloadHal();
+    // Add preloading here for other HALs that are (a) always passthrough, and
+    // (b) loaded by most app processes.
+}
+```
+
+#### nativePreloadGraphicsDriver()
+
+- **源码**：`core/jni/com_android_internal_os_ZygoteInit.cpp` 行 24-26
+- **实现**：`zygote_preload_graphics()` —— 内部执行 OpenGL/Vulkan 纯函数调用，触发 GPU 驱动加载
+- **控制开关**：`ro.zygote.disable_gl_preload` 系统属性（默认 false，即启用预加载）
+
+```java
+private static void maybePreloadGraphicsDriver() {
+    if (!SystemProperties.getBoolean(PROPERTY_DISABLE_GRAPHICS_DRIVER_PRELOADING, false)) {
+        nativePreloadGraphicsDriver();
+    }
+}
+```
+
+#### Updatable GPU Driver 包路径
+
+- **包名**：`com.android.graphics.driver`
+- **选择框架**：`core/java/android/os/GraphicsEnvironment.java`
+- **sphal 库列表**：`sphal_libraries.txt` —— 指定必须通过 sphal (single pointer hole) 机制加载的 GL 库，实现驱动的懒加载和版本隔离
+- **Driver 类型**：
+  - `UPDATABLE_DRIVER_GLOBAL_OPT_IN_PRODUCTION_DRIVER (1)` → 生产 updatable driver
+  - `UPDATABLE_DRIVER_GLOBAL_OPT_IN_PRERELEASE_DRIVER (2)` → 预发布 driver
+  - `UPDATABLE_DRIVER_GLOBAL_OPT_IN_OFF (3)` → 强制 system graphics driver
+- **系统属性**：`ro.gfx.driver.0` (production)、`ro.gfx.driver.1` (prerelease)、`ro.gfx.driver_build_time`
+
+#### 完整 Preload 序列（ZygoteInit.java 行 119-163）
+
+1. `beginPreload()` → `ZygoteHooks.onBeginPreload()`
+2. `preloadClasses()` → `/system/etc/preloaded-classes`
+3. `cacheNonBootClasspathClassLoaders()` → 非启动类路径 ClassLoader 缓存
+4. `preloadResources()` → `Resources.preloadResources()`
+5. `nativePreloadAppProcessHALs()` → **[Android 13+]** IGBP HAL 预加载
+6. `maybePreloadGraphicsDriver()` → **[关键]** GPU 驱动预加载
+7. `preloadSharedLibraries()` → libandroid.so / libjnigraphics.so / libcompiler_rt.so
+8. `preloadTextResources()` → Hyphenator.init() + TextView.preloadFontCache()
+9. `HttpEngine.preload()` (Android 16 可选)
+10. `WebViewFactory.prepareWebViewInZygote()`
+11. `warmUpJcaProviders()` → AndroidKeyStoreProvider.install() + JCA provider warm-up
+
+<!-- AIW-源码调研-2026-05-07 END -->
+
 ## 要点
 
 ### 🔹 锚点 1：Zygote 为什么存在
