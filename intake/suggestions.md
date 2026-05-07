@@ -1630,3 +1630,17 @@
 - **问题**：[P2] 正文把“SurfaceFlinger 的 VSYNC-app 和 VSYNC-sf 间距变大”写成温控导致的 trace 特征。VSYNC-app / VSYNC-sf 是调度 phase / 唤醒时序，不会仅因为 App 或 SurfaceFlinger 工作变慢就自动拉大；温控导致的直接证据应是 CPU/GPU 频率上限被压低、thermal zone / trip 事件、FrameTimeline Actual 超出 Expected deadline。
 - **建议**：把该 bullet 改成“App / SurfaceFlinger Actual Timeline 越过 expected deadline；JankType 转为 AppDeadlineMissed / SurfaceFlinger*DeadlineMissed；同时 CPU freq 在高负载下受 thermal cap 下探”，不要把 phase offset 写成因果证据。
 - **review 日志**：logs/deep-review/2026-05-08-06-deep-review.md
+
+## [Task9 Deep Review] 7.1 卡顿的定义与分类 — 2026-05-08
+- **类型**：交叉引用一致性/P2 建议
+- **位置**：L206 `[待验证]` 外部 Review JankType 附注
+- **问题**：[P2] 附注只保留了 `JANK_NON_ANIMATING`、`JANK_APP_RESYNCED_JITTER`、`JANK_DISPLAY_NOT_ON`，但早期 external-review / queue 还包含 `JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS`、`JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS`。这五个 identifier 在公开 AOSP `android-15.0.0_r1`、`android-16.0.0_r1`、`main` 的 `frameworks/native/libs/gui/include/gui/JankInfo.h` 均未找到；正文如保留 external-review provenance，应完整列为 `[待验证]`，不要截断 opaque identifiers。
+- **建议**：如果继续保留外部 review 附注，改成“以下五个 identifier 均未在公开 AOSP tag 复核到”，逐一列全：`JANK_NON_ANIMATING`、`JANK_APP_RESYNCED_JITTER`、`JANK_DISPLAY_NOT_ON`、`JANK_DISPLAY_MODE_CHANGE_IN_PROGRESS`、`JANK_DISPLAY_POWER_MODE_CHANGE_IN_PROGRESS`；证据不足时也可删除整段传闻。
+- **review 日志**：logs/deep-review/2026-05-08-07-deep-review.md
+
+## [Task9 Deep Review] 7.1 卡顿的定义与分类 — 2026-05-08
+- **类型**：交叉引用一致性/P2 建议
+- **位置**：L408 `详见 → [2.3 VSync 机制] 第十一节源码补充`
+- **问题**：[P2] §2.3 当前实际标题是 `## 十二、VSyncPredictor 线性回归算法详解（Android 14+ 源码补充）`，下级 heading 才是 `11.1` ~ `11.5`。7.1 写“第十一节源码补充”会把读者导向错误层级。
+- **建议**：改为指向稳定标题或相对锚点，例如“详见 §2.3《VSync 机制》中的 `VSyncPredictor 线性回归算法详解` / `VsyncModulator 的三相动态调整`”。
+- **review 日志**：logs/deep-review/2026-05-08-07-deep-review.md

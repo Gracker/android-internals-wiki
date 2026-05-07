@@ -14595,6 +14595,27 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-08T06:32:42.009919+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.1",
+      "section_title": "卡顿的定义与分类",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 7.1 Binder SQL 仍未用 FrameTimeline 帧窗口/进程/线程约束，可能误把全局 Binder 事务当成 AppDeadlineMissed 证据，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-08-07-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/Trace SQL",
+          "location": "L281-L299 Binder SQL 佐证",
+          "detail": "[P1] 段落声称“找到帧周期内耗时最长的 binder 事务”，但 SQL 只按 `client_dur > 10000000` 全局排序 `android_binder_txns`，没有用 `actual_frame_timeline_slice` / `Expected Timeline` 的 `ts`、`dur`、`surface_frame_token`、`display_frame_token`、`client_upid`、`client_utid` 或目标进程约束；后续 `android_binder_client_breakdown` 也未限定到同一个 `binder_txn_id`。这样会把同一 trace 中无关 Binder 调用误当作 `AppDeadlineMissed` 的因果证据，上一轮 deadline 因果链仍未在 SQL 层闭环。",
+          "suggestion": "补 `INCLUDE PERFETTO MODULE android.binder;` 与 `INCLUDE PERFETTO MODULE android.binder_breakdown;`。以选中 janky frame 的 `actual_frame_timeline_slice` CTE 为起点，限定 `jank_type` / `on_time_finish`、frame `ts ~ ts + dur`、`process.upid` 和 `doFrame` / `RenderThread` 的 `utid`，再 join `android_binder_txns` 的 `client_ts/client_dur` 重叠区间，并用 `binder_txn_id` 关联 `android_binder_client_breakdown`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T07:36:49+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
