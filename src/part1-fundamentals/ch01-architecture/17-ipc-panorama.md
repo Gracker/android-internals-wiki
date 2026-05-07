@@ -28,20 +28,23 @@ tags: [ipc, binder, socket, pipe, shared-memory, mmap, ashmem, intent, aidl, mes
 related_chapters: ["1.4", "1.10", "1.13", "2.15", "4.1", "9.1"]
 created_by: "manual-request"
 created_date: "2026-04-09"
-reviewed_date: "2026-05-04"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-review_log: "logs/review/2026-04-11-09-review.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_result: needs-rework
-task9_state: pending
+reviewed_date: "2026-05-08"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
+review_log: "logs/review/2026-05-08-03-review.md"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_result: "pending"
+task9_state: "pending"
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-04-24T09:54:00+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-04-28
 last_task9_at: 2026-04-28T16:21:00+08:00
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T03:09:01+08:00"
+task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 18 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。"
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
@@ -83,7 +86,7 @@ last_task9_at: 2026-04-28T16:21:00+08:00
 
 Android 的安全模型基于进程隔离：每个应用运行在独立进程中，系统服务（system_server）、SurfaceFlinger、HAL 服务等也各有独立进程。进程间任何协作都依赖 IPC（Inter-Process Communication）。
 
-本书 §1.4 已深入分析了 Binder 的工作原理与性能影响。但 Android 并非只有 Binder 一种 IPC 机制：
+本书 §1.4 已深入分析了 Binder 的工作原理与性能影响。Android 还同时使用多种 IPC 机制：
 
 - SurfaceFlinger 与 App 之间通过 **共享内存 + Binder** 传递图形缓冲区
 - logd 通过 **Unix Domain Socket** 接收日志
@@ -92,7 +95,7 @@ Android 的安全模型基于进程隔离：每个应用运行在独立进程中
 - HAL 服务的控制调用在 Treble 之后分成 **HIDL / hwbinder** 与 **Stable AIDL / binder** 两条路径，高吞吐数据再配合 FMQ 或共享内存
 
 理解全貌有助于：
-1. **分析性能 Trace 时识别 IPC 瓶颈**（不仅仅是 Binder 延迟）
+1. **分析性能 Trace 时识别 IPC 瓶颈**（不只看 Binder 延迟）
 2. **系统级优化时选择最合适的 IPC 机制**
 3. **理解 Android 版本演进中 IPC 层的变化**（通用共享内存、图形 allocator 与 HAL 接口各自怎么演进）
 
@@ -132,8 +135,8 @@ Android 的安全模型基于进程隔离：每个应用运行在独立进程中
 | **mmap 文件映射** | 双向 | 文件大小 | 0 | 文件权限 | 配置共享、数据库 WAL |
 | **Signal** | 单向 | 无数据 | 0 | 内核级 | ANR SIGQUIT、进程杀死 |
 | **eventfd / epoll** | 单向事件 | 8 字节 | 0 | fd 继承 | 线程/进程事件通知 |
-| **Intent** | 双向（底层Binder） | ≤进程级 buffer 约 1MB | 1 | UID + 权限 | 组件间通信 |
-| **ContentProvider** | 双向（Binder+shm） | 大块 | 0~1 | UID + 权限 | 数据共享 |
+| **Intent** | 双向（底层 Binder） | ≤进程级 buffer 约 1MB | 1 | UID + 权限 | 组件间通信 |
+| **ContentProvider** | 双向（Binder + shm） | 大块 | 0~1 | UID + 权限 | 数据共享 |
 | **AIDL** | 双向（Binder） | ≤进程级 buffer 约 1MB | 1 | UID/GID + SELinux | 自定义服务接口 |
 | **Messenger** | 单向队列（Binder） | ≤进程级 buffer 约 1MB | 1 | UID/GID | 轻量消息传递 |
 | **FMQ（Fast Message Queue）** | 双向 | 可配置 | 0（零拷贝） | HAL 进程 | 高吞吐 HAL 数据流 |
@@ -147,7 +150,7 @@ Android 的安全模型基于进程隔离：每个应用运行在独立进程中
 
 **Binder 在 Android IPC 中的地位：**
 
-Android 上约 **90%+ 的 IPC 调用** 走 Binder 路径。四大组件的生命周期管理、权限检查、资源获取全部依赖 Binder。
+Android 框架内的大多数系统服务调用走 Binder 路径。四大组件的生命周期管理、权限检查、资源获取也依赖 Binder。
 
 **性能关键指标：**
 
@@ -180,7 +183,7 @@ Android 上约 **90%+ 的 IPC 调用** 走 Binder 路径。四大组件的生命
 | netd | `/dev/socket/netd` | 网络管理命令 |
 | WebView | Chromium IPC | 渲染进程通信 |
 
-InputDispatcher 这一行最容易写错。输入事件不是通过 `/data/system/input_manager/*` 这类命名 socket 路径发出去的。WMS / InputDispatcher 会创建一对 `InputChannel`，底层是 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`；客户端那一端作为 `Parcelable` 经 Binder 送到 App，之后事件和 `FINISHED` 回执都在这对未命名 Unix domain socket 上流动。
+InputDispatcher 这一路径容易写错。输入事件不是通过 `/data/system/input_manager/*` 这类命名 socket 路径发出去的。WMS / InputDispatcher 会创建一对 `InputChannel`，底层是 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`；客户端那一端作为 `Parcelable` 经 Binder 送到 App，之后事件和 `FINISHED` 回执都在这对未命名 Unix domain socket 上流动。
 
 [已验证: AOSP main, frameworks/native/libs/input/InputTransport.cpp — `InputChannel::openInputChannelPair()` 使用 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)`；frameworks/base/core/java/android/view/InputChannel.java — `InputChannel` 可通过 `Parcelable` 随 Binder 传递]
 
@@ -202,7 +205,7 @@ InputDispatcher 这一行最容易写错。输入事件不是通过 `/data/syste
 
 - **Process 重定向**：`Runtime.exec()` / `ProcessBuilder` 的 stdin/stdout/stderr 通过 pipe 连接父子进程
 - **父子进程控制流**：shell 或守护进程内部的少量字节流通知仍常用 pipe
-- **历史背景**：Looper 早期实现确实用过 pipe 唤醒 poll，但本书覆盖的 Android 8-17 不应再这样描述
+- **历史背景**：Looper 早期实现用过 pipe 唤醒 poll，但本书覆盖的 Android 8-17 不应再这样描述
 
 现代 Android 需要把 pipe 和 `eventfd` 分开看。`system/core/libutils/Looper.cpp` 在 `Looper` 构造时创建的是 `mWakeEventFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)`，再把这个 fd 注册进 epoll。也就是说，MessageQueue/Looper 的唤醒路径在 Android 8-17 范围内应理解为 `eventfd + epoll`，pipe 只能作为更早实现的历史背景。
 
@@ -338,7 +341,7 @@ libartbase 的封装（`bionic/libartbase/base/memfd.cc`）提供 tmpfile fallba
 
 ### 3.7 Treble 之后的 HAL IPC：HIDL / hwbinder 与 Stable AIDL / binder
 
-**背景：** Treble 真正改变的不是“HAL 一律改走更慢的 IPC”，而是把 Framework 和 vendor 之间的边界固化成稳定接口。Android 8 先用 HIDL + `/dev/hwbinder` 建立这条边界；Android 10 再引入 Stable AIDL，让 HAL 也可以走标准 `/dev/binder`，同时保留接口稳定性要求。
+**背景：** Treble 改变的是 Framework 和 vendor 之间的边界：它把两侧通信固化成稳定接口。Android 8 先用 HIDL + `/dev/hwbinder` 建立这条边界；Android 10 再引入 Stable AIDL，让 HAL 也可以走标准 `/dev/binder`，同时保留接口稳定性要求。
 
 **两条主路径不要混为一谈：**
 
@@ -347,12 +350,12 @@ libartbase 的封装（`bionic/libartbase/base/memfd.cc`）提供 tmpfile fallba
 | **HIDL HAL** | `/dev/hwbinder` | HIDL | Android 8 之后的存量 HAL | Treble 初期建立的独立 HAL binder domain |
 | **Stable AIDL HAL** | `/dev/binder` | Stable AIDL | Android 10 引入，Android 11+ 新 HAL 广泛采用 | 与 framework binder 共用驱动，靠稳定接口和 VINTF 约束兼容性 |
 
-所以，**AIDL HAL 不等于 HwBinder**。我们在 Trace 里看到一条 HAL 调用时，先要分清它落在哪个 binder domain：命中 `/dev/hwbinder` 的通常是 HIDL，命中标准 binder 的则更可能是 Stable AIDL HAL。
+**AIDL HAL 不等于 HwBinder**。Trace 里出现 HAL 调用时，要先分清它落在哪个 binder domain：命中 `/dev/hwbinder` 的通常是 HIDL，命中标准 binder 的则更可能是 Stable AIDL HAL。
 
 **性能影响：**
 
 - 控制面上的 HAL 调用，仍是 Binder 家族的 RPC，开销更多取决于服务端干了什么，而不是“hwbinder 天生更慢”
-- 音频、相机、传感器这类高吞吐路径，常见做法是 Binder / HwBinder 只负责控制面，真正的数据面走 FMQ、共享内存或 dmabuf
+- 音频、相机、传感器这类高吞吐路径，常见做法是 Binder / HwBinder 只负责控制面，数据面走 FMQ、共享内存或 dmabuf
 
 [已验证: AOSP docs《Work with binder IPC》《AIDL for HALs》— Android 8 将 vendor IPC 隔离到 `/dev/hwbinder`；Android 10 Stable AIDL 允许 HAL 使用 `/dev/binder`]
 
@@ -443,11 +446,13 @@ Signal        █                                ~1% (ANR/kill)
     └── Socket 路径 → SCM_RIGHTS
 ```
 
-如果把这个决策树套到真实系统里，我们会发现大多数“复杂 IPC”其实都是组合题：Binder 先把 channel、buffer handle 或共享内存 fd 交过去，后面的高吞吐数据再走零拷贝通道。只有把控制面和数据面拆开，我们才不会在性能分析时误把大块数据开销都算到 Binder 头上。
+真实系统里的“复杂 IPC”多数是组合题：Binder 先把 channel、buffer handle 或共享内存 fd 交过去，后面的高吞吐数据再走零拷贝通道。把控制面和数据面拆开后，性能分析时不会把大块数据开销都算到 Binder 头上。
 
 ## 6. Perfetto 中的 IPC 分析
 
 ### 6.1 Binder 追踪
+
+这条查询用来按 slice 名称聚合 Binder 调用耗时，先找出平均耗时最高的调用类型。
 
 ```sql
 -- Binder 调用延迟分布
@@ -463,7 +468,11 @@ ORDER BY avg_ms DESC
 LIMIT 20;
 ```
 
+如果结果集中某类 binder slice 的 `avg_ms` 或 `max_ms` 异常升高，再回到线程轨道确认调用端和服务端是否排队。
+
 ### 6.2 共享内存追踪
+
+这条查询从 slice 名称里筛出 dmabuf 或 buffer allocator 相关耗时；不同设备的 slice 命名可能不同，结果只作为入口。
 
 ```sql
 -- dmabuf/图形缓冲区分配
@@ -478,7 +487,11 @@ GROUP BY name
 ORDER BY avg_ms DESC;
 ```
 
+命中后再结合 SurfaceFlinger / BufferQueue 章节确认是哪类 buffer 分配，不要只靠名称判断根因。
+
 ### 6.3 Socket I/O 追踪
+
+这条查询用来定位 socket 读写相关 slice，并按线程聚合平均耗时，适合排查 logd、input 或本地守护进程通信。
 
 ```sql
 -- Unix socket 读写延迟
@@ -496,9 +509,11 @@ GROUP BY thread.name, slice.name
 ORDER BY avg_ms DESC;
 ```
 
+如果某个线程的 socket 读写耗时异常，再结合线程状态和调用栈判断是数据量过大、对端处理慢，还是调度延迟。
+
 ## 7. 版本演进中的 IPC 变化
 
-IPC 的版本演进，重点不是“又多了一个名词”，而是控制面和数据面的边界在持续重写。下面这张表只保留真正会影响我们分析判断的转折点：
+IPC 的版本演进重点在于控制面和数据面的边界变化。这张表只保留会影响分析判断的转折点：
 
 | 版本 | IPC 变化 | 分析时要注意什么 |
 |------|---------|----------------|
