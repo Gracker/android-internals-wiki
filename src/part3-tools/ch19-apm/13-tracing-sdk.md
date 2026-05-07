@@ -42,22 +42,22 @@
       "path": "https://developer.android.com/jetpack/androidx/releases/tracing"
     }
   ],
-  "pipeline_stage": "task6_pending",
+  "pipeline_stage": "task2b_pending",
   "task6_state": "revisiting",
-  "task9_state": "pending",
-  "task2b_state": "fixed",
+  "task9_state": "reviewed",
+  "task2b_state": "pending",
   "reviewed_by": "openclaw-task6",
   "reviewed_date": "2026-05-07",
   "task6_result": "pass-light-edit",
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-07",
   "task9_reviewed_by": "openclaw-task9",
-  "last_task9_at": "2026-05-07T19:32:17+08:00",
+  "last_task9_at": "2026-05-07T21:28:11+08:00",
   "task2b_result": "fixed",
   "last_task2b_at": "2026-05-07T14:48:15+08:00",
   "repaired_date": "2026-04-25",
   "repaired_by": "openclaw-task2b",
-  "task9_review_notes": "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。",
+  "task9_review_notes": "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。 | 2026-05-07 21:27 Task9 deep-review: needs-rework。P0 1 / P1 3 / P2 0。Top: API31+ tracing 内联/JNI 路径事实错误；协程修正示例仍可能跨挂起点或阻塞主线程；executor/mainHandler 示例异常路径仍可能遗留 async span。",
   "task6_review_notes": "2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion. | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由 Task9 复审。"
 }
 ---
