@@ -13916,6 +13916,46 @@
       "status": "completed",
       "completed_at": "2026-05-07T15:44:35+08:00",
       "completed_reason": "P0 android_startups SQL字段名修正：end_ts→dur；P1 Custom Data Source骨架补全为可编译最小示例（DataSource类定义、static members声明/定义、Tracing初始化、注册）"
+    },
+    {
+      "section": "2.7",
+      "section_title": "Hardware Layer",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 2.7 Hardware Layer 版本演进把 RenderProperties::promotedToLayer() 自动升层条件写成 Android 16 变更，但 AOSP android-10/12/15 已存在相关条件，需回炉修正版本边界",
+      "material_paths": [
+        "logs/deep-review/2026-05-07-16-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L353-L356 版本演进表 / L276 RenderProperties::promotedToLayer()",
+          "detail": "正文把 `RenderProperties::promotedToLayer()` 的 functor、ImageFilter、StretchEffect、alpha+hasOverlappingRendering、fitsOnLayer 条件放在 Android 16 版本变更下。复核 AOSP：android-10/11 已有 functor 与 alpha+overlap 自动升层；android-12/14/15 已加入 ImageFilter、StretchEffect 分支；android-16 只是本轮核验版本，不是这些条件首次出现的版本。",
+          "suggestion": "把版本表改成“以 android-16.0.0_r1 核验当前条件”，并补充版本边界：Android 10/11 已有 functor 与 alpha+overlap；Android 12 起可见 ImageFilter / StretchEffect 分支；不要写成 Android 16 才明确化。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T16:29:05+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.7",
+      "section_title": "Perfetto 的高级用法",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.7 Perfetto 的高级用法 Custom Data Source 示例调用 RenderPassDataSource::Register() 缺少 DataSourceDescriptor，与 Perfetto SDK 当前 API 签名不符，最小骨架无法编译",
+      "material_paths": [
+        "logs/deep-review/2026-05-07-16-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 签名错误",
+          "location": "L737-L744 Custom Data Source 初始化与注册",
+          "detail": "示例调用 `RenderPassDataSource::Register();`，但 Perfetto SDK 当前 `perfetto::DataSource<T>::Register` 需要 `const DataSourceDescriptor& descriptor` 参数。官方 tracing-sdk 文档示例为 `perfetto::DataSourceDescriptor dsd; dsd.set_name(\"com.example.custom_data_source\"); CustomDataSource::Register(dsd);`，并要求 TraceConfig 中加入同名 data source。当前代码标成“最小可编译路径”但会在注册处编译失败/无法被 trace config 启用。",
+          "suggestion": "补 `perfetto::DataSourceDescriptor`、稳定 data source name、`RenderPassDataSource::Register(dsd)`，并给出 `TraceConfig` 中 `data_sources.config.name` 的启用片段；如果不展开完整工程，明确标为伪代码。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T16:29:05+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
