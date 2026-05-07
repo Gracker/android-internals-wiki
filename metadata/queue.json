@@ -14467,6 +14467,27 @@
       "original_review_log": "logs/review/2026-05-08-05-review.md",
       "completed_at": "2026-05-08T05:42:56+08:00",
       "completed_reason": "P0 删除AIW残留段（thermal_monitor_notify/update_libcache_stats不存在于AOSP）；P1 16KB thermal确定性断言整段删除，保留前文\"研究假设\"口径"
+    },
+    {
+      "section": "7.1",
+      "section_title": "卡顿的定义与分类",
+      "priority": 90,
+      "reason": "[review回炉] AIW Binder Transaction Trace 新增块未融入章节主线，且位于参考资料后，需决定整合位置或迁移至 7.3",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写/需整合",
+          "location": "文件末尾 `AIW-源码调研-2026-05-06` / `Binder Transaction Trace 在卡顿分析中的应用`",
+          "detail": "新增块以资料摘录和清单形式出现，放在 `## 参考资料` 之后，破坏章节收束；内容更像 Binder Trace 分析方法，未接回本节“定义与分类”的 FrameTimeline / JankType 主线。",
+          "suggestion": "Task2B 先判断归属：若保留在 7.1，需要压缩为 1-2 段并接到 AppDeadlineMissed/响应慢边界；更推荐迁移到 7.3 卡顿分析方法论，改写为“Binder 阻塞如何佐证 AppDeadlineMissed/响应慢”的实操段。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-08T06:05:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-08-06-review.md"
     }
   ],
   "completed": [
