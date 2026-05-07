@@ -27,11 +27,11 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-06"
 task9_result: needs-rework
@@ -253,7 +253,7 @@ Perfetto 的自动化分析能力分三层，由底到顶：
 
 1. **旧版 Metric（v1）**：基于 `.sql` + `.proto` + `--run-metrics`。完全可用，但 SQL 直接操作底层表结构，Trace 格式变化时可能需要调整。
 
-2. **Perfetto Standard Library**：官方维护的标准化 SQL 模块集合，通过 `referenced_modules` 引用。前面的 Trace Summarization 示例中 `referenced_modules: "linux.memory.process"` 就是引用了 Standard Library 的 `linux.memory.process` 模块，它提供了 `memory_rss_and_swap_per_process` 表等标准化视图。已有的官方模块包括 `android_cpu`、`android_startup`、`android_jank`、`linux.memory.process` 等。优先复用这些模块，避免从零写底层 SQL。
+2. **Perfetto Standard Library**：官方维护的标准化 SQL 模块集合，通过 `referenced_modules` 引用。前面的 Trace Summarization 示例中 `referenced_modules: "linux.memory.process"` 就是引用了 Standard Library 的 `linux.memory.process` 模块，它提供了 `memory_rss_and_swap_per_process` 表等标准化视图。已有的官方模块包括 `android.cpu.cpu_per_uid` / `android.cpu.cluster_type`、`android.startup.startups` / `android.startup.startup_breakdowns`、`android.frames.jank_type` / `android.frames.per_frame_metrics`、`linux.memory.process` 等。注意 Standard Library 模块名使用点分命名（如 `android.cpu.cpu_per_uid`），与旧版 v1 metric id（如 `android_cpu`）是两套命名体系；在 `INCLUDE PERFETTO MODULE` 和 `referenced_modules` 中应使用点分模块名。优先复用这些模块，避免从零写底层 SQL。
 
 3. **Trace Summarization（v2）**：基于 Standard Library 模块之上的结构化指标提取 API。通过 `metric_spec` + `referenced_modules` + `group_by` + `aggregates` 声明式定义指标，Python API 调用 `tp.trace_summary()` 返回结构化 `TraceSummary`。
 

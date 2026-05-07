@@ -13081,8 +13081,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T13:39:29+08:00",
-      "status": "pending",
-      "updated_at": "2026-05-06T13:39:29+08:00"
+      "status": "completed",
+      "updated_at": "2026-05-06T13:39:29+08:00",
+      "completed_at": "2026-05-07T12:49:16+08:00",
+      "completed_reason": "P1 Standard Library模块名修正(android_cpu→android.cpu.cpu_per_uid等点分命名); 补充v1 metric id与stdlib module name两套命名体系说明"
     },
     {
       "section": "9.6",
@@ -13801,7 +13803,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T12:23:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T12:49:16+08:00",
+      "completed_reason": "P0 RenderEffect源码锚点修正(drawFrames→renderFrame/renderLayersImpl/RenderNodeDrawable); P1 Android16自动建层启发式修正为verified promotedToLayer()布尔条件; P1 SF关系修正(View layer vs SF layer层级澄清); P1 缓存失效描述收窄(标脏重绘 vs 销毁重建)"
     }
   ],
   "completed": [
