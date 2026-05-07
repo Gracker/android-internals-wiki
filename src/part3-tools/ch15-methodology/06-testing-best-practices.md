@@ -2,7 +2,7 @@
 title: "性能测试最佳实践"
 chapter: "15.6"
 section: "15.6"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-04-04"
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-27"
@@ -41,23 +41,23 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-07T17:40:00+08:00"
 review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用 P10/慢帧占比）；Macrobenchmark 自动稳定化已改为 IsolationActivity + sustained perf mode 源码级描述。"
-task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T10:40:29+08:00"
+task9_result: pass-tech-review
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-07"
+last_task9_at: "2026-05-07T18:28:30+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。"
+task9_review_notes: "2026-05-07 Task9 18:28：pass-tech-review。P0 0 / P1 0 / P2 1；Macrobenchmark 分位数与自动稳定化 P1 已闭环，JSON schema 口径 P2 已写入 suggestions。满足 Task6 通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # 性能测试最佳实践

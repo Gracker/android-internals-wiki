@@ -13966,6 +13966,39 @@
       "status": "completed",
       "completed_at": "2026-05-07T16:46:32",
       "completed_reason": "P0 Custom Data Source Register() 已补 DataSourceDescriptor 参数、稳定 data source name、TraceConfig 启用片段"
+    },
+    {
+      "section": "8.4",
+      "section_title": "其他响应速度场景",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 8.4 Activity 启动链路、Binder 线程池常量与 ViewPager2 prefetch 优化存在源码/API 错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-07-18-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L93 Activity 跳转完整路径",
+          "detail": "[P0] 正文把 system_server 到目标进程的启动入口写成 `scheduleLaunchActivity()`。该入口只适用于 Android 8.x 旧路径；Android 9/API 28 起 `IApplicationThread` 公开入口为 `scheduleTransaction(ClientTransaction)`，Activity 启动由 `LaunchActivityItem` 经 `ClientLifecycleManager.scheduleTransaction*()` 分发，目标进程再进入 `ActivityThread.handleLaunchActivity()`。",
+          "suggestion": "按版本拆开：Android 8.x 可写 `scheduleLaunchActivity()`；Android 9+ / Android 16 应写 `ClientTransaction` + `LaunchActivityItem` + `scheduleTransaction()`，再落到 `handleLaunchActivity()` / `performLaunchActivity()`。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L97 Binder IPC 往返",
+          "detail": "[P0] 正文写 Android 16 `ProcessState.cpp` 默认线程池上限为 16（`DEFAULT_MAX_BINDER_THREADS`）。复核 AOSP android-16.0.0_r1 `frameworks/native/libs/binder/ProcessState.cpp`，实际为 `#define DEFAULT_MAX_BINDER_THREADS 15`；`BINDER_VM_SIZE` 约 1MB 减 2 个 page 的描述正确。",
+          "suggestion": "把常量值改为 15；如想表达“业务侧可能看到主线程/调用线程 + binder 线程”的总并发口径，需要另行解释，不要把 `DEFAULT_MAX_BINDER_THREADS` 写成 16。"
+        },
+        {
+          "type": "API/优化策略错误",
+          "location": "L222 ViewPager2 预加载（Prefetch）",
+          "detail": "[P1] 正文建议通过自定义 `RecyclerView.LayoutManager` 微调 ViewPager2 prefetch。AndroidX ViewPager2 在 `ViewPager2.java` 内部创建 `LinearLayoutManagerImpl` 并调用 `mRecyclerView.setLayoutManager(mLayoutManager)`，公开 API 不提供替换 LayoutManager 的入口；反射/访问子 RecyclerView 属于不稳定实现细节。",
+          "suggestion": "删除“自定义 LayoutManager 微调 prefetch”建议；保留 `setOffscreenPageLimit()`、数据预取、页面布局简化、Fragment 生命周期懒加载等公开 API 路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T18:28:30+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

@@ -1448,3 +1448,17 @@
 - **问题**：[P2] “单次约 50-100ns”没有来源、设备、构建类型、是否 tracing enabled/disabled、字符串长度等条件。Trace 点治理章节给出精确数值但缺测试边界，会误导生产包开销评估。
 - **建议**：补 microbenchmark/官方来源；至少拆成 tracing disabled fast path、enabled path，并写明 SoC/Android 版本/编译优化条件。
 - **review 日志**：logs/deep-review/2026-05-07-15-deep-review.md
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-05-07
+- **类型**：源码准确性
+- **位置**：L115 Fragment 切换调用链
+- **问题**：正文写 `FragmentTransaction.commit()` → `BackStackRecord.execute()`。AndroidX Fragment 当前 `BackStackRecord` 的执行方法是 `executeOps()` / `executePopOps()`，由 `FragmentManager.execPendingActions()`、`removeRedundantOperationsAndExecute()`、`executeOpsTogether()` 等路径调度；不存在稳定的 `BackStackRecord.execute()` 调用点。
+- **建议**：改成“`commit()` 入队，`FragmentManager` 在主线程执行 pending actions，最终调用 `BackStackRecord.executeOps()` 推进 Fragment 生命周期”。
+- **review 日志**：logs/deep-review/2026-05-07-18-deep-review.md
+
+## [Task9 Deep Review] 15.6 性能测试最佳实践 — 2026-05-07
+- **类型**：源码/API 边界
+- **位置**：L498-L521 Macrobenchmark JSON 结果自动分析
+- **问题**：正文写 JSON 可通过 `androidx.benchmark:benchmark-junit4` 库解析，并列出 `metricName`、`median`、`minimum`、`maximum`、`p90`、`runs`。AndroidX `benchmark-common` 当前 `BenchmarkData.kt` schema 是 `benchmarks[].metrics` / `sampledMetrics` map，metric name 是 map key；单值指标字段为 `minimum`、`maximum`、`median`、`coefficientOfVariation`、`runs`，采样指标为大写 `P50/P90/P95/P99`。`BenchmarkData` 本身带 `@RestrictTo(LIBRARY_GROUP)`，不应写成稳定公开解析 API。
+- **建议**：改成“CI 可读取 Macrobenchmark 生成的 JSON artifact 并按当前 schema 解析；解析代码应固定 AndroidX 版本或做 schema 兼容”。不要承诺 `metricName` / 小写 `p90` 字段，也不要把内部 `BenchmarkData` 当公开 API。
+- **review 日志**：logs/deep-review/2026-05-07-18-deep-review.md
