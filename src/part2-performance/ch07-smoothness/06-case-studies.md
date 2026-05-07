@@ -34,7 +34,7 @@ sources:
     path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
 tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
 related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: "reviewed"
@@ -364,13 +364,15 @@ RenderThread 相关卡顿的 Perfetto 特征：
 
 | 特征 | AVD | Lottie（复杂 JSON） |
 |------|-----|-------------------|
-| 主要瓶颈 | RenderThread 向量栅格化/tessellation | 主线程 JSON 解析 + 层树构建 |
-| Perfetto 特征 | RenderThread `DrawFrame` 拉长；主线程 `syncAndDrawFrame` 等待 | 主线程 `Choreographer#doFrame` 耗时集中；`inflate`/`parse` slice 显著 |
-| GPU 参与 | 高（向量路径实时栅格化） | 低（解析完成后走位图渲染） |
+| Composition 构建 | 系统资源预编译，构建成本低 | 主线程 JSON 解析 + `LottieComposition` 构建；复杂 JSON 可达数十毫秒 |
+| 每帧更新 | 属性动画驱动 VectorDrawable 状态 | `LottieDrawable.invalidateSelf()` → Canvas draw；路径取决于 RenderMode |
+| RenderMode路径 | — | AUTOMATIC: 按内容自动选择；SOFTWARE: 内部位图渲染；HARDWARE: GPU 路径（mask/matte/merge path 可能触发纹理上传） |
+| Perfetto 特征 | RenderThread `DrawFrame` 拉长；主线程 `syncAndDrawFrame` 等待 | 首次加载：主线程 parse/inflate slice；播放中：主线程 `LottieDrawable.draw` 或 RenderThread textureUpload（hardware path） |
+| GPU 参与 | 高（向量路径实时栅格化） | 取决于 RenderMode 和内容：mask/matte/merge path 的 hardware path 需要额外 GPU 纹理；software path 几乎不碰 GPU |
 | RT 加速 | API 25+ 可走 VectorDrawableAnimatorRT | 无 RT 加速路径 |
-| 典型卡顿场景 | 同屏多个 AVD 同时播放 | 首次播放复杂 JSON / 动态切换动画源 |
+| 典型卡顿场景 | 同屏多个 AVD 同时播放 | 首次播放复杂 JSON / dynamic property 切换 / hardware path 下多层 mask 叠加 |
 
-排查 Lottie 卡顿的入口：先用 Perfetto 确认瓶颈在主线程还是 RenderThread。如果是主线程 JSON 解析耗时长，考虑预加载（后台线程解析后缓存 `LottieComposition`）、简化 JSON 或改用序列帧。如果是渲染侧，排查路径与 AVD 一致。
+排查 Lottie 卡顿的入口：先用 Perfetto 确认瓶颈在主线程还是 RenderThread。如果是主线程 JSON 解析耗时长，考虑预加载（后台线程解析后缓存 `LottieComposition`）、简化 JSON 或改用序列帧。如果是渲染侧，检查 Lottie 的 RenderMode：SOFTWARE 路径走内部位图渲染，主线程承担绘制；HARDWARE 路径走 GPU，mask/matte/merge path 会增加纹理上传和 GPU 工作量。切换 RenderMode 前后用 Perfetto 对比 `draw` slice 和 GPU `textureUpload` 来确认瓶颈归属。
 
 ---
 
