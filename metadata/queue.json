@@ -5099,14 +5099,16 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
       "added_at": "2026-04-28T09:21:00+08:00",
-      "source_file": "logs/deep-review/2026-04-28-09-deep-review.md"
+      "source_file": "logs/deep-review/2026-04-28-09-deep-review.md",
+      "completed_at": "2026-05-07T11:49:17+08:00",
+      "completed_reason": "P1 Android 16指令复杂度评分改为内部启发式描述并标注待验证；P1 16KB GPU内存影响移除无数据支撑的具体数值(9%/48KB)，改为条件化描述+实测建议"
     },
     {
       "section": "2.8",

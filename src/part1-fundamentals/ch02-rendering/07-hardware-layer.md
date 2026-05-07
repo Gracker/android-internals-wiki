@@ -2,7 +2,7 @@
 title: "Hardware Layer"
 chapter: "2.7"
 section: "2.7"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-03-30"
 applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
 last_verified: "2026-04-28"
@@ -27,13 +27,13 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
+task2b_state: "fixed"
+task2b_result: "fixed"
 task9_reviewed_date: "2026-04-28"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-28T09:21:00+08:00"
@@ -176,7 +176,9 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 每个 Hardware Layer 对应一块 GPU 纹理。如果同时有多个 View 设置了 Hardware Layer，或者 View 面积很大，显存消耗会非常可观。官方推荐只在动画期间启用，动画结束后立即释放。
 
-16KB 页环境下还需要注意一个额外因素：GPU 显存分配的最小单元提升后，小面积硬件层会产生严重的"尾部浪费"——一个 100×50 像素的 layer 理论只需要约 20KB（RGBA），但在 16KB 最小分配粒度下可能占用 48KB 甚至更多。多个小 layer 累积起来，系统内存压力增加约 9%。对于需要频繁建层/销毁的场景（如列表 item 动画），这个开销会在 Trace 中表现为 GPU 内存分配的尖峰。
+16KB 页环境下需要注意一个额外因素：GPU 显存分配的最小对齐单元提升后，小面积硬件层可能产生更多的对齐填充浪费。例如一个 100×50 像素的 layer 理论需要约 20KB（RGBA_8888），在 16KB 页粒度下可能因对齐要求占用更多空间。多个小 layer 累积起来的影响取决于 GPU 驱动的分配策略（sub-allocator、tile-based 渲染的内部缓冲管理等）。对于需要频繁建层/销毁的场景（如列表 item 动画），建议通过 `dumpsys gfxinfo` 和 `adb shell dumpsys meminfo <pkg>` 观察实际的 GPU 内存变化，不要仅凭理论估算做判断。
+
+[待验证: 16KB 页对 GPU 纹理分配的实际影响需在具体设备上用 memtrack/gralloc 统计数据确认]
 
 ### 代价二：缓存建立的开销
 
@@ -265,7 +267,9 @@ Android 开发者选项中有一个"显示硬件层更新"（Show hardware layer
 
 AOSP `frameworks/base/graphics/java/android/graphics/RenderNode.java` 的公开 API 是 `setUseCompositingLayer(boolean forceToLayer, Paint paint)` 和 `getUseCompositingLayer()`。原注释把边界写得很清楚：`RenderNode` 会在“这样更省时”或者 `alpha + hasOverlappingRendering()` 组合需要时，自动提升为 composition layer；`forceToLayer=false` 才是默认且推荐的值。`paint` 只在强制建层时生效，用来给这层额外叠加 blend mode、alpha 和 `ColorFilter`。
 
-Android 16 在这个自动建层逻辑中加入了**指令复杂度评分**机制。系统会自动评估 RenderNode 的 DisplayList 中各类绘制指令的权重——`drawPath`、`RenderEffect` 等重型指令得分较高，纯矩形填充得分较低。当一个静态节点（内容不变化）的累计分数超过阈值时，系统会自动将其提升为 composition layer，无需开发者手动调用 `setLayerType()`。这意味着很多过去需要手动建层的场景，Android 16 已经能够自动处理。
+Android 16 在这个自动建层逻辑中加入了内部启发式判断。HWUI 会综合考虑 RenderNode DisplayList 的绘制复杂度——绘制指令越多、涉及的 path/effect/shader 越复杂，自动提升为 composition layer 的可能性越高；纯矩形填充等简单内容则不会被提升。当一个静态节点（内容不变化）被判定为"建层收益大于成本"时，系统会自动将其提升为 composition layer，无需开发者手动调用 `setLayerType()`。这意味着很多过去需要手动建层的场景，Android 16 已经能够自动处理。
+
+[待验证: 具体评分函数与阈值位于 libhwui 内部实现，未在公开 RenderNode API 中暴露；当前描述基于 HWUI 行为推断，具体权重/阈值待 AOSP 源码确认]
 
 ```java
 // frameworks/base/graphics/java/android/graphics/RenderNode.java
@@ -341,7 +345,7 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 | Android 5.0 (API 21) | RenderThread 引入，Hardware Layer 的 buildLayer 从主线程移到 RenderThread |
 | Android 10 (API 29) | `RenderNode.setUseCompositingLayer(boolean, Paint)` 与 `getUseCompositingLayer()` 作为公开 API 可用 |
 | Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer控制 |
-| Android 16 (API 36) | RenderNode 自动建层引入指令复杂度评分；HWUI 可根据 DisplayList 指令权重自动提升静态节点为 composition layer |
+| Android 16 (API 36) | HWUI 自动建层引入基于绘制复杂度的内部启发式；静态节点可被自动提升为 composition layer，无需手动 setLayerType |
 | Compose 1.10 | `graphicsLayer` 离屏缓冲池化，纹理复用减少 LazyLayout 滑动场景的 GPU 内存分配开销 |
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)]
