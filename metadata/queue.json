@@ -13683,6 +13683,27 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T07:28:39+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.11",
+      "section_title": "WebView 渲染性能与优化",
+      "priority": 90,
+      "reason": "[review回炉] WebView 章节后半部 Renderer 崩溃恢复与 WebView tracing 两节仍像调研补丁，需整合为发布稿结构",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "“常见问题与误区”之后的“WebView Renderer 进程崩溃恢复”“WebView 渲染管线与 Perfetto 追踪”",
+          "detail": "两节内容技术密度高，但现在放在常见误区之后，读感像把 AIW 源码调研材料追加到正文尾部；“Perfetto 分析”已经在前文出现一次，后文又以更底层口径重开一节，发布稿收束顺序被打断。",
+          "suggestion": "保留现有技术内容，不做技术裁决；请 Task2B 做结构整合：Renderer 崩溃恢复并入多进程/版本演进或常见误区之前；WebView tracing API 与渲染管线内容并入“WebView 在 Perfetto 中的分析”；“常见问题与误区”与“参考资料”放回全文收束位置。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-07T08:20:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-07-08-review.md"
     }
   ],
   "completed": [

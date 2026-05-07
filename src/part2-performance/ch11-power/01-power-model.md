@@ -41,9 +41,9 @@ tags: ['power', 'battery', 'power_profile', 'BatteryStats', 'ODPM', 'Coulomb Cou
 related_chapters: ["5.4", "5.5", "5.6", "11.2", "11.3", "13.1"]
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-05-07T07:47:17+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
@@ -52,6 +52,9 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T07:28:39+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-07-07-deep-review.md"
 task9_review_notes: "2026-05-07 Task9 07:20：needs-rework。P0 2 / P1 0 / P2 0；Perfetto ODPM data source 名称仍写成 HAL 名，Perfetto 源码路径也不匹配。"
+last_task6_at: "2026-05-07T08:20:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-08-review.md"
+review_notes: "2026-05-07 Task6 08:20：pass-light-edit。小修4处（否定纠正式/连接句优化）；Task9 仍为 pending，等待技术复审。"
 ---
 
 
@@ -188,7 +191,7 @@ CPU charge ≈ cpu.active × activeTime
 
 ### Display：最直观的耗电源
 
-屏幕依然是大头，但“屏幕功耗不归属到 App”已经不是完整表述。`ScreenPowerCalculator` 先看 `batteryStats.getScreenOnEnergyConsumptionUC()` 是否可用。如果设备有屏幕 `EnergyConsumer` 数据，就能直接给每个 `UidBatteryConsumer` 写入 `POWER_COMPONENT_SCREEN`。如果没有，Framework 才回退到 `POWER_GROUP_DISPLAY_SCREEN_ON` 和 `POWER_GROUP_DISPLAY_SCREEN_FULL` 这套 power-profile 估算，再按前台 activity 时间把总屏幕耗电分摊到各个 UID。源码里的 `smearScreenBatteryDrain()` 还要求总前台活动时间至少 10 分钟才开始分摊。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java]
+屏幕依然是大头，但“屏幕功耗不归属到 App”只覆盖了旧 batterystats 视角。`ScreenPowerCalculator` 先看 `batteryStats.getScreenOnEnergyConsumptionUC()` 是否可用。如果设备有屏幕 `EnergyConsumer` 数据，就能直接给每个 `UidBatteryConsumer` 写入 `POWER_COMPONENT_SCREEN`。如果没有，Framework 才回退到 `POWER_GROUP_DISPLAY_SCREEN_ON` 和 `POWER_GROUP_DISPLAY_SCREEN_FULL` 这套 power-profile 估算，再按前台 activity 时间把总屏幕耗电分摊到各个 UID。源码里的 `smearScreenBatteryDrain()` 还要求总前台活动时间至少 10 分钟才开始分摊。[已验证: AOSP android-16.0.0_r1, services/core/java/com/android/server/power/stats/ScreenPowerCalculator.java]
 
 所以，旧 batterystats 视角里常见的“屏幕是系统项”只说对了一半。到了 `BatteryUsageStats` 这层，屏幕既可能以 smear 的方式分摊到前台 UID，也可能在有硬件计量时直接带着 UID 归属结果出现。我们看设置页、电池 bugreport 和 Power Profiler 时，要先分清设备走的是哪条路径。
 
@@ -269,7 +272,7 @@ Coulomb Counter 是一个集成在设备主板上的专用芯片，通常位于 
 
 ### Fuel Gauge（电量计）
 
-Fuel Gauge 建立在 Coulomb Counter 之上。它不仅做电流积分，还会结合电池电压、温度、放电曲线等信息，综合计算出电池的 State of Charge（SoC，即电池剩余百分比）和 State of Health（SoH，即电池健康度）。
+Fuel Gauge 建立在 Coulomb Counter 之上。它在电流积分之外，还会结合电池电压、温度、放电曲线等信息，综合计算出电池的 State of Charge（SoC，即电池剩余百分比）和 State of Health（SoH，即电池健康度）。
 
 现代 Fuel Gauge IC（如 TI 的 Impedance Track 系列）采用混合算法：用 Coulomb Counter 做实时的充放电跟踪，用开路电压（OCV）在电池静置时做校准，用温度传感器做补偿。三者结合，能在动态负载下保持较高的 SoC 精度。
 
@@ -301,7 +304,7 @@ Fuel Gauge 建立在 Coulomb Counter 之上。它不仅做电流积分，还会�
 
 **GPS / Sensor**：按注册者和活跃时间归属。谁持有请求，谁承担对应时段的成本。
 
-**WakeLock**：按持有者归属。它影响的不只是 CPU 忙碌时间，还会把本来可以进入休眠的时间变成可计费的耗电窗口。
+**WakeLock**：按持有者归属。它会增加 CPU 忙碌时间，也会把本来可以进入休眠的时间变成可计费的耗电窗口。
 
 **Screen**：可能是 smear，也可能直接按 UID 归属，取决于设备有没有屏幕 `EnergyConsumer` 数据。
 
@@ -450,7 +453,7 @@ duration_ms: 60000
 EOF
 ```
 
-Perfetto 的 Android power probe 注册的数据源名是 `android.power`，不是 HAL 语义的 `android.hardware.power.stats`。power rail 数据通过 `android_power_config` 的 `collect_power_rails` 字段启用；按需还可以开启 `battery_poll_ms`、energy breakdown、entity residency 等子项。[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/probes/power/android_power_data_source.cc]
+Perfetto 的 Android power probe 注册的数据源名是 `android.power`；`android.hardware.power.stats` 是 HAL 接口名，不是 Perfetto 配置里的 data source。power rail 数据通过 `android_power_config` 的 `collect_power_rails` 字段启用；按需还可以开启 `battery_poll_ms`、energy breakdown、entity residency 等子项。[已验证: AOSP android-16.0.0_r1, external/perfetto/src/traced/probes/power/android_power_data_source.cc]
 
 **Android Studio Power Profiler**：从 Hedgehog 版本开始集成，在 System Trace 视图中直接显示 ODPM 电源轨数据，与 CPU、线程、Frame 时间线同步展示。适合 App 开发者做日常功耗分析。
 

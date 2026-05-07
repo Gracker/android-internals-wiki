@@ -23,16 +23,16 @@ sources:
     path: "frameworks/base/core/java/android/webkit/"
   - type: aosp
     path: "android_webview/docs/ (chromium.googlesource.com)"
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
-task2b_state: fixed
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task2b_state: pending
 task2b_result: fixed
-last_task6_at: "2026-05-05T15:17:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-15-review.md"
-review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 3，P1 2，P2 3。 | 2026-05-05 Task6 15:17：L1 高频词与读者指向轻修；发现 AIW 源码调研区块堆叠与参考资料后追加正文，已写入 Task2B 回炉。"
+last_task6_at: "2026-05-07T08:20:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-08-review.md"
+review_notes: "2026-05-07 Task6 08:20：needs-rework。L1 禁用词通过；锚点覆盖完整；后半部 Renderer 崩溃恢复与 WebView tracing 两节仍像调研补丁，位置在常见误区之后，发布稿收束顺序不自然，已写入 Task2B 回炉。"
 task9_result: needs-rework
 task9_state: pending
 task9_reviewed_by: openclaw-task9
