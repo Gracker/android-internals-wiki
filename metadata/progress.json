@@ -1,15 +1,14 @@
 {
-  "generated_at": "2026-05-07T09:06:00+08:00",
+  "generated_at": "2026-05-07T09:37:18+08:00",
   "state_machine_version": "v2",
   "total_sections": 205,
   "metrics": {
     "total_sections": 205,
-    "last_updated": "2026-05-07T09:06:00+08:00",
+    "last_updated": "2026-05-07T09:37:18+08:00",
     "pipeline_stage_counts": {
-      "ready-to-publish": 128,
-      "task2b_pending": 73,
+      "ready-to-publish": 129,
+      "task2b_pending": 74,
       "task6_pending": 1,
-      "task9_pending": 2,
       "unknown": 1
     },
     "task6_state_counts": {
@@ -18,18 +17,17 @@
       "unknown": 2
     },
     "task9_state_counts": {
-      "pending": 2,
-      "reviewed": 201,
+      "reviewed": 203,
       "unknown": 2
     },
     "task2b_state_counts": {
-      "fixed": 129,
-      "pending": 72,
+      "fixed": 128,
+      "pending": 73,
       "unknown": 4
     },
     "status_counts": {
-      "finalized": 128,
-      "ready-for-review": 76,
+      "finalized": 129,
+      "ready-for-review": 75,
       "unknown": 1
     }
   }

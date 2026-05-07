@@ -13728,6 +13728,32 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T08:36:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "7.11",
+      "section_title": "WebView 渲染性能与优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.11 WebView 渲染性能与优化仍有 Chromium WebView 源码路径错误，并把渲染提交路径重新写成固定 ASurfaceControl/BufferQueue → SurfaceFlinger",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L590-L594 Chromium 多进程架构源码路径表",
+          "detail": "[P0] 表中写 `chromium/src/android_webview/java/src/org/chromium/android_webview/AwGLFunctor.java`，当前 Chromium mainline 该路径不存在。`AwContents.java` 实际 import 的 Java wrapper 是 `org.chromium.android_webview.gfx.AwDrawFnImpl`，文件路径为 `android_webview/java/src/org/chromium/android_webview/gfx/AwDrawFnImpl.java`；native 绘制实现集中在 `android_webview/browser/gfx/aw_draw_fn_impl.{cc,h}`、`hardware_renderer.{cc,h}`、`browser_view_renderer.{cc,h}` 等。",
+          "suggestion": "将 `AwGLFunctor.java` 改为当前可核验的 `AwDrawFnImpl.java` / `aw_draw_fn_impl.cc` 路径；如果想讲“GL functor”概念，用源码中的 draw functor / `AwDrawFnImpl` 命名，并标注 Chromium 版本。"
+        },
+        {
+          "type": "原理断裂/交叉引用一致性",
+          "location": "L596-L604 从 JS 到屏幕路径、L642-L647 Renderer 模型版本差异表",
+          "detail": "[P1] 底部新增的“完整渲染路径”把 WebView 固定写成 `Viz → GPU service → ASurfaceControl / BufferQueue → SurfaceFlinger`，并在版本表中写 Android 11+ 全部走 `ASurfaceControl / BufferQueue`。这与正文 L425-L433 刚修正过的边界冲突：普通嵌入式 WebView 可通过 GLFunctor / HWUI 绘入宿主窗口，不一定产生 WebView 自己的独立 SurfaceFlinger layer；只有独立 Surface / SurfaceControl / BufferQueue 路径才应这么写。",
+          "suggestion": "底部路径表拆成两条：① GLFunctor / HWUI / 宿主窗口 BufferQueue；② 独立 SurfaceControl / BufferQueue / SF layer。版本表不要把 Android 11+ renderer out-of-process 等同于“全部 ASurfaceControl / BufferQueue”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-07T09:35:55+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
