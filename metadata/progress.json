@@ -571,6 +571,36 @@
           "fix": "P1 BufferQueue 消费者图与 HWC 边界修正；P1 BLASTBufferQueue 版本从 Android 12 改为 Android 11"
         }
       ]
+    },
+    {
+      "date": "2026-05-08T04:51:53+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        {
+          "section": "2.17",
+          "title": "Frame Pacing Library 与帧节奏控制",
+          "fixes": [
+            "P1 DeliQueue targetSdk 37+ 生效边界补充"
+          ],
+          "status": "ready-for-review"
+        },
+        {
+          "section": "5.5",
+          "title": "Thermal 管控",
+          "fixes": [
+            "P1 16KB 热平衡因果链降级为研究假设"
+          ],
+          "status": "ready-for-review"
+        },
+        {
+          "section": "10.6",
+          "title": "内存抖动与频繁 GC",
+          "fixes": [
+            "P1 Android 17 分代 CMC 全量默认降级为待验证"
+          ],
+          "status": "ready-for-review"
+        }
+      ]
     }
   ],
   "task2b_last_run": "2026-05-07T17:47:16.435445",

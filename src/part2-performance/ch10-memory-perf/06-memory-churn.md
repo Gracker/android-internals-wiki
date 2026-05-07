@@ -2,7 +2,7 @@
 title: "内存抖动与频繁 GC"
 chapter: "10.6"
 section: "10.6"
-status: ready-for-review
+status: "ready-for-review"
 polish_count: 1
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
@@ -11,31 +11,22 @@ drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-24"
 last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 / Perfetto native-heap-profiler docs"
+verified_note: "Android 17/API 37 分代 CMC 全量默认结论降级为待验证，公开 AOSP 无 android-17 tag"
 confidence: medium
-sources:
-  - type: official
-    path: "https://developer.android.com/studio/profile/memory-profiler"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
-  - type: official
-    path: "https://developer.android.com/topic/performance/memory"
-  - type: aosp
-    path: "frameworks/base/core/java/com/android/internal/os/BinderInternal.java"
-  - type: research
-    path: "intake/research-feeds/2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
+sources: 
+- type: blog
+path: "Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
 tags: ['memory', 'gc', 'churn', 'object-pool', 'tlab', 'autoboxing', 'heapprofd']
 related_chapters: ["4.3", "7.1", "7.2", "10.1", "10.4"]
 word_count: "~7500"
 reviewed_date: "2026-05-04"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 task2b_rework_date: "2026-05-04"
 task2b_fixed_at: "2026-05-04T05:40:00+08:00"
 last_task2b_at: "2026-05-04T05:40:00+08:00"
@@ -92,7 +83,7 @@ task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 
 当一个线程在 Java 堆上分配对象时（比如 `new Object()`），ART 运行时需要为这个对象找到一块空闲内存。现代 ART 的快路径仍然依赖 TLAB / RegionTLAB 这类线程本地分配缓冲区，小对象通常只需要一次"指针前进"（bump pointer）操作，代价极低。`android-14.0.0_r1` 的 `art/runtime/gc/heap.cc` 仍保留 `gUseReadBarrier -> kCollectorTypeCC` 路径，所以 Android 8 到 14 更适合按 Concurrent Copying（CC）和后续的分代 CC 理解；到了 Android 15，`heap.cc` 才能明确看到 `gUseUserfaultfd -> kCollectorTypeCMC` / `kCollectorTypeCMCBackground` 这条 CMC 主线；Android 16 再继续把分代能力放到 CMC 路径上。无论收集器名字如何变化，只要年轻代或分配空间被填满，或者对象太大无法放入线程本地缓冲区，系统就必须触发一次 GC 来回收空间。
 
-GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制或压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 8 到 14 的代价模型更接近 CC / 分代 CC，Android 15 开始切到 CMC（Concurrent Mark-Compact），Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化），Android 17（API 37）才将分代 CMC 设为全量强制默认。判断 GC 影响更稳的方式是看分配速率、Young GC 频率、Allocation Stall 和 CPU 竞争，而不是把 Android 14、15、16 合成一个统一的 GC 时代。暂停仍然存在，只是不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同。
+GC 本身并不等于卡顿。这些并发收集器的大部分标记、复制或压缩工作都尽量和应用线程并行执行，但仍然保留短暂的 Stop-The-World（STW）阶段。Android 8 到 14 的代价模型更接近 CC / 分代 CC，Android 15 开始切到 CMC（Concurrent Mark-Compact），Android 16 在部分设备上实验性引入分代 CMC（QPR2 定向优化），Android 17（API 37）据公开信息计划将分代 CMC 设为默认基线，但截至 android-16.0.0_r1，AOSP 公开 tag 未见 android-17 对应分支，该结论仍需正式 release notes 或 ART runtime flag 确认。[待验证：Android 17 分代 CMC 默认状态] 判断 GC 影响更稳的方式是看分配速率、Young GC 频率、Allocation Stall 和 CPU 竞争，而不是把 Android 14、15、16 合成一个统一的 GC 时代。暂停仍然存在，只是不同版本把代价分布在读屏障、并发回收、压缩和年轻代回收上的方式不同。
 
 问题出在"频繁"二字。如果 GC 被触发得太频繁——比如每秒触发十几次甚至几十次——这些暂停就会累积成可感知的卡顿。更严重的是，GC 线程（HeapTaskDaemon）与主线程和 RenderThread 争抢 CPU 时间，进一步加剧帧耗时波动。
 
@@ -389,7 +380,7 @@ TLAB 的工作方式没有变：当线程需要分配一个小对象时，不需
 - **大对象或突发式分配**：更容易触发 TLAB 补充和同步 GC，性能影响更大
 - **分配速率超过 GC 回收速率**：最危险——Eden 区永远处于即将耗尽的边缘，GC 疯狂运转
 
-对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。Android 17 将分代 CMC 设为默认基线；Android 16 的分代 CMC 尚未全量生效，不能当作所有设备的标准配置。
+对内存抖动来说，版本差异不会改变判断方法：短命对象越多，年轻代回收越频繁；分配越突发，越容易把线程从 TLAB 快路径拖到 GC 或 Allocation Stall 上。Android 17 据公开信息计划将分代 CMC 设为默认基线，但截至当前尚无正式 AOSP tag 支撑，需以 release notes 为准。[待验证：Android 17 分代 CMC 默认状态] Android 16 的分代 CMC 尚未全量生效，不能当作所有设备的标准配置。
 
 ## 与其他章节的关系
 

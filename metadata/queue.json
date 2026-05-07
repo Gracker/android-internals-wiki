@@ -11835,7 +11835,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T04:51:42.168874",
+      "completed_reason": "Android 17 分代 CMC 全量默认结论降级为待验证，补 [待验证] 标注并更新 last_verified_against 说明"
     },
     {
       "section": "10.7",
@@ -12069,9 +12071,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T20:26:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-04T20:26:00+08:00"
+      "last_reviewed_at": "2026-05-04T20:26:00+08:00",
+      "completed_at": "2026-05-08T04:51:42.168874",
+      "completed_reason": "16KB 热平衡因果链已从确定性结论降级为研究假设，补齐待验证条件（需同设备 A/B trace）"
     },
     {
       "section": "16.4",
@@ -12915,7 +12919,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T06:23:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T04:51:42.168874",
+      "completed_reason": "DeliQueue targetSdk 37+ 生效边界已补入（Android 17 behavior changes 限定 targetSdk ≥ 37），Choreographer 受益结论限定在该条件下"
     },
     {
       "section": "19.0",

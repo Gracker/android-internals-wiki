@@ -2,60 +2,38 @@
 title: "Thermal 管控"
 section: "5.5"
 chapter: "5.5"
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
 applicable_versions_note: "已验证范围 Android 7-14；Android 15-17 为待验证"
 last_verified: "2026-04-24"
 last_verified_against: "PowerManager#getThermalHeadroom docs + ADPF fixed-performance-mode docs"
 confidence: medium
-sources:
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/ThermalManagerService.java"
-  - type: aosp
-    path: "hardware/interfaces/thermal/2.0/IThermal.hal"
-  - type: aosp
-    path: "hardware/interfaces/thermal/2.0/types.hal"
-  - type: aosp
-    path: "hardware/interfaces/thermal/aidl/android/hardware/thermal/"
-  - type: official
-    path: "developer.android.com/reference/android/os/PowerManager#THERMAL_STATUS_NONE"
-  - type: official
-    path: "source.android.com/docs/core/thermal"
-  - type: official
-    path: "developer.android.com/games/optimize/thermal"
-  - type: official
-    path: "developer.android.com/games/optimize/adpf"
+sources: 
+- type: official
+path: "developer.android.com/games/optimize/adpf"
 related_chapters: ["5.1", "5.2", "5.3", "5.4", "5.6", "5.9", "5.12", "7.3"]
 drafted_date: "2026-04-01"
 drafted_by: "openclaw-task2"
 polish_count: 2
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-tags:
-  - android
-  - power
-  - research
-  - thermal
-  - throttling
-  - dvfs
-  - cpu-frequency
+tags: 
 reviewed_date: 2026-05-04
 reviewed_by: openclaw-task6
-task6_state: reviewed
+task6_state: "revisiting"
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: "pending"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: "openclaw-task9"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 last_task9_at: "2026-05-05T21:00:00+08:00"
-task2b_state: "pending"
-task2b_result: fixed
+task2b_state: "fixed"
+task2b_result: "fixed"
 repaired_date: "2026-04-24"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-01T23:43:12.672839"
 review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 1，P1 1，P2 1；问题已写入 queue/suggestions/research-gaps。；2026-05-04 task6 re-review (revisiting→reviewed): pass-light-edit。无新增L1/L2问题。 | 2026-05-05 Task9 21:00：needs-rework。复核旧 P1：16KB/MMU 功耗→延迟 thermal throttling 仍缺设备/SoC/trace 数据闭环；getThermalHeadroom >1.0 边界已有 suggestions，不新增 queue。"
-
 last_task9_review_log: "logs/deep-review/2026-05-05-21-deep-review.md"
 ---
 # Thermal 管控
@@ -447,13 +425,15 @@ Thermal 降频是另一种机制：它是 **强制性的频率上限约束**。�
 
 如果我们看到高负载期间频率反而比空闲时低，基本可以确认是 thermal throttling。
 
-### 16KB Page Size 对热平衡的底层加持
+### 16KB Page Size 与热平衡：研究假设
 
-[自动发现] 16KB 大页内存对温控的贡献不直接体现在 thermal zone 的阈值上，而是从底层改变了热积累的斜率。大页使页表条目数量减少约 75%，MMU 的 TLB miss 率和页表遍历功耗随之下降。实测数据显示，MMU 功耗可降低约 4.5%，这在应用启动、大内存分配等场景中对整机功耗有可观测的优化。
+[自动发现 | 待验证] 16KB 大页内存对温控可能存在间接贡献，但当前缺乏同设备 4KB/16KB A/B 对照数据（thermal zone 温度曲线、CPU 频率上限变化、time-to-throttle、功耗 rail 读数），以下为研究假设而非已验证结论。
 
-热积累斜率变缓意味着设备在相同工作负载下维持最高频率的时间窗更长——温控降频被推迟。这和 DVFS 降频形成了一个间接的正反馈：16KB 减缓了功耗产生，功耗减缓了温度上升，温度放缓又延迟了 thermal throttling。在对比 4KB 和 16KB 设备的性能稳定性时，这个底层因素容易被忽略。
+大页使页表条目数量减少约 75%，TLB miss 率理论上下降，页表遍历功耗也会减少。社区估算 MMU 功耗可降低约 4.5%，但该数值因 SoC 和工作负载而异，尚无公开的系统性 benchmark 支撑。
 
-[待验证: MMU 功耗降低 4.5% 为社区实测估算值，具体数值因 SoC 和工作负载而异]
+如果 MMU 功耗确实下降，理论上热积累斜率变缓，设备在相同工作负载下维持最高频率的时间窗可能延长。但这条因果链（16KB → TLB miss 降低 → MMU 功耗下降 → 热积累变缓 → thermal throttling 推迟）的每一环都需要实测数据验证。在缺乏同设备 A/B trace 之前，不应把 16KB 当作推迟温控降频的确定因素。
+
+[待验证: 需要同设备 4KB/16KB kernel 页大小配置下的 thermal zone trace、CPU freq 上限曲线、time-to-throttle 与 power rail 对照数据]
 
 ## Thermal Mitigation 策略：系统如何降温
 
