@@ -1,34 +1,36 @@
 {
-  "generated_at": "2026-05-07T17:29:52+08:00",
+  "generated_at": "2026-05-07T18:09:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 210,
   "metrics": {
     "total_sections": 210,
-    "last_updated": "2026-05-07T17:29:52+08:00",
+    "last_updated": "2026-05-07T18:09:00+08:00",
     "pipeline_stage_counts": {
       "ready-to-publish": 135,
-      "task2b_pending": 73,
+      "task2b_pending": 70,
+      "task9_pending": 2,
       "task6_pending": 1,
       "ready-for-review": 1
     },
     "task6_state_counts": {
-      "reviewed": 208,
-      "unknown": 1,
+      "unknown": 2,
+      "reviewed": 207,
       "revisiting": 1
     },
     "task9_state_counts": {
-      "reviewed": 207,
+      "unknown": 2,
+      "reviewed": 204,
       "pass": 2,
-      "unknown": 1
+      "pending": 2
     },
     "task2b_state_counts": {
-      "fixed": 135,
-      "pending": 72,
-      "unknown": 3
+      "unknown": 4,
+      "fixed": 137,
+      "pending": 69
     },
     "status_counts": {
       "finalized": 135,
-      "ready-for-review": 75
+      "ready-for-review": 74
     }
   },
   "task2b_rework_history": [
@@ -162,6 +164,26 @@
         }
       ],
       "review_log": "logs/review/2026-05-07-17-review.md"
+    },
+    {
+      "timestamp": "2026-05-07T18:09:00+08:00",
+      "sections": [
+        "8.4",
+        "15.6"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 40,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分，outline 后正文 0 行"
+        }
+      ],
+      "review_log": "logs/review/2026-05-07-18-review.md"
     }
   ],
   "task9_review_history": [
