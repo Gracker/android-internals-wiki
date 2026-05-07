@@ -11,8 +11,8 @@ drafted_date: "2026-03-30"
 polish_count: 2
 polish_date: "2026-04-09"
 polish_by: "task2b-polish"
-reviewed_date: "2026-04-25"
-reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-07"
+reviewed_by: openclaw-task6
 sources:
   - type: official
     path: "https://developer.android.com/guide/topics/graphics/overview"
@@ -24,10 +24,10 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: "pass-light-edit"
-review_round: 5
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: pass-light-edit
+review_round: 6
 task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-04"
@@ -38,10 +38,11 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-04T00:30:00+08:00"
 task2b_fixed_by: openclaw-task2b
 review_notes_4: "2026-04-25 task6 re-review (round 4): pass-light-edit after task2b fix. L1: no banned words. L2: opening/structure/flow all good. 1 minor wording fix (手工→手动). No B-class issues."
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-25"
 review_notes_5: "2026-04-25 task6 re-review (round 5): pass-light-edit. L1: 1 banned word fix (可以看到→直接陈述) in 03-metrics; AI句式 3→1 in 03-metrics. 01-rendering-overview and 05-leakcanary clean. No B-class issues across all 3 chapters."
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。需 Task2B 回炉。"
+task6_review_notes: "2026-05-07 Task6 14:05：Task2B 修复后写作复审；清理结构性元叙述/冗余因果句/顺序口吻 3 处，frontmatter 去重并更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-07T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-14-review.md"
 ---
 
 # Android 渲染架构全景
@@ -80,7 +81,7 @@ task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 
 ## 渲染管线全景:Measure → Layout → Draw → Sync → GPU Render → Composite → Display
 
-Android 渲染管线是一条从 View 树到屏幕像素的完整流水线。XML 布局经过 Measure、Layout、Draw 转化为绘制指令,再经 GPU 渲染为像素,最终由 SurfaceFlinger 合成并输出到屏幕。下面我们从这条流水线的起点开始,逐阶段拆解。[已验证: 官方文档, Android 渲染管线概述]
+Android 渲染管线是一条从 View 树到屏幕像素的完整流水线。XML 布局经过 Measure、Layout、Draw 转化为绘制指令,再经 GPU 渲染为像素,最终由 SurfaceFlinger 合成并输出到屏幕。这条流水线的起点是主线程的 View 树遍历,后续阶段依次进入 RenderThread、SurfaceFlinger 与显示硬件。[已验证: 官方文档, Android 渲染管线概述]
 
 ### 第一阶段:UI 线程准备阶段
 
@@ -224,9 +225,9 @@ CompositionEngine::present()
 
 显示输出阶段负责将合成后的图像安全地送到屏幕上。这里的关键机制是双缓冲/三缓冲--屏幕正在显示的缓冲区(前台缓冲)不能被同时写入新数据,否则会出现画面撕裂(上半部分是旧帧、下半部分是新帧)。缓冲区的切换严格与 VSync 信号同步:每次 VSync 到来时,显示控制器切换到下一个已准备好的缓冲区,开始输出新的一帧。
 
-帧率同步是另一个需要关注的点。当 App 的渲染速度跟不上屏幕刷新率时(比如 App 只能跑到 45fps 而屏幕是 60Hz),缓冲区队列中会出现空位,用户就会感知到卡顿。反过来,如果 App 渲染速度远超屏幕刷新率(比如跑到 120fps 而屏幕只有 60Hz),多出的帧会被丢弃,白白浪费了 GPU 算力--这就是为什么 Android 通过 VSync 来限制渲染频率的原因。
+帧率同步是另一个需要关注的点。当 App 的渲染速度跟不上屏幕刷新率时(比如 App 只能跑到 45fps 而屏幕是 60Hz),缓冲区队列中会出现空位,用户就会感知到卡顿。反过来,如果 App 渲染速度远超屏幕刷新率(比如跑到 120fps 而屏幕只有 60Hz),多出的帧会被丢弃,白白浪费 GPU 算力。因此 Android 通过 VSync 限制渲染频率,避免无效绘制。
 
-色域转换是最后一步,将渲染管线产出的图像数据(通常是 sRGB 或 Display P3)转换为屏幕硬件支持的色彩空间。大多数情况下这一步对性能没有明显影响,但如果屏幕支持广色域(如 HDR),转换的计算量会更大。
+色域转换发生在显示输出的收尾阶段,负责将渲染管线产出的图像数据(通常是 sRGB 或 Display P3)转换为屏幕硬件支持的色彩空间。大多数情况下这一步对性能没有明显影响,但如果屏幕支持广色域(如 HDR),转换的计算量会更大。
 
 [图:Android 渲染管线全景图,显示从 Measure 到 Display 的完整流程,标注各个组件的交互时序]
 

@@ -27,8 +27,8 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -41,11 +41,10 @@ last_task2b_at: "2026-05-06T13:04:10+08:00"
 task2b_result: fixed
 last_task9_at: "2026-05-07T13:26:03+08:00"
 task9_review_notes: "2026-05-07 Task9 13:20：needs-rework。P0 0 / P1 1 / P2 4。L456-L467 冷启动回归检测 SQL 缺少同进程/时间窗口/launch 约束。"
-last_task6_at: "2026-05-07T13:09:20+08:00"
-last_task6_review_log: "logs/review/2026-05-07-13-review.md"
-task6_review_notes: "2026-05-07 Task6 13:09：Task2B 修复后写作复审；清理元叙述/英文术语/引用摘要措辞 8 处；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-07T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-14-review.md"
+task6_review_notes: "2026-05-07 Task6 14:05：Task2B 修复后写作复审；修复冷启动示例中遗留的 result 未定义变量 1 处，frontmatter 更新状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-07-13-deep-review.md"
-
 ---
 
 
@@ -499,7 +498,6 @@ def analyze_startup(trace_path, baseline_ms, threshold_pct, target_package):
             LIMIT 1
         """.format(target_package))
         df = startup_result.as_pandas_dataframe()
-    df = result.as_pandas_dataframe()
     if df.empty:
         return None
     startup_ms = df['startup_ms'].iloc[0]
