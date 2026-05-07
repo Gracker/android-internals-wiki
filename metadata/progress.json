@@ -322,6 +322,22 @@
       ],
       "auto_finalized": [],
       "review_log": "logs/review/2026-05-08-03-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T04:05:00+08:00",
+      "sections": [
+        "1.17",
+        "4.7",
+        "10.2"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 10,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [],
+      "review_log": "logs/review/2026-05-08-04-review.md"
     }
   ],
   "task9_review_history": [
