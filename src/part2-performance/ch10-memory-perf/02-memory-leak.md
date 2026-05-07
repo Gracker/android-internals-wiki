@@ -9,7 +9,7 @@ applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
-reviewed_date: "2026-05-07"
+reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-08"
@@ -27,10 +27,10 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task2b_result: fixed
 task2b_state: "fixed"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: "pending"
 task9_reviewed_date: "2026-05-08"
@@ -38,8 +38,8 @@ task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-08T00:28:41+08:00"
 task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束"
 task9_result: "pending"
-last_task6_at: "2026-05-07T23:13:13+08:00"
-task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。"
+last_task6_at: "2026-05-08T02:09:46+08:00"
+task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 7 处 L1/L2 表达与格式问题；Task9 仍为 pending，未自动晋升。"
 ---
 
 # 内存泄漏
@@ -69,9 +69,9 @@ task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit�
 
 ## 为什么要了解内存泄漏
 
-做过 Android 性能优化的工程师，大概率都遇到过这样的场景：应用用着用着就越来越卡，最终 OOM 崩溃；打开 Android Studio 的 Memory Profiler，看到内存曲线像台阶一样只升不降。尝试分析 OOM 时的堆栈日志，却发现堆栈指向的可能只是一次普通的字符串分配——持续占用内存的那些泄漏对象，早已在之前无数次页面跳转和配置变更中积累。
+做过 Android 性能优化的工程师，大概率都遇到过这样的场景：应用用着用着就越来越卡，最终 OOM 崩溃；打开 Android Studio 的 Memory Profiler，看到内存曲线呈阶梯状上升且不回落。尝试分析 OOM 时的堆栈日志，却发现堆栈指向的可能只是一次普通的字符串分配——持续占用内存的那些泄漏对象，早已在之前无数次页面跳转和配置变更中积累。
 
-内存泄漏通常不会立刻把应用打崩，而是让可用内存在长时间运行中持续减少。等到问题暴露时，面前是一批积累了几十分钟的泄漏对象，要从中找出最早失效的引用链很难。
+内存泄漏通常不会立刻让应用崩溃，而是让可用内存在长时间运行中持续减少。等到问题暴露时，面前是一批积累了几十分钟的泄漏对象，要从中找出最早失效的引用链很难。
 
 了解内存泄漏的核心目的只有一个：**在泄漏发生的瞬间就捕获它，而不是等到 OOM 时再回头找。**
 
@@ -92,13 +92,13 @@ task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit�
 - **JNI Global Reference**：Native 代码通过 `NewGlobalRef()` 创建的全局引用。如果不显式调用 `DeleteGlobalRef()`，这些引用会一直存在。
 - **活跃的线程对象**：正在运行的 Thread 对象本身就是 GC Root。
 
-理解了 GC Root，内存泄漏的定义就非常清晰了：**泄漏就是一条不应该存在的、从 GC Root 到"已死亡"对象的引用链。**
+有了 GC Root 这个起点，内存泄漏可以写成一个更具体的判断：**泄漏就是一条不应该存在的、从 GC Root 到"已死亡"对象的引用链。**
 
 [图：GC Root → 引用链 → 泄漏对象 的示意图]
 
 内存泄漏有两种不同的语境。开发者常说的"内存泄漏"一般是指 Java 堆上的泄漏。而在 Native 层，内存泄漏指的是通过 `malloc`/`new` 分配的内存没有被 `free`/`delete` 释放——这和 GC 无关，纯粹是开发者的手动管理失误。两种泄漏的症状相似（内存持续增长），但排查方法完全不同。
 
-理解泄漏的成因后，接下来要解决的是发现时机。在 Java 堆上，开发阶段最常用的工具是 LeakCanary。这个库在开发阶段的内存泄漏检测方面已经接近行业标准，后续不少线上检测方案也沿用了类似思路。
+理解泄漏的成因后，下一步是发现时机。在 Java 堆上，开发阶段最常用的工具是 LeakCanary。这个库在开发阶段的内存泄漏检测方面已经接近行业标准，后续不少线上检测方案也沿用了类似思路。
 
 ## LeakCanary：开发阶段的自动检测
 
@@ -108,7 +108,7 @@ task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit�
 
 ### 工作原理：WeakReference + ReferenceQueue
 
-LeakCanary 的检测机制巧妙地利用了 Java 引用体系中的一个特性：当一个对象只被 WeakReference 引用时，下次 GC 会回收它，同时 JVM 会把这个 WeakReference 对象放入它关联的 ReferenceQueue 中。
+LeakCanary 的检测机制利用了 Java 引用体系中的一个特性：当一个对象只被 WeakReference 引用时，下次 GC 会回收它，同时 JVM 会把这个 WeakReference 对象放入它关联的 ReferenceQueue 中。
 
 Android 17（API 37）引入分代 CMC（Concurrent Mark-Compact），理论上对年轻代 WeakReference 入队延迟有改善空间——分代 GC 允许在 Minor GC 阶段处理年轻代中的弱引用对象，减少等待 Major GC 的概率。但当前缺乏 ART reference processing 的源码提交或官方 benchmark 支撑具体延迟数据；CC collector 在 Android 10+ 已默认 generational，Android 17 分代 CMC 对 ReferenceQueue/WeakReference 处理时机的增量效果尚待验证。（[待验证：Android 17 分代 CMC 是否显著缩短 LeakCanary watchDuration 前后的响应时间]）
 
@@ -191,7 +191,7 @@ public class MainActivity extends Activity {
 
 注册了回调但没有在合适的时机解注册。回调对象会一直被系统服务或库的内部数据结构持有。建议在 `onStop()` 而非 `onDestroy()` 中解注册——原因是多页面场景下，`onDestroy()` 的调用时机不确定，而 `onStop()` 在 Activity 不可见时必定触发，能更及时地释放引用。
 
-### Fragment 泄漏：FragmentTransaction 和 View 的纠葛
+### Fragment 泄漏：FragmentTransaction 与 View 生命周期
 
 Fragment 有两个可能泄漏的对象：Fragment 本身和它的 View。`onDestroyView()` 销毁 View 但保留 Fragment，`onDestroy()` 才销毁 Fragment。如果在 View 销毁后仍然引用它（比如在 ViewModel 或静态变量中缓存了 `fragment.view`），就会导致 View 层的泄漏——Fragment 还在，但 View 已经应该被回收了。
 
@@ -238,7 +238,7 @@ AddressSanitizer（ASan）和 Hardware ASan（HWASan）是编译期插桩的 Nat
 
 [适用版本]：ASan 从 API 27（Android 8.1）开始支持；HWASan 需要 Android 10+、arm64 架构且硬件与系统镜像同时支持
 
-Native 泄漏排查依赖系统工具（heapprofd、Malloc Debug），而 Java 泄漏的主要分析手段是 Heap Dump——拿到进程某一时刻的完整堆快照，然后逐层追踪引用链。LeakCanary 在检测到泄漏后会自动触发 Heap Dump，但当需要在生产环境或手动排查时，我们需要独立完成这个过程。
+Native 泄漏排查依赖系统工具（heapprofd、Malloc Debug），而 Java 泄漏的主要分析手段是 Heap Dump——拿到进程某一时刻的完整堆快照，然后逐层追踪引用链。LeakCanary 在检测到泄漏后会自动触发 Heap Dump，但在生产环境或手动排查时，仍要手动完成这个过程。
 
 ## Heap Dump 深度分析
 
@@ -330,7 +330,7 @@ Jetpack Compose 引入了新的泄漏场景：
 
 Android 15（API 35）+ 引入的 `ProfilingManager`（`android.os.ProfilingManager`）提供了系统级按需触发能力：应用通过 `requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 请求系统采集。支持的类型包括 `PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_HEAP_PROFILE`、`PROFILING_TYPE_SYSTEM_TRACE`。采集完成后通过 `ProfilingResultCallback` 获取结果路径。
 
-需要注意：请求受系统限流，不保证一定执行；结果落在应用数据目录且可能被 redaction 处理。ProfilingManager 适合按条件采样和诊断入口，不能替代常驻泄漏监控（LeakCanary、Koom 等）。对于不需要自建 APM 的中小型项目，这是获取内存现场的官方路径。
+这类请求受系统限流，不保证一定执行；结果落在应用数据目录且可能被 redaction 处理。ProfilingManager 适合按条件采样和诊断入口，不能替代常驻泄漏监控（LeakCanary、Koom 等）。对于不需要自建 APM 的中小型项目，这是获取内存现场的官方路径。
 
 ## 参考资料
 
