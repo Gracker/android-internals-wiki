@@ -11,9 +11,9 @@ last_verified_against: "Android PixelCopy / WebViewRenderProcess APIs, Flutter F
 confidence: high
 tags: [apm, webview, flutter, hybrid]
 related_chapters: ["19.0", "19.01"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: "fixed"
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-28"
@@ -79,7 +79,7 @@ WebView 页面加载至少分成四段:Native 容器创建、WebView 初始化�
 | 页面可交互 | Native 交互事件、JSBridge ready | TTI / 自定义 ready | 移动端 H5 往往需要业务自定义 ready 事件 |
 | 加载结束 | `onPageFinished` | `loadEventEnd` | 只能说明主文档加载结束,不能等同于无白屏 |
 
-时钟映射要在桥接层处理。JS 的 `performance.now()` 基于页面 `timeOrigin`,Native 常用 `SystemClock.elapsedRealtime()`。注入脚本时同时记录 Native 时间和 JS `timeOrigin`,后续 H5 指标回传时带上相对时间,服务端再转换到同一时间轴。这样才能把"容器初始化 180ms + FCP 620ms"合成一条端到端加载样本。
+时钟映射要在桥接层处理。JS 的 `performance.now()` 基于页面 `timeOrigin`，Native 常用 `SystemClock.elapsedRealtime()`。注入脚本时记录校准对：`nativeElapsedRealtimeAtInjection`、`nativeWallClockAtInjection`（可选，用于服务端合并）、`jsPerformanceNowAtInjection`。H5 侧 `entry.startTime` 回传后，用 `nativeElapsedAtInjection + (entry.startTime - jsNowAtInjection)` 归一到端侧单调时钟。如果需要用 `timeOrigin` 做服务端时序合并，还要保留 wall-clock offset，并标注 clock-skew 边界（`elapsedRealtime` 是单调时钟，wall-clock 存在 NTP 调整风险）。这样才能把"容器初始化 180ms + FCP 620ms"合成一条端到端加载样本。
 
 这段 JS 的用途是把前端 FCP/LCP 指标回传给 Android。重点看:只传脱敏页面名、相对时间和统一 session,不传完整 URL query。
 
@@ -136,6 +136,8 @@ LCP 在部分旧 WebView 中不可用。没有 `supportedEntryTypes` 检查和 `
 ## 2. H5 白屏检测:API 26+ 优先用 `PixelCopy`
 
 白屏检测常见三类信号:DOM 信号、生命周期信号、像素信号。DOM 节点数量、首屏可见节点面积、业务 ready 事件适合低成本采样;`onPageFinished` 只能说明主文档加载结束,无法证明首屏已经有有效内容;像素采样能观察最终显示结果,但实现不当会把监控本身变成卡顿来源。
+
+`onPageFinished` 之外还有两个官方可见状态锚点。API 23+ 的 `WebViewClient.onPageCommitVisible()` 在当前导航的新内容首次绘制到屏幕时回调，表示旧页面内容不再可见，适合作为"页面已切换"的判据。`WebView.postVisualStateCallback(long requestId, VisualStateCallback)` 提供更细粒度的 visual state 更新通知：传入的 requestId 对应 `loadUrl()` 时的请求标识，回调触发时表示该请求对应的视觉状态已提交到渲染管线。白屏采样建议先等 `onPageCommitVisible` 或 `postVisualStateCallback` 确认渲染管线就绪，再做低频 `PixelCopy` 或 DOM/业务 ready 交叉判断，避免采到旧内容或未提交到渲染管线的中间状态。
 
 API 26+ 的 Android 应优先使用 `PixelCopy` 从 Window 或 Surface 异步复制像素。它比在 UI 线程调用 `WebView.draw(Canvas)` 更适合线上采样,原因是 WebView 使用硬件加速和 Chromium 渲染管线,同步 `draw()` 会让主线程承担额外绘制成本,还可能拿不到视频、GL 或硬件层的真实像素。`PixelCopy.request()` 通过回调返回结果,采样区域也能限制在首屏或关键区域。
 

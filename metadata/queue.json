@@ -1824,7 +1824,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T20:49:32+08:00",
+      "completed_reason": "章节已 finalized，external review 指出的 Android 16 IMemtrack AIDL 全局 GPU 查询和 16KB Page Size 基线偏移内容已在之前修复轮次中写入正文，本条目为历史残留"
     },
     {
       "section": "10.2",
@@ -1905,7 +1907,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T20:49:32+08:00",
+      "completed_reason": "章节已 finalized，external review 指出的 Android 16 IMemtrack AIDL 全局 GPU 查询和 16KB Page Size 基线偏移内容已在之前修复轮次中写入正文，本条目为历史残留"
     },
     {
       "section": "10.5",
@@ -6645,8 +6649,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T04:29:00+08:00",
-      "status": "pending",
-      "updated_at": "2026-05-03T08:25:39+08:00"
+      "status": "completed",
+      "updated_at": "2026-05-03T08:25:39+08:00",
+      "completed_at": "2026-05-07T20:49:32+08:00",
+      "completed_reason": "P1 Lottie/AVD对比表已重写(RenderMode/software/hardware路径分开，mask/matte/merge path成本标注)；SF/HWC合成案例和thermal案例标记为待补充(需trace证据归档)"
     },
     {
       "section": "8.10",
@@ -7090,7 +7096,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T08:39:32+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T20:49:32+08:00",
+      "completed_reason": "P1 WebView可见状态锚点已补充(onPageCommitVisible+postVisualStateCallback)；P1 跨时钟校准已改为校准对方案(nativeElapsedRealtimeAtInjection+jsPerformanceNowAtInjection)"
     },
     {
       "section": "05.08",
