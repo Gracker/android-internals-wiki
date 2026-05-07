@@ -11,7 +11,7 @@ confidence: medium
 polish_count: 2
 polish_date: '2026-04-17'
 polish_by: task2b-polish
-reviewed_date: "2026-05-06"
+reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 sources:
@@ -43,17 +43,17 @@ related_chapters:
 - '8.3'
 - '16.1'
 task2b_result: fixed
-task6_state: revisiting
-review_round: 4
+task6_state: reviewed
+review_round: 5
 last_task2b_at: "2026-05-06T09:49:49.432169"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；P0/P1 写入 queue.json，P2 写入 suggestions.md。"
-last_task6_at: "2026-05-06T10:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-10-review.md"
-task6_review_notes: "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理第一人称、未标语言代码块和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
+last_task6_at: "2026-05-07T09:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-09-review.md"
+task6_review_notes: "2026-05-07 task6 revisiting review 09:06: pass-light-edit。小修 Cloud Compilation 命中时的 `dex2oat` 进程表述；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 status: ready-for-review
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task9_result: needs-rework
 task9_state: pending
 last_task2b_at: "2026-05-07T08:42:28"
@@ -143,7 +143,7 @@ Android 7.0 引入了当前架构的基石——**混合编译模式**。核心�
 
 ### Android 16/17：编译体系的最新演进
 
-**Cloud Compilation 与 SDM（Android 16）。** Android 16 公开了 Cloud Compilation 路径：Play Store 可直接下发预编译的 `.odex` / `.vdex` 产物，设备跳过本地 dex2oat。配合 SDM（Secure Dex Metadata）校验机制，确保下载的编译产物与设备上的 APK 完全匹配。这解决了两个长期问题：OTA 后首次开机的批量 dex2oat（"正在优化应用"），以及低端设备上 dex2oat 本身耗时过长。对性能分析的影响：Cloud Compilation 命中时，Perfetto 中安装阶段的 dex2oat 子进程将不再出现；如果仍然看到 dex2oat 活动，说明该安装来源或设备策略未命中 Cloud Compilation。
+**Cloud Compilation 与 SDM（Android 16）。** Android 16 公开了 Cloud Compilation 路径：Play Store 可直接下发预编译的 `.odex` / `.vdex` 产物，设备跳过本地 dex2oat。配合 SDM（Secure Dex Metadata）校验机制，确保下载的编译产物与设备上的 APK 完全匹配。这解决了两个长期问题：OTA 后首次开机的批量 dex2oat（"正在优化应用"），以及低端设备上 dex2oat 本身耗时过长。对性能分析的影响：Cloud Compilation 命中时，Perfetto 中安装阶段的 `dex2oat` 独立进程将不再出现；如果仍然看到 `dex2oat` 活动，说明该安装来源或设备策略未命中 Cloud Compilation。
 
 **Android 17 编译侧变化。** Android 17 把 `static final` 的行为约束收得更紧（运行时不可通过反射修改），这给编译器提供了更稳定的前提——常量传播、分支裁剪和内联缓存的假设空间更宽。但具体能换来多少常量折叠或内联收益，还要看 ART 版本和实际命中的优化路径。此外，Android 17 将分代 GC（Generational GC）设为默认，GC 暂停时间分布与旧版 CC 有显著差异，这在 §4.3 ART 内存管理中有详细讨论。
 

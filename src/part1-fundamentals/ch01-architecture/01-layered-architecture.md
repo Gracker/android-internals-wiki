@@ -24,13 +24,13 @@ sources:
     path: "https://androidperformance.com"
 tags: ['architecture', '分层架构', 'HAL', 'HIDL', 'AIDL', 'Binder', 'SystemServer', 'Zygote', 'SurfaceFlinger', '性能优化', 'Perfetto']
 related_chapters: ["1.2", "1.3", "2.1", "3.1", "4.1", "5.1", "7.1"]
-reviewed_date: "2026-04-28"
+reviewed_date: "2026-05-07"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-review_notes:
-2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。 "2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（「这意味着」x2 / 「至关重要」x1 禁用词替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
+review_notes: >-
+  2026-04-28 task6 auto-promotion: finalized。条件满足：task6_result=pass-light-edit ✓，task9_result=pass-with-p1-notes ✓，queue无pending条目 ✓。2026-04-18 task6 re-review (revisiting): pass-light-edit。小修3处（禁用表达替换）。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。| 2026-04-11 task6 review: pass-light-edit。小修14处（禁用词替换/句式去模板化/验证标注格式统一）。无B类大问题。评分: 结构5/5·措辞4/5·一致性4/5·验证4/5·元数据5/5。| 2026-04-05 task2b-polish质检: 通过→ready-to-publish。小修1处（补充section字段）。无B类大问题。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。| 2026-03-31 二次review: 通过finalized。小修7处（标准化验证标注格式/补充4处待验证标注/补充来源标注）。无B类大问题。评分: 结构4/5·措辞4/5·一致性4/5·验证4/5·元数据4/5。| 历史记录: 2026-03-30 task6 review 回炉 v2：集成3篇新研究素材（Perfetto映射/误区/Treble演进），补充数据源三层映射、HAL追踪完整方法、hwbinder vs binder区别、新增3条误区（线程状态/Binder阻塞/全系统视角），所有锚点已覆盖"
 pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
@@ -42,6 +42,9 @@ task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-28T22:57:00+08:00"
 task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1。自动晋升 finalized。"
+last_task6_at: "2026-05-07T09:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-09-review.md"
+task6_review_notes: "2026-05-07 task6 finalized 抽检：pass-light-edit。清理正文 8 处禁用/模板化表达和 SystemServer 注释；状态保持 finalized / ready-to-publish。"
 ---
 
 # Android 分层架构
@@ -78,7 +81,7 @@ task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 
 
 当我们在分析一个渲染卡顿问题时，在 Trace 里看到的可能是：主线程在 `doFrame()` 里卡了 30ms，原因是某个 `measure()` 调用触发了 Binder 通信，等 SystemServer 那边返回结果就花掉了 20ms。这时候如果我们不知道主线程、SystemServer、Binder 分别属于架构的哪一层、为什么要跨层通信，就只能看到一堆彩色方块而无法定位根因。
 
-所以，理解分层架构，是性能分析的基础功。读完这一节，我们再看 Perfetto Trace 的时候，应该能快速判断一段异常耗时发生在哪一层、为什么发生、可以从哪一层入手优化。
+理解分层架构，是性能分析的基础功。再打开 Perfetto Trace 时，我们就能快速判断异常耗时落在哪一层、为什么发生、该从哪一层入手优化。
 
 [已验证: 官方文档, https://developer.android.com/guide/platform]
 
@@ -137,7 +140,7 @@ Zygote 进程也在这一层扮演关键角色：所有 App 进程都由 Zygote 
 
 ## 每一层的职责边界与典型组件
 
-分层架构的成功关键在于清晰的职责边界。每一层都有自己的"管辖范围"，越界的调用往往会带来性能问题。这一节我们把每一层拆开来看，重点回答：这一层有哪些关键组件？它们为什么这样设计？在性能分析中意味着什么？
+分层架构能长期稳定运行，靠的是清晰的职责边界。每一层都有自己的“管辖范围”，越界调用往往会带来性能问题。拆到单层看时，重点是三个问题：有哪些关键组件、为什么这样设计、性能分析时对应哪些观察点。
 
 ### SystemServer：系统服务的"大管家"
 
@@ -159,12 +162,12 @@ private void run() {
     try {
         startBootstrapServices(t);  // 先启动最基础的服务（AMS、PMS等）
         startCoreServices(t);       // 再启动核心服务
-        startOtherServices(t);      // 最后启动其他服务
+        startOtherServices(t);      // 启动其他服务
     } catch (Throwable ex) { /* ... */ }
 }
 ```
 
-`main()` 只做一件事：构造 SystemServer 实例并调用 `run()`。`run()` 内部先完成环境初始化（系统属性、时区、Looper），再加载 `android_servers` JNI 库，最后按三阶段启动服务。三阶段的顺序是串行的：`startBootstrapServices()` 启动的服务之间有强依赖关系（比如 AMS 需要 PMS 提供的包信息），必须按序初始化；`startOtherServices()` 内部同样以串行调用为主，个别耗时初始化可借助 `SystemServerInitThreadPool` 并行执行。如果启动阶段的某个服务初始化耗时过长，会导致整个系统启动变慢——这在 Perfetto 中可以看到 SystemServer 的 main 线程持续占用 CPU 的时间。
+`main()` 只做一件事：构造 SystemServer 实例并调用 `run()`。`run()` 内部先完成环境初始化（系统属性、时区、Looper），再加载 `android_servers` JNI 库，随后按三阶段启动服务。三阶段的顺序是串行的：`startBootstrapServices()` 启动的服务之间有强依赖关系（比如 AMS 需要 PMS 提供的包信息），必须按序初始化；`startOtherServices()` 内部同样以串行调用为主，个别耗时初始化可借助 `SystemServerInitThreadPool` 并行执行。如果启动阶段的某个服务初始化耗时过长，Perfetto 中会表现为 SystemServer 的 main 线程长时间占用 CPU。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/services/java/com/android/server/SystemServer.java]
 
@@ -298,15 +301,15 @@ Perfetto 采集数据的方式恰好与 Android 的三层结构一一对应。�
 
 在 Perfetto UI 中打开一个系统级 Trace，最上面是按 CPU 编号排列的调度 Track（内核层），中间是各进程的线程 Track（App/Framework/Native 层），底部是各类 Counter Track（内存、功耗等）。其中 Binder Transaction Track 贯穿所有进程——它就是架构分层图中那条"跨层通信"的箭头在 Trace 中的具象化。
 
-**应用层**的表现最直观：每个 App 都是一个独立的进程 Track。展开一个 App 进程，可以看到它的主线程（`main`）、Binder 线程（`Binder:xxxx_x`）和 RenderThread。主线程上的 CPU 切片就是 App 的 Java/Kotlin 代码执行时间。如果主线程出现长时间连续的 CPU 切片，说明有耗时的业务逻辑阻塞了 UI 渲染。ART 的 GC 事件也在主线程 Track 中可见，标注为 "GC" slice——如果 GC 频繁出现且耗时长，说明存在内存抖动问题。
+**应用层**的表现最直观：每个 App 都是一个独立的进程 Track。展开一个 App 进程，会看到它的主线程（`main`）、Binder 线程（`Binder:xxxx_x`）和 RenderThread。主线程上的 CPU 切片就是 App 的 Java/Kotlin 代码执行时间。如果主线程出现长时间连续的 CPU 切片，说明有耗时的业务逻辑阻塞了 UI 渲染。ART 的 GC 事件也在主线程 Track 中可见，标注为 "GC" slice——如果 GC 频繁出现且耗时长，说明存在内存抖动问题。
 
-**Framework 层**主要体现在 `system_server` 进程中。展开它可以看到几十个线程，每个线程对应一个或多个系统服务。比如 `ActivityManager` 线程处理 Activity 相关请求，`WindowManager` 线程处理窗口相关请求。当 App 向这些服务发起 Binder 调用时，在 Trace 中可以看到一条从 App 进程指向 `system_server` 对应线程的箭头。如果这个箭头很长（等待时间长），需要到 `system_server` 对应线程中看它在忙什么。`surfaceflinger` 虽然与 Framework 层的 WMS 紧密协作，但它是独立的 Native 进程，在 Trace 中需要单独查看它的进程 Track。
+**Framework 层**主要体现在 `system_server` 进程中。展开它会看到几十个线程，每个线程对应一个或多个系统服务。比如 `ActivityManager` 线程处理 Activity 相关请求，`WindowManager` 线程处理窗口相关请求。当 App 向这些服务发起 Binder 调用时，Trace 中会出现一条从 App 进程指向 `system_server` 对应线程的箭头。如果这个箭头很长（等待时间长），需要到 `system_server` 对应线程中看它在忙什么。`surfaceflinger` 虽然与 Framework 层的 WMS 紧密协作，但它是独立的 Native 进程，在 Trace 中需要单独查看它的进程 Track。
 
-`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。它的主线程上可以看到 `onMessageReceived` → `handleMessageRefresh` → `doComposition` 的调用链。如果 `doComposition` 耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接告诉我们问题出在合成层而非 App 层。
+`surfaceflinger` 是独立的 Native 系统服务进程，不属于 Framework 层也不属于 HAL 层，在架构上属于 Graphics Stack 的核心组件。它的主线程上能看到 `onMessageReceived` → `handleMessageRefresh` → `doComposition` 的调用链。如果 `doComposition` 耗时过长，说明 GPU 合成负担重，可能需要减少 Surface 数量或降低图层复杂度。SurfaceFlinger 的 `FrameMissed` 行可以直接告诉我们问题出在合成层而非 App 层。
 
 **Native/HAL 层**的表现比较分散。Treble 之后的 HAL Service 按 transport 区分：binderized HAL（AIDL HAL 和部分 HIDL HAL）以独立进程运行，名字类似 `android.hardware.camera.provider@2.4-service`；passthrough HAL（仅限 HIDL C++ 实现）则以共享库形式加载到 client 进程内，Trace 中不会出现独立的 HAL 进程。对于 binderized HAL，需要同时启用 `hal` 和 `binder_driver` 这两个 atrace category，才能看到完整的 Framework → HAL 调用路径。如果独立 HAL 进程频繁出现 "Runnable" 但不被调度的状态，说明系统 CPU 负载高，HAL 请求排队等待。对于 passthrough HAL，排查时要留在 client 进程内看 native slice 和锁竞争，不要去外面找不存在的 HAL 服务进程。
 
-**内核层**在 Perfetto 中表现为底层的 CPU 调度 Track 和 ftrace 事件。每个 CPU core 上的调度切片（sched slice）显示了哪个线程正在执行。Binder 的事务事件（`binder_transaction`）可以看到跨进程通信的发起方、目标方和数据大小。这是唯一一个横跨所有架构层的数据源——无论跨的是哪两层，Binder 事务都会在这里留下记录。
+**内核层**在 Perfetto 中表现为底层的 CPU 调度 Track 和 ftrace 事件。每个 CPU core 上的调度切片（sched slice）显示了哪个线程正在执行。Binder 的事务事件（`binder_transaction`）记录跨进程通信的发起方、目标方和数据大小。这是唯一一个横跨所有架构层的数据源——无论跨的是哪两层，Binder 事务都会在这里留下记录。
 
 [图：Perfetto Trace 截图示意，标注 App/system_server/surfaceflinger 进程，标注 Binder 调用箭头，标注 VSync 信号线，标注三种数据源的对应区域]
 

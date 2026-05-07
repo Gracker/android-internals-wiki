@@ -25,20 +25,21 @@ sources:
     path: "android_webview/docs/ (chromium.googlesource.com)"
 reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
-task6_result: needs-rework
-pipeline_stage: task6_pending
-task6_state: revisiting
+task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task6_at: "2026-05-07T08:20:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-08-review.md"
-review_notes: "2026-05-07 Task6 08:20：needs-rework。L1 禁用词通过；锚点覆盖完整；后半部 Renderer 崩溃恢复与 WebView tracing 两节仍像调研补丁，位置在常见误区之后，发布稿收束顺序不自然，已写入 Task2B 回炉。"
+last_task6_at: "2026-05-07T09:06:00+08:00"
+last_task6_review_log: "logs/review/2026-05-07-09-review.md"
+review_notes: "2026-05-07 Task6 09:06：pass-light-edit。Task2B 已将后半部调研补丁移入发布稿收束前；本轮小修 6 处（代码围栏语言、16KB 边界术语、Viz/GPU service 表述），L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 task9_result: needs-rework
 task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
 last_task9_at: "2026-04-30T10:31:41+08:00"
 last_task2b_at: "2026-05-07T08:42:28"
+review_round: 3
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -299,7 +300,7 @@ WebView 相关的 ANR 通常有以下几种模式：
 
 WebView 通过共享重定位只读段（RELRO）节省多进程内存。`libwebviewchromium.so` 体积超过 100MB，如果每个使用 WebView 的进程都独立加载一次，PSS 开销会非常高。RELRO 的生成不是每个宿主 App 首次创建 WebView 时触发的——它由系统 WebViewUpdateService 在 provider 变更时预创建。AOSP 路径：`WebViewFactory.onWebViewProviderChanged()` 调用 `WebViewLibraryLoader.prepareNativeLibraries()`，再由 isolated `RelroFileCreator` 进程生成 `/data/misc/shared_relro/libwebviewchromium{32,64}.relro`。App 加载 WebView 时通过 `waitForAndGetProvider()` 等待准备结果，再在 `loadNativeLibrary()` 中使用已生成的 relro 文件。
 
-Android 15 升级到 16KB 内存页后，RELRO 共享必须满足 16KB 对齐，否则共享页会失效，每个进程各自持有一份副本，造成显著的 PSS 增量。排查时可以通过 `dumpsys meminfo` 对比不同进程的 `.so` mapped / shared 比例，判断 RELRO 是否正常共享。[待验证：16KB 对齐问题的具体触发条件和 AOSP 修复版本]
+Android 15 升级到 16KB 内存页后，RELRO 共享必须落在 16KB 边界上，否则共享页会失效，每个进程各自持有一份副本，造成显著的 PSS 增量。排查时可以通过 `dumpsys meminfo` 对比不同进程的 `.so` mapped / shared 比例，判断 RELRO 是否正常共享。[待验证：16KB 边界要求的具体触发条件和 AOSP 修复版本]
 
 同一宿主 App 中的多个 WebView 共享同一份 browser-side provider 代码、data directory 和一部分 service 状态；页面自己的 DOM、JavaScript heap、图层和 tile 资源则可能分布在宿主进程与 renderer 进程两侧，是否落到独立 renderer 进程，取决于当前 provider 版本和 multiprocess 配置。
 
@@ -510,7 +511,7 @@ WebView 发起的网络请求可以在 Perfetto 的 Network Track 中观察到�
 
 Renderer 进程退出后，事件通过以下路径传递到应用层：
 
-```
+```text
 Native Renderer Process (Chromium)
   ↓ crash / OOM-killed
 AwBrowserTerminator.ProcessTerminationStatus()
@@ -590,13 +591,13 @@ Android WebView 的渲染引擎源码位于 `chromium/src/android_webview/`（AO
 |------|---------|------|
 | `AwContents.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | WebView 内容管理层，持有 WebContents |
 | `AwGLFunctor.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwGLFunctor.java` | 原生 GL 渲染器，管理 GL 资源 |
-| Viz 进程 | `chromium/src/components/viz/` | GPU 组合器，聚合多 Renderer 帧 |
+| `Viz` 组件 / GPU service | `chromium/src/components/viz/` | GPU 组合器，聚合多 Renderer 帧 |
 
 从 JS 到屏幕的完整渲染路径：
 
-```
+```text
 V8 (JS 执行) → Blink (Layout/Paint) → CompositorThread → CompositorFrame
-  → Viz 进程 (GPU 组合) → GPU Service → ASurfaceControl / BufferQueue
+  → Viz 组件 (GPU 组合) → GPU service → ASurfaceControl / BufferQueue
   → SurfaceFlinger (系统合成) → Display
 ```
 
@@ -618,7 +619,7 @@ WebView Perfetto 追踪需要同时开启两类数据源：
 | `blink` | Blink 渲染引擎（DOM/CSS/Layout/Paint） | JS → 像素内部管线 |
 | `blink.user_timing` | `performance.measure` API 输出 | App 注入计时标记 |
 | `cc` (Chromium Compositor) | CompositorThread 帧提交 | 组合管线分析 |
-| `gpu` | GPU 进程与 GLES 命令 | GPU 负载评估 |
+| `gpu` | GPU service 与 GLES 命令 | GPU 负载评估 |
 | `v8` | V8 JS 引擎执行 | JS CPU 热点 |
 | `navigation` | 页面导航 IPC | 加载时间分解 |
 | `loading` | 资源加载 | 网络 → 渲染流水线 |
