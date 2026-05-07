@@ -22,16 +22,16 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/network-traces"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-27"
-last_task9_at: "2026-04-27T22:33:32+08:00"
+task9_reviewed_date: "2026-05-08"
+last_task9_at: "2026-05-08T01:32:37+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 last_task2b_at: "2026-05-07T23:47:13+08:00"
@@ -39,7 +39,7 @@ repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 last_task6_at: "2026-05-08T01:09:14+08:00"
 task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result: needs-rework 等待 Task9 复审。"
-
+task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。Top: Android attribute key 上限写成 32，当前 Firebase Android SDK/API reference 为 40；Cronet 兜底建议误写为 FirebasePerfUrlConnection/拦截器，应改为 HttpMetric custom network trace；OkHttp EventListener 冲突结论缺公开源码支撑，需删除或标注待验证。"
 ---
 # Firebase Performance
 

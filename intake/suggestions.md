@@ -1513,3 +1513,10 @@
 - **位置**：L143 postVisualStateCallback 可见性说明
 - **问题**：`postVisualStateCallback` 只保证当前 WebView visual state 已准备好在后续 draw 中呈现，不保证已经显示到屏幕；WebView 被遮挡、未 attach、窗口不可见时也可能触发回调。正文用于白屏采样锚点时缺少这层边界。
 - **建议**：补一句：它只能作为渲染管线就绪信号，最终屏幕可见性仍要结合 View attach/visibility/window focus 和 PixelCopy/DOM/业务 ready 交叉判断。
+
+
+## [Task9 Deep Review] 19.17 Firebase Performance — 2026-05-08
+- **类型**：源码准确性/版本差异
+- **位置**：L138/L143 App start 起点说明
+- **问题**：正文把 API 24+ 启动起点概括为 `Process.getStartUptimeMillis()`，但当前 Firebase Android SDK `AppStartTrace` 中 process start 计时使用 `Process.getStartElapsedRealtime()`；`logAppStartTrace()` 仍以 `getClassLoadTimeCompat()` 写 `_app_start` 的 start/duration，实验 TTID trace 才走 process-start 兼容路径。这会把平台 API、Firebase `_app_start` 与实验 TTID 的口径混在一起。
+- **建议**：补一个源码锚点说明：`Process.getStartElapsedRealtime()`/`getStartUptimeMillis()` 是平台进程启动时间 API；Firebase 当前 app-start 实现需区分 `_app_start`、`_experiment_app_start_ttid` 与低版本 class-load fallback。若不展开源码，至少改成“API 24+ 平台提供进程启动时间，Firebase SDK 是否用于控制台指标以当前 SDK 源码为准”。
