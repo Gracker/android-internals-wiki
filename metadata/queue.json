@@ -13253,9 +13253,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T18:45:44+08:00",
-      "status": "pending",
-      "completed_at": null,
-      "completed_reason": null
+      "status": "completed",
+      "completed_at": "2026-05-07T21:47:07+08:00",
+      "completed_reason": "P1 RT/DL频率策略改为条件化描述：uclamp启用时RT受uclamp约束，DL通过带宽下限/饱和判断影响频率；补源码锚点"
     },
     {
       "section": "9.6",
@@ -14165,7 +14165,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T21:28:11+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T21:47:07+08:00",
+      "completed_reason": "P0 API31+ JNI/inline路径断言已删除，改为分层调用链说明；P1 开销表改为定性量级+复测指引；P1 协程示例修正为withContext(Dispatchers.IO)内同步slice+async trace；P1 executor示例补try/finally/post返回值检查"
     }
   ],
   "completed": [
