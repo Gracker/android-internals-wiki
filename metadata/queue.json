@@ -2377,7 +2377,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T13:17:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T23:47:13+08:00",
+      "completed_reason": "review_issues 无具体问题（detail为\"无\"），标记完成"
     },
     {
       "section": "13.1",
@@ -3867,8 +3869,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T15:21:32.054234",
-      "status": "pending",
-      "source_file": "2026-04-25-15-17-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-25-15-17-external-review.md",
+      "completed_at": "2026-05-07T23:47:13+08:00",
+      "completed_reason": "P1 网络插桩冲突检测已补充(bytecode instrumentation/build.log/logcat验证/Cronet FirebasePerfUrlConnection); P1 Near Real-time延迟风险已加强警告(Firebase不应作为唯一故障发现工具); P1 采集生效验证路径已添加"
     },
     {
       "section": "17-oem",
@@ -4379,10 +4383,12 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T16:17:20+08:00",
-      "status": "pending",
+      "status": "completed",
       "material_paths": [
         "intake/suggestions.md"
-      ]
+      ],
+      "completed_at": "2026-05-07T23:47:13+08:00",
+      "completed_reason": "P1 网络插桩冲突检测已补充(bytecode instrumentation/build.log/logcat验证/Cronet FirebasePerfUrlConnection); P1 Near Real-time延迟风险已加强警告(Firebase不应作为唯一故障发现工具); P1 采集生效验证路径已添加"
     },
     {
       "section": "19.18",
@@ -4443,7 +4449,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T03:16:09.066416+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T23:47:13+08:00",
+      "completed_reason": "External review指出的Performance Class和AndroBench问题已在之前轮次修复：Performance Class已在机型分层段落中详细覆盖(PC12-15); AndroBench已标为历史工具; CPDT已作为现代推荐"
     },
     {
       "section": "19.23",

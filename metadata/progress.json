@@ -412,5 +412,20 @@
       ]
     }
   ],
-  "task2b_last_run": "2026-05-07T17:47:16.435445"
+  "task2b_last_run": "2026-05-07T17:47:16.435445",
+  "task2b_reworks": [
+    {
+      "date": "2026-05-07T23:40:00+08:00",
+      "sections": [
+        "19.17"
+      ],
+      "fixes": [
+        "P1: 网络插桩冲突检测+验证路径(build.log/firebase_performance_logcat_enabled/Cronet FirebasePerfUrlConnection)",
+        "P1: Near Real-time延迟风险加强警告(Firebase不应作为唯一故障发现工具)"
+      ],
+      "auto_promoted": [
+        "19.21"
+      ]
+    }
+  ]
 }
