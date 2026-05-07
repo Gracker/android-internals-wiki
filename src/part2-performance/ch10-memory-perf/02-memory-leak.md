@@ -27,16 +27,16 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: "pending"
-task6_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: pending
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-08T02:30:38+08:00"
-task9_review_notes: "2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
+task9_review_notes:  | 2026-05-08 03:44 Task2B rework: P0 ProfilingManager requestProfiling API 签名已修正（补 tag/CancellationSignal/Consumer<ProfilingResult>，说明 global listener 路径）"2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
 task9_result: "needs-rework"
 last_task6_at: "2026-05-08T02:09:46+08:00"
 task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 7 处 L1/L2 表达与格式问题；Task9 仍为 pending，未自动晋升。"
@@ -328,7 +328,20 @@ Jetpack Compose 引入了新的泄漏场景：
 3. **服务端分析**：Shark 或自研引擎批量分析
 4. **SDK 集成**：腾讯 Matrix、快手 Koom、字节 MemoryLeakDetector
 
-Android 15（API 35）+ 引入的 `ProfilingManager`（`android.os.ProfilingManager`）提供了系统级按需触发能力：应用通过 `requestProfiling(int type, Bundle params, Executor executor, ProfilingResultCallback callback)` 请求系统采集。支持的类型包括 `PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_HEAP_PROFILE`、`PROFILING_TYPE_SYSTEM_TRACE`。采集完成后通过 `ProfilingResultCallback` 获取结果路径。
+Android 15（API 35）+ 引入的 `ProfilingManager`（`android.os.ProfilingManager`）提供了系统级按需触发能力。公开 API 签名：
+
+```java
+// android.os.ProfilingManager (API 35+)
+public void requestProfiling(
+    int profilingType,
+    Bundle parameters,
+    String tag,
+    CancellationSignal cancellationSignal,
+    Executor executor,
+    Consumer<ProfilingResult> listener)
+```
+
+支持的类型包括 `PROFILING_TYPE_JAVA_HEAP_DUMP`、`PROFILING_TYPE_HEAP_PROFILE`、`PROFILING_TYPE_SYSTEM_TRACE`、`PROFILING_TYPE_STACK_SAMPLING`。`tag` 用于在结果中标识请求来源；`CancellationSignal` 可取消未执行的采集。除了 per-request listener，还可以通过 `registerForAllProfilingResults(Executor, Consumer<ProfilingResult>)` 注册全局结果回调。
 
 这类请求受系统限流，不保证一定执行；结果落在应用数据目录且可能被 redaction 处理。ProfilingManager 适合按条件采样和诊断入口，不能替代常驻泄漏监控（LeakCanary、Koom 等）。对于不需要自建 APM 的中小型项目，这是获取内存现场的官方路径。
 

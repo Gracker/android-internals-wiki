@@ -37,19 +37,19 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-08"
-task9_state: "reviewed"
+task9_state: pending
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: fixed
 task6_result: "pass-light-edit"
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-08T03:20:00+08:00"
 last_task2b_at: "2026-04-27T05:45:00+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
+task9_review_notes:  | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB覆盖粒度改为2MB(CONT_PTES=128)；P0 kCompatPageSize源码锚点改为linker_phdr.h/ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size"2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
@@ -146,7 +146,7 @@ Google 的测试表明，16KB 页大小下系统平均内存使用量增加约 5
 
 **构建工具链要求：**
 - NDK r28+：默认输出满足 16KB 边界要求的 `.so` 文件
-- NDK r27：需要在链接时添加 `-Wl,-z,max-page-size=16384`
+- NDK r27 及更低版本：需要在链接时添加 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384`
 - AGP 8.5.1+：对使用 uncompressed shared libraries 的 App，可以正确请求 16KB zip 布局
 - AAB 产物要再用 `bundletool dump config --bundle <your.aab> | grep alignment` 检查是否为 `PAGE_ALIGNMENT_16K`
 - AGP 8.3-8.5 虽然默认会生成满足 16KB 页边界要求的 ELF，但 `bundletool` 默认不会补齐 APK zip alignment；只升级到这几个版本，Play 产物仍可能安装失败
@@ -231,20 +231,20 @@ compat 只用于临时兼容验证，不应作为发布态性能方案。对于�
 
 ### 对开发者的实际含义
 
-正文中"需要在链接时添加 `-Wl,-z,max-page-size=16384`"的底层原理是：此 flag 告诉链接器将 ELF 的 `p_align` 设为 16384，使 `min_palign` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
+正文中"需要在链接时添加 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384`"的底层原理是：此 flag 告诉链接器将 ELF 的 `p_align` 设为 16384，使 `min_palign` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
 
 ## Bionic Linker 16KB Compat Mode 常量与 mprotect 修复
 
 ### kCompatPageSize 常量与 CompatMapSegment 双路径
 
-AOSP commit ce1c3cf77b8b08d402818dad10b804013f46722f 中新增了 `linker_phdr_16kib_compat.cpp`，定义关键常量：
+AOSP commit ce1c3cf77b8b08d402818dad10b804013f46722f 中新增了 16KB 兼容模式，关键常量定义在：
 
 ```cpp
-// bionic/linker/linker_phdr_16kib_compat.cpp, 行 48
+// bionic/linker/linker_phdr.h
 static constexpr size_t kCompatPageSize = 0x1000;  // 4KB
 ```
 
-在 `phdr_table_load_segment()` 中根据 `should_use_16kib_app_compat_` 决定调用路径：
+在 `ElfReader::LoadSegments()`（`bionic/linker/linker_phdr.cpp`）中根据 `should_use_16kib_app_compat_` 决定调用路径：
 
 ```cpp
 if (should_use_16kib_app_compat_) {
@@ -388,9 +388,9 @@ adb shell zcat /proc/config.gz | grep CONFIG_TRANSPARENT_HUGEPAGE
 
 ### mTHP 与 contpte：16KB 环境下的二次优化
 
-在 16KB 基础页之上，如果内核启用了 `CONFIG_ARM64_CONTPTE` 和 mTHP 框架，可以获得进一步的 TLB 优化。contpte（contiguous page table entries）将 16 个物理连续的 16KB 页组成一个 256KB 的连续块，ARM MMU 硬件可以将这个连续块合并为单个 TLB entry 覆盖 256KB——相当于在 TLB 容量不变的前提下，单个 entry 的覆盖范围从 16KB 扩大到 256KB。这些能力依赖内核配置和 SoC 支持，不是所有 Android 16 设备都会启用。
+在 16KB 基础页之上，如果内核启用了 `CONFIG_ARM64_CONTPTE` 和 mTHP 框架，可以获得进一步的 TLB 优化。contpte（contiguous page table entries）利用 ARM MMU 的 contiguous hint 特性，将一组物理连续的页表条目合并为一个 TLB entry。在 16KB 基础页下，`ARM64_CONT_PTE_SHIFT` 默认为 7，`CONT_PTES = 1 << 7 = 128`，`CONT_PTE_SIZE = 128 × 16KB = 2MB`——单个 TLB entry 覆盖 2MB，相当于覆盖范围从 16KB 扩大了 128 倍。这些能力依赖内核配置和 SoC 支持，不是所有 Android 16 设备都会启用。
 
-这个机制与 THP 的区别在于：THP 需要物理连续的 2MB（4KB base）或 32MB（16KB base）大块内存，对碎片化敏感；contpte 在更小的粒度（256KB）上工作，内存分配器更容易满足连续性要求，碎片化风险更低。
+contpte 与 THP 的区别：THP（PMD 级）需要物理连续的 32MB 大块内存（16KB base），对碎片化敏感；contpte 在更小的粒度（2MB）上工作，内存分配器更容易满足连续性要求。mTHP（Multi-size Transparent Huge Pages）框架允许内核在 16KB 基础页上按需组装 64KB、128KB 等中间大小的 folio，这些 folio 可能利用也可能不利用 contpte hint——两者是独立的优化维度。
 
 同时，mTHP（Multi-size Transparent Huge Pages）框架允许内核在 16KB 基础页上按需组装多种大小的中间页（如 64KB、256KB），兼顾 TLB 收益和碎片控制。在 Perfetto 中，mTHP 的效果仍然通过 page fault 减少和启动耗时缩短来间接观测。验证内核是否启用 mTHP：`adb shell cat /sys/kernel/mm/transparent_hugepage/hpage_pmd_size` 以及查看 `/sys/kernel/mm/transparent_hugepage/` 目录下是否存在 multi-size 相关配置。
 
