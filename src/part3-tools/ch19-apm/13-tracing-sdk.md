@@ -42,10 +42,10 @@
       "path": "https://developer.android.com/jetpack/androidx/releases/tracing"
     }
   ],
-  "pipeline_stage": "task2b_pending",
-  "task6_state": "reviewed",
+  "pipeline_stage": "task6_pending",
+  "task6_state": "revisiting",
   "task9_state": "reviewed",
-  "task2b_state": "pending",
+  "task2b_state": "fixed",
   "reviewed_by": "openclaw-task6",
   "reviewed_date": "2026-05-01",
   "task6_result": "pass-light-edit",
@@ -54,7 +54,7 @@
   "task9_reviewed_by": "openclaw-task9",
   "last_task9_at": "2026-04-27T18:35:00+08:00",
   "task2b_result": "fixed",
-  "last_task2b_at": "2026-04-25T09:40:00+08:00",
+  "last_task2b_at": "2026-05-07T14:48:15+08:00",
   "repaired_date": "2026-04-25",
   "repaired_by": "openclaw-task2b",
   "task9_review_notes": "2026-04-27 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1",
@@ -172,11 +172,19 @@ void renderHomeFeed(List<FeedItem> items) {
 
 1. **字符串分配**：每次 `beginSection` 都会在 native 层做一次 `write(fd, ...)` 系统调用，把 `B|<pid>|<name>` 写入 `trace_marker`。字符串越长，系统调用耗时越高。
 2. **ftrace ring buffer 写入**：写入 per-CPU ring buffer 本身很快（约 100ns），但在高并发场景下 buffer 溢出会触发额外的锁竞争。
+3. **JNI 转换开销（API 30 及以下）**：`androidx.tracing` 1.2 之前，以及 API 31 以下的平台，每次 `beginSection()` 都要经过 JNI native 调用。单次 JNI transition 约 30-100ns，叠加字符串拼接时可能触发额外 GC。API 31+ 在 AndroidX 1.2+ 走内联优化路径，跳过 JNI，开销降至接近纯 native 调用。在热路径高频打标场景下，API 30 及以下的 JNI 开销累积不可忽略——`onBindViewHolder` 里每帧 20 次 trace 调用，JNI 部分额外消耗约 1-2μs，在 120Hz 设备上占帧预算 0.8-1.6%。
 
 基于这些数据，几个实用边界：
 
 - **热路径谨慎打标**：如果某段代码在一帧内被调用超过 1000 次（如 `onDraw` 内的循环），不要在里面放 `beginSection`。把 trace 提到循环外面，标注整体耗时即可。
-- **避免动态字符串拼接**：`"item_" + id` 这种写法会多一次字符串分配和拷贝。用固定名称或预分配好的静态常量。
+- **避免动态字符串拼接**：`"item_" + id` 这种写法会多一次 `StringBuilder` 分配 + `toString()` + native 字符串拷贝。在 `onBindViewHolder` 里每帧调用 20 次时，字符串分配带来的 GC 压力可能比 trace 本身还大。改用静态常量可以完全消除这笔开销：
+
+```kotlin
+companion object {
+    private const val TAG_BIND = "Feed#bindItem"
+}
+// 使用时直接引用 TAG_BIND，零分配
+```
 - **Release 包保留必要的 trace**：少量稳定的 trace slice（每帧 < 20 个）在 120Hz 下占用不到 0.5% 的帧预算，对用户无感知。
 
 不适合加 trace 的场景：
@@ -273,6 +281,43 @@ trace("Home#loadFirstFeed") {
 这段 trace 只记录异步任务提交耗时，不记录网络、解析、数据库和 UI 更新。
 
 协程里也有同样边界，且更容易写错。不要把包含 `delay()`、`withContext()` 或其他挂起点的 `suspend` 块直接包进同步 `trace {}`。挂起后线程会去跑别的任务，但这个同步 slice 还没结束，Perfetto 里会留下很长的错误区间。未引入 AndroidX Tracing 2.0.0 alpha 的 coroutine tracing API 前，包含挂起点的业务跨度用 async trace 显式配对；线程内真实工作仍用同步 slice。
+
+下面是一段会在 Perfetto 里产生"视图污染"的错误写法，以及对应的修正方案：
+
+**❌ 错误：同步 `trace {}` 包裹含挂起点的协程块**
+
+```kotlin
+// 错误：trace 区间跨越了挂起点
+trace("Home#loadData") {
+    val data = repository.fetchData()   // 内部 withContext(Dispatchers.IO)
+    adapter.submitList(data)
+}
+```
+
+Perfetto 中这条 slice 会从调用开始一直延伸到协程恢复后执行完毕。挂起期间主线程去跑了其他任务（measure、draw、input handling），但这些工作全部被包在 `Home#loadData` 这条 slice 内。读 trace 的人会误以为"加载耗时 200ms"，实际上网络请求只占 50ms，剩下的 150ms 是主线程在挂起期间执行的无关工作。
+
+**✅ 修正：每个线程的同步工作单独标记，跨线程逻辑用 async trace 配对**
+
+```kotlin
+val cookie = nextCookie.getAndIncrement()
+Trace.beginAsyncSection("Home#loadData", cookie)
+
+viewModelScope.launch {
+    // I/O 线程：同步 slice 标记实际网络 + 解析耗时
+    trace("Home#fetchData") {
+        val data = repository.fetchData()
+    }
+    withContext(Dispatchers.Main) {
+        // 主线程：同步 slice 标记渲染耗时
+        trace("Home#renderData") {
+            adapter.submitList(data)
+        }
+        Trace.endAsyncSection("Home#loadData", cookie)
+    }
+}
+```
+
+修正后，Perfetto 中 I/O 线程和主线程各有独立的同步 slice，async trace 把两端串成同一个业务 span。不会出现"一条 slice 吃掉整个线程时间线"的视图污染。
 
 跨线程任务要分两层标注：
 
@@ -385,7 +430,7 @@ Java 层只看到一次 JNI 调用，Perfetto 里如果没有 native slice，读
 | 名称带动态数据 | 无法聚合，可能泄露隐私 | 用固定枚举和稳定名称 |
 | 只标异步提交 | 看不到实际工作耗时 | 在实际执行线程标记 |
 | Java begin/end 没有 `finally` | 异常路径会破坏后续 slice 嵌套 | 用 `try-finally` 固定关闭区间 |
-| 同步 `trace {}` 包含协程挂起点 | Perfetto 出现跨线程的错误长 slice | 挂起跨度用 async trace 或评估 `traceCoroutine` |
+| 同步 `trace {}` 包含协程挂起点 | Perfetto 出现跨线程的错误长 slice，挂起期间线程的其他工作全被包进同一条 slice，读 trace 的人误判耗时 | 挂起跨度用 async trace 或评估 `traceCoroutine`；上方的"视图污染"示例展示了错误写法和修正方案 |
 | Debug 才有 trace | Release 问题无法复现 | 低成本稳定 trace 留在正式代码 |
 
 Tracing SDK 的价值来自一致性。少量稳定、长期存在的 trace，比临时到处加标记更有用。

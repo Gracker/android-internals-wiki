@@ -24,7 +24,11 @@ sources:
     path: "AOSP 源码分析 frameworks/base/core/java/android/view"
 tags: ['rendering', 'hwui', 'skia', 'surfaceflinger', 'gpu', 'triple-buffering', 'rendering-pipeline', 'bufferqueue', 'vsync', 'displaylist', 'rendernode']
 related_chapters: ["2.2", "2.3", "2.4", "2.5", "2.6", "2.10"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 task6_state: reviewed
 task6_result: pass-light-edit
 review_round: 6
@@ -213,7 +217,7 @@ HWC / display HAL 发出硬件 VSync
 
 SurfaceFlinger 合成的核心逻辑是按 Z-Order(Z 轴顺序)从后到前逐层叠加各个 Layer 的内容。想象一摞透明玻璃板,每一块玻璃上画着不同 App 的界面:状态栏是一层、导航栏是一层、当前 App 是一层、如果有个悬浮窗又是一层。SurfaceFlinger 就像是在上方俯瞰这摞玻璃板,把它们叠在一起形成最终的画面。
 
-合成过程中需要处理层与层之间的混合模式--完全覆盖的区域直接替换,半透明的区域需要 Alpha 混合,部分重叠的区域需要裁剪计算。这些操作如果交给 CPU 来做会很慢,所以 Android 优先使用 HWC(Hardware Composer)进行硬件合成。HWC 是 SoC 上的专用硬件单元,可以高效地完成多 Layer 叠加、缩放、旋转等操作,几乎不消耗 CPU 或 GPU 资源。只有在 Layer 数量超过 HWC 的处理能力或使用了 HWC 不支持的混合模式时,SurfaceFlinger 才会回退到 GPU 合成(通过 RenderEngine)。
+合成过程中需要处理层与层之间的混合模式--完全覆盖的区域直接替换,半透明的区域需要 Alpha 混合,部分重叠的区域需要裁剪计算。这些操作如果交给 CPU 来做会很慢,所以 Android 优先使用 HWC(Hardware Composer)进行硬件合成。HWC 是 Composer HAL 对底层合成能力的抽象,底层实现通常是 SoC 上的 display controller / DPU,可以高效地完成多 Layer 叠加、缩放、旋转等操作。但 HWC 本身有容量限制,且 SurfaceFlinger 与 HWC 的交互(调用 validateDisplay / presentDisplay)仍涉及 CPU 调度、内存带宽和 fence 等待——不是零开销。只有在 Layer 数量超过 HWC 的处理能力或使用了 HWC 不支持的混合模式时,SurfaceFlinger 才会回退到 GPU 合成(通过 RenderEngine)。
 
 #### 7. 显示输出:最终呈现到屏幕
 
@@ -289,11 +293,20 @@ Trace 中验证三缓冲,打开 FrameTimeline、gfx / view / sched / freq、Surf
 BufferQueue 是 Android 图形系统的核心组件,实现了生产者-消费者模式的缓冲区管理:
 
 ```
-生产者 (Producer)        BufferQueue        消费者 (Consumer)
-App进程                 系统进程           SurfaceFlinger/HWC
-├── dequeueBuffer()      ├── 队列管理        ├── acquireBuffer()
-├── queueBuffer()       ├── 缓冲区分配      └── dequeueBuffer()
-└── cancelBuffer()      └── 同步控制        └── setReleaseFence()
+生产者 (Producer)           BufferQueue                消费者 (Consumer)
+App进程                    系统进程                   SurfaceFlinger
+├── dequeueBuffer()         ├── 队列管理               ├── acquireBuffer()
+├── queueBuffer()          ├── 缓冲区分配             ├── latch buffer + 合成决策
+└── cancelBuffer()         └── 同步控制               └── releaseBuffer()
+         │                                                 │
+         │  IGraphicBufferProducer         IGraphicBufferConsumer  │
+         └──────────────► BufferQueue ──────────────►─────────────┘
+                                                           │
+                                              SurfaceFlinger 合成后
+                                                           ▼
+                                               HWC / Composer HAL
+                                              (validateDisplay /
+                                               presentDisplay)
 ```
 
 ### 关键角色和职责
@@ -316,7 +329,7 @@ BufferQueue 的核心职责是管理缓冲区池和协调生产者-消费者的�
 
 消费者的工作与生产者镜像对称:通过 acquireBuffer() 从 BufferQueue 中取出已填充的缓冲区,对其中的内容进行处理(比如 SurfaceFlinger 把多个缓冲区合成在一起),处理完毕后通过 releaseBuffer() 将缓冲区归还给缓冲区池。
 
-SurfaceFlinger 是 Android 中最重要的 BufferQueue 消费者--它同时消费来自多个 App 的缓冲区,把它们按 Z-Order 叠加成最终的屏幕画面。HWC 作为硬件合成器，也是消费者侧的一部分--SurfaceFlinger 会将 Layer 信息和缓冲区传递给 HWC,由 HWC 直接完成合成和输出。
+SurfaceFlinger 是 Android 中最重要的 BufferQueue 消费者——它通过 IGraphicBufferConsumer 接口同时消费来自多个 App 的缓冲区,把它们按 Z-Order 叠加成最终的屏幕画面。HWC(Composer HAL)不是 BufferQueue 的消费者,而是 SurfaceFlinger 完成缓冲区 acquire 之后的合成通道：SurfaceFlinger 把 Layer 信息和缓冲区传递给 HWC,由 HWC 完成最终的合成和输出。HWC 与 SurfaceFlinger 之间走的是 validateDisplay / acceptDisplayChanges / presentDisplay 这套 HAL 接口,与 BufferQueue 的 dequeue/acquire/queue/release 不是同一组操作。
 
 ### 生产-消费时序
 
@@ -618,7 +631,7 @@ App 的 RenderThread 画的是"一个 App 的一帧"("画一个按钮"、"绘制
 
 **Android 10(Q,2019)** 引入了 Skia 渲染后端统一,HWUI 的渲染管线完全基于 Skia,同时支持 OpenGL 和 Vulkan 后端。
 
-**Android 12(S,2021)** 引入了 BLASTBufferQueue,把 buffer 提交和 SurfaceControl transaction 放到同一事务节奏里,减少了 App 进程与 SurfaceFlinger 之间的时序错位。多窗口和频繁 resize 的场景受益更明显;后续版本里,这组事务流程又继续向 ASurfaceControl 侧的接口收敛。
+**Android 11(R,2020)** 出现了 BLASTBufferQueue(AOSP `frameworks/native/libs/gui/BLASTBufferQueue.cpp`),把 buffer 提交和 SurfaceControl transaction 放到同一事务节奏里,减少了 App 进程与 SurfaceFlinger 之间的时序错位。**Android 12(S,2021)** 之后,BLASTBufferQueue 在窗口/SurfaceControl transaction 路径中更广泛承担 buffer 与 transaction 同步,多窗口和频繁 resize 的场景受益更明显;后续版本里,这组事务流程又继续向 ASurfaceControl 侧的接口收敛。
 
 **Android 13(T,2022)** 优化了 Vulkan 后端的稳定性,但 HWUI 默认走 OpenGL 还是 Vulkan 仍然取决于设备 `use_vulkan` 属性和 OEM 配置,不是平台级统一切换。
 

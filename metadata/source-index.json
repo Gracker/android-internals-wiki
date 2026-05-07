@@ -3079,6 +3079,76 @@
       ],
       "summary": "# ClawFeed 日报 - 2026-05-06\ndate: 2026-05-06\ntags:\n  - clawfeed\n  - daily\n  - curated\naliases:\n  - ClawFeed 2026-05-06\n---\n\n## ⚠ 格式规范（最高优先级）\n\n执行前必须先读取：/Users/gracker/.openclaw/workspace/DIGEST_FORMAT.m...",
       "scored_at": "2026-05-06T05:54:31.836526"
+    },
+    {
+      "title": "1.1.2-CPU缓存与CacheLine-2026-05-06 2",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/1.1.2-CPU缓存与CacheLine-2026-05-06 2.md",
+      "relative_path": "Cubox/1.1.2-CPU缓存与CacheLine-2026-05-06 2.md",
+      "score": 12,
+      "chapter": "ch04",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:05.173611"
+    },
+    {
+      "title": "融合eBPF与AI技术的微架构能效分析-2026-05-06",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/融合eBPF与AI技术的微架构能效分析-2026-05-06.md",
+      "relative_path": "Cubox/融合eBPF与AI技术的微架构能效分析-2026-05-06.md",
+      "score": 12,
+      "chapter": "ch04",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:05.850271"
+    },
+    {
+      "title": "2026-05-06-ams-mgloballock-mproclock-perfetto",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-06-ams-mgloballock-mproclock-perfetto.md",
+      "relative_path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-06-ams-mgloballock-mproclock-perfetto.md",
+      "score": 16,
+      "chapter": "ch05",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:06.186128"
+    },
+    {
+      "title": "2026-05-07-bionic-linker-namespace-hook-bypass",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-bionic-linker-namespace-hook-bypass.md",
+      "relative_path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-bionic-linker-namespace-hook-bypass.md",
+      "score": 19,
+      "chapter": "ch04",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:06.501141"
+    },
+    {
+      "title": "2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md",
+      "relative_path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md",
+      "score": 19,
+      "chapter": "ch02",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:06.687320"
+    },
+    {
+      "title": "2026-05-06-每日深度研究选题",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日深度研究选题/2026-05-06-每日深度研究选题.md",
+      "relative_path": "OpenClaw定时任务/每日深度研究选题/2026-05-06-每日深度研究选题.md",
+      "score": 16,
+      "chapter": "ch02",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:07.961743"
+    },
+    {
+      "title": "2026-05-07-10分钟速览An-10分钟速览Android开发者需要关注",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-07-10分钟速览An-10分钟速览Android开发者需要关注.md",
+      "relative_path": "source/juejin-android/2026-05-07-10分钟速览An-10分钟速览Android开发者需要关注.md",
+      "score": 12,
+      "chapter": "ch05",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:11.477471"
     }
   ]
 }

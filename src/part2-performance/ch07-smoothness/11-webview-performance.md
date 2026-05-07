@@ -26,9 +26,9 @@ sources:
 reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
+pipeline_stage: ready-for-review
 task6_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task6_at: "2026-05-07T09:06:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-09-review.md"
@@ -38,7 +38,7 @@ task9_state: reviewed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-07
 last_task9_at: "2026-05-07T09:35:55+08:00"
-last_task2b_at: "2026-05-07T08:42:28"
+last_task2b_at: "2026-05-07T09:42:00+08:00"
 review_round: 3
 task9_review_notes: "2026-05-07 Task9 09:34：needs-rework。P0 1：Chromium WebView `AwGLFunctor.java` 源码路径不存在；P1 1：底部渲染路径重新把 WebView 写成固定 ASurfaceControl/BufferQueue → SF 路径，与 GLFunctor/HWUI 路径边界冲突；P2 1：render_process_gone Perfetto 事件待验证。"
 ---
@@ -591,16 +591,26 @@ Android WebView 的渲染引擎源码位于 `chromium/src/android_webview/`（AO
 | 组件 | 源码路径 | 角色 |
 |------|---------|------|
 | `AwContents.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwContents.java` | WebView 内容管理层，持有 WebContents |
-| `AwGLFunctor.java` | `chromium/src/android_webview/java/src/org/chromium/android_webview/AwGLFunctor.java` | 原生 GL 渲染器，管理 GL 资源 |
+| DrawFn 实现 | `android_webview/browser/gfx/aw_draw_fn_impl.cc`（C++ 侧）；Java 侧通过 `android_webview/public/browser/draw_fn.h` 定义的 `AwDrawFnFunctorCallbacks` 回调 | Android P+ HWUI functor 双后端入口（`draw_gl` / `draw_vk`），不是独立 Java 类 |
 | `Viz` 组件 / GPU service | `chromium/src/components/viz/` | GPU 组合器，聚合多 Renderer 帧 |
 
-从 JS 到屏幕的完整渲染路径：
+从 JS 到屏幕的渲染路径取决于 WebView 当前的合成模式，不是固定路径。Chromium 侧的帧生产管线相同——V8 执行 JS、Blink 做 Layout/Paint、CompositorThread 生成 `CompositorFrame`——但帧输出后走哪条提交路径，取决于运行时条件：
 
+**GLFunctor 路径（更常见）**：
 ```text
-V8 (JS 执行) → Blink (Layout/Paint) → CompositorThread → CompositorFrame
-  → Viz 组件 (GPU 组合) → GPU service → ASurfaceControl / BufferQueue
-  → SurfaceFlinger (系统合成) → Display
+V8 → Blink → CompositorThread → CompositorFrame
+  → Viz 合成 → GPU service → draw functor 回调
+  → 宿主 RenderThread → queueBuffer(主窗口) → SurfaceFlinger → Display
 ```
+帧由宿主 `RenderThread` 通过 functor 替 Viz 执行 swap，和主窗口 buffer 一起提交。这是 WebView 区别于独立 Chrome 的架构核心（§18.13 有完整流程图）。
+
+**SurfaceControl 独立子 Surface 路径（条件满足时）**：
+```text
+V8 → Blink → CompositorThread → CompositorFrame
+  → Viz 合成 → GPU service → ASurfaceControl child buffer 更新
+  → SurfaceFlinger 独立合成 → Display
+```
+命中后网页帧可以从主窗口拆出，宿主 `RenderThread` 只保留几何同步。四层门槛（HWUI 放行、GpuService 就绪、overlay support 检查通过、frame sink 未 blocked）需要同时满足，具体见 §18.13。
 
 Viz（compositor service / GPU service）在 WebView 场景下通常以 in-process 方式运行在宿主 App 进程内，不是独立进程。Chromium `android_webview/docs/architecture.md` 明确 WebView 的 GPU service、Network Service 等非沙箱服务在各 OS 版本都 in-process。Perfetto 中看到的 `VizCompositorThread`、`CrGpuMain` 都是宿主进程内的线程。
 
@@ -644,8 +654,8 @@ Renderer 进程崩溃在 Perfetto 中的表现：Renderer 进程所有 slice 在
 |------|--------------|-------------------|------|
 | Android 7-8 (API 24-26) | In-process renderer | GLFunctor / 硬件加速兼容层 | renderer 线程在宿主进程内 |
 | Android 8-10 (API 26-29) | Out-of-process renderer（低内存 32-bit 设备可能回退 in-process） | Command Buffer → 宿主窗口 | multiprocess 逐步铺开 |
-| Android 11+ (API 30) | 全部 out-of-process | ASurfaceControl / BufferQueue | renderer 崩溃隔离成为默认 |
-| Android 13+ (API 33) | Sandbox 加强隔离 | 优化 BufferQueue 交互 | 安全边界收紧 |
+| Android 11+ (API 30) | 全部 out-of-process | GLFunctor（默认）/ SurfaceControl 子 Surface（条件满足时） | renderer 崩溃隔离成为默认 |
+| Android 13+ (API 33) | Sandbox 加强隔离 | SurfaceControl 子 Surface 路径更常见 | 安全边界收紧 |
 
 [已验证: 来源见 Chromium `android_webview/docs/architecture.md`、`chromium/src/base/trace_event/README.md`、`perfetto.dev/docs/analysis/webview-tracing`]
 
