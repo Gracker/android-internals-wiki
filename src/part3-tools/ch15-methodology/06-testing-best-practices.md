@@ -41,27 +41,24 @@ related_chapters:
   - "8.3"
   - "13.2"
   - "5.5"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-29"
+reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-07T17:40:00+08:00"
 review_notes: "2026-05-07 task2b rework: P90/FPS 分位语义已修正（FPS 用 P10/慢帧占比）；Macrobenchmark 自动稳定化已改为 IsolationActivity + sustained perf mode 源码级描述。"
-task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T10:40:29+08:00"
-last_task2b_at: "2026-04-29T09:46:49"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。"
 ---
-
 
 # 性能测试最佳实践
 
@@ -90,23 +87,23 @@ task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 0 / P1 2 / 
 > 锚点内容需 L1/L2 验证,扩展内容至少 L2 验证,自动发现内容至少标注来源。
 <!-- outline-end -->
 
-## 为什么性能测试需要"最佳实践"
+## 为什么性能测试需要「最佳实践」
 
-性能测试的工具链--Perfetto、Profiler、Benchmark--本身没有问题,真正经常出问题的是测试方式。同一台设备、同一段代码,第一次冷启动 450ms,第二次就变成 620ms;今天帧率 58fps,明天同样的代码变成 52fps。拿着这些数据去定位问题,根本分不清是代码引入了回归,还是测试环境本身在波动。
+性能测试的工具链——Perfetto、Profiler、Benchmark——本身没有问题，测试方式更容易出问题。同一台设备、同一段代码，第一次冷启动 450ms，第二次变成 620ms；今天帧率 58fps，明天同样的代码变成 52fps。拿着这些数据定位问题，很难分清是代码引入了回归，还是测试环境本身在波动。
 
-性能测试和功能测试有一个根本性的区别:功能测试的结果是确定的--要么通过要么失败;而性能测试的结果是概率性的--它受到温度、后台进程、CPU 调频策略、GC 时机等大量不可控因素的影响。如果我们不主动控制这些变量,测试数据就没有参考价值。
+性能测试和功能测试的区别在于：功能测试的结果是确定的，要么通过，要么失败；性能测试的结果是概率性的，会受到温度、后台进程、CPU 调频策略、GC 时机等变量影响。测试不主动控制这些变量，数据就没有参考价值。
 
-本节想解决的比"怎么写一个 benchmark"更前面的事:怎样把测试环境、采样方法和结果解释先做对。没有这一步,后面的数据就没有足够的参考价值。
+本节先处理比「怎么写一个 benchmark」更前面的事：把测试环境、采样方法和结果解释做对。没有这一步，后面的数据就没有足够的参考价值。
 
 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking]
 
 ## 测试环境标准化
 
-性能测试的第一步是搭建一个**尽可能可控的测试环境**,这一步做好了,后面的一切才有意义。
+性能测试的第一步是搭建一个**尽可能可控的测试环境**，这一步做好了，后面的一切才有意义。
 
-### 设备选择:覆盖主力用户群
+### 设备选择：覆盖主力用户群
 
-测试设备的选择需要考虑两个维度:**市场占有率**和**性能梯度**。
+测试设备的选择需要考虑两个维度：**市场占有率**和**性能梯度**。
 
 市场占有率决定了我们应该优先测什么设备。如果你的目标用户中 60% 使用的是中端骁龙 7 系处理器设备,那么旗舰机上测出的数据对大多数用户就没有代表性。反之,如果你只测中低端设备,可能无法发现那些只在高端设备上才会暴露的 GPU bound 问题。
 
@@ -122,7 +119,7 @@ Google 在官方文档中建议至少使用一台运行 AOSP 系统镜像的 Pix
 
 ### 温度控制:性能测试的隐形杀手
 
-温度是 Android 性能测试中最大的变量之一。几乎所有现代 SoC 都会根据温度动态调整 CPU 和 GPU 频率--这就是我们常说的 Thermal Throttling(温控降频)。
+温度是 Android 性能测试中最大的变量之一。几乎所有现代 SoC 都会根据温度动态调整 CPU 和 GPU 频率——这就是我们常说的 Thermal Throttling（温控降频）。
 
 一个典型的场景:第一次冷启动测试跑出了 450ms 的好成绩,连续跑十次之后变成了 700ms。代码没变,但 SoC 温度从 35°C 升到了 48°C,大核频率从 2.84GHz 降到了 1.8GHz。如果你不控制温度,测试结果就是不可重复的。
 
@@ -147,13 +144,13 @@ Google 在官方文档中建议至少使用一台运行 AOSP 系统镜像的 Pix
 
 ### 电量与充电状态
 
-电池电量会影响 SoC 的性能策略。Android 的功耗管理子系统会根据当前电量调整 CPU 频率上限--低电量时系统会进入省电模式,限制大核使用和高频运行。
+电池电量会影响 SoC 的性能策略。Android 的功耗管理子系统会根据当前电量调整 CPU 频率上限——低电量时系统会进入省电模式，限制大核使用和高频运行。
 
 标准做法:
 
 - 测试时保持电量在 **50% 以上**,避免触发低电量模式
 - **充电状态**也需要注意:充电时设备温度上升更快,同时某些 SoC 在充电时会调整调度策略(优先充电效率而非峰值性能)
-- 最理想的状态是**连接电源但不充电**--这可以通过将电量充至 100% 后保持连接来实现,但某些设备在充满后会自动切换到小电流模式,行为可能不一致
+- 最理想的状态是**连接电源但不充电**——这可以通过将电量充至 100% 后保持连接来实现，但某些设备在充满后会自动切换到小电流模式，行为可能不一致
 - 对于严格的基准测试,建议使用**不插电、电量 70-90%** 的状态
 
 ### 刷新率与显示模式
@@ -193,7 +190,7 @@ adb shell dumpsys display | grep -i "refresh"
 
 ### 关闭不必要的后台进程
 
-Android 系统中有大量的后台服务在运行--Google Play Services、系统更新检查、应用同步、定位服务等等。这些后台进程会占用 CPU 时间片、消耗内存、触发 I/O 操作,都可能干扰性能测试。
+Android 系统中有大量的后台服务在运行——Google Play Services、系统更新检查、应用同步、定位服务等等。这些后台进程会占用 CPU 时间片、消耗内存、触发 I/O 操作，都可能干扰性能测试。
 
 推荐的清理步骤:
 
@@ -226,7 +223,7 @@ adb shell cmd package bg-dexopt-job --disable 2>/dev/null || true
 
 `am kill-all` 只能杀掉后台 App 进程,拦不住系统维护任务。后台 dexopt 的控制面和执行面要按 Android 版本分开看。Android 14 中,`cmd package bg-dexopt-job` / `cancel-bg-dexopt-job` 的 shell 分发在 `PackageManagerShellCommand.java`,JobScheduler 调度在 `BackgroundDexOptService.java` / `BackgroundDexOptJobService.java`。Android 16 中,`PackageManagerShellCommand.java` 仍保留 `bg-dexopt-job` / `cancel-bg-dexopt-job` 命令入口,ART Service 执行侧落在 `art/libartservice/service/java/com/android/server/art/ArtManagerLocal.java`。设备空闲或充电时的 background dexopt 会带来 CPU 和 I/O 波动,启动、安装后首次运行、CI 基准测试都容易被影响。
 
-`bg-dexopt-job --cancel` / `--disable`、`cancel-bg-dexopt-job` 和 `pm.dexopt.disable_bg_dexopt` 的可用性会随系统版本、权限和厂商实现变化。CI 脚本要记录命令是否执行成功;执行失败时,把 ART 后台优化状态写进测试报告。测试结束后恢复 `pm.dexopt.disable_bg_dexopt=false`,避免长期影响设备的正常优化。
+`bg-dexopt-job --cancel` / `--disable`、`cancel-bg-dexopt-job` 和 `pm.dexopt.disable_bg_dexopt` 的可用性会随系统版本、权限和厂商实现变化。CI 脚本要记录命令是否执行成功；执行失败时，把 ART 后台优化状态写进测试报告。测试结束后恢复 `pm.dexopt.disable_bg_dexopt=false`，避免长期影响设备的正常优化。
 
 ### 固定 CPU 频率(进阶)
 
@@ -258,7 +255,7 @@ Macrobenchmark 库在内部会自动执行一些环境稳定化操作。每次�
 
 ### 屏幕亮度与显示设置
 
-OLED 屏幕的功耗和发热量与显示内容直接相关--全白背景比全黑背景消耗更多电量、产生更多热量。对于长时间运行的基准测试:
+OLED 屏幕的功耗和发热量与显示内容直接相关——全白背景比全黑背景消耗更多电量、产生更多热量。对于长时间运行的基准测试：
 
 - 固定屏幕亮度为中等水平(约 50%),避免自动亮度调节引入波动
 - 使用深色测试界面(如果 App 支持 Dark Theme),减少屏幕发热
@@ -287,11 +284,11 @@ Google 官方建议 Macrobenchmark 的迭代次数至少 **10 次** [已验证: 
 - **帧率测量**:至少 5 次完整的滑动场景,每次覆盖相同的滑动距离和内容
 - **Microbenchmark**(微观基准测试):库内部会自动处理 warmup 和迭代,通常配置 20-50 次测量迭代
 
-为什么用中位数而不是平均值?因为性能数据经常受到异常值的干扰--某次测量恰好遇到了 GC,耗时飙到正常值的 3 倍。如果用平均值,这种异常值会拉高整体结果;而中位数对异常值不敏感,更能反映"典型情况"。
+为什么用中位数而不是平均值？性能数据经常受到异常值的干扰——某次测量恰好遇到了 GC，耗时飙到正常值的 3 倍。如果用平均值，这种异常值会拉高整体结果；而中位数对异常值不敏感，更能反映「典型情况」。
 
-同时关注 P90(90 百分位)也很重要。中位数告诉你"一半用户会体验到什么",P90 告诉你"10% 的用户会体验到最差是什么情况"。对于性能优化来说,降低 P90 往往比降低中位数更有价值--因为体验最差的那些用户,正是最容易投诉和卸载的。
+同时关注 P90（90 百分位）也很重要。中位数告诉你「一半用户会体验到什么」，P90 告诉你「10% 的用户会体验到最差是什么情况」。对于性能优化来说，降低 P90 往往比降低中位数更有价值——体验最差的那些用户，正是最容易投诉和卸载的。
 
-**分位数的指标方向**:P90 语义对"越小越好"的指标(耗时、延迟、TTID/TTFD)可以直接使用--P90 耗时越高,尾部越慢。对"越大越好"的指标(FPS、吞吐),P90 反而是"最好的 10%",不表示尾部劣化。FPS 应改用 **P10/P5**(10%/5% 分位的帧率),或直接换用 **frame duration / jank / slow frames** 这类越小越好的指标来衡量尾部体验。[已验证: 统计学定义, AndroidX Metrics / JankStats frame duration 分位用法]
+**分位数的指标方向**：P90 语义对「越小越好」的指标（耗时、延迟、TTID/TTFD）可以直接使用——P90 耗时越高，尾部越慢。对「越大越好」的指标（FPS、吞吐），P90 反而是「最好的 10%」，不表示尾部劣化。FPS 应改用 **P10/P5**（10%/5% 分位的帧率），或直接换用 **frame duration / jank / slow frames** 这类越小越好的指标来衡量尾部体验。[已验证: 统计学定义, AndroidX Metrics / JankStats frame duration 分位用法]
 
 ### Warm-up 轮次
 
@@ -343,7 +340,7 @@ fun startupWithPartialCompilation() = benchmarkRule.measureRepeated(
 - **温启动(Warm Start)**:Activity 被销毁但进程还在(比如用户按了返回键退出,但进程尚未被系统回收)。只需要重新执行 Activity 的生命周期
 - **热启动(Hot Start)**:Activity 只是调用了 onStop()(比如用户切到后台再切回来),恢复速度最快
 
-Macrobenchmark 通过 `StartupMode.COLD` / `StartupMode.WARM` / `StartupMode.HOT` 来控制这三种模式。在测试报告中应该分别记录这三种场景的数据,因为它们的优化方向完全不同--冷启动关注的是 dex2oat 编译、ContentProvider 初始化、布局 inflation 的耗时;热启动关注的是 Activity 恢复、View 重建的速度。
+Macrobenchmark 通过 `StartupMode.COLD` / `StartupMode.WARM` / `StartupMode.HOT` 来控制这三种模式。在测试报告中应该分别记录这三种场景的数据，因为它们的优化方向完全不同——冷启动关注的是 dex2oat 编译、ContentProvider 初始化、布局 inflation 的耗时；热启动关注的是 Activity 恢复、View 重建的速度。
 
 ## 性能基线管理与回归检测
 
@@ -351,7 +348,7 @@ Macrobenchmark 通过 `StartupMode.COLD` / `StartupMode.WARM` / `StartupMode.HOT
 
 ### 什么是性能基线
 
-性能基线(Performance Baseline)是一组经过验证的性能数据,作为后续版本比较的参照标准。基线不是随便取一个值--它应该满足以下条件:
+性能基线（Performance Baseline）是一组经过验证的性能数据，作为后续版本比较的参照标准。基线不是随便取一个值——它应该满足以下条件：
 
 - 在**标准化的测试环境**下测得(上面讲的环境标准)
 - 经过**足够的迭代次数**(至少 10 次)
@@ -387,9 +384,9 @@ Macrobenchmark 通过 `StartupMode.COLD` / `StartupMode.WARM` / `StartupMode.HOT
 
 这取决于指标的**固有波动性**。冷启动时间的波动通常在 ±5-10%,帧率的波动通常在 ±1-2fps。一个实用的策略是:
 
-- **严格阈值**(P50):中位数偏离基线超过 **10%** 就触发警告。对于启动时间,这意味着 412ms 的基线,如果新版本中位数超过 453ms 就需要调查
-- **宽松阈值**(耗时类 P90 / FPS 类 P10):耗时类 P90 偏离超过 **20%** 才触发警告,因为 P90 本身波动更大;FPS/吞吐类用 P10 或慢帧占比衡量尾部,偏离 20% 触发警告
-- **趋势检测**:如果连续 3 个版本中位数都在缓慢上升(比如 412ms → 418ms → 425ms),即使每次都没有触发阈值,也应该触发趋势告警。这种"温水煮青蛙"式的性能退化最容易被忽略
+- **严格阈值**（P50）：中位数偏离基线超过 **10%** 就触发警告。对于启动时间，412ms 的基线如果新版本中位数超过 453ms，就需要调查
+- **宽松阈值**（耗时类 P90 / FPS 类 P10）：耗时类 P90 偏离超过 **20%** 才触发警告，因为 P90 本身波动更大；FPS/吞吐类用 P10 或慢帧占比衡量尾部，偏离 20% 触发警告
+- **趋势检测**：如果连续 3 个版本中位数都在缓慢上升（比如 412ms → 418ms → 425ms），即使每次都没有触发阈值，也应该触发趋势告警。这种「温水煮青蛙」式的性能退化最容易被忽略
 
 Macrobenchmark 库输出的是 JSON 格式的结果数据,可以通过 `./gradlew :benchmark:androidTest` 运行后在 `build/outputs/connected_android_test_additional_output/` 目录下找到。将这些数据导入 CI 系统,可以实现自动化的回归检测 [已验证: 官方文档, developer.android.com/topic/performance/benchmarking/benchmarking-in-ci]。
 
@@ -413,7 +410,7 @@ Macrobenchmark 库输出的是 JSON 格式的结果数据,可以通过 `./gradle
 
 用 3-5 行话概括测试结论。比如:"本次回归测试覆盖冷启动、首页滑动、详情页渲染三个场景。冷启动中位数 425ms,较基线上升 3.1%,在正常波动范围内。首页滑动帧率 P10 降至 52.3fps,慢帧占比翻倍至 4.1%,需关注。"
 
-这一段是最重要的--大多数时候,读者只看这一段就够了。
+这一段最影响读者判断——大多数时候，读者只看这一段就够了。
 
 **2. 测试环境**
 
@@ -433,11 +430,11 @@ Macrobenchmark 库输出的是 JSON 格式的结果数据,可以通过 `./gradle
 | 慢帧占比 (>16ms)| 2.0%          | 4.1%          | +105%↑ |
 ```
 
-注意:表格适合用于**数据汇总**,但关键发现应该用**叙述文字**解释--表格告诉你"是什么",叙述告诉你"为什么"。
+注意：表格适合用于**数据汇总**，但关键发现应该用**叙述文字**解释——表格告诉你「是什么」，叙述告诉你「为什么」。
 
 **4. 异常分析与根因**
 
-对于退化的指标,给出初步的根因分析。比如:"首页帧率 P10 退化主要由详情页图片加载引起--新版本将图片缓存策略从 LRU 改为 FIFO,导致在大图场景下缓存命中率降低,频繁触发 Bitmap 解码阻塞主线程。在 Perfetto Trace 中,RenderThread 的 drawBitmap 耗时从 2ms 上升到 8ms。"
+对于退化的指标，给出初步的根因分析。比如：「首页帧率 P10 退化主要由详情页图片加载引起——新版本将图片缓存策略从 LRU 改为 FIFO，导致在大图场景下缓存命中率降低，频繁触发 Bitmap 解码阻塞主线程。在 Perfetto Trace 中，RenderThread 的 drawBitmap 耗时从 2ms 上升到 8ms。」
 
 **5. 建议与下一步**
 
@@ -531,7 +528,7 @@ Firebase Performance Monitoring(FPM)是 Google 提供的线上性能监控服务
 
 **采样策略不透明**。FPM 的采样由平台侧控制,开发者不能按实验批次或设备分层精确指定样本量。它更适合看整体趋势,不适合拿来做严格的实验设计。
 
-**自定义 Trace 的限制是按单条 trace 计算**。官方约束包括:trace name 最长 100 个字符、每条 custom code trace 最多 5 个 custom attributes、最多 32 个 metrics(含默认的 Duration)。这里要控制的是字段数量和名称基数,不是简单记成"应用最多 100 个 Trace" [已验证: Firebase Performance Monitoring limits, firebase.google.com/docs/perf-mon/troubleshooting#performance-monitoring-limits]。
+**自定义 Trace 的限制是按单条 trace 计算**。官方约束包括：trace name 最长 100 个字符、每条 custom code trace 最多 5 个 custom attributes、最多 32 个 metrics（含默认的 Duration）。需要控制的是字段数量和名称基数，不能简单记成「应用最多 100 个 Trace」[已验证: Firebase Performance Monitoring limits, firebase.google.com/docs/perf-mon/troubleshooting#performance-monitoring-limits]。
 
 **数据粒度有限**。FPM 提供的是聚合指标,适合看 P50/P95/P99 和版本趋势,不适合还原单个会话的完整上下文。
 
@@ -558,14 +555,14 @@ Firebase Performance Monitoring(FPM)是 Google 提供的线上性能监控服务
 - **帧率验证**:在 RenderThread track 中检查 `DrawFrame` 切片的耗时分布。正常情况下 60fps 设备的 DrawFrame 应该在 16ms 以内,120fps 设备应该在 8ms 以内。超过阈值的 DrawFrame 就是掉帧
 - **内存占用验证**:在 Trace 的 `memtrack` track 或 `Process Stats` 中查看目标进程的内存使用情况,与测试报告中的内存数据做交叉验证
 
-如果在 Trace 中发现的数据与基准测试报告不一致,通常意味着测试环境存在未被控制的变量--比如后台有大量 I/O 活动、系统正在进行 dex2oat 编译等。这时需要回到环境标准化步骤,排查干扰源。
+如果在 Trace 中发现的数据与基准测试报告不一致，通常说明测试环境存在未被控制的变量——比如后台有大量 I/O 活动、系统正在进行 dex2oat 编译等。这时需要回到环境标准化步骤，排查干扰源。
 
 ## 与其他机制的关系
 
 性能测试最佳实践不是孤立的,它与本书其他章节有紧密的关联:
 
 - **§14.6 自动化测试工具**:介绍了 Macrobenchmark、Microbenchmark、UI Automator 等具体工具的使用方法。本节侧重的是"怎么用好这些工具"的方法论层面
-- **§15.5 线上性能监控**:基准测试是实验室环境下的测量,线上监控是真实用户环境下的测量。两者互补--基线管"回归检测",线上管"真实体验"
+- **§15.5 线上性能监控**：基准测试是实验室环境下的测量，线上监控是真实用户环境下的测量。两者互补——基线管「回归检测」，线上管「真实体验」
 - **§8.3 启动优化策略**:冷启动是最核心的性能指标之一,本节讲怎么可靠地测量启动时间,§8.3 讲怎么优化它
 - **§13.2 Trace 抓取**:当基准测试发现性能退化时,需要用 Trace 定位根因。两章配合使用
 - **§5.5 Thermal 管控**:理解温控机制才能理解为什么温度控制对测试如此重要
@@ -574,7 +571,7 @@ Firebase Performance Monitoring(FPM)是 Google 提供的线上性能监控服务
 
 ### "性能测试应该用最高端的设备"
 
-恰恰相反。如果你的目标用户中高端设备只占 20%,那在旗舰机上跑出来的数据对 80% 的用户都没有参考价值。选择测试设备时应该优先覆盖主力用户群的设备档次。
+不应该只看最高端设备。如果目标用户中高端设备只占 20%，旗舰机上跑出来的数据对 80% 的用户都没有参考价值。选择测试设备时应该优先覆盖主力用户群的设备档次。
 
 ### "一次测试就够了,多跑几次浪费时间"
 
@@ -582,11 +579,11 @@ Firebase Performance Monitoring(FPM)是 Google 提供的线上性能监控服务
 
 ### "CI 里跑的基准测试和本地跑的不一致,一定是 CI 有问题"
 
-不一定。首先检查 CI 和本地的测试环境差异--设备是否相同、系统版本是否一致、温度条件是否接近。如果环境确认一致但结果仍然不一致,可能是因为 CI 的并行执行导致了额外的资源竞争。CI 基准数据更适合看趋势,而不是看绝对值。
+不一定。先检查 CI 和本地的测试环境差异——设备是否相同、系统版本是否一致、温度条件是否接近。如果环境确认一致但结果仍然不一致，可能是 CI 并行执行带来了额外的资源竞争。CI 基准数据更适合看趋势，不适合看绝对值。
 
 ### "性能基线不需要更新"
 
-性能基线不是一成不变的。当 App 引入了重大的新功能(比如全新的首页设计),旧的基线可能就不再适用了。每次大版本发布后,都应该重新建立基线。但要注意:新基线和旧基线之间要有清晰的交接记录,避免"基线漂移"--每次重新建基线都放宽一点标准,几个版本下来标准就形同虚设了。
+性能基线不是一成不变的。当 App 引入了重大的新功能（比如全新的首页设计），旧的基线可能就不再适用了。每次大版本发布后，都应该重新建立基线。但要注意：新基线和旧基线之间要有清晰的交接记录，避免「基线漂移」——每次重新建基线都放宽一点标准，几个版本下来标准就形同虚设了。
 
 ### "自动化测试可以替代手动性能分析"
 

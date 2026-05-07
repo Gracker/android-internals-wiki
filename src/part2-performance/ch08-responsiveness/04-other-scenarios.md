@@ -5,8 +5,8 @@ section: "8.4"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-27"
-reviewed_by: openclaw-task6-task6
+reviewed_date: "2026-05-07"
+reviewed_by: openclaw-task6
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-27"
 last_verified_against: "AOSP android-16.0.0_r1 InputTransport/InputDispatcher/ViewRootImpl + AndroidX ViewPager2/Fragment release notes + Task9 deep review 2026-04-27"
@@ -29,8 +29,8 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_state: pending
@@ -42,7 +42,7 @@ task2b_result: fixed
 last_task2b_at: "2026-05-07T17:40:00+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
-review_notes: "2026-05-07 task2b rework: P1 Binder线程池待验证已闭环（Android 16 默认16线程，mmap ~1MB 不变）。"
+review_notes: "2026-05-07 task2b rework: P1 Binder 线程池待验证项已处理完成（Android 16 默认 16 线程，mmap 约 1MB 不变）。"
 
 ---
 
@@ -78,7 +78,7 @@ review_notes: "2026-05-07 task2b rework: P1 Binder线程池待验证已闭环（
 
 但启动只是用户与 App 交互的第一步。在日常使用中，用户花时间最多的是**页面跳转、Tab 切换、按钮点击、搜索输入**这些高频操作。每一个场景都有自己独特的性能瓶颈和分析方法。如果我们只优化了冷启动，却忽略了页面切换时那个几百毫秒的白屏、搜索时每次按键都触发的卡顿，用户的体验感知仍然很差。
 
-本节要做的，就是把启动之外最常见的四个响应速度场景逐一拆解：它为什么慢、在 Trace 中怎么看、怎么优化。
+本节要做的，是把启动之外最常见的四个响应速度场景逐一说明：它为什么慢、在 Trace 中怎么看、怎么优化。
 
 ---
 
@@ -150,11 +150,13 @@ public class PreloadFragmentFactory extends FragmentFactory {
 }
 ```
 
+代码里的关键点是不要在 `instantiate()` 内做同步查询；`FragmentFactory` 只接收已经准备好的轻量参数。
+
 **2. 使用 postponeEnterTransition()。** 当 Fragment 包含异步加载内容（如网络图片、RecyclerView 数据）时，先调用 `postponeEnterTransition()` 延迟转场动画，等数据加载完成后再调用 `startPostponedEnterTransition()`。这样用户看到的转场动画背后是已经准备好的内容，而不是加载中的空白。
 
 [已验证: 官方文档, developer.android.com/guide/fragments]
 
-**3. ViewStub 延迟加载。** 对于 Fragment 中不是立刻需要的部分（如错误页、空状态页、高级设置面板），用 `ViewStub` 占位，到真正需要时再 inflate。
+**3. ViewStub 延迟加载。** 对于 Fragment 中不是立刻需要的部分（如错误页、空状态页、高级设置面板），用 `ViewStub` 占位，到需要时再 inflate。
 
 **4. 避免 commitNow() 的滥用。** `commitNow()` 是同步执行事务，会立即执行所有操作。在 `onCreate()` 中调用没问题，但如果在 `onResume()` 之后调用，可能会与系统正在执行的 Fragment 状态切换产生冲突，导致 `IllegalStateException`。
 
@@ -224,7 +226,7 @@ class MyFragment : Fragment() {
 - 对不立即显示的内容使用 `ViewStub`
 - 对图片使用缩略图占位，异步加载高清图
 
-**数据预取。** 如果 Tab 页的内容来自网络或数据库，可以在 ViewPager2 的 `OnPageChangeCallback.onPageSelected()` 中提前发起下一个 Tab 的数据请求。这样当用户真正切换过去时，数据可能已经就绪。
+**数据预取。** 如果 Tab 页的内容来自网络或数据库，可以在 ViewPager2 的 `OnPageChangeCallback.onPageSelected()` 中提前发起下一个 Tab 的数据请求。这样当用户切换过去时，数据可能已经就绪。
 
 ```kotlin
 viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
@@ -329,7 +331,7 @@ Trace.endSection();
 
 ### 防抖（Debounce）：搜索响应的基石
 
-防抖的核心思想很简单：**用户连续输入时，只有停下来之后的最后一次输入才触发搜索。** 实现方式是给输入事件流加一个时间窗口——在这个窗口内如果有新的输入，计时器就重置。
+防抖的规则是：**用户连续输入时，只有停下来之后的最后一次输入才触发搜索。** 实现方式是给输入事件流加一个时间窗口——在这个窗口内如果有新的输入，计时器就重置。
 
 以 Kotlin Flow 为例：
 
@@ -348,7 +350,7 @@ viewModelScope.launch {
 }
 ```
 
-这里每个操作符都有明确的职责。`debounce(300L)` 确保快速输入时不会每个字符都发请求。`distinctUntilChanged()` 避免用户删除再重输入相同内容时的重复搜索。`flatMapLatest` 是最关键的——当用户输入 "app" 之后又输入了 "apple"，"app" 的搜索请求会被自动取消，只有 "apple" 的结果会返回。
+每个操作符都有明确职责。`debounce(300L)` 确保快速输入时不会每个字符都发请求。`distinctUntilChanged()` 避免用户删除再重输入相同内容时的重复搜索。`flatMapLatest` 负责取消旧请求——当用户输入 "app" 之后又输入了 "apple"，"app" 的搜索请求会被自动取消，只有 "apple" 的结果会返回。
 
 [已验证: 官方文档, developer.android.com/kotlin/flow]
 
