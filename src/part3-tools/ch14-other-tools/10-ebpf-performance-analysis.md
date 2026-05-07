@@ -62,7 +62,7 @@ repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
 task9_review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。"
 task2b_rework_note_2: "2026-05-07 2B修复: Android eBPF起始版本从Android 10修正为Android 9(网络流量监控/xt_qtaguid替代); applicable_versions已更新"
-status: "ready-for-review"
+status: "finalized"
 pipeline_stage: ready-to-publish
 task9_state: "pass"
 task9_result: "pass-tech-review"
