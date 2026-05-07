@@ -7318,7 +7318,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T11:41:58+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T17:47:02.309776",
+      "completed_reason": "P1 Binder线程池待验证已闭环（Android 16 默认16线程/mmap ~1MB，源码已验证）；写回已验证结论并删除待验证标记"
     },
     {
       "section": "18.6",
@@ -8043,7 +8045,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T10:40:29+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T17:47:02.309776",
+      "completed_reason": "P1 P90/FPS分位语义已修正（FPS改用P10/慢帧占比）；Macrobenchmark自动稳定化已改为IsolationActivity+sustained perf mode源码级描述"
     },
     {
       "section": "7.1",

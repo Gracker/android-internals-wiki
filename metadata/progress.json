@@ -47,6 +47,25 @@
         "2.7 P1: Cache invalidation narrowed to dirty+redraw",
         "13.7 P1: Standard Library module names corrected to dot-separated"
       ]
+    },
+    {
+      "date": "2026-05-07T17:47:16.435445",
+      "sections": [
+        "8.4",
+        "15.6"
+      ],
+      "sections_title": [
+        "其他响应速度场景",
+        "性能测试最佳实践"
+      ],
+      "sources": [
+        "task9-deep-tech-review",
+        "task9-deep-tech-review"
+      ],
+      "fixes": [
+        "§8.4: P1 Binder线程池待验证标记已删除，写入Android 16确认结论（DEFAULT_MAX_BINDER_THREADS=16，BINDER_VM_SIZE不变）",
+        "§15.6: P90/FPS分位语义修正（耗时类用P90，FPS改用P10/慢帧占比）；Macrobenchmark自动稳定化改为IsolationActivity+sustained perf mode源码级描述"
+      ]
     }
   ],
   "task6_review_history": [
@@ -207,5 +226,6 @@
         }
       ]
     }
-  ]
+  ],
+  "task2b_last_run": "2026-05-07T17:47:16.435445"
 }
