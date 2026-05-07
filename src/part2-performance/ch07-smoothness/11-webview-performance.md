@@ -26,9 +26,9 @@ sources:
 reviewed_date: "2026-05-07"
 reviewed_by: openclaw-task6
 task6_result: needs-rework
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task2b_state: fixed
 task2b_result: fixed
 last_task6_at: "2026-05-07T08:20:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-08-review.md"
@@ -38,7 +38,7 @@ task9_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-30"
 last_task9_at: "2026-04-30T10:31:41+08:00"
-last_task2b_at: "2026-05-07T07:47:17+08:00"
+last_task2b_at: "2026-05-07T08:42:28"
 ---
 
 # 7.11 WebView 渲染性能与优化
@@ -502,24 +502,6 @@ WebView 发起的网络请求可以在 Perfetto 的 Network Track 中观察到�
 - **功耗管理（§8.1）**：WebView 的 GPU 线程持续活跃会导致 GPU 功耗上升。复杂的 CSS 动画和频繁的页面重绘是 WebView 场景下功耗问题的常见原因。
 - **Perfetto 高级用法（§13.7）**：WebView 的多线程分析需要用到 Perfetto 的高级功能（自定义 Trace Event、SQL 查询、多进程关联）。
 
-## 常见问题与误区
-
-### 「WebView 性能差，应该用原生替代」
-
-不完全对。WebView 的性能瓶颈通常不在 WebView 本身，而在页面内容的质量和 App 的使用方式。如果页面内容本身优化得当（避免强制布局重算、使用 passive 事件监听、控制 compositing layers 数量），WebView 的滚动流畅度可以接近原生。只有在需要高性能交互（如实时绘图、游戏）的场景下，原生替代才是必要的选择。
-
-### 「Chrome Custom Tabs 可以完全替代 WebView」
-
-Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展示一篇新闻），但不适合深度嵌入 App 的混合页面。CCT 无法自定义 UI 布局（只能自定义工具栏颜色和动画），无法与 App 进行 JS Bridge 通信，也无法嵌入到 App 的 View 树中。选择依据：如果页面需要与 App 交互 → WebView；如果只是展示外部内容 → Custom Tabs。
-
-### 「WebView destroy() 会释放所有内存」
-
-`destroy()` 会释放当前 WebView 的 Java 层资源和大部分与实例绑定的 native 资源，但 browser-side 的共享 provider 状态不会因为销毁单个实例就完全回到“未初始化”状态。App 中只要还有其他 WebView 实例或共享资源存活，宿主进程里的 WebView provider / service 状态就会继续保留；`CookieManager`、HTTP 缓存这类 provider 级共享服务的生命周期也长于单个 WebView。
-
-### 「evaluateJavascript() 是同步的」
-
-这是一个常见误解。`evaluateJavascript()` 是异步 API——调用后立即返回，JS 执行结果通过 `ValueCallback` 异步回调。但由于它必须在 UI 线程调用且回调也在 UI 线程，很多开发者错误地用同步等待模式来使用它，导致 ANR。正确做法是完全基于回调/异步模式。
-
 ## WebView Renderer 进程崩溃恢复
 
 当 WebView 的 Renderer 进程因 OOM 或 crash 退出时，宿主 App 进程不会崩溃，但 WebView 会显示白屏。`WebViewClient.onRenderProcessGone()` 是恢复的核心回调（API 26+）。
@@ -665,6 +647,24 @@ Renderer 进程崩溃在 Perfetto 中的表现：Renderer 进程所有 slice 在
 
 [已验证: 来源见 Chromium `android_webview/docs/architecture.md`、`chromium/src/base/trace_event/README.md`、`perfetto.dev/docs/analysis/webview-tracing`]
 
+
+## 常见问题与误区
+
+### 「WebView 性能差，应该用原生替代」
+
+不完全对。WebView 的性能瓶颈通常不在 WebView 本身，而在页面内容的质量和 App 的使用方式。如果页面内容本身优化得当（避免强制布局重算、使用 passive 事件监听、控制 compositing layers 数量），WebView 的滚动流畅度可以接近原生。只有在需要高性能交互（如实时绘图、游戏）的场景下，原生替代才是必要的选择。
+
+### 「Chrome Custom Tabs 可以完全替代 WebView」
+
+Custom Tabs 适合展示外部 URL 的场景（如打开一个帮助页面、展示一篇新闻），但不适合深度嵌入 App 的混合页面。CCT 无法自定义 UI 布局（只能自定义工具栏颜色和动画），无法与 App 进行 JS Bridge 通信，也无法嵌入到 App 的 View 树中。选择依据：如果页面需要与 App 交互 → WebView；如果只是展示外部内容 → Custom Tabs。
+
+### 「WebView destroy() 会释放所有内存」
+
+`destroy()` 会释放当前 WebView 的 Java 层资源和大部分与实例绑定的 native 资源，但 browser-side 的共享 provider 状态不会因为销毁单个实例就完全回到“未初始化”状态。App 中只要还有其他 WebView 实例或共享资源存活，宿主进程里的 WebView provider / service 状态就会继续保留；`CookieManager`、HTTP 缓存这类 provider 级共享服务的生命周期也长于单个 WebView。
+
+### 「evaluateJavascript() 是同步的」
+
+这是一个常见误解。`evaluateJavascript()` 是异步 API——调用后立即返回，JS 执行结果通过 `ValueCallback` 异步回调。但由于它必须在 UI 线程调用且回调也在 UI 线程，很多开发者错误地用同步等待模式来使用它，导致 ANR。正确做法是完全基于回调/异步模式。
 
 ## 参考资料
 
