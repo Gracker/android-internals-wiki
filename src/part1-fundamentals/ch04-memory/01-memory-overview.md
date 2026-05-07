@@ -42,11 +42,11 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-07"
@@ -115,7 +115,7 @@ Android 在 Linux 内核的基础上做了几件特别的事情：
 
 **App 侧 trim 回调和系统侧杀进程是两条路径。** `onTrimMemory()` 属于 `ComponentCallbacks2` 回调，由 framework 在合适的生命周期和内存压力点通知 `Application`、`Activity`、`Service` 等组件，让 App 主动释放缓存。`lmkd` 不会直接向 App 调 `onTrimMemory()`；当回收压力继续升高时，它会按 kill 策略直接结束目标进程。API 34 起，`TRIM_MEMORY_RUNNING_MODERATE`、`TRIM_MEMORY_RUNNING_LOW`、`TRIM_MEMORY_RUNNING_CRITICAL`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 这些等级已经不再投递给 App。
 
-Android 17（API 37）引入了 MemoryLimiter 硬限额机制。当应用 PSS 超过系统分配的配额时，进程会被直接终止，`ApplicationExitInfo` 中会记录 `MemoryLimiter` 原因。这一机制从依赖 `onTrimMemory` 的自觉释放转为强制配额审计，意味着内存治理从"建议"变成了"硬约束"。
+Android 17（API 37）引入了 app memory limits 硬限额机制。当应用的匿名交换页（AnonSwap）用量超过系统分配的配额时，进程会被终止。`ApplicationExitInfo.getReason()` 返回 `REASON_OTHER`，`getDescription()` 返回的字符串包含 `"MemoryLimiter:AnonSwap"`——不是独立的 `MemoryLimiter` reason code。开发者还可以通过 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` 在命中限额时触发 heap dump，用于事后分析。配额审计口径以 AOSP `ActivityManagerService` 和官方行为变更文档为准，PSS、RSS、AnonSwap 在 lmkd / kernel / framework 各层含义不同，不要混用。
 
 **cgroup 约束。** Android 10 起把 cgroup 配置统一归到 `cgroups.json` / `task_profiles.json` 这层抽象。具体 memory controller 字段要分 v1 / v2 看：`MemLimit` 映射 v1 `memory.limit_in_bytes`、v2 `memory.max`；`MemSoftLimit` 映射 v1 `memory.soft_limit_in_bytes`、v2 `memory.low`。`memory.pressure_level` 仍是 v1 接口，不能和 `memory.max` / `memory.low` 当成同一条 v2 路径。
 
@@ -509,9 +509,11 @@ ZRAM:  123,456K physical used for 456,789K in swap (500,000K total swap)
 
 ### 内存相关的 Track
 
-- **`android.process_meminfo`**：按进程展示 PSS、RSS 等数据的变化曲线。这是看内存增长趋势的主要数据源。
-- **`linux.counter` / `linux.process_counter`**：可以展示系统级的内存计数器（如 `MemAvailable`、`SwapUsed`）。
-- **`android.memory_snapshot`**：Java Heap 的快照数据（需要在抓 Trace 时启用 Java Heap Dump）。
+- **`linux.process_stats`**：按进程周期性采集 `mem.rss`、`mem.swap` 等 per-process 计数器，是看内存增长趋势的主要数据源。Perfetto UI 中表现为进程级别的内存轨道，SQL 层通过 `counter` + `process_counter_track` 表查询。
+- **`linux.sys_stats`**：采集 `/proc/meminfo` 中的系统级内存指标（`MemAvailable`、`SwapUsed`、`Cached` 等），用于观察系统整体内存压力。
+- **`android.java_hprof` / `android.java_hprof.oom`**：Java Heap Dump 数据源，需要在 TraceConfig 中显式启用，触发后生成 heap dump 用于离线分析。
+
+注意区分数据源名称与 UI 轨道名称：上面列出的是 TraceConfig `data_sources` 配置项，Perfetto UI 中的轨道名称和 SQL 表名不一定与数据源同名。
 
 ### 常见模式识别
 
