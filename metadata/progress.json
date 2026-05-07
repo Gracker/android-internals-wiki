@@ -1,36 +1,36 @@
 {
-  "generated_at": "2026-05-07T15:27:55+08:00",
+  "generated_at": "2026-05-07T16:29:05+08:00",
   "state_machine_version": "v2",
-  "total_sections": 205,
+  "total_sections": 210,
   "metrics": {
-    "total_sections": 205,
-    "last_updated": "2026-05-07T15:27:55+08:00",
+    "total_sections": 210,
+    "last_updated": "2026-05-07T16:29:05+08:00",
     "pipeline_stage_counts": {
-      "ready-to-publish": 131,
-      "task2b_pending": 70,
       "unknown": 1,
+      "ready-to-publish": 132,
+      "task2b_pending": 74,
       "task6_pending": 1,
       "ready-for-review": 2
     },
     "task6_state_counts": {
-      "reviewed": 202,
       "unknown": 2,
+      "reviewed": 207,
       "revisiting": 1
     },
     "task9_state_counts": {
-      "reviewed": 201,
-      "pass": 2,
-      "unknown": 2
+      "unknown": 2,
+      "reviewed": 206,
+      "pass": 2
     },
     "task2b_state_counts": {
-      "fixed": 132,
-      "pending": 69,
-      "unknown": 4
+      "unknown": 4,
+      "fixed": 133,
+      "pending": 73
     },
     "status_counts": {
-      "finalized": 131,
-      "ready-for-review": 73,
-      "unknown": 1
+      "unknown": 1,
+      "finalized": 132,
+      "ready-for-review": 77
     }
   },
   "task2b_rework_history": [
@@ -124,6 +124,24 @@
       "rework_count": 0,
       "skipped": [],
       "review_log": "logs/review/2026-05-07-16-review.md"
+    }
+  ],
+  "task9_review_history": [
+    {
+      "timestamp": "2026-05-07T16:29:05+08:00",
+      "sections": [
+        "2.7",
+        "13.7"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "needs-rework",
+      "p0": 1,
+      "p1": 1,
+      "p2": 6,
+      "p3": 0,
+      "queue_items_added": 2,
+      "auto_finalized": [],
+      "review_log": "logs/deep-review/2026-05-07-16-deep-review.md"
     }
   ]
 }

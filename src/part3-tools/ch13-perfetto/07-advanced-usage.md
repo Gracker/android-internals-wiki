@@ -27,11 +27,11 @@ tags:
   - android
   - perfetto
   - research
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task9_result: needs-rework
@@ -39,12 +39,12 @@ task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task2b_at: "2026-05-07T15:44:35+08:00"
 task2b_result: fixed
-last_task9_at: "2026-05-07T15:27:55+08:00"
-task9_review_notes: "2026-05-07 Task9 15:27：needs-rework。P0 1 / P1 1 / P2 1。Top: L471-L474 android.startup.startups 查询"
+last_task9_at: "2026-05-07T16:29:05+08:00"
+task9_review_notes: "2026-05-07 Task9 16:20：needs-rework。P0 1 / P2 3。Top: L743 RenderPassDataSource::Register() 缺 DataSourceDescriptor，与 Perfetto SDK API 签名不符。"
 last_task6_at: "2026-05-07T16:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-16-review.md"
 task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理结构性元叙述/承接句 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-07-15-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-07-16-deep-review.md"
 ---
 
 
