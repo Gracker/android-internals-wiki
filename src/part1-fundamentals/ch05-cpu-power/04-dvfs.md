@@ -272,7 +272,9 @@ static void sugov_get_util(struct sugov_cpu *sg_cpu) {
 
 [已验证: AOSP android15-6.6 & android16-6.12, kernel/sched/cpufreq_schedutil.c — `sugov_get_util()` / 官方文档, kernel.org — schedutil 1.25 headroom]
 
-对于实时（RT）和 Deadline 调度类的任务，schedutil 的策略更直接：将频率拉到最高，确保实时任务的执行不受影响。
+对于实时（RT）和 Deadline 调度类的任务，schedutil 的策略取决于 uclamp 是否启用。Android 设备上 uclamp 通常已开启（top-app `uclamp_min` 由 ActivityManager 设置），此时 RT 任务受 `uclamp_min` / `uclamp_max` 约束，不会无条件拉到最高频率。只有 `uclamp` 未启用时，schedutil 才会在 RT runnable 的 CPU 上直接返回 `max`。Deadline 调度类通过 `cpu_bw_dl` 提供带宽下限和饱和判断，影响目标频率——饱和时到 `max`，未饱和时按带宽比例贡献。`effective_cpu_util()` 会汇总 CFS、RT、DL、IRQ 各部分的利用率，最终由 `uclamp` / `schedutil` 计算频率目标，不存在 RT/DL 无条件 `fmax` 的单一策略。
+
+[已验证: android15-6.6 kernel/sched/core.c:7605-7679 effective_cpu_util()；android16-6.12 kernel/sched/fair.c:8380-8414]
 
 #### schedutil 的调频速率限制
 

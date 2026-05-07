@@ -42,10 +42,10 @@
       "path": "https://developer.android.com/jetpack/androidx/releases/tracing"
     }
   ],
-  "pipeline_stage": "task2b_pending",
+  "pipeline_stage": "task6_pending",
   "task6_state": "revisiting",
-  "task9_state": "reviewed",
-  "task2b_state": "pending",
+  "task9_state": "pending",
+  "task2b_state": "fixed",
   "reviewed_by": "openclaw-task6",
   "reviewed_date": "2026-05-07",
   "task6_result": "pass-light-edit",
@@ -54,7 +54,7 @@
   "task9_reviewed_by": "openclaw-task9",
   "last_task9_at": "2026-05-07T21:28:11+08:00",
   "task2b_result": "fixed",
-  "last_task2b_at": "2026-05-07T14:48:15+08:00",
+  "last_task2b_at": "2026-05-07T21:47:07+08:00",
   "repaired_date": "2026-04-25",
   "repaired_by": "openclaw-task2b",
   "task9_review_notes": "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。 | 2026-05-07 21:27 Task9 deep-review: needs-rework。P0 1 / P1 3 / P2 0。Top: API31+ tracing 内联/JNI 路径事实错误；协程修正示例仍可能跨挂起点或阻塞主线程；executor/mainHandler 示例异常路径仍可能遗留 async span。",
@@ -161,26 +161,26 @@ void renderHomeFeed(List<FeedItem> items) {
 
 `Trace.beginSection()` / `Trace.endSection()` 的单次调用开销取决于平台和字符串长度，大致范围如下：
 
-| 操作 | 典型耗时（trace 已启用） | 说明 |
+| 操作 | 量级（trace 已启用） | 说明 |
 |---|---|---|
-| `beginSection`（短名称，<32 字符） | 200-500ns | API 31+ 内联路径；API 30 及以下多一次 JNI transition |
-| `beginSection`（长名称，>64 字符） | 500-1000ns | 含字符串拷贝 + ftrace write 开销 |
-| `endSection` | 100-300ns | 无字符串参数 |
-| `beginAsyncSection` / `endAsyncSection` | 200-400ns | 含 int cookie 写入 |
-| trace disabled fast path | <50ns | 单次布尔判断即返回，生产环境无 trace 时几乎零开销 |
+| `beginSection`（短名称） | 亚微秒级 | 含 `@FastNative` JNI 调用 + atrace tag 检查 + ftrace write；具体耗时因 SoC、ftrace buffer 状态、字符串长度而异 |
+| `beginSection`（长名称） | 微秒级上下 | 字符串拷贝与 ftrace write 随名称长度线性增长 |
+| `endSection` | 百纳秒级 | 无字符串参数，仅 tag 检查 + ftrace write |
+| `beginAsyncSection` / `endAsyncSection` | 亚微秒级 | 含 int cookie 写入，与 beginSection 处于同一量级 |
+| trace disabled fast path | 纳秒级 | 平台层 `isTagEnabled()` 布尔短路即返回，生产环境无 trace 时几乎零开销 |
 
-> 以上数据来自 Pixel 8 / Android 15 / 桌面 microbenchmark 单线程测量，不同 SoC、Android 版本和 ftrace buffer 状态下会有差异。读者可基于 `androidx.benchmark:benchmark-micro-junit4` 自行复测。
+> 量级来自公开文档与平台源码行为分析。具体数值因设备、Android 版本、ftrace buffer 状态而异；读者可用 `androidx.benchmark:benchmark-micro-junit4` 在目标设备上复测。
 
 开销来自两部分：
 
 1. **字符串分配**：每次 `beginSection` 都会在 native 层做一次 `write(fd, ...)` 系统调用，把 `B|<pid>|<name>` 写入 `trace_marker`。字符串越长，系统调用耗时越高。
 2. **ftrace ring buffer 写入**：写入 per-CPU ring buffer 本身很快（约 100ns），但在高并发场景下 buffer 溢出会触发额外的锁竞争。
-3. **JNI 转换开销（API 30 及以下）**：`androidx.tracing` 1.2 之前，以及 API 31 以下的平台，每次 `beginSection()` 都要经过 JNI native 调用。单次 JNI transition 约 30-100ns，叠加字符串拼接时可能触发额外 GC。API 31+ 在 AndroidX 1.2+ 走内联优化路径，跳过 JNI，开销降至接近纯 native 调用。在热路径高频打标场景下，API 30 及以下的 JNI 开销累积不可忽略——`onBindViewHolder` 里每帧 20 次 trace 调用，JNI 部分额外消耗约 1-2μs，在 120Hz 设备上约占帧预算 0.01-0.02%。加上字符串分配和 ftrace write，单次完整 trace 调用约 300-700ns，20 次合计约 6-14μs，占 120Hz 帧预算（8.33ms）的 0.07-0.17%。
+3. **AndroidX 包装层与平台路径**：`androidx.tracing` 1.3.0 的 `Trace.beginSection(label)` 最终调用 `android.os.Trace.beginSection(label.truncatedTraceSectionLabel())`，平台层再经 `isTagEnabled(TRACE_TAG_APP)` 检查和 `nativeTraceBegin()`（标注 `@FastNative`）写入 atrace。无论 API 级别如何，调用链都经过 JNI；AndroidX 1.2 的变化是 lazy string/cookie 的 `trace()` / `traceAsync()` 扩展函数以及 begin 失败时自动跳过 end，不是"API 31+ 跳过 JNI"。在热路径高频打标场景下，单次完整 `beginSection` 调用（含字符串处理、tag 检查、JNI transition、ftrace write）约几百纳秒到一微秒，`onBindViewHolder` 里每帧 20 次 trace 调用约 6-14μs，占 120Hz 帧预算（8.33ms）的 0.07-0.17%。
 
 基于这些数据，几个实用边界：
 
 - **热路径谨慎打标**：如果某段代码在一帧内被调用超过 1000 次（如 `onDraw` 内的循环），不要在里面放 `beginSection`。把 trace 提到循环外面，标注整体耗时即可。
-- **避免动态字符串拼接**：`"item_" + id` 这种写法会多一次 `StringBuilder` 分配 + `toString()` + native 字符串拷贝。在 `onBindViewHolder` 里每帧调用 20 次时，字符串分配带来的 GC 压力可能比 trace 本身还大。改用静态常量可以完全消除这笔开销：
+- **避免动态字符串拼接**：`"item_" + id` 这种写法会多一次 `StringBuilder` 分配 + `toString()` + native 字符串拷贝。高频调用时字符串分配带来的 GC 压力可能比 trace 本身还大。改用静态常量可以完全消除这笔开销：
 
 ```kotlin
 companion object {
@@ -188,7 +188,7 @@ companion object {
 }
 // 使用时直接引用 TAG_BIND，零分配
 ```
-- **Release 包保留必要的 trace**：少量稳定的 trace slice（每帧 < 20 个）在 120Hz 下占用不到 0.5% 的帧预算，对用户无感知。
+- **Release 包保留必要的 trace**：少量稳定的 trace slice（每帧 < 20 个）在 120Hz 下只占帧预算的小比例，对用户无感知。
 
 不适合加 trace 的场景：
 
@@ -232,7 +232,7 @@ trace 标注代码可以留在 Release 包里，但能不能在 Perfetto 里看�
 | API 18-23 | `beginSection` 可用，但只支持 debuggable 进程 | 非 debuggable 进程无法使用自定义 slice | `Trace.forceEnableAppTracing()` 在 API 18 加入，但实际效果依赖 ROM 实现 |
 | API 24-28 | 只有 debuggable 进程默认能记录 app trace | 非 debuggable 进程要在启动早期调用 `Trace.forceEnableAppTracing()` | `trace_marker` fd 访问权限受 SELinux 策略限制 |
 | API 29-30 | debuggable 和 profileable 进程默认可见 | 非 debuggable 且未声明 `profileable` 的进程，仍要调用 `Trace.forceEnableAppTracing()` | API 29 新增 `beginAsyncSection()` / `endAsyncSection()`，支持跨线程 trace 配对 |
-| API 31+ | app tracing 在所有应用里默认开启 | `Trace.forceEnableAppTracing()` 在这一段没有实际效果 | `androidx.tracing` 在 API 31+ 可直接调用平台 `Trace` 方法，减少 JNI overhead；`<profileable enabled=false/>` 的进程可能仍有限制 |
+| API 31+ | app tracing 在所有应用里默认开启 | `Trace.forceEnableAppTracing()` 在这一段没有实际效果 | `androidx.tracing` 直接调用平台 `android.os.Trace`；`<profileable enabled=false/>` 的进程可能仍有限制 |
 | API 33+ | 同上 | 无 | Perfetto 默认启用 `android.os.Trace` 数据源采集 |
 | API 35+ | 同上 | 无 | ProfilingManager 系统触发采样可在 App 不主动 trace 时自动抓取 |
 
@@ -300,7 +300,7 @@ trace("Home#loadData") {
 
 Perfetto 中这条 slice 会从调用开始一直延伸到协程恢复后执行完毕。挂起期间主线程去跑了其他任务（measure、draw、input handling），但这些工作全部被包在 `Home#loadData` 这条 slice 内。读 trace 的人会误以为"加载耗时 200ms"，网络请求只占 50ms，剩下的 150ms 是主线程在挂起期间执行的无关工作。
 
-**✅ 修正：每个线程的同步工作单独标记，跨线程逻辑用 async trace 配对**
+**✅ 修正：同步 slice 只包住线程内阻塞工作，跨线程逻辑用 async trace 配对**
 
 ```kotlin
 val cookie = nextCookie.getAndIncrement()
@@ -308,15 +308,15 @@ Trace.beginAsyncSection("Home#loadData", cookie)
 
 viewModelScope.launch {
     try {
-        // I/O 线程：同步 slice 标记实际网络 + 解析耗时
-        val data = trace("Home#fetchData") {
-            repository.fetchData()
-        }
-        withContext(Dispatchers.Main) {
-            // 主线程：同步 slice 标记渲染耗时
-            trace("Home#renderData") {
-                adapter.submitList(data)
+        // 切到 I/O 线程，同步 slice 只包住该线程内的阻塞工作
+        val data = withContext(Dispatchers.IO) {
+            trace("Home#fetchData") {
+                repository.fetchDataBlocking()  // 阻塞式网络/解析调用
             }
+        }
+        // 回到主线程，同步 slice 只包住渲染
+        trace("Home#renderData") {
+            adapter.submitList(data)
         }
     } finally {
         // 无论成功、异常、取消都关闭 async span
@@ -325,7 +325,7 @@ viewModelScope.launch {
 }
 ```
 
-修正后，Perfetto 中 I/O 线程和主线程各有独立的同步 slice，async trace 把两端串成同一个业务 span。不会出现"一条 slice 吃掉整个线程时间线"的视图污染。
+修正后，`withContext(Dispatchers.IO)` 保证 `trace("Home#fetchData")` 在 I/O 线程内部执行，不跨挂起点；主线程的 `trace("Home#renderData")` 只覆盖 `submitList` 的同步部分。async trace 把两端串成同一个业务 span，不会出现同步 slice 跨挂起点导致的视图污染。
 
 跨线程任务要分两层标注：
 
@@ -342,22 +342,35 @@ private val nextCookie = AtomicInteger(1)
 fun loadFirstFeed() {
     val cookie = nextCookie.getAndIncrement()
     Trace.beginAsyncSection("Home#loadFirstFeed", cookie)
-    ioExecutor.execute {
-        try {
-            trace("Home#requestFirstFeed") {
-                val response = api.loadFirstFeed()
-                val items = parser.parse(response)
-                mainHandler.post {
-                    trace("Home#renderFirstFeed") {
-                        adapter.submitList(items)
+    try {
+        ioExecutor.execute {
+            try {
+                trace("Home#requestFirstFeed") {
+                    val response = api.loadFirstFeed()
+                    val items = parser.parse(response)
+                }
+                val posted = mainHandler.post {
+                    try {
+                        trace("Home#renderFirstFeed") {
+                            adapter.submitList(items)
+                        }
+                    } finally {
+                        // posted runnable 内无论成功/异常都关闭 async span
+                        Trace.endAsyncSection("Home#loadFirstFeed", cookie)
                     }
+                }
+                if (!posted) {
+                    // Handler 已退出（如 Activity 销毁），立即关闭 span
                     Trace.endAsyncSection("Home#loadFirstFeed", cookie)
                 }
+            } catch (e: Exception) {
+                // 网络/解析/executor 失败时关闭 async span
+                Trace.endAsyncSection("Home#loadFirstFeed", cookie)
             }
-        } catch (e: Exception) {
-            // 网络/解析失败时关闭 async span，避免未闭合 span 污染 trace
-            Trace.endAsyncSection("Home#loadFirstFeed", cookie)
         }
+    } catch (e: Exception) {
+        // executor.execute() 本身可能抛 RejectedExecutionException
+        Trace.endAsyncSection("Home#loadFirstFeed", cookie)
     }
 }
 ```
