@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-05-08T07:24:00+08:00",
+  "generated_at": "2026-05-08T07:36:49+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total_sections": 209,
-    "last_updated": "2026-05-08T07:24:00+08:00",
+    "last_updated": "2026-05-08T07:36:49+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 142,
@@ -665,6 +665,23 @@
         "5.5"
       ],
       "review_log": "logs/deep-review/2026-05-08-06-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T07:36:49+08:00",
+      "sections": [
+        "7.1"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "needs-rework",
+      "p0": 0,
+      "p1": 1,
+      "p2": 2,
+      "p3": 0,
+      "queue_items_added": 1,
+      "suggestions_added": 2,
+      "research_gaps_added": 0,
+      "auto_finalized": [],
+      "review_log": "logs/deep-review/2026-05-08-07-deep-review.md"
     }
   ],
   "rework_history": [
