@@ -23,26 +23,27 @@ sources:
   - type: aosp
     path: "android_webview/docs/ (chromium.googlesource.com)"
 review_notes: "2026-05-07 Task6 09:06：pass-light-edit。Task2B 已将后半部调研补丁移入发布稿收束前；本轮小修 6 处（代码围栏语言、16KB 边界术语、Viz/GPU service 表述），L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-07
-last_task9_at: "2026-05-07T09:35:55+08:00"
+task9_reviewed_date: "2026-05-07"
+last_task9_at: "2026-05-07T17:29:52+08:00"
 last_task2b_at: "2026-05-07T09:42:00+08:00"
 review_round: 3
-task9_review_notes: "2026-05-07 Task9 09:34：needs-rework。P0 1：Chromium WebView `AwGLFunctor.java` 源码路径不存在；P1 1：底部渲染路径重新把 WebView 写成固定 ASurfaceControl/BufferQueue → SF 路径，与 GLFunctor/HWUI 路径边界冲突；P2 1：render_process_gone Perfetto 事件待验证。"
+task9_review_notes: "2026-05-07 Task9 17:29：pass-tech-review。P0 0 / P1 0 / P2 4（均为既有 suggestions 或日志记录，本轮不重复写入）；自动晋升 finalized。"
 
-status: ready-for-review
+status: finalized
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 task2b_state: fixed
 last_task6_at: "2026-05-07T17:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-17-review.md"
 task2b_result: fixed
 task6_review_notes: "2026-05-07 Task6 17:07：Task2B 修复后写作复审；补充 render_process_gone Perfetto 事件待验证标注 1 处，frontmatter 更新；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-07-17-deep-review.md"
 ---
 
 # 7.11 WebView 渲染性能与优化
