@@ -1595,3 +1595,24 @@
 - **问题**：残留段落仍把 16KB page size 对 thermal throttling 的收益写成确定性结论，并包含 `thermal_monitor_notify()`、Android 16/17 thermal 管理等未在本节证据中补齐来源的断言；与前文已降级为研究假设的口径冲突。
 - **建议**：由 Task2B/Task9 按同设备 4KB/16KB A/B trace、AOSP 路径和官方文档复核；证据不足则删除该 AIW 段落或整体降级为研究假设。
 - **review 日志**：logs/review/2026-05-08-05-review.md
+
+## [Task9 Deep Review] 2.17 Frame Pacing Library 与帧节奏控制 — 2026-05-08
+- **类型**：交叉引用一致性
+- **位置**：L399 `详见 §16.4` / frontmatter `related_chapters`
+- **问题**：DeliQueue 的完整架构与 targetSdk 37 行为变更在 §16.5《Android 17 (API 37) 性能行为变更与适配方法》；§16.4 只在 kernel 6.12 系统级优化章节中简述 DeliQueue。当前引用会让读者跳到信息较少的章节。
+- **建议**：将正文“详见 §16.4”和 frontmatter `related_chapters` 中的 `16.4` 改为 `16.5`；如仍想保留系统级关联，可同时列 `16.4` 和 `16.5`，但 DeliQueue 深入解释应指向 §16.5。
+- **review 日志**：logs/deep-review/2026-05-08-05-deep-review.md
+
+## [Task9 Deep Review] 10.6 内存抖动与频繁 GC — 2026-05-08
+- **类型**：版本差异/交叉引用一致性
+- **位置**：L92-L94 / L381-L391 ART GC 版本边界
+- **问题**：本节把 Android 8-14 主要归为 CC / 分代 CC，把 Android 15 作为 CMC 主线起点；但 §4.3 已写明 `android-14.0.0_r1` 公开源码中已有 `kCollectorTypeCMC` 与 `mark_compact.cc`，更合适的全书口径是 Android 8-13 看 CC，Android 14/15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 之后再谈 Generational CMC。
+- **建议**：同步 §4.3 口径：Android 14/15 已进入 CMC 路径但不要写成 Generational CMC；Android 16 QPR2 是 Generational CMC 的正式公开节点；Android 17 默认状态继续保留 `[待验证]`，等待 release notes / ART flag / 设备配置确认。
+- **review 日志**：logs/deep-review/2026-05-08-05-deep-review.md
+
+## [Task9 Deep Review] 10.6 内存抖动与频繁 GC — 2026-05-08
+- **类型**：数据缺失
+- **位置**：L234 GC Events 频率阈值
+- **问题**：正文写 GC 图标“每秒超过 2-3 次”即可说明内存抖动，但这个阈值缺少设备、ART 版本、堆大小、刷新率、负载类型和应用基线。不同应用的正常 GC 频率差异很大，固定阈值容易误导排查。
+- **建议**：改成“显著高于该应用在同设备/同场景下的基线频率时需关注”；如保留 2-3 次/秒，标注它只是典型手机场景的经验提示，并补测试条件。
+- **review 日志**：logs/deep-review/2026-05-08-05-deep-review.md
