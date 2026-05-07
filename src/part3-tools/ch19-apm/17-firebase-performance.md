@@ -22,8 +22,8 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/network-traces"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -33,10 +33,12 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-27"
 last_task9_at: "2026-04-27T22:33:32+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-05-08"
 last_task2b_at: "2026-05-07T23:47:13+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
+last_task6_at: "2026-05-08T01:09:14+08:00"
+task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result: needs-rework 等待 Task9 复审。"
 
 ---
 # Firebase Performance
@@ -82,7 +84,7 @@ repaired_by: openclaw-task2b
 
 ## Firebase Performance 的定位
 
-Firebase Performance Monitoring 是托管型性能看板。它的长处是接入快、自动采集多、控制台开箱即用；短板是原始样本控制弱、字段合同弱、私有化能力弱，控制台还有处理延迟。
+Firebase Performance Monitoring 是托管型性能看板。它的长处是接入快、自动采集覆盖面广、控制台不需要自建；短板是原始样本控制弱、字段契约弱、私有化能力弱，控制台还有处理延迟。
 
 它适合中小团队先把启动、渲染、网络和少量业务 trace 建起来，再用 JankStats、Perfetto 或自建 APM 补深度诊断。把它当成秒级事故面板会踩空。
 
@@ -115,7 +117,7 @@ plugins {
 Manifest 开关要单独写清楚：
 
 - `firebase_performance_collection_enabled=false`：默认关闭采集，后面还可以按灰度策略再打开
-- `firebase_performance_collection_deactivated=true`：彻底停用；它会覆盖前一个开关，想恢复只能改 Manifest 重新发版
+- `firebase_performance_collection_deactivated=true`：完全停用；它会覆盖前一个开关，想恢复只能改 Manifest 重新发版
 
 ```xml
 <application>
@@ -184,11 +186,11 @@ Firebase Performance 的控制台时效必须单独写出来。官方 troublesho
 
 这直接决定了排查边界：Firebase 适合发布回归、版本比较、趋势监控，不适合秒级 incident 排查。
 
-近实时 SDK 的几分钟延迟叠加采样过滤，可能导致事故发生时控制台仍然显示正常。不要把 Firebase Performance 作为唯一的故障发现工具——线上告警体系必须有独立的实时业务错误码监控、自建 APM 或日志告警作为主链路，Firebase 只做补充验证和趋势观察。
+近实时 SDK 的几分钟延迟叠加采样过滤，可能导致事故发生时控制台仍然显示正常。不要把 Firebase Performance 作为唯一的故障发现工具——线上告警体系必须有独立的实时业务错误码监控、自建 APM 或日志告警作为主要告警路径，Firebase 只做补充验证和趋势观察。
 
 ## 和 JankStats、FrameMetrics、Android Vitals 的分工
 
-这几套工具都能谈“卡顿”，但口径不一样：
+这几套工具都会给出“卡顿”相关指标，但口径不一样：
 
 | 工具 | 主要样本 | 长处 | 不足 |
 | --- | --- | --- | --- |
@@ -205,7 +207,7 @@ Firebase Performance 适合下面这类团队：
 
 - 先把启动、渲染、网络盘面搭起来，再决定哪些流程要补自定义 trace
 - 产品主要面向 Google 生态可用地区
-- 团队更缺平台建设时间，不缺对聚合盘的接受度
+- 团队缺少平台建设时间，也能接受聚合盘的延迟和采样限制
 
 只靠 Firebase 不够的场景也很清楚：
 
@@ -213,4 +215,4 @@ Firebase Performance 适合下面这类团队：
 - 需要自托管、私有化或更严格的数据所有权控制
 - 需要还原原始 network stage、逐帧上下文、ANR 线程或 native 现场
 
-把它放在“第一层聚合盘”的位置最合适。深度诊断还是要靠 JankStats、Perfetto、服务端 trace 和更细的内部字段合同。
+把它放在“第一层聚合盘”的位置最合适。深度诊断还是要靠 JankStats、Perfetto、服务端 trace 和更细的内部字段契约。
