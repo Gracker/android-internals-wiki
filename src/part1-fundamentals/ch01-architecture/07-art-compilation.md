@@ -43,7 +43,7 @@ related_chapters:
 - '8.3'
 - '16.1'
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 review_round: 4
 last_task2b_at: "2026-05-06T09:49:49.432169"
 repaired_date: "2026-04-25"
@@ -53,10 +53,11 @@ last_task6_at: "2026-05-06T10:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-10-review.md"
 task6_review_notes: "2026-05-06 task6 revisiting review 10:10: pass-light-edit。清理第一人称、未标语言代码块和结构性引导语；L1/L2 通过，无新增 B 类大问题，转入 Task9 复审。"
 status: ready-for-review
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+last_task2b_at: "2026-05-07T08:42:28"
+task2b_state: fixed
 task9_reviewed_date: 2026-05-06
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T10:38:04+08:00"
@@ -397,7 +398,7 @@ AutoFDO 在 Pixel 设备上的量化效果：
 
 dex2oat 编译在以下场景可见：
 
-- **安装时**：`system_server` 进程中的 `dex2oat` 子进程
+- **安装时**：`system_server` / ART Service 发起 dexopt 请求，经 `installd`（或新版 ART Service / `artd` 路径）触发 `dex2oat`；Trace 中直接搜索 `dex2oat` 进程
 - **后台优化**：后台编译服务（Android 13 及以下为 `bg-dexopt`，Android 14+ 为 ART Service `MaintenanceJobs`）
 - **OTA 后**：系统更新后的批量 recompile
 

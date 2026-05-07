@@ -13009,7 +13009,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T10:38:04+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-07T08:42:28",
+      "completed_reason": "P1 dex2oat进程归属已修正：system_server/ART Service→installd→dex2oat独立进程"
     },
     {
       "section": "5.4",
@@ -13702,8 +13704,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-07T08:20:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-05-07-08-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-05-07-08-review.md",
+      "completed_at": "2026-05-07T08:42:28",
+      "completed_reason": "结构整合：Renderer崩溃恢复+WebView tracing移至常见误区之前，常见误区+参考资料回到全文收束位置"
     },
     {
       "section": "18.5",
