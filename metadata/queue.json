@@ -14247,7 +14247,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T00:28:41+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T01:43:00+08:00",
+      "completed_reason": "P0 ASan/HWASan 重新定位为内存安全检测器并修正版本(API 27+)；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流与约束"
     },
     {
       "section": "19.13",
@@ -14329,7 +14331,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T01:32:37+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T01:43:00+08:00",
+      "completed_reason": "P0 attribute key 32->40 补 reserved prefix 规则；P0 Cronet 兜底改为 HttpMetric manual trace；P1 删除 OkHttp EventListener 无证据断言"
     }
   ],
   "completed": [

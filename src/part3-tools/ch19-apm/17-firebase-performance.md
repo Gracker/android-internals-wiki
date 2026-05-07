@@ -22,13 +22,13 @@ sources:
     path: "https://firebase.google.com/docs/perf-mon/network-traces"
   - type: official
     path: "https://firebase.google.com/docs/perf-mon/screen-traces"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
+task9_result: "pending"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T01:32:37+08:00"
@@ -38,8 +38,8 @@ last_task2b_at: "2026-05-07T23:47:13+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 last_task6_at: "2026-05-08T01:09:14+08:00"
-task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result: needs-rework 等待 Task9 复审。"
-task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。Top: Android attribute key 上限写成 32，当前 Firebase Android SDK/API reference 为 40；Cronet 兜底建议误写为 FirebasePerfUrlConnection/拦截器，应改为 HttpMetric custom network trace；OkHttp EventListener 冲突结论缺公开源码支撑，需删除或标注待验证。"
+task6_review_notes: "2026-05-08 01:08 task6 revisiting-review: pass-light-edit。复核 Task2B 回炉修正后的写作层，修复 6 处 L1/L2 文风与可读性问题；保留 task9_result: "pending" 等待 Task9 复审。"
+task9_review_notes: "2026-05-08 01:32 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 attribute key 32->40 + reserved prefix；P0 Cronet 改为 HttpMetric manual trace；P1 EventListener 删除无证据断言"
 ---
 # Firebase Performance
 
@@ -148,7 +148,7 @@ Screen rendering 也要区分粒度。SDK 20.1.0+ 已经能自动记录 Fragment
 
 ## 自定义 trace 的命名规则
 
-自定义 trace 要解决两个问题：名字能长期复用，字段不会把聚合盘打散。官方限制要分对象看：trace 名和 metric 名最多 100 个字符，不能有前后空格，也不能以下划线开头；attribute key 最多 32 个字符，每个 custom trace 最多 5 个 attribute。attribute value 也按枚举写，避免高基数字段。
+自定义 trace 要解决两个问题：名字能长期复用，字段不会把聚合盘打散。官方限制要分对象看：trace 名和 metric 名最多 100 个字符，不能有前后空格，也不能以下划线开头；attribute key 最多 40 个字符、value 最多 100 个字符，每个 custom trace 最多 5 个 attribute。key 不能使用 `firebase_`、`google_`、`ga_` 前缀，且必须以字母开头。attribute value 也按枚举写，避免高基数字段。
 
 | 场景 | trace 名 | metric 名 | attribute | 不要写 |
 | --- | --- | --- | --- | --- |
@@ -167,8 +167,8 @@ URL pattern 必须做归一化。像 `/api/item/10001/detail`、`/api/item/10002
 
 官方文档给了几条实操边界：
 
-- Gradle plugin 通过字节码插桩拦截 OkHttp，但覆盖范围有限：自研网络库、Cronet、native 网络栈或非常规封装可能漏掉。Cronet 需要用 `FirebasePerfUrlConnection` 包装或手动添加拦截器，否则网络 trace 会静默缺失
-- 如果项目中使用了复杂 AOP 框架（自定义 Transformer 顺序不当），或者 OkHttp 的自定义 `EventListener` 占据了全局槽位，Firebase 的网络采集也会静默失败。接入后应在 `build.log` 中搜索 `firebase-perf` 插件输出确认插桩生效，并在 Logcat 中开启 `firebase_performance_logcat_enabled` 验证 trace 是否正常上报
+- Gradle plugin 通过字节码插桩拦截 OkHttp，但覆盖范围有限：自研网络库、Cronet、native 网络栈或非常规封装可能漏掉。Cronet、native 网络栈、自研网络库需要用 `HttpMetric` 手工 network trace：通过 `FirebasePerformance.getInstance().newHttpMetric(url, method)` 创建 metric，手动调用 `start()` / `stop()`，并设置 `setHttpResponseCode()`、`setRequestPayloadSize()` / `setResponsePayloadSize()`、`setContentType()`。不支持的协议会静默缺失
+- 如果项目中使用了复杂 AOP 框架（自定义 Transformer 顺序不当），Firebase 的字节码插桩可能失败。排查路径：在 `build.log` 中搜索 `firebase-perf` 插件输出确认插桩生效，检查 Logcat `FirebasePerformance` 日志中是否有 completed request 和正确的 Content-Type。接入后应在 `build.log` 中搜索 `firebase-perf` 插件输出确认插桩生效，并在 Logcat 中开启 `firebase_performance_logcat_enabled` 验证 trace 是否正常上报
 - 只完成了一半、长时间不结束的连接，控制台不一定会形成稳定样本；`Content-Type` 非法的请求也可能不展示
 
 线上要拆阶段时，还是要回到应用日志、服务端 trace 和 Perfetto。
