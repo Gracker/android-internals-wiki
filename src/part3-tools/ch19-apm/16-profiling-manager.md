@@ -33,15 +33,18 @@ task2b_state: fixed
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-25"
+last_task6_at: "2026-05-07T15:09:20+08:00"
+last_task6_review_log: "logs/review/2026-05-07-15-review.md"
+task6_review_notes: "2026-05-07 task6 review 15:09：重审 ProfilingManager，清理填充词 3 处；L1/L2 通过，无新增回炉项；Task9 已通过且 queue 无 pending，自动晋升 finalized。"
 last_task9_at: "2026-04-25T02:26:14+08:00"
 task2b_result: fixed
-last_task2b_at: "2026-04-25T02:09:22+08:00"
+last_task2b_at: "2026-05-07T14:47:28+08:00"
 repaired_date: "2026-04-25"
 repaired_by: "openclaw-task2b"
 
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-25"
+reviewed_date: "2026-05-07"
 ---
 
 # ProfilingManager
@@ -77,7 +80,7 @@ reviewed_date: "2026-04-25"
 
 ## 按结果类型选请求
 
-应用侧真正要先决定的是“要回答什么问题”，再选 request 类型。
+应用侧要先决定的是“要回答什么问题”，再选 request 类型。
 
 | 请求类型 | 结果形态 | 适合回答的问题 | 不适合 |
 |---|---|---|---|
@@ -109,7 +112,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-这段调用只说明一件事：**请求参数、执行过程、结果回传是异步拆开的**。应用线程负责提交 request，平台负责真正执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
+这段调用只说明一件事：**请求参数、执行过程、结果回传是异步拆开的**。应用线程负责提交 request，平台负责执行与限流，结果在 listener 里回到应用。归档、上传、删除都应走后台流程，不要塞回请求线程。
 
 `ProfilingManager` 的结果写入应用私有目录，发起 request 不需要外部存储权限。若希望 system trace 覆盖更完整的调度与系统视角，调试包、内测包或可分析版本要在 manifest 中配置 `<profileable android:shell="true" />`，并让发布渠道确认这项配置符合内部合规口径。没有这类配置时，系统仍可能返回结果，但可见范围会收窄。
 
@@ -214,11 +217,29 @@ metadata 至少要带这些字段：
 - 页面、前后台状态、实验分组、触发原因
 - 上传状态、文件大小、压缩方式、清理时间
 
+## Heap Dump 的敏感数据风险
+
+Java heap dump（`.hprof`）包含进程内所有 Java 对象的快照。如果用户已登录，堆中会包含：
+
+- 登录 Token / Session ID / OAuth Refresh Token
+- 手机号、邮箱、用户昵称等 PII
+- 支付信息、订单号、地址
+- 加密密钥或证书（如果缓存在内存中）
+
+这些数据在 heap dump 里是明文的。`ProfilingManager` 简化了采集，但没有简化合规。上传前必须在本地完成脱敏或加密处理，且处理方式要和 App 隐私协议一致。
+
+具体要求：
+
+1. **上传前脱敏**：heap dump 不能直接上传到通用诊断平台。要么在本地用工具（如 Android Studio Profiler 的脱敏导出）清除敏感对象引用，要么对整个文件做端到端加密后再上传，确保服务端无法直接读取堆内容。
+2. **存储隔离**：结果文件落在应用私有目录，但要检查是否被备份到 Google Drive 或其他云同步路径。`ProfilingManager` 的结果文件应加入备份排除列表。
+3. **采样同意**：如果采集触发条件覆盖线上用户，要在隐私协议中说明"性能诊断数据可能包含内存快照"，并给用户关闭入口。system-triggered profiling 的 trigger 不受应用控制时，至少在 APM 后台展示时标注数据来源。
+4. **保留期限**：heap dump 文件体积通常在 50-500MB。本地保留超过 24 小时会显著占用存储空间。设置自动清理策略，上传成功后立即删除本地文件。
+
 ## 上线前检查清单
 
 - 版本门槛按 API 35、API 36、version 36.1、API 37 分开判断
 - trigger 模式先注册 global listener，再注册 trigger
-- request callback 只做轻量关联，真正归档走后台流程
+- request callback 只做轻量关联，归档走后台流程
 - 结果文件要有大小上限、过期时间和清理策略
 - 堆文件、trace 文件的采集说明要和隐私条款、内部合规口径一致
 - manifest 中的 `profileable`、构建变体和设备策略要进入上线前检查，避免线上大量返回 `ERROR_FAILED_PROFILING_NOT_ALLOWED`
