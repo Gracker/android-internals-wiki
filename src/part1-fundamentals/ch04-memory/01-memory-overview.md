@@ -42,16 +42,16 @@ sources:
     path: "https://juejin.cn/post/7530909474103296039"
 tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
 related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T05:30:17+08:00"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。Stack 物理占用、ZRAM physical used 口径仍未修正"
+task9_reviewed_date: "2026-05-07"
+last_task9_at: "2026-05-07T19:32:17+08:00"
+task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。"
 ---
 
 # Android 内存模型全景

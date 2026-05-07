@@ -1462,3 +1462,24 @@
 - **问题**：正文写 JSON 可通过 `androidx.benchmark:benchmark-junit4` 库解析，并列出 `metricName`、`median`、`minimum`、`maximum`、`p90`、`runs`。AndroidX `benchmark-common` 当前 `BenchmarkData.kt` schema 是 `benchmarks[].metrics` / `sampledMetrics` map，metric name 是 map key；单值指标字段为 `minimum`、`maximum`、`median`、`coefficientOfVariation`、`runs`，采样指标为大写 `P50/P90/P95/P99`。`BenchmarkData` 本身带 `@RestrictTo(LIBRARY_GROUP)`，不应写成稳定公开解析 API。
 - **建议**：改成“CI 可读取 Macrobenchmark 生成的 JSON artifact 并按当前 schema 解析；解析代码应固定 AndroidX 版本或做 schema 兼容”。不要承诺 `metricName` / 小写 `p90` 字段，也不要把内部 `BenchmarkData` 当公开 API。
 - **review 日志**：logs/deep-review/2026-05-07-18-deep-review.md
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-05-07
+- **类型**：示例代码边界
+- **位置**：L196-L214 Lifecycle + ViewModel 懒加载示例
+- **问题**：[P2] 示例只在 `viewLifecycleOwner.lifecycleScope.launch` 中 collect `uiState`，没有触发首次加载，也没有 `repeatOnLifecycle` 限制可见状态；与“只在首次可见时加载”的说明没有闭环。
+- **建议**：补 `onResume`/`repeatOnLifecycle(Lifecycle.State.RESUMED)` 触发 + ViewModel 幂等 guard，或者把示例改成只展示状态收集，不宣称它完成懒加载。
+- **review 日志**：logs/deep-review/2026-05-07-19-deep-review.md
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-05-07
+- **类型**：Trace 观察点
+- **位置**：L407 搜索响应网络请求观察
+- **问题**：[P2] 正文写网络请求可以在 `HttpURLConnection` 或 OkHttp 的 trace 中观察到，容易让读者理解为 Perfetto 默认有稳定 OkHttp/HttpURLConnection slice。实际需要 OkHttp EventListener、自定义 `Trace.beginSection`、Network Inspector 或更底层 socket/syscall/ftrace 线索。
+- **建议**：改成“默认 Perfetto 不保证有应用层 HTTP client slice；需要在 repository/OkHttp EventListener 外层补稳定 trace 名称，或结合 socket/线程状态侧证”。
+- **review 日志**：logs/deep-review/2026-05-07-19-deep-review.md
+
+## [Task9 Deep Review] 19.13 androidx.tracing（Tracing SDK） — 2026-05-07
+- **类型**：版本边界
+- **位置**：L232 API 31+ app tracing 默认可见性
+- **问题**：[P2] 正文写 API 31+ app tracing 在所有应用里默认开启，但 AndroidX Trace 源码注释还列出 `<profileable enabled=false/>` 或 `<profileable shell=false/>` 例外。
+- **建议**：补 profileable manifest 例外，避免把“默认开启”写成无条件成立。
+- **review 日志**：logs/deep-review/2026-05-07-19-deep-review.md
