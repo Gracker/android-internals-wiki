@@ -37,8 +37,8 @@ tags:
   - tlb
   - compatibility
   - research
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_reviewed_date: "2026-05-08"
 task9_state: pending
 task2b_result: fixed
@@ -49,15 +49,15 @@ task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-08T03:20:00+08:00"
 last_task2b_at: "2026-04-27T05:45:00+08:00"
-task9_review_notes:  | 2026-05-08 03:44 Task2B rework: P0 contpte 16KB覆盖粒度改为2MB(CONT_PTES=128)；P0 kCompatPageSize源码锚点改为linker_phdr.h/ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size"2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
+task9_review_notes: "2026-05-08 03:44 Task2B rework: P0 contpte 16KB 覆盖粒度改为 2MB (CONT_PTES=128)；P0 kCompatPageSize 源码锚点改为 linker_phdr.h / ElfReader::LoadSegments()；P1 NDK r27 linker flags 补 common-page-size | 2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 1 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9/External 问题单）"
 review_notes: "2026-05-06 task9 deep-review: needs-rework。P1 2 / P2 1；THP/mTHP/contpte 与 compat RELRO 边界仍需回炉。"
 
-last_task6_at: "2026-05-08T03:09:01+08:00"
-review_log: "logs/review/2026-05-08-03-review.md"
-task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 26 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-08T04:05:00+08:00"
+review_log: "logs/review/2026-05-08-04-review.md"
+task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 26 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、代码块语言标注、compat 说明句和 mTHP 重复段落；无新增回炉项，送 Task9 复审。"
 ---
 # 4.7 16KB Page Size 与 Android 性能
 
@@ -194,7 +194,7 @@ bool ElfReader::Read(...) {
 
 在此次提交之前，ELF program alignment 不符合系统页大小时 Linker 报错模糊（通用 segfault）。提交后改为明确报错：
 
-```
+```text
 program alignment (4096) cannot be smaller than system page size (16384)
 ```
 
@@ -231,7 +231,7 @@ compat 只用于临时兼容验证，不应作为发布态性能方案。对于�
 
 ### 对开发者的实际含义
 
-正文中"需要在链接时添加 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384`"的底层原理是：此 flag 告诉链接器将 ELF 的 `p_align` 设为 16384，使 `min_palign` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
+链接参数 `-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384` 的作用是告诉链接器将 ELF 的 `p_align` 设为 16384，使 `min_palign` 满足 16KB 系统要求，从而绕过 `linker_phdr.cpp` 中的兼容模式检测。
 
 ## Bionic Linker 16KB Compat Mode 常量与 mprotect 修复
 
@@ -264,11 +264,11 @@ CompatMapSegment 内部使用 4KB (kCompatPageSize) 边界映射，原生 MapSeg
 
 NDK r27 链接器生成的 ELF 文件 p_align=4096（4KB），在 16KB 页面设备上触发 mprotect 边界错误：
 
-```
+```text
 Crash with WriteProtected mprotect 1 failed: Invalid argument.
 ```
 
-mprotect(addr, size, PROT_READ|PROT_WRITE) 的 addr 参数必须落在页边界上，16KB 设备上 4KB 边界地址会触发 EINVAL。该 bug 在 AOSP commit ce1c3cf77b8b08d402818dad10b804013f46722f（2024-10-11）中修复，NDK r28 已包含。
+`mprotect(addr, size, PROT_READ | PROT_WRITE)` 的 `addr` 参数必须落在页边界上，16KB 设备上 4KB 边界地址会触发 EINVAL。该 bug 在 AOSP commit ce1c3cf77b8b08d402818dad10b804013f46722f（2024-10-11）中修复，NDK r28 已包含。
 
 ### RELRO 保护在 Compat 模式下的差异
 
@@ -390,9 +390,7 @@ adb shell zcat /proc/config.gz | grep CONFIG_TRANSPARENT_HUGEPAGE
 
 在 16KB 基础页之上，如果内核启用了 `CONFIG_ARM64_CONTPTE` 和 mTHP 框架，可以获得进一步的 TLB 优化。contpte（contiguous page table entries）利用 ARM MMU 的 contiguous hint 特性，将一组物理连续的页表条目合并为一个 TLB entry。在 16KB 基础页下，`ARM64_CONT_PTE_SHIFT` 默认为 7，`CONT_PTES = 1 << 7 = 128`，`CONT_PTE_SIZE = 128 × 16KB = 2MB`——单个 TLB entry 覆盖 2MB，相当于覆盖范围从 16KB 扩大了 128 倍。这些能力依赖内核配置和 SoC 支持，不是所有 Android 16 设备都会启用。
 
-contpte 与 THP 的区别：THP（PMD 级）需要物理连续的 32MB 大块内存（16KB base），对碎片化敏感；contpte 在更小的粒度（2MB）上工作，内存分配器更容易满足连续性要求。mTHP（Multi-size Transparent Huge Pages）框架允许内核在 16KB 基础页上按需组装 64KB、128KB 等中间大小的 folio，这些 folio 可能利用也可能不利用 contpte hint——两者是独立的优化维度。
-
-同时，mTHP（Multi-size Transparent Huge Pages）框架允许内核在 16KB 基础页上按需组装多种大小的中间页（如 64KB、256KB），兼顾 TLB 收益和碎片控制。在 Perfetto 中，mTHP 的效果仍然通过 page fault 减少和启动耗时缩短来间接观测。验证内核是否启用 mTHP：`adb shell cat /sys/kernel/mm/transparent_hugepage/hpage_pmd_size` 以及查看 `/sys/kernel/mm/transparent_hugepage/` 目录下是否存在 multi-size 相关配置。
+contpte 与 THP 的区别：THP（PMD 级）需要物理连续的 32MB 大块内存（16KB base），对碎片化敏感；contpte 在更小的粒度（2MB）上工作，内存分配器更容易满足连续性要求。mTHP（Multi-size Transparent Huge Pages）框架允许内核在 16KB 基础页上按需组装 64KB、128KB 等中间大小的 folio，这些 folio 可能利用也可能不利用 contpte hint——两者是独立的优化维度。在 Perfetto 中，mTHP 的效果仍然通过 page fault 减少和启动耗时缩短来间接观测。验证内核是否启用 mTHP：`adb shell cat /sys/kernel/mm/transparent_hugepage/hpage_pmd_size`，再查看 `/sys/kernel/mm/transparent_hugepage/` 目录下是否存在 multi-size 相关配置。
 
 ## 版本演进与 OEM 适配
 

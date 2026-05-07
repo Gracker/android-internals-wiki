@@ -10,7 +10,7 @@ last_verified: "2026-04-02"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: high
 reviewed_date: "2026-05-08"
-reviewed_by: openclaw-task6
+reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
@@ -27,19 +27,21 @@ sources:
     path: "perfetto.dev/docs/data-sources/native-heap-profiler"
 tags: ['memory-leak', 'leakcanary', 'mat', 'heapprofd', 'heap-dump', 'gc-root', 'native-memory']
 related_chapters: ["4.1", "4.3", "4.5", "10.1", "10.6"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: reviewed
+task6_reviewed_date: "2026-05-08"
+task6_result: "pass-light-edit"
+review_log: "logs/review/2026-05-08-04-review.md"
 task9_state: pending
 task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-08T02:30:38+08:00"
-task9_review_notes:  | 2026-05-08 03:44 Task2B rework: P0 ProfilingManager requestProfiling API 签名已修正（补 tag/CancellationSignal/Consumer<ProfilingResult>，说明 global listener 路径）"2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
+task9_review_notes: "2026-05-08 03:44 Task2B rework: P0 ProfilingManager requestProfiling API 签名已修正（补 tag/CancellationSignal/Consumer<ProfilingResult>，说明 global listener 路径） | 2026-05-03 04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。 | 2026-05-08 01:40 Task2B rework: P0 ASan/HWASan 重新定位为内存安全检测器并修正版本；P1 dumpsys meminfo 改为受控复现口径；P2 ProfilingManager 补充限流和约束 | 2026-05-08 02 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。ProfilingManager requestProfiling API 签名错误，需 Task2B 回炉。"
 task9_result: "needs-rework"
-last_task6_at: "2026-05-08T02:09:46+08:00"
-task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 7 处 L1/L2 表达与格式问题；Task9 仍为 pending，未自动晋升。"
+last_task6_at: "2026-05-08T04:05:00+08:00"
+task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。修复禁用词、无语言代码块、比喻化开头与少量措辞问题；Task9 历史技术项仍待复审，未自动晋升。 | 2026-05-08 02:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 7 处 L1/L2 表达与格式问题；Task9 仍为 pending，未自动晋升。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter YAML 与流程元数据；正文无新增 L1/L2 问题；无新增回炉项，送 Task9 复审。"
 ---
 
 # 内存泄漏

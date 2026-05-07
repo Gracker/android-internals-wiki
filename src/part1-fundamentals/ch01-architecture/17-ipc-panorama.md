@@ -31,9 +31,9 @@ created_date: "2026-04-09"
 reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-review_log: "logs/review/2026-05-08-03-review.md"
-pipeline_stage: task6_pending
-task6_state: revisiting
+review_log: "logs/review/2026-05-08-04-review.md"
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_result: "needs-rework"
 task9_state: pending
 task2b_result: fixed
@@ -43,9 +43,9 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T03:20:00+08:00"
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T03:09:01+08:00"
-task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 18 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。"
-task9_review_notes:  | 2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写"2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
+last_task6_at: "2026-05-08T04:05:00+08:00"
+task6_review_notes: "2026-05-08 03:09 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 18 处 L1/L2 文风、格式与代码说明问题；无新增回炉项，送 Task9 复审。 | 2026-05-08 04:05 task6 revisiting-review: pass-light-edit。复核 Task2B 修正后写作层，修复 frontmatter、数据口径示意与代码块语言标注；无新增回炉项，送 Task9 复审。"
+task9_review_notes: "2026-05-08 03:44 Task2B rework: P0 BINDER_VM_SIZE 改为 sysconf(_SC_PAGE_SIZE)*2；P0 Parcel::writeBlob BLOB_INPLACE_LIMIT 改为 16KB，ashmem 路径重写 | 2026-05-08 03 Task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1。源码锚点与版本/数据口径需 Task2B 回炉；详见 logs/deep-review/2026-05-08-03-deep-review.md。"
 ---
 
 # IPC 全景：Android 进程间通信机制对比与性能选型
@@ -104,7 +104,7 @@ Android 的安全模型基于进程隔离：每个应用运行在独立进程中
 
 ### 2.1 按层级分类
 
-```
+```text
 ┌─────────────────────────────────────────────────┐
 │                  应用层 IPC                       │
 │  Intent · ContentProvider · BroadcastReceiver    │
@@ -408,21 +408,23 @@ fd 传递就是这两层之间的桥。Binder 路径里对应的是 `BINDER_TYPE
 
 这也是为什么 BufferQueue、CursorWindow、很多 HAL 数据流都不能简单归类成“Binder”或“共享内存”二选一。更准确的说法是：**控制面走 Binder 家族，数据面走 fd 指向的零拷贝通道。**
 
-### 4.3 使用频率统计（AOSP 系统进程）
+### 4.3 使用频率的方向性印象（AOSP 系统进程）
 
-```
-Binder        ████████████████████████████████  ~90% 的 IPC 调用
-Unix Socket   ██████                           ~5% (logd/input/vold)
-共享内存       ████                             ~3% (图形/ContentProvider)
-Pipe          ██                               ~1% (subprocess/shell)
-Signal        █                                ~1% (ANR/kill)
+下面这张图只表达常见程度，不作为实测占比。不同设备、系统版本和采样窗口下，IPC 分布会明显变化。
+
+```text
+Binder        ████████████████████████████████  系统服务调用最常见
+Unix Socket   ██████                           logd / input / vold 等本地守护进程
+共享内存       ████                             图形缓冲区、ContentProvider、HAL 数据面
+Pipe          ██                               子进程标准流与少量控制流
+Signal        █                                ANR、kill、native dump 等紧急通知
 ```
 
 ## 5. IPC 选型决策树
 
 在 Android 里，IPC 选型通常是先定控制面，再定数据面。
 
-```
+```text
 需要 IPC？
 ├── 先判断这是控制面还是数据面？
 │   ├── 控制面（命令、状态、权限、生命周期）
