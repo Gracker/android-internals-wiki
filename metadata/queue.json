@@ -14954,6 +14954,48 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T01:25:25+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.6",
+      "section_title": "Android 版本演进中的架构变化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1.6 Perfetto 版本差异提示把 ART Mainline 写成 Android 11+，与官方 Android 12 引入时间线冲突，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-09-02-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/交叉引用一致性",
+          "location": "L373 表格阅读提示",
+          "detail": "[P1] 正文同一节 L140 已写明官方 Mainline 模块表中 `com.android.art` Release introduced 为 Android 12，但 L373 又写“Android 11+ 由于 ART 已成为 Mainline 模块”。Android 11 有 Mainline 体系与 adbd/CellBroadcast 等模块，但 ART APEX 仍应从 Android 12 起算；当前写法会误导读者把 Android 11 设备的 ART 编译器行为也按 Play 更新后的 ART Mainline 处理。",
+          "suggestion": "将 L373 改为 Android 12+；或把表格分成 Android 8-11（Profile-AOT 但 ART 非 Mainline）与 Android 12+（ART Mainline 可更新）两段，并与 L140 保持一致。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T02:30:12+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 4.3 Android 17 DeliQueue / ConcurrentMessageQueue 命名和 ART ReferenceQueue 因果链仍未闭合，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-09-02-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/原理断裂/版本差异",
+          "location": "L302-L308 Android 17：DeliQueue 与 MessageQueue 无锁路径",
+          "detail": "[P1] 章节已承认 ReferenceQueue / FinalizerDaemon 的 DeliQueue 接入无源码证据，但 L306 仍把“Android 17 的 DeliQueue”写成已在 `ConcurrentMessageQueue` 内部使用的无锁队列。复核 AOSP android-16.0.0_r1：`core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` 使用 `ConcurrentSkipListSet`、Atomic 与锁组合；`CombinedMessageQueue` 由 `Flags.forceConcurrentMessageQueue()` 等条件控制；公开源码未出现 `DeliQueue` 命名。该段仍把 Handler/Looper 队列优化与 ART ReferenceQueue/FinalizerDaemon 锁竞争混成一条未证实因果链。",
+          "suggestion": "本节删除或降级 DeliQueue 段，只保留“ReferenceQueue 接入未证实”的边界；如需讲 MessageQueue 并发实现，改写为 Android 16 AOSP Concurrent/CombinedMessageQueue 路径并移到 MessageQueue/Looper 相关章节，等 Android 17 正式 tag 或 release note 证明 DeliQueue 命名后再恢复。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T02:30:12+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
