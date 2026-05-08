@@ -35,7 +35,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T14:32:28+08:00"
 review_round: 3
-last_task2b_at: "2026-05-08T12:51:41+08:00"
+last_task2b_at: "2026-05-08T19:44:22"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External P95 问题单：SIGQUIT诊断可信度/android.anr track/frontmatter版本号）"
@@ -43,12 +43,12 @@ task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 0 / 
 
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task9_state: pending
+pipeline_stage: task6_pending
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-14-review.md"
@@ -141,13 +141,13 @@ trace 头部包含大量诊断信息，以下是关键字段的含义：
 
 ### SIGQUIT 响应延迟与诊断可信度
 
-[来源：External Review 核验 AOSP android-14.0.0_r1+ AnrLatencyTracker]
+[来源：AOSP android-14.0.0_r1+ com.android.internal.os.anr.AnrLatencyTracker]
 
 traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定准确反映 ANR 发生的"第一案发现场"。诊断可信度需要按版本区分：
 
 **Android 13 及以下**：从 ANR 触发到 SIGQUIT 发送、再到所有线程被挂起并 dump 完调用栈，中间可能经过数秒。在这段时间里，主线程的状态可能已经发生了变化——导致 ANR 的耗时操作可能在 dump 之前就执行完了，trace 里看到的只是后续空闲状态（比如 `nativePollOnce`）。这种情况下，traces.txt 里的堆栈可能已经滞后，需要结合 Perfetto 时间线还原真实过程。
 
-**Android 14+**：`AnrLatencyTracker` 在 ANR 处理的关键节点写入了 Perfetto trace slice（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等），可以精确还原从 ANR 触发到 trace dump 的时间差。`AnrLatencyTracker` 会在 `anrRecordPlacedOnQueue` → `dumpStackTraces()` 这段间隔内采样主线程状态；只要间隔足够短，主线程堆栈大概率仍在执行导致 ANR 的代码路径。实测经验表明，在 dump 延迟 < 500ms 的场景中，主线程堆栈与 Perfetto 时间线高度吻合；随着延迟拉长，堆栈漂移的概率会上升。AOSP 源码中并没有定义“90% 可信”或“2 秒阈值”的硬性常量——这两个数字不应作为判断标准。
+**Android 14+**：`AnrLatencyTracker` 在 ANR 处理的关键节点写入了 Perfetto trace slice（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等），可以精确还原从 ANR 触发到 trace dump 的时间差。`AnrLatencyTracker` 记录 ANR 处理各阶段的 trace slice/counter 与延迟分解（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等），可以精确还原从 ANR 触发到 trace dump 的时间差。主线程是否仍在案发代码路径，需要靠 Perfetto 的 sched、slice 数据与 traces.txt 交叉验证——时间差越短，堆栈可信度越高。实测经验表明，在 dump 延迟 < 500ms 的场景中，主线程堆栈与 Perfetto 时间线高度吻合；随着延迟拉长，堆栈漂移的概率会上升。AOSP 源码中并没有定义“90% 可信”或“2 秒阈值”的硬性常量——这两个数字不应作为判断标准。
 
 **排查建议**：Android 14+ 设备上，先在 Perfetto 中确认 `dumpStackTraces()` 与 `anrRecordPlacedOnQueue` 的时间差。时间差越小，主线程堆栈越值得信赖；如果时间差超过数百毫秒，需要交叉比对 Perfetto 主线程 slice，确认 dump 时刻主线程是否已经离开了 ANR 触发时的代码路径。
 
@@ -449,7 +449,7 @@ if (Build.VERSION.SDK_INT >= 36) {
 - **Android 11（API 30）**：新增 `ActivityManager.getHistoricalProcessExitReasons()` 和 `ApplicationExitInfo`，应用可以回捞 `REASON_ANR` 历史记录并读取 `getTraceInputStream()`
 - **Android 12（API 31）**：ANR traces 的 dump 路径改为 `/data/anr/<process_name>_anr_<timestamp>`
 - **Android 13（API 33）**：ANR traces 开始包含更完整的 Native 线程调用栈，Perfetto 系统层面 trace 覆盖范围扩大
-- **Android 13/14（API 33/34）**：增加 ANR latency trace 与 statsd 观测点（`AnrLatencyTracker` 写入 `anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等 slice/counter；`ANR_LATENCY_REPORTED` statsd atom），ANR 触发到 dump 的时序可在 Perfetto 中通过这些 slice 间接观察
+- **Android 14（API 34）**：引入 `com.android.internal.os.anr.AnrLatencyTracker`，在 ANR 处理各阶段写入 Perfetto trace slice/counter（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等）和 `ANR_LATENCY_REPORTED` statsd atom，ANR 触发到 dump 的时序可在 Perfetto 中通过这些 slice 精确观察
 - **Android 15（API 35）**：新增 `ProfilingManager`，应用可以主动请求 profiling，并注册全局结果回调
 - **Android 16（API 36）**：新增 `ProfilingTrigger.TRIGGER_TYPE_ANR` 和 `addProfilingTriggers()`，系统触发式 ANR profiling 正式可用
 

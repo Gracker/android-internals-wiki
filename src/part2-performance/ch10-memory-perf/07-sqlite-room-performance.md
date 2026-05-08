@@ -56,12 +56,13 @@ task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task9_state: pending
+pipeline_stage: task6_pending
+last_task2b_at: "2026-05-08T19:44:22"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-14-review.md"
@@ -234,7 +235,7 @@ Room 不会无条件把所有数据库操作搬到后台线程，API 形态决�
 
 ### 3.2 Room 的 @Transaction 与 suspend 函数
 
-Room 的 `@Transaction` 注解确保方法在一个数据库事务中执行。对于 `suspend` 函数，Room 使用 `withTransaction` 扩展函数，它在内部维护了一个专用的事务线程。
+Room 的 `@Transaction` 注解确保方法在一个数据库事务中执行。对于 `suspend` 函数，Room 使用 `withTransaction` 扩展函数，它在内部通过 Room 的 transaction executor（或协程上下文）调度事务体的执行。
 
 使用事务的收益除了原子性，也体现在性能上。以下面的批量插入为例：
 
@@ -249,9 +250,9 @@ suspend fun insertAll(items: List<Item>) {
 }
 ```
 
-没有事务时，每次 `insert()` 都是独立的事务：获取 SQLite 写锁 → 写入 WAL → 提交。1000 次插入意味着 1000 次这样的循环。每次提交是否触发 `fsync()` 取决于 WAL sync mode：Android 默认 `db_wal_sync_mode` 为 `NORMAL`（参见 AOSP `frameworks/base/core/res/res/values/config.xml`），提交时只写 WAL 页缓存但不强制 `fsync`，由后台 checkpoint 线程负责刷盘。即便如此，1000 次独立事务的开销仍然来自锁获取、WAL 写入和事务状态切换的累积——即使每次只有微秒级，乘以 1000 后也会很可观。如果 sync mode 被设为 `FULL`，则每次提交都会 `fsync`，代价更高。
+没有事务时，每次 `insert()` 都是独立的事务：获取 SQLite 写锁 → 写入 WAL → 提交。1000 次插入意味着 1000 次这样的循环。每次提交是否触发 `fsync()` 取决于 WAL sync mode：Android 默认 `db_wal_sync_mode` 为 `NORMAL`（参见 AOSP `frameworks/base/core/res/res/values/config.xml`），提交时只写 WAL 页缓存但不强制 `fsync`。超过 `wal_autocheckpoint` 阈值（AOSP 默认 100 页）时，checkpoint 在提交路径或显式 checkpoint 路径发生——因此仍可能把 I/O 成本落到当前写线程，不存在一个可依赖的独立后台 checkpoint 线程。即便如此，1000 次独立事务的开销仍然来自锁获取、WAL 写入和事务状态切换的累积——即使每次只有微秒级，乘以 1000 后也会很可观。如果 sync mode 被设为 `FULL`，则每次提交都会 `fsync`，代价更高。
 
-使用事务后，锁获取和 WAL 提交只发生一次，1000 条数据批量写入 WAL 文件。在测试中，批量插入的速度提升可以达到 10x-100x。
+使用事务后，锁获取和 WAL 提交只发生一次，1000 条数据批量写入 WAL 文件。批量插入的速度提升可达数量级差异（常见 10x-100x），具体幅度取决于事务大小、sync mode、存储栈和设备性能。
 
 [已验证：官方文档， developer.android.com/reference/androidx/room/Transaction; AOSP config.xml db_wal_sync_mode=NORMAL]
 
