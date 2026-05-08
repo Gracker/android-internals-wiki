@@ -1644,3 +1644,15 @@
 - **问题**：[P2] §2.3 当前实际标题是 `## 十二、VSyncPredictor 线性回归算法详解（Android 14+ 源码补充）`，下级 heading 才是 `11.1` ~ `11.5`。7.1 写“第十一节源码补充”会把读者导向错误层级。
 - **建议**：改为指向稳定标题或相对锚点，例如“详见 §2.3《VSync 机制》中的 `VSyncPredictor 线性回归算法详解` / `VsyncModulator 的三相动态调整`”。
 - **review 日志**：logs/deep-review/2026-05-08-07-deep-review.md
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-05-08
+- **类型**：源码/API 语义
+- **位置**：L356 Flow `distinctUntilChanged()`
+- **问题**：`distinctUntilChanged()` 只过滤连续相同的 query。用户已经搜索过 `app`，再删成 `ap` 后重新输入 `app`，这是非连续重复，仍会触发新搜索；正文写“删除再重输入相同内容”会误导缓存/去重设计。
+- **建议**：改成“过滤相邻重复输入”；如要跨历史查询去重，需要额外加缓存命中、TTL 或 query-result 层复用策略。
+
+## [Task9 Deep Review] 8.4 其他响应速度场景 — 2026-05-08
+- **类型**：原理链/数据支撑
+- **位置**：L287-L290 Ripple 与 onClick 阻塞
+- **问题**：Ripple 的 pressed state 在 `ACTION_DOWN` 进入主线程后设置，但首帧仍依赖主线程返回 Looper 并完成下一次 traversal；如果快速 tap 的 `ACTION_UP` 触发 `onClick` 后立即阻塞主线程，Ripple 首帧可能被一起延迟。正文写“onClick 50ms 仍在 16ms 内开始扩散”条件过满。
+- **建议**：加上条件边界：只有 `ACTION_DOWN` 后主线程能及时让出、下一帧能绘制，Ripple 才能先于 onClick 重活呈现；onClick 仍不能阻塞主线程。
