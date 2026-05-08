@@ -12351,7 +12351,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T15:51:58+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T20:44:59+08:00",
+      "completed_reason": "Dynamic Rendering feature bit 边界已修正：需查询 VkPhysicalDeviceDynamicRenderingFeatures，VP_ANDROID_15/16_minimums 未声明 dynamicRendering"
     },
     {
       "section": "2.17",
@@ -12964,7 +12966,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-06T06:23:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T20:44:59+08:00",
+      "completed_reason": "tracing-perfetto 版本线已拆分：tracing 1.3.0 稳定 / 2.0.0-alpha06；tracing-perfetto(+binary) 1.0.1"
     },
     {
       "section": "18.10",
@@ -14002,7 +14006,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T16:29:05+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T20:44:59+08:00",
+      "completed_reason": "RenderProperties::promotedToLayer() 版本边界已修正（Android 10/11 已有 functor+alpha+overlap，12 起有 ImageFilter/StretchEffect，16 为核验版本）"
     },
     {
       "section": "13.7",

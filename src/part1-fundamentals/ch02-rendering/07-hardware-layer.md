@@ -27,14 +27,14 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
+task6_state: "revisiting"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: "fixed"
 task2b_result: "fixed"
-last_task2b_at: "2026-05-07T15:44:35+08:00"
+last_task2b_at: "2026-05-08T20:44:59+08:00"
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T16:29:05+08:00"
@@ -273,9 +273,9 @@ Android 开发者选项中有一个"显示硬件层更新"（Show hardware layer
 
 AOSP `frameworks/base/graphics/java/android/graphics/RenderNode.java` 的公开 API 是 `setUseCompositingLayer(boolean forceToLayer, Paint paint)` 和 `getUseCompositingLayer()`。原注释把边界写得很清楚：`RenderNode` 会在“这样更省时”或者 `alpha + hasOverlappingRendering()` 组合需要时，自动提升为 composition layer；`forceToLayer=false` 才是默认且推荐的值。`paint` 只在强制建层时生效，用来给这层额外叠加 blend mode、alpha 和 `ColorFilter`。
 
-Android 16 中 `RenderProperties::promotedToLayer()` 的自动升层条件是可验证的：functor 需要隔离、RenderNode 有 ImageFilter、StretchEffect 要求建层、alpha 在 (0,1) 区间（源码条件 `!MathUtils::isZero(mAlpha) && mAlpha < 1`）且 `hasOverlappingRendering()` 为 true，并且尺寸满足 `fitsOnLayer()`。这些条件是确定性的布尔组合，不是绘制指令复杂度评分。满足条件时 HWUI 自动为该 RenderNode 分配离屏缓冲，应用无需手动 `setLayerType`。
+RenderNode 的自动升层（compositing layer）条件按版本逐步丰富。Android 10/11 已有 functor 隔离和 alpha+hasOverlappingRendering 的自动升层；Android 12 起可见 ImageFilter、StretchEffect 分支。以 `android-16.0.0_r1` 核验，`RenderProperties::promotedToLayer()` 的当前条件包括：functor 需要隔离、RenderNode 有 ImageFilter、StretchEffect 要求建层、alpha 在 (0,1) 区间（源码条件 `!MathUtils::isZero(mAlpha) && mAlpha < 1`）且 `hasOverlappingRendering()` 为 true，以及尺寸满足 `fitsOnLayer()`。这些条件是确定性的布尔组合，不是绘制指令复杂度评分。满足条件时 HWUI 自动为该 RenderNode 分配离屏缓冲，应用无需手动 `setLayerType`。
 
-[已验证: AOSP android-16.0.0_r1, RenderProperties::promotedToLayer() 条件]
+[已验证: AOSP android-16.0.0_r1, RenderProperties::promotedToLayer() 条件；functor + alpha+overlap 条件经 AOSP android-10.0.0_r47 核验存在，ImageFilter/StretchEffect 分支经 android-12.0.0_r1 核验存在]
 
 ```java
 // frameworks/base/graphics/java/android/graphics/RenderNode.java
@@ -352,7 +352,9 @@ Hardware Layer 是 Android 渲染管线中的一个优化手段，它与以下�
 | Android 5.0 (API 21) | RenderThread 引入，Hardware Layer 的 buildLayer 从主线程移到 RenderThread |
 | Android 10 (API 29) | `RenderNode.setUseCompositingLayer(boolean, Paint)` 与 `getUseCompositingLayer()` 作为公开 API 可用 |
 | Android 12 (API 31) | Jetpack Compose 1.0 正式发布，`graphicsLayer` Modifier 基于底层 RenderNode compositing layer 机制提供声明式 layer 控制 |
-| Android 16 (API 36) | `RenderProperties::promotedToLayer()` 自动升层条件明确化：functor 隔离、ImageFilter、StretchEffect、alpha+hasOverlappingRendering + fitsOnLayer()；满足条件时自动分配离屏缓冲，无需手动 setLayerType |
+| Android 10/11 (API 29/30) | `promotedToLayer()` 已包含 functor 隔离、alpha+hasOverlappingRendering 自动升层条件 |
+| Android 12 (API 31) | 自动升层条件扩展 ImageFilter、StretchEffect 分支 |
+| Android 16 (API 36) | 以 `android-16.0.0_r1` 核验当前自动升层条件全貌：functor 隔离、ImageFilter、StretchEffect、alpha+hasOverlappingRendering + fitsOnLayer() |
 | Compose 1.10 | `graphicsLayer` 离屏缓冲池化，纹理复用减少 LazyLayout 滑动场景的 GPU 内存分配开销 |
 
 [已验证: 官方文档, developer.android.com/reference/android/view/View#setLayerType(int,%20android.graphics.Paint)]
