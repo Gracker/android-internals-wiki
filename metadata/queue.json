@@ -14894,6 +14894,39 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T19:29:15+08:00",
       "status": "pending"
+    },
+    {
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.13 Hook 基础设施 W^X/RWX、ShadowHook 源码路径与 namespace 源码节选存在 P0，需要回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-09-00-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本口径",
+          "location": "L370-L420、L852-L858：W^X / execmem / ShadowHook mprotect 口径",
+          "detail": "[P0] 正文把 Android 8-13 写成“要求两步 mprotect、禁止 PROT_WRITE|PROT_EXEC”，并称 ShadowHook“严格遵循两步 mprotect”，还写 untrusted_app 默认禁止 execmem。复核 upstream ShadowHook main：common/sh_trampo.c:99 使用 mmap(PROT_READ|PROT_WRITE|PROT_EXEC)，arch/arm64/sh_inst.c:92 与 common/sh_util.c:229 使用 sh_util_mprotect(..., PROT_READ|PROT_WRITE|PROT_EXEC)；AOSP system/sepolicy private/app.te:189 仍有 allow appdomain self:process execmem。当前表述与源码/策略不一致。",
+          "suggestion": "改成源码限定口径：ShadowHook 当前 upstream 使用 RWX mmap/mprotect 与 clear_cache；Android appdomain 是否允许 execmem 以实际 sepolicy/target/OEM 为准。不要把“两步 RW→RX”写成 Android 8+ 或 ShadowHook 的通用事实。"
+        },
+        {
+          "type": "源码路径/实现流程错误",
+          "location": "L815-L858：ShadowHook trampoline 文件路径与匿名页写入流程",
+          "detail": "[P0] 正文写 shadowhook/src/main/cpp/trampoline/ 下有 trampoline_arm64.cpp、trampoline_arm.cpp、trampoline_allocator.cpp、trampoline_map.h；当前 upstream 实际为 common/sh_trampo.c、sh_island.c、arch/arm64/sh_inst.c、arch/arm/sh_t16.c、arch/arm/sh_t32.c 等，没有该 trampoline/ 目录。L852-L854 写 mmap(PROT_READ|PROT_EXEC) 后写入 trampoline，也与 upstream sh_trampo.c:99 的 RWX mmap 不符。",
+          "suggestion": "按当前 upstream 文件名和调用链重写：sh_island_alloc → sh_trampo_alloc_between / ELF gap；远跳 island/trampoline 的权限与写入流程按 sh_trampo.c、sh_inst.c 实际代码描述。"
+        },
+        {
+          "type": "源码节选错误",
+          "location": "L687-L695：android_namespace_t::is_accessible(soinfo*) 代码块",
+          "detail": "[P0] 代码块中函数参数是 s，但函数体直接使用未定义的 si，且省略了 AOSP bionic/linker/linker_namespaces.cpp:72-L118 中的 is_accessible_ftor lambda 与 allow_secondary 参数，作为源码节选不可编译，也会误导 secondary namespace 的符号可见性判断。",
+          "suggestion": "替换为真实源码节选，或改为文字摘要：先 is_accessible_ftor(s, true)，再递归 parents 且 allow_secondary=false；不要贴半截不可编译代码。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T00:37:58+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

@@ -2,7 +2,7 @@
 title: "Android View 混合渲染链路"
 chapter: "18.4"
 section: "18.4"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 11 (API 30) - Android 16 (API 36)"
 sources:
   - type: aosp
@@ -15,19 +15,20 @@ tags: ["hybrid-composition", "SurfaceView", "mixed-rendering", "parallel-pipelin
 related_chapters: ["2.1", "2.6", "18.2", "18.6"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-pipeline_stage: "task2b_pending"
-task6_state: revisiting
-task9_state: "pending"
-task2b_state: "pending"
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-02"
 task6_result: pass-light-edit
-review_note: "Task 6 二审(2026-05-02):补 frontmatter section/sources; task6 三审(2026-05-02): re-review pass, task9 仍 needs-rework"
-task9_result: "pending"
-task9_reviewed_date: "2026-05-02"
+review_note: "Task 6 二审(2026-05-02):补 frontmatter section/sources; task6 三审(2026-05-02): re-review pass; Task9 复审(2026-05-09): pass-tech-review，自动晋升 finalized"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-09"
 task2b_fixed_at: "2026-05-08T23:46:33"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-01T18:51:19+08:00"
+last_task9_at: "2026-05-09T00:37:58+08:00"
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
