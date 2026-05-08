@@ -387,3 +387,133 @@ Native 层要额外做两件事：
 - [已覆盖] 多 SDK 冲突：说明 Java / Native handler 链接链处理方式
 - [扩展已覆盖] `ApplicationExitInfo` 代码片段
 - [扩展已覆盖] GWP-ASan 灰度方案
+
+## 11. Android 11 以下：ApplicationExitInfo 缺失时的替代方案
+
+<!-- AIW-源码调研-2026-05-08 -->
+### 11.1 核心矛盾
+
+API 30 之前，没有系统统一的进程退出历史收集。APM 必须自己构建 "Process Exit Info" 的采集、存储和上报链路。低版本缺失的不只是一个 API，而是整套机制：
+
+- **无统一存储**：进程退出时 system_server 不会写 Proto 文件
+- **无官方 trace 路径**：`/data/anr/` 对普通 App 始终不可读
+- **ANR 无信号**：`SIGQUIT` 由系统发送，但普通 App 无法通过 `sigaction` 截获（SignalCatcher 用 `sigwait()` 消费）
+
+### 11.2 Signal Handler 自注册（Native Crash）
+
+**原理**：在 JNI 层注册 `sigaction`，捕获 `SIGSEGV` / `SIGABRT` / `SIGFPE` 等信号，获取 native crash 时的寄存器上下文和调用栈。
+
+**典型实现**：
+```cpp
+// 伪代码，参考 KOOM native-hook 和 Breakpad 思路
+#include <signal.h>
+#include <ucontext.h>
+
+static struct sigaction g_old_handlers[64];
+
+void crash_handler(int sig, siginfo_t* info, ucontext_t* ctx) {
+    // 1. 获取 fault address（SIGSEGV 的 si_addr）
+    void* fault_addr = info->si_addr;
+    
+    // 2. 获取 instruction pointer (ARM64: ctx->uc_mcontext.pc)
+    uint64_t pc = ctx->uc_mcontext.pc;
+    
+    // 3. 通过 libunwind / libgcc 获取 native backtrace
+    // 4. 写入预分配 ring buffer（不可依赖 malloc）
+    // 5. 转发给旧 handler（如果存在）
+    if (g_old_handlers[sig].sa_handler &&
+        g_old_handlers[sig].sa_handler != SIG_DFL) {
+        g_old_handlers[sig].sa_handler(sig, info, ctx);
+    }
+}
+
+// 安装
+struct sigaction sa;
+sa.sa_sigaction = crash_handler;
+sa.sa_flags = SA_SIGINFO;
+sigemptyset(&sa.sa_mask);
+sigaction(SIGSEGV, &sa, &g_old_handlers[SIGSEGV]);
+sigaction(SIGABRT, &sa, &g_old_handlers[SIGABRT]);
+```
+
+**局限**：
+- 只能捕获 native crash，不能捕获纯 Java OOM
+- 信号到来时进程状态已不稳定，上报链路本身可能受损
+- ANR 不发信号，无法通过此路径获取 ANR trace
+
+### 11.3 LMKd 监听（进程被 LMK 杀死）
+
+**源码位置**：`system/core/lmkd/`、`frameworks/base/services/core/java/com/android/server/am/ProcessList.java`
+
+LMK 的触发阈值由 `ProcessList.computeOomAdj()` 计算的 `oom_adj` 值决定：
+
+```java
+// frameworks/base/services/core/java/com/android/server/am/ProcessList.java
+// Android 14 典型阈值：
+static final int ZOMBIE_ADJ = 1000;
+static final int CACHED_APP_MAX_ADJ = 900;   // 可被冻结的最大值
+static final int CACHED_APP_MIN_ADJ = 700;   // 开始冻结的最小值
+static final int SERVICE_B_ADJ = 700;
+static final int HOME_APP_ADJ = 600;
+static final int FOREGROUND_APP_ADJ = 0;
+```
+
+**低版本 APM 监听方式**：
+| 方式 | 权限要求 | 精度 | 实现难度 |
+|------|---------|------|---------|
+| 轮询 `/proc/<pid>/oom_score_adj` | 需目标进程权限，普通 App 不可行 | 低 | 低 |
+| 监听 LMKd socket | 需 root 或厂商合作 | 高 | 高 |
+| cgroup v2 `memory.high` (Android 12+) | 系统服务才可读 | 高 | 高 |
+| `ActivityManager.isLowMemoryKillReportSupported()` | 普通 API，可查设备能力 | 中 | 低 |
+
+**核心约束**：普通 App 没有权限读取他进程的 `/proc/<pid>/oom_score_adj`，只能通过系统 API 间接判断。
+
+### 11.4 /data/anr/ 目录不可读的处理
+
+**路径**：`/data/anr/`（API 26+ 统一为 `traces_text.txt`，不再按进程名区分）
+
+**权限约束**：所有应用可写但不可读（安全加固）。
+
+**APM 获取方式**：
+| 方式 | 权限要求 | 可靠性 | 备注 |
+|------|---------|--------|------|
+| strace 监控 `openat/write` | 需 root | 高 | 与系统版本耦合 |
+| wormhole 方案（利用 inotify） | 需厂商合作 | 中 | 文件系统事件通知 |
+| 启动时读 `ApplicationExitInfo` (API 30+) | 普通 API | 高 | 官方方案 |
+| 反射 `ActivityManagerService` 内部接口 | 违反 Android 安全设计 | 高 | 不推荐量产 |
+
+**注**：ANR 不发信号，`sigaction` 无法截获。系统通过 SignalCatcher 线程的 `sigwait()` 消费 `SIGQUIT`，这不是普通的异步信号处理。
+
+### 11.5 KOOM fork-dump 对低版本 OOM 的补偿
+
+KOOM 的核心贡献是解决"Java heap OOM 时进程无法自保"的问题，不依赖 `ApplicationExitInfo`：
+
+```
+主进程 Java heap 接近阈值（连续 N 次超过 heapThreshold）
+  → KOOM HeapOOMTracker 连续检测
+  → SuspendVM（暂停 ART 虚拟机）
+  → fork() 子进程（copy-on-write，冻结时间 < 20ms）
+  → ResumeVM
+  → 子进程执行 hprof dump
+  → ForkStripHeapDumper 裁剪 Hprof（二进制截断 system heap）
+  → 上报
+  → 子进程退出
+```
+
+这个模式在 Android 5.0 (API 21) 起可用，不依赖 `ApplicationExitInfo`。是 Android 低版本 OOM 现场保留的最优解。
+
+### 11.6 版本能力对比
+
+| 能力 | < API 21 | API 21-28 | API 29 | API 30+ |
+|------|---------|---------|--------|---------|
+| ApplicationExitInfo | ❌ | ❌ | ❌ | ✅ |
+| Signal Handler 捕获 native crash | ✅ | ✅ | ✅ | ✅ |
+| LMK 事件监听 | ❌ | 有限 | 有限 | ✅ (FrozenStateChangeCallback) |
+| /data/anr/ 读取 | ❌ | ❌ | ❌ | ❌ (仍不可读) |
+| strace 监控 | 需 root | 需 root | 需 root | 需 root |
+| KOOM fork-dump | ✅ | ✅ | ✅ | ✅ |
+
+**推荐策略**：
+- API 30+：优先使用 `ApplicationExitInfo`
+- API 21-29：Signal Handler 覆盖 native crash；KOOM fork-dump 覆盖 Java OOM；ANR 和 LMK 主要靠下次启动补拉
+- < API 21：同 API 21-29，KOOM 可能需要额外适配

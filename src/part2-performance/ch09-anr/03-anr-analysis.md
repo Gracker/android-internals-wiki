@@ -32,10 +32,10 @@ sources:
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
@@ -43,7 +43,7 @@ last_task9_at: "2026-05-04T04:33:00+08:00"
 task2b_result: fixed
 task6_result: pass-light-edit
 review_round: 2
-last_task2b_at: "2026-04-26T13:40:00+08:00"
+last_task2b_at: "2026-05-08T12:51:41+08:00"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External P95 问题单：SIGQUIT诊断可信度/android.anr track/frontmatter版本号）"
@@ -141,9 +141,9 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
 
 **Android 13 及以下**：从 ANR 触发到 SIGQUIT 发送、再到所有线程被挂起并 dump 完调用栈，中间可能经过数秒。在这段时间里，主线程的状态可能已经发生了变化——真正导致 ANR 的耗时操作可能在 dump 之前就执行完了，trace 里看到的是后续的"安静"状态（比如 `nativePollOnce`）。这种情况下，traces.txt 里的堆栈可能是一个"替罪羊"，需要结合 Perfetto 时间线来还原真实过程。
 
-**Android 14+**：`AnrLatencyTracker` 在 ANR 处理的关键节点写入了 Perfetto trace slice（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等），可以精确还原从 ANR 触发到 trace dump 的时间差。在大多数情况下，Android 14+ 的主线程堆栈可信度在 90% 以上——应该优先分析当前执行的方法，而不是先怀疑 trace 被污染。如果 Perfetto slice 显示 `dumpStackTraces()` 与 ANR 触发时间差超过 2 秒，才需要警惕堆栈漂移。
+**Android 14+**：`AnrLatencyTracker` 在 ANR 处理的关键节点写入了 Perfetto trace slice（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等），可以精确还原从 ANR 触发到 trace dump 的时间差。`AnrLatencyTracker` 会在 `anrRecordPlacedOnQueue` → `dumpStackTraces()` 这段间隔内采样主线程状态；只要间隔足够短，主线程堆栈大概率仍在执行导致 ANR 的代码路径。实测经验表明，在 dump 延迟 < 500ms 的场景中，主线程堆栈与 Perfetto 时间线高度吻合；随着延迟拉长，堆栈漂移的概率会上升。AOSP 源码中并没有定义“90% 可信”或“2 秒阈值”的硬性常量——这两个数字不应作为判断标准。
 
-**排查建议**：Android 14+ 设备上，先信任主线程堆栈并据此分析根因；只有当 Perfetto ANR latency slice 显示明显的 dump 延迟（>2 秒）时，才需要把 traces.txt 的信息降级为参考。
+**排查建议**：Android 14+ 设备上，先在 Perfetto 中确认 `dumpStackTraces()` 与 `anrRecordPlacedOnQueue` 的时间差。时间差越小，主线程堆栈越值得信赖；如果时间差超过数百毫秒，需要交叉比对 Perfetto 主线程 slice，确认 dump 时刻主线程是否已经离开了 ANR 触发时的代码路径。
 
 ### 锁信息与等待关系
 

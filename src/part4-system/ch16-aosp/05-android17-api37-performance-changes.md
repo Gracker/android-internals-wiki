@@ -36,14 +36,14 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-30T23:57:00+08:00"
+last_task2b_at: "2026-05-08T12:51:41+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
@@ -127,7 +127,7 @@ Android Developers Blog 把公开数字分成三类，它们的测试前提并�
 
 DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化，但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
 
-官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存：`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`，负责兼容层与实现选择；`ConcurrentMessageQueue/MessageQueue.java` 的核心结构已经换成 `mPriorityQueue` 和 `mAsyncPriorityQueue` 这两组并发有序集合，不再靠 `mMessages` 维护单链表。排障时不要把这次变化简化成“某个字段改名”。
+官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存：`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`，负责兼容层与实现选择；`ConcurrentMessageQueue/MessageQueue.java` 的核心结构已经换成 `mPriorityQueue` 和 `mAsyncPriorityQueue` 前者就是上文说的 min-heap（Java `PriorityQueue` 本身就是堆实现），后者为异步消息单独维护一个排序队列。写入端的概念模型是 Treiber Stack，AOSP 实际结构是在 `ConcurrentMessageQueue` 中通过 lock-free 入队 + drain 批量搬运完成，不是逐条 CAS push 到字面意义的栈——博客的“Treiber Stack”描述的是并发入队的算法语义，AOSP 实现会根据同步/异步消息走不同队列入口。排障时不要把这次变化简化成“某个字段改名”。
 
 把源码层再拆开看，会更准确：
 
