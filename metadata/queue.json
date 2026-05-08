@@ -15011,6 +15011,28 @@
       "status": "completed",
       "completed_at": "2026-05-08T17:58:58+08:00",
       "completed_reason": "Task2B P0 修复完成"
+    },
+    {
+      "section": "13.9",
+      "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.9 `ftrace_config.drain_period_ms` 默认值写成 250ms，与 AOSP android-16.0.0_r1 Perfetto 源码不符，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-18-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "level": "P0",
+          "type": "源码错误/默认值错误",
+          "location": "L221 `ftrace_config.drain_period_ms` 默认 250ms",
+          "detail": "正文称 `FtraceConfig.drain_period_ms` 默认 250ms。AOSP android-16.0.0_r1 / external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc 中 `kDefaultTickPeriodMs = 100`，`GetTickPeriodMs()` 在未显式配置时返回 historical default 100ms；若所有实例使用 buffer watermark polling，则返回 `kPollBackingTickPeriodMs = 1000`。proto 注释也建议除本地精调外保持 unset。250ms 不是当前 AOSP/Perfetto 默认值。",
+          "suggestion": "把“默认 250ms”改为“未设置时由 Perfetto 选择默认读取周期；android-15/16/main 源码中的 historical default 为 100ms，poll-backed 场景可放宽到 1000ms”。如果保留固定值，必须标注对应 Perfetto 旧版本来源。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T18:40:56+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

@@ -1700,3 +1700,15 @@
 - **位置**：L542 ADPF power efficiency “功耗降低 15-30%”
 - **问题**：“功耗降低 15-30%”是量化收益断言，但正文未给设备、负载、CPU cluster、温控状态、测试窗口或来源；`setPreferPowerEfficiency` 本身是 hint，收益高度依赖平台调度实现。
 - **建议**：删掉固定百分比，或补一组明确实验条件；更稳妥写成“可能降低能耗，但需要用 PowerMonitor/Perfetto rail 做 A/B 验证”。
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-05-08
+- **类型**：源码准确性 / 原理链
+- **位置**：L451 PowerStatsService 与 PowerStatsProcessor 描述
+- **问题**：正文把 `PowerStatsService` 写成“通过 `PowerStatsProcessor` 接口为 CPU、GPU、Modem 等组件分别建立能耗模型，并与 `SystemHealthManager` 对接后暴露查询接口”。AOSP android-16.0.0_r1 中 `PowerStatsService` 的 PowerMonitor 查询路径是 `SystemHealthManager` → `IPowerStatsService` → `PowerStatsService` → Power Stats HAL 的 `getEnergyConsumed()` / `readEnergyMeter()`；`PowerStatsProcessor` 是 `com.android.server.power.stats.processor` 下的抽象处理类，不是 PowerMonitor API 暴露路径上的接口。
+- **建议**：改成“PowerStatsService 通过 Power Stats HAL 获取 EnergyConsumer / EnergyMeasurement；BatteryStats 侧的建模处理代码在 `power/stats/processor/`，不要把它写成 PowerMonitor 查询接口链路”。
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-05-08
+- **类型**：源码锚点
+- **位置**：L537 ADPF 源码锚点第三条
+- **问题**：正文写 `PowerMonitor.getConsumedEnergy()`，但方法实际定义在 `PowerMonitorReadings` 上，签名是 `PowerMonitorReadings.getConsumedEnergy(PowerMonitor)`；文件路径 `frameworks/base/core/java/android/os/PowerMonitorReadings.java` 是对的，类名/方法归属写错。
+- **建议**：改为 `PowerMonitorReadings.getConsumedEnergy(PowerMonitor) — frameworks/base/core/java/android/os/PowerMonitorReadings.java`。

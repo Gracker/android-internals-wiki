@@ -2,7 +2,7 @@
 title: "Battery Historian 与功耗分析工具"
 chapter: "14.11"
 section: "14.11"
-status: ready-for-review
+status: "finalized"
 applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
 tags: [Battery Historian, bugreport, 功耗分析, Wakelock, 电池, Power Profiler, ODPM, Energy Profiler]
 related_chapters: ["11.1", "11.2", "11.5", "14.1", "15.5"]
@@ -28,7 +28,7 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -37,17 +37,17 @@ last_task6_at: "2026-05-08T18:20:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-18-review.md"
 task6_reviewed_date: "2026-05-08"
 review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。'
-task9_state: pending
-task2b_state: fixed
+task9_state: "reviewed"
+task2b_state: "fixed"
 task2b_result: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 last_task2b_at: 2026-05-08T17:58:58+08:00
-task9_result: needs-rework
-last_task9_at: '2026-05-08T17:40:52+08:00'
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-08'
-last_task9_review_log: logs/deep-review/2026-05-08-17-deep-review.md
-task9_review_notes: '2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。'
+task9_result: "pass-tech-review"
+last_task9_at: "2026-05-08T18:40:56+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-08"
+last_task9_review_log: "logs/deep-review/2026-05-08-18-deep-review.md"
+task9_review_notes: "2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。 | 2026-05-08 Task9 18:39：pass-tech-review。P0/P1 0；前轮 PowerMonitor 常量与 PowerStatsService 路径/版本 P0 已复核通过；新增 P2 源码锚点建议 2 条，自动晋升 finalized。"
 ---
 
 # 14.11 Battery Historian 与功耗分析工具
