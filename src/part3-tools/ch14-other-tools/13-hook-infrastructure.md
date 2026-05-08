@@ -39,22 +39,22 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-09"
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-09T00:37:58+08:00"
+last_task9_at: "2026-05-09T03:30:00+08:00"
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 last_task2b_at: '2026-05-08T22:40:00'
-task9_review_notes: "2026-05-09 task9 deep-review: needs-rework。W^X/RWX、ShadowHook 源码路径与 namespace 代码节选存在 P0，已写入 queue。"
+task9_review_notes: "2026-05-09 Task9 03:30：needs-rework。P0 2：__loader_dlopen caller_addr 误写为 dso handle；ShadowHook 文件路径与 ARM64/Thumb stub 源码节选不匹配。P1 3：Gap Trampoline 与 namespace bypass 混层、init_array/linker lock 解释错误、16KB compat RELRO 口径错误。"
 last_task6_at: "2026-05-09T03:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-03-review.md"
 review_notes: "2026-05-09 Task6 03:07：Task2B 修复后写作复审；轻修 20 处（标题引导语、形容词冒号起手式、半角标点、限制变严/分解类翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
