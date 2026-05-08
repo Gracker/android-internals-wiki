@@ -39,21 +39,14 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-09"
-task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-09"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-09T03:30:00+08:00"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: '2026-05-08T22:40:00'
+task2b_state: fixed
+last_task2b_at: '2026-05-09T19:40:00'
 task9_review_notes: "2026-05-09 Task9 03:30：needs-rework。P0 2：__loader_dlopen caller_addr 误写为 dso handle；ShadowHook 文件路径与 ARM64/Thumb stub 源码节选不匹配。P1 3：Gap Trampoline 与 namespace bypass 混层、init_array/linker lock 解释错误、16KB compat RELRO 口径错误。"
 last_task6_at: "2026-05-09T03:07:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-03-review.md"
@@ -490,9 +483,11 @@ Android 的 `dlopen` 内部实现会检查调用者的 `caller_addr`（调用者
 #### 手段二：伪造 caller_addr（__loader_dlopen 技巧）
 
 标准 Linux `dlopen` 不接受 `caller_addr`，而 Android 版本隐式使用调用者地址。在某些场景下（hook 框架内部），可以通过以下方式伪造调用者身份：
-1. 获取目标库自身的句柄（`dlopen(target_lib, RTLD_NOLOAD)`）
-2. 将该句柄的地址作为 `caller_addr` 传入，伪装成目标库自身在加载依赖
-3. Linker 认为请求来自目标库的 namespace，从而允许加载
+1. 获取目标 namespace 内某个已加载 ELF 的真实代码地址（例如通过 `/proc/self/maps` 定位基址后从 `.dynsym` 查符号，或使用 xDL 等库查询已加载 ELF 符号）
+2. 将该真实代码地址（而非 dlopen 返回的 opaque handle）作为 `caller_addr` 传入，伪装成目标库自身在加载依赖
+3. Linker 通过 `find_containing_library(caller_addr)` 在已加载 soinfo 列表中查找包含该地址的 soinfo，确认其 namespace，从而允许加载
+
+> **dlopen handle 与 caller_addr 的区别**：`dlopen()` 返回的是 opaque handle（内部为 soinfo 指针，地址值本身不指向目标库的代码段），不能直接当作 `caller_addr` 使用。`bionic/linker/linker.cpp` 的 `do_dlopen()` 调用 `find_containing_library(caller_addr)` 期望收到的是进程内某条已执行指令的地址，以便定位调用者所属的 soinfo。
 
 #### 手段三：ShadowHook 的 do_dlopen Hook
 
@@ -552,7 +547,7 @@ bytehook_stub_t bytehook_hook_all(
 
 **ShadowHook 的初始化优化**：
 
-为了避免重复获取 `linker` 全局互斥锁，ShadowHook 将 `dlopen` / `dlsym` 操作移至 `libshadowhook.so` 的 `.init_array` 段执行，确保在后续初始化阶段不需要再次持有 `linker` 全局锁。
+ShadowHook 在 `.init_array` 段缓存 `dlopen` / `dlsym` 的函数地址（主要用于 Android 4.x 兼容），目的是降低这些符号被 PLT-hook 拦截的概率——因为后续调用走的是保存好的函数指针而非 PLT 表项。
 
 ### Android 11+ namespace API 限制变化的历史脉络
 
@@ -617,7 +612,7 @@ ShadowHook 仅对 arm64-v8a 强制 16KB 对齐。
 - `kPageSize == 16384 && min_palign == 4096` → 触发 compat mode（`bionic.linker.16kb.app_compat.enabled`）
 - `min_palign >= kPageSize` → 正常加载
 
-compat mode 允许 4KB 对齐的 .so 在 16KB 设备上运行，但会跳过 RELRO 段填充（安全退化）。Google Play 强制截止日期：2025-11-01。
+compat mode 使用匿名映射将 4KB 对齐的 ELF 段内容读入进程空间，PSS 和共享内存都有额外代价。RELRO 保护在 compat mode 下仍然执行（`soinfo::protect_relro()` 调用 `mprotect(PROT_READ|PROT_EXEC)`），但布局受连续约束限制：兼容布局为 RO|RX + RELRO prefix + RW，`IsEligibleFor16KiBAppCompat()` 负责检查段排列是否满足此要求。Google Play 强制截止日期：2025-11-01。
 
 | NDK 版本 | 默认 p_align | 说明 |
 |----------|-------------|------|
@@ -728,9 +723,11 @@ bool ElfReader::IsEligibleFor16KiBAppCompat(ElfW(Addr)* vaddr) {
 
 触发条件：`linker_phdr.cpp` — `kPageSize == 16384 && min_align_ == 4096`。
 
-### ShadowHook Gap Trampoline 机制（绕过 Namespace 限制）
+### ShadowHook Trampoline Island 与可执行内存放置策略
 
-**核心设计**：利用 ELF PT_LOAD 段末尾未使用内存空间（gap）作为 trampoline 存储区，不调用 dlopen，直接向已映射内存区域写入代码。
+**Island 与 Gap**：ShadowHook 需要一块可执行内存来存放跳转 stub（trampoline）。首选方案是分配匿名 RWX mmap 页（island），不需要依赖目标 ELF 的空闲区域；当 island 不可用或想节省映射时，则回退到 ELF PT_LOAD 段末尾的未使用空间（gap）。Gap 本身解决的是 trampoline 的放置问题——分支距离超出 ARM64 B 指令 ±128MB 范围时，需要一个中间跳板。
+
+**Namespace 绕过**：ShadowHook 的 namespace bypass 能力来自对已加载 ELF 的符号查询（`.dynsym` / `.symtab`），通过 `xdl_*` 系列函数直接解析进程内存中的 ELF 头和符号表，不经过 `dlsym()`，因此不受 linker namespace 可见性约束。
 
 **gap 发现算法**（`sh_elf.c:sh_elf_get_gaps_from_phdr`）：
 ```cpp
@@ -775,7 +772,7 @@ for (size_t i = 0; i < dlpi_phnum; i++) {
 uintptr_t load_bias = base - min_vaddr;
 ```
 
-**为何能绕过 Namespace 限制**：ShadowHook 不调用 dlopen 加载目标库，而是直接向已映射的内存区域写入 trampoline 代码。目标 so 已经在进程地址空间（由系统 linker 加载），Namespace 限制仅对 dlopen() 新加载生效，对已加载 so 的内存区域写入不适用。
+**gap trampoline 与 namespace bypass 的关系**：gap/island 解决的是跳转距离和 trampoline 放置问题，本身不是 namespace bypass 手段。Namespace bypass 来自 ShadowHook 对已加载 ELF 的直接符号查询能力（`.dynsym` / `.symtab`），不经过 `dlsym()`。
 
 ### 主流 Hook 库 Namespace 绕过能力对比
 
@@ -809,30 +806,39 @@ ShadowHook upstream 的核心实现文件分布在以下路径：
 
 | 文件 | 职责 |
 |------|------|
-| `common/sh_trampo.c` | Trampoline 分配与管理（island 内存分配、释放、查找） |
-| `common/sh_island.c` | 远跳 island 的核心逻辑（分配可执行代码页） |
-| `arch/arm64/sh_inst.c` | ARM64 指令生成（LDR/BR literal stub、原始指令备份） |
-| `arch/arm/sh_t16.c` | ARM32 Thumb-16 指令生成 |
-| `arch/arm/sh_t32.c` | ARM32 Thumb-32 指令生成 |
-| `common/sh_util.c` | 工具函数（mprotect 封装、icache flush） |
+| 文件 | 职责 |
+|------|------|
+| `shadowhook/src/main/cpp/sh_trampo.c` | Trampoline 分配与管理（island 内存分配、释放、查找） |
+| `shadowhook/src/main/cpp/sh_island.c` | 远跳 island 的核心逻辑（分配可执行代码页） |
+| `shadowhook/src/main/cpp/arch/arm64/sh_inst.c` | ARM64 指令生成（LDR/BR literal stub、原始指令备份） |
+| `shadowhook/src/main/cpp/arch/arm/sh_t16.c` | ARM32 Thumb-16 指令生成 |
+| `shadowhook/src/main/cpp/arch/arm/sh_t32.c` | ARM32 Thumb-32 指令生成 |
+| `shadowhook/src/main/cpp/common/sh_util.c` | 工具函数（mprotect 封装、icache flush） |
 
-**ARM64 近距离跳转的 16 字节 stub 格式**：
+**ARM64 stub 策略**（区分 with-island 和 no-island）：
+
+- **with-island**（跳转距离 ≤ ±128MB）：函数入口写入 4 字节 `B` 相对跳转指令，跳转到 island 中间跳板。Island 中写入 `LDR X17, #offset` + `BR X17`（16B）+ literal pool。
+- **no-island**（远跳转或 island 不可用）：函数入口直接写入 20 字节绝对跳转 stub（`NOP` + `sh_a64_absolute_jump_with_br_ip()`，共 20B），原始指令备份 20 或 24 字节到 trampoline 页。函数入口被替换为：
 
 ```asm
-; 原函数入口被替换为：
-0x00: ldr x17, #0x08    ; 从 [pc+8] 加载 trampoline 地址
-0x04: br x17            ; 无条件跳转至 x17
-0x08: .quad <trampoline_addr>  ; literal pool
-0x10: ...(原始指令前 12 字节)
+; no-island 路径（20 字节，函数入口直接写入）
+0x00: nop                          ; 填充对齐
+0x04: ldr x17, #0x08              ; 从 [pc+8] 加载 trampoline 地址
+0x08: br x17                      ; 无条件跳转至 x17
+0x0c: .quad <trampoline_addr>     ; literal pool（8B）
+0x14: ...(trampoline 中保存的原始指令)
 ```
 
-**ARM32 Thumb 模式的 4 字节跳转**：
+**ARM32 Thumb stub 策略**（区分 with-island 和 no-island）：
+
+- **with-island**（跳转距离 ≤ ±2MB）：函数入口写入 4 字节 Thumb-2 相对跳转（`B.W`），跳转到 island 中间跳板。Island 中写入 `LDR R0, [PC, #imm]` + `BX R0`（4B 指令 + 4B 地址 = 8B）。
+- **no-island**（远跳转）：函数入口写入 `sh_t32_absolute_jump`（8 或 10 字节 Thumb-2 绝对跳转），原始指令备份到 trampoline 页：
 
 ```asm
-; Thumb-2 LDR PC, [PC, #imm]
-0x00: 4801 ldr r0, [pc, #4]  ; 从 [pc+4] 加载地址到 r0
-0x02: 4710 bx r0             ; 跳转至 r0
-0x04: .word <trampoline_addr>
+; no-island 路径（Thumb-2，函数入口写入）
+0x00: ldr r0, [pc, #4]           ; 从 [pc+4] 加载地址到 r0
+0x02: bx r0                      ; 跳转至 r0
+0x04: .word <trampoline_addr>    ; literal pool（4B）
 ```
 
 **模式判断逻辑**（源码示意）：
