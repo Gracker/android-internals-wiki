@@ -14648,7 +14648,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T09:27:37+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T10:48:43",
+      "completed_reason": "P1 Binder SQL已补client_utid关键线程约束(UI/RenderThread)；时间条件改为区间重叠(client_ts < frame_end AND client_ts + dur > frame_start)；breakdown查询内联子查询避免跨CTE丢失"
     },
     {
       "section": "3.2",
@@ -14679,7 +14681,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T10:29:04+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T10:48:43",
+      "completed_reason": "P0 InputReader.loopOnce代码已按android-16.0.0_r1重写(processEventsLocked+mPendingArgs+mNextListener.notify，移除QueuedListener.flush)；P1 队列观测口径已统一为ATRACE_INT counter计数器"
     }
   ],
   "completed": [
