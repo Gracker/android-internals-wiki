@@ -1268,7 +1268,7 @@
       ]
     }
   ],
-  "task2b_last_run": "2026-05-08T08:43:47+08:00",
+  "task2b_last_run": "2026-05-09T05:43:39+08:00",
   "task2b_reworks": [
     {
       "date": "2026-05-07T23:40:00+08:00",
@@ -1282,6 +1282,15 @@
       "auto_promoted": [
         "19.21"
       ]
+    },
+    {
+      "date": "2026-05-09T05:43:39+08:00",
+      "sections": [
+        "3.5",
+        "8.3"
+      ],
+      "type": "task9-deep-tech-review",
+      "summary": "P95 回炉: 3.5 pilferPointers调用方修正; 8.3 AutoFDO数据修正+Startup Profile版本表更新+ReDex分类修正"
     }
   ],
   "task2b_rework_log": [

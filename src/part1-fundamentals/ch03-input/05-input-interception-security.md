@@ -30,13 +30,13 @@ related_chapters:
 reviewed_date: 2026-05-09
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
-task2b_state: pending
-task9_result: needs-rework
+task2b_state: fixed
+task9_result: pending
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-09T05:30:47+08:00"
@@ -165,9 +165,11 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 `InputMonitor` 创建的输入通道在 InputDispatcher 内部被标记为 **spy window**。spy window 的特点是：
 
 1. **收到事件的副本**，不影响正常分发流程。目标窗口的事件不会因为 spy window 的存在而延迟或丢失。
-2. **可以 pilfer pointers**。`pilferPointers()` 让 spy window 从目标窗口拿走当前 pointer stream。系统手势导航（三键导航/手势导航）就用这个能力在用户从屏幕边缘滑动时接管触摸流——原始目标窗口会收到 `ACTION_CANCEL`。
+2. **可以 pilfer pointers**。`pilferPointers()` 让 spy window 从目标窗口拿走当前 pointer stream。手势导航模式下，SystemUI 的 `EdgeBackGestureHandler` 创建 `InputMonitorCompat("edge-swipe")` 监听边缘滑动，确认为返回手势后调用 `pilferPointers()` 接管触摸流——原始目标窗口收到 `ACTION_CANCEL`。
 
-`pilferPointers()` 的调用方通常是 `NavigationModeController` 或 `NavbarGestureController` 这类系统组件。它在 Perfetto 中的表现为：目标窗口的 touch slice 突然中断（`ACTION_CANCEL`），同时系统 UI 进程开始处理手势。如果分析时发现 App 的触摸流被意外中断，可以检查是否存在系统 spy window 在 pilfer。
+> [已验证: AOSP android-16.0.0_r1, packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java]
+
+它在 Perfetto 中的表现为：目标窗口的 touch slice 突然中断（`ACTION_CANCEL`），同时系统 UI 进程开始处理手势。如果分析时发现 App 的触摸流被意外中断，可以检查是否存在系统 spy window 在 pilfer。
 
 ### InputMonitor 与 InputFilter 的区别
 
@@ -177,7 +179,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 | 能否拿走 pointer stream | 否 | 是（`pilferPointers()`） |
 | 能否发出替代事件 | 是（`sendInputEvent()`） | 否（只能读，不能注入） |
 | 权限要求 | 系统签名，由 WMS 注册 | `MONITOR_INPUT`，系统签名或 privileged |
-| 典型使用方 | `AccessibilityInputFilter`、厂商定制 filter | 系统手势导航、系统 UI 手势识别 |
+| 典型使用方 | `AccessibilityInputFilter`、厂商定制 filter | SystemUI `EdgeBackGestureHandler`（手势导航返回）、系统 UI 手势识别 |
 
 三类输入旁路能力的边界：
 
@@ -474,7 +476,8 @@ adb shell dumpsys accessibility
 ### AOSP 源码路径
 
 - `frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java` — `setInputFilter()`
-- `frameworks/base/services/core/java/com/android/server/input/InputManagerService.java` — `setInputFilter()`、`injectInputEventToTarget()`
+- `frameworks/base/services/core/java/com/android/server/input/InputManagerService.java` — `setInputFilter()`、`injectInputEventToTarget()`、`monitorGestureInput()`
+- `packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java` — `InputMonitorCompat("edge-swipe")`、`pilferPointers()` 调用
 - `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` — `filterInputEvent()` 调用点、`injectInputEvent()`
 - `frameworks/base/core/java/android/view/InputFilter.java` — `InputFilter` 抽象与 `sendInputEvent()`
 - `frameworks/base/core/java/android/accessibilityservice/AccessibilityServiceInfo.java` — `CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`、`FLAG_REQUEST_FILTER_KEY_EVENTS`

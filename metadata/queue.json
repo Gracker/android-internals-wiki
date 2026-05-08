@@ -15045,7 +15045,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T05:30:47+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T05:43:23+08:00",
+      "completed_reason": "P0 pilferPointers调用方已修正为EdgeBackGestureHandler，删除不存在的类名，补源码锚点"
     },
     {
       "section": "8.3",
@@ -15077,6 +15079,28 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T05:30:47+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-09T05:43:23+08:00",
+      "completed_reason": "P0 AutoFDO数据已按官方Blog修正(boot time 2%→1%，删除未核实的Binder 21%)；P1 Startup Profile版本表改为AGP 8.1/8.2/8.3分阶+R8前提；P1 ReDex interdex已从闲时任务移除"
+    },
+    {
+      "section": "17.1",
+      "section_title": "章节 17",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        "https://juejin.cn/post/7595108457496346639"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "准确判断应用处于前台还是后台 — 文章深入分析了 Android 应用前后台状态的各种判断方法，包括 usageStatsManager、ActivityLifecycleCallbacks、ProcessLifecycleOwner",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-09T05:35:34.777331",
       "status": "pending"
     }
   ],
