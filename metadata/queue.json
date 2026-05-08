@@ -14688,6 +14688,33 @@
       "status": "completed",
       "completed_at": "2026-05-08T10:48:43",
       "completed_reason": "P0 InputReader.loopOnce代码已按android-16.0.0_r1重写(processEventsLocked+mPendingArgs+mNextListener.notify，移除QueuedListener.flush)；P1 队列观测口径已统一为ATRACE_INT counter计数器"
+    },
+    {
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 4.3 ART GC Perfetto 观测口径与 DeliQueue/MessageQueue 版本事实仍有 P1，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L297-L303 Android 17：DeliQueue 与 MessageQueue 无锁路径",
+          "detail": "[P1] 正文把“Android 17 的 DeliQueue”写成已在 android.os.MessageQueue 层面实现的无锁投递。复核 AOSP android-16.0.0_r1 与 main：公开路径是 LegacyMessageQueue / ConcurrentMessageQueue / CombinedMessageQueue，Concurrent 路径使用 ConcurrentSkipListSet 与 CAS stack；源码中未见 DeliQueue 命名。CombinedMessageQueue 还通过 Flags.forceConcurrentMessageQueue、core UID、SystemUI 进程等条件 gated，不是普通应用通用的 Android 17 行为。",
+          "suggestion": "改为“公开 AOSP 已有 ConcurrentMessageQueue / CombinedMessageQueue 路径（android-16.0.0_r1/main 可见），DeliQueue 命名与 Android 17 正式行为待 release note / tag / API 文档验证”。删除或弱化“消除 Handler/Message 路径同步开销”的全局结论；ReferenceQueue/FinalizerDaemon 仍保持未证实口径。"
+        },
+        {
+          "type": "Trace 配置错误/数据支撑",
+          "location": "L420-L459 Perfetto ART GC track 与 SQL 示例",
+          "detail": "[P1] 正文写 `art_gc` counter track 并用 `track.name LIKE '%art_gc%' AND slice.name LIKE '%GC%'` 统计 GC。复核 AOSP android-15.0.0_r1：`GarbageCollector::Run()` 通过 `ScopedTrace(\"%s %s GC\")` 产出 GC slice；`TraceGCMetric()` 上报的 counter 名是 `freed_normal_object_bytes`、`freed_large_object_bytes`、`freed_bytes`，`Heap::TraceHeapSize()` 上报 `Heap size (KB)`。源码未支持一个通用名为 `art_gc` 的 GC slice/counter track；该 SQL 容易返回空结果或漏掉真实 GC slice。`AllocObject` 也需要用真实 trace 样本确认 slice 名称和 category，不能直接写成稳定观测点。",
+          "suggestion": "重写 Perfetto 观测小节：GC 次数/耗时优先从进程/线程 slice（如 `HeapTaskDaemon`、main thread 上 `slice.name LIKE '% GC'` 或实际样本名称）统计；GC counter 单独查 `counter` / `counter_track` 中的 `freed_bytes`、`freed_*_object_bytes`、`Heap size (KB)`。Allocation Stall SQL 必须先用目标 trace 验证 `AllocObject` slice 名，再限定 process/thread。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T12:39:39+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
