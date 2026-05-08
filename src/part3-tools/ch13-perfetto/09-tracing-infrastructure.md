@@ -22,8 +22,8 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
@@ -32,8 +32,8 @@ task9_result: needs-rework
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T17:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-08-17-review.md"
+last_task6_at: "2026-05-08T18:20:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-18-review.md"
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
 last_task9_at: '2026-05-08T17:40:52+08:00'
@@ -45,13 +45,14 @@ repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
-review_notes: '2026-05-05 task6 revisit: pass-light-edit。清理 frontmatter 重复字段、验证路径与段落节奏；无新增 B 类问题；转入 Task9 复审。 | 2026-05-05 Task9 13:34：复核发现 P0，Perfetto SQL 原始 ftrace 表名仍误写为 ftrace_events；转 Task2B 修正为 ftrace_event。 | 2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误，需回炉修正。'
+task6_reviewed_date: "2026-05-08"
+review_notes: '2026-05-05 task6 revisit: pass-light-edit。清理 frontmatter 重复字段、验证路径与段落节奏；无新增 B 类问题；转入 Task9 复审。 | 2026-05-05 Task9 13:34：复核发现 P0，Perfetto SQL 原始 ftrace 表名仍误写为 ftrace_events；转 Task2B 修正为 ftrace_event。 | 2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。'
 last_task9_review_log: logs/deep-review/2026-05-08-17-deep-review.md
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
 
-当 Perfetto 里某个 Track 突然不出数，或者自定义 tag 没进 Trace 时，只会看 UI 已经不够了。我们得知道这些数据是从哪一层采上来，又是沿着什么路径写进 Trace 文件的。
+当 Perfetto 里某个 Track 突然不出数，或者自定义 tag 没进 Trace 时，只会看 UI 已经不够了。需要知道这些数据是从哪一层采上来，又是沿着什么路径写进 Trace 文件的。
 
 这一节拆开 Android Tracing 的整条数据链：Linux 内核的 ftrace 如何提供基础事件，atrace 如何把用户空间 tag 接到这条链上，Perfetto 的 `traced` / `traced_probes` 如何把内核和用户空间数据汇到同一个 Trace 中，以及 App、Framework、Kernel 三层分别怎么扩展自定义追踪点。
 
@@ -94,7 +95,7 @@ function tracer 因而可以记录内核中**所有被追踪函数的调用序�
 
 **tracepoint**——这是 Android 性能分析中最常用的 ftrace 模式。与 function tracer 不同，tracepoint 不是"追踪所有函数"，而是在内核源码中**预定义的探测点**。内核开发者在关键位置使用 `TRACE_EVENT` 宏声明一个 tracepoint，编译后它在未被启用时是一条分支预测为 not-taken 的 `if` 判断（使用 `static_key` 机制），开销接近零。当启用时，它执行对应的 probe 回调函数，将事件数据写入 per-CPU ring buffer。
 
-Perfetto Trace 中我们看到的 `sched_switch`、`sched_wakeup`、`cpu_frequency`、`binder_transaction`、`block_rq_issue` 等内核事件，全部来自 tracepoint。它们是 ftrace 中开销最低、最稳定的数据源。
+Perfetto Trace 中的 `sched_switch`、`sched_wakeup`、`cpu_frequency`、`binder_transaction`、`block_rq_issue` 等内核事件，全部来自 tracepoint。它们是 ftrace 中开销最低、最稳定的数据源。
 
 ### tracefs 文件系统接口
 
@@ -108,7 +109,7 @@ Perfetto Trace 中我们看到的 `sched_switch`、`sched_wakeup`、`cpu_frequen
 
 [已验证: AOSP android-17-beta3, kernel/trace/trace.c]
 
-当我们用 Perfetto 抓取 Trace 时，traced 守护进程通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 字段列出的每一个事件名，最终都会被写入 `set_event` 文件。
+用 Perfetto 抓取 Trace 时，traced 守护进程通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 字段列出的每一个事件名，最终都会被写入 `set_event` 文件。
 
 ### Android 常用 tracepoint 分类
 
@@ -135,7 +136,7 @@ ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户
 
 ### atrace 的分类机制
 
-`atrace` 命令（源码位于 `frameworks/native/cmds/atrace/`）对 ftrace 的 tracepoint 做了分类封装。当我们执行 `atrace --help` 时看到的那一堆 category（`sched`, `freq`, `binder_driver`, `gfx`, `view`, `dalvik` 等），每个 category 背后对应一组 ftrace events 和/或用户空间 tag 的启停。
+`atrace` 命令（源码位于 `frameworks/native/cmds/atrace/`）对 ftrace 的 tracepoint 做了分类封装。执行 `atrace --help` 时看到的那一堆 category（`sched`, `freq`, `binder_driver`, `gfx`, `view`, `dalvik` 等），每个 category 背后对应一组 ftrace events 和/或用户空间 tag 的启停。
 
 例如：
 - `atrace sched` → 启用 ftrace 的 `sched_switch`, `sched_wakeup`, `sched_wakeup_new` 等 tracepoint
@@ -151,7 +152,7 @@ Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 直接绕过 atrace 的�
 
 ### 用户空间 Trace tag 的底层实现
 
-我们在 App 和 Framework 中经常使用的 `Trace.beginSection("myTag")` / `Trace.endSection()`（Android API）和 C/C++ 中的 `ATRACE_CALL()` / `ATRACE_BEGIN()` 宏，它们的数据最终也通过 ftrace 传递。
+App 和 Framework 中常用的 `Trace.beginSection("myTag")` / `Trace.endSection()`（Android API）和 C/C++ 中的 `ATRACE_CALL()` / `ATRACE_BEGIN()` 宏，它们的数据最终也通过 ftrace 传递。
 
 具体流程是这样的：
 
@@ -191,7 +192,7 @@ traced 进程（源码位于 `external/perfetto/src/traced/`）采用 producer-c
 
 数据流如下：
 
-```
+```text
 ftrace tracepoints ──┐
                       ├── traced_probes ──→ traced service ──→ Trace 文件
 /proc/* 文件系统 ────┤                                         
@@ -237,7 +238,7 @@ traced_probes 读取 ftrace 数据的源码路径（AOSP main 组织方式）：
 
 **路径一：App 层时间片（最常用）。** 通过 `android.os.Trace` / `androidx.tracing` 写入 `trace_marker`，traced 会自动采集。适合绝大多数场景，不需要引入额外依赖。
 
-**路径二：Perfetto C++ SDK 自定义 Data Source。** 如果你需要发射结构化的自定义数据（不是简单的时间片），可以使用 Perfetto C++ SDK 注册自定义数据源。这是纯 C++ API，Java/Kotlin 应用需要通过 JNI 调用：
+**路径二：Perfetto C++ SDK 自定义 Data Source。** 如果需要发射结构化的自定义数据（不是简单的时间片），可以使用 Perfetto C++ SDK 注册自定义数据源。这是纯 C++ API，Java/Kotlin 应用需要通过 JNI 调用：
 
 ```cpp
 // Perfetto C++ SDK — 注册自定义 Data Source
@@ -444,13 +445,13 @@ Android 16 引入的 UprobeStats 是基于 eBPF uprobe 机制的动态埋点工�
 
 [来源: intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md；“任意函数 <1%” 缺一手基准数据，已收窄为条件化描述]
 
-在 §14.10 中我们会深入讨论 eBPF 在 Android 性能分析中的具体应用。
+§14.10 会继续讨论 eBPF 在 Android 性能分析中的具体应用。
 
 ## 小结
 
-我们梳理了 Android Tracing 的完整数据流：
+这一节梳理了 Android Tracing 的完整数据流：
 
-```
+```text
 内核 tracepoint ──→ ftrace ring buffer ──→ traced_probes ──→ traced ──→ Trace 文件 ──→ Perfetto UI/SQL
 用户 trace_marker ──→ ftrace ring buffer ──↗
 ```

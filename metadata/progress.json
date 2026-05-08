@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-05-08T17:05:00+08:00",
+  "generated_at": "2026-05-08T18:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
-    "total_sections": 210,
-    "last_updated": "2026-05-08T17:05:00+08:00",
+    "total_sections": 240,
+    "last_updated": "2026-05-08T18:20:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 146,
-      "task2b_pending": 60,
+      "task2b_pending": 57,
       "task6_pending": 1,
-      "task9_pending": 1,
-      "unknown": 1
+      "task9_pending": 4,
+      "unknown": 31
     },
     "task6_state_counts": {
       "reviewed": 207,
       "revisiting": 1,
-      "unknown": 2
+      "unknown": 32
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 1,
-      "reviewed": 205,
-      "unknown": 2
+      "pending": 4,
+      "reviewed": 202,
+      "unknown": 32
     },
     "task2b_state_counts": {
-      "fixed": 147,
-      "pending": 59,
-      "unknown": 4
+      "fixed": 150,
+      "pending": 56,
+      "unknown": 34
     },
     "status_counts": {
       "finalized": 146,
       "ready-for-review": 63,
-      "unknown": 1
+      "unknown": 31
     }
   },
   "task2b_rework_history": [
@@ -527,6 +527,22 @@
       "auto_finalized": [],
       "skipped": [],
       "review_log": "logs/review/2026-05-08-17-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T18:20:00+08:00",
+      "sections": [
+        "7.1",
+        "13.9",
+        "14.11"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 24,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [],
+      "review_log": "logs/review/2026-05-08-18-review.md"
     }
   ],
   "task9_review_history": [
@@ -1039,17 +1055,29 @@
   "7.1": {
     "last_task2b_at": "2026-05-08T17:59:11.630954+08:00",
     "task2b_result": "fixed",
-    "pipeline_stage": "task6_pending"
+    "pipeline_stage": "task9_pending",
+    "last_task6_at": "2026-05-08T18:20:00+08:00",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "last_task6_review_log": "logs/review/2026-05-08-18-review.md"
   },
   "13.9": {
     "last_task2b_at": "2026-05-08T17:59:11.630954+08:00",
     "task2b_result": "fixed",
-    "pipeline_stage": "task6_pending"
+    "pipeline_stage": "task9_pending",
+    "last_task6_at": "2026-05-08T18:20:00+08:00",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "last_task6_review_log": "logs/review/2026-05-08-18-review.md"
   },
   "14.11": {
     "last_task2b_at": "2026-05-08T17:59:11.630954+08:00",
     "task2b_result": "fixed",
-    "pipeline_stage": "task6_pending"
+    "pipeline_stage": "task9_pending",
+    "last_task6_at": "2026-05-08T18:20:00+08:00",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "last_task6_review_log": "logs/review/2026-05-08-18-review.md"
   },
   "daily_stats": {
     "2026-05-08": {
