@@ -39,10 +39,10 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-08"
+reviewed_date: "2026-05-09"
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
@@ -55,9 +55,9 @@ task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: '2026-05-08T22:40:00'
 task9_review_notes: "2026-05-09 task9 deep-review: needs-rework。W^X/RWX、ShadowHook 源码路径与 namespace 代码节选存在 P0，已写入 queue。"
-last_task6_at: "2026-05-08T23:18:39+08:00"
-last_task6_review_log: "logs/review/2026-05-08-23-review.md"
-review_notes: "2026-05-08 Task6 23:18：Task2B 修复后写作复审；轻修 104 处（禁用词/高频词、否定纠正式、半角标点、中英文间距与代码围栏语言），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-09T03:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-09-03-review.md"
+review_notes: "2026-05-09 Task6 03:07：Task2B 修复后写作复审；轻修 20 处（标题引导语、形容词冒号起手式、半角标点、限制变严/分解类翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 
@@ -94,7 +94,7 @@ review_notes: "2026-05-08 Task6 23:18：Task2B 修复后写作复审；轻修 10
 这些问题的答案不在功能列表里，而在实现机制中。
 这一章不教读者自己编写 Hook，但会详细介绍常见的实现路线及其工程代价。理解这些机制后，再看 `Matrix`、`KOOM`、`btrace`、`Booster` 等工具时，就能基于技术原理而不是表面功能来做决策。
 
-## 先把五条常见路线分开
+## 五条常见路线的边界
 
 性能工具常用的底层手段很多，常见路线可以分成五条：
 
@@ -122,14 +122,13 @@ review_notes: "2026-05-08 Task6 23:18：Task2B 修复后写作复审；轻修 10
 - `Choreographer.FrameCallback`：VSync 回调接口，用于帧时间对齐和自定义帧调度
 - `JVMTI`：JVM Tool Interface，debuggable 进程可用的运行时诊断接口（Android 8+）
 
-这条路线的优点很直接：
+这条路线有三个优势：
 
 - 兼容性通常最好
 - 升级成本最低
 - 对系统行为的破坏最小
 
-它的缺点也同样直接：
-系统愿意给你的，你才能拿到；系统没暴露的，你就拿不到。
+它的边界也只有一条：系统愿意给你的，你才能拿到；系统没暴露的，你就拿不到。
 
 所以它非常适合作为第一层信号源，却不适合解决"平台没给，但团队非常想看"的那部分需求。
 
@@ -137,7 +136,7 @@ review_notes: "2026-05-08 Task6 23:18：Task2B 修复后写作复审；轻修 10
 
 ## 第二条路线：字节码插桩
 
-字节码插桩的思路很朴素：既然运行时看不到，那就在编译时先把监控逻辑织进去。
+字节码插桩把监控逻辑提前织入编译产物：运行时看不到的调用点，编译阶段先改掉。
 
 典型代表是：
 
@@ -179,7 +178,7 @@ PLT Hook 的入口在动态库边界。
 
 这也是 `ByteHook` 这类现代框架比早期通用实现更重的一层工程成本：难点从"改指针"扩展到"在受限装载环境里可靠找到符号"。
 
-但它的边界也必须明确：
+但它的边界需要提前说明：
 **不是所有调用都经过 PLT / GOT。**
 所以 PLT Hook 天然有盲区。
 
@@ -209,7 +208,7 @@ Inline Hook 更激进。它直接改目标函数入口处的机器码，把执�
 
 ART 运行时 Hook 直接改 Java 方法在 ART 内部的入口点。典型实现会定位 `ArtMethod`，再把 `entry_point_from_quick_compiled_code_` 指向代理入口，或在解释/编译入口之间插入跳转。`SandHook`、`Epic` 属于这条路线。
 
-它解决的是字节码插桩覆盖不到的运行时拦截：例如无法重打包、无法修改 AOSP、又需要临时接管某个 Java Framework 方法的场景。代价也很明确：
+它解决的是字节码插桩覆盖不到的运行时拦截：例如无法重打包、无法修改 AOSP、又需要临时接管某个 Java Framework 方法的场景。代价也随之出现：
 
 - `ArtMethod` 结构随 Android/ART 版本变化，字段偏移需要逐版本适配
 - JIT、AOT、inline、quickening 会改变方法入口和调用路径
@@ -220,7 +219,7 @@ ART 运行时 Hook 直接改 Java 方法在 ART 内部的入口点。典型实�
 
 ## 把几个名字放回它们对应的位置
 
-这时再看几个常见工具，位置就会清楚很多：
+把常见工具放回各自路线，位置会更清楚：
 
 | 工具 | 主要路线 | 更适合做什么 |
 |---|---|---|
@@ -234,9 +233,9 @@ ART 运行时 Hook 直接改 Java 方法在 ART 内部的入口点。典型实�
 
 | 工具 | 天然短板 |
 |---|---|
-| `ByteHook` / `xHook` | 不是所有调用都走 PLT;系统库还受 linker namespace 约束 |
+| `ByteHook` / `xHook` | 不是所有调用都走 PLT；系统库还受 linker namespace 约束 |
 | `ShadowHook` | 维护成本和兼容风险更高 |
-| `SandHook` / `Epic` | 依赖 ART 内部结构,受版本、inline/JIT/AOT 与 hidden API 影响大 |
+| `SandHook` / `Epic` | 依赖 ART 内部结构，受版本、inline/JIT/AOT 与 hidden API 影响大 |
 | `Booster` | 强依赖构建链和 AGP 版本 |
 
 最常见的误判，是把这些路线当成互相替代。它们经常不在同一层。
@@ -254,7 +253,7 @@ ART 运行时 Hook 直接改 Java 方法在 ART 内部的入口点。典型实�
 - `IO Canary` 更偏 native Hook
 - `Resource Canary` 更偏弱引用、GC 和 hprof 裁剪
 
-所以再看 Matrix 时，不该把它理解成"一个统一 API"，更准确的理解是"多个能力被装进了同一套框架里"。
+所以再看 Matrix 时，不该把它理解成"一个统一 API"，它更像是"多个能力被装进了同一套框架里"。
 
 ### KOOM
 
@@ -329,8 +328,8 @@ target_link_options(your_native_lib PRIVATE "-Wl,-z,max-page-size=16384")
 如果某个 Hook 库几年没维护，又默认假设 4KB 页，这在 Android 15/16 设备上就是上线前必须先排掉的兼容性红线。
 
 - **Android API 版本变化**：每个大版本的 Bionic Linker、SELinux 策略、execmem/execmod 判定逻辑都可能调整，Hook 库需要逐版本验证
-- **Android 14 (API 34) 动态代码加载收紧**：targetSdk 34 要求动态加载的 DEX/JAR/APK 文件在加载前必须只读（Safer dynamic code loading 行为变更）；native 代码页的 W^X / execmem / execmod 约束在 Android 8-13 已存在，Android 14 未新增通用 `mprotect()` 限制
-- **linker / namespace 行为差异**：Android 7 起引入的 linker namespace 隔离，不同版本对 `dlopen` 路径和符号可见性的限制逐步收紧
+- **Android 14 (API 34) 动态代码加载要求变严**：targetSdk 34 要求动态加载的 DEX/JAR/APK 文件在加载前必须只读（Safer dynamic code loading 行为变更）；native 代码页的 W^X / execmem / execmod 约束在 Android 8-13 已存在，Android 14 未新增通用 `mprotect()` 限制
+- **linker / namespace 行为差异**：Android 7 起引入的 linker namespace 隔离，不同版本对 `dlopen` 路径和符号可见性的限制逐步变严
 - **Android 15+ (API 35+) 的 16KB Page Size**：页大小变化直接影响 `mprotect` 的地址对齐要求和 ELF 加载兼容性
 - **ABI 与指令集差异**：ARM32/ARM64 的指令修补策略不同，Thumb/ARM 模式切换、分支距离限制都需要分别处理
 - **ROM 定制**：厂商可能修改 so 装载策略、SELinux 策略或 linker 行为，同一 Hook 库在不同 ROM 上的表现可能不一致
@@ -374,14 +373,14 @@ Inline Hook 在 Android 上长期受 W^X / execmem / execmod / SELinux 共同约
 Inline Hook 修改的是已映射的代码页，不能只用一句“Bionic Linker 限制”解释。工程约束分三层：
 
 - `mprotect()` 是内核接口，页面权限变更最终要经过内核 VMA 检查和 SELinux 判定；是否允许 `PROT_WRITE | PROT_EXEC`（RWX）组合取决于内核配置和 SELinux 策略，不能一概而论。部分设备/内核允许匿名 RWX mmap，部分则严格禁止。
-- SELinux 权限标签按内存来源区分：匿名可执行内存、JIT trampoline 更接近 `execmem`；文件映射代码页被改脏后再执行，会落到 `execmod` / text relocation 这类约束。AOSP sepolicy `private/app.te` 中仍有 `allow appdomain self:process execmem` 规则，但 OEM 可以收紧或移除。
+- SELinux 权限标签按内存来源区分：匿名可执行内存、JIT trampoline 更接近 `execmem`；文件映射代码页被改脏后再执行，会落到 `execmod` / text relocation 这类约束。AOSP sepolicy `private/app.te` 中仍有 `allow appdomain self:process execmem` 规则，但 OEM 可以改严或移除。
 - Bionic Linker 在处理 text relocation 等场景时遵循 RX→RW→RX 的转换，不保留同时可写可执行的页面。`bionic/linker/linker_phdr.cpp` 的加载流程体现了这种约束，但这只规范 Linker 自身行为，不影响用户态 `mmap`/`mprotect` 的内核级判定。
 
 因此 Inline Hook 的工程做法要拆成三个动作：短时间切到可写、写完后恢复可执行、刷新 icache。但具体是走两步 `mprotect`（RW→RX）还是直接 RWX mmap，取决于目标设备的 SELinux 策略和 Hook 库的实现选择。
 
 ### Inline Hook 在 W^X 约束下的标准执行流程
 
-Inline Hook 的完整执行流程在现代 Android 上被拆解为五个阶段：
+Inline Hook 的完整执行流程在现代 Android 上分为五个阶段：
 
 ```text
 1. 查询目标函数地址（从 /proc/self/maps 或 ELF 符号表）
@@ -438,9 +437,9 @@ Compat Mode 触发条件在 `linker_phdr.cpp`：`kPageSize == 16384 && min_align
 
 | Android 版本 | W^X 严格程度 | 动态代码加载限制 | 页大小 |
 |--------------|-------------|-----------------|--------|
-| Android 7 (API 24) | PIE 强制,系统库装载边界开始收紧 | 无 | 4KB |
+| Android 7 (API 24) | PIE 强制，系统库装载边界开始变严 | 无 | 4KB |
 | Android 8-13 (API 26-33) | SELinux execmem/execmod 策略因设备/OEM 而异；AOSP 默认允许 appdomain execmem | 无强制 | 4KB |
-| Android 14 (API 34) | 同上;targetSdkVersion 34 的动态代码加载只读要求更严 | DEX/JAR/APK 等动态代码文件加载前必须只读 | 4KB |
+| Android 14 (API 34) | 同上；targetSdkVersion 34 的动态代码加载只读要求更严 | DEX/JAR/APK 等动态代码文件加载前必须只读 | 4KB |
 | Android 15 (API 35) | 同上 | 同上 | 4KB / 16KB（设备相关） |
 | Android 16 (API 36) | 同上 | 同上 | 4KB / 16KB（设备相关） |
 
@@ -451,7 +450,7 @@ Compat Mode 触发条件在 `linker_phdr.cpp`：`kPageSize == 16384 && min_align
 
 <!-- AIW-源码调研-2026-04-27 -->
 
-### Android Linker Namespace 机制从引入到收紧的演进
+### Android Linker Namespace 机制的演进
 
 Android 从 7.0 (Nougat) 开始引入 Linker Namespace，核心目标是**隔离私有系统库、防止应用依赖非 NDK API**。Android 8.0 (Oreo) 的 Project Treble 进一步强化了这套隔离机制，使它成为系统安全架构的基础组件。
 
@@ -555,13 +554,13 @@ bytehook_stub_t bytehook_hook_all(
 
 为了避免重复获取 `linker` 全局互斥锁，ShadowHook 将 `dlopen` / `dlsym` 操作移至 `libshadowhook.so` 的 `.init_array` 段执行，确保在后续初始化阶段不需要再次持有 `linker` 全局锁。
 
-### Android 11+ namespace API 收紧的历史脉络
+### Android 11+ namespace API 限制变化的历史脉络
 
 | Android 版本 | 关键变更 |
 |--------------|---------|
 | Android 7.0 (API 24) | 引入 linker namespace，初步隔离 |
 | Android 8.0 (API 26) | classloader-namespace 分配给 Java App（Treble 核心） |
-| Android 9 (API 28) | 进一步收紧限制，禁止加载私有 API |
+| Android 9 (API 28) | 进一步强化限制，禁止加载私有 API |
 | Android 10 (API 29) | `android_create_namespace()` 不再从 `libdl.so` 导出；内部实现入口为 `linker/dlfcn.cpp::__loader_android_create_namespace` |
 | Android 14 (API 34) | Safer dynamic code loading：DEX/JAR/APK 加载前必须只读；native W^X 约束未变 |
 | Android 16 (API 36) | ShadowHook 支持至 API 36 |
@@ -851,7 +850,7 @@ static bool is_thumb_mode(uintptr_t addr) {
 3. 原入口处写入跳转指令（`b #offset` 或 `bl #offset`），同样需要 mprotect 和 icache flush
 4. 上游 ShadowHook 在 island 分配时直接使用 RWX mmap，简化了写入流程；部分设备上如果 SELinux 禁止 execmem，这一步会失败
 
-**可执行内存的 SELinux 约束**：匿名 mmap 分配 RWX 权限需要 `execmem`，AOSP sepolicy `private/app.te` 中默认 `allow appdomain self:process execmem`，但 OEM 可能收紧或移除此规则。ShadowHook 依赖此权限可用，在严格策略的设备上 Hook 会失败。
+**可执行内存的 SELinux 约束**：匿名 mmap 分配 RWX 权限需要 `execmem`，AOSP sepolicy `private/app.te` 中默认 `allow appdomain self:process execmem`，但 OEM 可能改严或移除此规则。ShadowHook 依赖此权限可用，在严格策略的设备上 Hook 会失败。
 
 ### ShadowHook v2.0.0 支持 intercept（断点级拦截）
 

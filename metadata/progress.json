@@ -1,21 +1,21 @@
 {
-  "generated_at": "2026-05-09T02:08:33+08:00",
+  "generated_at": "2026-05-09T03:07:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T02:08:33+08:00",
+    "last_updated": "2026-05-09T03:07:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 154,
       "task2b_pending": 50,
-      "task6_pending": 2,
-      "task9_pending": 3,
+      "task6_pending": 1,
+      "task9_pending": 4,
       "unknown": 30
     },
     "task6_state_counts": {
-      "reviewed": 208,
-      "revisiting": 1,
+      "reviewed": 209,
+      "revisiting": 0,
       "unknown": 31
     },
     "task9_state_counts": {
@@ -638,6 +638,25 @@
         }
       ],
       "review_log": "logs/review/2026-05-09-02-review.md"
+    },
+    {
+      "timestamp": "2026-05-09T03:07:00+08:00",
+      "sections": [
+        "14.13"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 20,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分，outline 后正文 0 行；queue 中仍有 blocked 外部 review 项"
+        }
+      ],
+      "review_log": "logs/review/2026-05-09-03-review.md"
     }
   ],
   "task9_review_history": [
@@ -1408,17 +1427,18 @@
     "task2b_state": "fixed"
   },
   "14.13": {
-    "last_task6_at": "2026-05-08T23:18:39+08:00",
+    "last_task6_at": "2026-05-09T03:07:00+08:00",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
-    "last_task6_review_log": "logs/review/2026-05-08-23-review.md",
-    "pipeline_stage": "task2b_pending",
+    "last_task6_review_log": "logs/review/2026-05-09-03-review.md",
+    "pipeline_stage": "task9_pending",
     "status": "ready-for-review",
-    "task9_state": "reviewed",
-    "task2b_state": "pending",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
     "last_task9_at": "2026-05-09T00:37:58+08:00",
     "task9_result": "needs-rework",
-    "last_task9_review_log": "logs/deep-review/2026-05-09-00-deep-review.md"
+    "last_task9_review_log": "logs/deep-review/2026-05-09-00-deep-review.md",
+    "task2b_result": "fixed"
   },
   "rework_completed": [
     {
