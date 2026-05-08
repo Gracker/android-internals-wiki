@@ -2,7 +2,6 @@
 title: "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理"
 chapter: "13.9"
 section: "13.9"
-status: "ready-for-review"
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
@@ -22,20 +21,10 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: "task6_pending"
-task6_state: reviewed
-task9_state: "reviewed"
 task2b_state: "fixed"
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
-task6_result: pass-light-edit
 task9_result: "needs-rework"
 task2b_result: fixed
-task6_state: revisiting
-task9_state: pending
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T18:20:00+08:00"
-last_task6_review_log: "logs/review/2026-05-08-18-review.md"
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
 last_task9_at: "2026-05-08T18:40:56+08:00"
@@ -47,9 +36,18 @@ repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
-task6_reviewed_date: "2026-05-08"
-review_notes: '2026-05-05 task6 revisit: pass-light-edit。清理 frontmatter 重复字段、验证路径与段落节奏；无新增 B 类问题；转入 Task9 复审。 | 2026-05-05 Task9 13:34：复核发现 P0，Perfetto SQL 原始 ftrace 表名仍误写为 ftrace_events；转 Task2B 修正为 ftrace_event。 | 2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误，需回炉修正。 | 2026-05-08 Task6 18:20：复审 Task2B P0 修复后的文稿，完成代码围栏语言标注与第一/二人称痕迹小修；无新增 B 类回炉项；转入 Task9 复审。'
 last_task9_review_log: "logs/deep-review/2026-05-08-18-deep-review.md"
+status: "ready-for-review"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-08"
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T19:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-19-review.md"
+review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 修复后的复审；清理 frontmatter 重复字段，收紧 tracing 开销表述的验证边界；未发现新增 B 类回炉项；转入 Task9 复审。"
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
@@ -412,7 +410,7 @@ WHERE name = 'my_custom_my_event'
 | 追踪模式 | 典型开销 | 适用场景 |
 |----------|---------|---------|
 | function tracer | 系统 10-15% 性能下降 | 内核调试、代码理解，**禁止**在生产或性能测试中启用 |
-| tracepoint（已启用） | 单个 tracepoint 约 100-500ns | 性能分析首选，Android 默认追踪集开销 < 3% |
+| tracepoint（已启用） | 单个 tracepoint 约 100-500ns | 性能分析首选；Android 默认追踪集开销 < 3% 需按设备和事件集复测 |
 | tracepoint（未启用） | 接近零（static_key branch） | 平时零开销，按需启用 |
 | trace_marker（用户空间 tag） | 约 200-500ns/次 | App/Framework 追踪，高频调用时需注意 |
 | eBPF kprobe | 约 500-2000ns/次 | 动态追踪，比 tracepoint 开销略高 |

@@ -2,19 +2,13 @@
 title: Binder IPC 机制与性能影响
 chapter: '1.4'
 section: '1.4'
-reviewed_date: '2026-05-08'
-reviewed_by: openclaw-task6
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 drafted_date: '2026-04-10'
 drafted_by: openclaw-task2a
 last_verified: '2026-05-08'
 last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android 官方文档
-status: ready-for-review
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
 confidence: medium
 sources:
 - type: blog
@@ -49,17 +43,23 @@ related_chapters:
 - '7.2'
 - '8.2'
 - '9.1'
-task6_result: needs-rework
-review_round: 6
-task6_reviewed_date: '2026-05-08'
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-01'
 last_task9_at: '2026-05-01T03:20:00+08:00'
 task9_review_notes: '2026-05-01 task9 deep-review: needs-rework。P1 3，P2 0。Android 16 android.binder 字段/来源描述、Binder 风暴 SQL、16KB Binder 吞吐数据需回炉。'
-last_task6_at: '2026-05-08T17:05:00+08:00'
-last_task6_review_log: logs/review/2026-05-08-17-review.md
-review_notes: '2026-05-08 task6 revisit: needs-rework。frontmatter 重复字段已清理；正文末尾 AIW 源码调研块仍是资料摘录且位于参考资料后，已标注并写入 Task2B queue。'
+status: "ready-for-review"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task9_pending"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-08"
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T19:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-19-review.md"
+review_round: 7
+review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成 Task2B 回炉后复审；去除第一/二人称痕迹、冗余强调词，并修正版本演进处 scatter-gather 表述与 FAQ 内部一致性；无新增 B 类回炉项；转入 Task9 复审。"
 ---
 
 
@@ -94,11 +94,11 @@ review_notes: '2026-05-08 task6 revisit: needs-rework。frontmatter 重复字段
 
 ## 为什么要了解 Binder
 
-如果我们做过 Android 性能优化，往往会在 Perfetto 里看到这样的场景：主线程一段 `doFrame` 执行到一半，突然出现一个 10ms 甚至 30ms 的 Sleeping 状态。没有 Java 代码在跑，CPU 也不忙，线程只是停在那里。放大去看 `thread_state`，`blocked_function` 显示的是 `binder_thread_read`。这说明主线程发起了一次跨进程调用，正在等对方回复。
+做 Android 性能优化时，Perfetto 里常见这样的场景：主线程一段 `doFrame` 执行到一半，突然出现一个 10ms 甚至 30ms 的 Sleeping 状态。没有 Java 代码在跑，CPU 也不忙，线程只是停在那里。放大去看 `thread_state`，`blocked_function` 显示的是 `binder_thread_read`。这说明主线程发起了一次跨进程调用，正在等对方回复。
 
 这不是偶然。Android 的多进程架构决定了几乎所有系统服务调用都走 Binder：启动 Activity、获取窗口信息、查询定位、读写设置……一个典型的冷启动流程，主线程可能发起 30-50 次同步 Binder 调用。其中任何一次耗时过长，都会直接表现为启动变慢或卡顿。更严重的是，如果调用端是主线程且超时，就会触发 ANR。
 
-理解 Binder 的工作原理和它在 Perfetto 中的表现后，我们就能回答这些问题：主线程那段 Sleeping 时间到底在等谁，是服务端处理慢、排队等线程，还是锁竞争？这是同步调用还是 oneway？答案不同，优化方向也完全不同。
+理解 Binder 的工作原理和它在 Perfetto 中的表现后，分析时就能回答这些问题：主线程那段 Sleeping 时间到底在等谁，是服务端处理慢、排队等线程，还是锁竞争？这是同步调用还是 oneway？答案不同，优化方向也完全不同。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/IBinder] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
 
@@ -106,7 +106,7 @@ review_notes: '2026-05-08 task6 revisit: needs-rework。frontmatter 重复字段
 
 ### 一次调用经历了什么
 
-Binder 的设计目标是让跨进程调用看起来像本地函数调用。当我们写 `windowManager.addView()` 时，实际发生的事情远比一行代码复杂。
+Binder 的设计目标是让跨进程调用看起来像本地函数调用。业务代码调用 `windowManager.addView()` 时，实际发生的事情远比一行代码复杂。
 
 整个调用链可以简化为五个角色和四个步骤：
 
@@ -116,7 +116,7 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。当�
 
 1. Client 线程通过 Proxy 将参数序列化到 `Parcel`，调用 `IBinder.transact()`。
 2. Binder Driver 接管，将数据从 Client 进程的地址空间拷贝到 Server 进程可以访问的共享内存区域，然后唤醒一个空闲的 Server 端 Binder 线程。
-3. Server 端的 Binder 线程被唤醒，Stub 类从 `Parcel` 反序列化参数，调用真正的实现代码，将结果序列化回 `Parcel`。
+3. Server 端的 Binder 线程被唤醒，Stub 类从 `Parcel` 反序列化参数，调用实际实现代码，将结果序列化回 `Parcel`。
 4. Binder Driver 将结果数据传回 Client，唤醒等待中的 Client 线程。
 
 [已验证: AOSP 源码, frameworks/native/libs/binder/BpBinder.cpp] [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_Binder驱动中的流程详解.md]
@@ -141,7 +141,7 @@ Android 8（Oreo）加入了 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_R
 
 ### AIDL：让跨进程调用看起来像本地调用
 
-AIDL（Android Interface Definition Language）是 Binder 在应用层的接口。我们写一个 `.aidl` 文件定义接口，编译器会生成 `Stub`（服务端基类）和 `Proxy`（客户端代理），业务代码通过这两个类把“本地方法调用”翻译成 `Parcel` 序列化和 `transact()`。
+AIDL（Android Interface Definition Language）是 Binder 在应用层的接口。业务代码用 `.aidl` 文件定义接口，编译器会生成 `Stub`（服务端基类）和 `Proxy`（客户端代理），再通过这两个类把“本地方法调用”翻译成 `Parcel` 序列化和 `transact()`。
 
 这里用一个自定义接口演示 Proxy/Stub 模式。这样更容易把调用过程讲清楚，也不会把系统私有接口名和示例方法签名混在一起。窗口添加相关的真实系统入口在 `frameworks/base/core/java/android/view/IWindowSession.aidl` 的 `addToDisplay*()`，不是 `IWindowManager.addView()`。
 
@@ -173,7 +173,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 }
 ```
 
-这个模式的关键点不在方法名，而在调用步骤：先把参数写进 `Parcel`，再通过 `mRemote.transact()` 把事务交给 Binder Driver，再从 reply `Parcel` 中读取结果。服务端的 `Stub.onTransact()` 会根据事务码分发到真实实现。我们读系统接口时，重点也该放在这条调用链，不该把示例代码误当成某个 AOSP 接口的原样拷贝。
+这个模式要看的不是方法名，而是调用步骤：先把参数写进 `Parcel`，再通过 `mRemote.transact()` 把事务交给 Binder Driver，再从 reply `Parcel` 中读取结果。服务端的 `Stub.onTransact()` 会根据事务码分发到真实实现。读系统接口时，重点也该放在这条调用链，不该把示例代码误当成某个 AOSP 接口的原样拷贝。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/IWindowSession.aidl] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Binder.java] [已验证: 官方文档, developer.android.com/guide/components/aidl]
 
@@ -193,7 +193,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 
 当空闲 Binder worker 不够时，新的同步请求会在驱动里排队，调用端线程常会停在 `binder_thread_read` 或相关 `ioctl(BINDER_WRITE_READ)` 上等待回复。主线程如果在这里连续等待，这段时间会直接记到启动耗时或 ANR 超时里。
 
-判断线程池是否真的吃紧，不能只数 Running 的 Binder 线程。更稳妥的看法有两层。第一层，看目标进程的 `binder:` / `hwbinder:` worker 数量是否已经接近 `ProcessState.setThreadPoolMaxThreadCount()` 的上限。第二层，看这些 worker 是否长期不在空闲的 `binder_thread_read` 上，而是分散在 Running、锁等待、IO 等状态里，同时客户端的 Binder latency 或 binder reply wait 明显抬高。只有这几类证据同时出现，我们再把结论落到“线程池压力大”。
+判断线程池是否真的吃紧，不能只数 Running 的 Binder 线程。更稳妥的判断分两层。第一层，看目标进程的 `binder:` / `hwbinder:` worker 数量是否已经接近 `ProcessState.setThreadPoolMaxThreadCount()` 的上限。第二层，看这些 worker 是否长期不在空闲的 `binder_thread_read` 上，而是分散在 Running、锁等待、IO 等状态里，同时客户端的 Binder latency 或 binder reply wait 明显抬高。只有这几类证据同时出现，才能判断为“线程池压力大”。
 
 如果只看到少数 worker 在 Running，其余 worker 卡在锁或 IO，问题通常不在线程数本身，而在某个 Binder 方法把 worker 占住太久。后面的排查要继续沿着 `thread_state`、Lock contention 和服务端 slice 往下看。
 
@@ -221,11 +221,11 @@ Client 调用 `oneway` 方法后，`transact()` 会立即返回，不等待 Serv
 
 oneway 很容易被当成“更快”的选择，但这里有几个容易踩的坑：
 
-**oneway 不是并发的。** 同一个 `IBinder` 对象上的 oneway 调用，在 Server 端是串行处理的。如果你连发 10 个 oneway 调用，它们会在 Server 端排队依次执行，而不是 10 个线程同时处理。
+**oneway 不是并发的。** 同一个 `IBinder` 对象上的 oneway 调用，在 Server 端是串行处理的。如果客户端连续发出 10 个 oneway 调用，它们会在 Server 端排队依次执行，而不是 10 个线程同时处理。
 
 **调用方仍然可能阻塞。** 虽然不等服务端处理结果，但如果 Server 端的 oneway 队列积压过长，Binder Driver 可能会对调用方施加反压（特别是在 Android 14+ 引入 Lazy Async 之后）。在极端情况下，Client 端调用 oneway 方法也可能被短暂阻塞。
 
-**适用场景。** 真正"发出就忘"的场景适合用 oneway：状态通知、日志上报、事件广播。需要返回值、或者需要确认对方已处理的场景，不要用 oneway。
+**适用场景。** 不需要确认处理结果的场景适合用 oneway：状态通知、日志上报、事件广播。需要返回值、或者需要确认对方已处理的场景，不要用 oneway。
 
 [已验证: AOSP, frameworks/native/libs/binder/IPCThreadState.cpp] [已验证: 官方文档, developer.android.com/guide/components/aidl#oneway]
 
@@ -243,7 +243,7 @@ oneway 很容易被当成“更快”的选择，但这里有几个容易踩的�
 
 ## 在 Perfetto 中分析 Binder
 
-到了定位问题时，Perfetto 是最直接的入口。主线程一旦卡住，我们通常就是从这里往下追。
+到了定位问题时，Perfetto 是最直接的入口。主线程一旦卡住，排查通常就从这里开始。
 
 ### Binder 事务在 Perfetto 中的表现
 
@@ -280,13 +280,13 @@ Perfetto 提供两层 Binder 数据源：
 
 **第三步：检查锁竞争。** 如果 Server 端线程在处理请求时出现了长时间 Sleeping，很可能是等 Java `synchronized` 锁。Perfetto 的 **Lock contention** 轨道会显示"谁持有锁"和"谁在等锁"。
 
-在 Perfetto 中，我们可以用 Flow 箭头追踪 Client 和 Server 之间的因果关系。点击一个 Binder 事务 Slice，如果 Flow Events 已开启，就会看到一条箭头从 Client 的 Sleeping 片段指向 Server 端的 Running 片段。这条箭头说明，正是这次 Binder 调用导致了 Client 的等待。
+在 Perfetto 中，可以用 Flow 箭头追踪 Client 和 Server 之间的因果关系。点击一个 Binder 事务 Slice，如果 Flow Events 已开启，就会看到一条箭头从 Client 的 Sleeping 片段指向 Server 端的 Running 片段。这条箭头说明，正是这次 Binder 调用导致了 Client 的等待。
 
 [已验证: L2, Perfetto UI 实际操作验证] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
 
 ### 一个典型案例：窗口管理延迟
 
-以应用冷启动为例。我们发现 `Activity.startActivity` 的耗时异常，主线程在调用 `IActivityTaskManager.startActivity` 期间 Sleeping 了 30ms。沿着 Flow 箭头追到 `system_server` 的 `binder:1605_2` 线程，会发现它在处理请求时又 Sleeping 了 20ms，不是在做实际工作，而是在等锁。再看 Lock contention 轨道，`WindowManagerGlobalLock` 正被 `android.anim` 线程持有。
+以应用冷启动为例。`Activity.startActivity` 耗时异常时，主线程可能在调用 `IActivityTaskManager.startActivity` 期间 Sleeping 30ms。沿着 Flow 箭头追到 `system_server` 的 `binder:1605_2` 线程，如果它在处理请求时又 Sleeping 20ms，时间通常耗在等锁上。再看 Lock contention 轨道，`WindowManagerGlobalLock` 正被 `android.anim` 线程持有。
 
 结论：App 启动发起的 Binder 请求，在 `system_server` 端因为等待窗口管理锁而被阻塞。锁被系统动画线程持有，用于更新窗口状态。这是一个典型的系统层锁竞争问题。App 端能做的优化，是减少冷启动期间的 IPC 调用频率，避免在动画密集期做复杂的窗口操作。
 
@@ -337,7 +337,7 @@ Perfetto 的 `BinderTracker`（`src/trace_processor/importers/ftrace/binder_trac
 
 [自动发现: 来源 obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
 
-在 Perfetto 中，如果我们看到某个进程在短时间内发起大量 Binder 事务，Transactions 轨道上密密麻麻全是短条，这通常就是 Binder 风暴。它不一定导致单次调用超时，但会形成累积效应：`system_server` 的 Binder 线程池被打满，锁竞争加剧，其他 App 的系统服务调用延迟也会上升。
+在 Perfetto 中，如果某个进程短时间内发起大量 Binder 事务，Transactions 轨道上密密麻麻全是短条，这通常就是 Binder 风暴。它不一定导致单次调用超时，但会形成累积效应：`system_server` 的 Binder 线程池被打满，锁竞争加剧，其他 App 的系统服务调用延迟也会上升。
 
 Binder 风暴的典型来源：某个 App 在主线程的 `doFrame` 中反复调用系统服务（比如每帧都查询一次 DisplayInfo），或者某个后台进程在短时间内大量注册/注销回调。在 Perfetto 中定位 Binder 风暴，可以用 SQL 按 Client 进程统计事务频率：
 
@@ -385,14 +385,14 @@ Binder 和全书多个章节直接相连：
 
 Binder 在 Android 版本中持续优化，这里列出对性能分析有影响的变化：
 
-- **Android 8.0（API 26）**：引入 scatter-gather 优化，将 Binder 数据拷贝从最多三次减少到一次。Project Treble 也在这一代引入 HIDL 和 hwbinder，HAL 层开始大规模 Binder 化。
+- **Android 8.0（API 26）**：引入 scatter-gather 优化，减少发送端将分散对象整理成连续 `Parcel` 缓冲区的中间成本。Project Treble 也在这一代引入 HIDL 和 hwbinder，HAL 层开始大规模 Binder 化。
 - **Android 11（API 30）**：官方开始支持 HAL 使用 Stable AIDL。迁移方向是“where possible”转到 AIDL；如果上游 HAL 仍然使用 HIDL，就还得继续用 HIDL。
 - **Android 11 QPR3+**：cached apps freezer / binder-freezer 开始影响 Binder 语义。对 frozen app 发起同步（非 `oneway`）Binder 调用时，系统会 kill remote process；异步事务会先缓冲，缓冲区溢出时可能把目标进程一起拖崩。
 - **Android 12（API 31）源码已可见 `BinderCallHeavyHitterWatcher`**：系统侧对 Binder 热点调用的内部观测能力早已存在，不适合写成 Android 15 才出现的新变化。
 - **Android 14/15（API 34/35）**：`android.binder` 数据源在 Perfetto 里更完整，事务语义和阻塞时长字段更容易直接消费。
 - **Android 16（API 36）**：`android.binder` 标准库（`android/binder.sql`）进一步完善了从 AIDL/HIDL slice 拆分 `interface`/`method_name` 的逻辑，`android_binder_txns` 表的字段名以 `interface` 和 `method_name` 为准（不是 `interface_name`）。同步 Binder 调用在 Perfetto 中的诊断效率因此显著提升。
 - **Android 16（API 36）**：`RemoteCallbackList` 引入 `FrozenCalleePolicy`，允许在客户端进程被冻结时自动丢弃高频数据回调，避免 oneway 队列在解冻后瞬间雪崩。此前开发者需要自行处理冻结态下的回调堆积问题。
-- **Android 16 + 16KB Page Size**：Binder mmap 缓冲区大小为 `1MiB - 2 * page_size`（AOSP `ProcessState.cpp`），16KB 页确实减少了页表项数量。Binder 吞吐量理论上受益于更少的 TLB miss，但当前公开资料没有给出 Binder 专项 benchmark 数据，Android 16 的 16KB Page Size 公开资料主要给出 app launch、boot、camera 等宏观收益。[待验证] 如需精确量化 Binder 吞吐量变化，应补充设备型号、Binder payload 大小、事务次数、对照组 trace 数据。
+- **Android 16 + 16KB Page Size**：Binder mmap 缓冲区大小为 `1MiB - 2 * page_size`（AOSP `ProcessState.cpp`），16KB 页会减少页表项数量。Binder 吞吐量理论上受益于更少的 TLB miss，但当前公开资料没有给出 Binder 专项 benchmark 数据，Android 16 的 16KB Page Size 公开资料主要给出 app launch、boot、camera 等宏观收益。[待验证] 如需精确量化 Binder 吞吐量变化，应补充设备型号、Binder payload 大小、事务次数、对照组 trace 数据。
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/aidl/aidl-hals] [已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer] [已验证: 官方文档, source.android.com/docs/core/architecture/ipc/binder-freezer] [已验证: AOSP android-12.0.0_r1, frameworks/base/core/java/com/android/internal/os/BinderCallHeavyHitterWatcher.java]
 
@@ -404,7 +404,7 @@ Android 8 引入 Project Treble 时，HIDL 是 Framework 与 HAL 之间的主力
 
 Android 11 开始，Google 官方提供了 HAL 使用 Stable AIDL 的路径。迁移原则是“where possible”转到 AIDL，不是无条件一次切完。如果上游 HAL 仍然使用 HIDL，系统还得继续用 HIDL 保持兼容。
 
-从性能分析的角度看，binderized HIDL 通常走 `hwbinder`，AIDL HAL 走稳定 AIDL Binder；两者都会留下跨进程事务痕迹。passthrough HIDL 不经过这条 IPC 路径，Trace 形态也完全不同。我们在 Perfetto 里先分清调用是 binderized 还是 passthrough，再判断瓶颈落在 IPC 调度、服务端执行，还是压根不经过 Binder。
+从性能分析的角度看，binderized HIDL 通常走 `hwbinder`，AIDL HAL 走稳定 AIDL Binder；两者都会留下跨进程事务痕迹。passthrough HIDL 不经过这条 IPC 路径，Trace 形态也完全不同。在 Perfetto 里先分清调用是 binderized 还是 passthrough，再判断瓶颈落在 IPC 调度、服务端执行，还是压根不经过 Binder。
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/aidl/aidl-hals]
 
@@ -412,7 +412,7 @@ Android 11 开始，Google 官方提供了 HAL 使用 Stable AIDL 的路径。�
 
 ### 误区：Binder 调用一定很慢
 
-Binder 的基础开销是一次上下文切换（通常微秒级），并不是每个调用都会造成可感知的延迟。大部分系统服务方法（如 `getRunningTasks()`）在服务端的执行时间不到 1ms。Binder 变"慢"通常是因为三个叠加因素：服务端处理本身耗时、线程池排队、锁竞争。单独一次正常的 Binder 调用不是性能瓶颈——高频调用或与慢服务叠加才是。
+Binder 的基础开销通常在微秒级，并不是每个调用都会造成可感知的延迟。大部分系统服务方法（如 `getRunningTasks()`）在服务端的执行时间不到 1ms。Binder 变"慢"通常是因为三个叠加因素：服务端处理本身耗时、线程池排队、锁竞争。单独一次正常的 Binder 调用不是性能瓶颈——高频调用或与慢服务叠加才是。
 
 ### 误区：oneway 一定比同步快
 
@@ -420,7 +420,7 @@ oneway 调用避免了 Client 端的阻塞等待，但它不意味着"零成本"
 
 ### 误区：线程池 15 个线程不够用就该加大
 
-如果线程池经常被打满，根本原因往往不是线程数太少，而是 Server 端某些方法的执行时间太长（比如在 Binder 线程中做了 IO 操作或等锁）。加大线程池只是延缓症状，正确的方向是缩短单次 Binder 调用的处理时间、减少锁持有时间、避免在 Binder 线程中做耗时操作。
+如果线程池经常被打满，主要原因往往不在线程数，而在 Server 端某些方法的执行时间太长（比如在 Binder 线程中做了 IO 操作或等锁）。加大线程池只是延缓症状，正确的方向是缩短单次 Binder 调用的处理时间、减少锁持有时间、避免在 Binder 线程中做耗时操作。
 
 ## 参考资料
 
