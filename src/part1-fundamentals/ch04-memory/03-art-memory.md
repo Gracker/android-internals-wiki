@@ -36,11 +36,11 @@ task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-08T11:40:00+08:00"
-task6_state: revisiting
-task6_result: pass-light-edit
+task6_state: reviewed
+task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-03"
-pipeline_stage: task6_pending
+reviewed_date: "2026-05-08"
+pipeline_stage: task9_pending
 p1: 1
 p2: 1
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。"
@@ -82,14 +82,14 @@ task9_result: needs-rework
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
-## ART 堆结构：五个 Space 各司其职
+## ART 堆结构：五类 Space 的分工
 
-ART 的 Heap 并不是一块单一的连续内存，而是由多个功能不同的 Space（空间）组合而成。每种 Space 有其特定的分配策略和 GC 行为，理解它们的分工是理解整个内存管理体系的基础。
+ART 的 Heap 由多个功能不同的 Space（空间）组合而成，单一连续内存这个模型不足以解释 ART 的分配策略和 GC 行为。理解这些 Space 的分工，是理解整个内存管理体系的基础。
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 [来源: Cubox/【Android ART】Heap的内存布局-2024-07-23.md]
 
-### Image Space：系统启动时就位的基础设施
+### Image Space：系统启动时就位的基础对象
 
 Image Space 是所有 Space 中最特殊的一块空间，它在应用进程启动之前就已经被填充好了。系统编译期间，构建工具会将启动类路径（bootclasspath）中的核心类预先实例化，并将完整的堆快照写入 `.art` 格式的镜像文件（如 `boot.art`）。Zygote 进程启动时，直接通过 `mmap` 将这些镜像文件映射到 Image Space 的地址空间。
 
@@ -110,7 +110,7 @@ Zygote Space 中的对象同样不会被 GC 移动和回收。这样做的好处
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/heap.cc InitializeZygoteSpace]
 
-### Allocation Space：应用的主战场
+### Allocation Space：应用的主要分配区域
 
 Allocation Space（也叫 Main Space）是应用运行期间绝大多数对象分配的地方。它是 ART 堆中最大、最活跃的区域，也是 GC 主要的工作对象。
 
@@ -173,7 +173,7 @@ Android 15 上，Non-moving Space 的数据结构仍然是 `DlMallocSpace`，使
 
 ## GC 策略演进：从 CMS 到 CC 再到 CMC
 
-ART 的垃圾回收策略经历了几次重大演进，每一次演进都显著改变了 GC 对应用性能的影响方式。了解这个演进脉络，能帮助我们在不同 Android 版本的设备上做出准确的性能判断。
+ART 的垃圾回收策略经历了几次版本切换，每一次切换都会改变 GC 对应用性能的影响方式。了解这个演进脉络，能帮助我们在不同 Android 版本的设备上做出准确的性能判断。
 
 ### Dalvik 时代：stop-the-world 的代价
 
@@ -189,16 +189,16 @@ ART 引入了 Concurrent Mark-Sweep（CMS）GC，将标记阶段的部分工作�
 
 在分配器层面，ART 用 RosAlloc（Runs-of-Slots Allocator）替代了 `dlmalloc`。RosAlloc 将内存组织为由相同大小 slot 组成的 run，这些 run 以 page 为单位聚集。不同线程可以在不同的 run 上并行分配，通过分片锁定（sharded locking）策略减少了全局锁争用。
 
-但 CMS 仍然有一个根本性的缺陷：它是非移动式的（non-moving）。标记-清除不会整理内存碎片。长时间运行的应用，堆中的空闲空间可能很多但都是碎片化的，导致无法分配大对象而触发更频繁的 GC，形成恶性循环。
+但 CMS 仍然有一个主要缺陷：它是非移动式的（non-moving）。标记-清除不会整理内存碎片。长时间运行的应用，堆中的空闲空间可能很多但都是碎片化的，导致无法分配大对象而触发更频繁的 GC，形成恶性循环。
 
 ART 的 CMS 实现分布在多个文件中。核心标记-清除逻辑在 `art/runtime/gc/collector/mark_sweep.cc`（`MarkSweep` / `PartialMarkSweep` / `StickyMarkSweep`），而非 `concurrent_mark_sweep.cc`。`art/runtime/gc/collector/` 目录下没有名为 `concurrent_mark_sweep.cc` 的文件。
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/allocator/rosalloc.cc]
 
-### Android 8.0：CC GC 的革命性突破
+### Android 8.0：CC GC 成为默认策略
 
-Android 8.0 Oreo 将 Concurrent Copying（CC）GC 设为默认策略，这是 ART 内存管理的一次根本性变革。
+Android 8.0 Oreo 将 Concurrent Copying（CC）GC 设为默认策略，这是 ART 内存管理的一次重要切换。
 
-CC GC 的核心思想是：用两个 Space（FromSpace 和 ToSpace）交替使用，GC 时将存活对象从 FromSpace 拷贝到 ToSpace，拷贝完成后两个 Space 角色互换。这种拷贝式 GC 天然解决了碎片问题——每次 GC 后存活对象都被紧凑排列。
+CC GC 的做法是：用两个 Space（FromSpace 和 ToSpace）交替使用，GC 时将存活对象从 FromSpace 拷贝到 ToSpace，拷贝完成后两个 Space 角色互换。这种拷贝式 GC 可以整理碎片——每次 GC 后存活对象都被紧凑排列。
 
 但"拷贝时应用还在跑"是个难题。ART 的解决方案是 **Read Barrier（读屏障）**：当 GC 正在移动一个对象时，如果应用线程试图读取该对象的引用，Read Barrier 会拦截这次读取，确保线程拿到的是移动后的正确地址。这个过程对应用代码完全透明。
 
@@ -312,7 +312,7 @@ Android 17 的 DeliQueue 是一种无锁消息队列机制，已在 `android.os.
 
 Android 8.0+ 的 CC GC 引入了 RegionTLAB（Thread Local Allocation Buffer）分配策略。每个应用线程从 `RegionSpace` 中获取自己专属的 TLAB——一块连续的内存缓冲区。线程在自己的 TLAB 中分配对象时，只需要移动一个 top 指针（bump pointer），无需任何同步操作：
 
-```
+```cpp
 // 概念伪代码：TLAB 分配
 Object allocate(size_t size) {
     if (tlab_top + size <= tlab_end) {
@@ -324,7 +324,7 @@ Object allocate(size_t size) {
 }
 ```
 
-TLAB 分配的速度比 Android 7.0 快 70%，比 Dalvik 时代快约 18 倍。这是 ART 内存分配的"快车道"——只要 TLAB 有空间，对象分配几乎是免费的。
+TLAB 分配的速度比 Android 7.0 快 70%，比 Dalvik 时代快约 18 倍。只要 TLAB 有空间，这就是 ART 对象分配的最快路径。
 
 AOSP 源码路径：`art/runtime/gc/space/region_space.cc (AllocNewTlab)`、`kRegionSize = 256 * KB` 定义在 `region_space.h`
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/space/region_space.cc]
@@ -366,7 +366,7 @@ ART 的编译策略可以简化为以下流程：
 3. **Profile 收集**：ART 在运行过程中记录哪些方法被频繁执行，生成 Profile 文件
 4. **AOT 编译**：设备空闲且充电时，编译守护进程（`dex2oat`）根据 Profile 对热点代码进行 AOT 编译，结果持久化到磁盘
 
-这种混合策略的核心思想是：用最少的内存和时间，让最重要的代码运行得最快。
+这种混合策略的取舍是：把内存和编译时间优先花在高频代码路径上。
 
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles]
 
@@ -407,13 +407,13 @@ AOT 编译后的机器码存储在 `.oat` 和 `.vdex` 文件中，运行时通�
 
 对 ART 来说，页大小变化会影响 `mmap` 粒度、堆页管理和 native 库兼容性边界。它当然会反映到运行时内存行为，但官方页面公开的数字是整机测试结果，不是 ART 内部某个分配器的单独 benchmark。
 
-官方文档当前给出的平均结果是：内存压力下的应用启动时间降低 3.16%，启动期功耗降低 4.56%，相机热启动快 4.48%，相机冷启动快 6.60%，开机时间改善 8%。这些数据更适合放在 §4.7《16KB Page Size 与 Android 性能》里展开。本节只保留一个结论：如果讨论 16KB page 对 TLAB、Region 或 TLB miss 的具体影响，必须给出设备、版本和实验条件，不能把它直接写成 ART 的默认事实。
+官方文档当前给出的平均结果是：内存压力下的应用启动时间降低 3.16%，启动期功耗降低 4.56%，相机热启动快 4.48%，相机冷启动快 6.60%，开机时间改善 8%。这些数据更适合放在 §4.7《16KB Page Size 与 Android 性能》里展开。在 ART 内存管理语境里，如果讨论 16KB page 对 TLAB、Region 或 TLB miss 的具体影响，必须给出设备、版本和实验条件，不能把它直接写成 ART 的默认事实。
 
 [已验证: 官方文档, developer.android.com/guide/practices/page-sizes]
 
 ## 在 Perfetto 中观察 ART GC
 
-了解原理后，接下来转到 Perfetto 中的实际观察路径。
+理解 GC 路径后，Perfetto 中的实际观察入口主要有三类。
 
 ### 关键 Track 和事件
 
@@ -485,15 +485,15 @@ LIMIT 20;
 
 ### 误区一：GC 导致了卡顿，应该手动调用 System.gc()
 
-恰恰相反。`System.gc()` 会强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，它知道什么时候该回收。如果发现需要手动触发 GC 来"解决问题"，通常说明存在内存泄漏或对象抖动，应该从源头修复。
+不应该这样做。`System.gc()` 会强制触发一次 Full GC，暂停时间比正常的 Young GC 长得多。ART 的 GC 是自适应的，会根据堆压力和分配情况决定回收时机。如果发现需要手动触发 GC 来"解决问题"，通常说明存在内存泄漏或对象抖动，应该从源头修复。
 
 ### 误区二：对象池总是能减少 GC 压力
 
-对象池在特定场景（如游戏中的子弹对象、消息队列的 Message）下确实有效。但不加区分地使用对象池反而会增加 Old Generation 中的常驻对象，导致 Full GC 时需要扫描更多的存活对象。正确做法是先用 Trace 分析确认 GC 压力来源，再针对性地优化。
+对象池只在特定场景（如游戏中的子弹对象、消息队列的 Message）下有效。不加区分地使用对象池反而会增加 Old Generation 中的常驻对象，导致 Full GC 时需要扫描更多的存活对象。正确做法是先用 Trace 分析确认 GC 压力来源，再针对性地优化。
 
 ### 误区三：Android 的 GC 已经足够快了，不需要关注
 
-虽然 ART 的 GC 确实比 Dalvik 时代快了很多，但在 120Hz 设备上，一帧只有 8.33ms。即使一次 GC 暂停只有 3ms，如果恰好发生在帧的关键路径上，也可能导致掉帧。特别是在 Compose 应用中，recomposition 可能产生大量临时对象——如果不注意优化，GC 仍然是卡顿的重要来源。
+虽然 ART 的 GC 比 Dalvik 时代快了很多，但在 120Hz 设备上，一帧只有 8.33ms。即使一次 GC 暂停只有 3ms，如果恰好发生在帧的关键路径上，也可能导致掉帧。特别是在 Compose 应用中，recomposition 可能产生大量临时对象——如果不注意优化，GC 仍然是卡顿的重要来源。
 
 ### 误区四：堆越大越好
 
