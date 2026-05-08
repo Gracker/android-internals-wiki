@@ -27,13 +27,19 @@ sources:
     path: "obsidian/Personal-Knowlodge/source/2026-03-06_wechat_后AOSP时代还能贡献代码吗.md"
   - type: official
     path: "https://developer.android.com/about/versions"
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
+task2b_fixed_at: "2026-05-08T23:46:33"
 tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page', 'compilation', 'profile-guided', 'background-execution']
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
 reviewed_date: "2026-04-30"
 reviewed_by: "openclaw-task6"
 review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)；2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
 task9_result: "needs-rework"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task6_state: "reviewed"
 task6_result: pass-light-edit
 task9_state: "reviewed"
@@ -156,7 +162,7 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 **16KB 页面大小的兼容模式。** Android 15 开始支持 16KB 内存页面（详见本节扩展内容），Android 16 为此增加了兼容模式——允许为 4KB 页面构建的 App 在 16KB 设备上运行。同时，TLS 相关的缓冲区被隔离到独立的内存页面中，在 16KB 页面大小的设备上可以显著节省内存。
 
-**Cloud Compilation（云端编译产物分发）。** Android 16 开始公开 CloudCompilation 路径——设备可以直接从 Play Store 下载预编译的 `.odex` / `.vdex` 产物，跳过本地 dex2oat 编译。这解决了 OTA 后首次开机"正在优化应用"的长期困扰，用带宽换计算。对低端机的安装体验改善尤为明显。应用侧无需做任何适配，编译产物的分发和校验由 Play Store 和 ART 模块协同完成。
+**Cloud Compilation（云端编译产物分发）。** Android 16 开始公开 CloudCompilation 路径——Play 分发侧可能通过 SDM（Secure Dex Metadata）和云端预编译减少本机 dex2oat 开销。官方公开资料中具体集成细节和设备覆盖范围仍有限（同书 §1.9 对该点也标注为待验证）。已确认的能力方向是：设备从 Play Store 获取预编译 `.odex` / `.vdex` 产物后可跳过本地编译，缓解 OTA 后首次开机"正在优化应用"的体验问题。设备侧启用条件、Play 与 ART 模块的协同路径，需以安装 Trace（`cmd package art dump` 编译状态）和 Play Console 数据验证，不应视为所有 Android 16 设备的确定行为。[来源: Android 16 behavior changes, ART dump; 具体 AOSP 集成文档待补]
 
 **更严格的后台限制。** Android 16 将前台服务启动的后台 Job 也纳入了运行时配额管理，进一步收紧了后台执行的自由度。
 
@@ -289,7 +295,7 @@ Android 11（API 30）引入了**包可见性（Package Visibility）限制**。
 - **Android 12**：精确闹钟需要 `SCHEDULE_EXACT_ALARM` 权限（进一步限制后台定时任务）
 - **Android 13**：通知权限（`POST_NOTIFICATIONS`）需要运行时授权；`SCHEDULE_EXACT_ALARM` 默认拒绝
 - **Android 14**：前台服务必须声明类型并申请对应权限（如 `FOREGROUND_SERVICE_CAMERA`）
-- **Android 15**：`dataSync` 和 `mediaProcessing` 类型的前台服务有 6 小时/24 小时的配额限制；后台 App 网络请求被限制
+- **Android 15**：`dataSync` 和 `mediaProcessing` 类型的前台服务有 6 小时/24 小时的配额限制；处于停止态或特定后台生命周期的 App 网络请求受到约束（WorkManager / 前台服务场景不受影响）
 
 [适用版本: Android 10 (API 29) 起，隐私限制逐版本收紧]
 
@@ -309,7 +315,7 @@ Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程�
 
 **Android 14（2023）——前台服务类型强制声明。** 所有前台服务必须在 Manifest 中声明具体类型（mediaPlayback、location、connectedDevice 等），并申请对应权限。`BOOT_COMPLETED` 广播对某些前台服务类型的启动也做了限制。
 
-**Android 15（2024）——配额制。** `dataSync` 和 `mediaProcessing` 前台服务类型引入了 6 小时/24 小时的配额。后台 App 的网络请求在非 WorkManager/前台服务场景下直接失败（`UnknownHostException`）。
+**Android 15（2024）——配额制。** `dataSync` 和 `mediaProcessing` 前台服务类型引入了 6 小时/24 小时的配额。后台 App 的网络请求约束有具体触发条件：App 处于停止态（force-stopped）、不在前台服务或 WorkManager 调度上下文中时，网络访问可能失败（`UnknownHostException`）。使用前台服务、WorkManager 或用户可见交互触发的网络请求不在约束范围内。[来源: Android 15 behavior changes, developer.android.com]
 
 **Android 16（2025）——配额扩展。** 从前台服务启动的后台 Job 也必须遵守运行时配额。JobScheduler 的配额根据 App 的 standby bucket 和启动时的状态动态调整。
 
@@ -319,7 +325,7 @@ Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程�
 
 - **App 不能再依赖后台长时间运行**——必须用 WorkManager 等调度框架
 - **定时任务的精度受限**——精确闹钟不再是默认能力
-- **后台网络请求可能静默失败**——需要在错误处理中考虑 `UnknownHostException`
+- **后台网络请求在特定条件下可能失败**——App 停止态且非前台服务/WorkManager 上下文时，需要处理 `UnknownHostException`
 - **前台服务的通知要求越来越严格**——用户更容易感知并关闭
 
 ## 扩展：16K Page Size 对性能和兼容性的影响

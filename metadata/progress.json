@@ -1349,5 +1349,15 @@
     "status": "ready-for-review",
     "task9_state": "pending",
     "task2b_state": "fixed"
-  }
+  },
+  "rework_completed": [
+    {
+      "date": "2026-05-08T23:46:33",
+      "sections": [
+        "1.6",
+        "18.4"
+      ],
+      "items_fixed": 2
+    }
+  ]
 }
