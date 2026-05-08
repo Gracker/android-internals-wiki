@@ -214,7 +214,7 @@ HIDL / AIDL 解决的是跨进程接口版本问题，native 共享库的依赖�
 
 GSI（Generic System Image）是 Treble 架构的一个副产品——如果 Treble 的接口定义足够完善，那么一个纯 AOSP 编译出来的 System Image 理论上应该能在任何 Treble 兼容的设备上运行。GSI 就是这个"通用系统镜像"，主要用于：
 
-1. **CTS-V（Compatibility Test Suite for Vendors）验证**：设备必须通过 GSI 测试才能获得 Google 认证
+1. **VTS（Vendor Test Suite）/ CTS-on-GSI 验证**：设备必须通过 GSI 测试才能获得 Google 认证
 2. **开发调试**：开发者可以在自己的设备上刷入 GSI 来测试纯 AOSP 的行为
 3. **Project Treble 合规性检查**：确保厂商的 Vendor 实现确实遵循了 Treble 接口
 
@@ -371,7 +371,7 @@ Android 16 增加了兼容模式，让部分为 4KB 页面构建的 App 能在 1
 | 编译产物 | 完整 OAT（全量 AOT） | VDEX + ODEX（Profile-AOT） | VDEX + ODEX（Profile-AOT） |
 | 后台进程 | 可长期存活 | 受限但仍可后台服务 | 配额制 + 网络限制 |
 
-> **表格阅读提示**：Android 8-10 和 11+ 的编译产物格式看起来相同（VDEX + ODEX），但 Android 11+ 由于 ART 已成为 Mainline 模块，编译器行为和优化策略可能已经通过 Play Store 更新发生变化。因此分析 11+ 设备的 Trace 时，不能直接把 8-10 的 ART 行为当成默认前提。表格里的 Zygote 一行按 init service 名称统一写成 `zygote` / `zygote_secondary`；在 `ps` 或 Trace 里常看到的 `zygote64`，说的是 64 位主 zygote 的进程形态。
+> **表格阅读提示**：Android 8-10 和 11+ 的编译产物格式看起来相同（VDEX + ODEX），但 Android 12+ 由于 ART 已成为 Mainline 模块，编译器行为和优化策略可能已经通过 Play Store 更新发生变化。因此分析 12+ 设备的 Trace 时，不能直接把 8-11 的 ART 行为当成默认前提。Android 11 虽然已有 Mainline 架构，但 `com.android.art` 的 Release introduced 为 Android 12，11 的 ART 行为仍与 10 相近。表格里的 Zygote 一行按 init service 名称统一写成 `zygote` / `zygote_secondary`；在 `ps` 或 Trace 里常看到的 `zygote64`，说的是 64 位主 zygote 的进程形态。
 
 [图：Android 8、Android 11+、Android 16 在 Perfetto 中的典型 Trace 对比，重点标出 binder/hwbinder、zygote 形态与编译产物差异]
 
