@@ -1743,5 +1743,39 @@
     "last_task9_at": "2026-05-09T07:20:00+08:00",
     "task9_reviewed_date": "2026-05-09",
     "task9_reviewed_by": "openclaw-task9"
-  }
+  },
+  "rework_log": [
+    {
+      "date": "2026-05-09T07:47:22.201015",
+      "task": "task2b-rework",
+      "sections": [
+        "13.2",
+        "19.13"
+      ],
+      "details": [
+        {
+          "section": "13.2",
+          "title": "Trace 抓取",
+          "source": "task9-deep-tech-review P95",
+          "fixes": [
+            "P0: ActivityManager.getProcessMemoryDump→Debug.dumpHprofData/am dumpheap",
+            "P0: process_cmdline空≠全进程采样，需all:true",
+            "P1: heapprofd/linux.perf user/userdebug/profileable边界"
+          ],
+          "status": "ready-for-review"
+        },
+        {
+          "section": "19.13",
+          "title": "Tracing SDK",
+          "source": "external-ai-review P85",
+          "fixes": [
+            "P1: 协程trace ThreadLocal栈原理补充",
+            "P1: JNI/GC字符串开销具体量化",
+            "P1: 协程段落JNI/trace开销警示加强"
+          ],
+          "status": "ready-for-review"
+        }
+      ]
+    }
+  ]
 }

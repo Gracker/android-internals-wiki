@@ -181,7 +181,7 @@ void renderHomeFeed(List<FeedItem> items) {
 基于这些数据，几个实用边界：
 
 - **热路径谨慎打标**：如果某段代码在一帧内被调用超过 1000 次（如 `onDraw` 内的循环），不要在里面放 `beginSection`。把 trace 提到循环外面，标注整体耗时即可。
-- **避免动态字符串拼接**：`"item_" + id` 这种写法会多一次 `StringBuilder` 分配 + `toString()` + native 字符串拷贝。高频调用时字符串分配带来的 GC 压力可能比 trace 本身还大。改用静态常量可以完全消除这笔开销：
+- **避免动态字符串拼接**：`"item_" + id` 这种写法会多一次 `StringBuilder` 分配 + `toString()` + JNI 层 `GetStringUTFChars()` 转换 + native 字符串拷贝。高频调用时字符串分配带来的 GC 压力和 JNI 转换开销可能超过 trace 本身耗时。改用静态常量可以完全消除这笔开销：
 
 ```kotlin
 companion object {
@@ -259,7 +259,7 @@ AndroidX `Trace.forceEnableAppTracing()` 的文档说明了两点：它用于在
 
 还有两条约束：
 
-- 热路径上不要创建复杂字符串作为 trace 名称。
+- 热路径上不要创建复杂字符串作为 trace 名称。`"Item_" + position` 这种写法在每帧调用 N 次的 `onBindViewHolder` 里，每次都分配一个临时 `StringBuilder`、触发 `toString()`、再经 JNI `GetStringUTFChars()` 转为 C 字符串写入 `trace_marker`——分配 + GC + JNI 开销可能超过 trace 本身耗时。改用静态常量或预拼接字符串。
 - 不要在 trace 名称里写用户数据、业务密钥或完整请求信息。
 
 Tracing SDK 的收益来自长期积累。每个性能敏感模块保留少量稳定 slice，后面抓到 Perfetto 时，系统事件和业务阶段才容易对应。
@@ -292,7 +292,7 @@ trace("Home#loadFirstFeed") {
 
 这段 trace 只记录异步任务提交耗时，不记录网络、解析、数据库和 UI 更新。
 
-协程里也有同样边界，且更容易写错。不要把包含 `delay()`、`withContext()` 或其他挂起点的 `suspend` 块直接包进同步 `trace {}`。挂起后线程会去跑别的任务，但这个同步 slice 还没结束，Perfetto 里会留下很长的错误区间。未引入 AndroidX Tracing 2.0.0 alpha 的 coroutine tracing API 前，包含挂起点的业务跨度用 async trace 显式配对；线程内真实工作仍用同步 slice。
+协程里也有同样边界，且更容易写错。不要把包含 `delay()`、`withContext()` 或其他挂起点的 `suspend` 块直接包进同步 `trace {}`。`Trace.beginSection()` / `endSection()` 内部依赖线程本地（ThreadLocal）的栈结构维护嵌套关系。挂起时协程让出线程，但 `endSection()` 还没被调用；线程转去执行其他协程或系统任务时，后续所有 `beginSection()` 调用都会被压入这条未关闭的 slice 下面——Perfetto 里不仅出现跨线程的错误长区间，后续 trace 事件也全部变成这条 slice 的子节点，导致整个 trace 视图被污染。未引入 AndroidX Tracing 2.0.0 alpha 的 coroutine tracing API 前，包含挂起点的业务跨度用 async trace 显式配对；线程内真实工作仍用同步 slice。
 
 这类写法会在 Perfetto 里产生"视图污染"，可以改成按线程和异步跨度分层标记：
 

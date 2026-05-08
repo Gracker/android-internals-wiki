@@ -678,10 +678,12 @@ data_sources {
 
 这些字段决定采样范围和导出节奏：
 - `sampling_interval_bytes`：采样间隔，默认 4096 字节。意味着每分配 4096 字节采样一次。更大的值意味着更低的开销但更粗的粒度。
-- `process_cmdline`：目标进程的包名。不设置则对所有进程生效（高开销）。
+- `process_cmdline`：目标进程的包名。不设置时 heapprofd **不会**采样任何进程；如确实要 profile 所有符合条件的进程，必须显式设置 `all: true`（`HeapprofdConfig` proto 的独立字段）。全进程采样在 userdebug 设备上开销很高，可能导致 heapprofd 过载。
 - `continuous_dump_config`：周期性导出快照的间隔。用于观察内存增长趋势。
 
 在 Perfetto UI 中，Heap Profiling 数据显示为火焰图（Flamegraph）和分配详情表，可以直接看到哪些调用路径分配了最多的内存。
+
+**权限边界**：heapprofd 在 `userdebug`/`eng` 构建上可采样大多数 App 和系统服务；在 `user` 构建上只能采样 manifest 中声明了 `android:profileable="true"` 或 `android:debuggable="true"` 的 App。未满足条件的目标进程会得到空 profile 或采样失败。官方文档见 [perfetto.dev — Heap Profiler](https://perfetto.dev/docs/data-sources/native-heap-profiler)。
 
 ### Java Heap Sampling（Android 12+）
 
@@ -700,7 +702,7 @@ data_sources {
 }
 ```
 
-Java Heap Sampling 和传统的 Java Heap Dump（如通过 `android.app.ActivityManager.getProcessMemoryDump` 获取的，或者 Android Studio Profiler 的 Dump Java Heap）是两种不同的分析手段。Sampling 记录的是每次分配发生时的调用栈，能看到"谁在频繁分配内存"；Heap Dump 是某一时刻的对象存留快照，能看到"谁持有大量对象不释放"。两者互补，前者适合定位分配热点，后者适合定位泄漏源头。
+Java Heap Sampling 和传统的 Java Heap Dump（如通过 `android.os.Debug.dumpHprofData(String)` 导出、`adb shell am dumpheap <pid>` 捕获、Android Studio Profiler 的 Dump Java Heap，或本节后文的 `android.java_hprof` 数据源触发）是两种不同的分析手段。Sampling 记录的是每次分配发生时的调用栈，能看到"谁在频繁分配内存"；Heap Dump 是某一时刻的对象存留快照，能看到"谁持有大量对象不释放"。两者互补，前者适合定位分配热点，后者适合定位泄漏源头。
 
 ### Java Heap Snapshot（Android 11+）
 
@@ -733,7 +735,7 @@ duration_ms: 10000
 
 Perfetto 还可以在 Trace 中集成 CPU 调用栈采样。这对分析 CPU 密集型瓶颈（如某段计算代码占用大量 CPU）非常有用。
 
-**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 13 (Tiramisu / API 33) 起可用。运行条件：设备为 `userdebug`/`eng` 构建版本，或目标 App 声明了 `android:debuggable="true"`。在 `user` 构建的 release 设备上，只有 debuggable App 才能被采样。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
+**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 13 (Tiramisu / API 33) 起可用。运行条件取决于构建类型：`userdebug`/`eng` 构建可采样大多数进程；`user` 构建上目标 App 必须声明 `android:profileable="true"` 或 `android:debuggable="true"`，二者满足其一即可。非符合条件的目标进程会被跳过，trace 中无采样数据。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
 
 ```textproto
 data_sources {

@@ -2280,8 +2280,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T15:21:32.054234",
-      "status": "pending",
-      "source_file": "2026-04-25-15-13-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-25-15-13-external-review.md",
+      "completed_at": "2026-05-09T07:47:09.786406",
+      "completed_reason": "P1 协程trace视图污染补充ThreadLocal栈原理; P1 JNI/GC字符串开销具体量化(含GetStringUTFChars/trace_marker写入); JNI/trace开销警示已在字符串和协程段落同步加强"
     },
     {
       "section": "13.03",
@@ -15245,7 +15247,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T07:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T07:47:09.786406",
+      "completed_reason": "P0 ActivityManager.getProcessMemoryDump已替换为Debug.dumpHprofData/am dumpheap; P0 process_cmdline空≠全进程采样已修正(all: true); P1 heapprofd/linux.perf权限边界已补齐(userdebug/profileable/debuggable)"
     }
   ],
   "completed": [
