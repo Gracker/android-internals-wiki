@@ -341,6 +341,14 @@ SoC 平台差异不是一个独立的机制，它影响着本书前面讲过的�
 
 **「Google Tensor 性能差」**——这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中不如骁龙和天玑，但它的设计目标是端侧 AI 体验，而不是通用峰值性能。在 Pixel 设备上，语音识别、实时翻译和计算摄影的响应速度可能优于其他平台，因为这些工作负载被 TPU 加速了。评估 Tensor 需要看你关心的场景是什么。
 
+
+### sched_ext 在 Android OEM 上的 BPF 调度落地策略
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-sched-ext-oem-implementation.md
+- 类型：DeepResearch 调研结果
+- 摘要：深度分析 Linux sched_ext 架构在 Android OEM 的落地实践：Qualcomm SCX_Oplus 基于游戏场景的优先级映射与大核优先调度，MediaTek SCX_Mtk 应急响应调度与低延迟敏感优化，Google Pixel SCX_Litto 电源效率优化。这些 BPF 调度器结合 Android 特有 cgroup 配置和进程
+- 注入时间：2026-05-08
+- 价值：首个系统对比 Qualcomm/MediaTek/Google Pixel 在 sched_ext BPF 调度器上的 OEM 定制化实现差异，对理解厂商调度策略和设备级性能差异有核心参考价值
+
 ## 参考资料
 
 ### AOSP / 官方文档

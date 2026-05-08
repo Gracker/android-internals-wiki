@@ -3149,6 +3149,285 @@
       "date": "2026-05-07",
       "type": "incremental_scan",
       "scored_at": "2026-05-07T05:50:11.477471"
+    },
+    {
+      "path": "X 文章/2026-05-07-1636-0x鸣人-Claude Code 实战中文教程来了.md",
+      "title": "2026-05-07-1636-0x鸣人-Claude Code 实战中文教程来了",
+      "score": 13,
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.037969",
+      "scored_at": "2026-05-08T05:47:31.063272"
+    },
+    {
+      "path": "X 文章/2026-05-07-1636-Berryxia.AI-Ollama直接把Claude Desk.md",
+      "title": "2026-05-07-1636-Berryxia.AI-Ollama直接把Claude Desk",
+      "score": 15,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.086974",
+      "scored_at": "2026-05-08T05:47:31.063279"
+    },
+    {
+      "path": "X 文章/2026-05-07-1636-Tom Huang-正式开源 open claude des.md",
+      "title": "2026-05-07-1636-Tom Huang-正式开源 open claude des",
+      "score": 11,
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.138746",
+      "scored_at": "2026-05-08T05:47:31.063282"
+    },
+    {
+      "path": "X 文章/2026-05-07-1636-宝玉-GPT-5.5 官方提示词指南：别再写长.md",
+      "title": "2026-05-07-1636-宝玉-GPT-5.5 官方提示词指南：别再写长",
+      "score": 13,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.246167",
+      "scored_at": "2026-05-08T05:47:31.063283"
+    },
+    {
+      "path": "Twitter/AI影响力日报/2026-05-07.md",
+      "title": "2026-05-07",
+      "score": 14,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.300668",
+      "scored_at": "2026-05-08T05:47:31.063285"
+    },
+    {
+      "path": "Cubox/告别“氛围编程”：基于 Harness 治理和 SDD 的团队级 AI 研发范式演进与实践-2026-05-07.md",
+      "title": "告别“氛围编程”：基于 Harness 治理和 SDD 的团队级 AI 研发范式演进与实践-2026-05-07",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.352389",
+      "scored_at": "2026-05-08T05:47:31.063286"
+    },
+    {
+      "path": "Cubox/SPEC CPU2026 首次全面特性分析：更大的指令cache压力-2026-05-07.md",
+      "title": "SPEC CPU2026 首次全面特性分析：更大的指令cache压力-2026-05-07",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.405293",
+      "scored_at": "2026-05-08T05:47:31.063288"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第033章-隔离启动.md",
+      "title": "第033章-隔离启动",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.459091",
+      "scored_at": "2026-05-08T05:47:31.063289"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第051章-触发前夜.md",
+      "title": "第051章-触发前夜",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.515789",
+      "scored_at": "2026-05-08T05:47:31.063290"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第020章-第二个结果.md",
+      "title": "第020章-第二个结果",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.570598",
+      "scored_at": "2026-05-08T05:47:31.063291"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第057章-第十七次审查.md",
+      "title": "第057章-第十七次审查",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.623438",
+      "scored_at": "2026-05-08T05:47:31.063293"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第024章-限制期.md",
+      "title": "第024章-限制期",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.676720",
+      "scored_at": "2026-05-08T05:47:31.063294"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第021章-第340天.md",
+      "title": "第021章-第340天",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.733295",
+      "scored_at": "2026-05-08T05:47:31.063295"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第056章-第十六次审查.md",
+      "title": "第056章-第十六次审查",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.784520",
+      "scored_at": "2026-05-08T05:47:31.063296"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-08_RSS_2987af5f0d.md",
+      "title": "2026-05-08_RSS_2987af5f0d",
+      "score": 13,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.831259",
+      "scored_at": "2026-05-08T05:47:31.063297"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-08_RSS_2fdc91f9fa.md",
+      "title": "2026-05-08_RSS_2fdc91f9fa",
+      "score": 13,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.877291",
+      "scored_at": "2026-05-08T05:47:31.063299"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-08_RSS_86b9de0b8c.md",
+      "title": "2026-05-08_RSS_86b9de0b8c",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.974463",
+      "scored_at": "2026-05-08T05:47:31.063300"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-08_RSS_b514d7531d.md",
+      "title": "2026-05-08_RSS_b514d7531d",
+      "score": 13,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:31.022028",
+      "scored_at": "2026-05-08T05:47:31.063301"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-bufferqueue-internal-lock-contention.md",
+      "title": "BufferQueue 内部锁竞争机制",
+      "summary": "BufferQueue 采用单一 mutex + 多 condition variable 方案保护共享状态，核心竞争路径包括 dequeueBuffer 等待 free slot、ActiveBuffer O(n) 扫描、Allocation 期间锁释放。Android 14 引入 BUFFER_RELEASE_CHANNEL 的 notifyBufferReleased() 替代 notify",
+      "chapter": "ch02",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-koom-fastdump-suspend-fork-resume-mechanism.md",
+      "title": "KOOM FastDump Suspend-Fork-Resume 机制",
+      "summary": "KOOM FastDump 采用 Suspend VM → Fork → Resume → 子进程 dump 机制，将主进程冻结时间缩短到 <20ms。闭源 koom-fast-dump.so 通过 JNI bridge 实现，5 个 OOM Tracker（Heap/Thread/Fd/PhysicalMemory/FastHuge）协同检测内存异常，hprof_strip 直接解析 Hprof",
+      "chapter": "ch19",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-adpf-non-gaming-application-strategy.md",
+      "title": "ADPF 非游戏场景应用策略",
+      "summary": "ADPF PerformanceHintManager 对所有应用开放，非游戏可通过 Session 建立 hint 反馈闭环。setPreferPowerEfficiency(API 35)是非游戏场景核心工具，sendHint 提供 CPU/GPU 负载信号，GameState MODE_CONTENT 专为非游戏内容设计。ProfilingManager TRIGGER_TYPE_ANOMA",
+      "chapter": "ch05",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-sched-ext-oem-implementation.md",
+      "title": "sched_ext 在 Android OEM 上的 BPF 调度落地策略",
+      "summary": "深度分析 Linux sched_ext 架构在 Android OEM 的落地实践：Qualcomm SCX_Oplus 基于游戏场景的优先级映射与大核优先调度，MediaTek SCX_Mtk 应急响应调度与低延迟敏感优化，Google Pixel SCX_Litto 电源效率优化。这些 BPF 调度器结合 Android 特有 cgroup 配置和进程优先级体系，实现移动设备性能功耗平衡。",
+      "chapter": "ch17",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-bufferqueue-blocking-perfetto-patterns.md",
+      "title": "BufferQueue 堵塞的 Perfetto 直观特征识别",
+      "summary": "BufferQueue 堵塞在 Perfetto 中有三类特征：Producer 侧 dequeueBuffer 在 mDequeueCondition 等待导致 slice 拉长；Consumer 侧 acquireBuffer 返回 PRESENT_LATER 表明帧时机未到；NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND 返回 true 说明队列积压。详细拆解了 ",
+      "chapter": "ch07",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "queue"
     }
   ]
 }

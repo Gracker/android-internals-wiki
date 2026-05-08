@@ -167,7 +167,7 @@ PSS 是 `dumpsys meminfo`、`/proc/<pid>/smaps` 汇总和人工分析最常用�
 
 `lmkd` 的判断口径不是逐进程看 PSS 再排序。现代 userspace `lmkd` 先看 PSI、vmpressure、file cache、thrashing 等压力信号，再按 `oom_score_adj` 选择候选；如果启用了 `kill_heaviest_task`，它还会读取 `/proc/<pid>/statm` 的 RSS 来挑更重的进程。PSS 更适合人做分析，不是 `lmkd` 的主排序字段。
 
-**在 Perfetto 中看内存趋势时，也要先确认数据源。** 如果抓的是 `android.process_meminfo` 或 `dumpsys meminfo` 等价口径，PSS 很适合判断共享页分摊后的变化；如果抓的是 RSS / anon / file cache 计数器，就要按对应口径解释，不能把所有曲线都当成 PSS。
+**在 Perfetto 中看内存趋势时，要先确认数据源。** Perfetto 的 `linux.process_stats` 数据源提供的是 RSS 级别的计数器（`mem.rss`、`mem.rss.anon`、`mem.rss.file`、`mem.swap`），不包含 PSS。如果需要 PSS 时间序列，要靠 `dumpsys meminfo` 定时快照。抓到的是 RSS 计数器时，按 RSS 口径解释，不能把曲线当成 PSS。
 
 ### USS（Unique Set Size）——进程独有的物理内存
 
@@ -455,12 +455,12 @@ adb shell dumpsys meminfo com.example.app
 
 **3. 在 Perfetto 中看内存**
 
-Perfetto 的内存面板（`android.process_meminfo` 数据源）会周期性采集进程的 PSS/RSS 等数据，可以在时间轴上直观地看到内存变化趋势。这比 `dumpsys meminfo` 的瞬时快照更适合分析"内存增长发生在什么时候"。
+Perfetto 的 `linux.process_stats` 数据源会周期性采集进程的 RSS、swap 等数据（计数器包括 `mem.rss`、`mem.rss.anon`、`mem.rss.file`、`mem.swap`），可以在时间轴上直观地看到内存变化趋势。这比 `dumpsys meminfo` 的瞬时快照更适合分析"内存增长发生在什么时候"。如果需要 PSS 维度的趋势数据，要单独采集 `dumpsys meminfo` 快照序列，`linux.process_stats` 不提供 PSS。
 
 [待补充：Perfetto 内存面板截图]
 
 [已验证: 官方文档, developer.android.com/studio/profile/investigate-ram]
-[已验证: 官方文档, perfetto.dev/docs/data-sources]
+[已验证: Perfetto 官方文档, perfetto.dev/docs/data-sources（linux.process_stats / linux.sys_stats 计数器定义）]
 
 ## cgroup 对 Android 内存控制的作用
 
