@@ -1771,3 +1771,9 @@
 - **位置**：L232-L245 SplashScreen 调用顺序
 - **问题**：正文只强调 installSplashScreen() 要在 setContentView() 前；官方迁移文档要求在 starting activity 中先于 super.onCreate() 调用。示例代码是对的，但文字约束弱了一层。
 - **建议**：把文字改为“必须在 super.onCreate() 之前调用；自然也早于 setContentView()”。
+
+## [Task9 Deep Review] 3.5 输入事件拦截与安全机制 — 2026-05-09
+- **类型**：数据缺失/厂商实现待证
+- **位置**：L381-L395 厂商定制的拦截增强方案
+- **问题**：游戏模式输入优先级、防误触方案写了“绑定大核”“InputChannel 优先级”“TouchInputMapper 边缘判断”等具体实现，但没有厂商 ROM、内核调度、AOSP fork 或 trace 证据；目前只能作为可能实现路径，不能当成通用 Android 结论。
+- **建议**：补至少一个厂商实现的一手证据或 trace 观察点；否则改为“可能出现在厂商定制中”的待验证清单，并把 CPU 绑核、InputDispatcher 优先队列、触控 IC 采样率分开标注证据来源。

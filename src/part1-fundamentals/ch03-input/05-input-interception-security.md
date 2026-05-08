@@ -33,18 +33,18 @@ review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除�
 pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: "pending"
+task9_state: reviewed
 task2b_result: fixed
 task2b_state: "pending"
-task9_result: "pending"
+task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-09T05:30:47+08:00"
+last_task9_at: "2026-05-09T06:20:00+08:00"
 last_task6_at: "2026-05-09T06:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-06-review.md"
 task6_review_notes: "2026-05-09 Task6 06:05：Task2B 修复后写作复审；轻修 5 处（权限限制表述、运行时 flag 术语），L1/L2 通过；无新增 L3/L4 回炉项。因 queue.json 仍有 3.5 既有 external-review pending 条目，pipeline 保持 task2b_pending，不自动晋升。"
-last_task9_review_log: "logs/deep-review/2026-05-09-05-deep-review.md"
-task9_review_notes: "2026-05-09 Task9 05:30：needs-rework。P0 1，P1 0，P2 1。关键问题：文中把 pilferPointers() 的典型调用方写成 NavigationModeController / NavbarGestureController，并把“三键导航/手势导航”合并描述。"
+last_task9_review_log: "logs/deep-review/2026-05-09-06-deep-review.md"
+task9_review_notes: "2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入 suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。"
 ---
 # 输入事件拦截与安全机制
 

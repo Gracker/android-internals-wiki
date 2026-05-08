@@ -15102,6 +15102,33 @@
       "added_by": "task8-classifier",
       "added_at": "2026-05-09T05:35:34.777331",
       "status": "pending"
+    },
+    {
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-05-09 06:20 发现 P0 2，需 Task2B 回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-09-06-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码准确性",
+          "location": "L114 FrameMetrics 能力版本",
+          "detail": "正文写“FrameMetrics：每帧渲染耗时、GPU 执行时间的结构化上报（Android 7+）”。FrameMetrics 本身是 API 24 引入，但 GPU_DURATION 常量是 API 31 才加入；不能把 GPU 执行时间能力整体标成 Android 7+。",
+          "suggestion": "拆成“FrameMetrics API 24+ 可观测多项帧耗时；GPU_DURATION 需 API 31+”，或删除 GPU 执行时间这一路径，避免读者在 Android 7-11 上按 GPU_DURATION 排查。"
+        },
+        {
+          "type": "版本差异/API 错误",
+          "location": "L116 ApplicationExitInfo 版本",
+          "detail": "正文写“ApplicationExitInfo：系统记录的进程退出原因（ANR、crash、LMK 等，Android 10+）”。Android API 文档标注 ApplicationExitInfo Added in API level 30，即 Android 11；Android 10/API 29 不具备该 public API。",
+          "suggestion": "把版本改为 Android 11/API 30+；如需覆盖 Android 10，另写旧版本只能依赖 DropBox、bugreport、tombstone/logcat 等路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T06:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
