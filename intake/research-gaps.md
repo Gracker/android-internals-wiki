@@ -12622,3 +12622,19 @@ Flutter `FrameTiming` 只上报 build/raster/total duration 还不够。要进�
 
 ### 关联章节
 19.26、19.0、7.1、13.5
+
+## [2026-05-09] 1.0 第 1 章：系统架构全景 — Android 17 Energy Limiter / sched_ext / Generational CMC 边界
+
+### 盲区描述
+README L38/L71 把 Android 17 平台变化写成一组确定能力，但内部章节给出的边界不一致：Energy Limiter 在 5.7 仍标注为未核实研究线索；sched_ext 属于 Linux/ACK 6.12 与 OEM 可选调度框架，不是默认 Android 17 行为；Generational CMC 需要 runtime flag/device_config 等 gating 条件。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 17/API 37 官方 behavior changes、release notes、API reference 中是否存在 Energy Limiter 或等价后台能量配额机制。
+- 核对 `kernel/common` android16-6.12 / Android 17 GKI 口径下 sched_ext 的默认启用条件、CTS/VTS/OEM 开关与 Perfetto 可观测点。
+- 核对 ART Generational CMC 在 Android 16 QPR2 / Android 17 上的 flag、device_config、AOSP 源码路径和实际启用验证方式。
+
+### 关联章节
+1.0, 4.3, 4.6, 5.7, 14.10, 16.4, 16.5

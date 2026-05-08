@@ -14927,6 +14927,33 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T00:37:58+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.0",
+      "section_title": "第 1 章：系统架构全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 1.0 Android 17 平台变化概述混合了已确认平台行为、Kernel 6.12/OEM 可选能力和未核实 Energy Limiter，且阅读路线无法追到 Generational CMC/sched_ext 的实际章节，需回炉修正版本边界与交叉引用。",
+      "material_paths": [
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-09-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/交叉引用一致性",
+          "location": "L38 Android 17 平台变化串",
+          "detail": "[P1] README 将 “Android 17 进一步扩展到 Generational CMC、sched_ext 可编程调度、Energy Limiter 配额制和更强的锁消除” 写成同一组确定平台变化。与现有章节不一致：Generational CMC 在 16.5/4.3 中标注为需要 runtime flag/device_config gating；sched_ext 在 16.4/14.10 中归入 Kernel 6.12/android16-6.12 可见能力，且 Google 官方构建仍以 fair scheduler/EEVDF 为主；Energy Limiter 在 5.7 中明确标注为未在官方 behavior changes 找到对应条目；“更强的锁消除”应落到 Android 17 targetSdk 37 的 lock-free MessageQueue/DeliQueue，而不是泛化表述。",
+          "suggestion": "把这句话拆成四类边界：① Android 17/API 37 已确认平台行为（DeliQueue/ProfilingManager 等）；② Kernel 6.12/OEM 可选能力（sched_ext）；③ ART Generational CMC 的启用条件；④ Energy Limiter 保留为 [待验证] 研究线索或移出确定特性列表。"
+        },
+        {
+          "type": "交叉引用错误/知识盲区",
+          "location": "L71 阅读建议：Android 14/15/16/17 平台变化路线",
+          "detail": "[P1] 该句说 1.6、1.7、1.9、1.12、1.13、1.15、1.16 会把 Generational CMC 放到性能语境里，但在 ch01 目录内检索只有 README 命中 Generational CMC；实际机制主要在 4.3/4.6/16.5，sched_ext/Energy Limiter 也分别在 5.7、14.10、16.4 等章节。读者按当前路线无法追到这些 Android 17 机制的源码/版本边界。",
+          "suggestion": "阅读建议应改为：ch01 负责 Mainline、16KB、ADPF、云编译、DeliQueue 等架构入口；Generational CMC 跳转到 4.3/4.6/16.5；sched_ext 跳转到 5.7/14.10/16.4；Energy Limiter 仅在官方确认后再加入路线。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T01:25:25+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
