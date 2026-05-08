@@ -10622,7 +10622,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T03:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T15:44:57.788154",
+      "completed_reason": "P1 interface_name 改为 interface/method_name（与 android_binder_txns 实际字段对齐）；12% 吞吐量量化结论删除改为定性描述；Binder 风暴 SQL 改为 android.binder 标准库 + 低版本回退只过滤 binder transaction"
     },
     {
       "section": "7.3",
@@ -14798,7 +14800,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T13:32:43+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T15:42:00+08:00",
+      "completed_reason": "P0 mPriorityQueue ConcurrentSkipListSet修正，P1 Generational CMC gating条件补充，已通过最终验证"
     },
     {
       "section": "3.2",
@@ -14848,7 +14852,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T14:32:28+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T15:44:57.788154",
+      "completed_reason": "P0 jank_type SQL 改为 GLOB *App Deadline Missed*；P1 UI线程定位改为 android_frames + is_main_thread 回退，不再依赖 thread.name=main"
     },
     {
       "section": "9.3",
