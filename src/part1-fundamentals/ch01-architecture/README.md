@@ -16,14 +16,14 @@ sources:
     path: "https://developer.android.com/about/versions/16/release-cycle"
 tags: ['architecture', 'overview', 'chapter-intro']
 related_chapters: ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12", "1.13", "1.14", "1.15", "1.16", "1.17"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 last_task2b_at: "2026-05-08T11:40:00+08:00"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-23"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-08"
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 last_task9_at: "2026-04-28T14:33:59+08:00"
@@ -67,7 +67,7 @@ task9_reviewed_date: "2026-04-28"
 ## 阅读建议
 
 - 第一次系统读这一章，建议按 `1.1 → 1.5` 顺着走。读完后，应该能把一次 Binder 调用经过的线程、进程和调度点讲清楚。
-- 如果你在查启动或卡顿问题，优先看 `1.2`、`1.4`、`1.8`、`1.11`、`1.14`。读完后，应该能在 Perfetto 或 traces.txt 里先分清问题落在启动分段、Binder 等待、系统服务调度还是锁竞争。
-- 如果你想补 Android 14/15/16/17 的平台变化，重点看 `1.6`、`1.7`、`1.9`、`1.12`、`1.13`、`1.15`、`1.16`。这些小节会把 Mainline、16KB Page Size、ADPF、云编译、无锁 MessageQueue、Generational CMC 和音频低时延放到性能语境里。
-- 如果你只想先建立整体印象，先读 `1.1`、`1.2`、`1.3`、`1.6`。这四节足够把系统边界、版本变化和后面章节的入口搭起来。
-- 看完 `1.4` 之后，给自己留一个检查点：能不能在 Perfetto 里认出 Binder 事务阻塞和优先级继承；看完 `1.11` 之后，再检查一次自己能不能解释冷启动里 Zygote、预加载和 fork 继承各自带来的收益与代价。
+- 查启动或卡顿问题时，优先看 `1.2`、`1.4`、`1.8`、`1.11`、`1.14`。读完后，应该能在 Perfetto 或 traces.txt 里先分清问题落在启动分段、Binder 等待、系统服务调度还是锁竞争。
+- 补 Android 14/15/16/17 的平台变化时，重点看 `1.6`、`1.7`、`1.9`、`1.12`、`1.13`、`1.15`、`1.16`。这些小节会把 Mainline、16KB Page Size、ADPF、云编译、无锁 MessageQueue、Generational CMC 和音频低时延放到性能语境里。
+- 只需要先建立整体印象时，先读 `1.1`、`1.2`、`1.3`、`1.6`。这四节足够把系统边界、版本变化和后面章节的入口搭起来。
+- 看完 `1.4` 之后，可以留一个检查点：能不能在 Perfetto 里认出 Binder 事务阻塞和优先级继承；看完 `1.11` 之后，再检查一次能不能解释冷启动里 Zygote、预加载和 fork 继承各自带来的收益与代价。
