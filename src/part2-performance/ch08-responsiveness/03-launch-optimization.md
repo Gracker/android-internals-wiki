@@ -31,13 +31,13 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-30"
+task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-30T05:20:00+08:00"
+last_task9_at: "2026-05-09T05:30:47+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T10:44:00+08:00"
@@ -46,11 +46,13 @@ task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-09
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 review_round: 3
 last_task6_at: "2026-05-09T05:15:25+08:00"
 last_task6_review_log: "logs/review/2026-05-09-05-review.md"
 task6_review_notes: "2026-05-09 Task6 05:15：Task2B 修复后写作复审；轻修 24 处（禁用词、结构性元叙述、编辑痕迹、第一/第二人称和中性表达），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-09-05-deep-review.md"
+task9_review_notes: "2026-05-09 Task9 05:30：needs-rework。P0 1，P1 2，P2 2。关键问题：当前写“Pixel 上冷启动提升超过 4%、boot time 降低约 2%、Binder 测试最高提升 21%”；当前写 AGP 7.0+ 开始支持 Startup Profile 消费、AGP 8.0+ 改进布局算法。"
 ---
 
 # 启动优化策略

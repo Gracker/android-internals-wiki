@@ -1173,6 +1173,24 @@
       "queue_items_added": 1,
       "auto_finalized": [],
       "review_log": "logs/deep-review/2026-05-09-03-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-09T05:30:47+08:00",
+      "sections": [
+        "3.5",
+        "8.3"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "needs-rework",
+      "p0": 2,
+      "p1": 2,
+      "p2": 3,
+      "p3": 0,
+      "queue_items_added": 2,
+      "suggestions_added": 3,
+      "research_gaps_added": 0,
+      "auto_finalized": [],
+      "review_log": "logs/deep-review/2026-05-09-05-deep-review.md"
     }
   ],
   "rework_history": [
@@ -1562,27 +1580,40 @@
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "last_task6_review_log": "logs/review/2026-05-09-05-review.md",
-    "pipeline_stage": "task9_pending",
+    "pipeline_stage": "task2b_pending",
     "status": "ready-for-review",
-    "task9_state": "pending",
-    "task2b_state": "fixed",
+    "task9_state": "reviewed",
+    "task2b_state": "pending",
     "task2b_result": "fixed",
     "last_task6_polish_count": 19,
     "last_task6_rework_count": 0,
-    "section_title": "输入事件拦截与安全机制"
+    "section_title": "输入事件拦截与安全机制",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-09T05:30:47+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-09-05-deep-review.md",
+    "task9_reviewed_date": "2026-05-09"
   },
   "8.3": {
     "last_task6_at": "2026-05-09T05:15:25+08:00",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "last_task6_review_log": "logs/review/2026-05-09-05-review.md",
-    "pipeline_stage": "task9_pending",
+    "pipeline_stage": "task2b_pending",
     "status": "ready-for-review",
-    "task9_state": "pending",
-    "task2b_state": "fixed",
+    "task9_state": "reviewed",
+    "task2b_state": "pending",
     "task2b_result": "fixed",
     "last_task6_polish_count": 24,
     "last_task6_rework_count": 0,
-    "section_title": "启动优化策略"
-  }
+    "section_title": "启动优化策略",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-09T05:30:47+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-09-05-deep-review.md",
+    "task9_reviewed_date": "2026-05-09"
+  },
+  "task9_last_run": "2026-05-09T05:30:47+08:00",
+  "task9_last_sections": [
+    "3.5",
+    "8.3"
+  ]
 }

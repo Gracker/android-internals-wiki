@@ -30,19 +30,21 @@ related_chapters:
 reviewed_date: 2026-05-09
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-29"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-29T03:25:00+08:00"
+task9_reviewed_date: "2026-05-09"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-09T05:30:47+08:00"
 last_task6_at: "2026-05-09T05:15:25+08:00"
 last_task6_review_log: "logs/review/2026-05-09-05-review.md"
 task6_review_notes: "2026-05-09 Task6 05:15：Task2B 修复后写作复审；轻修 19 处（禁用词、结构性元叙述、编辑痕迹、第一/第二人称和中性表达），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task9_review_log: "logs/deep-review/2026-05-09-05-deep-review.md"
+task9_review_notes: "2026-05-09 Task9 05:30：needs-rework。P0 1，P1 0，P2 1。关键问题：文中把 pilferPointers() 的典型调用方写成 NavigationModeController / NavbarGestureController，并把“三键导航/手势导航”合并描述。"
 ---
 # 输入事件拦截与安全机制
 
