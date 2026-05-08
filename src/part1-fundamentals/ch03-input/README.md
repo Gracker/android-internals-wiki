@@ -21,19 +21,22 @@ related_chapters:
   - "3.4"
   - "3.5"
   - "3.6"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-08T19:40:00+08:00"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: 2026-04-23
+reviewed_date: 2026-05-09
 task9_result: needs-rework
 last_task9_at: "2026-04-28T14:33:59+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-28"
+last_task6_at: "2026-05-09T04:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-09-04-review.md"
+task6_review_notes: "2026-05-09 Task6 04:05：Task2B 修复后写作复审；修正验证锚点路径格式，L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # 第 3 章：输入系统
@@ -44,7 +47,7 @@ task9_reviewed_date: "2026-04-28"
 
 | 主题 | 子节 | Android 16/17 候选变化 | 验证锚点 |
 |------|------|----------------------|----------|
-| Predictive Back | 3.3 | AOT 编译期 back 动画预测，减少运行时回调开销 | ` frameworks/base/libs/windowmanager/` / `BackAnimationController` |
+| Predictive Back | 3.3 | AOT 编译期 back 动画预测，减少运行时回调开销 | `frameworks/base/libs/windowmanager/` / `BackAnimationController` |
 | MotionPredictor | 3.4 | ML 驱动的触控预测模型，替代线性外推 | `frameworks/native/services/inputflinger/predictor/` / `MotionPredictor.cpp` |
 | InputFlinger Rust | 3.1 / 3.5 | 输入事件分发路径中的 Rust 组件替换 | `frameworks/native/services/inputflinger/rust/` |
 | DeliQueue | 3.1 | MessageQueue 延迟投递优化，减少输入事件到主线程的排队延迟 | `frameworks/base/core/java/android/os/MessageQueue.java` |

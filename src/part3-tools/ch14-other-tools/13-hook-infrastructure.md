@@ -39,18 +39,22 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
 task2b_state: fixed
-last_task2b_at: '2026-05-09T19:40:00'
+last_task2b_at: "2026-05-09T03:46:13+08:00"
 task9_review_notes: "2026-05-09 Task9 03:30：needs-rework。P0 2：__loader_dlopen caller_addr 误写为 dso handle；ShadowHook 文件路径与 ARM64/Thumb stub 源码节选不匹配。P1 3：Gap Trampoline 与 namespace bypass 混层、init_array/linker lock 解释错误、16KB compat RELRO 口径错误。"
-last_task6_at: "2026-05-09T03:07:00+08:00"
-last_task6_review_log: "logs/review/2026-05-09-03-review.md"
+last_task6_at: "2026-05-09T04:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-09-04-review.md"
 review_notes: "2026-05-09 Task6 03:07：Task2B 修复后写作复审；轻修 20 处（标题引导语、形容词冒号起手式、半角标点、限制变严/分解类翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-09
+task6_review_notes: "2026-05-09 Task6 04:05：Task2B 修复后写作复审；轻修验证标注与重复表头，L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 
@@ -99,9 +103,7 @@ review_notes: "2026-05-09 Task6 03:07：Task2B 修复后写作复审；轻修 20
 
 把这五条线分清楚，比记住几个库名更重要。工具会变，名字会变，版本会变，但这些基本路线不会轻易变。
 
-[已验证: 本文分类框架参考 Android 性能工具生态的实际发展脉络]
-
-[已验证: Hook 技术路线分析基于主流开源项目调研]
+[已验证: 分类框架已对照 ByteHook、ShadowHook、xHook、Booster、Matrix、KOOM 公开仓库与 Android ART TI 文档。]
 
 ## 第一条路线：系统回调 / 官方接口
 
@@ -804,8 +806,6 @@ uintptr_t load_bias = base - min_vaddr;
 
 ShadowHook upstream 的核心实现文件分布在以下路径：
 
-| 文件 | 职责 |
-|------|------|
 | 文件 | 职责 |
 |------|------|
 | `shadowhook/src/main/cpp/sh_trampo.c` | Trampoline 分配与管理（island 内存分配、释放、查找） |
