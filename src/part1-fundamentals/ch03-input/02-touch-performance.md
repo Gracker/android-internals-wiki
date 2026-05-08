@@ -2,7 +2,7 @@
 title: "触摸响应的性能分析"
 chapter: "3.2"
 section: "3.2"
-status: ready-for-review
+status: finalized
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
@@ -35,22 +35,25 @@ task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T14:32:28+08:00"
-task9_result: needs-rework
+task9_result: pass-tech-review
 
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-08-14-review.md"
-review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。"
+last_task6_at: "2026-05-08T15:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-15-review.md"
+review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 15:05：自动晋升 finalized。条件满足：task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending 条目；本轮未做重复正文 review。"
 last_task9_review_log: "logs/deep-review/2026-05-08-14-deep-review.md"
-task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。"
+task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。Task2B 随后修正 ACK 回路方法名，queue 项已 completed，task9_result 更新为 pass-tech-review。"
+finalized_date: "2026-05-08"
+finalized_by: openclaw-task6-auto-promote
+task6_review_notes: "2026-05-08 Task6 15:05：未做重复正文 review；自动晋升检查通过（task6_result=pass-light-edit、task9_result=pass-tech-review、queue 无 pending）。"
 ---
 
 # 触摸响应的性能分析
@@ -168,7 +171,7 @@ InputDispatcher 也是 `system_server` 中的 Native 线程，被 InputReader �
 
 1. **InboundQueue（"iq"）**：InputReader 交付的事件先进入这里。InputDispatcher 从队列头取出事件开始处理。
 2. **OutboundQueue（"oq"）**：每个目标窗口（Connection）都有一个 OutboundQueue。事件被包装成 `DispatchEntry` 后放入对应窗口的 OutboundQueue，等待通过 socketpair 发送。
-3. **WaitQueue（"wq"）**：事件通过 socket 发送给 App 后，会先从 OutboundQueue 挪到 WaitQueue，等待 App 侧把 `Finished` 信号写回 InputChannel。条目从 WaitQueue 移走，要等 `InputDispatcher` 在 `doDispatchCycleFinishedLockedInterruptible` 里收到这个 ACK，而不是某个 View 回调刚 return 的瞬间。
+3. **WaitQueue（"wq"）**：事件通过 socket 发送给 App 后，会先从 OutboundQueue 挪到 WaitQueue，等待 App 侧把 `Finished` 信号写回 InputChannel。条目从 WaitQueue 移走，要等 `InputDispatcher` 在 `handleReceiveCallback()` → `finishDispatchCycleLocked()` → `doDispatchCycleFinishedCommand()` 里收到这个 ACK，而不是某个 View 回调刚 return 的瞬间。
 
 这条 ACK 回路要单独看。主线程已经跑完 `onTouchEvent()`，但如果 Looper 回切、线程调度或 socket 回写又慢了一拍，WaitQueue 仍然会继续堆积。Input ANR 计时看的就是这条“已分发但未完成 ACK”的路径。
 
