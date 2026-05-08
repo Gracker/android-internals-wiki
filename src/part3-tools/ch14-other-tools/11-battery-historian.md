@@ -28,23 +28,25 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T17:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-17-review.md"
-review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。"
-task9_state: pending
-task2b_state: fixed
+review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。'
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 last_task2b_at: "2026-04-30T17:46:37.750688"
 task9_result: needs-rework
-last_task9_at: "2026-04-30T18:33:37+08:00"
+last_task9_at: '2026-05-08T17:40:52+08:00'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-30"
+task9_reviewed_date: '2026-05-08'
+last_task9_review_log: logs/deep-review/2026-05-08-17-deep-review.md
+task9_review_notes: '2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。'
 ---
 
 # 14.11 Battery Historian 与功耗分析工具

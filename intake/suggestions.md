@@ -1688,3 +1688,15 @@
 - **问题**：章节末尾仍保留大段 AIW 源码调研摘录，位置在参考资料之后，破坏发布稿收束；内容尚未融入 Binder 性能分析主线。
 - **建议**：Task2B 判断归属：若保留在 1.4，压缩为 2-3 段并接回“在 Perfetto 中分析 Binder”；更推荐迁移到 7.3 卡顿分析方法或 13.9 tracing 基础设施。发布稿需删除 AIW 编辑痕迹和原始清单式堆料。
 - **review 日志**：logs/review/2026-05-08-17-review.md
+
+## [Task9 Deep Review] 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理 — 2026-05-08
+- **类型**：数据缺失
+- **位置**：L212 `buffer_size_kb` 通常 32-128MB
+- **问题**：`FtraceConfig.buffer_size_kb` 是每 CPU kernel ftrace ring buffer，Perfetto v43+ 文档建议多数配置不显式设置，示例常见 4096KB lower bound；“通常 32-128MB”缺少来源，且容易被理解为每 CPU 巨大缓冲区。
+- **建议**：改为“按场景设置，v43+ 多数配置可留空；若需兼容旧版本，可用 `buffer_size_kb: 4096` + `buffer_size_lower_bound: true` 作为起点”，并补 Perfetto proto 注释来源。
+
+## [Task9 Deep Review] 14.11 Battery Historian 与功耗分析工具 — 2026-05-08
+- **类型**：数据缺失
+- **位置**：L542 ADPF power efficiency “功耗降低 15-30%”
+- **问题**：“功耗降低 15-30%”是量化收益断言，但正文未给设备、负载、CPU cluster、温控状态、测试窗口或来源；`setPreferPowerEfficiency` 本身是 hint，收益高度依赖平台调度实现。
+- **建议**：删掉固定百分比，或补一组明确实验条件；更稳妥写成“可能降低能耗，但需要用 PowerMonitor/Perfetto rail 做 A/B 验证”。
