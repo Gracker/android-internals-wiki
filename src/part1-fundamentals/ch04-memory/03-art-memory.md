@@ -1,7 +1,7 @@
 ---
-task9_reviewed_date: "2026-04-30"
+task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-30T09:28:00+08:00"
+last_task9_at: "2026-05-08T12:39:39+08:00"
 title: "ART 虚拟机内存管理"
 chapter: "4.3"
 section: "4.3"
@@ -32,18 +32,20 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-08T11:40:00+08:00"
 task6_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
-pipeline_stage: task9_pending
-p1: 1
-p2: 1
-review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。"
+pipeline_stage: task2b_pending
+p1: 2
+p2: 3
+task9_review_notes: "2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。"
+last_task9_review_log: logs/deep-review/2026-05-08-12-deep-review.md
+review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。"
 task9_result: needs-rework
 ---
 # ART 虚拟机内存管理
