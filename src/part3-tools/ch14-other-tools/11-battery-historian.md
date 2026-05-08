@@ -28,19 +28,19 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T17:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-17-review.md"
 review_notes: '2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正。'
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
-last_task2b_at: "2026-04-30T17:46:37.750688"
+last_task2b_at: 2026-05-08T17:58:58+08:00
 task9_result: needs-rework
 last_task9_at: '2026-05-08T17:40:52+08:00'
 task9_reviewed_by: openclaw-task9
@@ -390,8 +390,8 @@ Macrobenchmark `PowerMetric` 是 AndroidX Benchmark 1.2.0+ 的库能力，平台
 
 `android.os.PowerMonitor` 代表一个电源监控实体，分为两类：
 
-- `POWER_MONITOR_TYPE_MEASUREMENT`（0x1）：直接测量的电源轨，轨名设备特有（如 "S2S_VDD_G3D"），跨设备不可比
-- `POWER_MONITOR_TYPE_CONSUMER`（0x2）：建模能耗消费者，名称相对通用（如 "GPU"、"MODEM"），可能组合多个轨或共享轨的建模估算
+- `POWER_MONITOR_TYPE_CONSUMER`（0）：建模能耗消费者，名称相对通用（如 "GPU"、"MODEM"），可能组合多个轨或共享轨的建模估算
+- `POWER_MONITOR_TYPE_MEASUREMENT`（1）：直接测量的电源轨，轨名设备特有（如 "S2S_VDD_G3D"），跨设备不可比
 
 ```kotlin
 // 获取支持的 PowerMonitor 列表
@@ -437,7 +437,7 @@ systemHealthManager.getPowerMonitorReadings(
     用途：离线回顾、趋势对比、定位高耗电 App
 
 路径 B：Rail 级实时读数（PowerMonitor / Perfetto / Power Profiler）
-    PowerStatsService (Android 15+) → IPowerStats HAL
+    PowerStatsService (Android 12+；API 35 应用层开放) → IPowerStats HAL
         ├── PowerMonitor API (API 35) → 应用层异步查询
         ├── Perfetto (android.power_rails) → android_power_rails_counters 表
         └── Studio Power Profiler → IDE 实时可视化
@@ -447,7 +447,7 @@ systemHealthManager.getPowerMonitorReadings(
 
 两条路径在 bugreport 中可以汇合（batterystats 段落内也会引用 rail 数据做交叉校验），但采集机制和统计口径不同，分析时不要混用。
 
-Android 15 引入了 `PowerStatsService`（位于 `frameworks/base/services/core/java/com/android/server/power/stats/`），取代了旧版 `BatteryStatsImpl` 中耦合的功耗统计逻辑。`PowerStatsService` 通过 `PowerStatsProcessor` 接口为 CPU、GPU、Modem 等组件分别建立能耗模型，与 `SystemHealthManager` 对接后向应用层暴露标准查询接口。这套架构使得功耗统计从单一巨型类逐步解耦为可独立迭代的模块。
+`PowerStatsService`（`frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`）从 Android 12 已存在（Copyright 2020），负责管理功耗采集与模型计算。`PowerMonitor` API 在 API 35 向应用层开放；内部 `PowerStatsService` 通过 `PowerStatsProcessor` 接口为 CPU、GPU、Modem 等组件分别建立能耗模型，与 `SystemHealthManager` 对接后暴露标准查询接口。功耗模型代码（`PowerCalculator`、`PowerProcessor` 等）位于相邻的 `power/stats/` 目录，两者并存：`powerstats/` 管采集与服务，`power/stats/` 管建模与计算。
 
 **版本门槛**：应用层 PowerMonitor API 需要 API 35； Perfetto `android.power_rails` 从 Android 10 就存在，但需要设备支持 ODPM（Pixel 6+ 确认支持）。
 

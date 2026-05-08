@@ -14950,7 +14950,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T17:40:52+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T17:58:58+08:00",
+      "completed_reason": "Task2B P0 修复完成"
     },
     {
       "section": "13.9",
@@ -14977,7 +14979,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T17:40:52+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T17:58:58+08:00",
+      "completed_reason": "Task2B P0 修复完成"
     },
     {
       "section": "14.11",
@@ -15004,7 +15008,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T17:40:52+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T17:58:58+08:00",
+      "completed_reason": "Task2B P0 修复完成"
     }
   ],
   "completed": [

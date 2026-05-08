@@ -1035,5 +1035,25 @@
       "14.11: PowerMetric版本门槛统一 + 功耗通路图拆为两条证据链",
       "13.9: UprobeStats开销描述从<1%收窄为条件化描述"
     ]
+  },
+  "7.1": {
+    "last_task2b_at": "2026-05-08T17:59:11.630954+08:00",
+    "task2b_result": "fixed",
+    "pipeline_stage": "task6_pending"
+  },
+  "13.9": {
+    "last_task2b_at": "2026-05-08T17:59:11.630954+08:00",
+    "task2b_result": "fixed",
+    "pipeline_stage": "task6_pending"
+  },
+  "14.11": {
+    "last_task2b_at": "2026-05-08T17:59:11.630954+08:00",
+    "task2b_result": "fixed",
+    "pipeline_stage": "task6_pending"
+  },
+  "daily_stats": {
+    "2026-05-08": {
+      "task2b_fixed": 3
+    }
   }
 }
