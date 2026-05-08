@@ -6,12 +6,17 @@ status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
-last_verified: "2026-04-22"
+last_verified: "2026-05-08"
 last_verified_against: "AOSP android-16.0.0_r1 FrameTimeline.cpp + Perfetto docs / Android Developers docs"
-polish_count: 2
+polish_count: 3
 polish_date: "2026-05-08"
 polish_by: "task2b-rework"
 review_type: "post-polish-quality-gate"
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: medium
 sources:
   - type: aosp
@@ -286,15 +291,21 @@ INCLUDE PERFETTO MODULE android.binder;
 INCLUDE PERFETTO MODULE android.binder_breakdown;
 
 WITH janky_frame AS (
-  SELECT ts, dur, upid,
-         -- 定位该帧的 UI 线程和 RenderThread
-         -- 通过 android.frames.timeline 或 doFrame slice 找到具体 utid
-         (SELECT utid FROM thread WHERE name = 'main' AND upid = actual_frame_timeline_slice.upid) AS main_utid,
-         (SELECT utid FROM thread WHERE name = 'RenderThread' AND upid = actual_frame_timeline_slice.upid) AS rt_utid
-  FROM actual_frame_timeline_slice
-  WHERE jank_type = 'AppDeadlineMissed'
-    AND on_time_finish = 0
-  ORDER BY dur DESC
+  SELECT af.ts, af.dur, af.upid,
+         -- 用 android_frames 取帧关联的 UI/RenderThread utid
+         -- Perfetto 主线程名可能是进程名或截断的 comm，不能依赖 thread.name = 'main'
+         af_ui.utid AS ui_utid,
+         af_rt.utid AS rt_utid
+  FROM actual_frame_timeline_slice af
+  LEFT JOIN android_frames af_ui ON af.id = af_ui.actual_frame_timeline_id AND af_ui.utid IS NOT NULL
+  LEFT JOIN (  -- RenderThread: 从同 upid 的线程中按名称筛选
+    SELECT a.id AS frame_id, t.utid
+    FROM actual_frame_timeline_slice a
+    JOIN thread t ON t.upid = a.upid AND t.name = 'RenderThread'
+  ) af_rt ON af.id = af_rt.frame_id
+  WHERE af.jank_type GLOB '*App Deadline Missed*'
+    AND af.on_time_finish = 0
+  ORDER BY af.dur DESC
   LIMIT 1
 ),
 -- Step 2: 找与该帧时间窗口重叠的 Binder 事务
@@ -306,7 +317,8 @@ frame_binder AS (
          b.aidl_name, b.is_main_thread, b.binder_txn_id
   FROM android_binder_txns b, janky_frame jf
   WHERE b.client_upid = jf.upid
-    AND b.client_utid IN (jf.main_utid, jf.rt_utid)  -- 限定关键线程
+    AND (b.client_utid = jf.ui_utid OR b.client_utid = jf.rt_utid
+         OR b.is_main_thread = 1)  -- 回退：is_main_thread 标记兜底
     AND b.client_ts < jf.ts + jf.dur        -- 事务起点早于帧结束
     AND b.client_ts + b.client_dur > jf.ts  -- 事务结束晚于帧起点（区间重叠）
     AND b.client_dur > 1000000  -- > 1ms
@@ -322,17 +334,23 @@ SELECT * FROM frame_binder;
 SELECT reason, count(*) AS count, sum(dur)/1e6 AS total_ms
 FROM android_binder_client_breakdown
 WHERE binder_txn_id IN (
-  -- 内联 frame_binder 子查询，避免跨代码块 CTE 丢失
   SELECT b.binder_txn_id
   FROM android_binder_txns b,
-       (SELECT ts, dur, upid,
-               (SELECT utid FROM thread WHERE name = 'main' AND upid = af.upid) AS main_utid,
-               (SELECT utid FROM thread WHERE name = 'RenderThread' AND upid = af.upid) AS rt_utid
+       (SELECT af.ts, af.dur, af.upid,
+               af_ui.utid AS ui_utid,
+               af_rt.utid AS rt_utid
         FROM actual_frame_timeline_slice af
-        WHERE jank_type = 'AppDeadlineMissed' AND on_time_finish = 0
-        ORDER BY dur DESC LIMIT 1) jf
+        LEFT JOIN android_frames af_ui ON af.id = af_ui.actual_frame_timeline_id AND af_ui.utid IS NOT NULL
+        LEFT JOIN (
+          SELECT a.id AS frame_id, t.utid
+          FROM actual_frame_timeline_slice a
+          JOIN thread t ON t.upid = a.upid AND t.name = 'RenderThread'
+        ) af_rt ON af.id = af_rt.frame_id
+        WHERE af.jank_type GLOB '*App Deadline Missed*' AND af.on_time_finish = 0
+        ORDER BY af.dur DESC LIMIT 1) jf
   WHERE b.client_upid = jf.upid
-    AND b.client_utid IN (jf.main_utid, jf.rt_utid)
+    AND (b.client_utid = jf.ui_utid OR b.client_utid = jf.rt_utid
+         OR b.is_main_thread = 1)
     AND b.client_ts < jf.ts + jf.dur
     AND b.client_ts + b.client_dur > jf.ts
     AND b.client_dur > 1000000

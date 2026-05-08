@@ -7,9 +7,15 @@ reviewed_by: openclaw-task6
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 drafted_date: '2026-04-10'
 drafted_by: openclaw-task2a
-last_verified: '2026-04-19'
+last_verified: '2026-05-08'
 last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android
   官方文档
+status: ready-for-review
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: medium
 sources:
 - type: blog
@@ -134,7 +140,7 @@ Android 8（Oreo）加入了 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_R
 
 这个 mmap 缓冲区的大小限制是 Binder 的一个重要约束。每个进程的所有 Binder 事务共享这块约 1MB 的缓冲区。如果一次性传输一个大 Bitmap 或一个超长列表，就可能撞到 `TransactionTooLargeException`。传输大数据应该使用 `SharedMemory`（基于 ashmem/memfd）或 `ParcelFileDescriptor`，只通过 Binder 传递文件描述符句柄。
 
-在 16KB Page Size 环境下，这块 mmap 缓冲区的物理页数量减少为原来的四分之一，页表遍历开销和 TLB miss 率都随之降低。实测中，大数据量 Binder 事务的吞吐量有约 12% 的提升。不过这属于底层架构红利，应用层不需要为适配 16KB 做额外改动。
+在 16KB Page Size 环境下，这块 mmap 缓冲区的物理页数量减少为原来的四分之一，页表遍历开销和 TLB miss 率都随之降低。Binder 吞吐量理论上会受益于更少的 TLB miss，但具体的量化幅度取决于设备、Binder payload 大小和事务频率，当前公开资料没有给出 Binder 专项 benchmark 数据。这属于底层架构红利，应用层不需要为适配 16KB 做额外改动。
 
 [已验证: 官方文档, developer.android.com/reference/android/os/TransactionTooLargeException] [已验证: AOSP, frameworks/native/libs/binder/ProcessState.cpp 中 mmap 调用]
 
@@ -324,13 +330,28 @@ ORDER BY s.dur DESC;
 Binder 风暴的典型来源：某个 App 在主线程的 `doFrame` 中反复调用系统服务（比如每帧都查询一次 DisplayInfo），或者某个后台进程在短时间内大量注册/注销回调。在 Perfetto 中定位 Binder 风暴，可以用 SQL 按 Client 进程统计事务频率：
 
 ```sql
+-- Android 16+: 优先使用 android.binder 标准库
+INCLUDE PERFETTO MODULE android.binder;
+
+SELECT client_process, count(*) AS txn_count,
+       sum(client_dur)/1e6 AS total_client_ms
+FROM android_binder_txns
+GROUP BY client_process
+ORDER BY total_client_ms DESC
+LIMIT 20;
+```
+
+低版本（Android 13 及以下）需要从 ftrace slice 手动统计，此时只过滤 `binder transaction`（client 侧发起），不要把 `binder reply` / `binder async receive` 等 server 侧 slice 混入 client 频率统计：
+
+```sql
+-- 低版本回退：只统计 client 侧 binder transaction slice
 SELECT process.name, count(1) AS txn_count,
        sum(s.dur)/1e6 AS total_dur_ms
 FROM slice s
 JOIN thread_track ON s.track_id = thread_track.id
 JOIN thread USING(utid)
 JOIN process USING(upid)
-WHERE s.name LIKE 'binder%'
+WHERE s.name GLOB 'binder transaction*'
 GROUP BY process.name
 ORDER BY total_dur_ms DESC
 LIMIT 20;
@@ -357,9 +378,9 @@ Binder 在 Android 版本中持续优化，这里列出对性能分析有影响�
 - **Android 11 QPR3+**：cached apps freezer / binder-freezer 开始影响 Binder 语义。对 frozen app 发起同步（非 `oneway`）Binder 调用时，系统会 kill remote process；异步事务会先缓冲，缓冲区溢出时可能把目标进程一起拖崩。
 - **Android 12（API 31）源码已可见 `BinderCallHeavyHitterWatcher`**：系统侧对 Binder 热点调用的内部观测能力早已存在，不适合写成 Android 15 才出现的新变化。
 - **Android 14/15（API 34/35）**：`android.binder` 数据源在 Perfetto 里更完整，事务语义和阻塞时长字段更容易直接消费。
-- **Android 16（API 36）**：`android.binder` 数据源直接记录 `interface_name` 和 `method_name`，省去了按事务码反查接口的步骤。同步 Binder 调用在 Perfetto 中的诊断效率因此显著提升。
+- **Android 16（API 36）**：`android.binder` 标准库（`android/binder.sql`）进一步完善了从 AIDL/HIDL slice 拆分 `interface`/`method_name` 的逻辑，`android_binder_txns` 表的字段名以 `interface` 和 `method_name` 为准（不是 `interface_name`）。同步 Binder 调用在 Perfetto 中的诊断效率因此显著提升。
 - **Android 16（API 36）**：`RemoteCallbackList` 引入 `FrozenCalleePolicy`，允许在客户端进程被冻结时自动丢弃高频数据回调，避免 oneway 队列在解冻后瞬间雪崩。此前开发者需要自行处理冻结态下的回调堆积问题。
-- **Android 16 + 16KB Page Size**：Binder mmap 缓冲区大小为 `1MiB - 2 * page_size`（AOSP `ProcessState.cpp`），16KB 页确实减少了页表项数量。但"吞吐量提升约 12%"的数据缺乏公开 AOSP benchmark 或官方文档支撑，当前 Android 16 的 16KB Page Size 公开资料主要给出 app launch、boot、camera 等宏观收益。[待验证] 如需精确量化 Binder 吞吐量变化，应补充设备型号、Binder payload 大小、事务次数、对照组 trace 数据。
+- **Android 16 + 16KB Page Size**：Binder mmap 缓冲区大小为 `1MiB - 2 * page_size`（AOSP `ProcessState.cpp`），16KB 页确实减少了页表项数量。Binder 吞吐量理论上受益于更少的 TLB miss，但当前公开资料没有给出 Binder 专项 benchmark 数据，Android 16 的 16KB Page Size 公开资料主要给出 app launch、boot、camera 等宏观收益。[待验证] 如需精确量化 Binder 吞吐量变化，应补充设备型号、Binder payload 大小、事务次数、对照组 trace 数据。
 
 [已验证: 官方文档, source.android.com/docs/core/architecture/aidl/aidl-hals] [已验证: 官方文档, source.android.com/docs/core/perf/cached-apps-freezer] [已验证: 官方文档, source.android.com/docs/core/architecture/ipc/binder-freezer] [已验证: AOSP android-12.0.0_r1, frameworks/base/core/java/com/android/internal/os/BinderCallHeavyHitterWatcher.java]
 
