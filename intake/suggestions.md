@@ -1777,3 +1777,10 @@
 - **位置**：L381-L395 厂商定制的拦截增强方案
 - **问题**：游戏模式输入优先级、防误触方案写了“绑定大核”“InputChannel 优先级”“TouchInputMapper 边缘判断”等具体实现，但没有厂商 ROM、内核调度、AOSP fork 或 trace 证据；目前只能作为可能实现路径，不能当成通用 Android 结论。
 - **建议**：补至少一个厂商实现的一手证据或 trace 观察点；否则改为“可能出现在厂商定制中”的待验证清单，并把 CPU 绑核、InputDispatcher 优先队列、触控 IC 采样率分开标注证据来源。
+
+
+## [Task9 Deep Review] 13.2 Trace 抓取 — 2026-05-09
+- **类型**：原理链细化
+- **位置**：L659 Native Heap Profiling（heapprofd）
+- **问题**：“heapprofd 运行在目标进程中”把 daemon 与目标进程内 client/hook 机制混在一起。heapprofd 是守护进程，目标进程侧通过 heapprofd client / malloc hook 参与采样。
+- **建议**：改成“heapprofd daemon 负责收集与聚合；目标进程侧加载 client/hook 记录 malloc/free/new/delete 调用栈”，避免读者误解为 daemon 本身在 App 进程内运行。
