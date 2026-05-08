@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-05-08T21:24:13+08:00",
+  "generated_at": "2026-05-08T21:35:11+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-08T21:24:13+08:00",
+    "last_updated": "2026-05-08T21:35:11+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
-      "ready-to-publish": 151,
-      "task2b_pending": 56,
+      "ready-to-publish": 153,
+      "task2b_pending": 54,
       "task6_pending": 1,
       "task9_pending": 1,
       "unknown": 30
@@ -25,13 +25,13 @@
       "unknown": 31
     },
     "task2b_state_counts": {
-      "fixed": 152,
-      "pending": 55,
+      "fixed": 154,
+      "pending": 53,
       "unknown": 33
     },
     "status_counts": {
-      "finalized": 151,
-      "ready-for-review": 59,
+      "finalized": 153,
+      "ready-for-review": 57,
       "unknown": 30
     }
   },
@@ -1003,6 +1003,26 @@
         "13.9"
       ],
       "review_log": "logs/deep-review/2026-05-08-20-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T21:35:11+08:00",
+      "sections": [
+        "2.7",
+        "18.9",
+        "19.0"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "needs-rework",
+      "p0": 0,
+      "p1": 1,
+      "p2": 7,
+      "p3": 0,
+      "queue_items_added": 1,
+      "auto_finalized": [
+        "2.7",
+        "19.0"
+      ],
+      "review_log": "logs/deep-review/2026-05-08-21-deep-review.md"
     }
   ],
   "rework_history": [
@@ -1267,5 +1287,38 @@
         "19.0: tracing-perfetto 版本线拆分修正 (P1, task9)"
       ]
     }
-  ]
+  ],
+  "2.7": {
+    "last_task9_at": "2026-05-08T21:35:11+08:00",
+    "task9_result": "pass-tech-review",
+    "task9_state": "reviewed",
+    "last_task9_review_log": "logs/deep-review/2026-05-08-21-deep-review.md",
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "task2b_state": "fixed"
+  },
+  "18.9": {
+    "last_task9_at": "2026-05-08T21:35:11+08:00",
+    "task9_result": "needs-rework",
+    "task9_state": "reviewed",
+    "last_task9_review_log": "logs/deep-review/2026-05-08-21-deep-review.md",
+    "pipeline_stage": "task2b_pending",
+    "status": "ready-for-review",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "task2b_state": "pending"
+  },
+  "19.0": {
+    "last_task9_at": "2026-05-08T21:35:11+08:00",
+    "task9_result": "pass-tech-review",
+    "task9_state": "reviewed",
+    "last_task9_review_log": "logs/deep-review/2026-05-08-21-deep-review.md",
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "task2b_state": "fixed"
+  }
 }
