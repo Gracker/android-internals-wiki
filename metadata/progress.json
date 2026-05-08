@@ -594,6 +594,25 @@
         }
       ],
       "review_log": "logs/review/2026-05-08-21-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T23:18:39+08:00",
+      "sections": [
+        "14.13"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 104,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分（outline 后正文 0 行；queue 已有 blocked 条目）"
+        }
+      ],
+      "review_log": "logs/review/2026-05-08-23-review.md"
     }
   ],
   "task9_review_history": [
@@ -1319,6 +1338,16 @@
     "status": "finalized",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
+    "task2b_state": "fixed"
+  },
+  "14.13": {
+    "last_task6_at": "2026-05-08T23:18:39+08:00",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "last_task6_review_log": "logs/review/2026-05-08-23-review.md",
+    "pipeline_stage": "task9_pending",
+    "status": "ready-for-review",
+    "task9_state": "pending",
     "task2b_state": "fixed"
   }
 }
