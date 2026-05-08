@@ -27,11 +27,11 @@ related_chapters:
 - '3.2'
 - '9.1'
 - '9.2'
-reviewed_date: "2026-04-29"
+reviewed_date: 2026-05-09
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_result: fixed
@@ -40,6 +40,9 @@ task9_result: needs-rework
 task9_reviewed_date: "2026-04-29"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-29T03:25:00+08:00"
+last_task6_at: "2026-05-09T05:15:25+08:00"
+last_task6_review_log: "logs/review/2026-05-09-05-review.md"
+task6_review_notes: "2026-05-09 Task6 05:15：Task2B 修复后写作复审；轻修 19 处（禁用词、结构性元叙述、编辑痕迹、第一/第二人称和中性表达），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 # 输入事件拦截与安全机制
 
@@ -70,9 +73,9 @@ last_task9_at: "2026-04-29T03:25:00+08:00"
 
 ## 为什么要了解输入事件拦截与安全机制
 
-在第 3.1 节中，我们追踪了一条 Input 事件从硬件到 View 树的完整路径。但那条路径描述的是"正常情况"——事件沿着设计好的管道一路传递到目标窗口。现实远比这复杂：系统中存在多种机制可以在事件传递的不同环节进行拦截、过滤甚至注入新事件。
+第 3.1 节追踪了一条 Input 事件从硬件到 View 树的完整路径。那条路径描述的是"正常情况"——事件沿着设计好的管道一路传递到目标窗口。现实远比这复杂：系统中存在多种机制可以在事件传递的不同环节进行拦截、过滤甚至注入新事件。
 
-做性能优化时，你可能会遇到一种诡异的卡顿：Perfetto 中 InputDispatcher 的队列状态完全正常，App 主线程也没有阻塞，但用户就是感觉触摸响应慢了。排查到最后发现，系统注册了一个 InputFilter，每个事件在分发前都要经过一层过滤处理，引入了额外的延迟。又或者在分析无障碍服务相关的 bug 时，发现事件在到达 View 树之前就被无障碍服务拦截并修改。你以为是 App 代码的问题，根因却在更上层。
+做性能优化时，常见一种诡异卡顿：Perfetto 中 InputDispatcher 的队列状态完全正常，App 主线程也没有阻塞，但用户仍然感觉触摸响应慢。继续排查后发现，系统注册了一个 InputFilter，每个事件在分发前都要经过一层过滤处理，引入了额外延迟。又或者在分析无障碍服务相关的 bug 时，事件在到达 View 树之前就被无障碍服务拦截并修改。看起来像 App 代码问题，根因却在更上层。
 
 理解这些拦截机制的存在、工作原理和安全边界，一方面是为了在性能分析时能够识别"事件去哪了"，另一方面也是为了在做 Framework 定制或安全审计时，清楚系统允许什么、禁止什么。
 
@@ -82,7 +85,7 @@ last_task9_at: "2026-04-29T03:25:00+08:00"
 
 InputFilter 是 Android 系统提供的一个**全局事件拦截机制**，允许系统级组件在 InputDispatcher 将事件分发给目标窗口之前，对事件进行拦截、修改或过滤。它工作在 InputDispatcher 内部，是事件分发路径上最早的可编程拦截点。
 
-与 App 层面的事件拦截（如 `ViewGroup.onInterceptTouchEvent()`）不同，InputFilter 是**系统级**的——它拦截的是所有窗口的事件，而不是单个 App 的事件。这意味着一个 InputFilter 可以影响整个系统的输入行为。
+与 App 层面的事件拦截（如 `ViewGroup.onInterceptTouchEvent()`）不同，InputFilter 是**系统级**的——它拦截的是所有窗口的事件，而不是单个 App 的事件。影响范围覆盖整个系统的输入行为。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/native/services/inputflinger/dispatcher/InputDispatcher.h]
 
@@ -137,13 +140,13 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 ### InputFilter 在 Perfetto 中的表现
 
-这里要把两类耗时分开看。
+两类耗时需要分开看。
 
 一类是 filter 本身在 system_server 里的本地处理时间，例如 Java 回调、事件复制、坐标变换、`sendInputEvent()` 重新发布。这部分会直接拉长“事件进入 Input 子系统之后，到达目标窗口之前”的时间。
 
 另一类是无障碍按键判定带来的额外等待。它不是 `InputDispatcher` 线程同步等远端 Binder 返回，而是 `KeyboardInterceptor` 把按键交给 `AccessibilityManagerService`，再由 `KeyEventDispatcher` 异步等服务调用 `setOnKeyEventResult()`。InputDispatcher 并没有同步卡在 Binder 上等远端返回。
 
-当前素材没有对应的真实 trace 截图，本节只保留可从源码核对到的结论。Perfetto 图例先记为 `[待补充：展示 InputDispatcher、AccessibilityManagerService、无障碍服务进程的时间关系]`。
+当前素材没有对应的真实 trace 截图，本节只保留可从源码核对到的结论。Perfetto 图例暂记为 `[待补充：展示 InputDispatcher、AccessibilityManagerService、无障碍服务进程的时间关系]`。
 
 ## InputMonitor：特权组件的旁路监控
 
@@ -214,7 +217,7 @@ android-10.0.0_r1 和 android-14.0.0_r1 都是这套做法，所以“Android 10
 - 服务返回 handled，事件在无障碍层结束，不再发给 App
 - 服务返回 unhandled，或 500ms 内没有回结果，`KeyEventDispatcher` 把原始按键重新送回 input filter，再继续分发给目标窗口
 
-这就是为什么我们在分析按键延迟时，应该去看 `AccessibilityManagerService`、`KeyEventDispatcher` 和服务进程自己的处理时间，而不是假定 `InputDispatcher` 一直堵着不动。
+分析按键延迟时，应该看 `AccessibilityManagerService`、`KeyEventDispatcher` 和服务进程自己的处理时间，而不是假定 `InputDispatcher` 一直堵着不动。
 
 ### 事件修改的安全限制
 
@@ -222,7 +225,7 @@ android-10.0.0_r1 和 android-14.0.0_r1 都是这套做法，所以“Android 10
 
 1. **原始硬件事件不能被服务直接原位改写。** 触摸从 `EventHub/InputReader` 进入系统后，普通服务拿不到那份内核事件缓冲。无障碍更常见的做法是消费原事件，再通过 `MotionEventInjector` 或 `dispatchGesture()` 发出替代手势。
 2. **按键判定是“消费还是放行”，不是修改原 `KeyEvent` 再放行。** `AccessibilityService.onKeyEvent()` 给出的只是一个布尔结果。若服务想产生另一组按键，仍然要走注入入口。
-3. **`source` 不能拿来判断无障碍注入。** `MotionEvent.getSource()` / `KeyEvent.getSource()` 描述的是设备类别。App 真正能直接看到的标记是 `KeyEvent.FLAG_IS_ACCESSIBILITY_EVENT` 和 `MotionEvent.FLAG_IS_ACCESSIBILITY_EVENT`。`POLICY_FLAG_INJECTED`、`POLICY_FLAG_INJECTED_FROM_ACCESSIBILITY` 属于 InputDispatcher 内部 policy flag，不是 public API。
+3. **`source` 不能拿来判断无障碍注入。** `MotionEvent.getSource()` / `KeyEvent.getSource()` 描述的是设备类别。App 侧能直接看到的标记是 `KeyEvent.FLAG_IS_ACCESSIBILITY_EVENT` 和 `MotionEvent.FLAG_IS_ACCESSIBILITY_EVENT`。`POLICY_FLAG_INJECTED`、`POLICY_FLAG_INJECTED_FROM_ACCESSIBILITY` 属于 InputDispatcher 内部 policy flag，不是 public API。
 
 ## 系统级事件注入
 
@@ -232,7 +235,7 @@ android-10.0.0_r1 和 android-14.0.0_r1 都是这套做法，所以“Android 10
 
 #### 1. Instrumentation.sendPointerSync()
 
-`Instrumentation.sendPointerSync()` 先做一次 window transaction 同步，然后调用 `InputManagerGlobal.getInstance().injectInputEvent(..., Process.myUid())`。AOSP 注释写得很直白，它只会把事件定向到 instrumentation target 自己拥有的窗口，不会像 `UiAutomation` 那样跨 App。
+`Instrumentation.sendPointerSync()` 会做一次 window transaction 同步，然后调用 `InputManagerGlobal.getInstance().injectInputEvent(..., Process.myUid())`。AOSP 注释写得很直白，它只会把事件定向到 instrumentation target 自己拥有的窗口，不会像 `UiAutomation` 那样跨 App。
 
 ```java
 // frameworks/base/core/java/android/app/Instrumentation.java
@@ -277,7 +280,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 }
 ```
 
-下面这张表把几种入口放在一起看：
+几种入口的差异如下：
 
 | 方式 | 最终入口 | 是否经过 accessibility input filter | 目标范围 | App 侧可直接看到的标记 |
 |------|----------|--------------------------------------|----------|------------------------|
@@ -299,7 +302,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 ### 哪些环节可以被拦截/修改
 
-Input 事件从硬件到 App 之间，真正可编程的拦截点按源码可以落到下面几处：
+Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这几处：
 
 | 位置 | 能做什么 | 典型实现 |
 |------|----------|----------|
@@ -308,7 +311,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点按源码可以
 | `AccessibilityInputFilter` 内部变换器 | 按键判定、触摸探索、手势注入 | `KeyboardInterceptor`、`TouchExplorer`、`MotionEventInjector` |
 | App 自己的 `InputStage` / `ViewGroup` | 只影响本进程窗口 | `ViewRootImpl`、`onInterceptTouchEvent()` |
 
-下面几处普通 App 或普通服务碰不到：
+普通 App 或普通服务碰不到这几处：
 
 1. **`EventHub → InputReader` 的原始设备事件。** 这是内核输入设备到系统服务的边界。
 2. **`InputChannel` 的 socket 传输。** 事件进入 socket 之后，App 只能从自己那一端读，不能改 system_server 已经写出的包。
@@ -318,7 +321,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点按源码可以
 
 ### 安全策略的版本演进
 
-本节只保留当前能直接从 AOSP 和官方文档核对到的结论。
+当前只保留能直接从 AOSP 和官方文档核对到的结论。
 
 | 版本/来源 | 能直接核对到的结论 | 证据 |
 |-----------|--------------------|------|
@@ -373,7 +376,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点按源码可以
 
 ### 游戏模式中的输入优先级
 
-主流手机厂商在游戏场景中做了大量输入拦截和优先级的定制。核心思路是：当检测到游戏 App 在前台运行时，提升触摸事件的分发优先级，降低事件在 InputDispatcher 中的等待时间。
+主流手机厂商在游戏场景中做了大量输入拦截和优先级定制。常见做法是：当检测到游戏 App 在前台运行时，提升触摸事件的分发优先级，降低事件在 InputDispatcher 中的等待时间。
 
 具体实现通常包括：
 
@@ -385,7 +388,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点按源码可以
 
 ### 防误触机制
 
-防误触是厂商在 Input 系统上的另一个重要定制方向。常见方案包括：
+防误触也是厂商常见的 Input 定制方向。常见方案包括：
 
 1. **边缘防误触**：在屏幕边缘区域（通常 10-20px 宽度）降低触摸灵敏度或直接忽略触摸事件。实现方式是在 InputReader 的 `TouchInputMapper` 中增加边缘区域判断逻辑
 2. **口袋防误触**：通过距离传感器检测手机是否在口袋中，如果是则忽略触摸事件
@@ -397,19 +400,19 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点按源码可以
 
 ## Android 14 时代仍可核对到的权限边界
 
-这一节原来写了几条“Android 14+ 进一步收紧”的判断，但其中两条因缺乏 AOSP 或官方文档依据，本节暂不收录。android-14.0.0_r1 里，至少有下面三条边界可以直接核对：
+关于 Android 14+ 权限收紧，当前只保留能从 AOSP 或官方文档直接核对的边界。android-14.0.0_r1 里，至少有三条可以直接核对：
 
 1. **按键过滤仍然依赖 capability + runtime flag。** 代码位置在 `AccessibilityServiceInfo.java`，不是某个 `R.string.*` 资源开关。
 2. **手势注入要过无障碍安全检查。** `AccessibilityServiceConnection.dispatchGesture()` 会先看 `mSecurityPolicy.canPerformGestures(this)`，拿到 `MotionEventInjector` 之后才会发事件。
 3. **标准 injected event 和 accessibility injected event 是两回事。** 前者走普通注入入口，后者会在 `MotionEventInjector` / `InputDispatcher` 里补上 accessibility 标记。
 
-如果后续补到 Android 15/16 的一手材料，再单独写版本增量会更稳。当前这一版不再保留没有证据的“14+ 白名单收紧”描述。
+如果后续补到 Android 15/16 的一手材料，再单独写版本增量会更稳。没有证据的“14+ 白名单收紧”描述不放入正文。
 
 ## 在 Perfetto 中分析事件拦截问题
 
-排查这类问题时，先把事件停留的层次分出来。
+排查这类问题时，需要把事件停留的层次分出来。
 
-### Step 1：先确认事件有没有进入 InputDispatcher
+### Step 1：确认事件有没有进入 InputDispatcher
 
 在 `system_server` 里看 InputDispatcher 相关线程和目标 App 的 `deliverInputEvent` / `InputEventReceiver` 节奏。
 
@@ -450,7 +453,7 @@ adb shell dumpsys accessibility
 
 ### 误区二：无障碍按键过滤是 InputDispatcher 同步调 `onKeyEvent()`
 
-不是。`InputDispatcher` 把事件交给 filter 之后，真正的“是否消费”判定发生在 `AccessibilityManagerService` / `KeyEventDispatcher` / 服务进程这一侧，并带 500ms 超时。
+不是。`InputDispatcher` 把事件交给 filter 之后，“是否消费”的判定发生在 `AccessibilityManagerService` / `KeyEventDispatcher` / 服务进程这一侧，并带 500ms 超时。
 
 ### 误区三：触摸无障碍只能“间接操作 UI 树”，不碰 MotionEvent
 

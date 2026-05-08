@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-05-09T04:05:00+08:00",
+  "generated_at": "2026-05-09T05:15:25+08:00",
   "state_machine_version": "v2",
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T04:05:00+08:00",
+    "last_updated": "2026-05-09T05:15:25+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
-      "ready-to-publish": 154,
-      "task2b_pending": 51,
-      "task6_pending": 1,
-      "task9_pending": 3,
-      "unknown": 30
+      "ready-to-publish": 155,
+      "task2b_pending": 47,
+      "task6_pending": 2,
+      "task9_pending": 4,
+      "unknown": 31
     },
     "task6_state_counts": {
-      "reviewed": 209,
-      "revisiting": 0,
-      "unknown": 31
+      "reviewed": 207,
+      "revisiting": 1,
+      "unknown": 32
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 2,
-      "reviewed": 205,
-      "unknown": 31
+      "pending": 4,
+      "reviewed": 202,
+      "unknown": 32
     },
     "task2b_state_counts": {
-      "fixed": 157,
-      "pending": 50,
-      "unknown": 33
+      "fixed": 160,
+      "pending": 46,
+      "unknown": 34
     },
     "status_counts": {
-      "finalized": 154,
-      "ready-for-review": 56,
-      "unknown": 30
+      "finalized": 155,
+      "ready-for-review": 54,
+      "unknown": 31
     }
   },
   "task2b_rework_history": [
@@ -94,6 +94,21 @@
     }
   ],
   "task6_review_history": [
+    {
+      "timestamp": "2026-05-09T05:15:25+08:00",
+      "sections": [
+        "3.5",
+        "8.3"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 43,
+      "rework_count": 0,
+      "skipped": [],
+      "review_log": "logs/review/2026-05-09-05-review.md",
+      "auto_finalized": []
+    },
     {
       "timestamp": "2026-05-07T13:09:20+08:00",
       "sections": [
@@ -1541,5 +1556,33 @@
     "last_task6_polish_count": 2,
     "last_task6_rework_count": 0,
     "section_title": "第 3 章：输入系统"
+  },
+  "3.5": {
+    "last_task6_at": "2026-05-09T05:15:25+08:00",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "last_task6_review_log": "logs/review/2026-05-09-05-review.md",
+    "pipeline_stage": "task9_pending",
+    "status": "ready-for-review",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task6_polish_count": 19,
+    "last_task6_rework_count": 0,
+    "section_title": "输入事件拦截与安全机制"
+  },
+  "8.3": {
+    "last_task6_at": "2026-05-09T05:15:25+08:00",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "last_task6_review_log": "logs/review/2026-05-09-05-review.md",
+    "pipeline_stage": "task9_pending",
+    "status": "ready-for-review",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task6_polish_count": 24,
+    "last_task6_rework_count": 0,
+    "section_title": "启动优化策略"
   }
 }
