@@ -3221,7 +3221,9 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T16:54:12.404896",
+      "completed_reason": "TRIGGER_TYPE_COLD_START已修正为TRIGGER_TYPE_STARTUP/TRIGGER_TYPE_ANR；AS版本已改为Koala/Meercat/Panda等具体代号（此前轮次已修复，queue条目为历史残留）"
     },
     {
       "section": "14.11",
@@ -10475,7 +10477,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T18:33:37+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T16:54:12.404896",
+      "completed_reason": "P1 PowerMetric版本门槛已统一为AndroidX Benchmark 1.2.0+ API 29+（删除API 34+错误表述）；P1 功耗数据通路图已拆为两条独立证据链（UID统计 vs Rail读数）"
     },
     {
       "section": "1.6",
@@ -13521,7 +13525,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T01:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T16:54:12.404896",
+      "completed_reason": "P1 UprobeStats\"任意函数<1%\"已收窄为条件化描述：开销与命中频率/BPF map/ring buffer/栈回溯相关，适合低频采样，不建议帧循环内高频函数全量统计"
     },
     {
       "section": "4.6",
