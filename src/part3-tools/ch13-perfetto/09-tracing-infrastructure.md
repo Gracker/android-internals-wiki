@@ -23,25 +23,25 @@ tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
 task2b_state: "fixed"
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
-task9_result: "needs-rework"
+task9_result: pass-tech-review
 task2b_result: fixed
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
-last_task9_at: "2026-05-08T18:40:56+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-08"
-task9_review_notes: "2026-05-05 13:34 task9 deep-review: needs-rework。P0 1：Perfetto SQL 原始 ftrace 表仍误写为 ftrace_events；正确表名是 ftrace_event。 | 2026-05-07 Task9 01:20：needs-rework。P0 0 / P1 1 / P2 0；ftrace_event 表名已修正，但 UprobeStats “任意用户态函数 <1%”与 Perfetto/StatsD 数据出口口径仍缺一手证据。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误，需回炉修正。 | 2026-05-08 Task9 18:39：needs-rework。P0 1 / P1 0 / P2 1；FtraceConfig.drain_period_ms 默认值误写 250ms，AOSP android-16.0.0_r1 实际 historical default 100ms、poll-backed 可到 1000ms，已写入 queue。"
+last_task9_at: "2026-05-08T20:30:08+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-08
+task9_review_notes: "2026-05-05 13:34 task9 deep-review: needs-rework。P0 1：Perfetto SQL 原始 ftrace 表仍误写为 ftrace_events；正确表名是 ftrace_event。 | 2026-05-07 Task9 01:20：needs-rework。P0 0 / P1 1 / P2 0；ftrace_event 表名已修正，但 UprobeStats “任意用户态函数 <1%”与 Perfetto/StatsD 数据出口口径仍缺一手证据。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误，需回炉修正。 | 2026-05-08 Task9 18:39：needs-rework。P0 1 / P1 0 / P2 1；FtraceConfig.drain_period_ms 默认值误写 250ms，AOSP android-16.0.0_r1 实际 historical default 100ms、poll-backed 可到 1000ms，已写入 queue。 | 2026-05-08 Task9 20:30：pass-tech-review。P0 0 / P1 0 / P2 0；FtraceConfig 字段、drain_period_ms 默认值、trace_marker 路径和 atrace category 口径已按源码闭合；tracing 开销数字仍按待验证处理，仅作为 P3 日志项。 自动晋升 finalized。"
 last_task2b_at: 2026-05-08T17:58:58+08:00
 repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
-last_task9_review_log: "logs/deep-review/2026-05-08-18-deep-review.md"
-status: "ready-for-review"
+last_task9_review_log: logs/deep-review/2026-05-08-20-deep-review.md
+status: finalized
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-08"
 task6_reviewed_date: "2026-05-08"

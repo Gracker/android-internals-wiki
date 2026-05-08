@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-05-08T20:05:00+08:00",
+  "generated_at": "2026-05-08T20:30:08+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-08T20:05:00+08:00",
+    "last_updated": "2026-05-08T20:30:08+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
-      "ready-to-publish": 148,
+      "ready-to-publish": 151,
       "task2b_pending": 56,
       "task6_pending": 1,
-      "task9_pending": 4,
+      "task9_pending": 1,
       "unknown": 30
     },
     "task6_state_counts": {
@@ -20,8 +20,8 @@
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 4,
-      "reviewed": 203,
+      "pending": 1,
+      "reviewed": 206,
       "unknown": 31
     },
     "task2b_state_counts": {
@@ -30,8 +30,8 @@
       "unknown": 33
     },
     "status_counts": {
-      "finalized": 148,
-      "ready-for-review": 62,
+      "finalized": 151,
+      "ready-for-review": 59,
       "unknown": 30
     }
   },
@@ -957,6 +957,31 @@
       "p1": 1,
       "p2": 1,
       "review_log": "logs/deep-review/2026-05-08-19-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T20:30:08+08:00",
+      "sections": [
+        "9.3",
+        "10.7",
+        "13.9"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "pass-tech-review",
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p2_existing": 1,
+      "p3": 2,
+      "queue_items_added": 0,
+      "suggestions_added": 0,
+      "suggestions_existing": 1,
+      "research_gaps_added": 0,
+      "auto_finalized": [
+        "9.3",
+        "10.7",
+        "13.9"
+      ],
+      "review_log": "logs/deep-review/2026-05-08-20-deep-review.md"
     }
   ],
   "rework_history": [
@@ -1131,18 +1156,19 @@
     "last_task9_review_log": "logs/deep-review/2026-05-08-18-deep-review.md"
   },
   "13.9": {
-    "last_task6_at": "2026-05-08T19:05:00+08:00",
+    "last_task9_at": "2026-05-08T20:30:08+08:00",
+    "task9_result": "pass-tech-review",
+    "task9_state": "reviewed",
+    "last_task9_review_log": "logs/deep-review/2026-05-08-20-deep-review.md",
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
-    "last_task6_review_log": "logs/review/2026-05-08-19-review.md",
-    "task9_state": "pending",
-    "pipeline_stage": "task9_pending",
     "task2b_state": "fixed",
-    "task9_result": "needs-rework",
-    "last_task9_at": "2026-05-08T18:40:56+08:00",
-    "last_task9_review_log": "logs/deep-review/2026-05-08-18-deep-review.md",
-    "last_task2b_at": "2026-05-08T17:59:11.630954+08:00",
-    "task2b_result": "fixed"
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-08T17:58:58+08:00",
+    "last_task6_at": "2026-05-08T19:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-08-19-review.md"
   },
   "14.11": {
     "last_task2b_at": "2026-05-08T17:59:11.630954+08:00",
@@ -1174,5 +1200,35 @@
     "last_task9_at": "2026-05-08T19:29:15+08:00",
     "task2b_result": "fixed",
     "last_task9_review_log": "logs/deep-review/2026-05-08-19-deep-review.md"
+  },
+  "9.3": {
+    "last_task9_at": "2026-05-08T20:30:08+08:00",
+    "task9_result": "pass-tech-review",
+    "task9_state": "reviewed",
+    "last_task9_review_log": "logs/deep-review/2026-05-08-20-deep-review.md",
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-08T19:44:22",
+    "last_task6_at": "2026-05-08T20:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-08-20-review.md"
+  },
+  "10.7": {
+    "last_task9_at": "2026-05-08T20:30:08+08:00",
+    "task9_result": "pass-tech-review",
+    "task9_state": "reviewed",
+    "last_task9_review_log": "logs/deep-review/2026-05-08-20-deep-review.md",
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "last_task2b_at": "2026-05-08T19:44:22",
+    "last_task6_at": "2026-05-08T20:05:00+08:00",
+    "last_task6_review_log": "logs/review/2026-05-08-20-review.md"
   }
 }
