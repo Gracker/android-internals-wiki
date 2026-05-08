@@ -10891,7 +10891,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T12:25:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T09:45:24+08:00",
+      "completed_reason": "P1 WaitQueue/batching观测口径已拆开(InputDispatcher侧派发ACK背压 vs App侧batching消费); P1 isResampled版本边界已补(API 35+;低版本无公开接口)"
     },
     {
       "section": "14.9",
@@ -12053,7 +12055,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T17:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T09:45:24+08:00",
+      "completed_reason": "P1 ADPF setPreferPowerEfficiency版本边界修正为Android 15/API 35+; P1 调度语义修正为OEM策略(不再写死\"低功耗核心\"); 高频词确实已压至3次"
     },
     {
       "section": "5.5",

@@ -8,8 +8,8 @@ drafted_by: "openclaw-task2a"
 polish_count: 1
 polish_date: "2026-04-07"
 polish_by: "task2b-polish"
-rework_count: 4
-rework_date: "2026-05-04"
+rework_count: 5
+rework_date: "2026-05-08"
 rework_by: "task2b-rework"
 applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
 last_verified: "2026-05-04"
@@ -40,15 +40,15 @@ task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-04"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_round: 4
 last_task2b_at: "2026-05-04T01:40:00+08:00"
 task9_result: needs-rework
-task9_state: "reviewed"
-task2b_state: pending
-pipeline_stage: "task2b_pending"
+task9_state: "pending"
+task2b_state: fixed
+pipeline_stage: "task6_pending"
 task9_reviewed_date: "2026-05-04"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-04T17:20:00+08:00"
@@ -188,7 +188,7 @@ WorkManager 的几个关键省电配置:
 
 **合理安排任务顺序**。多个有依赖关系的任务可以用 WorkManager 的 `then()` 接在一起,系统更容易把它们放进同一批执行窗口,减少额外唤醒。
 
-**能效提示 ADPF setPreferPowerEfficiency(Android 16+)**。WorkManager 本身没有能效标记 API。能效提示应走 ADPF 的 `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)`(Android 16 / API 36+)。当任务不紧急时传入 `true`,系统调度器会优先将其置于低功耗核心执行。这套机制面向的是正在执行的计算密集型任务(如后台数据同步、日志处理),而不是 WorkManager 的调度决策。WorkManager 仍按约束(constraints)、配额(quota)、standby bucket、expedited / UIDT 等机制调度。
+**能效提示 ADPF setPreferPowerEfficiency(Android 15+)**。WorkManager 本身没有能效标记 API。能效提示应走 ADPF 的 `PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)`(Android 15 / API 35+)。当任务不紧急时传入 `true`，向系统声明这组线程可偏向能效；系统/OEM 策略可据此调整频率、核心放置或功耗策略——但不保证一定绑到低功耗核心，具体行为取决于设备实现和 Power HAL。这套机制面向的是正在执行的计算密集型任务(如后台数据同步、日志处理),而不是 WorkManager 的调度决策。WorkManager 仍按约束(constraints)、配额(quota)、standby bucket、expedited / UIDT 等机制调度。
 
 ### JobScheduler 的定位
 
@@ -216,7 +216,7 @@ FLP 提供四种精度级别,对应不同的功耗:
 
 **PRIORITY_BALANCED_POWER_ACCURACY** 是大多数 App 应该使用的默认选择。它通常不启用 GPS,依靠 WiFi 和基站信息提供街区级(约 100 米)精度,功耗显著低于 GPS。社交类 App 的"附近的人"、天气 App 的城市定位、本地搜索,这些场景用这个精度就够了。
 
-**PRIORITY_HIGH_ACCURACY** 会启用全部定位源包括 GPS,功耗最高。只有在导航、跑步追踪等确实需要精确位置的场景才使用,而且应该只在 App 处于前台时启用。
+**PRIORITY_HIGH_ACCURACY** 会启用全部定位源包括 GPS,功耗最高。只有在导航、跑步追踪等需要精确位置的场景才使用,而且应该只在 App 处于前台时启用。
 
 **PRIORITY_LOW_POWER** 仅使用基站,精度为城市级(约 10 公里),功耗最低。
 
@@ -287,7 +287,7 @@ Firebase Cloud Messaging(FCM)是 Android 推荐的消息推送方案。它的省
 
 FCM 分为两种优先级:
 
-**高优先级消息**(high priority)会争取立即送达,适合需要马上展示用户可见通知的场景。但如果 FCM 在 7 天行为窗口里发现这些消息没有带来 user-facing notifications,后续消息可能被降级为 normal priority,也可能改由 Google Play services 代理展示通知。高优先级不是通用保活通道,它只适合确实要打到用户面前的事件。
+**高优先级消息**(high priority)会争取立即送达,适合需要马上展示用户可见通知的场景。但如果 FCM 在 7 天行为窗口里发现这些消息没有带来 user-facing notifications,后续消息可能被降级为 normal priority,也可能改由 Google Play services 代理展示通知。高优先级不是通用保活通道,它只适合需要打到用户面前的事件。
 
 **普通优先级消息**(normal priority)会在设备下次活跃时才送达,不会额外唤醒设备。用于数据同步、内容更新等不需要立即处理的场景。
 
@@ -448,7 +448,7 @@ App 耗电优化不是孤立的话题,它与全书的多个章节形成上下游
 
 ### 误区二:"WorkManager 的约束条件设得越多越好"
 
-约束条件过多会导致任务长期无法执行,积累后可能在工作条件满足时集中爆发,造成瞬时高功耗。合理的做法是根据业务需求设置核心约束--比如大文件上传确实需要 WiFi 和充电,但普通数据同步只需要 WiFi 即可。
+约束条件过多会导致任务长期无法执行,积累后可能在工作条件满足时集中爆发,造成瞬时高功耗。合理的做法是根据业务需求设置核心约束--比如大文件上传需要 WiFi 和充电,但普通数据同步只需要 WiFi 即可。
 
 ### 误区三:"GPS 没开就不会耗电"
 
