@@ -11,6 +11,13 @@ applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 FrameTimeline.cpp + Perfetto docs / Android Developers docs"
 polish_count: 2
+polish_date: "2026-05-08"
+polish_by: "task2b-rework"
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 review_type: "post-polish-quality-gate"
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -280,12 +287,16 @@ Binder 阻塞出现在 SurfaceFlinger 线程上时，需要额外证据才能指
 确认 FrameTimeline 归因后，用帧窗口约束的 Binder SQL 定位具体调用。直接查 `android_binder_txns` 全局排序会抓到无关事务——必须先锁定 janky frame 的时间范围和线程：
 
 ```sql
--- Step 1: 锁定 AppDeadlineMissed 的 janky frame
+-- Step 1: 锁定 AppDeadlineMissed 的 janky frame，并定位该帧对应的关键线程
 INCLUDE PERFETTO MODULE android.binder;
 INCLUDE PERFETTO MODULE android.binder_breakdown;
 
 WITH janky_frame AS (
-  SELECT ts, dur, upid
+  SELECT ts, dur, upid,
+         -- 定位该帧的 UI 线程和 RenderThread
+         -- 通过 android.frames.timeline 或 doFrame slice 找到具体 utid
+         (SELECT utid FROM thread WHERE name = 'main' AND upid = actual_frame_timeline_slice.upid) AS main_utid,
+         (SELECT utid FROM thread WHERE name = 'RenderThread' AND upid = actual_frame_timeline_slice.upid) AS rt_utid
   FROM actual_frame_timeline_slice
   WHERE jank_type = 'AppDeadlineMissed'
     AND on_time_finish = 0
@@ -293,6 +304,7 @@ WITH janky_frame AS (
   LIMIT 1
 ),
 -- Step 2: 找与该帧时间窗口重叠的 Binder 事务
+-- 关键约束：只看 UI/RenderThread 的事务，且用区间重叠而非起点包含
 frame_binder AS (
   SELECT b.client_process, b.server_process,
          b.client_dur/1e6 AS client_ms,
@@ -300,20 +312,37 @@ frame_binder AS (
          b.aidl_name, b.is_main_thread, b.binder_txn_id
   FROM android_binder_txns b, janky_frame jf
   WHERE b.client_upid = jf.upid
-    AND b.client_ts >= jf.ts
-    AND b.client_ts <= jf.ts + jf.dur
+    AND b.client_utid IN (jf.main_utid, jf.rt_utid)  -- 限定关键线程
+    AND b.client_ts < jf.ts + jf.dur        -- 事务起点早于帧结束
+    AND b.client_ts + b.client_dur > jf.ts  -- 事务结束晚于帧起点（区间重叠）
     AND b.client_dur > 1000000  -- > 1ms
   ORDER BY b.client_dur DESC
 )
 SELECT * FROM frame_binder;
 ```
 
-拿到 `binder_txn_id` 后，再用 `android_binder_client_breakdown` 按 reason 拆分该事务的延迟来源：
+拿到 `binder_txn_id` 后，在同一 WITH 查询块中用 `android_binder_client_breakdown` 按 reason 拆分延迟来源：
 
 ```sql
+-- 接续上面的 CTE 链，把 frame_binder 作为子查询使用
 SELECT reason, count(*) AS count, sum(dur)/1e6 AS total_ms
 FROM android_binder_client_breakdown
-WHERE binder_txn_id IN (SELECT binder_txn_id FROM frame_binder)
+WHERE binder_txn_id IN (
+  -- 内联 frame_binder 子查询，避免跨代码块 CTE 丢失
+  SELECT b.binder_txn_id
+  FROM android_binder_txns b,
+       (SELECT ts, dur, upid,
+               (SELECT utid FROM thread WHERE name = 'main' AND upid = af.upid) AS main_utid,
+               (SELECT utid FROM thread WHERE name = 'RenderThread' AND upid = af.upid) AS rt_utid
+        FROM actual_frame_timeline_slice af
+        WHERE jank_type = 'AppDeadlineMissed' AND on_time_finish = 0
+        ORDER BY dur DESC LIMIT 1) jf
+  WHERE b.client_upid = jf.upid
+    AND b.client_utid IN (jf.main_utid, jf.rt_utid)
+    AND b.client_ts < jf.ts + jf.dur
+    AND b.client_ts + b.client_dur > jf.ts
+    AND b.client_dur > 1000000
+)
 GROUP BY reason
 ORDER BY total_ms DESC;
 ```

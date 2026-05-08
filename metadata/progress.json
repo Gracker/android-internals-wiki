@@ -866,5 +866,38 @@
   "task2b_last_sections": [
     "7.1",
     "8.4"
+  ],
+  "rework_rounds": [
+    {
+      "round": 1,
+      "date": "2026-05-08T10:50:32",
+      "sections": [
+        "3.2",
+        "7.1"
+      ],
+      "items_processed": [
+        {
+          "section": "3.2",
+          "title": "触摸响应的性能分析",
+          "priority": 95,
+          "source": "task9-deep-tech-review",
+          "issues_fixed": [
+            "P0 InputReader.loopOnce QueuedListener.flush→mNextListener.notify",
+            "P1 队列Slice→ATRACE_INT counter"
+          ],
+          "result": "fixed"
+        },
+        {
+          "section": "7.1",
+          "title": "卡顿的定义与分类",
+          "priority": 85,
+          "source": "task9-deep-tech-review",
+          "issues_fixed": [
+            "P1 Binder SQL client_utid关键线程约束+区间重叠+breakdown内联"
+          ],
+          "result": "fixed"
+        }
+      ]
+    }
   ]
 }

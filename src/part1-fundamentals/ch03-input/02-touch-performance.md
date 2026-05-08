@@ -11,9 +11,14 @@ reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
-polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
+polish_count: 2
+polish_date: "2026-05-08"
+polish_by: "task2b-rework"
+task2b_result: fixed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/Android-Systrace-Input.md"
@@ -127,25 +132,30 @@ Android 16+ 支持将内核页面大小从 4KB 切换到 16KB。更大的页面�
 
 ### 3. InputReader 读取和加工
 
-InputReader 是运行在 `system_server` 进程中的 Native 线程。它从 EventHub 读取原始的 `input_event`，经过一系列加工处理（坐标转换、多点触控合并、工具类型识别、虚拟按键判断等），转换为 Android 层面的 `NotifyArgs` 对象，然后通过 `QueuedListener.flush()` 发送给 InputDispatcher。
+InputReader 是运行在 `system_server` 进程中的 Native 线程。它从 EventHub 读取原始的 `input_event`，经过一系列加工处理（坐标转换、多点触控合并、工具类型识别、虚拟按键判断等），转换为 Android 层面的 `NotifyArgs` 对象，然后逐个交给下一层监听器（InputDispatcher）。
 
 核心循环在 `InputReader.loopOnce()` 中：
 
 ```cpp
 // frameworks/native/services/inputflinger/reader/InputReader.cpp (android-16.0.0_r1)
+// 简化伪代码，省略锁细节和边界处理
 void InputReader::loopOnce() {
-    // 从 EventHub 获取原始事件，返回 std::vector<RawEvent>
+    // 从 EventHub 获取原始事件
     std::vector<RawEvent> events = mEventHub->getEvents(timeoutMillis);
     if (!events.empty()) {
-        // 加工：RawEvent -> NotifyArgs
-        processEventsLocked(events.data(), events.size());
+        // 加工：RawEvent -> NotifyArgs，累积到 mPendingArgs
+        mPendingArgs += processEventsLocked(events);
     }
-    // 将加工后的事件发送给 InputDispatcher
-    mQueuedListener->flush();
+    // 锁外：将 NotifyArgs 逐个通知给 mNextListener (即 InputDispatcher)
+    std::vector<NotifyArgs> notifyArgs;
+    std::swap(notifyArgs, mPendingArgs);
+    for (const NotifyArgs& args : notifyArgs) {
+        mNextListener.notify(args);
+    }
 }
 ```
 
-android-16.0.0_r1 已将 `getEvents()` 改为返回 `std::vector<RawEvent>`，不再使用固定大小的 `mEventBuffer` 数组。一次 `loopOnce` 调用会读取并处理一批事件（一次 MOVE 操作可能产生几十个采样点），所以 InputReader 的处理效率通常不会成为瓶颈。
+android-16.0.0_r1 的 `loopOnce()` 已经不再使用旧版 `QueuedListener.flush()` 路径，改为 `processEventsLocked()` 返回 `NotifyArgs` 列表并累积到 `mPendingArgs`，锁外通过 `std::swap` 取出后逐个调用 `mNextListener.notify(args)` 交给 InputDispatcher。`getEvents()` 也改为返回 `std::vector<RawEvent>`，不再使用固定大小的 `mEventBuffer` 数组。一次 `loopOnce` 调用会读取并处理一批事件（一次 MOVE 操作可能产生几十个采样点），所以 InputReader 的处理效率通常不会成为瓶颈。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/reader/InputReader.cpp] [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
@@ -161,7 +171,7 @@ InputDispatcher 也是 `system_server` 中的 Native 线程，被 InputReader �
 
 这条 ACK 回路要单独看。主线程已经跑完 `onTouchEvent()`，但如果 Looper 回切、线程调度或 socket 回写又慢了一拍，WaitQueue 仍然会继续堆积。Input ANR 计时看的就是这条“已分发但未完成 ACK”的路径。
 
-在 Perfetto 中，这三个队列以 Slice 的形式出现在 `system_server` 进程的 InputDispatcher 线程中。它们是分析触摸延迟的核心入口点。如果 InboundQueue 堆积，说明 InputDispatcher 处理不过来；如果 OutboundQueue 堆积，说明目标窗口的 socket 通道拥塞；如果 WaitQueue 堆积，说明 App 端处理太慢，主线程很可能被阻塞了。
+在 Perfetto 中，这三个队列以 **counter 计数器轨道**的形式出现在 `system_server` 进程的 InputDispatcher 线程中（由 `ATRACE_INT` 写入的 `iq` / `oq:*` / `wq:*` 计数器，不是 Slice）。它们是分析触摸延迟的核心入口点。如果 InboundQueue 堆积，说明 InputDispatcher 处理不过来；如果 OutboundQueue 堆积，说明目标窗口的 socket 通道拥塞；如果 WaitQueue 堆积，说明 App 端处理太慢，主线程很可能被阻塞了。
 
 对手写笔、掌压误触和边缘触控更激进的设备，还要把 classification 一起纳入判断。系统在 dispatch 前后都可能附带分类结果；落到应用观察面时，常见信号是 `MotionEvent.CLASSIFICATION_AMBIGUOUS_GESTURE`、被放大的 touch slop / long-press timeout，以及 Android 13+ 上用 `ACTION_CANCEL` / `FLAG_CANCELED` 撤回误触输入。遇到“第一笔慢半拍”或“首个 MOVE 没生效”的问题时，别只盯 WaitQueue，也要把 classification 和 cancel 路径一起看。
 
