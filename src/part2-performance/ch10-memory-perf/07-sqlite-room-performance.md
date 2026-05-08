@@ -48,11 +48,11 @@ sources:
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-04"
@@ -234,19 +234,21 @@ Room 的 `@Transaction` 注解确保方法在一个数据库事务中执行。�
 使用事务的收益除了原子性，也体现在性能上。以下面的批量插入为例：
 
 ```kotlin
-// 不使用事务：1000 次插入 = 1000 次锁获取 + 1000 次 fsync
+// 不使用事务：1000 次插入 = 1000 次独立事务，每次都要获取写锁、写入 WAL
 items.forEach { dao.insert(it) }
 
-// 使用事务：1000 次插入 = 1 次锁获取 + 1 次 fsync
+// 使用事务：1000 次插入 = 1 次事务，1 次锁获取 + 1 次 WAL 提交
 @Transaction
 suspend fun insertAll(items: List<Item>) {
     items.forEach { dao.insert(it) }
 }
 ```
 
-没有事务时，每次 `insert()` 都是独立的事务：获取 SQLite 写锁 → 写入 WAL → `fsync()` → 释放锁。1000 次插入意味着 1000 次这样的循环。使用事务后，锁获取和 `fsync()` 只发生一次，1000 条数据批量写入 WAL 文件。在测试中，批量插入的速度提升可以达到 10x-100x。
+没有事务时，每次 `insert()` 都是独立的事务：获取 SQLite 写锁 → 写入 WAL → 提交。1000 次插入意味着 1000 次这样的循环。每次提交是否触发 `fsync()` 取决于 WAL sync mode：Android 默认 `db_wal_sync_mode` 为 `NORMAL`（参见 AOSP `frameworks/base/core/res/res/values/config.xml`），提交时只写 WAL 页缓存但不强制 `fsync`，由后台 checkpoint 线程负责刷盘。即便如此，1000 次独立事务的开销仍然来自锁获取、WAL 写入和事务状态切换的累积——即使每次只有微秒级，乘以 1000 后也会很可观。如果 sync mode 被设为 `FULL`，则每次提交都会 `fsync`，代价更高。
 
-[已验证: 官方文档, developer.android.com/reference/androidx/room/Transaction]
+使用事务后，锁获取和 WAL 提交只发生一次，1000 条数据批量写入 WAL 文件。在测试中，批量插入的速度提升可以达到 10x-100x。
+
+[已验证: 官方文档, developer.android.com/reference/androidx/room/Transaction; AOSP config.xml db_wal_sync_mode=NORMAL]
 
 ### 3.3 Paging 3 的懒加载与预取策略
 

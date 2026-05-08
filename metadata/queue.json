@@ -10671,7 +10671,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T04:26:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T12:51:41+08:00",
+      "completed_reason": "P1 DeliQueue Treiber Stack/min-heap 与 AOSP mPriorityQueue/mAsyncPriorityQueue 描述已对齐，补充博客术语与源码实现映射"
     },
     {
       "section": "1.3",
@@ -11792,7 +11794,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T04:33:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T12:51:41+08:00",
+      "completed_reason": "P1 ANR traces.txt 90%可信度与2秒硬阈值已改为基于AOSP AnrLatencyTracker可验证的定性描述"
     },
     {
       "section": "18.10",
@@ -11937,8 +11941,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T12:41:40+08:00",
-      "status": "pending",
-      "completed_at": null
+      "status": "completed",
+      "completed_at": "2026-05-08T12:51:41+08:00",
+      "completed_reason": "P1 SQLite批量插入1000次fsync已修正为WAL sync mode NORMAL实际行为（非每次fsync）"
     },
     {
       "section": "1.5",
