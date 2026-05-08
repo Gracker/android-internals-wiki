@@ -4833,8 +4833,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-13-buffer-queue-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-13-buffer-queue-external-review.md",
+      "completed_at": "2026-05-08T22:51:16+08:00",
+      "completed_reason": "Android 16 maxDequeuedBufferCount默认值从2提升至3已补充; vsyncId后缀跨进程帧对齐已添加到Perfetto读图段落; 版本表已更新"
     },
     {
       "section": "2.14",
@@ -11014,7 +11016,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T19:38:39+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T22:51:16+08:00",
+      "completed_reason": "P1 android_create_namespace版本节点已修正(Android 10起不再从libdl导出,内部实现指向linker/dlfcn.cpp); P1 Android 14 W^X口径已纠正(DCL只读要求vs native W^X已有约束拆开)"
     },
     {
       "section": "5.3",
