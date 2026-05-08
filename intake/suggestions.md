@@ -1668,3 +1668,16 @@
 - **位置**：L302-L305 EXPLAIN QUERY PLAN 输出示例
 - **问题**：`WHERE conversation_id = 42` 命中复合索引最左列时，SQLite 常见输出应是 `SEARCH ... USING INDEX ... (conversation_id=?)`，正文示例写成 `SCAN messages USING INDEX idx_msg_conv_date`，与后文“SEARCH 精确查找最优”的解释冲突。
 - **建议**：用实际 SQLite 版本跑一份可复现 schema + `EXPLAIN QUERY PLAN` 输出；或者把示例改成 `SEARCH messages USING INDEX idx_msg_conv_date (conversation_id=?)`，再单独举一个覆盖索引扫描/全索引扫描的 `SCAN ... USING INDEX` 场景。
+
+## [Task9 Deep Review] 3.2 触摸响应的性能分析 — 2026-05-08
+- **类型**：数据/版本口径
+- **位置**：L452 GPU Completion >32ms 判断
+- **问题**：“超过 32ms（两个 VSync 周期）”只适合 60Hz 口径；90/120Hz 设备的两个刷新周期分别约 22.2ms/16.7ms。
+- **建议**：改成 `超过 2 × 当前 frame period`，并把 32ms 标成 60Hz 示例值。
+
+
+## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-05-08
+- **类型**：数据缺失
+- **位置**：L254 批量插入 10x-100x
+- **问题**：“批量插入速度提升 10x-100x”没有给出设备、SQLite sync mode、Room 版本、数据量、是否 WAL、事务大小等测试条件。
+- **建议**：补一组最小 benchmark 条件，或降级为“常见可达到数量级提升，具体幅度依赖事务大小和存储栈”。

@@ -34,22 +34,23 @@ related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
 task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
-last_task9_at: "2026-05-08T10:29:04+08:00"
+last_task9_at: "2026-05-08T14:32:28+08:00"
 task9_result: needs-rework
 
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: task2b_pending
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T14:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-08-14-review.md"
 review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。"
-
+last_task9_review_log: "logs/deep-review/2026-05-08-14-deep-review.md"
+task9_review_notes: "2026-05-08 Task9 14:32：needs-rework。P0 1 / P1 0 / P2 1；正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。"
 ---
 
 # 触摸响应的性能分析
