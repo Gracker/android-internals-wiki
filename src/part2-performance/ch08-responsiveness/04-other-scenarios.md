@@ -5,8 +5,8 @@ section: "8.4"
 status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-07"
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-08"
+reviewed_by: "openclaw-task6"
 applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
 last_verified: "2026-04-27"
 last_verified_against: "AOSP android-16.0.0_r1 InputTransport/InputDispatcher/ViewRootImpl + AndroidX ViewPager2/Fragment release notes + Task9 deep review 2026-04-27"
@@ -29,9 +29,9 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_state: pending
 task2b_state: fixed
@@ -42,8 +42,11 @@ task2b_result: fixed
 last_task2b_at: "2026-05-07T17:40:00+08:00"
 repaired_date: "2026-05-07"
 repaired_by: "openclaw-task2b"
-review_notes: "2026-05-07 task2b rework R2: P0 Activity 启动路径改为 Android 9+ ClientTransaction 模型（含 8.x 旧路径说明）；P0 Binder 线程池常量改为 15；P1 删除 ViewPager2 自定义 LayoutManager prefetch 建议，补公开 API 限制说明；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9。"
+review_notes: "2026-05-07 task2b rework R2: P0 Activity 启动路径改为 Android 9+ ClientTransaction 模型（含 8.x 旧路径说明）；P0 Binder 线程池常量改为 15；P1 删除 ViewPager2 自定义 LayoutManager prefetch 建议，补公开 API 限制说明；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 FragmentManager trace 残留表述；删除自动 slice 断言，统一为业务侧插桩口径，并完成 L1/L2 小修，等待 Task9 技术复审。"
 task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。"
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T09:08:46+08:00"
+last_task6_review_log: "logs/review/2026-05-08-09-review.md"
 ---
 
 # 其他响应速度场景
@@ -74,9 +77,9 @@ task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P
 
 ## 为什么要关注「其他」响应速度场景
 
-我们在 §8.1 中建立了响应速度的基本框架——从用户感知出发，将响应定义为 TTID（Time To Initial Display）和 TTFD（Time To Fully Drawn）。§8.2 和 §8.3 分别从 App 启动全流程和启动优化策略角度做了深入分析。
+§8.1 已经建立响应速度的基本框架——从用户感知出发，将响应定义为 TTID（Time To Initial Display）和 TTFD（Time To Fully Drawn）。§8.2 和 §8.3 分别从 App 启动全流程和启动优化策略角度做了深入分析。
 
-但启动只是用户与 App 交互的第一步。在日常使用中，用户花时间最多的是**页面跳转、Tab 切换、按钮点击、搜索输入**这些高频操作。每一个场景都有自己独特的性能瓶颈和分析方法。如果我们只优化了冷启动，却忽略了页面切换时那个几百毫秒的白屏、搜索时每次按键都触发的卡顿，用户的体验感知仍然很差。
+但启动只是用户与 App 交互的第一步。在日常使用中，用户花时间最多的是**页面跳转、Tab 切换、按钮点击、搜索输入**这些高频操作。每一个场景都有自己独特的性能瓶颈和分析方法。如果只优化冷启动，却忽略页面切换时几百毫秒的白屏、搜索时每次按键触发的卡顿，用户的体验感知仍然很差。
 
 本节要做的，是把启动之外最常见的四个响应速度场景逐一说明：它为什么慢、在 Trace 中怎么看、怎么优化。
 
@@ -88,7 +91,7 @@ task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P
 
 ### Activity 跳转的完整路径
 
-当我们调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这是一条跨进程的 Binder IPC 通信路径：
+调用 `startActivity()` 启动一个新的 Activity 时，系统要完成一系列工作。这是一条跨进程的 Binder IPC 通信路径：
 
 **调用方进程**通过 `Activity.startActivity()` → `Instrumentation.execStartActivity()` → 向 **system_server** 发起 Binder 请求。在 Android 10（API 29）及以上版本，调用入口是 `ActivityTaskManager.getService().startActivity()`；Android 8-9（API 26-28）使用的是 `ActivityManager.getService().startActivity()`。ActivityTaskManager 从 Android 10 开始独立出来，专门负责 Activity 生命周期管理，此前这部分逻辑在 ActivityManagerService 中。system_server 中的 `ActivityStarter` 经过权限检查、Intent 解析、Task 栈计算后，通过 Binder 向 **目标进程** 发送启动事务。Android 9（API 28）起，入口从旧版 `IApplicationThread.scheduleLaunchActivity()` 改为 `ClientTransaction` 模型：`ApplicationThread.scheduleTransaction(ClientTransaction)`，事务内携带 `LaunchActivityItem` 等生命周期回调项。目标进程的 `TransactionExecutor.execute()` 拆解事务后，经 `ActivityThread.handleLaunchActivity()` → `performLaunchActivity()`，依次完成：创建 Activity 实例 → 调用 `attach()` → 调用 `onCreate()` → `onStart()` → `onResume()` → 首帧渲染。Android 8.x（API 26-27）仍使用 `scheduleLaunchActivity()` 直接传递启动参数。
 
@@ -99,7 +102,7 @@ task9_review_notes: "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P
 - **布局膨胀（Layout Inflate）**：这是最大的变量。一个复杂的布局可能需要 30-100ms 甚至更多。[已验证: 官方文档, developer.android.com/topic/performance]
 - **首帧渲染**：从 `onResume()` 完成到 VSync 信号触发 `doFrame()`，再到 RenderThread 完成绘制，通常需要 1-2 个 VSync 周期（16-33ms @60Hz）。
 
-在 Perfetto 中，我们可以通过以下方式定位 Activity 跳转的耗时：
+在 Perfetto 中，可通过以下方式定位 Activity 跳转的耗时：
 
 ```text
 [图：Perfetto 中 Activity 跳转的典型 Trace 片段]
@@ -150,7 +153,7 @@ public class PreloadFragmentFactory extends FragmentFactory {
 }
 ```
 
-代码里的关键点是不要在 `instantiate()` 内做同步查询；`FragmentFactory` 只接收已经准备好的轻量参数。
+这段代码的约束是不要在 `instantiate()` 内做同步查询；`FragmentFactory` 只接收已经准备好的轻量参数。
 
 **2. 使用 postponeEnterTransition()。** 当 Fragment 包含异步加载内容（如网络图片、RecyclerView 数据）时，先调用 `postponeEnterTransition()` 延迟转场动画，等数据加载完成后再调用 `startPostponedEnterTransition()`。这样用户看到的转场动画背后是已经准备好的内容，而不是加载中的空白。
 
@@ -219,9 +222,9 @@ class MyFragment : Fragment() {
 
 ### ViewPager2 切换的性能优化
 
-**预加载（Prefetch）。** RecyclerView 内置了 prefetch 机制。当用户快速滑动到下一页时，RecyclerView 会在布局过程中预测下一个将要出现的 Item，并提前创建 ViewHolder。ViewPager2 继承了这个能力。我们可以通过 `setOffscreenPageLimit()` 控制预加载范围。ViewPager2 内部创建了 `LinearLayoutManagerImpl`（`LinearLayoutManager` 的子类）并通过 `setLayoutManager()` 绑定到内部 `RecyclerView`，公开 API 不提供替换 LayoutManager 的入口，因此无法通过自定义 LayoutManager 微调 prefetch 策略。可用的优化路径是 `setOffscreenPageLimit()` 控制保留范围、`OnPageChangeCallback.onPageSelected()` 中预取数据、简化页面布局、以及 Fragment 生命周期懒加载。
+**预加载（Prefetch）。** RecyclerView 内置了 prefetch 机制。当用户快速滑动到下一页时，RecyclerView 会在布局过程中预测下一个将要出现的 Item，并提前创建 ViewHolder。ViewPager2 继承了这个能力。可通过 `setOffscreenPageLimit()` 控制预加载范围。ViewPager2 内部创建了 `LinearLayoutManagerImpl`（`LinearLayoutManager` 的子类）并通过 `setLayoutManager()` 绑定到内部 `RecyclerView`，公开 API 不提供替换 LayoutManager 的入口，因此无法通过自定义 LayoutManager 微调 prefetch 策略。可用的优化路径是 `setOffscreenPageLimit()` 控制保留范围、`OnPageChangeCallback.onPageSelected()` 中预取数据、简化页面布局、以及 Fragment 生命周期懒加载。
 
-**布局简化。** 每个 Tab 页的 Fragment 布局越简单，切换越快。关键优化手段包括：
+**布局简化。** 每个 Tab 页的 Fragment 布局越简单，切换越快。常用优化手段包括：
 - 用 `ConstraintLayout` 替代多层嵌套的 `LinearLayout` + `RelativeLayout`
 - 对不立即显示的内容使用 `ViewStub`
 - 对图片使用缩略图占位，异步加载高清图
@@ -267,7 +270,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 **1. 硬件输入延迟（~5-15ms）**：触摸屏控制器扫描到触摸事件 → 触摸 IC 通过 I2C/SPI 上报给驱动 → 驱动通过 `/dev/input/eventX` 暴露给用户空间。这段延迟取决于硬件和驱动，App 开发者无法控制。
 
-**2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件后，`InputDispatcher` 选择目标窗口，并通过 `InputChannel` 把事件发给应用进程。`InputChannel` 的 native 实现由 `InputTransport.cpp` 创建 Unix domain `socketpair(AF_UNIX, SOCK_SEQPACKET, 0, ...)`，事件通过 socket 传输；应用侧端点通常绑定到主线程 Looper，由 `ViewRootImpl.WindowInputEventReceiver` / native `InputEventReceiver` 接收后进入 ViewRootImpl 分发。如果主线程正在执行上一帧 `doFrame()`、同步 Binder 或 GC，事件会在主 Looper 上排队。我们在 §3.1 中详细分析 Input 事件分发全流程。
+**2. InputDispatcher 分发延迟（~2-5ms）**：`InputReader` 线程从驱动读取事件后，`InputDispatcher` 选择目标窗口，并通过 `InputChannel` 把事件发给应用进程。`InputChannel` 的 native 实现由 `InputTransport.cpp` 创建 Unix domain `socketpair(AF_UNIX, SOCK_SEQPACKET, 0, ...)`，事件通过 socket 传输；应用侧端点通常绑定到主线程 Looper，由 `ViewRootImpl.WindowInputEventReceiver` / native `InputEventReceiver` 接收后进入 ViewRootImpl 分发。如果主线程正在执行上一帧 `doFrame()`、同步 Binder 或 GC，事件会在主 Looper 上排队。Input 事件分发全流程见 §3.1。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/libs/input/InputTransport.cpp; frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp; frameworks/base/core/java/android/view/ViewRootImpl.java]
 
@@ -281,7 +284,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 ### Ripple 效果与感知优化
 
-Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反馈。Ripple 的一个关键设计优势是：**它不需要等 onClick 回调执行完就能显示。** 当 `onTouchEvent()` 收到 `ACTION_DOWN` 时，Ripple 动画就会立即开始，给用户一个「系统已经收到点击」的即时信号。
+Android 的 Material Design 引入了 Ripple Drawable 作为点击的视觉反馈。Ripple 的一个设计优势是：**它不需要等 onClick 回调执行完就能显示。** 当 `onTouchEvent()` 收到 `ACTION_DOWN` 时，Ripple 动画就会立即开始，给用户一个「系统已经收到点击」的即时信号。
 
 即使 onClick 回调里做了 50ms 的数据操作，用户感知到的「响应」仍然是即时的——Ripple 在 16ms 内就已经开始扩散了。
 
@@ -390,7 +393,7 @@ fun View.setOnSingleClickListener(delay: Long = 500L, onClick: (View) -> Unit) {
 
 **热门搜索预加载。** 很多 App 会在搜索页展示「热门搜索」或「搜索推荐」。这些推荐项对应的搜索结果可以在用户进入搜索页时就提前加载。当用户点击某个推荐项时，结果已经在内存中了——响应时间接近 0ms。
 
-**拼音/首字母匹配。** 对于中文搜索场景，用户可能输入拼音或首字母。实现 pinyin 搜索索引（比如将通讯录中所有名字建立拼音映射），可以显著提升搜索响应速度。这个索引应该在数据变化时后台更新，而不是搜索时实时计算。
+**拼音/首字母匹配。** 对于中文搜索场景，用户可能输入拼音或首字母。实现 pinyin 搜索索引（比如将通讯录中所有名字建立拼音映射），可以减少搜索时实时计算的开销。这个索引应该在数据变化时后台更新，而不是搜索时实时计算。
 
 ---
 
@@ -398,9 +401,9 @@ fun View.setOnSingleClickListener(delay: Long = 500L, onClick: (View) -> Unit) {
 
 四个场景在 Perfetto 中的表现各有特点：
 
-**页面跳转（Activity/Fragment）**：在主线程 track 中可以观察到 `ActivityThread.handleLaunchActivity`（Activity 切换）或 `FragmentManager:` 前缀的 slice（Fragment 切换）。关注从用户操作（Input 事件）到这些 slice 开始的延迟，以及 slice 内部的耗时分布（inflate vs. 数据加载 vs. 首帧渲染）。
+**页面跳转（Activity/Fragment）**：Activity 切换可在主线程 track 中观察 `ActivityThread.handleLaunchActivity`；Fragment 切换建议依赖业务侧 `Trace.beginSection("FragmentTransaction")` 插桩。关注从用户操作（Input 事件）到页面切换入口的延迟，以及入口内部的耗时分布（inflate vs. 数据加载 vs. 首帧渲染）。
 
-**Tab 切换（ViewPager2）**：结合 `FragmentManager:` slice、`RecyclerView` layout / prefetch slice 和业务侧 `Trace.beginSection("TabSwitch")` 埋点观察。重点看 `inflate`、Fragment 生命周期回调、RecyclerView 布局和数据加载是否挤在同一帧。
+**Tab 切换（ViewPager2）**：结合业务侧 `Trace.beginSection("TabSwitch")` / `Trace.beginSection("FragmentTransaction")` 插桩、`RecyclerView` layout / prefetch slice 和 FrameTimeline 观察。重点看 `inflate`、Fragment 生命周期回调、RecyclerView 布局和数据加载是否挤在同一帧。
 
 **点击响应**：搜索 `input_event` 或自定义的 `Click.*` trace slice。关注从 Input 事件注入到 onClick 回调开始的延迟（反映主线程是否被阻塞），以及从 onClick 到首帧渲染的延迟（反映 UI 更新是否高效）。
 
@@ -444,7 +447,6 @@ debounce 的目的是减少无效搜索，不是加快搜索速度。设太短�
 - **Android 5.0（API 21）**：Material Design 引入 Ripple Drawable，点击反馈从纯色背景变化升级为波纹动画。
 - **AndroidX Fragment 1.1.0（2019）**：`FragmentFactory` 与 `setMaxLifecycle()` 进入稳定版本，Fragment 懒加载开始从 `setUserVisibleHint()` 迁移到 Lifecycle 约束。
 - **AndroidX ViewPager2 1.0.0（2019）**：独立 `androidx.viewpager2:viewpager2` artifact 发布，基于 RecyclerView 实现，不绑定 Android 9 / API 28 平台版本。
-- **AndroidX Fragment 1.3.0+**：FragmentManager trace 覆盖更完整，Perfetto 中可优先搜索 `FragmentManager:` 前缀。
 - **Android 16（API 36）**：ARR（Adaptive Refresh Rate）继续演进；它对点击响应尾延迟的量化影响需要按设备刷新率策略和 Perfetto trace 复核。
 
 ---

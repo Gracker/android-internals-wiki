@@ -38,8 +38,8 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: "pass-light-edit"
 task9_state: pending
 task9_result: needs-rework
@@ -54,10 +54,10 @@ task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T07:36:49+08:00"
 task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 2（JankType 版本边界、未验证枚举）/ P2 5 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。"
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T07:24:00+08:00"
-last_task6_review_log: "logs/review/2026-05-08-07-review.md"
+last_task6_at: "2026-05-08T09:08:46+08:00"
+last_task6_review_log: "logs/review/2026-05-08-09-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-08-07-deep-review.md"
-review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。"
+review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。"
 ---
 
 # 卡顿的定义与分类
@@ -116,7 +116,7 @@ Android 系统的渲染管线是围绕 VSync 信号构建的。在 60Hz 屏幕�
 
 **Jank 的标准定义是：某一帧没有在预期的 VSync 周期内完成渲染和上屏。**
 
-这里的"预期"非常关键。系统不是简单地看"这一帧渲染花了多长时间"，而是看"这一帧实际被呈现（present）的时间，是否与调度器（Scheduler）预测的呈现时间一致"。如果实际呈现时间晚于预期，那就是 Jank。
+这里的"预期"指调度器给这一帧分配的呈现时间。系统不是简单地看"这一帧渲染花了多长时间"，而是看"这一帧实际被呈现（present）的时间，是否与调度器（Scheduler）预测的呈现时间一致"。如果实际呈现时间晚于预期，那就是 Jank。
 
 VSync 是渲染管线的基本时钟，每一帧必须在分配给自己的 VSync 周期内完成渲染和上屏。按时完成，画面连贯；错过了当前周期，这一帧只能等到下一个 VSync 才能上屏，中间的空档就是用户感知到的"不连贯"。
 
@@ -135,7 +135,7 @@ VSync 是渲染管线的基本时钟，每一帧必须在分配给自己的 VSyn
 [已验证: Perfetto 文档, https://perfetto.dev/docs/data-sources/frametimeline]
 [已验证: 官方文档, https://developer.android.com/topic/performance/vitals/render]
 
-### 一个关键区分：FPS 不等于流畅度
+### FPS 不等于流畅度
 
 工程排查里常先看 FPS，但 FPS 最容易把人带偏。它只回答"一秒里总共画了多少帧"，不回答"这些帧是不是均匀到达"。
 
@@ -147,7 +147,7 @@ VSync 是渲染管线的基本时钟，每一帧必须在分配给自己的 VSyn
 
 ## Google 的 Jank 分类体系
 
-Android 12 之后，FrameTimeline 会给每一帧写下责任归因。我们在 Perfetto 里先看 `Jank Type`，再决定回链到 App、SurfaceFlinger 还是显示末端。把这些类型拆开，排查路径才不会跑偏。
+Android 12 之后，FrameTimeline 会给每一帧写下责任归因。Perfetto 里先看 `Jank Type`，再决定回链到 App、SurfaceFlinger 还是显示末端。把这些类型拆开，排查路径才不会跑偏。
 
 [已验证: Perfetto 文档, https://perfetto.dev/docs/data-sources/frametimeline]
 
@@ -357,7 +357,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 ## 用户感知与技术指标的映射
 
-了解了各种技术指标之后，我们还得回答一个更实际的问题：这些数字对应的用户感受是什么？用户不会看 Perfetto Trace，他们只会说"这个列表滑起来不顺手"或"这个动画一卡一卡的"。
+技术指标还要接回用户感受：这些数字对应的体验是什么？用户不会看 Perfetto Trace，只会说"这个列表滑起来不顺手"或"这个动画一卡一卡的"。
 
 ### 视觉惯性与帧率稳定性
 
@@ -369,7 +369,7 @@ Android vitals 对 Frozen Frame 的要求更硬，文档直接写了：应用里
 
 ### 延迟感知的阈值
 
-研究表明，用户对延迟的感知有几个关键阈值：
+研究表明，用户对延迟的感知有几个常用阈值：
 
 - **< 100ms**：用户感觉系统是"即时响应"的。Jakob Nielsen 的研究表明，100ms 是用户感觉"系统在直接响应我的操作"的极限。在这个范围内，用户认为操作和结果是直接关联的。
 - **100ms - 300ms**：用户能感知到延迟，但仍然觉得在"可接受"范围内。此时用户能感觉到操作和结果之间有轻微的间隔。
