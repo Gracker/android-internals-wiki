@@ -14624,6 +14624,27 @@
       "status": "completed",
       "completed_at": "2026-05-08T08:43:36+08:00",
       "completed_reason": "P1 Binder SQL已改为帧窗口约束：先锁定AppDeadlineMissed janky frame的ts/dur/upid，再join android_binder_txns限定client时间重叠区间，并用binder_txn_id关联breakdown"
+    },
+    {
+      "section": "7.1",
+      "section_title": "卡顿的定义与分类",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 7.1 Binder SQL 缺少帧关键线程/区间重叠约束，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-09-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/数据准确性",
+          "location": "L281-L319 Perfetto SQL 佐证",
+          "detail": "[P1] 当前 SQL 已用 actual_frame_timeline_slice 锁定 AppDeadlineMissed 帧并限定 client_upid，但没有把 android_binder_txns.client_utid 收窄到该帧的 UI 线程/RenderThread（doFrame/DrawFrame）关键路径；同一进程后台线程在该时间窗内的 Binder 事务仍可能被误选为 AppDeadlineMissed 因果证据。时间条件只要求 client_ts 落在帧内，也会漏掉与帧窗口重叠但起点早于 frame ts 的阻塞事务；第二段 breakdown 查询还依赖上一段 CTE，单独执行会失败。",
+          "suggestion": "以 FrameTimeline 选中帧为起点，补 display_frame_token/surface_frame_token 或 android.frames.timeline 视图来定位对应 doFrame/DrawFrame/RenderThread utid；再用 b.client_utid IN (...) 且 b.client_ts < frame_end AND b.client_ts + b.client_dur > frame_start 做区间重叠匹配。breakdown 查询应放在同一 WITH 链路内，或把 frame_binder 落成临时表/子查询。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T09:27:37+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
