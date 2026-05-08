@@ -15068,6 +15068,26 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T19:29:15+08:00",
       "status": "pending"
+    },
+    {
+      "section": "18.9",
+      "section_title": "Vulkan 原生渲染管线",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 18.9 Vulkan Present/Swappy 时序图把 CPU queueBuffer 误画成 GPU 动作，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-08-21-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/源码映射",
+          "location": "L252-L265 完整时序图；L360-L371 Swappy 时序图",
+          "detail": "[P1] 两处图都把 `queueBuffer()` 画成 GPU -> Swapchain/SurfaceFlinger 的动作。AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp::PresentOneSwapchain()` 显示，`vkQueuePresentKHR` 的 CPU/driver 路径先调用 `QueueSignalReleaseImageANDROID()` 取得 release fence，再调用 `ANativeWindow::queueBuffer(window, buffer, fence)` 把 buffer 和 fence 交给 BufferQueue。GPU 只执行绘制并 signal fence，不直接调用 BufferQueue。当前图会误导读者在 Perfetto 中把 present/queueBuffer 成本归到 GPU，而不是 `vkQueuePresentKHR` 主机调用和 BufferQueue/SF 等待关系。",
+          "suggestion": "把图改成 App/driver 在 `vkQueuePresentKHR` 内调用 `QueueSignalReleaseImageANDROID()` 取得 fence，再 CPU 调用 `ANativeWindow::queueBuffer(buffer, fence)`；SurfaceFlinger/消费者等待 acquire fence 后 latch。Swappy 图也应改成 Swappy/driver 控制 present 时机，CPU 侧 queueBuffer，GPU 只负责 signal fence。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T21:35:11+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

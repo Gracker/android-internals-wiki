@@ -1719,3 +1719,19 @@
 - **问题**：[P2] 两处量化断言缺少设备、Android build、启动场景、样本数、Perfetto trace 或统计 SQL。作为经验值可以保留，但发布稿需要把“典型冷启动 30-50 次同步 Binder”和“大部分系统服务方法 <1ms”的来源落到一组可复核数据，否则读者无法判断适用范围。
 - **建议**：补一份最小 Perfetto 样本：设备/系统版本、冷/温启动条件、按 `android_binder_txns` 过滤主线程同步事务的 SQL、事务次数分布与 P50/P95 耗时；拿不到样本时改为定性描述，避免固定数量级。
 - **review 日志**：logs/deep-review/2026-05-08-19-deep-review.md
+
+## [Task9 Deep Review] 19.0 第 19 章：APM 工具与性能监控生态 — 2026-05-08 — L83 Tracing SDK 版本线
+- **类型**：版本准确性
+- **位置**：L83 Tracing SDK 版本线
+- **问题**：README 写 `androidx.tracing:tracing` 2.0.0-alpha06；本轮复核 Google Maven metadata，`androidx.tracing:tracing` latest/release 已是 2.0.0-alpha07，稳定线仍是 1.3.0；`tracing-perfetto` / `tracing-perfetto-binary` 仍是 1.0.1。
+- **建议**：把 README 的 alpha 版本更新到 2.0.0-alpha07，或改成“2.0.0-alpha 线”避免小时级 latest 变动造成反复回炉；保留 `tracing-perfetto` 1.0.1 与 `tracing` artifact 分线描述。
+- **review 日志**：logs/deep-review/2026-05-08-21-deep-review.md
+
+
+## [Task9 Deep Review] 19.0 第 19 章：APM 工具与性能监控生态 — 2026-05-08 — L142-L143 本章内容；src/SUMMARY.md L254-L255；19.21 H1
+- **类型**：交叉引用一致性
+- **位置**：L142-L143 本章内容；src/SUMMARY.md L254-L255；19.21 H1
+- **问题**：README 当前写 19.21 包含 Speedometer、19.22 为 AndroBench/A1；SUMMARY 仍写 19.22 为 CPDT/PCMark Storage/历史 AndroBench/A1；实际 19.21 H1 仍是 “Geekbench、安兔兔、3DMark、PCMark、Vellamo”，与 README 的 Geekbench 6/Speedometer 不一致。
+- **建议**：统一 README、SUMMARY、19.21/19.22 frontmatter title 与 H1：要么把 19.21 正文/H1 补到 Geekbench 6 + Speedometer 口径，要么 README/SUMMARY 回退到当前正文实际覆盖范围；19.22 是否纳入 CPDT/PCMark Storage 也要与正文一致。
+- **review 日志**：logs/deep-review/2026-05-08-21-deep-review.md
+

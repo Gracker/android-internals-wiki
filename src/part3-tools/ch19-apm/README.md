@@ -33,17 +33,17 @@ reviewed_date: "2026-05-08"
 task6_reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T21:24:13+08:00"
 last_task6_review_log: "logs/review/2026-05-08-21-review.md"
-status: "ready-for-review"
-pipeline_stage: "task9_pending"
-task9_state: "pending"
-task9_result: needs-rework
+status: "finalized"
+pipeline_stage: "ready-to-publish"
+task9_state: "reviewed"
+task9_result: "pass-tech-review"
 task2b_state: "fixed"
-task9_reviewed_date: "2026-05-06"
+task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-06T06:23:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-06-06-deep-review.md"
+last_task9_at: "2026-05-08T21:35:11+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-08-21-deep-review.md"
 review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 2 处（19.22 目录标题与阅读建议），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。"
+task9_review_notes: "2026-05-08 Task9 21:32：pass-tech-review。无 P0/P1；P2 2 处记录在 deep-review/suggestions，不阻塞发布；自动晋升 finalized / ready-to-publish。"
 ---
 
 # 第 19 章：APM 工具与性能监控生态

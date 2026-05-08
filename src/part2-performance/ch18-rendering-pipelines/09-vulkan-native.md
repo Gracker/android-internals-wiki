@@ -8,15 +8,15 @@ last_verified: "2026-05-04"
 last_verified_against: "Android Vulkan NDK docs, Game SDK Frame Pacing docs, Vulkan spec, AOSP frameworks/native/vulkan"
 confidence: medium
 task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-05"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-05T15:51:58+08:00"
+task9_reviewed_date: "2026-05-08"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-08T21:35:11+08:00"
 tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-pacing", "VkQueue", "Presentation-Mode"]
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-task2b_state: "fixed"
-task2b_result: "fixed"
+task2b_state: "pending"
+task2b_result: "pending"
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
@@ -42,13 +42,14 @@ repaired_by: openclaw-task2b
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: "task9_pending"
+pipeline_stage: "task2b_pending"
 task6_state: "reviewed"
-task9_state: "pending"
+task9_state: "reviewed"
 last_task6_at: "2026-05-08T21:24:13+08:00"
 last_task6_review_log: "logs/review/2026-05-08-21-review.md"
 review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 4 处（GLSE 拼写、VSync 同步用词、否定纠正式、口语化工具描述），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
-last_task9_review_log: "logs/deep-review/2026-05-05-15-deep-review.md"
+last_task9_review_log: "logs/deep-review/2026-05-08-21-deep-review.md"
+task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Present/Swappy 时序图把 CPU `queueBuffer()` 误画成 GPU 动作；P2 1：Validation Layer 启用命令仍需按官方 GPU debug layer 流程收敛。"
 ---
 
 # 18.9 Vulkan 原生渲染管线
