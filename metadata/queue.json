@@ -14720,6 +14720,81 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T12:39:39+08:00",
       "status": "pending"
+    },
+    {
+      "section": "9.3",
+      "section_title": "ANR 分析方法",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 9.3 ANR trace 进程 dump 范围与 AOSP 行为不一致，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L347 Android 14+ 非主进程堆栈因果关联",
+          "detail": "[P0] 正文称 Android 14+ 系统只 dump 与 ANR 有关的进程（ANR 目标进程、对端 Binder 进程等）。复核 AOSP android-16.0.0_r1 `ProcessErrorStateRecord.appNotResponding()`：`firstPids` 仍会加入 ANR 进程、parent/system_server、persistent 进程、treated-like-activity/IME；`lastPids` 仍收集其他 LRU 进程并交给 `StackTracesDumpHelper.dumpStackTraces()` 按 CPU/lastPids 选择；`nativePids` 还可能包含 `NATIVE_STACKS_OF_INTEREST`。源码没有“只 dump Binder 因果进程”的语义。",
+          "suggestion": "改成按 `firstPids` / `lastPids` / `nativePids` 解释非主进程来源；如果 trace 出现其他进程，先判断它是 parent、system_server、persistent、IME、CPU-ranked 进程还是 native daemon，只有在线程栈、Binder 日志或调用链能闭合时再判定为对端因果进程。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T13:32:43+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "10.7",
+      "section_title": "SQLite/Room 数据库性能优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 10.7 Android WAL checkpoint 默认值与 Room transaction executor 口径仍有技术错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L339 16KB Page Size 下的 checkpoint 调优",
+          "detail": "[P0] 正文称 `wal_autocheckpoint` 默认值是 1000 页，并据此推导 4KB≈4MB、16KB≈16MB。复核 AOSP `frameworks/base/core/res/res/values/config.xml`，Android 14/15/16/main 的 `db_wal_autocheckpoint` 资源默认都是 `100`；`SQLiteGlobal.getWALAutoCheckpoint()` 读取该资源。对 Android framework SQLiteDatabase / Room 默认路径，4KB 页约 400KB，16KB 页约 1.6MB；正文建议调到 250 页不是“调低到 4MB”，而是相对 Android 默认增大。",
+          "suggestion": "区分 SQLite upstream 默认 1000 页与 Android 资源默认 100 页；重算 4KB/16KB 下的 checkpoint 规模，并把建议改为“按设备 I/O 与事务模式实测后调整”，不要把 `PRAGMA wal_autocheckpoint=250` 写成通用降峰值建议。"
+        },
+        {
+          "type": "原理断裂/源码一致性",
+          "location": "L431 Room 的 `withTransaction` 与单线程串行写入",
+          "detail": "[P1] 正文把 Room `withTransaction` 等同于“所有写操作在一个专用线程上串行执行”。Room 的 transaction executor 是可配置的，默认也可能与 query executor 共用底层 executor；即使 Room 对事务任务做串行化，也不等于业务建立了一个固定的 dedicated single-thread 写队列。该说法会误导读者把 Room transaction executor、SQLite 单写者约束和应用侧写队列混成一件事。",
+          "suggestion": "改成三层表述：SQLite 同一时刻只有一个 writer；Room 事务通过 transaction executor 进入事务路径并保持事务互斥/顺序；应用若需要全局写入顺序和背压，仍应显式设计单写队列或受控 executor。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T13:32:43+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "16.5",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 16.5 DeliQueue 源码结构与 Generational CMC 版本边界仍不准确，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L131 `ConcurrentMessageQueue` 的 `mPriorityQueue` / `mAsyncPriorityQueue`",
+          "detail": "[P0] 正文称 `mPriorityQueue` 是上文 min-heap，并解释为 Java `PriorityQueue` 堆实现。复核 AOSP main `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`，字段实际声明为 `ConcurrentSkipListSet<MessageNode> mPriorityQueue` 与 `ConcurrentSkipListSet<MessageNode> mAsyncPriorityQueue`，不是 `java.util.PriorityQueue`。博客中的 min-heap 是公开技术博客的概念口径，不能写成当前 AOSP 源码结构。",
+          "suggestion": "分开写“Android Developers Blog 的概念模型：Treiber Stack + min-heap”和“AOSP main 当前源码：ConcurrentSkipListSet 排序集合 + lock-free/drain 逻辑”；删除“Java PriorityQueue 本身就是堆实现”这句，避免源码锚点错误。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "location": "L159-L172 Android 17 Generational CMC",
+          "detail": "[P1] 正文把 Generational CMC 写成 Android 17 的统一行为，并给出 “暂停通常 <1ms” 的泛化结论。复核 AOSP `art/runtime/gc/collector/mark_compact.cc`，Generational CMC 受 `gUseUserfaultfd`、`use_generational_cmc` flag 与 `persist.device_config.runtime_native_boot.use_generational_gc` 等条件影响；AOSP android-16.0.0_r1/main 已存在 `YoungMarkCompact` 和相关 gating。当前文本缺少 feature flag、kernel/userfaultfd、设备配置和 Android 16/17 边界，读者会误以为 targetSdk 或系统版本必然切换。",
+          "suggestion": "补上源码 gating：`ShouldUseGenerationalGC()`、`YoungMarkCompact`、`use_generational_cmc`、`persist.device_config.runtime_native_boot.use_generational_gc`；把 “Android 17 统一启用/通常 <1ms” 改成按设备/flag/trace 验证的表述，并把暂停数字改为需要本机 GC histogram 或 Perfetto GC slice 支撑。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T13:32:43+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
