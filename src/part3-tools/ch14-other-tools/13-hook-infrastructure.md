@@ -6,8 +6,8 @@ status: ready-for-review
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-04-25'
-last_verified_against: AOSP sepolicy public/domain.te + bionic linker linker_phdr.cpp + Android 16KB page size docs + ART TI + GitHub upstream READMEs
+last_verified: '2026-05-08'
+last_verified_against: AOSP sepolicy public/domain.te + bionic linker linker_phdr.cpp + bionic linker libdl.map.txt (android-9/10/11 tags) + Android 16KB page size docs + ART TI + GitHub upstream READMEs
 confidence: medium
 sources:
 - type: official
@@ -39,21 +39,21 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
+pipeline_stage: "task6_pending"
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-01'
 task6_result: pass-light-edit
-task9_state: "reviewed"
+task9_state: pending
 task9_result: "needs-rework"
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-01T19:38:39+08:00"
-repaired_date: '2026-05-01'
+repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: "pending"
-last_task2b_at: '2026-05-01T09:40:00'
+task2b_state: fixed
+last_task2b_at: '2026-05-08T22:40:00'
 task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
 ---
 
@@ -326,7 +326,7 @@ target_link_options(your_native_lib PRIVATE "-Wl,-z,max-page-size=16384")
 如果某个 Hook 库几年没维护,又默认假设 4KB 页,这在 Android 15/16 设备上就是上线前必须先排掉的兼容性红线。
 
 - **Android API 版本变化**：每个大版本的 Bionic Linker、SELinux 策略、execmem/execmod 判定逻辑都可能调整，Hook 库需要逐版本验证
-- **Android 14 (API 34) W^X 收紧**：targetSdk 34 对可写可执行内存的限制更严，Inline Hook 的写回窗口更窄
+- **Android 14 (API 34) 动态代码加载收紧**：targetSdk 34 要求动态加载的 DEX/JAR/APK 文件在加载前必须只读（Safer dynamic code loading 行为变更）；native 代码页的 W^X / execmem / execmod 约束在 Android 8-13 已存在，Android 14 未新增通用 `mprotect()` 限制
 - **linker / namespace 行为差异**：Android 7 起引入的 linker namespace 隔离，不同版本对 `dlopen` 路径和符号可见性的限制逐步收紧
 - **Android 15+ (API 35+) 的 16KB Page Size**：页大小变化直接影响 `mprotect` 的地址对齐要求和 ELF 加载兼容性
 - **ABI 与指令集差异**：ARM32/ARM64 的指令修补策略不同，Thumb/ARM 模式切换、分支距离限制都需要分别处理
@@ -360,11 +360,11 @@ Hook 到了,不代表结论就一定对。例如:
 
 这个顺序的价值,是把高风险能力尽量后置。
 
-## 补充：Android 14 W^X 与 Inline Hook iCache 失效机制
+## 补充：W^X 约束下的 Inline Hook 与 iCache 失效机制
 
 <!-- AIW-源码调研-2026-04-24 -->
 
-Android 14 起对 Inline Hook 的影响需要按版本拆开看：**Android 14 (API 34) 的 W^X 内存保护策略限制了"同时可写可执行"的内存操作窗口**；**Android 15+ (API 35) 的 16KB Page Size 改变了 `mprotect()` 的页边界假设**。两条线发生时间不同，不能混在一起。
+Inline Hook 在 Android 上长期受 W^X / execmem / execmod / SELinux 共同约束。这些约束不是 Android 14 才引入的：Android 8-13 已经要求两步 `mprotect()`、禁止 `PROT_WRITE | PROT_EXEC` 组合。**Android 14 (API 34) 新增的是 Safer dynamic code loading 行为变更（DEX/JAR/APK 加载前必须只读），和 `mprotect()` 修改代码页权限不是同一个问题**；**Android 15+ (API 35) 的 16KB Page Size 改变了 `mprotect()` 的页边界假设**。三条线性质不同，不能混在一起。
 
 ### W^X 在 Hook 场景里的三层约束
 
@@ -441,7 +441,7 @@ Compat Mode 触发条件在 `linker_phdr.cpp`：`kPageSize == 16384 && min_align
 | Android 15 (API 35) | 同上 | 同上 | 4KB / 16KB（设备相关） |
 | Android 16 (API 36) | 同上 | 同上 | 4KB / 16KB（设备相关） |
 
-**结论**：Android 14+ 上的 Inline Hook 必须遵守两步 `mprotect()`、icache flush 和运行时页大小;任一环节出错都会导致 Hook 失败或进程崩溃。
+**结论**：Android 8+ 上的 Inline Hook 必须遵守两步 `mprotect()`、icache flush 和运行时页大小；Android 14+ 还要额外注意动态代码加载的只读文件要求。任一环节出错都会导致 Hook 失败或进程崩溃。
 
 
 ## 补充：Linker Namespace 限制与 ByteDance Hook 库绕过机制
@@ -559,11 +559,11 @@ bytehook_stub_t bytehook_hook_all(
 | Android 7.0 (API 24) | 引入 linker namespace，初步隔离 |
 | Android 8.0 (API 26) | classloader-namespace 分配给 Java App（Treble 核心） |
 | Android 9 (API 28) | 进一步收紧限制，禁止加载私有 API |
-| Android 11 (API 30) | `android_create_namespace()` 从 `libdl.so` 移除并私有化 |
-| Android 14 (API 34) | W^X 强制 read-only，Inline Hook 需要额外 mprotect 步骤 |
+| Android 10 (API 29) | `android_create_namespace()` 不再从 `libdl.so` 导出；内部实现入口为 `linker/dlfcn.cpp::__loader_android_create_namespace` |
+| Android 14 (API 34) | Safer dynamic code loading：DEX/JAR/APK 加载前必须只读；native W^X 约束未变 |
 | Android 16 (API 36) | ShadowHook 支持至 API 36 |
 
-`android_create_namespace()` 在 Android 8 中允许创建自定义 namespace 并指定 LSPath 和隔离规则，但该函数在 Android 11 被移除并移至 `libc.so` 内部，外部应用无法直接调用。这是 namespace 绕过技术（尤其是 soinfo 修改和 `__loader_dlopen` 技巧）存在的技术背景。
+`android_create_namespace()` 在 Android 8 中允许创建自定义 namespace 并指定 LSPath 和隔离规则，但该函数在 Android 10 起不再从 `libdl.so` 导出（`libdl.map.txt` 已确认）。后续版本内部实现入口为 `linker/dlfcn.cpp` 的 `__loader_android_create_namespace` / `create_namespace`，不再是对外可用的公共 API。这是 namespace 绕过技术（尤其是 soinfo 修改和 `__loader_dlopen` 技巧）存在的技术背景。
 
 ### 源码文件索引
 
@@ -676,7 +676,7 @@ bool android_namespace_t::is_accessible(const std::string& file) {
 3. 库路径在 `default_library_paths_` 目录下
 4. 库路径在 `permitted_paths_` 目录下
 
-Android 8+ 通过 `/system/etc/ld.config.txt` 配置隔离规则，Android 11+ 进一步私有化 `android_create_namespace()` API，外部应用无法直接创建自定义 namespace。
+Android 8+ 通过 `/system/etc/ld.config.txt` 配置隔离规则，Android 10 起不再从 `libdl.so` 导出 `android_create_namespace()`，外部应用无法直接创建自定义 namespace。
 
 **符号可见性**：`is_accessible(soinfo*)` 判断符号查找权限时，允许 secondary namespace 成员参与查找，但不含传递依赖：
 
