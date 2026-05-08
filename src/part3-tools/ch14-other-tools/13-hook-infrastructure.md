@@ -39,22 +39,22 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: "task9_pending"
+pipeline_stage: task2b_pending
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: "needs-rework"
-task9_reviewed_date: "2026-05-01"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-01T19:38:39+08:00"
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-09"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-09T00:37:58+08:00"
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 last_task2b_at: '2026-05-08T22:40:00'
-task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
+task9_review_notes: "2026-05-09 task9 deep-review: needs-rework。W^X/RWX、ShadowHook 源码路径与 namespace 代码节选存在 P0，已写入 queue。"
 last_task6_at: "2026-05-08T23:18:39+08:00"
 last_task6_review_log: "logs/review/2026-05-08-23-review.md"
 review_notes: "2026-05-08 Task6 23:18：Task2B 修复后写作复审；轻修 104 处（禁用词/高频词、否定纠正式、半角标点、中英文间距与代码围栏语言），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"

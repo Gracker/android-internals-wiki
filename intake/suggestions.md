@@ -1735,3 +1735,9 @@
 - **建议**：统一 README、SUMMARY、19.21/19.22 frontmatter title 与 H1：要么把 19.21 正文/H1 补到 Geekbench 6 + Speedometer 口径，要么 README/SUMMARY 回退到当前正文实际覆盖范围；19.22 是否纳入 CPDT/PCMark Storage 也要与正文一致。
 - **review 日志**：logs/deep-review/2026-05-08-21-deep-review.md
 
+
+## [Task9 Deep Review] 18.4 Android View 混合渲染链路 — 2026-05-09
+- **类型**：交叉引用一致性
+- **位置**：L257-L258（2.6 SurfaceFlinger / 2.7 Hardware Layer 链接）
+- **问题**：`06-surfaceflinger.md`、`07-hardware-layer.md` 按当前章节目录 `src/part2-performance/ch18-rendering-pipelines/` 解析不存在；实际文件在 `src/part1-fundamentals/ch02-rendering/` 下。
+- **建议**：改成跨目录相对路径 `../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md` 与 `../../part1-fundamentals/ch02-rendering/07-hardware-layer.md`，或改为 Obsidian wiki 链接以避免相对路径失效。
