@@ -10375,7 +10375,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T00:55:15+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T23:46:33",
+      "completed_reason": "Cloud Compilation 收窄为条件化描述+补验证路径；Android 15 后台网络限制补充触发条件/例外路径/WorkManager/前台服务排除"
     },
     {
       "section": "1.9",
@@ -10928,7 +10930,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-01T18:51:19+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T23:46:33",
+      "completed_reason": "SurfaceSyncGroup SurfaceView API 可见性标注@hide/公开路径区分；几何 Transaction 同步边界按受控Surface/外部Producer拆分"
     },
     {
       "section": "1.9",
