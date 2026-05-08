@@ -33,14 +33,14 @@ sources:
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
 task9_state: reviewed
-task2b_state: pending
-task2b_result: fixed
+task2b_state: "fixed"
+task2b_result: "fixed"
 last_task2b_at: "2026-05-08T11:40:00+08:00"
 task6_state: reviewed
 task6_result: "pass-light-edit"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
-pipeline_stage: task2b_pending
+pipeline_stage: "task6_pending"
 p1: 2
 p2: 3
 task9_review_notes: "2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。"
@@ -302,7 +302,7 @@ GC 吞吐量指的是应用运行时间占总时间的比例。如果 GC 吞吐�
 
 ART 的 FinalizerDaemon 线程负责处理对象的 `finalize()` 方法。在 Android 16 及之前，GC 完成标记后需要通过 `ReferenceQueue` 将待 finalize 对象传递给 FinalizerDaemon，这条路径涉及同步锁。当 GC 频率高、FinalizerDaemon 处理压力大时，锁竞争会导致 FinalizerDaemon 出现 `TimeoutException`，极端情况下引发 ANR。
 
-Android 17 的 DeliQueue 是一种无锁消息队列机制，已在 `android.os.MessageQueue` 层面实现了无锁投递，消除了 Handler/Message 路径上的同步开销。至于 DeliQueue 是否已延伸到 ART 内部的 `ReferenceQueue` 并消除 FinalizerDaemon 的锁竞争，当前 AOSP 源码尚未提供明确证据，这一部分留作待验证。
+Android 17 的 DeliQueue 是一种无锁消息队列数据结构，在 `ConcurrentMessageQueue`（AOSP 中的新 MessageQueue 实现）内部使用，实现无锁投递，替代了 `LegacyMessageQueue` 的 synchronized 路径。至于 DeliQueue 是否已延伸到 ART 内部的 `ReferenceQueue` 并消除 FinalizerDaemon 的锁竞争，当前 AOSP 源码尚未提供明确证据，这一部分留作待验证。
 
 在 Perfetto 中，如果看到 `FinalizerDaemon` 线程出现长时间的 `Object.wait()` 或 `ReferenceQueue` 相关的阻塞 slice，通常是锁竞争路径的表征。
 
@@ -421,25 +421,28 @@ AOT 编译后的机器码存储在 `.oat` 和 `.vdex` 文件中，运行时通�
 
 在 Perfetto 的 UI 中，ART GC 的活动分布在几个关键位置：
 
-- **`art_gc` counter track**：显示 GC 的整体活动。Young GC 在这个 track 上表现为短促的脉冲，Full GC 则是持续更长的波峰
+- **GC 事件 slice**：ART 的 `GarbageCollector::Run()` 通过 `ScopedTrace` 产出 GC slice，名称如 `ConcurrentCopying GC`、`MarkCompact GC` 等。slice 所在 track 取决于执行线程——后台并发 GC 由 `HeapTaskDaemon` 线程执行，Foreground GC 则出现在触发 GC 的应用线程 track 上
+- **GC 活动 counter**：Perfetto 中存在反映 GC 频率和吞吐量的 counter track，具体 track name 因 Android 版本和 GC 实现而异，需对照实际 trace 确认
 - **`HeapTaskDaemon` 线程**：ART 的后台 GC 线程，Concurrent GC 的主要执行者。这个线程的活跃区间对应并发标记和拷贝/压缩的时间
 - **`AllocObject` trace point**：当应用线程在分配对象时被阻塞（Allocation Stall），对应线程的 track 上会出现这个 slice
 
 对于需要量化分析的场景，可以使用 Perfetto 的 SQL 视图。以下查询统计一段时间内各类型 GC 的次数和平均耗时：
 
 ```sql
--- 统计 GC 事件类型、次数和平均耗时
-SELECT
-  slice.name AS gc_type,
-  COUNT(*) AS count,
-  ROUND(AVG(dur / 1e6), 2) AS avg_duration_ms
+-- 统计 GC 事件类型、次数和平均耗时（按线程名和 slice 名匹配）
+SELECT slice.name AS gc_type, COUNT(*) AS count, ROUND(AVG(dur / 1e6), 2) AS avg_duration_ms
 FROM slice
 JOIN track ON slice.track_id = track.id
-WHERE track.name LIKE '%art_gc%'
+JOIN thread_track ON thread_track.id = track.id
+JOIN thread ON thread_track.utid = thread.utid
+WHERE (thread.name = 'HeapTaskDaemon' OR slice.name LIKE '%GC%')
   AND slice.name LIKE '%GC%'
+  AND slice.dur > 0
 GROUP BY gc_type
 ORDER BY avg_duration_ms DESC;
 ```
+
+> **注意**：GC slice 所在的 track name 就是线程名，因 Android 版本和 GC 实现而异。读者需打开自己的 trace，在线程列表中确认 `HeapTaskDaemon` 或目标应用线程的实际名称，再据此调整 SQL 中的 `thread.name` 过滤条件。
 
 另一个实用的查询是检查 Allocation Stall——找出哪些线程在对象分配上等待了多久：
 

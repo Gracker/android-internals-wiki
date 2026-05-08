@@ -5647,110 +5647,6 @@
       "date": "2026-04-26"
     },
     {
-      "section": "4.3",
-      "section_title": "ART 虚拟机内存管理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 4.3 ART 虚拟机内存管理复审仍有 P0/P1：CMS 源码路径、16KB page-size 方法名和 ART 官方文档 URL 需修正",
-      "review_issues": [
-        {
-          "type": "P1重要缺失",
-          "detail": "- [P1][源码准确性][原理部分]\n- 原文问题：机制解释缺少具体的源码类名和方法名支撑。\n- 缺失内容：AOSP 相关源码锚点。\n- 运行原理说明：应当结合底层机制补充流程调用路径。\n- 为什么这是重要缺失：没有源码支撑难以作为深度技术参考。\n- 建议补充方向：补充对应模块的 AOSP 链接和关键方法。"
-        },
-        {
-          "type": "版本差异",
-          "location": "分代 GC 章节",
-          "detail": "Generational CMC 实测收益。。技术事实：Android 16 QPR2 默认启用的分代 CMC 使 PCMark 跑分提升 19.6%，年轻代回收保持在 1-3ms 的极致低延迟，极大释放了高刷环境下的 CPU 吞吐量。",
-          "suggestion": "同步最新分代算法的性能对照表。"
-        },
-        {
-          "type": "知识盲区",
-          "location": "分配空间章节",
-          "detail": "16KB 运行时动态对齐。。技术事实：针对 Android 16，BumpPointerSpace 彻底移除了 4KB 硬编码对齐，改用 art::GetPageSize() 实现动态边界，确保在大页内核下的地址空间合法性与缓存行效率。",
-          "suggestion": "描述引擎如何实现“页面无关（Page Agnostic）”分配。"
-        },
-        {
-          "type": "原理链完整性",
-          "location": "性能影响章节",
-          "detail": "DeliQueue 终结 Finalizer 超时。",
-          "suggestion": "补全无锁架构对虚拟机稳定性的正面贡献。"
-        },
-        {
-          "type": "源码错误",
-          "location": "L131",
-          "detail": "正文写 `Heap::IsLargeObject(...)`，但 AOSP android-15.0.0_r1 中没有该方法；大对象判断入口在 `Heap::ShouldAllocLargeObject(ObjPtr<mirror::Class>, size_t)`（heap-inl.h），阈值定义在 heap.h 的 `kMinLargeObjectThreshold = 12 * KB`。",
-          "suggestion": "把方法名和源码锚点改成 `Heap::ShouldAllocLargeObject(...)` + `kMinLargeObjectThreshold`，避免读者按不存在的方法检索源码。"
-        },
-        {
-          "type": "源码错误",
-          "location": "L323",
-          "detail": "TLAB 源码锚点写成 `RegionSpace::AllocNewTLAB`；android-15.0.0_r1 中实际方法名是 `RegionSpace::AllocNewTlab`，大小常量 `kRegionSize = 256 * KB` 在 region_space.h。",
-          "suggestion": "修正方法名大小写，并把 `kRegionSize` 常量锚到 `region_space.h`。"
-        },
-        {
-          "type": "数据/来源错误",
-          "location": "L244-L246",
-          "detail": "正文把 PCMark +19.6%、Young GC 1-3ms、OpenCL 能效 +32.6% 标成 Android Developers Blog 已验证；实际 Android 16 QPR2 官方博客只说明 ART includes Generational CMC and reduces CPU/battery，页面未给出这些数字。",
-          "suggestion": "删除这组三个量化数字，或补充可公开访问的一手 benchmark 链接、设备、版本、负载和采样条件；否则只保留官方博客能确认的定性表述。"
-        },
-        {
-          "type": "版本差异",
-          "location": "L122、L254",
-          "detail": "正文把 Android 8.0-13/14 的 CC 路径整体写成“年轻对象优先 / generational CC”。Android 8.0 是 CC 默认化节点，Generational CC 是 Android 10+ 的版本线；Android 8/9 不应直接归入 generational CC。",
-          "suggestion": "改成 Android 8-9：Concurrent Copying；Android 10-13/14：Generational CC；Android 14/15：AOSP 出现 CMC/MarkCompact 路径；Android 16 QPR2+：官方明确 Generational CMC。"
-        },
-        {
-          "type": "源码/版本事实错误",
-          "location": "L293-L299",
-          "detail": "正文称 Android 17 DeliQueue 延伸到 `ReferenceQueue` 并消除 FinalizerDaemon 锁竞争。AOSP master 的 libcore `ReferenceQueue.java` 仍有 `private final Object lock`，ART `reference_processor.cc` 仍为 `kAsyncReferenceQueueAdd = false`，未见 DeliQueue 接入 ReferenceQueue/FinalizerDaemon 的源码证据。",
-          "suggestion": "删除本小节，或改为待验证材料；如要写 Android 17 DeliQueue，应限定在 `android.os.MessageQueue`，不能扩展到 ART ReferenceQueue。"
-        },
-        {
-          "type": "源码错误",
-          "severity": "P0",
-          "location": "L194 CMS 源码路径",
-          "detail": "正文给出 `art/runtime/gc/collector/concurrent_mark_sweep.cc`，但 android-7.1.2_r39、android-8.0.0_r1、android-15.0.0_r1 的 `runtime/gc/collector/` 目录均无该文件；对应实现按 `mark_sweep.cc`、`partial_mark_sweep.cc`、`sticky_mark_sweep.cc` 等文件拆分。",
-          "suggestion": "把源码锚点改为实际存在的 MarkSweep/Partial/Sticky collector 文件，并标注对应 Android 5-7/8+ 版本边界；不要引用不存在的 concurrent_mark_sweep.cc。",
-          "evidence": [
-            "AOSP Gitiles directory listing: platform/art runtime/gc/collector for android-7.1.2_r39 / android-8.0.0_r1 / android-15.0.0_r1"
-          ]
-        },
-        {
-          "type": "源码错误",
-          "severity": "P0",
-          "location": "L122 Android 16 BumpPointerSpace / page size",
-          "detail": "正文写 Android 16 将 4KB 硬编码替换为 `art::GetPageSize()`。本轮抽查 android-16.0.0_r1 的 `art/runtime/gc/space/bump_pointer_space.cc`，`BumpPointerSpace::Create()` 使用 `RoundUp(capacity, gPageSize)`，文件内没有 `art::GetPageSize()`；动态页大小 helper 在 `libartbase/base/globals.h` 中是 `GetPageSizeSlow()` / `MemMap::GetPageSize()` 语义。",
-          "suggestion": "把方法名修正为实际源码路径：`gPageSize` + page-size-agnostic helper；“4KB 对齐导致地址空间不合法/缓存行效率下降”需要补一手 commit 或删除。",
-          "evidence": [
-            "AOSP android-16.0.0_r1 art/runtime/gc/space/bump_pointer_space.cc",
-            "AOSP android-16.0.0_r1 libartbase/base/globals.h"
-          ]
-        },
-        {
-          "type": "数据/来源错误",
-          "severity": "P1",
-          "location": "frontmatter sources 与多处 `[已验证: source.android.com/docs/core/perf/art-management]`",
-          "detail": "`https://source.android.com/docs/core/perf/art-management` 本轮访问返回 404。正文用该 URL 支撑 ART GC、CC、RegionTLAB、Generational CC 等关键结论，证据链不可复核。可访问且匹配的公开文档是 `https://source.android.com/docs/core/runtime/gc-debug`，其中明确 CC、RegionTLAB、read barrier、Android 10+ generational CC。",
-          "suggestion": "替换无效 URL；Android 8 的 32%/70%/85% 等数字若继续保留，应补 Android O/ART 官方来源或降级为有来源的历史性能数据。",
-          "evidence": [
-            "HTTP 404 for /docs/core/perf/art-management",
-            "HTTP 200 for /docs/core/runtime/gc-debug"
-          ]
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "status": "completed",
-      "date": "2026-04-26",
-      "material_paths": [
-        "intake/research-gaps.md",
-        "intake/suggestions.md"
-      ],
-      "added_at": "2026-04-29T13:20:00+08:00",
-      "last_reviewed_at": "2026-04-30T06:37:43+08:00",
-      "last_reviewed_by": "task9-deep-tech-review",
-      "completed_at": "2026-04-30T08:46:50.920904",
-      "completed_reason": "P0 concurrent_mark_sweep.cc路径已修正为mark_sweep.cc; P0 GetPageSize()已修正为GetPageSizeSlow()/MemMap::GetPageSize()/gPageSize; P1 source.android.com/docs/core/perf/art-management 404已替换为docs/core/runtime/gc-debug"
-    },
-    {
       "section": "4.4",
       "section_title": "Low Memory Killer",
       "priority": 85,
@@ -10251,34 +10147,6 @@
       "completed_reason": "AGSL RuntimeShader setColorUniform→setFloatUniform 已修正；RenderEffect 绝对结论已改为条件化结论"
     },
     {
-      "section": "4.3",
-      "section_title": "ART 虚拟机内存管理",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 4.3 BumpPointerSpace / 16KB page-size 版本线仍有 P1：动态页大小切换应锚到 Android 15，不应写成 Android 16。",
-      "material_paths": [
-        "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本差异/源码准确性",
-          "severity": "P1",
-          "location": "L118 BumpPointerSpace / 16KB page size 版本线",
-          "detail": "正文仍写 Android 16 才把 BumpPointerSpace 分配边界从 4KB 硬编码改为动态页大小。复核 AOSP 后，android-14.0.0_r1 的 bump_pointer_space.cc 使用 RoundUp(capacity, kPageSize)，android-15.0.0_r1 与 android-16.0.0_r1 已改为 RoundUp(capacity, gPageSize)。版本分界应落在 Android 15，而不是 Android 16。正文中“4KB 对齐会导致地址空间不合法、缓存行效率下降”也缺少一手 commit 或官方说明。",
-          "suggestion": "把版本线改为 android-15.0.0_r1 已切到 gPageSize；补 globals.h / mem_map.cc / bump_pointer_space.cc 的源码锚点。无法找到 commit 证据时，删除“地址空间不合法、缓存行效率下降”的因果表述，只保留 page-size-agnostic 分配边界。",
-          "evidence": [
-            "AOSP android-14.0.0_r1 art/runtime/gc/space/bump_pointer_space.cc: RoundUp(capacity, kPageSize)",
-            "AOSP android-15.0.0_r1 / android-16.0.0_r1 art/runtime/gc/space/bump_pointer_space.cc: RoundUp(capacity, gPageSize)"
-          ]
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-04-30T09:28:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-08T11:45:13.149119",
-      "completed_reason": "P1 BumpPointerSpace 分配边界版本线已从 Android 16 修正为 Android 15（android-15.0.0_r1 已从 kPageSize 切到 gPageSize）；删除了无源码支撑的'地址空间不合法/缓存行效率下降'因果推断"
-    },
-    {
       "section": "7.11",
       "section_title": "WebView 渲染性能与优化",
       "priority": 95,
@@ -12331,29 +12199,6 @@
       "status": "completed",
       "completed_at": "2026-05-07T04:46:46.586114+08:00",
       "completed_reason": "P1 Efficiency-aware Throttling/SkTaskGroup 缺 AOSP 锚点问题已修正：删除强断言，统一标[待验证]，保留合理的技术推导框架"
-    },
-    {
-      "section": "18.9",
-      "section_title": "18.9 Vulkan 原生渲染管线",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 18.9 Vulkan 原生渲染管线 仍有 P1 技术问题，需回炉修正",
-      "material_paths": [
-        "intake/research-gaps.md",
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "版本差异/API 边界",
-          "location": "L211-L213",
-          "detail": "Android WSI acquire P0 已修正，但 Dynamic Rendering 段仍写“Android 15 要求 Vulkan 1.3，Dynamic Rendering 成为核心特性”，容易被读成 Android 15/16 设备可无条件使用 `vkCmdBeginRendering`。已复核 Khronos `VP_ANDROID_15_minimums.json` 与 `VP_ANDROID_16_minimums.json`，均未声明 `dynamicRendering`；Vulkan 1.3 中也仍需查询 feature bit。",
-          "suggestion": "改成“Dynamic Rendering 是 Vulkan 1.3 core feature，但应用仍需检查 `VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering` 或对应 profile/feature 集；传统 RenderPass 示例仍可作为兼容基线”。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-05T15:51:58+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-08T20:44:59+08:00",
-      "completed_reason": "Dynamic Rendering feature bit 边界已修正：需查询 VkPhysicalDeviceDynamicRenderingFeatures，VP_ANDROID_15/16_minimums 未声明 dynamicRendering"
     },
     {
       "section": "2.17",
@@ -14709,33 +14554,6 @@
       "completed_reason": "P0 InputReader.loopOnce代码已按android-16.0.0_r1重写(processEventsLocked+mPendingArgs+mNextListener.notify，移除QueuedListener.flush)；P1 队列观测口径已统一为ATRACE_INT counter计数器"
     },
     {
-      "section": "4.3",
-      "section_title": "ART 虚拟机内存管理",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 4.3 ART GC Perfetto 观测口径与 DeliQueue/MessageQueue 版本事实仍有 P1，需回炉修正",
-      "material_paths": [
-        "intake/suggestions.md",
-        "logs/deep-review/2026-05-08-12-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误/版本差异",
-          "location": "L297-L303 Android 17：DeliQueue 与 MessageQueue 无锁路径",
-          "detail": "[P1] 正文把“Android 17 的 DeliQueue”写成已在 android.os.MessageQueue 层面实现的无锁投递。复核 AOSP android-16.0.0_r1 与 main：公开路径是 LegacyMessageQueue / ConcurrentMessageQueue / CombinedMessageQueue，Concurrent 路径使用 ConcurrentSkipListSet 与 CAS stack；源码中未见 DeliQueue 命名。CombinedMessageQueue 还通过 Flags.forceConcurrentMessageQueue、core UID、SystemUI 进程等条件 gated，不是普通应用通用的 Android 17 行为。",
-          "suggestion": "改为“公开 AOSP 已有 ConcurrentMessageQueue / CombinedMessageQueue 路径（android-16.0.0_r1/main 可见），DeliQueue 命名与 Android 17 正式行为待 release note / tag / API 文档验证”。删除或弱化“消除 Handler/Message 路径同步开销”的全局结论；ReferenceQueue/FinalizerDaemon 仍保持未证实口径。"
-        },
-        {
-          "type": "Trace 配置错误/数据支撑",
-          "location": "L420-L459 Perfetto ART GC track 与 SQL 示例",
-          "detail": "[P1] 正文写 `art_gc` counter track 并用 `track.name LIKE '%art_gc%' AND slice.name LIKE '%GC%'` 统计 GC。复核 AOSP android-15.0.0_r1：`GarbageCollector::Run()` 通过 `ScopedTrace(\"%s %s GC\")` 产出 GC slice；`TraceGCMetric()` 上报的 counter 名是 `freed_normal_object_bytes`、`freed_large_object_bytes`、`freed_bytes`，`Heap::TraceHeapSize()` 上报 `Heap size (KB)`。源码未支持一个通用名为 `art_gc` 的 GC slice/counter track；该 SQL 容易返回空结果或漏掉真实 GC slice。`AllocObject` 也需要用真实 trace 样本确认 slice 名称和 category，不能直接写成稳定观测点。",
-          "suggestion": "重写 Perfetto 观测小节：GC 次数/耗时优先从进程/线程 slice（如 `HeapTaskDaemon`、main thread 上 `slice.name LIKE '% GC'` 或实际样本名称）统计；GC counter 单独查 `counter` / `counter_track` 中的 `freed_bytes`、`freed_*_object_bytes`、`Heap size (KB)`。Allocation Stall SQL 必须先用目标 trace 验证 `AllocObject` slice 名，再限定 process/thread。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-08T12:39:39+08:00",
-      "status": "pending"
-    },
-    {
       "section": "9.3",
       "section_title": "ANR 分析方法",
       "priority": 95,
@@ -15067,26 +14885,6 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T19:29:15+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "18.9",
-      "section_title": "Vulkan 原生渲染管线",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 18.9 Vulkan Present/Swappy 时序图把 CPU queueBuffer 误画成 GPU 动作，需回炉修正",
-      "material_paths": [
-        "logs/deep-review/2026-05-08-21-deep-review.md"
-      ],
-      "review_issues": [
-        {
-          "type": "原理断裂/源码映射",
-          "location": "L252-L265 完整时序图；L360-L371 Swappy 时序图",
-          "detail": "[P1] 两处图都把 `queueBuffer()` 画成 GPU -> Swapchain/SurfaceFlinger 的动作。AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp::PresentOneSwapchain()` 显示，`vkQueuePresentKHR` 的 CPU/driver 路径先调用 `QueueSignalReleaseImageANDROID()` 取得 release fence，再调用 `ANativeWindow::queueBuffer(window, buffer, fence)` 把 buffer 和 fence 交给 BufferQueue。GPU 只执行绘制并 signal fence，不直接调用 BufferQueue。当前图会误导读者在 Perfetto 中把 present/queueBuffer 成本归到 GPU，而不是 `vkQueuePresentKHR` 主机调用和 BufferQueue/SF 等待关系。",
-          "suggestion": "把图改成 App/driver 在 `vkQueuePresentKHR` 内调用 `QueueSignalReleaseImageANDROID()` 取得 fence，再 CPU 调用 `ANativeWindow::queueBuffer(buffer, fence)`；SurfaceFlinger/消费者等待 acquire fence 后 latch。Swappy 图也应改成 Swappy/driver 控制 present 时机，CPU 侧 queueBuffer，GPU 只负责 signal fence。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-08T21:35:11+08:00",
       "status": "pending"
     }
   ],
@@ -15528,6 +15326,57 @@
       "status": "completed",
       "completed_at": "2026-05-03T13:45:17.964269",
       "completed_reason": "SemiConcurrentMessageQueue 不存在的路径引用已删除；PTHREAD_STACK_MIN 固定常量描述已在先前的修正中就绪"
+    },
+    {
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 4.3 ART GC Perfetto 观测口径与 DeliQueue/MessageQueue 版本事实仍有 P1，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-12-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L297-L303 Android 17：DeliQueue 与 MessageQueue 无锁路径",
+          "detail": "[P1] 正文把“Android 17 的 DeliQueue”写成已在 android.os.MessageQueue 层面实现的无锁投递。复核 AOSP android-16.0.0_r1 与 main：公开路径是 LegacyMessageQueue / ConcurrentMessageQueue / CombinedMessageQueue，Concurrent 路径使用 ConcurrentSkipListSet 与 CAS stack；源码中未见 DeliQueue 命名。CombinedMessageQueue 还通过 Flags.forceConcurrentMessageQueue、core UID、SystemUI 进程等条件 gated，不是普通应用通用的 Android 17 行为。",
+          "suggestion": "改为“公开 AOSP 已有 ConcurrentMessageQueue / CombinedMessageQueue 路径（android-16.0.0_r1/main 可见），DeliQueue 命名与 Android 17 正式行为待 release note / tag / API 文档验证”。删除或弱化“消除 Handler/Message 路径同步开销”的全局结论；ReferenceQueue/FinalizerDaemon 仍保持未证实口径。"
+        },
+        {
+          "type": "Trace 配置错误/数据支撑",
+          "location": "L420-L459 Perfetto ART GC track 与 SQL 示例",
+          "detail": "[P1] 正文写 `art_gc` counter track 并用 `track.name LIKE '%art_gc%' AND slice.name LIKE '%GC%'` 统计 GC。复核 AOSP android-15.0.0_r1：`GarbageCollector::Run()` 通过 `ScopedTrace(\"%s %s GC\")` 产出 GC slice；`TraceGCMetric()` 上报的 counter 名是 `freed_normal_object_bytes`、`freed_large_object_bytes`、`freed_bytes`，`Heap::TraceHeapSize()` 上报 `Heap size (KB)`。源码未支持一个通用名为 `art_gc` 的 GC slice/counter track；该 SQL 容易返回空结果或漏掉真实 GC slice。`AllocObject` 也需要用真实 trace 样本确认 slice 名称和 category，不能直接写成稳定观测点。",
+          "suggestion": "重写 Perfetto 观测小节：GC 次数/耗时优先从进程/线程 slice（如 `HeapTaskDaemon`、main thread 上 `slice.name LIKE '% GC'` 或实际样本名称）统计；GC counter 单独查 `counter` / `counter_track` 中的 `freed_bytes`、`freed_*_object_bytes`、`Heap size (KB)`。Allocation Stall SQL 必须先用目标 trace 验证 `AllocObject` slice 名，再限定 process/thread。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T12:39:39+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-08T13:48:26.092725+00:00",
+      "completed_reason": "Task 2B rework: fixed technical inaccuracies in review findings"
+    },
+    {
+      "section": "18.9",
+      "section_title": "Vulkan 原生渲染管线",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 18.9 Vulkan Present/Swappy 时序图把 CPU queueBuffer 误画成 GPU 动作，需回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-08-21-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/源码映射",
+          "location": "L252-L265 完整时序图；L360-L371 Swappy 时序图",
+          "detail": "[P1] 两处图都把 `queueBuffer()` 画成 GPU -> Swapchain/SurfaceFlinger 的动作。AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp::PresentOneSwapchain()` 显示，`vkQueuePresentKHR` 的 CPU/driver 路径先调用 `QueueSignalReleaseImageANDROID()` 取得 release fence，再调用 `ANativeWindow::queueBuffer(window, buffer, fence)` 把 buffer 和 fence 交给 BufferQueue。GPU 只执行绘制并 signal fence，不直接调用 BufferQueue。当前图会误导读者在 Perfetto 中把 present/queueBuffer 成本归到 GPU，而不是 `vkQueuePresentKHR` 主机调用和 BufferQueue/SF 等待关系。",
+          "suggestion": "把图改成 App/driver 在 `vkQueuePresentKHR` 内调用 `QueueSignalReleaseImageANDROID()` 取得 fence，再 CPU 调用 `ANativeWindow::queueBuffer(buffer, fence)`；SurfaceFlinger/消费者等待 acquire fence 后 latch。Swappy 图也应改成 Swappy/driver 控制 present 时机，CPU 侧 queueBuffer，GPU 只负责 signal fence。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T21:35:11+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-08T13:48:26.092725+00:00",
+      "completed_reason": "Task 2B rework: fixed technical inaccuracies in review findings"
     }
   ]
 }

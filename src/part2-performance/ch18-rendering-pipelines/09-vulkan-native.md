@@ -15,8 +15,8 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
@@ -42,7 +42,7 @@ repaired_by: openclaw-task2b
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task6_state: "reviewed"
 task9_state: "reviewed"
 last_task6_at: "2026-05-08T21:24:13+08:00"
@@ -262,7 +262,7 @@ sequenceDiagram
     GPU->>GPU: Signal S_RenderDone
     
     Note over GPU: Present Handling
-    GPU->>SC: queueBuffer() (Driver Internal)
+    App->>SC: queueBuffer() (libvulkan CPU 端调用)
     SC->>SF: Transaction(Buffer)
 ```
 
@@ -368,7 +368,7 @@ sequenceDiagram
     
     Note over Swappy: 等待目标 VSync 前 x ms
     Swappy->>GPU: Inject Fence Wait
-    GPU->>SF: queueBuffer (精准时机)
+    App->>SF: queueBuffer (libvulkan/Swappy CPU 端调用，精准时机由 Frame Pacing 控制)
 ```
 
 ### 关键 API
