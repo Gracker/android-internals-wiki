@@ -1741,3 +1741,9 @@
 - **位置**：L257-L258（2.6 SurfaceFlinger / 2.7 Hardware Layer 链接）
 - **问题**：`06-surfaceflinger.md`、`07-hardware-layer.md` 按当前章节目录 `src/part2-performance/ch18-rendering-pipelines/` 解析不存在；实际文件在 `src/part1-fundamentals/ch02-rendering/` 下。
 - **建议**：改成跨目录相对路径 `../../part1-fundamentals/ch02-rendering/06-surfaceflinger.md` 与 `../../part1-fundamentals/ch02-rendering/07-hardware-layer.md`，或改为 Obsidian wiki 链接以避免相对路径失效。
+
+## [Task9 Deep Review] 1.6 Android 版本演进中的架构变化 — 2026-05-09
+- **类型**：交叉引用/术语准确性
+- **位置**：L206-L210 GSI 用途
+- **问题**：正文写 “CTS-V（Compatibility Test Suite for Vendors）验证”。官方 GSI 文档的口径是 “VTS and CTS-on-GSI tests”：Vendor Test Suite (VTS) 与 Compatibility Test Suite (CTS)，未使用 CTS-V 这个名称。
+- **建议**：改成 “VTS 与 CTS-on-GSI 验证”；如果要解释认证路径，补 `source.android.com/docs/setup/create/gsi` 中 “GSIs are used for running VTS and CTS-on-GSI tests” 的来源。

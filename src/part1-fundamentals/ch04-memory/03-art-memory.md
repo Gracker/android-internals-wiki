@@ -1,7 +1,7 @@
 ---
-task9_reviewed_date: "2026-05-08"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-08T12:39:39+08:00"
+task9_reviewed_date: "2026-05-09"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-09T02:30:12+08:00"
 title: "ART 虚拟机内存管理"
 chapter: "4.3"
 section: "4.3"
@@ -34,9 +34,9 @@ related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
 last_task2b_at: "2026-05-08T11:40:00+08:00"
 p1: 2
 p2: 3
-task9_review_notes: "2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。"
-last_task9_review_log: logs/deep-review/2026-05-08-12-deep-review.md
-task9_result: needs-rework
+task9_review_notes: "2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。"
+last_task9_review_log: "logs/deep-review/2026-05-09-02-deep-review.md"
+task9_result: "needs-rework"
 status: "ready-for-review"
 reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
@@ -44,11 +44,11 @@ last_task6_at: "2026-05-09T02:08:33+08:00"
 last_task6_review_log: "logs/review/2026-05-09-02-review.md"
 task6_state: "reviewed"
 task6_result: "pass-light-edit"
-task9_state: "pending"
-task2b_state: "fixed"
+task9_state: "reviewed"
+task2b_state: "pending"
 task2b_result: "fixed"
-pipeline_stage: "task9_pending"
-review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。"
+pipeline_stage: "task2b_pending"
+review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。"
 ---
 # ART 虚拟机内存管理
 
