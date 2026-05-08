@@ -5,7 +5,7 @@ section: "9.3"
 status: ready-for-review
 drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-04"
+last_verified: "2026-05-08"
 last_verified_against: "AOSP android-16.0.0_r1"
 reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
@@ -32,10 +32,10 @@ sources:
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
@@ -344,7 +344,7 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 **第六步：得出结论。** 综合判断是应用问题、系统问题、还是两者叠加。
 
-**重要提示（Android 14+）**：Android 14 起，ANR trace 中出现的非主进程堆栈通常具备明确的因果关联——系统只 dump 与 ANR 有关的进程（ANR 目标进程、对端 Binder 进程等），不再是全量 dump 所有进程。如果 trace 里出现了其他进程的堆栈，应该检查它们是否与主线程的 Binder 调用存在对端关系，而不是直接忽略。
+**重要提示（Android 14+）**：ANR trace 中出现的非主进程堆栈来源由 `ProcessErrorStateRecord.appNotResponding()` 中的 `firstPids` / `lastPids` / `nativePids` 三组列表决定。`firstPids` 包含 ANR 目标进程、parent 进程、system_server、persistent 进程、top-app IME 以及按 CPU 占用排序的热点进程；`lastPids` 包含被收集了 Binder 对端 pid 的进程；`nativePids` 是 native daemon 列表。因此 trace 中出现其他进程的堆栈，不一定是 Binder 对端——可能是 parent、system_server、IME、CPU 热点进程或 native daemon。排查时应先按分组判断来源，只有在线程栈、Binder 日志或调用链能闭合时，再判定为对端因果进程。
 
 线上排查不一定按六步机械执行。经验丰富的工程师通常会先快速扫描 traces.txt 主线程堆栈和 CPU 使用率（第三步和第四步），形成初步假设，再根据假设决定深入哪个方向。完整流程的价值是避免漏掉关键线索，尤其是线上偶现 ANR 这种“可能只有一次机会拿到日志”的场景。
 
