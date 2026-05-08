@@ -15213,6 +15213,39 @@
       "status": "completed",
       "completed_at": "2026-05-09T06:51:20+08:00",
       "completed_reason": "P0 FrameMetrics GPU_DURATION 版本拆为 API 24+/API 31+ 两段；P0 ApplicationExitInfo 修正为 Android 11/API 30+"
+    },
+    {
+      "section": "13.2",
+      "section_title": "Trace 抓取",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.2 Trace 抓取 — 2026-05-09 07:20 发现 P0 2、P1 1，需 Task2B 回炉修正",
+      "material_paths": [
+        "logs/deep-review/2026-05-09-07-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 错误",
+          "location": "L703 Java Heap Sampling",
+          "detail": "正文把传统 Java Heap Dump 举例为 `android.app.ActivityManager.getProcessMemoryDump`。Android public API 中没有这个方法；ActivityManager 只有 `getProcessMemoryInfo(int[])` 这类内存信息接口，heap dump 应改指向 `android.os.Debug.dumpHprofData()`、`adb shell am dumpheap`、Android Studio Profiler Dump Java Heap，或本节后文的 `android.java_hprof`。",
+          "suggestion": "删除 `ActivityManager.getProcessMemoryDump`；若要对比 Heap Dump 与 Sampling，写成 `Debug.dumpHprofData()` / `am dumpheap` / Android Studio Profiler / `android.java_hprof`。"
+        },
+        {
+          "type": "源码错误/TraceConfig 配置错误",
+          "location": "L679-L682 Native Heap Profiling 字段说明",
+          "detail": "正文写 `process_cmdline` 不设置则对所有进程生效。`HeapprofdConfig` proto 里全进程采样是单独的 `all: true` 字段；`process_cmdline` 为空不等于 profile all，可能导致没有目标进程被采样或行为与预期不符。",
+          "suggestion": "改为：`process_cmdline` 限定目标进程；如确实要 profile 所有符合条件的进程，必须显式写 `all: true`，并提示 userdebug 上可能导致 heapprofd 过载/系统风险。"
+        },
+        {
+          "type": "版本差异/权限边界",
+          "location": "L657-L682、L736 Heap Profiling / CPU Callstack Sampling",
+          "detail": "Native Heap Profiler 官方文档要求：debug Android build 可 profile 大多数 App/系统服务；user build 只能 profile manifest 标记为 `profileable` 或 `debuggable` 的 App。CPU Profiling 文档也写明 profileable/debuggable 二选一。正文 heapprofd 段完全缺少 user/userdebug/profileable 边界，CPU 段只写 debuggable，遗漏 profileable。",
+          "suggestion": "在 heapprofd 与 linux.perf 两段都补齐运行条件：userdebug/eng 可覆盖更多目标；量产 user build 只能对 profileable 或 debuggable App 生效；非符合条件目标会得到空 profile 或采样失败。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T07:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
