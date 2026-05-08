@@ -237,6 +237,33 @@ Fragment 切换比 Activity 切换轻量，因为都在同一个进程和同一�
 - 预加载下一页 Fragment 的 View（`setMaxLifecycle` 配合 ViewPager2 的 `setOffscreenPageLimit`）
 
 ### 2.3 页面切换动画在 Perfetto 中的表现
+<!-- AIW-源码调研-2026-05-08: FragmentTransaction commit 源码链路 -->
+
+**FragmentTransaction.commit() 源码链路深度分析**：
+
+关键发现：FragmentTransaction 的 `commit()` 并非立即执行，而是通过 `BackStackRecord.mTrack()` 封存为 `OpGenerator` 投入 `mPendingActions` 队列，等待主线程 Looper 下一轮消息处理才真正执行。
+
+**源码流程**：
+1. `commitInternal()` → 将 `BackStackRecord` 加入 `mPendingActions` 队列
+2. `scheduleCommit()` → 通过 `FragmentHostCallback.mHandler` 在主线程安排异步执行
+3. `execPendingActions()` → 由 `FragmentActivity.onResume()` 触发，处理所有挂起的事务
+4. `moveToState()` → 执行 fragment 状态转换，创建/销毁 View
+
+**时序关键点**：
+- `commit()` → `enqueuePendingAction()` → `scheduleCommit()` → `mHostHandler.execPendingActions()` → `moveToState()` → 真正的状态推进
+- `execPendingActions()` 在 Activity 生命周期中早于 Choreographer 帧回调
+- Fragment 状态推进与 View 树布局在不同消息周期，不会立即响应
+
+**性能影响**：
+- `commit()` 延迟设计确保 UI 线程有序执行，避免竞争
+- `mPendingActions` 堆积过多可能导致首帧延迟
+- 无 Choreographer 绑定，fragment 操作不感知 VSync 周期
+
+**源码依据**：
+- `frameworks/base/core/java/android/app/FragmentManager.java:1913-1935` - enqueuePendingAction
+- `frameworks/base/core/java/android/app/FragmentManager.java:2060-2078` - execPendingActions  
+- `frameworks/base/core/java/android/app/FragmentManager.java:1624-1627` - moveToState
+
 
 [图：Activity 切换动画期间两个进程的 Perfetto 时序，标注源 Activity 退出动画和目标 Activity 进入动画]
 

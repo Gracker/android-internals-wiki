@@ -328,6 +328,77 @@ Play Console 的 App Bundle Explorer 也提供了自动化的边界检查。上�
 
 **第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果 App 依赖的第三方 SDK 还没有适配 16KB，需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新处理 ELF/ZIP 边界（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
 
+**第三方 SDK 的 `.so` 文件**：这是最常见的阻塞点。如果 App 依赖的第三方 SDK 还没有适配 16KB，需要联系 SDK 提供方获取更新版本。在此期间，可以用 NDK r28+ 的 `llvm-objcopy` 工具手动重新处理 ELF/ZIP 边界（但这不能修复代码中的硬编码 PAGE_SIZE 问题）。
+
+### 三方库破坏性影响清单（源码级核实）
+
+16KB Page Size 的破坏性集中在**静态链接 native 库**层面，而非 Java/Kotlin 层。以下是经过源码或 Issue 溯源的受影响清单：
+
+#### NDK r27 libc.a：WriteProtected hardcoded PAGE_SIZE
+
+这是影响最广的已知 crash 根因。AOSP commit `2713655`（2023-08-11）修复了 `bionic/libc/private/WriteProtected.h` 中的两处硬编码：
+
+```cpp
+// 修复前：padding[PAGE_SIZE] 在 4KB 硬编码，16KB 设备上 mprotect 边界错误
+char padding[PAGE_SIZE];                      // PAGE_SIZE = 4096 always
+mprotect(addr, PAGE_SIZE, prot);             // EINVAL on 16KB device
+
+// 修复后：padding[MAX_PAGE_SIZE] 和 mprotect(addr, MAX_PAGE_SIZE, prot)
+char padding[MAX_PAGE_SIZE];                  // MAX(4096, actual_page_size) = 16384
+mprotect(addr, MAX_PAGE_SIZE, prot);         // works on both 4KB and 16KB
+```
+
+`WriteProtected<T>` 是 Bionic 用来对齐并写保护静态对象的模板联合类。静态链接 NDK r27 `libc.a` 的任何 `.so` 在 16KB 设备上启动时都会触发：`WriteProtected mprotect 1 failed: Invalid argument`。
+
+受影响组件：
+- **NDK r27 `libc.a` 静态归档**：所有通过 ndk-build 静态链接 `libc.a` 的 native 库（Android NDK r27）
+- **NDK r27 预编译 `lldb-server`**：同属 NDK r27 预编译包，包含相同 bug
+
+来源：[GitHub android/ndk#2026](https://github.com/android/ndk/issues/2026)（2024-06-02）；AOSP commit [2713655](https://android-review.googlesource.com/c/platform/bionic/+/2713655)。**NDK r28+ 已包含修复。**
+
+#### React Native prefab 模式：CMake linker flags 被忽略
+
+React Native 0.75.x 的 prefab native 模块（`react-android`）在 CMake 构建时**完全忽略** `-Wl,-z,max-page-size=16384` linker flags，导致生成的 `.so` 仍然是 4KB 对齐，无法通过 Google Play pre-launch validation。
+
+```gradle
+// React Native 0.75.x build.gradle —— 这段配置在 prefab 模式下被忽略
+arguments "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
+          "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
+          "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384"
+```
+
+根因：`ReactAndroid/cmake-utils/default-app-setup` 中的 CMake 配置不向 prefab 工具链传递 `max-page-size` 参数。**修复方案**：升级 NDK 28+；App 层面无法通过 gradle 配置绕过。
+
+来源：[GitHub facebook/react-native#54073](https://github.com/facebook/react-native/issues/54073)。
+
+#### Hook 类库（xHook / bhook / SandHook）：兼容性良好
+
+主流 Hook 库**不依赖 `WriteProtected`**，因此不受上述 bug 影响：
+
+- **ShadowHook**（ByteDance）的 Gap Trampoline 机制利用 PT_LOAD 段末尾未使用空间插入 hook stub，不涉及页对齐的 `mprotect` 边界问题
+- **xHook / bhook** 的 PLT/GOT hook 路径同样不涉及 `WriteProtected`，兼容性不受页大小影响
+
+#### APM SDK（KOOM / Matrix）：兼容性分层
+
+- **KOOM**：fork dump 路径（`koom-fast-dump.so`）使用 `fork()` + `WaitForVmToSuspend()`，native 内存操作走标准系统调用，不依赖 `WriteProtected`，在 16KB 设备上正常工作
+- **Matrix（Tencent）**：主要兼容性风险在于 Android 15 对 `/proc/self/maps` 输出格式的微调（16KB 设备上 Size 列以 16KB 为单位显示），而非 `WriteProtected` 本身；Matrix 的正则解析若硬编码了 KB 单位（如 `\d+ +K`），可能在 16KB 设备上将 `16384`（非 K 后缀）解析失败
+
+#### 游戏引擎（Unity IL2CPP / Unreal NDK）
+
+需要确认是否静态链接了 NDK r27 `libc.a`。官方未公开明确的兼容性声明，建议通过 Play Console pre-launch report 验证或直接联系引擎支持。理论上，重新编译使 `.so` 满足 16KB 边界即可解决。
+
+| 类别 | 典型库/组件 | 受影响程度 | 根因 |
+|------|------------|----------|------|
+| NDK 静态库 | `libc.a` (r27) | **严重（启动 crash）** | WriteProtected hardcoded 4KB |
+| 预编译调试工具 | `lldb-server` (r27) | **严重（无法调试）** | 同上 |
+| React Native | prefab native 模块 | **高（Play 认证失败）** | prefab 忽略 max-page-size flag |
+| 游戏引擎 | Unity IL2CPP / Unreal NDK | **中（需验证）** | 依赖 NDK 版本和静态链接方式 |
+| Hook 框架 | xHook / bhook / SandHook | **低（兼容）** | 不依赖 WriteProtected |
+| APM SDK | KOOM | **低（兼容）** | fork/dump 路径无 WriteProtected |
+| APM SDK | Matrix | **低（/proc/maps 解析风险）** | 解析格式依赖，非页对齐问题 |
+
+
+
 **构建缓存问题**：升级 AGP/NDK 后，记得 clean build。Gradle 的增量编译缓存可能保留旧的 4KB 边界产物。
 
 ## 在 Perfetto 中的表现
