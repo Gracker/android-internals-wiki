@@ -39,22 +39,22 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
 task2b_state: fixed
 last_task2b_at: "2026-05-09T06:51:32+08:00"
 task9_review_notes: "2026-05-09 Task9 06:20：needs-rework。P0 2：FrameMetrics GPU_DURATION 被并入 Android 7+；ApplicationExitInfo 被写成 Android 10+，实际 API 30/Android 11+。P2 1：ARM64 cache flush 完整序列已有 suggestions 既有项。→ 已于 2026-05-09 Task2B 修复：GPU_DURATION 拆为 API 24+/API 31+ 两段；ApplicationExitInfo 修正为 Android 11/API 30+。"
-last_task6_at: "2026-05-09T04:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-09-04-review.md"
+last_task6_at: "2026-05-09T07:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-09-07-review.md"
 review_notes: "2026-05-09 Task6 03:07：Task2B 修复后写作复审；轻修 20 处（标题引导语、形容词冒号起手式、半角标点、限制变严/分解类翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-05-09
-task6_review_notes: "2026-05-09 Task6 04:05：Task2B 修复后写作复审；轻修验证标注与重复表头，L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-09"
+task6_review_notes: "2026-05-09 Task6 07:12：Task2B 修复后写作复审；轻修 17 处（结构性元叙述、形容词冒号起手式、翻译腔动词、章节收束段），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
@@ -94,11 +94,11 @@ last_task9_review_log: "logs/deep-review/2026-05-09-06-deep-review.md"
 - 为什么有些工具性能开销很低，有些却会导致系统整体变慢？
 
 这些问题的答案不在功能列表里，而在实现机制中。
-这一章不教读者自己编写 Hook，但会详细介绍常见的实现路线及其工程代价。理解这些机制后，再看 `Matrix`、`KOOM`、`btrace`、`Booster` 等工具时，就能基于技术原理而不是表面功能来做决策。
+读者不需要自己编写 Hook，也要看懂常见实现路线及其工程代价。理解这些机制后，再看 `Matrix`、`KOOM`、`btrace`、`Booster` 等工具时，就能基于技术原理而不是表面功能来做决策。
 
 ## 五条常见路线的边界
 
-性能工具常用的底层手段很多，常见路线可以分成五条：
+性能工具常用的底层手段很多，常见路线有五条：
 
 1. 系统回调 / 官方接口
 2. 字节码插桩
@@ -292,7 +292,7 @@ Hook 能力越强，通常维护成本越高。
 
 ## 什么情况下不该优先上 Hook
 
-下面几种情况，通常应该先用更轻的方案：
+遇到这些情况，通常先用更轻的方案：
 
 - 只需要帧级信号：优先 `JankStats` / `FrameMetrics`
 - 只需要启动时间：优先手动埋点 / Macrobenchmark / Android Vitals
@@ -309,7 +309,7 @@ Hook 的价值在于补上系统没直接暴露、业务又需要的那部分信
 
 #### Android 15 的 16KB Page Size 会直接改变 Hook 成败
 
-Native Hook 无论是改 GOT/PLT 还是改函数入口，收束到实现层时都绕不开 `mprotect()` 这类页权限修改。`mprotect()` 的硬约束是起始地址 `addr` 必须按系统页大小对齐；`len` 参数指定覆盖范围，内核会自动按页粒度向上取整，不需要调用方手动传入页大小的整数倍。4KB 时代很多老框架把页大小硬编码成 `4096`，只影响 `addr` 对齐计算；到了 Android 15 的 16KB 设备上，如果 `addr` 仍按 4KB 对齐计算，`mprotect()` 会返回 `EINVAL`，表现成 Hook 失败，重则直接把进程带崩。
+Native Hook 无论是改 GOT/PLT 还是改函数入口，实现时都绕不开 `mprotect()` 这类页权限修改。`mprotect()` 的硬约束是起始地址 `addr` 必须按系统页大小对齐；`len` 参数指定覆盖范围，内核会自动按页粒度向上取整，不需要调用方手动传入页大小的整数倍。4KB 时代很多老框架把页大小硬编码成 `4096`，只影响 `addr` 对齐计算；到了 Android 15 的 16KB 设备上，如果 `addr` 仍按 4KB 对齐计算，`mprotect()` 会返回 `EINVAL`，表现成 Hook 失败，重则直接把进程带崩。
 
 工程上至少要补三件事：
 
@@ -376,11 +376,11 @@ Inline Hook 修改的是已映射的代码页，不能只用一句“Bionic Link
 - SELinux 权限标签按内存来源区分：匿名可执行内存、JIT trampoline 更接近 `execmem`；文件映射代码页被改脏后再执行，会落到 `execmod` / text relocation 这类约束。AOSP sepolicy `private/app.te` 中仍有 `allow appdomain self:process execmem` 规则，但 OEM 可以改严或移除。
 - Bionic Linker 在处理 text relocation 等场景时遵循 RX→RW→RX 的转换，不保留同时可写可执行的页面。`bionic/linker/linker_phdr.cpp` 的加载流程体现了这种约束，但这只规范 Linker 自身行为，不影响用户态 `mmap`/`mprotect` 的内核级判定。
 
-因此 Inline Hook 的工程做法要拆成三个动作：短时间切到可写、写完后恢复可执行、刷新 icache。但具体是走两步 `mprotect`（RW→RX）还是直接 RWX mmap，取决于目标设备的 SELinux 策略和 Hook 库的实现选择。
+因此 Inline Hook 的工程实现通常包含三个动作：短时间切到可写、写完后恢复可执行、刷新 icache。但具体是走两步 `mprotect`（RW→RX）还是直接 RWX mmap，取决于目标设备的 SELinux 策略和 Hook 库的实现选择。
 
 ### Inline Hook 在 W^X 约束下的标准执行流程
 
-Inline Hook 的完整执行流程在现代 Android 上分为五个阶段：
+现代 Android 上的 Inline Hook 执行流程通常包含五个阶段：
 
 ```text
 1. 查询目标函数地址（从 /proc/self/maps 或 ELF 符号表）
@@ -390,7 +390,7 @@ Inline Hook 的完整执行流程在现代 Android 上分为五个阶段：
 5. 调用 __builtin___clear_cache() 刷新 icache
 ```
 
-**关键约束**：
+**现代 Android 上的 Inline Hook 约束**：
 - `mprotect(PROT_WRITE|PROT_EXEC)` 在部分设备/SELinux 策略下会被拒绝，应优先使用两步 RW→RX 模式；但某些 Hook 库（如 ShadowHook upstream）在匿名内存上直接使用 RWX mmap，依赖 `execmem` 权限可用
 - 不能跳过 icache flush（ARM64 icache 和 dcache 是非一致性的，CPU 可能继续取旧指令）
 - 每次 `mprotect()` 调用的起始地址必须按页对齐（`getpagesize()` 返回值，非 4096 硬编码）；`len` 覆盖范围由内核自动按页取整，不需要手动凑整
@@ -452,7 +452,7 @@ Compat Mode 触发条件在 `linker_phdr.cpp`：`kPageSize == 16384 && min_align
 
 ### Android Linker Namespace 机制的演进
 
-Android 从 7.0 (Nougat) 开始引入 Linker Namespace，核心目标是**隔离私有系统库、防止应用依赖非 NDK API**。Android 8.0 (Oreo) 的 Project Treble 进一步强化了这套隔离机制，使它成为系统安全架构的基础组件。
+Android 从 7.0 (Nougat) 开始引入 Linker Namespace，用来**隔离私有系统库、防止应用依赖非 NDK API**。Android 8.0 (Oreo) 的 Project Treble 进一步强化了这套隔离机制，使它成为系统安全架构的基础组件。
 
 **classloader-namespace 的分配流程**：
 
@@ -470,7 +470,7 @@ Zygote 进程
 
 Android 的 `dlopen` 内部实现会检查调用者的 `caller_addr`（调用者函数地址），Linker 根据该地址确定调用者所属的 soinfo，从而获知其 namespace。如果目标库路径不在 namespace 的允许列表中，加载失败并返回 NULL。
 
-关键源码位置：
+源码位置：
 - `bionic/linker/linker_soinfo.h` — soinfo 类定义，含 `primary_namespace_` 和 `secondary_namespaces_`
 - `bionic/linker/linker.cpp` — namespace 校验和 dlopen 实现
 - `bionic/linker/linker_soinfo.cpp` — soinfo 成员函数实现
@@ -505,7 +505,7 @@ ShadowHook 能够在用户 hook 一个**尚未加载**的库时，内部 hook �
 
 同时，ShadowHook 支持注册 `.init` / `.init_array` / `.fini` / `.fini_array` 的回调，用于在库加载完成后执行自定义逻辑，从而支持符号查询、namespace 绕过等操作。
 
-ShadowHook README 明确说明：
+ShadowHook README 给出这段说明：
 > Supports bypassing linker namespace restrictions to query symbol addresses in .dynsym and .symtab of all ELFs in the process.
 
 ### ByteDance Hook 库生态：ByteHook 与 ShadowHook 对比
@@ -589,7 +589,7 @@ ShadowHook 在 `.init_array` 段缓存 `dlopen` / `dlsym` 的函数地址（主�
 
 ### ByteHook 与 ShadowHook 的 CMakeLists.txt 16KB 对齐配置
 
-根据源码级调研（GitHub 一手源码），主流 Hook 库已在构建层面显式支持 16KB 对齐：
+源码级调研显示，主流 Hook 库已在构建层面显式支持 16KB 对齐：
 
 **ByteHook v1.1.1** (`bytehook/src/main/cpp/CMakeLists.txt`)：
 ```cmake
@@ -636,7 +636,7 @@ Inline Hook 修改被保护页面时：
 3. `mprotect(addr, size, PROT_READ|PROT_EXEC)`
 4. `__builtin___clear_cache()` → ARM64: `dc cvau → dsb → ic ivau → isb`
 
-**关键约束**：16KB 页面下 `mprotect` 的起始地址 `addr` 必须按 16KB 边界对齐（通过 `addr & ~(page_size - 1)` 计算）；`size` 参数指定覆盖范围，内核自动按页粒度向上取整，不需要调用方手动凑成页大小整数倍。如果 `addr` 没有按实际页大小对齐，`mprotect()` 会返回 `EINVAL`。
+**16KB 页面下的 `mprotect` 约束**：`addr` 必须按 16KB 边界对齐（通过 `addr & ~(page_size - 1)` 计算）；`size` 参数指定覆盖范围，内核自动按页粒度向上取整，不需要调用方手动凑成页大小整数倍。如果 `addr` 没有按实际页大小对齐，`mprotect()` 会返回 `EINVAL`。
 
 
 ## 补充：Bionic Linker Namespace 隔离机制与 Hook 库绕过手段源码深度分析
@@ -789,19 +789,18 @@ uintptr_t load_bias = base - min_vaddr;
 | ShadowHook | Inline Hook | ✅ hook do_dlopen | ✅ | ✅ bypass namespace |
 | xHook | PLT Hook | ❌ 不支持 API 29+ | ❌ | ❌ |
 
-**关键差异**：ShadowHook 支持绕过 namespace 限制查询任意 ELF 的 `.dynsym` 和 `.symtab`，而 ByteHook 仅在 PLT 层面工作，不涉及 namespace 访问限制。
+**符号查找边界**：ShadowHook 支持绕过 namespace 限制查询任意 ELF 的 `.dynsym` 和 `.symtab`，而 ByteHook 仅在 PLT 层面工作，不涉及 namespace 访问限制。
 
 
-## 这一章在全书里的位置
+## 与全书主线的关系
 
-这一章不是孤立的底层技术补充，它和全书主线直接相连：
+Hook 基础设施和全书主线直接相连：
 
 - `14.5` 里提到的很多三方性能库，都依赖这里的实现路线
 - `14.12` 里的 APM 选型，如果不懂机制，选型就很容易只停留在功能表层
 - `15.5` 讲线上监控时，很多"客户端增强层"能力实际都建立在这里
 
-所以这章不教读者自己写 Hook，重点是让读者更成熟地判断：
-这个工具为什么能做到这些，它为什么会在这里出边界，它为什么不适合被随便拔高成"万能方案"。
+读完后需要能判断三件事：工具为什么能做到这些，边界会出在哪里，为什么不能被当成"万能方案"。
 
 ## 补充：ShadowHook 的 Trampoline 注入与 ARM32 Thumb 模式处理
 
@@ -809,7 +808,7 @@ uintptr_t load_bias = base - min_vaddr;
 
 ### ShadowHook 的 Trampoline 管理架构
 
-ShadowHook upstream 的核心实现文件分布在以下路径：
+ShadowHook upstream 的实现文件主要分布在这些路径：
 
 | 文件 | 职责 |
 |------|------|
