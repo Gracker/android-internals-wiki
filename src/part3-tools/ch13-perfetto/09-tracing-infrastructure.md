@@ -22,10 +22,11 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: pending
@@ -436,9 +437,9 @@ eBPF 是 tracepoint 的重要补充。传统的 tracepoint 是静态的——必
 - **uprobe**：动态附加到用户空间函数入口，无需修改应用代码
 - **tracepoint**：eBPF 程序也可以附加到现有的静态 tracepoint 上，获取结构化的参数数据
 
-Android 16 引入的 UprobeStats 就是基于 eBPF uprobe 机制的动态埋点工具，可以在不修改应用代码的情况下对任意用户态函数进行耗时统计，性能开销 < 1%。
+Android 16 引入的 UprobeStats 是基于 eBPF uprobe 机制的动态埋点工具，可以在不修改应用代码的情况下对用户态函数做耗时统计。实际开销与命中频率、BPF map 更新次数、ring buffer 写入和栈回溯深度强相关（详见 §14.10）；简单的 uprobe/uretprobe 单次开销常在微秒级，高频热点函数上需要评估对目标线程的尾部延迟影响。UprobeStats 适合低频采样或冷路径观测，不建议对帧循环内的高频函数做全量统计。
 
-[已验证: 来源见 intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md]
+[来源: intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md；“任意函数 <1%” 缺一手基准数据，已收窄为条件化描述]
 
 在 §14.10 中我们会深入讨论 eBPF 在 Android 性能分析中的具体应用。
 

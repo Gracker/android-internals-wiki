@@ -28,14 +28,15 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-30"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
+last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 last_task2b_at: "2026-04-30T17:46:37.750688"
 task9_result: needs-rework
 last_task9_at: "2026-04-30T18:33:37+08:00"
@@ -377,7 +378,7 @@ class PowerBenchmark {
 
 ## PowerMonitor API（API 35 应用层接口）
 
-Macrobenchmark `PowerMetric` 在 API 34+ 就能用，但 Android 35 (API 35) 进一步向应用层开放了直接查询功耗数据的接口：`android.os.PowerMonitor` + `SystemHealthManager` 组合。
+Macrobenchmark `PowerMetric` 是 AndroidX Benchmark 1.2.0+ 的库能力，平台下限 API 29（`@RequiresApi(29)`），高精度 rail 采集依赖设备是否实现 Power Stats HAL / ODPM（Pixel 6+ 确认支持，其他设备需用 `deviceSupportsHighPrecisionTracking()` 判断）。Android 35 (API 35) 进一步向应用层开放了直接查询功耗数据的接口：`android.os.PowerMonitor` + `SystemHealthManager` 组合。
 
 核心三类：
 
@@ -420,22 +421,27 @@ systemHealthManager.getPowerMonitorReadings(
 
 注意返回值是**累计值**而非瞬时功率，要计算瞬时功率需要取两次快照的差值。
 
-**3. 与 Perfetto 的数据通路关系**
+**3. 功耗数据的两条证据链**
+
+功耗分析涉及两条独立的采集路径，口径和用途不同：
 
 ```
-应用层：PowerMonitor API (API 35)
-    ↓ SystemHealthManager
-    ├── IPowerStats HAL
-    │       ↓
-    │   ├── Perfetto (android.power_rails, collect_power_rails: true)
-    │   │       → android_power_rails_counters 表（PerfettoSQL）
-    │   │
-    │   ├── Studio Power Profiler
-    │   │
-    │   └── batterystats / bugreport
+路径 A：UID 维度历史统计（batterystats / bugreport）
+    BatteryStatsService → BatteryStatsImpl
+        → dumpsys batterystats → bugreport
+    口径：按 UID/Process 汇总的 CPU 时间、网络流量、Wakelock、Sensor 等
+    用途：离线回顾、趋势对比、定位高耗电 App
+
+路径 B：Rail 级实时读数（PowerMonitor / Perfetto / Power Profiler）
+    PowerStatsService (Android 15+) → IPowerStats HAL
+        ├── PowerMonitor API (API 35) → 应用层异步查询
+        ├── Perfetto (android.power_rails) → android_power_rails_counters 表
+        └── Studio Power Profiler → IDE 实时可视化
+    口径：硬件电源轨的瞬时/累计能耗读数（μJ）
+    用途：精确关联代码行为与功耗、CI 回归检测
 ```
 
-底层都走 `IPowerStats HAL`，差异只是暴露给谁、以什么格式。Perfetto 录制的是系统级 Trace，应用层 API 是单次异步查询。
+两条路径在 bugreport 中可以汇合（batterystats 段落内也会引用 rail 数据做交叉校验），但采集机制和统计口径不同，分析时不要混用。
 
 Android 15 引入了 `PowerStatsService`（位于 `frameworks/base/services/core/java/com/android/server/power/stats/`），取代了旧版 `BatteryStatsImpl` 中耦合的功耗统计逻辑。`PowerStatsService` 通过 `PowerStatsProcessor` 接口为 CPU、GPU、Modem 等组件分别建立能耗模型，与 `SystemHealthManager` 对接后向应用层暴露标准查询接口。这套架构使得功耗统计从单一巨型类逐步解耦为可独立迭代的模块。
 
@@ -528,7 +534,7 @@ PowerMonitor 再次采样 → 验证效果 → 动态调整策略
 
 **两个关键约束**：
 
-1. **PowerMonitor 数据不自动流入 ADPF 系统服务**。两者之间没有自动数据管道，闭环需要 App 主动将 PowerMonitor 采样数据用于 hint 策略决策。
+1. **PowerMonitor 数据不自动流入 ADPF 系统服务**。两者之间没有自动数据管道，这条数据通路需要 App 主动将 PowerMonitor 采样数据用于 hint 策略决策。
 
 2. **`setPreferPowerEfficiency` 是 hint 而非 guarantee**。系统仍会综合热状态、目标工作时长、实际负载决定最终调度。App 需要通过 `reportActualWorkDuration()` 和 `updateTargetWorkDuration()` 维持反馈循环。
 
