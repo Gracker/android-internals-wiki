@@ -7570,8 +7570,10 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-29T03:25:00+08:00",
-      "status": "pending",
-      "source_file": "src/part1-fundamentals/ch03-input/05-input-interception-security.md"
+      "status": "completed",
+      "source_file": "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
+      "completed_at": "2026-05-09T04:42:54+08:00",
+      "completed_reason": "P1 InputMonitor/spy window/pilferPointers/MONITOR_INPUT权限已补充；P1 accessibilityDataSensitive版本表已补入"
     },
     {
       "section": "4.2",
@@ -8351,7 +8353,7 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T05:20:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "source_file": "2026-04-29-10-8.3-external-review.md",
       "material_paths": [
         "logs/deep-review/2026-04-30-05-deep-review.md",
@@ -8359,7 +8361,9 @@
       ],
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-04-30T05:20:00+08:00",
-      "external_review_source": "2026-04-29-10-8.3-external-review.md"
+      "external_review_source": "2026-04-29-10-8.3-external-review.md",
+      "completed_at": "2026-05-09T04:42:54+08:00",
+      "completed_reason": "P1 16KB COW已限定为共享页/Zygote继承页场景(非所有写入)；P1 Startup Profile DEX layout已改为构建工具链归因(AGP/R8/D8)并补版本矩阵"
     },
     {
       "section": "8.5",
