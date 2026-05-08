@@ -1230,5 +1230,21 @@
     "last_task2b_at": "2026-05-08T19:44:22",
     "last_task6_at": "2026-05-08T20:05:00+08:00",
     "last_task6_review_log": "logs/review/2026-05-08-20-review.md"
-  }
+  },
+  "task2b_history": [
+    {
+      "date": "2026-05-08T20:45:56+08:00",
+      "sections": [
+        "2.7",
+        "18.9",
+        "19.0"
+      ],
+      "action": "rework-fix",
+      "details": [
+        "2.7: promotedToLayer() 版本边界修正 (P1, task9)",
+        "18.9: Dynamic Rendering feature bit 边界修正 (P1, task9)",
+        "19.0: tracing-perfetto 版本线拆分修正 (P1, task9)"
+      ]
+    }
+  ]
 }

@@ -22,8 +22,8 @@ sources:
     path: https://github.com/Tencent/matrix
   - type: github
     path: https://github.com/KwaiAppTeam/KOOM
-task2b_result: fixed
-task6_state: reviewed
+task2b_result: "fixed"
+task6_state: "revisiting"
 last_task2b_at: "2026-05-06T05:49:37+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
@@ -33,11 +33,11 @@ reviewed_date: "2026-05-06"
 task6_reviewed_date: "2026-05-06"
 last_task6_at: "2026-05-06T06:08:00+08:00"
 last_task6_review_log: "logs/review/2026-05-06-06-review.md"
-status: ready-for-review
-pipeline_stage: task2b_pending
-task9_state: reviewed
+status: "ready-for-review"
+pipeline_stage: "task6_pending"
+task9_state: "pending"
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: "fixed"
 task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T06:23:00+08:00"
@@ -80,7 +80,7 @@ task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Trac
 |------|-------------------|----------|------|
 | JankStats | androidx.metrics | 帧级卡顿感知 | 主流 |
 | FrameMetrics | android.view.FrameMetrics / Window.OnFrameMetricsAvailableListener (API 24+) | 帧耗时阶段细分（AndroidX 聚合器：FrameMetricsAggregator） | 主流 |
-| Tracing SDK | androidx.tracing | 进程内 trace（1.3.0 稳定版；tracing-perfetto 2.0 alpha 支持 Perfetto 格式输出） | 主流 |
+| Tracing SDK | androidx.tracing | 进程内 trace（`androidx.tracing:tracing` 1.3.0 稳定 / 2.0.0-alpha06；`androidx.tracing:tracing-perfetto`(+binary) 1.0.1 支持 Perfetto 格式输出） | 主流 |
 | Microbenchmark | androidx.benchmark | 代码段 CPU 性能测量 | 主流 |
 | Macrobenchmark | androidx.benchmark | 端到端启动、滑动、复杂 UI 测量 | 主流 |
 | Baseline Profiles | Android Gradle Plugin / Jetpack | 编译优化 + 启动加速，和 Play Cloud Profiles / ART 编译策略一起影响首次启动 | 主流 |

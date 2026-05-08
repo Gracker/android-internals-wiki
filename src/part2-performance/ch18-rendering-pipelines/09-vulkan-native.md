@@ -1,7 +1,7 @@
 ---
 title: "Vulkan 原生渲染管线"
 chapter: "18.9"
-status: ready-for-review
+status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 section: "18.9"
 last_verified: "2026-05-04"
@@ -15,8 +15,8 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-task2b_state: "pending"
-task2b_result: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
@@ -42,9 +42,9 @@ repaired_by: openclaw-task2b
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
+task9_state: "pending"
 last_task6_at: "2026-05-05T15:17:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-15-review.md"
 review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。"
@@ -210,7 +210,7 @@ vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
 
 **观察点**：
 - Command Buffer 录制是纯 CPU 操作，不涉及 GPU
-- **Dynamic Rendering（Android 15+）**：Android 15 要求 Vulkan 1.3，Dynamic Rendering 成为核心特性。使用 `vkCmdBeginRendering` / `vkCmdEndRendering` 替代传统 `vkCmdBeginRenderPass` / `vkCmdEndRenderPass`，无需预先创建 `VkRenderPass` 和 `VkFramebuffer` 对象。上面代码示例保留传统 RenderPass 写法以保证向后兼容；面向 Android 15+ 的新项目可以直接采用 Dynamic Rendering，减少初始化复杂度。[已验证: Vulkan 1.3 spec + VP_ANDROID_15_minimums]
+- **Dynamic Rendering（Vulkan 1.3 core feature）**：Dynamic Rendering 是 Vulkan 1.3 核心特性，但应用仍需在设备创建时查询 `VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering` feature bit 确认支持；VP_ANDROID_15_minimums 与 VP_ANDROID_16_minimums 均未显式声明该 feature。使用 `vkCmdBeginRendering` / `vkCmdEndRendering` 替代传统 `vkCmdBeginRenderPass` / `vkCmdEndRenderPass`，无需预先创建 `VkRenderPass` 和 `VkFramebuffer` 对象。上面代码示例保留传统 RenderPass 写法以保证向后兼容；确认设备支持后可直接采用 Dynamic Rendering，减少初始化复杂度。[已验证: Vulkan 1.3 spec, Khronos VP_ANDROID_15_minimums.json, VP_ANDROID_16_minimums.json]
 - 多线程录制不等于共享同一个 command pool 并发录制；每个录制线程应使用自己的 `VkCommandPool` 和 command buffers
 - 同一个 `VkCommandBuffer` 在 begin / record / end / reset 过程中不能被多个线程同时修改
 - secondary command buffer 适合把 draw call 生成拆到 worker 线程；primary command buffer 负责执行它们并进入提交阶段
