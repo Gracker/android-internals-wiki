@@ -22,14 +22,16 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 task6_state: reviewed
 task9_state: "reviewed"
-task2b_state: "pending"
+task2b_state: "fixed"
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 task6_result: pass-light-edit
 task9_result: "needs-rework"
 task2b_result: fixed
+task6_state: revisiting
+task9_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 last_task6_at: "2026-05-08T18:20:00+08:00"
@@ -218,7 +220,7 @@ traced_probes 采集 ftrace 数据的核心步骤：
 
 `TraceConfig` 中几个容易忽略的 ftrace 相关配置：
 
-- `ftrace_config.drain_period_ms`：多久从 ring buffer 读一次数据。默认 250ms。设太大会导致 buffer 溢出丢数据，设太小会增加 CPU 唤醒频率。注意这是 `FtraceConfig` 消息内的字段名，不是顶层的 `TraceConfig` 字段
+- `ftrace_config.drain_period_ms`：多久从 ring buffer 读一次数据。AOSP `ftrace_controller.cc` 中 `kDefaultTickPeriodMs = 100`，即未显式配置时 historical default 为 100ms；若所有实例使用 buffer watermark polling，`GetTickPeriodMs()` 返回 `kPollBackingTickPeriodMs = 1000`。proto 注释建议除本地精调外保持 unset。设太大会导致 buffer 溢出丢数据，设太小会增加 CPU 唤醒频率。注意这是 `FtraceConfig` 消息内的字段名，不是顶层的 `TraceConfig` 字段
 - `ftrace_config.buffer_size_kb`：per-CPU ring buffer 大小。设备 8 核时设 32KB 意味着总共 256KB 的内核缓冲区，高负载场景下很容易溢出。32KB 是一个容易溢出的反例值，不是默认值；Perfetto v43+ 多数配置不显式设置该字段，默认值 / `buffer_size_lower_bound` 通常远大于 32KB
 - `ftrace_config.ftrace_events`：要启用的 tracepoint 列表。这是 `FtraceConfig` 消息内的字段，通过 `TraceConfig.ftrace_config` 设置
 
