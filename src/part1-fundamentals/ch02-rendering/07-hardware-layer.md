@@ -8,8 +8,8 @@ applicable_versions: "Android 3.0 (API 11) - Android 17 (API 37)"
 last_verified: "2026-04-28"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
-reviewed_date: "2026-05-07"
-review_notes: "2026-05-07 16:08 task6 review (Task2B 修复后复审): pass-light-edit。轻修 4 处（16KB 分配粒度/数据描述/Compose offscreen 用词）；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。"
+reviewed_date: "2026-05-08"
+review_notes: "2026-05-07 16:08 task6 review (Task2B 修复后复审): pass-light-edit。轻修 4 处（16KB 分配粒度/数据描述/Compose offscreen 用词）；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。评分: 结构5/5·措辞5/5·一致性5/5·验证4/5·元数据5/5。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 reviewed_by: openclaw-task6
 polish_count: 2
 polish_date: "2026-04-28"
@@ -27,9 +27,9 @@ sources:
     path: "frameworks/base/graphics/java/android/graphics/RenderNode.java (setUseCompositingLayer/getUseCompositingLayer)"
 tags: [hardware-layer, LAYER_TYPE_HARDWARE, LAYER_TYPE_SOFTWARE, animation, RenderNode, compositing-layer, buildLayer, graphicsLayer, GPU-纹理缓存]
 related_chapters: ["2.4", "2.5", "2.6", "7.1", "7.5"]
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task6_result: pass-light-edit
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task9_result: needs-rework
 task2b_state: "fixed"
@@ -38,9 +38,9 @@ last_task2b_at: "2026-05-08T20:44:59+08:00"
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T16:29:05+08:00"
-last_task6_at: "2026-05-07T16:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-16-review.md"
-task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理 L1/L2 用词 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-08T21:24:13+08:00"
+last_task6_review_log: "logs/review/2026-05-08-21-review.md"
+task6_review_notes: "2026-05-07 Task6 16:08：Task2B 修复后写作复审；清理 L1/L2 用词 4 处，L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 5 处（开头读者指向、第一人称、操作原则句），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-07-16-deep-review.md"
 task9_review_notes: "2026-05-07 Task9 16:20：needs-rework。P1 1 / P2 3。Top: L355 版本演进把 promotedToLayer() 条件写成 Android 16 变更；AOSP 10/12/15 已存在相关条件。"
 ---
@@ -73,13 +73,13 @@ task9_review_notes: "2026-05-07 Task9 16:20：needs-rework。P1 1 / P2 3。Top: 
 
 ## 为什么要了解 Hardware Layer
 
-如果你在 Perfetto 中看到一帧的 RenderThread 出现了一段异常耗时的 `buildLayer` 调用，或者在主线程看到了不该出现的 `buildDrawingCache/SW`——那大概率就是 Hardware Layer（或 Software Layer）使用不当的信号。
+Perfetto 中一旦看到某一帧的 RenderThread 出现异常耗时的 `buildLayer` 调用，或者主线程出现不该有的 `buildDrawingCache/SW`，大概率就是 Hardware Layer（或 Software Layer）使用不当的信号。
 
-Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启了硬件加速吗？为什么还有一个叫 "Hardware Layer" 的东西？这二者的区别正是本节要讲清楚的第一件事。理解了 Hardware Layer 的本质，我们才能知道什么时候该用它、什么时候它在帮倒忙——在实际性能优化中，因为 LayerType 误用导致卡顿的案例并不少见。
+Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启了硬件加速吗？为什么还有一个叫 "Hardware Layer" 的东西？这二者的区别正是本节要讲清楚的第一件事。理解了 Hardware Layer 的本质，才能判断什么时候该用它、什么时候它会帮倒忙；在实际性能优化中，因为 LayerType 误用导致卡顿的案例并不少见。
 
 ## 硬件加速 ≠ Hardware Layer
 
-在讲 Hardware Layer 之前，我们需要把两个容易混淆的概念区分清楚。
+在讲 Hardware Layer 之前，需要把两个容易混淆的概念区分清楚。
 
 **硬件加速（Hardware Acceleration）** 指的是 Android 的渲染管线使用 GPU 来完成图形绘制，而不是用 CPU 调用 Skia 软件渲染。从 Android 4.0 开始，硬件加速默认开启。开启后，App 的渲染工作由主线程（记录 DisplayList）和 RenderThread（将 DisplayList 提交给 GPU 执行）协同完成。
 
@@ -89,7 +89,7 @@ Hardware Layer 这个名字容易让人困惑：Android 默认不是已经开启
 
 Hardware Layer 能减少的是 RenderThread 侧对这棵子树 DisplayList 的重复 replay 和光栅化成本——现代 HWUI 是 retained DisplayList/RenderNode 模型，translation、scale、rotation、alpha 等属性动画通常不会让 UI 线程每帧重录 DisplayList。它本身不是 measure/layout 的跳过开关。布局能不能跳过，取决于这一帧有没有新的 layout request、尺寸约束有没有变化；内容一旦 `invalidate()`，layer 缓存仍然会失效并重建。
 
-为了不把几个层级混在一起，我们把三个场景分开看：
+为了不把几个层级混在一起，可以把三个场景分开看：
 
 - **整个 window/app 开启硬件加速，View 保持默认 `LAYER_TYPE_NONE`**：这是现代 Android 的常态。MainThread 记录 DisplayList，RenderThread 把 RenderNode 提交给 GPU。
 - **单个 View 使用 `LAYER_TYPE_SOFTWARE`**：只有这个 View 子树改走软件缓存，先生成 Bitmap，再参与窗口合成；窗口其他部分仍然可以保持硬件加速。
@@ -238,7 +238,7 @@ Hardware Layer 不是万能的。它的收益来源于"缓存一次、复用多�
 
 这条规律背后的判断是：**缓存的价值取决于命中率。** 内容不变时缓存一直有效，收益巨大；内容频繁变化时缓存一直失效，维护缓存的开销反而成了负担。
 
-在性能优化的实际工作中，这条规律可以转化为一条操作原则：在考虑对某个 View 使用 Hardware Layer 之前，先问自己一个问题——动画期间这个 View 的内容会变吗？如果答案是不会，Hardware Layer 几乎一定能提升性能；如果答案是会，优先考虑把内容变化和动画分离到不同的 View 上，再评估是否使用 Hardware Layer。
+在性能优化的实际工作中，这条规律可以转化为一条操作原则：评估某个 View 是否该使用 Hardware Layer 时，先确认动画期间内容是否会变化。内容不变时，Hardware Layer 通常能提升性能；内容会变时，优先把内容变化和动画分离到不同的 View 上，再评估是否使用 Hardware Layer。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Hardware-Layer.md (高爷原创)]
 

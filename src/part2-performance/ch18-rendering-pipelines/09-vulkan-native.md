@@ -39,15 +39,15 @@ rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 P95 + 同章节链接修复）"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
 task9_state: "pending"
-last_task6_at: "2026-05-05T15:17:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-15-review.md"
-review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。"
+last_task6_at: "2026-05-08T21:24:13+08:00"
+last_task6_review_log: "logs/review/2026-05-08-21-review.md"
+review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 4 处（GLSE 拼写、VSync 同步用词、否定纠正式、口语化工具描述），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-05-15-deep-review.md"
 ---
 
@@ -90,7 +90,7 @@ Vulkan 要求 App 对一切负责：
 | **内存管理** | 驱动自动分配/释放 | App 显式分配、绑定、释放 |
 | **同步** | 隐式 barrier 由驱动插入 | App 显式指定 VkBarrier |
 | **命令提交** | 驱动缓存命令 | App 自己管理 Command Buffer |
-| **错误处理** | 驱动吞掉或用 GLSE | Validation Layer 严格检查 |
+| **错误处理** | 依赖 GLES 错误码或驱动日志 | Validation Layer 严格检查 |
 | **CPU 开销** | 高（驱动猜测多） | 低（显式路径短路） |
 | **多线程** | 有限（Context 绑定线程） | 完全支持（Command Buffer 并行录制） |
 
@@ -174,8 +174,8 @@ VkResult result = vkAcquireNextImageKHR(
 
 - `vkAcquireNextImageKHR` 内部调用 `ANativeWindow::dequeueBuffer` 拿到一个 buffer 和对应的 fence fd，随后将这个 fd 交给 GPU 驱动的 `AcquireImageANDROID` 钩子（`libvulkan` swapchain 内部实现，不是公开 API）。驱动负责在 buffer 可写时 signal App 传入的 `VkSemaphore` / `VkFence`。这个 fence fd 的来源是 BufferQueue 里上一个消费者释放此 buffer 时返回的 release fence——显示路径里通常来自 HWC 在 `presentDisplay` 后通过 `getReleaseFences()` 返回、再经 SF / BufferQueue 回传的 **release fence**（per-layer，回答"上一帧 buffer 什么时候能被 Producer 安全复用"）。
 - Android 上 swapchain image 数量由 driver 和 surface capability 协商，一般落在 2-3（double / triple buffering）。BufferQueue 的 `maxDequeueBufferCount` 和 `VkSwapchainCreateInfoKHR::minImageCount` 共同决定实际可用 image 数，没有哪一个参数单独定死。
-- App 通常选择 `VK_PRESENT_MODE_FIFO_KHR`（Vulkan 规范要求所有实现必须支持，对应 vsync 对齐）；Android 上 `MAILBOX` 和 `IMMEDIATE` 是否可用取决于设备驱动，部分设备会在驱动 / SurfaceFlinger / vendor policy 中把请求的 mode 降级为 FIFO。
-- **如果在 `vkAcquireNextImageKHR` 上看到长时间等待**，通常是前面某个 image 的 release fence 还没回来（BufferQueue 消费端没跟上）——和 GLES 路径上 `eglSwapBuffers` 长 slice 的成因等价：**不是 GPU 还在画**，而是内部等空闲 buffer。
+- App 通常选择 `VK_PRESENT_MODE_FIFO_KHR`（Vulkan 规范要求所有实现必须支持，对应 VSync 同步）；Android 上 `MAILBOX` 和 `IMMEDIATE` 是否可用取决于设备驱动，部分设备会在驱动 / SurfaceFlinger / vendor policy 中把请求的 mode 降级为 FIFO。
+- **如果在 `vkAcquireNextImageKHR` 上看到长时间等待**，通常是前面某个 image 的 release fence 还没回来（BufferQueue 消费端没跟上）——和 GLES 路径上 `eglSwapBuffers` 长 slice 的成因等价：内部在等空闲 buffer，并不是 GPU 绘制仍未完成。
 
 [已验证: AOSP `frameworks/native/vulkan/libvulkan/swapchain.cpp` `AcquireNextImageKHR` → `AcquireImageANDROID` 驱动钩子路径 + `frameworks/native/libs/gui/Surface.cpp` `dequeueBuffer`]
 
@@ -442,7 +442,7 @@ Perfetto 里的默认诊断入口应先看三类证据：
 
 ### 调试工具
 
-- **RenderDoc**：抓帧神器，查看具体 DrawCall 和资源。支持 Vulkan 的完整抓帧分析
+- **RenderDoc**：Vulkan 抓帧工具，用于查看具体 DrawCall 和资源。支持 Vulkan 的完整抓帧分析
 - **AGI（Android GPU Inspector）**：Google 官方图形调试工具（GAPID 的继承者），对 Vulkan 支持最好
 - **Validation Layers**：开发阶段必须开启。Vulkan 出错通常表现为崩溃、黑屏或 validation message，Validation Layer 是开发阶段最重要的诊断来源之一
 
