@@ -3321,7 +3321,9 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 14.2 already completed in earlier round (stale queue entry)"
     },
     {
       "section": "14.3",
@@ -3591,8 +3593,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T15:21:32.054234",
-      "status": "pending",
-      "source_file": "2026-04-25-15-15-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-25-15-15-external-review.md",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 19.15 Baseline Profiles already finalized with 混淆与初始化检查 section"
     },
     {
       "section": "15.1",
@@ -3746,8 +3750,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T15:21:32.054234",
-      "status": "pending",
-      "source_file": "2026-04-25-15-16-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-25-15-16-external-review.md",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 19.16 ProfilingManager already finalized, Heap Dump security already covered"
     },
     {
       "section": "16-sync-fence",
@@ -4193,8 +4199,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T15:21:32.054234",
-      "status": "pending",
-      "source_file": "2026-04-25-15-19-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-25-15-19-external-review.md",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 19.19 PerfDog already finalized with GPU SoC dependency warning"
     },
     {
       "section": "19.0",
@@ -4254,7 +4262,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T19:19:39.292657+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 19.1 APM Landscape already finalized (stale entry with generic 缺乏源码锚点)"
     },
     {
       "section": "19.13",
@@ -4299,7 +4309,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T19:19:39.292657+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — ProfilingManager already finalized, duplicate of section 16"
     },
     {
       "section": "19.17",
@@ -4407,9 +4419,11 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-26T10:41:09+08:00",
-      "status": "pending",
+      "status": "completed",
       "source_file": "logs/external-review/archive/2026-04-25-15-18.11-external-review.md",
-      "split_from": "queue[136]"
+      "split_from": "queue[136]",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 19.18 commercial APM already finalized with 隐私字段审计 and SDK初始化 guidance"
     },
     {
       "section": "19.21",
@@ -4538,7 +4552,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T19:19:39.292657+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 19.3 KOOM already finalized (stale entry with generic 缺乏源码锚点)"
     },
     {
       "section": "19.4",
@@ -4554,7 +4570,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T19:19:39.292657+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 19.4 BTrace already finalized (stale entry with generic 缺乏源码锚点)"
     },
     {
       "section": "19.5",
@@ -4570,7 +4588,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T19:19:39.292657+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Stale queue entry — 19.5 LeakCanary already finalized (stale entry with generic 缺乏源码锚点)"
     },
     {
       "section": "2.0",
@@ -7455,7 +7475,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T14:33:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:40:00+08:00",
+      "completed_reason": "Android 16/17 输入栈候选变化验证索引已补充(Predictive Back/MotionPredictor/InputFlinger Rust/DeliQueue/InputMonitor 逐条配验证锚点和子节分配)"
     },
     {
       "section": "1.17",
