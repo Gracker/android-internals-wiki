@@ -8,7 +8,7 @@ drafted_by: openclaw-task2a
 last_verified: '2026-05-08'
 last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android 官方文档
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: "pending"
 confidence: medium
 sources:
 - type: blog
@@ -43,16 +43,17 @@ related_chapters:
 - '7.2'
 - '8.2'
 - '9.1'
-task9_result: needs-rework
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-01'
-last_task9_at: '2026-05-01T03:20:00+08:00'
-task9_review_notes: '2026-05-01 task9 deep-review: needs-rework。P1 3，P2 0。Android 16 android.binder 字段/来源描述、Binder 风暴 SQL、16KB Binder 吞吐数据需回炉。'
+task9_result: "needs-rework"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: '2026-05-08'
+last_task9_at: "2026-05-08T19:29:15+08:00"
+task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P1 1，P2 1。oneway/Lazy Async 版本口径与反压语义需回炉；冷启动 Binder 次数和服务方法耗时需补可复核 trace 数据。"
+last_task9_review_log: "logs/deep-review/2026-05-08-19-deep-review.md"
 status: "ready-for-review"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
+task9_state: "reviewed"
+pipeline_stage: "task2b_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-08"
 task6_reviewed_date: "2026-05-08"
