@@ -2,7 +2,6 @@
 title: "Android 版本演进中的架构变化"
 chapter: "1.6"
 section: "1.6"
-status: "ready-for-review"
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
@@ -27,27 +26,25 @@ sources:
     path: "obsidian/Personal-Knowlodge/source/2026-03-06_wechat_后AOSP时代还能贡献代码吗.md"
   - type: official
     path: "https://developer.android.com/about/versions"
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
 task2b_fixed_at: "2026-05-08T23:46:33"
 tags: ['treble', 'mainline', 'apex', 'gki', 'art', 'dalvik', 'privacy', 'background-restrictions', '16k-page', 'compilation', 'profile-guided', 'background-execution']
 related_chapters: ["1.1", "1.4", "1.7", "2.9", "4.4", "4.6", "5.6", "8.7"]
-reviewed_date: "2026-04-30"
-reviewed_by: "openclaw-task6"
-review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)；2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
 task9_result: "needs-rework"
-pipeline_stage: "task6_pending"
-task6_state: "reviewed"
-task6_result: pass-light-edit
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "fixed"
 task9_reviewed_date: "2026-05-01"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-01T00:55:15+08:00"
+status: "ready-for-review"
+reviewed_date: "2026-05-09"
+reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-09T02:08:33+08:00"
+last_task6_review_log: "logs/review/2026-05-09-02-review.md"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+pipeline_stage: "task9_pending"
+review_notes: "task9 P90 rework: 寄存器描述修正(翻倍→精确), Dalvik/Zygote已验证正确；2026-04-14 task6 轻量精修：文风、间距、图示占位; 2026-04-19 task6 re-review (revisiting): L1 fix x2 (not-X-Y pattern)；2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。 | 2026-05-09 Task6 02:08：revisiting 写作复审；清理 frontmatter 重复键，修复 L1/L2 文风词与元叙述 8 处，无新增 L3/L4 回炉项，转 Task9 复审。"
 ---
 
 # Android 版本演进中的架构变化
@@ -81,13 +78,13 @@ last_task9_at: "2026-05-01T00:55:15+08:00"
 
 打开 Perfetto 抓一份 Trace，那些进程、线程、Binder 调用、渲染管线的形态并非一成不变。Android 从 2008 年的 1.0 到今天的 Android 16，每一次大版本的架构变更都在重塑这些行为。不了解这些变化，分析问题时容易犯经验主义的错误：用 Android 8 的经验去解释 Android 15 的 Trace，得出错误结论。
 
-Android 的版本演进围绕一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断"这个问题是系统层面的还是厂商层面的"。这在 OEM 和 App 开发者的日常工作中很关键。
+Android 的版本演进围绕一条清晰的主线：**模块化**。从 Project Treble 到 Project Mainline，从 GKI 到 APEX，Google 一直在把 Android 从一个"铁板一块"的操作系统拆解为可独立升级的模块。理解这条主线，不仅能帮你看懂系统架构的设计意图，还能帮你在实际工作中判断一个现象属于系统层还是厂商层。这会直接影响 OEM 和 App 开发者的日常判断。
 
-本节会梳理 Android 版本演进中那些对性能分析有直接影响的架构变化，而不是事无巨细地罗列每个版本的新功能。
+性能分析最需要关注的是那些会改变底层行为的架构变化，而不是每个版本的新功能清单。
 
 ## 关键版本的架构里程碑
 
-Android 的架构演进不是线性的——有些版本在底层做了根本性的重构（如 5.0 引入 ART、8.0 引入 Treble），而有些版本则在应用层和 API 层做了大量工作。我们聚焦于那些改变了系统底层行为的版本。
+Android 的架构演进不是线性的——有些版本在底层做了大规模重构（如 5.0 引入 ART、8.0 引入 Treble），而有些版本则在应用层和 API 层做了大量工作。这里聚焦那些改变系统底层行为的版本。
 
 ### Android 4.4 KitKat（API 19）：ART 初登场
 
@@ -111,7 +108,7 @@ Android 8.0（2017 年）引入了 **Project Treble**，这是 Android 架构演
 
 在 Treble 之前，每次升级 Android 版本，芯片厂商（高通、MTK、三星 LSI）都需要先更新他们底层驱动代码以适配新的 Framework API，然后设备厂商再基于芯片厂商的适配做整机集成。整个升级链动辄需要半年以上，这也是 Android 设备系统更新缓慢的根本原因。
 
-Treble 的解决方案简洁而彻底：在 Android Framework 和厂商实现（HAL）之间插入一层稳定的接口（HIDL（HAL Interface Definition Language）/AIDL（Android Interface Definition Language）），将系统分为 **System 分区**（Google 控制）和 **Vendor 分区**（芯片/设备厂商控制）。这样，Framework 可以独立于 Vendor 进行升级。
+Treble 的方案是在 Android Framework 和厂商实现（HAL）之间插入一层稳定的接口（HIDL（HAL Interface Definition Language）/AIDL（Android Interface Definition Language）），将系统分为 **System 分区**（Google 控制）和 **Vendor 分区**（芯片/设备厂商控制）。这样，Framework 可以独立于 Vendor 进行升级。
 
 [图：Project Treble 前后的架构对比]
 
@@ -172,7 +169,7 @@ Android 16（2025 年 6 月发布，代号 Baklava）延续了模块化和性能
 
 ## Project Treble → VINTF → GSI → GKI：模块化的完整链条
 
-上面我们按时间线梳理了各个里程碑。下面把这些变化串起来，看它们如何形成一条完整的模块化链条。
+这些里程碑落到系统边界上，形成的是一条模块化链条：Treble、VINTF、GSI、GKI 分别处理不同边界。
 
 这条链条的目标只有一个：**让 Android 的每一层都可以独立更新。**
 
@@ -206,7 +203,7 @@ VINTF（Vendor Interface）是 Treble 架构中定义 HAL 接口版本和兼容�
 
 HIDL / AIDL 解决的是跨进程接口版本问题，native 共享库的依赖边界还要靠 VNDK（Vendor Native Development Kit）和 linker namespace。VNDK 提供一组允许 vendor 进程在运行时依赖的稳定库，Framework 内部库则继续留在 system 一侧。这样，vendor 模块不会因为 framework 私有库的符号变化被一起打断。
 
-动态链接器会为 Framework 进程、vendor 进程、Same-Process HAL 准备不同的 namespace。比如 SP-HAL 只能看到 LL-NDK 和 VNDK-SP 指定的库，看不到 Framework 内部实现细节。Treble 真正建立起来的是两层隔离：一层是 HAL 接口版本由 VINTF 约束，另一层是 native ABI 可见范围由 VNDK + namespace 约束。
+动态链接器会为 Framework 进程、vendor 进程、Same-Process HAL 准备不同的 namespace。比如 SP-HAL 只能看到 LL-NDK 和 VNDK-SP 指定的库，看不到 Framework 内部实现细节。Treble 建立了两层隔离：一层是 HAL 接口版本由 VINTF 约束，另一层是 native ABI 可见范围由 VNDK + namespace 约束。
 
 为支持不同 vendor image 的组合，Android 还引入过 VNDK snapshot / VNDK APEX，把某个版本的稳定库集合固定下来，供 vendor 构建和 GSI 运行时复用。Android 15 开始官方逐步淡出 VNDK 机制，但在 Treble 建立期，它承担的是"冻结 vendor 可见 ABI"这件事。
 
@@ -232,7 +229,7 @@ Android 的运行时经历了从 Dalvik 到 ART 的迁移，但这个故事比"�
 
 早期的 Android 设备内存非常有限（200MB RAM 很常见）。Dalvik 运行时采用 **JIT（Just-In-Time）编译**策略：应用运行时，Dalvik 会跟踪频繁执行的代码路径（"trace"），并将这些热点代码动态编译为本地机器码。未编译的代码则以解释方式执行。
 
-JIT 的优势是内存占用小——只编译真正用到的代码。劣势也明显：每次运行都需要重新编译（编译结果不持久化），运行时开销大，耗电。
+JIT 的优势是内存占用小——只编译运行中用到的热点代码。劣势也明显：每次运行都需要重新编译（编译结果不持久化），运行时开销大，耗电。
 
 Android 2.2 引入的 trace-based JIT 让 Dalvik 的性能有了质的飞跃，但随着 App 越来越大、功能越来越多，JIT 的局限性也日益明显。
 
@@ -266,7 +263,7 @@ Android 7.0 引入了**混合编译策略**，这是 ART 编译策略的最终�
 后续的改进包括：
 
 - **Cloud Profiles（Android 9+）**：Google Play 收集大量用户的 Profile 数据，在 App 安装时就提供聚合后的 Profile，让首次启动就有 AOT 编译的热点代码
-- **Baseline Profiles（Android 7+，库开发者可提供）**：开发者可以在 APK 中内置 Profile 文件，定义自己 App 的关键代码路径。Jetpack 库（如 Compose）已经内置了 Baseline Profiles。这对 Compose 的首次启动性能至关重要——没有 Baseline Profile 的 Compose App 在首次启动时会有明显的卡顿。
+- **Baseline Profiles（Android 7+，库开发者可提供）**：开发者可以在 APK 中内置 Profile 文件，定义自己 App 的关键代码路径。Jetpack 库（如 Compose）已经内置了 Baseline Profiles。这直接影响 Compose 的首次启动性能——没有 Baseline Profile 的 Compose App 在首次启动时会有明显的卡顿。
 
 从 Perfetto 的角度看，编译策略直接影响你在 Trace 中看到的模式：如果一个 App 首次安装后启动很慢但后续变快，那就是 Profile-Guided 编译在起作用。我们可以在 Trace 中观察到首次启动时更多的 JIT 编译活动（对应 CPU 使用率高峰），以及后续启动时这些活动消失。
 
@@ -303,7 +300,7 @@ Android 11（API 30）引入了**包可见性（Package Visibility）限制**。
 
 ## 扩展：后台限制的持续收紧
 
-Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程。这个趋势对 App 开发者和性能优化工程师都至关重要——因为很多"以前能用的招"现在不能用了。
+Android 对后台执行的管制经历了从"放任"到"严管"的渐进过程。这个趋势会直接改变 App 开发者和性能优化工程师的策略，因为很多"以前能用的招"现在不能用了。
 
 ### 限制演进时间线
 
@@ -389,7 +386,7 @@ Treble 改变了 HAL 层的通信方式，间接影响了硬件相关操作（�
 
 ### 误区："Profile-Guided 编译意味着 App 安装后第一次都很慢"
 
-Cloud Profiles 和 Baseline Profiles 大幅缓解了这个问题。大多数通过 Google Play 分发的 App 在安装时就能获得 Profile 数据，首次启动时热点代码已经有 AOT 编译。真正"裸启动"（无任何 Profile）的场景越来越少见。
+Cloud Profiles 和 Baseline Profiles 大幅缓解了这个问题。大多数通过 Google Play 分发的 App 在安装时就能获得 Profile 数据，首次启动时热点代码已经有 AOT 编译。完全"裸启动"（无任何 Profile）的场景越来越少见。
 
 ## 参考资料
 

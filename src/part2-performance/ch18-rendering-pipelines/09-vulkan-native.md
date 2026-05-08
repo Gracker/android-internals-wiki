@@ -1,7 +1,6 @@
 ---
 title: "Vulkan 原生渲染管线"
 chapter: "18.9"
-status: "ready-for-review"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 section: "18.9"
 last_verified: "2026-05-04"
@@ -15,8 +14,6 @@ tags: ["Vulkan", "VkSwapchainKHR", "explicit-control", "AVP", "Swappy", "frame-p
 related_chapters: ["2.1", "2.6", "2.14", "18.8", "18.10"]
 created_by: "rendering-pipelines-merge"
 created_date: "2026-04-09"
-task2b_state: "fixed"
-task2b_result: "fixed"
 sources:
   - type: official
     path: "developer.android.com/ndk/guides/graphics"
@@ -39,17 +36,20 @@ rework_by: openclaw-task2b
 rework_type: "review回炉修复（Task9 P95 + 同章节链接修复）"
 repaired_date: "2026-04-27"
 repaired_by: openclaw-task2b
-reviewed_date: "2026-05-08"
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
-pipeline_stage: "task6_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-last_task6_at: "2026-05-08T21:24:13+08:00"
-last_task6_review_log: "logs/review/2026-05-08-21-review.md"
-review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 4 处（GLSE 拼写、VSync 同步用词、否定纠正式、口语化工具描述），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-08-21-deep-review.md"
 task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Present/Swappy 时序图把 CPU `queueBuffer()` 误画成 GPU 动作；P2 1：Validation Layer 启用命令仍需按官方 GPU debug layer 流程收敛。"
+status: "ready-for-review"
+reviewed_date: "2026-05-09"
+reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-09T02:08:33+08:00"
+last_task6_review_log: "logs/review/2026-05-09-02-review.md"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+pipeline_stage: "task9_pending"
+review_notes: "2026-04-27 task2b: 修复 Android 15/16 Vulkan Profile 文件名为 VP_ANDROID_*_minimums，并补 Command Buffer 多线程录制的 host synchronization 约束；同步修复 2.14/2.13 交叉引用。；2026-05-04 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 2。Android Vulkan WSI acquire 路径把 AOSP `AcquireImageANDROID` 写成公开 fd import 机制；另有 validation layer 命令与 GL 错误术语问题。 | 2026-05-05 Task6 15:17：补齐 section/H1 与基础验证元数据；修复读者指向、高频词和 validation 绝对化表达；无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-05 Task9 15:51：复审后仍有 P1：Dynamic Rendering 与 Android Vulkan Profile 的 feature 边界未写清。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 4 处（GLSE 拼写、VSync 同步用词、否定纠正式、口语化工具描述），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-09 Task6 02:08：revisiting 写作复审；轻修 L1/L2 文风 4 处，无新增 L3/L4 回炉项，转 Task9 复审。"
 ---
 
 # 18.9 Vulkan 原生渲染管线
@@ -57,7 +57,7 @@ task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Prese
 <!-- outline-start -->
 
 **锚点（必须覆盖）：**
-- [18.9.1 为什么选择 Vulkan](#为什么选择-vulkan) — 与 GLES 的本质区别
+- [18.9.1 为什么选择 Vulkan](#为什么选择-vulkan) — 与 GLES 的关键区别
 - [18.9.2 Android Vulkan Profile (AVP)](#android-vulkan-profile-avp) — 碎片化问题的标准化方案
 - [18.9.3 渲染流程详解](#渲染流程详解) — Acquire → Submit → Present 的完整流程
 - [18.9.4 Pipeline Barrier 与 Image Layout](#pipeline-barrier-与-image-layout) — 显式同步的关键
@@ -72,15 +72,15 @@ task9_review_notes: "2026-05-08 Task9 21:32：needs-rework。P1 1：Vulkan Prese
 
 <!-- outline-end -->
 
-Vulkan 是 Android 的主要底层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的核心区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只执行提交的命令，不再替应用推断状态。换来的是更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
+Vulkan 是 Android 的主要底层图形 API，Android 15+ 进一步推进了 AVP（Android Vulkan Profile）等能力。[已验证: Android 15 Developer Preview 文档] 与 OpenGL ES 相比，Vulkan 的关键区别在于**"显式优于隐式"**——内存管理、同步原语、命令提交全部由 App 显式控制，驱动只执行提交的命令，不再替应用推断状态。换来的是更低的 CPU 开销、更少的驱动 bug，以及更高的调试可控性。
 
-关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。本节聚焦 Vulkan 渲染管线的实战视角：从 Acquire 到 Present 的完整流程、Presentation Mode 的选择，以及如何在 Trace 中识别 Vulkan 调用路径。
+关于图形 API 的演进历史和 Vulkan 在 Android 上的引入过程，详见 [2.14 图形 API 演进](../../part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md)。Vulkan 渲染管线的实战视角包括三件事：Acquire 到 Present 的完整流程、Presentation Mode 的选择，以及 Trace 中的调用路径识别。
 
 ## 为什么选择 Vulkan
 
 ### GLES 的隐式模型问题
 
-GLES 驱动会做很多"聪明的猜测"——什么时候切换 Render Target、什么时候等待 GPU 完成、什么时候同步、内存什么时候释放。这些"猜测"让开发门槛降低，但代价是**CPU 端的 driver 开销巨大**——每次 GL 调用都可能触发驱动内部的同步逻辑。移动设备 GPU 驱动尤其如此，因为移动 GPU 的驱动通常比桌面端更激进地做隐式优化。
+GLES 驱动会做很多"聪明的猜测"——什么时候切换 Render Target、什么时候等待 GPU 完成、什么时候同步、内存什么时候释放。这些"猜测"让开发门槛降低，但代价是 **CPU 端 driver work 变重**——每次 GL 调用都可能触发驱动内部的同步逻辑。移动设备 GPU 驱动尤其如此，因为移动 GPU 的驱动通常比桌面端更激进地做隐式优化。
 
 ### Vulkan 的显式控制
 
@@ -106,7 +106,7 @@ Vulkan 的代价是**开发复杂度**。应用需要自行管理：
 - Image Layout 转换
 - 渲染 Pass 的显式定义
 
-如果这些做错了，轻则花屏、黑屏，重则设备挂起。这就是为什么 Google 推出了 Swappy、AVP 等辅助工具——降低 Vulkan 的正确使用门槛。
+如果这些做错了，轻则花屏、黑屏，重则设备挂起。因此 Google 推出了 Swappy、AVP 等辅助工具，用来降低 Vulkan 的正确使用门槛。
 
 ## Android Vulkan Profile (AVP)
 
