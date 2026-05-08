@@ -7,18 +7,11 @@ drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-05-08"
-reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 polish_count: 2
 polish_date: "2026-05-08"
 polish_by: "task2b-rework"
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
 sources:
   - type: blog
     path: "Personal-Knowlodge/source/Android-Systrace-Input.md"
@@ -38,18 +31,25 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task2b_pending
-task2b_result: fixed
-task2b_state: pending
-task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
 task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T10:29:04+08:00"
 task9_result: needs-rework
-review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。"
+
+reviewed_date: "2026-05-08"
+reviewed_by: openclaw-task6
+task2b_state: fixed
+task2b_result: fixed
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-14-review.md"
+review_notes: "2026-05-08 10:28 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；InputReader.loopOnce 源码片段与 InputDispatcher 队列观测口径需修正。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。"
+
 ---
 
 # 触摸响应的性能分析
@@ -167,7 +167,7 @@ InputDispatcher 也是 `system_server` 中的 Native 线程，被 InputReader �
 
 1. **InboundQueue（"iq"）**：InputReader 交付的事件先进入这里。InputDispatcher 从队列头取出事件开始处理。
 2. **OutboundQueue（"oq"）**：每个目标窗口（Connection）都有一个 OutboundQueue。事件被包装成 `DispatchEntry` 后放入对应窗口的 OutboundQueue，等待通过 socketpair 发送。
-3. **WaitQueue（"wq"）**：事件通过 socket 发送给 App 后，会先从 OutboundQueue 挪到 WaitQueue，等待 App 侧把 `Finished` 信号写回 InputChannel。真正把条目从 WaitQueue 移走的时刻，是 `InputDispatcher` 在 `doDispatchCycleFinishedLockedInterruptible` 里收到这个 ACK 之后，而不是某个 View 回调刚 return 的瞬间。
+3. **WaitQueue（"wq"）**：事件通过 socket 发送给 App 后，会先从 OutboundQueue 挪到 WaitQueue，等待 App 侧把 `Finished` 信号写回 InputChannel。条目从 WaitQueue 移走，要等 `InputDispatcher` 在 `doDispatchCycleFinishedLockedInterruptible` 里收到这个 ACK，而不是某个 View 回调刚 return 的瞬间。
 
 这条 ACK 回路要单独看。主线程已经跑完 `onTouchEvent()`，但如果 Looper 回切、线程调度或 socket 回写又慢了一拍，WaitQueue 仍然会继续堆积。Input ANR 计时看的就是这条“已分发但未完成 ACK”的路径。
 
@@ -261,7 +261,7 @@ float latestY = event.getY();
 
 ### Batching 之外还有重采样
 
-Batching 解决的是“一帧里来了太多点，怎么一起交给应用”；让轨迹贴着帧时间走的还有重采样。系统把 batched input 贴到 `CALLBACK_INPUT` 附近之后，Native 层 `InputConsumer` 会按照目标 frame time，在最近几个真实采样点之间做插值，补出一个更接近这一帧显示时刻的坐标。这样 120Hz 采样配 60Hz 显示仍然有价值，系统拿到的不只是“最新一个点”，而是“更接近这一帧该显示的位置”。
+Batching 解决的是“一帧里来了太多点，怎么一起交给应用”；让轨迹贴着帧时间走的还有重采样。系统把 batched input 贴到 `CALLBACK_INPUT` 附近之后，Native 层 `InputConsumer` 会按照目标 frame time，在最近几个真实采样点之间做插值，补出一个更接近这一帧显示时刻的坐标。这样 120Hz 采样配 60Hz 显示仍然有价值：系统交给应用的当前坐标更接近这一帧该显示的位置，避免直接拿最新一个真实采样点造成时序偏差。
 
 对应用来说，重采样生成的坐标可通过 `MotionEvent.PointerCoords.isResampled()`（Android 15 / API 35+）识别——`getX()` / `getY()` 读到的是当前样本坐标，是否为重采样点要看对应 PointerCoords 的 `isResampled` 字段。API 35 以下没有公开接口查询重采样状态，只能通过 Trace / 源码判断。历史样本还在，但当前坐标更贴近帧时序，指尖轨迹也更稳。也因为这个原因，`requestUnbufferedDispatch()` 只能在笔迹、绘图、签名这类场景慎用；一旦关闭 batching 和系统重采样，MOVE 事件虽然更早送达，轨迹也更容易抖。
 
@@ -360,7 +360,7 @@ Batching 解决的是“一帧里来了太多点，怎么一起交给应用”�
 
 一个典型的 `dumpsys input` 输出片段如下：
 
-```
+```text
 Input Dispatcher State:
   FocusedWindow: Window{abc1234 com.example.app/com.example.MainActivity}
   InboundQueue: <empty>
@@ -547,13 +547,13 @@ Android Native 层实现了 **LegacyResampler**（`frameworks/native/libs/input/
 **调用链（基于 AOSP android-16.0.0_r1）：**
 
 **系统侧：**
-```
+```text
 evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
     → InputChannel（通过 Unix socket 将 MotionEvent 批量发送给 App）
 ```
 
 **App 侧（重采样发生在这里）：**
-```
+```text
 ViewRootImpl → Choreographer.doFrame()
     → NativeInputEventReceiver.consumeBatchedInputEvents(frameTimeNanos)
         → InputConsumer.consume(..., frameTime)
