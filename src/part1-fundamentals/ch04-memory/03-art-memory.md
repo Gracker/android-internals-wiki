@@ -7,7 +7,6 @@ chapter: "4.3"
 section: "4.3"
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-task2"
-status: ready-for-review
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 polish_count: 1
@@ -32,21 +31,24 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-task9_state: reviewed
-task2b_state: "fixed"
-task2b_result: "fixed"
 last_task2b_at: "2026-05-08T11:40:00+08:00"
-task6_state: reviewed
-task6_result: "pass-light-edit"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-08"
-pipeline_stage: "task6_pending"
 p1: 2
 p2: 3
 task9_review_notes: "2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。"
 last_task9_review_log: logs/deep-review/2026-05-08-12-deep-review.md
-review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。"
 task9_result: needs-rework
+status: "ready-for-review"
+reviewed_date: "2026-05-09"
+reviewed_by: "openclaw-task6"
+last_task6_at: "2026-05-09T02:08:33+08:00"
+last_task6_review_log: "logs/review/2026-05-09-02-review.md"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: "pending"
+task2b_state: "fixed"
+task2b_result: "fixed"
+pipeline_stage: "task9_pending"
+review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。"
 ---
 # ART 虚拟机内存管理
 
@@ -80,7 +82,7 @@ task9_result: needs-rework
 
 我们在 Perfetto 中分析一个应用的卡顿问题时，经常会看到这样的现象：主线程突然被挂起几十毫秒，对应的时间片上标注着 `GC`。或者更隐蔽地，一个应用的帧率在持续滑动时逐渐下降，CPU 占用里 `HeapTaskDaemon` 线程的活跃时间越来越多。这些现象的背后，都是 ART 虚拟机的内存管理在工作。
 
-理解 ART 的堆结构、GC 策略和对象分配机制，不是为了自己去实现垃圾回收器。我们的目标，是在拿到一份 Trace、看到 GC 暂停或 Allocation Stall 时，能快速判断这是正常波动，还是应用已经出现内存抖动，并知道该从哪里排查。读完这一节，我们应该能在 Perfetto 中识别 ART GC 的主要活动，理解它们对帧率和响应速度的影响，并掌握减少 GC 压力的基本方法。
+理解 ART 的堆结构、GC 策略和对象分配机制，能帮助我们在拿到一份 Trace、看到 GC 暂停或 Allocation Stall 时，快速判断这是正常波动，还是应用已经出现内存抖动，并知道该从哪里排查。最终目标是在 Perfetto 中识别 ART GC 的主要活动，理解它们对帧率和响应速度的影响，并掌握减少 GC 压力的基本方法。
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
@@ -123,7 +125,6 @@ Allocation Space 的具体实现取决于当前使用的 GC 策略：
 
 Android 15 针对 16KB 页环境改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐（`RoundUp(capacity, kPageSize)`）。从 `android-15.0.0_r1` 起，改为动态获取当前页大小（`RoundUp(capacity, gPageSize)`），全局变量 `gPageSize` 在 ART 初始化阶段由 `InitPageSize()` 设置，对应源码位于 `art/runtime/gc/space/bump_pointer_space.cc`。
 
-这两种策略在后续的 GC 策略演进部分会详细展开。
 
 Allocation Space 的实现和分代策略要按平台版本拆开看。Android 8.0-13 的主线是基于 `RegionSpace` 的 CC 路径，年轻对象优先在更小的工作集里回收。到了 Android 14，AOSP 平台源码已经出现 `kCollectorTypeCMC` 和 `mark_compact.cc`，说明 UFFD 驱动的 Mark Compact / CMC 路径已经进入主线实现；Android 15 继续补齐 `kCollectorTypeCMCBackground`、`BumpPointerSpace` 等配套结构。公开发布材料把 Generational CMC 明确讲清楚，则是 Android 16 QPR2 之后的事情。
 
@@ -292,7 +293,7 @@ Allocation Stall 在以下场景中容易发生：
 
 GC 吞吐量指的是应用运行时间占总时间的比例。如果 GC 吞吐量是 99%，意味着 1% 的时间花在了 GC 上。在正常应用中，这个值应该在 98% 以上。如果降到 95% 以下，用户很可能感知到卡顿。
 
-在 Perfetto 中可以通过 `art_gc_*` 相关的 counter track 来监控 GC 的吞吐量和频率。
+在 Perfetto 中要结合 GC slice、`HeapTaskDaemon` 活动和实际 trace 中可见的 GC counter 来估算 GC 的频率与耗时。
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
