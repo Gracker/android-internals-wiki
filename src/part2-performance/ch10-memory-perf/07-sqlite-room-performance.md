@@ -48,25 +48,25 @@ sources:
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
-task2b_state: fixed
-task2b_result: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-08"
-task6_result: pass-light-edit
 last_task9_at: "2026-05-08T13:32:43+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
 task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；WAL autocheckpoint 默认值与 Room transaction executor 口径需回炉。"
-review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。"
+
+reviewed_date: "2026-05-08"
+reviewed_by: openclaw-task6
+task2b_state: fixed
+task2b_result: fixed
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-14-review.md"
+review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。"
+
 ---
 
 # 10.7 SQLite/Room 数据库性能优化
@@ -360,7 +360,7 @@ ANR traces 中更常见的数据库相关模式是：
 
 在 ANR traces 中，我们更可能看到下面这种栈形态：
 
-```
+```text
 "main" prio=5 tid=1 Native
   at android.database.sqlite.SQLiteConnectionPool.waitForConnection(...)
   at android.database.sqlite.SQLiteSession.executeForCursorWindow(...)

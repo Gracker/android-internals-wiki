@@ -7,8 +7,6 @@ drafted_date: "2026-04-02"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-05-08"
 last_verified_against: "AOSP android-16.0.0_r1"
-reviewed_date: "2026-05-08"
-reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
@@ -32,23 +30,30 @@ sources:
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
-task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
 last_task9_at: "2026-05-08T13:32:43+08:00"
-task2b_result: fixed
-task6_result: pass-light-edit
 review_round: 3
 last_task2b_at: "2026-05-08T12:51:41+08:00"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External P95 问题单：SIGQUIT诊断可信度/android.anr track/frontmatter版本号）"
 task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；ANR trace 非主进程 dump 范围需按 AOSP firstPids/lastPids/nativePids 修正。"
-review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。"
+
+reviewed_date: "2026-05-08"
+reviewed_by: openclaw-task6
+task2b_state: fixed
+task2b_result: fixed
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-14-review.md"
+review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。"
+
 ---
 
 # ANR 分析方法
@@ -98,7 +103,7 @@ ANR 是 Android 性能分析里最容易误判的一类问题。和卡顿不同�
 
 下面是一段主线程处于空闲等待状态的 trace（这是正常的）：
 
-```
+```text
 "main" prio=5 tid=1 Native
   | group="main" sCount=1 dsCount=0 flags=1 obj=0x72c8bbf8 self=0xb400007b0ec10800
   | sysTid=5991 nice=-10 cgrp=default sched=0/0 handle=0x7b95f61500
@@ -152,7 +157,7 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
 
 当主线程处于 Blocked 状态时，trace 中会显示锁的等待关系，这是排查死锁的关键线索：
 
-```
+```text
 "main" prio=5 tid=1 Blocked
   | held mutexes=
   at com.facebook.cache.disk.DiskStorageCache.e(DiskStorageCache.java:3)
@@ -246,7 +251,7 @@ SharedPreferences 容易踩一个坑：`apply()` 看起来是异步的，但在 
 
 系统日志中的 `binder_sample` 条目能直接告诉我们哪个 Binder 调用耗时多久：
 
-```
+```text
 binder_sample: [android.view.accessibility.IAccessibilityManager,6,2010,com.xxx.community,100]
 ```
 
@@ -282,7 +287,7 @@ ANR 日志中搜索 `ANR in` 可以找到系统在 ANR 前后收集的 CPU 使�
 
 一份完整的 CPU 信息通常包含两段统计：
 
-```
+```text
 // ANR 前一段时间的 CPU 使用情况（通常 10-15 秒）
 CPU usage from 0ms to 13135ms later:
   191% 1948/system_server: 72% user + 119% kernel / faults: 78816 minor 9 major
@@ -309,7 +314,7 @@ CPU usage from 246ms to 1271ms later:
 
 较新的 Android 版本还会输出 `/proc/pressure/memory` 的内容：
 
-```
+```text
 ----- Output from /proc/pressure/memory -----
 some avg10=1.35 avg60=0.31 avg300=0.06 total=346727
 full avg10=0.00 avg60=0.00 avg300=0.00 total=34803

@@ -5,22 +5,13 @@ chapter: "7.1"
 status: ready-for-review
 drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
-reviewed_date: "2026-05-08"
-reviewed_by: "openclaw-task6"
 applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
 last_verified: "2026-04-22"
 last_verified_against: "AOSP android-16.0.0_r1 FrameTimeline.cpp + Perfetto docs / Android Developers docs"
 polish_count: 2
 polish_date: "2026-05-08"
 polish_by: "task2b-rework"
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
 review_type: "post-polish-quality-gate"
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
 confidence: medium
 sources:
   - type: aosp
@@ -45,13 +36,7 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: "pass-light-edit"
-task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
-task2b_result: fixed
 last_task2b_at: '2026-05-08T05:42:56+08:00'
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
@@ -60,11 +45,21 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-08
 last_task9_at: "2026-05-08T09:27:37+08:00"
 task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 2（JankType 版本边界、未验证枚举）/ P2 5 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。"
-task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T09:08:46+08:00"
-last_task6_review_log: "logs/review/2026-05-08-09-review.md"
 last_task9_review_log: logs/deep-review/2026-05-08-09-deep-review.md
-review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。"
+
+reviewed_date: "2026-05-08"
+reviewed_by: openclaw-task6
+task2b_state: fixed
+task2b_result: fixed
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: pending
+pipeline_stage: task9_pending
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T14:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-14-review.md"
+review_notes: "2026-05-08 Task6 06:05：发现 AIW Binder Trace 新增块位于参考资料后且未融入主线，已标注并写入 Task2B queue；同步完成 L1/L2 标点格式小修。 | 2026-05-08 Task9 06:20：needs-rework。P1 1；Binder Trace 新增块将 Binder 阻塞与 AppDeadlineMissed/SF/BufferStuffing 一一映射，缺少 FrameTimeline deadline 与 BufferQueue 因果条件，已写入 queue。 | 2026-05-08 Task6 07:24：Task2B 已将 Binder 段改为 FrameTimeline deadline 因果链，本轮将该段移入 FrameTimeline 主体并完成 L1/L2 小修；文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 07:30：needs-rework。P1 1；Binder SQL 仍未用 actual_frame_timeline_slice 的帧窗口、client_upid/client_utid 与 binder_txn_id 约束，会从全局 Binder 事务反推 AppDeadlineMissed 证据，已写入 queue。P2 2 写入 suggestions。 | 2026-05-08 Task6 09:07：复审 Task2B 修复后的 Binder SQL 段与全文 L1/L2；压掉少量第一人称和填充式标题，文稿通过，等待 Task9 技术复审。 | 2026-05-08 Task9 09:27：needs-rework。P1 1；Binder SQL 已按进程收窄，但仍缺 client_utid / doFrame 或 RenderThread 关键线程约束，且时间条件不是重叠区间，仍可能把同进程后台 Binder 事务误归因到 AppDeadlineMissed，已写入 queue。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。"
+
 ---
 # 卡顿的定义与分类
 
@@ -179,7 +174,7 @@ Trace 里先点 App 的 `Actual Timeline` slice，再顺 token 回到 `Choreogra
 
 ### DisplayHAL
 
-`DisplayHAL` 表示 SurfaceFlinger 已经按时把 frame 往下交了，但 frame 没在预测的那个 vsync 上真正显示出来。Perfetto 文档写得很明确，这类问题有两种常见解释：一种是 HAL / 显示末端自己慢，另一种是 SurfaceFlinger 留给 HAL 的时间不够。两种情况都要看证据，不能直接写成"厂商 HAL 慢"。
+`DisplayHAL` 表示 SurfaceFlinger 已经按时把 frame 往下交了，但 frame 没按预测的那个 vsync 显示出来。Perfetto 文档写得很明确，这类问题有两种常见解释：一种是 HAL / 显示末端自己慢，另一种是 SurfaceFlinger 留给 HAL 的时间不够。两种情况都要看证据，不能直接写成"厂商 HAL 慢"。
 
 排查时先看 details 面板里的 `Present Type`、`On time finish`、`GPU Composition`。如果 App 和 SurfaceFlinger 都按时完成，frame 还是 late，才有理由继续怀疑 Display HAL / display pipeline 末端。
 
@@ -239,7 +234,7 @@ Perfetto 的颜色是 UI 层面的归因提示，不是 `JankType` 到颜色的�
 Perfetto 给每个出现在屏幕上的应用加两条 track。
 
 - `Expected Timeline` 表示系统给这帧分配的时间窗口。它的起点是 `Choreographer` 回调计划开始执行的时刻。
-- `Actual Timeline` 表示 App 真正花掉的时间。它从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 `max(actualQueueBufferTime, actualGpuCompletionTime)`：前者对应 App 调用 `queueBuffer` 把 Buffer 交给 BufferQueue 的时刻，后者对应 GPU 完成这帧内容的 fence signal 时刻。
+- `Actual Timeline` 表示 App 实际花掉的时间。它从 `Choreographer#doFrame` 或 `AChoreographer_vsyncCallback` 开始，结束点取 `max(actualQueueBufferTime, actualGpuCompletionTime)`：前者对应 App 调用 `queueBuffer` 把 Buffer 交给 BufferQueue 的时刻，后者对应 GPU 完成这帧内容的 fence signal 时刻。
 
 两条线贴得住，说明 App 这一段按时完成。`Actual Timeline` 晚于 `Expected Timeline`，再结合 `Jank Type` 才能知道迟到是 App、SurfaceFlinger 还是显示末端造成的。
 
