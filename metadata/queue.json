@@ -14799,6 +14799,102 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T13:32:43+08:00",
       "status": "pending"
+    },
+    {
+      "section": "3.2",
+      "section_title": "触摸响应的性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3.2 InputDispatcher ACK/WaitQueue 源码方法名仍使用旧接口，和 android-16.0.0_r1 不一致，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-14-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L168-L174 InputDispatcher WaitQueue ACK 回路",
+          "detail": "[P0] 正文写 WaitQueue 条目要等 `doDispatchCycleFinishedLockedInterruptible` 收到 ACK 后移走；android-16.0.0_r1 的实际路径是 `handleReceiveCallback()` 读取 Finished signal，`finishDispatchCycleLocked()` post command，随后 `doDispatchCycleFinishedCommand()` 从 `connection->waitQueue` erase 对应 `seq`。公开 tag 中没有 `doDispatchCycleFinishedLockedInterruptible` 这个方法名。",
+          "suggestion": "把方法名和调用链改为 android-16.0.0_r1 的 `handleReceiveCallback()` → `finishDispatchCycleLocked()` → `doDispatchCycleFinishedCommand()`，同时说明这是 App 侧 `finishInputEvent()` 写回 finished signal 后的 ACK 处理路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T14:32:28+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.1",
+      "section_title": "卡顿的定义与分类",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.1 Binder 佐证 SQL 仍有 Perfetto FrameTimeline 表值与关键线程定位错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-14-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/Trace SQL 错误",
+          "location": "L289-L299 / L329-L334 janky_frame CTE",
+          "detail": "[P0] SQL 使用 `jank_type = 'AppDeadlineMissed'`。Perfetto `actual_frame_timeline_slice.jank_type` 示例和 stdlib `android.frames.jank_type` 口径使用带空格的展示值（如 `App Deadline Missed`、`Buffer Stuffing`），官方 stdlib 也用 `GLOB '*App Deadline Missed*'` 判断 app jank。当前等值条件可能查不到目标帧。",
+          "suggestion": "改为 `jank_type GLOB '*App Deadline Missed*'`，或引入 `INCLUDE PERFETTO MODULE android.frames.jank_type` 后用 `android_is_app_jank_type(jank_type)`；如果只查 AppDeadlineMissed，要明确 Perfetto 版本下的实际字符串。"
+        },
+        {
+          "type": "原理断裂/Trace SQL 错误",
+          "location": "L289-L310 / L329-L338 UI 线程定位",
+          "detail": "[P1] SQL 用 `thread.name = 'main'` 找 UI 线程。Perfetto 里 Android 主线程名常是进程名或被截断后的 comm，不稳定等于 `main`；这会让 `main_utid` 为空，漏掉主线程 Binder 阻塞。Perfetto stdlib `android.frames.timeline` 已提供 `android_frames.ui_thread_utid` / `render_thread_utid`，更适合做帧关键线程约束。",
+          "suggestion": "用 `android_frames` 根据 `actual_frame_timeline_id` 取 `ui_thread_utid` 和 `render_thread_utid`，或至少使用 `android_binder_txns.is_main_thread` 辅助过滤；不要依赖 `thread.name = 'main'`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T14:32:28+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "9.3",
+      "section_title": "ANR 分析方法",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 9.3 AnrLatencyTracker 作用与版本边界仍有误导，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-14-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L146-L152、L445-L454 AnrLatencyTracker 与版本演进",
+          "detail": "[P1] 正文写 `AnrLatencyTracker` 会在 `anrRecordPlacedOnQueue` → `dumpStackTraces()` 间隔内“采样主线程状态”，且版本表写 Android 13/14 增加 ANR latency trace。复核 AOSP：android-13.0.0_r1 只有 `AnrHelper`，没有 `com.android.internal.os.anr.AnrLatencyTracker`；android-14.0.0_r1+ 才引入该类。该类记录 ANR 流程 latency、trace slice/counter 和 statsd atom，不负责采样主线程状态；主线程状态需要由 Perfetto 的 sched/slice 数据交叉观察。",
+          "suggestion": "把版本边界统一改为 Android 14+；将“采样主线程状态”改成“记录 ANR 处理阶段的 trace slice/counter 与延迟分解”，并补一句：主线程是否仍在案发代码路径，要靠 sched、slice、dump 时间差与 traces.txt 交叉验证。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T14:32:28+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "10.7",
+      "section_title": "SQLite/Room 数据库性能优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 10.7 WAL checkpoint 与 Room transaction executor 口径仍不准确，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-14-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂/源码准确性",
+          "location": "L252 WAL sync mode / checkpoint 描述",
+          "detail": "[P1] 正文写 Android 默认 WAL NORMAL 下“由后台 checkpoint 线程负责刷盘”。AOSP `config.xml` 只定义 `db_wal_sync_mode=NORMAL` 与 `db_wal_autocheckpoint=100`；SQLite 的 auto-checkpoint 通常在提交后超过阈值时由执行提交的连接触发，也可能由显式 checkpoint、关闭/重开等路径触发，并不存在一个可依赖的 Android 后台 checkpoint 线程。这个错误会低估写事务线程自己承担 checkpoint I/O 的风险。",
+          "suggestion": "改成“WAL NORMAL 下提交通常不对每次事务强制同步 WAL；超过 `wal_autocheckpoint` 阈值时，checkpoint 可能在提交路径或显式 checkpoint 路径发生，因此仍可能把 I/O 成本落到当前写线程”。"
+        },
+        {
+          "type": "交叉引用一致性/原理断裂",
+          "location": "L235-L238 与 L432-L436 Room transaction executor",
+          "detail": "[P1] L237 写 `withTransaction` 内部维护“专用的事务线程”，但 L436 又说明 transaction executor 可配置、默认可能与 query executor 共用底层线程池，不等于 dedicated single-thread 写队列。两处口径冲突，且“专用线程”会让读者误以为 Room 自动提供全局单写队列和独立线程隔离。",
+          "suggestion": "统一为三层表述：SQLite 保证单写者；Room 的事务体在 transaction executor / 事务协程上下文中串行进入事务路径；应用若需要全局写入顺序、背压和线程隔离，应显式配置受控 executor 或单写队列。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T14:32:28+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
