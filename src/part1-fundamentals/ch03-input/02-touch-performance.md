@@ -33,13 +33,13 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_result: pass-light-edit
-task6_state: reviewed
-task9_state: reviewed
-task2b_rework_date: "2026-04-29"
+task6_state: revisiting
+task9_state: pending
+task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-01"
 last_task9_at: "2026-05-01T12:25:00+08:00"
@@ -253,7 +253,7 @@ float latestY = event.getY();
 
 Batching 解决的是“一帧里来了太多点，怎么一起交给应用”；真正让轨迹贴着帧时间走的，还有重采样。系统把 batched input 贴到 `CALLBACK_INPUT` 附近之后，Native 层 `InputConsumer` 会按照目标 frame time，在最近几个真实采样点之间做插值，补出一个更接近这一帧显示时刻的坐标。这样 120Hz 采样配 60Hz 显示仍然有价值，系统拿到的不只是“最新一个点”，而是“更接近这一帧该显示的位置”。
 
-对应用来说，重采样生成的坐标可通过 `MotionEvent.PointerCoords.isResampled()` 识别——`getX()` / `getY()` 读到的是当前样本坐标，是否为重采样点要看对应 PointerCoords 的 `isResampled` 字段。历史样本还在，但当前坐标更贴近帧时序，指尖轨迹也更稳。也因为这个原因，`requestUnbufferedDispatch()` 只能在笔迹、绘图、签名这类场景慎用；一旦关闭 batching 和系统重采样，MOVE 事件虽然更早送达，轨迹也更容易抖。
+对应用来说，重采样生成的坐标可通过 `MotionEvent.PointerCoords.isResampled()`（Android 15 / API 35+）识别——`getX()` / `getY()` 读到的是当前样本坐标，是否为重采样点要看对应 PointerCoords 的 `isResampled` 字段。API 35 以下没有公开接口查询重采样状态，只能通过 Trace / 源码判断。历史样本还在，但当前坐标更贴近帧时序，指尖轨迹也更稳。也因为这个原因，`requestUnbufferedDispatch()` 只能在笔迹、绘图、签名这类场景慎用；一旦关闭 batching 和系统重采样，MOVE 事件虽然更早送达，轨迹也更容易抖。
 
 在 Perfetto 里常见的现象是：一个 VSync 周期内先积累多个 MOVE 采样，App 在输入阶段一次性消费，然后这一帧的布局和绘制以最新状态为准。
 
@@ -275,16 +275,25 @@ Batching 解决的是“一帧里来了太多点，怎么一起交给应用”�
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java; frameworks/base/core/java/android/view/ViewRootImpl.java] [已验证: 官方文档, developer.android.com/reference/android/view/MotionEvent]
 
-### Batching 在 Perfetto 中的表现
+### Batching 与 WaitQueue 在 Perfetto 中的表现
 
-在 Perfetto 中观察 Batching 的方法：
+观察 Batching 和 App 处理能力是两个不同的视角，在 Perfetto 中对应不同的 Track 和 Slice。
+
+**InputDispatcher 侧 — 派发/ACK 背压**：
 
 1. 找到 `system_server` 进程的 InputDispatcher 线程
-2. 观察 WaitQueue（"wq"）的 Slice：如果在一个 VSync 周期内 WaitQueue 中有多个 MOVE 事件等待，说明 App 还没来得及处理，InputDispatcher 一直在堆积事件
-3. 切换到 App 进程的主线程 Track：在 `InputResponse` 区域内，如果看到 `deliverInputEvent` 快速连续执行多次，那就是在消费 Batch 中的事件
+2. 观察 InboundQueue（iq）、OutboundQueue（oq）、WaitQueue（wq）的 ATRACE_INT 计数器（队列长度，不是 Slice）
+3. WaitQueue 反映的是已派发但等待 App finish/ACK 的事件数量。wq 堆积说明 App 端处理慢或 ACK 回写延迟，不等同于 batching 本身
+4. 如果 WaitQueue 持续堆积且不下降，说明 App 主线程跟不上事件到来速度，可能正在卡顿
+
+**App 侧 — Batching 消费**：
+
+1. 切换到 App 进程的主线程 Track
+2. 在 `InputResponse` 区域内，如果看到 `deliverInputEvent` 快速连续执行多次，那就是在消费 Batch 中的历史事件
+3. `consumeBatchedInputEvents` 的调用时刻对应 Choreographer `CALLBACK_INPUT` 阶段，一个 VSync 内积攒的 MOVE 历史样本在这里一次性取出
 4. 再看 `doFrame` 的执行：它发生在 Batch 消费之后，使用最新的事件位置来计算布局和绘制
 
-如果 WaitQueue 持续堆积且不下降，那就是一个明确的信号：App 的主线程处理速度跟不上 Input 事件的到来速度，可能正在发生卡顿。
+两条证据链不要混在一起：InputDispatcher 的 wq 计数器判断的是派发/ACK 背压；App 侧的 `deliverInputEvent` 连续调用和 MotionEvent history 才是 batching 的直接证据。
 
 [来源: obsidian/Personal-Knowlodge/source/Android-Systrace-Input.md]
 
@@ -522,7 +531,7 @@ Android Native 层实现了 **LegacyResampler**（`frameworks/native/libs/input/
 
 **关键约束：**
 - 仅支持 FINGER / MOUSE / STYLUS / UNKNOWN 四种工具类型
-- `isResampled=true` 标记可供 App 层查询该坐标是否为重采样点
+- `isResampled=true` 标记可供 App 层查询该坐标是否为重采样点（API 35+；低版本无公开接口，需依赖 Trace / 源码判断）
 - 开关：`ro.input.resampling` 系统属性（默认启用）
 
 **调用链（基于 AOSP android-16.0.0_r1）：**
