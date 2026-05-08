@@ -14928,8 +14928,10 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-08T17:05:00+08:00",
-      "status": "pending",
-      "original_review_log": "logs/review/2026-05-08-17-review.md"
+      "status": "completed",
+      "original_review_log": "logs/review/2026-05-08-17-review.md",
+      "completed_at": "2026-05-08T18:49:31+08:00",
+      "completed_reason": "AIW源码调研块已压缩整合进\"在Perfetto中分析Binder\"章节（新增BinderTracker Slice命名与异常模式小节），原始资料摘录块已移除"
     },
     {
       "section": "7.1",
@@ -15032,7 +15034,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T18:40:56+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T18:49:31+08:00",
+      "completed_reason": "P0 drain_period_ms默认值已修正：250ms→100ms(historical default)/1000ms(poll-backed)，附AOSP源码锚点"
     }
   ],
   "completed": [
