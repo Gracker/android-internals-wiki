@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-05-09T06:05:00+08:00",
+  "generated_at": "2026-05-09T07:12:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T06:20:00+08:00",
+    "last_updated": "2026-05-09T07:12:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
-      "ready-to-publish": 156,
-      "task2b_pending": 49,
+      "ready-to-publish": 155,
+      "task2b_pending": 48,
       "task6_pending": 2,
-      "task9_pending": 1,
+      "task9_pending": 3,
       "unknown": 31
     },
     "task6_state_counts": {
@@ -20,18 +20,18 @@
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 1,
-      "reviewed": 205,
+      "pending": 3,
+      "reviewed": 203,
       "unknown": 32
     },
     "task2b_state_counts": {
-      "fixed": 158,
-      "pending": 48,
+      "fixed": 159,
+      "pending": 47,
       "unknown": 34
     },
     "status_counts": {
-      "finalized": 156,
-      "ready-for-review": 53,
+      "finalized": 155,
+      "ready-for-review": 54,
       "unknown": 31
     }
   },
@@ -94,6 +94,27 @@
     }
   ],
   "task6_review_history": [
+    {
+      "timestamp": "2026-05-09T07:12:00+08:00",
+      "sections": [
+        "13.2",
+        "14.13"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 44,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分（outline 后正文 0 行）"
+        }
+      ],
+      "review_log": "logs/review/2026-05-09-07-review.md",
+      "notes": "仅发现 2 个 task6_state=revisiting 的可审章节；两章均为长章节，本轮按规则降为 2 章。L1/L2 轻修后送 Task9 复审。"
+    },
     {
       "timestamp": "2026-05-09T06:05:00+08:00",
       "sections": [
@@ -1566,22 +1587,23 @@
     "task2b_state": "fixed"
   },
   "14.13": {
-    "last_task6_at": "2026-05-09T04:05:00+08:00",
+    "last_task6_at": "2026-05-09T07:12:00+08:00",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
-    "last_task6_review_log": "logs/review/2026-05-09-04-review.md",
-    "pipeline_stage": "task2b_pending",
+    "last_task6_review_log": "logs/review/2026-05-09-07-review.md",
+    "pipeline_stage": "task9_pending",
     "status": "ready-for-review",
-    "task9_state": "reviewed",
-    "task2b_state": "pending",
-    "last_task9_at": "2026-05-09T06:20:00+08:00",
-    "task9_result": "needs-rework",
-    "last_task9_review_log": "logs/deep-review/2026-05-09-06-deep-review.md",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
     "task2b_result": "fixed",
-    "task9_reviewed_date": "2026-05-09",
-    "last_task6_polish_count": 4,
+    "task9_result": "needs-rework",
+    "last_task6_polish_count": 17,
     "last_task6_rework_count": 0,
-    "section_title": "Hook 基础设施与性能工具实现原理"
+    "section_title": "Hook 基础设施与性能工具实现原理",
+    "last_task9_at": "2026-05-09T06:20:00+08:00",
+    "last_task9_review_log": "logs/deep-review/2026-05-09-06-deep-review.md",
+    "task9_reviewed_date": "2026-05-09",
+    "task9_reviewed_by": "openclaw-task9"
   },
   "rework_completed": [
     {
@@ -1687,5 +1709,23 @@
   "task9_last_sections": [
     "3.5",
     "8.3"
-  ]
+  ],
+  "13.2": {
+    "last_task6_at": "2026-05-09T07:12:00+08:00",
+    "task6_result": "pass-light-edit",
+    "task6_state": "reviewed",
+    "last_task6_review_log": "logs/review/2026-05-09-07-review.md",
+    "pipeline_stage": "task9_pending",
+    "status": "ready-for-review",
+    "task9_state": "pending",
+    "task2b_state": "fixed",
+    "task2b_result": "fixed",
+    "task9_result": "needs-rework",
+    "last_task6_polish_count": 27,
+    "last_task6_rework_count": 0,
+    "section_title": "Trace 抓取",
+    "last_task9_at": "2026-05-02T10:20:00+08:00",
+    "task9_reviewed_date": "2026-05-02",
+    "task9_reviewed_by": "openclaw-task9"
+  }
 }

@@ -9,9 +9,9 @@ applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 last_verified: "2026-04-25"
 last_verified_against: perfetto.dev docs, google/perfetto main data_source_config/java_hprof_config/perf_event_config.proto, Android Trace API
 confidence: high
-reviewed_date: 2026-05-02
-reviewed_by: openclaw-task6
-task6_result: pass-light-edit
+reviewed_date: "2026-05-09"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
@@ -45,9 +45,9 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: reviewed
+pipeline_stage: "task9_pending"
+task6_state: "reviewed"
+task9_state: "pending"
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
@@ -59,7 +59,9 @@ repaired_by: openclaw-task2b
 task2b_fixed_by: openclaw-task2b
 last_task2b_at: "2026-05-09T06:51:32+08:00"
 review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 0，P1 1，P2 0；问题已写入 queue/suggestions/research-gaps。→ 已于 2026-05-09 Task2B 修复：CPU Callstack Sampling 补充 Android 13+ / traced_perf 守护进程版本要求和 userdebug|eng|debuggable 运行条件。"
-
+last_task6_at: "2026-05-09T07:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-09-07-review.md"
+task6_review_notes: "2026-05-09 Task6 07:12：Task2B 修复后写作复审；轻修 27 处（补齐 TraceConfig 代码块语言、删除结构性元叙述/填充词），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # Trace 抓取
@@ -116,7 +118,7 @@ adb shell perfetto -o /data/misc/perfetto-traces/trace.perfetto-trace -t 10s \
 adb pull /data/misc/perfetto-traces/trace.perfetto-trace
 ```
 
-这里有几个关键参数需要理解：
+这几个参数决定输出位置、抓取时长和事件范围：
 
 - `-o` 指定输出路径。Perfetto 要求输出路径必须在 `/data/misc/perfetto-traces/` 目录下（需要 root 或 shell 权限），这个目录是 Perfetto 服务进程有写入权限的标准位置。
 - `-t 10s` 指定追踪时长。也可以用 `-t 20s`、`-t 1m` 等格式。如果不指定 `-t`，追踪会持续到手动停止。
@@ -142,7 +144,7 @@ adb push config.pbtxt /data/misc/perfetto-configs/config.pbtxt
 
 `TraceConfig` 文件的基本结构是这样的：
 
-```
+```textproto
 buffers {
   size_kb: 65536
   fill_policy: DISCARD
@@ -184,13 +186,13 @@ duration_ms: 10000
 
 [已验证: 官方文档, perfetto.dev/docs/concepts/config]
 
-TraceConfig 是 Perfetto 追踪的核心配置，理解它的几个关键配置项，我们就能灵活地调整抓取行为。
+TraceConfig 决定 Perfetto 追踪会话的 buffer、时长和数据源。理解这几个配置项后，抓取窗口和数据量才好控制。
 
 ### buffer 配置
 
 `buffers` 块定义了 Trace 数据的内存缓冲区。每个 Trace 会话至少需要一个 buffer。
 
-```
+```textproto
 buffers {
   size_kb: 65536          # 64MB
   fill_policy: DISCARD     # 满了就丢弃新数据
@@ -202,7 +204,7 @@ buffers {
 
 ### duration 配置
 
-```
+```textproto
 duration_ms: 10000    # 10 秒
 ```
 
@@ -224,11 +226,11 @@ duration_ms: 10000    # 10 秒
 
 ### 一个推荐的通用配置
 
-下面把配置拆成两份可直接执行的版本。`.pbtxt` 是 protobuf text format，不能把版本判断写成运行时分支后直接塞进配置文件。跨版本抓取有两种做法：手工准备两份配置，或由 host 侧脚本按 API level 生成对应文件。
+通用配置可以拆成两份可直接执行的版本。`.pbtxt` 是 protobuf text format，不能把版本判断写成运行时分支后直接塞进配置文件。跨版本抓取有两种做法：手工准备两份配置，或由 host 侧脚本按 API level 生成对应文件。
 
 #### Android 10 / 11 基线配置
 
-```
+```textproto
 buffers {
   size_kb: 65536
   fill_policy: DISCARD
@@ -291,7 +293,7 @@ duration_ms: 20000
 
 #### Android 12+ 配置（追加 FrameTimeline）
 
-```
+```textproto
 buffers {
   size_kb: 65536
   fill_policy: DISCARD
@@ -372,7 +374,7 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 
 在命令行中，我们可以用 `adb shell atrace --list_categories` 查看当前设备支持的所有 category。不同设备、不同 Android 版本支持的列表可能略有差异，但核心的几个 category 在所有设备上都可用。
 
-下面我们按用途分组，逐一介绍日常性能分析中最常用的 categories。
+日常性能分析中最常用的 categories 可以按用途分组：
 
 ### 渲染与 UI（分析卡顿、流畅度必备）
 
@@ -404,7 +406,7 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 
 ### 按分析场景选择 Categories
 
-不同的性能分析场景，需要的 category 组合不同。下面是一份快速参考：
+不同性能分析场景需要不同的 category 组合，可以先按这份表选：
 
 | 分析场景 | 推荐 Categories |
 |---------|----------------|
@@ -415,7 +417,7 @@ atrace categories 是 Android 系统预定义的事件分类，每一个 categor
 | 内存问题 | sched dalvik memory gfx |
 | 功耗分析 | sched freq idle power |
 
-这张表是入门的快捷方式。随着分析经验积累，我们会根据具体问题调整 category 组合——比如在分析 HAL 层音频延迟时加上 `audio`，在追踪 Camera 管线时加上 `camera`。不过，`sched` + `freq` + `gfx` + `view` 这个核心组合几乎在所有场景下都不会错。
+这张表适合入门阶段使用。经验积累到一定程度后，可以按具体问题调整 category 组合——例如分析 HAL 层音频延迟时加上 `audio`，追踪 Camera 管线时加上 `camera`。`sched` + `freq` + `gfx` + `view` 仍然是多数场景下的基础组合。
 
 ## 用 record_android_trace 快速抓取
 
@@ -434,7 +436,7 @@ chmod u+x record_android_trace
 
 ### 基本用法
 
-最简单的方式，不带任何参数：
+最小命令不带任何参数：
 
 ```bash
 python3 record_android_trace -o trace.perfetto-trace
@@ -540,7 +542,7 @@ try {
 
 `Trace.beginSection` 的 section name 上限是 127 个 Unicode code unit。Java public API 对过长名字会抛出 `IllegalArgumentException`；native 侧也受 ATrace 消息长度和 ftrace `trace_marker` 写入格式约束。这个限制来自一条 trace marker 消息要同时容纳事件类型、线程信息和 section name，名字过长会增加 trace buffer 压力，也会让 Perfetto UI 难以阅读。建议使用简洁但足够描述性的标签名，比如 `"HomeFragment.loadData"`，不要把请求 URL、JSON 片段或用户标识塞进 section name。
 
-另外，`beginSection`/`endSection` 只能在同一线程中使用。如果要标记跨线程操作，需要用下面介绍的异步 API。
+另外，`beginSection`/`endSection` 只能在同一线程中使用。跨线程操作要改用异步 API。
 
 ### 异步标记（API 29+）
 
@@ -599,9 +601,9 @@ ATrace_endSection();
 
 ### 启用 Long Trace
 
-Long Trace 的核心配置是在 TraceConfig 中设置 `write_into_file: true`：
+启用 Long Trace 时，需要在 TraceConfig 中设置 `write_into_file: true`：
 
-```
+```textproto
 buffers {
   size_kb: 32768    # 32MB in-memory buffer
 }
@@ -629,7 +631,7 @@ data_sources {
 }
 ```
 
-这里有几个关键参数：
+这几个参数决定刷盘节奏和文件上限：
 
 - `write_into_file: true`：启用 Long Trace 模式，Trace 数据会定期从内存 buffer 刷写到磁盘文件。
 - `file_write_period_ms`：刷盘间隔。默认是 5000ms（5 秒）。更短的间隔意味着每次刷盘的数据量更少、buffer 可以更小，但磁盘 I/O 更频繁。
@@ -658,7 +660,7 @@ Perfetto 不只能做时间线追踪。它还集成了内存剖析（Heap Profil
 
 在 TraceConfig 中启用 heapprofd 时，`data_sources.config.name` 从 Android 10 起就是 `android.heapprofd`：
 
-```
+```textproto
 data_sources {
   config {
     name: "android.heapprofd"
@@ -674,7 +676,7 @@ data_sources {
 }
 ```
 
-关键参数：
+这些字段决定采样范围和导出节奏：
 - `sampling_interval_bytes`：采样间隔，默认 4096 字节。意味着每分配 4096 字节采样一次。更大的值意味着更低的开销但更粗的粒度。
 - `process_cmdline`：目标进程的包名。不设置则对所有进程生效（高开销）。
 - `continuous_dump_config`：周期性导出快照的间隔。用于观察内存增长趋势。
@@ -685,7 +687,7 @@ data_sources {
 
 从 Android 12 开始，heapprofd 也支持 Java 堆的采样分析。这里要分清两层边界：`android.heapprofd` 这个数据源 Android 10+ 就有了，但 `heaps: "com.android.art"` 这类 Java heap selector 是 Android 12 才引入的字段。配置示例：
 
-```
+```textproto
 data_sources {
   config {
     name: "android.heapprofd"
@@ -706,7 +708,7 @@ Java Heap Sampling 和传统的 Java Heap Dump（如通过 `android.app.Activity
 
 最小配置如下：
 
-```
+```textproto
 data_sources {
   config {
     name: "android.java_hprof"
@@ -719,7 +721,7 @@ data_sources {
 duration_ms: 10000
 ```
 
-选择逻辑可以直接按问题拆开：
+选择方式可以按问题类型确定：
 
 - `android.heapprofd` + `heaps: "com.android.art"`：Android 12+，看 Java 分配热点和调用栈，适合回答“谁在频繁分配”。
 - `android.java_hprof` + `java_hprof_config`：Android 11+，看快照里的对象持有关系，适合回答“谁还持有没有释放”。
@@ -733,7 +735,7 @@ Perfetto 还可以在 Trace 中集成 CPU 调用栈采样。这对分析 CPU 密
 
 **版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 13 (Tiramisu / API 33) 起可用。运行条件：设备为 `userdebug`/`eng` 构建版本，或目标 App 声明了 `android:debuggable="true"`。在 `user` 构建的 release 设备上，只有 debuggable App 才能被采样。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
 
-```
+```textproto
 data_sources {
   config {
     name: "linux.perf"
@@ -774,7 +776,7 @@ data_sources {
 
 `linux.perf` 数据源通过 `traced_perf` 守护进程实现，它调用 Linux 内核的 `perf_event_open` syscall，为每个 CPU 创建一个 perf event group leader（由 `timebase` 定义），然后周期性采样。
 
-**PerfEventConfig 关键字段详解**：
+**PerfEventConfig 字段说明**：
 
 源码锚点在 `protos/perfetto/config/profiling/perf_event_config.proto`。当前主干里的 `PerfEventConfig` 已经把调用栈相关约束收进 `CallstackSampling` 子消息，字段编号也和早期文章里常见的旧 schema 不同：
 
@@ -825,9 +827,9 @@ message CallstackSampling {
 
 ### 同时收集多种数据的配置示例
 
-在一份 TraceConfig 中，我们可以同时开启多个数据源。下面是一份同时收集 ftrace 事件、Heap Profiling 和 CPU 调用栈采样的配置：
+一份 TraceConfig 可以同时开启多个数据源。这个示例同时收集 ftrace 事件、Heap Profiling 和 CPU 调用栈采样：
 
-```
+```textproto
 buffers {
   size_kb: 131072   # 128MB，Heap Profiling 需要更大 buffer
   fill_policy: DISCARD
@@ -885,7 +887,7 @@ duration_ms: 20000
 
 ## 常见问题与误区
 
-**"atrace categories 选得越多越好"**——不对。每个 category 都会持续产生额外事件，数据量会很快膨胀，buffer 也更容易被写满。真正需要的数据被覆盖后，后面的分析就失去了定位依据。更稳妥的做法是根据分析目标选一组最小 category 组合，再按需要逐步加项，参考前面「按分析场景选择 Categories」的推荐表。
+**"atrace categories 选得越多越好"**——不对。每个 category 都会持续产生额外事件，数据量会很快膨胀，buffer 也更容易被写满。关键数据被覆盖后，后面的分析就失去了定位依据。更稳妥的做法是根据分析目标选一组最小 category 组合，再按需要逐步加项，参考前面「按分析场景选择 Categories」的推荐表。
 
 **"Trace 文件越大，信息越丰富"**——也不对。信息丰富度取决于数据源的选择和配置是否精准，而不是文件大小。一份 20MB 的精准 Trace 通常比一份 200MB 的冗余 Trace 更容易定位问题。
 
@@ -895,7 +897,7 @@ duration_ms: 20000
 
 ## 与其他章节的关系
 
-本章是工具篇的入口。掌握了 Trace 抓取之后，后续章节将在本节抓取的 Trace 数据基础上展开分析：
+Trace 抓取是工具篇的入口。掌握抓取方式后，后续章节会基于这些 Trace 数据展开分析：
 
 - §13.3（Perfetto View）会介绍如何在 Perfetto UI 中阅读和导航 Trace
 - §13.5（主题分析）会深入各性能主题的 Trace 分析方法
