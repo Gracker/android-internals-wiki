@@ -7,7 +7,7 @@ drafted_date: "2026-03-30"
 drafted_by: "openclaw-task2"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-03-31"
-reviewed_date: "2026-05-01"
+reviewed_date: "2026-05-08"
 reviewed_by: "openclaw-task6"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
@@ -33,11 +33,11 @@ sources:
     path: "developer.android.com/jetpack/androidx/releases/input"
 tags: [touch, input, latency, InputReader, InputDispatcher, sampling-rate, batching, Choreographer, responsiveness]
 related_chapters: ["3.1", "2.3", "2.4", "2.5", "8.1"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
 task2b_state: fixed
 task6_result: pass-light-edit
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_rework_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
@@ -76,11 +76,11 @@ task9_result: needs-rework
 
 ## 为什么需要关注触摸响应
 
-在 Perfetto 中打开一段用户滑动列表的 Trace，我们会看到这样的画面：InputReader 线程每隔几毫秒就读取一个触摸坐标，InputDispatcher 线程把这些坐标派发给应用，应用的主线程被唤醒，处理事件、执行 invalidate()、等 VSync、绘制一帧。等这一帧真正显示出来时，用户的手指已经移动到了下一个位置，但屏幕上显示的还是上一帧的内容。
+在 Perfetto 中打开一段用户滑动列表的 Trace，会看到这样的画面：InputReader 线程每隔几毫秒读取一个触摸坐标，InputDispatcher 线程把这些坐标派发给应用，应用主线程被唤醒，处理事件、执行 invalidate()、等 VSync、绘制一帧。等这一帧显示出来时，用户的手指已经移动到了下一个位置，但屏幕上显示的还是上一帧的内容。
 
-这就是触摸响应延迟。用户的手指已经离开了某个位置，但系统还没来得及把画面更新到屏幕上。在 60Hz 屏幕上，最坏情况下一帧从"触摸发生"到"画面更新"可能经历一个完整的 VSync 周期（16.6ms）的延迟；在 120Hz 屏幕上这个数字降到了约 8.3ms，但如果我们在 Perfetto 中仔细看，从触摸硬件采样到画面最终上屏，实际的总延迟往往在 30-80ms 之间。本节就按时间顺序把这段延迟拆开。
+这就是触摸响应延迟。用户的手指已经离开了某个位置，但系统还没来得及把画面更新到屏幕上。在 60Hz 屏幕上，最坏情况下一帧从"触摸发生"到"画面更新"可能经历一个完整的 VSync 周期（16.6ms）的延迟；在 120Hz 屏幕上这个数字降到了约 8.3ms。但如果在 Perfetto 中仔细看，从触摸硬件采样到画面最终上屏，实际的总延迟往往在 30-80ms 之间。本节按时间顺序分解这段延迟。
 
-理解触摸响应延迟的组成，是优化所有"跟手性"问题的前提。不管我们在做滑动流畅度优化、启动速度优化还是 ANR 分析，Input 事件传递路径上的每一个环节都可能成为瓶颈。
+理解触摸响应延迟的组成，是优化所有"跟手性"问题的前提。不管是滑动流畅度优化、启动速度优化还是 ANR 分析，Input 事件传递路径上的每一个环节都可能成为瓶颈。
 
 ### HCI 感知阈值研究
 
@@ -97,7 +97,7 @@ HCI 领域对触摸延迟的感知研究有几个广泛引用的结论。多项�
 
 ## 触摸响应延迟的组成
 
-一个触摸事件从手指触碰屏幕到画面更新显示，要经过一条相当长的路径。我们用时间顺序来拆解，看看每一阶段发生了什么、耗时在哪里。
+一个触摸事件从手指触碰屏幕到画面更新显示，要经过一条相当长的路径。按时间顺序分解后，每一阶段发生了什么、耗时在哪里会更清楚。
 
 ### 1. 硬件采样（触摸屏 → 驱动）
 
@@ -251,7 +251,7 @@ float latestY = event.getY();
 
 ### Batching 之外还有重采样
 
-Batching 解决的是“一帧里来了太多点，怎么一起交给应用”；真正让轨迹贴着帧时间走的，还有重采样。系统把 batched input 贴到 `CALLBACK_INPUT` 附近之后，Native 层 `InputConsumer` 会按照目标 frame time，在最近几个真实采样点之间做插值，补出一个更接近这一帧显示时刻的坐标。这样 120Hz 采样配 60Hz 显示仍然有价值，系统拿到的不只是“最新一个点”，而是“更接近这一帧该显示的位置”。
+Batching 解决的是“一帧里来了太多点，怎么一起交给应用”；让轨迹贴着帧时间走的还有重采样。系统把 batched input 贴到 `CALLBACK_INPUT` 附近之后，Native 层 `InputConsumer` 会按照目标 frame time，在最近几个真实采样点之间做插值，补出一个更接近这一帧显示时刻的坐标。这样 120Hz 采样配 60Hz 显示仍然有价值，系统拿到的不只是“最新一个点”，而是“更接近这一帧该显示的位置”。
 
 对应用来说，重采样生成的坐标可通过 `MotionEvent.PointerCoords.isResampled()`（Android 15 / API 35+）识别——`getX()` / `getY()` 读到的是当前样本坐标，是否为重采样点要看对应 PointerCoords 的 `isResampled` 字段。API 35 以下没有公开接口查询重采样状态，只能通过 Trace / 源码判断。历史样本还在，但当前坐标更贴近帧时序，指尖轨迹也更稳。也因为这个原因，`requestUnbufferedDispatch()` 只能在笔迹、绘图、签名这类场景慎用；一旦关闭 batching 和系统重采样，MOVE 事件虽然更早送达，轨迹也更容易抖。
 
@@ -508,11 +508,11 @@ AndroidX `input-motionprediction` 更像兼容层和封装层。AndroidX release
 
 ### 误区：Input ANR 等于 App 卡死
 
-Input ANR 的触发条件是：InputDispatcher 将事件派发给 App 后，5 秒内没有收到 `finishInputEvent()` 的回调。这确实说明 App 主线程卡住了，但"卡住"的原因可能是多样的：死锁、Binder 调用阻塞、磁盘 I/O 等待、甚至是因为 GC 暂停了主线程。需要结合 Perfetto 或 ANR Trace 来具体分析，而不是笼统地认为"App 写得差"。
+Input ANR 的触发条件是：InputDispatcher 将事件派发给 App 后，5 秒内没有收到 `finishInputEvent()` 的回调。这说明 App 主线程卡住了，但"卡住"的原因可能是多样的：死锁、Binder 调用阻塞、磁盘 I/O 等待、甚至是因为 GC 暂停了主线程。需要结合 Perfetto 或 ANR Trace 来具体分析，而不是笼统地认为"App 写得差"。
 
 ## 输入重采样（Motion Resampling）机制
 
-### 源码级细节（2026-04-25 调研补充）
+### 源码级细节
 
 Android Native 层实现了 **LegacyResampler**（`frameworks/native/libs/input/Resampler.cpp`），负责将触摸屏硬件高频采样与屏幕刷新率解耦。核心实现逻辑：
 
@@ -555,7 +555,7 @@ ViewRootImpl → Choreographer.doFrame()
 Resampler 位于 App 进程的 `InputConsumer` 内部（`frameworks/native/libs/input/InputConsumer.cpp`），不在系统侧的 InputReader/InputDispatcher 管线中。`Resampler.cpp` 定义在 `frameworks/native/libs/input/Resampler.cpp`。
 
 **性能影响：**
-- 正面：消除频率差带来的抖动，使触摸轨迹对齐 VSync 边界
+- 正面：消除频率差带来的抖动，使触摸轨迹贴近 VSync 边界
 - 负面：5ms 人为延迟，外推在速度突变时可能预测错误
 
 源码：`frameworks/native/libs/input/Resampler.cpp`（AOSP mainline）
