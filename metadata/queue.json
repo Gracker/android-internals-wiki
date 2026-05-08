@@ -7532,7 +7532,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-28T14:33:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T11:45:13.149119",
+      "completed_reason": "版本边界已从 Android 16 升级到 Android 17；开头段已补充 Android 17 入口（Generational CMC、sched_ext、Energy Limiter、锁消除）；阅读建议已更新为 Android 14/15/16/17"
     },
     {
       "section": "3.0",
@@ -10270,7 +10272,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-04-30T09:28:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T11:45:13.149119",
+      "completed_reason": "P1 BumpPointerSpace 分配边界版本线已从 Android 16 修正为 Android 15（android-15.0.0_r1 已从 kPageSize 切到 gPageSize）；删除了无源码支撑的'地址空间不合法/缓存行效率下降'因果推断"
     },
     {
       "section": "7.11",

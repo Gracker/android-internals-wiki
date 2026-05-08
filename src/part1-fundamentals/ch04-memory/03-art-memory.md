@@ -32,15 +32,15 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-30T08:40:00+08:00"
-task6_state: reviewed
+last_task2b_at: "2026-05-08T11:40:00+08:00"
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-03"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 p1: 1
 p2: 1
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。"
@@ -119,7 +119,7 @@ Allocation Space 的具体实现取决于当前使用的 GC 策略：
 - 在 Android 8.0–14 中使用 CC（Concurrent Copying）GC 时，Allocation Space 的数据结构是 `RegionSpace`，堆被划分为 256KB 固定大小的 Region
 - 在 Android 15+ 使用 CMC（Concurrent Mark-Compact）GC 时，Allocation Space 的数据结构切换为 `BumpPointerSpace`，结构更简单，更有利于全局压缩。
 
-Android 16 针对 16KB 页环境进一步改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐——在 16KB 页设备上，4KB 对齐的分配会导致地址空间不合法、缓存行效率下降。Android 16 将这个硬编码替换为动态获取当前页大小的机制。在 android-16.0.0_r1 中，ART 通过 `libartbase/base/globals.h` 的 `GetPageSizeSlow()` 和 `art/runtime/mem_map.cc` 的 `MemMap::GetPageSize()` 获取运行时页大小，而不是直接调用一个虚构的 `art::GetPageSize()` 方法。全局变量 `gPageSize` 在 ART 初始化阶段由 `InitPageSize()` 设置。
+Android 15 针对 16KB 页环境改造了 `BumpPointerSpace` 的分配边界。旧版本中，分配边界硬编码为 4KB 对齐（`RoundUp(capacity, kPageSize)`）。从 `android-15.0.0_r1` 起，改为动态获取当前页大小（`RoundUp(capacity, gPageSize)`），全局变量 `gPageSize` 在 ART 初始化阶段由 `InitPageSize()` 设置，对应源码位于 `art/runtime/gc/space/bump_pointer_space.cc`。
 
 这两种策略在后续的 GC 策略演进部分会详细展开。
 
