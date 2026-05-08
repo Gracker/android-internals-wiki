@@ -29,12 +29,12 @@ sources:
     path: "https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2"
 tags: ['responsiveness', 'page-switch', 'click-response', 'search', 'viewpager2', 'fragment', 'debounce']
 related_chapters: ["8.1", "8.2", "8.3", "3.1", "3.2", "7.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_date: "2026-05-07"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T19:32:17+08:00"
@@ -122,7 +122,7 @@ Fragment 的切换比 Activity 轻量得多——它不需要跨进程通信，�
 
 **回退栈（Back Stack）的生命周期开销。** 当使用 `addToBackStack()` 并执行 `replace()` 时，旧 Fragment 会走到 `onDestroyView()`（View 被销毁但 Fragment 实例保留）。用户按返回键时，旧 Fragment 需要重新走 `onCreateView()` → `onDestroyView()` 之间的所有回调——布局要重新 inflate。
 
-在 Perfetto 中，AndroidX Fragment 1.3.0+ 可以观察到 `FragmentManager:` 前缀的 trace slice，例如 `FragmentManager:commit`、`FragmentManager:execPendingActions`、`FragmentManager:moveToState`。业务代码仍然可以在导航入口外层加 `Trace.beginSection("FragmentTransaction")`，用来标出从点击到事务提交的应用侧边界。
+AndroidX Fragment 源码（FragmentManager / BackStackRecord / FragmentStateManager / SpecialEffectsController）中没有 `Trace.beginSection` 调用，Perfetto 不会自动生成 `FragmentManager:*` slice。排查 Fragment 切换性能时，需要业务代码自行插桩：在导航入口外层加 `Trace.beginSection("FragmentTransaction")`，配合主线程 slice（inflate、RecyclerView layout/prefetch）和 FrameTimeline 观察帧耗时。
 
 ### 页面跳转优化策略
 
@@ -244,7 +244,7 @@ viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback
 
 [已验证: AOSP android-16.0.0_r1, androidx.viewpager2]
 
-在 Perfetto 中，Tab 切换的性能问题通常表现为主线程 `inflate` 耗时过长，或 Fragment 生命周期回调里存在同步 I/O。排查时搜索 `FragmentManager:` 前缀的 trace slice，并在业务入口用 `Trace.beginSection("TabSwitch_" + position)` 标出每个 Tab 的切换耗时。
+在 Perfetto 中，Tab 切换的性能问题通常表现为主线程 `inflate` 耗时过长，或 Fragment 生命周期回调里存在同步 I/O。排查时在业务入口用 `Trace.beginSection("TabSwitch_" + position)` 标出每个 Tab 的切换耗时，配合主线程 slice、FrameTimeline 和 `tracing.mark_trace` 观察。
 
 ```text
 [图：Perfetto 中 ViewPager2 Tab 切换的典型 Trace]

@@ -11961,7 +11961,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T16:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T07:47:57.226765",
+      "completed_reason": "P1 Choreographer ThreadLocal: 修正\"只有主线程Choreographer收到VSync\"为\"任何有Looper线程的Choreographer都可收到VSync\"，补充sThreadInstance.initialValue()+FrameDisplayEventReceiver源码证据；P1 WorkManager精确定时: PeriodicWorkRequest改为AlarmManager(SCHEDULE_EXACT_ALARM)，补充PeriodicWorkRequest 15分钟最小间隔和不精确说明"
     },
     {
       "section": "7.9",
@@ -14086,7 +14088,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T19:32:17+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T08:43:36+08:00",
+      "completed_reason": "P1 删除FragmentManager:*自动可见slice断言（AndroidX源码无Trace.beginSection调用），改为业务自行插桩+主线程slice+FrameTimeline观察"
     },
     {
       "section": "19.13",
@@ -14148,7 +14152,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T20:24:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T07:47:57.226765",
+      "completed_reason": "P1 Perfetto数据源: android.process_meminfo→linux.process_stats(两处修正)，明确linux.process_stats提供RSS计数器(mem.rss/mem.rss.anon/mem.rss.file/mem.swap)不含PSS，PSS需靠dumpsys meminfo快照"
     },
     {
       "section": "19.13",
@@ -14615,7 +14621,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T07:36:49+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T08:43:36+08:00",
+      "completed_reason": "P1 Binder SQL已改为帧窗口约束：先锁定AppDeadlineMissed janky frame的ts/dur/upid，再join android_binder_txns限定client时间重叠区间，并用binder_txn_id关联breakdown"
     }
   ],
   "completed": [

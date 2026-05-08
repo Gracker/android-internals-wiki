@@ -735,9 +735,31 @@
           "status": "ready-for-review"
         }
       ]
+    },
+    {
+      "date": "2026-05-08T08:43:47+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        {
+          "section": "7.1",
+          "title": "卡顿的定义与分类",
+          "fixes": [
+            "P1 Binder SQL改为帧窗口约束：用actual_frame_timeline_slice锁定AppDeadlineMissed帧的ts/dur/upid，join android_binder_txns限定client时间重叠，binder_txn_id关联breakdown"
+          ],
+          "status": "ready-for-review"
+        },
+        {
+          "section": "8.4",
+          "title": "其他响应速度场景",
+          "fixes": [
+            "P1 删除FragmentManager:*自动可见Perfetto slice断言（AndroidX源码无Trace.beginSection），改为业务自行插桩+主线程slice+FrameTimeline观察"
+          ],
+          "status": "ready-for-review"
+        }
+      ]
     }
   ],
-  "task2b_last_run": "2026-05-07T17:47:16.435445",
+  "task2b_last_run": "2026-05-08T08:43:47+08:00",
   "task2b_reworks": [
     {
       "date": "2026-05-07T23:40:00+08:00",
@@ -773,8 +795,7 @@
   ],
   "task2b_last_rework": "2026-05-08",
   "task2b_last_sections": [
-    "10.2",
-    "1.17",
-    "4.7"
+    "7.1",
+    "8.4"
   ]
 }

@@ -420,7 +420,9 @@ WorkManager 是 Android Jetpack 中用于处理可延迟后台任务的推荐方
 | 即时的 CPU/IO 操作 | Kotlin Coroutine + Dispatchers.IO/Default |
 | 可延迟但必须执行的后台任务 | WorkManager |
 | 用户感知的长期后台任务 | 前台 Service |
-| 精确定时的重复任务 | WorkManager（PeriodicWorkRequest） |
+| 精确定时的重复任务 | AlarmManager（需要 `SCHEDULE_EXACT_ALARM` 权限，API 31+） |
+
+> **WorkManager `PeriodicWorkRequest` 的限制**：最小周期间隔 15 分钟，执行时间受 Doze 省电模式和电池优化影响，不保证精确触发。业务要求精确定时（闹钟、定时提醒）时，使用 `AlarmManager` 的 `setExactAndAllowWhileIdle()`，并在 Android 12（API 31）及以上声明 `SCHEDULE_EXACT_ALARM` 权限（用户可在系统设置中撤销）。API 33+ 对闹钟类应用提供 `USE_EXACT_ALARM` 权限，不需要用户授权。
 
 WorkManager 底层根据 Android 版本选择不同的执行引擎：API 23+ 使用 JobScheduler，更低版本使用 AlarmManager + BroadcastReceiver。开发者不需要关心这些细节，只需要定义 Worker 类、设置约束条件、提交给 WorkManager 即可。
 
@@ -451,9 +453,11 @@ public static Looper myLooper() {
 
 ### Choreographer 中的 ThreadLocal
 
-Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程存储一个独立的 Choreographer 实例。因此，主线程有自己的 Choreographer，其他有 Looper 的线程也可以有自己的 Choreographer。实践里，只有主线程的 Choreographer 会收到 VSync 信号并驱动渲染。
+Choreographer 也使用了同样的模式：通过 `ThreadLocal` 为每个线程存储一个独立的 Choreographer 实例。AOSP `Choreographer` 的 `sThreadInstance.initialValue()` 会对任何已有 Looper 的线程创建实例，构造函数里会注册 `FrameDisplayEventReceiver(looper, VSYNC_SOURCE_APP)` 来接收 VSync 信号。任何有 Looper 的线程调用了 `Choreographer.getInstance()` 之后，都能收到 VSync 回调，没有主线程限制。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Looper.java 和 frameworks/base/core/java/android/view/Choreographer.java]
+日常分析中通常只看到主线程的 Choreographer 驱动渲染，原因是 `ViewRootImpl.scheduleTraversals()` 通过 `Choreographer.getInstance()` 拿到的是主线程的实例，`doFrame()` → Traversal 调度链绑在主线程上。如果其他线程也创建了自己的 Choreographer 并通过 `postFrameCallback` 注册回调，那个线程的 Choreographer 同样会收到 VSync 并执行回调。Perfetto 里看到非主线程出现 `Choreographer#doFrame` slice 时，先检查该线程是否注册了自己的 Choreographer，不要直接当成异常。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/Choreographer.java — sThreadInstance.initialValue() 创建 FrameDisplayEventReceiver; frameworks/base/core/java/android/os/Looper.java]
 
 ## 在 Perfetto 中的表现
 

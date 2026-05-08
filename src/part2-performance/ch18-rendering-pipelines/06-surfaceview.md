@@ -130,6 +130,10 @@ SurfaceView 的渲染路径可以分为三个阶段，每个阶段对应不同�
 这通常是视频解码线程（MediaCodec）、Camera 数据线程或游戏逻辑线程：
 
 1. **dequeueBuffer**：从 BufferQueue 申请一个空闲 Buffer。如果队列满了（Consumer 没来得及消费），这里会阻塞。[已验证: AOSP BufferQueue]
+   - **内部锁机制**：`BufferQueueProducer::waitForFreeSlotThenRelock()`（行 297）持有 `BufferQueueCore::mMutex` 的情况下等待——这把互斥锁同时保护 `mSlots[]`、`mFreeSlots`/`mFreeBuffers`/`mActiveBuffers` 三套 Slot 集合，以及 `mQueue` FIFO。Consumer 的 `releaseBuffer()`（行 480）通过 `mDequeueCondition.notify_all()` 唤醒等待中的 Producer。[已验证: AOSP BufferQueueProducer.cpp]
+   - **O(n) 热点**：每次 `waitForFreeSlotThenRelock` 重试都要遍历 `mActiveBuffers` 集合统计 dequeued/acquired 数量（默认 Slot=4），n 越大竞争越激烈
+   - **Android 14+ 优化**：`BUFFER_RELEASE_CHANNEL` flag 引入 `notifyBufferReleased()` 替代 `notify_all()`，实现精确唤醒，减少无效唤醒竞争
+   - **Allocation 期间释放锁**：`mIsAllocating=true` 时 `waitWhileAllocatingLocked()` 主动释放 `mMutex`，避免 GraphicBuffer 分配 I/O 导致全局阻塞——这是避免分配期间整个 BufferQueue 冻结的关键设计
 2. **Draw（绘制）**：
    - **Canvas 模式**：`lockCanvas()` → 在 Bitmap 上绘制 → `unlockCanvasAndPost()`。这种模式适合简单的 2D 绘制，如 AR 贴纸
    - **GLES 模式**：`eglMakeCurrent()` → `glDraw*()` → `eglSwapBuffers()`。游戏、地图常用

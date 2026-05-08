@@ -38,12 +38,12 @@ sources:
     path: "Personal-Knowlodge/source/Android-Perfetto-05-Chorergrapher.md"
 tags: [jank, smoothness, FrameTimeline, Choreographer, 掉帧, 渲染性能]
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.2", "7.3", "7.15", "8.1", "9.1"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-08T05:42:56+08:00'
 repaired_date: '2026-04-22'
@@ -278,24 +278,45 @@ Binder 阻塞出现在 SurfaceFlinger 线程上时，需要额外证据才能指
 
 #### Perfetto SQL 佐证
 
-确认 FrameTimeline 归因后，用 `android_binder_txns` 定位具体 Binder 调用：
+确认 FrameTimeline 归因后，用帧窗口约束的 Binder SQL 定位具体调用。直接查 `android_binder_txns` 全局排序会抓到无关事务——必须先锁定 janky frame 的时间范围和线程：
 
 ```sql
--- 找到帧周期内耗时最长的 binder 事务
-SELECT client_process, server_process, client_dur/1e6 AS client_ms,
-       server_dur/1e6 AS server_ms, aidl_name, is_main_thread
-FROM android_binder_txns
-WHERE client_dur > 10000000  -- > 10ms
-ORDER BY client_dur DESC;
+-- Step 1: 锁定 AppDeadlineMissed 的 janky frame
+INCLUDE PERFETTO MODULE android.binder;
+INCLUDE PERFETTO MODULE android.binder_breakdown;
+
+WITH janky_frame AS (
+  SELECT ts, dur, upid
+  FROM actual_frame_timeline_slice
+  WHERE jank_type = 'AppDeadlineMissed'
+    AND on_time_finish = 0
+  ORDER BY dur DESC
+  LIMIT 1
+),
+-- Step 2: 找与该帧时间窗口重叠的 Binder 事务
+frame_binder AS (
+  SELECT b.client_process, b.server_process,
+         b.client_dur/1e6 AS client_ms,
+         b.server_dur/1e6 AS server_ms,
+         b.aidl_name, b.is_main_thread, b.binder_txn_id
+  FROM android_binder_txns b, janky_frame jf
+  WHERE b.client_upid = jf.upid
+    AND b.client_ts >= jf.ts
+    AND b.client_ts <= jf.ts + jf.dur
+    AND b.client_dur > 1000000  -- > 1ms
+  ORDER BY b.client_dur DESC
+)
+SELECT * FROM frame_binder;
 ```
 
-再用 `android_binder_client_breakdown` 按 reason 拆分延迟来源：
+拿到 `binder_txn_id` 后，再用 `android_binder_client_breakdown` 按 reason 拆分该事务的延迟来源：
 
 ```sql
 SELECT reason, count(*) AS count, sum(dur)/1e6 AS total_ms
 FROM android_binder_client_breakdown
-WHERE reason = 'binder'
-GROUP BY reason;
+WHERE binder_txn_id IN (SELECT binder_txn_id FROM frame_binder)
+GROUP BY reason
+ORDER BY total_ms DESC;
 ```
 
 排查顺序：**先看 FrameTimeline 归因 → 确认哪条线程在帧周期内阻塞 → 再用 Binder SQL 定位具体调用**。不要跳过 FrameTimeline 直接从 Binder 调用反推 JankType。
