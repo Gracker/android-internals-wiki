@@ -5,10 +5,13 @@ section: '1.4'
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 drafted_date: '2026-04-10'
 drafted_by: openclaw-task2a
-last_verified: '2026-05-08'
+last_verified: '2026-05-09'
 last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android 官方文档
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: "fixed"
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: medium
 sources:
 - type: blog
@@ -47,13 +50,13 @@ task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: '2026-05-08'
 last_task9_at: "2026-05-08T19:29:15+08:00"
-task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P1 1，P2 1。oneway/Lazy Async 版本口径与反压语义需回炉；冷启动 Binder 次数和服务方法耗时需补可复核 trace 数据。"
+task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P1 1，P2 1。oneway/Lazy Async 版本口径与反压语义已修复(task2b)；冷启动 Binder 次数和服务方法耗时需补可复核 trace 数据。"
 last_task9_review_log: "logs/deep-review/2026-05-08-19-deep-review.md"
 status: "ready-for-review"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
 task9_state: "reviewed"
-pipeline_stage: "task2b_pending"
+pipeline_stage: "task6_pending"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-08"
 task6_reviewed_date: "2026-05-08"
@@ -224,7 +227,7 @@ oneway 很容易被当成“更快”的选择，但这里有几个容易踩的�
 
 **oneway 不是并发的。** 同一个 `IBinder` 对象上的 oneway 调用，在 Server 端是串行处理的。如果客户端连续发出 10 个 oneway 调用，它们会在 Server 端排队依次执行，而不是 10 个线程同时处理。
 
-**调用方仍然可能阻塞。** 虽然不等服务端处理结果，但如果 Server 端的 oneway 队列积压过长，Binder Driver 可能会对调用方施加反压（特别是在 Android 14+ 引入 Lazy Async 之后）。在极端情况下，Client 端调用 oneway 方法也可能被短暂阻塞。
+**调用方仍然可能阻塞。** 虽然不等服务端处理结果，但 oneway 调用并非完全无开销。三个边界需要留意：(1) 同一 Binder node 上的 async transaction 不并发，积压时 Driver 的 async buffer 空间有限，耗尽后 `transact()` 返回 `BR_FAILED_REPLY`；(2) Android 11 QPR3+ 的 binder freezer 机制下，frozen callee 的 async transaction 会被缓冲，buffer overflow 时可能导致接收端崩溃（`BR_TRANSACTION_PENDING_FROZEN`）；(3) Android 12+ 引入了 oneway spam detection（`BINDER_ENABLE_ONEWAY_SPAM_DETECTION`），高频 oneway 调用可能触发 `BR_ONEWAY_SPAM_SUSPECT` 限流。在极端情况下，Client 端调用 oneway 方法也可能被短暂阻塞。
 
 **适用场景。** 不需要确认处理结果的场景适合用 oneway：状态通知、日志上报、事件广播。需要返回值、或者需要确认对方已处理的场景，不要用 oneway。
 

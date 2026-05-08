@@ -39,15 +39,15 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: pending
-last_task2b_at: "2026-05-09T03:46:13+08:00"
-task9_review_notes: "2026-05-09 Task9 06:20：needs-rework。P0 2：FrameMetrics GPU_DURATION 被并入 Android 7+；ApplicationExitInfo 被写成 Android 10+，实际 API 30/Android 11+。P2 1：ARM64 cache flush 完整序列已有 suggestions 既有项。"
+task2b_state: fixed
+last_task2b_at: "2026-05-09T06:51:32+08:00"
+task9_review_notes: "2026-05-09 Task9 06:20：needs-rework。P0 2：FrameMetrics GPU_DURATION 被并入 Android 7+；ApplicationExitInfo 被写成 Android 10+，实际 API 30/Android 11+。P2 1：ARM64 cache flush 完整序列已有 suggestions 既有项。→ 已于 2026-05-09 Task2B 修复：GPU_DURATION 拆为 API 24+/API 31+ 两段；ApplicationExitInfo 修正为 Android 11/API 30+。"
 last_task6_at: "2026-05-09T04:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-04-review.md"
 review_notes: "2026-05-09 Task6 03:07：Task2B 修复后写作复审；轻修 20 处（标题引导语、形容词冒号起手式、半角标点、限制变严/分解类翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
@@ -116,9 +116,9 @@ last_task9_review_log: "logs/deep-review/2026-05-09-06-deep-review.md"
 
 典型例子包括：
 
-- `FrameMetrics`：每帧渲染耗时、GPU 执行时间的结构化上报（Android 7+）
+- `FrameMetrics`：每帧渲染耗时、输入延迟、布局/绘制阶段的分项耗时（Android 7 / API 24+）；GPU 执行时间（`TOTAL_DURATION`、`GPU_DURATION`）从 API 31 (Android 12) 起可用
 - `JankStats`：基于 FrameMetrics 的卡顿检测与归因库（AndroidX）
-- `ApplicationExitInfo`：系统记录的进程退出原因（ANR、crash、LMK 等，Android 10+）
+- `ApplicationExitInfo`：系统记录的进程退出原因（ANR、crash、LMK 等，Android 11 / API 30+）
 - `Choreographer.FrameCallback`：VSync 回调接口，用于帧时间对齐和自定义帧调度
 - `JVMTI`：JVM Tool Interface，debuggable 进程可用的运行时诊断接口（Android 8+）
 

@@ -270,6 +270,70 @@ Android 16 (GKI 6.12) 是一个分水岭：MGLRU 成为 GKI 内核的强制基�
 [来源: Cubox/荣耀在MGLRU内存回收上的发力或恰到好处-2026-02-25.md]
 [来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md]
 
+<!-- AIW-源码调研-2026-05-09 -->
+#### 源码分析：MGLRU vs 传统双级 LRU 锁竞争
+
+传统双级 LRU 的核心问题是 **per-node 全局 `lru_lock` 的竞争**。`struct lruvec` 持有单一 `spinlock_t lru_lock`，所有 CPU 上的页面引用事件（`activate_page()` / `lru_note_procit()`）和页面回收路径（`shrink_inactive_list()`）都在这把锁下操作。在 8+ 核的手机 SoC 上，多核并发访问导致这把锁成为瓶颈。
+
+MGLRU（Linux 6.8+）通过三个机制削减锁竞争：
+
+**1. 锁粒度细化到 per-lruvec（node+memcg 组合）**
+
+```c
+// include/linux/mmzone.h
+static struct lruvec *get_lruvec(struct mem_cgroup *memcg, int nid)
+{
+    struct pglist_data *pgdat = NODE_DATA(nid);
+    if (memcg) {
+        return &memcg->nodeinfo[nid]->lruvec;  // 每个 memcg+node 独立 lruvec
+    }
+    return &pgdat->__lruvec;  // root memcg
+}
+```
+
+不同 App（不同 memcg）的内存回收不再竞争同一把锁。
+
+**2. `folio_update_gen()` 无锁化**
+
+传统 LRU 每次页面引用都做 `list_move()`（持锁）。MGLRU 用 generation 编号替代：页面引用时只更新 `folio->flags` 中的 `LRU_GEN_MASK` 位（不需要锁），由 `lru_gen_look_around()` 做批量 PTE accessed bit 清除：
+
+```c
+// mm/vmscan.c lru_gen_look_around()，行 3977-4060
+void lru_gen_look_around(struct page_vma_mapped_walk *pvmw)
+{
+    for (i = 0, addr = start; addr != end; i++, addr += PAGE_SIZE) {
+        pte_t ptent = ptep_get(pte + i);
+        if (!pte_young(ptent))
+            continue;
+        ptep_test_and_clear_young(vma, addr, pte + i);  // 批量清除 accessed bit
+        old_gen = folio_update_gen(folio, new_gen);  // 只更新 flags，无锁
+    }
+}
+```
+
+**3. `evict_folios()` 锁持有时间从 O(n) 降到 O(1)**
+
+传统 `shrink_inactive_list()` 在整个扫描期间（可能数千次 `list_move()`）持有 `lru_lock`。MGLRU 的 `evict_folios()` 持锁后只做一代链表的批量 `isolate_folios()`，然后立即释放锁：
+
+```c
+// mm/vmscan.c evict_folios()，行 4491-4530
+static int evict_folios(struct lruvec *lruvec, ...)
+{
+    spin_lock_irq(&lruvec->lru_lock);
+    scanned = isolate_folios(lruvec, sc, swappiness, &type, &list);
+    // try_to_inc_min_seq() 也在这里执行
+    spin_unlock_irq(&lruvec->lru_lock);  // 立即释放！
+
+    // shrink 在锁外执行
+    reclaimed = shrink_folio_list(&list, pgdat, sc, &stat, false);
+}
+```
+
+**sysfs 监控接口**：`/sys/kernel/mm/lru_gen/enabled`（bitmask 主开关）+ `/sys/kernel/mm/lru_gen/lru_gen`（各代页面数量直方图）。
+
+[AIW-源码调研-2026-05-09 end]
+[来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md]
+
 ### [自动发现] Silk：GC 与内核页面回收的协同优化
 
 华中科技大学在 TACO '25 上发表的 Silk 论文提出了一个更深层的观察：ART 虚拟机的 GC 行为会严重干扰内核的 LRU 判断。论文发现了"Object Hotness Inversion"（对象热度倒置）问题：
@@ -479,3 +543,10 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
   - OPPO《内存反碎片优化原理》
   - Silk (TACO '25) — GC 与内核页面回收的协同优化
   - LPC 2025 — HW/SW Design Recommendations for 16KB Devices
+
+### MGLRU vs 传统双级 LRU 锁竞争差异
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md
+- 类型：DeepResearch 调研结果
+- 摘要：MGLRU（Linux 6.8 主线）通过 per-lruvec 代际链表细化锁粒度，减少传统双级 LRU 全局 lru_lock 在多核并发下的竞争。核心改进：代际独立链表+批量 PTE accessed bit 清除（锁外执行）+ per-lruvec 锁粒度，从根源削减 shrink_inactive_list 全局持锁瓶颈。
+- 注入时间：2026-05-09
+- 价值：源码级对比传统 LRU 与 MGLRU 的锁竞争机制，直接补充 ch04 Linux 内存管理章节的页面回收锁竞争分析

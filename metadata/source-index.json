@@ -3428,6 +3428,123 @@
       "processed_at": "2026-05-08 06:32",
       "type": "deepresearch-inject",
       "action": "queue"
+    },
+    {
+      "title": "16KB Page Size 对现有三方库的破坏性影响评估",
+      "path": "DeepResearch/2026-05-08-16kb-page-size-third-party-library-impact.md",
+      "quality": "high",
+      "score": 20,
+      "scored_at": "2026-05-09T00:24:11.765102"
+    },
+    {
+      "title": "AnimatedVectorDrawable 的线程退化机制",
+      "path": "DeepResearch/2026-05-08-animatedvectordrawable-thread-degradation.md",
+      "quality": "high",
+      "score": 19,
+      "scored_at": "2026-05-09T00:24:14.529855"
+    },
+    {
+      "title": "Binder Freezer 与 cgroup v2 Freezer 协同机制",
+      "path": "DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md",
+      "quality": "high",
+      "score": 20,
+      "scored_at": "2026-05-09T00:24:25.387794"
+    },
+    {
+      "title": "FragmentTransaction commit 源码链路",
+      "path": "DeepResearch/2026-05-08-fragment-transaction-commit-source-chain.md",
+      "quality": "high",
+      "score": 18,
+      "scored_at": "2026-05-09T00:24:38.006196"
+    },
+    {
+      "title": "ApplicationExitInfo 在 Android 11 以下的替代方案",
+      "path": "DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md",
+      "quality": "high",
+      "score": 20,
+      "scored_at": "2026-05-09T00:24:48.135844"
+    },
+    {
+      "title": "ApplicationExitInfo 在 Android 11 以下的替代方案",
+      "path": "DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md",
+      "quality": "high",
+      "score": 18,
+      "scored_at": "2026-05-09T00:24:58.132514"
+    },
+    {
+      "path": "OpenClaw定时任务/Perfetto每日提交监控/2026-05-08-Perfetto每日提交监控.md",
+      "score": 18,
+      "reasoning": "Relevance: 5/5, Technical Depth: 5/5, Currency: 5/5, Verifiability: 3/5",
+      "scored_at": "2026-05-09T05:51:04.578629"
+    },
+    {
+      "path": "source/juejin-android/2026-05-09-75967106-2026年了，Android开发该如何调.md",
+      "score": 15,
+      "reasoning": "Relevance: 5/5, Technical Depth: 3/5, Currency: 5/5, Verifiability: 2/5",
+      "scored_at": "2026-05-09T05:51:04.578637"
+    },
+    {
+      "path": "source/juejin-android/2026-05-09-76128120-Android17 为什么重写 Mess.md",
+      "score": 19,
+      "reasoning": "Relevance: 5/5, Technical Depth: 5/5, Currency: 5/5, Verifiability: 4/5",
+      "scored_at": "2026-05-09T05:51:04.578640"
+    },
+    {
+      "path": "source/juejin-android/2026-05-09-76132301-2026 Flutter VS Reac.md",
+      "score": 17,
+      "reasoning": "Relevance: 5/5, Technical Depth: 5/5, Currency: 5/5, Verifiability: 2/5",
+      "scored_at": "2026-05-09T05:51:04.578641"
+    },
+    {
+      "path": "论文/Android-2026-05-08-Native-vs-Web-Energy/03-analysis.md",
+      "score": 18,
+      "reasoning": "Relevance: 5/5, Technical Depth: 5/5, Currency: 3/5, Verifiability: 5/5",
+      "scored_at": "2026-05-09T05:51:04.578643"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md",
+      "title": "MGLRU vs 传统双级 LRU 锁竞争差异",
+      "summary": "MGLRU（Linux 6.8 主线）通过 per-lruvec 代际链表细化锁粒度，减少传统双级 LRU 全局 lru_lock 在多核并发下的竞争。核心改进：代际独立链表+批量 PTE accessed bit 清除（锁外执行）+ per-lruvec 锁粒度，从根源削减 shrink_inactive_list 全局持锁瓶颈。",
+      "chapter": "ch04",
+      "section": "4.2",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-pi-mutex-pthread-prio-inherit-android.md",
+      "title": "PI-Mutex (PTHREAD_PRIO_INHERIT) 在 Android Bionic 中的实现与 32 位架构限制",
+      "summary": "Bionic PI-Mutex 通过 FUTEX_LOCK_PI 实现优先级继承，防止低优先级持锁线程被中优先级抢占导致高优先级反转。主要应用于 AudioFlinger FAST Mixer 和 Binder 驱动优先级传播。32 位架构 PID 回绕问题在 Android 12+ 通过扩展 PID 类型缓解。",
+      "chapter": "ch01",
+      "section": "1.14",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md",
+      "title": "ApplicationExitInfo 在 Android 11 以下的替代方案",
+      "summary": "Android 10 及以下版本通过四种方案弥补 ApplicationExitInfo 监控盲区：ANR traces 直接读取、LMKd 信号监听、自定义 Signal Handler、ActivityManager 内存统计。KOOM fork dump 机制将主进程冻结时间从 ~20s 降至 <20ms。",
+      "chapter": "ch19",
+      "section": "19.24",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md",
+      "title": "Binder Freezer 与 cgroup v2 Freezer 协同机制",
+      "summary": "Android 12+ CachedAppOptimizer 通过 cgroup v2 freezer 冻结缓存应用，Binder 驱动层通过 cgroup_enter_frozen/leave_frozen 协同管理冻结状态。内核侧完整状态机：CGRP_FREEZE → JOBCTL_TRAP_FREEZE → TASK_STOPPED。FREEZER_CUTOFF_ADJ=900 决定冷冻范围。",
+      "chapter": "ch05",
+      "section": "5.8",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-bufferqueue-internal-lock-contention.md",
+      "title": "BufferQueue 内部锁竞争机制",
+      "summary": "BufferQueue 采用单一 mutex + 多 condition variable 保护所有共享状态。三个关键竞争路径：dequeueBuffer 等待 free slot（持锁阻塞）、ActiveBuffer O(n) 扫描热点、Allocation 期间主动释放锁。Android 14 引入 BUFFER_RELEASE_CHANNEL 精确唤醒替代广播式 notify_all。",
+      "chapter": "ch02",
+      "section": "2.13",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
     }
   ]
 }
