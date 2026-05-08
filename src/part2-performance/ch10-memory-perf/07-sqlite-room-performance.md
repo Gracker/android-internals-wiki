@@ -48,20 +48,20 @@ sources:
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-04"
+reviewed_date: "2026-05-08"
 task6_result: pass-light-edit
 last_task9_at: "2026-05-04T12:41:40+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-04"
 task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；批量事务 fsync 与 Room transaction executor 口径需回炉。"
-
+review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。"
 ---
 
 # 10.7 SQLite/Room 数据库性能优化
@@ -70,7 +70,7 @@ task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / 
 
 数据库操作之所以容易成为性能瓶颈，根源在于 SQLite 的并发模型和 Android 在其上叠加的 connection pool。SQLite 在同一时刻只允许一个写者，Android 侧再用 `SQLiteSession`、`SQLiteConnectionPool` 和 helper open 流程把查询、事务、Migration 组织起来。把这几层分清楚，才能判断慢点究竟出在 SQL、本地窗口 refill、跨进程 Cursor 传输，还是连接池争用。
 
-本章我们从 SQLite 内部机制讲起，覆盖 CursorWindow 跨进程传输的瓶颈、Room 的线程模型与优化策略，并给出数据库性能问题的系统分析方法。
+数据库性能问题可以沿着四层看：SQLite 并发模型、CursorWindow 跨进程传输、Room 线程模型，以及最终在 ANR / Perfetto 里的表现。
 
 <!-- outline-start -->
 - 🔹 WAL 模式、锁层级与 `SQLiteDatabase` 同步机制
@@ -104,7 +104,7 @@ WAL 模式的收益主要来自两个更稳定的事实。
 
 WAL 模式也有限制需要注意：只有一个写者可以活跃（写操作仍然串行），WAL 文件如果不及时做检查点可能无限增长，以及它不适用于网络文件系统（需要共享内存）。
 
-[待验证: F2FS 文件系统上 WAL 的写入放大 10-15% 是否影响实际性能]
+[待验证：F2FS 文件系统上 WAL 的写入放大 10-15% 是否影响实际性能]
 
 ### 1.2 SQLite 的锁层级
 
@@ -140,7 +140,7 @@ public SQLiteConnection acquireConnection(String sql, int connectionFlags,
 }
 ```
 
-要分清两个层次。`mLock` 保护的是连接池元数据，真正让线程睡下去的位置是 `waitForConnection()`；长事务、独占写连接或连接池规模过小，都会让后续线程在这里排队。Perfetto 和 ANR trace 里更值得找的是 `beginTransaction`、`executeForCursorWindow()`、`waitForConnection()` 这条链。
+要分清两个层次。`mLock` 保护的是连接池元数据，让线程进入等待的位置是 `waitForConnection()`；长事务、独占写连接或连接池规模过小，都会让后续线程在这里排队。Perfetto 和 ANR trace 里更值得找的是 `beginTransaction`、`executeForCursorWindow()`、`waitForConnection()` 这条链。
 
 `SQLiteOpenHelper` 的数据库打开路径仍然是串行的。`getWritableDatabase()` 会把 `onCreate()`、`onUpgrade()`、`onDowngrade()` 串在一次 open 流程里，所以慢 Migration 一样会把后续打开者挡在门外。这里的阻塞点更接近 helper open 和 connection acquisition。
 
@@ -188,7 +188,7 @@ public boolean onMove(int oldPosition, int newPosition) {
 
 把“大查询”直接等同为“Binder buffer 溢出”太粗。跨进程 Cursor 返回时，常见路径是 `BulkCursorDescriptor` 携带窗口描述信息，窗口内容通过 ashmem FD 共享。容易混在一起的有三类问题：
 
-- **CursorWindowAllocationException / row too big**：单行太宽，或者窗口分配失败，数据根本塞不进当前窗口。
+- **CursorWindowAllocationException / row too big**：单行太宽，或者窗口分配失败，数据无法塞进当前窗口。
 - **频繁 refill 带来的卡顿**：窗口本身能创建，但因为 projection 过宽、目标位置太深或跨进程往返太多，列表滚动时不断触发 refill。
 - **TransactionTooLargeException**：更常见于同一次 Binder 事务里还夹带了大 `Bundle`、大 `Cursor` extras、多个并发事务共享 buffer，或者把非 Cursor 数据一起塞进回复包。
 
@@ -211,13 +211,13 @@ ORDER BY id
 LIMIT 20;
 ```
 
-如果列表会翻到很深的位置，Offset 成本仍然会随页数增长。Keyset 的优势在于利用索引直接定位起点，但它要求业务提供稳定排序键和游标条件。Paging 3 可以承载这两种查询，真正决定成本的是 DAO SQL，不是 Paging 3 这个框架名字本身。
+如果列表会翻到很深的位置，Offset 成本仍然会随页数增长。Keyset 的优势在于利用索引直接定位起点，但它要求业务提供稳定排序键和游标条件。Paging 3 可以承载这两种查询，决定成本的是 DAO SQL，不是 Paging 3 这个框架名字本身。
 
 ## 3. Room 的性能特性与优化
 
 ### 3.1 Room 的线程模型
 
-Room 不是“自动把所有数据库操作搬到后台线程”的魔法层，API 形态决定执行模型。
+Room 不会无条件把所有数据库操作搬到后台线程，API 形态决定执行模型。
 
 - **同步 DAO 方法**：就在调用线程执行。如果发生在主线程，Room 会直接抛异常；只有显式 `allowMainThreadQueries()` 才会关掉这层保护。
 - **`suspend` DAO / `withTransaction`**：走 Room 的 coroutine / executor 适配层，在 query executor 或 transaction executor 上执行。
@@ -248,7 +248,7 @@ suspend fun insertAll(items: List<Item>) {
 
 使用事务后，锁获取和 WAL 提交只发生一次，1000 条数据批量写入 WAL 文件。在测试中，批量插入的速度提升可以达到 10x-100x。
 
-[已验证: 官方文档, developer.android.com/reference/androidx/room/Transaction; AOSP config.xml db_wal_sync_mode=NORMAL]
+[已验证：官方文档， developer.android.com/reference/androidx/room/Transaction; AOSP config.xml db_wal_sync_mode=NORMAL]
 
 ### 3.3 Paging 3 的懒加载与预取策略
 
@@ -273,7 +273,7 @@ val db = Room.databaseBuilder(context, AppDb::class.java, "app.db")
 
 更稳妥的做法是把“首次 open + migration”提前到可控的后台时机，例如启动前置预热、冷启动后的 dedicated executor，或者由 App Startup 触发一次后台 prewarm。App Startup 在这里是调度手段，不是 Room 的专用优化开关。
 
-[待补充: Migration 耗时在不同数据量级下的基准测试数据]
+[待补充：Migration 耗时在不同数据量级下的基准测试数据]
 
 ## 4. 索引与查询优化
 
@@ -340,7 +340,7 @@ CREATE TABLE user_prefs (
 
 `synchronous=NORMAL` 在 WAL 模式下是安全的：正常使用时数据不会丢失，只有在系统崩溃（非应用崩溃）的极端情况下才可能丢失最近一次检查点之后的事务。对于绝大多数应用来说，这个风险可以接受。
 
-[已验证: sqlite.org/pragma.html]
+[已验证：sqlite.org/pragma.html]
 
 ## 5. 数据库与 ANR 的关联分析
 
@@ -469,7 +469,7 @@ SQLCipher 在 SQLite 之上增加了加密层，每次读写操作都需要进�
 
 在性能敏感的场景中，可以考虑只在特定表或列上使用加密，而非全库加密。Android Keystore + 自定义加密方案是另一种思路。
 
-[待验证: SQLCipher 与原生 SQLite 在 ARM 设备上的具体性能差异数据]
+[待验证：SQLCipher 与原生 SQLite 在 ARM 设备上的具体性能差异数据]
 
 ### 🔸 扩展点 2：多进程数据库访问
 
