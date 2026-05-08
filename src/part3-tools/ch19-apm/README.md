@@ -23,18 +23,18 @@ sources:
   - type: github
     path: https://github.com/KwaiAppTeam/KOOM
 task2b_result: "fixed"
-task6_state: "revisiting"
+task6_state: "reviewed"
 last_task2b_at: "2026-05-06T05:49:37+08:00"
 repaired_date: "2026-04-25"
 repaired_by: openclaw-task2b
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-06"
-task6_reviewed_date: "2026-05-06"
-last_task6_at: "2026-05-06T06:08:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-06-review.md"
+reviewed_date: "2026-05-08"
+task6_reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T21:24:13+08:00"
+last_task6_review_log: "logs/review/2026-05-08-21-review.md"
 status: "ready-for-review"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 task9_state: "pending"
 task9_result: needs-rework
 task2b_state: "fixed"
@@ -42,7 +42,7 @@ task9_reviewed_date: "2026-05-06"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-06T06:23:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-06-06-deep-review.md"
-review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。"
+review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。 | 2026-05-08 Task6 21:24：Task2B 修复后写作复审；轻修 2 处（19.22 目录标题与阅读建议），L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 task9_review_notes: "2026-05-06 Task9 06:23：deep-review needs-rework；P1 Tracing SDK / tracing-perfetto 版本线仍写错；P2 Benchmark 目录与实际章节标题仍不一致。"
 ---
 
@@ -140,7 +140,7 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 - 19.19 PerfDog
 - 19.20 SoloPi 与历史 Emmagee
 - 19.21 Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
-- 19.22 存储 Benchmark（CPDT、PCMark Storage、历史 AndroBench / A1 SD Bench）
+- 19.22 存储 Benchmark（AndroBench、A1 SD Bench）
 - 19.23 网络 APM 底层捕获原理
 - 19.24 崩溃与 ANR 捕获机制
 - 19.25 耗电与发热监控 (Battery & Thermal)
@@ -152,4 +152,4 @@ Vellamo、AndroBench、A1 SD Bench、Emmagee 不再作为现代 Android 推荐�
 - 第一次搭线上 APM 体系：先读 19.1 建立全景图，再按团队当前最需要解决的问题选 2-3 个工具深入。
 - 已经在用某个工具想深入理解：直接翻对应小节。
 - 需要选型：结合 14.12 的框架和本章各工具的深度分析一起看。
-- 关注 Benchmark 方向：19.21 和 19.22 覆盖主流 Benchmark 应用。
+- 关注 Benchmark 方向：19.21 覆盖通用 Benchmark 应用，19.22 覆盖存储基线工具。
