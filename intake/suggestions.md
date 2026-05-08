@@ -1712,3 +1712,10 @@
 - **位置**：L537 ADPF 源码锚点第三条
 - **问题**：正文写 `PowerMonitor.getConsumedEnergy()`，但方法实际定义在 `PowerMonitorReadings` 上，签名是 `PowerMonitorReadings.getConsumedEnergy(PowerMonitor)`；文件路径 `frameworks/base/core/java/android/os/PowerMonitorReadings.java` 是对的，类名/方法归属写错。
 - **建议**：改为 `PowerMonitorReadings.getConsumedEnergy(PowerMonitor) — frameworks/base/core/java/android/os/PowerMonitorReadings.java`。
+
+## [Task9 Deep Review] 1.4 Binder IPC 机制与性能影响 — 2026-05-08
+- **类型**：数据缺失/量化口径
+- **位置**：L99 冷启动 30-50 次同步 Binder；L415 系统服务方法不到 1ms
+- **问题**：[P2] 两处量化断言缺少设备、Android build、启动场景、样本数、Perfetto trace 或统计 SQL。作为经验值可以保留，但发布稿需要把“典型冷启动 30-50 次同步 Binder”和“大部分系统服务方法 <1ms”的来源落到一组可复核数据，否则读者无法判断适用范围。
+- **建议**：补一份最小 Perfetto 样本：设备/系统版本、冷/温启动条件、按 `android_binder_txns` 过滤主线程同步事务的 SQL、事务次数分布与 P50/P95 耗时；拿不到样本时改为定性描述，避免固定数量级。
+- **review 日志**：logs/deep-review/2026-05-08-19-deep-review.md
