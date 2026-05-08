@@ -14926,7 +14926,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T00:37:58+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T02:47:17.454412",
+      "completed_reason": "P0 W^X/ShadowHook mprotect 表格口径已修正（两步→因库而异）；L850 sh_util_mprotect 描述已修正（upstream 保持 RWX 非调 RX）"
     },
     {
       "section": "1.0",
@@ -14974,7 +14976,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T02:30:12+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T02:47:17.454412",
+      "completed_reason": "P1 Perfetto表格阅读提示 ART Mainline 11+→12+ 已修正；P2 CTS-V→VTS/CTS-on-GSI 已修正"
     },
     {
       "section": "4.3",

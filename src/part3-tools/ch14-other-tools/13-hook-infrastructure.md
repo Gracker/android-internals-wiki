@@ -6,7 +6,7 @@ status: ready-for-review
 drafted_date: '2026-04-21'
 drafted_by: codex
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
-last_verified: '2026-05-08'
+last_verified: '2026-05-09'
 last_verified_against: AOSP sepolicy public/domain.te + bionic linker linker_phdr.cpp + bionic linker libdl.map.txt (android-9/10/11 tags) + Android 16KB page size docs + ART TI + GitHub upstream READMEs
 confidence: medium
 sources:
@@ -39,12 +39,12 @@ related_chapters:
 - '13.9'
 - '15.5'
 - '15.9'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
@@ -52,7 +52,7 @@ last_task9_at: "2026-05-09T00:37:58+08:00"
 repaired_date: '2026-05-08'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 last_task2b_at: '2026-05-08T22:40:00'
 task9_review_notes: "2026-05-09 task9 deep-review: needs-rework。W^X/RWX、ShadowHook 源码路径与 namespace 代码节选存在 P0，已写入 queue。"
 last_task6_at: "2026-05-08T23:18:39+08:00"
@@ -367,17 +367,17 @@ Hook 到了，不代表结论就一定对。例如：
 
 <!-- AIW-源码调研-2026-04-24 -->
 
-Inline Hook 在 Android 上长期受 W^X / execmem / execmod / SELinux 共同约束。这些约束不是 Android 14 才引入的：Android 8-13 已经要求两步 `mprotect()`、禁止 `PROT_WRITE | PROT_EXEC` 组合。**Android 14 (API 34) 新增的是 Safer dynamic code loading 行为变更（DEX/JAR/APK 加载前必须只读），和 `mprotect()` 修改代码页权限不是同一个问题**；**Android 15+ (API 35) 的 16KB Page Size 改变了 `mprotect()` 的页边界假设**。三条线性质不同，不能混在一起。
+Inline Hook 在 Android 上长期受 W^X / execmem / execmod / SELinux 共同约束。约束的严格程度因版本、设备和 SELinux 策略而异。**Android 14 (API 34) 新增的是 Safer dynamic code loading 行为变更（DEX/JAR/APK 加载前必须只读），和 `mprotect()` 修改代码页权限不是同一个问题**；**Android 15+ (API 35) 的 16KB Page Size 改变了 `mprotect()` 的页边界假设**。三条线性质不同，不能混在一起。
 
 ### W^X 在 Hook 场景里的三层约束
 
 Inline Hook 修改的是已映射的代码页，不能只用一句“Bionic Linker 限制”解释。工程约束分三层：
 
-- `mprotect()` 是内核接口，页面权限变更最终要经过内核 VMA 检查和 SELinux 判定；直接请求 `PROT_WRITE | PROT_EXEC` 的 RWX 组合，在现代 Android 上不能作为可用路径。
-- SELinux 权限标签按内存来源区分：匿名可执行内存、JIT trampoline 更接近 `execmem`；文件映射代码页被改脏后再执行，会落到 `execmod` / text relocation 这类约束。
-- Bionic Linker 在处理 text relocation 等场景时遵循 RX→RW→RX 的转换，不保留同时可写可执行的页面。`bionic/linker/linker_phdr.cpp` 的加载流程体现了这种约束。
+- `mprotect()` 是内核接口，页面权限变更最终要经过内核 VMA 检查和 SELinux 判定；是否允许 `PROT_WRITE | PROT_EXEC`（RWX）组合取决于内核配置和 SELinux 策略，不能一概而论。部分设备/内核允许匿名 RWX mmap，部分则严格禁止。
+- SELinux 权限标签按内存来源区分：匿名可执行内存、JIT trampoline 更接近 `execmem`；文件映射代码页被改脏后再执行，会落到 `execmod` / text relocation 这类约束。AOSP sepolicy `private/app.te` 中仍有 `allow appdomain self:process execmem` 规则，但 OEM 可以收紧或移除。
+- Bionic Linker 在处理 text relocation 等场景时遵循 RX→RW→RX 的转换，不保留同时可写可执行的页面。`bionic/linker/linker_phdr.cpp` 的加载流程体现了这种约束，但这只规范 Linker 自身行为，不影响用户态 `mmap`/`mprotect` 的内核级判定。
 
-因此 Inline Hook 的工程做法要拆成三个动作：短时间切到可写、写完后恢复可执行、刷新 icache。Trampoline 如果放在匿名内存，也要单独确认分配、写入、转为可执行三个阶段是否满足 `execmem` 和设备 SELinux 策略。
+因此 Inline Hook 的工程做法要拆成三个动作：短时间切到可写、写完后恢复可执行、刷新 icache。但具体是走两步 `mprotect`（RW→RX）还是直接 RWX mmap，取决于目标设备的 SELinux 策略和 Hook 库的实现选择。
 
 ### Inline Hook 在 W^X 约束下的标准执行流程
 
@@ -392,7 +392,7 @@ Inline Hook 的完整执行流程在现代 Android 上被拆解为五个阶段�
 ```
 
 **关键约束**：
-- 不能尝试 `mprotect(PROT_WRITE|PROT_EXEC)`（违反 W^X，会被内核/SELinux/Linker 约束拦住）
+- `mprotect(PROT_WRITE|PROT_EXEC)` 在部分设备/SELinux 策略下会被拒绝，应优先使用两步 RW→RX 模式；但某些 Hook 库（如 ShadowHook upstream）在匿名内存上直接使用 RWX mmap，依赖 `execmem` 权限可用
 - 不能跳过 icache flush（ARM64 icache 和 dcache 是非一致性的，CPU 可能继续取旧指令）
 - 每次 `mprotect()` 调用的起始地址必须按页对齐（`getpagesize()` 返回值，非 4096 硬编码）；`len` 覆盖范围由内核自动按页取整，不需要手动凑整
 
@@ -417,7 +417,7 @@ Android 14（API 34）针对 targetSdkVersion 34 的应用引入了 “Safer dyn
 
 | 库 | 类型 | 支持版本 | W^X 适配 |
 |----|------|---------|---------|
-| ShadowHook（字节跳动） | Inline Hook | Android 4.1 - 16（API 16-36） | 严格遵循两步 mprotect 模式 |
+| ShadowHook（字节跳动） | Inline Hook | Android 4.1 - 16（API 16-36） | upstream 使用 RWX mmap/mprotect，依赖 execmem 可用；W^X 严格设备可能失效 |
 | ByteHook（字节跳动） | PLT Hook | Android 4.1 - 15（API 16-35） | PLT Hook 不修改代码段，无 W^X 问题 |
 | xHook（爱奇艺） | PLT Hook | Android 4.0 - 10（API 14-29） | **不支持 Android 14+** |
 
@@ -439,12 +439,12 @@ Compat Mode 触发条件在 `linker_phdr.cpp`：`kPageSize == 16384 && min_align
 | Android 版本 | W^X 严格程度 | 动态代码加载限制 | 页大小 |
 |--------------|-------------|-----------------|--------|
 | Android 7 (API 24) | PIE 强制,系统库装载边界开始收紧 | 无 | 4KB |
-| Android 8-13 (API 26-33) | Bionic Linker 与 SELinux 共同约束 W^X/execmod/execmem | 无强制 | 4KB |
+| Android 8-13 (API 26-33) | SELinux execmem/execmod 策略因设备/OEM 而异；AOSP 默认允许 appdomain execmem | 无强制 | 4KB |
 | Android 14 (API 34) | 同上;targetSdkVersion 34 的动态代码加载只读要求更严 | DEX/JAR/APK 等动态代码文件加载前必须只读 | 4KB |
 | Android 15 (API 35) | 同上 | 同上 | 4KB / 16KB（设备相关） |
 | Android 16 (API 36) | 同上 | 同上 | 4KB / 16KB（设备相关） |
 
-**结论**：Android 8+ 上的 Inline Hook 必须遵守两步 `mprotect()`、icache flush 和运行时页大小；Android 14+ 还要额外注意动态代码加载的只读文件要求。任一环节出错都会导致 Hook 失败或进程崩溃。
+**结论**：Android 8+ 上的 Inline Hook 需要处理 `mprotect()` 权限、icache flush 和运行时页大小。`execmem` 是否允许以实际 sepolicy / target / OEM 为准，不能假设所有设备都禁止 RWX。Android 14+ 还要额外注意动态代码加载的只读文件要求。任一环节出错都会导致 Hook 失败或进程崩溃。
 
 
 ## 补充：Linker Namespace 限制与 ByteDance Hook 库绕过机制
@@ -518,7 +518,7 @@ ShadowHook README 明确说明：
 | **架构支持** | armeabi-v7a, arm64-v8a, x86, x86_64 | armeabi-v7a, arm64-v8a |
 | **Namespace 绕过** | 不支持 | 支持 |
 | **典型场景** | 通用函数 Hook、IO/malloc 类监控 | 需要访问任意 ELF 符号或绕过 namespace |
-| **W^X 影响** | 无（不修改代码段） | 需要两步 mprotect + icache flush |
+| **W^X 影响** | 无（不修改代码段） | 需修改代码页权限 + icache flush（方式因库而异：两步 RW→RX 或直接 RWX mmap） |
 
 **ByteHook 三种 Hook 模式**（bytehook/bytehook.h）：
 
@@ -683,17 +683,11 @@ Android 8+ 通过 `/system/etc/ld.config.txt` 配置隔离规则，Android 10 �
 
 **符号可见性**：`is_accessible(soinfo*)` 判断符号查找权限时，允许 secondary namespace 成员参与查找，但不含传递依赖：
 
-```cpp
-bool android_namespace_t::is_accessible(soinfo* s) {
-  if (si->get_primary_namespace() == this) return true;  // 直接成员
-  const android_namespace_list_t& secondary = si->get_secondary_namespaces();
-  if (secondary.contains(this)) return true;  // secondary 成员（不含传递依赖）
-  // 递归检查父 namespace
-  return !s->get_parents().visit([&](soinfo* si) {
-    return !is_accessible_ftor(si, false);
-  });
-}
-```
+`is_accessible(soinfo* s)` 判断符号查找权限，逻辑分三步：
+
+1. 检查 `s` 的 `primary_namespace_` 是否为当前 namespace（直接成员直接放行）
+2. 检查 `s` 的 `secondary_namespaces_` 是否包含当前 namespace（secondary 成员放行，不含传递依赖）
+3. 递归检查 `s` 的所有 parent soinfo：对每个 parent 调用 `is_accessible_ftor(parent, false)`（`allow_secondary=false`，即递归时不允许 secondary 匹配），全部通过则放行
 
 ### 16KB Compat Mode 加载逻辑（4KB ELF 在 16KB 设备）
 
@@ -812,14 +806,16 @@ uintptr_t load_bias = base - min_vaddr;
 
 ### ShadowHook 的 Trampoline 管理架构
 
-ShadowHook 在 `shadowhook/src/main/cpp/trampoline/` 下实现 Trampoline 生成和管理：
+ShadowHook upstream 的核心实现文件分布在以下路径：
 
 | 文件 | 职责 |
 |------|------|
-| `trampoline_arm64.cpp` | ARM64 trampoline 生成（16 字节 LDR/BR literal stub） |
-| `trampoline_arm.cpp` | ARM32 trampoline 生成（含 Thumb/ARM 模式判断） |
-| `trampoline_allocator.cpp` | 匿名可执行内存分配器（mmap MAP_ANONYMOUS） |
-| `trampoline_map.h` | Trampoline 页映射表管理 |
+| `common/sh_trampo.c` | Trampoline 分配与管理（island 内存分配、释放、查找） |
+| `common/sh_island.c` | 远跳 island 的核心逻辑（分配可执行代码页） |
+| `arch/arm64/sh_inst.c` | ARM64 指令生成（LDR/BR literal stub、原始指令备份） |
+| `arch/arm/sh_t16.c` | ARM32 Thumb-16 指令生成 |
+| `arch/arm/sh_t32.c` | ARM32 Thumb-32 指令生成 |
+| `common/sh_util.c` | 工具函数（mprotect 封装、icache flush） |
 
 **ARM64 近距离跳转的 16 字节 stub 格式**：
 
@@ -849,13 +845,13 @@ static bool is_thumb_mode(uintptr_t addr) {
 
 ### 远距离跳转的居中 Trampoline 页策略
 
-当跳转距离超过 ±1GB（ARM64）或 32MB（ARM32）时：
-1. 通过 `mmap(NULL, 4096, PROT_READ|PROT_EXEC, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0)` 分配匿名可执行页
-2. Trampoline 页写入 `LDR X17, #offset` + `BR X17` 跳转到 proxy 函数
-3. 原入口处写入跳转指令（`b #offset` 或 `bl #offset`）
-4. 执行完整 icache flush 后生效
+当跳转距离超过 ±128MB（ARM64 B 指令范围）时：
+1. 通过 `sh_trampo.c` 中的 `mmap(NULL, size, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0)` 分配匿名 RWX 内存页作为 island
+2. 在 island 中写入跳转指令（ARM64 为 `LDR X17, #offset` + `BR X17`），然后执行 `__builtin___clear_cache` 刷新 icache。upstream ShadowHook 的 `sh_util_mprotect` 在 island 分配时直接使用 RWX 权限，写入完成后不再单独调整为 RX
+3. 原入口处写入跳转指令（`b #offset` 或 `bl #offset`），同样需要 mprotect 和 icache flush
+4. 上游 ShadowHook 在 island 分配时直接使用 RWX mmap，简化了写入流程；部分设备上如果 SELinux 禁止 execmem，这一步会失败
 
-**可执行内存的 SELinux 约束**：匿名 mmap 分配 PROT_READ|PROT_EXEC 需要 `execmem` 权限，平台应用和 untrusted_app 默认被 SELinux 策略禁止。ShadowHook 在 Android 8+ 通过 linker namespace 隔离规避部分限制，但特定厂商 ROM 可能加强此约束导致 Hook 失效。
+**可执行内存的 SELinux 约束**：匿名 mmap 分配 RWX 权限需要 `execmem`，AOSP sepolicy `private/app.te` 中默认 `allow appdomain self:process execmem`，但 OEM 可能收紧或移除此规则。ShadowHook 依赖此权限可用，在严格策略的设备上 Hook 会失败。
 
 ### ShadowHook v2.0.0 支持 intercept（断点级拦截）
 
