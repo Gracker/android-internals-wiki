@@ -31,10 +31,10 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-task9_result: needs-rework
+task9_result: pending
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-09T05:30:47+08:00"
@@ -42,11 +42,11 @@ repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T10:44:00+08:00"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0，P1 2，P2 2。Startup Profile 原问题部分已覆盖；external DEFAULT_TO_WEB 线索未采纳。"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-09
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 review_round: 3
 last_task6_at: "2026-05-09T05:15:25+08:00"
 last_task6_review_log: "logs/review/2026-05-09-05-review.md"
@@ -637,7 +637,7 @@ class BaselineProfileGenerator {
 生成任务会产出 HRF 规则，常见落点是 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`；开启 Startup Profile 后，还会把启动路径写入 `startup-prof.txt`。两者用途不同：
 
 - `baseline-prof.txt`：描述需要 ART AOT 编译的热点类和方法，最终打包成 `assets/dexopt/baseline.prof`。
-- `startup-prof.txt`：服务于 DEX layout。这是构建工具链能力，不是运行时行为——AGP/R8/D8 在构建阶段消费 `startup-prof.txt`，将启动热点类物理集中在 primary DEX 的起始扇区（DEX Layout Optimization）。主要价值是减少启动期加载这些类时的 Page Fault，与 AOT 编译是两条独立的优化路径。如果只用了 Baseline Profile 而没配置 Startup Profile，DEX 布局优化这一层就缺失了。版本要求：AGP 7.0+ 开始支持 Startup Profile 消费；AGP 8.0+ 改进布局算法；Macrobenchmark 1.2+ 提供自动化生成；运行时无需特定 Android 版本要求，优化效果取决于 APK 内 DEX 布局。
+- `startup-prof.txt`：服务于 DEX layout。这是构建工具链能力，不是运行时行为——AGP/R8/D8 在构建阶段消费 `startup-prof.txt`，将启动热点类物理集中在 primary DEX 的起始扇区（DEX Layout Optimization）。主要价值是减少启动期加载这些类时的 Page Fault，与 AOT 编译是两条独立的优化路径。如果只用了 Baseline Profile 而没配置 Startup Profile，DEX 布局优化这一层就缺失了。版本要求：AGP 8.1 可通过 `android.experimental.dexLayoutOptimization=true` 手动开启；AGP 8.2 支持模板但 variant 有一定限制；AGP 8.3 起默认开启并支持 distinct Startup Profiles。前提是 release 构建需开启 R8（`isMinifyEnabled=true`），Macrobenchmark 1.2.0+ 提供自动化生成；运行时无需特定 Android 版本要求，优化效果取决于 APK 内 DEX 布局。
 
 HRF 方法规则必须包含 flags、类描述符、完整方法签名和返回类型，例如：
 
@@ -726,7 +726,7 @@ Cloud Profile 的边界很清楚：它依赖 Google Play 分发和足够多的�
 
 启动框架还需要区分"启动阶段必须完成的任务"和"可以延迟到闲时执行的任务"。闲时任务使用 `JobScheduler` 或 `WorkManager` 在设备空闲时执行，不占用启动时间。
 
-典型的闲时任务包括：数据库预填充、配置文件预加载、缓存预热、编译优化（如 ReDex 的 interdex 优化）等。
+典型的闲时任务包括：数据库预填充、配置文件预加载、缓存预热、非关键配置拉取等。
 
 ## 启动速度的线上监控与回归检测
 
@@ -789,7 +789,7 @@ adb shell am start -W -n com.example.app/.MainActivity
 
 - **Android 12-13**：Baseline Profile 机制进入稳定使用期。Jetpack `benchmark-macro-junit4` 1.2.0 引入 `includeInStartupProfile`，1.3.0 支持 DSL 配置。
 - **Android 14-15**：ART 继续通过 Mainline 模块更新运行时和 dexopt 能力，但公开资料没有把 Cloud Profile 写成由 ART Mainline 直接分发。Cloud Profile 仍按 Google Play 的聚合与分发模型理解。
-- **Android 16（API 36）**：AutoFDO（Auto Feedback-Directed Optimization）覆盖到 Android 内核优化，Google 公开材料提到 Pixel 上冷启动提升超过 4%、boot time 降低约 2%、Binder 测试最高提升 21%。AutoFDO 与 Baseline Profile 互补：Baseline Profile 决定哪些 Java/Kotlin 方法进入 ART `speed-profile` 编译，AutoFDO 改善内核和 native binary 的机器码布局、分支预测和内联效果。详细机制见 1.12 节。
+- **Android 16（API 36）**：AutoFDO（Auto Feedback-Directed Optimization）覆盖到 Android 内核优化，[Google 公开材料](https://android-developers.googleblog.com/2026/03/BoostingAndroid%20PerformanceIntroducingAutoFDO.html)提到 Pixel 上冷启动提升约 4%、boot time 降低约 1%。AutoFDO 与 Baseline Profile 互补：Baseline Profile 决定哪些 Java/Kotlin 方法进入 ART `speed-profile` 编译，AutoFDO 改善内核和 native binary 的机器码布局、分支预测和内联效果。详细机制见 1.12 节。
 
 ### profileable 要求变化
 
