@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-05-08T14:32:28+08:00",
+  "generated_at": "2026-05-08T15:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 209,
   "metrics": {
     "total_sections": 210,
-    "last_updated": "2026-05-08T14:32:28+08:00",
+    "last_updated": "2026-05-08T15:05:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
-      "ready-to-publish": 145,
-      "task2b_pending": 61,
+      "ready-to-publish": 146,
+      "task2b_pending": 60,
       "task6_pending": 1,
       "task9_pending": 1,
       "unknown": 1
@@ -25,13 +25,13 @@
       "unknown": 2
     },
     "task2b_state_counts": {
-      "fixed": 146,
-      "pending": 60,
+      "fixed": 147,
+      "pending": 59,
       "unknown": 4
     },
     "status_counts": {
-      "finalized": 145,
-      "ready-for-review": 64,
+      "finalized": 146,
+      "ready-for-review": 63,
       "unknown": 1
     }
   },
@@ -491,6 +491,25 @@
       "auto_finalized": [],
       "skipped": [],
       "review_log": "logs/review/2026-05-08-14-review.md"
+    },
+    {
+      "timestamp": "2026-05-08T15:05:00+08:00",
+      "sections": [],
+      "source": "task6-draft-review",
+      "mode": "maintenance-auto-finalize",
+      "result": "auto-finalized-only",
+      "polish_count": 0,
+      "rework_count": 0,
+      "auto_finalized": [
+        "3.2"
+      ],
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分（outline 后正文 0 行）；已存在 blocked 队列项，等待正文草拟流程"
+        }
+      ],
+      "review_log": "logs/review/2026-05-08-15-review.md"
     }
   ],
   "task9_review_history": [
