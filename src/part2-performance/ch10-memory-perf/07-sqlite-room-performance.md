@@ -5,7 +5,7 @@ status: ready-for-review
 drafted_date: "2026-04-06"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-05-04"
+last_verified: "2026-05-08"
 last_verified_against: "AOSP android-17-beta3"
 confidence: medium
 sources:
@@ -48,6 +48,11 @@ sources:
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
+task2b_state: fixed
+task2b_result: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
@@ -336,7 +341,7 @@ CREATE TABLE user_prefs (
 | `busy_timeout` | `3000` | 写冲突时等待 3 秒而非立即返回 `SQLITE_BUSY` |
 | `cache_size` | `-8000` | 页缓存 8MB（默认约 2MB），减少磁盘读取 |
 
-**16KB Page Size 下的 checkpoint 调优**：`wal_autocheckpoint` 默认值是 1000 页。在 4KB 页设备上，一次 checkpoint 写回约 4MB；在 16KB 页设备上，同样 1000 页对应约 16MB 的瞬时写入峰值。在 UFS 2.x / 3.x 低端设备上，这个峰值可能引发主线程 D 状态阻塞（磁盘 I/O 阻塞在内核等待队列中）。建议在 16KB 环境下调低为 `PRAGMA wal_autocheckpoint = 250`（约 4MB），或根据设备存储性能动态调整。
+**16KB Page Size 下的 checkpoint 调优**：SQLite 上游默认 `wal_autocheckpoint` 为 1000 页，但 Android 通过 `frameworks/base/core/res/res/values/config.xml` 中的 `db_wal_autocheckpoint` 资源覆盖为 **100 页**（可通过 `SQLiteGlobal.getWALAutoCheckpoint()` 读取）。因此在 4KB 页设备上，一次 checkpoint 写回约 400KB；在 16KB 页设备上约 1.6MB。如果应用或 SDK 通过 `PRAGMA wal_autocheckpoint` 修改了这个值，需要按实际页大小重算 checkpoint 规模。建议按设备 I/O 能力和事务模式实测后调整，而不是直接套用固定数值。
 
 `synchronous=NORMAL` 在 WAL 模式下是安全的：正常使用时数据不会丢失，只有在系统崩溃（非应用崩溃）的极端情况下才可能丢失最近一次检查点之后的事务。对于绝大多数应用来说，这个风险可以接受。
 
@@ -428,7 +433,7 @@ StrictMode.setThreadPolicy(
 
 由于 SQLite 在同一时刻只允许一个写者（即使在 WAL 模式下），数据库写操作的线程池设计有两条路径：
 
-**单线程串行写入**：所有写操作在一个专用线程上串行执行。优点是简单、无锁竞争、写操作顺序可预测。Room 的 `withTransaction` 内部就是这种模式。
+**单线程串行写入**：SQLite 在同一时刻只允许一个写者，Room 的事务通过 transaction executor 进入事务路径并保持事务互斥与顺序。需要注意三层关系：SQLite 内核层保证单写者；Room 的 `withTransaction` 在 transaction executor 上执行事务体并持有数据库互斥；应用如果需要全局写入顺序和背压控制，仍应显式设计单写队列或受控 executor——Room 的 transaction executor 是可配置的，默认可能与 query executor 共用底层线程池，不等于自动建立一个 dedicated single-thread 写队列。
 
 ```kotlin
 val dbWriteExecutor = Executors.newSingleThreadExecutor()

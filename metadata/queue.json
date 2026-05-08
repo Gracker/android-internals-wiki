@@ -14740,7 +14740,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T13:32:43+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T13:45:58+08:00",
+      "completed_reason": "P0 ANR trace非主进程dump范围已按AOSP firstPids/lastPids/nativePids三组列表修正"
     },
     {
       "section": "10.7",
@@ -14767,7 +14769,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T13:32:43+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T13:45:58+08:00",
+      "completed_reason": "P0 wal_autocheckpoint默认值已修正为Android资源覆盖100页(非SQLite上游1000); P1 Room withTransaction已改为三层表述(SQLite单写/Room事务互斥/应用需显式设计写队列)"
     },
     {
       "section": "16.5",
