@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-05-09T03:07:00+08:00",
+  "generated_at": "2026-05-09T03:30:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T03:07:00+08:00",
+    "last_updated": "2026-05-09T03:30:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 154,
-      "task2b_pending": 50,
+      "task2b_pending": 51,
       "task6_pending": 1,
-      "task9_pending": 4,
+      "task9_pending": 3,
       "unknown": 30
     },
     "task6_state_counts": {
@@ -20,13 +20,13 @@
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 3,
-      "reviewed": 204,
+      "pending": 2,
+      "reviewed": 205,
       "unknown": 31
     },
     "task2b_state_counts": {
-      "fixed": 158,
-      "pending": 49,
+      "fixed": 157,
+      "pending": 50,
       "unknown": 33
     },
     "status_counts": {
@@ -1124,6 +1124,21 @@
       "research_gaps_added": 1,
       "auto_finalized": [],
       "review_log": "logs/deep-review/2026-05-09-01-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-09T03:30:00+08:00",
+      "sections": [
+        "14.13"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "needs-rework",
+      "p0": 2,
+      "p1": 3,
+      "p2": 1,
+      "p3": 0,
+      "queue_items_added": 1,
+      "auto_finalized": [],
+      "review_log": "logs/deep-review/2026-05-09-03-deep-review.md"
     }
   ],
   "rework_history": [
@@ -1431,14 +1446,15 @@
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "last_task6_review_log": "logs/review/2026-05-09-03-review.md",
-    "pipeline_stage": "task9_pending",
+    "pipeline_stage": "task2b_pending",
     "status": "ready-for-review",
-    "task9_state": "pending",
-    "task2b_state": "fixed",
-    "last_task9_at": "2026-05-09T00:37:58+08:00",
+    "task9_state": "reviewed",
+    "task2b_state": "pending",
+    "last_task9_at": "2026-05-09T03:30:00+08:00",
     "task9_result": "needs-rework",
-    "last_task9_review_log": "logs/deep-review/2026-05-09-00-deep-review.md",
-    "task2b_result": "fixed"
+    "last_task9_review_log": "logs/deep-review/2026-05-09-03-deep-review.md",
+    "task2b_result": "fixed",
+    "task9_reviewed_date": "2026-05-09"
   },
   "rework_completed": [
     {

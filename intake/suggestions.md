@@ -1747,3 +1747,9 @@
 - **位置**：L206-L210 GSI 用途
 - **问题**：正文写 “CTS-V（Compatibility Test Suite for Vendors）验证”。官方 GSI 文档的口径是 “VTS and CTS-on-GSI tests”：Vendor Test Suite (VTS) 与 Compatibility Test Suite (CTS)，未使用 CTS-V 这个名称。
 - **建议**：改成 “VTS 与 CTS-on-GSI 验证”；如果要解释认证路径，补 `source.android.com/docs/setup/create/gsi` 中 “GSIs are used for running VTS and CTS-on-GSI tests” 的来源。
+
+## [Task9 Deep Review] 14.13 Hook 基础设施与性能工具实现原理 — 2026-05-09
+- **类型**：源码细节/数据口径
+- **位置**：L400-L407 / L631-L635 `__builtin___clear_cache()` ARM64 序列
+- **问题**：正文把 ARM64 cache flush 简化成 `dc cvau → dsb sy → ic ivau → isb`。LLVM compiler-rt 的 AArch64 `__clear_cache` 会先读 `CTR_EL0`，在 IDC/DIC 未置位时分别执行 dcache clean / icache invalidate，并使用 `dsb ish`（ic invalidate 后还有一次 `dsb ish`）和最终 `isb sy`。当前写法可作为概念摘要，但不宜标成完整实现。
+- **建议**：改为“典型序列包含 `dc cvau`、`dsb ish`、`ic ivau`、`dsb ish`、`isb sy`，且会根据 `CTR_EL0.IDC/DIC` 跳过部分步骤”；或明确标注为简化说明。

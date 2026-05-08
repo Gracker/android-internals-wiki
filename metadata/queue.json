@@ -15000,6 +15000,51 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T02:30:12+08:00",
       "status": "pending"
+    },
+    {
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.13 Hook 基础设施与性能工具实现原理 ShadowHook / Bionic linker 源码链仍存在 P0/P1，需要回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-09-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/实现流程错误",
+          "location": "L490-L495 __loader_dlopen caller_addr 技巧",
+          "detail": "[P0] 正文写“dlopen(target_lib, RTLD_NOLOAD) 后将句柄地址作为 caller_addr”。AOSP mainline `do_dlopen()` 通过 `find_containing_library(caller_addr)` 把 caller_addr 当作进程内某个已加载 ELF 的代码/映射地址；targetSdk >=24 时 `dlopen()` handle 是 `soinfo::get_handle()` 生成的 opaque odd handle，不是目标库内地址；旧 target 返回的 `soinfo*` 也不是目标库代码 PC。按正文步骤传入 handle 不能稳定伪装成目标库 namespace，可能解析到错误 caller 或直接失败。",
+          "suggestion": "将该技巧改成“向 `__loader_dlopen` 传入目标 namespace 内真实代码地址/返回地址，或使用 xDL/ELF 解析查询已加载 ELF 符号”；不要写成传 dso handle。补 AOSP `linker.cpp::do_dlopen()` / `find_containing_library()` 和 `linker_soinfo.cpp::to_handle()/generate_handle()` 证据。"
+        },
+        {
+          "type": "源码路径错误/源码节选错误",
+          "location": "L808-L836 ShadowHook 文件索引与 ARM64/Thumb stub",
+          "detail": "[P0] `common/sh_island.c` 路径不存在，upstream 文件在 `shadowhook/src/main/cpp/sh_island.c`。ARM64 入口 patch 也不是正文写的“16 字节 stub + 原始指令前 12 字节”：`sh_inst.c` 的 no-island 路径备份 20 或 24 字节，函数入口场景写入 `NOP + sh_a64_absolute_jump_with_br_ip()`（20B），非函数入口/拦截场景走 `sh_a64_absolute_jump_with_br_rx()`（20B）并可能追加 restore。Thumb 段标题写“4 字节跳转”，代码块本身为 8B，且 upstream no-island 使用 `sh_t32_absolute_jump()`（8/10B），with-island 才是 4B 相对跳到 island。",
+          "suggestion": "按 upstream 路径重写文件索引：`sh_island.c`、`common/sh_trampo.c`、`arch/arm64/sh_inst.c`、`arch/arm64/sh_a64.c`、`arch/arm/sh_inst.c`、`arch/arm/sh_t32.c`。stub 说明按 with-island/no-island、proc_start/non-proc_start、Thumb 对齐分别列出，不把 helper 函数片段写成统一入口 patch。"
+        },
+        {
+          "type": "原理断裂/概念混淆",
+          "location": "L731-L779 ShadowHook Gap Trampoline 与 namespace 绕过",
+          "detail": "[P1] 正文把“Gap Trampoline 机制”写成 namespace 绕过核心。upstream `sh_island_alloc()` 实际先走匿名 RWX page（`sh_trampo_alloc_between`），失败后才尝试 ELF gap；gap/island 解决的是分支距离和 trampoline 放置问题。ShadowHook README 的 namespace bypass 指的是可查询进程内所有已加载 ELF 的 `.dynsym` / `.symtab` 符号，属于符号查询/已加载 ELF 解析边界，和 gap trampoline 不是同一层。",
+          "suggestion": "拆成两段：① namespace bypass = 对已加载 ELF 的符号查询/回调能力，不等于新加载任意系统库；② island/gap = 跳转距离与可执行 stub 放置策略，匿名页优先、ELF gap 兜底。"
+        },
+        {
+          "type": "源码解释错误",
+          "location": "L553-L555 ShadowHook 初始化优化",
+          "detail": "[P1] 正文称 ShadowHook 将 `dlopen` / `dlsym` 移至 `libshadowhook.so` 的 `.init_array` 以避免后续初始化再次持有 linker 全局锁。upstream `sh_linker.c` 的 constructor 只在 Android 4.x 保存 `dlopen/dlerror/dlsym/dladdr/dlclose/dl_unwind_find_exidx` 地址，注释目的为降低这些符号被 PLT-hook 的概率；manual 还明确 `shadowhook_*_sym_name()` 内部仍等价于 `shadowhook_dlopen()` + `shadowhook_dlsym()` + `shadowhook_dlclose()`，重复调用会增加耗时。",
+          "suggestion": "删除“避免 linker 全局锁”的断言，改为 Android 4.x dlfcn 地址缓存与 newly loaded ELF init/fini callbacks 两条能力；如要讨论 linker mutex，只引用 `SH_LINKER_HOOK_WITH_DL_MUTEX` 相关源码并限定版本。"
+        },
+        {
+          "type": "版本差异/源码行为错误",
+          "location": "L620 16KB compat mode 与 RELRO",
+          "detail": "[P1] 正文写 compat mode 允许 4KB `.so` 在 16KB 设备运行“但会跳过 RELRO 段填充（安全退化）”。AOSP mainline `soinfo::protect_relro()` 在 `should_use_16kib_app_compat_` 为真时调用 `phdr_table_protect_gnu_relro_16kib_compat(compat_relro_start_, compat_relro_size_)`，对 compat RELRO 区域执行 `mprotect(PROT_READ | PROT_EXEC)`；不能写成跳过 RELRO 保护。",
+          "suggestion": "把风险改为“4KB ELF compat loading 使用匿名映射/读入段内容，存在 PSS/共享与性能代价，且受 RO|RX + RELRO prefix + RW 连续布局约束”；若要保留安全退化，需给出 AOSP/官方文档的具体证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T03:30:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
