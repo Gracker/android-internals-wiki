@@ -28,11 +28,14 @@ sources:
     path: "https://developer.android.com/jetpack/androidx/releases/benchmark"
   - type: official
     path: "https://source.android.com/docs/core/power/power-stats-hal"
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-30"
+reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T17:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-17-review.md"
+review_notes: "2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；修正虚假引导语/填充词和格式空行；无新增 B 类回炉项；转入 Task9 复审。"
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
@@ -86,7 +89,7 @@ adb bugreport bugreport.zip    # Android 7.0+
 adb bugreport > bugreport.txt  # Android 6.0 及更早
 ```
 
-这里有一个容易忽略的细节：**断开 USB**。USB 连接时设备处于充电状态，这会影响电池状态数据的准确性。要获得真实的电池消耗数据，需要在完全脱离 USB 的条件下运行测试场景。部分 Android 14+ 的 OEM 机型会对 `dumpsys batterystats` 历史记录做额外限制，如果发现 wakelock 历史为空，先确认开发者选项、USB 调试和厂商自带的调试权限都已打开。
+一个容易忽略的细节是：**断开 USB**。USB 连接时设备处于充电状态，这会影响电池状态数据的准确性。要获得真实的电池消耗数据，需要在完全脱离 USB 的条件下运行测试场景。部分 Android 14+ 的 OEM 机型会对 `dumpsys batterystats` 历史记录做额外限制，如果发现 wakelock 历史为空，先确认开发者选项、USB 调试和厂商自带的调试权限都已打开。
 
 bugreport 文件中与功耗直接相关的部分包括：
 - **batterystats**：按 UID 统计的电池使用明细，包含 CPU 时间、网络流量、Wakelock 持有时长、传感器使用等
@@ -256,7 +259,7 @@ adb shell dumpsys batterystats | grep -A 10 "Package com.example.app"
 
 ### ODPM 的工作原理
 
-ODPM 这条能力从 Android 10 (API 29) 的 Power Stats HAL 开始进入平台。真正能不能在 Studio 里看到 power rail，取决于设备是否实现并暴露 `android.hardware.power.stats` HAL。Pixel 6 及后续 Pixel 设备是官方文档明确列出的支持样本。其他 OEM 机型只要实现了同一套 HAL，同样可以上报对应的 rail 数据。它直接测量电池下游各硬件子系统的功耗，不依赖估算模型，精度远高于 Energy Profiler 的 CPU/网络/GPS 估算。
+ODPM 这条能力从 Android 10 (API 29) 的 Power Stats HAL 开始进入平台。能不能在 Studio 里看到 power rail，取决于设备是否实现并暴露 `android.hardware.power.stats` HAL。Pixel 6 及后续 Pixel 设备是官方文档明确列出的支持样本。其他 OEM 机型只要实现了同一套 HAL，同样可以上报对应的 rail 数据。它直接测量电池下游各硬件子系统的功耗，不依赖估算模型，精度远高于 Energy Profiler 的 CPU/网络/GPS 估算。
 
 ODPM 测量的 Power Rail 包括：
 
@@ -375,7 +378,6 @@ class PowerBenchmark {
 
 ---
 
-
 ## PowerMonitor API（API 35 应用层接口）
 
 Macrobenchmark `PowerMetric` 是 AndroidX Benchmark 1.2.0+ 的库能力，平台下限 API 29（`@RequiresApi(29)`），高精度 rail 采集依赖设备是否实现 Power Stats HAL / ODPM（Pixel 6+ 确认支持，其他设备需用 `deviceSupportsHighPrecisionTracking()` 判断）。Android 35 (API 35) 进一步向应用层开放了直接查询功耗数据的接口：`android.os.PowerMonitor` + `SystemHealthManager` 组合。
@@ -480,7 +482,7 @@ Android 15 引入了 `PowerStatsService`（位于 `frameworks/base/services/core
 
 ### 硬件级功耗测量
 
-对于需要高精度功耗数据的场景（如 OEM 的系统级优化），硬件电流表是终极方案：
+对于需要高精度功耗数据的场景（如 OEM 的系统级优化），硬件电流表是精度更高的方案：
 
 - **Monsoon Power Monitor**：高精度（微安级）的外部功耗测量设备，直接连接在电池供电线路上
 - **华为功耗仪/其他厂商工具**：部分手机厂商提供自己的功耗分析工具
@@ -513,7 +515,6 @@ Android 15 引入了 `PowerStatsService`（位于 `frameworks/base/services/core
 **「功耗分析必须用真机」** → 基本正确。模拟器没有真实电池和传感器，Energy Profiler 的估算数据在模拟器上参考价值有限。Power Profiler（ODPM）完全不支持模拟器。
 
 ---
-
 
 ## ADPF Power Efficiency Mode 与 PowerMonitor 的协作方案
 

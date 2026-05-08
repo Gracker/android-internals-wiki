@@ -2,20 +2,19 @@
 title: Binder IPC 机制与性能影响
 chapter: '1.4'
 section: '1.4'
-reviewed_date: "2026-05-01"
+reviewed_date: '2026-05-08'
 reviewed_by: openclaw-task6
 applicable_versions: Android 8 (API 26) - Android 16 (API 36)
 drafted_date: '2026-04-10'
 drafted_by: openclaw-task2a
 last_verified: '2026-05-08'
-last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android
-  官方文档
+last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android 官方文档
 status: ready-for-review
-task2b_result: fixed
-task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-pipeline_stage: task6_pending
+task2b_result: pending
+task2b_state: pending
+task6_state: reviewed
+task9_state: reviewed
+pipeline_stage: task2b_pending
 confidence: medium
 sources:
 - type: blog
@@ -50,21 +49,17 @@ related_chapters:
 - '7.2'
 - '8.2'
 - '9.1'
-task6_state: reviewed
-task6_result: pass-light-edit
-task2b_result: fixed
+task6_result: needs-rework
 review_round: 6
-task6_reviewed_date: "2026-05-01"
-status: ready-for-review
-pipeline_stage: task2b_pending
+task6_reviewed_date: '2026-05-08'
 task9_result: needs-rework
-task9_state: reviewed
-task2b_state: pending
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-01'
-last_task9_at: "2026-05-01T03:20:00+08:00"
-task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P1 3，P2 0。Android 16 android.binder 字段/来源描述、Binder 风暴 SQL、16KB Binder 吞吐数据需回炉。"
-
+last_task9_at: '2026-05-01T03:20:00+08:00'
+task9_review_notes: '2026-05-01 task9 deep-review: needs-rework。P1 3，P2 0。Android 16 android.binder 字段/来源描述、Binder 风暴 SQL、16KB Binder 吞吐数据需回炉。'
+last_task6_at: '2026-05-08T17:05:00+08:00'
+last_task6_review_log: logs/review/2026-05-08-17-review.md
+review_notes: '2026-05-08 task6 revisit: needs-rework。frontmatter 重复字段已清理；正文末尾 AIW 源码调研块仍是资料摘录且位于参考资料后，已标注并写入 Task2B queue。'
 ---
 
 
@@ -432,6 +427,8 @@ oneway 调用避免了 Client 端的阻塞等待，但它不意味着"零成本"
 - [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_Binder驱动中的流程详解.md]（OPPO 内核工匠：Binder 驱动中的流程详解）
 - [引用: https://paul.pub/android-binder-driver/]
 - [引用: https://perfetto.dev/docs/data-sources/android-binder]
+
+[需重写: 下面 AIW 源码调研块仍是资料摘录，且位于参考资料之后；需由 Task2B 判断迁移到 7.3/13.9，或压缩整合进 Binder Trace 小节，发布稿不能保留这类编辑痕迹。]
 
 <!-- AIW-源码调研-2026-05-06 -->
 ### **Perfetto Binder Transaction Trace 深度分析（新增 2026-05-06）**
