@@ -31,8 +31,8 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-30"
@@ -42,11 +42,11 @@ repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T10:44:00+08:00"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0，P1 2，P2 2。Startup Profile 原问题部分已覆盖；external DEFAULT_TO_WEB 线索未采纳。"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: "2026-04-30"
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 review_round: 3
 ---
 
@@ -130,7 +130,9 @@ TTFD 是从用户触发启动到应用内容完全就绪的时间。终点需要
 
 **可以延迟到使用时再初始化的任务**：二级页面或特定功能才需要的模块——地图 SDK（只在用户打开地图页面时才需要）、支付 SDK（只在用户发起支付时才需要）等。这些任务用懒加载（Lazy Load）策略，第一次使用时才初始化。
 
-**16KB 页面下的启动期写操作克制**：在 16KB 页面设备上（Android 15+），任何微小的写操作都会触发 4 倍于传统 4KB 页面的物理内存拷贝（COW，Copy-on-Write）。启动瞬间执行大规模 SDK 配置写入，会导致 CPU 被 Page Fault 中断淹没。建议启动初期保持配置只读，延迟到首页显示后再执行写入操作。这一规则对 Zygote fork 后的 App 进程尤为明显——fork 继承的页表在首次写入时触发 COW，写操作越多，COW 开销越大。
+**16KB 页面下启动期 COW 场景的写操作克制**：16KB 页面设备上（Android 15+），COW 粒度从 4KB 扩大到 16KB，但 COW 只在写入**共享页或 Zygote 继承页**时触发。App 进程自己的堆对象分配、已私有页（modified/dirty private）的后续写入、文件映射写入都不会额外触发 COW。需要关注的是 Zygote fork 后首次写入继承页的场景——这类页在 fork 时标记为共享，首次写入触发 16KB 粒度的 COW，比 4KB 页多拷贝 4 倍物理内存。启动阶段如果对 Zygote 继承的静态字段、共享配置对象、class 字段做大量写入，COW 开销会叠加。建议的做法：启动初期避免对 Zygote 继承的数据结构做批量写入，延迟到首页显示后再执行。对 App 自己在 `onCreate()` 里新分配的堆对象做初始化，不额外触发 COW。
+
+[待验证: 缺少同设备 4KB/16KB 的 minor faults / PSS / CPU 时间对照 trace 数据，当前描述基于源码级 COW 机制推导]
 
 ### 异步初始化的正确姿势
 
@@ -631,7 +633,7 @@ class BaselineProfileGenerator {
 生成任务会产出 HRF 规则，常见落点是 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`；开启 Startup Profile 后，还会把启动路径写入 `startup-prof.txt`。两者用途不同：
 
 - `baseline-prof.txt`：描述需要 ART AOT 编译的热点类和方法，最终打包成 `assets/dexopt/baseline.prof`。
-- `startup-prof.txt`：服务于 DEX layout。Android 15+ 强化了对 Startup Profile 的消费——R8/D8 在构建阶段会根据 `startup-prof.txt` 中的启动热点类，将这些类物理集中在 primary DEX 的起始扇区（DEX Layout Optimization）。其核心价值在于减少启动期的 Page Fault，而非单纯的 AOT 编译。如果只用了 Baseline Profile 而没配置 Startup Profile，DEX 布局优化这一层就缺失了。
+- `startup-prof.txt`：服务于 DEX layout。这是构建工具链能力，不是运行时行为——AGP/R8/D8 在构建阶段消费 `startup-prof.txt`，将启动热点类物理集中在 primary DEX 的起始扇区（DEX Layout Optimization）。核心价值是减少启动期加载这些类时的 Page Fault，与 AOT 编译是两条独立的优化路径。如果只用了 Baseline Profile 而没配置 Startup Profile，DEX 布局优化这一层就缺失了。版本要求：AGP 7.0+ 开始支持 Startup Profile 消费；AGP 8.0+ 改进布局算法；Macrobenchmark 1.2+ 提供自动化生成；运行时无需特定 Android 版本要求，优化效果取决于 APK 内 DEX 布局。
 
 HRF 方法规则必须包含 flags、类描述符、完整方法签名和返回类型，例如：
 

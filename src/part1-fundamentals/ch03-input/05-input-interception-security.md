@@ -4,7 +4,7 @@ chapter: '3.5'
 section: '3.5'
 status: ready-for-review
 drafted_by: openclaw-task
-applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+applicable_versions: Android 10 (API 29) - Android 16 (API 36), InputMonitor 部分基于 android-16.0.0_r1 核验
 confidence: medium
 sources:
 - type: official
@@ -30,11 +30,12 @@ related_chapters:
 reviewed_date: "2026-04-29"
 reviewed_by: openclaw-task6
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_result: fixed
+task2b_state: fixed
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-29"
 task9_reviewed_by: openclaw-task9
@@ -143,6 +144,41 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 另一类是无障碍按键判定带来的额外等待。它不是 `InputDispatcher` 线程同步等远端 Binder 返回，而是 `KeyboardInterceptor` 把按键交给 `AccessibilityManagerService`，再由 `KeyEventDispatcher` 异步等服务调用 `setOnKeyEventResult()`。InputDispatcher 并没有同步卡在 Binder 上等远端返回。
 
 当前素材没有对应的真实 trace 截图，本节只保留可从源码核对到的结论。Perfetto 图例先记为 `[待补充：展示 InputDispatcher、AccessibilityManagerService、无障碍服务进程的时间关系]`。
+
+## InputMonitor：特权组件的旁路监控
+
+### 什么是 InputMonitor
+
+前面讲的 `InputFilter` 是"拦截-决定放行或消费"的模型。Android 还有一套更隐蔽的系统能力——`InputMonitor`，允许特权组件在**不是目标窗口**时监控 `InputEvent` 流。它不做拦截，只拿一份副本。
+
+`InputMonitor` 的注册入口是 `InputManagerService.monitorGestureInput()`，调用方需要持有 `android.permission.MONITOR_INPUT` 权限——这个权限只签发给系统签名应用或 `privileged` 应用。普通 App 和第三方无障碍服务都无法获取。
+
+> [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java, monitorGestureInput()]
+
+### spy window 与 pilferPointers
+
+`InputMonitor` 创建的输入通道在 InputDispatcher 内部被标记为 **spy window**。spy window 的特点是：
+
+1. **收到事件的副本**，不影响正常分发流程。目标窗口的事件不会因为 spy window 的存在而延迟或丢失。
+2. **可以 pilfer pointers**。`pilferPointers()` 让 spy window 从目标窗口拿走当前 pointer stream。系统手势导航（三键导航/手势导航）就用这个能力在用户从屏幕边缘滑动时接管触摸流——原始目标窗口会收到 `ACTION_CANCEL`。
+
+`pilferPointers()` 的调用方通常是 `NavigationModeController` 或 `NavbarGestureController` 这类系统组件。它在 Perfetto 中的表现为：目标窗口的 touch slice 突然中断（`ACTION_CANCEL`），同时系统 UI 进程开始处理手势。如果分析时发现 App 的触摸流被意外中断，可以检查是否存在系统 spy window 在 pilfer。
+
+### InputMonitor 与 InputFilter 的区别
+
+| 能力 | InputFilter | InputMonitor (spy window) |
+|------|-------------|--------------------------|
+| 能否消费事件 | 是（filter 返回 false 则事件不再分发） | 否（只拿副本，不影响分发） |
+| 能否拿走 pointer stream | 否 | 是（`pilferPointers()`） |
+| 能否发出替代事件 | 是（`sendInputEvent()`） | 否（只能读，不能注入） |
+| 权限要求 | 系统签名，由 WMS 注册 | `MONITOR_INPUT`，系统签名或 privileged |
+| 典型使用方 | `AccessibilityInputFilter`、厂商定制 filter | 系统手势导航、系统 UI 手势识别 |
+
+三类输入旁路能力的边界：
+
+1. **旁路监控副本**（InputMonitor / spy window）：只读，不改变事件流。用于系统手势检测、导航手势识别。
+2. **拿走 pointer stream**（`pilferPointers()`）：把当前 pointer stream 从目标窗口转移到 spy window。用于系统导航手势接管。
+3. **消费 / 重发事件**（InputFilter）：拦截原始事件，决定放行、消费或发出替代事件。用于全局输入策略和无障碍变换。
 
 ## 无障碍服务的事件拦截
 
@@ -290,6 +326,7 @@ Input 事件从硬件到 App 之间，真正可编程的拦截点按源码可以
 | android-14.0.0_r1 | 按键过滤仍是 capability + runtime flag 这套机制，不存在“只有系统无障碍服务可用该 flag”的 AOSP 依据 | `AccessibilityServiceInfo.java` |
 | android-14.0.0_r1 | 标准 `UiAutomation.injectInputEvent()` 会跳过 accessibility input filter；测试 filter 需要 `injectInputEventToInputFilter()` | `UiAutomation.java` |
 | android-14.0.0_r1 | accessibility 注入事件会在 InputDispatcher 中转成 `FLAG_IS_ACCESSIBILITY_EVENT` 供 App 识别 | `InputDispatcher.cpp`、`KeyEvent.java`、`MotionEvent.java` |
+| android-14.0.0_r1 (API 34) | `View.setAccessibilityDataSensitive(ACCESSIBILITY_DATA_SENSITIVE_YES)` 可标记敏感 View；非 `isAccessibilityTool` 的无障碍服务对该 View 的 accessibility interaction 会被限制。这限制的是 `AccessibilityInteractionClient` 的查询/操作通道，不是 InputDispatcher 的原始事件拦截 | `View.java`、`AccessibilityServiceInfo.isAccessibilityTool()` |
 
 以下结论因缺乏一手证据暂不收录：
 - `MotionEvent.isFromSource()` 可检测 injected event
