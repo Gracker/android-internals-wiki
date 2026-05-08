@@ -14649,6 +14649,37 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T09:27:37+08:00",
       "status": "pending"
+    },
+    {
+      "section": "3.2",
+      "section_title": "触摸响应的性能分析",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3.2 触摸响应的性能分析仍有 InputReader 源码片段与 InputDispatcher 队列观测口径错误，需回炉修正（P0:1 P1:1）",
+      "material_paths": [
+        "logs/deep-review/2026-05-08-10-deep-review.md",
+        "src/part1-fundamentals/ch03-input/02-touch-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "dimension": "源码引用准确性",
+          "location": "L130-L145 InputReader.loopOnce / QueuedListener.flush()",
+          "detail": "正文写 InputReader 将 NotifyArgs 通过 QueuedListener.flush() 发送给 InputDispatcher，代码块也保留 mQueuedListener->flush()。复核 AOSP android-16.0.0_r1 frameworks/native/services/inputflinger/reader/InputReader.cpp：loopOnce() 使用 mPendingArgs += processEventsLocked(...)，随后 std::swap(notifyArgs, mPendingArgs)，并在锁外 for (const NotifyArgs& args : notifyArgs) mNextListener.notify(args)。当前 InputReader.cpp 未见 mQueuedListener / QueuedListener.flush() 这一路径。",
+          "suggestion": "按 android-16.0.0_r1 重写代码片段和文字：getEvents() 返回 std::vector<RawEvent>；processEventsLocked() 返回 NotifyArgs 列表并累积到 mPendingArgs；锁外逐个 mNextListener.notify(args) 交给下一层监听器。若要讲历史 QueuedListener.flush()，必须单列旧版本边界。"
+        },
+        {
+          "type": "Trace 观测错误/原理断裂",
+          "severity": "P1",
+          "dimension": "原理链完整性",
+          "location": "L164 InputDispatcher 队列在 Perfetto 中的表现",
+          "detail": "正文仍写 InboundQueue / OutboundQueue / WaitQueue “以 Slice 的形式”出现在 InputDispatcher 线程。AOSP android-16.0.0_r1 InputDispatcher.cpp 中 traceInboundQueueLengthLocked()、traceOutboundQueueLength()、traceWaitQueueLength() 均通过 ATRACE_INT 写 iq / oq:* / wq:* 队列长度 counter，不是 slice。正文后文 L285 已写成 ATRACE_INT 计数器，前后口径冲突。",
+          "suggestion": "将 L164 改为“以 counter / 计数器轨道形式出现”，并统一说明 iq/oq/wq 只能判断派发与 ACK 背压；App 侧 batching 仍看 consumeBatchedInputEvents / deliverInputEvent / MotionEvent history。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T10:29:04+08:00",
+      "status": "pending"
     }
   ],
   "completed": [

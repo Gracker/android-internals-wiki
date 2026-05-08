@@ -1,7 +1,7 @@
 ---
 title: "App 耗电优化"
 chapter: "11.2"
-status: ready-for-review
+status: finalized
 section: "11.2"
 drafted_date: "2026-04-03"
 drafted_by: "openclaw-task2a"
@@ -61,15 +61,14 @@ repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 review_round: 4
 last_task2b_at: "2026-05-04T01:40:00+08:00"
-task9_result: needs-rework
-task9_state: "pending"
+task9_result: pass-tech-review
+task9_state: "reviewed"
 task2b_state: fixed
-pipeline_stage: "task9_pending"
-task9_reviewed_date: "2026-05-04"
+pipeline_stage: "ready-to-publish"
+task9_reviewed_date: "2026-05-08"
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-04T17:20:00+08:00"
-review_notes: "2026-05-04 17:20 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0 / P3 1；ADPF setPreferPowerEfficiency API 版本边界与调度语义需修正。"
-
+last_task9_at: "2026-05-08T10:29:04+08:00"
+review_notes: "2026-05-08 10:28 task9 deep-review: pass-tech-review；无 P0/P1，Task6 已通过且 queue 无 pending 条目，自动晋升 finalized / ready-to-publish。"
 
 ---
 
