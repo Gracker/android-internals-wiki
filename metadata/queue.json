@@ -15026,6 +15026,58 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T02:30:12+08:00",
       "status": "pending"
+    },
+    {
+      "section": "3.5",
+      "section_title": "输入事件拦截与安全机制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 3.5 输入事件拦截与安全机制 — 2026-05-09 05:30 发现 P0 1 / P1 0，需 Task2B 回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L165-L170 spy window 与 pilferPointers",
+          "detail": "文中把 pilferPointers() 的典型调用方写成 NavigationModeController / NavbarGestureController，并把“三键导航/手势导航”合并描述。android-16.0.0_r1 中实际可核对到 SystemUI EdgeBackGestureHandler 创建 InputMonitorCompat(\"edge-swipe\") 并调用 pilferPointers()；NavigationModeController 只管理导航模式，未调用 pilferPointers()；NavbarGestureController 源码路径不存在。三键导航也不是边缘滑动 pilfer pointer stream 的典型路径。",
+          "suggestion": "把例子改为 SystemUI EdgeBackGestureHandler/edge back gesture（如需写 Quickstep 需另补源码锚点），删除“三键导航”与不存在类名，补 packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java 锚点。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T05:30:47+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "8.3",
+      "section_title": "启动优化策略",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 8.3 启动优化策略 — 2026-05-09 05:30 发现 P0 1 / P1 2，需 Task2B 回炉修正",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据错误",
+          "location": "L792 Android 16 AutoFDO 数据",
+          "detail": "当前写“Pixel 上冷启动提升超过 4%、boot time 降低约 2%、Binder 测试最高提升 21%”。Android Developers Blog《Boosting Android Performance: Introducing AutoFDO for the Kernel》正文可核对到的是 about 4% cold app launch improvement 和 1% boot time reduction；本轮未在该公开正文中核到 Binder 21% 数据。",
+          "suggestion": "将 boot time 改为 1%；Binder 21% 若来自图表或 kernel repo，补一手链接/表格名，否则删除或标为待验证。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L637-L640 Startup Profile / DEX layout 版本要求",
+          "detail": "当前写 AGP 7.0+ 开始支持 Startup Profile 消费、AGP 8.0+ 改进布局算法。官方 Startup Profiles 文档给出的要求是 Macrobenchmark 1.2.0+、AGP 8.2+、Android Studio Iguana+；DEX layout optimization 从 AGP 8.1 可用，AGP 8.3 起默认开启，且 release 构建需要 R8/isMinifyEnabled。",
+          "suggestion": "把版本表改成“AGP 8.1 可手动开 dexLayoutOptimization、8.2 支持模板但 variant 有限制、8.3 默认开启/支持 distinct Startup Profiles”，并补 R8 开启前提。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L725-L729 闲时任务调度",
+          "detail": "把“编译优化（如 ReDex 的 interdex 优化）”列为 JobScheduler/WorkManager 闲时任务。ReDex interdex 属于构建期 DEX 布局/重排优化，不能在用户设备闲时通过 WorkManager/JobScheduler 执行。",
+          "suggestion": "把 ReDex/interdex 移到构建期优化小节，闲时任务示例保留数据库预填充、缓存预热、非关键配置拉取等运行时任务。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-09T05:30:47+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
@@ -15433,7 +15485,7 @@
       "review_issues": [
         {
           "type": "源码错误/版本差异",
-          "location": "L632-L642, L665, L698, L790",
+          "location": "L632-L642, L665, L698, L792",
           "detail": "章节引用 frameworks/base/services/core/java/com/android/server/job/JobServiceContext.java 和 EXECUTING_TIMESLICE_MILLIS=10min 解释 Android 16 JobScheduler 超时，但 android-16.0.0_r1 中 JobServiceContext 已在 frameworks/base/apex/jobscheduler/service/java/com/android/server/job/，且执行上限由 JobSchedulerService.Constants / quota 决定：普通 Job 默认 free quota max 30min、min guarantee 10min，Expedited Job 通常按 10min 上限处理，User-initiated Job 还有更长限制。",
           "suggestion": "重写案例五的超时模型：区分 regular / expedited / user-initiated Job，补 JobSchedulerService.java 中 DEFAULT_RUNTIME_FREE_QUOTA_MAX_LIMIT_MS=30min、DEFAULT_RUNTIME_MIN_GUARANTEE_MS=10min、getMaxJobExecutionTimeMs() 的源码锚点；同步修正文中 10min/30min 图注不一致。"
         }

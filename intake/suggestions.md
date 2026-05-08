@@ -1753,3 +1753,21 @@
 - **位置**：L400-L407 / L631-L635 `__builtin___clear_cache()` ARM64 序列
 - **问题**：正文把 ARM64 cache flush 简化成 `dc cvau → dsb sy → ic ivau → isb`。LLVM compiler-rt 的 AArch64 `__clear_cache` 会先读 `CTR_EL0`，在 IDC/DIC 未置位时分别执行 dcache clean / icache invalidate，并使用 `dsb ish`（ic invalidate 后还有一次 `dsb ish`）和最终 `isb sy`。当前写法可作为概念摘要，但不宜标成完整实现。
 - **建议**：改为“典型序列包含 `dc cvau`、`dsb ish`、`ic ivau`、`dsb ish`、`isb sy`，且会根据 `CTR_EL0.IDC/DIC` 跳过部分步骤”；或明确标注为简化说明。
+
+## [Task9 Deep Review] 3.5 输入事件拦截与安全机制 — 2026-05-09
+- **类型**：数据缺失
+- **位置**：L345-L351 InputFilter 的延迟开销
+- **问题**：章节已承认缺少空 filter / 复杂 filter 的同设备量化数据；目前只能说明开销来源，不能给出可复现判断阈值。
+- **建议**：补一组 Perfetto 或 microbenchmark：空 InputFilter、轻量判断、包含对象分配/跨线程的复杂 filter 三组，记录 InputDispatcher 到目标窗口 deliver 的增量延迟。
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-05-09
+- **类型**：数据缺失
+- **位置**：L659-L665 Baseline Profile 效果量化
+- **问题**：10%-20% / 20%-40% / 超过 40% 与“2s 降到 1.2-1.6s”缺少对应官方或项目实验条件；官方基线口径更接近“included code paths execution speed about 30%”，不能直接泛化成所有冷启动收益。
+- **建议**：改为引用官方 30% code execution speed 口径，并把冷启动毫秒收益留给 Macrobenchmark 实测；如保留区间，补样本 App、设备、编译模式、迭代次数。
+
+## [Task9 Deep Review] 8.3 启动优化策略 — 2026-05-09
+- **类型**：源码准确性
+- **位置**：L232-L245 SplashScreen 调用顺序
+- **问题**：正文只强调 installSplashScreen() 要在 setContentView() 前；官方迁移文档要求在 starting activity 中先于 super.onCreate() 调用。示例代码是对的，但文字约束弱了一层。
+- **建议**：把文字改为“必须在 super.onCreate() 之前调用；自然也早于 setContentView()”。
