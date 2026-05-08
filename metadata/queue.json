@@ -14930,6 +14930,81 @@
       "added_at": "2026-05-08T17:05:00+08:00",
       "status": "pending",
       "original_review_log": "logs/review/2026-05-08-17-review.md"
+    },
+    {
+      "section": "7.1",
+      "section_title": "卡顿的定义与分类",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 7.1 Binder SQL 使用不存在的 android_frames.utid 列且未 include android.frames.timeline，示例无法执行，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-17-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/Perfetto SQL错误",
+          "location": "L299-L356 Binder SQL 佐证",
+          "detail": "[P0] `android_frames` 是 Perfetto stdlib `android.frames.timeline` 模块里的表，使用前需要 `INCLUDE PERFETTO MODULE android.frames.timeline;`。该表字段为 `ui_thread_utid` / `render_thread_utid`，没有 `utid` 列；当前 SQL 两处写 `af_ui.utid`，并用 `af.id = af_ui.actual_frame_timeline_id` 后再取不存在列，实际执行会报 no such column / no such table，无法定位 Binder 事务。",
+          "suggestion": "在 SQL 顶部加入 `INCLUDE PERFETTO MODULE android.frames.timeline;`；用 `android_frames f ON af.id = f.actual_frame_timeline_id`，直接取 `f.ui_thread_utid AS ui_utid`、`f.render_thread_utid AS rt_utid`，第二个 breakdown 查询复用同一 CTE，避免复制错误。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T17:40:52+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "13.9",
+      "section_title": "Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-17-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/tracepoint错误",
+          "location": "L123 Android 常用 tracepoint 分类表",
+          "detail": "[P0] 表格列出 `drm_atomic_commit` 作为 DRM ftrace tracepoint。公开 Linux DRM trace 定义与 Perfetto ftrace event registry 中可见 `drm_vblank_event`、`drm_sched_job`、`drm_run_job` 等事件，未见 `drm_atomic_commit`；读者按 `drm/drm_atomic_commit` 写 TraceConfig 会采集失败。",
+          "suggestion": "替换为公开 GKI/Perfetto 可采集的 DRM 事件；如果该名字来自厂商私有内核，需标注“厂商内核特有，GKI 不保证存在”。"
+        },
+        {
+          "type": "配置字段错误/版本差异",
+          "location": "L225、L423 `ftrace_drain_period_ms`；L110/L149/L209 `TraceConfig.ftrace_events`",
+          "detail": "[P0] Perfetto proto 字段是 `FtraceConfig.drain_period_ms`，完整路径为 `TraceConfig.ftrace_config.drain_period_ms`；源码 `ftrace_controller.cc` 中读取的是 `ds->config().drain_period_ms()`，不存在 `ftrace_drain_period_ms`。同理，`ftrace_events` 不是 `TraceConfig` 顶层字段，而是 `TraceConfig.ftrace_config.ftrace_events`。",
+          "suggestion": "全文统一为 `TraceConfig.ftrace_config.ftrace_events` 与 `TraceConfig.ftrace_config.drain_period_ms`；源码描述中不要引入不存在的 `ftrace_drain_period_ms` 名称。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T17:40:52+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "14.11",
+      "section_title": "Battery Historian 与功耗分析工具",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 14.11 PowerMonitor 常量值与 PowerStatsService 源码路径/版本错误，需回炉修正",
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-08-17-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "API 常量错误",
+          "location": "L391-L392 PowerMonitor 类型常量",
+          "detail": "[P0] AOSP android-15.0.0_r1 / android-16.0.0_r1 `frameworks/base/core/java/android/os/PowerMonitor.java` 中定义为 `POWER_MONITOR_TYPE_CONSUMER = 0`、`POWER_MONITOR_TYPE_MEASUREMENT = 1`。正文写 `MEASUREMENT=0x1` 正确，但把 `CONSUMER` 写成 `0x2`，会误导读者做类型判断。",
+          "suggestion": "修正为 `POWER_MONITOR_TYPE_CONSUMER = 0`、`POWER_MONITOR_TYPE_MEASUREMENT = 1`；如果只讲语义，避免手写十六进制值。"
+        },
+        {
+          "type": "源码路径错误/版本差异",
+          "location": "L448 PowerStatsService 路径与 Android 15 引入断言",
+          "detail": "[P0] `PowerStatsService.java` 实际位于 `frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`，不是 `com/android/server/power/stats/`。该类在 android-12.0.0_r1 已存在（Copyright 2020），并非 Android 15 才引入；`power/stats/` 目录承载 BatteryStatsImpl、PowerCalculator/Collector/Processor 等模型代码。",
+          "suggestion": "改成“PowerMonitor API 在 API 35 向应用层开放；内部 PowerStatsService 更早已存在，并与 BatteryStatsImpl/功耗模型代码并存”，同时给出两个正确目录：`powerstats/PowerStatsService.java` 与 `power/stats/*PowerStats*.java`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-08T17:40:52+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
