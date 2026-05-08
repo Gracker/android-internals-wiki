@@ -58,21 +58,21 @@ reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-05-08T19:44:22"
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-08-14-review.md"
-review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。"
+last_task6_at: "2026-05-08T20:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-20-review.md"
+review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 20:05：复审 Task2B 修复后的文稿，完成 L1/L2 轻量精修（重复句、用途句、口语化表达与结构性提示）；无新增 B 类回炉问题，等待 Task9 技术复审。"
 last_task9_review_log: "logs/deep-review/2026-05-08-14-deep-review.md"
 ---
 
 # 10.7 SQLite/Room 数据库性能优化
 
-在分析 ANR 和卡顿问题时，我们经常看到线程停在数据库路径上。一个耗时 200ms 的查询，如果发生在主线程，就是一次用户可感知的卡顿；如果它又把其他线程拖进同一条数据库路径，ANR traces 和 Perfetto 里就会出现一串线程一起等待连接、事务或远端 Provider 回复。
+在分析 ANR 和卡顿问题时，我们经常看到线程停在数据库路径上。一个耗时 200ms 的查询，如果发生在主线程，就是一次用户可感知的卡顿；如果它又把其他线程带到同一条数据库等待路径，ANR traces 和 Perfetto 里就会出现一串线程一起等待连接、事务或远端 Provider 回复。
 
 数据库操作之所以容易成为性能瓶颈，根源在于 SQLite 的并发模型和 Android 在其上叠加的 connection pool。SQLite 在同一时刻只允许一个写者，Android 侧再用 `SQLiteSession`、`SQLiteConnectionPool` 和 helper open 流程把查询、事务、Migration 组织起来。把这几层分清楚，才能判断慢点究竟出在 SQL、本地窗口 refill、跨进程 Cursor 传输，还是连接池争用。
 
@@ -97,6 +97,8 @@ SQLite 默认使用回滚日志（rollback journal）模式。在这种模式下
 
 WAL（Write-Ahead Logging）模式反转了这个模型。写操作不再直接修改数据库文件，而是将变更追加到一个独立的 WAL 文件（`.db-wal`）中。读操作可以从数据库文件和 WAL 文件中同时读取，但看到的是各自一致的快照。这样，一个写者可以持续追加变更，多个读者也能同时读取，读写不再互斥。
 
+启用 WAL 通常通过这条 PRAGMA 完成：
+
 ```sql
 -- 启用 WAL 模式
 PRAGMA journal_mode=WAL;
@@ -108,7 +110,7 @@ WAL 模式的收益主要来自两个更稳定的事实。
 
 第二，WAL 把大部分写入变成 append-only I/O。它少了一次“先复制旧页再覆盖新页”的往返，对频繁小事务和批量写入都更友好。Room 在默认 `JournalMode.AUTOMATIC` 配置下，通常也会优先选择 WAL；最终行为仍然取决于 API 级别、低内存设备判定和具体打开配置。
 
-WAL 模式也有限制需要注意：只有一个写者可以活跃（写操作仍然串行），WAL 文件如果不及时做检查点可能无限增长，以及它不适用于网络文件系统（需要共享内存）。
+WAL 模式也有三个限制：只有一个写者可以活跃（写操作仍然串行），WAL 文件如果不及时做检查点可能无限增长，以及它不适用于网络文件系统（需要共享内存）。
 
 [待验证：F2FS 文件系统上 WAL 的写入放大 10-15% 是否影响实际性能]
 
@@ -311,7 +313,7 @@ EXPLAIN QUERY PLAN SELECT * FROM messages WHERE conversation_id = 42;
 -- SCAN messages USING INDEX idx_msg_conv_date
 ```
 
-关键解读规则：
+解读时看三类输出：
 
 - `SCAN TABLE`（不带 `USING INDEX`）→ 全表扫描，通常需要优化
 - `SCAN TABLE USING INDEX` → 索引扫描，正常
@@ -333,7 +335,7 @@ CREATE TABLE user_prefs (
 
 ### 4.4 PRAGMA 调优
 
-几个对性能影响最大的 PRAGMA 设置：
+排查和调优时常看的 PRAGMA 设置：
 
 | PRAGMA | 推荐值 | 说明 |
 |--------|--------|------|
@@ -434,7 +436,7 @@ StrictMode.setThreadPolicy(
 
 由于 SQLite 在同一时刻只允许一个写者（即使在 WAL 模式下），数据库写操作的线程池设计有两条路径：
 
-**单线程串行写入**：SQLite 在同一时刻只允许一个写者，Room 的事务通过 transaction executor 进入事务路径并保持事务互斥与顺序。需要注意三层关系：SQLite 内核层保证单写者；Room 的 `withTransaction` 在 transaction executor 上执行事务体并持有数据库互斥；应用如果需要全局写入顺序和背压控制，仍应显式设计单写队列或受控 executor——Room 的 transaction executor 是可配置的，默认可能与 query executor 共用底层线程池，不等于自动建立一个 dedicated single-thread 写队列。
+**单线程串行写入**：SQLite 在同一时刻只允许一个写者，Room 的事务通过 transaction executor 进入事务路径并保持事务互斥与顺序。这里分三层看：SQLite 内核层保证单写者；Room 的 `withTransaction` 在 transaction executor 上执行事务体并持有数据库互斥；应用如果需要全局写入顺序和背压控制，仍应显式设计单写队列或受控 executor——Room 的 transaction executor 是可配置的，默认可能与 query executor 共用底层线程池，不等于自动建立一个 dedicated single-thread 写队列。
 
 ```kotlin
 val dbWriteExecutor = Executors.newSingleThreadExecutor()
@@ -460,7 +462,7 @@ PRAGMA busy_timeout=3000;
 3. 如果列表使用 Room + Paging 3，确认 DAO SQL 到底是 `LIMIT / OFFSET` 还是业务自定义 Keyset，不要把 Paging 3 的框架名当成性能担保。
 4. 再回到数据设计：projection 是否过宽、BLOB 是否外置、写操作是否串行化、跨进程查询是否真的有必要。
 
-沿着这条线往下走，前面各节的建议会自然落位：同步 DAO 避免进主线程，批量写入放进事务，长 Migration 提前预热，深翻页场景改成稳定排序键 + Keyset，跨进程 Cursor 缩小窗口压力。收束到 ANR / Perfetto 场景时，读者可以直接拿去排查，而不是对着一串 checklist 打勾。
+按这个顺序排查，前面各节的建议会对应到具体动作：同步 DAO 避免进主线程，批量写入放进事务，长 Migration 提前预热，深翻页场景改成稳定排序键 + Keyset，跨进程 Cursor 缩小窗口压力。回到 ANR / Perfetto 场景时，读者可以直接拿这套路径排查，而不是只对着清单打勾。
 
 ## 扩展
 

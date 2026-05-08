@@ -45,14 +45,14 @@ reviewed_date: "2026-05-08"
 reviewed_by: openclaw-task6
 task2b_state: fixed
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_reviewed_date: "2026-05-08"
-last_task6_at: "2026-05-08T14:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-08-14-review.md"
-review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。"
+last_task6_at: "2026-05-08T20:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-20-review.md"
+review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。 | 2026-05-08 Task6 14:05：复审 Task2B 修复后的文稿，完成 frontmatter 去重、代码围栏语言标注与 L1/L2 小修；无新增 B 类回炉问题，等待 Task9 技术复审。 | 2026-05-08 Task6 20:05：复审 Task2B 修复后的文稿，完成 L1/L2 轻量精修（重复句、用途句、口语化表达与结构性提示）；无新增 B 类回炉问题，等待 Task9 技术复审。"
 last_task9_review_log: "logs/deep-review/2026-05-08-14-deep-review.md"
 ---
 
@@ -147,7 +147,7 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
 
 **Android 13 及以下**：从 ANR 触发到 SIGQUIT 发送、再到所有线程被挂起并 dump 完调用栈，中间可能经过数秒。在这段时间里，主线程的状态可能已经发生了变化——导致 ANR 的耗时操作可能在 dump 之前就执行完了，trace 里看到的只是后续空闲状态（比如 `nativePollOnce`）。这种情况下，traces.txt 里的堆栈可能已经滞后，需要结合 Perfetto 时间线还原真实过程。
 
-**Android 14+**：`AnrLatencyTracker` 在 ANR 处理的关键节点写入了 Perfetto trace slice（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等），可以精确还原从 ANR 触发到 trace dump 的时间差。`AnrLatencyTracker` 记录 ANR 处理各阶段的 trace slice/counter 与延迟分解（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等），可以精确还原从 ANR 触发到 trace dump 的时间差。主线程是否仍在案发代码路径，需要靠 Perfetto 的 sched、slice 数据与 traces.txt 交叉验证——时间差越短，堆栈可信度越高。实测经验表明，在 dump 延迟 < 500ms 的场景中，主线程堆栈与 Perfetto 时间线高度吻合；随着延迟拉长，堆栈漂移的概率会上升。AOSP 源码中并没有定义“90% 可信”或“2 秒阈值”的硬性常量——这两个数字不应作为判断标准。
+**Android 14+**：`AnrLatencyTracker` 在 ANR 处理的关键节点写入 Perfetto trace slice/counter 与延迟分解（`anrRecordPlacedOnQueue`、`anrProcessing`、`dumpStackTraces()` 等），可以还原从 ANR 触发到 trace dump 的时间差。主线程是否仍在触发时的代码路径，需要靠 Perfetto 的 sched、slice 数据与 traces.txt 交叉验证——时间差越短，堆栈可信度越高。实测经验表明，在 dump 延迟 < 500ms 的场景中，主线程堆栈与 Perfetto 时间线高度吻合；随着延迟拉长，堆栈漂移的概率会上升。AOSP 源码中并没有定义“90% 可信”或“2 秒阈值”的硬性常量——这两个数字不应作为判断标准。
 
 **排查建议**：Android 14+ 设备上，先在 Perfetto 中确认 `dumpStackTraces()` 与 `anrRecordPlacedOnQueue` 的时间差。时间差越小，主线程堆栈越值得信赖；如果时间差超过数百毫秒，需要交叉比对 Perfetto 主线程 slice，确认 dump 时刻主线程是否已经离开了 ANR 触发时的代码路径。
 
@@ -185,7 +185,7 @@ traces.txt 是 SIGQUIT 信号触发后的一个时间点快照，但它不一定
 
 [来源：Personal-Knowlodge/source/Android-ANR-02-How-to-analysis-ANR.md, Android-ANR-03-ANR-Case-Share.md]
 
-traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是一个时间点的快照。而 Perfetto 能告诉我们 ANR 发生的前后一段时间内，主线程到底经历了什么——这才是分析 ANR 的完整视角。
+traces.txt 能告诉我们 ANR 发生时各个线程在做什么，但它只是一个时间点的快照。Perfetto 补上的是 ANR 前后一段时间内的过程视角：主线程什么时候开始忙、什么时候被调度、什么时候恢复空闲，都需要回到时间线里看。
 
 ### 抓取包含 ANR 的 Perfetto Trace
 
@@ -273,7 +273,7 @@ CPU 饥饿的判断需要结合 CPU 使用率信息和 Perfetto 的全局视图�
 
 以下几种系统进程的异常是重要的信号：
 - **system_server CPU 占用异常高**：可能是内部有死循环或锁竞争
-- **kswapd0 CPU 占用高**：内存紧张，内核在疯狂回收页面
+- **kswapd0 CPU 占用高**：内存紧张，内核在高频回收页面
 - **logd CPU 占用高**：日志系统过载，所有进程的日志输出都被阻塞
 - **surfaceflinger CPU 占用高**：合成线程繁忙，可能影响 VSync 信号的分发
 
@@ -333,7 +333,7 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 
 ### 标准分析流程
 
-**第一步：确认 ANR 日志的有效性。** 搜索 EventLog 中的 `am_anr`，确认 ANR 的精确时间。然后搜索 `ANR in`，对比两者时间是否一致。如果 `ANR in` 的输出时间比 `am_anr` 延迟了 10 秒以上，说明当时系统负载很重，trace 的堆栈可能已经不是"第一案发现场"了。
+**第一步：确认 ANR 日志的有效性。** 搜索 EventLog 中的 `am_anr`，确认 ANR 的精确时间。然后搜索 `ANR in`，对比两者时间是否一致。如果 `ANR in` 的输出时间比 `am_anr` 延迟了 10 秒以上，说明当时系统负载很重，trace 的堆栈可能已经不是触发现场了。
 
 **第二步：提取 ANR 基本信息。** 从 `ANR in` 行中提取进程名和 PID、ANR 原因、CPU Load 值。
 
@@ -440,7 +440,7 @@ if (Build.VERSION.SDK_INT >= 36) {
 
 **"线上 ANR 发生概率极低（十万分之一），不值得修。"** 如果根因明确指向应用的某个代码路径，即使发生概率很低也建议修复——同一个根因可能在其他场景下更容易触发。
 
-**"traces.txt 已经够用了，不需要 Perfetto。"** — traces.txt 只是一个时间点的快照，无法还原 ANR 前后的完整过程。Android 17 引入了更丰富的时段采样画像能力，通过 `ProfilingManager` 的 ANOMALY 触发器，系统可以在内存压力、ANR 等异常发生前持续采集 trace 数据，为"疑难杂症排查"提供时间维度的连续信息，弥补点快照模型的局限。
+**"traces.txt 已经够用了，不需要 Perfetto。"** traces.txt 只是一个时间点的快照，无法还原 ANR 前后的完整过程。Android 17 引入了更丰富的时段采样画像能力，通过 `ProfilingManager` 的 ANOMALY 触发器，系统可以在内存压力、ANR 等异常发生前持续采集 trace 数据，为疑难问题提供时间维度的连续信息，弥补点快照模型的局限。
 
 ## 版本演进
 
