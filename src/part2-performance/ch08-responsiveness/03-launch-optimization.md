@@ -42,12 +42,15 @@ repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T10:44:00+08:00"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0，P1 2，P2 2。Startup Profile 原问题部分已覆盖；external DEFAULT_TO_WEB 线索未采纳。"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-30"
-pipeline_stage: task6_pending
+reviewed_date: 2026-05-09
+pipeline_stage: task9_pending
 review_round: 3
+last_task6_at: "2026-05-09T05:15:25+08:00"
+last_task6_review_log: "logs/review/2026-05-09-05-review.md"
+task6_review_notes: "2026-05-09 Task6 05:15：Task2B 修复后写作复审；轻修 24 处（禁用词、结构性元叙述、编辑痕迹、第一/第二人称和中性表达），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 ---
 
 # 启动优化策略
@@ -80,21 +83,21 @@ review_round: 3
 
 ## 为什么要了解启动优化策略
 
-在上一节（8.2 App 启动全流程）中，我们完整地梳理了从用户点击图标到首帧绘制的冷启动路径。如果我们在 Perfetto 中打开一个中等复杂度应用的冷启动 Trace，会发现从 `BindApplication` 到 `performTraversals` 之间可能有 1-3 秒的间隔——这段时间里，Application 在初始化十几个 SDK，Activity 在 inflate 一个复杂的布局，ContentProvider 在默默地加载各种库。这些操作串行堆积在主线程上，就构成了用户感知到的"启动慢"。
+上一节（8.2 App 启动全流程）已经梳理了从用户点击图标到首帧绘制的冷启动路径。在 Perfetto 中打开一个中等复杂度应用的冷启动 Trace，常会看到从 `BindApplication` 到 `performTraversals` 之间有 1-3 秒的间隔——这段时间里，Application 在初始化十几个 SDK，Activity 在 inflate 一个复杂的布局，ContentProvider 在默默加载各种库。这些操作串行堆积在主线程上，就构成了用户感知到的"启动慢"。
 
 了解启动流程是为了知道"时间花在哪里"，本节回答"怎么把时间省下来"。启动优化不是在 Application.onCreate 里删几行代码这么简单——它是一套系统工程，涉及任务编排、布局优化、编译优化、以及线上监控等多个层面。每个优化手段都有适用场景和副作用，盲目套用可能适得其反。
 
-在展开具体策略之前，先明确两个衡量启动速度的核心指标：**TTID（Time To Initial Display）**和 **TTFD（Time To Full Display）**。
+具体策略需要绑定两个衡量启动速度的指标：**TTID（Time To Initial Display）**和 **TTFD（Time To Full Display）**。
 
 TTID 是从用户触发启动到应用绘制第一帧的时间。对应 `am start -W` 输出中的 `TotalTime`，也对应 Perfetto 中 `Choreographer#doFrame` 第一次出现的时间点。TTID 衡量的是"用户看到了画面"——但这个画面可能只是骨架屏或 Loading 状态。
 
-TTFD 是从用户触发启动到应用内容完全就绪的时间。终点需要开发者在代码中调用 `Activity.reportFullyDrawn()` 来标记。没有调用 `reportFullyDrawn()` 的话，系统无法知道应用何时才算"真正准备好"。TTFD 衡量的是"用户看到的是完整内容"。
+TTFD 是从用户触发启动到应用内容完全就绪的时间。终点需要开发者在代码中调用 `Activity.reportFullyDrawn()` 来标记。没有调用 `reportFullyDrawn()` 的话，系统无法知道应用何时内容已经完整可交互。TTFD 衡量的是"用户看到的是完整内容"。
 
 两者可能差距很大。一个新闻 App 的 TTID 可能只有 800ms（首帧显示了骨架屏），但 TTFD 要 2 秒（首页新闻列表从服务端加载完成）。这里有三个容易混在一起的时间点：`Activity.reportFullyDrawn()` 早在 API 19 就已经提供，用来告诉系统“内容已经完整可交互”；`FrameMetrics` 和 `FrameMetrics#TOTAL_DURATION` 则是 API 24 引入的帧耗时观测能力；Android 12（API 31）新增的是 SplashScreen API 和更统一的启动体验规范。另一个容易误判的点是：Android 12+ 如果应用在系统判定 TTID 之前就调用 `reportFullyDrawn()`，系统会把这次 TTFD 记成 TTID，避免过早上报把启动耗时做小。
 
 优化策略必须针对正确的指标：TTID 优化侧重减少主线程阻塞（延迟初始化、布局优化、ContentProvider 精简），TTFD 优化还需要考虑数据预加载、网络策略、以及 `reportFullyDrawn()` 的合理调用时机。
 
-读完本节之后，我们应该能够：在面对一个启动耗时 2 秒以上的应用时，判断时间主要花在了哪个环节（SDK 初始化？布局 inflate？DEX 编译？），并选择对应的优化策略组合，而不是上来就"把所有 SDK 改成异步初始化"。
+目标是：面对一个启动耗时 2 秒以上的应用，能判断时间主要花在了哪个环节（SDK 初始化？布局 inflate？DEX 编译？），再选择对应的优化策略组合，而不是上来就"把所有 SDK 改成异步初始化"。
 
 ## 优化策略全景：一张图看清四个维度
 
@@ -110,17 +113,16 @@ TTFD 是从用户触发启动到应用内容完全就绪的时间。终点需要
 
 [图：启动优化四维策略全景图——横轴为"减少工作量 / 加速执行 / 改善感知 / 提前编译"，纵轴为"应用侧可做 / 系统侧可做 / 需要两者配合"]
 
-下面我们逐个展开。
 
 ## 延迟初始化策略：把"现在就要"变成"用的时候再说"
 
 [已验证: 来源见 developer.android.com/topic/performance/vitals/launch-time 及多个行业实践]
 
-### 核心思路：区分"必须同步完成"和"可以延后"
+### 分类原则：区分"必须同步完成"和"可以延后"
 
 启动阶段主线程上执行的每一行代码都在消耗启动时间。而很多在 Application.onCreate 和 Activity.onCreate 中执行的初始化逻辑，并不需要在首帧绘制前完成。
 
-以一个典型的内容类应用为例，启动阶段可能执行了 20-30 个 SDK 的初始化。仔细分析下来，真正影响首帧显示的只有 UI 框架、网络库（用于加载首页数据）、图片加载库这几个。其他如推送 SDK、统计 SDK、热修复 SDK、广告 SDK 等，完全可以等到首页显示后再初始化。
+以一个典型的内容类应用为例，启动阶段可能执行了 20-30 个 SDK 的初始化。仔细分析下来，首帧显示依赖的通常只有 UI 框架、网络库（用于加载首页数据）、图片加载库这几个。其他如推送 SDK、统计 SDK、热修复 SDK、广告 SDK 等，完全可以等到首页显示后再初始化。
 
 这背后的分类逻辑是这样的：
 
@@ -179,10 +181,10 @@ val locationManager by lazy {
 
 ### 在 Perfetto 中验证延迟初始化的效果
 
-做延迟初始化优化前后，我们可以用 Perfetto 清晰地看到效果：
+延迟初始化优化前后，Perfetto 中的差异很直接：
 
-- **优化前**：主线程在 `Application.onCreate` 中有大量的 CPU 活动（一段厚厚的执行块），对应的是 SDK 的同步初始化。我们能看到主线程在这段期间持续运行，没有 idle。
-- **优化后**：`Application.onCreate` 变得很薄（可能只有几十毫秒），因为大部分 SDK 已经被移到后台线程或延迟了。我们在其他线程上可能会看到初始化活动，但不阻塞首帧绘制。
+- **优化前**：主线程在 `Application.onCreate` 中有大量的 CPU 活动（一段厚厚的执行块），对应的是 SDK 的同步初始化。主线程在这段期间持续运行，没有 idle。
+- **优化后**：`Application.onCreate` 变得很薄（可能只有几十毫秒），因为大部分 SDK 已经被移到后台线程或延迟了。其他线程上可能会出现初始化活动，但不阻塞首帧绘制。
 
 在 Perfetto 中具体看的方法：搜索 `BindApplication` slice，观察其结束后到 `Choreographer#doFrame` 第一次出现之间的主线程活动。这段区域越薄越好。
 
@@ -242,7 +244,7 @@ class MainActivity : ComponentActivity() {
 
 ### 让启动画面"等一下再消失"
 
-默认行为是：应用绘制第一帧后，启动画面立即消失。但在实际场景中，我们可能需要让启动画面多停留一会儿——比如等待首页数据从网络加载完成再显示内容，或者等待开屏广告加载完成。
+默认行为是：应用绘制第一帧后，启动画面立即消失。但在实际场景中，启动画面有时需要多停留一会儿——比如等待首页数据从网络加载完成再显示内容，或者等待开屏广告加载完成。
 
 SplashScreen 提供了 `KeepOnScreenCondition` 来实现这个需求：
 
@@ -290,7 +292,7 @@ splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
 
 ### 从旧方案迁移到 SplashScreen API
 
-如果我们的应用之前通过自定义 `windowBackground` 实现启动画面，迁移到 SplashScreen API 时需要注意：
+如果应用之前通过自定义 `windowBackground` 实现启动画面，迁移到 SplashScreen API 时需要注意：
 
 1. 移除旧的 `windowBackground` 自定义主题
 2. 添加 SplashScreen 兼容库依赖（`androidx.core:core-splashscreen:1.0.1` 或更高版本）
@@ -314,11 +316,11 @@ splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
 
 **缺乏全局视图。** 无法看到所有初始化任务的执行状态、耗时和依赖关系，排查启动问题时像是在黑箱中摸索。
 
-并行初始化框架的核心思想是：**把所有初始化任务建模成一个有向无环图（DAG），用拓扑排序确定执行顺序，在依赖约束下最大化并行度。**
+并行初始化框架的基本模型是：**把所有初始化任务建模成一个有向无环图（DAG），用拓扑排序确定执行顺序，在依赖约束下最大化并行度。**
 
 ### DAG 模型与拓扑排序
 
-我们把每个初始化任务定义为一个 Node，Node 之间通过依赖关系连接：
+每个初始化任务定义为一个 Node，Node 之间通过依赖关系连接：
 
 ```
   NetworkSDK ──→ LoginSDK ──→ UserProfileSDK
@@ -341,7 +343,7 @@ splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
 - 第二层（并发）：LoginSDK、CrashReportSDK
 - 第三层（并发）：PushSDK、UserProfileSDK
 
-这样 8 个串行初始化的任务变成了 3 层并发执行。下面这组数字只用于估算上限，不当成通用收益数据：
+这样 8 个串行初始化的任务变成了 3 层并发执行。这组数字只用于估算上限，不当成通用收益数据：
 
 **串行执行**：8 个任务每个平均耗时 100ms，总耗时约 800ms
 **3 层并行执行**：第一层(3个)约 100ms，第二层(2个)约 100ms，第三层(2个)约 100ms，总耗时约 300ms
@@ -352,7 +354,7 @@ splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
 
 Google 在 2020 年推出了 Jetpack App Startup 库（`androidx.startup:startup-runtime`），提供了一个轻量级的初始化框架。
 
-App Startup 的核心接口是 `Initializer<T>`：
+App Startup 的主要接口是 `Initializer<T>`：
 
 ```java
 public interface Initializer<T> {
@@ -416,7 +418,7 @@ App Startup 的优点是简单、官方维护、与 ContentProvider 机制集成
 
 ### 自研并行初始化框架的关键设计
 
-大型应用通常需要比 App Startup 更强大的框架。以下是自研框架需要考虑的关键设计点：
+大型应用通常需要比 App Startup 更强大的框架。自研框架需要处理这些设计点：
 
 **线程池分级。** 不是所有初始化任务都适合在高并发线程池中执行。I/O 密集型任务（读数据库、读配置文件）和 CPU 密集型任务（JSON 解析、加密计算）应该使用不同的线程池。通常的做法是分为 CPU 线程池（核心数等于 CPU 核心数）和 I/O 线程池（核心数较大，如 2 * CPU 核心数）。
 
@@ -440,7 +442,7 @@ App Startup 的优点是简单、官方维护、与 ContentProvider 机制集成
 
 这个方案对开发者来说很方便，但对启动性能来说是个灾难。一个集成了 10 个以上第三方库的应用，可能有 5-6 个甚至更多的 ContentProvider 在启动阶段串行执行。每个 ContentProvider 的 `onCreate()` 可能耗时 10-50ms，累积起来就是 50-300ms 的额外启动时间。
 
-更麻烦的是，这些隐式初始化通常没有出现在我们的代码中，很容易被忽略。在 Perfetto 中我们能看到 `BindApplication` 阶段有一段比较厚的主线程活动，其中就包含了 ContentProvider 的初始化，但在代码中搜索 `onCreate` 我们可能找不到对应的调用。
+更麻烦的是，这些隐式初始化通常没有出现在业务代码中，很容易被忽略。Perfetto 中能看到 `BindApplication` 阶段有一段比较厚的主线程活动，其中就包含了 ContentProvider 的初始化，但在代码中可能找不到对应的调用。
 
 ### 发现隐式的 ContentProvider 初始化
 
@@ -482,7 +484,7 @@ Jetpack App Startup 库的设计初衷之一就是解决这个问题。它提供
 
 从 3 个 ContentProvider 减少到 1 个，不仅减少了 ContentProvider 创建和初始化的系统开销，还让初始化逻辑集中管理，方便排查和优化。
 
-### 彻底移除不需要的自动初始化
+### 移除不需要的自动初始化
 
 对于不需要在启动阶段初始化的库，可以完全禁用其 ContentProvider 自动初始化（关于 ContentProvider 在启动流程中的完整机制分析，可以参考 1.10 节）：
 
@@ -503,7 +505,7 @@ ApplicationScope.launch(Dispatchers.IO) {
 }
 ```
 
-这种方式最灵活，但也意味着我们需要自己管理初始化时机和线程安全。
+这种方式最灵活，但也意味着需要自行管理初始化时机和线程安全。
 
 ## 布局优化对首帧速度的影响
 
@@ -633,7 +635,7 @@ class BaselineProfileGenerator {
 生成任务会产出 HRF 规则，常见落点是 `src/<variant>/generated/baselineProfiles/baseline-prof.txt`；开启 Startup Profile 后，还会把启动路径写入 `startup-prof.txt`。两者用途不同：
 
 - `baseline-prof.txt`：描述需要 ART AOT 编译的热点类和方法，最终打包成 `assets/dexopt/baseline.prof`。
-- `startup-prof.txt`：服务于 DEX layout。这是构建工具链能力，不是运行时行为——AGP/R8/D8 在构建阶段消费 `startup-prof.txt`，将启动热点类物理集中在 primary DEX 的起始扇区（DEX Layout Optimization）。核心价值是减少启动期加载这些类时的 Page Fault，与 AOT 编译是两条独立的优化路径。如果只用了 Baseline Profile 而没配置 Startup Profile，DEX 布局优化这一层就缺失了。版本要求：AGP 7.0+ 开始支持 Startup Profile 消费；AGP 8.0+ 改进布局算法；Macrobenchmark 1.2+ 提供自动化生成；运行时无需特定 Android 版本要求，优化效果取决于 APK 内 DEX 布局。
+- `startup-prof.txt`：服务于 DEX layout。这是构建工具链能力，不是运行时行为——AGP/R8/D8 在构建阶段消费 `startup-prof.txt`，将启动热点类物理集中在 primary DEX 的起始扇区（DEX Layout Optimization）。主要价值是减少启动期加载这些类时的 Page Fault，与 AOT 编译是两条独立的优化路径。如果只用了 Baseline Profile 而没配置 Startup Profile，DEX 布局优化这一层就缺失了。版本要求：AGP 7.0+ 开始支持 Startup Profile 消费；AGP 8.0+ 改进布局算法；Macrobenchmark 1.2+ 提供自动化生成；运行时无需特定 Android 版本要求，优化效果取决于 APK 内 DEX 布局。
 
 HRF 方法规则必须包含 flags、类描述符、完整方法签名和返回类型，例如：
 
@@ -706,7 +708,7 @@ Cloud Profile 的边界很清楚：它依赖 Google Play 分发和足够多的�
 
 当应用的初始化任务超过 30 个、模块之间有复杂的依赖关系时，简单的 DAG 框架就开始不够用了。大型应用（如淘宝、微信、抖音）通常需要一套完整的启动 Task 编排系统。
 
-这种系统的核心设计通常包含以下几个方面：
+这种系统的设计通常包含以下几个方面：
 
 **任务描述符。** 每个初始化任务不再是一个简单的 `Initializer` 接口，而是一个功能丰富的描述符，包含：任务名称、依赖列表、执行线程（主线程/IO 线程/CPU 线程）、优先级、是否阻塞首帧、超时时间等。
 
@@ -730,7 +732,7 @@ Cloud Profile 的边界很清楚：它依赖 Google Play 分发和足够多的�
 
 ### 为什么需要线上监控
 
-启动优化不是一个一次性的工作。随着版本迭代、新功能加入、SDK 更新，启动速度很容易"悄悄劣化"。我们可能在某个版本优化了 200ms，但下一个版本新加了一个 SDK 又慢了 300ms——如果没有线上监控，我们可能根本不知道。
+启动优化不是一次性工作。随着版本迭代、新功能加入、SDK 更新，启动速度很容易"悄悄劣化"。某个版本可能刚优化了 200ms，下一个版本新加一个 SDK 又慢了 300ms——如果没有线上监控，团队可能很晚才发现。
 
 线上监控需要覆盖以下几个维度：
 
@@ -774,7 +776,7 @@ adb shell am start -W -n com.example.app/.MainActivity
 
 ## 版本演进：Android 13-17 对启动优化的影响
 
-启动优化相关的工具和系统行为在不同 Android 版本有显著变化，这里按版本梳理关键差异。
+不同 Android 版本对启动优化工具和系统行为的影响如下。
 
 ### SplashScreen 相关变更
 
