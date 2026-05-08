@@ -13,10 +13,10 @@ polish_date: '2026-05-08'
 polish_by: task2b-rework
 review_type: post-polish-quality-gate
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
-pipeline_stage: task2b_pending
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: medium
 sources:
 - type: aosp
@@ -57,7 +57,7 @@ related_chapters:
 - '8.1'
 - '9.1'
 task9_result: needs-rework
-last_task2b_at: '2026-05-08T05:42:56+08:00'
+last_task2b_at: 2026-05-08T17:58:58+08:00
 repaired_date: '2026-04-22'
 repaired_by: openclaw-task2b
 review_round: 9
@@ -296,22 +296,16 @@ Binder 阻塞出现在 SurfaceFlinger 线程上时，需要额外证据才能指
 
 ```sql
 -- Step 1: 锁定 AppDeadlineMissed 的 janky frame，并定位该帧对应的关键线程
+INCLUDE PERFETTO MODULE android.frames.timeline;
 INCLUDE PERFETTO MODULE android.binder;
 INCLUDE PERFETTO MODULE android.binder_breakdown;
 
 WITH janky_frame AS (
   SELECT af.ts, af.dur, af.upid,
-         -- 用 android_frames 取帧关联的 UI/RenderThread utid
-         -- Perfetto 主线程名可能是进程名或截断的 comm，不能依赖 thread.name = 'main'
-         af_ui.utid AS ui_utid,
-         af_rt.utid AS rt_utid
+         f.ui_thread_utid AS ui_utid,
+         f.render_thread_utid AS rt_utid
   FROM actual_frame_timeline_slice af
-  LEFT JOIN android_frames af_ui ON af.id = af_ui.actual_frame_timeline_id AND af_ui.utid IS NOT NULL
-  LEFT JOIN (  -- RenderThread: 从同 upid 的线程中按名称筛选
-    SELECT a.id AS frame_id, t.utid
-    FROM actual_frame_timeline_slice a
-    JOIN thread t ON t.upid = a.upid AND t.name = 'RenderThread'
-  ) af_rt ON af.id = af_rt.frame_id
+  JOIN android_frames f ON af.id = f.actual_frame_timeline_id
   WHERE af.jank_type GLOB '*App Deadline Missed*'
     AND af.on_time_finish = 0
   ORDER BY af.dur DESC
@@ -346,15 +340,10 @@ WHERE binder_txn_id IN (
   SELECT b.binder_txn_id
   FROM android_binder_txns b,
        (SELECT af.ts, af.dur, af.upid,
-               af_ui.utid AS ui_utid,
-               af_rt.utid AS rt_utid
+               f.ui_thread_utid AS ui_utid,
+               f.render_thread_utid AS rt_utid
         FROM actual_frame_timeline_slice af
-        LEFT JOIN android_frames af_ui ON af.id = af_ui.actual_frame_timeline_id AND af_ui.utid IS NOT NULL
-        LEFT JOIN (
-          SELECT a.id AS frame_id, t.utid
-          FROM actual_frame_timeline_slice a
-          JOIN thread t ON t.upid = a.upid AND t.name = 'RenderThread'
-        ) af_rt ON af.id = af_rt.frame_id
+        JOIN android_frames f ON af.id = f.actual_frame_timeline_id
         WHERE af.jank_type GLOB '*App Deadline Missed*' AND af.on_time_finish = 0
         ORDER BY af.dur DESC LIMIT 1) jf
   WHERE b.client_upid = jf.upid

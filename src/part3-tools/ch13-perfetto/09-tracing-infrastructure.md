@@ -22,10 +22,10 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 task6_result: pass-light-edit
 task9_result: needs-rework
@@ -40,7 +40,7 @@ last_task9_at: '2026-05-08T17:40:52+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-08'
 task9_review_notes: '2026-05-05 13:34 task9 deep-review: needs-rework。P0 1：Perfetto SQL 原始 ftrace 表仍误写为 ftrace_events；正确表名是 ftrace_event。 | 2026-05-07 Task9 01:20：needs-rework。P0 0 / P1 1 / P2 0；ftrace_event 表名已修正，但 UprobeStats “任意用户态函数 <1%”与 Perfetto/StatsD 数据出口口径仍缺一手证据。 | 2026-05-08 Task9 17:38：needs-rework。P0 2 / P1 0 / P2 1；13.9 DRM tracepoint 与 Perfetto FtraceConfig 字段名存在事实错误，需回炉修正。'
-last_task2b_at: "2026-05-05T13:50:28"
+last_task2b_at: 2026-05-08T17:58:58+08:00
 repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
@@ -108,7 +108,7 @@ Perfetto Trace 中我们看到的 `sched_switch`、`sched_wakeup`、`cpu_frequen
 
 [已验证: AOSP android-17-beta3, kernel/trace/trace.c]
 
-当我们用 Perfetto 抓取 Trace 时，traced 守护进程通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig` 中 `ftrace_events` 字段列出的每一个事件名，最终都会被写入 `set_event` 文件。
+当我们用 Perfetto 抓取 Trace 时，traced 守护进程通过读写这些文件来控制 ftrace 的启停和数据采集。Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 字段列出的每一个事件名，最终都会被写入 `set_event` 文件。
 
 ### Android 常用 tracepoint 分类
 
@@ -121,7 +121,7 @@ Android 系统中与性能分析相关的 tracepoint 主要分布在以下几个
 | binder | `binder_transaction`, `binder_transaction_received`, `binder_lock`, `binder_unlock` | IPC 延迟分析，Binder ANR 诊断（§9.1, §9.2） |
 | block | `block_rq_issue`, `block_rq_complete`, `block_rq_insert` | I/O 延迟分析，存储性能诊断（§6.1-6.3） |
 | net | `netif_receive_skb`, `net_dev_xmit`, `napi_gro_receive_entry` | 网络传输分析 |
-| drm | `drm_vblank_event`, `drm_atomic_commit` | 显示管线，VSync 追踪（§2.3） |
+| drm | `drm_vblank_event`, `drm_sched_job`, `drm_run_job` | 显示管线 VSync 追踪、GPU 任务调度（§2.3） |
 
 [已验证: AOSP android-17-beta3, available_events]
 
@@ -147,7 +147,7 @@ ftrace 是内核层的机制。Android 应用和 Framework 代码运行在用户
 
 [已验证: AOSP android-16.0.0_r1 / main, frameworks/native/cmds/atrace/atrace.cpp k_categories]
 
-Perfetto 的 `TraceConfig.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。它比 atrace 更灵活：可以精确指定需要哪些 tracepoint，不受 atrace 预设分类限制。
+Perfetto 的 `TraceConfig.ftrace_config.ftrace_events` 直接绕过 atrace 的分类，直接操作 ftrace 的 event 名称。它比 atrace 更灵活：可以精确指定需要哪些 tracepoint，不受 atrace 预设分类限制。
 
 ### 用户空间 Trace tag 的底层实现
 
@@ -207,7 +207,7 @@ ftrace tracepoints ──┐
 
 traced_probes 采集 ftrace 数据的核心步骤：
 
-1. 读取 `TraceConfig` 中的 `ftrace_events` 列表
+1. 读取 `TraceConfig` 中的 `ftrace_config.ftrace_events` 列表
 2. 打开 `/sys/kernel/tracing/` 目录下的控制文件
 3. 将需要启用的 tracepoint 名称写入 `set_event`
 4. 设置 `buffer_size_kb` 为配置值（通常 32-128MB）
@@ -219,11 +219,11 @@ traced_probes 采集 ftrace 数据的核心步骤：
 
 - `ftrace_config.drain_period_ms`：多久从 ring buffer 读一次数据。默认 250ms。设太大会导致 buffer 溢出丢数据，设太小会增加 CPU 唤醒频率。注意这是 `FtraceConfig` 消息内的字段名，不是顶层的 `TraceConfig` 字段
 - `ftrace_config.buffer_size_kb`：per-CPU ring buffer 大小。设备 8 核时设 32KB 意味着总共 256KB 的内核缓冲区，高负载场景下很容易溢出。32KB 是一个容易溢出的反例值，不是默认值；Perfetto v43+ 多数配置不显式设置该字段，默认值 / `buffer_size_lower_bound` 通常远大于 32KB
-- `ftrace_events`：要启用的 tracepoint 列表。Perfetto 文档有完整的事件列表
+- `ftrace_config.ftrace_events`：要启用的 tracepoint 列表。这是 `FtraceConfig` 消息内的字段，通过 `TraceConfig.ftrace_config` 设置
 
 traced_probes 读取 ftrace 数据的源码路径（AOSP main 组织方式）：
 
-- `FtraceController`（`external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc`）负责读取 `TraceConfig`、启停 ftrace，并按 `ftrace_drain_period_ms` 触发采集循环
+- `FtraceController`（`external/perfetto/src/traced/probes/ftrace/ftrace_controller.cc`）负责读取 `TraceConfig`、启停 ftrace，并按 `FtraceConfig.drain_period_ms` 触发采集循环
 - `CpuReader`（`external/perfetto/src/traced/probes/ftrace/cpu_reader.cc`）负责解析单个 CPU 的原始 ftrace page
 - `FtraceProcfs`（`external/perfetto/src/traced/probes/ftrace/ftrace_procfs.cc`）封装 tracefs 访问；`OpenPipeForCpu()` 打开 `/sys/kernel/tracing/per_cpu/cpu<N>/trace_pipe_raw`
 - 原始二进制事件通过 ftrace parser / event filter 处理后，写入 Perfetto protobuf 流并交给 traced service
@@ -384,7 +384,9 @@ Makefile 只负责把包含 `CREATE_TRACE_POINTS` 的源文件编进对应模块
 只要自定义 tracepoint 被注册到 ftrace，Perfetto 就能采集它。在 `TraceConfig` 中添加：
 
 ```protobuf
-ftrace_events: "my_custom/my_event"
+ftrace_config {
+  ftrace_events: "my_custom/my_event"
+}
 ```
 
 在 SQL 中查询：
@@ -421,7 +423,7 @@ ftrace 使用 per-CPU ring buffer 存储事件。当事件产生速度超过消�
 缓解方法：
 - 增大 buffer（`buffer_size_kb`），但会占用更多内核内存
 - 减少启用的 tracepoint 数量，只采集需要的
-- 调整 `ftrace_drain_period_ms`，让 traced_probes 更频繁地读取
+- 调整 `TraceConfig.ftrace_config.drain_period_ms`，让 traced_probes 更频繁地读取
 
 ### 生产环境中的 Tracing 最佳实践
 
