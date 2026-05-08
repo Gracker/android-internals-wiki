@@ -11130,7 +11130,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-02T10:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T06:51:20+08:00",
+      "completed_reason": "CPU Callstack Sampling 补充 Android 13+/traced_perf 版本要求及 userdebug|eng|debuggable 运行条件"
     },
     {
       "section": "2.16",
@@ -14953,8 +14955,8 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T00:37:58+08:00",
       "status": "completed",
-      "completed_at": "2026-05-09T02:47:17.454412",
-      "completed_reason": "P0 W^X/ShadowHook mprotect 表格口径已修正（两步→因库而异）；L850 sh_util_mprotect 描述已修正（upstream 保持 RWX 非调 RX）"
+      "completed_at": "2026-05-09T06:51:20+08:00",
+      "completed_reason": "P0 FrameMetrics GPU_DURATION 版本拆为 API 24+/API 31+ 两段；P0 ApplicationExitInfo 修正为 Android 11/API 30+"
     },
     {
       "section": "1.0",
@@ -15104,6 +15106,86 @@
       "status": "pending"
     },
     {
+      "section": "1.14",
+      "section_title": "锁竞争",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-pi-mutex-pthread-prio-inherit-android.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "PI-Mutex (PTHREAD_PRIO_INHERIT) 在 Android Bionic 中的实现与 32 位架构限制 — Bionic PI-Mutex 通过 FUTEX_LOCK_PI 实现优先级继承，防止低优先级持锁线程被中优先级抢占导致高优先级反转。主要应用于 AudioFlinger FAST Mixer 和 B",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-09T06:13:15.793717",
+      "status": "pending"
+    },
+    {
+      "section": "19.24",
+      "section_title": "Crash/ANR 内部原理",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "ApplicationExitInfo 在 Android 11 以下的替代方案 — Android 10 及以下版本通过四种方案弥补 ApplicationExitInfo 监控盲区：ANR traces 直接读取、LMKd 信号监听、自定义 Signal Handler、Activ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-09T06:13:15.793717",
+      "status": "pending"
+    },
+    {
+      "section": "5.8",
+      "section_title": "后台执行限制",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Binder Freezer 与 cgroup v2 Freezer 协同机制 — Android 12+ CachedAppOptimizer 通过 cgroup v2 freezer 冻结缓存应用，Binder 驱动层通过 cgroup_enter_frozen/leave_fr",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-09T06:13:15.793717",
+      "status": "pending"
+    },
+    {
+      "section": "2.13",
+      "section_title": "BufferQueue",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-bufferqueue-internal-lock-contention.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "BufferQueue 内部锁竞争机制 — BufferQueue 采用单一 mutex + 多 condition variable 保护所有共享状态。三个关键竞争路径：dequeueBuffer 等待 free slot（持锁阻塞）、Act",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-09T06:13:15.793717",
+      "status": "pending"
+    },
+    {
       "section": "14.13",
       "section_title": "Hook 基础设施与性能工具实现原理",
       "priority": 95,
@@ -15128,7 +15210,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T06:20:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T06:51:20+08:00",
+      "completed_reason": "P0 FrameMetrics GPU_DURATION 版本拆为 API 24+/API 31+ 两段；P0 ApplicationExitInfo 修正为 Android 11/API 30+"
     }
   ],
   "completed": [

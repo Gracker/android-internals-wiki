@@ -1305,6 +1305,30 @@
           "status": "ready-for-review"
         }
       ]
+    },
+    {
+      "timestamp": "2026-05-09T06:51:45+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "14.13",
+        "13.2"
+      ],
+      "fixes": [
+        {
+          "section": "14.13",
+          "priority": 95,
+          "source": "task9-deep-tech-review",
+          "issues_fixed": 2,
+          "details": "P0 FrameMetrics GPU_DURATION版本拆分; P0 ApplicationExitInfo Android 11/API 30+"
+        },
+        {
+          "section": "13.2",
+          "priority": 85,
+          "source": "task9-deep-tech-review",
+          "issues_fixed": 1,
+          "details": "CPU Callstack Sampling补充Android 13+版本要求和userdebug|eng|debuggable运行条件"
+        }
+      ]
     }
   ],
   "task2b_last_run": "2026-05-09T05:43:39+08:00",

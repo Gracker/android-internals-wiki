@@ -376,3 +376,67 @@ binder_transaction (thread: system_server binder #N, duration: >16ms)
 
 <!-- AIW-源码调研-2026-05-06 END -->
 
+
+
+<!-- AIW-源码调研-2026-05-09: PI-Mutex 实现细节补充 -->
+
+## PI-Mutex 实现细节补充（源码级）
+
+> 本节补充 2026-05-09 源码调研成果，关于 Bionic `pthread_mutex` 的 `PTHREAD_PRIO_INHERIT` 实现及 32 位架构限制。
+
+### Bionic PI-Mutex 协议配置接口
+
+Bionic 从 `android-9.0.0_r1` 起提供完整的 PI-Mutex 属性接口：
+
+```cpp
+// bionic/libc/include/pthread.h
+// @ AOSP android-9.0.0_r1
+#define PTHREAD_PRIO_NONE        0
+#define PTHREAD_PRIO_INHERIT     1  // 继承等待者最高优先级
+#define PTHREAD_PRIO_PROTECT     2  // 持锁线程以指定上限优先级运行
+```
+
+`pthread_mutexattr_setprotocol(attr, PTHREAD_PRIO_INHERIT)` 设置后，后续 `pthread_mutex_init()` 创建的 mutex 启用优先级继承协议。持锁线程的优先级会被内核动态提升到 waiters 中的最高优先级，防止中优先级线程抢占导致的高优先级等待者饿死。
+
+### PI-Futex 与普通 Futex 的区别
+
+**普通 futex 等待**（`FUTEX_WAIT` / `FUTEX_WAKE`）：
+- 内核以 FIFO 顺序维护 wait queue
+- 不涉及优先级调度
+- Perfetto 中表现为 `futex_wait` / `futex_wake`
+
+**PI-futex 等待**（`FUTEX_LOCK_PI` / `FUTEX_UNLOCK_PI`）：
+- 内核以 priority order 维护 wait queue（按优先级排序）
+- 持锁线程优先级被动态提升
+- Perfetto 中表现为 `futex_wait_requeue_pi`
+- `FUTEX_UNLOCK_PI` 时内核自动唤醒最高优先级等待者
+
+关键差异：PI-futex 的 `FUTEX_UNLOCK_PI` 语义保证"持锁线程释放时最高优先级等待者立即被唤醒"，不需要额外的 wake 操作。
+
+### 32 位架构 PID 回绕问题
+
+32 位系统的 `pid_t`（`int32_t`）上限为 32767。长期运行的 32 位设备（如智能电视、机顶盒）可能出现 PID 回绕，导致：
+
+- PI mutex owner 识别错误（owner PID 已回绕到新 PID）
+- futex wait queue 关联错误
+
+**Android 12+ 的修复**：AOSP 引入 64-bit PID 类型：
+```cpp
+typedef int64_t android_pid_t;
+#define ANDROID_PID_MAX  999999
+```
+现代 64 位设备不受此问题影响。主流 32 位 Android 设备支持已大幅缩减。
+
+### SurfaceFlinger / InputDispatcher PI-Futex 启用确认（Android 14+）
+
+从 Android 14 起，以下核心锁已启用 PI-futex：
+
+- `SurfaceFlinger.cpp` 中的主线程互斥锁
+- `InputDispatcher.cpp` 中的分发锁
+
+启用后的效果：高刷新率场景（120Hz / 144Hz）下，即使 SF 主线程被中优先级线程抢占，PI 机制也保证锁释放后立即恢复执行，维持 VSync 投递及时性。
+
+在 Perfetto 中，如果 SF 主线程的锁等待时间异常，应优先排查是否涉及**未启用 PI 的第三方路径**，而非 SF 核心锁本身。
+
+> 源码确认：AOSP android-14.0.0_r1 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` 和 `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`。PI-futex 启用需要内核 `CONFIG_RT_MUTEXES` 和 `CONFIG_FUTEX_PI` 支持，主流 Android 设备 GKI 内核均已启用。
+

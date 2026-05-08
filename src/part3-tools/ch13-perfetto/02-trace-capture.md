@@ -45,11 +45,11 @@ related_chapters:
 - '14.1'
 - '15.1'
 re-review-result: 审查 2 条素材，无需修改（素材内容为 Trace Processor SQL 分析，与 Trace 抓取阶段不匹配，更适合 §13.3/§13.5）
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: 2026-05-02
 task9_reviewed_by: openclaw-task9
@@ -57,8 +57,8 @@ last_task9_at: "2026-05-02T10:20:00+08:00"
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
 task2b_fixed_by: openclaw-task2b
-last_task2b_at: '2026-04-25T10:40:00+08:00'
-review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 0，P1 1，P2 0；问题已写入 queue/suggestions/research-gaps。"
+last_task2b_at: "2026-05-09T06:51:32+08:00"
+review_notes: "2026-05-02 task9 deep-review: needs-rework。本轮 P0 0，P1 1，P2 0；问题已写入 queue/suggestions/research-gaps。→ 已于 2026-05-09 Task2B 修复：CPU Callstack Sampling 补充 Android 13+ / traced_perf 守护进程版本要求和 userdebug|eng|debuggable 运行条件。"
 
 ---
 
@@ -729,7 +729,9 @@ duration_ms: 10000
 
 ### CPU Callstack Sampling
 
-Perfetto 还可以在 Trace 中集成 CPU 调用栈采样。这对分析 CPU 密集型瓶颈（如某段计算代码占用大量 CPU）非常有用：
+Perfetto 还可以在 Trace 中集成 CPU 调用栈采样。这对分析 CPU 密集型瓶颈（如某段计算代码占用大量 CPU）非常有用。
+
+**版本与设备要求**：`linux.perf` 数据源（即 `traced_perf` 守护进程）从 Android 13 (Tiramisu / API 33) 起可用。运行条件：设备为 `userdebug`/`eng` 构建版本，或目标 App 声明了 `android:debuggable="true"`。在 `user` 构建的 release 设备上，只有 debuggable App 才能被采样。官方 quickstart 见 [perfetto.dev — CPU Profiling](https://perfetto.dev/docs/quickstart/callstack-profiling)。
 
 ```
 data_sources {
