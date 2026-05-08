@@ -14881,7 +14881,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T14:32:28+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:44:22",
+      "completed_reason": "P1 AnrLatencyTracker版本边界统一为Android 14+(非13/14)；作用描述从'采样主线程状态'修正为'记录ANR处理阶段trace slice/counter与延迟分解'，补交叉验证说明"
     },
     {
       "section": "10.7",
@@ -14908,7 +14910,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T14:32:28+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-08T19:44:22",
+      "completed_reason": "P1 WAL checkpoint后台线程错误已修正(auto-checkpoint在提交路径触发)；P1 Room withTransaction'专用线程'已修正为transaction executor调度；P2 批量插入10x-100x已条件化"
     },
     {
       "section": "1.4",
