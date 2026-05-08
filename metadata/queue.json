@@ -14909,6 +14909,27 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T14:32:28+08:00",
       "status": "pending"
+    },
+    {
+      "section": "1.4",
+      "section_title": "Binder IPC 机制与性能影响",
+      "priority": 90,
+      "reason": "[review回炉] AIW 源码调研块未融入章节主线，且位于参考资料之后，需整合或迁移",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写/需整合",
+          "location": "参考资料之后 `AIW-源码调研-2026-05-06` 块",
+          "detail": "章节末尾仍保留大段 AIW 源码调研摘录，位置在参考资料之后，破坏发布稿收束；内容是 Perfetto BinderTracker / android_binder_txns 的资料清单，尚未融入 Binder 性能分析主线。",
+          "suggestion": "Task2B 判断归属：若保留在 1.4，压缩为 2-3 段并接回“在 Perfetto 中分析 Binder”；更推荐迁移到 7.3 卡顿分析方法或 13.9 tracing 基础设施。无论哪种，删除 AIW 编辑痕迹和原始清单式堆料。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-08T17:05:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-08-17-review.md"
     }
   ],
   "completed": [

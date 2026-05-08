@@ -22,18 +22,18 @@ sources:
     path: "intake/research-feeds/2026-04-07-19-android17-ebpf-sched-ext-uprobestats-observability.md"
 tags: [tracing, atrace, ftrace, tracepoint, perfetto, kernel, observability]
 related_chapters: ["13.1", "13.2", "13.5", "14.10", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 last_task2b_rerun_at: "2026-05-08T16:50:00+08:00"
 task6_result: pass-light-edit
 task9_result: needs-rework
-task2b_result: pending
+task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T13:28:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-13-review.md"
+reviewed_date: "2026-05-08"
+last_task6_at: "2026-05-08T17:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-08-17-review.md"
 rework_date: "2026-04-25"
 rework_by: openclaw-task2b
 last_task9_at: "2026-05-07T01:20:00+08:00"
@@ -45,7 +45,7 @@ repaired_by: openclaw-task2b
 repaired_date: "2026-04-26"
 updated_by: openclaw-task2b
 updated_date: "2026-04-26"
-review_notes: "2026-05-05 task6 revisit: pass-light-edit。清理 frontmatter 重复字段、验证路径与段落节奏；无新增 B 类问题；转入 Task9 复审。 | 2026-05-05 Task9 13:34：复核发现 P0，Perfetto SQL 原始 ftrace 表名仍误写为 ftrace_events；转 Task2B 修正为 ftrace_event。"
+review_notes: "2026-05-05 task6 revisit: pass-light-edit。清理 frontmatter 重复字段、验证路径与段落节奏；无新增 B 类问题；转入 Task9 复审。 | 2026-05-05 Task9 13:34：复核发现 P0，Perfetto SQL 原始 ftrace 表名仍误写为 ftrace_events；转 Task2B 修正为 ftrace_event。 | 2026-05-08 task6 revisit: pass-light-edit。完成写作层复审；未发现新增 L1/L2 文风问题；无新增 B 类回炉项；转入 Task9 复审。"
 ---
 
 # 13.9 Android Tracing 基础设施：atrace、ftrace 与 Perfetto 数据采集原理
