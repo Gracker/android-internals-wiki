@@ -1656,3 +1656,15 @@
 - **位置**：L287-L290 Ripple 与 onClick 阻塞
 - **问题**：Ripple 的 pressed state 在 `ACTION_DOWN` 进入主线程后设置，但首帧仍依赖主线程返回 Looper 并完成下一次 traversal；如果快速 tap 的 `ACTION_UP` 触发 `onClick` 后立即阻塞主线程，Ripple 首帧可能被一起延迟。正文写“onClick 50ms 仍在 16ms 内开始扩散”条件过满。
 - **建议**：加上条件边界：只有 `ACTION_DOWN` 后主线程能及时让出、下一帧能绘制，Ripple 才能先于 onClick 重活呈现；onClick 仍不能阻塞主线程。
+
+## [Task9 Deep Review] 9.3 ANR 分析方法 — 2026-05-08
+- **类型**：数据支撑/版本边界
+- **位置**：L438 ProfilingManager ANOMALY 触发器
+- **问题**：正文称 Android 17 ANOMALY 触发器可以在内存压力、ANR 等异常发生前“持续采集 trace 数据”。公开 `ProfilingTrigger` reference 只说明 `TRIGGER_TYPE_ANOMALY` 是系统检测到 App anomalous behavior 时触发，未给出“内存压力/ANR 前持续采集”的通用语义。
+- **建议**：改为“可作为系统异常触发的 profiling 入口，具体异常类型和产物以 API 37 reference / ProfilingResult 为准”；若保留“发生前持续采集”，补官方文档或 AOSP Profiling 模块源码证据并标注适用版本。
+
+## [Task9 Deep Review] 10.7 SQLite/Room 数据库性能优化 — 2026-05-08
+- **类型**：数据准确性
+- **位置**：L302-L305 EXPLAIN QUERY PLAN 输出示例
+- **问题**：`WHERE conversation_id = 42` 命中复合索引最左列时，SQLite 常见输出应是 `SEARCH ... USING INDEX ... (conversation_id=?)`，正文示例写成 `SCAN messages USING INDEX idx_msg_conv_date`，与后文“SEARCH 精确查找最优”的解释冲突。
+- **建议**：用实际 SQLite 版本跑一份可复现 schema + `EXPLAIN QUERY PLAN` 输出；或者把示例改成 `SEARCH messages USING INDEX idx_msg_conv_date (conversation_id=?)`，再单独举一个覆盖索引扫描/全索引扫描的 `SCAN ... USING INDEX` 场景。

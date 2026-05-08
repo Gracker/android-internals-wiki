@@ -32,14 +32,14 @@ sources:
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
 tags: ['anr', 'traces', 'perfetto', 'analysis', 'cpu-usage']
 related_chapters: ["9.1", "9.2", "9.4", "9.5", "1.4", "2.4"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-04"
-last_task9_at: "2026-05-04T04:33:00+08:00"
+task9_reviewed_date: "2026-05-08"
+last_task9_at: "2026-05-08T13:32:43+08:00"
 task2b_result: fixed
 task6_result: pass-light-edit
 review_round: 3
@@ -47,7 +47,7 @@ last_task2b_at: "2026-05-08T12:51:41+08:00"
 task2b_fixed_at: "2026-04-26T13:40:00+08:00"
 rework_by: openclaw-task2b
 rework_type: "review回炉修复（External P95 问题单：SIGQUIT诊断可信度/android.anr track/frontmatter版本号）"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。"
+task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；ANR trace 非主进程 dump 范围需按 AOSP firstPids/lastPids/nativePids 修正。"
 review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。"
 ---
 

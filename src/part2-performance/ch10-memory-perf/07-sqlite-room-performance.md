@@ -48,19 +48,19 @@ sources:
 tags: [SQLite, Room, database, ANR, CursorWindow, WAL, performance]
 related_chapters: ["1.10", "4.1", "9.1", "10.1", "10.6"]
 section: "10.7"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-08"
 task6_result: pass-light-edit
-last_task9_at: "2026-05-04T12:41:40+08:00"
+last_task9_at: "2026-05-08T13:32:43+08:00"
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-04"
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1；批量事务 fsync 与 Room transaction executor 口径需回炉。"
+task9_reviewed_date: "2026-05-08"
+task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；WAL autocheckpoint 默认值与 Room transaction executor 口径需回炉。"
 review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式；无新增 B 类回炉问题。"
 ---
 
