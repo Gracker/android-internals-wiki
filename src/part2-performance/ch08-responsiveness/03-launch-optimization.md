@@ -31,10 +31,10 @@ related_chapters: ["8.1", "8.2", "2.4", "2.5", "7.5", "1.10", "1.12", "8.7"]
 section: "8.3"
 drafted_by: "openclaw-task2a"
 drafted_date: "2026-04-01"
-task9_state: pending
-task2b_state: fixed
+task9_state: "pending"
+task2b_state: "fixed"
 task2b_result: fixed
-task9_result: pending
+task9_result: "pending"
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-09T05:30:47+08:00"
@@ -42,15 +42,15 @@ repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-04-27T10:44:00+08:00"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P0 0，P1 2，P2 2。Startup Profile 原问题部分已覆盖；external DEFAULT_TO_WEB 线索未采纳。"
-task6_state: revisiting
-task6_result: pass-light-edit
-reviewed_by: openclaw-task6
-reviewed_date: 2026-05-09
-pipeline_stage: task6_pending
-review_round: 3
-last_task6_at: "2026-05-09T05:15:25+08:00"
-last_task6_review_log: "logs/review/2026-05-09-05-review.md"
-task6_review_notes: "2026-05-09 Task6 05:15：Task2B 修复后写作复审；轻修 24 处（禁用词、结构性元叙述、编辑痕迹、第一/第二人称和中性表达），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+reviewed_by: "openclaw-task6"
+reviewed_date: "2026-05-09"
+pipeline_stage: "task9_pending"
+review_round: 4
+last_task6_at: "2026-05-09T06:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-09-06-review.md"
+task6_review_notes: "2026-05-09 Task6 06:05：Task2B 修复后写作复审；轻修 8 处（结构性元叙述、主观标题、模糊/口号化表达、无条件量化表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task9_review_log: "logs/deep-review/2026-05-09-05-deep-review.md"
 task9_review_notes: "2026-05-09 Task9 05:30：needs-rework。P0 1，P1 2，P2 2。关键问题：当前写“Pixel 上冷启动提升超过 4%、boot time 降低约 2%、Binder 测试最高提升 21%”；当前写 AGP 7.0+ 开始支持 Startup Profile 消费、AGP 8.0+ 改进布局算法。"
 ---
@@ -87,7 +87,7 @@ task9_review_notes: "2026-05-09 Task9 05:30：needs-rework。P0 1，P1 2，P2 2�
 
 上一节（8.2 App 启动全流程）已经梳理了从用户点击图标到首帧绘制的冷启动路径。在 Perfetto 中打开一个中等复杂度应用的冷启动 Trace，常会看到从 `BindApplication` 到 `performTraversals` 之间有 1-3 秒的间隔——这段时间里，Application 在初始化十几个 SDK，Activity 在 inflate 一个复杂的布局，ContentProvider 在默默加载各种库。这些操作串行堆积在主线程上，就构成了用户感知到的"启动慢"。
 
-了解启动流程是为了知道"时间花在哪里"，本节回答"怎么把时间省下来"。启动优化不是在 Application.onCreate 里删几行代码这么简单——它是一套系统工程，涉及任务编排、布局优化、编译优化、以及线上监控等多个层面。每个优化手段都有适用场景和副作用，盲目套用可能适得其反。
+了解启动流程是为了知道"时间花在哪里"；启动优化要解决的是"怎么把时间省下来"。它会牵涉任务编排、布局优化、编译优化和线上监控等多个层面。每个优化手段都有适用场景和副作用，盲目套用可能适得其反。
 
 具体策略需要绑定两个衡量启动速度的指标：**TTID（Time To Initial Display）**和 **TTFD（Time To Full Display）**。
 
@@ -161,7 +161,7 @@ Executors.newSingleThreadExecutor().execute(() -> {
 
 **第三，时序竞争。** 如果异步初始化的 SDK 在后台还没完成时，用户已经触发了需要该 SDK 的操作（比如用户飞快地点击了一个需要统计 SDK 的按钮），就会遇到 SDK 未初始化的问题。解决方案通常有两种：一是在关键路径上加一个 `CountDownLatch` 或 `await()`，让需要该 SDK 的操作等待初始化完成；二是做好 SDK 未初始化时的降级处理（比如统计事件先缓存，SDK 初始化完成后批量上报）。
 
-### 懒加载：最优雅的延迟
+### 懒加载：用到时再初始化
 
 懒加载（Lazy Initialization）是延迟初始化的一种特例——在第一次实际使用时才初始化（区别于启动时异步初始化）。这是对启动时间贡献最大的优化手段之一，因为它把初始化开销从启动阶段完全移除了。
 
@@ -316,7 +316,7 @@ splashScreen.setOnExitAnimationListener { splashScreenViewProvider ->
 
 **线程管理混乱。** 如果每个 SDK 都开一个线程初始化，应用启动时可能有十几个线程同时竞争 CPU 和 I/O 资源，反而比串行更慢。特别是在低端设备上，过多的并发线程会导致严重的 CPU 争用和上下文切换开销。
 
-**缺乏全局视图。** 无法看到所有初始化任务的执行状态、耗时和依赖关系，排查启动问题时像是在黑箱中摸索。
+**缺乏全局视图。** 无法看到所有初始化任务的执行状态、耗时和依赖关系，排查启动问题时缺少清晰的定位依据。
 
 并行初始化框架的基本模型是：**把所有初始化任务建模成一个有向无环图（DAG），用拓扑排序确定执行顺序，在依赖约束下最大化并行度。**
 
@@ -442,7 +442,7 @@ App Startup 的优点是简单、官方维护、与 ContentProvider 机制集成
 
 实现方式是：库在自己的 AndroidManifest.xml 中注册一个 ContentProvider，在该 ContentProvider 的 `onCreate()` 中执行初始化逻辑。启动时系统会在 `ActivityThread#handleBindApplication` 中创建 `Application` 对象，接着执行 `installContentProviders()`，随后才进入 `Application.onCreate()`；所以 Provider 初始化仍然会卡在主线程上，而且发生在应用自己的 `Application.onCreate()` 之前。
 
-这个方案对开发者来说很方便，但对启动性能来说是个灾难。一个集成了 10 个以上第三方库的应用，可能有 5-6 个甚至更多的 ContentProvider 在启动阶段串行执行。每个 ContentProvider 的 `onCreate()` 可能耗时 10-50ms，累积起来就是 50-300ms 的额外启动时间。
+这个方案对开发者来说很方便，但会把启动成本隐藏到系统创建 Provider 的阶段。一个集成了 10 个以上第三方库的应用，可能有 5-6 个甚至更多的 ContentProvider 在启动阶段串行执行。按常见项目经验估算，每个 ContentProvider 的 `onCreate()` 可能耗时 10-50ms，累积起来就是 50-300ms 的额外启动时间。
 
 更麻烦的是，这些隐式初始化通常没有出现在业务代码中，很容易被忽略。Perfetto 中能看到 `BindApplication` 阶段有一段比较厚的主线程活动，其中就包含了 ContentProvider 的初始化，但在代码中可能找不到对应的调用。
 
@@ -565,7 +565,7 @@ AsyncLayoutInflater 的局限性需要了解：
 3. **自定义 View 的构造函数中不能有依赖主线程的操作**（比如获取 Window 参数），因为 inflate 发生在后台线程。
 4. **parent 的 generateLayoutParams 方法必须是线程安全的**。
 
-在实际项目中，AsyncLayoutInflater 的收益通常在 50-200ms 之间，具体取决于布局的复杂度。
+在实际项目中，AsyncLayoutInflater 的收益要用 Perfetto 或 Macrobenchmark 量出来；布局越复杂，收益空间通常越大。
 
 ### 布局扁平化：减少嵌套层级
 
@@ -817,7 +817,7 @@ Cloud Profile 的数据采集主要通过 Google Play 服务在用户设备上�
 
 面对一个启动慢的应用，建议按以下优先级逐步优化：
 
-1. **延迟/懒加载非必要任务**（收益最大，风险最低）——通常可以减少 30%-50% 的 Application.onCreate 耗时
+1. **延迟/懒加载非必要任务**（优先检查，风险相对低）——先把首帧前不需要的任务移出同步路径
 2. **ContentProvider 优化**（排查隐式初始化，合并或移除不必要的 ContentProvider）
 3. **布局优化**（ViewStub、布局扁平化、AsyncLayoutInflater）
 4. **Splash Screen 配置**（改善用户感知，但不减少实际耗时）
@@ -825,13 +825,13 @@ Cloud Profile 的数据采集主要通过 Google Play 服务在用户设备上�
 6. **Baseline Profile**（需要生成、打包并确认设备端进入 `speed-profile`；非 Play 渠道要核对 `ProfileInstaller` 与后台 dexopt）
 7. **线上监控与防劣化体系**（长期保障）
 
-一条底线原则：**先度量，再优化，后验证**。没有数据支撑的优化是盲目的，没有线上监控的优化是不可持续的。
+最后的操作原则是：**先度量，再优化，后验证**。没有数据支撑的优化是盲目的，没有线上监控的优化是不可持续的。
 
 ## 常见问题与误区
 
 ### 误区一："把所有 SDK 都改成异步初始化就好了"
 
-异步初始化不是银弹。第一，有些 SDK 之间存在依赖关系（如网络库→登录SDK），简单并行会破坏顺序。第二，过度并发在低端设备上会导致 CPU 争用，反而比串行更慢。第三，某些 SDK 的 init 方法内部操作了 UI 线程元素，异步调用会崩溃。正确做法是先分类（必须同步/可异步/可懒加载），再按依赖关系编排执行顺序。
+异步初始化不能解决所有启动问题。第一，有些 SDK 之间存在依赖关系（如网络库→登录SDK），简单并行会破坏顺序。第二，过度并发在低端设备上会导致 CPU 争用，反而比串行更慢。第三，某些 SDK 的 init 方法内部操作了 UI 线程元素，异步调用会崩溃。正确做法是先分类（必须同步/可异步/可懒加载），再按依赖关系编排执行顺序。
 
 ### 误区二："Splash Screen 能加速启动"
 

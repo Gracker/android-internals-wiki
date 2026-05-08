@@ -27,22 +27,22 @@ related_chapters:
 - '3.2'
 - '9.1'
 - '9.2'
-reviewed_date: 2026-05-09
-reviewed_by: openclaw-task6
+reviewed_date: "2026-05-09"
+reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
-task9_state: pending
+pipeline_stage: "task2b_pending"
+task6_state: "reviewed"
+task6_result: "pass-light-edit"
+task9_state: "pending"
 task2b_result: fixed
-task2b_state: fixed
-task9_result: pending
+task2b_state: "pending"
+task9_result: "pending"
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
 last_task9_at: "2026-05-09T05:30:47+08:00"
-last_task6_at: "2026-05-09T05:15:25+08:00"
-last_task6_review_log: "logs/review/2026-05-09-05-review.md"
-task6_review_notes: "2026-05-09 Task6 05:15：Task2B 修复后写作复审；轻修 19 处（禁用词、结构性元叙述、编辑痕迹、第一/第二人称和中性表达），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_at: "2026-05-09T06:05:00+08:00"
+last_task6_review_log: "logs/review/2026-05-09-06-review.md"
+task6_review_notes: "2026-05-09 Task6 06:05：Task2B 修复后写作复审；轻修 5 处（权限限制表述、运行时 flag 术语），L1/L2 通过；无新增 L3/L4 回炉项。因 queue.json 仍有 3.5 既有 external-review pending 条目，pipeline 保持 task2b_pending，不自动晋升。"
 last_task9_review_log: "logs/deep-review/2026-05-09-05-deep-review.md"
 task9_review_notes: "2026-05-09 Task9 05:30：needs-rework。P0 1，P1 0，P2 1。关键问题：文中把 pilferPointers() 的典型调用方写成 NavigationModeController / NavbarGestureController，并把“三键导航/手势导航”合并描述。"
 ---
@@ -62,7 +62,7 @@ task9_review_notes: "2026-05-09 Task9 05:30：needs-rework。P0 1，P1 0，P2 1�
 ### 扩展（可选深入）
 
 - 🔸 厂商定制的拦截增强方案（游戏模式中的输入优先级、防误触）
-- 🔸 Android 14+ 对无障碍服务事件拦截的权限收紧
+- 🔸 Android 14+ 对无障碍服务事件拦截的权限限制变化
 
 ### OpenClaw 加工指引
 
@@ -330,7 +330,7 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 | 版本/来源 | 能直接核对到的结论 | 证据 |
 |-----------|--------------------|------|
 | android-10.0.0_r1 | `canRequestFilterKeyEvents` metadata 会转成 `CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS`；运行时用 `FLAG_REQUEST_FILTER_KEY_EVENTS` 打开按键过滤 | `AccessibilityServiceInfo.java` |
-| android-14.0.0_r1 | 按键过滤仍是 capability + runtime flag 这套机制，不存在“只有系统无障碍服务可用该 flag”的 AOSP 依据 | `AccessibilityServiceInfo.java` |
+| android-14.0.0_r1 | 按键过滤仍是 capability + 运行时 flag 这套机制，不存在“只有系统无障碍服务可用该 flag”的 AOSP 依据 | `AccessibilityServiceInfo.java` |
 | android-14.0.0_r1 | 标准 `UiAutomation.injectInputEvent()` 会跳过 accessibility input filter；测试 filter 需要 `injectInputEventToInputFilter()` | `UiAutomation.java` |
 | android-14.0.0_r1 | accessibility 注入事件会在 InputDispatcher 中转成 `FLAG_IS_ACCESSIBILITY_EVENT` 供 App 识别 | `InputDispatcher.cpp`、`KeyEvent.java`、`MotionEvent.java` |
 | android-14.0.0_r1 (API 34) | `View.setAccessibilityDataSensitive(ACCESSIBILITY_DATA_SENSITIVE_YES)` 可标记敏感 View；非 `isAccessibilityTool` 的无障碍服务对该 View 的 accessibility interaction 会被限制。这限制的是 `AccessibilityInteractionClient` 的查询/操作通道，不是 InputDispatcher 的原始事件拦截 | `View.java`、`AccessibilityServiceInfo.isAccessibilityTool()` |
@@ -404,13 +404,13 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 
 ## Android 14 时代仍可核对到的权限边界
 
-关于 Android 14+ 权限收紧，当前只保留能从 AOSP 或官方文档直接核对的边界。android-14.0.0_r1 里，至少有三条可以直接核对：
+关于 Android 14+ 权限限制变化，当前只保留能从 AOSP 或官方文档直接核对的边界。android-14.0.0_r1 里，至少有三条可以直接核对：
 
-1. **按键过滤仍然依赖 capability + runtime flag。** 代码位置在 `AccessibilityServiceInfo.java`，不是某个 `R.string.*` 资源开关。
+1. **按键过滤仍然依赖 capability + 运行时 flag。** 代码位置在 `AccessibilityServiceInfo.java`，不是某个 `R.string.*` 资源开关。
 2. **手势注入要过无障碍安全检查。** `AccessibilityServiceConnection.dispatchGesture()` 会先看 `mSecurityPolicy.canPerformGestures(this)`，拿到 `MotionEventInjector` 之后才会发事件。
 3. **标准 injected event 和 accessibility injected event 是两回事。** 前者走普通注入入口，后者会在 `MotionEventInjector` / `InputDispatcher` 里补上 accessibility 标记。
 
-如果后续补到 Android 15/16 的一手材料，再单独写版本增量会更稳。没有证据的“14+ 白名单收紧”描述不放入正文。
+如果后续补到 Android 15/16 的一手材料，再单独写版本增量会更稳。没有证据的“14+ 白名单限制变化”描述不放入正文。
 
 ## 在 Perfetto 中分析事件拦截问题
 
