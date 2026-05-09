@@ -1262,8 +1262,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-10T02:18:19.169690",
+      "completed_reason": "stale entry: section already finalized (status: finalized, pipeline_stage: ready-to-publish, task6_result: pass-light-edit, task9_result: pass-tech-review), extensive AOSP source code anchors already present (concurrent_copying.cc/mark_compact.h/mark_compact.cc/heap.cc/write_barrier-inl.h/card_table.cc)"
     },
     {
       "section": "5",
@@ -1299,8 +1301,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-10T02:18:19.169690",
+      "completed_reason": "task2b fixed: P0 prio_to_weight verification corrected (AOSP→Linux kernel), P0 CFS scheduling loop source code anchors added (update_curr/pick_next_task_fair/pick_next_entity/check_preempt_wakeup), P1 SchedTune restructured as legacy mechanism (kernel/sched/tune.c removed), P1 SchedTune/UClamp version boundary table added, P1 EEVDF vlag boundary strengthened, AI套话 这意味着 removed"
     },
     {
       "section": "5.10",

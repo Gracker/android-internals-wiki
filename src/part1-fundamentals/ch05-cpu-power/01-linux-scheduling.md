@@ -39,12 +39,13 @@ polish_date: "2026-04-06"
 polish_by: "task2b-polish"
 review_type: post-polish-quality-gate
 review_round: 3
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
-task9_result: "needs-rework"
-task2b_state: pending
+task9_result: pending
+task2b_state: fixed
+task2b_result: fixed
 ---
 
 <!-- outline-start -->
@@ -100,6 +101,30 @@ delta_vruntime = delta_exec × (NICE_0_LOAD / weight)
 - **权重越低的进程**（nice 值越高），vruntime 增长越快，更容易被调度器换下 CPU
 
 [已验证: Linux v6.6 kernel/sched/fair.c, update_curr() / calc_delta_fair()；注：AOSP platform tag 不包含内核源码，内核路径应以 Linux 或 Android common kernel 分支为准]
+
+### CFS 调度循环的源码路径
+
+CFS 的调度决策在 `kernel/sched/fair.c` 中实现。Linux 5.x / 6.1 内核（当前 Android 主流）的调度循环经过以下关键函数：
+
+**1. 记账：`update_curr()`**。每次时钟中断或任务状态变化时调用，计算当前任务的 `delta_exec`（实际运行时间），再通过 `calc_delta_fair()` 按权重换算为 vruntime 增量，累加到 `se->vruntime`。这是 vruntime 持续增长的源头。
+
+**2. 入队/出队：`enqueue_entity()` / `dequeue_entity()`**。`enqueue_entity()` 将任务加入红黑树，以 `se->vruntime` 为 key；`dequeue_entity()` 将任务移出。被唤醒的任务调用 `enqueue_entity()` 重新入队，时间片用完或被抢占的任务通过 `dequeue_entity()` 出队。
+
+**3. 选人：`pick_next_task_fair()`**。fair class 的核心选人入口。在 pre-EEVDF 内核（Linux < 6.6）中，它调用 `pick_next_entity()` 取红黑树最左节点（`rb_leftmost`）——也就是 vruntime 最小的调度实体。
+
+**4. 抢占判定：`check_preempt_wakeup()`**。在任务被唤醒时调用，比较被唤醒任务和当前运行任务的 vruntime 差距，决定是否触发抢占。如果新唤醒的任务 vruntime 远小于当前任务，调度器会在下一个调度点切换。
+
+```
+schedule()
+  └→ __schedule()
+       ├→ pick_next_task_fair()        ← fair class 选人入口
+       │    └→ pick_next_entity()      ← 取 vruntime 最小实体
+       │         └→ rb_leftmost        ← 红黑树最左节点
+       └→ update_curr()                ← 更新当前任务 vruntime
+            └→ calc_delta_fair()       ← 按权重换算 vruntime
+```
+
+[已验证: Linux kernel 5.10/6.1, kernel/sched/fair.c: update_curr() / calc_delta_fair() / enqueue_entity() / dequeue_entity() / pick_next_task_fair() / pick_next_entity() / check_preempt_wakeup()]
 
 ### 红黑树：O(log N) 的调度队列
 
@@ -210,7 +235,7 @@ CFS 不直接使用 nice 值，而是通过一个查表将 nice 值映射为权�
 | 15 | 36 | × 0.035 |
 | 19 | 15 | × 0.015 |
 
-[已验证: AOSP android-16.0.0_r1, kernel/sched/core.c, prio_to_weight[]]
+[已验证: Linux kernel 6.6, kernel/sched/core.c, prio_to_weight[]（注：prio_to_weight[] 定义在 Linux 内核源码中，不在 AOSP platform tag 里）]
 
 从这个表中我们可以看出几个关键信息：
 
@@ -300,7 +325,7 @@ Android 更常见的控制入口其实是 task profiles。Framework 通过 `libp
 
 ### 硬件迁移效率对绑核必要性的影响
 
-骁龙 8 Elite 等基于 ARMv9.2 的 SoC 将跨核迁移开销压缩到了 1.5μs - 3.5μs 级别，远低于前代平台的 10μs+。这种高频率、低损耗的迁移使调度器可以更激进地进行负载均衡——线程在大核和小核之间来回迁移的性能代价变小了。从性能分析角度看，这意味着：
+骁龙 8 Elite 等基于 ARMv9.2 的 SoC 将跨核迁移开销压缩到了 1.5μs - 3.5μs 级别，远低于前代平台的 10μs+。这种高频率、低损耗的迁移使调度器可以更激进地进行负载均衡——线程在大核和小核之间来回迁移的性能代价变小了。从性能分析角度看：
 
 - 在 ARMv9.2 平台上，线程被调度到小核不一定是性能问题。迁移成本足够低时，调度器的动态选核可能比硬绑核更优
 - 手动 `sched_setaffinity()` 绑核的收益在新型 SoC 上会收窄，绑核前更应该先用 Perfetto 对比绑与不绑的实际 wall time 差异
@@ -447,7 +472,7 @@ CFS 的调度标准只有一个维度——vruntime 谁最小，不区分任务�
 
 EEVDF 调度器中每个任务维护一个 vlag（virtual lag）值，表示该任务"被欠"或"透支"了多少 CPU 时间。vlag > 0 表示任务还没用完公平份额（系统"欠"它 CPU 时间），vlag < 0 表示任务已经超支。vlag 的绝对值越大，说明该任务的调度时机越偏离理想状态。
 
-需要注意的是，vlag 是 EEVDF 调度器的内部字段，Linux v6.6 / v6.12 的 `include/trace/events/sched.h` 中并没有暴露 `sched_eevdf_entity` 之类的 ftrace 事件。默认 trace 不提供 vlag 的直接读取入口。实战中要量化调度公平性，仍然应该基于已有的 `sched_switch`、`sched_wakeup`、`thread_state` 轨道来观察 Runnable 等待时间：
+vlag 是 EEVDF 调度器的内部字段，stock Linux v6.6 / v6.12 和 Android common kernel 都没有通过 ftrace 或 perf_event 暴露该字段。Perfetto 也没有对应的 SQL 表或轨道。要量化调度公平性，只能基于已有的 `sched_switch`、`sched_wakeup`、`thread_state` 轨道观察 Runnable 等待时间：
 
 - 如果主线程在关键路径（如 `doFrame`）期间 Runnable 等待时间持续偏长，说明它被其他任务"抢"了太多 CPU 时间
 - 如果后台线程几乎不等待，说明它在大量占用 CPU 份额
@@ -538,12 +563,12 @@ SchedTune 和 UClamp 就是 Android 用来回答这两个问题的机制。它�
 
 ### SchedTune：Android 专属的 Boost 机制
 
-SchedTune 最早随 EAS（Energy Aware Scheduling）引入，作为 Android 对 Linux 调度器的补丁，不在主线 Linux 内核中。它以 cgroup 控制器的形式存在，允许 Android Framework 按进程组设置调度策略。
+SchedTune 是旧版厂商内核（Android 11 及更早）的专有调度增强机制，不在主线 Linux 内核中，也不存在于 Android common kernel 6.1/6.6/6.12 或 GKI 设备。Android 12+ 设备的主路径已转向 UClamp + cpu controller（见下节）。下文 SchedTune 描述适用于仍在维护旧版厂商内核的场景，或需要理解历史 boost 机制的读者。
 
-SchedTune 的核心参数是 `schedtune.boost`，取值范围 0~100。当一个任务的 boost 值大于 0 时，调度器会将该任务的"感知利用率"（perceived utilization）人为放大——就像给任务画了一个更高的"需求曲线"，让调度器和调频器以为这个任务比实际更忙。
+SchedTune 最早随 EAS（Energy Aware Scheduling）引入，以 cgroup 控制器的形式存在，允许 Android Framework 按进程组设置调度策略。核心参数是 `schedtune.boost`，取值范围 0~100。当一个任务的 boost 值大于 0 时，调度器会将该任务的"感知利用率"（perceived utilization）人为放大——让调度器和调频器以为这个任务比实际更忙。
 
 ```
-# 示例：查看前台应用进程组的 boost 设置
+# 示例：查看前台应用进程组的 boost 设置（仅旧版厂商内核）
 cat /dev/stune/foreground/schedtune.boost
 # 输出: 10
 
@@ -551,8 +576,6 @@ cat /dev/stune/foreground/schedtune.boost
 cat /dev/stune/top-app/schedtune.boost
 # 输出: 20
 ```
-
-[注：SchedTune 不在主线 Linux 内核中，也不存在于 Android common kernel 6.1/6.6/6.12。它属于旧版厂商内核（Android 11 及更早）的专有机制。Android 12+ / GKI 设备的主路径已转向 UClamp + cpu controller。下文 SchedTune 描述适用于仍在维护旧版厂商内核的场景，或需要理解历史 boost 机制的读者。厂商内核中的实现路径可能为 `kernel/sched/tune.c` 或 `/dev/stune` cgroup 接口]
 
 boost 的效果体现在两个层面：
 
@@ -606,7 +629,15 @@ Android 产品机上更常见的入口是 task profiles，而不是手写 `/proc
 
 ### SchedTune 与 UClamp 的版本边界
 
-主线 Linux 的 `uclamp` 从 5.3 合入。Android 11 的 AOSP `task_profiles.json` 还能同时看到 `schedtune` controller 和 `cpu.uclamp.*` 属性；到了 Android 12 的 AOSP `task_profiles.json`，`schedtune` controller 已经退场，前台 / top-app 的性能提示主要通过 `cpu` cgroup 和 `cpu.uclamp.*` 表达。厂商内核是否还保留 `stune`，要以目标设备实际 cgroup 布局为准。
+主线 Linux 的 `uclamp` 从 5.3 合入。版本边界拆开看：
+
+| Android 版本 | GKI 内核 | Boost 机制 | task_profiles.json 中的关键 controller |
+|---|---|---|---|
+| 10-11 | 厂商 4.x/5.x | SchedTune（`/dev/stune`） | `schedtune.boost` + `cpu.uclamp.*` 共存 |
+| 12-14 | GKI 5.10 | UClamp（`/dev/cgroot/cpu`） | `schedtune` controller 退场，改用 `cpu.uclamp.min/max` |
+| 15-17 | GKI 6.1/6.6/6.12 | UClamp | 同上，无 SchedTune |
+
+厂商内核是否还保留 `stune`，要以目标设备实际 cgroup 布局为准——在 shell 里 `ls /dev/stune/` 存在就说明还在用旧路径。
 
 [已验证: AOSP `android11-release` / `android12-release` / `main` `system/core/libprocessgroup/profiles/task_profiles.json`；AOSP mainline `system/core/libprocessgroup/include/processgroup/processgroup.h`]
 

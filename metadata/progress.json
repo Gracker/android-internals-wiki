@@ -1537,6 +1537,41 @@
         "15.README",
         "15.README"
       ]
+    },
+    {
+      "timestamp": "2026-05-10T02:18:30.937539",
+      "task": "task2b-rework",
+      "sections_processed": [
+        "5.1",
+        "4.8"
+      ],
+      "details": [
+        {
+          "section": "5.1",
+          "title": "Linux 进程调度基础",
+          "source": "external-ai-review + task9-deep-tech-review",
+          "priority": 85,
+          "fixes": [
+            "P0: prio_to_weight verification tag corrected (AOSP→Linux kernel)",
+            "P0: CFS scheduling loop source code anchors added (update_curr/pick_next_task_fair/pick_next_entity/check_preempt_wakeup)",
+            "P1: SchedTune restructured as legacy mechanism (kernel/sched/tune.c removed)",
+            "P1: SchedTune/UClamp version boundary table added",
+            "P1: EEVDF vlag boundary strengthened",
+            "AI套话 fix: '这意味着' removed"
+          ],
+          "result": "fixed → ready-for-review (re-enters task6→task9 pipeline)"
+        },
+        {
+          "section": "4.8",
+          "title": "ART 分代垃圾回收与 GC 暂停优化",
+          "source": "external-ai-review",
+          "priority": 85,
+          "fixes": [
+            "stale queue entry — section already finalized"
+          ],
+          "result": "already finalized, queue entry cleaned up"
+        }
+      ]
     }
   ],
   "task2b_last_run": "2026-05-09T20:49:17.584382+08:00",
