@@ -12,7 +12,7 @@ task2b_result: fixed
 last_task2b_at: "2026-05-09T08:43:58+08:00"
 task2b_state: fixed
 task6_result: "pass-light-edit"
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 pipeline_stage: task6_pending
 confidence: medium

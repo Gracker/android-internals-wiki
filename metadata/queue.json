@@ -1430,7 +1430,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T05:14:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T05:48:59.252926+00:00",
+      "completed_reason": "task2b fixed: see repair details in commit"
     },
     {
       "section": "6",
@@ -1528,14 +1530,16 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "updated_by": "task9-deep-tech-review",
       "updated_at": "2026-04-25T22:29:14+08:00",
       "material_paths": [
         "intake/suggestions.md",
         "intake/research-gaps.md"
       ],
-      "source_file": "2026-04-29-11-8.10-external-review.md"
+      "source_file": "2026-04-29-11-8.10-external-review.md",
+      "completed_at": "2026-05-09T05:48:59.252926+00:00",
+      "completed_reason": "task2b fixed: see repair details in commit"
     },
     {
       "section": "8.8",
@@ -1701,8 +1705,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T01:20:33",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-09-adpf-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-09-adpf-external-review.md",
+      "completed_at": "2026-05-09T05:48:59.252926+00:00",
+      "completed_reason": "task2b fixed: see repair details in commit"
     },
     {
       "section": "05.10",

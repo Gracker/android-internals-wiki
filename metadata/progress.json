@@ -1407,6 +1407,32 @@
           "details": "CPU Callstack Sampling补充Android 13+版本要求和userdebug|eng|debuggable运行条件"
         }
       ]
+    },
+    {
+      "date": "2026-05-09T05:49:18.144904+00:00",
+      "task": "task2b-rework",
+      "sections": [
+        {
+          "section": "8.10",
+          "file": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
+          "issues_fixed": [
+            "ANOMALY专段: tag-driven routing + MemoryLimiter证据链 + 临终遗言定位",
+            "产物表增强: 新增ANOMALY/APP_COMPAT行, 标注artifact动态性",
+            "多UID限制: 同一UID多进程注册时不保证每个都收到产物",
+            "为什么要了解: 强调ANOMALY在kill之前的战略价值"
+          ]
+        },
+        {
+          "section": "5.9",
+          "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+          "issues_fixed": [
+            "setPreferIdle (API 37): 新增Android 17节能API说明与代码示例",
+            "厂商延迟对照表: 2026旗舰机Hint响应延迟数据(1.2ms-5ms)",
+            "RecyclerView 1.4 ADPF: 内置HintSession管理说明",
+            "Headroom API风险: 强调120fps下1ms调用的帧预算消耗(12%)"
+          ]
+        }
+      ]
     }
   ],
   "task2b_last_run": "2026-05-09T05:43:39+08:00",
