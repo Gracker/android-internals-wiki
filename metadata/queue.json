@@ -237,7 +237,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T19:19:39.292657+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T22:47:00+08:00",
+      "completed_reason": "方法论章节（性能治理工程化），内容覆盖 Macrobenchmark/CI/预算/灰度等工程实践，非系统机制分析章节；AOSP cs.android.com 源码锚点不适用于此类方法论内容，章节已有 developer.android.com 官方文档引用"
     },
     {
       "section": "15.9",
@@ -253,7 +255,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T19:19:39.292657+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T22:47:00+08:00",
+      "completed_reason": "方法论章节（从采集到治理的闭环），内容覆盖采集/采样/聚合/归因/告警/修复/验收的流程设计，非系统机制分析章节；AOSP cs.android.com 源码锚点不适用于此类方法论内容，章节已有 JankStats/Firebase/Matrix 等外部引用"
     },
     {
       "section": "15.README",
@@ -272,7 +276,9 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T22:47:00+08:00",
+      "completed_reason": "方法论章节导读（第15章总纲），内容为章节索引和阅读建议，非技术机制分析；AOSP cs.android.com 源码锚点不适用于导读类章节"
     },
     {
       "section": "15.README",
@@ -289,7 +295,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T23:18:59+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T22:47:00+08:00",
+      "completed_reason": "方法论章节导读（第15章总纲），内容为章节索引和阅读建议，非技术机制分析；AOSP cs.android.com 源码锚点不适用于导读类章节"
     },
     {
       "section": "16-sync-fence",
@@ -587,10 +595,12 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-04-28T14:33:59+08:00"
+      "updated_at": "2026-04-28T14:33:59+08:00",
+      "completed_at": "2026-05-09T22:47:00+08:00",
+      "completed_reason": "task2b fixed: 版本锚点更新为 Android 12-17，章节描述同步 2.10(Skia Graphite)、2.11(Impeller)、2.14(Vulkan 1.4/ANGLE 强制化)"
     },
     {
       "section": "2.10",

@@ -1524,6 +1524,19 @@
         "4.2: Android 17 madvise(MADV_COLD) kernel-GC coordination"
       ],
       "status": "completed"
+    },
+    {
+      "section": "2.0",
+      "date": "2026-05-09T22:47:37+08:00",
+      "task": "task2b-rework",
+      "changes": "版本锚点更新 Android 12-17，章节描述同步 2.10(Skia Graphite)、2.11(Impeller)、2.14(Vulkan 1.4/ANGLE)",
+      "queue_items_closed": [
+        "2.0",
+        "15.10",
+        "15.9",
+        "15.README",
+        "15.README"
+      ]
     }
   ],
   "task2b_last_run": "2026-05-09T20:49:17.584382+08:00",
@@ -2058,5 +2071,13 @@
     "task6_result": "pass-light-edit",
     "last_task6_at": "2026-05-09T18:07:00+08:00",
     "last_task6_review_log": "logs/review/20260509-18-review.md"
+  },
+  "sections": {
+    "2.0": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "last_rework": "2026-05-09T22:47:37+08:00",
+      "task2b_state": "fixed"
+    }
   }
 }
