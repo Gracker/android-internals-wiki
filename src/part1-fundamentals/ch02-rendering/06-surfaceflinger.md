@@ -417,3 +417,11 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 ### 博客与文章
 
 - [高爷 Android Performance 博客](https://www.androidperformance.com/) — SurfaceFlinger、BufferQueue、Systrace/Perfetto 分析系列
+
+### BufferQueue 内部锁竞争机制（源码级调研）
+- 来源：DeepResearch 调研结果（2026-05-08）
+- 类型：AIW 每日源码调研
+- 摘要：详述 BufferQueue 单一 mutex + 多 condition variable 锁架构，分析 dequeueBuffer 等待、ActiveBuffer O(n) 扫描、Allocation 期间锁释放三个关键竞争路径，以及 Android 14 BUFFER_RELEASE_CHANNEL 精确唤醒优化。
+- 注入时间：2026-05-10
+- 价值：补充 BufferQueue 锁竞争机制源码级分析，对理解 SurfaceFlinger 合成链路中 Producer-Consumer 锁瓶颈极具价值
+
