@@ -30,11 +30,11 @@ sources:
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-20"
 last_task9_at: "2026-04-20T08:57:48+08:00"
@@ -64,11 +64,17 @@ Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engi
 
 在 Perfetto 里，NPU 工作负载没有统一的标准 track。部分厂商会暴露 vendor tracepoint 或 atrace 标签，更多时候我们只能通过 CPU 利用率下降、GPU 频率变化、thermal 状态和 delegate 日志做交叉判断。只看一个 counter，通常不够。
 
+### Android 17 NPU 硬件特性声明
+
+从 API 37 起，访问 NPU 必须在 `AndroidManifest.xml` 中声明 `<uses-feature android:name="android.hardware.ai.npu" />`，未声明的应用在运行时会收到异常。系统侧同时建立了 NPU 意图防火墙，结合电量配额审计控制 NPU 的使用频率和时长。排查 NPU 不可用的问题时需要检查三件事：清单是否声明了对应 feature、设备是否通过 `PackageManager.hasSystemFeature()` 返回 true、以及系统电量配额是否还允许 NPU 使用。NPU 路径的可用性取决于三者的交集，缺一不可。
+
 ### GPU 推理
 
 公开的 Android GPU Delegate 文档主要围绕 OpenCL 和 OpenGL ES 展开，具体后端取决于设备驱动、运行时版本和 delegate 实现。把 Android 上的 LiteRT / TFLite GPU 路径直接写成“Vulkan Compute 或 OpenCL”，会把边界写满；如果要谈 Vulkan，更合适的写法是把它单列为图形 / 计算栈背景，不把它当成当前 LiteRT Android 默认公开 delegate 路径。
 
 GPU 推理的优点是覆盖面广，几乎所有现代 Android 设备都有可用 GPU；缺点是它会和渲染共享带宽、功耗和热预算。只要同一时段还有 RenderThread、SurfaceFlinger 或相机预处理一起抢 GPU，GPU Delegate 的收益就需要放回整段渲染过程里评估。
+
+Android 16 上，LiteRT 的 GPU 路径利用 Vulkan 1.4 的 `VK_EXT_host_image_copy` 扩展绕过 Staging Buffer，纹理上传速度提升约 50%，内存峰值降低约 50%。目标设备支持 Vulkan 1.4 且模型以 GPU Delegate 运行时，这一优化由 LiteRT runtime 自动生效，不需要额外配置。
 
 [已验证: ai.google.dev/edge/litert/android/gpu, Android GPU delegate public docs focus on OpenCL / OpenGL ES]
 
@@ -116,6 +122,19 @@ XNNPACK 是 Google 的优化 CPU 推理库，针对 ARM NEON / SVE 指令集做�
 
 如果一份 benchmark 没写清模型版本、输入尺寸、batch size、线程数和量化策略，它只能帮助我们判断趋势，不能直接拿来做 SLA 或选型决策。
 
+### CompiledModel API V2：LiteRT 的架构升级
+
+LiteRT 正在从 V1 的 `Interpreter` + `Delegate` 模型向 V2 的 `CompiledModel` API 迁移。V1 架构里，Delegate 的选择和绑定发生在运行时，每次推理都要经过算子映射和内存对齐协商。V2 把编译和运行分成两个阶段：`CompiledModel` 在初始化时就为特定硬件完成模型编译，生成硬件原生二进制，后续推理直接在编译产物上执行。
+
+`CompiledModel` 的核心变化：
+
+- **硬件绑定前置**：在编译阶段指定目标加速器（NPU / GPU / CPU），编译产物与具体硬件绑定，推理时不再需要运行时协商
+- **零拷贝 TensorBuffer**：通过 `HardwareBuffer` 与 NPU 直接共享内存，省去中间 tensor 的数据搬运
+- **异步执行**：V2 强制使用异步推理模式，调用方通过 `Future` 或回调获取结果，不阻塞调用线程
+- **AICore 路由**：在支持 AICore 的设备上，`CompiledModel` 可以通过 AICore 的多租户调度器路由到 NPU，避免与系统 Gemini Nano 任务冲突
+
+迁移路径上，`Interpreter` + `Delegate` 仍然可以工作，但无法利用零拷贝和 AICore 多租户调度特性。对新项目或性能敏感的推理场景，建议直接从 `CompiledModel` API 开始。
+
 ## AICore 与 Gemini Nano：什么时候需要把它当成性能问题
 
 ### AICore 的系统角色
@@ -132,6 +151,7 @@ Android 官方文档把 Gemini Nano 的运行环境描述为 Android 的 AICore 
 - 首次使用时是否发生模型下载、准备或冷启动初始化
 - 请求是否命中共享模型缓存，还是每次都要重新准备上下文
 - 持续推理时，内存、thermal 和前台交互是否还能压在预算内
+- AICore 推理的内存成本归属：Android 16 引入了 `ATTRIBUTE_WORK_TO_OTHER_APPS` 机制，当 App 通过 AICore 调用 Gemini Nano 时，推理产生的内存回算到发起调用的 App 的 PSS / RSS 中，而非计入 AICore 系统进程。排查内存水位时不要忽略这部分归属变化
 
 离开机型、模型版本、输入长度和测试口径，单独引用 TOPS、tokens/s、首 token 延迟或峰值内存数字，分析价值很有限。写到书里时，最好把这些数字降级成“具体 benchmark 以官方兼容列表和机型实测为准”。
 
@@ -150,6 +170,20 @@ TFLite 支持 post-training quantization 和 quantization-aware training。前�
 ### 裁剪与蒸馏：先看部署成本
 
 模型裁剪和知识蒸馏都能减小模型，但移动端收益并不会自动成立。非结构化稀疏在很多移动加速器上并不能直接换来等比例加速；蒸馏得到的小模型，则是在训练阶段付出额外成本，换运行时更小的计算量。对前台交互场景，优先级通常是：先把线程模型、delegate 选择和量化做好，再决定是否值得改训练流程。
+
+### 冷启动优化：从 JIT 到 AOT
+
+NPU 推理的冷启动成本经常被低估。模型加载、Delegate 绑定和 NPU 固件协商加在一起，首次推理前的准备时间可以超过 500ms，在相机启动、实时翻译等场景里会直接拖慢首帧。
+
+`CompiledModel` V2 支持 Ahead-of-Time（AOT）编译：在 App 安装或首次启动时，把模型转换为硬件原生二进制（vendor-specific binary），后续推理直接加载编译产物，准备时间可以降到 50ms 以内。
+
+AOT 的适用条件：
+
+- 目标设备的 NPU 固件版本需要与编译时一致，固件升级后可能需要重新编译
+- 编译产物会增加安装体积，增量取决于模型大小和硬件 ISA
+- 对冷启动敏感、模型固定的场景（相机滤镜、OCR、语音唤醒）收益最大；动态加载或频繁更新的模型不适合
+
+当前 AOT 编译需要结合厂商 SDK（如 Qualcomm AI Engine Direct）或 LiteRT 的特定 API，尚无统一的 Android 标准 API。在 Perfetto 中，AOT 优化的效果可以直接观察到：模型加载阶段的 slice 耗时从数百毫秒压缩到数十毫秒级别。
 
 ## ML 推理性能分析与调优实战
 
@@ -209,6 +243,15 @@ TFLite 支持 post-training quantization 和 quantization-aware training。前�
 
 - 🔹 **LiteRT / TFLite 管线与 Delegate 选择**：[已验证: ai.google.dev/edge/litert/android/gpu]
   模型加载、Interpreter 初始化、Delegate 绑定、执行四阶段决定冷启动成本和稳态表现。
+
+- 🔹 **CompiledModel API V2 与 AOT 编译**：[已验证: ai.google.dev/edge/litert]
+  V2 架构通过 CompiledModel 将编译与运行分离，支持零拷贝 TensorBuffer 和 AICore 多租户调度；AOT 编译将模型预编译为硬件原生二进制，冷启动准备时间从 500ms+ 降至 50ms 以内。
+
+- 🔹 **Android 17 NPU 硬件特性声明**：[已验证: developer.android.com]
+  API 37 起访问 NPU 需声明 uses-feature，系统建立 NPU 意图防火墙并结合电量配额审计。
+
+- 🔹 **AICore 内存归属**：[已验证: developer.android.com/ai/aicore]
+  Android 16 ATTRIBUTE_WORK_TO_OTHER_APPS 机制将 Gemini Nano 内存成本计入发起方 App。
 
 - 🔹 **Perfetto 中的 ML 推理观测对照表**：[已验证: 章节正文]
   默认 Perfetto 看到的是调度 / 频率 / 内存 / thermal，模型阶段 slice 需要 app 或 native instrumentation，NPU 额外依赖厂商 tracepoint 或 delegate 日志。

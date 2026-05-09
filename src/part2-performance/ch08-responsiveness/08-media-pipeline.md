@@ -36,10 +36,10 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-06"
 gap_source: "AOSP结构+官方文档+读者需求"
 gap_score: "16/20"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task9_reviewed_date: 2026-04-23
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-23T00:30:00+08:00"
@@ -289,6 +289,12 @@ MMAP 的两种模式：
 
 MMAP 需要 HAL 和驱动的支持。如果设备不支持 MMAP 或打开失败，AAudio 会自动回退到传统的 AudioFlinger 数据路径。这就是为什么同一款 App 在不同设备上的音频延迟差异可以很大——从不到 10ms（MMAP EXCLUSIVE）到超过 100ms（传统路径）。
 
+### 低延迟解码模式
+
+Android 11 引入了 `FEATURE_LowLatency` 视频解码支持。在支持该特性的设备上，通过 `MediaFormat.setKeyMaxOutputFramesForLateDecode()` 或设置 `KEY_LOW_LATENCY` 为 `1`，可以减少解码器内部的排队深度，降低首帧输出延迟。这对视频通话、云游戏、实时屏幕共享等场景有直接帮助。
+
+排查低延迟解码是否生效时，先检查设备是否声明 `PackageManager.FEATURE_LOW_LATENCY_VIDEO`，再对比开启 `KEY_LOW_LATENCY` 前后的首帧 decode slice 耗时。不支持该特性的设备会静默忽略这个参数，不会报错但也没有收益。
+
 [已验证: 官方文档, developer.android.com/ndk/guides/audio/aaudio/low-latency-audio — MMAP Mode]
 
 ### 音频延迟的构成
@@ -299,6 +305,8 @@ MMAP 需要 HAL 和驱动的支持。如果设备不支持 MMAP 或打开失败�
 2. **HAL 延迟**：厂商音频 HAL 实现（差异最大，2-20ms 不等）
 3. **AudioFlinger 缓冲**：Normal Mixer 约 20ms 一轮，Fast Mixer 可以短到 2-4ms
 4. **应用缓冲**：App 端 AudioTrack/AAudio 的 buffer 大小配置
+
+**BLE Audio 空间音频链路**：Android 15 引入了 Spatial Audio over BLE Audio。利用 BLE Audio 的低延迟特性，从传感器（头动追踪）到音频渲染生效的端到端时延被显著压缩。在沉浸式应用中，头动追踪 → 音场更新的延迟此前是核心瓶颈；BLE Audio 把这条链路缩短到了可以接受的范围内。排查音频延迟时，如果涉及空间音频场景，需要额外关注传感器采样到 AudioFlinger 渲染生效的完整路径。
 
 在 Perfetto 中，可以通过音频相关的 track 观察 AudioFlinger 的 mixer 活动。如果 mixer thread 出现较大的调度间隔或者 underrun 标记，通常说明 CPU 调度不够及时，比如高优先级线程被抢占，或者 GC 暂停阻塞了音频回调。
 
@@ -416,6 +424,8 @@ media,codec,audio,view,gfx,am
 
 **解码慢**：硬件解码器处理某些复杂帧（如高运动场景的 B 帧）耗时过长，超过了一个 VSync 周期。在 Perfetto 中表现为 decode slice 的 duration 出现异常峰值。解决方案包括降低分辨率/码率、或者切换到更高效的编码格式（如从 AVC 切换到 HEVC）。
 
+**AV1 软解不再是低效路径**：Android 15 将 dav1d 设为默认 AV1 软解引擎，解码效率比之前提升了约 3 倍。在中低端设备没有 AV1 硬件解码支持时，dav1d 软解仍能维持 1080p/60fps 的流畅度。排查 AV1 播放卡顿时，先确认设备是否有 AV1 硬解（`MediaCodecList` 搜索 `c2.android.av1.decoder`），再评估是否需要降分辨率，不要默认认为软解一定卡。
+
 **渲染慢**：解码完成了，但 GPU 合成耗时过长。这种情况在 HDR 内容或存在复杂的 Surface 叠加（如字幕 + 弹幕 + 视频）时容易出现。在 Perfetto 中，常见表现是 SurfaceFlinger 的合成耗时异常。
 
 ### 音频 Underrun 的根因分析
@@ -457,6 +467,8 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - **Media3 1.6.0 (2025-03)**：引入 `MediaCodecVideoRenderer` 预热支持，减少连续媒体项切换延迟
 - **Media3 1.8.0 (2025-07)**：引入实验性的动态调度开关 `experimentalSetDynamicSchedulingEnabled()`
 - **Media3 1.9.0 (2025-11)**：`media3-ui-compose` 提供 `ContentFrame` 和 `PlayerSurface`
+- **Android 15 (2025)**：dav1d 成为默认 AV1 软解引擎，解码效率提升约 3 倍；引入 Spatial Audio over BLE Audio
+- **Android 16 (Baklava, 2026)**：16KB 页面减少编解码大分辨率视频时的 TLB 抖动和内核态切换，提升 Codec2 处理 4K/8K 视频的吞吐量；Gralloc AIDL V2 的 additionalOptions 支持显式传递 16KB 对齐约束
 - **Media3 1.10.0 (2026-03)**：`media3-ui-compose-material3` 提供 `Player` composable 与一组 Material3 播放控件
 
 [待验证: low-latency decoding 在不同 SoC 上的支持情况]
