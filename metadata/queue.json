@@ -3155,12 +3155,14 @@
       ],
       "added_by": "task6-draft-review",
       "added_at": "2026-05-09T11:17:47+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T07:17:43.476091",
+      "completed_reason": "Added Binder-FrameTimeline correlation SQL query: correlates janky doFrame slices with Binder transactions on main thread, addressing \"如何关联到主线程卡顿\" review issue"
     },
     {
       "section": "3.0",
       "section_title": "第 3 章：输入系统",
-      "priority": 85,
+      "priority": 95,
       "reason": "[Deep Tech Review] Android 15/16 架构演进缺失",
       "material_paths": [
         "intake/suggestions.md"
@@ -3177,6 +3179,24 @@
           "location": "输入事件分发流程描述",
           "detail": "缺失 InputClassifier 作为 Android 10+ 引入的关键中间环节",
           "suggestion": "在描述路径时增加 InputClassifier 环节，使原理链更完整"
+        },
+        {
+          "type": "源码错误",
+          "location": "InputReader.loopOnce() 源码片段",
+          "detail": "文中描述的旧版 QueuedListener.flush() 路径已被移除，实际使用 processEventsLocked() 返回 NotifyArgs 列表",
+          "suggestion": "更新源码引用为 AOSP android-16.0.0_r1 的实际实现"
+        },
+        {
+          "type": "原理断裂",
+          "location": "HCI 感知阈值研究部分",
+          "detail": "从感知阈值到 Android 实际延迟的逻辑链断裂",
+          "suggestion": "补充从 HCI 研究到 Android 产品设计的转化逻辑"
+        },
+        {
+          "type": "知识盲区",
+          "location": "输入事件反压机制",
+          "detail": "未覆盖输入事件的反压机制和背压应对策略",
+          "suggestion": "补充 InputDispatcher 的降级策略和优先级处理逻辑"
         }
       ],
       "added_by": "task9-deep-tech-review",
@@ -3184,6 +3204,72 @@
       "status": "completed",
       "completed_at": "2026-05-09T23:25:59.388563+08:00",
       "completed_reason": "task2b fixed: added version-differentiated intro (Android 12/13-14/15+/16-17), InputClassifier in dispatch flow overview, expanded section 3.1 description with AOT interception"
+    },
+    {
+      "section": "3.1",
+      "section_title": "Input 事件分发全流程",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-input-dispatcher-backpressure-mechanism.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "输入事件反压机制与 InputDispatcher 降级策略 — InputDispatcher 反压机制由三个正交子系统组成：stale event 丢弃（10s 超时，不通知 App）、ANR 超时（5s，AnrTracker 独立检测）、输入队列积压监测（In",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-10T06:15:01.435551+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-10T07:17:43.476091",
+      "completed_reason": "Section already finalized; InputDispatcher backpressure mechanism (stale event, ANR tracker, injection queue) already extensively covered in section appendix with source code analysis"
+    },
+    {
+      "section": "3.3",
+      "section_title": "输入系统架构重构（Rust + ARR）",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputflinger-rust-arr-input-system.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "InputFlinger Rust 组件与 ARR 协同架构 — Android 15/16 在 InputFlinger 中引入 Rust 组件（cxxbridge FFI），实现 InputFilter 框架和三个无障碍键盘过滤器。输入系统与 ARR（自适应刷新",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-10T06:15:01.435551+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-10T07:17:43.476091",
+      "completed_reason": "DeepResearch material covers InputFlinger Rust accessibility filters and ARR coordination; not directly relevant to gesture navigation section topic (Predictive Back, edge swipe, system gesture exclusion)"
+    },
+    {
+      "section": "2.6",
+      "section_title": "SurfaceFlinger 与合成",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "SurfaceFlinger FrontEnd 架构与 RequestedLayerState — Android 15 引入 FrontEnd 架构，将客户端请求状态（RequestedLayerState）与系统合成状态（LayerSnapshot）完全分离。通过 LayerLifecycleM",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-10T06:15:01.435551+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-10T07:17:43.476091",
+      "completed_reason": "Reference added: SurfaceFlinger FrontEnd architecture and RequestedLayerState DeepResearch material added to section references"
     }
   ],
   "completed": [

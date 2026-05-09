@@ -544,3 +544,11 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - [研究] ART 内存分配器演进（dlmalloc → RosAlloc → RegionTLAB）
 - [研究] ART 分代 GC 架构（Young/Old Generation + Concurrent Copying）
 - [研究] Android 15/16 的 16KB Page Size 对 ART 内存的影响
+
+
+### ART FinalizerDaemon 与 ReferenceQueue 并发优化边界验证
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md
+- 类型：DeepResearch 调研结果
+- 摘要：验证了 ART FinalizerDaemon 与 ReferenceQueue 仍使用传统 synchronized(lock) 机制，未发现 ConcurrentMessageQueue 集成。ReferenceQueue 所有核心方法均使用 object monitor 同步，FinalizerDaemon 采用 poll(非阻塞)/remove(阻塞)双路径设计。enqueuePending() 的批处理优化（MAX_ITERS=100）仍以 synchronized(queue.lock) 为边界。
+- 注入时间：2026-05-10
+- 价值：源码级验证了 ART FinalizerDaemon 锁机制现状，明确否定了 ConcurrentMessageQueue 集成的猜测，对 ART 内存管理章节有精确的补充价值

@@ -58,11 +58,11 @@ task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 ## 为什么要了解 Android 17 的性能行为变更
 
-`targetSdkVersion` 升级到 37 后,最先要核查的是几类会改变运行时行为的点:`MessageQueue`、`static final` 反射限制、网络安全配置迁移,以及大屏配置策略。分代 GC、ProfilingManager trigger、JobScheduler 诊断 API 更偏向"排障与观测方式变了",它们通常不会直接把 App 改崩,但会改变我们解释 trace 和定位问题的方式。
+`targetSdkVersion` 升级到 37 后，最先要核查的是几类会改变运行时行为的点：`MessageQueue`、`static final` 反射限制、网络安全配置迁移，以及大屏配置策略。分代 GC、ProfilingManager trigger、JobScheduler 诊断 API 更偏向"排障与观测方式变了"，它们通常不会直接把 App 改崩，但会改变我们解释 trace 和定位问题的方式。
 
-公开能拿到定量收益的,当前主要是 `MessageQueue` 的 lock-free 改造。公开来源一共有三层:Android Developers Blog 给出的 synthetic benchmark、internal beta testers 的 Perfetto traces,以及同一批测试设备上的用户体验指标。官方没有公开具体机型、工作负载脚本和 trace 附件,因此本文只把这些数字当成方向性对比,不把它们写成任意业务都能复现的保底收益。
+公开能拿到定量收益的，当前主要是 `MessageQueue` 的 lock-free 改造。公开来源一共有三层：Android Developers Blog 给出的 synthetic benchmark、internal beta testers 的 Perfetto traces，以及同一批测试设备上的用户体验指标。官方没有公开具体机型、工作负载脚本和 trace 附件，因此本文只把这些数字当成方向性对比，不把它们写成任意业务都能复现的保底收益。
 
-这些变更在 Perfetto 中留下明确特征:DeliQueue 减少主线程锁竞争;分代 GC 改变 Memory Track 中的 GC 切片模式;ProfilingManager 新触发器改变系统事件采样入口。掌握这些特征,才能把 Android 17 trace 里的新现象和旧经验区分开。
+这些变更在 Perfetto 中留下明确特征：DeliQueue 减少主线程锁竞争；分代 GC 改变 Memory Track 中的 GC 切片模式；ProfilingManager 新触发器改变系统事件采样入口。掌握这些特征，才能把 Android 17 trace 里的新现象和旧经验区分开。
 
 性能相关的核心变更可以按影响程度和适配优先级排序。
 
@@ -81,17 +81,17 @@ task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 ### 旧实现的问题
 
-从 Android 1.0 开始,`MessageQueue` 的核心数据结构就是一个 `synchronized` 保护的 singly linked list。所有线程通过 `Handler.sendMessage()` 或 `Handler.post()` 投递消息时,都需要获取同一把锁。在 Looper 线程(通常是主线程)从队列头部取消息执行时,其他线程如果想投递消息,就必须等主线程释放锁。
+从 Android 1.0 开始，`MessageQueue` 的核心数据结构就是一个 `synchronized` 保护的 singly linked list。所有线程通过 `Handler.sendMessage()` 或 `Handler.post()` 投递消息时，都需要获取同一把锁。在 Looper 线程（通常是主线程）从队列头部取消息执行时，其他线程如果想投递消息，就必须等主线程释放锁。
 
-在日常场景下这个锁争用几乎不存在--消息投递操作很快,持有锁的时间极短。但在高并发场景下,问题就暴露出来了。一个典型案例:Launcher 在后台加载应用列表时,多个工作线程同时向主线程投递消息,而主线程正在执行一次耗时的布局计算。此时所有投递操作都被阻塞在 synchronized 块上,主线程的 `enqueueMessage()` 等待时间在 Perfetto 中表现为一截 Lock Wait 切片。如果这个等待恰好发生在 VSync 周期内,就会导致掉帧。
+在日常场景下这个锁争用几乎不存在——消息投递操作很快，持有锁的时间极短。但在高并发场景下，问题就暴露出来了。一个典型案例：Launcher 在后台加载应用列表时，多个工作线程同时向主线程投递消息，而主线程正在执行一次耗用的布局计算。此时所有投递操作都被阻塞在 synchronized 块上，主线程的 `enqueueMessage()` 等待时间在 Perfetto 中表现为一截 Lock Wait 切片。如果这个等待恰好发生在 VSync 周期内，就会导致掉帧。
 
-在 Perfetto Trace 中,旧实现的锁争用表现为:
+在 Perfetto Trace 中，旧实现的锁争用表现为：
 - Main Thread Track 中出现名为 "monitor contention with MessageQueue" 的切片
-- 等待线程显示为 Sleeping 状态,持有锁的线程正在执行 Handler 相关代码
-- 锁等待时间通常在 1-5ms 范围,但多次累积就会导致帧时间超过 16.6ms(60fps)
+- 等待线程显示为 Sleeping 状态，持有锁的线程正在执行 Handler 相关代码
+- 锁等待时间通常在 1-5ms 范围，但多次累积就会导致帧时间超过 16.6ms(60fps)
 - 特别出现在 `Choreographer.doFrame` 期间的消息投递操作中
 
-如果手头没有旧版 trace 截图,线下自查时可以直接在 Perfetto 搜索 `monitor contention`,再看它是否和 `Choreographer#doFrame`、`Handler.enqueueMessage()` 或主线程布局计算重叠。旧实现下,消耗帧预算的通常就是这类重叠区间。
+如果手头没有旧版 trace 截图，线下自查时可以直接在 Perfetto 搜索 `monitor contention`，再看它是否和 `Choreographer#doFrame`、`Handler.enqueueMessage()` 或主线程布局计算重叠。旧实现下，消耗帧预算的通常就是这类重叠区间。
 
 ### 新实现：DeliQueue 的混合数据结构
 
@@ -112,21 +112,21 @@ Thread C ──CAS push──▶      │                         │
 
 ### 性能收益
 
-Android Developers Blog 把公开数字分成三类,它们的测试前提并不相同:
+Android Developers Blog 把公开数字分成三类，它们的测试前提并不相同：
 
 | 证据类型 | 公开口径 | 能回答什么 |
 |:---|:---|:---|
 | Synthetic benchmark | busy queue 上的 multi-threaded insertions 最多可比 legacy `MessageQueue` 快 **5,000x** | 说明 DeliQueue 在高竞争入队场景的上限收益 |
 | internal beta testers 的 Perfetto traces | App 主线程花在 lock contention 的时间减少 **15%** | 说明锁竞争本身下降 |
-| 同一批测试设备上的用户体验指标 | App missed frames **-4%**;System UI / Launcher missed frames **-7.7%**;启动到首帧 P95 **-9.1%** | 说明锁竞争下降已经传导到交互体验 |
+| 同一批测试设备上的用户体验指标 | App missed frames **-4%**；System UI / Launcher missed frames **-7.7%**；启动到首帧 P95 **-9.1%** | 说明锁竞争下降已经传导到交互体验 |
 
-公开资料没有给出机型、脚本和 trace 附件,所以这组数字只能用来判断"Android 17 的新队列是否值得关注"。如果要回答"你的业务能拿到多少收益",还是要在同一机型、同一 workload、同一 trace 配置下做 A/B。
+公开资料没有给出机型、脚本和 trace 附件，所以这组数字只能用来判断"Android 17 的新队列是否值得关注"。如果要回答"你的业务能拿到多少收益"，还是要在同一机型、同一 workload、同一 trace 配置下做 A/B。
 
 ### 适配要点
 
-DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化,但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
+DeliQueue 对大多数业务代码是透明的。`Handler`、`Looper`、`Message` 的公共 API 没有变化，但**依赖 `MessageQueue` 私有实现细节的代码需要重点排查**。
 
-官方的 MessageQueue behavior change guidance 已明确写明:为了保留二进制兼容性,`MessageQueue.mMessages` 字段仍然存在,但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存:`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`,负责兼容层与实现选择;`ConcurrentMessageQueue/MessageQueue.java` 的核心结构已经换成 `mPriorityQueue` 和 `mAsyncPriorityQueue` 使用 `ConcurrentSkipListSet<MessageNode>` 两组并发有序集合，不是 Java `PriorityQueue` 堆结构。前者是排序集合，后者为异步消息单独维护一个排序集合。写入端的概念模型是 Treiber Stack,AOSP 实际结构是通过 lock-free 入队 + drain 批量搬运完成，不是逐条 CAS push 到字面意义的栈--博客的"Treiber Stack"描述的是并发入队的算法语义,AOSP 实现会根据同步/异步消息走不同队列入口。排障时不要把这次变化简化成"某个字段改名"。
+官方的 MessageQueue behavior change guidance 已明确写明：为了保留二进制兼容性，`MessageQueue.mMessages` 字段仍然存在，但在新的 lock-free 实现里**始终为 `null`**。AOSP 当前源码还能看到多套实现并存:`CombinedMessageQueue/MessageQueue.java` 继续保留 `mMessages`、`mLast` 和 `mUseConcurrent`,负责兼容层与实现选择;`ConcurrentMessageQueue/MessageQueue.java` 的核心结构已经换成 `mPriorityQueue` 和 `mAsyncPriorityQueue` 使用 `ConcurrentSkipListSet<MessageNode>` 两组并发有序集合，不是 Java `PriorityQueue` 堆结构。前者是排序集合，后者为异步消息单独维护一个排序集合。写入端的概念模型是 Treiber Stack,AOSP 实际结构是通过 lock-free 入队 + drain 批量搬运完成，不是逐条 CAS push 到字面意义的栈--博客的"Treiber Stack"描述的是并发入队的算法语义,AOSP 实现会根据同步/异步消息走不同队列入口。排障时不要把这次变化简化成"某个字段改名"。
 
 把源码层再拆开看,会更准确:
 
