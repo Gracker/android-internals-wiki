@@ -809,8 +809,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-09T17:52:12+08:00",
+      "completed_reason": "task2b fixed: added HWC 4.0 expectedPresentTime predictive switching, updated calculateLayerScoreLocked source code accuracy note with version caveat"
     },
     {
       "section": "2.20",
@@ -871,8 +873,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-21-text-rendering-performance-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-21-text-rendering-performance-external-review.md",
+      "completed_at": "2026-05-09T17:52:12+08:00",
+      "completed_reason": "task2b fixed: added HarfBuzz 10.x speedup data, variable font Variation Axes caching, Android 17 shiftDrawingOffsetForStartOverhang + useBoundsForWidth layout API"
     },
     {
       "section": "2.3",
