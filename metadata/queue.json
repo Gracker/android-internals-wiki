@@ -704,8 +704,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-14-graphics-api-evolution-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-14-graphics-api-evolution-external-review.md",
+      "completed_at": "2026-05-09T17:32:11.294619+08:00",
+      "completed_reason": "task2b fixed: added VPA16 mandatory extensions (VK_EXT_host_image_copy + VK_EXT_shader_object), Android 17 ANGLE mandatory CDD policy, WebGPU compute pipeline 90-95% Vulkan performance baseline"
     },
     {
       "section": "2.15",
@@ -837,8 +839,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-20-multiwindow-desktop-rendering-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-20-multiwindow-desktop-rendering-external-review.md",
+      "completed_at": "2026-05-09T17:32:11.294619+08:00",
+      "completed_reason": "task2b fixed: added Android 17 DeliQueue multi-display jank isolation (4%/7.7% reduction), Android 16 desktop state caching, 16KB page memory stacking effect in multi-window"
     },
     {
       "section": "2.21",

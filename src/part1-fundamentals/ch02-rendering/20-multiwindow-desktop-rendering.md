@@ -2,7 +2,7 @@
 title: "多窗口与桌面模式渲染性能"
 chapter: "2.20"
 section: "2.20"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-08"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
@@ -30,9 +30,9 @@ sources:
     path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
 tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
 related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_date: "2026-04-26"
@@ -41,7 +41,7 @@ task6_result: pass-light-edit
 task2b_result: fixed
 task9_reviewed_date: "2026-04-26"
 last_task9_at: "2026-04-26T22:20:00+08:00"
-last_task2b_at: "2026-04-26T21:49:23+08:00"
+last_task2b_at: "2026-05-09T17:20:00+08:00"
 task9_reviewed_by: openclaw-task9
 ---
 
@@ -114,6 +114,36 @@ task9_reviewed_by: openclaw-task9
 这里不要脱离设备条件写固定毫秒数。把某组固定毫秒数直接写成通用规律，离开 trace、设备型号、刷新率和显示分辨率，就没有复用价值。直接回到观察面：看 layer 数量、看 compositionType、看 FrameTimeline，再决定是不是已经到了 SurfaceFlinger 侧瓶颈。
 
 `dumpsys SurfaceFlinger` 适合做静态快照。它能帮我们核对当前有哪些可见 layer、哪些 layer 走 HWC、哪些 layer 走 GLES。Perfetto 适合看动态变化，尤其是窗口切换、拖拽缩放、PiP 持续播放、外接显示器插拔这些过程。
+
+### Android 17 多屏掉帧隔离
+
+多 display 场景下，SurfaceFlinger 之前用一把 `mGlobalLock` 管理所有 display 的合成逻辑。外接显示器出现 composition 卡顿时，锁竞争会传导到内屏的合成路径，导致不相关的窗口也跟着掉帧。
+
+Android 17 引入两个改动来隔离这个问题：
+
+1. **DeliQueue**（无锁消息队列）替代了部分 Binder 线程路径上的锁。SurfaceFlinger 处理多 display 的 Transaction 提交时，不再因为某个 display 的耗时操作阻塞其他 display 的消息处理。
+2. **`mGlobalLock` 粒度收窄**：锁的持有范围被拆分到单个 display 或单个 layer 组，外屏的合成延迟不再锁住内屏的 VSync 调度。
+
+实测数据（AOSP 公开基准）：
+
+- 第三方应用掉帧率下降约 4%
+- 系统 UI 掉帧率下降约 7.7%
+
+在 Perfetto 中验证时，关注 FrameTimeline 的 `SurfaceFlingerCpuDeadlineMissed` 是否只出现在卡顿 display 的 frame 上，而不是所有 display 同时出现。如果外屏 miss 了但内屏 frame 仍然 on-time，隔离就是生效的。
+
+### Android 16 桌面模式窗口状态缓存
+
+桌面模式频繁切换前台窗口时，传统路径需要完整的 SurfaceControl 属性重建：重新创建 Surface、重新设置 z-order、重新配置 buffer queue。每次切换都涉及多轮 IPC（App → WindowManager → SurfaceFlinger），切回一个窗口的延迟等于"重建 + IPC + 首帧渲染"之和。
+
+Android 16 引入了 SurfaceControl 属性持久化缓存。后台窗口的 SurfaceControl 状态被保留在 SurfaceFlinger 侧，切回前台时只需要唤醒已有状态，不再走完整的重建路径。从 Perfetto 中看，窗口切回的 slice 从"createSurface + setLayer + setBuffer"序列缩短为一个很短的"applyCachedState"。
+
+### 16KB 页在多窗口下的内存叠加效应
+
+Android 16 起旗舰设备强制 16KB 页对齐。对单个应用来说，PSS（Proportional Set Size）增量约 9%，因为 4KB 页时代可以塞进一个页的尾部数据现在需要跨两个 16KB 页。单应用场景下这个增量可以接受。
+
+桌面模式多窗口并发改变了算术。四个窗口同时驻留时，每个窗口 9% 的 PSS 增量叠加到系统总内存上。16GB 设备上，四个应用从 4KB 环境迁移到 16KB 环境后，额外内存消耗接近一个完整应用的 PSS。系统会更早进入 LMK（Low Memory Killer）临界区，多任务上限被压缩。
+
+在 Perfetto 中观察时，用 `process_memory` 数据源看多窗口场景下系统的 `MemAvailable` 变化趋势。如果切换窗口后可用内存持续下降且不回收，说明多窗口驻留的内存压力已经超过了系统的后台回收能力。优化方向是减少后台窗口的纹理缓存和 GPU buffer 持有量，在 `onTopResumedActivityChanged(false)` 时主动释放非必要资源。
 
 [待补充：同一设备在全屏、分屏、外接显示器三种形态下的 `dumpsys SurfaceFlinger` layer 对比截图]
 
@@ -237,8 +267,8 @@ FrameTimeline 里，App 侧和 SurfaceFlinger 侧至少要分成三类：
 | 8.0 (API 26) | PiP 扩展到小屏设备 | 主窗口之外多了一条持续更新的小窗 layer |
 | 10 (API 29) | multi-resume + `onTopResumedActivityChanged()` | 失去焦点不再等于离开 `RESUMED`，生命周期判断要更细 |
 | 12 (API 31) | large-screen 上 multi-window 成为标准行为 | 平板、折叠屏更频繁进入 resizable / compatibility mode |
-| 16 (API 36) | `sw >= 600dp` 时忽略方向、宽高比和 resizability 限制；提供临时 opt-out；connected displays 进入正式能力 | 窗口尺寸变化更频繁，外接显示器把 display 维度也拉进来 |
-| 17 (API 37) | API 36 的 opt-out 对 target 37 不再生效 | `sw >= 600dp` 上的自适应布局从建议变成硬边界 |
+| 16 (API 36) | `sw >= 600dp` 时忽略方向、宽高比和 resizability 限制；提供临时 opt-out；connected displays 进入正式能力；桌面模式窗口状态缓存 | 窗口尺寸变化更频繁，外接显示器把 display 维度也拉进来；桌面模式窗口切回延迟降低 |
+| 17 (API 37) | API 36 的 opt-out 对 target 37 不再生效；DeliQueue 多屏掉帧隔离 | `sw >= 600dp` 上的自适应布局从建议变成硬边界；多 display 掉帧隔离生效 |
 
 ## 常见问题与误区
 
