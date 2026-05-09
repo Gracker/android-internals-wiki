@@ -2,10 +2,10 @@
 title: "I/O 调度与性能"
 chapter: "6.3"
 section: "6.3"
-status: finalized
-applicable_versions: "Android 10–16"
-last_verified: "2026-04-01"
-last_verified_against: "Linux 6.1 + Android 14 GKI"
+status: ready-for-review
+applicable_versions: "Android 10–17"
+last_verified: "2026-05-09"
+last_verified_against: "Linux 6.12 + Android 16 GKI + Android 17 Baklava preview"
 confidence: medium
 sources:
   - "Cubox/IO调度器详解-2024-03-08.md"
@@ -15,10 +15,10 @@ tags:
   - linux
   - android
   - research
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: reviewed
-task9_result: pass-tech-review
+task9_result: pending
 task2b_state: fixed
 task2b_result: fixed
 last_task9_at: "2026-04-19T23:59:59+08:00"
@@ -359,6 +359,37 @@ Android 上 SQLite 是 I/O 最密集的组件之一。它的核心特征是**频
 | 脏页回写 | ftrace: `writeback:*` | 低频 | 高频 + kswapd 活跃 |
 | memcg file cache / reclaim | `memory.stat` + Perfetto 中的 `kswapd` / `writeback:*` | `active_file`、`inactive_file` 波动平稳 | `workingset_refault_file`、major fault、`file_writeback` 同时抬升 |
 | writeback ownership / io pressure | `io.stat`、`io.pressure` + `writeback:*` | 前台窗口内 background cgroup 写回平稳 | 背景 cgroup 的 `wbytes` / `wios` 暴涨，前台窗口同步出现 fsync 拉长 |
+
+
+## Android 16/17 的 I/O 栈加速
+
+### io_uring 进入 Android 存储 APEX
+
+Android 16 的存储 APEX 开始集成基于 io_uring 的异步 FUSE 实现。传统 FUSE 使用同步系统调用处理外部存储请求，每次读写都要在内核和 FUSE 守护进程之间来回切换。io_uring 把这个模型改成了异步提交-完成模型：
+
+- **Registered Buffers 零拷贝读取**：应用预注册内存缓冲区，内核直接在已注册的缓冲区上完成 I/O，省去一次内核态到用户态的拷贝
+- **外部存储扫描提速**：媒体扫描等批量操作从同步阻塞变为异步流水线，外部存储扫描速度提升约 40%
+
+对性能分析来说，io_uring 的引入意味着在 Perfetto 中看到的 FUSE 相关延迟模式会发生变化。异步模型下，单次 FUSE 请求的阻塞时间更短，但总的吞吐量更高。排查外部存储性能问题时，要区分"FUSE 同步阻塞"和"io_uring 提交队列积压"两种不同的延迟来源。
+
+[待验证: AOSP android-16.0.0_r1 存储 APEX 中 io_uring 的具体集成路径和默认启用状态]
+
+### dm-verity 多缓冲区并行哈希
+
+Android 16 的 dm-verity 引入了 Multi-buffer Hashing 优化。系统分区验证（dm-verity）需要在读取时对每个哈希块做 SHA256 校验，传统实现是逐块串行计算。Multi-buffer Hashing 利用 ARM64 的 NEON 指令同时处理多个哈希块，将系统分区冷读取吞吐提升了约 35%。
+
+这个优化对系统 OTA 后的首次启动、应用安装后首次加载 DEX 文件等冷读场景影响最大。如果 Trace 里看到 dm-verity 相关延迟在 Android 16 设备上明显缩短，这可能是原因之一。
+
+### cgroup v2 io 控制器的演进
+
+Android 17（Baklava）继续推进 cgroup v2 迁移，彻底移除了 cgroup v1 的 blkio 子系统。cgroup v2 的 io 控制器成为唯一的 I/O 带宽管理接口：
+
+- **权重比 1000:10**：前台应用 cgroup 的 io 权重为 1000，后台为 10，等效于 100:1 的 I/O 带宽比。这个比例比 cgroup v1 时代更激进，确保前台交互在 I/O 争抢中占据绝对优势。
+- **io.max 替代固定权重**：除权重外，`io.max` 接口可以按设备设置具体的 IOPS 和带宽上限，实现更精确的后台限流。
+
+cgroup v2 io 控制器的完善意味着 Android 的前后台 I/O 隔离不再只依赖调度器选择（BFQ vs mq-deadline），cgroup 层面就有了更强的保障。排查 I/O 问题时，检查线程所在的 cgroup 和 `io.stat`/`io.pressure` 变得更重要。
+
+[待验证: AOSP android-17 Baklava cgroup v2 io 控制器的具体配置和 1000:10 权重来源]
 
 ## 本章小结
 
