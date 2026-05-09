@@ -10,11 +10,11 @@ last_verified: "2026-04-24"
 confidence: high
 tags: [apm, network, okhttp, asm, cronet]
 related_chapters: ["19.0", "19.08", "19.17"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task2b_result: fixed
-task2b_state: pending
-task6_state: reviewed
-task9_state: reviewed
+task2b_state: fixed
+task6_state: revisiting
+task9_state: pending
 sources:
   - "https://square.github.io/okhttp/features/events/"
   - "https://square.github.io/okhttp/features/interceptors/"
@@ -30,7 +30,7 @@ reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
 review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion. | 2026-05-05 task6 review: L1/L2 小修完成（术语换为“分解”，结束动作改成“请求结束”）；无新增 L3/L4 回炉项，等待 Task9 复审。"
 
-last_task2b_at: "2026-05-04T03:40:00+08:00"
+last_task2b_at: "2026-05-09T18:45:30+08:00"
 last_task6_at: "2026-05-05T14:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-05-14-review.md"
 last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
@@ -93,7 +93,7 @@ last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
 - `EventListener`：负责时序观察。OkHttp 官方提供了 `dnsStart/dnsEnd`、`connectStart/connectEnd/connectFailed`、`secureConnectStart/secureConnectEnd`、`requestHeadersStart`、`responseHeadersStart`、`responseBodyEnd` 等事件，适合拆分阶段耗时。
 - `Interceptor`：负责请求和响应语义。它适合读取或改写 header、补 trace id、记录业务接口名、状态码、异常类型、请求体大小、脱敏后的 URL。
 
-只靠 `Interceptor` 拿不到 DNS 和 TCP 耗时，原因很直接：拦截器看到的是请求链条，DNS 查询和 Socket 建连已经由 OkHttp 内部完成或复用了连接。网络拦截器虽然比应用拦截器更靠近网络，但它仍然没有 `dnsStart`、`connectStart` 这类阶段回调。
+只靠 `Interceptor` 拿不到 DNS 和 TCP 耗时，原因在于 Interceptor API 没有阶段回调。DNS 查询、Socket 建连、TLS 握手这些阶段由 OkHttp 内部的 `RealCall` / `ExchangeFinder` 驱动，Interceptor 链条只看到最终的请求和响应对象，拿不到 `dnsStart`、`connectStart` 这类事件。网络拦截器虽然比应用拦截器更靠近网络，但它仍然只在请求/响应层面观察。
 
 ### 2.2 一段可执行的 `EventListener` 埋点代码
 
@@ -117,6 +117,21 @@ private class NetworkMetricEventListener(
     private val clock: () -> Long = { System.nanoTime() }
 ) : EventListener() {
 
+    // Exchange: 单次 request/response 往返。
+    // OkHttp EventListener 文档明确写明"Events and sequences of events
+    // may be repeated for retries and follow-ups"。同一个 Call 内，
+    // redirect、auth follow-up、缓存条件请求都会让 requestHeaders/responseHeaders
+    // 等事件重复触发。如果不拆层，后一次会覆盖前一次的耗时数据。
+    private data class Exchange(
+        var requestHeadersStartNs: Long? = null,
+        var requestHeadersEndNs: Long? = null,
+        var requestBodyStartNs: Long? = null,
+        var requestBodyEndNs: Long? = null,
+        var responseHeadersStartNs: Long? = null,
+        var responseHeadersEndNs: Long? = null,
+        var responseBodyEndNs: Long? = null
+    )
+
     private data class Attempt(
         var dnsStartNs: Long? = null,
         var dnsEndNs: Long? = null,
@@ -124,14 +139,23 @@ private class NetworkMetricEventListener(
         var connectEndNs: Long? = null,
         var secureStartNs: Long? = null,
         var secureEndNs: Long? = null,
-        var requestHeadersStartNs: Long? = null,
-        var requestHeadersEndNs: Long? = null,
-        var requestBodyStartNs: Long? = null,
-        var requestBodyEndNs: Long? = null,
-        var responseHeadersStartNs: Long? = null,
-        var responseBodyEndNs: Long? = null,
+        var connectionAcquiredNs: Long? = null,
+        var connectionReleasedNs: Long? = null,
+        var requestFailed: String? = null,
+        var responseFailed: String? = null,
+        val exchanges: MutableList<Exchange> = mutableListOf(),
         var failure: String? = null
-    )
+    ) {
+        // 当前活跃 exchange：如果上一个 exchange 已有 responseBodyEnd，说明它结束
+        // 了，需要新建一个。redirect / follow-up 会触发新一轮 requestHeadersStart。
+        fun activeExchange(): Exchange {
+            val last = exchanges.lastOrNull()
+            if (last != null && last.responseBodyEndNs == null && last.responseHeadersEndNs == null) {
+                return last
+            }
+            return Exchange().also { exchanges += it }
+        }
+    }
 
     private val callId = java.util.UUID.randomUUID().toString()
     private val attempts = mutableListOf(Attempt())
@@ -183,6 +207,26 @@ private class NetworkMetricEventListener(
         currentAttempt().connectEndNs = clock()
     }
 
+    override fun responseHeadersEnd(call: Call, response: Response) {
+        currentAttempt().activeExchange().responseHeadersEndNs = clock()
+    }
+
+    override fun connectionAcquired(call: Call, connection: Connection) {
+        currentAttempt().connectionAcquiredNs = clock()
+    }
+
+    override fun connectionReleased(call: Call, connection: Connection) {
+        currentAttempt().connectionReleasedNs = clock()
+    }
+
+    override fun requestFailed(call: Call, ioe: IOException) {
+        currentAttempt().requestFailed = ioe.javaClass.simpleName
+    }
+
+    override fun responseFailed(call: Call, response: Response) {
+        currentAttempt().responseFailed = response.code.toString()
+    }
+
     override fun connectFailed(
         call: Call,
         inetSocketAddress: InetSocketAddress,
@@ -197,29 +241,29 @@ private class NetworkMetricEventListener(
     }
 
     override fun requestHeadersStart(call: Call) {
-        currentAttempt().requestHeadersStartNs = clock()
+        currentAttempt().activeExchange().requestHeadersStartNs = clock()
     }
 
     // OkHttp 3.11+ 提供 requestHeadersEnd 回调，用于精确分隔 header 写入与 body 写入
     override fun requestHeadersEnd(call: Call, request: Request) {
-        currentAttempt().requestHeadersEndNs = clock()
+        currentAttempt().activeExchange().requestHeadersEndNs = clock()
     }
 
     // requestBodyStart 标记 body 写入开始（有请求体时才有）
     override fun requestBodyStart(call: Call) {
-        currentAttempt().requestBodyStartNs = clock()
+        currentAttempt().activeExchange().requestBodyStartNs = clock()
     }
 
     override fun requestBodyEnd(call: Call, byteCount: Long) {
-        currentAttempt().requestBodyEndNs = clock()
+        currentAttempt().activeExchange().requestBodyEndNs = clock()
     }
 
     override fun responseHeadersStart(call: Call) {
-        currentAttempt().responseHeadersStartNs = clock()
+        currentAttempt().activeExchange().responseHeadersStartNs = clock()
     }
 
     override fun responseBodyEnd(call: Call, byteCount: Long) {
-        currentAttempt().responseBodyEndNs = clock()
+        currentAttempt().activeExchange().responseBodyEndNs = clock()
     }
 
     override fun callEnd(call: Call) {
@@ -369,7 +413,9 @@ eBPF 在 Android 系统侧已经广泛用于网络统计，但普通应用通常
 | `attempt_count` | 建连或路由重试次数 |
 | `network_type` | Wi‑Fi / Cellular / VPN / Offline |
 
-### 5.2 attempt 级阶段耗时
+### 5.2 attempt 与 exchange 级阶段耗时
+
+一个 attempt 对应一次建连尝试（DNS/TCP/TLS）。一个 attempt 内可以包含多个 exchange（redirect、auth follow-up 会在同一连接上触发新一轮 request/response）。拆成两层后，弱网归因才能区分"建连阶段失败"和"请求阶段因 follow-up 被重复触发"。
 
 | 阶段 | 起点 | 终点 | 说明 |
 | --- | --- | --- | --- |
@@ -378,7 +424,8 @@ eBPF 在 Android 系统侧已经广泛用于网络统计，但普通应用通常
 | TLS 握手 | `secureConnectStart` | `secureConnectEnd` | 仅 HTTPS 且新握手时出现 |
 | Request Headers | `requestHeadersStart` | `requestHeadersEnd` | header 写入耗时，通常很短 |
 | Request Body | `requestHeadersEnd` / `requestBodyStart` | `requestBodyEnd` | 无请求体时此段为空 |
-| Server Wait / TTFB | `requestHeadersEnd`（无 body）或 `requestBodyEnd`（有 body） | `responseHeadersStart` | 只看同一次 attempt |
+| Server Wait / TTFB | `requestHeadersEnd`（无 body）或 `requestBodyEnd`（有 body） | `responseHeadersStart` | 只看同一次 exchange；attempt 内如有 follow-up，每个 exchange 独立计算 TTFB |
+| Response Headers End | `responseHeadersStart` | `responseHeadersEnd` | header 接收完成时刻，TTFB 可精确到此处 |
 | Response 接收 | `responseHeadersStart` | `responseBodyEnd` | 下载大包、弱网抖动会放大 |
 
 几个实现细节要统一：
@@ -409,7 +456,8 @@ eBPF 在 Android 系统侧已经广泛用于网络统计，但普通应用通常
 
 识别重试可用这些信号：
 
-- OkHttp 出现多次 `connectStart` / `connectFailed`
+- OkHttp 出现多次 `connectStart` / `connectFailed`（新 attempt）
+- 同一 attempt 内出现多次 `requestHeadersStart`（新 exchange，通常是 redirect 或 follow-up）
 - 同一 request id 下 host、IP、proxy 发生切换
 - `RouteException`、超时、连接重置后又继续发起请求
 - Cronet 或自研栈暴露了内部重试原因码

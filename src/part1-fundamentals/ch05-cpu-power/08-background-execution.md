@@ -2,8 +2,8 @@
 title: "后台执行限制与优化"
 chapter: "5.8"
 section: "5.8"
-status: finalized
-applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
+status: ready-for-review
+applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 last_verified: "2026-04-12"
@@ -54,9 +54,9 @@ sources:
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [后台限制, Doze, App Standby, 前台服务, WorkManager, JobScheduler, AlarmManager, 省电, 后台启动, BAL]
 related_chapters: ["5.6", "5.7", "11.2", "8.4"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_date: 2026-04-20
 task9_reviewed_by: openclaw-task9
@@ -64,7 +64,7 @@ last_task9_at: "2026-04-20T10:22:00+08:00"
 task2b_state: fixed
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-04-23T04:32:00+08:00"
+last_task2b_at: "2026-05-09T18:44:33+08:00"
 reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
 ---
@@ -273,6 +273,12 @@ Android 15 又给 `dataSync` 和 `mediaProcessing` 加了累计预算。两种�
 
 这一组超时回调以 Android Developers 的 `Service` API reference 和 Android 15 behavior changes 页为准。当前 reference 同时列出 `onTimeout(int startId)` 和 `onTimeout(int startId, int fgsType)` 两个重载：前者对应 `shortService`，后者对应 Android 15 新增的类型化超时。`dataSync` / `mediaProcessing` 收到 `Service.onTimeout(int, int)` 后如果几秒内还不 `stopSelf()`，Logcat 会记录 `RemoteServiceException`；`shortService` 超时不退出则会走 ANR。
 
+### Android 17 的后台音频硬化
+
+API 37 对后台音频操作施加了更严格的约束。由后台触发器（如 `BOOT_COMPLETED`、`CONNECTIVITY_ACTION`）拉起的 FGS，即使声明了 `mediaPlayback` 类型，也无法获取音频焦点。`AudioManager.requestAudioFocus()` 在这类场景下返回 `AUDIOFOCUS_REQUEST_FAILED`，不会抛异常，但播放会静默失败。
+
+这意味着"后台 FGS + 音频焦点 + 持续播放"这条保活路径从 API 37 起被系统层封堵。如果 App 需要在后台持续播放音频，必须保证前台交互状态（Activity 可见、或 FGS 由用户操作触发）成立。已经在播放的音频流，如果应用退到后台且失去了 While-In-Use 状态，系统会在一段宽限期后停止音频焦点。
+
 ## WorkManager vs JobScheduler vs AlarmManager：选型指南
 
 当 App 需要做后台任务时，这三个 API 最常见，但职责边界差很多。选错工具，后面看到的大部分“系统为什么不让我跑”都只是后果。
@@ -324,6 +330,8 @@ AlarmManager 的强项是精确时间点触发，代价是最难和系统的省�
 - **User-initiated data transfer job（UIDT）**：Android 官方给“用户明确点了上传 / 下载”这种数据传输任务的专用入口，走 JobScheduler 的 `setUserInitiated(true)`，并要求进度通知
 - **Temporary allowlist**：Android 8.0 文档明确写了，高优先级 FCM、SMS / MMS 广播、通知 `PendingIntent`、VPN 启动等场景，应用会被临时放进 allowlist 几分钟，这段时间可以启动 service 并继续跑后台逻辑
 - **Android 12+ 的后台启动 FGS 豁免**：高优先级 FCM、用户可见交互、exact alarm 等场景仍可能允许起 FGS，但如果 FCM 最终被系统降级，`startForegroundService()` 依旧会因为 `ForegroundServiceStartNotAllowedException` 失败
+
+- **AVF pVM 任务配额豁免**：通过 Android Virtualization Framework (AVF) 运行的受保护虚拟机（pVM）中的计算任务，不再消耗宿主 App 的 JobScheduler 运行时配额。适用于需要隔离执行但又不想挤占宿主后台预算的 ML 推理、数据加工等场景。任务在 pVM 内独立调度，宿主 App 的 bucket、quota 和 Doze 约束不影响 pVM 内部。
 
 因此，看到“受限状态下任务还是执行了”，先核对它是不是走了这些例外入口。
 
@@ -392,6 +400,12 @@ IBinder.addFrozenStateChangeCallback(callback)
 - `libs/binder/IPCThreadState.cpp` L1714-1730 — BC_REQUEST_FREEZE_NOTIFICATION 发送
 - `services/core/java/com/android/server/am/CachedAppOptimizer.java` L4230-4270 — 冻结编排完整流程
 <!-- AIW-源码调研-2026-04-28 -->
+### 16KB 页环境下的 GC 联动压缩
+
+Android 16 引入了系统压缩期间联动触发应用 GC 的机制。当系统判定需要回收物理内存时（`CachedAppOptimizer` 执行压缩前或 `lmkd` 压力增大），会先向目标进程发送 GC 请求，让应用侧主动释放可回收的 Java 堆对象，再由系统层利用 16KB 大页做更高效的物理内存释放。
+
+16KB 页环境下，单次页面释放的内存量是 4KB 模式的 4 倍，GC 联动压缩的收益因此更明显。排查时可以在 Perfetto 中观察系统压缩事件前后，目标进程的 GC slice 与 `malloc_stats` 下降是否同步出现。
+
 ## Binder Freezer Driver 协同机制：源码级补充
 
 本节在 2026-04-27 通过 AOSP 源码核验了 CachedAppOptimizer 与 Binder Driver 协同冻结的完整链路，以下为关键实现细节补充。
@@ -504,6 +518,7 @@ binder.addFrozenStateChangeCallback((b, frozen) -> {
 | Android 14 (API 34) | FGS 类型强制声明，新增 `remoteMessaging`、`shortService`、`systemExempted` 等类型 | FGS 类型、权限和运行时前提都要写完整 |
 | Android 15 (API 35) | `mediaProcessing` 类型加入，`dataSync` / `mediaProcessing` 引入 6 小时预算 | 长时间同步和媒体加工要处理超时回调 |
 | Android 16 (API 36) | `getPendingJobReasons()` / `getPendingJobReasonsHistory()` 进入 public API；CachedAppOptimizer 增加约 10 秒 freeze debounce，Binder 增加 `FrozenStateChangeCallback` | Job pending 原因更容易直接定位，cached 进程的 freeze / unfreeze 抖动也更容易解释 |
+| Android 17 (API 37) | 后台音频操作必须具备 While-In-Use 能力，后台触发器拉起的 FGS 无法获取音频焦点；AVF pVM 计算任务豁免宿主 JobScheduler 配额；系统压缩期间联动触发应用 GC | 后台保活路径进一步收窄；隔离计算不再挤占宿主配额；16KB 页环境下 GC 联动更高效 |
 
 ## 常见问题与误区
 
