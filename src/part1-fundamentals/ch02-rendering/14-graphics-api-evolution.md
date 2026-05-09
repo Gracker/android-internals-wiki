@@ -1,7 +1,7 @@
 ---
 title: "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）"
 chapter: "2.14"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
@@ -40,9 +40,9 @@ sources:
 tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
 related_chapters: ["2.1", "2.9", "2.10", "2.17", "14.8"]
 section: "2.14"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-20'
@@ -51,7 +51,7 @@ review_log: "logs/review/2026-04-11-13-review.md"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-04-21"
 task2b_result: fixed
-last_task2b_at: "2026-04-26T19:47:00+08:00"
+last_task2b_at: "2026-05-09T17:20:00+08:00"
 last_task9_at: "2026-04-21T00:05:03+08:00"
 task9_reviewed_by: openclaw-task9
 ---
@@ -68,7 +68,7 @@ Android 从诞生到现在，GPU 编程接口经历了三代更迭。这个演�
 
 ### 第一代：OpenGL ES——移动 GPU 的起点
 
-OpenGL ES（OpenGL for Embedded Systems）是 Khronos Group 为嵌入式设备制定的图形 API 标准。Android 从 1.0 版本就支持 OpenGL ES 1.0/1.1，但真正让 GPU 渲染成为主流的是 OpenGL ES 2.0——它带来了可编程着色器（vertex shader 和 fragment shader），从固定功能管线转向了可编程管线。
+OpenGL ES（OpenGL for Embedded Systems）是 Khronos Group 为嵌入式设备制定的图形 API 标准。Android 从 1.0 版本就支持 OpenGL ES 1.0/1.1，但让 GPU 渲染成为主流的是 OpenGL ES 2.0——它带来了可编程着色器（vertex shader 和 fragment shader），从固定功能管线转向了可编程管线。
 
 Android 各版本对 OpenGL ES 的支持时间线：
 
@@ -82,7 +82,7 @@ Android 各版本对 OpenGL ES 的支持时间线：
 
 [已验证: 官方文档, developer.android.com/guide/topics/graphics/opengl]
 
-OpenGL ES 2.0 是一个分水岭。在它之前（ES 1.x），开发者只能用固定功能管线：告诉 GPU "画一个三角形、贴一张纹理、加一个光源"，GPU 按预定义的流程执行。ES 2.0 引入了 GLSL ES 着色器语言，开发者可以自己写代码控制 GPU 的顶点处理和片段着色阶段。这打开了移动端 GPU 的真正潜力——后处理滤镜、水面反射、粒子系统都成为可能。
+OpenGL ES 2.0 是一个分水岭。在它之前（ES 1.x），开发者只能用固定功能管线：告诉 GPU "画一个三角形、贴一张纹理、加一个光源"，GPU 按预定义的流程执行。ES 2.0 引入了 GLSL ES 着色器语言，开发者可以自己写代码控制 GPU 的顶点处理和片段着色阶段。这打开了移动端 GPU 的潜力——后处理滤镜、水面反射、粒子系统都成为可能。
 
 ES 3.0/3.1/3.2 在 ES 2.0 的基础上逐步添加了更高级的 GPU 特性：多重渲染目标允许一次绘制输出多张纹理（延迟渲染的基础）、Compute Shader 让 GPU 执行通用计算、实例化绘制减少了 draw call 数量。
 
@@ -115,13 +115,34 @@ AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展 profile 能力集合，官
 
 [已验证: 官方文档, developer.android.com/ndk/guides/graphics/android-vulkan-profile]
 
+### VPA16 强制扩展
+
+Android 16 的 Vulkan Profile（VPA16）在 Vulkan 1.4 基线之上，额外强制要求两项扩展：
+
+| 扩展 | 解决什么问题 |
+|---|---|
+| `VK_EXT_host_image_copy` | CPU 直接把数据拷到 VkImage，省掉 staging buffer 和额外拷贝。纹理流式加载和首帧资源上传都受益。 |
+| `VK_EXT_shader_object` | 不需要提前创建完整 PSO 就能绑定着色器。运行时按需编译，从驱动层消除传统 Pipeline 创建带来的 Shader Jank。 |
+
+`VK_EXT_shader_object` 对渲染流畅性的影响更直接。传统路径中，每个 shader + render state 组合都要预编译成不可变 PSO。着色器变体多的场景（不同材质、光照组合），PSO 创建是冷启动卡顿的主要来源。这个扩展让驱动在运行时按需编译单个着色器，不需要穷举所有组合。排查 Shader Jank 时，如果目标设备支持该扩展但应用仍有着色器编译卡顿，优先检查是否已经在用 shader object 路径。
+
 ### 第三代：ANGLE——翻译层，不是新 API
 
 严格来说，ANGLE（Almost Native Graphics Layer Engine）不是一个独立的图形 API，它是一个**翻译层**：接收 OpenGL ES API 调用，将其翻译为 Vulkan（或 macOS/iOS 上的 Metal）调用。
 
-ANGLE 的定位可以用一句话概括：它让 OpenGL ES 应用在不改 API 的前提下，有机会跑在 Vulkan 后端之上。但在 Android 上，真正关键的不是“系统里有没有 ANGLE”，而是“这次进程启动时，GLES driver 最终选中了谁”。
+ANGLE 的定位可以用一句话概括：它让 OpenGL ES 应用在不改 API 的前提下，有机会跑在 Vulkan 后端之上。但在 Android 上，关键的不是“系统里有没有 ANGLE”，而是“这次进程启动时，GLES driver 最终选中了谁”。
 
 Android 15 的图形说明页把 ANGLE 描述为“running OpenGL ES on top of Vulkan”的 optional layer，同时明确写到，后续会在更多**新设备**上把 ANGLE 作为 GL system driver 出厂。因此，我们更应该把 ANGLE 理解为一条持续推进中的路线，而不是一个已经对所有设备统一生效的开关。
+
+Android 17（API 37）的 CDD 把 ANGLE 从推荐路线升级为新设备上的强制性默认 GLES 驱动。原生 GLES 驱动不再作为默认选项出厂，应用层写的 GLES 调用由平台统一翻译到 Vulkan 后端。新设备上"原生 GLES 驱动碎片化"这条路被切断了。
+
+Android 17+ 新设备上的实际情况：
+
+- GLES 应用走的一律是 ANGLE → Vulkan 路径
+- 性能对比基准不再是"ANGLE vs 原生 GLES"，只剩一条路
+- Perfetto 排查时不需要先确认"是否走 ANGLE"——答案是确定的
+
+旧设备升级到 Android 17 后仍可能保留原生 GLES 驱动。CDD 要求面向新出厂设备。
 
 AOSP `GraphicsEnvironment.queryAngleChoice()` 给出了 Java 层的第一段选路顺序：先看全局开关 `ANGLE_GL_DRIVER_ALL_ANGLE`，再看按包名配置的 `angle_gl_driver_selection_pkgs` / `angle_gl_driver_selection_values`，最后才落到平台资源里的 `config_angleAllowList`。如果显式选了 `native`，Java 层会把 `shouldUseNativeDriver` 传给 native 层；如果选了 ANGLE，则先尝试 ANGLE APK，再回退到 system ANGLE。到了 `frameworks/native/opengl/libs/EGL/Loader.cpp`，loader 的顺序是“先尝试 ANGLE，再尝试 updatable driver，最后再落回 native / system GLES driver”。这也是为什么我们不能把“Android 15+”直接等同于“所有 GLES 应用都会自动经过 ANGLE”。
 
@@ -140,7 +161,7 @@ private String queryAngleChoice(...) {
 }
 ```
 
-开发者选项和 ADB override，本质上就是在改这些 `Settings.Global` 键值。调试单个包时，常见做法是同时写入包名列表和值列表：
+开发者选项和 ADB override，就是在改这些 `Settings.Global` 键值。调试单个包时，常见做法是同时写入包名列表和值列表：
 
 ```bash
 adb shell settings put global angle_gl_driver_selection_pkgs com.example.app
@@ -204,7 +225,7 @@ vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence);
 
 ### 多线程渲染
 
-OpenGL ES 的全局状态机设计导致它本质上是一个单线程 API。虽然可以通过 EGL 共享上下文在多个线程中使用 OpenGL ES，但状态机的全局性使得多线程同时操作 GL 上下文需要大量的锁同步，实际收益有限。
+OpenGL ES 的全局状态机设计导致它是一个单线程 API。虽然可以通过 EGL 共享上下文在多个线程中使用 OpenGL ES，但状态机的全局性使得多线程同时操作 GL 上下文需要大量的锁同步，实际收益有限。
 
 Vulkan 的 Command Buffer 天然支持多线程。不同的线程可以各自独立地构建 Command Buffer，最后在一个线程上统一提交：
 
@@ -296,6 +317,8 @@ Android 15 在 ADPF 中新增了 power-efficiency mode、GPU + CPU work duration
 Android 侧新增的一条图形接口路线是 WebGPU。Jetpack 文档把它定义为 WebGPU 标准的 Kotlin bindings，并直接写明它是 WebGL 的后继接口，定位比 Vulkan 更高层，代码量也更小，适合图像处理、数据可视化、ML inference 和游戏这类直接依赖 GPU 的场景。
 
 需要把 WebGPU 和 ANGLE 分开看。ANGLE 是 GLES 到 Vulkan 的翻译层，WebGPU 是另一套 API 语义和 WGSL shader 体系。AndroidX WebGPU 的 release notes 已经写明它会持续更新内部 Dawn source commit，Dawn 项目本身也是 Chromium 中 WebGPU 的底层实现。分析 WebView / WebGL / WebGPU 问题时，要先确认 Chromium / Dawn 这一层的 backend，再去解释系统 ANGLE policy。两者观察路径不同。
+
+Jetpack WebGPU 在 Android 17 上的计算管线（compute pipeline）基准测试达到了 Vulkan 原生实现 90%-95% 的吞吐量，API 代码量比 Vulkan 少一个数量级。图形渲染管线的相对性能取决于 draw call 密度和着色器复杂度，与计算管线的差距更大。在 Perfetto 中对比 WebGPU 和原生 Vulkan 的 GPU Activity 时，计算任务的 slice 分布接近，渲染任务的差距仍然明显。选择 WebGPU 的场景（图像处理、ML inference、数据可视化）通常以计算管线为主，这组基准数据有直接参考价值。
 
 [已验证: 官方文档 + 上游实现, developer.android.com/develop/ui/views/graphics/webgpu, developer.android.com/jetpack/androidx/releases/webgpu, github.com/google/dawn]
 

@@ -109,6 +109,18 @@
         "2.18 P1: Added 16KB page SF scoring optimization (SmallVector, -12%)",
         "2.18 P1: Added VSync ID prediction error analysis with SQL query"
       ]
+    },
+    {
+      "date": "2026-05-09T17:32:47.245520+08:00",
+      "sections": [
+        "2.14",
+        "2.20"
+      ],
+      "source": "external-ai-review",
+      "fixes": [
+        "2.14: VPA16 mandatory extensions (VK_EXT_host_image_copy + VK_EXT_shader_object), Android 17 ANGLE mandatory CDD, WebGPU 90-95% Vulkan compute baseline",
+        "2.20: Android 17 DeliQueue jank isolation (4%/7.7%), Android 16 desktop state caching, 16KB page memory stacking"
+      ]
     }
   ],
   "task6_review_history": [
@@ -1453,7 +1465,7 @@
       ]
     }
   ],
-  "task2b_last_run": "2026-05-09T05:43:39+08:00",
+  "task2b_last_run": "2026-05-09T17:32:47.245520+08:00",
   "task2b_reworks": [
     {
       "date": "2026-05-07T23:40:00+08:00",
