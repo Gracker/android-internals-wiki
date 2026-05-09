@@ -31,7 +31,7 @@ sources:
     path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
 tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
 related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-last_task2b_at: "2026-05-08T11:40:00+08:00"
+last_task2b_at: "2026-05-09T09:44:52"
 p1: 2
 p2: 3
 task9_review_notes: "2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。"
@@ -42,12 +42,12 @@ reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
 last_task6_at: "2026-05-09T02:08:33+08:00"
 last_task6_review_log: "logs/review/2026-05-09-02-review.md"
-task6_state: "reviewed"
+task6_state: revisiting
 task6_result: "pass-light-edit"
-task9_state: "reviewed"
-task2b_state: "pending"
-task2b_result: "fixed"
-pipeline_stage: "task2b_pending"
+task9_state: "pending"
+task2b_state: fixed
+task2b_result: fixed
+pipeline_stage: "task6_pending"
 review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。"
 ---
 # ART 虚拟机内存管理
@@ -297,13 +297,15 @@ GC 吞吐量指的是应用运行时间占总时间的比例。如果 GC 吞吐�
 
 [已验证: 官方文档, source.android.com/docs/core/runtime/gc-debug]
 
-### Android 17：DeliQueue 与 `MessageQueue` 无锁路径 [待验证]
+### Android 17：`MessageQueue` 并发优化与 ART ReferenceQueue 边界 [待验证]
 
-> **注意**：以下内容关于 DeliQueue 延伸到 `ReferenceQueue` 并消除 FinalizerDaemon 锁竞争的描述，经 AOSP master（2026-04）复核，`libcore ReferenceQueue.java` 仍有 `private final Object lock`，`reference_processor.cc` 仍为 `kAsyncReferenceQueueAdd = false`，未见 DeliQueue 接入 ReferenceQueue/FinalizerDaemon 的源码证据。以下已改为限定在 `android.os.MessageQueue` 范围，ReferenceQueue 部分标记为待验证。
+> **边界说明**：Android 16 AOSP `android-16.0.0_r1` 引入了 `ConcurrentMessageQueue`（使用 `ConcurrentSkipListSet` 与 Atomic 组合）和 `CombinedMessageQueue`（由 `Flags.forceConcurrentMessageQueue()` 控制），作为 `LegacyMessageQueue` 的替代路径。`DeliQueue` 这一命名在当前公开 AOSP 源码中未出现，不应作为已确认的类名或数据结构引用。
 
 ART 的 FinalizerDaemon 线程负责处理对象的 `finalize()` 方法。在 Android 16 及之前，GC 完成标记后需要通过 `ReferenceQueue` 将待 finalize 对象传递给 FinalizerDaemon，这条路径涉及同步锁。当 GC 频率高、FinalizerDaemon 处理压力大时，锁竞争会导致 FinalizerDaemon 出现 `TimeoutException`，极端情况下引发 ANR。
 
-Android 17 的 DeliQueue 是一种无锁消息队列数据结构，在 `ConcurrentMessageQueue`（AOSP 中的新 MessageQueue 实现）内部使用，实现无锁投递，替代了 `LegacyMessageQueue` 的 synchronized 路径。至于 DeliQueue 是否已延伸到 ART 内部的 `ReferenceQueue` 并消除 FinalizerDaemon 的锁竞争，当前 AOSP 源码尚未提供明确证据，这一部分留作待验证。
+`ConcurrentMessageQueue` 的无锁投递优化属于 `android.os` 层的 Handler/Looper 路径，与 ART 内部的 `ReferenceQueue` / FinalizerDaemon 锁竞争是两条独立的调用路径。当前 AOSP 源码中 `libcore ReferenceQueue.java` 仍有 `private final Object lock`，`reference_processor.cc` 仍为 `kAsyncReferenceQueueAdd = false`，未见 `ConcurrentMessageQueue` 或任何无锁队列接入 `ReferenceQueue` 的证据。`ReferenceQueue` 是否会在后续 Android 版本中移除同步锁，需要等正式 tag 或 release note 确认。
+
+MessageQueue 并发优化的实现细节见 `1.13 MessageQueue 机制与无锁优化`。
 
 在 Perfetto 中，如果看到 `FinalizerDaemon` 线程出现长时间的 `Object.wait()` 或 `ReferenceQueue` 相关的阻塞 slice，通常是锁竞争路径的表征。
 

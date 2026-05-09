@@ -14990,7 +14990,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T01:25:25+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T09:45:16",
+      "completed_reason": "P1 Android 17 平台变化已拆为四类边界（已确认平台行为/Kernel 6.12可选/sched_ext/ART Generational CMC gating/Energy Limiter待验证）；阅读建议交叉引用已修正为按主题跳转到 4.3/4.6/5.7/14.10/16.4/16.5 等实际章节"
     },
     {
       "section": "1.6",
@@ -15034,7 +15036,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T02:30:12+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T09:45:16",
+      "completed_reason": "P1 DeliQueue 命名与 ReferenceQueue 因果链已修正：DeliQueue 未确认命名已移除，改为 ConcurrentMessageQueue/CombinedMessageQueue 实际实现；Handler/Looper 路径与 ART ReferenceQueue 锁竞争已拆为两条独立调用路径；引用 1.13 章节覆盖 MessageQueue 并发细节"
     },
     {
       "section": "3.5",
