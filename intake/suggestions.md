@@ -1784,3 +1784,10 @@
 - **位置**：L659 Native Heap Profiling（heapprofd）
 - **问题**：“heapprofd 运行在目标进程中”把 daemon 与目标进程内 client/hook 机制混在一起。heapprofd 是守护进程，目标进程侧通过 heapprofd client / malloc hook 参与采样。
 - **建议**：改成“heapprofd daemon 负责收集与聚合；目标进程侧加载 client/hook 记录 malloc/free/new/delete 调用栈”，避免读者误解为 daemon 本身在 App 进程内运行。
+
+## [Task9 Deep Review] 1.4 Binder IPC 机制与性能影响 — 2026-05-09
+- **类型**：版本口径/工具数据源
+- **位置**：L250-L254、L345-L356、L392-L393 `android.binder` 与 `android_binder_txns`
+- **问题**：[P2] 正文把 `android.binder` 写成“用户层数据源 / Android 14/15+ 完善”，并把标准库 SQL 的使用边界写成 Android 16+。复核 Perfetto `src/trace_processor/perfetto_sql/stdlib/android/binder.sql`：`android.binder` 是 trace_processor 的 SQL 标准库模块，`android_binder_txns` 由 ftrace binder slice、flow 和 AIDL/HIDL 子 slice 解析生成；可用性取决于 trace_processor 版本和 trace 是否采到所需事件，不应简单等同于设备侧 Android 版本或独立用户层数据源。
+- **建议**：改成“Perfetto SQL 标准库模块 `android.binder`”；版本边界拆成两件事：trace 采集侧是否有 binder ftrace/AIDL-HIDL slice，分析侧 trace_processor 是否包含该 stdlib 表。Android 16 可作为字段口径已复核的版本锚点，但低版本回退不要硬写成 Android 13 及以下只能手写 ftrace SQL。
+- **review 日志**：logs/deep-review/2026-05-09-08-deep-review.md

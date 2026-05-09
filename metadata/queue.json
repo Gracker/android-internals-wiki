@@ -14908,17 +14908,18 @@
       "section": "1.4",
       "section_title": "Binder IPC 机制与性能影响",
       "priority": 85,
-      "reason": "[Deep Tech Review] 1.4 Binder IPC 机制与性能影响 — oneway/Lazy Async 版本口径与反压语义需回炉修正",
+      "reason": "[Deep Tech Review] 1.4 Binder IPC 机制与性能影响 — oneway spam detection 与 async buffer 反压语义仍需回炉修正",
       "material_paths": [
         "intake/suggestions.md",
-        "logs/deep-review/2026-05-08-19-deep-review.md"
+        "logs/deep-review/2026-05-08-19-deep-review.md",
+        "logs/deep-review/2026-05-09-08-deep-review.md"
       ],
       "review_issues": [
         {
           "type": "版本差异/原理断裂",
-          "location": "L226 oneway 调用“Android 14+ Lazy Async / 反压”表述",
-          "detail": "[P1] 正文把 oneway 调用方可能阻塞归因于“Android 14+ 引入 Lazy Async 后 Binder Driver 对调用方施加反压”。本轮复核 source.android Binder threading / binder-freezer 文档与 AOSP android-16.0.0_r1 / android-mainline 源码：公开文档只描述 oneway 在事务进入 kernel 后调用方继续执行、同一 node 的 async transaction 串行、frozen callee 下异步事务缓冲；AOSP 可见的是 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION`、`BR_ONEWAY_SPAM_SUSPECT`、async buffer `free_async_space` 与 frozen 相关的 `BR_TRANSACTION_PENDING_FROZEN`，没有可复核的“Android 14+ Lazy Async”版本节点。当前写法会让读者把 oneway 队列积压理解成稳定的调用方阻塞/反压机制。",
-          "suggestion": "删除“Android 14+ Lazy Async”定论，改成源码可验证的三段边界：① oneway 不等待服务端处理，但同一 Binder node 上 async transaction 不并发；② Android 11 QPR3+ binder freezer 下 frozen callee 的 async transaction 会缓冲，buffer overflow 时可能导致接收端崩溃；③ Android 12+ 可见 oneway spam detection / async buffer 空间耗尽风险，必要时用 `BR_ONEWAY_SPAM_SUSPECT`、`BR_FAILED_REPLY`、`BR_TRANSACTION_PENDING_FROZEN` 解释异常，而不是写成“反压导致短暂阻塞”。"
+          "location": "L226 oneway 调用“BR_ONEWAY_SPAM_SUSPECT 限流 / 短暂阻塞”表述",
+          "detail": "[P1] Task2B 已删除“Android 14+ Lazy Async”字样，但当前 L226 仍写高频 oneway 会触发 `BR_ONEWAY_SPAM_SUSPECT`“限流”，并把 async buffer 耗尽后的结果收束为“Client 端调用 oneway 方法也可能被短暂阻塞”。复核 android-mainline `drivers/android/binder_alloc.c` 与 `drivers/android/binder.c`：oneway spam detection 在 async 空间低于阈值且同一 pid 占用过多 buffer 时只标记 `oneway_spam_suspect`、返回 `BR_ONEWAY_SPAM_SUSPECT` / netlink report；它是诊断/告警信号，不是限流机制。async buffer 空间不足时 `binder_alloc_new_buf()` 返回 `-ENOSPC`，事务路径返回 `BR_FAILED_REPLY`，不是稳定的“反压导致调用方短暂阻塞”。",
+          "suggestion": "把该段改成源码可复核的边界：① 正常 remote `oneway` 在事务进入 Binder 后不等待服务端处理；② 同一 Binder node 上 async transaction 串行，队列积压会影响接收端处理时延；③ async buffer 耗尽时事务失败（Java/Native 层表现为 FAILED_TRANSACTION / BR_FAILED_REPLY 一类错误）；④ `BR_ONEWAY_SPAM_SUSPECT` 是 spam detection 告警，不写成限流；⑤ 若要提“阻塞”，只限定为 ioctl/锁/调度等通用内核路径，不能写成 oneway 专属反压语义。"
         }
       ],
       "added_by": "task9-deep-tech-review",

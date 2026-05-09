@@ -9,11 +9,11 @@ drafted_by: openclaw-task2a
 last_verified: '2026-05-09'
 last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android 官方文档
 task2b_result: fixed
-task2b_state: "fixed"
+task2b_state: "pending"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
-pipeline_stage: "task9_pending"
+task9_state: "reviewed"
+pipeline_stage: "task2b_pending"
 confidence: medium
 sources:
 - type: blog
@@ -50,10 +50,10 @@ related_chapters:
 - '9.1'
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: '2026-05-08'
-last_task9_at: "2026-05-08T19:29:15+08:00"
-task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P1 1，P2 1。oneway/Lazy Async 版本口径与反压语义已修复(task2b)；冷启动 Binder 次数和服务方法耗时需补可复核 trace 数据。"
-last_task9_review_log: "logs/deep-review/2026-05-08-19-deep-review.md"
+task9_reviewed_date: "2026-05-09"
+last_task9_at: "2026-05-09T08:20:00+08:00"
+task9_review_notes: "2026-05-09 task9 deep-review: needs-rework。P1 1，P2 2。oneway spam detection/async buffer 语义仍需回炉；Perfetto android.binder 标准库版本口径需澄清；冷启动 Binder 次数与服务方法耗时数据缺口沿用既有 P2。"
+last_task9_review_log: "logs/deep-review/2026-05-09-08-deep-review.md"
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-05-09"
 task6_reviewed_date: "2026-05-09"

@@ -1,16 +1,16 @@
 {
-  "generated_at": "2026-05-09T08:05:00+08:00",
+  "generated_at": "2026-05-09T08:20:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T08:05:00+08:00",
+    "last_updated": "2026-05-09T08:20:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 155,
-      "task2b_pending": 48,
+      "task2b_pending": 49,
       "task6_pending": 1,
-      "task9_pending": 4,
+      "task9_pending": 3,
       "unknown": 31
     },
     "task6_state_counts": {
@@ -20,13 +20,13 @@
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 4,
-      "reviewed": 202,
+      "pending": 3,
+      "reviewed": 203,
       "unknown": 32
     },
     "task2b_state_counts": {
-      "fixed": 160,
-      "pending": 46,
+      "fixed": 159,
+      "pending": 47,
       "unknown": 34
     },
     "status_counts": {
@@ -1288,6 +1288,26 @@
       "research_gaps_added": 0,
       "auto_finalized": [],
       "review_log": "logs/deep-review/2026-05-09-07-deep-review.md"
+    },
+    {
+      "timestamp": "2026-05-09T08:20:00+08:00",
+      "sections": [
+        "1.4"
+      ],
+      "source": "task9-deep-tech-review",
+      "result": "needs-rework",
+      "p0": 0,
+      "p1": 1,
+      "p2": 2,
+      "p2_existing": 1,
+      "p3": 0,
+      "queue_items_added": 0,
+      "queue_items_updated": 1,
+      "suggestions_added": 1,
+      "suggestions_existing": 1,
+      "research_gaps_added": 0,
+      "auto_finalized": [],
+      "review_log": "logs/deep-review/2026-05-09-08-deep-review.md"
     }
   ],
   "rework_history": [
@@ -1532,16 +1552,17 @@
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "last_task6_review_log": "logs/review/2026-05-09-08-review.md",
-    "task9_state": "pending",
-    "pipeline_stage": "task9_pending",
-    "task2b_state": "fixed",
+    "task9_state": "reviewed",
+    "pipeline_stage": "task2b_pending",
+    "task2b_state": "pending",
     "task9_result": "needs-rework",
-    "last_task9_at": "2026-05-08T19:29:15+08:00",
+    "last_task9_at": "2026-05-09T08:20:00+08:00",
     "task2b_result": "fixed",
-    "last_task9_review_log": "logs/deep-review/2026-05-08-19-deep-review.md",
+    "last_task9_review_log": "logs/deep-review/2026-05-09-08-deep-review.md",
     "status": "ready-for-review",
     "last_task6_polish_count": 11,
-    "task6_review_notes": "2026-05-09 Task6 08:05：Task2B 修复后写作复审；轻修 11 处（frontmatter 去重、结构性引导/否定-纠正式句式/翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+    "task6_review_notes": "2026-05-09 Task6 08:05：Task2B 修复后写作复审；轻修 11 处（frontmatter 去重、结构性引导/否定-纠正式句式/翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。",
+    "task9_review_notes": "2026-05-09 Task9 08:20：复审后仍有 P1；`BR_ONEWAY_SPAM_SUSPECT` 被写成限流、async buffer 耗尽被收束成短暂阻塞，需 Task2B 回炉；新增 P2：Perfetto android.binder 标准库版本口径。"
   },
   "9.3": {
     "last_task9_at": "2026-05-08T20:30:08+08:00",
@@ -1745,9 +1766,9 @@
     "last_task9_review_log": "logs/deep-review/2026-05-09-06-deep-review.md",
     "task9_reviewed_date": "2026-05-09"
   },
-  "task9_last_run": "2026-05-09T07:20:00+08:00",
+  "task9_last_run": "2026-05-09T08:20:00+08:00",
   "task9_last_sections": [
-    "13.2"
+    "1.4"
   ],
   "13.2": {
     "last_task6_at": "2026-05-09T07:12:00+08:00",
