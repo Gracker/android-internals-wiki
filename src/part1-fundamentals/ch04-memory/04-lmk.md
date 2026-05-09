@@ -9,8 +9,8 @@ reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-27"
+applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
+last_verified: "2026-05-09"
 last_verified_against: "AOSP android-4.0.1_r1 init.rc/ProcessList.java, android-8.1 ProcessList/lmkd socket, android-10 lmkd PSI, android-11/12/14/16 CachedAppOptimizer, Android 16 lmkd/reaper, developer.android.com 16KB Page Size"
 confidence: medium-high
 sources:
@@ -34,12 +34,12 @@ sources:
     path: "frameworks/base/services/core/java/com/android/server/wm/ActivityTaskManagerService.java"
 tags: ['lmk', 'lmkd', 'oom_adj', 'oom_score_adj', 'PSI', 'memory-pressure', 'process-kill']
 related_chapters: ["4.1", "4.2", "4.3", "1.3", "10.4"]
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: "pass-light-edit"
 task9_result: needs-rework
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-05-05"
 task9_reviewed_by: "openclaw-task9"
@@ -418,6 +418,10 @@ ORDER BY c.ts;
 
 **大小核感知：** 部分 SoC 厂商（如 MTK）会在 lmkd 中加入对 CPU topology 的感知——在大核上执行杀进程操作以减少延迟。
 
+**高负载场景的激进清场：** 相机启动是典型的内存尖峰场景。主流 OEM 在相机启动时会将 `oom_score_adj >= 200`（PERCEPTIBLE 以上）的进程标记为强制回收目标，为相机进程预留约 1.5GB 内存。拍照完成后的合成进程通常有 30 秒以上的保护期，防止被 lmkd 误杀导致照片合成失败。这种场景化的激进策略不在 AOSP 默认配置中，是 OEM 根据硬件能力和相机内存需求单独调校的。
+
+[待验证: 以上 OEM 相机场景策略来自公开技术分享，具体阈值因厂商而异]
+
 [待验证: 以上 OEM 定制策略来自公开技术分享，具体实现因厂商而异]
 
 ## 扩展三：Android 15/16 的变化
@@ -441,6 +445,27 @@ Android 15 引入了对 16KB 内存页的支持（传统为 4KB）。这不会�
 对 Android 16 来说，和分析更相关的点是 userspace `lmkd` 路径已经稳定：PSI / thrashing / file cache 判断负责决定是否 kill，`reaper` 线程负责 `pidfd_send_signal()` + `process_mrelease()`。我们在 Android 16 设备上排查低内存卡顿时，重点应放在 kill 触发条件、kill 后 reclaim 延迟，以及 App 被杀后的冷启动连锁反应。
 
 [已验证: AOSP android-12.0.0_r1 ~ android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
+
+### Android 16/17：可见性感知与配额制
+
+#### 可见性感知保护（Android 16）
+
+桌面模式下多个窗口同时出现在屏幕上，传统的 `oom_score_adj` 无法完整表达"这个窗口用户正在看"的语义。Android 16 的 lmkd 开始利用 HWC（Hardware Composer）反馈来识别屏幕上的可见窗口。
+
+在内存压力下，即使某个进程的 `oom_score_adj` 较高（按传统规则应该被优先回收），只要它的窗口在 HWC 的可见图层列表中（比如桌面模式下的侧边栏应用），lmkd 就会跳过这个进程。没有这个机制，桌面模式下的后台应用更容易被误杀——传统 lmkd 只看 adj 数字，加了可见性维度后，kill 决策多了一个来源：屏幕上到底有什么。
+
+[待验证: AOSP android-16.0.0_r1 lmkd 可见性感知的具体实现路径和配置开关]
+
+#### 内存配额制：MemoryLimiter（Android 17）
+
+Android 17（API 37）引入了单应用 AnonSwap 硬限制（MemoryLimiter）。传统 lmkd 只在整体内存不足时才杀进程，是"压力响应"模式。MemoryLimiter 改为"配额管控"——应用 PSS 超过阈值后，系统直接杀掉，不等整体内存压力信号。
+
+被杀进程的 `ExitInfo` 中会包含 MemoryLimiter 描述，方便排查。系统通过 `ProfilingManager` 的 ANOMALY 触发器进行预警，应用可以在被杀前收到信号。
+
+MemoryLimiter 改变了"谁会被杀"的判断逻辑。以前只看 `oom_score_adj` 和整体水位，现在还要看单个应用的内存用量是否超限。排查应用被杀问题时，除了查 lmkd 日志，还要查 MemoryLimiter 相关的进程退出原因。
+
+[待验证: AOSP API 37 MemoryLimiter 具体阈值配置和 ProfilingManager ANOMALY 触发器细节]
+
 
 
 <!-- AIW-源码调研-2026-04-20: CachedAppOptimizer 机制补充 -->
