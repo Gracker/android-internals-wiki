@@ -1855,8 +1855,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T01:20:33",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch06-03-io-scheduling-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch06-03-io-scheduling-external-review.md",
+      "completed_at": "2026-05-09T23:25:59.388563+08:00",
+      "completed_reason": "task2b verified: io_uring/dm-verity/cgroup v2 content already present in section \"Android 16/17 的 I/O 栈加速\""
     },
     {
       "section": "06.04",
@@ -1885,8 +1887,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T01:20:33",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch06-04-storage-evolution-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch06-04-storage-evolution-external-review.md",
+      "completed_at": "2026-05-09T23:25:59.388563+08:00",
+      "completed_reason": "task2b: duplicate of section 6.4 (already completed 2026-05-09), 16KB/FUSE/SDM content already in source"
     },
     {
       "section": "8.2",
@@ -2707,7 +2711,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T08:36:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T23:25:59.388563+08:00",
+      "completed_reason": "task2b fixed: split multi-window scene analysis into same-process vs cross-process categories, fixed split-screen section to distinguish same-App vs cross-App topology"
     },
     {
       "section": "7.6",
@@ -3035,7 +3041,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-09T20:24:34.454429",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T23:25:59.388563+08:00",
+      "completed_reason": "task2b fixed: added version-differentiated intro (Android 12/13-14/15+/16-17), InputClassifier in dispatch flow overview, expanded section 3.1 description with AOT interception"
     }
   ],
   "completed": [

@@ -1,5 +1,5 @@
 ---
-title: "第 3 章：输入系统"
+title: "第 3 章:输入系统"
 chapter: "3.0"
 section: "3.0"
 status: "ready-for-review"
@@ -21,12 +21,12 @@ related_chapters:
   - "3.4"
   - "3.5"
   - "3.6"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-08T19:40:00+08:00"
+last_task2b_at: "2026-05-09T23:17:00+08:00"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-09
@@ -36,36 +36,41 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-28"
 last_task6_at: "2026-05-09T04:05:00+08:00"
 last_task6_review_log: "logs/review/2026-05-09-04-review.md"
-task6_review_notes: "2026-05-09 Task6 04:05：Task2B 修复后写作复审；修正验证锚点路径格式，L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
+task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正验证锚点路径格式,L1/L2 通过;无新增 L3/L4 回炉项,送 Task9 复审。"
 ---
 
-# 第 3 章：输入系统
+# 第 3 章:输入系统
 
-输入系统经常在排查后期才被翻出来，但很多“点了没反应”“滑动不跟手”“帧率不低却还是觉得卡”的问题，往往都要回到这里。判断这类问题时，先看事件什么时候进入系统、什么时候排到目标线程、什么时候变成屏幕反馈，通常比只盯着渲染线程更有效。
+输入系统经常在排查后期才被翻出来,但很多"点了没反应""滑动不跟手""帧率不低却还是觉得卡"的问题,往往都要回到这里。判断这类问题时,先看事件什么时候进入系统(EventHub → InputReader)、经过哪些分类和过滤环节(`InputClassifier` 自 Android 10 起作为触摸事件的必经路由点,负责多指/手掌/触控笔的分类和分流)、什么时候排到目标线程(InputDispatcher 按焦点窗口分发)、什么时候变成屏幕反馈,通常比只盯着渲染线程更有效。
 
-这一章也要按新版本重新看。Android 15 之后，输入延迟分析已经要同时关注预测输入、Predictive Back 和 ARR 对显示刷新节奏的协同；AOSP 主线里的 InputFlinger 也开始引入 Rust 组件，输入服务不再只有传统的 C++ 分发栈。Android 16/17 输入栈还有一组待验证的候选变化，分析前先确认目标设备的实际行为：
+这一章也要按新版本重新看。分析输入问题时,版本差异直接决定从哪里下手:
+
+- **Android 12 及更早**:InputFlinger 是纯 C++ 分发栈,`InputDispatcher` 直接按焦点窗口投递,`InputClassifier` 做基本的多指分类。
+- **Android 13-14**:Predictive Back 引入返回手势预测,输入事件流和返回动画开始耦合;`InputClassifier` 的分类逻辑逐步加重。
+- **Android 15+**:ARR(Adaptive Refresh Rate)进入输入分析视野--屏幕刷新节奏不再是固定 60/120Hz,而是随内容动态变化,触控采样到显示反馈的端到端延迟分析必须结合 ARR 的 VSync 调度策略。
+- **Android 16/17**:AOSP 主线里的 InputFlinger 开始引入 Rust 组件替换部分 C++ 模块,`InputDispatcher` 的返回键 AOT 拦截模型(Target 36+)改变了传统 `onBackPressed` 流程;Native 级手势排除区域判定下沉至 `InputDispatcher` 循环。这些变化仍在推进中，分析前先确认目标设备的实际行为：
 
 | 主题 | 子节 | Android 16/17 候选变化 | 验证锚点 |
 |------|------|----------------------|----------|
-| Predictive Back | 3.3 | AOT 编译期 back 动画预测，减少运行时回调开销 | `frameworks/base/libs/windowmanager/` / `BackAnimationController` |
-| MotionPredictor | 3.4 | ML 驱动的触控预测模型，替代线性外推 | `frameworks/native/services/inputflinger/predictor/` / `MotionPredictor.cpp` |
+| Predictive Back | 3.3 | AOT 编译期 back 动画预测,减少运行时回调开销 | `frameworks/base/libs/windowmanager/` / `BackAnimationController` |
+| MotionPredictor | 3.4 | ML 驱动的触控预测模型,替代线性外推 | `frameworks/native/services/inputflinger/predictor/` / `MotionPredictor.cpp` |
 | InputFlinger Rust | 3.1 / 3.5 | 输入事件分发路径中的 Rust 组件替换 | `frameworks/native/services/inputflinger/rust/` |
-| DeliQueue | 3.1 | MessageQueue 延迟投递优化，减少输入事件到主线程的排队延迟 | `frameworks/base/core/java/android/os/MessageQueue.java` |
-| InputMonitor | 3.5 | 隐藏系统 API，可编程监控输入事件流，权限边界需按 `android.permission.MONITOR_INPUT` 核验 | `frameworks/base/core/java/android/hardware/input/InputMonitor.java` |
+| DeliQueue | 3.1 | MessageQueue 延迟投递优化,减少输入事件到主线程的排队延迟 | `frameworks/base/core/java/android/os/MessageQueue.java` |
+| InputMonitor | 3.5 | 隐藏系统 API,可编程监控输入事件流,权限边界需按 `android.permission.MONITOR_INPUT` 核验 | `frameworks/base/core/java/android/hardware/input/InputMonitor.java` |
 
-把以上变化放进同一张图里，后面分析响应速度、ANR 和高延迟交互时才不容易看偏。
+把以上变化放进同一张图里,后面分析响应速度、ANR 和高延迟交互时才不容易看偏。
 
 ## 本章内容
 
-- `3.1` Input 事件分发全流程：从 EventHub / InputReader，经由 `InputClassifier` 等分类或过滤环节，再到 InputDispatcher 和应用窗口的投递路径。
-- `3.2` 触摸响应的性能分析：看采样、批处理、主线程消费和 UI 反馈之间的时间差。
-- `3.3` 手势导航与系统交互：重点放在系统手势截获、Predictive Back 回调模型和返回动画时序。
-- `3.4` 输入延迟与预测输入技术：把 Motion 预测、低延迟渲染路径和 Android 15 ARR 的高刷协同放在一起看。
-- `3.5` 输入事件拦截与安全机制：看焦点窗口、权限边界、遮挡与注入限制。
-- `3.6` 手势识别算法与性能优化：看去抖、阈值、误触处理和复杂手势识别的代价。
+- `3.1` Input 事件分发全流程:从 EventHub / InputReader,经由 `InputClassifier`(Android 10+ 的触摸事件必经路由点,负责多指/手掌/触控笔分类与分流),再到 InputDispatcher 和应用窗口的投递路径。Android 16+ 的 AOT 返回键拦截和 Native 手势排除判定也落在这一节。
+- `3.2` 触摸响应的性能分析:看采样、批处理、主线程消费和 UI 反馈之间的时间差。
+- `3.3` 手势导航与系统交互:重点放在系统手势截获、Predictive Back 回调模型和返回动画时序。
+- `3.4` 输入延迟与预测输入技术:把 Motion 预测、低延迟渲染路径和 Android 15 ARR 的高刷协同放在一起看。
+- `3.5` 输入事件拦截与安全机制:看焦点窗口、权限边界、遮挡与注入限制。
+- `3.6` 手势识别算法与性能优化:看去抖、阈值、误触处理和复杂手势识别的代价。
 
 ## 阅读建议
 
-- 如果你在查“点了没反应”“滑动不跟手”，先读 `3.1`、`3.2`、`3.4`，把输入进入系统、进入应用、变成视觉反馈的时间顺序串起来。
-- 如果你在查系统手势冲突、返回手势掉帧或动画接不上的问题，继续读 `3.3` 和 `3.5`。Android 14/15 的 Predictive Back 已经把输入分发和返回动画预览绑得更紧。
-- 如果你在查高刷设备上的触控延迟、采样节奏或功耗波动，重点看 `3.4`，再和 `2.18` 的 ARR 机制对照。输入采样和刷新周期是否同步，会直接影响“跟手感”。
+- 如果你在查"点了没反应""滑动不跟手",先读 `3.1`、`3.2`、`3.4`,把输入进入系统、进入应用、变成视觉反馈的时间顺序串起来。
+- 如果你在查系统手势冲突、返回手势掉帧或动画接不上的问题,继续读 `3.3` 和 `3.5`。Android 14/15 的 Predictive Back 已经把输入分发和返回动画预览绑得更紧。
+- 如果你在查高刷设备上的触控延迟、采样节奏或功耗波动,重点看 `3.4`,再和 `2.18` 的 ARR 机制对照。输入采样和刷新周期是否同步,会直接影响"跟手感"。
