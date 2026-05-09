@@ -2,7 +2,7 @@
 title: DMA-BUF、Gralloc 与跨进程图形内存共享
 chapter: '2.15'
 section: '2.15'
-status: ready-for-review
+status: "finalized"
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-26'
 last_verified_against: AOSP android-16.0.0_r1, Linux kernel 6.12, android.googlesource.com graphics/mapper stable-c, developer.android.com/guide/practices/page-sizes
@@ -64,7 +64,7 @@ created_by: task2a-knowledge-gap
 created_date: '2026-04-05'
 gap_source: 素材驱动+AOSP结构+每日信息
 gap_score: 17/20
-pipeline_stage: task6_pending
+pipeline_stage: "ready-to-publish"
 task6_state: revisiting
 task6_result: 'pass-light-edit'
 task9_state: pending
