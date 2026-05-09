@@ -11805,7 +11805,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-04T08:42:32+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T08:43:58+08:00",
+      "completed_reason": "P1 ADPF/VSync deadline口径已修正：删除不存在的\"订阅VSync偏移+上报帧deadline\"API断言，改为帧节奏线(Swappy/ARR/FrameTimeline)与性能反馈线(ADPF target/actual duration)两条独立线拆开描述"
     },
     {
       "section": "7.9",
@@ -14924,7 +14926,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T19:29:15+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T08:43:58+08:00",
+      "completed_reason": "P1 oneway spam detection/async buffer语义已修正：BR_ONEWAY_SPAM_SUSPECT改为诊断信号非限流机制；async buffer耗尽改为事务失败(BR_FAILED_REPLY)非短暂阻塞；恢复freezer独立边界"
     },
     {
       "section": "14.13",
