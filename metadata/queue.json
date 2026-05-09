@@ -672,8 +672,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-11-flutter-rendering-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-11-flutter-rendering-external-review.md",
+      "completed_at": "2026-05-09T16:49:46.018832+08:00",
+      "completed_reason": "task2b fixed: added 16KB Page Size合规与Flutter原生插件适配、Vulkan 1.4 VK_EXT_host_image_copy零拷贝纹理上传、ADPF HintSession系统级调频协同"
     },
     {
       "section": "2.14",
@@ -930,8 +932,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-09T16:49:46.018832+08:00",
+      "completed_reason": "task2b confirmed: ADPF闭环反馈、分片GPU并行提交、DeliQueue无锁同步 均已在正文中覆盖，无需额外修改"
     },
     {
       "section": "2.6",
