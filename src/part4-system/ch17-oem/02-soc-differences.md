@@ -30,12 +30,13 @@ task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
-pipeline_stage: task2b_pending
-task9_state: reviewed
-task9_result: needs-rework
+pipeline_stage: task6_pending
+task9_state: pending
+task9_result: ~
 task9_reviewed_date: "2026-05-07"
-task2b_state: pending
-last_task6_at: "2026-05-07T05:05:00+08:00"
+task2b_state: fixed
+task6_state: revisiting
+last_task6_at: "2026-05-09T20:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-05-review.md"
 task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。 | 2026-05-06 task6 review 23:21：清理结构性元叙述和编辑标记，修正频率轨道措辞，补 SQL 代码块解释，统一缓存/唤醒路径术语；无新增 Task2B 回炉项，待 Task9 复审。 | 2026-05-07 task6 review 05:05：复查 L1/L2 与锚点覆盖，正文无需改写；无新增回炉项，转 Task9 复审。"
 task9_reviewed_by: openclaw-task9
@@ -124,9 +125,9 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 同样是 ARMv9 指令集，不同核心的微架构设计会导致 IPC（Instructions Per Cycle）有显著差异。这直接影响我们在 Perfetto 中分析 CPU 利用率时的判断。
 
-高通的 Oryon 核心是自研微架构，开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历。公开产品页显示 Oryon 采用大容量 L1 缓存和共享 L2 缓存设计，但缓存拓扑的具体参数（容量、延迟周期）尚未有官方白皮书或芯片分析报告确认。当前能确认的方向性特征是：大容量 L1 带来更好的命中率，而共享 L2 的访问延迟可能高于 ARM 公版核心的私有 L2 设计。在 Perfetto 中，Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
+高通的 Oryon 核心是自研微架构，开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历。二手微架构分析文章称 Oryon 采用大容量 L1 缓存和共享 L2 缓存设计，但缓存拓扑的具体参数（容量、延迟周期）尚未有 Qualcomm 官方白皮书、Hot Chips/ISSCC 演讲、芯片拆解报告或可信 benchmark 数据确认，容易把 Snapdragon X Elite 与 8 Elite 的 cache 拓扑混用。当前能确认的方向性特征是：大容量 L1 带来更好的命中率，而共享 L2 的访问延迟可能高于 ARM 公版核心的私有 L2 设计——但这部分也来自二手分析，待一手资料确认。在 Perfetto 中，Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
 
-[待验证: Oryon L1 容量、L2 拓扑和访问延迟周期——公开产品页未披露具体数字，待 Qualcomm 白皮书或 AnandTech/Chipworks 芯片分析报告]
+[待验证: Oryon L1 容量、L2 拓扑和访问延迟周期——Qualcomm 公开产品页未披露具体数字，待官方白皮书、Hot Chips/ISSCC 或芯片拆解报告确认；现有 research-gaps.md 中 Oryon 微架构资料边界保持不变]
 
 ARM 的 Cortex-X925 是 ARM 最高性能的公版核心，10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心，IPC 虽然不如 X 系列，但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用，其基础性能仍远超传统的 A5xx 系列小核心。
 

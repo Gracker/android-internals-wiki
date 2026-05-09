@@ -2661,7 +2661,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T07:28:39+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T20:14:39.146265+08:00",
+      "completed_reason": "task2b fixed: Oryon L1/L2 cache description changed from \"公开产品页显示\" to second-hand analysis attribution with explicit uncertainty qualification and research-gaps boundary preserved"
     },
     {
       "section": "18.5",
@@ -2724,7 +2726,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-08T00:28:41+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T20:14:39.146265+08:00",
+      "completed_reason": "task2b fixed: added Flutter FrameTiming timestamp calibration section explaining raw timestamp epoch mismatch with native elapsedRealtime, MethodChannel calibration event approach, and batch callback error range annotation"
     },
     {
       "section": "2.6 SurfaceFlinger",
