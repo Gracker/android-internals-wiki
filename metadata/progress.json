@@ -1974,14 +1974,25 @@
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "last_task6_review_log": "logs/review/2026-05-09-04-review.md",
-    "pipeline_stage": "task9_pending",
+    "pipeline_stage": "task2b_pending",
     "status": "ready-for-review",
-    "task9_state": "pending",
-    "task2b_state": "fixed",
+    "task9_state": "reviewed",
+    "task2b_state": "pending",
     "task2b_result": "fixed",
     "last_task6_polish_count": 2,
     "last_task6_rework_count": 0,
-    "section_title": "第 3 章：输入系统"
+    "section_title": "第 3 章：输入系统",
+    "task9_result": "needs-rework",
+    "last_task9_at": "2026-05-10T03:38:36.841696",
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_reviewed_date": "2026-05-10",
+    "review_issues_summary": {
+      "p0_count": 1,
+      "p1_count": 5,
+      "p2_count": 0,
+      "p3_count": 0,
+      "total_technical_score": 2.5
+    }
   },
   "3.5": {
     "last_task6_at": "2026-05-09T06:05:00+08:00",
@@ -2103,6 +2114,39 @@
             "知识盲区: Android 17 DeliQueue 输入加速"
           ],
           "result": "fixed"
+        }
+      ]
+    },
+    {
+      "date": "2026-05-10T07:18:23.846250",
+      "task": "task2b-rework",
+      "sections_processed": [
+        "1.4",
+        "2.6",
+        "3.1",
+        "3.3"
+      ],
+      "summary": "Material injection (3 DeepResearch items) + draft review fix (1 Binder section)",
+      "details": [
+        {
+          "section": "3.1",
+          "action": "material_injection_skip",
+          "reason": "InputDispatcher backpressure already covered"
+        },
+        {
+          "section": "3.3",
+          "action": "material_injection_skip",
+          "reason": "Not relevant to gesture navigation topic"
+        },
+        {
+          "section": "2.6",
+          "action": "material_injection",
+          "reason": "FrontEnd architecture reference added"
+        },
+        {
+          "section": "1.4",
+          "action": "rework",
+          "reason": "Binder-FrameTimeline correlation SQL added"
         }
       ]
     }

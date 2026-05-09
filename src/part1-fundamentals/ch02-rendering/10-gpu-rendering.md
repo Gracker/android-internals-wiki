@@ -797,3 +797,11 @@ status_t BufferQueue Producer::waitForFreeSlotThenRelock(
 ```
 
 这种演进带来了更好的安全性和稳定性，但对应用层透明，理解分配底层有助于排查内存泄漏问题。
+
+
+### RenderEffect 底层 GPU 渲染管线与 offscreen buffer 机制
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md
+- 类型：DeepResearch 调研结果
+- 摘要：RenderEffect 映射到 Skia 的 SkImageFilter 链，触发 offscreen GPU texture 分配（RenderLayer）。分析了 Java API → JNI → Skia GPU pipeline 的完整路径，blur sigma 值与 shader 计算量关系，AGSL RuntimeShader 通过 makeImageSnapshot() 触发 offscreen buffer 分配的机制。性能代价来自显存申请、filter chain GPU pass 数、RenderThread-GPU 同步三方面。
+- 注入时间：2026-05-10
+- 价值：RenderEffect 到 Skia 底层的完整链路分析，包含 offscreen buffer 触发条件和性能代价量化，对 GPU 渲染深入章节有直接补充价值

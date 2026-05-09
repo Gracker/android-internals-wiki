@@ -1,16 +1,17 @@
 ---
 title: "VSync 机制"
 chapter: "2.3"
-status: ready-for-review
-reviewed_date: "2026-05-09"
+status: finalized
+pipeline_stage: ready-to-publish
+reviewed_date: "2026-05-10"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
 applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
-last_verified: "2026-05-09"
+last_verified: "2026-05-10"
 last_verified_against: "AOSP android-16.0.0_r1 Scheduler/VSync Reactor.cpp + VSync Predictor.cpp + VSync DispatchTimerQueue"
-confidence: medium
+confidence: high
 sources:
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/Scheduler/VSync Predictor.cpp"

@@ -3545,6 +3545,81 @@
       "section": "2.13",
       "processed_at": "2026-05-09T06:13:15.793717",
       "type": "deepresearch-inject"
+    },
+    {
+      "title": "源码调研：SurfaceFlinger FrontEnd 架构与 RequestedLayerState",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md",
+      "score": 19,
+      "chapter": "02",
+      "scored_at": "2026-05-10T05:46:03.088173"
+    },
+    {
+      "title": "源码调研：Android 15/16 输入系统架构演进与 InputFlinger 现状",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-inputflinger-rust-architecture-android15-16.md",
+      "score": 17,
+      "chapter": "03",
+      "scored_at": "2026-05-10T05:46:03.088181"
+    },
+    {
+      "title": "源码调研：RenderEffect 底层 GPU 渲染管线与 offscreen buffer 机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md",
+      "score": 18,
+      "chapter": "02",
+      "scored_at": "2026-05-10T05:46:03.088184"
+    },
+    {
+      "title": "源码调研：ART FinalizerDaemon 与 ReferenceQueue 的并发优化边界验证",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md",
+      "score": 20,
+      "chapter": "04",
+      "scored_at": "2026-05-10T05:46:03.088186"
+    }
+  ],
+  "entries": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-input-dispatcher-backpressure-mechanism.md",
+      "title": "输入事件反压机制与 InputDispatcher 降级策略",
+      "summary": "InputDispatcher 反压机制由三个正交子系统组成：stale event 丢弃（10s 超时，不通知 App）、ANR 超时（5s，AnrTracker 独立检测）、输入队列积压监测（InputPublisher 返回码）。三者在 Perfetto 中表现各异，Android 12-16 有明确演进路径。",
+      "section_mapping": "ch03",
+      "processed_at": "2026-05-10T06:15:24.900159+08:00",
+      "type": "DeepResearch",
+      "status": "queued"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputflinger-rust-arr-input-system.md",
+      "title": "InputFlinger Rust 组件与 ARR 协同架构",
+      "summary": "Android 15/16 在 InputFlinger 中引入 Rust 组件（cxxbridge FFI），实现 InputFilter 框架和三个无障碍键盘过滤器。输入系统与 ARR 通过 RefreshRatePolicy 协同，触摸事件触发刷新率切换。",
+      "section_mapping": "ch03",
+      "processed_at": "2026-05-10T06:15:24.900159+08:00",
+      "type": "DeepResearch",
+      "status": "queued"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md",
+      "title": "ART FinalizerDaemon 与 ReferenceQueue 并发优化边界验证",
+      "summary": "验证了 ART FinalizerDaemon 与 ReferenceQueue 仍使用传统 synchronized(lock) 机制，未发现 ConcurrentMessageQueue 集成。FinalizerDaemon 采用 poll/remove 双路径设计，enqueuePending() 批处理仍以 synchronized(queue.lock) 为边界。",
+      "section_mapping": "ch04",
+      "processed_at": "2026-05-10T06:15:24.900159+08:00",
+      "type": "DeepResearch",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md",
+      "title": "SurfaceFlinger FrontEnd 架构与 RequestedLayerState",
+      "summary": "Android 15 引入 FrontEnd 架构，将客户端请求状态（RequestedLayerState）与系统合成状态（LayerSnapshot）完全分离，通过 LayerLifecycleManager 和 LayerHierarchyBuilder 解耦，大幅降低 SF 主线程锁竞争。",
+      "section_mapping": "ch02",
+      "processed_at": "2026-05-10T06:15:24.900159+08:00",
+      "type": "DeepResearch",
+      "status": "injected"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md",
+      "title": "RenderEffect 底层 GPU 渲染管线与 offscreen buffer 机制",
+      "summary": "RenderEffect 映射到 Skia SkImageFilter 链，触发 offscreen GPU texture 分配。分析了 Java→JNI→Skia GPU pipeline 完整路径，AGSL RuntimeShader 触发 offscreen buffer 机制，性能代价来自显存申请、filter chain GPU pass 数、同步三方面。",
+      "section_mapping": "ch02",
+      "processed_at": "2026-05-10T06:15:24.900159+08:00",
+      "type": "DeepResearch",
+      "status": "injected"
     }
   ]
 }

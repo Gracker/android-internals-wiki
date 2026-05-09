@@ -1,7 +1,8 @@
 ---
 title: "Input 事件分发全流程"
 chapter: "3.1"
-status: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-27"
 last_verified_against: "AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp / InputProcessor.cpp / inputflinger Android.bp"

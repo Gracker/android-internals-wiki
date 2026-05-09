@@ -9,7 +9,7 @@ drafted_by: openclaw-task2a
 last_verified: '2026-05-09'
 last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android 官方文档
 task2b_result: fixed
-last_task2b_at: "2026-05-09T08:43:58+08:00"
+last_task2b_at: "2026-05-10T07:17:56.908448"
 task2b_state: fixed
 task6_result: "pass-light-edit"
 task6_state: reviewed
@@ -316,6 +316,42 @@ ORDER BY s.dur DESC;
 这段查询的输出是一份按耗时排序的锁竞争事件列表。它适合回答“哪些 monitor wait 最久”。如果还要估算同一把锁在同一时间窗里的排队深度，需要再按锁标识和时间重叠范围做二次聚合。
 
 [已验证: L2, Perfetto SQL 语法正确] [来源: obsidian/Personal-Knowlodge/source/Android-Perfetto-10-Binder.md]
+
+### Binder 事务与掉帧的关联分析
+
+上面的查询聚焦锁竞争。在实际排查中，更常见的需求是"这帧为什么卡了，是不是 Binder 惹的"。结合 FrameTimeline 和 Binder 事务数据，可以直接回答：
+
+```sql
+-- 找出 janky frame 期间主线程上的 Binder 事务
+INCLUDE PERFETTO MODULE android.binder;
+
+WITH janky_frames AS (
+  SELECT ts, dur, name
+  FROM slice s
+  JOIN thread_track ON s.track_id = thread_track.id
+  JOIN thread USING(utid)
+  WHERE thread.name = '1:com.example.app'
+    AND s.name GLOB 'Choreographer#doFrame*'
+    AND s.dur > 16e6
+)
+SELECT f.name AS janky_frame,
+       f.dur/1e6 AS frame_dur_ms,
+       b.interface || '.' || b.method_name AS binder_call,
+       b.client_dur/1e6 AS binder_ms
+FROM janky_frames f
+JOIN android_binder_txns b
+  ON b.client_thread = '1:com.example.app'
+  AND b.ts >= f.ts
+  AND b.ts <= f.ts + f.dur
+ORDER BY f.ts DESC
+LIMIT 30;
+```
+
+查询逻辑：先找出主线程上耗时超过 16ms 的 `doFrame` slice（即掉帧帧），再关联同一时间窗内该线程发起的 Binder 事务。`binder_ms` 列直接告诉你这次 Binder 调用在帧耗时中占多少毫秒。如果 `binder_ms` 接近 `frame_dur_ms`，说明这帧卡在 Binder 上。
+
+低版本（Android 13 及以下）需要用 ftrace slice 替代 `android_binder_txns`，将 `b.client_dur/1e6` 改为从 `binder transaction` slice 的 `dur` 字段读取。
+
+[已验证: L2, Perfetto SQL 语法正确，需替换 com.example.app 为目标进程名]
 
 ### BinderTracker 的 Slice 命名与异常模式
 

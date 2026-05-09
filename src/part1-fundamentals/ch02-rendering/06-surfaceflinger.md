@@ -2,16 +2,17 @@
 title: "SurfaceFlinger 与合成"
 chapter: "2.6"
 section: "2.6"
-status: ready-for-review
+status: finalized
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
-last_verified: "2026-04-27"
+last_verified: "2026-05-10"
 drafted_date: 2026-03-30
-reviewed_date: "2026-05-09"
+reviewed_date: "2026-05-10"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 rework_date: 2026-04-02
 last_verified_against: "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1 (SurfaceFlinger / BLAST BufferQueue / HWC 2-HWC 3) + source.android.com HWC docs"
-confidence: medium
+confidence: high
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
@@ -29,7 +30,6 @@ sources:
     path: "https://www.androidperformance.com/"
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
-pipeline_stage: task6_pending
 task6_state: reviewed
 task9_state: pending
 task9_result: pass-tech-review
@@ -424,4 +424,10 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 - 摘要：详述 BufferQueue 单一 mutex + 多 condition variable 锁架构，分析 dequeueBuffer 等待、ActiveBuffer O(n) 扫描、Allocation 期间锁释放三个关键竞争路径，以及 Android 14 BUFFER_RELEASE_CHANNEL 精确唤醒优化。
 - 注入时间：2026-05-10
 - 价值：补充 BufferQueue 锁竞争机制源码级分析，对理解 SurfaceFlinger 合成链路中 Producer-Consumer 锁瓶颈极具价值
+### SurfaceFlinger FrontEnd 架构与 RequestedLayerState（源码级调研）
+- 来源：DeepResearch 调研结果（2026-05-09）
+- 类型：AIW 每日源码调研
+- 摘要：Android 15 引入 FrontEnd 模块，将客户端请求状态（RequestedLayerState）与系统合成状态（LayerSnapshot）完全分离。通过 LayerLifecycleManager 生命周期管理和 LayerHierarchyBuilder 层级构建解耦，主合成线程只在真正需要合成计算时持有 mStateLock，大幅降低锁竞争。包含 Changes bitmask 枚举、TransactionHandler 事务批处理、以及 FrontEnd 目录结构。
+- 注入时间：2026-05-10
+- 价值：补充 Android 15 SurfaceFlinger FrontEnd 架构的源码级分析，对理解 SurfaceFlinger 锁优化和 Layer 状态管理机制极具价值
 

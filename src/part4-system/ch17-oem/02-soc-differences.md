@@ -26,7 +26,6 @@ sources:
     path: "多来源综合（web search 验证）"
 tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
-task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
@@ -35,7 +34,7 @@ task9_state: pending
 task9_result: ~
 task9_reviewed_date: "2026-05-07"
 task2b_state: fixed
-task6_state: revisiting
+task6_state: reviewing
 last_task6_at: "2026-05-09T20:10:00+08:00"
 last_task6_review_log: "logs/review/2026-05-07-05-review.md"
 task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。 | 2026-05-06 task6 review 23:21：清理结构性元叙述和编辑标记，修正频率轨道措辞，补 SQL 代码块解释，统一缓存/唤醒路径术语；无新增 Task2B 回炉项，待 Task9 复审。 | 2026-05-07 task6 review 05:05：复查 L1/L2 与锚点覆盖，正文无需改写；无新增回炉项，转 Task9 复审。"
