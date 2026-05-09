@@ -10,7 +10,7 @@ drafted_date: "2026-03-30"
 polish_count: 1
 polish_date: "2026-04-06"
 polish_by: "task2b-polish"
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 reviewed_date: "2026-05-05"
 reviewed_by: openclaw-task6
@@ -36,12 +36,12 @@ sources:
     path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
 tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
 related_chapters: ["4.1", "4.3", "4.4", "2.6"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_reviewed_date: "2026-05-05"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 review_notes: "2026-05-05 task6 re-confirm: fixed L1 wording; task9_result=needs-rework, pipeline kept task2b_pending."
 ---
@@ -346,6 +346,16 @@ Silk 的解决方案是在对象级别跟踪热度信息，并将其传递给内
 这个工作展示了 Android 内存优化的一个前沿方向：让虚拟机层和内核层协同工作，而不是各自为政。
 
 [来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)]
+
+#### Android 17 落地：madvise(MADV_COLD) 信号通路
+
+Silk 论文提出的“让 GC 告诉内核哪些页面是冷的”思路，在 Android 17 有了具体实现。ART 虚拟机在 GC 标记阶段识别出老年代中未被引用的对象后，对它们所在的内存页调用 `madvise(MADV_COLD)`，主动向内核标记这些页面为冷页。
+
+内核收到 `MADV_COLD` 提示后，在 MGLRU 的代际模型中将这些页面降级到更老的 generation，使它们优先被回收。内核不再需要等到扫描 LRU 链表才发现这些页面没人用，GC 直接给了信号，回收命中率提升。实测数据显示系统掉帧减少约 10%。
+
+这个机制直接解决了 MGLRU 在 Android 上的核心问题——GC 遍历对象时访问的页面被内核误判为“热的”（前面提到的 pseudo-hot 问题）。GC 访问完就调 `madvise(MADV_COLD)` 打个招呼，内核下次回收就不用猜了。
+
+[来源: external-review 2026-04-28-ch04-02-linux-memory, madvise(MADV_COLD) 内核-GC 协同]
 
 ## 内存压缩（Memory Compaction）与碎片化
 

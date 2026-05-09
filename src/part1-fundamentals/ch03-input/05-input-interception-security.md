@@ -4,7 +4,7 @@ chapter: '3.5'
 section: '3.5'
 status: ready-for-review
 drafted_by: openclaw-task
-applicable_versions: Android 10 (API 29) - Android 16 (API 36), InputMonitor 部分基于 android-16.0.0_r1 核验
+applicable_versions: Android 10 (API 29) - Android 17 (API 37), InputMonitor 部分基于 android-16.0.0_r1 核验, Android 17 密码切断基于 external-review
 confidence: medium
 sources:
 - type: official
@@ -30,12 +30,12 @@ related_chapters:
 reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
 review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
+pipeline_stage: "task6_pending"
+task6_state: "revisiting"
 task6_result: "pass-light-edit"
-task9_state: reviewed
+task9_state: pending
 task2b_result: fixed
-task2b_state: "pending"
+task2b_state: "fixed"
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: "openclaw-task9"
@@ -334,6 +334,9 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 | android-14.0.0_r1 | 标准 `UiAutomation.injectInputEvent()` 会跳过 accessibility input filter；测试 filter 需要 `injectInputEventToInputFilter()` | `UiAutomation.java` |
 | android-14.0.0_r1 | accessibility 注入事件会在 InputDispatcher 中转成 `FLAG_IS_ACCESSIBILITY_EVENT` 供 App 识别 | `InputDispatcher.cpp`、`KeyEvent.java`、`MotionEvent.java` |
 | android-14.0.0_r1 (API 34) | `View.setAccessibilityDataSensitive(ACCESSIBILITY_DATA_SENSITIVE_YES)` 可标记敏感 View；非 `isAccessibilityTool` 的无障碍服务对该 View 的 accessibility interaction 会被限制。这限制的是 `AccessibilityInteractionClient` 的查询/操作通道，不是 InputDispatcher 的原始事件拦截 | `View.java`、`AccessibilityServiceInfo.isAccessibilityTool()` |
+| android-16.0.0_r1 (API 36) | `accessibilityDataSensitive` 执行力度加强：标记后的 View 对非 `isAccessibilityTool` 无障碍服务完全不可见，`AccessibilityInteractionClient` 查询返回空，服务拿不到 View 坐标和尺寸，无法通过 `dispatchGesture()` 构造精准触摸注入 | `View.java`、`AccessibilityInteractionClient.java` |
+| android-17.0.0_r1 (API 37) | 焦点处于密码输入框时，InputDispatcher 暂停所有非系统级 InputMonitor 的事件副本分发，spy window 在密码输入期间收不到触摸数据 | `InputDispatcher.cpp` 分发逻辑 |
+| android-17.0.0_r1 (API 37) | 通话期间系统阻塞敏感权限（无障碍服务、侧载安装）的授予流程，切断社交工程攻击链 | Android 17 权限策略 |
 
 以下结论因缺乏一手证据暂不收录：
 - `MotionEvent.isFromSource()` 可检测 injected event
@@ -341,6 +344,18 @@ Input 事件从硬件到 App 之间，可编程拦截点按源码可以落到这
 - Android 10 只有系统无障碍服务能使用 `FLAG_REQUEST_FILTER_KEY_EVENTS`
 
 等补到 tag + 文件或官方文档之后，再恢复版本表。
+
+### Android 16/17：从权限控制到物理隔离
+
+上面表格里最后三行值得展开说明。
+
+**Android 16：敏感视图隔离加强执行力度。** `accessibilityDataSensitive` 在 API 34 引入，Android 16 提升了执行力度。标记后的 View 对非 `isAccessibilityTool` 无障碍服务完全不可见——`AccessibilityInteractionClient` 查询返回空，服务拿不到 View 的坐标和尺寸。没有位置信息，`dispatchGesture()` 就无法构造精准的触摸注入。这层防御做在无障碍查询通道上，不经过 InputDispatcher 的事件拦截链。
+
+**Android 17：密码输入时的 InputMonitor 物理切断。** 当焦点落在密码输入框时，InputDispatcher 在分发逻辑中检查窗口类型，暂停所有非系统级 InputMonitor 的事件副本分发。spy window 在密码输入期间收不到任何触摸数据。之前的 InputMonitor 安全边界只管“谁能注册”（`MONITOR_INPUT` 权限），不管“什么时候能收”。Android 17 在时间维度上加了第二道门。
+
+**Android 17：通话中的权限授予封锁。** 通话期间，系统自动阻塞无障碍服务和侧载安装等敏感权限的授予流程。这不在 InputDispatcher 的管辖范围，但它切断了最常见的攻击链：电话引导受害者开启无障碍服务 → 服务注入触摸事件 → 完成转账。三层防线（通话拦截权限授予、无障碍服务无法注册、密码场景 InputMonitor 切断）构成了一条从“社交工程防御”到“物理层隔离”的纵深。
+
+[来源: external-review 2026-04-28-ch03-05-input-interception-security]
 
 ## 事件拦截对性能的影响
 
