@@ -642,8 +642,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-09T19:40:00+08:00",
+      "completed_reason": "task2b fixed: ASTC vs ETC2 bandwidth comparison table, gpu_busy Android 16 standardization with diagnostic method"
     },
     {
       "section": "2.11",
@@ -1065,8 +1067,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-09T19:40:00+08:00",
+      "completed_reason": "task2b fixed: InputThread ANDROID_PRIORITY_URGENT_DISPLAY verified, ADPF input feedback loop, HWC 4.0 AIDL V4 actualPresentTime photon timeline"
     },
     {
       "section": "3.5",

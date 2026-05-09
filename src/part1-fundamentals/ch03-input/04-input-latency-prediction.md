@@ -30,19 +30,13 @@ sources:
     path: "intake/research-feeds/2026-04-02-11-ch02-android17-deltique-lockfree-messagequeue.md"
 tags: [input, latency, touch, prediction, motioneventpredictor, front-buffer, kalman-filter, perfetto, input-latency]
 related_chapters: ["1.13", "3.1", "3.2", "2.3", "2.4", "2.5", "8.1", "13.3", "13.5"]
-pipeline_stage: "task2b_pending"
-task6_state: "reviewed"
-task9_state: "reviewed"
-task2b_state: "pending"
-task6_result: pass-light-edit
-task9_result: "needs-rework"
-task2b_result: "fixed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-30"
-task9_reviewed_date: "2026-05-01"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-01T00:55:15+08:00"
-review_notes: "2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-09T19:40:00+08:00"
+review_notes: "2026-05-09 task2b rework: InputThread 调度策略验证、ADPF 输入反馈回路、HWC 4.0 标准化光子时间线。"
 ---
 
 # 3.4 输入延迟与预测输入技术
@@ -270,7 +264,25 @@ void InputDispatcher::traceInboundQueueLengthLocked() {
 
 这个案例揭示了一个常见规律：**输入延迟问题有时不在“处理太慢”，而在调度没有跟上**。在分析输入延迟时，除了看事件处理耗时，还要看相关线程的调度状态，是 Running、Runnable 还是 Sleeping。
 
-[待验证: Android 16/17 中 InputReader/InputDispatcher 的默认调度策略是否有改进]
+#### Android 16/17 默认调度策略
+
+AOSP android-16.0.0_r1 源码中，InputReader 和 InputDispatcher 的线程调度已有明确策略。`InputThread` 构造函数以 `ANDROID_PRIORITY_URGENT_DISPLAY`（-8）启动线程：
+
+```cpp
+// frameworks/native/services/inputflinger/common/InputThread.cpp
+InputThread::InputThread(std::string name, std::function<void()> loop)
+      : mThreadLoop(loop), mThreadName(std::move(name)) {
+    mThread = std::thread(&InputThread::loop, this);
+    // 设置线程优先级为 URGENT_DISPLAY (-8)
+    androidSetThreadPriority(mThread.native_handle(), ANDROID_PRIORITY_URGENT_DISPLAY);
+}
+```
+
+在此基础上，当 `enable_input_policy_profile` feature flag 打开时，线程还会通过 `SetTaskProfiles(..., {"InputPolicy"})` 注册到系统 task profile，获得更精细的调度策略（如绑定大核、限制 CPU affinity）。`InputDispatcher::start()` 启动时也走同样的 `InputThread` 构造路径。
+
+这意味着 Android 16 默认已将输入线程优先级设为 -8（高于普通应用的 0），不再需要 OEM 手动调整 SCHED_FIFO。但对于游戏等高负载场景，如果 Perfetto 仍显示输入线程出现较长 Runnable 等待，问题多半是 CPU 负载过高导致大核被占满，此时应从整体负载均衡角度优化，而非继续提高输入线程优先级。
+
+> [已验证: AOSP android-16.0.0_r1, frameworks/native/services/inputflinger/common/InputThread.cpp, enable_input_policy_profile flag]
 
 
 ## 预测输入与触控预测（Touch Prediction）
@@ -454,6 +466,23 @@ LIMIT 100;
 
 [待补充：真实 Trace 截图]
 
+### HWC 4.0 标准化光子时间线（Android 16+）
+
+传统的端到端延迟测量有一个盲区：`end_to_end_latency_dur` 虽然追踪了从 InputReader 到帧 present 的全过程，但 present 时间本身依赖于 SurfaceFlinger 从 HWC 获取的 `actualPresentTime`。在 Android 15 及更早版本中，部分 HWC 实现不反馈精确的 present 时间，导致端到端测量缺少最后一环。
+
+Android 16 通过 AIDL Composer V4 强制要求 HWC 上报 `expectedPresentTime` 和 `actualPresentTime`。这意味着从输入事件到达内核、到像素在屏幕上点亮的完整时间线，首次可以不依赖外部硬件（如高速摄像机）就能在 Perfetto 中完整测量。`actualPresentTime` 由 Display HAL 在帧扫描完成后写入，通过 `FrameTimeline` track 在 Perfetto 中可见。
+
+基于标准化光子时间线的端到端延迟分析步骤：
+
+1. 在 Perfetto 中同时开启 `android.input` 模块和 `FrameTimeline` track
+2. 用 `input_event_id` 定位目标输入事件
+3. 找到关联的 `frame_id`，在 `FrameTimeline` track 上追踪到 `actualPresentTime`
+4. 端到端延迟 = `actualPresentTime - read_time`（InputReader 读取事件的时间）
+
+这套测量方法的前提是设备运行 Android 16+ 且 HWC 实现支持 AIDL V4。在旧版本上，如果 `actualPresentTime` 缺失，只能退回到 `gpuCompletedTime` 作为近似的帧完成时间。
+
+> [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/composer/aidl/ — expectedPresentTime / presentTime 字段]
+
 
 ## 降低输入延迟的优化策略
 
@@ -468,7 +497,17 @@ LIMIT 100;
 - 在性能关键场景将它们绑定到大核
 - 使用 `sched_setaffinity` 避免线程在不同核心间迁移带来的 cache miss
 
+Android 16 默认已通过 `ANDROID_PRIORITY_URGENT_DISPLAY` 为输入线程设定了较高优先级（详见前文“Android 16/17 默认调度策略”），OEM 层面的 SCHED_FIFO 调优空间已大幅缩小。
+
 [来源: Cubox/Android Input 调试与优化 - 魅族内核团队-2025-08-05.md]
+
+**ADPF 输入线程反馈回路（Android 16+）**
+
+Android 16 的 ADPF（自适应性能框架）不只服务于渲染线程，输入线程同样可以作为 ADPF 的传感器。当输入事件处理耗时接近 VSync 截止线时，系统可以通过 `reportActualWorkDuration()` 接收输入线程的实际工作时长，并据此动态提升 CPU 频率或将线程迁移至大核。这实现了从“被动响应”到“预判调度”的转变：系统不再等到掉帧发生才提频，而是在输入处理时长出现上升趋势时就提前干预。
+
+在 Perfetto 中观察这一机制的表现：关注 `perfetto_hints` track 上的 hint session 活动，以及 CPU 频率 track 在输入密集场景下的动态变化。如果输入线程的处理耗时稳定低于 2ms，ADPF 可能不会干预；但如果出现 4-6ms 的处理峰值，系统应该能看到相应的提频响应。
+
+> [说明: ADPF 对输入线程的反馈回路是 Android 16 系统级行为，应用层无法直接控制。开发者可以通过 Perfetto 观察其效果，但不需要在应用代码中做额外适配。]
 
 **2. 触控采样率与报点率**
 

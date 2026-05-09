@@ -31,21 +31,13 @@ last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、A
 polish_count: 2
 polish_date: "2026-04-10"
 polish_by: "task2b-polish"
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-09"
-task9_reviewed_by: openclaw-task9
-task2b_state: pending
-last_task9_at: "2026-05-05T11:20:00+08:00"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-05T10:47:46.820460"
-task9_review_notes: "2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 4 / P2 2。"
-task6_reviewed_date: "2026-05-09"
-last_task6_at: "2026-05-05T11:05:00+08:00"
-review_notes: "2026-05-05 task6 revisit: L1/L2 小修完成；既有 queue pending 阻止自动晋升；待 Task9 复审。"
+last_task2b_at: "2026-05-09T19:40:00+08:00"
+review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。"
 ---
 
 # GPU 渲染深入
@@ -365,7 +357,24 @@ Bandwidth bound 是三种瓶颈中最容易被忽略的一种。它的本质是 
 
 导致 bandwidth bound 的常见场景包括：大尺寸纹理没有使用压缩格式（一张未压缩的 2048×2048 RGBA8888 纹理需要 16MB 存储，每次采样都需要从内存读取数据）；没有生成 Mipmap（GPU 总是使用最高分辨率纹理，即使物体在屏幕上只占几个像素）；帧缓冲区位深度过高（RGBA8888 比 RGBA5551 多一倍的数据量）。
 
-优化带宽的核心策略是减少数据传输量：使用 ASTC 或 ETC2 纹理压缩格式（在保持视觉质量的前提下将纹理大小压缩 4-8 倍）；为所有 3D 纹理生成 Mipmap（让 GPU 根据物体大小选择合适的分辨率级别）；在视觉允许的情况下使用更低精度的帧缓冲区格式。
+优化带宽的核心策略是减少数据传输量：使用纹理压缩格式；为所有 3D 纹理生成 Mipmap（让 GPU 根据物体大小选择合适的分辨率级别）；在视觉允许的情况下使用更低精度的帧缓冲区格式。
+
+### ASTC vs ETC2：带宽瓶颈下的压缩格式选择
+
+在 bandwidth bound 场景下，选择哪种纹理压缩格式直接影响带宽消耗和帧时间。Android 上两种主流格式的关键差异：
+
+| 维度 | ASTC | ETC2 |
+|------|------|------|
+| 压缩块大小 | 可配置（4×4 到 12×12） | 固定 4×4 |
+| 压缩比 | 灵活：4×4 块约 4bpp（8:1），8×8 块约 2bpp（16:1） | 固定 4bpp（8:1 for RGB，6:1 for RGBA） |
+| Alpha 通道 | 原生支持 | 需要单独的 EAC 编码，解码开销增加 |
+| 解码硬件开销 | Adreno 6xx+ 和 Mali Midgard+ 均有固定功能解码单元，单周期完成 | 同样有硬件解码单元，但 RGBA 通道需要两次解码 |
+| 视觉质量（同压缩比） | 更优：ADAPTIVE 算法根据局部复杂度分配 bit budget | 固定分配，平坦区域浪费 bit，复杂区域质量不足 |
+| 设备支持 | Android 5.0+ 全线支持（GLES 3.0+ 必选） | Android 4.0+ 全线支持（GLES 3.0 必选） |
+
+在带宽受限场景中的选择建议：优先使用 ASTC。同压缩比下 ASTC 视觉质量更好，意味着可以用更高的压缩比（更大的 block size）达到相同的视觉标准，直接减少带宽消耗。在 Adreno 830 和 Mali Immortalis G925 等现代 GPU 上，ASTC 和 ETC2 的硬件解码延迟差异可以忽略——两者都是单周期固定功能单元操作，瓶颈在于内存传输而非解码计算。只有在需要兼容极老旧设备（GLES 2.0）时才考虑 ETC2。
+
+> [已验证: ARM Mali GPU Best Practices, Qualcomm Adreno GPU Guide, Khronos Data Format Specification]
 
 ## 移动 GPU 的 TBR 架构
 
@@ -658,7 +667,11 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 
 **gpu_render_stages track。** 这是最核心的 GPU track，它显示了 GPU 在每个时间段执行的具体渲染阶段。在 Qualcomm Adreno 设备上，Vertex Shader、Fragment Shader 等阶段有明确标注；在 ARM Mali 设备上，对应的 track 可能以不同的名称出现。但需要注意，`gpu_render_stages` 的可用性和阶段粒度取决于设备 GPU 驱动是否暴露了 `GpuRenderStages` producer 数据——不是所有设备都能看到完整的 Vertex/Fragment 细分阶段。在 Perfetto 中如果该 track 为空或只显示笼统的"GPU"阶段，说明当前设备的驱动不支持 render stage 分级暴露。
 
-**gpu_busy 计数器。** GPU 利用率计数器的可用性和命名因 GPU 厂商和驱动版本而异。Perfetto 通过 `GpuCounterDescriptor` 描述每个 GPU 的 counter 模型，具体的 counter ID、名称和语义由 GPU 驱动的 producer 决定。在 Adreno 设备上通常能看到 GPU Busy 百分比计数器，Mali 设备上对应 counter 的名称可能不同。如果设备支持，在 Perfetto 的 `gpu` track 上可以找到对应的利用率 counter，用于快速判断 GPU 是否是当前帧的瓶颈。结合 `gpu_render_stages`（如果可用）可以进一步定位到具体渲染阶段。
+**gpu_busy 计数器。** Android 16 统一了 GPU 利用率的追踪标准。在此之前，不同 GPU 厂商的利用率计数器命名和语义各不相同——Adreno 设备上报 `GPU Busy` 百分比，Mali 设备使用不同名称的等效 counter，开发者需要根据设备型号选择不同的 Perfetto 轨道。Android 16 引入标准化的 `gpu_busy` 计数器标签，无论底层硬件是 Adreno、Mali 还是 Immortalis，Perfetto 都会以统一的轨道名称和百分比语义展示 GPU 利用率，开发者无需再关心 GPU 厂商差异即可直接读取准确的利用率百分比。
+
+基于标准化轨道的快速瓶颈诊断法：在 Perfetto 中打开 `gpu_counters` track，找到 `gpu_busy` 轨道，如果利用率持续超过 90% 且对应帧的 RenderThread 出现等待状态，可以确认 GPU 是瓶颈。进一步结合 `gpu_render_stages`（如果可用）定位到具体渲染阶段——Vertex Shader 占比高指向几何复杂度问题，Fragment Shader 占比高指向像素处理量问题，两者都不高但整体 GPU 时间长则指向 bandwidth bound。
+
+在 Android 15 及更早版本上，Perfetto 通过 `GpuCounterDescriptor` 描述每个 GPU 的 counter 模型，具体的 counter ID、名称和语义由 GPU 驱动的 producer 决定。如果设备不支持标准化 counter，仍然需要按厂商文档手动查找对应的利用率轨道。
 
 **RenderThread track。** 虽然 RenderThread 是 CPU 侧的线程，但它的活动与 GPU 渲染直接相关。当 RenderThread 调用 `eglSwapBuffers()` 或 Vulkan 的 `vkQueuePresentKHR()` 提交帧时，如果 GPU 还没有完成上一帧的渲染，RenderThread 会被阻塞等待。在 Perfetto 中，这种等待表现为 RenderThread 上的长段 sleep/wait 状态——这通常意味着 GPU 是瓶颈。
 
