@@ -1511,6 +1511,19 @@
           ]
         }
       ]
+    },
+    {
+      "date": "2026-05-09T21:40:45.770278",
+      "sections": [
+        "3.5",
+        "4.2"
+      ],
+      "source": "external-ai-review",
+      "fixes": [
+        "3.5: Android 16 accessibilityDataSensitive enforcement, Android 17 InputMonitor password disconnection, Android 17 phone-call permission blocking",
+        "4.2: Android 17 madvise(MADV_COLD) kernel-GC coordination"
+      ],
+      "status": "completed"
     }
   ],
   "task2b_last_run": "2026-05-09T20:49:17.584382+08:00",
