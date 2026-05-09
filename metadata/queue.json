@@ -960,8 +960,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-06-surfaceflinger-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-06-surfaceflinger-external-review.md",
+      "completed_at": "2026-05-09T16:23:04.606+08:00",
+      "completed_reason": "task2b fixed: added FrameTargeter multi-display Pacesetter architecture, AIDL Composer V4 CLIENT_BYPASS mode, and HWC3 V4 HDR DisplayLuts hardware tone mapping"
     },
     {
       "section": "3",
@@ -1010,8 +1012,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch03-01-input-dispatch-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch03-01-input-dispatch-external-review.md",
+      "completed_at": "2026-05-09T16:23:04.606+08:00",
+      "completed_reason": "task2b fixed: added Android 16 AOT back key interception, Native gesture exclusion detection, and Android 17 DeliQueue input acceleration"
     },
     {
       "section": "3.4",

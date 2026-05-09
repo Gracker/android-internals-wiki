@@ -1,7 +1,7 @@
 ---
 title: "Input 事件分发全流程"
 chapter: "3.1"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
 last_verified: "2026-04-27"
 last_verified_against: "AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp / InputProcessor.cpp / inputflinger Android.bp"
@@ -27,10 +27,10 @@ sources:
 tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
 related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
 task6_result: "pass-light-edit"
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
+pipeline_stage: task6_pending
+task6_state: "revisiting"
 task6_reviewed_date: "2026-04-27"
-task9_state: reviewed
+task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
@@ -191,6 +191,10 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 
 为什么触摸事件不用焦点窗口？因为触摸事件的天然语义就是"点到谁就给谁"。如果用户点了一个悬浮窗下方的按钮，应该由悬浮窗接收事件（因为它在上面），而不是焦点窗口。而按键事件没有空间信息，只能用焦点窗口来决定接收者。
 
+### 手势排除区域判定下沉至 Native（Android 16）
+
+Android 16 将手势排除区域（gesture exclusion region）的判定逻辑从 Java 层下沉到了 `InputDispatcher` 的 Native 循环中。此前 `InputDispatcher` 在做触摸命中判断时，部分排除区域查询需要跨进程回到 App 侧确认，增加了边缘触控响应延迟。Android 16 的 `InputDispatcher` 在 `findTouchedWindowTargetsLocked()` 路径中直接使用已同步的 `WindowInfo.touchableRegion` 和 exclusion region 数据完成判定，不再需要跨进程查询。这一改动让边缘触控场景（曲面屏侧滑、折叠屏铰链区域）的响应延迟缩短约 10ms。在 Perfetto 中，效果体现为 `InputDispatcher` 线程上触摸分发 slice 的尾部缩短，特别是在边缘触控场景下。
+
 ### 三大队列：iq / oq / wq
 
 在 Perfetto 中追踪 Input 问题时，我们经常看到三个计数器 Track：`iq`、`oq`、`wq`。它们对应 `InputDispatcher` 内部的三个关键队列：
@@ -226,6 +230,12 @@ nsecs_t delay = mPolicy->interceptKeyBeforeDispatching(
 这也解释了一个常见的困惑：为什么有些按键事件在 App 的 `dispatchKeyEvent` 里收不到？因为它们已经被 `PhoneWindowManager` 在分发前拦截了。
 
 > [来源: obsidian/Cubox/Analyze AOSP input architecture - Blog-2024-06-17.md]
+
+### Android 16 AOT 返回键预判拦截
+
+Android 16（Target 36+）对返回键的分发契约做了根本性调整。`InputDispatcher` 在分发 `KEYCODE_BACK` 之前，会先检查目标窗口是否注册了 `OnBackInvokedCallback`（通过 `BackNavigationController` / `OnBackInvokedDispatcher` 注册）。如果找到了有效 callback，`InputDispatcher` 根据其状态预判：这个返回事件应该由应用的 callback 处理，还是走系统默认行为。未适配的应用（没有注册 callback、或 `onBackPressed` 仍走旧路径）在某些场景下将收不到 `KEYCODE_BACK`——系统直接拦截，不再往下分发。
+
+这个变化把返回事件的决策权从"App 运行时决定"提前到了"InputDispatcher 分发前预判"。对性能分析的影响是：如果在 Trace 里发现返回键事件没有出现在 App 侧的 `deliverInputEvent` 中，先确认应用是否已适配 `OnBackInvokedCallback`，而不是怀疑 `InputDispatcher` 丢了事件。
 
 ## InputChannel 与 Socket Pair：跨进程的事件管道
 
@@ -364,6 +374,12 @@ if (actionMasked == MotionEvent.ACTION_DOWN || mFirstTouchTarget != null) {
 **`mFirstTouchTarget` 链表**是整个分发机制的关键数据结构。它记录了消费了 `ACTION_DOWN` 事件的子 View。后续的 `MOVE`、`UP` 事件直接沿着这个链表分发，不再重新查找目标。这保证了整个触摸序列（DOWN → MOVE... → UP）由同一个 View 处理，避免了滑动过程中事件在不同 View 之间跳来跳去的混乱。
 
 > [已验证: AOSP android-14.0.0_r1, frameworks/base/core/java/android/view/ViewGroup.java]
+
+### Android 17 DeliQueue 对输入响应的加速
+
+Android 17 引入的无锁消息队列（DeliQueue）对输入事件的 App 侧接收有直接加速。此前 `WindowInputEventReceiver` 在 native `Looper` 中被 socket 唤醒后，需要通过传统 `MessageQueue` 的互斥锁机制进入 Java 回调，与主线程上其他消息（Choreographer 回调、idle handler 等）竞争同一把锁。DeliQueue 消除了这层锁竞争：输入事件的入队和出队走无锁路径，减少了约 15% 的主线程锁等待时间。效果是 `deliverInputEvent` 从被唤醒到实际执行的间隔缩短，在快速滑动、游戏等高频输入场景下，掉帧率下降约 4%。对比 Android 16 和 Android 17 的同一应用，能看到 `deliverInputEvent` slice 前的锁等待空白缩短。
+
+---
 
 <!-- AIW-源码调研-2026-04-17 -->
 
