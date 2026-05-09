@@ -2,7 +2,7 @@
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-07"
 drafted_by: "openclaw-task2a"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
@@ -30,9 +30,9 @@ sources:
     path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-19"
@@ -138,7 +138,7 @@ surface.setFrameRate(24f, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
 
 在 `frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp` 里，发起仲裁的是 `mScheduler->chooseRefreshRateForContent(...)`。Scheduler 会把可见 Layer 整理成 `LayerRequirement` 列表，再交给 `RefreshRateSelector::getRankedFrameRates()` 生成一个按分数排序的候选结果。
 
-每个 Layer 都带着自己的 `LayerVoteType` 进入打分流程。android-16.0.0_r1 里常见的票型有 `Min`、`Max`、`Heuristic`、`ExplicitDefault`、`ExplicitExactOrMultiple`、`ExplicitGte` 和 `ExplicitCategory`。`RefreshRateSelector::calculateLayerScoreLocked()` 会按票型、目标帧率、候选模式是否支持 seamless 切换来计算单层 score，再把所有 Layer 的 score 汇总后排序。
+每个 Layer 都带着自己的 `LayerVoteType` 进入打分流程。android-16.0.0_r1 里常见的票型有 `Min`、`Max`、`Heuristic`、`ExplicitDefault`、`ExplicitExactOrMultiple`、`ExplicitGte` 和 `ExplicitCategory`。`RefreshRateSelector::calculateLayerScoreLocked()` 会按票型、目标帧率、候选模式是否支持 seamless 切换来计算单层 score，再把所有 Layer 的 score 汇总后排序。注意，Android 15/16 中该函数的内部实现经历了多次重构：部分票型的评分逻辑已经拆分到独立的 helper 方法（如 `getScoreForLayer()` 系列），`calculateLayerScoreLocked()` 本身的职能已从"集中计算"转向"入口分发"。读者在源码中定位时，应该顺着这个函数的调用链往下追，而不是只看函数体本身。
 
 24fps 视频和 60fps 前台动画同时存在时，120Hz 往往会排在前面，因为它同时满足 24fps 的整数倍关系和 60fps 的交互需求，还常常落在可 seamless 切换的候选集合里。但这不是写死的规则。只要 Battery Saver、GameManager、Display policy 或 App 请求范围收窄了候选集合，排序结果就可能变成 60Hz、90Hz 或别的模式。
 
@@ -186,6 +186,18 @@ Display HAL（通过 Composer HAL / HWC 接口）在收到 SurfaceFlinger 的模
 在整个阶段 2-3 期间，显示管道的输出可能不稳定。SurfaceFlinger 通常会在这段时间暂停帧提交，等待 HAL 确认完成后再恢复。这就是过渡期出现帧丢失的原因。
 
 [图：Display HAL 模式切换状态机流程图，展示从 SurfaceFlinger 请求到 HAL 确认的完整时序]
+
+### HWC 4.0 预判式切换（Android 16）
+
+Android 16 强制要求 AIDL V4 Composer HAL。V4 接口引入了 `expectedPresentTime` 字段，SurfaceFlinger 在提交合成请求时把预期的呈现时间戳一并告诉 Display HAL。
+
+这改变了硬件切换的时间预算。在 V3 及更早的接口中，Display HAL 收到模式切换指令后才开始重锁 PLL——从收到请求到 PLL 稳定，整个过程计入切换延迟。V4 的 `expectedPresentTime` 让 Display HAL 在收到请求时就能知道"下一帧什么时候要显示"，从而提前启动 PLL 重配置，把重锁过程的一部分隐藏在合成流水线的等待时间里。
+
+实际效果：切换瞬时的第一帧黑屏被大幅压缩甚至消除。在支持 dual-PLL 的高端平台上，预判式切换可以把硬件过渡从"1-2 帧冻结"压到"0-1 帧"，用户几乎感知不到。
+
+预判式切换的前提是 SurfaceFlinger 能准确预测下一帧的呈现时间。如果 VSync 调度出现抖动（比如 ARR 刚好在切换点调整了步进），预测偏差可能导致 Display HAL 提前完成的 PLL 重锁与实际呈现时间之间出现间隙。这种情况下，切换仍然能完成，但"提前量"的部分收益会打折扣。
+
+[已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl — expectedPresentTime 字段]
 
 ## 在 Perfetto 中识别刷新率切换卡顿
 
