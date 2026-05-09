@@ -1,14 +1,14 @@
 ---
 title: "VSync 机制"
 chapter: "2.3"
-status: finalized
+status: ready-for-review
 reviewed_date: "2026-04-26"
 reviewed_by: "openclaw-task6"
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-applicable_versions: "Android 4.1 (API 16) - Android 16 (API 36)"
-last_verified: "2026-04-26"
+applicable_versions: "Android 4.1 (API 16) - Android 17 (API 37)"
+last_verified: "2026-05-09"
 last_verified_against: "AOSP android-16.0.0_r1 Scheduler/VSyncReactor.cpp + VSyncPredictor.cpp + VSyncDispatchTimerQueue"
 confidence: medium
 sources:
@@ -16,6 +16,8 @@ sources:
     path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncPredictor.cpp"
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/Scheduler/VSyncReactor.cpp"
+  - type: aosp
+    path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncSchedule.cpp"
   - type: aosp
     path: "frameworks/native/services/surfaceflinger/Scheduler/EventThread.cpp"
   - type: aosp
@@ -36,24 +38,22 @@ sources:
     path: "https://source.android.com/docs/core/graphics/implement-vsync"
   - type: official
     path: "https://developer.android.com/about/versions/16/features"
-  - type: blog
-    path: "https://cloud.tencent.com/developer/article/1905184 (Vsync Phase 详解)"
-tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering]
+tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
-pipeline_stage: ready-to-publish
-task6_state: "reviewed"
-task6_result: "pass-light-edit"
+pipeline_stage: task6_pending
+task6_state: revisiting
+task6_result: pass-light-edit
 task9_result: pass-tech-review
-task9_state: reviewed
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T19:36:19+08:00"
 review_round: 4
-repaired_date: "2026-04-26"
+repaired_date: "2026-05-09"
 repaired_by: "openclaw-task2b"
-last_task2b_at: "2026-04-26T22:53:54+08:00"
+last_task2b_at: "2026-05-09T12:43:00+08:00"
 
 ---
 
@@ -245,6 +245,8 @@ Present Fence 也走同一套入口。`VSyncReactor::addPresentFence()` 在 fenc
 
 **3)校正**:一旦硬件真实时间和预测结果偏差变大,`validate()` 会失败,或者 `VSyncReactor` 在刷新率切换、Present Fence 异常时重新进入采样模式。Perfetto 里短暂出现 HW_VSYNC 开启,表示系统正在重新收集样本；模型稳定后仍回到软件预测和定时分发。
 
+Android 16 新增了 `IVsyncTrackerCallback` 接口,允许预测器主动向调度器反馈模型失效状态。在旧架构中,模型是否需要重新校准完全由 `VSyncReactor` 通过 `needsMoreSamples()` 被动判断；有了这个回调后,预测器在检测到连续样本异常或周期突变时,可以主动通知上层进入快速重新校准模式。这对 ARR（自适应刷新率）场景尤其关键——刷新率切换时 VSync 周期突变,预测器需要尽快失效旧模型并重建,而不是等到下一轮采样才发现偏差过大。
+
 `[已验证: AOSP android-16.0.0_r1, Scheduler/VSyncPredictor.cpp + Scheduler/VSyncReactor.cpp + 官方文档 implement-vsync]`
 
 ### 3.3 现代架构:Scheduler 子目录承担 DispSync 的旧职责
@@ -257,7 +259,7 @@ Present Fence 也走同一套入口。`VSyncReactor::addPresentFence()` 在 fenc
 - `EventThread`:服务 VSYNC-app / vsync-appSf 客户端
 - `MessageQueue`:服务 VSYNC-sf,把合成消息送回 SurfaceFlinger
 
-现代实现里,Scheduler 下的预测、校正和分发组件共同承担了旧版 DispSync 的工作。
+现代实现里,Scheduler 下的预测、校正和分发组件共同承担了旧版 DispSync 的工作。从 Android 14 起,这些组件在 SurfaceFlinger 内部由 `VsyncSchedule` 类统一持有——它组合了 `VSyncPredictor`、`VSyncReactor`、`VSyncDispatchTimerQueue` 和 `VsyncModulator`,对外提供 `nextAnticipatedVSyncTimeFrom()` 等统一入口。在分析 Perfetto 或追踪 AOSP 调用链时,可以把 `VsyncSchedule` 理解为 SurfaceFlinger Scheduler 的 VSync 总调度器。
 
 ## 四、VSync 信号的传递路径
 
@@ -716,7 +718,7 @@ AOSP mainline 的 `VSyncPredictor.cpp`（路径 `services/surfaceflinger/Schedul
 
 ### 11.1 核心算法
 
-VSyncPredictor 维护一个**环型缓冲区** `mTimestamps`（默认 `historySize=32`），记录最近的硬件 VSync 时间戳。计算周期时使用线性回归：
+VSyncPredictor 维护一个**环型缓冲区** `mTimestamps`（Android 16 修订后默认 `historySize=20`，早期版本为 32），记录最近的硬件 VSync 时间戳。计算周期时使用线性回归：
 
 ```
 slope = Σ((X_i - mean(X)) × (Y_i - mean(Y))) / Σ((X_i - mean(X))²)
@@ -753,7 +755,7 @@ for (size_t i = 0; i < numSamples; i++) {
 
 ### 11.2 异常值过滤
 
-新样本进入 `addVsyncTimestamp()` 时,`validate()` 会先把它和当前 `idealPeriod()` 模型比较。源码将 `(timestamp - aValidTimestamp) % idealPeriod()` 转成百分比；结果落在 `10% ~ 90%` 区间时,表示样本离最近的理想 VSync 点太远,预测器拒绝这个样本：
+新样本进入 `addVsyncTimestamp()` 时,`validate()` 会先把它和当前 `idealPeriod()` 模型比较。源码将 `(timestamp - aValidTimestamp) % idealPeriod()` 转成百分比；结果落在 `20% ~ 80%` 区间时（Android 16 将 `kOutlierTolerancePercent` 从 10% 修订为 20%，同时 `historySize` 从 32 缩减为 20）,表示样本离最近的理想 VSync 点太远,预测器拒绝这个样本。放宽容差、缩短窗口的策略意图是：容忍小抖动以换取模型稳定性,避免因少数异常样本频繁触发重新学习。
 
 ```cpp
 // services/surfaceflinger/Scheduler/VSyncPredictor.cpp

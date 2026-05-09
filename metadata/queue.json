@@ -891,8 +891,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-03-vsync-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-03-vsync-external-review.md",
+      "completed_at": "2026-05-09T12:49:44.104507",
+      "completed_reason": "task2b fixed: historySize 32->20, kOutlierTolerancePercent 10%->20%, added IVsyncTrackerCallback, added VsyncSchedule coordinator"
     },
     {
       "section": "2.5",
@@ -1341,13 +1343,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "updated_by": "task9-deep-tech-review",
       "updated_at": "2026-05-01T09:26:13+08:00",
       "material_paths": [
         "intake/suggestions.md"
-      ]
+      ],
+      "completed_at": "2026-05-09T12:49:44.104507",
+      "completed_reason": "task2b fixed: overutilized version-specific language in EAS-CFS relationship and FAQ sections"
     },
     {
       "section": "5.8",
