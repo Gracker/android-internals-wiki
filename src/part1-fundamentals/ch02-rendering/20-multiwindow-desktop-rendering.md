@@ -1,47 +1,62 @@
 ---
-title: "多窗口与桌面模式渲染性能"
-chapter: "2.20"
-section: "2.20"
+title: 多窗口与桌面模式渲染性能
+chapter: '2.20'
+section: '2.20'
 status: ready-for-review
-drafted_date: "2026-04-08"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 7.0 (API 24) - Android 17 (API 37)"
-last_verified: "2026-04-26"
-last_verified_against: "AOSP android-16.0.0_r1 attrs_manifest.xml + Android Developers multi-window/desktop/connected displays/behavior changes 16/17 + android.R.attr#recreateOnConfigChanges + Perfetto stdlib docs"
+drafted_date: '2026-04-08'
+drafted_by: openclaw-task2a
+applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
+last_verified: '2026-04-26'
+last_verified_against: AOSP android-16.0.0_r1 attrs_manifest.xml + Android Developers
+  multi-window/desktop/connected displays/behavior changes 16/17 + android.R.attr#recreateOnConfigChanges
+  + Perfetto stdlib docs
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/guide/topics/large-screens/multi-window-support"
-  - type: official
-    path: "https://developer.android.com/about/versions/16/behavior-changes-16"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/behavior-changes-all"
-  - type: official
-    path: "https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges"
-  - type: official
-    path: "https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing"
-  - type: official
-    path: "https://developer.android.com/develop/ui/compose/layouts/adaptive/support-connected-displays"
-  - type: official
-    path: "https://perfetto.dev/docs/analysis/stdlib-docs"
-  - type: official
-    path: "https://source.android.com/docs/core/graphics/surfaceflinger"
-  - type: aosp
-    path: "frameworks/base/core/res/res/values/attrs_manifest.xml"
-tags: [multiwindow, desktop-mode, split-screen, freeform, foldable, surfaceflinger, rendering]
-related_chapters: ["2.6", "2.9", "2.12", "2.13", "7.4", "3.3"]
+- type: official
+  path: https://developer.android.com/guide/topics/large-screens/multi-window-support
+- type: official
+  path: https://developer.android.com/about/versions/16/behavior-changes-16
+- type: official
+  path: https://developer.android.com/about/versions/17/behavior-changes-all
+- type: official
+  path: https://developer.android.com/reference/android/R.attr#recreateOnConfigChanges
+- type: official
+  path: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-desktop-windowing
+- type: official
+  path: https://developer.android.com/develop/ui/compose/layouts/adaptive/support-connected-displays
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs
+- type: official
+  path: https://source.android.com/docs/core/graphics/surfaceflinger
+- type: aosp
+  path: frameworks/base/core/res/res/values/attrs_manifest.xml
+tags:
+- multiwindow
+- desktop-mode
+- split-screen
+- freeform
+- foldable
+- surfaceflinger
+- rendering
+related_chapters:
+- '2.6'
+- '2.9'
+- '2.12'
+- '2.13'
+- '7.4'
+- '3.3'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
-reviewed_date: "2026-04-26"
+reviewed_date: '2026-05-09'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
-task9_reviewed_date: "2026-04-26"
-last_task9_at: "2026-04-26T22:20:00+08:00"
-last_task2b_at: "2026-05-09T17:20:00+08:00"
+task9_reviewed_date: '2026-04-26'
+last_task9_at: '2026-04-26T22:20:00+08:00'
+last_task2b_at: '2026-05-09T17:20:00+08:00'
 task9_reviewed_by: openclaw-task9
 ---
 
@@ -159,7 +174,7 @@ Android 16 起旗舰设备强制 16KB 页对齐。对单个应用来说，PSS（
 
 ### Android 16 / 17 的真实边界
 
-真正和大屏多窗口直接相关的边界，在 Android 16（API 36）和 Android 17（API 37）。
+和大屏多窗口直接相关的边界，在 Android 16（API 36）和 Android 17（API 37）。
 
 Android 12（API 31）把 multi-window 变成 large-screen 上的标准行为。公开文档写得很明确，大屏设备上平台会让所有 App 进入 multi-window 流程，不再按旧习惯把 `resizeableActivity="false"` 当成绝对开关；如果应用不能适配，系统会把它放进 compatibility mode。
 
@@ -183,7 +198,7 @@ API 37 的 `recreateOnConfigChanges` 要和这条大屏规则分开读。它面�
 
 多窗口优化最容易写错的地方，就是把“失去焦点”近似成“进入 `onStop()`”。Android 10（API 29）之后，这个近似已经不成立。官方 multi-window 文档明确写了 multi-resume，多个可见 Activity 可以同时停留在 `RESUMED`。PiP 这类不具备焦点的窗口可能被 pause，但只要 Activity 还在屏幕上，生命周期就不能按“后台窗口已经停掉”去推导。
 
-真正和独占资源绑定的是 **top resumed**。官方建议用 `onTopResumedActivityChanged()` 处理相机、麦克风这类一次只能被一个窗口稳定持有的资源。对渲染也一样。高频动画、连续 invalidation、激进的 frame rate vote，应该跟 top resumed 或真实可见性绑定，不该只盯 `onStop()`。
+和独占资源绑定的是 **top resumed**。官方建议用 `onTopResumedActivityChanged()` 处理相机、麦克风这类一次只能被一个窗口稳定持有的资源。对渲染也一样。高频动画、连续 invalidation、激进的 frame rate vote，应该跟 top resumed 或真实可见性绑定，不该只盯 `onStop()`。
 
 ```kotlin
 override fun onTopResumedActivityChanged(topResumed: Boolean) {
@@ -207,7 +222,7 @@ override fun onStop() {
 
 - `topResumed = true`，窗口拿到前台交互资格。相机、麦克风、手写、游戏主循环这类要争抢独占资源的工作，放在这里最稳。
 - visible 但不是 top resumed，窗口可能还在 `RESUMED`。视频小窗、导航小窗、分屏副窗口都可能属于这一类。这里适合做“降频”和“减少无效重绘”，不适合一刀切停掉全部渲染。
-- `onStop()` 只在 Activity 真正离开屏幕时触发。彻底停止 offscreen work，放这里才对。
+- `onStop()` 只在 Activity 离开屏幕时触发。彻底停止 offscreen work，放这里才对。
 
 PiP 也要单独看。它经常是“可见，但不 focusable”。如果 PiP 还在持续播放视频，你不能把它当成静态后台窗口；如果 PiP 只是一个暂停状态的小窗，也没必要让它每帧都做完整 UI 刷新。
 
@@ -217,7 +232,7 @@ PiP 也要单独看。它经常是“可见，但不 focusable”。如果 PiP �
 
 ### 1. 先列出当前 trace 里的 SurfaceFlinger slice 名
 
-`doCompose` 不能直接写成通用过滤条件。先在当前 trace 里列出 SurfaceFlinger 线程上真正存在的 slice 名，再挑和合成相关的项继续看：
+`doCompose` 不能直接写成通用过滤条件。先在当前 trace 里列出 SurfaceFlinger 线程上存在的 slice 名，再挑和合成相关的项继续看：
 
 ```sql
 SELECT DISTINCT slice.name
