@@ -1,58 +1,70 @@
 ---
-title: "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）"
-chapter: "2.14"
+title: 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
+chapter: '2.14'
 status: ready-for-review
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 4.0 (API 14) - Android 17 (API 37)"
-last_verified: "2026-04-26"
-last_verified_against: "source.android.com implement-vulkan + developer.android.com AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX WebGPU docs + AOSP vk_android_native_buffer.h"
+drafted_date: '2026-04-05'
+drafted_by: openclaw-task2a
+applicable_versions: Android 4.0 (API 14) - Android 17 (API 37)
+last_verified: '2026-04-26'
+last_verified_against: source.android.com implement-vulkan + developer.android.com
+  AVP / ProfilingManager docs + perfetto.dev frametimeline + AOSP main + AndroidX
+  WebGPU docs + AOSP vk_android_native_buffer.h
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/ndk/guides/graphics"
-  - type: official
-    path: "https://source.android.com/docs/core/graphics/implement-vulkan"
-  - type: official
-    path: "https://developer.android.com/ndk/guides/graphics/android-vulkan-profile"
-  - type: official
-    path: "https://developer.android.com/about/versions/15/features#graphics"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/GraphicsEnvironment.java"
-  - type: aosp
-    path: "frameworks/native/opengl/libs/EGL/Loader.cpp"
-  - type: aosp
-    path: "frameworks/native/libs/graphicsenv/GraphicsEnv.cpp"
-  - type: aosp
-    path: "frameworks/native/vulkan/include/vulkan/vk_android_native_buffer.h"
-  - type: aosp
-    path: "external/angle/"
-  - type: official
-    path: "https://developer.android.com/ndk/guides/graphics/validation-layer"
-  - type: official
-    path: "https://developer.android.com/games/optimize/adpf"
-  - type: official
-    path: "https://developer.android.com/develop/ui/views/graphics/webgpu"
-  - type: official
-    path: "https://developer.android.com/jetpack/androidx/releases/webgpu"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/frametimeline"
-tags: [opengl-es, vulkan, angle, gpu, graphics-api, rendering]
-related_chapters: ["2.1", "2.9", "2.10", "2.17", "14.8"]
-section: "2.14"
+- type: official
+  path: https://developer.android.com/ndk/guides/graphics
+- type: official
+  path: https://source.android.com/docs/core/graphics/implement-vulkan
+- type: official
+  path: https://developer.android.com/ndk/guides/graphics/android-vulkan-profile
+- type: official
+  path: https://developer.android.com/about/versions/15/features#graphics
+- type: aosp
+  path: frameworks/base/core/java/android/os/GraphicsEnvironment.java
+- type: aosp
+  path: frameworks/native/opengl/libs/EGL/Loader.cpp
+- type: aosp
+  path: frameworks/native/libs/graphicsenv/GraphicsEnv.cpp
+- type: aosp
+  path: frameworks/native/vulkan/include/vulkan/vk_android_native_buffer.h
+- type: aosp
+  path: external/angle/
+- type: official
+  path: https://developer.android.com/ndk/guides/graphics/validation-layer
+- type: official
+  path: https://developer.android.com/games/optimize/adpf
+- type: official
+  path: https://developer.android.com/develop/ui/views/graphics/webgpu
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/webgpu
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+tags:
+- opengl-es
+- vulkan
+- angle
+- gpu
+- graphics-api
+- rendering
+related_chapters:
+- '2.1'
+- '2.9'
+- '2.10'
+- '2.17'
+- '14.8'
+section: '2.14'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-04-20'
-task6_result: 'pass-light-edit'
-review_log: "logs/review/2026-04-11-13-review.md"
+reviewed_date: '2026-05-09'
+task6_result: pass-light-edit
 task9_result: pass-tech-review
-task9_reviewed_date: "2026-04-21"
+task9_reviewed_date: '2026-04-21'
 task2b_result: fixed
-last_task2b_at: "2026-05-09T17:20:00+08:00"
-last_task9_at: "2026-04-21T00:05:03+08:00"
+last_task2b_at: '2026-05-09T17:20:00+08:00'
+last_task9_at: '2026-04-21T00:05:03+08:00'
 task9_reviewed_by: openclaw-task9
 ---
 
@@ -283,9 +295,9 @@ ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换*
 
 从机制上看，ANGLE 的额外成本主要集中在两个阶段。第一次是 shader 翻译和 pipeline 建立：GLES shader 需要被 ANGLE 翻译到后端可用的形式，首次命中时会有额外 CPU 开销。第二次是 draw call 前的状态映射：ANGLE 需要把 OpenGL ES 的状态机语义折算成 Vulkan 的 pipeline、descriptor 和 render pass 语义。如果 workload 状态切换频繁、pipeline cache 命中率又不高，这部分成本就会更明显。
 
-反过来看，如果某个 SoC 的原生 GLES driver 本身存在较重的 CPU 开销或兼容性问题，ANGLE 走 Vulkan 后端反而可能更稳定，甚至更快。所以我们不应该在文章里给出脱离场景的固定百分比，更合理的结论是：**ANGLE 带来的是“以一定翻译成本换取更一致的驱动行为”**。真正的答案只能在目标 workload 和目标设备上测出来。
+反过来看，如果某个 SoC 的原生 GLES driver 本身存在较重的 CPU 开销或兼容性问题，ANGLE 走 Vulkan 后端反而可能更稳定，甚至更快。所以我们不应该在文章里给出脱离场景的固定百分比，更合理的结论是：**ANGLE 带来的是“以一定翻译成本换取更一致的驱动行为”。**答案只能在目标 workload 和目标设备上测出来。
 
-另外，Vulkan 确实支持 pipeline cache，但“系统 ANGLE 一定能替所有 GLES 应用统一管理并稳定复用 cache”并不是官方给出的通用承诺。分析启动抖动时，我们可以把 pipeline / shader 首次编译当成重点怀疑对象，但不要先把它写成一条无条件成立的系统保证。
+另外，Vulkan 支持 pipeline cache，但“系统 ANGLE 一定能替所有 GLES 应用统一管理并稳定复用 cache”并不是官方给出的通用承诺。分析启动抖动时，我们可以把 pipeline / shader 首次编译当成重点怀疑对象，但不要先把它写成一条无条件成立的系统保证。
 
 ### ANGLE 路线对开发者的实际影响
 
@@ -359,7 +371,7 @@ Vulkan 则要求开发者自己做这些优化。它不会替你合并 draw call
 | 进程 maps / 已加载共享库 | `libEGL.so`、`libGLESv2.so`、`libvulkan.so`、ANGLE 相关库是否出现 | 很多栈会同时加载多种库，不能只凭 loaded libs 判断最终渲染后端 |
 | App 侧自检日志 | 当前进程向上暴露的 renderer / backend 信息 | 需要应用配合，单独使用时也看不到 GPU 负载细节 |
 
-真正靠谱的做法是把这些信号组合起来：先用 app 侧自检或 driver selection 配置确认“这次想走哪条路”，再用 maps 和 Perfetto 看“实际加载了什么、GPU 工作怎么分布”，最后再把 Frame Timeline 里的帧结果对上去。这样我们才能区分 native Vulkan、native GLES，以及 GLES-over-ANGLE 这三类路径，而不是被某一个 slice 名字带偏。
+靠谱的做法是把这些信号组合起来：先用 app 侧自检或 driver selection 配置确认“这次想走哪条路”，再用 maps 和 Perfetto 看“实际加载了什么、GPU 工作怎么分布”，最后再把 Frame Timeline 里的帧结果对上去。这样我们才能区分 native Vulkan、native GLES，以及 GLES-over-ANGLE 这三类路径，而不是被某一个 slice 名字带偏。
 
 GPU counter 的配置方式（在 TraceConfig 中）：
 
@@ -456,7 +468,7 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timel
 ## 常见问题与误区
 
 **误区：ANGLE 一定会让所有 GLES 应用变慢**
-实际情况：ANGLE 没有统一适用的固定性能百分比。它的开销取决于 workload、shader 首次编译、状态切换密度，以及原生 GLES driver 的质量。真正可靠的结论只能来自目标设备实测。
+实际情况：ANGLE 没有统一适用的固定性能百分比。它的开销取决于 workload、shader 首次编译、状态切换密度，以及原生 GLES driver 的质量。**可靠的结论只能来自目标设备实测。
 
 **误区：Android 15+ 之后所有 GLES 应用都会自动走 ANGLE**
 实际情况：是否走 ANGLE，取决于系统 driver、全局开关、per-app override、平台 allowlist，以及 loader 的 fallback 路径。官方 roadmap 说的是“更多新设备会把 ANGLE 作为 GL system driver”，不是“所有设备、所有应用今天都已经统一切换”。

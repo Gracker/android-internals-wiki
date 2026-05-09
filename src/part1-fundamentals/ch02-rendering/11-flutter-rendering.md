@@ -1,46 +1,63 @@
 ---
-title: "2.11 Flutter 渲染管线与性能"
-section: "2.11"
-chapter: "2.11"
+title: 2.11 Flutter 渲染管线与性能
+section: '2.11'
+chapter: '2.11'
 status: ready-for-review
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-27"
-reviewed_by: "openclaw-task6"
-review_notes: "task6 re-review (revisiting): pass-light-edit。L1禁用词4处已修复。无B类大问题。评分: 结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。"
+drafted_date: '2026-04-01'
+drafted_by: openclaw-task2a
+reviewed_date: '2026-05-09'
+reviewed_by: openclaw-task6
+review_notes: 'task6 re-review (revisiting): pass-light-edit。L1禁用词4处已修复。无B类大问题。评分:
+  结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。'
 polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-05-09"
-last_verified_against: "Flutter 3.29 architecture/thread merge docs + Flutter Impeller docs/engine impeller README + Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java / FlutterRenderer.java) + Android 16 Vulkan 1.4 VPA16 specs + ADPF PerformanceHintManager"
+polish_date: '2026-04-05'
+polish_by: task2b-polish
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+last_verified: '2026-05-09'
+last_verified_against: Flutter 3.29 architecture/thread merge docs + Flutter Impeller
+  docs/engine impeller README + Flutter Engine main (VsyncWaiter.java / PlatformViewsController.java
+  / FlutterRenderer.java) + Android 16 Vulkan 1.4 VPA16 specs + ADPF PerformanceHintManager
 confidence: medium
 sources:
-  - type: official
-    path: "https://docs.flutter.dev/perf/rendering-performance"
-  - type: official
-    path: "https://docs.flutter.dev/perf/impeller"
-  - type: blog
-    path: "https://github.com/flutter/flutter/wiki/Impeller"
-  - type: source
-    path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/view/VsyncWaiter.java"
-  - type: source
-    path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java"
-  - type: source
-    path: "https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java"
-tags: [flutter, rendering, impeller, skia, cross-platform, shader-compilation, jank]
-related_chapters: ["2.1", "2.3", "2.4", "2.5", "7.1", "7.7", "18.12"]
+- type: official
+  path: https://docs.flutter.dev/perf/rendering-performance
+- type: official
+  path: https://docs.flutter.dev/perf/impeller
+- type: blog
+  path: https://github.com/flutter/flutter/wiki/Impeller
+- type: source
+  path: https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/view/VsyncWaiter.java
+- type: source
+  path: https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/plugin/platform/PlatformViewsController.java
+- type: source
+  path: https://github.com/flutter/engine/blob/main/shell/platform/android/io/flutter/embedding/engine/renderer/FlutterRenderer.java
+tags:
+- flutter
+- rendering
+- impeller
+- skia
+- cross-platform
+- shader-compilation
+- jank
+related_chapters:
+- '2.1'
+- '2.3'
+- '2.4'
+- '2.5'
+- '7.1'
+- '7.7'
+- '18.12'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T16:43:00+08:00"
-task9_reviewed_date: "2026-04-27"
+last_task2b_at: '2026-05-09T16:43:00+08:00'
+task9_reviewed_date: '2026-04-27'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T02:20:00+08:00"
+last_task9_at: '2026-04-27T02:20:00+08:00'
 ---
 
 <!-- outline-start -->

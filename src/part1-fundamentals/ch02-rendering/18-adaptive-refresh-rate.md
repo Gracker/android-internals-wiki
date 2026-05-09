@@ -1,50 +1,65 @@
 ---
-title: "Adaptive Refresh Rate 与动态帧率控制"
-chapter: "2.18"
-section: "2.18"
+title: Adaptive Refresh Rate 与动态帧率控制
+chapter: '2.18'
+section: '2.18'
 status: ready-for-review
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
-applicable_versions: "ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持"
-last_verified: "2026-04-26"
-last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev + external review 2026-04-25"
+drafted_date: '2026-04-05'
+drafted_by: openclaw-task2a
+applicable_versions: ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持
+last_verified: '2026-04-26'
+last_verified_against: AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev
+  + external review 2026-04-25
 confidence: high
 sources:
-  - type: official
-    path: "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Display"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/View"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Surface"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/Choreographer.FrameData"
-  - type: official
-    path: "https://developer.android.com/games/sdk/frame-pacing"
-  - type: research
-    path: "intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/frametimeline"
-  - type: official
-    path: "https://perfetto.dev/docs/analysis/stdlib-docs"
-tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
-related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
+- type: official
+  path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
+- type: official
+  path: https://developer.android.com/reference/android/view/Display
+- type: official
+  path: https://developer.android.com/reference/android/view/View
+- type: official
+  path: https://developer.android.com/reference/android/view/Surface
+- type: official
+  path: https://developer.android.com/reference/android/view/Choreographer.FrameData
+- type: official
+  path: https://developer.android.com/games/sdk/frame-pacing
+- type: research
+  path: intake/research-feeds/2026-04-05-19-android16-arr-surfaceflinger-choreographer-frame-pacing.md
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs
+tags:
+- ARR
+- refresh-rate
+- VSync
+- SurfaceFlinger
+- Choreographer
+- LTPO
+- frame-pacing
+- Android-16
+related_chapters:
+- '2.2'
+- '2.3'
+- '2.4'
+- '2.6'
+- '2.13'
+- '2.16'
 pipeline_stage: task6_pending
-last_task9_at: "2026-04-26T01:29:40+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-26"
-task6_state: revisiting
+last_task9_at: '2026-04-26T01:29:40+08:00'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-26'
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-20"
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-09'
 task6_result: pass-light-edit
 task9_result: pass-tech-review
 task2b_result: fixed
-last_task2b_at: "2026-05-09T14:40:00+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
+last_task2b_at: '2026-05-09T14:40:00+08:00'
+repaired_date: '2026-04-26'
+repaired_by: openclaw-task2b
 ---
 
 # 2.18 Adaptive Refresh Rate 与动态帧率控制
@@ -94,7 +109,7 @@ Android 11 起，系统已经支持多刷新率和 `Surface.setFrameRate()`。�
 
 官方 ARR 文档把正式能力收在 Android 15-QPR1 及以上，并要求设备实现对应 HAL API。也就是说，我们要把“Android 11-14 的多刷新率背景”和“Android 15-QPR1+ 的 ARR 正式能力”分开看。前者让系统学会在多个模式之间做选择，后者才让支持的面板在更细的刷新档位里跟着内容变化。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
-LTPO 面板之所以经常和 ARR 一起出现，是因为它更适合低频到高频的宽范围调节。但有没有 LTPO 不是 App 能直接假定的前提。真正该检查的是设备是否公开支持 ARR，以及当前系统给出的刷新率范围。
+LTPO 面板之所以经常和 ARR 一起出现，是因为它更适合低频到高频的宽范围调节。但有没有 LTPO 不是 App 能直接假定的前提。**该检查的是设备是否公开支持 ARR**，以及当前系统给出的刷新率范围。
 
 ## 系统里谁在做什么
 
@@ -273,7 +288,7 @@ Android 16 通过 Display HAL 引入了实时 Gamma 补偿。系统在每次 VSY
 ## 版本演进要分两层看
 
 - **Android 11-14**：系统已经支持多刷新率、`Surface.setFrameRate()` 和更成熟的 mode switching。这一阶段的重点是“能选多个刷新率”。
-- **Android 15-QPR1 及以上**：官方 ARR 文档把真正的 ARR 支持放在这个窗口，并要求设备实现对应 HAL API。这一阶段的重点是“刷新率能更细地跟着内容变化”。
+- **Android 15-QPR1 及以上**：官方 ARR 文档把 ARR 支持放在这个窗口，并要求设备实现对应 HAL API。这一阶段的重点是“刷新率能更细地跟着内容变化”。
 - **Android 16（API 36）**：`Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 这组公开查询 API 让 App 更容易知道设备能力和系统建议值。ARR 系统能力与 App 可见 API 的版本边界需要分开写。[已验证: 官方文档, developer.android.com/reference/android/view/Display]
 
 按这个时间线区分，适用范围就很明确。我们谈 Android 11-14 时，主要是在交代背景；谈 ARR 主体时，焦点应该放在 Android 15-QPR1 及以上。
