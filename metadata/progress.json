@@ -1,32 +1,32 @@
 {
-  "generated_at": "2026-05-09T07:12:00+08:00",
+  "generated_at": "2026-05-09T08:05:00+08:00",
   "state_machine_version": "v2",
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T07:12:00+08:00",
+    "last_updated": "2026-05-09T08:05:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 155,
       "task2b_pending": 48,
-      "task6_pending": 2,
-      "task9_pending": 3,
+      "task6_pending": 1,
+      "task9_pending": 4,
       "unknown": 31
     },
     "task6_state_counts": {
-      "reviewed": 207,
-      "revisiting": 1,
+      "reviewed": 208,
+      "revisiting": 0,
       "unknown": 32
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 3,
-      "reviewed": 203,
+      "pending": 4,
+      "reviewed": 202,
       "unknown": 32
     },
     "task2b_state_counts": {
-      "fixed": 159,
-      "pending": 47,
+      "fixed": 160,
+      "pending": 46,
       "unknown": 34
     },
     "status_counts": {
@@ -94,6 +94,26 @@
     }
   ],
   "task6_review_history": [
+    {
+      "timestamp": "2026-05-09T08:05:00+08:00",
+      "sections": [
+        "1.4"
+      ],
+      "source": "task6-draft-review",
+      "mode": "revisiting-review",
+      "result": "pass-light-edit",
+      "polish_count": 11,
+      "rework_count": 0,
+      "auto_finalized": [],
+      "skipped": [
+        {
+          "section": "19.27",
+          "reason": "内容不充分（outline 后正文 0 行）"
+        }
+      ],
+      "review_log": "logs/review/2026-05-09-08-review.md",
+      "notes": "本轮仅 1.4 具备实质内容可复审；19.27 仍为空壳章节，跳过等待 task2 加工。1.4 L1/L2 轻修后送 Task9 复审；queue.json 中仍有 1.4 既有 pending 技术项，未自动晋升。"
+    },
     {
       "timestamp": "2026-05-09T07:12:00+08:00",
       "sections": [
@@ -1508,17 +1528,20 @@
     }
   },
   "1.4": {
-    "last_task6_at": "2026-05-08T19:05:00+08:00",
+    "last_task6_at": "2026-05-09T08:05:00+08:00",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
-    "last_task6_review_log": "logs/review/2026-05-08-19-review.md",
-    "task9_state": "reviewed",
-    "pipeline_stage": "task2b_pending",
-    "task2b_state": "pending",
+    "last_task6_review_log": "logs/review/2026-05-09-08-review.md",
+    "task9_state": "pending",
+    "pipeline_stage": "task9_pending",
+    "task2b_state": "fixed",
     "task9_result": "needs-rework",
     "last_task9_at": "2026-05-08T19:29:15+08:00",
     "task2b_result": "fixed",
-    "last_task9_review_log": "logs/deep-review/2026-05-08-19-deep-review.md"
+    "last_task9_review_log": "logs/deep-review/2026-05-08-19-deep-review.md",
+    "status": "ready-for-review",
+    "last_task6_polish_count": 11,
+    "task6_review_notes": "2026-05-09 Task6 08:05：Task2B 修复后写作复审；轻修 11 处（frontmatter 去重、结构性引导/否定-纠正式句式/翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。"
   },
   "9.3": {
     "last_task9_at": "2026-05-08T20:30:08+08:00",
