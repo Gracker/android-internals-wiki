@@ -1129,8 +1129,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-09T23:40:00+08:00",
+      "completed_reason": "stale entry: section already finalized with extensive AOSP source code anchors (VelocityTracker.java, VelocityTracker.cpp, GestureDetector.java, ViewConfiguration.java, ViewGroup.java); task9_result: pass-tech-review, pipeline_stage: ready-to-publish"
     },
     {
       "section": "4",
@@ -2734,7 +2736,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-07T22:24:50+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T23:40:00+08:00",
+      "completed_reason": "task2b fixed: added SF/HWC GPU fallback synthesis case (案例六) and thermal throttling case (案例七) with complete analysis chains and Perfetto trace guidance"
     },
     {
       "section": "19.26",
