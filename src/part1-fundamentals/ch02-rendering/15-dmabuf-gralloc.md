@@ -11,6 +11,12 @@ drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 reviewed_date: '2026-04-20'
 reviewed_by: openclaw-task6
+reviewed_date: '2026-05-09'
+reviewed_by: 'openclaw-task6'
+task6_result: 'needs-rework'
+task6_state: 'reviewed'
+task9_state: 'pending'
+pipeline_stage: 'task9_pending'
 sources:
 - type: aosp
   path: frameworks/native/libs/ui/GraphicBuffer.cpp
