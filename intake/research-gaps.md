@@ -14,3 +14,20 @@ ART FinalizerDaemon 线程与 ReferenceQueue 的并发优化边界未证实。AO
 
 ### 关联章节
 4.3, 1.6, 7.7
+## [2026-05-09] 3.0 输入系统 — 知识盲区
+
+### 盲区描述
+Android 15/16 输入系统架构重构，包括 InputFlinger Rust 组件、ARR (Adaptive Refresh Rate) 与输入协同、预测性返回性能影响
+
+### 重要程度
+高
+
+### 建议研究方向
+- AOSP  目录结构演进
+- Android 15 中 Input 如何驱动刷新率切换的调用链
+- Predictive Back 在 Android 14+ 中的性能影响量化
+
+### 关联章节
+3.1, 3.3, 3.4, 3.5
+
+
