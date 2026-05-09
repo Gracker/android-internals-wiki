@@ -4,12 +4,12 @@
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T08:20:00+08:00",
+    "last_updated": "2026-05-09T14:51:35.395261",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
-      "ready-to-publish": 155,
+      "ready-to-publish": 153,
       "task2b_pending": 49,
-      "task6_pending": 1,
+      "task6_pending": 3,
       "task9_pending": 3,
       "unknown": 31
     },
@@ -30,8 +30,8 @@
       "unknown": 34
     },
     "status_counts": {
-      "finalized": 155,
-      "ready-for-review": 54,
+      "finalized": 153,
+      "ready-for-review": 56,
       "unknown": 31
     }
   },
@@ -90,6 +90,24 @@
           "priority": 85,
           "fixes": "P1 标题从'Android 15/16新增'改为'Android 12+已有与较新tag补充'; 未验证枚举移出主表; Dropped版本门槛单独标注; 高频词'真正'从5次降至2次"
         }
+      ]
+    },
+    {
+      "timestamp": "2026-05-09T14:51:35.395261",
+      "sections": [
+        "2.15",
+        "2.18"
+      ],
+      "source": "external-ai-review",
+      "issues_fixed": 6,
+      "details": [
+        "2.15 P1: Added Gralloc AIDL V2 allocate2() alignment negotiation section",
+        "2.15 P1: Added libdmabufheap user-space pooling section",
+        "2.15 P1: Added Binder FDA batch optimization section",
+        "2.15: Expanded Android 16 version history with 3 enhancements summary",
+        "2.18 P1: Added 1Hz flicker suppression and Gamma compensation section",
+        "2.18 P1: Added 16KB page SF scoring optimization (SmallVector, -12%)",
+        "2.18 P1: Added VSync ID prediction error analysis with SQL query"
       ]
     }
   ],
