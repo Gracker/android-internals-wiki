@@ -1608,6 +1608,30 @@
         "18.9: Dynamic Rendering feature bit 边界修正 (P1, task9)",
         "19.0: tracing-perfetto 版本线拆分修正 (P1, task9)"
       ]
+    },
+    {
+      "timestamp": "2026-05-09T08:44:11+08:00",
+      "task": "task2b-rework",
+      "sections_processed": [
+        "8.9",
+        "1.4"
+      ],
+      "details": [
+        {
+          "section": "8.9",
+          "title": "Android 游戏性能与 Game Mode/State API",
+          "source": "task9-deep-tech-review",
+          "priority": 85,
+          "fix": "P1 删除不存在的\"订阅VSync偏移+上报帧deadline\"API断言，改为帧节奏线(Swappy/ARR/FrameTimeline)与性能反馈线(ADPF)两条独立线"
+        },
+        {
+          "section": "1.4",
+          "title": "Binder IPC 机制与性能影响",
+          "source": "task9-deep-tech-review",
+          "priority": 85,
+          "fix": "P1 BR_ONEWAY_SPAM_SUSPECT改为诊断信号非限流；async buffer耗尽改为事务失败非短暂阻塞"
+        }
+      ]
     }
   ],
   "2.7": {

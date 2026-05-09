@@ -9,11 +9,12 @@ drafted_by: openclaw-task2a
 last_verified: '2026-05-09'
 last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android 官方文档
 task2b_result: fixed
-task2b_state: "pending"
+last_task2b_at: "2026-05-09T08:43:58+08:00"
+task2b_state: fixed
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: "reviewed"
-pipeline_stage: "task2b_pending"
+task6_state: revisiting
+task9_state: pending
+pipeline_stage: task6_pending
 confidence: medium
 sources:
 - type: blog
@@ -223,7 +224,7 @@ oneway 很容易被当成“更快”的选择，但需要留意几个边界：
 
 **oneway 在同一对象上串行处理。** 同一个 `IBinder` 对象上的 oneway 调用，在 Server 端会排队依次执行。客户端连续发出 10 个 oneway 调用时，Server 端不会启动 10 个线程同时处理。
 
-**调用方仍然可能阻塞。** 虽然不等服务端处理结果，但 oneway 调用并非完全无开销。三个边界需要留意：(1) 同一 Binder node 上的 async transaction 不并发，积压时 Driver 的 async buffer 空间有限，耗尽后 `transact()` 返回 `BR_FAILED_REPLY`；(2) Android 11 QPR3+ 的 binder freezer 机制下，frozen callee 的 async transaction 会被缓冲，buffer overflow 时可能导致接收端崩溃（`BR_TRANSACTION_PENDING_FROZEN`）；(3) Android 12+ 引入了 oneway spam detection（`BINDER_ENABLE_ONEWAY_SPAM_DETECTION`），高频 oneway 调用可能触发 `BR_ONEWAY_SPAM_SUSPECT` 限流。在极端情况下，Client 端调用 oneway 方法也可能被短暂阻塞。
+**调用方仍需留意边界。** oneway 不等回复，但不等于完全无开销。四个边界需要留意：(1) 同一 Binder node 上的 async transaction 不并发，队列积压会影响接收端处理时延；(2) async buffer 空间有限，耗尽后 `binder_alloc_new_buf()` 返回 `-ENOSPC`，事务失败，Java/Native 层表现为 `FAILED_TRANSACTION` / `BR_FAILED_REPLY`；(3) Android 11 QPR3+ 的 binder freezer 机制下，frozen callee 的 async transaction 会被缓冲，buffer overflow 时可能导致接收端崩溃（`BR_TRANSACTION_PENDING_FROZEN`）；(4) Android 12+ 引入 oneway spam detection（`BINDER_ENABLE_ONEWAY_SPAM_DETECTION`），当同一 pid 占用过多 async buffer 时标记 `oneway_spam_suspect` 并发出 `BR_ONEWAY_SPAM_SUSPECT` 告警和 netlink report——这是诊断信号，不是限流机制。
 
 **适用场景。** 不需要确认处理结果的场景适合用 oneway：状态通知、日志上报、事件广播。需要返回值、或者需要确认对方已处理的场景，不要用 oneway。
 
