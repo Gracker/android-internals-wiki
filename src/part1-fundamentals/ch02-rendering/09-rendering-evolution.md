@@ -15,7 +15,7 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit  
 task9_state: pending
 task9_result: needs-rework

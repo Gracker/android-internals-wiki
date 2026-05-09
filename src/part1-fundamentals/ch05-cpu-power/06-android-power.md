@@ -11,7 +11,7 @@ drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-05"
 task6_reviewed_date: "2026-05-05"
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending  
 task9_result: needs-rework
