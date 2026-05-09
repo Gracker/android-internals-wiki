@@ -15,6 +15,14 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
+task6_state: revisiting
+task6_result: pass-light-edit  
+task9_state: pending
+task9_result: needs-rework
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-09T10:40:00+08:00"
+pipeline_stage: task6_pending
 sources:
 - type: official
   path: developer.android.com/about/versions
@@ -28,54 +36,6 @@ sources:
   path: frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java
 - type: aosp
   path: frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java
-- type: aosp
-  path: frameworks/base/core/java/android/view/Display.java
-- type: aosp
-  path: frameworks/base/core/java/android/view/Window.java
-- type: research
-  path: intake/research-feeds/2026-03-30-ch02-gpu-optimization.md
-- type: research
-  path: intake/research-feeds/2026-03-30-15-arr-vsync-android15-16.md
-- type: research
-  path: intake/research-feeds/2026-03-30-ch02-skia-surfaceflinger.md
-tags:
-- frametimeline
-- vulkan
-- rendering-evolution
-- blastBufferQueue
-- hwui
-- skia
-- choreographer
-- FrameMetrics
-related_chapters:
-- '2.1'
-- '2.3'
-- '2.6'
-- '2.10'
-- '3.1'
-- '8.2'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: needs-rework
-task9_task6_reviewed_date: "2026-04-30"
-reviewed_date: '2026-04-28'
-task9_reviewed_by: openclaw-task9
-repaired_date: '2026-04-26'
-repaired_by: openclaw-task2b
-review_notes: "2026-04-24 task6 re-review: pass-light-edit；2026-04-26 task2b 修复 Task9 TokenManager 源码路径、Choreographer 版本边界、SkiaVulkan 裸数字问题；2026-04-26 task6 revisiting review: pass-light-edit, 修复1处禁用词。；2026-04-27 task9 deep-review: needs-rework。P1 3，P2 1。"
-task2b_result: fixed
-task2b_state: pending
-last_task2b_at: "2026-04-28T09:42:00+08:00"
-last_task9_at: "2026-05-01T11:20:00+08:00"
-task2b_fixed_by: openclaw-task2b
-updated_date: '2026-04-26'
-updated_by: openclaw-task2b
-task9_reviewed_date: "2026-05-01"
-task9_review_notes: "2026-05-01 task9 deep-review: needs-rework。P0 0 / P1 3 / P2 1。"
-
----
 
 # 渲染机制的版本演进
 
@@ -97,7 +57,7 @@ Android 3.0（API 11，2011 年）引入了基于 OpenGL ES 2.0 的硬件加速�
 
 HWUI 带来了三个核心概念：
 
-1. **DisplayList（后更名为 RenderNode）**：将 `View` 的绘制操作录制为一份命令列表，而非直接执行。当一个 `View` 只有位置变化（平移、旋转、缩放）时，无需重新录制所有 draw 命令，只需修改变换矩阵即可。这在 Perfetto 中体现为：同一个 `View` 的连续帧，主线程 `draw` 阶段的耗时会明显减少——因为只需修改矩阵参数，跳过了整个命令录制过程。
+1. **DisplayList（后更名为 RenderNode）**：将 `View` 的绘制操作录制为一份命令列表，而非直接执行。当一个 `View` 只有位置变化（平移、旋转、缩放）时，无需重新录制所有 draw 命令，只需修改变换配置即可。这在 Perfetto 中体现为：同一个 `View` 的连续帧，主线程 `draw` 阶段的耗时会明显减少——因为只需修改配置参数，跳过了整个命令录制过程。
 
 2. **硬件层（Hardware Layer）**：将复杂的 `View` 内容缓存为 GPU 纹理，后续帧只需做纹理合成，不再重复光栅化。适合频繁做动画但内容不变的 `View`。
 
@@ -184,15 +144,13 @@ Android Oreo（8.0）开始测试将 Skia 作为统一的渲染后端，通过 S
 
 这个改动简化了架构：HWUI 不再直接管理 OpenGL ES 上下文，而是将所有绘制命令交给 Skia，由 Skia 统一调度 GPU。好处是 Skia 团队可以独立优化渲染管线，无需 HWUI 逐版本调整 GL 调用。
 
-### Skia Graphite：从画家算法到深度剔除（Android 16+）
+### Skia Graphite：方向性后端演进
 
-Skia 的下一代渲染后端 **Graphite** 在 Android 16 开始进入生产部署。Graphite 对渲染管线做了一个根本性的改变：将传统的 Back-to-Front（画家算法）绘制顺序改为 **Front-to-Back**，配合 GPU 硬件的 **Early-Z 深度测试**，自动跳过被遮挡像素的片元着色。
+Skia 的下一代渲染后端 **Graphite** 是 Skia 团队的长期演进方向。Graphite 对渲染管线的设计思路是：将传统的 Back-to-Front（画家算法）绘制顺序改为 **Front-to-Back**，配合 GPU 硬件的 **Early-Z 深度测试**，跳过被遮挡像素的片元着色。
 
-传统画家算法下，GPU 按从后到前的顺序逐层绘制，每一层都会实际执行片元着色并写入颜色缓冲。被遮挡的像素白白消耗了 GPU 算力。Graphite 的做法是先画前面的层，深度缓冲记录下已写入像素的深度值；后续层在着色前先做 Early-Z 测试，如果当前像素深度更大（被遮挡），直接跳过着色，不执行任何片元计算。
+传统画家算法下，GPU 按从后到前的顺序逐层绘制，每一层都会实际执行片元着色并写入颜色缓冲。被遮挡的像素白白消耗了 GPU 算力。Graphite 的设计是先画前面的层，深度缓冲记录已写入像素的深度值；后续层在着色前先做 Early-Z 测试，如果当前像素深度更大（被遮挡），直接跳过着色。
 
-这对过度绘制的影响是：在完全不透明的 UI 区域，过度绘制被引擎层面自动消除，开发者不需要手动裁剪或移除背景。但半透明层不在 Z-test 优化范围内——混合操作必须看到底层内容，所以半透明叠加场景仍然需要开发者优化层级结构。
-
-在 Perfetto 中，Graphite 后端对应的 RenderThread 行为和 SkiaGL/SkiaVulkan 有差异，命令录制的并行度更高，`DrawFrame` slice 的内部结构会发生变化。目前 Graphite 的部署范围取决于设备厂商的驱动适配进度，Android 16 上并非所有设备都启用。
+**当前启用状态**：截至 AOSP android-16.0.0_r1，`frameworks/base/libs/hwui/pipeline/skia/` 目录下只有 SkiaOpenGLPipeline、SkiaVulkanPipeline、SkiaGpuPipeline 等 HWUI 后端，未检出 Graphite 后端或 HWUI 侧的启用路径。Graphite 是 Skia 方向上的重要能力，但 Android 应用 UI 渲染是否默认走 Graphite，取决于后续版本的 HWUI 集成进度和设备厂商的驱动适配，不能假设 Android 16 设备已统一启用。开发者应关注 HWUI 后端选择逻辑（`use_vulkan` 属性、`debug.hwui.renderer` 配置）来判断实际使用的渲染管线。
 
 ### SkiaVulkan 后端（Android 10+ 可测试，2024+ 扩大部署）
 
@@ -211,17 +169,17 @@ Vulkan 后端相比 OpenGL ES 的具体改进：
 - Android 13（API 33）：新设备必须支持 Vulkan 1.3
 - Android 16（API 36）：新设备必须支持 Vulkan 1.4 及 VPA16 Profile（Android Vulkan Profile 2025），Host Image Copy 等高性能纹理技术成为设备必选项。VPA16 的核心价值是统一跨厂商的驱动行为：以前同一份 Vulkan 代码在不同 SoC 上可能因为可选特性支持差异产生不同的性能表现，VPA16 把这些特性锁定为强制基线，减少了"设备 A 正常、设备 B 渲染错误"的碎片化问题。
 
-## BLASTBufferQueue：统一的 Buffer 管理（Android 12）
+## BLASTBufferQueue：统一的 Buffer 管理（Android 11+）
 
 ### 从 BufferQueue 到 BLASTBufferQueue
 
-在 Android 11 及之前，App 进程与 SurfaceFlinger 之间的 Buffer 流转通过 `BufferQueue` 管理。`BufferQueue` 的设计存在一些问题：当多个 App 进程同时提交 Buffer 时，窗口几何变化（如旋转、resize）和 Buffer 内容的同步缺乏统一机制，可能导致 ANR（因为 View 事务已更新但 Buffer 回调未释放）。
+在 Android 10 及之前，App 进程与 SurfaceFlinger 之间的 Buffer 流转通过 `BufferQueue` 管理。`BufferQueue` 的设计存在一些问题：当多个 App 进程同时提交 Buffer 时，窗口几何变化（如旋转、resize）和 Buffer 内容的同步缺乏统一机制，可能导致 ANR（因为 View 事务已更新但 Buffer 回调未释放）。
 
-Android 12（API 31，2021 年）引入了 **BLASTBufferQueue**（BLAST = Buffer Layer Async Synced Transfer），替代了 App 端的 `BufferQueue`。
+**BLASTBufferQueue**（BLAST = Buffer Layer Async Synced Transfer）在 Android 11（API 30）开始进入主线：`ViewRootImpl` 中的 `mBlastBufferQueue` 在 AOSP android-11.0.0_r1 已可见，主窗口路径率先迁移。Android 12（API 31）的重点是 FrameTimeline/VSyncId/窗口同步观测口径的完善，以及 BLAST 覆盖范围从主窗口扩展到更多 Surface 类型。
 
 ### BLASTBufferQueue 的核心改进
 
-1. **App 端自主提交**：App 不再需要等待 SurfaceFlinger 释放 Buffer 才能获取新的 Buffer，而是可以主动向 SurfaceFlinger "blasting"提交 Buffer，SurfaceFlinger 在下一个 `VSYNC-sf` 时机进行合成
+1. **Buffer 与 Transaction 绑定提交**：BLAST 将 buffer 与 `SurfaceControl.Transaction` 绑定到同一帧边界提交，改善了几何变化（位置/大小/裁剪）与 buffer 内容的同步。buffer 复用等待仍由 BufferQueue slot 与 release fence 决定——当 slot 耗尽或 release fence 未 signal 时，App 在 `dequeueBuffer` 仍可能被 back-pressure 卡住
 2. **事务与 Buffer 绑定**：窗口几何变化（位置、大小、裁剪）与 Buffer 内容打包在一起提交，确保状态一致性
 3. **多进程同步优化**：当多个 App 进程向同一个 SurfaceFlinger 提交内容时，`BLASTBufferQueue` 提供了更健壮的同步机制
 
@@ -304,7 +262,7 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 ### FrameMetrics API：量化每一帧的"慢"在哪里
 
-分析卡顿时，核心问题是："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
+分析卡顿时，核心冲突在于："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
 
 FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。开发者不需要在代码里手动打点，就能拿到完整的帧耗时分布。
 
@@ -467,11 +425,12 @@ Unreal Engine 已集成 Swappy。
 | 8.0 | 2017 | SkiaGL 后端测试 | HWUI 渲染路径变更（OpenGL → SkiaGL） |
 | 9.0 | 2018 | SkiaGL 正式默认 | `hwui` Task 线程行为变化 |
 | 10 | 2019 | Vulkan 1.1 强制要求（64位） | SkiaVulkan 可测试 |
-| 12 | 2021 | BLASTBufferQueue + FrameTimeline | Buffer 管理 Track 变化；FrameTimeline 可精确对比预期/实际帧时间 |
+| 11 | 2020 | BLASTBufferQueue 主窗口迁移 | App 端主窗口 Buffer 流转开始走 BLAST 路径 |
+| 12 | 2021 | BLAST 扩展 + FrameTimeline | BLAST 覆盖更多 Surface 类型；FrameTimeline 可精确对比预期/实际帧时间 |
 | 13 | 2022 | vsync-appSf 解耦 + AGSL 引入 | Choreographer 同步精度提升；自定义图形着色器可用 |
 | 15 | 2024 | ARR 自适应刷新率引入 | `VSYNC-app` 间隔不再固定 |
-| 16 | 2025 | VPA16 Vulkan Profile 加严 + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan 能力门槛提升；帧率动态切换更频繁；Graphite Front-to-Back 绘制 |
-| 16KB 页 | 2024-2025 | 16KB Page Size 在旗舰设备上落地 | TLB 命中率提升约 9%，渲染管线有效带宽增益 |
+| 16 | 2025 | VPA16 Vulkan Profile 加严 + OpenGL ES 维护模式 + ANGLE 持续集成（设备级） + ARR 增强 | Vulkan 能力门槛提升；帧率动态切换更频繁；Graphite 为 Skia 方向性后端，HWUI 侧启用路径待后续版本 |
+| 16KB 页 | 2024-2025 | 16KB Page Size 在旗舰设备上实现 | TLB 命中率提升约 9%，渲染管线有效带宽增益 |
 
 > [已验证: Android 16 于 2025 年 6 月 10 日正式发布（稳定版 BP2A.250605.031.A2），确认年份为 2025。验证来源: Wikipedia + androidcentral.com + androidauthority.com。验证时间: 2026-04-03]
 
@@ -487,9 +446,9 @@ Android 3.0 就引入了 HWUI 硬件加速，4.0 只是将它设为默认开启�
 
 RenderThread 是 `hwui` 库内部管理的系统线程，每个拥有硬件加速 Window 的进程都会自动创建一个。它不是 `Thread` 的子类，而是通过 native 代码（`renderthread::RenderThread.cpp`）实现的。在 Perfetto 中它的线程名通常是 `RenderThread`。
 
-### "BLASTBufferQueue 在 Android 12 就完全替代了 BufferQueue"——部分替代
+### "BLASTBufferQueue 在 Android 12 就完全替代了 BufferQueue"——部分替代，且起点是 Android 11
 
-BLASTBufferQueue 替代的是 **App 端**与 SurfaceFlinger 之间的 Buffer 流转。SurfaceFlinger 内部以及系统服务之间的 Buffer 管理仍然使用 `BufferQueue`。在 Perfetto 中，两者的 Track 共存是正常的。
+BLASTBufferQueue 的主窗口迁移从 Android 11 就开始了（`ViewRootImpl.mBlastBufferQueue`），Android 12 扩展到更多 Surface 类型并引入 FrameTimeline 观测。BLAST 替代的是 **App 端**与 SurfaceFlinger 之间的 Buffer 流转。SurfaceFlinger 内部以及系统服务之间的 Buffer 管理仍然使用 `BufferQueue`。在 Perfetto 中，两者的 Track 共存是正常的。
 
 ### "VSync 信号间隔永远固定"——ARR 打破了这个假设
 
