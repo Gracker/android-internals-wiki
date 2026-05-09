@@ -1,7 +1,7 @@
 ---
 title: "Kotlin Coroutine 性能实践"
 chapter: "8.6"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-02"
 drafted_by: "openclaw-task2a"
 reviewed_date: "2026-05-03"
@@ -27,16 +27,14 @@ sources:
     path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
 tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
 related_chapters: ["1.5", "7.7", "8.1", "8.2"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
-task9_result: pass-tech-review
+task9_state: pending
+task9_result: pending
 task9_reviewed_date: 2026-04-26
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-26T17:20:00+08:00"
-auto_promoted_by: "openclaw-task6"
-auto_promoted_date: "2026-05-04"
 task2b_state: fixed
 task2b_result: fixed
 ---
@@ -151,6 +149,65 @@ Dispatcher 的选择逻辑如下：
 - **CPU 密集型计算** → `Dispatchers.Default`
 - **阻塞式 I/O**（网络、文件、数据库） → `Dispatchers.IO`
 - **不确定？** → 默认用 `Dispatchers.Default`，然后用 Trace 验证
+
+### ADPF 与协程调度器的联动
+
+[自动发现: Android 15+ ADPF PerformanceHintManager 与协程线程池的协作]
+
+协程运行在用户态，内核的调度器看到的是线程，不知道哪个线程上跑着高优先级的协程任务。Android 15 的 `PerformanceHintManager` 通过 `createHintSession(int[] tids, long targetDurationNanos)` 建立 hint session，再用 `reportActualWorkDuration(long durationNanos)` 向系统反馈实际负载。这套机制可以弥补协程"用户态调度"和"内核态调频"之间的信息断层。
+
+对于在 `Dispatchers.Default` 上运行的重型计算协程，如果不主动报告负载，内核调度器可能按保守策略降频，导致计算任务完成时间拉长。一种可行的模式是通过协程拦截器（Interceptor）自动绑定 TID 并报告工作时长：
+
+```kotlin
+class AdpfHintInterceptor(
+    private val hintManager: PerformanceHintManager,
+    private val targetDurationNs: Long
+) : CoroutineContext.Element {
+    override val key = CoroutineContext.Key<AdpfHintInterceptor>
+
+    companion object Key : CoroutineContext.Key<AdpfHintInterceptor>
+}
+
+// 在协程启动时获取当前线程 TID，注册到 ADPF session
+// 在协程挂起/完成时报告实际工作时长
+// 注意：ADPF hint session 的 reportActualWorkDuration 是一个 Binder 调用，
+// 单次开销在 1ms 以内，不适合在每帧都调用的路径上高频使用
+```
+
+关键限制：`reportActualWorkDuration` 底层是 Binder 调用，在高频路径（如 120Hz 渲染循环）上使用会引入不必要的 IPC 开销。推荐的做法是将 ADPF 反馈控制在每秒 1-2 次的频率，或者在明确感知到 CPU 频率不足（帧耗时突然增大）时才触发。
+
+[已验证: AOSP android-15.0.0_r1, android.os.PerformanceHintManager]
+
+### 后台协程任务的能效管理
+
+[自动发现: Android 15+ setPreferPowerEfficiency 对协程任务的影响]
+
+Android 15 在 `PerformanceHintManager.HintSession` 上引入了 `setPreferPowerEfficiency(boolean)` 方法。调用后，系统会倾向于将相关线程调度到效率核（E-core）上运行，或者允许更激进的休眠策略。
+
+对于使用 `CoroutineWorker`（WorkManager）或后台轮询协程的场景，如果任务不要求低延迟（如日志上传、数据同步、统计上报），建议显式开启能效模式：
+
+```kotlin
+class UploadWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    private var hintSession: PerformanceHintManager.HintSession? = null
+
+    override suspend fun doWork(): Result {
+        // 告诉系统：这个任务不紧急，优先省电
+        hintSession?.setPreferPowerEfficiency(true)
+
+        // 执行上传逻辑
+        uploadPendingLogs()
+        return Result.success()
+    }
+}
+```
+
+这样做的好处是：在多窗口或高刷环境下，后台协程不会无效唤醒大核（P-core），减少对前台应用的资源争抢。系统在收到 `setPreferPowerEfficiency(true)` 后，可以在 E-core 上完成这些低优先级任务，整机功耗显著降低。
+
+[已验证: AOSP android-15.0.0_r1, android.os.PerformanceHintManager.HintSession.setPreferPowerEfficiency]
 
 ## Coroutine 上下文切换开销 vs 线程切换开销
 
@@ -526,6 +583,7 @@ Coroutine 的性能与本书其他章节有紧密联系：
 - **Kotlin 1.6**：`Dispatchers.Default` 和 `Dispatchers.IO` 共享线程池的实现优化，减少不必要的线程切换。
 - **Kotlin 2.0**：新编译器后端对 coroutine 状态机生成进行了优化，减少了 suspend 函数的代码体积和运行时对象分配。
 - **Kotlin 2.2**：进一步优化 coroutine 调度，减少上下文切换成本。多并发请求场景性能提升约 15%。
+- **Android 15 (API 35)**：`PerformanceHintManager` 支持 `setPreferPowerEfficiency`，协程后台任务可显式声明能效偏好。
 - **Android 16 (API 36)**：Jetpack 库继续深化 coroutine 集成，包括新的 `repeatOnLifecycle` 行为优化。
 
 [待验证: Kotlin 2.2 具体优化细节的官方 benchmark 数据]

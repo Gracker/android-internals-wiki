@@ -1805,8 +1805,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T01:20:33",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-11-ondevice-ml-inference-performance-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-11-ondevice-ml-inference-performance-external-review.md",
+      "completed_at": "2026-05-09T20:48:42.047756+08:00",
+      "completed_reason": "task2b: duplicate of section 5.11 (already completed on 2026-05-09T19:21:43), issues already addressed"
     },
     {
       "section": "06.03",
@@ -1889,8 +1891,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-10-8.2-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-10-8.2-external-review.md",
+      "completed_at": "2026-05-09T20:48:42.047756+08:00",
+      "completed_reason": "task2b fixed: added 16KB Page Size cold launch I/O削峰分析(3.16% avg speedup, TLB/页表收益), expanded ApplicationStartInfo with field table and Perfetto correlation guide"
     },
     {
       "section": "8.6",
@@ -1913,8 +1917,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-29T16:19:40.737307",
-      "status": "pending",
-      "source_file": "2026-04-29-10-8.6-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-10-8.6-external-review.md",
+      "completed_at": "2026-05-09T20:48:42.047756+08:00",
+      "completed_reason": "task2b fixed: added ADPF PerformanceHintManager coroutine interceptor pattern, setPreferPowerEfficiency for CoroutineWorker background tasks"
     },
     {
       "section": "14.1 工具与基准测试",
