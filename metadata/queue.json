@@ -2078,7 +2078,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "与章节内容无关（Android Framework 面试参考答案，非性能优化深度内容），跳过"
     },
     {
       "section": "4.1 内存管理",
@@ -2098,7 +2100,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "Material already covered in ch04/01-memory-overview.md (33 处 Swap/ZRAM/kswapd 引用)"
     },
     {
       "section": "16.1 AOSP源码",
@@ -2118,7 +2122,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "Material already covered in ch07/03-jank-methodology.md (Binder Transaction 诊断章节，已含 android_binder_txns SQL 分析)"
     },
     {
       "section": "7.1 流畅度优化",
@@ -2138,7 +2144,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "Material already injected into ch02/06-surfaceflinger.md references (BufferQueue 内部锁竞争机制)"
     },
     {
       "section": "3.1 输入系统",
@@ -2158,7 +2166,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "目标章节 ch03/01-input-dispatch.md 已 finalized (pipeline_stage: ready-to-publish)，跳过"
     },
     {
       "section": "16.1 AOSP源码",
@@ -2178,7 +2188,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "目标章节 ch05/09-adpf.md 已 finalized (pipeline_stage: ready-to-publish)，跳过"
     },
     {
       "section": "14.1 工具与基准测试",
@@ -2198,7 +2210,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "与章节内容无关（泛泛 2026 年 Android 开发趋势讨论，非工具/基准测试深度内容），跳过"
     },
     {
       "section": "5.X",
@@ -2218,7 +2232,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-01T05:37:18.378854",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "目标章节 ch05/09-adpf.md 已 finalized (pipeline_stage: ready-to-publish)，跳过"
     },
     {
       "section": "16.X",
@@ -2238,7 +2254,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-01T05:37:18.396553",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "Material already covered in ch14/13-hook-infrastructure.md (sections on 16KB Page Size Hook 对齐实现细节)"
     },
     {
       "section": "14.X",
@@ -2258,7 +2276,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-01T05:37:18.410660",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "目标章节不明确（14.X 待分配），无法定位具体注入位置，跳过"
     },
     {
       "section": "14.X",
@@ -2278,7 +2298,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-01T05:37:18.422697",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T03:30:11+08:00",
+      "completed_reason": "目标章节不明确（14.X 待分配），无法定位具体注入位置，跳过"
     },
     {
       "section": "19.23",
