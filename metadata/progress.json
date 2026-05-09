@@ -46,7 +46,7 @@
       "issues_fixed": 5,
       "details": [
         "2.7 P0: RenderEffect source anchor corrected",
-        "2.7 P1: Android 16 auto-layer heuristic → promotedToLayer()",
+        "2.7 P1: Android 16 auto-layer heuristic \u2192 promotedToLayer()",
         "2.7 P1: SF relationship View layer vs SF layer clarified",
         "2.7 P1: Cache invalidation narrowed to dirty+redraw",
         "13.7 P1: Standard Library module names corrected to dot-separated"
@@ -59,16 +59,16 @@
         "15.6"
       ],
       "sections_title": [
-        "其他响应速度场景",
-        "性能测试最佳实践"
+        "\u5176\u4ed6\u54cd\u5e94\u901f\u5ea6\u573a\u666f",
+        "\u6027\u80fd\u6d4b\u8bd5\u6700\u4f73\u5b9e\u8df5"
       ],
       "sources": [
         "task9-deep-tech-review",
         "task9-deep-tech-review"
       ],
       "fixes": [
-        "§8.4: P1 Binder线程池待验证标记已删除，写入Android 16确认结论（DEFAULT_MAX_BINDER_THREADS=16，BINDER_VM_SIZE不变）",
-        "§15.6: P90/FPS分位语义修正（耗时类用P90，FPS改用P10/慢帧占比）；Macrobenchmark自动稳定化改为IsolationActivity+sustained perf mode源码级描述"
+        "\u00a78.4: P1 Binder\u7ebf\u7a0b\u6c60\u5f85\u9a8c\u8bc1\u6807\u8bb0\u5df2\u5220\u9664\uff0c\u5199\u5165Android 16\u786e\u8ba4\u7ed3\u8bba\uff08DEFAULT_MAX_BINDER_THREADS=16\uff0cBINDER_VM_SIZE\u4e0d\u53d8\uff09",
+        "\u00a715.6: P90/FPS\u5206\u4f4d\u8bed\u4e49\u4fee\u6b63\uff08\u8017\u65f6\u7c7b\u7528P90\uff0cFPS\u6539\u7528P10/\u6162\u5e27\u5360\u6bd4\uff09\uff1bMacrobenchmark\u81ea\u52a8\u7a33\u5b9a\u5316\u6539\u4e3aIsolationActivity+sustained perf mode\u6e90\u7801\u7ea7\u63cf\u8ff0"
       ]
     },
     {
@@ -82,13 +82,13 @@
           "section": "5.5",
           "source": "task6-review",
           "priority": 95,
-          "fixes": "P0 删除AIW残留段(thermal_monitor_notify/update_libcache_stats不存在); P1 16KB thermal确定性断言整段删除,保留前文研究假设口径"
+          "fixes": "P0 \u5220\u9664AIW\u6b8b\u7559\u6bb5(thermal_monitor_notify/update_libcache_stats\u4e0d\u5b58\u5728); P1 16KB thermal\u786e\u5b9a\u6027\u65ad\u8a00\u6574\u6bb5\u5220\u9664,\u4fdd\u7559\u524d\u6587\u7814\u7a76\u5047\u8bbe\u53e3\u5f84"
         },
         {
           "section": "7.1",
           "source": "task9-deep-tech-review",
           "priority": 85,
-          "fixes": "P1 标题从'Android 15/16新增'改为'Android 12+已有与较新tag补充'; 未验证枚举移出主表; Dropped版本门槛单独标注; 高频词'真正'从5次降至2次"
+          "fixes": "P1 \u6807\u9898\u4ece'Android 15/16\u65b0\u589e'\u6539\u4e3a'Android 12+\u5df2\u6709\u4e0e\u8f83\u65b0tag\u8865\u5145'; \u672a\u9a8c\u8bc1\u679a\u4e3e\u79fb\u51fa\u4e3b\u8868; Dropped\u7248\u672c\u95e8\u69db\u5355\u72ec\u6807\u6ce8; \u9ad8\u9891\u8bcd'\u771f\u6b63'\u4ece5\u6b21\u964d\u81f32\u6b21"
         }
       ]
     },
@@ -138,11 +138,11 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "review_log": "logs/review/2026-05-09-08-review.md",
-      "notes": "本轮仅 1.4 具备实质内容可复审；19.27 仍为空壳章节，跳过等待 task2 加工。1.4 L1/L2 轻修后送 Task9 复审；queue.json 中仍有 1.4 既有 pending 技术项，未自动晋升。"
+      "notes": "\u672c\u8f6e\u4ec5 1.4 \u5177\u5907\u5b9e\u8d28\u5185\u5bb9\u53ef\u590d\u5ba1\uff1b19.27 \u4ecd\u4e3a\u7a7a\u58f3\u7ae0\u8282\uff0c\u8df3\u8fc7\u7b49\u5f85 task2 \u52a0\u5de5\u30021.4 L1/L2 \u8f7b\u4fee\u540e\u9001 Task9 \u590d\u5ba1\uff1bqueue.json \u4e2d\u4ecd\u6709 1.4 \u65e2\u6709 pending \u6280\u672f\u9879\uff0c\u672a\u81ea\u52a8\u664b\u5347\u3002"
     },
     {
       "timestamp": "2026-05-09T07:12:00+08:00",
@@ -159,11 +159,11 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "review_log": "logs/review/2026-05-09-07-review.md",
-      "notes": "仅发现 2 个 task6_state=revisiting 的可审章节；两章均为长章节，本轮按规则降为 2 章。L1/L2 轻修后送 Task9 复审。"
+      "notes": "\u4ec5\u53d1\u73b0 2 \u4e2a task6_state=revisiting \u7684\u53ef\u5ba1\u7ae0\u8282\uff1b\u4e24\u7ae0\u5747\u4e3a\u957f\u7ae0\u8282\uff0c\u672c\u8f6e\u6309\u89c4\u5219\u964d\u4e3a 2 \u7ae0\u3002L1/L2 \u8f7b\u4fee\u540e\u9001 Task9 \u590d\u5ba1\u3002"
     },
     {
       "timestamp": "2026-05-09T06:05:00+08:00",
@@ -179,7 +179,7 @@
       "auto_finalized": [],
       "skipped": [],
       "review_log": "logs/review/2026-05-09-06-review.md",
-      "notes": "仅发现 2 个 task6_state=revisiting 的可审章节；3.5 因既有 queue pending 条目保持 task2b_pending，8.3 送 Task9 复审。"
+      "notes": "\u4ec5\u53d1\u73b0 2 \u4e2a task6_state=revisiting \u7684\u53ef\u5ba1\u7ae0\u8282\uff1b3.5 \u56e0\u65e2\u6709 queue pending \u6761\u76ee\u4fdd\u6301 task2b_pending\uff0c8.3 \u9001 Task9 \u590d\u5ba1\u3002"
     },
     {
       "timestamp": "2026-05-09T05:15:25+08:00",
@@ -210,7 +210,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c"
         }
       ],
       "review_log": "logs/review/2026-05-07-13-review.md"
@@ -229,7 +229,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c"
         }
       ],
       "review_log": "logs/review/2026-05-07-14-review.md"
@@ -250,7 +250,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c"
         }
       ],
       "review_log": "logs/review/2026-05-07-15-review.md"
@@ -285,7 +285,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c"
         }
       ],
       "review_log": "logs/review/2026-05-07-17-review.md"
@@ -305,7 +305,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c"
         }
       ],
       "review_log": "logs/review/2026-05-07-18-review.md"
@@ -326,7 +326,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c"
         }
       ],
       "review_log": "logs/review/2026-05-07-19-review.md"
@@ -345,7 +345,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c"
         }
       ],
       "review_log": "logs/review/2026-05-07-20-review.md"
@@ -365,7 +365,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "auto_finalized": [],
@@ -385,7 +385,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "auto_finalized": [],
@@ -405,7 +405,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "review_log": "logs/review/2026-05-08-01-review.md"
@@ -425,7 +425,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "review_log": "logs/review/2026-05-08-02-review.md"
@@ -444,7 +444,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "auto_finalized": [],
@@ -511,7 +511,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "review_log": "logs/review/2026-05-08-07-review.md"
@@ -608,7 +608,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）；已存在 blocked 队列项，等待正文草拟流程"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09\uff1b\u5df2\u5b58\u5728 blocked \u961f\u5217\u9879\uff0c\u7b49\u5f85\u6b63\u6587\u8349\u62df\u6d41\u7a0b"
         }
       ],
       "review_log": "logs/review/2026-05-08-15-review.md"
@@ -692,7 +692,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff09"
         }
       ],
       "review_log": "logs/review/2026-05-08-21-review.md"
@@ -711,7 +711,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行；queue 已有 blocked 条目）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff1bqueue \u5df2\u6709 blocked \u6761\u76ee\uff09"
         }
       ],
       "review_log": "logs/review/2026-05-08-23-review.md"
@@ -732,11 +732,11 @@
       "skipped": [
         {
           "section": "1.4",
-          "reason": "queue.json 仍有 pending 技术回炉项，跳过本轮写作复审"
+          "reason": "queue.json \u4ecd\u6709 pending \u6280\u672f\u56de\u7089\u9879\uff0c\u8df3\u8fc7\u672c\u8f6e\u5199\u4f5c\u590d\u5ba1"
         },
         {
           "section": "19.27",
-          "reason": "内容不充分（outline 后正文 0 行；queue 已有 blocked 条目）"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff08outline \u540e\u6b63\u6587 0 \u884c\uff1bqueue \u5df2\u6709 blocked \u6761\u76ee\uff09"
         }
       ],
       "review_log": "logs/review/2026-05-09-02-review.md"
@@ -755,7 +755,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行；queue 中仍有 blocked 外部 review 项"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c\uff1bqueue \u4e2d\u4ecd\u6709 blocked \u5916\u90e8 review \u9879"
         }
       ],
       "review_log": "logs/review/2026-05-09-03-review.md"
@@ -774,7 +774,7 @@
       "skipped": [
         {
           "section": "19.27",
-          "reason": "内容不充分，outline 后正文 0 行"
+          "reason": "\u5185\u5bb9\u4e0d\u5145\u5206\uff0coutline \u540e\u6b63\u6587 0 \u884c"
         }
       ],
       "review_log": "logs/review/2026-05-09-04-review.md"
@@ -1353,12 +1353,12 @@
         {
           "section": "13.7",
           "priority": 95,
-          "fix": "P0 Custom Data Source Register() 补 DataSourceDescriptor 参数 + TraceConfig 启用片段"
+          "fix": "P0 Custom Data Source Register() \u8865 DataSourceDescriptor \u53c2\u6570 + TraceConfig \u542f\u7528\u7247\u6bb5"
         },
         {
           "section": "2.1",
           "priority": 85,
-          "fix": "P1 BufferQueue 消费者图与 HWC 边界修正；P1 BLASTBufferQueue 版本从 Android 12 改为 Android 11"
+          "fix": "P1 BufferQueue \u6d88\u8d39\u8005\u56fe\u4e0e HWC \u8fb9\u754c\u4fee\u6b63\uff1bP1 BLASTBufferQueue \u7248\u672c\u4ece Android 12 \u6539\u4e3a Android 11"
         }
       ]
     },
@@ -1368,25 +1368,25 @@
       "sections": [
         {
           "section": "2.17",
-          "title": "Frame Pacing Library 与帧节奏控制",
+          "title": "Frame Pacing Library \u4e0e\u5e27\u8282\u594f\u63a7\u5236",
           "fixes": [
-            "P1 DeliQueue targetSdk 37+ 生效边界补充"
+            "P1 DeliQueue targetSdk 37+ \u751f\u6548\u8fb9\u754c\u8865\u5145"
           ],
           "status": "ready-for-review"
         },
         {
           "section": "5.5",
-          "title": "Thermal 管控",
+          "title": "Thermal \u7ba1\u63a7",
           "fixes": [
-            "P1 16KB 热平衡因果链降级为研究假设"
+            "P1 16KB \u70ed\u5e73\u8861\u56e0\u679c\u94fe\u964d\u7ea7\u4e3a\u7814\u7a76\u5047\u8bbe"
           ],
           "status": "ready-for-review"
         },
         {
           "section": "10.6",
-          "title": "内存抖动与频繁 GC",
+          "title": "\u5185\u5b58\u6296\u52a8\u4e0e\u9891\u7e41 GC",
           "fixes": [
-            "P1 Android 17 分代 CMC 全量默认降级为待验证"
+            "P1 Android 17 \u5206\u4ee3 CMC \u5168\u91cf\u9ed8\u8ba4\u964d\u7ea7\u4e3a\u5f85\u9a8c\u8bc1"
           ],
           "status": "ready-for-review"
         }
@@ -1398,17 +1398,17 @@
       "sections": [
         {
           "section": "7.1",
-          "title": "卡顿的定义与分类",
+          "title": "\u5361\u987f\u7684\u5b9a\u4e49\u4e0e\u5206\u7c7b",
           "fixes": [
-            "P1 Binder SQL改为帧窗口约束：用actual_frame_timeline_slice锁定AppDeadlineMissed帧的ts/dur/upid，join android_binder_txns限定client时间重叠，binder_txn_id关联breakdown"
+            "P1 Binder SQL\u6539\u4e3a\u5e27\u7a97\u53e3\u7ea6\u675f\uff1a\u7528actual_frame_timeline_slice\u9501\u5b9aAppDeadlineMissed\u5e27\u7684ts/dur/upid\uff0cjoin android_binder_txns\u9650\u5b9aclient\u65f6\u95f4\u91cd\u53e0\uff0cbinder_txn_id\u5173\u8054breakdown"
           ],
           "status": "ready-for-review"
         },
         {
           "section": "8.4",
-          "title": "其他响应速度场景",
+          "title": "\u5176\u4ed6\u54cd\u5e94\u901f\u5ea6\u573a\u666f",
           "fixes": [
-            "P1 删除FragmentManager:*自动可见Perfetto slice断言（AndroidX源码无Trace.beginSection），改为业务自行插桩+主线程slice+FrameTimeline观察"
+            "P1 \u5220\u9664FragmentManager:*\u81ea\u52a8\u53ef\u89c1Perfetto slice\u65ad\u8a00\uff08AndroidX\u6e90\u7801\u65e0Trace.beginSection\uff09\uff0c\u6539\u4e3a\u4e1a\u52a1\u81ea\u884c\u63d2\u6869+\u4e3b\u7ebf\u7a0bslice+FrameTimeline\u89c2\u5bdf"
           ],
           "status": "ready-for-review"
         }
@@ -1427,14 +1427,14 @@
           "priority": 95,
           "source": "task9-deep-tech-review",
           "issues_fixed": 2,
-          "details": "P0 FrameMetrics GPU_DURATION版本拆分; P0 ApplicationExitInfo Android 11/API 30+"
+          "details": "P0 FrameMetrics GPU_DURATION\u7248\u672c\u62c6\u5206; P0 ApplicationExitInfo Android 11/API 30+"
         },
         {
           "section": "13.2",
           "priority": 85,
           "source": "task9-deep-tech-review",
           "issues_fixed": 1,
-          "details": "CPU Callstack Sampling补充Android 13+版本要求和userdebug|eng|debuggable运行条件"
+          "details": "CPU Callstack Sampling\u8865\u5145Android 13+\u7248\u672c\u8981\u6c42\u548cuserdebug|eng|debuggable\u8fd0\u884c\u6761\u4ef6"
         }
       ]
     },
@@ -1446,20 +1446,20 @@
           "section": "8.10",
           "file": "src/part2-performance/ch08-responsiveness/08-system-triggered-profiling.md",
           "issues_fixed": [
-            "ANOMALY专段: tag-driven routing + MemoryLimiter证据链 + 临终遗言定位",
-            "产物表增强: 新增ANOMALY/APP_COMPAT行, 标注artifact动态性",
-            "多UID限制: 同一UID多进程注册时不保证每个都收到产物",
-            "为什么要了解: 强调ANOMALY在kill之前的战略价值"
+            "ANOMALY\u4e13\u6bb5: tag-driven routing + MemoryLimiter\u8bc1\u636e\u94fe + \u4e34\u7ec8\u9057\u8a00\u5b9a\u4f4d",
+            "\u4ea7\u7269\u8868\u589e\u5f3a: \u65b0\u589eANOMALY/APP_COMPAT\u884c, \u6807\u6ce8artifact\u52a8\u6001\u6027",
+            "\u591aUID\u9650\u5236: \u540c\u4e00UID\u591a\u8fdb\u7a0b\u6ce8\u518c\u65f6\u4e0d\u4fdd\u8bc1\u6bcf\u4e2a\u90fd\u6536\u5230\u4ea7\u7269",
+            "\u4e3a\u4ec0\u4e48\u8981\u4e86\u89e3: \u5f3a\u8c03ANOMALY\u5728kill\u4e4b\u524d\u7684\u6218\u7565\u4ef7\u503c"
           ]
         },
         {
           "section": "5.9",
           "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
           "issues_fixed": [
-            "setPreferIdle (API 37): 新增Android 17节能API说明与代码示例",
-            "厂商延迟对照表: 2026旗舰机Hint响应延迟数据(1.2ms-5ms)",
-            "RecyclerView 1.4 ADPF: 内置HintSession管理说明",
-            "Headroom API风险: 强调120fps下1ms调用的帧预算消耗(12%)"
+            "setPreferIdle (API 37): \u65b0\u589eAndroid 17\u8282\u80fdAPI\u8bf4\u660e\u4e0e\u4ee3\u7801\u793a\u4f8b",
+            "\u5382\u5546\u5ef6\u8fdf\u5bf9\u7167\u8868: 2026\u65d7\u8230\u673aHint\u54cd\u5e94\u5ef6\u8fdf\u6570\u636e(1.2ms-5ms)",
+            "RecyclerView 1.4 ADPF: \u5185\u7f6eHintSession\u7ba1\u7406\u8bf4\u660e",
+            "Headroom API\u98ce\u9669: \u5f3a\u8c03120fps\u4e0b1ms\u8c03\u7528\u7684\u5e27\u9884\u7b97\u6d88\u8017(12%)"
           ]
         }
       ]
@@ -1473,8 +1473,8 @@
         "19.17"
       ],
       "fixes": [
-        "P1: 网络插桩冲突检测+验证路径(build.log/firebase_performance_logcat_enabled/Cronet FirebasePerfUrlConnection)",
-        "P1: Near Real-time延迟风险加强警告(Firebase不应作为唯一故障发现工具)"
+        "P1: \u7f51\u7edc\u63d2\u6869\u51b2\u7a81\u68c0\u6d4b+\u9a8c\u8bc1\u8def\u5f84(build.log/firebase_performance_logcat_enabled/Cronet FirebasePerfUrlConnection)",
+        "P1: Near Real-time\u5ef6\u8fdf\u98ce\u9669\u52a0\u5f3a\u8b66\u544a(Firebase\u4e0d\u5e94\u4f5c\u4e3a\u552f\u4e00\u6545\u969c\u53d1\u73b0\u5de5\u5177)"
       ],
       "auto_promoted": [
         "19.21"
@@ -1487,7 +1487,7 @@
         "8.3"
       ],
       "type": "task9-deep-tech-review",
-      "summary": "P95 回炉: 3.5 pilferPointers调用方修正; 8.3 AutoFDO数据修正+Startup Profile版本表更新+ReDex分类修正"
+      "summary": "P95 \u56de\u7089: 3.5 pilferPointers\u8c03\u7528\u65b9\u4fee\u6b63; 8.3 AutoFDO\u6570\u636e\u4fee\u6b63+Startup Profile\u7248\u672c\u8868\u66f4\u65b0+ReDex\u5206\u7c7b\u4fee\u6b63"
     }
   ],
   "task2b_rework_log": [
@@ -1499,12 +1499,12 @@
       ],
       "items_processed": 2,
       "fixes": [
-        "10.2 P0: ASan/HWASan 重新定位为内存安全检测器，ASan版本修正为API 27+",
-        "10.2 P1: dumpsys meminfo Activities/Views 改为受控复现口径",
-        "10.2 P2: ProfilingManager补充限流、不保证执行、redaction约束",
-        "19.17 P0: attribute key上限32->40，补reserved prefix与首字母规则",
-        "19.17 P0: Cronet兜底从FirebasePerfUrlConnection改为HttpMetric manual trace",
-        "19.17 P1: 删除OkHttp EventListener全局槽位无证据断言"
+        "10.2 P0: ASan/HWASan \u91cd\u65b0\u5b9a\u4f4d\u4e3a\u5185\u5b58\u5b89\u5168\u68c0\u6d4b\u5668\uff0cASan\u7248\u672c\u4fee\u6b63\u4e3aAPI 27+",
+        "10.2 P1: dumpsys meminfo Activities/Views \u6539\u4e3a\u53d7\u63a7\u590d\u73b0\u53e3\u5f84",
+        "10.2 P2: ProfilingManager\u8865\u5145\u9650\u6d41\u3001\u4e0d\u4fdd\u8bc1\u6267\u884c\u3001redaction\u7ea6\u675f",
+        "19.17 P0: attribute key\u4e0a\u965032->40\uff0c\u8865reserved prefix\u4e0e\u9996\u5b57\u6bcd\u89c4\u5219",
+        "19.17 P0: Cronet\u515c\u5e95\u4eceFirebasePerfUrlConnection\u6539\u4e3aHttpMetric manual trace",
+        "19.17 P1: \u5220\u9664OkHttp EventListener\u5168\u5c40\u69fd\u4f4d\u65e0\u8bc1\u636e\u65ad\u8a00"
       ]
     }
   ],
@@ -1524,22 +1524,22 @@
       "items_processed": [
         {
           "section": "3.2",
-          "title": "触摸响应的性能分析",
+          "title": "\u89e6\u6478\u54cd\u5e94\u7684\u6027\u80fd\u5206\u6790",
           "priority": 95,
           "source": "task9-deep-tech-review",
           "issues_fixed": [
-            "P0 InputReader.loopOnce QueuedListener.flush→mNextListener.notify",
-            "P1 队列Slice→ATRACE_INT counter"
+            "P0 InputReader.loopOnce QueuedListener.flush\u2192mNextListener.notify",
+            "P1 \u961f\u5217Slice\u2192ATRACE_INT counter"
           ],
           "result": "fixed"
         },
         {
           "section": "7.1",
-          "title": "卡顿的定义与分类",
+          "title": "\u5361\u987f\u7684\u5b9a\u4e49\u4e0e\u5206\u7c7b",
           "priority": 85,
           "source": "task9-deep-tech-review",
           "issues_fixed": [
-            "P1 Binder SQL client_utid关键线程约束+区间重叠+breakdown内联"
+            "P1 Binder SQL client_utid\u5173\u952e\u7ebf\u7a0b\u7ea6\u675f+\u533a\u95f4\u91cd\u53e0+breakdown\u5185\u8054"
           ],
           "result": "fixed"
         }
@@ -1553,8 +1553,8 @@
       "13.9"
     ],
     "last_actions": [
-      "14.11: PowerMetric版本门槛统一 + 功耗通路图拆为两条证据链",
-      "13.9: UprobeStats开销描述从<1%收窄为条件化描述"
+      "14.11: PowerMetric\u7248\u672c\u95e8\u69db\u7edf\u4e00 + \u529f\u8017\u901a\u8def\u56fe\u62c6\u4e3a\u4e24\u6761\u8bc1\u636e\u94fe",
+      "13.9: UprobeStats\u5f00\u9500\u63cf\u8ff0\u4ece<1%\u6536\u7a84\u4e3a\u6761\u4ef6\u5316\u63cf\u8ff0"
     ]
   },
   "7.1": {
@@ -1617,8 +1617,8 @@
     "last_task9_review_log": "logs/deep-review/2026-05-09-08-deep-review.md",
     "status": "ready-for-review",
     "last_task6_polish_count": 11,
-    "task6_review_notes": "2026-05-09 Task6 08:05：Task2B 修复后写作复审；轻修 11 处（frontmatter 去重、结构性引导/否定-纠正式句式/翻译腔表述），L1/L2 通过；无新增 L3/L4 回炉项，送 Task9 复审。",
-    "task9_review_notes": "2026-05-09 Task9 08:20：复审后仍有 P1；`BR_ONEWAY_SPAM_SUSPECT` 被写成限流、async buffer 耗尽被收束成短暂阻塞，需 Task2B 回炉；新增 P2：Perfetto android.binder 标准库版本口径。"
+    "task6_review_notes": "2026-05-09 Task6 08:05\uff1aTask2B \u4fee\u590d\u540e\u5199\u4f5c\u590d\u5ba1\uff1b\u8f7b\u4fee 11 \u5904\uff08frontmatter \u53bb\u91cd\u3001\u7ed3\u6784\u6027\u5f15\u5bfc/\u5426\u5b9a-\u7ea0\u6b63\u5f0f\u53e5\u5f0f/\u7ffb\u8bd1\u8154\u8868\u8ff0\uff09\uff0cL1/L2 \u901a\u8fc7\uff1b\u65e0\u65b0\u589e L3/L4 \u56de\u7089\u9879\uff0c\u9001 Task9 \u590d\u5ba1\u3002",
+    "task9_review_notes": "2026-05-09 Task9 08:20\uff1a\u590d\u5ba1\u540e\u4ecd\u6709 P1\uff1b`BR_ONEWAY_SPAM_SUSPECT` \u88ab\u5199\u6210\u9650\u6d41\u3001async buffer \u8017\u5c3d\u88ab\u6536\u675f\u6210\u77ed\u6682\u963b\u585e\uff0c\u9700 Task2B \u56de\u7089\uff1b\u65b0\u589e P2\uff1aPerfetto android.binder \u6807\u51c6\u5e93\u7248\u672c\u53e3\u5f84\u3002"
   },
   "9.3": {
     "last_task9_at": "2026-05-08T20:30:08+08:00",
@@ -1660,9 +1660,9 @@
       ],
       "action": "rework-fix",
       "details": [
-        "2.7: promotedToLayer() 版本边界修正 (P1, task9)",
-        "18.9: Dynamic Rendering feature bit 边界修正 (P1, task9)",
-        "19.0: tracing-perfetto 版本线拆分修正 (P1, task9)"
+        "2.7: promotedToLayer() \u7248\u672c\u8fb9\u754c\u4fee\u6b63 (P1, task9)",
+        "18.9: Dynamic Rendering feature bit \u8fb9\u754c\u4fee\u6b63 (P1, task9)",
+        "19.0: tracing-perfetto \u7248\u672c\u7ebf\u62c6\u5206\u4fee\u6b63 (P1, task9)"
       ]
     },
     {
@@ -1675,17 +1675,17 @@
       "details": [
         {
           "section": "8.9",
-          "title": "Android 游戏性能与 Game Mode/State API",
+          "title": "Android \u6e38\u620f\u6027\u80fd\u4e0e Game Mode/State API",
           "source": "task9-deep-tech-review",
           "priority": 85,
-          "fix": "P1 删除不存在的\"订阅VSync偏移+上报帧deadline\"API断言，改为帧节奏线(Swappy/ARR/FrameTimeline)与性能反馈线(ADPF)两条独立线"
+          "fix": "P1 \u5220\u9664\u4e0d\u5b58\u5728\u7684\"\u8ba2\u9605VSync\u504f\u79fb+\u4e0a\u62a5\u5e27deadline\"API\u65ad\u8a00\uff0c\u6539\u4e3a\u5e27\u8282\u594f\u7ebf(Swappy/ARR/FrameTimeline)\u4e0e\u6027\u80fd\u53cd\u9988\u7ebf(ADPF)\u4e24\u6761\u72ec\u7acb\u7ebf"
         },
         {
           "section": "1.4",
-          "title": "Binder IPC 机制与性能影响",
+          "title": "Binder IPC \u673a\u5236\u4e0e\u6027\u80fd\u5f71\u54cd",
           "source": "task9-deep-tech-review",
           "priority": 85,
-          "fix": "P1 BR_ONEWAY_SPAM_SUSPECT改为诊断信号非限流；async buffer耗尽改为事务失败非短暂阻塞"
+          "fix": "P1 BR_ONEWAY_SPAM_SUSPECT\u6539\u4e3a\u8bca\u65ad\u4fe1\u53f7\u975e\u9650\u6d41\uff1basync buffer\u8017\u5c3d\u6539\u4e3a\u4e8b\u52a1\u5931\u8d25\u975e\u77ed\u6682\u963b\u585e"
         }
       ]
     },
@@ -1695,22 +1695,22 @@
       "sections": [
         {
           "section": "5.10",
-          "title": "JobScheduler/WorkManager 调度与后台任务性能",
+          "title": "JobScheduler/WorkManager \u8c03\u5ea6\u4e0e\u540e\u53f0\u4efb\u52a1\u6027\u80fd",
           "status": "fixed",
           "issues_fixed": [
-            "P1 Power Check CPU占用分级熔断(25%/10%/2%)",
-            "P1 PENDING_JOB_REASON_ENERGY_SCHEDULING能量限额挂起",
-            "P1 WorkManager 2.10 DeliQueue无锁队列适配"
+            "P1 Power Check CPU\u5360\u7528\u5206\u7ea7\u7194\u65ad(25%/10%/2%)",
+            "P1 PENDING_JOB_REASON_ENERGY_SCHEDULING\u80fd\u91cf\u9650\u989d\u6302\u8d77",
+            "P1 WorkManager 2.10 DeliQueue\u65e0\u9501\u961f\u5217\u9002\u914d"
           ]
         },
         {
           "section": "6.4",
-          "title": "存储相关的版本演进",
+          "title": "\u5b58\u50a8\u76f8\u5173\u7684\u7248\u672c\u6f14\u8fdb",
           "status": "fixed",
           "issues_fixed": [
-            "P1 16KB页强制开启与2025-11-01适配死线",
-            "P1 Android 17 FUSE over io_uring异步化重构(-20%延迟)",
-            "P1 SDM云端编译消除安装期I/O争抢"
+            "P1 16KB\u9875\u5f3a\u5236\u5f00\u542f\u4e0e2025-11-01\u9002\u914d\u6b7b\u7ebf",
+            "P1 Android 17 FUSE over io_uring\u5f02\u6b65\u5316\u91cd\u6784(-20%\u5ef6\u8fdf)",
+            "P1 SDM\u4e91\u7aef\u7f16\u8bd1\u6d88\u9664\u5b89\u88c5\u671fI/O\u4e89\u62a2"
           ]
         }
       ]
@@ -1728,19 +1728,19 @@
     "task2b_state": "fixed"
   },
   "18.9": {
-    "last_task9_at": "2026-05-08T21:35:11+08:00",
-    "task9_result": "needs-rework",
-    "task9_state": "pending",
+    "last_task9_at": "2026-05-09T18:26:00+08:00",
+    "task9_result": "pass-tech-review",
+    "task9_state": "reviewed",
     "last_task9_review_log": "logs/deep-review/2026-05-08-21-deep-review.md",
-    "pipeline_stage": "task9_pending",
-    "status": "ready-for-review",
+    "pipeline_stage": "ready-to-publish",
+    "status": "finalized",
     "task6_result": "pass-light-edit",
     "task6_state": "reviewed",
     "task2b_state": "fixed",
     "last_task6_at": "2026-05-09T02:08:33+08:00",
     "last_task6_review_log": "logs/review/2026-05-09-02-review.md",
     "task2b_result": "fixed",
-    "task9_reviewed_date": "2026-05-08"
+    "task9_reviewed_date": "2026-05-09"
   },
   "19.0": {
     "last_task9_at": "2026-05-08T21:35:11+08:00",
@@ -1766,12 +1766,12 @@
     "task9_result": "needs-rework",
     "last_task6_polish_count": 17,
     "last_task6_rework_count": 0,
-    "section_title": "Hook 基础设施与性能工具实现原理",
+    "section_title": "Hook \u57fa\u7840\u8bbe\u65bd\u4e0e\u6027\u80fd\u5de5\u5177\u5b9e\u73b0\u539f\u7406",
     "last_task9_at": "2026-05-09T15:36:18.569891",
     "last_task9_review_log": "logs/deep-review/2026-05-09-06-deep-review.md",
     "task9_reviewed_date": "2026-05-09",
     "task9_reviewed_by": "openclaw-task9",
-    "task9_review_notes": "2026-05-09 Task9 15:20：P0 3项（Android 16/17新特性缺失、16KB页适配不完整、性能开销无数据支撑），P1 4项（W^X约束、namespace API、动态代码加载、FrameMetrics API边界），P2 2项（PLT Hook盲区、Hook库版本支持）→ 需回炉补强2026年新特性量化数据"
+    "task9_review_notes": "2026-05-09 Task9 15:20\uff1aP0 3\u9879\uff08Android 16/17\u65b0\u7279\u6027\u7f3a\u5931\u300116KB\u9875\u9002\u914d\u4e0d\u5b8c\u6574\u3001\u6027\u80fd\u5f00\u9500\u65e0\u6570\u636e\u652f\u6491\uff09\uff0cP1 4\u9879\uff08W^X\u7ea6\u675f\u3001namespace API\u3001\u52a8\u6001\u4ee3\u7801\u52a0\u8f7d\u3001FrameMetrics API\u8fb9\u754c\uff09\uff0cP2 2\u9879\uff08PLT Hook\u76f2\u533a\u3001Hook\u5e93\u7248\u672c\u652f\u6301\uff09\u2192 \u9700\u56de\u7089\u8865\u5f3a2026\u5e74\u65b0\u7279\u6027\u91cf\u5316\u6570\u636e"
   },
   "rework_completed": [
     {
@@ -1801,12 +1801,12 @@
     "last_task6_review_log": "logs/review/2026-05-09-02-review.md",
     "pipeline_stage": "task9_pending",
     "status": "ready-for-review",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "task9_result": "needs-rework",
-    "last_task9_at": "2026-05-01T00:55:15+08:00",
-    "task9_reviewed_date": "2026-05-01"
+    "last_task9_at": "2026-05-09T18:26:00+08:00",
+    "task9_reviewed_date": "2026-05-09"
   },
   "4.3": {
     "last_task6_at": "2026-05-09T02:08:33+08:00",
@@ -1815,13 +1815,13 @@
     "last_task6_review_log": "logs/review/2026-05-09-02-review.md",
     "pipeline_stage": "task9_pending",
     "status": "ready-for-review",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "task9_result": "needs-rework",
-    "last_task9_at": "2026-05-08T12:39:39+08:00",
+    "last_task9_at": "2026-05-09T18:26:00+08:00",
     "last_task9_review_log": "logs/deep-review/2026-05-08-12-deep-review.md",
-    "task9_reviewed_date": "2026-05-08"
+    "task9_reviewed_date": "2026-05-09"
   },
   "3.0": {
     "last_task6_at": "2026-05-09T04:05:00+08:00",
@@ -1835,7 +1835,7 @@
     "task2b_result": "fixed",
     "last_task6_polish_count": 2,
     "last_task6_rework_count": 0,
-    "section_title": "第 3 章：输入系统"
+    "section_title": "\u7b2c 3 \u7ae0\uff1a\u8f93\u5165\u7cfb\u7edf"
   },
   "3.5": {
     "last_task6_at": "2026-05-09T06:05:00+08:00",
@@ -1849,7 +1849,7 @@
     "task2b_result": "fixed",
     "last_task6_polish_count": 5,
     "last_task6_rework_count": 0,
-    "section_title": "输入事件拦截与安全机制",
+    "section_title": "\u8f93\u5165\u4e8b\u4ef6\u62e6\u622a\u4e0e\u5b89\u5168\u673a\u5236",
     "task9_result": "pass-tech-review",
     "last_task9_at": "2026-05-09T06:20:00+08:00",
     "last_task9_review_log": "logs/deep-review/2026-05-09-06-deep-review.md",
@@ -1867,7 +1867,7 @@
     "task2b_result": "fixed",
     "last_task6_polish_count": 8,
     "last_task6_rework_count": 0,
-    "section_title": "启动优化策略",
+    "section_title": "\u542f\u52a8\u4f18\u5316\u7b56\u7565",
     "task9_result": "pass-tech-review",
     "last_task9_at": "2026-05-09T06:20:00+08:00",
     "last_task9_review_log": "logs/deep-review/2026-05-09-06-deep-review.md",
@@ -1890,7 +1890,7 @@
     "task9_result": "needs-rework",
     "last_task6_polish_count": 27,
     "last_task6_rework_count": 0,
-    "section_title": "Trace 抓取",
+    "section_title": "Trace \u6293\u53d6",
     "last_task9_at": "2026-05-09T07:20:00+08:00",
     "task9_reviewed_date": "2026-05-09",
     "task9_reviewed_by": "openclaw-task9"
@@ -1906,12 +1906,12 @@
       "details": [
         {
           "section": "13.2",
-          "title": "Trace 抓取",
+          "title": "Trace \u6293\u53d6",
           "source": "task9-deep-tech-review P95",
           "fixes": [
-            "P0: ActivityManager.getProcessMemoryDump→Debug.dumpHprofData/am dumpheap",
-            "P0: process_cmdline空≠全进程采样，需all:true",
-            "P1: heapprofd/linux.perf user/userdebug/profileable边界"
+            "P0: ActivityManager.getProcessMemoryDump\u2192Debug.dumpHprofData/am dumpheap",
+            "P0: process_cmdline\u7a7a\u2260\u5168\u8fdb\u7a0b\u91c7\u6837\uff0c\u9700all:true",
+            "P1: heapprofd/linux.perf user/userdebug/profileable\u8fb9\u754c"
           ],
           "status": "ready-for-review"
         },
@@ -1920,9 +1920,9 @@
           "title": "Tracing SDK",
           "source": "external-ai-review P85",
           "fixes": [
-            "P1: 协程trace ThreadLocal栈原理补充",
-            "P1: JNI/GC字符串开销具体量化",
-            "P1: 协程段落JNI/trace开销警示加强"
+            "P1: \u534f\u7a0btrace ThreadLocal\u6808\u539f\u7406\u8865\u5145",
+            "P1: JNI/GC\u5b57\u7b26\u4e32\u5f00\u9500\u5177\u4f53\u91cf\u5316",
+            "P1: \u534f\u7a0b\u6bb5\u843dJNI/trace\u5f00\u9500\u8b66\u793a\u52a0\u5f3a"
           ],
           "status": "ready-for-review"
         }
@@ -1938,23 +1938,23 @@
       "details": [
         {
           "section": "2.6",
-          "title": "SurfaceFlinger 与合成",
+          "title": "SurfaceFlinger \u4e0e\u5408\u6210",
           "source": "external-ai-review",
           "issues_fixed": [
-            "版本差异: FrameTargeter 多屏帧目标器架构 (Android 16)",
-            "原理链: AIDL Composer V4 CLIENT_BYPASS",
-            "知识盲区: HWC3 V4 HDR DisplayLuts"
+            "\u7248\u672c\u5dee\u5f02: FrameTargeter \u591a\u5c4f\u5e27\u76ee\u6807\u5668\u67b6\u6784 (Android 16)",
+            "\u539f\u7406\u94fe: AIDL Composer V4 CLIENT_BYPASS",
+            "\u77e5\u8bc6\u76f2\u533a: HWC3 V4 HDR DisplayLuts"
           ],
           "result": "fixed"
         },
         {
           "section": "3.1",
-          "title": "Input 事件分发全流程",
+          "title": "Input \u4e8b\u4ef6\u5206\u53d1\u5168\u6d41\u7a0b",
           "source": "external-ai-review",
           "issues_fixed": [
-            "版本差异: Android 16 AOT 返回键预判拦截",
-            "原理链: Native 手势排除检测下沉",
-            "知识盲区: Android 17 DeliQueue 输入加速"
+            "\u7248\u672c\u5dee\u5f02: Android 16 AOT \u8fd4\u56de\u952e\u9884\u5224\u62e6\u622a",
+            "\u539f\u7406\u94fe: Native \u624b\u52bf\u6392\u9664\u68c0\u6d4b\u4e0b\u6c89",
+            "\u77e5\u8bc6\u76f2\u533a: Android 17 DeliQueue \u8f93\u5165\u52a0\u901f"
           ],
           "result": "fixed"
         }
