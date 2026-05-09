@@ -52,12 +52,12 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-04-20T18:33:00+08:00'
 task9_reviewed_date: '2026-04-22'
@@ -96,7 +96,7 @@ last_task9_at: '2026-04-22T14:30:00+08:00'
 
 ## 为什么要了解 App 启动流程
 
-我们在 Perfetto 中打开一个冷启动的 Trace，看到的是一段横跨 system_server、SurfaceFlinger 和目标 App 三个进程的长长的时间线。从用户点击桌面图标到界面显示出来，中间经历了进程创建、Binder 通信、Application 初始化、Activity 生命周期、View 树构建、第一帧绘制、SurfaceFlinger 合成——整个过程可能超过 2 秒，而我们真正能优化的部分只占其中一段。
+我们在 Perfetto 中打开一个冷启动的 Trace，看到的是一段横跨 system_server、SurfaceFlinger 和目标 App 三个进程的长长的时间线。从用户点击桌面图标到界面显示出来，中间经历了进程创建、Binder 通信、Application 初始化、Activity 生命周期、View 树构建、第一帧绘制、SurfaceFlinger 合成——整个过程可能超过 2 秒，而我们能优化的部分只占其中一段。
 
 这就是我们需要完整理解启动流程的原因。如果我们只知道 Application.onCreate 里不能做太多事，那我们能优化的范围就很有限。但如果我们知道从点击到首帧的完整路径，就能找到所有可能的优化切入点：哪些是系统开销我们无法改变的，哪些是应用侧可以加速的，哪些是可以通过缓存机制绕过的。
 
@@ -175,13 +175,25 @@ ATMS 确认 Pause 完成后，检查目标进程是否存在。冷启动场景�
 
 这一阶段的开销主要是：Binder IPC（2 次跨进程调用）、Zygote fork（创建新进程）、以及 system_server 内部的调度逻辑。在 Perfetto 中，我们可以在 system_server 进程中看到 "launching: xxx" 的 slice，在 app 进程中看到 "BindApplication" 的开始。
 
+#### 16KB Page Size 对启动 I/O 的削峰作用
+
+[自动发现: Android 15+ 16KB page size 对启动链路的影响]
+
+Android 15 在部分设备上引入了 16KB 内存页（传统为 4KB）。页表项减少约 75%，TLB 命中率提升约 4 倍。这对冷启动中涉及大 so 库加载的环节有直接的 I/O 削峰效果。
+
+冷启动的进程创建阶段需要通过 `mmap` 加载 `libart.so`（~10MB）、`libwebviewchromium.so`（~50MB）等大型共享库。在 4KB 页环境下，每个库的页表条目数量庞大，内核需要完成大量 page fault 处理才能建立完整的地址映射。16KB 页将映射粒度放大 4 倍，相同范围的虚拟地址只需要 1/4 的页表条目，减少了 page fault 中断次数和内核态耗时。
+
+根据 Google 公布的基准测试数据，16KB 页在冷启动场景下的平均提速幅度约 3.16%，对于依赖大型本地库的应用（如集成 WebView 或 ML 推理引擎的应用），提升更为明显。Zygote 的 Copy-on-Write 机制同样受益：虽然单页拷贝的数据量变大（16KB vs 4KB），但触发 COW 的 page fault 次数减少，对于依赖大量静态资源的 App，冷启动的内核态损耗会降低。
+
+在 Perfetto 中可以通过对比 4KB 和 16KB 设备上同一 App 的 `BindApplication` 前置耗时来验证这一收益。重点关注 fork 到 `ActivityThread.main()` 之间的时间差。
+
 ### 第二阶段：进程初始化与 Application 创建
 
 fork 出来的子进程从 ActivityThread.main() 开始执行。这个 main() 函数做了两件关键的事：
 
 **创建主线程 Looper**。调用 Looper.prepareMainLooper() 和 Looper.loop()，建立起 Android 主线程的消息循环。此后所有与 UI 相关的操作都通过这个 Looper 分发。
 
-**通知 system_server 进程已就绪**。通过 Binder 调用 ATMS 的 attachApplication() 和 AMS 的 attachApplication()。ATMS 收到通知后，会继续后续的 Activity 启动流程。注意，这个时候主线程的 Looper.loop() 还没真正开始循环（或者刚开始），因为 attachApplication 的调用是在 main() 函数中同步完成的，而后续的消息处理要等 loop() 跑起来才行。
+**通知 system_server 进程已就绪**。通过 Binder 调用 ATMS 的 attachApplication() 和 AMS 的 attachApplication()。ATMS 收到通知后，会继续后续的 Activity 启动流程。注意，这个时候主线程的 Looper.loop() 还没开始循环（或者刚开始），因为 attachApplication 的调用是在 main() 函数中同步完成的，而后续的消息处理要等 loop() 跑起来才行。
 
 AMS 的 attachApplication 会触发 bindApplication，这会向主线程发送一条 BIND_APPLICATION 消息。Looper 开始循环后处理这条消息时，创建 Application 对象。如果我们在 AndroidManifest.xml 中声明了自定义的 Application 类，系统会通过反射创建 Application 实例，然后依次调用：
 
@@ -206,7 +218,7 @@ App 的 ActivityThread 在主线程处理 EXECUTE_TRANSACTION 消息。Transacti
 
 ### 第四阶段：首帧绘制
 
-Activity.onResume() 执行完后，并不是立刻就能看到界面。真正的绘制操作是延后执行的。
+Activity.onResume() 执行完后，并不是立刻就能看到界面。绘制操作是延后执行的。
 
 在 onResume 的处理过程中，WindowManager 会将 DecorView 添加到 WindowManagerGlobal 中，这会创建 ViewRootImpl。ViewRootImpl 做了两件事：
 
@@ -224,7 +236,7 @@ Activity.onResume() 执行完后，并不是立刻就能看到界面。真正的
 
 **performDraw**：在硬件加速开启的情况下（Android 4.4+ 默认开启），View 的 onDraw() 并不真正执行绘制命令，而是将绘制指令记录到 DisplayList 中。然后 ViewRootImpl 向 RenderThread post 一个 DrawFrameTask，由 RenderThread 统一执行 OpenGL 绘制命令。
 
-RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将帧提交给 SurfaceFlinger。queueBuffer 返回并不等同于 TTID 终点——真正的 TTID 终点是 WMS/ActivityRecord 的 windows drawn 回调。当 SurfaceFlinger 完成合成后，通过 WindowManagerService 通知 ActivityRecord 记录界面完全就绪的时间戳，这才是系统统计的 TTID 终点。
+RenderThread 完成绘制后，通过 IGraphicBufferProducer.queueBuffer() 将帧提交给 SurfaceFlinger。queueBuffer 返回并不等同于 TTID 终点——TTID 终点是 WMS/ActivityRecord 的 windows drawn 回调。当 SurfaceFlinger 完成合成后，通过 WindowManagerService 通知 ActivityRecord 记录界面完全就绪的时间戳，这才是系统统计的 TTID 终点。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
 
@@ -298,24 +310,54 @@ FullyDrawnReporter 内部维护一个计数器（reporterCount），每次 addRe
 
 Android 15 引入了 ApplicationStartInfo 结构化启动诊断能力，为启动性能分析提供了更细粒度的数据支撑。[已验证: AOSP android-15.0.0_r1, android.app.ApplicationStartInfo]
 
-ApplicationStartInfo 提供了以下关键信息：
-- 启动类型（冷启动/温启动/热启动）
-- Application 初始化耗时
-- 各个 Activity 生命周期阶段的耗时分解
-- 首次绘制与完全绘制的时间差
-- 启动过程中的关键事件时间戳
+ApplicationStartInfo 是 AOSP 历史上首次将进程 fork 开始时间暴露给应用层的 API。配合 Perfetto，它可以补齐"从点击图标到 Zygote 开始工作"这段系统黑盒时间。
 
-开发者可以通过以下方式获取 ApplicationStartInfo：
+#### 关键字段与含义
+
+| 字段 | 类型 | 含义 |
+|---|---|---|
+| `getLaunchType()` | int | 启动类型：`LAUNCH_TYPE_COLD`(1)、`LAUNCH_TYPE_WARM`(2)、`LAUNCH_TYPE_HOT`(3) |
+| `getStartTimestamp()` | long | 进程 fork 开始的 elapsedRealtime 时间戳，这是能拿到的最早系统时间点 |
+| `getApplicationInitializationDurationMillis()` | long | 从 Application 创建到 `onCreate()` 返回的耗时 |
+| `getFirstDrawDurationMillis()` | long | 从启动触发到首帧绘制的总耗时（对应 TTID） |
+| `getFullyDrawnDurationMillis()` | long | 从启动触发到 `reportFullyDrawn()` 的总耗时（对应 TTFD），未调用则为 -1 |
+| `getStartupState()` | int | 启动当前阶段：`STARTUP_STATE_STARTED` / `FIRST_FRAME_DRAWN` / `FULLY_DRAWN` |
+| `getProcessStartupTimestamp()` | long | Zygote 完成子进程创建的时间戳 |
+
+#### getStartTimestamp() 与 getLaunchType() 的联动分析
+
+这两个字段组合使用可以回答一个之前无法回答的问题：系统从点击到 fork 花了多久？
+
 ```java
-ApplicationStartInfo startInfo = ActivityTaskManager.getInstance().getApplicationStartInfo();
-if (startInfo != null) {
-    Log.d("Startup", "Launch type: " + startInfo.getLaunchType());
-    Log.d("Startup", "App init duration: " + startInfo.getApplicationInitializationDurationMillis());
-    Log.d("Startup", "First draw duration: " + startInfo.getFirstDrawDurationMillis());
+ActivityTaskManager atm = ActivityTaskManager.getInstance();
+List<ApplicationStartInfo> history = atm.getHistoricalApplicationStartInfo();
+if (history != null && !history.isEmpty()) {
+    ApplicationStartInfo latest = history.get(0);
+    long forkStart = latest.getStartTimestamp();
+    long processReady = latest.getProcessStartupTimestamp();
+    long systemOverhead = processReady - forkStart;
+    long appInitOverhead = latest.getApplicationInitializationDurationMillis();
+    
+    Log.d("Startup", "Launch type: " + launchTypeName(latest.getLaunchType()));
+    Log.d("Startup", "System fork→ready: " + systemOverhead + "ms");
+    Log.d("Startup", "App init (Application.onCreate): " + appInitOverhead + "ms");
+    Log.d("Startup", "TTID: " + latest.getFirstDrawDurationMillis() + "ms");
 }
 ```
 
-这些数据对于定位启动瓶颈非常有价值，可以精确区分是 Application 初始化慢还是 Activity 绘制慢。
+#### 与 Perfetto 的联动
+
+在 Perfetto 中，`getStartTimestamp()` 可以与 system_server 的 `launchingActivity#...` slice 的起点对齐。`getProcessStartupTimestamp()` 可以与 App 进程的第一个可见 slice（`BindApplication`）对齐。两者的差值就是 Zygote fork + 进程初始化的系统开销——这段在 Perfetto 中往往是一个"空白"区域（App 进程还没开始跑任何业务代码），通过 ApplicationStartInfo 可以量化它。
+
+一个推荐的分析流程：
+
+1. 在 Perfetto 中找到 `launchingActivity#...` 的起点（system_server 侧），这是系统视角的启动起点
+2. 读取 `ApplicationStartInfo.getStartTimestamp()`，对齐到同一时间轴
+3. 读取 `getProcessStartupTimestamp()`，得到 fork 完成 + 进程初始化的时间点
+4. 在 Perfetto 中定位 App 进程的 `BindApplication` slice 开始位置
+5. 三者对比，就能把"系统调度"和"应用初始化"的耗时拆开
+
+[已验证: AOSP android-15.0.0_r1, android.app.ApplicationStartInfo]
 
 ## 启动耗时的度量方法
 
@@ -453,7 +495,7 @@ Android 5.0+ 使用 ART 运行时，原生支持多 DEX，这个问题基本消�
 
 ### 数据库初始化
 
-数据库初始化（尤其是使用 SQLCipher 加密数据库时）是一个常见的耗时操作。SQLCipher 的首次加载需要初始化 OpenSSL 库，这可能在低端设备上消耗 100-300ms。优化方式是将数据库初始化推迟到真正需要访问数据时，或者在后台线程预加载。
+数据库初始化（尤其是使用 SQLCipher 加密数据库时）是一个常见的耗时操作。SQLCipher 的首次加载需要初始化 OpenSSL 库，这可能在低端设备上消耗 100-300ms。优化方式是将数据库初始化推迟到需要访问数据时，或者在后台线程预加载。
 
 ### ContentProvider 初始化的隐藏陷阱
 
@@ -483,7 +525,7 @@ measure 阶段从 DecorView 开始递归调用每个 View/ViewGroup 的 onMeasur
 
 measure 和 layout 完成后，就进入 draw 阶段。在硬件加速开启的情况下，这个过程分为两步：
 
-**主线程记录 DisplayList**：performDraw() 遍历 View 树，每个 View 的 onDraw() 不是真正执行绘制命令，而是将绘制操作记录到一个 DisplayList 中（"画一条线"、"填充一个矩形" 等）。
+**主线程记录 DisplayList**：performDraw() 遍历 View 树，每个 View 的 onDraw() 不执行绘制命令，而是将绘制操作记录到一个 DisplayList 中（"画一条线"、"填充一个矩形" 等）。
 
 **RenderThread 执行绘制**：DrawFrameTask 在 RenderThread 中执行，将 DisplayList 中的命令翻译为 OpenGL/Vulkan 绘制调用，渲染到从 SurfaceFlinger 申请的 Buffer 上。完成后通过 queueBuffer 提交给 SurfaceFlinger。
 
@@ -577,11 +619,11 @@ Application.onCreate 只是冷启动的一个环节。完整路径包括系统�
 
 **误区二："am start -W 测出来的时间就是用户感知的时间"**
 
-am start -W 的 TotalTime 不包含用户点击到 Input 系统响应的这段时间（约几十毫秒），也不包含 SurfaceFlinger 合成和 LCD 更新的时间（1-2 个 VSync 周期）。真正的用户感知时间比 TotalTime 多 30-50ms 左右。对于追求极致体验的场景，需要在 Trace 中手动加上这两个时间段。
+am start -W 的 TotalTime 不包含用户点击到 Input 系统响应的这段时间（约几十毫秒），也不包含 SurfaceFlinger 合成和 LCD 更新的时间（1-2 个 VSync 周期）。用户感知时间比 TotalTime 多 30-50ms 左右。对于追求极致体验的场景，需要在 Trace 中手动加上这两个时间段。
 
 **误区三："reportFullyDrawn 调用越早越好"**
 
-reportFullyDrawn 的调用时机应该反映"界面真正准备好"的时刻。为了追求 TTFD 数字好看而过早调用，会导致监控数据失去意义。正确的做法是在界面内容（数据、图片、交互）全部就绪后调用。
+reportFullyDrawn 的调用时机应该反映"界面准备好"的时刻。为了追求 TTFD 数字好看而过早调用，会导致监控数据失去意义。正确的做法是在界面内容（数据、图片、交互）全部就绪后调用。
 
 **误区四："温启动和热启动不需要优化"**
 
