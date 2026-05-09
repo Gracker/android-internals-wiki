@@ -1412,7 +1412,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T05:14:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T18:46:15.335282",
+      "completed_reason": "task2b fixed: added Android 17 background audio hardening (While-In-Use FGS audio focus), pVM quota exemption, 16KB GC compaction linkage"
     },
     {
       "section": "5.9",
@@ -1699,8 +1701,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T01:20:33",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-08-background-execution-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-08-background-execution-external-review.md",
+      "completed_at": "2026-05-09T18:46:15.335282",
+      "completed_reason": "task2b fixed: added Android 17 background audio hardening (While-In-Use FGS audio focus), pVM quota exemption, 16KB GC compaction linkage"
     },
     {
       "section": "05.09",
@@ -2204,9 +2208,11 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-05T14:20:00+08:00",
-      "status": "pending",
+      "status": "completed",
       "last_reviewed_by": "task9-deep-tech-review",
-      "last_reviewed_at": "2026-05-05T14:20:00+08:00"
+      "last_reviewed_at": "2026-05-05T14:20:00+08:00",
+      "completed_at": "2026-05-09T18:46:15.335282",
+      "completed_reason": "task2b fixed: restructured Attempt→Exchange model for OkHttp EventListener redirect/follow-up support; added responseHeadersEnd/connectionAcquired/Released/requestFailed/responseFailed; fixed Interceptor DNS/TCP explanation"
     },
     {
       "section": "ch17-oem",
