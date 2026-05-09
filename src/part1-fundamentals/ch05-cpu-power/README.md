@@ -7,6 +7,15 @@
 
 这一章想讲清楚的是：线程到底怎样被放到不同核心上执行，频率和热控怎样影响它的真实速度，为什么“同样的代码”在不同设备和不同温度下表现会差很多。
 
+调度、频率和热控不是三个独立子系统，而是一个动态平衡系统：
+
+1. **CFS（Completely Fair Scheduler）** 是 Linux 默认进程调度器，按虚拟运行时间公平分配 CPU 时间片。大小核架构出现后，CFS 无法感知核心能效差异，只看“时间公平”。
+2. **EAS（Energy Aware Scheduling）** 在 CFS 基础上引入能量模型（EM），唤醒路径上通过 `find_energy_efficient_cpu()` 把任务优先放到能效核，节省功耗。EAS 的有效边界由 overutilized 阈值控制——系统负载过高时 EAS 退让，回退到 CFS 的性能优先策略。
+3. **DVFS（Dynamic Voltage and Frequency Scaling）** 根据负载动态调整 CPU/GPU 频率和电压。Android 上通过 `sysfs` 或 `hint` 接口驱动，Perfetto 里对应 CPU frequency 轨道。
+4. **Thermal 管控** 监控 SoC 温度，通过 Thermal HAL 和 `thermal-engine` 在温度超限时降频、迁移任务或杀后台进程。Thermal 状态变化直接影响 DVFS 可用的最高频率。
+
+四个子系统形成循环反馈：调度器决定任务放哪个核 → DVFS 根据负载调频 → 温度升高触发 Thermal 降频 → 降频反过来影响调度决策。分析性能问题时，如果只看调度不看频率、只看频率不看温度，容易得出“CPU 没跑满”却找不到原因的结论。
+
 ## 本章内容
 
 - Linux 进程调度基础

@@ -1007,7 +1007,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-26T15:14:34+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T01:10:00+08:00",
+      "completed_reason": "task2b fixed: added core input dispatch path AOSP source code anchors table (EventHub/InputReader/InputClassifier/InputDispatcher/InputConsumer/InputThread with framework paths)"
     },
     {
       "section": "3.1",
@@ -1276,7 +1278,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-26T15:14:34+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T01:10:00+08:00",
+      "completed_reason": "task2b fixed: added CFS→EAS evolution and Thermal/DVFS coupling architecture overview explaining dynamic balance system"
     },
     {
       "section": "5.1",

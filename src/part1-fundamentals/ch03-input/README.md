@@ -26,7 +26,7 @@ task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T23:17:00+08:00"
+last_task2b_at: "2026-05-10T01:10:00+08:00"
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-09
@@ -42,6 +42,19 @@ task6_review_notes: "2026-05-09 Task6 04:05:Task2B 修复后写作复审;修正�
 # 第 3 章:输入系统
 
 输入系统经常在排查后期才被翻出来,但很多"点了没反应""滑动不跟手""帧率不低却还是觉得卡"的问题,往往都要回到这里。判断这类问题时,先看事件什么时候进入系统(EventHub → InputReader)、经过哪些分类和过滤环节(`InputClassifier` 自 Android 10 起作为触摸事件的必经路由点,负责多指/手掌/触控笔的分类和分流)、什么时候排到目标线程(InputDispatcher 按焦点窗口分发)、什么时候变成屏幕反馈,通常比只盯着渲染线程更有效。
+
+核心分发路径在 AOSP 里的对应关系（按事件流经顺序）：
+
+| 组件 | AOSP 路径 | 职责 |
+|------|-----------|------|
+| EventHub | `frameworks/native/services/inputflinger/reader/EventHub.cpp` | 从 `/dev/input/` 读取内核输入事件，是整个分发链的入口 |
+| InputReader | `frameworks/native/services/inputflinger/reader/InputReader.cpp` | 解析原始事件、识别设备类型、执行触控预处理 |
+| InputClassifier | `frameworks/native/services/inputflinger/classifier/InputClassifier.cpp` | Android 10+ 引入，负责多指/手掌/触控笔的分类和分流 |
+| InputDispatcher | `frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp` | 按焦点窗口和输入策略投递到目标连接 |
+| InputConsumer | `frameworks/native/libs/input/InputConsumer.cpp` | 应用端通过 `InputEventReceiver` 接收事件的 native 桥梁 |
+| InputThread | `frameworks/native/services/inputflinger/common/InputThread.cpp` | 以 `ANDROID_PRIORITY_URGENT_DISPLAY` 启动 InputReader 和 InputDispatcher 线程 |
+
+分析 Perfetto trace 时，这些类名会直接出现在 slice 和 thread name 里，按名字对照就能定位到具体阶段。
 
 这一章也要按新版本重新看。分析输入问题时,版本差异直接决定从哪里下手:
 
