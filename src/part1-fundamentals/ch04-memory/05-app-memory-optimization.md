@@ -2,7 +2,7 @@
 title: "App 内存优化"
 section: "4.5"
 chapter: "4.5"
-status: finalized
+status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
 last_verified: "2026-03-31"
 last_verified_against: "AOSP android-16.0.0_r1"
@@ -37,21 +37,20 @@ review_round: 3
 polish_count: 1
 polish_date: "2026-04-08"
 polish_by: "task2b-polish"
-pipeline_stage: ready-to-publish
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 # task6_result: pass-light-edit  # reset after rework
-task9_state: reviewed
+task9_state: pending
 # task9_result: pass-tech-review  # reset after rework
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-01T14:40:00+08:00"
+last_task2b_at: "2026-05-09T22:10:00+08:00"
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-29"
 last_task9_at: "2026-04-29T05:30:17+08:00"
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 1。ASan/heapprofd/ApplicationStartInfo API 错误，API 34 onTrimMemory 差异未覆盖"
-auto_finalized_by: openclaw-task6
-auto_finalized_date: "2026-05-02"
+
 ---
 
 # App 内存优化
@@ -667,6 +666,33 @@ data_sources {
 在 API 34+ 设备上，系统内存压力判断应回到 PSI（`/proc/pressure/memory`）、`mm_vmscan` tracepoint、`lmkd` 指标等系统级信号，不要依赖不再投递的 `TRIM_MEMORY_COMPLETE` 作为"即将被杀"的信号。
 
 [已验证: AOSP ComponentCallbacks2.java — RUNNING_MODERATE=5, RUNNING_LOW=10, RUNNING_CRITICAL=15, UI_HIDDEN=20, BACKGROUND=40, MODERATE=60, COMPLETE=80]
+
+### onTrimMemory 的分发路径
+
+了解回调级别之后，下一个问题是：`onTrimMemory` 是怎么从系统到达 App 的？追踪 AOSP 源码可以看到完整的分发链路。
+
+1. **System Server**：`ActivityManagerService` 检测到内存压力变化后，通过 Binder 向目标进程发送 `scheduleTrimMemory(level)`。
+2. **App 侧 Binder 线程**：`ActivityThread.handleTrimMemory(int level)` 接收调用，先分发给 `Application.onTrimMemory(level)`，再通过 `ContextImpl` 遍历所有已注册的 `ComponentCallbacks2` 逐一回调。
+
+```java
+// frameworks/base/core/java/android/app/ActivityThread.java
+// handleTrimMemory 的核心分发（简化）
+public final void handleTrimMemory(int level) {
+    // 1. 分发给 Application
+    if (mInitialApplication != null) {
+        mInitialApplication.onTrimMemory(level);
+    }
+    // 2. 分发给所有已注册的 ComponentCallbacks2
+    // 实际通过 ContextImpl.getComponentCallbacks() 遍历
+}
+```
+
+> [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java — handleTrimMemory]
+
+两个排查边界：
+
+- **回调顺序不确定**：`handleTrimMemory` 会分发给所有已注册的 `ComponentCallbacks2`，但分发顺序没有严格保证。不要假设某个回调一定在另一个之前执行。
+- **API 34+ 收窄发生在 System Server 侧**：前文提到的 `RUNNING_*`、`MODERATE`(60)、`COMPLETE`(80) 等旧 level 在 API 34+ 不再投递——`ActivityManagerService` 直接跳过这些 level，App 侧的 `handleTrimMemory` 不会收到。
 
 ### 正确的响应策略
 

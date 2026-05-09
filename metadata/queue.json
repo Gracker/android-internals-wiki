@@ -1189,8 +1189,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-09T22:19:02.693295",
+      "completed_reason": "task2b fixed: 补充 onTrimMemory 分发路径源码锚点 (ActivityThread.handleTrimMemory → Application.onTrimMemory → ComponentCallbacks2 遍历)"
     },
     {
       "section": "4.6",
@@ -1204,8 +1206,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "date": "2026-04-26"
+      "status": "completed",
+      "date": "2026-04-26",
+      "completed_at": "2026-05-09T22:19:02.693295",
+      "completed_reason": "task2b fixed: 补全 16KB linker compat 缺失函数名 (Setup16KiBAppCompat/IsEligibleFor16KiBAppCompat/linker_phdr_16kib_compat.cpp); NativeAllocationRegistry 与 Scudo MTE 源码路径此前已修正"
     },
     {
       "section": "4.8",

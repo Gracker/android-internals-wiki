@@ -44,18 +44,18 @@ related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
 drafted_date: "2026-03-31"
 drafted_by: "openclaw-subagent"
 review_count: 6
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: "2026-05-07T03:07:54+08:00"
 last_task6_review_log: "logs/review/2026-05-07-03-review.md"
 task6_review_notes: "2026-05-07 Task6 03:07：pass-light-edit。小修 6 处：补充代码块用途句，补齐 PSS 公式代码块语言标记，清理 ASYMM 段禁用句式与 frontmatter 禁用词；无新增 Task2B 回炉项。因 Task9 仍为 needs-rework 且 queue 有既有 pending 条目，未自动晋升。"
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: "2026-05-07T02:20:00+08:00"
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: "2026-05-01T14:40:00+08:00"
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: "2026-05-09T22:10:00+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-07"
 task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB 页内部碎片公式错误，RELRO 兼容模式安全断言缺源码证据链 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。 | 2026-05-07 Task9 02:20：needs-rework。P0 3 / P1 0 / P2 0；NativeAllocationRegistry、Scudo MTE、16KB linker compat 三处源码锚点/函数名错误，写入 queue。"
@@ -547,13 +547,14 @@ PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻�
 
 #### Bionic Linker 16KB Compat Mode
 
-`bionic/linker/linker_phdr.cpp` 中 `ElfReader::LoadSegments()` 处理 4KB 对齐 ELF 在 16KB 系统上的兼容加载。当 `kPageSize == 16384` 且 ELF 段 `min_palign == 4096` 时，linker 检查 `bionic.linker.16kb.app.compat.enabled` 系统属性，决定是否启用 compat 模式：
+`bionic/linker/linker_phdr.cpp` 中 `ElfReader::LoadSegments()` 调用 `IsEligibleFor16KiBAppCompat()` 判断 ELF 是否需要 compat 处理——满足条件后通过 `Setup16KiBAppCompat()` 配置兼容加载参数（如放宽 RELRO 权限、改用 RW 初始映射）。具体 compat 逻辑封装在 `bionic/linker/linker_phdr_16kib_compat.cpp` 中。当 `kPageSize == 16384` 且 ELF 段 `min_palign == 4096` 时，linker 检查 `bionic.linker.16kb.app.compat.enabled` 系统属性，决定是否启用 compat 模式：
 
 ```cpp
 // bionic/linker/linker_phdr.cpp (android-16.0.0_r1)
 // ElfReader::LoadSegments() 内部判断：
 if (kPageSize == 16*1024 && min_palign == 4096) {
-  // 检查 compat 属性（不能缓存，开发者可动态切换）
+  // IsEligibleFor16KiBAppCompat() → Setup16KiBAppCompat()
+  // 实际 compat 逻辑在 linker_phdr_16kib_compat.cpp
   should_use_16kib_app_compat_ =
     GetBoolProperty("bionic.linker.16kb.app.compat.enabled", false);
 }
@@ -577,7 +578,8 @@ if (kPageSize == 16*1024 && min_palign == 4096) {
 | 文件路径 | 关键内容 | 版本 |
 |---------|---------|------|
 | `frameworks/base/core/jni/android_os_Debug.cpp` | PSS JNI 读取，read_mapinfo() 解析 smaps | android-14+ |
-| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode，min_palign 检测 | android-mainline |
+| `bionic/linker/linker_phdr.cpp` | 16KB Compat Mode，`ElfReader::LoadSegments()` 入口 | android-mainline |
+| `bionic/linker/linker_phdr_16kib_compat.cpp` | `Setup16KiBAppCompat()` / `IsEligibleFor16KiBAppCompat()` | android-mainline |
 | `android.googlesource.com commit fc89c8ae1dfc` | 16KB 错误消息改进 | 2024-08-05 |
 | `kernel/common/arch/arm64/Kconfig` | CONFIG_ARM64_16K_PAGES=y | ACK 6.6+ |
 
