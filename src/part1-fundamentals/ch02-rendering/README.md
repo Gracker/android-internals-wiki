@@ -10,13 +10,14 @@ last_verified: "2026-04-23"
 last_verified_against: "ch02-rendering 目录结构、AOSP android-16.0.0_r1 渲染流程说明、external review 资产"
 confidence: medium
 tags: [rendering, SurfaceFlinger, BufferQueue, BLAST, sync-fence, FrameTimeline, ARR]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+last_task2b_at: "2026-05-09T22:40:00+08:00"
+task6_state: revisiting
 reviewed_date: "2026-04-23"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 last_task9_at: "2026-04-28T14:33:59+08:00"
@@ -28,7 +29,7 @@ task9_reviewed_date: "2026-04-28"
 
 Android 里最常见的性能体感问题，很多都要回到渲染流程。列表掉帧、过渡动画发飘、首帧晚、SurfaceView 黑边、高刷切换不稳，排查时都会碰到同一组节点：`Choreographer`、`RenderThread`、`SurfaceFlinger`、`BufferQueue / BLAST`、`Sync Fence`、`Display HAL`。
 
-这一章把“App 产出一帧”到“面板显示这一帧”之间的路径拆开。读完整章，应该能回答三件事：问题落在 App、系统合成还是显示流程；Perfetto 里该先看哪条轨道；Android 12-16 之后哪些渲染变化改变了分析方法。
+这一章把“App 产出一帧”到“面板显示这一帧”之间的路径拆开。读完整章，应该能回答三件事：问题落在 App、系统合成还是显示流程；Perfetto 里该先看哪条轨道；Android 12 到 17 之间哪些渲染变化改变了分析方法。
 
 ## 本章内容
 
@@ -46,11 +47,11 @@ Android 里最常见的性能体感问题，很多都要回到渲染流程。列
 - `2.9` 渲染机制的版本演进：梳理 Android 早期 View 渲染到 FrameTimeline / 高刷时代的变化
 
 ### GPU、缓冲区与同步基础设施
-- `2.10` GPU 渲染深入：补上 Skia、RenderEngine、GPU 提交和常见瓶颈
-- `2.11` Flutter 渲染管线与性能：单独看 Flutter 的调度和工具链
+- `2.10` GPU 渲染深入：Skia Graphite 后端、GPU 提交流程、带宽瓶颈与标准化利用率轨道
+- `2.11` Flutter 渲染管线与性能：Impeller 渲染后端、16KB 合规适配与原生管线性能分析方法
 - `2.12` Window Manager Service 与窗口管理：理解窗口层级、动画和可见性变化
 - `2.13` 图形缓冲区管理（BufferQueue）：看 producer/consumer、槽位和背压
-- `2.14` 图形 API 演进与选择策略：梳理 OpenGL ES、Vulkan、ANGLE 的边界
+- `2.14` 图形 API 演进与选择策略：Vulkan 1.4 必选扩展、ANGLE 强制化与 WebGPU 前景
 - `2.15` DMA-BUF、Gralloc 与跨进程图形内存共享：看 GraphicBuffer 在进程间如何流转
 - `2.16` Sync Fence 框架与帧同步机制：定位 GPU 等待、buffer release 和合成阻塞
 
