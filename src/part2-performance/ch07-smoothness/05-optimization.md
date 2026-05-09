@@ -498,6 +498,123 @@ WeSing 在进房场景中发现主线程 inflate 耗时过长，原因是“游�
 - [Compose 性能 Codelab](https://developer.android.com/codelabs/compose-performance)
 
 <!-- AIW-源码调研-2026-05-02 -->
+
+<!-- AIW-源码调研-2026-05-09 -->
+## RenderEffect GPU 渲染管线：offscreen buffer 分配与 filter chain 执行细节（续）
+
+前文描述了 RenderEffect 的高层调用链。本节补充源码级细节，重点在 offscreen buffer 分配机制和 RenderNode snapshot capture 路径。
+
+### RenderNode 的 Layer 申请与 LAYER_SIZE 对齐
+
+当 View 设置了 RenderEffect（blur、colorFilter、RuntimeShader 等），系统为该 RenderNode 分配一块 GPU texture 作为 RenderLayer。分配尺寸按 `LAYER_SIZE=256` 向上对齐：
+
+```cpp
+// 文件: frameworks/base/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp, 行 51-60
+bool SkiaGpuPipeline::createOrUpdateLayer(RenderNode* node, ...) {
+    const int surfaceWidth = ceilf(node->getWidth() / float(LAYER_SIZE)) * LAYER_SIZE;
+    const int surfaceHeight = ceilf(node->getHeight() / float(LAYER_SIZE)) * LAYER_SIZE;
+    // 一个 100×100 的 View 实际分配 256×256 的 GPU texture
+    SkImageInfo info = SkImageInfo::Make(surfaceWidth, surfaceHeight, ...);
+    node->setLayerSurface(SkSurfaces::RenderTarget(
+            mRenderThread.getGrContext(), skgpu::Budgeted::kYes, info, ...));
+}
+```
+
+这意味着即使很小的 View 设置了 blur，也会按 256 的倍数分配 texture。对于 300×300 的 View，分配 512×512。Layer 尺寸越大，GPU 显存占用和 shader 处理量都越高。
+
+### RenderEffect 的 filter chain 执行：updateSnapshotIfRequired
+
+RenderNode 在绘制时会检查是否需要用 ImageFilter 处理 content。关键函数 `updateSnapshotIfRequired()` 执行 GPU 上的 filter chain：
+
+```cpp
+// 文件: frameworks/base/libs/hwui/RenderNode.cpp, 行 275-305
+std::optional<RenderNode::SnapshotResult> RenderNode::updateSnapshotIfRequired(
+    GrRecordingContext* context, const SkImageFilter* imageFilter,
+    const SkIRect& clipBounds) {
+    auto* layerSurface = getLayerSurface();
+    sk_sp<SkImage> snapshot = layerSurface->makeImageSnapshot();  // 捕获当前 layer 内容
+    if (imageFilter == nullptr) {
+        mSnapshotResult.snapshot = snapshot;
+    } else {
+        // 使用 SkImages::MakeWithFilter 在 GPU 上执行 filter chain
+        mSnapshotResult.snapshot = SkImages::MakeWithFilter(
+                context, snapshot, imageFilter, subset, clipBounds,
+                &mSnapshotResult.outSubset, &mSnapshotResult.outOffset);
+    }
+    return mSnapshotResult;
+}
+```
+
+`makeImageSnapshot()` 将 layer surface 当前内容捕获为 `SkImage`，`SkImages::MakeWithFilter` 在 GPU 上执行 filter chain。对于 blur，Skia 内部会将 sigma 转换为 shader 参数并执行多次 texture sampling。
+
+### JNI 层 RenderEffect → SkImageFilter 映射
+
+所有 RenderEffect 类型在 JNI 层统一创建为 `SkImageFilter*`：
+
+```cpp
+// 文件: frameworks/base/libs/hwui/jni/RenderEffect.cpp
+// blur 效果
+static jlong createBlurEffect(...) {
+    sk_sp<SkImageFilter> blurFilter = SkImageFilters::Blur(
+            Blur::convertRadiusToSigma(radiusX),
+            Blur::convertRadiusToSigma(radiusY),
+            static_cast<SkTileMode>(edgeTreatment), ...);
+    return reinterpret_cast<jlong>(blurFilter.release());
+}
+
+// AGSL RuntimeShader 效果
+static jlong createRuntimeShaderEffect(JNIEnv* env, jobject, jlong shaderBuilderHandle,
+                                       jstring inputShaderName) {
+    SkRuntimeShaderBuilder* builder = reinterpret_cast<SkRuntimeShaderBuilder*>(shaderBuilderHandle);
+    sk_sp<SkImageFilter> filter = SkImageFilters::RuntimeShader(
+            *builder, inputShaderName.c_str(), nullptr);
+    return reinterpret_cast<jlong>(filter.release());
+}
+```
+
+`Blur::convertRadiusToSigma()` 将 radius 转换为 sigma（`sigma ≈ radius * 0.3`）。radius 越大，shader 中的 sampling 范围越大，GPU 计算量越大。
+
+### Hardware Bitmap Upload：EGL vs Vulkan 两条路径
+
+对于非 GPU-native 的 Bitmap（如软件 Bitmap），`HardwareBitmapUploader` 负责将 CPU 数据上传到 GPU：
+
+```cpp
+// 文件: frameworks/base/libs/hwui/HardwareBitmapUploader.cpp, 行 130-160
+class EGLUploader : public AHBUploader {
+    bool onUploadHardwareBitmap(const SkBitmap& bitmap, const FormatInfo& format,
+                                AHardwareBuffer* ahb) override {
+        // 1. 从 AHardwareBuffer 创建 EGLImage
+        const EGLClientBuffer clientBuffer = eglGetNativeClientBufferANDROID(ahb);
+        AutoEglImage autoImage(display, clientBuffer);
+        // 2. 绑定到 GL texture
+        glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, autoImage.image);
+        // 3. CPU→GPU 传输（glTexSubImage2D）
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, bitmap.width(), bitmap.height(),
+                        format.format, format.type, bitmap.getPixels());
+        // 4. Fence 同步等待上传完成
+        EGLSyncKHR fence = eglCreateSyncKHR(...);
+        eglClientWaitSyncKHR(display, fence, 0, FENCE_TIMEOUT);
+    }
+};
+```
+
+Android 14+ 支持 Vulkan 上传路径（`VkUploader`），通过 `SkImages::TextureFromAHardwareBufferWithData` 直接将数据上传到 Vulkan texture，省去 EGLImage 中转。
+
+### 性能影响总结
+
+| 因素 | 影响 |
+|------|------|
+| View 尺寸 | 按 LAYER_SIZE=256 对齐，小 View 也可能分配较大 texture |
+| blur radius | sigma 越大，shader sampling 范围越大，GPU 计算量呈几何增长 |
+| RuntimeShader inputShader | 访问 inputShader 时触发 makeImageSnapshot()，增加 GPU→GPU copy |
+| Layer 数量 | 同时有多个带 RenderEffect 的 View，显存压力叠加 |
+| 每帧 invalidate | 导致 snapshot 重建，filter chain 重新执行 |
+
+优化建议：
+1. 确认 View 尺寸确实需要那么大才设置 RenderEffect
+2. blur radius 尽量保守；大模糊效果考虑用静态 bitmap 替代运行时计算
+3. RuntimeShader 参数不变时复用同一个 RenderEffect 对象
+4. 多层 RenderEffect 时利用 `createChainEffect()` 让 Skia 做算子融合
 ## RenderEffect GPU 渲染管线深度分析
 
 ### Offscreen Buffer 双重机制

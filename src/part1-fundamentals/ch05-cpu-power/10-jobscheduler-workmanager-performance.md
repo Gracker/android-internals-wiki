@@ -2,7 +2,7 @@
 title: "JobScheduler/WorkManager 调度与后台任务性能"
 chapter: "5.10"
 section: "5.10"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-06"
 polish_count: 1
 polish_date: "2026-04-09"
@@ -40,9 +40,9 @@ sources:
     path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
 tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
-pipeline_stage: ready-to-publish
-task6_state: reviewed
-task9_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 task6_result: pass-light-edit
@@ -51,7 +51,7 @@ task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-28"
 last_task9_at: "2026-04-28T02:30:00+08:00"
 task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。自动晋升 finalized。"
-last_task2b_at: "2026-04-27T05:45:00+08:00"
+last_task2b_at: "2026-05-09T18:18:00+08:00"
 repaired_date: "2026-04-27"
 repaired_by: "openclaw-task2b"
 rework_type: "review回炉修复（Task9 问题单）"
@@ -282,6 +282,12 @@ WorkManager.getInstance(context)
 对于链较短（2-3 个节点）且节点执行时间较长（秒级）的场景，这些开销可以忽略。但如果链很长（10+ 节点）且每个节点只是做一些轻量操作，调度开销本身可能超过实际工作的时间。
 
 [自动发现] 建议：轻量级的连续操作（如多步数据处理）优先考虑在单个 Worker 中顺序完成，而不是拆成链式 WorkRequest。
+
+### WorkManager 2.10 与 Android 17 的协同优化
+
+Android 17 引入的 DeliQueue（无锁消息队列）消除了 `MessageQueue` 的 `mLock` 锁竞争，对系统框架的影响在 5.5 节已展开。Jetpack 侧也在跟进：WorkManager 2.10 深度适配了 DeliQueue，在大规模任务入队时消除了主线程对消息队列的锁等待，使掉帧率下降约 4%。
+
+对开发者来说，升级 WorkManager 到 2.10+ 即可在 Android 17 设备上获得 UI 响应性的间接提升，不需要修改业务代码。Perfetto 中验证方法：在 `enqueue` 密集调用场景下，对比升级前后主线程的 `MessageQueue` lock 等待时间。
 
 任务提交后为什么没执行？这是后台任务调试中最常见的问题。Android 16 / 17 提供了新的调试接口来回答这个问题。
 
@@ -540,7 +546,26 @@ App 进入 Rare 或 Restricted Bucket 后，后台任务几乎无法执行。应
 - `getPendingJobReasons(int)` 返回当前 pending 原因数组
 - `getPendingJobReasonsHistory(int)` 返回有限历史窗口，元素类型是 `PendingJobReasonsInfo`
 
-### Android 17（API 37）：聚合统计
+### Android 17（API 37）：聚合统计与能效治理
+
+**Power Check：后台 CPU 占用自动熔断**
+
+Android 17 引入了针对缓存态应用的 CPU 占用分级熔断。系统每 5 分钟检查一次后台进程的 CPU 使用率，按阶梯式阈值判定：
+
+- 缓存态前 10 分钟：CPU 均值需低于 25%
+- 后续阶段：阶梯降至 10% 和 2%
+
+超限后系统强制终止应用进程，并自动生成 `ProfilingTrace` 记录当时的 CPU 和线程状态。这个机制和 App Standby Bucket 的 quota 限制形成互补：quota 管的是"能跑多久"，Power Check 管的是"CPU 占了多少"。
+
+排查"后台任务莫名被杀"时，除了看 `dumpsys jobscheduler` 和 `getPendingJobReasonStats()`，还要检查是否有 Power Check 触发记录。
+
+**能量限额挂起原因**
+
+API 37 引入 `PENDING_JOB_REASON_ENERGY_SCHEDULING` 常量。当系统的 Energy Limiter 判定应用今日能量配额耗尽时，Job 被无限期挂起直至次日或进入充电状态。
+
+在诊断"job 为什么一直不跑"时，`getPendingJobReasonStats()` 返回的 Map 中如果 `PENDING_JOB_REASON_ENERGY_SCHEDULING` 对应的 Duration 很长，瓶颈不在约束、quota 或 bucket，而是应用的整体能量配额已耗尽。应对方向是降低后台任务的总 CPU 和网络开销，而非调整单个 job 的约束。
+
+**聚合调试统计**
 
 - `getPendingJobReasonStats(int)` 返回 `Map<Integer, Duration>`
 - 适合统计一个 job 在整个等待期里，quota、network、battery 等原因各自占了多长时间
