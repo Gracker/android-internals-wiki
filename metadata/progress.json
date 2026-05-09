@@ -1478,6 +1478,39 @@
       "queue_items_completed": 3,
       "queue_remaining_pending": 93,
       "queue_remaining_blocked": 8
+    },
+    {
+      "timestamp": "2026-05-09T19:22:20.532197",
+      "task": "task2b-rework",
+      "sections": [
+        "5.11",
+        "8.8"
+      ],
+      "details": [
+        {
+          "section": "5.11",
+          "title": "端侧 AI 推理性能",
+          "source": "external-ai-review (P85)",
+          "fixes": [
+            "Added Android 17 NPU uses-feature declaration requirement",
+            "Added AICore ATTRIBUTE_WORK_TO_OTHER_APPS memory attribution",
+            "Added VPA16 VK_EXT_host_image_copy 50% texture speedup for GPU Delegate",
+            "Added CompiledModel API V2 section (zero-copy, async, AICore routing)",
+            "Added AOT compilation section (cold-start 500ms→50ms)"
+          ]
+        },
+        {
+          "section": "8.8",
+          "title": "多媒体管线性能",
+          "source": "external-ai-review (P85)",
+          "fixes": [
+            "Added dav1d AV1 soft-decode 3x speedup data",
+            "Added BLE Audio spatial audio latency path",
+            "Added KEY_LOW_LATENCY / FEATURE_LowLatency low-latency decode mode",
+            "Added 16KB page Codec2 throughput benefit for 4K/8K"
+          ]
+        }
+      ]
     }
   ],
   "task2b_last_run": "2026-05-09T17:32:47.245520+08:00",

@@ -1345,7 +1345,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T05:14:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T19:21:43.253320",
+      "completed_reason": "task2b fixed: added NPU uses-feature declaration (API 37), AICore ATTRIBUTE_WORK_TO_OTHER_APPS memory attribution, VPA16 VK_EXT_host_image_copy 50% texture speedup, CompiledModel V2 API (zero-copy + AICore multi-tenant), AOT compilation cold-start optimization (500ms→50ms)"
     },
     {
       "section": "5.2",
@@ -1611,8 +1613,10 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
-      "source_file": "2026-04-29-10-8.8-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-29-10-8.8-external-review.md",
+      "completed_at": "2026-05-09T19:21:43.253320",
+      "completed_reason": "task2b fixed: added dav1d AV1 3x soft-decode speedup, BLE Audio spatial audio latency path, KEY_LOW_LATENCY/FEATURE_LowLatency low-latency decode, 16KB page Codec2 throughput for 4K/8K"
     },
     {
       "section": "?",
