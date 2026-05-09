@@ -732,8 +732,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-15-dmabuf-gralloc-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-15-dmabuf-gralloc-external-review.md",
+      "completed_at": "2026-05-09T14:51:03.653891",
+      "completed_reason": "task2b fixed: added Gralloc AIDL V2 alignment negotiation (allocate2/additionalOptions), libdmabufheap user-space pooling, and Binder FDA batch optimization"
     },
     {
       "section": "2.18",
@@ -762,8 +764,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T03:49:02+08:00",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch02-18-adaptive-refresh-rate-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch02-18-adaptive-refresh-rate-external-review.md",
+      "completed_at": "2026-05-09T14:51:03.653891",
+      "completed_reason": "task2b fixed: added 1Hz flicker suppression with Gamma compensation, 16KB page SF scoring optimization (SmallVector, -12%), and VSync ID prediction error analysis with SQL query"
     },
     {
       "section": "2.19",

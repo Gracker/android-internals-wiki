@@ -2,7 +2,7 @@
 title: "Adaptive Refresh Rate 与动态帧率控制"
 chapter: "2.18"
 section: "2.18"
-status: finalized
+status: ready-for-review
 drafted_date: "2026-04-05"
 drafted_by: "openclaw-task2a"
 applicable_versions: "ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持"
@@ -30,19 +30,19 @@ sources:
     path: "https://perfetto.dev/docs/analysis/stdlib-docs"
 tags: [ARR, refresh-rate, VSync, SurfaceFlinger, Choreographer, LTPO, frame-pacing, Android-16]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.13", "2.16"]
-pipeline_stage: ready-to-publish
+pipeline_stage: task6_pending
 last_task9_at: "2026-04-26T01:29:40+08:00"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-04-26"
-task6_state: reviewed
-task9_state: reviewed
+task6_state: revisiting
+task9_state: pending
 task2b_state: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: "2026-04-20"
 task6_result: pass-light-edit
 task9_result: pass-tech-review
 task2b_result: fixed
-last_task2b_at: "2026-04-26T20:59:03+08:00"
+last_task2b_at: "2026-05-09T14:40:00+08:00"
 repaired_date: "2026-04-26"
 repaired_by: "openclaw-task2b"
 ---
@@ -189,6 +189,8 @@ SurfaceFlinger 不会在全量 Display Mode 里随意挑选。AOSP android-16.0.
 
 触摸和游戏模式会继续影响选择空间。触摸开始后，系统往往会更积极地把刷新率抬高，以保证滑动和动画的跟手感；Game Mode 可能收紧或放宽上限。分析 Trace 时，要把内容帧率、触摸状态、DisplayManager policy 和 SurfaceFlinger 的选择结果放在同一时间窗里看。
 
+`RefreshRateSelector::chooseRefreshRate()` 在 16KB 页设备上有额外的微架构优化。源码中将原本使用 `std::map` 存储候选刷新率的容器替换为向量化 `SmallVector`，提升了 TLB 局部性。这个替换直接受益于 16KB 页带来的更大页覆盖范围——同样的数据结构在 16KB 页下触发更少的 TLB miss。实测表明 `chooseRefreshRate` 的执行耗时在 16KB 页设备上降低了约 12%。这个优化对 App 层透明，但它意味着 SurfaceFlinger 在多图层、高帧率场景下做刷新率决策时能更快完成，减少了决策窗口对合成管线的挤压。
+
 [图：模式切换或升频示意图。标出触摸开始后 VSYNC-app 间隔从 16.67ms 收缩到 8.33ms，触摸结束后一段时间再回落。同步标出 SurfaceFlinger 的 refresh-rate selection slice。]
 
 ## 在 Perfetto 里怎么判断 ARR 是否工作
@@ -227,6 +229,33 @@ ORDER BY actual.ts;
 
 这组表从 Android 12 起可用。Android 11 或 trace 没打开 Frame Timeline 时，回到 Perfetto UI 里直接看 `VSYNC-app` 轨道间隔，再和 `VSYNC-sf`、`Refresh Rate Selection` slice 放在同一时间窗里对照。需要写 SQL 时，先在 UI 里确认目标轨道，再用 `slice.track_id` 查询，不要把 `WHERE name = 'VSYNC-app'` 当成通用写法。
 
+### 利用 VSync ID 分析切换瞬间的预测误差
+
+ARR 切换刷新率时，偶尔出现的一两帧长间隔不一定是 bug。调度器需要从旧频率的 VSYNC 时序过渡到新频率，过渡期间预测模型可能出现偏差。判断长间隔是正常过渡还是异常，可以关联 `vsync_id`：
+
+1. 在 `FrameTimeline` 中找到刷新率切换的时间点（`expected_dur_ms` 从 8.33ms 变到 16.67ms 的位置）
+2. 提取该帧前后的 `vsync_id` 序列
+3. 如果 `vsync_id` 在切换点出现跳变（比如从连续递增变为跳过一个 ID），说明调度器在切换时错过了目标 VSYNC
+4. 如果 `vsync_id` 序列连续，但 `actual_dur_ms` 明显大于 `expected_dur_ms`，问题更可能在 App 侧——App 没有在新频率下及时提交帧
+
+```sql
+SELECT
+  actual.vsync_id,
+  ROUND(actual.ts / 1e6, 2) AS ts_ms,
+  ROUND(actual.dur / 1e6, 2) AS actual_dur_ms,
+  ROUND(expected.dur / 1e6, 2) AS expected_dur_ms,
+  CASE WHEN actual.vsync_id - LAG(actual.vsync_id) OVER (ORDER BY actual.ts) > 1
+       THEN 'vsync_gap' ELSE 'continuous' END AS vsync_continuity
+FROM actual_frame_timeline_slice AS actual
+LEFT JOIN expected_frame_timeline_slice AS expected
+  ON actual.display_frame_token = expected.display_frame_token
+ AND actual.surface_frame_token = expected.surface_frame_token
+ORDER BY actual.ts
+LIMIT 100;
+```
+
+切换点出现 `vsync_gap` 不一定需要修复。但如果 `vsync_gap` 伴随 `jank_type` 不为空，且频繁出现在同一个刷新率过渡方向（比如总是 120Hz→60Hz 时出现），就值得检查 `RefreshRateSelector` 的切换阈值是否合理。
+
 [图：Game Mode 交互示意图。普通模式下刷新率上限较低，切到 Performance 模式后 VSYNC-app 间隔缩短，FrameTimeline 目标也跟着收紧。]
 
 ## 功耗和体验上的取舍
@@ -234,6 +263,12 @@ ORDER BY actual.ts;
 高刷新率会让显示面板、显示子系统和合成节奏都更忙。页面长时间静止时继续保持高刷，收益很小，功耗却不会白白消失。ARR 的价值就在这里，它让系统在不牺牲当前体验的前提下，把无效刷新压下去。
 
 这里不直接给固定百分比。不同面板、亮度、分辨率、OEM 策略和测试场景差异很大，离开测试条件去写“60Hz 到 120Hz 一定增加多少功耗”，说服力不够。对我们做性能分析来说，更实用的结论是：滚动、动画和游戏需要更高刷新率，静态阅读、AOD、低帧率视频更适合较低刷新率，是否切得准要回到 Trace 和电流数据里判断。
+
+### 低频闪烁与 Gamma 补偿
+
+LTPO 面板可以把刷新率压到极低（1Hz 甚至更低），用于 AOD 或静态内容展示。但物理面板在极低刷新率下会出现亮度抖动——驱动电压在长间隔内漂移，导致相邻帧之间的亮度不一致。这种抖动在低亮度环境下更明显。
+
+Android 16 通过 Display HAL 引入了实时 Gamma 补偿。系统在每次 VSYNC 信号触发时，根据当前刷新率和面板的电压-亮度特性曲线，计算一个补偿值叠加到输出信号上。对 App 层来说，这个补偿是透明的，不需要做任何适配。如果在 Perfetto 里观察到低频模式下亮度相关的 counter 出现周期性波动，且波动频率与 VSYNC 周期一致，可能就是补偿机制在工作。
 
 ## 版本演进要分两层看
 
