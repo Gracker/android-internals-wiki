@@ -22,7 +22,7 @@ tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory'
 related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-05"
+reviewed_date: "2026-05-09"
 reviewed_by: openclaw-task6
 rework_date: "2026-04-21"
 rework_by: openclaw-task2b
@@ -36,14 +36,14 @@ task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: "2026-05-05"
+task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: openclaw-task9
 task2b_state: pending
 last_task9_at: "2026-05-05T11:20:00+08:00"
 task2b_result: fixed
 last_task2b_at: "2026-05-05T10:47:46.820460"
 task9_review_notes: "2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 4 / P2 2。"
-task6_reviewed_date: "2026-05-05"
+task6_reviewed_date: "2026-05-09"
 last_task6_at: "2026-05-05T11:05:00+08:00"
 review_notes: "2026-05-05 task6 revisit: L1/L2 小修完成；既有 queue pending 阻止自动晋升；待 Task9 复审。"
 ---
@@ -453,23 +453,23 @@ App (Java/Kotlin)
     │    mNativeBitmap = AHardwareBuffer*（无 Java heap，像素全在 GPU 显存）
     │
     └── android.graphics.SurfaceTexture
-         mProducer: IGraphicBufferProducer（跨进程 Binder 端点）
+         mProducer: I GraphicBuffer Producer（跨进程 Binder 端点）
               │
 ANativeWindow (C/C++ Layer)
     └── Surface.cpp（frameworks/native/libs/gui/Surface.cpp）
-         mGraphicBufferProducer: IGBP
+         m GraphicBuffer Producer: IGBP
               │
 BufferQueue（跨进程）
-    ├── BufferQueueProducer.cpp → dequeueBuffer() → waitForFreeSlotThenRelock()
+    ├── BufferQueue Producer.cpp → dequeueBuffer() → waitForFreeSlotThenRelock()
     │    （阻塞条件：dequeuedCount >= mMaxDequeuedBufferCount = 1）
-    ├── BufferQueueCore.h → mSlots[64] / mQueue / mFreeSlots / mFreeBuffers
-    └── BufferQueueConsumer.cpp → acquireBuffer()
+    ├── BufferQueue Core.h → mSlots[64] / mQueue / mFreeSlots / mFreeBuffers
+    └── BufferQueue Consumer.cpp → acquireBuffer()
               │
 GraphicBuffer（frameworks/native/libs/gui/）
     ├── mBufferHandle: buffer_handle_t（ashmem fd / dmabuf fd）
     └── flatten/unflatten 跨进程传递句柄
               │
-GraphicBufferMapper（frameworks/native/libs/gui/GraphicBufferMapper.cpp）
+GraphicBuffer Mapper（frameworks/native/libs/gui/GraphicBuffer Mapper.cpp）
     ├── importBuffer() → ION/DMABuf map → 进程地址空间
     └── freeBuffer() → ION/DMABuf unmap
               │
@@ -487,14 +487,14 @@ Physical Memory（ION heap / CMA / GPU VRAM）
 | App | Bitmap.Config.HARDWARE | `frameworks/base/graphics/java/android/graphics/Bitmap.java` |
 | App | SurfaceTexture.mProducer | `frameworks/base/graphics/java/android/graphics/SurfaceTexture.java` |
 | ANativeWindow | Surface::dequeueBuffer() | `frameworks/native/libs/gui/Surface.cpp`（ANativeWindow hook 路由） |
-| BufferQueue | BufferQueueCore.mSlots/mQueue | `frameworks/native/libs/gui/BufferQueueCore.h`（NUM_BUFFER_SLOTS=64） |
-| BufferQueue | waitForFreeSlotThenRelock() | `frameworks/native/libs/gui/BufferQueueProducer.cpp`（mDequeueCondition 条件变量） |
-| BufferQueue | releaseBuffer() → notify_all() | `frameworks/native/libs/gui/BufferQueueProducer.cpp` |
-| BufferQueue | acquireBuffer() | `frameworks/native/libs/gui/BufferQueueConsumer.cpp` |
+| BufferQueue | BufferQueue Core.mSlots/mQueue | `frameworks/native/libs/gui/BufferQueue Core.h`（NUM_BUFFER_SLOTS=64） |
+| BufferQueue | waitForFreeSlotThenRelock() | `frameworks/native/libs/gui/BufferQueue Producer.cpp`（mDequeueCondition 条件变量） |
+| BufferQueue | releaseBuffer() → notify_all() | `frameworks/native/libs/gui/BufferQueue Producer.cpp` |
+| BufferQueue | acquireBuffer() | `frameworks/native/libs/gui/BufferQueue Consumer.cpp` |
 | GraphicBuffer | mBufferHandle 类型 | `frameworks/native/libs/gui/GraphicBuffer.h`（buffer_handle_t = native_handle_t*） |
-| Mapper | importBuffer/freeBuffer | `frameworks/native/libs/gui/GraphicBufferMapper.cpp`（ION/DMABuf map） |
+| Mapper | importBuffer/freeBuffer | `frameworks/native/libs/gui/GraphicBuffer Mapper.cpp`（ION/DMABuf map） |
 | Gralloc | gralloc_module_t | `hardware/libhardware/include/hardware/gralloc.h`（alloc/free 接口） |
-| HWC | HWC2::getRequests() | `frameworks/native/services/surfaceflinger/DisplayHardware/HWC2.cpp`（DEVICE/CLIENT 决策） |
+| HWC | HWC 2::getRequests() | `frameworks/native/services/surfaceflinger/DisplayHardware/HWC 2.cpp`（DEVICE/CLIENT 决策） |
 
 **Buffer Stuffing 源码机制**：当 SurfaceFlinger/HWC release 延迟时，`mFreeBuffers` 为空，`mQueue.size()` 积压超过 `maxBufferCount`，`waitForFreeSlotThenRelock()` 进入无限期等待（无超时）。`mDequeueCondition.notify_all()` 在 `releaseBuffer()` 中被调用，Android 14 引入 `BUFFER_RELEASE_CHANNEL` 精确通知替代全局 `notify_all()`。
 
@@ -509,7 +509,7 @@ Physical Memory（ION heap / CMA / GPU VRAM）
 
 **Hardware Bitmap 特殊行为**：Bitmap.Config.HARDWARE（API 26+）创建的 Bitmap，像素数据完全不存在于 Java heap，全部存储在 GPU 显存中的 AHardwareBuffer。`/proc/<pid>/smaps` 中不反映其占用，必须通过 `dumpsys meminfo gfxinfo` 或厂商特定工具观测。
 
-> [已验证: AOSP mainline, frameworks/native/libs/gui/Surface.cpp, BufferQueueCore.h, BufferQueueProducer.cpp, GraphicBufferMapper.cpp]
+> [已验证: AOSP mainline, frameworks/native/libs/gui/Surface.cpp, BufferQueue Core.h, BufferQueue Producer.cpp, GraphicBuffer Mapper.cpp]
 
 > [已验证: AOSP android-16.0.0_r1, hardware/interfaces/graphics/allocator/aidl/]
 
@@ -762,7 +762,7 @@ struct BufferState {
 - **Android 12+ (DMA-BUF Heaps)**：使用 Linux 上游 DMA-BUF Heaps，支持细粒度访问控制
 
 ```cpp
-// frameworks/native/libs/gui/BufferQueueProducer.cpp
+// frameworks/native/libs/gui/BufferQueue Producer.cpp
 // @ AOSP android-16.0.0_r1
 // [简化骨架] 实际函数签名：
 //   status_t waitForFreeSlotThenRelock(
@@ -770,7 +770,7 @@ struct BufferState {
 //       std::unique_lock<std::mutex>& lock,
 //       int* found) const
 // 返回 NO_ERROR / WOULD_BLOCK / TIMED_OUT；slot 通过 *found 输出
-status_t BufferQueueProducer::waitForFreeSlotThenRelock(
+status_t BufferQueue Producer::waitForFreeSlotThenRelock(
         FreeSlotCaller caller, std::unique_lock<std::mutex>& lock,
         int* found) const {
     // 1. 统计当前 dequeued / acquired 数量

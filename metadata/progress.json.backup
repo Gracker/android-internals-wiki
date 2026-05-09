@@ -4,12 +4,12 @@
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T14:51:35.395261",
+    "last_updated": "2026-05-09T08:20:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
-      "ready-to-publish": 153,
+      "ready-to-publish": 155,
       "task2b_pending": 49,
-      "task6_pending": 3,
+      "task6_pending": 1,
       "task9_pending": 3,
       "unknown": 31
     },
@@ -30,8 +30,8 @@
       "unknown": 34
     },
     "status_counts": {
-      "finalized": 153,
-      "ready-for-review": 56,
+      "finalized": 155,
+      "ready-for-review": 54,
       "unknown": 31
     }
   },
@@ -90,36 +90,6 @@
           "priority": 85,
           "fixes": "P1 标题从'Android 15/16新增'改为'Android 12+已有与较新tag补充'; 未验证枚举移出主表; Dropped版本门槛单独标注; 高频词'真正'从5次降至2次"
         }
-      ]
-    },
-    {
-      "timestamp": "2026-05-09T14:51:35.395261",
-      "sections": [
-        "2.15",
-        "2.18"
-      ],
-      "source": "external-ai-review",
-      "issues_fixed": 6,
-      "details": [
-        "2.15 P1: Added Gralloc AIDL V2 allocate2() alignment negotiation section",
-        "2.15 P1: Added libdmabufheap user-space pooling section",
-        "2.15 P1: Added Binder FDA batch optimization section",
-        "2.15: Expanded Android 16 version history with 3 enhancements summary",
-        "2.18 P1: Added 1Hz flicker suppression and Gamma compensation section",
-        "2.18 P1: Added 16KB page SF scoring optimization (SmallVector, -12%)",
-        "2.18 P1: Added VSync ID prediction error analysis with SQL query"
-      ]
-    },
-    {
-      "date": "2026-05-09T17:32:47.245520+08:00",
-      "sections": [
-        "2.14",
-        "2.20"
-      ],
-      "source": "external-ai-review",
-      "fixes": [
-        "2.14: VPA16 mandatory extensions (VK_EXT_host_image_copy + VK_EXT_shader_object), Android 17 ANGLE mandatory CDD, WebGPU 90-95% Vulkan compute baseline",
-        "2.20: Android 17 DeliQueue jank isolation (4%/7.7%), Android 16 desktop state caching, 16KB page memory stacking"
       ]
     }
   ],
@@ -1465,7 +1435,7 @@
       ]
     }
   ],
-  "task2b_last_run": "2026-05-09T17:32:47.245520+08:00",
+  "task2b_last_run": "2026-05-09T05:43:39+08:00",
   "task2b_reworks": [
     {
       "date": "2026-05-07T23:40:00+08:00",
@@ -1688,32 +1658,6 @@
           "fix": "P1 BR_ONEWAY_SPAM_SUSPECT改为诊断信号非限流；async buffer耗尽改为事务失败非短暂阻塞"
         }
       ]
-    },
-    {
-      "date": "2026-05-09T18:25:08.236001+08:00",
-      "task": "task2b-rework",
-      "sections": [
-        {
-          "section": "5.10",
-          "title": "JobScheduler/WorkManager 调度与后台任务性能",
-          "status": "fixed",
-          "issues_fixed": [
-            "P1 Power Check CPU占用分级熔断(25%/10%/2%)",
-            "P1 PENDING_JOB_REASON_ENERGY_SCHEDULING能量限额挂起",
-            "P1 WorkManager 2.10 DeliQueue无锁队列适配"
-          ]
-        },
-        {
-          "section": "6.4",
-          "title": "存储相关的版本演进",
-          "status": "fixed",
-          "issues_fixed": [
-            "P1 16KB页强制开启与2025-11-01适配死线",
-            "P1 Android 17 FUSE over io_uring异步化重构(-20%延迟)",
-            "P1 SDM云端编译消除安装期I/O争抢"
-          ]
-        }
-      ]
     }
   ],
   "2.7": {
@@ -1760,18 +1704,17 @@
     "last_task6_review_log": "logs/review/2026-05-09-07-review.md",
     "pipeline_stage": "task9_pending",
     "status": "ready-for-review",
-    "task9_state": "reviewed",
+    "task9_state": "pending",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "task9_result": "needs-rework",
     "last_task6_polish_count": 17,
     "last_task6_rework_count": 0,
     "section_title": "Hook 基础设施与性能工具实现原理",
-    "last_task9_at": "2026-05-09T15:36:18.569891",
+    "last_task9_at": "2026-05-09T06:20:00+08:00",
     "last_task9_review_log": "logs/deep-review/2026-05-09-06-deep-review.md",
     "task9_reviewed_date": "2026-05-09",
-    "task9_reviewed_by": "openclaw-task9",
-    "task9_review_notes": "2026-05-09 Task9 15:20：P0 3项（Android 16/17新特性缺失、16KB页适配不完整、性能开销无数据支撑），P1 4项（W^X约束、namespace API、动态代码加载、FrameMetrics API边界），P2 2项（PLT Hook盲区、Hook库版本支持）→ 需回炉补强2026年新特性量化数据"
+    "task9_reviewed_by": "openclaw-task9"
   },
   "rework_completed": [
     {
@@ -1927,62 +1870,6 @@
           "status": "ready-for-review"
         }
       ]
-    },
-    {
-      "timestamp": "2026-05-09T16:23:43.275+08:00",
-      "task": "task2b-rework",
-      "sections": [
-        "2.6",
-        "3.1"
-      ],
-      "details": [
-        {
-          "section": "2.6",
-          "title": "SurfaceFlinger 与合成",
-          "source": "external-ai-review",
-          "issues_fixed": [
-            "版本差异: FrameTargeter 多屏帧目标器架构 (Android 16)",
-            "原理链: AIDL Composer V4 CLIENT_BYPASS",
-            "知识盲区: HWC3 V4 HDR DisplayLuts"
-          ],
-          "result": "fixed"
-        },
-        {
-          "section": "3.1",
-          "title": "Input 事件分发全流程",
-          "source": "external-ai-review",
-          "issues_fixed": [
-            "版本差异: Android 16 AOT 返回键预判拦截",
-            "原理链: Native 手势排除检测下沉",
-            "知识盲区: Android 17 DeliQueue 输入加速"
-          ],
-          "result": "fixed"
-        }
-      ]
     }
-  ],
-  "2.11": {
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit",
-    "last_task6_at": "2026-05-09T18:07:00+08:00",
-    "last_task6_review_log": "logs/review/20260509-18-review.md"
-  },
-  "2.18": {
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit",
-    "last_task6_at": "2026-05-09T18:07:00+08:00",
-    "last_task6_review_log": "logs/review/20260509-18-review.md"
-  },
-  "2.20": {
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit",
-    "last_task6_at": "2026-05-09T18:07:00+08:00",
-    "last_task6_review_log": "logs/review/20260509-18-review.md"
-  },
-  "2.14": {
-    "task6_state": "reviewed",
-    "task6_result": "pass-light-edit",
-    "last_task6_at": "2026-05-09T18:07:00+08:00",
-    "last_task6_review_log": "logs/review/20260509-18-review.md"
-  }
+  ]
 }

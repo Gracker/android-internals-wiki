@@ -6,16 +6,16 @@ status: ready-for-review
 applicable_versions: "Android 12 (API S) - Android 16 (API 36)"
 last_verified: "2026-04-27"
 drafted_date: 2026-03-30
-reviewed_date: "2026-04-20"
+reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
 task6_result: pass-light-edit
 rework_date: 2026-04-02
-last_verified_against: "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1 (SurfaceFlinger / BLASTBufferQueue / HWC2-HWC3) + source.android.com HWC docs"
+last_verified_against: "AOSP android-12.0.0_r1, android-14.0.0_r1, android-16.0.0_r1 (SurfaceFlinger / BLAST BufferQueue / HWC 2-HWC 3) + source.android.com HWC docs"
 confidence: medium
 polish_count: 1
 polish_date: "2026-04-04"
 polish_by: "task2b-polish"
-task9_reviewed_date: "2026-04-28"
+task9_reviewed_date: "2026-05-09"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-28T01:31:04+08:00"
 sources:
@@ -30,14 +30,14 @@ sources:
 tags: ['surfaceflinger', 'bufferqueue', 'hwc', 'composition', 'layer', 'vsync', 'blastbufferqueue', 'renderengine']
 related_chapters: ["2.1", "2.3", "2.4", "2.5", "2.10", "2.13", "2.16", "7.3"]
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-04-27T02:40:00+08:00"
 review_notes: "2026-04-26 task9 deep-review: needs-rework。P0 1，P1 2，P2 2。2026-04-27 task6 re-review (revisiting): pass-light-edit。比喻降格1处已修复。无B类大问题。；2026-04-27 task9 deep-review: needs-rework。P0 1，P1 2，P2 0。2026-04-27 task2b: fixed BufferQueue release wording, VSYNC-app/SF offset direction, and Layer/CompositionEngine stage anchors。；2026-04-28 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 2。自动晋升 finalized。"
-task6_reviewed_date: "2026-04-27"
+task6_reviewed_date: "2026-05-09"
 ---
 
 # SurfaceFlinger 与合成
@@ -52,7 +52,7 @@ task6_reviewed_date: "2026-04-27"
 - 🔹 Layer 的概念与 z-order 排列
 - 🔹 SurfaceFlinger 主循环：Android 12-13 为 onMessageReceived → INVALIDATE/REFRESH，Android 14+ 为 commit/composite
 - 🔹 Jank 与 SurfaceFlinger 的关系：SF 主线程卡顿对全局帧率的影响
-- 🔹 BLASTBufferQueue 的版本边界（Android 11 进入主线，Android 12+ 观察口径继续完善）
+- 🔹 BLAST BufferQueue 的版本边界（Android 11 进入主线，Android 12+ 观察口径继续完善）
 - 🔹 在 Perfetto 中的表现：各 Track 对照与正常/异常判断
 
 ### 扩展（可选深入）
@@ -93,12 +93,12 @@ SurfaceFlinger 是 Android 系统中唯一能够直接修改显示内容的核�
 
 ### VSync 分发：管线的节拍器
 
-SurfaceFlinger 既负责合成画面，也参与软件 VSync 的调度。硬件 VSync 仍由 HWC（Hardware Composer）提供，但 Android 12 之后不能简单写成“DispSync 被 VsyncModulator 替换”。在 `android-14.0.0_r1` 的 `Scheduler::createEventThread()` 里，系统仍然为 `app` 和 `appSf` 创建 EventThread 连接，它们共用 `getVsyncSchedule()` 计算软件 VSync；`Scheduler::onFrameSignal()` 再把 `sf-vsync` 送进合成入口。`VsyncModulator` 负责 phase 调整，例如事务提交和刷新率切换时修改 app / sf 的 offset；完整分发路径还包括 EventThread、VSyncDispatch 和 Scheduler。
+SurfaceFlinger 既负责合成画面，也参与软件 VSync 的调度。硬件 VSync 仍由 HWC（Hardware Composer）提供，但 Android 12 之后不能简单写成“DispSync 被 VsyncModulator 替换”。在 `android-14.0.0_r1` 的 `Scheduler::createEventThread()` 里，系统仍然为 `app` 和 `appSf` 创建 EventThread 连接，它们共用 `getVsyncSchedule()` 计算软件 VSync；`Scheduler::onFrameSignal()` 再把 `sf-vsync` 送进合成入口。`VsyncModulator` 负责 phase 调整，例如事务提交和刷新率切换时修改 app / sf 的 offset；完整分发路径还包括 EventThread、VSync Dispatch 和 Scheduler。
 
 - **VSYNC-app**：发给应用进程，触发 Choreographer 开始一帧的 `measure → layout → draw`。
 - **VSYNC-sf**：发给 SurfaceFlinger，触发本帧的事务整理、Buffer 获取和合成。
 
-工程上更稳妥的理解是，`Scheduler`、`EventThread`、`VSyncSchedule` 负责生成并投递软件 VSync，`VsyncModulator` 负责在特殊时刻调整 phase。我们在 §2.3 中单独展开 offset 的计算，SurfaceFlinger 能不能在合适的时刻拿到 Buffer，取决于 `VSYNC-app` 和 `VSYNC-sf` 的相对 phase 是否稳定。
+工程上更稳妥的理解是，`Scheduler`、`EventThread`、`VSync Schedule` 负责生成并投递软件 VSync，`VsyncModulator` 负责在特殊时刻调整 phase。我们在 §2.3 中单独展开 offset 的计算，SurfaceFlinger 能不能在合适的时刻拿到 Buffer，取决于 `VSYNC-app` 和 `VSYNC-sf` 的相对 phase 是否稳定。
 
 ### Buffer 管理：BufferQueue 的四步流转
 
@@ -117,11 +117,11 @@ SurfaceFlinger 和应用之间通过 BufferQueue 传递画面数据。最常见�
 
 SurfaceFlinger 合成慢不只是自己的问题——它会沿着 BufferQueue 链向上传递 backpressure，最终堵死 App 的渲染线程。
 
-这条路径发生在 consumer 释放旧 Buffer 与 producer 重新拿到可写 slot 之间（已验证 AOSP `BufferQueueProducer.cpp` 行 297–399、`BufferQueueConsumer.cpp` 行 480–591）：SurfaceFlinger / HWC 持有 Buffer 参与合成或等待 present fence 时，consumer 侧 `releaseBuffer()` 还没有让对应 slot 回到可用状态；App 的 RenderThread 调用 `dequeueBuffer()` 后，会在 `waitForFreeSlotThenRelock()` 里等待 free slot、out fence 或 release fence 条件满足，必要时进入 `mDequeueCondition.wait(lock)`。当 consumer 完成 release 并触发 `mDequeueCondition.notify_all()` 后，producer 才能继续拿到可写 Buffer。
+这条路径发生在 consumer 释放旧 Buffer 与 producer 重新拿到可写 slot 之间（已验证 AOSP `BufferQueue Producer.cpp` 行 297–399、`BufferQueue Consumer.cpp` 行 480–591）：SurfaceFlinger / HWC 持有 Buffer 参与合成或等待 present fence 时，consumer 侧 `releaseBuffer()` 还没有让对应 slot 回到可用状态；App 的 RenderThread 调用 `dequeueBuffer()` 后，会在 `waitForFreeSlotThenRelock()` 里等待 free slot、out fence 或 release fence 条件满足，必要时进入 `mDequeueCondition.wait(lock)`。当 consumer 完成 release 并触发 `mDequeueCondition.notify_all()` 后，producer 才能继续拿到可写 Buffer。
 
 在 Trace 里看到 RenderThread `dequeueBuffer()` 阻塞，根因不一定在 App 侧。顺着往上看：如果 SurfaceFlinger 主线程的 `commit` / `composite` / `present` 耗时异常，或者 HWC 持有 Buffer 时间变长，`dequeueBuffer()` 等待通常是下游长期持有 Buffer 的结果。反过来，如果 SurfaceFlinger 并不忙，但 dequeue 依然持续阻塞，那就该查 slot 数量配置、shared buffer mode、或 buffer count 约束这些上层设置。
 
-[已验证：AOSP android-main `BufferQueueProducer::waitForFreeSlotThenRelock`、`BufferQueueConsumer::releaseBuffer::mDequeueCondition.notify_all`]
+[已验证：AOSP android-main `BufferQueue Producer::waitForFreeSlotThenRelock`、`BufferQueue Consumer::releaseBuffer::mDequeueCondition.notify_all`]
 
 ## 合成方式：Client 合成与 Device 合成
 
@@ -141,7 +141,7 @@ HWC（Hardware Composer）在 Android 里表示 SurfaceFlinger 与厂商显示�
 
 不过 HWC 也有其限制。Overlay plane 数量、缩放能力、旋转支持和颜色格式约束都强依赖 SoC 的 DPU 实现，不能把某台设备的 4 个、8 个或 16 个 plane 当成通用基线。排查时以 `dumpsys SurfaceFlinger`、厂商显示文档和实际 Trace 为准；一旦超出设备能力，相关 Layer 就会退回 Client 合成。
 
-Android 16 强制要求 HWC3 V4 通过 `DisplayLuts` 接口下发 HDR 色调映射查找表。此前 HDR 合成链路中的 tone mapping 依赖软件库（如 libui 中的 Skia 路径），需要在 GPU client 合成阶段做色彩空间转换，占用 GPU 算力和带宽。V4 之后，HDR LUT 直接交给 DPU / display controller 的硬件单元执行，SurfaceFlinger 只负责把 LUT 数据通过 HWC 接口传给 HAL，实际的色调映射发生在显示硬件内部。HDR 场景下 SurfaceFlinger 的 client 合成耗时因此下降（tone mapping 不再走 GPU），功耗也有改善。排查 HDR 相关合成耗时异常时，要区分是软件 tone mapping 时代的行为还是硬件 LUT 时代的行为。
+Android 16 强制要求 HWC 3 V4 通过 `DisplayLuts` 接口下发 HDR 色调映射查找表。此前 HDR 合成链路中的 tone mapping 依赖软件库（如 libui 中的 Skia 路径），需要在 GPU client 合成阶段做色彩空间转换，占用 GPU 算力和带宽。V4 之后，HDR LUT 直接交给 DPU / display controller 的硬件单元执行，SurfaceFlinger 只负责把 LUT 数据通过 HWC 接口传给 HAL，实际的色调映射发生在显示硬件内部。HDR 场景下 SurfaceFlinger 的 client 合成耗时因此下降（tone mapping 不再走 GPU），功耗也有改善。排查 HDR 相关合成耗时异常时，要区分是软件 tone mapping 时代的行为还是硬件 LUT 时代的行为。
 
 ### 合成方式的选择逻辑
 
@@ -171,10 +171,10 @@ Android 12-16 都能按这组阶段理解，只是接口承载形式不同：And
 // frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
 // @ AOSP android-12.0.0_r1
 void SurfaceFlinger::onMessageReceived(int32_t what, int64_t vsyncId,
-                                       nsecs_t expectedVSyncTime) {
+                                       nsecs_t expected VSync Time) {
     switch (what) {
         case MessageQueue::INVALIDATE: {
-            onMessageInvalidate(vsyncId, expectedVSyncTime);
+            onMessageInvalidate(vsyncId, expected VSync Time);
             break;
         }
         case MessageQueue::REFRESH: {
@@ -315,7 +315,7 @@ SurfaceFlinger 的性能问题会表现成系统级卡顿。因为 SurfaceFlinge
 
 应对思路也很直接：减少 Layer 数量、尽量让更多 Layer 走 HWC 合成、控制 Transaction 的频率和数据量。具体的排查方法论，我们在 §7.3（卡顿分析方法论）中会系统讲解。
 
-## BlastBufferQueue
+## Blast BufferQueue
 
 本节聚焦 Android 12-16，但主窗口 BLAST 进入主线的时间点要往前挪到 Android 11。Android 11 的 `ViewRootImpl` 已经把主窗口 Buffer 提交和 `SurfaceControl.Transaction` 绑定到 BLAST 路径里；Android 12 之后，这套路径再和 FrameTimeline、窗口同步分析口径一起变得更容易观测。
 
@@ -323,23 +323,23 @@ SurfaceFlinger 的性能问题会表现成系统级卡顿。因为 SurfaceFlinge
 
 Legacy 模型里，Buffer 通过 BufferQueue 在 producer 和 consumer 之间流转，窗口大小、裁剪、位置这类几何信息则通过 `SurfaceControl.Transaction` 单独提交。窗口 resize、旋转、分屏切换、IME 顶起这类场景里，二者如果落在不同的 frame boundary，上层就可能看到内容已经换成新 Buffer，几何信息却还是旧状态，表现为 stretch、jump 或短暂不同步。
 
-Android 11 把主窗口 BLAST 放进 `ViewRootImpl` 主线后，应用侧会在 `BLASTBufferQueue` 中先取到待提交 Buffer，再把 Buffer、fence 和几何 transaction 合成一笔 `SurfaceControl.Transaction` 送给 SurfaceFlinger。这条路径解决的是“同一帧里内容和壳子怎么一起到位”的问题。
+Android 11 把主窗口 BLAST 放进 `ViewRootImpl` 主线后，应用侧会在 `BLAST BufferQueue` 中先取到待提交 Buffer，再把 Buffer、fence 和几何 transaction 合成一笔 `SurfaceControl.Transaction` 送给 SurfaceFlinger。这条路径解决的是“同一帧里内容和壳子怎么一起到位”的问题。
 
 ### Android 12+：分析口径更完整
 
-Android 12 没有“才引入 BLAST”，它做的是把既有 BLAST 路径和 FrameTimeline、VSyncId、窗口同步分析口径更紧地绑在一起。做 Perfetto 分析时，Android 12+ 更容易把 Buffer 提交、transaction 应用、expected present 和 actual present 放到同一组观察点里。
+Android 12 没有“才引入 BLAST”，它做的是把既有 BLAST 路径和 FrameTimeline、VSync Id、窗口同步分析口径更紧地绑在一起。做 Perfetto 分析时，Android 12+ 更容易把 Buffer 提交、transaction 应用、expected present 和 actual present 放到同一组观察点里。
 
 ### 代码锚点与 transaction 合并顺序
 
-主窗口侧入口在 `frameworks/base/core/java/android/view/ViewRootImpl.java`。一次 draw 完成后，ViewRootImpl 会把新 Buffer 的提交与本轮窗口几何、裁剪、位置、大小等 `SurfaceControl.Transaction` 组织到同一帧边界上。native 侧对应 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`：
+主窗口侧入口在 `frameworks/base/core/java/android/view/ViewRootImpl.java`。一次 draw 完成后，ViewRootImpl 会把新 Buffer 的提交与本轮窗口几何、裁剪、位置、大小等 `SurfaceControl.Transaction` 组织到同一帧边界上。native 侧对应 `frameworks/native/libs/gui/BLAST BufferQueue.cpp`：
 
-1. `BLASTBufferQueue::onFrameAvailable()` 收到 producer queue 进来的 `BufferItem`，进入 `acquireNextBufferLocked()`。
+1. `BLAST BufferQueue::onFrameAvailable()` 收到 producer queue 进来的 `BufferItem`，进入 `acquireNextBufferLocked()`。
 2. `acquireNextBufferLocked()` 取出 buffer、acquire fence、dataspace、surface damage、transform、crop、frame number 等元数据。
 3. BLAST 创建或复用一笔 `SurfaceComposerClient::Transaction`，通过 `Transaction::setBuffer()` 绑定 buffer 和 acquire fence，并继续写入 `setDataspace()`、`setSurfaceDamageRegion()`、frame number / desired present time 等帧属性。
 4. 如果同一帧还有 ViewRootImpl 侧的 geometry transaction，BLAST 会把内容 buffer transaction 与 geometry / sync transaction 合并后提交，避免“新内容 + 旧壳子”或“旧内容 + 新壳子”跨帧出现。
 5. Android 14+ 的 `SurfaceFlinger::commit()` 阶段消费这笔 transaction，完成 Layer 状态更新、buffer latch 和 frame timeline 归因；后续 `composite()` 再按 HWC / RenderEngine 决策进入显示。
 
-读 Trace 时，把 BLAST 当成“BufferQueue + 同帧 SurfaceControl.Transaction 提交”这层适配即可。如果某一帧同时发生 Buffer 更新和 geometry 变化，检查它们是否落在同一个 frame number / VSyncId 上。consumer、fence 和 release 链仍然存在；释放阶段还会走 `releaseBufferCallbackLocked()`，最终回到 `mBufferItemConsumer->releaseBuffer()`。这部分可和 §2.13 BufferQueue、§2.16 Sync Fence 一起读。
+读 Trace 时，把 BLAST 当成“BufferQueue + 同帧 SurfaceControl.Transaction 提交”这层适配即可。如果某一帧同时发生 Buffer 更新和 geometry 变化，检查它们是否落在同一个 frame number / VSync Id 上。consumer、fence 和 release 链仍然存在；释放阶段还会走 `releaseBufferCallbackLocked()`，最终回到 `mBufferItemConsumer->releaseBuffer()`。这部分可和 §2.13 BufferQueue、§2.16 Sync Fence 一起读。
 
 ## 与其他机制的关系
 
@@ -365,7 +365,7 @@ SurfaceFlinger 的主干职责没有变，变化主要发生在调度入口、Bu
 
 **Android 11**：主窗口 BLAST 进入 `ViewRootImpl` 主线，Buffer 提交和窗口几何 transaction 开始按同帧语义组织。分析 resize、rotation、relayout 这类问题时，BLAST 已经是主路径之一。
 
-**Android 12**：FrameTimeline 进入官方性能分析体系，BLAST 路径上的 VSyncId、expected present、actual present 更容易放到同一时间基准里观察；窗口同步和 SurfaceView 相关分析口径也更稳定。
+**Android 12**：FrameTimeline 进入官方性能分析体系，BLAST 路径上的 VSync Id、expected present、actual present 更容易放到同一时间基准里观察；窗口同步和 SurfaceView 相关分析口径也更稳定。
 
 **Android 13**：HWC HAL 开始支持 AIDL 接口（`android.hardware.graphics.composer3` / `IComposer.aidl`），用于替代 HIDL composer；RenderEngine 的常见 backend 仍以 GLES / SkiaGL 路径为主。
 
@@ -403,7 +403,7 @@ Device composition 往往更省 GPU 和带宽，但前提是当前 Layer 组合�
 - `frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp` / `OutputLayer.cpp` — 显示输出层规划、可见区域、裁剪和 composition type 计算入口
 - `frameworks/native/services/surfaceflinger/` — SurfaceFlinger 服务完整实现
 - `frameworks/base/core/java/android/view/ViewRootImpl.java` — 主窗口 BLAST 接入路径
-- `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现（Android 11 进入主线，Android 12+ 更适合结合 FrameTimeline 一起分析）
+- `frameworks/native/libs/gui/BLAST BufferQueue.cpp` — BLAST BufferQueue 实现（Android 11 进入主线，Android 12+ 更适合结合 FrameTimeline 一起分析）
 - `frameworks/native/libs/gui/SurfaceComposerClient.cpp` — SurfaceControl.Transaction / SurfaceComposerClient::Transaction 的 native 实现
 - `hardware/interfaces/graphics/composer/` — HWC HAL 接口定义（HIDL @2.x 和 AIDL composer3）
 - `frameworks/native/libs/renderengine/` — RenderEngine 实现（OpenGL ES / Vulkan 后端）

@@ -1305,7 +1305,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T05:14:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T18:24:53.729056+08:00",
+      "completed_reason": "task2b fixed: added Power Check CPU滥用分级熔断(25%/10%/2%), PENDING_JOB_REASON_ENERGY_SCHEDULING能量限额挂起, WorkManager 2.10 DeliQueue无锁队列适配(掉帧率-4%)"
     },
     {
       "section": "5.11",
@@ -1511,7 +1513,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T05:14:26+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-09T18:24:53.729056+08:00",
+      "completed_reason": "task2b fixed: added 16KB页强制开启与适配死线, Android 17 FUSE over io_uring异步化重构(-20%延迟), SDM云端编译消除安装期I/O争抢"
     },
     {
       "section": "8.10",
@@ -1757,8 +1761,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-28T01:20:33",
-      "status": "pending",
-      "source_file": "2026-04-28-15-ch05-10-jobscheduler-workmanager-performance-external-review.md"
+      "status": "completed",
+      "source_file": "2026-04-28-15-ch05-10-jobscheduler-workmanager-performance-external-review.md",
+      "completed_at": "2026-05-09T18:24:53.729056+08:00",
+      "completed_reason": "task2b fixed: added Power Check CPU滥用分级熔断(25%/10%/2%), PENDING_JOB_REASON_ENERGY_SCHEDULING能量限额挂起, WorkManager 2.10 DeliQueue无锁队列适配(掉帧率-4%)"
     },
     {
       "section": "05.11",
