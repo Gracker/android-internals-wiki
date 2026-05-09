@@ -1722,17 +1722,18 @@
     "last_task6_review_log": "logs/review/2026-05-09-07-review.md",
     "pipeline_stage": "task9_pending",
     "status": "ready-for-review",
-    "task9_state": "pending",
+    "task9_state": "reviewed",
     "task2b_state": "fixed",
     "task2b_result": "fixed",
     "task9_result": "needs-rework",
     "last_task6_polish_count": 17,
     "last_task6_rework_count": 0,
     "section_title": "Hook 基础设施与性能工具实现原理",
-    "last_task9_at": "2026-05-09T06:20:00+08:00",
+    "last_task9_at": "2026-05-09T15:36:18.569891",
     "last_task9_review_log": "logs/deep-review/2026-05-09-06-deep-review.md",
     "task9_reviewed_date": "2026-05-09",
-    "task9_reviewed_by": "openclaw-task9"
+    "task9_reviewed_by": "openclaw-task9",
+    "task9_review_notes": "2026-05-09 Task9 15:20：P0 3项（Android 16/17新特性缺失、16KB页适配不完整、性能开销无数据支撑），P1 4项（W^X约束、namespace API、动态代码加载、FrameMetrics API边界），P2 2项（PLT Hook盲区、Hook库版本支持）→ 需回炉补强2026年新特性量化数据"
   },
   "rework_completed": [
     {
@@ -1886,6 +1887,38 @@
             "P1: 协程段落JNI/trace开销警示加强"
           ],
           "status": "ready-for-review"
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-05-09T16:23:43.275+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "2.6",
+        "3.1"
+      ],
+      "details": [
+        {
+          "section": "2.6",
+          "title": "SurfaceFlinger 与合成",
+          "source": "external-ai-review",
+          "issues_fixed": [
+            "版本差异: FrameTargeter 多屏帧目标器架构 (Android 16)",
+            "原理链: AIDL Composer V4 CLIENT_BYPASS",
+            "知识盲区: HWC3 V4 HDR DisplayLuts"
+          ],
+          "result": "fixed"
+        },
+        {
+          "section": "3.1",
+          "title": "Input 事件分发全流程",
+          "source": "external-ai-review",
+          "issues_fixed": [
+            "版本差异: Android 16 AOT 返回键预判拦截",
+            "原理链: Native 手势排除检测下沉",
+            "知识盲区: Android 17 DeliQueue 输入加速"
+          ],
+          "result": "fixed"
         }
       ]
     }
