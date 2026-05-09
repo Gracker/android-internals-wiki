@@ -125,7 +125,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-04-28T06:13:23.086237",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "Section 4.8 already finalized (pipeline_stage: ready-to-publish), material already in references"
     },
     {
       "section": "08.05",
@@ -201,7 +203,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-25T05:39:49.885338",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "14-other-tools",
@@ -221,7 +225,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-25T05:39:49.920846",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "15.10",
@@ -317,7 +323,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-04-28T06:13:23.086237",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "Section 2.16 already finalized (pipeline_stage: ready-to-publish)"
     },
     {
       "section": "17-oem",
@@ -337,7 +345,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-25T05:39:49.847279",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "17.oem",
@@ -357,7 +367,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-27T05:44:59.722724",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "17.oem",
@@ -377,7 +389,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-27T05:44:59.756863",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "17.oem",
@@ -397,7 +411,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-27T05:44:59.789879",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "17.oem",
@@ -417,7 +433,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-27T05:44:59.823927",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "17.oem",
@@ -437,7 +455,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-27T05:44:59.857022",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "17.oem",
@@ -457,7 +477,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-27T05:44:59.890170",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "17.oem",
@@ -477,7 +499,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-27T05:44:59.924591",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "17.oem",
@@ -497,7 +521,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-27T05:44:59.956297",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "18.01",
@@ -623,7 +649,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-04-26T10:24:39+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "Material already injected into section references (注入时间 2026-04-29)"
     },
     {
       "section": "2.10",
@@ -1248,7 +1276,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-04-26T10:24:39+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "Section 4.8 already finalized (pipeline_stage: ready-to-publish), material already in references"
     },
     {
       "section": "4.8",
@@ -1715,7 +1745,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T16:15:23+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "blocked_at": "2026-05-10T02:44:27+08:00",
+      "blocked_by": "openclaw-task2b",
+      "block_reason": "跨多章节批量 review（ch10/ch12/ch14/ch18 等），无法映射到单一 section，需拆分后重新入队"
     },
     {
       "section": "05.08",
@@ -1979,7 +2012,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "14.1 工具与基准测试",
@@ -1999,7 +2034,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "14.1 工具与基准测试",
@@ -2019,7 +2056,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-04-30T05:37:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "8.1 响应速度优化",
@@ -2285,7 +2324,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2305,7 +2346,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2325,7 +2368,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2345,7 +2390,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2365,7 +2412,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2385,7 +2434,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2405,7 +2456,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2425,7 +2478,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2445,7 +2500,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:39:11",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2465,7 +2522,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2485,7 +2544,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2505,7 +2566,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2525,7 +2588,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2545,7 +2610,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2565,7 +2632,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2585,7 +2654,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2605,7 +2676,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "ch17-oem",
@@ -2625,7 +2698,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-06T05:40:34",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（material_paths 为空），跳过"
     },
     {
       "section": "02-performance",
@@ -2645,7 +2720,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-07T05:36:27",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "02-performance",
@@ -2665,7 +2742,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-07T05:36:27",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "02-performance",
@@ -2685,7 +2764,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-07T05:36:27",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "17.2",
@@ -2797,7 +2878,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-08T06:32:42.009919+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:47:39+08:00",
+      "completed_reason": "Material injected into section references (BufferQueue 内部锁竞争机制源码级调研)"
     },
     {
       "section": "19.3 KOOM",
@@ -2817,7 +2900,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-08T06:32:42.009919+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:47:39+08:00",
+      "completed_reason": "Section file not found for 19.3 KOOM, cannot inject material"
     },
     {
       "section": "5.9 ADPF 自适应性能框架",
@@ -2837,7 +2922,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-08T06:32:42.009919+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:47:39+08:00",
+      "completed_reason": "Section 5.9 already finalized (pipeline_stage: ready-to-publish)"
     },
     {
       "section": "7.2 卡顿原因体系",
@@ -2857,7 +2944,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-08T06:32:42.009919+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:47:39+08:00",
+      "completed_reason": "Section 7.2 already finalized (pipeline_stage: ready-to-publish)"
     },
     {
       "section": "17.1",
@@ -2877,7 +2966,9 @@
       ],
       "added_by": "task8-classifier",
       "added_at": "2026-05-09T05:35:34.777331",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:44:27+08:00",
+      "completed_reason": "URL 不可访问（juejin.cn 被反爬/内网限制），跳过"
     },
     {
       "section": "1.14",
@@ -2897,7 +2988,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-09T06:13:15.793717",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:47:10+08:00",
+      "completed_reason": "Section 1.14 already finalized (pipeline_stage: ready-to-publish)"
     },
     {
       "section": "19.24",
@@ -2917,7 +3010,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-09T06:13:15.793717",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:47:10+08:00",
+      "completed_reason": "Section 19.24 already finalized (pipeline_stage: ready-to-publish)"
     },
     {
       "section": "5.8",
@@ -2937,7 +3032,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-09T06:13:15.793717",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:47:10+08:00",
+      "completed_reason": "已有高度相关 DeepResearch 参考资料（CachedAppOptimizer Freezer 源码级深度解析 2026-04-18），新增材料聚焦 Binder+cgroup v2 协同，与已有参考重叠度较高，跳过"
     },
     {
       "section": "2.13",
@@ -2957,7 +3054,9 @@
       ],
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-09T06:13:15.793717",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T02:47:10+08:00",
+      "completed_reason": "Section 2.13 already finalized (pipeline_stage: ready-to-publish)"
     },
     {
       "section": "2.9",

@@ -1574,7 +1574,7 @@
       ]
     }
   ],
-  "task2b_last_run": "2026-05-09T20:49:17.584382+08:00",
+  "task2b_last_run": "2026-05-10T02:48:15+08:00",
   "task2b_reworks": [
     {
       "date": "2026-05-07T23:40:00+08:00",
@@ -1836,6 +1836,30 @@
           ]
         }
       ]
+    },
+    {
+      "date": "2026-05-10T02:48:15+08:00",
+      "task": "task2b-rework",
+      "sections_processed": [
+        "2.6"
+      ],
+      "details": [
+        {
+          "section": "2.6",
+          "title": "SurfaceFlinger 与合成",
+          "source": "task-deepresearch-injector (P80)",
+          "fixes": [
+            "BufferQueue 内部锁竞争机制源码级调研注入参考资料（单一 mutex + 多 condition variable 架构、dequeueBuffer 等待路径、Android 14 BUFFER_RELEASE_CHANNEL 精确唤醒优化）"
+          ],
+          "result": "reference-injected"
+        }
+      ],
+      "queue_cleanup": {
+        "stale_deepresearch_closed": 8,
+        "stale_task8_closed": 30,
+        "external_batch_blocked": 1,
+        "overlapping_skipped": 1
+      }
     }
   ],
   "2.7": {
