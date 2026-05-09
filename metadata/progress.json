@@ -2079,5 +2079,23 @@
       "last_rework": "2026-05-09T22:47:37+08:00",
       "task2b_state": "fixed"
     }
+  },
+  "task2b_latest": {
+    "7.6": {
+      "section": "7.6",
+      "title": "案例集",
+      "status": "fixed",
+      "fixed_at": "2026-05-09T23:40:00+08:00",
+      "fixed_by": "openclaw-task2b",
+      "fix_summary": "Added SF/HWC GPU fallback case + thermal throttling case",
+      "pipeline_stage": "task6_pending"
+    },
+    "3.6": {
+      "section": "3.6",
+      "title": "手势识别算法与性能优化",
+      "status": "stale-closed",
+      "closed_at": "2026-05-09T23:40:00+08:00",
+      "close_reason": "Section already finalized with AOSP source anchors; stale queue entry closed"
+    }
   }
 }
