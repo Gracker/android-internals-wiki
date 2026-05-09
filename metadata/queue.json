@@ -5349,13 +5349,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "intake/research-gaps.md",
         "intake/suggestions.md"
       ],
-      "added_at": "2026-05-01T11:20:00+08:00"
+      "added_at": "2026-05-01T11:20:00+08:00",
+      "completed_at": "2026-05-09T10:40:00+08:00",
+      "completed_reason": "task2b-fixed: BLAST版本历史修正、Graphite部署状态修正、WakeLock源码链补充"
     },
     {
       "section": "3",
@@ -6114,13 +6116,15 @@
         }
       ],
       "added_by": "external-ai-review",
-      "status": "pending",
+      "status": "completed",
       "date": "2026-04-26",
       "material_paths": [
         "intake/suggestions.md"
       ],
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-04-27T16:20:00+08:00"
+      "updated_at": "2026-04-27T16:20:00+08:00",
+      "completed_at": "2026-05-09T10:40:00+08:00",
+      "completed_reason": "task2b-fixed: WakeLock→BatteryStats源码链补充、WakeLock禁用状态修正"
     },
     {
       "section": "5.8",

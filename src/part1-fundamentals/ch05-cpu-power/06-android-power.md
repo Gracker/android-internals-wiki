@@ -11,55 +11,23 @@ drafted_date: "2026-04-01"
 drafted_by: openclaw-task2a
 reviewed_date: "2026-05-05"
 task6_reviewed_date: "2026-05-05"
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending  
 task9_result: needs-rework
 task9_reviewed_date: "2026-04-27"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T16:20:00+08:00"
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-04-29T10:45:00+08:00"
-pipeline_stage: task2b_pending
+last_task2b_at: "2026-05-09T10:40:00+08:00"
+pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 review_round: 4
 related_chapters:
   - "5.1"
   - "5.2"
   - "5.4"
-  - "5.5"
-  - "11.5"
-polish_count: 1
-polish_date: "2026-04-08"
-polish_by: task2b-polish
-sources:
-  - type: blog
-    path: "https://mp.weixin.qq.com/s/抖音功耗优化实践"
-  - type: blog
-    path: "https://mp.weixin.qq.com/s/BatteryHistorian Android手机耗电分析神器"
-  - type: blog
-    path: "https://mp.weixin.qq.com/s/SoC低功耗问题定位及优化的10个思路"
-  - type: blog
-    path: "https://mp.weixin.qq.com/s/借助Android Studio中的功耗性能分析器进行AB测试"
-  - type: official
-    path: "https://developer.android.com/topic/performance/power/setup-battery-historian"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/PowerManager"
-  - type: official
-    path: "https://source.android.com/docs/core/power"
-tags:
-  - android
-  - power
-  - wakelock
-  - doze
-  - battery
-  - suspend
-  - jobscheduler
-  - powermanager
-last_task6_at: "2026-05-05T10:05:00+08:00"
-review_notes: "2026-05-05 task6 review: L1/L2 小修完成；Task6 未新增回炉项，但 queue 中仍有 5.6 技术待办，保持 task2b_pending。"
----
 
 
 # Android 功耗管理
@@ -126,6 +94,8 @@ WakeLock 是 Android 提供给 App 的一种"阻止系统休眠"的机制。在 
 
 其他类型的锁(如 SCREEN_BRIGHT_WAKE_LOCK、FULL_WAKE_LOCK)在较新的 Android 版本中已经被废弃,因为它们强制保持屏幕点亮,功耗影响太大。如果代码中还在使用这些废弃的锁类型,应该迁移到 FLAG_KEEP_SCREEN_ON 或其他方式。
 
+**WakeLock 事件如何流向 BatteryStats**：当 App 调用 PowerManager.newWakeLock() 时，请求会经过 PowerManager(客户端) → Binder IPC → PowerManagerService(PMS)。PMS 在 acquireWakeLockInternal() 中创建 BatteryStatsImpl.WakeLock 对象，调用 stats.noteWakeLockAcquired(uid, pid, lockFlags)；释放时调用 stats.noteWakeLockReleased()。这个 stats 对象是 BatteryService 中追踪进程耗电的核心数据结构，最终会通过 Binder IPC 反馈到 batterystats 服务供 Battery Historian 分析。在 Perfetto 中看不到这个细节，Battery Historian 的 Userspace Wakelock Track 就是从这个 BatteryStats 统计路径得到的。
+
 ```java
 // frameworks/base/core/java/android/os/PowerManager.java
 // WakeLock 类型定义(部分已废弃)
@@ -162,7 +132,7 @@ Android 16 在 suspend 路径中引入了 HWC 4.0 的 onVsyncIdle 信号联动�
 
 如果我们在 Perfetto 中抓取了包含电源事件的 Trace,可以观察到以下信息:
 
-- **Power 标签页**:在 system_server 进程下可以看到 WakeLock 的 acquire/release 事件,以及屏幕 on/off 的状态变化
+- **Power 标签页**:在 system_server 进程下 WakeLock 的 acquire/release 事件,以及屏幕 on/off 的状态变化
 - **CPU 状态**:当系统进入 Suspend 后,所有 CPU 的 idle 比例会接近 100%;如果某个 CPU 在灭屏期间仍然有活跃的执行段,说明有东西阻止了系统进入深度休眠
 - **Wake reasons**:内核唤醒原因通常会记录在 `pm_wakeup` 事件中
 
@@ -265,7 +235,7 @@ Battery Historian 提供了两个主要视图:
 
 **System Stats(系统统计)**:展示整个设备的状态,包括信号强度、屏幕亮度、充电状态等。这个视图用于排除环境因素--如果系统统计显示在问题时段网络信号极差(射频模块会增大发射功率来维持连接),那高耗电可能并非 App 自身的问题。
 
-**App Stats(应用统计)**:选中某个 App 后,可以看到它在这个时间段内的详细行为:WakeLock 持有时长、网络访问频率、Job 执行情况、前台/后台进程状态、SyncManager 活动等。
+**App Stats(应用统计)**:选中某个 App 后,它在这个时间段内的详细行为:WakeLock 持有时长、网络访问频率、Job 执行情况、前台/后台进程状态、SyncManager 活动等。
 
 ### 通用分析思路
 
