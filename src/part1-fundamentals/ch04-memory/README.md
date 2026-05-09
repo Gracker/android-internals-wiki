@@ -8,6 +8,9 @@
 这一章会把 Android 内存问题拆成两个层次：  
 一个是系统到底怎样分配、回收和压缩内存；另一个是这些系统行为最后如何反映到 App 的卡顿、重启、GC、LMK 和图形内存问题上。
 
+
+Android 内存管理是一个跨层协作的系统。从 App 视角看，内存分配经过 Java Heap（ART 管理）和 Native Heap（scudo/mmap）；当内存紧张时，ART 触发 GC 回收 Java 对象，框架层通过 `ActivityThread.handleTrimMemory()` → `ComponentCallbacks2.onTrimMemory()` 通知 App 释放缓存；如果还不够，内核侧 kswapd 开始后台回收页面，把冷页面压缩写回 ZRAM swap 空间（`/proc/meminfo` 中 `SwapCached` + `SwapTotal` 可观测）；压力继续升级时，LMKD（`system/memory/lmkd/lmkd.cpp`，`mp_event_common` 主循环）按 oom_adj_score 逐级杀进程。整条链路中，App 能做的事情在第一环（主动释放）和最后一环（响应 `onTrimMemory`），中间的 kswapd、ZRAM、LMK 都是系统行为，App 只能观察不能控制。理解这条链路，能帮你在排查内存问题时判断：问题出在 App 自身分配过多，还是系统侧压力传导上来的。
+
 ## 本章内容
 
 - Android 内存模型全景

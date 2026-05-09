@@ -514,7 +514,10 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-25T14:10:00+08:00",
-      "status": "pending"
+      "status": "blocked",
+      "blocked_at": "2026-05-10T01:44:00.691562+08:00",
+      "blocked_by": "openclaw-task2b",
+      "block_reason": "section already finalized (pipeline_stage: ready-to-publish, task9_result: pass-tech-review), review_issues detail and suggestion 均为空，且无对应 external-review 文件，无法定位具体修复方向"
     },
     {
       "section": "19.27",
@@ -1154,7 +1157,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-26T15:14:34+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T01:44:00.691562+08:00",
+      "completed_reason": "task2b fixed: 补充 App→ART GC→onTrimMemory→kswapd→ZRAM→LMKD 跨层内存管理链路概述，含关键 AOSP 源码锚点 (ActivityThread.handleTrimMemory, ComponentCallbacks2.onTrimMemory, lmkd.cpp mp_event_common) 和观测入口"
     },
     {
       "section": "4.2",
@@ -1506,7 +1511,9 @@
       ],
       "added_by": "external-ai-review",
       "added_at": "2026-04-26T15:14:34+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T01:44:00.691562+08:00",
+      "completed_reason": "task2b fixed: 补充 Android 存储栈架构概述 (eMMC→UFS 演进、ext4→F2FS 文件系统选择动机、fsync/FUSE/FBE 结构性瓶颈)，增加 Perfetto 观测入口"
     },
     {
       "section": "6.4",
