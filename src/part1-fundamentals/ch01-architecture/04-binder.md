@@ -71,7 +71,7 @@ review_notes: "2026-05-09 task6 revisit: pass-light-edit。完成 Task2B 回炉�
 
 ### 锚点（必须覆盖）
 
-- 🔹 Binder 架构：Client → Proxy → Binder Driver → Stub → Server，一次拷贝的实现原理（mmap）
+- 🔹 Binder 架构：Client → Proxy → Binder驱动 → Stub → Server，一次拷贝的实现原理（mmap）
 - 🔹 AIDL 接口定义与代码生成：Proxy/Stub 模式
 - 🔹 Binder 线程池模型：默认最大 15 个 binder 线程（可配置）、线程池动态管理、线程耗尽对 ANR 的影响
 - 🔹 同步 Binder 调用的性能开销：上下文切换、调度延迟、数据序列化
@@ -111,14 +111,14 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。业�
 
 整个调用链可以简化为五个角色和四个步骤：
 
-**五个角色：** Client（调用方进程中的线程）→ **Proxy**（AIDL 生成的代理类）→ **Binder Driver**（`/dev/binder` 内核模块）→ **Stub**（AIDL 生成的桩类）→ **Server**（服务方进程中的 Binder 线程）。
+**五个角色：** Client（调用方进程中的线程）→ **Proxy**（AIDL 生成的代理类）→ **Binder驱动**（`/dev/binder` 内核模块）→ **Stub**（AIDL 生成的桩类）→ **Server**（服务方进程中的 Binder 线程）。
 
 **四个步骤：**
 
 1. Client 线程通过 Proxy 将参数序列化到 `Parcel`，调用 `IBinder.transact()`。
-2. Binder Driver 接管，将数据从 Client 进程的地址空间拷贝到 Server 进程可以访问的共享内存区域，然后唤醒一个空闲的 Server 端 Binder 线程。
+2. Binder驱动接管，将数据从 Client 进程的地址空间拷贝到 Server 进程可以访问的共享内存区域，然后唤醒一个空闲的 Server 端 Binder 线程。
 3. Server 端的 Binder 线程被唤醒，Stub 类从 `Parcel` 反序列化参数，调用实际实现代码，将结果序列化回 `Parcel`。
-4. Binder Driver 将结果数据传回 Client，唤醒等待中的 Client 线程。
+4. Binder驱动将结果数据传回 Client，唤醒等待中的 Client 线程。
 
 [已验证: AOSP 源码, frameworks/native/libs/binder/BpBinder.cpp] [来源: obsidian/Personal-Knowlodge/source/2026-03-06_wechat_Binder驱动中的流程详解.md]
 
@@ -126,7 +126,7 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。业�
 
 传统 IPC 机制（管道、Socket）传输数据需要至少两次拷贝：从发送方用户空间到内核空间一次，从内核空间到接收方用户空间又一次。Binder 通过 `mmap()` 把这个过程压缩到了一次。
 
-工作原理是这样的：每个使用 Binder 的进程在初始化时，会对 `/dev/binder` 调用 `mmap()`，在用户空间映射一块内存（默认约 1MB）。这块内存同时被内核的 Binder Driver 映射。当 Client 发送数据时，Binder Driver 只需要把 `Parcel` 数据拷贝到这块共享内存区域，Server 端进程就能直接读到它——不需要再从内核拷贝到 Server 的用户空间。
+工作原理是这样的：每个使用 Binder 的进程在初始化时，会对 `/dev/binder` 调用 `mmap()`，在用户空间映射一块内存（默认约 1MB）。这块内存同时被内核的 Binder驱动映射。当 Client 发送数据时，Binder驱动只需要把 `Parcel` 数据拷贝到这块共享内存区域，Server 端进程就能直接读到它——不需要再从内核拷贝到 Server 的用户空间。
 
 Binder 的数据路径属于"单次拷贝"（single copy）：发送方从自己的用户空间拷贝到共享区域，接收方不需要再拷贝一次。
 
@@ -174,7 +174,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 }
 ```
 
-读这段生成代码时，重点放在调用步骤：先把参数写进 `Parcel`，再通过 `mRemote.transact()` 把事务交给 Binder Driver，再从 reply `Parcel` 中读取结果。服务端的 `Stub.onTransact()` 会根据事务码分发到真实实现。读系统接口时，也应该把注意力放在这条调用链上，避免把示例代码误当成某个 AOSP 接口的原样拷贝。
+读这段生成代码时，重点放在调用步骤：先把参数写进 `Parcel`，再通过 `mRemote.transact()` 把事务交给 Binder驱动，再从 reply `Parcel` 中读取结果。服务端的 `Stub.onTransact()` 会根据事务码分发到真实实现。读系统接口时，也应该把注意力放在这条调用链上，避免把示例代码误当成某个 AOSP 接口的原样拷贝。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/IWindowSession.aidl] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Binder.java] [已验证: 官方文档, developer.android.com/guide/components/aidl]
 
@@ -184,7 +184,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 
 每个进程在初始化 Binder 时，会创建一组工作线程专门处理进来的 Binder 请求。这个线程池有几个重要特征：
 
-**按需创建，有上限。** 线程不是一开始就全创建出来的。Binder Driver 根据负载动态创建新线程，默认上限 15 个工作线程（不含主线程）。这个上限可以通过 `ProcessState.setThreadPoolMaxThreadCount()` 修改，但一旦设置就不能减小。`system_server` 等核心进程可能在厂商定制 ROM 中被调高。
+**按需创建，有上限。** 线程不是一开始就全创建出来的。Binder驱动根据负载动态创建新线程，默认上限 15 个工作线程（不含主线程）。这个上限可以通过 `ProcessState.setThreadPoolMaxThreadCount()` 修改，但一旦设置就不能减小。`system_server` 等核心进程可能在厂商定制 ROM 中被调高。
 
 **命名规则。** AOSP `ProcessState::makeBinderThreadName()` 用 `"%.*s:%d_%X"` 生成线程名，前缀取决于 driver 名称，所以常见的是 `binder:<pid>_<hex-seq>`、`hwbinder:<pid>_<hex-seq>` 或 `vndbinder:<pid>_<hex-seq>`。这里的后缀是线程池里的十六进制序号，`_B` 只是第 11 个线程，不代表特殊角色。
 
@@ -218,7 +218,7 @@ oneway interface ICallback {
 }
 ```
 
-Client 调用 `oneway` 方法后，`transact()` 会立即返回，不等待 Server 处理结果。Binder Driver 把请求放入队列，稍后唤醒 Server 端线程处理。
+Client 调用 `oneway` 方法后，`transact()` 会立即返回，不等待 Server 处理结果。Binder驱动把请求放入队列，稍后唤醒 Server 端线程处理。
 
 oneway 很容易被当成“更快”的选择，但需要留意几个边界：
 
@@ -234,7 +234,7 @@ oneway 很容易被当成“更快”的选择，但需要留意几个边界：
 
 同步 Binder 调用会把请求交给另一进程，同时还会影响服务端 worker 的调度优先级。source.android 的 priority inheritance 文档把这套机制分成三层：transaction priority inheritance、node priority inheritance 和 real-time priority inheritance。
 
-对性能分析最常见的是 transaction priority inheritance。高优先级线程发起同步 Binder 调用时，Binder Driver 会临时把服务端 worker 的优先级调到和调用方一致；事务结束后再恢复。这样做是为了减少优先级反转。异步 `oneway` 调用不阻塞调用方，所以默认不会继承调用方优先级。
+对性能分析最常见的是 transaction priority inheritance。高优先级线程发起同步 Binder 调用时，Binder驱动会临时把服务端 worker 的优先级调到和调用方一致；事务结束后再恢复。这样做是为了减少优先级反转。异步 `oneway` 调用不阻塞调用方，所以默认不会继承调用方优先级。
 
 如果某个服务希望所有事务至少以某个调度等级执行，还可以在服务端节点上配置 node priority inheritance。文档给出的入口是 `BBinder::setMinSchedulerPolicy`。real-time priority inheritance 也是同一套思路，但默认关闭，只有显式调用 `BBinder::setInheritRt(true)` 的节点才会传播 RT policy。
 
@@ -276,7 +276,7 @@ Perfetto 提供两层 Binder 数据源：
 **第二步：区分"谁慢"。** 查看这次事务的 `client_dur`、`server_dur` 和 `is_sync`：
 
 - 如果 `server_dur` 很长（比如 15ms），说明 Server 端处理本身就很慢。需要跳转到 Server 端线程看它到底在干什么。
-- 如果 `client_dur` 很长但 `server_dur` 很短，说明时间耗在 Binder Driver 调度或排队上——可能是线程池忙。
+- 如果 `client_dur` 很长但 `server_dur` 很短，说明时间耗在 Binder驱动调度或排队上——可能是线程池忙。
 - 如果两者都正常但 Client 端 thread_state 显示长时间 Sleeping，结合 Server 端线程状态进一步确认是否存在调度延迟。
 
 **第三步：检查锁竞争。** 如果 Server 端线程在处理请求时出现了长时间 Sleeping，很可能是等 Java `synchronized` 锁。Perfetto 的 **Lock contention** 轨道会显示"谁持有锁"和"谁在等锁"。
@@ -354,7 +354,7 @@ ORDER BY total_client_ms DESC
 LIMIT 20;
 ```
 
-低版本（Android 13 及以下）需要从 ftrace slice 手动统计，此时只过滤 `binder transaction`（client 侧发起），不要把 `binder reply` / `binder async receive` 等 server 侧 slice 混入 client 频率统计：
+低版本（Android 13 及以下）需要从 ftrace slice 手动统计，此时只过滤 `binder transaction`（client 侧发起），不要把 `binder reply` / `binder async receive` 等 server 侧 slice 淨入 client 频率统计：
 
 ```sql
 -- 低版本回退：只统计 client 侧 binder transaction slice
@@ -432,7 +432,7 @@ oneway 调用避免了 Client 端的阻塞等待，但仍然有队列和处理�
   - `frameworks/base/core/java/android/os/Binder.java`（Java 层 Binder 基类）
   - `frameworks/base/core/java/android/view/IWindowSession.aidl`（窗口相关真实 AIDL 入口）
   - `frameworks/base/core/java/com/android/internal/os/BinderCallHeavyHitterWatcher.java`（内部 Binder 热点调用监控）
-  - `drivers/android/binder.c`（内核 Binder Driver 实现）
+  - `drivers/android/binder.c`（内核 Binder驱动 实现）
 - [已验证: 官方文档, developer.android.com/reference/android/os/IBinder]
 - [已验证: 官方文档, developer.android.com/guide/components/aidl]
 - [已修正: Perfetto Binder 字段口径基于 AOSP android-16.0.0_r1 stdlib android/binder.sql 复核]
