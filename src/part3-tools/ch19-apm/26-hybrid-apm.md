@@ -1,38 +1,50 @@
 ---
-title: "混合栈与跨平台 APM (WebView / Flutter)"
-chapter: "19"
-section: "19.26"
-status: ready-for-review
-drafted_date: "2026-04-24"
-drafted_by: "gemini"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-25"
-last_verified_against: "Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming docs"
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+chapter: '19'
 confidence: high
-tags: [apm, webview, flutter, hybrid]
-related_chapters: ["19.0", "19.01"]
-pipeline_stage: "task6_pending"
-task2b_result: fixed
-task2b_state: "fixed"
-task6_state: "revisiting"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-07"
-task6_result: "pass-light-edit"
-task9_state: "pending"
+drafted_by: gemini
+drafted_date: '2026-04-24'
+last_task6_at: '2026-05-07T23:13:13+08:00'
+last_task9_at: '2026-05-08T00:28:41+08:00'
+last_verified: '2026-04-25'
+last_verified_against: Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming
+  docs
+pipeline_stage: task6_pending
+related_chapters:
+- '19.0'
+- '19.01'
+review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 2（WebView 可见状态 API 与跨时钟校准）。'
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-07'
+section: '19.26'
 sources:
-  - "https://developer.android.com/reference/android/view/PixelCopy"
-  - "https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)"
-  - "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient"
-  - "https://api.flutter.dev/flutter/dart-ui/FrameTiming-class.html"
-  - "https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addTimingsCallback.html"
-task9_result: ~
-task9_reviewed_date: "2026-05-08"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-08T00:28:41+08:00"
-review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 2（WebView 可见状态 API 与跨时钟校准）。"
-last_task6_at: "2026-05-07T23:13:13+08:00"
-task6_review_notes: "2026-05-07 23:13 task6 revisiting-review: pass-light-edit。复核 Task9 回炉后的写作层，修复 PixelCopy 段动词翻译腔；Task9 needs-rework 记录未由 Task6 裁决，未自动晋升。"
-task9_review_notes: "2026-05-07 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；WebView.postVisualStateCallback requestId 语义与 AOSP API 文档不一致。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2。Top: Flutter FrameTiming 缺少时间戳归一，无法真正进入统一 Session Timeline。"
+- https://developer.android.com/reference/android/view/PixelCopy
+- https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)
+- https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient
+- https://api.flutter.dev/flutter/dart-ui/FrameTiming-class.html
+- https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addTimingsCallback.html
+status: ready-for-review
+tags:
+- apm
+- webview
+- flutter
+- hybrid
+task2b_result: fixed
+task2b_state: fixed
+task6_result: pass-light-edit
+task6_review_notes: '2026-05-07 23:13 task6 revisiting-review: pass-light-edit。复核
+  Task9 回炉后的写作层，修复 PixelCopy 段动词翻译腔；Task9 needs-rework 记录未由 Task6 裁决，未自动晋升。'
+task6_reviewed_at: '2026-05-10T10:17:22.875562'
+task6_reviewed_by: openclaw-task6
+task6_state: reviewed
+task9_result: null
+task9_review_notes: '2026-05-07 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；WebView.postVisualStateCallback
+  requestId 语义与 AOSP API 文档不一致。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0
+  0 / P1 1 / P2 2。Top: Flutter FrameTiming 缺少时间戳归一，无法真正进入统一 Session Timeline。'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-08'
+task9_state: pending
+title: 混合栈与跨平台 APM (WebView / Flutter)
 ---
 
 # 混合栈与跨平台 APM (WebView / Flutter)
@@ -242,16 +254,22 @@ void installFlutterFrameReporter(String sessionId) {
 
 `FrameTiming` 上报的 `buildDuration` / `rasterDuration` / `totalSpan` 是时长，可以直接用。但如果想把 Flutter 帧事件和 Native ANR、网络、WebView 事件放在同一条 Session Timeline（按 `elapsed_realtime_ms` 排列），就需要解决时钟归一问题。
 
-`FrameTiming.timestampInMicroseconds(FramePhase)` 返回的是 Flutter 引擎内部的 raw timestamp（同一 epoch 下的微秒计数），官方文档未保证它与 Dart `DateTime` epoch 对齐，更不等于 Native 的 `SystemClock.elapsedRealtime()`。直接把 `timestampInMicroseconds` 除以 1000 当作 `elapsed_realtime_ms` 写入 Timeline，时间轴会偏移。
+`FrameTiming.timestampInMicroseconds(FramePhase)` 返回的是 Flutter 引擎内部的 raw timestamp（同一 epoch 下的微秒计数），官方文档未保证它与 Dart `DateTime` epoch 协调，更不等于 Native 的 `SystemClock.elapsedRealtime()`。直接把 `timestampInMicroseconds` 除以 1000 当作 `elapsed_realtime_ms` 写入 Timeline，时间轴会偏移。
 
-工程上可用近似校准：
+工程上分三步做近似校准：
 
-1. **MethodChannel 接收时刻近似**：Native 端收到 `frameTimings` 调用时记录 `elapsedRealtimeNow = SystemClock.elapsedRealtime()`，Flutter 端在批量回传时附带当前 Dart 时间戳 `dartNow = DateTime.now().microsecondsSinceEpoch`。校准偏移 `offset = elapsedRealtimeNow - dartNow`（近似，忽略了 MethodChannel 传输延迟）。
-2. **单次校准事件**：在 Flutter Engine 初始化后、首帧渲染前，通过 MethodChannel 发一次校准对（`native_elapsed_realtime_ms` + `dart_timestamp_us`），后续所有帧事件用这对偏移量做线性换算。
-3. **误差标注**：`addTimingsCallback` 是批量回调（Flutter 引擎攒一批帧后才触发），Native 收到时刻与帧实际完成时刻之间有 `totalSpan` + 传输延迟的误差。Session Timeline 中 Flutter 帧事件应标注 `clock_source: "calibrated_approx"` 和估计误差范围（通常 <20ms，但在滑动高峰时批量回调间隔可能拉长到 50ms+）。
+1. **初始化时建立校准对**：Flutter Engine 启动后、首帧渲染前，通过 MethodChannel 发一次校准事件。Native 端收到时记录 `nativeElapsedRealtimeMs = SystemClock.elapsedRealtime()`，Flutter 端在发送时附带 `dartTimestampUs = DateTime.now().microsecondsSinceEpoch`。校准偏移量 `offsetMs = nativeElapsedRealtimeMs - dartTimestampUs / 1000`。
+
+   注意：`DateTime.now()` 是 wall-clock，`elapsedRealtime()` 是单调时钟。两者在设备 NTP 校时后会偏移。校准偏移只在"本次进程生命周期内相对稳定"的前提下成立——如果设备在 App 运行期间做了大幅时钟调整（极少见但不可排除），校准精度会劣化。Session Timeline 中应记录校准对的采集时刻，供后续分析时判断偏移是否可能过期。
+
+2. **帧事件用校准偏移换算**：上报每帧时附带 `rawVsyncStartUs`、`rawBuildStartUs`、`rawRasterFinishUs`（来自 `FrameTiming.timestampInMicroseconds(FramePhase)`），Native 端收到后换算为 `elapsed_realtime_ms = rawTimestampUs / 1000 + offsetMs`。`FrameTiming.timestampInMicroseconds` 返回的是 Flutter 引擎内部的微秒计数，与 Dart `DateTime` epoch 的关系是：两者在同一个 Flutter Engine 进程内共享同一时间基准，因此校准对中用 `DateTime.now()` 作为桥接是可行的——但只能换算相对时长，不能当作绝对时间戳。
+
+3. **标注误差来源和范围**：误差来自三方面。一是 MethodChannel 传输延迟（异步调用，通常 1-5ms），二是 `addTimingsCallback` 的批量延迟（引擎攒一批帧后才触发回调，极端情况下 50ms+），三是 `DateTime.now()` 与 `elapsedRealtime()` 的时钟类型差异（wall-clock vs 单调时钟）。Session Timeline 中 Flutter 帧事件应标注 `clock_source: "calibrated_approx"` 和估计误差范围：常规场景 <20ms，滑动高峰或 GC 频繁时 50ms+。只做粗粒度分析（按秒聚合丢帧率）时，可以直接用 `buildMs` / `rasterMs` 时长指标，不需要精确时间轴协调。
+
+**进程挂起边界**：App 进入后台后系统可能冻结进程（CachedAppOptimizer / cgroup freezer），恢复后 `elapsedRealtime()` 持续计时但 `DateTime.now()` 可能跳变。如果校准对是在挂起前采集的，恢复后应重新发送一次校准对。实现方式：监听 `WidgetsBindingObserver.didChangeAppLifecycleState`，在 `resumed` 时重发校准事件。
 
 ```dart
-// 校准对示例：在 Flutter 初始化后立即发送
+// 校准对示例：在 Flutter 初始化后、首帧前发送；App resume 时重发
 void sendCalibrationEvent() {
   final dartNow = DateTime.now().microsecondsSinceEpoch;
   _apmChannel.invokeMethod('calibrate', {
@@ -274,7 +292,7 @@ final payload = timings.map((timing) => {
 }).toList();
 ```
 
-Native 端收到帧事件后，用校准偏移把 `rawVsyncStartUs` / `rawRasterFinishUs` 换算为 `elapsed_realtime_ms`，写入 Session Timeline。如果只做粗粒度分析（按秒聚合丢帧率），可以直接用时长指标（`buildMs` / `rasterMs`），不需要精确时间轴对齐。需要精确对齐的场景主要是：Flutter 帧卡顿与 Native ANR / 网络 / WebView 事件的时序关联分析。
+Native 端收到帧事件后，用校准偏移把 `rawVsyncStartUs` / `rawRasterFinishUs` 换算为 `elapsed_realtime_ms`，写入 Session Timeline。如果只做粗粒度分析（按秒聚合丢帧率），可以直接用时长指标（`buildMs` / `rasterMs`），不需要精确时间轴协调。需要精确协调的场景主要是：Flutter 帧卡顿与 Native ANR / 网络 / WebView 事件的时序关联分析。
 
 Native 收到数据后，按页面、路由、设备刷新率、前后台和引擎后端聚合。Flutter 3.x 之后，Impeller 在部分平台替代或补充 Skia 路径，着色器编译和栅格化表现会变化。APM 样本里保留 Flutter 版本、渲染后端和设备 GPU 信息，才能解释同一页面在不同设备上的差异。
 

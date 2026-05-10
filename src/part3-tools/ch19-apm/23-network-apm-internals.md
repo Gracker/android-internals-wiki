@@ -1,39 +1,53 @@
 ---
-title: "网络 APM 底层捕获原理"
-chapter: "19"
-section: "19.23"
-status: ready-for-review
-drafted_date: "2026-04-24"
-drafted_by: "gemini"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+chapter: '19'
 confidence: high
-tags: [apm, network, okhttp, asm, cronet]
-related_chapters: ["19.0", "19.08", "19.17"]
+drafted_by: gemini
+drafted_date: '2026-04-24'
+last_task2b_at: '2026-05-10T10:26:46+08:00'
+last_task6_at: '2026-05-05T14:10:00+08:00'
+last_task6_review_log: logs/review/2026-05-05-14-review.md
+last_task9_at: '2026-05-05T14:20:00+08:00'
+last_task9_review_log: logs/deep-review/2026-05-05-14-deep-review.md
+last_verified: '2026-04-24'
 pipeline_stage: task6_pending
+related_chapters:
+- '19.0'
+- '19.08'
+- '19.17'
+review_notes: '2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned
+  words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered.
+  task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6
+  re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues
+  previously fixed in queue. task9 re-review needed for auto-promotion. | 2026-05-05
+  task6 review: L1/L2 小修完成（术语换为“分解”，结束动作改成“请求结束”）；无新增 L3/L4 回炉项，等待 Task9 复审。'
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-05'
+section: '19.23'
+sources:
+- https://square.github.io/okhttp/features/events/
+- https://square.github.io/okhttp/features/interceptors/
+- https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory
+- https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback
+- https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo
+status: ready-for-review
+tags:
+- apm
+- network
+- okhttp
+- asm
+- cronet
 task2b_result: fixed
 task2b_state: fixed
-task6_state: revisiting
-task9_state: pending
-sources:
-  - "https://square.github.io/okhttp/features/events/"
-  - "https://square.github.io/okhttp/features/interceptors/"
-  - "https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory"
-  - "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback"
-  - "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-05"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T14:20:00+08:00"
-reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
 task6_result: pass-light-edit
-review_notes: "2026-05-01 task6 re-review (revisiting): pass-light-edit. L1: no banned words. L2: excellent structure and rhythm. All 7 anchors + 3 extensions covered. task9_result=needs-rework, not eligible for auto-promotion. | ⚡ 2026-05-01 task6 re-confirm (revisiting→reviewed): content clean, no new L1/L2 issues. task9 issues previously fixed in queue. task9 re-review needed for auto-promotion. | 2026-05-05 task6 review: L1/L2 小修完成（术语换为“分解”，结束动作改成“请求结束”）；无新增 L3/L4 回炉项，等待 Task9 复审。"
-
-last_task2b_at: "2026-05-09T18:45:30+08:00"
-last_task6_at: "2026-05-05T14:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-05-14-review.md"
-last_task9_review_log: "logs/deep-review/2026-05-05-14-deep-review.md"
+task6_reviewed_at: '2026-05-10T10:17:22.870988'
+task6_reviewed_by: openclaw-task6
+task6_state: reviewed
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-05'
+task9_state: pending
+title: 网络 APM 底层捕获原理
 ---
 
 # 网络 APM 底层捕获原理
@@ -376,7 +390,7 @@ class OpenConnectionMethodVisitor(
 
 明文 HTTP 是例外：没有 TLS 层时，`send` / `recv` 看到的就是应用明文。HTTPS 路径下，`SSL_write` 的输入和 `SSL_read` 的输出更接近业务明文长度；`send` / `recv` 位于 TLS 下方，更适合看 Socket 层错误和传输规模。
 
-PLT Hook 适合拦截动态链接符号，能覆盖部分 Cronet、Mars、libssl、libc 调用路径。它的局限同样明确：
+PLT Hook 适合拦截动态链接符号，能覆盖部分 Cronet、Mars、libssl、libc 调用路径。它的局限也需要清楚：
 
 - 静态链接的网络栈看不到
 - 直接 syscall 或内部函数跳转看不到
@@ -388,7 +402,7 @@ PLT Hook 适合拦截动态链接符号，能覆盖部分 Cronet、Mars、libssl
 
 eBPF 在 Android 系统侧已经广泛用于网络统计，但普通应用通常没有加载 eBPF 程序所需权限。它更像 ROM、设备侧、企业管控环境、测试机或 root 环境的工具，而不是面向所有线上用户的通用 App 方案。
 
-对 APM 来说，eBPF 的价值在这些场景里很高：
+对 APM 来说，eBPF 在这些场景里能提供常规 Java 回调拿不到的数据：
 
 - 可以按 UID 看流量与 socket 事件
 - 能观察重传、RTT、连接失败等更贴近内核的数据
