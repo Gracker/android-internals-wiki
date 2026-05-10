@@ -578,3 +578,11 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
 - 摘要：MGLRU（Linux 6.8 主线）通过 per-lruvec 代际链表细化锁粒度，减少传统双级 LRU 全局 lru_lock 在多核并发下的竞争。核心改进：代际独立链表+批量 PTE accessed bit 清除（锁外执行）+ per-lruvec 锁粒度，从根源削减 shrink_inactive_list 全局持锁瓶颈。
 - 注入时间：2026-05-09
 - 价值：源码级对比传统 LRU 与 MGLRU 的锁竞争机制，直接补充 ch04 Linux 内存管理章节的页面回收锁竞争分析
+
+
+### MGLRU vs 传统双级 LRU 锁竞争差异
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md
+- 类型：DeepResearch 调研结果
+- 摘要：Linux 6.8 MGLRU 与传统双级 LRU 的锁竞争对比。传统 LRU 用全局 lru_lock 做频繁 list_move，多核时成为瓶颈；MGLRU 将页面按访问时间分 2-4 代，锁粒度细化到 per-lruvec，通过 page table batch mark 和 folio_update_gen 减少锁内操作。含 lru_gen_foli
+- 注入时间：2026-05-11
+- 价值：源码级分析，含关键数据结构与调用链，可直接作为章节背景材料或延伸阅读

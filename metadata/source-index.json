@@ -3573,53 +3573,238 @@
       "score": 20,
       "chapter": "04",
       "scored_at": "2026-05-10T05:46:03.088186"
-    }
-  ],
-  "entries": [
-    {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-input-dispatcher-backpressure-mechanism.md",
-      "title": "输入事件反压机制与 InputDispatcher 降级策略",
-      "summary": "InputDispatcher 反压机制由三个正交子系统组成：stale event 丢弃（10s 超时，不通知 App）、ANR 超时（5s，AnrTracker 独立检测）、输入队列积压监测（InputPublisher 返回码）。三者在 Perfetto 中表现各异，Android 12-16 有明确演进路径。",
-      "section_mapping": "ch03",
-      "processed_at": "2026-05-10T06:15:24.900159+08:00",
-      "type": "DeepResearch",
-      "status": "queued"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputflinger-rust-arr-input-system.md",
-      "title": "InputFlinger Rust 组件与 ARR 协同架构",
-      "summary": "Android 15/16 在 InputFlinger 中引入 Rust 组件（cxxbridge FFI），实现 InputFilter 框架和三个无障碍键盘过滤器。输入系统与 ARR 通过 RefreshRatePolicy 协同，触摸事件触发刷新率切换。",
-      "section_mapping": "ch03",
-      "processed_at": "2026-05-10T06:15:24.900159+08:00",
-      "type": "DeepResearch",
-      "status": "queued"
+      "filename": "DeepResearch/2026-05-10-art-referencequeue-analysis.md",
+      "title": "源码调研：Android 16 ART ReferenceQueue 与 ConcurrentMessageQueue 并发优化边界分析",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "04",
+      "keywords": [
+        "ART",
+        "ReferenceQueue",
+        "ConcurrentMessageQueue",
+        "内存管理",
+        "并发优化",
+        "Android 16"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:47:43.797500"
     },
     {
-      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md",
-      "title": "ART FinalizerDaemon 与 ReferenceQueue 并发优化边界验证",
-      "summary": "验证了 ART FinalizerDaemon 与 ReferenceQueue 仍使用传统 synchronized(lock) 机制，未发现 ConcurrentMessageQueue 集成。FinalizerDaemon 采用 poll/remove 双路径设计，enqueuePending() 批处理仍以 synchronized(queue.lock) 为边界。",
-      "section_mapping": "ch04",
-      "processed_at": "2026-05-10T06:15:24.900159+08:00",
-      "type": "DeepResearch",
-      "status": "injected"
+      "filename": "DeepResearch/2026-05-10-deliqueue-concurrentmessagequeue-gcmcm-profindingmanager.md",
+      "title": "源码调研：Android 17 (API 37) DeliQueue、ConcurrentMessageQueue、Generational CMC、ProfilingManager 深度源码验证",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "16",
+      "keywords": [
+        "DeliQueue",
+        "ConcurrentMessageQueue",
+        "Generational CMC",
+        "ProfilingManager",
+        "Android 17"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:47:43.797510"
+    },
+    {
+      "filename": "DeepResearch/2026-05-10-input-dispatcher-backpressure-mechanism.md",
+      "title": "源码调研：输入事件反压机制与 InputDispatcher 降级策略",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "03",
+      "keywords": [
+        "InputDispatcher",
+        "反压机制",
+        "ANR",
+        "输入系统",
+        "性能优化"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:47:43.797513"
+    },
+    {
+      "filename": "DeepResearch/2026-05-10-inputflinger-rust-architecture.md",
+      "title": "源码调研：Android 15/16 输入系统架构重构：InputFlinger Rust 组件与 ARR 协同机制",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "03",
+      "keywords": [
+        "InputFlinger",
+        "Rust",
+        "架构重构",
+        "ARR",
+        "输入系统"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:47:43.797514"
+    },
+    {
+      "filename": "source/juejin-android/2026-05-11-75967106-2026年了，Android开发该如何调.md",
+      "title": "2026年了，Android开发该如何调试布局",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 15,
+      "mapped_chapter": "04",
+      "keywords": [
+        "Android",
+        "调试工具",
+        "Layout Inspector",
+        "AYA",
+        "DevEx"
+      ],
+      "source_type": "JuejinAndroid",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:48:40.393823"
+    },
+    {
+      "filename": "source/juejin-android/2026-05-11-75999636-Android-嵌入式照片选择器，让体验.md",
+      "title": "Android 嵌入式照片选择器，让体验更加丝滑",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 16,
+      "mapped_chapter": "04",
+      "keywords": [
+        "Android",
+        "Photo Picker",
+        "嵌入式",
+        "隐私保护",
+        "API 34"
+      ],
+      "source_type": "JuejinAndroid",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:48:40.393831"
+    },
+    {
+      "filename": "source/juejin-android/2026-05-11-75049649-Jetpack-Compose---封装.md",
+      "title": "Jetpack Compose - 封装特定功能",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 16,
+      "mapped_chapter": "11",
+      "keywords": [
+        "Jetpack Compose",
+        "UI状态",
+        "单数据流",
+        "封装"
+      ],
+      "source_type": "JuejinAndroid",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:48:40.393833"
+    },
+    {
+      "filename": "source/juejin-android/2026-05-11-75978117-AI-定义的-Android-开发规范，.md",
+      "title": "AI 定义的 Android 开发规范，直接抄作业！",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 16,
+      "mapped_chapter": "04",
+      "keywords": [
+        "AI编程",
+        "开发规范",
+        "命名",
+        "架构",
+        "DevEx"
+      ],
+      "source_type": "JuejinAndroid",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:48:40.393835"
+    },
+    {
+      "filename": "DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md",
+      "title": "源码调研：HCI 感知阈值与 Android 端到端延迟的映射关系",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "03",
+      "keywords": [
+        "HCI",
+        "感知阈值",
+        "延迟",
+        "输入系统",
+        "性能优化"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:49:03.719760"
+    },
+    {
+      "filename": "DeepResearch/2026-05-11-input-system-architecture-refactor.md",
+      "title": "源码调研：Android 15/16 输入系统架构重构",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total_score": 17,
+      "mapped_chapter": "03",
+      "keywords": [
+        "InputFlinger",
+        "Rust",
+        "架构重构",
+        "ARR",
+        "性能优化"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:49:03.719767"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputflinger-rust-architecture.md",
+      "title": "InputFlinger Rust 组件架构与 ARR 协同机制",
+      "summary": "Android 16 InputFlinger 从 C++ 到 Rust 的渐进式迁移分析。Rust 过滤器通过 FFI 与 C++ InputDispatcher 交互，模块化输入过滤器包括 bounce_keys/slow_keys/sticky_keys。事件验证与触摸状态管理仍在 C++，Rust 专注预处理和过滤，为 ARR 提供低延迟事件处理。含",
+      "chapter_mapping": "ch03",
+      "processed_at": "2026-05-11T06:19:17.902930+08:00",
+      "processor": "task-deepresearch-injector"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md",
       "title": "SurfaceFlinger FrontEnd 架构与 RequestedLayerState",
-      "summary": "Android 15 引入 FrontEnd 架构，将客户端请求状态（RequestedLayerState）与系统合成状态（LayerSnapshot）完全分离，通过 LayerLifecycleManager 和 LayerHierarchyBuilder 解耦，大幅降低 SF 主线程锁竞争。",
-      "section_mapping": "ch02",
-      "processed_at": "2026-05-10T06:15:24.900159+08:00",
-      "type": "DeepResearch",
-      "status": "injected"
+      "summary": "Android 15 引入 FrontEnd 架构，将客户端请求的 Layer 状态(RequestedLayerState)与系统合成状态(LayerSnapshot)完全分离。通过 LayerLifecycleManager 和 LayerHierarchyBuilder 解耦，主合成线程只在需要合成计算时持有 mStateLock，大幅降低锁竞争。含 ",
+      "chapter_mapping": "ch02",
+      "processed_at": "2026-05-11T06:19:17.902930+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md",
+      "title": "MGLRU vs 传统双级 LRU 锁竞争差异",
+      "summary": "Linux 6.8 MGLRU 与传统双级 LRU 的锁竞争对比。传统 LRU 用全局 lru_lock 做频繁 list_move，多核时成为瓶颈；MGLRU 将页面按访问时间分 2-4 代，锁粒度细化到 per-lruvec，通过 page table batch mark 和 folio_update_gen 减少锁内操作。含 lru_gen_foli",
+      "chapter_mapping": "ch04",
+      "processed_at": "2026-05-11T06:19:17.902930+08:00",
+      "processor": "task-deepresearch-injector"
     },
     {
       "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md",
-      "title": "RenderEffect 底层 GPU 渲染管线与 offscreen buffer 机制",
-      "summary": "RenderEffect 映射到 Skia SkImageFilter 链，触发 offscreen GPU texture 分配。分析了 Java→JNI→Skia GPU pipeline 完整路径，AGSL RuntimeShader 触发 offscreen buffer 机制，性能代价来自显存申请、filter chain GPU pass 数、同步三方面。",
-      "section_mapping": "ch02",
-      "processed_at": "2026-05-10T06:15:24.900159+08:00",
-      "type": "DeepResearch",
-      "status": "injected"
+      "title": "RenderEffect GPU 渲染管线与 offscreen buffer 机制",
+      "summary": "RenderEffect 底层映射到 Skia SkImageFilter 链的完整分析。含 Java API 层、JNI 层到 RenderNode 与 RenderLayer 绑定的完整路径。RenderEffect 触发 offscreen GPU texture 分配的三个代价来源：显存申请、filter chain 执行、RenderThread→",
+      "chapter_mapping": "ch07",
+      "processed_at": "2026-05-11T06:19:17.902930+08:00",
+      "processor": "task-deepresearch-injector"
     }
   ]
 }

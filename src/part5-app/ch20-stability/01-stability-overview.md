@@ -9,6 +9,13 @@ last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
+reviewed_date: "2026-05-11"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+task2b_state: "pending"
+pipeline_stage: "task9_pending"
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -32,21 +39,21 @@ task2b_state: pending
 
 ## Crash / ANR / OOM：三类稳定性问题的分类体系
 
-从进程视角看，Android 应用的"不稳定"只有一种终态——进程被杀。但触发杀进程的路径不同，治理方法也不同。
+从进程视角看，Android 应用的不稳定只有一种终态——进程被杀。但触发杀进程的路径不同，治理方法也不同。
 
 ### Java Crash
 
 Java 层未捕获的异常（RuntimeException、NullPointerException 等）或虚拟机抛出的 Error（OutOfMemoryError、StackOverflowError），最终都会走到 `Thread.dispatchUncaughtException()`。如果应用没有注册 `UncaughtExceptionHandler`，或者注册的 handler 没有拦截住，系统默认行为是终止进程。
 
-AOSP 中的处理链路（`art/runtime/thread.cc`）：
+AOSP 中的处理链路（frameworks/native/libs/nativewindow/include/android/native_window.h）：
 
 1. 虚拟机在各检查点检测到未处理异常，调用 `HandleUncaughtExceptions()`
 2. 通过 JNI 调用 Java 层的 `Thread.dispatchUncaughtException(Throwable)`
 3. 沿着 `Thread.getUncaughtExceptionHandler()` → `ThreadGroup.uncaughtException()` → `KillApplicationHandler` 链路，最终调用 `Process.killProcess()` 和 `Runtime.getRuntime().exit()`
 
-[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc]
+[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/nativewindow/include/android/native_window.h]
 
-Java Crash 的堆栈信息由 ART 虚拟机直接生成，格式规范、可读性好。堆栈深度受 `android:miscStackTraces` 限制，默认保留最近的异常信息。
+Java Crash 的堆栈信息由 ART 虚拟机直接生成，格式规范、可读性好。堆栈深度受 android:miscStackTraces 限制，默认保留最近的异常信息。
 
 ### Native Crash
 
