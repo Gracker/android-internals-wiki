@@ -2,10 +2,14 @@
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-11",
   "task9_reviewed_by": "openclaw-task9",
-  "review_sections": ["2.3", "2.4", "2.5"],
+  "review_sections": [
+    "2.3",
+    "2.4",
+    "2.5"
+  ],
   "review_files": [
     "src/part1-fundamentals/ch02-rendering/03-vsync.md",
-    "src/part1-fundamentals/ch02-rendering/04-choreographer.md", 
+    "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
     "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
   ],
   "review_summary": {
@@ -31,5 +35,6 @@
       "p2": 1
     }
   },
-  "next_review_candidates": []
+  "next_review_candidates": [],
+  "ready-for-review": 1
 }
