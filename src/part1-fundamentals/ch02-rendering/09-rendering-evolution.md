@@ -21,7 +21,7 @@ task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T10:40:00+08:00"
+last_task2b_at: "2026-05-10T13:15:46+08:00"
 pipeline_stage: task6_pending
 sources:
 - type: official
@@ -120,7 +120,7 @@ Android 5.0 Lollipop（API 21，2014 年）引入了 **RenderThread**——一�
 3. **RenderThread** 独立执行 GPU 命令：遍历 `RenderNode` 树，将 Skia draw 命令转为 GL/Vulkan 调用，提交给 GPU
 4. RenderThread 完成后通过 `FrameMetrics` 或 `FrameTimeline` 通知帧完成
 
-在 Perfetto 中，`UI Thread` 和 `RenderThread` 是两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。
+在 Perfetto 中，`UI Thread` 和 `RenderThread` 是两个独立的 Track。`UI Thread` 上的 `performTraversals` 结束后，`RenderThread` 上的 `DrawFrame` 才开始执行 GPU 工作。如果 `DrawFrame` 耗时长，但 `UI Thread` 已经空闲，说明 GPU 是瓶颈，而非主线程代码问题。反过来，如果 `DrawFrame` 还没开始，`UI Thread` 上的 `performTraversals` 就已经超了帧预算，那瓶颈在主线程的 measure/layout/draw——RenderThread 再快也救不回来。
 
 [图：Perfetto 中 UI Thread 与 RenderThread 的 Track 分离示意图，标注 performTraversals 和 DrawFrame 的时序关系]
 
@@ -183,7 +183,7 @@ Vulkan 后端相比 OpenGL ES 的具体改进：
 2. **事务与 Buffer 绑定**：窗口几何变化（位置、大小、裁剪）与 Buffer 内容打包在一起提交，确保状态一致性
 3. **多进程同步优化**：当多个 App 进程向同一个 SurfaceFlinger 提交内容时，`BLASTBufferQueue` 提供了更健壮的同步机制
 
-在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果我们习惯了 Android 11 及之前的 `BufferQueue` Track，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。
+在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果我们习惯了 Android 11 及之前的 `BufferQueue` Track，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。实际排查中，如果你在 Android 12+ 设备的 Trace 里看到了 `dequeueBuffer` 等待时间异常拉长，不要急着按旧经验去查 BufferQueue slot 状态——先确认走的是 BLAST 路径还是旧路径，再决定排查方向。
 
 [图：Android 11 BufferQueue 与 Android 12 BLASTBufferQueue 的 Buffer 流转对比示意图]
 
@@ -242,7 +242,7 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 应用把目标帧率告诉系统之后，是否真的切到对应档位，仍由系统按电量、温度、面板能力和当前场景统一决策。
 
-在 Perfetto 中，ARR 的变化体现在 **`VSYNC-app` 信号不再固定间隔**。当 App 请求 30 FPS 时，`VSYNC-app` 的周期间隔会变为约 33.3ms 而非 8.33ms（120Hz）。这让 Perfetto 分析需要更仔细地识别帧率切换场景。
+在 Perfetto 中，ARR 的变化体现在 **`VSYNC-app` 信号不再固定间隔**。当 App 请求 30 FPS 时，`VSYNC-app` 的周期间隔会变为约 33.3ms 而非 8.33ms（120Hz）。这让 Perfetto 分析需要更仔细地识别帧率切换场景。拿到一份 ARR 设备的 Trace 时，先别急着按固定帧预算做判断——看一眼 VSync 间隔是否在切换，如果帧率档位变了，对应的帧预算也要跟着换。
 
 [图：ARR 开启前后 VSYNC-app 信号间隔对比，展示 120Hz→30Hz 切换时的 Trace 表现]
 
@@ -492,4 +492,12 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 
 另一条线索是**渲染节奏从固定到自适应**。Project Butter 确立了 VSync 驱动 60 FPS 的模型，但固定刷新率在高帧率设备上浪费功耗。ARR 让刷新率跟随内容帧率动态调整，`VSYNC-app` 不再是均匀的节拍器。Perfetto 分析也需要相应调整：不能只看 VSync 间隔是否均匀，还要结合 `FrameTimeline` 判断帧是否在预期时间内完成。
 
-理解这些版本差异，是分析 Perfetto Trace 的前提条件。`RenderThread` Track 从 Android 5.0 才存在；`BLASTBufferQueue` 从 Android 12 开始取代 `BufferQueue`；ARR 设备上的 `VSYNC-app` 间隔会动态变化——每一个 Track 都带着版本烙印，忽略了这一点，就可能对着正确的 Trace 得出错误的结论。
+理解这些版本差异，是分析 Perfetto Trace 的前提条件。下面是几个在实战中踩过的版本认知坑。
+
+**坑 1：对着 Android 12+ 的 Trace 找 "BufferQueue" slice。** Android 12 起主窗口 Buffer 流转走 BLASTBufferQueue，旧版 Perfetto 教程里提到的 `BufferQueue` Track 在新设备上可能只剩副窗口或系统内部路径。如果盯着一个已经不存在的 Track 做分析，结论必然跑偏。排查时先确认设备版本，再决定用哪个 Buffer 管理概念去解读 Trace。
+
+**坑 2：认为 VSYNC-app 间隔永远是固定值。** 在支持 ARR 的设备（Android 15+）上，当 App 请求 30 FPS 时，`VSYNC-app` 间隔会从 8.33ms（120Hz）跳到 33.3ms（30Hz）。如果仍然按"每 16.67ms 一个 VSync"的经验去判断是否掉帧，会把 ARR 正常的帧率切换误判为渲染异常。遇到 VSync 间隔不均匀时，先检查 `FrameTimeline` Track 里对应帧的 `PRESENT_ON_TIME` 状态，再下结论。
+
+**坑 3：在 Android 4.x 的 Trace 里找 RenderThread。** RenderThread 从 Android 5.0 才引入。如果分析的是一台跑 Android 4.4 的老设备，GPU 命令提交仍在主线程上。这时候 `performTraversals` 里面会包含 `eglSwapBuffers` 的等待——这是 Android 4.x 架构下 GPU 同步的必然行为，拿 Android 5.0+ 的 RenderThread 模型去套就会误判。
+
+`RenderThread` Track 从 Android 5.0 才存在；`BLASTBufferQueue` 从 Android 12 开始取代 `BufferQueue`；ARR 设备上的 `VSYNC-app` 间隔会动态变化——拿到一份 Trace 的第一件事，是确认设备系统版本，再决定用哪套概念模型去解读。
