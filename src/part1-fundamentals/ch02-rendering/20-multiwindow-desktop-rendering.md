@@ -47,7 +47,12 @@ related_chapters:
 - '3.3'
 pipeline_stage: task6_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: "reviewed"
+    task9_result: "needs-rework"
+    task9_reviewed_date: "2026-05-10"
+    task9_reviewed_by: "openclaw-task9"
+    last_task9_at: "2026-05-10T16:30:00+08:00"
+    task9_review_notes: "2026-05-10 Task9深度审计：P0级事实错误：recreateOnConfigChanges属性语义错误；P1级问题：Android 16/17大屏边界条件描述不完整，需回炉修正"
 task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_date: '2026-05-09'

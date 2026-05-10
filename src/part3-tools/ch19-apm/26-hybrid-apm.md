@@ -1,4 +1,5 @@
 ---
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: '19'
 confidence: high
@@ -9,7 +10,7 @@ last_task9_at: '2026-05-08T00:28:41+08:00'
 last_verified: '2026-04-25'
 last_verified_against: Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming
   docs
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 related_chapters:
 - '19.0'
 - '19.01'
@@ -23,7 +24,6 @@ sources:
 - https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient
 - https://api.flutter.dev/flutter/dart-ui/FrameTiming-class.html
 - https://api.flutter.dev/flutter/scheduler/SchedulerBinding/addTimingsCallback.html
-status: ready-for-review
 tags:
 - apm
 - webview
@@ -46,6 +46,7 @@ task9_reviewed_date: '2026-05-08'
 task9_state: pending
 title: 混合栈与跨平台 APM (WebView / Flutter)
 ---
+
 
 # 混合栈与跨平台 APM (WebView / Flutter)
 

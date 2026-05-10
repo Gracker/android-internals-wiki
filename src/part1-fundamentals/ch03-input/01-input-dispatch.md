@@ -1,49 +1,69 @@
 ---
-title: "Input 事件分发全流程"
-chapter: "3.1"
 status: finalized
+title: Input 事件分发全流程
+chapter: '3.1'
 pipeline_stage: ready-to-publish
-applicable_versions: "Android 12 (API 31) - Android 16 (API 36)"
-last_verified: "2026-04-27"
-last_verified_against: "AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp / InputProcessor.cpp / inputflinger Android.bp"
-version_note: "已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android 13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及 Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。"
+applicable_versions: Android 12 (API 31) - Android 16 (API 36)
+last_verified: '2026-04-27'
+last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
+  / InputProcessor.cpp / inputflinger Android.bp
+version_note: 已补核 Android 12/13 的 InputClassifier、Android 14+ 的 InputProcessor、Android
+  13+ WindowInfosListener、Android 14/16 DEFAULT_INPUT_DISPATCHING_TIMEOUT chrono 写法，以及
+  Android 12-16 InputFlinger 默认仍以内嵌 libinputflinger 形态进入 system_server。
 confidence: high
-reviewed_date: "2026-04-27"
+reviewed_date: '2026-04-27'
 reviewed_by: openclaw-task6
-rework2_date: "2026-04-15"
-rework2_by: "openclaw-task2b"
-rework2_reason: "Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）"
+rework2_date: '2026-04-15'
+rework2_by: openclaw-task2b
+rework2_reason: 'Task9 Deep Tech Review: 修正 DEFAULT_INPUT_DISPATCHING_TIMEOUT 常量源码路径（frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp）'
 polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
+polish_date: '2026-04-05'
+polish_by: task2b-polish
 sources:
-  - type: blog
-    path: "https://utzcoz.github.io/2020/05/06/Analyze-AOSP-input-architecture.html"
-  - type: blog
-    path: "https://kernel.meizu.com/2023/10/27/Android-inputTuning-and-Optimizing/"
-  - type: official
-    path: "https://source.android.com/docs/core/interaction/input"
-  - type: blog
-    path: "https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture"
-tags: ['input', 'inputdispatcher', 'inputreader', 'eventhub', 'inputchannel', 'anr', 'inputflinger', 'socketpair', 'touch', 'view-hierarchy']
-related_chapters: ["3.2", "3.3", "2.5", "9.1", "9.2"]
-task6_result: "pass-light-edit"
-pipeline_stage: task6_pending
-task6_state: "revisiting"
-task6_reviewed_date: "2026-04-27"
+- type: blog
+  path: https://utzcoz.github.io/2020/05/06/Analyze-AOSP-input-architecture.html
+- type: blog
+  path: https://kernel.meizu.com/2023/10/27/Android-inputTuning-and-Optimizing/
+- type: official
+  path: https://source.android.com/docs/core/interaction/input
+- type: blog
+  path: https://mp.weixin.qq.com/s/Analyze-AOSP-input-architecture
+tags:
+- input
+- inputdispatcher
+- inputreader
+- eventhub
+- inputchannel
+- anr
+- inputflinger
+- socketpair
+- touch
+- view-hierarchy
+related_chapters:
+- '3.2'
+- '3.3'
+- '2.5'
+- '9.1'
+- '9.2'
+task6_result: pass-light-edit
+task6_state: pending
+task6_reviewed_date: '2026-04-27'
 task9_state: pending
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_date: "2026-04-27"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-27T11:27:00+08:00"
-review_notes: "2026-04-27 Task9 复审通过：InputClassifier/InputProcessor、WindowInfosListener、stale event、ANR timeout 与 InputFlinger 进程形态已按 AOSP 12-16 核验；仅保留 Compose pointer input trace 观察点 P2 建议。"
-last_task2b_at: "2026-04-27T01:50:00+08:00"
+task9_reviewed_date: '2026-04-27'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-27T11:27:00+08:00'
+review_notes: 2026-04-27 Task9 复审通过：InputClassifier/InputProcessor、WindowInfosListener、stale
+  event、ANR timeout 与 InputFlinger 进程形态已按 AOSP 12-16 核验；仅保留 Compose pointer input
+  trace 观察点 P2 建议。
+last_task2b_at: '2026-04-27T01:50:00+08:00'
 task2b_fixed_by: openclaw-task2b
-repaired_date: "2026-04-27"
+repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 ---
+
 
 # Input 事件分发全流程
 

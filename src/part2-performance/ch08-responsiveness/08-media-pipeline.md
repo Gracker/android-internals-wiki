@@ -1,4 +1,5 @@
 ---
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: 8.8
 confidence: medium
@@ -12,7 +13,7 @@ last_task2b_at: '2026-05-10T10:26:46+08:00'
 last_task9_at: '2026-04-23T00:30:00+08:00'
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-17.0.0_r1 + androidx/media release
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 related_chapters:
 - '2.6'
 - '2.13'
@@ -38,7 +39,6 @@ sources:
   type: aosp
 - path: frameworks/av/services/audioflinger/
   type: aosp
-status: ready-for-review
 tags:
 - MediaCodec
 - Media3
@@ -59,6 +59,7 @@ task9_reviewed_date: 2026-04-23
 task9_state: pending
 title: Android 多媒体管线性能
 ---
+
 
 # 8.8 Android 多媒体管线性能
 

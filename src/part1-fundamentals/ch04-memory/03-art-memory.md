@@ -1,55 +1,86 @@
 ---
-task9_reviewed_date: "2026-05-09"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-09T02:30:12+08:00"
-title: "ART 虚拟机内存管理"
-chapter: "4.3"
-section: "4.3"
-drafted_date: "2026-03-31"
-drafted_by: "openclaw-task2"
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-23"
+status: ready-for-review
+task9_reviewed_date: '2026-05-09'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-09T02:30:12+08:00'
+title: ART 虚拟机内存管理
+chapter: '4.3'
+section: '4.3'
+drafted_date: '2026-03-31'
+drafted_by: openclaw-task2
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-23'
 polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
-last_verified_against: "AOSP android-14.0.0_r1 / android-15.0.0_r1 + Android Developers Blog (Android 16 QPR2)"
+polish_date: '2026-04-06'
+polish_by: task2b-polish
+last_verified_against: AOSP android-14.0.0_r1 / android-15.0.0_r1 + Android Developers
+  Blog (Android 16 QPR2)
 confidence: medium
 sources:
-  - type: official
-    path: "https://source.android.com/docs/core/runtime/gc-debug"
-  - type: blog
-    path: "ART虚拟机内存分配原理浅析 (微信技术文章)"
-  - type: blog
-    path: "ART虚拟机CMC GC算法核心实现介绍 (微信技术文章)"
-  - type: blog
-    path: "【Android ART】Heap的内存布局 (微信技术文章)"
-  - type: official
-    path: "https://developer.android.com/topic/performance/baselineprofiles"
-  - type: official
-    path: "https://developer.android.com/guide/practices/page-sizes"
-  - type: official
-    path: "https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html"
-tags: ['art', 'gc', 'heap', 'tlab', 'aot', 'jit', 'cc-gc', 'cmc-gc', 'uffd', 'read-barrier', 'memory-allocation', 'generational-gc']
-related_chapters: ["4.1", "4.2", "4.4", "4.6", "4.7", "4.8", "7.1", "7.7"]
-last_task2b_at: "2026-05-09T09:44:52"
+- type: official
+  path: https://source.android.com/docs/core/runtime/gc-debug
+- type: blog
+  path: ART虚拟机内存分配原理浅析 (微信技术文章)
+- type: blog
+  path: ART虚拟机CMC GC算法核心实现介绍 (微信技术文章)
+- type: blog
+  path: 【Android ART】Heap的内存布局 (微信技术文章)
+- type: official
+  path: https://developer.android.com/topic/performance/baselineprofiles
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://android-developers.googleblog.com/2025/12/android-16-qpr2-is-released.html
+tags:
+- art
+- gc
+- heap
+- tlab
+- aot
+- jit
+- cc-gc
+- cmc-gc
+- uffd
+- read-barrier
+- memory-allocation
+- generational-gc
+related_chapters:
+- '4.1'
+- '4.2'
+- '4.4'
+- '4.6'
+- '4.7'
+- '4.8'
+- '7.1'
+- '7.7'
+last_task2b_at: '2026-05-09T09:44:52'
 p1: 2
 p2: 3
-task9_review_notes: "2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。"
-last_task9_review_log: "logs/deep-review/2026-05-09-02-deep-review.md"
-task9_result: "needs-rework"
-status: "ready-for-review"
-reviewed_date: "2026-05-09"
-reviewed_by: "openclaw-task6"
-last_task6_at: "2026-05-09T02:08:33+08:00"
-last_task6_review_log: "logs/review/2026-05-09-02-review.md"
-task6_state: revisiting
-task6_result: "pass-light-edit"
-task9_state: "pending"
+task9_review_notes: 2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2
+  ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue
+  版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。 | 2026-05-09 Task9
+  02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue
+  因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。
+last_task9_review_log: logs/deep-review/2026-05-09-02-deep-review.md
+task9_result: needs-rework
+reviewed_date: '2026-05-09'
+reviewed_by: openclaw-task6
+last_task6_at: '2026-05-09T02:08:33+08:00'
+last_task6_review_log: logs/review/2026-05-09-02-review.md
+task6_state: pending
+task6_result: pass-light-edit
+task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-pipeline_stage: "task6_pending"
-review_notes: "2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。"
+pipeline_stage: task6_pending
+review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08
+  Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto
+  ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09
+  Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转
+  Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue
+  命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。'
 ---
+
 # ART 虚拟机内存管理
 
 <!-- outline-start -->
@@ -552,3 +583,128 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - 摘要：验证了 ART FinalizerDaemon 与 ReferenceQueue 仍使用传统 synchronized(lock) 机制，未发现 ConcurrentMessageQueue 集成。ReferenceQueue 所有核心方法均使用 object monitor 同步，FinalizerDaemon 采用 poll(非阻塞)/remove(阻塞)双路径设计。enqueuePending() 的批处理优化（MAX_ITERS=100）仍以 synchronized(queue.lock) 为边界。
 - 注入时间：2026-05-10
 - 价值：源码级验证了 ART FinalizerDaemon 锁机制现状，明确否定了 ConcurrentMessageQueue 集成的猜测，对 ART 内存管理章节有精确的补充价值
+
+<!-- AIW-源码调研-2026-05-10 -->
+## Android 16 ReferenceQueue 与 ConcurrentMessageQueue 并发边界源码级验证
+
+基于 AOSP android-16-release 源码分析，本研究验证了 ART FinalizerDaemon 线程与 ReferenceQueue 的并发优化边界。核心发现：Android 16 的 `libcore ReferenceQueue.java` 仍使用传统 `synchronized` 锁机制，而 `frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java` 采用无锁 Treiber 架构，两者无直接集成。
+
+### ReferenceQueue 锁机制验证
+
+**源码位置**：`libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java`
+
+**关键函数**：`ReferenceQueue.enqueue()`
+
+**调用链**：
+1. `Reference.process()` → 
+2. `ReferenceQueue.enqueue()` → 
+3. `synchronized (lock)` 块
+
+**关键代码段**：
+```java
+// 文件: libcore/ojluni/src/main/java/java/lang/ref/ReferenceQueue.java, 行 86-95
+private final Object lock = new Object();
+
+boolean enqueue(Reference<? extends T> reference) {
+    synchronized (lock) {
+        if (reference instanceof sun.misc.Cleaner cl) {
+            // Cleaners 直接执行清理，不入队
+            cl.clean();
+            reference.queueNext = sQueueNextUnenqueued;
+            return true;
+        }
+
+        if (enqueueLocked(reference)) {
+            lock.notifyAll();  // 仍然使用 notifyAll 唤醒等待线程
+            return true;
+        }
+        return false;
+    }
+}
+```
+
+### ConcurrentMessageQueue 无锁架构
+
+**源码位置**：`frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java`
+
+**关键函数**：`ConcurrentMessageQueue.enqueueMessage()`
+
+**调用链**：
+1. `Handler.sendMessage()` → 
+2. `MessageQueue.enqueueMessage()` → 
+3. `VarHandle.compareAndSet()` 原子操作
+
+**关键代码段**：
+```java
+// 文件: frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java, 行 887-920
+private boolean enqueueMessageUnchecked(@NonNull Message msg, long when) {
+    long seq = when != 0 ? ((long)sNextInsertSeq.getAndAdd(this, 1L) + 1L)
+            : ((long)sNextFrontInsertSeq.getAndAdd(this, -1L) - 1L);
+    MessageNode node = new MessageNode(msg, seq);
+    
+    while (true) {
+        StackNode old = (StackNode) sState.getVolatile(this);
+        node.mNext = old;
+        
+        // 无锁 Treiber 栈插入 - 使用 VarHandle 原子操作
+        if (sState.compareAndSet(this, old, node)) {
+            if (inactive) {
+                if (wakeNeeded) {
+                    nativeWake(mPtr);  // 原子唤醒
+                } else {
+                    mMessageCounts.incrementQueued();
+                }
+            }
+            return true;
+        }
+    }
+}
+```
+
+### FinalizerDaemon 与 ReferenceQueue 交互
+
+**源码位置**：`libcore/ojluni/src/main/java/java/lang/ref/Reference.java`
+
+**关键函数**：`Reference.process()`
+
+**调用链**：
+1. `GarbageCollector` 扫描 → 
+2. `Reference.process()` → 
+3. `ReferenceQueue.enqueue()` → 
+4. `FinalizerDaemon` 处理
+
+**关键代码段**：
+```java
+// 文件: libcore/ojluni/src/main/java/java/lang/ref/Reference.java, 行 146-152
+boolean process(boolean includeReferent) {
+    ReferenceQueue queue = this.queue;
+    if (queue != null) {
+        // 直接调用 ReferenceQueue.enqueue，绕过并发优化
+        queue.enqueue(this);
+    }
+    return true;
+}
+```
+
+### 性能边界分析
+
+**无锁优化范围**：
+- `ConcurrentMessageQueue`：无锁架构，针对 UI 消息分发优化，减少 Handler 场景下的锁竞争
+- `ReferenceQueue`：传统 `synchronized` 锁，ART GC 路径未受影响
+
+**锁竞争瓶颈**：
+- `FinalizerDaemon` 通过 `ReferenceQueue.enqueue()` 直接阻塞在 `synchronized (lock)`
+- 批量处理优化（`MAX_ITERS=100`）仍以 `synchronized(queue.lock)` 为边界
+
+### 结论与验证状态
+
+**证实事项**：
+1. ✅ Android 16 ReferenceQueue 仍使用传统锁机制（`private final Object lock`）
+2. ✅ ConcurrentMessageQueue 采用无锁 Treiber 架构（VarHandle + ConcurrentSkipListSet）
+3. ✅ 优化系统独立运行，无集成证据
+
+**未验证事项**：
+- ⚠️ Android 17 是否计划 ReferenceQueue 无锁重构
+- ⚠️ ART 编译时优化（如逃逸分析）是否影响锁竞争
+
+> **版本差异**：Android 16 的 ConcurrentMessageQueue 属于 UI 层优化，对 ART GC 性能无直接影响。FinalizerDaemon 的锁竞争问题在 Android 16 中仍存在，需关注 Android 17+ 是否引入无锁 ReferenceQueue 机制。

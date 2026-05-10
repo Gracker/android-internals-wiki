@@ -1,43 +1,54 @@
 ---
-title: "Kotlin Coroutine 性能实践"
-chapter: "8.6"
 status: ready-for-review
-drafted_date: "2026-04-02"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-03"
-reviewed_by: "openclaw-task6"
-reworked_date: "2026-04-06"
-reworked_by: "openclaw-task2b"
+title: Kotlin Coroutine 性能实践
+chapter: '8.6'
+drafted_date: '2026-04-02'
+drafted_by: openclaw-task2a
+reviewed_date: '2026-05-03'
+reviewed_by: openclaw-task6
+reworked_date: '2026-04-06'
+reworked_by: openclaw-task2b
 polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
-polish_review_date: "2026-04-09"
-polish_review_by: "openclaw-task6"
+polish_date: '2026-04-08'
+polish_by: task2b-polish
+polish_review_date: '2026-04-09'
+polish_review_by: openclaw-task6
 review_cycle: 4
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-02"
-last_verified_against: "kotlinx.coroutines 1.9.x / Kotlin 2.1.x / Kotlin 2.2"
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-02'
+last_verified_against: kotlinx.coroutines 1.9.x / Kotlin 2.1.x / Kotlin 2.2
 confidence: medium-high
 sources:
-  - type: official
-    path: "https://kotlinlang.org/docs/coroutines-guide.html"
-  - type: official
-    path: "https://developer.android.com/kotlin/coroutines"
-  - type: blog
-    path: "https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html"
-tags: ['coroutine', 'performance', 'dispatcher', 'structured-concurrency', 'flow', 'backpressure']
-related_chapters: ["1.5", "7.7", "8.1", "8.2"]
-pipeline_stage: task6_pending
+- type: official
+  path: https://kotlinlang.org/docs/coroutines-guide.html
+- type: official
+  path: https://developer.android.com/kotlin/coroutines
+- type: blog
+  path: https://kotlinlang.org/docs/coroutines-context-and-dispatchers.html
+tags:
+- coroutine
+- performance
+- dispatcher
+- structured-concurrency
+- flow
+- backpressure
+related_chapters:
+- '1.5'
+- '7.7'
+- '8.1'
+- '8.2'
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task9_result: pending
 task9_reviewed_date: 2026-04-26
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-26T17:20:00+08:00"
+last_task9_at: '2026-04-26T17:20:00+08:00'
 task2b_state: fixed
 task2b_result: fixed
 ---
+
 
 # Kotlin Coroutine 性能实践
 

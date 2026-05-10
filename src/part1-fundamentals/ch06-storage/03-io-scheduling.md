@@ -1,33 +1,35 @@
 ---
-title: "I/O 调度与性能"
-chapter: "6.3"
-section: "6.3"
 status: ready-for-review
-applicable_versions: "Android 10–17"
-last_verified: "2026-05-09"
-last_verified_against: "Linux 6.12 + Android 16 GKI + Android 17 Baklava preview"
+title: I/O 调度与性能
+chapter: '6.3'
+section: '6.3'
+applicable_versions: Android 10–17
+last_verified: '2026-05-09'
+last_verified_against: Linux 6.12 + Android 16 GKI + Android 17 Baklava preview
 confidence: medium
 sources:
-  - "Cubox/IO调度器详解-2024-03-08.md"
-  - "Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md"
-  - "Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md"
+- Cubox/IO调度器详解-2024-03-08.md
+- Personal-Knowlodge/source/2026-03-08_wechat_手机Android存储性能优化架构分析_1.md
+- Personal-Knowlodge/source/2026-03-07_wechat_性能优化基础_深入理解Linux文件系统.md
 tags:
-  - linux
-  - android
-  - research
-pipeline_stage: task6_pending
+- linux
+- android
+- research
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
-task9_result: pending
+task9_state: pending
+task9_result: ''
 task2b_state: fixed
 task2b_result: fixed
-last_task9_at: "2026-04-19T23:59:59+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-19"
+last_task9_at: '2026-04-19T23:59:59+08:00'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-19'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-04-20"
+reviewed_date: '2026-04-20'
 task6_result: pass-light-edit
 ---
+
+
 
 
 # I/O 调度与性能

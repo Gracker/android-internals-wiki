@@ -1,17 +1,28 @@
 ---
-title: "千万级 DAU 的 APM 端侧架构"
-chapter: "19"
-section: "19.27"
 status: ready-for-review
-drafted_date: "2026-04-24"
-drafted_by: "gemini"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-24"
+title: 千万级 DAU 的 APM 端侧架构
+chapter: '19'
+section: '19.27'
+drafted_date: '2026-04-24'
+drafted_by: gemini
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-24'
 confidence: high
-tags: [apm, architecture, mmap, protobuf, reliability]
-related_chapters: ["19.0", "19.02", "19.09"]
+tags:
+- apm
+- architecture
+- mmap
+- protobuf
+- reliability
+related_chapters:
+- '19.0'
+- '19.02'
+- '19.09'
 pipeline_stage: task6_pending
+task6_state: pending
+task9_state: pending
 ---
+
 
 # 千万级 DAU 的 APM 端侧架构
 

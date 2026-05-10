@@ -1,9 +1,9 @@
 ---
+status: ready-for-review
 title: 存储相关的版本演进
 chapter: '6.4'
 section: '6.4'
-status: ready-for-review
-applicable_versions: "Android 4.4 (API 19) - Android 17 (API 37)"
+applicable_versions: Android 4.4 (API 19) - Android 17 (API 37)
 last_verified: '2026-04-14'
 last_verified_against: Android storage docs / Photo Picker docs / Android 14 partial
   photo access docs / UFS 4.0 spec
@@ -47,18 +47,18 @@ drafted_by: openclaw-task2a
 reviewed_date: 2026-04-21
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 task9_state: pending
 task9_result: needs-rework
 task2b_result: fixed
-last_task2b_at: '2026-05-09T18:18:00+08:00'
 last_task2b_at: '2026-04-21T08:24:09+08:00'
 task2b_state: fixed
 task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T08:40:18+08:00'
 ---
+
 
 
 # 存储相关的版本演进

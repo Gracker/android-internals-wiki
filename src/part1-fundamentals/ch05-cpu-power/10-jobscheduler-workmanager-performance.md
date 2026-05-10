@@ -1,47 +1,61 @@
 ---
-title: "JobScheduler/WorkManager 调度与后台任务性能"
-chapter: "5.10"
-section: "5.10"
 status: ready-for-review
-drafted_date: "2026-04-06"
+title: JobScheduler/WorkManager 调度与后台任务性能
+chapter: '5.10'
+section: '5.10'
+drafted_date: '2026-04-06'
 polish_count: 1
-polish_date: "2026-04-09"
-polish_by: "task2b-polish"
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-27"
-reviewed_date: "2026-05-10"
+polish_date: '2026-04-09'
+polish_by: task2b-polish
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-27'
+reviewed_date: '2026-05-10'
 reviewed_by: openclaw-task6
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs, Android Vitals docs"
+last_verified_against: AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev
+  stdlib docs, Android Vitals docs
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/reference/android/app/job/JobScheduler"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/job/JobInfo.Builder"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/usage/UsageStatsManager"
-  - type: official
-    path: "https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work"
-  - type: official
-    path: "https://developer.android.com/about/versions/16/behavior-changes-all"
-  - type: official
-    path: "https://developer.android.com/about/versions/17/features#job-debugging"
-  - type: official
-    path: "https://perfetto.dev/docs/analysis/stdlib-docs"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobStore.java"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
-tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, wakelock, app-standby, quota]
-related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: official
+  path: https://developer.android.com/reference/android/app/job/JobScheduler
+- type: official
+  path: https://developer.android.com/reference/android/app/job/JobInfo.Builder
+- type: official
+  path: https://developer.android.com/reference/android/app/usage/UsageStatsManager
+- type: official
+  path: https://developer.android.com/topic/libraries/architecture/workmanager/how-to/define-work
+- type: official
+  path: https://developer.android.com/about/versions/16/behavior-changes-all
+- type: official
+  path: https://developer.android.com/about/versions/17/features#job-debugging
+- type: official
+  path: https://perfetto.dev/docs/analysis/stdlib-docs
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobStore.java
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/controllers/
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobInfo.java
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java
+tags:
+- jobscheduler
+- workmanager
+- background-scheduling
+- power
+- doze
+- battery
+- wakelock
+- app-standby
+- quota
+related_chapters:
+- '5.6'
+- '5.8'
+- '1.5'
+- '11.2'
+- '15.5'
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
@@ -49,14 +63,16 @@ task2b_state: fixed
 task2b_result: fixed
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-28"
-last_task9_at: "2026-04-28T02:30:00+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 2。自动晋升 finalized。"
-last_task2b_at: "2026-05-09T18:18:00+08:00"
-repaired_date: "2026-04-27"
-repaired_by: "openclaw-task2b"
-rework_type: "review回炉修复（Task9 问题单）"
+task9_reviewed_date: '2026-04-28'
+last_task9_at: '2026-04-28T02:30:00+08:00'
+task9_review_notes: '2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 /
+  P2 2。自动晋升 finalized。'
+last_task2b_at: '2026-05-09T18:18:00+08:00'
+repaired_date: '2026-04-27'
+repaired_by: openclaw-task2b
+rework_type: review回炉修复（Task9 问题单）
 ---
+
 
 # JobScheduler/WorkManager 调度与后台任务性能
 
