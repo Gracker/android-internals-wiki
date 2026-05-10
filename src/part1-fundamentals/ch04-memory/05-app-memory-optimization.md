@@ -1,57 +1,71 @@
 ---
-title: "App 内存优化"
-section: "4.5"
-chapter: "4.5"
 status: ready-for-review
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-03-31"
-last_verified_against: "AOSP android-16.0.0_r1"
+title: App 内存优化
+section: '4.5'
+chapter: '4.5'
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-03-31'
+last_verified_against: AOSP android-16.0.0_r1
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/topic/performance/memory"
-  - type: official
-    path: "https://developer.android.com/topic/performance/graphics/manage-memory"
-  - type: official
-    path: "https://developer.android.com/build/apps/16kb-page-size"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityManager.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java"
-  - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/Bitmap.java"
-  - type: blog
-    path: "https://android-developers.googleblog.com/2024/10/16kb-page-size-android-15.html"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/native-heap-profiler"
-  - type: official
-    path: "https://developer.android.com/ndk/guides/debug-gdb"
-tags: ['memory-optimization', 'bitmap', 'memory-leak', 'onTrimMemory', 'native-memory', 'memory-churn', 'object-pool', 'heapprofd', '16kb-page-size']
-related_chapters: ["4.1", "4.2", "4.3", "4.4", "7.2", "7.3"]
-drafted_date: "2026-03-31"
-drafted_by: "openclaw-task2"
-reviewed_date: "2026-04-29"
-reviewed_by: "openclaw-task6"
-review_type: "draft-review"
+- type: official
+  path: https://developer.android.com/topic/performance/memory
+- type: official
+  path: https://developer.android.com/topic/performance/graphics/manage-memory
+- type: official
+  path: https://developer.android.com/build/apps/16kb-page-size
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityManager.java
+- type: aosp
+  path: frameworks/base/core/java/android/content/ComponentCallbacks2.java
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/Bitmap.java
+- type: blog
+  path: https://android-developers.googleblog.com/2024/10/16kb-page-size-android-15.html
+- type: official
+  path: https://perfetto.dev/docs/data-sources/native-heap-profiler
+- type: official
+  path: https://developer.android.com/ndk/guides/debug-gdb
+tags:
+- memory-optimization
+- bitmap
+- memory-leak
+- onTrimMemory
+- native-memory
+- memory-churn
+- object-pool
+- heapprofd
+- 16kb-page-size
+related_chapters:
+- '4.1'
+- '4.2'
+- '4.3'
+- '4.4'
+- '7.2'
+- '7.3'
+drafted_date: '2026-03-31'
+drafted_by: openclaw-task2
+reviewed_date: '2026-04-29'
+reviewed_by: openclaw-task6
+review_type: draft-review
 review_round: 3
 polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
+polish_date: '2026-04-08'
+polish_by: task2b-polish
 pipeline_stage: task6_pending
-task6_state: revisiting
-# task6_result: pass-light-edit  # reset after rework
+task6_state: pending
 task9_state: pending
-# task9_result: pass-tech-review  # reset after rework
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T22:10:00+08:00"
+last_task2b_at: '2026-05-09T22:10:00+08:00'
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-04-29"
-last_task9_at: "2026-04-29T05:30:17+08:00"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 1。ASan/heapprofd/ApplicationStartInfo API 错误，API 34 onTrimMemory 差异未覆盖"
-
+task9_reviewed_date: '2026-04-29'
+last_task9_at: '2026-04-29T05:30:17+08:00'
+task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 1。ASan/heapprofd/ApplicationStartInfo
+  API 错误，API 34 onTrimMemory 差异未覆盖'
 ---
+
 
 # App 内存优化
 

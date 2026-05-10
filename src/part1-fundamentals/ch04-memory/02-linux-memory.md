@@ -1,50 +1,68 @@
 ---
-task9_reviewed_date: "2026-04-29"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-29T03:25:00+08:00"
-title: "Linux 内核内存管理"
-chapter: "4.2"
-section: "4.2"
 status: ready-for-review
-drafted_date: "2026-03-30"
+task9_reviewed_date: '2026-04-29'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-29T03:25:00+08:00'
+title: Linux 内核内存管理
+chapter: '4.2'
+section: '4.2'
+drafted_date: '2026-03-30'
 polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
-applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
-last_verified: "2026-03-31"
-reviewed_date: "2026-05-05"
+polish_date: '2026-04-06'
+polish_by: task2b-polish
+applicable_versions: Android 10 (API 29) - Android 17 (API 37)
+last_verified: '2026-03-31'
+reviewed_date: '2026-05-05'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-last_verified_against: "Linux kernel 6.6 (android14-6.6-lts)"
+last_verified_against: Linux kernel 6.6 (android14-6.6-lts)
 confidence: medium
 sources:
-  - type: blog
-    path: "Cubox/五万字 - 深入理解Linux内存管理-2022-08-05.md"
-  - type: blog
-    path: "Cubox/为什么 Linux 需要虚拟内存 - 面向信仰编程-2024-06-25.md"
-  - type: blog
-    path: "Cubox/OPPO内存反碎片优化原理-2022-10-26.md"
-  - type: blog
-    path: "Cubox/Android 系统 内存不足时，kswapd 导致的性能问题之冷热文件回收方案-2025-05-31.md"
-  - type: paper
-    path: "Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)"
-  - type: blog
-    path: "Cubox/荣耀在MGLRU内存回收上的发力或恰到好处-2026-02-25.md"
-  - type: official
-    path: "developer.android.com - 16KB page size"
-  - type: blog
-    path: "Cubox/LPC2025-Android MC主题-2026-01-10.md"
-tags: ['kernel', 'memory', 'buddy', 'slab', 'kswapd', 'page-reclaim', 'compaction', 'ION', 'DMA-BUF', 'LRU', 'MGLRU', '16K-page']
-related_chapters: ["4.1", "4.3", "4.4", "2.6"]
+- type: blog
+  path: Cubox/五万字 - 深入理解Linux内存管理-2022-08-05.md
+- type: blog
+  path: Cubox/为什么 Linux 需要虚拟内存 - 面向信仰编程-2024-06-25.md
+- type: blog
+  path: Cubox/OPPO内存反碎片优化原理-2022-10-26.md
+- type: blog
+  path: Cubox/Android 系统 内存不足时，kswapd 导致的性能问题之冷热文件回收方案-2025-05-31.md
+- type: paper
+  path: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)
+- type: blog
+  path: Cubox/荣耀在MGLRU内存回收上的发力或恰到好处-2026-02-25.md
+- type: official
+  path: developer.android.com - 16KB page size
+- type: blog
+  path: Cubox/LPC2025-Android MC主题-2026-01-10.md
+tags:
+- kernel
+- memory
+- buddy
+- slab
+- kswapd
+- page-reclaim
+- compaction
+- ION
+- DMA-BUF
+- LRU
+- MGLRU
+- 16K-page
+related_chapters:
+- '4.1'
+- '4.3'
+- '4.4'
+- '2.6'
 pipeline_stage: task6_pending
-task6_state: revisiting
-task6_reviewed_date: "2026-05-05"
+task6_state: pending
+task6_reviewed_date: '2026-05-05'
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
-review_notes: "2026-05-05 task6 re-confirm: fixed L1 wording; task9_result=needs-rework, pipeline kept task2b_pending."
+review_notes: '2026-05-05 task6 re-confirm: fixed L1 wording; task9_result=needs-rework,
+  pipeline kept task2b_pending.'
 ---
+
 
 # Linux 内核内存管理
 

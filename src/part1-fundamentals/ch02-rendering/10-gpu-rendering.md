@@ -1,45 +1,60 @@
 ---
-section: "2.10"
-title: "GPU 渲染深入"
-chapter: "2.10"
 status: ready-for-review
-applicable_versions: "Android 5.0 - Android 17 (API 21-37)"
-last_verified: "2026-04-17"
-last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
+section: '2.10'
+title: GPU 渲染深入
+chapter: '2.10'
+applicable_versions: Android 5.0 - Android 17 (API 21-37)
+last_verified: '2026-04-17'
+last_verified_against: AOSP android-16.0.0_r1, developer.android.com
 confidence: medium-high
 sources:
-  - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/"
-  - type: official
-    path: "https://developer.android.com/guide/topics/graphics/"
-  - type: blog
-    path: "https://androidperformance.com/"
-  - type: paper
-    path: "2026-03-30-ch02-vulkan-android16.md"
-  - type: paper
-    path: "2026-03-30-ch02-gpu-optimization.md"
-tags: ['gpu', 'rendering', 'shader', 'vulkan', 'opengl', 'performance', 'memory']
-related_chapters: ["2.3", "2.4", "2.5", "2.6", "2.9", "3.2", "14.3"]
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/
+- type: official
+  path: https://developer.android.com/guide/topics/graphics/
+- type: blog
+  path: https://androidperformance.com/
+- type: paper
+  path: 2026-03-30-ch02-vulkan-android16.md
+- type: paper
+  path: 2026-03-30-ch02-gpu-optimization.md
+tags:
+- gpu
+- rendering
+- shader
+- vulkan
+- opengl
+- performance
+- memory
+related_chapters:
+- '2.3'
+- '2.4'
+- '2.5'
+- '2.6'
+- '2.9'
+- '3.2'
+- '14.3'
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: "2026-05-10"
+reviewed_date: '2026-05-10'
 reviewed_by: openclaw-task6
-rework_date: "2026-04-21"
+rework_date: '2026-04-21'
 rework_by: openclaw-task2b
 review_round: 8
-last_polish_notes: "第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达"
+last_polish_notes: 第2轮出版级精修：修复applicable_versions范围、ANGLE URL拼写、叙述过渡、口语化表达
 polish_count: 2
-polish_date: "2026-04-10"
-polish_by: "task2b-polish"
-pipeline_stage: task6_pending
+polish_date: '2026-04-10'
+polish_by: task2b-polish
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T19:40:00+08:00"
-review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。"
+last_task2b_at: '2026-05-09T19:40:00+08:00'
+review_notes: '2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。'
 ---
+
 
 # GPU 渲染深入
 

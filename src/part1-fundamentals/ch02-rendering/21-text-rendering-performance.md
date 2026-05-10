@@ -1,58 +1,68 @@
 ---
-title: "文字渲染性能"
-chapter: "2.21"
-section: "2.21"
-status: "finalized"
-drafted_date: "2026-04-09"
-reviewed_date: "2026-05-09"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: "pass-tech-review"
-pipeline_stage: "task9_pending"
-applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-23"
-last_verified_against: "AOSP android-16.0.0_r1 + androidx-main + developer.android.com page sizes"
+status: finalized
+title: 文字渲染性能
+chapter: '2.21'
+section: '2.21'
+drafted_date: '2026-04-09'
+reviewed_date: '2026-04-23'
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+task6_state: pending
+task9_state: pending
+pipeline_stage: ready-to-publish
+applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-23'
+last_verified_against: AOSP android-16.0.0_r1 + androidx-main + developer.android.com
+  page sizes
 confidence: medium
 sources:
-  - type: aosp
-    path: "frameworks/base/core/java/android/widget/TextView.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/text/StaticLayout.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/text/BoringLayout.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/text/PrecomputedText.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/text/MeasuredParagraph.java"
-  - type: aosp
-    path: "frameworks/base/graphics/java/android/graphics/text/MeasuredText.java"
-  - type: aosp
-    path: "frameworks/minikin/"
-  - type: aosp
-    path: "frameworks/base/libs/hwui/SkiaCanvas.cpp"
-  - type: official
-    path: "developer.android.com/reference/android/text/PrecomputedText"
-  - type: official
-    path: "developer.android.com/guide/practices/page-sizes"
-tags: [text, rendering, minikin, skia, emoji, layout, performance, textview, staticlayout]
-related_chapters: ["2.1", "2.4", "2.5", "7.8", "7.12"]
-reviewed_by: openclaw-task6
-reviewed_date: "2026-04-23"
-task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+- type: aosp
+  path: frameworks/base/core/java/android/widget/TextView.java
+- type: aosp
+  path: frameworks/base/core/java/android/text/StaticLayout.java
+- type: aosp
+  path: frameworks/base/core/java/android/text/BoringLayout.java
+- type: aosp
+  path: frameworks/base/core/java/android/text/PrecomputedText.java
+- type: aosp
+  path: frameworks/base/core/java/android/text/MeasuredParagraph.java
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/text/MeasuredText.java
+- type: aosp
+  path: frameworks/minikin/
+- type: aosp
+  path: frameworks/base/libs/hwui/SkiaCanvas.cpp
+- type: official
+  path: developer.android.com/reference/android/text/PrecomputedText
+- type: official
+  path: developer.android.com/guide/practices/page-sizes
+tags:
+- text
+- rendering
+- minikin
+- skia
+- emoji
+- layout
+- performance
+- textview
+- staticlayout
+related_chapters:
+- '2.1'
+- '2.4'
+- '2.5'
+- '7.8'
+- '7.12'
 task9_result: pass-tech-review
-repaired_date: "2026-04-23"
-repaired_by: "openclaw-task2b"
+repaired_date: '2026-04-23'
+repaired_by: openclaw-task2b
 task2b_result: fixed
 task2b_state: fixed
-last_task2b_at: "2026-05-09T17:52:02+08:00"
+last_task2b_at: '2026-05-09T17:52:02+08:00'
 task9_reviewed_date: 2026-04-24
 task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-04-24T00:43:52+08:00
+last_task9_at: 2026-04-24 00:43:52+08:00
 ---
+
 
 # 2.21 文字渲染性能
 

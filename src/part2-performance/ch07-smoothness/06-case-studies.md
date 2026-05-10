@@ -1,53 +1,77 @@
 ---
-title: "案例集"
-chapter: "7.6"
-section: "7.6"
-drafted_date: "2026-04-01"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-07"
-reviewed_by: "openclaw-task6"
-status: "ready-for-review"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-05-03"
-last_verified_against: "AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI / Android 14 cached process freezing / ComponentCallbacks2 / Lottie vs AVD Perfetto 特征"
+status: ready-for-review
+title: 案例集
+chapter: '7.6'
+section: '7.6'
+drafted_date: '2026-04-01'
+drafted_by: openclaw-task2a
+reviewed_date: '2026-05-07'
+reviewed_by: openclaw-task6
+applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+last_verified: '2026-05-03'
+last_verified_against: AOSP android-16.0.0_r1 / AnimatedVectorDrawable fallbackOntoUI
+  / Android 14 cached process freezing / ComponentCallbacks2 / Lottie vs AVD Perfetto
+  特征
 polish_count: 1
-polish_date: "2026-04-04"
-polish_by: "task2b-polish"
+polish_date: '2026-04-04'
+polish_by: task2b-polish
 confidence: medium-high
-task9_reviewed_date: "2026-05-07"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-07T22:24:50+08:00"
+task9_reviewed_date: '2026-05-07'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-07T22:24:50+08:00'
 sources:
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-System.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md"
-  - type: official
-    path: "https://developer.android.com/topic/performance/recycler-view"
-  - type: official
-    path: "https://developer.android.com/reference/android/content/ComponentCallbacks2"
-tags: ['case-study', 'jank', 'smoothness', 'GC', 'layout', 'binder', 'render-thread', 'low-memory', 'perfetto', 'recycler-view', 'bitmap-cache', 'vendor-optimization']
-related_chapters: ["7.1", "7.2", "7.3", "7.4", "2.5", "2.7", "4.4"]
-pipeline_stage: "task6_pending"
-task6_state: "revisiting"
-task6_result: "pass-light-edit"
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-System.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-Low-Memory.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Perfetto-07-MainThread-And-RenderThread.md
+- type: official
+  path: https://developer.android.com/topic/performance/recycler-view
+- type: official
+  path: https://developer.android.com/reference/android/content/ComponentCallbacks2
+tags:
+- case-study
+- jank
+- smoothness
+- GC
+- layout
+- binder
+- render-thread
+- low-memory
+- perfetto
+- recycler-view
+- bitmap-cache
+- vendor-optimization
+related_chapters:
+- '7.1'
+- '7.2'
+- '7.3'
+- '7.4'
+- '2.5'
+- '2.7'
+- '4.4'
+pipeline_stage: task6_pending
+task6_state: pending
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-task2b_rework_date: "2026-05-09"
-task2b_fixed_at: "2026-05-09T15:40:00+08:00"
-task9_result: "needs-rework"
-last_task2b_at: "2026-05-09T15:40:00+08:00"
-task9_review_notes: "2026-05-07 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1;SF/HWC 合成与温控降频完整案例仍缺,P2 数据证据包为延续项。"
-last_task6_at: "2026-05-07T22:11:39+08:00"
-task6_review_notes: "2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复;Task9 技术复审仍 pending,未自动晋升。"
+task2b_rework_date: '2026-05-09'
+task2b_fixed_at: '2026-05-09T15:40:00+08:00'
+task9_result: needs-rework
+last_task2b_at: '2026-05-09T15:40:00+08:00'
+task9_review_notes: '2026-05-07 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1;SF/HWC
+  合成与温控降频完整案例仍缺,P2 数据证据包为延续项。'
+last_task6_at: '2026-05-07T22:11:39+08:00'
+task6_review_notes: '2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2
+  轻量修复;Task9 技术复审仍 pending,未自动晋升。'
 ---
+
 
 # 案例集
 

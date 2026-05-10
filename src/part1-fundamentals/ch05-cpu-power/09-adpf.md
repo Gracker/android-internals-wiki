@@ -1,51 +1,63 @@
 ---
-title: "ADPF 自适应性能框架"
-chapter: "5.9"
-section: "5.9"
 status: finalized
-applicable_versions: "Android 11 (API 30, Thermal Headroom 基础能力) - Android 17 (API 37)"
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
-tags: [adpf, thermal, performance-hint, game-performance, cpu-boost, frame-rate]
-related_chapters: ["5.5", "5.6", "7.5", "14.7"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-05"
-gap_source: "官方文档+研究素材+AOSP结构"
-gap_score: "15/20"
+title: ADPF 自适应性能框架
+chapter: '5.9'
+section: '5.9'
+applicable_versions: Android 11 (API 30, Thermal Headroom 基础能力) - Android 17 (API
+  37)
+drafted_date: '2026-04-06'
+drafted_by: openclaw-task2a
+tags:
+- adpf
+- thermal
+- performance-hint
+- game-performance
+- cpu-boost
+- frame-rate
+related_chapters:
+- '5.5'
+- '5.6'
+- '7.5'
+- '14.7'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-05'
+gap_source: 官方文档+研究素材+AOSP结构
+gap_score: 15/20
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/reference/android/os/PerformanceHintManager"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/PowerManager"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/health/SystemHealthManager"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/GameManager"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/GameState"
-  - type: aosp
-    path: "frameworks/base/native/android/performance_hint.cpp"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/PerformanceHintManager.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java"
-  - type: blog
-    path: "https://android-developers.googleblog.com/"
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: official
+  path: https://developer.android.com/reference/android/os/PerformanceHintManager
+- type: official
+  path: https://developer.android.com/reference/android/os/PowerManager
+- type: official
+  path: https://developer.android.com/reference/android/os/health/SystemHealthManager
+- type: official
+  path: https://developer.android.com/reference/android/app/GameManager
+- type: official
+  path: https://developer.android.com/reference/android/app/GameState
+- type: aosp
+  path: frameworks/base/native/android/performance_hint.cpp
+- type: aosp
+  path: frameworks/base/core/java/android/os/PerformanceHintManager.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/power/hint/HintManagerService.java
+- type: blog
+  path: https://android-developers.googleblog.com/
+pipeline_stage: ready-to-publish
+task6_state: pending
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T13:40:00+08:00"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-20"
+last_task2b_at: '2026-05-09T13:40:00+08:00'
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-20'
 task6_result: pass-light-edit
 task9_result: pass-tech-review
-last_task9_at: "2026-04-19T23:59:59+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-19"
+last_task9_at: '2026-04-19T23:59:59+08:00'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-19'
 ---
+
 
 # 5.9 ADPF 自适应性能框架
 

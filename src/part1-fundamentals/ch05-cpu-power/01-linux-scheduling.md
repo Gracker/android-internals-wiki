@@ -1,52 +1,65 @@
 ---
-task9_reviewed_date: "2026-04-29"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-29T18:48:00+08:00"
-title: "Linux 进程调度基础"
-chapter: "5.1"
-section: "5.1"
 status: ready-for-review
-applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)"
-last_verified: "2026-04-14"
-last_verified_against: "Linux kernel 6.6 sched-design-CFS/EEVDF + sched priority headers, bionic pthread.h mainline, libprocessgroup task profiles"
+task9_reviewed_date: '2026-04-29'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-29T18:48:00+08:00'
+title: Linux 进程调度基础
+chapter: '5.1'
+section: '5.1'
+applicable_versions: Android 6.0 (API 23) - Android 17 (API 37, EEVDF 部分需 6.6+ 内核)
+last_verified: '2026-04-14'
+last_verified_against: Linux kernel 6.6 sched-design-CFS/EEVDF + sched priority headers,
+  bionic pthread.h mainline, libprocessgroup task profiles
 confidence: high
 sources:
-  - type: blog
-    path: "Personal-Knowlodge/source/Android-Perfetto-09-CPU.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md"
-  - type: blog
-    path: "Personal-Knowlodge/source/2026-03-08_wechat_性能测试中的系统资源分析之_CPU.md"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
-  - type: official
-    path: "https://docs.kernel.org/scheduler/sched-design-CFS.html"
-  - type: official
-    path: "https://docs.kernel.org/scheduler/sched-eevdf.html"
-  - type: official
-    path: "https://man7.org/linux/man-pages/man7/sched.7.html"
-  - type: official
-    path: "https://source.android.com/docs/core/perf/uclamp"
-tags: ['scheduler', 'CFS', 'vruntime', 'nice', 'sched_setaffinity', 'cpuset', 'Perfetto']
-related_chapters: ["5.2", "5.3", "2.5", "7.3"]
-drafted_date: "2026-03-31"
-reviewed_date: "2026-04-21"
+- type: blog
+  path: Personal-Knowlodge/source/Android-Perfetto-09-CPU.md
+- type: blog
+  path: Personal-Knowlodge/source/android-systrace-cpu-state-sleep.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-06_wechat_Android性能优化之绑定RenderThread到大核CPU.md
+- type: blog
+  path: Personal-Knowlodge/source/2026-03-08_wechat_性能测试中的系统资源分析之_CPU.md
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+- type: official
+  path: https://docs.kernel.org/scheduler/sched-design-CFS.html
+- type: official
+  path: https://docs.kernel.org/scheduler/sched-eevdf.html
+- type: official
+  path: https://man7.org/linux/man-pages/man7/sched.7.html
+- type: official
+  path: https://source.android.com/docs/core/perf/uclamp
+tags:
+- scheduler
+- CFS
+- vruntime
+- nice
+- sched_setaffinity
+- cpuset
+- Perfetto
+related_chapters:
+- '5.2'
+- '5.3'
+- '2.5'
+- '7.3'
+drafted_date: '2026-03-31'
+reviewed_date: '2026-04-21'
 reviewed_by: openclaw-task6
 polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
+polish_date: '2026-04-06'
+polish_by: task2b-polish
 review_type: post-polish-quality-gate
 review_round: 3
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: pending
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: pending
 task2b_state: fixed
 task2b_result: fixed
 ---
+
 
 <!-- outline-start -->
 - 🔹 CFS / EEVDF 的基本原理：vruntime、红黑树、base_slice、eligible entity、virtual deadline

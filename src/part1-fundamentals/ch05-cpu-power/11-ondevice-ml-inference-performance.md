@@ -1,44 +1,51 @@
 ---
-title: "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线"
-chapter: "5.11"
 status: ready-for-review
-applicable_versions: "Android 8.1 (API 27) - Android 17 (API 37)"
+title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
+chapter: '5.11'
+applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 tags:
-  - android
-  - ai
-  - npu
-  - tflite
-  - nnapi
-  - aicore
-related_chapters: ["5.4", "5.6", "5.9", "1.15", "4.3", "14.1"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-08"
-drafted_date: "2026-04-08"
-drafted_by: "openclaw-task2a"
-last_verified: "2026-04-12"
-last_verified_against: "AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu"
+- android
+- ai
+- npu
+- tflite
+- nnapi
+- aicore
+related_chapters:
+- '5.4'
+- '5.6'
+- '5.9'
+- '1.15'
+- '4.3'
+- '14.1'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-08'
+drafted_date: '2026-04-08'
+drafted_by: openclaw-task2a
+last_verified: '2026-04-12'
+last_verified_against: AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu
 confidence: medium
 sources:
-  - type: official
-    path: "developer.android.com/ndk/guides/neuralnetworks"
-  - type: official
-    path: "developer.android.com/ai/aicore"
-  - type: official
-    path: "ai.google.dev/edge/litert/android/gpu"
-  - type: aosp
-    path: "frameworks/ml/nn/"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-20"
+- type: official
+  path: developer.android.com/ndk/guides/neuralnetworks
+- type: official
+  path: developer.android.com/ai/aicore
+- type: official
+  path: ai.google.dev/edge/litert/android/gpu
+- type: aosp
+  path: frameworks/ml/nn/
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-20'
 task6_result: pass-light-edit
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: pending
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-04-20"
-last_task9_at: "2026-04-20T08:57:48+08:00"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-04-20'
+last_task9_at: '2026-04-20T08:57:48+08:00'
 ---
+
 
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 

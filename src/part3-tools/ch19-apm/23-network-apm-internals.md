@@ -1,4 +1,5 @@
 ---
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: '19'
 confidence: high
@@ -10,7 +11,7 @@ last_task6_review_log: logs/review/2026-05-05-14-review.md
 last_task9_at: '2026-05-05T14:20:00+08:00'
 last_task9_review_log: logs/deep-review/2026-05-05-14-deep-review.md
 last_verified: '2026-04-24'
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 related_chapters:
 - '19.0'
 - '19.08'
@@ -30,7 +31,6 @@ sources:
 - https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory
 - https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlRequest.Callback
 - https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo
-status: ready-for-review
 tags:
 - apm
 - network
@@ -49,6 +49,7 @@ task9_reviewed_date: '2026-05-05'
 task9_state: pending
 title: 网络 APM 底层捕获原理
 ---
+
 
 # 网络 APM 底层捕获原理
 

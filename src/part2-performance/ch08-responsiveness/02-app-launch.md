@@ -1,7 +1,7 @@
 ---
+status: ready-for-review
 title: App 启动全流程
 chapter: '8.2'
-status: ready-for-review
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-04-20'
 last_verified_against: AOSP android-15.0.0_r1, AndroidX Activity release notes, Perfetto
@@ -52,7 +52,7 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
@@ -64,6 +64,7 @@ task9_reviewed_date: '2026-04-22'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-22T14:30:00+08:00'
 ---
+
 
 # App 启动全流程
 

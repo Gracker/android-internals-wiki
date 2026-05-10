@@ -1,73 +1,88 @@
 ---
-title: "后台执行限制与优化"
-chapter: "5.8"
-section: "5.8"
 status: ready-for-review
-applicable_versions: "Android 6.0 (API 23) - Android 17 (API 37)"
-drafted_date: "2026-04-05"
-drafted_by: "openclaw-task2a"
-last_verified: "2026-04-12"
-last_verified_against: "AOSP android-16.0.0_r1 + Android Developers docs"
+title: 后台执行限制与优化
+chapter: '5.8'
+section: '5.8'
+applicable_versions: Android 6.0 (API 23) - Android 17 (API 37)
+drafted_date: '2026-04-05'
+drafted_by: openclaw-task2a
+last_verified: '2026-04-12'
+last_verified_against: AOSP android-16.0.0_r1 + Android Developers docs
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
-  - type: official
-    path: "https://developer.android.com/topic/performance/appstandby"
-  - type: official
-    path: "https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket"
-  - type: official
-    path: "https://developer.android.com/about/versions/oreo/background"
-  - type: official
-    path: "https://developer.android.com/about/versions/14/changes/fgs-types-required"
-  - type: official
-    path: "https://developer.android.com/about/versions/15/behavior-changes-15#fgs-hardening"
-  - type: official
-    path: "https://developer.android.com/about/versions/15/changes/foreground-service-types"
-  - type: official
-    path: "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
-  - type: official
-    path: "https://developer.android.com/develop/background-work/background-tasks/data-transfer-options"
-  - type: official
-    path: "https://developer.android.com/develop/background-work/services/alarms/schedule"
-  - type: official
-    path: "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/Service"
-  - type: official
-    path: "https://developer.android.com/reference/android/app/job/JobScheduler"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/usage/UsageStatsManager.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/Service.java"
-  - type: aosp
-    path: "frameworks/base/services/usage/java/com/android/server/usage/AppStandbyController.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/DeviceIdleController.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/IBinder.java"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
-tags: [后台限制, Doze, App Standby, 前台服务, WorkManager, JobScheduler, AlarmManager, 省电, 后台启动, BAL]
-related_chapters: ["5.6", "5.7", "11.2", "8.4"]
+- type: official
+  path: https://developer.android.com/training/monitoring-device-state/doze-standby
+- type: official
+  path: https://developer.android.com/topic/performance/appstandby
+- type: official
+  path: https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket
+- type: official
+  path: https://developer.android.com/about/versions/oreo/background
+- type: official
+  path: https://developer.android.com/about/versions/14/changes/fgs-types-required
+- type: official
+  path: https://developer.android.com/about/versions/15/behavior-changes-15#fgs-hardening
+- type: official
+  path: https://developer.android.com/about/versions/15/changes/foreground-service-types
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/data-transfer-options
+- type: official
+  path: https://developer.android.com/develop/background-work/services/alarms/schedule
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+- type: official
+  path: https://developer.android.com/reference/android/app/Service
+- type: official
+  path: https://developer.android.com/reference/android/app/job/JobScheduler
+- type: aosp
+  path: frameworks/base/core/java/android/app/usage/UsageStatsManager.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/Service.java
+- type: aosp
+  path: frameworks/base/services/usage/java/com/android/server/usage/AppStandbyController.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/DeviceIdleController.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/job/JobSchedulerService.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/IBinder.java
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java
+tags:
+- 后台限制
+- Doze
+- App Standby
+- 前台服务
+- WorkManager
+- JobScheduler
+- AlarmManager
+- 省电
+- 后台启动
+- BAL
+related_chapters:
+- '5.6'
+- '5.7'
+- '11.2'
+- '8.4'
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: pending
 task9_state: pending
 task9_result: pass-tech-review
 task9_reviewed_date: 2026-04-20
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-20T10:22:00+08:00"
+last_task9_at: '2026-04-20T10:22:00+08:00'
 task2b_state: fixed
 task6_result: pass-light-edit
 task2b_result: fixed
-last_task2b_at: "2026-05-09T18:44:33+08:00"
+last_task2b_at: '2026-05-09T18:44:33+08:00'
 reviewed_date: 2026-04-20
 reviewed_by: openclaw-task6
 ---
+
 
 
 # 5.8 后台执行限制与优化

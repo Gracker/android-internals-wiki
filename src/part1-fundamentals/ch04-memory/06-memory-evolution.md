@@ -1,66 +1,89 @@
 ---
-title: "内存相关的版本演进"
-chapter: "4.6"
 status: ready-for-review
-section: "4.6"
-reviewed_date: "2026-05-07"
-reviewed_by: "openclaw-task6"
+title: 内存相关的版本演进
+chapter: '4.6'
+section: '4.6'
+reviewed_date: '2026-05-07'
+reviewed_by: openclaw-task6
 polish_count: 1
-polish_date: "2026-04-07"
-polish_by: "task2b-polish"
-rework_date: "2026-04-02"
-rework_by: "openclaw-task2b"
-applicable_versions: "Android 5.0 (API 21) - Android 16 (API 36)"
-last_verified: "2026-03-31"
-last_verified_against: "AOSP android-16.0.0_r1"
+polish_date: '2026-04-07'
+polish_by: task2b-polish
+rework_date: '2026-04-02'
+rework_by: openclaw-task2b
+applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
+last_verified: '2026-03-31'
+last_verified_against: AOSP android-16.0.0_r1
 confidence: medium
 sources:
-  - type: official
-    path: "https://source.android.com/docs/core/perf/art-management"
-  - type: official
-    path: "https://developer.android.com/topic/performance/graphics/manage-memory"
-  - type: official
-    path: "https://source.android.com/docs/security/test/memory-safety/arm-mte"
-  - type: official
-    path: "https://developer.android.com/ndk/guides/arm-mte"
-  - type: official
-    path: "https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE"
-  - type: official
-    path: "https://developer.android.com/guide/practices/page-sizes"
-  - type: blog
-    path: "Cubox/Scudo内存分配器介绍-2022-01-14.md"
-  - type: blog
-    path: "Cubox/【Android 15】内存分配器Scudo在这些年的优化-2024-06-14.md"
-  - type: blog
-    path: "Cubox/不同版本上 Bitmap 内存分配与回收原理对比-2023-01-24.md"
-  - type: blog
-    path: "Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md"
-  - type: research
-    path: "intake/research-feeds/2026-03-31-11-ch04-art-allocator-evolution.md"
-  - type: research
-    path: "intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md"
-tags: ['memory-evolution', 'art', 'dalvik', 'gc', 'bitmap', 'scudo', 'mte', 'large-heap', 'memory-limit', 'version-history']
-related_chapters: ["4.1", "4.2", "4.3", "4.4", "4.5", "2.9"]
-drafted_date: "2026-03-31"
-drafted_by: "openclaw-subagent"
+- type: official
+  path: https://source.android.com/docs/core/perf/art-management
+- type: official
+  path: https://developer.android.com/topic/performance/graphics/manage-memory
+- type: official
+  path: https://source.android.com/docs/security/test/memory-safety/arm-mte
+- type: official
+  path: https://developer.android.com/ndk/guides/arm-mte
+- type: official
+  path: https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: blog
+  path: Cubox/Scudo内存分配器介绍-2022-01-14.md
+- type: blog
+  path: Cubox/【Android 15】内存分配器Scudo在这些年的优化-2024-06-14.md
+- type: blog
+  path: Cubox/不同版本上 Bitmap 内存分配与回收原理对比-2023-01-24.md
+- type: blog
+  path: Cubox/四年之后，重新审视 MTE：从硬件架构到工程落地-2025-12-18.md
+- type: research
+  path: intake/research-feeds/2026-03-31-11-ch04-art-allocator-evolution.md
+- type: research
+  path: intake/research-feeds/2026-03-31-11-ch04-art-generational-gc.md
+tags:
+- memory-evolution
+- art
+- dalvik
+- gc
+- bitmap
+- scudo
+- mte
+- large-heap
+- memory-limit
+- version-history
+related_chapters:
+- '4.1'
+- '4.2'
+- '4.3'
+- '4.4'
+- '4.5'
+- '2.9'
+drafted_date: '2026-03-31'
+drafted_by: openclaw-subagent
 review_count: 6
 pipeline_stage: task6_pending
-task6_state: revisiting
+task6_state: pending
 task6_result: pass-light-edit
-last_task6_at: "2026-05-07T03:07:54+08:00"
-last_task6_review_log: "logs/review/2026-05-07-03-review.md"
-task6_review_notes: "2026-05-07 Task6 03:07：pass-light-edit。小修 6 处：补充代码块用途句，补齐 PSS 公式代码块语言标记，清理 ASYMM 段禁用句式与 frontmatter 禁用词；无新增 Task2B 回炉项。因 Task9 仍为 needs-rework 且 queue 有既有 pending 条目，未自动晋升。"
+last_task6_at: '2026-05-07T03:07:54+08:00'
+last_task6_review_log: logs/review/2026-05-07-03-review.md
+task6_review_notes: 2026-05-07 Task6 03:07：pass-light-edit。小修 6 处：补充代码块用途句，补齐 PSS
+  公式代码块语言标记，清理 ASYMM 段禁用句式与 frontmatter 禁用词；无新增 Task2B 回炉项。因 Task9 仍为 needs-rework
+  且 queue 有既有 pending 条目，未自动晋升。
 task9_state: pending
 task9_result: needs-rework
-last_task9_at: "2026-05-07T02:20:00+08:00"
+last_task9_at: '2026-05-07T02:20:00+08:00'
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T22:10:00+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-07"
-task9_review_notes: "2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB 页内部碎片公式错误，RELRO 兼容模式安全断言缺源码证据链 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1 / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。 | 2026-05-07 Task9 02:20：needs-rework。P0 3 / P1 0 / P2 0；NativeAllocationRegistry、Scudo MTE、16KB linker compat 三处源码锚点/函数名错误，写入 queue。"
-last_task9_review_log: "logs/deep-review/2026-05-07-02-deep-review.md"
+last_task2b_at: '2026-05-09T22:10:00+08:00'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-07'
+task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB
+  页内部碎片公式错误，RELRO 兼容模式安全断言缺源码证据链 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1
+  / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。 |
+  2026-05-07 Task9 02:20：needs-rework。P0 3 / P1 0 / P2 0；NativeAllocationRegistry、Scudo
+  MTE、16KB linker compat 三处源码锚点/函数名错误，写入 queue。'
+last_task9_review_log: logs/deep-review/2026-05-07-02-deep-review.md
 ---
+
 
 
 # 内存相关的版本演进

@@ -1,8 +1,8 @@
 ---
+status: ready-for-review
 title: Adaptive Refresh Rate 与动态帧率控制
 chapter: '2.18'
 section: '2.18'
-status: ready-for-review
 drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持
@@ -45,7 +45,7 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_at: '2026-04-26T01:29:40+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-26'
@@ -61,6 +61,7 @@ last_task2b_at: '2026-05-09T14:40:00+08:00'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 ---
+
 
 # 2.18 Adaptive Refresh Rate 与动态帧率控制
 

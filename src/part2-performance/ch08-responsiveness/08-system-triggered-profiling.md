@@ -1,64 +1,72 @@
 ---
-title: "ProfilingManager 系统触发式性能追踪"
-chapter: "8.10"
-section: "8.10"
 status: ready-for-review
-applicable_versions: "Android 16 (API 36) - Android 17 (API 37)"
-tags: [profiling-manager, system-triggered, cold-start, anr, tracing, performance-monitoring]
-related_chapters: ["8.2", "9.3", "13.7"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-10"
-gap_source: "研究素材"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP main + Android Developers"
+title: ProfilingManager 系统触发式性能追踪
+chapter: '8.10'
+section: '8.10'
+applicable_versions: Android 16 (API 36) - Android 17 (API 37)
+tags:
+- profiling-manager
+- system-triggered
+- cold-start
+- anr
+- tracing
+- performance-monitoring
+related_chapters:
+- '8.2'
+- '9.3'
+- '13.7'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-10'
+gap_source: 研究素材
+last_verified: '2026-04-20'
+last_verified_against: AOSP main + Android Developers
 confidence: medium
 sources:
-  - type: blog
-    path: "Android 16/17 ProfilingManager 系统触发式性能追踪"
-    title: "系统触发式性能追踪机制"
-    date: "2026-04-01"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingManager"
-    title: "ProfilingManager API Reference"
-    date: "2026"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
-    title: "ProfilingTrigger API Reference"
-    date: "2026"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ProfilingResult"
-    title: "ProfilingResult API Reference"
-    date: "2026"
-  - type: aosp
-    path: "packages/modules/Profiling/framework/java/android/os/ProfilingManager.java"
-  - type: aosp
-    path: "packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java"
-  - type: aosp
-    path: "packages/modules/Profiling/framework/java/android/os/ProfilingResult.java"
-  - type: aosp
-    path: "packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java"
-  - type: official
-    path: "https://developer.android.com/reference/android/os/ext/SdkExtensions"
-    title: "SdkExtensions API Reference"
-    date: "2026"
-pipeline_stage: task6_pending
-task6_state: revisiting
+- type: blog
+  path: Android 16/17 ProfilingManager 系统触发式性能追踪
+  title: 系统触发式性能追踪机制
+  date: '2026-04-01'
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingManager
+  title: ProfilingManager API Reference
+  date: '2026'
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingTrigger
+  title: ProfilingTrigger API Reference
+  date: '2026'
+- type: official
+  path: https://developer.android.com/reference/android/os/ProfilingResult
+  title: ProfilingResult API Reference
+  date: '2026'
+- type: aosp
+  path: packages/modules/Profiling/framework/java/android/os/ProfilingManager.java
+- type: aosp
+  path: packages/modules/Profiling/framework/java/android/os/ProfilingTrigger.java
+- type: aosp
+  path: packages/modules/Profiling/framework/java/android/os/ProfilingResult.java
+- type: aosp
+  path: packages/modules/Profiling/service/java/com/android/os/profiling/ProfilingService.java
+- type: official
+  path: https://developer.android.com/reference/android/os/ext/SdkExtensions
+  title: SdkExtensions API Reference
+  date: '2026'
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T13:40:00+08:00"
-repaired_date: "2026-05-09"
-repaired_by: "openclaw-task2b"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-23"
+last_task2b_at: '2026-05-09T13:40:00+08:00'
+repaired_date: '2026-05-09'
+repaired_by: openclaw-task2b
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-23'
 task6_result: pass-light-edit
 task9_result: needs-rework
-task9_reviewed_date: "2026-04-25"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-04-25T22:29:14+08:00"
-task2b_result: fixed
+task9_reviewed_date: '2026-04-25'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-25T22:29:14+08:00'
 ---
+
 
 # ProfilingManager 系统触发式性能追踪
 
