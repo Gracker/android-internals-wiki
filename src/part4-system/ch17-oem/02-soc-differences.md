@@ -41,10 +41,10 @@ task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁�
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-07T07:28:39+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-07-07-deep-review.md"
-task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。 | 2026-05-07 Task9 00:20：needs-rework。P0 1 / P1 1 / P2 1；Dimensity 9400 频率口径、Oryon cache 一手资料边界、Perfetto PMU 数据源需回炉。 | 2026-05-07 Task9 07:20：needs-rework。P0 0 / P1 1 / P2 1；Oryon L1/L2 cache 一手资料边界仍未闭合，Perfetto PMU 数据源仍写成 linux.ftrace pmu。"
+task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。 | 2026-05-07 Task9 00:20：needs-rework。P0 1 / P1 1 / P2 1；Dimensity 9400 频率口径、Oryon cache 一手资料边界、Perfetto PMU 数据源需回炉。 | 2026-05-07 Task9 07:20：needs-rework。P0 0 / P1 1 / P2 1；Oryon L1/L2 cache 一手资料边界仍未闭合，Perfetto PMU 数据源仍写成 linux.ftrace pmu。 | 2026-05-10 Task2B：P0 SQL ucpu→cpu 修复完成，sched 表无 ucpu 字段，已替换为 cpu。"
 
 task2b_result: fixed
-last_task2b_at: "2026-05-06T23:02:59"
+last_task2b_at: "2026-05-10T09:45:05.268043+08:00"
 ---
 
 # SoC 平台差异
@@ -162,11 +162,11 @@ static INT32 perfLockParamsOpenCamera[] = {
 1. **CPU Scheduling Track** 中直接统计线程的 `migrations` 次数。全大核架构下，负载均衡器（load balancer）在核心间重新分配任务的频率明显高于传统大小核，因为各核心的算力差距小，迁移代价低。用 SQL 查询可以量化：
 ```sql
 -- 统计每个线程在 10 秒窗口内的迁移次数
--- Perfetto sched 表没有 prev_cpu 字段，需要用窗口函数从上一条调度记录取上一次所在的 CPU
+-- sched 表只有 cpu 字段记录当前所在核心，没有 prev_cpu，需要用 LAG 窗口函数从上一条调度记录取上一次所在的 CPU
 WITH sched_with_prev AS (
   SELECT
     *,
-    LAG(ucpu) OVER (PARTITION BY utid ORDER BY ts) AS prev_ucpu
+    LAG(cpu) OVER (PARTITION BY utid ORDER BY ts) AS prev_cpu
   FROM sched
 )
 SELECT
@@ -176,8 +176,8 @@ SELECT
 FROM sched_with_prev
   JOIN thread USING (utid)
 WHERE ts BETWEEN <start_ts> AND <end_ts>
-  AND prev_ucpu IS NOT NULL
-  AND prev_ucpu != ucpu
+  AND prev_cpu IS NOT NULL
+  AND prev_cpu != cpu
 GROUP BY tid
 ORDER BY migration_count DESC
 LIMIT 20;
