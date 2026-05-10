@@ -9,7 +9,7 @@ polish_date: "2026-04-09"
 polish_by: "task2b-polish"
 applicable_versions: "Android 8.0 (API 26) - Android 17 (API 37)"
 last_verified: "2026-04-27"
-task6_reviewed_date: "2026-04-27"
+reviewed_date: "2026-05-10"
 reviewed_by: openclaw-task6
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev stdlib docs, Android Vitals docs"
 confidence: medium
@@ -42,10 +42,11 @@ tags: [jobscheduler, workmanager, background-scheduling, power, doze, battery, w
 related_chapters: ["5.6", "5.8", "1.5", "11.2", "15.5"]
 pipeline_stage: task6_pending
 task6_state: revisiting
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-task6_result: pass-light-edit
 task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-04-28"

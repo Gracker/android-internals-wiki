@@ -13,9 +13,10 @@ tags: [rendering, SurfaceFlinger, BufferQueue, BLAST, sync-fence, FrameTimeline,
 pipeline_stage: task6_pending
 last_task2b_at: "2026-05-09T22:40:00+08:00"
 task6_state: revisiting
-reviewed_date: "2026-04-23"
+reviewed_date: "2026-05-10"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
