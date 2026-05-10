@@ -1,60 +1,6 @@
 {
   "pending": [
     {
-      "section": "1.3",
-      "section_title": "进程模型与生命周期管理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：LegacyMessageQueue 路径不存在",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "LegacyMessageQueue 路径引用",
-          "detail": "文档中引用 frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java，但在 AOSP android-16.0.0_r1 中，LegacyMessageQueue 类位于 frameworks/base/core/java/android/os/LegacyMessageQueue.java，目录结构不存在 LegacyMessageQueue/MessageQueue.java 子目录",
-          "suggestion": "修正为正确的路径：frameworks/base/core/java/android/os/LegacyMessageQueue.java"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T01:27:02.750592",
-      "status": "pending"
-    },
-    {
-      "section": "1.3",
-      "section_title": "进程模型与生命周期管理",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：lmkd PSI monitors 实现细节缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "lmkd 时间线描述",
-          "detail": "文档提到 userspace lmkd 时间线，但缺少 lmkd 的 PSI monitors 具体实现细节，以及与内核 LMK 的切换时机",
-          "suggestion": "补充 PSI monitors 在 lmkd 中的具体实现，包括: threshold 监控、stall time 计算方法、与内核 LMK 的切换条件"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T01:27:02.750592",
-      "status": "pending"
-    },
-    {
-      "section": "1.4",
-      "section_title": "Binder IPC 机制与性能影响",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：scatter-gather 优化机制描述过于简略",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "scatter-gather 优化描述",
-          "detail": "文档提到 Android 8 引入 scatter-gather 优化，但过于简略。缺少 BINDER_TYPE_PTR 的工作机制、offsets 数组的组织方式、以及与传统事务的性能对比数据",
-          "suggestion": "补充 scatter-gather 的具体实现机制：BC_TRANSACTION_SG 消息格式、offsets 数组结构、内存拷贝次数对比、以及实际性能提升数据"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T01:27:14.905663",
-      "status": "pending"
-    },
-    {
       "section": "1.5",
       "section_title": "线程模型",
       "priority": 85,
@@ -229,6 +175,66 @@
       "status": "completed",
       "completed_at": "2026-05-10T22:22:33+08:00",
       "completed_reason": "task2b fixed: added sysfs/debugfs V/F data reading method and SCMI performance-level-to-OPP mapping mechanism with Fastchannels detail"
+    },
+    {
+      "section": "1.3",
+      "section_title": "进程模型与生命周期管理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误：LegacyMessageQueue 路径不存在",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "LegacyMessageQueue 路径引用",
+          "detail": "文档中引用 frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java，但在 AOSP android-16.0.0_r1 中，LegacyMessageQueue 类位于 frameworks/base/core/java/android/os/LegacyMessageQueue.java，目录结构不存在 LegacyMessageQueue/MessageQueue.java 子目录",
+          "suggestion": "修正为正确的路径：frameworks/base/core/java/android/os/LegacyMessageQueue.java"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T01:27:02.750592",
+      "status": "completed",
+      "completed_at": "2026-05-11T03:18:49+08:00",
+      "completed_reason": "path error not in section 1.3 source file (03-process-model.md); actual affected files: 1.5 (05-threading-model.md), 1.13 (13-messagequeue-deliqueue.md), 2.3 (03-vsync.md), 16.5 (05-android17-api37-performance-changes.md) — these need separate queue entries"
+    },
+    {
+      "section": "1.3",
+      "section_title": "进程模型与生命周期管理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：lmkd PSI monitors 实现细节缺失",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "lmkd 时间线描述",
+          "detail": "文档提到 userspace lmkd 时间线，但缺少 lmkd 的 PSI monitors 具体实现细节，以及与内核 LMK 的切换时机",
+          "suggestion": "补充 PSI monitors 在 lmkd 中的具体实现，包括: threshold 监控、stall time 计算方法、与内核 LMK 的切换条件"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T01:27:02.750592",
+      "status": "completed",
+      "completed_at": "2026-05-11T03:18:49+08:00",
+      "completed_reason": "task2b fixed: added PSI monitors subsection with threshold/window config, stall time mechanism, lmkd decision flow, and Perfetto diagnostics"
+    },
+    {
+      "section": "1.4",
+      "section_title": "Binder IPC 机制与性能影响",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：scatter-gather 优化机制描述过于简略",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "scatter-gather 优化描述",
+          "detail": "文档提到 Android 8 引入 scatter-gather 优化，但过于简略。缺少 BINDER_TYPE_PTR 的工作机制、offsets 数组的组织方式、以及与传统事务的性能对比数据",
+          "suggestion": "补充 scatter-gather 的具体实现机制：BC_TRANSACTION_SG 消息格式、offsets 数组结构、内存拷贝次数对比、以及实际性能提升数据"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T01:27:14.905663",
+      "status": "completed",
+      "completed_at": "2026-05-11T03:18:49+08:00",
+      "completed_reason": "task2b fixed: expanded scatter-gather section with BC_TRANSACTION_SG structure, binder_buffer_object/offsets array details, comparison table, and updated version evolution entry"
     }
   ]
 }

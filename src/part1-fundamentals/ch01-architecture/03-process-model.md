@@ -66,16 +66,17 @@ related_chapters:
 - '4.4'
 - '5.1'
 - '5.8'
-task6_state: reviewed
+task6_state: revisiting
 review_notes: '2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fixes.
   | 2026-05-05 task6 re-confirm: fixed L1/L2 wording and punctuation; task9_result=needs-rework,
   pipeline kept task2b_pending.'
 task2b_result: fixed
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task9_state: pending
 task9_result: ''
 task6_reviewed_date: '2026-05-05'
-task2b_state: pending
+task2b_state: fixed
+last_task2b_at: '2026-05-11T03:18:49'
 task9_reviewed_date: '2026-05-01'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-01T05:32:43+08:00'
@@ -390,6 +391,28 @@ Android 9 把 userspace `lmkd` 引入主线，但它的启用条件仍然带着 
 
 [已验证: 官方文档, source.android.com/docs/core/perf/lmkd]
 [已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp]
+
+### PSI monitors：lmkd 如何感知内存压力
+
+PSI（Pressure Stall Information）是 Linux 4.20+ 内核提供的内存压力跟踪机制（`CONFIG_PSI`）。它在 `/proc/pressure/memory` 中暴露两类 stall 指标：`some`（至少一个任务因内存不足而阻塞的时间占比）和 `full`（所有非 idle 任务同时被阻塞的时间占比）。lmkd 监控的是 `some` 指标——当有任务因内存不足而等待 refault 或 swap 时，这个值就会上升。
+
+lmkd 启动时通过 `epoll_ctl()` 在 PSI fd 上注册监控条件。每个监控条件由两个参数定义：
+
+- **threshold**：stall 时间百分比。例如 10% 表示窗口期内有 10% 的时间存在内存阻塞
+- **window**：监控窗口大小，单位毫秒。例如 700ms
+
+当窗口内的 stall 时间超过 threshold，内核通过 `epoll_wait()` 唤醒 lmkd。lmkd 收到信号后进入回收决策流程：先读取 `MemAvailable`、file cache 大小和 refault 比例（thrashing），再按 `oom_score_adj` 从高到低选择 victim 进程发送 SIGKILL。一次 PSI 触发可以杀掉多个进程，直到内存压力降到安全水位以下。
+
+threshold 和 window 的配置分两条路径：
+
+- 设备厂商通过 `ro.lmk.psi_thresholds` 属性指定，格式是一组逗号分隔的 `threshold:window` 对，分别对应 low / medium / critical 三个压力级别
+- 如果未指定，lmkd 根据设备总内存大小计算默认值。低 RAM 设备（< 2GB）的 threshold 更敏感、window 更短；高性能设备相对宽松
+
+从内核 LMK driver 切换到 userspace lmkd + PSI 的条件：内核编译时未设置 `CONFIG_ANDROID_LOW_MEMORY_KILLER`（不编译 in-kernel LMK），同时 `ro.lmk.use_psi=true`。如果内核不支持 PSI（检查 `/proc/pressure/memory` 是否存在），lmkd 退回 `vmpressure` 事件。`vmpressure` 的粒度比 PSI 粗——只有 low / medium / critical 三档通知，没有连续的 stall 时间百分比。
+
+在 Perfetto 中排查 lmkd 行为时，`linux.ftrace` 的 `lowmemorykiller/lowmemory_kill` tracepoint 记录每次 kill 的时间、pid 和 oom_score_adj。结合 `linux.sys_stats` 的 `MemAvailable` 曲线，可以还原"内存压力上升 → PSI 触发 → lmkd 选 victim → 进程消失"的完整链条。
+
+[已验证: AOSP android-16.0.0_r1, system/memory/lmkd/lmkd.cpp 中 `init_psi_monitors()` / `mp_event_psi()` / `mp_event_common()` 函数]
 
 ### AMS 入口和计算路径不在同一层
 
