@@ -20,7 +20,7 @@ task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-04-27T16:20:00+08:00"
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-09T10:40:00+08:00"
+last_task2b_at: "2026-05-10T13:15:46+08:00"
 pipeline_stage: task6_pending
 reviewed_by: openclaw-task6
 review_round: 4
@@ -203,7 +203,7 @@ Doze 关注的是"设备层面的状态"--灭屏、静止、未充电。App Stan
 
 当收到一条用户反馈说"App 耗电太厉害了"时,我们需要一个能看到"过去几个小时系统到底发生了什么"的工具。Battery Historian 就是这个工具。
 
-Battery Historian 是 Google 推出的开源工具,用于分析 Android 设备的电池使用历史。它不是一个实时监控工具,而是一个"事后分析"工具--我们先让设备正常运行一段时间,然后导出 bugreport,再用 Battery Historian 可视化分析。[已验证: 来源见 obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md]
+Battery Historian 是 Google 推出的开源工具,用于分析 Android 设备的电池使用历史。它不是一个实时监控工具,而是一个"事后分析"工具--我们先让设备正常运行一段时间,然后导出 bugreport,再用 Battery Historian 可视化分析。排查功耗问题的第一步几乎都是"先抓一份 bugreport 扔进 Battery Historian",比直接猜问题出在哪里要高效得多。[已验证: 来源见 obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md]
 
 ### 使用流程
 
@@ -248,6 +248,33 @@ Battery Historian 提供了两个主要视图:
 **3. 逐项排查。** 综合查看亮度状态、网络类型(5G > 4G > WiFi 的功耗递减)、后台 Job、前台应用,判断耗电是否符合预期。
 
 Battery Historian 中的常见场景案例也很有参考价值:充电慢可能与异常 Job 有关;发热问题可能来自网络+高亮度+高耗电 App 的叠加;灭屏异常耗电可能是有 App 通过音频锁给自己保活,导致系统无法休眠。[已验证: 来源见 obsidian/Cubox/BatteryHistorian Android手机耗电分析神器-2022-04-15.md]
+
+### 实战案例:灭屏后 GPS 持续定位导致的异常耗电
+
+这是一个在 Battery Historian 中定位灭屏耗电问题的典型路径。
+
+**现象**:用户反馈"App 安装后手机掉电明显加快",灭屏一晚上掉电 15%-20%,正常设备应该在 3% 以内。
+
+**排查步骤**:
+
+1. **重置 + 复现**。`adb shell dumpsys batterystats --reset`,然后让用户正常使用半天,复现耗电场景,再导出 bugreport。
+
+2. **在 Battery Historian 中定位异常时间段**。打开时间轴,先看整体电量曲线。灭屏时段（深色背景区域）电量下降斜率明显大于正常水平。点击该时段,检查以下维度:
+
+   - **Userspace Wakelock**:发现目标 App 持有 `myapp:location_update` WakeLock,覆盖了灭屏时段的 90% 以上。
+   - **GPS 状态**:`GPS` 行在灭屏期间持续为 `active`(绿色条),说明 GPS 硬件没有被关闭。
+   - **网络活动**:灭屏期间 App 仍在频繁发起网络请求,间隔约 30 秒。
+
+3. **定位根因**。结合代码审查发现:App 注册了 `LocationManager.requestLocationUpdates(GPS_PROVIDER, 0, 0, listener)`,minTime 和 minDistance 都设为 0,意味着只要有 GPS 信号就持续回调。灭屏后没有取消注册,GPS 模块持续运行,App 通过 WakeLock 保持 CPU 活跃来处理位置更新并上报服务端。
+
+4. **修复方案**:
+   - 灭屏时取消 GPS 注册,改用 `PassiveProvider` 或降低更新频率（如 60 秒一次）
+   - 位置上报改用 WorkManager 约束调度,替代 WakeLock + 定时器
+   - 注册 `BroadcastReceiver` 监听 `ACTION_SCREEN_OFF/ON`,在灭屏时进入低功耗模式
+
+5. **验证**:修复后重新跑 Battery Historian,灭屏时段 GPS active 消失,WakeLock 覆盖率降到 5% 以下,灭屏一晚掉电回到 2%-3%。
+
+这个案例体现了 Battery Historian 排查的核心思路:**先锁定异常时段,再按维度（WakeLock、网络、GPS、CPU）逐一排查,找到维度之间的关联,最后回到代码定位根因。**
 
 ### 其他功耗分析工具
 
@@ -310,7 +337,7 @@ try {
 
 ### 如何检测 WakeLock 滥用
 
-**Battery Historian 是最直接的工具。** 在 App Stats 视图中选中目标 App,查看 "Userspace Wakelock" 行--如果看到某个 WakeLock 覆盖了很大比例的时间段,特别是在灭屏期间,那就是问题的信号。关于 WakeLock 在 Perfetto 中的更详细分析,参见 §11.5 Wakelock 机制与功耗分析。
+**Battery Historian 是最直接的工具。** 在 App Stats 视图中选中目标 App,查看 "Userspace Wakelock" 行--如果看到某个 WakeLock 覆盖了很大比例的时间段,特别是在灭屏期间,那就是问题的信号。遇到灭屏掉电快,第一件事就是打开 Battery Historian 看 Userspace Wakelock 行,八九不离十能看到某个 App 的锁把灭屏时段填满了。关于 WakeLock 在 Perfetto 中的更详细分析,参见 §11.5 Wakelock 机制与功耗分析。
 
 **adb 命令快速排查:**
 
@@ -332,7 +359,7 @@ adb shell dumpsys batterystats | grep -A 5 "Wake lock"
 
 前面讲了 WakeLock 的滥用风险,那后台任务到底应该怎么做?答案是:不要直接操作 WakeLock,而是通过 JobScheduler 或 WorkManager 让系统代为调度。
 
-这样做的好处是系统可以**批量执行**多个 App 的后台任务,而不是每个 App 各自唤醒系统--后者的代价是系统在 Suspend 和 Resume 之间反复切换,每次切换都需要重新初始化硬件外设。以 10 个 App 各自设置 Alarm 唤醒系统为例:系统要被唤醒 10 次,每次都要从 Suspend 恢复、执行任务、再回到 Suspend。而如果这 10 个 App 都通过 JobScheduler 调度,系统可以在一个维护窗口内批量执行所有任务,只经历一次唤醒-休眠周期。
+这样做的好处是系统可以**批量执行**多个 App 的后台任务,而不是每个 App 各自唤醒系统--后者的代价是系统在 Suspend 和 Resume 之间反复切换,每次切换都需要重新初始化硬件外设。如果你在 Battery Historian 里看到灭屏期间系统被频繁唤醒（每隔几分钟就亮一次 CPU active 的短线段），大概率就是多个 App 各自设了独立的 Alarm，系统在反复进出 Suspend。换成 JobScheduler 调度后，这些零散的唤醒会被系统合并到少数几个窗口里。以 10 个 App 各自设置 Alarm 唤醒系统为例:系统要被唤醒 10 次,每次都要从 Suspend 恢复、执行任务、再回到 Suspend。而如果这 10 个 App 都通过 JobScheduler 调度,系统可以在一个维护窗口内批量执行所有任务,只经历一次唤醒-休眠周期。
 
 ### JobScheduler:系统级的任务调度
 

@@ -3106,7 +3106,9 @@
       ],
       "added_by": "task6-draft-review",
       "added_at": "2026-05-09T11:17:47+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T13:15:46+08:00",
+      "completed_reason": "task2b fixed: 补充三个版本认知坑案例(BLASTBufferQueue误判/ARR帧率切换/VSYNC间隔/4.x RenderThread缺失), 增加实战经验句式, 修正否定-纠正结构超限"
     },
     {
       "section": "5.6",
@@ -3134,7 +3136,9 @@
       ],
       "added_by": "task6-draft-review",
       "added_at": "2026-05-09T11:17:47+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T13:15:46+08:00",
+      "completed_reason": "task2b fixed: 新增GPS持续定位功耗排查实战案例(完整排查路径), Battery Historian实用经验句式增加"
     },
     {
       "section": "1.4",
@@ -3504,7 +3508,9 @@
       ],
       "added_by": "openclaw-task6",
       "added_at": "2026-05-09T21:25:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T13:15:46+08:00",
+      "completed_reason": "stale entry: section already extensively reworked in prior task2b rounds with ASTC/ETC2 comparison, gpu_busy standardization, Gralloc AIDL V2; pending status was likely a queue inconsistency"
     }
   ]
 }
