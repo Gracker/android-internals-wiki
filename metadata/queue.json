@@ -3374,6 +3374,37 @@
       "task6_reviewed_by": "openclaw-task6",
       "completed_at": "2026-05-10T10:26:46+08:00",
       "completed_reason": "task2b fixed: 新增视频播放掉帧端到端排查案例(SurfaceView vs TextureView路径对比、acquire fence观测、HWC overlay条件), 修正L136真正填充词"
+    },
+    {
+      "section": "17.02",
+      "section_title": "SoC 平台差异",
+      "priority": 95,
+      "reason": "[Deep Tech Review] P0 SQL字段错误与Android 16常量过时",
+      "review_issues": [
+        {
+          "type": "P0",
+          "location": "CPU迁移统计SQL查询",
+          "detail": "sched表字段错误：使用不存在的prev_cpu字段，应替换为LAG(cpu)窗口函数",
+          "suggestion": "修正SQL查询，用LAG(cpu) OVER (PARTITION BY utid ORDER BY ts) AS prev_cpu"
+        },
+        {
+          "type": "P0",
+          "location": "Android 16 VSync预测器常量",
+          "detail": "historySize=32过时（应为20），kOutlierTolerancePercent=10%过时（应为20%）",
+          "suggestion": "更新常量值并解释20/20%策略意图：容忍小抖动换取模型稳定性"
+        },
+        {
+          "type": "P1",
+          "location": "Oryon微架构",
+          "detail": "L1/L2缓存容量、延迟周期未获官方确认，引用二手分析资料",
+          "suggestion": "补充官方白皮书、Hot Chips/ISSCC或芯片拆解报告，或标注待验证状态"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-10T10:32:15.340136",
+      "status": "completed",
+      "completed_at": "2026-05-10T10:43:21+08:00",
+      "completed_reason": "task2b verified: all 3 issues already addressed — P0 SQL: LAG(cpu) fix already in place (prev task2b round); P0 VSync constants: not applicable to section 17.02 (SoC 平台差异 has no VSync content, belongs to §2.3 which is already completed); P1 Oryon cache: already tagged [待验证] with full provenance and pending source list"
     }
   ],
   "completed": [

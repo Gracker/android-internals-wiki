@@ -44,7 +44,7 @@ last_task9_review_log: "logs/deep-review/2026-05-07-07-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。 | 2026-05-07 Task9 00:20：needs-rework。P0 1 / P1 1 / P2 1；Dimensity 9400 频率口径、Oryon cache 一手资料边界、Perfetto PMU 数据源需回炉。 | 2026-05-07 Task9 07:20：needs-rework。P0 0 / P1 1 / P2 1；Oryon L1/L2 cache 一手资料边界仍未闭合，Perfetto PMU 数据源仍写成 linux.ftrace pmu。 | 2026-05-10 Task2B：P0 SQL ucpu→cpu 修复完成，sched 表无 ucpu 字段，已替换为 cpu。"
 
 task2b_result: fixed
-last_task2b_at: "2026-05-10T09:45:05.268043+08:00"
+last_task2b_at: "2026-05-10T10:43:34+08:00"
 ---
 
 # SoC 平台差异
