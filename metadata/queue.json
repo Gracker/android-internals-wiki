@@ -3270,6 +3270,26 @@
       "status": "completed",
       "completed_at": "2026-05-10T07:17:43.476091",
       "completed_reason": "Reference added: SurfaceFlinger FrontEnd architecture and RequestedLayerState DeepResearch material added to section references"
+    },
+    {
+      "section": "2.11",
+      "section_title": "2.11",
+      "priority": 95,
+      "reason": "[Deep Tech Review] P0 源码错误：SQL查询使用了不存在的ucpu字段",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "P0",
+          "location": "章节开头分析部分",
+          "detail": "SQL查询使用了不存在的ucpu字段，实际应为upid或cpu字段",
+          "suggestion": "修正SQL查询使用正确的sched表字段"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-10T09:25:34.026221",
+      "status": "completed",
+      "completed_at": "2026-05-10T09:44:53.194965+08:00",
+      "completed_reason": "task2b fixed: queue entry section mismatch (filed as 2.11 but actual ucpu SQL bug is in 17.02/02-soc-differences.md). Fixed ucpu→cpu in Perfetto migration SQL query (line 169/179/180). Section 2.11 has zero SQL queries, confirmed not affected."
     }
   ],
   "completed": [

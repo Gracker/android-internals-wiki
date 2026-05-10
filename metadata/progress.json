@@ -4,7 +4,7 @@
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-09T14:51:35.395261",
+    "last_updated": "2026-05-10T09:45:30.655373+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 153,
@@ -120,6 +120,22 @@
       "fixes": [
         "2.14: VPA16 mandatory extensions (VK_EXT_host_image_copy + VK_EXT_shader_object), Android 17 ANGLE mandatory CDD, WebGPU 90-95% Vulkan compute baseline",
         "2.20: Android 17 DeliQueue jank isolation (4%/7.7%), Android 16 desktop state caching, 16KB page memory stacking"
+      ]
+    },
+    {
+      "date": "2026-05-10T09:45:30.655373+08:00",
+      "sections": [
+        "17.02"
+      ],
+      "sections_title": [
+        "SoC 平台差异"
+      ],
+      "sources": [
+        "task9-deep-tech-review"
+      ],
+      "fixes": [
+        "§17.02: P0 SQL修复 — Perfetto sched表ucpu字段不存在，替换为cpu（LAG(cpu) AS prev_cpu，WHERE prev_cpu != cpu）",
+        "queue条目section号误标为2.11（2.11无SQL），实际修复位置为17.02"
       ]
     }
   ],
