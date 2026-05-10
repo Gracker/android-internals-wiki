@@ -1,41 +1,53 @@
 ---
-title: "线程 CPU 状态分析"
-section: "13.6"
-chapter: "13.6"
+title: 线程 CPU 状态分析
+section: '13.6'
+chapter: '13.6'
 status: ready-for-review
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-04-22"
-reviewed_by: "openclaw-task6"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-03"
-last_verified_against: "perfetto.dev/docs/data-sources/cpu-scheduling"
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+reviewed_date: '2026-04-22'
+reviewed_by: openclaw-task6
+applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-03'
+last_verified_against: perfetto.dev/docs/data-sources/cpu-scheduling
 confidence: high
 sources:
-  - type: blog
-    path: "https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/"
-  - type: blog
-    path: "https://www.androidperformance.com/2022/01/21/android-systrace-cpu-state-runnable/"
-  - type: blog
-    path: "https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/"
-  - type: blog
-    path: "https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/"
-  - type: official
-    path: "https://perfetto.dev/docs/data-sources/cpu-scheduling"
-tags: ['perfetto', 'thread-state', 'sched-switch', 'running', 'runnable', 'sleep', 'uninterruptible-sleep', 'cpu-scheduling']
-related_chapters: ["5.1", "13.1", "13.5"]
-pipeline_stage: task2b_pending
+- type: blog
+  path: https://www.androidperformance.com/2025/11/12/Android-Perfetto-09-CPU/
+- type: blog
+  path: https://www.androidperformance.com/2022/01/21/android-systrace-cpu-state-runnable/
+- type: blog
+  path: https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-running/
+- type: blog
+  path: https://www.androidperformance.com/2022/03/13/android-systrace-cpu-state-sleep/
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-scheduling
+tags:
+- perfetto
+- thread-state
+- sched-switch
+- running
+- runnable
+- sleep
+- uninterruptible-sleep
+- cpu-scheduling
+related_chapters:
+- '5.1'
+- '13.1'
+- '13.5'
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: pending
-task9_result: needs-rework
+task9_result: ''
 task9_reviewed_date: '2026-04-27'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-27T15:34:11+08:00'
 task2b_result: fixed
 last_task2b_at: '2026-04-28T01:40:00+08:00'
 ---
+
 
 # 线程 CPU 状态分析
 

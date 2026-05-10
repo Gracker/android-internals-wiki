@@ -1,58 +1,78 @@
 ---
-title: "Android 内存模型全景"
-chapter: "4.1"
-section: "4.1"
+title: Android 内存模型全景
+chapter: '4.1'
+section: '4.1'
 status: ready-for-review
-drafted_date: "2026-03-31"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-21"
-last_verified_against: "AOSP android-16.0.0_r1 / Android Developers bitmap memory & 16 KB page size docs / kernel zram docs"
-reviewed_date: "2026-05-07"
-reviewed_by: "openclaw-task6"
-review_notes: "task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack 物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in swap/total swap）；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9；2026-05-07 20:08 Task6 复审：L1/L2 小修 12 处，锚点覆盖完整，无新增回炉项，交回 Task9"
+drafted_date: '2026-03-31'
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-21'
+last_verified_against: AOSP android-16.0.0_r1 / Android Developers bitmap memory &
+  16 KB page size docs / kernel zram docs
+reviewed_date: '2026-05-07'
+reviewed_by: openclaw-task6
+review_notes: 'task2b-polish: 已做首轮润色；2026-04-14 Task6：L1/L2 小修；2026-05-07 Task2B 验证：Stack
+  物理占用已拆为虚拟栈保留+resident stack pages；ZRAM physical used 口径已修正为三指标分读（physical used/in
+  swap/total swap）；2026-05-07 19:05 Task6 复审：L1/L2 轻量修复通过，交回 Task9；2026-05-07 20:08
+  Task6 复审：L1/L2 小修 12 处，锚点覆盖完整，无新增回炉项，交回 Task9'
 task6_result: pass-light-edit
 confidence: medium
 polish_count: 1
-polish_date: "2026-04-06"
-polish_by: "task2b-polish"
+polish_date: '2026-04-06'
+polish_by: task2b-polish
 sources:
-  - type: official
-    path: "https://developer.android.com/topic/performance/memory-management"
-  - type: official
-    path: "https://developer.android.com/topic/performance/graphics/manage-memory"
-  - type: official
-    path: "https://developer.android.com/guide/practices/page-sizes"
-  - type: official
-    path: "https://source.android.com/docs/core/perf/lmkd"
-  - type: official
-    path: "https://source.android.com/docs/core/perf/cgroups"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/am/ProcessList.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/content/ComponentCallbacks2.java"
-  - type: aosp
-    path: "system/core/libprocessgroup/profiles/task_profiles.json"
-  - type: aosp
-    path: "system/memory/lmkd/lmkd.cpp"
-  - type: official
-    path: "https://docs.kernel.org/admin-guide/blockdev/zram.html"
-  - type: blog
-    path: "https://androidperformance.com/"
-  - type: blog
-    path: "https://juejin.cn/post/7530909474103296039"
-tags: ['memory', 'PSS', 'RSS', 'dumpsys', 'meminfo', 'procfs', 'ZRAM', 'cgroup']
-related_chapters: ["4.2", "4.3", "4.4", "4.5", "10.1"]
-pipeline_stage: task2b_pending
+- type: official
+  path: https://developer.android.com/topic/performance/memory-management
+- type: official
+  path: https://developer.android.com/topic/performance/graphics/manage-memory
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
+- type: official
+  path: https://source.android.com/docs/core/perf/lmkd
+- type: official
+  path: https://source.android.com/docs/core/perf/cgroups
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/am/ProcessList.java
+- type: aosp
+  path: frameworks/base/core/java/android/content/ComponentCallbacks2.java
+- type: aosp
+  path: system/core/libprocessgroup/profiles/task_profiles.json
+- type: aosp
+  path: system/memory/lmkd/lmkd.cpp
+- type: official
+  path: https://docs.kernel.org/admin-guide/blockdev/zram.html
+- type: blog
+  path: https://androidperformance.com/
+- type: blog
+  path: https://juejin.cn/post/7530909474103296039
+tags:
+- memory
+- PSS
+- RSS
+- dumpsys
+- meminfo
+- procfs
+- ZRAM
+- cgroup
+related_chapters:
+- '4.2'
+- '4.3'
+- '4.4'
+- '4.5'
+- '10.1'
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: ''
 task2b_state: pending
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-07"
-last_task9_at: "2026-05-07T20:24:00+08:00"
-task9_review_notes: "2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats` / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。"
+task9_reviewed_date: '2026-05-07'
+last_task9_at: '2026-05-07T20:24:00+08:00'
+task9_review_notes: '2026-05-07 20:24 Task9 deep-review: needs-rework。P0 0 / P1 1
+  / P2 1。遗留 `android.process_meminfo` 数据源口径错误，需统一改为 Perfetto `linux.process_stats`
+  / `linux.sys_stats` / `android.java_hprof` 分层说明；补真实 dumpsys/Perfetto 样本。'
 ---
+
 
 # Android 内存模型全景
 

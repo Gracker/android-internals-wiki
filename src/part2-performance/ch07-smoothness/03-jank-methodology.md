@@ -1,56 +1,74 @@
 ---
-title: "卡顿分析方法论"
-chapter: "7.3"
-section: "7.3"
-reviewed_date: "2026-05-05"
+title: 卡顿分析方法论
+chapter: '7.3'
+section: '7.3'
+reviewed_date: '2026-05-05'
 last_task2b_at: '2026-05-05T10:47:46.821502'
 reviewed_by: openclaw-task6
-rework_date: "2026-04-04"
+rework_date: '2026-04-04'
 rework_by: openclaw-task2b
-rework_type: "review回炉修复（Task9/External 问题单）"
+rework_type: review回炉修复（Task9/External 问题单）
 polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
-applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
-last_verified: "2026-03-31"
-last_verified_against: "AOSP android-16.0.0_r1, Perfetto 官方文档"
+polish_date: '2026-04-05'
+polish_by: task2b-polish
+applicable_versions: Android 8 (API 26) - Android 16 (API 36)
+last_verified: '2026-03-31'
+last_verified_against: AOSP android-16.0.0_r1, Perfetto 官方文档
 confidence: high
 sources:
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md"
-  - type: blog
-    path: "obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md"
-  - type: official
-    path: "https://perfetto.dev/docs/analysis/trace-probe-checks"
-  - type: official
-    path: "https://developer.android.com/reference/android/view/FrameMetrics"
-tags: ['jank', 'methodology', 'Perfetto', 'Systrace', 'FrameTimeline', 'FrameMetrics', 'CPU', 'checklist']
-related_chapters: ["7.1", "7.2", "2.4", "2.5", "2.6", "2.18", "1.5", "13.3"]
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Perfetto-03-how-to-analysis-perfetto.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-2.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/android-systrace-smooth-in-action-3.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/Android-Perfetto-09-CPU.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android深入卡顿分析与实践.md
+- type: blog
+  path: obsidian/Personal-Knowlodge/source/2026-03-07_wechat_Android卡顿监测的方方面面.md
+- type: official
+  path: https://perfetto.dev/docs/analysis/trace-probe-checks
+- type: official
+  path: https://developer.android.com/reference/android/view/FrameMetrics
+tags:
+- jank
+- methodology
+- Perfetto
+- Systrace
+- FrameTimeline
+- FrameMetrics
+- CPU
+- checklist
+related_chapters:
+- '7.1'
+- '7.2'
+- '2.4'
+- '2.5'
+- '2.6'
+- '2.18'
+- '1.5'
+- '13.3'
 task6_state: reviewed
 task6_result: pass-light-edit
 task2b_result: fixed
-task6_reviewed_date: "2026-05-05"
+task6_reviewed_date: '2026-05-05'
 review_round: 3
 status: ready-for-review
-pipeline_stage: task2b_pending
-task9_result: needs-rework
-task9_state: reviewed
+pipeline_stage: task9_pending
+task9_result: ''
+task9_state: pending
 task2b_state: pending
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-05"
-last_task9_at: "2026-05-05T11:20:00+08:00"
-task9_review_notes: "2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1 / P2 1。"
-last_task6_at: "2026-05-05T11:05:00+08:00"
-review_notes: "2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。"
+task9_reviewed_date: '2026-05-05'
+last_task9_at: '2026-05-05T11:20:00+08:00'
+task9_review_notes: '2026-05-05 11:20 task9 deep-review: needs-rework；P0 0 / P1 1
+  / P2 1。'
+last_task6_at: '2026-05-05T11:05:00+08:00'
+review_notes: '2026-05-05 task6 revisit: L1/L2 小修完成；待 Task9 复审。'
 ---
+
 
 # 卡顿分析方法论
 

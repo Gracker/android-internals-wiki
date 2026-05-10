@@ -1,41 +1,52 @@
 ---
-title: "Android View 多窗口渲染路径"
-chapter: "18.5"
-section: "18.5"
-status: ready-for-review
-applicable_versions: "Android 9 (API 28) - Android 16 (API 36)"
-last_verified: "2026-05-07"
-last_verified_against: "AOSP Choreographer/ViewRootImpl/RenderThread references + EGL 1.5 Specification"
+title: Android View 多窗口渲染路径
+chapter: '18.5'
+section: '18.5'
+status: finalized
+applicable_versions: Android 9 (API 28) - Android 16 (API 36)
+last_verified: '2026-05-07'
+last_verified_against: AOSP Choreographer/ViewRootImpl/RenderThread references + EGL
+  1.5 Specification
 confidence: medium
-tags: ["multi-window", "Dialog", "RenderThread-contention", "Choreographer", "serial-rendering"]
-related_chapters: ["2.1", "18.2"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+tags:
+- multi-window
+- Dialog
+- RenderThread-contention
+- Choreographer
+- serial-rendering
+related_chapters:
+- '2.1'
+- '18.2'
+created_by: rendering-pipelines-merge
+created_date: '2026-04-09'
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-10T07:17:00+08:00"
+last_task2b_at: '2026-05-10T07:17:00+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-07"
+reviewed_date: '2026-05-07'
 task6_result: pass-light-edit
 sources:
-  - "AOSP frameworks/base/core/java/android/view/Choreographer.java"
-  - "AOSP frameworks/base/core/java/android/view/ViewRootImpl.java"
-  - "AOSP frameworks/base/libs/hwui/renderthread/RenderThread.cpp"
-  - "EGL 1.5 Specification"
+- AOSP frameworks/base/core/java/android/view/Choreographer.java
+- AOSP frameworks/base/core/java/android/view/ViewRootImpl.java
+- AOSP frameworks/base/libs/hwui/renderthread/RenderThread.cpp
+- EGL 1.5 Specification
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-07"
-last_task6_at: "2026-05-07T06:10:00+08:00"
-last_task6_review_log: "logs/review/2026-05-07-06-review.md"
-task6_review_notes: "2026-05-07 task6 review 05:05:补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词;L1/L2 通过,无新增回炉项,转 Task9 复审。 | 2026-05-07 task6 review 06:10:清理标题术语与正文提示腔,统一为多窗口渲染路径;L1/L2 通过,无新增回炉项,转 Task9 复审。"
-last_task9_at: "2026-05-07T08:36:00+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-07-08-deep-review.md"
-task9_review_notes: "2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题,需 Task2B 回炉。"
-
+task9_reviewed_date: '2026-05-07'
+last_task6_at: '2026-05-07T06:10:00+08:00'
+last_task6_review_log: logs/review/2026-05-07-06-review.md
+task6_review_notes: 2026-05-07 task6 review 05:05:补齐 section/H1、last_verified/confidence、代码块语言标注并清理禁用词;L1/L2
+  通过,无新增回炉项,转 Task9 复审。 | 2026-05-07 task6 review 06:10:清理标题术语与正文提示腔,统一为多窗口渲染路径;L1/L2
+  通过,无新增回炉项,转 Task9 复审。
+last_task9_at: '2026-05-07T08:36:00+08:00'
+last_task9_review_log: logs/deep-review/2026-05-07-08-deep-review.md
+task9_review_notes: 2026-05-07 Task9 08:36:needs-rework。P0 0 / P1 1 / P2 2;分屏/桌面多窗口仍有同进程泛化问题,需
+  Task2B 回炉。
 ---
+
 
 # 18.5 Android View 多窗口渲染路径
 

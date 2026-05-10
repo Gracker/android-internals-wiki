@@ -1,34 +1,48 @@
 ---
-title: "Android View 标准管线（BLAST 深入）"
-chapter: "18.2"
-section: "18.2"
+title: Android View 标准管线（BLAST 深入）
+chapter: '18.2'
+section: '18.2'
 status: ready-for-review
-applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
-last_verified: "2026-05-05"
-last_verified_against: "AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases of a frame + 2026-04-29 external review"
+applicable_versions: Android 11 (API 30) - Android 17 (API 37)
+last_verified: '2026-05-05'
+last_verified_against: AOSP ViewRootImpl/HWUI/BLASTBufferQueue + Compose 官方 Phases
+  of a frame + 2026-04-29 external review
 confidence: medium
-tags: ["BLAST", "RenderThread", "HWUI", "DisplayList", "FrameTimeline", "Triple-Buffering", "Non-blocking-Sync", "Compose"]
-related_chapters: ["2.1", "2.5", "2.6", "2.7", "18.1"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
-pipeline_stage: task2b_pending
+tags:
+- BLAST
+- RenderThread
+- HWUI
+- DisplayList
+- FrameTimeline
+- Triple-Buffering
+- Non-blocking-Sync
+- Compose
+related_chapters:
+- '2.1'
+- '2.5'
+- '2.6'
+- '2.7'
+- '18.1'
+created_by: rendering-pipelines-merge
+created_date: '2026-04-09'
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: pending
 task2b_result: fixed
-last_task2b_at: "2026-05-05T04:53:00+08:00"
+last_task2b_at: '2026-05-05T04:53:00+08:00'
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-05"
+reviewed_date: '2026-05-05'
 task6_result: pass-light-edit
-task6_reviewed_date: "2026-05-05"
-last_task6_at: "2026-05-05T05:05:00+08:00"
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-05"
+task6_reviewed_date: '2026-05-05'
+last_task6_at: '2026-05-05T05:05:00+08:00'
+task9_result: ''
+task9_reviewed_date: '2026-05-05'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T05:41:00+08:00"
-task9_review_notes: "2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。"
-
+last_task9_at: '2026-05-05T05:41:00+08:00'
+task9_review_notes: '2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。'
 ---
+
 
 <!-- outline-start -->
 

@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: ProfilingManager 系统触发式性能追踪
 chapter: '8.10'
 section: '8.10'
@@ -50,7 +50,7 @@ sources:
   path: https://developer.android.com/reference/android/os/ext/SdkExtensions
   title: SdkExtensions API Reference
   date: '2026'
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
@@ -66,6 +66,7 @@ task9_reviewed_date: '2026-04-25'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-04-25T22:29:14+08:00'
 ---
+
 
 
 # ProfilingManager 系统触发式性能追踪

@@ -1,47 +1,66 @@
 ---
-title: "案例集"
-chapter: "9.5"
-section: "9.5"
+title: 案例集
+chapter: '9.5'
+section: '9.5'
 status: ready-for-review
-drafted_date: "2026-04-02"
-drafted_by: "openclaw-task2a"
-reviewed_date: "2026-05-05"
-reviewed_by: "openclaw-task6"
-applicable_versions: "Android 8.0 (API 26) - Android 16 (API 36)"
-last_verified: "2026-04-21"
-last_verified_against: "AOSP android-14.0.0_r1"
+drafted_date: '2026-04-02'
+drafted_by: openclaw-task2a
+reviewed_date: '2026-05-05'
+reviewed_by: openclaw-task6
+applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
+last_verified: '2026-04-21'
+last_verified_against: AOSP android-14.0.0_r1
 confidence: medium
 sources:
-  - type: blog
-    path: "Obsidian/Cubox/ANR-实例分析-启动应用失败-2024-12-18.md"
-  - type: blog
-    path: "Obsidian/Cubox/ANR-实例分析-Input dispatching timed out-2024-12-18.md"
-  - type: blog
-    path: "Obsidian/Cubox/ANR-实例分析-负载过高-2024-12-18.md"
-  - type: blog
-    path: "Obsidian/Cubox/今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md"
-  - type: blog
-    path: "Obsidian/Cubox/疑难ANR原因分析-冻结导致直播讲解相关完整笔记-2025-02-22.md"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/SharedPreferencesImpl.java"
-  - type: aosp
-    path: "frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp"
-  - type: aosp
-    path: "frameworks/native/libs/binder/ProcessState.cpp"
-tags: ['anr', 'case-study', 'input-dispatching', 'sharedpreferences', 'system-load', 'binder', 'process-freeze', 'deadlock', 'lock-ordering', 'synchronized']
-related_chapters: ["9.1", "9.2", "9.3", "9.4", "1.4"]
-pipeline_stage: task2b_pending
+- type: blog
+  path: Obsidian/Cubox/ANR-实例分析-启动应用失败-2024-12-18.md
+- type: blog
+  path: Obsidian/Cubox/ANR-实例分析-Input dispatching timed out-2024-12-18.md
+- type: blog
+  path: Obsidian/Cubox/ANR-实例分析-负载过高-2024-12-18.md
+- type: blog
+  path: Obsidian/Cubox/今日头条 ANR 优化实践系列 - 告别 SharedPreference 等待-2023-12-20.md
+- type: blog
+  path: Obsidian/Cubox/疑难ANR原因分析-冻结导致直播讲解相关完整笔记-2025-02-22.md
+- type: aosp
+  path: frameworks/base/core/java/android/app/SharedPreferencesImpl.java
+- type: aosp
+  path: frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp
+- type: aosp
+  path: frameworks/native/libs/binder/ProcessState.cpp
+tags:
+- anr
+- case-study
+- input-dispatching
+- sharedpreferences
+- system-load
+- binder
+- process-freeze
+- deadlock
+- lock-ordering
+- synchronized
+related_chapters:
+- '9.1'
+- '9.2'
+- '9.3'
+- '9.4'
+- '1.4'
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: pending
 task2b_result: fixed
-task9_result: needs-rework
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-05"
-last_task9_at: "2026-05-05T18:55:00+08:00"
-review_notes: "2026-05-05 task6 revisiting: pass-light-edit。小修18处（代码块语言、I/O术语统一、口语化表达、填充词）。无新增B类问题；既有Task9技术项已由Task2B完成，待Task9复审。 | 2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task 2B 回炉。 | 2026-05-05 task9 deep-review: needs-rework。P0 2，P1 1，P2 0；需回炉校正 InputDispatcher freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。"
+task9_result: ''
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-05'
+last_task9_at: '2026-05-05T18:55:00+08:00'
+review_notes: '2026-05-05 task6 revisiting: pass-light-edit。小修18处（代码块语言、I/O术语统一、口语化表达、填充词）。无新增B类问题；既有Task9技术项已由Task2B完成，待Task9复审。
+  | 2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task
+  2B 回炉。 | 2026-05-05 task9 deep-review: needs-rework。P0 2，P1 1，P2 0；需回炉校正 InputDispatcher
+  freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。'
 ---
+
 # 案例集
 
 > **阅读本章前，你需要了解：** §9.1 ANR 的设计思想、§9.2 ANR 类型与触发条件、§9.3 ANR 分析方法论、§9.4 特殊场景的 ANR。

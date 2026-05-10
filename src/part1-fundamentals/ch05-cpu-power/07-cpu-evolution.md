@@ -1,83 +1,86 @@
 ---
-title: "CPU 相关的版本演进"
-chapter: "5.7"
-section: "5.7"
+title: CPU 相关的版本演进
+chapter: '5.7'
+section: '5.7'
 status: ready-for-review
-applicable_versions: "Android 5.0 - Android 17"
-last_verified: "2026-04-29"
-last_verified_against: "developer.android.com + source.android.com + AOSP android-16.0.0_r1 + android15-6.6.98_r00 + Arm MTE docs"
+applicable_versions: Android 5.0 - Android 17
+last_verified: '2026-04-29'
+last_verified_against: developer.android.com + source.android.com + AOSP android-16.0.0_r1
+  + android15-6.6.98_r00 + Arm MTE docs
 confidence: medium
 sources:
-  - type: official
-    path: "developer.android.com/about/versions/marshmallow/android-6.0-changes"
-  - type: official
-    path: "developer.android.com/about/versions/pie/power"
-  - type: official
-    path: "developer.android.com/about/versions/12/behavior-changes-12"
-  - type: official
-    path: "developer.android.com/develop/background-work/services/alarms"
-  - type: official
-    path: "developer.android.com/about/versions/15/behavior-changes-all"
-  - type: official
-    path: "source.android.com/docs/core/power"
-  - type: official
-    path: "source.android.com/docs/core/perf/cgroups"
-  - type: blog
-    path: "ARM documentation - Energy Aware Scheduling"
-  - type: aosp
-    path: "platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/usage/UsageStatsManager.java"
-  - type: aosp
-    path: "platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
-  - type: aosp
-    path: "platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
-  - type: aosp
-    path: "platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
-  - type: aosp
-    path: "platform/system/core/+/android-16.0.0_r1/libprocessgroup/profiles/task_profiles.json"
-  - type: aosp
-    path: "platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/PerformanceHintManager.java"
-  - type: official
-    path: "developer.android.com/ndk/guides/arm-mte"
-  - type: official
-    path: "source.android.com/docs/security/test/memory-safety/arm-mte"
-  - type: aosp
-    path: "kernel/common/+/refs/tags/android15-6.6.98_r00/include/trace/hooks/sched.h"
+- type: official
+  path: developer.android.com/about/versions/marshmallow/android-6.0-changes
+- type: official
+  path: developer.android.com/about/versions/pie/power
+- type: official
+  path: developer.android.com/about/versions/12/behavior-changes-12
+- type: official
+  path: developer.android.com/develop/background-work/services/alarms
+- type: official
+  path: developer.android.com/about/versions/15/behavior-changes-all
+- type: official
+  path: source.android.com/docs/core/power
+- type: official
+  path: source.android.com/docs/core/perf/cgroups
+- type: blog
+  path: ARM documentation - Energy Aware Scheduling
+- type: aosp
+  path: platform/frameworks/base/+/android-16.0.0_r1/core/java/android/app/usage/UsageStatsManager.java
+- type: aosp
+  path: platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java
+- type: aosp
+  path: platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
+- type: aosp
+  path: platform/frameworks/base/+/android-16.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
+- type: aosp
+  path: platform/system/core/+/android-16.0.0_r1/libprocessgroup/profiles/task_profiles.json
+- type: aosp
+  path: platform/frameworks/base/+/android-16.0.0_r1/core/java/android/os/PerformanceHintManager.java
+- type: official
+  path: developer.android.com/ndk/guides/arm-mte
+- type: official
+  path: source.android.com/docs/security/test/memory-safety/arm-mte
+- type: aosp
+  path: kernel/common/+/refs/tags/android15-6.6.98_r00/include/trace/hooks/sched.h
 tags:
-  - android
-  - power
-  - cpu-scheduling
-  - doze
-  - eas
-  - job-scheduler
-  - gki
-
+- android
+- power
+- cpu-scheduling
+- doze
+- eas
+- job-scheduler
+- gki
 polish_count: 1
-drafted_date: "2026-04-01"
+drafted_date: '2026-04-01'
 related_chapters:
-  - "5.2 EAS 能量感知调度"
-  - "5.6 Android 功耗管理"
-  - "5.8 后台执行限制与优化"
-repaired_date: "2026-04-30"
-repaired_by: "openclaw-task2b"
-rework_type: "review回炉修复(Task9/External 问题单)"
-
-reviewed_date: "2026-05-05"
+- 5.2 EAS 能量感知调度
+- 5.6 Android 功耗管理
+- 5.8 后台执行限制与优化
+repaired_date: '2026-04-30'
+repaired_by: openclaw-task2b
+rework_type: review回炉修复(Task9/External 问题单)
+reviewed_date: '2026-05-05'
 reviewed_by: openclaw-task6
-task6_reviewed_date: "2026-05-05"
+task6_reviewed_date: '2026-05-05'
 task6_result: pass-light-edit
 task6_state: reviewed
-last_task2b_at: "2026-04-30T10:46:19+08:00"
-review_notes: "2026-05-05 Task6：去重 frontmatter，修正 L1 填充词/元引导与少量中英文间距；L1/L2 通过，等待 Task9 复审技术项。"
-task9_result: needs-rework
-task9_state: reviewed
+last_task2b_at: '2026-04-30T10:46:19+08:00'
+review_notes: 2026-05-05 Task6：去重 frontmatter，修正 L1 填充词/元引导与少量中英文间距；L1/L2 通过，等待 Task9
+  复审技术项。
+task9_result: ''
+task9_state: pending
 task2b_state: pending
 task2b_result: pending
-pipeline_stage: task2b_pending
-task9_reviewed_date: "2026-05-05"
+pipeline_stage: task9_pending
+task9_reviewed_date: '2026-05-05'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-05T01:36:09+08:00"
-task9_review_notes: "2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。；2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。需 Task2B 回炉。；2026-05-05 01:36 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；详见 logs/deep-review/2026-05-05-01-deep-review.md。"
+last_task9_at: '2026-05-05T01:36:09+08:00'
+task9_review_notes: '2026-04-28 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0。；2026-04-29
+  task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。需 Task2B 回炉。；2026-05-05 01:36
+  task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；详见 logs/deep-review/2026-05-05-01-deep-review.md。'
 ---
+
 
 
 
