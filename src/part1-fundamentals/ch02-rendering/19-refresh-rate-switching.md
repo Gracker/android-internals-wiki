@@ -383,6 +383,7 @@ App 侧公开 API 没有直接暴露刷新率字段。`Choreographer.VsyncCallba
 | Android 16 公开接口 | `Display.hasArrSupport()`、`Display.getSuggestedFrameRate()`、`Display.getSupportedRefreshRates()` 让 App 能直接读取设备能力和系统建议值 |
 | Android 16 | `VsyncModulator` 采用 `std::atomic` 管理 VSync phase offset，消除 Binder 线程与 VSync 线程间的锁竞争，实现相位切换的确定性 |
 | Android 17 | 缩减 SurfaceFlinger `mGlobalLock` 范围并引入 DeliQueue，副屏刷新率切换不再干扰主屏渲染节奏，实现多屏"性能主权隔离" |
+| Android 16 | 16KB 页面大小推广，图形缓冲区分配需考虑页对齐影响 |
 | AndroidX / Compose | RecyclerView 1.4、AndroidX core 1.15、Compose `preferredFrameRate()` 把滚动和局部动画的 ARR 适配放到更高层 API 里 |
 
 ## 与其他机制的关系
