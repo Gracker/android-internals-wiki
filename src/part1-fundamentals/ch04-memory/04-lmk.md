@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: Low Memory Killer
 section: '4.4'
 chapter: '4.4'
@@ -9,7 +9,7 @@ reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
 task9_state: reviewed
-pipeline_stage: task2b_pending
+pipeline_stage: ready-to-publish
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
@@ -69,6 +69,7 @@ task2b_fixed_by: openclaw-task2b
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 ---
+
 
 
 # Low Memory Killer

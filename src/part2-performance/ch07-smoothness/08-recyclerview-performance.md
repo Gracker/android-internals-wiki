@@ -1,53 +1,71 @@
 ---
-title: "RecyclerView 列表滑动性能深度优化"
-chapter: "7.8"
-section: "7.8"
+title: RecyclerView 列表滑动性能深度优化
+chapter: '7.8'
+section: '7.8'
 status: ready-for-review
-applicable_versions: "Android 5.0 (API 21) - Android 17 (API 37)"
-tags: [recyclerview, scrolling, jank, prefetch, diffutil, nested-scrolling, arr, viewholder, viewcache, gapworker]
-related_chapters: ["7.1", "7.2", "7.4", "7.5", "2.4", "2.18", "9.4"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-06"
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
-last_verified: "2026-04-12"
-last_verified_against: "AOSP android-17.0.0_r3 + AndroidX androidx-main + AOSP android-16.0.0_r1"
+applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
+tags:
+- recyclerview
+- scrolling
+- jank
+- prefetch
+- diffutil
+- nested-scrolling
+- arr
+- viewholder
+- viewcache
+- gapworker
+related_chapters:
+- '7.1'
+- '7.2'
+- '7.4'
+- '7.5'
+- '2.4'
+- '2.18'
+- '9.4'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-06'
+drafted_date: '2026-04-06'
+drafted_by: openclaw-task2a
+last_verified: '2026-04-12'
+last_verified_against: AOSP android-17.0.0_r3 + AndroidX androidx-main + AOSP android-16.0.0_r1
 confidence: medium
 polish_count: 1
-polish_date: "2026-04-08"
-polish_by: "task2b-polish"
-reviewed_date: "2026-05-03"
-reviewed_by: "openclaw-task6"
+polish_date: '2026-04-08'
+polish_by: task2b-polish
+reviewed_date: '2026-05-03'
+reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 sources:
-  - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java"
-  - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java"
-  - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/LinearLayoutManager.java"
-  - type: androidx
-    path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java"
-  - type: aosp
-    path: "platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/View.java"
-  - type: aosp
-    path: "platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java"
-  - type: official
-    path: "https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView"
-  - type: official
-    path: "https://developer.android.com/jetpack/androidx/releases/recyclerview"
-pipeline_stage: task2b_pending
+- type: androidx
+  path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java
+- type: androidx
+  path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/GapWorker.java
+- type: androidx
+  path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/LinearLayoutManager.java
+- type: androidx
+  path: platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/DiffUtil.java
+- type: aosp
+  path: platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/View.java
+- type: aosp
+  path: platform/frameworks/base/+/android-16.0.0_r1/core/java/android/view/Display.java
+- type: official
+  path: https://developer.android.com/reference/androidx/recyclerview/widget/RecyclerView
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/recyclerview
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
-task9_result: needs-rework
+task9_state: pending
+task9_result: ''
 task2b_state: pending
 task2b_result: fixed
-last_task9_at: "2026-05-03T13:11:19+08:00"
-task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: "2026-05-03"
-review_notes: "2026-05-03 task9 deep-review: needs-rework。P0 2；P1 1；源码/API/数据口径需回炉，已写入 queue.json。"
-
+last_task9_at: '2026-05-03T13:11:19+08:00'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-03'
+review_notes: '2026-05-03 task9 deep-review: needs-rework。P0 2；P1 1；源码/API/数据口径需回炉，已写入
+  queue.json。'
 ---
+
 
 # 7.8 RecyclerView 列表滑动性能深度优化
 

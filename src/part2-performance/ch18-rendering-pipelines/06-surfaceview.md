@@ -1,34 +1,58 @@
 ---
-title: "SurfaceView 直出路径"
-section: "18.6"
-chapter: "18.6"
-applicable_versions: "Android 1.0 (API 1) - Android 17 (API 37)"
-tags: ["SurfaceView", "BLAST", "SurfaceFlinger", "HWC", "Direct-Producer", "独立Layer", "Overlay", "渲染路径"]
-related_chapters: ["2.1", "2.6", "2.13", "2.14", "18.1", "18.7", "18.8", "18.9"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
-task2b_state: "fixed"
-task9_result: "needs-rework"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-06T02:28:51+08:00"
-task9_reviewed_date: "2026-05-06"
+title: SurfaceView 直出路径
+section: '18.6'
+chapter: '18.6'
+applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
+tags:
+- SurfaceView
+- BLAST
+- SurfaceFlinger
+- HWC
+- Direct-Producer
+- 独立Layer
+- Overlay
+- 渲染路径
+related_chapters:
+- '2.1'
+- '2.6'
+- '2.13'
+- '2.14'
+- '18.1'
+- '18.7'
+- '18.8'
+- '18.9'
+created_by: rendering-pipelines-merge
+created_date: '2026-04-09'
+task2b_state: fixed
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-06T02:28:51+08:00'
+task9_reviewed_date: '2026-05-06'
 task2b_result: fixed
-task2b_rework_date: "2026-04-20"
-task2b_fixed_at: "2026-04-26T13:40:00+08:00"
-last_task2b_at: "2026-05-07T09:42:00+08:00"
+task2b_rework_date: '2026-04-20'
+task2b_fixed_at: '2026-04-26T13:40:00+08:00'
+last_task2b_at: '2026-05-07T09:42:00+08:00'
 rework_by: openclaw-task2b
-rework_type: "review回炉修复（External 问题单）"
-status: "ready-for-review"
-pipeline_stage: ready-for-review
-task6_state: "reviewed"
-task6_result: "pass-light-edit"
-task9_state: "reviewed"
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-05-06"
-task6_reviewed_date: "2026-05-06"
-last_task6_at: "2026-05-06T02:06:00+08:00"
-review_notes: "2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST 创建路径缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理 L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。Android 16 低延迟输入 API 断言未在 AOSP Window/ViewRootImpl 找到，现代 SurfaceView 首帧/WMS 路径仍有旧模型残留；已写入 queue P95，交 Task2B 回炉。 | 2026-05-06T01:46:24+08:00 Task2B：P0 删除不存在的 setPreferLowLatencyInput API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。 | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；按技术写作词库统一术语为“路径”，清理夸张/填充表达 4 处；无新增 L3/L4 回炉项，送 Task9 复审。"
+rework_type: review回炉修复（External 问题单）
+status: finalized
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task6_result: pass-light-edit
+task9_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-06'
+task6_reviewed_date: '2026-05-06'
+last_task6_at: '2026-05-06T02:06:00+08:00'
+review_notes: '2026-04-28 task9 deep-review: needs-rework。P1 1：现代 SurfaceView SurfaceControl/BLAST
+  创建路径缺失且 WMS 表述需标版本边界；P2 4 写入 suggestions。 | 2026-05-06 Task6 01:05：Task2B 修复后写作复审，清理
+  L1/L2 表达与格式；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 Task9 01:28：needs-rework。Android
+  16 低延迟输入 API 断言未在 AOSP Window/ViewRootImpl 找到，现代 SurfaceView 首帧/WMS 路径仍有旧模型残留；已写入
+  queue P95，交 Task2B 回炉。 | 2026-05-06T01:46:24+08:00 Task2B：P0 删除不存在的 setPreferLowLatencyInput
+  API，改为四段输入延迟分析；P1 首帧延迟按 Android 10-/11+ 版本拆开；P1 Producer Thread Choreographer 按视频/Camera/游戏三类限定。
+  | 2026-05-06 Task6 02:06：Task2B 修复后写作复审；按技术写作词库统一术语为“路径”，清理夸张/填充表达 4 处；无新增 L3/L4
+  回炉项，送 Task9 复审。'
 ---
+
 
 # SurfaceView 直出路径
 

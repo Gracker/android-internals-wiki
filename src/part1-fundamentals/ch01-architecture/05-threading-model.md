@@ -1,9 +1,8 @@
 ---
-
-task9_result: needs-rework
-task9_reviewed_date: "2026-05-04"
+task9_result: ''
+task9_reviewed_date: '2026-05-04'
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-04T16:20:00+08:00"
+last_task9_at: '2026-05-04T16:20:00+08:00'
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
@@ -71,15 +70,17 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '5.1'
-pipeline_stage: task2b_pending
+pipeline_stage: task9_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task2b_state: pending
-last_task2b_at: "2026-05-04T15:49:22"
+last_task2b_at: '2026-05-04T15:49:22'
 task2b_result: fixed
-task9_review_notes: "2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0；详见 logs/deep-review/2026-05-04-16-deep-review.md。"
+task9_review_notes: '2026-05-04 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 0；详见
+  logs/deep-review/2026-05-04-16-deep-review.md。'
 ---
+
 
 
 # 线程模型

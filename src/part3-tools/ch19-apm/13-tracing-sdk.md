@@ -1,67 +1,62 @@
 ---
-{
-  "title": "androidx.tracing（Tracing SDK）",
-  "chapter": "19",
-  "section": "19.13",
-  "status": "ready-for-review",
-  "drafted_date": "2026-04-24",
-  "drafted_by": "codex",
-  "applicable_versions": "Android 8 (API 26) - Android 17 (API 37)",
-  "last_verified": "2026-04-24",
-  "last_verified_against": "Android tracing docs / AndroidX tracing reference / JankStats docs / Macrobenchmark docs / NDK tracing docs",
-  "confidence": "medium",
-  "tags": [
-    "apm"
-  ],
-  "related_chapters": [
-    "19.0"
-  ],
-  "sources": [
-    {
-      "type": "official",
-      "path": "https://developer.android.com/topic/performance/tracing"
-    },
-    {
-      "type": "official",
-      "path": "https://developer.android.com/reference/androidx/tracing/package-summary"
-    },
-    {
-      "type": "official",
-      "path": "https://developer.android.com/topic/performance/jankstats"
-    },
-    {
-      "type": "official",
-      "path": "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
-    },
-    {
-      "type": "official",
-      "path": "https://developer.android.com/ndk/reference/group/tracing"
-    },
-    {
-      "type": "official",
-      "path": "https://developer.android.com/jetpack/androidx/releases/tracing"
-    }
-  ],
-  "pipeline_stage": "task2b_pending",
-  "task6_state": "reviewed",
-  "task9_state": "reviewed",
-  "task2b_state": "pending",
-  "reviewed_by": "openclaw-task6",
-  "reviewed_date": "2026-05-07",
-  "task6_result": "pass-light-edit",
-  "task9_result": "needs-rework",
-  "task9_reviewed_date": "2026-05-08",
-  "task9_reviewed_by": "openclaw-task9",
-  "last_task9_at": "2026-05-08T00:28:41+08:00",
-  "task2b_result": "fixed",
-  "last_task2b_at": "2026-05-07T21:47:07+08:00",
-  "repaired_date": "2026-04-25",
-  "repaired_by": "openclaw-task2b",
-  "task9_review_notes": "2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5 / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice 未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。 | 2026-05-07 21:27 Task9 deep-review: needs-rework。P0 1 / P1 3 / P2 0。Top: API31+ tracing 内联/JNI 路径事实错误；协程修正示例仍可能跨挂起点或阻塞主线程；executor/mainHandler 示例异常路径仍可能遗留 async span。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 0 / P1 2 / P2 1。Top: AndroidX Tracing 版本表混淆平台 API 与 AndroidX compat，协程 async 示例仍有取消路径不闭合。",
-  "task6_review_notes": "2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion. | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由 Task9 复审。 | 2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知技术风险继续交 Task9 复审，未自动晋升。",
-  "last_task6_at": "2026-05-07T22:11:39+08:00"
-}
+title: androidx.tracing（Tracing SDK）
+chapter: '19'
+section: '19.13'
+status: ready-for-review
+drafted_date: '2026-04-24'
+drafted_by: codex
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+last_verified: '2026-04-24'
+last_verified_against: Android tracing docs / AndroidX tracing reference / JankStats
+  docs / Macrobenchmark docs / NDK tracing docs
+confidence: medium
+tags:
+- apm
+related_chapters:
+- '19.0'
+sources:
+- type: official
+  path: https://developer.android.com/topic/performance/tracing
+- type: official
+  path: https://developer.android.com/reference/androidx/tracing/package-summary
+- type: official
+  path: https://developer.android.com/topic/performance/jankstats
+- type: official
+  path: https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview
+- type: official
+  path: https://developer.android.com/ndk/reference/group/tracing
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/tracing
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-07'
+task6_result: pass-light-edit
+task9_result: ''
+task9_reviewed_date: '2026-05-08'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-08T00:28:41+08:00'
+task2b_result: fixed
+last_task2b_at: '2026-05-07T21:47:07+08:00'
+repaired_date: '2026-04-25'
+repaired_by: openclaw-task2b
+task9_review_notes: '2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P1 5
+  / P2 3。Top: 4.1 MemoryLimiter 误写为 PSS/exit reason；8.4 FragmentManager 自动 trace slice
+  未证实；19.13 协程 async trace 示例不可编译且异常路径不闭合。 | 2026-05-07 21:27 Task9 deep-review: needs-rework。P0
+  1 / P1 3 / P2 0。Top: API31+ tracing 内联/JNI 路径事实错误；协程修正示例仍可能跨挂起点或阻塞主线程；executor/mainHandler
+  示例异常路径仍可能遗留 async span。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 0
+  / P1 2 / P2 1。Top: AndroidX Tracing 版本表混淆平台 API 与 AndroidX compat，协程 async 示例仍有取消路径不闭合。'
+task6_review_notes: '2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task
+  2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean.
+  Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion.
+  | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由
+  Task9 复审。 | 2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知技术风险继续交
+  Task9 复审，未自动晋升。'
+last_task6_at: '2026-05-07T22:11:39+08:00'
 ---
+
 
 # androidx.tracing（Tracing SDK）
 

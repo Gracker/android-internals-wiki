@@ -1,32 +1,54 @@
 ---
-title: "SurfaceControl API 深入"
-chapter: "18.10"
-section: "18.10"
+title: SurfaceControl API 深入
+chapter: '18.10'
+section: '18.10'
 status: ready-for-review
-applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
-tags: ["SurfaceControl", "ASurfaceControl", "ASurfaceTransaction", "NDK", "layer-hierarchy", "FrameTimeline", "atomicity", "AHardwareBuffer"]
-related_chapters: ["2.6", "2.13", "2.16", "18.2", "18.6", "18.9", "18.13"]
-created_by: "rendering-pipelines-merge"
-created_date: "2026-04-09"
-last_task2b_at: "2026-05-06T19:28:51+08:00"
-pipeline_stage: task2b_pending
+applicable_versions: Android 10 (API 29) - Android 16 (API 36)
+tags:
+- SurfaceControl
+- ASurfaceControl
+- ASurfaceTransaction
+- NDK
+- layer-hierarchy
+- FrameTimeline
+- atomicity
+- AHardwareBuffer
+related_chapters:
+- '2.6'
+- '2.13'
+- '2.16'
+- '18.2'
+- '18.6'
+- '18.9'
+- '18.13'
+created_by: rendering-pipelines-merge
+created_date: '2026-04-09'
+last_task2b_at: '2026-05-06T19:28:51+08:00'
+pipeline_stage: task9_pending
 task6_state: reviewed
-task9_state: reviewed
+task9_state: pending
 task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-06"
-last_task9_at: "2026-05-06T19:57:05+08:00"
+reviewed_date: '2026-05-06'
+last_task9_at: '2026-05-06T19:57:05+08:00'
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: ''
 task2b_result: pending
-task9_reviewed_date: "2026-05-06"
+task9_reviewed_date: '2026-05-06'
 task9_reviewed_by: openclaw-task9
-task9_review_notes: "2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。 | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。"
-last_task6_at: "2026-05-06T08:15:00+08:00"
-task6_review_notes: "2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作 L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。"
-last_task9_review_log: "logs/deep-review/2026-05-06-19-deep-review.md"
-review_notes: "2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface 消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto 错误；L666-L668 交叉链接断链。"
+task9_review_notes: '2026-05-06 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 0。
+  | 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface
+  消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto
+  错误；L666-L668 交叉链接断链。'
+last_task6_at: '2026-05-06T08:15:00+08:00'
+task6_review_notes: '2026-05-06 task6 revisiting review 08:15: pass-light-edit。清理禁用词、文稿编辑痕迹和引用措辞；写作
+  L1/L2 通过。保留 Task9 已投递 P95 技术回炉项，未重复写入 queue。'
+last_task9_review_log: logs/deep-review/2026-05-06-19-deep-review.md
+review_notes: 2026-05-06 19:57 Task9：needs-rework。P0 2 / P1 2 / P2 1。L627 FramebufferSurface
+  消费路径；L583 buffer_handle_t/fence 边界；L603-L606 Gralloc5/AIDL 版本链；L649-L654 源码索引/proto
+  错误；L666-L668 交叉链接断链。
 ---
+
 
 <!-- outline-start -->
 

@@ -1,74 +1,89 @@
 ---
-title: "系统级功耗优化"
-chapter: "11.3"
+title: 系统级功耗优化
+chapter: '11.3'
 status: ready-for-review
-section: "11.3"
-drafted_date: "2026-04-03"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 6.0 (API 23) - Android 16 (API 36)"
-last_verified: "2026-04-20"
-last_verified_against: "AOSP android-16.0.0_r1, Android Developers Doze / location / foreground service docs"
+section: '11.3'
+drafted_date: '2026-04-03'
+drafted_by: openclaw-task2a
+applicable_versions: Android 6.0 (API 23) - Android 16 (API 36)
+last_verified: '2026-04-20'
+last_verified_against: AOSP android-16.0.0_r1, Android Developers Doze / location
+  / foreground service docs
 polish_count: 1
-polish_date: "2026-04-05"
-polish_by: "task2b-polish"
+polish_date: '2026-04-05'
+polish_by: task2b-polish
 rework_count: 3
-rework_date: "2026-05-07"
-rework_by: "task2b-rework"
+rework_date: '2026-05-07'
+rework_by: task2b-rework
 confidence: medium
 sources:
-  - type: official
-    path: "https://developer.android.com/training/monitoring-device-state/doze-standby"
-  - type: official
-    path: "https://developer.android.com/topic/performance/appstandby"
-  - type: official
-    path: "https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket"
-  - type: official
-    path: "https://developer.android.com/guide/components/activities/background-starts"
-  - type: official
-    path: "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
-  - type: official
-    path: "https://developer.android.com/training/location/background"
-  - type: official
-    path: "https://source.android.com/docs/core/power"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
-  - type: aosp
-    path: "frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java"
-  - type: aosp
-    path: "frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
-  - type: aosp
-    path: "frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/app/ActivityOptions.java"
-  - type: aosp
-    path: "frameworks/base/core/java/android/os/PowerManager.java"
-  - type: official
-    path: "https://dontkillmyapp.com/"
-tags: ['doze', 'standby', 'battery-saver', 'background-restriction', 'oem-power', 'adaptive-battery', 'foreground-service']
-related_chapters: ["5.6", "11.1", "11.2", "1.3", "4.4"]
+- type: official
+  path: https://developer.android.com/training/monitoring-device-state/doze-standby
+- type: official
+  path: https://developer.android.com/topic/performance/appstandby
+- type: official
+  path: https://developer.android.com/topic/performance/power/power-details#app-stdby-bucket
+- type: official
+  path: https://developer.android.com/guide/components/activities/background-starts
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+- type: official
+  path: https://developer.android.com/training/location/background
+- type: official
+  path: https://source.android.com/docs/core/power
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java
+- type: aosp
+  path: frameworks/base/services/usage/java/com/android/server/usage/UsageStatsService.java
+- type: aosp
+  path: frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/power/PowerManagerService.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityOptions.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/PowerManager.java
+- type: official
+  path: https://dontkillmyapp.com/
+tags:
+- doze
+- standby
+- battery-saver
+- background-restriction
+- oem-power
+- adaptive-battery
+- foreground-service
+related_chapters:
+- '5.6'
+- '11.1'
+- '11.2'
+- '1.3'
+- '4.4'
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-06"
+reviewed_date: '2026-05-06'
 task6_result: pass-light-edit
 task6_state: reviewed
-last_task2b_at: "2026-04-26T10:41:09+08:00"
-repaired_date: "2026-04-26"
-repaired_by: "openclaw-task2b"
-last_task6_at: "2026-05-06T22:05:00+08:00"
-last_task6_review_log: "logs/review/2026-05-06-22-review.md"
-review_notes: "2026-05-06 task6 re-review (revisiting): pass-light-edit。修复 frontmatter 分隔符、L1 禁用/高风险词与中英文术语；无新增 L3/L4 回炉项，等待 Task9 复审。"
+last_task2b_at: '2026-04-26T10:41:09+08:00'
+repaired_date: '2026-04-26'
+repaired_by: openclaw-task2b
+last_task6_at: '2026-05-06T22:05:00+08:00'
+last_task6_review_log: logs/review/2026-05-06-22-review.md
+review_notes: '2026-05-06 task6 re-review (revisiting): pass-light-edit。修复 frontmatter
+  分隔符、L1 禁用/高风险词与中英文术语；无新增 L3/L4 回炉项，等待 Task9 复审。'
 review_round: 4
-pipeline_stage: task2b_pending
-task9_state: reviewed
-task9_result: needs-rework
+pipeline_stage: task9_pending
+task9_state: pending
+task9_result: ''
 task2b_state: pending
-task9_reviewed_date: "2026-05-06"
-task9_reviewed_by: "openclaw-task9"
-last_task9_at: "2026-05-06T22:41:22+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-06-22-deep-review.md"
+task9_reviewed_date: '2026-05-06'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-06T22:41:22+08:00'
+last_task9_review_log: logs/deep-review/2026-05-06-22-deep-review.md
 ---
+
 
 # 系统级功耗优化
 
