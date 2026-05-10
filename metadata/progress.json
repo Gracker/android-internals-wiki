@@ -1,4 +1,8 @@
 {
+  "total": 263,
+  "draft": 58,
+  "ready-for-review": 55,
+  "finalized": 149,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-11",
   "task9_reviewed_by": "openclaw-task9",
@@ -35,6 +39,5 @@
       "p2": 1
     }
   },
-  "next_review_candidates": [],
-  "ready-for-review": 1
+  "next_review_candidates": []
 }
