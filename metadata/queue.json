@@ -3290,6 +3290,90 @@
       "status": "completed",
       "completed_at": "2026-05-10T09:44:53.194965+08:00",
       "completed_reason": "task2b fixed: queue entry section mismatch (filed as 2.11 but actual ucpu SQL bug is in 17.02/02-soc-differences.md). Fixed ucpu→cpu in Perfetto migration SQL query (line 169/179/180). Section 2.11 has zero SQL queries, confirmed not affected."
+    },
+    {
+      "section": "19-apm.23",
+      "section_title": "网络 APM 底层捕获原理",
+      "priority": 75,
+      "reason": "[Task 6 Review] L3/L4 写作质量问题",
+      "review_issues": [
+        {
+          "type": "L4",
+          "location": "活人感",
+          "detail": "发现多处形容词+冒号模式（AI-like），影响表达生动性",
+          "suggestion": "建议重写相关段落，使用更自然的表达方式"
+        }
+      ],
+      "added_by": "openclaw-task6",
+      "added_at": "2026-05-10T10:16:34.816058",
+      "status": "completed",
+      "task6_reviewed_at": "2026-05-10T10:16:34.816065",
+      "task6_reviewed_by": "openclaw-task6",
+      "completed_at": "2026-05-10T10:26:46+08:00",
+      "completed_reason": "task2b fixed: L405 形容词+冒号模式修正(eBPF价值评价→直接陈述能力), L393 修正(局限明确→局限需要清楚)"
+    },
+    {
+      "section": "19-apm.26",
+      "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "priority": 75,
+      "reason": "[Task 6 Review] L3/L4 写作质量问题",
+      "review_issues": [
+        {
+          "type": "L3",
+          "location": "内容深度",
+          "detail": "Flutter FrameTiming 时间戳归一化需要更精确的实现方案",
+          "suggestion": "建议补充具体的算法实现和边界条件处理"
+        }
+      ],
+      "added_by": "openclaw-task6",
+      "added_at": "2026-05-10T10:16:34.816479",
+      "status": "completed",
+      "task6_reviewed_at": "2026-05-10T10:16:34.816481",
+      "task6_reviewed_by": "openclaw-task6",
+      "completed_at": "2026-05-10T10:26:46+08:00",
+      "completed_reason": "task2b fixed: Flutter时间戳校准方案增强(三步校准算法、DateTime.now vs elapsedRealtime时钟差异说明、进程挂起边界处理、批量回调误差量化)"
+    },
+    {
+      "section": "08-responsiveness.08",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 75,
+      "reason": "[Task 6 Review] L3/L4 写作质量问题",
+      "review_issues": [
+        {
+          "type": "L3",
+          "location": "内容深度",
+          "detail": "MediaCodec 与 Surface 协同机制缺乏实际案例分析",
+          "suggestion": "建议增加典型场景下的配置参数和性能对比数据"
+        }
+      ],
+      "added_by": "openclaw-task6",
+      "added_at": "2026-05-10T10:16:34.816941",
+      "status": "completed",
+      "task6_reviewed_at": "2026-05-10T10:16:34.816943",
+      "task6_reviewed_by": "openclaw-task6",
+      "completed_at": "2026-05-10T10:26:46+08:00",
+      "completed_reason": "task2b fixed: 新增视频播放掉帧端到端排查案例(SurfaceView vs TextureView路径对比、acquire fence观测、HWC overlay条件), 修正L136真正填充词"
+    },
+    {
+      "section": "08-responsiveness.08",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 75,
+      "reason": "[Task 6 Review] L3/L4 写作质量问题",
+      "review_issues": [
+        {
+          "type": "L4",
+          "location": "活人感",
+          "detail": "多处抽象名词+形容词结构，表达过于学术化",
+          "suggestion": "使用更具体的动词和实例说明技术概念"
+        }
+      ],
+      "added_by": "openclaw-task6",
+      "added_at": "2026-05-10T10:16:34.816945",
+      "status": "completed",
+      "task6_reviewed_at": "2026-05-10T10:16:34.816945",
+      "task6_reviewed_by": "openclaw-task6",
+      "completed_at": "2026-05-10T10:26:46+08:00",
+      "completed_reason": "task2b fixed: 新增视频播放掉帧端到端排查案例(SurfaceView vs TextureView路径对比、acquire fence观测、HWC overlay条件), 修正L136真正填充词"
     }
   ],
   "completed": [

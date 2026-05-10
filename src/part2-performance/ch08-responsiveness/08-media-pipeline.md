@@ -1,49 +1,63 @@
 ---
-title: "Android 多媒体管线性能"
+applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: 8.8
-section: "8.8"
-status: ready-for-review
-drafted_date: "2026-04-06"
-drafted_by: "openclaw-task2a"
-applicable_versions: "Android 8 (API 26) - Android 17 (API 37)"
-last_verified: "2026-04-13"
-last_verified_against: "AOSP android-17.0.0_r1 + androidx/media release"
-reviewed_date: "2026-04-20"
-reviewed_by: "openclaw-task6"
-task6_result: pass-light-edit
-task9_result: needs-rework
-last_task2b_at: "2026-04-21T03:10:05+08:00"
-task2b_result: fixed
 confidence: medium
-sources:
-  - type: official
-    path: "https://developer.android.com/reference/android/media/MediaCodec"
-  - type: official
-    path: "https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio"
-  - type: official
-    path: "https://developer.android.com/jetpack/androidx/releases/media3"
-  - type: blog
-    path: "https://android-developers.googleblog.com/ (Media3 1.10 Release)"
-  - type: source
-    path: "https://github.com/androidx/media/blob/release/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/DefaultLoadControl.java"
-  - type: aosp
-    path: "frameworks/av/media/libstagefright/"
-  - type: aosp
-    path: "frameworks/av/services/audioflinger/"
-tags: [MediaCodec, Media3, Surface, AudioFlinger, 视频性能, 音频延迟, ExoPlayer]
-related_chapters: ["2.6", "2.13", "2.15", "2.16", "8.4", "14.9"]
-created_by: "task2a-knowledge-gap"
-created_date: "2026-04-06"
-gap_source: "AOSP结构+官方文档+读者需求"
-gap_score: "16/20"
+created_by: task2a-knowledge-gap
+created_date: '2026-04-06'
+drafted_by: openclaw-task2a
+drafted_date: '2026-04-06'
+gap_score: 16/20
+gap_source: AOSP结构+官方文档+读者需求
+last_task2b_at: '2026-05-10T10:26:46+08:00'
+last_task9_at: '2026-04-23T00:30:00+08:00'
+last_verified: '2026-04-13'
+last_verified_against: AOSP android-17.0.0_r1 + androidx/media release
 pipeline_stage: task6_pending
-task6_state: revisiting
-task9_state: pending
+related_chapters:
+- '2.6'
+- '2.13'
+- '2.15'
+- '2.16'
+- '8.4'
+- '14.9'
+reviewed_by: openclaw-task6
+reviewed_date: '2026-04-20'
+section: '8.8'
+sources:
+- path: https://developer.android.com/reference/android/media/MediaCodec
+  type: official
+- path: https://developer.android.com/ndk/guides/audio/aaudio/low-latency-audio
+  type: official
+- path: https://developer.android.com/jetpack/androidx/releases/media3
+  type: official
+- path: https://android-developers.googleblog.com/ (Media3 1.10 Release)
+  type: blog
+- path: https://github.com/androidx/media/blob/release/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/DefaultLoadControl.java
+  type: source
+- path: frameworks/av/media/libstagefright/
+  type: aosp
+- path: frameworks/av/services/audioflinger/
+  type: aosp
+status: ready-for-review
+tags:
+- MediaCodec
+- Media3
+- Surface
+- AudioFlinger
+- 视频性能
+- 音频延迟
+- ExoPlayer
+task2b_result: fixed
 task2b_state: fixed
-task9_reviewed_date: 2026-04-23
+task6_result: pass-light-edit
+task6_reviewed_at: '2026-05-10T10:17:22.880357'
+task6_reviewed_by: openclaw-task6
+task6_state: reviewed
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-23T00:30:00+08:00"
-
+task9_reviewed_date: 2026-04-23
+task9_state: pending
+title: Android 多媒体管线性能
 ---
 
 # 8.8 Android 多媒体管线性能
@@ -78,7 +92,7 @@ last_task9_at: "2026-04-23T00:30:00+08:00"
 
 理解这条管线的架构和性能特征，可以让我们在 Perfetto 中精准定位问题发生在哪个环节：是解码慢、渲染慢、还是合成慢？是音频 buffer 供给不上、还是 CPU 调度不够及时？本节的目标就是帮我们建立这种端到端的定位能力。
 
-多媒体相关的信息在 Perfetto 中分布在多个 track 上——MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动、Surface 渲染的帧时间线，后续章节会逐项拆解怎么对应到具体问题。
+多媒体相关的信息在 Perfetto 中分布在多个 track 上——MediaCodec 的编解码耗时、AudioFlinger 的 mixer 活动、Surface 渲染的帧时间线，后续章节会逐项分析怎么对应到具体问题。
 
 ## 多媒体管线架构全景
 
@@ -119,7 +133,7 @@ codec.configure(format, surface, null, 0);  // surface 参数开启 Surface 输�
 codec.start();
 ```
 
-这段代码里真正决定输出模型的是 `configure()` 的第二个参数。传入 `surface` 之后，解码器的 output buffer 不再以 `ByteBuffer` 暴露给 App，而是作为 `GraphicBuffer` 进入对应的图形队列。后续由谁消费，取决于这个 `surface` 来自哪里：`SurfaceView` 通常把帧交给 `SurfaceFlinger` / HWC，`TextureView` 背后则是 `SurfaceTexture`，帧会先被 App 的 `RenderThread` 当作外部纹理采样，再并入 UI 场景。若排查厂商编解码器兼容性，再用 `MediaCodecList` 或设备实际返回的 codec name 去锁定具体组件；直接写死 `OMX.qcom...` 只适合设备定向诊断，不能当跨设备范式。
+这段代码里决定输出模型的是 `configure()` 的第二个参数。传入 `surface` 之后，解码器的 output buffer 不再以 `ByteBuffer` 暴露给 App，而是作为 `GraphicBuffer` 进入对应的图形队列。后续由谁消费，取决于这个 `surface` 来自哪里：`SurfaceView` 通常把帧交给 `SurfaceFlinger` / HWC，`TextureView` 背后则是 `SurfaceTexture`，帧会先被 App 的 `RenderThread` 当作外部纹理采样，再并入 UI 场景。若排查厂商编解码器兼容性，再用 `MediaCodecList` 或设备实际返回的 codec name 去锁定具体组件；直接写死 `OMX.qcom...` 只适合设备定向诊断，不能当跨设备范式。
 
 [已验证: 官方文档, developer.android.com/reference/android/media/MediaCodec — Buffer Management]
 
@@ -165,7 +179,27 @@ codec.setCallback(new MediaCodec.Callback() {
 
 [已验证: 官方文档, source.android.com/docs/core/graphics — Explicit Sync]
 
-这条 fence 链确保了从硬件解码器到 GPU 合成再到显示控制器的整个流程不会出现竞态条件，同时也不引入额外的 CPU 等待开销，因为 fence 是在内核中以文件描述符的形式传递的，GPU 和显示控制器可以直接在硬件层面等待 fence signal，不需要 CPU 自旋。
+fence 链确保从硬件解码器到 GPU 合成再到显示控制器的整个流程不出现竞态条件，同时不引入额外的 CPU 等待开销——fence 在内核中以文件描述符的形式传递，GPU 和显示控制器直接在硬件层面等待 fence signal。
+
+### 案例：视频播放偶发掉帧的端到端定位
+
+一个典型的排查场景：用户反馈视频播放时偶发掉帧（非 rebuffering），Perfetto 里 decode slice 耗时正常，但 SurfaceFlinger 的 present fence 间隔出现不规则跳变。
+
+排查步骤：
+
+1. **确认 MediaCodec 输出路径**：检查 App 代码中 `codec.configure(format, surface, ...)` 传入的 `surface` 来源。如果是 `TextureView`，解码后的帧要经过 App 的 `RenderThread` 做纹理采样再交 SurfaceFlinger，多了一跳 GPU 处理。切换到 `SurfaceView` 可以去掉这一跳。
+
+2. **检查 SurfaceFlinger 的 composition type**：在 Perfetto 中搜索 `SurfaceFlinger` track，看视频 layer 的 composition 是 `DEVICE`（HWC overlay）还是 `GPU`（SurfaceFlinger 合成）。如果是 GPU 合成，说明 HWC 拒绝了 overlay——常见原因包括视频分辨率超出了 HWC overlay 支持的最大尺寸（部分低端 SoC overlay 上限是 1920×1080）、视频 layer 被其他半透明 layer 遮挡、或者色彩空间不匹配。
+
+3. **观察 acquire fence 耗时**：如果视频 layer 走的是 `DEVICE` composition，但仍然掉帧，在 Perfetto 中检查 acquire fence 的 signal 时间。如果 decode 完成到 fence signal 之间有异常延迟（例如 >8ms），可能是解码器内部排队或 GPU 后处理阻塞。此时需要查看 codec 进程（`mediacodec` 或 `omx`）的线程活动。
+
+4. **对比 SurfaceView vs TextureView**：同一个视频流，分别用两种容器播放，在 Perfetto 中对比：
+   - `SurfaceView`：帧从 codec output 直接到 SurfaceFlinger / HWC，`RenderThread` 不参与
+   - `TextureView`：帧经过 `SurfaceTexture` → App `RenderThread` GPU 纹理采样 → SurfaceFlinger
+
+   TextureView 路径下，如果 App 主线程同时在做 UI 操作（列表滚动、动画），`RenderThread` 可能因为 GPU 命令队列拥塞而延迟提交视频帧。表现为 Perfetto 中 `RenderThread` 的 `DrawFrame` slice 出现排队。
+
+5. **结论**：常规视频播放场景优先用 `SurfaceView`。需要 UI 变换（圆角、动画、叠加）时才用 `TextureView`，此时要确保 `RenderThread` 的 GPU 工作量不与视频帧提交竞争。
 
 ### Tunneled Video Playback：sideband 模式把显示交给 HWC
 
@@ -468,7 +502,7 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 - **Media3 1.8.0 (2025-07)**：引入实验性的动态调度开关 `experimentalSetDynamicSchedulingEnabled()`
 - **Media3 1.9.0 (2025-11)**：`media3-ui-compose` 提供 `ContentFrame` 和 `PlayerSurface`
 - **Android 15 (2025)**：dav1d 成为默认 AV1 软解引擎，解码效率提升约 3 倍；引入 Spatial Audio over BLE Audio
-- **Android 16 (Baklava, 2026)**：16KB 页面减少编解码大分辨率视频时的 TLB 抖动和内核态切换，提升 Codec2 处理 4K/8K 视频的吞吐量；Gralloc AIDL V2 的 additionalOptions 支持显式传递 16KB 对齐约束
+- **Android 16 (Baklava, 2026)**：16KB 页面减少编解码大分辨率视频时的 TLB 抖动和内核态切换，提升 Codec2 处理 4K/8K 视频的吞吐量；Gralloc AIDL V2 的 additionalOptions 支持显式传递 16KB 协调约束
 - **Media3 1.10.0 (2026-03)**：`media3-ui-compose-material3` 提供 `Player` composable 与一组 Material3 播放控件
 
 [待验证: low-latency decoding 在不同 SoC 上的支持情况]
