@@ -8,6 +8,12 @@ applicable_versions: "Android 17 (API 37)"
 last_verified: "2026-04-27"
 last_verified_against: "Android 17 behavior changes / API 36 JobScheduler pending reasons / API 37 JobScheduler reference / MessageQueue guidance / Activity configuration change guidance / static final reflection and JNI behavior"
 confidence: medium
+reviewed_date: "2026-05-10"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
@@ -120,7 +126,7 @@ Android Developers Blog 把公开数字分成三类，它们的测试前提并�
 | internal beta testers 的 Perfetto traces | App 主线程花在 lock contention 的时间减少 **15%** | 说明锁竞争本身下降 |
 | 同一批测试设备上的用户体验指标 | App missed frames **-4%**；System UI / Launcher missed frames **-7.7%**；启动到首帧 P95 **-9.1%** | 说明锁竞争下降已经传导到交互体验 |
 
-公开资料没有给出机型、脚本和 trace 附件，所以这组数字只能用来判断"Android 17 的新队列是否值得关注"。如果要回答"你的业务能拿到多少收益"，还是要在同一机型、同一 workload、同一 trace 配置下做 A/B。
+公开资料没有给出机型、脚本和 trace 附件，所以这组数字只能用来判断"Android 17 的新队列是否需要关注"。如果要回答"你的业务能拿到多少收益"，还是要在同一机型、同一 workload、同一 trace 配置下做 A/B。
 
 ### 适配要点
 

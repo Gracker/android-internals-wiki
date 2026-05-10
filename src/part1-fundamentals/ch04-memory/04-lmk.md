@@ -4,8 +4,12 @@ section: "4.4"
 chapter: "4.4"
 status: ready-for-review
 drafted_date: "2026-03-31"
-reviewed_date: "2026-05-01"
+reviewed_date: "2026-05-10"
 reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+pipeline_stage: "task6_pending"
 polish_count: 1
 polish_date: "2026-04-05"
 polish_by: "task2b-polish"

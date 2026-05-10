@@ -929,3 +929,123 @@ Android 12 的 `setInputWindows()` 是 Pull 模式（InputDispatcher 主动查�
 4. [Android12 Input子系统解析 - FranzKafka Blog](https://blog.coderfan.org/en/android12-input-event-dispatch-progress.html) — Android 12 `dispatchKeyLocked` 中 `isStaleEvent` 调用序列
 5. [InputFlinger directory - cs.android.com](https://cs.android.com/android/platform/superproject/+/master:frameworks/native/services/inputflinger/) — Android 12+ 目录重组结构
 6. [Analyze AOSP input architecture - utzcoz](https://utzcoz.github.io/2020/05/06/Analyze-AOSP-input-architecture.html) — InputReaderThread / InputDispatcherThread 调用关系
+
+
+<!-- AIW-源码调研-2026-05-10 -->
+## 源码调研补充：InputDispatcher 反压机制与降级策略
+
+基于 2026-05-10 的源码深度调研，以下是 InputDispatcher 反压机制与目标窗口无响应时的降级策略的具体实现细节：
+
+### 反压机制源码实现
+
+**文件**: `services/inputflinger/dispatcher/InputDispatcher.cpp`
+
+核心反压机制通过 Unix pipe 的 `WOULD_BLOCK` 状态自然实现：
+
+```cpp
+// 行 3760-3790: startDispatchCycleLocked 中的反压处理
+void InputDispatcher::startDispatchCycleLocked(nsecs_t currentTime,
+                                               const std::shared_ptr<Connection>& connection) {
+    while (connection->status == Connection::Status::NORMAL && !connection->outboundQueue.empty()) {
+        status_t status = connection->inputPublisher.publishKeyEvent(...);
+        if (status == WOULD_BLOCK) {
+            // Pipe is full and we are waiting for the app to finish process some events
+            if (DEBUG_DISPATCH_CYCLE) {
+                ALOGD("channel '%s' ~ Could not publish event because the pipe is full, "
+                      "waiting for the application to catch up",
+                      connection->getInputChannelName().c_str());
+            }
+            return; // Exit cycle, app is backpressured
+        }
+    }
+}
+```
+
+**关键数据结构**:
+- `mInboundQueue`: 输入事件队列，事件进入系统的入口
+- `connection->outboundQueue`: 待发布到应用的事件队列  
+- `connection->waitQueue`: 已发布但等待应用响应的事件队列
+- `AnrTracker`: 跟踪每个连接的超时状态
+
+### 无响应连接降级策略
+
+**文件**: `services/inputflinger/dispatcher/InputDispatcher.cpp`
+
+当连接无响应时的自动降级流程：
+
+```cpp
+// 行 6334-6390: onAnrLocked 中的降级处理
+void InputDispatcher::onAnrLocked(const std::shared_ptr<Connection>& connection) {
+    if (connection->waitQueue.empty()) {
+        // Recovery check: wait queue is empty, connection is responsive again
+        return;
+    }
+    // Mark connection as unresponsive and cancel events
+    processConnectionUnresponsiveLocked(connection);
+    cancelEventsForAnrLocked(connection, "channel is not responding");
+}
+```
+
+**降级机制特点**:
+1. **连接状态隔离**: 设置 `connection->responsive = false`，该连接不再参与新事件分发
+2. **事件取消**: 通过 `cancelEventsForAnrLocked` 取消等待队列中的所有事件
+3. **ANR 跟踪**: 从 `AnrTracker` 中移除该连接的跟踪条目，避免重复检测
+
+### 跨应用切换优化
+
+**文件**: `services/inputflinger/dispatcher/InputDispatcher.cpp`
+
+智能队列优化机制：
+
+```cpp
+// 行 1221-1255: shouldPruneInboundQueueLocked 的应用切换优化
+bool InputDispatcher::shouldPruneInboundQueueLocked(const MotionEntry& motionEntry) const {
+    const bool isPointerDownEvent = motionEntry.action == AMOTION_EVENT_ACTION_DOWN;
+    
+    if (isPointerDownEvent && mAwaitedFocusedApplication != nullptr) {
+        // Check if user touched a different application
+        if (touchedWindowHandle != nullptr &&
+            touchedWindowHandle->getApplicationToken() != mAwaitedFocusedApplication->getApplicationToken()) {
+            ALOGI("Pruning input queue because user touched a different application while waiting "
+                  "for %s", mAwaitedFocusedApplication->getName().c_str());
+            return true; // Drop preceding events for faster app switching
+        }
+    }
+    return false;
+}
+```
+
+**优化效果**: 当用户快速在不同应用间切换时，自动丢弃前序输入事件，避免因旧事件阻塞新应用的输入响应。
+
+### 全局事件同步机制
+
+**取消事件实现**:
+```cpp
+// 行 1433-1475: synthesizeCancelationEventsForConnectionLocked
+void InputDispatcher::synthesizeCancelationEventsForConnectionLocked(
+        const std::shared_ptr<Connection>& connection, const CancelationOptions& options,
+        const sp<WindowInfoHandle>& window) {
+    std::vector<std::unique_ptr<EventEntry>> cancelationEvents =
+            connection->inputState.synthesizeCancelationEvents(currentTime, options);
+    
+    for (size_t i = 0; i < cancelationEvents.size(); i++) {
+        std::unique_ptr<EventEntry> cancelationEventEntry = std::move(cancelationEvents[i]);
+        addWindowTargetLocked(window, InputTarget::DispatchMode::AS_IS,
+                              /*targetFlags=*/{}, cancelationEventEntry->downTime, targets);
+        enqueueDispatchEntryLocked(connection, std::move(cancelationEventEntry), targets[0]);
+    }
+}
+```
+
+**同步目的**: 确保所有连接对输入事件状态达成一致，防止数据不一致导致的 ANR 或处理错误。
+
+### 性能影响总结
+
+1. **内存管理**: `waitQueue` 长度控制避免内存泄漏，ANR 超时及时释放资源
+2. **响应速度**: `shouldPruneInboundQueueLocked` 优化减少跨应用切换延迟  
+3. **CPU 使用**: `processAnrsLocked` 定期检查（10ms 间隔）平衡检测开销和响应速度
+4. **事件丢失**: `WOULD_BACK` 机制通过队列转移保证数据完整性，避免事件丢失
+
+**完整报告**: [2026-05-10-inputdispatcher-backpressure.md](./DeepResearch/2026-05-10-inputdispatcher-backpressure.md)
+
+<!-- AIW-源码调研-2026-05-10 结束 -->
