@@ -1,6 +1,188 @@
 {
   "pending": [
     {
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误：ApplicationExitInfo 接口说明不完整",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "ApplicationExitInfo 接口说明",
+          "detail": "文档提到 API 30+ 支持 ApplicationExitInfo，但未说明具体的类路径和方法，实际应为 android.app.ApplicationExitInfo 及其相关方法如 setReason(), getPid() 等",
+          "suggestion": "补充完整的类引用：android.app.ApplicationExitInfo，并说明关键方法的使用示例"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：android:miscStackTraces 机制缺失",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "android:miscStackTraces 机制",
+          "detail": "文档提及该机制限制堆栈深度，但未解释具体的限制机制和阈值设置。ART虚拟机如何实现堆栈深度的管理和限制？",
+          "suggestion": "补充堆栈深度限制的实现原理：包括ShadowFrame的管理、最大深度计算方法、以及android:miscStackTraces属性的具体作用"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：ANR 触发机制缺失",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "ANR 触发机制",
+          "detail": "文档列出ANR超时阈值但未说明系统如何监控线程状态。InputDispatcher、ActiveServices等监控器的具体工作原理和实现缺失",
+          "suggestion": "补充监控器实现原理：InputDispatcher的事件循环监控、ActiveServices的Service状态轮询机制、以及ANR触发后的处理流程"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：OOM治理机制缺失",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "OOM治理机制",
+          "detail": "文档提到堆增量技术但未解释具体实现机制。Runtime.maxMemory()、Heap::AllocObjectWithAllocator()等底层逻辑的交互关系缺失",
+          "suggestion": "补充OOM治理的完整链路：Heap::AllocObjectWithAllocator()的分配逻辑、AllocateInternalWithGc()的GC触发机制、堆扩容的决策条件"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "20.2",
+      "section_title": "Java Crash 治理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误：Thread异常处理函数",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Thread::HandleUncaughtExceptions() 路径",
+          "detail": "文档引用Thread::HandleUncaughtExceptions()，但AOSP实际函数名为HandleUncaughtExceptions()，位于art/runtime/thread.cc，缺少Thread::前缀",
+          "suggestion": "修正为正确的函数引用：HandleUncaughtExceptions()，位于art/runtime/thread.cc"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "20.2",
+      "section_title": "Java Crash 治理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误：RuntimeInit初始化路径",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "RuntimeInit.commonInit() 路径",
+          "detail": "文档引用RuntimeInit.commonInit()但路径不完整，正确路径应为frameworks/base/core/java/com/android/internal/os/RuntimeInit.java:commonInit()",
+          "suggestion": "补充完整的包路径：com.android.internal.os.RuntimeInit.commonInit()"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "20.2",
+      "section_title": "Java Crash 治理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：异常检测时机机制",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "异常检测时机",
+          "detail": "文档未说明ART虚拟机在哪些检查点检测异常。仅提到检测点但未解释具体的触发条件和检查机制",
+          "suggestion": "补充ART异常检测的完整流程：方法返回时的检查、GC过程中的检查、线程销毁时的检查等关键节点"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.10",
+      "section_title": "GPU 渲染深入",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误：Canvas调用链",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Canvas.drawRect() 调用链",
+          "detail": "文档简化了Canvas.drawRect()的调用路径，实际为Canvas.drawRect() → super.drawRect() → BaseCanvas.drawRect() → nDrawNative()，缺少中间步骤说明",
+          "suggestion": "修正完整的调用链：说明Canvas、BaseCanvas、native层的具体传递过程和各层的作用"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.10",
+      "section_title": "GPU 渲染深入",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码结构错误：ANativeWindowBuffer",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "ANativeWindowBuffer 结构描述",
+          "detail": "文档中描述的ANativeWindowBuffer字段与AOSP实际定义不符。实际定义在frameworks/native/libs/nativewindow/include/android/native_window.h",
+          "suggestion": "修正为正确的结构定义：包括buffer_handle_t、common、width、height、stride、format、usage等实际字段"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.10",
+      "section_title": "GPU 渲染深入",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：Vulkan渲染管线",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "Vulkan渲染管线原理",
+          "detail": "文档缺少对VkRenderPass、VkFramebuffer等关键概念在渲染过程中的作用说明。这些组件如何协同工作构成完整的渲染管线",
+          "suggestion": "补充Vulkan渲染管线的完整流程：VkCommandBuffer构建、VkRenderPass设置、VkFramebuffer绑定、以及它们之间的依赖关系"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "pending"
+    }
+  ],
+  "completed": [
+    {
       "section": "1.5",
       "section_title": "线程模型",
       "priority": 85,
@@ -12,229 +194,11 @@
           "location": "MessageQueue 实现演进",
           "detail": "文档提到 LegacyMessageQueue、CombinedMessageQueue、ConcurrentMessageQueue 三套实现并存，但缺少每套实现的核心差异点、默认启用条件、以及性能对比",
           "suggestion": "补充三种实现的核心区别：Legacy: 链表实现、Combined: 混合锁策略、Concurrent: 无锁实现；以及各版本的默认启用策略"
-        },
-        {
-          "type": "数据缺失",
-          "location": "syncAndDrawFrame 性能影响",
-          "detail": "文档提到 syncAndDrawFrame 包含可见的同步等待，但缺少同步等待时间的量化数据，以及在不同设备上的性能影响",
-          "suggestion": "补充具体数据：同步等待时间通常 0.5-2ms，GPU 瓶颈时可能增加到 5-10ms；以及在不同屏幕刷新率下的影响"
         }
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-11T01:27:14.905670",
       "status": "pending"
-    }
-  ],
-  "completed": [
-    {
-      "section": "19.23",
-      "section_title": "网络 APM 底层捕获原理",
-      "priority": 75,
-      "reason": "[Task 6 Review] L3/L4 内容深度问题",
-      "review_issues": [
-        {
-          "type": "L3-内容深度",
-          "location": "生产环境权衡",
-          "detail": "技术原理阐述充分，但缺乏实际生产环境中的权衡考量，如不同采集方式对功耗、内存和性能的影响对比",
-          "suggestion": "补充生产环境下的采样策略选择指南，包括功耗/精度权衡和实际场景的最佳实践"
-        },
-        {
-          "type": "L3-内容深度",
-          "location": "行业实践支撑",
-          "detail": "部分技术点需要更多行业实践支撑，如商业 APM 的实际架构选型和常见坑点",
-          "suggestion": "增加主流 APM 产品的架构对比和行业最佳实践案例"
-        }
-      ],
-      "added_by": "openclaw-task6",
-      "added_at": "2026-05-09T21:25:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-10T10:27:49+08:00",
-      "completed_reason": "task2b fixed: duplicate of 19.23, already addressed in primary entry"
-    },
-    {
-      "section": "19.26",
-      "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
-      "priority": 75,
-      "reason": "[Task 6 Review] L3/L4 内容深度问题",
-      "review_issues": [
-        {
-          "type": "L3-内容深度",
-          "location": "Flutter FrameTiming 时间戳归一化",
-          "detail": "Flutter FrameTiming 时间戳归一化方案需要更详细的工程实践案例，如何解决跨时钟同步的精度问题",
-          "suggestion": "补充实际项目中时钟校准的实现案例和常见坑点"
-        },
-        {
-          "type": "L3-内容深度",
-          "location": "像素截帧性能损耗",
-          "detail": "像素截帧判白屏的性能损耗分析缺乏量化数据支持，无法评估其在不同设备上的实际影响",
-          "suggestion": "添加不同设备配置下的性能基准测试数据"
-        }
-      ],
-      "added_by": "openclaw-task6",
-      "added_at": "2026-05-09T21:25:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-10T10:27:49+08:00",
-      "completed_reason": "task2b fixed: duplicate of 19.26, already addressed in primary entry"
-    },
-    {
-      "section": "08.08",
-      "section_title": "Android 多媒体管线性能",
-      "priority": 75,
-      "reason": "[Task 6 Review] L3/L4 内容深度问题",
-      "review_issues": [
-        {
-          "type": "L3-内容深度",
-          "location": "Media3 播放器池化策略",
-          "detail": "Media3 播放器池化策略缺乏具体场景的最佳实践，如不同业务场景下的池化规模和预热时机",
-          "suggestion": "补充不同业务场景（短视频、长视频、直播）下的池化策略优化建议"
-        },
-        {
-          "type": "L3-内容深度",
-          "location": "AudioFlinger 混合线程调度",
-          "detail": "AudioFlinger 混合线程调度的深入分析需要更多底层实现细节，如实际调度算法和线程优先级设置",
-          "suggestion": "补充 AudioFlinger 实际调度算法的源码分析和调优建议"
-        }
-      ],
-      "added_by": "openclaw-task6",
-      "added_at": "2026-05-09T21:25:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-10T13:15:46+08:00",
-      "completed_reason": "stale entry: section already extensively reworked in prior task2b rounds with ASTC/ETC2 comparison, gpu_busy standardization, Gralloc AIDL V2; pending status was likely a queue inconsistency"
-    },
-    {
-      "section": "2.10",
-      "section_title": "GPU 渲染深入",
-      "priority": 75,
-      "reason": "[Task 6 Review] L3/L4 内容深度问题",
-      "review_issues": [
-        {
-          "type": "L3-内容深度",
-          "location": "Vulkan vs OpenGL ES 性能对比",
-          "detail": "Vulkan vs OpenGL ES 性能对比需要更多具体设备的基准测试数据，不同GPU厂商的实现差异",
-          "suggestion": "增加主流设备上 Vulkan/OpenGL ES 的性能对比测试数据"
-        },
-        {
-          "type": "L3-内容深度",
-          "location": "GPU 瓶颈分析方法",
-          "detail": "GPU 性能瓶颈分析方法需要更多的实际案例支撑，如复杂场景下的定位流程",
-          "suggestion": "补充实际项目中的GPU性能瓶颈排查案例"
-        }
-      ],
-      "added_by": "openclaw-task6",
-      "added_at": "2026-05-09T21:25:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-10T13:15:46+08:00",
-      "completed_reason": "stale entry: section already extensively reworked in prior task2b rounds with ASTC/ETC2 comparison, gpu_busy standardization, Gralloc AIDL V2; pending status was likely a queue inconsistency"
-    },
-    {
-      "section": "16.5",
-      "section_title": "Android 17 API 37 性能变更",
-      "priority": 85,
-      "reason": "[Task 6 Review] L3 内容深度问题",
-      "review_issues": [
-        {
-          "type": "L3-内容深度",
-          "location": "概念模型与实际实现差异",
-          "detail": "Android 17 DeliQueue的官方描述为'Treiber Stack + min-heap'，但实际源码中使用ConcurrentSkipListSet的双队列结构(mPriorityQueue + mAsyncPriorityQueue)，两者存在实现差异。概念模型简化可能导致开发者对性能特征理解偏差",
-          "suggestion": "补充实际数据结构说明：1) 明确两组ConcurrentSkipListSet的用途和消息类型区分；2) 说明同步屏障逻辑对性能的实际影响；3) 补充性能复杂度分析(O(1)入队 + O(log n)出队 + 内存开销)"
-        },
-        {
-          "type": "L3-内容深度",
-          "location": "分代垃圾回收 gating条件验证",
-          "detail": "文中提到Generational CMC需要满足gating条件但缺乏具体验证方法。开发者无法判断自己设备是否启用该功能，影响性能优化决策",
-          "suggestion": "补充具体验证方案：1) device_config配置方法和强制开启命令；2) 运行时检测代码示例；3) 通过Perfetto验证CMC类型的方法"
-        }
-      ],
-      "added_by": "openclaw-task6",
-      "added_at": "2026-05-10T22:05:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-10T22:22:33+08:00",
-      "completed_reason": "task2b fixed: added DeliQueue complexity analysis (O(log n) + lock-free benefit) and Generational CMC verification methods (device_config/Perfetto/force-enable)"
-    },
-    {
-      "section": "5.4",
-      "section_title": "DVFS 与功耗管理",
-      "priority": 80,
-      "reason": "[Task 6 Review] L3 内容深度问题",
-      "review_issues": [
-        {
-          "type": "L3-内容深度",
-          "location": "4 GHz+ V/F曲线具体数据",
-          "detail": "文中提到'4 GHz+档位的具体V/F曲线数据因SoC而异'但缺乏实际参考数据。开发者无法获得定量优化决策依据，只能依赖定性描述",
-          "suggestion": "补充可量化的指导数据：1) 主流SoC的4 GHz+档位V/F曲线范围；2) 3.5-3.8 GHz限制对性能/功耗的具体影响比例；3) 通过sysfs或adb获取实际V/F数据的方法"
-        },
-        {
-          "type": "L3-内容深度",
-          "location": "SCMI/CPPC架构详细映射",
-          "detail": "提到'SCMI/CPPC把请求表达成抽象性能等级'但缺乏映射机制详细说明。开发者无法理解如何从performance level转换为实际频率，影响对调频延迟的分析",
-          "suggestion": "补充映射机制分析：1) performance level到具体OPP的转换过程；2) Fastchannels实现如何减少mailbox往返；3) 实际调频路径的性能影响分析"
-        }
-      ],
-      "added_by": "openclaw-task6",
-      "added_at": "2026-05-10T22:05:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-10T22:22:33+08:00",
-      "completed_reason": "task2b fixed: added sysfs/debugfs V/F data reading method and SCMI performance-level-to-OPP mapping mechanism with Fastchannels detail"
-    },
-    {
-      "section": "1.3",
-      "section_title": "进程模型与生命周期管理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：LegacyMessageQueue 路径不存在",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "LegacyMessageQueue 路径引用",
-          "detail": "文档中引用 frameworks/base/core/java/android/os/LegacyMessageQueue/MessageQueue.java，但在 AOSP android-16.0.0_r1 中，LegacyMessageQueue 类位于 frameworks/base/core/java/android/os/LegacyMessageQueue.java，目录结构不存在 LegacyMessageQueue/MessageQueue.java 子目录",
-          "suggestion": "修正为正确的路径：frameworks/base/core/java/android/os/LegacyMessageQueue.java"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T01:27:02.750592",
-      "status": "completed",
-      "completed_at": "2026-05-11T03:18:49+08:00",
-      "completed_reason": "path error not in section 1.3 source file (03-process-model.md); actual affected files: 1.5 (05-threading-model.md), 1.13 (13-messagequeue-deliqueue.md), 2.3 (03-vsync.md), 16.5 (05-android17-api37-performance-changes.md) — these need separate queue entries"
-    },
-    {
-      "section": "1.3",
-      "section_title": "进程模型与生命周期管理",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：lmkd PSI monitors 实现细节缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "lmkd 时间线描述",
-          "detail": "文档提到 userspace lmkd 时间线，但缺少 lmkd 的 PSI monitors 具体实现细节，以及与内核 LMK 的切换时机",
-          "suggestion": "补充 PSI monitors 在 lmkd 中的具体实现，包括: threshold 监控、stall time 计算方法、与内核 LMK 的切换条件"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T01:27:02.750592",
-      "status": "completed",
-      "completed_at": "2026-05-11T03:18:49+08:00",
-      "completed_reason": "task2b fixed: added PSI monitors subsection with threshold/window config, stall time mechanism, lmkd decision flow, and Perfetto diagnostics"
-    },
-    {
-      "section": "1.4",
-      "section_title": "Binder IPC 机制与性能影响",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：scatter-gather 优化机制描述过于简略",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "scatter-gather 优化描述",
-          "detail": "文档提到 Android 8 引入 scatter-gather 优化，但过于简略。缺少 BINDER_TYPE_PTR 的工作机制、offsets 数组的组织方式、以及与传统事务的性能对比数据",
-          "suggestion": "补充 scatter-gather 的具体实现机制：BC_TRANSACTION_SG 消息格式、offsets 数组结构、内存拷贝次数对比、以及实际性能提升数据"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T01:27:14.905663",
-      "status": "completed",
-      "completed_at": "2026-05-11T03:18:49+08:00",
-      "completed_reason": "task2b fixed: expanded scatter-gather section with BC_TRANSACTION_SG structure, binder_buffer_object/offsets array details, comparison table, and updated version evolution entry"
     }
   ]
 }

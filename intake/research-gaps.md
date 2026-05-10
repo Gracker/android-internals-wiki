@@ -1,11 +1,121 @@
+## [2026-05-11] 20.1 应用稳定性全景 — 知识盲区
+
+### 盲区描述
+Android 15+ 的新特性 Battery Historian 2.0、ANR Predictor 等优化机制未覆盖，缺乏对新一代稳定性监控工具的说明
+
+### 重要程度
+高
+
+### 建议研究方向
+- Battery Historian 2.0 的事件收集机制和性能优化改进
+- ANR Predictor 的工作原理和准确率评估
+- Android 15+ 的系统级稳定性监控API演进
+- 新特性对开发者调试和优化的实际影响
+
+### 关联章节
+20.4, 20.5, 1.7
+
+---
+
+## [2026-05-11] 20.1 应用稳定性全景 — 知识盲区
+
+### 盲区描述
+Native Crash 的符号表处理机制说明不足，缺少对`.sym`文件的生成、加载和符号还原的完整流程
+
+### 重要程度
+中
+
+### 建议研究方向
+- Native Crash 符号表文件的生成标准和工具链
+- 符号表在运行时的加载和缓存机制
+- 多进程场景下的符号表管理
+- 符号还原的性能优化和最佳实践
+
+### 关联章节
+20.3, 5.7
+
+---
+
+## [2026-05-11] 20.2 Java Crash 治理 — 知识盲区
+
+### 盲区描述
+Kotlin协程异常处理机制与UncaughtExceptionHandler的关系说明不足，缺少对协程上下文中的异常捕获机制
+
+### 重要程度
+高
+
+### 建议研究方向
+- CoroutineExceptionHandler 与 UncaughtExceptionHandler 的优先级和协作机制
+- 协程异常的传播路径和日志格式标准
+- 多个协程异常处理器的链式调用规则
+- 协程异常的监控和上报最佳实践
+
+### 关联章节
+20.1, 1.7, 25.4
+
+---
+
+## [2026-05-11] 20.2 Java Crash 治理 — 知识盲区
+
+### 盲区描述
+多进程应用的特殊性未覆盖，缺少多进程场景中的异常处理最佳实践和进程间通信异常的处理策略
+
+### 重要程度
+中
+
+### 建议研究方向
+- 多进程场景中的异常传播和跨进程上报机制
+- Service/Activity进程崩溃对主进程的影响评估
+- 进程间异常处理的一致性和性能考量
+- 多进程应用的稳定性监控策略
+
+### 关联章节
+20.1, 15.3, 1.3
+
+---
+
+## [2026-05-11] 2.10 GPU 渲染深入 — 知识盲区
+
+### 盲区描述
+GPU计算着色器在Android UI渲染中的应用场景未覆盖，缺少对计算着色器与图形着色器的协作机制
+
+### 重要程度
+中
+
+### 建议研究方向
+- Android UI渲染中的计算着色器应用模式
+- 计算着色器与图形管线的性能权衡
+- 模糊、阴影等效果的GLSL优化实现
+- 计算着色器在Material Design效果中的应用案例
+
+### 关联章节
+2.9, 3.2, 14.3
+
+---
+
+## [2026-05-11] 2.10 GPU 渲染深入 — 知识盲区
+
+### 盲区描述
+Metal/Vulkan互操作和iOS/Metal相关对比内容缺失，缺乏跨平台GPU渲染的技术对比
+
+### 重要程度
+低
+
+### 建议研究方向
+- Android Vulkan vs iOS Metal 的API设计对比
+- 跨平台GPU代码的统一架构设计
+- Metal的Metal Performance Shaders vs Android的优化策略
+- 跨平台GPU调试工具的集成方案
+
+### 关联章节
+2.9, 3.2, 14.3
+
+---
 
 ## [2026-05-10] 3.0 输入系统 — 知识盲区
 
 ### 盲区描述
-1. HCI 感知阈值研究与 Android 实际产品实现的转化逻辑缺失，需要建立从实验室研究结果到产品性能目标的桥梁
-2. 输入事件反压机制未覆盖，缺乏 InputDispatcher 在目标窗口无响应时的降级策略说明
-3. 高负载场景下输入事件的优先级处理机制未覆盖，缺乏系统资源紧张时的优先级调度逻辑
-4. 输入事件的异步处理和回调机制未覆盖，缺乏 InputConsumer 与 Native 层的异步协作机制说明
+HCI 感知阈值研究与 Android 实际产品实现的转化逻辑缺失，需要建立从实验室研究结果到产品性能目标的桥梁
 
 ### 重要程度
 高
@@ -37,6 +147,7 @@ ART FinalizerDaemon 线程与 ReferenceQueue 的并发优化边界未证实。AO
 
 ### 关联章节
 4.3, 1.6, 7.7
+
 ## [2026-05-09] 3.0 输入系统 — 知识盲区
 
 ### 盲区描述
@@ -46,32 +157,7 @@ Android 15/16 输入系统架构重构，包括 InputFlinger Rust 组件、ARR (
 高
 
 ### 建议研究方向
-- AOSP  目录结构演进
+- AOSP 目录结构演进
 - Android 15 中 Input 如何驱动刷新率切换的调用链
-- Predictive Back 在 Android 14+ 中的性能影响量化
 
-### 关联章节
-3.1, 3.3, 3.4, 3.5
-
-
-
-## [2026-05-10] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 知识盲区
-
-### 盲区描述
-DeliQueue 的完整工作机制，特别是 drain 触发条件和内部实现细节；Generational CMC 的具体 gating 条件配置方法；ProfilingManager 触发器的内部判断逻辑；ConcurrentMessageQueue 的实际数据结构实现
-
-### 重要程度
-高
-
-### 建议研究方向
-- 深入分析 AOSP frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java 的实际实现
-- 研究 DeliQueue drain 操作的具体触发时机和实现算法
-- 分析 Generational CMC 的 gating 条件具体含义和配置方法
-- 探究 ProfilingManager 触发器如何判断 "anomalous behavior" 等系统事件
-- 验证 ConcurrentMessageQueue 是否真的使用 ConcurrentSkipListSet 还是其他数据结构
-
-### 关联章节
-4.8, 14.7, 16.2, 16.4
-
-### 外部 Review 命中
-external-review 未直接命中此盲区，但 Task 6 已指出 DeliQueue 概念模型与实际实现存在语义差异
+[已发现external-review命中: 3.0 输入系统external-review文档已命中ARR相关技术盲区]
