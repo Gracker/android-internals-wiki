@@ -1,3 +1,26 @@
+
+## [2026-05-10] 3.0 输入系统 — 知识盲区
+
+### 盲区描述
+1. HCI 感知阈值研究与 Android 实际产品实现的转化逻辑缺失，需要建立从实验室研究结果到产品性能目标的桥梁
+2. 输入事件反压机制未覆盖，缺乏 InputDispatcher 在目标窗口无响应时的降级策略说明
+3. 高负载场景下输入事件的优先级处理机制未覆盖，缺乏系统资源紧张时的优先级调度逻辑
+4. 输入事件的异步处理和回调机制未覆盖，缺乏 InputConsumer 与 Native 层的异步协作机制说明
+
+### 重要程度
+高
+
+### 建议研究方向
+- HCI 感知阈值与 Android 端到端延迟的映射关系研究
+- InputDispatcher 的背压处理和降级策略实现机制
+- 高负载场景下输入事件的优先级算法和调度策略
+- InputConsumer 与 Native 层的异步处理流程优化
+
+### 关联章节
+1.1, 2.3, 2.4, 2.5, 8.1
+
+---
+
 ## [2026-05-09] 4.3 ART 虚拟机内存管理 — 知识盲区
 
 ### 盲区描述
@@ -31,3 +54,24 @@ Android 15/16 输入系统架构重构，包括 InputFlinger Rust 组件、ARR (
 3.1, 3.3, 3.4, 3.5
 
 
+
+## [2026-05-10] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 知识盲区
+
+### 盲区描述
+DeliQueue 的完整工作机制，特别是 drain 触发条件和内部实现细节；Generational CMC 的具体 gating 条件配置方法；ProfilingManager 触发器的内部判断逻辑；ConcurrentMessageQueue 的实际数据结构实现
+
+### 重要程度
+高
+
+### 建议研究方向
+- 深入分析 AOSP frameworks/base/core/java/android/os/ConcurrentMessageQueue/MessageQueue.java 的实际实现
+- 研究 DeliQueue drain 操作的具体触发时机和实现算法
+- 分析 Generational CMC 的 gating 条件具体含义和配置方法
+- 探究 ProfilingManager 触发器如何判断 "anomalous behavior" 等系统事件
+- 验证 ConcurrentMessageQueue 是否真的使用 ConcurrentSkipListSet 还是其他数据结构
+
+### 关联章节
+4.8, 14.7, 16.2, 16.4
+
+### 外部 Review 命中
+external-review 未直接命中此盲区，但 Task 6 已指出 DeliQueue 概念模型与实际实现存在语义差异

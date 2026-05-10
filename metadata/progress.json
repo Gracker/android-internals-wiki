@@ -4,7 +4,7 @@
   "total_sections": 240,
   "metrics": {
     "total_sections": 240,
-    "last_updated": "2026-05-10T09:45:30.655373+08:00",
+    "last_updated": "2026-05-10T16:30:00+08:00",
     "pipeline_stage_counts": {
       "ready-for-review": 1,
       "ready-to-publish": 153,
@@ -20,9 +20,10 @@
     },
     "task9_state_counts": {
       "pass": 2,
-      "pending": 3,
-      "reviewed": 203,
-      "unknown": 32
+      "pending": 2,
+      "reviewed": 205,
+      "needs-rework": 2,
+      "unknown": 29
     },
     "task2b_state_counts": {
       "fixed": 159,
