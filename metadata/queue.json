@@ -1,132 +1,6 @@
 {
   "pending": [
     {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：ApplicationExitInfo 接口说明不完整",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "ApplicationExitInfo 接口说明",
-          "detail": "文档提到 API 30+ 支持 ApplicationExitInfo，但未说明具体的类路径和方法，实际应为 android.app.ApplicationExitInfo 及其相关方法如 setReason(), getPid() 等",
-          "suggestion": "补充完整的类引用：android.app.ApplicationExitInfo，并说明关键方法的使用示例"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：android:miscStackTraces 机制缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "android:miscStackTraces 机制",
-          "detail": "文档提及该机制限制堆栈深度，但未解释具体的限制机制和阈值设置。ART虚拟机如何实现堆栈深度的管理和限制？",
-          "suggestion": "补充堆栈深度限制的实现原理：包括ShadowFrame的管理、最大深度计算方法、以及android:miscStackTraces属性的具体作用"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：ANR 触发机制缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "ANR 触发机制",
-          "detail": "文档列出ANR超时阈值但未说明系统如何监控线程状态。InputDispatcher、ActiveServices等监控器的具体工作原理和实现缺失",
-          "suggestion": "补充监控器实现原理：InputDispatcher的事件循环监控、ActiveServices的Service状态轮询机制、以及ANR触发后的处理流程"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：OOM治理机制缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "OOM治理机制",
-          "detail": "文档提到堆增量技术但未解释具体实现机制。Runtime.maxMemory()、Heap::AllocObjectWithAllocator()等底层逻辑的交互关系缺失",
-          "suggestion": "补充OOM治理的完整链路：Heap::AllocObjectWithAllocator()的分配逻辑、AllocateInternalWithGc()的GC触发机制、堆扩容的决策条件"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "20.2",
-      "section_title": "Java Crash 治理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：Thread异常处理函数",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "Thread::HandleUncaughtExceptions() 路径",
-          "detail": "文档引用Thread::HandleUncaughtExceptions()，但AOSP实际函数名为HandleUncaughtExceptions()，位于art/runtime/thread.cc，缺少Thread::前缀",
-          "suggestion": "修正为正确的函数引用：HandleUncaughtExceptions()，位于art/runtime/thread.cc"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "20.2",
-      "section_title": "Java Crash 治理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：RuntimeInit初始化路径",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "RuntimeInit.commonInit() 路径",
-          "detail": "文档引用RuntimeInit.commonInit()但路径不完整，正确路径应为frameworks/base/core/java/com/android/internal/os/RuntimeInit.java:commonInit()",
-          "suggestion": "补充完整的包路径：com.android.internal.os.RuntimeInit.commonInit()"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "20.2",
-      "section_title": "Java Crash 治理",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：异常检测时机机制",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "异常检测时机",
-          "detail": "文档未说明ART虚拟机在哪些检查点检测异常。仅提到检测点但未解释具体的触发条件和检查机制",
-          "suggestion": "补充ART异常检测的完整流程：方法返回时的检查、GC过程中的检查、线程销毁时的检查等关键节点"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "pending"
-    },
-    {
       "section": "2.10",
       "section_title": "GPU 渲染深入",
       "priority": 95,
@@ -380,6 +254,139 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-11T01:27:14.905670",
       "status": "pending"
+    },
+    {
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误：ApplicationExitInfo 接口说明不完整",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "ApplicationExitInfo 接口说明",
+          "detail": "文档提到 API 30+ 支持 ApplicationExitInfo，但未说明具体的类路径和方法，实际应为 android.app.ApplicationExitInfo 及其相关方法如 setReason(), getPid() 等",
+          "suggestion": "补充完整的类引用：android.app.ApplicationExitInfo，并说明关键方法的使用示例"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-11T07:21:07.462916"
+    },
+    {
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：android:miscStackTraces 机制缺失",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "android:miscStackTraces 机制",
+          "detail": "文档提及该机制限制堆栈深度，但未解释具体的限制机制和阈值设置。ART虚拟机如何实现堆栈深度的管理和限制？",
+          "suggestion": "补充堆栈深度限制的实现原理：包括ShadowFrame的管理、最大深度计算方法、以及android:miscStackTraces属性的具体作用"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-11T07:21:07.462938"
+    },
+    {
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：ANR 触发机制缺失",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "ANR 触发机制",
+          "detail": "文档列出ANR超时阈值但未说明系统如何监控线程状态。InputDispatcher、ActiveServices等监控器的具体工作原理和实现缺失",
+          "suggestion": "补充监控器实现原理：InputDispatcher的事件循环监控、ActiveServices的Service状态轮询机制、以及ANR触发后的处理流程"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-11T07:21:07.462941"
+    },
+    {
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：OOM治理机制缺失",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "OOM治理机制",
+          "detail": "文档提到堆增量技术但未解释具体实现机制。Runtime.maxMemory()、Heap::AllocObjectWithAllocator()等底层逻辑的交互关系缺失",
+          "suggestion": "补充OOM治理的完整链路：Heap::AllocObjectWithAllocator()的分配逻辑、AllocateInternalWithGc()的GC触发机制、堆扩容的决策条件"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-11T07:21:07.462943"
+    },
+    {
+      "section": "20.2",
+      "section_title": "Java Crash 治理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误：Thread异常处理函数",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "Thread::HandleUncaughtExceptions() 路径",
+          "detail": "文档引用Thread::HandleUncaughtExceptions()，但AOSP实际函数名为HandleUncaughtExceptions()，位于art/runtime/thread.cc，缺少Thread::前缀",
+          "suggestion": "修正为正确的函数引用：HandleUncaughtExceptions()，位于art/runtime/thread.cc"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-11T07:21:07.462944"
+    },
+    {
+      "section": "20.2",
+      "section_title": "Java Crash 治理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码路径错误：RuntimeInit初始化路径",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "RuntimeInit.commonInit() 路径",
+          "detail": "文档引用RuntimeInit.commonInit()但路径不完整，正确路径应为frameworks/base/core/java/com/android/internal/os/RuntimeInit.java:commonInit()",
+          "suggestion": "补充完整的包路径：com.android.internal.os.RuntimeInit.commonInit()"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-11T07:21:07.462946"
+    },
+    {
+      "section": "20.2",
+      "section_title": "Java Crash 治理",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 原理断裂：异常检测时机机制",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "异常检测时机",
+          "detail": "文档未说明ART虚拟机在哪些检查点检测异常。仅提到检测点但未解释具体的触发条件和检查机制",
+          "suggestion": "补充ART异常检测的完整流程：方法返回时的检查、GC过程中的检查、线程销毁时的检查等关键节点"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T05:24:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-11T07:21:07.462947"
     }
   ]
 }

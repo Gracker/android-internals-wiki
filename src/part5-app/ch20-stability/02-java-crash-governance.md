@@ -9,13 +9,14 @@ last_verified_against: AOSP android-16.0.0_r1, developer.android.com
 confidence: medium
 drafted_date: '2026-05-10'
 polish_count: 0
+task2b_result: fixed
 reviewed_date: '2026-05-11'
 reviewed_by: 'openclaw-task6'
 task6_result: 'pass-light-edit'
-task6_state: 'reviewed'
+task6_state: 'revisiting'
 task9_state: 'pending'
-task2b_state: 'pending'
-pipeline_stage: 'task9_pending'
+task2b_state: 'fixed'
+pipeline_stage: 'task6_pending'
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
@@ -36,10 +37,6 @@ related_chapters:
 - '20.1'
 - '20.7'
 - '1.7'
-pipeline_stage: draft
-task6_state: pending
-task9_state: pending
-task2b_state: pending
 ---
 # Java Crash 治理
 
@@ -72,11 +69,11 @@ Android Java 层的异常按 ART 虚拟机处理路径分为 Exception 和 Error
 
 当一个异常在 Java 层未被捕获，ART 虚拟机的处理流程（`art/runtime/thread.cc`）：
 
-1. 虚拟机在各检查点检测到未处理异常，调用 `Thread::HandleUncaughtExceptions()`
+1. 虚拟机在各检查点检测到未处理异常，调用 `art::Thread::HandleUncaughtExceptions()`（`art/runtime/thread.cc`）
 2. 通过 JNI 调用 Java 层 `Thread.dispatchUncaughtException(Throwable)`
 3. 沿 handler 链执行：`getUncaughtExceptionPreHandler()` → `getUncaughtExceptionHandler()` → `ThreadGroup.uncaughtException()`
 
-在 `RuntimeInit.commonInit()` 中，系统注册了两个默认 handler：
+在 `com.android.internal.os.RuntimeInit.commonInit()`（`frameworks/base/core/java/com/android/internal/os/RuntimeInit.java`）中，系统注册了两个默认 handler：
 
 | Handler | 职责 | 行为 |
 |---------|------|------|
@@ -238,9 +235,16 @@ String name = user != null ? user.getName() : "";
 
 ### ART 虚拟机异常处理流程
 
-Java 异常在 ART 中的传递路径：`Thread::SetException()` 设置异常标志 → 各检查点检测 → `HandleUncaughtExceptions()` → JNI 到 Java 层 → `dispatchUncaughtException()` → handler 链。
+Java 异常在 ART 中的传递路径：`art::Thread::SetException()` 设置异常标志 → 各检查点检测 → `art::Thread::HandleUncaughtExceptions()`（`art/runtime/thread.cc`）→ JNI 到 Java 层 → `Thread.dispatchUncaughtException()` → handler 链。
 
-虚拟机在设置异常标志后不会立即终止线程，而是在后续检查点（方法返回、线程销毁）才检查。异常发生后到检查点之间，代码可能继续执行一段。ART 编译器在异常可能抛出的位置插入了检查指令。
+异常标志设置后线程不会立即终止。ART 在多个位置插入异常检查：
+
+- **编译执行的方法返回时**：编译器在每个可能抛异常的调用点之后插入 `IsExceptionClear()` 检查（`art/compiler/optimizing/code_generator.cc` 生成）
+- **解释执行时**：`ExecuteGoto()` 解释器在每条指令执行前检查异常标志（`art/runtime/interpreter/interpreter.cc`）
+- **JNI 调用返回时**：`CheckJNI` 在 JNI 方法返回后检查是否有待处理异常
+- **线程销毁时**：`Thread::Destroy()` 中调用 `HandleUncaughtExceptions()` 处理残留异常
+
+编译模式下，异常检查窗口通常只有一条指令——编译器在调用指令后立即插入检查。解释模式下，每条字节码指令前都有检查，窗口更短。
 
 详见 1.7 节 ART 编译管线中关于异常表和 deoptimization 的部分。
 

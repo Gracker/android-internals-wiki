@@ -9,13 +9,14 @@ last_verified_against: "AOSP android-16.0.0_r1, developer.android.com"
 confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
+task2b_result: fixed
 reviewed_date: "2026-05-11"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
-task2b_state: "pending"
-pipeline_stage: "task9_pending"
+task2b_state: "fixed"
+pipeline_stage: "task6_pending"
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -27,15 +28,11 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md"
 tags: [stability, crash, anr, oom, app-quality]
 related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
-pipeline_stage: ready-for-review
-task6_state: pending
-task9_state: pending
-task2b_state: pending
 ---
 
 # 应用稳定性全景
 
-本章是应用稳定性治理的入口。先建立分类框架，把 Crash、ANR、OOM 三类问题在 Android 运行时中的位置讲清楚；再给出 Google Play 和行业通用的度量标准；最后把稳定性治理拆成一条可操作的闭环。
+本章是应用稳定性治理的入口。先建立分类框架，把 Crash、ANR、OOM 三类问题在 Android 运行时中的位置讲清楚；再给出 Google Play 和行业通用的度量标准；最后把稳定性治理拆成一个可循环的操作流程。
 
 ## Crash / ANR / OOM：三类稳定性问题的分类体系
 
@@ -45,15 +42,15 @@ task2b_state: pending
 
 Java 层未捕获的异常（RuntimeException、NullPointerException 等）或虚拟机抛出的 Error（OutOfMemoryError、StackOverflowError），最终都会走到 `Thread.dispatchUncaughtException()`。如果应用没有注册 `UncaughtExceptionHandler`，或者注册的 handler 没有拦截住，系统默认行为是终止进程。
 
-AOSP 中的处理链路（frameworks/native/libs/nativewindow/include/android/native_window.h）：
+AOSP 中的处理链路：
 
 1. 虚拟机在各检查点检测到未处理异常，调用 `HandleUncaughtExceptions()`
 2. 通过 JNI 调用 Java 层的 `Thread.dispatchUncaughtException(Throwable)`
 3. 沿着 `Thread.getUncaughtExceptionHandler()` → `ThreadGroup.uncaughtException()` → `KillApplicationHandler` 链路，最终调用 `Process.killProcess()` 和 `Runtime.getRuntime().exit()`
 
-[已验证: AOSP android-16.0.0_r1, frameworks/native/libs/nativewindow/include/android/native_window.h]
+[已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
 
-Java Crash 的堆栈信息由 ART 虚拟机直接生成，格式规范、可读性好。堆栈深度受 android:miscStackTraces 限制，默认保留最近的异常信息。
+Java Crash 的堆栈信息由 ART 虚拟机直接生成，格式规范、可读性好。堆栈帧数上限由 ART 内部常量控制：`CreateInternalStackTraceInternal()`（`art/runtime/thread.cc`）遍历 `ManagedStack` 链表中的 `ShadowFrame`（解释执行帧）和 `QuickFrame`（编译执行帧），逐帧解析 `ArtMethod` 指针，上限 256 帧——超出部分截断，堆栈底部显示 `... N more`。
 
 ### Native Crash
 
@@ -81,6 +78,8 @@ ANR 不是崩溃，是系统对"主线程阻塞"的强制干预。触发条件�
 | BroadcastReceiver timeout | 前台 10 秒 / 后台 60 秒 | ActivityManagerService |
 | ContentProvider timeout | 10 秒 | ActivityManagerService |
 
+各监控器的实现机制不同。`InputDispatcher`（`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`）在分发事件时记录 dispatch timeout 时间点，超时未收到 `finishInputEvent` 回调则触发 ANR。`ActiveServices`（`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`）通过 `bumpServiceExecutingLocked()` 设置超时消息（`SERVICE_TIMEOUT_MSG`），`ActivityManagerService` 的 Main Handler 收到超时消息后调用 `serviceTimeout()` 进入 ANR 流程。BroadcastReceiver 和 ContentProvider 的监控逻辑类似——在系统服务端设置超时定时器，超时后回调对应的 timeout 方法。
+
 ANR 发生后，系统会：
 
 1. 向用户弹出"应用无响应"对话框
@@ -95,7 +94,9 @@ ANR 的治理思路与 Crash 不同。Crash 是"代码逻辑出错，需要修�
 
 OOM 在 Android 上有两层含义：
 
-**Java 堆 OOM**：ART 虚拟机在 `Heap::AllocObjectWithAllocator()` 中发现 Java 堆已达到 `Runtime.maxMemory()` 限制，先触发一次 Full GC（`AllocateInternalWithGc()`），回收后仍不够则抛出 `OutOfMemoryError`。这个限制由 `dalvik.vm.heapsize` 系统属性控制，不同设备在 256MB ~ 512MB 之间。
+**Java 堆 OOM**：对象分配的入口是 `Heap::AllocObjectWithAllocator()`（`art/runtime/gc/heap.cc`）。当已分配内存加上新对象大小超过 `Runtime.maxMemory()` 限制时，进入 `AllocateInternalWithGc()`——先尝试触发 GC（根据内存压力选择 kGcCauseForAlloc 对应的 GC 类型），回收后重新检查空间。如果 GC 后仍不够，尝试堆扩容（前提是未达到 `HeapGrowthLimit`，由 `dalvik.vm.heapgrowthlimit` 控制）。扩容后仍不够，才抛出 `OutOfMemoryError`。
+
+`Runtime.maxMemory()` 返回值取决于 Manifest 配置：未设置 `largeHeap` 时返回 `dalvik.vm.heapgrowthlimit`（通常 256MB ~ 384MB），设置 `android:largeHeap="true"` 时返回 `dalvik.vm.heapsize`（通常 512MB）。但 `largeHeap` 不等于无限分配——最终仍受物理内存和系统整体内存压力约束。
 
 **虚拟内存耗尽**：进程的虚拟地址空间被耗尽（64 位 ARM 上理论值约 256TB，但实际受 `vm.max_map_count`、文件描述符限制等约束）。典型场景：线程数过多（每个线程占用 ~8MB 栈空间）、内存映射文件过多、JNI 层连续 malloc 但不释放。
 
@@ -130,7 +131,7 @@ OOM 的特殊性在于，它抛出的是 `Error` 而非 `Exception`。Java 的�
                      └─────────────┘
 ```
 
-三者的共同点：都会导致用户看到"应用异常退出或卡死"。治理时需要先通过 `ApplicationExitInfo`（API 30+）区分退出原因，再按类型走不同的诊断路径。15.3 节详细介绍了这些指标的采集方式。
+三者的共同点：都会导致用户看到"应用异常退出或卡死"。区分退出原因的第一步是读取 `android.app.ApplicationExitInfo`（API 30+）——这个类封装了进程退出时的上下文：退出原因（`getReason()` 返回 `REASON_CRASH`、`REASON_ANR`、`REASON_LOW_MEMORY` 等常量）、进程 PID（`getPid()`）、退出时间戳（`getTimestamp()`）、异常堆栈（`getTraceInputStream()`，仅 Java Crash 有值）。通过 `ActivityManager.getHistoricalProcessExitReasons()` 批量查询，可以统计各类型退出的占比和趋势。15.3 节详细介绍了采集方式。
 
 ## 稳定性的行业标准与度量维度
 
@@ -182,7 +183,7 @@ Google Play 的阈值是底线。团队内部的稳定性度量通常更细：
 
 ## 稳定性治理的全局视角
 
-把稳定性治理拆成五个阶段。每个阶段的目标和交付物不同，但它们构成闭环：
+把稳定性治理拆成五个阶段。每个阶段的目标和交付物不同，但它们构成循环：
 
 ```
 预防 ──→ 发现 ──→ 诊断 ──→ 修复 ──→ 验证
