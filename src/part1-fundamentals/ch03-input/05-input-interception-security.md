@@ -7,6 +7,13 @@ drafted_by: openclaw-task
 applicable_versions: Android 10 (API 29) - Android 17 (API 37), InputMonitor 部分基于
   android-16.0.0_r1 核验, Android 17 密码切断基于 external-review
 confidence: medium
+reviewed_date: '2026-05-11'
+reviewed_by: 'openclaw-task6'
+task6_result: 'pass-light-edit'
+task6_state: 'reviewed'
+task9_state: 'pending'
+task2b_state: 'pending'
+pipeline_stage: 'task9_pending'
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -97,7 +104,7 @@ InputFilter 是 Android 系统提供的一个**全局事件拦截机制**，允�
 
 ### InputFilter 的注册流程
 
-InputFilter 的入口不在 `InputManagerService` 自己对外暴露的公开 API，而是 `WindowManagerService` 通过 `IWindowManager.setInputFilter()` 把过滤器交给 `InputManagerService`。`InputManagerService` 保存当前 filter、创建 `InputFilterHost`、调用 `filter.install(mInputFilterHost)`，然后只把一个布尔开关同步到 Native 层。
+InputFilter 的入口不在 InputManagerService 自己对外暴露的公开 API，而是 WindowManagerService 通过 IWindowManager.setInputFilter() 把过滤器交给 InputManagerService。`InputManagerService` 保存当前 filter、创建 `InputFilterHost`、调用 `filter.install(mInputFilterHost)`，然后只把一个布尔开关同步到 Native 层。
 
 ```java
 // frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java
@@ -152,7 +159,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 另一类是无障碍按键判定带来的额外等待。它不是 `InputDispatcher` 线程同步等远端 Binder 返回，而是 `KeyboardInterceptor` 把按键交给 `AccessibilityManagerService`，再由 `KeyEventDispatcher` 异步等服务调用 `setOnKeyEventResult()`。InputDispatcher 并没有同步卡在 Binder 上等远端返回。
 
-当前素材没有对应的真实 trace 截图，本节只保留可从源码核对到的结论。Perfetto 图例暂记为 `[待补充：展示 InputDispatcher、AccessibilityManagerService、无障碍服务进程的时间关系]`。
+当前素材没有对应的真实 trace 截图，本节只保留可从源码核对到的结论。Perfetto 图例暂记为 `[待补充：InputDispatcher、AccessibilityManagerService、无障碍服务进程的时间关系]`。
 
 ## InputMonitor：特权组件的旁路监控
 
@@ -162,7 +169,7 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 `InputMonitor` 的注册入口是 `InputManagerService.monitorGestureInput()`，调用方需要持有 `android.permission.MONITOR_INPUT` 权限——这个权限只签发给系统签名应用或 `privileged` 应用。普通 App 和第三方无障碍服务都无法获取。
 
-> [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java, monitorGestureInput()]
+> [已验证: AOSP android-16.0.0_r1, frameworks/base/services/core/java/com/android/server/input/InputManagerService.java]
 
 ### spy window 与 pilferPointers
 

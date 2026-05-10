@@ -10,6 +10,13 @@ last_verified: '2026-04-11'
 last_verified_against: AOSP android-16.0.0_r1 + developer.android.com + perfetto stdlib
   docs
 confidence: medium
+reviewed_date: '2026-05-11'
+reviewed_by: 'openclaw-task6'
+task6_result: 'pass-light-edit'
+task6_state: 'reviewed'
+task9_state: 'pending'
+task2b_state: 'pending'
+pipeline_stage: 'task9_pending'
 sources:
 - type: official
   path: source.android.com/docs/core/interaction/input
@@ -98,7 +105,7 @@ Android 17 Predictive Back 的输入关联
 
 UX 研究表明，用户对输入响应延迟的感知阈值大约在 100ms [待验证: 具体研究来源与实验条件]——低于这个值，用户会觉得"即时响应"；高于 200ms，用户会明显感觉到迟滞。而在 Android 的标准渲染管线中，从手指触碰屏幕到像素点亮的端到端延迟，典型值在 2-3 个 VSync 周期（60Hz 屏幕上约 33-50ms，120Hz 屏幕上约 17-25ms）。这个数字看起来离 100ms 还有余量，但实际场景中叠加主线程卡顿、调度延迟、GPU 合成时间等因素，很容易突破感知阈值。
 
-这就是本节要解决的问题：把输入延迟拆解成可量化、可追踪的阶段，然后用两种思路来改善——一种是**减少实际延迟**（优化管线各阶段耗时），另一种是**减少感知延迟**（用预测算法提前渲染用户可能看到的画面）。
+本节要解决的问题：把输入延迟拆解成可量化、可追踪的阶段，然后用两种思路来改善——一种是**减少实际延迟**（优化管线各阶段耗时），另一种是**减少感知延迟**（用预测算法提前渲染用户可能看到的画面）。
 
 
 ## 输入延迟的端到端模型
@@ -107,7 +114,7 @@ UX 研究表明，用户对输入响应延迟的感知阈值大约在 100ms [待
 
 一个触控事件从指尖到像素，需要经过六个阶段。每个阶段都引入自己的延迟，它们叠加起来构成端到端延迟：
 
-[已验证: source.android.com/docs/core/interaction/input + AOSP Choreographer.java]
+[已验证: source.android.com/docs/core/interaction/input, AOSP Choreographer.java]
 
 **阶段 1：硬件采样延迟**（触控 IC → 中断）
 触控 IC（Touch Panel Controller）以固定的采样率扫描屏幕电容变化，通常为 120Hz 或 240Hz（高端设备可达 480Hz）。当检测到触控事件后，IC 通过 I2C 或 SPI 总线向 CPU 发出中断。采样率决定了硬件层面的最小延迟粒度：120Hz 采样率下，最坏情况需要等待 8.33ms 才能采集到一次触控。
@@ -201,7 +208,7 @@ doCallbacks(Choreographer.CALLBACK_TRAVERSAL, frameIntervalNanos);
 doCallbacks(Choreographer.CALLBACK_COMMIT, frameIntervalNanos);
 ```
 
-所以我们分析输入延迟时，至少要拆成两段。一段是“事件多久送到并被 App 处理”，另一段是“处理结果多久出现在下一帧并真正显示”。前者更多受 InputDispatcher、主线程消息队列和 batching 影响，后者更多受 VSync 对齐、渲染耗时和 SurfaceFlinger 合成影响。
+所以我们分析输入延迟时，至少要拆成两段。一段是“事件多久送到并被 App 处理”，另一段是“处理结果多久出现在下一帧并真正显示”。前者更多受 InputDispatcher、主线程消息队列和 batching 影响，后者更多受 VSync 同步、渲染耗时和 SurfaceFlinger 合成影响。
 
 [已验证: AOSP android-16.0.0_r1, Choreographer.java]
 

@@ -9,6 +9,13 @@ last_verified_against: AOSP android-16.0.0_r1, developer.android.com
 confidence: medium
 drafted_date: '2026-05-10'
 polish_count: 0
+reviewed_date: '2026-05-11'
+reviewed_by: 'openclaw-task6'
+task6_result: 'pass-light-edit'
+task6_state: 'reviewed'
+task9_state: 'pending'
+task2b_state: 'pending'
+pipeline_stage: 'task9_pending'
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
@@ -17,7 +24,7 @@ sources:
 - type: aosp
   path: frameworks/base/core/java/com/android/internal/os/RuntimeInit.java
 - type: aosp
-  path: art/runtime/thread.cc
+  path: frameworks/base/core/java/com/android/internal/os/RuntimeInit.java
 - type: official
   path: developer.android.com/reference/java/lang/Thread.UncaughtExceptionHandler
 tags:
@@ -246,3 +253,21 @@ Java 异常在 ART 中的传递路径：`Thread::SetException()` 设置异常标
 - **降级开关**：对关键 SDK（广告、推送）设置远程开关，crash rate 飙升时动态禁用
 
 [待补充: 第三方 SDK crash 隔离的具体实现方案]
+
+### Kotlin协程异常与UncaughtExceptionHandler的关系
+
+> 源码调研补充，2026-05-11，详见 §20.7 扩展章节或 [DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md](../DeepResearch/2026-05-11-kotlin-coroutine-exception-handler-analysis.md)
+
+Kotlin协程异常处理与Java的UncaughtExceptionHandler形成级联体系：
+
+1. **Context中的CoroutineExceptionHandler**（最高优先级）— 协程创建者明确指定
+2. **ServiceLoader注册的全局handler** — `kotlinx-coroutines-android`通过META-INF注册`AndroidExceptionPreHandler`
+3. **Thread.uncaughtExceptionHandler**（兜底）— 最终触发RuntimeInit的LoggingHandler/KillApplicationHandler
+
+**关键区别**：CoroutineExceptionHandler只处理"无传播路径"的协程异常。在`coroutineScope`中，异常会通过结构化并发传播给父协程，不需要CoroutineExceptionHandler介入。在`supervisorScope`或`GlobalScope`中，异常没有传播路径，必须由CoroutineExceptionHandler处理。
+
+Android 8.0/8.1存在pre-handler丢失问题（协程直接调用uncaughtExceptionHandler绕过了pre-handler），`kotlinx-coroutines-android`通过反射调用修复了这个问题。
+
+详细分析见 §20.7 扩展章节。
+
+<!-- AIW-源码调研-2026-05-11-kotlin -->

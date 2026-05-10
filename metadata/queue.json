@@ -179,6 +179,187 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-11T05:24:00+08:00",
       "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了 — ...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-11T05:35:41.763927",
+      "status": "pending"
+    },
+    {
+      "section": "ch17-oem",
+      "section_title": "ch17-oem",
+      "priority": 60,
+      "reason": "[素材注入] 新增参考文章，建议补充到章节",
+      "material_paths": [
+        ""
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考",
+          "location": "参考资料小节",
+          "detail": "2026年了，Android开发该如何调试布局 — ...",
+          "suggestion": "判断是否适合作为章节参考，如适合请补充"
+        }
+      ],
+      "added_by": "task8-classifier",
+      "added_at": "2026-05-11T05:35:41.770358",
+      "status": "pending"
+    },
+    {
+      "section": "1.3",
+      "section_title": "进程模型与生命周期管理",
+      "priority": 90,
+      "reason": "[review回炉] 写作质量与内容深度问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "锚点覆盖部分",
+          "detail": "关键锚点内容深度不够，需要深入源码分析",
+          "suggestion": "补充实际AOSP源码示例和Perfetto验证"
+        },
+        {
+          "type": "需补充素材",
+          "location": "进程回收策略",
+          "detail": "lmkd与PSI分析缺少实际观察数据",
+          "suggestion": "添加不同厂商设备的回收决策对比"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-11T06:15:36.927240",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-11-06-review.md"
+    },
+    {
+      "section": "1.4",
+      "section_title": "Binder IPC 机制与性能影响",
+      "priority": 90,
+      "reason": "[review回炉] 写作质量与内容深度问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "线程池模型",
+          "detail": "Binder线程耗尽与ANR关系缺少实际案例",
+          "suggestion": "补充典型ANR分析案例和优化建议"
+        },
+        {
+          "type": "需确认",
+          "location": "架构分析",
+          "detail": "与Task 9的oneway spam detection结论有潜在矛盾",
+          "suggestion": "重新审核async buffer语义与技术实现"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-11T06:15:36.927402",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-11-06-review.md"
+    },
+    {
+      "section": "3.4",
+      "section_title": "输入延迟与预测输入技术",
+      "priority": 90,
+      "reason": "[review回炉] 写作质量与内容深度问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "全文多处",
+          "detail": "VSync同步、渲染管线与Perfetto追踪分析",
+          "suggestion": "补充Perfetto标准库版本对比和实际case study"
+        },
+        {
+          "type": "需重写",
+          "location": "输出-响应映射部分",
+          "detail": "当前段落过长，建议拆分为场景化叙述",
+          "suggestion": "按游戏/普通场景分别说明输入延迟影响"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-11T06:15:36.927563",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-11-06-review.md"
+    },
+    {
+      "section": "3.1",
+      "section_title": "3.1 Input 事件分发全流程",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputflinger-rust-architecture.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "InputFlinger Rust 组件架构与 ARR 协同机制 — Android 16 InputFlinger 从 C++ 到 Rust 的渐进式迁移分析。Rust 过滤器通过 FFI 与 C++ InputDispatcher 交互，模块化输入过滤器包括 bou",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-11T06:19:17.902930+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "2.6",
+      "section_title": "2.6 SurfaceFlinger 与合成",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "SurfaceFlinger FrontEnd 架构与 RequestedLayerState — Android 15 引入 FrontEnd 架构，将客户端请求的 Layer 状态(RequestedLayerState)与系统合成状态(LayerSnapshot)完全分离。通过 LayerLi",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-11T06:19:17.902930+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "7.5",
+      "section_title": "7.5 优化策略",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "RenderEffect GPU 渲染管线与 offscreen buffer 机制 — RenderEffect 底层映射到 Skia SkImageFilter 链的完整分析。含 Java API 层、JNI 层到 RenderNode 与 RenderLayer 绑定的完整路径。Re",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-11T06:19:17.902930+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
