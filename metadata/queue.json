@@ -73,8 +73,8 @@
       "added_by": "openclaw-task6",
       "added_at": "2026-05-09T21:25:00+08:00",
       "status": "completed",
-      "completed_at": "2026-05-10T10:27:49+08:00",
-      "completed_reason": "task2b fixed: duplicate of 08.08, already addressed in primary entry"
+      "completed_at": "2026-05-10T13:15:46+08:00",
+      "completed_reason": "stale entry: section already extensively reworked in prior task2b rounds with ASTC/ETC2 comparison, gpu_busy standardization, Gralloc AIDL V2; pending status was likely a queue inconsistency"
     },
     {
       "section": "2.10",
@@ -100,6 +100,56 @@
       "status": "completed",
       "completed_at": "2026-05-10T13:15:46+08:00",
       "completed_reason": "stale entry: section already extensively reworked in prior task2b rounds with ASTC/ETC2 comparison, gpu_busy standardization, Gralloc AIDL V2; pending status was likely a queue inconsistency"
+    },
+    {
+      "section": "16.5",
+      "section_title": "Android 17 API 37 性能变更",
+      "priority": 85,
+      "reason": "[Task 6 Review] L3 内容深度问题",
+      "review_issues": [
+        {
+          "type": "L3-内容深度",
+          "location": "概念模型与实际实现差异",
+          "detail": "Android 17 DeliQueue的官方描述为'Treiber Stack + min-heap'，但实际源码中使用ConcurrentSkipListSet的双队列结构(mPriorityQueue + mAsyncPriorityQueue)，两者存在实现差异。概念模型简化可能导致开发者对性能特征理解偏差",
+          "suggestion": "补充实际数据结构说明：1) 明确两组ConcurrentSkipListSet的用途和消息类型区分；2) 说明同步屏障逻辑对性能的实际影响；3) 补充性能复杂度分析(O(1)入队 + O(log n)出队 + 内存开销)"
+        },
+        {
+          "type": "L3-内容深度",
+          "location": "分代垃圾回收 gating条件验证",
+          "detail": "文中提到Generational CMC需要满足gating条件但缺乏具体验证方法。开发者无法判断自己设备是否启用该功能，影响性能优化决策",
+          "suggestion": "补充具体验证方案：1) device_config配置方法和强制开启命令；2) 运行时检测代码示例；3) 通过Perfetto验证CMC类型的方法"
+        }
+      ],
+      "added_by": "openclaw-task6",
+      "added_at": "2026-05-10T22:05:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-10T22:22:33+08:00",
+      "completed_reason": "task2b fixed: added DeliQueue complexity analysis (O(log n) + lock-free benefit) and Generational CMC verification methods (device_config/Perfetto/force-enable)"
+    },
+    {
+      "section": "5.4",
+      "section_title": "DVFS 与功耗管理",
+      "priority": 80,
+      "reason": "[Task 6 Review] L3 内容深度问题",
+      "review_issues": [
+        {
+          "type": "L3-内容深度",
+          "location": "4 GHz+ V/F曲线具体数据",
+          "detail": "文中提到'4 GHz+档位的具体V/F曲线数据因SoC而异'但缺乏实际参考数据。开发者无法获得定量优化决策依据，只能依赖定性描述",
+          "suggestion": "补充可量化的指导数据：1) 主流SoC的4 GHz+档位V/F曲线范围；2) 3.5-3.8 GHz限制对性能/功耗的具体影响比例；3) 通过sysfs或adb获取实际V/F数据的方法"
+        },
+        {
+          "type": "L3-内容深度",
+          "location": "SCMI/CPPC架构详细映射",
+          "detail": "提到'SCMI/CPPC把请求表达成抽象性能等级'但缺乏映射机制详细说明。开发者无法理解如何从performance level转换为实际频率，影响对调频延迟的分析",
+          "suggestion": "补充映射机制分析：1) performance level到具体OPP的转换过程；2) Fastchannels实现如何减少mailbox往返；3) 实际调频路径的性能影响分析"
+        }
+      ],
+      "added_by": "openclaw-task6",
+      "added_at": "2026-05-10T22:05:00+08:00",
+      "status": "completed",
+      "completed_at": "2026-05-10T22:22:33+08:00",
+      "completed_reason": "task2b fixed: added sysfs/debugfs V/F data reading method and SCMI performance-level-to-OPP mapping mechanism with Fastchannels detail"
     }
   ]
 }

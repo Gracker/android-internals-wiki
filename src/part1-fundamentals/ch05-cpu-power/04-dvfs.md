@@ -41,12 +41,12 @@ polish_date: '2026-04-07'
 polish_by: task2b-polish
 task9_result: ''
 task9_reviewed_date: '2026-05-06'
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-06T18:45:44+08:00'
 status: ready-for-review
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
@@ -65,7 +65,7 @@ review_notes: '2026-05-01 task9 deep-review: needs-rework。P0 2，P1 1，P2 1�
   断行、统一数值单位空格和少量 L2 表达；无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06 18:45 Task9：needs-rework。P0
   0 / P1 1 / P2 0。L275 RT/Deadline 任务并非在 Android 15/16 schedutil 中无条件拉到最高频；需按 effective_cpu_util()、uclamp
   与 DL bandwidth 重新表述。'
-last_task2b_at: '2026-05-06T17:59:16+08:00'
+last_task2b_at: '2026-05-10T22:21:46+08:00'
 last_task6_review_log: logs/review/2026-05-06-18-review.md
 task6_review_notes: 2026-05-06T16:04 Task2B 修复后待 Task6 复审。 | 2026-05-06 Task6 13:13：Task2B
   修复后写作复审；清理 frontmatter 重复键并统一流水线状态；L1/L2 通过，无新增 L3/L4 回炉项，送 Task9 复审。 | 2026-05-06
@@ -155,6 +155,8 @@ DVFS 的任务是：根据当前负载，从预先定义好的频率-电压对�
 
 [待验证: 4 GHz+ 档位的具体 V/F 曲线数据因 SoC 而异，以上为典型趋势描述]
 
+**获取实际 V/F 数据的方法**：每个 CPU cluster 的频率档位可以通过 sysfs 读取。`/sys/devices/system/cpu/cpufreq/` 下的 policy 目录（如 `policy4` 对应大核 cluster）包含 `scaling_available_frequencies` 和 `cpuinfo_max_freq` 等文件。对应的电压信息通常不在 sysfs 直接暴露，但在部分设备上可以通过 debugfs 的 `regulator` 节点（`/sys/kernel/debug/regulator/`）观察实际供电电压。限频的实际影响可以直接测试：找到大核 cluster 的 policy 目录，向 `scaling_max_freq` 写入目标频率上限（如 `3800000` 表示 3.8 GHz），在同一 workload 下用 Perfetto 对比帧时间分布和功耗——这种设备上的 A/B 对比比引用任何第三方数字都可靠。
+
 ## OPP Table：频率与电压的档位表
 
 CPU 并不能以任意频率运行。每个 SoC 在设计时，会为 CPU 定义一组离散的、经过验证的频率-电压组合，称为 Operating Performance Points（OPP）。
@@ -214,6 +216,8 @@ OPP 框架为上层子系统（如 cpufreq、devfreq）提供了统一的接口�
 上面的模型适合解释“平台有哪些可用档位”，但在 Android 15/16 常见的 ARMv8.4+ 平台上，OS 并不总是直接点名某个 MHz。很多 SoC 会通过 SCMI（System Control and Management Interface）或 CPPC（Collaborative Processor Performance Control）把请求表达成抽象的性能等级，再由固件把这个等级映射到具体的电压/频率档位。
 
 这会带来两个变化。其一，OPP 仍然存在，但它更多是固件和电源管理逻辑内部的映射表，Linux 看到的接口逐步从“请求某个频点”扩展到“请求更高或更低的 performance level”。其二，切换路径可以缩短。带 Fastchannels 的 SCMI 实现会把一部分控制路径做成内存映射通道，请求不必每次都走高开销的 mailbox 往返。
+
+具体映射过程是：OS 通过 `PERF_LEVEL_SET` 发出一个整数的 performance level（比如 level 7），固件端的 SCP（System Control Processor）收到后，在内部的 OPP 映射表中查找该 level 对应的 (frequency, voltage) 组合，再通过硬件驱动分别设置 PLL 和供电电压。映射在固件侧完成，Linux 内核不直接看到从 level 到 MHz 的对应关系——这就是为什么 Perfetto 中的 `power/cpu_frequency` 轨迹记录的是内核请求的频率，而固件实际下发的频率可能不同。Fastchannels 把控制路径从"mailbox 中断 → SCP 处理 → 中断返回"缩短为共享内存写入，省掉了 mailbox 往返开销。没有 Fastchannel 的平台，每次调频请求都要经过完整的 mailbox 交互，延迟更高。下文的"SCMI 频率真值"一节会展开如何用 Perfetto 追踪这个协商过程。
 
 对性能分析有两点影响。Perfetto 里看到的频率跳变依旧是真实结果，最终落点仍受 OPP、热约束和 governor 策略共同限制。端到端升频偏慢时，排查重点通常落在负载估计、uclamp、rate limit 和固件协商过程，单次 PLL 或 regulator 动作往往不是主要耗时项。
 
