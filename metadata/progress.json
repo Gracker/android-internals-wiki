@@ -137,6 +137,18 @@
         "§17.02: P0 SQL修复 — Perfetto sched表ucpu字段不存在，替换为cpu（LAG(cpu) AS prev_cpu，WHERE prev_cpu != cpu）",
         "queue条目section号误标为2.11（2.11无SQL），实际修复位置为17.02"
       ]
+    },
+    {
+      "date": "2026-05-10T13:16:22+08:00",
+      "sections": [
+        "2.9",
+        "5.6"
+      ],
+      "action": "task2b-rework",
+      "details": [
+        "2.9: 补充版本认知坑案例(3个) + 实战句式 + 修正否定-纠正超限",
+        "5.6: 新增GPS功耗排查实战案例 + Battery Historian实用经验"
+      ]
     }
   ],
   "task6_review_history": [
