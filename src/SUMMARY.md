@@ -277,6 +277,84 @@ tags:
 
 ---
 
+# 第五部分：应用层优化
+
+- [第 20 章：应用稳定性治理](part5-app/ch20-stability/README.md)
+  - [20.1 应用稳定性全景](part5-app/ch20-stability/01-stability-overview.md)
+  - [20.2 Java Crash 治理](part5-app/ch20-stability/02-java-crash-governance.md)
+  - [20.3 Native Crash 分析与治理](part5-app/ch20-stability/03-native-crash-governance.md)
+  - [20.4 ANR 治理策略](part5-app/ch20-stability/04-anr-governance.md)
+  - [20.5 OOM 治理](part5-app/ch20-stability/05-oom-governance.md)
+  - [20.6 稳定性度量与指标体系](part5-app/ch20-stability/06-stability-metrics.md)
+  - [20.7 异常处理架构设计](part5-app/ch20-stability/07-exception-architecture.md)
+  - [20.8 崩溃聚合与归因分析](part5-app/ch20-stability/08-crash-aggregation.md)
+  - [20.9 稳定性治理案例集](part5-app/ch20-stability/09-stability-case-studies.md)
+
+- [第 21 章：启动优化](part5-app/ch21-startup/README.md)
+  - [21.1 启动全链路分析（App 视角）](part5-app/ch21-startup/01-startup-analysis.md)
+  - [21.2 启动框架设计与任务编排](part5-app/ch21-startup/02-startup-framework.md)
+  - [21.3 ContentProvider 启动治理](part5-app/ch21-startup/03-contentprovider-optimization.md)
+  - [21.4 Baseline Profile 实战](part5-app/ch21-startup/04-baseline-profile-practice.md)
+  - [21.5 Splash Screen 与感知启动速度](part5-app/ch21-startup/05-splash-screen.md)
+  - [21.6 延迟初始化与按需加载](part5-app/ch21-startup/06-lazy-initialization.md)
+  - [21.7 多进程启动优化](part5-app/ch21-startup/07-multiprocess-startup.md)
+  - [21.8 启动监控与度量](part5-app/ch21-startup/08-startup-monitoring.md)
+  - [21.9 启动优化案例集](part5-app/ch21-startup/09-startup-case-studies.md)
+
+- [第 22 章：渲染优化实战](part5-app/ch22-rendering-practice/README.md)
+  - [22.1 布局优化策略](part5-app/ch22-rendering-practice/01-layout-optimization.md)
+  - [22.2 RecyclerView 最佳实践](part5-app/ch22-rendering-practice/02-recyclerview-practice.md)
+  - [22.3 Jetpack Compose 性能优化](part5-app/ch22-rendering-practice/03-compose-performance.md)
+  - [22.4 自定义 View 性能优化](part5-app/ch22-rendering-practice/04-custom-view-optimization.md)
+  - [22.5 动画性能优化](part5-app/ch22-rendering-practice/05-animation-performance.md)
+  - [22.6 图片加载与显示优化](part5-app/ch22-rendering-practice/06-image-loading.md)
+  - [22.7 WebView 性能优化实战](part5-app/ch22-rendering-practice/07-webview-optimization.md)
+  - [22.8 帧率监控与线上卡顿治理](part5-app/ch22-rendering-practice/08-frame-monitoring.md)
+  - [22.9 渲染优化案例集](part5-app/ch22-rendering-practice/09-rendering-case-studies.md)
+
+- [第 23 章：内存优化实战](part5-app/ch23-memory-practice/README.md)
+  - [23.1 内存泄漏检测与治理](part5-app/ch23-memory-practice/01-memory-leak-governance.md)
+  - [23.2 Bitmap 与图片内存优化](part5-app/ch23-memory-practice/02-bitmap-optimization.md)
+  - [23.3 Native 内存管理与优化](part5-app/ch23-memory-practice/03-native-memory-management.md)
+  - [23.4 Java Heap 优化策略](part5-app/ch23-memory-practice/04-java-heap-optimization.md)
+  - [23.5 内存抖动与 GC 治理](part5-app/ch23-memory-practice/05-memory-churn-gc.md)
+  - [23.6 大内存与多进程策略](part5-app/ch23-memory-practice/06-large-heap-multiprocess.md)
+  - [23.7 内存监控与线上治理](part5-app/ch23-memory-practice/07-memory-monitoring.md)
+  - [23.8 内存优化案例集](part5-app/ch23-memory-practice/08-memory-case-studies.md)
+
+- [第 24 章：I/O 与网络优化](part5-app/ch24-io-network/README.md)
+  - [24.1 文件 I/O 优化](part5-app/ch24-io-network/01-file-io-optimization.md)
+  - [24.2 数据库性能优化（SQLite/Room）](part5-app/ch24-io-network/02-database-optimization.md)
+  - [24.3 序列化性能对比与选型](part5-app/ch24-io-network/03-serialization-performance.md)
+  - [24.4 网络架构与连接管理](part5-app/ch24-io-network/04-network-architecture.md)
+  - [24.5 网络协议优化（HTTP/2、HTTP/3、gRPC）](part5-app/ch24-io-network/05-protocol-optimization.md)
+  - [24.6 数据压缩与缓存策略](part5-app/ch24-io-network/06-data-caching.md)
+  - [24.7 离线优先架构](part5-app/ch24-io-network/07-offline-first.md)
+  - [24.8 I/O 与网络优化案例集](part5-app/ch24-io-network/08-io-network-case-studies.md)
+
+- [第 25 章：功耗与包体积优化](part5-app/ch25-power-size/README.md)
+  - [25.1 功耗诊断与分析方法](part5-app/ch25-power-size/01-power-diagnosis.md)
+  - [25.2 后台功耗治理](part5-app/ch25-power-size/02-background-power.md)
+  - [25.3 WakeLock 与 Alarm 管理](part5-app/ch25-power-size/03-wakelock-alarm.md)
+  - [25.4 WorkManager 实战与后台任务调度](part5-app/ch25-power-size/04-workmanager-practice.md)
+  - [25.5 定位与传感器功耗优化](part5-app/ch25-power-size/05-location-sensor.md)
+  - [25.6 APK 体积分析与瘦身](part5-app/ch25-power-size/06-apk-analysis.md)
+  - [25.7 R8 与资源优化](part5-app/ch25-power-size/07-r8-resource-optimization.md)
+  - [25.8 App Bundle 与按需分发](part5-app/ch25-power-size/08-app-bundle-delivery.md)
+  - [25.9 功耗与包体积案例集](part5-app/ch25-power-size/09-power-size-case-studies.md)
+
+- [第 26 章：应用可观测性](part5-app/ch26-observability/README.md)
+  - [26.1 App 可观测性架构设计](part5-app/ch26-observability/01-observability-architecture.md)
+  - [26.2 Crash 上报体系搭建](part5-app/ch26-observability/02-crash-reporting.md)
+  - [26.3 性能指标采集与上报](part5-app/ch26-observability/03-performance-collection.md)
+  - [26.4 ANR 监控体系](part5-app/ch26-observability/04-anr-monitoring.md)
+  - [26.5 线上问题排查方法论](part5-app/ch26-observability/05-online-troubleshooting.md)
+  - [26.6 A/B Test 与性能回归防护](part5-app/ch26-observability/06-ab-testing-regression.md)
+  - [26.7 发版质量门禁](part5-app/ch26-observability/07-release-quality-gate.md)
+  - [26.8 可观测性案例集](part5-app/ch26-observability/08-observability-case-studies.md)
+
+---
+
 # 附录
 
 - [A. Android 版本性能变更速查表](appendix/version-changelog.md)
