@@ -3398,7 +3398,9 @@
       ],
       "added_by": "openclaw-task6",
       "added_at": "2026-05-09T21:25:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T10:27:49+08:00",
+      "completed_reason": "task2b fixed: duplicate of 19.23, already addressed in primary entry"
     },
     {
       "section": "19.26",
@@ -3421,7 +3423,9 @@
       ],
       "added_by": "openclaw-task6",
       "added_at": "2026-05-09T21:25:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T10:27:49+08:00",
+      "completed_reason": "task2b fixed: duplicate of 19.26, already addressed in primary entry"
     },
     {
       "section": "08.08",
@@ -3444,7 +3448,9 @@
       ],
       "added_by": "openclaw-task6",
       "added_at": "2026-05-09T21:25:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-05-10T10:27:49+08:00",
+      "completed_reason": "task2b fixed: duplicate of 08.08, already addressed in primary entry"
     },
     {
       "section": "2.10",
