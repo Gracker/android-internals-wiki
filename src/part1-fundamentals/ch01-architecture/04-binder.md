@@ -10,12 +10,12 @@ last_verified: '2026-05-09'
 last_verified_against: AOSP android-16.0.0_r1, source.android / developer.android
   官方文档
 task2b_result: fixed
-last_task2b_at: '2026-05-10T07:17:56.908448'
+last_task2b_at: '2026-05-11T03:18:49'
 task2b_state: fixed
 task6_result: pass-light-edit
-task6_state: reviewed
+task6_state: revisiting
 task9_state: pending
-pipeline_stage: task9_pending
+pipeline_stage: task6_pending
 confidence: medium
 sources:
 - type: blog
@@ -135,9 +135,20 @@ Binder 的设计目标是让跨进程调用看起来像本地函数调用。业�
 
 Binder 的数据路径属于"单次拷贝"（single copy）：发送方从自己的用户空间拷贝到共享区域，接收方不需要再拷贝一次。
 
-Android 8（Oreo）加入了 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_REPLY_SG`）。这里讨论的是另一层优化：Binder 的内核态 IPC 仍然是一次 `copy_from_user` 到目标进程的 Binder buffer，变化发生在发送端的数据组织方式。普通事务会先把分散对象整理进连续的 `Parcel` 缓冲区，再交给驱动复制；scatter-gather 会按照 offsets 和 `BINDER_TYPE_PTR` 描述的片段逐段复制，省掉额外的 gather-to-contiguous 中间整理。读 Binder 时，把 mmap 对应的 single copy 和 scatter-gather 对应的数据整理优化分开看，结论就不会打架。
+Android 8（Oreo）引入 scatter-gather 事务（`BC_TRANSACTION_SG` / `BC_REPLY_SG`），优化的是发送端的数据组织成本，不是减少 `copy_from_user` 的次数。Binder 的内核态 IPC 对两种事务类型都是一次 `copy_from_user` 到目标进程的 Binder buffer——数据总量相同，区别在于发送端如何把数据交给驱动。
 
-[已验证: AOSP android-mainline, include/uapi/linux/android/binder.h 中 `BC_TRANSACTION_SG` / `BC_REPLY_SG`; drivers/android/binder.c 中 `binder_transaction()` 的 offsets/object 逐段 copy 逻辑]
+传统 `BC_TRANSACTION` 使用 `binder_transaction_data` 结构。发送方需要先把所有 payload（包括分散在不同内存位置的对象）gather 到一块连续的 `Parcel` 缓冲区，驱动再做一次整块 `copy_from_user`。
+
+`BC_TRANSACTION_SG` 使用 `binder_transaction_data_sg` 结构，额外带一个 offsets 数组。数组中每个元素指向一个 `binder_buffer_object`（类型标记 `BINDER_TYPE_PTR`），每个 object 描述用户空间中的一段片段（`ptr` + `length`）。驱动遍历 offsets 数组，逐个把片段 `copy_from_user` 到目标进程的 Binder buffer。各段数据留在发送端原位，不需要先 gather 成连续内存。
+
+| 事务类型 | 结构体 | 发送端准备 | 驱动拷贝方式 |
+|---|---|---|---|
+| `BC_TRANSACTION` | `binder_transaction_data` | gather 到连续 Parcel | 一次整块 `copy_from_user` |
+| `BC_TRANSACTION_SG` | `binder_transaction_data_sg` | 直接引用各段 buffer | 遍历 offsets 逐段 `copy_from_user` |
+
+当 Parcel 中包含多个独立对象（多个 Bundle、文件描述符数组等）时，scatter-gather 省掉了 gather 步骤的一次额外内存分配和 memcpy。单对象小 payload 的场景收益不明显，多对象大 payload 的场景能减少发送端的 CPU 时间和内存峰值。两种事务到目标 buffer 的数据量一致，接收端不需要区分事务类型。
+
+[已验证: AOSP android-mainline, include/uapi/linux/android/binder.h 中 `binder_transaction_data_sg` 结构体、`BINDER_TYPE_PTR` 定义; drivers/android/binder.c 中 `binder_transaction()` 的 offsets 遍历与 `copy_from_user` 逐段拷贝逻辑]
 
 这个 mmap 缓冲区的大小限制是 Binder 的一个重要约束。每个进程的所有 Binder 事务共享这块约 1MB 的缓冲区。如果一次性传输一个大 Bitmap 或一个超长列表，就可能撞到 `TransactionTooLargeException`。传输大数据应该使用 `SharedMemory`（基于 ashmem/memfd）或 `ParcelFileDescriptor`，只通过 Binder 传递文件描述符句柄。
 
@@ -427,7 +438,7 @@ Binder 和全书多个章节直接相连：
 
 Binder 在 Android 版本中持续优化，这里列出对性能分析有影响的变化：
 
-- **Android 8.0（API 26）**：引入 scatter-gather 优化，减少发送端将分散对象整理成连续 `Parcel` 缓冲区的中间成本。Project Treble 也在这一代引入 HIDL 和 hwbinder，HAL 层开始大规模 Binder 化。
+- **Android 8.0（API 26）**：引入 scatter-gather 事务（`BC_TRANSACTION_SG`），发送端用 `binder_buffer_object` + offsets 数组直接引用各段 buffer，省掉 gather 到连续 `Parcel` 的中间步骤。Project Treble 也在这一代引入 HIDL 和 hwbinder，HAL 层开始大规模 Binder 化。
 - **Android 11（API 30）**：官方开始支持 HAL 使用 Stable AIDL。迁移方向是“where possible”转到 AIDL；如果上游 HAL 仍然使用 HIDL，就还得继续用 HIDL。
 - **Android 11 QPR3+**：cached apps freezer / binder-freezer 开始影响 Binder 语义。对 frozen app 发起同步（非 `oneway`）Binder 调用时，系统会 kill remote process；异步事务会先缓冲，缓冲区溢出时可能把目标进程一起拖崩。
 - **Android 12（API 31）源码已可见 `BinderCallHeavyHitterWatcher`**：系统侧对 Binder 热点调用的内部观测能力早已存在，不适合写成 Android 15 才出现的新变化。
