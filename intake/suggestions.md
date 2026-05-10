@@ -91,3 +91,19 @@
 - **问题**：5,000x、15% 等性能数据未说明具体测试条件和基准
 - **建议**：提供详细的测试环境、工作负载和基准对比信息
 
+## [Task9 Deep Review] 1.3-1.5 Threading Model Chapters — 2026-05-11
+- **类型**：数据缺失
+- **位置**：Binder 线程池数量口径
+- **问题**：文档提到默认上限 15 个线程，但未明确说明包括 startThreadPool() 启动的 1 个基础线程，实际上限是 1+15=16 个
+- **建议**：修正为：默认配置下有 1 个启动线程 + 最多 15 个内核追加线程 = 总共最多 16 个 Binder 线程
+
+- **类型**：知识盲区
+- **位置**：ThreadLocal 内存泄漏风险
+- **问题**：文档提到 ThreadLocal 用于 Looper 和 Choreographer，但缺少内存泄漏风险分析，以及如何正确清理 ThreadLocal
+- **建议**：补充内存泄漏注意事项：避免在 Handler 中持有 Activity 引用、WeakReference 的使用方法、以及 ThreadLocal.remove() 调用时机
+
+- **类型**：版本差异
+- **位置**：oneway spam detection 演进
+- **问题**：文档提到 Android 12+ 的 oneway spam detection，但缺少 Android 14/15/16 中的策略调整和告警机制改进
+- **建议**：补充版本演进：Android 14: 添加告警阈值调整、Android 15: 优化检测算法、Android 16: 添加进程级别统计
+
