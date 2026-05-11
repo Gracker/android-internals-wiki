@@ -58,16 +58,16 @@ tags:
 - cloud-compilation
 - app-installation
 - compilation
-pipeline_stage: 'task2b_pending'
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: 'reviewed'
+task9_state: pending
 task9_result: 'needs-rework'
 last_task9_at: '2026-05-11T10:20:00+08:00'
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-11'
 task2b_result: fixed
-task2b_state: 'pending'
+task2b_state: fixed
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06
   04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06
   05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。'
@@ -135,7 +135,7 @@ SystemServer 启动阶段（简化）:
     → InputManagerService
 ```
 
-PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。android-16 源码中 PMS 开机扫描可见并行路径：APEX 模块的解析不再串行排队，而是通过 `InitAppsHelper.java` 的 `getApexScanPartitions()` / `scanSystemDirs()` 在多线程中处理，线程池由 `ParallelPackageParser` 提供。`ParallelPackageParser` 本身在更早版本已存在，android-16 的优化集中在 APEX 模块的并发解析。包数量多的设备上，这一优化可以缩短 PMS 初始化耗时。
+PMS 初始化时要扫描 `/system/app/`、`/system/priv-app/`、`/product/app/`、`/vendor/app/`、`/data/app/` 等目录，解析 Manifest，校验签名，恢复 `packages.xml` 和每个包的持久化状态。首次开机、OTA 后首启、包量很多的设备，这一段在 `system_server` 里会非常显眼。android-16 源码中 PMS 开机扫描的并行路径：`InitAppsHelper.java` 的 `getApexScanPartitions()` / `scanSystemDirs()` 通过线程池（`ParallelPackageParser`）在多线程中处理。`ParallelPackageParser` 和 `mExecutorService` 并行扫描路径在 android-13 到 android-16 的源码中均已存在，不是 android-16 首次引入。包数量多的设备上，并行扫描缩短了 PMS 初始化耗时。
 
 [已验证: AOSP android-16.0.0_r1 `InitAppsHelper.java` parallel APEX scanning / `ParallelPackageParser`]
 
@@ -220,11 +220,11 @@ PMS 解析 `AndroidManifest.xml`、校验签名、检查 sharedUserId / 权限 /
 
 APK v3 签名支持密钥轮转（key rotation，proof-of-rotation 机制），允许应用在签名密钥变更时保持更新链。Android 11 引入 APK Signature Scheme v4（merkle tree 签名，服务于增量/流式安装的 .idsig 文件），v4 需要与 v2/v3 配套使用。流式校验允许安装过程中增量验证 APK 块，而非一次性读入全部内容做校验。
 
-在 Android 12+ 设备上，`IncrementalService`（`system/incremental_delivery/service/java/`）配合 v4 签名实现了按需解密和校验：应用安装后不必等所有文件完整写入，先完成校验的部分就可以被访问。在 Perfetto 中，可以通过 `android.incremental` 相关的 Trace 事件观察这一过程。当设备使用 Incremental FS（`/data/incremental/` 挂载点）时，文件访问会经过 `IncrementalService` 的 ioctl 路径，触发按块的签名校验。
+在 Android 12+ 设备上，`IncrementalService`（`system/incremental_delivery/` / `frameworks/base/services/incremental/IncrementalService.cpp`）配合 v4 签名实现了按需解密和校验：应用安装后不必等所有文件完整写入，先完成校验的部分就可以被访问。在 Perfetto 中，可以通过 `android.incremental` 相关的 Trace 事件观察这一过程。当设备使用 Incremental FS（`/data/incremental/` 挂载点）时，文件访问会经过 `IncrementalService` 的 ioctl 路径，触发按块的签名校验。
 
 这对大型游戏和应用商店的分发体验有直接影响：用户可以在"安装尚未完成"时就启动应用，已校验的部分可正常使用，未校验的部分按需下载和验证。
 
-[已验证: AOSP `system/incremental_delivery/` / `frameworks/base/services/core/java/com/android/server/os/IncrementalManagerService.java`]
+[已验证: AOSP `system/incremental_delivery/` / `frameworks/base/services/incremental/IncrementalService.cpp`]
 
 **5. 应用数据目录与 native 准备**
 
@@ -569,7 +569,7 @@ Package Manager Service 与全书多个章节有交叉：
 | Android 12 | ART 模块化（Mainline） | 编译优化可通过 Play 系统更新推送 |
 | Android 13 | `Computer` 接口引入 PMS 读写分离 | 并发查询不再被写操作阻塞 |
 | Android 14 | ART Service 取代直接 dex2oat 调用 | 编译管理更统一，后台 dexopt 更智能 |
-| Android 16 | PMS 开机扫描并行化（APEX 模块并发解析）；Play 分发侧引入 SDM 预编译产物分发 | 开机扫描时长缩短；安装场景可减少本机 dexopt |
+| Android 16 | android-16 源码中可见 APEX 模块并发解析路径（并行扫描框架在更早版本已存在）；Play 分发侧引入 SDM 预编译产物分发 | 安装场景可减少本机 dexopt |
 | Android 17 | static final 不可变 → 更激进的常量折叠 | 编译优化深度提升（与 §1.7 交叉） |
 
 ## 常见问题与误区
