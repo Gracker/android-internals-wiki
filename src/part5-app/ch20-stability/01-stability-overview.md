@@ -13,10 +13,10 @@ task2b_result: fixed
 reviewed_date: "2026-05-11"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
