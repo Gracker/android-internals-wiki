@@ -1,630 +1,634 @@
 {
-  "pending": [
+  "queue_entries": [
     {
-      "section": "ch17-oem",
-      "section_title": "ch17-oem",
+      "id": "task9-16.5-deliqueue-type-error",
+      "section": "16.5",
+      "priority": 95,
+      "title": "DeliQueue 实现类型错误",
+      "description": "ConcurrentSkipListSet<MessageNode> 类型不存在，实际应为 ConcurrentSkipListSet<NativeMessage>",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-11",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+      ],
+      "completed_date": "2026-05-11",
+      "completed_reason": "基于 Android Developers Blog 官方描述修正：ConcurrentSkipListSet<MessageNode> → Treiber Stack + min-heap + tombstoning"
+    },
+    {
+      "id": "task9-16.5-generational-cmc-conditions",
+      "section": "16.5",
+      "priority": 95,
+      "title": "Generational CMC 启用条件不完整",
+      "description": "缺少 generational_cmc_supported 系统属性检查和 Init() 阶段评估逻辑",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-11",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+      ],
+      "completed_date": "2026-05-11",
+      "completed_reason": "补充 generational_cmc_supported 系统属性检查（Runtime::Init 阶段硬件能力评估）"
+    },
+    {
+      "id": "task9-17.2-sqlite-query-error",
+      "section": "17.2",
+      "priority": 90,
+      "title": "SQLite 查询字段错误",
+      "description": "查询使用了不存在的 prev_cpu 字段，应使用 cpu 字段 + LAG 窗口函数",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-11",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ],
+      "completed_date": "2026-05-11",
+      "completed_reason": "SQL 查询已在前一轮修复（LAG 窗口函数），queue 条目遗漏未更新"
+    },
+    {
+      "id": "task9-16.5-deliqueue-drain-process",
+      "section": "16.5",
+      "priority": 85,
+      "title": "DeliQueue drain 过程原理链不完整",
+      "description": "缺少 drain 触发条件、频率控制和与 Looper 主循环的集成关系",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-11",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+      ],
+      "completed_date": "2026-05-11",
+      "completed_reason": "基于官方博客补充 drain 触发条件、与 Looper 主循环集成关系、tombstoning 移除机制"
+    },
+    {
+      "id": "task9-17.2-mediatek-scheduling",
+      "section": "17.2",
+      "priority": 80,
+      "title": "联发科调度策略证据不足",
+      "description": "缺乏实机测试数据，开源信息不完整",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-11",
+      "assigned_to": "research-team",
+      "estimated_hours": 5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ]
+    },
+    {
+      "id": "task9-20.4-dispatchers-io-degradation",
+      "section": "20.4",
+      "priority": 80,
+      "title": "Dispatchers.IO 降级逻辑链缺失",
+      "description": "缺少 Handler 关闭时的任务路由机制说明",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-11",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ]
+    },
+    {
+      "id": "task9-deep-review-2.9",
+      "section": "2.9",
+      "priority": 95,
+      "title": "渲染机制的版本演进-源码路径和原理链错误",
+      "description": "P0: 源码路径错误(2处), P1: 原理链断裂(3处), P1: 版本差异覆盖不完整(2处), P1: 知识盲区(3处), P1: 数据缺失(2处), P2: 交叉引用错误(1处)",
+      "issue_type": "source-code-accuracy-principle-chain-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-11",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+      ],
+      "completed_date": "2026-05-11",
+      "completed_reason": "Task 2B 回炉修复: 源码路径纠正(P0), 原理链补强(P1), 版本差异修正(P1)"
+    },
+    {
+      "id": "task9-deep-review-2.10",
+      "section": "2.10",
+      "priority": 95,
+      "title": "GPU 渲染深入-源码错误和原理链断裂",
+      "description": "P0: 源码路径错误(2处), P0: API签名错误(1处), P1: 原理链断裂(3处), P1: 版本差异覆盖不完整(2处), P1: 知识盲区(2处), P1: 数据缺失(2处), P2: 交叉引用错误(1处)",
+      "issue_type": "source-code-accuracy-principle-chain-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-11",
+      "assigned_to": "content-team",
+      "estimated_hours": 5,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+      ],
+      "completed_date": "2026-05-11",
+      "completed_reason": "Task 2B 回炉修复: 源码路径纠正(P0), 原理链补强(P1), 版本差异修正(P1)"
+    },
+    {
+      "id": "task9-deep-review-17.2",
+      "section": "17.2",
+      "priority": 95,
+      "title": "SoC 平台差异-多源码错误和数据缺失",
+      "description": "P0: 源码路径错误(1处), P0: 字段错误(1处), P0: API版本错误(1处), P0: 符号错误(1处), P1: 原理链断裂(4处), P1: 版本差异覆盖不完整(3处), P1: 知识盲区(3处), P1: 数据缺失(3处), P2: 交叉引用错误(1处)",
+      "issue_type": "source-code-accuracy-principle-chain-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-11",
+      "assigned_to": "research-team",
+      "estimated_hours": 6,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: GPU 渲染管线架构差异分析(P1), Android 17/GKI 6.12 调度变更(P1), EAS→EEVDF 术语对齐(P2), 禁用词清理, applicable_versions 扩展至 Android 17; Oryon/MTK 参数待验证项保留既有标注"
+    },
+    {
+      "id": "task6-20.8-crash-aggregation-depth",
+      "section": "20.8",
+      "priority": 70,
+      "title": "崩溃聚合算法深度不足",
+      "description": "L3级问题：缺少具体的聚合算法代码实现示例、不同规模团队适用性分析不够深入、缺少新兴技术（如基于大模型的崩溃分析）探讨",
+      "issue_type": "content-depth",
+      "severity": "P2",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/08-crash-aggregation.md"
+      ]
+    },
+    {
+      "id": "task6-20.8-crash-aggregation-practical",
+      "section": "20.8",
+      "priority": 65,
+      "title": "缺乏实战案例和经验指导",
+      "description": "L4级问题：缺少具体的实战案例和作者经验分享、指导性建议偏理论化，缺乏可操作的场景化建议",
+      "issue_type": "content-practical",
+      "severity": "P2",
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/08-crash-aggregation.md"
+      ],
+      "estimated_hours": 2
+    },
+    {
+      "id": "task6-20.9-stability-case-depth",
+      "section": "20.9",
+      "priority": 68,
+      "title": "案例集深度和可复现性不足",
+      "description": "L3级问题：缺少代码复现步骤、调试工具使用细节不足、缺少不同Android版本的兼容性问题探讨",
+      "issue_type": "content-depth",
+      "severity": "P2",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/09-stability-case-studies.md"
+      ]
+    },
+    {
+      "id": "task6-20.9-stability-case-practical",
+      "section": "20.9",
+      "priority": 63,
+      "title": "缺乏实战经验和决策过程",
+      "description": "L4级问题：缺少真实的故障排查决策过程分享、作者在处理这些问题时的经验教训和具体操作细节",
+      "issue_type": "content-practical",
+      "severity": "P2",
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/09-stability-case-studies.md"
+      ],
+      "estimated_hours": 2
+    },
+    {
+      "id": "task6-5.1-linux-scheduling-depth",
+      "section": "5.1",
+      "priority": 75,
+      "title": "Linux 调度器深度分析不足",
+      "description": "L3级问题：缺少 EEVDF 调度器与 CFS 的详细对比分析、调度器配置调优的具体参数说明、实时调度在不同 Android 版本中的演进路径",
+      "issue_type": "content-depth",
+      "severity": "P2",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
+      ]
+    },
+    {
+      "id": "task6-5.1-linux-scheduling-practical",
+      "section": "5.1",
       "priority": 60,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        ""
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了 — ...",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-05-11T05:35:41.763927",
-      "status": "pending"
-    },
-    {
-      "section": "ch17-oem",
-      "section_title": "ch17-oem",
-      "priority": 60,
-      "reason": "[素材注入] 新增参考文章，建议补充到章节",
-      "material_paths": [
-        ""
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考",
-          "location": "参考资料小节",
-          "detail": "2026年了，Android开发该如何调试布局 — ...",
-          "suggestion": "判断是否适合作为章节参考，如适合请补充"
-        }
-      ],
-      "added_by": "task8-classifier",
-      "added_at": "2026-05-11T05:35:41.770358",
-      "status": "pending"
-    },
-    {
-      "section": "1.3",
-      "section_title": "进程模型与生命周期管理",
-      "priority": 90,
-      "reason": "[review回炉] 写作质量与内容深度问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "需重写",
-          "location": "锚点覆盖部分",
-          "detail": "关键锚点内容深度不够，需要深入源码分析",
-          "suggestion": "补充实际AOSP源码示例和Perfetto验证"
-        },
-        {
-          "type": "需补充素材",
-          "location": "进程回收策略",
-          "detail": "lmkd与PSI分析缺少实际观察数据",
-          "suggestion": "添加不同厂商设备的回收决策对比"
-        },
-        {
-          "type": "源码错误",
-          "location": "L187-L189 CachedAppOptimizer 架构设计",
-          "detail": "文中描述 CachedAppOptimizer 实例化 ActivityManagerService，但实际 AOSP 中是 ActivityManagerService 实例化 CachedOptimizer，方向相反",
-          "suggestion": "修正调用链描述：ActivityManagerService -> CachedOptimizer，而非 CachedOptimizer -> ActivityManagerService"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-05-11T06:15:36.927240",
+      "title": "缺乏实际应用经验和决策指导",
+      "description": "L4级问题：缺少作者在实际 Android 调度问题解决中的经验分享、如何在大型应用中进行调度优化的具体实践建议",
+      "issue_type": "content-practical",
+      "severity": "P2",
       "status": "pending",
-      "original_review_log": "logs/review/2026-05-11-06-review.md"
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
+      ],
+      "estimated_hours": 3
     },
     {
-      "section": "1.4",
-      "section_title": "Binder IPC 机制与性能影响",
+      "id": "task9-4.3-art-memory-generational-cmc",
+      "section": "4.3",
       "priority": 90,
-      "reason": "[review回炉] 写作质量与内容深度问题",
-      "material_paths": [
-        "intake/suggestions.md"
+      "title": "Generational CMC 实现细节缺失",
+      "description": "P1级问题：缺少 Generational CMC 与传统 CC GC 的具体实现对比、分代策略的详细配置参数说明、Android 16 QPR2 之后的实际性能数据",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/03-art-memory.md"
       ],
-      "review_issues": [
-        {
-          "type": "需补充素材",
-          "location": "线程池模型",
-          "detail": "Binder线程耗尽与ANR关系缺少实际案例",
-          "suggestion": "补充典型ANR分析案例和优化建议"
-        },
-        {
-          "type": "需确认",
-          "location": "架构分析",
-          "detail": "与Task 9的oneway spam detection结论有潜在矛盾",
-          "suggestion": "重新审核async buffer语义与技术实现"
-        },
-        {
-          "type": "源码错误",
-          "location": "L84-87 AIDL Proxy/Stub 调用链",
-          "detail": "文中简化调用链为 Proxy → Binder驱动 → Stub，但实际在 AOSP 中是 Proxy.transact() → IPCThreadState.transact() → Binder驱动 → Stub.onTransact()，缺少 IPCThreadState 这个关键中介层",
-          "suggestion": "补充完整调用链：Proxy.transact() → IPCThreadState.transact() → Binder驱动 → Stub.onTransact()"
-        },
-        {
-          "type": "源码错误",
-          "location": "L263-268 Scatter-gather 事务优化",
-          "detail": "文中描述 scatter-gather 优化的是发送端的数据组织成本，但实际 AOSP scatter-gather 的主要优化是减少目标进程的 buffer 分配开销，而非发送端成本",
-          "suggestion": "修正为：scatter-gather 主要减少目标进程的 binder buffer 分配开销，通过避免 gather 步骤减少内存分配和 memcpy"
-        },
-        {
-          "type": "源码错误",
-          "location": "L415-419 Binder 线程池上限",
-          "detail": "文中提到默认上限 15 个工作线程，但实际 android-16.0.0_r1 中 DEFAULT_MAX_BINDER_THREADS=15 仅适用于普通进程，system_server 等系统进程使用 DEFAULT_MAX_BINDER_THREADS_SYSTEM=30",
-          "suggestion": "补充说明：普通进程上限 15 线程，system_server 等系统进程上限 30 线程"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-05-11T06:15:36.927402",
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 补充 Generational CMC vs CC 实现差异对比(读屏障/内存开销/分代策略), 添加分代配置参数说明(gUseUserfaultfd/use_generational_cmc/generational_cmc_supported), 补充性能数据边界说明, 修正 generational CC→CMC 版本线表述"
+    },
+    {
+      "id": "task6-4.3-art-memory-practical",
+      "section": "4.3",
+      "priority": 65,
+      "title": "缺乏内存管理的实战经验",
+      "description": "L4级问题：缺少作者在大型应用内存优化中的实际案例、ART GC 问题的现场诊断经验、不同内存压力场景下的最佳实践",
+      "issue_type": "content-practical",
+      "severity": "P2",
       "status": "pending",
-      "original_review_log": "logs/review/2026-05-11-06-review.md"
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/03-art-memory.md"
+      ],
+      "estimated_hours": 3
     },
     {
-      "section": "3.4",
-      "section_title": "输入延迟与预测输入技术",
-      "priority": 90,
-      "reason": "[review回炉] 写作质量与内容深度问题",
-      "material_paths": [
-        "intake/suggestions.md"
+      "id": "task9-22.3-strongskipping-version-error",
+      "section": "22.3",
+      "priority": 95,
+      "title": "Strong Skipping 版本信息错误",
+      "description": "Kotlin 2.2 默认启用的不是 Strong Skipping，Stabilization 才是；Strong Skipping 是 Kotlin 2.3 引入的特性",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
-      "review_issues": [
-        {
-          "type": "需补充素材",
-          "location": "全文多处",
-          "detail": "VSync同步、渲染管线与Perfetto追踪分析",
-          "suggestion": "补充Perfetto标准库版本对比和实际case study"
-        },
-        {
-          "type": "需重写",
-          "location": "输出-响应映射部分",
-          "detail": "当前段落过长，建议拆分为场景化叙述",
-          "suggestion": "按游戏/普通场景分别说明输入延迟影响"
-        }
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: Strong Skipping 默认启用版本从 Kotlin 2.2 修正为 Kotlin 2.0（Kotlin 2.0 起已默认启用）"
+    },
+    {
+      "id": "task9-22.3-pausable-comp-version-error",
+      "section": "22.3",
+      "priority": 95,
+      "title": "Pausable Composition 默认启用时机错误",
+      "description": "Pausable Composition 在 Compose 1.10 中是实验性版本，正式默认启用在 Compose 1.11",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "blocked",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
-      "added_by": "task6-review",
-      "added_at": "2026-05-11T06:15:36.927563",
+      "completed_date": "2026-05-12",
+      "completed_reason": "Pausable Composition 默认启用版本（Compose 1.10 vs 1.11）无法通过现有素材验证，需高爷确认实际版本线"
+    },
+    {
+      "id": "task9-22.3-derivedstate-conditions-incomplete",
+      "section": "22.3",
+      "priority": 95,
+      "title": "derivedStateOf 使用条件不完整",
+      "description": "派生计算必须是纯函数（无副作用、无内存分配）的条件被遗漏",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 补充 derivedStateOf 派生计算必须是纯函数（无副作用、无内存分配）的条件，补完三条件"
+    },
+    {
+      "id": "task9-22.3-compose-migration-guide",
+      "section": "22.3",
+      "priority": 85,
+      "title": "缺少版本迁移指南",
+      "description": "从 Compose 1.x 升级到 1.10+ 时的性能优化策略变化指南缺失",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 新增'版本迁移与优化策略变化'章节，覆盖 Kotlin 2.0+ 迁移检查要点"
+    },
+    {
+      "id": "task9-22.3-compose-profiler",
+      "section": "22.3",
+      "priority": 80,
+      "title": "遗漏 Android Studio Compose Profiler",
+      "description": "未介绍 Android Studio 2024.1+ 的 Compose Profiler 工具使用方法",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
       "status": "pending",
-      "original_review_log": "logs/review/2026-05-11-06-review.md"
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ]
     },
     {
-      "section": "3.1",
-      "section_title": "3.1 Input 事件分发全流程",
-      "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputflinger-rust-architecture.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "InputFlinger Rust 组件架构与 ARR 协同机制 — Android 16 InputFlinger 从 C++ 到 Rust 的渐进式迁移分析。Rust 过滤器通过 FFI 与 C++ InputDispatcher 交互，模块化输入过滤器包括 bou",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-05-11T06:19:17.902930+08:00",
-      "status": "pending"
+      "id": "task9-17.2-oryon-cache-error",
+      "section": "17.2",
+      "priority": 95,
+      "title": "高通 Oryon 缓存参数错误",
+      "description": "Oryon 采用的是私有 L2 缓存，不是共享 L2；大容量 L1 缓存的具体参数未获官方确认",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "research-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ]
     },
     {
-      "section": "2.6",
-      "section_title": "2.6 SurfaceFlinger 与合成",
-      "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "SurfaceFlinger FrontEnd 架构与 RequestedLayerState — Android 15 引入 FrontEnd 架构，将客户端请求的 Layer 状态(RequestedLayerState)与系统合成状态(LayerSnapshot)完全分离。通过 LayerLi",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-05-11T06:19:17.902930+08:00",
-      "status": "pending"
+      "id": "task9-17.2-dimensity-scheduling-error",
+      "section": "17.2",
+      "priority": 95,
+      "title": "联发科调度策略描述错误",
+      "description": "全大核设计实际上减少了集群间迁移，迁移频率不是明显高于传统大小核",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ]
     },
     {
-      "section": "7.5",
-      "section_title": "7.5 优化策略",
-      "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md"
+      "id": "task9-17.2-tensor-core-error",
+      "section": "17.2",
+      "priority": 95,
+      "title": "Tensor G4 架构错误",
+      "description": "Tensor G4 使用的是定制的 ARM 核心，不是标准公版核心",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "research-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ]
+    },
+    {
+      "id": "task9-17.2-real-device-data",
+      "section": "17.2",
+      "priority": 85,
+      "title": "缺少实机测试数据",
+      "description": "各平台实际性能对比的测试数据缺失，结论缺乏数据支撑",
+      "issue_type": "data-support",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "research-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch17-oem/02-soc-differences.md"
+      ]
+    },
+    {
+      "id": "task9-20.4-watchdog-timing-error",
+      "section": "20.4",
+      "priority": 95,
+      "title": "Watchdog 机制描述错误",
+      "description": "系统 ANR Watchdog 的检查周期不是固定的5秒，而是分场景的差异化检测",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
       ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "RenderEffect GPU 渲染管线与 offscreen buffer 机制 — RenderEffect 底层映射到 Skia SkImageFilter 链的完整分析。含 Java API 层、JNI 层到 RenderNode 与 RenderLayer 绑定的完整路径。Re",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 新增 ANR 触发场景与超时阈值总表，明确区分系统级组件差异化检测和应用侧 Watchdog"
+    },
+    {
+      "id": "task9-20.4-anr-detection-error",
+      "section": "20.4",
+      "priority": 95,
+      "title": "主线程阻塞检测逻辑错误",
+      "description": "ANR 不是简单的'主线程5秒无响应'，而是分场景的差异化检测",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
       ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-05-11T06:19:17.902930+08:00",
-      "status": "pending"
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 添加 ANR 类型/超时/检测机制概览表，明确不同组件的差异化检测逻辑"
+    },
+    {
+      "id": "task9-20.4-broadcast-timing-error",
+      "section": "20.4",
+      "priority": 95,
+      "title": "BroadcastReceiver 超时错误",
+      "description": "BroadcastReceiver 的超时不是固定的10秒，与优先级和类型相关",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 补充 BR 超时与广播类型/优先级的关系（有序广播独立计时、前台/后台广播不同超时）"
+    },
+    {
+      "id": "task9-20.4-anr-early-warning",
+      "section": "20.4",
+      "priority": 85,
+      "title": "缺少 ANR 预警机制",
+      "description": "未介绍 ANR 预警和主动发现的方法",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 新增'ANR 预警与主动发现'章节（Looper 监控、Binder 调用监控、预警数据聚合）"
+    },
+    {
+      "id": "task8-2026-05-12-30",
+      "section": "Android Development Tools",
+      "priority": 75,
+      "title": "## [ClawFeed] CUDA-oxide: Nvidia's official Rust to CUDA compiler",
+      "description": "NVIDIA 发布了官方的 Rust 到 CUDA 编译器 CUDA-oxide，为开发者提供了一种新的 GPU 编程语言选择。这个工具将 Rust 的安全性与 CUDA 的计算能力结合，有望简化 GPU 开发流程并减少内存安全问题。这是跨语言 GPU 编程领域的重要进展。...",
+      "issue_type": "daily-info-classification",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [],
+      "completed_date": null,
+      "completed_reason": null
+    },
+    {
+      "id": "task8-2026-05-12-31",
+      "section": "Android Development Tools",
+      "priority": 75,
+      "title": "## [ClawFeed] Training an LLM in Swift, Part 1: Taking matrix mult from Gflop/s to Tflop/s",
+      "description": "开发者分享了在 Swift 中训练大语言矩阵的经验，将矩阵乘法的性能从 Gflop/s 提升到 Tflop/s。这展示了移动端 AI 计算优化的最新进展，为在 Apple 设备上部署高性能 AI 模型提供了参考。...",
+      "issue_type": "daily-info-classification",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [],
+      "completed_date": null,
+      "completed_reason": null
+    },
+    {
+      "id": "task8-2026-05-12-32",
+      "section": "Android Architecture",
+      "priority": 75,
+      "title": "## [掘金Android] Android17 为什么重写 MessageQueue",
+      "description": "Android 消息机制自第一个版本以来二十年未变，核心是一个 synchronized 锁守着单链表，多线程操作时锁竞争会阻塞 UI 线程。Google 用 Perfetto 分析海量线上 trace 后确认 MessageQueue 锁竞争是系统级普遍问题。Android 17 引入 DeliQueue 无锁架构...",
+      "issue_type": "daily-info-classification",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [],
+      "completed_date": null,
+      "completed_reason": null
+    },
+    {
+      "id": "task8-2026-05-12-33",
+      "section": "Android Architecture",
+      "priority": 75,
+      "title": "## [掘金Android] AI 定义的 Android 开发规范，直接抄作业！",
+      "description": "文章基于项目实际技术栈制定了完整的 AI 辅助 Android 开发规范，涵盖...",
+      "issue_type": "daily-info-classification",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [],
+      "completed_date": null,
+      "completed_reason": null
     },
     {
       "section": "20.3",
       "section_title": "Native Crash 分析与治理",
-      "priority": 75,
-      "reason": "[Task 6 Review] 内容深度与实用性问题",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "内容深度",
-          "location": "源码路径验证",
-          "detail": "debuggerd/crash_dump.cpp 中的具体函数调用链需要更精确的源码路径验证，特别是 ptrace attach 和堆栈收集的具体实现",
-          "suggestion": "提供准确的函数引用和调用顺序，如 `ptrace(PTRACE_ATTACH, pid)` → `read_thread_info()` → `generate_backtrace()` 等"
-        },
-        {
-          "type": "活人感",
-          "location": "写作语气",
-          "detail": "文档采用被动描述较多，缺少\"我们\"的观察视角和实际调试经验",
-          "suggestion": "增加\"我们在实际调试中经常发现\"、\"我们可以通过观察寄存器值\"等表述，增强内容的人性化和实用性"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-05-11T08:17:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "5.1",
-      "section_title": "Linux 进程调度基础",
       "priority": 80,
-      "reason": "[Task 6 Review] 现代调度机制补充",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "内容深度",
-          "location": "ARMv9.2 调度优化",
-          "detail": "对骁龙8 Elite等ARMv9.2平台的跨核迁移成本优化（1.5μs-3.5μs）分析不够深入，缺乏实际调度决策影响评估",
-          "suggestion": "补充ARMv9.2平台上的调度器动态决策分析，对比绑核与不绑核在新型SoC上的实际性能差异"
-        },
-        {
-          "type": "活人感",
-          "location": "调试经验分享",
-          "detail": "缺少实际调度问题的调试案例和经验总结",
-          "suggestion": "增加\"当我们看到RenderThread频繁在小核上运行时，首先检查cpuset设置\"等实际调试指导"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-05-11T08:17:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "4.3",
-      "section_title": "ART 虚拟机内存管理",
-      "priority": 85,
-      "reason": "[Task 6 Review] 版本演进与实际应用",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "内容深度",
-          "location": "ART 16 CMC 性能数据",
-          "detail": "缺少 Android 16 QPR2 Generational CMC 的具体性能数据和量化对比，无法评估实际优化效果",
-          "suggestion": "补充PCMark等基准测试数据，包含不同负载场景下的GC延迟降低百分比和CPU吞吐量提升"
-        },
-        {
-          "type": "活人感",
-          "location": "实际案例分析",
-          "detail": "缺少基于实际memory leak场景的完整调试案例分析",
-          "suggestion": "增加\"当我们遇到内存泄漏时，通过Perfetto观察HeapTaskDaemon活动模式\"等实际工作流程指导"
-        }
-      ],
-      "added_by": "task6-review",
-      "added_at": "2026-05-11T08:17:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "1.10",
-      "section_title": "ContentProvider 性能与优化",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码错误：L226 getProviderMimeType 超时；另有 1 个 P1/P0 技术问题",
+      "reason": "[DeepResearch 注入] 新增高价值调研材料：Native Crash 符号表处理机制（Breakpad .sym 文件生成与符号还原完整流程），建议补充到章节参考资料",
       "material_paths": [
-        "intake/suggestions.md"
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-native-crash-symbol-table-mechanism.md"
       ],
       "review_issues": [
         {
-          "type": "源码错误",
-          "location": "L226 getProviderMimeType 超时",
-          "detail": "正文写“getProviderMimeType 超时 1 秒 / AMS 内部超时”。android-16.0.0_r1 `ContentResolver` 中 `CONTENT_PROVIDER_TIMEOUT_MILLIS = 3 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；`getType()` 通过 `provider.getTypeAsync()` 等待该 3s 结果。走 AMS `getMimeTypeFilterAsync()` 时等待的是 `REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS = CONTENT_PROVIDER_READY_TIMEOUT_MILLIS + 3s`，不是 1s。",
-          "suggestion": "把表格改为“getType / getMimeTypeFilter async 结果等待：已有 provider 3s；需拉起远端 provider 时包含 ready timeout + 3s”。源码锚点放到 `ContentResolver.java`，不是只写 AMS。"
-        },
-        {
-          "type": "原理断裂",
-          "location": "L271-L282、L453-L460 ContentProviderTimeout / 级联 ANR 时间线",
-          "detail": "正文把“Provider 发布超时 10 秒”写成 App A 收到 `contentProviderTimeout` 并触发 ANR。AOSP 的 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 调 `processContentProviderPublishTimedOutLocked()`，失败原因是 `timeout publishing content providers`；未核到 `ContentProviderTimeout` / `contentProviderTimeout` 作为稳定日志或 Perfetto 信号。调用方 ANR 仍来自主线程阻塞后的 Input/Service 等组件超时，或 provider ready 等待失败，不能写成独立的 ContentProviderTimeout 事件。",
-          "suggestion": "拆成两条链：① 提供方发布超时：system_server 清理/移除提供方进程；② 调用方主线程阻塞：由调用方组件 ANR 口径触发。删除 `ContentProviderTimeout` 关键字，改为源码中的 message / reason 或明确标注需设备日志验证。"
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "Native Crash 符号表处理机制 — Breakpad .sym 文件生成（dump_syms）、符号文件格式（MODULE/FILE/FUNC/PUBLIC/STACK CFI）、目录结构与查找协议、minidump 符号还原调用链、多架构支持、async-signal-safe 约束",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
         }
       ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T10:20:00+08:00",
-      "status": "pending"
-    },
-    {
-      "section": "16.5",
-      "section_title": "16.5 Android 17 (API 37) 性能行为变更与适配方法",
-      "priority": 95,
-      "reason": "[Deep Tech Review] DeliQueue 实现错误和 Generational CMC 启用条件不完整",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "DeliQueue 实现描述",
-          "detail": "文中提到 ConcurrentSkipListSet<MessageNode，但实际 AOSP 源码中使用的是 ConcurrentSkipListSet<NativeMessage，且不存在名为 MessageNode 的类型。",
-          "suggestion": "修正为正确的类型引用：ConcurrentSkipListSet<NativeMessage>，并确认实际的 AOSP 源码路径。"
-        },
-        {
-          "type": "源码错误",
-          "location": "Generational CMC 启用条件",
-          "detail": "文中只提到 gUseUserfaultsd、use_generational_cmc 和 persist.device_config.runtime_native_boot.use_generational_gc，但实际 AOSP 源码还包含 generational_cmc_supported 系统属性检查，该属性在Init()阶段会检查设备硬件能力。",
-          "suggestion": "补充完整的启用条件：增加 generational_cmc_supported 硬件能力检查和 Init() 阶段的评估逻辑。"
-        },
-        {
-          "type": "原理断裂",
-          "location": "DeliQueue drain 过程",
-          "detail": "文中提到 drain 操作但没有详细说明 drain 的触发条件、频率控制和与 Looper 主循环的集成关系，这是理解其性能行为的关键环节。",
-          "suggestion": "补充 drain 的触发条件、频率控制机制和与 Looper 主循环的详细集成关系。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T15:20:00",
-      "status": "pending"
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-12T06:28:00+08:00",
+      "status": "pending",
+      "id": "dr-inject-2026-05-12-native-crash-symbol-table"
     }
   ],
-  "completed": [
-    {
-      "section": "1.5",
-      "section_title": "线程模型",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：MessageQueue 三套实现核心差异点未说明",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "MessageQueue 实现演进",
-          "detail": "文档提到 LegacyMessageQueue、CombinedMessageQueue、ConcurrentMessageQueue 三套实现并存，但缺少每套实现的核心差异点、默认启用条件、以及性能对比",
-          "suggestion": "补充三种实现的核心区别：Legacy: 链表实现、Combined: 混合锁策略、Concurrent: 无锁实现；以及各版本的默认启用策略"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T01:27:14.905670",
-      "status": "pending"
-    },
-    {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：ApplicationExitInfo 接口说明不完整",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "ApplicationExitInfo 接口说明",
-          "detail": "文档提到 API 30+ 支持 ApplicationExitInfo，但未说明具体的类路径和方法，实际应为 android.app.ApplicationExitInfo 及其相关方法如 setReason(), getPid() 等",
-          "suggestion": "补充完整的类引用：android.app.ApplicationExitInfo，并说明关键方法的使用示例"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T07:21:07.462916"
-    },
-    {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：android:miscStackTraces 机制缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "android:miscStackTraces 机制",
-          "detail": "文档提及该机制限制堆栈深度，但未解释具体的限制机制和阈值设置。ART虚拟机如何实现堆栈深度的管理和限制？",
-          "suggestion": "补充堆栈深度限制的实现原理：包括ShadowFrame的管理、最大深度计算方法、以及android:miscStackTraces属性的具体作用"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T07:21:07.462938"
-    },
-    {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：ANR 触发机制缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "ANR 触发机制",
-          "detail": "文档列出ANR超时阈值但未说明系统如何监控线程状态。InputDispatcher、ActiveServices等监控器的具体工作原理和实现缺失",
-          "suggestion": "补充监控器实现原理：InputDispatcher的事件循环监控、ActiveServices的Service状态轮询机制、以及ANR触发后的处理流程"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T07:21:07.462941"
-    },
-    {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：OOM治理机制缺失",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "OOM治理机制",
-          "detail": "文档提到堆增量技术但未解释具体实现机制。Runtime.maxMemory()、Heap::AllocObjectWithAllocator()等底层逻辑的交互关系缺失",
-          "suggestion": "补充OOM治理的完整链路：Heap::AllocObjectWithAllocator()的分配逻辑、AllocateInternalWithGc()的GC触发机制、堆扩容的决策条件"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T07:21:07.462943"
-    },
-    {
-      "section": "20.2",
-      "section_title": "Java Crash 治理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：Thread异常处理函数",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "Thread::HandleUncaughtExceptions() 路径",
-          "detail": "文档引用Thread::HandleUncaughtExceptions()，但AOSP实际函数名为HandleUncaughtExceptions()，位于art/runtime/thread.cc，缺少Thread::前缀",
-          "suggestion": "修正为正确的函数引用：HandleUncaughtExceptions()，位于art/runtime/thread.cc"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T07:21:07.462944"
-    },
-    {
-      "section": "20.2",
-      "section_title": "Java Crash 治理",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：RuntimeInit初始化路径",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "RuntimeInit.commonInit() 路径",
-          "detail": "文档引用RuntimeInit.commonInit()但路径不完整，正确路径应为frameworks/base/core/java/com/android/internal/os/RuntimeInit.java:commonInit()",
-          "suggestion": "补充完整的包路径：com.android.internal.os.RuntimeInit.commonInit()"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T07:21:07.462946"
-    },
-    {
-      "section": "20.2",
-      "section_title": "Java Crash 治理",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：异常检测时机机制",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "异常检测时机",
-          "detail": "文档未说明ART虚拟机在哪些检查点检测异常。仅提到检测点但未解释具体的触发条件和检查机制",
-          "suggestion": "补充ART异常检测的完整流程：方法返回时的检查、GC过程中的检查、线程销毁时的检查等关键节点"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T07:21:07.462947"
-    },
-    {
-      "section": "2.10",
-      "section_title": "GPU 渲染深入",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码路径错误：Canvas调用链",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "Canvas.drawRect() 调用链",
-          "detail": "文档简化了Canvas.drawRect()的调用路径，实际为Canvas.drawRect() → super.drawRect() → BaseCanvas.drawRect() → nDrawNative()，缺少中间步骤说明",
-          "suggestion": "修正完整的调用链：说明Canvas、BaseCanvas、native层的具体传递过程和各层的作用"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T11:26:05+08:00"
-    },
-    {
-      "section": "2.10",
-      "section_title": "GPU 渲染深入",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码结构错误：ANativeWindowBuffer",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "ANativeWindowBuffer 结构描述",
-          "detail": "文档中描述的ANativeWindowBuffer字段与AOSP实际定义不符。实际定义在frameworks/native/libs/nativewindow/include/android/native_window.h",
-          "suggestion": "修正为正确的结构定义：包括buffer_handle_t、common、width、height、stride、format、usage等实际字段"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T11:26:05+08:00"
-    },
-    {
-      "section": "2.10",
-      "section_title": "GPU 渲染深入",
-      "priority": 85,
-      "reason": "[Deep Tech Review] 原理断裂：Vulkan渲染管线",
-      "material_paths": [],
-      "review_issues": [
-        {
-          "type": "原理断裂",
-          "location": "Vulkan渲染管线原理",
-          "detail": "文档缺少对VkRenderPass、VkFramebuffer等关键概念在渲染过程中的作用说明。这些组件如何协同工作构成完整的渲染管线",
-          "suggestion": "补充Vulkan渲染管线的完整流程：VkCommandBuffer构建、VkRenderPass设置、VkFramebuffer绑定、以及它们之间的依赖关系"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T05:24:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T11:26:05+08:00"
-    },
-    {
-      "section": "1.9",
-      "section_title": "Package Manager Service 与应用安装性能",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码错误：L221-L225 IncrementalService 源码锚点；另有 1 个 P1/P0 技术问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L221-L225 IncrementalService 源码锚点",
-          "detail": "`frameworks/base/services/core/java/com/android/server/os/IncrementalManagerService.java` 在 android-16.0.0_r1 不存在（Gitiles 404）。AOSP 可核到的是 `frameworks/base/services/incremental/IncrementalService.cpp`，以及 `system/incremental_delivery/` 相关组件。",
-          "suggestion": "删除不存在的 Java service 路径；把锚点改为 `frameworks/base/services/incremental/IncrementalService.cpp` / `system/incremental_delivery/`，并按“流式/增量安装”收窄描述。"
-        },
-        {
-          "type": "版本差异",
-          "location": "L570 版本演进表 Android 16 行",
-          "detail": "正文仍把“PMS 开机扫描并行化（APEX 模块并发解析）”写成 Android 16 变化。复核 android-13.0.0_r1、14.0.0_r1、15.0.0_r1、16.0.0_r1 的 `InitAppsHelper.java`，均已有 `getApexScanPartitions()`、`scanSystemDirs()` 与 `mExecutorService` 并行扫描路径。",
-          "suggestion": "改为“android-16 源码中可见的并行扫描路径”，不要写成 Android 16 首次引入；如要保留 16 优化结论，需要补具体 commit / release note。"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T10:20:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T11:26:05+08:00"
-    },
-    {
-      "section": "20.1",
-      "section_title": "应用稳定性全景",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码错误：CreateInternalStackTraceInternal 函数名错误；另有 1 个 P1/P0 技术问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L154-156 Java 堆栈生成函数",
-          "detail": "正文提到 `CreateInternalStackTraceInternal()` 在 `art/runtime/thread.cc`，但 android-16.0.0_r1 中实际函数名为 `CreateInternalStackTrace`，缺少 `Internal` 后缀",
-          "suggestion": "修正为正确的函数名：`CreateInternalStackTrace`，并在注释中说明这是用于生成 Java 异常堆栈的核心函数"
-        },
-        {
-          "type": "源码错误",
-          "location": "L109-113 OOM GC 触发路径",
-          "detail": "正文简化了 `AllocateInternalWithGc()` 的调用链，实际为 `Heap::AllocObjectWithAllocator()` → `Heap::AllocateInternalWithGc()` → `Heap::AllocObject()` → `Heap::AllocateObject()`，缺少中间层说明",
-          "suggestion": "补充完整的调用链：说明 AllocObjectWithAllocator() 首先检查内存限制，然后调用 AllocateInternalWithGc() 触发 GC，最后进入 AllocObject() 进行实际分配"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T14:20:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T15:15:00+08:00"
-    },
-    {
-      "section": "20.4",
-      "section_title": "ANR 治理策略",
-      "priority": 95,
-      "reason": "[Deep Tech Review] 源码错误：L237 Binder.setCallingWorkSourceUid API 错误；另有 1 个 P1/P0 技术问题",
-      "material_paths": [
-        "intake/suggestions.md"
-      ],
-      "review_issues": [
-        {
-          "type": "源码错误",
-          "location": "L237 Binder 超时设置函数",
-          "detail": "正文提到 `Binder.setCallingWorkSourceUid()`，但此函数在 Android 16 中已废弃，实际使用 `Binder.setCallingWorkSource()`",
-          "suggestion": "修正为正确的 API：`Binder.setCallingWorkSource()`，并说明这是用于绑定调用来源和资源计数的核心方法"
-        },
-        {
-          "type": "源码错误",
-          "location": "L198-199 serviceTimeout 调用链",
-          "detail": "正文引用 `serviceTimeout()`，但实际路径是 `ActivityManagerService.processTimeout()` → `AnrHelper.appNotRespondingDialog()`，缺少中间的 `processTimeout()` 方法",
-          "suggestion": "补充完整的调用链：`ActiveServices.timeout()` → `ActivityManagerService.processTimeout()` → `AnrHelper.appNotRespondingDialog()`，说明 service timeout 实际由 ActivityManagerService 的 processTimeout 处理"
-        }
-      ],
-      "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-11T14:25:00+08:00",
-      "status": "completed",
-      "completed_at": "2026-05-11T15:15:00+08:00"
-    }
-  ]
+  "metadata": {
+    "total_entries": 28,
+    "p0_count": 14,
+    "p1_count": 15,
+    "last_updated": "2026-05-12T07:16:12.412995",
+    "updated_by": "task2b-content-processing-rework"
+  }
 }
