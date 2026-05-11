@@ -34,12 +34,12 @@ related_chapters:
 - '5.4'
 - '2.5'
 drafted_date: '2026-03-31'
-reviewed_date: '2026-05-10'
+reviewed_date: "2026-05-11"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 review2_date: '2026-04-06'
 review2_by: openclaw-task6
 polish_count: 1
@@ -311,7 +311,7 @@ overutilized 对 EAS 的影响随内核版本有差异:
 
 - **Android 10**:task profile 已经能操作 `cpu.util.min` / `cpu.util.max`,但默认的性能档位还是大量依赖 `/dev/stune/{background,foreground,top-app}` 和 `schedtune.boost` / `schedtune.prefer_idle`;cpuset 这条线单独决定线程允许跑在哪组 CPU 上。
 - **Android 11**:AOSP 把 cpu controller 的接口名切到 `cpu.uclamp.min` / `cpu.uclamp.max`,默认 profile 仍保留 `schedtune` 分组,属于"uclamp 文件名到位了,默认性能档位还没完全离开 schedtune"的阶段。
-- **Android 12 及以后**:AOSP 默认的 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接加入 `cpu/{background,foreground,top-app}`,`cpuset` 继续负责 CPU 集约束,freezer 迁到 cgroup v2。到这时,top-app / foreground / background 这三档才真正把 uclamp 提示纳入默认用户态路径。
+- **Android 12 及以后**:AOSP 默认的 `HighEnergySaving` / `HighPerformance` / `MaxPerformance` 直接加入 `cpu/{background,foreground,top-app}`,`cpuset` 继续负责 CPU 集约束,freezer 迁到 cgroup v2。到这时,top-app / foreground / background 这三档才把 uclamp 提示纳入默认用户态路径。
 
 落到设备上排查时,我们至少看三处:
 
