@@ -28,8 +28,8 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: draft
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
 ---
@@ -211,7 +211,7 @@ ContentProvider 的超时发生在 `ActivityManagerService` 等待应用 publish
 
 治理手段：
 
-- **延迟初始化**：Android 11+ 提供的 `AppComponentFactory` 可以控制 ContentProvider 的初始化时机。更通用的做法是在 ContentProvider 的 `onCreate()` 里只做极轻量的注册操作，真正的初始化放到首次调用 `query()` / `insert()` 时再触发（lazy init）。
+- **延迟初始化**：Android 11+ 提供的 `AppComponentFactory` 可以控制 ContentProvider 的初始化时机。更通用的做法是在 ContentProvider 的 `onCreate()` 里只做极轻量的注册操作，实质的初始化工作放到首次调用 `query()` / `insert()` 时再触发（lazy init）。
 - **精简 ContentProvider 数量**：检查 manifest 中声明的 ContentProvider，移除不必要的。很多第三方 SDK 提供了关闭自动初始化的开关（`enable = false`），改用手动初始化。
 - **启动时序优化**：把 ContentProvider 初始化纳入启动框架统一调度（详见 21.2 节），控制并发数和依赖关系。
 
@@ -268,7 +268,7 @@ Watchdog 的核心是一个定期向主线程投递 `Runnable` 的监测线程�
 public class ANRWatchdog {
     private static final long CHECK_INTERVAL_MS = 5000;  // 5 秒检测一次
     private volatile long mainThreadTick = 0;
-    private final Handler mainHandler = new Handler(Looper.getMainMainLooper());
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private final Runnable ticker = () -> mainThreadTick = SystemClock.uptimeMillis();
 
@@ -387,4 +387,4 @@ ANR 治理的五条核心策略：
 4. **组件超时治理**：ContentProvider 和 BroadcastReceiver 的回调只做最轻量的转发，实际工作交给后台线程。
 5. **Watchdog 兜底**：在系统判定 ANR 之前主动检测主线程阻塞，dump 堆栈并上报。
 
-ANR 的机制和类型在 9.1-9.3 节已详述；本节聚焦的是工程实践层面的治理手段。遇到线上 ANR 时，先按 9.3 节的方法定位类型，再按本节对应的方向落地修复。
+ANR 的机制和类型在 9.1-9.3 节已详述；本节聚焦的是工程实践层面的治理手段。遇到线上 ANR 时，先按 9.3 节的方法定位类型，再按本节对应的方向执行修复。
