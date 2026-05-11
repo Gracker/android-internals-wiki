@@ -1,5 +1,5 @@
 {
-  "current_issue": 10,
+  "current_issue": 11,
   "total_issues": 58,
   "completed_issues": [
     0,
@@ -11,15 +11,26 @@
     6,
     7,
     8,
-    9
+    9,
+    10
   ],
-  "indexed_links": 33,
-  "skipped_links": 107,
-  "fetch_failures": 106,
+  "indexed_links": 47,
+  "skipped_links": 108,
+  "fetch_failures": 85,
   "attempted_issues": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
     10
   ],
   "last_attempted_issue": 10,
-  "last_attempt_date": "2026-05-10",
-  "access_issues_count": 6
+  "last_attempt_date": "2026-05-11",
+  "access_issues_count": 5
 }
