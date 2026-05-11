@@ -1,4 +1,5 @@
 ---
+
 title: Package Manager Service 与应用安装性能
 chapter: '1.9'
 section: '1.9'
@@ -57,16 +58,16 @@ tags:
 - cloud-compilation
 - app-installation
 - compilation
-pipeline_stage: task9_pending
+pipeline_stage: 'task2b_pending'
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: ''
-last_task9_at: '2026-05-06T05:30:00+08:00'
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-06'
+task9_state: 'reviewed'
+task9_result: 'needs-rework'
+last_task9_at: '2026-05-11T10:20:00+08:00'
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-05-11'
 task2b_result: fixed
-task2b_state: pending
+task2b_state: 'pending'
 review_notes: '2026-05-01 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。；2026-05-06
   04 task6 re-review: pass-light-edit。L1/L2 小修 8 处；无新增 B 类回炉问题，等待 Task 9 复审。 | 2026-05-06
   05 task9 deep-review: needs-rework。P0 2 / P1 1 / P2 2。P0/P1 已写入 queue，等待 Task2B。'
@@ -74,7 +75,8 @@ task9_review_notes: '2026-05-06 05 task9 deep-review: needs-rework。P0 2 / P1 1
   2。P0/P1 已写入 queue，等待 Task2B。'
 last_task6_at: '2026-05-06T04:13:56+08:00'
 task6_reviewed_date: '2026-05-06'
-last_task9_review_log: logs/deep-review/2026-05-06-05-deep-review.md
+last_task9_review_log: 'logs/deep-review/2026-05-11-10-deep-review.md'
+
 ---
 
 

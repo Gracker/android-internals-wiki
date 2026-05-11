@@ -1,46 +1,55 @@
 {
-  "total": 263,
+  "total": 268,
   "draft": 57,
-  "ready-for-review": 55,
-  "finalized": 133,
+  "ready-for-review": 57,
+  "finalized": 154,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-11",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
-    "2.3",
-    "2.4",
-    "2.5"
+    "1.6",
+    "1.9",
+    "1.10"
   ],
   "review_files": [
-    "src/part1-fundamentals/ch02-rendering/03-vsync.md",
-    "src/part1-fundamentals/ch02-rendering/04-choreographer.md",
-    "src/part1-fundamentals/ch02-rendering/05-main-render-thread.md"
+    "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
+    "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+    "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
   ],
   "review_summary": {
-    "p0_issues": 5,
-    "p1_issues": 7,
+    "p0_issues": 2,
+    "p1_issues": 2,
     "p2_issues": 3,
-    "total_issues": 15
+    "p3_issues": 0,
+    "total_issues": 7
   },
   "issues_by_section": {
-    "2.3": {
-      "p0": 2,
-      "p1": 3,
-      "p2": 3
+    "1.6": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
     },
-    "2.4": {
-      "p0": 2,
-      "p1": 3,
-      "p2": 2
-    },
-    "2.5": {
+    "1.9": {
       "p0": 1,
       "p1": 1,
-      "p2": 1
+      "p2": 1,
+      "p3": 0
+    },
+    "1.10": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0
     }
   },
-  "next_review_candidates": [],
+  "next_review_candidates": [
+    "2.14",
+    "2.18",
+    "4.1"
+  ],
   "ready_for_review": 57,
-  "last_updated": "2026-05-11T08:16:41+08:00",
-  "last_updated_by": "task2a"
+  "last_updated": "2026-05-11T10:20:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "ready_to_publish": 0
 }

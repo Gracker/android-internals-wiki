@@ -234,6 +234,130 @@
       "added_by": "task-deepresearch-injector",
       "added_at": "2026-05-11T06:19:17.902930+08:00",
       "status": "pending"
+    },
+    {
+      "section": "20.3",
+      "section_title": "Native Crash 分析与治理",
+      "priority": 75,
+      "reason": "[Task 6 Review] 内容深度与实用性问题",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "内容深度",
+          "location": "源码路径验证",
+          "detail": "debuggerd/crash_dump.cpp 中的具体函数调用链需要更精确的源码路径验证，特别是 ptrace attach 和堆栈收集的具体实现",
+          "suggestion": "提供准确的函数引用和调用顺序，如 `ptrace(PTRACE_ATTACH, pid)` → `read_thread_info()` → `generate_backtrace()` 等"
+        },
+        {
+          "type": "活人感",
+          "location": "写作语气",
+          "detail": "文档采用被动描述较多，缺少\"我们\"的观察视角和实际调试经验",
+          "suggestion": "增加\"我们在实际调试中经常发现\"、\"我们可以通过观察寄存器值\"等表述，增强内容的人性化和实用性"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-11T08:17:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "5.1",
+      "section_title": "Linux 进程调度基础",
+      "priority": 80,
+      "reason": "[Task 6 Review] 现代调度机制补充",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "内容深度",
+          "location": "ARMv9.2 调度优化",
+          "detail": "对骁龙8 Elite等ARMv9.2平台的跨核迁移成本优化（1.5μs-3.5μs）分析不够深入，缺乏实际调度决策影响评估",
+          "suggestion": "补充ARMv9.2平台上的调度器动态决策分析，对比绑核与不绑核在新型SoC上的实际性能差异"
+        },
+        {
+          "type": "活人感",
+          "location": "调试经验分享",
+          "detail": "缺少实际调度问题的调试案例和经验总结",
+          "suggestion": "增加\"当我们看到RenderThread频繁在小核上运行时，首先检查cpuset设置\"等实际调试指导"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-11T08:17:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 85,
+      "reason": "[Task 6 Review] 版本演进与实际应用",
+      "material_paths": [],
+      "review_issues": [
+        {
+          "type": "内容深度",
+          "location": "ART 16 CMC 性能数据",
+          "detail": "缺少 Android 16 QPR2 Generational CMC 的具体性能数据和量化对比，无法评估实际优化效果",
+          "suggestion": "补充PCMark等基准测试数据，包含不同负载场景下的GC延迟降低百分比和CPU吞吐量提升"
+        },
+        {
+          "type": "活人感",
+          "location": "实际案例分析",
+          "detail": "缺少基于实际memory leak场景的完整调试案例分析",
+          "suggestion": "增加\"当我们遇到内存泄漏时，通过Perfetto观察HeapTaskDaemon活动模式\"等实际工作流程指导"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-11T08:17:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.9",
+      "section_title": "Package Manager Service 与应用安装性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码错误：L221-L225 IncrementalService 源码锚点；另有 1 个 P1/P0 技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L221-L225 IncrementalService 源码锚点",
+          "detail": "`frameworks/base/services/core/java/com/android/server/os/IncrementalManagerService.java` 在 android-16.0.0_r1 不存在（Gitiles 404）。AOSP 可核到的是 `frameworks/base/services/incremental/IncrementalService.cpp`，以及 `system/incremental_delivery/` 相关组件。",
+          "suggestion": "删除不存在的 Java service 路径；把锚点改为 `frameworks/base/services/incremental/IncrementalService.cpp` / `system/incremental_delivery/`，并按“流式/增量安装”收窄描述。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L570 版本演进表 Android 16 行",
+          "detail": "正文仍把“PMS 开机扫描并行化（APEX 模块并发解析）”写成 Android 16 变化。复核 android-13.0.0_r1、14.0.0_r1、15.0.0_r1、16.0.0_r1 的 `InitAppsHelper.java`，均已有 `getApexScanPartitions()`、`scanSystemDirs()` 与 `mExecutorService` 并行扫描路径。",
+          "suggestion": "改为“android-16 源码中可见的并行扫描路径”，不要写成 Android 16 首次引入；如要保留 16 优化结论，需要补具体 commit / release note。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T10:20:00+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "1.10",
+      "section_title": "ContentProvider 性能与优化",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 源码错误：L226 getProviderMimeType 超时；另有 1 个 P1/P0 技术问题",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L226 getProviderMimeType 超时",
+          "detail": "正文写“getProviderMimeType 超时 1 秒 / AMS 内部超时”。android-16.0.0_r1 `ContentResolver` 中 `CONTENT_PROVIDER_TIMEOUT_MILLIS = 3 * 1000 * Build.HW_TIMEOUT_MULTIPLIER`；`getType()` 通过 `provider.getTypeAsync()` 等待该 3s 结果。走 AMS `getMimeTypeFilterAsync()` 时等待的是 `REMOTE_CONTENT_PROVIDER_TIMEOUT_MILLIS = CONTENT_PROVIDER_READY_TIMEOUT_MILLIS + 3s`，不是 1s。",
+          "suggestion": "把表格改为“getType / getMimeTypeFilter async 结果等待：已有 provider 3s；需拉起远端 provider 时包含 ready timeout + 3s”。源码锚点放到 `ContentResolver.java`，不是只写 AMS。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "L271-L282、L453-L460 ContentProviderTimeout / 级联 ANR 时间线",
+          "detail": "正文把“Provider 发布超时 10 秒”写成 App A 收到 `contentProviderTimeout` 并触发 ANR。AOSP 的 `CONTENT_PROVIDER_PUBLISH_TIMEOUT_MSG` 调 `processContentProviderPublishTimedOutLocked()`，失败原因是 `timeout publishing content providers`；未核到 `ContentProviderTimeout` / `contentProviderTimeout` 作为稳定日志或 Perfetto 信号。调用方 ANR 仍来自主线程阻塞后的 Input/Service 等组件超时，或 provider ready 等待失败，不能写成独立的 ContentProviderTimeout 事件。",
+          "suggestion": "拆成两条链：① 提供方发布超时：system_server 清理/移除提供方进程；② 调用方主线程阻塞：由调用方组件 ANR 口径触发。删除 `ContentProviderTimeout` 关键字，改为源码中的 message / reason 或明确标注需设备日志验证。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-11T10:20:00+08:00",
+      "status": "pending"
     }
   ],
   "completed": [
