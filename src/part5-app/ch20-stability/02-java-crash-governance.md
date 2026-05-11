@@ -2,7 +2,7 @@
 title: Java Crash 治理
 chapter: '20.2'
 section: '20.2'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 10 (API 29) - Android 16 (API 36)
 last_verified: '2026-05-11'
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com
@@ -13,10 +13,11 @@ task2b_result: fixed
 reviewed_date: '2026-05-11'
 reviewed_by: 'openclaw-task6'
 task6_result: 'pass-light-edit'
-task6_state: 'revisiting'
-task9_state: 'pending'
+task6_state: 'finalized'
+task9_result: 'pass-tech-review'
+task9_state: 'finalized'
 task2b_state: 'fixed'
-pipeline_stage: 'task6_pending'
+pipeline_stage: 'ready-to-publish'
 sources:
 - type: clippings-structure-ref
   path: Clippings/Android 应用稳定性剖析与优化 - Java Crash 监控：实现自定义 Crash 处理器.md
