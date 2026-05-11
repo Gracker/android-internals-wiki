@@ -63,5 +63,31 @@
   "last_updated": "2026-05-11T14:05:00+08:00",
   "last_updated_by": "task2a-content-processing",
   "task6_last_review": "2026-05-11T13:05:00+08:00",
-  "ready_to_publish": 0
+  "ready_to_publish": 0,
+  "rework_history": [
+    {
+      "date": "2026-05-11T15:15:00+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "20.1",
+        "20.4"
+      ],
+      "sections_title": [
+        "应用稳定性全景",
+        "ANR 治理策略"
+      ],
+      "source": [
+        "task9-deep-tech-review",
+        "task9-deep-tech-review"
+      ],
+      "issues_fixed": [
+        "20.1 L53: CreateInternalStackTraceInternal → CreateInternalStackTrace 函数名修正",
+        "20.1 L89: OOM GC 触发路径补充完整调用链 AllocObjectWithAllocator→AllocateInternalWithGc→AllocObject→AllocateObject",
+        "20.1 L81: serviceTimeout 调用链修正为 ActiveServices.timeout()→AMS.processTimeout()→AnrHelper.appNotRespondingDialog()",
+        "20.4 L257: Binder.setCallingWorkSourceUid → Binder.setCallingWorkSource API 修正"
+      ],
+      "verification": "L1 禁用词扫描通过，高频词均在安全范围",
+      "status": "done"
+    }
+  ]
 }

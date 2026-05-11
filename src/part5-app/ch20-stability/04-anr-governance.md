@@ -28,10 +28,11 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task2b_result: fixed
+task6_state: revisiting
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 ---
 
 # ANR 治理策略
@@ -115,6 +116,127 @@ WorkManager.getInstance(context).enqueue(uploadWork)
 - **StrictMode 的价值**：在开发阶段启用 `StrictMode`，它能在主线程 I/O 和网络操作发生时直接抛异常，比线上 ANR 发现成本低两个数量级。
 - **第三方 SDK 的主线程调用**：很多第三方 SDK（广告、推送、统计）在初始化或回调里做磁盘 I/O 或网络请求，而调用时机往往是 `Application.onCreate()` 或 `Activity.onCreate()`——这两个都在主线程。治理手段：SDK 初始化移到子线程（如果 SDK 支持），或者用 `ContentProvider` 的延迟初始化机制（详见后文）。
 
+
+### Kotlin 协程 ANR 治理：源码级细节
+
+以下发现基于 kotlinx-coroutines 1.9.x 源码（GitHub master 分支）。
+
+#### Dispatchers.IO 与 Default 共享线程池
+
+Dispatchers.IO 的内部实现是 `DefaultIoScheduler`，而 Dispatchers.Default 的内部实现是 `DefaultScheduler`。两者都继承自 `SchedulerCoroutineDispatcher`，**共享同一个 CoroutineScheduler 实例**。
+
+```kotlin
+// kotlinx-coroutines-core/jvm/src/scheduling/Dispatcher.kt
+internal object DefaultScheduler : SchedulerCoroutineDispatcher(
+    CORE_POOL_SIZE, MAX_POOL_SIZE, ...
+)
+
+private object UnlimitedIoScheduler : CoroutineDispatcher() {
+    // 内部调用 DefaultScheduler.dispatchWithContext(block, BlockingContext, ...)
+}
+
+internal object DefaultIoScheduler : ExecutorCoroutineDispatcher() {
+    private val default = UnlimitedIoScheduler.limitedParallelism(
+        systemProp(IO_PARALLELISM_PROPERTY_NAME, 64.coerceAtLeast(AVAILABLE_PROCESSORS))
+    )
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        default.dispatch(context, block)  // 路由到 DefaultScheduler
+    }
+}
+```
+
+关键注释（Dispatcher.kt 官方文档）：
+
+> "This dispatcher and its views share threads with the Default dispatcher, so using `withContext(Dispatchers.IO) { ... }` when already running on the Default dispatcher typically does not lead to an actual switching to another thread."
+
+**ANR 治理启示**：在 Default 线程上用 `withContext(Dispatchers.IO)` 不会发生线程切换，只是改变了 TaskContext（从 NonBlockingContext 变为 BlockingContext）。真正的线程切换开销来自 blocking 任务释放 CPU 令牌后调度器唤醒/创建新 worker 的开销。
+
+#### CoroutineScheduler 的 CPU 令牌机制
+
+CoroutineScheduler 用"CPU 令牌"机制隔离 CPU 密集型和 blocking 任务：
+
+```kotlin
+// kotlinx-coroutines-core/jvm/src/scheduling/CoroutineScheduler.kt
+enum class WorkerState {
+    CPU_ACQUIRED,   // 持有 CPU 令牌，只执行 CPU 任务或 steal CPU 任务
+    BLOCKING,       // 执行 blocking 任务，释放 CPU 令牌
+    PARKING,        // 空闲停车
+    DORMANT,        // 不再需要的 worker
+    TERMINATED
+}
+
+// Worker 寻找任务时的调度决策（行 200-230）：
+while (true) {
+    if (tryAcquireCpuPermit()) return findAnyTask(mayHaveLocalTasks)
+    // 无法获取 CPU 令牌 → 只能执行 blocking 任务
+    return findBlockingTask()
+}
+```
+
+**ANR 治理启示**：如果一个 worker 在执行 blocking 任务（TaskContext = BlockingContext）时阻塞（例如无限期等待 I/O），它不会影响持有 CPU 令牌的 worker 处理 CPU 任务。但一旦 blocking 任务占满所有 worker，主线程上的 withContext(Dispatchers.IO) 任务就必须排队等待。
+
+#### Dispatchers.Main 的 Handler 降级逻辑
+
+Android 上的 Dispatchers.Main 基于 Handler。**关键风险**：Handler 关闭时，任务会被重新路由到 Dispatchers.IO：
+
+```kotlin
+// ui/kotlinx-coroutines-android/src/HandlerDispatcher.kt
+override fun dispatch(context: CoroutineContext, block: Runnable) {
+    if (!handler.post(block)) {
+        cancelOnRejection(context, block)  // Handler 关闭时触发
+    }
+}
+
+private fun cancelOnRejection(context: CoroutineContext, block: Runnable) {
+    context.cancel(CancellationException("..."))
+    Dispatchers.IO.dispatch(context, block)  // 降级到 IO
+}
+```
+
+**ANR 传播链**：主线程阻塞 → Handler 队列积压 → Handler 关闭 → 任务降级到 Dispatchers.IO → 如果 IO 线程池也满 → 任务继续积压。这是 ANR 从主线程扩散到整个应用的过程。
+
+#### Dispatchers.IO 的 unlimited 线程特性
+
+Dispatchers.IO.limitedParallelism() 的视图**不共享 parallelism 限制**：
+
+> "Despite not abiding by Dispatchers.IO's parallelism restrictions, its views share threads and resources with it."
+
+```kotlin
+// Dispatchers.kt 文档注释
+// 100 threads for MySQL connection
+val myMysqlDbDispatcher = Dispatchers.IO.limitedParallelism(100)
+// 60 threads for MongoDB connection
+val myMongoDbDispatcher = Dispatchers.IO.limitedParallelism(60)
+// Peak: 64 + 100 + 60 threads possible
+```
+
+**ANR 治理启示**：limitedParallelism() 的 parallelism 参数只是"建议值"，峰值时系统可以创建的线程数上限是 MAX_POOL_SIZE (256)。如果多个 limitedParallelism 视图同时跑满，系统实际线程数可能远超预期，导致线程调度开销剧增。
+
+#### 协程 ANR 的本质
+
+协程不自动防 ANR。`withContext(Dispatchers.Main)` 的代码仍然在主线程执行：
+
+```kotlin
+// 错误用法：
+suspend fun doHeavyWork() {
+    withContext(Dispatchers.Main) {
+        database.query()  // 仍然阻塞主线程！
+    }
+}
+
+// 正确用法：
+suspend fun doHeavyWork() = withContext(Dispatchers.IO) {
+    database.query()  // 在 IO 线程执行
+}
+// UI 更新时才回主线程：
+suspend fun updateUI() = withContext(Dispatchers.Main) {
+    textView.text = data  // 仅必要的 UI 操作
+}
+```
+
+[AIW-源码调研-2026-05-11 — 基于 kotlinx-coroutines 1.9.x 源码]
+
+
 ## IPC（Binder）调用治理
 
 Binder 是 Android 进程间通信的基础设施。应用通过 Binder 和系统服务（AMS、PMS、WMS）交互，也通过 Binder 和其他应用交互。Binder 调用的特殊性在于：即使调用方在子线程，如果对方进程没有响应，调用方的线程也会被阻塞。而当这个调用发生在主线程时，就有 ANR 风险。
@@ -133,7 +255,7 @@ Binder 是 Android 进程间通信的基础设施。应用通过 Binder 和系�
 - **ActivityManager 进程查询**：`getRunningAppProcesses()` 在 Android 10+ 已经不返回其他应用的信息，不要依赖它做业务判断。
 - **WindowManager 的同步事务**：`WindowManager.addView()` / `updateViewLayout()` 内部走 Binder 调用到 WindowManagerService。如果 WMS 处理队列繁忙，调用可能阻塞。
 
-**设置 Binder 调用超时。** 在 Android 11+，可以通过 `Binder.setCallingWorkSourceUid()` 和 Service 的 `Binder.allowBlocking()` 控制阻塞行为。更实用的做法是在异步调用外部 Service 时，用带超时的 `Future.get(timeout)` 而不是无限等待：
+**设置 Binder 调用超时。** 在 Android 11+，可以通过 `Binder.setCallingWorkSource()` 和 Service 的 `Binder.allowBlocking()` 控制阻塞行为。`setCallingWorkSource()` 用于绑定调用来源和资源计数，`allowBlocking()` 允许在特定场景下放宽 Binder 调用的阻塞限制。更实用的做法是在异步调用外部 Service 时，用带超时的 `Future.get(timeout)` 而不是无限等待：
 
 ```java
 Future<String> result = executor.submit(() -> remoteService.getData());
