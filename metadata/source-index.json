@@ -3805,6 +3805,328 @@
       "chapter_mapping": "ch07",
       "processed_at": "2026-05-11T06:19:17.902930+08:00",
       "processor": "task-deepresearch-injector"
+    },
+    {
+      "title": "Android图形系统综述(干货篇)",
+      "path": "AndroidWeekly/#10/Android图形系统综述(干货篇)",
+      "source_url": "https://juejin.cn/post/6898525503960186887",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android图形系统综述(干货篇)",
+      "scored_at": "2026-05-11T09:09:12.601747"
+    },
+    {
+      "title": "Android-Choreographer工作原理",
+      "path": "AndroidWeekly/#10/Android-Choreographer工作原理",
+      "source_url": "https://juejin.cn/post/6894206842277199880",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android-Choreographer工作原理",
+      "scored_at": "2026-05-11T09:09:12.601759"
+    },
+    {
+      "title": "实现 ART 即时 (JIT) 编译器 | Android 开源项目 | Android Open Source Project",
+      "path": "AndroidWeekly/#10/实现 ART 即时 (JIT) 编译器 | Android 开源项目 | Android Open Source Project",
+      "source_url": "https://source.android.google.cn/devices/tech/dalvik/jit-compiler?hl=zh-cn",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch10-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "实现 ART 即时 (JIT) 编译器 | Android 开源项目 | Android...",
+      "scored_at": "2026-05-11T09:09:12.601762"
+    },
+    {
+      "title": "Handler的初级、中级、高级问法，你都掌握了吗？",
+      "path": "AndroidWeekly/#10/Handler的初级、中级、高级问法，你都掌握了吗？",
+      "source_url": "https://juejin.cn/post/6893791473121280013",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Handler的初级、中级、高级问法，你都掌握了吗？",
+      "scored_at": "2026-05-11T09:09:12.601765"
+    },
+    {
+      "title": "Ninja提升编译速度的方法-Android10.0编译系统（十）",
+      "path": "AndroidWeekly/#10/Ninja提升编译速度的方法-Android10.0编译系统（十）",
+      "source_url": "https://mp.weixin.qq.com/s/45Et5kVh-y1EAb2hq5o1Rg",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch10-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Ninja提升编译速度的方法-Android10.0编译系统（十）",
+      "scored_at": "2026-05-11T09:09:12.601767"
+    },
+    {
+      "title": "编译系统总结篇-Android10.0编译系统（十一）",
+      "path": "AndroidWeekly/#10/编译系统总结篇-Android10.0编译系统（十一）",
+      "source_url": "https://mp.weixin.qq.com/s/B9V1k4YU2pVD4ajq6N2nQg",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch10-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "编译系统总结篇-Android10.0编译系统（十一）",
+      "scored_at": "2026-05-11T09:09:12.601769"
+    },
+    {
+      "title": "Linux内核内存检测工具KASAN",
+      "path": "AndroidWeekly/#10/Linux内核内存检测工具KASAN",
+      "source_url": "https://mp.weixin.qq.com/s/523xDv4bkZMi426_9GhRSw",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核内存检测工具KASAN",
+      "scored_at": "2026-05-11T09:09:12.601771"
+    },
+    {
+      "title": "减少崩溃，提升体验 | 使用 Kotlin 打造优质应用",
+      "path": "AndroidWeekly/#10/减少崩溃，提升体验 | 使用 Kotlin 打造优质应用",
+      "source_url": "https://mp.weixin.qq.com/s/uwfZZ7aao032L_Bh3llXOg",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch99-其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "减少崩溃，提升体验 | 使用 Kotlin 打造优质应用",
+      "scored_at": "2026-05-11T09:09:12.601772"
+    },
+    {
+      "title": "面试官：今日头条启动很快，你觉得可能是做了哪些优化？",
+      "path": "AndroidWeekly/#10/面试官：今日头条启动很快，你觉得可能是做了哪些优化？",
+      "source_url": "https://mp.weixin.qq.com/s/Q6cLLaMG3JSriNaUj-IYCw",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch99-其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "面试官：今日头条启动很快，你觉得可能是做了哪些优化？",
+      "scored_at": "2026-05-11T09:09:12.601774"
+    },
+    {
+      "title": "基于 Metal 的现代渲染技术",
+      "path": "AndroidWeekly/#10/基于 Metal 的现代渲染技术",
+      "source_url": "https://mp.weixin.qq.com/s/nuR_NAfRkFLPhINg4aMqcQ",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "基于 Metal 的现代渲染技术",
+      "scored_at": "2026-05-11T09:09:12.601776"
+    },
+    {
+      "title": "谈谈内存压缩那些事",
+      "path": "AndroidWeekly/#10/谈谈内存压缩那些事",
+      "source_url": "https://mp.weixin.qq.com/s/6Yrx9wTH7H7pvzw4uM6f0g",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "谈谈内存压缩那些事",
+      "scored_at": "2026-05-11T09:09:12.601778"
+    },
+    {
+      "title": "【再出发】Android11源码分析：静态广播是如何接收到消息的？",
+      "path": "AndroidWeekly/#10/【再出发】Android11源码分析：静态广播是如何接收到消息的？",
+      "source_url": "https://juejin.cn/post/6895373172125171726",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch99-其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "【再出发】Android11源码分析：静态广播是如何接收到消息的？",
+      "scored_at": "2026-05-11T09:09:12.601782"
+    },
+    {
+      "title": "介绍一下 Android Handler 中的 epoll 机制？",
+      "path": "AndroidWeekly/#10/介绍一下 Android Handler 中的 epoll 机制？",
+      "source_url": "https://mp.weixin.qq.com/s/ClTE15s9qUaNsInIIwX57w",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍一下 Android Handler 中的 epoll 机制？",
+      "scored_at": "2026-05-11T09:09:12.601783"
+    },
+    {
+      "title": "https://medium.com/androiddevelopers/now-in-android-25-8596a08554d7",
+      "path": "AndroidWeekly/#10/https://medium.com/androiddevelopers/now-in-android-25-8596a08554d7",
+      "source_url": "https://medium.com/androiddevelopers/now-in-android-25-8596a08554d7",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch99-其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "https://medium.com/androiddevelopers/now-in-android-25...",
+      "scored_at": "2026-05-11T09:09:12.601785"
     }
   ]
 }

@@ -60,6 +60,12 @@
           "location": "进程回收策略",
           "detail": "lmkd与PSI分析缺少实际观察数据",
           "suggestion": "添加不同厂商设备的回收决策对比"
+        },
+        {
+          "type": "源码错误",
+          "location": "L187-L189 CachedAppOptimizer 架构设计",
+          "detail": "文中描述 CachedAppOptimizer 实例化 ActivityManagerService，但实际 AOSP 中是 ActivityManagerService 实例化 CachedOptimizer，方向相反",
+          "suggestion": "修正调用链描述：ActivityManagerService -> CachedOptimizer，而非 CachedOptimizer -> ActivityManagerService"
         }
       ],
       "added_by": "task6-review",
@@ -87,6 +93,24 @@
           "location": "架构分析",
           "detail": "与Task 9的oneway spam detection结论有潜在矛盾",
           "suggestion": "重新审核async buffer语义与技术实现"
+        },
+        {
+          "type": "源码错误",
+          "location": "L84-87 AIDL Proxy/Stub 调用链",
+          "detail": "文中简化调用链为 Proxy → Binder驱动 → Stub，但实际在 AOSP 中是 Proxy.transact() → IPCThreadState.transact() → Binder驱动 → Stub.onTransact()，缺少 IPCThreadState 这个关键中介层",
+          "suggestion": "补充完整调用链：Proxy.transact() → IPCThreadState.transact() → Binder驱动 → Stub.onTransact()"
+        },
+        {
+          "type": "源码错误",
+          "location": "L263-268 Scatter-gather 事务优化",
+          "detail": "文中描述 scatter-gather 优化的是发送端的数据组织成本，但实际 AOSP scatter-gather 的主要优化是减少目标进程的 buffer 分配开销，而非发送端成本",
+          "suggestion": "修正为：scatter-gather 主要减少目标进程的 binder buffer 分配开销，通过避免 gather 步骤减少内存分配和 memcpy"
+        },
+        {
+          "type": "源码错误",
+          "location": "L415-419 Binder 线程池上限",
+          "detail": "文中提到默认上限 15 个工作线程，但实际 android-16.0.0_r1 中 DEFAULT_MAX_BINDER_THREADS=15 仅适用于普通进程，system_server 等系统进程使用 DEFAULT_MAX_BINDER_THREADS_SYSTEM=30",
+          "suggestion": "补充说明：普通进程上限 15 线程，system_server 等系统进程上限 30 线程"
         }
       ],
       "added_by": "task6-review",
