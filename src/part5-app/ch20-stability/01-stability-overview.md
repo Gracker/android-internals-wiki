@@ -13,10 +13,10 @@ task2b_result: fixed
 reviewed_date: "2026-05-11"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
+task6_state: "revisiting"
 task9_state: "pending"
 task2b_state: "fixed"
-pipeline_stage: "task9_pending"
+pipeline_stage: "task6_pending"
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -50,7 +50,7 @@ AOSP 中的处理链路：
 
 [已验证: AOSP android-16.0.0_r1, art/runtime/thread.cc, frameworks/base/core/java/com/android/internal/os/RuntimeInit.java]
 
-Java Crash 的堆栈信息由 ART 虚拟机直接生成，格式规范、可读性好。堆栈帧数上限由 ART 内部常量控制：`CreateInternalStackTraceInternal()`（`art/runtime/thread.cc`）遍历 `ManagedStack` 链表中的 `ShadowFrame`（解释执行帧）和 `QuickFrame`（编译执行帧），逐帧解析 `ArtMethod` 指针，上限 256 帧——超出部分截断，堆栈底部显示 `... N more`。
+Java Crash 的堆栈信息由 ART 虚拟机直接生成，格式规范、可读性好。堆栈帧数上限由 ART 内部常量控制：`CreateInternalStackTrace()`（`art/runtime/thread.cc`）——用于生成 Java 异常堆栈的核心函数遍历 `ManagedStack` 链表中的 `ShadowFrame`（解释执行帧）和 `QuickFrame`（编译执行帧），逐帧解析 `ArtMethod` 指针，上限 256 帧——超出部分截断，堆栈底部显示 `... N more`。
 
 ### Native Crash
 
@@ -78,7 +78,7 @@ ANR 不是崩溃，是系统对"主线程阻塞"的强制干预。触发条件�
 | BroadcastReceiver timeout | 前台 10 秒 / 后台 60 秒 | ActivityManagerService |
 | ContentProvider timeout | 10 秒 | ActivityManagerService |
 
-各监控器的实现机制不同。`InputDispatcher`（`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`）在分发事件时记录 dispatch timeout 时间点，超时未收到 `finishInputEvent` 回调则触发 ANR。`ActiveServices`（`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`）通过 `bumpServiceExecutingLocked()` 设置超时消息（`SERVICE_TIMEOUT_MSG`），`ActivityManagerService` 的 Main Handler 收到超时消息后调用 `serviceTimeout()` 进入 ANR 流程。BroadcastReceiver 和 ContentProvider 的监控逻辑类似——在系统服务端设置超时定时器，超时后回调对应的 timeout 方法。
+各监控器的实现机制不同。`InputDispatcher`（`frameworks/native/services/inputflinger/dispatcher/InputDispatcher.cpp`）在分发事件时记录 dispatch timeout 时间点，超时未收到 `finishInputEvent` 回调则触发 ANR。`ActiveServices`（`frameworks/base/services/core/java/com/android/server/am/ActiveServices.java`）通过 `bumpServiceExecutingLocked()` 设置超时消息（`SERVICE_TIMEOUT_MSG`），handler 收到后调用 `ActiveServices.timeout()`，经由 `ActivityManagerService.processTimeout()` 进入 `AnrHelper.appNotRespondingDialog()` 走 ANR 流程。BroadcastReceiver 和 ContentProvider 的监控逻辑类似——在系统服务端设置超时定时器，超时后回调对应的 timeout 方法。
 
 ANR 发生后，系统会：
 
@@ -94,7 +94,7 @@ ANR 的治理思路与 Crash 不同。Crash 是"代码逻辑出错，需要修�
 
 OOM 在 Android 上有两层含义：
 
-**Java 堆 OOM**：对象分配的入口是 `Heap::AllocObjectWithAllocator()`（`art/runtime/gc/heap.cc`）。当已分配内存加上新对象大小超过 `Runtime.maxMemory()` 限制时，进入 `AllocateInternalWithGc()`——先尝试触发 GC（根据内存压力选择 kGcCauseForAlloc 对应的 GC 类型），回收后重新检查空间。如果 GC 后仍不够，尝试堆扩容（前提是未达到 `HeapGrowthLimit`，由 `dalvik.vm.heapgrowthlimit` 控制）。扩容后仍不够，才抛出 `OutOfMemoryError`。
+**Java 堆 OOM**：分配入口是 `Heap::AllocObjectWithAllocator()`（`art/runtime/gc/heap.cc`），首先检查当前已分配内存加上新对象大小是否超过 `Runtime.maxMemory()` 限制。超过时进入 `AllocateInternalWithGc()` 触发 GC（根据内存压力选择 kGcCauseForAlloc 对应的 GC 类型），回收后重新检查空间；空间足够时经 `AllocObject()` → `AllocateObject()` 执行实际内存分配。如果 GC 后仍不够，尝试堆扩容（前提是未达到 `HeapGrowthLimit`，由 `dalvik.vm.heapgrowthlimit` 控制）。扩容后仍不够，才抛出 `OutOfMemoryError`。
 
 `Runtime.maxMemory()` 返回值取决于 Manifest 配置：未设置 `largeHeap` 时返回 `dalvik.vm.heapgrowthlimit`（通常 256MB ~ 384MB），设置 `android:largeHeap="true"` 时返回 `dalvik.vm.heapsize`（通常 512MB）。但 `largeHeap` 不等于无限分配——最终仍受物理内存和系统整体内存压力约束。
 
