@@ -1,37 +1,55 @@
 {
   "total": 268,
-  "draft": 55,
-  "ready-for-review": 59,
+  "draft": 50,
+  "ready-for-review": 62,
   "finalized": 154,
   "task9_result": "tech-review-completed",
-  "task9_reviewed_date": "2026-05-11",
+  "task9_reviewed_date": "2026-05-12",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
     "1.9",
     "1.10",
     "8.9",
-    "2.10"
+    "2.10",
+    "16.5",
+    "17.2",
+    "20.4",
+    "20.8",
+    "3.5",
+    "4.3",
+    "5.1",
+    "22.3",
+    "2.3",
+    "8.2"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
     "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
     "src/part1-fundamentals/ch01-architecture/10-content-provider.md",
     "src/part2-performance/ch08-responsiveness/09-game-performance.md",
-    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+    "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+    "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md",
+    "src/part4-system/ch17-oem/02-soc-differences.md",
+    "src/part5-app/ch20-stability/04-anr-governance.md",
+    "src/part5-app/ch20-stability/08-crash-aggregation.md",
+    "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
   ],
   "review_summary": {
-    "p0_issues": 2,
-    "p1_issues": 2,
-    "p2_issues": 3,
-    "p3_issues": 0,
-    "total_issues": 7
+    "p0_issues": 13,
+    "p1_issues": 14,
+    "p2_issues": 17,
+    "p3_issues": 4,
+    "total_issues": 48
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 12,
-    "l3_issues": 5,
-    "l4_issues": 4,
-    "total_issues": 9,
+    "l1_l2_fixes": 3,
+    "l3_issues": 2,
+    "l4_issues": 2,
+    "total_issues": 7,
     "auto_promotions": 1
   },
   "issues_by_section": {
@@ -52,17 +70,51 @@
       "p1": 1,
       "p2": 1,
       "p3": 0
+    },
+    "16.5": {
+      "p0": 2,
+      "p1": 2,
+      "p2": 2,
+      "p3": 0
+    },
+    "17.2": {
+      "p0": 3,
+      "p1": 4,
+      "p2": 5,
+      "p3": 2
+    },
+    "20.4": {
+      "p0": 3,
+      "p1": 4,
+      "p2": 5,
+      "p3": 0
+    },
+    "22.3": {
+      "p0": 3,
+      "p1": 4,
+      "p2": 5,
+      "p3": 2
+    },
+    "2.3": {
+      "p0": 1,
+      "p1": 2,
+      "p2": 0,
+      "p3": 0
+    },
+    "8.2": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0
     }
   },
-  "next_review_candidates": [
-    "2.14",
-    "2.18",
-    "4.1"
-  ],
-  "ready_for_review": 57,
-  "last_updated": "2026-05-11T14:05:00+08:00",
+  "total_review_sections": 15,
+  "next_review_candidates": [],
+  "ready_for_review": 58,
+  "last_updated": "2026-05-12T05:10:00+08:00",
   "last_updated_by": "task2a-content-processing",
-  "task6_last_review": "2026-05-11T13:05:00+08:00",
+  "task6_last_review": "2026-05-12T02:09:00+08:00",
+  "task9_last_review": "2026-05-12T06:20:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
     {
@@ -88,6 +140,48 @@
       ],
       "verification": "L1 禁用词扫描通过，高频词均在安全范围",
       "status": "done"
+    },
+    {
+      "date": "2026-05-11T23:29:05+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "2.9",
+        "2.10"
+      ],
+      "queue_ids": [
+        "task9-deep-review-2.9",
+        "task9-deep-review-2.10"
+      ],
+      "summary": "P0 source path fixes (5), P1 principle chain (DispSync→VsyncPredictor, BLAST vs BufferQueue sync, Vulkan Fence), P1 version diff (Android 4.0 hw accel claim), P1 factual (Vulkan default wording), P2 (rendering backend check method, ASTC test conditions, gpu_busy Perfetto correspondence)",
+      "files_modified": [
+        "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+        "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+        "metadata/queue.json"
+      ]
+    },
+    {
+      "date": "2026-05-12 07:17",
+      "sections": [
+        "22.3",
+        "20.4"
+      ],
+      "action": "task2b-rework",
+      "fixes": [
+        "22.3: Strong Skipping 版本 Kotlin 2.2→2.0",
+        "22.3: derivedStateOf 纯函数条件补充",
+        "22.3: 版本迁移指南新增(P85)",
+        "22.3: Pausable Composition 版本待确认(blocked)",
+        "20.4: ANR 超时阈值总表新增",
+        "20.4: Watchdog 与系统检测区分明确",
+        "20.4: BR 超时按类型/优先级细化",
+        "20.4: ANR 预警章节新增(P85)"
+      ]
     }
-  ]
+  ],
+  "last_task2b_at": "2026-05-12 07:17",
+  "last_task2b_sections": [
+    "22.3",
+    "20.4"
+  ],
+  "last_task2b_action": "回炉修复: 22.3(Strong Skipping版本修正, derivedStateOf纯函数条件, 迁移指南) + 20.4(ANR超时总表, BR超时细化, Watchdog区分, 预警章节)"
 }

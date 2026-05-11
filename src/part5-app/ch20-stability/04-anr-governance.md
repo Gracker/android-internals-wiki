@@ -41,6 +41,23 @@ ANR 的分析和定位方法在 9.1-9.3 节已经讲过。这一节回答一个�
 
 ANR 治理的底层逻辑只有一条——让主线程在超时窗口内完成所有系统要求它响应的工作。这条约束拆开来看，涉及五个独立的治理方向：主线程瘦身、IPC 调用治理、锁竞争治理、四大组件超时治理、以及兜底的 Watchdog 搭建。这五个方向各自有独立的治理手段和验证方法，下面逐个展开。
 
+### ANR 触发场景与超时阈值
+
+不同组件类型的 ANR 超时阈值不同，系统的检测机制也各不相同。治理 ANR 的第一步是区分自己面对的是哪种类型的 ANR：
+
+| ANR 类型 | 超时阈值（AOSP 默认值） | 检测机制 | 典型成因 |
+|----------|------------------------|---------|---------|
+| Input dispatch | 5s（`Settings.System.ANR_INPUT_DISPATCH_TIMEOUT`） | InputDispatcher 检测触摸/按键事件在超时窗口内未送达 | 主线程阻塞导致 InputConsumer 无法处理事件 |
+| BroadcastReceiver（前台） | 10s（`BROADCAST_FG_TIMEOUT`） | BroadcastQueue 检测 onReceive() 执行超时 | onReceive() 中执行同步 I/O 或 Binder 调用 |
+| BroadcastReceiver（后台） | 60s（`BROADCAST_BG_TIMEOUT`） | 同上 | 后台广播处理链过长 |
+| ContentProvider publish | 10s（`CONTENT_PROVIDER_PUBLISH_TIMEOUT`） | AMS 检测应用 publish provider 超时 | Application.onCreate() 或 ContentProvider.onCreate() 耗时 |
+| Service（前台） | 20s（`SERVICE_FOREGROUND_TIMEOUT`） | ActiveServices 检测 onCreate()/onStartCommand() 超时 | Service 生命周期回调中执行耗时操作 |
+| Service（后台） | 200s（`SERVICE_BACKGROUND_TIMEOUT`） | 同上 | 后台 Service 长时间运行 |
+
+上表中的超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。Input dispatch ANR 是线上最常见的类型，占 ANR 总量的 60-80%。
+
+> 注意：`BROADCAST_FG_TIMEOUT` 和 `BROADCAST_BG_TIMEOUT` 对应的是标准（unordered）广播。有序广播（ordered broadcast）的超时由 `BroadcastRecord.timeout` 控制，每个接收者独立计时。高优先级接收者如果在前台，走前台超时；在后台走后台超时。
+
 ## 主线程瘦身策略与异步化
 
 主线程上任何超过超时阈值的同步操作都是 ANR 候选项。治理的第一步不是"怎么优化这些操作"，而是"哪些操作根本不该出现在主线程"。
@@ -322,7 +339,9 @@ try {
 
 ## ContentProvider / BroadcastReceiver 超时治理
 
-ContentProvider 和 BroadcastReceiver 的 ANR 超时阈值分别是 10 秒和前台 10 秒 / 后台 60 秒（详见 9.2 节的完整阈值表）。这两种 ANR 的治理思路和主线程 ANR 不同：关键不是优化单个操作的耗时，而是减少在系统回调里做的工作量。
+ContentProvider 的 ANR 超时阈值是 10 秒（publish provider），BroadcastReceiver 的超时根据广播类型和优先级而定（前台广播 10 秒 / 后台广播 60 秒 / 有序广播按每个接收者独立计时）。完整的阈值表见 9.2 节。
+
+这两种 ANR 的治理思路和主线程 ANR 不同：关键不是优化单个操作的耗时，而是减少在系统回调里做的工作量。
 
 ### ContentProvider 超时治理
 
@@ -376,7 +395,9 @@ Service 的前台超时是 20 秒，后台 200 秒。治理要点：
 
 ## ANR Watchdog 搭建
 
-ANR Watchdog 是应用侧的 ANR 检测机制，用于在系统弹出 ANR 对话框之前就发现主线程阻塞。它的工作原理和 Android 系统的 ANR 检测机制独立——Watchdog 不依赖系统信号，而是通过主动探测主线程的响应性来判断。
+ANR Watchdog 是应用侧的 ANR 检测机制，用于在系统弹出 ANR 对话框之前就发现主线程阻塞。
+
+**注意区分两层检测**：系统的 ANR 检测（上表所列）是按组件类型分场景检测的，每种组件有独立的超时阈值和检测逻辑。应用侧的 Watchdog 是另一套独立的监测线程，不依赖系统信号，通过主动探测主线程的响应性来判断。两者的关系是：Watchdog 的检测间隔和阈值由应用自己设定，通常设得比系统阈值低，目的是在系统判定 ANR 之前发出预警。
 
 ### 工作原理
 
@@ -446,6 +467,45 @@ Watchdog 检测到主线程阻塞后，上报的数据应该包含：
 这些数据聚合后，按堆栈签名聚类，就能看到哪些代码路径是高频的 ANR 嫌疑点。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
+
+## ANR 预警与主动发现
+
+线上 ANR 治理的核心难题不是"修复已知 ANR"（定位到堆栈后通常有明确的修复方向），而是"发现尚未被系统判定的主线程阻塞趋势"。以下是几种预警手段：
+
+### 主线程 Looper 监控
+
+在主线程 Looper 的每个 Message 分发前后插桩，记录单个 Message 的处理耗时。超过阈值（如 500ms）但未触发系统 ANR 的消息就是"准 ANR"——它在当前设备上没超时，但在更慢的设备或更高负载下可能触发。
+
+```java
+// 基于 Looper.getMainLooper().setMessageLogging() 的监控
+public class LooperMonitor implements Printer {
+    private long startTime = 0;
+    
+    @Override
+    public void println(String x) {
+        if (x.startsWith(">>>>> Dispatching to Handler")) {
+            startTime = SystemClock.uptimeMillis();
+        } else if (x.startsWith("<<<<< Finished to Handler")) {
+            long duration = SystemClock.uptimeMillis() - startTime;
+            if (duration > 500) {  // 500ms 预警阈值
+                // 记录主线程堆栈和耗时，用于聚类分析
+                onMainThreadStall(duration);
+            }
+        }
+    }
+}
+
+// 注册
+Looper.getMainLooper().setMessageLogging(new LooperMonitor());
+```
+
+### Binder 调用耗时监控
+
+Binder 调用在主线程上的阻塞时间直接影响 ANR 风险。通过 `BinderProxy.transactNative()` 的 AOP 插桩，记录每次调用的对端进程、接口描述符和耗时。超过 50ms 的 Binder 调用需要重点关注。
+
+### 预警数据的聚合与分析
+
+预警数据的价值在于趋势发现，而不是单次告警。将"准 ANR"事件按主线程堆栈签名聚类，就能看到哪些代码路径在逼近 ANR 阈值，在它们真正触发系统 ANR 之前进行治理。
 
 ## 后台 ANR 与前台 ANR 的差异化治理
 
