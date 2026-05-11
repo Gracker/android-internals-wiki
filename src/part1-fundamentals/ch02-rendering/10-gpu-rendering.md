@@ -45,13 +45,13 @@ last_polish_notes: 第2轮出版级精修：修复applicable_versions范围、AN
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-pipeline_stage: task9_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-05-09T19:40:00+08:00'
+last_task2b_at: '2026-05-11T11:23:45+08:00'
 review_notes: '2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。'
 ---
 
@@ -126,7 +126,9 @@ void drawRect(float left, float top, float right, float bottom, Paint paint) {
 }
 ```
 
-这个调用链是 Canvas → BaseCanvas → nDrawRect(native)。Skia 在 native 侧接收到指令后，生成对应的顶点数据提交给 GPU。对于简单的矩形绘制，Vertex Shader 执行四个顶点的位置变换，开销很低。但如果矩形被缩放、旋转或倾斜——这在动画和自定义 View 中很常见——这些变换矩阵的复杂度会相应增加。
+调用链分三层：Canvas.drawRect() 是公开 API 入口，内部直接调用 super.drawRect() 把参数原样传递给父类；BaseCanvas.drawRect() 先调用 throwIfHasHwFeaturesInSwMode() 检查 Paint 是否在软件渲染模式下使用了硬件特性，然后通过 JNI 调用 nDrawRect() 进入 native 层；Skia 在 native 侧接收到指令后，根据当前后端（OpenGL ES 或 Vulkan）生成对应的顶点数据和 GPU 命令。
+
+对于简单的矩形绘制，Vertex Shader 执行四个顶点的位置变换，开销很低。但如果矩形被缩放、旋转或倾斜——这在动画和自定义 View 中很常见——这些变换矩阵的复杂度会相应增加。
 
 在 Perfetto 中，我们可以在 GPU track 看到顶点处理时间。如果发现某个 UI 元素的 GPU 时间异常高，而界面又包含大量的自定义 Path 或复杂的 Canvas 变换，Vertex Shader 往往是第一个需要排查的方向。
 
@@ -162,17 +164,18 @@ Framebuffer 是 GPU 渲染管线的最终输出目标，它是一块用于存储
 Android 中的 Framebuffer 管理涉及多个层面。最底层是 Gralloc 模块，它负责实际分配和管理图形缓冲区的内存。Gralloc 分配的缓冲区就是 GraphicBuffer，应用通过 Canvas 绘制的内容最终写入到 GraphicBuffer 中，然后由 SurfaceFlinger 在合成时读取。
 
 ```cpp
-// 示意性伪代码：ANativeWindowBuffer 的概念结构
-// 注意：AOSP 中 ANativeWindowBuffer 的实际定义在 frameworks/native/libs/nativewindow/include/android/native_window.h
-// GraphicBuffer 的定义在 frameworks/native/libs/ui/include/ui/GraphicBuffer.h
-// 以下代码仅为说明 Framebuffer 相关概念，非 AOSP 实际源码
-struct ANativeWindowBuffer {
-    int width;       // 缓冲区宽度
-    int height;      // 缓冲区高度
-    int stride;      // 行跨度（字节）
-    int format;      // 像素格式
-    int usage;       // 使用标志（如 GPU 渲染、相机预览等）
-};
+// AOSP android-16.0.0_r1
+// ANativeWindowBuffer 定义: frameworks/native/libs/nativewindow/include/android/native_window.h
+// GraphicBuffer 定义: frameworks/native/libs/ui/include/ui/GraphicBuffer.h
+typedef struct ANativeWindowBuffer {
+    int width;                // 缓冲区宽度（像素）
+    int height;               // 缓冲区高度（像素）
+    int stride;               // 行跨度（像素）
+    int format;               // 像素格式（AHARDWAREBUFFER_FORMAT_*）
+    int usage;                // 使用标志（AHARDWAREBUFFER_USAGE_*）
+    void* reserved[2];        // 保留字段
+    buffer_handle_t handle;   // 底层图形缓冲区 native handle（native_handle_t*）
+} ANativeWindowBuffer_t;
 ```
 
 这层对象关系很容易混在一起。App 或 NDK 代码日常直接接触的通常是 `Surface`、`SurfaceTexture`、`ANativeWindow`、`HardwareBuffer` 这类公开对象；缓冲区一旦进入 BufferQueue，底层 native handle 会被 `GraphicBuffer` 包装，并附带 format、usage、stride、fence 等元数据，再继续流向 SurfaceFlinger、HWC 或 GPU 驱动。也就是说，`ANativeWindowBuffer` 更接近生产者视角的窗口缓冲区抽象，`GraphicBuffer` 更常出现在 framework/native 图形栈里，两者描述的是同一批底层图形内存，可以视为同一份底层 buffer 在不同层的表示。
@@ -243,6 +246,18 @@ Android 16 把 Vulkan 推到更靠前的位置，但要把这句话拆开看。�
 VPA16 里与性能关系最直接的一项是 Host Image Copy。它允许 CPU 侧把图像数据直接拷入 GPU image，省掉 staging buffer 和一次额外 copy。对滚动列表里的大图、视频帧上传、纹理流式加载这类持续上传场景，收益通常体现在峰值内存更低、提交抖动更小，而不只是 API 名字变化。
 
 这个转变背后的一个直接原因是 OpenGL ES 驱动实现质量长期参差不齐。不同 GPU 厂商（Qualcomm Adreno、ARM Mali、Imagination PowerVR）各自维护 OpenGL ES 驱动，bug 和性能差异都不小。Google 通过 ANGLE 将大量 OpenGL ES 调用统一翻译为 Vulkan，只需要维护一套 Vulkan 后端的质量，碎片化问题也随之收敛。但要注意：ANGLE 的启用取决于设备/应用级别的配置策略（`ro.hardware.egl`、Settings.Global、Angle APK allowlist），不是所有 GLES 应用在所有 Android 16 设备上都自动走 ANGLE。
+
+### Vulkan 渲染管线的核心组件
+
+Vulkan 渲染帧需要应用显式组装三个核心对象：VkCommandBuffer、VkRenderPass 和 VkFramebuffer。
+
+**VkCommandBuffer** 是指令容器。应用在 CommandBuffer 中记录所有渲染命令（draw call、资源绑定、状态设置），然后一次性提交到 GPU 队列。CommandBuffer 可以在任意线程上构建，这是 Vulkan 多线程渲染能力的基础。
+
+**VkRenderPass** 定义一帧渲染的结构：有哪些附件（color attachment、depth attachment）、每个附件在渲染开始和结束时的 load/store 操作、子 pass 之间的依赖关系。在移动 GPU 的 TBR 架构下，RenderPass 的边界直接影响 tile 的 load/store 行为——每开始一个新 RenderPass，GPU 要完成当前 tile 的写回并重新加载下一个 RenderPass 的附件。合并 RenderPass 可以减少 tile 写回次数，是移动端 Vulkan 性能优化的基本策略。
+
+**VkFramebuffer** 是 RenderPass 的附件绑定实体，把 VkImageView（对应 swapchain image 或 offscreen render target 等实际图像资源）与 RenderPass 声明的附件槽位关联。Framebuffer 的生命周期通常与它所引用的图像资源一致——swapchain 重建时 Framebuffer 也需要重建。
+
+三者的依赖关系：VkRenderPass 描述渲染结构，VkFramebuffer 提供渲染目标，VkCommandBuffer 记录渲染指令。提交渲染时，CommandBuffer 中记录的每个 RenderPass 实例都必须指定对应的 Framebuffer。在 Perfetto 的 Vulkan track 中，CommandBuffer 的构建时间（CPU 侧 Record phase）和 GPU 执行时间（Submit + Execute phase）是分开的，可以分别观察。
 
 ### CPU 开销：一个数量级的差距
 
