@@ -1,4 +1,6 @@
 ---
+
+
 status: ready-for-review
 title: 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 chapter: '2.14'
@@ -53,19 +55,20 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-09'
 task6_result: pass-light-edit
-task9_result: pass-tech-review
-task9_reviewed_date: '2026-04-21'
+task9_result: needs-rework
+task9_reviewed_date: 2026-05-12
 task2b_result: fixed
 last_task2b_at: '2026-05-09T17:20:00+08:00'
-last_task9_at: '2026-04-21T00:05:03+08:00'
+last_task9_at: '2026-05-12T15:40:00+08:00'
 task9_reviewed_by: openclaw-task9
+task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；详见 logs/deep-review/2026-05-12-15-deep-review.md。'
 ---
 
 

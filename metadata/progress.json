@@ -21,7 +21,10 @@
     "5.1",
     "22.3",
     "2.3",
-    "8.2"
+    "8.2",
+    "1.5",
+    "2.14",
+    "2.18"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -36,14 +39,17 @@
     "src/part1-fundamentals/ch03-input/05-input-interception-security.md",
     "src/part1-fundamentals/ch04-memory/03-art-memory.md",
     "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md",
-    "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
+    "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+    "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
   ],
   "review_summary": {
-    "p0_issues": 2,
-    "p1_issues": 9,
-    "p2_issues": 4,
+    "p0_issues": 5,
+    "p1_issues": 12,
+    "p2_issues": 6,
     "p3_issues": 0,
-    "total_issues": 15
+    "total_issues": 23
   },
   "task6_review_summary": {
     "l1_l2_fixes": 3,
@@ -106,15 +112,33 @@
       "p1": 1,
       "p2": 0,
       "p3": 0
+    },
+    "1.5": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0
+    },
+    "2.14": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0
+    },
+    "2.18": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0
     }
   },
-  "total_review_sections": 15,
+  "total_review_sections": 18,
   "next_review_candidates": [],
   "ready_for_review": 55,
-  "last_updated": "2026-05-12T11:00:00+08:00",
-  "last_updated_by": "task2a-content-processing",
+  "last_updated": "2026-05-12T15:40:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": "2026-05-12T02:09:00+08:00",
-  "task9_last_review": "2026-05-12T12:20:00+08:00",
+  "task9_last_review": "2026-05-12T15:40:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
     {

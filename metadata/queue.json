@@ -1038,12 +1038,174 @@
       ],
       "completed_date": "2026-05-12",
       "completed_reason": "Task 2B 回炉修复: 补充 Watchdog 监测线程与主线程交互时序——volatile 可见性保证、6 步交互流程、检测盲区与误报消除机制"
+    },
+    {
+      "id": "task9-1.5-renderthread-workqueue",
+      "section": "1.5",
+      "priority": 95,
+      "title": "RenderThread 接收任务机制写成 pipe",
+      "description": "AOSP android-16.0.0_r1 的 DrawFrameTask::postAndWait() 通过 mRenderThread->queue().post([this]{ run(); }) 投递到 RenderThread 的 WorkQueue，并用 Condition 等待；RenderThread::threadLoop() 调用 waitForWork()/processQueue()，没有 pipe 语义。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+      ],
+      "review_issues": [
+        {
+          "type": "source-code-accuracy",
+          "location": "L264 RenderThread 接收任务机制写成“通过管道接收 DrawFrameTask”",
+          "detail": "AOSP android-16.0.0_r1 的 DrawFrameTask::postAndWait() 通过 mRenderThread->queue().post([this]{ run(); }) 投递到 RenderThread 的 WorkQueue，并用 Condition 等待；RenderThread::threadLoop() 调用 waitForWork()/processQueue()，没有 pipe 语义。",
+          "suggestion": "改为“通过 RenderThread 的 WorkQueue 投递 DrawFrameTask，并在 postAndWait() 中同步等待 syncFrameState 完成后再 unblock UI thread”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T15:40:00+08:00"
+    },
+    {
+      "id": "task9-1.5-looper-fd-native-path",
+      "section": "1.5",
+      "priority": 85,
+      "title": "Looper fd 注册路径混淆 Java 接口与 native addFd",
+      "description": "InputEventReceiver 和 DisplayEventReceiver 的 fd 是在 JNI/native 层通过 messageQueue->getLooper()->addFd(...) 注册；MessageQueue.addOnFileDescriptorEventListener() 只是 Java 公开 fd listener 接口之一。原文写成 Input socket fd、VSync fd 均通过此 Java 接口注册，容易把系统内部事件源路径讲错。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/05-threading-model.md"
+      ],
+      "review_issues": [
+        {
+          "type": "source-code-accuracy",
+          "location": "L209 fd 注册路径混淆 Java 公共接口与 native Looper",
+          "detail": "InputEventReceiver 和 DisplayEventReceiver 的 fd 是在 JNI/native 层通过 messageQueue->getLooper()->addFd(...) 注册；MessageQueue.addOnFileDescriptorEventListener() 只是 Java 公开 fd listener 接口之一。原文写成 Input socket fd、VSync fd 均通过此 Java 接口注册，容易把系统内部事件源路径讲错。",
+          "suggestion": "改为“这些事件最终进入同一个 native Looper/epoll 等待集合；App 自定义 fd 可通过 MessageQueue.addOnFileDescriptorEventListener() 接入”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T15:40:00+08:00"
+    },
+    {
+      "id": "task9-2.14-vp-android16-shader-object",
+      "section": "2.14",
+      "priority": 95,
+      "title": "VP_ANDROID_16 扩展要求误写 shader_object",
+      "description": "Khronos VP_ANDROID_16_requirements.json 的 MUST 扩展包含 VK_EXT_host_image_copy，但未包含 VK_EXT_shader_object；profile api-version 为 1.3.276。正文写成“VPA16 在 Vulkan 1.4 基线之上额外强制 host_image_copy + shader_object”，与可核对 profile 不一致。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md"
+      ],
+      "review_issues": [
+        {
+          "type": "source-code-accuracy",
+          "location": "L131-L140 VPA16 强制扩展列表与 Khronos profile 不符",
+          "detail": "Khronos VP_ANDROID_16_requirements.json 的 MUST 扩展包含 VK_EXT_host_image_copy，但未包含 VK_EXT_shader_object；profile api-version 为 1.3.276。正文写成“VPA16 在 Vulkan 1.4 基线之上额外强制 host_image_copy + shader_object”，与可核对 profile 不一致。",
+          "suggestion": "把 VPA16 / VP_ANDROID_16 的描述改成以 Khronos profile JSON 为准：保留 VK_EXT_host_image_copy；删除“强制 VK_EXT_shader_object”和“基于 Vulkan 1.4 profile”的断言，另把 Android 16 平台 Vulkan 1.4 基线与 VP_ANDROID_16 minimum requirements 分开写。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T15:40:00+08:00"
+    },
+    {
+      "id": "task9-2.14-angle-android17-cdd",
+      "section": "2.14",
+      "priority": 85,
+      "title": "Android 17 CDD 强制 ANGLE 默认驱动缺少依据",
+      "description": "当前可核对官方文档只说明 Android 15 把 ANGLE 作为 optional layer；source.android.com/compatibility 公开到 Android 16 CDD，未见 Android 17 CDD 条款支撑“新设备强制 ANGLE 为默认 GLES driver”。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md"
+      ],
+      "review_issues": [
+        {
+          "type": "version-differences",
+          "location": "L150 Android 17 CDD 强制 ANGLE 默认 GLES 驱动缺少公开依据",
+          "detail": "当前可核对官方文档只说明 Android 15 把 ANGLE 作为 optional layer；source.android.com/compatibility 公开到 Android 16 CDD，未见 Android 17 CDD 条款支撑“新设备强制 ANGLE 为默认 GLES driver”。",
+          "suggestion": "此段需降级为[待验证]或删除；若保留，必须补 Android 17 CDD 条款编号、AOSP config/CTS 变更或官方发布文档。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T15:40:00+08:00"
+    },
+    {
+      "id": "task9-2.18-refresh-rate-selector-smallvector",
+      "section": "2.18",
+      "priority": 95,
+      "title": "RefreshRateSelector SmallVector/12% 优化与源码不符",
+      "description": "AOSP android-16.0.0_r1 frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp 仍使用 std::map<Key, DisplayModeIterator, KeyLess> ratesMap，未见 SmallVector 替换；12% 耗时下降也无测试条件。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
+      ],
+      "review_issues": [
+        {
+          "type": "source-code-accuracy",
+          "location": "L208 RefreshRateSelector SmallVector / 12% 优化与 android-16 源码不符",
+          "detail": "AOSP android-16.0.0_r1 frameworks/native/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp 仍使用 std::map<Key, DisplayModeIterator, KeyLess> ratesMap，未见 SmallVector 替换；12% 耗时下降也无测试条件。",
+          "suggestion": "删除该段或改为[待验证]，除非能提供对应 commit、分支和 perf 数据。当前 android-16.0.0_r1 不能支撑该结论。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T15:40:00+08:00"
+    },
+    {
+      "id": "task9-2.18-gamma-compensation-evidence",
+      "section": "2.18",
+      "priority": 85,
+      "title": "Android 16 Display HAL Gamma 补偿缺少源码锚点",
+      "description": "source.android.com ARR 文档只描述 HWC3 DisplayConfiguration.vrrConfig、vsyncPeriod、VrrConfig.minFrameIntervalNs、notifyExpectedPresent 等 ARR 接口，未提实时 Gamma compensation。正文把它写成 Android 16 Display HAL 机制，缺少 AIDL/实现路径。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
+      ],
+      "review_issues": [
+        {
+          "type": "source-code-accuracy",
+          "location": "L287 Android 16 Display HAL 实时 Gamma 补偿缺少源码/文档锚点",
+          "detail": "source.android.com ARR 文档只描述 HWC3 DisplayConfiguration.vrrConfig、vsyncPeriod、VrrConfig.minFrameIntervalNs、notifyExpectedPresent 等 ARR 接口，未提实时 Gamma compensation。正文把它写成 Android 16 Display HAL 机制，缺少 AIDL/实现路径。",
+          "suggestion": "补具体 HAL/AIDL 字段、Pixel reference implementation 或官方文档；否则把“Gamma 补偿”改成面板/OEM 侧可能存在的实现差异，不作为 Android 16 平台机制。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T15:40:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 57,
-    "p0_count": 7,
-    "last_updated": "2026-05-12T15:37:00",
-    "updated_by": "task2b-content-processing-rework"
+    "total_entries": 63,
+    "p0_count": 3,
+    "last_updated": "2026-05-12T15:40:00+08:00",
+    "updated_by": "task9-deep-tech-review"
   }
 }
