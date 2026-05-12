@@ -55,18 +55,17 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: 'openclaw-task9'
 task9_reviewed_date: '2026-05-12'
 last_task9_at: '2026-05-12T19:58:00+08:00'
 task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；API 37 PENDING_JOB_REASON_ENERGY_SCHEDULING 未在官方 JobScheduler 常量中出现，Power Check/WorkManager 2.10 量化口径需补证。'
-last_task2b_at: '2026-05-09T18:18:00+08:00'
+last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 rework_type: review回炉修复（Task9 问题单）
@@ -575,11 +574,15 @@ Android 17 引入了针对缓存态应用的 CPU 占用分级熔断。系统每 
 
 排查"后台任务莫名被杀"时，除了看 `dumpsys jobscheduler` 和 `getPendingJobReasonStats()`，还要检查是否有 Power Check 触发记录。
 
-**能量限额挂起原因**
+**能效与设备状态相关挂起原因**
 
-API 37 引入 `PENDING_JOB_REASON_ENERGY_SCHEDULING` 常量。当系统的 Energy Limiter 判定应用今日能量配额耗尽时，Job 被无限期挂起直至次日或进入充电状态。
+API 37 的 `getPendingJobReasonStats()` 返回的 `Map<Integer, Duration>` 中，除了前文提到的 `PENDING_JOB_REASON_QUOTA`（配额耗尽），还有几个和能效、设备状态直接相关的挂起原因：
 
-在诊断"job 为什么一直不跑"时，`getPendingJobReasonStats()` 返回的 Map 中如果 `PENDING_JOB_REASON_ENERGY_SCHEDULING` 对应的 Duration 很长，瓶颈不在约束、quota 或 bucket，而是应用的整体能量配额已耗尽。应对方向是降低后台任务的总 CPU 和网络开销，而非调整单个 job 的约束。
+- `PENDING_JOB_REASON_DEVICE_STATE_THERMAL`：设备处于热限流状态，系统暂停后台 job 以降温
+- `PENDING_JOB_REASON_DEVICE_STATE_BATTERY_SAVER`：省电模式开启，后台任务被挂起
+- `PENDING_JOB_REASON_QUOTA`：App 在当前 standby bucket 下的执行配额已用尽
+
+在诊断"job 为什么一直不跑"时，如果这些设备状态相关 reason 对应的 Duration 很长，瓶颈不在 job 自身的约束设置，而是系统级的能效策略。应对方向是降低后台任务的总 CPU 和网络开销，或等待设备状态恢复。
 
 **聚合调试统计**
 
