@@ -333,3 +333,18 @@
 - **问题**：代码示例与文字说明对 `installSplashScreen()` 和 `super.onCreate()` 的顺序描述不一致，属于 API 行为边界。
 - **建议**：Task 9 按当前 AndroidX core-splashscreen / 官方文档复核调用顺序；Task 2B 再统一示例和正文说明。
 - **review 日志**：logs/review/2026-05-13-01-review.md
+
+## [Task6 Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-05-13
+- **类型**：需补充素材
+- **位置**：WorkManager 2.10 与 Android 17 DeliQueue 协同优化；Android 17 Power Check 阈值描述
+- **问题**：正文保留了“掉帧率下降约 4%”和 Power Check 检查周期/阈值分段等量化口径，但当前来源列表与段落标注没有给出官方发布说明、benchmark 条件或实测记录。
+- **建议**：补充官方文档、发布说明或实测 trace；如果只能作为观察结论，应改成待验证表述并给出测试条件。
+- **review 日志**：logs/review/2026-05-13-02-review.md
+
+## [Task6 Review] 17.2 SoC 平台差异 — 2026-05-13
+- **类型**：需重写
+- **位置**：常见问题之后的 “sched_ext 在 Android OEM 上的 BPF 调度器实现” 素材块
+- **问题**：sched_ext 调研素材仍以资料卡片形式堆在正文末尾，和前文 CPU 调度策略、Perfetto 观测差异没有形成叙述链路。
+- **建议**：由 Task2B 将素材拆入“厂商调度策略差异”和“不同 SoC 上 Perfetto 数据的差异”，按 Qualcomm / MediaTek / Google Pixel 三类 OEM 调度器说明适用版本、证据边界和 trace 观察点。
+- **review 日志**：logs/review/2026-05-13-02-review.md
+

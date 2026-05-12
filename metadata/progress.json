@@ -43,7 +43,9 @@
     "21.6",
     "21.5",
     "2.9",
-    "22.4"
+    "22.4",
+    "5.10",
+    "20.1"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -80,7 +82,9 @@
     "src/part5-app/ch21-startup/06-lazy-initialization.md",
     "src/part5-app/ch21-startup/05-splash-screen.md",
     "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
-    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md"
+    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md",
+    "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md",
+    "src/part5-app/ch20-stability/01-stability-overview.md"
   ],
   "review_summary": {
     "p0_issues": 2,
@@ -90,10 +94,10 @@
     "total_issues": 6
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 147,
-    "l3_issues": 16,
+    "l1_l2_fixes": 155,
+    "l3_issues": 19,
     "l4_issues": 4,
-    "total_issues": 169,
+    "total_issues": 180,
     "auto_promotions": 2
   },
   "issues_by_section": {
@@ -279,19 +283,18 @@
     "19.25 耗电与发热监控"
   ],
   "ready_for_review": 54,
-  "last_updated": "2026-05-13T01:43:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-13T02:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-13T01:20:00+08:00",
-    "log": "logs/review/2026-05-13-01-review.md",
+    "at": "2026-05-13T02:12:00+08:00",
+    "log": "logs/review/2026-05-13-02-review.md",
     "sections": [
-      "21.5",
-      "21.6",
-      "2.9",
-      "2.18"
+      "5.10",
+      "17.2",
+      "20.1"
     ],
-    "l1_l2_fixes": 26,
-    "l3_l4_issues": 1,
+    "l1_l2_fixes": 8,
+    "l3_l4_issues": 3,
     "auto_promotions": 0
   },
   "task9_last_review": "2026-05-13T01:43:00+08:00",
@@ -366,10 +369,12 @@
   "last_task2b_action": "回炉修复: 22.3(Strong Skipping版本修正, derivedStateOf纯函数条件, 迁移指南) + 20.4(ANR超时总表, BR超时细化, Watchdog区分, 预警章节)",
   "sections": {
     "17.2": {
-      "last_task2b_at": "2026-05-12T03:31:49",
-      "task2b_result": "fixed",
-      "pending_p95": 0,
-      "last_fix_summary": "Oryon cache (shared→private L2), Dimensity migration (frequency correction), Tensor G4 (custom cores)"
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-13T02:12:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_review_log": "logs/review/2026-05-13-02-review.md"
     },
     "3.5": {
       "status": "finalized",
@@ -575,6 +580,22 @@
       "last_task9_at": "2026-05-13T01:43:00+08:00",
       "last_task6_at": "2026-05-12T08:14:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-12-08-review.md"
+    },
+    "5.10": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-13T02:12:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_review_log": "logs/review/2026-05-13-02-review.md"
+    },
+    "20.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-13T02:12:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-13-02-review.md"
     }
   },
   "task2b_rounds": [

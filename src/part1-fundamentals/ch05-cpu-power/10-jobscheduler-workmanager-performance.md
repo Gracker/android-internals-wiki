@@ -9,7 +9,7 @@ polish_date: '2026-04-09'
 polish_by: task2b-polish
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-27'
-reviewed_date: '2026-05-10'
+reviewed_date: '2026-05-13'
 reviewed_by: openclaw-task6
 last_verified_against: AOSP android-16.0.0_r1, developer.android.com reference, perfetto.dev
   stdlib docs, Android Vitals docs
@@ -55,10 +55,10 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: 'openclaw-task9'
@@ -69,6 +69,10 @@ last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
 rework_type: review回炉修复（Task9 问题单）
+task6_result: needs-rework
+last_task6_at: '2026-05-13T02:12:00+08:00'
+last_task6_review_log: "logs/review/2026-05-13-02-review.md"
+task6_review_notes: "2026-05-13 Task6：L1/L2 小修完成；WorkManager 2.10 DeliQueue 4%收益与 Android 17 Power Check 阈值缺少可验证口径，已标注并回炉 Task2B。"
 ---
 
 
@@ -300,7 +304,7 @@ WorkManager.getInstance(context)
 
 ### WorkManager 2.10 与 Android 17 的协同优化
 
-Android 17 引入的 DeliQueue（无锁消息队列）消除了 `MessageQueue` 的 `mLock` 锁竞争，对系统框架的影响在 5.5 节已展开。Jetpack 侧也在跟进：WorkManager 2.10 深度适配了 DeliQueue，在大规模任务入队时消除了主线程对消息队列的锁等待，使掉帧率下降约 4%。
+Android 17 引入的 DeliQueue（无锁消息队列）消除了 `MessageQueue` 的 `mLock` 锁竞争，对系统框架的影响在 5.5 节已展开。Jetpack 侧也在跟进：WorkManager 2.10 深度适配了 DeliQueue，在大规模任务入队时减少主线程对消息队列的锁等待，使掉帧率下降约 4%。[需补充素材: 这组 WorkManager 2.10 / Android 17 协同收益需要补充官方发布说明、benchmark 条件或实测记录，否则只能保留为待验证观察。]
 
 对开发者来说，升级 WorkManager 到 2.10+ 即可在 Android 17 设备上获得 UI 响应性的间接提升，不需要修改业务代码。Perfetto 中验证方法：在 `enqueue` 密集调用场景下，对比升级前后主线程的 `MessageQueue` lock 等待时间。
 
@@ -474,7 +478,7 @@ JobScheduler / AlarmManager 触发频率不是 Vitals 的指标名。它更适�
 | 场景 | 推荐入口 | 使用前提 | 运行特点 | 常见失败方式 |
 |------|---------|---------|---------|-------------|
 | 可延期、可重试、需要持久化 | WorkManager `OneTimeWorkRequest` / `PeriodicWorkRequest` | 无需用户当场盯着结果 | 交给系统批处理，受 bucket、quota、约束影响 | 约束不满足、bucket 过低、周期 work 被批量延后 |
-| 用户刚触发，希望尽快开始，工作本身不长 | Expedited Job / Expedited Work | 任务要短，且确实需要更快开始 | 走单独的 expedited quota | 直接 `JobScheduler.schedule()` 可能因 quota 返回 `RESULT_FAILURE`；WorkManager 会按 `OutOfQuotaPolicy` 降级或取消 |
+| 用户刚触发，希望尽快开始，工作本身不长 | Expedited Job / Expedited Work | 任务要短，且确有必要更快开始 | 走单独的 expedited quota | 直接 `JobScheduler.schedule()` 可能因 quota 返回 `RESULT_FAILURE`；WorkManager 会按 `OutOfQuotaPolicy` 降级或取消 |
 | 用户发起的大文件上传 / 下载 | UIDT Job（`setUserInitiated(true)`） | Android 14+、声明 `RUN_USER_INITIATED_JOBS`、App 在前台或处于允许后台启动 Activity 的状态、必须声明 network 约束、运行时必须调用 `JobService.setNotification(...)` | 只用于 network data transfer，不走常规 job quota，条件满足时会尽快开始 | 未及时设置 notification 会被系统停止；用户从 Task Manager 停止后，App 不能直接把同一个 UIDT job 悄悄重新排回去 |
 | 用户可见、需要持续运行，而且不只是网络传输 | Foreground Service | 需要正确的 FGS type，满足后台启动限制 | 适合持续进行中的可见工作 | Android 12+ 启动限制、Android 14+ 类型约束、Android 15 `dataSync` / `mediaProcessing` 等类型有 24 小时内约 6 小时的累计时长预算 |
 
@@ -569,6 +573,8 @@ Android 17 引入了针对缓存态应用的 CPU 占用分级熔断。系统每 
 
 - 缓存态前 10 分钟：CPU 均值需低于 25%
 - 后续阶段：阶梯降至 10% 和 2%
+
+[需补充素材: Power Check 的检查周期、阈值分段和 ProfilingTrace 生成条件需要补充 Android 17 官方文档或实测来源，避免把口径写成无条件事实。]
 
 超限后系统强制终止应用进程，并自动生成 `ProfilingTrace` 记录当时的 CPU 和线程状态。这个机制和 App Standby Bucket 的 quota 限制形成互补：quota 管的是"能跑多久"，Power Check 管的是"CPU 占了多少"。
 
