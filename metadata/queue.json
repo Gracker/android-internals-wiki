@@ -1602,15 +1602,115 @@
       "added_by": "task6-review",
       "added_at": "2026-05-12T19:12:00+08:00",
       "original_review_log": "logs/review/2026-05-12-19-review.md"
+    },
+    {
+      "id": "task9-2026-05-12-5.10-api37-energy-reason",
+      "section": "5.10",
+      "section_title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "priority": 95,
+      "title": "API 37 pending reason 常量写入不存在的 ENERGY_SCHEDULING",
+      "description": "正文把 API 37 写成新增 PENDING_JOB_REASON_ENERGY_SCHEDULING，并用 getPendingJobReasonStats() 读取该 key。复核 developer.android.com/reference/android/app/job/JobScheduler 当前公开 PENDING_JOB_REASON_* 常量列表，未包含 ENERGY_SCHEDULING；真实可用原因包括 QUOTA、DEVICE_STATE_THERMAL、DEVICE_STATE_BATTERY_SAVER 等。",
+      "reason": "[Deep Tech Review][源码错误] §Android 17 聚合统计与能效治理：PENDING_JOB_REASON_ENERGY_SCHEDULING 未在官方 JobScheduler API 常量中出现，诊断代码会误导读者使用不存在的 key。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T19:58:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "§Android 17（API 37）：聚合统计与能效治理 / 能量限额挂起原因",
+          "detail": "`PENDING_JOB_REASON_ENERGY_SCHEDULING` 未出现在官方 JobScheduler 公开常量列表；当前示例把该常量作为 API 37 确定能力使用。",
+          "suggestion": "删除该常量或降级为待验证；若要表达能效/热/省电相关挂起，改用官方已公开的 `PENDING_JOB_REASON_DEVICE_STATE_THERMAL`、`PENDING_JOB_REASON_DEVICE_STATE_BATTERY_SAVER`、`PENDING_JOB_REASON_QUOTA` 等，并补 API level。"
+        }
+      ]
+    },
+    {
+      "id": "task9-2026-05-12-6.3-android16-17-io-stack-evidence",
+      "section": "6.3",
+      "section_title": "I/O 调度与性能",
+      "priority": 85,
+      "title": "Android 16/17 I/O 栈加速段缺一手版本与源码证据",
+      "description": "正文把 Android 16 存储 APEX io_uring 异步 FUSE、外部存储扫描提升约 40%、Android 17 彻底移除 blkio、前后台 io 权重 1000:10 写成确定事实，但同段仍标待验证，且当前 source.android.com storage/cgroups 页面未给出这些具体实现和数值。",
+      "reason": "[Deep Tech Review][版本差异/数据缺失] §Android 16/17 的 I/O 栈加速：多项版本结论和量化数据缺 AOSP/官方锚点，作为 ready-for-review 章节风险偏高。",
+      "issue_type": "version-differences-data-support",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T19:58:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch06-storage/03-io-scheduling.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "§Android 16/17 的 I/O 栈加速",
+          "detail": "Android 16 存储 APEX io_uring 异步 FUSE、Android 17 cgroup v2 io 唯一接口、1000:10 权重等被写成确定版本行为，但缺 AOSP 路径、配置文件或官方文档。",
+          "suggestion": "补 storage APEX/vold/MediaProvider/kernel 具体路径、设备/内核条件和配置文件；补不到时拆成“已验证主线内核能力”和“Android 设备默认启用待验证”，删除固定收益数字。"
+        }
+      ]
+    },
+    {
+      "id": "task9-2026-05-12-6.4-fuse-io-uring-sdm-evidence",
+      "section": "6.4",
+      "section_title": "存储相关的版本演进",
+      "priority": 85,
+      "title": "Android 17 FUSE over io_uring 与 Android 16 SDM 机制证据链不足",
+      "description": "正文声称 Android 17 基于 Linux 6.14 通过 vold + io_uring 重构 FUSE，请求延迟降低约 20%；同时把 Android 16 SDM 展开为 Streaming Data Mapping，并断言云端预编译产物直接下载链接。这些结论缺官方/AOSP 锚点，且与项目现有 SDM 盲区记录冲突。",
+      "reason": "[Deep Tech Review][版本差异/原理断裂] §Android 17 FUSE over io_uring 与 §云端编译（SDM）：核心版本演进被写成确定事实，但缺源码路径、官方文档和可观测信号。",
+      "issue_type": "version-differences-principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T19:58:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "related_files": [
+        "src/part1-fundamentals/ch06-storage/04-storage-evolution.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "§Android 17 FUSE over io_uring：异步化重构",
+          "detail": "`Linux 6.14`、`vold` 处理 FUSE 请求、20% 延迟收益没有一手来源；官方 storage 文档目前只明确 Android 12 FUSE passthrough/SDCardFS deprecation 等路径。",
+          "suggestion": "补 AOSP vold/MediaProvider/kernel FUSE io_uring 代码路径、启用条件和测试来源；补不到则降级为待验证素材。"
+        },
+        {
+          "type": "原理断裂",
+          "location": "§云端编译（SDM）：安装期 I/O 负载的结构性减负",
+          "detail": "SDM 全称、产物类型、签名/校验、Google Play 分发与设备端 dex2oat fallback 关系没有被拆开，且“Streaming Data Mapping”缺官方锚点。",
+          "suggestion": "先复核 SDM 官方术语与 Play 分发文档；补签名校验、`.dm`/profile/odex-vdex-art 关系、fallback 条件和 Perfetto/安装日志观测点。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 73,
-    "p0_count": 4,
-    "last_updated": "2026-05-12T19:36:00+08:00",
-    "updated_by": "task2b-rework",
-    "pending_entries": 36
+    "total_entries": 76,
+    "p0_count": 6,
+    "last_updated": "2026-05-12T19:58:00+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 35
   },
-  "last_updated": "2026-05-12T19:36:00+08:00",
-  "last_updated_by": "task2b-rework"
+  "last_updated": "2026-05-12T19:58:00+08:00",
+  "last_updated_by": "task9-deep-tech-review"
 }
