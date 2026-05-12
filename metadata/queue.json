@@ -1948,15 +1948,133 @@
       "completed_reason": null,
       "added_by": "task6-review",
       "added_at": "2026-05-12T21:56:00+08:00"
+    },
+    {
+      "id": "task9-8-8-media-pipeline-api-atrace-codec2-20260512",
+      "section": "8.8",
+      "section_title": "Android 多媒体管线性能",
+      "priority": 95,
+      "title": "多媒体管线低延迟 API、atrace 分类与 Codec2/tunneled 版本边界错误",
+      "reason": "[Deep Tech Review] 低延迟视频解码 API/feature 写错，TraceConfig atrace 分类含不存在项，Codec2/tunneled playback 版本边界和 Fast Mixer 条件不完整。",
+      "description": "低延迟视频解码 API/feature 写错，TraceConfig atrace 分类含不存在项，Codec2/tunneled playback 版本边界和 Fast Mixer 条件不完整。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/08-media-pipeline.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-12-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码/API错误",
+          "severity": "P0",
+          "location": "L329-L333 低延迟解码模式",
+          "detail": "`MediaFormat.setKeyMaxOutputFramesForLateDecode()` 与 `PackageManager.FEATURE_LOW_LATENCY_VIDEO` 在 Android API 中不存在；该段还用 AAudio MMAP 文档验证视频解码低延迟。",
+          "suggestion": "改为 `MediaFormat.KEY_LOW_LATENCY` / `MediaCodec.PARAMETER_KEY_LOW_LATENCY`（通过 `setInteger` 或 `setParameters`），能力检测使用 `MediaCodecInfo.CodecCapabilities.FEATURE_LowLatency`；验证源改为 MediaCodec/MediaFormat/CodecCapabilities 官方文档。"
+        },
+        {
+          "type": "工具配置错误",
+          "severity": "P0",
+          "location": "L432-L443 atrace 分类",
+          "detail": "AOSP atrace category 列表中没有 `media` / `codec` 分类；android-14/16 的 `atrace.cpp` 暴露的是 `audio`、`video`、`camera`、`gfx`、`view`、`sched` 等。",
+          "suggestion": "删除 `media,codec`，按目标改用 `audio,video,camera,gfx,view,sched,freq` 等；保留 `[待验证]` 并给出 `atrace --list_categories` 复核步骤。"
+        },
+        {
+          "type": "版本差异/原理断裂",
+          "severity": "P1",
+          "location": "L223-L233、L500 tunneled playback / Codec2",
+          "detail": "正文写 Android 11 支持 tunneled playback via Codec2，容易误读为 tunneled playback Android 11 才出现；OMX 时代已支持 tunneled，Android 10+ 才是 Codec2 框架补齐对应路径。正文也缺少 OMX 与 Codec2 的关系。",
+          "suggestion": "补 OMX → Codec2 版本线；把 tunneled playback 拆为 OMX tunneled 与 Codec2 tunneled 两条路径，并标注具体源码锚点后再下结论。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L293-L306 Fast Mixer Thread",
+          "detail": "Fast Mixer 能否命中取决于 AudioTrack flag、采样率/格式/声道匹配、是否需要 SRC 与应用音效等条件；正文只写“跳过采样率转换和应用处理器音效”，未说明不满足条件会回退 Normal Mixer。",
+          "suggestion": "补 Fast Track 准入条件和回退路径，避免读者认为设置 `AUDIO_OUTPUT_FLAG_FAST` 即必定走 Fast Mixer。"
+        },
+        {
+          "type": "数据/版本证据缺失",
+          "severity": "P1",
+          "location": "L246-L252 Media3 ABR",
+          "detail": "“近期版本引入主动预测模型”“adaptation decision 缩短到亚 100ms”未能在 Media3 release notes / DefaultLoadControl / AdaptiveTrackSelection 公开资料中对应到明确版本和测试条件。",
+          "suggestion": "补官方 release note、commit 或 benchmark；无法验证时改为 `[待验证]` 或删除亚 100ms 数值。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T22:15:00+08:00"
+    },
+    {
+      "id": "task9-9-5-anr-case-source-waitqueue-freezer-20260512",
+      "section": "9.5",
+      "section_title": "案例集",
+      "priority": 95,
+      "title": "ANR 案例中 QueuedWork、freezer 与 WaitQueue 观察口径存在源码错误",
+      "reason": "[Deep Tech Review] ActivityThread/QueuedWork 等待点、InputDispatcher freezer 方法和 Perfetto WaitQueue track 名称与 AOSP 行为不一致。",
+      "description": "ActivityThread/QueuedWork 等待点、InputDispatcher freezer 方法和 Perfetto WaitQueue track 名称与 AOSP 行为不一致。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch09-anr/05-case-studies.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-12-22-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L244 QueuedWork 等待点",
+          "detail": "AOSP android-14.0.0_r1 的 `ActivityThread` 中 `QueuedWork.waitToFinish()` 只在 service start/stop、Activity pause(pre-Honeycomb)/stop(non-pre-Honeycomb) 等路径出现；`handleReceiver()` 不直接 waitToFinish，BroadcastReceiver.finish() 是发现 pending work 后 queue 一个 finish runnable；未发现 `handleRelaunchActivity()` 作为 ContentProvider 等待点。",
+          "suggestion": "重写 SharedPreferences apply 等待点：Activity stop/pause 与 Service 是主线程 wait；Broadcast 是 finish 延后导致广播完成被 pending work 拖住；ContentProvider 说法删除或补源码证据。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L296 Cached Apps Freezer 版本边界",
+          "detail": "android-15/16 `InputDispatcher.cpp` 未发现 `InputDispatcher::setFrozen`；只有 `setInputDispatchMode(enabled, frozen)` 处理全局 input dispatch freeze。`CachedAppOptimizer` 也不是通过 InputDispatcher::setFrozen 检查活跃连接进程。",
+          "suggestion": "删除 `InputDispatcher::setFrozen` 断言；改为基于 CachedAppOptimizer / binder freezer / UID frozen state 的可验证路径描述，并对 OEM freezer 豁免保持 `[待验证]`。"
+        },
+        {
+          "type": "工具观察口径错误",
+          "severity": "P0",
+          "location": "L467-L470 WaitQueue Perfetto counter",
+          "detail": "未在 AOSP InputDispatcher 或 Perfetto 公开源码中找到 `android.input.input_event_waiting_duration` track；AOSP InputDispatcher 暴露的是 atrace counter `iq`、`oq:<channel>`、`wq:<channel>`，以及 `dumpsys input` 的 WaitQueue。",
+          "suggestion": "把观察点改为 `dumpsys input` WaitQueue 和 `wq:<InputChannel>` atrace counter；如果保留等待时长 track，必须附对应 Android 版本/flag/源码证据。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L472-L477 WaitQueue length 判据",
+          "detail": "WaitQueue length 只表示某 connection 已派发但未 finish 的事件数，受 MOVE 合并、输入类型、事件频率和 timeout 影响；“≈1=单点卡死、远大于1=吞吐不足”过于确定。",
+          "suggestion": "改为辅助信号：结合主线程 trace、InputDispatcher timeout reason、`wq/oq` counter 时间序列和 sched slices 判断，不能单独定性根因。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T22:15:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 82,
-    "p0_count": 6,
-    "last_updated": "2026-05-12T21:56:00+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 41
+    "total_entries": 84,
+    "p0_count": 8,
+    "last_updated": "2026-05-12T22:15:00+08:00",
+    "updated_by": "openclaw-task9",
+    "pending_entries": 43,
+    "updated_date": "2026-05-12"
   },
-  "last_updated": "2026-05-12T21:56:00+08:00",
-  "last_updated_by": "task6-review"
+  "last_updated": "2026-05-12T22:15:00+08:00",
+  "last_updated_by": "openclaw-task9"
 }

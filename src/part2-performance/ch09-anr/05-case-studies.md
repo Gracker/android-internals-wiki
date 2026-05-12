@@ -45,20 +45,21 @@ related_chapters:
 - '9.3'
 - '9.4'
 - '1.4'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
-task9_result: ''
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-05'
-last_task9_at: '2026-05-05T18:55:00+08:00'
+task9_reviewed_date: '2026-05-12'
+last_task9_at: '2026-05-12T22:15:00+08:00'
 review_notes: '2026-05-05 task6 revisiting: pass-light-edit。小修18处（代码块语言、I/O术语统一、口语化表达、填充词）。无新增B类问题；既有Task9技术项已由Task2B完成，待Task9复审。
   | 2026-05-04 task9 deep-review: needs-rework。本轮 P0/P1 技术问题已写入 queue.json，等待 Task
   2B 回炉。 | 2026-05-05 task9 deep-review: needs-rework。P0 2，P1 1，P2 0；需回炉校正 InputDispatcher
   freezer、QueuedWork 等待点、WaitQueue Perfetto 观察口径。'
+task9_review_notes: '2026-05-12 22:15 Task9 deep-review: needs-rework。P0 3 / P1 1 / P2 0；QueuedWork 等待点、InputDispatcher freezer 方法、Perfetto WaitQueue track 与 WaitQueue 判据需回炉。'
 ---
 
 # 案例集
