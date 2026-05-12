@@ -77,12 +77,12 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '5.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
-last_task2b_at: '2026-05-04T15:49:22'
+task9_state: pending
+task2b_state: fixed
+last_task2b_at: '2026-05-12T19:36:00+08:00'
 task2b_result: fixed
 task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；详见 logs/deep-review/2026-05-12-15-deep-review.md。'
   logs/deep-review/2026-05-04-16-deep-review.md。'
@@ -208,7 +208,7 @@ public static void loop() {
 
 1. 有新的 Java 消息入队（通过 `mWakeEventFd` 写入唤醒）
 2. 有 Native 层的定时消息到期
-3. 有通过 `MessageQueue.addOnFileDescriptorEventListener()` 注册的 fd 变为可读状态（Input 事件的 socket fd、VSync 信号的 fd 等均通过此接口注册）
+3. 有 native 层通过 `Looper.addFd()` 注册的 fd 变为可读状态（Input 事件 socket fd、VSync 信号 fd 等在 JNI/native 层通过 `messageQueue->getLooper()->addFd(...)` 注册到同一个 epoll 实例）；App 自定义 fd 可通过 `MessageQueue.addOnFileDescriptorEventListener()` 接入
 
 这种设计让主线程的 Looper 同时承担了 Java 消息泵和统一事件分发中心这两个角色。Input 事件、VSync 信号等系统事件，通过 `addFd` 注册到 epoll 后被统一监控，再通过回调机制分发到各自的处理路径。注意：Binder 通信的 fd 不在主线程 Looper 的默认 epoll 监控集合中——Binder 线程池有自己独立的 epoll 循环处理跨进程调用。
 
@@ -263,7 +263,7 @@ mAttachInfo.mThreadedRenderer.initializeIfNeeded(
     mWidth, mHeight, mAttachInfo, mSurface, surfaceInsets);
 ```
 
-在 native 层，RenderThread 使用独立的 Looper（注意：不是主线程的 Looper，而是 native 层自己的 `Looper` 实现），通过管道接收来自主线程的 `DrawFrameTask`。RenderThread 仍然是一个单线程的渲染引擎，它按顺序处理每一帧的渲染任务，不会出现多线程并发操作 GPU 的场景。
+在 native 层，RenderThread 使用独立的 Looper（不是主线程的 Looper，而是 native 层自己的 `Looper` 实现），通过内部的 WorkQueue 接收来自主线程的 `DrawFrameTask`。主线程调用 `DrawFrameTask::postAndWait()` 时，通过 `mRenderThread->queue().post()` 将任务投递到 RenderThread 的 WorkQueue，并用 Condition 同步等待 `syncFrameState` 完成。RenderThread 的 `threadLoop()` 在 `waitForWork()` / `processQueue()` 循环中依次取出并执行任务。RenderThread 仍然是单线程渲染引擎，按顺序处理每一帧，不会出现多线程并发操作 GPU 的场景。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/libs/hwui/renderthread/RenderThread.cpp]
 

@@ -55,17 +55,17 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-09'
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-12
 task2b_result: fixed
-last_task2b_at: '2026-05-09T17:20:00+08:00'
+last_task2b_at: '2026-05-12T19:36:00+08:00'
 last_task9_at: '2026-05-12T15:40:00+08:00'
 task9_reviewed_by: openclaw-task9
 task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；详见 logs/deep-review/2026-05-12-15-deep-review.md。'
@@ -131,16 +131,23 @@ AVP 2025 在 AVP 2022 / 2021 的基础上继续扩展 profile 能力集合，官
 
 [已验证: 官方文档, developer.android.com/ndk/guides/graphics/android-vulkan-profile]
 
-### VPA16 强制扩展
+### VP_ANDROID_16 Profile 与 Vulkan 1.4 基线
 
-Android 16 的 Vulkan Profile（VPA16）在 Vulkan 1.4 基线之上，额外强制要求两项扩展：
+Android 16 的 Vulkan 要求要拆成两层看：
 
-| 扩展 | 解决什么问题 |
-|---|---|
-| `VK_EXT_host_image_copy` | CPU 直接把数据拷到 VkImage，省掉 staging buffer 和额外拷贝。纹理流式加载和首帧资源上传都受益。 |
-| `VK_EXT_shader_object` | 不需要提前创建完整 PSO 就能绑定着色器。运行时按需编译，从驱动层消除传统 Pipeline 创建带来的 Shader Jank。 |
+1. **平台基线**：Android 16 新设备需要支持 Vulkan 1.4（见 `implement-vulkan` 官方表）
+2. **VP_ANDROID_16 Profile**：Khronos 发布的 Android 16 Vulkan Profile，定义新设备上应具备的最低兼容能力集合。该 profile 的 api-version 为 1.3.276，额外强制要求 `VK_EXT_host_image_copy`
 
-`VK_EXT_shader_object` 对渲染流畅性的影响更直接。传统路径中，每个 shader + render state 组合都要预编译成不可变 PSO。着色器变体多的场景（不同材质、光照组合），PSO 创建是冷启动卡顿的主要来源。这个扩展让驱动在运行时按需编译单个着色器，不需要穷举所有组合。排查 Shader Jank 时，如果目标设备支持该扩展但应用仍有着色器编译卡顿，优先检查是否已经在用 shader object 路径。
+| 层级 | 版本要求 | 强制扩展 |
+|---|---|---|
+| Android 16 平台基线 | Vulkan 1.4 | — |
+| VP_ANDROID_16 Profile | api-version 1.3.276 | `VK_EXT_host_image_copy` |
+
+`VK_EXT_host_image_copy` 允许 CPU 直接把数据拷到 VkImage，省掉 staging buffer 和额外拷贝。纹理流式加载和首帧资源上传都受益。
+
+`VK_EXT_shader_object` 不是 VP_ANDROID_16 的强制扩展，但在支持它的设备上对渲染流畅性有直接帮助：传统路径中每个 shader + render state 组合都要预编译成不可变 PSO，着色器变体多的场景（不同材质、光照组合），PSO 创建是冷启动卡顿的主要来源。这个扩展让驱动在运行时按需编译单个着色器，不需要穷举所有组合。排查 Shader Jank 时，如果目标设备支持该扩展但应用仍有着色器编译卡顿，优先检查是否已经在用 shader object 路径。
+
+工程上建议同时核对目标设备的 Vulkan 1.4 支持和 VP_ANDROID_16 profile compliance：前者决定平台能力基线，后者决定跨设备兼容能力的最低集合。具体设备的扩展支持以 `vkEnumerateDeviceExtensionProperties` 返回的结果为准。
 
 ### 第三代：ANGLE——翻译层，不是新 API
 
@@ -150,15 +157,15 @@ ANGLE 的定位可以用一句话概括：它让 OpenGL ES 应用在不改 API �
 
 Android 15 的图形说明页把 ANGLE 描述为“running OpenGL ES on top of Vulkan”的 optional layer，同时明确写到，后续会在更多**新设备**上把 ANGLE 作为 GL system driver 出厂。因此，我们更应该把 ANGLE 理解为一条持续推进中的路线，而不是一个已经对所有设备统一生效的开关。
 
-Android 17（API 37）的 CDD 把 ANGLE 从推荐路线升级为新设备上的强制性默认 GLES 驱动。原生 GLES 驱动不再作为默认选项出厂，应用层写的 GLES 调用由平台统一翻译到 Vulkan 后端。新设备上"原生 GLES 驱动碎片化"这条路被切断了。
+**[待验证]** Android 17（API 37）据传会把 ANGLE 升级为新设备上的强制性默认 GLES 驱动，但截至 2026-05，source.android.com/compatibility 公开到 Android 16 CDD，未见 Android 17 CDD 条款直接支撑这一结论。如果后续官方文档确认，以下影响将成立：原生 GLES 驱动不再作为默认选项出厂，GLES 调用由平台统一翻译到 Vulkan 后端。
 
-Android 17+ 新设备上的实际情况：
+目前可以确认的结论：
 
-- GLES 应用走的一律是 ANGLE → Vulkan 路径
-- 性能对比基准不再是"ANGLE vs 原生 GLES"，只剩一条路
-- Perfetto 排查时不需要先确认"是否走 ANGLE"——答案是确定的
+- Android 15 把 ANGLE 定位为 optional layer，官方 roadmap 表明后续会在更多新设备上把 ANGLE 作为 GL system driver 出厂
+- 具体设备是否走 ANGLE，需以 CDD 条款、AOSP config/CTS 变更或官方发布文档为依据
+- 旧设备升级后的行为取决于厂商实现
 
-旧设备升级到 Android 17 后仍可能保留原生 GLES 驱动。CDD 要求面向新出厂设备。
+排查 Perfetto 时，仍建议先确认"本次进程启动时 GLES driver 最终选中了谁"，不要默认所有 Android 17+ 设备都走 ANGLE。
 
 AOSP `GraphicsEnvironment.queryAngleChoice()` 给出了 Java 层的第一段选路顺序：先看全局开关 `ANGLE_GL_DRIVER_ALL_ANGLE`，再看按包名配置的 `angle_gl_driver_selection_pkgs` / `angle_gl_driver_selection_values`，最后才落到平台资源里的 `config_angleAllowList`。如果显式选了 `native`，Java 层会把 `shouldUseNativeDriver` 传给 native 层；如果选了 ANGLE，则先尝试 ANGLE APK，再回退到 system ANGLE。到了 `frameworks/native/opengl/libs/EGL/Loader.cpp`，loader 的顺序是“先尝试 ANGLE，再尝试 updatable driver，最后再落回 native / system GLES driver”。这也是为什么我们不能把“Android 15+”直接等同于“所有 GLES 应用都会自动经过 ANGLE”。
 
