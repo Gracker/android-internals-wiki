@@ -26,10 +26,11 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [contentprovider, startup, sdk-init, app-startup]
 related_chapters: ["21.1", "21.2", "1.10"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
@@ -121,7 +122,7 @@ app = root.find("application")
 for provider in app.findall("provider"):
     name = provider.get("{http://schemas.android.com/apk/res/android}name")
     authorities = provider.get("{http://schemas.android.com/apk/res/android}authorities")
-    process = provider.get("{http://schemas.android.com/apk/res/android}process") or ":main"
+    process = provider.get("{http://schemas.android.com/apk/res/android}process") or "<default>"
     init_order = provider.get("{http://schemas.android.com/apk/res/android}initOrder") or "0"
     exported = provider.get("{http://schemas.android.com/apk/res/android}exported")
     print(f"{name}\t{authorities}\t{process}\tinitOrder={init_order}\texported={exported}")
@@ -227,12 +228,16 @@ class MainActivity : Activity() {
         setContentView(R.layout.main)
 
         val content = window.decorView
-        content.viewTreeObserver.addOnDrawListener(object : ViewTreeObserver.OnDrawListener {
-            override fun onDraw() {
-                content.viewTreeObserver.removeOnDrawListener(this)
+        // OnPreDrawListener 可在 onPreDraw 内安全移除自身；
+        // OnDrawListener.onDraw() 内调用 removeOnDrawListener() 在 android-16 上
+        // 会抛 IllegalStateException
+        content.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                content.viewTreeObserver.removeOnPreDrawListener(this)
                 content.post {
                     StartupTasks.afterFirstDraw()
                 }
+                return true // 不阻止绘制
             }
         })
     }

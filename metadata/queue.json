@@ -1601,7 +1601,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/02-startup-framework.md"
@@ -1625,7 +1625,9 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T19:12:00+08:00",
-      "original_review_log": "logs/review/2026-05-12-19-review.md"
+      "original_review_log": "logs/review/2026-05-12-19-review.md",
+      "completed_date": "2026-05-13T03:44:10+08:00",
+      "completed_reason": "Task 2B 回炉修复: 与 task9-21-2 一并处理，ThreadFactory 和优先级表格均已修正"
     },
     {
       "id": "task9-2026-05-12-5.10-api37-energy-reason",
@@ -1873,7 +1875,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/02-startup-framework.md"
@@ -1898,7 +1900,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-12T20:54:00+08:00"
+      "added_at": "2026-05-12T20:54:00+08:00",
+      "completed_date": "2026-05-13T03:44:10+08:00",
+      "completed_reason": "Task 2B 回炉修复: ThreadFactory 优先级设置移入线程执行体（run 内 Process.setThreadPriority），关键启动线程范围从 -2~-4 收敛至 -2（THREAD_PRIORITY_FOREGROUND），补充 THREAD_PRIORITY_DISPLAY 应用侧不可配置说明"
     },
     {
       "id": "task9-21-3-provider-first-draw-process-20260512",
@@ -1913,7 +1917,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch21-startup/03-contentprovider-optimization.md"
@@ -1938,7 +1942,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-12T20:54:00+08:00"
+      "added_at": "2026-05-12T20:54:00+08:00",
+      "completed_date": "2026-05-13T03:44:10+08:00",
+      "completed_reason": "Task 2B 回炉修复: OnDrawListener→OnPreDrawListener（避免 IllegalStateException），Provider 审计脚本缺省进程从 ':main' 修正为 '<default>'"
     },
     {
       "id": "task6-1.9-cloud-compilation-evidence-2026-05-12-21",
@@ -2379,9 +2385,9 @@
   "metadata": {
     "total_entries": 93,
     "p0_count": 11,
-    "last_updated": "2026-05-13T02:51:35+08:00",
-    "updated_by": "openclaw-task9",
-    "pending_entries": 49,
+    "last_updated": "2026-05-13T03:44:10+08:00",
+    "updated_by": "openclaw-task2b",
+    "pending_entries": 47,
     "updated_date": "2026-05-13"
   },
   "last_updated": "2026-05-13T02:51:35+08:00",

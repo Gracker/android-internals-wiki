@@ -22,10 +22,11 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: needs-rework
@@ -362,16 +363,17 @@ ExecutorService ioPool = new ThreadPoolExecutor(
     new ThreadFactory() {
         @Override
         public Thread newThread(Runnable r) {
-            Thread t = new Thread(r, "startup-io-" + threadId.getAndIncrement());
-            // IO 线程降低优先级，避免和主线程争抢 CPU
-            Process.setThreadPriority(t.getId(), Process.THREAD_PRIORITY_BACKGROUND);
+            Thread t = new Thread(() -> {
+                // IO 线程降低优先级，避免和主线程争抢 CPU
+                // 在线程执行体内设置优先级，确保使用当前线程的 Linux tid
+                Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
+                r.run();
+            }, "startup-io-" + threadId.getAndIncrement());
             return t;
         }
     }
 );
 ```
-
-[存疑: 示例中在 ThreadFactory 里用 `Thread.getId()` 调 `Process.setThreadPriority()` 可能不是 Android 线程优先级设置的可靠写法，需 Task9 核对后再定稿。]
 
 **CPU 线程池**（处理计算密集型任务：JSON 解析、数据序列化、编解码）
 
@@ -408,12 +410,10 @@ mainHandler.post(() -> { /* 主线程初始化任务 */ });
 | 线程类别 | Nice 值 | 说明 |
 |----------|---------|------|
 | 主线程 | 0 | 系统默认 |
-| 渲染线程 | -4 | 系统默认 |
-| 关键启动线程 | -2 ~ -4 | 首帧关键路径上的异步任务 |
-| 普通启动线程 | 0 ~ 5 | 非关键路径的异步任务 |
-| 低优先级线程 | 10 ~ 19 | 日志上报、数据预加载等 |
-
-[存疑: 关键启动线程 `-2 ~ -4` 的可设置范围、权限边界和示例值需要 Task9 核对。]
+| 渲染线程 | -4 | 系统默认，应用不可配置（THREAD_PRIORITY_DISPLAY） |
+| 关键启动线程 | -2 | 首帧关键路径上的异步任务（THREAD_PRIORITY_FOREGROUND） |
+| 普通启动线程 | 0 | 非关键路径的异步任务（THREAD_PRIORITY_DEFAULT） |
+| 低优先级线程 | 10 | IO 线程和后台任务（THREAD_PRIORITY_BACKGROUND） |
 
 ```java
 // 设置关键启动线程优先级
@@ -423,7 +423,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);  // -2
 Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
 ```
 
-关键路径上的异步线程优先级设置为 Foreground（-2），非关键路径的 IO 线程设置为 Background（10）。这样关键任务能获得更多 CPU 时间片，非关键任务不会干扰主线程。线程优先级的原理详见 1.5 节。
+关键路径上的异步线程优先级设置为 `THREAD_PRIORITY_FOREGROUND`（-2），非关键路径的 IO 线程设置为 `THREAD_PRIORITY_BACKGROUND`（10）。`THREAD_PRIORITY_DISPLAY`（-4）及其以上优先级专供系统渲染管线使用，AOSP `Process.java` 注释明确标注 "Applications can not normally change to this priority"，应用侧调用 `Process.setThreadPriority(-4)` 可能抛出 `SecurityException`。线程优先级的原理详见 1.5 节。
 
 ### 线程池的监控指标
 
