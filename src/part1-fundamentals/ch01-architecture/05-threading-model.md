@@ -2,8 +2,8 @@
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
-status: ready-for-review
-pipeline_stage: task9_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
 reviewed_by: openclaw-task6
@@ -13,12 +13,12 @@ last_task6_at: '2026-05-12T20:10:00+08:00'
 task6_reviewed_date: '2026-05-12'
 review_round: 9
 task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、禁用元叙述词和轻量措辞；L1/L2 通过，无新增回炉项。'
-task9_state: pending
-task9_result: needs-rework
-task9_reviewed_date: 2026-05-12
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-12T15:40:00+08:00'
-task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；详见 logs/deep-review/2026-05-12-15-deep-review.md、logs/deep-review/2026-05-04-16-deep-review.md。'
+last_task9_at: "2026-05-13T06:25:00+08:00"
+task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；自动晋升 finalized。详见 logs/deep-review/2026-05-13-06-deep-review.md。"
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: '2026-05-12T19:36:00+08:00'

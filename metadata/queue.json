@@ -2790,16 +2790,83 @@
       "added_by": "task6-review",
       "added_at": "2026-05-13T05:09:00+08:00",
       "original_review_log": "logs/review/2026-05-13-05-review.md"
+    },
+    {
+      "id": "task9-deep-review-20.4-20260513-binder-broadcast",
+      "section": "20.4",
+      "priority": 95,
+      "title": "ANR 治理策略：Binder / Broadcast / Input 超时机制错误",
+      "description": "P0: Input dispatch timeout 常量、Binder API、Binder.getStackTrace、动态 Receiver 规避 ANR 等事实错误；P1: goAsync 与前台 Service 超时原理链需修正。",
+      "issue_type": "source-code-accuracy-principle-chain-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L72 Input dispatch 超时常量",
+          "detail": "`Settings.System.ANR_INPUT_DISPATCH_TIMEOUT` 在 android-16 `Settings.java` 中不存在；InputDispatcher 使用 `android.os.InputConstants.DEFAULT_DISPATCHING_TIMEOUT_MILLIS` / native `DEFAULT_INPUT_DISPATCHING_TIMEOUT`，并可从 Window/Application handle 取 dispatching timeout。",
+          "suggestion": "改为 `InputConstants.DEFAULT_DISPATCHING_TIMEOUT_MILLIS`、`InputDispatcher.cpp DEFAULT_INPUT_DISPATCHING_TIMEOUT`，说明 per-window/per-application timeout 来源。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/原理错误",
+          "location": "L299-L310 Binder 调用超时段落",
+          "detail": "`Binder.setCallingWorkSource()` 不是 android-16 `Binder.java` API；源码为 `setCallingWorkSourceUid(int)`。`allowBlocking(IBinder)` 只是关闭 blocking warning，不提供超时控制；WorkSource 只做归因。",
+          "suggestion": "删除“用 setCallingWorkSource/allowBlocking 控制阻塞”的表述；保留应用层 `Future.get(timeout)` / coroutine timeout / 降级兜底，说明平台同步 Binder 本身没有通用调用超时 API。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L500 Binder.getStackTrace()",
+          "detail": "android-16 `Binder.java` 无 `Binder.getStackTrace()` API，不能作为线上判断是否有 Binder 调用的方法。",
+          "suggestion": "改为 Binder 调用插桩、线程栈采样、Perfetto binder_driver/binder_transaction 事件，或在具备权限时用 SIGQUIT/debuggerd。"
+        },
+        {
+          "severity": "P0",
+          "type": "事实错误",
+          "location": "L393 静态广播改动态广播",
+          "detail": "“动态注册的 onReceive() 不受系统 ANR 超时监控”不成立；`BroadcastReceiver` 文档对 receiver 执行时间限制未区分静态/动态，goAsync 后 timeout 仍覆盖到 `finish()`。",
+          "suggestion": "改成“动态注册可减少未运行时被唤醒和广播面，但 onReceive/goAsync 仍受广播执行时间限制”。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L387-L392 BroadcastReceiver 异步处理",
+          "detail": "正文先写系统不允许异步操作，随后又推荐 `goAsync()`，前后矛盾。源码/文档语义是允许在 `onReceive()` 中调用 `goAsync()` 把工作移到其他线程，但广播执行超时仍包含直到 `PendingResult.finish()` 的时间。",
+          "suggestion": "补完整链路：onReceive 主线程返回 → goAsync 持有 PendingResult → 后台任务完成 → finish 通知 AMS；超时窗口不消失。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/原理断裂",
+          "location": "L416 前台 Service 超时",
+          "detail": "触发顺序应是 `Context.startForegroundService()` 后 Service 必须在限定时间内调用 `Service.startForeground()`；正文写成“在 `Service.startForeground()` 后调用”。android-16 `ActiveServices` 通过 `SERVICE_FOREGROUND_TIMEOUT_ANR_MSG` 等路径处理，不能笼统写成“ANR 的另一种形式”。",
+          "suggestion": "按版本补 Android 12+ FGS 启动限制、timeout 消息、异常/ANR 表现边界，并纠正调用顺序。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T06:25:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 99,
+    "total_entries": 108,
     "p0_count": 45,
-    "last_updated": "2026-05-13T04:11:56+08:00",
+    "last_updated": "2026-05-13T06:25:00+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 52,
-    "updated_date": "2026-05-13"
+    "pending_entries": 61,
+    "updated_date": "2026-05-13",
+    "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T04:39:00+08:00",
+  "last_updated": "2026-05-13T06:25:00+08:00",
   "last_updated_by": "task9-deep-tech-review"
 }
