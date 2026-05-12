@@ -1,0 +1,408 @@
+---
+title: "自定义 View 性能优化"
+chapter: "22.4"
+section: "22.4"
+status: ready-for-review
+applicable_versions: "Android 10 (API 29) - Android 17 (API 37)"
+last_verified: "2026-05-12"
+last_verified_against: "AOSP android-16.0.0_r1"
+confidence: medium
+drafted_date: "2026-05-12"
+polish_count: 0
+sources: 
+- type: official
+path: "developer.android.com/topic/performance/rendering/optimizing-view"
+tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
+related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
+pipeline_stage: task9_pending
+task6_state: reviewed
+task9_state: pending
+task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-12
+task6_result: pass-light-edit
+---
+
+# 自定义 View 性能优化
+
+自定义 View 是 Android 开发中最灵活的 UI 扩展手段，也是性能问题的高发区。一条 onDraw() 里多了几行对象分配，就可能在大列表滑动场景中触发每秒 60-120 次的 GC 压力；一次 invalidate() 没有指定脏区域，就会让整棵 View 树重绘。
+
+本节聚焦自定义 View 的四个性能瓶颈：绘制管线开销、对象分配、硬件加速适配、重绘范围控制。每个环节都给出可观察的指标和可落地的改法。
+
+## onMeasure / onLayout / onDraw 性能原则
+
+### 三者的调用频率差异
+
+自定义 View 的 onMeasure()、onLayout()、onDraw() 不是等权重的。onDraw() 的调用频率远高于前两者——任何一次 invalidate() 或父容器布局变化都可能触发 onDraw()，而 onMeasure() 只在布局请求（requestLayout()）时触发，onLayout() 只在布局尺寸变化时触发。
+
+在滑动列表中，一个自定义 View 可能每帧都走一次 `onDraw()`，但 `onMeasure()` 和 `onLayout()` 只在条目进入/离开屏幕时才执行。
+
+**优化优先级**：`onDraw()` > `onLayout()` > `onMeasure()`。把 `onDraw()` 的优化做完，再做 `onLayout()` 的布局计算缓存。
+
+### onMeasure 的常见问题
+
+`onMeasure()` 的性能问题集中在两个场景：
+
+1. **循环测量**：父容器在 `UNSPECIFIED → AT_MOST → EXACTLY` 多次调用 `measure()`。自定义 ViewGroup 如果在 `onMeasure()` 中对子 View 做了多次 `measure()` 调用（典型场景：先测一次拿宽度，再根据宽度决定高度），测量成本翻倍。解法是用一次测量 + `MeasureSpec` 推算代替两次 `measure()` 调用。
+
+2. **测量结果未缓存**：`onMeasure()` 里的中间计算结果（如文字宽度、子 View 总高度）如果每帧重新计算，就是浪费。把结果存到成员变量里，只在尺寸参数变化时重新计算。
+
+```java
+// View.java 中 onMeasure 的典型重写
+@Override
+protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+    int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+    int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+
+    // 只在尺寸变化时重新计算
+    if (widthSize != mLastMeasuredWidth) {
+        mCachedContentWidth = calculateContentWidth(widthSize);
+        mLastMeasuredWidth = widthSize;
+    }
+
+    setMeasuredDimension(
+        resolveSize(mCachedContentWidth, widthMeasureSpec),
+        resolveSize(mCachedContentHeight, heightMeasureSpec)
+    );
+}
+```
+
+### onLayout 的注意事项
+
+`onLayout()` 的性能问题通常和 `onMeasure()` 耦合。如果 `onMeasure()` 已经缓存了子 View 的位置，`onLayout()` 只需要读缓存直接设置：
+
+```java
+@Override
+protected void onLayout(boolean changed, int l, int t, int r, int b) {
+    // 如果 measure 阶段已缓存位置，直接使用
+    for (int i = 0; i < getChildCount(); i++) {
+        View child = getChildAt(i);
+        child.layout(mCachedPositions[i].left, mCachedPositions[i].top,
+                     mCachedPositions[i].right, mCachedPositions[i].bottom);
+    }
+}
+```
+
+关键点：`onLayout()` 的 `changed` 参数表示父容器给的本 View 尺寸是否变化，但子 View 的位置是否需要重新排列取决于自己的布局逻辑。不要因为 `changed == false` 就跳过所有子 View 的 `layout()` 调用——子 View 的可见性、边距变化同样需要处理。
+
+## Canvas 绘制优化：避免在 onDraw 中分配对象
+
+这是自定义 View 性能优化中收益最高的一条。
+
+### 为什么 onDraw 不能分配对象
+
+硬件加速模式下（Android 4.0+ 默认开启），onDraw() 的 Canvas 参数是 RecordingCanvas（AOSP: frameworks/base/libs/hwui/RecordingCanvas.cpp）。每次 onDraw() 调用，系统会把绘制命令录制到 DisplayList 中，由 RenderThread 在 GPU 上回放执行。
+
+如果 onDraw() 里创建了 Paint、Path、Rect、Bitmap 等对象，这些对象会在每帧的录制过程中分配，在 GC 回收时造成内存抖动。Perfetto 里的表现是 RenderThread 的 drawFrame 调用伴随着频繁的 GC slice。
+
+一个每帧分配 2-3 个 Paint 对象的自定义 View，在 120fps 设备上每秒分配 240-360 个短命对象。这在低端设备上会导致明显的帧率不稳定。
+
+### 实操规则
+
+**所有绘制用的对象都在构造函数或 `init()` 方法中创建，`onDraw()` 只使用成员变量。**
+
+```java
+public class WaveformView extends View {
+    private final Paint mWavePaint;
+    private final Paint mGridPaint;
+    private final Path mWavePath;
+    private final RectF mBounds;
+
+    public WaveformView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        mWavePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mWavePaint.setStyle(Paint.Style.STROKE);
+        mWavePaint.setStrokeWidth(2f);
+
+        mGridPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mGridPaint.setColor(0x40FFFFFF);
+
+        mWavePath = new Path();
+        mBounds = new RectF();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        // 只使用成员变量，零分配
+        mWavePath.reset();
+        mBounds.set(0, 0, getWidth(), getHeight());
+
+        // 绘制网格
+        drawGrid(canvas, mBounds, mGridPaint);
+
+        // 绘制波形
+        buildWavePath(mWavePath, mBounds);
+        canvas.drawPath(mWavePath, mWavePaint);
+    }
+}
+```
+
+### 容易忽略的分配点
+
+以下操作看似无害，但在 onDraw() 中调用会产生隐式对象分配：
+
+| 操作 | 分配的对象 | 替代方案 |
+|------|-----------|---------|
+| `String.format()` 在 `drawText()` 中 | `String` + 内部 `Formatter` | 预格式化文本，存为成员变量 |
+| `canvas.drawText(String.valueOf(value), ...)` | `String` | 用 `Integer.toString()` 预转换 |
+| `new float[]` / `new int[]` 传给 `drawLines()` / `drawBitmapMesh()` | 数组 | 复用成员数组 |
+| `paint.setColor(Color.parseColor("#FF5722"))` | 内部 `long` 转换 | 构造函数中解析一次 |
+| `canvas.save()` + `canvas.restore()` 的嵌套过多 | `Canvas` 内部栈帧 | 减少嵌套层数，改用 `save()/restore()` 的指定 flag 版本 |
+
+### 检测方法
+
+在 Android Studio Profiler 的 Memory 面板中，按自定义 View 的类名过滤分配。正常情况下，自定义 View 在 `onDraw()` 中的分配数应为 0。如果看到每帧都有来自 `onDraw()` 调用栈的分配，逐个追踪来源。
+
+Perfetto 里可以用以下 SQL 查到绘制过程中的 GC 活动：
+
+```sql
+SELECT slice.name, slice.ts, slice.dur
+FROM slice
+JOIN thread_track ON slice.track_id = thread_track.id
+JOIN thread ON thread_track.utid = thread.utid
+WHERE thread.name = 'RenderThread'
+  AND slice.name LIKE '%GC%'
+ORDER BY slice.ts DESC
+LIMIT 20
+```
+
+## 硬件加速与 Layer 使用
+
+### 硬件加速下的自定义 View 行为
+
+硬件加速模式下，Canvas 的绘制命令不会直接执行，而是录制到 DisplayList 中（详见 2.5 节）。这意味着：
+
+1. onDraw() 不是直接在屏幕上画，而是往 DisplayList 里追加命令
+2. 如果 View 的绘制内容没变（没有 invalidate()），系统直接复用上一帧的 DisplayList，跳过整个 onDraw() 调用
+3. Canvas 的部分 API 在硬件加速下不支持，会静默忽略或降级处理
+
+硬件加速不支持的 API 列表在 Android 官方文档中有完整记录（`Canvas` 兼容性矩阵）。常见的包括：`Canvas.clipPath()` 的某些复杂模式、`Canvas.drawPicture()`、`Canvas.drawVertices()` 等。遇到这些 API 失效时，不要关闭整个 View 的硬件加速，而是评估是否可以用支持的 API 替代。
+
+### setLayerType 的使用时机
+
+`setLayerType()` 控制的是 View 的缓存策略，不是硬件加速的开关。
+
+| Layer Type | 缓存位置 | 适用场景 | 代价 |
+|-----------|---------|---------|------|
+| `LAYER_TYPE_NONE` (默认) | 无缓存 | 内容频繁变化 | 每帧重绘 |
+| `LAYER_TYPE_HARDWARE` | GPU 纹理 | 复杂但静态的绘制内容 | 占用 GPU 内存 |
+| `LAYER_TYPE_SOFTWARE` | Bitmap (CPU) | 需要关闭硬件加速的局部场景 | 内存占用 + CPU 绘制 |
+
+`LAYER_TYPE_HARDWARE` 的正确用法：当一个自定义 View 的绘制非常复杂（比如多路径叠加、渐变、阴影），但内容不频繁变化时，开启硬件 Layer 可以把绘制结果缓存为 GPU 纹理。后续帧直接用纹理合成，跳过 `onDraw()`。
+
+```java
+// 复杂但静态的绘制 → 开启硬件 Layer
+setLayerType(LAYER_TYPE_HARDWARE, null);
+
+// 内容发生变化时，手动触发更新
+public void updateContent(Data newData) {
+    mData = newData;
+    invalidate(); // 会重新执行 onDraw 并更新纹理
+}
+```
+
+**错误用法**：对频繁变化的 View（如动画、实时数据可视化）开启 `LAYER_TYPE_HARDWARE`。每帧 `invalidate()` 都会导致纹理重建，比不缓存更慢。
+
+动画场景的 Layer 使用模式（详见 22.5 节）：
+
+```java
+// 动画开始前临时开启
+view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+ObjectAnimator animator = ObjectAnimator.ofFloat(view, "alpha", 0f, 1f);
+animator.addListener(new AnimatorListenerAdapter() {
+    @Override
+    public void onAnimationEnd(Animator animation) {
+        // 动画结束后恢复
+        view.setLayerType(View.LAYER_TYPE_NONE, null);
+    }
+});
+animator.start();
+```
+
+### View.setWillNotDraw
+
+如果一个自定义 ViewGroup 不需要绘制自身内容（只负责排列子 View），设置 `setWillNotDraw(true)` 可以让系统跳过它的 `onDraw()` 调用。这是零成本的优化。
+
+```java
+// 纯布局容器 → 跳过绘制
+public class FlowLayout extends ViewGroup {
+    public FlowLayout(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        setWillNotDraw(true); // 没有自身绘制内容
+    }
+}
+```
+
+如果后续需要绘制背景、调试辅助线等，需要重新设置为 `false`。
+
+## invalidate 范围控制
+
+### invalidate() vs invalidate(Rect) vs postInvalidateOnAnimation()
+
+`invalidate()` 的三种重载在性能上有量级差异：
+
+| 方法 | 重绘范围 | 线程 | 适用场景 |
+|------|---------|------|---------|
+| `invalidate()` | 整个 View | UI 线程 | 内容全面变化 |
+| `invalidate(Rect dirty)` | 指定矩形区域 | UI 线程 | 局部更新（如进度条、光标） |
+| `invalidate(int l, int t, int r, int b)` | 同上 | UI 线程 | 同上 |
+| `postInvalidateOnAnimation()` | 整个 View | 任意线程 | 在下一帧动画时刷新 |
+
+局部 `invalidate()` 的收益来自 `ViewRootImpl` 的脏区域合并机制（`ViewRootImpl.invalidateRectOnScreen()`）。多个 View 的脏矩形会在 `performDraw()` 前合并，最终只重绘合并后的区域。如果每个 View 都调无参 `invalidate()`，脏区域合并退化为整屏重绘。
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
+
+### 脏区域 invalidate 的实践
+
+```java
+// 进度条场景：只有进度指示器区域变化
+private RectF mProgressBounds = new RectF();
+private float mProgress = 0f;
+
+public void setProgress(float progress) {
+    float oldProgress = mProgress;
+    mProgress = Math.max(0f, Math.min(1f, progress));
+
+    // 只 invalidate 进度条变化的区域
+    float viewWidth = getWidth() - getPaddingLeft() - getPaddingRight();
+    int left = (int) (getPaddingLeft() + oldProgress * viewWidth) - 2;
+    int right = (int) (getPaddingLeft() + mProgress * viewWidth) + 2;
+    invalidate(left, getPaddingTop(), right, getHeight() - getPaddingBottom());
+}
+
+@Override
+protected void onDraw(Canvas canvas) {
+    // 完整绘制，但只有脏区域会被实际光栅化
+    mProgressBounds.set(getPaddingLeft(), getPaddingTop(),
+            getPaddingLeft + mProgress * getContentWidth(), getBottom() - getPaddingBottom());
+    canvas.drawRect(mProgressBounds, mProgressPaint);
+}
+```
+
+### requestLayout() vs invalidate()
+
+这两者会触发不同范围的重新计算：
+
+- invalidate()：标记 View 需要重绘，触发 onDraw()
+- requestLayout()：标记 View 需要重新测量和布局，触发 onMeasure() + onLayout() + onDraw()
+
+`requestLayout()` 的调用会沿 View 树向上冒泡到 `ViewRootImpl`，触发完整的 `performTraversals()`（measure → layout → draw）。如果只需要重绘内容，不要调 `requestLayout()`。
+
+```java
+// ❌ 只需要重绘却触发了完整布局
+public void setColor(int color) {
+    mColor = color;
+    requestLayout(); // 多余！尺寸没变
+}
+
+// ✅
+public void setColor(int color) {
+    mColor = color;
+    invalidate(); // 只重绘
+}
+```
+
+### onDraw 中不要调 invalidate
+
+在 `onDraw()` 中调用 `invalidate()` 会造成当前帧绘制未完成就标记下一帧重绘，形成无限循环。如果需要持续动画效果，用 `postInvalidateOnAnimation()` 或 `ValueAnimator`：
+
+```java
+// ❌ 永远不要这样写
+@Override
+protected void onDraw(Canvas canvas) {
+    drawFrame(canvas, mFrameIndex++);
+    invalidate(); // 无限递归
+}
+
+// ✅ 用 Animator 控制帧率
+private ValueAnimator mAnimator;
+
+public void startAnimation() {
+    mAnimator = ValueAnimator.ofInt(0, TOTAL_FRAMES);
+    mAnimator.setRepeatCount(ValueAnimator.INFINITE);
+    mAnimator.setDuration(FRAME_DURATION_MS * TOTAL_FRAMES);
+    mAnimator.addUpdateListener(a -> invalidate());
+    mAnimator.start();
+}
+```
+
+
+
+## [自动发现] ViewCompat.postInvalidateOnAnimation 的兼容性
+
+`postInvalidateOnAnimation()` 在 API 16 以下的行为是 `postInvalidate()`，即延迟 16ms 而非等到下一个 VSync。`ViewCompat.postInvalidateOnAnimation()` 提供了向后兼容。当前 Android 10+ 的目标版本下这不是问题，但在维护旧版本兼容时需要注意。
+
+[来源: AOSP View.java 源码注释]
+
+## [自动发现] RenderNode 与自定义 View
+
+Android 10 (API 29) 引入了公开的 `RenderNode` API。自定义 View 可以利用 `RenderNode` 把复杂的绘制内容拆成多个独立节点，每个节点单独缓存和更新。这在以下场景有收益：
+
+- 自定义 View 中有一块静态背景和一块动态前景，前景变化时不影响背景的 `DisplayList`
+- 多层叠加的绘制内容，各层的更新频率不同
+
+```java
+// Android 10+ 使用 RenderNode 拆分绘制层
+private RenderNode mBackgroundNode;
+private RenderNode mForegroundNode;
+
+@Override
+protected void onDraw(Canvas canvas) {
+    if (mBackgroundNode == null) {
+        mBackgroundNode = new RenderNode("background");
+        mForegroundNode = new RenderNode("foreground");
+        // 录制静态背景
+        RecordingCanvas bgCanvas = mBackgroundNode.beginRecording();
+        drawBackground(bgCanvas);
+        mBackgroundNode.endRecording();
+    }
+
+    // 背景 RenderNode 直接提交，不重绘
+    canvas.drawRenderNode(mBackgroundNode);
+
+    // 前景每帧更新
+    RecordingCanvas fgCanvas = mForegroundNode.beginRecording();
+    drawForeground(fgCanvas);
+    mForegroundNode.endRecording();
+    canvas.drawRenderNode(mForegroundNode);
+}
+```
+
+[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/graphics/RenderNode.java]
+
+## 扩展
+
+### 🔸 性能自检清单
+
+自定义 View 上线前的性能检查项：
+
+1. `onDraw()` 零对象分配（Android Studio Profiler Memory 面板确认）
+2. 静态内容使用 `LAYER_TYPE_HARDWARE` 缓存或 `RenderNode` 分离
+3. 频繁更新场景使用脏区域 `invalidate(Rect)` 而非全量 `invalidate()`
+4. 纯布局容器设置 `setWillNotDraw(true)`
+5. 颜色、文字、路径等不变参数在构造函数中初始化
+6. 动画场景用临时 `LAYER_TYPE_HARDWARE`，结束即恢复
+7. 不在 `onDraw()` 中调用 `invalidate()` 或 `requestLayout()`
+
+### 🔸 Perfetto 观测自定义 View 绘制耗时
+
+在 Perfetto trace 中定位自定义 View 的绘制耗时：
+
+1. 找到 `UI Thread` 上的 `performDraw` → `draw` slice
+2. 如果启用了 `android.view.View` 的 trace tag（`adb shell setprop debug.hwui.profile true`），可以看到每个 View 的 `onDraw` 耗时
+3. 关注 `RenderThread` 上的 `DrawFrame` 耗时——如果 `DrawFrame` 远大于 `UI Thread` 的 `draw`，说明 `DisplayList` 回放到 GPU 的阶段是瓶颈，需要减少绘制命令数量或降低绘制复杂度
+
+```sql
+-- 查询每帧 DrawFrame 耗时（微秒）
+SELECT
+  (slice.ts / 1000000) as ts_ms,
+  slice.dur / 1000 as dur_us,
+  slice.name
+FROM slice
+JOIN thread_track ON slice.track_id = thread_track.id
+JOIN thread ON thread_track.utid = thread.utid
+WHERE thread.name = 'RenderThread'
+  AND slice.name = 'DrawFrame'
+ORDER BY slice.ts DESC
+LIMIT 50
+```

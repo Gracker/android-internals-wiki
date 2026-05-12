@@ -8,21 +8,18 @@ last_verified: "2026-05-12"
 last_verified_against: "AOSP android-15.0.0_r1, Android Developers launch-time docs"
 confidence: medium
 drafted_date: "2026-05-12"
-sources:
-  - type: official
-    path: developer.android.com/topic/performance/vitals/launch-time
-  - type: aosp
-    path: frameworks/base/core/java/android/app/ActivityThread.java
-  - type: aosp
-    path: frameworks/base/core/java/android/app/servertransaction/LaunchActivityItem.java
-  - type: aosp
-    path: frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java
+sources: 
+- type: aosp
+path: frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
-pipeline_stage: draft
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-12
+task6_result: pass-light-edit
 ---
 
 # 启动全链路分析（App 视角）
@@ -76,13 +73,13 @@ task2b_state: pending
 
 Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶段 App 开发者几乎没有可控的代码介入点——从 fork 到 `attachBaseContext` 之间的耗时完全由系统决定。主要开销在 ART 运行时初始化、主线程 Looper 创建、以及 `attachApplication` 的 Binder 调用。
 
-在 Perfetto 中，这个阶段对应 App 进程从出现到 `ActivityThreadMain` slice 开始之间的一段空白。典型耗时 50-150ms，与设备性能和 so 库数量相关。App 侧无法优化，但可以间接加速：减少 `android:usesCleartextTraffic`、`android:allowBackup` 等不必要配置项的解析开销（影响极小，但聊胜于无），以及减少 `loadLibrary` 调用数量（so 加载发生在 `System.loadLibrary` 被调用时，通常在 Application 初始化阶段）。
+在 Perfetto 中，这个阶段对应 App 进程从出现到 `ActivityThreadMain` slice 开始之间的一段空白。典型耗时 50-150ms，与设备性能和 so 库数量相关。App 侧无法优化，但可以间接加速：减少不必要的配置项解析和 `loadLibrary` 调用数量。
 
 **阶段 2：Application.attachBaseContext 到 Application.onCreate 结束**
 
 [已验证: AOSP, ActivityThread.handleBindApplication]
 
-这是 App 开发者能直接控制的第一个耗时入口。`attachBaseContext` 和 `onCreate` 之间包含了大部分 SDK 的初始化逻辑。常见的耗时大户：
+这是 App 开发者能直接控制的第一个耗时入口。`attachBaseContext` 和 `onCreate` 之间包含了大部分 SDK 的初始化逻辑。常见耗时大户：
 
 - 第三方 SDK 初始化（Analytics、Push、Crash 上报等）
 - 数据库打开与升级检查（Room、SQLiteOpenHelper）
@@ -90,7 +87,7 @@ Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶�
 - 全局配置读取（SharedPreferences 读取、远程配置拉取）
 - 网络框架预热（OkHttp ConnectionPool 初始化、DNS 预解析）
 
-在一个中大型 App 中，`Application.onCreate` 的耗时通常在 200-800ms 之间，是冷启动优化最常见的切入点。优化策略（延迟初始化、异步初始化、任务编排）在 21.2 节展开。
+在一个中大型 App 中，`Application.onCreate` 的耗时通常在 200-800ms 之间，是冷启动优化最常见的切入点。优化策略在 21.2 节展开。
 
 **阶段 3：Activity.onCreate 到 View 树构建完成**
 
@@ -98,7 +95,7 @@ Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶�
 
 `Application.onCreate` 返回后，system_server 通过 `ClientTransaction` 向 App 发送 `LaunchActivityItem`。App 主线程处理这条事务时执行 Activity 生命周期：`onCreate` → `onStart` → `onResume`。
 
-在 `Activity.onCreate` 中，`setContentView` 触发 XML 布局的 inflate——这是一次同步的 XML 解析 + View 对象创建过程。对于复杂的布局层级（嵌套超过 10 层、包含大量自定义 View），inflate 耗时可能达到 50-200ms。
+在 `Activity.onCreate` 中，`setContentView` 触发 XML 布局的 inflate——同步的 XML 解析 + View 对象创建过程。复杂布局层级（嵌套超过 10 层、包含大量自定义 View）的 inflate 耗时可能达到 50-200ms。
 
 `onResume` 中创建 `ViewRootImpl` 并注册 `Choreographer` 回调，为主线程接收 VSync 信号做准备。但此时还没有绘制任何像素——第一帧的绘制要等下一个 VSync 到来。
 
@@ -106,7 +103,7 @@ Zygote fork 出子进程后，`ActivityThread.main()` 开始执行。这一阶�
 
 [已验证: AOSP, ViewRootImpl.performTraversals]
 
-下一个 VSync 信号到来时，`Choreographer` 回调触发 `ViewRootImpl.performTraversals()`，执行 `measure` → `layout` → `draw` 三步。如果 App 使用硬件加速（Android 4.0+ 默认开启），draw 阶段生成 `DisplayList` 并交给 `RenderThread` 处理。
+下一个 VSync 信号到来时，`Choreographer` 回调触发 `ViewRootImpl.performTraversals()`，执行 `measure` → `layout` → `draw` 三步。使用硬件加速（Android 4.0+ 默认开启）时，draw 阶段生成 `DisplayList` 并交给 `RenderThread` 处理。
 
 `RenderThread` 通过 GPU 执行绘制命令，完成后通过 `queueBuffer` 将帧提交给 `SurfaceFlinger`。从 `performTraversals` 开始到帧提交完成，典型耗时 10-50ms。
 
@@ -206,7 +203,7 @@ TTID 度量的是从系统收到 `startActivity` 调用到首帧绘制完成的�
 ActivityTaskManager: Displayed com.example/.MainActivity: +1s234ms
 ```
 
-这个 `+1s234ms` 就是 TTID。系统通过 `ActivityMetricsLogger` 在 `startActivity` 时记录起点，在 `reportDrawFinished`（对应 `ViewRootImpl` 的首帧绘制完成回调）时记录终点。
+这个 `+1s234ms` 就是 TTID。系统通过 `ActivityMetricsLogger` 在 `startActivity` 时记录起点，在 `reportDrawFinished` 时记录终点。
 
 TTID 的局限：它只度量到首帧显示，不关心首帧是否有实际内容。如果 `SplashScreen` 显示了一个纯色背景，TTID 会很漂亮，但用户还在等真正的内容。
 

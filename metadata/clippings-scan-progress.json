@@ -1,0 +1,43 @@
+{
+  "current_book": 0,
+  "current_offset": 15,
+  "books": [
+    {
+      "prefix": "Android 应用稳定性剖析与优化",
+      "total_files": 20,
+      "completed_files": 15
+    },
+    {
+      "prefix": "Android 性能优化",
+      "total_files": 21,
+      "completed_files": 0
+    },
+    {
+      "prefix": "线上疑难问题该如何排查和跟踪",
+      "total_files": 59,
+      "completed_files": 0
+    }
+  ],
+  "last_scan_date": "2026-05-12",
+  "total_knowledge_points": 26,
+  "total_suggestions": 9,
+  "total_gaps": 3,
+  "skipped": [
+    {
+      "file": "ART 堆内存分布与黑科技扩量：拯救 OOM 的利器",
+      "reason": "stub: only title, no content"
+    },
+    {
+      "file": "Binder 通信监控：如何监控每一次 Binder 传输？",
+      "reason": "stub: only title, no content"
+    },
+    {
+      "file": "Binder 通信过程：客户端视角领略 Binder",
+      "reason": "stub: only title, no content"
+    },
+    {
+      "file": "-Binder 异常：原来 Binder 异常真不少！",
+      "reason": "stub: only title, no content"
+    }
+  ]
+}

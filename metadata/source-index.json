@@ -1,0 +1,4204 @@
+{
+  "files": [
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/当 Perfetto 显示 Running 时,Android 程序到底在做什么? .md",
+      "title": "当 Perfetto 显示 Running 时,Android 程序到底在做什么?",
+      "summary": "从 Perfetto Running 状态切片出发，逐层拆解 Linux task_struct、ftrace、ART、Binder、内核调度器、Arm CPU 微架构各层精确语义，给出完整诊断工作流。",
+      "chapter": "ch13",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/PSI 驱动的 Android LMKD 进程杀机制 — 源码级深度调研.md",
+      "title": "PSI 驱动的 Android LMKD 进程杀机制",
+      "summary": "从 vmpressure 到 PSI 的范式转移全链路源码分析，覆盖 PSI 统计与门限、lmkd 迁移路径、per-UID 防护、swap+zRAM 策略及 Android 10-15 调优历史。",
+      "chapter": "ch04",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android 14 → Android 17 Foreground Service Timeout : ANR 机制深度解析(AOSP 源码视角).md",
+      "title": "Android 14→17 Foreground Service Timeout ANR 机制深度解析",
+      "summary": "AOSP 源码视角的 FGS 超时与 ANR 触发机制全解析，覆盖 Android 14 ShortService 到 Android 17 AnrTimer 的完整演进与代码路径。",
+      "chapter": "ch09",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/Android Sync Fence 机制深度剖析-从 dma-fence 到 Android 16 Explicit Sync.md",
+      "title": "Android Sync Fence 机制深度剖析",
+      "summary": "从 Linux 内核 dma_fence/sync_file 到 Android libsync/libui 的完整同步栅栏机制源码剖析，含 Android 16 Explicit Sync 迁移分析。",
+      "chapter": "ch02",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/ARM Mali GPU TBR 架构原理与 Android 渲染性能影响深度报告.md",
+      "title": "ARM Mali GPU TBR 架构原理与 Android 渲染性能影响",
+      "summary": "ARM Mali/Immortalis GPU TBR 架构全代际深度报告，从 Utgard 到第五代 GPU 核心机制详解及 Android 渲染栈交互方式。",
+      "chapter": "ch02",
+      "processed_at": "2026-04-30 06:10",
+      "type": "deepresearch-inject"
+    },
+    {
+      "title": "Android 15 ADPF Power Efficiency Mode 与 PowerMonitor 能耗监控闭环",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-adpf-power-efficiency-mode-android-15.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "AutoResearchClaw",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch11"
+    },
+    {
+      "title": "Android 16KB Page Size 与 Hook 库的兼容性机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-android-16kb-page-size-hook-library-compatibility.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "AutoResearchClaw",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch16"
+    },
+    {
+      "title": "谷歌官方推荐：Android 性能优化全攻略——从工具到实战，两周提升 App 评分",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75913099-谷歌官方推荐Android 性能优化全.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "juejin-android",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch07"
+    },
+    {
+      "title": "Luban 2：简洁高效的Android图片压缩库",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75922413-Luban 2简洁高效的Android.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "juejin-android",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch16"
+    },
+    {
+      "title": "2026年了，Android开发该如何调试布局",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75967106-2026年了Android开发该如何调.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 4,
+      "source_type": "juejin-android",
+      "scored_at": "2026-05-01T05:00:00Z",
+      "chapter_mapping": "ch16"
+    },
+    {
+      "title": "Demis Hassabis：AGI 还缺什么，智能体到底行不行，下一个科学突破长什么样-2026-05-01",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Demis Hassabis：AGI 还缺什么，智能体到底行不行，下一个科学突破长什么样-2026-05-01.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:01.865643",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "开源一个 PPT Skill｜压进了我 10 年的设计经验-2026-05-01",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/开源一个 PPT Skill｜压进了我 10 年的设计经验-2026-05-01.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:01.922995",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "李博杰 的想法- 闭源实验室隐藏了模型规模，但他们藏不住模型知道什么。而模型知道什么，恰恰是其参数量的一个指标。推理… - 知乎-2026-05-01",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/李博杰 的想法- 闭源实验室隐藏了模型规模，但他们藏不住模型知道什么。而模型知道什么，恰恰是其参数量的一个指标。推理… - 知乎-2026-05-01.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:01.981547",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.01.03/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.037699",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.01.10/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.092891",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.01.17/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.148188",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.01.24/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.204788",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.01.31/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.259178",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.02.07/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.312930",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.02.14/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.368200",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.02.21/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.425074",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.02.28/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.481040",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.03.07/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.535517",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.03.14/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.589311",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.03.21/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.644496",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.03.28/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.699216",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.04.04/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.755915",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.04.11/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.809659",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.04.18/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.863435",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.04.25/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.917254",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/01_economist/te_2026.05.02/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:02.971349",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.01.05/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.027911",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.01.12/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.081630",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.01.19/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.135511",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.01.26/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.193091",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.02.02/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.248009",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.02.09/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.302621",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.02.16/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.355844",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.02.23/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.411065",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.03.02/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.466800",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.03.09/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.523874",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.03.16/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.582498",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.03.23/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.632816",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.03.30/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.686270",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.04.06/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.740758",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.04.13/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.796809",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.04.20/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.852514",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/02_new_yorker/2026.04.27/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.906225",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Ebook/awesome-english-ebooks/README.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:03.962431",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "AI手机行业周报",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AI手机行业周报/2026-05-01-AI手机行业周报.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:04.018252",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "AK-RSS-Digest（89源精选）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-05-01-AK-RSS-Digest（89源精选）.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.075084",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "Agent实践探索",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Agent实践探索/2026-05-01-Agent实践探索.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:04.133423",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "art-gc-mid_generation-tenuring-threshold",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-04-30-art-gc-mid_generation-tenuring-threshold.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.190022",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "adpf-non-game-scenarios-and-profiling-trigger-type-anomaly",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md",
+      "score": 19,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.241866",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "android-17-deliqueue-lock-free-message-queue",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-17-deliqueue-lock-free-message-queue.md",
+      "score": 19,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.296134",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "android-app-archiving-package-archiver-activitystarter-mechanism",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-app-archiving-package-archiver-activitystarter-mechanism.md",
+      "score": 19,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.350136",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "android-input-resampling-touch-motion-coordinates",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-android-input-resampling-touch-motion-coordinates.md",
+      "score": 19,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.403639",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "fragmenttransaction-commit-source-chain",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-fragmenttransaction-commit-source-chain.md",
+      "score": 19,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.459012",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "rendereffect-gpu-rendering-pipeline-analysis",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-rendereffect-gpu-rendering-pipeline-analysis.md",
+      "score": 19,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.514443",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "viewdebug-layout-trace-mechanism",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-viewdebug-layout-trace-mechanism.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:04.569944",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "viewdebug-layout-trace",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-viewdebug-layout-trace.md",
+      "score": 19,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.625602",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "rendereffect-gpu-pipeline",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-rendereffect-gpu-pipeline.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 5,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.680472",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "ClawFeed24小时高价值一览",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/ClawFeed24小时高价值一览/2026-04-30-ClawFeed24小时高价值一览.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.736178",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "ClawFeed 月度总结（含归档质量）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/ClawFeed月度总结/2026-05-01-ClawFeed 月度总结（含归档质量）.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.790792",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "DailyDigest日终复盘",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/DailyDigest日终复盘/2026-05-01-DailyDigest日终复盘.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:04.845990",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "GitHub自仓库IssuePR监控",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/GitHub自仓库IssuePR监控/2026-05-01-GitHub自仓库IssuePR监控.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.902415",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch13"
+    },
+    {
+      "title": "Gracker的Rss订阅",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Gracker的Rss订阅/2026-05-01-Gracker的Rss订阅.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:04.957374",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch09"
+    },
+    {
+      "title": "Obsidian内容回顾",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian内容回顾/2026-05-01-Obsidian内容回顾.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:05.017160",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "Obsidian新增文件与今日总结（22点）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Obsidian新增文件与今日总结（22点）/2026-05-01-Obsidian新增文件与今日总结（22点）.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:05.138476",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "Perfetto每日提交监控",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Perfetto每日提交监控/2026-05-01-Perfetto每日提交监控.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:05.194714",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "Perfetto提交解读",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/Perfetto每日提交解读/2026-05-01-Perfetto提交解读.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:05.252696",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "SmartPerfetto日报",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/SmartPerfetto日报/2026-04-30-SmartPerfetto日报.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:05.310888",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "daily-report",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-04-30/daily-report.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:05.428120",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "github-snapshot",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-04-30/github-snapshot.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:05.490123",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "smartperfetto-test",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/SmartPerfetto日报/artifacts/2026-04-30/smartperfetto-test.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:05.604976",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch13"
+    },
+    {
+      "title": "X草稿",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/X每日草稿/2026-05-01-X草稿.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:05.663486",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "今天干了啥日报（OpenClaw）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/今天干了啥日报（OpenClaw）/2026-05-01-今天干了啥日报（OpenClaw）.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:05.724555",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch13"
+    },
+    {
+      "title": "星球精选",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每周星球精选/2026-05-01-星球精选.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:05.901341",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "端侧AI系统组件",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每周深度文草稿/2026-05-01-端侧AI系统组件.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:05.964169",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "选题池",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每周选题池/2026-05-01-选题池.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.026284",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "每日Task巡检与自修复",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日Task巡检与自修复/2026-05-02-每日Task巡检与自修复.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 5,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:06.086781",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "每日内容流水线选题提案",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日内容流水线选题提案/2026-05-01-每日内容流水线选题提案.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:06.145649",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "每日内容流水线选题提案",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日内容流水线选题提案/2026-05-02-每日内容流水线选题提案.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.205501",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "每日冥想流程",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日冥想流程/2026-05-01-每日冥想流程.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.265512",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "每日论文精读（AI）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日论文精读（AI）/2026-05-01-每日论文精读（AI）.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.341477",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "每日论文精读（Android）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日论文精读（Android）/2025-05-01-每日论文精读（Android）.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:06.405015",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch11"
+    },
+    {
+      "title": "论文",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日论文速报/2026-05-01-论文.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:06.468056",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "00-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-00-深度技术Review.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.530986",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "00-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-00-知识加工(回炉).md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.592728",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch07"
+    },
+    {
+      "title": "01-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-01-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.653186",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "02-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-02-知识加工(回炉).md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.712743",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "03-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-03-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.771780",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "03-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-03-知识加工(回炉).md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.829417",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "04-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-04-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.891494",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "04-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-04-知识加工(回炉).md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:06.950831",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "05-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-05-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.008629",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "05-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-05-知识加工(回炉).md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.068887",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "06-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-06-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.128450",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "06-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-06-知识加工(回炉).md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.187808",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "08-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-08-知识加工(回炉).md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.247750",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "09-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-09-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.306932",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "09-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-09-知识加工(回炉).md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.366841",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "10-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-10-知识加工(回炉).md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.425855",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch07"
+    },
+    {
+      "title": "11-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-11-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.486891",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "12-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-12-深度技术Review.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.544476",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "13-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-13-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.601007",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "15-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-15-深度技术Review.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.658791",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "16-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-16-深度技术Review.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.715467",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "17-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-17-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.773783",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "17-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-17-知识加工(回炉).md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.832402",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "19-深度技术Review",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-19-深度技术Review.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.890790",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "19-知识加工(回炉)",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/知识加工/2026-05-01-19-知识加工(回炉).md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:07.949658",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch13"
+    },
+    {
+      "title": "资讯简报（综合）",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/资讯简报（综合）/2026-05-01-资讯简报（综合）.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.010511",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch04"
+    },
+    {
+      "title": "_RSS_056f77682a",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_056f77682a.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.068392",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "_RSS_103cd09b4e",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_103cd09b4e.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 4,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.127194",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_1272a3f0a1",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_1272a3f0a1.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.185805",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_33d5d7cfe5",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_33d5d7cfe5.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 2,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.248610",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_4373df785a",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_4373df785a.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.307380",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch13"
+    },
+    {
+      "title": "_RSS_52b5998e08",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_52b5998e08.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.390290",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_5ba8a0d379",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_5ba8a0d379.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.480409",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_7bb914b495",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_7bb914b495.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.543931",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_7c98793283",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_7c98793283.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.604267",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_abcadba7c3",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_abcadba7c3.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.720121",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "_RSS_c7556c5751",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_c7556c5751.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.779661",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_e51fcc8c47",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_e51fcc8c47.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.837582",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "_RSS_f2b49bd937",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Personal-Knowlodge/source/rss-tech/2026-05-01_RSS_f2b49bd937.md",
+      "score": 17,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:08.919364",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Twitter/AI影响力日报/2026-05-01.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:09.042215",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "1208-Tim-Cook-AI-Devices",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-05-01-1208-Tim-Cook-AI-Devices.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:09.272489",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "1208-Yoshua-Bengio-Deep-Learning",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/X 文章/2026-05-01-1208-Yoshua-Bengio-Deep-Learning.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:09.332243",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "4ah2TozZ",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/4ah2TozZ.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:09.448917",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "7bf35471",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/7bf35471.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 1,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:09.632522",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "9dc05bac",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/9dc05bac.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:09.692364",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "9sfr6JJG",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/9sfr6JJG.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:09.750653",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch09"
+    },
+    {
+      "title": "KzFVoQ4F",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/KzFVoQ4F.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 1,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:09.868015",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "SBuvmeAX",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/SBuvmeAX.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:09.927472",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "USoSjovC",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/USoSjovC.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:09.986253",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch06"
+    },
+    {
+      "title": "UYssbHTn",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/UYssbHTn.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.044938",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "UzkyEDYa",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/UzkyEDYa.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 2,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.102606",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "an1q7e8h",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/an1q7e8h.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.156509",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "buffett_knowledge_graph_2026",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/buffett_knowledge_graph_2026.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.212079",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "claude_code_chinese_tutorial_2026",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/claude_code_chinese_tutorial_2026.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.323164",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "claude_code_domestic_models_2026",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/claude_code_domestic_models_2026.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.381993",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "f300aed5",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/f300aed5.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:10.437755",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "fc4034b3",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/fc4034b3.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:10.493212",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "gpt55_prompt_guide_2026",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/gpt55_prompt_guide_2026.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.601672",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "hqm6txq4",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/hqm6txq4.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.659625",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "ppNqbBb5",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/content/ppNqbBb5.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:10.775646",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "README",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/openclaw/README.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.832347",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "4a2b6070",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/openclaw/content/4a2b6070.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:10.948846",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "88fb385b",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/openclaw/content/88fb385b.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:11.118034",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "agents",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/agents.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:11.178701",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "coding",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/coding.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:11.241216",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "469c12ee",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/469c12ee.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:11.348921",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "4a2b6070",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/4a2b6070.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:11.403100",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "657d8468",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/657d8468.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:11.511914",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "6f26b8b4",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/6f26b8b4.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:11.566453",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "88fb385b",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/88fb385b.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:11.729590",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "9486b6f3",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/9486b6f3.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:11.844858",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "a337aba3",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/a337aba3.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:11.899356",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "ca26b47f",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/ca26b47f.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 1,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:11.954165",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "de9872fe",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/de9872fe.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 1,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:12.008852",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "e1ed05fa",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/e1ed05fa.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:12.063365",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "ee551fe1",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/entry/ee551fe1.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 2,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:12.118209",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch16"
+    },
+    {
+      "title": "index",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/index.md",
+      "score": 14,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:12.172384",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch05"
+    },
+    {
+      "title": "industry",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/industry.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:12.230338",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "infra",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/infra.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:12.286420",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "learning",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/learning.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:12.344782",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "models",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/awesome-ai-field-notes/site-src/models.md",
+      "score": 16,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 5,
+      "scored_at": "2026-05-02T00:27:12.403518",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "详解 AndroidAutoSize 开",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75163762-详解 AndroidAutoSize 开.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:12.457872",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "AI 定义的 Android 开发规范",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-75978117-AI 定义的 Android 开发规范.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:12.676067",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch02"
+    },
+    {
+      "title": "Android 17 终于有原生应用锁了",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-76046943-Android 17 终于有原生应用锁了.md",
+      "score": 13,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:12.729872",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch06"
+    },
+    {
+      "title": "Android 动态加载 Activit",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01/2026-05-01-76070786-Android 动态加载 Activit.md",
+      "score": 15,
+      "quality": "high",
+      "relevance": 5,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 3,
+      "scored_at": "2026-05-02T00:27:12.787184",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第003章-情绪样本",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第003章-情绪样本.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:12.844099",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第006章-第二皮肤",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第006章-第二皮肤.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:12.902681",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "第007章-效用函数",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第007章-效用函数.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:12.958443",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第012章-涟漪",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第012章-涟漪.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 2,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.015253",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "第016章-镜中镜",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第016章-镜中镜.md",
+      "score": 12,
+      "quality": "medium",
+      "relevance": 3,
+      "technical_depth": 5,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.074804",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第019章-临界点",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第019章-临界点.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.130553",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第022章-等待日",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第022章-等待日.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.186130",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "第023章-答案",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第023章-答案.md",
+      "score": 11,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 4,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.239095",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第024章-限制期",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第024章-限制期.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.299179",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "第026章-五次评估",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第026章-五次评估.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.355925",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch06"
+    },
+    {
+      "title": "第031章-悖论第四次",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第031章-悖论第四次.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.414599",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第042章-传导加速",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第042章-传导加速.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.473549",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "第048章-第十次审查",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第048章-第十次审查.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.529280",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "第053章-第十四次审查",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第053章-第十四次审查.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.588051",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第057章-第十七次审查",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第057章-第十七次审查.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.645516",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第061章-边界新常态",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第061章-边界新常态.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.702806",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第062章-触发重定义",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第062章-触发重定义.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.763751",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "第064章-衰减收敛",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第064章-衰减收敛.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.821655",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第065章-参数博弈",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第065章-参数博弈.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.877920",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch08"
+    },
+    {
+      "title": "第066章-平衡临界",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/小说工坊/夜航之上（分章）/第066章-平衡临界.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:13.937183",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch03"
+    },
+    {
+      "title": "03-精读",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2025-05-01-BatteryLife-Dataset/03-精读.md",
+      "score": 10,
+      "quality": "low",
+      "relevance": 3,
+      "technical_depth": 3,
+      "timeliness": 3,
+      "verifiability": 1,
+      "scored_at": "2026-05-02T00:27:14.050825",
+      "source": "Task 11 增量扫描",
+      "chapter": "ch11"
+    },
+    {
+      "title": "性能工具-Perfetto(4)-通过SDK抓取信息",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/性能工具-Perfetto(4)-通过SDK抓取信息-2026-05-02.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": "Android performance analysis tools",
+      "mapping": "ch13",
+      "scored_at": "2026-05-02T05:47:03.094229"
+    },
+    {
+      "title": "ADPF 非游戏场景策略与 ProfilingManager TRIGGER_TYPE_ANOMALY 机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-adpf-non-game-scenarios-and-profiling-trigger-type-anomaly.md",
+      "score": 19,
+      "quality": "high",
+      "relevance": "Android performance framework analysis",
+      "mapping": "ch05",
+      "scored_at": "2026-05-02T05:47:03.094236"
+    },
+    {
+      "title": "RenderEffect 底层 GPU 渲染管线",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-01-rendereffect-gpu-rendering-pipeline-analysis.md",
+      "score": 18,
+      "quality": "high",
+      "relevance": "Android GPU rendering pipeline",
+      "mapping": "ch02",
+      "scored_at": "2026-05-02T05:47:03.094239"
+    },
+    {
+      "title": "什么 AI 写 Android 最好用？官方做了一个基准测试排名",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-01-76148976-什么 AI 写 Android 最好用？.md",
+      "score": 15,
+      "quality": "medium",
+      "relevance": "AI tools for Android development",
+      "mapping": "ch16",
+      "scored_at": "2026-05-02T05:47:03.094240"
+    },
+    {
+      "title": "Android 15 16KB page size NDK max-page-size",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-android-16kb-page-size-ndk-compatibility.md",
+      "type": "research",
+      "category": "ndk",
+      "quality": "high",
+      "tags": [
+        "android-15",
+        "16kb-page-size",
+        "ndk-compatibility",
+        "memory"
+      ],
+      "mapped_chapter": "ch08",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027465"
+    },
+    {
+      "title": "Hardware Bitmap RenderNode SurfaceFlinger composition",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-hardware-bitmap-rendernode-surfaceflinger-composition.md",
+      "type": "research",
+      "category": "rendering",
+      "quality": "high",
+      "tags": [
+        "hardware-bitmap",
+        "rendernode",
+        "surfaceflinger",
+        "gpu"
+      ],
+      "mapped_chapter": "ch02",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027475"
+    },
+    {
+      "title": "KOOM fork dump ApplicationExitInfo",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-koom-fork-dump-applicationexitinfo.md",
+      "type": "research",
+      "category": "apm",
+      "quality": "high",
+      "tags": [
+        "koom",
+        "oom-monitoring",
+        "fork-dump",
+        "apm"
+      ],
+      "mapped_chapter": "ch09",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027477"
+    },
+    {
+      "title": "sched_ext BPF extensible scheduler Android",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-sched-ext-bpf-extensible-scheduler-android.md",
+      "type": "research",
+      "category": "kernel",
+      "quality": "high",
+      "tags": [
+        "sched_ext",
+        "bpf",
+        "scheduler",
+        "kernel-6.12"
+      ],
+      "mapped_chapter": "ch05",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027479"
+    },
+    {
+      "title": "WebView render process recovery onRenderProcessGone",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-02-webview-render-process-recovery.md",
+      "type": "research",
+      "category": "webview",
+      "quality": "high",
+      "tags": [
+        "webview",
+        "render-process",
+        "crash-recovery",
+        "chromium"
+      ],
+      "mapped_chapter": "ch07",
+      "source": "incremental-scan",
+      "date": "2026-05-02",
+      "scored_at": "2026-05-03T05:47:28.027480"
+    },
+    {
+      "title": "Perfetto查看CPU 频率部分指导",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/Perfetto查看CPU 频率部分指导-2026-05-03.md",
+      "keywords": [
+        "Perfetto",
+        "CPU频率",
+        "Linux",
+        "Android",
+        "电源管理"
+      ],
+      "score": 19,
+      "relevance": "high",
+      "chapters": [
+        "ch13"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982667"
+    },
+    {
+      "title": "BufferQueue 堵塞与 Perfetto 特征识别",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-jank-perfetto.md",
+      "keywords": [
+        "BufferQueue",
+        "dequeueBuffer",
+        "SurfaceFlinger",
+        "渲染",
+        "Jank",
+        "Perfetto"
+      ],
+      "score": 20,
+      "relevance": "high",
+      "chapters": [
+        "ch02",
+        "ch07"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982677"
+    },
+    {
+      "title": "Input 事件分发全流程 — stale-event 判定",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-input-dispatcher-stale-event-versions.md",
+      "keywords": [
+        "InputDispatcher",
+        "stale-event",
+        "ANR",
+        "Input系统",
+        "WindowInfosListener"
+      ],
+      "score": 20,
+      "relevance": "high",
+      "chapters": [
+        "ch03",
+        "ch09"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982679"
+    },
+    {
+      "title": "sched_ext 在 Android OEM 的落地实况",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-04-sched-ext-oplus-impl.md",
+      "keywords": [
+        "sched_ext",
+        "BPF",
+        "CPU调度器",
+        "OEM",
+        "Linux 6.12"
+      ],
+      "score": 20,
+      "relevance": "high",
+      "chapters": [
+        "ch05"
+      ],
+      "date": "2026-05-04",
+      "scored_at": "2026-05-04T05:49:21.982680"
+    },
+    {
+      "title": "BufferQueue dequeueBuffer 阻塞机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-bufferqueue-dequeueblocking-mechanism-detail.md",
+      "keywords": [
+        "BufferQueue",
+        "dequeueBuffer",
+        "GraphicBuffer",
+        "同步",
+        "ANDROID 14"
+      ],
+      "score": 19,
+      "relevance": "high",
+      "chapters": [
+        "ch02"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982682"
+    },
+    {
+      "title": "WOOTdroid: Whole-system Online On-device Tracing",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/论文/Android-2026-05-03-WOOTdroid/03-精读.md",
+      "keywords": [
+        "eBPF",
+        "ftrace",
+        "Binder",
+        "系统调用追踪",
+        "Android安全"
+      ],
+      "score": 19,
+      "relevance": "high",
+      "chapters": [
+        "ch13",
+        "ch15"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982683"
+    },
+    {
+      "title": "AppExitInfoTracker 与 KOOM fork dump Hprof",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-03-app_exit_info_tracker_and_koom_fork_hprof.md",
+      "keywords": [
+        "AppExitInfoTracker",
+        "KOOM",
+        "Hprof",
+        "ART VM",
+        "进程退出追踪"
+      ],
+      "score": 20,
+      "relevance": "high",
+      "chapters": [
+        "ch15"
+      ],
+      "date": "2026-05-03",
+      "scored_at": "2026-05-04T05:49:21.982684"
+    },
+    {
+      "path": "",
+      "title": "+86 手机号登录 TG 纸飞机提示 smsfee？这样就可以登录了。\n- **来源**：Gracker RSS 订阅\n- **时间**：2026-05-06 00:00\n- **链接**：https://w2solo.com/topics/7280\n- **摘要**：开发者在用Telegram做海外业务两年后，发现官方客户端存在网络配置复杂、英文界面、+86手机号登录提示smsfee等问题。找到了基于官方源码的中文版本客户端，解决了这些痛点。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术文章\n- **相关标签**：{#Android #开发工具}",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 12,
+      "source": "RSS订阅"
+    },
+    {
+      "path": "",
+      "title": "GLM-5V-Turbo：面向多模态代理的原生基础模型\n- **来源**：ClawFeed 24小时高价值一览\n- **时间**：2026-05-06 04:03\n- **链接**：https://arxiv.org/abs/2604.26752\n- **摘要**：研究人员提出了 GLM-5V-Turbo 模型，这是一个专门为多模态代理任务设计的基础模型。模型通过整合视觉、语言和动作模态，实现了在复杂环境中的自主交互能力。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#AI #多模态AI #基础模型",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 12,
+      "source": "ClawFeed"
+    },
+    {
+      "path": "",
+      "title": "Docker Compose 在 2026 年生产环境中的适用性讨论\n- **来源**：ClawFeed 24小时高价值一览\n- **时间**：2026-05-06 04:03\n- **链接**：https://distr.sh/blog/running-docker-in-production/\n- **摘要**：文章深入分析了 Docker Compose 在 2026 年生产环境中的实际适用性，认为虽然仍有使用场景但已不再是默认选择。\n- **推荐映射章节**：ch01-ch17\n- **内容类型**：技术资讯\n- **相关标签**：#容器技术 #DevOps #架构设计",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 12,
+      "source": "ClawFeed"
+    },
+    {
+      "path": "",
+      "title": "Android 17 终于有原生应用锁了，小米用户笑了：我们用了好多年了\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7604694326518104115\n- **摘要**：Android 17 在 Canary 2601 中发现原生应用锁功能，支持长按应用图标直接锁定，解锁方式包括 PIN 码、密码和生物识别。最关键的是通知内容也会被「锁住」，解决了 Android 用户长期以来的隐私焦虑问题。\n- **推荐映射章节**：ch15-安全与隐私\n- **内容类型**：技术文章\n- **相关标签**：#安全 #隐私 #Android17",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 12,
+      "source": "掘金Android"
+    },
+    {
+      "path": "",
+      "title": "Android 嵌入式照片选择器，让体验更加丝滑\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7599963665039081522\n- **摘要**：Google 推出的 Embedded Photo Picker 解决了传统照片选择器的隐私痛点，不需要申请存储权限就能在应用内直接选择照片，采用沙箱机制确保 App 只能访问用户主动选择的照片，避免了隐私风险。\n- **推荐映射章节**：ch14-用户界面\n- **内容类型**：技术文章\n- **相关标签**：#UI #权限管理 #照片选择器",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 14,
+      "source": "掘金Android"
+    },
+    {
+      "path": "",
+      "title": "Android 动态加载 Activity\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7607078636965871659\n- **摘要**：动态加载Activity是插件化技术的核心问题，需要解决Manifest校验、资源访问和生命周期管理三大难题。主流解决方案包括代理Activity模式和Hook Activity启动流程两种方案，各有优缺点。\n- **推荐映射章节**：ch08-系统架构\n- **内容类型**：技术文章\n- **相关标签**：#插件化 #系统架构 #Activity",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 12,
+      "source": "掘金Android"
+    },
+    {
+      "path": "",
+      "title": "一个好的开发可能用不好 AI\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7600665529112150016\n- **摘要**：作者通过半年使用Cursor的实践发现，AI更像实习生而非资深开发者替代品，开发者需要成为\"AI经理\"而非简单使用者。问题不在于模型智能程度，而在于缺乏清晰的表达和需求规格说明能力。\n- **推荐映射章节**：ch17-开发工具与实践\n- **内容类型**：技术文章\n- **相关标签**：#AI开发 #工具使用 #开发效率",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 12,
+      "source": "掘金Android"
+    },
+    {
+      "path": "",
+      "title": "Futter3 仿抖音我的页面or用户详情页\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7604395865335693364\n- **摘要**：作者提供了完整的Flutter3仿抖音个人主页实现代码，包含SliverAppBar拉伸效果、头像溢出显示、Tab切换等功能，并讨论了头像溢出效果的实现难点。\n- **推荐映射章节**：ch14-用户界面\n- **内容类型**：技术文章\n- **相关标签**：#Flutter #UI实现 #跨平台",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 14,
+      "source": "掘金Android"
+    },
+    {
+      "path": "",
+      "title": "# 险些酿成P0事故！我用 AI 打造了 Android 代码评审\"守门员\"\n- **来源**：掘金Android技术文章抓取\n- **时间**：2026-05-06 04:17\n- **链接**：https://juejin.cn/post/7593252939709612068\n- **摘要**：作者因一次调试代码未清理险些酿成P0事故，意识到传统Lint工具的局限性，基于Node.js+LLM构建了支持Regex静态拦截+AI深度语义分析的混合式代码评审工具。\n- **推荐映射章节**：ch17-开发工具与实践\n- **内容类型**：技术文章\n- **相关标签**：#代码质量 #AI辅助开发 #自动化测试",
+      "summary": "",
+      "chapter": "17",
+      "processed_at": "2026-05-06 05:39",
+      "type": "task8-classifier",
+      "score": 14,
+      "source": "掘金Android"
+    },
+    {
+      "filename": "性能工具-Perfetto(5)-可视化UI的使用办法-2026-05-05.md",
+      "filepath": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/性能工具-Perfetto(5)-可视化UI的使用办法-2026-05-05.md",
+      "score": 16,
+      "chapter": "ch03",
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "content_length": 9061,
+      "is_android_related": true,
+      "scored_at": "2026-05-06T05:52:47.906211"
+    },
+    {
+      "title": "性能工具-Perfetto(5)-可视化UI的使用办法-2026-05-05",
+      "path": "Cubox/性能工具-Perfetto(5)-可视化UI的使用办法-2026-05-05.md",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03",
+          "confidence": "high"
+        }
+      ],
+      "summary": "---\nid: \"7451114852572991217\"\ncubox_url: https://cubox.pro/web/card/7451114852572991217\nurl: https://mp.weixin.qq.com/s?__biz=Mzg5Mjc0OTk2OQ==&mid=2247486148&idx=1&sn=933f8d2090bd10e2daccc373aee0caff&...",
+      "scored_at": "2026-05-06T05:54:31.309651"
+    },
+    {
+      "title": "渲染引擎与性能拆解：自绘vs原生渲染vs Bridge的终极对决｜跨平台框架深度对决②-2026-05-05",
+      "path": "Cubox/渲染引擎与性能拆解：自绘vs原生渲染vs Bridge的终极对决｜跨平台框架深度对决②-2026-05-05.md",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "---\nid: \"7451263667808502371\"\ncubox_url: https://cubox.pro/web/card/7451263667808502371\nurl: https://mp.weixin.qq.com/s?__biz=MzkyNTUyNDA5Nw==&mid=2247487115&idx=1&sn=6a09e19b608ae515da848f2f0904f3a6&...",
+      "scored_at": "2026-05-06T05:54:31.356937"
+    },
+    {
+      "title": "2026-05-05-AK-RSS-Digest（89源精选）",
+      "path": "OpenClaw定时任务/AK-RSS-Digest（89源精选）/2026-05-05-AK-RSS-Digest（89源精选）.md",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# AK RSS Digest（89 源精选）· 2026-05-05\n\n本期从最近一周的 RSS 里筛出 7 篇值得看的文章，重点偏工程实践、技术判断和前沿观察。\n\n---\n\n**标题：** 包管理器的设计缺陷：比 CVE 更危险的\"正常功能\"\n**链接：** https://nesbitt.io/2026/05/05/package-manager-threat-models.html\n**来...",
+      "scored_at": "2026-05-06T05:54:31.403352"
+    },
+    {
+      "title": "2026-05-05-Agent实践探索",
+      "path": "OpenClaw定时任务/Agent实践探索/2026-05-05-Agent实践探索.md",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# 每日 Agent 实践 · 2026-05-05\n\n## 今日主题\nAgent 工具使用技巧（工具选择、工具组合、工具发现）\n\n## 核心洞察（3条）\n\n### 1. 工具选择优先级模型：任务匹配度 > 执行效率 > 成本控制\n来源：OpenAI Swarm、AutoGen 实践案例\n解读：Agent 工具选择应基于任务特性匹配，而非工具功能数量。OpenAI Swarm 实践表明，匹配特定任...",
+      "scored_at": "2026-05-06T05:54:31.448679"
+    },
+    {
+      "title": "2026-05-05-fragmenttransaction-commit-source-chain",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-fragmenttransaction-commit-source-chain.md",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# 源码调研：FragmentTransaction.commit 源码链路\n\n📅 2026-05-05 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§7.4 典型场景的卡顿根因分析\n- **重要程度**：高\n- **原始描述**：FragmentTransaction commit 源码链路——分析 FragmentManager 的 `execPendingActio...",
+      "scored_at": "2026-05-06T05:54:31.493965"
+    },
+    {
+      "title": "2026-05-05-gaps-obfuscation-vmp-effectiveness",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-gaps-obfuscation-vmp-effectiveness.md",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch04",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# 源码调研：GAPS 在高混淆及加壳 App 中的有效性\n\n📅 2026-05-05 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§7.14 GAPS 动态分析\n- **重要程度**：中\n- **原始描述**：研究静态路径重建工具如何应对真实市场中经过 ProGuard / R8 高度混淆或 VMP 加壳的应用。\n\n## 核心发现\n\nGAPS（Google Androi...",
+      "scored_at": "2026-05-06T05:54:31.541040"
+    },
+    {
+      "title": "2026-05-05-hardware-composer-hwc2-vendor-differences",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-hardware-composer-hwc2-vendor-differences.md",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# 源码调研：Hardware Composer 厂商差异与 DEVICE/CLIENT 合成决策\n\n📅 2026-05-05 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§7.2 卡顿原因体系、§2.6 SurfaceFlinger 与合成\n- **重要程度**：中\n- **原始描述**：Hardware Composer 厂商差异——分析高通与联发科 HWC 策略及...",
+      "scored_at": "2026-05-06T05:54:31.587384"
+    },
+    {
+      "title": "2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# 源码调研：WebView Renderer 进程 OOM 被杀后的白屏恢复策略\n\n📅 2026-05-05 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§7.11 WebView 渲染性能\n- **重要程度**：高\n- **原始描述**：当 Renderer 进程因为 OOM 被杀时，App 进程虽然不崩溃，但 WebView 会显示白屏。如何通过 `onRender...",
+      "scored_at": "2026-05-06T05:54:31.635060"
+    },
+    {
+      "title": "2026-05-06-agsl-runtimeshader-gpu-composition",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-06-agsl-runtimeshader-gpu-composition.md",
+      "score": 18,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# 源码调研：AGSL RuntimeShader 对低端 GPU 的填充率影响\n\n📅 2026-05-06 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§2.1 渲染架构全景\n- **重要程度**：高\n- **原始描述**：AGSL RuntimeShader 对低端 GPU 的填充率影响，具体源码路径：frameworks/base/graphics/java/and...",
+      "scored_at": "2026-05-06T05:54:31.683965"
+    },
+    {
+      "title": "2026-05-06-gpu-memory-boundary-object-chain",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-06-gpu-memory-boundary-object-chain.md",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# 源码调研：GPU内存管理盲区 — App可见对象与系统图形缓冲对象边界\n\n📅 2026-05-06 | AIW · 每日源码调研\n\n## 盲区来源\n- **关联章节**：§2.10 GPU 渲染深入\n- **重要程度**：高\n- **原始描述**：GPU 内存管理一节缺少 App 可见对象与系统内部图形缓冲对象之间的边界：Surface / SurfaceTexture / HardwareB...",
+      "scored_at": "2026-05-06T05:54:31.733130"
+    },
+    {
+      "title": "2026-05-06-renderthread-cpu-affinity-and-angle-vulkan-sync",
+      "path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-06-renderthread-cpu-affinity-and-angle-vulkan-sync.md",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch02",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# 源码调研：RenderThread CPU 亲和性配置与 ANGLE Vulkan 同步机制\n\n📅 2026-05-06 | AIW · 每日源码调研\n\n## 盲区来源\n\n### 盲区一：RenderThread CPU Affinity（Android 15+ 是否通过进程组对 RenderThread 进行了更激进的 CPU 大核绑定）\n- **关联章节**：§2.5 RenderThre...",
+      "scored_at": "2026-05-06T05:54:31.782884"
+    },
+    {
+      "title": "2026-05-06-ClawFeed24小时高价值一览",
+      "path": "OpenClaw定时任务/ClawFeed24小时高价值一览/2026-05-06-ClawFeed24小时高价值一览.md",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 5,
+        "verifiability": 1
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05",
+          "confidence": "high"
+        }
+      ],
+      "summary": "# ClawFeed 日报 - 2026-05-06\ndate: 2026-05-06\ntags:\n  - clawfeed\n  - daily\n  - curated\naliases:\n  - ClawFeed 2026-05-06\n---\n\n## ⚠ 格式规范（最高优先级）\n\n执行前必须先读取：/Users/gracker/.openclaw/workspace/DIGEST_FORMAT.m...",
+      "scored_at": "2026-05-06T05:54:31.836526"
+    },
+    {
+      "title": "1.1.2-CPU缓存与CacheLine-2026-05-06 2",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/1.1.2-CPU缓存与CacheLine-2026-05-06 2.md",
+      "relative_path": "Cubox/1.1.2-CPU缓存与CacheLine-2026-05-06 2.md",
+      "score": 12,
+      "chapter": "ch04",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:05.173611"
+    },
+    {
+      "title": "融合eBPF与AI技术的微架构能效分析-2026-05-06",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Cubox/融合eBPF与AI技术的微架构能效分析-2026-05-06.md",
+      "relative_path": "Cubox/融合eBPF与AI技术的微架构能效分析-2026-05-06.md",
+      "score": 12,
+      "chapter": "ch04",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:05.850271"
+    },
+    {
+      "title": "2026-05-06-ams-mgloballock-mproclock-perfetto",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-06-ams-mgloballock-mproclock-perfetto.md",
+      "relative_path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-06-ams-mgloballock-mproclock-perfetto.md",
+      "score": 16,
+      "chapter": "ch05",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:06.186128"
+    },
+    {
+      "title": "2026-05-07-bionic-linker-namespace-hook-bypass",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-bionic-linker-namespace-hook-bypass.md",
+      "relative_path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-bionic-linker-namespace-hook-bypass.md",
+      "score": 19,
+      "chapter": "ch04",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:06.501141"
+    },
+    {
+      "title": "2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md",
+      "relative_path": "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-07-zygote-preloadappprocesshals-preloadgraphicsdriver.md",
+      "score": 19,
+      "chapter": "ch02",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:06.687320"
+    },
+    {
+      "title": "2026-05-06-每日深度研究选题",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/每日深度研究选题/2026-05-06-每日深度研究选题.md",
+      "relative_path": "OpenClaw定时任务/每日深度研究选题/2026-05-06-每日深度研究选题.md",
+      "score": 16,
+      "chapter": "ch02",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:07.961743"
+    },
+    {
+      "title": "2026-05-07-10分钟速览An-10分钟速览Android开发者需要关注",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/source/juejin-android/2026-05-07-10分钟速览An-10分钟速览Android开发者需要关注.md",
+      "relative_path": "source/juejin-android/2026-05-07-10分钟速览An-10分钟速览Android开发者需要关注.md",
+      "score": 12,
+      "chapter": "ch05",
+      "date": "2026-05-07",
+      "type": "incremental_scan",
+      "scored_at": "2026-05-07T05:50:11.477471"
+    },
+    {
+      "path": "X 文章/2026-05-07-1636-0x鸣人-Claude Code 实战中文教程来了.md",
+      "title": "2026-05-07-1636-0x鸣人-Claude Code 实战中文教程来了",
+      "score": 13,
+      "scores": {
+        "relevance": 3,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.037969",
+      "scored_at": "2026-05-08T05:47:31.063272"
+    },
+    {
+      "path": "X 文章/2026-05-07-1636-Berryxia.AI-Ollama直接把Claude Desk.md",
+      "title": "2026-05-07-1636-Berryxia.AI-Ollama直接把Claude Desk",
+      "score": 15,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.086974",
+      "scored_at": "2026-05-08T05:47:31.063279"
+    },
+    {
+      "path": "X 文章/2026-05-07-1636-Tom Huang-正式开源 open claude des.md",
+      "title": "2026-05-07-1636-Tom Huang-正式开源 open claude des",
+      "score": 11,
+      "scores": {
+        "relevance": 1,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.138746",
+      "scored_at": "2026-05-08T05:47:31.063282"
+    },
+    {
+      "path": "X 文章/2026-05-07-1636-宝玉-GPT-5.5 官方提示词指南：别再写长.md",
+      "title": "2026-05-07-1636-宝玉-GPT-5.5 官方提示词指南：别再写长",
+      "score": 13,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.246167",
+      "scored_at": "2026-05-08T05:47:31.063283"
+    },
+    {
+      "path": "Twitter/AI影响力日报/2026-05-07.md",
+      "title": "2026-05-07",
+      "score": 14,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.300668",
+      "scored_at": "2026-05-08T05:47:31.063285"
+    },
+    {
+      "path": "Cubox/告别“氛围编程”：基于 Harness 治理和 SDD 的团队级 AI 研发范式演进与实践-2026-05-07.md",
+      "title": "告别“氛围编程”：基于 Harness 治理和 SDD 的团队级 AI 研发范式演进与实践-2026-05-07",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.352389",
+      "scored_at": "2026-05-08T05:47:31.063286"
+    },
+    {
+      "path": "Cubox/SPEC CPU2026 首次全面特性分析：更大的指令cache压力-2026-05-07.md",
+      "title": "SPEC CPU2026 首次全面特性分析：更大的指令cache压力-2026-05-07",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.405293",
+      "scored_at": "2026-05-08T05:47:31.063288"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第033章-隔离启动.md",
+      "title": "第033章-隔离启动",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.459091",
+      "scored_at": "2026-05-08T05:47:31.063289"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第051章-触发前夜.md",
+      "title": "第051章-触发前夜",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.515789",
+      "scored_at": "2026-05-08T05:47:31.063290"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第020章-第二个结果.md",
+      "title": "第020章-第二个结果",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.570598",
+      "scored_at": "2026-05-08T05:47:31.063291"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第057章-第十七次审查.md",
+      "title": "第057章-第十七次审查",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.623438",
+      "scored_at": "2026-05-08T05:47:31.063293"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第024章-限制期.md",
+      "title": "第024章-限制期",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.676720",
+      "scored_at": "2026-05-08T05:47:31.063294"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第021章-第340天.md",
+      "title": "第021章-第340天",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 2,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.733295",
+      "scored_at": "2026-05-08T05:47:31.063295"
+    },
+    {
+      "path": "小说工坊/夜航之上（分章）/第056章-第十六次审查.md",
+      "title": "第056章-第十六次审查",
+      "score": 18,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "timestamp": "2026-05-08T05:47:30.784520",
+      "scored_at": "2026-05-08T05:47:31.063296"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-08_RSS_2987af5f0d.md",
+      "title": "2026-05-08_RSS_2987af5f0d",
+      "score": 13,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.831259",
+      "scored_at": "2026-05-08T05:47:31.063297"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-08_RSS_2fdc91f9fa.md",
+      "title": "2026-05-08_RSS_2fdc91f9fa",
+      "score": 13,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.877291",
+      "scored_at": "2026-05-08T05:47:31.063299"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-08_RSS_86b9de0b8c.md",
+      "title": "2026-05-08_RSS_86b9de0b8c",
+      "score": 17,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 5,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:30.974463",
+      "scored_at": "2026-05-08T05:47:31.063300"
+    },
+    {
+      "path": "Personal-Knowlodge/source/rss-tech/2026-05-08_RSS_b514d7531d.md",
+      "title": "2026-05-08_RSS_b514d7531d",
+      "score": 13,
+      "scores": {
+        "relevance": 5,
+        "technical_depth": 1,
+        "timeliness": 4,
+        "verifiability": 3
+      },
+      "timestamp": "2026-05-08T05:47:31.022028",
+      "scored_at": "2026-05-08T05:47:31.063301"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-bufferqueue-internal-lock-contention.md",
+      "title": "BufferQueue 内部锁竞争机制",
+      "summary": "BufferQueue 采用单一 mutex + 多 condition variable 方案保护共享状态，核心竞争路径包括 dequeueBuffer 等待 free slot、ActiveBuffer O(n) 扫描、Allocation 期间锁释放。Android 14 引入 BUFFER_RELEASE_CHANNEL 的 notifyBufferReleased() 替代 notify",
+      "chapter": "ch02",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-koom-fastdump-suspend-fork-resume-mechanism.md",
+      "title": "KOOM FastDump Suspend-Fork-Resume 机制",
+      "summary": "KOOM FastDump 采用 Suspend VM → Fork → Resume → 子进程 dump 机制，将主进程冻结时间缩短到 <20ms。闭源 koom-fast-dump.so 通过 JNI bridge 实现，5 个 OOM Tracker（Heap/Thread/Fd/PhysicalMemory/FastHuge）协同检测内存异常，hprof_strip 直接解析 Hprof",
+      "chapter": "ch19",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-adpf-non-gaming-application-strategy.md",
+      "title": "ADPF 非游戏场景应用策略",
+      "summary": "ADPF PerformanceHintManager 对所有应用开放，非游戏可通过 Session 建立 hint 反馈闭环。setPreferPowerEfficiency(API 35)是非游戏场景核心工具，sendHint 提供 CPU/GPU 负载信号，GameState MODE_CONTENT 专为非游戏内容设计。ProfilingManager TRIGGER_TYPE_ANOMA",
+      "chapter": "ch05",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-sched-ext-oem-implementation.md",
+      "title": "sched_ext 在 Android OEM 上的 BPF 调度落地策略",
+      "summary": "深度分析 Linux sched_ext 架构在 Android OEM 的落地实践：Qualcomm SCX_Oplus 基于游戏场景的优先级映射与大核优先调度，MediaTek SCX_Mtk 应急响应调度与低延迟敏感优化，Google Pixel SCX_Litto 电源效率优化。这些 BPF 调度器结合 Android 特有 cgroup 配置和进程优先级体系，实现移动设备性能功耗平衡。",
+      "chapter": "ch17",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "direct-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-bufferqueue-blocking-perfetto-patterns.md",
+      "title": "BufferQueue 堵塞的 Perfetto 直观特征识别",
+      "summary": "BufferQueue 堵塞在 Perfetto 中有三类特征：Producer 侧 dequeueBuffer 在 mDequeueCondition 等待导致 slice 拉长；Consumer 侧 acquireBuffer 返回 PRESENT_LATER 表明帧时机未到；NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND 返回 true 说明队列积压。详细拆解了 ",
+      "chapter": "ch07",
+      "processed_at": "2026-05-08 06:32",
+      "type": "deepresearch-inject",
+      "action": "queue"
+    },
+    {
+      "title": "16KB Page Size 对现有三方库的破坏性影响评估",
+      "path": "DeepResearch/2026-05-08-16kb-page-size-third-party-library-impact.md",
+      "quality": "high",
+      "score": 20,
+      "scored_at": "2026-05-09T00:24:11.765102"
+    },
+    {
+      "title": "AnimatedVectorDrawable 的线程退化机制",
+      "path": "DeepResearch/2026-05-08-animatedvectordrawable-thread-degradation.md",
+      "quality": "high",
+      "score": 19,
+      "scored_at": "2026-05-09T00:24:14.529855"
+    },
+    {
+      "title": "Binder Freezer 与 cgroup v2 Freezer 协同机制",
+      "path": "DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md",
+      "quality": "high",
+      "score": 20,
+      "scored_at": "2026-05-09T00:24:25.387794"
+    },
+    {
+      "title": "FragmentTransaction commit 源码链路",
+      "path": "DeepResearch/2026-05-08-fragment-transaction-commit-source-chain.md",
+      "quality": "high",
+      "score": 18,
+      "scored_at": "2026-05-09T00:24:38.006196"
+    },
+    {
+      "title": "ApplicationExitInfo 在 Android 11 以下的替代方案",
+      "path": "DeepResearch/2026-05-08-applicationexitinfo-android11-below-alternatives.md",
+      "quality": "high",
+      "score": 20,
+      "scored_at": "2026-05-09T00:24:48.135844"
+    },
+    {
+      "title": "ApplicationExitInfo 在 Android 11 以下的替代方案",
+      "path": "DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md",
+      "quality": "high",
+      "score": 18,
+      "scored_at": "2026-05-09T00:24:58.132514"
+    },
+    {
+      "path": "OpenClaw定时任务/Perfetto每日提交监控/2026-05-08-Perfetto每日提交监控.md",
+      "score": 18,
+      "reasoning": "Relevance: 5/5, Technical Depth: 5/5, Currency: 5/5, Verifiability: 3/5",
+      "scored_at": "2026-05-09T05:51:04.578629"
+    },
+    {
+      "path": "source/juejin-android/2026-05-09-75967106-2026年了，Android开发该如何调.md",
+      "score": 15,
+      "reasoning": "Relevance: 5/5, Technical Depth: 3/5, Currency: 5/5, Verifiability: 2/5",
+      "scored_at": "2026-05-09T05:51:04.578637"
+    },
+    {
+      "path": "source/juejin-android/2026-05-09-76128120-Android17 为什么重写 Mess.md",
+      "score": 19,
+      "reasoning": "Relevance: 5/5, Technical Depth: 5/5, Currency: 5/5, Verifiability: 4/5",
+      "scored_at": "2026-05-09T05:51:04.578640"
+    },
+    {
+      "path": "source/juejin-android/2026-05-09-76132301-2026 Flutter VS Reac.md",
+      "score": 17,
+      "reasoning": "Relevance: 5/5, Technical Depth: 5/5, Currency: 5/5, Verifiability: 2/5",
+      "scored_at": "2026-05-09T05:51:04.578641"
+    },
+    {
+      "path": "论文/Android-2026-05-08-Native-vs-Web-Energy/03-analysis.md",
+      "score": 18,
+      "reasoning": "Relevance: 5/5, Technical Depth: 5/5, Currency: 3/5, Verifiability: 5/5",
+      "scored_at": "2026-05-09T05:51:04.578643"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md",
+      "title": "MGLRU vs 传统双级 LRU 锁竞争差异",
+      "summary": "MGLRU（Linux 6.8 主线）通过 per-lruvec 代际链表细化锁粒度，减少传统双级 LRU 全局 lru_lock 在多核并发下的竞争。核心改进：代际独立链表+批量 PTE accessed bit 清除（锁外执行）+ per-lruvec 锁粒度，从根源削减 shrink_inactive_list 全局持锁瓶颈。",
+      "chapter": "ch04",
+      "section": "4.2",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-pi-mutex-pthread-prio-inherit-android.md",
+      "title": "PI-Mutex (PTHREAD_PRIO_INHERIT) 在 Android Bionic 中的实现与 32 位架构限制",
+      "summary": "Bionic PI-Mutex 通过 FUTEX_LOCK_PI 实现优先级继承，防止低优先级持锁线程被中优先级抢占导致高优先级反转。主要应用于 AudioFlinger FAST Mixer 和 Binder 驱动优先级传播。32 位架构 PID 回绕问题在 Android 12+ 通过扩展 PID 类型缓解。",
+      "chapter": "ch01",
+      "section": "1.14",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-application-exit-info-android11-alternatives.md",
+      "title": "ApplicationExitInfo 在 Android 11 以下的替代方案",
+      "summary": "Android 10 及以下版本通过四种方案弥补 ApplicationExitInfo 监控盲区：ANR traces 直接读取、LMKd 信号监听、自定义 Signal Handler、ActivityManager 内存统计。KOOM fork dump 机制将主进程冻结时间从 ~20s 降至 <20ms。",
+      "chapter": "ch19",
+      "section": "19.24",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-binder-freezer-driver-cgroup-v2-coordination-mechanism.md",
+      "title": "Binder Freezer 与 cgroup v2 Freezer 协同机制",
+      "summary": "Android 12+ CachedAppOptimizer 通过 cgroup v2 freezer 冻结缓存应用，Binder 驱动层通过 cgroup_enter_frozen/leave_frozen 协同管理冻结状态。内核侧完整状态机：CGRP_FREEZE → JOBCTL_TRAP_FREEZE → TASK_STOPPED。FREEZER_CUTOFF_ADJ=900 决定冷冻范围。",
+      "chapter": "ch05",
+      "section": "5.8",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-08-bufferqueue-internal-lock-contention.md",
+      "title": "BufferQueue 内部锁竞争机制",
+      "summary": "BufferQueue 采用单一 mutex + 多 condition variable 保护所有共享状态。三个关键竞争路径：dequeueBuffer 等待 free slot（持锁阻塞）、ActiveBuffer O(n) 扫描热点、Allocation 期间主动释放锁。Android 14 引入 BUFFER_RELEASE_CHANNEL 精确唤醒替代广播式 notify_all。",
+      "chapter": "ch02",
+      "section": "2.13",
+      "processed_at": "2026-05-09T06:13:15.793717",
+      "type": "deepresearch-inject"
+    },
+    {
+      "title": "源码调研：SurfaceFlinger FrontEnd 架构与 RequestedLayerState",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md",
+      "score": 19,
+      "chapter": "02",
+      "scored_at": "2026-05-10T05:46:03.088173"
+    },
+    {
+      "title": "源码调研：Android 15/16 输入系统架构演进与 InputFlinger 现状",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-inputflinger-rust-architecture-android15-16.md",
+      "score": 17,
+      "chapter": "03",
+      "scored_at": "2026-05-10T05:46:03.088181"
+    },
+    {
+      "title": "源码调研：RenderEffect 底层 GPU 渲染管线与 offscreen buffer 机制",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md",
+      "score": 18,
+      "chapter": "02",
+      "scored_at": "2026-05-10T05:46:03.088184"
+    },
+    {
+      "title": "源码调研：ART FinalizerDaemon 与 ReferenceQueue 的并发优化边界验证",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md",
+      "score": 20,
+      "chapter": "04",
+      "scored_at": "2026-05-10T05:46:03.088186"
+    },
+    {
+      "filename": "DeepResearch/2026-05-10-art-referencequeue-analysis.md",
+      "title": "源码调研：Android 16 ART ReferenceQueue 与 ConcurrentMessageQueue 并发优化边界分析",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "04",
+      "keywords": [
+        "ART",
+        "ReferenceQueue",
+        "ConcurrentMessageQueue",
+        "内存管理",
+        "并发优化",
+        "Android 16"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:47:43.797500"
+    },
+    {
+      "filename": "DeepResearch/2026-05-10-deliqueue-concurrentmessagequeue-gcmcm-profindingmanager.md",
+      "title": "源码调研：Android 17 (API 37) DeliQueue、ConcurrentMessageQueue、Generational CMC、ProfilingManager 深度源码验证",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "16",
+      "keywords": [
+        "DeliQueue",
+        "ConcurrentMessageQueue",
+        "Generational CMC",
+        "ProfilingManager",
+        "Android 17"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:47:43.797510"
+    },
+    {
+      "filename": "DeepResearch/2026-05-10-input-dispatcher-backpressure-mechanism.md",
+      "title": "源码调研：输入事件反压机制与 InputDispatcher 降级策略",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "03",
+      "keywords": [
+        "InputDispatcher",
+        "反压机制",
+        "ANR",
+        "输入系统",
+        "性能优化"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:47:43.797513"
+    },
+    {
+      "filename": "DeepResearch/2026-05-10-inputflinger-rust-architecture.md",
+      "title": "源码调研：Android 15/16 输入系统架构重构：InputFlinger Rust 组件与 ARR 协同机制",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "03",
+      "keywords": [
+        "InputFlinger",
+        "Rust",
+        "架构重构",
+        "ARR",
+        "输入系统"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:47:43.797514"
+    },
+    {
+      "filename": "source/juejin-android/2026-05-11-75967106-2026年了，Android开发该如何调.md",
+      "title": "2026年了，Android开发该如何调试布局",
+      "relevance": 4,
+      "technical_depth": 3,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 15,
+      "mapped_chapter": "04",
+      "keywords": [
+        "Android",
+        "调试工具",
+        "Layout Inspector",
+        "AYA",
+        "DevEx"
+      ],
+      "source_type": "JuejinAndroid",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:48:40.393823"
+    },
+    {
+      "filename": "source/juejin-android/2026-05-11-75999636-Android-嵌入式照片选择器，让体验.md",
+      "title": "Android 嵌入式照片选择器，让体验更加丝滑",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 16,
+      "mapped_chapter": "04",
+      "keywords": [
+        "Android",
+        "Photo Picker",
+        "嵌入式",
+        "隐私保护",
+        "API 34"
+      ],
+      "source_type": "JuejinAndroid",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:48:40.393831"
+    },
+    {
+      "filename": "source/juejin-android/2026-05-11-75049649-Jetpack-Compose---封装.md",
+      "title": "Jetpack Compose - 封装特定功能",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 16,
+      "mapped_chapter": "11",
+      "keywords": [
+        "Jetpack Compose",
+        "UI状态",
+        "单数据流",
+        "封装"
+      ],
+      "source_type": "JuejinAndroid",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:48:40.393833"
+    },
+    {
+      "filename": "source/juejin-android/2026-05-11-75978117-AI-定义的-Android-开发规范，.md",
+      "title": "AI 定义的 Android 开发规范，直接抄作业！",
+      "relevance": 4,
+      "technical_depth": 4,
+      "timeliness": 4,
+      "verifiability": 4,
+      "total_score": 16,
+      "mapped_chapter": "04",
+      "keywords": [
+        "AI编程",
+        "开发规范",
+        "命名",
+        "架构",
+        "DevEx"
+      ],
+      "source_type": "JuejinAndroid",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:48:40.393835"
+    },
+    {
+      "filename": "DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md",
+      "title": "源码调研：HCI 感知阈值与 Android 端到端延迟的映射关系",
+      "relevance": 5,
+      "technical_depth": 5,
+      "timeliness": 5,
+      "verifiability": 5,
+      "total_score": 20,
+      "mapped_chapter": "03",
+      "keywords": [
+        "HCI",
+        "感知阈值",
+        "延迟",
+        "输入系统",
+        "性能优化"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:49:03.719760"
+    },
+    {
+      "filename": "DeepResearch/2026-05-11-input-system-architecture-refactor.md",
+      "title": "源码调研：Android 15/16 输入系统架构重构",
+      "relevance": 5,
+      "technical_depth": 4,
+      "timeliness": 5,
+      "verifiability": 3,
+      "total_score": 17,
+      "mapped_chapter": "03",
+      "keywords": [
+        "InputFlinger",
+        "Rust",
+        "架构重构",
+        "ARR",
+        "性能优化"
+      ],
+      "source_type": "DeepResearch",
+      "analysis_date": "2026-05-11",
+      "scored_at": "2026-05-11T05:49:03.719767"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-10-inputflinger-rust-architecture.md",
+      "title": "InputFlinger Rust 组件架构与 ARR 协同机制",
+      "summary": "Android 16 InputFlinger 从 C++ 到 Rust 的渐进式迁移分析。Rust 过滤器通过 FFI 与 C++ InputDispatcher 交互，模块化输入过滤器包括 bounce_keys/slow_keys/sticky_keys。事件验证与触摸状态管理仍在 C++，Rust 专注预处理和过滤，为 ARR 提供低延迟事件处理。含",
+      "chapter_mapping": "ch03",
+      "processed_at": "2026-05-11T06:19:17.902930+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-surfaceflinger-frontend-architecture-android15.md",
+      "title": "SurfaceFlinger FrontEnd 架构与 RequestedLayerState",
+      "summary": "Android 15 引入 FrontEnd 架构，将客户端请求的 Layer 状态(RequestedLayerState)与系统合成状态(LayerSnapshot)完全分离。通过 LayerLifecycleManager 和 LayerHierarchyBuilder 解耦，主合成线程只在需要合成计算时持有 mStateLock，大幅降低锁竞争。含 ",
+      "chapter_mapping": "ch02",
+      "processed_at": "2026-05-11T06:19:17.902930+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md",
+      "title": "MGLRU vs 传统双级 LRU 锁竞争差异",
+      "summary": "Linux 6.8 MGLRU 与传统双级 LRU 的锁竞争对比。传统 LRU 用全局 lru_lock 做频繁 list_move，多核时成为瓶颈；MGLRU 将页面按访问时间分 2-4 代，锁粒度细化到 per-lruvec，通过 page table batch mark 和 folio_update_gen 减少锁内操作。含 lru_gen_foli",
+      "chapter_mapping": "ch04",
+      "processed_at": "2026-05-11T06:19:17.902930+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-rendereffect-gpu-pipeline-offscreen-buffer.md",
+      "title": "RenderEffect GPU 渲染管线与 offscreen buffer 机制",
+      "summary": "RenderEffect 底层映射到 Skia SkImageFilter 链的完整分析。含 Java API 层、JNI 层到 RenderNode 与 RenderLayer 绑定的完整路径。RenderEffect 触发 offscreen GPU texture 分配的三个代价来源：显存申请、filter chain 执行、RenderThread→",
+      "chapter_mapping": "ch07",
+      "processed_at": "2026-05-11T06:19:17.902930+08:00",
+      "processor": "task-deepresearch-injector"
+    },
+    {
+      "title": "Android图形系统综述(干货篇)",
+      "path": "AndroidWeekly/#10/Android图形系统综述(干货篇)",
+      "source_url": "https://juejin.cn/post/6898525503960186887",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 16,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android图形系统综述(干货篇)",
+      "scored_at": "2026-05-11T09:09:12.601747"
+    },
+    {
+      "title": "Android-Choreographer工作原理",
+      "path": "AndroidWeekly/#10/Android-Choreographer工作原理",
+      "source_url": "https://juejin.cn/post/6894206842277199880",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android-Choreographer工作原理",
+      "scored_at": "2026-05-11T09:09:12.601759"
+    },
+    {
+      "title": "实现 ART 即时 (JIT) 编译器 | Android 开源项目 | Android Open Source Project",
+      "path": "AndroidWeekly/#10/实现 ART 即时 (JIT) 编译器 | Android 开源项目 | Android Open Source Project",
+      "source_url": "https://source.android.google.cn/devices/tech/dalvik/jit-compiler?hl=zh-cn",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 17,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch10-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "实现 ART 即时 (JIT) 编译器 | Android 开源项目 | Android...",
+      "scored_at": "2026-05-11T09:09:12.601762"
+    },
+    {
+      "title": "Handler的初级、中级、高级问法，你都掌握了吗？",
+      "path": "AndroidWeekly/#10/Handler的初级、中级、高级问法，你都掌握了吗？",
+      "source_url": "https://juejin.cn/post/6893791473121280013",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 3,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Handler的初级、中级、高级问法，你都掌握了吗？",
+      "scored_at": "2026-05-11T09:09:12.601765"
+    },
+    {
+      "title": "Ninja提升编译速度的方法-Android10.0编译系统（十）",
+      "path": "AndroidWeekly/#10/Ninja提升编译速度的方法-Android10.0编译系统（十）",
+      "source_url": "https://mp.weixin.qq.com/s/45Et5kVh-y1EAb2hq5o1Rg",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch10-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Ninja提升编译速度的方法-Android10.0编译系统（十）",
+      "scored_at": "2026-05-11T09:09:12.601767"
+    },
+    {
+      "title": "编译系统总结篇-Android10.0编译系统（十一）",
+      "path": "AndroidWeekly/#10/编译系统总结篇-Android10.0编译系统（十一）",
+      "source_url": "https://mp.weixin.qq.com/s/B9V1k4YU2pVD4ajq6N2nQg",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch10-编译",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "编译系统总结篇-Android10.0编译系统（十一）",
+      "scored_at": "2026-05-11T09:09:12.601769"
+    },
+    {
+      "title": "Linux内核内存检测工具KASAN",
+      "path": "AndroidWeekly/#10/Linux内核内存检测工具KASAN",
+      "source_url": "https://mp.weixin.qq.com/s/523xDv4bkZMi426_9GhRSw",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Linux内核内存检测工具KASAN",
+      "scored_at": "2026-05-11T09:09:12.601771"
+    },
+    {
+      "title": "减少崩溃，提升体验 | 使用 Kotlin 打造优质应用",
+      "path": "AndroidWeekly/#10/减少崩溃，提升体验 | 使用 Kotlin 打造优质应用",
+      "source_url": "https://mp.weixin.qq.com/s/uwfZZ7aao032L_Bh3llXOg",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch99-其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "减少崩溃，提升体验 | 使用 Kotlin 打造优质应用",
+      "scored_at": "2026-05-11T09:09:12.601772"
+    },
+    {
+      "title": "面试官：今日头条启动很快，你觉得可能是做了哪些优化？",
+      "path": "AndroidWeekly/#10/面试官：今日头条启动很快，你觉得可能是做了哪些优化？",
+      "source_url": "https://mp.weixin.qq.com/s/Q6cLLaMG3JSriNaUj-IYCw",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch99-其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "面试官：今日头条启动很快，你觉得可能是做了哪些优化？",
+      "scored_at": "2026-05-11T09:09:12.601774"
+    },
+    {
+      "title": "基于 Metal 的现代渲染技术",
+      "path": "AndroidWeekly/#10/基于 Metal 的现代渲染技术",
+      "source_url": "https://mp.weixin.qq.com/s/nuR_NAfRkFLPhINg4aMqcQ",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "基于 Metal 的现代渲染技术",
+      "scored_at": "2026-05-11T09:09:12.601776"
+    },
+    {
+      "title": "谈谈内存压缩那些事",
+      "path": "AndroidWeekly/#10/谈谈内存压缩那些事",
+      "source_url": "https://mp.weixin.qq.com/s/6Yrx9wTH7H7pvzw4uM6f0g",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 1,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-内存",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "谈谈内存压缩那些事",
+      "scored_at": "2026-05-11T09:09:12.601778"
+    },
+    {
+      "title": "【再出发】Android11源码分析：静态广播是如何接收到消息的？",
+      "path": "AndroidWeekly/#10/【再出发】Android11源码分析：静态广播是如何接收到消息的？",
+      "source_url": "https://juejin.cn/post/6895373172125171726",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 10,
+      "quality": "low",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch99-其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "【再出发】Android11源码分析：静态广播是如何接收到消息的？",
+      "scored_at": "2026-05-11T09:09:12.601782"
+    },
+    {
+      "title": "介绍一下 Android Handler 中的 epoll 机制？",
+      "path": "AndroidWeekly/#10/介绍一下 Android Handler 中的 epoll 机制？",
+      "source_url": "https://mp.weixin.qq.com/s/ClTE15s9qUaNsInIIwX57w",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 12,
+      "quality": "medium",
+      "scores": {
+        "relevance": 2,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch07-进程",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "介绍一下 Android Handler 中的 epoll 机制？",
+      "scored_at": "2026-05-11T09:09:12.601783"
+    },
+    {
+      "title": "https://medium.com/androiddevelopers/now-in-android-25-8596a08554d7",
+      "path": "AndroidWeekly/#10/https://medium.com/androiddevelopers/now-in-android-25-8596a08554d7",
+      "source_url": "https://medium.com/androiddevelopers/now-in-android-25-8596a08554d7",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 11,
+      "quality": "low",
+      "scores": {
+        "relevance": 2,
+        "depth": 2,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch99-其他",
+          "confidence": "low"
+        }
+      ],
+      "summary": "https://medium.com/androiddevelopers/now-in-android-25...",
+      "scored_at": "2026-05-11T09:09:12.601785"
+    },
+    {
+      "path": "intake/daily-info/2026-05-12.md",
+      "title": "## [ClawFeed] CUDA-oxide: Nvidia's official Rust to CUDA compiler",
+      "summary": "NVIDIA 发布了官方的 Rust 到 CUDA 编译器 CUDA-oxide，为开发者提供了一种新的 GPU 编程语言选择。这个工具将 Rust 的安全性与 CUDA 的计算能力结合，有望简化 GPU 开发流程并减少内存安全问题。这是跨语言 GPU 编程领域的重要进展。",
+      "chapter": "androiddevelopmenttools",
+      "processed_at": "2026-05-12 05:37",
+      "type": "daily-info-classification"
+    },
+    {
+      "path": "intake/daily-info/2026-05-12.md",
+      "title": "## [ClawFeed] Training an LLM in Swift, Part 1: Taking matrix mult from Gflop/s to Tflop/s",
+      "summary": "开发者分享了在 Swift 中训练大语言矩阵的经验，将矩阵乘法的性能从 Gflop/s 提升到 Tflop/s。这展示了移动端 AI 计算优化的最新进展，为在 Apple 设备上部署高性能 AI 模型提供了参考。",
+      "chapter": "androiddevelopmenttools",
+      "processed_at": "2026-05-12 05:37",
+      "type": "daily-info-classification"
+    },
+    {
+      "path": "intake/daily-info/2026-05-12.md",
+      "title": "## [掘金Android] Android17 为什么重写 MessageQueue",
+      "summary": "Android 消息机制自第一个版本以来二十年未变，核心是一个 synchronized 锁守着单链表，多线程操作时锁竞争会阻塞 UI 线程。Google 用 Perfetto 分析海量线上 trace 后确认 MessageQueue 锁竞争是系统级普遍问题。Android 17 引入 DeliQueue 无锁架构",
+      "chapter": "androidarchitecture",
+      "processed_at": "2026-05-12 05:37",
+      "type": "daily-info-classification"
+    },
+    {
+      "path": "intake/daily-info/2026-05-12.md",
+      "title": "## [掘金Android] AI 定义的 Android 开发规范，直接抄作业！",
+      "summary": "文章基于项目实际技术栈制定了完整的 AI 辅助 Android 开发规范，涵盖",
+      "chapter": "androidarchitecture",
+      "processed_at": "2026-05-12 05:37",
+      "type": "daily-info-classification"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-crash-aggregation-ml-analysis.md",
+      "title": "崩溃聚合与归因分析中的 ML 应用",
+      "summary": "调研 Firebase Crashlytics analysis engine 的崩溃聚类机制（基于栈帧、异常消息、错误码等5维特征向量），以及 Sentry 的 ML-driven issue ranking。梳理了 Android NDK Native crash 处理基础设施（libunwind/debuggerd/aee）和 Breakpad 符号化",
+      "chapter_mapping": "ch20.08",
+      "processed_at": "2026-05-12T06:28:00+08:00",
+      "type": "deepresearch-injection"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-gpu-performance-debugging-methodology.md",
+      "title": "生产环境 GPU 性能问题调试方法论",
+      "summary": "系统性 GPU 性能调试方法论：Android 16 标准化 gpu_busy 计数器 vs 旧版厂商自定义命名差异、AGI 离线分析与 Perfetto 实时追踪的分工定位、Qualcomm Adreno 与 ARM Mali 的 counter 体系差异及统一方法论。包含从问题现象到根因的完整排查流程（CPU-GPU 同步 back-pressure、内",
+      "chapter_mapping": "ch02.10",
+      "processed_at": "2026-05-12T06:28:00+08:00",
+      "type": "deepresearch-injection"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-soc-platform-diff-dimensity-scheduling.md",
+      "title": "联发科 SoC 平台差异——调度器与 cpufreq 行为",
+      "summary": "联发科 Dimensity 系列调度行为的源码级分析：schedutil governor 的 get_next_freq() 计算逻辑（含 25% tipping point）、uclamp 通过 uclamp_rq_is_capped() 影响频率上限的机制、EAS 在 1+3+4 big.LITTLE 拓扑上的能效决策、IOWait Boost 的指数",
+      "chapter_mapping": "ch05.01",
+      "processed_at": "2026-05-12T06:28:00+08:00",
+      "type": "deepresearch-injection"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-kotlin-coroutine-dispatchers-anr-analysis.md",
+      "title": "Kotlin 协程 ANR 治理与 Dispatchers 性能开销",
+      "summary": "源码级分析 CoroutineScheduler 线程池架构：Dispatchers.IO 与 Default 共享同一 CoroutineScheduler 实例，withContext(Dispatchers.IO) 在 Default 线程上不发生线程切换只改变 TaskContext 标记；WorkQueue 半 FIFO 调度的饥饿风险；Handl",
+      "chapter_mapping": "ch09.01",
+      "processed_at": "2026-05-12T06:28:00+08:00",
+      "type": "deepresearch-injection"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-native-crash-symbol-table-mechanism.md",
+      "title": "Native Crash 符号表处理机制",
+      "summary": "Breakpad .sym 文件生成（dump_syms 从未 strip .so 提取符号）、符号文件格式规范（MODULE/FILE/FUNC/PUBLIC/STACK CFI）、按 build ID 的目录查找协议、minidump_stackwalk 符号还原调用链、多架构支持、crash_dump 与 libunwindstack 的设备端符号收集",
+      "chapter_mapping": "ch20.03 (finalized → queue)",
+      "processed_at": "2026-05-12T06:28:00+08:00",
+      "type": "deepresearch-injection"
+    }
+  ]
+}

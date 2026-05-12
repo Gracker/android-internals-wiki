@@ -622,13 +622,158 @@
       "added_at": "2026-05-12T06:28:00+08:00",
       "status": "pending",
       "id": "dr-inject-2026-05-12-native-crash-symbol-table"
+    },
+    {
+      "id": "task9-16.5-source-path-error",
+      "section": "16.5",
+      "priority": 95,
+      "title": "DeliQueue 源码路径错误",
+      "description": "ConcurrentMessageQueue/MessageQueue.java 路径不正确，实际应为 frameworks/base/core/java/android/os/MessageQueue.java 中的内部类实现",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+      ],
+      "completed_date": null,
+      "completed_reason": null
+    },
+    {
+      "id": "task9-16.5-api-version-error",
+      "section": "16.5",
+      "priority": 95,
+      "title": "JobScheduler API 版本错误",
+      "description": "JobScheduler.getPendingJobReasonStats(int) 声称在 API 37 新增，但 AOSP android-16.0.0_r1 中不存在，需确认实际版本",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+      ],
+      "completed_date": null,
+      "completed_reason": null
+    },
+    {
+      "id": "task9-22.3-kotlin-version-error",
+      "section": "22.3",
+      "priority": 95,
+      "title": "Strong Skipping 版本信息错误",
+      "description": "Strong Skipping 在 Kotlin 2.2 默认启用，实际在 Kotlin 2.0 起已默认启用",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ],
+      "completed_date": null,
+      "completed_reason": null
+    },
+    {
+      "id": "task9-22.3-pausable-compose-version-error",
+      "section": "22.3",
+      "priority": 95,
+      "title": "Pausable Composition 版本信息错误",
+      "description": "Pausable Composition 在 Compose 1.10 中是实验性版本，正式默认启用在 Compose 1.11",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ],
+      "completed_date": null,
+      "completed_reason": null
+    },
+    {
+      "id": "task9-22.3-derivedstateof-conditions-error",
+      "section": "22.3",
+      "priority": 95,
+      "title": "derivedStateOf 使用条件不完整",
+      "description": "派生计算必须是纯函数（无副作用、无内存分配）的条件被遗漏",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ],
+      "completed_date": null,
+      "completed_reason": null
     }
   ],
   "metadata": {
-    "total_entries": 28,
-    "p0_count": 14,
+    "total_entries": 40,
+    "p0_count": 19,
     "p1_count": 15,
-    "last_updated": "2026-05-12T07:16:12.412995",
+    "last_updated": "2026-05-12T07:23:26.964475",
     "updated_by": "task2b-content-processing-rework"
-  }
+  },
+  "pending": [
+    {
+      "section": "22.3",
+      "section_title": "Jetpack Compose 性能优化",
+      "priority": 90,
+      "reason": "[Task6 Review] 独创性提升、心流优化",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需提升独创性",
+          "location": "全文多处",
+          "detail": "内容多为标准技术知识，缺乏独特洞察和个人经验分享",
+          "suggestion": "加入实际项目中的独特发现、特殊场景的优化经验、或与众不同的分析角度"
+        },
+        {
+          "type": "需优化心流",
+          "location": "第4节重组控制、第8节扩展",
+          "detail": "技术点密度过高，需要更好的呼吸感和分段",
+          "suggestion": "在复杂技术段落后增加总结句，适当拆分长段落，增加读者引导语"
+        }
+      ],
+      "added_by": "task6-report",
+      "added_at": "2026-05-12T08:23:37.220974",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-12-HH-review.md"
+    },
+    {
+      "section": "21.1",
+      "section_title": "启动全链路分析（App 视角）",
+      "priority": 90,
+      "reason": "[Task6 Review] 心流优化",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需优化心流",
+          "location": "第7节Perfetto启动分析实战",
+          "detail": "技术段落密度过高，读者需要更好的呼吸感",
+          "suggestion": "在复杂分析步骤后增加小结，适当拆分长段落，增加读者引导语"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T08:23:37.220980",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-12-HH-review.md"
+    }
+  ]
 }
