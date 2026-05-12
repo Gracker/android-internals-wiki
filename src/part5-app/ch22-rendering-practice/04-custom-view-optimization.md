@@ -14,13 +14,17 @@ sources:
 path: "developer.android.com/topic/performance/rendering/optimizing-view"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-13"
+last_task9_at: "2026-05-13T01:43:00+08:00"
 ---
 
 # 自定义 View 性能优化

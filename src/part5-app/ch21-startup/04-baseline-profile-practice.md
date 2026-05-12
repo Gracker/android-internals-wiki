@@ -2,7 +2,7 @@
 title: "Baseline Profile 实战"
 chapter: "21.4"
 section: "21.4"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 7 (API 24) - Android 16 (API 36)"
 last_verified: "2026-05-12"
 last_verified_against: "Android Developers Baseline Profiles docs, AOSP art/profman + art/dex2oat, AIW 8.7 / 19.15, Clippings Android 性能优化"
@@ -30,15 +30,19 @@ sources:
     path: "src/part3-tools/ch19-apm/15-baseline-profiles.md"
 tags: [baseline-profile, aot, dex-layout, macrobenchmark]
 related_chapters: ["21.1", "8.7", "1.7", "19.15"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-12"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-12T21:56:00+08:00"
 task6_reviewed_date: "2026-05-12"
+task9_result: pass-tech-review
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-13"
+last_task9_at: "2026-05-13T01:43:00+08:00"
 ---
 
 # Baseline Profile 实战
