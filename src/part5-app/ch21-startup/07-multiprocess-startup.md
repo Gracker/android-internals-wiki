@@ -8,6 +8,10 @@ last_verified: "2026-05-13"
 last_verified_against: "AOSP android16-release, Android Developers docs, Clippings structure refs"
 confidence: medium
 drafted_date: "2026-05-13"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+review_notes: "Task6 review: L1/L2 小修 11 处；1 个技术引用口径待 Task9/Task2B 复核。"
+task6_result: needs-rework
 polish_count: 0
 sources:
   - type: aosp
@@ -30,23 +34,40 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [multiprocess, startup, process-priority, ipc, app-startup]
 related_chapters: ["21.1", "1.3", "5.8"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
 ---
 
 # 多进程启动优化
 
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 多进程 App 的启动开销：拆清进程创建、运行时/类加载、组件初始化和 IPC 等成本。
+- 🔹 进程拉起时序控制：按首屏必需、首帧后可用、路径预测和后台任务区分启动时机。
+- 🔹 跨进程初始化依赖管理：把同步对象依赖改成带超时、取消和降级路径的能力协作。
+- 🔹 进程保活与启动的平衡：只为高频、高成本、用户可感知任务保留预启动或常驻策略。
+- 🔹 多进程启动的观测清单：按进程名、启动原因、Binder ready、TTID/TTFD、PSS/RSS 和失败率拆分观测。
+- 🔹 小结：确认是否需要离开主进程，再决定何时拉起、初始化多少、如何验证收益。
+
+### OpenClaw 加工指引
+
+> **锚点**是最低覆盖要求，加工时必须逐条落实并标注验证结果。
+> 涉及源码/API/版本口径时，Task 6 只标注风险，不做最终技术裁决。
+<!-- outline-end -->
+
 多进程能把 WebView、地图、音视频、图片解码、上传下载、插件容器这类高风险模块隔离出去，也能缓解 32 位设备上的虚拟地址压力。但它不会让启动天然变快。每拉起一个新进程，系统都要创建进程、准备运行时、实例化 `Application`，再执行该进程内的初始化代码。
 
-本节只讨论 App 侧怎么安排多进程启动顺序、怎么拆初始化依赖、怎么避免为了“保活”反过来拖慢主进程。进程模型与生命周期规则详见 1.3 节，冷启动分段与 TTID/TTFD 口径详见 21.1 节，后台执行限制详见 5.8 节。
+多进程启动优化关注 App 侧的启动顺序、初始化依赖拆分，以及“保活”策略对主进程启动的反向影响。进程模型与生命周期规则详见 1.3 节，冷启动分段与 TTID/TTFD 口径详见 21.1 节，后台执行限制详见 5.8 节。
 
-[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
 
 ## 多进程 App 的启动开销分析
 
-Android 官方文档对进程的描述很直接：当某个组件启动且应用还没有运行中的进程时，系统会为应用启动一个新的 Linux 进程，并创建一条主线程；默认情况下，同一应用的组件运行在同一个进程和主线程中，也可以通过 manifest 的 `android:process` 把组件放到其他进程。换成启动优化视角，就是每个子进程都有自己的冷启动成本。[已验证: 官方文档, developer.android.com/guide/components/processes-and-threads]
+Android 官方文档对进程的描述是：当某个组件启动且应用还没有运行中的进程时，系统会为应用启动一个新的 Linux 进程，并创建一条主线程；默认情况下，同一应用的组件运行在同一个进程和主线程中，也可以通过 manifest 的 `android:process` 把组件放到其他进程。换成启动优化视角，就是每个子进程都有自己的冷启动成本。[已验证: 官方文档, developer.android.com/guide/components/processes-and-threads]
 
 子进程启动成本可以拆成四类：
 
@@ -96,9 +117,8 @@ class App : Application() {
 }
 ```
 
-这段代码不解决进程创建成本，只负责阻止初始化扩散。真正要降耗，还要把 provider 自动初始化、静态单例初始化、native 库加载、线程池创建一起纳入进程分支。
+这段代码不解决进程创建成本，只负责阻止初始化扩散。要继续降耗，还要把 provider 自动初始化、静态单例初始化、native 库加载、线程池创建一起纳入进程分支。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 
 ## 跨进程初始化依赖管理
 
@@ -111,7 +131,7 @@ class App : Application() {
 - 主进程通过 Binder/Provider 发送请求，并设置超时、取消和降级路径。
 - 启动阶段只做握手，不做大批量数据同步。
 
-内存态数据不能假设跨进程一致。官方 `Application` 文档里还保留了一个典型警告：`MODE_MULTI_PROCESS` 已废弃且在部分 Android 版本上不可靠，跨进程数据应使用明确的数据管理机制，例如 ContentProvider。这个结论对启动也适用：不要用 SharedPreferences 的“多进程模式”当启动依赖同步方案。[已验证: 官方文档, developer.android.com/reference/android/app/Application]
+内存态数据不能假设跨进程一致。官方 `Application` 文档里还保留了一个典型警告：`MODE_MULTI_PROCESS` 已废弃且在部分 Android 版本上不可靠，跨进程数据应使用明确的数据管理机制，例如 ContentProvider。这个结论对启动也适用：不要用 SharedPreferences 的“多进程模式”当启动依赖同步方案。[已验证: 官方文档, developer.android.com/reference/android/app/Application] [需确认: `MODE_MULTI_PROCESS` 的官方引用路径可能应为 `Context` / `SharedPreferences` 相关文档，当前 Application 引用需 Task 9 核对。]
 
 进程间初始化可以按下面的状态机处理：
 
@@ -123,15 +143,15 @@ class App : Application() {
 | `Degraded` | 初始化超时或失败 | 走降级 UI、重试或回主进程实现 |
 | `Dead` | 进程被系统杀死或崩溃 | 清理 client 端引用，重新握手 |
 
-这个模型的价值在于把“启动子进程”从同步函数调用改成有状态的异步协作。只要主进程首帧不依赖子进程结果，就不要在主线程做同步 Binder 等待。
+这张状态表把“启动子进程”从同步函数调用改成有状态的异步协作。只要主进程首帧不依赖子进程结果，就不要在主线程做同步 Binder 等待。
 
-[自动发现] 线程池也要按进程隔离配置。参考线程池章节的结构，CPU 线程池、I/O 线程池、调度线程池应当服务于当前进程真实任务量；子进程不要复制主进程的大线程池参数。一个只做上传的进程，不需要主进程同等规模的图片解码池、业务调度池和监控线程池。[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
+线程池也要按进程隔离配置。CPU 线程池、I/O 线程池、调度线程池应当服务于当前进程真实任务量；子进程不要复制主进程的大线程池参数。一个只做上传的进程，不需要主进程同等规模的图片解码池、业务调度池和监控线程池。
 
 ## 进程保活与启动的平衡
 
-多进程启动里最容易走偏的是“提前拉起并尽量别死”。从启动速度看，常驻子进程确实能减少下一次冷启动；从系统资源看，它会占用 RSS/PSS、线程、文件描述符、Binder 连接和后台调度机会。Android 会根据用户可感知程度、组件状态、内存压力决定进程存活，后台 service、前台 service、绑定 service 的规则也随版本收紧。相关规则详见 5.8 节。
+多进程启动里最容易走偏的是“提前拉起并尽量别死”。从启动速度看，常驻子进程能减少下一次冷启动；从系统资源看，它会占用 RSS/PSS、线程、文件描述符、Binder 连接和后台调度机会。Android 会根据用户可感知程度、组件状态、内存压力决定进程存活，后台 service、前台 service、绑定 service 的规则也随版本收紧。相关规则详见 5.8 节。
 
-保活策略的判断标准很简单：它节省的用户等待时间，必须高于它长期占用资源带来的代价。建议只保留三类预启动：
+保活策略的判断标准是：它节省的用户等待时间，必须高于它长期占用资源带来的代价。建议只保留三类预启动：
 
 1. **高频路径**：用户进入首页后，短时间内有稳定概率打开子进程页面。
 2. **高成本路径**：子进程冷启动成本明显高于普通页面打开，例如 WebView 首次启动、地图引擎加载、大型 native 库加载。
@@ -139,7 +159,7 @@ class App : Application() {
 
 不建议使用空 service、循环广播、互相拉起等方式维持进程。它们会抬高后台功耗和内存占用，也容易被系统限制或厂商策略处理。对启动优化来说，更稳妥的做法是接受子进程会死亡，把恢复路径做短：缓存必要元数据、缩小初始化集、保证 Binder 断开后能重连。
 
-线程优先级和绑核策略也要克制。参考任务调度结构，关键线程提升优先级的收益来自减少调度等待；滥用高优先级会抢走主线程、RenderThread 或其他前台任务的 CPU 时间。多进程场景下，子进程预热任务应使用低优先级线程，只有用户正在等待的短任务才考虑提升优先级。[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+线程优先级和绑核策略也要克制。关键线程提升优先级的收益来自减少调度等待；滥用高优先级会抢走主线程、RenderThread 或其他前台任务的 CPU 时间。多进程场景下，子进程预热任务应使用低优先级线程，只有用户正在等待的短任务才考虑提升优先级。
 
 ## 多进程启动的观测清单
 
@@ -159,4 +179,4 @@ Perfetto 里优先看 `bindApplication`、`activityStart`、provider 安装、Bi
 
 ## 小结
 
-多进程启动优化的判断顺序是：先确认模块是否必须离开主进程，再决定什么时候拉起子进程，随后收紧该进程的初始化集合，再用 TTID/TTFD、Binder ready、PSS/RSS 和失败率验证收益。多进程的收益来自隔离和分摊，不来自无差别预启动。
+多进程启动优化的判断顺序是：先确认模块是否必须离开主进程，再决定什么时候拉起子进程，随后缩小该进程的初始化集合，再用 TTID/TTFD、Binder ready、PSS/RSS 和失败率验证收益。多进程的收益来自隔离和分摊，不来自无差别预启动。

@@ -2,10 +2,14 @@
 title: 2.11 Flutter 渲染管线与性能
 section: '2.11'
 chapter: '2.11'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
 reviewed_date: '2026-05-09'
+finalized_date: "2026-05-13"
+finalized_by: openclaw-task6-auto-promote
+auto_promoted_date: "2026-05-13"
+auto_promoted_by: openclaw-task6
 reviewed_by: openclaw-task6
 review_notes: 'task6 re-review (revisiting): pass-light-edit。L1禁用词4处已修复。无B类大问题。评分:
   结构5/5·措辞4/5·一致性5/5·验证4/5·元数据5/5。'
@@ -47,15 +51,10 @@ related_chapters:
 - '7.1'
 - '7.7'
 - '18.12'
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: "reviewed"
-    task9_result: "pass-tech-review"
-    task9_reviewed_date: "2026-05-10"
-    task9_reviewed_by: "openclaw-task9"
-    last_task9_at: "2026-05-10T16:30:00+08:00"
-    task9_review_notes: "2026-05-10 Task9深度审计：技术评分5.0/5，无P0/P1问题，建议考虑晋升至finalized状态"
+task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
 task2b_result: fixed

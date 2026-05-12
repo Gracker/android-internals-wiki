@@ -2349,6 +2349,31 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T02:51:35+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task6-review-21.7-mode-multi-process-source-20260513",
+      "section": "21.7",
+      "section_title": "多进程启动优化",
+      "priority": 90,
+      "reason": "[review回炉] `MODE_MULTI_PROCESS` 官方引用路径需技术核对",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "跨进程初始化依赖管理 / `MODE_MULTI_PROCESS` 段落",
+          "detail": "当前段落写成“官方 Application 文档里……”，但该常量/警告的官方引用路径可能应为 Context / SharedPreferences 相关文档；Task 6 不裁决真伪，需 Task 9 核对来源与措辞。",
+          "suggestion": "Task 9 先核对官方 reference；Task 2B 再统一来源路径和段落标注。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-13T03:19:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-13-03-review.md",
+      "related_files": [
+        "src/part5-app/ch21-startup/07-multiprocess-startup.md"
+      ]
     }
   ],
   "metadata": {

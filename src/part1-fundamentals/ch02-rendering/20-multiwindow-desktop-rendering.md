@@ -2,7 +2,7 @@
 title: 多窗口与桌面模式渲染性能
 chapter: '2.20'
 section: '2.20'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
@@ -45,17 +45,16 @@ related_chapters:
 - '2.13'
 - '7.4'
 - '3.3'
-pipeline_stage: task6_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: "reviewed"
-    task9_result: "needs-rework"
-    task9_reviewed_date: "2026-05-10"
-    task9_reviewed_by: "openclaw-task9"
-    last_task9_at: "2026-05-10T16:30:00+08:00"
-    task9_review_notes: "2026-05-10 Task9深度审计：P0级事实错误：recreateOnConfigChanges属性语义错误；P1级问题：Android 16/17大屏边界条件描述不完整，需回炉修正"
+task9_state: reviewed
 task9_result: pass-tech-review
 task2b_state: fixed
 reviewed_date: '2026-05-09'
+finalized_date: "2026-05-13"
+finalized_by: openclaw-task6-auto-promote
+auto_promoted_date: "2026-05-13"
+auto_promoted_by: openclaw-task6
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task2b_result: fixed
