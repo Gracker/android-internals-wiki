@@ -210,7 +210,9 @@ private fun cancelOnRejection(context: CoroutineContext, block: Runnable) {
 }
 ```
 
-**ANR 传播链**：主线程阻塞 → Handler 队列积压 → Handler 关闭 → 任务降级到 Dispatchers.IO → 如果 IO 线程池也满 → 任务继续积压。这是 ANR 从主线程扩散到整个应用的过程。
+**降级触发条件**：`handler.post()` 返回 false 的唯一原因是底层 Looper 正在退出（`Looper.quit()` 已调用）。`Dispatchers.Main` 包装的是主线程 Looper，它在正常应用生命周期内不会退出，所以这条降级路径对主线程 ANR 分析来说基本不可达。Handler 降级更多出现在自定义 Handler 关联的子线程 Looper 被 quit() 的场景。
+
+**主线程 ANR 的协程侧成因**：Handler 队列积压。主线程被一个长操作阻塞时，后续通过 `withContext(Dispatchers.Main)` 投递的恢复协程全部排在 Handler 队列后面。这些等待恢复的协程如果持有其他线程需要的资源（锁、信号量、Channel），就会形成跨线程的级联阻塞。阻塞解除后，积压的消息仍需逐个执行，新投递的 Runnable 排在队尾，响应延迟被放大。
 
 #### Dispatchers.IO 的 unlimited 线程特性
 
@@ -227,7 +229,7 @@ val myMongoDbDispatcher = Dispatchers.IO.limitedParallelism(60)
 // Peak: 64 + 100 + 60 threads possible
 ```
 
-**ANR 治理启示**：limitedParallelism() 的 parallelism 参数只是"建议值"，峰值时系统可以创建的线程数上限是 MAX_POOL_SIZE (256)。如果多个 limitedParallelism 视图同时跑满，系统实际线程数可能远超预期，导致线程调度开销剧增。
+**ANR 治理启示**：`limitedParallelism(n)` 通过 worker 计数器严格限制该视图同时向底层调度器投递的任务数，`n` 不是"建议值"而是强制并发上限。但线程数仍可能超过 `n`，原因在底层调度器：当视图内的任务在 worker 上执行并进入 BLOCKING 状态，CoroutineScheduler 会释放该 worker 的 CPU 令牌并创建新 worker 服务其他任务。多个视图同时存在阻塞任务时，底层线程数上限是 `MAX_POOL_SIZE`（默认 256），线程调度开销和上下文切换成本会显著上升。
 
 #### 协程 ANR 的本质
 
@@ -436,6 +438,17 @@ public class ANRWatchdog {
     }
 }
 ```
+
+**监测线程与主线程的交互时序**：
+
+1. 监测线程将 `mainThreadTick` 置 0（`volatile` 写，对所有线程立即可见）
+2. 监测线程通过 `mainHandler.post(ticker)` 将 ticker 投递到主线程的 Handler 队列
+3. 监测线程 `Thread.sleep(CHECK_INTERVAL_MS)` 进入等待
+4. 主线程 Looper 取出 ticker 并执行，将 `mainThreadTick` 设为当前时间（`volatile` 写）
+5. 监测线程唤醒，检查 `mainThreadTick` 是否仍为 0
+6. `mainThreadTick == 0` → 主线程在整个检测周期内没有执行 ticker → 判定阻塞
+
+`volatile` 保证步骤 1 和 4 的写入对所有线程可见，不需要额外同步。检测存在一个盲区：ticker 可能在监测线程检查之后、`onANRSuspected()` 执行之前被主线程处理。这会导致偶发误报，通过"连续 2-3 次检测确认"来消除（见参数调优小节）。
 
 这段代码是简化版本，生产环境的 Watchdog 需要处理更多细节：误报过滤、多次确认、主线程堆栈 dump、上报策略等。
 

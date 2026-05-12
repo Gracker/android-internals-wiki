@@ -104,11 +104,13 @@
       "created_date": "2026-05-11",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch20-stability/04-anr-governance.md"
-      ]
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: Handler 降级逻辑修正——澄清降级触发条件(Looper.quit)、主线程 Looper 不可降级、主线程 ANR 协程侧成因是 Handler 队列积压而非 Handler 关闭"
     },
     {
       "id": "task9-deep-review-2.9",
@@ -856,12 +858,192 @@
       ],
       "completed_date": "2026-05-12",
       "completed_reason": "重复条目：文件已修正为 Treiber Stack + min-heap，与已完成同名条目一致"
+    },
+    {
+      "id": "task9-20.4-dispatchers-io-degradation",
+      "section": "20.4",
+      "priority": 95,
+      "title": "Dispatchers.IO 降级逻辑链缺失",
+      "description": "缺少 Handler 关闭时的任务路由机制说明",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: Handler 降级逻辑修正——澄清降级触发条件(Looper.quit)、主线程 Looper 不可降级、主线程 ANR 协程侧成因是 Handler 队列积压而非 Handler 关闭"
+    },
+    {
+      "id": "task9-20.4-dispatchers-pool-error",
+      "section": "20.4",
+      "priority": 95,
+      "title": "Dispatchers.IO 线程池机制错误",
+      "description": "limitedParallelism 误解：实际线程数可能远超 parallelism 参数",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: limitedParallelism 并发限制修正——parallelism 参数是强制并发上限(非'建议值')，线程数可超过 parallelism 因底层 BLOCKING worker 释放 CPU 令牌后创建新 worker"
+    },
+    {
+      "id": "task9-1.9-cloud-compilation-evidence",
+      "section": "1.9",
+      "priority": 85,
+      "title": "Android 16 云编译实现细节缺乏一手证据",
+      "description": "SDM 机制描述模糊，缺乏 AOSP 源码直接证据",
+      "issue_type": "knowledge-gap",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "research-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/09-package-manager.md"
+      ]
+    },
+    {
+      "id": "task9-1.9-pms-computer-principle",
+      "section": "1.9",
+      "priority": 85,
+      "title": "PMS Computer 模式原理描述不完整",
+      "description": "快照隔离的并发控制机制解释不够深入",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "research-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/09-package-manager.md"
+      ]
+    },
+    {
+      "id": "task9-1.9-compiler-strategy-diff",
+      "section": "1.9",
+      "priority": 80,
+      "title": "Android 16 与 17 编译策略差异缺失",
+      "description": "缺少 Android 17 对编译过滤器的新约束和优化",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/09-package-manager.md"
+      ]
+    },
+    {
+      "id": "task9-1.10-inputfilter-registration",
+      "section": "1.10",
+      "priority": 85,
+      "title": "InputFilter 注册流程描述错误",
+      "description": "Native 侧实际工作机制描述不准确：InputDispatcher 通过 policy.filterInputEvent()，而非直接调用 Java filter",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "blocked",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "问题与章节内容不匹配：InputFilter 注册流程属于 Input 事件分发章节，section 1.10 实际为 ContentProvider 章节(10-content-provider.md)，需重新路由到正确章节"
+    },
+    {
+      "id": "task9-1.10-accessibility-key-filter",
+      "section": "1.10",
+      "priority": 85,
+      "title": "无障碍按键过滤机制描述不准确",
+      "description": "500ms 超时窗口理解偏差：实际是 KeyEventDispatcher 异步等待，不是 InputDispatcher 同步等待",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "blocked",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "问题与章节内容不匹配：无障碍按键过滤 500ms 超时窗口属于 Input 事件分发章节，section 1.10 实际为 ContentProvider 章节(10-content-provider.md)，需重新路由到正确章节"
+    },
+    {
+      "id": "task9-1.10-binder-cursorwindow-confusion",
+      "section": "1.10",
+      "priority": 80,
+      "title": "Binder 事务缓冲区限制与 CursorWindow 关系解释混乱",
+      "description": "两个机制各自独立运行，当前描述将两者功能混淆",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
+      ]
+    },
+    {
+      "id": "task9-1.10-android16-security",
+      "section": "1.10",
+      "priority": 80,
+      "title": "Android 16 密码输入安全增强未覆盖",
+      "description": "焦点处于密码输入框时，InputDispatcher 暂停非系统级 InputMonitor 的事件副本分发",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/10-content-provider.md"
+      ]
+    },
+    {
+      "id": "task9-20.4-anr-watchdog-principle",
+      "section": "20.4",
+      "priority": 85,
+      "title": "ANR Watchdog 工作原理链断裂",
+      "description": "监测线程与主线程交互机制不清晰：Runnable 投递、执行状态检查、阈值判定逻辑",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "completed",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/04-anr-governance.md"
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 补充 Watchdog 监测线程与主线程交互时序——volatile 可见性保证、6 步交互流程、检测盲区与误报消除机制"
     }
   ],
   "metadata": {
-    "total_entries": 47,
+    "total_entries": 57,
     "p0_count": 7,
-    "last_updated": "2026-05-12T03:31:49",
+    "last_updated": "2026-05-12T15:37:00",
     "updated_by": "task2b-content-processing-rework"
   }
 }
