@@ -16,9 +16,9 @@ polish_count: 1
 polish_date: '2026-04-04'
 polish_by: task2b-polish
 confidence: medium-high
-task9_reviewed_date: '2026-05-07'
+task9_reviewed_date: '2026-05-12'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-07T22:24:50+08:00'
+last_task9_at: '2026-05-12T18:24:00+08:00'
 sources:
 - type: blog
   path: obsidian/Personal-Knowlodge/source/Android-Jank-Due-To-App.md
@@ -55,22 +55,22 @@ related_chapters:
 - '2.5'
 - '2.7'
 - '4.4'
-review_count: 1
-pipeline_stage: task9_pending
+review_count: 2
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
+task9_state: reviewed
+task2b_state: pending
+task2b_result: pending
 task2b_rework_date: '2026-05-09'
 task2b_fixed_at: '2026-05-09T15:40:00+08:00'
 task9_result: needs-rework
 last_task2b_at: '2026-05-09T15:40:00+08:00'
-task9_review_notes: '2026-05-07 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1;SF/HWC
-  合成与温控降频完整案例仍缺,P2 数据证据包为延续项。'
+task9_review_notes: '2026-05-12 Task9 18:24：needs-rework。P0 1 / P1 1 / P2 1；SF/HWC 合成案例使用 android-16 源码中不存在的 doComposition/renderFeatureImpl 锚点；Overlay Plane 归因过度简化；案例 trace 证据包未落盘。'
 last_task6_at: '2026-05-12T18:02:31+08:00'
 task6_review_notes: '2026-05-12 Task6 18:02：pass-light-edit。L1/L2 小修 2 处：修正“七个案例/五个案例”不一致和方法论段第一人称；未新增回炉项。Task9 仍 pending/needs-rework，未自动晋升。'
 last_task6_review_log: logs/review/2026-05-12-18-review.md
+last_task9_review_log: logs/deep-review/2026-05-12-18-deep-review.md
 ---
 
 

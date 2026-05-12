@@ -211,3 +211,16 @@
 - **问题**：正文原先把 FD 耗尽与 pthread_create 内部分配 epoll FD 直接绑定；epoll FD 通常来自 Looper 初始化，不一定是 pthread_create 本身。
 - **建议**：Task9 核对 pthread_create、Looper epoll 初始化、FD 耗尽三者的边界；Task2B 将线程创建 OOM 与 FD 泄漏 OOM 拆开写。
 - **review 日志**：logs/review/2026-05-12-18-review.md
+
+
+## [Task9 Deep Review] 7.6 案例集 — 2026-05-12
+- **类型**：数据缺失
+- **位置**：全文 7 个案例的 Trace 与效果对比
+- **问题**：章节已标注原始 trace 与截图尚未归档，当前耗时区间、Jank 率、内存数值都只能作为案例化示例；案例型章节如果没有至少 1-2 份可复核 trace，读者无法验证判断链。
+- **建议**：为每类根因补 trace 文件名、设备型号、Android 版本、刷新率、采样窗口、样本次数和前后对比表；未补齐前保留 `[待验证]`，不要把数值写成实测结论。
+
+## [Task9 Deep Review] 20.5 OOM 治理 — 2026-05-12
+- **类型**：知识盲区 / 风险边界
+- **位置**：L349-L367 Native 层 `sigsetjmp` / `siglongjmp` 线程级兜底
+- **问题**：该方案属于 Native crash 防护，不是 OOM 专属治理；信号处理、非 async-signal-safe 调用、锁状态、堆状态和业务一致性都有风险，正文当前只给实现骨架，缺少适用边界。
+- **建议**：补充 signal-safety、备用信号栈、只限非关键后台线程、恢复后必须隔离/上报/停止复用该线程等边界；否则降低为“工程参考”，不要作为通用 OOM 兜底策略。

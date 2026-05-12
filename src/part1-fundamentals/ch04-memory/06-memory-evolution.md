@@ -59,27 +59,23 @@ related_chapters:
 - '2.9'
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
-review_count: 7
-pipeline_stage: task9_pending
+review_count: 8
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_at: '2026-05-12T18:02:31+08:00'
 last_task6_review_log: logs/review/2026-05-12-18-review.md
 task6_review_notes: '2026-05-12 Task6 18:02：pass-light-edit。L1/L2 小修 10 处：去第一人称/读者直呼、修正限制句式、删除编辑口吻；未新增回炉项。Task9 仍 pending/needs-rework，未自动晋升。'
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-last_task9_at: '2026-05-07T02:20:00+08:00'
-task2b_state: fixed
-task2b_result: fixed
+last_task9_at: '2026-05-12T18:24:00+08:00'
+task2b_state: pending
+task2b_result: pending
 last_task2b_at: '2026-05-09T22:10:00+08:00'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-07'
-task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0。16KB
-  页内部碎片公式错误，RELRO 兼容模式安全断言缺源码证据链 | 2026-05-07 Task9 01:20：needs-rework。P0 1 / P1 1
-  / P2 0；largeHeap 后台“堆空间压缩”与 ActivityManager 静态堆上限不符，MGLRU GKI 6.12 首次默认口径需回炉。 |
-  2026-05-07 Task9 02:20：needs-rework。P0 3 / P1 0 / P2 0；NativeAllocationRegistry、Scudo
-  MTE、16KB linker compat 三处源码锚点/函数名错误，写入 queue。'
-last_task9_review_log: logs/deep-review/2026-05-07-02-deep-review.md
+task9_reviewed_date: '2026-05-12'
+task9_review_notes: '2026-05-12 Task9 18:24：needs-rework。P0 3 / P1 1 / P2 0；16KB linker compat、Bitmap 源码路径、MTE ASYMM 平台边界存在源码/版本错误；MGLRU 观察口径不足。'
+last_task9_review_log: logs/deep-review/2026-05-12-18-deep-review.md
 ---
 
 
