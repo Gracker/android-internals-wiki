@@ -1,7 +1,7 @@
 {
   "total": 268,
-  "draft": 48,
-  "ready-for-review": 61,
+  "draft": 47,
+  "ready-for-review": 62,
   "finalized": 156,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-12",
@@ -170,9 +170,9 @@
     "21.2 启动框架设计与任务编排",
     "5.10 JobScheduler/WorkManager 调度与后台任务性能"
   ],
-  "ready_for_review": 54,
-  "last_updated": "2026-05-12T18:02:31+08:00",
-  "last_updated_by": "task6-draft-review",
+  "ready_for_review": 55,
+  "last_updated": "2026-05-12T18:09:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "task6_last_review": "2026-05-12T18:02:31+08:00",
   "task9_last_review": "2026-05-12T17:09:00+08:00",
   "ready_to_publish": 0,
