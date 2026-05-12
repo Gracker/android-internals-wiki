@@ -197,3 +197,17 @@
 - **位置**：L329 Android 17 已确认的功耗行为变更
 - **问题**：“Reduced Wakelocks for Idle Alarms”和 `ProfilingManager.KILL_EXCESSIVE_CPU_USAGE` 被归到 behavior changes all-apps / target-37 页面，但此前审计已指出这两项更像 release notes / API reference 口径。
 - **建议**：拆成 behavior changes、release notes、API reference 三类来源，分别标注，避免把 API 引用写成平台行为变更页结论。
+
+## [Task6 Review] 20.5 OOM 治理 — 2026-05-12
+- **类型**：需确认
+- **位置**：Native 内存 OOM / Unsafe.allocateMemory
+- **问题**：正文将 Gson 无空参构造函数反序列化归到 Unsafe.allocateMemory → malloc → native alloc OOM 路径；该路径可能应区分 Unsafe.allocateInstance 与 allocateMemory。
+- **建议**：Task9 核对 Gson/Unsafe 实际调用链和 ART 抛 OOM 入口；Task2B 根据核对结果修正文中示例。
+- **review 日志**：logs/review/2026-05-12-18-review.md
+
+## [Task6 Review] 20.5 OOM 治理 — 2026-05-12
+- **类型**：需确认
+- **位置**：FD 泄漏导致的 OOM / FD 耗尽与 pthread_create
+- **问题**：正文原先把 FD 耗尽与 pthread_create 内部分配 epoll FD 直接绑定；epoll FD 通常来自 Looper 初始化，不一定是 pthread_create 本身。
+- **建议**：Task9 核对 pthread_create、Looper epoll 初始化、FD 耗尽三者的边界；Task2B 将线程创建 OOM 与 FD 泄漏 OOM 拆开写。
+- **review 日志**：logs/review/2026-05-12-18-review.md

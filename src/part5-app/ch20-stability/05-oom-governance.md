@@ -22,18 +22,40 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md"
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
-pipeline_stage: ready-for-review
-task6_state: pending
+review_count: 1
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
 created_by: "task2a"
+reviewed_date: "2026-05-12"
+reviewed_by: openclaw-task6
+task6_result: needs-rework
+last_task6_at: "2026-05-12T18:02:31+08:00"
+last_task6_review_log: logs/review/2026-05-12-18-review.md
+task6_review_notes: "2026-05-12 Task6 18:02：needs-rework。L1/L2 小修 16 处：补 outline、代码块语言、开头措辞、泛化词；发现 2 个技术风险标注，已写入 queue/suggestions，交 Task9/Task2B 复核。"
 ---
 
 # OOM 治理
 
-Android 应用遇到的 OutOfMemoryError 并不只有"堆内存不够"这一种。按照错误来源，可以分成两类：ART 虚拟机自身的堆限制（256 MB / 512 MB growth_limit），和 Linux 进程层面的虚拟内存/FD/线程数限制。两类 OOM 的限流者不同、排查路径也不同——归类是治理的第一步。
+<!-- outline-start -->
+## 本节要点大纲
 
-本章从 OOM 的产生路径入手，逐类讲解 Java Heap OOM、Native 内存 OOM、线程数 OOM、FD 泄漏 OOM、虚拟内存空间耗尽的排查思路和治理策略。
+### 锚点（必须覆盖）
+
+- 🔹 OOM 的 ART 投递机制与预分配 OOM 对象兜底
+- 🔹 Java Heap OOM 的错误字段、产生路径与治理方向
+- 🔹 Native 内存 OOM、线程数 OOM、FD 泄漏 OOM 与虚拟内存耗尽的排查入口
+- 🔹 OOM 兜底、安全降级与大型 App 内存预算管理
+
+### OpenClaw 加工指引
+
+> 锚点是最低覆盖要求，review 时需要确认每个锚点都有对应正文和验证标注。
+<!-- outline-end -->
+
+Android 应用遇到的 OutOfMemoryError 并不只有"堆内存不够"这一种。按照错误来源，可以分成两类：ART 虚拟机自身的堆限制（256 MB / 512 MB growth_limit），和 Linux 进程层面的虚拟内存、FD、线程数限制。两类 OOM 的约束来源不同，排查路径也不同——归类是治理的第一步。
+
+本节从 OOM 的产生路径入手，逐类讲解 Java Heap OOM、Native 内存 OOM、线程数 OOM、FD 泄漏 OOM、虚拟内存空间耗尽的排查思路和治理策略。
 
 ## OOM 的投递机制
 
@@ -51,7 +73,7 @@ ART 里所有 OutOfMemoryError 最终都经过 `Thread::ThrowOutOfMemoryError`�
 
 一个典型的 Java Heap OOM 错误信息如下：
 
-```
+```text
 java.lang.OutOfMemoryError: Failed to allocate a 48 byte allocation with 3610680 free bytes
 and 3526KB until OOM, target footprint 536870912, growth limit 536870912;
 giving up on allocation because <1% of heap free after GC.
@@ -68,7 +90,7 @@ giving up on allocation because <1% of heap free after GC.
 
 Java 层的 `new` 操作符进入 ART 后走到 `Heap::AllocObjectWithAllocator`（`art/runtime/heap.cc`）。分配失败时，ART 发起一次强力 GC（`AllocateInternalWithGc`），如果 GC 后仍然分配不了，进入 `Heap::ThrowOutOfMemoryError`：
 
-```
+```cpp
 // art/runtime/heap.cc 简化逻辑
 void Heap::ThrowOutOfMemoryError(Thread* self, size_t byte_count,
                                   AllocatorType allocator_type) {
@@ -115,7 +137,7 @@ Native 层的 OOM 发生在 `malloc`、`mmap` 等 Linux 内存分配 API 返回�
 
 `NewStringUTF` 在构造字符串时，如果长度超过 `INT_MAX`，即使内存空间充足也会抛出 OOM：
 
-```
+```cpp
 // art/runtime/jni_internal.cc 简化
 if (utf16_length > std::numeric_limits<int32_t>::max()) {
   soa.Self()->ThrowOutOfMemoryError(
@@ -126,9 +148,9 @@ if (utf16_length > std::numeric_limits<int32_t>::max()) {
 
 **Unsafe.allocateMemory**
 
-`sun.misc.Unsafe` 的 `allocateMemory` 底层调用 `malloc`。Gson 在反序列化没有空参构造函数的类时会走这条路径。`malloc` 返回 `nullptr` 时，ART 抛出 `"native alloc"` OOM：
+`sun.misc.Unsafe` 的 `allocateMemory` 底层调用 `malloc`。部分反射或序列化框架会通过 Unsafe 家族 API 绕过构造流程，但这里需要区分 `allocateMemory` 与 `allocateInstance` 两条路径。[需确认: Gson 无空参构造函数路径是否应归为 `Unsafe.allocateInstance`，以及该路径是否会触发本文所述 `"native alloc"` OOM。] `malloc` 返回 `nullptr` 时，ART 抛出 `"native alloc"` OOM：
 
-```
+```cpp
 // art/runtime/openjdkjvm/OpenjdkJvm.cc 简化
 void* mem = malloc(malloc_bytes);
 if (mem == nullptr) {
@@ -160,7 +182,7 @@ Native 内存管理的详细优化策略详见 23.3 节。
 
 `CreateNativeThread` 的错误处理区分两种失败原因：
 
-```
+```cpp
 // art/runtime/thread.cc 简化
 std::string msg(child_jni_env_ext.get() == nullptr ?
     StringPrintf("Could not allocate JNI Env: %s", error_msg.c_str()) :
@@ -184,7 +206,7 @@ soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 
 定期读取 `/proc/pid/status` 的 Threads 字段：
 
-```
+```text
 Threads:	387
 ```
 
@@ -199,11 +221,11 @@ Threads:	387
 
 ## FD 泄漏导致的 OOM
 
-Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket、甚至无法创建新线程（`pthread_create` 内部需要分配 FD 给 epoll）。
+Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket，也可能让后续需要 epoll、pipe 或 socket 的初始化步骤失败。[需确认: `pthread_create` 与 FD 耗尽的直接因果链需要 Task9 复核；epoll FD 通常来自 Looper 初始化，而不是 `pthread_create` 本身。]
 
 ### 典型崩溃堆栈
 
-```
+```text
 signal:6 (SIGABRT), code:-6 (SI_TKILL)
 FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 ```
@@ -224,7 +246,7 @@ FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 
 **第一步：读取 `/proc/pid/fd` 目录**
 
-```
+```kotlin
 val fdFile = File("/proc/${Process.myPid()}/fd/")
 val files = fdFile.listFiles()
 // files.size 即为当前 FD 总数
@@ -232,7 +254,7 @@ val files = fdFile.listFiles()
 
 对每个 FD 调用 `Os.readlink()` 获取指向路径：
 
-```
+```text
 socket:[12345]    → 网络连接
 pipe:[789]        → 管道
 anon_inode:[...]  → Looper / InputChannel
@@ -245,7 +267,7 @@ anon_inode:[...]  → Looper / InputChannel
 
 当 FD 数量监控无法定位到具体泄漏点时，通过 PLT Hook 拦截 `open`、`socket`、`pipe`、`dup`、`epoll_create` 等 FD 创建函数：
 
-```
+```cpp
 // 使用 bhook 拦截 open 函数
 typedef int(*open_type)(char*, int, int);
 int proxy_open(char* path, int flags, int mode) {
@@ -288,7 +310,7 @@ int proxy_open(char* path, int flags, int mode) {
 
 ### 治理方向
 
-- 迁移到 64 位：根本解决虚拟地址空间限制。
+- 迁移到 64 位：从地址空间上解决 32 位进程的虚拟地址上限。
 - 减少线程数：线程栈是虚拟内存的大头消费者。合并线程池、使用协程替代线程。
 - 减少 so 库数量：每个 so 的代码段 + 数据段都要占用虚拟地址空间。动态合并 or 按需加载。
 - 调整 `malloc` 参数：`mallopt(M_PURGE, 1)` 释放空闲 arena 的物理页，减少虚拟内存碎片。
@@ -305,7 +327,7 @@ int proxy_open(char* path, int flags, int mode) {
 
 OOM 是 `Error` 不是 `Exception`，默认的 `UncaughtExceptionHandler` 会终止进程。注册自定义 Handler 后，可以拦截 OOM 并做降级处理：
 
-```
+```kotlin
 Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
   if (throwable is OutOfMemoryError) {
     // 记录当时的内存状态
@@ -328,7 +350,7 @@ Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
 
 对子线程的 Native Crash（包括 SIGSEGV、SIGABRT），可以通过 PLT Hook 拦截 `pthread_create`，在执行函数入口调用 `sigsetjmp` 设置安全点。当信号处理函数收到 crash 信号时，调用 `siglongjmp` 跳回安全点：
 
-```
+```cpp
 static void* pthread_wrapper(void* arg) {
   ThreadArgs* args = (ThreadArgs*)arg;
   if (sigsetjmp(args->env, 1)) {

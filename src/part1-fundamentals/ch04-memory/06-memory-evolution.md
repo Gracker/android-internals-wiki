@@ -3,7 +3,7 @@ status: ready-for-review
 title: 内存相关的版本演进
 chapter: '4.6'
 section: '4.6'
-reviewed_date: '2026-05-07'
+reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-07'
@@ -59,15 +59,13 @@ related_chapters:
 - '2.9'
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
-review_count: 6
-pipeline_stage: task6_pending
-task6_state: pending
+review_count: 7
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: '2026-05-07T03:07:54+08:00'
-last_task6_review_log: logs/review/2026-05-07-03-review.md
-task6_review_notes: 2026-05-07 Task6 03:07：pass-light-edit。小修 6 处：补充代码块用途句，补齐 PSS
-  公式代码块语言标记，清理 ASYMM 段禁用句式与 frontmatter 禁用词；无新增 Task2B 回炉项。因 Task9 仍为 needs-rework
-  且 queue 有既有 pending 条目，未自动晋升。
+last_task6_at: '2026-05-12T18:02:31+08:00'
+last_task6_review_log: logs/review/2026-05-12-18-review.md
+task6_review_notes: '2026-05-12 Task6 18:02：pass-light-edit。L1/L2 小修 10 处：去第一人称/读者直呼、修正限制句式、删除编辑口吻；未新增回炉项。Task9 仍 pending/needs-rework，未自动晋升。'
 task9_state: pending
 task9_result: needs-rework
 last_task9_at: '2026-05-07T02:20:00+08:00'
@@ -115,17 +113,17 @@ last_task9_review_log: logs/deep-review/2026-05-07-02-deep-review.md
 
 ## 为什么要了解内存相关的版本演进
 
-如果我们在日常工作中需要分析来自不同 Android 版本设备的 Trace，我们会发现一个让人困惑的现象：同样的内存分配模式，在 Android 8.0 的设备上 GC 暂停可能只有 2ms，但在 Android 6.0 的设备上却高达 30ms。同样是加载一张大图，在 Android 7.1 上 Java 堆直接爆了，在 Android 8.0 上却风平浪静。
+日常分析来自不同 Android 版本设备的 Trace 时，一个现象很容易误导判断：同样的内存分配模式，在 Android 8.0 的设备上 GC 暂停可能只有 2ms，但在 Android 6.0 的设备上却高达 30ms。同样是加载一张大图，在 Android 7.1 上 Java 堆直接 OOM，在 Android 8.0 上却可能不触发 Java 堆限制。
 
-原因在于 Android 在每个大版本中都持续调整内存管理。有些改动是底层架构级的（比如 ART 替代 Dalvik），有些是分配策略级的（比如 Bitmap 像素数据搬家），有些是安全增强型的（比如 Scudo 和 MTE）。如果你不了解这些变化的脉络，拿到一份旧设备的 Trace 时可能会做出错误的判断——把系统行为误认为是应用问题，或者反过来。
+原因在于 Android 在每个大版本中都持续调整内存管理。有些改动是底层架构级的（比如 ART 替代 Dalvik），有些是分配策略级的（比如 Bitmap 像素数据搬家），有些是安全增强型的（比如 Scudo 和 MTE）。如果不了解这些变化的脉络，拿到一份旧设备的 Trace 时可能会做出错误的判断——把系统行为误认为是应用问题，或者反过来。
 
-本节的目标是把这些散落在各版本中的内存相关变更串成一条清晰的演进线。读完之后，我们应该能回答：给定一个 Android 版本和一种内存现象，这是该版本的正常行为还是异常？这个版本的内存子系统与更新版本相比有哪些关键差异？以及，升级到新版本后，App 需要做哪些适配？
+本节把这些散落在各版本中的内存相关变更串成一条清晰的演进线。读完之后，应能回答：给定一个 Android 版本和一种内存现象，这是该版本的正常行为还是异常？这个版本的内存子系统与更新版本相比有哪些关键差异？升级到新版本后，App 需要做哪些适配？
 
 [已验证: 官方文档 source.android.com/docs/core/perf/art-management]
 
 ## Android 5.0：ART 替代 Dalvik，GC 效率大幅提升
 
-Android 5.0 Lollipop 是 Android 内存管理的一次重要分水岭：ART（Android Runtime）正式替代了自 Android 诞生以来一直使用的 Dalvik 虚拟机。这个替换影响的不只是"运行速度"，还改变了 Java 堆的分配策略和垃圾回收机制。
+Android 5.0 Lollipop 是 Android 内存管理的一次重要分水岭：ART（Android Runtime）正式替代了自 Android 诞生以来一直使用的 Dalvik 虚拟机。这个替换的影响范围超过"运行速度"，还改变了 Java 堆的分配策略和垃圾回收机制。
 
 ### Dalvik 的 GC 有多慢
 
@@ -147,7 +145,7 @@ ART 的 GC 设计从一开始就瞄准了 Dalvik 的两个核心问题：暂停�
 
 不过 CMS 仍然有一个关键缺陷：它是非移动式的（non-moving）。标记-清除不会整理内存碎片。长时间运行的应用，堆中的空闲空间可能很多但都是碎片化的，导致无法分配大对象而触发更频繁的 GC，形成恶性循环。Android 8.0 引入 Concurrent Copying GC 后，这个问题才有了系统级解决路径。
 
-关于 ART 内存管理的完整细节（堆结构、GC 策略、对象分配路径），我们在 4.3 节「ART 虚拟机内存管理」中已经深入展开，这里不再重复。本节重点关注的是"版本之间的变化"本身。
+关于 ART 内存管理的完整细节（堆结构、GC 策略、对象分配路径），4.3 节「ART 虚拟机内存管理」已经展开，这里不再重复。本节重点关注"版本之间的变化"本身。
 
 AOSP 源码路径：
 - ART CMS GC：`art/runtime/gc/collector/concurrent_mark_sweep.cc`
@@ -175,7 +173,7 @@ AOSP 源码路径：
 
 **Java 堆的"天花板"变了。** 之前 Bitmap 像素数据计入 `dalvikHeapSize`，受 `Runtime.getRuntime().maxMemory()` 限制。迁移后，Bitmap 不再占用 Java 堆配额。同样大小的 Java 堆，可以容纳更多的 Java 对象（或者说，不容易因为 Bitmap 而触发 Java OOM）。
 
-**内存统计口径变了。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看，我们会发现 `Native Heap` 部分增大了。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果 App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
+**内存统计口径变了。** 虽然 Bitmap 不在 Java 堆了，但它仍然占用进程的 PSS（Proportional Set Size）。通过 `dumpsys meminfo` 查看时，`Native Heap` 部分会增大。一个常见的错误是：开发者通过 `Runtime.getRuntime().freeMemory()` 判断内存是否紧张，但在 Android 8.0+ 上，这个方法只反映 Java 堆的情况，完全不包含 Bitmap 占用的 Native 内存。如果 App 有大量图片，可能 Java 堆看起来还很充裕，但进程整体内存已经接近系统限制。
 
 **回收机制的变更。** Native 堆的 Bitmap 不再由 Java GC 直接回收。Android 8.0 引入了 `NativeAllocationRegistry` 机制：创建 Bitmap 时，将一个 Native 回收函数注册到 Java 层的 Cleaner（基于虚引用）。当 Java Bitmap 对象被 GC 回收时，Cleaner 触发 Native 回收函数，最终通过 `free()` 释放像素数据。这比 Android 7.0 之前使用的 Finalizer 机制更稳定、更可预测。
 
@@ -208,7 +206,7 @@ AOSP 源码路径：
 
 ## Android 8.0–15：GC 从 Concurrent Copying 演进到 Concurrent Mark-Compact
 
-我们在 4.3 节中详细解析了 ART 的 CC GC 机制，这里聚焦于"版本差异"这个维度——从 CMS 到 CC 的跨越，以及在 Android 10 上的进一步优化。
+4.3 节已经详细解析 ART 的 CC GC 机制，这里聚焦"版本差异"——从 CMS 到 CC 的跨越，以及 Android 10 上的进一步优化。
 
 ### Android 8.0：CC GC 的核心改进
 
@@ -236,14 +234,14 @@ Android 10 在 CC GC 的基础上进一步完善了分代垃圾回收。ART 将 
 
 分代策略大幅减少了 Full GC 的频率。在 120Hz 设备上，帧间隔只有 8.3ms，1-3ms 的 Young GC 暂停通常不会导致丢帧。即使偶尔发生，也只是丢一帧，用户几乎感知不到。但 Android 7.0 时代的 CMS GC 在同样的场景下，Full GC 可能暂停 10-50ms，在 120Hz 设备上意味着连续丢 6 帧以上。
 
-在 Perfetto 中，我们可以通过 `art_gc` counter 观察这些变化。Android 10+ 的设备上，我们会看到大量短暂的、频率稳定的 Young GC 活动（每 2-5 秒一次），而 Full GC 非常罕见。如果我们在 Android 10+ 的设备上仍然看到频繁的 Full GC，那几乎可以确定是应用存在内存问题（泄漏或过度分配）。
+在 Perfetto 中，可以通过 `art_gc` counter 观察这些变化。Android 10+ 的设备上，常见的是大量短暂、频率稳定的 Young GC 活动（每 2-5 秒一次），Full GC 非常罕见。如果在 Android 10+ 的设备上仍然看到频繁的 Full GC，基本可以判断应用存在内存问题（泄漏或过度分配）。
 
 [已验证: AOSP android-15.0.0_r1, art/runtime/gc/collector/concurrent_copying.cc]
 [来源: research-feed 2026-03-31-11-ch04-art-generational-gc.md]
 
 ### Android 15：UFFD 驱动的 Mark Compact 路径进入 AOSP
 
-到了 Android 15，ART 源码里已经能看到基于 `userfaultfd` 的 Mark Compact / CMC 路径。这个版本适合写成“UFFD 驱动的 Mark Compact 已进入 AOSP”。不要直接下“collector 已完全切换”的结论，也不要把 Android 15 和 Android 16 QPR2+ 之后的 Generational CMC 对外口径混在一起。
+到了 Android 15，ART 源码里已经能看到基于 `userfaultfd` 的 Mark Compact / CMC 路径。这说明 AOSP 已具备 UFFD 驱动的 Mark Compact 实现路径，但不等于所有设备已经完全切换到这个 collector；讨论版本边界时，也要把 Android 16 QPR2+ 之后官方明确对外说明的 Generational CMC 分开。
 
 这条路径把对象迁移和应用线程继续运行拆到页级别协调。GC 线程压缩对象时，如果应用线程访问到尚未整理完成的页，内核会把 fault 交给 ART 处理，ART 先整理目标页，再把控制权交还给应用线程。这里讨论的是 collector 实现变化，分代回收思路本身没有消失。
 
@@ -328,7 +326,7 @@ AOSP 源码路径：
 
 ## 进程内存限制与 largeHeap 策略的版本演进
 
-了解了各个子系统（GC、Bitmap、Native allocator）的版本变化后，我们来看一个更宏观的维度：Android 在各版本中是如何调整进程内存限制和 largeHeap 策略的。这直接决定了你的 App 能用多少内存，以及超出限制后会发生什么。
+了解各个子系统（GC、Bitmap、Native allocator）的版本变化后，再看一个更宏观的维度：Android 在各版本中如何调整进程内存限制和 largeHeap 策略。这直接决定了 App 能用多少内存，以及超出限制后会发生什么。
 
 ### 常规堆限制（normal heap）
 
@@ -621,7 +619,7 @@ MGLRU 的核心改进是把页回收决策从被动扫描变为按代分级。�
 
 ## 版本演进速查表
 
-为了方便日常查阅，我们把本节覆盖的所有内存相关版本变化汇总成一张表：
+下表汇总本节覆盖的所有内存相关版本变化：
 
 | 版本 | 变更 | 影响 |
 |---|---|---|
