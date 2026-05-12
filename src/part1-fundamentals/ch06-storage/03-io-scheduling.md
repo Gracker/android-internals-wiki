@@ -15,18 +15,19 @@ tags:
 - linux
 - android
 - research
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task9_result: ''
-task2b_state: fixed
+task9_state: reviewed
+task9_result: needs-rework
+task2b_state: pending
 task2b_result: fixed
-last_task9_at: '2026-04-19T23:59:59+08:00'
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-19'
+last_task9_at: '2026-05-12T19:58:00+08:00'
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-20'
 task6_result: pass-light-edit
+task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 2；Android 16/17 io_uring/FUSE、dm-verity、cgroup v2 io 权重需补一手版本与源码证据。'
 ---
 
 

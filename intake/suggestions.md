@@ -239,3 +239,22 @@
 - **问题**：`Thread.getId()` 与 `Process.setThreadPriority()` 的用法可能不可靠；关键启动线程 `-2 ~ -4` 的可设置范围和权限边界需要核对。
 - **建议**：Task9 对照 Android 线程优先级 API / 常量确认；必要时改为在线程执行体内设置优先级，并补充权限边界。
 - **review 日志**：logs/review/2026-05-12-19-review.md
+
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-05-12
+- **类型**：数据缺失/版本差异
+- **位置**：§WorkManager 2.10 与 Android 17 的协同优化
+- **问题**：`WorkManager 2.10 深度适配 DeliQueue` 和“掉帧率下降约 4%”缺 Jetpack WorkManager release note、源码提交或独立 benchmark。当前证据更像 Android 17 MessageQueue/DeliQueue 的系统级收益，不能直接归因到 WorkManager 2.10。
+- **建议**：补 AndroidX WorkManager 2.10 对 MessageQueue/DeliQueue 的具体改动链接与实验条件；补不到时改成“Android 17 DeliQueue 可降低密集 enqueue 场景的主线程锁等待”，避免把收益归到 WorkManager 版本。
+
+## [Task9 Deep Review] 6.3 I/O 调度与性能 — 2026-05-12
+- **类型**：源码准确性/边界说明
+- **位置**：§ionice：进程级 I/O 优先级
+- **问题**：示例直接写“将前台 App 设为 RT”的 `ionice -c 1`，但普通 App 不能在量产设备上任意设置 RT I/O class；该操作通常需要 root/userdebug 或系统权限。缺少权限边界会误导读者把调试命令当成应用侧优化手段。
+- **建议**：标明这是 rooted/userdebug/系统进程排查命令；应用侧应通过系统公开入口、后台任务策略和设备 task profile 间接影响 I/O，而不是自行 `ionice`。
+
+## [Task9 Deep Review] 6.4 存储相关的版本演进 — 2026-05-12
+- **类型**：数据缺失
+- **位置**：§16KB 页对齐、§EROFS 的核心技术优势
+- **问题**：`PSS 平均增加约 9%`、EROFS `24%-45%`、`App 启动最高提升 22.9%` 等数字缺设备、Android 版本、页面大小、分区大小、压缩算法、测试 workload 和原始链接。作为版本演进章节，这些数字会影响读者对收益/代价的判断。
+- **建议**：补官方或论文/演讲出处、测试条件和基线；无法补齐时保留方向性结论，删除固定百分比或标成待验证案例。

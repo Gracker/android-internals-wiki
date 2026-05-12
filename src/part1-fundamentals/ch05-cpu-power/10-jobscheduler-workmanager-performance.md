@@ -55,18 +55,17 @@ related_chapters:
 - '1.5'
 - '11.2'
 - '15.5'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
-task9_result: pass-tech-review
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-28'
-last_task9_at: '2026-04-28T02:30:00+08:00'
-task9_review_notes: '2026-04-28 task9 deep-review: pass-tech-review。P0 0 / P1 0 /
-  P2 2。自动晋升 finalized。'
+task9_result: needs-rework
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-05-12'
+last_task9_at: '2026-05-12T19:58:00+08:00'
+task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；API 37 PENDING_JOB_REASON_ENERGY_SCHEDULING 未在官方 JobScheduler 常量中出现，Power Check/WorkManager 2.10 量化口径需补证。'
 last_task2b_at: '2026-05-09T18:18:00+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
