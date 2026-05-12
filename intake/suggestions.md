@@ -384,3 +384,21 @@
 - **问题**：当前段落写成“官方 `Application` 文档里……”，但该常量/警告的官方引用路径可能应为 `Context` / `SharedPreferences` 相关文档；Task 6 不裁决真伪，已在正文加 `[需确认]` 标注。
 - **建议**：Task 9 按当前 Android Developers reference 复核来源路径和废弃说明；Task 2B 再统一正文措辞与验证标注。
 - **review 日志**：logs/review/2026-05-13-03-review.md
+
+## [Task9 Deep Review] 8.6 Kotlin Coroutine 性能实践 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L249、L592-L600 Kotlin 2.2 性能提升约 15%
+- **问题**：正文把 15% 写成已验证结论，但同章末尾又标注“待验证官方 benchmark 数据”。
+- **建议**：补充具体 benchmark 来源、测试条件和 kotlinx.coroutines/Kotlin 版本；未找到官方数据前删除 15% 或改为待验证。
+
+## [Task9 Deep Review] 13.6 线程 CPU 状态分析 — 2026-05-13
+- **类型**：交叉引用/SQL
+- **位置**：L495-L524 SQL 示例
+- **问题**：同章前文引用 Perfetto 官方 sched_slice 表，但后文 CPU 统计 SQL 使用 sched 表；CPU 利用率也未说明多核下可能超过 100% 或是否按核心数归一化。
+- **建议**：统一改用 sched_slice 或标注 sched 兼容视图；补充“单核百分比/总核归一化”两种口径。
+
+## [Task9 Deep Review] 14.3 内存分析工具 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L551 malloc hooks 性能 2-5 倍分配延迟
+- **问题**：“2-5 倍”缺少测试设备、分配大小、hook 行为和来源，且 hook 空实现与记录调用栈的开销差异很大。
+- **建议**：补充自测 microbenchmark 或 AOSP/官方说明；无数据前改为“会显著增加分配路径开销，需实测”。

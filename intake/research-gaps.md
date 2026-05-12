@@ -58,3 +58,35 @@
 ### 关联章节
 7.8、5.10、16.5
 
+
+## [2026-05-13] 8.6 Kotlin Coroutine 性能实践 — 知识盲区
+
+### 盲区描述
+ADPF hint session 与 Kotlin 协程线程迁移的工程化边界缺少一手验证。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 复核 PerformanceHintManager.Session 文档、setThreads 行为与 Android 15/16 flagged API 状态
+- 用 DefaultDispatcher/limitedParallelism/固定 Executor 三种模型做 TID 迁移 trace
+- 评估 reportActualWorkDuration 调用频率和 IPC 开销的实测数据
+
+### 关联章节
+5.9、8.6
+
+## [2026-05-13] 14.3 内存分析工具 — 知识盲区
+
+### 盲区描述
+MTE ASYMM 在 Android App memtagMode=async 下是否自动启用缺少源码闭环。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 定位 bionic/scudo/kernel 中 memtag async/asymm 选择路径
+- 区分 Arm 硬件 mte3 能力、/sys mte_tcf_preferred、Zygote runtimeFlags 和 manifest memtagMode
+- 补充 Pixel 8/9 或 Android 15/16 实机验证
+
+### 关联章节
+4.3、14.3
