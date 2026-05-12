@@ -36,7 +36,7 @@ related_chapters:
 - '14.3'
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-10'
+reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
 rework_date: '2026-04-21'
 rework_by: openclaw-task2b
@@ -45,15 +45,17 @@ last_polish_notes: 第2轮出版级精修：修复applicable_versions范围、AN
 polish_count: 2
 polish_date: '2026-04-10'
 polish_by: task2b-polish
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-11T23:28:02+08:00"
-review_notes: '2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。'
+review_notes: "2026-05-09 task2b rework: ASTC vs ETC2 带宽对比表、gpu_busy Android 16 标准化轨道。 | 2026-05-12 task6 review: needs-rework。L1/L2 小修 2 处；参考资料后源码调研补充未整合、实战案例缺一手 Trace/AGI 证据，已写入 queue。"
+review_type: task6-writing-quality-review
 ---
+
 
 
 # GPU 渲染深入
@@ -642,6 +644,8 @@ adb devices
 
 [待高爷补充：Perfetto Trace 截图——标注 GPU track 中每帧的渲染时间，以及与 VSync 周期的对应关系]
 
+[需补充素材: 这个实战案例包含设备、帧耗时、帧率和优化收益，但仍缺真实 Trace 截图、AGI 截图或可匿名复现的测试条件。需由 Task 2B 补齐一手证据；如果只是示意案例，应改成“示例场景”并删除固定收益数值。]
+
 ### 逐步分析
 
 接下来我们用 AGI 对滚动过程进行了 GPU 帧分析。AGI 的帧分析结果显示：
@@ -784,6 +788,8 @@ GPU 渲染并不是一个独立的环节，它是整个 Android 渲染管线中�
 - Snapdragon Profiler：<https://developer.qualcomm.com/software/snapdragon-profiler>
 - ARM Streamline：<https://developer.arm.com/tools-and-software/streamline-performance-analyzer>
 
+[需重写: 以下源码调研材料目前位于参考资料之后，需由 Task 2B 整合回「GPU 内存管理」或「GPU 性能问题系统性排查流程」等正文小节，或整理成附录；正文不应在参考资料后继续展开。]
+
 <!-- AIW-源码调研-2026-05-04 -->
 ## GPU 内存管理与对象边界（源码级补充）
 
@@ -911,7 +917,7 @@ AGI 是一个**离线分析工具**，工作模式：
 2. 保存为 `.gpitrace` 文件
 3. 在 AGI 桌面应用中打开分析
 
-这意味着：
+使用边界如下：
 - **AGI 不能用于实时生产监控**：无法在已上线应用上持续监控 GPU 状态
 - **AGI 适合开发阶段和预发布测试**：在受控环境中录制典型场景的 GPU Trace，再做深度分析
 - **AGI 需要可复现的场景**：GPU 问题是偶发的还是稳定的，决定了录制策略
@@ -1001,7 +1007,7 @@ Mali 的 `gpu_render_stages` 在 Perfetto 中通常比 Adreno 更细粒度——
 
 **第四步：修复 + 验证**
 - 修复后用 Perfetto 确认 GPU 时间下降
-- 用 AGI 确认修复的指标（shader 时间、带宽等）确实改善
+- 用 AGI 确认修复后的指标（shader 时间、带宽等）已经改善
 
 ### 系统性排查流程：CPU-GPU 同步 / 内存带宽 / 着色器编译
 

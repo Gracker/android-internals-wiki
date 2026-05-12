@@ -2065,6 +2065,87 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-12T22:15:00+08:00"
+    },
+    {
+      "id": "task6-20260512-23-2.10-structure-evidence",
+      "section": "2.10",
+      "section_title": "GPU 渲染深入",
+      "priority": 90,
+      "reason": "[review回炉] 参考资料后继续展开源码调研补充，正文/参考边界断裂；实战案例含具体收益但缺一手 Trace/AGI 证据。",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "参考资料之后的 AIW 源码调研补充",
+          "detail": "参考资料之后继续展开“GPU 内存管理与对象边界”“GPU 性能问题系统性排查流程”等正文内容，读者会误以为正文已结束，结构边界断裂。",
+          "suggestion": "Task 2B 将补充内容整合回对应正文小节，或整理为附录；参考资料之后不再继续正文叙述。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "实战案例：社交应用图片滚动中的 GPU 瓶颈定位",
+          "detail": "案例给出设备、GPU 时间、帧率和优化收益，但仍缺真实 Perfetto/AGI 截图、采样条件或匿名复现说明。",
+          "suggestion": "补一手 Trace/AGI 证据与测试条件；如仅为示意案例，改名为示例场景并删除固定收益数值。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T23:18:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-12-23-review.md",
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+      ]
+    },
+    {
+      "id": "task6-20260512-23-2.14-webgpu-benchmark-evidence",
+      "section": "2.14",
+      "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "priority": 90,
+      "reason": "[review回炉] WebGPU 90%-95% 吞吐量结论缺基准来源、设备、workload 和版本条件。",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "WebGPU / Dawn：另一条新接口",
+          "detail": "“Jetpack WebGPU 在 Android 17 上的计算管线基准测试达到 Vulkan 原生实现 90%-95% 吞吐量”缺具体 benchmark 来源、设备、库版本和 workload。",
+          "suggestion": "补官方/上游 benchmark 链接与测试条件；补不齐时改成定性描述，避免作为通用结论。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T23:18:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-12-23-review.md",
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md"
+      ]
+    },
+    {
+      "id": "task6-20260512-23-16.5-profilingmanager-source-anchor",
+      "section": "16.5",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 90,
+      "reason": "[review回炉] ProfilingManagerService 内部判断伪代码缺可核对 API 37 源码锚点，需 Task9 复核后再定稿。",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "补充：DeliQueue drain 触发机制和 Generational CMC gating 条件深度验证 / ProfilingManager 触发器内部判断逻辑",
+          "detail": "小节以源码级口吻给出 detectAnomalousBehavior() 伪代码和触发器行为差异，但缺少具体源码锚点、提交或官方 reference。",
+          "suggestion": "Task 9 复核 API 37 / AOSP preview 源码；无法核实时降级为示意流程，删除具体阈值与函数名。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T23:18:00+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-12-23-review.md",
+      "related_files": [
+        "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+      ]
     }
   ],
   "metadata": {

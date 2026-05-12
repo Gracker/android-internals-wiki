@@ -8,24 +8,29 @@ applicable_versions: "Android 17 (API 37)"
 last_verified: "2026-04-27"
 last_verified_against: "Android 17 behavior changes / API 36 JobScheduler pending reasons / API 37 JobScheduler reference / MessageQueue guidance / Activity configuration change guidance / static final reflection and JNI behavior"
 confidence: medium
-    task9_result: "needs-rework"
-    task9_reviewed_date: "2026-05-10"
-    task9_reviewed_by: "openclaw-task9"
-    last_task9_at: "2026-05-10T16:30:00+08:00"
-    task9_review_notes: "2026-05-10 Task9深度审计：P2级问题：DeliQueue同步屏障机制描述不完整，需查阅ConcurrentMessageQueue/MessageQueue.java中postSyncBarrier()实现"
 reviewed_at: "2026-05-11T19:05:00+08:00"
 sources:
   - type: official
     path: "https://developer.android.com/about/versions/17/behavior-changes-17"
+  - type: official
     path: "https://developer.android.com/about/versions/17/features"
+  - type: official
     path: "https://developer.android.com/about/versions/17/changes/messagequeue"
+  - type: official
     path: "https://developer.android.com/reference/android/os/ProfilingTrigger"
+  - type: official
     path: "https://developer.android.com/reference/android/app/job/JobScheduler"
+  - type: official
     path: "https://developer.android.com/privacy-and-security/security-config"
+  - type: official
     path: "https://developer.android.com/guide/practices/page-sizes"
+  - type: blog
     path: "https://android-developers.googleblog.com/2026/02/under-hood-android-17s-lock-free.html"
+  - type: blog
     path: "https://android-developers.googleblog.com/"
+  - type: blog
     path: "https://juejin.cn/post/7612812060795093002"
+  - type: blog
     path: "https://juejin.cn/post/7610233341305389099"
 tags: [android17, api37, behavior-changes, performance, deliqueue, generational-gc, profiling-manager, cloud-compilation]
 related_chapters: ["1.6", "1.13", "4.8", "5.7", "8.2", "14.7", "16.2", "16.4"]
@@ -33,22 +38,24 @@ created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+研究素材+AOSP结构+读者需求"
 gap_score: 20
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
 task9_result: ~
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-11T19:14:00+08:00"
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-08"
+reviewed_date: '2026-05-12'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-08"
-review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式;无新增 B 类回炉问题。"
+review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式;无新增 B 类回炉问题。 | 2026-05-12 task6 review: needs-rework。修复 frontmatter 缩进与 sources 列表、标题标点和 1 处禁用句式；ProfilingManager 源码级补充缺可核对锚点，已写入 queue。"
 last_task9_at: "2026-05-08T13:32:43+08:00"
 task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0;DeliQueue 源码结构与 Generational CMC gating 需回炉。"
+review_type: task6-writing-quality-review
 ---
+
 
 # 16.5 Android 17 (API 37) 性能行为变更与适配方法
 
@@ -62,7 +69,7 @@ task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 性能相关的核心变更可以按影响程度和适配优先级排序。
 
-### 和 Android 16 对比,哪些变化有公开量化数据
+### 和 Android 16 对比，哪些变化有公开量化数据
 
 | 项目 | Android 16 / API 36 | Android 17 / API 37 | 公开量化数据 |
 |:---|:---|:---|:---|
@@ -73,7 +80,7 @@ task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 ---
 
-## DeliQueue:20 年来 MessageQueue 的最大架构变更
+## DeliQueue：20 年来 MessageQueue 的最大架构变更
 
 ### 旧实现的问题
 
@@ -495,7 +502,7 @@ drain 的触发时机是 Looper 需要下一条消息时——按需触发,不�
 ```
 
 **与 Looper 主循环的集成**:
-drain 是 Looper 主循环的一部分,不是独立线程。`Looper.loop()` 每次迭代调用 `MessageQueue.next()`,`next()` 内部在堆为空或需要下一条消息时执行 drain。这意味着 drain 的执行在主线程上,如果 Treiber Stack 中积压了大量消息,drain 本身也会占用主线程时间——但这个成本通常远小于它消除的锁竞争收益。
+drain 是 Looper 主循环的一部分，不是独立线程。`Looper.loop()` 每次迭代调用 `MessageQueue.next()`，`next()` 内部在堆为空或需要下一条消息时执行 drain。也就是说，drain 的执行在主线程上，如果 Treiber Stack 中积压了大量消息，drain 本身也会占用主线程时间——但这个成本通常远小于它消除的锁竞争收益。
 
 AOSP 实现在此基础上增加了同步屏障和异步消息的专门处理路径。当存在 barrier 时,drain 过程会优先处理异步消息。
 
@@ -528,6 +535,8 @@ bool Runtime::useGenerationalCMC() const {
 - 通过 `adb shell device_config set runtime_native_boot use_generational_gc true` 强制开启
 - 需要 `persist.device_config.runtime_native_boot.use_generational_gc` 属性设置为 true
 - 必须在编译时启用 `kUseUserfaultfd` 特性
+
+[存疑: 本小节包含 `ProfilingManagerService` 内部判断伪代码和触发器行为差异，但当前只给出源码文件路径，缺少可核对的 API 37 源码锚点或官方文档。需 Task 9 复核；复核前应降级为“示意流程”，不要作为定稿实现细节。]
 
 ### ProfilingManager 触发器内部判断逻辑
 
