@@ -26,13 +26,18 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [contentprovider, startup, sdk-init, app-startup]
 related_chapters: ["21.1", "21.2", "1.10"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-12
+last_task9_at: 2026-05-12T20:54:00+08:00
+
 ---
 
 # ContentProvider 启动治理

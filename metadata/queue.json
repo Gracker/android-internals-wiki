@@ -1784,6 +1784,147 @@
       "added_by": "task6-review",
       "added_at": "2026-05-12T20:10:00+08:00",
       "original_review_log": "logs/review/2026-05-12-20-review.md"
+    },
+    {
+      "id": "task9-21-1-startup-measurement-api-20260512",
+      "section": "21.1",
+      "section_title": "启动全链路分析（App 视角）",
+      "priority": 95,
+      "title": "启动度量 API、SplashScreen/TTFD 与 Perfetto SQL 存在技术错误",
+      "reason": "[Deep Tech Review] reportFullyDrawn/SplashScreen、首帧埋点 API、Perfetto SQL schema 与 dex layout 工具描述存在源码/API 错误，需 Task2B 回炉修正。",
+      "description": "reportFullyDrawn/SplashScreen、首帧埋点 API、Perfetto SQL schema 与 dex layout 工具描述存在源码/API 错误，需 Task2B 回炉修正。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/01-startup-analysis.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码错误",
+          "severity": "P0",
+          "location": "L232-L234 TTFD、SplashScreen 与 FullyDrawnReporter",
+          "detail": "正文称 Android 12+ SplashScreen 会保持启动画面直到 reportFullyDrawn() 被调用或超时，并称 Android 15 平台为 reportFullyDrawn() 增加 FullyDrawnReporter。官方 launch-time 文档和 Activity.reportFullyDrawn() API 将 reportFullyDrawn 定位为诊断/优化上报；SplashScreen 生命周期由首帧、keepOnScreenCondition/退出动画控制。FullyDrawnReporter 属于 androidx.activity:activity，文档标注 Added in 1.7.0，不是 Android 15 平台 API。",
+          "suggestion": "改写为：TTFD 由 Activity.reportFullyDrawn() 或 AndroidX FullyDrawnReporter 协调上报；它不改变 SplashScreen 显示时机，也不应把启动画面消失等同 TTFD。补 androidx.activity 版本锚点。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L276-L278 first_frame 埋点 API",
+          "detail": "`Window.OnFrameRenderedListener` 不是 Android View/Window API；`View.getWindowVisibleDisplayFrame()` 只是同步返回可见区域 Rect，不是首帧回调。用这些作为 first_frame 埋点会误导实现。",
+          "suggestion": "替换为可验证 API：`ViewTreeObserver.OnPreDrawListener`/`OnDrawListener`（注意移除时机）、`ViewTreeObserver.registerFrameCommitCallback()`、`Window.OnFrameMetricsAvailableListener` 或 Macrobenchmark/Perfetto；分别说明它们观测的是 draw 前、draw、frame commit 还是 frame metrics。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L423-L462 Perfetto SQL 查询",
+          "detail": "Perfetto `slice` 表字段是 `name`，没有 `slice_name`；`slice` 表也没有 `process_name` 字段。示例 SQL 直接复制会执行失败。`thread_state` 查询同样需要通过 `thread.utid`/`process.upid` 约束线程和进程。",
+          "suggestion": "改成 `slice s JOIN thread_track tt ON s.track_id=tt.id JOIN thread t ON tt.utid=t.utid JOIN process p ON t.upid=p.upid`，用 `s.name` 和 `p.name` 过滤；`thread_state` 用 `utid` 与时间窗口过滤。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L100 ViewRootImpl 创建时机",
+          "detail": "正文写“onResume 中创建 ViewRootImpl”。AOSP android-16 ActivityThread.handleResumeActivity() 先 performResumeActivity() 执行 Activity.onResume()，随后在 WindowManager.addView()/WindowManagerGlobal.addView() 中 new ViewRootImpl 并 setView。创建 ViewRootImpl 不是 Activity.onResume 回调内部行为。",
+          "suggestion": "改成“onResume 返回后，ActivityThread 在 handleResumeActivity 的 addView 阶段创建 ViewRootImpl，并由 setView 触发后续 traversal 调度”。"
+        },
+        {
+          "type": "版本差异/源码错误",
+          "severity": "P1",
+          "location": "L490 Dex Layout 工具链",
+          "detail": "正文把 `retrace` + `profile` 写成 Android Dex Layout 优化工具。`retrace` 是 R8/ProGuard 混淆堆栈还原工具，不参与 dex layout。",
+          "suggestion": "改为 Baseline Profile / ART profile-guided compilation / profman / dex layout 优化，并标注 AGP、R8 与 ART 版本边界；删除 `retrace`。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T20:54:00+08:00"
+    },
+    {
+      "id": "task9-21-2-thread-priority-api-20260512",
+      "section": "21.2",
+      "section_title": "启动框架设计与任务编排",
+      "priority": 95,
+      "title": "启动线程优先级示例使用错误线程 ID，关键线程优先级边界不完整",
+      "reason": "[Deep Tech Review] ThreadFactory 中使用 Java Thread.getId() 调 Process.setThreadPriority() 与 Android 线程优先级 API 语义不符；关键启动线程 -4 权限边界需修正。",
+      "description": "ThreadFactory 中使用 Java Thread.getId() 调 Process.setThreadPriority() 与 Android 线程优先级 API 语义不符；关键启动线程 -4 权限边界需修正。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/02-startup-framework.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L362 IO 线程池 ThreadFactory 示例",
+          "detail": "`Process.setThreadPriority(t.getId(), Process.THREAD_PRIORITY_BACKGROUND)` 使用的是 Java Thread.getId()，不是 Linux tid；并且 ThreadFactory 返回时新线程尚未进入 run()。Android Process.setThreadPriority(int tid, int priority) 需要 Linux thread id。",
+          "suggestion": "把优先级设置移入线程执行体：在线程 run() 开始调用 `Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)` 或 `Process.setThreadPriority(Process.myTid(), priority)`；捕获 SecurityException/IllegalArgumentException 并保留降级。"
+        },
+        {
+          "type": "版本差异/权限边界",
+          "severity": "P1",
+          "location": "L407-L415 关键启动线程 Nice 值",
+          "detail": "正文建议关键启动线程使用 -2 ~ -4。AOSP Process.java 注释明确 `THREAD_PRIORITY_DISPLAY = -4` “Applications can not normally change to this priority”；应用侧可安全依赖的公开常量边界需要说明。",
+          "suggestion": "把应用侧建议收敛到 `THREAD_PRIORITY_DEFAULT`、`THREAD_PRIORITY_BACKGROUND`，谨慎使用 `THREAD_PRIORITY_FOREGROUND(-2)` 并说明可能抛 SecurityException；不要把 `DISPLAY(-4)` 写成普通 App 可配置策略。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T20:54:00+08:00"
+    },
+    {
+      "id": "task9-21-3-provider-first-draw-process-20260512",
+      "section": "21.3",
+      "section_title": "ContentProvider 启动治理",
+      "priority": 95,
+      "title": "首帧后调度示例与 Provider 默认进程判断存在 API/manifest 错误",
+      "reason": "[Deep Tech Review] OnDrawListener 内移除自身会触发 ViewTreeObserver 禁止路径；Provider 默认进程被误标为 :main。",
+      "description": "OnDrawListener 内移除自身会触发 ViewTreeObserver 禁止路径；Provider 默认进程被误标为 :main。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/03-contentprovider-optimization.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L227 首帧后调度示例",
+          "detail": "代码在 OnDrawListener.onDraw() 内调用 `removeOnDrawListener(this)`。AOSP ViewTreeObserver.removeOnDrawListener() 文档和实现都标明不能在 onDraw 内调用，android-16 中会构造 “Cannot call removeOnDrawListener inside of onDraw” 的 IllegalStateException（fatal 开关打开时直接抛出）。",
+          "suggestion": "改用 OnPreDrawListener 并在 onPreDraw 中移除；或在 onDraw 中只置标记，post 到下一轮消息再移除；需要 frame 已提交语义时用 `registerFrameCommitCallback()`。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P1",
+          "location": "L119 Provider manifest 审计脚本",
+          "detail": "脚本把缺省 `android:process` 记为 `:main`。官方 provider-element 文档说明缺省进程是应用默认进程，通常与 applicationId/package 同名；以冒号开头表示应用私有的额外进程。当前脚本会把默认主进程误报成一个不存在或不同语义的私有进程。",
+          "suggestion": "改为输出 `<default>` / `${applicationId}` / application 级 process；只有 manifest 显式写 `android:process=\":xxx\"` 时才显示冒号进程。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T20:54:00+08:00"
     }
   ],
   "metadata": {
