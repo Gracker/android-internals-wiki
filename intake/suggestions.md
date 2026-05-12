@@ -285,3 +285,10 @@
 - **位置**：L216 Jetpack App Startup “按依赖拓扑排序执行所有 Initializer”
 - **问题**：AndroidX AppInitializer 实现是先发现 metadata，再递归初始化 dependencies；它满足依赖先执行，但不是一个可调度的全局拓扑排序执行器，也没有并行、优先级或超时语义。当前表述容易和后文 Alpha/自研 DAG 调度器混淆。
 - **建议**：改成“递归初始化依赖并做环检测”，避免把 App Startup 描述成完整 DAG scheduler。
+
+## [Task6 Review] 1.9 Package Manager Service 与应用安装性能 — 2026-05-12
+- **类型**：需确认 / 需补充素材
+- **位置**：`## Android 16 云端编译与 SDM 机制深度分析`
+- **问题**：前文已声明 Android 16 云端编译 / SDM 缺少可交叉核对的一手资料，不下确定性结论；后文又以 AOSP 源码形式给出 `PackageSnapshotCompiler`、`SDM`、`CloudCompilerNetworkService` 等类名和调用链，并给出 30-50% / 15-25% 等性能数值。Task 6 不裁决真伪，已在正文加 `[存疑]` 标注。
+- **建议**：Task 9 先核对 AOSP / Android Developers / Source.android.com 是否存在这些类、接口、数值和版本边界；Task 2B 再按复核结果补证据、降级表述或删除无法验证的深度段。
+- **review 日志**：logs/review/2026-05-12-21-review.md

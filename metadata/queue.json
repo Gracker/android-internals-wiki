@@ -1925,15 +1925,38 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-12T20:54:00+08:00"
+    },
+    {
+      "id": "task6-1.9-cloud-compilation-evidence-2026-05-12-21",
+      "section": "1.9",
+      "priority": 90,
+      "title": "[review回炉] Android 16 云端编译 / SDM 段落证据边界冲突",
+      "description": "Task6 复审发现：前文已声明 Android 16 云端编译 / SDM 公开资料不足，不下确定结论；后文“源码调研”段又以 AOSP 源码形式给出 PackageSnapshotCompiler、SDM、CloudCompilerNetworkService 等类名/调用链，以及安装提升 30-50%、运行提升 15-25% 等数值。需 Task9 复核一手证据，Task2B 按复核结果补证据、降级为待验证素材或删除。",
+      "issue_type": "review-rework",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1.5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/09-package-manager.md",
+        "intake/suggestions.md",
+        "logs/review/2026-05-12-21-review.md"
+      ],
+      "completed_date": null,
+      "completed_reason": null,
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T21:56:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 76,
+    "total_entries": 82,
     "p0_count": 6,
-    "last_updated": "2026-05-12T19:58:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 35
+    "last_updated": "2026-05-12T21:56:00+08:00",
+    "updated_by": "task6-review",
+    "pending_entries": 41
   },
-  "last_updated": "2026-05-12T19:58:00+08:00",
-  "last_updated_by": "task9-deep-tech-review"
+  "last_updated": "2026-05-12T21:56:00+08:00",
+  "last_updated_by": "task6-review"
 }
