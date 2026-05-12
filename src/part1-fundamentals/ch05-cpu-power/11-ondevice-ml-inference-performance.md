@@ -1,8 +1,37 @@
 ---
-status: ready-for-review
 title: 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
 chapter: '5.11'
+section: '5.11'
+status: ready-for-review
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-12'
+reviewed_at: '2026-05-12T20:10:00+08:00'
+last_task6_at: '2026-05-12T20:10:00+08:00'
+task6_reviewed_date: '2026-05-12'
+review_round: 2
+task6_review_notes: '2026-05-12 task6 review: 移动 misplaced outline、补齐 section frontmatter、修禁用词和翻译腔动词；技术证据问题已写入 queue.json。'
+task9_state: pending
+task9_result: needs-rework
+task9_reviewed_date: '2026-04-20'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-04-20T08:57:48+08:00'
+task2b_state: pending
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
+last_verified: '2026-04-12'
+last_verified_against: AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu
+confidence: medium
+sources:
+- type: official
+  path: developer.android.com/ndk/guides/neuralnetworks
+- type: official
+  path: developer.android.com/ai/aicore
+- type: official
+  path: ai.google.dev/edge/litert/android/gpu
+- type: aosp
+  path: frameworks/ml/nn/
 tags:
 - android
 - ai
@@ -17,37 +46,51 @@ related_chapters:
 - '1.15'
 - '4.3'
 - '14.1'
-created_by: task2a-knowledge-gap
-created_date: '2026-04-08'
 drafted_date: '2026-04-08'
 drafted_by: openclaw-task2a
-last_verified: '2026-04-12'
-last_verified_against: AOSP android-17-beta3 + developer.android.com + ai.google.dev/edge/litert/android/gpu
-confidence: medium
-sources:
-- type: official
-  path: developer.android.com/ndk/guides/neuralnetworks
-- type: official
-  path: developer.android.com/ai/aicore
-- type: official
-  path: ai.google.dev/edge/litert/android/gpu
-- type: aosp
-  path: frameworks/ml/nn/
-reviewed_by: openclaw-task6
-reviewed_date: '2026-04-20'
-task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task6_state: pending
-task9_state: pending
-task9_result: needs-rework
-task2b_state: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-20'
-last_task9_at: '2026-04-20T08:57:48+08:00'
+created_by: task2a-knowledge-gap
+created_date: '2026-04-08'
 ---
 
-
 # 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 **端侧 AI 推理为什么会变成性能问题**：[已验证: 章节正文 + developer.android.com]
+  端侧推理会把 latency、内存、thermal 和硬件调度成本一起带回设备，本质是前台交互预算问题。
+
+- 🔹 **Android ML 硬件加速栈**：[已验证: developer.android.com/ndk/guides/neuralnetworks, ai.google.dev/edge/litert/android/gpu]
+  CPU / GPU / NPU / DSP 各有优缺点，公开 GPU Delegate 路径以 OpenCL / OpenGL ES 为主，NPU 可观测性依赖厂商实现。
+
+- 🔹 **NNAPI 的版本边界与迁移方向**：[已验证: developer.android.com/ndk/guides/neuralnetworks]
+  NNAPI 在 Android 8.1（API 27）引入，在 Android 15 被官方标记为 deprecated，对性能敏感 workload 建议迁移。
+
+- 🔹 **LiteRT / TFLite 管线与 Delegate 选择**：[已验证: ai.google.dev/edge/litert/android/gpu]
+  模型加载、Interpreter 初始化、Delegate 绑定、执行四阶段决定冷启动成本和稳态表现。
+
+- 🔹 **CompiledModel API V2 与 AOT 编译**：[已验证: ai.google.dev/edge/litert]
+  V2 架构通过 CompiledModel 将编译与运行分离，支持零拷贝 TensorBuffer 和 AICore 多租户调度；AOT 编译将模型预编译为硬件原生二进制，冷启动准备时间从 500ms+ 降至 50ms 以内。
+
+- 🔹 **Android 17 NPU 硬件特性声明**：[已验证: developer.android.com]
+  API 37 起访问 NPU 需声明 uses-feature，系统建立 NPU 意图防火墙并结合电量配额审计。
+
+- 🔹 **AICore 内存归属**：[已验证: developer.android.com/ai/aicore]
+  Android 16 ATTRIBUTE_WORK_TO_OTHER_APPS 机制将 Gemini Nano 内存成本计入发起方 App。
+
+- 🔹 **Perfetto 中的 ML 推理观测对照表**：[已验证: 章节正文]
+  默认 Perfetto 看到的是调度 / 频率 / 内存 / thermal，模型阶段 slice 需要 app 或 native instrumentation，NPU 额外依赖厂商 tracepoint 或 delegate 日志。
+
+- 🔹 **AICore / Gemini Nano 与模型优化的工程判断**：[已验证: developer.android.com/ai/aicore]
+  先看设备支持、冷启动准备、共享缓存、内存和 thermal，再谈模型版本和 benchmark 数字。
+
+### 扩展（可选深入）
+
+- 🔸 **LiteRT in Play Services 的部署取舍**：GMS 依赖、国内设备回退、运行时更新节奏
+- 🔸 **量化 / 裁剪 / 蒸馏的验证顺序**：模型大小、RSS、单次 latency、持续运行后的 thermal 变化
+<!-- outline-end -->
 
 过去三年，端侧 AI 推理从实验室技术变成了 Android 性能工程师必须面对的生产问题。当 App 把图像分类、OCR、语音理解或生成式模型塞进前台交互过程后，推理任务就会直接占用 CPU 时间片、拉高内存峰值，并持续推动 GPU / NPU / thermal 子系统进入高负载状态。它不只是“AI 功能能不能跑起来”的问题，更是掉帧、发热、后台进程被杀和续航下降会不会一起冒出来的问题。
 
@@ -55,7 +98,7 @@ last_task9_at: '2026-04-20T08:57:48+08:00'
 
 ## 为什么端侧 AI 推理是性能工程师的新课题
 
-云推理首先受延迟和可用性限制。网络一抖，前台交互就跟着抖；隐私敏感数据也未必适合上传云端。这两个因素把越来越多的推理任务推回到设备本地。
+云推理受延迟和可用性限制。网络一抖，前台交互就跟着抖；隐私敏感数据也未必适合上传云端。这两个因素把越来越多的推理任务推回到设备本地。
 
 但端侧推理也会把原本分散的成本压回手机上。模型权重、临时 tensor、delegate 初始化、硬件调度、持续高负载带来的热约束，都会直接映射到卡顿和功耗问题。在 Perfetto 里，我们通常先看到线程繁忙、频率抬升、内存水位变化或 thermal 回调，再顺着这些信号反推是不是推理过程本身出了问题。
 
@@ -72,6 +115,8 @@ Qualcomm 的公开路径从 Hexagon DSP 逐步演进到 HTA 和更新的 AI Engi
 在 Perfetto 里，NPU 工作负载没有统一的标准 track。部分厂商会暴露 vendor tracepoint 或 atrace 标签，更多时候我们只能通过 CPU 利用率下降、GPU 频率变化、thermal 状态和 delegate 日志做交叉判断。只看一个 counter，通常不够。
 
 ### Android 17 NPU 硬件特性声明
+
+[存疑: Android 17 NPU feature、意图防火墙、电量配额审计等表述需要 Task 9 复核官方 API/源码来源后再发布。]
 
 从 API 37 起，访问 NPU 必须在 `AndroidManifest.xml` 中声明 `<uses-feature android:name="android.hardware.ai.npu" />`，未声明的应用在运行时会收到异常。系统侧同时建立了 NPU 意图防火墙，结合电量配额审计控制 NPU 的使用频率和时长。排查 NPU 不可用的问题时需要检查三件事：清单是否声明了对应 feature、设备是否通过 `PackageManager.hasSystemFeature()` 返回 true、以及系统电量配额是否还允许 NPU 使用。NPU 路径的可用性取决于三者的交集，缺一不可。
 
@@ -130,6 +175,8 @@ XNNPACK 是 Google 的优化 CPU 推理库，针对 ARM NEON / SVE 指令集做�
 如果一份 benchmark 没写清模型版本、输入尺寸、batch size、线程数和量化策略，它只能帮助我们判断趋势，不能直接拿来做 SLA 或选型决策。
 
 ### CompiledModel API V2：LiteRT 的架构升级
+
+[存疑: CompiledModel API V2、AICore 路由和 AOT 耗时数据需要一手官方文档或源码锚点支撑。]
 
 LiteRT 正在从 V1 的 `Interpreter` + `Delegate` 模型向 V2 的 `CompiledModel` API 迁移。V1 架构里，Delegate 的选择和绑定发生在运行时，每次推理都要经过算子映射和内存对齐协商。V2 把编译和运行分成两个阶段：`CompiledModel` 在初始化时就为特定硬件完成模型编译，生成硬件原生二进制，后续推理直接在编译产物上执行。
 
@@ -210,7 +257,7 @@ AOT 的适用条件：
 
 ### 常见性能问题
 
-**NPU / NNAPI fallback 导致的 CPU jank**：模型中的一部分算子没有被当前 delegate 接住，执行路径退回 CPU。表面现象通常是 CPU 线程突然忙起来，GPU / NPU 预期负载却没有出现。先看 delegate 日志，再对照模型算子覆盖率，比单看平均 latency 更容易定位。
+**NPU / NNAPI fallback 导致的 CPU jank**：模型中的一部分算子没有被当前 delegate 覆盖，执行路径退回 CPU。表面现象通常是 CPU 线程突然忙起来，GPU / NPU 预期负载却没有出现。先看 delegate 日志，再对照模型算子覆盖率，比单看平均 latency 更容易定位。
 
 **模型加载阻塞主线程**：大模型的 FlatBuffer 映射、Interpreter 初始化和 delegate 绑定如果放在主线程，会直接拖慢冷启动或页面切换。排查时重点看初始化是否落在主线程，以及预热是否和首帧竞争。
 
@@ -234,43 +281,6 @@ AOT 的适用条件：
 - **§1.15 JNI/NDK 性能**：TFLite 的 C++ 推理引擎通过 JNI 调用，JNI 开销在高频推理场景下需要关注
 - **§14.1 Android Studio Profiler**：ML Profiler 可视化推理性能
 
-<!-- outline-start -->
-## 本节要点大纲
-
-### 锚点（必须覆盖）
-
-- 🔹 **端侧 AI 推理为什么会变成性能问题**：[已验证: 章节正文 + developer.android.com]
-  端侧推理会把 latency、内存、thermal 和硬件调度成本一起带回设备，本质是前台交互预算问题。
-
-- 🔹 **Android ML 硬件加速栈**：[已验证: developer.android.com/ndk/guides/neuralnetworks, ai.google.dev/edge/litert/android/gpu]
-  CPU / GPU / NPU / DSP 各有优缺点，公开 GPU Delegate 路径以 OpenCL / OpenGL ES 为主，NPU 可观测性依赖厂商实现。
-
-- 🔹 **NNAPI 的版本边界与迁移方向**：[已验证: developer.android.com/ndk/guides/neuralnetworks]
-  NNAPI 在 Android 8.1（API 27）引入，在 Android 15 被官方标记为 deprecated，对性能敏感 workload 建议迁移。
-
-- 🔹 **LiteRT / TFLite 管线与 Delegate 选择**：[已验证: ai.google.dev/edge/litert/android/gpu]
-  模型加载、Interpreter 初始化、Delegate 绑定、执行四阶段决定冷启动成本和稳态表现。
-
-- 🔹 **CompiledModel API V2 与 AOT 编译**：[已验证: ai.google.dev/edge/litert]
-  V2 架构通过 CompiledModel 将编译与运行分离，支持零拷贝 TensorBuffer 和 AICore 多租户调度；AOT 编译将模型预编译为硬件原生二进制，冷启动准备时间从 500ms+ 降至 50ms 以内。
-
-- 🔹 **Android 17 NPU 硬件特性声明**：[已验证: developer.android.com]
-  API 37 起访问 NPU 需声明 uses-feature，系统建立 NPU 意图防火墙并结合电量配额审计。
-
-- 🔹 **AICore 内存归属**：[已验证: developer.android.com/ai/aicore]
-  Android 16 ATTRIBUTE_WORK_TO_OTHER_APPS 机制将 Gemini Nano 内存成本计入发起方 App。
-
-- 🔹 **Perfetto 中的 ML 推理观测对照表**：[已验证: 章节正文]
-  默认 Perfetto 看到的是调度 / 频率 / 内存 / thermal，模型阶段 slice 需要 app 或 native instrumentation，NPU 额外依赖厂商 tracepoint 或 delegate 日志。
-
-- 🔹 **AICore / Gemini Nano 与模型优化的工程判断**：[已验证: developer.android.com/ai/aicore]
-  先看设备支持、冷启动准备、共享缓存、内存和 thermal，再谈模型版本和 benchmark 数字。
-
-### 扩展（可选深入）
-
-- 🔸 **LiteRT in Play Services 的部署取舍**：GMS 依赖、国内设备回退、运行时更新节奏
-- 🔸 **量化 / 裁剪 / 蒸馏的验证顺序**：模型大小、RSS、单次 latency、持续运行后的 thermal 变化
-<!-- outline-end -->
 
 ## 延伸阅读
 ### 从 NNAPI 到 LiteRT：Android NPU 性能优化全景

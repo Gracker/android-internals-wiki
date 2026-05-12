@@ -31,7 +31,8 @@
     "5.7",
     "4.6",
     "7.6",
-    "20.5"
+    "20.5",
+    "5.11"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -56,7 +57,8 @@
     "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
     "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
     "src/part2-performance/ch07-smoothness/06-case-studies.md",
-    "src/part5-app/ch20-stability/05-oom-governance.md"
+    "src/part5-app/ch20-stability/05-oom-governance.md",
+    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md"
   ],
   "review_summary": {
     "p0_issues": 7,
@@ -66,10 +68,10 @@
     "total_issues": 12
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 83,
-    "l3_issues": 8,
-    "l4_issues": 3,
-    "total_issues": 96,
+    "l1_l2_fixes": 97,
+    "l3_issues": 10,
+    "l4_issues": 4,
+    "total_issues": 113,
     "auto_promotions": 2
   },
   "issues_by_section": {
@@ -182,16 +184,16 @@
       "p3": 0
     }
   },
-  "total_review_sections": 25,
+  "total_review_sections": 26,
   "next_review_candidates": [
-    "20.1 应用稳定性全景",
-    "20.4 ANR 治理策略",
-    "2.10 GPU 渲染深入"
+    "1.9 Package Manager Service 与应用安装性能",
+    "2.10 GPU 渲染深入",
+    "2.14 图形 API 演进与选择策略"
   ],
   "ready_for_review": 55,
-  "last_updated": "2026-05-12T19:12:00+08:00",
+  "last_updated": "2026-05-12T20:10:00+08:00",
   "last_updated_by": "task6-review",
-  "task6_last_review": "2026-05-12T19:12:00+08:00",
+  "task6_last_review": "2026-05-12T20:10:00+08:00",
   "task9_last_review": "2026-05-12T18:24:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
@@ -361,6 +363,30 @@
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "last_task6_review_log": "logs/review/2026-05-12-19-review.md"
+    },
+    "5.1": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-12T20:10:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_review_log": "logs/review/2026-05-12-20-review.md"
+    },
+    "5.11": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-12T20:10:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_review_log": "logs/review/2026-05-12-20-review.md"
+    },
+    "1.5": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-12T20:10:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-12-20-review.md"
     }
   }
 }

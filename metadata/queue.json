@@ -236,7 +236,7 @@
     {
       "id": "task6-5.1-linux-scheduling-depth",
       "section": "5.1",
-      "priority": 75,
+      "priority": 90,
       "title": "Linux 调度器深度分析不足",
       "description": "L3级问题：缺少 EEVDF 调度器与 CFS 的详细对比分析、调度器配置调优的具体参数说明、实时调度在不同 Android 版本中的演进路径",
       "issue_type": "content-depth",
@@ -248,12 +248,18 @@
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
-      ]
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "original_review_log": "logs/review/2026-05-12-20-review.md",
+      "last_reviewed_by": "task6-review",
+      "last_reviewed_at": "2026-05-12T20:10:00+08:00"
     },
     {
       "id": "task6-5.1-linux-scheduling-practical",
       "section": "5.1",
-      "priority": 60,
+      "priority": 90,
       "title": "缺乏实际应用经验和决策指导",
       "description": "L4级问题：缺少作者在实际 Android 调度问题解决中的经验分享、如何在大型应用中进行调度优化的具体实践建议",
       "issue_type": "content-practical",
@@ -263,7 +269,13 @@
       "related_files": [
         "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
       ],
-      "estimated_hours": 3
+      "estimated_hours": 3,
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "original_review_log": "logs/review/2026-05-12-20-review.md",
+      "last_reviewed_by": "task6-review",
+      "last_reviewed_at": "2026-05-12T20:10:00+08:00"
     },
     {
       "id": "task9-4.3-art-memory-generational-cmc",
@@ -1702,6 +1714,76 @@
           "suggestion": "先复核 SDM 官方术语与 Play 分发文档；补签名校验、`.dm`/profile/odex-vdex-art 关系、fallback 条件和 Perfetto/安装日志观测点。"
         }
       ]
+    },
+    {
+      "id": "task6-review-5.1-20260512-oom-adj-placement",
+      "section": "5.1",
+      "section_title": "Linux 进程调度基础",
+      "priority": 90,
+      "title": "OOM Adj / TrimMemory 段落位置需确认",
+      "description": "L3 结构问题：常见问题之后插入的 OOM Adj / TrimMemory 源码段落更接近 §7.3 内存回收内容，削弱 Linux 调度主线。",
+      "issue_type": "content-structure",
+      "severity": "P2",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/01-linux-scheduling.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "常见问题与误区之后：Android OOM Adj 与 TrimMemory 机制",
+          "detail": "段落更像内存回收/进程优先级章节补充，不属于 Linux 调度主线。",
+          "suggestion": "Task 2B 判断是否移回 §7.3；若保留在 5.1，只保留与调度优先级/cgroup 相关的交叉引用。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T20:10:00+08:00",
+      "original_review_log": "logs/review/2026-05-12-20-review.md"
+    },
+    {
+      "id": "task6-review-5.11-20260512-tech-evidence",
+      "section": "5.11",
+      "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "priority": 90,
+      "title": "Android 16/17 ML 推理断言需要一手证据复核",
+      "description": "L3/技术证据问题：Android 17 NPU feature、CompiledModel API V2、AICore 内存归属、AOT 耗时等断言需要官方文档或源码锚点逐条绑定。",
+      "issue_type": "source-evidence",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "research-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "Android 17 NPU 硬件特性声明",
+          "detail": "NPU feature、意图防火墙、电量配额审计等说法缺少逐条官方/API 来源。",
+          "suggestion": "Task 9 先核对 Android 17 SDK/API 文档和 AOSP 变更，再由 Task 2B 改写。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "CompiledModel API V2 与 AOT 编译",
+          "detail": "CompiledModel V2、AICore 路由、500ms→50ms 等数值缺少一手资料和测试条件。",
+          "suggestion": "补官方 LiteRT/AICore 文档、设备/模型/量化条件；无法验证的数值改为待验证或删除。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T20:10:00+08:00",
+      "original_review_log": "logs/review/2026-05-12-20-review.md"
     }
   ],
   "metadata": {
