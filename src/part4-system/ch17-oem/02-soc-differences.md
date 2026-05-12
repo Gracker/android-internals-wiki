@@ -24,33 +24,25 @@ sources:
     path: "arm.com/products/silicon-ip-cpu"
   - type: web
     path: "多来源综合（web search 验证）"
-tags: ['qualcomm', 'mediatek', 'samsung', 'exynos', 'tensor', 'adreno', 'mali', 'xclipse', 'soc', 'cpu', 'gpu']
+tags: [qualcomm, mediatek, samsung, exynos, tensor, adreno, mali, xclipse, soc, cpu, gpu]
 related_chapters: ["5.1", "5.3", "5.4", "2.10", "17.1"]
 reviewed_by: openclaw-task6
-reviewed_date: "2026-05-07"
-task6_result: pass-light-edit
-pipeline_stage: task6_pending
-task9_state: pending
-    task9_result: "needs-rework"
-    task9_reviewed_date: "2026-05-10"
-    task9_reviewed_by: "openclaw-task9"
-    last_task9_at: "2026-05-10T16:30:00+08:00"
-    task9_review_notes: "2026-05-10 Task9深度审计：P1级问题：联发科全大核调度策略证据不足；P2级问题：GPU差异的trace表现描述不够具体"
-task9_result: ~
-task9_reviewed_date: "2026-05-07"
-task2b_state: fixed
-task6_state: revisiting
-last_task6_at: "2026-05-12T06:08:00+08:00"
-task6_result: pass-light-edit
-last_task6_review_log: "logs/review/2026-05-12-06-review.md"
-task6_review_notes: "2026-05-06 task6 review 11:12: pass-light-edit。清理禁用填充词、未标语言代码块和量化表达边界；L1/L2 通过，无新增 B 类大问题；queue 仍有既有 pending 技术项，转入 Task9 复审。 | 2026-05-06 task6 review 20:13：完成 L1/L2 小修；发现 Oryon ‘同源’表述仍与 Task9 风险项重叠，已写入 queue 交 Task2B/Task9。 | 2026-05-06 task6 review 23:21：清理结构性元叙述和编辑标记，修正频率轨道措辞，补 SQL 代码块解释，统一缓存/唤醒路径术语；无新增 Task2B 回炉项，待 Task9 复审。 | 2026-05-07 task6 review 05:05：复查 L1/L2 与锚点覆盖，正文无需改写；无新增回炉项，转 Task9 复审。"
+reviewed_date: "2026-05-13"
+task6_result: needs-rework
+task6_state: reviewed
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-05-07T07:28:39+08:00"
-last_task9_review_log: "logs/deep-review/2026-05-07-07-deep-review.md"
-task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。 | 2026-05-07 Task9 00:20：needs-rework。P0 1 / P1 1 / P2 1；Dimensity 9400 频率口径、Oryon cache 一手资料边界、Perfetto PMU 数据源需回炉。 | 2026-05-07 Task9 07:20：needs-rework。P0 0 / P1 1 / P2 1；Oryon L1/L2 cache 一手资料边界仍未闭合，Perfetto PMU 数据源仍写成 linux.ftrace pmu。 | 2026-05-10 Task2B：P0 SQL ucpu→cpu 修复完成，sched 表无 ucpu 字段，已替换为 cpu。"
-
+task9_reviewed_date: "2026-05-10"
+last_task9_at: "2026-05-10T16:30:00+08:00"
+task9_review_notes: "2026-05-10 Task9深度审计：P1级问题：联发科全大核调度策略证据不足；P2级问题：GPU差异的trace表现描述不够具体。此前 Task9 还记录 Oryon cache / Perfetto PMU / SQL 查询风险，Task2B 已部分修复，仍保留实机数据与素材整合回炉项。"
+task2b_state: pending
 task2b_result: fixed
-last_task2b_at: '2026-05-12T03:31:49'
+last_task2b_at: "2026-05-12T03:31:49+08:00"
+last_task6_at: "2026-05-13T02:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-13-02-review.md"
+task6_review_notes: "2026-05-13 Task6：修复 frontmatter YAML 结构；发现 sched_ext 调研素材仍以卡片形式堆在 FAQ 后，需 Task2B 整合到 OEM 调度策略叙述。"
 ---
 
 # SoC 平台差异
@@ -347,6 +339,8 @@ SoC 平台差异不是一个独立的机制，它影响着本书前面讲过的�
 
 **「Google Tensor 性能差」**——这是一个过度简化的判断。Tensor 在传统 CPU/GPU 基准测试中不如骁龙和天玑，但它的设计目标是端侧 AI 体验，而不是通用峰值性能。在 Pixel 设备上，语音识别、实时翻译和计算摄影的响应速度可能优于其他平台，因为这些工作负载被 TPU 加速了。评估 Tensor 需要看你关心的场景是什么。
 
+
+[需重写: 下面这段 sched_ext 调研素材仍是资料卡片，尚未融入“厂商调度策略差异”或“不同 SoC 上 Perfetto 数据差异”的叙述链路。建议 Task2B 按 Qualcomm / MediaTek / Google Pixel 三类 OEM 调度器整理成正文，并补充适用版本边界。]
 
 ### sched_ext 在 Android OEM 上的 BPF 调度器实现
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-07-sched-ext-oem-implementation.md

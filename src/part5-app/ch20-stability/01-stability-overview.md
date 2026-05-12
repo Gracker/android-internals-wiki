@@ -10,13 +10,13 @@ confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 0
 task2b_result: fixed
-reviewed_date: "2026-05-11"
+reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "revisiting"
+task6_state: "reviewed"
 task9_state: "pending"
 task2b_state: "fixed"
-pipeline_stage: "task6_pending"
+pipeline_stage: "task9_pending"
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -28,11 +28,31 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md"
 tags: [stability, crash, anr, oom, app-quality]
 related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
+last_task6_at: "2026-05-13T02:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-13-02-review.md"
+task6_review_notes: "2026-05-13 Task6：补齐 outline 块、补代码围栏语言、清理元叙述词；L1/L2 通过，无新增回炉项。"
 ---
 
 # 应用稳定性全景
 
-本章是应用稳定性治理的入口。先建立分类框架，把 Crash、ANR、OOM 三类问题在 Android 运行时中的位置讲清楚；再给出 Google Play 和行业通用的度量标准；最后把稳定性治理拆成一个可循环的操作流程。
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+
+- 🔹 Crash / ANR / OOM 的分类体系与进程退出原因
+- 🔹 Java Crash、Native Crash、ANR、OOM 的触发链路与观测入口
+- 🔹 Google Play Vitals 与团队内部稳定性指标
+- 🔹 稳定性治理流程：预防、发现、诊断、修复、验证
+- 🔹 采集方式对比与后续章节的衔接
+
+### 扩展（可选深入）
+
+- 🔸 稳定性治理的组织保障与发版门禁
+
+<!-- outline-end -->
+
+本章是应用稳定性治理的入口。先建立分类框架，把 Crash、ANR、OOM 三类问题在 Android 运行时中的位置讲清楚；随后给出 Google Play 和行业通用的度量标准；再把稳定性治理拆成一个可循环的操作流程。
 
 ## Crash / ANR / OOM：三类稳定性问题的分类体系
 
@@ -94,7 +114,7 @@ ANR 的治理思路与 Crash 不同。Crash 是"代码逻辑出错，需要修�
 
 OOM 在 Android 上有两层含义：
 
-**Java 堆 OOM**：分配入口是 `Heap::AllocObjectWithAllocator()`（`art/runtime/gc/heap.cc`），首先检查当前已分配内存加上新对象大小是否超过 `Runtime.maxMemory()` 限制。超过时进入 `AllocateInternalWithGc()` 触发 GC（根据内存压力选择 kGcCauseForAlloc 对应的 GC 类型），回收后重新检查空间；空间足够时经 `AllocObject()` → `AllocateObject()` 执行实际内存分配。如果 GC 后仍不够，尝试堆扩容（前提是未达到 `HeapGrowthLimit`，由 `dalvik.vm.heapgrowthlimit` 控制）。扩容后仍不够，才抛出 `OutOfMemoryError`。
+**Java 堆 OOM**：分配入口是 `Heap::AllocObjectWithAllocator()`（`art/runtime/gc/heap.cc`），先检查当前已分配内存加上新对象大小是否超过 `Runtime.maxMemory()` 限制。超过时进入 `AllocateInternalWithGc()` 触发 GC（根据内存压力选择 kGcCauseForAlloc 对应的 GC 类型），回收后重新检查空间；空间足够时经 `AllocObject()` → `AllocateObject()` 执行实际内存分配。如果 GC 后仍不够，尝试堆扩容（前提是未达到 `HeapGrowthLimit`，由 `dalvik.vm.heapgrowthlimit` 控制）。扩容后仍不够，才抛出 `OutOfMemoryError`。
 
 `Runtime.maxMemory()` 返回值取决于 Manifest 配置：未设置 `largeHeap` 时返回 `dalvik.vm.heapgrowthlimit`（通常 256MB ~ 384MB），设置 `android:largeHeap="true"` 时返回 `dalvik.vm.heapsize`（通常 512MB）。但 `largeHeap` 不等于无限分配——最终仍受物理内存和系统整体内存压力约束。
 
@@ -106,7 +126,7 @@ OOM 的特殊性在于，它抛出的是 `Error` 而非 `Exception`。Java 的�
 
 ### 三类问题的关系
 
-```
+```text
                     ┌──────────────┐
                     │  进程被杀     │
                     └──────┬───────┘
@@ -185,7 +205,7 @@ Google Play 的阈值是底线。团队内部的稳定性度量通常更细：
 
 把稳定性治理拆成五个阶段。每个阶段的目标和交付物不同，但它们构成循环：
 
-```
+```text
 预防 ──→ 发现 ──→ 诊断 ──→ 修复 ──→ 验证
   ↑                                    │
   └────────────────────────────────────┘
