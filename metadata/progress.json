@@ -183,5 +183,13 @@
     "22.3",
     "20.4"
   ],
-  "last_task2b_action": "回炉修复: 22.3(Strong Skipping版本修正, derivedStateOf纯函数条件, 迁移指南) + 20.4(ANR超时总表, BR超时细化, Watchdog区分, 预警章节)"
+  "last_task2b_action": "回炉修复: 22.3(Strong Skipping版本修正, derivedStateOf纯函数条件, 迁移指南) + 20.4(ANR超时总表, BR超时细化, Watchdog区分, 预警章节)",
+  "sections": {
+    "17.2": {
+      "last_task2b_at": "2026-05-12T03:31:49",
+      "task2b_result": "fixed",
+      "pending_p95": 0,
+      "last_fix_summary": "Oryon cache (shared→private L2), Dimensity migration (frequency correction), Tensor G4 (custom cores)"
+    }
+  }
 }

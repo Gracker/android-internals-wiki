@@ -401,11 +401,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "research-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
-      ]
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: Oryon L2 已修正为私有（非共享），更新待验证标注"
     },
     {
       "id": "task9-17.2-dimensity-scheduling-error",
@@ -418,11 +420,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
-      ]
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 全大核迁移描述修正——迁移更多发生在同性能级别核心间，频率不一定高于传统大小核"
     },
     {
       "id": "task9-17.2-tensor-core-error",
@@ -435,11 +439,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "research-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
-      ]
+      ],
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: Tensor G4 已修正为三星定制的 ARM 核心（非标准公版 Cortex）"
     },
     {
       "id": "task9-17.2-real-device-data",
@@ -634,13 +640,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "重复条目：文件已使用正确的 AOSP 路径（CombinedMessageQueue/ConcurrentMessageQueue），与已完成条目重叠"
     },
     {
       "id": "task9-16.5-api-version-error",
@@ -653,13 +659,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "重复条目：文件已标注待验证状态，与已完成条目重叠"
     },
     {
       "id": "task9-22.3-kotlin-version-error",
@@ -672,13 +678,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "重复条目：文件已修正为 Kotlin 2.0 起默认启用 Strong Skipping，与已完成条目一致"
     },
     {
       "id": "task9-22.3-pausable-compose-version-error",
@@ -691,13 +697,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "blocked",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "与已 blocked 条目 task9-22.3-pausable-comp-version-error 重复，Pausable Composition 默认启用版本无法通过现有素材验证，需高爷确认"
     },
     {
       "id": "task9-22.3-derivedstateof-conditions-error",
@@ -710,13 +716,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "重复条目：文件已补充 derivedStateOf 纯函数条件，与已完成条目一致"
     },
     {
       "id": "task9-22.3-strongskipping-version-error",
@@ -729,13 +735,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "重复条目：文件已修正 Strong Skipping 版本信息，与已完成同名条目一致"
     },
     {
       "id": "task9-17.2-oryon-cache-error",
@@ -748,13 +754,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "research-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: Oryon L2 已修正为私有（非共享），更新待验证标注"
     },
     {
       "id": "task9-17.2-dimensity-scheduling-error",
@@ -767,13 +773,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: 全大核迁移描述修正——迁移更多发生在同性能级别核心间，频率不一定高于传统大小核"
     },
     {
       "id": "task9-17.2-tensor-core-error",
@@ -786,13 +792,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "research-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "Task 2B 回炉修复: Tensor G4 已修正为三星定制的 ARM 核心（非标准公版 Cortex）"
     },
     {
       "id": "task9-16.5-source-path-error",
@@ -805,13 +811,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "重复条目：文件已使用正确的 AOSP 路径（CombinedMessageQueue/ConcurrentMessageQueue），与已完成条目重叠"
     },
     {
       "id": "task9-16.5-api-version-error",
@@ -824,13 +830,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "重复条目：文件已标注待验证状态，与已完成条目重叠"
     },
     {
       "id": "task9-16.5-deliqueue-type-error",
@@ -843,19 +849,19 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ],
-      "completed_date": null,
-      "completed_reason": null
+      "completed_date": "2026-05-12",
+      "completed_reason": "重复条目：文件已修正为 Treiber Stack + min-heap，与已完成同名条目一致"
     }
   ],
   "metadata": {
     "total_entries": 47,
     "p0_count": 7,
-    "last_updated": "2026-05-12T10:23:12.028646",
-    "updated_by": "task9-deep-tech-review"
+    "last_updated": "2026-05-12T03:31:49",
+    "updated_by": "task2b-content-processing-rework"
   }
 }

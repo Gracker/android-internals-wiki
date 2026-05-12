@@ -21,7 +21,12 @@ sources:
   - type: cubox
     path: "Cubox/华为-交互流畅体验设计-2025-02-18.md"
   - type: cubox
-    path: "Cubox/评估性能 - Android 开源项目 --- Evaluating Performance  - ...-2024-01-10.md"
+    path: "Cubox/评估性能 - Android 开源项目
+status: ready-for-review
+drafted_by: legacy-manual
+drafted_date: '2026-05-12'
+section: '08.01'
+--- Evaluating Performance  - ...-2024-01-10.md"
   - type: cubox
     path: "Cubox/Android Vitals - Tap Response Time 👉 - DEV Community-2022-01-17.md"
   - type: web
