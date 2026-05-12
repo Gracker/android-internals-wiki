@@ -52,7 +52,8 @@
     "21.8",
     "8.6",
     "13.6",
-    "14.3"
+    "14.3",
+    "21.9"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -99,7 +100,8 @@
     "src/part5-app/ch21-startup/08-startup-monitoring.md",
     "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md",
     "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
-    "src/part3-tools/ch14-other-tools/03-memory-tools.md"
+    "src/part3-tools/ch14-other-tools/03-memory-tools.md",
+    "src/part5-app/ch21-startup/09-startup-case-studies.md"
   ],
   "review_summary": {
     "p0_issues": 3,
@@ -109,10 +111,10 @@
     "total_issues": 8
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 183,
-    "l3_issues": 21,
+    "l1_l2_fixes": 200,
+    "l3_issues": 22,
     "l4_issues": 4,
-    "total_issues": 212,
+    "total_issues": 230,
     "auto_promotions": 4
   },
   "issues_by_section": {
@@ -333,18 +335,16 @@
       "p3": 0
     }
   },
-  "total_review_sections": 46,
+  "total_review_sections": 47,
   "next_review_candidates": [],
   "ready_for_review": 65,
-  "last_updated": "2026-05-13T04:17:00+08:00",
+  "last_updated": "2026-05-13T05:09:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-13T04:17:00+08:00",
-    "log": "logs/review/2026-05-13-04-review.md",
+    "at": "2026-05-13T05:09:00+08:00",
+    "log": "logs/review/2026-05-13-05-review.md",
     "sections": [
-      "21.2",
-      "21.3",
-      "21.8"
+      "21.9"
     ],
     "l1_l2_fixes": 17,
     "l3_l4_issues": 1,
@@ -692,6 +692,14 @@
       "task6_result": "needs-rework",
       "queue_priority": 90,
       "last_task6_review_log": "logs/review/2026-05-13-04-review.md"
+    },
+    "21.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-13T05:09:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_review_log": "logs/review/2026-05-13-05-review.md"
     }
   },
   "task2b_rounds": [
