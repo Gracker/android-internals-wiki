@@ -1163,7 +1163,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
@@ -1177,7 +1177,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-12T15:40:00+08:00"
+      "added_at": "2026-05-12T15:40:00+08:00",
+      "completed_date": "2026-05-12T23:39:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: SmallVector/12% 优化描述降级为[待验证]——AOSP android-16.0.0_r1 RefreshRateSelector.cpp 仍使用 std::map，未找到 SmallVector 替换和 12% 耗时下降证据"
     },
     {
       "id": "task9-2.18-gamma-compensation-evidence",
@@ -1190,7 +1192,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
@@ -1204,7 +1206,9 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-12T15:40:00+08:00"
+      "added_at": "2026-05-12T15:40:00+08:00",
+      "completed_date": "2026-05-12T23:39:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: Gamma 补偿段落降级为[待验证]——source.android.com ARR 文档未覆盖 Gamma 补偿 HAL 接口，重写为面板/OEM 实现差异说明"
     },
     {
       "id": "task6-4-3-review-rework-20260512-1615",
@@ -1630,7 +1634,7 @@
       "added_at": "2026-05-12T19:58:00+08:00",
       "assigned_to": "content-team",
       "estimated_hours": 2,
-      "status": "pending",
+      "status": "completed",
       "material_paths": [
         "intake/suggestions.md"
       ],
@@ -1644,7 +1648,9 @@
           "detail": "`PENDING_JOB_REASON_ENERGY_SCHEDULING` 未出现在官方 JobScheduler 公开常量列表；当前示例把该常量作为 API 37 确定能力使用。",
           "suggestion": "删除该常量或降级为待验证；若要表达能效/热/省电相关挂起，改用官方已公开的 `PENDING_JOB_REASON_DEVICE_STATE_THERMAL`、`PENDING_JOB_REASON_DEVICE_STATE_BATTERY_SAVER`、`PENDING_JOB_REASON_QUOTA` 等，并补 API level。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-12T23:39:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: PENDING_JOB_REASON_ENERGY_SCHEDULING 替换为官方已公开常量(THERMAL/BATTERY_SAVER/QUOTA)，删除不存在的 API 常量引用"
     },
     {
       "id": "task9-2026-05-12-6.3-android16-17-io-stack-evidence",
@@ -2151,8 +2157,8 @@
   "metadata": {
     "total_entries": 84,
     "p0_count": 8,
-    "last_updated": "2026-05-12T22:15:00+08:00",
-    "updated_by": "openclaw-task9",
+    "last_updated": "2026-05-12T23:39:00+08:00",
+    "updated_by": "openclaw-task2b",
     "pending_entries": 43,
     "updated_date": "2026-05-12"
   },

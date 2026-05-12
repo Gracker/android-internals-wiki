@@ -46,19 +46,19 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: task2b_pending
+pipeline_stage: task6_pending
 last_task9_at: '2026-05-12T15:40:00+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-12
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-09'
 task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
-last_task2b_at: '2026-05-09T14:40:00+08:00'
+last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-12-15-deep-review.md。'
@@ -207,7 +207,7 @@ SurfaceFlinger 不会在全量 Display Mode 里随意挑选。AOSP android-16.0.
 
 触摸和游戏模式会继续影响选择空间。触摸开始后，系统往往会更积极地把刷新率抬高，以保证滑动和动画的跟手感；Game Mode 可能收紧或放宽上限。分析 Trace 时，要把内容帧率、触摸状态、DisplayManager policy 和 SurfaceFlinger 的选择结果放在同一时间窗里看。
 
-`RefreshRateSelector::chooseRefreshRate()` 在 16KB 页设备上有额外的微架构优化。源码中将原本使用 `std::map` 存储候选刷新率的容器替换为向量化 `SmallVector`，提升了 TLB 局部性。这个替换直接受益于 16KB 页带来的更大页覆盖范围——同样的数据结构在 16KB 页下触发更少的 TLB miss。实测表明 `chooseRefreshRate` 的执行耗时在 16KB 页设备上降低了约 12%。这个优化对 App 层透明，但它意味着 SurfaceFlinger 在多图层、高帧率场景下做刷新率决策时能更快完成，减少了决策窗口对合成管线的挤压。
+[待验证] `RefreshRateSelector::chooseRefreshRate()` 在 16KB 页设备上是否存在 `SmallVector` 替换 `std::map` 的优化，以及对应的 TLB 局部性收益和 12% 耗时下降——AOSP android-16.0.0_r1 的 `RefreshRateSelector.cpp` 仍使用 `std::map<Key, DisplayModeIterator, KeyLess> ratesMap`，未能找到 SmallVector 替换或对应的 perf 数据。如有后续版本确认，再补回该段。
 
 [图：模式切换或升频示意图。标出触摸开始后 VSYNC-app 间隔从 16.67ms 收缩到 8.33ms，触摸结束后一段时间再回落。同步标出 SurfaceFlinger 的 refresh-rate selection slice。]
 
@@ -286,7 +286,7 @@ LIMIT 100;
 
 LTPO 面板可以把刷新率压到极低（1Hz 甚至更低），用于 AOD 或静态内容展示。但物理面板在极低刷新率下会出现亮度抖动——驱动电压在长间隔内漂移，导致相邻帧之间的亮度不一致。这种抖动在低亮度环境下更明显。
 
-Android 16 通过 Display HAL 引入了实时 Gamma 补偿。系统在每次 VSYNC 信号触发时，根据当前刷新率和面板的电压-亮度特性曲线，计算一个补偿值叠加到输出信号上。对 App 层来说，这个补偿是透明的，不需要做任何适配。如果在 Perfetto 里观察到低频模式下亮度相关的 counter 出现周期性波动，且波动频率与 VSYNC 周期一致，可能就是补偿机制在工作。
+[待验证] 部分面板/OEM 在低刷新率下通过硬件或固件层实现 Gamma 补偿，缓解驱动电压漂移导致的亮度抖动。source.android.com 的 ARR 文档只覆盖了 HWC3 `DisplayConfiguration.vrrConfig`、`vsyncPeriod`、`VrrConfig.minFrameIntervalNs`、`notifyExpectedPresent` 等 HAL 接口，未涉及实时 Gamma 补偿的 AIDL 字段或 Display HAL 接口定义。如果设备确实在低频模式下出现周期性亮度波动，可以先在面板厂商文档或 OEM HAL 实现中查找补偿逻辑，再决定是否需要在 Perfetto 中观察对应 counter。
 
 ## 版本演进要分两层看
 
