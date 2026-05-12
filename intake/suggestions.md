@@ -292,3 +292,15 @@
 - **问题**：前文已声明 Android 16 云端编译 / SDM 缺少可交叉核对的一手资料，不下确定性结论；后文又以 AOSP 源码形式给出 `PackageSnapshotCompiler`、`SDM`、`CloudCompilerNetworkService` 等类名和调用链，并给出 30-50% / 15-25% 等性能数值。Task 6 不裁决真伪，已在正文加 `[存疑]` 标注。
 - **建议**：Task 9 先核对 AOSP / Android Developers / Source.android.com 是否存在这些类、接口、数值和版本边界；Task 2B 再按复核结果补证据、降级表述或删除无法验证的深度段。
 - **review 日志**：logs/review/2026-05-12-21-review.md
+
+## [Task9 Deep Review] 4.1 Android 内存模型全景 — 2026-05-12
+- **类型**：版本验证/数据缺失
+- **位置**：frontmatter `last_verified_against`；正文 `[待补充]` 标记
+- **问题**：正文已包含 Android 17 app memory limits / MemoryLimiter:AnonSwap / TRIGGER_TYPE_ANOMALY，但验证基线仍主要写 AOSP android-16.0.0_r1；同时 dumpsys/Perfetto/Graphics/内存泄漏示例仍有截图或 Trace 样本待补充。
+- **建议**：补 Android 17 官方 behavior changes / ProfilingManager 触发式 profiling 来源；补样本时标注设备型号、Android 版本、page size、TraceConfig 数据源和采样周期。
+
+## [Task9 Deep Review] 8.8 Android 多媒体管线性能 — 2026-05-12
+- **类型**：数据缺失/观察边界
+- **位置**：L175-L178 AudioTimestamp；版本演进 Android 16 条目
+- **问题**：`AudioTimestamp` 未说明来自 `AudioTrack.getTimestamp()`，也未交代 HAL 时间戳精度边界；16KB page / Gralloc AIDL V2 对 4K/8K 编解码吞吐的收益缺公开 benchmark 支撑。
+- **建议**：补 AudioTrack timestamp API 与设备精度边界；16KB/Gralloc 收益改成 `[待验证]` 或补设备、内容、codec、分辨率、fps、TLB/CPU counter 对照数据。

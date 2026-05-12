@@ -10,10 +10,10 @@ drafted_date: '2026-04-06'
 gap_score: 16/20
 gap_source: AOSP结构+官方文档+读者需求
 last_task2b_at: '2026-05-10T10:26:46+08:00'
-last_task9_at: '2026-04-23T00:30:00+08:00'
+last_task9_at: '2026-05-12T22:15:00+08:00'
 last_verified: '2026-04-13'
 last_verified_against: AOSP android-17.0.0_r1 + androidx/media release
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 related_chapters:
 - '2.6'
 - '2.13'
@@ -48,16 +48,17 @@ tags:
 - 音频延迟
 - ExoPlayer
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_result: pass-light-edit
 task6_reviewed_at: '2026-05-10T10:17:22.880357'
 task6_reviewed_by: openclaw-task6
 task6_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-04-23
-task9_state: pending
+task9_reviewed_date: '2026-05-12'
+task9_state: reviewed
 title: Android 多媒体管线性能
+task9_review_notes: '2026-05-12 22:15 Task9 deep-review: needs-rework。P0 2 / P1 3 / P2 2；低延迟视频 API、atrace 分类、Codec2/tunneled 版本边界、Fast Mixer 条件与 Media3 ABR 断言需回炉。'
 ---
 
 

@@ -1,8 +1,8 @@
 {
   "total": 268,
   "draft": 46,
-  "ready-for-review": 63,
-  "finalized": 156,
+  "ready-for-review": 62,
+  "finalized": 157,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-12",
   "task9_reviewed_by": "openclaw-task9",
@@ -36,7 +36,10 @@
     "21.1",
     "21.2",
     "21.3",
-    "21.4"
+    "21.4",
+    "4.1",
+    "8.8",
+    "9.5"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -66,14 +69,17 @@
     "src/part5-app/ch21-startup/01-startup-analysis.md",
     "src/part5-app/ch21-startup/02-startup-framework.md",
     "src/part5-app/ch21-startup/03-contentprovider-optimization.md",
-    "src/part5-app/ch21-startup/04-baseline-profile-practice.md"
+    "src/part5-app/ch21-startup/04-baseline-profile-practice.md",
+    "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
+    "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
+    "src/part2-performance/ch09-anr/05-case-studies.md"
   ],
   "review_summary": {
-    "p0_issues": 12,
-    "p1_issues": 7,
+    "p0_issues": 5,
+    "p1_issues": 4,
     "p2_issues": 4,
-    "p3_issues": 0,
-    "total_issues": 23
+    "p3_issues": 2,
+    "total_issues": 15
   },
   "task6_review_summary": {
     "l1_l2_fixes": 110,
@@ -208,19 +214,37 @@
       "p1": 1,
       "p2": 0,
       "p3": 0
+    },
+    "4.1": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 2
+    },
+    "8.8": {
+      "p0": 2,
+      "p1": 3,
+      "p2": 2,
+      "p3": 0
+    },
+    "9.5": {
+      "p0": 3,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0
     }
   },
-  "total_review_sections": 30,
+  "total_review_sections": 33,
   "next_review_candidates": [
-    "2.10 GPU 渲染深入",
-    "2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
-    "20.1 应用稳定性全景"
+    "11.3 系统级功耗优化",
+    "13.2 Trace 抓取",
+    "13.6 线程 CPU 状态分析"
   ],
   "ready_for_review": 55,
-  "last_updated": "2026-05-12T21:56:00+08:00",
-  "last_updated_by": "task6-review",
+  "last_updated": "2026-05-12T22:15:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": "2026-05-12T21:56:00+08:00",
-  "task9_last_review": "2026-05-12T18:24:00+08:00",
+  "task9_last_review": "2026-05-12T22:15:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
     {

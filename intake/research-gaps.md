@@ -209,3 +209,19 @@ ProfilingManager 新触发器在不同 Android 版本中的兼容性处理缺失
 - 5.1 Linux 调度器
 - 2.10 GPU 渲染深入
 - 16.5 Android 17 性能变更
+
+## [2026-05-12] 8.8 Android 多媒体管线性能 — Codec2 / tunneled playback / Media3 ABR
+
+### 盲区描述
+章节需要补齐 OMX → Codec2 的媒体框架演进、tunneled playback 在 OMX 与 Codec2 下的实现差异，以及 Media3 ABR “主动预测 / 亚 100ms 决策”是否有官方 release note、commit 或 benchmark 支撑。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 `frameworks/av/media/codec2/`、`frameworks/av/media/libstagefright/`、Codec2 component 配置与 tunneled playback 相关源码锚点。
+- 核对 AndroidX Media3 release notes、`AdaptiveTrackSelection` / `BandwidthMeter` 变更与可复现实验数据。
+- 整理 SurfaceView / TextureView / tunneled sideband 三路径在 Android 10-17 的版本边界。
+
+### 关联章节
+8.8、2.6、2.15、2.16、14.9
