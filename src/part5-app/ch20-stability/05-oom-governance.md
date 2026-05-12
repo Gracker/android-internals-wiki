@@ -22,10 +22,10 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md"
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
-review_count: 1
+review_count: 2
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 created_by: "task2a"
 reviewed_date: "2026-05-12"
@@ -34,6 +34,13 @@ task6_result: needs-rework
 last_task6_at: "2026-05-12T18:02:31+08:00"
 last_task6_review_log: logs/review/2026-05-12-18-review.md
 task6_review_notes: "2026-05-12 Task6 18:02：needs-rework。L1/L2 小修 16 处：补 outline、代码块语言、开头措辞、泛化词；发现 2 个技术风险标注，已写入 queue/suggestions，交 Task9/Task2B 复核。"
+task9_result: needs-rework
+task2b_result: pending
+last_task9_at: '2026-05-12T18:24:00+08:00'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-12'
+last_task9_review_log: logs/deep-review/2026-05-12-18-deep-review.md
+task9_review_notes: '2026-05-12 Task9 18:24：needs-rework。P0 3 / P1 1 / P2 1；Unsafe/Gson、Bitmap native 分配、pthread_create 与 FD 耗尽边界需修正；Native crash 兜底需补 signal-safety 和状态一致性边界。'
 ---
 
 # OOM 治理

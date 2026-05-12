@@ -1405,29 +1405,119 @@
       "id": "task6-20.5-oom-governance-tech-risk-202605121802",
       "section": "20.5",
       "section_title": "OOM 治理",
-      "priority": 90,
-      "reason": "[review回炉] Unsafe/Gson OOM 路径与 FD/线程创建因果链存在技术风险，需要 Task9/Task2B 复核后修复",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Task9 已确认 Unsafe/Gson、Bitmap native 分配、pthread_create 与 FD 耗尽边界存在技术错误，需 Task2B 回炉修复。",
       "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
+        "intake/suggestions.md"
       ],
       "review_issues": [
         {
-          "type": "需确认",
-          "location": "Native 内存 OOM / Unsafe.allocateMemory",
-          "detail": "正文将 Gson 无空参构造函数反序列化归到 Unsafe.allocateMemory → malloc → native alloc OOM 路径；该路径可能应区分 Unsafe.allocateInstance 与 allocateMemory。",
-          "suggestion": "Task9 核对 Gson/Unsafe 实际调用链和 ART 抛 OOM 入口；Task2B 根据核对结果修正文中示例。"
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L151-L158 Unsafe.allocateMemory 源码路径",
+          "detail": "正文代码注释写 art/runtime/openjdkjvm/OpenjdkJvm.cc，但 android-16.0.0_r1 中 Unsafe.allocateMemory 的实现位于 art/runtime/native/sun_misc_Unsafe.cc，方法名为 Unsafe_allocateMemory()。",
+          "suggestion": "修正源码路径和方法名，并保留 “malloc 返回 nullptr → ThrowOutOfMemoryError(\"native alloc\")” 这一准确链路。"
         },
         {
-          "type": "需确认",
-          "location": "FD 泄漏导致的 OOM / FD 耗尽与 pthread_create",
-          "detail": "正文原先把 FD 耗尽与 pthread_create 内部分配 epoll FD 直接绑定；epoll FD 通常来自 Looper 初始化，不一定是 pthread_create 本身。",
-          "suggestion": "Task9 核对 pthread_create、Looper epoll 初始化、FD 耗尽三者的边界；Task2B 将线程创建 OOM 与 FD 泄漏 OOM 拆开写。"
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L151 Gson 无空参构造函数路径",
+          "detail": "Gson 的 UnsafeAllocator 使用 sun.misc.Unsafe.allocateInstance(Class) 绕过构造函数，不是 Unsafe.allocateMemory；allocateInstance 分配的是 Java 对象，不应归入 native alloc OOM 路径。",
+          "suggestion": "将 Gson/allocateInstance 从 Native 内存 OOM 示例中移除，另放到“反射/反序列化对象创建与 Java heap 压力”边界说明。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L162-L165 Bitmap 像素存储路径",
+          "detail": "正文称 Android 8+ Bitmap 像素数据“通过 mmap”存放 Native 堆；普通 heap Bitmap 在 frameworks/base/libs/hwui/hwui/Bitmap.cpp 的 allocateHeapBitmap(size, ...) 中使用 calloc。HardwareBitmap/GraphicBuffer 是另一条路径。",
+          "suggestion": "改为“普通 Bitmap 走 calloc/native heap；大块分配最终可能由 allocator 使用 mmap；Hardware Bitmap 走 GraphicBuffer/AHardwareBuffer”，避免把所有 Bitmap OOM 都写成 Failed anonymous mmap。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L177-L224 pthread_create 与 FD 耗尽",
+          "detail": "Thread::CreateNativeThread 的失败路径是 JNIEnvExt::Create 与 pthread_create；epoll/eventfd 来自 system/core/libutils/Looper.cpp 的 Looper 初始化，不是 pthread_create 本身。FD 耗尽可导致 Looper/epoll/socket/open 失败，但不应写成线程创建 OOM 的直接因果链。",
+          "suggestion": "将“线程数 OOM（栈/虚拟内存/pthread EAGAIN）”与“FD 泄漏导致 epoll/open/socket 失败或 FORTIFY SIGABRT”拆成两个治理路径。"
         }
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T18:02:31+08:00",
       "status": "pending",
-      "original_review_log": "logs/review/2026-05-12-18-review.md"
+      "original_review_log": "logs/review/2026-05-12-18-review.md",
+      "updated_by": "task9-deep-tech-review",
+      "updated_at": "2026-05-12T18:24:00+08:00"
+    },
+    {
+      "id": "task9-4-6-deep-tech-review-20260512-1824",
+      "section": "4.6",
+      "section_title": "内存相关的版本演进",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 16KB linker compat、Bitmap 源码路径、MTE ASYMM 平台边界存在源码/版本错误；MGLRU 观察口径不足。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L185/L674 Bitmap 源码路径",
+          "detail": "章节引用 frameworks/base/libs/hwui/Bitmap.cpp，但 android-15/16 中实际路径为 frameworks/base/libs/hwui/hwui/Bitmap.cpp；普通 heap bitmap 分配入口 allocateHeapBitmap() 使用 calloc。",
+          "suggestion": "将源码路径统一修正为 libs/hwui/hwui/Bitmap.cpp，并标注 android-15/16；同时区分普通 Bitmap 的 calloc native heap 与 HardwareBitmap/GraphicBuffer 路径。"
+        },
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L571-L580 Bionic Linker 16KB Compat Mode",
+          "detail": "系统属性写成 bionic.linker.16kb.app.compat.enabled，AOSP android-16.0.0_r1 实际为 bionic.linker.16kb.app_compat.enabled；属性读取在 ReadProgramHeaders 阶段设置 should_use_16kib_app_compat_，Load() 再调用 Setup16KiBAppCompat()，不是 LoadSegments() 直接调用 IsEligibleFor16KiBAppCompat()。",
+          "suggestion": "按 linker_phdr.cpp + linker_phdr_16kib_compat.cpp 重写调用链：ReadProgramHeaders 读取 min_palign/属性 → Load 调 Setup16KiBAppCompat → IsEligibleFor16KiBAppCompat 校验 RELRO/RW 边界 → LoadSegments 使用 compat 参数。"
+        },
+        {
+          "type": "版本差异",
+          "severity": "P0",
+          "location": "L453-L461 MTE ASYMM 平台边界",
+          "detail": "正文称 App 请求 android:memtagMode=\"async\" 时 OS 会在硬件支持时自动透明升级为 ASYMM；AOSP Zygote 只将 MEMTAG_ASYNC 映射到 MEMORY_TAG_LEVEL_ASYNC，source.android 文档说明默认 ASYNC 进程仍以 ASYNC 运行，是否在特定 CPU 上使用 sync/asymm 取决于 vendor 写入 /sys/devices/system/cpu/cpu<N>/mte_tcf_preferred。",
+          "suggestion": "改成“App 侧只暴露 sync/async；ASYMM 是硬件/内核/vendor policy 能力，不是 App 请求 async 后必然获得的行为”，并给出 sysfs 验证方式。"
+        },
+        {
+          "type": "数据缺失",
+          "severity": "P1",
+          "location": "L610-L616 MGLRU Perfetto 观察点",
+          "detail": "正文只给 mm_vmscan_lru_shrink_inactive 作为 MGLRU 观察点，但该 tracepoint 在传统 LRU 路径中也存在，不能单独证明设备正在走 MGLRU。",
+          "suggestion": "补充 CONFIG_LRU_GEN、/sys/kernel/mm/lru_gen/enabled、debugfs lru_gen 或对应 tracepoint/内核版本三者之一；否则标为“页回收活动观察点”，不要写成 MGLRU 专属证据。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T18:24:00+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-7-6-deep-tech-review-20260512-1824",
+      "section": "7.6",
+      "section_title": "案例集",
+      "priority": 95,
+      "reason": "[Deep Tech Review] SF/HWC 合成案例使用 android-16 源码中不存在的 doComposition/renderFeatureImpl 锚点；Overlay Plane 归因过度简化；案例 trace 证据包未落盘。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "severity": "P0",
+          "location": "L528/L536/L544 SurfaceFlinger 合成源码锚点",
+          "detail": "章节将 android-16 SurfaceFlinger 主路径写成 doComposition() 与 renderFeatureImpl，但 frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp 在 android-16.0.0_r1 中没有这两个函数/符号；CLIENT 合成实际经过 SurfaceFlinger::composite()、CompositionEngine::Output::present()/composeSurfaces()、RenderEngine::drawLayers() 等路径。",
+          "suggestion": "将源码锚点改为 CompositionEngine/src/Output.cpp 的 Output::present()/composeSurfaces()/RenderEngine::drawLayers()，并把 Perfetto 观察点从函数名断言改为 surfaceflinger composite/CompositionEngine/RenderEngine slices（按实际 trace 命名核对）。"
+        },
+        {
+          "type": "原理断裂",
+          "severity": "P1",
+          "location": "L538-L551 HWC Overlay Plane 归因",
+          "detail": "正文把“Layer 数量超过 4”写成 CLIENT composition 的决定性原因，但 HWC validateDisplay 的决策还受格式、transform、dataspace、alpha/blend、protected content、scaling、bandwidth、plane capability、系统 UI 等约束影响。",
+          "suggestion": "补一段 validateDisplay 决策链：先列 Layer 属性和 HWC capability，再用 changedTypes/CLIENT 类型作为证据；不要把中端 SoC “通常 4 个 plane”写成通用规则。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-12T18:24:00+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
