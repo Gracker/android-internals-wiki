@@ -8,7 +8,7 @@ last_verified: "2026-05-11"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com, Google Play Console"
 confidence: medium
 drafted_date: "2026-05-11"
-polish_count: 0
+polish_count: 1
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -18,17 +18,20 @@ sources:
     path: "frameworks/base/core/java/com/android/internal/os/RuntimeInit.java"
 tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
-pipeline_stage: draft
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-12
+task6_result: needs-rework
 ---
 
 # 稳定性度量与指标体系
 
-20.1 节建立了 Crash / ANR / OOM 的分类框架，也给出了 Google Play Vitals 的底线阈值。本节解决的问题是：**团队内部的稳定性数据怎么算、怎么看、怎么管**——从计算口径到看板搭建，到 SLO 落地。
+20.1 节建立了 Crash / ANR / OOM 的分类框架，也给出了 Google Play Vitals 的底线阈值。本节处理三件事：**团队内部的稳定性数据怎么算、怎么看、怎么管**——从计算口径到看板搭建，再到 SLO 执行。
 
-崩溃率不是一个简单的数字，而是一组针对性指标。不同计算口径回答不同问题，选错口径会得出错误判断。下面逐个拆解这些指标的计算方法和适用场景。
+崩溃率是一组针对性指标。不同计算口径回答不同问题，选错口径会得出错误判断。后文分别说明这些指标的计算方法和适用场景。
 
 ## 崩溃率指标定义：四种口径，四种用途
 
@@ -36,7 +39,7 @@ task2b_state: pending
 
 $$\text{UV 崩溃率} = \frac{\text{当日发生过崩溃的去重用户数}}{\text{当日活跃用户数（DAU）}}$$
 
-UV 崩溃率回答的问题是：**崩溃影响了多少比例的用户**。分子是"发生过至少一次崩溃的独立用户"，不去重意味着一个用户崩溃 10 次和崩溃 1 次在 UV 崩溃率里等价。
+UV 崩溃率衡量：**崩溃影响了多少比例的用户**。分子是"发生过至少一次崩溃的独立用户"，不去重意味着一个用户崩溃 10 次和崩溃 1 次在 UV 崩溃率里等价。
 
 这是最常用的对外汇报指标，也是 Google Play Vitals 的核心指标。但 UV 崩溃率有一个陷阱：它和应用的使用时长强相关。用户在 App 里待 60 分钟，遇到崩溃的概率远高于待 5 分钟的用户。一个日活 1 亿、人均使用 120 分钟的社交 App，和一个日活 500 万、人均使用 10 分钟的工具 App，UV 崩溃率不能直接横向比较。
 
@@ -44,7 +47,7 @@ UV 崩溃率回答的问题是：**崩溃影响了多少比例的用户**。分�
 
 $$\text{PV 崩溃率} = \frac{\text{崩溃次数}}{\text{总会话数（Session 数）}}$$
 
-PV 崩溃率也叫 Session 崩溃率，回答的问题是：**平均多少次会话会出现一次崩溃**。它消除了用户使用时长带来的偏差，适合做跨应用、跨版本的横向对比。
+PV 崩溃率也叫 Session 崩溃率，用来衡量：**平均多少次会话会出现一次崩溃**。它消除了用户使用时长带来的偏差，适合做跨应用、跨版本的横向对比。
 
 Firebase Crashlytics 报告中的 "Crash-Free Sessions" 就是基于这个口径的变形：
 
@@ -63,7 +66,7 @@ $$\text{启动崩溃率} = \frac{\text{启动阶段崩溃次数}}{\text{总启�
 1. 启动崩溃对用户伤害最大——App 打不开，热修复也无法自救
 2. 启动阶段代码路径集中（初始化、配置下发、资源加载），崩溃的归因相对明确
 
-启动崩溃率的目标通常比整体崩溃率严格一个数量级。大厂内部红线：≤ 0.01%。超过这个值，灰度立即暂停。
+启动崩溃率的目标通常比整体崩溃率严格一个数量级。大型团队常见内部红线：≤ 0.01%。超过这个值，灰度立即暂停。
 
 ### 重复崩溃率
 
@@ -160,6 +163,8 @@ App B 的 Crash-Free Users 明显更差（95% vs 99%），说明崩溃影响面�
 
 ### 行业参考值
 
+[需补充素材: 行业参考值、头部 App 目标与 Firebase 推荐基线需要补公开来源或内部口径说明。]
+
 | 应用级别 | Crash-Free Users 目标 | 说明 |
 |----------|----------------------|------|
 | Play Store 不良行为线 | < 98.91%（即 User-Perceived Crash Rate > 1.09%） | 超过此值 Play Store 展示警告 |
@@ -216,7 +221,7 @@ Crash Rate 按 Android 版本和机型的热力图。用于发现特定设备上
 | ANR Rate 较上一版本上升 | > 30% | P2：版本 review |
 | 单机型 Crash Rate | > 5% | P2：定向排查 |
 
-告警不是越多越好。太多告警会导致团队麻木，太少会漏掉重要问题。原则：P1 告警要求 5 分钟内响应，每天不超过 2 条；P2 告警要求当天响应，每天不超过 5 条。
+告警不是越多越好。太多告警会导致团队麻木，太少会漏掉重要问题。P1 告警要求 5 分钟内响应，每天不超过 2 条；P2 告警要求当天响应，每天不超过 5 条。
 
 ### 看板的技术实现
 
@@ -270,11 +275,13 @@ $$\text{Error Budget} = 1 - \text{SLO Target}$$
 
 ### 行业对标参考
 
+[需补充素材: “微信公开分享”“头部电商”等对标值需要补具体出处，或改成匿名内部经验区间。]
+
 | 公司 / 产品 | Crash-Free Users | ANR Rate | 说明 |
 |-------------|-----------------|----------|------|
 | Google Play 不良行为线 | < 98.91% | > 0.47% | 全机型阈值 |
 | 微信（公开分享） | ~99.8% | < 0.1% | 超级 App 内控标准 |
-| 头部电商（行业通用） | ≥ 99.5% | < 0.2% | 大厂发版门禁 |
+| 头部电商（行业通用） | ≥ 99.5% | < 0.2% | 大型团队发版门禁 |
 | 中型应用 | ≥ 99.0% | < 0.5% | 行业及格线 |
 | 长尾应用 | < 98% | > 1% | Play Store 会展示警告 |
 
@@ -288,4 +295,4 @@ $$\text{Error Budget} = 1 - \text{SLO Target}$$
 - 设备分布差异：出海东南亚（大量低端机）和只做国内旗舰机型的崩溃率基准不同
 - 采集 SDK 差异：用 try-catch 吞掉异常，或者不采集 Native Crash，数字会好看但问题没解决
 
-稳定性 SLO 的核心不是追求数字好看，而是建立一套可量化、可追溯、可改进的闭环。
+稳定性 SLO 的价值不在于追求数字好看，而是建立一套可量化、可追溯、可改进的治理机制。

@@ -8,7 +8,7 @@ last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1, Jetpack App Startup 1.2.0, Alpha 1.2.0"
 confidence: medium
 drafted_date: "2026-05-12"
-polish_count: 0
+polish_count: 1
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/Application.java"
@@ -22,10 +22,13 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: draft
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-12
+task6_result: needs-rework
 ---
 
 # 启动框架设计与任务编排
@@ -55,7 +58,7 @@ task2b_state: pending
 
 ## 本节定位
 
-21.1 节拆解了冷 / 温 / 热启动各阶段的耗时分布，给出了 Perfetto 中逐段读耗时的方法。这一节回答紧接着的工程问题：**拿到一份启动任务清单，怎么编排它们的执行顺序和线程分配，把 wall-clock time 压到最低？**
+21.1 节梳理了冷 / 温 / 热启动各阶段的耗时分布，给出了 Perfetto 中逐段读耗时的方法。这一节回答紧接着的工程问题：**拿到一份启动任务清单，怎么编排它们的执行顺序和线程分配，把 wall-clock time 压到最低？**
 
 8.3 节从策略层面讲了延迟初始化、异步初始化、Splash Screen 等手法。本节聚焦"编排"这件事本身——如何建模任务之间的依赖关系、如何选型或设计一个启动框架、如何配置线程池让并发效率最大化。
 
@@ -317,7 +320,7 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 
 ### 主线程是瓶颈
 
-21.1 节的耗时拆解已经说明：从 `Application.onCreate` 到首帧绘制，主线程的执行时间直接决定 TTID（Time To Initial Display）。每在主线程增加 50ms 的同步初始化，TTID 就增加 50ms。
+21.1 节的耗时分段已经说明：从 `Application.onCreate` 到首帧绘制，主线程的执行时间直接决定 TTID（Time To Initial Display）。每在主线程增加 50ms 的同步初始化，TTID 就增加 50ms。
 
 异步初始化的原则：**除了必须访问 UI 组件、必须使用主线程 Handler/Looper、或 Android API 强制要求主线程调用的任务，其余全部放到后台线程。**
 
@@ -344,7 +347,7 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 
 ```java
 // 核心线程数 = CPU 核心数，最大线程数 = CPU 核心数 * 2
-// 使用无界队列或大容量队列，因为 IO 任务不消耗 CPU，阻塞等待是常态
+// 使用无界队列或大容量队列，因为 IO 任务的阻塞等待时间占比较高
 int cpuCount = Runtime.getRuntime().availableProcessors();
 ExecutorService ioPool = new ThreadPoolExecutor(
     cpuCount,           // corePoolSize
@@ -362,6 +365,8 @@ ExecutorService ioPool = new ThreadPoolExecutor(
     }
 );
 ```
+
+[存疑: 示例中在 ThreadFactory 里用 `Thread.getId()` 调 `Process.setThreadPriority()` 可能不是 Android 线程优先级设置的可靠写法，需 Task9 核对后再定稿。]
 
 **CPU 线程池**（处理计算密集型任务：JSON 解析、数据序列化、编解码）
 
@@ -403,6 +408,8 @@ mainHandler.post(() -> { /* 主线程初始化任务 */ });
 | 普通启动线程 | 0 ~ 5 | 非关键路径的异步任务 |
 | 低优先级线程 | 10 ~ 19 | 日志上报、数据预加载等 |
 
+[存疑: 关键启动线程 `-2 ~ -4` 的可设置范围、权限边界和示例值需要 Task9 核对。]
+
 ```java
 // 设置关键启动线程优先级
 Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);  // -2
@@ -411,7 +418,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND);  // -2
 Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
 ```
 
-核心思路：**提高关键路径线程的优先级，降低非关键路径线程的优先级**。两者配合使用，让关键任务获得更多 CPU 时间片。线程优先级的原理详见 1.5 节。
+关键路径上的异步线程优先级设置为 Foreground（-2），非关键路径的 IO 线程设置为 Background（10）。这样关键任务能获得更多 CPU 时间片，非关键任务不会干扰主线程。线程优先级的原理详见 1.5 节。
 
 ### 线程池的监控指标
 
@@ -421,6 +428,8 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);  // 10
 - **队列积压量**：队列中等待执行的任务数。积压意味着任务提交速率 > 处理速率。
 - **任务平均等待时间**：从提交到开始执行的间隔。超过 100ms 说明线程池成为瓶颈。
 - **任务拒绝次数**：CallerRunsPolicy 触发时意味着线程池已满，提交线程（通常是主线程）被阻塞。
+
+这些指标进入启动框架看板后，线程池配置才有调整依据。
 
 ## 启动任务的动态配置与 A/B 测试
 

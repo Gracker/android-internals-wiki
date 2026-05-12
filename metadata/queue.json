@@ -1518,14 +1518,91 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-12T18:24:00+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task6-20-6-review-rework-20260512-1912",
+      "section": "20.6",
+      "section_title": "稳定性度量与指标体系",
+      "priority": 90,
+      "reason": "[review回炉] Task6 草稿审查发现 L3 内容支撑问题，需 Task2B 补充来源或改写为内部经验口径",
+      "title": "稳定性指标行业参考值来源不足",
+      "issue_type": "draft-writing-depth",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/06-stability-metrics.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "“行业参考值”“行业对标参考”两张表",
+          "detail": "Firebase 推荐基线、头部 App 目标、微信/头部电商对标值缺具体公开来源或内部口径说明；当前验证标注只能说明内容来自结构参考，不能支撑数值权威性。",
+          "suggestion": "补公开分享、官方文档或内部指标口径来源；无法补源的数值改成匿名经验区间，并标注适用边界。"
+        },
+        {
+          "type": "需确认",
+          "location": "“PV 崩溃率（Session Crash Rate）”命名",
+          "detail": "章节将 PV 崩溃率等同 Session Crash Rate，术语口径可能与常见 PV / Session 定义混用。",
+          "suggestion": "Task9 确认术语；若保留，补一句团队内 PV = Session 的口径说明。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T19:12:00+08:00",
+      "original_review_log": "logs/review/2026-05-12-19-review.md"
+    },
+    {
+      "id": "task6-21-2-review-rework-20260512-1912",
+      "section": "21.2",
+      "section_title": "启动框架设计与任务编排",
+      "priority": 90,
+      "reason": "[review回炉] Task6 草稿审查发现线程优先级示例存在技术风险信号，需 Task9 / Task2B 核对修正",
+      "title": "启动线程优先级示例需技术核对",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/02-startup-framework.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "“三种线程池的分工” IO 线程池 ThreadFactory 示例",
+          "detail": "示例在 ThreadFactory 中用 Thread.getId() 调 Process.setThreadPriority()，可能不是 Android 设置线程优先级的可靠写法；需核对 Linux tid 与 Java Thread id 的差异。",
+          "suggestion": "Task9 核对 Android Process.setThreadPriority 用法；必要时改为在线程 run() 内设置优先级，并补权限/范围说明。"
+        },
+        {
+          "type": "需确认",
+          "location": "“线程优先级策略”表格与 Foreground / Background 示例",
+          "detail": "关键启动线程 -2 ~ -4 的可设置范围、权限边界和示例值需要技术审查确认。",
+          "suggestion": "Task9 对照 Android 线程优先级常量和系统权限边界确认后，再由 Task2B 调整表格。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T19:12:00+08:00",
+      "original_review_log": "logs/review/2026-05-12-19-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 69,
+    "total_entries": 73,
     "p0_count": 4,
-    "last_updated": "2026-05-12T18:02:31+08:00",
-    "updated_by": "task6-review"
+    "last_updated": "2026-05-12T19:12:00+08:00",
+    "updated_by": "task6-review",
+    "pending_entries": 36
   },
-  "last_updated": "2026-05-12T18:02:31+08:00",
+  "last_updated": "2026-05-12T19:12:00+08:00",
   "last_updated_by": "task6-review"
 }
