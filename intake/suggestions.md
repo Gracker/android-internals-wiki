@@ -158,3 +158,15 @@
 - **位置**：性能提升说明
 - **问题**：性能提升数据缺乏具体测试条件，缺乏具体的测试环境和测试条件说明
 - **建议**：补充测试环境和基线数据
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-05-12
+- **类型**：数据缺失
+- **位置**：L234 IdleHandler 1-2ms 阈值缺少测试条件
+- **问题**：“控制在 1-2ms 以内”是经验阈值，但正文未给设备、刷新率、Trace 或业务场景。
+- **建议**：补一条 Perfetto 示例或改成“不得超过当前帧预算中的空闲窗口”，避免固定阈值被当成平台规则。
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-05-12
+- **类型**：数据缺失
+- **位置**：L334 WebGPU 90%-95% Vulkan 吞吐量缺少一手数据
+- **问题**：AndroidX WebGPU release notes 只说明 alpha 版本与 Dawn commit 更新，未给 Android 17 compute pipeline 对 Vulkan 90%-95% 的公开基准。
+- **建议**：补 benchmark 来源、设备、driver、workload、样本数；否则删除百分比，只保留 WebGPU 是更高层 Kotlin binding / Dawn 路线。
