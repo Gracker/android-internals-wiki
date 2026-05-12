@@ -1,7 +1,7 @@
 {
   "total": 270,
-  "draft": 42,
-  "ready-for-review": 66,
+  "draft": 41,
+  "ready-for-review": 67,
   "finalized": 162,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-13",
@@ -716,5 +716,8 @@
         "task9-2026-05-12-5.10-api37-energy-reason"
       ]
     }
-  ]
+  ],
+  "last_task2a_processed": "22.1",
+  "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/01-layout-optimization.md",
+  "last_task2a_processed_date": "2026-05-13"
 }
