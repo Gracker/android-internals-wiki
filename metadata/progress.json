@@ -1,7 +1,7 @@
 {
   "total": 268,
-  "draft": 45,
-  "ready-for-review": 62,
+  "draft": 44,
+  "ready-for-review": 63,
   "finalized": 157,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-12",
@@ -39,7 +39,8 @@
     "21.4",
     "4.1",
     "8.8",
-    "9.5"
+    "9.5",
+    "21.6"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -72,7 +73,8 @@
     "src/part5-app/ch21-startup/04-baseline-profile-practice.md",
     "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
-    "src/part2-performance/ch09-anr/05-case-studies.md"
+    "src/part2-performance/ch09-anr/05-case-studies.md",
+    "src/part5-app/ch21-startup/06-lazy-initialization.md"
   ],
   "review_summary": {
     "p0_issues": 5,
