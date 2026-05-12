@@ -285,21 +285,6 @@
       "completed_reason": "Task 2B 回炉修复: 补充 Generational CMC vs CC 实现差异对比(读屏障/内存开销/分代策略), 添加分代配置参数说明(gUseUserfaultfd/use_generational_cmc/generational_cmc_supported), 补充性能数据边界说明, 修正 generational CC→CMC 版本线表述"
     },
     {
-      "id": "task6-4.3-art-memory-practical",
-      "section": "4.3",
-      "priority": 65,
-      "title": "缺乏内存管理的实战经验",
-      "description": "L4级问题：缺少作者在大型应用内存优化中的实际案例、ART GC 问题的现场诊断经验、不同内存压力场景下的最佳实践",
-      "issue_type": "content-practical",
-      "severity": "P2",
-      "status": "pending",
-      "dependencies": [],
-      "related_files": [
-        "src/part1-fundamentals/ch04-memory/03-art-memory.md"
-      ],
-      "estimated_hours": 3
-    },
-    {
       "id": "task9-22.3-strongskipping-version-error",
       "section": "22.3",
       "priority": 95,
@@ -1200,6 +1185,97 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-12T15:40:00+08:00"
+    },
+    {
+      "id": "task6-4-3-review-rework-20260512-1615",
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 90,
+      "reason": "[review回炉] Task6 草稿审查发现 L3/L4 写作质量问题，需 Task2B 整合素材或补充证据",
+      "title": "ART 内存管理写作回炉：调研材料未整合与实战经验不足",
+      "issue_type": "draft-writing-depth",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/03-art-memory.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需重写",
+          "location": "参考资料之后的 ART FinalizerDaemon / ReferenceQueue 调研段落",
+          "detail": "源码调研材料以原始补丁形式追加在参考资料之后，破坏章节收束；读者读到参考资料后又进入一段新正文，结构断裂。",
+          "suggestion": "将材料整合到“Android 17：MessageQueue 并发优化与 ART ReferenceQueue 边界”小节，或改成附录；正文参考资料之后不再追加新论述。"
+        },
+        {
+          "type": "需补充素材",
+          "location": "全章实践与诊断部分",
+          "detail": "现有内容机制解释充分，但大型应用 ART GC 诊断案例、内存压力场景下的实操决策和作者经验不足。",
+          "suggestion": "补 1 个 Perfetto/Memory Profiler 诊断案例：现象、GC/Allocation Stall 观察点、判断依据、修复动作和结果。"
+        },
+        {
+          "type": "content-practical",
+          "location": "既有 queue 条目",
+          "detail": "L4级问题：缺少作者在大型应用内存优化中的实际案例、ART GC 问题的现场诊断经验、不同内存压力场景下的最佳实践",
+          "suggestion": "与本轮 Task6 回炉一并处理。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T16:15:00+08:00",
+      "original_review_log": "logs/review/2026-05-12-16-review.md",
+      "supersedes_queue_ids": [
+        "task6-4.3-art-memory-practical"
+      ]
+    },
+    {
+      "id": "task6-4-5-review-rework-20260512-1615",
+      "section": "4.5",
+      "section_title": "App 内存优化",
+      "priority": 90,
+      "reason": "[review回炉] Task6 草稿审查发现 L3/L4 写作质量问题，需 Task2B 整合素材或补充证据",
+      "title": "App 内存优化写作回炉：Perfetto 证据与量化数据补齐",
+      "issue_type": "draft-writing-depth",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "监控兜底 / Perfetto 工具表现",
+          "detail": "章节已标注缺少 Java Heap Track、GC Event Track、dmabuf/GPU memory Track 的具体表现，工具侧证据不足。",
+          "suggestion": "补充至少 1 组 Perfetto/Memory Profiler 观察说明，明确 track 名称、正常/异常形态和如何指导优化。"
+        },
+        {
+          "type": "需确认",
+          "location": "内存抖动与高刷掉帧量化描述",
+          "detail": "“3ms 黄金停顿”“掉帧率下降 3-5 倍”等量化描述缺少设备、刷新率、负载、样本和采样方法。",
+          "suggestion": "补一手 benchmark；如果没有数据，改为定性描述，并保留帧预算推导。"
+        },
+        {
+          "type": "需确认",
+          "location": "Bitmap / inBitmap 优化收益",
+          "detail": "“inBitmap 减少 80% 以上分配”缺少测试条件，已在正文临时降为定性描述并加待验证标注。",
+          "suggestion": "补充图片尺寸、列表复用策略、采样方法和结果，或删除固定百分比。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T16:15:00+08:00",
+      "original_review_log": "logs/review/2026-05-12-16-review.md"
     }
   ],
   "metadata": {
@@ -1207,5 +1283,7 @@
     "p0_count": 3,
     "last_updated": "2026-05-12T15:40:00+08:00",
     "updated_by": "task9-deep-tech-review"
-  }
+  },
+  "last_updated": "2026-05-12T16:15:00+08:00",
+  "last_updated_by": "task6-review"
 }

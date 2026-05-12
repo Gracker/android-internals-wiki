@@ -45,25 +45,29 @@ related_chapters:
 - '7.3'
 drafted_date: '2026-03-31'
 drafted_by: openclaw-task2
-reviewed_date: '2026-04-29'
+reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
 review_type: draft-review
 review_round: 3
 polish_count: 1
 polish_date: '2026-04-08'
 polish_by: task2b-polish
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: '2026-05-09T22:10:00+08:00'
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-04-29'
 last_task9_at: '2026-04-29T05:30:17+08:00'
-task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 1。ASan/heapprofd/ApplicationStartInfo
-  API 错误，API 34 onTrimMemory 差异未覆盖'
+task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 1。ASan/heapprofd/ApplicationStartInfo API 错误，API 34 onTrimMemory 差异未覆盖'
+task6_result: needs-rework
+last_task6_at: '2026-05-12T16:15:00+08:00'
+last_task6_review_log: logs/review/2026-05-12-16-review.md
+task6_review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
+review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
 ---
 
 
@@ -97,23 +101,23 @@ task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / 
 
 ## 为什么要系统性地看待 App 内存优化
 
-我们在前面几节讲了 Android 内存模型的底层架构：Linux 内核如何管理物理页（4.2），ART 虚拟机如何分配和回收 Java 堆内存（4.3），系统在内存不足时如何通过 LMK 杀进程（4.4）。这些都是系统层面的机制——作为 App 开发者，我们无法直接控制 `lmkd` 的杀进程策略，也无法修改 ART 的 GC 算法。
+前面几节已经讲过 Android 内存模型的底层架构：Linux 内核如何管理物理页（4.2），ART 虚拟机如何分配和回收 Java 堆内存（4.3），系统在内存不足时如何通过 LMK 杀进程（4.4）。这些都是系统层面的机制——作为 App 开发者，无法直接控制 `lmkd` 的杀进程策略，也无法修改 ART 的 GC 算法。
 
 但这并不意味着 App 层面无能为力。恰恰相反，**App 的内存使用方式直接决定了系统级机制的触发频率**。一个内存管理良好的 App，不容易触发 GC 暂停导致卡顿，不容易被 LMK 杀死导致冷启动，也不容易因为内存抖动让整个系统的内存压力增大。
 
-问题是，很多开发者对"内存优化"的理解是碎片化的——知道 Bitmap 要 recycle，知道 Activity 泄漏要用 WeakReference，知道 onTrimMemory 要处理——但缺少一个系统性的框架把这些点串起来。
+很多开发者对"内存优化"的理解是碎片化的——知道 Bitmap 要 recycle，知道 Activity 泄漏要用 WeakReference，知道 onTrimMemory 要处理——但缺少一个系统性的框架把这些点串起来。
 
 本节的目标就是建立这个框架。
 
 ## 内存优化的分层思路
 
-我们来看一个内存优化实践的层次模型。这是一套有严格先后顺序的策略——每一层都是下一层的前提。
+内存优化实践可以拆成一个有严格先后顺序的层次模型，每一层都是下一层的前提。
 
 ### 第一层：减少分配
 
-最有效的优化，是根本不分配内存。
+最有效的优化，是避免不必要的内存分配。
 
-这听起来是常识，但在实际项目中，大量的内存问题是"分配了不需要的东西"造成的。举几个例子：
+这听起来是常识，但在实际项目中，大量内存问题来自"分配了不需要的东西"。几个典型例子：
 
 - 在 `onDraw()` 中创建 `Paint`、`Path` 对象。`onDraw()` 在一帧中可能被调用多次，每帧创建新对象意味着大量短命对象，触发频繁 GC。正确做法是将 `Paint` 作为成员变量，在构造函数中初始化一次。
 - 在循环中使用字符串拼接 `"" + value`。每次拼接都创建一个 `StringBuilder` 和一个新的 `String` 对象。使用 `StringBuilder` 的 `append()` 方法可以复用同一个实例。
@@ -145,7 +149,7 @@ task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / 
 
 避免泄漏比"减少分配"和"及时释放"更难，因为泄漏通常是隐式的：开发者并没有显式地"持有"一个对象，但某个回调、某个内部类、某个系统服务隐式地持有了。而且泄漏的影响是累积的——一个 Activity 泄漏可能只浪费几 MB，但如果用户在一个列表页反复进出 20 次，就是 20 个 Activity 实例同时驻留在内存中。
 
-我们会在后面的"内存泄漏的常见模式"部分逐一分析。
+后面的"内存泄漏的常见模式"部分会逐一分析这些模式。
 
 ### 第四层：监控兜底
 
@@ -165,7 +169,7 @@ task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / 
 
 ## 内存抖动：当"减少分配"失败时的连锁反应
 
-在讲具体优化手段之前，我们需要理解一个贯穿整个内存优化话题的核心概念——**内存抖动（Memory Churn）**，以及它如何与我们在 4.3 节讲的 ART GC 产生连锁反应。
+在讲具体优化手段之前，需要先理解一个贯穿整个内存优化话题的核心概念——**内存抖动（Memory Churn）**，以及它如何与 4.3 节的 ART GC 产生连锁反应。
 
 [已验证: 研究素材, research-feed 2026-03-31-19-ch04-app-memory-churn-gc-objectpool.md]
 
@@ -177,7 +181,7 @@ task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / 
 
 ### 为什么内存抖动会导致卡顿
 
-我们在 4.3 节讲过，ART 使用 Concurrent Copying Collector，虽然是并发的，但仍然有 Young Generation 暂停。当高频分配导致 GC 频繁触发时，会出现这样的时间线：
+4.3 节讲过，ART 使用 Concurrent Copying Collector，虽然是并发的，但仍然有 Young Generation 暂停。当高频分配导致 GC 频繁触发时，会出现这样的时间线：
 
 ```
 帧 N         | 帧 N+1       | 帧 N+2
@@ -188,7 +192,9 @@ UI Thread    | GC Pause!    | UI Thread
 
 帧 N+1 中，GC 暂停了 8ms，加上 UI 线程自身的工作时间，帧 N+1 的总耗时超过了 VSync 周期（120Hz 设备仅 8.3ms，60Hz 设备为 16.6ms），结果就是掉帧。
 
-在高刷新率设备上，这个问题更加严峻。120Hz 设备的帧间隔只有 8.3ms，GC 暂停 5ms 会挤占 60% 的帧预算，几乎必然导致掉帧；而把 GC 暂停控制在 3ms 以内，则有较大概率"藏入"任务间隙，不触发掉帧。实测数据表明，将 GC 暂停从 5ms 降到 3ms，应用掉帧率通常下降 3-5 倍。可以把"3ms 黄金停顿准则"作为 120Hz 设备上 GC 优化的量化目标——Young GC 单次暂停不应超过 3ms，否则就应该排查对象抖动源头。
+在高刷新率设备上，这个问题更加严峻。120Hz 设备的帧间隔只有 8.3ms，GC 暂停 5ms 会挤占 60% 的帧预算，几乎必然导致掉帧；而把 GC 暂停控制在 3ms 以内，则有较大概率"藏入"任务间隙，不触发掉帧。实测数据表明，将 GC 暂停从 5ms 降到 3ms，应用掉帧率通常下降 3-5 倍。[待验证: 该 3-5 倍降幅需要补充设备、负载、采样方法和数据来源。]
+
+可以把"3ms 黄金停顿准则"作为 120Hz 设备上 GC 优化的量化目标——Young GC 单次暂停不应超过 3ms，否则就应该排查对象抖动源头。
 
 这导致一个反直觉的现象：**App 在高刷设备上反而更容易暴露内存抖动问题**。60Hz 设备的 16.6ms 帧间隔给了 GC 更多"藏身"空间，5ms 的暂停可能不丢帧；同样的暂停在 120Hz 上就是掉帧。
 
@@ -238,7 +244,7 @@ Bitmap 是 Android App 中最大的内存消费者之一。一张 1080×1920 的
 
 这是一个经常被忽略但影响深远的变更。
 
-在 Android 8.0（API 26）之前，Bitmap 的像素数据存储在 **Java 堆**中。这意味着 Bitmap 的内存占用直接计入 App 的 `dalvikHeapSize`，受 `Runtime.getRuntime().maxMemory()` 限制。当 Bitmap 过多导致 Java 堆超限时，就会抛出 `OutOfMemoryError`。
+在 Android 8.0（API 26）之前，Bitmap 的像素数据存储在 **Java 堆**中，因此会直接计入 App 的 `dalvikHeapSize`，受 `Runtime.getRuntime().maxMemory()` 限制。当 Bitmap 过多导致 Java 堆超限时，就会抛出 `OutOfMemoryError`。
 
 从 Android 8.0 开始，Bitmap 的像素数据移到了 **Native 堆**。这带来了几个变化：
 
@@ -269,7 +275,7 @@ val bitmap = BitmapFactory.decodeResource(res, resId, options)
 - **API 11-18**：复用 Bitmap 的大小必须与解码后的 Bitmap **精确匹配**（限制极大，几乎不可用）
 - **API 19+**：复用 Bitmap 的大小只需要 **≥** 解码后的 Bitmap（实用性强得多）
 
-直接好处是它完全跳过了内存分配和释放，减少了 malloc/free 调用，也降低了 GC 压力。在列表滑动场景中，图片不断进出屏幕，`inBitmap` 可以将 Bitmap 相关的内存分配减少 80% 以上。
+直接好处是它完全跳过了内存分配和释放，减少了 malloc/free 调用，也降低了 GC 压力。在列表滑动场景中，图片不断进出屏幕，`inBitmap` 可以明显减少 Bitmap 相关的内存分配。[待验证: “减少 80% 以上”需要补充测试场景、图片尺寸、列表复用策略和采样方法后再恢复量化表述。]
 
 ### 下采样（inSampleSize）
 
@@ -301,7 +307,7 @@ fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeig
 
 Android 8.0（API 26）引入了一种特殊的 Bitmap 配置：`Bitmap.Config.HARDWARE`。
 
-硬件 Bitmap 的像素数据存储在 **GPU 内存**中，而不是系统 RAM 中。这意味着：
+硬件 Bitmap 的像素数据存储在 **GPU 内存**中，而不是系统 RAM 中。直接结果是：
 
 - **不计入 Java Heap**：从 dumpsys meminfo 角度看，像素常见于 Graphics/GL/memtrack/Other dev 等口径，是否归入单进程 PSS 取决于 OEM/memtrack 实现，设备差异大。不能写成"不占内存"——它仍然形成系统内存压力
 - **渲染更快**：GPU 直接使用自己的显存绘制，不需要从系统 RAM 拷贝到 GPU
@@ -327,7 +333,7 @@ Android 8.0（API 26）引入了一种特殊的 Bitmap 配置：`Bitmap.Config.H
 
 [已验证: Glide 官方文档, bumptech.github.io/glide/doc/bitmap-pool.html]
 
-现代 Android 开发中，很少有人手动管理 Bitmap。我们通常使用图片加载库——Glide、Coil 或 Fresco——它们都内建了完善的 Bitmap 内存管理。
+现代 Android 开发中，很少有人手动管理 Bitmap。常见做法是使用 Glide、Coil 或 Fresco 这类图片加载库，它们都内建了完善的 Bitmap 内存管理。
 
 **Glide** 使用 `LruBitmapPool` 管理 Bitmap 复用池。池的默认大小是 `maxMemory / 8`。当 Bitmap 不再使用时，Glide 不调用 `recycle()`，而是将 Bitmap 放入池中等待复用。下次解码新图片时，优先从池中取一个大小匹配的 Bitmap，通过 `inBitmap` 复用它的内存。
 
@@ -348,11 +354,11 @@ Android 8.0（API 26）引入了一种特殊的 Bitmap 配置：`Bitmap.Config.H
 
 内存泄漏是 App 内存优化中最棘手的问题——它不像崩溃那样立刻暴露，而是像温水煮青蛙一样慢慢消耗可用内存，直到 App 被系统杀死或者开始严重卡顿。
 
-我们来看三种最常见的泄漏模式。
+三种最常见的泄漏模式分别如下。
 
 ### 模式一：Activity 引用泄漏
 
-这是 Android 开发中最经典的泄漏模式。核心问题是：一个长生命周期的对象持有了一个已经应该被销毁的 `Activity` 的引用。
+这是 Android 开发中最经典的泄漏模式。触发条件是：一个长生命周期的对象持有了一个已经应该被销毁的 `Activity` 的引用。
 
 最常见的触发场景是**非静态内部类**。在 Java 中，非静态内部类（包括匿名内部类）隐式持有外部类的引用。如果这个内部类的实例比外部 `Activity` 活得更长，`Activity` 就泄漏了。
 
@@ -395,7 +401,7 @@ public class MyActivity extends Activity {
 }
 ```
 
-修复的关键点在于：`static` 修饰的内部类不再隐式持有外部类引用，我们通过 `WeakReference` 显式地、可空地获取 Activity。当 Activity 被销毁后，`activityRef.get()` 返回 `null`，worker 线程就知道应该停止工作。
+修复的关键点在于：`static` 修饰的内部类不再隐式持有外部类引用，代码通过 `WeakReference` 显式地、可空地获取 Activity。当 Activity 被销毁后，`activityRef.get()` 返回 `null`，worker 线程就知道应该停止工作。
 
 [已验证: 官方文档, developer.android.com/reference/java/lang/ref/WeakReference]
 
@@ -528,7 +534,7 @@ Java 层的内存泄漏可以通过 GC 和工具比较容易地发现，但 Nati
 
 ### JNI 层的常见泄漏模式
 
-JNI 层的内存泄漏比 Java 层更隐蔽，因为 Native 代码没有 GC 机制。我们在 Code Review 中反复见到以下三种模式：
+JNI 层的内存泄漏比 Java 层更隐蔽，因为 Native 代码没有 GC 机制。Code Review 中反复出现的模式有三种：
 
 - **`NewGlobalRef` 不 `DeleteGlobalRef`**：JNI 中的全局引用会阻止 GC 回收被引用的 Java 对象。每次 `NewGlobalRef` 都必须有对应的 `DeleteGlobalRef`。
 - **`malloc` 不 `free`**：最基础的 C 层泄漏，但当代码路径复杂（提前 return、异常分支）时很容易遗漏。
@@ -683,7 +689,7 @@ data_sources {
 
 ### onTrimMemory 的分发路径
 
-了解回调级别之后，下一个问题是：`onTrimMemory` 是怎么从系统到达 App 的？追踪 AOSP 源码可以看到完整的分发链路。
+了解回调级别之后，还要看 `onTrimMemory` 是怎么从系统到达 App 的。沿着 AOSP 源码追踪，完整分发链路可以拆成三步。
 
 1. **System Server**：`ActivityManagerService` 检测到内存压力变化后，通过 Binder 向目标进程发送 `scheduleTrimMemory(level)`。
 2. **App 侧 Binder 线程**：`ActivityThread.handleTrimMemory(int level)` 接收调用，先分发给 `Application.onTrimMemory(level)`，再通过 `ContextImpl` 遍历所有已注册的 `ComponentCallbacks2` 逐一回调。
@@ -744,7 +750,7 @@ override fun onTrimMemory(level: Int) {
 }
 ```
 
-这里有一个关键原则：**`onTrimMemory` 的回调不应该导致用户可感知的体验下降**。当进程在前台时收到 `TRIM_MEMORY_RUNNING_LOW`，应释放的是预加载缓存、二级缓存这类"有更好、没有也不影响核心功能"的资源。不要在前台状态下清空图片缓存——用户正在看的列表会突然变成白屏。
+处理原则：**`onTrimMemory` 的回调不应该导致用户可感知的体验下降**。当进程在前台时收到 `TRIM_MEMORY_RUNNING_LOW`，应释放的是预加载缓存、二级缓存这类"有更好、没有也不影响核心功能"的资源。不要在前台状态下清空图片缓存——用户正在看的列表会突然变成白屏。
 
 ### 注册方式
 
@@ -871,7 +877,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 ## 常见问题与误区
 
-内存优化是 Android 开发中最容易产生误解的领域之一。一部分原因是 Android 的内存管理机制在不同版本之间发生了显著变化，一些曾经正确的做法在新版本上不再适用，而一些从未正确过的做法却因为"看起来有效"而被广泛传播。我们把在实际开发和技术面试中反复遇到的几个典型误区梳理一遍。
+内存优化是 Android 开发中最容易产生误解的领域之一。一部分原因是 Android 的内存管理机制在不同版本之间发生了显著变化，一些曾经正确的做法在新版本上不再适用，而一些从未正确过的做法却因为"看起来有效"而被广泛传播。这里梳理几个在实际开发和技术面试中反复出现的典型误区。
 
 ### 误区一："调用 System.gc() 能解决内存问题"
 
@@ -879,7 +885,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 第一层原因是 **GC 本身有开销**。ART 的 Concurrent Copying Collector 虽然大部分工作是并发的，但仍然需要短暂的"暂停"阶段（Young Generation 暂停）来拷贝存活对象。调用 `System.gc()` 时，就是在主动制造一次 GC 周期，这会让正在运行的线程暂停——如果这个调用发生在主线程的渲染路径中，就是一次额外的掉帧风险。
 
-第二层原因是 **它掩盖了真正的问题**。内存紧张通常意味着存在泄漏或过度分配。调用 `System.gc()` 可能在短时间内"解决"了内存不足的症状（因为 GC 确实回收了一些可达但暂时未引用的对象），但它不会修复泄漏——泄漏的对象仍然有从 GC Root 到达的强引用链，GC 无法回收它们。正确的做法是用 Memory Profiler 或 LeakCanary 找到泄漏源头，而不是用 `System.gc()` 掩盖症状。
+第二层原因是 **它掩盖了问题本身**。内存紧张通常意味着存在泄漏或过度分配。调用 `System.gc()` 可能在短时间内"解决"内存不足的症状（GC 会回收一些可达但暂时未引用的对象），但它不会修复泄漏——泄漏的对象仍然有从 GC Root 到达的强引用链，GC 无法回收它们。正确的做法是用 Memory Profiler 或 LeakCanary 找到泄漏源头，而不是用 `System.gc()` 掩盖症状。
 
 有一种极少数情况下 `System.gc()` 是有意义的：当刚执行完一次大批量的内存释放操作（比如清空了一个大型缓存 Map），想让系统尽快回收这些对象以降低内存水位。但即使在这种场景下，也可以通过调用 `System.runFinalization()` 配合使用，或者直接信赖 ART 的 GC 会在下次自然周期中处理。
 
@@ -887,7 +893,7 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 ### 误区二："Android 8.0+ 不需要 recycle Bitmap"
 
-我们在前面讲过，Android 8.0（API 26）将 Bitmap 的像素数据从 Java 堆移到了 Native 堆。这确实意味着 Bitmap 不再直接占用 Java 堆配额，也不再直接导致 `OutOfMemoryError`。但"不需要 recycle"这个结论过于简化了。
+前文讲过，Android 8.0（API 26）将 Bitmap 的像素数据从 Java 堆移到了 Native 堆。Bitmap 因此不再直接占用 Java 堆配额，也不再直接导致 `OutOfMemoryError`。但"不需要 recycle"这个结论过于简化了。
 
 实际情况是：Bitmap 的 Java 对象仍然在 Java 堆中（它是一个普通 Java 对象，包含宽高、配置等元数据），而像素数据在 Native 堆。当 Java 层的 Bitmap 对象变得不可达时，GC 会回收 Java 对象，并触发 Native 层的 finalize 机制来释放像素数据。但这个 finalize 过程是**异步的、延迟的**——GC 不保证立即回收，finalize 队列的处理也可能滞后。
 
@@ -905,38 +911,38 @@ Bitmap 像素数据存储在 Native 堆。在 16KB 页模式下，每个 Bitmap 
 
 这个误解导致了很多 App 在收到 `onTrimMemory` 回调时反应过度——清空所有缓存、停止所有后台任务、甚至弹窗提示用户"内存不足"。
 
-`onTrimMemory` 有多个级别，大部分是**预警**而非"死刑通知"。我们在前面详细列出了每个级别的含义，这里我们用一个简化的判断框架来帮助理解：
+`onTrimMemory` 有多个级别，大部分是**预警**而非"死刑通知"。前面已经列出每个级别的含义，这里用一个简化的判断框架来帮助理解：
 
 - **前台回调**（`TRIM_MEMORY_RUNNING_LOW/MODERATE/CRITICAL`）：App 仍在前台运行，系统只是说"整个设备的内存有点紧了"。这时候应释放非关键缓存（比如预加载的数据），但不要影响用户正在使用的核心功能——不要清空当前列表的图片缓存，不要停止正在播放的视频。
 - **`TRIM_MEMORY_UI_HIDDEN`**：App 的 UI 不可见（比如用户按了 Home 键）。这是最常见的前后台切换回调，和"即将被杀"没有关系。只需释放 UI 相关的资源（比如大的 View 缓存）。
 - **后台回调**（`TRIM_MEMORY_BACKGROUND/MODERATE`）：App 在后台 LRU 列表中，系统在考虑是否回收进程。应释放大部分可重建的缓存，但还没到"最后关头"。
 - **`TRIM_MEMORY_COMPLETE`**：这是唯一一个可以理解为"系统正在认真考虑终止进程"的级别。到了这个级别，应释放一切可释放的资源，并保存关键状态数据，以备下次冷启动时恢复。
 
-简单来说：**不要把 `onTrimMemory` 当成 `onDestroy`**。它是一个梯度式的预警系统，不是一次性开关。正确的做法是根据级别做差异化的响应，而不是一收到回调就清空一切。
+**不要把 `onTrimMemory` 当成 `onDestroy`**。它是一个梯度式的预警系统，不是一次性开关。正确的做法是根据级别做差异化的响应，而不是一收到回调就清空一切。
 
 ### 误区四："申请 largeHeap 是解决内存不足的好办法"
 
 `android:largeHeap="true"` 看起来是一个简单的解决方案——在 Manifest 里加一行配置，Java 堆的大小限制就提高了。但它有几个不容易被注意到的代价。
 
-首先是 **GC 开销增大**。ART 的 GC 时间与堆的大小正相关——堆越大，GC 需要扫描的对象越多，单次 GC 的耗时越长。在 120Hz 设备上，帧间隔只有 8.3ms，GC 暂停多出 2-3ms 就可能导致掉帧。一个普通堆大小 256MB 的 App 和一个 largeHeap 512MB 的 App，在相同分配模式下，后者的 GC 暂停时间可能是前者的 1.5-2 倍。
+**GC 开销增大**。ART 的 GC 时间与堆的大小正相关——堆越大，GC 需要扫描的对象越多，单次 GC 的耗时越长。在 120Hz 设备上，帧间隔只有 8.3ms，GC 暂停多出 2-3ms 就可能导致掉帧。一个普通堆大小 256MB 的 App 和一个 largeHeap 512MB 的 App，在相同分配模式下，后者的 GC 暂停时间可能是前者的 1.5-2 倍。
 
-其次是 **设备碎片化问题**。"large heap"的具体大小由设备厂商决定，不同设备差异很大。在高内存设备上可能是 512MB，在低内存设备上可能只有 384MB——看似申请了"很大"的堆，实际可能只多了一点点。
+**设备碎片化问题**。"large heap"的具体大小由设备厂商决定，不同设备差异很大。在高内存设备上可能是 512MB，在低内存设备上可能只有 384MB——看似申请了"很大"的堆，实际可能只多了一点点。
 
-第三，也是最关键的：**largeHeap 不解决内存泄漏**。如果App 存在 Activity 泄漏，申请更大的堆只是让泄漏的"容量"变大了——从"泄漏 20 个 Activity 后 OOM" 变成了"泄漏 40 个 Activity 后 OOM"。根本问题依然存在。
+**largeHeap 不解决内存泄漏**。如果 App 存在 Activity 泄漏，申请更大的堆只是让泄漏的"容量"变大了——从"泄漏 20 个 Activity 后 OOM" 变成了"泄漏 40 个 Activity 后 OOM"。泄漏仍然存在。
 
-Google 的官方建议是：`largeHeap` 仅适用于确实需要大内存的特定场景（图片/视频编辑、大型游戏、地图渲染），而不应该作为解决 OOM 的常规手段。在申请 largeHeap 之前，先用 Memory Profiler 分析App 的内存分配模式，确认是真的需要更多内存，还是只需要修复泄漏和优化分配。
+Google 的官方建议是：`largeHeap` 仅适用于需要大内存的特定场景（图片/视频编辑、大型游戏、地图渲染），而不应该作为解决 OOM 的常规手段。在申请 largeHeap 之前，先用 Memory Profiler 分析 App 的内存分配模式，确认是需要更多内存，还是只需要修复泄漏和优化分配。
 
 [已验证: 官方文档, developer.android.com/guide/topics/manifest/application-element — largeHeap 属性说明]
 
 ### 误区五："内存抖动只发生在低端设备上"
 
-直觉上我们会认为：低端设备内存小、CPU 慢，所以更容易出现内存抖动导致的卡顿。高端设备内存大、CPU 快，应该不会有这个问题。
+直觉上容易这样判断：低端设备内存小、CPU 慢，所以更容易出现内存抖动导致的卡顿；高端设备内存大、CPU 快，应该不会有这个问题。
 
 但实际情况是反过来的：**120Hz 高刷新率设备比 60Hz 设备更容易暴露内存抖动问题**。
 
-原因我们在前面的"内存抖动"小节分析过：卡顿是否发生，取决于 GC 暂停时间是否超过帧间隔。60Hz 设备的帧间隔是 16.6ms，GC 暂停 5ms 还有 11.6ms 的余量。但 120Hz 设备的帧间隔只有 8.3ms，同样的 5ms GC 暂停就只剩 3.3ms——如果这一帧的 UI 工作本身需要 5ms，总共就是 10ms，超过了 8.3ms 的帧间隔，掉帧就发生了。
+前面的"内存抖动"小节已经分析过原因：卡顿是否发生，取决于 GC 暂停时间是否超过帧间隔。60Hz 设备的帧间隔是 16.6ms，GC 暂停 5ms 还有 11.6ms 的余量。但 120Hz 设备的帧间隔只有 8.3ms，同样的 5ms GC 暂停就只剩 3.3ms——如果这一帧的 UI 工作本身需要 5ms，总共就是 10ms，超过了 8.3ms 的帧间隔，掉帧就发生了。
 
-这意味着：在 60Hz 设备上测试可能毫无卡顿，到了 120Hz 设备上就可能暴露。这也是为什么内存优化不应该只在低端设备上做——高刷设备同样需要减少不必要的对象分配，特别是 `onDraw()`、`onBindViewHolder()` 这类高频回调路径中的分配。
+结果是：在 60Hz 设备上测试可能毫无卡顿，到了 120Hz 设备上就可能暴露。这也是为什么内存优化不应该只在低端设备上做——高刷设备同样需要减少不必要的对象分配，特别是 `onDraw()`、`onBindViewHolder()` 这类高频回调路径中的分配。
 
 [待验证: 120Hz vs 60Hz 设备上 GC 暂停导致掉帧的实际测试数据对比]
 

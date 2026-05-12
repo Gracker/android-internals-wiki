@@ -170,3 +170,17 @@
 - **位置**：L334 WebGPU 90%-95% Vulkan 吞吐量缺少一手数据
 - **问题**：AndroidX WebGPU release notes 只说明 alpha 版本与 Dawn commit 更新，未给 Android 17 compute pipeline 对 Vulkan 90%-95% 的公开基准。
 - **建议**：补 benchmark 来源、设备、driver、workload、样本数；否则删除百分比，只保留 WebGPU 是更高层 Kotlin binding / Dawn 路线。
+
+## [Task6 Review] 4.3 ART 虚拟机内存管理 — 2026-05-12
+- **类型**：需重写 / 需补充素材
+- **位置**：参考资料之后的 ART FinalizerDaemon 与 ReferenceQueue 调研段落；全章实践与诊断部分
+- **问题**：源码调研材料追加在参考资料之后，结构上像未消化素材；同时缺少大型应用 ART GC 诊断案例和作者经验。
+- **建议**：将调研材料整合回正文对应小节或移为附录；补 1 个 Perfetto/Memory Profiler 诊断案例（现象、观察点、判断依据、修复动作、结果）。
+- **review 日志**：logs/review/2026-05-12-16-review.md
+
+## [Task6 Review] 4.5 App 内存优化 — 2026-05-12
+- **类型**：需补充素材 / 需确认
+- **位置**：监控兜底、内存抖动与高刷掉帧、Bitmap / inBitmap 优化收益
+- **问题**：Perfetto/Memory Profiler 观察说明不足；“3ms 黄金停顿”“掉帧率下降 3-5 倍”“inBitmap 减少 80% 以上分配”等量化描述缺少测试条件或来源。
+- **建议**：补充设备、系统版本、刷新率、负载场景、采样方法和对比数据；无数据时保留帧预算推导，删除固定百分比。
+- **review 日志**：logs/review/2026-05-12-16-review.md
