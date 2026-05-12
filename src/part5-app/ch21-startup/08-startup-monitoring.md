@@ -26,10 +26,15 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [startup-monitoring, metrics, p50, p90, regression, android-vitals]
 related_chapters: ["21.1", "26.3", "15.3", "15.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-05-13"
+task6_result: needs-rework
+
 ---
 
 # 启动监控与度量
@@ -59,11 +64,9 @@ task2b_state: pending
 
 ## 为什么要了解启动监控与度量
 
-21.1 到 21.7 节已经拆过启动链路、任务编排、ContentProvider、Baseline Profile、Splash Screen、延迟初始化和多进程启动。剩下的工程问题是：**优化完成后，怎么在线上持续判断启动有没有变快、有没有退化、退化由谁引入**。
+21.1 到 21.7 节已经拆过启动链路、任务编排、ContentProvider、Baseline Profile、Splash Screen、延迟初始化和多进程启动。剩下的工程问题：**优化完成后，怎么在线上持续判断启动有没有变快、有没有退化、退化由谁引入**。
 
 启动监控不是在 `Application.onCreate()` 前后打两个点。`Application` 只能覆盖 App 代码开始执行后的区间，漏掉了进程创建、Zygote fork、类加载、资源加载、首帧绘制和用户感知完成等关键阶段。线上度量要把系统口径、业务口径和用户体感放在一张表里，否则容易出现 Trace 里变快、用户仍觉得慢的情况。
-
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 
 ## 启动耗时埋点方案设计
 
@@ -119,8 +122,6 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 
 字段越多，隐私和数据成本越高。采集原则是：只采集能服务归因的字段，不上传用户敏感内容；页面名、任务名、入口来源使用枚举值；用户操作序列只保留稳定性和性能排查需要的最小信息。详见 26.3 节的性能指标采集与上报。
 
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
-
 ## 线上启动性能采集与分位值分析
 
 ### 分位值比平均值更适合启动监控
@@ -150,8 +151,6 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 | 诊断层 | 初始化任务耗时、主线程长任务、I/O 摘要、线程池状态 | 低采样率，只对慢启动样本打开 | 退化归因 |
 
 慢启动样本可以按规则触发诊断上报：冷启动 TTID 超过 P90 阈值、TTFD 超过业务阈值、首屏 Activity 首次打开、升级后首次启动。这样既能控制成本，又能保证慢样本有足够上下文。
-
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
 
 ### 看板拆分方式
 
@@ -212,11 +211,9 @@ Android 官方文档把启动分为冷启动、温启动和热启动，并建议
 
 这套流程的价值在于把“启动变慢了”拆成“哪个版本、哪个入口、哪类用户、哪个任务变慢”。没有这一层拆分，启动优化很容易变成全员猜测。
 
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
+### Android 15+ 的平台启动信息
 
-### [自动发现] Android 15+ 的平台启动信息
-
-Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`），用于提供启动类型、启动原因、时间戳等信息。它适合补齐 App 自建埋点拿不到的系统侧起点，但只能覆盖较新系统版本，线上监控仍需要保留 Android 10-14 的兼容采集路径。[待验证: 需在 Task9 复核 Android 15/16 API 细节与字段名称]
+Android 15 起，平台增加了应用启动信息相关 API（`ApplicationStartInfo`），用于提供启动类型、启动原因、时间戳等信息。它适合补齐 App 自建埋点拿不到的系统侧起点，但只能覆盖较新系统版本，线上监控仍需要保留 Android 10-14 的兼容采集路径。[需确认: ApplicationStartInfo 的字段名称、启动原因枚举和 Android 15/16 可用性需 Task9 复核]
 
 这个能力更适合作为校准源：在 Android 15+ 设备上对比平台时间戳和自建埋点，确认 TTID / TTFD 的端侧口径是否偏移；不要把它当成替代全版本启动监控的方案。
 
@@ -265,4 +262,3 @@ Android Vitals 和自建启动监控的差异主要在四个方面。
 
 启动监控的工作顺序是：先定义 TTID / TTFD 和启动类型，再采集端侧时间线与归因字段，随后用 P50/P90/P99 建看板和告警，并把 Android Vitals 作为外部校准。优化是否有效，不由单次 Trace 决定，而由线上分位值、慢样本归因和版本趋势共同决定。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
