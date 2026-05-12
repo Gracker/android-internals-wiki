@@ -258,3 +258,18 @@
 - **位置**：§16KB 页对齐、§EROFS 的核心技术优势
 - **问题**：`PSS 平均增加约 9%`、EROFS `24%-45%`、`App 启动最高提升 22.9%` 等数字缺设备、Android 版本、页面大小、分区大小、压缩算法、测试 workload 和原始链接。作为版本演进章节，这些数字会影响读者对收益/代价的判断。
 - **建议**：补官方或论文/演讲出处、测试条件和基线；无法补齐时保留方向性结论，删除固定百分比或标成待验证案例。
+
+## [Task6 Review] 5.1 Linux 进程调度基础 — 2026-05-12
+- **类型**：需确认 / 内容结构
+- **位置**：常见问题与误区之后「Android OOM Adj 与 TrimMemory 机制」
+- **问题**：该段更接近 §7.3 内存回收/进程优先级内容，插在 Linux 调度章节末尾会打断主线。5.1 另有既存 L3/L4 回炉项：调度器深度分析和实战决策指导不足。
+- **建议**：Task 2B 判断是否移回 §7.3；若保留在 5.1，只保留与调度优先级、cgroup、oom_score_adj 的交叉引用。
+- **review 日志**：logs/review/2026-05-12-20-review.md
+
+## [Task6 Review] 5.11 端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线 — 2026-05-12
+- **类型**：需确认 / 技术证据
+- **位置**：Android 17 NPU 硬件特性声明；CompiledModel API V2 与 AOT 编译
+- **问题**：Android 17 NPU feature、意图防火墙、电量配额审计、CompiledModel V2、AICore 路由和 AOT 耗时数据等断言缺少一手官方文档或源码锚点。Task 6 不裁决真伪，已在正文加 `[存疑]` 标注。
+- **建议**：Task 9 先核对 Android SDK / AOSP / LiteRT / AICore 官方资料；Task 2B 再按复核结果补证据、降级表述或删除无法验证的数值。
+- **review 日志**：logs/review/2026-05-12-20-review.md
+

@@ -1,30 +1,30 @@
 ---
-
-
-task9_result: needs-rework
-task9_reviewed_date: 2026-05-12
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-12T15:40:00+08:00'
 title: 线程模型
 chapter: '1.5'
 section: '1.5'
 status: ready-for-review
-reviewed_date: 2026-05-12
-reviewed_by: openclaw-task6
-review_round: 8
-task6_result: pass-light-edit
+pipeline_stage: task9_pending
 task6_state: reviewed
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: '2026-05-12'
+reviewed_at: '2026-05-12T20:10:00+08:00'
+last_task6_at: '2026-05-12T20:10:00+08:00'
+task6_reviewed_date: '2026-05-12'
+review_round: 9
+task6_review_notes: '2026-05-12 task6 review: 修复 frontmatter、禁用元叙述词和轻量措辞；L1/L2 通过，无新增回炉项。'
+task9_state: pending
+task9_result: needs-rework
+task9_reviewed_date: 2026-05-12
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-12T15:40:00+08:00'
+task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；详见 logs/deep-review/2026-05-12-15-deep-review.md、logs/deep-review/2026-05-04-16-deep-review.md。'
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: '2026-05-12T19:36:00+08:00'
 applicable_versions: Android 5.0 (API 21) - Android 16 (API 36)
 last_verified: '2026-04-24'
-reviewed_date: 2026-05-04
-reviewed_by: openclaw-task6
-review_round: 7
-polish_count: 2
-polish_date: '2026-04-10'
-polish_by: task2b-polish
-drafted_by: openclaw-task2
 last_verified_against: AOSP android-16.0.0_r1, Android SDK android-Baklava stubs
-drafted_date: '2026-03-31'
 confidence: high
 sources:
 - type: blog
@@ -77,18 +77,12 @@ related_chapters:
 - '2.4'
 - '2.5'
 - '5.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
-task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
-last_task2b_at: '2026-05-12T19:36:00+08:00'
-task2b_result: fixed
-task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；详见 logs/deep-review/2026-05-12-15-deep-review.md。'
-  logs/deep-review/2026-05-04-16-deep-review.md。'
+drafted_date: '2026-03-31'
+drafted_by: openclaw-task2
+polish_count: 2
+polish_date: '2026-04-10'
+polish_by: task2b-polish
 ---
-
-
 
 # 线程模型
 
@@ -123,7 +117,7 @@ task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / 
 
 打开 Perfetto，我们会看到每个 App 进程下都有好几个线程在活动。其中最显眼的两条是 UI Thread（主线程）和 RenderThread（渲染线程）。在滑动列表的时候，UI Thread 上会出现一串整齐的 `doFrame` 方块，紧跟着 RenderThread 上出现对应的 `DrawFrame` 方块——两个线程像齿轮一样咬合，一帧一帧地把画面推到屏幕上。
 
-做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，首先要搞清楚主线程是怎么运转的。主线程会不断地从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
+做卡顿分析、ANR 排查或启动速度优化，都必须理解这套线程模型。因为 Android 的主线程承担了几乎所有与用户交互相关的工作——处理 Input 事件、执行动画、measure/layout/draw、响应 Binder 调用。任何一项工作阻塞了主线程，用户就会感知到卡顿甚至 ANR。而理解主线程为什么会被阻塞、阻塞在哪里，先要搞清楚主线程是怎么运转的。主线程会不断地从消息队列中取出消息并处理，代码执行只是这个循环中的一个片段。
 
 同时，从 Android 5.0 开始，渲染工作被分离到了独立的 RenderThread。理解主线程和 RenderThread 之间的分工和同步机制，是在 Perfetto 中正确解读渲染性能数据的前提。
 
@@ -241,7 +235,7 @@ IdleHandler 的典型用途包括：
 
 ### 为什么需要独立的渲染线程
 
-在 Android 4.4 及更早的版本中，所有的 UI 渲染工作都在主线程完成：measure、layout、draw，然后调用 OpenGL API 提交绘制命令，最后与 SurfaceFlinger 交互。结果是 GPU 命令提交会同步阻塞主线程。如果 GPU 处理慢了，主线程也会一起被拖慢。
+在 Android 4.4 及更早的版本中，所有的 UI 渲染工作都在主线程完成：measure、layout、draw，然后调用 OpenGL API 提交绘制命令，并与 SurfaceFlinger 交互。结果是 GPU 命令提交会同步阻塞主线程。如果 GPU 处理慢了，主线程也会一起被拖慢。
 
 Android 5.0（Lollipop）引入了 RenderThread，将渲染工作从主线程分离出去。这个改动的核心思想是：主线程只负责构建绘制指令（DisplayList），构建完成后通过 `syncAndDrawFrame()` 将 DisplayList（一组平台无关的绘制指令序列）同步给 RenderThread，然后主线程就可以解放出来处理下一个 VSync 周期的消息。RenderThread 在自己的线程上独立执行 GPU 渲染命令、管理 Buffer、与 SurfaceFlinger 交互。
 
@@ -325,7 +319,7 @@ Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
 
 这里没有一个跨版本都成立的固定比例。不同设备会再叠加 `cpu.shares`、cpuset、uclamp 甚至 cgroup v2 的控制参数，所以不要把它理解成通用的 95:5。分析实机时，直接查看设备上的 `/dev/cpuctl/`、`/dev/stune/` 或 cgroup v2 对应目录参数，更可靠。这样解读 Perfetto 也更稳妥：后台线程的 CPU slice 往往更短、更稀疏，但具体压缩到什么程度，取决于设备配置。
 
-在 Perfetto 的 CPU 视图中，我们可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，首先要检查的是它的优先级设置是否正确。
+在 Perfetto 的 CPU 视图中，我们可以观察到这个效果：后台线程的 CPU slice 通常很短且稀疏，而前台线程的 CPU slice 更长且连续。如果看到一个后台线程意外地占用了大量 CPU，先检查的是它的优先级设置是否正确。
 
 ### SCHED_OTHER vs SCHED_FIFO
 
