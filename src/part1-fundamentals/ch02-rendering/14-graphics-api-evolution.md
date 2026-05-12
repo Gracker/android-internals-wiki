@@ -1,6 +1,4 @@
 ---
-
-
 status: ready-for-review
 title: 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
 chapter: '2.14'
@@ -55,13 +53,13 @@ related_chapters:
 - '2.17'
 - '14.8'
 section: '2.14'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-09'
-task6_result: pass-light-edit
+reviewed_date: '2026-05-12'
+task6_result: needs-rework
 task9_result: needs-rework
 task9_reviewed_date: 2026-05-12
 task2b_result: fixed
@@ -69,7 +67,10 @@ last_task2b_at: '2026-05-12T19:36:00+08:00'
 last_task9_at: '2026-05-12T15:40:00+08:00'
 task9_reviewed_by: openclaw-task9
 task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；详见 logs/deep-review/2026-05-12-15-deep-review.md。'
+review_type: task6-writing-quality-review
+review_notes: "2026-05-12 task6 review: needs-rework。L1/L2 小修 4 处；WebGPU 90%-95% 吞吐量缺基准条件，已写入 queue。"
 ---
+
 
 
 # 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）
@@ -295,7 +296,7 @@ Vulkan 驱动 → GPU
 
 ANGLE 的翻译不是简单的 API 映射。最复杂的部分是**状态转换**：OpenGL ES 的"随时改变状态"模型需要被翻译为 Vulkan 的"预编译 Pipeline"模型。ANGLE 内部维护了一个状态向量到 Vulkan PSO 的哈希映射表——当应用改变了 OpenGL ES 状态时，ANGLE 会查找是否已经有匹配的 Vulkan Pipeline，如果没有就创建一个新的。
 
-这意味着 ANGLE 引入的额外开销主要来自两方面：
+ANGLE 引入的额外开销主要来自两方面：
 
 1. **GLSL ES 到 SPIR-V 的着色器翻译**：ANGLE 内置了一个着色器编译器，将 GLSL ES 源码翻译为 Vulkan 使用的 SPIR-V 二进制格式。这个翻译发生在着色器首次编译时，之后会被缓存
 2. **状态追踪和 Pipeline 查找**：每次 GLES draw call 都需要在哈希表中查找匹配的 Vulkan Pipeline，如果未命中则创建新的 Pipeline（这个创建过程本身是耗时的）
@@ -342,6 +343,8 @@ Android 侧新增的一条图形接口路线是 WebGPU。Jetpack 文档把它定
 需要把 WebGPU 和 ANGLE 分开看。ANGLE 是 GLES 到 Vulkan 的翻译层，WebGPU 是另一套 API 语义和 WGSL shader 体系。AndroidX WebGPU 的 release notes 已经写明它会持续更新内部 Dawn source commit，Dawn 项目本身也是 Chromium 中 WebGPU 的底层实现。分析 WebView / WebGL / WebGPU 问题时，要先确认 Chromium / Dawn 这一层的 backend，再去解释系统 ANGLE policy。两者观察路径不同。
 
 Jetpack WebGPU 在 Android 17 上的计算管线（compute pipeline）基准测试达到了 Vulkan 原生实现 90%-95% 的吞吐量，API 代码量比 Vulkan 少一个数量级。图形渲染管线的相对性能取决于 draw call 密度和着色器复杂度，与计算管线的差距更大。在 Perfetto 中对比 WebGPU 和原生 Vulkan 的 GPU Activity 时，计算任务的 slice 分布接近，渲染任务的差距仍然明显。选择 WebGPU 的场景（图像处理、ML inference、数据可视化）通常以计算管线为主，这组基准数据有直接参考价值。
+
+[需确认: Jetpack WebGPU 在 Android 17 上达到 Vulkan 原生实现 90%-95% 吞吐量这一数字需要补充基准来源、设备、测试 workload 和 API/库版本；补不齐时应改成定性描述，避免把单一 benchmark 写成通用结论。]
 
 [已验证: 官方文档 + 上游实现, developer.android.com/develop/ui/views/graphics/webgpu, developer.android.com/jetpack/androidx/releases/webgpu, github.com/google/dawn]
 
@@ -445,7 +448,7 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timel
 - 现有的 GLES 应用，目标设备实测稳定
 - 以 2D UI 为主，且没有明确的 CPU driver bottleneck
 - 跨平台代码仍需要保持 GLES 抽象层
-- 开发资源有限，但要把 native GLES / ANGLE 两条路径纳入回归矩阵
+- 开发资源有限，但要把 native GLES / ANGLE 两条路径纳入回归范围
 
 ### 从 GLES 迁移到 Vulkan 的关键步骤
 
@@ -479,7 +482,7 @@ Frame Timeline（帧时间线）要求 Android 12(S) 及以上。`Expected Timel
 ## 常见问题与误区
 
 **误区：ANGLE 一定会让所有 GLES 应用变慢**
-实际情况：ANGLE 没有统一适用的固定性能百分比。它的开销取决于 workload、shader 首次编译、状态切换密度，以及原生 GLES driver 的质量。**可靠的结论只能来自目标设备实测。
+实际情况：ANGLE 没有统一适用的固定性能百分比。它的开销取决于 workload、shader 首次编译、状态切换密度，以及原生 GLES driver 的质量。可靠的结论只能来自目标设备实测。
 
 **误区：Android 15+ 之后所有 GLES 应用都会自动走 ANGLE**
 实际情况：是否走 ANGLE，取决于系统 driver、全局开关、per-app override、平台 allowlist，以及 loader 的 fallback 路径。官方 roadmap 说的是“更多新设备会把 ANGLE 作为 GL system driver”，不是“所有设备、所有应用今天都已经统一切换”。

@@ -304,3 +304,25 @@
 - **位置**：L175-L178 AudioTimestamp；版本演进 Android 16 条目
 - **问题**：`AudioTimestamp` 未说明来自 `AudioTrack.getTimestamp()`，也未交代 HAL 时间戳精度边界；16KB page / Gralloc AIDL V2 对 4K/8K 编解码吞吐的收益缺公开 benchmark 支撑。
 - **建议**：补 AudioTrack timestamp API 与设备精度边界；16KB/Gralloc 收益改成 `[待验证]` 或补设备、内容、codec、分辨率、fps、TLB/CPU counter 对照数据。
+
+
+## [Task6 Review] 2.10 GPU 渲染深入 — 2026-05-12
+- **类型**：需重写 / 需补充素材
+- **位置**：参考资料之后的源码调研补充；实战案例“社交应用图片滚动中的 GPU 瓶颈定位”
+- **问题**：参考资料之后继续展开正文内容，结构边界断裂；实战案例给出设备、帧耗时、帧率和优化收益，但缺真实 Trace/AGI 截图、采样条件或匿名复现说明。
+- **建议**：Task 2B 将补充内容整合回正文或附录；补一手证据与测试条件。若只是示意案例，改成“示例场景”并删除固定收益数值。
+- **review 日志**：logs/review/2026-05-12-23-review.md
+
+## [Task6 Review] 2.14 图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE） — 2026-05-12
+- **类型**：需确认 / 需补充素材
+- **位置**：WebGPU / Dawn：另一条新接口
+- **问题**：“Jetpack WebGPU 在 Android 17 上的计算管线基准测试达到 Vulkan 原生实现 90%-95% 吞吐量”缺 benchmark 来源、设备、库版本和 workload 条件。
+- **建议**：补官方或上游 benchmark 链接与测试条件；补不齐时改成定性描述，避免把单一测试写成通用结论。
+- **review 日志**：logs/review/2026-05-12-23-review.md
+
+## [Task6 Review] 16.5 Android 17 (API 37) 性能行为变更与适配方法 — 2026-05-12
+- **类型**：需确认 / 技术证据
+- **位置**：补充：DeliQueue drain 触发机制和 Generational CMC gating 条件深度验证 / ProfilingManager 触发器内部判断逻辑
+- **问题**：该小节以源码级口吻给出 `ProfilingManagerService` 内部判断伪代码和触发器行为差异，但缺 API 37 源码锚点、提交或官方 reference。Task 6 不裁决真伪，已在正文加 `[存疑]` 标注。
+- **建议**：Task 9 先核对 API 37 / AOSP preview 源码；无法核实时降级为示意流程，删除具体阈值与函数名。
+- **review 日志**：logs/review/2026-05-12-23-review.md

@@ -82,10 +82,10 @@
     "total_issues": 15
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 110,
-    "l3_issues": 11,
+    "l1_l2_fixes": 121,
+    "l3_issues": 15,
     "l4_issues": 4,
-    "total_issues": 127,
+    "total_issues": 142,
     "auto_promotions": 2
   },
   "issues_by_section": {
@@ -110,7 +110,7 @@
     "16.5": {
       "p0": 2,
       "p1": 2,
-      "p2": 2,
+      "p2": 3,
       "p3": 0
     },
     "17.2": {
@@ -152,7 +152,7 @@
     "2.14": {
       "p0": 1,
       "p1": 1,
-      "p2": 1,
+      "p2": 2,
       "p3": 0
     },
     "2.18": {
@@ -232,18 +232,24 @@
       "p1": 1,
       "p2": 0,
       "p3": 0
+    },
+    "2.10": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0
     }
   },
   "total_review_sections": 33,
   "next_review_candidates": [
-    "11.3 系统级功耗优化",
-    "13.2 Trace 抓取",
-    "13.6 线程 CPU 状态分析"
+    "17.2 SoC 平台差异",
+    "20.1 应用稳定性全景",
+    "08.01 响应速度原理"
   ],
   "ready_for_review": 55,
-  "last_updated": "2026-05-12T22:15:00+08:00",
-  "last_updated_by": "openclaw-task9",
-  "task6_last_review": "2026-05-12T21:56:00+08:00",
+  "last_updated": "2026-05-12T23:18:00+08:00",
+  "last_updated_by": "openclaw-task6",
+  "task6_last_review": "2026-05-12T23:18:00+08:00",
   "task9_last_review": "2026-05-12T22:15:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
@@ -456,6 +462,27 @@
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
       "last_task6_at": "2026-05-12T21:56:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90
+    },
+    "2.10": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-12T23:18:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90
+    },
+    "2.14": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-12T23:18:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90
+    },
+    "16.5": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-12T23:18:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90
     }
