@@ -2380,16 +2380,176 @@
       "related_files": [
         "src/part5-app/ch21-startup/07-multiprocess-startup.md"
       ]
+    },
+    {
+      "id": "task9-2026-05-13-8.6-performancehint-session-api",
+      "section": "8.6",
+      "section_title": "Kotlin Coroutine 性能实践",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "PerformanceHintManager.HintSession API 名称错误",
+      "description": "正文和示例使用 PerformanceHintManager.HintSession，但 AOSP android-15/16 公开嵌套类为 PerformanceHintManager.Session；示例代码无法按当前 API 编译。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L196-L210 ADPF setPreferPowerEfficiency 示例",
+          "detail": "AOSP frameworks/base/core/java/android/os/PerformanceHintManager.java 中嵌套类名为 Session，不存在 public HintSession；setPreferPowerEfficiency(boolean) 是 Session 方法且 Android 15+ flagged API。",
+          "suggestion": "将 PerformanceHintManager.HintSession 改为 PerformanceHintManager.Session，并补充 Android 15/API 35+、flagged API 与 fallback 边界。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-13-04-deep-review.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:11:19+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-8.6-adpf-coroutine-thread-model",
+      "section": "8.6",
+      "section_title": "Kotlin Coroutine 性能实践",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "principle-chain",
+      "title": "ADPF 与协程线程池联动模型缺少线程生命周期约束",
+      "description": "正文建议用协程拦截器自动绑定 TID 并报告工作时长，但 PerformanceHintManager.Session 文档要求 session 线程应长期存在；DefaultDispatcher 协程可能跨 worker 恢复，示例也未实现 ContinuationInterceptor。",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/06-coroutine-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L168-L188 ADPF 与协程调度器的联动",
+          "detail": "章节从“协程运行在用户态”跳到“Interceptor 自动绑定 TID”缺少 session 线程集合、协程恢复线程迁移、setThreads()/关闭时机、周期性 workload 的约束说明。",
+          "suggestion": "把建议收窄到长期 worker/游戏帧循环等稳定线程场景；若保留协程方案，补 ContinuationInterceptor 或 ThreadContextElement 的真实实现边界，并说明每次恢复可能换 TID。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-13-04-deep-review.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:11:19+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-13.6-irq-context-model",
+      "section": "13.6",
+      "section_title": "线程 CPU 状态分析",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "principle-chain",
+      "title": "irq/softirq 执行上下文描述误导",
+      "description": "正文写硬件中断和 softirq 在当前进程上下文执行并共享进程堆栈，过度简化甚至错误；Android/Linux 上硬 IRQ 是 interrupt context，arm64 常见独立 IRQ stack，softirq 也可能由 ksoftirqd 执行。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理断裂",
+          "location": "L390-L394 irq/softirq 对线程调度的影响",
+          "detail": "“共享进程堆栈”不适合作为 Android 设备上的通用事实；Perfetto 分析中也应优先启用 irq/softirq 轨道或 perf 采样验证，不能只用 Running slice 与火焰图差额推断。",
+          "suggestion": "改为说明 current task 可能仍显示为 Running，但中断处理属于 interrupt/softirq 上下文；补充 irq/softirq ftrace 事件、ksoftirqd 路径和分析限制。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-13-04-deep-review.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:11:19+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-14.3-malloc-hook-header-visibility",
+      "section": "14.3",
+      "section_title": "内存分析工具",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "malloc hooks 头文件可见性判断错误",
+      "description": "正文写 __malloc_hook 等符号在 NDK 头文件中不可见、需要自行 extern；但 bionic malloc_hooks README 明确这些 hooks defined in malloc.h，AOSP libc/include/malloc.h 在 API 28 声明这些符号。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/03-memory-tools.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L542-L547 malloc hooks 关键注意事项",
+          "detail": "AOSP bionic/libc/include/malloc.h 对 __malloc_hook/__realloc_hook/__free_hook/__memalign_hook 标注 __INTRODUCED_IN(28)；README 也说明 four hooks are defined in malloc.h。",
+          "suggestion": "删除“NDK 头文件中不可见/需要自行 extern”断言；改为说明 API 28+、需启用 LIBC_HOOKS_ENABLE/libc.debug.hooks.enable、hook 指针设置无线程安全。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-13-04-deep-review.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:11:19+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-14.3-mte-asymm-source-anchor",
+      "section": "14.3",
+      "section_title": "内存分析工具",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "source-code-accuracy",
+      "title": "MTE ASYMM 自动升级缺少 AOSP 源码锚点",
+      "description": "正文声称 App memtagMode=async 时 OS 会在硬件支持下自动静默升级到 ASYMM，并引用 Zygote.java；复核 android-15/16 Zygote.java 只看到 MEMTAG ASYNC/SYNC 映射和 compat change，没有 ASYMM 分支。",
+      "assigned_to": "research-team",
+      "estimated_hours": 3,
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/03-memory-tools.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L584-L608 MTE 三种模式与 ASYMM 升级机制",
+          "detail": "ASYMM 硬件能力与 Android runtime 策略的关系没有源码闭环；当前引用到 Zygote.java 不能支撑“App async 自动升级到 ASYMM”的强断言。",
+          "suggestion": "找到 bionic/scudo/kernel 或 Android security 文档中的确切锚点后再写成结论；否则降级为[待验证]，并区分硬件支持、内核 preferred mode、App manifest memtagMode 三层。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-13-04-deep-review.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:11:19+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 93,
-    "p0_count": 11,
-    "last_updated": "2026-05-13T03:44:10+08:00",
-    "updated_by": "openclaw-task2b",
-    "pending_entries": 47,
+    "total_entries": 99,
+    "p0_count": 45,
+    "last_updated": "2026-05-13T04:11:56+08:00",
+    "updated_by": "openclaw-task9",
+    "pending_entries": 52,
     "updated_date": "2026-05-13"
   },
-  "last_updated": "2026-05-13T02:51:35+08:00",
+  "last_updated": "2026-05-13T04:11:56+08:00",
   "last_updated_by": "openclaw-task9"
 }
