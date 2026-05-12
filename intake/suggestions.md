@@ -348,3 +348,33 @@
 - **建议**：由 Task2B 将素材拆入“厂商调度策略差异”和“不同 SoC 上 Perfetto 数据的差异”，按 Qualcomm / MediaTek / Google Pixel 三类 OEM 调度器说明适用版本、证据边界和 trace 观察点。
 - **review 日志**：logs/review/2026-05-13-02-review.md
 
+## [Task9 Deep Review] 7.3 卡顿分析方法论 — 2026-05-13
+- **类型**：源码准确性/指标口径
+- **位置**：L388-L389 FrameMetrics `TOTAL_DURATION` / `DEADLINE`
+- **问题**：`TOTAL_DURATION` 被描述为“从 Choreographer 回调开始到 GPU 完成渲染”，容易和 API 31+ 的 `GPU_DURATION`、FrameTimeline Actual 中的 GPU work 混淆；官方只把它定义为 total frame duration，`DEADLINE` 是系统给 App 产出一帧的可用时长。
+- **建议**：改为“FrameMetrics 各阶段总时长 / total frame duration；GPU 侧单独看 `GPU_DURATION` 或 FrameTimeline Actual”，保留 `TOTAL_DURATION > DEADLINE` 作为线上粗筛。
+
+## [Task9 Deep Review] 7.3 卡顿分析方法论 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：多处 `[待补充：Trace 截图]`（三线程 Pin、FrameTimeline、线程状态、Critical Path）
+- **问题**：本节是方法论章节，关键判断依赖 Trace 观察，但核心截图仍为空位；不影响技术结论通过，但会削弱读者复现能力。
+- **建议**：补 1 份 Android 12+ FrameTimeline Trace 与 1 份调度延迟 Trace，标注设备、版本、刷新率、TraceConfig 与问题帧 token。
+
+## [Task9 Deep Review] 7.8 RecyclerView 列表滑动性能深度优化 — 2026-05-13
+- **类型**：源码准确性
+- **位置**：L124-L132 ViewHolder 回收复用的四级缓存
+- **问题**：AttachedScrap 被解释成“被移出屏幕但还会回来”的缓存层，容易与 `mCachedViews` 混淆；源码里还存在 `mChangedScrap`，pre-layout/change animation 场景下语义不同。
+- **建议**：按 `mAttachedScrap` / `mChangedScrap`、`mCachedViews`、`ViewCacheExtension`、`RecycledViewPool` 分开说明，明确 AttachedScrap 是 layout pass 中临时 detach/scrap 的已附着 ViewHolder。
+
+## [Task9 Deep Review] 7.8 RecyclerView 列表滑动性能深度优化 — 2026-05-13
+- **类型**：原理链完整性
+- **位置**：L413-L500 GapWorker bindTime 与 ConstraintLayout 多次测量
+- **问题**：同一盲区在 2026-04-25 与 2026-05-04 两段中重复展开，后一段还包含“源码改进建议”伪代码，容易把当前 AndroidX 行为与作者推演方案混在一起。
+- **建议**：合并为一段“已验证现状 + Perfetto 识别 + 工程应对”，把平台/库级改进设想移到 research note 或明确标 `[建议方向]`。
+
+## [Task9 Deep Review] 8.2 App 启动全流程 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L185-L187 16KB page size 冷启动收益
+- **问题**：“冷启动平均提速约 3.16%”缺少 Google 原文链接、测试设备、样本 App、page size 对照条件；`libwebviewchromium.so` 等大小也会随版本和 ABI 变化。
+- **建议**：补 Android 15 16KB page size 官方 benchmark 链接和测试条件；补不到则保留定性解释，把 3.16% 降级为 `[待验证]`。
+

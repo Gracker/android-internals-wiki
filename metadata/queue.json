@@ -2301,16 +2301,64 @@
       "related_files": [
         "src/part4-system/ch17-oem/02-soc-differences.md"
       ]
+    },
+    {
+      "section": "7.8",
+      "section_title": "RecyclerView 列表滑动性能深度优化",
+      "priority": 85,
+      "reason": "[Deep Tech Review] Android 17 DeliQueue / MessageQueue 版本边界与量化收益缺一手证据，需补 AOSP/官方 release note/benchmark 或降级为待验证。",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/数据缺失",
+          "location": "L181-L187 Android 17 DeliQueue 对预取调度的影响",
+          "detail": "章节把 DeliQueue、Treiber Stack、targetSdk 37 生效条件以及 missed frames -4% / System UI -7.7% / 首帧 P95 -9.1% 写成已验证结论，但 frontmatter sources 未列出 Android 17 MessageQueue/DeliQueue 源码、官方行为变更或 benchmark 条件。",
+          "suggestion": "补 `android.os.MessageQueue` / DeliQueue 相关 AOSP 路径、commit 或 Android 17 behavior changes / release note，并写清设备、targetSdk、样本口径；补不到则将本段降级为 `[待验证]`，避免把预取收益归因给未证实的系统队列实现。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T02:51:35+08:00",
+      "status": "pending"
+    },
+    {
+      "section": "8.2",
+      "section_title": "App 启动全流程",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ApplicationStartInfo 公开 API 与示例代码错误；TTID / SurfaceFlinger composition 指标口径混用，需回炉修正。",
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API错误",
+          "location": "L310-L345 Android 15+ ApplicationStartInfo",
+          "detail": "公开 API 中不存在 `getStartTimestamp()`、`getProcessStartupTimestamp()`、`getApplicationInitializationDurationMillis()`、`getFirstDrawDurationMillis()`、`getFullyDrawnDurationMillis()`、`getLaunchType()`，也不存在示例里的 `ActivityTaskManager.getHistoricalApplicationStartInfo()`。",
+          "suggestion": "改为 `ActivityManager#getHistoricalProcessStartReasons(int)` 获取 `ApplicationStartInfo`，使用 `getStartType()`、`getStartupState()`、`getStartupTimestamps()` 与 `START_TIMESTAMP_LAUNCH/FORK/BIND_APPLICATION/APPLICATION_ONCREATE/FIRST_FRAME/FULLY_DRAWN/SURFACEFLINGER_COMPOSITION_COMPLETE` 计算阶段耗时。"
+        },
+        {
+          "type": "原理断裂/指标口径",
+          "location": "L240-L256、L623 TTID / queueBuffer / SurfaceFlinger composition",
+          "detail": "正文同时写“TTID 终点是 windows drawn 回调”“系统度量统计到 queueBuffer 完成”“TTID 涵盖 SurfaceFlinger 合成完成”，三个口径互相冲突。Android 15 的 `ApplicationStartInfo` 已把 `FIRST_FRAME` 与 `SURFACEFLINGER_COMPOSITION_COMPLETE` 拆成不同 timestamp。",
+          "suggestion": "统一为：Displayed/TTID 对应首帧绘制/窗口首次绘制完成口径；`queueBuffer`、SF composition complete、物理送显属于后续链路，应在 Perfetto 或 ApplicationStartInfo 中单独说明，不要并入 `am start -W TotalTime` 的主定义。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T02:51:35+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
-    "total_entries": 89,
-    "p0_count": 10,
-    "last_updated": "2026-05-13T01:43:00+08:00",
+    "total_entries": 93,
+    "p0_count": 11,
+    "last_updated": "2026-05-13T02:51:35+08:00",
     "updated_by": "openclaw-task9",
-    "pending_entries": 45,
+    "pending_entries": 49,
     "updated_date": "2026-05-13"
   },
-  "last_updated": "2026-05-13T01:43:00+08:00",
+  "last_updated": "2026-05-13T02:51:35+08:00",
   "last_updated_by": "openclaw-task9"
 }

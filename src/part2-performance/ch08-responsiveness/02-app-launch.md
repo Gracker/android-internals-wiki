@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: 'ready-for-review'
 title: App 启动全流程
 chapter: '8.2'
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
@@ -52,17 +52,18 @@ reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-pipeline_stage: task9_pending
+pipeline_stage: 'task2b_pending'
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task9_result: needs-rework
-task2b_state: fixed
+task9_state: 'reviewed'
+task9_result: 'needs-rework'
+task2b_state: 'pending'
 task2b_result: fixed
 last_task2b_at: '2026-04-20T18:33:00+08:00'
-task9_reviewed_date: '2026-04-22'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-22T14:30:00+08:00'
+task9_reviewed_date: '2026-05-13'
+task9_reviewed_by: 'openclaw-task9'
+last_task9_at: '2026-05-13T02:51:35+08:00'
+task9_review_notes: '2026-05-13 02:51 Task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1；ApplicationStartInfo 公开 API 写错；TTID / SurfaceFlinger composition 口径需统一。'
 ---
 
 
