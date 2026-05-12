@@ -2183,16 +2183,70 @@
       "added_by": "task6-review",
       "added_at": "2026-05-13T01:20:00+08:00",
       "original_review_log": "logs/review/2026-05-13-01-review.md"
+    },
+    {
+      "id": "task9-22-4-custom-view-dirty-rect-rendernode-20260513",
+      "section": "22.4",
+      "section_title": "自定义 View 性能优化",
+      "title": "自定义 View 脏区域、GC 观测与 RenderNode 示例存在源码口径错误",
+      "description": "章节把已废弃的 dirty rect invalidate 写成 Android 10-17 的局部重绘优化主路径，同时 Perfetto GC 查询和 RenderNode 示例存在误导。",
+      "reason": "[Deep Tech Review] API 21+ `invalidate(Rect)` dirty rectangle 已被忽略；onDraw 分配的 GC 观测不应只查 RenderThread；RenderNode 示例缺 setPosition / try-finally。",
+      "issue_type": "source-code-accuracy",
+      "priority": 95,
+      "severity": "P0",
+      "status": "pending",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "dependencies": [],
+      "created_date": "2026-05-13",
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T01:43:00+08:00",
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-13-01-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L240-L252、L255-L280、L381 invalidate(Rect) / dirty rect 优化建议",
+          "detail": "AOSP android-15/16 `View.invalidate(Rect)` 与 `invalidate(int,int,int,int)` 文档已标 deprecated，并说明 API 21 起传入 dirty rectangle 会被忽略，推荐直接调用 `invalidate()`。正文把它写成 Android 10-17 的局部重绘主路径，并声称“只有脏区域会被实际光栅化”，与现代硬件加速 View 行为冲突。",
+          "suggestion": "重写 invalidate 范围控制小节：删除“频繁更新优先 invalidate(Rect)”的发布建议；改为解释硬件加速下 View/RenderNode 内部 damage 与 `invalidate()` 的关系。如要讲 dirty rect，单独放到旧版软件绘制或 Surface/Canvas `lockCanvas(Rect)` 场景。"
+        },
+        {
+          "severity": "P0",
+          "type": "代码错误",
+          "location": "L257-L279 进度条 invalidate 示例",
+          "detail": "示例中 `getPaddingLeft + mProgress * getContentWidth()` 少了 `getPaddingLeft()` 调用，`getContentWidth()` 未在示例中定义；进度值回退时 left/right 可能反向，生成无效 dirty rect。",
+          "suggestion": "若保留示例，先按现代 Android API 边界改写；代码必须可编译，并用 `min(old,new)` / `max(old,new)` 处理进度增减两种方向。"
+        },
+        {
+          "severity": "P1",
+          "type": "工具观察口径错误",
+          "location": "L94-L167 onDraw 分配与 Perfetto GC SQL",
+          "detail": "`onDraw()` 中 Java 对象分配发生在 UI thread 录制 DisplayList 阶段；GC 可能暂停 app 线程，但不应只过滤 `thread.name = RenderThread`。当前 SQL 很可能查不到真正的 ART GC，或把 RenderThread drawFrame 与 GC 因果关系写错。",
+          "suggestion": "把查询改为按 app process 范围查 GC/HeapTaskDaemon/main thread 相关 slice，并与 `Choreographer#doFrame`、FrameTimeline 或 UI thread draw slice 做时间窗口关联。"
+        },
+        {
+          "severity": "P1",
+          "type": "API 示例错误",
+          "location": "L344-L368 RenderNode 示例",
+          "detail": "`RenderNode.beginRecording()` 示例没有调用 `setPosition()` 或 `beginRecording(width, height)`，默认 RenderNode 宽高可能为 0；`endRecording()` 未放入 try/finally，异常时会留下未结束 recording。",
+          "suggestion": "按 AOSP `RenderNode.java` 官方示例改写：初始化/尺寸变化时设置 `setPosition(0,0,w,h)`，录制时用 try/finally 调 `endRecording()`，绘制前检查 `canvas.isHardwareAccelerated()` 与 `hasDisplayList()`。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 84,
-    "p0_count": 8,
-    "last_updated": "2026-05-12T23:39:00+08:00",
-    "updated_by": "openclaw-task2b",
-    "pending_entries": 43,
-    "updated_date": "2026-05-12"
+    "total_entries": 89,
+    "p0_count": 10,
+    "last_updated": "2026-05-13T01:43:00+08:00",
+    "updated_by": "openclaw-task9",
+    "pending_entries": 45,
+    "updated_date": "2026-05-13"
   },
-  "last_updated": "2026-05-12T22:15:00+08:00",
+  "last_updated": "2026-05-13T01:43:00+08:00",
   "last_updated_by": "openclaw-task9"
 }

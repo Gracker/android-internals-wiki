@@ -1,10 +1,10 @@
 {
   "total": 268,
   "draft": 44,
-  "ready-for-review": 63,
-  "finalized": 157,
+  "ready-for-review": 61,
+  "finalized": 159,
   "task9_result": "tech-review-completed",
-  "task9_reviewed_date": "2026-05-12",
+  "task9_reviewed_date": "2026-05-13",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
@@ -42,7 +42,8 @@
     "9.5",
     "21.6",
     "21.5",
-    "2.9"
+    "2.9",
+    "22.4"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -78,14 +79,15 @@
     "src/part2-performance/ch09-anr/05-case-studies.md",
     "src/part5-app/ch21-startup/06-lazy-initialization.md",
     "src/part5-app/ch21-startup/05-splash-screen.md",
-    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md",
+    "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md"
   ],
   "review_summary": {
-    "p0_issues": 5,
-    "p1_issues": 4,
-    "p2_issues": 4,
+    "p0_issues": 2,
+    "p1_issues": 2,
+    "p2_issues": 0,
     "p3_issues": 2,
-    "total_issues": 15
+    "total_issues": 6
   },
   "task6_review_summary": {
     "l1_l2_fixes": 147,
@@ -250,17 +252,35 @@
       "p1": 1,
       "p2": 0,
       "p3": 0
+    },
+    "22.4": {
+      "p0": 2,
+      "p1": 2,
+      "p2": 0,
+      "p3": 0
+    },
+    "21.4": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 1
+    },
+    "21.6": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 1
     }
   },
-  "total_review_sections": 36,
+  "total_review_sections": 37,
   "next_review_candidates": [
-    "17.2 SoC 平台差异",
-    "20.1 应用稳定性全景",
-    "08.01 响应速度原理"
+    "19.13 androidx.tracing（Tracing SDK）",
+    "19.21 Benchmark 应用",
+    "19.25 耗电与发热监控"
   ],
-  "ready_for_review": 56,
-  "last_updated": "2026-05-13T01:20:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 54,
+  "last_updated": "2026-05-13T01:43:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-13T01:20:00+08:00",
     "log": "logs/review/2026-05-13-01-review.md",
@@ -274,7 +294,7 @@
     "l3_l4_issues": 1,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-12T22:15:00+08:00",
+  "task9_last_review": "2026-05-13T01:43:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
     {
@@ -476,11 +496,13 @@
       "task9_state": "pending"
     },
     "21.4": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-05-12T21:56:00+08:00",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending"
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-13T01:43:00+08:00",
+      "last_task6_at": "2026-05-12T21:56:00+08:00"
     },
     "1.9": {
       "status": "ready-for-review",
@@ -519,11 +541,13 @@
       "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
     },
     "21.6": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "last_task6_at": "2026-05-13T01:20:00+08:00",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-13T01:43:00+08:00",
+      "last_task6_at": "2026-05-13T01:20:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
     },
     "2.9": {
@@ -541,6 +565,16 @@
       "task6_result": "pass-light-edit",
       "task9_state": "pending",
       "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
+    },
+    "22.4": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-13T01:43:00+08:00",
+      "last_task6_at": "2026-05-12T08:14:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-12-08-review.md"
     }
   },
   "task2b_rounds": [

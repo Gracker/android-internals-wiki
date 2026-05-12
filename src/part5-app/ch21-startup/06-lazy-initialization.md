@@ -2,7 +2,7 @@
 title: "延迟初始化与按需加载"
 chapter: "21.6"
 section: "21.6"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-15.0.0_r1 MessageQueue, Android Developers launch-time / App Startup / Play Feature Delivery docs"
@@ -26,14 +26,18 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [lazy-init, idlehandler, on-demand-loading, app-startup]
 related_chapters: ["21.2", "21.3", "1.13"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
+task9_result: pass-tech-review
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-13"
+last_task9_at: "2026-05-13T01:43:00+08:00"
 ---
 
 # 延迟初始化与按需加载
