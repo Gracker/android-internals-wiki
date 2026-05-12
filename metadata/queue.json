@@ -2572,6 +2572,192 @@
       "added_by": "task6-review",
       "added_at": "2026-05-13T04:17:00+08:00",
       "original_review_log": "logs/review/2026-05-13-04-review.md"
+    },
+    {
+      "id": "task9-2026-05-13-2.9-graphics-java-source-paths",
+      "section": "2.9",
+      "section_title": "渲染机制的版本演进",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "AGSL / RenderNodeAnimator 源码路径写错",
+      "description": "frontmatter 与参考资料把 RuntimeColorFilter、RenderNodeAnimator 写到 frameworks/base/core/java/...；AOSP android-16.0.0_r1 中对应 public graphics 类在 frameworks/base/graphics/java/...，RuntimeXfermode 也应补同目录源码锚点。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L36/L38/L474",
+          "detail": "`frameworks/base/core/java/android/graphics/RuntimeColorFilter.java` 与 `frameworks/base/core/java/android/graphics/animation/RenderNodeAnimator.java` 在 android-16.0.0_r1 不存在；实际路径是 `frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java`、`frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java`。",
+          "suggestion": "改正 frontmatter sources 与参考资料路径，并补 `frameworks/base/graphics/java/android/graphics/RuntimeXfermode.java`。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:39:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-2.9-vpa16-profile-version",
+      "section": "2.9",
+      "section_title": "渲染机制的版本演进",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "VPA16 / Vulkan 1.4 口径混在一起",
+      "description": "正文把 VPA16（Android Vulkan Profile 2025）描述为包含 Vulkan 1.4 支持的 profile；Khronos VP_ANDROID_16_requirements.json 的 api-version 为 1.3.276，Host Image Copy 是 profile 扩展之一。Android 平台 Vulkan 版本要求与 VP_ANDROID_16 profile 需要分开表述。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L174/L203/L435",
+          "detail": "`VP_ANDROID_16_requirements.json` 显示 profile `api-version` 为 1.3.276；正文写成 VPA16 包含 Vulkan 1.4 支持，容易把平台要求与 Khronos profile 混为一谈。",
+          "suggestion": "以 Khronos profile JSON 和 Android CDD/官方文档拆开写：profile 能力集、平台 Vulkan 版本要求、新设备准入要求分别给锚点。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:39:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-2.18-supported-refresh-rates-semantics",
+      "section": "2.18",
+      "section_title": "Adaptive Refresh Rate 与动态帧率控制",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "version-difference",
+      "title": "Display.getSupportedRefreshRates() 语义被写成默认刷新率列表",
+      "description": "正文把 Android 16/API 36 的 getSupportedRefreshRates() 写成“返回当前显示的默认刷新率列表”；AOSP Display.java 注释区分了 BAKLAVA+ 返回 display supported render rates、VANILLA_ICE_CREAM 及以下 legacy 行为才只返回 default modes。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L133",
+          "detail": "`getSupportedRefreshRates()` 的 API 36 语义与旧版 legacy 行为被压成一句“默认刷新率列表”，会误导 ARR 查询 API 的版本边界。",
+          "suggestion": "改为“Android 16+ 返回 display supported render rates；Android 15 及以下旧行为只返回默认 mode 的 refresh rates，需要更多选项时用 getSupportedModes()”。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:39:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-20.1-applicationexitinfo-trace-stream",
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "ApplicationExitInfo.getTraceInputStream() 适用原因写反",
+      "description": "正文写 getTraceInputStream() “仅 Java Crash 有值”；AOSP android-16.0.0_r1 ApplicationExitInfo.java 注释说明该 trace 通常用于 REASON_ANR，API 31 起 native tombstone 也会返回，且可能因环形缓冲被覆盖而为 null。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part5-app/ch20-stability/01-stability-overview.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L154",
+          "detail": "`getTraceInputStream()` 被描述为“异常堆栈，仅 Java Crash 有值”，与 AOSP 注释相反；它通常服务 ANR trace，API 31+ 也可返回 native tombstone protobuf。",
+          "suggestion": "改成按 reason 分支说明：REASON_ANR 通常可取 ANR trace；REASON_CRASH_NATIVE API 31+ 可取 tombstone；Java crash 不应写成唯一来源，并说明可能返回 null。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:39:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-20.1-anr-timeout-trace-version",
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "version-difference",
+      "title": "ANR 阈值与 trace 落盘路径口径过旧",
+      "description": "章节适用 Android 10-16，但 ANR 表格只给固定 Broadcast 10s/60s，遗漏 Android 14+ CPU-starved 时 10-20s / 60-120s 的官方口径；同时写成 dump 到 /data/anr/trace，AOSP android-16 StackTracesDumpHelper 使用 ANR_TRACE_DIR=/data/anr 与 anr_ 文件前缀。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part5-app/ch20-stability/01-stability-overview.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "ANR 阈值表 / L106",
+          "detail": "BroadcastReceiver timeout 未区分 Android 14+ 的 10-20s / 60-120s；ANR trace 写成单个 `/data/anr/trace` 文件也不符合 android-16 源码。",
+          "suggestion": "补 Android 13- 与 Android 14+ broadcast timeout 表；把 trace 路径改成 `/data/anr/anr_*`（或说明旧版 traces.txt / 设备差异），并补 silent/background ANR 不一定弹窗的边界。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:39:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-20.1-crashlytics-anr-support",
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "data-source-accuracy",
+      "title": "Firebase Crashlytics ANR 支持状态过时",
+      "description": "采集方式表把 Firebase Crashlytics 的 ANR 能力标成 ❌；Firebase 官方文档已有 “Debug your Android app based on ANR tags in the Crashlytics dashboard”，并说明 Crashlytics 会分析 crashes、non-fatals、ANRs 形成 issue。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part5-app/ch20-stability/01-stability-overview.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据/来源错误",
+          "location": "L197",
+          "detail": "Crashlytics ANR 列写 ❌ 且备注“ANR 需额外集成”，与 Firebase Crashlytics 当前 ANR dashboard/tags 文档不一致。",
+          "suggestion": "将表格改为“支持 ANR（能力/版本/平台限制需注明）”，并区分 Play Vitals、Crashlytics、自建 APM 在实时性、上下文和可定制上的差异。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T04:39:00+08:00"
     }
   ],
   "metadata": {
@@ -2582,6 +2768,6 @@
     "pending_entries": 52,
     "updated_date": "2026-05-13"
   },
-  "last_updated": "2026-05-13T04:11:56+08:00",
-  "last_updated_by": "openclaw-task9"
+  "last_updated": "2026-05-13T04:39:00+08:00",
+  "last_updated_by": "task9-deep-tech-review"
 }

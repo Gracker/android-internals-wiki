@@ -409,3 +409,16 @@
 - **问题**：正文提到 Android 15+ `ApplicationStartInfo` 可提供启动类型、启动原因、时间戳等信息，但字段名称、Android 15/16 可用性和版本边界仍需源码/API 复核。Task 6 不裁决 API 真伪，已在正文加 `[需确认]` 标注。
 - **建议**：Task 9 对照 Android Developers reference 与 AOSP API 定义核对字段、权限和版本差异；Task 2B 再把结论改成已验证口径或降级为兼容性提示。
 - **review 日志**：logs/review/2026-05-13-04-review.md
+
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-05-13
+- **类型**：原理链/源码支撑
+- **位置**：L153-L155
+- **问题**：Graphite 被解释为“Front-to-Back + Early-Z 跳过遮挡像素”的核心设计，但正文没有给 Skia 一手设计文档或 Android HWUI 集成源码锚点；容易把 Graphite 的任务图/资源管理/现代 GPU 后端演进误写成单一遮挡剔除机制。
+- **建议**：补 Skia Graphite 官方设计资料；若无法核实，降级为“Graphite 是 Skia 下一代 GPU 后端，Android HWUI 默认启用仍待集成验证”，删除 Early-Z 作为核心机制的强断言。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L436
+- **问题**：“16KB Page Size 让 TLB 命中率提升约 9%，渲染管线有效带宽增益”缺少设备、内核页大小、SoC、workload、采样方法和来源；该行被放进版本时间线，读者会把它当成平台通用结论。
+- **建议**：补可复现实验或官方性能数据；否则删掉百分比，改成“16KB 页会改变 TLB/内存映射开销，具体收益依赖设备和 workload”。

@@ -1,4 +1,5 @@
 ---
+
 status: ready-for-review
 title: Adaptive Refresh Rate 与动态帧率控制
 chapter: '2.18'
@@ -44,13 +45,13 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: task9_pending
-last_task9_at: '2026-05-12T15:40:00+08:00'
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-12
+pipeline_stage: task2b_pending
+last_task9_at: "2026-05-13T04:39:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-13"
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
@@ -59,7 +60,7 @@ task2b_result: fixed
 last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
-task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-12-15-deep-review.md。'
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 0；getSupportedRefreshRates API 36 语义需修正。"
 task6_reviewed_date: "2026-05-13"
 ---
 

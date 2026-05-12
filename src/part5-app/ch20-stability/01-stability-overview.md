@@ -1,4 +1,5 @@
 ---
+
 title: "应用稳定性全景"
 chapter: "20.1"
 section: "20.1"
@@ -14,9 +15,9 @@ reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: "fixed"
-pipeline_stage: "task9_pending"
+task9_state: reviewed
+task2b_state: pending
+pipeline_stage: task2b_pending
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -31,6 +32,11 @@ related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
 last_task6_at: "2026-05-13T02:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-13-02-review.md"
 task6_review_notes: "2026-05-13 Task6：补齐 outline 块、补代码围栏语言、清理元叙述词；L1/L2 通过，无新增回炉项。"
+task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-13"
+last_task9_at: "2026-05-13T04:39:00+08:00"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 0；ApplicationExitInfo、ANR 版本口径、Crashlytics ANR 支持需回炉。"
 ---
 
 # 应用稳定性全景
