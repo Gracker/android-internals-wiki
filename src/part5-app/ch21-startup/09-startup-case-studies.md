@@ -38,8 +38,11 @@ sources:
     path: "src/part5-app/ch21-startup/04-baseline-profile-practice.md"
 tags: [case-study, startup, optimization, baseline-profile, startup-framework]
 related_chapters: ["21.1", "21.2", "21.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
+task6_result: needs-rework
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
 task9_state: pending
 task2b_state: pending
 ---
@@ -72,18 +75,19 @@ task2b_state: pending
 
 21.1 到 21.8 已经把启动分析、任务编排、`ContentProvider`、Baseline Profile、启动页、延迟初始化、多进程和线上监控拆开讲过。本章收束到案例视角：拿到一个启动慢的大型 App，怎样把 trace、任务清单、profile、线上指标串成一次可复盘的优化过程。
 
-这里不重复讲原理。重点放在三个工程场景：`Application` 初始化过重、启动框架从散点初始化演进为任务图、Baseline Profile 从“文件已生成”走到“收益可验证”。
+本节不重复前文原理，重点放在三个工程场景：`Application` 初始化过重、启动框架从散点初始化演进为任务图、Baseline Profile 从“文件已生成”走到“收益可验证”。
+
+[需补充素材: 本节定位为案例集，但现有 `Application` 初始化、启动框架演进和 Baseline Profile 三段更像通用复盘框架，缺少真实设备、Android 版本、Perfetto 截图或匿名化 TTID / TTFD 数据。建议 Task 2B 补至少 1 个完整启动优化案例的证据链；补不齐时，将“案例”表述降级为“复盘模板”。]
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 
 ## 大型 App 启动优化实战
 
-### 案例 A：`Application.onCreate()` 被 SDK 初始化占满
+### `Application.onCreate()` 被 SDK 初始化占满
 
 大型 App 的冷启动慢，最常见的形态是 `Application.onCreate()` 里堆了大量同步初始化：Crash、埋点、推送、广告、网络、配置、数据库、实验平台、图片库都想抢启动入口。每个 SDK 单看只花 20-50 ms，串起来就是几百毫秒。
 
-排查时先不要急着改代码。把启动分成 4 段量出来：进程创建到 `attachBaseContext()`、`Application` 初始化、入口 `Activity` 创建、首帧绘制。21.1 节已经给出 TTID / TTFD 和 Perfetto 读法，本案例只看 `Application` 段。
+排查时先把启动分成 4 段量出来，再决定改动位置：进程创建到 `attachBaseContext()`、`Application` 初始化、入口 `Activity` 创建、首帧绘制。21.1 节已经给出 TTID / TTFD 和 Perfetto 读法，本案例只看 `Application` 段。
 
 可执行的复盘表如下：
 
@@ -95,10 +99,9 @@ task2b_state: pending
 | 数据库打开 | 主线程风险高 | 首屏如不读取本地数据就不必启动前打开 | I/O time | 改为懒打开，升级迁移放到后台窗口 |
 | 远程配置 | 网络 / I/O | 不应阻塞首帧 | 等待时间 | 使用本地缓存，网络刷新放到首帧后 |
 
-这个表的目的不是把所有任务都异步化，而是区分三类任务：首帧前必须完成、首帧前只要完成最小能力、首帧后再做也不影响用户第一眼内容。改完后再对比 TTID、TTFD、启动慢帧和启动阶段 Crash / ANR，防止把启动耗时转移成首屏不可用。
+这张表用来区分三类任务：首帧前必须完成、首帧前只要完成最小能力、首帧后再做也不影响用户第一眼内容。改完后再对比 TTID、TTFD、启动慢帧和启动阶段 Crash / ANR，防止把启动耗时转移成首屏不可用。
 
 [已验证: 官方文档, developer.android.com/topic/performance/vitals/launch-time]
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 
 ### 从 trace 里判断优化方向
 
@@ -111,16 +114,14 @@ task2b_state: pending
 | `HeapTaskDaemon` 在启动阶段抢占 CPU，伴随频繁对象分配 | 启动分配过多触发 GC 压力 | 减少临时对象、复用缓存、推迟大对象创建 |
 | 后台线程过多，CPU 被大量初始化任务占满 | 并发过度 | 限制启动线程池、按优先级分层执行 |
 
-参考书把速度优化拆成 CPU、缓存、任务调度三个方向。放到启动场景里，对应的工程动作是：减少启动路径上必须执行的代码；让会被马上访问的类、资源、配置更早命中缓存；让首帧相关线程拿到足够 CPU 时间。不要把线程数开大当成通用解法，启动阶段 CPU 核心有限，过量并发会让主线程和 RenderThread 排队。
+参考素材把速度优化拆成 CPU、缓存、任务调度三个方向。放到启动场景里，对应的工程动作是：减少启动路径上必须执行的代码；让会被马上访问的类、资源、配置更早命中缓存；让首帧相关线程拿到足够 CPU 时间。不要把线程数开大当成通用解法，启动阶段 CPU 核心有限，过量并发会让主线程和 RenderThread 排队。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
 ### 对 GC 抑制方案的取舍
 
-参考书中有一类激进方案：通过分析 ART 的 `HeapTaskDaemon` 和 `ConcurrentGCTask`，在启动阶段延后 GC 执行。这个方向说明了一个事实：启动期 GC 会抢 CPU，也会放大锁等待。但 App 侧不建议把 hook ART 内部符号作为常规线上方案。
+参考素材中有一类激进方案：通过分析 ART 的 `HeapTaskDaemon` 和 `ConcurrentGCTask`，在启动阶段延后 GC 执行。这个方向说明了一个事实：启动期 GC 会抢 CPU，也会放大锁等待。但 App 侧不建议把 hook ART 内部符号作为常规线上方案。
 
-更稳的处理顺序是：
+App 侧优先按这个顺序处理：
 
 - 减少启动期对象分配，尤其是大 JSON、临时集合、反射元数据和一次性 Bitmap。
 - 把非首屏对象创建推迟到首帧后，避免 `Application` 和入口 `Activity` 同时制造分配峰值。
@@ -129,13 +130,12 @@ task2b_state: pending
 
 这类方案适合作为研究素材，不适合作为启动优化的默认动作。
 
-[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
 
 ## 启动框架演进案例
 
 ### 阶段一：散点初始化
 
-早期项目通常有三类初始化入口：`Application.onCreate()`、多个 SDK 的 `ContentProvider`、入口 Activity 的临时代码。问题不在“入口多”本身，而在这些入口之间没有统一的依赖关系、耗时统计和失败策略。
+早期项目通常有三类初始化入口：`Application.onCreate()`、多个 SDK 的 `ContentProvider`、入口 Activity 的临时代码。入口多不一定是问题；缺少统一的依赖关系、耗时统计和失败策略，才会让启动阶段失控。
 
 Jetpack App Startup 官方文档指出，多个组件各自声明 `ContentProvider` 会增加启动成本，并且系统初始化不同 Provider 的顺序不适合表达复杂依赖。App Startup 用单个 Provider 和 `Initializer` 依赖声明改善这个问题，适合把多个静态初始化点集中管理。
 
@@ -158,11 +158,10 @@ Jetpack App Startup 官方文档指出，多个组件各自声明 `ContentProvid
 这张清单是启动框架演进的分水岭。有了它，启动不再靠“谁先写进 `Application` 谁先跑”，而是按依赖、优先级和线程约束调度。21.2 节已经展开 DAG、关键路径和线程池策略，本案例关注演进结果：每个任务有位置、有耗时、有责任人、有可回滚开关。
 
 [已验证: 官方文档, developer.android.com/topic/libraries/app-startup]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
 ### 阶段三：把框架接入发布流程
 
-启动框架不是只在运行时调度任务，还要进入发布检查。一个实用的发布门禁可以包含这些项：
+启动框架除了运行时调度任务，还要进入发布检查。一个实用的发布门禁可以包含这些项：
 
 | 检查项 | 阈值建议 | 失败动作 |
 |---|---|---|
@@ -176,9 +175,9 @@ Jetpack App Startup 官方文档指出，多个组件各自声明 `ContentProvid
 
 ## Baseline Profile 实施效果
 
-### 案例 C：文件生成了，但收益不稳定
+### 文件生成了，但收益不稳定
 
-Baseline Profile 常见失败形态不是“完全无效”，而是本地测试有收益，线上新安装用户收益不稳定。原因通常出在三个位置：profile 没打进正确 variant、生成脚本没有覆盖真实启动路径、设备侧还没按 profile 完成编译。
+Baseline Profile 常见失败形态并不是“完全无效”。更常见的是本地测试有收益，线上新安装用户收益不稳定。原因通常出在三个位置：profile 没打进正确 variant、生成脚本没有覆盖真实启动路径、设备侧还没按 profile 完成编译。
 
 验证顺序要按 21.4 节的清单走：源码文件、构建产物、设备编译状态、性能收益。跳过任一层，都会把问题看错。
 
@@ -214,18 +213,17 @@ AOSP `Activity.reportFullyDrawn()` 的注释说明，系统会用这个信号辅
 
 ### 和 Dex 布局优化的关系
 
-参考书用 Redex 的 Dex 类重排序解释空间局部性：把启动路径上会连续访问的类排得更近，减少加载和缓存 miss。现代 Android 工程里，Baseline Profile、Startup Profile、AGP / R8 / D8 的 profile 处理接过了很大一部分工作。
+参考素材用 Redex 的 Dex 类重排序解释空间局部性：把启动路径上会连续访问的类排得更近，减少加载和缓存 miss。现代 Android 工程里，Baseline Profile、Startup Profile、AGP / R8 / D8 的 profile 处理已经覆盖了很大一部分工作。
 
-工程上不建议同时叠很多黑盒优化。更稳的路径是：
+工程上不建议同时叠很多黑盒优化。App 侧先按这条路径验证：
 
 1. 用 Macrobenchmark 生成覆盖启动和高频路径的 Baseline Profile。
 2. 检查构建产物和设备编译状态。
 3. 用同一设备池对比 `CompilationMode.None()` 和 `CompilationMode.Partial()`。
 4. 如果仍然有明确的 Dex 布局问题，再评估 Redex 或构建系统级布局优化。
 
-[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
 
-## [自动发现] 启动案例复盘模板
+## 启动案例复盘模板
 
 启动优化案例写成文章或内部复盘时，建议保留同一套字段。否则每次复盘都只剩“优化了几个点、快了多少”，后续版本很难复用。
 
@@ -240,7 +238,7 @@ AOSP `Activity.reportFullyDrawn()` 的注释说明，系统会用这个信号辅
 | 验证 | 本地多轮测试、灰度 A/B、低端机、回滚开关 |
 | 后续 | 新增门禁、任务 owner、指标看板、待验证项 |
 
-这个模板和 21.8 的启动监控配合使用：本地 trace 负责解释原因，线上指标负责证明影响范围。案例价值不在单次优化数字，而在让下一次启动退化能更快定位到任务、owner 和版本变更。
+这个模板和 21.8 的启动监控配合使用：本地 trace 负责解释原因，线上指标负责证明影响范围。案例的价值来自后续复用：下一次启动退化时，团队能更快定位到任务、owner 和版本变更。
 
 [来源: src/part5-app/ch21-startup/01-startup-analysis.md]
 [来源: src/part5-app/ch21-startup/02-startup-framework.md]

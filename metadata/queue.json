@@ -2758,6 +2758,38 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T04:39:00+08:00"
+    },
+    {
+      "id": "task6-21-9-startup-case-evidence-20260513-0509",
+      "section": "21.9",
+      "section_title": "启动优化案例集",
+      "priority": 90,
+      "reason": "[review回炉] Task6 草稿审查发现案例集缺少真实案例证据链",
+      "title": "启动优化案例缺少真实 Trace / 指标证据",
+      "issue_type": "content-depth",
+      "severity": "P1",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/09-startup-case-studies.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "全文案例段落 / 开头问题标注",
+          "detail": "本节定位为启动优化案例集，但现有 Application 初始化、启动框架演进、Baseline Profile 三段更像通用复盘框架，缺少真实设备、Android 版本、Perfetto 截图或匿名化 TTID/TTFD 数据，案例证据链不足。",
+          "suggestion": "Task 2B 补至少 1 个完整启动优化案例：设备与版本、启动口径、关键 trace 观察、改动列表、TTID/TTFD 或线上 A/B 结果、风险与回滚；补不齐时，将“案例”表述降级为“复盘模板”。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-13T05:09:00+08:00",
+      "original_review_log": "logs/review/2026-05-13-05-review.md"
     }
   ],
   "metadata": {
