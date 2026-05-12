@@ -2,7 +2,7 @@
 title: "布局优化策略"
 chapter: "22.1"
 section: "22.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Blog ConstraintLayout benchmark, AndroidX AsyncLayoutInflater 1.1.0 docs, AIW 7.12/22.3"
@@ -32,9 +32,9 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [layout, constraintlayout, viewstub, inflate, hierarchy]
 related_chapters: ["22.3", "7.12", "2.5"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
@@ -43,6 +43,11 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-13T06:19:26+08:00"
 last_task6_review_log: "logs/review/2026-05-13-06-review.md"
 task6_review_notes: "2026-05-13 Task6：L1/L2 轻修后通过；无新增回炉项，转入 Task9 技术复核。"
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-13"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-13T06:25:00+08:00"
+task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；自动晋升 finalized。详见 logs/deep-review/2026-05-13-06-deep-review.md。"
 ---
 
 # 布局优化策略

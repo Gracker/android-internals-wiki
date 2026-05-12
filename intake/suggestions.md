@@ -429,3 +429,23 @@
 - **问题**：本节定位为案例集，但现有 `Application` 初始化、启动框架演进、Baseline Profile 三段更像通用复盘框架，缺少真实设备、Android 版本、Perfetto 截图或匿名化 TTID / TTFD 数据，案例证据链不足。
 - **建议**：Task 2B 补至少 1 个完整启动优化案例（设备与版本、启动口径、关键 trace 观察、改动列表、TTID / TTFD 或线上 A/B 结果、风险与回滚）；补不齐时，将“案例”表述降级为“复盘模板”。
 - **review 日志**：logs/review/2026-05-13-05-review.md
+
+
+## [Task9 Deep Review] 1.5 线程模型 — 2026-05-13
+- **类型**：原理链/诊断边界
+- **位置**：L488-L490 RenderThread 延迟分析
+- **问题**：只凭 RenderThread `DrawFrame` 超过一个 VSync 周期就判定“GPU 渲染是性能瓶颈”过粗；`DrawFrame` 可能包含 UI renderer CPU 工作、dequeue/wait fence、buffer 压力或 GPU 执行，单靠 slice 长度无法区分。
+- **建议**：补 FrameTimeline missed reason、GPU counters / fence wait、SurfaceFlinger/BufferQueue 观察点；改成“RenderThread/GPU 路径成为候选瓶颈，需要继续拆分”。
+
+## [Task9 Deep Review] 20.4 ANR 治理策略 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L586 系统负载 ANR 过滤阈值
+- **问题**：`CPU iowait > 30%` 被写成过滤特征，但缺设备档位、采样窗口、内核统计口径和来源；容易被线上策略直接照搬。
+- **建议**：补一组真实 ANR 样本的 iowait 分布和采样方法；补不到时改为“iowait 异常升高”并标注为经验信号，不给固定阈值。
+
+## [Task9 Deep Review] 22.1 布局优化策略 — 2026-05-13
+- **类型**：数据缺失/版本边界
+- **位置**：L105 ConstraintLayout 2017 benchmark
+- **问题**：40% 平均耗时下降来自 2017 年 support ConstraintLayout 示例，章节适用 Android 10-16 / AndroidX ConstraintLayout 2.x；现文已提醒不能当固定收益，但缺新版本复现实验或边界说明。
+- **建议**：补 AndroidX ConstraintLayout 2.x + Macrobenchmark / FrameMetrics 复测条件；补不到时把该数据明确标为“历史官方样例”，正文结论以同机 trace 实测为准。
+- **review 日志**：logs/deep-review/2026-05-13-06-deep-review.md

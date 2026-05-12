@@ -28,16 +28,21 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task9_pending
-task2b_result: fixed
+pipeline_stage: task2b_pending
+task2b_result: pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-12"
 task6_result: pass-light-edit
 last_task6_at: "2026-05-12T21:56:00+08:00"
 task6_reviewed_date: "2026-05-12"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-13"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-13T06:25:00+08:00"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 4 / P1 2 / P2 1；详见 logs/deep-review/2026-05-13-06-deep-review.md。"
 ---
 
 # ANR 治理策略
