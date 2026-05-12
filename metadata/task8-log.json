@@ -1,0 +1,34 @@
+{
+  "date": "2026-05-03",
+  "total_entries": 2,
+  "passed_entries": 1,
+  "filtered_entries": 1,
+  "direct_injections": 1,
+  "queue_additions": 0,
+  "high_score_count": 0,
+  "processed_at": "2026-05-03T05:32:30.525434",
+  "entries": [
+    {
+      "url": "https://w2solo.com/topics/7280",
+      "source": "",
+      "time": "",
+      "summary": "+86用户在使用官方Telegram客户端时遇到smsfee验证码问题，基于官方12.5.1源码的中文客户端提供解决方案，内置网络优化和完整中文界面。",
+      "recommended_chapter": "ch01-ch17",
+      "content_type": "技术文章",
+      "tags": [
+        "Android",
+        "开发",
+        "工具"
+      ],
+      "score": 14,
+      "score_reasons": [
+        "相关性 5/5",
+        "深度 3/5",
+        "时效性 3/5",
+        "来源 3/5"
+      ],
+      "matched_chapter": "ch14-other-tools",
+      "final_decision": "inject"
+    }
+  ]
+}

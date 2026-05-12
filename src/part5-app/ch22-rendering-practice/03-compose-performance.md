@@ -9,26 +9,25 @@ last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2"
 confidence: high
 drafted_date: "2026-05-12"
 polish_count: 0
-sources:
-  - type: official
-    path: "Compose BOM 2025.12.00 release notes"
-  - type: blog
-    path: "Google Android Developers Blog - Compose 1.10 性能对等公告 (2025.12)"
-  - type: aosp
-    path: "androidx/compose/runtime/ PausableComposition"
+sources: 
+- type: aosp
+path: "androidx/compose/runtime/ PausableComposition"
 tags: [compose, recomposition, stability, derivedstateof, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-12
+task6_result: pass-light-edit
 ---
 
 # Jetpack Compose 性能优化
 
 Compose 渲染管线的原理和机制在 §7.7 已详细拆解。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose runtime 的几个关键变化如何改变了优化策略的优先级。
 
-先建立一条基准线：**Compose BOM 2025.12.00（对应 Compose 1.10）官方宣布在滚动性能上与 View 系统达到性能对等**。Google 内部长列表滚动基准测试的卡顿率降至 0.2%。这不是说 Compose 不需要优化，而是说运行时层面最大的性能坑（长列表组合阻塞主线程）已经被 Pausable Composition 解决了。剩下需要开发者关注的，是组合范围控制、状态读取阶段和互操作开销。
+先建立一条基准线：**Compose BOM 2025.12.00（对应 Compose 1.10）官方宣布在滚动性能上与 View 系统达到性能对等**。Google 内部长列表滚动基准测试的卡顿率降至 0.2%。运行时层面最大的性能坑（长列表组合阻塞主线程）已经被 Pausable Composition 解决了，剩下需要开发者关注的，是组合范围控制、状态读取阶段和互操作开销。
 
 ## 重组控制：从手动优化到编译器自动跳过
 
@@ -79,7 +78,7 @@ Strong Skipping 减少了 `@Stable` / `@Immutable` 注解的使用频次，但�
 
 **场景一：第三方 Composable 函数的跳过**。如果第三方库的 Composable 函数没有启用 Strong Skipping（较旧版本），它的跳过行为仍然依赖参数的 Stability。
 
-**场景二：`mutableStateOf` 之外的自定义状态容器**。`mutableStateOf` 返回的 `MutableState<T>` 已经被 Compose runtime 标记为 `@Stable`。但如果自定义一个状态容器类，需要手动标注：
+**场景二：`mutableStateOf` 之外的自定义状态容器**。`mutableStateOf` 返回的 `MutableState<T>` 已经被 Compose runtime 标记为 `@Stable`。自定义状态容器类需要手动标注：
 
 ```kotlin
 // 自定义状态容器：需要手动标注 @Stable
