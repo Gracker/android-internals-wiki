@@ -102,9 +102,9 @@
     "src/part3-tools/ch14-other-tools/03-memory-tools.md"
   ],
   "review_summary": {
-    "p0_issues": 2,
+    "p0_issues": 3,
     "p1_issues": 3,
-    "p2_issues": 3,
+    "p2_issues": 2,
     "p3_issues": 0,
     "total_issues": 8
   },
@@ -183,7 +183,7 @@
       "p3": 0
     },
     "2.18": {
-      "p0": 1,
+      "p0": 0,
       "p1": 1,
       "p2": 0,
       "p3": 0
@@ -318,6 +318,18 @@
       "p0": 1,
       "p1": 1,
       "p2": 1,
+      "p3": 0
+    },
+    "2.9": {
+      "p0": 2,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0
+    },
+    "20.1": {
+      "p0": 1,
+      "p1": 2,
+      "p2": 0,
       "p3": 0
     }
   },

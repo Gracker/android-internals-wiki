@@ -1,4 +1,5 @@
 ---
+
 title: 渲染机制的版本演进
 chapter: '2.9'
 section: '2.9'
@@ -17,12 +18,12 @@ polish_date: '2026-04-05'
 polish_by: task2b-polish
 task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-11T23:28:02+08:00"
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 sources:
 - type: official
   path: developer.android.com/about/versions
@@ -36,6 +37,10 @@ sources:
   path: frameworks/base/core/java/android/graphics/RuntimeColorFilter.java
 - type: aosp
   path: frameworks/base/core/java/android/graphics/animation/RenderNodeAnimator.java
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-13"
+last_task9_at: "2026-05-13T04:39:00+08:00"
+task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2；源码路径、VPA16 profile 口径需回炉。"
 ---
 # 渲染机制的版本演进
 
