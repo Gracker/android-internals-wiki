@@ -4199,6 +4199,121 @@
       "chapter_mapping": "ch20.03 (finalized → queue)",
       "processed_at": "2026-05-12T06:28:00+08:00",
       "type": "deepresearch-injection"
+    },
+    {
+      "title": "Android图形系统综述(干货篇)",
+      "path": "AndroidWeekly/#10/Android图形系统综述_干货篇",
+      "source_url": "https://juejin.cn/post/6898525503960186887",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 16,
+      "quality": "medium",
+      "scores": {
+        "relevance": 5,
+        "depth": 3,
+        "timeliness": 4,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch05-渲染",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android图形系统原理深度解析，包含渲染机制...",
+      "scored_at": "2026-05-12T09:08:30.335046"
+    },
+    {
+      "title": "实现 ART 即时 (JIT) 编译器 | Android 开源项目 | Android Open源项目",
+      "path": "AndroidWeekly/#10/实现_ART_即时_(JIT)_编译器",
+      "source_url": "https://source.android.google.cn/devices/tech/dalvik/jit-compiler?hl=zh-cn",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 19,
+      "quality": "high",
+      "scores": {
+        "relevance": 5,
+        "depth": 5,
+        "timeliness": 4,
+        "verifiability": 5
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-构建",
+          "confidence": "high"
+        }
+      ],
+      "summary": "Android AOSP官方文档，JIT编译器实现详解...",
+      "scored_at": "2026-05-12T09:08:30.335058"
+    },
+    {
+      "title": "Handler的初级、中级、高级问法，你都掌握了吗？",
+      "path": "AndroidWeekly/#10/Handler的初级中级高级问法",
+      "source_url": "https://juejin.cn/post/6893791473121280013",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 15,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 4,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch03-并发",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Handler机制深度解析，包含面试高频问题...",
+      "scored_at": "2026-05-12T09:08:30.335061"
+    },
+    {
+      "title": "Ninja提升编译速度的方法-Android10.0编译系统（十）",
+      "path": "AndroidWeekly/#10/Ninja提升编译速度的方法",
+      "source_url": "https://mp.weixin.qq.com/s/45Et5kVh-y1EAb2hq5o1Rg",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 14,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 4
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-构建",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Ninja构建工具在Android编译系统中的应用...",
+      "scored_at": "2026-05-12T09:08:30.335064"
+    },
+    {
+      "title": "编译系统总结篇-Android10.0编译系统（十一）",
+      "path": "AndroidWeekly/#10/编译系统总结篇",
+      "source_url": "https://mp.weixin.qq.com/s/B9V1k4YU2pVD4ajq6N2nQg",
+      "weekly_issue": "#10",
+      "weekly_date": "2020-11-25",
+      "score": 13,
+      "quality": "medium",
+      "scores": {
+        "relevance": 4,
+        "depth": 3,
+        "timeliness": 3,
+        "verifiability": 3
+      },
+      "mapped_chapters": [
+        {
+          "chapter": "ch06-构建",
+          "confidence": "medium"
+        }
+      ],
+      "summary": "Android 10.0编译系统全面总结和分析...",
+      "scored_at": "2026-05-12T09:08:30.335066"
     }
   ]
 }
