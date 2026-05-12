@@ -1400,14 +1400,42 @@
           "suggestion": "改为“Linux 6.12 / Android common 6.12 分支包含 sched_ext 基础设施；Android 17 设备是否可用取决于具体 kernel tag/config，AOSP 默认调度链尚未切换”。"
         }
       ]
+    },
+    {
+      "id": "task6-20.5-oom-governance-tech-risk-202605121802",
+      "section": "20.5",
+      "section_title": "OOM 治理",
+      "priority": 90,
+      "reason": "[review回炉] Unsafe/Gson OOM 路径与 FD/线程创建因果链存在技术风险，需要 Task9/Task2B 复核后修复",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "Native 内存 OOM / Unsafe.allocateMemory",
+          "detail": "正文将 Gson 无空参构造函数反序列化归到 Unsafe.allocateMemory → malloc → native alloc OOM 路径；该路径可能应区分 Unsafe.allocateInstance 与 allocateMemory。",
+          "suggestion": "Task9 核对 Gson/Unsafe 实际调用链和 ART 抛 OOM 入口；Task2B 根据核对结果修正文中示例。"
+        },
+        {
+          "type": "需确认",
+          "location": "FD 泄漏导致的 OOM / FD 耗尽与 pthread_create",
+          "detail": "正文原先把 FD 耗尽与 pthread_create 内部分配 epoll FD 直接绑定；epoll FD 通常来自 Looper 初始化，不一定是 pthread_create 本身。",
+          "suggestion": "Task9 核对 pthread_create、Looper epoll 初始化、FD 耗尽三者的边界；Task2B 将线程创建 OOM 与 FD 泄漏 OOM 拆开写。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-12T18:02:31+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-12-18-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 63,
-    "p0_count": 3,
-    "last_updated": "2026-05-12T15:40:00+08:00",
-    "updated_by": "task9-deep-tech-review"
+    "total_entries": 69,
+    "p0_count": 4,
+    "last_updated": "2026-05-12T18:02:31+08:00",
+    "updated_by": "task6-review"
   },
-  "last_updated": "2026-05-12T16:15:00+08:00",
+  "last_updated": "2026-05-12T18:02:31+08:00",
   "last_updated_by": "task6-review"
 }

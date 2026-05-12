@@ -5,7 +5,7 @@ chapter: '7.6'
 section: '7.6'
 drafted_date: '2026-04-01'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-07'
+reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
 applicable_versions: Android 8.0 (API 26) - Android 16 (API 36)
 last_verified: '2026-05-03'
@@ -55,8 +55,9 @@ related_chapters:
 - '2.5'
 - '2.7'
 - '4.4'
-pipeline_stage: task6_pending
-task6_state: pending
+review_count: 1
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
 task9_state: pending
 task2b_state: fixed
@@ -67,9 +68,9 @@ task9_result: needs-rework
 last_task2b_at: '2026-05-09T15:40:00+08:00'
 task9_review_notes: '2026-05-07 task9 deep-review: needs-rework。P0 0 / P1 1 / P2 1;SF/HWC
   合成与温控降频完整案例仍缺,P2 数据证据包为延续项。'
-last_task6_at: '2026-05-07T22:11:39+08:00'
-task6_review_notes: '2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2
-  轻量修复;Task9 技术复审仍 pending,未自动晋升。'
+last_task6_at: '2026-05-12T18:02:31+08:00'
+task6_review_notes: '2026-05-12 Task6 18:02：pass-light-edit。L1/L2 小修 2 处：修正“七个案例/五个案例”不一致和方法论段第一人称；未新增回炉项。Task9 仍 pending/needs-rework，未自动晋升。'
+last_task6_review_log: logs/review/2026-05-12-18-review.md
 ---
 
 
@@ -105,7 +106,7 @@ task6_review_notes: '2026-05-07 22:10 task6 revisiting-review: pass-light-edit�
 
 ### 本节 Trace 与数据口径
 
-这五个案例来自历史问题复盘和公开资料归纳,原始 trace 与截图尚未随章节归档。文中的耗时区间、Jank 率和内存数值只作为案例化示例,用来说明判断过程;正式用于项目复盘前,需要补齐 trace 文件名、设备型号、Android 版本、刷新率、采样窗口、样本次数和统计口径。缺少这些字段时,不把数值当作可复核结论。
+这些案例来自历史问题复盘和公开资料归纳,原始 trace 与截图尚未随章节归档。文中的耗时区间、Jank 率和内存数值只作为案例化示例,用来说明判断过程;正式用于项目复盘前,需要补齐 trace 文件名、设备型号、Android 版本、刷新率、采样窗口、样本次数和统计口径。缺少这些字段时,不把数值当作可复核结论。
 
 ---
 
@@ -711,7 +712,7 @@ vivo 在 X200 系列中采用了从 SoC 调度到应用层的多层优化策略,
 
 ## 分析案例的通用方法论
 
-从上面五个案例中,我们可以提炼出一个通用的分析框架:
+从上面七个案例中,可以提炼出一个通用的分析框架:
 
 **第一步:确认问题域。** 是单个 App 还是全局性?是持续性的还是偶发的?是否与特定操作相关?
 

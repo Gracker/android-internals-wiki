@@ -28,7 +28,10 @@
     "4.5",
     "4.2",
     "5.2",
-    "5.7"
+    "5.7",
+    "4.6",
+    "7.6",
+    "20.5"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -50,7 +53,10 @@
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
     "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
     "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
-    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md",
+    "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
+    "src/part2-performance/ch07-smoothness/06-case-studies.md",
+    "src/part5-app/ch20-stability/05-oom-governance.md"
   ],
   "review_summary": {
     "p0_issues": 1,
@@ -60,10 +66,10 @@
     "total_issues": 7
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 41,
+    "l1_l2_fixes": 69,
     "l3_issues": 6,
     "l4_issues": 3,
-    "total_issues": 50,
+    "total_issues": 80,
     "auto_promotions": 2
   },
   "issues_by_section": {
@@ -158,16 +164,16 @@
       "p3": 0
     }
   },
-  "total_review_sections": 22,
+  "total_review_sections": 25,
   "next_review_candidates": [
-    "5.10 JobScheduler/WorkManager 调度与后台任务性能",
-    "6.3 I/O 调度与性能",
-    "6.4 存储相关的版本演进"
+    "20.6 稳定性度量与指标体系",
+    "21.2 启动框架设计与任务编排",
+    "5.10 JobScheduler/WorkManager 调度与后台任务性能"
   ],
   "ready_for_review": 54,
-  "last_updated": "2026-05-12T17:09:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "task6_last_review": "2026-05-12T16:15:00+08:00",
+  "last_updated": "2026-05-12T18:02:31+08:00",
+  "last_updated_by": "task6-draft-review",
+  "task6_last_review": "2026-05-12T18:02:31+08:00",
   "task9_last_review": "2026-05-12T17:09:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
@@ -286,6 +292,27 @@
       "last_task9_at": "2026-05-12T17:09:00+08:00",
       "task9_result": "needs-rework",
       "queue_priority": 85
+    },
+    "4.6": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-12T18:02:31+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework"
+    },
+    "7.6": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-12T18:02:31+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_result": "needs-rework"
+    },
+    "20.5": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-12T18:02:31+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90
     }
   }
 }
