@@ -37,16 +37,16 @@ related_chapters:
 - '7.7'
 - '8.1'
 - '8.2'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-13T04:11:19+08:00'
-task2b_state: pending
-task2b_result: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。'
 ---
 
@@ -194,7 +194,7 @@ class AdpfHintInterceptor(
 
 [自动发现: Android 15+ setPreferPowerEfficiency 对协程任务的影响]
 
-Android 15 在 `PerformanceHintManager.HintSession` 上引入了 `setPreferPowerEfficiency(boolean)` 方法。调用后，系统会倾向于将相关线程调度到效率核（E-core）上运行，或者允许更激进的休眠策略。
+Android 15 在 `PerformanceHintManager.Session` 上引入了 `setPreferPowerEfficiency(boolean)` 方法。调用后，系统会倾向于将相关线程调度到效率核（E-core）上运行，或者允许更激进的休眠策略。
 
 对于使用 `CoroutineWorker`（WorkManager）或后台轮询协程的场景，如果任务不要求低延迟（如日志上传、数据同步、统计上报），建议显式开启能效模式：
 
@@ -204,7 +204,7 @@ class UploadWorker(
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
-    private var hintSession: PerformanceHintManager.HintSession? = null
+    private var hintSession: PerformanceHintManager.Session? = null
 
     override suspend fun doWork(): Result {
         // 告诉系统：这个任务不紧急，优先省电
@@ -219,7 +219,19 @@ class UploadWorker(
 
 这样做的好处是：在多窗口或高刷环境下，后台协程不会无效唤醒大核（P-core），减少对前台应用的资源争抢。系统在收到 `setPreferPowerEfficiency(true)` 后，可以在 E-core 上完成这些低优先级任务，整机功耗显著降低。
 
-[已验证: AOSP android-15.0.0_r1, android.os.PerformanceHintManager.HintSession.setPreferPowerEfficiency]
+[已验证: AOSP android-15.0.0_r1, android.os.PerformanceHintManager.Session.setPreferPowerEfficiency]
+
+
+<!-- AIW-源码调研-2026-05-13: PerformanceHintManager Session 与 Kotlin 协程线程迁移边界源码验证 -->
+**源码级验证补充**（2026-05-13）：
+
+- `createHintSession(tids, initialTargetWorkDurationNanos)`：传入空数组会抛 `IllegalArgumentException`，不是静默忽略
+- `Session.setThreads(tids)`：close() 后 mNativeSessionPtr=0 时直接 return；空数组抛异常
+- Android 16 中 `GPU_LOAD_UP/DOWN/RESET` 需 `@FlaggedApi(FLAGS.FLAG_ADPF_GPU_REPORT_ACTUAL_WORK_DURATION)` 标注，是 gated API
+- Android 16 中 `setPreferPowerEfficiency()` 需 `@FlaggedApi(FLAGS.FLAG_ADPF_PREFER_POWER_EFFICIENCY)` 标注
+- `reportActualWorkDuration(WorkDuration)` 的 WorkDuration 对象有严格验证：workPeriodStartTimestampNanos > 0，totalDuration > 0，CPU+GPU > 0
+
+详见：[DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md](DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md)
 
 ## Coroutine 上下文切换开销 vs 线程切换开销
 

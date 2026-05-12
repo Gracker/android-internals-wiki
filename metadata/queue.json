@@ -2404,14 +2404,16 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md",
         "logs/deep-review/2026-05-13-04-deep-review.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T04:11:19+08:00"
+      "added_at": "2026-05-13T04:11:19+08:00",
+      "completed_date": "2026-05-13T07:37:12+08:00",
+      "completed_reason": "Task 2B 回炉修复: HintSession→Session 重命名——AOSP PerformanceHintManager 嵌套类名为 Session(非 HintSession)，修正代码示例和文本引用"
     },
     {
       "id": "task9-2026-05-13-8.6-adpf-coroutine-thread-model",
@@ -2500,14 +2502,16 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md",
         "logs/deep-review/2026-05-13-04-deep-review.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T04:11:19+08:00"
+      "added_at": "2026-05-13T04:11:19+08:00",
+      "completed_date": "2026-05-13T07:37:12+08:00",
+      "completed_reason": "Task 2B 回炉修复: malloc hooks API 可见性纠正——__malloc_hook/__free_hook 等符号在 bionic malloc.h 中声明(__INTRODUCED_IN(28))，删除'NDK 头文件不可见/需自行 extern'错误断言"
     },
     {
       "id": "task9-2026-05-13-14.3-mte-asymm-source-anchor",
@@ -2689,13 +2693,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T04:39:00+08:00"
+      "added_at": "2026-05-13T04:39:00+08:00",
+      "completed_date": "2026-05-13T07:37:12+08:00",
+      "completed_reason": "Task 2B 回炉修复: getTraceInputStream() 适用原因纠正——ANR trace 为主要用途，API 31+ native tombstone 也可返回，非'仅 Java Crash 有值'"
     },
     {
       "id": "task9-2026-05-13-20.1-anr-timeout-trace-version",
@@ -2792,6 +2798,100 @@
       "original_review_log": "logs/review/2026-05-13-05-review.md"
     },
     {
+      "id": "task9-2026-05-13-14.9-hal-buffer-management-return-path",
+      "section": "14.9",
+      "section_title": "Android Camera 性能与 Perfetto 分析",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "Camera HAL buffer management 返回路径写错",
+      "description": "正文把 HAL 3.5 buffer management 写成 requestStreamBuffers → returnStreamBuffers 完成每帧归还；AOSP camera3.h 将 request_stream_buffers/return_stream_buffers 放在 CAMERA_DEVICE_API_VERSION_3_6，且正常填充完成的输出 buffer 应通过 process_capture_result() 返回，return_stream_buffers() 只用于归还请求到但未随 capture result 返回的 buffer。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L146-L149 / L469-L471",
+          "detail": "`returnStreamBuffers` 被写成 HAL 填完预览帧后的常规归还路径，同时把接口归到 HAL 3.5；AOSP android-16.0.0_r1 `camera3.h` 标注该 callback 为 `>= CAMERA_DEVICE_API_VERSION_3_6`，常规输出 buffer 由 `process_capture_result()` 携带 release fence 返回。",
+          "suggestion": "改成：支持 HAL buffer management 的 stream 可让 HAL 通过 `request_stream_buffers()` 向 framework 取 output buffer；HAL 填充后随 `process_capture_result()` 返回；`return_stream_buffers()` 用于归还未随结果返回的 buffer/flush 场景，并单独说明 `ANDROID_INFO_SUPPORTED_BUFFER_MANAGEMENT_VERSION_HIDL_DEVICE_3_5` 与 device API 3.6 的命名差异。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T05:26:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-18.2-nonblocking-sync-version",
+      "section": "18.2",
+      "section_title": "Android View 标准管线（BLAST 深入）",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "Android 15+ Non-blocking Sync 描述与 HWUI 源码不符",
+      "description": "正文称 Android 15+ 引入 Non-blocking Sync，主线程提交后立即返回；但 android-14/15/16 `DrawFrameTask::drawFrame()` 均调用 `postAndWait()`，UI 线程至少等待 RenderThread 完成 `syncFrameState()`，之后才可能在可安全绘制时提前 unblock。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L82-L87",
+          "detail": "`postAndWait()` 在 android-16.0.0_r1 仍存在；`run()` 中 `syncFrameState(info)` 之后才根据 `canUnblockUiThread` signal UI 线程，且同一结构在 android-14/15/16 均存在，不是 Android 15+ 才“提交后立即返回”。",
+          "suggestion": "重写为源码可验证口径：UI 线程会等待 RenderThread 完成状态同步；若 `syncFrameState()` 后满足条件，可在 GPU draw 前释放 UI 线程，否则等绘制结束。不要把它写成 Android 15+ 普遍异步移交；AVP 例外需要独立源码锚点。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T05:26:00+08:00"
+    },
+    {
+      "id": "task9-2026-05-13-18.2-compose-gc-android17-evidence",
+      "section": "18.2",
+      "section_title": "Android View 标准管线（BLAST 深入）",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "data-source-accuracy",
+      "title": "Android 17 分代 GC 对 Compose 提升的强断言缺证据",
+      "description": "正文把 Android 17 Generational GC 写成会让 Compose Composition 对象分配开销降低 20%+，且把 Snapshot/Slot Table 条目统称短生命周期对象；当前段落没有 AOSP/ART、Compose runtime 或实测 benchmark 锚点支撑。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据/版本差异",
+          "location": "L288",
+          "detail": "Android 17 GC 与 Compose Composition 的因果链、对象生命周期分类和“20% 以上”数字均未给来源；Slot Table 不是简单每帧短生命周期临时对象，容易误导读者。",
+          "suggestion": "补 ART generational GC 一手资料、Compose runtime allocation/SlotTable 资料和同机 benchmark；补不齐时删除百分比，降级为“GC 策略可能影响 Composition 阶段分配停顿，需按版本和场景实测”。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md",
+        "intake/research-gaps.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T05:26:00+08:00"
+    },
+    {
       "id": "task9-deep-review-20.4-20260513-binder-broadcast",
       "section": "20.4",
       "priority": 95,
@@ -2859,14 +2959,56 @@
     }
   ],
   "metadata": {
-    "total_entries": 108,
+    "total_entries": 111,
     "p0_count": 45,
-    "last_updated": "2026-05-13T06:25:00+08:00",
-    "updated_by": "openclaw-task9",
+    "last_updated": "2026-05-13T07:37:12+08:00",
+    "updated_by": "openclaw-task2b",
     "pending_entries": 61,
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
   "last_updated": "2026-05-13T06:25:00+08:00",
-  "last_updated_by": "task9-deep-tech-review"
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": [
+    {
+      "section": "ch05 §5.9 ADPF",
+      "section_title": "ADPF PerformanceHintManager Session 与 Kotlin 协程线程迁移边界",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "ADPF PerformanceHintManager Session 与 Kotlin 协程线程迁移边界 — 深入分析 PerformanceHintManager API 在 Android 16/15 中的行为差异：setThreads() 空数组校验、Session 不可复用、GPU hints 需要 ",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-12T22:24:44.120705+00:00",
+      "status": "pending"
+    },
+    {
+      "section": "ch03 §3.5 输入事件拦截与安全机制",
+      "section_title": "厂商游戏模式输入优先级提升机制",
+      "priority": 80,
+      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节参考资料",
+      "material_paths": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md"
+      ],
+      "review_issues": [
+        {
+          "type": "新增参考材料",
+          "location": "参考资料/延伸阅读",
+          "detail": "厂商游戏模式输入优先级提升机制 — 验证标准 AOSP GameMode 框架（GameManagerService + GameServiceController）不包含输入优先级提升机制。GameMode 核心能力限于帧率策略、Ga",
+          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
+        }
+      ],
+      "added_by": "task-deepresearch-injector",
+      "added_at": "2026-05-12T22:24:44.120705+00:00",
+      "status": "pending"
+    }
+  ]
 }

@@ -42,13 +42,13 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
-task9_state: reviewed
-task2b_state: pending
+task9_state: pending
+task2b_state: fixed
 task9_result: needs-rework
-task2b_result: pending
+task2b_result: fixed
 task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-04-20'
 task9_reviewed_date: '2026-05-13'
@@ -544,7 +544,7 @@ static void install_hooks() {
 - **线程安全**：bionic 的 `__malloc_hook`/`__free_hook` 不是原子操作，多线程并发设置时存在竞态条件，应在启动早期（单线程阶段）完成注册
 - **递归风险**：hook 函数内部如果调用 `printf`、`std::string` 等会触发 `malloc` 的函数，会导致无限递归崩溃
 - **启用方式**：API 28+ 需要通过属性 `adb shell setprop libc.debug.hooks.enable 1` 或环境变量 `LIBC_HOOKS_ENABLE=1` 启用。注意 `libc.debug.malloc.options` 属于 malloc debug 的开关，不是 hooks 的启用入口
-- **API 限制**：`__malloc_hook` 等符号在 NDK 头文件中不可见（属于 bionic 内部 API），需要自行声明 `extern`
+- **API 可见性**：`__malloc_hook`/`__free_hook`/`__realloc_hook`/`__memalign_hook` 在 bionic `malloc.h` 中声明（`__INTRODUCED_IN(28)`，API 28+ 可用）。使用前需通过属性 `libc.debug.hooks.enable` 或环境变量 `LIBC_HOOKS_ENABLE` 启用，且 hook 指针设置无线程安全保证
 
 malloc hooks 的典型应用场景包括：构建轻量级的内存分配追踪器、实现自定义的内存统计面板、集成到自动化测试中检测特定操作引入的内存分配。
 

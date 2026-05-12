@@ -14,10 +14,10 @@ task2b_result: fixed
 reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
-task6_state: "reviewed"
-task9_state: reviewed
-task2b_state: pending
-pipeline_stage: task2b_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+pipeline_stage: task6_pending
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -157,7 +157,7 @@ OOM 的特殊性在于，它抛出的是 `Error` 而非 `Exception`。Java 的�
                      └─────────────┘
 ```
 
-三者的共同点：都会导致用户看到"应用异常退出或卡死"。区分退出原因的第一步是读取 `android.app.ApplicationExitInfo`（API 30+）——这个类封装了进程退出时的上下文：退出原因（`getReason()` 返回 `REASON_CRASH`、`REASON_ANR`、`REASON_LOW_MEMORY` 等常量）、进程 PID（`getPid()`）、退出时间戳（`getTimestamp()`）、异常堆栈（`getTraceInputStream()`，仅 Java Crash 有值）。通过 `ActivityManager.getHistoricalProcessExitReasons()` 批量查询，可以统计各类型退出的占比和趋势。15.3 节详细介绍了采集方式。
+三者的共同点：都会导致用户看到"应用异常退出或卡死"。区分退出原因的第一步是读取 `android.app.ApplicationExitInfo`（API 30+）——这个类封装了进程退出时的上下文：退出原因（`getReason()` 返回 `REASON_CRASH`、`REASON_ANR`、`REASON_LOW_MEMORY` 等常量）、进程 PID（`getPid()`）、退出时间戳（`getTimestamp()`）、异常堆栈（`getTraceInputStream()`：`REASON_ANR` 时返回 ANR trace；`REASON_CRASH_NATIVE` 在 API 31+ 可返回 tombstone protobuf；也可能因环形缓冲被覆盖而返回 `null`）。通过 `ActivityManager.getHistoricalProcessExitReasons()` 批量查询，可以统计各类型退出的占比和趋势。15.3 节详细介绍了采集方式。
 
 ## 稳定性的行业标准与度量维度
 
