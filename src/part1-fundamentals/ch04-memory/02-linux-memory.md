@@ -1,8 +1,8 @@
 ---
 status: ready-for-review
-task9_reviewed_date: '2026-04-29'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-29T03:25:00+08:00'
+task9_reviewed_date: '2026-05-12'
+task9_reviewed_by: 'openclaw-task9'
+last_task9_at: '2026-05-12T17:09:00+08:00'
 title: Linux 内核内存管理
 chapter: '4.2'
 section: '4.2'
@@ -52,15 +52,15 @@ related_chapters:
 - '4.3'
 - '4.4'
 - '2.6'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_reviewed_date: '2026-05-05'
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task2b_state: fixed
-task2b_result: fixed
-review_notes: '2026-05-05 task6 re-confirm: fixed L1 wording; task9_result=needs-rework,
-  pipeline kept task2b_pending.'
+task2b_state: pending
+task2b_result: pending
+review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 2，MGLRU 源码锚点、Android16/17 版本与 MADV_COLD 数据需回炉。'
+
 ---
 
 

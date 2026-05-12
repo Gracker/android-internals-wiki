@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 last_task2b_at: '2026-05-09T12:43:00+08:00'
 title: EAS 能量感知调度
 chapter: '5.2'
@@ -38,8 +38,8 @@ reviewed_date: "2026-05-11"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: task9_pending
+task9_state: reviewed
+pipeline_stage: ready-to-publish
 review2_date: '2026-04-06'
 review2_by: openclaw-task6
 polish_count: 1
@@ -47,12 +47,12 @@ polish_date: '2026-04-06'
 polish_by: task2b-polish
 task2b_state: fixed
 task2b_result: fixed
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-01'
-last_task9_at: '2026-05-01T09:26:13+08:00'
-task9_result: needs-rework
-review_notes: '2026-05-01 task9 deep-review: needs-rework。P0 0,P1 1,P2 1。2026-05-09
-  task2b fixed overutilized 版本口径。'
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-05-12'
+last_task9_at: '2026-05-12T17:09:00+08:00'
+task9_result: pass-tech-review
+review_notes: '2026-05-12 task9 deep-review: pass-tech-review。无 P0/P1；仅 P2 数据锚点建议，已自动晋升 finalized。'
+
 ---
 
 
