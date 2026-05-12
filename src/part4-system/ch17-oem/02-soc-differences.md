@@ -30,7 +30,7 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-07"
 task6_result: pass-light-edit
 pipeline_stage: task6_pending
-task9_state: "reviewed"
+task9_state: pending
     task9_result: "needs-rework"
     task9_reviewed_date: "2026-05-10"
     task9_reviewed_by: "openclaw-task9"
@@ -39,7 +39,7 @@ task9_state: "reviewed"
 task9_result: ~
 task9_reviewed_date: "2026-05-07"
 task2b_state: fixed
-task6_state: reviewed
+task6_state: revisiting
 last_task6_at: "2026-05-12T06:08:00+08:00"
 task6_result: pass-light-edit
 last_task6_review_log: "logs/review/2026-05-12-06-review.md"
@@ -50,7 +50,7 @@ last_task9_review_log: "logs/deep-review/2026-05-07-07-deep-review.md"
 task9_review_notes: "2026-05-06 Task9 11:39：needs-rework。P0 1：Perfetto 迁移 SQL 使用不存在的 prev_cpu；P1 2：Oryon 缓存/延迟数字缺权威锚点，DSU/跨核 L2 解释不准确；P2 1：cpufreq policy 与频点/实机 trace 证据不足。 | 2026-05-07 Task9 00:20：needs-rework。P0 1 / P1 1 / P2 1；Dimensity 9400 频率口径、Oryon cache 一手资料边界、Perfetto PMU 数据源需回炉。 | 2026-05-07 Task9 07:20：needs-rework。P0 0 / P1 1 / P2 1；Oryon L1/L2 cache 一手资料边界仍未闭合，Perfetto PMU 数据源仍写成 linux.ftrace pmu。 | 2026-05-10 Task2B：P0 SQL ucpu→cpu 修复完成，sched 表无 ucpu 字段，已替换为 cpu。"
 
 task2b_result: fixed
-last_task2b_at: '2026-05-12T03:17:57'
+last_task2b_at: '2026-05-12T03:31:49'
 ---
 
 # SoC 平台差异
@@ -120,7 +120,7 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 联发科的策略最为激进。Dimensity 9300 和 9400 采用了「全大核」设计：Dimensity 9400 配置为 1×Cortex-X925 + 3×Cortex-X4 + 4×Cortex-A720 的全大核架构。联发科官方只公布核心型号、不公布具体频率；公开渠道引用的频率数字（如 X925 约 3.6GHz、X4 约 2.8-3.3GHz、A720 约 2.0-2.4GHz）来自评测拆解和 GeekBoard/AnTuTu 等工具读数，未获 MediaTek 官方确认，不同渠道的数字存在差异。这种设计带来的直接影响是：在 Perfetto 的 CPU Track 中，所有核心都有较高的基础性能，即使任务被调度到所谓「能效核」上，也不会出现性能断崖式下降的情况。
 
-三星 Exynos 2500 则保持相对传统的大小核配置，使用 ARM 公版核心搭配标准的 DynamIQ 集群。Google Tensor G4 也是类似思路，使用三星代工的 ARM 公版核心，但核心频率通常设得比同代骁龙和天玑低一些，以换取更好的功耗和散热表现。
+三星 Exynos 2500 则保持相对传统的大小核配置，使用 ARM 公版核心搭配标准的 DynamIQ 集群。Google Tensor G4 使用三星定制的 ARM 核心（非标准公版 Cortex），核心频率通常设得比同代骁龙和天玑低一些，以换取更好的功耗和散热表现。
 
 在 Perfetto 中识别不同 SoC 的核心拓扑，最直接的方法是看 CPU Frequency Track：高通 Oryon 的双集群通常体现为两个主要频率策略组；联发科全大核的几个集群频率跨度相对紧凑；传统大小核的频率跨度则非常大（比如小核 1.8GHz 对比大核 3.4GHz）。
 
@@ -130,9 +130,9 @@ CPU 是我们做性能分析时最关注的组件。不同 SoC 在 CPU 核心的
 
 同样是 ARMv9 指令集，不同核心的微架构设计会导致 IPC（Instructions Per Cycle）有显著差异。这直接影响我们在 Perfetto 中分析 CPU 利用率时的判断。
 
-高通的 Oryon 核心是自研微架构，开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历。二手微架构分析文章称 Oryon 采用大容量 L1 缓存和共享 L2 缓存设计，但缓存拓扑的具体参数（容量、延迟周期）尚未有 Qualcomm 官方白皮书、Hot Chips/ISSCC 演讲、芯片拆解报告或可信 benchmark 数据确认，容易把 Snapdragon X Elite 与 8 Elite 的 cache 拓扑混用。当前能确认的方向性特征是：大容量 L1 带来更好的命中率，而共享 L2 的访问延迟可能高于 ARM 公版核心的私有 L2 设计——但这部分也来自二手分析，待一手资料确认。在 Perfetto 中，Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
+高通的 Oryon 核心是自研微架构，开发团队背景来自 Nuvia，创始成员有 Apple CPU 团队经历。二手微架构分析文章称 Oryon 采用大容量 L1 缓存和私有 L2 缓存设计（每个核心独占 L2），但缓存拓扑的具体参数（容量、延迟周期）尚未有 Qualcomm 官方白皮书、Hot Chips/ISSCC 演讲、芯片拆解报告或可信 benchmark 数据确认，容易把 Snapdragon X Elite 与 8 Elite 的 cache 拓扑混用。当前能确认的方向性特征是：大容量 L1 带来更好的命中率，私有 L2 消除了多核共享缓存带来的竞争延迟——但 L2 容量和延迟周期仍待一手资料确认。在 Perfetto 中，Oryon 核心在缓存不命中的工作负载上可能会有偶尔的延迟尖峰，但整体吞吐量很好。
 
-[待验证: Oryon L1 容量、L2 拓扑和访问延迟周期——Qualcomm 公开产品页未披露具体数字，待官方白皮书、Hot Chips/ISSCC 或芯片拆解报告确认；现有 research-gaps.md 中 Oryon 微架构资料边界保持不变]
+[待验证: Oryon L1/L2 容量和访问延迟周期——Qualcomm 公开产品页未披露具体数字，待官方白皮书、Hot Chips/ISSCC 或芯片拆解报告确认；L2 已确认为私有（非共享），但容量和延迟数值仍待验证]
 
 ARM 的 Cortex-X925 是 ARM 最高性能的公版核心，10 宽度解码器、384 项 ROB、最大 2MB L2。相比前代 X4 有约 15% 的 IPC 提升。Cortex-A720 作为性能-能效核心，IPC 虽然不如 X 系列，但能效比非常出色。联发科将 A720 作为全大核设计中的「能效核心」使用，其基础性能仍远超传统的 A5xx 系列小核心。
 
@@ -161,11 +161,11 @@ static INT32 perfLockParamsOpenCamera[] = {
 
 这种 Perflock 机制在 Perfetto 中的表现是：某些时刻所有 CPU 核心的频率会突然同时拉到最高，即使用户操作并不需要这么高的性能。这在分析功耗或发热问题时需要区分——是 App 的代码触发了重负载，还是厂商的系统服务通过 Perflock 提频了。
 
-联发科的调度策略相对保守，更强调能效平衡。联发科也有类似的性能提示机制（通常通过 `/sys/devices/system/cpu/cpu*/cpufreq/` 节点控制），但在默认策略上不那么激进。不过，在全大核架构下，调度器的迁移决策会更频繁——因为没有传统意义上的「小核」来接收低优先级任务，所以负载分配的粒度更细。
+联发科的调度策略相对保守，更强调能效平衡。联发科也有类似的性能提示机制（通常通过 `/sys/devices/system/cpu/cpu*/cpufreq/` 节点控制），但在默认策略上不那么激进。不过，在全大核架构下，调度器的迁移更多发生在同性能级别的核心之间——因为没有传统意义上的「小核」作为低优先级任务的收容区，负载均衡在几个性能接近的集群内部分配。
 
 **在 Perfetto 中观察全大核迁移行为**，可以通过以下方式：
 
-1. **CPU Scheduling Track** 中直接统计线程的 `migrations` 次数。全大核架构下，负载均衡器（load balancer）在核心间重新分配任务的频率明显高于传统大小核，因为各核心的算力差距小，迁移代价低。用 SQL 查询可以量化：
+1. **CPU Scheduling Track** 中直接统计线程的 `migrations` 次数。全大核架构下，不同集群间不再有数量级的性能差距，迁移对任务执行性能的影响更小。但迁移频率不一定更高——没有大小核之间的性能断崖，调度器不需要频繁地把任务在高性能核和低性能核之间来回搬。用 SQL 查询可以量化迁移模式：
 ```sql
 -- 统计每个线程在 10 秒窗口内的迁移次数
 -- sched 表只有 cpu 字段记录当前所在核心，没有 prev_cpu，需要用 LAG 窗口函数从上一条调度记录取上一次所在的 CPU
@@ -195,7 +195,7 @@ LIMIT 20;
 
 3. **sched_waking / sched_wakeup 事件**中观察唤醒目标 CPU 的分布。大小核架构下，低优先级唤醒偏向小核（CPU 4-7）；全大核架构下唤醒目标分布更均匀，没有明显的「小核汇聚」现象。
 
-需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，迁移本身的开销也较低（Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存，但任务迁移仍然会损失私有 L1 / L2 的局部性）。实际迁移成本要看缓存未命中、`uclamp`、集群策略、唤醒路径和具体工作负载——不能简单用 DSU 的存在推论“跨核迁移成本低”。在 Perfetto 中，只有迁移导致缓存抖动（例如 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
+需要区分的是：迁移频繁不等于调度效率低。全大核的核心间性能差距小，同性能级别核心间的迁移开销较低（Armv8.5+ 的 DSU 提供缓存一致性协议和共享系统缓存，但任务迁移仍然会损失私有 L1 / L2 的局部性）。实际迁移成本要看缓存未命中、`uclamp`、集群策略、唤醒路径和具体工作负载——不能简单用 DSU 的存在推论“跨核迁移成本低”。在 Perfetto 中，只有迁移导致缓存抖动（例如 `cpu_cycles / instructions` 比值突然上升）时才需要关注。
 
 [已验证: ARM DSU-120 架构手册——DSU 提供一致性协议和可选共享缓存，但不等于跨核复用对方私有 L2]
 
@@ -325,7 +325,7 @@ Perfetto 作为通用工具，在不同 SoC 上的数据可用性和精度有差
 
 SoC 平台差异不是一个独立的机制，它影响着本书前面讲过的几乎每一个性能相关机制。
 
-与 **§5.1 Linux 进程调度** 的关系：调度器的核心决策依据是每个 CPU 核心的算力和能效比。不同 SoC 的核心拓扑（双集群 vs 三集群 vs 全大核）直接决定了负载均衡和迁移策略。Android 16 及之前基于 CFS 的 EAS（Energy Aware Scheduling）在选核时权衡算力与功耗，Android 17 / GKI 6.12 切换到 EEVDF 后，调度决策基于虚拟截止时间，但能效感知的选核逻辑仍然存在（详见 §5.1）。联发科的全大核架构让负载均衡更频繁，高通的 Oryon 双集群让迁移更简洁。
+与 **§5.1 Linux 进程调度** 的关系：调度器的核心决策依据是每个 CPU 核心的算力和能效比。不同 SoC 的核心拓扑（双集群 vs 三集群 vs 全大核）直接决定了负载均衡和迁移策略。Android 16 及之前基于 CFS 的 EAS（Energy Aware Scheduling）在选核时权衡算力与功耗，Android 17 / GKI 6.12 切换到 EEVDF 后，调度决策基于虚拟截止时间，但能效感知的选核逻辑仍然存在（详见 §5.1）。联发科的全大核架构消除了大小核之间的性能断崖，迁移更多发生在同性能级别的核心之间；高通的 Oryon 双集群让迁移更简洁。
 
 与 **§5.3 大小核架构** 的关系：联发科的全大核策略明显改变了传统大小核架构的分析前提。它改变了我们分析 Perfetto 时对「小核」的预期——在传统架构上，任务在小核上执行慢是正常的；在全大核架构上，任何核心上的性能都不应该太差。
 
