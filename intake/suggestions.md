@@ -378,3 +378,9 @@
 - **问题**：“冷启动平均提速约 3.16%”缺少 Google 原文链接、测试设备、样本 App、page size 对照条件；`libwebviewchromium.so` 等大小也会随版本和 ABI 变化。
 - **建议**：补 Android 15 16KB page size 官方 benchmark 链接和测试条件；补不到则保留定性解释，把 3.16% 降级为 `[待验证]`。
 
+## [Task6 Review] 21.7 多进程启动优化 — 2026-05-13
+- **类型**：需确认
+- **位置**：跨进程初始化依赖管理 / `MODE_MULTI_PROCESS` 段落
+- **问题**：当前段落写成“官方 `Application` 文档里……”，但该常量/警告的官方引用路径可能应为 `Context` / `SharedPreferences` 相关文档；Task 6 不裁决真伪，已在正文加 `[需确认]` 标注。
+- **建议**：Task 9 按当前 Android Developers reference 复核来源路径和废弃说明；Task 2B 再统一正文措辞与验证标注。
+- **review 日志**：logs/review/2026-05-13-03-review.md
