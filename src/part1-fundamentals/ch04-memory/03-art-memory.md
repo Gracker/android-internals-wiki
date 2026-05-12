@@ -13,8 +13,7 @@ last_verified: '2026-04-23'
 polish_count: 1
 polish_date: '2026-04-06'
 polish_by: task2b-polish
-last_verified_against: AOSP android-14.0.0_r1 / android-15.0.0_r1 + Android Developers
-  Blog (Android 16 QPR2)
+last_verified_against: AOSP android-14.0.0_r1 / android-15.0.0_r1 + Android Developers Blog (Android 16 QPR2)
 confidence: medium
 sources:
 - type: official
@@ -56,29 +55,21 @@ related_chapters:
 last_task2b_at: '2026-05-12T03:17:57'
 p1: 2
 p2: 3
-task9_review_notes: 2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2
-  ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue
-  版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。 | 2026-05-09 Task9
-  02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue
-  因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。
+task9_review_notes: 2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。
 last_task9_review_log: logs/deep-review/2026-05-09-02-deep-review.md
 task9_result: needs-rework
-reviewed_date: '2026-05-09'
+reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
-last_task6_at: '2026-05-09T02:08:33+08:00'
-last_task6_review_log: logs/review/2026-05-09-02-review.md
-task6_state: pending
-task6_result: pass-light-edit
+last_task6_at: '2026-05-12T16:15:00+08:00'
+last_task6_review_log: logs/review/2026-05-12-16-review.md
+task6_state: reviewed
+task6_result: needs-rework
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
-pipeline_stage: task6_pending
-review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08
-  Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto
-  ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09
-  Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转
-  Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue
-  命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。'
+pipeline_stage: task2b_pending
+review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。P2 既有 suggestions 保留，不重复新增。 | 2026-05-09 Task6 02:08：revisiting 写作复审；修复元叙述与 Perfetto GC counter 表述一致性 3 处，无新增 L3/L4 回炉项，转 Task9 复审。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。 | 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。'
+task6_review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 9 处；发现参考资料后追加调研材料未整合、实战案例不足等 L3/L4 问题，已写入 queue.json（priority 90）。
 ---
 
 # ART 虚拟机内存管理
@@ -111,13 +102,13 @@ review_notes: '2026-04-30 task9 deep-review: needs-rework。P1 1 / P2 1。 | 202
 
 ## 为什么要了解 ART 的内存管理
 
-在 Perfetto 中分析应用卡顿时，我们经常看到这样的现象：主线程突然被挂起几十毫秒，时间片上标注着 `GC`；或者更隐蔽地，应用的帧率在滑动过程中逐渐下降，同时 `HeapTaskDaemon` 线程的 CPU 占用越来越多。这些表现背后，都是 ART 虚拟机的内存管理机制在工作。
+在 Perfetto 中分析应用卡顿时，经常会看到这样的现象：主线程突然被挂起几十毫秒，时间片上标注着 `GC`；或者更隐蔽地，应用的帧率在滑动过程中逐渐下降，同时 `HeapTaskDaemon` 线程的 CPU 占用越来越多。这些表现背后，都是 ART 虚拟机的内存管理机制在工作。
 
 如果不知道 ART 的堆结构、GC 策略和对象分配路径，面对这些问题就像在黑暗中摸索——你不知道 GC 为什么在这个时候暂停，不清楚对象分配为什么会阻塞，也无法判断当前的内存使用模式是否正常。
 
-理解这些机制，我们就能：
+理解这些机制后，可以：
 1. 在 Trace 中准确识别 ART GC 活动，区分正常的 Young GC 和有问题的 Full GC
-2. 判断 Allocation Stall 的根本原因，而不是简单归结为"内存不足"
+2. 判断 Allocation Stall 的触发原因，而不是简单归结为"内存不足"
 3. 在面对内存泄漏或抖动时，快速定位到具体的分配模式或 GC 策略问题
 
 最终目标是让读者读完这节，能够独立分析 ART 内存相关的性能问题，而不是仅仅会使用 `dumpsys meminfo`。
@@ -214,7 +205,7 @@ Android 15 上，Non-moving Space 的数据结构仍然是 `DlMallocSpace`，使
 
 ## GC 策略演进：从 CMS 到 CC 再到 CMC
 
-ART 的垃圾回收策略经历了几次版本切换，每一次切换都会改变 GC 对应用性能的影响方式。了解这个演进脉络，能帮助我们在不同 Android 版本的设备上做出准确的性能判断。
+ART 的垃圾回收策略经历了几次版本切换，每一次切换都会改变 GC 对应用性能的影响方式。了解这个演进脉络，能帮助读者在不同 Android 版本的设备上做出准确的性能判断。
 
 ### Dalvik 时代：stop-the-world 的代价
 
@@ -282,7 +273,7 @@ CMC 的另一处变化，是主分配路径可以配合 `BumpPointerSpace` 这�
 
 ### Android 16 QPR2 / Android 17：官方对外明确 Generational CMC
 
-Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响我们怎么描述 GC 路线。写 Android 16 QPR2 和 Android 17 时，可以把 Generational CMC 当成正式能力来讨论；写 Android 14 / 15 时，表述应收在 Mark Compact / CMC 路径本身。
+Android 16 QPR2 的官方发布说明直接写到：ART now includes a Generational Concurrent Mark-Compact (CMC) Garbage Collector。这个版本分界会直接影响 GC 路线的写法。写 Android 16 QPR2 和 Android 17 时，可以把 Generational CMC 当成正式能力来讨论；写 Android 14 / 15 时，表述应收在 Mark Compact / CMC 路径本身。
 
 这条时间线更适合记成：Android 8.0-13 主要看 CC，Android 14 / 15 看 UFFD 驱动的 CMC 路径，Android 16 QPR2 / Android 17 再谈 Generational CMC。也不要把 Android 8.0-14 的 generational CC 经验，原样套到 Android 16 QPR2 之后的 Generational CMC 上。两者都体现了优先回收年轻对象，但底层 collector 已经不是同一套实现。
 
@@ -316,7 +307,7 @@ Generational CMC 不只是把 CMC 加上了分代策略——它在几个关键�
 
 在 Android 8.0-9 的 CC 路径里，分代回收还处于早期阶段；Android 10-14 的 CC 路径有了更成熟的 generational CC 实现，新对象先进入年轻工作集，Young GC 主要扫描这部分对象，暂停时间通常只有 1-3ms；只有年轻对象晋升、老年代压力上来，才会触发更重的 full-heap 回收。到了 Android 16 QPR2 之后，Generational CMC 取代了 generational CC 的角色——同样优先回收年轻对象，但底层 collector 从 CC 的 Brooks pointer + from/to-space 双缓冲换成了 UFFD + 原地压缩（见上方对比）。观察口径不变：Young GC 负责快速回收短命对象，Full GC 负责全局压缩。
 
-在 Perfetto 中，我们仍然可以用相同的观察方式区分这两类活动：
+在 Perfetto 中，仍然可以用相同的观察方式区分这两类活动：
 - **Young / minor collection**：持续时间短、频率更高，通常出现在对象快速创建和销毁的场景
 - **Full-heap collection / full GC**：持续时间更长，常和堆增长、老年代压力或内存泄漏一起出现
 - **如果一个应用的 minor collection 已经频繁到每秒多次**，通常说明对象抖动已经开始影响前台体验
@@ -325,7 +316,7 @@ Generational CMC 不只是把 CMC 加上了分代策略——它在几个关键�
 
 ## GC 对性能的影响：暂停、吞吐与 Stall
 
-理解了 GC 策略的演进后，我们需要关注一个更实际的问题：GC 具体在哪些方面影响应用性能？
+理解 GC 策略的演进后，还需要回答一个更实际的问题：GC 具体在哪些方面影响应用性能？
 
 ### Pause Time（暂停时间）
 
@@ -367,7 +358,7 @@ MessageQueue 并发优化的实现细节见 `1.13 MessageQueue 机制与无锁�
 
 ## 对象分配路径：从 TLAB 到 Full GC
 
-了解对象在 ART 中是如何分配的，有助于我们理解为什么某些代码模式会导致性能问题。
+了解对象在 ART 中的分配路径，有助于解释某些代码模式为什么会导致性能问题。
 
 ### TLAB 分配：最快路径
 
@@ -464,7 +455,7 @@ AOT 编译后的机器码存储在 `.oat` 和 `.vdex` 文件中，运行时通�
 
 [来源: intake/research-feeds/2026-03-31-11-ch04-art-16kb-page-memory.md]
 
-16KB page size 是 Android 15 开始支持的系统能力，但这一节要把 ART 直接受到的影响和系统级收益拆开写。
+16KB page size 是 Android 15 开始支持的系统能力。在 ART 内存管理语境里，需要把 ART 直接受到的影响和系统级收益拆开。
 
 对 ART 来说，页大小变化会影响 `mmap` 粒度、堆页管理和 native 库兼容性边界。它当然会反映到运行时内存行为，但官方页面公开的数字是整机测试结果，不是 ART 内部某个分配器的单独 benchmark。
 
@@ -601,6 +592,8 @@ ART 的堆大小受到系统限制（由 `ActivityManager.getMemoryClass()` 返�
 - [研究] ART 分代 GC 架构（Young/Old Generation + Concurrent Copying）
 - [研究] Android 15/16 的 16KB Page Size 对 ART 内存的影响
 
+
+[需重写: 以下源码调研材料目前位于参考资料之后，需由 Task 2B 整合回「Android 17：MessageQueue 并发优化与 ART ReferenceQueue 边界」小节，或整理成附录；正文不应在参考资料后继续展开。]
 
 ### ART FinalizerDaemon 与 ReferenceQueue 并发优化边界验证
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-art-finalizerdaemon-referencequeue-concurrency.md

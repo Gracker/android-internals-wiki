@@ -1,19 +1,18 @@
 ---
-status: ready-for-review
+status: finalized
 title: 输入事件拦截与安全机制
 chapter: '3.5'
 section: '3.5'
 drafted_by: openclaw-task
-applicable_versions: Android 10 (API 29) - Android 17 (API 37), InputMonitor 部分基于
-  android-16.0.0_r1 核验, Android 17 密码切断基于 external-review
+applicable_versions: Android 10 (API 29) - Android 17 (API 37), InputMonitor 部分基于 android-16.0.0_r1 核验, Android 17 密码切断基于 external-review
 confidence: medium
-reviewed_date: '2026-05-11'
-reviewed_by: 'openclaw-task6'
-task6_result: 'pass-light-edit'
-task6_state: 'reviewed'
-task9_state: 'pending'
-task2b_state: 'pending'
-pipeline_stage: 'task9_pending'
+reviewed_date: '2026-05-12'
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+task6_state: reviewed
+task9_state: reviewed
+task2b_state: fixed
+pipeline_stage: ready-to-publish
 sources:
 - type: official
   path: https://source.android.com/docs/core/interaction/input
@@ -35,26 +34,19 @@ related_chapters:
 - '3.2'
 - '9.1'
 - '9.2'
-reviewed_date: '2026-05-09'
-reviewed_by: openclaw-task6
-review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。'
-pipeline_stage: task6_pending
-task6_state: pending
-task6_result: pass-light-edit
-task9_state: pending
+review_notes: '2026-04-19 task6 re-review: pass-light-edit. L1小修7处(删除旧稿/编辑痕迹)。无需回炉。 | 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；Task9 已通过且 queue 无 pending，自动晋升 finalized。'
 task2b_result: fixed
-task2b_state: fixed
 task9_result: pass-tech-review
 task9_reviewed_date: '2026-05-09'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-09T06:20:00+08:00'
-last_task6_at: '2026-05-09T06:05:00+08:00'
-last_task6_review_log: logs/review/2026-05-09-06-review.md
-task6_review_notes: 2026-05-09 Task6 06:05：Task2B 修复后写作复审；轻修 5 处（权限限制表述、运行时 flag 术语），L1/L2
-  通过；无新增 L3/L4 回炉项。因 queue.json 仍有 3.5 既有 external-review pending 条目，pipeline 保持 task2b_pending，不自动晋升。
+last_task6_at: '2026-05-12T16:15:00+08:00'
+last_task6_review_log: logs/review/2026-05-12-16-review.md
+task6_review_notes: 2026-05-12 Task6 16:15：写作复审通过；清理 frontmatter 重复字段；L1/L2 通过；Task9 已通过且 queue 无 pending，自动晋升 finalized。
 last_task9_review_log: logs/deep-review/2026-05-09-06-deep-review.md
-task9_review_notes: 2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入
-  suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。
+task9_review_notes: 2026-05-09 Task9 06:20：pass-tech-review。未发现新增 P0/P1；P2 1：厂商游戏模式/防误触实现缺少一手证据，已写入 suggestions。因 queue.json 仍有 3.5 external-review pending 条目，不自动晋升。
+finalized_date: '2026-05-12'
+finalized_by: openclaw-task6
 ---
 
 # 输入事件拦截与安全机制
