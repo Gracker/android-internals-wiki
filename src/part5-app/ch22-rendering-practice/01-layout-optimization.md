@@ -8,7 +8,7 @@ last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers Blog ConstraintLayout benchmark, AndroidX AsyncLayoutInflater 1.1.0 docs, AIW 7.12/22.3"
 confidence: medium
 drafted_date: "2026-05-13"
-polish_count: 0
+polish_count: 1
 sources:
   - type: aiw
     path: "src/part2-performance/ch07-smoothness/12-view-layout-performance.md"
@@ -32,10 +32,17 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [layout, constraintlayout, viewstub, inflate, hierarchy]
 related_chapters: ["22.3", "7.12", "2.5"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-13T06:19:26+08:00"
+last_task6_review_log: "logs/review/2026-05-13-06-review.md"
+task6_review_notes: "2026-05-13 Task6：L1/L2 轻修后通过；无新增回炉项，转入 Task9 技术复核。"
 ---
 
 # 布局优化策略
@@ -119,7 +126,7 @@ Google 在 2017 年用注册表单页面做过公开测试：传统 `RelativeLay
 | `<merge>` | 减少被 include 或自定义 View 内部的多余根容器 | 自定义组合 View、公共标题栏、卡片根布局 | 必须依赖外部父容器提供布局参数，单独预览和复用受限 |
 | `<include>` | 复用 XML 布局 | 多页面共用 header/footer/状态区 | 只复用结构，不减少运行时 inflate 成本；要降层级通常要配合 `<merge>` |
 
-`ViewStub` 适合“大概率不显示”的内容。错误页、空态页、折叠的高级筛选区，如果直接写在主布局里，首帧已经承担了 inflate 和对象创建成本；换成 `ViewStub` 后，首帧只创建一个轻量占位符。首次需要显示时再调用 `inflate()`，拿到真实根 View 后缓存引用，后续切换只改 `visibility`。
+`ViewStub` 适合“大概率不显示”的内容。错误页、空态页、折叠的高级筛选区，如果直接写在主布局里，首帧就会执行 inflate 和对象创建；换成 `ViewStub` 后，首帧只创建一个轻量占位符。首次需要显示时再调用 `inflate()`，拿到真实根 View 后缓存引用，后续切换只改 `visibility`。
 
 [已验证: 官方文档, `android.view.ViewStub`]
 
@@ -218,4 +225,4 @@ Compose 章节已经单独讲过重组、稳定性、Lazy 列表和 Pausable Com
 - 低端机和高刷新率设备上是否同时通过，120Hz 下单帧预算约 8.33 ms，布局余量更少。
 - 视觉一致性、无障碍层级、点击热区没有被改坏。
 
-布局优化不是把 XML 改得更“现代”，而是把关键帧里的主线程工作量减下来。能用 trace 证明 `performMeasure` / `performLayout` 下降，这次改造才算完成。
+布局优化的完成标准，是把关键帧里的主线程工作量减下来。能用 trace 证明 `performMeasure` / `performLayout` 下降，这次改造才算完成。

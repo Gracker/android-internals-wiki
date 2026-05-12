@@ -8,7 +8,7 @@ last_verified: "2026-05-13"
 last_verified_against: "AndroidX androidx-main, Android Developers docs, AIW 7.8/22.1/2.4, Clippings 结构参考"
 confidence: medium
 drafted_date: "2026-05-13"
-polish_count: 0
+polish_count: 1
 sources:
   - type: androidx
     path: "platform/frameworks/support/+/androidx-main/recyclerview/recyclerview/src/main/java/androidx/recyclerview/widget/RecyclerView.java"
@@ -44,10 +44,17 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
 tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-13T06:19:26+08:00"
+last_task6_review_log: "logs/review/2026-05-13-06-review.md"
+task6_review_notes: "2026-05-13 Task6：L1/L2 轻修后通过；无新增回炉项，转入 Task9 技术复核。"
 ---
 
 # RecyclerView 最佳实践
