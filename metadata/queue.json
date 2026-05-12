@@ -2540,6 +2540,38 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T04:11:19+08:00"
+    },
+    {
+      "id": "task6-21-8-applicationstartinfo-api-20260513-0417",
+      "section": "21.8",
+      "section_title": "启动监控与度量",
+      "priority": 90,
+      "reason": "[review回炉] Task6 草稿审查发现 ApplicationStartInfo API / 版本口径需技术复核",
+      "title": "ApplicationStartInfo API 与版本边界需复核",
+      "issue_type": "source-code-accuracy",
+      "severity": "P1",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/08-startup-monitoring.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "Android 15+ 的平台启动信息 / ApplicationStartInfo 段落",
+          "detail": "正文提到 Android 15+ ApplicationStartInfo 可提供启动类型、启动原因、时间戳等信息，但字段名称、Android 15/16 可用性和版本边界仍需源码/API 复核。Task 6 不裁决 API 真伪，已在正文标注需确认。",
+          "suggestion": "Task 9 对照 Android Developers reference 与 AOSP API 定义核对字段、权限和版本差异；Task 2B 再把结论改成已验证口径或降级为兼容性提示。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-13T04:17:00+08:00",
+      "original_review_log": "logs/review/2026-05-13-04-review.md"
     }
   ],
   "metadata": {

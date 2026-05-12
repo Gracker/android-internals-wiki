@@ -402,3 +402,10 @@
 - **位置**：L551 malloc hooks 性能 2-5 倍分配延迟
 - **问题**：“2-5 倍”缺少测试设备、分配大小、hook 行为和来源，且 hook 空实现与记录调用栈的开销差异很大。
 - **建议**：补充自测 microbenchmark 或 AOSP/官方说明；无数据前改为“会显著增加分配路径开销，需实测”。
+
+## [Task6 Review] 21.8 启动监控与度量 — 2026-05-13
+- **类型**：需确认
+- **位置**：Android 15+ 的平台启动信息 / `ApplicationStartInfo` 段落
+- **问题**：正文提到 Android 15+ `ApplicationStartInfo` 可提供启动类型、启动原因、时间戳等信息，但字段名称、Android 15/16 可用性和版本边界仍需源码/API 复核。Task 6 不裁决 API 真伪，已在正文加 `[需确认]` 标注。
+- **建议**：Task 9 对照 Android Developers reference 与 AOSP API 定义核对字段、权限和版本差异；Task 2B 再把结论改成已验证口径或降级为兼容性提示。
+- **review 日志**：logs/review/2026-05-13-04-review.md

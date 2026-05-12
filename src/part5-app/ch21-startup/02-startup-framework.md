@@ -22,18 +22,19 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-12
-task6_result: needs-rework
+reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-12
 last_task9_at: 2026-05-12T20:54:00+08:00
+task6_reviewed_date: "2026-05-13"
 
 ---
 
@@ -71,8 +72,6 @@ last_task9_at: 2026-05-12T20:54:00+08:00
 ## 启动任务有向无环图（DAG）设计
 
 [已验证: AOSP android-16.0.0_r1, Jetpack AppStartup 依赖图构建逻辑]
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md — 任务调度维度]
-
 ### 为什么用 DAG
 
 Application.onCreate 到首帧绘制之间的初始化工作，少则十几个，多则上百个。这些任务之间存在两类关系：
@@ -141,8 +140,6 @@ DAG 中如果出现循环依赖，拓扑排序无法完成。实际工程中循�
 框架层面必须在构建阶段做环检测，常用方法是 DFS + 节点状态标记（WHITE/GRAY/BLACK）。检测到环时抛出明确异常，列出环路径，而不是让框架在运行时死锁。
 
 ## 任务优先级与依赖管理
-
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md — 优先级分层思路]
 
 ### 任务的四种分类维度
 
@@ -322,8 +319,6 @@ Alpha 是阿里巴巴开源的启动任务编排框架，核心设计是一个�
 ## 异步初始化与线程池策略
 
 [已验证: AOSP android-16.0.0_r1, ThreadPoolExecutor 配置参数]
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md — 线程优先级与绑核]
-
 ### 主线程是瓶颈
 
 21.1 节的耗时分段已经说明：从 `Application.onCreate` 到首帧绘制，主线程的执行时间直接决定 TTID（Time To Initial Display）。每在主线程增加 50ms 的同步初始化，TTID 就增加 50ms。
@@ -400,8 +395,6 @@ mainHandler.post(() -> { /* 主线程初始化任务 */ });
 ```
 
 ### 线程优先级策略
-
-[结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
 启动阶段主线程和渲染线程的 Nice 值分别是 0 和 -4。后台线程默认 Nice 值为 0，如果不做区分，后台线程会和主线程争抢 CPU 时间片。
 

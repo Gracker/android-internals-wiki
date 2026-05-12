@@ -26,18 +26,19 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [contentprovider, startup, sdk-init, app-startup]
 related_chapters: ["21.1", "21.2", "1.10"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-12
+reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-12
 last_task9_at: 2026-05-12T20:54:00+08:00
+task6_reviewed_date: "2026-05-13"
 
 ---
 
@@ -100,8 +101,6 @@ ContentProvider 对启动的影响主要有四类：
 | 线程与锁 | Provider 内创建线程池、等待单例锁 | 主线程栈、锁等待采样 | 初始化拆分；耗时任务放到启动框架 |
 | 跨进程唤醒 | 某个 SDK Provider 放在独立进程，启动时拉起子进程 | `ps`、Perfetto process track | 按进程拆初始化；避免主进程触发子进程预热 |
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-
 这类开销的麻烦点在于“隐式”。业务代码里看不到调用方，SDK 升级后却能多出一个 Provider。启动优化如果只盯 `Application.onCreate()`，很容易把 100ms 的 Provider 初始化误判成系统启动慢。
 
 ### 怎么量化 Provider 耗时
@@ -149,8 +148,6 @@ class AppInitProvider : ContentProvider() {
 这段 trace 会出现在 Perfetto 主线程轨道里。它和 `bindApplication`、`Application.onCreate()` 的相对位置能说明 Provider 是否挤占了冷启动关键路径。
 
 ## 三方 SDK ContentProvider 审计与治理
-
-[结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 
 三方 SDK 用 ContentProvider 做自动初始化，原因通常很现实：SDK 不想让接入方手写初始化代码，也不想依赖宿主在 `Application.onCreate()` 里按顺序调用。代价是所有接入方都在启动阶段支付初始化成本，即使首屏用不到这个 SDK。
 
@@ -202,7 +199,7 @@ class AppInitProvider : ContentProvider() {
 
 ## 延迟初始化与按需注册
 
-ContentProvider 启动治理的目标不是“把所有初始化都删掉”，而是把初始化挪到更合适的时机。时机分三类：首帧前、首帧后、首次使用时。
+ContentProvider 启动治理要把初始化挪到更合适的时机。时机分三类：首帧前、首帧后、首次使用时。
 
 ### 首帧前只留最小集合
 
@@ -286,7 +283,7 @@ object ShareSdkHolder {
 
 Jetpack App Startup 解决的是“多个库各自声明 Provider 自动初始化”的混乱问题。它把自动初始化入口集中到一个 `InitializationProvider`，再通过 `Initializer.dependencies()` 表达依赖关系。
 
-这段自动初始化仍然发生在 `Application.onCreate()` 之前，因为 `InitializationProvider` 本身就是 ContentProvider。App Startup 的价值不是消灭 Provider 启动成本，而是把多个 Provider 合并成一个入口，并把依赖顺序从 manifest 里的隐式顺序改成显式依赖图。
+这段自动初始化仍然发生在 `Application.onCreate()` 之前，因为 `InitializationProvider` 本身就是 ContentProvider。App Startup 不会消灭 Provider 启动成本。它把多个 Provider 合并成一个入口，并把依赖顺序从 manifest 里的隐式顺序改成显式依赖图。
 
 ### 适合迁入 App Startup 的任务
 
@@ -366,7 +363,7 @@ AppInitializer.getInstance(context)
 
 这套写法适合把“自动初始化”和“按需初始化”拆开。自动初始化只保留首屏前必要的轻量任务，其他任务由业务入口或启动框架显式触发。
 
-## [自动发现] 多进程初始化要单独治理
+## 多进程初始化要单独治理
 
 [已验证: AndroidX Startup source, `InitializationProvider.onCreate()` 使用 provider class context 读取 metadata，源码注释提到 multiple processes 场景]
 
