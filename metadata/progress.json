@@ -486,5 +486,20 @@
       "task6_result": "needs-rework",
       "queue_priority": 90
     }
-  }
+  },
+  "task2b_rounds": [
+    {
+      "date": "2026-05-12",
+      "time": "23:39",
+      "sections": [
+        "2.18",
+        "5.10"
+      ],
+      "entries_completed": [
+        "task9-2.18-refresh-rate-selector-smallvector",
+        "task9-2.18-gamma-compensation-evidence",
+        "task9-2026-05-12-5.10-api37-energy-reason"
+      ]
+    }
+  ]
 }

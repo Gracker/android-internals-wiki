@@ -1,0 +1,40 @@
+# mdbook build output
+book/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
+metadata/*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+*.md~
+*.swp
+*.swo
+
+# Node (if used for tooling)
+node_modules/
+
+# Environment
+.env
+.env.local
+.omx/
+.git.bak/
