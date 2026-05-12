@@ -1,8 +1,8 @@
 {
   "total": 270,
-  "draft": 41,
-  "ready-for-review": 65,
-  "finalized": 164,
+  "draft": 39,
+  "ready-for-review": 66,
+  "finalized": 165,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-13",
   "task9_reviewed_by": "openclaw-task9",
@@ -54,6 +54,9 @@
     "13.6",
     "14.3",
     "21.9",
+    "14.9",
+    "18.2",
+    "19.21",
     "22.1"
   ],
   "review_files": [
@@ -103,6 +106,9 @@
     "src/part3-tools/ch13-perfetto/06-thread-cpu-states.md",
     "src/part3-tools/ch14-other-tools/03-memory-tools.md",
     "src/part5-app/ch21-startup/09-startup-case-studies.md",
+    "src/part3-tools/ch14-other-tools/09-camera-performance-analysis.md",
+    "src/part2-performance/ch18-rendering-pipelines/02-android-view-standard.md",
+    "src/part3-tools/ch19-apm/21-benchmark-apps.md",
     "src/part5-app/ch22-rendering-practice/01-layout-optimization.md"
   ],
   "review_summary": {
@@ -336,6 +342,24 @@
       "p2": 0,
       "p3": 0
     },
+    "14.9": {
+      "p0": 1,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0
+    },
+    "18.2": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 2,
+      "p3": 0
+    },
+    "19.21": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0
+    },
     "22.1": {
       "p0": 0,
       "p1": 0,
@@ -343,11 +367,11 @@
       "p3": 0
     }
   },
-  "total_review_sections": 48,
+  "total_review_sections": 51,
   "next_review_candidates": [],
-  "ready_for_review": 65,
-  "last_updated": "2026-05-13T06:25:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 66,
+  "last_updated": "2026-05-13T07:20:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "at": "2026-05-13T06:19:26+08:00",
     "log": "logs/review/2026-05-13-06-review.md",
@@ -360,7 +384,7 @@
     "auto_promotions": 0
   },
   "task9_last_review": "2026-05-13T06:25:00+08:00",
-  "ready_to_publish": 162,
+  "ready_to_publish": 163,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -710,6 +734,45 @@
       "queue_priority": 90,
       "last_task6_review_log": "logs/review/2026-05-13-05-review.md"
     },
+    "14.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-13T05:26:00+08:00",
+      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "queue_priority": 95,
+      "last_task9_review_log": "logs/deep-review/2026-05-13-05-deep-review.md"
+    },
+    "18.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-13T05:26:00+08:00",
+      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "queue_priority": 95,
+      "last_task9_review_log": "logs/deep-review/2026-05-13-05-deep-review.md"
+    },
+    "19.21": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task9_at": "2026-05-13T05:26:00+08:00",
+      "task9_result": "pass-tech-review",
+      "task9_state": "reviewed",
+      "auto_promoted": true,
+      "last_task9_review_log": "logs/deep-review/2026-05-13-05-deep-review.md"
+    },
+    "22.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "last_task2a_at": "2026-05-13T06:04:00+08:00",
+      "file": "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+      "title": "RecyclerView 最佳实践",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-13T06:19:26+08:00",
+      "last_task6_review_log": "logs/review/2026-05-13-06-review.md"
+    },
     "22.1": {
       "status": "ready-for-review",
       "pipeline_stage": "task9_pending",
@@ -721,16 +784,14 @@
       "file": "src/part5-app/ch22-rendering-practice/01-layout-optimization.md",
       "title": "布局优化策略"
     },
-    "22.2": {
+    "22.5": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "task6_result": "pass-light-edit",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
       "task9_state": "pending",
-      "last_task6_at": "2026-05-13T06:19:26+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-06-review.md",
-      "file": "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-      "title": "RecyclerView 最佳实践"
+      "last_task2a_at": "2026-05-13T07:20:00+08:00",
+      "file": "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
+      "title": "动画性能优化"
     }
   },
   "task2b_rounds": [
@@ -748,9 +809,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "22.1",
-  "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/01-layout-optimization.md",
-  "last_task2a_processed_date": "2026-05-13",
+  "last_task2a_processed": "22.5 动画性能优化",
+  "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
+  "last_task2a_processed_date": "2026-05-13T07:20:00+08:00",
   "task9_last_review_detail": {
     "at": "2026-05-13T06:25:00+08:00",
     "log": "logs/deep-review/2026-05-13-06-deep-review.md",
