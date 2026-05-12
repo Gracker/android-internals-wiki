@@ -1,0 +1,13 @@
+name: Lint
+
+on: [pull_request]
+
+jobs:
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: 'src/**/*.md'
+          config: '.markdownlint.json'

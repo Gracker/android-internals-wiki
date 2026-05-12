@@ -522,3 +522,84 @@ adb shell dumpsys accessibility
 - 3.1 Input 事件分发全流程 — 事件传递的基础路径
 - 9.1 安全边界与权限模型 — 输入注入与系统权限的交叉点
 - 9.2 无障碍服务的安全风险与审计 — 无障碍能力的安全侧分析
+
+
+## 扩展：厂商游戏模式输入优先级机制（源码级验证）
+
+> **调研时间**：2026-05-12 | **调研引擎**：AutoResearchClaw | **源码版本**：android-15.0.0_r1
+
+### 核心结论
+
+**AOSP 标准 GameMode 框架不包含独立的输入优先级提升机制。**
+
+Android 标准 GameMode（GameManagerService + GameServiceController）的核心能力：
+1. **帧率策略控制**：`RefreshRatePolicy` 通过 `LAYER_PRIORITY_*` 影响 SurfaceFlinger 刷新率决策
+2. **功耗模式切换**：`PowerManager.setMode(Mode.GAME, true)` 调整 CPU/GPU 功耗档位
+3. **GameService API**：GameSession/GameServiceProvider 接口用于 OEM 游戏工具集成
+
+### 关键源码发现
+
+#### 1. GameManagerService：不包含输入优先级逻辑
+
+```java
+// services/core/java/com/android/server/app/GameManagerService.java
+if (gameMode == GameMode.GAME_MODE_PERFORMANCE) {
+    mPowerManagerInternal.setMode(Mode.GAME, true);  // 只影响功耗档位
+} else {
+    mPowerManagerInternal.setMode(Mode.GAME, false);
+}
+```
+
+`GAME_MODE_PERFORMANCE` 激活的是功耗 HAL 档位，不涉及输入事件分发优先级。
+
+#### 2. 帧率优先级机制（非输入分发优先级）
+
+```java
+// services/core/java/com/android/server/wm/RefreshRatePolicy.java
+static final int LAYER_PRIORITY_FOCUSED_WITH_MODE = 0;   // 最高
+static final int LAYER_PRIORITY_FOCUSED_WITHOUT_MODE = 1;
+static final int LAYER_PRIORITY_NOT_FOCUSED_WITH_MODE = 2;
+```
+
+这是**渲染优先级**机制（通知 SurfaceFlinger 哪个窗口的刷新率请求更重要），不是**输入分发优先级**机制。
+
+#### 3. DISALLOW_INTERCEPT：View 层触摸完整性保证
+
+```java
+// core/java/android/view/ViewGroup.java, line 3225
+public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+    if (disallowIntercept) {
+        mGroupFlags |= FLAG_DISALLOW_INTERCEPT;
+    }
+    // 传递给父容器
+    if (mParent != null) {
+        mParent.requestDisallowInterceptTouchEvent(disallowIntercept);
+    }
+}
+```
+
+游戏等需要完整触摸序列的场景可以调用此方法防止父容器拦截事件，这是 View 层设计，AOSP 无系统级输入优先级机制。
+
+#### 4. 焦点窗口：输入分发的唯一标准机制
+
+Android 中输入事件分发给焦点窗口（focused window），焦点窗口的确定在 WindowManagerService 层：
+
+```java
+// services/core/java/com/android/server/wm/WindowManagerService.java, line 1882
+boolean focusChanged = updateFocusedWindowLocked(UPDATE_FOCUS_WILL_ASSIGN_LAYERS, false);
+```
+
+**游戏窗口获得焦点后自然优先收到输入事件，但这不涉及独立的"游戏模式输入优先级"机制。**
+
+### 结论
+
+§3.5 中关于"厂商游戏模式输入优先级"的描述：
+- "游戏模式中输入优先级提升机制"如果指的是独立于焦点之外的机制，属于**厂商定制范畴**，AOSP 无公开源码支撑
+- 游戏窗口的"输入优先级"实际上就是**焦点窗口机制**
+- 游戏模式下触摸响应优化依赖：**帧率优先级** + **HAL Game 档位** + **DISALLOW_INTERCEPT**
+
+**调研结论**：AOSP 标准 GameMode 框架中不存在独立的"游戏输入优先级提升"机制。厂商实现此功能依赖非公开修改或专有 Framework 扩展。
+
+---
+
+<!-- AIW-源码调研-2026-05-12 -->

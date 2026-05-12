@@ -509,6 +509,62 @@ Camera 采集和视频编码的组合管线（如直播、录屏）需要特别�
 
 [待验证: low-latency decoding 在不同 SoC 上的支持情况]
 
+
+
+---
+
+<!-- AIW-源码调研-2026-05-12 -->
+
+## 源码调研补充：Codec2 / Tunneled Playback / Media3 ABR 演进（2026-05-12）
+
+### OMX → Codec2 演进
+
+OMX（Open Max IL）是 Android 早期多媒体栈的底层接口，采用 C 风格回调驱动模型：
+- **关键文件**：`frameworks/av/media/libstagefright/omx/OMXNodeInstance.cpp` — OMX 组件实例管理
+- **适配层**：`frameworks/av/media/libstagefright/ACodec.cpp` — OMX 与 MediaCodec 的命令转换
+
+Codec2（Android 10+）是 OMX 的现代化替代，使用 C++17 队列驱动模型：
+- **关键文件**：`frameworks/av/media/codec2/core/C2.cpp` — Codec2 库主入口
+- **类型定义**：`frameworks/av/media/codec2/core/include/C2.h` — `C2Component`、`C2Work` 定义
+
+两条路径共存于 `ACodec` 类中，由 `ACodec::setupNode()` 根据 API level 选择初始化哪个路径。
+
+### Tunneled Playback 实现差异
+
+| 路径 | 数据流 | App 参与 | HWC 直接取帧 |
+|------|--------|----------|--------------|
+| BufferQueue | `MediaCodec → BufferQueue → SurfaceFlinger → HWC` | SurfaceView 配置 | 否 |
+| TextureView | `MediaCodec → BufferQueue → SurfaceTexture → App RenderThread → SurfaceFlinger` | GPU 纹理采样 | 否 |
+| Tunneled sideband | `Decoder → sideband handle → SurfaceView layer → HWC` | 无像素接触 | 是 |
+
+OMX 下通过 `OMX_IndexConfigAndroidTunnelingStatus` 配置 tunneled 节点；Codec2 下通过 `ACodec::setupTunneledPlayback()` 封装相同语义。Tunneled 的本质是 decoder 输出通过 sideband stream 绑定到 video layer，HWC 在音频时钟驱动下直接从 decoder 取帧渲染。
+
+### Media3 ABR 决策机制
+
+Media3 的 ABR 决策由 `AdaptiveTrackSelection` + `DefaultBandwidthMeter` 实现：
+- **带宽估算**：`DefaultBandwidthMeter` 使用指数平滑窗口，每次 chunk 下载完成后更新
+- **决策触发**：`AdaptiveTrackSelection` 在检测到带宽下降时立即触发回调，不需要等待下一轮缓冲区检查周期
+
+"亚 100ms 决策"不是某个单独 commit 的特定功能，而是决策延迟 = 采样时延（当前 chunk 下载完成）+ 评估计算（<1ms）+ 切换触发（immediate），通常在 50-200ms 量级。
+
+### 版本边界
+
+- **Android 4.3+**：Surface 作为 MediaCodec output surface 启用零拷贝路径
+- **Android 5.0+**：async callback mode 减少主线程阻塞
+- **Android 10 (API 29)+**：Codec2 正式成为 OMX 的替代路径
+- **Android 11 (API 30)+**：low-latency decoding 模式
+- **Android 15 (API 35)+**：dav1d 默认软解引擎，AV1 软解效率提升约 3x
+
+### 源码文件索引
+
+| 文件路径 | 关键内容 |
+|----------|---------|
+| `frameworks/av/media/libstagefright/ACodec.cpp` | OMX/Codec2 适配层，tunneled 配置 |
+| `frameworks/av/media/codec2/core/C2.cpp` | Codec2 核心接口实现 |
+| `frameworks/av/media/codec2/core/include/C2.h` | C2Component, C2Work 类型定义 |
+| `androidx/media3/exoplayer/.../DefaultBandwidthMeter.java` | 带宽估算逻辑 |
+
+
 ## 参考资料
 
 - AOSP MediaCodec 源码：`frameworks/av/media/libstagefright/`

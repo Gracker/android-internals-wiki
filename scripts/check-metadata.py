@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""检查所有章节文件是否包含完整的 YAML 元数据头。"""
+
+import os
+import re
+import sys
+import yaml
+import glob
+
+REQUIRED_FIELDS = [
+    "title", "chapter", "status", "applicable_versions", "tags"
+]
+
+OPTIONAL_FIELDS = ["last_verified", "confidence", "sources"]
+
+VALID_STATUS = [
+    "verified", "draft", "needs-review", "outdated",
+    "reviewed", "ready-to-publish", "ready-for-review", "finalized",
+]
+VALID_CONFIDENCE = ["high", "medium", "low", "medium-high", "medium-low"]
+
+def check_file(filepath):
+    issues = []
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    if not content.startswith('---'):
+        return ["缺少 YAML frontmatter"]
+
+    # 按行首的 --- 分割，避免误匹配内容中的 ---
+    m = re.match(r'^---\n(.*?)\n---\n', content, re.DOTALL)
+    if not m:
+        return ["YAML frontmatter 格式错误"]
+
+    try:
+        meta = yaml.safe_load(m.group(1))
+    except yaml.YAMLError as e:
+        return [f"YAML 解析错误: {e}"]
+
+    if meta is None:
+        return [f"YAML frontmatter 为空"]
+
+    for field in REQUIRED_FIELDS:
+        if field not in meta:
+            issues.append(f"缺少字段: {field}")
+
+    if meta.get("status") and meta["status"] not in VALID_STATUS:
+        issues.append(f"status 值无效: {meta['status']}")
+
+    if meta.get("confidence") and meta["confidence"] not in VALID_CONFIDENCE:
+        issues.append(f"confidence 值无效: {meta['confidence']}")
+
+    for field in OPTIONAL_FIELDS:
+        if field not in meta:
+            issues.append(f"[warn] 缺少可选字段: {field} (建议补充)")
+
+    return issues
+
+
+def main():
+    src_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src")
+
+    # 只检查非 README 的章节文件
+    all_files = []
+    for root, dirs, files in os.walk(src_dir):
+        for f in files:
+            if f.endswith('.md') and f != 'README.md' and f != 'SUMMARY.md':
+                filepath = os.path.join(root, f)
+                # 跳过 preface / appendix，以及 graphify 生成报告
+                rel = os.path.relpath(filepath, src_dir)
+                if rel.startswith(('preface/', 'appendix/', 'graphify-out/')):
+                    continue
+                all_files.append(filepath)
+
+    total = len(all_files)
+    issues_count = 0
+    warn_count = 0
+
+    print(f"检查 {total} 个章节文件的元数据...\n")
+
+    for filepath in sorted(all_files):
+        rel = os.path.relpath(filepath, src_dir)
+        issues = check_file(filepath)
+        if issues and not all(i.startswith('[warn]') for i in issues):
+            issues_count += 1
+            print(f"❌ {rel}")
+            for issue in issues:
+                print(f"   - {issue}")
+        elif any(i.startswith('[warn]') for i in issues):
+            warn_count += 1
+            print(f"⚠️  {rel}")
+            for issue in issues:
+                print(f"   - {issue}")
+        else:
+            print(f"✅ {rel}")
+
+    print(f"\n总计: {total} 个文件, {total - issues_count} 个通过, {issues_count} 个失败, {warn_count} 个警告")
+    return 1 if issues_count > 0 else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

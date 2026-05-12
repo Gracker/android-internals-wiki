@@ -430,3 +430,194 @@ JNI ERROR (app bug): local reference table overflow (max=512)
 C++ 代码 `throw` 了异常，但没有在 native 函数内部 `catch`，异常试图穿越 JNI 边界回到 Java 层。ART 不支持 C++ 异例穿越 JNI 边界，行为是未定义的——可能直接 abort，也可能导致内存损坏后延迟崩溃。
 
 排查：所有 JNI 函数的 C++ 实现必须用 `try/catch` 包裹顶层，确保异常不会逃逸。这是 1.15 节强调的 JNI 异常安全原则。
+
+
+## Native Crash 兜底机制：线程级安全点
+
+前面几节讲的都是「crash 后如何收集信息」，本节介绍一种**在线 crash 发生时不让进程崩溃**的技术：线程级安全点机制。
+
+### 核心原理：sigsetjmp/siglongjmp 非局部跳转
+
+硬件异常（SIGSEGV 等）触发后，信号被投递到崩溃线程的栈帧上执行信号处理器。信号处理器中如果直接调用 `exit()` 或 `abort()`，进程终结。但如果信号处理器能「跳回」到某个安全位置继续执行，线程就能存活。
+
+实现这种跳转的机制是 C 标准的 `sigsetjmp`/`siglongjmp`：
+
+```c
+// sigsetjmp 将当前寄存器上下文保存到 sigjmp_buf
+// 如果第二个参数=1，同时保存信号掩码
+int sigsetjmp(sigjmp_buf env, int savesigs);
+
+// siglongjmp 恢复 env 中的寄存器上下文
+// sigsetjmp 调用点之后的代码感受到的就是 sigsetjmp 返回了 val（非零）
+void siglongjmp(sigjmp_buf env, int val);
+```
+
+`siglongjmp` 恢复的上下文包含 PC（程序计数器）、SP（栈指针）、callee-saved 寄存器等。如果 sigsetjmp 在某函数的外层调用帧中执行，`siglongjmp` 就能让执行流「穿越」中间函数直接跳回 sigsetjmp 调用点。
+
+关键约束：siglongjmp 恢复的 SP 指向的栈帧必须仍然有效，不能跳到一个已经返回的函数的栈帧上。因此 sigsetjmp/siglongjmp 做 crash 安全点时，sigsetjmp 必须在 crash 目标函数的**外层调用栈**上执行。
+
+### mooner 的 prevent_pthread_crash 实现
+
+**源码位置**：[TestPlanB/mooner - prevent_pthread_crash.c](https://github.com/TestPlanB/mooner/blob/master/mooner-core/src/main/cpp/prevent_pthread_crash.c)
+
+mooner 是一个开源的 Android Native Crash 兜底库，完整实现了线程级安全点机制。核心思路：**在 pthread_create 的 start_routine 执行前插入 sigsetjmp，如果 start_routine 执行期间发生 crash，通过 siglongjmp 跳回安全点**。
+
+#### 线程参数封装
+
+```c
+// prevent_pthread_crash.c，行 26-30
+struct ThreadHookeeArgus {
+    void *(*current_func)(void *);  // 原 start_routine
+    void *current_arg;              // 原实参
+};
+```
+
+被 hook 的 pthread_create 调用自己的 wrapper `pthread()` 作为 start_routine，原始的 start_routine 和实参作为参数传递给 wrapper。
+
+#### sigsetjmp 安全点与信号处理器
+
+```c
+// prevent_pthread_crash.c，行 37-49
+static void *pthread(void *arg) {
+    struct ThreadHookeeArgus *temp = (struct ThreadHookeeArgus *) arg;
+    if (sigsetjmp(sig_env, 1)) {
+        // siglongjmp 跳回此处：crash 被捕获，执行 Java 回调后线程正常退出
+        __android_log_print(ANDROID_LOG_INFO, TAG, "crash 了，但被我抓住了");
+        JavaVMAttachArgs vmAttachArgs = {...};
+        jint attachRet = (*currentVm)->AttachCurrentThread(currentVm, &currentEnv, &vmAttachArgs);
+        jmethodID id = (*currentEnv)->GetStaticMethodID(currentEnv, callClass, "onHandleSignal", "()V");
+        (*currentEnv)->CallStaticVoidMethod(currentEnv, callClass, id);
+    } else {
+        temp->current_func(temp->current_arg);  // 正常执行
+    }
+    handleFlag = 0;  // wrapper 退出时清零
+}
+```
+
+sigsetjmp 返回 0 时执行原 start_routine；siglongjmp 触发后 sigsetjmp 返回 1，执行 Java 回调后线程正常退出。
+
+#### handleFlag 标志位：区分线程内 crash 和跨线程 crash
+
+```c
+// prevent_pthread_crash.c，行 59-66
+static void sig_handler(int sig, struct siginfo *info, void *ptr) {
+    if (handleFlag == 1) {
+        // 线程正在 start_routine 中执行，siglongjmp 跳回安全点
+        siglongjmp(sig_env, 1);
+    } else {
+        // handleFlag==0：跨线程 crash 或非目标信号，透传给原信号处理器
+        sigaction(sig, &old, NULL);
+    }
+}
+```
+
+`handleFlag` 在 pthread_create_auto 中设为 1，在 pthread() wrapper 退出时设为 0。这意味着：**只有真正在被 hook 的 start_routine 执行期间发生的 crash 才会被拦截**。另一个线程 crash 时，handleFlag=0 会透传；pthread wrapper 之外的代码 crash 时，也会透传。
+
+#### sigaltstack：独立的信号栈
+
+```c
+// prevent_pthread_crash.c，行 90-101
+stack_t ss;
+ss.ss_sp = calloc(1, SIGNAL_CRASH_STACK_SIZE);  // 128KB
+ss.ss_size = SIGNAL_CRASH_STACK_SIZE;
+ss.ss_flags = 0;
+sigaltstack(&ss, NULL);  // 为信号处理器分配独立栈
+```
+
+崩溃线程的栈可能已经损坏（栈溢出）。sigaltstack 分配一个 128KB 的已知有效的栈空间给信号处理器，保证 siglongjmp 能够执行。
+
+#### GOT Hook 劫持 pthread_create
+
+```c
+// prevent_pthread_crash.c，行 73-82
+static int pthread_create_auto(pthread_t *thread, pthread_attr_t *attr,
+                               void *(*start_routine)(void *), void *arg) {
+    struct ThreadHookeeArgus *params = malloc(sizeof(struct ThreadHookeeArgus));
+    params->current_func = start_routine;
+    params->current_arg = arg;
+    handleFlag = 1;  // 在调用原 pthread_create 前设为 1
+    int fd = BYTEHOOK_CALL_PREV(pthread_create_auto, pthread_create_define,
+                                thread, attr, pthread, (void *) params);
+    BYTEHOOK_POP_STACK();
+    return fd;
+}
+```
+
+通过 ByteHook 的 `bytehook_hook_single` 将目标 SO 中的 pthread_create 替换为 pthread_create_auto。BYTEHOOK_CALL_PREV 调用原始 pthread_create，BYTEHOOK_POP_STACK 恢复调用者栈。
+
+#### JNI_OnLoad 缓存 JVM 全局引用
+
+```c
+// jni_init.c，行 15-27
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+    currentVm = vm;
+    ...
+    callClass = (*env)->NewGlobalRef(env, cls);  // 缓存 Java 类全局引用
+    return JNI_VERSION_1_6;
+}
+```
+
+信号处理器（运行在 crash 线程中）需要 Attach 到 JVM 才能调用 Java 回调。JNI_OnLoad 是唯一安全获取 JVM 全局引用的时机（库加载时，Binder 线程池尚未完全初始化，可以安全持有全局引用）。
+
+### ByteHook PLT Hook 框架
+
+**源码位置**：[bytedance/bhook](https://github.com/bytedance/bhook)
+
+ByteHook 是字节跳动的 PLT Hook 库（MIT），支撑抖音、今日头条等亿级 App。核心原理：修改 ELF 的 PLT/GOT 条目，将函数调用重定向到代理函数。API 简洁：
+
+```c
+bytehook_stub_t bytehook_hook_single(
+    const char *caller_path_name,  // 调用方 SO（NULL = 所有）
+    const char *callee_path_name,  // 被 hook SO（NULL = 任意）
+    const char *sym_name,          // 符号名
+    void *new_func,                // 代理函数
+    bytehook_hooked_t hooked,       // hook 成功回调（可选）
+    void *hooked_arg);             // 回调实参
+```
+
+支持 Android 4.1 - 15（API 16-35），armeabi-v7a、arm64-v8a、x86、x86_64。
+
+### shadowhook inline Hook 框架
+
+**源码位置**：[bytedance/android-inline-hook](https://github.com/bytedance/android-inline-hook)
+
+shadowhook 是 ByteHook 的配套 inline Hook 库（MIT）。与 PLT Hook 不同，inline Hook 直接修改函数开头指令，可 hook 任意地址的函数。mooner's memory sponge（ART OOM 拦截）使用 shadowhook：
+
+```c
+// msponge.c，行 65-71
+shadowhook_hook_sym_name(
+    "libart.so",
+    "_ZN3art2gc5space13FreeListSpace5AllocEPNS_6ThreadEmPmS5_S5_",
+    (void *) los_alloc_proxy,
+    (void **) &los_alloc_orig);
+```
+
+支持 Android 4.1 - 16（API 16-36），armeabi-v7a、arm64-v8a。
+
+### pthread_mutex_destroy 后使用检测
+
+**源码位置**：[mooner - pthread_mutex_use_after_destroy.c](https://github.com/TestPlanB/mooner/blob/master/mooner-core/src/main/cpp/pthread_mutex_use_after_destroy.c)
+
+这是 prevent_pthread_crash 的补充，不是防止 crash，而是检测并记录谁在 mutex destroy 后还使用了它。通过检测 `pthread_mutex_internal_t.state == 0xffff`（LP64 架构）判断锁是否已销毁：
+
+```c
+// check_is_destroy_mutex.cpp
+auto *mutex = reinterpret_cast<pthread_mutex_internal_t *>(mutex_interface);
+uint16_t old_state = atomic_load_explicit(&mutex->state, memory_order_relaxed);
+if (old_state == 0xffff) return 1;  // 锁已销毁
+```
+
+hook pthread_mutex_lock/trylock/unlock/timedlock/clocklock，在每个函数入口检查锁状态。如果发现已销毁，记录 backtrace（通过 CFI unwind 获取）。
+
+### 设计意图总结
+
+| 技术要素 | 作用 |
+|----------|------|
+| sigsetjmp/siglongjmp | 非局部跳转，跳回安全点继续执行 |
+| handleFlag | 区分线程内 crash（拦截）和跨线程 crash（透传） |
+| sigaltstack | 128KB 独立栈，保证信号处理器在崩溃栈上仍能执行 |
+| ByteHook GOT Hook | 劫持 pthread_create，在 start_routine 执行前插入 sigsetjmp |
+| JNI_OnLoad 缓存 JVM | 让信号处理器能调用 Java 层回调 |
+| shadowhook inline hook | art.so 等内部符号的 hook，ART OOM 拦截等高级功能 |
+
+<!-- AIW-源码调研-2026-05-12 -->
