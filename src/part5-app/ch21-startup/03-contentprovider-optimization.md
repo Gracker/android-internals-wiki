@@ -8,7 +8,7 @@ last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers App Startup / provider manifest docs, AndroidX Startup source"
 confidence: medium
 drafted_date: "2026-05-12"
-polish_count: 0
+polish_count: 1
 sources:
   - type: aosp
     path: "frameworks/base/core/java/android/app/ActivityThread.java"
@@ -26,10 +26,13 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [contentprovider, startup, sdk-init, app-startup]
 related_chapters: ["21.1", "21.2", "1.10"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
+reviewed_by: openclaw-task6
+reviewed_date: 2026-05-12
+task6_result: pass-light-edit
 ---
 
 # ContentProvider 启动治理
@@ -143,7 +146,7 @@ class AppInitProvider : ContentProvider() {
 
 [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 
-三方 SDK 用 ContentProvider 做自动初始化，原因通常很现实：SDK 不想让接入方手写初始化代码，也不想依赖宿主在 `Application.onCreate()` 里按顺序调用。代价是所有接入方都在启动阶段支付初始化成本，即使首屏根本用不到这个 SDK。
+三方 SDK 用 ContentProvider 做自动初始化，原因通常很现实：SDK 不想让接入方手写初始化代码，也不想依赖宿主在 `Application.onCreate()` 里按顺序调用。代价是所有接入方都在启动阶段支付初始化成本，即使首屏用不到这个 SDK。
 
 ### 审计清单
 

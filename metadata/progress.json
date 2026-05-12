@@ -66,10 +66,10 @@
     "total_issues": 12
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 69,
-    "l3_issues": 6,
+    "l1_l2_fixes": 83,
+    "l3_issues": 8,
     "l4_issues": 3,
-    "total_issues": 80,
+    "total_issues": 96,
     "auto_promotions": 2
   },
   "issues_by_section": {
@@ -184,14 +184,14 @@
   },
   "total_review_sections": 25,
   "next_review_candidates": [
-    "5.10 JobScheduler/WorkManager 调度与后台任务性能",
-    "20.6 稳定性度量与指标体系",
-    "21.2 启动框架设计与任务编排"
+    "20.1 应用稳定性全景",
+    "20.4 ANR 治理策略",
+    "2.10 GPU 渲染深入"
   ],
   "ready_for_review": 55,
-  "last_updated": "2026-05-12T18:24:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "task6_last_review": "2026-05-12T18:02:31+08:00",
+  "last_updated": "2026-05-12T19:12:00+08:00",
+  "last_updated_by": "task6-review",
+  "task6_last_review": "2026-05-12T19:12:00+08:00",
   "task9_last_review": "2026-05-12T18:24:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
@@ -337,6 +337,30 @@
       "task9_state": "reviewed",
       "queue_priority": 95,
       "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md"
+    },
+    "20.6": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-12T19:12:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_review_log": "logs/review/2026-05-12-19-review.md"
+    },
+    "21.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-12T19:12:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_review_log": "logs/review/2026-05-12-19-review.md"
+    },
+    "21.3": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-12T19:12:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-12-19-review.md"
     }
   }
 }
