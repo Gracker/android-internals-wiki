@@ -13,13 +13,18 @@ sources:
 path: frameworks/base/services/core/java/com/android/server/wm/ActivityMetricsLogger.java
 tags: [cold-start, warm-start, hot-start, ttid, ttfd, startup-trace, perfetto]
 related_chapters: ["8.2", "8.3", "1.7", "1.11", "21.2"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-12
+last_task9_at: 2026-05-12T20:54:00+08:00
+
 ---
 
 # 启动全链路分析（App 视角）

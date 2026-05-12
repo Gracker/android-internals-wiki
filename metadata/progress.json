@@ -32,7 +32,10 @@
     "4.6",
     "7.6",
     "20.5",
-    "5.11"
+    "5.11",
+    "21.1",
+    "21.2",
+    "21.3"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -58,14 +61,17 @@
     "src/part1-fundamentals/ch04-memory/06-memory-evolution.md",
     "src/part2-performance/ch07-smoothness/06-case-studies.md",
     "src/part5-app/ch20-stability/05-oom-governance.md",
-    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md"
+    "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md",
+    "src/part5-app/ch21-startup/01-startup-analysis.md",
+    "src/part5-app/ch21-startup/02-startup-framework.md",
+    "src/part5-app/ch21-startup/03-contentprovider-optimization.md"
   ],
   "review_summary": {
-    "p0_issues": 7,
-    "p1_issues": 3,
-    "p2_issues": 2,
+    "p0_issues": 12,
+    "p1_issues": 7,
+    "p2_issues": 4,
     "p3_issues": 0,
-    "total_issues": 12
+    "total_issues": 23
   },
   "task6_review_summary": {
     "l1_l2_fixes": 97,
@@ -182,16 +188,34 @@
       "p1": 1,
       "p2": 1,
       "p3": 0
+    },
+    "21.1": {
+      "p0": 3,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0
+    },
+    "21.2": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 1,
+      "p3": 0
+    },
+    "21.3": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0
     }
   },
-  "total_review_sections": 26,
+  "total_review_sections": 29,
   "next_review_candidates": [
-    "1.9 Package Manager Service 与应用安装性能",
-    "2.10 GPU 渲染深入",
-    "2.14 图形 API 演进与选择策略"
+    "21.4 Baseline Profile 实战",
+    "22.4 自定义 View 性能优化",
+    "2.6 SurfaceFlinger 与合成"
   ],
   "ready_for_review": 55,
-  "last_updated": "2026-05-12T20:10:00+08:00",
+  "last_updated": "2026-05-12T20:54:00+08:00",
   "last_updated_by": "task6-review",
   "task6_last_review": "2026-05-12T20:10:00+08:00",
   "task9_last_review": "2026-05-12T18:24:00+08:00",

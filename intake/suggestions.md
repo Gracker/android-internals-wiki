@@ -273,3 +273,15 @@
 - **建议**：Task 9 先核对 Android SDK / AOSP / LiteRT / AICore 官方资料；Task 2B 再按复核结果补证据、降级表述或删除无法验证的数值。
 - **review 日志**：logs/review/2026-05-12-20-review.md
 
+
+## [Task9 Deep Review] 21.1 启动全链路分析（App 视角） — 2026-05-12
+- **类型**：数据缺失/版本边界
+- **位置**：L115-L119 冷启动典型耗时、L406 GC 抑制 2 秒、L494 Baseline Profile 20%-40% 收益
+- **问题**：这些数字和版本结论缺设备、系统版本、采样方法、官方文档或实验来源。尤其“Android 8+ 启动时自动抑制 GC 2 秒”和 Baseline Profile 20%-40% 收益会影响读者对优化优先级的判断。
+- **建议**：补 Android Developers / ART 源码 / Macrobenchmark 数据来源；补不到时改成经验区间或 `[待验证]`，不要作为通用 Android 10-16 结论。
+
+## [Task9 Deep Review] 21.2 启动框架设计与任务编排 — 2026-05-12
+- **类型**：源码准确性/实现边界
+- **位置**：L216 Jetpack App Startup “按依赖拓扑排序执行所有 Initializer”
+- **问题**：AndroidX AppInitializer 实现是先发现 metadata，再递归初始化 dependencies；它满足依赖先执行，但不是一个可调度的全局拓扑排序执行器，也没有并行、优先级或超时语义。当前表述容易和后文 Alpha/自研 DAG 调度器混淆。
+- **建议**：改成“递归初始化依赖并做环检测”，避免把 App Startup 描述成完整 DAG scheduler。

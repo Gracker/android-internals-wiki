@@ -24,11 +24,16 @@ tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-schedu
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: needs-rework
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-12
+last_task9_at: 2026-05-12T20:54:00+08:00
+
 ---
 
 # 启动框架设计与任务编排
