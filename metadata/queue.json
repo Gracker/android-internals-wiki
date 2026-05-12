@@ -1276,6 +1276,130 @@
       "added_by": "task6-review",
       "added_at": "2026-05-12T16:15:00+08:00",
       "original_review_log": "logs/review/2026-05-12-16-review.md"
+    },
+    {
+      "id": "task9-4.2-mglru-source-snippets-20260512",
+      "section": "4.2",
+      "priority": 95,
+      "title": "MGLRU 锁竞争源码锚点存在伪函数/伪路径风险",
+      "description": "源码分析段落引用 lru_note_procit()、get_lruvec() 等无法锚定到公开内核源码的符号/片段，并把传统 LRU 与 MGLRU 的 lru_lock 粒度差异说得过满。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L294-L334 MGLRU vs 传统双级 LRU 锁竞争",
+          "detail": "`lru_note_procit()` 疑似拼写/伪造符号，`include/linux/mmzone.h::get_lruvec()` 代码块也不是可直接引用的一手 API；同时“锁粒度细化到 per-lruvec”容易误导，因为现代传统 LRU 也围绕 lruvec/lru_lock 演进，MGLRU 的重点应落在减少锁内 list_move/批量 aging/eviction。",
+          "suggestion": "回到 android common kernel 或 upstream v6.12 源码，改用真实函数/结构锚点，例如 `folio_mark_accessed()`、`folio_lruvec_lock_irqsave()`、`mem_cgroup_lruvec()`、`lru_gen_look_around()`、`evict_folios()`；无法逐字对应的代码块标成伪代码。"
+        }
+      ]
+    },
+    {
+      "id": "task9-4.2-mglru-version-madvise-20260512",
+      "section": "4.2",
+      "priority": 85,
+      "title": "MGLRU Android 16/17 版本定调与 MADV_COLD 数据缺少一手锚点",
+      "description": "Android 16 “所有 GKI 设备必须启用 MGLRU”、Android 17 ART GC 调 madvise(MADV_COLD) 且掉帧减少 10% 等结论缺少 AOSP/官方文档锚点。",
+      "issue_type": "version-differences-data-support",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "research-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L281 Android 版本与 MGLRU 启用状态",
+          "detail": "“Android 16 / GKI 6.12 强制默认，所有 GKI 设备必须启用”写成平台硬结论，但正文未给 CDD/VTS/GKI config 的一手依据。",
+          "suggestion": "改为“6.12 common kernel 具备 MGLRU，是否启用以 CONFIG_LRU_GEN/CONFIG_LRU_GEN_ENABLED 和 `/sys/kernel/mm/lru_gen/enabled` 为准”；若要写强制基线，补 CDD/VTS 或 kernel config 引用。"
+        },
+        {
+          "type": "版本差异",
+          "location": "L296 与 L578",
+          "detail": "同章前文说 MGLRU Linux 6.1 合入主线，源码调研段又写“Linux 6.8+”，版本口径自相矛盾。",
+          "suggestion": "把“6.8+”限定为本段采用的源码样本版本，主线合入时间仍写 Linux 6.1。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L368-L376 Android 17 madvise(MADV_COLD) 信号通路",
+          "detail": "ART GC 对老年代冷页调用 `madvise(MADV_COLD)`、系统掉帧减少约 10% 只引用 archived external-review，未给 AOSP commit、官方 release note 或论文/实验条件。",
+          "suggestion": "未找到一手依据前标为 `[待验证]`；若保留，补 ART / libcore / runtime 源码路径、commit/tag、测试设备和 jank 指标口径。"
+        }
+      ]
+    },
+    {
+      "id": "task9-5.7-exact-alarm-android13-20260512",
+      "section": "5.7",
+      "priority": 85,
+      "title": "精确闹钟默认拒绝版本写错",
+      "description": "正文把 SCHEDULE_EXACT_ALARM 默认拒绝写到 Android 13；本轮核对本地 Android 14 官方发布资料，默认拒绝从 Android 14 对大多数新安装且 target 33+ 应用开始。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L287 Android 13:精确闹钟默认拒绝",
+          "detail": "Android 13 段落称 targetSdkVersion >= 33 的 App `SCHEDULE_EXACT_ALARM` 权限默认拒绝；本地资料 `Cubox/最新版发布 - Android 14 现已正式发布至 AOSP！` 写明“从 Android 14 开始，系统不再向以 Android 13 及更高版本为目标平台的大多数新安装应用预先授予”。",
+          "suggestion": "将默认拒绝移动到 Android 14 段；Android 13 只保留 USE_EXACT_ALARM/政策边界和权限检查适配。"
+        }
+      ]
+    },
+    {
+      "id": "task9-5.7-sched-ext-version-anchor-20260512",
+      "section": "5.7",
+      "priority": 85,
+      "title": "sched_ext 与 Android 17/GKI 6.12 绑定过满",
+      "description": "正文写 Android 17 (GKI 6.12) 已具备 sched_ext 基础设施，但缺少 android17 common-kernel tag/config 锚点，需拆成 Linux 6.12 upstream、Android common 6.12 branch 与设备启用状态。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-12",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L358 sched_ext:BPF 可编程调度的演进蓝图",
+          "detail": "“Android 17 (GKI 6.12) 已具备”把平台版本、common-kernel 分支和设备 config 混成一个确定事实；此前审计可核验锚点是 android16-6.12 common-kernel 的 `kernel/sched/ext.c`，量产设备是否启用还要看 `CONFIG_SCHED_CLASS_EXT`。",
+          "suggestion": "改为“Linux 6.12 / Android common 6.12 分支包含 sched_ext 基础设施；Android 17 设备是否可用取决于具体 kernel tag/config，AOSP 默认调度链尚未切换”。"
+        }
+      ]
     }
   ],
   "metadata": {

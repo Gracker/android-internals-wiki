@@ -184,3 +184,16 @@
 - **问题**：Perfetto/Memory Profiler 观察说明不足；“3ms 黄金停顿”“掉帧率下降 3-5 倍”“inBitmap 减少 80% 以上分配”等量化描述缺少测试条件或来源。
 - **建议**：补充设备、系统版本、刷新率、负载场景、采样方法和对比数据；无数据时保留帧预算推导，删除固定百分比。
 - **review 日志**：logs/review/2026-05-12-16-review.md
+
+
+## [Task9 Deep Review] 5.2 EAS 能量感知调度 — 2026-05-12
+- **类型**：数据缺失
+- **位置**：L261 全大核架构的调度边界
+- **问题**：骁龙 8 Elite Performance 核 capacity≈837、Prime/Performance 差距约 18% 缺少设备 kernel capacity、公开芯片资料或实机 `/sys/devices/system/cpu/cpu*/cpu_capacity` 锚点。
+- **建议**：补一手来源或实机命令输出；否则改成定性描述，避免把单机型估算写成通用数值。
+
+## [Task9 Deep Review] 5.7 CPU 相关的版本演进 — 2026-05-12
+- **类型**：源码准确性/引用边界
+- **位置**：L329 Android 17 已确认的功耗行为变更
+- **问题**：“Reduced Wakelocks for Idle Alarms”和 `ProfilingManager.KILL_EXCESSIVE_CPU_USAGE` 被归到 behavior changes all-apps / target-37 页面，但此前审计已指出这两项更像 release notes / API reference 口径。
+- **建议**：拆成 behavior changes、release notes、API reference 三类来源，分别标注，避免把 API 引用写成平台行为变更页结论。

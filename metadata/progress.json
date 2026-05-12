@@ -1,8 +1,8 @@
 {
   "total": 268,
   "draft": 48,
-  "ready-for-review": 62,
-  "finalized": 155,
+  "ready-for-review": 61,
+  "finalized": 156,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-12",
   "task9_reviewed_by": "openclaw-task9",
@@ -25,7 +25,10 @@
     "1.5",
     "2.14",
     "2.18",
-    "4.5"
+    "4.5",
+    "4.2",
+    "5.2",
+    "5.7"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -44,14 +47,17 @@
     "src/part1-fundamentals/ch01-architecture/05-threading-model.md",
     "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
     "src/part1-fundamentals/ch02-rendering/18-adaptive-refresh-rate.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+    "src/part1-fundamentals/ch04-memory/02-linux-memory.md",
+    "src/part1-fundamentals/ch05-cpu-power/02-eas.md",
+    "src/part1-fundamentals/ch05-cpu-power/07-cpu-evolution.md"
   ],
   "review_summary": {
-    "p0_issues": 5,
-    "p1_issues": 12,
-    "p2_issues": 6,
+    "p0_issues": 1,
+    "p1_issues": 4,
+    "p2_issues": 2,
     "p3_issues": 0,
-    "total_issues": 23
+    "total_issues": 7
   },
   "task6_review_summary": {
     "l1_l2_fixes": 41,
@@ -132,15 +138,37 @@
       "p1": 1,
       "p2": 0,
       "p3": 0
+    },
+    "4.2": {
+      "p0": 1,
+      "p1": 2,
+      "p2": 0,
+      "p3": 0
+    },
+    "5.2": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
+    },
+    "5.7": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0
     }
   },
-  "total_review_sections": 19,
-  "next_review_candidates": [],
+  "total_review_sections": 22,
+  "next_review_candidates": [
+    "5.10 JobScheduler/WorkManager 调度与后台任务性能",
+    "6.3 I/O 调度与性能",
+    "6.4 存储相关的版本演进"
+  ],
   "ready_for_review": 54,
-  "last_updated": "2026-05-12T16:15:00+08:00",
-  "last_updated_by": "task6-review",
+  "last_updated": "2026-05-12T17:09:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": "2026-05-12T16:15:00+08:00",
-  "task9_last_review": "2026-05-12T15:40:00+08:00",
+  "task9_last_review": "2026-05-12T17:09:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
     {
@@ -237,6 +265,27 @@
       "last_task6_at": "2026-05-12T16:15:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90
+    },
+    "4.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-12T17:09:00+08:00",
+      "task9_result": "needs-rework",
+      "queue_priority": 95
+    },
+    "5.2": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task9_at": "2026-05-12T17:09:00+08:00",
+      "task9_result": "pass-tech-review",
+      "auto_promoted": true
+    },
+    "5.7": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-12T17:09:00+08:00",
+      "task9_result": "needs-rework",
+      "queue_priority": 85
     }
   }
 }
