@@ -28,14 +28,36 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 8.md"
 tags: [anr, main-thread, binder, lock-contention, watchdog, broadcast, contentprovider]
 related_chapters: ["20.1", "9.1", "9.2", "9.3", "1.4", "1.5"]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 task2b_result: fixed
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-12"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-12T21:56:00+08:00"
+task6_reviewed_date: "2026-05-12"
 ---
 
 # ANR 治理策略
+
+<!-- outline-start -->
+## 本节要点大纲
+
+### 锚点（必须覆盖）
+- 🔹 ANR 触发场景与超时阈值
+- 🔹 主线程瘦身策略与异步化
+- 🔹 IPC（Binder）调用治理
+- 🔹 锁竞争与死锁预防
+- 🔹 ContentProvider / BroadcastReceiver 超时治理
+- 🔹 ANR Watchdog 搭建
+- 🔹 ANR 预警与主动发现
+- 🔹 前后台 ANR 与系统负载过滤
+
+### 导读
+本节从系统超时窗口出发，按主线程、Binder、锁、组件回调和应用侧 Watchdog 几条路径拆解 ANR 治理动作。
+<!-- outline-end -->
 
 ANR 的分析和定位方法在 9.1-9.3 节已经讲过。这一节回答一个不同的问题：已知 ANR 的成因，怎么在工程里系统性地消除它。
 
@@ -54,13 +76,13 @@ ANR 治理的底层逻辑只有一条——让主线程在超时窗口内完成�
 | Service（前台） | 20s（`SERVICE_FOREGROUND_TIMEOUT`） | ActiveServices 检测 onCreate()/onStartCommand() 超时 | Service 生命周期回调中执行耗时操作 |
 | Service（后台） | 200s（`SERVICE_BACKGROUND_TIMEOUT`） | 同上 | 后台 Service 长时间运行 |
 
-上表中的超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。Input dispatch ANR 是线上最常见的类型，占 ANR 总量的 60-80%。
+上表中的超时值是 AOSP 默认值，厂商 ROM 可能调整（通常缩短）。在多数线上治理中，Input dispatch ANR 是优先排查对象，具体占比应以应用自己的 ANR 监控口径为准。
 
 > 注意：`BROADCAST_FG_TIMEOUT` 和 `BROADCAST_BG_TIMEOUT` 对应的是标准（unordered）广播。有序广播（ordered broadcast）的超时由 `BroadcastRecord.timeout` 控制，每个接收者独立计时。高优先级接收者如果在前台，走前台超时；在后台走后台超时。
 
 ## 主线程瘦身策略与异步化
 
-主线程上任何超过超时阈值的同步操作都是 ANR 候选项。治理的第一步不是"怎么优化这些操作"，而是"哪些操作根本不该出现在主线程"。
+主线程上任何超过超时阈值的同步操作都是 ANR 候选项。治理时先列出不该出现在主线程的操作，再看这些操作是否需要优化。
 
 ### 主线程耗时操作的分类
 
@@ -166,7 +188,7 @@ internal object DefaultIoScheduler : ExecutorCoroutineDispatcher() {
 
 > "This dispatcher and its views share threads with the Default dispatcher, so using `withContext(Dispatchers.IO) { ... }` when already running on the Default dispatcher typically does not lead to an actual switching to another thread."
 
-**ANR 治理启示**：在 Default 线程上用 `withContext(Dispatchers.IO)` 不会发生线程切换，只是改变了 TaskContext（从 NonBlockingContext 变为 BlockingContext）。真正的线程切换开销来自 blocking 任务释放 CPU 令牌后调度器唤醒/创建新 worker 的开销。
+**ANR 治理启示**：在 Default 线程上用 `withContext(Dispatchers.IO)` 不会发生线程切换，只是改变了 TaskContext（从 NonBlockingContext 变为 BlockingContext）。可观察的线程切换开销来自 blocking 任务释放 CPU 令牌后调度器唤醒/创建新 worker 的开销。
 
 #### CoroutineScheduler 的 CPU 令牌机制
 
@@ -229,7 +251,7 @@ val myMongoDbDispatcher = Dispatchers.IO.limitedParallelism(60)
 // Peak: 64 + 100 + 60 threads possible
 ```
 
-**ANR 治理启示**：`limitedParallelism(n)` 通过 worker 计数器严格限制该视图同时向底层调度器投递的任务数，`n` 不是"建议值"而是强制并发上限。但线程数仍可能超过 `n`，原因在底层调度器：当视图内的任务在 worker 上执行并进入 BLOCKING 状态，CoroutineScheduler 会释放该 worker 的 CPU 令牌并创建新 worker 服务其他任务。多个视图同时存在阻塞任务时，底层线程数上限是 `MAX_POOL_SIZE`（默认 256），线程调度开销和上下文切换成本会显著上升。
+**ANR 治理启示**：`limitedParallelism(n)` 通过 worker 计数器严格限制该视图同时向底层调度器投递的任务数，`n` 表示强制并发上限。但线程数仍可能超过 `n`，原因在底层调度器：当视图内的任务在 worker 上执行并进入 BLOCKING 状态，CoroutineScheduler 会释放该 worker 的 CPU 令牌并创建新 worker 服务其他任务。多个视图同时存在阻塞任务时，底层线程数上限是 `MAX_POOL_SIZE`（默认 256），线程调度开销和上下文切换成本会显著上升。
 
 #### 协程 ANR 的本质
 
@@ -343,7 +365,7 @@ try {
 
 ContentProvider 的 ANR 超时阈值是 10 秒（publish provider），BroadcastReceiver 的超时根据广播类型和优先级而定（前台广播 10 秒 / 后台广播 60 秒 / 有序广播按每个接收者独立计时）。完整的阈值表见 9.2 节。
 
-这两种 ANR 的治理思路和主线程 ANR 不同：关键不是优化单个操作的耗时，而是减少在系统回调里做的工作量。
+这两种 ANR 的治理思路和主线程 ANR 不同：治理重点从单个操作耗时，转向减少系统回调里的工作量。
 
 ### ContentProvider 超时治理
 
@@ -367,7 +389,7 @@ BroadcastReceiver 的 ANR 发生在 `onReceive()` 执行超过阈值时。关键
 治理手段：
 
 - **onReceive() 只做转发**：收到广播后，把实际处理逻辑交给 `JobScheduler` / `WorkManager` / `Coroutine` 在后台执行。`onReceive()` 本身只做参数解析和任务调度。
-- **用 goAsync() 延长处理窗口**：`BroadcastReceiver.goAsync()` 允许把处理时间延长到 10 秒（前台）或 60 秒（后台）。但 `goAsync()` 不解决根本问题——它只是给了更多时间，处理仍然不能无限长。正确用法是在 `goAsync()` 的窗口内启动异步任务，然后在任务完成后调用 `PendingResult.finish()`。
+- **用 goAsync() 延长处理窗口**：`BroadcastReceiver.goAsync()` 允许把处理时间延长到 10 秒（前台）或 60 秒（后台）。但 `goAsync()` 不消除超时风险——它只是给了更多时间，处理仍然不能无限长。正确用法是在 `goAsync()` 的窗口内启动异步任务，然后在任务完成后调用 `PendingResult.finish()`。
 - **静态广播 → 动态广播**：如果不需要在应用未运行时接收广播，把静态注册的 `BroadcastReceiver` 改为动态注册。动态注册的 `onReceive()` 不受系统的 ANR 超时监控。
 
 ```kotlin
@@ -483,7 +505,7 @@ Watchdog 检测到主线程阻塞后，上报的数据应该包含：
 
 ## ANR 预警与主动发现
 
-线上 ANR 治理的核心难题不是"修复已知 ANR"（定位到堆栈后通常有明确的修复方向），而是"发现尚未被系统判定的主线程阻塞趋势"。以下是几种预警手段：
+线上 ANR 治理除了修复已知 ANR，还要发现尚未被系统判定的主线程阻塞趋势。以下是几种预警手段：
 
 ### 主线程 Looper 监控
 
@@ -493,7 +515,7 @@ Watchdog 检测到主线程阻塞后，上报的数据应该包含：
 // 基于 Looper.getMainLooper().setMessageLogging() 的监控
 public class LooperMonitor implements Printer {
     private long startTime = 0;
-    
+
     @Override
     public void println(String x) {
         if (x.startsWith(">>>>> Dispatching to Handler")) {
@@ -518,7 +540,7 @@ Binder 调用在主线程上的阻塞时间直接影响 ANR 风险。通过 `Bin
 
 ### 预警数据的聚合与分析
 
-预警数据的价值在于趋势发现，而不是单次告警。将"准 ANR"事件按主线程堆栈签名聚类，就能看到哪些代码路径在逼近 ANR 阈值，在它们真正触发系统 ANR 之前进行治理。
+预警数据的价值在于趋势发现，而不是单次告警。将"准 ANR"事件按主线程堆栈签名聚类，就能看到哪些代码路径在逼近 ANR 阈值，在它们触发系统 ANR 之前进行治理。
 
 ## 后台 ANR 与前台 ANR 的差异化治理
 
@@ -559,7 +581,7 @@ ANR 的严重程度取决于触发时应用的状态。前台 ANR 用户可以�
 
 在 traces.txt 和 event log 中，以下特征暗示系统负载是主因：
 
-- **主线程堆栈显示 `nativePollOnce`**：主线程在 Looper 中等待下一个 Message，没有在做任何工作。这意味着 ANR 发生的时刻，主线程其实是空闲的——是系统侧的某个操作（如 Binder 调用到 system_server）阻塞了，导致系统认为应用无响应。
+- **主线程堆栈显示 `nativePollOnce`**：主线程在 Looper 中等待下一个 Message，没有在做任何工作。这意味着 ANR 发生的时刻，主线程处于空闲等待状态——是系统侧的某个操作（如 Binder 调用到 system_server）阻塞了，导致系统认为应用无响应。
 - **event log 中 `am_anr` 前后有大量 `am_proc_died` / `am_kill`**：系统在密集杀进程，内存压力极大。
 - **CPU iowait > 30%**：设备存储 I/O 瓶颈严重，所有进程都在等磁盘。
 - **ANR 发生在设备启动后的前 2 分钟**：系统启动阶段各服务初始化集中，响应速度普遍偏慢。

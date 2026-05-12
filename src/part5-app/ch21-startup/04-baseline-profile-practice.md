@@ -30,10 +30,15 @@ sources:
     path: "src/part3-tools/ch19-apm/15-baseline-profiles.md"
 tags: [baseline-profile, aot, dex-layout, macrobenchmark]
 related_chapters: ["21.1", "8.7", "1.7", "19.15"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-12"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-12T21:56:00+08:00"
+task6_reviewed_date: "2026-05-12"
 ---
 
 # Baseline Profile 实战
@@ -98,7 +103,7 @@ flowchart LR
 
 [已验证: 官方文档, developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles]
 
-## 用 Macrobenchmark 生成 Profile
+## Profile 生成方法：Macrobenchmark + BaselineProfileRule
 
 生成脚本应该模拟真实用户路径，而不是只把启动 Activity 跑起来。冷启动到首页首屏是最低覆盖，首页滚动、主导航切换、搜索、详情页、支付等高频 CUJ 要按业务优先级加入。路径太少会漏掉热点，路径太多会增加编译范围和维护成本。
 
