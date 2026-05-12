@@ -8,10 +8,10 @@ drafted_date: '2026-04-24'
 last_task2b_at: '2026-05-10T10:26:46+08:00'
 last_task6_at: '2026-05-05T14:10:00+08:00'
 last_task6_review_log: logs/review/2026-05-05-14-review.md
-last_task9_at: '2026-05-05T14:20:00+08:00'
-last_task9_review_log: logs/deep-review/2026-05-05-14-deep-review.md
+last_task9_at: 2026-05-13T07:38:00+08:00
+last_task9_review_log: logs/deep-review/2026-05-13-07-deep-review.md
 last_verified: '2026-04-24'
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 related_chapters:
 - '19.0'
 - '19.08'
@@ -38,16 +38,17 @@ tags:
 - asm
 - cronet
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: pending
 task6_result: pass-light-edit
 task6_reviewed_at: '2026-05-10T10:17:22.870988'
 task6_reviewed_by: openclaw-task6
 task6_state: reviewed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-05'
-task9_state: pending
+task9_reviewed_date: 2026-05-13
+task9_state: reviewed
 title: 网络 APM 底层捕获原理
+task9_review_notes: "2026-05-13 Task9：P0 2 / P1 0，代码示例存在可编译性/签名错误，转 Task2B 修复。"
 ---
 
 

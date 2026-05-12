@@ -2,7 +2,7 @@
 title: 耗电与发热监控 (Battery & Thermal)
 chapter: '19'
 section: '19.25'
-status: ready-for-review
+status: finalized
 drafted_date: '2026-04-24'
 drafted_by: gemini
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
@@ -18,23 +18,24 @@ tags:
 related_chapters:
 - '19.0'
 - '19.19'
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task2b_result: fixed
-task2b_state: pending
+task2b_state: fixed
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: '2026-04-28'
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 sources:
 - https://developer.android.com/reference/android/os/PowerManager
 - https://source.android.com/docs/core/power/thermal-mitigation
 - https://developer.android.com/topic/performance/power/setup-battery-historian
-task9_result: ''
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-28'
-last_task9_at: '2026-04-28T03:43:01+08:00'
-task9_review_notes: '2026-04-28 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0。'
+task9_reviewed_date: 2026-05-13
+last_task9_at: 2026-05-13T07:38:00+08:00
+task9_review_notes: "2026-05-13 Task9 复审：无 P0/P1，前次 exact alarm P0 已修正；queue 无 pending，Task6 已通过，自动晋升 finalized。"
+last_task9_review_log: logs/deep-review/2026-05-13-07-deep-review.md
 ---
 
 
