@@ -2956,6 +2956,54 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T06:25:00+08:00"
+    },
+    {
+      "id": "task9-19-23-eventlistener-signature-fields-20260513",
+      "section": "19.23",
+      "section_title": "网络 APM 底层捕获原理",
+      "priority": 95,
+      "reason": "[Deep Tech Review] OkHttp 4.12.0 EventListener#responseFailed 的签名是 responseFailed(Call, IOException)，正文示例写成 responseFailed(Call, Response)，Kotlin override 无法编译，且响应失败不能从这里读取 HTTP status code。；Attempt 数据类没有 requestHeadersStartNs 字段，该字段定义在 Exchange 中；validAttempts 里访问 att.requestHeadersStartNs 会直接编译失败。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L241-L242 EventListener 示例：responseFailed override",
+          "detail": "OkHttp 4.12.0 EventListener#responseFailed 的签名是 responseFailed(Call, IOException)，正文示例写成 responseFailed(Call, Response)，Kotlin override 无法编译，且响应失败不能从这里读取 HTTP status code。",
+          "suggestion": "改为 override fun responseFailed(call: Call, ioe: IOException)，记录异常类型；HTTP status code 应在 responseHeadersEnd(call, response) 或 Interceptor/Response 语义层记录。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L291-L294 callFailed validAttempts 过滤",
+          "detail": "Attempt 数据类没有 requestHeadersStartNs 字段，该字段定义在 Exchange 中；validAttempts 里访问 att.requestHeadersStartNs 会直接编译失败。",
+          "suggestion": "过滤逻辑改为检查 att.exchanges.any { it.requestHeadersStartNs != null || it.responseHeadersStartNs != null || it.responseBodyEndNs != null }，或在 Attempt 层提供 hasExchangeSignal() 辅助函数。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T07:38:00+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-22-2-diffutil-payload-flatten-20260513",
+      "section": "22.2",
+      "section_title": "RecyclerView 最佳实践",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Adapter#onBindViewHolder(holder, position, payloads) 的 payloads 类型是 MutableList<Any>。正文示例调用 payloads.flatten()，但 Kotlin 的 flatten() 需要 Iterable<Iterable<T>>，MutableList<Any> 上没有该扩展，示例无法编译。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L174-L184 DiffUtil payload 示例",
+          "detail": "Adapter#onBindViewHolder(holder, position, payloads) 的 payloads 类型是 MutableList<Any>。正文示例调用 payloads.flatten()，但 Kotlin 的 flatten() 需要 Iterable<Iterable<T>>，MutableList<Any> 上没有该扩展，示例无法编译。",
+          "suggestion": "将 payload 规整为列表：val changes = payloads.flatMap { it as? List<*> ?: listOf(it) }，再按 TitleChanged/AvatarChanged 分发；或让 getChangePayload 返回单个 sealed payload，避免嵌套列表。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T07:38:00+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
