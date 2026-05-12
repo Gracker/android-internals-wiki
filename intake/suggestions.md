@@ -326,3 +326,10 @@
 - **问题**：该小节以源码级口吻给出 `ProfilingManagerService` 内部判断伪代码和触发器行为差异，但缺 API 37 源码锚点、提交或官方 reference。Task 6 不裁决真伪，已在正文加 `[存疑]` 标注。
 - **建议**：Task 9 先核对 API 37 / AOSP preview 源码；无法核实时降级为示意流程，删除具体阈值与函数名。
 - **review 日志**：logs/review/2026-05-12-23-review.md
+
+## [Task6 Review] 21.5 Splash Screen 与感知启动速度 — 2026-05-13
+- **类型**：需确认
+- **位置**：SplashScreen API 适配 / 在 Activity 中安装 SplashScreen
+- **问题**：代码示例与文字说明对 `installSplashScreen()` 和 `super.onCreate()` 的顺序描述不一致，属于 API 行为边界。
+- **建议**：Task 9 按当前 AndroidX core-splashscreen / 官方文档复核调用顺序；Task 2B 再统一示例和正文说明。
+- **review 日志**：logs/review/2026-05-13-01-review.md

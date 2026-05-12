@@ -5,8 +5,8 @@ section: '2.9'
 status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-task6_reviewed_date: "2026-04-30"
-reviewed_date: "2026-04-28"
+task6_reviewed_date: "2026-05-13"
+reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
 applicable_versions: Android 3.0 (API 11) ~ Android 16 (API 36)
 last_verified: '2026-04-23'
@@ -15,14 +15,14 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-task6_state: revisiting
-task6_result: pass-light-edit  
+task6_state: reviewed
+task6_result: pass-light-edit
 task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-11T23:28:02+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 sources:
 - type: official
   path: developer.android.com/about/versions
@@ -36,10 +36,10 @@ sources:
   path: frameworks/base/core/java/android/graphics/RuntimeColorFilter.java
 - type: aosp
   path: frameworks/base/core/java/android/graphics/animation/RenderNodeAnimator.java
-
+---
 # 渲染机制的版本演进
 
-当我们打开 Perfetto 抓一份 Trace，看到 `RenderThread` 在主线程旁边有条不紊地执行 GPU 命令，看到 `VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列——这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线，并非一蹴而就。它经历了十多个 Android 大版本的持续重构。
+当我们打开 Perfetto 抓一份 Trace，看到 `RenderThread` 在主线程旁边有条不紊地执行 GPU 命令，看到 `VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列——这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线，经历了十多个 Android 大版本的持续重构。
 
 理解这段演进历史，是性能分析的前置知识：我们在 Perfetto 中看到的每一个 Track 名称、每一项 API 行为，都带着版本烙印。当我们面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
 
@@ -49,7 +49,7 @@ sources:
 
 ### 问题的起点
 
-Android 2.x 时代，所有 UI 绘制都依赖 CPU 完成。`Canvas` 的 `drawXXX` 操作最终走到 Skia 的软件光栅化路径，主线程承担了从 Measure/Layout/Draw 到像素生成的全部工作。这套方案在低分辨率设备上勉强够用，但随着屏幕分辨率提升和 UI 复杂度增加，CPU 很快成为瓶颈。
+Android 2.x 时代，所有 UI 绘制都依赖 CPU 完成。`Canvas` 的 `drawXXX` 操作最终走到 Skia 的软件光栅化路径，主线程负责从 Measure/Layout/Draw 到像素生成的全部工作。这套方案在低分辨率设备上勉强够用，但随着屏幕分辨率提升和 UI 复杂度增加，CPU 很快成为瓶颈。
 
 ### Android 3.0 Honeycomb：HWUI 登场
 
@@ -183,9 +183,8 @@ Vulkan 后端相比 OpenGL ES 的具体改进：
 
 ### BLASTBufferQueue 的核心改进
 
-1. **Buffer 与 Transaction 绑定提交**：BLAST 将 buffer 与 `SurfaceControl.Transaction` 绑定到同一帧边界提交，改善了几何变化（位置/大小/裁剪）与 buffer 内容的同步。buffer 复用等待仍由 BufferQueue slot 与 release fence 决定——当 slot 耗尽或 release fence 未 signal 时，App 在 `dequeueBuffer` 仍可能被 back-pressure 卡住
-2. **事务与 Buffer 绑定**：窗口几何变化（位置、大小、裁剪）与 Buffer 内容打包在一起提交，确保状态一致性
-3. **多进程同步优化**：当多个 App 进程向同一个 SurfaceFlinger 提交内容时，`BLASTBufferQueue` 提供了更健壮的同步机制
+1. **Buffer 与 Transaction 绑定提交**：BLAST 将 buffer 与 `SurfaceControl.Transaction` 绑定到同一帧边界提交，改善了几何变化（位置/大小/裁剪）与 buffer 内容的同步。buffer 复用等待仍由 BufferQueue slot 与 release fence 决定——当 slot 耗尽或 release fence 未 signal 时，App 在 `dequeueBuffer` 仍可能被 back-pressure 卡住。
+2. **多进程同步优化**：当多个 App 进程向同一个 SurfaceFlinger 提交内容时，`BLASTBufferQueue` 提供了更健壮的同步机制
 
 在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果我们习惯了 Android 11 及之前的 `BufferQueue` Track，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。实际排查中，如果你在 Android 12+ 设备的 Trace 里看到了 `dequeueBuffer` 等待时间异常拉长，不要急着按旧经验去查 BufferQueue slot 状态——先确认走的是 BLAST 路径还是旧路径，再决定排查方向。
 
@@ -199,18 +198,18 @@ Vulkan 后端相比 OpenGL ES 的具体改进：
 
 ### Vulkan 的地位提升
 
-Android 16 在图形 API 方面有几个值得注意的变化,但需要把不同层面拆开看。
+Android 16 在图形 API 方面有几个变化，但需要把不同层面拆开看。
 
-**Vulkan Profile 要求加严。** Android 16 对新设备提出了更高的 Vulkan 能力要求(Vulkan Profile Android 2025, VPA16),包括 Vulkan 1.4 支持和特定 feature/extension 集合。这是对新设备的能力门槛,不等于现有设备的 OpenGL ES App 自动切换到 Vulkan 后端。
+**Vulkan Profile 要求加严。** Android 16 对新设备提出了更高的 Vulkan 能力要求（Vulkan Profile Android 2025, VPA16），包括 Vulkan 1.4 支持和特定 feature/extension 集合。这是对新设备的能力门槛，不等于现有设备的 OpenGL ES App 自动切换到 Vulkan 后端。
 
-**OpenGL ES 进入维护模式。** Khronos 已明确 OpenGL ES 不再接受新特性开发。但"OpenGL ES 进入维护模式"和"ANGLE 系统级翻译已默认启用"是两件事。ANGLE 在 Android 上的部署状态取决于设备厂商和系统配置,不能写成 Android 16 的统一行为。
+**OpenGL ES 进入维护模式。** Khronos 已明确 OpenGL ES 不再接受新特性开发。但"OpenGL ES 进入维护模式"和"ANGLE 系统级翻译已默认启用"是两件事。ANGLE 在 Android 上的部署状态取决于设备厂商和系统配置，不能写成 Android 16 的统一行为。
 
-**ANGLE 的实际部署情况。** ANGLE(Almost Native Graphics Layer Engine)确实是一个将 OpenGL ES 调用翻译为 Vulkan 的兼容层,Google 在多个版本中持续推动其集成。但截至 Android 16,ANGLE 的系统级启用仍受设备白名单和系统属性控制,不是所有 OpenGL ES App 的调用都默认经过 ANGLE 翻译。排查时可通过 `adb shell getprop persist.graphics.angle.enabled` 和 `adb shell dumpsys gfxinfo` 确认当前设备的 ANGLE 状态。
+**ANGLE 的实际部署情况。** ANGLE（Almost Native Graphics Layer Engine）是一个将 OpenGL ES 调用翻译为 Vulkan 的兼容层，Google 在多个版本中持续推动其集成。但截至 Android 16，ANGLE 的系统级启用仍受设备白名单和系统属性控制，不是所有 OpenGL ES App 的调用都默认经过 ANGLE 翻译。排查时可通过 `adb shell getprop persist.graphics.angle.enabled` 和 `adb shell dumpsys gfxinfo` 确认当前设备的 ANGLE 状态。
 
-对开发者的影响:
+对开发者的影响：
 - 新设备需要满足 VPA16 的 Vulkan 能力要求
 - 游戏和图形密集型应用应优先使用 Vulkan API
-- OpenGL ES App 不需要改代码,但不要假设系统已自动切换到 ANGLE/Vulkan 后端
+- OpenGL ES App 不需要改代码，但不要假设系统已自动切换到 ANGLE/Vulkan 后端
 - 可通过 `Android Vulkan Profile 2025` 确保跨设备兼容性
 
 ### AGSL 图形着色能力增强
@@ -246,7 +245,7 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 应用把目标帧率告诉系统之后，是否真的切到对应档位，仍由系统按电量、温度、面板能力和当前场景统一决策。
 
-在 Perfetto 中，ARR 的变化体现在 **`VSYNC-app` 信号不再固定间隔**。当 App 请求 30 FPS 时，`VSYNC-app` 的周期间隔会变为约 33.3ms 而非 8.33ms（120Hz）。这让 Perfetto 分析需要更仔细地识别帧率切换场景。拿到一份 ARR 设备的 Trace 时，先别急着按固定帧预算做判断——看一眼 VSync 间隔是否在切换，如果帧率档位变了，对应的帧预算也要跟着换。
+在 Perfetto 中，ARR 的变化体现在 **`VSYNC-app` 信号不再固定间隔**。当 App 请求 30 FPS 时，`VSYNC-app` 的周期间隔会变为约 33.3ms 而非 8.33ms（120Hz）。这让 Perfetto 分析需要更仔细地识别帧率切换场景。拿到一份 ARR 设备的 Trace 时，先检查 VSync 间隔是否在切换；如果帧率档位变了，对应的帧预算也要跟着换。
 
 [图：ARR 开启前后 VSYNC-app 信号间隔对比，展示 120Hz→30Hz 切换时的 Trace 表现]
 
@@ -266,11 +265,11 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 ### FrameMetrics API：量化每一帧的"慢"在哪里
 
-分析卡顿时，核心冲突在于："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期拆解为多个阶段，告诉我们时间究竟花在了哪里。
+分析卡顿时，核心冲突在于："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期划分为多个阶段，告诉我们时间究竟花在了哪里。
 
 FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。开发者不需要在代码里手动打点，就能拿到完整的帧耗时分布。
 
-FrameMetrics 将一帧的渲染拆解为以下阶段：
+FrameMetrics 将一帧的渲染划分为以下阶段：
 
 | 阶段 | 含义 |
 |------|------|
@@ -366,13 +365,13 @@ Perfetto 中的 `JankType` 定义在 `protos/perfetto/trace/android/frame_timeli
 | `JANK_SF_STUFFING` | 512 | SurfaceFlinger stuffing |
 | `JANK_DROPPED` | 1024 | 帧被丢弃 |
 
-Perfetto 中 Frame Timeline track 的 Actual Timeline 结束时间是 `max(GPU时间, postTime)`，postTime 是 App 帧发送到 SurfaceFlinger 的时间。
+Perfetto 中 Frame Timeline track 的 Actual Timeline 结束时间是 `max(GPU 时间, postTime)`，postTime 是 App 帧发送到 SurfaceFlinger 的时间。
 
 #### vsync-appSf 解耦（Android 13）
 
-Android 13 之前，`vsync-sf` 承担双重职责：唤醒 SurfaceFlinger 合成 + 唤醒部分 Choreographer 客户端。这导致时序歧义。Android 13 引入独立的 `vsync-appSf` 信号，专门服务需要与 SurfaceFlinger 内部状态精确同步的 Choreographer 客户端：
+Android 13 之前，`vsync-sf` 同时负责唤醒 SurfaceFlinger 合成和部分 Choreographer 客户端。这导致时序歧义。Android 13 引入独立的 `vsync-appSf` 信号，专门服务需要与 SurfaceFlinger 内部状态精确同步的 Choreographer 客户端：
 
-```
+```text
 Android 12- : vsync-sf 双重职责
 Android 13+ : vsync-sf → 仅唤醒 SF 合成
               vsync-appSf → 专门服务 Choreographer 客户端精确同步
@@ -444,7 +443,7 @@ Unreal Engine 已集成 Swappy。
 
 ### "硬件加速从 Android 4.0 才开始"——不准确
 
-Android 3.0 就引入了 HWUI 硬件加速，4.0 只是将它设为默认开启。如果分析的是 targetSdk < 14 的老应用，它可能仍在走 CPU 软件渲染路径——在 Perfetto 中表现为 `draw` 阶段没有对应的 GPU 工作，主线程承担了全部光栅化。
+Android 3.0 就引入了 HWUI 硬件加速，4.0 只是将它设为默认开启。如果分析的是 targetSdk < 14 的老应用，它可能仍在走 CPU 软件渲染路径——在 Perfetto 中表现为 `draw` 阶段没有对应的 GPU 工作，主线程负责全部光栅化。
 
 ### "RenderThread 是 App 自己创建的线程"——不是
 

@@ -26,10 +26,14 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [lazy-init, idlehandler, on-demand-loading, app-startup]
 related_chapters: ["21.2", "21.3", "1.13"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
 ---
 
 # 延迟初始化与按需加载

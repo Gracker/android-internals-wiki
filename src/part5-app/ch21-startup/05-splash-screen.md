@@ -24,11 +24,15 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md"
 tags: [splash-screen, perceived-performance, skeleton-screen, starting-window, window-background, splashscreen-compat]
 related_chapters: ["2.12", "8.3", "21.1"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
 created_by: "task2a-content-processing"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-05-13"
+task6_result: needs-rework
 ---
 
 # Splash Screen 与感知启动速度
@@ -118,7 +122,7 @@ Android 12 之前，Starting Window 的外观由 App theme 的 `windowBackground
 
 ### 设计思路
 
-SplashScreen API 把启动画面的行为统一收口到系统：开发者配置样式，系统管理"什么时候显示、什么时候消失"。App 不需要自己创建和管理启动页的 View。
+SplashScreen API 把启动画面的行为统一交给系统处理：开发者配置样式，系统管理"什么时候显示、什么时候消失"。App 不需要自己创建和管理启动页的 View。
 
 核心组件：
 
@@ -184,7 +188,7 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
-`installSplashScreen()` 必须在 `super.onCreate()` 之后、`setContentView()` 之前调用。调反了会导致 `postSplashScreenTheme` 无法正确切换。
+`installSplashScreen()` 必须在 `setContentView()` 之前调用。当前代码示例把它放在 `super.onCreate()` 之前，文字说明不能再写成之后。[存疑: 需 Task 9 复核 AndroidX core-splashscreen 当前版本对 `installSplashScreen()` 与 `super.onCreate()` 顺序的要求]
 
 ### 版本行为差异
 
@@ -369,7 +373,7 @@ SplashScreen 的退出动画是系统侧到 App 侧的过渡。App 内容加载�
 
 | 度量 | 含义 | 采集方式 |
 |------|------|----------|
-| TTID（Time To Initial Display） | 从点击到 App 首帧完成 | `reportFullyDrawn()` 或系统 Trace |
+| TTID（Time To Initial Display） | 从点击到 App 首帧完成 | 系统 Trace / Android Vitals |
 | TTFD（Time To Fully Drawn） | 从点击到内容完全可交互 | `Activity.reportFullyDrawn()` |
 | 感知启动时间 | 用户主观感受的启动耗时 | 用户调研 / A/B 实验留存率 |
 | 首帧内容质量 | 首帧展示了多少有效内容（不是骨架屏/空白） | 截图对比 + 自动化检测 |
@@ -392,7 +396,7 @@ App 在 Android 12+ 上不适配 SplashScreen API 时，启动流程可能出现
 
 - 退出动画和图标动画不可用。
 - `KeepOnScreenCondition` 的行为和 Android 12+ 一致。
-- 兼容库模式下的 SplashScreen 不是真正的 Starting Window，它的绘制发生在 App 进程里，不算系统侧 starting surface。
+- 兼容库模式下的 SplashScreen 不是系统侧 Starting Window，它的绘制发生在 App 进程里，不算系统侧 starting surface。
 
 在 Perfetto 里分析低版本启动时，要区分兼容库创建的 View 和系统 Starting Window——它们在不同的进程和不同的时间段。
 

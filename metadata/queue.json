@@ -2152,6 +2152,37 @@
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
       ]
+    },
+    {
+      "id": "task6-review-21.5-installSplashScreen-order-2026-05-13",
+      "section": "21.5",
+      "priority": 90,
+      "title": "SplashScreen installSplashScreen 调用顺序需确认",
+      "description": "章节中代码示例将 installSplashScreen() 放在 super.onCreate() 之前，原文字说明写成之后；需要 Task 9 确认当前 AndroidX core-splashscreen 版本的推荐调用顺序，并由 Task 2B 统一正文。",
+      "issue_type": "api-semantics",
+      "severity": "P1",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/05-splash-screen.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "SplashScreen API 适配 / 在 Activity 中安装 SplashScreen",
+          "detail": "代码示例与文字说明对 installSplashScreen() 和 super.onCreate() 的顺序描述不一致，属于 API 行为边界，Task 6 已移除错误的确定性表述并保留存疑标注。",
+          "suggestion": "Task 9 按当前 AndroidX core-splashscreen / 官方文档复核调用顺序；Task 2B 再统一示例和正文说明。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-13T01:20:00+08:00",
+      "original_review_log": "logs/review/2026-05-13-01-review.md"
     }
   ],
   "metadata": {

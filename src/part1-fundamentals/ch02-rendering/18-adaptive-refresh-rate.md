@@ -1,5 +1,4 @@
 ---
-
 status: ready-for-review
 title: Adaptive Refresh Rate 与动态帧率控制
 chapter: '2.18'
@@ -8,8 +7,7 @@ drafted_date: '2026-04-05'
 drafted_by: openclaw-task2a
 applicable_versions: ARR 主体：Android 15-QPR1 及以上；背景：Android 11-14 多刷新率支持
 last_verified: '2026-04-26'
-last_verified_against: AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev
-  + external review 2026-04-25
+last_verified_against: "AOSP android-16.0.0_r1 + developer.android.com + perfetto.dev + external review 2026-04-25"
 confidence: high
 sources:
 - type: official
@@ -46,15 +44,15 @@ related_chapters:
 - '2.6'
 - '2.13'
 - '2.16'
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task9_at: '2026-05-12T15:40:00+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: 2026-05-12
-task6_state: revisiting
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-09'
+reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task2b_result: fixed
@@ -62,6 +60,7 @@ last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；详见 logs/deep-review/2026-05-12-15-deep-review.md。'
+task6_reviewed_date: "2026-05-13"
 ---
 
 
@@ -205,7 +204,7 @@ SurfaceFlinger 不会在全量 Display Mode 里随意挑选。AOSP android-16.0.
 
 应用没有接入 ARR API，设备也可能在滚动时升频、静止后降频。系统会从 Layer 的更新节奏里估算内容帧率，再在 allowed range 里选更合适的模式。[已验证: 官方文档, developer.android.com/develop/ui/views/animations/adaptive-refresh-rate]
 
-触摸和游戏模式会继续影响选择空间。触摸开始后，系统往往会更积极地把刷新率抬高，以保证滑动和动画的跟手感；Game Mode 可能收紧或放宽上限。分析 Trace 时，要把内容帧率、触摸状态、DisplayManager policy 和 SurfaceFlinger 的选择结果放在同一时间窗里看。
+触摸和游戏模式会继续影响选择空间。触摸开始后，系统往往会更积极地把刷新率抬高，以保证滑动和动画的跟手感；Game Mode 可能降低或提高刷新率上限。分析 Trace 时，要把内容帧率、触摸状态、DisplayManager policy 和 SurfaceFlinger 的选择结果放在同一时间窗里看。
 
 [待验证] `RefreshRateSelector::chooseRefreshRate()` 在 16KB 页设备上是否存在 `SmallVector` 替换 `std::map` 的优化，以及对应的 TLB 局部性收益和 12% 耗时下降——AOSP android-16.0.0_r1 的 `RefreshRateSelector.cpp` 仍使用 `std::map<Key, DisplayModeIterator, KeyLess> ratesMap`，未能找到 SmallVector 替换或对应的 perf 数据。如有后续版本确认，再补回该段。
 
@@ -274,7 +273,7 @@ LIMIT 100;
 
 切换点出现 `vsync_gap` 不一定需要修复。但如果 `vsync_gap` 伴随 `jank_type` 不为空，且频繁出现在同一个刷新率过渡方向（比如总是 120Hz→60Hz 时出现），就值得检查 `RefreshRateSelector` 的切换阈值是否合理。
 
-[图：Game Mode 交互示意图。普通模式下刷新率上限较低，切到 Performance 模式后 VSYNC-app 间隔缩短，FrameTimeline 目标也跟着收紧。]
+[图：Game Mode 交互示意图。普通模式下刷新率上限较低，切到 Performance 模式后 VSYNC-app 间隔缩短，FrameTimeline 目标时长也随之缩短。]
 
 ## 功耗和体验上的取舍
 
@@ -286,7 +285,7 @@ LIMIT 100;
 
 LTPO 面板可以把刷新率压到极低（1Hz 甚至更低），用于 AOD 或静态内容展示。但物理面板在极低刷新率下会出现亮度抖动——驱动电压在长间隔内漂移，导致相邻帧之间的亮度不一致。这种抖动在低亮度环境下更明显。
 
-[待验证] 部分面板/OEM 在低刷新率下通过硬件或固件层实现 Gamma 补偿，缓解驱动电压漂移导致的亮度抖动。source.android.com 的 ARR 文档只覆盖了 HWC3 `DisplayConfiguration.vrrConfig`、`vsyncPeriod`、`VrrConfig.minFrameIntervalNs`、`notifyExpectedPresent` 等 HAL 接口，未涉及实时 Gamma 补偿的 AIDL 字段或 Display HAL 接口定义。如果设备确实在低频模式下出现周期性亮度波动，可以先在面板厂商文档或 OEM HAL 实现中查找补偿逻辑，再决定是否需要在 Perfetto 中观察对应 counter。
+[待验证] 部分面板/OEM 在低刷新率下通过硬件或固件层实现 Gamma 补偿，缓解驱动电压漂移导致的亮度抖动。source.android.com 的 ARR 文档只覆盖了 HWC3 `DisplayConfiguration.vrrConfig`、`vsyncPeriod`、`VrrConfig.minFrameIntervalNs`、`notifyExpectedPresent` 等 HAL 接口，未涉及实时 Gamma 补偿的 AIDL 字段或 Display HAL 接口定义。如果设备在低频模式下出现周期性亮度波动，可以先在面板厂商文档或 OEM HAL 实现中查找补偿逻辑，再决定是否需要在 Perfetto 中观察对应 counter。
 
 ## 版本演进要分两层看
 

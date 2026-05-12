@@ -40,7 +40,9 @@
     "4.1",
     "8.8",
     "9.5",
-    "21.6"
+    "21.6",
+    "21.5",
+    "2.9"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -74,7 +76,9 @@
     "src/part1-fundamentals/ch04-memory/01-memory-overview.md",
     "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
     "src/part2-performance/ch09-anr/05-case-studies.md",
-    "src/part5-app/ch21-startup/06-lazy-initialization.md"
+    "src/part5-app/ch21-startup/06-lazy-initialization.md",
+    "src/part5-app/ch21-startup/05-splash-screen.md",
+    "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
   ],
   "review_summary": {
     "p0_issues": 5,
@@ -84,10 +88,10 @@
     "total_issues": 15
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 121,
-    "l3_issues": 15,
+    "l1_l2_fixes": 147,
+    "l3_issues": 16,
     "l4_issues": 4,
-    "total_issues": 142,
+    "total_issues": 169,
     "auto_promotions": 2
   },
   "issues_by_section": {
@@ -240,18 +244,36 @@
       "p1": 0,
       "p2": 2,
       "p3": 0
+    },
+    "21.5": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0
     }
   },
-  "total_review_sections": 33,
+  "total_review_sections": 36,
   "next_review_candidates": [
     "17.2 SoC 平台差异",
     "20.1 应用稳定性全景",
     "08.01 响应速度原理"
   ],
   "ready_for_review": 56,
-  "last_updated": "2026-05-13T00:10:00+08:00",
+  "last_updated": "2026-05-13T01:20:00+08:00",
   "last_updated_by": "openclaw-task6",
-  "task6_last_review": "2026-05-12T23:18:00+08:00",
+  "task6_last_review": {
+    "at": "2026-05-13T01:20:00+08:00",
+    "log": "logs/review/2026-05-13-01-review.md",
+    "sections": [
+      "21.5",
+      "21.6",
+      "2.9",
+      "2.18"
+    ],
+    "l1_l2_fixes": 26,
+    "l3_l4_issues": 1,
+    "auto_promotions": 0
+  },
   "task9_last_review": "2026-05-12T22:15:00+08:00",
   "ready_to_publish": 0,
   "rework_history": [
@@ -487,6 +509,38 @@
       "last_task6_at": "2026-05-12T23:18:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90
+    },
+    "21.5": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task6_at": "2026-05-13T01:20:00+08:00",
+      "task6_result": "needs-rework",
+      "queue_priority": 90,
+      "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
+    },
+    "21.6": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-13T01:20:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
+    },
+    "2.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-13T01:20:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
+    },
+    "2.18": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-13T01:20:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
     }
   },
   "task2b_rounds": [
