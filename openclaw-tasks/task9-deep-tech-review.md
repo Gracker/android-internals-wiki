@@ -46,7 +46,7 @@
 1. **优先选 `pipeline_stage: task9_pending` 且最近 24 小时内被 Task 6 处理过的章节**
 2. 其次选择 `task9_state: pending` 的其他章节
 3. 同优先级时按章节号顺序（1.1 → 1.2 → 2.1...）
-4. 追踪已 Review 章节：在日志中维护，避免重复（同一章节至少间隔 7 天才可重审）
+4. 追踪已 Review 章节：在日志中维护，避免重复（同一章节至少间隔 3 天才可重审）
 5. 如果没有可 Review 的章节 → 回复"当前无可 Review 章节"并结束
 6. 当 recent external-review backlog 较多时，优先处理已被 external-review 标记出明确高风险点、且可在 1 轮内完成技术审计闭环的章节
 
@@ -54,7 +54,7 @@
 
 ## Step 1.5：读取 external-review（如存在）
 
-在正式 deep review 前，检查 `logs/external-review/` 根目录（不含 `archive/`）下是否已有该章节最近 7 天的 external-review 活跃文件。
+在正式 deep review 前，检查 `logs/external-review/` 根目录（不含 `archive/`）下是否已有该章节最近 3 天的 external-review 活跃文件。
 
 如果存在，必须读取并提取：
 - 一手资料索引
