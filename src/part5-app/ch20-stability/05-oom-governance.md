@@ -22,21 +22,21 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 实现 FD 监控：文件描述符（FD）超限怎么办？.md"
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
-review_count: 2
-pipeline_stage: task6_pending
-task6_state: revisiting
+review_count: 3
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 created_by: "task2a"
-reviewed_date: "2026-05-12"
+reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
-task6_result: needs-rework
-last_task6_at: "2026-05-12T18:02:31+08:00"
-last_task6_review_log: logs/review/2026-05-12-18-review.md
-task6_review_notes: "2026-05-12 Task6 18:02：needs-rework。L1/L2 小修 16 处：补 outline、代码块语言、开头措辞、泛化词；发现 2 个技术风险标注，已写入 queue/suggestions，交 Task9/Task2B 复核。"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-13T21:32:00+08:00"
+last_task6_review_log: logs/review/2026-05-13-21-review.md
+task6_review_notes: "2026-05-13 Task6 21:32：pass-light-edit。L1/L2 小修 4 处：修正 Task2B 日期占位符、Looper 拼写、英文 or、中性化 FD 崩溃描述；无新增回炉项，等待 Task9 复核。"
 task9_result: needs-rework
 task2b_result: fixed
-last_task2b_at: '2026-%m-13T19:33:05+08:00'
+last_task2b_at: '2026-05-13T19:33:05+08:00'
 last_task9_at: '2026-05-12T18:24:00+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-12'
@@ -241,7 +241,7 @@ signal:6 (SIGABRT), code:-6 (SI_TKILL)
 FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 ```
 
-这个崩溃不是"FD 超限"的直接原因，而是 FD 编号超过 `FD_SETSIZE`（通常 1024）后，`FD_SET` 宏触发的 fortify 检查。出现这个崩溃时，FD 泄漏已经持续了很长时间——崩溃点只是"最后一根稻草"。
+这个崩溃不是"FD 超限"的直接原因，而是 FD 编号超过 `FD_SETSIZE`（通常 1024）后，`FD_SET` 宏触发的 fortify 检查。出现这个崩溃时，FD 泄漏已经持续了很长时间——崩溃点只是资源耗尽后暴露出来的表层位置。
 
 ### 常见 FD 消耗者
 
@@ -249,7 +249,7 @@ FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 |------|------|------|
 | 文件 | `open()` / `FileInputStream` | 日志库 mmap、数据库 WAL 文件 |
 | Socket | 网络请求、IPC | Binder 连接、WebSocket 长连接 |
-| Pipe | `pipe()` / `eventfd` | Loopper 的 `mWakeEventFd`、线程间通信 |
+| Pipe | `pipe()` / `eventfd` | Looper 的 `mWakeEventFd`、线程间通信 |
 | epoll | `epoll_create()` | 每个 Looper 线程创建一个 epoll 实例 |
 | anon_inode | `memfd_create()` | 共享内存、Ashmem |
 
@@ -323,7 +323,7 @@ int proxy_open(char* path, int flags, int mode) {
 
 - 迁移到 64 位：从地址空间上解决 32 位进程的虚拟地址上限。
 - 减少线程数：线程栈是虚拟内存的大头消费者。合并线程池、使用协程替代线程。
-- 减少 so 库数量：每个 so 的代码段 + 数据段都要占用虚拟地址空间。动态合并 or 按需加载。
+- 减少 so 库数量：每个 so 的代码段 + 数据段都要占用虚拟地址空间。动态合并或按需加载。
 - 调整 `malloc` 参数：`mallopt(M_PURGE, 1)` 释放空闲 arena 的物理页，减少虚拟内存碎片。
 
 虚拟内存优化详见 23.6 节（大型 App 的多进程内存策略）。
