@@ -46,10 +46,10 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
 related_chapters: ["22.1", "7.11", "18.13", "26.2"]
-pipeline_stage: task9_pending
+pipeline_stage: "task2b_pending"
 task6_state: reviewed
-task9_state: pending
-task2b_state: pending
+task9_state: "reviewed"
+task2b_state: "pending"
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
@@ -57,6 +57,12 @@ task6_result: pass-light-edit
 last_task6_at: "2026-05-13T09:12:00+08:00"
 last_task6_review_log: "logs/review/2026-05-13-09-review.md"
 task6_review_notes: "2026-05-13 Task6：L1/L2 轻修（Native/兜底术语、表达收束）；四层质检通过，无新增回炉项，转入 Task9。"
+task9_result: "needs-rework"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-13"
+last_task9_at: "2026-05-13T09:20:00+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-13-09-deep-review.md"
+task9_review_notes: "2026-05-13 Task9：发现 P0/P1 技术问题（P0=0, P1=1），转入 Task2B 回炉。"
 ---
 
 # WebView 性能优化实战

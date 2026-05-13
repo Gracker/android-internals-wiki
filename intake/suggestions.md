@@ -498,3 +498,39 @@
 - **位置**：L102 `跨进程唤醒`
 - **问题**：表格容易被读者理解成主进程冷启动会自动安装并拉起所有独立进程 Provider。AOSP `handleBindApplication()` 安装的是当前进程的 provider；`android:process=":remote"` 的 Provider 只有在远程进程启动或主进程主动访问它时，才会由系统启动对应进程。
 - **建议**：把“启动时拉起子进程”改成带条件表述：主进程 Provider 进入主进程冷启动关键路径；remote Provider 不随主进程自动安装，但被同步访问会触发远程进程启动和跨进程等待。诊断项保留 `ps` / Perfetto process track。
+
+## [Task9 Deep Review] 22.6 图片加载与显示优化 — 2026-05-13
+- **类型**：源码准确性/版本差异
+- **位置**：L136-L169 `inSampleSize` 与 `inBitmap`
+- **问题**：`inSampleSize` 未说明非 2 的幂会向下取整到最近 2 的幂；`inBitmap` 未补 API 19+ reusable allocationByteCount 约束。
+- **建议**：补官方规则：`inSampleSize=3` 实际按 2 处理；API 19+ 复用要求解码后 byte count 不超过 `getAllocationByteCount()`，API 19 前约束更严。
+
+## [Task9 Deep Review] 22.6 图片加载与显示优化 — 2026-05-13
+- **类型**：API 版本差异
+- **位置**：L197-L200 `BitmapRegionDecoder.newInstance()`
+- **问题**：只写“API 31 起部分入口 deprecated”，没有列出弃用的是带 `boolean isShareable` 的重载。
+- **建议**：明确 `newInstance(String, boolean)`、`newInstance(byte[], int, int, boolean)`、`newInstance(InputStream, boolean)` 在 API 31 弃用，替换为不带 `isShareable` 的重载。
+
+## [Task9 Deep Review] 22.6 图片加载与显示优化 — 2026-05-13
+- **类型**：数据精度/版本口径
+- **位置**：L95-L113 框架对比与像素内存示例
+- **问题**：Glide/Coil 对比未标注版本基准；4000×3000 对 1000×750 的像素比值是 16 倍，正文写“15 倍以上”。
+- **建议**：标明基于 Glide 4.x / Coil 3.x；像素内存例子直接写 16 倍。
+
+## [Task9 Deep Review] 22.7 WebView 性能优化实战 — 2026-05-13
+- **类型**：源码准确性
+- **位置**：L163-L167 `WebViewWarmup.release()` 与 L431-L443 `destroyWebView()`
+- **问题**：`WebView.destroy()` 必须在创建 WebView 的线程调用；`release()` 未标注 MainThread 约束。`loadUrl("about:blank")` 后立即 `clearHistory()` 也不能保证异步 blank 导航完成后历史完全为空。
+- **建议**：在 `release()` 内加主线程检查或 `Handler.post`；在清理顺序旁说明 `about:blank` 异步导航的历史栈边界。
+
+## [Task9 Deep Review] 22.7 WebView 性能优化实战 — 2026-05-13
+- **类型**：源码准确性/原理精度
+- **位置**：L176-L189 `WebSettings.getDefaultUserAgent()` 预热
+- **问题**：“只能提前触发一部分 provider 初始化”描述偏模糊；AOSP 路径是触发 WebViewFactory/provider 加载与 native library 初始化，但不创建 WebView/AwContents/renderer/compositor。
+- **建议**：把预热边界写成“provider + native library 可提前，renderer 与页面资源不可提前”。
+
+## [Task9 Deep Review] 22.7 WebView 性能优化实战 — 2026-05-13
+- **类型**：工程边界
+- **位置**：L276-L296 `shouldInterceptRequest()` 示例
+- **问题**：main frame 默认进入 offlineStore 查找，但代码未显式展示可信域名/manifest 白名单；读者可能误把主文档和子资源拦截边界混在一起。
+- **建议**：补注释：main frame 仅限离线包 manifest 命中的受控 URL；子资源也要走 allowlist，校验失败立即返回 null 走网络兜底。

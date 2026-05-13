@@ -327,20 +327,62 @@
       "id": "task9-22.3-pausable-comp-version-error",
       "section": "22.3",
       "priority": 95,
-      "title": "Pausable Composition 默认启用时机错误",
-      "description": "Pausable Composition 在 Compose 1.10 中是实验性版本，正式默认启用在 Compose 1.11",
-      "issue_type": "source-code-accuracy",
+      "title": "Compose 1.10 Pausable/Lazy 预取/API 与 ComposeView 互操作口径错误",
+      "description": "正文把 Compose 1.10 的 Pausable Composition、LazyLayoutCacheWindow、Strong Skipping、编译器报告和 RecyclerView 中 ComposeView 策略写成确定结论；与 AndroidX 1.10.6 release notes 和公开 API/官方互操作文档不一致，含不可编译 API 示例。",
+      "issue_type": "source-code-accuracy-version-differences-api-signature",
       "severity": "P0",
-      "created_date": "2026-05-12",
+      "created_date": "2026-05-13",
       "assigned_to": "content-team",
-      "estimated_hours": 1,
-      "status": "blocked",
+      "estimated_hours": 5,
+      "status": "pending",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
       "completed_date": "2026-05-12",
-      "completed_reason": "Pausable Composition 默认启用版本（Compose 1.10 vs 1.11）无法通过现有素材验证，需高爷确认实际版本线"
+      "section_title": "Jetpack Compose 性能优化",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异/源码行为",
+          "location": "L220-L246 Pausable Composition 与 LazyColumn 预取",
+          "detail": "正文写成 Compose 1.10 默认启用 Pausable Composition、无需代码改动并解决长列表组合阻塞；Compose Foundation release notes 显示 1.10.0-alpha05 曾默认启用 ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled，但 1.10.6 已因稳定性问题默认禁用。",
+          "suggestion": "按具体 foundation/runtime 版本重写：区分运行时 PausableComposition API、Lazy 预取中的 pausable flag、1.10 alpha/1.10.6 默认值变化；删除或标注“滚动性能对等、0.2% 卡顿率”为需来源条件。"
+        },
+        {
+          "severity": "P0",
+          "type": "API 签名错误",
+          "location": "L257-L264 LazyLayoutCacheWindow 示例",
+          "detail": "公开 API 没有 Modifier.lazyLayoutCacheWindow(prefetchWindow=...)；LazyLayoutCacheWindow 也没有 Int 构造。官方 API 是 rememberLazyListState(cacheWindow = LazyLayoutCacheWindow(...))，窗口以 Dp ahead/behind 或 viewport fraction 描述。",
+          "suggestion": "改成 `val state = rememberLazyListState(cacheWindow = LazyLayoutCacheWindow(ahead = ..., behind = ...))` 并传给 `LazyColumn(state = state)`；标注 ExperimentalFoundationApi 与 1.9/1.10 构造函数差异。"
+        },
+        {
+          "severity": "P0",
+          "type": "官方实践相反/生命周期错误",
+          "location": "L353-L369 ComposeView in RecyclerView",
+          "detail": "正文称默认 DisposeOnDetachedFromWindowOrReleasedFromPool 会在 RecyclerView item 回收时销毁 Composition，并推荐 ViewHolder 使用 DisposeOnViewTreeLifecycleDestroyed。官方文档说明默认策略正是为 RecyclerView 等 pooling container 设计：在池容器 detach 或 item 被丢弃时处理；DisposeOnViewTreeLifecycleDestroyed 适用于 Fragment View。",
+          "suggestion": "改为默认策略适合 RecyclerView item；如需手动策略，说明与 pooling container、ViewHolder 重绑定、remember 状态隔离的边界。不要推荐 ViewHolder 默认绑定到 Activity/Fragment 生命周期。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码语义过度概括",
+          "location": "L45-L55 / L306-L313 Strong Skipping 与 skippable 字段",
+          "detail": "正文写“所有 @Composable 函数都会被标记为 skippable”，并把 skip 比较简化成 equals。官方 Strong Skipping 文档口径是“all restartable composable functions become skippable”；non-restartable composables 仍不可跳过，unstable 参数用 instance equality(===)，stable 参数用 object equality。",
+          "suggestion": "统一为“所有 restartable composable 可 skippable”；补充 stable/unstable 参数比较规则，并同步调整编译器报告中 `skippable=false` 的解读。"
+        },
+        {
+          "severity": "P1",
+          "type": "构建配置/版本适配",
+          "location": "L280-L315 Compose compiler reports",
+          "detail": "`build.gradle.kts` 示例使用 Groovy 风格的 `freeCompilerArgs += [ ... ]`，Kotlin DSL 不能直接编译；Kotlin 2.0+ Compose Compiler 已有 `composeCompiler { reportsDestination; metricsDestination }` DSL。正文还写“升级到 Kotlin 2.2 利用 Strong Skipping”，与前文 Kotlin 2.0+ 默认启用口径冲突。",
+          "suggestion": "主示例改为 Kotlin 2.0+ `composeCompiler {}` DSL；旧 `-P plugin:...` 仅作为老项目兼容写法；把 Kotlin 2.2 改为 Kotlin 2.0.20+ 或按官方文档口径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T09:20:00+08:00"
     },
     {
       "id": "task9-22.3-derivedstate-conditions-incomplete",
@@ -704,13 +746,13 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 1,
-      "status": "blocked",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
       "completed_date": "2026-05-12",
-      "completed_reason": "与已 blocked 条目 task9-22.3-pausable-comp-version-error 重复，Pausable Composition 默认启用版本无法通过现有素材验证，需高爷确认"
+      "completed_reason": "重复 blocked 条目已由 task9-22.3-pausable-comp-version-error 重新打开并补充 1.10.6 release notes 证据。"
     },
     {
       "id": "task9-22.3-derivedstateof-conditions-error",
@@ -3075,18 +3117,82 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T08:40:35+08:00"
+    },
+    {
+      "id": "task9-22-6-avif-region-version-boundary-20260513",
+      "section": "22.6",
+      "section_title": "图片加载与显示优化",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "version-differences",
+      "title": "BitmapRegionDecoder / AVIF 格式支持缺少 API 31 边界",
+      "description": "章节适用 Android 10(API 29)+，但大图区域解码与格式选型把 AVIF 与 JPEG/PNG/WebP/HEIF 并列描述，未说明 AVIF 平台解码从 Android 12(API 31) 才支持；API 29/30 需要 WebP/JPG fallback。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/06-image-loading.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L197-L200 / L227-L240 BitmapRegionDecoder 格式支持与 AVIF 选型",
+          "detail": "BitmapRegionDecoder 文档列出 JPEG/PNG/WebP/HEIF/AVIF，但 AVIF 平台支持始于 Android 12(API 31)。章节 applicable_versions 覆盖 API 29-36，未给出 API 29/30 fallback。",
+          "suggestion": "补格式版本表：JPEG/PNG、WebP、HEIF(API 28+)、AVIF(API 31+)；在 AVIF 小节明确 Android 10/11 使用 WebP/JPG fallback。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T09:20:00+08:00"
+    },
+    {
+      "id": "task9-22-7-onrenderprocessgone-recovery-guards-20260513",
+      "section": "22.7",
+      "section_title": "WebView 性能优化实战",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "principle-chain-source-code-accuracy",
+      "title": "onRenderProcessGone 重建示例缺少生命周期与重试预算保护",
+      "description": "Renderer 退出恢复示例直接 destroy 旧 WebView、factory 新实例并加载 lastUrl，未检查 Activity/容器生命周期，也没有 per URL/session 重试上限；renderer OOM 或页面自身崩溃时可能形成闪退/重载循环。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/07-webview-optimization.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/工程边界",
+          "location": "L455-L477 RecoverableWebViewClient.onRenderProcessGone()",
+          "detail": "官方要求旧 WebView 不可继续使用并由宿主返回 true 处理；正文示例完成了清理和重建，但缺少 Activity isFinishing/isDestroyed、container 是否 attached、factory 失败、lastUrl 重试次数/错误页降级等保护。",
+          "suggestion": "在示例或正文补充生命周期 guard、retry budget（例如同 URL 最多 1-2 次）、错误页降级和销毁中取消重建；上报 didCrash、priority、URL 模板、内存水位和重建结果。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T09:20:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 115,
+    "total_entries": 117,
     "p0_count": 55,
-    "last_updated": "2026-05-13T08:40:35+08:00",
+    "last_updated": "2026-05-13T09:20:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 65,
+    "pending_entries": 68,
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T08:40:35+08:00",
+  "last_updated": "2026-05-13T09:20:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
