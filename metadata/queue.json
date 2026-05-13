@@ -3575,18 +3575,121 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T19:47:40+08:00"
+    },
+    {
+      "id": "task9-20260513-4.6-cmc-version-boundary",
+      "section": "4.6",
+      "section_title": "内存相关的版本演进",
+      "priority": 85,
+      "title": "CMC / Mark Compact 版本边界写晚到 Android 15",
+      "description": "[Deep Tech Review] 章节把 UFFD Mark Compact / CMC 源码路径进入 AOSP 写成 Android 15，实际 android-14.0.0_r1 已有 mark_compact.cc 与 kCollectorTypeCMC/userfaultfd 探测路径。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/06-memory-evolution.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L238-L247、L629  CMC / Mark Compact 版本边界",
+          "detail": "正文把“UFFD 驱动的 Mark Compact / CMC 路径进入 AOSP”写成 Android 15 事件；实际 android-14.0.0_r1 已存在 art/runtime/gc/collector/mark_compact.cc，heap.cc 也已有 kCollectorTypeCMC / userfaultfd 探测路径。Android 15/16 可以讨论启用条件或默认策略变化，但不能写成代码路径首次进入 AOSP。",
+          "suggestion": "把版本线拆开：Android 14 已有 CMC/mark_compact 源码路径；Android 15/16 说明 gUseUserfaultfd、设备 userfaultfd/minor-fault 支持与 rollout 条件；Android 16 QPR2+ 如保留“官方对外明确 Generational CMC”，补官方链接和精确措辞。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T20:35:00+08:00"
+    },
+    {
+      "id": "task9-20260513-19.27-diagnostic-permission-boundary",
+      "section": "19.27",
+      "section_title": "千万级 DAU 的 APM 端侧架构",
+      "priority": 85,
+      "title": "APM 远程诊断能力缺少 Android 权限边界",
+      "description": "[Deep Tech Review] 动态指令把系统级 Perfetto Trace、Hprof、Logcat 回捞并列为端侧能力，但普通三方 App 与系统/adb/internal build 的权限边界不同，容易承诺线上 SDK 实际做不到的诊断能力。",
+      "issue_type": "principle-chain-version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part3-tools/ch19-apm/27-apm-client-architecture.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "权限边界/版本差异",
+          "location": "L194-L206 动态指令：Perfetto / Hprof / Logcat 回捞",
+          "detail": "章节把远程指令开启深度 Perfetto Trace、Hprof Dump、高级 Logcat 回捞放在同一能力表里，但没有区分普通三方 App、profileable/debuggable、系统签名/特权 App、adb/internal build 的权限边界。Perfetto SDK in-process tracing 可无特权运行，但系统级 Perfetto/ftrace 通常需要 privileged consumer（如 adb shell / system）；Android 4.1+ READ_LOGS 只授予 privileged/system app，普通 SDK 不能回捞全设备 logcat，只能处理本 SDK/本进程可控日志。",
+          "suggestion": "补一张“诊断能力 × 权限边界”矩阵：普通三方仅能上报 SDK 自有日志、android.os.Trace/Perfetto SDK in-process 标记和自身 Hprof；系统/内测/adb 通道才能做系统级 Perfetto、完整 logcat 或更深 Hprof/trace。远程指令协议里增加 capability check 与失败回执。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T20:35:00+08:00"
+    },
+    {
+      "id": "task9-20260513-1.9-cloud-compilation-sdm-fabricated-sources",
+      "section": "1.9",
+      "section_title": "Package Manager Service 与应用安装性能",
+      "priority": 95,
+      "title": "Android 16 云端编译 / SDM 源码锚点不存在",
+      "description": "[Deep Tech Review] 章节中 Android 16 云端编译与 SDM 深度分析引用多个 android-16.0.0_r1 中不存在的类、方法和性能数据，需要回炉删除或改为待验证外部报道。",
+      "issue_type": "source-code-accuracy-version-differences-data-support",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch01-architecture/09-package-manager.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L392、L595-L804 Android 16 云端编译 / SDM 深度分析",
+          "detail": "正文宣称 android-16.0.0_r1 存在 PackageSnapshotCompiler.java、SDM.java、CloudCompilerNetworkService.java、CompilerFallback.java、PackageManagerService.snapshotCompiler()、verifySdmSignatures() 等源码锚点；复核 android-16.0.0_r1 frameworks/base/services/core/java/com/android/server/pm/ 目录和 PackageManagerService.java，未找到这些文件、类或方法。当前代码块属于不可核验/伪造源码。",
+          "suggestion": "删除该深度分析中的伪代码、调用链和“基于 AOSP 源码分析”表述；只保留前文“公开资料不足、作为 Play 分发侧变量观察”的保守段落，或补真实 AOSP/官方文档锚点后再写。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据缺失/版本差异",
+          "location": "L565、L781-L790 Android 16 行与性能收益",
+          "detail": "“Play 分发侧引入 SDM 预编译产物分发”“安装性能提升 30-50% / 运行性能 15-25% / 带宽 60-80%”缺少官方文档、AOSP 源码或可复现实验；与前文“资料边界：缺少一手材料”冲突。",
+          "suggestion": "移除定量收益和版本表确定性描述；若引用 Android Authority 等外部报道，只能标为外部报道/待验证，并给出设备侧可观测信号：安装来源、dex2oat 是否出现、cmd package art dump / dumpsys package dexopt 输出。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T20:35:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 127,
-    "p0_count": 22,
-    "last_updated": "2026-05-13T19:47:40+08:00",
+    "total_entries": 130,
+    "p0_count": 23,
+    "last_updated": "2026-05-13T20:35:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 75,
+    "pending_entries": 78,
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T19:47:40+08:00",
+  "last_updated": "2026-05-13T20:35:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": 2
 }

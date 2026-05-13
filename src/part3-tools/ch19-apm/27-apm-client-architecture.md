@@ -42,15 +42,22 @@ sources:
   path: https://developer.android.com/reference/android/app/ApplicationExitInfo
 - type: official
   path: https://developer.android.com/studio/profile/capture-heap-dump
-pipeline_stage: task9_pending
+pipeline_stage: 'task2b_pending'
 task6_state: reviewed
-task9_state: pending
+task9_state: 'reviewed'
 reviewed_date: '2026-05-13'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 last_task6_at: '2026-05-13T20:10:00+08:00'
 last_task6_review_log: logs/review/2026-05-13-20-review.md
 task6_review_notes: '2026-05-13 Task6 20:10：pass-light-edit。L1/L2 小修 6 处：去否定-纠正式开头、修正 mmap 空格、压缩口头约定/完整 SDK 等表达；无新增回炉项，转入 Task9 技术复审。'
+task9_result: 'needs-rework'
+last_task9_at: '2026-05-13T20:35:00+08:00'
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-05-13'
+last_task9_review_log: 'logs/deep-review/2026-05-13-20-deep-review.md'
+task9_review_notes: '2026-05-13 Task9 20:35：needs-rework。P0 0 / P1 1 / P2 2；远程诊断能力缺普通三方 App 与系统/adb/internal build 的 Perfetto/Logcat/Hprof 权限边界；另有队列示例与协议 benchmark 建议。'
+task2b_state: 'pending'
 ---
 
 # 千万级 DAU 的 APM 端侧架构

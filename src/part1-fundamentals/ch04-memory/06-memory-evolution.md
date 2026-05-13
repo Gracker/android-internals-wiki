@@ -60,22 +60,22 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 8
-pipeline_stage: task9_pending
+pipeline_stage: 'task2b_pending'
 task6_state: reviewed
 task6_result: pass-light-edit
 last_task6_at: '2026-05-13T20:10:00+08:00'
 last_task6_review_log: logs/review/2026-05-13-20-review.md
 task6_review_notes: '2026-05-13 Task6 20:10：pass-light-edit。L1/L2 小修 2 处：修正 last_task2b_at 日期占位符、删除 largeHeap 否定纠正式表述；Task9 仍待复核，未自动晋升。'
-task9_state: pending
-task9_result: needs-rework
-last_task9_at: '2026-05-12T18:24:00+08:00'
-task2b_state: fixed
+task9_state: 'reviewed'
+task9_result: 'needs-rework'
+last_task9_at: '2026-05-13T20:35:00+08:00'
+task2b_state: 'pending'
 task2b_result: fixed
 last_task2b_at: '2026-05-13T19:33:05+08:00'
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-12'
-task9_review_notes: '2026-05-12 Task9 18:24：needs-rework。P0 3 / P1 1 / P2 0；16KB linker compat、Bitmap 源码路径、MTE ASYMM 平台边界存在源码/版本错误；MGLRU 观察口径不足。'
-last_task9_review_log: logs/deep-review/2026-05-12-18-deep-review.md
+task9_reviewed_by: 'openclaw-task9'
+task9_reviewed_date: '2026-05-13'
+task9_review_notes: '2026-05-13 Task9 20:35：needs-rework。P0 0 / P1 1 / P2 0；CMC/Mark Compact 版本边界写成 Android 15 首次进入 AOSP，实际 android-14.0.0_r1 已有源码路径与 kCollectorTypeCMC/userfaultfd 探测。'
+last_task9_review_log: 'logs/deep-review/2026-05-13-20-deep-review.md'
 ---
 
 
