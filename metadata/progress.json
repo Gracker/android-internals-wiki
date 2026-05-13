@@ -1,7 +1,7 @@
 {
   "total": 270,
-  "draft": 39,
-  "ready-for-review": 64,
+  "draft": 38,
+  "ready-for-review": 65,
   "finalized": 168,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-13",
@@ -431,8 +431,8 @@
     }
   ],
   "ready_for_review": 65,
-  "last_updated": "2026-05-13T16:42:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-13T16:57:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "at": "2026-05-13T16:42:00+08:00",
     "log": "logs/review/2026-05-13-16-review.md",
