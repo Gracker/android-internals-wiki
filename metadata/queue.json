@@ -3181,6 +3181,34 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T09:20:00+08:00"
+    },
+    {
+      "id": "task9-22.8-framemetrics-api31-boundary",
+      "section": "22.8",
+      "section_title": "帧率监控与线上卡顿治理",
+      "priority": 85,
+      "title": "FrameMetrics GPU/deadline 字段缺少 API 31 边界",
+      "description": "[Deep Tech Review] 22.8 在 Android 10-16 适用范围内直接使用 FrameMetrics.GPU_DURATION / DEADLINE 与 deadline 聚合，缺少 Android 10/11 兜底口径。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/08-frame-monitoring.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L231-L259 FrameMetrics 阶段归因与 deadline 聚合",
+          "detail": "章节适用范围是 Android 10-16，但直接把 FrameMetrics.GPU_DURATION / DEADLINE 当作通用字段使用；官方 API 与 AOSP 显示二者 Added in API level 31，Android 10/11 的 FrameMetrics.getMetric() 对 id>VSYNC_TIMESTAMP 返回 -1。",
+          "suggestion": "补充版本分支：API 31+ 才能用 GPU_DURATION/DEADLINE 与 deadline missed 统计；API 29/30 使用 TOTAL_DURATION、VSYNC/INTENDED_VSYNC_TIMESTAMP、当前刷新率预算或 JankStats isJank 口径兜底。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T10:22:00+08:00"
     }
   ],
   "metadata": {
