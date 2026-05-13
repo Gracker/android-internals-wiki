@@ -625,3 +625,11 @@
 - **位置**：L173-L188 JSON / Protobuf Lite / FlatBuffers 协议对比
 - **问题**：二进制协议节省 CPU、降低 GC、压缩网络流量的判断缺少字段规模、事件频率、设备、payload 大小、序列化耗时或分配量对比。
 - **建议**：补一个 1k/10k 事件 benchmark，记录 payload bytes、encode/decode time、alloc bytes、GC 次数；没有数据时收窄为定性判断。
+
+
+## [Task6 Review] 2.19 刷新率切换与帧率适配性能 — 2026-05-13
+- **类型**：需确认 / 技术风险交接
+- **位置**：`HWC 4.0 预判式切换（Android 16）`、`VsyncModulator 原子化相位切换（Android 16）`、`精确 fps 请求、category 请求和 range 请求怎么选`
+- **问题**：Task9 已将本节列为 needs-rework：`expectedPresentTime` 版本与源码锚点、`VsyncModulator` 原子化声明、`Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` FlaggedApi 边界仍需修正。Task6 本轮只补 `[存疑]` 标注和 L1/L2 小修，不裁决技术真伪。
+- **建议**：Task2B 优先处理 queue.json 中 `task9-20260513-2.19-hwc-vsyncmodulator-version-errors`，修复后再进入 Task6 / Task9 复核。
+- **review 日志**：logs/review/2026-05-13-22-review.md

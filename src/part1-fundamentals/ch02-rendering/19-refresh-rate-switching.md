@@ -2,14 +2,17 @@
 title: "刷新率切换与帧率适配性能"
 chapter: "2.19"
 section: "2.19"
-status: 'ready-for-review'
+status: "ready-for-review"
 drafted_date: "2026-04-07"
-reviewed_date: "2026-05-09"
+reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 task6_result: "needs-rework"
-task6_state: reviewed
-task9_state: 'reviewed'
-pipeline_stage: 'task2b_pending'
+task6_state: "reviewed"
+task9_state: "reviewed"
+task9_result: "needs-rework"
+task2b_state: "pending"
+task2b_result: "fixed"
+pipeline_stage: "task2b_pending"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"
 last_verified: "2026-04-23"
 last_verified_against: "AOSP android-16.0.0_r1, developer.android.com ARR / Display / View / Surface 文档，外部 review 2.19 问题单"
@@ -35,18 +38,11 @@ sources:
     path: "frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp"
 tags: [refresh-rate, frame-rate, SurfaceFlinger, VSync, setFrameRate, jank, rendering, display-mode, ARR]
 related_chapters: ["2.2", "2.3", "2.4", "2.6", "2.18"]
-pipeline_stage: 'task2b_pending'
-task6_state: revisiting
-task9_state: 'reviewed'
-task2b_state: 'pending'
-reviewed_by: "openclaw-task6"
-reviewed_date: "2026-04-19"
-task6_result: pass-light-edit
-task9_result: 'needs-rework'
-task2b_result: fixed
-task9_reviewed_date: '2026-05-13'
-task9_reviewed_by: 'openclaw-task9'
-last_task9_at: '2026-05-13T21:57:00+08:00'
+task9_reviewed_date: "2026-05-13"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-13T21:57:00+08:00"
+last_task6_at: "2026-05-13T22:12:00+08:00"
+task6_review_notes: "2026-05-13 task6 review: 清理重复 frontmatter、补充技术存疑标注、修复代码块语言和少量文风问题；Task9 P0 问题仍在 queue.json 中待 Task2B 处理。"
 ---
 
 # 2.19 刷新率切换与帧率适配性能
@@ -71,13 +67,13 @@ last_task9_at: '2026-05-13T21:57:00+08:00'
 
 ## 为什么要了解刷新率切换
 
-在 Android 手机上，有一个几乎所有厂商都很难彻底消除的卡顿场景：从相机界面划到多任务，再返回桌面的动画。无论旗舰还是中端，无论高通、联发科还是三星芯片，这个场景都很常见。问题通常出在屏幕刷新率切换。
+在 Android 手机上，有一个几乎所有厂商都难以完全消除的卡顿场景：从相机界面划到多任务，再返回桌面的动画。无论旗舰还是中端，无论高通、联发科还是三星芯片，这个场景都很常见。问题通常出在屏幕刷新率切换。
 
 相机界面通常以 60Hz 运行（Camera 传感器采集帧率有限，更高刷新率只会增加功耗），而桌面动画需要 120Hz 才能更顺滑。当用户从相机上划触发多任务动画时，系统需要把刷新率从 60Hz 切到 120Hz。这个切换不只是改一个配置值，它还涉及 PLL 时钟重配置、Display HAL 状态机切换和 VSync 信号源周期调整。整个过程中，若干帧可能被延迟或丢弃，用户就会看到一瞬间的卡顿。
 
 这种卡顿有一个让人头疼的特征：在 App 侧的 Perfetto Trace 中看起来完全正常。Choreographer#doFrame 的耗时没有异常，主线程没有阻塞，RenderThread 也没有超时，但用户还是会觉得不流畅。如果我们不知道刷新率切换会导致这种卡顿，就会在错误的 Track 上浪费大量分析时间。
 
-读完这一节，我们会知道：刷新率切换在系统层面到底发生了什么、SurfaceFlinger 如何仲裁多个 Surface 的帧率需求、在 Perfetto 中如何识别刷新率切换导致的卡顿、以及 App 开发者和系统工程师分别能做什么来减少这类卡顿。
+分析这类问题，需要把四件事串起来：刷新率切换在系统层面到底发生了什么、SurfaceFlinger 如何仲裁多个 Surface 的帧率需求、在 Perfetto 中如何识别刷新率切换导致的卡顿，以及 App 开发者和系统工程师分别能做什么来减少这类卡顿。
 
 ## 帧率切换导致卡顿的机制
 
@@ -197,6 +193,8 @@ Display HAL（通过 Composer HAL / HWC 接口）在收到 SurfaceFlinger 的模
 
 ### HWC 4.0 预判式切换（Android 16）
 
+[存疑: Task9 2026-05-13 已指出 `expectedPresentTime` 的版本归属和源码锚点需要复核，本段不在 Task6 中裁决，交 Task2B 按 queue.json 修正。]
+
 Android 16 强制要求 AIDL V4 Composer HAL。V4 接口引入了 `expectedPresentTime` 字段，SurfaceFlinger 在提交合成请求时把预期的呈现时间戳一并告诉 Display HAL。
 
 这改变了硬件切换的时间预算。在 V3 及更早的接口中，Display HAL 收到模式切换指令后才开始重锁 PLL——从收到请求到 PLL 稳定，整个过程计入切换延迟。V4 的 `expectedPresentTime` 让 Display HAL 在收到请求时就能知道"下一帧什么时候要显示"，从而提前启动 PLL 重配置，把重锁过程的一部分隐藏在合成流水线的等待时间里。
@@ -255,13 +253,13 @@ ORDER BY ts
 
 SurfaceFlinger 在做出刷新率决策时会输出日志：
 
-```
+```bash
 adb logcat -s SurfaceFlinger | grep -i "refresh\|mode\|setFrameRate"
 ```
 
 可能看到类似这样的信息：
 
-```
+```text
 ChooseRefreshRate: layers={CameraPreview: 60fps, Launcher: Max} -> chosen: 120Hz
 DisplayMode: switching from 60Hz to 120Hz (seamless)
 ```
@@ -302,9 +300,9 @@ DisplayMode: switching from 60Hz to 120Hz (seamless)
 
 [已验证: AOSP android-16.0.0_r1, frameworks/native/services/surfaceflinger/Scheduler/VsyncModulator.cpp]
 
-
-
 ### VsyncModulator 原子化相位切换（Android 16）
+
+[存疑: Task9 2026-05-13 已指出 android-16.0.0_r1 中 `VsyncModulator` 原子化相位切换声明与源码不符，本段不在 Task6 中裁决，交 Task2B 按 queue.json 修正。]
 
 刷新率切换时，`VsyncModulator` 需要把新的 VSync phase offset 应用到调度器。在 Android 16 之前，这个操作依赖 `mVsyncConfigSet` 的互斥锁保护——Binder 线程提交 Transaction 时会触发 `setVsyncConfigSet()`，而 VSync 线程在每次唤醒时需要读取当前 config set 来计算唤醒偏移。两条线程竞争同一把锁，在刷新率切换的瞬间，VSync 线程可能拿到一个"半更新"的 config set，导致那一帧的唤醒时点偏离预期。
 
@@ -317,6 +315,8 @@ Android 16 把 `mVsyncConfigSet` 的访问改成了 `std::atomic<std::shared_ptr
 ### 精确 fps 请求、category 请求和 range 请求怎么选
 
 Android 11-14 的主入口还是 `Surface.setFrameRate(float, int)`。到 Android 15-QPR1+ 的 ARR 场景，App 侧更常见的做法是把“这是固定片源”“这是高刷动画”“这是随速度变化的滚动”分别交给不同 API，再让系统把它映射到当前设备可用的刷新率集合。
+
+[存疑: Task9 2026-05-13 已指出 `Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 存在 FlaggedApi / SDK 可用性边界，表格中的底层 Surface 范围提示行需 Task2B 补准。]
 
 | 场景 | 首选 API | 适合什么时候用 | 备注 |
 |------|----------|----------------|------|
@@ -401,7 +401,7 @@ App 侧公开 API 没有直接暴露刷新率字段。`Choreographer.VsyncCallba
 
 **误区：调用 `setFrameRate(120f)` 就能消除切换卡顿。**
 
-恰恰相反，如果在 60fps 的场景中调用 `setFrameRate(120f)`，反而会触发一次不必要的刷新率切换。正确的做法是声明实际的渲染帧率，让系统决定最优的刷新率。
+在 60fps 的场景中调用 `setFrameRate(120f)`，反而会触发一次不必要的刷新率切换。正确的做法是声明实际的渲染帧率，让系统决定最优的刷新率。
 
 **误区：所有 120Hz 手机的切换延迟都一样。**
 
@@ -409,7 +409,7 @@ App 侧公开 API 没有直接暴露刷新率字段。`Choreographer.VsyncCallba
 
 **误区：帧率切换卡顿只在低端机上出现。**
 
-高端旗舰同样有这个问题。相机→多任务的切换卡顿几乎在所有 Android 设备上都存在（截至 Android 16）。这是因为即使硬件切换够快，SurfaceFlinger 的软件仲裁和调度仍然需要时间。只有 ARR 设备在部分场景下能做到真正无缝。
+高端旗舰同样有这个问题。相机→多任务的切换卡顿几乎在所有 Android 设备上都存在（截至 Android 16）。这是因为即使硬件切换够快，SurfaceFlinger 的软件仲裁和调度仍然需要时间。只有 ARR 设备在部分场景下能做到无缝过渡。
 
 **误区：App 可以通过提前渲染来解决切换卡顿。**
 

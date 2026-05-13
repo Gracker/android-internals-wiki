@@ -164,10 +164,10 @@
     "total_issues": 11
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 307,
-    "l3_issues": 25,
+    "l1_l2_fixes": 317,
+    "l3_issues": 26,
     "l4_issues": 4,
-    "total_issues": 340,
+    "total_issues": 351,
     "auto_promotions": 5
   },
   "issues_by_section": {
@@ -500,21 +500,25 @@
       "p1": 1,
       "p2": 2,
       "p3": 0
-    }
+    },
+    "2.19": [
+      "Task6 2026-05-13: 已补 [存疑] 标注，沿用 Task9 P0 队列项，待 Task2B 修正。"
+    ]
   },
   "total_review_sections": 69,
   "next_review_candidates": [],
   "ready_for_review": 66,
-  "last_updated": "2026-05-13T21:32:00+08:00",
+  "last_updated": "2026-05-13T22:12:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-13T21:32:00+08:00",
-    "log": "logs/review/2026-05-13-21-review.md",
+    "at": "2026-05-13T22:12:00+08:00",
+    "log": "logs/review/2026-05-13-22-review.md",
     "sections": [
-      "20.5"
+      "2.19",
+      "23.1"
     ],
-    "l1_l2_fixes": 4,
-    "l3_l4_issues": 0,
+    "l1_l2_fixes": 10,
+    "l3_l4_issues": 1,
     "auto_promotions": 0
   },
   "task9_last_review": "2026-05-13T20:35:00+08:00",

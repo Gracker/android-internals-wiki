@@ -3718,10 +3718,17 @@
           "location": "L316-L328 FrameRateParams 表格",
           "detail": "`Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 在 android-16.0.0_r1 带 `@FlaggedApi(FLAG_ARR_SETFRAMERATE_API)`；正文把它写成 Android 15-QPR1+ 的通用 App 侧用法，缺少 flag/SDK 可用性边界。",
           "suggestion": "表格补“flagged API/设备与 SDK 开关”说明；普通三方 App 的稳定路径仍以 `Surface.setFrameRate(float,int[,int])`、`View.setRequestedFrameRate()`、`Display.getSuggestedFrameRate()` 等公开 API 为主。"
+        },
+        {
+          "type": "Task6 标注 / 技术风险交接",
+          "location": "HWC 4.0 预判式切换、VsyncModulator 原子化相位切换、FrameRateParams 表格",
+          "detail": "Task6 本轮已在正文补充 [存疑] 标注；这些问题属于源码/API/版本差异，不在 Task6 中裁决。",
+          "suggestion": "Task2B 按 Task9 2026-05-13 队列项逐项修正后，再回到 Task6 / Task9 复核。"
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T21:57:00+08:00"
+      "added_at": "2026-05-13T21:57:00+08:00",
+      "last_task6_review_at": "2026-05-13T22:12:00+08:00"
     },
     {
       "id": "task9-20260513-2.21-text-rendering-api-version-data-errors",

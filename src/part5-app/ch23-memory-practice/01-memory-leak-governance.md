@@ -2,8 +2,15 @@
 title: "内存泄漏检测与治理"
 chapter: "23.1"
 section: "23.1"
-status: ready-for-review
+status: "ready-for-review"
 drafted_date: "2026-05-13"
+reviewed_date: "2026-05-13"
+reviewed_by: "openclaw-task6"
+task6_result: "pass-light-edit"
+task6_state: "reviewed"
+task9_state: "pending"
+task2b_state: "pending"
+pipeline_stage: "task9_pending"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + LeakCanary fundamentals"
@@ -34,10 +41,8 @@ sources:
     path: "[结构参考: Clippings/Android 应用稳定性剖析与优化 - Java 内存泄漏监控与 OOM：Java 内存泄漏如何定义？.md]"
 tags: [memory-leak, leakcanary, activity-leak, reference-chain, java-heap]
 related_chapters: ["23.4", "10.2", "4.3", "19.5"]
-pipeline_stage: ready-for-review
-task6_state: pending
-task9_state: pending
-task2b_state: pending
+last_task6_at: "2026-05-13T22:12:00+08:00"
+task6_review_notes: "2026-05-13 task6 review: 替换正文中的编辑标签式“用途句”，L1/L2 通过，无新增 L3/L4 回炉项。"
 ---
 
 # 内存泄漏检测与治理
@@ -140,7 +145,7 @@ LeakCanary 的价值不是“告诉你内存变大了”，而是在对象失效
 
 接入时建议把 LeakCanary 放在 debug / QA 包。Heap dump 会冻结进程一段时间，Hprof 文件也包含对象内容，不适合直接作为默认线上能力。线上需要的是趋势发现和样本触发，引用链分析仍应回到可控环境完成。
 
-自定义对象观察适合业务组件、Presenter、长生命周期 Controller。用途句：下面代码展示“对象生命周期结束后主动交给 ObjectWatcher”的接入点。
+自定义对象观察适合业务组件、Presenter、长生命周期 Controller。下面这段代码展示对象生命周期结束后主动交给 `ObjectWatcher` 的接入点。
 
 ```kotlin
 class SearchPresenter(
@@ -203,7 +208,7 @@ class SearchPresenter(
 - **Flow 收集未随生命周期停止**：在 `onCreate()` 里直接 `launch { flow.collect { render(it) } }`，页面进入 STOPPED 后仍可能继续收集和渲染。
 - **回调式 API 没有 awaitClose / removeListener**：`callbackFlow` 注册 listener 后没有在 `awaitClose` 中注销，Flow 停止收集后 listener 仍保留页面对象。
 
-用途句：下面代码展示 Flow 收集与 Fragment View 生命周期绑定的写法，重点是 `viewLifecycleOwner` 和 `repeatOnLifecycle`。
+下面这段代码展示 Flow 收集与 Fragment View 生命周期绑定的写法，重点看 `viewLifecycleOwner` 和 `repeatOnLifecycle`。
 
 ```kotlin
 class FeedFragment : Fragment(R.layout.feed) {
