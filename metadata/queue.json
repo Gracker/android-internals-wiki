@@ -3409,18 +3409,65 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T17:55:27+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task9-20260513-2.3-vsync-source-identifiers-vsyncmodulator",
+      "section": "2.3",
+      "section_title": "VSync 机制",
+      "priority": 95,
+      "reason": "[Deep Tech Review] VSync 源码路径/接口名与 VsyncModulator 行为多处不符合 android-16.0.0_r1。",
+      "title": "VSync 源码路径、预测器接口与 VsyncModulator 行为需回炉",
+      "description": "章节使用不存在的 Scheduler 文件名/方法名，声称 Android 16 新增 IVsyncTrackerCallback，并把 VsyncModulator 的 Early/Late 切换与 onTransactionCommit 行为写反。",
+      "issue_type": "source-code-accuracy-principle-chain",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/03-vsync.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码路径/方法名错误",
+          "location": "frontmatter sources 与正文多处：VSync Predictor.cpp / VSync Reactor.cpp / VSync DispatchTimerQueue.cpp / nextAnticipated VSync TimeFrom()",
+          "detail": "AOSP android-16.0.0_r1 的实际文件名是 VSyncPredictor.cpp、VSyncReactor.cpp、VSyncDispatchTimerQueue.cpp；方法名是 nextAnticipatedVSyncTimeFrom()。当前路径和方法名带空格，无法对应到源码，也会误导后续源码检索。",
+          "suggestion": "统一替换为真实 AOSP 标识：services/surfaceflinger/Scheduler/VSyncPredictor.cpp、VSyncReactor.cpp、VSyncDispatchTimerQueue.cpp、VsyncSchedule.cpp，以及 VSyncPredictor::nextAnticipatedVSyncTimeFrom()。"
+        },
+        {
+          "severity": "P0",
+          "type": "不存在的接口/版本事实错误",
+          "location": "L250 Android 16 新增 IVsyncTrackerCallback",
+          "detail": "在 android-16.0.0_r1 的 Scheduler 公开源码中未找到 IVsyncTrackerCallback；VSyncTracker.h 暴露的是 VSyncTracker 接口，模型更新/重采样仍通过 VSyncReactor、VSyncPredictor::validate()/needsMoreSamples()/resetModel()/setDisplayModePtr() 等路径闭环。",
+          "suggestion": "删除“Android 16 新增 IVsyncTrackerCallback”断言；如需描述 ARR/VRR 下的模型恢复，应改用 VSyncPredictor::setDisplayModePtr()、numVsyncsPerFrame()/mNumVsyncsForFrame、needsMoreSamples() 与 VSyncReactor 的真实调用链。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码行为描述错误",
+          "location": "L789-L808 VsyncModulator 三相动态调整与 onTransactionCommit()",
+          "detail": "AOSP android-16.0.0_r1 中 onTransactionCommit() 只记录 mLastTransactionCommitTime，把非 Late 的 mTransactionSchedule 设回 Late 并 updateVsyncConfig()；mEarlyTransactionFrames = MIN_EARLY_TRANSACTION_FRAMES 发生在 setTransactionSchedule(EarlyEnd) 且 early wakeup request 清空时，帧计数在 onDisplayRefresh() 中递减。默认无事务/GPU/刷新率变化时 getNextVsyncConfigType() 返回 Late，不是“Early=正常渲染”。",
+          "suggestion": "重写该小节：Early 条件是 early wakeup request、EarlyEnd、earlyTransactionFrames>0 或 refreshRateChangePending；EarlyGpu 条件是 recent GPU composition；否则 Late。把 onTransactionCommit() 从“重置 Early 帧数”改成“提交后退出显式 early schedule，并由后续 display refresh 消耗 early 帧数”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T18:28:00+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 124,
-    "p0_count": 21,
-    "last_updated": "2026-05-13T17:55:27+08:00",
+    "total_entries": 125,
+    "p0_count": 22,
+    "last_updated": "2026-05-13T18:28:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 74,
+    "pending_entries": 75,
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T17:55:27+08:00",
+  "last_updated": "2026-05-13T18:28:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {

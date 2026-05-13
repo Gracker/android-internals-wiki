@@ -587,3 +587,15 @@
 - **位置**：L329-L345 chooseFrameTimeline()
 - **问题**：当 desiredPresentTimeNanos 晚于所有 candidate timeline 时，示例 fallback 到 preferred index，会把低帧率/主动延后场景重新绑回较早 timeline；这和前文“选择 expectedPresentTime 不早于目标时间”的规则不一致。
 - **建议**：fallback 改成最后一个 candidate，或明确“超过候选范围时不绑定 frameTimeline，仅保留 setDesiredPresentTime/等待下一次 vsync callback”的策略。
+
+## [Task9 Deep Review] 1.3 进程模型与生命周期管理 — 2026-05-13
+- **类型**：源码精度/版本口径
+- **位置**：进程重要性表 `perceptible / foreground service` 行
+- **问题**：短前台服务被概括为“perceptible medium 区间”，但 Android 16 `OomAdjuster` 实际使用 `PERCEPTIBLE_MEDIUM_APP_ADJ + 1`；最近从 top 转入 FGS 的宽限期还会使用 `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ + 1`。
+- **建议**：表格或脚注补齐 regular FGS=200、short FGS=226、recent short FGS=51 的分支口径，并说明具体值仍以设备源码/分支为准。
+
+## [Task9 Deep Review] 1.4 Binder IPC 机制与性能影响 — 2026-05-13
+- **类型**：API 语义/版本口径
+- **位置**：L426 `RemoteCallbackList` `FrozenCalleePolicy`
+- **问题**：正文写成“自动丢弃高频数据回调”过窄。API 36 文档定义的是 callback recipient 进程被冻结时的策略：`DROP`、`ENQUEUE_ALL`、`ENQUEUE_MOST_RECENT`、`UNSET`，是否丢弃取决于构建 RemoteCallbackList 时选择的 policy。
+- **建议**：改成“允许服务端为 frozen callback recipient 配置丢弃、全量排队或仅保留最近一次回调”，并补充 `maxQueueSize` / executor 的使用边界。

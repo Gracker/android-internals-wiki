@@ -2,7 +2,6 @@
 title: "Binder IPC 机制与性能影响"
 chapter: "1.4"
 section: "1.4"
-status: ready-for-review
 applicable_versions: "Android 8 (API 26) - Android 16 (API 36)"
 drafted_date: "2026-05-13"
 drafted_by: openclaw-task2a
@@ -36,11 +35,16 @@ sources:
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-pipeline_stage: task6_pending
 task6_state: pending
-task9_state: pending
 last_task2a_at: "2026-05-13T18:20:00+08:00"
 last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
+status: ready-for-review
+pipeline_stage: task6_pending
+task9_state: reviewed
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-13"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-13T18:28:00+08:00"
 ---
 
 

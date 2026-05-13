@@ -70,7 +70,8 @@
     "1.3",
     "18.10",
     "19.13",
-    "19.26"
+    "19.26",
+    "1.4"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -135,14 +136,16 @@
     "src/part1-fundamentals/ch01-architecture/03-process-model.md",
     "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
     "src/part3-tools/ch19-apm/13-tracing-sdk.md",
-    "src/part3-tools/ch19-apm/26-hybrid-apm.md"
+    "src/part3-tools/ch19-apm/26-hybrid-apm.md",
+    "src/part1-fundamentals/ch01-architecture/04-binder.md",
+    "src/part1-fundamentals/ch02-rendering/03-vsync.md"
   ],
   "review_summary": {
     "p0_issues": 3,
-    "p1_issues": 1,
+    "p1_issues": 0,
     "p2_issues": 2,
     "p3_issues": 0,
-    "total_issues": 6
+    "total_issues": 5
   },
   "task6_review_summary": {
     "l1_l2_fixes": 262,
@@ -195,8 +198,8 @@
       "p3": 0
     },
     "2.3": {
-      "p0": 1,
-      "p1": 2,
+      "p0": 3,
+      "p1": 0,
       "p2": 0,
       "p3": 0
     },
@@ -445,20 +448,32 @@
       "p1": 0,
       "p2": 0,
       "p3": 0
+    },
+    "1.3": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
+    },
+    "1.4": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
     }
   },
-  "total_review_sections": 64,
+  "total_review_sections": 65,
   "next_review_candidates": [
     {
-      "section": "",
-      "title": "暂无内容充分的 task6 pending/revisiting 章节",
-      "file": "",
-      "reason": "本轮扫描后，仅 1.3 符合 Task 6 待审条件并已完成；其余 ready-for-review 章节均已 task6 reviewed 或等待 Task 9/Task2B。"
+      "section": "2.6",
+      "title": "SurfaceFlinger 与合成",
+      "file": "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
+      "reason": "同属渲染基础章节，task9_state pending，适合继续核对 android-16 SurfaceFlinger/Scheduler/HWC 链路。"
     }
   ],
   "ready_for_review": 66,
-  "last_updated": "2026-05-13T18:20:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-13T18:28:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-13T17:23:00+08:00",
     "log": "logs/review/2026-05-13-17-review.md",
@@ -471,7 +486,7 @@
     "skipped_insufficient_content": [],
     "note": "本轮仅 1 个 task6_state=pending/revisiting 且内容充分的候选。"
   },
-  "task9_last_review": "2026-05-13T17:55:27+08:00",
+  "task9_last_review": "2026-05-13T18:28:00+08:00",
   "ready_to_publish": 164,
   "rework_history": [
     {
@@ -1005,15 +1020,19 @@
       "title": "Jetpack Compose 性能优化"
     },
     "1.3": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "last_task6_at": "2026-05-13T17:23:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-13-17-review.md",
       "file": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
-      "title": "进程模型与生命周期管理"
+      "title": "进程模型与生命周期管理",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-13T18:28:00+08:00",
+      "last_task9_log": "logs/deep-review/2026-05-13-18-deep-review.md",
+      "auto_finalized_by_task9": "2026-05-13T18:28:00+08:00"
     },
     "18.10": {
       "status": "ready-for-review",
@@ -1046,10 +1065,24 @@
       "status": "ready-for-review",
       "pipeline_stage": "task6_pending",
       "task6_state": "pending",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "last_task2a_at": "2026-05-13T18:20:00+08:00",
       "file": "src/part1-fundamentals/ch01-architecture/04-binder.md",
-      "title": "Binder IPC 机制与性能影响"
+      "title": "Binder IPC 机制与性能影响",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-13T18:28:00+08:00",
+      "last_task9_log": "logs/deep-review/2026-05-13-18-deep-review.md"
+    },
+    "2.3": {
+      "title": "VSync 机制",
+      "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-13T18:28:00+08:00",
+      "last_task9_log": "logs/deep-review/2026-05-13-18-deep-review.md",
+      "task2b_state": "pending"
     }
   },
   "task2b_rounds": [
@@ -1071,18 +1104,18 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/04-binder.md",
   "last_task2a_processed_date": "2026-05-13T18:20:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-13T15:31:00+08:00",
-    "log": "logs/deep-review/2026-05-13-15-deep-review.md",
+    "at": "2026-05-13T18:28:00+08:00",
+    "log": "logs/deep-review/2026-05-13-18-deep-review.md",
     "sections": [
-      "11.3",
-      "13.2",
-      "14.13"
+      "1.3",
+      "1.4",
+      "2.3"
     ],
-    "p0": 1,
-    "p1": 3,
+    "p0": 3,
+    "p1": 0,
     "p2": 2,
     "auto_finalized": [
-      "11.3"
+      "1.3"
     ]
   }
 }

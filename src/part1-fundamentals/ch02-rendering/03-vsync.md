@@ -1,8 +1,6 @@
 ---
 title: "VSync 机制"
 chapter: "2.3"
-status: finalized
-pipeline_stage: ready-to-publish
 reviewed_date: "2026-05-10"
 reviewed_by: "openclaw-task6"
 polish_count: 1
@@ -41,22 +39,21 @@ sources:
     path: "https://developer.android.com/about/versions/16/features"
 tags: [vsync, dispsync, choreographer, surfaceflinger, phase-offset, arr, rendering, vsyncschedule]
 related_chapters: ["2.1", "2.4", "2.5", "2.6", "2.9", "8.1"]
-pipeline_stage: task6_pending
 task6_state: reviewed
 task6_result: pass-light-edit
-    task6_reviewed_date: "2026-05-09"
-task9_result: pass-tech-review
-task9_state: pending
-task2b_state: fixed
-task2b_result: fixed
-task9_reviewed_date: "2026-05-09"
-task9_reviewed_by: openclaw-task9
-last_task9_at: "2026-04-27T19:36:19+08:00"
+task6_reviewed_date: "2026-05-09"
 review_round: 4
 repaired_date: "2026-05-09"
 repaired_by: "openclaw-task2b"
 last_task2b_at: "2026-05-09T12:43:00+08:00"
-
+status: ready-for-review
+pipeline_stage: task2b_pending
+task9_state: reviewed
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-13"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-13T18:28:00+08:00"
+task2b_state: pending
 ---
 
 # VSync 机制
