@@ -547,3 +547,10 @@
 - **问题**：示例把 `displayRefreshHz` 固定在构造参数中；Android 11+ 高刷和 Android 12+ 动态刷新率设备可能在页面生命周期内切换刷新率，固定预算会放大误报或漏报。
 - **建议**：补充动态刷新率处理：采集窗口记录当前 display mode/refresh rate，监听 DisplayManager 变化，或优先使用 JankStats / FrameMetrics deadline、overrun 口径。
 
+
+## [Task6 Review] 22.9 渲染优化案例集 — 2026-05-13
+- **类型**：需补充素材（L3 内容深度 / L4 活人感）
+- **位置**：全文案例内容，尤其是「列表滑动卡顿优化实战」「Compose 迁移性能踩坑」「复杂页面渲染优化」三节
+- **问题**：章节标题和锚点都指向案例/实战，但正文主要是排查框架、指标口径和模板，缺少至少一个真实案例的设备环境、复现路径、优化前后指标、Perfetto/JankStats/Macrobenchmark 证据与改动代价。读者能获得排查清单，但还看不到可复查的现场过程。
+- **建议**：Task2B 补 1-2 个真实或脱敏案例：场景与设备刷新率、复现步骤、慢帧/P95/P99/frozen frame 基线、关键 trace slice、改动前后对比和边界代价；没有一手数据时保留模板定位，章节标题或段落明确为“案例复盘模板/排查框架”。
+- **review 日志**：logs/review/2026-05-13-15-review.md

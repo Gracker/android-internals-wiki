@@ -32,10 +32,13 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [case-study, rendering, optimization, recyclerview, compose, jank]
 related_chapters: ["22.1", "22.2", "22.3", "22.8", "7.8", "13.6", "19.18"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_result: needs-rework
 ---
 
 
@@ -72,16 +75,16 @@ Android 官方把慢帧定义为渲染时间超过设备刷新周期的帧。60H
 
 ## 列表滑动卡顿优化实战
 
-列表卡顿的排查入口应是一段可重复的滑动用例，而不是 RecyclerView 配置项清单。用 `Macrobenchmark` 固定启动方式、滑动距离和迭代次数，采集 `FrameTimingMetric`；同时用自定义 trace 标记 `createViewHolder`、`bindViewHolder`、图片加载回调、Diff 计算和主线程任务。线上版本再用 `JankStats` 给列表场景加状态，例如 `FeedList=Scrolling`、`Tab=Home`、`DataState=ColdCache`。这样 P95 变差时能区分是首屏冷缓存、快速滑动、分页加载还是局部刷新引发的问题。详见 22.8 节。[已验证: 官方文档, developer.android.com/topic/performance/jankstats][已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
+排查列表卡顿，先固定一段可重复的滑动用例，不从 RecyclerView 配置项清单开始。用 `Macrobenchmark` 固定启动方式、滑动距离和迭代次数，采集 `FrameTimingMetric`；同时用自定义 trace 标记 `createViewHolder`、`bindViewHolder`、图片加载回调、Diff 计算和主线程任务。线上版本再用 `JankStats` 给列表场景加状态，例如 `FeedList=Scrolling`、`Tab=Home`、`DataState=ColdCache`。这样 P95 变差时能区分是首屏冷缓存、快速滑动、分页加载还是局部刷新引发的问题。详见 22.8 节。[已验证: 官方文档, developer.android.com/topic/performance/jankstats][已验证: 官方文档, developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics]
 
 列表滑动常见的慢帧来源可以按线程拆开：
 
 - 主线程: `onBindViewHolder()` 做格式化、JSON 解析、同步数据库读取、Bitmap 尺寸计算，或者 `notifyDataSetChanged()` 让可复用项全部失效。
 - RenderThread: 圆角裁剪、阴影、复杂 path、过大的图片纹理提交，让 draw 阶段持续超预算。
-- 后台线程: 图片解码、Diff 计算、分页请求和日志上报没有限流，CPU 被后台任务占满，主线程进入 runnable 但拿不到足够运行时间。
+- 后台线程: 图片解码、Diff 计算、分页请求和日志上报没有限流，CPU 长时间被后台任务占用，主线程进入 runnable 但拿不到足够运行时间。
 - GC: 滑动中频繁创建临时对象，`HeapTaskDaemon` 抢 CPU，Perfetto 上能看到 GC 与慢帧重叠。
 
-处理顺序建议固定下来。先把全量刷新改成 Diff + payload，再压缩 bind 阶段的 CPU 工作量；接着检查图片尺寸和缓存命中，保证进入 bind 的图片已经是目标尺寸附近的结果；然后把分页、曝光、埋点和预取放到有界队列中，避免后台线程池把 CPU 打满。RecyclerView 复用、DiffUtil、预取和嵌套列表的细节见 22.2 节；图片加载细节见 22.6 节。
+处理顺序建议固定下来。先把全量刷新改成 Diff + payload，再压缩 bind 阶段的 CPU 工作量；接着检查图片尺寸和缓存命中，保证进入 bind 的图片已经是目标尺寸附近的结果；然后把分页、曝光、埋点和预取放到有界队列中，避免后台线程池让 CPU 长时间满负载。RecyclerView 复用、DiffUtil、预取和嵌套列表的细节见 22.2 节；图片加载细节见 22.6 节。
 
 下面的代码只演示 payload 的边界：列表项结构不变时只刷新变化字段，避免一次点赞状态变化触发整项重新绑定。
 
@@ -167,7 +170,7 @@ Compose 页面还要补两类测试：一类是 Macrobenchmark 滚动测试，�
 
 ## 复杂页面渲染优化
 
-复杂页面的优化目标是让首屏可交互和后续滚动稳定，而不是让所有模块一起变快。一个详情页可能包含头图、视频、价格区、推荐列表、评论、广告和运营浮层。如果所有模块在 `onCreate()` 或首帧前同步完成，慢帧会集中在页面打开阶段；如果都推迟到首帧后，又可能在用户刚开始滑动时集中抢 CPU。更稳妥的做法是把页面拆成三类任务：首帧必须显示、首帧后立即补齐、滑动到附近才加载。
+复杂页面的优化目标是让首屏可交互和后续滚动稳定，而不是让所有模块一起变快。一个详情页可能包含头图、视频、价格区、推荐列表、评论、广告和运营浮层。如果所有模块在 `onCreate()` 或首帧前同步完成，慢帧会集中在页面打开阶段；如果都推迟到首帧后，又可能在用户刚开始滑动时集中抢 CPU。更稳妥的做法是按首屏需求把任务分成三类：首帧必须显示、首帧后立即补齐、滑动到附近才加载。
 
 可执行的拆分规则如下：
 
@@ -203,7 +206,7 @@ Compose 页面还要补两类测试：一类是 Macrobenchmark 滚动测试，�
 | 代价 | 内存增加、预加载时机、代码复杂度、兼容边界 |
 | 验收 | 同设备同用例复测结果，以及线上灰度指标 |
 
-这个模板能把案例从经验描述变成可复查记录。没有复测条件的结论只标「待验证」，不要写成通用建议。[已验证: 官方文档, developer.android.com/topic/performance/measuring-performance]
+这个模板会让案例保留复查所需的场景、证据和验收口径。没有复测条件的结论只标「待验证」，不要写成通用建议。[已验证: 官方文档, developer.android.com/topic/performance/measuring-performance]
 
 ## 基于 AI 的渲染问题归因
 
