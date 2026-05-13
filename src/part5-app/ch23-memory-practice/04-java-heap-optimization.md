@@ -8,7 +8,10 @@ last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + Clippings/Android 性能优化"
 confidence: medium
 drafted_date: "2026-05-14"
-polish_count: 0
+reviewed_date: "2026-05-14"
+reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
+polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/memory"
@@ -36,10 +39,13 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]"
 tags: [java-heap, object-pool, gc-friendly, collection-optimization]
 related_chapters: ["23.1", "23.5", "4.3", "4.8"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式表达、缓存预算和 GC 友好段落；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
+last_task6_review_log: "logs/review/2026-05-14-01-review.md"
+last_task6_at: "2026-05-14T01:14:00+08:00"
 ---
 
 # Java Heap 优化策略
@@ -69,11 +75,11 @@ task2b_state: pending
 
 ## 为什么要了解 Java Heap 优化策略
 
-Java Heap 优化处理的是应用侧对象分配、对象生命周期和缓存预算之间的关系。内存泄漏章节处理“该释放的对象没有释放”，Bitmap 章节处理“像素内存太大”，这一节处理更日常的问题：对象本身仍有业务价值，但分配时机、集合规模、缓存策略或临时对象频率让堆压力升高。
+Java Heap 优化处理的是应用侧对象分配、对象生命周期和缓存预算之间的关系。内存泄漏章节处理“该释放的对象没有释放”，Bitmap 章节处理“像素内存太大”，这一节转到应用侧常见的堆压力：对象本身仍有业务价值，但分配时机、集合规模、缓存策略或临时对象频率让堆压力升高。
 
 Android Developers 的内存文档给了两个判断口径：Android 会给每个应用进程设置堆上限，应用超过堆容量继续分配会触发 `OutOfMemoryError`；Memory Profiler 可以观察内存曲线、Java 对象数量和 GC 事件。工程上不要只看一次 `maxMemory()`，还要看场景里的增长速度、峰值、回落能力和 GC 频率。
 
-ART 堆空间、分配器和 GC 细节详见 4.3 节；分代 GC 与暂停分析详见 4.8 节；内存泄漏治理详见 23.1 节；内存抖动与 GC 治理详见 23.5 节。本节把这些机制压到应用侧可执行动作：少分配、晚分配、按预算缓存、在生命周期边界清理。
+ART 堆空间、分配器和 GC 细节详见 4.3 节；分代 GC 与暂停分析详见 4.8 节；内存泄漏治理详见 23.1 节；内存抖动与 GC 治理详见 23.5 节。本节把这些机制转成应用侧可执行动作：少分配、晚分配、按预算缓存、在生命周期边界清理。
 
 [结构参考: Clippings/Android 性能优化 - 物理内存优化实战：Java Heap 内存优化.md]
 [结构参考: Clippings/Android 性能优化 - 原理：掌握 App 运行时的内存模型.md]
@@ -89,7 +95,7 @@ ART 堆空间、分配器和 GC 细节详见 4.3 节；分代 GC 与暂停分析
 
 应用代码里 `new` 出来的对象不会均匀落在一整块抽象堆里。ART 会按对象性质和回收器配置把对象放到不同空间中，应用侧最需要关心的是 Main Space 和 Large Object Space：普通对象通常进入 Main Space，满足大对象条件的基本类型数组或 `String` 会走 Large Object Space。
 
-AOSP `Heap::ShouldAllocLargeObject()` 的判断包含两个条件：分配字节数达到 `large_object_threshold_`，并且对象类型是 primitive array 或 `String`。这会影响优化动作的优先级。一个很大的 `ByteArray`、`IntArray` 或字符串拼接结果，不只是“占用更大”，它还可能走另一条分配路径，回收与碎片风险也会不同。
+AOSP `Heap::ShouldAllocLargeObject()` 的判断包含两个条件：分配字节数达到 `large_object_threshold_`，并且对象类型是 primitive array 或 `String`。这会影响优化动作的优先级。体积较大的 `ByteArray`、`IntArray` 或字符串拼接结果，除了占用更多字节，还可能走另一条分配路径，回收与碎片风险也会不同。
 
 堆上限不等于进程物理内存占用。AOSP `Heap::GetMaxMemory()` 对应 `Runtime.maxMemory()`，注释里写明 Android 应用从 growth limit 起步，large app 会扩展这个限制；`GetFreeMemoryUntilOOME()` 用 `growth_limit_ - GetBytesAllocated()` 估算距离 OOM 的空间。Android Developers 也强调，堆的逻辑大小和 PSS 这样的物理内存口径不同，排查时要分开看。
 
@@ -176,7 +182,7 @@ fun buildVisibleItems(
 
 对象池和缓存都在用空间换时间，区别在于目标不同。对象池减少重复分配，缓存减少重复计算或重复 I/O。两者都要有上限、失效条件和生命周期归属，否则优化很快会变成常驻内存。
 
-缓存预算不要按“最大堆的固定比例”拍脑袋。更稳的做法是按业务价值分层：首屏和高频路径拿稳定预算，低频页面用小缓存或弱缓存，后台后响应 `onTrimMemory()` 释放 UI 相关对象。Android Developers 建议应用在内存紧张或生命周期变化时主动释放内存，`onTrimMemory()` 是应用侧接收系统压力信号的标准入口。
+缓存预算不要按“最大堆的固定比例”拍脑袋。缓存预算应按业务价值分层：首屏和高频路径拿稳定预算，低频页面用小缓存或弱缓存，后台后响应 `onTrimMemory()` 释放 UI 相关对象。Android Developers 建议应用在内存紧张或生命周期变化时主动释放内存，`onTrimMemory()` 是应用侧接收系统压力信号的标准入口。
 
 下面这段 `LruCache` 代码保留两个策略：按字节计量，收到系统 trim 信号后主动降级。
 
@@ -210,7 +216,7 @@ class StringPayloadCache(
 [已验证: 官方文档, developer.android.com/studio/profile/record-java-kotlin-allocations]
 [结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]
 
-GC 友好的代码不是不分配对象，而是让分配符合场景节奏：启动、首帧、滑动、动画、输入响应期间少制造短时间高峰；页面退出、后台切换、系统 trim 时能释放；后台任务和低优先级计算不要跟前台帧争资源。
+GC 友好的代码要让分配符合场景节奏：启动、首帧、滑动、动画、输入响应期间少制造短时间高峰；页面退出、后台切换、系统 trim 时能释放；后台任务和低优先级计算不要跟前台帧争资源。
 
 可执行的检查项有这些：
 

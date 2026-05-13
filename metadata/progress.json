@@ -81,7 +81,9 @@
     "3.1",
     "23.1",
     "5.4",
-    "23.2"
+    "23.2",
+    "23.3",
+    "23.4"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -158,7 +160,9 @@
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
     "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md",
     "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
-    "src/part5-app/ch23-memory-practice/02-bitmap-optimization.md"
+    "src/part5-app/ch23-memory-practice/02-bitmap-optimization.md",
+    "src/part5-app/ch23-memory-practice/03-native-memory-management.md",
+    "src/part5-app/ch23-memory-practice/04-java-heap-optimization.md"
   ],
   "review_summary": {
     "p0_issues": 9,
@@ -168,10 +172,10 @@
     "total_issues": 11
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 317,
+    "l1_l2_fixes": 332,
     "l3_issues": 26,
     "l4_issues": 4,
-    "total_issues": 351,
+    "total_issues": 366,
     "auto_promotions": 5
   },
   "issues_by_section": {
@@ -509,20 +513,21 @@
       "Task6 2026-05-13: 已补 [存疑] 标注，沿用 Task9 P0 队列项，待 Task2B 修正。"
     ]
   },
-  "total_review_sections": 69,
+  "total_review_sections": 77,
   "next_review_candidates": [],
   "ready_for_review": 66,
-  "last_updated": "2026-05-14T00:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-14T01:14:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-13T22:12:00+08:00",
-    "log": "logs/review/2026-05-13-22-review.md",
+    "at": "2026-05-14T01:14:00+08:00",
+    "log": "logs/review/2026-05-14-01-review.md",
     "sections": [
-      "2.19",
-      "23.1"
+      "23.2",
+      "23.3",
+      "23.4"
     ],
-    "l1_l2_fixes": 10,
-    "l3_l4_issues": 1,
+    "l1_l2_fixes": 15,
+    "l3_l4_issues": 0,
     "auto_promotions": 0
   },
   "task9_last_review": "2026-05-14T00:20:00+08:00",
