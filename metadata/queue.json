@@ -1847,7 +1847,9 @@
         "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md"
       ],
       "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
+        "intake/suggestions.md（含 review 意见）",
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-14-03-deep-review.md"
       ],
       "review_issues": [
         {
@@ -1861,11 +1863,20 @@
           "location": "CompiledModel API V2 与 AOT 编译",
           "detail": "CompiledModel V2、AICore 路由、500ms→50ms 等数值缺少一手资料和测试条件。",
           "suggestion": "补官方 LiteRT/AICore 文档、设备/模型/量化条件；无法验证的数值改为待验证或删除。"
+        },
+        {
+          "severity": "P0/P1",
+          "type": "源码/数据证据缺失",
+          "location": "L65-L80、L127-L188：Android 17 NPU / LiteRT / AICore",
+          "detail": "Task9 已将该问题拆为 P95 技术回炉：Android 17 NPU feature、LiteRT Host Image Copy 自动收益、CompiledModel AOT/AICore 路由、AICore 内存归属均缺公开源码或官方文档锚点。",
+          "suggestion": "优先处理 task9-20260514-5.11-ml-npu-litert-aicore-unsupported。"
         }
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T20:10:00+08:00",
-      "original_review_log": "logs/review/2026-05-12-20-review.md"
+      "original_review_log": "logs/review/2026-05-12-20-review.md",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T03:44:00+08:00"
     },
     {
       "id": "task9-21-1-startup-measurement-api-20260512",
@@ -2190,7 +2201,9 @@
       "priority": 90,
       "reason": "[review回炉] WebGPU 90%-95% 吞吐量结论缺基准来源、设备、workload 和版本条件。",
       "material_paths": [
-        "intake/suggestions.md（含 review 意见）"
+        "intake/suggestions.md（含 review 意见）",
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-14-03-deep-review.md"
       ],
       "review_issues": [
         {
@@ -2198,6 +2211,13 @@
           "location": "WebGPU / Dawn：另一条新接口",
           "detail": "“Jetpack WebGPU 在 Android 17 上的计算管线基准测试达到 Vulkan 原生实现 90%-95% 吞吐量”缺具体 benchmark 来源、设备、库版本和 workload。",
           "suggestion": "补官方/上游 benchmark 链接与测试条件；补不齐时改成定性描述，避免作为通用结论。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据缺失",
+          "location": "L274-L276：WebGPU 90%-95% Vulkan 吞吐量",
+          "detail": "Task9 复核后仍未在章节中看到基准来源、设备、workload、AndroidX WebGPU/Dawn 版本和 Vulkan baseline；当前只能作为待验证素材，不能作为通用性能结论。",
+          "suggestion": "补 benchmark 原文与测试条件；补不齐则改成定性表述。"
         }
       ],
       "added_by": "task6-review",
@@ -2206,7 +2226,9 @@
       "original_review_log": "logs/review/2026-05-12-23-review.md",
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md"
-      ]
+      ],
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T03:44:00+08:00"
     },
     {
       "id": "task6-20260512-23-16.5-profilingmanager-source-anchor",
@@ -4018,18 +4040,169 @@
           "suggestion": "改成：用 Perfetto/atrace 打开 view 相关 trace 只能看到框架级 `Record View#draw()` 等 slice；要定位具体自定义 View 的 `onDraw()`，在 `onDraw()` 内用 `Trace.beginSection(\"MyView#onDraw\")` / Android Studio CPU profiler / method tracing 辅助。`debug.hwui.profile` 只作为 gfxinfo/屏幕柱状图口径。"
         }
       ]
+    },
+    {
+      "id": "task9-20260514-2.10-gpu-source-paths-perfetto-counters",
+      "section": "2.10",
+      "section_title": "GPU 渲染深入",
+      "title": "GPU 渲染源码路径与 Perfetto GPU counter 口径错误",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 章节多处 AOSP graphics/java 路径、BufferQueue/GraphicBuffer/HWC2 文件名与 Perfetto GpuCounterConfig 字段写错，并把 gpu_busy 标准化说成无条件保证。",
+      "description": "Canvas/BaseCanvas/Shader/GraphicBuffer Java 路径应在 frameworks/base/graphics/java/android/graphics/；BufferQueue/GraphicBufferMapper/HWC2 等 native 文件名不能带空格；Android 16 Perfetto GpuCounterConfig 无 gpu_id 字段，gpu_busy 统一别名需要公开 CDD/Perfetto 证据。",
+      "issue_type": "source-code-accuracy-observability",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "added_at": "2026-05-14T03:44:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "added_by": "task9-deep-tech-review",
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-14-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L59-L100、L392-L415、frontmatter sources：android.graphics Java 源码路径",
+          "detail": "正文把 Canvas/BaseCanvas/Shader/GraphicBuffer 写到 frameworks/base/core/java/android/graphics/，AOSP 实际路径为 frameworks/base/graphics/java/android/graphics/。路径错误会导致读者按源码索引查不到类。",
+          "suggestion": "统一改为 frameworks/base/graphics/java/android/graphics/Canvas.java、BaseCanvas.java、Shader.java、GraphicBuffer.java，并复核 frontmatter sources。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L475-L487、L770-L789：BufferQueue / GraphicBuffer / HWC2 路径表与伪代码注释",
+          "detail": "正文使用 BufferQueue Core.h、BufferQueue Producer.cpp、BufferQueue Consumer.cpp、GraphicBuffer Mapper.cpp、HWC 2.cpp 等带空格文件名；GraphicBuffer 也写到 libs/gui。AOSP 实际文件名是 BufferQueueCore.h、BufferQueueProducer.cpp、BufferQueueConsumer.cpp、libs/ui/GraphicBufferMapper.cpp、DisplayHardware/HWC2.cpp，GraphicBuffer 位于 libs/ui。",
+          "suggestion": "按实际 AOSP 文件名与目录重建表格；如果只是概念图，不要标成可直接打开的源码路径。"
+        },
+        {
+          "severity": "P1",
+          "type": "观测口径/版本差异",
+          "location": "L811-L828：Android 16 标准化 gpu_busy 与 GpuCounterConfig 示例",
+          "detail": "复核 android16-qpr2 Perfetto GpuCounterConfig 仅有 counter_period_ns、repeated counter_ids、instrumented_sampling、fix_gpu_clock；无 gpu_id 字段。正文还声称 Android 16 要求所有厂商提供 gpu_busy 标准别名，但缺 CDD/Perfetto producer 证据。",
+          "suggestion": "删除 gpu_id；配置示例改为 counter_period_ns + counter_ids。gpu_busy 改成“若设备/producer 暴露统一名称则可用”，并补充从 data source descriptor 枚举 counter ID/name 的方法。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260514-2.14-vulkan-version-proto-sources",
+      "section": "2.14",
+      "section_title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "title": "Vulkan 版本基线、Perfetto 配置与 RenderThread 源码片段需修正",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 章节把 Vulkan 1.1 版本基线写到 Android 9，Perfetto GPU counter textproto 字段写错，并放入非实际 AOSP 的 HardwareRenderer/RenderThread 源码片段。",
+      "description": "官方 implement-vulkan / Android Developers 口径为 Android 10 起新 64 位设备要求 Vulkan 1.1；Perfetto GpuCounterConfig 字段是 counter_period_ns；HardwareRenderer 文档说明共享 render thread，但正文 Java 字段示例不是实际源码。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "added_at": "2026-05-14T03:44:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "added_by": "task9-deep-tech-review",
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-14-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本差异",
+          "location": "L43-L49：Vulkan 版本基线表",
+          "detail": "表格写 Vulkan 1.1 对应 Android 9。官方口径是 Vulkan 从 Android 7.0 可用；新 64 位 Android 10 设备要求 Vulkan 1.1；Android 13+ launch devices 要求 1.3；Android 16+ launch devices 要求 1.4。Android 9 相关的是 validation layer 加载能力，不是 1.1 launch requirement。",
+          "suggestion": "把“Android 版本基线”列拆成“平台 API 可用性”和“launch device requirement”，并将 1.1 行修正为 Android 10 新 64 位设备。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码/API 配置错误",
+          "location": "L319-L332：Perfetto TraceConfig GPU counter 配置",
+          "detail": "示例使用 sampling_period_ns，但 Perfetto GpuCounterConfig 字段名是 counter_period_ns；官方示例使用 counter_ids: 1 / counter_ids: 3 这类 repeated textproto 形式。当前片段按 Perfetto textproto 直接使用会解析失败或被忽略。",
+          "suggestion": "改为 gpu_counter_config { counter_period_ns: 1000000 counter_ids: 1 counter_ids: 2 counter_ids: 3 }；若要用名称，需说明依赖 producer 是否支持 counter_names。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码片段不准确",
+          "location": "L566-L574：HardwareRenderer / RenderThread 架构确认",
+          "detail": "Android SDK 文档确实说明所有 HardwareRenderer instances share a common render thread，但正文 Java 片段里的 private final RenderThread mRenderThread 不是 HardwareRenderer.java 的实际字段。把说明性伪代码标成源码会误导读者。",
+          "suggestion": "改成引用 HardwareRenderer 文档句子 + AOSP graphics/java/android/graphics/HardwareRenderer.java；若要追 native 线程，补 libhwui RenderProxy / renderthread/RenderThread.cpp 路径。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260514-5.11-ml-npu-litert-aicore-unsupported",
+      "section": "5.11",
+      "section_title": "端侧 AI 推理性能：NPU/GPU 加速与 TFLite 管线",
+      "title": "Android 17 NPU、LiteRT GPU/AOT 与 AICore 内存归属多处缺一手来源",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 章节把 Android 17 NPU feature、LiteRT Host Image Copy 自动收益、CompiledModel/AICore 路由和 AICore 内存回算写成确定事实，但当前公开资料无法支撑。",
+      "description": "Android 17 NPU uses-feature/意图防火墙/电量配额未找到公开 API 或 CDD；LiteRT GPU 公共文档主要是 OpenCL/GLES delegate，不能直接套 Vulkan Host Image Copy 50% 数据；CompiledModel/NPU 仍有 preview/vendor 边界；AICore 内存归属机制缺 API/源码锚点。",
+      "issue_type": "source-code-accuracy-data-support-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "added_at": "2026-05-14T03:44:00+08:00",
+      "assigned_to": "content-team",
+      "estimated_hours": 5,
+      "status": "pending",
+      "dependencies": [],
+      "added_by": "task9-deep-tech-review",
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/11-ondevice-ml-inference-performance.md"
+      ],
+      "material_paths": [
+        "intake/research-gaps.md",
+        "logs/deep-review/2026-05-14-03-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码/API 错误或不可验证声明",
+          "location": "L65-L69：Android 17 NPU 硬件特性声明",
+          "detail": "正文以确定语气写 API 37 起必须声明 android.hardware.ai.npu、未声明运行时报异常、存在 NPU 意图防火墙和电量配额审计。公开 developer.android.com / CDD 搜索未找到对应 feature 常量、权限模型或系统服务源码锚点；正文前一行已标“存疑”，但下一段仍按事实发布。",
+          "suggestion": "发布前删除该段或降级为待验证素材；只有找到 Android 17 CDD、PackageManager feature 常量、framework/service 源码后才能恢复确定表述。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据缺失/机制错配",
+          "location": "L77：LiteRT GPU + VK_EXT_host_image_copy 自动收益",
+          "detail": "正文声称 Android 16 LiteRT GPU 路径自动利用 Vulkan 1.4 Host Image Copy，纹理上传速度和内存峰值各改善约 50%。当前 LiteRT Android GPU delegate 公开资料主要围绕 OpenCL/OpenGL ES；Host Image Copy 是 Vulkan 图形上传扩展，不能直接推出 LiteRT GPU delegate 自动生效。50% 数字也缺模型、设备、delegate 版本和 workload。",
+          "suggestion": "把 Host Image Copy 放回图形/Vulkan 章节；5.11 只保留“GPU delegate 后端以公开文档为准”。若保留数据，补 LiteRT release note 或 benchmark。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本/发布阶段边界缺失",
+          "location": "L127-L138、L176-L188：CompiledModel V2 / AOT / AICore 路由",
+          "detail": "LiteRT CompiledModel API 已有公开资料，但正文进一步声称 V2 强制异步、TensorBuffer 通过 HardwareBuffer 与 NPU 直连、可通过 AICore 多租户调度器路由到 NPU、安装或首次启动 AOT 到 vendor binary 后准备时间降到 50ms 内。Google 2025 LiteRT 博客明确 NPU 支持为 private preview/vendor runtime 分发路径，这些结论需要 SDK 版本、平台范围和 benchmark。",
+          "suggestion": "拆成“公开可用的 CompiledModel/TensorBuffer 能力”和“private preview/vendor SDK 的 NPU/AOT 能力”；删除无来源的 50ms 绝对值。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码/指标归属缺证据",
+          "location": "L156：AICore 推理内存成本归属 ATTRIBUTE_WORK_TO_OTHER_APPS",
+          "detail": "正文声称 Android 16 ATTRIBUTE_WORK_TO_OTHER_APPS 会把 AICore/Gemini Nano 推理内存回算到发起 App 的 PSS/RSS。公开 AICore 与 Android memory docs 未检到该机制，且 PSS/RSS 归属通常由进程地址空间和共享页比例决定，不能只凭 work attribution 概念推出 meminfo 归属。",
+          "suggestion": "找到 framework API/StatsD/LMKD/meminfo 源码锚点后再写；否则改成“需要同时观察调用方与 AICore/PCS 相关进程内存”。"
+        }
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 130,
-    "p0_count": 23,
-    "last_updated": "2026-05-13T20:35:00+08:00",
+    "total_entries": 140,
+    "p0_count": 61,
+    "last_updated": "2026-05-14T03:44:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 78,
-    "updated_date": "2026-05-13",
+    "pending_entries": 83,
+    "updated_date": "2026-05-14",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-14T00:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
-  "pending": 80
+  "last_updated": "2026-05-14T03:44:00+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 83
 }

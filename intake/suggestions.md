@@ -706,3 +706,16 @@
 - **位置**：L195-L204 `setLayerType()` 小节
 - **问题**：“`setLayerType()` 控制的是 View 的缓存策略，不是硬件加速的开关”表述过绝对。`LAYER_TYPE_SOFTWARE` 本身就是 View 级软件渲染 fallback，会绕开该 View 的硬件绘制路径；`LAYER_TYPE_HARDWARE` 则是硬件 layer 缓存策略。
 - **建议**：改成“`setLayerType()` 不是全局硬件加速开关；它在单个 View 维度选择无 layer / hardware layer / software layer，其中 software layer 可作为局部关闭硬件绘制的 fallback”。
+
+
+## [Task9 Deep Review] 2.10 GPU 渲染深入 — 2026-05-14
+- **类型**：观测方法 / 数据支撑
+- **位置**：L79、L277、L325（Perfetto / AGI 中 Vertex、Fragment 阶段判断）
+- **问题**：正文把“Perfetto 中可看到顶点处理时间”“Fragment Shader 超过 60% / Vertex 超过 50% 即可判定瓶颈”写得过确定。Perfetto 是否有 `gpu.renderstages`、阶段粒度和 counter 语义取决于 GPU producer / vendor；AGI 阈值也不能脱离 workload 固化成统一线。
+- **建议**：改成启发式诊断流程：先确认设备是否暴露 render stages / counters，再用 AGI 或厂商 profiler 结合 draw call、overdraw、纹理采样和带宽 counter 交叉判断；阈值只作为示例，并标注测试条件。
+
+## [Task9 Deep Review] 2.14 图形 API 演进与选择策略 — 2026-05-14
+- **类型**：原理链边界
+- **位置**：L197-L199（Command Buffer 复用与静态 UI）
+- **问题**：正文把 Vulkan Command Buffer 复用直接套到 Android View 静态 UI，并写成“静态 UI 的帧提交开销几乎为零”。这对 app 自管 Vulkan 渲染在特定 swapchain / framebuffer 条件下才可能成立，不能代表 HWUI / SkiaVulkan 的 View 渲染路径。
+- **建议**：限定为“应用自管 Vulkan workload 可在内容和 framebuffer 依赖稳定时复用 command buffer”；Android View 静态内容应回到 RenderNode DisplayList / damage / Skia backend 机制解释。

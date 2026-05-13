@@ -126,3 +126,21 @@ Android 17 ART 分代 GC 与 Compose Composition 阶段分配/停顿之间的因
 - 在 20.7 异常处理架构或 20.6 稳定度量中补充「线程监控」小节：线程数采集 + 匿名线程归因
 - 可与已有 ASM 字节码插桩知识（书1第2讲）串联，形成完整的字节码监控方法论
 - 补充现代方案对比：AGP Transform → ASM Visitor vs Gradle Transform API deprecated 后的替代路径
+
+
+## [2026-05-14] 5.11 端侧 AI 推理性能 — Android ML 运行时公开/预览能力边界
+
+### 盲区描述
+章节涉及 Android 17 NPU feature、LiteRT CompiledModel / NPU / AOT、AICore 调度与内存归属，但当前正文混用了公开 API、Google AI Edge preview、厂商 SDK 能力和推测性 Android 17 平台能力。需要重新建立“公开可发布事实 vs preview / vendor / 待验证素材”的边界。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 17 CDD、PackageManager feature 常量与 framework/service 源码，确认是否存在 `android.hardware.ai.npu`、NPU 访问声明、配额或异常模型。
+- 核对 LiteRT CompiledModel Kotlin/C++ 文档、2025 LiteRT blog、release notes，拆分公开 GPU/CPU 能力、private preview NPU 能力和 vendor runtime 分发路径。
+- 核对 AICore / Gemini Nano 官方文档、StatsD/LMKD/meminfo 相关源码，确认是否存在可影响 PSS/RSS 归属的 work attribution 机制。
+- 为 AOT / 冷启动收益补机型、模型、delegate/runtime 版本、首次/稳态测试口径；无数据时删除 500ms→50ms 这类绝对数字。
+
+### 关联章节
+5.11、5.9、13.x、14.x、23.x

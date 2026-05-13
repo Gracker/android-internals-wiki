@@ -13,11 +13,11 @@ last_task6_at: '2026-05-12T20:10:00+08:00'
 task6_reviewed_date: '2026-05-12'
 review_round: 2
 task6_review_notes: '2026-05-12 task6 review: 移动 misplaced outline、补齐 section frontmatter、修禁用词和翻译腔动词；技术证据问题已写入 queue.json。'
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
-task9_reviewed_date: '2026-04-20'
+task9_reviewed_date: '2026-05-14'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-20T08:57:48+08:00'
+last_task9_at: '2026-05-14T03:44:00+08:00'
 task2b_state: pending
 applicable_versions: Android 8.1 (API 27) - Android 17 (API 37)
 last_verified: '2026-04-12'
