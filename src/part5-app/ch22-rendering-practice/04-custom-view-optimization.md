@@ -9,23 +9,27 @@ last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 drafted_date: "2026-05-12"
 polish_count: 0
-sources: 
-- type: official
-path: "developer.android.com/topic/performance/rendering/optimizing-view"
+sources:
+  - type: official
+    path: "developer.android.com/topic/performance/rendering/optimizing-view"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-12
+reviewed_date: 2026-05-14
 task6_result: pass-light-edit
 task9_result: needs-rework
 last_task2b_at: "2026-05-13T23:35:47+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T01:43:00+08:00"
+task6_reviewed_date: "2026-05-14"
+task6_review_notes: "2026-05-14 task6 review: 修正 sources frontmatter 缩进，替换两处填充表达；四层质检通过，无新增 L3/L4 回炉项，送 Task9 复审。"
+last_task6_review_log: "logs/review/2026-05-14-02-review.md"
+last_task6_at: "2026-05-14T02:13:00+08:00"
 ---
 
 # 自定义 View 性能优化
@@ -178,7 +182,7 @@ LIMIT 30
 
 ### 硬件加速下的自定义 View 行为
 
-硬件加速模式下，Canvas 的绘制命令不会直接执行，而是录制到 DisplayList 中（详见 2.5 节）。这意味着：
+硬件加速模式下，Canvas 的绘制命令不会直接执行，而是录制到 DisplayList 中（详见 2.5 节）。这个模式带来三个行为差异：
 
 1. onDraw() 不是直接在屏幕上画，而是往 DisplayList 里追加命令
 2. 如果 View 的绘制内容没变（没有 invalidate()），系统直接复用上一帧的 DisplayList，跳过整个 onDraw() 调用
@@ -256,7 +260,7 @@ public class FlowLayout extends ViewGroup {
 | `invalidate()` | 整个 View | UI 线程 | 内容变化 |
 | `postInvalidateOnAnimation()` | 整个 View | 任意线程 | 在下一帧动画时刷新 |
 
-在 API 21 之前的软件绘制路径中，`invalidate(Rect)` 的脏区域合并机制（`ViewRootImpl.invalidateRectOnScreen()`）确实能减少重绘范围。但现代 Android 默认硬件加速，这条路径已不再适用。
+在 API 21 之前的软件绘制路径中，`invalidate(Rect)` 的脏区域合并机制（`ViewRootImpl.invalidateRectOnScreen()`）能减少重绘范围。但现代 Android 默认硬件加速，这条路径已不再适用。
 
 ### invalidate 与 RenderNode damage
 

@@ -1,14 +1,13 @@
 ---
-
 title: 渲染机制的版本演进
 chapter: '2.9'
 section: '2.9'
 status: ready-for-review
 drafted_date: 2026-03-30
 drafted_by: openclaw-task2a
-task6_reviewed_date: "2026-05-13"
-reviewed_date: "2026-05-13"
-reviewed_by: openclaw-task6
+task6_reviewed_date: "2026-05-14"
+reviewed_date: "2026-05-14"
+reviewed_by: "openclaw-task6"
 applicable_versions: Android 3.0 (API 11) ~ Android 16 (API 36)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + external/perfetto + developer.android.com
@@ -16,14 +15,14 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-task6_state: revisiting
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 task2b_state: fixed
 task2b_result: fixed
 last_task2b_at: "2026-05-13T23:35:47+08:00"
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 sources:
 - type: official
   path: developer.android.com/about/versions
@@ -43,14 +42,17 @@ task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T04:39:00+08:00"
 task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 2；源码路径、VPA16 profile 口径需回炉。"
+task6_review_notes: "2026-05-14 task6 review: 移除第一人称叙述、结构性过渡和冗余强调词；四层质检通过，无新增 L3/L4 回炉项，送 Task9 复审既有修复。"
+last_task6_review_log: "logs/review/2026-05-14-02-review.md"
+last_task6_at: "2026-05-14T02:13:00+08:00"
 ---
 # 渲染机制的版本演进
 
-当我们打开 Perfetto 抓一份 Trace，看到 `RenderThread` 在主线程旁边有条不紊地执行 GPU 命令，看到 `VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列——这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线，经历了十多个 Android 大版本的持续重构。
+打开 Perfetto 抓一份 Trace，通常会看到 `RenderThread` 在主线程旁边执行 GPU 命令，`VSYNC-app` 和 `VSYNC-sf` 的信号整齐排列——这套"主线程构建 DisplayList → RenderThread 执行 GPU 命令 → SurfaceFlinger 合成上屏"的流水线，经历了十多个 Android 大版本的持续重构。
 
-理解这段演进历史，是性能分析的前置知识：我们在 Perfetto 中看到的每一个 Track 名称、每一项 API 行为，都带着版本烙印。当我们面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
+理解这段演进历史，是性能分析的前置知识：Perfetto 中的每一个 Track 名称、每一项 API 行为，都带着版本烙印。面对一份来自 Android 12 设备的 Trace 时，如果不知道 `BLASTBufferQueue` 已经取代了旧的 `BufferQueue`，就可能对着一个不存在的概念去排查问题。
 
-下面的梳理从硬件加速的引入开始，到 Vulkan 统一渲染堆栈为止，覆盖了我们在 Perfetto 中会遇到的每一个关键版本的渲染变化。
+这条演进线从硬件加速的引入开始，到 Vulkan 统一渲染堆栈为止，覆盖了 Perfetto 分析中会遇到的关键版本变化。
 
 ## 硬件加速的诞生（Android 3.0）与默认开启（Android 4.0）
 
@@ -193,7 +195,7 @@ Vulkan 后端相比 OpenGL ES 的具体改进：
 1. **Buffer 与 Transaction 绑定提交**：BLAST 将 buffer 与 `SurfaceControl.Transaction` 绑定到同一帧边界提交，改善了几何变化（位置/大小/裁剪）与 buffer 内容的同步。buffer 复用等待仍由 BufferQueue slot 与 release fence 决定——当 slot 耗尽或 release fence 未 signal 时，App 在 `dequeueBuffer` 仍可能被 back-pressure 卡住。
 2. **多进程同步优化**：当多个 App 进程向同一个 SurfaceFlinger 提交内容时，`BLASTBufferQueue` 提供了更健壮的同步机制
 
-在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果我们习惯了 Android 11 及之前的 `BufferQueue` Track，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。实际排查中，如果你在 Android 12+ 设备的 Trace 里看到了 `dequeueBuffer` 等待时间异常拉长，不要急着按旧经验去查 BufferQueue slot 状态——先确认走的是 BLAST 路径还是旧路径，再决定排查方向。
+在 Perfetto 中，这个变化主要体现在 Buffer 流转相关的事件和 Fence 时间线上。如果仍沿用 Android 11 及之前的 `BufferQueue` Track 经验，在 Android 12+ 上需要关注 `BLASTBufferQueue` 相关的 slice。实际排查中，如果 Android 12+ 设备的 Trace 里出现 `dequeueBuffer` 等待时间异常拉长，不要急着按旧经验去查 BufferQueue slot 状态——先确认走的是 BLAST 路径还是旧路径，再决定排查方向。
 
 [图：Android 11 BufferQueue 与 Android 12 BLASTBufferQueue 的 Buffer 流转对比示意图]
 
@@ -272,7 +274,7 @@ ARR 将**显示刷新率与内容帧率解耦**：内容只有 30 FPS 时，系�
 
 ### FrameMetrics API：量化每一帧的"慢"在哪里
 
-分析卡顿时，核心冲突在于："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期划分为多个阶段，告诉我们时间究竟花在了哪里。
+分析卡顿时，核心冲突在于："这帧为什么超了 16.67ms"。FrameMetrics 就是回答这个问题的工具——它把一帧的完整生命周期划分为多个阶段，标出时间究竟花在哪里。
 
 FrameMetrics 在 Android 7.0（API 24）引入，通过 `Window.addOnFrameMetricsAvailableListener()` 注册回调，系统会在每帧渲染完成后回调一次，附带该帧各阶段的精确耗时。开发者不需要在代码里手动打点，就能拿到完整的帧耗时分布。
 
@@ -291,11 +293,11 @@ FrameMetrics 将一帧的渲染划分为以下阶段：
 | `SWAP_BUFFERS_DURATION` | 提交 Buffer 耗时 |
 | `TOTAL_DURATION` | 总耗时 |
 
-在实际分析中，我们通常关注两个层面：
+实际分析通常关注两个层面：
 
 第一是**单帧瓶颈定位**。如果 `LAYOUT_MEASURE_DURATION` 占比最高，说明 View 层级过深或 layout 逻辑过重；如果 `COMMANDS_DURATION` 高，说明 GPU 是瓶颈；如果 `SYNC_DURATION` 异常，可能是主线程和 RenderThread 之间的同步出了问题（常见于大量 RenderNode 变更的场景）。
 
-第二是**整体帧率趋势**。通过持续收集 FrameMetrics 数据，我们可以建立帧耗时的时间线，发现哪些场景出现规律性 Jank。Android 12 的 `FrameTimeline` Track 在 Perfetto 中直观地展示了这一点——每一帧都有"预期完成时间"和"实际完成时间"的对比，绿色表示准时，红色表示 Jank。FrameMetrics 的阶段数据与 FrameTimeline 的视觉表现结合起来，就能精确定位 Jank 的根因。
+第二是**整体帧率趋势**。通过持续收集 FrameMetrics 数据，可以建立帧耗时的时间线，发现哪些场景出现规律性 Jank。Android 12 的 `FrameTimeline` Track 在 Perfetto 中直观地展示了这一点——每一帧都有"预期完成时间"和"实际完成时间"的对比，绿色表示准时，红色表示 Jank。FrameMetrics 的阶段数据与 FrameTimeline 的视觉表现结合起来，就能精确定位 Jank 的根因。
 
 FrameMetrics 只在 App 进程内可用（它是 per-window 的 API）。如果要分析系统级的帧率问题（如 SurfaceFlinger 合成延迟），需要结合 Perfetto Trace 中的 SurfaceFlinger Track 和 FrameTimeline 数据。
 
@@ -356,7 +358,7 @@ public:
 - `PRESENT_EARLY` — 帧早于预期（可能过度渲染）
 - `PRESENT_UNKNOWN` — 状态未知
 
-Perfetto 中的 `JankType` 定义在 `protos/perfetto/trace/android/frame_timeline_event.proto`，它是一个 bitmask。`JANK_UNSPECIFIED = 0` 只是缺省值，真正的 `JANK_UNKNOWN` 是 256。
+Perfetto 中的 `JankType` 定义在 `protos/perfetto/trace/android/frame_timeline_event.proto`，它是一个 bitmask。`JANK_UNSPECIFIED = 0` 只是缺省值，表示原因未知的枚举是 `JANK_UNKNOWN = 256`。
 
 | JankType | 值 | 含义 |
 |----------|---|------|
