@@ -2,9 +2,10 @@
 status: ready-for-review
 title: Kotlin Coroutine 性能实践
 chapter: '8.6'
+section: '8.6'
 drafted_date: '2026-04-02'
 drafted_by: openclaw-task2a
-reviewed_date: '2026-05-03'
+reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
 reworked_date: '2026-04-06'
 reworked_by: openclaw-task2b
@@ -37,16 +38,16 @@ related_chapters:
 - '7.7'
 - '8.1'
 - '8.2'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
+task9_state: reviewed
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: openclaw-task9
 last_task9_at: '2026-05-13T04:11:19+08:00'
-task2b_state: fixed
-task2b_result: fixed
+task2b_state: pending
+task2b_result: pending
 task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0/P1 技术问题已写入 queue。'
 ---
 
@@ -129,7 +130,7 @@ suspend fun loadData() = withContext(Dispatchers.Default) {
 
 `Dispatchers.IO` 使用一个弹性线程池，默认上限 64 个线程（或 CPU 核心数，取较大值），可通过 `kotlinx.coroutines.io.parallelism` 系统属性调整。它专门为阻塞式 I/O 操作设计——网络请求、数据库访问、文件读写等。
 
-`Dispatchers.Default` 和 `Dispatchers.IO` 在底层共享同一组线程。这意味着 `withContext(Dispatchers.IO) { ... }` 如果之前已经在 `Dispatchers.Default` 上，并不一定会发生真正的线程切换——运行时会尽量让任务留在同一个线程上。这个优化在 Kotlin 协程库内部通过共享调度器实现，对开发者透明。
+`Dispatchers.Default` 和 `Dispatchers.IO` 在底层共享同一组线程。`withContext(Dispatchers.IO) { ... }` 如果之前已经在 `Dispatchers.Default` 上，并不一定会发生真正的线程切换——运行时会尽量让任务留在同一个线程上。这个优化在 Kotlin 协程库内部通过共享调度器实现，对开发者透明。
 
 ```kotlin
 // 这段代码的 withContext 切换开销比直觉上要小
@@ -151,7 +152,7 @@ suspend fun processAndSave() {
 
 `Dispatchers.Unconfined` 是最特殊的一个。它在调用者所在的线程上启动 coroutine，但在第一个挂起点之后恢复时，会在"whoever resumed it"的线程上继续执行——不做任何 dispatch。
 
-这听起来很"快"（因为没有 dispatch 开销），但实际上 `Unconfined` 在生产代码中几乎不应该使用。原因有两个：第一，它让代码"跑在哪个线程上"变得不可预测，很难推理；第二，它破坏了结构化并发的线程安全保障。Kotlin 官方文档也明确说它只适用于某些测试场景或特殊的性能关键路径。
+这听起来很"快"（因为没有 dispatch 开销），但 `Unconfined` 在生产代码中几乎不应该使用。原因有两个：第一，它让代码"跑在哪个线程上"变得不可预测，很难推理；第二，它破坏了结构化并发的线程安全保障。Kotlin 官方文档也明确说它只适用于某些测试场景或特殊的性能关键路径。
 
 ### 怎么选：快速选择指南
 
@@ -163,8 +164,6 @@ Dispatcher 的选择逻辑如下：
 - **不确定？** → 默认用 `Dispatchers.Default`，然后用 Trace 验证
 
 ### ADPF 与协程调度器的联动
-
-[自动发现: Android 15+ ADPF PerformanceHintManager 与协程线程池的协作]
 
 协程运行在用户态，内核的调度器看到的是线程，不知道哪个线程上跑着高优先级的协程任务。Android 15 的 `PerformanceHintManager` 通过 `createHintSession(int[] tids, long targetDurationNanos)` 建立 hint session，再用 `reportActualWorkDuration(long durationNanos)` 向系统反馈实际负载。这套机制可以弥补协程"用户态调度"和"内核态调频"之间的信息断层。
 
@@ -191,8 +190,6 @@ class AdpfHintInterceptor(
 [已验证: AOSP android-15.0.0_r1, android.os.PerformanceHintManager]
 
 ### 后台协程任务的能效管理
-
-[自动发现: Android 15+ setPreferPowerEfficiency 对协程任务的影响]
 
 Android 15 在 `PerformanceHintManager.Session` 上引入了 `setPreferPowerEfficiency(boolean)` 方法。调用后，系统会倾向于将相关线程调度到效率核（E-core）上运行，或者允许更激进的休眠策略。
 
@@ -222,8 +219,7 @@ class UploadWorker(
 [已验证: AOSP android-15.0.0_r1, android.os.PerformanceHintManager.Session.setPreferPowerEfficiency]
 
 
-<!-- AIW-源码调研-2026-05-13: PerformanceHintManager Session 与 Kotlin 协程线程迁移边界源码验证 -->
-**源码级验证补充**（2026-05-13）：
+ADPF 接入还要先确认几个边界：
 
 - `createHintSession(tids, initialTargetWorkDurationNanos)`：传入空数组会抛 `IllegalArgumentException`，不是静默忽略
 - `Session.setThreads(tids)`：close() 后 mNativeSessionPtr=0 时直接 return；空数组抛异常
@@ -243,7 +239,7 @@ class UploadWorker(
 
 而"coroutine 切换"（suspend + resume）是在用户空间完成的。它保存的是协程的 continuation（一个状态机对象），然后通过 Dispatcher 把后续执行投递到目标线程。这个过程的调度部分（dispatching）大约在 **几十到几百纳秒** 量级，而实际执行取决于目标线程的负载。
 
-但这里有一个关键区别：coroutine 的"切换"并不总是意味着线程切换。如果两个 coroutine 运行在同一个 Dispatcher 的同一个线程上，那么从 A 切换到 B 只是"把 A 的 continuation 挂起，把 B 的 continuation 放到队列头部"的操作，不涉及任何 OS 级别的线程调度。
+coroutine 的"切换"并不总是意味着线程切换。如果两个 coroutine 运行在同一个 Dispatcher 的同一个线程上，从 A 切换到 B 只是"把 A 的 continuation 挂起，把 B 的 continuation 放到队列头部"的操作，不涉及任何 OS 级别的线程调度。
 
 [待验证: 具体的纳秒级数据因 JVM 版本和硬件平台而异，以上为社区 benchmark 的普遍共识]
 
@@ -328,7 +324,7 @@ viewModelScope.launch {
 
 在结构化并发的框架下，即使是"忘记 await"也不会泄漏，因为父 scope 仍然持有子 Job 的引用。真正的泄漏发生在打破结构化并发的时候——比如用 `GlobalScope.async` 或者手动管理 Job。
 
-[自动发现] 结构化并发的另一个性能好处是：它天然限制了并发度。因为父 coroutine 等待子 coroutine，不可能无意识地"扇出"上千个并发任务。这在不限制并发度的 `CoroutineScope` 中可能发生，但在 `viewModelScope` 这种受生命周期的 scope 中自然被约束了。
+结构化并发还有一个性能收益：它天然限制了并发度。因为父 coroutine 等待子 coroutine，不可能无意识地"扇出"上千个并发任务。这在不限制并发度的 `CoroutineScope` 中可能发生，但在 `viewModelScope` 这种受生命周期的 scope 中自然被约束了。
 
 ## Flow 的背压与性能
 
@@ -340,7 +336,7 @@ Flow 是 Kotlin 协程的响应式流 API。和 RxJava 的 Observable 类似，F
 
 Flow 是冷流（cold stream）——它不会自己开始发射数据，只有在被 `collect` 的时候才会运行。而且每次 `collect` 都是独立的执行。
 
-这意味着 Flow 天然就有背压能力：生产者每次调用 `emit()` 时，如果消费者还没处理完上一个值，`emit()` 就会挂起（suspend），等待消费者处理完毕。这和 RxJava 中 `Observable` 的"无限缓冲"行为不同——Flow 不会默默地堆积数据，而是通过 suspend 机制让生产者和消费者保持同步。
+Flow 的天然背压来自 `emit()` 的挂起语义：生产者每次调用 `emit()` 时，如果消费者还没处理完上一个值，`emit()` 就会挂起（suspend），等待消费者处理完毕。这和 RxJava 中 `Observable` 的"无限缓冲"行为不同——Flow 不会默默地堆积数据，而是通过 suspend 机制让生产者和消费者保持同步。
 
 这种默认行为对性能的影响是：如果消费者慢，生产者就会被拖慢。这不一定是期望的行为。
 

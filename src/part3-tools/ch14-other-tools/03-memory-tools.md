@@ -3,7 +3,7 @@ title: 内存分析工具
 chapter: '14.3'
 section: '14.3'
 status: ready-for-review
-reviewed_date: '2026-04-30'
+reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
@@ -42,13 +42,13 @@ related_chapters:
 - '10.3'
 - '14.1'
 - '13.1'
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task9_result: needs-rework
-task2b_result: fixed
+task2b_result: pending
 task2b_rework_date: '2026-05-01'
 task2b_fixed_at: '2026-04-20'
 task9_reviewed_date: '2026-05-13'
@@ -218,11 +218,11 @@ hprof-conv /data/local/tmp/heap.hprof heap-std.hprof
 
 一个典型的 MAT 分析流程如下。
 
-首先，在 Histogram 视图中，使用正则表达式过滤出我们关心的类。比如我们在 LeakCanary 中看到了某个 Activity 泄漏，就在 Histogram 中搜索这个 Activity 类名。找到后，右键选择 "List objects → with incoming references"（列出持有该对象引用的其他对象）。
+在 Histogram 视图中，使用正则表达式过滤出我们关心的类。比如我们在 LeakCanary 中看到了某个 Activity 泄漏，就在 Histogram 中搜索这个 Activity 类名。找到后，右键选择 "List objects → with incoming references"（列出持有该对象引用的其他对象）。
 
 然后，沿着引用链逐层展开。MAT 会在引用路径上标记 "Shallow Heap"（对象自身大小）和 "Retained Heap"（该对象被回收后可释放的总大小）。如果某个中间节点的 Retained Heap 异常大，它很可能就是泄漏的关键持有者。
 
-最后，在引用链的最末端找到 GC Root。GC Root 是 JVM 垃圾回收的起点，通常是静态变量、活跃线程的局部变量、JNI Global Reference 等。如果引用链从一个 GC Root 连到了一个本该被销毁的 Activity，那这条链上的某个引用就是泄漏点。
+引用链的最末端是 GC Root。GC Root 是 JVM 垃圾回收的起点，通常是静态变量、活跃线程的局部变量、JNI Global Reference 等。如果引用链从一个 GC Root 连到了一个本该被销毁的 Activity，那这条链上的某个引用就是泄漏点。
 
 对于 Bitmap 相关的问题，要先看 Android 版本边界。Android 7.x 及以下，Bitmap 像素数据还在 Java 堆里，MAT 能直接看到 `mBuffer` 一类字段；Android 8.0+ 把像素数据移到了 Native Heap，Java 对象里通常只剩 `mNativePtr`。这时标准 hprof 里拿不到像素内容，MAT 也不能再把 Bitmap 直接还原成图片。现代设备上如果要确认“是哪张图在占内存”，优先用 Android Studio Memory Profiler 看 Bitmap 预览，再结合 `dumpsys meminfo` 的 `Graphics` / `Native Heap`、heapprofd 和图形内存排查路径定位。
 
@@ -297,7 +297,7 @@ data_sources: {
 
 ### 分析结果
 
-采集完成后，在 Perfetto UI 中打开 trace 文件。在左侧的 Track 列表中会看到 "Heap profiles" 相关的 Track，展开后可以看到时间轴上的一系列堆快照（每个快照对应一个时间点的内存分配状态）。
+采集完成后，在 Perfetto UI 中打开 trace 文件。在左侧的 Track 列表中会看到 "Heap profiles" 相关的 Track，展开后会出现时间轴上的一系列堆快照（每个快照对应一个时间点的内存分配状态）。
 
 点击某个快照，Perfetto 会展示火焰图（Flamegraph）形式的分配调用栈。火焰图中每个色块的宽度代表该调用栈路径分配的内存大小。最宽的色块就是分配最多的调用路径。
 
@@ -330,7 +330,7 @@ data_sources: {
 
 **内存分类汇总表**是输出的核心部分。它按照内存类型（Java Heap、Native Heap、Code、Stack、Graphics 等）和内存属性（Private Dirty、Private Clean、Shared Dirty、Shared Clean、Swap）两个维度交叉展示。下面是关键字段的含义。
 
-**PSS（Proportional Set Size）**：这是最核心的指标。PSS 将共享内存按引用进程数均分——如果一个 4KB 的内存页被两个进程映射，那每个进程的 PSS 只算 2KB。PSS 的好处是可以把所有进程的 PSS 加起来，得到系统实际使用的物理内存总量。在 `dumpsys meminfo` 输出的最后一行 `TOTAL PSS` 就是这个进程对系统内存的"真实贡献"。
+**PSS（Proportional Set Size）**：这是最核心的指标。PSS 将共享内存按引用进程数均分——如果一个 4KB 的内存页被两个进程映射，那每个进程的 PSS 只算 2KB。PSS 的好处是可以把所有进程的 PSS 加起来，得到系统实际使用的物理内存总量。`dumpsys meminfo` 输出末尾的 `TOTAL PSS` 就是这个进程对系统内存的"真实贡献"。
 
 **USS（Unique Set Size）**：只属于这个进程的私有内存。如果一个进程被杀掉，USS 会被完全释放。USS 是判断"杀掉这个进程能回收多少内存"的直接指标。
 
@@ -581,9 +581,9 @@ Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应�
 [已验证: 官方文档, https://developer.android.com/ndk/guides/sanitizers]
 [已验证: 官方文档, https://source.android.com/docs/security/test/memory-safety]
 
-### [已验证 2026-04-26] MTE 三种模式与 Asymmetric（ASYMM）升级机制
+### MTE 三种模式与 Asymmetric（ASYMM）升级机制
 
-现有描述只涉及 sync 和 async 两种模式，实际硬件（Arm v8.7-A+）支持第三种——**Asymmetric（ASYMM）模式**，Android 系统对 App 透明使用：
+MTE 除了常见的 sync 和 async 两种模式，实际硬件（Arm v8.7-A+）还支持第三种——**Asymmetric（ASYMM）模式**，Android 系统对 App 透明使用：
 
 | 模式 | 读取检查 | 写入检查 | 性能 | 生产可用性 |
 |------|---------|---------|------|---------|
@@ -593,13 +593,13 @@ Android 已在部分系统组件和设备上逐步引入 MTE 支持。对于应�
 
 **ASYMM 核心价值**：读取越界（use-after-free read）提供精确错误位置，写入越界保持低开销。在 SPEC INT 2006 实测中，SYNC 最高可达 6.64x 减速，ASYMM 保持在 1-2% 区间（Pixel 8/9，来源：arxiv:2405.02735）。
 
-**Android 系统行为**：App 通过 `android:memtagMode="async"` 请求 MTE 时，如果硬件支持 ASYMM，OS 自动静默升级到 ASYMM，无需 App 感知。系统组件（蓝牙/NFC/网络daemon）以 ASYNC 模式运行，实际也受益于 ASYMM 硬件。
+**Android 系统行为**：App 通过 `android:memtagMode="async"` 请求 MTE 时，如果硬件支持 ASYMM，OS 自动静默升级到 ASYMM，无需 App 感知。系统组件（蓝牙 / NFC / 网络 daemon）以 ASYNC 模式运行，实际也受益于 ASYMM 硬件。
 
 **检测 ASYMM 支持**：`cat /proc/cpuinfo` 中显示 `mte mte3` 表示 ASYMM 可用；仅有 `mte` 表示仅支持 SYNC/ASYNC（Arm v8.5-A）。
 
 **sysfs 控制**：`/sys/devices/system/cpu/cpu<N>/mte_tcf_preferred`（root）可设置 per-CPU preferred 模式为 `async` / `sync` / `asymm`。
 
-**Android 15+ 默认状态**：MTE 在所有 Android 版本中均默认**关闭**。Compatibility Framework 明确 `NATIVE_MEMTAG_ASYNC` 和 `NATIVE_MEMTAG_SYNC` 的默认状态为"对所有 App 禁用"。Android 15 强烈建议生产环境使用 MTE，但保持关闭，由 OEM/设备配置决定。
+**Android 15+ 默认状态**：MTE 在所有 Android 版本中均默认**关闭**。Compatibility Framework 明确 `NATIVE_MEMTAG_ASYNC` 和 `NATIVE_MEMTAG_SYNC` 的默认状态为"对所有 App 禁用"。Android 15 强烈建议生产环境使用 MTE，但保持关闭，由 OEM / 设备配置决定。
 
 **Scudo 协作**：Android 默认堆分配器 Scudo（Android 11+）通过 `IRG`（生成随机 tag）和 `STG`（存储 tag）指令与 MTE 协作。仅 Primary 分配（< 0x10000 字节）应用 MTE tag。
 
