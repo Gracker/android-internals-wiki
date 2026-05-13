@@ -4,11 +4,14 @@ chapter: "23.3"
 section: "23.3"
 status: ready-for-review
 drafted_date: "2026-05-14"
+reviewed_date: "2026-05-14"
+reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP main / Android Developers docs / Perfetto docs"
 confidence: medium
-polish_count: 0
+polish_count: 1
 sources:
   - type: official
     path: "https://source.android.com/docs/core/tests/debug/native-memory"
@@ -28,10 +31,13 @@ sources:
     path: "Clippings/Android 性能优化 - Native 内存优化（上）：so 库申请的内存优化.md"
 tags: [native-memory, malloc, asan, hwasan, so-memory]
 related_chapters: ["23.2", "4.1", "4.2", "10.1", "14.3"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+task6_review_notes: "2026-05-14 task6 review: 修正 malloc_debug 限制表述，替换禁用语境下的抽象词；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
+last_task6_review_log: "logs/review/2026-05-14-01-review.md"
+last_task6_at: "2026-05-14T01:14:00+08:00"
 ---
 
 # Native 内存管理与优化
@@ -140,7 +146,7 @@ adb shell monkey -p com.example.app 1
 adb logcat | grep -i malloc
 ```
 
-`malloc_debug` 的限制也很明确：它依赖系统属性和进程重启，开销高，部分能力需要 root、userdebug 或可调试设备。工程上常把它放在“本地复现后进一步确认”的位置，而不是第一入口。
+`malloc_debug` 的限制来自系统属性、进程重启和运行开销，部分能力还需要 root、userdebug 或可调试设备。工程上常把它放在“本地复现后进一步确认”的位置，而不是第一入口。
 
 [已验证: AOSP main, bionic/libc/malloc_debug/README.md]
 
@@ -207,7 +213,7 @@ Android 应用通常不直接选择系统 allocator，但 allocator 会影响碎
 Scudo 的设计目标是提高 native heap 对越界、use-after-free、double free 等问题的抵抗能力，并在内存映射名称中留下 `[anon:scudo:*]` 一类线索。jemalloc 更强调通用分配性能和碎片控制。不同 Android 版本、设备配置和进程状态下，系统默认 allocator 与安全开关可能不同，应用侧结论要以设备上的 `smaps`、系统属性和 crash tombstone 为准。
 
 [已验证: 官方文档, https://source.android.com/devices/tech/debug/scudo]
-[待验证: 不同厂商 Android 14-16 user 版本默认 allocator 与安全开关矩阵]
+[待验证: 不同厂商 Android 14-16 user 版本默认 allocator 与安全开关清单]
 
 ## 排查清单
 

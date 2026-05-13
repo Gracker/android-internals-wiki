@@ -8,7 +8,10 @@ last_verified: "2026-05-13"
 last_verified_against: "AOSP android16-release + Android Developers"
 confidence: medium
 drafted_date: "2026-05-13"
-polish_count: 0
+reviewed_date: "2026-05-14"
+reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
+polish_count: 1
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/graphics/manage-memory"
@@ -34,10 +37,13 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]"
 tags: [bitmap, insamplesize, native-memory, inbitmap, hardware-bitmap]
 related_chapters: ["23.1", "22.6", "7.10", "4.3"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+task6_review_notes: "2026-05-14 task6 review: 修正否定纠正式开头、版本线表述和硬件 Bitmap 限制句；四层质检通过，无新增 L3/L4 回炉项，等待 Task9 review。"
+last_task6_review_log: "logs/review/2026-05-14-01-review.md"
+last_task6_at: "2026-05-14T01:14:00+08:00"
 ---
 
 # Bitmap 与图片内存优化
@@ -67,9 +73,9 @@ task2b_state: pending
 
 ## 为什么要了解 Bitmap 与图片内存优化
 
-图片内存问题通常不是单个对象太大，而是解码尺寸、缓存复用、页面生命周期和设备内存预算一起失控。一个 4000×3000 的 `ARGB_8888` 图片解码后约 45.8 MB；如果它只显示成 200×150 的缩略图，绝大部分像素都没有参与最终显示，却已经占用了 Native Heap 或 Java Heap。
+图片内存问题通常由解码尺寸、缓存复用、页面生命周期和设备内存预算一起放大。一个 4000×3000 的 `ARGB_8888` 图片解码后约 45.8 MB；如果它只显示成 200×150 的缩略图，绝大部分像素都没有参与最终显示，却已经占用了 Native Heap 或 Java Heap。
 
-这节处理应用侧能直接改的几件事：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进入 Native Heap 后对监控口径的影响；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载链路和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
+这一节聚焦四个应用侧入口：解码前算清目标尺寸，用 `inSampleSize` 降低像素数；理解 Android 8.0 之后 Bitmap 像素内存进入 Native Heap 后对监控口径的影响；在图片加载入口记录大图和泄漏线索；用 `inBitmap` 复用减少反复分配。ART 堆和 GC 的机制详见 4.3 节，图片加载链路和渲染侧问题详见 22.6 节，页面对象泄漏对 Bitmap 的放大效应详见 23.1 节。
 
 [结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 [结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]
@@ -142,7 +148,7 @@ fun calculateInSampleSize(
 [已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 [结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 
-Android Developers 的 Bitmap 内存文档给了清晰版本线：Android 2.3.3 及更早版本，像素数据在 Native 内存；Android 3.0 到 7.1，像素数据随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上，像素数据进入 Native Heap。当前章节覆盖 Android 10 到 Android 16，排查时应按 Native Heap 口径处理 Bitmap 像素内存。
+Android Developers 的 Bitmap 内存文档列出版本边界：Android 2.3.3 及更早版本，像素数据在 Native 内存；Android 3.0 到 7.1，像素数据随 Bitmap 对象放在 Dalvik Heap；Android 8.0 及以上，像素数据进入 Native Heap。当前章节覆盖 Android 10 到 Android 16，排查时应按 Native Heap 口径处理 Bitmap 像素内存。
 
 AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `getAllocationByteCount()`，再通过 `NativeAllocationRegistry.registerNativeAllocation(this, mNativePtr)` 注册 Native 释放器。这个设计带来两个工程结论：
 
@@ -157,7 +163,7 @@ AOSP `Bitmap.java` 中，Java 对象保存 `mNativePtr`，构造时会计算 `ge
 [已验证: AOSP android16-release, frameworks/base/graphics/java/android/graphics/BitmapFactory.java]
 [结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 
-图片监控不要等到 OOM 再看堆。更有效的做法是在统一图片入口记录“原图尺寸、目标 View 尺寸、解码后尺寸、配置、分配字节数、页面名、调用栈摘要”。这组信息能直接回答两个问题：是否解码了远大于显示尺寸的图片；是否有页面在退出后仍保留大图。
+图片监控不要等到 OOM 再看堆。统一图片入口应记录“原图尺寸、目标 View 尺寸、解码后尺寸、配置、分配字节数、页面名、调用栈摘要”。这组信息能直接回答两个问题：是否解码了远大于显示尺寸的图片；是否有页面在退出后仍保留大图。
 
 大图阈值建议按屏幕和业务类型拆开。全屏照片预览允许接近屏幕像素的 1 到 2 倍；头像、列表封面、icon 这类控件，如果解码尺寸超过目标 View 的 2 到 3 倍，就应该进入告警。只用固定 MB 阈值会漏掉低端机和高刷新列表，也会误报正常的图片编辑场景。
 
@@ -287,7 +293,7 @@ fun decodeWithReuse(
 
 `Bitmap.Config.HARDWARE` 表示像素只存储在图形内存中。`ImageDecoder` 的 AOSP 注释说明，它默认创建的 Bitmap 通常是 immutable，并且常见配置是 `Config.HARDWARE`；这适合只展示、不修改、由硬件加速管线绘制的图片，例如详情页大图、列表中不需要像素读取的封面图。
 
-限制也很明确：硬件 Bitmap 不可变，不能作为 `inBitmap` 候选，不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 在软件渲染模式下遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免硬件 Bitmap：
+硬件 Bitmap 的限制集中在可变性和绘制路径：它不能作为 `inBitmap` 候选，也不能和 `inMutable = true` 同时要求。AOSP `BaseCanvas` 在软件渲染模式下遇到 `Config.HARDWARE` 会抛出 `IllegalArgumentException("Software rendering doesn't support hardware bitmaps")`。因此下列场景应避免硬件 Bitmap：
 
 - 需要 `Canvas` 软件绘制、截图合成、离屏处理或生成分享图。
 - 需要读取或修改像素，例如滤镜、马赛克、取色、手写涂鸦。
