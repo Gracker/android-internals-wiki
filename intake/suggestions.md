@@ -599,3 +599,10 @@
 - **位置**：L426 `RemoteCallbackList` `FrozenCalleePolicy`
 - **问题**：正文写成“自动丢弃高频数据回调”过窄。API 36 文档定义的是 callback recipient 进程被冻结时的策略：`DROP`、`ENQUEUE_ALL`、`ENQUEUE_MOST_RECENT`、`UNSET`，是否丢弃取决于构建 RemoteCallbackList 时选择的 policy。
 - **建议**：改成“允许服务端为 frozen callback recipient 配置丢弃、全量排队或仅保留最近一次回调”，并补充 `maxQueueSize` / executor 的使用边界。
+
+## [Task9 Deep Review] 3.4 输入延迟与预测输入技术 — 2026-05-13
+- **类型**：数据缺失/可复现性
+- **位置**：L267-L303 Perfetto 输入延迟量化
+- **问题**：章节给出了 `android_input_events` 查询，但缺少最小 trace 配置与字段非空条件，读者可能把采集不足导致的空字段误判成没有延迟。
+- **建议**：补充 Perfetto 采集清单（至少覆盖 `android.input.inputevent` 与 FrameTimeline/graphics 相关数据源），并说明 `end_to_end_latency_dur` 非空依赖 input event 与 frame event 关联。
+

@@ -3460,59 +3460,126 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T18:28:00+08:00"
+    },
+    {
+      "id": "task9-2.6-hwc16-interface-and-sf-version-errors",
+      "section": "2.6",
+      "section_title": "SurfaceFlinger 与合成",
+      "priority": 95,
+      "title": "HWC Android 16 接口与 SurfaceFlinger 版本线错误",
+      "description": "P0: Android 12 代码签名错误、Android 16 DisplayLuts / CLIENT_BYPASS 无 AOSP 接口依据；P1: Pacesetter/FrameTargeter 版本线写晚。",
+      "reason": "[Deep Tech Review] SurfaceFlinger/HWC 源码锚点存在 3 个 P0 与 1 个 P1，需要回炉修正。",
+      "issue_type": "source-code-accuracy-version-differences",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 签名",
+          "location": "L172-L178 Android 12 onMessageReceived 代码块",
+          "detail": "代码块把参数写成 `expected VSync Time`，这是非法 C++ 标识符；AOSP android-12.0.0_r1 实际签名为 `nsecs_t expectedVSyncTime`，调用处也是 `expectedVSyncTime`。",
+          "suggestion": "按 android-12.0.0_r1 `SurfaceFlinger::onMessageReceived(int32_t what, int64_t vsyncId, nsecs_t expectedVSyncTime)` 修正代码块。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/HWC 接口",
+          "location": "L144 Android 16 `DisplayLuts` / HWC 3 V4",
+          "detail": "在 AOSP android-16.0.0_r1 与 main 的 `composer3/DisplayCommand.aidl`、`Composition.aidl` 中未找到 `DisplayLuts` 接口；正文把 HDR LUT 下发与 GPU tone mapping 旁路写成 Android 16 强制行为，缺少可核验接口依据。",
+          "suggestion": "删除确定性描述，或补充真实 AIDL 字段/接口与官方文档；未核验前改为 `[待验证]`。"
+        },
+        {
+          "severity": "P0",
+          "type": "源码错误/HWC composition type",
+          "location": "L156 Android 16 `CLIENT_BYPASS` 模式",
+          "detail": "AOSP `android.hardware.graphics.composer3.Composition` 枚举只有 INVALID/CLIENT/DEVICE/SOLID_COLOR/CURSOR/SIDEBAND/DISPLAY_DECORATION 等类型，未找到 `CLIENT_BYPASS`；`dumpsys SurfaceFlinger` 也不能按该 composition type 判断。",
+          "suggestion": "移除 `CLIENT_BYPASS` 作为正式 HWC composition type 的说法；如来自厂商私有扩展，必须标注 vendor-specific 并给出设备/日志证据。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L214 Pacesetter Display / FrameTargeter 版本线",
+          "detail": "正文写“Android 16 引入 Pacesetter Display 模式”。源码显示 Pacesetter display 调度已出现在 android-14.0.0_r1，`FrameTargeter` 与 `commit(PhysicalDisplayId, FrameTargets)`/`composite(...FrameTargeters)` 主签名在 android-15.0.0_r1 已出现。",
+          "suggestion": "把版本线改成 Android 14 出现 pacesetter 调度，Android 15 起进入 `FrameTargeter`/多 display target 主路径，Android 16 继续沿用/调整。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T19:47:40+08:00"
+    },
+    {
+      "id": "task9-2.15-gralloc-api-and-dmabuf-unsupported-claims",
+      "section": "2.15",
+      "section_title": "DMA-BUF、Gralloc 与跨进程图形内存共享",
+      "priority": 95,
+      "title": "Gralloc/NDK API 与 DMA-BUF 优化声明缺少源码依据",
+      "description": "P0: `AHardwareBuffer_allocateWithOptions()` 不存在；P1: allocate2 版本线、additionalOptions 对齐语义、libdmabufheap pooling、Binder FDA 20%-40% 收益均需回炉核验。",
+      "reason": "[Deep Tech Review] DMA-BUF/Gralloc 章节存在公开 API 错误与多处 Android 16 优化声明证据不足。",
+      "issue_type": "source-code-accuracy-version-differences-data-support",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 5,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/NDK API",
+          "location": "L222 `AHardwareBuffer_allocateWithOptions()`",
+          "detail": "AOSP android-15.0.0_r1、android-16.0.0_r1 与 main 的 `libs/nativewindow/include/android/hardware_buffer.h` 均未定义 `AHardwareBuffer_allocateWithOptions()`；公开 NDK 入口仍是 `AHardwareBuffer_allocate()`。",
+          "suggestion": "删除不存在的 NDK API 示例；如果要讨论 allocator AIDL `additionalOptions`，应明确这不是公开 NDK `AHardwareBuffer` 入口。"
+        },
+        {
+          "severity": "P1",
+          "type": "版本差异/源码边界",
+          "location": "L218-L220 `allocate2()` 与 `additionalOptions`",
+          "detail": "`IAllocator.allocate2(BufferDescriptorInfo, count)` 与 `BufferDescriptorInfo.additionalOptions` 在 android-15.0.0_r1 已存在，不是 Android 16 新增；AIDL 注释给出的 `additionalOptions` 示例是 compression level（如 EGL_EXT_surface_compression），未说明 16KB 页对齐。",
+          "suggestion": "修正版本线为 Android 15+；16KB 对齐说法必须补具体 option 定义或改为实现相关/待验证。"
+        },
+        {
+          "severity": "P1",
+          "type": "知识盲区/源码证据不足",
+          "location": "L180-L188、L438 libdmabufheap 用户空间池化",
+          "detail": "官方 DMA-BUF Heaps 文档把 libdmabufheap 描述为 ION → DMA-BUF heaps 迁移抽象层；android-12 到 android-16/main 的 libdmabufheap 源码未看到“释放后缓存并按尺寸复用”的通用 pooling 路径。正文把它写成 Android 16/17 引入的确定机制证据不足。",
+          "suggestion": "改为 `[待验证]` 或限定到具体 allocator/vendor 实现；补充 system/memory/libdmabufheap 的实际复用代码或删除该段。"
+        },
+        {
+          "severity": "P1",
+          "type": "数据缺失/源码证据不足",
+          "location": "L274-L279、L439 Binder FDA 批量传输优化",
+          "detail": "android-16.0.0_r1 `GraphicBuffer.cpp` 的 `flatten/unflatten` 仍是 transport fd 数组拷贝与 handle 重建路径，未看到正文所称 `GraphicBuffer::unflatten()` 直接利用 FDA 的源码锚点；“CPU 开销降低 20%-40%”也缺少测试条件。",
+          "suggestion": "补 Binder/Parcel 层 FDA 真实调用链与 benchmark 条件；否则删除 20%-40% 定量收益，把该段降级为待验证方向。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T19:47:40+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 125,
+    "total_entries": 127,
     "p0_count": 22,
-    "last_updated": "2026-05-13T18:28:00+08:00",
+    "last_updated": "2026-05-13T19:47:40+08:00",
     "updated_by": "task9-deep-tech-review",
     "pending_entries": 75,
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T18:28:00+08:00",
+  "last_updated": "2026-05-13T19:47:40+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": [
-    {
-      "section": "ch05 §5.9 ADPF",
-      "section_title": "ADPF PerformanceHintManager Session 与 Kotlin 协程线程迁移边界",
-      "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节参考资料",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "ADPF PerformanceHintManager Session 与 Kotlin 协程线程迁移边界 — 深入分析 PerformanceHintManager API 在 Android 16/15 中的行为差异：setThreads() 空数组校验、Session 不可复用、GPU hints 需要 ",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-05-12T22:24:44.120705+00:00",
-      "status": "pending"
-    },
-    {
-      "section": "ch03 §3.5 输入事件拦截与安全机制",
-      "section_title": "厂商游戏模式输入优先级提升机制",
-      "priority": 80,
-      "reason": "[DeepResearch 注入] 新增高价值调研材料，建议补充到章节参考资料",
-      "material_paths": [
-        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md"
-      ],
-      "review_issues": [
-        {
-          "type": "新增参考材料",
-          "location": "参考资料/延伸阅读",
-          "detail": "厂商游戏模式输入优先级提升机制 — 验证标准 AOSP GameMode 框架（GameManagerService + GameServiceController）不包含输入优先级提升机制。GameMode 核心能力限于帧率策略、Ga",
-          "suggestion": "判断是否适合补充为章节参考资料、延伸阅读或正文中的背景材料"
-        }
-      ],
-      "added_by": "task-deepresearch-injector",
-      "added_at": "2026-05-12T22:24:44.120705+00:00",
-      "status": "pending"
-    }
-  ]
+  "pending": 2
 }
