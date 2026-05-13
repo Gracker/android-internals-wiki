@@ -14,22 +14,23 @@ sources:
     path: "developer.android.com/topic/performance/rendering/optimizing-view"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-14
 task6_result: pass-light-edit
 task9_result: needs-rework
 last_task2b_at: "2026-05-13T23:35:47+08:00"
-task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-13"
-last_task9_at: "2026-05-13T01:43:00+08:00"
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: "2026-05-14"
+last_task9_at: "2026-05-14T02:37:00+08:00"
 task6_reviewed_date: "2026-05-14"
 task6_review_notes: "2026-05-14 task6 review: 修正 sources frontmatter 缩进，替换两处填充表达；四层质检通过，无新增 L3/L4 回炉项，送 Task9 复审。"
 last_task6_review_log: "logs/review/2026-05-14-02-review.md"
 last_task6_at: "2026-05-14T02:13:00+08:00"
+task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 0 / P1 2 / P2 2；invalidate 重绘范围、Perfetto 观测命令、Canvas save/restore 与 setLayerType 边界需回炉。"
 ---
 
 # 自定义 View 性能优化
