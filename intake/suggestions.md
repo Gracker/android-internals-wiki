@@ -650,3 +650,22 @@
 - **位置**：L150-L158 4GHz 限频收益、L365 升频延迟 Trace、L511-L513 内存频率观察
 - **问题**：章节保留了多处 `[待验证]` / `[待补充]`：4GHz 限频收益缺设备和 workload，升频延迟缺 Perfetto 片段，LPDDR/DDR 调频缺可观测方法。
 - **建议**：补设备型号、内核版本、频率上限、workload、功耗采样方式和 Perfetto trace；内存频率若无通用 Perfetto 数据源，应明确依赖 vendor/devfreq/debugfs 节点，不要写成通用能力。
+
+## [Task9 Deep Review] 21.5 Splash Screen 与感知启动速度 — 2026-05-14
+- **类型**：版本差异 / 依赖版本
+- **位置**：SplashScreen API 适配 / 添加依赖（L139-L144）
+- **问题**：正文示例仍写 `androidx.core:core-splashscreen:1.2.0-alpha02`，并建议生产使用 `1.0.1`。Google Maven metadata 显示 `core-splashscreen` 最新稳定版已为 `1.2.0`（2025-11-05 release），2026-05 的稿件不应默认推荐 alpha 或旧稳定版。
+- **建议**：改成“当前稳定版以 Google Maven metadata / AndroidX release notes 为准；截至 2026-05 可使用 1.2.0，历史项目如锁 1.0.1 需说明原因”。
+
+## [Task9 Deep Review] 21.7 多进程启动优化 — 2026-05-14
+- **类型**：源码准确性 / 引用路径
+- **位置**：跨进程初始化依赖管理 / `MODE_MULTI_PROCESS` 段落（L134）
+- **问题**：`MODE_MULTI_PROCESS` 废弃结论成立，但主证据写成 Application 文档不够精确；官方主路径应是 `Context#MODE_MULTI_PROCESS`，另用 `SharedPreferences` API reference 的“does not support use across multiple processes”作补充。
+- **建议**：把 `[已验证]` 来源改成 `developer.android.com/reference/android/content/Context#MODE_MULTI_PROCESS` + `developer.android.com/reference/android/content/SharedPreferences`。
+
+## [Task9 Deep Review] 21.8 启动监控与度量 — 2026-05-14
+- **类型**：版本差异 / API 细节补全
+- **位置**：Android 15+ 的平台启动信息 / `ApplicationStartInfo` 段落（L216-L218）
+- **问题**：正文高层描述正确，但仍停留在“需确认”；缺少 API 35、获取入口和 timestamp 常量，Task2B 修复时容易只删标注不补证据。
+- **建议**：补 `ActivityManager.getHistoricalProcessStartReasons()` / `addApplicationStartInfoCompletionListener()`，以及 `START_TIMESTAMP_FORK`、`BIND_APPLICATION`、`APPLICATION_ONCREATE`、`FIRST_FRAME`、`FULLY_DRAWN` 等关键时间戳；说明时间戳是 monotonic nanoseconds。
+

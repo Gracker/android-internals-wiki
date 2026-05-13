@@ -4,7 +4,7 @@
   "ready-for-review": 69,
   "finalized": 168,
   "task9_result": "needs-rework",
-  "task9_reviewed_date": "2026-05-13",
+  "task9_reviewed_date": "2026-05-14",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
     "1.6",
@@ -512,8 +512,8 @@
   "total_review_sections": 69,
   "next_review_candidates": [],
   "ready_for_review": 66,
-  "last_updated": "2026-05-13T22:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T00:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-13T22:12:00+08:00",
     "log": "logs/review/2026-05-13-22-review.md",
@@ -525,7 +525,7 @@
     "l3_l4_issues": 1,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-13T20:35:00+08:00",
+  "task9_last_review": "2026-05-14T00:20:00+08:00",
   "ready_to_publish": 165,
   "rework_history": [
     {
@@ -783,7 +783,13 @@
       "last_task6_at": "2026-05-13T01:20:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-01-review.md"
+      "last_task6_review_log": "logs/review/2026-05-13-01-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-05-14",
+      "task9_reviewed_by": "openclaw-task9",
+      "file": "src/part5-app/ch21-startup/05-splash-screen.md",
+      "title": "Splash Screen 与感知启动速度"
     },
     "21.6": {
       "status": "finalized",
@@ -846,7 +852,13 @@
       "last_task6_at": "2026-05-13T03:19:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-03-review.md"
+      "last_task6_review_log": "logs/review/2026-05-13-03-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-14",
+      "task9_reviewed_by": "openclaw-task9",
+      "file": "src/part5-app/ch21-startup/07-multiprocess-startup.md",
+      "title": "多进程启动优化"
     },
     "2.11": {
       "status": "finalized",
@@ -872,7 +884,13 @@
       "last_task6_at": "2026-05-13T04:17:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-04-review.md"
+      "last_task6_review_log": "logs/review/2026-05-13-04-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-14",
+      "task9_reviewed_by": "openclaw-task9",
+      "file": "src/part5-app/ch21-startup/08-startup-monitoring.md",
+      "title": "启动监控与度量"
     },
     "21.9": {
       "status": "ready-for-review",
@@ -880,7 +898,13 @@
       "last_task6_at": "2026-05-13T05:09:00+08:00",
       "task6_result": "needs-rework",
       "queue_priority": 90,
-      "last_task6_review_log": "logs/review/2026-05-13-05-review.md"
+      "last_task6_review_log": "logs/review/2026-05-13-05-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "task9_reviewed_date": "2026-05-14",
+      "task9_reviewed_by": "openclaw-task9",
+      "file": "src/part5-app/ch21-startup/09-startup-case-studies.md",
+      "title": "启动优化案例集"
     },
     "14.9": {
       "status": "ready-for-review",
@@ -1183,18 +1207,17 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
   "last_task2a_processed_date": "2026-05-13T19:04:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-13T18:28:00+08:00",
-    "log": "logs/deep-review/2026-05-13-18-deep-review.md",
+    "at": "2026-05-14T00:20:00+08:00",
+    "log": "logs/deep-review/2026-05-14-00-deep-review.md",
     "sections": [
-      "1.3",
-      "1.4",
-      "2.3"
+      "21.5",
+      "21.7",
+      "21.8",
+      "21.9"
     ],
-    "p0": 3,
-    "p1": 0,
-    "p2": 2,
-    "auto_finalized": [
-      "1.3"
-    ]
+    "p0": 0,
+    "p1": 2,
+    "p2": 4,
+    "auto_finalized": []
   }
 }

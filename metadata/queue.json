@@ -2254,6 +2254,12 @@
           "location": "SplashScreen API 适配 / 在 Activity 中安装 SplashScreen",
           "detail": "代码示例与文字说明对 installSplashScreen() 和 super.onCreate() 的顺序描述不一致，属于 API 行为边界，Task 6 已移除错误的确定性表述并保留存疑标注。",
           "suggestion": "Task 9 按当前 AndroidX core-splashscreen / 官方文档复核调用顺序；Task 2B 再统一示例和正文说明。"
+        },
+        {
+          "type": "Task9复核结论",
+          "location": "SplashScreen API 适配 / installSplashScreen 调用顺序",
+          "detail": "AndroidX SplashScreen.kt 明确要求在 starting Activity 的 onCreate 中、super.onCreate() 之前调用 installSplashScreen()；正文代码示例方向正确，当前 [存疑] 标注可由 Task2B 移除并改成已验证。",
+          "suggestion": "引用 AndroidX core-splashscreen SplashScreen.kt Usage 段落：call installSplashScreen just before super.onCreate()。"
         }
       ],
       "added_by": "task6-review",
@@ -2435,6 +2441,12 @@
           "location": "跨进程初始化依赖管理 / `MODE_MULTI_PROCESS` 段落",
           "detail": "当前段落写成“官方 Application 文档里……”，但该常量/警告的官方引用路径可能应为 Context / SharedPreferences 相关文档；Task 6 不裁决真伪，需 Task 9 核对来源与措辞。",
           "suggestion": "Task 9 先核对官方 reference；Task 2B 再统一来源路径和段落标注。"
+        },
+        {
+          "type": "Task9复核结论",
+          "location": "跨进程初始化依赖管理 / MODE_MULTI_PROCESS 段落",
+          "detail": "结论本身成立：Context.MODE_MULTI_PROCESS 已在 API 23 废弃，官方说明其在部分 Android 版本不可靠且无法协调跨进程并发修改；SharedPreferences API 文档也写明不支持跨进程使用。当前引用 Application 文档虽能通过继承常量看到同一说明，但主引用路径不够精确。",
+          "suggestion": "将来源改为 Context#MODE_MULTI_PROCESS + SharedPreferences API reference；Application 可不作为主证据。"
         }
       ],
       "added_by": "task6-review",
@@ -2635,6 +2647,12 @@
           "location": "Android 15+ 的平台启动信息 / ApplicationStartInfo 段落",
           "detail": "正文提到 Android 15+ ApplicationStartInfo 可提供启动类型、启动原因、时间戳等信息，但字段名称、Android 15/16 可用性和版本边界仍需源码/API 复核。Task 6 不裁决 API 真伪，已在正文标注需确认。",
           "suggestion": "Task 9 对照 Android Developers reference 与 AOSP API 定义核对字段、权限和版本差异；Task 2B 再把结论改成已验证口径或降级为兼容性提示。"
+        },
+        {
+          "type": "Task9复核结论",
+          "location": "Android 15+ 的平台启动信息 / ApplicationStartInfo 段落",
+          "detail": "API 口径成立：ApplicationStartInfo added in API level 35（Android 15），可通过 ActivityManager.getHistoricalProcessStartReasons() 或 addApplicationStartInfoCompletionListener() 取得；核心字段包括 getReason(), getStartType(), getStartupState(), getStartupTimestamps()，时间戳为 monotonic nanoseconds，并包含 START_TIMESTAMP_FORK/BIND_APPLICATION/APPLICATION_ONCREATE/FIRST_FRAME/FULLY_DRAWN 等。",
+          "suggestion": "Task2B 移除 [需确认]，补 API 35、获取入口和关键 timestamp 常量；保留 Android 10-14 需要自建埋点的版本边界。"
         }
       ],
       "added_by": "task6-review",
@@ -2859,6 +2877,12 @@
           "location": "全文案例段落 / 开头问题标注",
           "detail": "本节定位为启动优化案例集，但现有 Application 初始化、启动框架演进、Baseline Profile 三段更像通用复盘框架，缺少真实设备、Android 版本、Perfetto 截图或匿名化 TTID/TTFD 数据，案例证据链不足。",
           "suggestion": "Task 2B 补至少 1 个完整启动优化案例：设备与版本、启动口径、关键 trace 观察、改动列表、TTID/TTFD 或线上 A/B 结果、风险与回滚；补不齐时，将“案例”表述降级为“复盘模板”。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "全文案例段落 / L80 素材标注",
+          "detail": "Task9 复核后确认：本节标题和锚点要求“案例集”，但正文三段仍是通用复盘框架；没有设备/系统版本、Trace 片段、TTID/TTFD 前后对比、线上 A/B 或改动回滚数据。该缺失会让读者误以为模板等同于真实案例。",
+          "suggestion": "至少补 1 个匿名化完整案例；若无法补齐，将标题和锚点降级为“启动优化复盘模板”，并删除案例集的确定性口径。"
         }
       ],
       "added_by": "task6-review",
@@ -3890,6 +3914,37 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T22:26:00+08:00"
+    },
+    {
+      "id": "task9-21.5-splashscreen-compat-behavior-20260514",
+      "section": "21.5",
+      "section_title": "Splash Screen 与感知启动速度",
+      "priority": 85,
+      "reason": "[Deep Tech Review] AndroidX core-splashscreen 兼容模式行为写错：低版本不创建独立 Activity，且 setOnExitAnimationListener 在兼容实现中可用；正文表格把退出动画写成不支持。",
+      "title": "core-splashscreen 兼容模式行为需修正",
+      "issue_type": "api-semantics",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch21-startup/05-splash-screen.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "版本行为差异表 L199-L202；兼容库限制 L395-L398",
+          "detail": "正文把 Android 5-11 写成“App 侧创建 Activity 模拟”，并写“退出动画不支持/退出动画和图标动画不可用”。AndroidX SplashScreen.kt 的说明是 API 31 以下复制平台行为，例外是 launch screen 上的 Animated Vector Drawable；Impl#setOnExitAnimationListener 在兼容实现中创建 SplashScreenViewProvider 并回调退出动画，不会创建新的 Activity。",
+          "suggestion": "改成：API<31 由 AndroidX 在当前启动 Activity 内用主题、OnPreDrawListener 与 SplashScreenViewProvider 模拟；AnimatedVectorDrawable 启动图标不支持动画，setOnExitAnimationListener 仍可用于退出动画（需实机验证视觉一致性）。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T00:20:00+08:00"
     }
   ],
   "metadata": {
@@ -3901,7 +3956,7 @@
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T22:26:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 82
+  "last_updated": "2026-05-14T00:20:00+08:00",
+  "last_updated_by": "openclaw-task9",
+  "pending": 80
 }
