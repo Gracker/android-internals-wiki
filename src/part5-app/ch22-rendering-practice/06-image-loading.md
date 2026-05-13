@@ -44,10 +44,17 @@ sources:
     path: "https://coil-kt.github.io/coil/image_loaders/"
 tags: [image-loading, glide, coil, bitmap-decode, image-cache]
 related_chapters: ["22.1", "23.2", "7.10"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-13T09:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-13-09-review.md"
+task6_review_notes: "2026-05-13 Task6：L1/L2 轻修（术语、指标中文化、兜底表述）；四层质检通过，无新增回炉项，转入 Task9。"
 ---
 
 # 图片加载与显示优化
@@ -83,7 +90,7 @@ Part 5 的图片优化只讲应用侧动作。渲染管线和帧调度机制详�
 
 ## Glide / Coil 图片加载框架性能对比
 
-Glide 和 Coil 的差异不适合用单个 benchmark 排名。图片加载框架的性能取决于 UI 栈、请求生命周期、缓存命中率、解码尺寸和列表复用方式。工程选型时先看业务形态，再看 API 偏好。[已验证: Glide docs, bumptech.github.io/glide/][已验证: Coil docs, coil-kt.github.io]
+Glide 和 Coil 的差异不适合用单次基准测试排名。图片加载框架的性能取决于 UI 栈、请求生命周期、缓存命中率、解码尺寸和列表复用方式。工程选型时先看业务形态，再看 API 偏好。[已验证: Glide docs, bumptech.github.io/glide/][已验证: Coil docs, coil-kt.github.io]
 
 | 维度 | Glide | Coil | 选型判断 |
 | --- | --- | --- | --- |
@@ -158,7 +165,7 @@ fun decodeWithImageDecoder(source: ImageDecoder.Source, reqWidth: Int, reqHeight
 
 - 列表缩略图只解到 item 尺寸，详情页再请求更高规格图，不让缩略图承载详情图质量。
 - 图片服务端返回宽高和格式，客户端在发请求前就能决定 `override()` / `size()`，不要等下载完成后再裁。
-- `RGB_565` 只适合无透明度、无高质量渐变要求的场景；头像、插画、暗色渐变图降低位深后容易出 banding。
+- `RGB_565` 只适合无透明度、无高质量渐变要求的场景；头像、插画、暗色渐变图降低位深后容易出现色带（banding）。
 - `inBitmap` 复用要交给框架或统一池管理。Android 官方文档说明 API 19 前复用限制更严，现代业务仍要防止把仍在展示的 Bitmap 放回复用池。[已验证: 官方文档, Managing Bitmap Memory]
 
 ## 大图加载与区域解码（BitmapRegionDecoder）
@@ -215,7 +222,7 @@ Glide 的磁盘缓存区分 resource 和 data，能缓存变换后结果，也�
 - 低端机：优先降请求尺寸和预取数量，再调小缓存。只调缓存大小不能解决解码峰值。
 - 多进程：每个进程都有独立缓存。图片展示放在主进程时，后台进程不要初始化完整图片加载栈。
 
-[自动发现] 线上指标不要只记录“加载成功率”。图片加载至少要采集 decode time、memory cache hit、disk cache hit、下载字节数、Bitmap 分配字节数、OOM 前最近 N 次图片请求。这样才能区分网络慢、解码慢、缓存失效和图片尺寸异常。[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
+[自动发现] 线上指标不要只记录“加载成功率”。图片加载至少要采集解码耗时、内存缓存命中、磁盘缓存命中、下载字节数、Bitmap 分配字节数、OOM 前最近 N 次图片请求。这样才能区分网络慢、解码慢、缓存失效和图片尺寸异常。[结构参考: Clippings/Android 性能优化 - Native 内存优化（下）：Bitmap 的内存占用优化.md]
 
 ## AVIF / WebP 格式选型与兼容性
 
@@ -241,6 +248,6 @@ Android 官方图片压缩文档把 AVIF、PNG、JPG、WebP 放在常见格式�
 - 内存峰值：同一屏最多会同时存在多少张 Bitmap，ARGB_8888 下峰值是多少 MB。
 - 生命周期：页面退出、Fragment `onDestroyView()`、Compose item 离屏后请求是否释放。
 - 低内存回调：`ComponentCallbacks2.onTrimMemory()` 是否能触发缓存收缩。
-- 格式兼容：AVIF / WebP 是否按系统版本和服务端能力下发 fallback。
+- 格式兼容：AVIF / WebP 是否按系统版本和服务端能力下发兜底格式。
 
 到这里，图片优化的主线就清楚了：先把图片解到正确尺寸，再让框架管理生命周期和缓存，超大图按区域解码，格式选择服从兼容性和真实耗时。工程里最常见的收益，来自“少解码”和“少重复解码”。

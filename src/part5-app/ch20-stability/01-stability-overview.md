@@ -12,12 +12,12 @@ drafted_date: "2026-05-11"
 polish_count: 0
 task2b_result: fixed
 reviewed_date: "2026-05-13"
-reviewed_by: "openclaw-task6"
-task6_result: "pass-light-edit"
-task6_state: revisiting
+reviewed_by: openclaw-task6
+task6_result: pass-light-edit
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
-pipeline_stage: task6_pending
+task2b_state: pending
+pipeline_stage: task2b_pending
 sources:
   - type: official
     path: "https://support.google.com/googleplay/android-developer/answer/9844476"
@@ -29,14 +29,15 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md"
 tags: [stability, crash, anr, oom, app-quality]
 related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
-last_task6_at: "2026-05-13T02:12:00+08:00"
-last_task6_review_log: "logs/review/2026-05-13-02-review.md"
-task6_review_notes: "2026-05-13 Task6：补齐 outline 块、补代码围栏语言、清理元叙述词；L1/L2 通过，无新增回炉项。"
+last_task6_at: "2026-05-13T09:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-13-09-review.md"
+task6_review_notes: "2026-05-13 Task6：revisiting 复审；L1/L2 小修后通过。已知 task9 技术回炉项继续交 Task9/Task2B，Task6 不做技术裁决。"
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T04:39:00+08:00"
 task9_review_notes: "2026-05-13 task9 deep-review: needs-rework。P0 1 / P1 2 / P2 0；ApplicationExitInfo、ANR 版本口径、Crashlytics ANR 支持需回炉。"
+task6_reviewed_date: "2026-05-13"
 ---
 
 # 应用稳定性全景
@@ -263,9 +264,9 @@ Google Play 的阈值是底线。团队内部的稳定性度量通常更细：
 
 - 该堆栈簇的 Crash Rate 是否下降到预期
 - 该版本的整体 Crash Rate 是否稳定或改善
-- 同类问题是否在其他堆栈簇中出现（根因相同、表现不同）
+- 相同根因是否在其他堆栈簇中出现（表现不同、根因相同）
 
-验证通过后，回到预防阶段——把这个 case 的根因加入编码规范或静态分析规则，防止同类问题再次出现。
+验证通过后，回到预防阶段——把这个案例的根因加入编码规范或静态分析规则，防止同类问题再次出现。
 
 ## 扩展：稳定性治理的组织保障
 
