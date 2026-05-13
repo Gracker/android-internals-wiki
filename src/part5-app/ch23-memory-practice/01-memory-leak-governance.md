@@ -2,15 +2,15 @@
 title: "内存泄漏检测与治理"
 chapter: "23.1"
 section: "23.1"
-status: "ready-for-review"
+status: finalized
 drafted_date: "2026-05-13"
 reviewed_date: "2026-05-13"
 reviewed_by: "openclaw-task6"
 task6_result: "pass-light-edit"
 task6_state: "reviewed"
-task9_state: "pending"
-task2b_state: "pending"
-pipeline_stage: "task9_pending"
+task9_state: reviewed
+task2b_state: fixed
+pipeline_stage: ready-to-publish
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + LeakCanary fundamentals"
@@ -43,6 +43,13 @@ tags: [memory-leak, leakcanary, activity-leak, reference-chain, java-heap]
 related_chapters: ["23.4", "10.2", "4.3", "19.5"]
 last_task6_at: "2026-05-13T22:12:00+08:00"
 task6_review_notes: "2026-05-13 task6 review: 替换正文中的编辑标签式“用途句”，L1/L2 通过，无新增 L3/L4 回炉项。"
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-13'
+last_task9_at: '2026-05-13T22:26:00+08:00'
+last_task9_review_log: logs/deep-review/2026-05-13-22-deep-review.md
+task9_result: pass-tech-review
+task2b_result: fixed
+task9_review_notes: "2026-05-13 Task9 22:26：pass-tech-review。无 P0/P1；Task6 已通过且 queue 无 pending，自动晋升 finalized。本轮 P2 已写入 suggestions.md。"
 ---
 
 # 内存泄漏检测与治理

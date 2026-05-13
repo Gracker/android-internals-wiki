@@ -1,8 +1,8 @@
 {
   "total": 269,
   "draft": 34,
-  "ready-for-review": 69,
-  "finalized": 166,
+  "ready-for-review": 67,
+  "finalized": 168,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-13",
   "task9_reviewed_by": "openclaw-task9",
@@ -79,7 +79,8 @@
     "2.19",
     "2.21",
     "3.1",
-    "23.1"
+    "23.1",
+    "5.4"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -154,7 +155,8 @@
     "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
     "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
     "src/part1-fundamentals/ch03-input/01-input-dispatch.md",
-    "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md"
+    "src/part5-app/ch23-memory-practice/01-memory-leak-governance.md",
+    "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md"
   ],
   "review_summary": {
     "p0_issues": 9,

@@ -633,3 +633,20 @@
 - **问题**：Task9 已将本节列为 needs-rework：`expectedPresentTime` 版本与源码锚点、`VsyncModulator` 原子化声明、`Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` FlaggedApi 边界仍需修正。Task6 本轮只补 `[存疑]` 标注和 L1/L2 小修，不裁决技术真伪。
 - **建议**：Task2B 优先处理 queue.json 中 `task9-20260513-2.19-hwc-vsyncmodulator-version-errors`，修复后再进入 Task6 / Task9 复核。
 - **review 日志**：logs/review/2026-05-13-22-review.md
+## [Task9 Deep Review] 20.5 OOM 治理 — 2026-05-13
+- **类型**：交叉引用/资源分类
+- **位置**：L246-L254 FD 消耗者表
+- **问题**：表格把“Binder 连接”放在 Socket 类 FD 示例中；Binder IPC 不是 socket 连接模型，普通 Binder 调用不会为每个连接消耗 socket FD，容易把 FD 泄漏排查方向带偏。
+- **建议**：改成“Binder 驱动设备 FD / Binder 对象句柄与 socket FD 分开”；Socket 类只保留网络连接、Unix domain socket 等真实 socket。
+
+## [Task9 Deep Review] 23.1 内存泄漏检测与治理 — 2026-05-13
+- **类型**：交叉引用一致性
+- **位置**：frontmatter related_chapters 与 L77 LeakCanary 章节引用
+- **问题**：项目中 LeakCanary 章节的 section 是 `19.05`，正文和 frontmatter 写成 `19.5`；自动目录或章节索引可能匹配不到。
+- **建议**：统一改为 `19.05`，并在相关章节清单中保持和 ch19 文件 frontmatter 一致。
+
+## [Task9 Deep Review] 5.4 DVFS 与功耗管理 — 2026-05-13
+- **类型**：数据缺失/待验证项
+- **位置**：L150-L158 4GHz 限频收益、L365 升频延迟 Trace、L511-L513 内存频率观察
+- **问题**：章节保留了多处 `[待验证]` / `[待补充]`：4GHz 限频收益缺设备和 workload，升频延迟缺 Perfetto 片段，LPDDR/DDR 调频缺可观测方法。
+- **建议**：补设备型号、内核版本、频率上限、workload、功耗采样方式和 Perfetto trace；内存频率若无通用 Perfetto 数据源，应明确依赖 vendor/devfreq/debugfs 节点，不要写成通用能力。

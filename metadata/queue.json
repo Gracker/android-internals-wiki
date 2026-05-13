@@ -3829,6 +3829,61 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T21:57:00+08:00"
+    },
+    {
+      "id": "task9-20260513-20.5-oom-debug-api-diagnostics",
+      "section": "20.5",
+      "section_title": "OOM 治理",
+      "priority": 95,
+      "title": "OOM 治理中的 Debug API、ART OOM 诊断与虚拟内存治理口径错误",
+      "description": "[Deep Tech Review] 章节仍存在可编译 API 错误、ART OOM 错误信息解读过度归因、32 位虚拟地址空间治理建议错位，以及线程创建来源监控入口不可靠。",
+      "reason": "[Deep Tech Review] `Debug.getMemoryInfo()` 示例无法编译，ART free bytes 诊断不能直接等同碎片化，`mallopt(M_PURGE)` 不能解决 32 位虚拟地址空间耗尽，线程创建来源监控入口需要改为 ThreadFactory/Hook。",
+      "issue_type": "source-code-accuracy-principle-chain",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/05-oom-governance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-13-22-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "API 签名错误",
+          "location": "L316-L320 / L341-L349 Debug.getMemoryInfo 示例",
+          "detail": "AOSP / Android SDK 中 `Debug.getMemoryInfo()` 公开签名是 `static void getMemoryInfo(Debug.MemoryInfo memoryInfo)`，没有无参返回值版本；`Debug.MemoryInfo` 也没有公开 `totalPrivateDirty` 字段，应通过 `getTotalPrivateDirty()` 读取。当前 Kotlin 示例无法编译。",
+          "suggestion": "改为预分配 `Debug.MemoryInfo`：`val info = Debug.MemoryInfo(); Debug.getMemoryInfo(info); info.getTotalPrivateDirty()`；OOM handler 中要强调对象和日志缓冲区需提前准备，避免 OOM 路径再分配。"
+        },
+        {
+          "severity": "P1",
+          "type": "ART OOM 诊断口径错误",
+          "location": "L90-L95 / L127-L132 free bytes 与碎片化判断",
+          "detail": "`art/runtime/gc/heap.cc::Heap::ThrowOutOfMemoryError()` 在 `total_bytes_free >= byte_count` 时会先调用 `LogFragmentationAllocFailure()`；若不是最大连续块不足，则会输出 `<1% of heap free after GC`。因此“free bytes 大于请求但仍 OOM = 碎片化严重”不是充分条件，正文给出的示例本身更接近 GC 后剩余比例过低。",
+          "suggestion": "把诊断拆成两类：出现 largest contiguous chunk / fragmentation 信息才指向连续空间不足；出现 `<1% of heap free after GC` 时应归为整体堆接近 growth limit 或 min-free 策略触发。"
+        },
+        {
+          "severity": "P1",
+          "type": "虚拟内存治理建议错误",
+          "location": "L322-L328 32 位进程虚拟内存空间耗尽治理方向",
+          "detail": "`mallopt(M_PURGE, ...)` 只能促使 allocator 归还空闲页、降低 RSS / dirty pages，不能释放已保留的虚拟地址区间，也不能降低 so 映射、线程栈或 mmap 区域造成的 VmSize 压力。把它列为 32 位虚拟地址空间耗尽的治理方向会误导排查。",
+          "suggestion": "将 `mallopt(M_PURGE)` 移到 Native RSS/物理内存压力章节；本节应聚焦迁移 64 位、减少线程栈、降低 mmap/so 映射、拆分进程或控制大块地址空间保留。"
+        },
+        {
+          "severity": "P1",
+          "type": "监控入口错误",
+          "location": "L210-L224 线程治理与线程创建来源记录",
+          "detail": "`Thread.setDefaultUncaughtExceptionHandler` 只处理未捕获异常，不能记录线程创建来源；`ThreadGroup` 也不提供创建堆栈。当前建议无法定位线程泄漏的创建点。",
+          "suggestion": "改为统一 `ThreadFactory` / 协程 dispatcher 封装记录创建堆栈，必要时 hook `Thread.start()`、`pthread_create()` 或三方库线程工厂，并在阈值触发时同时上报当前线程堆栈与创建堆栈。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T22:26:00+08:00"
     }
   ],
   "metadata": {
@@ -3840,7 +3895,7 @@
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T20:35:00+08:00",
+  "last_updated": "2026-05-13T22:26:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 2
+  "pending": 82
 }
