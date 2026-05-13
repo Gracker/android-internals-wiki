@@ -10,13 +10,12 @@ last_verified: "2026-04-23"
 last_verified_against: "ch02-rendering 目录结构、AOSP android-16.0.0_r1 渲染流程说明、external review 资产"
 confidence: medium
 tags: [rendering, SurfaceFlinger, BufferQueue, BLAST, sync-fence, FrameTimeline, ARR]
-pipeline_stage: task6_pending
+pipeline_stage: task9_pending
 last_task2b_at: "2026-05-09T22:40:00+08:00"
-task6_state: revisiting
-reviewed_date: "2026-05-10"
+task6_state: reviewed
+reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
-task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed
