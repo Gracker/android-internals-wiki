@@ -144,3 +144,19 @@ Android 17 ART 分代 GC 与 Compose Composition 阶段分配/停顿之间的因
 
 ### 关联章节
 5.11、5.9、13.x、14.x、23.x
+
+## [2026-05-14] 4.3 ART 虚拟机内存管理 — Generational CMC 源码锚点
+
+### 盲区描述
+Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开关、年轻代参数、设备能力判断之间缺少可复核对应关系。当前章节出现 `use_generational_cmc`、`generational_cmc_supported`、年轻代占比 25%-40% 等细节，但缺 tag/commit 证据。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 对齐 Android 16 QPR2 / Android 17 ART tag 或 commit，确认 Generational CMC 开关名称与设备能力判断路径。
+- 复核 `gUseUserfaultfd`、`xgc_option.generational_gc`、`ShouldUseGenerationalGC()` 与 DeviceConfig 属性之间的关系。
+- 查找年轻代大小/晋升策略的源码参数或官方说明，补不到则删除具体比例。
+
+### 关联章节
+4.3, 4.5

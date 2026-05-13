@@ -54,20 +54,21 @@ polish_date: '2026-04-08'
 polish_by: task2b-polish
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 last_task2b_at: '2026-05-09T22:10:00+08:00'
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-04-29'
-last_task9_at: '2026-04-29T05:30:17+08:00'
-task9_review_notes: '2026-04-29 task9 deep-review: needs-rework。P0 3 / P1 2 / P2 1。ASan/heapprofd/ApplicationStartInfo API 错误，API 34 onTrimMemory 差异未覆盖'
+task9_reviewed_date: '2026-05-14'
+last_task9_at: '2026-05-14T05:50:18+08:00'
+task9_review_notes: 2026-05-14 Task9 05: needs-rework。P0 3：GC 可达性、malloc debug、API34 onTrimMemory；P1 5：Message 池、Bitmap 释放、ASan 等。 已写入 logs/deep-review/2026-05-14-05-deep-review.md。
 task6_result: needs-rework
 last_task6_at: '2026-05-12T16:15:00+08:00'
 last_task6_review_log: logs/review/2026-05-12-16-review.md
 task6_review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
 review_notes: 2026-05-12 Task6 16:15：L1/L2 小修 29 处（禁用词、第一人称导航、中英文间距、待验证标注）；L3 数据/Perfetto 证据缺口已写入 queue.json（priority 90）。
+last_task9_review_log: logs/deep-review/2026-05-14-05-deep-review.md
 ---
 
 

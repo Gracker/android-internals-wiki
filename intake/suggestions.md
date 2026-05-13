@@ -732,3 +732,44 @@
 - **问题**：`Debug.getRss()` 官方文档标注 Added in API level 35，而章节适用范围是 Android 10-16；当前表格未在采集入口处标出 API 35+ 边界。
 - **建议**：在表格中标注 `Debug.getRss()` 仅适用于 API 35+；Android 10-14 的线上兼容路径优先使用 `/proc/self/status` 的 `VmRSS` 或既有 PSS/Debug.MemoryInfo 口径。
 
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-05-14
+- **类型**：源码准确性
+- **位置**：L174 LargeObjectSpace 实现选择
+- **问题**：FreeList / Map 选择写成“arm64 vs 非 arm64”过窄；AOSP 默认由 `USE_ART_LOW_4G_ALLOCATOR` 决定。
+- **建议**：按宏/架构条件说明，避免把所有 arm64/非 arm64 设备简单二分。
+
+## [Task9 Deep Review] 4.3 ART 虚拟机内存管理 — 2026-05-14
+- **类型**：数据缺失
+- **位置**：L251-L253、L379 CC/TLAB 性能数字
+- **问题**：32%、85%、70%、18 倍等数字缺设备、版本、负载和原始来源。
+- **建议**：补官方原文或一手 benchmark；补不到则改为定性描述并保留版本边界。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-05-14
+- **类型**：数据缺失
+- **位置**：L197、L605、L830 等量化断言
+- **问题**：3ms GC 准则、掉帧率 3-5 倍、ASan 2-5 倍、16KB Bitmap 页浪费均缺设备/负载/采样方法。
+- **建议**：补一手 benchmark 或降级为定性描述。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-05-14
+- **类型**：源码准确性
+- **位置**：L340-L346 Glide/Coil/Fresco 对比
+- **问题**：Coil “Bitmap Pool=基于 Coroutine”、Glide 默认池大小等表述需官方文档或源码复核。
+- **建议**：保留可核实能力，删除未核实实现细节。
+
+## [Task9 Deep Review] 4.5 App 内存优化 — 2026-05-14
+- **类型**：知识盲区
+- **位置**：L869-L876 ApplicationStartInfo
+- **问题**：Android 17 `ApplicationStartInfo` 峰值内存相关能力已标 `[待验证]`，发布前不宜留在正文主路径。
+- **建议**：移入 research gap 或补官方 API 37 文档。
+
+## [Task9 Deep Review] 20.6 稳定性度量与指标体系 — 2026-05-14
+- **类型**：源码/系统行为
+- **位置**：L231-L233 Native Crash 采集
+- **问题**：“信号处理器上报 tombstone”容易混淆系统 debuggerd tombstone 与 App 侧 minidump/handler。
+- **建议**：改成“系统 tombstone + ApplicationExitInfo / 自建 minidump”两类来源。
+
+## [Task9 Deep Review] 20.6 稳定性度量与指标体系 — 2026-05-14
+- **类型**：交叉引用
+- **位置**：L145 详见 26.1
+- **问题**：26.1 当前仍是 draft/空壳，不适合作为可读延伸章节。
+- **建议**：改指向已成稿的 15.3 或删除该引用。

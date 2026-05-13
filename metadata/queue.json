@@ -4241,18 +4241,177 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T04:36:12+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-4-3-tech-review",
+      "section": "4.3",
+      "section_title": "ART 虚拟机内存管理",
+      "priority": 85,
+      "title": "ART 虚拟机内存管理 Task9 技术审计回炉",
+      "description": "[Deep Tech Review] P1 1：Generational CMC 配置/比例缺源码锚点；P2 2：LOS 架构边界、CC/TLAB 性能数据来源。",
+      "issue_type": "deep-tech-review",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/03-art-memory.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-05-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/源码锚点不足",
+          "severity": "P1",
+          "location": "L295-L298 Generational CMC 配置",
+          "detail": "`use_generational_cmc`、`generational_cmc_supported`、年轻代占堆 25%-40% 等实现细节缺少可复核 AOSP tag/commit；已核实 AOSP 仅能确认 `gUseUserfaultfd`、`xgc_option.generational_gc`、`ShouldUseGenerationalGC()` 等路径，当前变量名/比例仍不足以作为已验证事实。",
+          "suggestion": "补 Android 16 QPR2 / Android 17 对应 tag 或 commit；补不到则整体标 `[待验证]` 或删去具体变量名与比例。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T05:50:18+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-4-5-tech-review",
+      "section": "4.5",
+      "section_title": "App 内存优化",
+      "priority": 95,
+      "title": "App 内存优化 Task9 技术审计回炉",
+      "description": "[Deep Tech Review] P0 3：GC 可达性、malloc debug、API34 onTrimMemory；P1 5：Message 池、Bitmap 释放、ASan 等。",
+      "issue_type": "deep-tech-review",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-05-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "原理错误",
+          "severity": "P0",
+          "location": "L888 System.gc() 误区",
+          "detail": "正文写“GC 会回收一些可达但暂时未引用的对象”。可达对象不会被 GC 回收；只有不可达对象才可回收。",
+          "suggestion": "改为“清空缓存后原先被缓存强引用的对象变为不可达，GC 才可能回收”。"
+        },
+        {
+          "type": "工具/API 错误",
+          "severity": "P0",
+          "location": "L548-L557 malloc debug 示例",
+          "detail": "`LIBC_DEBUG_MALLOC_OPTIONS=backtrace_tracker` 未在已核实 bionic malloc debug 选项中出现，wrap 命令形式也不足以作为可执行示例。",
+          "suggestion": "按官方 `backtrace` / `backtrace_enable_on_signal` 等选项重写，并补 force-stop / 重启流程。"
+        },
+        {
+          "type": "版本差异错误",
+          "severity": "P0",
+          "location": "L673-L686、L918 onTrimMemory API 34+",
+          "detail": "官方 `ComponentCallbacks2` 文档标注 `TRIM_MEMORY_BACKGROUND/MODERATE/COMPLETE/RUNNING_*` 自 API 34 起不再通知 App，正文仍把 `BACKGROUND` 当作 API 34+ 有效回调。",
+          "suggestion": "API 34+ 收敛到仍投递的信号（如 `UI_HIDDEN`）和系统级 PSI/lmkd/trace 观察。"
+        },
+        {
+          "type": "源码行为错误",
+          "severity": "P1",
+          "location": "L207 Message.obtain()",
+          "detail": "`Handler.sendMessage(Message)` 使用调用方传入的 Message，并不会内部调用 `Message.obtain()`；`post` / `obtainMessage` / `sendEmptyMessage` 才涉及池化获取。",
+          "suggestion": "拆开 Message 池 API 与 Handler 发送路径。"
+        },
+        {
+          "type": "源码行为错误",
+          "severity": "P1",
+          "location": "L253、L898 Bitmap Native 内存释放",
+          "detail": "Android 8.0+ Bitmap 像素释放写成 finalize 机制过时；AOSP 当前应以 `NativeAllocationRegistry` / Cleaner 路径描述。",
+          "suggestion": "用 `frameworks/base/graphics/java/android/graphics/Bitmap.java` 当前实现重写释放链路。"
+        },
+        {
+          "type": "工具链缺失",
+          "severity": "P1",
+          "location": "L593-L604 ASan 配置",
+          "detail": "wrap.sh 只 export `ASAN_OPTIONS`，缺 ASan runtime、`LD_PRELOAD`、packaging 等关键运行条件。",
+          "suggestion": "补官方 API 27+ wrap.sh 配置步骤，明确 debug-only 边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T05:50:18+08:00"
+    },
+    {
+      "id": "task9-2026-05-14-20-6-tech-review",
+      "section": "20.6",
+      "section_title": "稳定性度量与指标体系",
+      "priority": 95,
+      "title": "稳定性度量与指标体系 Task9 技术审计回炉",
+      "description": "[Deep Tech Review] P0 1：Vitals 用户感知 ANR 定义不准；P1 4：门禁结论、阈值来源、示例计算、ANR 版本差异。",
+      "issue_type": "deep-tech-review",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/06-stability-metrics.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-05-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "官方口径错误",
+          "severity": "P0",
+          "location": "L98-L102 User-Perceived ANR Rate",
+          "detail": "正文把用户感知 ANR 写成“前台经历过至少一次 ANR”。官方 Android Vitals 当前只把 `Input dispatching timed out` 计为 user-perceived ANR，不等同所有前台 ANR。",
+          "suggestion": "重写公式，区分 ANR rate、user-perceived ANR rate 与 multiple ANR rate。"
+        },
+        {
+          "type": "指标口径断裂",
+          "severity": "P1",
+          "location": "L155-L175 Crash-Free Users / Sessions",
+          "detail": "Firebase 文档定义了 crash-free users/sessions，但不足以支持“Crash-Free Users 比 PV/Session 更适合发版门禁”的单向结论。",
+          "suggestion": "改成双指标门禁：Users 控制影响面，Sessions 控制频率。"
+        },
+        {
+          "type": "数据缺来源",
+          "severity": "P1",
+          "location": "L56、L164-L174、L276-L286 行业阈值表",
+          "detail": "99.5%、99.8%、微信/头部电商等数值缺公开来源或内部口径说明。",
+          "suggestion": "补来源；补不到就改为匿名经验区间并标注适用边界。"
+        },
+        {
+          "type": "指标计算错误",
+          "severity": "P1",
+          "location": "L159-L162 示例计算",
+          "detail": "PV / Session 崩溃率不能只由 DAU 和崩溃次数推出，示例缺总 Session 分母，0.5% / 0.75% 不可复算。",
+          "suggestion": "补总 Session 数，或只比较 Crash-Free Users。"
+        },
+        {
+          "type": "版本差异缺失",
+          "severity": "P1",
+          "location": "L121-L127 ANR 类型阈值表",
+          "detail": "Broadcast Queue 在 Android 14+ 有 soft/hard timeout 口径，Foreground Service 启动超时与执行超时也需拆分，当前表格按固定阈值写法覆盖不足。",
+          "suggestion": "补 Android 10-13 与 14+ 差异，或把表格标成团队内部监控阈值而非系统超时常量。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T05:50:18+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 140,
-    "p0_count": 61,
-    "last_updated": "2026-05-14T03:44:00+08:00",
+    "total_entries": 144,
+    "p0_count": 73,
+    "last_updated": "2026-05-14T05:50:18+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 83,
+    "pending_entries": 87,
     "updated_date": "2026-05-14",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-14T03:44:00+08:00",
+  "last_updated": "2026-05-14T05:50:18+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 83
+  "pending": 87
 }
