@@ -65,7 +65,8 @@
     "22.9",
     "11.3",
     "13.2",
-    "14.13"
+    "14.13",
+    "2.0"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -125,7 +126,8 @@
     "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md",
     "src/part2-performance/ch11-power/03-system-power-optimization.md",
     "src/part3-tools/ch13-perfetto/02-trace-capture.md",
-    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
+    "src/part1-fundamentals/ch02-rendering/README.md"
   ],
   "review_summary": {
     "p0_issues": 1,
@@ -135,10 +137,10 @@
     "total_issues": 6
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 244,
-    "l3_issues": 23,
+    "l1_l2_fixes": 261,
+    "l3_issues": 24,
     "l4_issues": 4,
-    "total_issues": 275,
+    "total_issues": 293,
     "auto_promotions": 4
   },
   "issues_by_section": {
@@ -429,23 +431,19 @@
     }
   ],
   "ready_for_review": 65,
-  "last_updated": "2026-05-13T15:31:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-13T16:42:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-13T15:18:00+08:00",
-    "log": "logs/review/2026-05-13-15-review.md",
+    "at": "2026-05-13T16:42:00+08:00",
+    "log": "logs/review/2026-05-13-16-review.md",
     "sections": [
-      "22.9"
+      "2.0",
+      "22.3"
     ],
-    "l1_l2_fixes": 5,
+    "l1_l2_fixes": 17,
     "l3_l4_issues": 1,
     "auto_promotions": 0,
-    "skipped_insufficient_content": [
-      "1.3",
-      "1.4",
-      "3.4",
-      "19.27"
-    ]
+    "skipped_insufficient_content": []
   },
   "task9_last_review": "2026-05-13T15:31:00+08:00",
   "ready_to_publish": 164,
@@ -954,6 +952,31 @@
       "last_task9_at": "2026-05-13T15:31:00+08:00",
       "task9_result": "needs-rework",
       "queue_priority": 95
+    },
+    "2.0": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-13T16:42:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-13-16-review.md",
+      "file": "src/part1-fundamentals/ch02-rendering/README.md",
+      "title": "渲染系统总纲"
+    },
+    "22.3": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task9_state": "pending",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "queue_priority": 90,
+      "last_task6_at": "2026-05-13T16:42:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-13-16-review.md",
+      "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "title": "Jetpack Compose 性能优化"
     }
   },
   "task2b_rounds": [

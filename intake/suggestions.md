@@ -566,3 +566,11 @@
 - **位置**：L763 CPU Callstack Sampling 采样频率
 - **问题**：正文把 100-1000 Hz 作为多数场景合理范围。Perfetto CPU profiling 文档提示非 native 调用栈 unwind 成本高，建议低于 200 Hz per CPU；1000 Hz 容易带来 unwinder 过载、丢样和目标进程扰动。
 - **建议**：将默认建议收敛为 100 Hz 起步，Java/JIT 混合栈保持 <200 Hz；native-only/短窗口实验再谨慎升高，并要求记录 dropped samples/overhead。
+
+
+## [Task6 Review] 22.3 Jetpack Compose 性能优化 — 2026-05-13
+- **类型**：需补充素材
+- **位置**：Compose 编译器报告与性能诊断 / 结尾自动发现段
+- **问题**：章节仍缺 Android Studio Compose Profiler 的官方入口和使用边界说明；结尾“后台文本布局预热”自动发现项缺少官方文档或 release notes 来源。
+- **建议**：由 Task2B 补齐官方文档、release notes 或 Android Studio 工具说明；涉及版本/API 口径的部分交 Task9 复核。
+- **review 日志**：logs/review/2026-05-13-16-review.md

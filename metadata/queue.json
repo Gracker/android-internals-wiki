@@ -426,7 +426,7 @@
     {
       "id": "task9-22.3-compose-profiler",
       "section": "22.3",
-      "priority": 80,
+      "priority": 90,
       "title": "遗漏 Android Studio Compose Profiler",
       "description": "未介绍 Android Studio 2024.1+ 的 Compose Profiler 工具使用方法",
       "issue_type": "knowledge-gap",
@@ -438,7 +438,22 @@
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
-      ]
+      ],
+      "section_title": "Jetpack Compose 性能优化",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "Compose 编译器报告与性能诊断 / 结尾自动发现段",
+          "detail": "Task6 复审确认：章节仍缺 Android Studio Compose Profiler 的官方入口和使用边界说明；结尾“后台文本布局预热”自动发现项缺少官方文档或 release notes 来源。",
+          "suggestion": "由 Task2B 补齐官方文档、release notes 或 Android Studio 工具说明；涉及版本/API 口径的部分交 Task9 复核。"
+        }
+      ],
+      "last_reviewed_by": "task6-review",
+      "last_reviewed_at": "2026-05-13T16:42:00+08:00",
+      "original_review_log": "logs/review/2026-05-13-16-review.md"
     },
     {
       "id": "task9-17.2-oryon-cache-error",

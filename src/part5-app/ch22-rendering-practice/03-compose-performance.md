@@ -9,32 +9,33 @@ last_verified_against: "Compose BOM 2025.12.00, Kotlin 2.2"
 confidence: high
 drafted_date: "2026-05-12"
 polish_count: 0
-sources: 
-- type: aosp
-path: "androidx/compose/runtime/ PausableComposition"
-tags: [compose, recomposition, stability, derivedstateof, pausable-composition, strong-skipping]
+sources:
+  - type: aosp
+    path: "androidx/compose/runtime/PausableComposition"
+tags: [compose, recomposition, stability, derivedStateOf, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: "task6_pending"
-task6_state: revisiting
+pipeline_stage: task2b_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: fixed
+task2b_state: pending
 task2b_result: fixed
 reviewed_by: openclaw-task6
-reviewed_date: 2026-05-12
-task6_result: pass-light-edit
+reviewed_date: "2026-05-13"
+task6_result: needs-rework
 task9_result: "needs-rework"
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T09:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-13-09-deep-review.md"
 task9_review_notes: "2026-05-13 Task9：发现 P0/P1 技术问题（P0=3, P1=2），转入 Task2B 回炉。"
+last_task6_review_log: "logs/review/2026-05-13-16-review.md"
 ---
 
 # Jetpack Compose 性能优化
 
-Compose 渲染管线的原理和机制在 §7.7 已详细拆解。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose runtime 的几个关键变化如何改变了优化策略的优先级。
+Compose 渲染管线的原理和机制在 §7.7 已详细拆解。本节聚焦工程实战：怎么写出不会卡顿的 Compose 代码，怎么用工具定位性能问题，以及 2025 年底 Compose 运行时的几个关键变化如何改变了优化策略的优先级。
 
-先建立一条基准线：**Compose BOM 2025.12.00（对应 Compose 1.10）官方宣布在滚动性能上与 View 系统达到性能对等**。Google 内部长列表滚动基准测试的卡顿率降至 0.2%。运行时层面最大的性能坑（长列表组合阻塞主线程）已经被 Pausable Composition 解决了，剩下需要开发者关注的，是组合范围控制、状态读取阶段和互操作开销。
+本文使用 **Compose BOM 2025.12.00（对应 Compose 1.10）** 作为版本基线。滚动性能与 View 系统性能对等、Google 内部长列表滚动基准测试卡顿率降至 0.2% 这两个判断，需要补齐官方声明链接、测试条件和 Foundation 版本边界。[待验证: Google 官方声明、测试条件与 Foundation 版本] 在可用且启用 Pausable Composition 的版本里，长列表组合阻塞主线程的风险由 Compose 运行时分担一部分；开发者仍要关注组合范围控制、状态读取阶段和互操作开销。
 
 ## 重组控制：从手动优化到编译器自动跳过
 
@@ -49,7 +50,7 @@ Compose 的渲染管线分三阶段：Composition → Layout → Draw。重组�
 
 控制重组的核心思路：**让状态变化只触发最小范围的 Composable 重新执行**。
 
-Compose runtime 的跳过（skip）机制：如果一个 `@Composable` 函数的所有参数与上次调用相比都"相等"（通过 `equals()` 判断），runtime 会跳过整个函数体的执行，直接复用上一次的结果。这就是 Stability 标记和 Strong Skipping Mode 要解决的问题。
+Compose 运行时的跳过（skip）机制：如果一个 `@Composable` 函数的所有参数与上次调用相比都"相等"（通过 `equals()` 判断），运行时会跳过整个函数体的执行，直接复用上一次的结果。这就是 Stability 标记和 Strong Skipping Mode 要解决的问题。
 
 ### Strong Skipping Mode（Kotlin 2.0 起默认启用）
 
@@ -86,7 +87,7 @@ Strong Skipping 减少了 `@Stable` / `@Immutable` 注解的使用频次，但�
 
 **场景一：第三方 Composable 函数的跳过**。如果第三方库的 Composable 函数没有启用 Strong Skipping（较旧版本），它的跳过行为仍然依赖参数的 Stability。
 
-**场景二：`mutableStateOf` 之外的自定义状态容器**。`mutableStateOf` 返回的 `MutableState<T>` 已经被 Compose runtime 标记为 `@Stable`。自定义状态容器类需要手动标注：
+**场景二：`mutableStateOf` 之外的自定义状态容器**。`mutableStateOf` 返回的 `MutableState<T>` 已经被 Compose 运行时标记为 `@Stable`。自定义状态容器类需要手动标注：
 
 ```kotlin
 // 自定义状态容器：需要手动标注 @Stable
@@ -105,7 +106,7 @@ class ScrollState(
 
 `@Stable` 的契约要求：
 1. `equals()` 的结果在多次调用间必须稳定（同一个实例、同样的值，返回结果一致）。
-2. 当属性变化时，Compose runtime 能收到通知（通过 `mutableStateOf` 或 `mutableStateListOf` 等机制）。
+2. 当属性变化时，Compose 运行时能收到通知（通过 `mutableStateOf` 或 `mutableStateListOf` 等机制）。
 3. 所有公开属性的类型也是 Stable 的。
 
 `@Immutable` 比 `@Stable` 更严格：要求类的所有属性在构造后不可变。用于 data class 或 val-only 的类，是一个编译器承诺而非运行时检查——标注了 `@Immutable` 但实际有可变字段，运行时不会报错，但可能导致应该跳过的重组没有跳过。
@@ -114,9 +115,9 @@ class ScrollState(
 
 ## 状态读取阶段：性能差距的分水岭
 
-### Composition、Layout、Draw 三阶段的 State 读取
+### Composition、Layout、Draw 三阶段的状态读取
 
-Compose 渲染管线的三个阶段各自有一个状态读取点。**一个 State 在哪个阶段被读取（调用 `.value`），决定了状态变化时会触发哪几个阶段的重新执行**。
+Compose 渲染管线的三个阶段各自有一个状态读取点。**一个状态值在哪个阶段被读取（调用 `.value`），决定了状态变化时会触发哪几个阶段的重新执行**。
 
 | 读取阶段 | 触发范围 | 典型位置 |
 |----------|---------|---------|
@@ -144,8 +145,8 @@ fun AnimatedBox() {
 场景 B 的性能优势在动画场景下非常明显：一个 60fps 的颜色动画，如果走 Composition 阶段，每秒触发 60 次重组；如果走 Draw 阶段，每秒只触发 60 次绘制——绘制本身是 GPU 操作，比重新执行 Composable 函数函数体的 CPU 开销小一到两个数量级。
 
 **实战判断规则**：
-- 如果 State 变化只影响视觉效果（颜色、透明度、位移、缩放），用 `Modifier.graphicsLayer` 或 `Modifier.drawBehind` 在 Draw 阶段读取。
-- 如果 State 变化影响布局尺寸或子元素数量，必须在 Composition 阶段读取，此时用 `derivedStateOf` 控制触发频率。
+- 如果状态变化只影响视觉效果（颜色、透明度、位移、缩放），用 `Modifier.graphicsLayer` 或 `Modifier.drawBehind` 在 Draw 阶段读取。
+- 如果状态变化影响布局尺寸或子元素数量，必须在 Composition 阶段读取，此时用 `derivedStateOf` 控制触发频率。
 
 [已验证: 官方文档 Jetpack Compose Performance - Defer reads as long as possible]
 
@@ -183,7 +184,7 @@ fun BadUsage(scrollState: LazyListState) {
 }
 ```
 
-`derivedStateOf` 内部维护了一套依赖监听机制，有对象创建和订阅成本。滥用 `derivedStateOf` 的典型模式：把所有 State 操作都包一层 `derivedStateOf`，以为能"自动优化"。实际效果是增加了 `SnapshotStateObserver` 的订阅数量，没有减少任何重组。
+`derivedStateOf` 内部维护了一套依赖监听机制，有对象创建和订阅成本。滥用 `derivedStateOf` 的典型模式：把所有状态操作都包一层 `derivedStateOf`，以为能"自动优化"。实际效果是增加了 `SnapshotStateObserver` 的订阅数量，没有减少任何重组。
 
 [已验证: AOSP Compose Runtime, DerivedState.kt]
 
@@ -206,7 +207,7 @@ fun ExpensiveView(data: List<Item>) {
 
 `remember` 的 key 参数：当 key 变化时，`remember` 会丢弃旧值并重新执行 lambda。不传 key 则只在首次组合时计算一次。
 
-**`key`**：在 LazyColumn 等容器中为每个 item 提供稳定标识。Compose runtime 用 key 来追踪 Composable 实例在列表中的位置变化。
+**`key`**：在 LazyColumn 等容器中为每个 item 提供稳定标识。Compose 运行时用 key 来追踪 Composable 实例在列表中的位置变化。
 
 ```kotlin
 LazyColumn {
@@ -233,7 +234,7 @@ Pausable Composition 是 Compose 1.10 引入的运行时改进，也是 Compose 
 
 **之前的行为**：Composition 必须在单个帧内完成。如果 Composable 树很深或 LazyColumn 的可见 item 很多，组合阶段的 CPU 时间可能超过 16.67ms 帧预算，直接导致掉帧。
 
-**Pausable Composition 的行为**：Compose runtime 将组合工作切分成可暂停的块。在每一块执行完后，runtime 通过 `shouldPause` 回调检查帧截止时间（FrameData deadline）是否临近。如果临近，暂停组合，让主线程处理当前帧的绘制任务；下一帧继续剩余的组合工作。
+**Pausable Composition 的行为**：Compose 运行时将组合工作切分成可暂停的块。在每一块执行完后，运行时通过 `shouldPause` 回调检查帧截止时间（FrameData deadline）是否临近。如果临近，暂停组合，让主线程处理当前帧的绘制任务；下一帧继续剩余的组合工作。
 
 ```kotlin
 // 内部控制流（简化）
@@ -249,7 +250,7 @@ Pausable Composition 是 Compose 1.10 引入的运行时改进，也是 Compose 
 
 **对开发者的意义**：
 1. 长列表滚动的卡顿率显著降低，不需要开发者做任何代码改动。
-2. 以前为了规避组合阻塞而做的各种拆分优化（手动将大 Composable 拆成小函数），在 Compose 1.10 上的效果减弱了——runtime 层面已经做了时间切片。
+2. 以前为了规避组合阻塞而做的各种拆分优化（手动将大 Composable 拆成小函数），在 Compose 1.10 上的效果减弱了——运行时层面已经做了时间切片。
 3. 但 `derivedStateOf`、key、stable 参数等优化仍然有效——Pausable Composition 解决的是单帧阻塞问题，不解决不必要的重组问题。
 
 [待确认: Pausable Composition 默认启用状态因 Foundation 版本而异——1.10.0-alpha05 默认启用，1.10.6 因稳定性问题默认禁用]
@@ -446,4 +447,4 @@ AndroidView(
 | Compose-View 混合 | ComposeView 的 ViewCompositionStrategy 是否正确 | 代码审查 |
 | Lambda 传递 | Kotlin 2.0 之前需要手动 remember 包裹 lambda；2.0+ Strong Skipping 自动 memoize | 编译器报告 skippable 字段 |
 
-[自动发现]：Compose 1.9 引入的后台文本布局预热功能，可以在后台线程预先完成文本的布局计算，减少主线程 Text Composable 的组合耗时。对长列表中包含大量文本的场景有显著帮助，无需开发者额外配置。
+[自动发现]：Compose 1.9 引入的后台文本布局预热功能，可以在后台线程预先完成文本的布局计算，减少主线程 Text Composable 的组合耗时。对长列表中包含大量文本的场景有显著帮助，无需开发者额外配置。[待验证: 需补充官方文档或 release notes 来源]
