@@ -1,8 +1,8 @@
 {
   "total": 270,
   "draft": 38,
-  "ready-for-review": 67,
-  "finalized": 165,
+  "ready-for-review": 65,
+  "finalized": 167,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-13",
   "task9_reviewed_by": "openclaw-task9",
@@ -114,11 +114,11 @@
     "src/part5-app/ch22-rendering-practice/05-animation-performance.md"
   ],
   "review_summary": {
-    "p0_issues": 4,
-    "p1_issues": 2,
-    "p2_issues": 3,
+    "p0_issues": 2,
+    "p1_issues": 1,
+    "p2_issues": 1,
     "p3_issues": 0,
-    "total_issues": 9
+    "total_issues": 4
   },
   "task6_review_summary": {
     "l1_l2_fixes": 225,
@@ -245,13 +245,13 @@
     "21.2": {
       "p0": 1,
       "p1": 1,
-      "p2": 1,
+      "p2": 0,
       "p3": 0
     },
     "21.3": {
-      "p0": 1,
-      "p1": 1,
-      "p2": 0,
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
       "p3": 0
     },
     "4.1": {
@@ -367,20 +367,26 @@
       "p1": 0,
       "p2": 1,
       "p3": 0
+    },
+    "22.5": {
+      "p0": 1,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0
     }
   },
   "total_review_sections": 52,
   "next_review_candidates": [
     {
-      "section": "20.1",
-      "title": "应用稳定性全景",
-      "file": "src/part5-app/ch20-stability/01-stability-overview.md",
-      "reason": "下一个通过内容充分性检查的 revisiting 章节"
+      "section": "2.3",
+      "title": "VSync 机制",
+      "file": "src/part1-fundamentals/ch02-rendering/03-vsync.md",
+      "reason": "task9_state: pending，Task6 已通过，queue 无 pending；本轮未审。"
     }
   ],
-  "ready_for_review": 66,
-  "last_updated": "2026-05-13T08:13:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 65,
+  "last_updated": "2026-05-13T08:40:35+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-13T08:13:00+08:00",
     "log": "logs/review/2026-05-13-08-review.md",
@@ -393,8 +399,8 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-13T06:25:00+08:00",
-  "ready_to_publish": 163,
+  "task9_last_review": "2026-05-13T08:40:35+08:00",
+  "ready_to_publish": 165,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -854,19 +860,18 @@
   "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
   "last_task2a_processed_date": "2026-05-13T07:20:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-13T06:25:00+08:00",
-    "log": "logs/deep-review/2026-05-13-06-deep-review.md",
+    "at": "2026-05-13T08:40:35+08:00",
+    "log": "logs/deep-review/2026-05-13-08-deep-review.md",
     "sections": [
-      "1.5",
-      "20.4",
-      "22.1"
+      "21.2",
+      "21.3",
+      "22.5"
     ],
-    "p0": 4,
-    "p1": 2,
-    "p2": 3,
+    "p0": 2,
+    "p1": 1,
+    "p2": 1,
     "auto_promotions": [
-      "1.5",
-      "22.1"
+      "21.3"
     ]
   }
 }

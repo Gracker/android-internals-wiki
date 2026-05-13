@@ -33,10 +33,14 @@ sources:
     path: "github.com/airbnb/lottie-android/LottieAnimationView.java"
 tags: [animation, property-animation, lottie, render-effect, transition, motionlayout]
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-13"
+last_task9_at: 2026-05-13T08:40:35+08:00
 ---
 
 # 动画性能优化

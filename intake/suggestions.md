@@ -431,6 +431,43 @@
 - **review 日志**：logs/review/2026-05-13-05-review.md
 
 
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L124 / L378 预览卡顿阈值
+- **问题**：30fps 预览“标准差超过 5ms 可感知”、单帧 40/50ms、低端 GPU 纹理上传 5-10ms 等阈值缺少设备、刷新率、预览分辨率、统计窗口和来源；这些数字会被读者当成通用判据。
+- **建议**：补一组 Perfetto trace 样本或公开报告；至少把阈值改成“经验告警线”，并标明 30fps、设备档位、窗口长度、SurfaceView/TextureView 路径。
+
+## [Task9 Deep Review] 14.9 Android Camera 性能与 Perfetto 分析 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L513 HAL3 管线延迟 / Binder IPC
+- **问题**：`Binder IPC 虽然单次延迟只有 1-2ms` 缺少 trace 样本和系统负载边界；Camera metadata 大小、binder 线程池状态和厂商 HAL 进程负载都会改变该值。
+- **建议**：用 `binder_driver` trace 给出同机样本，或者降级为“Binder IPC 通常不是主耗时，但在高负载/大 metadata/线程池拥塞时会放大”。
+
+## [Task9 Deep Review] 18.2 Android View 标准管线（BLAST 深入） — 2026-05-13
+- **类型**：版本差异
+- **位置**：L155 / L208 Buffer release 回路
+- **问题**：正文把槽位释放写成单一路径 `TransactionCompleted → releaseBufferCallbackLocked()`；android-16 `BLASTBufferQueue.cpp` 还包含 `BUFFER_RELEASE_CHANNEL` 条件路径，`waitForBufferRelease()` 可直接从 release channel 读 releaseFence 后调用 `releaseBufferCallback()`。
+- **建议**：保留 TransactionCompleted 作为基础路径，同时补 Android 15/16 之后可能存在的 BufferReleaseChannel 快路径/条件编译边界，避免读者只按一种 trace 形态排查。
+
+## [Task9 Deep Review] 18.2 Android View 标准管线（BLAST 深入） — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L225-L239 Trace 正常耗时阈值
+- **问题**：`Choreographer#doFrame <8ms`、`超过 16ms 必定掉帧`、`DrawFrame <8ms` 等阈值没有区分 60/90/120/144Hz、FrameTimeline deadline、SurfaceView/TextureView 和设备档位；“必定掉帧”也与后文 FrameTimeline 口径冲突。
+- **建议**：改成按刷新率预算和 FrameTimeline deadline 判断，并把表格阈值标注为 60Hz 经验参考；高刷设备单独给 8.3ms/11.1ms 边界。
+
+## [Task9 Deep Review] 19.21 Benchmark 应用 — 2026-05-13
+- **类型**：版本差异/术语
+- **位置**：L168-L173 Android Performance Class
+- **问题**：正文示例写 `PC12、PC13、PC14、PC15`，但平台 API `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 暴露的是 media performance class 的 API level 值（未声明时为 0），工程落库时应保留原始整数和 Android 版本映射。
+- **建议**：改成 `media_performance_class=31/33/34/35/0` 这类可落库字段，再在展示层映射为 Android 12/13/14/15 Performance Class；补 Jetpack Core Performance 的兼容查询版本边界。
+
+## [Task9 Deep Review] 19.21 Benchmark 应用 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L155-L176 机型分层方法
+- **问题**：章节给出 CPU/GPU/存储/热稳定性维度，但没有示例 bucket 边界、工具版本、取值策略和线上 APM join 示例的真实字段定义；落地时仍缺“怎么分层”的可执行口径。
+- **建议**：补一个匿名化设备字典样例：Geekbench/3DMark/CPDT 工具版本、分数区间、温度条件、bucket 规则，以及与启动 P95/慢帧率 join 后如何验证分层有效。
+
+
 ## [Task9 Deep Review] 1.5 线程模型 — 2026-05-13
 - **类型**：原理链/诊断边界
 - **位置**：L488-L490 RenderThread 延迟分析
@@ -449,3 +486,15 @@
 - **问题**：40% 平均耗时下降来自 2017 年 support ConstraintLayout 示例，章节适用 Android 10-16 / AndroidX ConstraintLayout 2.x；现文已提醒不能当固定收益，但缺新版本复现实验或边界说明。
 - **建议**：补 AndroidX ConstraintLayout 2.x + Macrobenchmark / FrameMetrics 复测条件；补不到时把该数据明确标为“历史官方样例”，正文结论以同机 trace 实测为准。
 - **review 日志**：logs/deep-review/2026-05-13-06-deep-review.md
+
+## [Task14 参考书扫描] 21.1 启动全链路分析 — 2026-05-13
+- **类型**：内容补充
+- **来源**：[结构参考: Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md]
+- **建议补充**：冷热端分离的 LruCache 方案——将单一 LruCache 拆分为热端（按使用频率排序）和冷端（LRU），在低容量缓存场景下提升命中率。具体场景：聊天 App 会话页图片缓存被公众号图片冲刷导致命中率下降。AIW 已引用此参考书但未展开冷热端分离的具体实现逻辑。
+- **参考书覆盖深度**：中等（含思路和流程图，无完整代码）
+
+## [Task9 Deep Review] 21.3 ContentProvider 启动治理 — 2026-05-13
+- **类型**：源码准确性/进程语义
+- **位置**：L102 `跨进程唤醒`
+- **问题**：表格容易被读者理解成主进程冷启动会自动安装并拉起所有独立进程 Provider。AOSP `handleBindApplication()` 安装的是当前进程的 provider；`android:process=":remote"` 的 Provider 只有在远程进程启动或主进程主动访问它时，才会由系统启动对应进程。
+- **建议**：把“启动时拉起子进程”改成带条件表述：主进程 Provider 进入主进程冷启动关键路径；remote Provider 不随主进程自动安装，但被同步访问会触发远程进程启动和跨进程等待。诊断项保留 `ps` / Perfetto process track。
