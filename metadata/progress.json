@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 31,
-  "ready-for-review": 68,
+  "draft": 30,
+  "ready-for-review": 69,
   "finalized": 170,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-05-14",
@@ -83,7 +83,8 @@
     "5.4",
     "23.2",
     "23.3",
-    "23.4"
+    "23.4",
+    "23.5"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -162,7 +163,8 @@
     "src/part1-fundamentals/ch05-cpu-power/04-dvfs.md",
     "src/part5-app/ch23-memory-practice/02-bitmap-optimization.md",
     "src/part5-app/ch23-memory-practice/03-native-memory-management.md",
-    "src/part5-app/ch23-memory-practice/04-java-heap-optimization.md"
+    "src/part5-app/ch23-memory-practice/04-java-heap-optimization.md",
+    "src/part5-app/ch23-memory-practice/05-memory-churn-gc.md"
   ],
   "review_summary": {
     "p0_issues": 9,
