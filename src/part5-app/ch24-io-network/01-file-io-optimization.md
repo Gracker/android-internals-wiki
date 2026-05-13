@@ -2,10 +2,10 @@
 title: "文件 I/O 优化"
 chapter: "24.1"
 section: "24.1"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
-last_verified_against: "AOSP master (SharedPreferencesImpl / QueuedWork / StrictMode / AtomicFile) + Android Developers docs"
+last_verified_against: "AOSP master snapshot 2026-05-14 (SharedPreferencesImpl / QueuedWork / StrictMode / AtomicFile) + Android Developers docs"
 confidence: medium
 drafted_date: "2026-05-14"
 polish_count: 0
@@ -36,16 +36,21 @@ sources:
     path: "Clippings/Android 性能优化 - 原理：重新认识内存.md"
 tags: [file-io, sharedpreferences, datastore, mmkv, strictmode]
 related_chapters: ["24.2", "6.1", "6.3", "6.5", "9.2"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-14"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-14T06:32:15+08:00"
 last_task9_review_log: logs/deep-review/2026-05-14-06-deep-review.md
 task9_review_notes: "2026-05-14 Task9 06: pass-tech-review。无 P0/P1；P2 2：AOSP master 需 pin tag，24.2 draft 交叉引用需处理。未自动晋升：Task6 尚未通过。 已写入 logs/deep-review/2026-05-14-06-deep-review.md。"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+last_task6_at: "2026-05-14T07:09:44+08:00"
+last_task6_review_log: logs/review/2026-05-14-07-review.md
 ---
 
 # 文件 I/O 优化
@@ -88,7 +93,7 @@ task9_review_notes: "2026-05-14 Task9 06: pass-tech-review。无 P0/P1；P2 2：
 
 主线程 I/O 的风险来自两个延迟源。读路径可能触发磁盘读取、缺页和目录遍历；写路径还可能触发 `fsync()`，等待文件系统把数据刷到存储设备。这个等待不消耗多少 CPU，却会让主线程无法处理输入、布局和绘制。对应到 ANR，就是主线程没有及时返回消息循环，详见 9.2 节。
 
-StrictMode 是开发期最直接的检测入口。AOSP `StrictMode.ThreadPolicy.Builder.detectAll()` 会启用 `detectDiskReads()` 和 `detectDiskWrites()`；框架内部也会在关键位置主动触发检测，例如 `SharedPreferencesImpl.awaitLoadedLocked()` 在等待 XML 加载前调用 `BlockGuard.getThreadPolicy().onReadFromDisk()`。[已验证: AOSP master, frameworks/base/core/java/android/os/StrictMode.java][已验证: AOSP master, frameworks/base/core/java/android/app/SharedPreferencesImpl.java]
+StrictMode 是开发期最直接的检测入口。AOSP `StrictMode.ThreadPolicy.Builder.detectAll()` 会启用 `detectDiskReads()` 和 `detectDiskWrites()`；框架内部也会在关键位置主动触发检测，例如 `SharedPreferencesImpl.awaitLoadedLocked()` 在等待 XML 加载前调用 `BlockGuard.getThreadPolicy().onReadFromDisk()`。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/os/StrictMode.java][已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/app/SharedPreferencesImpl.java]
 
 这段代码用于在 Debug 包里暴露主线程磁盘读写。重点看 `detectDiskReads()`、`detectDiskWrites()` 和 `penaltyLog()`，线上包不要直接开启崩溃惩罚。
 
@@ -120,9 +125,9 @@ class App : Application() {
 
 ## SharedPreferences 的坑与 DataStore 迁移
 
-SharedPreferences（SP）的性能坑集中在两个位置：首次读取和写入收尾。首次读取时，`getString()`、`getAll()` 这类 API 会进入 `awaitLoadedLocked()` 等待 XML 加载完成；如果调用发生在主线程，StrictMode 会记录磁盘读风险。写入时，`apply()` 会先更新内存，再把写文件任务交给 `QueuedWork`；`commit()` 会等待 `writtenToDiskLatch`，同步拿到写入结果。[已验证: AOSP master, frameworks/base/core/java/android/app/SharedPreferencesImpl.java]
+SharedPreferences（SP）的性能坑集中在两个位置：首次读取和写入收尾。首次读取时，`getString()`、`getAll()` 这类 API 会进入 `awaitLoadedLocked()` 等待 XML 加载完成；如果调用发生在主线程，StrictMode 会记录磁盘读风险。写入时，`apply()` 会先更新内存，再把写文件任务交给 `QueuedWork`；`commit()` 会等待 `writtenToDiskLatch`，同步拿到写入结果。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/app/SharedPreferencesImpl.java]
 
-`apply()` 的误区在于“调用点很快返回”不等于“生命周期切换不等待”。AOSP `QueuedWork` 的注释写得很直：这个机制最初就是为 SharedPreferences 异步写入服务，Activity `onPause` 等位置可以等待这些写入结束。于是某个页面里频繁 `apply()`，当 Activity 停止、广播结束或进程进入关键生命周期点时，主线程仍可能被 `QueuedWork.waitToFinish()` 拖住。SP 与 ANR 的完整路径见 6.5 节，这里只引用结论。[已验证: AOSP master, frameworks/base/core/java/android/app/QueuedWork.java]
+`apply()` 的误区在于“调用点很快返回”不等于“生命周期切换不等待”。AOSP `QueuedWork` 的注释写得很直：这个机制最初就是为 SharedPreferences 异步写入服务，Activity `onPause` 等位置可以等待这些写入结束。于是某个页面里频繁 `apply()`，当 Activity 停止、广播结束或进程进入关键生命周期点时，主线程仍可能被 `QueuedWork.waitToFinish()` 拖住。SP 与 ANR 的完整路径见 6.5 节，这里只引用结论。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/app/QueuedWork.java]
 
 SP 适合少量、低频、轻量配置。以下场景应迁移或拆分：
 
@@ -159,7 +164,7 @@ fun observeLaunchFlag(context: Context): Flow<Boolean> =
     context.settingsStore.data.map { prefs -> prefs[launchFlagKey] ?: false }
 ```
 
-DataStore 也不是数据库替代品。多表查询、条件检索、分页、事务关系交给 Room/SQLite，见 24.2 节；少量配置、强类型设置、迁移 SP 的 KV 数据，DataStore 更合适。
+DataStore 也不是数据库替代品。多表查询、条件检索、分页、事务关系交给 Room/SQLite；少量配置、强类型设置、迁移 SP 的 KV 数据，DataStore 更合适。
 
 ## MMKV 的原理与适用场景
 
@@ -183,7 +188,7 @@ MMKV 与 DataStore 的选择可以按访问模型判断：需要官方 Jetpack �
 
 ## 文件读写的线程安全与性能
 
-普通文件 I/O 的难点不是 API，而是并发语义。多个线程同时写同一个文件、一个线程读半成品、写入失败后留下损坏文件，都会把性能问题变成稳定性问题。Android `AtomicFile` 的注释也写明：如果另一个线程正在写，新的写入可能替换前一个写入结果；调用者必须自己做线程保护。[已验证: AOSP master, frameworks/base/core/java/android/util/AtomicFile.java]
+普通文件 I/O 的难点不是 API，而是并发语义。多个线程同时写同一个文件、一个线程读半成品、写入失败后留下损坏文件，都会把性能问题变成稳定性问题。Android `AtomicFile` 的注释也写明：如果另一个线程正在写，新的写入可能替换前一个写入结果；调用者必须自己做线程保护。[已验证: AOSP master snapshot 2026-05-14, frameworks/base/core/java/android/util/AtomicFile.java]
 
 可靠写入要满足三个条件：单写者、临时结果不可见、失败可恢复。`AtomicFile` 提供了 `startWrite()`、`finishWrite()`、`failWrite()` 这套写入协议，但它不负责跨线程排队。应用侧仍要用单线程队列、`Mutex` 或仓库层串行化，避免两个写入同时进入。
 
@@ -240,4 +245,4 @@ class JsonFileStore(
 
 ## 小结
 
-文件 I/O 优化的优先级顺序很清楚：主线程不做磁盘读写，SP 风险先识别再迁移，热 KV 读写按访问模型选择 DataStore 或 MMKV，普通文件写入用串行化和原子写协议兜住一致性。机制细节交给 6.1、6.3、6.5 节，应用工程里要把它们变成约束和检查项。
+文件 I/O 优化可以按风险排序：主线程不做磁盘读写，SP 风险先识别再迁移，热 KV 读写按访问模型选择 DataStore 或 MMKV，普通文件写入用串行化和原子写协议兜住一致性。机制细节交给 6.1、6.3、6.5 节，应用工程里要把它们变成约束和检查项。
