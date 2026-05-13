@@ -828,6 +828,77 @@ ORDER BY contention.dur DESC;
 
 [已验证: Perfetto stdlib android.monitor_contention 表结构, perfetto.dev/docs/analysis/stdlib-docs]
 
+## SPAN_JOIN 与窗口函数：跨维度时间序列交叉分析
+
+SPAN_JOIN 和窗口函数是 PerfettoSQL 中**跨维度关联分析的核心语法**。当帧时间需要和 CPU 频率、GC 暂停、或 Binder 排队做交叉分析时，单靠等值 JOIN 无法处理"时间段重叠"的语义——这时需要 SPAN_JOIN。
+
+### SPAN_JOIN 机制
+
+SPAN_JOIN 是一个**自定义算子表（Operator Table）**，由 C++ 实现时间跨度交集计算，对外暴露为 SQL 虚拟表。它的输入是两个含 `ts` 和 `dur` 列的表/视图，输出是两表在时间上存在重叠的行组合。
+
+```sql
+-- 调度切片 × CPU 频率的跨维度关联
+CREATE VIEW sp_sched AS
+SELECT ts, dur, cpu, utid FROM sched;
+
+CREATE VIEW sp_frequency AS
+SELECT
+  ts,
+  lead(ts) OVER (PARTITION BY track_id ORDER BY ts) - ts as dur,
+  cpu,
+  value as freq
+FROM counter
+JOIN cpu_counter_track ON counter.track_id = cpu_counter_track.id
+WHERE cpu_counter_track.name = 'cpufreq';
+
+CREATE VIRTUAL TABLE sched_with_freq
+USING SPAN_JOIN(sp_sched PARTITIONED cpu, sp_frequency PARTITIONED cpu);
+
+SELECT ts, dur, cpu, utid, freq FROM sched_with_freq;
+```
+
+关键参数：
+- `PARTITIONED col`：按整数列分区后再做交集，可将 O(n×m) 降到 O(n+m)
+- 分区列**必须是整数**，字符串需通过 `HASH()` 转换
+- 同一表同一分区内的 spans **不能重叠**，否则静默产生错误结果
+
+变体：`SPAN_LEFT_JOIN`（左表分区+右表不分区）、`SPAN_OUTER_JOIN`（两者都不分区）。
+
+窗口函数 `LEAD()` 在这里的作用是把离散的 counter 点转换为连续的 span：取当前行 ts 为起点，下一行的 ts 减当前 ts 为 dur——这是把"点"变成"段"的常用技巧。
+
+### 应用场景：帧 × CPU 频率 × 锁竞争三维关联
+
+```sql
+INCLUDE PERFETTO MODULE android.monitor_contention;
+
+-- 先用窗口函数把主线程锁等待转为 span
+CREATE VIEW main_lock_span AS
+SELECT
+  ts,
+  dur,
+  blocking_thread_name
+FROM android_monitor_contention
+WHERE is_blocked_thread_main = 1;
+
+-- 再 SPAN_JOIN 调度切片
+CREATE VIRTUAL TABLE frame_lock_cpu
+USING SPAN_JOIN(
+  main_lock_span PARTITIONED utid,
+  sp_sched
+);
+
+-- 帧 × 锁等待 × CPU 频率三维交叉（示意）
+SELECT ...
+FROM sched_with_freq
+JOIN frame_lock_cpu ...
+```
+
+这个模式可以回答"这一帧掉帧是因为 CPU 降频、还是因为等锁、还是因为调度延迟"。
+
+> SPAN_JOIN 的 C++ 源码位于 `external/perfetto/src/trace_processor/` 目录的 operand 相关文件中。v53+ 支持 `SPAN_OUTER_JOIN`。
+
+<!-- AIW-源码调研-2026-05-13 -->
+
 ## 交叉引用与分析路径
 
 上面的每个 SQL 查询都是针对单一维度的分析。在实际工作中，性能问题往往是多因素叠加的——一个 jank 帧可能同时涉及 GC 暂停、Binder 调用和锁竞争。以下是几种常见的组合分析路径：

@@ -339,3 +339,48 @@ ARR 本来就会改 VSYNC 周期。先分清是正常降频、模式切换，还
   - `https://perfetto.dev/docs/analysis/stdlib-docs`
 
 
+
+---
+
+## 附录：RefreshRateSelector 多维度评分算法与 ARR 实现机制（2026-05-13 调研）
+
+### 核心组件架构
+
+ARR（Adaptive Refresh Rate）机制涉及三个核心层次：
+
+1. **Framework 层**：`RefreshRateSelector.java` + `DisplayModeDirector.java`
+2. **HAL 层**：HWC Composer v3
+3. **Kernel/驱动层**：Panel 自适应刷新协议
+
+`DisplayModeDirector` 是 ARR 核心决策者，负责监听前台应用帧率请求、综合多维度权重评分、选择最优显示模式。
+
+### 评分算法多维度权重
+
+| 维度 | 说明 |
+|------|------|
+| 帧率匹配度 | 刷新率必须能被目标帧率整除（divisor 关系），避免 tearing |
+| 亮度阈值 | `config_brightnessThresholdsOfPeakRefreshRate` + `config_ambientThresholdsOfPeakRefreshRate` |
+| 场景优先级 | Keyguard 锁屏专用 `config_keyguardRefreshRate` |
+| 功耗预算 | PEAK_REFRESH_RATE / MIN_REFRESH_RATE 设置项 |
+| 温度控制 | 热阈值触发降刷新率 |
+
+### ARR vs VRR 关键区别
+
+| 特性 | ARR（Android 15+） | VRR（传统模式切换） |
+|------|-------------------|-------------------|
+| 刷新率变更 | 单一模内连续调整 | 模式级别切换 |
+| VSync 解耦 | 是，刷新率与 VSync 率解耦 | 否 |
+| 实现要求 | HWC HAL v3 | 驱动私有方案 |
+| 功耗收益 | 内容静止时降至 1Hz | 固定高刷新 |
+
+### 关键源码路径
+
+- `frameworks/base/services/core/java/com/android/server/display/RefreshRateSelector.java`
+- `frameworks/base/services/core/java/com/android/server/display/DisplayModeDirector.java`
+- `frameworks/base/core/res/res/values/config.xml`（亮度阈值配置）
+
+### 信息源自述
+
+本次调研基于 cs.android.com 代码索引、source.android.com 官方文档（source.android.com/docs/core/graphics/arr）、developer.android.com ARR 文档。部分源码文件因认证限制未能直接获取全文，核心架构分析来自官方文档与代码索引摘要。
+
+<!-- AIW-源码调研-2026-05-13 -->
