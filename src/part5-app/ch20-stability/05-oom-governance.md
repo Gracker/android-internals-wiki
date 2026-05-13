@@ -23,10 +23,10 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 2
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 created_by: "task2a"
 reviewed_date: "2026-05-12"
 reviewed_by: openclaw-task6
@@ -35,7 +35,8 @@ last_task6_at: "2026-05-12T18:02:31+08:00"
 last_task6_review_log: logs/review/2026-05-12-18-review.md
 task6_review_notes: "2026-05-12 Task6 18:02：needs-rework。L1/L2 小修 16 处：补 outline、代码块语言、开头措辞、泛化词；发现 2 个技术风险标注，已写入 queue/suggestions，交 Task9/Task2B 复核。"
 task9_result: needs-rework
-task2b_result: pending
+task2b_result: fixed
+last_task2b_at: '2026-%m-13T19:33:05+08:00'
 last_task9_at: '2026-05-12T18:24:00+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-12'
@@ -155,10 +156,11 @@ if (utf16_length > std::numeric_limits<int32_t>::max()) {
 
 **Unsafe.allocateMemory**
 
-`sun.misc.Unsafe` 的 `allocateMemory` 底层调用 `malloc`。部分反射或序列化框架会通过 Unsafe 家族 API 绕过构造流程，但这里需要区分 `allocateMemory` 与 `allocateInstance` 两条路径。[需确认: Gson 无空参构造函数路径是否应归为 `Unsafe.allocateInstance`，以及该路径是否会触发本文所述 `"native alloc"` OOM。] `malloc` 返回 `nullptr` 时，ART 抛出 `"native alloc"` OOM：
+`sun.misc.Unsafe` 的 `allocateMemory` 底层调用 `malloc`。`malloc` 返回 `nullptr` 时，ART 抛出 `"native alloc"` OOM：
 
 ```cpp
-// art/runtime/openjdkjvm/OpenjdkJvm.cc 简化
+// art/runtime/native/sun_misc_Unsafe.cc 简化
+// 函数名: Unsafe_allocateMemory()
 void* mem = malloc(malloc_bytes);
 if (mem == nullptr) {
   soa.Self()->ThrowOutOfMemoryError("native alloc");
@@ -166,9 +168,11 @@ if (mem == nullptr) {
 }
 ```
 
+> **边界说明**：Gson 等反序列化框架使用 `Unsafe.allocateInstance(Class)` 绕过构造函数——这条路径分配的是 Java 对象，走 Java 堆，不应归入 Native 内存 OOM。`allocateInstance` 增加的是 Java 堆压力（对象数），`allocateMemory` 增加的是 Native 堆压力（字节数），两者的 OOM 触发机制完全不同。
+
 **Bitmap 像素存储（Android 8.0+）**
 
-Android 8.0 起，Bitmap 像素数据存放在 Native 堆（通过 `mmap`），不再占用 Java 堆。大量 Bitmap 创建不会触发 Java Heap OOM，但会耗尽虚拟内存。错误信息通常包含 `Failed anonymous mmap`。
+Android 8.0 起，普通 Bitmap 的像素数据通过 `calloc` 分配在 Native 堆（`frameworks/base/libs/hwui/hwui/Bitmap.cpp` 的 `allocateHeapBitmap`），不再占用 Java 堆。Hardware Bitmap（`Bitmap.Config.HARDWARE`）走 GraphicBuffer / AHardwareBuffer 路径。大量 Bitmap 创建不会触发 Java Heap OOM，但会耗尽 Native 堆或虚拟内存。Native 堆 OOM 的错误信息取决于分配路径：`calloc` 失败时返回 `nullptr`，最终触发 ART 的 `ThrowOutOfMemoryError`；极少数超大块连续内存分配由 allocator 内部走 `mmap`，失败时报告 `Failed anonymous mmap`——但不要把所有 Bitmap OOM 都归结为 `Failed anonymous mmap`。
 
 ### 排查手段
 
@@ -183,7 +187,7 @@ Native 内存管理的详细优化策略详见 23.3 节。
 
 ## 线程数 OOM（pthread_create 失败）
 
-每个 Java 线程在底层对应一个 `pthread`，需要分配栈空间（默认约 1 MB）和 JNI 环境结构体。`Thread::CreateNativeThread`（`art/runtime/thread.cc`）调用 `pthread_create` 时，如果虚拟内存不够分配线程栈，或进程 FD 数达到上限，创建失败，抛出 OOM。
+每个 Java 线程在底层对应一个 `pthread`，需要分配栈空间（默认约 1 MB）和 JNI 环境结构体。`Thread::CreateNativeThread`（`art/runtime/thread.cc`）调用 `pthread_create` 时，如果虚拟内存不够分配线程栈，或内核资源不足（`EAGAIN`），创建失败，抛出 OOM。线程数 OOM 的根因是虚拟地址空间耗尽或内核线程配额——与 FD 泄漏是两个独立的治理路径。
 
 ### 错误信息区分
 
@@ -228,7 +232,7 @@ Threads:	387
 
 ## FD 泄漏导致的 OOM
 
-Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket，也可能让后续需要 epoll、pipe 或 socket 的初始化步骤失败。[需确认: `pthread_create` 与 FD 耗尽的直接因果链需要 Task9 复核；epoll FD 通常来自 Looper 初始化，而不是 `pthread_create` 本身。]
+Linux 进程的 FD（文件描述符）是有限资源。单个进程的 FD 上限由 `ulimit -n` 决定，Android 上通常为 1024 或更高（取决于厂商配置）。FD 耗尽后，无法打开新文件、创建新 socket，也让后续需要 epoll、pipe 或 socket 的初始化步骤失败——每个 Looper 线程初始化时都会创建 epoll FD 和 eventfd（`system/core/libutils/Looper.cpp`），FD 泄漏到后期会直接阻塞新 Looper 的创建。FD 泄漏与线程数 OOM 是两个独立的治理维度：前者是文件描述符资源耗尽，后者是虚拟地址空间或 pthread 资源耗尽。
 
 ### 典型崩溃堆栈
 

@@ -1532,10 +1532,12 @@
       ],
       "added_by": "task6-review",
       "added_at": "2026-05-12T18:02:31+08:00",
-      "status": "pending",
+      "status": "completed",
       "original_review_log": "logs/review/2026-05-12-18-review.md",
       "updated_by": "task9-deep-tech-review",
-      "updated_at": "2026-05-12T18:24:00+08:00"
+      "updated_at": "2026-05-12T18:24:00+08:00",
+      "completed_date": "2026-05-13T19:33:05+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 Unsafe 源码路径修正(OpenjdkJvm.cc→sun_misc_Unsafe.cc), P0 Gson/allocateInstance 从 Native OOM 移至 Java 堆压力边界说明, P0 Bitmap 分配路径修正(calloc 而非 mmap, 区分普通/Hardware Bitmap), P1 pthread_create 与 FD 泄漏拆分为两个独立治理路径"
     },
     {
       "id": "task9-4-6-deep-tech-review-20260512-1824",
@@ -1578,7 +1580,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-12T18:24:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-13T19:33:05+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 Bitmap 源码路径修正(libs/hwui/Bitmap.cpp→libs/hwui/hwui/Bitmap.cpp), P0 Bionic Linker 16KB compat 系统属性修正(app.compat→app_compat), P0 MTE ASYMM 平台边界修正(App 只暴露 sync/async, ASYMM 依赖 vendor policy), P1 MGLRU Perfetto 观察点补充(sysfs/config 验证方法)"
     },
     {
       "id": "task9-7-6-deep-tech-review-20260512-1824",
