@@ -3678,6 +3678,150 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T20:35:00+08:00"
+    },
+    {
+      "id": "task9-20260513-2.19-hwc-vsyncmodulator-version-errors",
+      "section": "2.19",
+      "section_title": "刷新率切换与帧率适配性能",
+      "priority": 95,
+      "title": "HWC expectedPresentTime 版本锚点与 VsyncModulator 原子化声明错误",
+      "description": "Composer AIDL expectedPresentTime 被写成 Android 16 / IComposerClient V4 新增，且 VsyncModulator 被写成 Android 16 std::atomic<shared_ptr> 原子化；与 AOSP android-16.0.0_r1 不符。",
+      "reason": "[Deep Tech Review] Composer AIDL expectedPresentTime 被写成 Android 16 / IComposerClient V4 新增，且 VsyncModulator 被写成 Android 16 std::atomic<shared_ptr> 原子化；与 AOSP android-16.0.0_r1 不符。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-13-21-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/版本差异",
+          "location": "L197-L205 HWC 4.0 预判式切换",
+          "detail": "`expectedPresentTime` 字段实际在 `hardware/interfaces/graphics/composer/aidl/.../DisplayCommand.aidl`，android-13.0.0_r1 已存在；正文写成 Android 16 强制 AIDL V4 且锚到 `IComposerClient.aidl`，版本和文件都不对。",
+          "suggestion": "改为“Composer AIDL 的 DisplayCommand.expectedPresentTime 允许 SurfaceFlinger 传递目标 present 时间”；如要讨论 Android 15/16，再单独核对 `IComposerClient.notifyExpectedPresent` / VRR early hint，不要把二者合并。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L304-L312 / L384 VsyncModulator 原子化相位切换",
+          "detail": "AOSP android-16.0.0_r1 `VsyncModulator.cpp` 中 `setVsyncConfigSet()` 仍是 `std::lock_guard<std::mutex>` 后按值写入 `mVsyncConfigSet`；未见 `std::atomic<std::shared_ptr<VsyncConfigSet>>`、`atomic_load/store` 路径。",
+          "suggestion": "删除“Android 16 原子化相位切换”“纳秒级确定性”等断言，改写为当前源码可验证的 mutex 更新模型；若引用未来分支，必须标注具体 commit/tag。"
+        },
+        {
+          "type": "版本差异/API 边界",
+          "location": "L316-L328 FrameRateParams 表格",
+          "detail": "`Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 在 android-16.0.0_r1 带 `@FlaggedApi(FLAG_ARR_SETFRAMERATE_API)`；正文把它写成 Android 15-QPR1+ 的通用 App 侧用法，缺少 flag/SDK 可用性边界。",
+          "suggestion": "表格补“flagged API/设备与 SDK 开关”说明；普通三方 App 的稳定路径仍以 `Surface.setFrameRate(float,int[,int])`、`View.setRequestedFrameRate()`、`Display.getSuggestedFrameRate()` 等公开 API 为主。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T21:57:00+08:00"
+    },
+    {
+      "id": "task9-20260513-2.21-text-rendering-api-version-data-errors",
+      "section": "2.21",
+      "section_title": "文字渲染性能",
+      "priority": 95,
+      "title": "文字渲染版本演进中的 HarfBuzz 数据、Variation 缓存与 StaticLayout API 版本错误",
+      "description": "HarfBuzz 10.x 性能数字、Variation Axes 40% 数据和 StaticLayout.Builder 新 API 版本归属与可核验资料不一致。",
+      "reason": "[Deep Tech Review] HarfBuzz 10.x 性能数字、Variation Axes 40% 数据和 StaticLayout.Builder 新 API 版本归属与可核验资料不一致。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-13-21-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "数据/源码错误",
+          "location": "L147-L149 / L394 HarfBuzz 10.x 性能数字",
+          "detail": "AOSP android-16.0.0_r1 `external/harfbuzz_ng/NEWS` 对应 10.2.0；未找到“阿拉伯语 Nastaliq 45%”“AAT 60%”这组结论。NEWS 中相近数字分别指 Noto Duployan shaping、SourceHanSans-VF subsetting 或 AAT short words up to 4%，正文把对象和比例混写。",
+          "suggestion": "删除或重写具体百分比；只保留可从 HarfBuzz NEWS 直接核对的条目，并写清 shaping / subsetting / loading 的不同口径。"
+        },
+        {
+          "type": "数据缺失/源码错误",
+          "location": "L330-L336 / L394 Variation Axes 缓存",
+          "detail": "正文宣称 Android 16 Minikin 为 Variation Axes 中间结果引入缓存、动态字重开销降低 40%，但当前可核验材料只显示 Minikin 支持 variation family/axis；HarfBuzz 4.4 NEWS 有 variable fonts shaping cache，未指向 Android 16 Minikin，也没有 40% 结论。",
+          "suggestion": "把该段降级为 `[待验证]` 或删除“Android 16 / Minikin / 40%”断言；若保留，需要补具体 AOSP commit、benchmark 条件和指标。"
+        },
+        {
+          "type": "版本差异/API 签名错误",
+          "location": "L395 / L404-L419 Android 17 排版 API",
+          "detail": "Android Developers `StaticLayout.Builder` 文档显示 `setUseBoundsForWidth(boolean)`、`setShiftDrawingOffsetForStartOverhang(boolean)` Added in API 35；正文写成 Android 17/API 37，且正文列表中的方法名漏掉 `set` 前缀。",
+          "suggestion": "把版本改为 Android 15/API 35，并统一使用真实方法名；“android-17.0.0_r1 已验证”锚点需要删除或替换为可访问 tag/官方 API 文档。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T21:57:00+08:00"
+    },
+    {
+      "id": "task9-20260513-3.1-input-rust-back-anr-fabricated-sources",
+      "section": "3.1",
+      "section_title": "Input 事件分发全流程",
+      "priority": 95,
+      "title": "InputFlinger Rust、预测性返回、DeliQueue 与 AnrTracker 多处源码锚点不存在或版本错误",
+      "description": "章节混入多段推测型源码调研，包含不存在的 InputDispatcher API/路径和未支撑的性能数字，需要回炉核对。",
+      "reason": "[Deep Tech Review] 章节混入多段推测型源码调研，包含不存在的 InputDispatcher API/路径和未支撑的性能数字，需要回炉核对。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 6,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-13-21-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L155-L205 / L253-L263 / L1078-L1130 InputFlinger Rust 架构",
+          "detail": "android-16.0.0_r1 确有 `services/inputflinger/rust/`，但它是 InputFilter 的 Rust 实现及 bounce/slow/sticky keys 等辅助输入过滤器；`InputReader`、`InputDispatcher` 仍是 C++。正文写成 InputFlinger 核心从 C++ 到 Rust、`InputDispatcher::notifyKey(..., KeyEntry&)` 调 `mInputFilter->filter(entry)`，在 `InputDispatcher.cpp` 中找不到该接口/调用。后文 `services/core/inputflinger/`、`InputDispatcher::predictiveBackHandling()` 也不存在。",
+          "suggestion": "删除“核心重构/替代传统 C++”叙述，改为“Android 16 引入 Rust InputFilter wrapper”；保留 Rust 内容时只写 `InputFilter.cpp/.h`、`rust/input_filter.rs`、accessibility filter 的真实边界。"
+        },
+        {
+          "type": "源码错误/版本差异",
+          "location": "L376-L382 Android 16 AOT 返回键预判拦截",
+          "detail": "android-16.0.0_r1 `InputDispatcher.cpp` 中没有 `OnBackInvokedCallback`、`BackNavigationController`、`predictiveBackHandling` 等符号；把返回 callback 适配写成 InputDispatcher 分发前检查目标窗口 callback，会误导读者。",
+          "suggestion": "按平台实际返回分发链重写：区分 KeyEvent BACK、预测性返回/OnBackInvokedDispatcher 的 framework/window 路径和 InputDispatcher 的按键分发边界；未核实前标 `[待验证]`。"
+        },
+        {
+          "type": "数据缺失/源码错误",
+          "location": "L520-L522 Android 17 DeliQueue 对输入响应的加速",
+          "detail": "段落宣称 DeliQueue 让输入事件入队/出队走无锁路径并减少 15% 锁等待、掉帧率下降 4%，但未给出 AOSP tag/commit、类名、trace 指标或 benchmark 条件；该段直接影响 App 侧 InputChannel/Looper 原理判断。",
+          "suggestion": "删除具体百分比和“已实现”语气；若保留，补 `MessageQueue`/`Looper`/`WindowInputEventReceiver` 的真实源码锚点和对照 trace。"
+        },
+        {
+          "type": "版本差异/源码错误",
+          "location": "L820-L840 AnrTracker 的 O(1) 优化（Android 14+）",
+          "detail": "`services/inputflinger/dispatcher/AnrTracker.cpp` 在 android-12.0.0_r1 已存在；实现是按 timeout 排序的容器，提供 `insert/erase/eraseToken/firstTimeout/firstToken`，不是 Android 14+ 新增，也没有正文暗示的 `findExpired()` API。",
+          "suggestion": "改成 Android 12+ 已有 AnrTracker，并说明它用最早 timeout 驱动下一次 ANR 检查；不要写 O(1) 全流程优化或 Android 14+ 引入。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L1067 WOULD_BACK",
+          "detail": "`WOULD_BACK` 不是 InputTransport/InputDispatcher 返回码；正文上方源码使用的是 `WOULD_BLOCK`。",
+          "suggestion": "统一改为 `WOULD_BLOCK`，并说明这是 socket/pipe 满时的 backpressure 信号。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T21:57:00+08:00"
     }
   ],
   "metadata": {

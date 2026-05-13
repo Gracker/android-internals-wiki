@@ -1,8 +1,8 @@
 {
   "total": 269,
   "draft": 35,
-  "ready-for-review": 65,
-  "finalized": 169,
+  "ready-for-review": 68,
+  "finalized": 166,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-13",
   "task9_reviewed_by": "openclaw-task9",
@@ -75,7 +75,10 @@
     "3.4",
     "2.6",
     "2.15",
-    "19.27"
+    "19.27",
+    "2.19",
+    "2.21",
+    "3.1"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -146,14 +149,17 @@
     "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
     "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
     "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
-    "src/part3-tools/ch19-apm/27-apm-client-architecture.md"
+    "src/part3-tools/ch19-apm/27-apm-client-architecture.md",
+    "src/part1-fundamentals/ch02-rendering/19-refresh-rate-switching.md",
+    "src/part1-fundamentals/ch02-rendering/21-text-rendering-performance.md",
+    "src/part1-fundamentals/ch03-input/01-input-dispatch.md"
   ],
   "review_summary": {
-    "p0_issues": 1,
-    "p1_issues": 3,
-    "p2_issues": 2,
+    "p0_issues": 9,
+    "p1_issues": 2,
+    "p2_issues": 0,
     "p3_issues": 0,
-    "total_issues": 6
+    "total_issues": 11
   },
   "task6_review_summary": {
     "l1_l2_fixes": 307,
