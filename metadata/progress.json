@@ -88,7 +88,8 @@
     "23.6",
     "5.9",
     "23.7",
-    "20.6"
+    "20.6",
+    "23.8"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -172,14 +173,15 @@
     "src/part5-app/ch23-memory-practice/06-large-heap-multiprocess.md",
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
-    "src/part5-app/ch20-stability/06-stability-metrics.md"
+    "src/part5-app/ch20-stability/06-stability-metrics.md",
+    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
   ],
-  "review_summary": "Task9 2026-05-14 05: reviewed 4.3/4.5/20.6; P0=4; P1=10; P2=7; auto-finalized 0.",
+  "review_summary": "Task6 2026-05-14 06: reviewed 23.8; L1/L2 fixes=11; L3/L4 queue items=1; auto-finalized 0.",
   "task6_review_summary": {
-    "l1_l2_fixes": 360,
-    "l3_issues": 26,
-    "l4_issues": 4,
-    "total_issues": 394,
+    "l1_l2_fixes": 371,
+    "l3_issues": 27,
+    "l4_issues": 5,
+    "total_issues": 407,
     "auto_promotions": 6
   },
   "issues_by_section": {
@@ -590,22 +592,32 @@
       "reviewed_at": "2026-05-14T05:50:18+08:00",
       "log": "logs/deep-review/2026-05-14-05-deep-review.md",
       "summary": "P0 1：Vitals 用户感知 ANR 定义不准；P1 4：门禁结论、阈值来源、示例计算、ANR 版本差异。"
+    },
+    "23.8": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 1,
+      "task6_result": "needs-rework",
+      "reviewed_at": "2026-05-14T06:10:39+08:00",
+      "log": "logs/review/2026-05-14-06-review.md",
+      "summary": "L3/L4：案例集缺少真实/可脱敏案例证据；已写入 queue.json priority 90。"
     }
   },
-  "total_review_sections": 82,
+  "total_review_sections": 83,
   "next_review_candidates": [],
   "ready_for_review": 67,
-  "last_updated": "2026-05-14T05:50:18+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-14T06:10:39+08:00",
+  "last_updated_by": "task6-review",
   "task6_last_review": {
-    "at": "2026-05-14T05:17:39+08:00",
-    "log": "logs/review/2026-05-14-05-review.md",
+    "at": "2026-05-14T06:10:39+08:00",
+    "log": "logs/review/2026-05-14-06-review.md",
     "sections": [
-      "23.7"
+      "23.8"
     ],
-    "l1_l2_fixes": 3,
-    "l3_l4_issues": 0,
-    "auto_promotions": 1
+    "l1_l2_fixes": 11,
+    "l3_l4_issues": 1,
+    "auto_promotions": 0
   },
   "task9_last_review": "2026-05-14T05:50:18+08:00",
   "ready_to_publish": 170,
@@ -1403,6 +1415,19 @@
       "last_task6_at": "2026-05-14T05:17:39+08:00",
       "last_task6_review_log": "logs/review/2026-05-14-05-review.md",
       "auto_finalized_by": "openclaw-task6"
+    },
+    "23.8": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "needs-rework",
+      "task2b_state": "pending",
+      "task9_state": "pending",
+      "queue_priority": 90,
+      "last_task6_at": "2026-05-14T06:10:39+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-06-review.md",
+      "file": "src/part5-app/ch23-memory-practice/08-memory-case-studies.md",
+      "title": "内存优化案例集"
     }
   },
   "task2b_rounds": [
