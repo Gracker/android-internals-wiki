@@ -41,12 +41,18 @@ tags: [case-study, memory, bitmap, native-memory, memory-budget]
 related_chapters: ["23.1", "23.2", "23.3", "23.4", "23.7", "20.5", "26.3"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
 task6_result: needs-rework
 last_task6_review_log: "logs/review/2026-05-14-06-review.md"
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-14"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-14T06:32:15+08:00"
+last_task9_review_log: logs/deep-review/2026-05-14-06-deep-review.md
+task9_review_notes: "2026-05-14 Task9 06: needs-rework。P1 1：heapprofd / smaps 运行条件缺少 user/userdebug、profileable/debuggable 与权限边界；P2 1：26.3 仍为 draft 引用。 已写入 logs/deep-review/2026-05-14-06-deep-review.md。"
 ---
 
 # 内存优化案例集

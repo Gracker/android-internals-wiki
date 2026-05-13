@@ -89,7 +89,8 @@
     "5.9",
     "23.7",
     "20.6",
-    "23.8"
+    "23.8",
+    "24.1"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -174,9 +175,10 @@
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
     "src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
     "src/part5-app/ch20-stability/06-stability-metrics.md",
-    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+    "src/part5-app/ch23-memory-practice/08-memory-case-studies.md",
+    "src/part5-app/ch24-io-network/01-file-io-optimization.md"
   ],
-  "review_summary": "Task6 2026-05-14 06: reviewed 23.8; L1/L2 fixes=11; L3/L4 queue items=1; auto-finalized 0.",
+  "review_summary": "Task9 2026-05-14 06: reviewed 22.9, 23.8, 24.1; P0=0 P1=1 P2=4; auto-finalized 0.",
   "task6_review_summary": {
     "l1_l2_fixes": 371,
     "l3_issues": 27,
@@ -595,20 +597,32 @@
     },
     "23.8": {
       "p0": 0,
-      "p1": 0,
+      "p1": 1,
       "p2": 1,
       "p3": 1,
       "task6_result": "needs-rework",
       "reviewed_at": "2026-05-14T06:10:39+08:00",
       "log": "logs/review/2026-05-14-06-review.md",
-      "summary": "L3/L4：案例集缺少真实/可脱敏案例证据；已写入 queue.json priority 90。"
+      "summary": "Task9 P1 1：heapprofd/smaps 工具运行条件缺失；Task6 L3/L4：案例集缺少真实/可脱敏案例证据，已写入 queue.json priority 90。"
+    },
+    "22.9": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
+    },
+    "24.1": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0
     }
   },
-  "total_review_sections": 83,
+  "total_review_sections": 84,
   "next_review_candidates": [],
   "ready_for_review": 67,
-  "last_updated": "2026-05-14T06:10:39+08:00",
-  "last_updated_by": "task6-review",
+  "last_updated": "2026-05-14T06:32:15+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-14T06:10:39+08:00",
     "log": "logs/review/2026-05-14-06-review.md",
@@ -1484,5 +1498,6 @@
     "src/part1-fundamentals/ch04-memory/03-art-memory.md",
     "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
     "src/part5-app/ch20-stability/06-stability-metrics.md"
-  ]
+  ],
+  "total_review_files": 84
 }

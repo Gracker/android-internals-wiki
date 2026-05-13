@@ -4425,18 +4425,50 @@
       "related_files": [
         "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
       ]
+    },
+    {
+      "id": "task9-23.8-heapprofd-smaps-tooling-boundary-20260514",
+      "section": "23.8",
+      "section_title": "内存优化案例集",
+      "priority": 85,
+      "reason": "[Deep Tech Review] heapprofd / smaps 排查路径缺少量产 user build、profileable/debuggable 与 /proc 权限边界，读者按命令可能直接抓不到数据",
+      "title": "Native 内存排查工具运行条件缺失",
+      "description": "L152-L168 把 Android 10+ heapprofd 与 adb shell smaps 命令写成通用路径，但没有说明 userdebug/eng 与 user build 的能力差异，也没有说明目标 App 需要 profileable/debuggable；/proc/<pid>/smaps 在非 root/user 设备上可能因权限失败。",
+      "issue_type": "tooling-boundary-version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-06-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/工具边界",
+          "location": "L152-L168 Native Heap / smaps / heapprofd 排查路径",
+          "detail": "heapprofd 在 user build 上只能 profile manifest 标记为 profileable 或 debuggable 的 App；debug/userdebug/eng 覆盖面不同。/proc/<pid>/smaps / showmap 在非 root 量产设备上也可能被权限限制。当前正文只写 Android 10+ 和 adb shell 命令，缺少关键运行前提。",
+          "suggestion": "补 userdebug/eng vs user build、profileable/debuggable、Perfetto tools/heap_profile 或 TraceConfig 入口；smaps 命令标注 root/run-as/可替代的 dumpsys meminfo 或 heapprofd 路径。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T06:32:15+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 145,
+    "total_entries": 146,
     "p0_count": 73,
-    "last_updated": "2026-05-14T06:11:14+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 88,
+    "last_updated": "2026-05-14T06:32:15+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 89,
     "updated_date": "2026-05-14",
-    "last_updated_by": "task6-review"
+    "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-14T06:11:14+08:00",
-  "last_updated_by": "task6-review",
-  "pending": 88
+  "last_updated": "2026-05-14T06:32:15+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 89
 }

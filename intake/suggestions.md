@@ -780,3 +780,28 @@
 - **问题**：章节目前以排查模板、治理口径和复盘字段为主，缺少可脱敏真实案例的修复前后数据、Heap Dump / heapprofd 观察点或线上 PSS 趋势。作为“案例集”，这会导致 L3 论据支撑不足，L4 作者在场感偏弱。
 - **建议**：Task2B 补 1-2 个可脱敏案例：至少覆盖 Bitmap 大图、Native 泄漏或预算门禁中的一个；每个案例包含现象、指标、证据、根因、修复、验证和防复发字段。涉及技术真伪或版本口径的新增内容再交 Task9 复核。
 - **review 日志**：logs/review/2026-05-14-06-review.md
+
+
+## [Task9 Deep Review] 22.9 渲染优化案例集 — 2026-05-14
+- **类型**：数据缺失/指标口径
+- **位置**：L127-L133 `FrameTimingMetric` 验收表
+- **问题**：当前只列 `frameDurationCpuMs` P95/P99，复杂列表与高刷场景更需要同时观察 deadline miss 口径；Macrobenchmark 的 `frameOverrunMs` 能直接表达帧相对 deadline 的提前/超时。
+- **建议**：验收表补 `frameOverrunMs` P95/P99，说明正值表示错过 deadline，和 vitals 慢帧/frozen frame 口径分开使用。
+
+## [Task9 Deep Review] 23.8 内存优化案例集 — 2026-05-14
+- **类型**：交叉引用
+- **位置**：L80、L195 指向 26.3
+- **问题**：26.3 当前仍是 draft，作为“指标上报体系/完整监控设计”延伸阅读会把读者导向未完成章节。
+- **建议**：发布前改指向已成稿的 23.7，或在 26.3 完成前删除该引用/标注“待成稿”。
+
+## [Task9 Deep Review] 24.1 文件 I/O 优化 — 2026-05-14
+- **类型**：源码准确性/版本标注
+- **位置**：frontmatter `last_verified_against`、L85、L117-L119、L180
+- **问题**：章节适用范围写 Android 10-16，但源码锚点标为 AOSP master；master 会随 Android 17+ 开发变化漂移，不能作为 Android 10-16 的稳定复核锚点。
+- **建议**：将 SharedPreferencesImpl、QueuedWork、StrictMode、AtomicFile 的源码锚点 pin 到 `android-16.0.0_r1` 或明确的 tag；若保留 master 观察，正文标为 Android 17+ 待验证。
+
+## [Task9 Deep Review] 24.1 文件 I/O 优化 — 2026-05-14（交叉引用）
+- **类型**：交叉引用
+- **位置**：L156 指向 24.2
+- **问题**：24.2 当前仍是 draft，正文把“多表查询、分页、事务关系交给 Room/SQLite，见 24.2 节”写成可读延伸章节，发布态不成立。
+- **建议**：24.2 成稿前删除“见 24.2 节”，或改为内部待补引用；发布前再恢复交叉链接。
