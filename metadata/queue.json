@@ -4191,6 +4191,56 @@
           "suggestion": "找到 framework API/StatsD/LMKD/meminfo 源码锚点后再写；否则改成“需要同时观察调用方与 AICore/PCS 相关进程内存”。"
         }
       ]
+    },
+    {
+      "id": "task9-2026-05-14-5.9-adpf-api-version-errors",
+      "section": "5.9",
+      "section_title": "ADPF 自适应性能框架",
+      "priority": 95,
+      "title": "ADPF API/版本口径错误",
+      "description": "PerformanceHintManager.Session#setPreferIdle 不存在；RecyclerView 1.4 ADPF 集成错误；WorkDuration API 版本写错；Java sendHint() 公开 API 边界不清。",
+      "reason": "[Deep Tech Review] ADPF 公开 API、AndroidX RecyclerView 1.4 与 WorkDuration 版本口径存在 P0/P1 技术错误。",
+      "issue_type": "source-code-accuracy-version-difference-api-boundary",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/09-adpf.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "5.9 L141-L157、L314",
+          "detail": "正文称 API 37 的 PerformanceHintManager.Session 引入 setPreferIdle(boolean)，并给出 hintSession.setPreferIdle() 示例；当前 Android Developers API 37 / REL 文档与 NDK Performance Hint 文档均无该公开方法。",
+          "suggestion": "删除 setPreferIdle 小节和版本表条目；如确有预览源码依据，改为 [待验证] 并补 AOSP commit/API stub 链接。当前可保留 setPreferPowerEfficiency(boolean) 作为 API 35 能效模式。"
+        },
+        {
+          "type": "源码错误",
+          "location": "5.9 L314、L520",
+          "detail": "正文称 RecyclerView 1.4 内置 ADPF HintSession 管理。AndroidX RecyclerView 1.4.0 release notes 只说明滚动时调用 setFrameContentVelocity 支持自适应刷新率，未出现 PerformanceHintManager、HintSession 或 ADPF 集成。",
+          "suggestion": "将该段改为 RecyclerView 1.4 的 Adaptive Refresh Rate / setFrameContentVelocity 支持，或删除“自动管理 HintSession / 上报 work duration”的 ADPF 说法。"
+        },
+        {
+          "type": "版本差异",
+          "location": "5.9 L421-L428、L312",
+          "detail": "源码调研补充写成 Android 16 (API 36+) 才通过 WorkDuration 上报 CPU/GPU 分拆耗时；官方 PerformanceHintManager.Session#reportActualWorkDuration(WorkDuration) 与 WorkDuration 文档均标注 Added in API level 35。",
+          "suggestion": "统一为 Android 15 / API 35；同时保留 L119-L127 的 Android 15 口径，删除与其冲突的 API 36+ 描述。"
+        },
+        {
+          "type": "公开 API 边界",
+          "location": "5.9 L380-L417",
+          "detail": "Java sendHint() 段落虽标注 @TestApi/@hide，但后文把它描述成可与 reportActualWorkDuration 组合使用的优化路径，容易误导普通 App 走隐藏 API。NDK 公开面对应的是 notifyWorkloadIncrease/Reset/Spike 等 workload hints。",
+          "suggestion": "明确 Java sendHint() 不是 public SDK API；若面向 NDK 游戏/引擎，改用 APerformanceHint_notifyWorkloadIncrease/Reset/Spike，并补 rate limiter 与适用 API 版本。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T04:36:12+08:00"
     }
   ],
   "metadata": {
