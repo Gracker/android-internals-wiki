@@ -16,14 +16,14 @@ confidence: medium
 polish_count: 1
 polish_date: '2026-04-05'
 polish_by: task2b-polish
-task6_state: reviewed
+task6_state: revisiting
 task6_result: pass-light-edit
 task9_state: reviewed
 task9_result: needs-rework
-task2b_state: pending
+task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: "2026-05-11T23:28:02+08:00"
-pipeline_stage: task2b_pending
+last_task2b_at: "2026-05-13T23:35:47+08:00"
+pipeline_stage: task6_pending
 sources:
 - type: official
   path: developer.android.com/about/versions
@@ -34,9 +34,11 @@ sources:
 - type: aosp
   path: external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto
 - type: aosp
-  path: frameworks/base/core/java/android/graphics/RuntimeColorFilter.java
+  path: frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java
 - type: aosp
-  path: frameworks/base/core/java/android/graphics/animation/RenderNodeAnimator.java
+  path: frameworks/base/graphics/java/android/graphics/animation/RenderNodeAnimator.java
+- type: aosp
+  path: frameworks/base/graphics/java/android/graphics/RuntimeXfermode.java
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T04:39:00+08:00"
@@ -176,7 +178,7 @@ Vulkan 后端相比 OpenGL ES 的具体改进：
 
 - Android 10（API 29）：64 位设备必须支持 Vulkan 1.1
 - Android 13（API 33）：新设备必须支持 Vulkan 1.3
-- Android 16（API 36）：新设备必须支持 Vulkan 1.4 及 VPA16 Profile（Android Vulkan Profile 2025），Host Image Copy 等高性能纹理技术成为设备必选项。VPA16 的核心价值是统一跨厂商的驱动行为：以前同一份 Vulkan 代码在不同 SoC 上可能因为可选特性支持差异产生不同的性能表现，VPA16 把这些特性锁定为强制基线，减少了"设备 A 正常、设备 B 渲染错误"的碎片化问题。
+- Android 16（API 36）：新设备必须支持 Vulkan 1.4（CDD 平台要求），同时 Khronos 定义了 VP_ANDROID_16 profile（Android Vulkan Profile 2025），profile api-version 为 1.3.276，强制扩展包括 `VK_EXT_host_image_copy` 等。Vulkan 1.4 是新设备准入门槛；VP_ANDROID_16 是在此基础上统一的兼容性扩展集——两者是不同层面的要求。VPA16 的核心价值是统一跨厂商的驱动行为：以前同一份 Vulkan 代码在不同 SoC 上可能因为可选特性支持差异产生不同的性能表现，VPA16 把这些特性锁定为强制基线，减少了"设备 A 正常、设备 B 渲染错误"的碎片化问题。
 
 ## BLASTBufferQueue：统一的 Buffer 管理（Android 11+）
 
@@ -476,7 +478,8 @@ FrameMetrics 是 per-window、per-process 的 API，只能报告当前 App 进�
 - `frameworks/base/core/java/android/view/FrameMetrics.java` — FrameMetrics API
 - `frameworks/native/libs/gui/BLASTBufferQueue.cpp` — BLASTBufferQueue 实现
 - `external/perfetto/protos/perfetto/trace/android/frame_timeline_event.proto` — FrameTimeline `JankType` bitmask 定义
-- `frameworks/base/core/java/android/graphics/RuntimeColorFilter.java` — Android 16 AGSL color filter API
+- `frameworks/base/graphics/java/android/graphics/RuntimeColorFilter.java` — Android 16 AGSL color filter API
+- `frameworks/base/graphics/java/android/graphics/RuntimeXfermode.java` — Android 16 AGSL xfermode API
 - `frameworks/base/core/java/android/view/Display.java` — ARR 公共 API（`hasArrSupport()` / `getSuggestedFrameRate()`）
 - `frameworks/base/core/java/android/view/Window.java` — Window 级 ARR 偏好设置
 - `frameworks/native/services/surfaceflinger/FrameTimeline/` — FrameTimeline 系统（Jank 检测框架）

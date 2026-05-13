@@ -2270,7 +2270,7 @@
       "issue_type": "source-code-accuracy",
       "priority": 95,
       "severity": "P0",
-      "status": "pending",
+      "status": "completed",
       "assigned_to": "content-team",
       "estimated_hours": 3,
       "dependencies": [],
@@ -2312,7 +2312,9 @@
           "detail": "`RenderNode.beginRecording()` 示例没有调用 `setPosition()` 或 `beginRecording(width, height)`，默认 RenderNode 宽高可能为 0；`endRecording()` 未放入 try/finally，异常时会留下未结束 recording。",
           "suggestion": "按 AOSP `RenderNode.java` 官方示例改写：初始化/尺寸变化时设置 `setPosition(0,0,w,h)`，录制时用 try/finally 调 `endRecording()`，绘制前检查 `canvas.isHardwareAccelerated()` 与 `hasDisplayList()`。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-13T23:35:47+08:00",
+      "completed_reason": "Task 2B 回炉修复: 源码路径/版本口径/脏区域/RenderNode/API 修正"
     },
     {
       "id": "task6-2026-05-13-5.10-evidence-boundary",
@@ -2662,13 +2664,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T04:39:00+08:00"
+      "added_at": "2026-05-13T04:39:00+08:00",
+      "completed_date": "2026-05-13T23:35:47+08:00",
+      "completed_reason": "Task 2B 回炉修复: 源码路径/版本口径/脏区域/RenderNode/API 修正"
     },
     {
       "id": "task9-2026-05-13-2.9-vpa16-profile-version",
@@ -2693,13 +2697,15 @@
         }
       ],
       "created_date": "2026-05-13",
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "material_paths": [
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T04:39:00+08:00"
+      "added_at": "2026-05-13T04:39:00+08:00",
+      "completed_date": "2026-05-13T23:35:47+08:00",
+      "completed_reason": "Task 2B 回炉修复: 源码路径/版本口径/脏区域/RenderNode/API 修正"
     },
     {
       "id": "task9-2026-05-13-2.18-supported-refresh-rates-semantics",
