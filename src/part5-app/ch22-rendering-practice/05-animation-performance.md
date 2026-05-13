@@ -8,6 +8,9 @@ last_verified: "2026-05-13"
 last_verified_against: "AOSP android-16.0.0_r1"
 confidence: medium
 drafted_date: "2026-05-13"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
 polish_count: 0
 sources:
   - type: clippings
@@ -30,10 +33,10 @@ sources:
     path: "github.com/airbnb/lottie-android/LottieAnimationView.java"
 tags: [animation, property-animation, lottie, render-effect, transition, motionlayout]
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
 ---
 
 # 动画性能优化
@@ -67,7 +70,6 @@ task2b_state: pending
 
 本节把动画优化拆成四类决策：选哪种动画模型、哪些视觉效果会推高 GPU 成本、主线程每帧要做多少事、转场是否扩大了布局和绘制范围。具体的渲染管线原理详见 2.5 节，本节只保留实战判断和检查项。
 
-[结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
 
 ## 属性动画 vs 帧动画的性能差异
 
@@ -220,7 +222,7 @@ ValueAnimator.ofFloat(0f, 1f).apply {
 
 [详见 22.4 节]
 
-[自动发现] 后台动画要纳入功耗治理。页面 `onStop()` 后还在播放的属性动画、Lottie、定时器刷新，会在用户不可见时继续占用 CPU/GPU。页面不可见时暂停，回到前台再按业务状态恢复；这类问题更适合通过生命周期钩子和页面级动画管理器统一兜底。
+后台动画也要纳入功耗治理。页面 `onStop()` 后还在播放的属性动画、Lottie、定时器刷新，会在用户不可见时继续占用 CPU/GPU。页面不可见时暂停，回到前台再按业务状态恢复；这类问题更适合通过生命周期钩子和页面级动画管理器统一兜底。
 
 [来源: intake/external-resources/blog-gracker-series.md, Android 后台动画优化]
 
@@ -282,8 +284,6 @@ MotionLayout 的调试重点不是“动画能不能跑”，而是 trace 里每
 
 ## 参考资料
 
-- [结构参考: Clippings/Android 性能优化 - 原理：重新认识应用的速度优化.md]
-- [结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]
 - [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewPropertyAnimator.java]
 - [已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderEffect.java]
 - [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/View.java]
