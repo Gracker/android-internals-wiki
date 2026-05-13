@@ -534,3 +534,16 @@
 - **位置**：L276-L296 `shouldInterceptRequest()` 示例
 - **问题**：main frame 默认进入 offlineStore 查找，但代码未显式展示可信域名/manifest 白名单；读者可能误把主文档和子资源拦截边界混在一起。
 - **建议**：补注释：main frame 仅限离线包 manifest 命中的受控 URL；子资源也要走 allowlist，校验失败立即返回 null 走网络兜底。
+
+## [Task9 Deep Review] 22.8 帧率监控与线上卡顿治理 — 2026-05-13
+- **类型**：数据口径
+- **位置**：L315-L330 `jank_count` / `frozen_count` / `frozen_frame_rate`
+- **问题**：`frozen_count` 与 `frozen_frame_rate` 未定义阈值来源，容易和 Android Vitals 的 frozen frame（通常以 >700ms 为口径）或业务自定义严重卡顿口径混用。
+- **建议**：明确每个计数字段的判定来源：JankStats `isJank`、FrameMetrics/JankStats overrun、Android Vitals frozen frame 阈值或业务阈值；服务端聚合时保留 `metric_source` / `threshold_ms`。
+
+## [Task9 Deep Review] 22.8 帧率监控与线上卡顿治理 — 2026-05-13
+- **类型**：版本差异/采集边界
+- **位置**：L110-L161 `FrameCadenceSampler` 刷新率预算
+- **问题**：示例把 `displayRefreshHz` 固定在构造参数中；Android 11+ 高刷和 Android 12+ 动态刷新率设备可能在页面生命周期内切换刷新率，固定预算会放大误报或漏报。
+- **建议**：补充动态刷新率处理：采集窗口记录当前 display mode/refresh rate，监听 DisplayManager 变化，或优先使用 JankStats / FrameMetrics deadline、overrun 口径。
+

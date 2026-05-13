@@ -44,10 +44,14 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [frame-rate, jankstats, choreographer, online-monitoring]
 related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.06", "19.11", "19.12", "26.3"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task9_result: needs-rework
+task9_reviewed_date: "2026-05-13"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-13T10:22:00+08:00"
 ---
 
 # 帧率监控与线上卡顿治理

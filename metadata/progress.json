@@ -883,14 +883,18 @@
     },
     "22.8": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "last_task6_at": "2026-05-13T10:13:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-13-10-review.md",
       "file": "src/part5-app/ch22-rendering-practice/08-frame-monitoring.md",
-      "title": "帧率监控与线上卡顿治理"
+      "title": "帧率监控与线上卡顿治理",
+      "task9_result": "needs-rework",
+      "task2b_state": "pending",
+      "last_task9_at": "2026-05-13T10:22:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-13-10-deep-review.md"
     }
   },
   "task2b_rounds": [
