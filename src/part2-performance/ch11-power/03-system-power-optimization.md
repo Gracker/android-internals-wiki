@@ -1,7 +1,7 @@
 ---
 title: 系统级功耗优化
 chapter: '11.3'
-status: ready-for-review
+status: finalized
 section: '11.3'
 drafted_date: '2026-04-03'
 drafted_by: openclaw-task2a
@@ -71,17 +71,16 @@ repaired_date: '2026-04-26'
 repaired_by: openclaw-task2b
 last_task6_at: '2026-05-06T22:05:00+08:00'
 last_task6_review_log: logs/review/2026-05-06-22-review.md
-review_notes: '2026-05-06 task6 re-review (revisiting): pass-light-edit。修复 frontmatter
-  分隔符、L1 禁用/高风险词与中英文术语；无新增 L3/L4 回炉项，等待 Task9 复审。'
+review_notes: '2026-05-13 task9 deep-review: pass-tech-review。P0 0，P1 0，P2 1；厂商功耗策略数据建议写入 suggestions，不阻塞发布；自动晋升 finalized。'
 review_round: 4
-pipeline_stage: task9_pending
-task9_state: pending
-task9_result: ''
-task2b_state: pending
-task9_reviewed_date: '2026-05-06'
+pipeline_stage: ready-to-publish
+task9_state: reviewed
+task9_result: pass-tech-review
+task2b_state: fixed
+task9_reviewed_date: '2026-05-13'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-06T22:41:22+08:00'
-last_task9_review_log: logs/deep-review/2026-05-06-22-deep-review.md
+last_task9_at: '2026-05-13T15:31:00+08:00'
+last_task9_review_log: logs/deep-review/2026-05-13-15-deep-review.md
 ---
 
 
