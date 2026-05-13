@@ -84,7 +84,8 @@
     "23.2",
     "23.3",
     "23.4",
-    "23.5"
+    "23.5",
+    "23.6"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -164,14 +165,15 @@
     "src/part5-app/ch23-memory-practice/02-bitmap-optimization.md",
     "src/part5-app/ch23-memory-practice/03-native-memory-management.md",
     "src/part5-app/ch23-memory-practice/04-java-heap-optimization.md",
-    "src/part5-app/ch23-memory-practice/05-memory-churn-gc.md"
+    "src/part5-app/ch23-memory-practice/05-memory-churn-gc.md",
+    "src/part5-app/ch23-memory-practice/06-large-heap-multiprocess.md"
   ],
-  "review_summary": "Task9 2026-05-14 03: reviewed 2.10/2.14/5.11; P0=5 P1=6 P2=2; no auto-finalized.",
+  "review_summary": "Task6 2026-05-14 04: reviewed 23.6; L1/L2 fixes=11; no rework; no auto-finalized.",
   "task6_review_summary": {
-    "l1_l2_fixes": 346,
+    "l1_l2_fixes": 357,
     "l3_issues": 26,
     "l4_issues": 4,
-    "total_issues": 380,
+    "total_issues": 391,
     "auto_promotions": 5
   },
   "issues_by_section": {
@@ -539,20 +541,18 @@
       "p3": 0
     }
   },
-  "total_review_sections": 78,
+  "total_review_sections": 79,
   "next_review_candidates": [],
   "ready_for_review": 68,
-  "last_updated": "2026-05-14T03:44:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-14T04:08:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T02:13:00+08:00",
-    "log": "logs/review/2026-05-14-02-review.md",
+    "at": "2026-05-14T04:08:00+08:00",
+    "log": "logs/review/2026-05-14-04-review.md",
     "sections": [
-      "23.5",
-      "2.9",
-      "22.4"
+      "23.6"
     ],
-    "l1_l2_fixes": 14,
+    "l1_l2_fixes": 11,
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
@@ -1307,6 +1307,14 @@
       "last_task9_review_log": "logs/deep-review/2026-05-14-01-deep-review.md",
       "file": "src/part5-app/ch23-memory-practice/04-java-heap-optimization.md",
       "title": "Java Heap 优化策略"
+    },
+    "23.6": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "last_task6_at": "2026-05-14T04:08:00+08:00",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_review_log": "logs/review/2026-05-14-04-review.md"
     }
   },
   "task2b_rounds": [

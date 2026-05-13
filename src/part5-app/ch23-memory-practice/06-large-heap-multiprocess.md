@@ -36,10 +36,17 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]"
 tags: [large-heap, multiprocess, memory-budget, 64bit]
 related_chapters: ["23.4", "4.4", "1.3", "4.7"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
-task2b_state: pending
+task2b_state: fixed
+reviewed_date: "2026-05-14"
+reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-14"
+task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 11 处（术语格式、填充表达、维护成本表述）；四层质检通过，无新增 L3/L4 回炉项，送 Task9 技术复审。"
+last_task6_review_log: "logs/review/2026-05-14-04-review.md"
+last_task6_at: "2026-05-14T04:08:00+08:00"
 ---
 
 # 大内存与多进程策略
@@ -69,15 +76,15 @@ task2b_state: pending
 
 ## 为什么要了解大内存与多进程策略
 
-大内存策略解决的是两个不同层面的限制：Java Heap 的增长上限，以及进程虚拟地址空间的可用范围。前者决定单进程内 Java 对象能申请到多少空间，后者决定 32 位进程还能不能继续 `mmap` 线程栈、so、dex、Bitmap、图形缓冲或匿名内存。
+大内存策略解决的是两个不同层面的限制：Java Heap 的增长上限，以及进程虚拟地址空间的可用范围。前者决定单进程内 Java 对象能申请到多少空间，后者决定 32 位进程还能不能继续 `mmap` 线程栈、`.so`、`.dex`、Bitmap、图形缓冲或匿名内存。
 
-`android:largeHeap`、多进程和 64 位迁移经常被放在同一个讨论里，但它们的收益和代价不一样。`largeHeap` 扩大的是当前应用进程的 Dalvik / ART heap 增长上限；多进程把不同业务拆到多个 Linux 进程，各自拥有独立地址空间和运行时；64 位迁移把地址空间瓶颈从 32 位用户态的 GB 级抬到 TB 级。三者都可能降低 OOM 发生率，也都可能增加 PSS、启动耗时和治理成本。
+`android:largeHeap`、多进程和 64 位迁移经常被放在同一个讨论里，但它们的收益和代价不一样。`largeHeap` 扩大的是当前应用进程的 Dalvik / ART heap 增长上限；多进程把不同业务拆到多个 Linux 进程，各自拥有独立地址空间和运行时；64 位迁移把地址空间瓶颈从 32 位用户态的 GB 级抬到 TB 级。三者都可能降低 OOM 发生率，也都可能增加 PSS、启动耗时和维护成本。
 
 实战里不要把它们当成“加内存开关”。先确认 OOM 类型，再决定手段：Java Heap OOM 优先回到 23.4 节处理对象和缓存；低内存杀进程优先看 4.4 节的 LMKD / oom_adj；32 位虚拟地址耗尽、线程栈过多、WebView / 图形 / Native 映射过大，才进入本篇的策略选择。[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
 
 ## largeHeap 的使用场景与代价
 
-`android:largeHeap="true"` 声明在 `<application>` 上。官方文档给出的定义很直接：应用进程会以 large Dalvik heap 创建；该属性作用于应用创建的所有进程，但只对某个进程里第一个加载的应用生效。官方也明确提示，大多数 App 不该依赖它，开启后也不保证可用内存固定增加，因为设备总内存仍然会限制结果。[已验证: 官方文档, developer.android.com/guide/topics/manifest/application-element#largeHeap]
+`android:largeHeap="true"` 声明在 `<application>` 上。官方文档的定义是：应用进程会以 large Dalvik heap 创建；该属性作用于应用创建的所有进程，但只对某个进程里第一个加载的应用生效。官方也明确提示，大多数 App 不该依赖它，开启后也不保证可用内存固定增加，因为设备总内存仍然会限制结果。[已验证: 官方文档, developer.android.com/guide/topics/manifest/application-element#largeHeap]
 
 AOSP 的启动路径能解释这个属性的边界。`ActivityThread.handleBindApplication()` 在绑定应用时检查 `ApplicationInfo.FLAG_LARGE_HEAP`：命中后调用 `VMRuntime.getRuntime().clearGrowthLimit()`，否则调用 `clampGrowthLimit()`。`ActivityManager.getMemoryClass()` 读取 `dalvik.vm.heapgrowthlimit`，`getLargeMemoryClass()` 读取 `dalvik.vm.heapsize`。这说明 largeHeap 影响的是 ART heap 的 growth limit，不会让 Native heap、图形内存、线程栈或文件映射免费变小。[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/app/ActivityThread.java; frameworks/base/core/java/android/app/ActivityManager.java]
 
@@ -116,9 +123,9 @@ largeHeap 的代价主要有四类：
 
 Android 默认让同一应用的组件运行在同一进程和主线程。组件可以通过 manifest 的 `android:process` 放到其他进程；远程 Binder 调用进入服务进程后，由系统维护的 Binder 线程池执行，服务端方法必须按并发调用设计。[已验证: 官方文档, developer.android.com/guide/components/processes-and-threads]
 
-多进程的价值是隔离地址空间和故障域。大对象解析、WebView、地图、相机预览、图片编辑、插件运行时、短时批处理这类模块，放到子进程后可以在任务结束时退出整个进程，让 Java Heap、Native heap、线程栈、JIT 缓存、so 映射和图形资源一起释放。对 32 位进程来说，这比在主进程里反复释放对象更干净，因为虚拟地址碎片也随进程退出消失。[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
+多进程的价值是隔离地址空间和故障域。大对象解析、WebView、地图、相机预览、图片编辑、插件运行时、短时批处理这类模块，放到子进程后可以在任务结束时退出整个进程，让 Java Heap、Native heap、线程栈、JIT 缓存、`.so` 映射和图形资源一起释放。对 32 位进程来说，这比在主进程里反复释放对象更干净，因为虚拟地址碎片也随进程退出消失。[结构参考: Clippings/Android 性能优化 - 虚拟内存优化（上）：线程+多进程优化.md]
 
-多进程不会自动降低总内存。每个进程都会有独立的 ART 运行时、ClassLoader、线程、Binder 线程池、Native allocator 状态和业务缓存。so、dex、framework 代码页可以共享，脏页、Java 对象、线程栈和多数 Native 分配不能共享。官方文档对 PSS 的定义也说明了这一点：共享页按进程数量分摊，非共享页完整计入当前进程；RSS 统计更快，但会把共享页完整算进每个进程。[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
+多进程不会自动降低总内存。每个进程都会有独立的 ART 运行时、ClassLoader、线程、Binder 线程池、Native allocator 状态和业务缓存。`.so`、`.dex`、framework 代码页可以共享，脏页、Java 对象、线程栈和多数 Native 分配不能共享。官方文档对 PSS 的定义也说明了这一点：共享页按进程数量分摊，非共享页完整计入当前进程；RSS 统计更快，但会把共享页完整算进每个进程。[已验证: 官方文档, developer.android.com/topic/performance/memory-management]
 
 适合拆进程的模块通常有这些特征：
 
@@ -162,14 +169,14 @@ adb shell cat /proc/$(adb shell pidof com.example.app:editor)/smaps_rollup
 
 64 位迁移对内存策略有两层影响。第一层是兼容要求：Google Play 要求发布的 App 支持 64 位架构；如果 App 或 SDK 包含 C/C++ native code，就要检查 APK / AAB 里的 ABI 目录，为每个支持的 32 位 ABI 提供对应 64 位 ABI，例如 `armeabi-v7a` 对应 `arm64-v8a`，`x86` 对应 `x86_64`。[已验证: 官方文档, developer.android.com/google/play/requirements/64-bit]
 
-第二层是地址空间：64 位进程能显著降低 32 位虚拟地址耗尽导致的 mmap 失败。线程多、so 多、dex / oat 映射多、WebView / 图形 / Native buffer 多的 App，在 32 位进程里可能还没耗尽物理内存就先耗尽连续虚拟地址；64 位迁移后，这类失败会少很多。[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]
+第二层是地址空间：64 位进程能显著降低 32 位虚拟地址耗尽导致的 mmap 失败。线程多、`.so` 多、`.dex` / `.oat` 映射多、WebView / 图形 / Native buffer 多的 App，在 32 位进程里可能还没耗尽物理内存就先耗尽连续虚拟地址；64 位迁移后，这类失败会少很多。[结构参考: Clippings/Android 性能优化 - 原理：重新认识内存.md]
 
-64 位不是免费扩容。指针宽度增加会放大部分对象、表结构和 Native 数据结构；so 体积、冷启动 I/O、指令缓存和内存局部性也可能变化。只用 Java / Kotlin 的 App 通常已经能在 64 位设备上运行；包含 native code 的 App 要把 ABI、三方 SDK、插件、热修复、so 加载路径、崩溃符号表和性能基线一起迁移。
+64 位不是免费扩容。指针宽度增加会放大部分对象、表结构和 Native 数据结构；`.so` 体积、冷启动 I/O、指令缓存和内存局部性也可能变化。只用 Java / Kotlin 的 App 通常已经能在 64 位设备上运行；包含 native code 的 App 要把 ABI、三方 SDK、插件、热修复、`.so` 加载路径、崩溃符号表和性能基线一起迁移。
 
 迁移检查按这条顺序做：
 
-- 包产物检查：AAB / APK 中是否包含 `lib/arm64-v8a`；如果还保留 `armeabi-v7a`，两边 so 集合要能对应业务功能。
-- 运行时检查：启动日志、`Build.SUPPORTED_ABIS`、native loader、插件 so 搜索路径和灰度开关要能区分 32 / 64 位。
+- 包产物检查：AAB / APK 中是否包含 `lib/arm64-v8a`；如果还保留 `armeabi-v7a`，两边 `.so` 集合要能对应业务功能。
+- 运行时检查：启动日志、`Build.SUPPORTED_ABIS`、native loader、插件 `.so` 搜索路径和灰度开关要能区分 32 / 64 位。
 - 性能检查：同设备对比启动耗时、PSS、Native heap、Graphics、线程数、page fault 和崩溃率。
 - 兜底检查：老设备、只支持 32 位的三方 SDK、厂商 ROM、WebView / Chromium 版本差异要保留降级路径。
 
