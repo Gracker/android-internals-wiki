@@ -57,14 +57,14 @@ related_chapters:
 - '15.5'
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 task9_result: needs-rework
-task9_reviewed_by: 'openclaw-task9'
-task9_reviewed_date: '2026-05-12'
-last_task9_at: '2026-05-12T19:58:00+08:00'
-task9_review_notes: '2026-05-12 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 1；API 37 PENDING_JOB_REASON_ENERGY_SCHEDULING 未在官方 JobScheduler 常量中出现，Power Check/WorkManager 2.10 量化口径需补证。'
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: 2026-05-14
+last_task9_at: 2026-05-14T07:24:00+08:00
+task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 2 / P1 0 / P2 1；API 37 pending reason 只提供聚合 DEVICE_STATE 常量，getAppStandbyBucket() 查询自身不需要 PACKAGE_USAGE_STATS；WorkManager 调度器示例需补 AndroidX 源码锚点。"
 last_task2b_at: '2026-05-12T23:39:00+08:00'
 repaired_date: '2026-04-27'
 repaired_by: openclaw-task2b
