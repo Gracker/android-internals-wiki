@@ -3564,6 +3564,13 @@
           "location": "L274-L279、L439 Binder FDA 批量传输优化",
           "detail": "android-16.0.0_r1 `GraphicBuffer.cpp` 的 `flatten/unflatten` 仍是 transport fd 数组拷贝与 handle 重建路径，未看到正文所称 `GraphicBuffer::unflatten()` 直接利用 FDA 的源码锚点；“CPU 开销降低 20%-40%”也缺少测试条件。",
           "suggestion": "补 Binder/Parcel 层 FDA 真实调用链与 benchmark 条件；否则删除 20%-40% 定量收益，把该段降级为待验证方向。"
+        },
+        {
+          "severity": "P1",
+          "type": "Task6交接",
+          "location": "全章技术风险段落",
+          "detail": "2026-05-13 Task6 复审完成 L1/L2 小修；章节仍因 Task9 P0/P1 风险不满足发布条件。",
+          "suggestion": "先按现有 Task9 review_issues 回炉，修复后再回到 Task6/Task9 复核。"
         }
       ],
       "added_by": "task9-deep-tech-review",

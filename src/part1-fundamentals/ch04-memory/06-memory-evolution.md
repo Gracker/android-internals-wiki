@@ -3,7 +3,7 @@ status: ready-for-review
 title: 内存相关的版本演进
 chapter: '4.6'
 section: '4.6'
-reviewed_date: '2026-05-12'
+reviewed_date: '2026-05-13'
 reviewed_by: openclaw-task6
 polish_count: 1
 polish_date: '2026-04-07'
@@ -60,18 +60,18 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 8
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task6_result: pass-light-edit
-last_task6_at: '2026-05-12T18:02:31+08:00'
-last_task6_review_log: logs/review/2026-05-12-18-review.md
-task6_review_notes: '2026-05-12 Task6 18:02：pass-light-edit。L1/L2 小修 10 处：去第一人称/读者直呼、修正限制句式、删除编辑口吻；未新增回炉项。Task9 仍 pending/needs-rework，未自动晋升。'
+last_task6_at: '2026-05-13T20:10:00+08:00'
+last_task6_review_log: logs/review/2026-05-13-20-review.md
+task6_review_notes: '2026-05-13 Task6 20:10：pass-light-edit。L1/L2 小修 2 处：修正 last_task2b_at 日期占位符、删除 largeHeap 否定纠正式表述；Task9 仍待复核，未自动晋升。'
 task9_state: pending
 task9_result: needs-rework
 last_task9_at: '2026-05-12T18:24:00+08:00'
 task2b_state: fixed
 task2b_result: fixed
-last_task2b_at: '2026-%m-13T19:33:05+08:00'
+last_task2b_at: '2026-05-13T19:33:05+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-12'
 task9_review_notes: '2026-05-12 Task9 18:24：needs-rework。P0 3 / P1 1 / P2 0；16KB linker compat、Bitmap 源码路径、MTE ASYMM 平台边界存在源码/版本错误；MGLRU 观察口径不足。'
@@ -346,7 +346,7 @@ Android 系统为每个进程设定了 Java 堆的大小上限。这个上限不
 
 Android 在 Manifest 中提供了 `android:largeHeap="true"` 选项，允许 App 请求更大的堆空间。这个设计的初衷是为少数需要大量内存的 App（如图片编辑器、地图应用）提供一个"逃生出口"。
 
-但 largeHeap 有一个经常被误解的点：**它不是免费的**。更大的堆带来三个直接影响：
+largeHeap 有一个经常被误解的点：**它有成本**。更大的堆带来三个直接影响：
 
 - **GC 暂停时间更长**。GC 需要扫描更多的对象，标记和回收的时间与堆大小正相关。一个 512MB 堆上的 Full GC 可能暂停 50ms 以上。
 - **其他进程的可用内存减少**。Android 设备的物理内存是所有进程共享的。一个 App 占用过多的 Java 堆，会挤压其他进程的可用空间，触发更频繁的 lmkd 进程回收。
