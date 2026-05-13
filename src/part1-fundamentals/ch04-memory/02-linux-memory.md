@@ -291,32 +291,27 @@ Android 16 (GKI 6.12) 是一个分水岭：MGLRU 成为 GKI 内核的强制基�
 <!-- AIW-源码调研-2026-05-09 -->
 #### 源码分析：MGLRU vs 传统双级 LRU 锁竞争
 
-传统双级 LRU 的核心问题是 **per-node 全局 `lru_lock` 的竞争**。`struct lruvec` 持有单一 `spinlock_t lru_lock`，所有 CPU 上的页面引用事件（`activate_page()` / `lru_note_procit()`）和页面回收路径（`shrink_inactive_list()`）都在这把锁下操作。在 8+ 核的手机 SoC 上，多核并发访问导致这把锁成为瓶颈。
+传统双级 LRU 的核心问题是 **per-node 全局 `lru_lock` 的竞争**。`struct lruvec` 持有单一 `spinlock_t lru_lock`，所有 CPU 上的页面引用事件（`folio_mark_accessed()` / `activate_page()`）和页面回收路径（`shrink_inactive_list()` / `shrink_active_list()`）都在这把锁下操作。在 8+ 核的手机 SoC 上，多核并发访问导致这把锁成为瓶颈。
 
-MGLRU（Linux 6.8+）通过三个机制削减锁竞争：
+MGLRU 通过三个机制削减锁竞争（以下源码以 Linux 6.12 / Android common kernel 为参考）：
 
-**1. 锁粒度细化到 per-lruvec（node+memcg 组合）**
+**1. 减少 per-lruvec 锁内的操作量**
+
+传统 LRU 和 MGLRU 都围绕 `lruvec`（每个 node+memcg 组合）组织 LRU 链表。MGLRU 的优势不在于引入 per-lruvec——传统 LRU 也有 `struct lruvec`——而在于减少了锁内的操作量和持有时间。
 
 ```c
-// include/linux/mmzone.h
-static struct lruvec *get_lruvec(struct mem_cgroup *memcg, int nid)
-{
-    struct pglist_data *pgdat = NODE_DATA(nid);
-    if (memcg) {
-        return &memcg->nodeinfo[nid]->lruvec;  // 每个 memcg+node 独立 lruvec
-    }
-    return &pgdat->__lruvec;  // root memcg
-}
+// 伪代码，基于 include/linux/mmzone.h / mm/vmscan.c
+// lruvec 通过 mem_cgroup_lruvec() 获取
+struct lruvec *mem_cgroup_lruvec(struct mem_cgroup *memcg, struct pglist_data *pgdat);
+// 不同 App（不同 memcg）的内存回收操作各自的 lruvec
 ```
-
-不同 App（不同 memcg）的内存回收不再竞争同一把锁。
 
 **2. `folio_update_gen()` 无锁化**
 
 传统 LRU 每次页面引用都做 `list_move()`（持锁）。MGLRU 用 generation 编号替代：页面引用时只更新 `folio->flags` 中的 `LRU_GEN_MASK` 位（不需要锁），由 `lru_gen_look_around()` 做批量 PTE accessed bit 清除：
 
 ```c
-// mm/vmscan.c lru_gen_look_around()，行 3977-4060
+// 伪代码，基于 mm/vmscan.c lru_gen_look_around()
 void lru_gen_look_around(struct page_vma_mapped_walk *pvmw)
 {
     for (i = 0, addr = start; addr != end; i++, addr += PAGE_SIZE) {
@@ -334,7 +329,7 @@ void lru_gen_look_around(struct page_vma_mapped_walk *pvmw)
 传统 `shrink_inactive_list()` 在整个扫描期间（可能数千次 `list_move()`）持有 `lru_lock`。MGLRU 的 `evict_folios()` 持锁后只做一代链表的批量 `isolate_folios()`，然后立即释放锁：
 
 ```c
-// mm/vmscan.c evict_folios()，行 4491-4530
+// 伪代码，基于 mm/vmscan.c evict_folios()
 static int evict_folios(struct lruvec *lruvec, ...)
 {
     spin_lock_irq(&lruvec->lru_lock);
@@ -365,7 +360,7 @@ Silk 的解决方案是在对象级别跟踪热度信息，并将其传递给内
 
 [来源: Cubox/Silk-安卓GC与内核内存管理的进一步融合-2025-10-20.md (TACO '25)]
 
-#### Android 17 落地：madvise(MADV_COLD) 信号通路
+#### Android 17 实现：madvise(MADV_COLD) 信号通路
 
 Silk 论文提出的“让 GC 告诉内核哪些页面是冷的”思路，在 Android 17 有了具体实现。ART 虚拟机在 GC 标记阶段识别出老年代中未被引用的对象后，对它们所在的内存页调用 `madvise(MADV_COLD)`，主动向内核标记这些页面为冷页。
 
@@ -575,6 +570,6 @@ Android 使用 zRAM 替代 swap。回收匿名页时，内核需要将其压缩�
 ### MGLRU vs 传统双级 LRU 锁竞争差异
 - 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-09-mglru-vs-traditional-lru-lock-contention.md
 - 类型：DeepResearch 调研结果
-- 摘要：Linux 6.8 MGLRU 与传统双级 LRU 的锁竞争对比。传统 LRU 用全局 lru_lock 做频繁 list_move，多核时成为瓶颈；MGLRU 将页面按访问时间分 2-4 代，锁粒度细化到 per-lruvec，通过 page table batch mark 和 folio_update_gen 减少锁内操作。含关键数据结构与调用链。
+- 摘要：Linux 6.12 / Android common kernel MGLRU 与传统双级 LRU 的锁竞争对比。传统 LRU 每次页面引用做 `list_move()`（持 `lruvec->lru_lock`），多核时成为瓶颈；MGLRU 用 generation 编号替代 `list_move()`（`folio_update_gen()` 无锁），`lru_gen_look_around()` 批量 PTE 扫描，`evict_folios()` 持锁时间从 O(n) 降到 O(1)。含关键数据结构与调用链。
 - 注入时间：2026-05-11
 - 价值：源码级分析，可直接作为章节背景材料或延伸阅读

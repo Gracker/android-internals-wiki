@@ -1378,7 +1378,7 @@
       "created_date": "2026-05-12",
       "assigned_to": "content-team",
       "estimated_hours": 3,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part1-fundamentals/ch04-memory/02-linux-memory.md"
@@ -1393,7 +1393,9 @@
           "detail": "`lru_note_procit()` 疑似拼写/伪造符号，`include/linux/mmzone.h::get_lruvec()` 代码块也不是可直接引用的一手 API；同时“锁粒度细化到 per-lruvec”容易误导，因为现代传统 LRU 也围绕 lruvec/lru_lock 演进，MGLRU 的重点应落在减少锁内 list_move/批量 aging/eviction。",
           "suggestion": "回到 android common kernel 或 upstream v6.12 源码，改用真实函数/结构锚点，例如 `folio_mark_accessed()`、`folio_lruvec_lock_irqsave()`、`mem_cgroup_lruvec()`、`lru_gen_look_around()`、`evict_folios()`；无法逐字对应的代码块标成伪代码。"
         }
-      ]
+      ],
+      "completed_date": "2026-05-14T03:23:23+08:00",
+      "completed_reason": "Task 2B 回炉修复: lru_note_procit 伪函数修正为 folio_mark_accessed/activate_page, get_lruvec 代码块改为 mem_cgroup_lruvec 伪代码, 'Linux 6.8+' 版本口径修正为 Linux 6.12 参考版本, per-lruvec 锁描述区分传统 LRU/MGLRU 差异, 代码块统一标注伪代码"
     },
     {
       "id": "task9-4.2-mglru-version-madvise-20260512",
@@ -1611,7 +1613,9 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-12T18:24:00+08:00",
-      "status": "pending"
+      "status": "completed",
+      "completed_date": "2026-05-14T03:23:23+08:00",
+      "completed_reason": "Task 2B 回炉修复: doComposition/renderFeatureImpl 替换为正确的 CompositionEngine 链路(composite→Output::present→composeSurfaces→RenderEngine::drawLayers), HWC validateDisplay 决策补充格式/transform/dataspace/alpha/scaling 等约束因子, Overlay Plane 数量不再写成唯一决定因素"
     },
     {
       "id": "task6-20-6-review-rework-20260512-1912",

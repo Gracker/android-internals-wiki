@@ -627,14 +627,48 @@
         "21.3"
       ],
       "description": "21.2 ThreadFactory/优先级表格修正; 21.3 OnDrawListener→OnPreDrawListener, Provider审计脚本修正"
+    },
+    {
+      "date": "2026-05-14T03:23:23+08:00",
+      "task": "task2b-rework",
+      "sections": [
+        "4.2",
+        "7.6"
+      ],
+      "sections_title": [
+        "Linux 内核内存管理",
+        "案例集"
+      ],
+      "source": [
+        "task9-deep-tech-review",
+        "task9-deep-tech-review"
+      ],
+      "queue_ids": [
+        "task9-4.2-mglru-source-snippets-20260512",
+        "task9-7-6-deep-tech-review-20260512-1824"
+      ],
+      "issues_fixed": [
+        "4.2 L294: lru_note_procit 伪函数→folio_mark_accessed/activate_page",
+        "4.2 L296: 'MGLRU(Linux 6.8+)' 版本口径→'Linux 6.12 参考'",
+        "4.2 L302: get_lruvec 代码块→mem_cgroup_lruvec 伪代码+per-lruvec 锁描述修正",
+        "4.2 L316/L334: 代码块标注为伪代码",
+        "4.2 L578: 参考资料摘要版本修正",
+        "7.6 L528: doComposition→composite()→Output::present()",
+        "7.6 L536: doComposition→composeSurfaces()/RenderEngine::drawLayers()",
+        "7.6 L538: HWC validateDisplay 决策因子补充(格式/transform/dataspace/alpha/scaling等)",
+        "7.6 L544: [已验证] renderFeatureImpl→正确的 CompositionEngine 链路",
+        "7.6 根因/效果对比/举一反三: doComposition 全部替换为正确 API"
+      ],
+      "verification": "L1 禁用词扫描通过（落地→已修正为实现）, 高频词均在安全范围",
+      "status": "done"
     }
   ],
-  "last_task2b_at": "2026-05-12 07:17",
+  "last_task2b_at": "2026-05-14T03:23:23+08:00",
   "last_task2b_sections": [
-    "22.3",
-    "20.4"
+    "4.2",
+    "7.6"
   ],
-  "last_task2b_action": "回炉修复: 22.3(Strong Skipping版本修正, derivedStateOf纯函数条件, 迁移指南) + 20.4(ANR超时总表, BR超时细化, Watchdog区分, 预警章节)",
+  "last_task2b_action": "回炉修复: 4.2(MGLRU 源码锚点修正) + 7.6(SF/HWC CompositionEngine 链路修正)",
   "sections": {
     "17.2": {
       "status": "ready-for-review",
@@ -667,10 +701,11 @@
     },
     "4.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-05-12T17:09:00+08:00",
       "task9_result": "needs-rework",
-      "queue_priority": 95
+      "queue_priority": 95,
+      "task2b_state": "fixed"
     },
     "5.2": {
       "status": "finalized",
@@ -700,12 +735,13 @@
     },
     "7.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task6_pending",
       "last_task9_at": "2026-05-12T18:24:00+08:00",
       "task9_result": "needs-rework",
       "task9_state": "reviewed",
       "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md",
+      "task2b_state": "fixed"
     },
     "20.5": {
       "status": "ready-for-review",
