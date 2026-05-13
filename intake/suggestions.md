@@ -719,3 +719,16 @@
 - **位置**：L197-L199（Command Buffer 复用与静态 UI）
 - **问题**：正文把 Vulkan Command Buffer 复用直接套到 Android View 静态 UI，并写成“静态 UI 的帧提交开销几乎为零”。这对 app 自管 Vulkan 渲染在特定 swapchain / framebuffer 条件下才可能成立，不能代表 HWUI / SkiaVulkan 的 View 渲染路径。
 - **建议**：限定为“应用自管 Vulkan workload 可在内容和 framebuffer 依赖稳定时复用 command buffer”；Android View 静态内容应回到 RenderNode DisplayList / damage / Skia backend 机制解释。
+
+## [Task9 Deep Review] 5.9 ADPF 自适应性能框架 — 2026-05-14
+- **类型**：数据缺失
+- **位置**：L549-L557 “2026 旗舰机 Hint 响应延迟对照”
+- **问题**：表格给出小米 17 Ultra / Pixel 10 / 三星 S26 Ultra 的 ADPF Hint → 频率生效延迟，但只有 `[待验证]`，缺测试固件、Perfetto/频点观测方法、样本数和 workload 条件。
+- **建议**：补实测 trace、机型固件版本、采样方法和统计口径；补不齐时降级为“需实测的对比维度”，不要保留具体毫秒数。
+
+## [Task9 Deep Review] 23.7 内存监控与线上治理 — 2026-05-14
+- **类型**：版本差异 / 源码准确性
+- **位置**：L90-L92 RSS 采集入口
+- **问题**：`Debug.getRss()` 官方文档标注 Added in API level 35，而章节适用范围是 Android 10-16；当前表格未在采集入口处标出 API 35+ 边界。
+- **建议**：在表格中标注 `Debug.getRss()` 仅适用于 API 35+；Android 10-14 的线上兼容路径优先使用 `/proc/self/status` 的 `VmRSS` 或既有 PSS/Debug.MemoryInfo 口径。
+
