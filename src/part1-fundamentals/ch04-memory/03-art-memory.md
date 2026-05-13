@@ -1,8 +1,8 @@
 ---
 status: ready-for-review
-task9_reviewed_date: '2026-05-09'
+task9_reviewed_date: '2026-05-14'
 task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-09T02:30:12+08:00'
+last_task9_at: '2026-05-14T05:50:18+08:00'
 title: ART 虚拟机内存管理
 chapter: '4.3'
 section: '4.3'
@@ -55,8 +55,8 @@ related_chapters:
 last_task2b_at: '2026-05-12T03:17:57'
 p1: 2
 p2: 3
-task9_review_notes: 2026-04-30 Task9：needs-rework。P1 BumpPointerSpace/gPageSize 版本线；P2 ART 8 性能数字来源。 | 2026-05-08 Task9 12:39：needs-rework。P1 2；DeliQueue/ConcurrentMessageQueue 版本与命名口径未证实，Perfetto ART GC track/SQL 口径与 ATrace 源码不匹配，已写入 queue。 | 2026-05-09 Task9 02:30：needs-rework。P1 1：DeliQueue / ConcurrentMessageQueue 命名与 ART ReferenceQueue 因果链仍未证实；保留既有 P2（LOS 实现选择、ART 8 性能数字、GC 阈值）不重复入队。
-last_task9_review_log: logs/deep-review/2026-05-09-02-deep-review.md
+task9_review_notes: 2026-05-14 Task9 05: needs-rework。P1 1：Generational CMC 配置/比例缺源码锚点；P2 2：LOS 架构边界、CC/TLAB 性能数据来源。 已写入 logs/deep-review/2026-05-14-05-deep-review.md。
+last_task9_review_log: logs/deep-review/2026-05-14-05-deep-review.md
 task9_result: needs-rework
 reviewed_date: '2026-05-12'
 reviewed_by: openclaw-task6
@@ -64,7 +64,7 @@ last_task6_at: '2026-05-12T16:15:00+08:00'
 last_task6_review_log: logs/review/2026-05-12-16-review.md
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 task2b_result: fixed
 pipeline_stage: task2b_pending

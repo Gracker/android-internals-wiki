@@ -87,7 +87,8 @@
     "23.5",
     "23.6",
     "5.9",
-    "23.7"
+    "23.7",
+    "20.6"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -170,9 +171,10 @@
     "src/part5-app/ch23-memory-practice/05-memory-churn-gc.md",
     "src/part5-app/ch23-memory-practice/06-large-heap-multiprocess.md",
     "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-    "src/part5-app/ch23-memory-practice/07-memory-monitoring.md"
+    "src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md"
   ],
-  "review_summary": "Task6 2026-05-14 05: reviewed 23.7; L1/L2=3; auto-finalized 23.7; no rework.",
+  "review_summary": "Task9 2026-05-14 05: reviewed 4.3/4.5/20.6; P0=4; P1=10; P2=7; auto-finalized 0.",
   "task6_review_summary": {
     "l1_l2_fixes": 360,
     "l3_issues": 26,
@@ -561,13 +563,40 @@
       "p1": 0,
       "p2": 0,
       "p3": 0
+    },
+    "4.3": {
+      "task9_result": "needs-rework",
+      "p0": 0,
+      "p1": 1,
+      "p2": 2,
+      "reviewed_at": "2026-05-14T05:50:18+08:00",
+      "log": "logs/deep-review/2026-05-14-05-deep-review.md",
+      "summary": "P1 1：Generational CMC 配置/比例缺源码锚点；P2 2：LOS 架构边界、CC/TLAB 性能数据来源。"
+    },
+    "4.5": {
+      "task9_result": "needs-rework",
+      "p0": 3,
+      "p1": 5,
+      "p2": 3,
+      "reviewed_at": "2026-05-14T05:50:18+08:00",
+      "log": "logs/deep-review/2026-05-14-05-deep-review.md",
+      "summary": "P0 3：GC 可达性、malloc debug、API34 onTrimMemory；P1 5：Message 池、Bitmap 释放、ASan 等。"
+    },
+    "20.6": {
+      "task9_result": "needs-rework",
+      "p0": 1,
+      "p1": 4,
+      "p2": 2,
+      "reviewed_at": "2026-05-14T05:50:18+08:00",
+      "log": "logs/deep-review/2026-05-14-05-deep-review.md",
+      "summary": "P0 1：Vitals 用户感知 ANR 定义不准；P1 4：门禁结论、阈值来源、示例计算、ANR 版本差异。"
     }
   },
-  "total_review_sections": 81,
+  "total_review_sections": 82,
   "next_review_candidates": [],
   "ready_for_review": 67,
-  "last_updated": "2026-05-14T05:17:39+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T05:50:18+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-14T05:17:39+08:00",
     "log": "logs/review/2026-05-14-05-review.md",
@@ -578,7 +607,7 @@
     "l3_l4_issues": 0,
     "auto_promotions": 1
   },
-  "task9_last_review": "2026-05-14T04:36:12+08:00",
+  "task9_last_review": "2026-05-14T05:50:18+08:00",
   "ready_to_publish": 170,
   "rework_history": [
     {
@@ -1395,44 +1424,40 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
   "last_task2a_processed_date": "2026-05-13T19:04:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-14T04:36:12+08:00",
-    "log": "logs/deep-review/2026-05-14-04-deep-review.md",
+    "at": "2026-05-14T05:50:18+08:00",
+    "log": "logs/deep-review/2026-05-14-05-deep-review.md",
     "sections": [
-      "5.9",
-      "23.6",
-      "23.7"
+      "4.3",
+      "4.5",
+      "20.6"
     ],
-    "p0": 3,
-    "p1": 1,
-    "p2": 2,
-    "auto_finalized": [
-      "23.6"
-    ]
+    "p0": 4,
+    "p1": 10,
+    "p2": 7,
+    "auto_finalized": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-04-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-14-05-deep-review.md",
   "last_task9_sections": [
-    "5.9",
-    "23.6",
-    "23.7"
+    "4.3",
+    "4.5",
+    "20.6"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-14T04:36:12+08:00",
-    "log": "logs/deep-review/2026-05-14-04-deep-review.md",
+    "at": "2026-05-14T05:50:18+08:00",
+    "log": "logs/deep-review/2026-05-14-05-deep-review.md",
     "sections": [
-      "5.9",
-      "23.6",
-      "23.7"
+      "4.3",
+      "4.5",
+      "20.6"
     ],
-    "p0": 3,
-    "p1": 1,
-    "p2": 2,
-    "auto_finalized": [
-      "23.6"
-    ]
+    "p0": 4,
+    "p1": 10,
+    "p2": 7,
+    "auto_finalized": []
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
-    "src/part5-app/ch23-memory-practice/06-large-heap-multiprocess.md",
-    "src/part5-app/ch23-memory-practice/07-memory-monitoring.md"
+    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+    "src/part5-app/ch20-stability/06-stability-metrics.md"
   ]
 }

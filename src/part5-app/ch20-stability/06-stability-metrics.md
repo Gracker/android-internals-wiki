@@ -20,11 +20,17 @@ tags: [metrics, crash-rate, anr-rate, play-vitals, slo, dashboard]
 related_chapters: ["20.1", "26.1", "15.3"]
 pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: needs-rework
+task9_reviewed_date: '2026-05-14'
+task9_reviewed_by: openclaw-task9
+last_task9_at: '2026-05-14T05:50:18+08:00'
+last_task9_review_log: logs/deep-review/2026-05-14-05-deep-review.md
+task9_result: needs-rework
+task9_review_notes: 2026-05-14 Task9 05: needs-rework。P0 1：Vitals 用户感知 ANR 定义不准；P1 4：门禁结论、阈值来源、示例计算、ANR 版本差异。 已写入 logs/deep-review/2026-05-14-05-deep-review.md。
 ---
 
 # 稳定性度量与指标体系
