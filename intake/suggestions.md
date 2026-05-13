@@ -675,3 +675,34 @@
 - **问题**：正文把 VMA 名称分类锚到 `frameworks/base/core/jni/android_os_Debug.cpp`；该文件只调用 `ExtractAndroidHeapStats()`，具体 `[heap]` / `[anon:libc_malloc]` / `[anon:scudo:*]` / `[anon:GWP-ASan*]` 与 `.so/.jar/.apk` 分类在 `system/memory/libmeminfo/androidprocheaps.cpp`。
 - **建议**：保留 `android_os_Debug.cpp` 作为 JNI 入口，同时补 `system/memory/libmeminfo/androidprocheaps.cpp` 作为分类规则源码锚点。
 
+
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-05-14
+- **类型**：原理链 / 指标归属
+- **位置**：L134 RenderThread 流程步骤
+- **问题**：正文写“RenderThread 完成后通过 `FrameMetrics` 或 `FrameTimeline` 通知帧完成”。`FrameMetrics` 是 per-window 指标回调，`FrameTimeline` 是 Choreographer / SurfaceFlinger 关联 expected/actual timeline 的观测框架，不是 RenderThread 的帧完成通知通道。
+- **建议**：改成“RenderThread 完成 DisplayList 回放和 buffer 提交；帧耗时随后可通过 FrameMetrics（App 侧）或 FrameTimeline/Perfetto（系统侧）观察”。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-05-14
+- **类型**：版本差异 / 交叉一致性
+- **位置**：L518 总结句 BLASTBufferQueue 版本线
+- **问题**：正文前文和 FAQ 已写 BLAST 主窗口迁移从 Android 11 开始、Android 12 扩展到更多 Surface 类型，但总结句又写“`BLASTBufferQueue` 从 Android 12 开始取代 `BufferQueue`”。同一章节内版本线不一致。
+- **建议**：统一为“Android 11 主窗口开始迁移到 BLASTBufferQueue，Android 12 扩展覆盖范围并完善 FrameTimeline/VSyncId 观测”。
+
+## [Task9 Deep Review] 2.9 渲染机制的版本演进 — 2026-05-14
+- **类型**：数据缺失 / 主题边界
+- **位置**：L445 16KB Page Size 行
+- **问题**：“TLB 命中率提升约 9%，渲染管线有效带宽增益”缺少设备、benchmark、workload 和来源；该行也偏内存/系统页大小主题，不属于渲染机制版本演进主线。
+- **建议**：删除该行，或移到内存/系统版本演进章节，并补来源、测试条件、指标定义和是否为通用结论。
+
+## [Task9 Deep Review] 22.4 自定义 View 性能优化 — 2026-05-14
+- **类型**：源码准确性 / API 版本
+- **位置**：L159 `canvas.save()` / `restore()` 分配点表
+- **问题**：`canvas.save()` / `restore()` 的嵌套成本主要是 Canvas native 状态栈和绘制状态管理，不应写成 Java 对象分配来源；“改用 `save()/restore()` 的指定 flag 版本”也不适合现代 API，`save(int flags)` 相关 save flags 在 API 26 后已被废弃/弱化。
+- **建议**：把该项从“对象分配”表移到“绘制状态栈成本”或删除；建议使用最小必要的 `save()` / `restore()` 范围，避免推荐 flags 版本。
+
+## [Task9 Deep Review] 22.4 自定义 View 性能优化 — 2026-05-14
+- **类型**：API 语义边界
+- **位置**：L195-L204 `setLayerType()` 小节
+- **问题**：“`setLayerType()` 控制的是 View 的缓存策略，不是硬件加速的开关”表述过绝对。`LAYER_TYPE_SOFTWARE` 本身就是 View 级软件渲染 fallback，会绕开该 View 的硬件绘制路径；`LAYER_TYPE_HARDWARE` 则是硬件 layer 缓存策略。
+- **建议**：改成“`setLayerType()` 不是全局硬件加速开关；它在单个 View 维度选择无 layer / hardware layer / software layer，其中 software layer 可作为局部关闭硬件绘制的 fallback”。

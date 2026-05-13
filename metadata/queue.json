@@ -3945,6 +3945,75 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T00:20:00+08:00"
+    },
+    {
+      "id": "task9-20260514-2.9-vpa16-profile-mismatch",
+      "section": "2.9",
+      "section_title": "渲染机制的版本演进",
+      "title": "VPA16 / Android Vulkan Profile 2025 口径混淆",
+      "priority": 95,
+      "reason": "[Deep Tech Review] 章节把 Android 16 minimum requirements profile 与 Android Vulkan Profile 2025 混为一谈，并把 api-version 1.3.276 归到 AVP 2025。",
+      "description": "正文 L183、L212-L222、L444 多处混用 VPA16、VP_ANDROID_16、Android Vulkan Profile 2025，属于 Vulkan profile 名称、版本和强制范围错误。",
+      "issue_type": "source-code-accuracy",
+      "severity": "P0",
+      "created_date": "2026-05-14",
+      "added_at": "2026-05-14T02:37:00+08:00",
+      "assigned_to": "content-team",
+      "status": "pending",
+      "added_by": "task9-deep-tech-review",
+      "related_files": [
+        "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/版本差异",
+          "location": "L183、L212-L222、L444 Vulkan Profile / VPA16 描述",
+          "detail": "Khronos `VP_ANDROID_16_minimums.json` 中的 profile 名称是 `VP_ANDROID_16_minimums`，label 为 “Vulkan Minimum Requirements for Android 16”，api-version 为 `1.3.276`，描述是 “mandated on Android 16”；`profiles/Android/VP_ANDROID_vulkan_profile_2025.json` 中的 profile 名称是 `VP_ANDROID_vulkan_profile_2025`，label 为 “Android Vulkan Profile 2025”，api-version 为 `1.1.128`，描述是 “broadly supported on Android”。正文把二者互称，并把 `VPA16` 写成 Android Vulkan Profile 2025，版本口径不成立。",
+          "suggestion": "把表述拆成两层：① Android 16 minimum requirements / `VP_ANDROID_16_minimums` 是 Android 16 设备准入/最低要求，含 `VK_EXT_host_image_copy` 等 MUST 扩展；② `VP_ANDROID_vulkan_profile_2025` 是 Android Vulkan Profile 2025，代表广泛支持的 profile。正文、时间线和 bullet 中不要再用 VPA16 指代 AVP 2025。"
+        }
+      ]
+    },
+    {
+      "id": "task9-20260514-22.4-invalidate-and-perfetto-observation",
+      "section": "22.4",
+      "section_title": "自定义 View 性能优化",
+      "title": "自定义 View 重绘范围与 Perfetto 观测命令错误",
+      "priority": 85,
+      "reason": "[Deep Tech Review] 章节对 invalidate 重绘范围和 debug.hwui.profile / View trace tag 的关系描述不准确，会误导自定义 View 性能排查。",
+      "description": "L37 把 invalidate() 未指定脏区域写成整棵 View 树重绘；L404 把 debug.hwui.profile true 写成启用 android.view.View trace tag 并能看到每个 View onDraw。两处均需回炉。",
+      "issue_type": "principle-chain",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "added_at": "2026-05-14T02:37:00+08:00",
+      "assigned_to": "content-team",
+      "status": "pending",
+      "added_by": "task9-deep-tech-review",
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/04-custom-view-optimization.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/交叉一致性",
+          "location": "L37 开头段；L277-L286 invalidate 与 RenderNode damage",
+          "detail": "开头说“一次 invalidate() 没有指定脏区域，就会让整棵 View 树重绘”，但正文后文又正确写到 API 21+ dirty rect 被忽略、硬件加速主要按 RenderNode 粒度重录 DisplayList。现代硬件加速路径不是整棵 View 树全部重绘；AOSP `View.invalidate(Rect)` 注释也说明 API 21 起 dirty rectangle 被忽略。",
+          "suggestion": "把开头改成“会让该 View / RenderNode 标记为需要重新录制，父级会参与 traversal，但未失效子树可复用 DisplayList”；如果讨论软件绘制旧路径，再单独标注 API 21 之前 dirty rect 合并。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码错误/观测方法",
+          "location": "L404 Perfetto 观测自定义 View 绘制耗时",
+          "detail": "`debug.hwui.profile` 在 AOSP `ThreadedRenderer.PROFILE_PROPERTY` 中用于 gfxinfo/profile bars；它不等同于启用 `android.view.View` trace tag，也不会自动给“每个 View 的 onDraw”生成 slice。AOSP `ThreadedRenderer.updateRootDisplayList()` 只打 `TRACE_TAG_VIEW` 的 `Record View#draw()` 根级 slice，View.java 中也没有逐个 onDraw 的通用 trace。",
+          "suggestion": "改成：用 Perfetto/atrace 打开 view 相关 trace 只能看到框架级 `Record View#draw()` 等 slice；要定位具体自定义 View 的 `onDraw()`，在 `onDraw()` 内用 `Trace.beginSection(\"MyView#onDraw\")` / Android Studio CPU profiler / method tracing 辅助。`debug.hwui.profile` 只作为 gfxinfo/屏幕柱状图口径。"
+        }
+      ]
     }
   ],
   "metadata": {
