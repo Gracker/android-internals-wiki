@@ -46,10 +46,17 @@ sources:
     path: "OpenClaw定时任务/AutoResearchClaw调研报告/2026-05-05-webview-render-process-oom-recovery-onrendeprocessgone.md"
 tags: [webview, preload, offline-package, jsbridge, h5-performance]
 related_chapters: ["22.1", "7.11", "18.13", "26.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
+last_task6_at: "2026-05-13T09:12:00+08:00"
+last_task6_review_log: "logs/review/2026-05-13-09-review.md"
+task6_review_notes: "2026-05-13 Task6：L1/L2 轻修（Native/兜底术语、表达收束）；四层质检通过，无新增回炉项，转入 Task9。"
 ---
 
 # WebView 性能优化实战
@@ -238,7 +245,7 @@ WebView 运行在多进程或多账号隔离场景时，还要处理 data direct
 
 ### 缓存分层怎么选
 
-WebView 首屏慢，很多时候不是 native 容器慢，而是主文档、CSS、JS 和首屏数据还在等网络。参考 Clippings 里的拆法，可以把 H5 缓存分为四层：
+WebView 首屏慢，很多时候不是 Native 容器慢，而是主文档、CSS、JS 和首屏数据还在等网络。参考 Clippings 里的拆法，可以把 H5 缓存分为四层：
 
 | 层级 | 适合缓存什么 | 收益 | 主要风险 |
 |------|--------------|------|----------|
@@ -494,7 +501,7 @@ class RecoverableWebViewClient(
 | 初始化 | 首帧后空闲预热，记录预热命中 | 预热耗时、命中率、T1 / T2 |
 | WebView 池 | 只复用受控页面，归还前完整清理 | 池命中率、复用后错误率、内存峰值 |
 | 离线包 | manifest + hash + 灰度 + 回滚 | 离线包命中率、白屏率、版本错误 |
-| 资源拦截 | `shouldInterceptRequest()` 只做短路径读取 | 拦截耗时、miss 原因、fallback 成功率 |
+| 资源拦截 | `shouldInterceptRequest()` 只做短路径读取 | 拦截耗时、miss 原因、兜底成功率 |
 | JS Bridge | 异步、批量、白名单、限制 payload | Bridge 调用次数、P95 耗时、失败码 |
 | 页面侧 | 首屏资源收敛，SSR / 预请求按命中率使用 | T2、首屏 JS 长任务、首屏请求数 |
 | 内存 | 退出移除父容器、解绑客户端、销毁实例 | PSS、native heap、泄漏对象数 |
