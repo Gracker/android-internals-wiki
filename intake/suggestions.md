@@ -613,3 +613,15 @@
 - **问题**：Task9 已将该章节列为 needs-rework（P0 1 / P1 3）。Task6 本轮只完成 L1/L2 小修，不裁决这些源码/API/版本差异；当前仍不满足发布条件。
 - **建议**：优先处理 queue.json 中 `task9-2.15-gralloc-api-and-dmabuf-unsupported-claims`，修复后再进入 Task6 / Task9 复核。
 - **review 日志**：logs/review/2026-05-13-20-review.md
+
+## [Task9 Deep Review] 19.27 千万级 DAU 的 APM 端侧架构 — 2026-05-13
+- **类型**：原理链/示例边界
+- **位置**：L132-L155 `ApmRecorder` queue 示例
+- **问题**：正文说“有界 RingBuffer / 无锁队列”，代码只注入 `Channel<ApmEvent>`，未展示 capacity、overflow 策略或实际 MPSC RingBuffer。`trySend()` 是否失败、是否有界，取决于调用方构造方式。
+- **建议**：示例改成显式有界 `Channel(capacity = N, onBufferOverflow = DROP_OLDEST/DROP_LATEST)` 或自定义 MPSC RingBuffer，并说明入口 O(1)、失败只记 dropped counter。
+
+## [Task9 Deep Review] 19.27 千万级 DAU 的 APM 端侧架构 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L173-L188 JSON / Protobuf Lite / FlatBuffers 协议对比
+- **问题**：二进制协议节省 CPU、降低 GC、压缩网络流量的判断缺少字段规模、事件频率、设备、payload 大小、序列化耗时或分配量对比。
+- **建议**：补一个 1k/10k 事件 benchmark，记录 payload bytes、encode/decode time、alloc bytes、GC 次数；没有数据时收窄为定性判断。
