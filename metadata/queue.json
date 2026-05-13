@@ -4400,18 +4400,43 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T05:50:18+08:00"
+    },
+    {
+      "id": "task6-23.8-memory-case-studies-case-evidence-20260514",
+      "section": "23.8",
+      "section_title": "内存优化案例集",
+      "priority": 90,
+      "reason": "[review回炉] 案例集缺少真实/可脱敏案例证据，L3 论据支撑与 L4 作者在场感不足。",
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "全文，尤其是“为什么要看内存优化案例”与三类案例小节",
+          "detail": "章节目前以排查模板、治理口径和复盘字段为主，缺少可脱敏真实案例的修复前后数据、Heap Dump / heapprofd 观察点或线上 PSS 趋势，作为“案例集”时 L3 论据支撑和 L4 作者在场感不足。",
+          "suggestion": "Task2B 补 1-2 个可脱敏案例：至少覆盖 Bitmap 大图、Native 泄漏或预算门禁中的一个；每个案例包含现象、指标、证据、根因、修复、验证和防复发字段。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-14T06:10:39+08:00",
+      "status": "pending",
+      "original_review_log": "logs/review/2026-05-14-06-review.md",
+      "related_files": [
+        "src/part5-app/ch23-memory-practice/08-memory-case-studies.md"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 144,
+    "total_entries": 145,
     "p0_count": 73,
-    "last_updated": "2026-05-14T05:50:18+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 87,
+    "last_updated": "2026-05-14T06:11:14+08:00",
+    "updated_by": "task6-review",
+    "pending_entries": 88,
     "updated_date": "2026-05-14",
-    "last_updated_by": "task9-deep-tech-review"
+    "last_updated_by": "task6-review"
   },
-  "last_updated": "2026-05-14T05:50:18+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 87
+  "last_updated": "2026-05-14T06:11:14+08:00",
+  "last_updated_by": "task6-review",
+  "pending": 88
 }
