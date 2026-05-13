@@ -57,8 +57,15 @@ related_chapters:
   - "4.4"
   - "5.1"
   - "5.8"
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-13"
+task9_state: pending
+review_round: 1
+task6_review_notes: "2026-05-13 task6 review: L1/L2 通过；本轮仅补齐 review 元数据，无新增 L3/L4 回炉项。"
 ---
 
 # 进程模型与生命周期管理
