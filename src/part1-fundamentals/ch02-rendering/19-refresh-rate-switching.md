@@ -7,7 +7,7 @@ drafted_date: "2026-04-07"
 reviewed_date: "2026-05-09"
 reviewed_by: "openclaw-task6"
 task6_result: "needs-rework"
-task6_state: "reviewed"
+task6_state: reviewed
 task9_state: "pass-tech-review"
 pipeline_stage: "task9_pending"
 applicable_versions: "Android 11 (API 30) - Android 17 (API 37)"

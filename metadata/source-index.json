@@ -4314,6 +4314,152 @@
       ],
       "summary": "Android 10.0编译系统全面总结和分析...",
       "scored_at": "2026-05-12T09:08:30.335066"
+    },
+    {
+      "title": "源码调研：Android 输入优先级机制与厂商游戏模式",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-android-input-priority-mechanism.md",
+      "type": "deep_research",
+      "keywords": [
+        "Android",
+        "输入",
+        "优先级",
+        "游戏模式",
+        "InputDevice",
+        "MotionEvent",
+        "ViewGroup"
+      ],
+      "quality": "high",
+      "chapters": [
+        "ch03"
+      ],
+      "date": "2026-05-12",
+      "summary": "Android 标准框架输入优先级机制源码分析，包括 InputDevice SOURCE 常量体系、MotionEvent 源码识别机制、ViewGroup 触摸拦截机制等核心发现",
+      "scored_at": "2026-05-13T05:53:19.071310"
+    },
+    {
+      "title": "源码调研：Android 多媒体管线 Codec2 / Tunneled Playback / Media3 ABR 演进",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-android-media-codec2-tunneled-playback-analysis.md",
+      "type": "deep_research",
+      "keywords": [
+        "Android",
+        "多媒体",
+        "Codec2",
+        "Tunneled Playback",
+        "Media3",
+        "ABR",
+        "OMX"
+      ],
+      "quality": "high",
+      "chapters": [
+        "ch08"
+      ],
+      "date": "2026-05-12",
+      "summary": "Android 多媒体框架从 OMX 到 Codec2 的演进分析，tunneled playback 实现差异，Media3 ABR 决策机制等核心发现",
+      "scored_at": "2026-05-13T05:53:19.071319"
+    },
+    {
+      "title": "Native Crash 线程安全机制与 sigsetjmp 恢复点分析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-native-crash-thread-safety-point-sigsetjmp.md",
+      "type": "deep_research",
+      "keywords": [
+        "Android",
+        "Native",
+        "Crash",
+        "线程安全",
+        "sigsetjmp",
+        "breakpad",
+        "调试"
+      ],
+      "quality": "high",
+      "chapters": [
+        "ch20"
+      ],
+      "date": "2026-05-12",
+      "summary": "Native crash 线程安全机制与 sigsetjmp 恢复点源码分析，涵盖调试器、信号处理、栈展开等核心内容",
+      "scored_at": "2026-05-13T05:54:34.409500"
+    },
+    {
+      "title": "OEM 游戏模式输入优先级机制深度调研",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md",
+      "type": "deep_research",
+      "keywords": [
+        "Android",
+        "游戏模式",
+        "输入优先级",
+        "OEM",
+        "厂商定制",
+        "性能优化"
+      ],
+      "quality": "high",
+      "chapters": [
+        "ch03"
+      ],
+      "date": "2026-05-12",
+      "summary": "OEM 厂商游戏模式输入优先级机制深度调研，分析vivo、小米、OPPO等厂商的实现方案",
+      "scored_at": "2026-05-13T05:54:34.409511"
+    },
+    {
+      "title": "RecyclerView Dequeue 与 MessageQueue 性能协同分析",
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-recyclerview-deliqueue-messagequeue-analysis.md",
+      "type": "deep_research",
+      "keywords": [
+        "Android",
+        "RecyclerView",
+        "Dequeue",
+        "MessageQueue",
+        "性能",
+        "列表",
+        "UI优化"
+      ],
+      "quality": "high",
+      "chapters": [
+        "ch07"
+      ],
+      "date": "2026-05-13",
+      "summary": "RecyclerView Dequeue 机制与 MessageQueue 协同性能分析，涵盖列表渲染优化和消息队列处理",
+      "scored_at": "2026-05-13T05:54:34.409513"
+    }
+  ],
+  "entries": [
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-adpf-performancehint-session-kotlin-coroutine-analysis.md",
+      "title": "ADPF PerformanceHintManager Session 与 Kotlin 协程线程迁移边界",
+      "summary": "深入分析 PerformanceHintManager API 在 Android 16/15 中的行为差异：setThreads() 空数组校验、Session 不可复用、GPU hints 需要 FlaggedApi gate、setPreferPowerEfficiency 为 flagged API、reportActualWorkDuration ",
+      "chapter_mapping": "ch05 §5.9 ADPF",
+      "processed_at": "2026-05-12T22:24:44.120705+00:00",
+      "action": "queue"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-recyclerview-deliqueue-messagequeue-analysis.md",
+      "title": "RecyclerView 列表滑动性能深度优化 — Android 17 DeliQueue 与 MessageQueue 版本口径",
+      "summary": "验证 Android 17 DeliQueue 基于 Treiber Stack 的无锁优先级队列架构、targetSdk>=37 下 Generational CMCM 分代策略（Short/Medium/Long）、RecyclerView GapWorker 与 DeliQueue 的交互机制，以及对 4%/7.7%/9.1% 性能数字的来源溯源（未找",
+      "chapter_mapping": "ch07 §7.8 RecyclerView 列表滑动性能",
+      "processed_at": "2026-05-12T22:24:44.120705+00:00",
+      "action": "inject"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-oem-game-mode-input-priority-research.md",
+      "title": "厂商游戏模式输入优先级提升机制",
+      "summary": "验证标准 AOSP GameMode 框架（GameManagerService + GameServiceController）不包含输入优先级提升机制。GameMode 核心能力限于帧率策略、GameService API 集成和功耗模式。LAYER_PRIORITY_FOCUSED_WITH_MODE 是渲染优先级而非输入优先级。厂商实现依赖 OEM ",
+      "chapter_mapping": "ch03 §3.5 输入事件拦截与安全机制",
+      "processed_at": "2026-05-12T22:24:44.120705+00:00",
+      "action": "queue"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-android-input-priority-mechanism.md",
+      "title": "Android 输入优先级机制与厂商游戏模式",
+      "summary": "梳理 Android 输入源分类体系（SOURCE_GAMEPAD/JOYSTICK 等）、ViewGroup FLAG_DISALLOW_INTERCEPT 拦截机制、InputDispatcher 焦点窗口分发逻辑。确认标准框架中无独立的游戏输入优先级 API，厂商实现属 HAL/framework 定制。",
+      "chapter_mapping": "ch03 §3.1 输入事件分发",
+      "processed_at": "2026-05-12T22:24:44.120705+00:00",
+      "action": "inject"
+    },
+    {
+      "file_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-android-media-codec2-tunneled-playback-analysis.md",
+      "title": "Android 多媒体管线 Codec2 / Tunneled Playback / Media3 ABR 演进",
+      "summary": "已被章节 ch08.08 直接消费，内容已完整融入多媒体管线章节正文",
+      "chapter_mapping": "ch08 §8.8 多媒体管线性能",
+      "processed_at": "2026-05-12T22:24:44.120705+00:00",
+      "action": "skipped_already_consumed"
     }
   ]
 }

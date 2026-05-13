@@ -1,8 +1,10 @@
 ---
+
+
 title: Benchmark 应用（Geekbench 6、安兔兔、3DMark、PCMark、Speedometer）
 chapter: '19'
 section: '19.21'
-status: ready-for-review
+status: 'finalized'
 drafted_date: '2026-04-24'
 drafted_by: codex
 applicable_versions: Geekbench 6：Android 7.0+（API 24）；Vellamo：历史工具，仅用于旧报告；其他 Benchmark
@@ -26,21 +28,24 @@ sources:
   path: https://www.geekbench.com/
 - type: official
   path: https://benchmarks.ul.com/3dmark-android
-pipeline_stage: task9_pending
+pipeline_stage: 'ready-to-publish'
 task6_state: reviewed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-04-25
 task6_result: pass-light-edit
-task9_state: pending
-task2b_state: pending
-task9_result: ''
-task9_reviewed_date: '2026-04-27'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-27T07:20:00+08:00'
+task9_state: 'reviewed'
+task2b_state: 'fixed'
+task9_result: 'pass-tech-review'
+task9_reviewed_date: '2026-05-13'
+task9_reviewed_by: 'openclaw-task9'
+last_task9_at: '2026-05-13T05:26:00+08:00'
 task2b_result: fixed
 last_task2b_at: '2026-04-25T02:49:32+08:00'
 repaired_date: '2026-04-25'
 repaired_by: openclaw-task2b
+last_task9_review_log: 'logs/deep-review/2026-05-13-05-deep-review.md'
+auto_promoted: true
+task9_review_notes: '2026-05-13 task9 deep-review: pass-tech-review。无 P0/P1；P2 已写入 suggestions.md；Task6 已通过且 queue 无 pending，自动晋升 finalized。'
 ---
 
 

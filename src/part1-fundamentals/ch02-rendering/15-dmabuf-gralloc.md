@@ -14,7 +14,7 @@ reviewed_by: openclaw-task6
 reviewed_date: '2026-05-09'
 reviewed_by: 'openclaw-task6'
 task6_result: 'needs-rework'
-task6_state: 'reviewed'
+task6_state: reviewed
 task9_state: 'pending'
 pipeline_stage: 'task9_pending'
 sources:
