@@ -3209,6 +3209,39 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T10:22:00+08:00"
+    },
+    {
+      "id": "task6-22-9-review-rework-20260513-1518",
+      "section": "22.9",
+      "section_title": "渲染优化案例集",
+      "priority": 90,
+      "reason": "[review回炉] Task6 草稿审查发现 L3/L4 写作质量问题，需 Task2B 补充真实案例证据或调整章节定位",
+      "title": "渲染优化案例集写作回炉：缺少真实案例证据链",
+      "description": "L3/L4级问题：章节当前更像排查框架与复盘模板，缺少可复查的列表/Compose/复杂页面真实案例、优化前后指标和 trace 证据。",
+      "issue_type": "draft-writing-depth",
+      "severity": "P1",
+      "created_date": "2026-05-13",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需补充素材",
+          "location": "全文案例内容，尤其是「列表滑动卡顿优化实战」「Compose 迁移性能踩坑」「复杂页面渲染优化」三节",
+          "detail": "章节标题和锚点都指向案例/实战，但正文主要是排查框架、指标口径和模板，缺少至少一个真实案例的设备环境、复现路径、优化前后指标、Perfetto/JankStats/Macrobenchmark 证据与改动代价。读者能获得排查清单，但还看不到可复查的现场过程。",
+          "suggestion": "Task2B 补 1-2 个真实或脱敏案例：场景与设备刷新率、复现步骤、慢帧/P95/P99/frozen frame 基线、关键 trace slice、改动前后对比和边界代价；没有一手数据时保留模板定位，章节标题或段落明确为“案例复盘模板/排查框架”。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-13T15:18:00+08:00",
+      "original_review_log": "logs/review/2026-05-13-15-review.md"
     }
   ],
   "metadata": {
