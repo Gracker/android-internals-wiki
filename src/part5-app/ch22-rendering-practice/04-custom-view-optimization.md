@@ -14,14 +14,15 @@ sources:
 path: "developer.android.com/topic/performance/rendering/optimizing-view"
 tags: [custom-view, ondraw, canvas, hardware-acceleration, invalidate, viewrootimpl, hwui]
 related_chapters: ["22.1", "2.5", "2.7", "2.10", "7.12"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: pending
+pipeline_stage: task6_pending
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
 task9_result: needs-rework
+last_task2b_at: "2026-05-13T23:35:47+08:00"
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-13"
 last_task9_at: "2026-05-13T01:43:00+08:00"
@@ -31,7 +32,7 @@ last_task9_at: "2026-05-13T01:43:00+08:00"
 
 自定义 View 是 Android 开发中最灵活的 UI 扩展手段，也是性能问题的高发区。一条 onDraw() 里多了几行对象分配，就可能在大列表滑动场景中触发每秒 60-120 次的 GC 压力；一次 invalidate() 没有指定脏区域，就会让整棵 View 树重绘。
 
-本节聚焦自定义 View 的四个性能瓶颈：绘制管线开销、对象分配、硬件加速适配、重绘范围控制。每个环节都给出可观察的指标和可落地的改法。
+本节聚焦自定义 View 的四个性能瓶颈：绘制管线开销、对象分配、硬件加速适配、重绘范围控制。每个环节都给出可观察的指标和可执行的改法。
 
 ## onMeasure / onLayout / onDraw 性能原则
 
@@ -157,17 +158,20 @@ public class WaveformView extends View {
 
 在 Android Studio Profiler 的 Memory 面板中，按自定义 View 的类名过滤分配。正常情况下，自定义 View 在 `onDraw()` 中的分配数应为 0。如果看到每帧都有来自 `onDraw()` 调用栈的分配，逐个追踪来源。
 
-Perfetto 里可以用以下 SQL 查到绘制过程中的 GC 活动：
+Perfetto 里可以用以下 SQL 查到 `onDraw()` 中对象分配引发的 GC 活动。注意 GC 暂停的是分配线程（通常是 main thread / UI thread 的 `doFrame` 阶段），不是 RenderThread；需要按进程范围过滤，并与 `Choreographer#doFrame` 时间窗口关联：
 
 ```sql
-SELECT slice.name, slice.ts, slice.dur
-FROM slice
-JOIN thread_track ON slice.track_id = thread_track.id
-JOIN thread ON thread_track.utid = thread.utid
-WHERE thread.name = 'RenderThread'
-  AND slice.name LIKE '%GC%'
-ORDER BY slice.ts DESC
-LIMIT 20
+-- 查询目标进程中的 GC slice，关联 doFrame 时间窗口
+SELECT s.name, s.ts, s.dur, t.name AS thread_name
+FROM slice s
+JOIN thread_track tt ON s.track_id = tt.id
+JOIN thread t ON tt.utid = t.utid
+JOIN process p ON t.upid = p.upid
+WHERE p.name = '${YOUR_APP}'
+  AND (s.name GLOB '*GC*' OR s.name GLOB '*HeapTaskDaemon*')
+  AND t.name IN ('main', 'HeapTaskDaemon')
+ORDER BY s.ts DESC
+LIMIT 30
 ```
 
 ## 硬件加速与 Layer 使用
@@ -180,7 +184,7 @@ LIMIT 20
 2. 如果 View 的绘制内容没变（没有 invalidate()），系统直接复用上一帧的 DisplayList，跳过整个 onDraw() 调用
 3. Canvas 的部分 API 在硬件加速下不支持，会静默忽略或降级处理
 
-硬件加速不支持的 API 列表在 Android 官方文档中有完整记录（`Canvas` 兼容性矩阵）。常见的包括：`Canvas.clipPath()` 的某些复杂模式、`Canvas.drawPicture()`、`Canvas.drawVertices()` 等。遇到这些 API 失效时，不要关闭整个 View 的硬件加速，而是评估是否可以用支持的 API 替代。
+硬件加速不支持的 API 列表在 Android 官方文档中有完整记录（`Canvas` 兼容性列表）。常见的包括：`Canvas.clipPath()` 的某些复杂模式、`Canvas.drawPicture()`、`Canvas.drawVertices()` 等。遇到这些 API 失效时，不要关闭整个 View 的硬件加速，而是评估是否可以用支持的 API 替代。
 
 ### setLayerType 的使用时机
 
@@ -241,47 +245,24 @@ public class FlowLayout extends ViewGroup {
 
 ## invalidate 范围控制
 
-### invalidate() vs invalidate(Rect) vs postInvalidateOnAnimation()
+### invalidate() vs postInvalidateOnAnimation()
 
-`invalidate()` 的三种重载在性能上有量级差异：
+`invalidate()` 只有一个行为：标记整个 View 需要重绘。硬件加速模式下（API 21+），View/RenderNode 的内部 damage 机制负责决定哪些区域需要重新录制 DisplayList，`invalidate(Rect)` / `invalidate(int, int, int, int)` 已被标记为 deprecated，传入的脏矩形参数会被忽略。
+
+> [已验证: AOSP android-16.0.0_r1, View.java `invalidate(Rect)` 注释明确标注 "Passed dirty rectangle is ignored since API 21"。]
 
 | 方法 | 重绘范围 | 线程 | 适用场景 |
-|------|---------|------|---------|
-| `invalidate()` | 整个 View | UI 线程 | 内容全面变化 |
-| `invalidate(Rect dirty)` | 指定矩形区域 | UI 线程 | 局部更新（如进度条、光标） |
-| `invalidate(int l, int t, int r, int b)` | 同上 | UI 线程 | 同上 |
+|------|---------|------|----------|
+| `invalidate()` | 整个 View | UI 线程 | 内容变化 |
 | `postInvalidateOnAnimation()` | 整个 View | 任意线程 | 在下一帧动画时刷新 |
 
-局部 `invalidate()` 的收益来自 `ViewRootImpl` 的脏区域合并机制（`ViewRootImpl.invalidateRectOnScreen()`）。多个 View 的脏矩形会在 `performDraw()` 前合并，最终只重绘合并后的区域。如果每个 View 都调无参 `invalidate()`，脏区域合并退化为整屏重绘。
+在 API 21 之前的软件绘制路径中，`invalidate(Rect)` 的脏区域合并机制（`ViewRootImpl.invalidateRectOnScreen()`）确实能减少重绘范围。但现代 Android 默认硬件加速，这条路径已不再适用。
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/ViewRootImpl.java]
+### invalidate 与 RenderNode damage
 
-### 脏区域 invalidate 的实践
+硬件加速模式下，调用 `invalidate()` 会触发 View 对应的 RenderNode 标记为 needs-update。后续 `performDraw()` 阶段只重新录制被标记的 RenderNode，未变化的子树保持缓存。这是硬件加速管线中控制重绘范围的主要机制——不是通过脏矩形，而是通过 RenderNode 粒度的 DisplayList 更新。
 
-```java
-// 进度条场景：只有进度指示器区域变化
-private RectF mProgressBounds = new RectF();
-private float mProgress = 0f;
-
-public void setProgress(float progress) {
-    float oldProgress = mProgress;
-    mProgress = Math.max(0f, Math.min(1f, progress));
-
-    // 只 invalidate 进度条变化的区域
-    float viewWidth = getWidth() - getPaddingLeft() - getPaddingRight();
-    int left = (int) (getPaddingLeft() + oldProgress * viewWidth) - 2;
-    int right = (int) (getPaddingLeft() + mProgress * viewWidth) + 2;
-    invalidate(left, getPaddingTop(), right, getHeight() - getPaddingBottom());
-}
-
-@Override
-protected void onDraw(Canvas canvas) {
-    // 完整绘制，但只有脏区域会被实际光栅化
-    mProgressBounds.set(getPaddingLeft(), getPaddingTop(),
-            getPaddingLeft + mProgress * getContentWidth(), getBottom() - getPaddingBottom());
-    canvas.drawRect(mProgressBounds, mProgressPaint);
-}
-```
+对于需要更细粒度控制的多层内容，可以用 `RenderNode` 手动拆分静态层和动态层（见本章末尾 RenderNode 小节）。
 
 ### requestLayout() vs invalidate()
 
@@ -349,30 +330,53 @@ Android 10 (API 29) 引入了公开的 `RenderNode` API。自定义 View 可以�
 // Android 10+ 使用 RenderNode 拆分绘制层
 private RenderNode mBackgroundNode;
 private RenderNode mForegroundNode;
+private boolean mBackgroundRecorded = false;
+
+@Override
+protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+    super.onSizeChanged(w, h, oldw, oldh);
+    // 尺寸变化时重新录制背景
+    mBackgroundRecorded = false;
+}
 
 @Override
 protected void onDraw(Canvas canvas) {
+    // 确保在硬件加速 Canvas 上操作
+    if (!canvas.isHardwareAccelerated()) return;
+
     if (mBackgroundNode == null) {
         mBackgroundNode = new RenderNode("background");
         mForegroundNode = new RenderNode("foreground");
-        // 录制静态背景
+    }
+
+    // 尺寸变化时重新录制静态背景
+    if (!mBackgroundRecorded) {
+        mBackgroundNode.setPosition(0, 0, getWidth(), getHeight());
         RecordingCanvas bgCanvas = mBackgroundNode.beginRecording();
-        drawBackground(bgCanvas);
-        mBackgroundNode.endRecording();
+        try {
+            drawBackground(bgCanvas);
+        } finally {
+            mBackgroundNode.endRecording();
+        }
+        mBackgroundRecorded = true;
     }
 
     // 背景 RenderNode 直接提交，不重绘
     canvas.drawRenderNode(mBackgroundNode);
 
     // 前景每帧更新
+    mForegroundNode.setPosition(0, 0, getWidth(), getHeight());
     RecordingCanvas fgCanvas = mForegroundNode.beginRecording();
-    drawForeground(fgCanvas);
-    mForegroundNode.endRecording();
+    try {
+        drawForeground(fgCanvas);
+    } finally {
+        mForegroundNode.endRecording();
+    }
     canvas.drawRenderNode(mForegroundNode);
 }
 ```
 
-[已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/graphics/RenderNode.java]
+[已验证: AOSP android-16.0.0_r1, frameworks/base/graphics/java/android/graphics/RenderNode.java。`setPosition()` 设定 RenderNode 尺寸，默认为 0；`endRecording()` 放入 try/finally 防止异常时录制状态泄漏。]
 
 ## 扩展
 
@@ -382,7 +386,7 @@ protected void onDraw(Canvas canvas) {
 
 1. `onDraw()` 零对象分配（Android Studio Profiler Memory 面板确认）
 2. 静态内容使用 `LAYER_TYPE_HARDWARE` 缓存或 `RenderNode` 分离
-3. 频繁更新场景使用脏区域 `invalidate(Rect)` 而非全量 `invalidate()`
+3. 多层内容用 `RenderNode` 拆分静态层和动态层，避免全量重录 DisplayList
 4. 纯布局容器设置 `setWillNotDraw(true)`
 5. 颜色、文字、路径等不变参数在构造函数中初始化
 6. 动画场景用临时 `LAYER_TYPE_HARDWARE`，结束即恢复
@@ -393,7 +397,7 @@ protected void onDraw(Canvas canvas) {
 在 Perfetto trace 中定位自定义 View 的绘制耗时：
 
 1. 找到 `UI Thread` 上的 `performDraw` → `draw` slice
-2. 如果启用了 `android.view.View` 的 trace tag（`adb shell setprop debug.hwui.profile true`），可以看到每个 View 的 `onDraw` 耗时
+2. 如果启用了 `android.view.View` 的 trace tag（`adb shell setprop debug.hwui.profile true`），能观察到每个 View 的 `onDraw` 耗时
 3. 关注 `RenderThread` 上的 `DrawFrame` 耗时——如果 `DrawFrame` 远大于 `UI Thread` 的 `draw`，说明 `DisplayList` 回放到 GPU 的阶段是瓶颈，需要减少绘制命令数量或降低绘制复杂度
 
 ```sql
