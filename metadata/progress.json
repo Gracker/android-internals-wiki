@@ -1,7 +1,7 @@
 {
   "total": 270,
-  "draft": 37,
-  "ready-for-review": 66,
+  "draft": 36,
+  "ready-for-review": 67,
   "finalized": 168,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-13",
@@ -471,9 +471,9 @@
       "reason": "同属渲染基础章节，task9_state pending，适合继续核对 android-16 SurfaceFlinger/Scheduler/HWC 链路。"
     }
   ],
-  "ready_for_review": 66,
-  "last_updated": "2026-05-13T18:28:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "ready_for_review": 67,
+  "last_updated": "2026-05-13T19:04:00+08:00",
+  "last_updated_by": "task2a-content-processing",
   "task6_last_review": {
     "at": "2026-05-13T17:23:00+08:00",
     "log": "logs/review/2026-05-13-17-review.md",
@@ -1083,6 +1083,15 @@
       "last_task9_at": "2026-05-13T18:28:00+08:00",
       "last_task9_log": "logs/deep-review/2026-05-13-18-deep-review.md",
       "task2b_state": "pending"
+    },
+    "3.4": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "last_task2a_at": "2026-05-13T19:04:00+08:00",
+      "file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
+      "title": "输入延迟与预测输入技术"
     }
   },
   "task2b_rounds": [
@@ -1100,9 +1109,9 @@
       ]
     }
   ],
-  "last_task2a_processed": "1.4 Binder IPC 机制与性能影响",
-  "last_task2a_processed_file": "src/part1-fundamentals/ch01-architecture/04-binder.md",
-  "last_task2a_processed_date": "2026-05-13T18:20:00+08:00",
+  "last_task2a_processed": "3.4 输入延迟与预测输入技术",
+  "last_task2a_processed_file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
+  "last_task2a_processed_date": "2026-05-13T19:04:00+08:00",
   "task9_last_review_detail": {
     "at": "2026-05-13T18:28:00+08:00",
     "log": "logs/deep-review/2026-05-13-18-deep-review.md",
