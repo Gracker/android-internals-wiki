@@ -23,10 +23,10 @@ sources:
 tags: [oom, memory, thread-limit, fd-leak, virtual-memory]
 related_chapters: ["20.1", "23.1", "23.4", "4.3", "4.4"]
 review_count: 3
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 created_by: "task2a"
 reviewed_date: "2026-05-13"
 reviewed_by: openclaw-task6
@@ -37,11 +37,11 @@ task6_review_notes: "2026-05-13 Task6 21:32：pass-light-edit。L1/L2 小修 4 �
 task9_result: needs-rework
 task2b_result: fixed
 last_task2b_at: '2026-05-13T19:33:05+08:00'
-last_task9_at: '2026-05-12T18:24:00+08:00'
+last_task9_at: '2026-05-13T22:26:00+08:00'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-12'
-last_task9_review_log: logs/deep-review/2026-05-12-18-deep-review.md
-task9_review_notes: '2026-05-12 Task9 18:24：needs-rework。P0 3 / P1 1 / P2 1；Unsafe/Gson、Bitmap native 分配、pthread_create 与 FD 耗尽边界需修正；Native crash 兜底需补 signal-safety 和状态一致性边界。'
+task9_reviewed_date: '2026-05-13'
+last_task9_review_log: logs/deep-review/2026-05-13-22-deep-review.md
+task9_review_notes: "2026-05-13 Task9 22:26：needs-rework。P0 1 / P1 3 / P2 1；Debug.getMemoryInfo 示例无法编译，ART free bytes 诊断、mallopt 虚拟内存治理与线程创建来源监控需回炉。"
 ---
 
 # OOM 治理
