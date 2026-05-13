@@ -1,8 +1,8 @@
 ---
-status: finalized
+status: 'ready-for-review'
 title: Input 事件分发全流程
 chapter: '3.1'
-pipeline_stage: ready-to-publish
+pipeline_stage: 'task2b_pending'
 applicable_versions: Android 12 (API 31) - Android 16 (API 36)
 last_verified: '2026-04-27'
 last_verified_against: AOSP android-12/13/14/15/16 InputDispatcher.cpp / InputClassifier.cpp
@@ -48,13 +48,13 @@ related_chapters:
 task6_result: pass-light-edit
 task6_state: reviewed
 task6_reviewed_date: '2026-04-27'
-task9_state: pending
-task9_result: pass-tech-review
-task2b_state: fixed
+task9_state: 'reviewed'
+task9_result: 'needs-rework'
+task2b_state: 'pending'
 task2b_result: fixed
-task9_reviewed_date: '2026-04-27'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-04-27T11:27:00+08:00'
+task9_reviewed_date: '2026-05-13'
+task9_reviewed_by: 'openclaw-task9'
+last_task9_at: '2026-05-13T21:57:00+08:00'
 review_notes: 2026-04-27 Task9 复审通过：InputClassifier/InputProcessor、WindowInfosListener、stale
   event、ANR timeout 与 InputFlinger 进程形态已按 AOSP 12-16 核验；仅保留 Compose pointer input
   trace 观察点 P2 建议。

@@ -1,5 +1,5 @@
 ---
-status: finalized
+status: 'ready-for-review'
 title: 文字渲染性能
 chapter: '2.21'
 section: '2.21'
@@ -8,8 +8,8 @@ reviewed_date: '2026-04-23'
 reviewed_by: openclaw-task6
 task6_result: pass-light-edit
 task6_state: reviewed
-task9_state: pending
-pipeline_stage: ready-to-publish
+task9_state: 'reviewed'
+pipeline_stage: 'task2b_pending'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 last_verified: '2026-04-23'
 last_verified_against: AOSP android-16.0.0_r1 + androidx-main + developer.android.com
@@ -52,15 +52,15 @@ related_chapters:
 - '2.5'
 - '7.8'
 - '7.12'
-task9_result: pass-tech-review
+task9_result: 'needs-rework'
 repaired_date: '2026-04-23'
 repaired_by: openclaw-task2b
 task2b_result: fixed
-task2b_state: fixed
+task2b_state: 'pending'
 last_task2b_at: '2026-05-09T17:52:02+08:00'
-task9_reviewed_date: 2026-04-24
-task9_reviewed_by: openclaw-task9
-last_task9_at: 2026-04-24 00:43:52+08:00
+task9_reviewed_date: '2026-05-13'
+task9_reviewed_by: 'openclaw-task9'
+last_task9_at: '2026-05-13T21:57:00+08:00'
 ---
 
 
