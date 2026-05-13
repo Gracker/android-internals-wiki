@@ -3004,18 +3004,89 @@
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T07:38:00+08:00",
       "status": "pending"
+    },
+    {
+      "id": "task9-21-2-alpha-appstartup-source-model-20260513",
+      "section": "21.2",
+      "section_title": "启动框架设计与任务编排",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "Alpha 框架实现模型与 App Startup DAG 口径错误",
+      "description": "正文把 Alpha 写成注解处理器生成 DAG、TaskGraph/TaskExecutor 多线程池模型，并称任务图编译期确定；alibaba/alpha 源码与 README 显示其核心 API 是 Task/Project/AlphaManager，可用 Java Builder 或 XML 配置，默认执行器是单个 ExecutorService + 主线程 Handler。选型表还把 App Startup 写成“单向链式依赖”，但 AppInitializer 会递归初始化 dependencies 并做 cycle detected 检查，支持静态依赖 DAG，只是不支持异步、优先级和运行时调度。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part5-app/ch21-startup/02-startup-framework.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L193 / L245-L268 Alpha 框架描述",
+          "detail": "Alpha 源码没有正文所写的注解处理器、TaskGraph、TaskExecutor 多线程池模型；README 与源码使用 Task、Project、AlphaManager，支持 Java Builder 和 XML 配置，默认 ExecutorService 为单线程池配置加主线程 Handler。",
+          "suggestion": "按 alibaba/alpha README 与 Task.java、Project.java、AlphaConfig.java 重写 Alpha 小节：Builder/XML 构建 PERT/DAG，Task 可设置 mainThread/threadPriority/executePriority，默认线程池可通过 AlphaConfig 替换；删除注解生成和 IO/CPU 多线程池断言。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码准确性/选型口径",
+          "location": "L309-L312 三种方案选型表",
+          "detail": "App Startup 被写成“单向链式依赖”；AndroidX AppInitializer#doInitialize() 会递归遍历 Initializer.dependencies() 并用 initializing set 检测环，语义上支持静态依赖 DAG，不限线性链。",
+          "suggestion": "将 App Startup 的 DAG 能力改成“支持静态依赖 DAG / 同步主线程执行 / 无优先级和超时”；把“动态配置”列拆成“XML/本地配置”和“远程运行时配置”，避免把 Alpha 与自研的边界写错。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T08:40:35+08:00"
+    },
+    {
+      "id": "task9-22-5-rendereffect-api31-guard-20260513",
+      "section": "22.5",
+      "section_title": "动画性能优化",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "RenderEffect 降级封装在 API 30- 会调用不存在的 View.setRenderEffect()",
+      "description": "正文 applyBlurIfSupported() 在 !enabled 或 SDK < S 分支里直接调用 setRenderEffect(null)。View.setRenderEffect(RenderEffect) 从 API 31 才存在；章节适用 Android 10-16，该示例在 Android 10/11 设备执行到 SDK < S 分支会触发 NoSuchMethodError/API lint 硬错。",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/05-animation-performance.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L162-L165 applyBlurIfSupported() API guard",
+          "detail": "`if (!enabled || SDK_INT < S) { setRenderEffect(null); return }` 在 Android 10/11 上仍会执行 API 31 方法。AOSP sources android-30 没有 View.setRenderEffect，android-31 才新增该方法。",
+          "suggestion": "改成先判断版本：`if (SDK_INT < S) return`；再在 API 31+ 分支处理 `!enabled` 时 `setRenderEffect(null)`。也可以把真实调用放进 `@RequiresApi(S)` helper，外层只做版本分发。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T08:40:35+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 111,
-    "p0_count": 45,
-    "last_updated": "2026-05-13T07:37:12+08:00",
-    "updated_by": "openclaw-task2b",
-    "pending_entries": 61,
+    "total_entries": 115,
+    "p0_count": 55,
+    "last_updated": "2026-05-13T08:40:35+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 65,
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T06:25:00+08:00",
+  "last_updated": "2026-05-13T08:40:35+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {

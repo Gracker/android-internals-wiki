@@ -22,20 +22,19 @@ sources:
     path: "androidx.startup:AppInitializer.java"
 tags: [startup-framework, dag, app-startup, async-init, thread-pool, task-scheduling]
 related_chapters: ["21.1", "21.6", "8.3", "1.5"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-12
-last_task9_at: 2026-05-12T20:54:00+08:00
+task9_reviewed_date: "2026-05-13"
+last_task9_at: 2026-05-13T08:40:35+08:00
 task6_reviewed_date: "2026-05-13"
-
 ---
 
 # 启动框架设计与任务编排

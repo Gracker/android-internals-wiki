@@ -2,7 +2,7 @@
 title: "ContentProvider 启动治理"
 chapter: "21.3"
 section: "21.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-12"
 last_verified_against: "AOSP android-16.0.0_r1, Android Developers App Startup / provider manifest docs, AndroidX Startup source"
@@ -26,20 +26,19 @@ sources:
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
 tags: [contentprovider, startup, sdk-init, app-startup]
 related_chapters: ["21.1", "21.2", "1.10"]
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
-task9_result: needs-rework
+task9_result: pass-tech-review
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: 2026-05-12
-last_task9_at: 2026-05-12T20:54:00+08:00
+task9_reviewed_date: "2026-05-13"
+last_task9_at: 2026-05-13T08:40:35+08:00
 task6_reviewed_date: "2026-05-13"
-
 ---
 
 # ContentProvider 启动治理
