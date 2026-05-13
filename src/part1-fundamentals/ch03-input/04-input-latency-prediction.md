@@ -47,11 +47,19 @@ related_chapters:
 - '2.5'
 - '8.1'
 - '13.8'
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
 last_task2a_at: '2026-05-13T19:04:00+08:00'
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-13"
+task9_state: pending
+last_task6_at: "2026-05-13T19:10:00+08:00"
+task6_review_log: "logs/review/2026-05-13-19-review.md"
+
 ---
 
 # 3.4 输入延迟与预测输入技术
@@ -93,7 +101,7 @@ ADPF 输入反馈、HWC actual present 时间线、动态报点率等内容，�
 
 这件事的难点不在概念，而在口径。InputDispatcher 的 `total_latency_dur` 只能说明事件派发到 ACK 的耗时；Frame Timeline 说明一帧是否按时 present；手写笔应用关心的则是笔尖和墨迹之间的距离。三者都叫输入延迟，但测到的不是同一段时间。
 
-分析跟手性时，先把口径对齐，后面才谈得上优化。
+分析跟手性时，先统一口径，后面才谈得上优化。
 
 ## 输入延迟的分层模型
 
@@ -131,7 +139,7 @@ sequenceDiagram
 | App 处理延迟 | `ViewRootImpl`、View 树、业务代码、Choreographer | `deliverInputEvent`、`CALLBACK_INPUT`、主线程状态 | 主线程 I/O、Binder 同步调用、复杂手势分发、过深 View 层级 |
 | 显示延迟 | RenderThread、GPU、SurfaceFlinger、HWC、Panel | Frame Timeline、`queueBuffer`、present fence | GPU 忙、BufferQueue 积压、SF 合成超时、刷新率切换 |
 
-这张表的用法是把问题分段。`wq` 堆积时，不要直接说“渲染慢”；Frame Timeline 红了，也不能反推 InputDispatcher 一定慢。每个指标只覆盖自己那段。
+这张表用于把问题分段。`wq` 堆积时，不要直接说“渲染慢”；Frame Timeline 红了，也不能反推 InputDispatcher 一定慢。每个指标只覆盖自己那段。
 
 ### 一帧预算里的输入位置
 
@@ -186,7 +194,7 @@ Batching 处理“点太多”的问题，重采样处理“点和帧时间不�
 
 ## MotionPredictor：用预测缩短感知距离
 
-预测输入不是让系统更早收到真实事件，而是在真实事件到达前，先估算下一小段轨迹，提前把视觉反馈画出来。它主要服务手写笔、绘图、签名这类连续轨迹场景。
+预测输入不会让系统更早收到真实事件；它在真实事件到达前估算下一小段轨迹，提前把视觉反馈画出来。它主要服务手写笔、绘图、签名这类连续轨迹场景。
 
 ### 三层能力边界
 
@@ -202,7 +210,7 @@ android-16.0.0_r1 可见的 Native 实现里，`TfLiteMotionPredictorModel` 会�
 
 ### Framework API 的使用方式
 
-下面是 framework API 的示意代码，重点看调用顺序：先记录真实事件，再按目标时间预测。真实项目还要处理多 pointer、取消、抬笔和预测失败返回。
+Framework API 的示意代码如下，调用顺序是：先记录真实事件，再按目标时间预测。真实项目还要处理多 pointer、取消、抬笔和预测失败返回。
 
 ```kotlin
 @RequiresApi(34)
@@ -291,7 +299,7 @@ ORDER BY total_latency_dur DESC
 LIMIT 100;
 ```
 
-读结果时按下面的顺序判断：
+结果按下面的顺序判断：
 
 - `dispatch_ms` 高：先看 InputDispatcher 线程、目标进程主线程是否 Runnable 等 CPU、socket 通道是否拥塞。
 - `handling_ms` 高：回到 App 主线程，展开 `deliverInputEvent`、`InputResponse` 和同一时间窗的业务 slice。
@@ -337,7 +345,7 @@ LIMIT 100;
 
 ## 面向手写笔应用的组合方案
 
-手写笔低延迟通常不是单个 API 解决，而是几层组合：
+手写笔低延迟通常需要几层能力组合：
 
 ```mermaid
 graph TD
@@ -380,11 +388,11 @@ graph TD
 
 ## 与其他章节的关系
 
-- §3.1 解释输入事件如何到达 App，本节只引用分发路径，不重复展开 InputDispatcher 策略。
-- §3.2 解释触摸响应分析，本节补充预测、前缓冲和端到端量化。
-- §2.3 和 §2.4 解释 VSync 与 Choreographer，本节关注输入事件如何被帧节奏消费。
-- §2.5 解释 MainThread / RenderThread 协作，本节把渲染延迟作为输入到显示的一段。
-- §13.8 提供更完整的 Perfetto SQL 模板，本节只保留输入延迟分析必需的最小查询。
+- §3.1 解释输入事件如何到达 App，这里引用分发路径，不重复展开 InputDispatcher 策略。
+- §3.2 解释触摸响应分析，这里补充预测、前缓冲和端到端量化。
+- §2.3 和 §2.4 解释 VSync 与 Choreographer，这里关注输入事件如何被帧节奏消费。
+- §2.5 解释 MainThread / RenderThread 协作，这里把渲染延迟作为输入到显示的一段。
+- §13.8 提供更完整的 Perfetto SQL 模板，这里保留输入延迟分析必需的最小查询。
 
 ## 参考资料
 
