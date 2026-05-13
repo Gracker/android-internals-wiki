@@ -44,10 +44,11 @@ sources:
     path: "Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 24.md"
 tags: [recyclerview, viewholder, diffutil, prefetch, nested-scroll]
 related_chapters: ["22.1", "7.8", "2.4"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_reviewed_date: "2026-05-13"
@@ -183,7 +184,8 @@ class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
             holder.bind(getItem(position))
             return
         }
-        payloads.flatten().forEach { payload ->
+        val changes = payloads.flatMap { (it as? List<*>) ?: listOf(it) }
+        changes.forEach { payload ->
             when (payload) {
                 is TitleChanged -> holder.bindTitle(payload.title)
                 is AvatarChanged -> holder.bindAvatar(payload.url)
