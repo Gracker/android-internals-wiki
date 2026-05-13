@@ -14,10 +14,11 @@ sources:
 path: "androidx/compose/runtime/ PausableComposition"
 tags: [compose, recomposition, stability, derivedstateof, pausable-composition, strong-skipping]
 related_chapters: ["7.7", "2.4", "22.1"]
-pipeline_stage: "task2b_pending"
-task6_state: reviewed
-task9_state: "reviewed"
-task2b_state: "pending"
+pipeline_stage: "task6_pending"
+task6_state: revisiting
+task9_state: pending
+task2b_state: fixed
+task2b_result: fixed
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
@@ -57,7 +58,8 @@ Compose compiler 从 Kotlin 2.0 起默认启用 Strong Skipping Mode。这个变
 **Strong Skipping 之前**：只有参数类型被标记为 `@Stable` 或 `@Immutable` 的 Composable 函数才会被跳过。Lambda 参数默认不被 memoize，每次父 Composable 重组时，lambda 参数都是新对象（引用不等），导致接收 lambda 的子 Composable 无法跳过。
 
 **Strong Skipping 之后**：
-- 所有 `@Composable` 函数都会被标记为 skippable，不再要求参数类型必须是 Stable。
+- 所有 **restartable** Composable 函数都会被标记为 skippable，不再要求参数类型必须是 Stable。非 restartable 的 Composable（如内联函数体内的 Composable 调用）仍然不可跳过。
+- 对于 unstable 参数，跳过比较使用实例相等（`===`）；stable 参数使用 `equals()`。
 - **所有 lambda 参数都会被自动 memoize**。Compose compiler 为每个 lambda 生成一个包装类，在参数列表的捕获值没变时复用同一个对象。
 
 ```kotlin
@@ -223,9 +225,11 @@ LazyColumn {
 
 ## Pausable Composition 与 LazyColumn 预取
 
-### Pausable Composition（Compose 1.10 默认启用）
+### Pausable Composition（Compose 1.10+）
 
-Pausable Composition 是 Compose 1.10 引入的运行时改进，也是 Compose 达到 View 系统性能对等的关键机制。
+Pausable Composition 是 Compose 1.10 引入的运行时改进，也是 Compose 官方宣称达到 View 系统性能对等的关键机制。
+
+**版本注意**：Compose Foundation 1.10.0-alpha05 曾默认启用 Pausable Composition（通过 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled`），但 1.10.6 因稳定性问题已将其默认禁用。当前是否默认启用取决于具体 Foundation 版本，使用前需确认目标版本的默认值或手动设置 flag。
 
 **之前的行为**：Composition 必须在单个帧内完成。如果 Composable 树很深或 LazyColumn 的可见 item 很多，组合阶段的 CPU 时间可能超过 16.67ms 帧预算，直接导致掉帧。
 
@@ -248,8 +252,8 @@ Pausable Composition 是 Compose 1.10 引入的运行时改进，也是 Compose 
 2. 以前为了规避组合阻塞而做的各种拆分优化（手动将大 Composable 拆成小函数），在 Compose 1.10 上的效果减弱了——runtime 层面已经做了时间切片。
 3. 但 `derivedStateOf`、key、stable 参数等优化仍然有效——Pausable Composition 解决的是单帧阻塞问题，不解决不必要的重组问题。
 
-[已验证: Compose 1.10 release notes, Pausable Composition 默认启用]
-[已验证: Google 内部基准测试，长列表滚动卡顿率 0.2%]
+[待确认: Pausable Composition 默认启用状态因 Foundation 版本而异——1.10.0-alpha05 默认启用，1.10.6 因稳定性问题默认禁用]
+[待验证: "卡顿率 0.2%" 来源为 Google 官方声明，具体测试条件和 Foundation 版本需确认]
 [待验证: Pausable Composition 在 Perfetto 中的具体表现（被切分的 composition slice 形态）]
 
 ### LazyColumn 预取策略
@@ -263,19 +267,21 @@ LazyColumn / LazyRow 的预取系统与 Pausable Composition 深度集成：
 Compose 1.9 引入的 `LazyLayoutCacheWindow` API 允许开发者精确控制预取窗口大小：
 
 ```kotlin
-LazyColumn(
-    modifier = Modifier.lazyLayoutCacheWindow(
-        // 预取可见区域前后各 3 个 item
-        prefetchWindow = LazyLayoutCacheWindow(3)
-    )
-) {
+@OptIn(ExperimentalFoundationApi::class)
+val listState = rememberLazyListState(
+    // cacheWindow 定义预取窗口范围
+    // 构造参数在不同 Foundation 版本间有差异，参见对应版本 release notes
+    cacheWindow = LazyLayoutCacheWindow(ahead = 3, behind = 1)
+)
+
+LazyColumn(state = listState) {
     // ...
 }
 ```
 
 预取窗口大小需要根据 item 的组合复杂度调整：简单的列表项（纯文本）不需要预取太多；复杂的列表项（图片 + 多行文本 + 操作按钮）适当增大预取窗口可以减少首次可见时的组合卡顿。
 
-[已验证: Compose 1.9 LazyLayoutCacheWindow API]
+[待验证: LazyLayoutCacheWindow API 构造参数在不同 Foundation 版本间有差异（ahead/behind 类型可能是 Dp 或 viewport fraction），需确认目标版本]
 
 ## Compose 编译器报告与性能诊断
 
@@ -285,20 +291,20 @@ Compose compiler 可以在编译时生成性能报告，帮助发现稳定性（
 
 在 Gradle 中启用：
 
-```groovy
-// build.gradle.kts
-kotlinOptions {
-    freeCompilerArgs += [
-        "-P",
-        "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
-            project.buildDir.absolutePath + "/compose_metrics"
-    ]
-    freeCompilerArgs += [
-        "-P",
-        "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
-            project.buildDir.absolutePath + "/compose_metrics"
-    ]
+```kotlin
+// Kotlin 2.0+ build.gradle.kts（推荐）
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_metrics")
+    metricsDestination = layout.buildDirectory.dir("compose_metrics")
 }
+
+// Kotlin 2.0 之前（兼容写法）
+// kotlinOptions {
+//     freeCompilerArgs += listOf(
+//         "-P", "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=${project.buildDir.absolutePath}/compose_metrics",
+//         "-P", "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=${project.buildDir.absolutePath}/compose_metrics"
+//     )
+// }
 ```
 
 编译后会在 `build/compose_metrics/` 下生成三个文件：
@@ -316,9 +322,9 @@ restartable     — 函数可以被独立重启（不在内联 Composable 内部
 skippable       — 函数可以被跳过（所有参数都是 Stable）
 ```
 
-如果 `skippable = false`，说明有参数类型被推断为 Unstable。需要检查哪个参数导致了不稳定，然后决定是否标注 `@Stable` / `@Immutable`，或者升级到 Kotlin 2.2 利用 Strong Skipping 自动处理。
+如果 `skippable = false`，说明有参数类型被推断为 Unstable。需要检查哪个参数导致了不稳定，然后决定是否标注 `@Stable` / `@Immutable`，或确认项目已使用 Kotlin 2.0+ 以利用 Strong Skipping 自动处理。
 
-[待验证: Kotlin 2.2 Strong Skipping 下编译器报告的 skippable 字段是否全部为 true]
+[待验证: Kotlin 2.0+ Strong Skipping 下编译器报告中 restartable Composable 的 skippable 字段是否全部为 true]
 
 ### Layout Inspector 和 Perfetto 中的 Compose 性能观测
 
@@ -358,21 +364,35 @@ LIMIT 20;
 
 在 RecyclerView 等 View 系统容器中嵌入 ComposeView 时，性能瓶颈不在 Compose 的组合阶段，而在 ComposeView 的生命周期管理。
 
-`ViewCompositionStrategy` 决定了 ComposeView 内部的 Composition 何时被销毁和重建。默认策略 `DisposeOnDetachedFromWindowOrReleasedFromPool` 在 RecyclerView 的 item 被回收到缓存池时会销毁 Composition，下次该 item 重新可见时从头创建——这意味着完整的 Composition 开销。
+`ViewCompositionStrategy` 决定了 ComposeView 内部的 Composition 何时被销毁和重建。
+
+**默认策略 `DisposeOnDetachedFromWindowOrReleasedFromPool`** 是为 RecyclerView 等 pooling container 设计的。当 ComposeView 从窗口 detach 或从缓存池中被丢弃时，Composition 被正确处理。注意"ReleasedFromPool"指的是缓存池满时丢弃最旧的 ViewHolder，而不是每次 item 滚出屏幕就销毁——item 被 RecyclerView 临时回收进缓存池时，Composition 保持存活。
 
 ```kotlin
-// 推荐：在 RecyclerView ViewHolder 中使用
+// RecyclerView ViewHolder 中使用——默认策略已适配 pooling container
 val composeView = ComposeView(context).apply {
-    setViewCompositionStrategy(
-        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
-    )
+    // 无需手动 setViewCompositionStrategy，默认策略即为 pooling container 设计
     setContent {
         MyComposableItem(data)
     }
 }
 ```
 
-`DisposeOnViewTreeLifecycleDestroyed` 让 Composition 的生命周期绑定到 Activity/Fragment 的 Lifecycle，而不是 RecyclerView item 的 attach/detach。item 被 RecyclerView 回收时，Composition 只是 detach 但不销毁，重新绑定时恢复，避免重复创建。
+**`DisposeOnViewTreeLifecycleDestroyed`** 适用于 Fragment View 场景：Composition 的生命周期绑定到 Activity/Fragment 的 LifecycleOwner，而不是 View 自身的 attach/detach。在 Fragment View 因配置变更被销毁但 Fragment 仍存活时，这个策略能确保 Composition 在正确的时机被清理。把这个策略用在 RecyclerView ViewHolder 上会把 Composition 生命周期绑定到 Activity/Fragment，导致 Composition 在整个 Activity 生命周期内不被释放，增加内存压力。
+
+```kotlin
+// Fragment 中嵌入 ComposeView 时适用
+val composeView = ComposeView(context).apply {
+    setViewCompositionStrategy(
+        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+    )
+    setContent {
+        MyComposableContent()
+    }
+}
+```
+
+如果需要在 ViewHolder rebinding 时重置 Compose 状态，可以调用 `disposeComposition()` 手动销毁，但要承担重建 Composition 的完整开销。
 
 ### AndroidView 在 Compose 中嵌入 View
 
@@ -395,7 +415,7 @@ AndroidView(
 `update` lambda 在每次父 Composable 重组时都会执行。如果 `update` 里有耗时操作（如设置大图片、触发布局重算），会放大重组的性能影响。优化方式：把 `update` 里的操作限制在最小必要范围，耗时操作移到 `remember` 或 `LaunchedEffect` 中异步处理。
 
 [已验证: 官方文档 ViewCompositionStrategy API]
-[待验证: RecyclerView 中 DisposeOnViewTreeLifecycleDestroyed 的内存占用差异实测数据]
+[待验证: RecyclerView + ComposeView 在不同 ViewCompositionStrategy 下的 Composition 重建频率和内存占用差异]
 
 ## 版本迁移与优化策略变化
 
@@ -406,7 +426,7 @@ AndroidView(
 | Lambda memoize | 手动 `remember { { ... } }` 包裹 | Strong Skipping 自动 memoize，手动包裹变为冗余 |
 | `@Stable` / `@Immutable` 标注 | 大量手动标注以保证跳过 | Strong Skipping 下大部分场景不再需要，仅第三方库和自定义状态容器仍需标注 |
 | 长列表组合阻塞 | 手动拆分大 Composable 函数 | Pausable Composition 自动切分，但 `derivedStateOf` / key 优化仍有效 |
-| 编译器报告 | 关注 `skippable` 字段 | Strong Skipping 下所有 Composable 默认 skippable，关注点转向重组次数和状态读取阶段 |
+| 编译器报告 | 关注 `skippable` 字段 | Strong Skipping 下所有 restartable Composable 默认 skippable，关注点转向重组次数和状态读取阶段 |
 
 迁移步骤：
 1. 升级 Kotlin 到 2.0+，确认 Compose compiler 插件版本匹配。
@@ -424,6 +444,6 @@ AndroidView(
 | 动画掉帧 | 动画状态是否延迟到 Draw 阶段读取 | Layout Inspector 重组计数 |
 | 全页重组 | `derivedStateOf` 是否只用于高频→低频映射 | 编译器报告 + 代码审查 |
 | Compose-View 混合 | ComposeView 的 ViewCompositionStrategy 是否正确 | 代码审查 |
-| Lambda 传递 | Kotlin 2.2 之前需要 remember 包裹 lambda | 编译器报告 skippable 字段 |
+| Lambda 传递 | Kotlin 2.0 之前需要手动 remember 包裹 lambda；2.0+ Strong Skipping 自动 memoize | 编译器报告 skippable 字段 |
 
 [自动发现]：Compose 1.9 引入的后台文本布局预热功能，可以在后台线程预先完成文本的布局计算，减少主线程 Text Composable 的组合耗时。对长列表中包含大量文本的场景有显著帮助，无需开发者额外配置。
