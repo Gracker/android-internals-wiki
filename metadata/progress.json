@@ -67,7 +67,10 @@
     "13.2",
     "14.13",
     "2.0",
-    "1.3"
+    "1.3",
+    "18.10",
+    "19.13",
+    "19.26"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -129,11 +132,14 @@
     "src/part3-tools/ch13-perfetto/02-trace-capture.md",
     "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md",
     "src/part1-fundamentals/ch02-rendering/README.md",
-    "src/part1-fundamentals/ch01-architecture/03-process-model.md"
+    "src/part1-fundamentals/ch01-architecture/03-process-model.md",
+    "src/part2-performance/ch18-rendering-pipelines/10-surface-control-api.md",
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+    "src/part3-tools/ch19-apm/26-hybrid-apm.md"
   ],
   "review_summary": {
-    "p0_issues": 1,
-    "p1_issues": 3,
+    "p0_issues": 3,
+    "p1_issues": 1,
     "p2_issues": 2,
     "p3_issues": 0,
     "total_issues": 6
@@ -421,9 +427,27 @@
       "p1": 1,
       "p2": 0,
       "p3": 0
+    },
+    "18.10": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 2,
+      "p3": 0
+    },
+    "19.13": {
+      "p0": 2,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0
+    },
+    "19.26": {
+      "p0": 1,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0
     }
   },
-  "total_review_sections": 61,
+  "total_review_sections": 64,
   "next_review_candidates": [
     {
       "section": "",
@@ -433,8 +457,8 @@
     }
   ],
   "ready_for_review": 65,
-  "last_updated": "2026-05-13T17:23:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-13T17:55:27+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-13T17:23:00+08:00",
     "log": "logs/review/2026-05-13-17-review.md",
@@ -447,7 +471,7 @@
     "skipped_insufficient_content": [],
     "note": "本轮仅 1 个 task6_state=pending/revisiting 且内容充分的候选。"
   },
-  "task9_last_review": "2026-05-13T15:31:00+08:00",
+  "task9_last_review": "2026-05-13T17:55:27+08:00",
   "ready_to_publish": 164,
   "rework_history": [
     {
@@ -990,6 +1014,33 @@
       "last_task6_review_log": "logs/review/2026-05-13-17-review.md",
       "file": "src/part1-fundamentals/ch01-architecture/03-process-model.md",
       "title": "进程模型与生命周期管理"
+    },
+    "18.10": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-13T17:55:27+08:00",
+      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "queue_priority": 85,
+      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md"
+    },
+    "19.13": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-13T17:55:27+08:00",
+      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "queue_priority": 95,
+      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md"
+    },
+    "19.26": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-13T17:55:27+08:00",
+      "task9_result": "needs-rework",
+      "task9_state": "reviewed",
+      "queue_priority": 95,
+      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md"
     }
   },
   "task2b_rounds": [

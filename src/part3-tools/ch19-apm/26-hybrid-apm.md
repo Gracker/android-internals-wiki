@@ -6,11 +6,11 @@ confidence: high
 drafted_by: gemini
 drafted_date: '2026-04-24'
 last_task6_at: '2026-05-07T23:13:13+08:00'
-last_task9_at: '2026-05-08T00:28:41+08:00'
+last_task9_at: '2026-05-13T17:55:27+08:00'
 last_verified: '2026-04-25'
 last_verified_against: Android PixelCopy / WebViewRenderProcess APIs, Flutter FrameTiming
   docs
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 related_chapters:
 - '19.0'
 - '19.01'
@@ -29,22 +29,23 @@ tags:
 - webview
 - flutter
 - hybrid
-task2b_result: fixed
-task2b_state: fixed
+task2b_result: pending
+task2b_state: pending
 task6_result: pass-light-edit
 task6_review_notes: '2026-05-07 23:13 task6 revisiting-review: pass-light-edit。复核
   Task9 回炉后的写作层，修复 PixelCopy 段动词翻译腔；Task9 needs-rework 记录未由 Task6 裁决，未自动晋升。'
 task6_reviewed_at: '2026-05-10T10:17:22.875562'
 task6_reviewed_by: openclaw-task6
 task6_state: reviewed
-task9_result: null
+task9_result: needs-rework
 task9_review_notes: '2026-05-07 task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；WebView.postVisualStateCallback
   requestId 语义与 AOSP API 文档不一致。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0
   0 / P1 1 / P2 2。Top: Flutter FrameTiming 缺少时间戳归一，无法真正进入统一 Session Timeline。'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: '2026-05-08'
-task9_state: pending
+task9_reviewed_date: '2026-05-13'
+task9_state: reviewed
 title: 混合栈与跨平台 APM (WebView / Flutter)
+last_task9_review_log: 'logs/deep-review/2026-05-13-17-deep-review.md'
 ---
 
 

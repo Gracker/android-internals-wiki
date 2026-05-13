@@ -574,3 +574,16 @@
 - **问题**：章节仍缺 Android Studio Compose Profiler 的官方入口和使用边界说明；结尾“后台文本布局预热”自动发现项缺少官方文档或 release notes 来源。
 - **建议**：由 Task2B 补齐官方文档、release notes 或 Android Studio 工具说明；涉及版本/API 口径的部分交 Task9 复核。
 - **review 日志**：logs/review/2026-05-13-16-review.md
+
+## [Task9 Deep Review] 18.10 SurfaceControl API 深入 — 2026-05-13
+- **类型**：交叉引用错误
+- **位置**：L699-L701 交叉引用
+- **问题**：BufferQueue / SurfaceFlinger / Sync Fence 三个相对链接指向当前 ch18 目录，实际文件在 src/part1-fundamentals/ch02-rendering/ 下。当前 Markdown 链接不可跳转。
+- **建议**：把链接修为 ../../part1-fundamentals/ch02-rendering/13-buffer-queue.md、06-surfaceflinger.md、16-sync-fence.md。
+
+
+## [Task9 Deep Review] 18.10 SurfaceControl API 深入 — 2026-05-13
+- **类型**：原理链/示例边界
+- **位置**：L329-L345 chooseFrameTimeline()
+- **问题**：当 desiredPresentTimeNanos 晚于所有 candidate timeline 时，示例 fallback 到 preferred index，会把低帧率/主动延后场景重新绑回较早 timeline；这和前文“选择 expectedPresentTime 不早于目标时间”的规则不一致。
+- **建议**：fallback 改成最后一个 candidate，或明确“超过候选范围时不绑定 frameTimeline，仅保留 setDesiredPresentTime/等待下一次 vsync callback”的策略。

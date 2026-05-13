@@ -3336,18 +3336,91 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-13T15:31:00+08:00"
+    },
+    {
+      "id": "task9-20260513-18.10-surfacecontrol-lifecycle",
+      "section": "18.10",
+      "section_title": "SurfaceControl API 深入",
+      "priority": 85,
+      "reason": "[Deep Tech Review] ASurfaceControl 生命周期把 release 写成结束显示/删除 Layer，缺少 reparent(null)/hide 与引用释放边界。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂",
+          "location": "L431-L442 ASurfaceControl 生命周期",
+          "detail": "正文只写 ASurfaceControl_release(sc)；AOSP android-16.0.0_r1 surface_control.h 明确 release 只是移除本地引用，surface 及子节点在父节点仍显示时 may remain on display。若要从显示树移除，应通过 ASurfaceTransaction_reparent(transaction, sc, nullptr) 或隐藏/移除事务处理，再释放引用。",
+          "suggestion": "补齐“显示树移除”和“句柄引用释放”的区别：结束显示先 transaction reparent 到 null 或 hide，等待事务边界；随后 release 本地引用，避免读者把 release 当作删除 Layer。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T17:55:27+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-20260513-19.13-async-trace-examples",
+      "section": "19.13",
+      "section_title": "androidx.tracing（Tracing SDK）",
+      "priority": 95,
+      "reason": "[Deep Tech Review] async trace 示例存在 begin/end 顺序错误与 Kotlin 作用域编译错误。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "API/示例逻辑错误",
+          "location": "L311-L336 协程 async trace 示例",
+          "detail": "Trace.beginAsyncSection() 放在 viewModelScope.launch 和 invokeOnCompletion 之后。viewModelScope 默认 Main.immediate 场景下，协程体可能在 begin 之前执行并进入 finally/endAsyncSection，形成 end-before-begin 或丢失 span 的 trace。",
+          "suggestion": "先 beginAsyncSection，再启动协程；用 job.invokeOnCompletion + AtomicBoolean 统一兜底关闭。若担心 launch 失败，包住 launch 创建并在 catch 中关闭。"
+        },
+        {
+          "severity": "P0",
+          "type": "代码不可编译",
+          "location": "L366-L373 executor/mainHandler 示例",
+          "detail": "items 在 trace(\"Home#requestFirstFeed\") lambda 内用 val 定义，L373 在 lambda 外 adapter.submitList(items) 引用，Kotlin 作用域不可见，示例不能编译。",
+          "suggestion": "让 trace lambda 返回 items：val items = trace(\"Home#requestFirstFeed\") { val response = api.loadFirstFeed(); parser.parse(response) }，再 post 到主线程；同时保留异常路径关闭 async span。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T17:55:27+08:00",
+      "status": "pending"
+    },
+    {
+      "id": "task9-20260513-19.26-flutter-timestamp-calibration",
+      "section": "19.26",
+      "section_title": "混合栈与跨平台 APM (WebView / Flutter)",
+      "priority": 95,
+      "reason": "[Deep Tech Review] Flutter FrameTiming raw timestamp 与 DateTime 共享 epoch 的断言违反官方文档，Session Timeline 换算公式不成立。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "版本/源码事实错误",
+          "location": "L258-L268 Flutter 时间戳到 Native 时钟的校准",
+          "detail": "正文先引用 Flutter 文档“timestampInMicroseconds 的 epoch may not match DateTime epoch”，随后又写 FrameTiming 与 DateTime 在同一 Flutter Engine 进程内共享同一时间基准，并用 DateTime.now() 与 elapsedRealtime() 建 offset。官方文档不保证这个前提，换算公式会产生错误 Session Timeline。",
+          "suggestion": "删除“共享同一时间基准”断言。若要做时间轴，只能标注为近似：用 native 接收时间作为批量帧事件的观测时间，或建立 raw FrameTiming timestamp 与 native monotonic clock 的同源校准证据；没有证据时仅上报 build/raster/total 时长，不输出 elapsed_realtime_ms。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T17:55:27+08:00",
+      "status": "pending"
     }
   ],
   "metadata": {
-    "total_entries": 117,
-    "p0_count": 55,
-    "last_updated": "2026-05-13T09:20:00+08:00",
+    "total_entries": 124,
+    "p0_count": 21,
+    "last_updated": "2026-05-13T17:55:27+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 68,
+    "pending_entries": 74,
     "updated_date": "2026-05-13",
     "last_updated_by": "task9-deep-tech-review"
   },
-  "last_updated": "2026-05-13T09:20:00+08:00",
+  "last_updated": "2026-05-13T17:55:27+08:00",
   "last_updated_by": "task9-deep-tech-review",
   "pending": [
     {
