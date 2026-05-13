@@ -60,18 +60,18 @@ related_chapters:
 drafted_date: '2026-03-31'
 drafted_by: openclaw-subagent
 review_count: 8
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task6_result: pass-light-edit
 last_task6_at: '2026-05-12T18:02:31+08:00'
 last_task6_review_log: logs/review/2026-05-12-18-review.md
 task6_review_notes: '2026-05-12 Task6 18:02：pass-light-edit。L1/L2 小修 10 处：去第一人称/读者直呼、修正限制句式、删除编辑口吻；未新增回炉项。Task9 仍 pending/needs-rework，未自动晋升。'
-task9_state: reviewed
+task9_state: pending
 task9_result: needs-rework
 last_task9_at: '2026-05-12T18:24:00+08:00'
-task2b_state: pending
-task2b_result: pending
-last_task2b_at: '2026-05-09T22:10:00+08:00'
+task2b_state: fixed
+task2b_result: fixed
+last_task2b_at: '2026-%m-13T19:33:05+08:00'
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: '2026-05-12'
 task9_review_notes: '2026-05-12 Task9 18:24：needs-rework。P0 3 / P1 1 / P2 0；16KB linker compat、Bitmap 源码路径、MTE ASYMM 平台边界存在源码/版本错误；MGLRU 观察口径不足。'
@@ -180,9 +180,9 @@ AOSP 源码路径：
 AOSP 源码路径：
 - Android 8.0 Bitmap 创建：`frameworks/base/graphics/java/android/graphics/Bitmap.java`
 - NativeAllocationRegistry：`libcore/luni/src/main/java/libcore/util/NativeAllocationRegistry.java`
-- Native Bitmap 分配：`frameworks/base/libs/hwui/Bitmap.cpp`（`allocateHeapBitmap` 使用 `calloc`）
+- Native Bitmap 分配：`frameworks/base/libs/hwui/hwui/Bitmap.cpp`（`allocateHeapBitmap` 使用 `calloc`）
 
-[已验证: AOSP android-15.0.0_r1, frameworks/base/libs/hwui/Bitmap.cpp]
+[已验证: AOSP android-15.0.0_r1, frameworks/base/libs/hwui/hwui/Bitmap.cpp]
 [已验证: Cubox/不同版本上 Bitmap 内存分配与回收原理对比-2023-01-24.md]
 
 ### 回收兜底策略的版本对照
@@ -448,7 +448,7 @@ Stack Tagging 属于另一条能力线。它要求 JNI / NDK 代码重新用 MTE
 
 **关键限制**：ASYMM 需要 `mte3` 特性，即 `/proc/cpuinfo` 中显示 `mte mte3`（而非仅有 `mte`）。当前仅部分 Arm v8.7-A+ 设备支持，主流手机 SoC 中 Pixel 8/9 是较早公开验证的机型。
 
-**Android 系统行为**：Android **不向 App 暴露 ASYMM API**。当 App 通过 `android:memtagMode="async"` 请求 MTE 时，OS 会自动将模式透明升级为 ASYMM（如果硬件支持）。这是系统层的静默优化，App 无需感知。
+**Android 系统行为**：Android 不向 App 暴露 ASYMM 模式——App 侧只能请求 `sync` 或 `async`。App 通过 `android:memtagMode="async"` 请求 MTE 时，Zygote 将其映射到 `MEMORY_TAG_LEVEL_ASYNC`，进程以 ASYNC 模式运行。ASYMM 不是 App 请求 `async` 后必然获得的行为，而是取决于硬件能力（`mte3`）和 vendor policy。vendor 可通过 `/sys/devices/system/cpu/cpu<N>/mte_tcf_preferred` 配置 per-CPU preferred 模式（`async` / `sync` / `asymm`），在支持 ASYMM 的硬件上透明升级，但这是平台实现细节，App 无法控制也无需感知。
 
 **sysfs 底层控制**：`/sys/devices/system/cpu/cpu<N>/mte_tcf_preferred` 控制 per-CPU 的 preferred MTE 模式（`async` / `sync` / `asymm`）。写入 `asymm` 可强制启用 ASYMM，但需要 root 权限。
 
@@ -564,7 +564,7 @@ PSS 公式本身不因页大小改变——**16KB 页不改变 PSS 的分摊逻�
 
 #### Bionic Linker 16KB Compat Mode
 
-`bionic/linker/linker_phdr.cpp` 中 `ElfReader::LoadSegments()` 调用 `IsEligibleFor16KiBAppCompat()` 判断 ELF 是否需要 compat 处理——满足条件后通过 `Setup16KiBAppCompat()` 配置兼容加载参数（如放宽 RELRO 权限、改用 RW 初始映射）。具体 compat 逻辑封装在 `bionic/linker/linker_phdr_16kib_compat.cpp` 中。当 `kPageSize == 16384` 且 ELF 段 `min_palign == 4096` 时，linker 检查 `bionic.linker.16kb.app.compat.enabled` 系统属性，决定是否启用 compat 模式：
+`bionic/linker/linker_phdr.cpp` 中 `ElfReader::LoadSegments()` 调用 `IsEligibleFor16KiBAppCompat()` 判断 ELF 是否需要 compat 处理——满足条件后通过 `Setup16KiBAppCompat()` 配置兼容加载参数（如放宽 RELRO 权限、改用 RW 初始映射）。具体 compat 逻辑封装在 `bionic/linker/linker_phdr_16kib_compat.cpp` 中。当 `kPageSize == 16384` 且 ELF 段 `min_palign == 4096` 时，linker 在 `ReadProgramHeaders` 阶段读取 `min_palign` 和系统属性 `bionic.linker.16kb.app_compat.enabled`，设置 `should_use_16kib_app_compat_` 标志；随后 `Load()` 调用 `Setup16KiBAppCompat()`，其中 `IsEligibleFor16KiBAppCompat()` 校验 RELRO/RW 边界条件；`LoadSegments()` 使用 compat 参数执行实际映射。
 
 ```cpp
 // bionic/linker/linker_phdr.cpp (android-16.0.0_r1)
@@ -573,7 +573,7 @@ if (kPageSize == 16*1024 && min_palign == 4096) {
   // IsEligibleFor16KiBAppCompat() → Setup16KiBAppCompat()
   // 实际 compat 逻辑在 linker_phdr_16kib_compat.cpp
   should_use_16kib_app_compat_ =
-    GetBoolProperty("bionic.linker.16kb.app.compat.enabled", false);
+    GetBoolProperty("bionic.linker.16kb.app_compat.enabled", false);
 }
 // Compat 模式代价：
 //   1. 初始映射使用 RW（而非标准 RO），需额外 kPageSize 预留空间
@@ -609,7 +609,7 @@ MGLRU（Multi-Gen LRU）在 GKI 6.1（Android 14）和 GKI 6.6（Android 15）�
 
 MGLRU 的核心改进是把页回收决策从被动扫描变为按代分级。内核按访问时间将页分到不同 generation，回收时优先淘汰最老一代中的页。与传统 LRU 的线性链表扫描相比，MGLRU 的多代结构让回收精度更高，误杀活跃页的概率更低。
 
-在 Perfetto 中可以通过 `mm_vmscan_lru_shrink_inactive` 和相关 tracepoint 观察 MGLRU 的回收行为。Android 16 设备上，如果发现回收仍然过于激进，需要检查厂商是否覆盖了 MGLRU 的默认参数。
+确认设备是否运行 MGLRU 的可靠方式：检查 `/sys/kernel/mm/lru_gen/enabled`（存在且值为非零表示 MGLRU 已启用），或确认内核配置 `CONFIG_LRU_GEN=y`。Perfetto 中 `mm_vmscan_lru_shrink_inactive` tracepoint 可以观察页回收活动，但该 tracepoint 在传统 LRU 路径中也存在，不能单独作为 MGLRU 的判断依据。如果需要区分 MGLRU 和传统 LRU 的回收行为，应结合上述 sysfs/config 检查结果一起判断。Android 16 设备上，如果发现回收仍然过于激进，需要检查厂商是否覆盖了 MGLRU 的默认参数。
 
 [来源: GKI 6.12 kernel config, CONFIG_LRU_GEN_ENABLED=y by default]
 
@@ -667,7 +667,7 @@ Scudo 能检测很多内存安全错误，但它是"检测"而不是"预防"。�
 - ART CMC GC：`art/runtime/gc/collector/mark_compact.cc`
 - RosAlloc：`art/runtime/gc/allocator/rosalloc.cc`
 - RegionSpace：`art/runtime/gc/space/region_space.cc`
-- Bitmap 分配（Android 8.0+）：`frameworks/base/libs/hwui/Bitmap.cpp`
+- Bitmap 分配（Android 8.0+）：`frameworks/base/libs/hwui/hwui/Bitmap.cpp`
 - NativeAllocationRegistry：`libcore/luni/src/main/java/libcore/util/NativeAllocationRegistry.java`
 - Scudo：`compiler-rt/lib/scudo/`（LLVM 上游）
 - ActivityManager（getMemoryClass）：`frameworks/base/core/java/android/app/ActivityManager.java`
