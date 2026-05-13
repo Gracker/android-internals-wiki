@@ -1,8 +1,8 @@
 {
   "total": 270,
-  "draft": 35,
-  "ready-for-review": 68,
-  "finalized": 167,
+  "draft": 39,
+  "ready-for-review": 64,
+  "finalized": 168,
   "task9_result": "tech-review-completed",
   "task9_reviewed_date": "2026-05-13",
   "task9_reviewed_by": "openclaw-task9",
@@ -62,7 +62,10 @@
     "22.6",
     "22.7",
     "22.8",
-    "22.9"
+    "22.9",
+    "11.3",
+    "13.2",
+    "14.13"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -119,14 +122,17 @@
     "src/part5-app/ch22-rendering-practice/06-image-loading.md",
     "src/part5-app/ch22-rendering-practice/07-webview-optimization.md",
     "src/part5-app/ch22-rendering-practice/08-frame-monitoring.md",
-    "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md"
+    "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md",
+    "src/part2-performance/ch11-power/03-system-power-optimization.md",
+    "src/part3-tools/ch13-perfetto/02-trace-capture.md",
+    "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
   ],
   "review_summary": {
-    "p0_issues": 3,
-    "p1_issues": 4,
-    "p2_issues": 8,
+    "p0_issues": 1,
+    "p1_issues": 3,
+    "p2_issues": 2,
     "p3_issues": 0,
-    "total_issues": 15
+    "total_issues": 6
   },
   "task6_review_summary": {
     "l1_l2_fixes": 244,
@@ -393,9 +399,27 @@
       "p1": 1,
       "p2": 4,
       "p3": 0
+    },
+    "11.3": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
+    },
+    "13.2": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0
+    },
+    "14.13": {
+      "p0": 1,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0
     }
   },
-  "total_review_sections": 56,
+  "total_review_sections": 59,
   "next_review_candidates": [
     {
       "section": "25.1",
@@ -405,8 +429,8 @@
     }
   ],
   "ready_for_review": 65,
-  "last_updated": "2026-05-13T15:18:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-13T15:31:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-13T15:18:00+08:00",
     "log": "logs/review/2026-05-13-15-review.md",
@@ -423,8 +447,8 @@
       "19.27"
     ]
   },
-  "task9_last_review": "2026-05-13T08:40:35+08:00",
-  "ready_to_publish": 165,
+  "task9_last_review": "2026-05-13T15:31:00+08:00",
+  "ready_to_publish": 164,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -910,6 +934,26 @@
       "last_task6_review_log": "logs/review/2026-05-13-15-review.md",
       "file": "src/part5-app/ch22-rendering-practice/09-rendering-case-studies.md",
       "title": "渲染优化案例集"
+    },
+    "11.3": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task9_at": "2026-05-13T15:31:00+08:00",
+      "task9_result": "pass-tech-review"
+    },
+    "13.2": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-13T15:31:00+08:00",
+      "task9_result": "needs-rework",
+      "queue_priority": 85
+    },
+    "14.13": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-13T15:31:00+08:00",
+      "task9_result": "needs-rework",
+      "queue_priority": 95
     }
   },
   "task2b_rounds": [
@@ -931,18 +975,18 @@
   "last_task2a_processed_file": "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
   "last_task2a_processed_date": "2026-05-13T07:20:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-13T08:40:35+08:00",
-    "log": "logs/deep-review/2026-05-13-08-deep-review.md",
+    "at": "2026-05-13T15:31:00+08:00",
+    "log": "logs/deep-review/2026-05-13-15-deep-review.md",
     "sections": [
-      "21.2",
-      "21.3",
-      "22.5"
+      "11.3",
+      "13.2",
+      "14.13"
     ],
-    "p0": 2,
-    "p1": 1,
-    "p2": 1,
-    "auto_promotions": [
-      "21.3"
+    "p0": 1,
+    "p1": 3,
+    "p2": 2,
+    "auto_finalized": [
+      "11.3"
     ]
   }
 }

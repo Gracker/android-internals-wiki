@@ -554,3 +554,15 @@
 - **问题**：章节标题和锚点都指向案例/实战，但正文主要是排查框架、指标口径和模板，缺少至少一个真实案例的设备环境、复现路径、优化前后指标、Perfetto/JankStats/Macrobenchmark 证据与改动代价。读者能获得排查清单，但还看不到可复查的现场过程。
 - **建议**：Task2B 补 1-2 个真实或脱敏案例：场景与设备刷新率、复现步骤、慢帧/P95/P99/frozen frame 基线、关键 trace slice、改动前后对比和边界代价；没有一手数据时保留模板定位，章节标题或段落明确为“案例复盘模板/排查框架”。
 - **review 日志**：logs/review/2026-05-13-15-review.md
+
+## [Task9 Deep Review] 11.3 系统级功耗优化 — 2026-05-13
+- **类型**：数据缺失
+- **位置**：L389-L423 厂商后台冻结与功耗报告差异
+- **问题**：MIUI/HyperOS 后台冻结“通常 10 分钟左右”、不同厂商电池消耗报告“3-5 倍”等量化口径来自公开经验汇总，当前缺少 ROM 版本、设备、复现条件或 trace/dumpsys 证据。
+- **建议**：补 dontkillmyapp/OEM 文档链接、机型与 ROM 版本，或用一次 WorkManager 延迟实验标出 trace、dumpsys jobscheduler/alarm 与电池策略设置；无法复核时把固定数值降为经验范围并标注 [待验证]。
+
+## [Task9 Deep Review] 13.2 Trace 抓取 — 2026-05-13
+- **类型**：采集开销/数据口径
+- **位置**：L763 CPU Callstack Sampling 采样频率
+- **问题**：正文把 100-1000 Hz 作为多数场景合理范围。Perfetto CPU profiling 文档提示非 native 调用栈 unwind 成本高，建议低于 200 Hz per CPU；1000 Hz 容易带来 unwinder 过载、丢样和目标进程扰动。
+- **建议**：将默认建议收敛为 100 Hz 起步，Java/JIT 混合栈保持 <200 Hz；native-only/短窗口实验再谨慎升高，并要求记录 dropped samples/overhead。

@@ -3243,6 +3243,84 @@
       "added_by": "task6-review",
       "added_at": "2026-05-13T15:18:00+08:00",
       "original_review_log": "logs/review/2026-05-13-15-review.md"
+    },
+    {
+      "id": "task9-13.2-perfetto-config-thread-boundaries-20260513",
+      "section": "13.2",
+      "section_title": "Trace 抓取",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "version-differences-source-observability",
+      "title": "Perfetto 配置文件路径与 Trace.beginSection 线程归属口径错误",
+      "description": "章节适用 Android 10-16，但配置文件抓取命令直接使用 /data/misc/perfetto-configs，缺少 Android 10/11 非 root 设备只能 stdin 传配置的边界；自定义 Trace 标记也被写成总在主线程 track，实际落在调用线程对应 track。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part3-tools/ch13-perfetto/02-trace-capture.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "版本差异",
+          "location": "L137-L147 配置文件抓取命令",
+          "detail": "章节适用 Android 10-16，但直接要求把 config.pbtxt push 到 /data/misc/perfetto-configs/。Perfetto 官方文档说明非 root 设备 Android 12 之前由于 SELinux 规则，配置只能通过 stdin 传入：cat config | adb shell perfetto -c -；Android 12 起才可用 /data/misc/perfetto-configs 存配置。",
+          "suggestion": "把命令拆成 Android 10/11 与 Android 12+ 两套：10/11 使用 stdin；12+ 才展示 adb push 到 /data/misc/perfetto-configs。"
+        },
+        {
+          "severity": "P1",
+          "type": "源码准确性/观测口径",
+          "location": "L537 自定义 Trace 标记展示位置",
+          "detail": "正文写 Trace.beginSection 标记会出现在 App 进程主线程 track。Trace.beginSection/endSection 是线程局部同步 section；如果在工作线程或 RenderThread 调用，slice 会出现在对应线程 track，不会统一落到主线程。",
+          "suggestion": "改成“出现在调用线程对应的 track；示例在主线程调用时才显示在主线程”。并补充跨线程操作应使用 beginAsyncSection/endAsyncSection。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T15:31:00+08:00"
+    },
+    {
+      "id": "task9-14.13-framemetrics-cacheflush-semantics-20260513",
+      "section": "14.13",
+      "section_title": "Hook 基础设施与性能工具实现原理",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy-principle-chain",
+      "title": "FrameMetrics GPU 指标与 ARM64 cache flush 序列错误",
+      "description": "FrameMetrics TOTAL_DURATION 被误归类为 API 31+ GPU 执行时间；ARM64 icache flush 序列缺少 ic ivau 之后的第二个 DSB，且把编译器内建实现写成固定指令文本。",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part3-tools/ch14-other-tools/13-hook-infrastructure.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误/API 语义",
+          "location": "L119 FrameMetrics 指标说明",
+          "detail": "正文把 TOTAL_DURATION 和 GPU_DURATION 一起归为“GPU 执行时间”且写成 API 31+ 可用。官方 API/AOSP 中 TOTAL_DURATION 是 total frame duration，Added in API 24；GPU_DURATION 才是 GPU duration，Added in API 31。",
+          "suggestion": "改为：FrameMetrics 的输入/布局/绘制/同步/总时长等基础指标 API 24+；GPU_DURATION 与 DEADLINE API 31+。不要把 TOTAL_DURATION 当 GPU 执行时间。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/源码准确性",
+          "location": "L400-L407 / L637 ARM64 icache flush 序列",
+          "detail": "章节把 __builtin___clear_cache() 写成 dc cvau → dsb sy → ic ivau → isb sy，并在 16KB 小节简化为 dc cvau → dsb → ic ivau → isb。ARM 自修改代码推荐序列需要 dcache clean 后 dsb ish、icache invalidate 后再次 dsb ish，再 isb；当前表格缺少 ic ivau 之后的第二个 DSB，且把具体 barrier domain 写成 sy 容易误导实现者。",
+          "suggestion": "按 ARM 官方序列重写：按 cache line 执行 dc cvau；dsb ish；按 cache line 执行 ic ivau；dsb ish；isb。说明 __builtin___clear_cache 由编译器/运行时封装，正文不要承诺所有 Android/NDK 都展开成完全相同指令文本。"
+        }
+      ],
+      "created_date": "2026-05-13",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-13T15:31:00+08:00"
     }
   ],
   "metadata": {
