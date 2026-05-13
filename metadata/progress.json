@@ -180,7 +180,7 @@
     "src/part5-app/ch24-io-network/01-file-io-optimization.md",
     "src/part5-app/ch24-io-network/02-database-optimization.md"
   ],
-  "review_summary": "Task6 2026-05-14 07: reviewed 24.1; pass-light-edit; auto-finalized 1.",
+  "review_summary": "Task9 2026-05-14 07: reviewed 5.10/16.5/24.2; P0 3, P1 1, P2 3; auto-finalized 0.",
   "task6_review_summary": {
     "l1_l2_fixes": 378,
     "l3_issues": 27,
@@ -208,9 +208,9 @@
       "p3": 0
     },
     "16.5": {
-      "p0": 2,
-      "p1": 2,
-      "p2": 3,
+      "p0": 1,
+      "p1": 1,
+      "p2": 0,
       "p3": 0
     },
     "17.2": {
@@ -614,6 +614,18 @@
       "p3": 0
     },
     "24.1": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0
+    },
+    "5.10": {
+      "p0": 2,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
+    },
+    "24.2": {
       "p0": 0,
       "p1": 0,
       "p2": 2,

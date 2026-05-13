@@ -41,18 +41,18 @@ gap_score: 20
 pipeline_stage: task2b_pending
 task6_state: reviewed
 task6_result: needs-rework
-task9_state: pending
-task9_result: ~
+task9_state: reviewed
+task9_result: needs-rework
 task2b_state: pending
 task2b_result: fixed
 last_task2b_at: "2026-05-11T19:14:00+08:00"
 reviewed_by: openclaw-task6
 reviewed_date: '2026-05-12'
 task9_reviewed_by: openclaw-task9
-task9_reviewed_date: "2026-05-08"
+task9_reviewed_date: 2026-05-14
 review_notes: "2026-05-08 task6 revisiting review: pass-light-edit。按写作规范修正禁用/填充词、结构性元叙述与中英文格式;无新增 B 类回炉问题。 | 2026-05-12 task6 review: needs-rework。修复 frontmatter 缩进与 sources 列表、标题标点和 1 处禁用句式；ProfilingManager 源码级补充缺可核对锚点，已写入 queue。"
-last_task9_at: "2026-05-08T13:32:43+08:00"
-task9_review_notes: "2026-05-08 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0;DeliQueue 源码结构与 Generational CMC gating 需回炉。"
+last_task9_at: 2026-05-14T07:24:00+08:00
+task9_review_notes: "2026-05-14 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 0；TRIGGER_TYPE_APP_FULLY_DRAWN 属 API 36 不是 API 37；ProfilingManagerService anomaly 伪代码仍缺 API37 源码锚点，沿用 pending 队列项。"
 review_type: task6-writing-quality-review
 ---
 

@@ -805,3 +805,21 @@
 - **位置**：L156 指向 24.2
 - **问题**：24.2 当前仍是 draft，正文把“多表查询、分页、事务关系交给 Room/SQLite，见 24.2 节”写成可读延伸章节，发布态不成立。
 - **建议**：24.2 成稿前删除“见 24.2 节”，或改为内部待补引用；发布前再恢复交叉链接。
+
+## [Task9 Deep Review] 5.10 JobScheduler/WorkManager 调度与后台任务性能 — 2026-05-14
+- **类型**：源码准确性/AndroidX 源码锚点
+- **位置**：L258-L269 `WorkManagerImpl.createSchedulers()` 简化片段
+- **问题**：正文用 `androidx/work/impl/WorkManagerImpl.java` 和 `createSchedulers()` 表达调度器选择，但未 pin AndroidX WorkManager 版本与真实源码路径；当前 WorkManager 调度器选择主要应落到 AndroidX `Schedulers` / `SystemJobScheduler` / `SystemAlarmScheduler` / `GreedyScheduler` 的具体版本实现上。
+- **建议**：补 AndroidX WorkManager 2.10.x tag 的源码链接与真实方法名；如果只是概念化流程，代码块标为“示意”，避免读者按该类/方法去查源码。
+
+## [Task9 Deep Review] 24.2 数据库性能优化（SQLite/Room） — 2026-05-14
+- **类型**：源码准确性/版本标注
+- **位置**：frontmatter `last_verified_against`、L89-L91 AOSP 源码锚点
+- **问题**：章节适用范围写 Android 10-16，但源码锚点使用 “AOSP master snapshot 2026-05-14”。`SQLiteDatabase`、`SQLiteConnectionPool`、`SQLiteGlobal` 和 `config.xml` 都会随 master 漂移，不适合作为 Android 10-16 的稳定复核依据。
+- **建议**：将源码锚点 pin 到 `android-16.0.0_r1` 或对应 release tag；若保留 master 观察，单独标为 Android 17+ 待验证。
+
+## [Task9 Deep Review] 24.2 数据库性能优化（SQLite/Room） — 2026-05-14（WAL page size）
+- **类型**：数据/版本边界
+- **位置**：L122 WAL 检查项
+- **问题**：“16KB page size 设备上，100 页 checkpoint 对应的数据量比 4KB page size 更大”容易把 Linux/设备页大小与 SQLite `PRAGMA page_size` 直接绑定。AOSP `SQLiteGlobal.getDefaultPageSize()` 从 `/data` block size 取默认值，最终数据库页大小仍应以实际库的 `PRAGMA page_size` 为准。
+- **建议**：改成“如果该库的 `PRAGMA page_size` 为 16KB，则 100 页约 1.6MB；默认值需在目标设备/数据库上查询确认”，并给出 `PRAGMA page_size; PRAGMA wal_autocheckpoint;` 的验证命令。

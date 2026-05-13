@@ -2245,6 +2245,12 @@
           "location": "补充：DeliQueue drain 触发机制和 Generational CMC gating 条件深度验证 / ProfilingManager 触发器内部判断逻辑",
           "detail": "小节以源码级口吻给出 detectAnomalousBehavior() 伪代码和触发器行为差异，但缺少具体源码锚点、提交或官方 reference。",
           "suggestion": "Task 9 复核 API 37 / AOSP preview 源码；无法核实时降级为示意流程，删除具体阈值与函数名。"
+        },
+        {
+          "type": "原理断裂/待验证源码锚点",
+          "location": "L544-L569 ProfilingManager 触发器内部判断逻辑",
+          "detail": "Task9 复核公开 API reference 后，只能确认 ProfilingTrigger 常量与公开 artifact 口径；正文给出的 ProfilingManagerService.detectAnomalousBehavior()、PackageStats 字段和“至少两个条件”判断没有可核对的 API37 源码锚点。",
+          "suggestion": "删除函数名、阈值和组合判断伪代码，或补 API37 源码/提交链接；保留为示意时必须明确“非平台源码”。"
         }
       ],
       "added_by": "task6-review",
@@ -2253,7 +2259,9 @@
       "original_review_log": "logs/review/2026-05-12-23-review.md",
       "related_files": [
         "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
-      ]
+      ],
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T07:24:00+08:00"
     },
     {
       "id": "task6-review-21.5-installSplashScreen-order-2026-05-13",
@@ -4463,18 +4471,73 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T06:32:15+08:00"
+    },
+    {
+      "id": "task9-20260514-5.10-job-api-constants-permission",
+      "section": "5.10",
+      "section_title": "JobScheduler/WorkManager 调度与后台任务性能",
+      "priority": 95,
+      "reason": "[Deep Tech Review] JobScheduler pending reason 常量与 UsageStatsManager 权限口径存在 API 级事实错误。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误/API 常量错误",
+          "location": "L587-L589 Android 17 “能效与设备状态相关挂起原因”",
+          "detail": "Android API reference 当前只公开 PENDING_JOB_REASON_DEVICE_STATE 聚合常量；页面中 DEVICE_STATE_THERMAL / DEVICE_STATE_BATTERY_SAVER 是 broken reference，不是可用常量。正文把它们写成可引用常量会导致代码不可编译。",
+          "suggestion": "改为使用 PENDING_JOB_REASON_DEVICE_STATE，并在解释中说明它覆盖 Doze、battery saver、memory、thermal 等设备状态；不要写不存在的细分常量。"
+        },
+        {
+          "type": "源码错误/权限口径错误",
+          "location": "L524 App Standby Bucket 适配",
+          "detail": "UsageStatsManager 文档说明 getAppStandbyBucket() 返回调用方自身 bucket，不需要 PACKAGE_USAGE_STATS；需要该权限的是查询其他 App usage/inactive state 的接口。",
+          "suggestion": "删除“需要 PACKAGE_USAGE_STATS 权限”，改成“查询自身 bucket 无需 usage access；查询其他 App usage 统计才涉及 PACKAGE_USAGE_STATS/用户授权”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T07:24:00+08:00",
+      "status": "pending",
+      "related_files": [
+        "src/part1-fundamentals/ch05-cpu-power/10-jobscheduler-workmanager-performance.md"
+      ]
+    },
+    {
+      "id": "task9-20260514-16.5-profilingtrigger-api-level",
+      "section": "16.5",
+      "section_title": "Android 17 (API 37) 性能行为变更与适配方法",
+      "priority": 95,
+      "reason": "[Deep Tech Review] ProfilingTrigger 触发器 API level 归属写错，APP_FULLY_DRAWN 属 API 36 而非 API 37。",
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异/API level 错误",
+          "location": "L77、L231 ProfilingManager triggers 表与说明",
+          "detail": "ProfilingTrigger reference 标注 TRIGGER_TYPE_APP_FULLY_DRAWN Added in API level 36；正文把它列入 API 37 新增项。API 37 新增的是 COLD_START、OOM、KILL_EXCESSIVE_CPU_USAGE、ANOMALY、APP_COMPAT 等。",
+          "suggestion": "把 APP_FULLY_DRAWN 移回 API 36/36.1 触发器集合；API 37 行只保留 API37 reference 明确新增的触发器，并注明 artifact 随触发类型变化。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T07:24:00+08:00",
+      "status": "pending",
+      "related_files": [
+        "src/part4-system/ch16-aosp/05-android17-api37-performance-changes.md"
+      ]
     }
   ],
   "metadata": {
-    "total_entries": 146,
-    "p0_count": 73,
-    "last_updated": "2026-05-14T06:32:15+08:00",
+    "total_entries": 148,
+    "p0_count": 75,
+    "last_updated": "2026-05-14T07:24:00+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 89,
+    "pending_entries": 88,
     "updated_date": "2026-05-14",
-    "last_updated_by": "task9-deep-tech-review"
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 88
   },
-  "last_updated": "2026-05-14T06:32:15+08:00",
+  "last_updated": "2026-05-14T07:24:00+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 89
+  "pending": 88
 }
