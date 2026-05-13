@@ -2,7 +2,7 @@
 title: 进程模型与生命周期管理
 chapter: '1.3'
 section: '1.3'
-status: ready-for-review
+status: draft
 reviewed_date: '2026-05-05'
 reviewed_by: openclaw-task6
 review_type: task6-writing-quality-review
@@ -71,7 +71,7 @@ review_notes: '2026-04-29 task6 re-review (revisiting): pass-light-edit, 3 L1 fi
   | 2026-05-05 task6 re-confirm: fixed L1/L2 wording and punctuation; task9_result=needs-rework,
   pipeline kept task2b_pending.'
 task2b_result: fixed
-pipeline_stage: task6_pending
+pipeline_stage: draft
 task6_reviewed_date: '2026-05-05'
 task2b_state: fixed
 last_task2b_at: '2026-05-11T03:18:49'

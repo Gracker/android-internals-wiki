@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: draft
 title: Binder IPC 机制与性能影响
 chapter: '1.4'
 section: '1.4'
@@ -14,7 +14,7 @@ last_task2b_at: '2026-05-11T03:18:49'
 task2b_state: fixed
 task6_result: pass-light-edit
 task6_state: revisiting
-pipeline_stage: task6_pending
+pipeline_stage: draft
 confidence: medium
 sources:
 - type: blog

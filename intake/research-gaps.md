@@ -90,3 +90,39 @@ MTE ASYMM 在 Android App memtagMode=async 下是否自动启用缺少源码闭�
 
 ### 关联章节
 4.3、14.3
+
+
+## [2026-05-13] 18.2 Android View 标准管线（BLAST 深入） — 知识盲区
+
+### 盲区描述
+Android 17 ART 分代 GC 与 Compose Composition 阶段分配/停顿之间的因果链缺少一手资料闭环；当前稿件直接给出“对象分配开销降低 20%+”，但缺 AOSP/ART 版本、Compose runtime 版本、设备、场景和 benchmark。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Android 17 ART generational GC 的公开变更、启用条件和应用可观测指标。
+- 核对 Compose runtime 中 Snapshot、SlotTable、LayoutNode 等对象的生命周期，区分持久结构和每帧临时分配。
+- 设计同机对比：复杂 recomposition / derivedState / SubcomposeLayout 场景下的 alloc count、GC pause、FrameTimeline jank。
+
+### 关联章节
+18.2, 22.3, 4.3
+
+## [2026-05-13] 20.7 异常处理架构设计 — 参考书素材
+
+### 来源
+[结构参考: Clippings/Android 应用稳定性剖析与优化 - 线程监控：如何解决匿名线程？.md]
+
+### 知识点
+1. 通过 ASM 字节码插桩将 Thread() 无参构造改写为 Thread(String name)，name 为调用类名，解决匿名线程（Thread-N）无法溯源问题
+2. Thread.getAllStackTraces() 获取全线程快照及其局限（仅能拿到线程名，无法知道创建来源）
+3. 字节码层面：INVOKESPECIAL + LdcInsnNode 改写 Thread.<init> 签名从 ()V 到 (Ljava/lang/String;)V 的完整流程
+4. MethodInsnNode 过滤：owner=java/lang/Thread, desc=()V, name=<init> 的匹配模式
+
+### 重要程度
+中
+
+### 建议加工方向
+- 在 20.7 异常处理架构或 20.6 稳定度量中补充「线程监控」小节：线程数采集 + 匿名线程归因
+- 可与已有 ASM 字节码插桩知识（书1第2讲）串联，形成完整的字节码监控方法论
+- 补充现代方案对比：AGP Transform → ASM Visitor vs Gradle Transform API deprecated 后的替代路径

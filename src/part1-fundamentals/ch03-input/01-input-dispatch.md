@@ -46,7 +46,7 @@ related_chapters:
 - '9.1'
 - '9.2'
 task6_result: pass-light-edit
-task6_state: pending
+task6_state: reviewed
 task6_reviewed_date: '2026-04-27'
 task9_state: pending
 task9_result: pass-tech-review
@@ -1135,3 +1135,11 @@ InputFlinger::handlePredictiveBack()
 ---
 
 *本调研基于 2026-2026-05-11 源码调研报告：[`DeepResearch/2026-05-11-input-system-architecture-refactor.md`](/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-11-input-system-architecture-refactor.md)*
+
+### Android 输入优先级机制与厂商游戏模式
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-12-android-input-priority-mechanism.md
+- 类型：DeepResearch 调研结果
+- 摘要：梳理 Android 输入源分类体系（SOURCE_GAMEPAD/JOYSTICK 等）、ViewGroup FLAG_DISALLOW_INTERCEPT 拦截机制、InputDispatcher 焦点窗口分发逻辑。确认标准框架中无独立的游戏输入优先级 API，厂商实现属 HAL/framework 定制。
+- 注入时间：2026-05-13
+- 价值：补充 InputDevice SOURCE 常量体系和 ViewGroup 拦截机制的源码级分析，完善输入分发章节参考资料
+

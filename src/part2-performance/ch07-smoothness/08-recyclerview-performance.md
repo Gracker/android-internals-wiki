@@ -581,3 +581,11 @@ MATCH_CONSTRAINT_SPREAD 和 MATCH_CONSTRAINT_WRAP 需要 2 轮迭代，每轮都
 
 此研究 Gap 已通过源码级深度调研确认，建议在后续的 GapWorker 和 ConstraintLayout 版本中考虑上述改进方案。
 <!-- end AIW-源码调研-2026-05-04 -->
+
+### RecyclerView 列表滑动性能深度优化 — Android 17 DeliQueue 与 MessageQueue 版本口径
+- 来源：/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-05-13-recyclerview-deliqueue-messagequeue-analysis.md
+- 类型：DeepResearch 调研结果
+- 摘要：验证 Android 17 DeliQueue 基于 Treiber Stack 的无锁优先级队列架构、targetSdk>=37 下 Generational CMCM 分代策略（Short/Medium/Long）、RecyclerView GapWorker 与 DeliQueue 的交互机制，以及对 4%/7.7%/9.1% 性能数字的来源溯源（未找到一手验证，建议标注数据来源待验证）。
+- 注入时间：2026-05-13
+- 价值：DeliQueue 架构与 GapWorker 交互机制的源码级验证，补充了版本差异表和性能数字可靠性评估
+

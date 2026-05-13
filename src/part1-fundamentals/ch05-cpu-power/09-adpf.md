@@ -44,7 +44,7 @@ sources:
 - type: blog
   path: https://android-developers.googleblog.com/
 pipeline_stage: ready-to-publish
-task6_state: pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 task2b_result: fixed

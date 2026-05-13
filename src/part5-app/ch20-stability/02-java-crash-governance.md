@@ -13,7 +13,7 @@ task2b_result: fixed
 reviewed_date: '2026-05-11'
 reviewed_by: 'openclaw-task6'
 task6_result: 'pass-light-edit'
-task6_state: 'finalized'
+task6_state: reviewed
 task9_result: 'pass-tech-review'
 task9_state: 'finalized'
 task2b_state: 'fixed'

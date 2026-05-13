@@ -1,16 +1,16 @@
 {
-  "current_book": 0,
-  "current_offset": 15,
+  "current_book": 1,
+  "current_offset": 4,
   "books": [
     {
       "prefix": "Android 应用稳定性剖析与优化",
       "total_files": 20,
-      "completed_files": 15
+      "completed_files": 20
     },
     {
       "prefix": "Android 性能优化",
       "total_files": 21,
-      "completed_files": 0
+      "completed_files": 4
     },
     {
       "prefix": "线上疑难问题该如何排查和跟踪",
@@ -18,10 +18,10 @@
       "completed_files": 0
     }
   ],
-  "last_scan_date": "2026-05-12",
-  "total_knowledge_points": 26,
-  "total_suggestions": 9,
-  "total_gaps": 3,
+  "last_scan_date": "2026-05-13",
+  "total_knowledge_points": 34,
+  "total_suggestions": 10,
+  "total_gaps": 4,
   "skipped": [
     {
       "file": "ART 堆内存分布与黑科技扩量：拯救 OOM 的利器",
@@ -37,6 +37,22 @@
     },
     {
       "file": "-Binder 异常：原来 Binder 异常真不少！",
+      "reason": "stub: only title, no content"
+    },
+    {
+      "file": "Android 性能优化 - Android 性能优化总结",
+      "reason": "stub: only title, no content"
+    },
+    {
+      "file": "Android 性能优化 - dex 文件的体积优化实战",
+      "reason": "stub: only title, no content"
+    },
+    {
+      "file": "Android 性能优化 - 通过插件化来优化包体积（上）",
+      "reason": "stub: only title, no content"
+    },
+    {
+      "file": "Android 性能优化 - 通过插件化来优化包体积（下）",
       "reason": "stub: only title, no content"
     }
   ]

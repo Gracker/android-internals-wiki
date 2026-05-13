@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: draft
 title: 千万级 DAU 的 APM 端侧架构
 chapter: '19'
 section: '19.27'
@@ -18,7 +18,7 @@ related_chapters:
 - '19.0'
 - '19.02'
 - '19.09'
-pipeline_stage: task6_pending
+pipeline_stage: draft
 task6_state: pending
 task9_state: pending
 ---

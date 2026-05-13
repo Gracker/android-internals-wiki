@@ -1,4 +1,5 @@
 ---
+
 title: Android View 标准管线（BLAST 深入）
 chapter: '18.2'
 section: '18.2'
@@ -25,10 +26,10 @@ related_chapters:
 - '18.1'
 created_by: rendering-pipelines-merge
 created_date: '2026-04-09'
-pipeline_stage: task9_pending
+pipeline_stage: 'task2b_pending'
 task6_state: reviewed
-task9_state: pending
-task2b_state: pending
+task9_state: 'reviewed'
+task2b_state: 'pending'
 task2b_result: fixed
 last_task2b_at: '2026-05-05T04:53:00+08:00'
 reviewed_by: openclaw-task6
@@ -36,11 +37,12 @@ reviewed_date: '2026-05-05'
 task6_result: pass-light-edit
 task6_reviewed_date: '2026-05-05'
 last_task6_at: '2026-05-05T05:05:00+08:00'
-task9_result: ''
-task9_reviewed_date: '2026-05-05'
-task9_reviewed_by: openclaw-task9
-last_task9_at: '2026-05-05T05:41:00+08:00'
-task9_review_notes: '2026-05-05 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 1。'
+task9_result: 'needs-rework'
+task9_reviewed_date: '2026-05-13'
+task9_reviewed_by: 'openclaw-task9'
+last_task9_at: '2026-05-13T05:26:00+08:00'
+task9_review_notes: '2026-05-13 task9 deep-review: needs-rework。P0 1 / P1 1 / P2 2。Non-blocking Sync 版本口径与 Compose/GC 数据支撑需回炉。'
+last_task9_review_log: 'logs/deep-review/2026-05-13-05-deep-review.md'
 ---
 
 

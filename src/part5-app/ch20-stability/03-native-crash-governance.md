@@ -21,7 +21,7 @@ sources:
 tags: [native-crash, tombstone, signal, breakpad, symbolication, debuggerd]
 related_chapters: ["20.1", "20.2", "1.15"]
 pipeline_stage: ready-to-publish
-task6_state: pass-light-edit
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: completed
 ---

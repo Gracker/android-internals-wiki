@@ -31,7 +31,7 @@ tags:
 - android
 - research
 pipeline_stage: ready-to-publish
-task6_state: revisiting
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: fixed
 task2b_result: fixed

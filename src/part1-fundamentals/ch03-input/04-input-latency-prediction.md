@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: draft
 title: 输入延迟与预测输入技术
 chapter: '3.4'
 section: '3.4'
@@ -15,7 +15,7 @@ reviewed_by: 'openclaw-task6'
 task6_result: 'pass-light-edit'
 task6_state: 'reviewed'
 task2b_state: 'pending'
-pipeline_stage: 'task9_pending'
+pipeline_stage: draft
 sources:
 - type: official
   path: source.android.com/docs/core/interaction/input
