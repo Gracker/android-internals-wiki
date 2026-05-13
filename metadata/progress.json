@@ -156,10 +156,10 @@
     "total_issues": 6
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 303,
+    "l1_l2_fixes": 307,
     "l3_issues": 25,
     "l4_issues": 4,
-    "total_issues": 336,
+    "total_issues": 340,
     "auto_promotions": 5
   },
   "issues_by_section": {
@@ -497,21 +497,17 @@
   "total_review_sections": 69,
   "next_review_candidates": [],
   "ready_for_review": 66,
-  "last_updated": "2026-05-13T20:35:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
+  "last_updated": "2026-05-13T21:32:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-13T20:10:00+08:00",
-    "log": "logs/review/2026-05-13-20-review.md",
+    "at": "2026-05-13T21:32:00+08:00",
+    "log": "logs/review/2026-05-13-21-review.md",
     "sections": [
-      "19.27",
-      "2.15",
-      "4.6"
+      "20.5"
     ],
-    "l1_l2_fixes": 25,
-    "l3_l4_issues": 1,
-    "auto_promotions": 0,
-    "skipped_insufficient_content": [],
-    "note": "默认吞吐量处理 3 个章节；2.15 存在 Task9 已入队 P0/P1 技术风险，本轮不做技术裁决，只交接 Task2B/Task9。"
+    "l1_l2_fixes": 4,
+    "l3_l4_issues": 0,
+    "auto_promotions": 0
   },
   "task9_last_review": "2026-05-13T20:35:00+08:00",
   "ready_to_publish": 165,
