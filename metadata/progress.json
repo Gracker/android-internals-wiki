@@ -118,11 +118,11 @@
     "src/part5-app/ch22-rendering-practice/07-webview-optimization.md"
   ],
   "review_summary": {
-    "p0_issues": 2,
-    "p1_issues": 1,
-    "p2_issues": 1,
+    "p0_issues": 3,
+    "p1_issues": 4,
+    "p2_issues": 8,
     "p3_issues": 0,
-    "total_issues": 4
+    "total_issues": 15
   },
   "task6_review_summary": {
     "l1_l2_fixes": 233,
@@ -170,9 +170,9 @@
     },
     "22.3": {
       "p0": 3,
-      "p1": 4,
-      "p2": 5,
-      "p3": 2
+      "p1": 2,
+      "p2": 0,
+      "p3": 0
     },
     "2.3": {
       "p0": 1,
@@ -376,6 +376,18 @@
       "p0": 1,
       "p1": 0,
       "p2": 0,
+      "p3": 0
+    },
+    "22.6": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 4,
+      "p3": 0
+    },
+    "22.7": {
+      "p0": 0,
+      "p1": 1,
+      "p2": 4,
       "p3": 0
     }
   },
