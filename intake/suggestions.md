@@ -669,3 +669,9 @@
 - **问题**：正文高层描述正确，但仍停留在“需确认”；缺少 API 35、获取入口和 timestamp 常量，Task2B 修复时容易只删标注不补证据。
 - **建议**：补 `ActivityManager.getHistoricalProcessStartReasons()` / `addApplicationStartInfoCompletionListener()`，以及 `START_TIMESTAMP_FORK`、`BIND_APPLICATION`、`APPLICATION_ONCREATE`、`FIRST_FRAME`、`FULLY_DRAWN` 等关键时间戳；说明时间戳是 monotonic nanoseconds。
 
+## [Task9 Deep Review] 23.3 Native 内存管理与优化 — 2026-05-14
+- **类型**：源码引用准确性 / 锚点补充
+- **位置**：L83 `dumpsys meminfo` VMA 分类源码引用
+- **问题**：正文把 VMA 名称分类锚到 `frameworks/base/core/jni/android_os_Debug.cpp`；该文件只调用 `ExtractAndroidHeapStats()`，具体 `[heap]` / `[anon:libc_malloc]` / `[anon:scudo:*]` / `[anon:GWP-ASan*]` 与 `.so/.jar/.apk` 分类在 `system/memory/libmeminfo/androidprocheaps.cpp`。
+- **建议**：保留 `android_os_Debug.cpp` 作为 JNI 入口，同时补 `system/memory/libmeminfo/androidprocheaps.cpp` 作为分类规则源码锚点。
+

@@ -1,9 +1,9 @@
 {
   "total": 269,
   "draft": 31,
-  "ready-for-review": 70,
-  "finalized": 168,
-  "task9_result": "needs-rework",
+  "ready-for-review": 68,
+  "finalized": 170,
+  "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-05-14",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
@@ -511,13 +511,67 @@
     },
     "2.19": [
       "Task6 2026-05-13: 已补 [存疑] 标注，沿用 Task9 P0 队列项，待 Task2B 修正。"
-    ]
+    ],
+    "23.2": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0
+    },
+    "23.3": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 1,
+      "p3": 0
+    },
+    "23.4": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0
+    }
   },
   "total_review_sections": 77,
-  "next_review_candidates": [],
-  "ready_for_review": 66,
-  "last_updated": "2026-05-14T01:14:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "next_review_candidates": [
+    {
+      "section": "2.10",
+      "title": "GPU 渲染深入",
+      "file": "src/part1-fundamentals/ch02-rendering/10-gpu-rendering.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending"
+    },
+    {
+      "section": "2.14",
+      "title": "图形 API 演进与选择策略（OpenGL ES / Vulkan / ANGLE）",
+      "file": "src/part1-fundamentals/ch02-rendering/14-graphics-api-evolution.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending"
+    },
+    {
+      "section": "4.3",
+      "title": "ART 虚拟机内存管理",
+      "file": "src/part1-fundamentals/ch04-memory/03-art-memory.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending"
+    },
+    {
+      "section": "4.5",
+      "title": "App 内存优化",
+      "file": "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending"
+    },
+    {
+      "section": "5.9",
+      "title": "ADPF 自适应性能框架",
+      "file": "src/part1-fundamentals/ch05-cpu-power/09-adpf.md",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish"
+    }
+  ],
+  "ready_for_review": 68,
+  "last_updated": "2026-05-14T01:43:02+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-14T01:14:00+08:00",
     "log": "logs/review/2026-05-14-01-review.md",
@@ -530,8 +584,8 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-14T00:20:00+08:00",
-  "ready_to_publish": 165,
+  "task9_last_review": "2026-05-14T01:43:02+08:00",
+  "ready_to_publish": 169,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1191,6 +1245,51 @@
       "queue_id": "task9-2.15-gralloc-api-and-dmabuf-unsupported-claims",
       "last_task6_at": "2026-05-13T20:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-13-20-review.md"
+    },
+    "23.2": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-05-14T01:14:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-14-01-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-14",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-05-14T01:41:44+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-01-deep-review.md",
+      "file": "src/part5-app/ch23-memory-practice/02-bitmap-optimization.md",
+      "title": "Bitmap 与图片内存优化"
+    },
+    "23.3": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-05-14T01:14:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-14-01-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-14",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-05-14T01:41:44+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-01-deep-review.md",
+      "file": "src/part5-app/ch23-memory-practice/03-native-memory-management.md",
+      "title": "Native 内存管理与优化"
+    },
+    "23.4": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "last_task6_at": "2026-05-14T01:14:00+08:00",
+      "task6_result": "pass-light-edit",
+      "last_task6_review_log": "logs/review/2026-05-14-01-review.md",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "task9_reviewed_date": "2026-05-14",
+      "task9_reviewed_by": "openclaw-task9",
+      "last_task9_at": "2026-05-14T01:41:44+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-01-deep-review.md",
+      "file": "src/part5-app/ch23-memory-practice/04-java-heap-optimization.md",
+      "title": "Java Heap 优化策略"
     }
   },
   "task2b_rounds": [
@@ -1212,17 +1311,26 @@
   "last_task2a_processed_file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
   "last_task2a_processed_date": "2026-05-13T19:04:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-14T00:20:00+08:00",
-    "log": "logs/deep-review/2026-05-14-00-deep-review.md",
+    "at": "2026-05-14T01:43:02+08:00",
+    "log": "logs/deep-review/2026-05-14-01-deep-review.md",
     "sections": [
-      "21.5",
-      "21.7",
-      "21.8",
-      "21.9"
+      "23.2",
+      "23.3",
+      "23.4"
     ],
     "p0": 0,
-    "p1": 2,
-    "p2": 4,
-    "auto_finalized": []
-  }
+    "p1": 0,
+    "p2": 1,
+    "auto_finalized": [
+      "23.2",
+      "23.3",
+      "23.4"
+    ]
+  },
+  "last_task9_review": "logs/deep-review/2026-05-14-01-deep-review.md",
+  "last_task9_sections": [
+    "23.2",
+    "23.3",
+    "23.4"
+  ]
 }
