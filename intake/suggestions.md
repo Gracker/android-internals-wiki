@@ -606,3 +606,10 @@
 - **问题**：章节给出了 `android_input_events` 查询，但缺少最小 trace 配置与字段非空条件，读者可能把采集不足导致的空字段误判成没有延迟。
 - **建议**：补充 Perfetto 采集清单（至少覆盖 `android.input.inputevent` 与 FrameTimeline/graphics 相关数据源），并说明 `end_to_end_latency_dur` 非空依赖 input event 与 frame event 关联。
 
+
+## [Task6 Review] 2.15 DMA-BUF、Gralloc 与跨进程图形内存共享 — 2026-05-13
+- **类型**：需确认 / 技术风险交接
+- **位置**：`allocate2()` / `AHardwareBuffer_allocateWithOptions()`、libdmabufheap 池化、Binder FDA 收益
+- **问题**：Task9 已将该章节列为 needs-rework（P0 1 / P1 3）。Task6 本轮只完成 L1/L2 小修，不裁决这些源码/API/版本差异；当前仍不满足发布条件。
+- **建议**：优先处理 queue.json 中 `task9-2.15-gralloc-api-and-dmabuf-unsupported-claims`，修复后再进入 Task6 / Task9 复核。
+- **review 日志**：logs/review/2026-05-13-20-review.md

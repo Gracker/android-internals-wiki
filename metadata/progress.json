@@ -74,7 +74,8 @@
     "1.4",
     "3.4",
     "2.6",
-    "2.15"
+    "2.15",
+    "19.27"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -144,7 +145,8 @@
     "src/part1-fundamentals/ch02-rendering/03-vsync.md",
     "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
     "src/part1-fundamentals/ch02-rendering/06-surfaceflinger.md",
-    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md"
+    "src/part1-fundamentals/ch02-rendering/15-dmabuf-gralloc.md",
+    "src/part3-tools/ch19-apm/27-apm-client-architecture.md"
   ],
   "review_summary": {
     "p0_issues": 4,
@@ -154,10 +156,10 @@
     "total_issues": 9
   },
   "task6_review_summary": {
-    "l1_l2_fixes": 278,
-    "l3_issues": 24,
+    "l1_l2_fixes": 303,
+    "l3_issues": 25,
     "l4_issues": 4,
-    "total_issues": 310,
+    "total_issues": 336,
     "auto_promotions": 5
   },
   "issues_by_section": {
@@ -486,23 +488,24 @@
       "p3": 0
     }
   },
-  "total_review_sections": 66,
+  "total_review_sections": 69,
   "next_review_candidates": [],
   "ready_for_review": 66,
-  "last_updated": "2026-05-13T19:10:00+08:00",
+  "last_updated": "2026-05-13T20:10:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-13T19:10:00+08:00",
-    "log": "logs/review/2026-05-13-19-review.md",
+    "at": "2026-05-13T20:10:00+08:00",
+    "log": "logs/review/2026-05-13-20-review.md",
     "sections": [
-      "1.4",
-      "3.4"
+      "19.27",
+      "2.15",
+      "4.6"
     ],
-    "l1_l2_fixes": 16,
-    "l3_l4_issues": 0,
-    "auto_promotions": 1,
+    "l1_l2_fixes": 25,
+    "l3_l4_issues": 1,
+    "auto_promotions": 0,
     "skipped_insufficient_content": [],
-    "note": "本轮仅 2 个 task6_state=pending 且内容充分的候选；按章节号处理 1.4、3.4。"
+    "note": "默认吞吐量处理 3 个章节；2.15 存在 Task9 已入队 P0/P1 技术风险，本轮不做技术裁决，只交接 Task2B/Task9。"
   },
   "task9_last_review": "2026-05-13T18:28:00+08:00",
   "ready_to_publish": 165,
@@ -636,11 +639,14 @@
     },
     "4.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
-      "last_task9_at": "2026-05-12T18:24:00+08:00",
+      "pipeline_stage": "task9_pending",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task9_state": "reviewed",
-      "queue_priority": 95,
+      "last_task6_at": "2026-05-13T20:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-13-20-review.md",
+      "last_task9_at": "2026-05-12T18:24:00+08:00",
       "last_task9_review_log": "logs/deep-review/2026-05-12-18-deep-review.md"
     },
     "7.6": {
@@ -1117,6 +1123,27 @@
       "file": "src/part1-fundamentals/ch03-input/04-input-latency-prediction.md",
       "title": "输入延迟与预测输入技术",
       "last_task2a_at": "2026-05-13T19:04:00+08:00"
+    },
+    "19.27": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_result": "pass-light-edit",
+      "task6_state": "reviewed",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-13T20:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-13-20-review.md"
+    },
+    "2.15": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_result": "needs-rework",
+      "task6_state": "reviewed",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "queue_priority": 95,
+      "queue_id": "task9-2.15-gralloc-api-and-dmabuf-unsupported-claims",
+      "last_task6_at": "2026-05-13T20:10:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-13-20-review.md"
     }
   },
   "task2b_rounds": [
