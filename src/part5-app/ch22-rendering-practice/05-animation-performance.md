@@ -33,10 +33,11 @@ sources:
     path: "github.com/airbnb/lottie-android/LottieAnimationView.java"
 tags: [animation, property-animation, lottie, render-effect, transition, motionlayout]
 related_chapters: ["22.4", "7.1", "2.5", "2.7"]
-pipeline_stage: task2b_pending
-task6_state: reviewed
+pipeline_stage: task6_pending
+task6_state: revisiting
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
+task2b_result: fixed
 task9_result: needs-rework
 task9_reviewed_by: openclaw-task9
 task9_reviewed_date: "2026-05-13"
@@ -164,7 +165,8 @@ RenderEffect 的优化要点是缩小输入内容，而不是只盯着 API 调�
 
 ```kotlin
 fun View.applyBlurIfSupported(radiusPx: Float, enabled: Boolean) {
-    if (!enabled || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+    if (!enabled) {
         setRenderEffect(null)
         return
     }
