@@ -334,12 +334,12 @@
       "created_date": "2026-05-13",
       "assigned_to": "content-team",
       "estimated_hours": 5,
-      "status": "pending",
+      "status": "completed",
       "dependencies": [],
       "related_files": [
         "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
       ],
-      "completed_date": "2026-05-12",
+      "completed_date": "2026-05-13T15:31:02+08:00",
       "section_title": "Jetpack Compose 性能优化",
       "material_paths": [
         "intake/suggestions.md"
@@ -382,7 +382,8 @@
         }
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T09:20:00+08:00"
+      "added_at": "2026-05-13T09:20:00+08:00",
+      "completed_reason": "Task 2B 回炉修复: P0 Pausable Composition 版本差异修正(1.10.0-alpha05 默认启用→1.10.6 默认禁用), P0 LazyLayoutCacheWindow API 签名修正(Modifier 扩展→rememberLazyListState cacheWindow 参数), P0 ComposeView 策略修正(默认策略适配 pooling container, DisposeOnViewTreeLifecycleDestroyed 限 Fragment 场景), P1 Strong Skipping 语义修正(所有 Composable→所有 restartable Composable, 补充 stable/unstable 比较规则), P1 Gradle 构建配置修正(Groovy 风格→Kotlin 2.0+ composeCompiler DSL, Kotlin 2.2→Kotlin 2.0 版本引用统一)"
     },
     {
       "id": "task9-22.3-derivedstate-conditions-incomplete",
