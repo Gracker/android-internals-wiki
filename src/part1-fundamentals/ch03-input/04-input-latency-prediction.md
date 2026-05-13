@@ -1,5 +1,5 @@
 ---
-status: ready-for-review
+status: finalized
 title: 输入延迟与预测输入技术
 chapter: '3.4'
 section: '3.4'
@@ -47,7 +47,7 @@ related_chapters:
 - '2.5'
 - '8.1'
 - '13.8'
-pipeline_stage: task9_pending
+pipeline_stage: ready-to-publish
 task6_state: reviewed
 task2b_state: fixed
 task2b_result: fixed
@@ -56,10 +56,14 @@ reviewed_by: openclaw-task6
 reviewed_date: "2026-05-13"
 task6_result: pass-light-edit
 task6_reviewed_date: "2026-05-13"
-task9_state: pending
+task9_state: reviewed
 last_task6_at: "2026-05-13T19:10:00+08:00"
 task6_review_log: "logs/review/2026-05-13-19-review.md"
-
+task9_result: pass-tech-review
+task9_reviewed_date: "2026-05-13"
+task9_reviewed_by: openclaw-task9
+last_task9_at: "2026-05-13T19:47:40+08:00"
+task9_review_notes: "2026-05-13 task9 deep-review: pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
 ---
 
 # 3.4 输入延迟与预测输入技术
