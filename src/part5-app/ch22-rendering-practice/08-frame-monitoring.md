@@ -9,6 +9,10 @@ last_verified_against: "AOSP android-16.0.0_r1, AndroidX JankStats docs, Android
 confidence: medium
 drafted_date: "2026-05-13"
 polish_count: 0
+reviewed_date: "2026-05-13"
+reviewed_by: openclaw-task6
+review_type: task6-writing-quality-review
+task6_result: pass-light-edit
 sources:
   - type: official
     path: "https://developer.android.com/topic/performance/jankstats"
@@ -40,8 +44,8 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [frame-rate, jankstats, choreographer, online-monitoring]
 related_chapters: ["22.1", "22.3", "7.2", "7.9", "19.06", "19.11", "19.12", "26.3"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
 ---
@@ -77,7 +81,7 @@ task2b_state: pending
 [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
-## 先把监控分成三层
+## 监控数据的三层口径
 
 帧率监控容易写成一个 FPS 数字，但线上治理靠单一 FPS 很难分派。一个页面平均 55 FPS，可能是每秒稳定丢 5 帧，也可能是一次 300 ms 卡住后其余时间满帧。两者对用户的感受和修复方向完全不同。
 
@@ -160,12 +164,12 @@ data class FrameSample(
 
 ## JankStats API 集成
 
-JankStats 是 AndroidX 提供的帧级卡顿采集入口。它按 `Window` 创建实例，每帧通过 `OnFrameListener` 回调 `FrameData`，字段包含 `isJank`、`frameDurationUiNanos`、`frameStartNanos` 和当前 UI state。API 24 及以上可以借助平台 FrameMetrics 获取更可靠的帧时间，API 31 及以上还提供 `frameOverrunNanos` 等字段。详见 19.11 节。
+JankStats 是 AndroidX 提供的帧级卡顿采集入口。它按 `Window` 创建实例，每帧通过 `OnFrameListener` 回调 `FrameData`，字段包含 `isJank`、`frameDurationUiNanos`、`frameStartNanos` 和当前 UI 状态。API 24 及以上可以借助平台 FrameMetrics 获取更可靠的帧时间，API 31 及以上还提供 `frameOverrunNanos` 等字段。详见 19.11 节。
 
 [已验证: 官方文档, developer.android.com/reference/androidx/metrics/performance/JankStats]
 [已验证: AIW 19.11]
 
-JankStats 的价值不只是判断一帧是否卡顿，而是把卡顿和页面状态绑在一起。没有 state 的慢帧只会变成“首页慢帧率升高”；有 state 后，才能拆成“首页 feed 列表 settling 阶段慢帧率升高”“商品详情大图加载时 `frameOverrunNanos` 升高”。
+JankStats 的价值在于把卡顿判定和页面状态绑在一起。没有状态标签的慢帧只会变成“首页慢帧率升高”；加上状态标签后，才能拆成“首页 feed 列表 settling 阶段慢帧率升高”“商品详情大图加载时 `frameOverrunNanos` 升高”。
 
 这段接入骨架展示三个关键点：按 Window 创建、生命周期启停、在回调里复制字段后交给后台聚合。`frameAggregator` 和 `JankFrameEvent` 是业务侧自定义聚合器与数据对象。
 
@@ -301,7 +305,7 @@ class MainThreadStackSampler(
 
 ## 卡顿归因与自动告警
 
-线上治理的分派粒度建议从“页面 + 场景 + 阶段 + 堆栈签名”开始，而不是从单帧日志开始。服务端可以按以下字段聚合：
+线上治理建议以“页面 + 场景 + 阶段 + 堆栈签名”作为分派单元，而不是从单帧日志开始。服务端可以按以下字段聚合：
 
 | 字段 | 用途 |
 |------|------|
@@ -327,7 +331,7 @@ and frozen_frame_rate >= baseline + 0.2%
 and top_state in ["feed_list:settling", "feed_card:bind"]
 ```
 
-这条规则不会因为少量测试设备误报，也不会被平均 FPS 掩盖。命中后，系统把报告分派给 `feed` 页面负责人，并附上 top device、top state、top stack signature、FrameMetrics 阶段分布和最近一次版本变更。
+这条规则不会因为少量测试设备误报，也不会被平均 FPS 掩盖。命中后，系统把报告分派给 `feed` 页面负责人，并附上 `top_device`、`top_state`、`top_stack_signature`、FrameMetrics 阶段分布和最近一次版本变更。
 
 归因时要避免三类常见误判：
 
@@ -342,7 +346,7 @@ and top_state in ["feed_list:settling", "feed_card:bind"]
 上线前按这份清单检查：
 
 - JankStats 按 Window 创建，Activity `onResume()` 启用、`onPause()` 停止并 flush。
-- UI state 至少包含 page、列表滚动状态、弹窗、加载态、关键业务组件；状态结束时必须 remove。
+- UI 状态至少包含 page、列表滚动状态、弹窗、加载态、关键业务组件；状态结束时必须 remove。
 - 端侧只做窗口聚合，默认不上报逐帧明细。
 - 慢帧触发堆栈采样时有远程开关、采样率、冷却时间和单次报告大小限制。
 - 阈值按 refresh rate、deadline 或 JankStats 口径计算，不写固定 16 ms。
