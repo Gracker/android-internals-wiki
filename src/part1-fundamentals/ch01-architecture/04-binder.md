@@ -35,16 +35,24 @@ sources:
     path: "external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql"
 tags: [binder, ipc, aidl, oneway, 线程池, 锁竞争, perfetto]
 related_chapters: ["1.1", "2.5", "7.2", "8.2", "9.1"]
-task6_state: pending
+task6_state: reviewed
 last_task2a_at: "2026-05-13T18:20:00+08:00"
 last_task2a_note: "空 draft 章节重建；修正 oneway spam detection/async buffer 语义与 Perfetto android.binder 标准库口径。"
-status: ready-for-review
-pipeline_stage: task6_pending
+status: finalized
+pipeline_stage: ready-to-publish
 task9_state: reviewed
 task9_result: pass-tech-review
 task9_reviewed_date: "2026-05-13"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-13T18:28:00+08:00"
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-13"
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-13"
+last_task6_at: "2026-05-13T19:10:00+08:00"
+task6_review_log: "logs/review/2026-05-13-19-review.md"
+auto_promoted_at: "2026-05-13T19:10:00+08:00"
+
 ---
 
 
@@ -169,7 +177,7 @@ public int getFrameBudgetNanos(int displayId) throws RemoteException {
 }
 ```
 
-读这段生成代码时，重点放在调用步骤：先把参数写进 `Parcel`，再通过 `mRemote.transact()` 把事务交给 Binder 驱动，再从 reply `Parcel` 中读取结果。服务端的 `Stub.onTransact()` 会根据事务码分发到真实实现。读系统接口时，也应该把注意力放在这条调用链上，避免把示例代码误当成某个 AOSP 接口的原样拷贝。
+这段生成代码的调用顺序是：先把参数写进 `Parcel`，再通过 `mRemote.transact()` 把事务交给 Binder 驱动，再从 reply `Parcel` 中读取结果。服务端的 `Stub.onTransact()` 会根据事务码分发到真实实现。读系统接口时，也应该把注意力放在这条调用链上，避免把示例代码误当成某个 AOSP 接口的原样拷贝。
 
 [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/view/IWindowSession.aidl] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/os/Binder.java] [已验证: 官方文档, developer.android.com/guide/components/aidl]
 
@@ -247,7 +255,7 @@ Perfetto 的 Binder 分析要分清两层：
 
 **录制层：`linux.ftrace`。** trace 文件里的原始 Binder 事件主要来自 `binder_transaction`、`binder_transaction_received` 等 ftrace tracepoint。只要抓取配置包含这些事件，trace processor 就能还原事务发起、接收、回复和线程调度关系。
 
-**分析层：`android.binder` 标准库。** `android.binder` 不是额外录制的数据源，而是 Perfetto trace processor 的 SQL 标准库模块。加载 `INCLUDE PERFETTO MODULE android.binder;` 后，可以通过 `android_binder_txns` 表读取结构化事务记录，字段包括 `aidl_name`、`interface`、`method_name`、`client_dur`、`server_dur`、`is_sync` 等。`interface` 和 `method_name` 来自 AIDL/HIDL slice 名称解析，不是内核 tracepoint 的原始字段。能否使用这些字段，取决于 trace processor 版本、trace 中是否包含 Binder ftrace 事件，以及 slice 命名是否足够完整，不能简单按 Android 系统版本切分。
+**分析层：`android.binder` 标准库。** `android.binder` 属于 Perfetto trace processor 的 SQL 标准库模块。加载 `INCLUDE PERFETTO MODULE android.binder;` 后，可以通过 `android_binder_txns` 表读取结构化事务记录，字段包括 `aidl_name`、`interface`、`method_name`、`client_dur`、`server_dur`、`is_sync` 等。`interface` 和 `method_name` 来自 AIDL/HIDL slice 名称解析，不是内核 tracepoint 的原始字段。能否使用这些字段，取决于 trace processor 版本、trace 中是否包含 Binder ftrace 事件，以及 slice 命名是否足够完整，不能简单按 Android 系统版本切分。
 
 在 Perfetto UI 中搜索 "Binder" 并添加 **Android Binder / Transactions** 轨道后，会看到一条时间轴，每个条目代表一次 Binder 事务。选中一个事务后，Details 面板会显示关键字段：
 
@@ -285,7 +293,7 @@ Perfetto 的 Binder 分析要分清两层：
 
 以应用冷启动为例。`Activity.startActivity` 耗时异常时，主线程可能在调用 `IActivityTaskManager.startActivity` 期间 Sleeping 30ms。沿着 Flow 箭头追到 `system_server` 的 `binder:1605_2` 线程，如果它在处理请求时又 Sleeping 20ms，时间通常耗在等锁上。再看 Lock contention 轨道，`WindowManagerGlobalLock` 正被 `android.anim` 线程持有。
 
-结论：App 启动发起的 Binder 请求，在 `system_server` 端因为等待窗口管理锁而被阻塞。锁被系统动画线程持有，用于更新窗口状态。这是一个典型的系统层锁竞争问题。App 端能做的优化，是减少冷启动期间的 IPC 调用频率，避免在动画密集期做复杂的窗口操作。
+这个案例说明，App 启动发起的 Binder 请求在 `system_server` 端等待窗口管理锁；锁被系统动画线程持有，用于更新窗口状态。这是一个典型的系统层锁竞争问题。App 端能做的优化，是减少冷启动期间的 IPC 调用频率，避免在动画密集期做复杂的窗口操作。
 
 [来源: obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md]
 
@@ -309,7 +317,7 @@ WHERE process.name = 'system_server'
 ORDER BY s.dur DESC;
 ```
 
-这段查询的输出是一份按耗时排序的锁竞争事件列表。它适合回答“哪些 monitor wait 最久”。如果还要估算同一把锁在同一时间窗里的排队深度，需要再按锁标识和时间重叠范围做二次聚合。
+查询输出按耗时排序列出锁竞争事件，适合回答“哪些 monitor wait 最久”。如果还要估算同一把锁在同一时间窗里的排队深度，需要再按锁标识和时间重叠范围做二次聚合。
 
 [已验证: L2, Perfetto SQL 语法正确] [来源: obsidian/Blog/Blog/source/_posts/Android-Perfetto-10-Binder.md]
 
@@ -346,7 +354,7 @@ ORDER BY f.ts DESC
 LIMIT 30;
 ```
 
-查询逻辑：先找出主线程上耗时超过 16ms 的 `doFrame` slice（即掉帧帧），再关联同一时间窗内该线程发起的 Binder 事务。`binder_ms` 列直接告诉你这次 Binder 调用在帧耗时中占多少毫秒。如果 `binder_ms` 接近 `frame_dur_ms`，说明这帧卡在 Binder 上。
+这个查询先找出主线程上耗时超过 16ms 的 `doFrame` slice（即掉帧帧），再关联同一时间窗内该线程发起的 Binder 事务。`binder_ms` 列直接告诉你这次 Binder 调用在帧耗时中占多少毫秒。如果 `binder_ms` 接近 `frame_dur_ms`，说明这帧卡在 Binder 上。
 
 如果当前 trace processor 没有 `android.binder` 标准库，或者 trace 里缺少能构建 `android_binder_txns` 的原始事件，就回退到 ftrace slice：过滤 `binder transaction` / `binder reply`，用 slice 的 `ts`、`dur` 和 Flow 关系手动还原客户端等待时间。
 
