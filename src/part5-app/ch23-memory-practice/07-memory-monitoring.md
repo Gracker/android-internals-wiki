@@ -2,7 +2,7 @@
 title: "内存监控与线上治理"
 chapter: "23.7"
 section: "23.7"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-14"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers + Clippings/Android 性能优化"
@@ -42,15 +42,25 @@ sources:
     path: "[结构参考: Clippings/Android 性能优化 - 如何通过 GC 抑制来提升启动速度？.md]"
 tags: [memory-monitoring, pss, rss, heap-dump, oom-alert]
 related_chapters: ["23.1", "20.5", "26.3", "10.1", "19.3"]
-pipeline_stage: ready-for-review
-task6_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
 task9_state: reviewed
-task2b_state: pending
+task2b_state: fixed
 task9_result: pass-tech-review
 last_task9_at: "2026-05-14T04:36:12+08:00"
 task9_reviewed_date: "2026-05-14"
 task9_reviewed_by: "openclaw-task9"
 last_task9_review_log: "logs/deep-review/2026-05-14-04-deep-review.md"
+reviewed_date: "2026-05-14"
+reviewed_by: "openclaw-task6"
+task6_result: pass-light-edit
+task6_reviewed_date: "2026-05-14"
+task6_reviewed_by: "openclaw-task6"
+task6_review_notes: "2026-05-14 task6 review: L1/L2 轻修 3 处（第二人称收束、API 35+ 边界标注、结尾措辞）；四层质检通过，无新增 L3/L4 回炉项。Task9 已 pass-tech-review 且 queue 无 pending，自动晋升 finalized。"
+last_task6_review_log: "logs/review/2026-05-14-05-review.md"
+last_task6_at: "2026-05-14T05:17:39+08:00"
+auto_finalized_by: openclaw-task6
+auto_finalized_date: "2026-05-14"
 ---
 
 # 内存监控与线上治理
@@ -80,7 +90,7 @@ last_task9_review_log: "logs/deep-review/2026-05-14-04-deep-review.md"
 
 ## 为什么要了解内存监控与线上治理
 
-内存优化做到线上阶段，问题已经从“哪里多占了内存”变成“什么时候该报警、该保留什么现场、该把哪类样本交给谁处理”。本地 Profiler 能帮你看清单机现象，线上监控要回答的是趋势、阈值、版本回归和 OOM 前兆。
+内存优化做到线上阶段，问题已经从“哪里多占了内存”变成“什么时候该报警、该保留什么现场、该把哪类样本交给谁处理”。本地 Profiler 适合看清单机现象，线上监控要回答的是趋势、阈值、版本回归和 OOM 前兆。
 
 这里的边界是监控与治理策略。Java 泄漏引用链详见 23.1 节，OOM 分类详见 20.5 节，内存分析工具详见 10.1 节，KOOM 这类专项工具详见 19.3 节。原理部分不重复展开，重点放在可持续采集、告警和现场保存。
 
@@ -93,7 +103,7 @@ last_task9_review_log: "logs/deep-review/2026-05-14-04-deep-review.md"
 | 指标 | 采集入口 | 线上用途 | 边界 |
 |---|---|---|---|
 | PSS | `ActivityManager.getProcessMemoryInfo(intArrayOf(pid))` 或 `Debug.getMemoryInfo()` | 观察进程对系统内存的分摊压力，适合做版本基线和 OOM 前兆指标 | Android Q 起 `getProcessMemoryInfo()` 采样频率被系统限制，过快调用会拿到上一次结果；PSS 读取成本高，不适合秒级轮询 |
-| RSS | Android Studio Process Memory 口径、`/proc/self/status` 的 `VmRSS`、AOSP `Debug.getRss()` | 观察进程驻留物理内存，适合发现 native 分配、mmap、线程栈和图形资源抬升 | RSS 包含共享页，不能直接等同于“应用独占内存”；公开 API 可用性随版本变化，线上兼容采集应优先读本进程 `/proc` |
+| RSS | Android Studio Process Memory 口径、`/proc/self/status` 的 `VmRSS`、API 35+ 的 `Debug.getRss()` | 观察进程驻留物理内存，适合发现 native 分配、mmap、线程栈和图形资源抬升 | RSS 包含共享页，不能直接等同于“应用独占内存”；公开 API 可用性随版本变化，线上兼容采集应优先读本进程 `/proc` |
 | Java Heap | `Runtime.totalMemory() - Runtime.freeMemory()`、`Runtime.maxMemory()`、`Debug.MemoryInfo.dalvikPss` | 判断 Java 对象分配与 `maxMemory()` 的距离，适合 Java OOM 预警和泄漏趋势 | `dalvikPss` 是内存页口径，`Runtime` 是 Java 堆对象口径，两者不能混算 |
 | Native Heap | `Debug.getNativeHeapAllocatedSize()`、`Debug.MemoryInfo.nativePss` | 观察 C/C++、Bitmap native backing、第三方 SDK、播放器、图形相关分配 | native 增长不等于泄漏，缓存、解码 buffer、mmap 和线程栈都要分开归因 |
 | 系统水位 | `ActivityManager.getMemoryInfo(ActivityManager.MemoryInfo)` | 判断设备是否进入低内存状态，结合 `availMem`、`threshold`、`lowMemory` 做全局背景信号 | 这是设备维度信号，不是单个 App 的 OOM 阈值 |
@@ -258,4 +268,4 @@ Android 10 到 14 的线上 heap dump 仍多依赖 `Debug.dumpHprofData()`、专
 
 ## 小结
 
-内存监控的有效性取决于指标拆分和触发策略。PSS / RSS 看进程对系统和物理内存的压力，Java Heap / Native Heap 帮你判断增长来源，`ActivityManager.MemoryInfo` 提供设备低内存背景信号。线上治理按“指标 → 水位线 → 降级 → 快照 → 专项分析”推进，少量高质量现场比大量单点数值更有用。
+内存监控的有效性取决于指标拆分和触发策略。PSS / RSS 看进程对系统和物理内存的压力，Java Heap / Native Heap 用于判断增长来源，`ActivityManager.MemoryInfo` 提供设备低内存背景信号。线上治理按“指标 → 水位线 → 降级 → 快照 → 专项分析”推进，少量高质量现场比大量单点数值更有用。
