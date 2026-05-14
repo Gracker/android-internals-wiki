@@ -92,7 +92,8 @@
     "23.8",
     "24.1",
     "24.2",
-    "22.2"
+    "22.2",
+    "24.3"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -180,9 +181,10 @@
     "src/part5-app/ch23-memory-practice/08-memory-case-studies.md",
     "src/part5-app/ch24-io-network/01-file-io-optimization.md",
     "src/part5-app/ch24-io-network/02-database-optimization.md",
-    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md"
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+    "src/part5-app/ch24-io-network/03-serialization-performance.md"
   ],
-  "review_summary": "Task6 2026-05-14 08: reviewed 24.2/2.9/22.2; auto-finalized 24.2; 2.9 回炉 1 项（16KB Page Size 数据来源）；22.2 写作层通过送 Task9。",
+  "review_summary": "Task9 2026-05-14 08: reviewed 22.2/20.1/22.3/24.3; P0 6 / P1 4 / P2 5; 24.3 pass-tech-review pending Task6; auto-finalized none.",
   "task6_review_summary": {
     "l1_l2_fixes": 396,
     "l3_issues": 28,
@@ -230,7 +232,7 @@
     "22.3": {
       "p0": 3,
       "p1": 2,
-      "p2": 0,
+      "p2": 3,
       "p3": 0
     },
     "2.3": {
@@ -402,7 +404,7 @@
       "p3": 0
     },
     "20.1": {
-      "p0": 1,
+      "p0": 2,
       "p1": 2,
       "p2": 0,
       "p3": 0
@@ -632,13 +634,25 @@
       "p1": 0,
       "p2": 2,
       "p3": 0
+    },
+    "22.2": {
+      "p0": 1,
+      "p1": 0,
+      "p2": 0,
+      "p3": 0
+    },
+    "24.3": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 2,
+      "p3": 0
     }
   },
-  "total_review_sections": 85,
+  "total_review_sections": 87,
   "next_review_candidates": [],
   "ready_for_review": 67,
-  "last_updated": "2026-05-14T07:12:00+08:00",
-  "last_updated_by": "openclaw-task2a",
+  "last_updated": "2026-05-14T08:47:50+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-14T07:09:44+08:00",
     "log": "logs/review/2026-05-14-07-review.md",
@@ -649,7 +663,7 @@
     "l3_l4_issues": 0,
     "auto_promotions": 1
   },
-  "task9_last_review": "2026-05-14T05:50:18+08:00",
+  "task9_last_review": "2026-05-14T08:47:50+08:00",
   "ready_to_publish": 171,
   "rework_history": [
     {
@@ -1007,13 +1021,11 @@
     "20.1": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "last_task6_at": "2026-05-13T09:12:00+08:00",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "last_task6_review_log": "logs/review/2026-05-13-09-review.md",
-      "queue_priority": 95,
       "task9_result": "needs-rework",
-      "task2b_state": "pending"
+      "queue_priority": 95,
+      "last_task9_at": "2026-05-14T08:47:50+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
     },
     "21.7": {
       "status": "ready-for-review",
@@ -1104,15 +1116,12 @@
     },
     "22.2": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "task6_state": "reviewed",
-      "last_task2a_at": "2026-05-13T06:04:00+08:00",
-      "file": "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
-      "title": "RecyclerView 最佳实践",
+      "pipeline_stage": "task2b_pending",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
-      "last_task6_at": "2026-05-13T06:19:26+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-06-review.md"
+      "task9_result": "needs-rework",
+      "queue_priority": 95,
+      "last_task9_at": "2026-05-14T08:47:50+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
     },
     "22.1": {
       "status": "ready-for-review",
@@ -1243,16 +1252,11 @@
     "22.3": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_state": "reviewed",
       "task6_result": "needs-rework",
-      "task9_state": "pending",
       "task9_result": "needs-rework",
-      "task2b_state": "pending",
-      "queue_priority": 90,
-      "last_task6_at": "2026-05-13T16:42:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-13-16-review.md",
-      "file": "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
-      "title": "Jetpack Compose 性能优化"
+      "queue_priority": 95,
+      "last_task9_at": "2026-05-14T08:47:50+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
     },
     "1.3": {
       "status": "finalized",
@@ -1482,6 +1486,14 @@
       "last_task2a_at": "2026-05-14T07:12:00+08:00",
       "file": "src/part5-app/ch24-io-network/02-database-optimization.md",
       "title": "数据库性能优化（SQLite/Room）"
+    },
+    "24.3": {
+      "status": "ready-for-review",
+      "pipeline_stage": "ready-for-review",
+      "task6_state": "pending",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-14T08:47:50+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
     }
   },
   "task2b_rounds": [
@@ -1503,43 +1515,59 @@
   "last_task2a_processed_file": "src/part5-app/ch24-io-network/02-database-optimization.md",
   "last_task2a_processed_date": "2026-05-14T07:12:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-14T05:50:18+08:00",
-    "log": "logs/deep-review/2026-05-14-05-deep-review.md",
+    "at": "2026-05-14T08:47:50+08:00",
+    "log": "logs/deep-review/2026-05-14-08-deep-review.md",
     "sections": [
-      "4.3",
-      "4.5",
-      "20.6"
+      "22.2",
+      "20.1",
+      "22.3",
+      "24.3"
     ],
-    "p0": 4,
-    "p1": 10,
-    "p2": 7,
+    "files": [
+      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+      "src/part5-app/ch20-stability/01-stability-overview.md",
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "src/part5-app/ch24-io-network/03-serialization-performance.md"
+    ],
+    "p0": 6,
+    "p1": 4,
+    "p2": 5,
     "auto_finalized": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-05-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-14-08-deep-review.md",
   "last_task9_sections": [
-    "4.3",
-    "4.5",
-    "20.6"
+    "22.2",
+    "20.1",
+    "22.3",
+    "24.3"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-14T05:50:18+08:00",
-    "log": "logs/deep-review/2026-05-14-05-deep-review.md",
+    "at": "2026-05-14T08:47:50+08:00",
+    "log": "logs/deep-review/2026-05-14-08-deep-review.md",
     "sections": [
-      "4.3",
-      "4.5",
-      "20.6"
+      "22.2",
+      "20.1",
+      "22.3",
+      "24.3"
     ],
-    "p0": 4,
-    "p1": 10,
-    "p2": 7,
+    "files": [
+      "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+      "src/part5-app/ch20-stability/01-stability-overview.md",
+      "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+      "src/part5-app/ch24-io-network/03-serialization-performance.md"
+    ],
+    "p0": 6,
+    "p1": 4,
+    "p2": 5,
     "auto_finalized": []
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch04-memory/03-art-memory.md",
-    "src/part1-fundamentals/ch04-memory/05-app-memory-optimization.md",
-    "src/part5-app/ch20-stability/06-stability-metrics.md"
+    "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md",
+    "src/part5-app/ch20-stability/01-stability-overview.md",
+    "src/part5-app/ch22-rendering-practice/03-compose-performance.md",
+    "src/part5-app/ch24-io-network/03-serialization-performance.md"
   ],
-  "total_review_files": 85,
+  "total_review_files": 87,
   "last_task2a_at": "2026-05-14T08:20:00+08:00",
   "last_task2a_section": "24.3",
   "last_task2a_file": "src/part5-app/ch24-io-network/03-serialization-performance.md"

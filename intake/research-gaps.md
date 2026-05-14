@@ -160,3 +160,21 @@ Android 16 QPR2 / Android 17 Generational CMC 的公开说明与 AOSP 具体开�
 
 ### 关联章节
 4.3, 4.5
+
+
+## [2026-05-14] 22.3 Jetpack Compose 性能优化 — Pausable Composition / Compose 工具链资料闭环
+
+### 盲区描述
+章节包含 Pausable Composition 默认启用/回退、LazyLayoutCacheWindow 版本 API、“View 系统性能对等 / 0.2% 卡顿率”、后台文本布局预热、Android Studio Compose Profiler 等判断；其中多处仍缺官方 release notes、AndroidX 源码 flag、工具文档或 benchmark 条件。
+
+### 重要程度
+高
+
+### 建议研究方向
+- 核对 Compose Foundation 1.9/1.10 release notes、Android Developers Blog 与 AndroidX `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认值。
+- 补 `LazyLayoutCacheWindow` Dp/fraction API 的版本边界与可编译示例。
+- 查找 Android Studio Compose Profiler / Composition tracing 的官方入口、适用版本和 trace 采集步骤。
+- 对“0.2% 卡顿率”和“后台文本布局预热”补设备、样本、指标定义和启用条件；补不齐则从正文判断中移除。
+
+### 关联章节
+22.3、7.7、22.2、18.2

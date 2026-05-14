@@ -451,9 +451,10 @@
           "suggestion": "由 Task2B 补齐官方文档、release notes 或 Android Studio 工具说明；涉及版本/API 口径的部分交 Task9 复核。"
         }
       ],
-      "last_reviewed_by": "task6-review",
-      "last_reviewed_at": "2026-05-13T16:42:00+08:00",
-      "original_review_log": "logs/review/2026-05-13-16-review.md"
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00",
+      "original_review_log": "logs/review/2026-05-13-16-review.md",
+      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
     },
     {
       "id": "task9-17.2-oryon-cache-error",
@@ -2852,7 +2853,10 @@
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T04:39:00+08:00"
+      "added_at": "2026-05-13T04:39:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00",
+      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
     },
     {
       "id": "task9-2026-05-13-20.1-crashlytics-anr-support",
@@ -2883,7 +2887,10 @@
         "intake/suggestions.md"
       ],
       "added_by": "task9-deep-tech-review",
-      "added_at": "2026-05-13T04:39:00+08:00"
+      "added_at": "2026-05-13T04:39:00+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00",
+      "review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
     },
     {
       "id": "task6-21-9-startup-case-evidence-20260513-0509",
@@ -4550,6 +4557,129 @@
       "related_files": [
         "src/part1-fundamentals/ch02-rendering/09-rendering-evolution.md"
       ]
+    },
+    {
+      "id": "task9-20260514-22.2-recyclerview-recycledviewpool-anchor",
+      "section": "22.2",
+      "section_title": "RecyclerView 最佳实践",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "RecyclerView 预取源码锚点类名错误",
+      "description": "预取段落把 willCreateInTime/willBindInTime 标到不存在的 RecyclerView.RecyclerPool；AndroidX androidx-main 中实际类为 RecyclerView.RecycledViewPool。",
+      "estimated_hours": 1,
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/02-recyclerview-practice.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L212 预取机制与配置 `[已验证]`",
+          "detail": "AndroidX RecyclerView.java 不存在 `RecyclerView.RecyclerPool`；`willCreateInTime()` / `willBindInTime()` 位于 `RecyclerView.RecycledViewPool`。",
+          "suggestion": "将源码锚点改为 `RecyclerView.RecycledViewPool#willCreateInTime/willBindInTime`，并保留 `GapWorker` 调用预算判断的说明。"
+        }
+      ],
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T08:47:50+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00"
+    },
+    {
+      "id": "task9-20260514-20.1-art-anr-source-chain-errors",
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "ART 堆栈帧上限与 ANR service 链路源码错误",
+      "description": "Java Crash 段把 ART kMaxSavedFrames=256 误写成异常堆栈硬上限；ANR 段引用了 android-16.0.0_r1 中不存在的 ActivityManagerService.processTimeout()/AnrHelper.appNotRespondingDialog()。",
+      "estimated_hours": 2,
+      "related_files": [
+        "src/part5-app/ch20-stability/01-stability-overview.md"
+      ],
+      "review_issues": [
+        {
+          "type": "源码错误",
+          "location": "L80 Java Crash 堆栈帧上限",
+          "detail": "`Thread::CreateInternalStackTrace()` 中 `kMaxSavedFrames = 256` 只是首轮栈帧缓存优化；当 depth >= 256 时会执行 `BuildInternalStackTraceVisitor.WalkStack()` 重新遍历，不是 Java 异常堆栈 256 帧硬截断。",
+          "suggestion": "删除“上限 256 帧/超出显示 ... N more”的硬结论；如要讨论日志折叠，区分 ART 内部 stack trace 构建与 Throwable#printStackTrace 的 common-frame 折叠。"
+        },
+        {
+          "type": "源码错误",
+          "location": "L108 ANR ActiveServices 链路",
+          "detail": "android-16.0.0_r1 无 `ActivityManagerService.processTimeout()` 和 `AnrHelper.appNotRespondingDialog()`；service timeout 当前链路是 MainHandler 处理 `SERVICE_TIMEOUT_MSG` → `ActiveServices.serviceTimeout(proc)` → `mAm.mAnrHelper.appNotResponding(proc, timeoutRecord)`。",
+          "suggestion": "按 android-16.0.0_r1 源码重写 Service ANR 链路；弹窗属于后续 UI/错误处理路径，不要用不存在的方法名做锚点。"
+        }
+      ],
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T08:47:50+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00"
+    },
+    {
+      "id": "task9-20260514-22.3-compose-version-api-contract-errors",
+      "section": "22.3",
+      "section_title": "Jetpack Compose 性能优化",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy",
+      "title": "Compose Strong Skipping、@Immutable 与 LazyLayoutCacheWindow 口径错误",
+      "description": "章节仍存在 Strong Skipping 默认启用版本、@Immutable 契约后果、LazyLayoutCacheWindow API 示例三类关键错误，并缺少 Compose Profiler/官方 benchmark 闭环。",
+      "estimated_hours": 3,
+      "related_files": [
+        "src/part5-app/ch22-rendering-practice/03-compose-performance.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L55-L82 / L448 Strong Skipping",
+          "detail": "Android Developers 文档写明 Strong Skipping 默认启用版本是 Kotlin 2.0.20；正文写 Kotlin 2.0+，且 `[适用版本: Kotlin 2.0+ (Compose Compiler 1.5+)]` 混用了旧 Compose compiler 口径。",
+          "suggestion": "改成 Kotlin 2.0.20+ 默认启用；2.0.20 之前需显式 `composeCompiler { enableStrongSkippingMode = true }`，并删除 Compose Compiler 1.5+ 的错误适用范围。"
+        },
+        {
+          "type": "源码/契约错误",
+          "location": "L112 `@Immutable` 契约",
+          "detail": "错误标注 `@Immutable` 的风险不是“应该跳过的重组没有跳过”，而是开发者违反稳定性契约后可能让 Compose 跳过本应执行的重组，导致 UI 不更新。",
+          "suggestion": "按官方 stability 文档改成“incorrectly annotating can cause recomposition to break / stale UI”，并补一个错误标注可变字段的反例。"
+        },
+        {
+          "type": "API 签名错误",
+          "location": "L268-L276 `LazyLayoutCacheWindow(ahead = 3, behind = 1)`",
+          "detail": "AndroidX androidx-main `LazyLayoutCacheWindow` 公开构造函数接收 `Dp`（或 fraction 版本），不是裸 `Int`；当前示例不能按 Compose 1.9/1.10 公开 API 编译。",
+          "suggestion": "改为 `LazyLayoutCacheWindow(ahead = 150.dp, behind = 100.dp)` 或 `LazyLayoutCacheWindow(aheadFraction = 1f, behindFraction = 0.5f)`，并注明单位是 viewport 外的窗口大小，不是 item 数。"
+        },
+        {
+          "type": "数据缺失",
+          "location": "L14 / L233-L251 Pausable Composition 与 0.2% 卡顿率",
+          "detail": "“View 系统性能对等”“0.2% 卡顿率”“1.10 默认启用/回退”仍缺官方链接、Foundation 版本、设备、benchmark 条件和 flag 默认值闭环。",
+          "suggestion": "补 Android Developers Blog / release notes / androidx source flag 的一手材料；无法闭环时保留为待验证，不作为正文判断。"
+        }
+      ],
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "status": "pending",
+      "dependencies": [],
+      "material_paths": [
+        "intake/suggestions.md"
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T08:47:50+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T08:47:50+08:00"
     }
   ],
   "metadata": {

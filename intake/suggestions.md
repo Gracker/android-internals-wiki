@@ -823,3 +823,33 @@
 - **位置**：L122 WAL 检查项
 - **问题**：“16KB page size 设备上，100 页 checkpoint 对应的数据量比 4KB page size 更大”容易把 Linux/设备页大小与 SQLite `PRAGMA page_size` 直接绑定。AOSP `SQLiteGlobal.getDefaultPageSize()` 从 `/data` block size 取默认值，最终数据库页大小仍应以实际库的 `PRAGMA page_size` 为准。
 - **建议**：改成“如果该库的 `PRAGMA page_size` 为 16KB，则 100 页约 1.6MB；默认值需在目标设备/数据库上查询确认”，并给出 `PRAGMA page_size; PRAGMA wal_autocheckpoint;` 的验证命令。
+
+## [Task9 Deep Review] 22.3 Jetpack Compose 性能优化 — 2026-05-14
+- **类型**：源码准确性/状态读取阶段
+- **位置**：L125 `Modifier.onSizeChanged { }`
+- **问题**：`onSizeChanged` 是尺寸变化回调，不是官方“延迟状态读取到 Layout phase”的典型入口；把它和 `Modifier.layout { }` 并列会误导读者在回调里读取状态。
+- **建议**：改用官方示例口径：Layout 阶段列 `Modifier.offset { }` / `Modifier.layout { }` 等 lambda modifier；`onSizeChanged` 单独作为尺寸回调说明，不作为读状态优化入口。
+
+## [Task9 Deep Review] 22.3 Jetpack Compose 性能优化 — 2026-05-14（derivedStateOf）
+- **类型**：原理链/数据支撑
+- **位置**：L158-L187
+- **问题**：`derivedStateOf` 的官方约束是“昂贵，只在结果变化频率低于输入时使用”；正文新增“无内存分配，否则 SnapshotStateObserver 监听判断失准”缺少源码/官方依据，且容易被理解成硬性 API 契约。
+- **建议**：保留“输入高频、输出低频、计算无副作用”的主线；将“避免在计算里创建大对象/复杂对象”降级为性能建议，并补 DerivedState.kt 或官方 side-effects 文档引用。
+
+## [Task9 Deep Review] 22.3 Jetpack Compose 性能优化 — 2026-05-14（后台文本布局）
+- **类型**：知识盲区/来源缺失
+- **位置**：L450 自动发现段
+- **问题**：“Compose 1.9 后台文本布局预热、无需开发者额外配置”当前只有待验证标注，未给 release notes、API 名称或默认启用条件。
+- **建议**：补 Compose UI/Foundation release notes 或源码 flag；补不齐时删除该自动发现段，避免和 LazyLayout prefetch / text measurement 混在一起。
+
+## [Task9 Deep Review] 24.3 序列化性能对比与选型 — 2026-05-14
+- **类型**：数据/案例支撑
+- **位置**：L105-L123 Moshi benchmark 示例
+- **问题**：正文把示例称为 Moshi Codegen 基线，但代码没有展示 `@JsonClass(generateAdapter = true)`、KSP/kapt codegen 依赖或如何确认拿到 generated adapter；读者可能实际测到 reflection adapter。
+- **建议**：补 `@JsonClass(generateAdapter = true)` 的模型片段、Gradle 依赖和 adapter 来源验证方式；或把示例标题改成“同 payload benchmark 骨架”。
+
+## [Task9 Deep Review] 24.3 序列化性能对比与选型 — 2026-05-14（源码 tag）
+- **类型**：源码准确性/版本标注
+- **位置**：frontmatter `last_verified_against`、Parcel / TransactionTooLargeException 段
+- **问题**：章节适用 Android 10-16，但 `last_verified_against` 写 AOSP master snapshot；`Parcel.java` 与 `TransactionTooLargeException.java` 应 pin 到稳定 release tag，避免 master 随 Android 17+ 开发漂移。
+- **建议**：把源码锚点改成 `android-16.0.0_r1`；如保留 master 观察，单独标为 Android 17+ 待验证材料。
