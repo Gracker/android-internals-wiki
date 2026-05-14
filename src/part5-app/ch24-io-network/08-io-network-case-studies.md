@@ -42,11 +42,15 @@ sources:
     path: "Clippings/Android 性能优化 - 缓存优化：冷热端分离+重排序，提升缓存命中率.md"
 tags: [case-study, io, network, optimization, sharedpreferences, upload-download]
 related_chapters: ["24.1", "24.4", "24.6", "24.7", "25.4"]
-pipeline_stage: ready-for-review
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 last_task2a_at: "2026-05-14T13:14:00+08:00"
+task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: 2026-05-14
+last_task9_at: "2026-05-14T13:30:11+08:00"
 ---
 
 # I/O 与网络优化案例集

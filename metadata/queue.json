@@ -4891,19 +4891,156 @@
       "added_at": "2026-05-14T12:37:27+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T12:37:27+08:00"
+    },
+    {
+      "id": "task9-20-8-crash-grouping-exception-chain-20260514",
+      "section": "20.8",
+      "section_title": "崩溃聚合与归因分析",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "principle-chain-algorithm-accuracy",
+      "title": "崩溃聚合算法的堆栈匹配与异常链指纹规则需要修正",
+      "description": "章节把“从堆栈底部往上匹配框架帧”和“只取 root cause 堆栈”写成通用指纹策略，容易把无关崩溃过度聚合，或丢掉包装异常携带的 API/业务语义。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/08-crash-aggregation.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "原理断裂/算法误导",
+          "location": "L131 去重边界情况：尾部匹配",
+          "detail": "正文建议从堆栈底部往上匹配，并称底部框架帧更稳定。Java/Native 崩溃栈底部常是 Looper、ActivityThread、zygote、pthread 等通用入口；用这些帧做公共尾部匹配会把不同根因合到同一簇。",
+          "suggestion": "改为“先剔除通用框架入口和反射/线程池胶水帧，再对 top in-app frame、异常类型/信号、归一化消息、cause chain 做加权匹配”；如果保留尾部匹配，必须限定为应用内稳定调用后缀。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/异常链处理过度简化",
+          "location": "L133 Caused by 链",
+          "detail": "正文写“指纹应该取根异常的堆栈，而不是包装异常的堆栈”。这不是通用规则：包装异常的类型、消息和顶部应用帧可能表示真实 API 边界；只取 root cause 会把不同业务入口的同一底层异常合并。",
+          "suggestion": "改成“异常链参与指纹：root cause 权重更高，但保留外层异常类型/消息模板/top in-app frame；平台可用 issue + variation 表达同根因不同入口”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T13:30:11+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T13:30:11+08:00"
+    },
+    {
+      "id": "task9-20-9-signal-thread-case-source-errors-20260514",
+      "section": "20.9",
+      "section_title": "稳定性治理案例集",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy-principle-chain",
+      "title": "稳定性案例中的 debuggerd 源码路径、线程 OOM 归因和 signal handler 示例存在技术错误",
+      "description": "Native Crash 案例引用不存在的 bionic/linker/debuggerd/handler.cpp，并且统一 signal handler 示例会递归 raise、错误调用旧 handler；线程 OOM 案例也把线程创建失败原因和预警代码写窄。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 4,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/09-stability-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "源码错误",
+          "location": "L172 Native Crash 案例源码锚点",
+          "detail": "正文标注 `bionic/linker/debuggerd/handler.cpp`，该路径不符合当前 AOSP 结构。debuggerd handler 相关实现应锚到 `system/core/debuggerd/handler/debuggerd_handler.cpp`；linker 侧集成在当前分支是 `bionic/linker/linker_debuggerd_android.cpp`（旧版本可见 `linker/debugger.cpp`）。",
+          "suggestion": "替换源码锚点，并按版本说明 linker/debuggerd 相关文件名变化；不要继续使用 `bionic/linker/debuggerd/handler.cpp`。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/归因过窄",
+          "location": "L69 Thread::CreateNativeThread 失败原因",
+          "detail": "正文写线程创建失败只有 FD 耗尽和虚拟内存不足。`pthread_create`/ART nativeCreate 还会受进程/用户 task 数限制、cgroup pids、RLIMIT_NPROC、线程栈/guard page 分配失败等影响；FDSize 也不能直接等价为 FD 耗尽。",
+          "suggestion": "改为“虚拟地址空间/物理内存、线程/进程数限制、cgroup pids、FD/资源限制”等多因子判断，并给出 `/proc/self/status` 中 Threads、VmSize、VmPeak、FDSize、limits/cgroup 的判读顺序。"
+        },
+        {
+          "severity": "P1",
+          "type": "代码准确性/监控时机错误",
+          "location": "L120-L129 短期止血代码",
+          "detail": "`Thread.setDefaultUncaughtExceptionHandler` 只会在 OOM 抛出后运行，不能“在 OOM 发生前提前检测”；`Thread.activeCount()` 只统计当前 ThreadGroup 及子组，不是进程线程总数，也覆盖不了 native 线程。",
+          "suggestion": "改为周期性采样 `/proc/self/status` 的 `Threads` 或枚举 `/proc/self/task`，并在 ThreadFactory/ASM/SDK 边界记录创建栈；UncaughtExceptionHandler 只能作为事后补充信息采集。"
+        },
+        {
+          "severity": "P1",
+          "type": "代码准确性/signal handler 链错误",
+          "location": "L208-L227 unified_signal_handler 示例",
+          "detail": "示例在无旧 handler 时直接 `raise(sig)`，但当前 handler 未恢复默认动作，会再次进入自身造成递归；同时不检查旧 action 是否带 `SA_SIGINFO`，直接调用 `sa_sigaction` 可能错误。handler 内 dump/写文件也需要区分 async-signal-safe 路径。",
+          "suggestion": "补恢复默认/旧 action 后用 `tgkill(getpid(), gettid(), sig)` 重新投递，按 `SA_SIGINFO` 区分 `sa_sigaction` 与 `sa_handler`；handler 内只保留 async-signal-safe 最小路径，复杂符号化放到子进程或崩溃后处理。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/初始化时机错误",
+          "location": "L243 统一处理器初始化时机",
+          "detail": "正文写统一处理器必须在所有 SDK 之前注册。按 `sigaction(oldact)` 链式模型，先注册的 handler 可能被后注册 SDK 覆盖；如果后者不调用 old handler，统一处理器不会执行。",
+          "suggestion": "改为“要么统一接管并禁止/拦截后续 SDK 注册；要么在第三方 SDK 初始化后注册总 handler，捕获已有 oldact，并明确仍无法保证不规范 SDK 链接”。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T13:30:11+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T13:30:11+08:00"
+    },
+    {
+      "id": "task9-24-8-preference-write-buffer-race-20260514",
+      "section": "24.8",
+      "section_title": "I/O 与网络优化案例集",
+      "priority": 85,
+      "severity": "P1",
+      "issue_type": "code-correctness-concurrency",
+      "title": "SharedPreferences 合并写入示例存在并发丢写竞态",
+      "description": "PreferenceWriteBuffer 在 collect snapshot 后无条件 `pending.value = emptyMap()`，如果 apply 期间有新的 putBoolean 进入，会把新写入清掉，示例存在数据丢失风险。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-13-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P1",
+          "type": "代码准确性/并发竞态",
+          "location": "L134-L151 PreferenceWriteBuffer",
+          "detail": "`collect { snapshot -> ... pending.value = emptyMap() }` 不是原子清空。若 flush 执行期间调用 `putBoolean()`，新值会先进入 `pending`，随后被 collector 的 `emptyMap()` 覆盖，导致偏好写入丢失。",
+          "suggestion": "改为 actor/Channel 单线程串行写入，或用 Mutex 保护 map，flush 后只移除 snapshot 中已写入且未被更新的 key；示例还应说明失败重试和进程退出前 flush 边界。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T13:30:11+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T13:30:11+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 157,
-    "p0_count": 79,
-    "last_updated": "2026-05-14T12:37:27+08:00",
+    "total_entries": 160,
+    "p0_count": 81,
+    "last_updated": "2026-05-14T13:30:11+08:00",
     "updated_by": "task9-deep-tech-review",
-    "pending_entries": 93,
+    "pending_entries": 96,
     "updated_date": "2026-05-14",
     "last_updated_by": "task9-deep-tech-review",
-    "pending": 93
+    "pending": 96
   },
-  "last_updated": "2026-05-14T12:37:27+08:00",
+  "last_updated": "2026-05-14T13:30:11+08:00",
   "last_updated_by": "task9-deep-tech-review",
-  "pending": 93
+  "pending": 96
 }

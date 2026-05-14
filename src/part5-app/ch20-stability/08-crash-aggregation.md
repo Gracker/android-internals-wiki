@@ -22,14 +22,18 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - Java 堆栈：深入了解 Throwable.md"
 tags: [crash-aggregation, attribution, alerting, stack-dedup, clustering]
 related_chapters: ["20.6", "26.2", "19.18"]
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: 2026-05-12
 task6_result: pass-light-edit
 task6_review_notes: 2026-05-12 task6 review: 完成表格格式统一、术语一致性修复、标点标准化；L1/L2 通过，无新增 L3/L4 回炉项。
+task9_result: needs-rework
+task9_reviewed_by: "openclaw-task9"
+task9_reviewed_date: 2026-05-14
+last_task9_at: "2026-05-14T13:30:11+08:00"
 ---
 
 # 崩溃聚合与归因分析

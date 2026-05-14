@@ -97,7 +97,9 @@
     "24.4",
     "24.5",
     "24.6",
-    "24.7"
+    "24.7",
+    "20.9",
+    "24.8"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -190,9 +192,11 @@
     "src/part5-app/ch24-io-network/04-network-architecture.md",
     "src/part5-app/ch24-io-network/05-protocol-optimization.md",
     "src/part5-app/ch24-io-network/06-data-caching.md",
-    "src/part5-app/ch24-io-network/07-offline-first.md"
+    "src/part5-app/ch24-io-network/07-offline-first.md",
+    "src/part5-app/ch20-stability/09-stability-case-studies.md",
+    "src/part5-app/ch24-io-network/08-io-network-case-studies.md"
   ],
-  "review_summary": "Task9 2026-05-14 12:37: reviewed 8.9, 24.7; P0 1, P1 2, P2 5; auto-finalized 0; 8.9 returned to Task2B, 24.7 waiting Task6.",
+  "review_summary": "Task9 2026-05-14 13:30: reviewed 20.8, 20.9, 24.8; P0 1, P1 7, P2 0; auto-finalized 0; all returned to Task2B.",
   "task6_review_summary": {
     "l1_l2_fixes": 446,
     "l3_issues": 29,
@@ -683,13 +687,43 @@
       "task6_reviewed_at": "2026-05-14T13:06:00+08:00",
       "task6_log": "logs/review/2026-05-14-13-review.md",
       "auto_finalized": true
+    },
+    "20.8": {
+      "task9_result": "needs-rework",
+      "p0": 0,
+      "p1": 2,
+      "p2": 0,
+      "p3": 1,
+      "reviewed_at": "2026-05-14T13:30:11+08:00",
+      "log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "summary": "P1 2：堆栈尾部匹配/根异常单独指纹会导致错误聚合；P3 1：ML 阈值和效果数据已有 suggestions 覆盖。"
+    },
+    "20.9": {
+      "task9_result": "needs-rework",
+      "p0": 1,
+      "p1": 4,
+      "p2": 0,
+      "p3": 0,
+      "reviewed_at": "2026-05-14T13:30:11+08:00",
+      "log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "summary": "P0 1：debuggerd 源码路径错误；P1 4：线程创建失败归因、OOM 预警代码、signal handler 代码与注册时机错误。"
+    },
+    "24.8": {
+      "task9_result": "needs-rework",
+      "p0": 0,
+      "p1": 1,
+      "p2": 0,
+      "p3": 0,
+      "reviewed_at": "2026-05-14T13:30:11+08:00",
+      "log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "summary": "P1 1：PreferenceWriteBuffer 示例存在竞态，可能清掉并发新增的偏好写入。"
     }
   },
-  "total_review_sections": 91,
+  "total_review_sections": 93,
   "next_review_candidates": [],
   "ready_for_review": 70,
-  "last_updated": "2026-05-14T13:06:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T13:30:11+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-14T13:06:00+08:00",
     "log": "logs/review/2026-05-14-13-review.md",
@@ -700,7 +734,7 @@
     "l3_l4_issues": 0,
     "auto_promotions": 1
   },
-  "task9_last_review": "2026-05-14T12:37:27+08:00",
+  "task9_last_review": "2026-05-14T13:30:11+08:00",
   "ready_to_publish": 177,
   "rework_history": [
     {
@@ -1592,6 +1626,36 @@
       "file": "src/part5-app/ch24-io-network/07-offline-first.md",
       "title": "离线优先架构",
       "auto_finalized_by": "openclaw-task6"
+    },
+    "20.8": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-14T13:30:11+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "queue_priority": 85,
+      "task2b_state": "pending"
+    },
+    "20.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-14T13:30:11+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "queue_priority": 95,
+      "task2b_state": "pending"
+    },
+    "24.8": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-14T13:30:11+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-13-deep-review.md",
+      "queue_priority": 85,
+      "task2b_state": "pending"
     }
   },
   "task2b_rounds": [
