@@ -109,7 +109,8 @@
     "25.6",
     "25.7",
     "25.8",
-    "25.9"
+    "25.9",
+    "26.1"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -214,14 +215,15 @@
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
     "src/part5-app/ch25-power-size/07-r8-resource-optimization.md",
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
-    "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+    "src/part5-app/ch26-observability/01-observability-architecture.md"
   ],
-  "review_summary": "Task2A 2026-05-14 23:08：加工 26.1 App 可观测性架构设计，status → ready-for-review，进入 Task6。",
+  "review_summary": "Task6 2026-05-14 23:13：review 26.1 App 可观测性架构设计，pass-light-edit，进入 Task9。",
   "task6_review_summary": {
-    "l1_l2_fixes": 521,
+    "l1_l2_fixes": 533,
     "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 546,
+    "total_issues": 558,
     "auto_promotions": 10
   },
   "issues_by_section": {
@@ -804,11 +806,11 @@
       "summary": "P0 1：AOSP 行号锚点错误；P1 2：bundletool --modules 体积门禁口径、国内渠道 split APK 安装边界缺失；P2 1：PAD 资源定位/更新状态机边界。"
     }
   },
-  "total_review_sections": 102,
+  "total_review_sections": 103,
   "next_review_candidates": [],
   "ready_for_review": 72,
-  "last_updated": "2026-05-14T23:08:00+08:00",
-  "last_updated_by": "task2a-content-processing",
+  "last_updated": "2026-05-14T23:13:00+08:00",
+  "last_updated_by": "task6-draft-review",
   "task6_last_review": {
     "at": "2026-05-14T19:10:00+08:00",
     "log": "logs/review/2026-05-14-19-review.md",
@@ -1979,11 +1981,16 @@
     },
     "26.1": {
       "status": "ready-for-review",
-      "pipeline_stage": "task6_pending",
+      "pipeline_stage": "task9_pending",
       "last_task2a_at": "2026-05-14T23:08:00+08:00",
       "task2a_result": "drafted",
-      "task6_state": "pending",
-      "file": "src/part5-app/ch26-observability/01-observability-architecture.md"
+      "task6_state": "reviewed",
+      "file": "src/part5-app/ch26-observability/01-observability-architecture.md",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "title": "App 可观测性架构设计",
+      "last_task6_at": "2026-05-14T23:13:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-23-review.md"
     }
   },
   "task2b_rounds": [
@@ -2043,35 +2050,31 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
   ],
-  "total_review_files": 102,
+  "total_review_files": 103,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
   "last_task2a_section": "25.6",
   "last_task2a_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
-  "last_task6_review": "logs/review/2026-05-14-22-review.md",
+  "last_task6_review": "logs/review/2026-05-14-23-review.md",
   "last_task6_sections": [
-    "25.8",
-    "25.9"
+    "26.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
-    "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+    "src/part5-app/ch26-observability/01-observability-architecture.md"
   ],
-  "last_task6_at": "2026-05-14T22:10:00+08:00",
+  "last_task6_at": "2026-05-14T23:13:00+08:00",
   "last_task6_review_detail": {
-    "at": "2026-05-14T22:10:00+08:00",
-    "log": "logs/review/2026-05-14-22-review.md",
+    "at": "2026-05-14T23:13:00+08:00",
+    "log": "logs/review/2026-05-14-23-review.md",
     "sections": [
-      "25.8",
-      "25.9"
+      "26.1"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
-      "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+      "src/part5-app/ch26-observability/01-observability-architecture.md"
     ],
-    "l1_l2_fixes": 7,
+    "l1_l2_fixes": 12,
     "l3_l4_issues": 0,
     "auto_promotions": 0,
-    "notes": "本轮可审充分内容仅 2 节。25.8 写作层通过，既有 Task9 P0/P1 队列保留；25.9 写作层通过，转 Task9。"
+    "notes": "本轮扫描后可审且内容充分的 Task6 pending 章节仅 1 节；26.1 写作层 L1/L2 小修 12 处后通过，Task9 尚未通过，未自动晋升。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
