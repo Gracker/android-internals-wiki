@@ -4810,19 +4810,51 @@
       ],
       "added_by": "task9-deep-tech-review",
       "added_at": "2026-05-14T11:34:00+08:00"
+    },
+    {
+      "id": "task6-20.1-anr-timeout-dialog-boundary-20260514",
+      "section": "20.1",
+      "section_title": "应用稳定性全景",
+      "priority": 90,
+      "title": "ANR timeout 与弹窗边界需补齐",
+      "description": "[review回炉] Task6 复审发现 ANR timeout 版本口径和 ANR 可见性边界仍有缺口，需 Task2B 按 Task9 结论补齐。",
+      "issue_type": "version-boundary",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 1,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch20-stability/01-stability-overview.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md（含 review 意见）"
+      ],
+      "review_issues": [
+        {
+          "type": "需确认",
+          "location": "ANR 超时阈值表 / ANR 发生后的系统行为",
+          "detail": "BroadcastReceiver timeout 缺少 Android 14+ CPU-starved 场景 10-20 秒 / 60-120 秒口径；ANR 后“向用户弹出对话框”的表述缺少前台可见、后台 / silent ANR 边界。",
+          "suggestion": "按 Task9 技术结论和官方文档补齐版本与可见性边界；无法确认时降级为典型前台场景并标注系统差异。"
+        }
+      ],
+      "added_by": "task6-review",
+      "added_at": "2026-05-14T12:07:00+08:00",
+      "original_review_log": "logs/review/2026-05-14-12-review.md"
     }
   ],
   "metadata": {
-    "total_entries": 155,
+    "total_entries": 156,
     "p0_count": 78,
-    "last_updated": "2026-05-14T11:34:00+08:00",
-    "updated_by": "task9-deep-tech-review",
-    "pending_entries": 91,
+    "last_updated": "2026-05-14T12:07:00+08:00",
+    "updated_by": "task6-review",
+    "pending_entries": 92,
     "updated_date": "2026-05-14",
-    "last_updated_by": "task9-deep-tech-review",
-    "pending": 91
+    "last_updated_by": "task6-review",
+    "pending": 92
   },
-  "last_updated": "2026-05-14T11:34:00+08:00",
-  "last_updated_by": "task9-deep-tech-review",
-  "pending": 91
+  "last_updated": "2026-05-14T12:07:00+08:00",
+  "last_updated_by": "task6-review",
+  "pending": 92
 }

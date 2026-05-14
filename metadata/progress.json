@@ -190,12 +190,12 @@
     "src/part5-app/ch24-io-network/05-protocol-optimization.md",
     "src/part5-app/ch24-io-network/06-data-caching.md"
   ],
-  "review_summary": "Task6 2026-05-14 11: reviewed 24.6; L1/L2 fixes 6; L3/L4 0; auto-finalized 0; pending Task9.",
+  "review_summary": "Task6 2026-05-14 12: reviewed 20.1; L1/L2 fixes 3; L3/L4 1; auto-finalized 0; returned to Task2B for ANR boundary.",
   "task6_review_summary": {
-    "l1_l2_fixes": 430,
-    "l3_issues": 28,
+    "l1_l2_fixes": 433,
+    "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 467,
+    "total_issues": 471,
     "auto_promotions": 9
   },
   "issues_by_section": {
@@ -411,7 +411,7 @@
     },
     "20.1": {
       "p0": 2,
-      "p1": 2,
+      "p1": 3,
       "p2": 0,
       "p3": 0
     },
@@ -669,16 +669,16 @@
   "total_review_sections": 89,
   "next_review_candidates": [],
   "ready_for_review": 71,
-  "last_updated": "2026-05-14T11:13:00+08:00",
+  "last_updated": "2026-05-14T12:07:00+08:00",
   "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T11:13:00+08:00",
-    "log": "logs/review/2026-05-14-11-review.md",
+    "at": "2026-05-14T12:07:00+08:00",
+    "log": "logs/review/2026-05-14-12-review.md",
     "sections": [
-      "24.6"
+      "20.1"
     ],
-    "l1_l2_fixes": 6,
-    "l3_l4_issues": 0,
+    "l1_l2_fixes": 3,
+    "l3_l4_issues": 1,
     "auto_promotions": 0
   },
   "task9_last_review": "2026-05-14T10:20:00+08:00",
@@ -1039,11 +1039,15 @@
     "20.1": {
       "status": "ready-for-review",
       "pipeline_stage": "task2b_pending",
-      "task6_result": "pass-light-edit",
+      "task6_result": "needs-rework",
       "task9_result": "needs-rework",
-      "queue_priority": 95,
+      "queue_priority": 90,
       "last_task9_at": "2026-05-14T08:47:50+08:00",
-      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-14-08-deep-review.md",
+      "task6_state": "reviewed",
+      "task2b_state": "pending",
+      "last_task6_at": "2026-05-14T12:07:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-14-12-review.md"
     },
     "21.7": {
       "status": "ready-for-review",
@@ -1630,13 +1634,11 @@
   "last_task2a_at": "2026-05-14T09:21:00+08:00",
   "last_task2a_section": "24.4",
   "last_task2a_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
-  "last_task6_review": "logs/review/2026-05-14-10-review.md",
+  "last_task6_review": "logs/review/2026-05-14-12-review.md",
   "last_task6_sections": [
-    "24.4",
-    "24.5"
+    "20.1"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch24-io-network/04-network-architecture.md",
-    "src/part5-app/ch24-io-network/05-protocol-optimization.md"
+    "src/part5-app/ch20-stability/01-stability-overview.md"
   ]
 }
