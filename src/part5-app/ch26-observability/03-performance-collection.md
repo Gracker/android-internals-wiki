@@ -2,7 +2,7 @@
 title: "性能指标采集与上报"
 chapter: "26.3"
 section: "26.3"
-status: ready-for-review
+status: finalized
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-15"
 last_verified_against: "Android Developers docs + Clippings structure references"
@@ -40,15 +40,19 @@ sources:
     path: "https://developer.android.com/reference/android/app/ActivityManager#getProcessMemoryInfo(int[])"
 tags: [performance-metrics, trace, percentile, regression-detection]
 related_chapters: ["26.1", "21.8", "22.8", "23.7", "15.3"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: ready-to-publish
+task6_state: reviewed
+task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 结构性元叙述小修 5 处；Task9 已通过且 queue 无 pending，自动晋升 finalized。'
+last_task6_at: "2026-05-15T01:12:00+08:00"
+task6_result: pass-light-edit
+reviewed_date: "2026-05-15"
+reviewed_by: openclaw-task6
 task9_state: reviewed
 task9_reviewed_date: "2026-05-15"
 task9_reviewed_by: openclaw-task9
 task9_result: pass-tech-review
 task2b_state: pending
 ---
-
 # 性能指标采集与上报
 
 <!-- outline-start -->
@@ -76,9 +80,9 @@ task2b_state: pending
 
 ## 为什么要了解性能指标采集与上报
 
-性能指标采集解决的是线上治理的入口问题：哪些数字要长期记录，哪些样本要保留现场，哪些变化应该拦截发版。26.1 节已经讲过 Metrics / Logs / Traces 的架构分层；本节只处理性能 Metrics 的端侧采集、上报口径、分位值计算和劣化检测。
+性能指标采集解决的是线上治理的入口问题：哪些数字要长期记录，哪些样本要保留现场，哪些变化应该拦截发版。26.1 节已经讲过 Metrics / Logs / Traces 的架构分层；这里聚焦性能 Metrics 的端侧采集、上报口径、分位值计算和劣化检测。
 
-Part 5 的启动、渲染、内存章节已经分别展开单项监控方法。本节把它们放回同一个 App 可观测性系统里：启动耗时、慢帧、内存水位、业务耗时都要走统一事件模型，否则后端很难把同一版本、同一页面、同一用户会话里的性能变化关联起来。
+Part 5 的启动、渲染、内存章节已经分别展开单项监控方法。这些单项监控最终要放回同一个 App 可观测性系统里：启动耗时、慢帧、内存水位、业务耗时都要走统一事件模型，否则后端很难把同一版本、同一页面、同一用户会话里的性能变化关联起来。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
@@ -151,7 +155,7 @@ inline fun <T> tracedMetric(
 
 ## 性能数据分位值统计（P50 / P90 / P99）
 
-性能数据通常是长尾分布。启动、页面渲染、网络请求、数据库查询都可能出现少数极慢样本；平均值会把这些样本摊薄，P90 / P99 更容易暴露尾部体验。15.3 节已经讲过指标体系，本节补端侧到服务端的计算口径。
+性能数据通常是长尾分布。启动、页面渲染、网络请求、数据库查询都可能出现少数极慢样本；平均值会把这些样本摊薄，P90 / P99 更容易暴露尾部体验。端侧到服务端还需要统一计算口径。
 
 | 分位值 | 代表含义 | 适合用途 | 使用边界 |
 | --- | --- | --- | --- |
@@ -191,9 +195,9 @@ Macrobenchmark 的 `StartupTimingMetric`、`FrameTimingMetric`、`TraceSectionMe
 
 ## [自动发现] 上报组件自监控
 
-性能指标系统本身也要被监控。采集 SDK 如果写入过慢、队列堆积、上传失败或本地文件膨胀，会反过来制造性能问题。高可用上报组件章节里提到数据自监控，本节把它作为性能采集的必要配套能力。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
+性能指标系统本身也要被监控。采集 SDK 如果写入过慢、队列堆积、上传失败或本地文件膨胀，会反过来制造性能问题。高可用上报组件章节已经提到数据自监控；在性能采集里，它也是必要配套能力。[结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 33.md]
 
-自监控至少保留下面这些字段：
+自监控至少保留这些字段：
 
 | 自监控字段 | 说明 | 处理动作 |
 | --- | --- | --- |

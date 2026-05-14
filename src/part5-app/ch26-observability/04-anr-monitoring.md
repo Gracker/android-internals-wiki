@@ -38,12 +38,16 @@ sources:
     path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
+task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 1 处；无新增 L3/L4 回炉项，交 Task9 技术复审。'
+last_task6_at: "2026-05-15T01:12:00+08:00"
+task6_result: pass-light-edit
+reviewed_date: "2026-05-15"
+reviewed_by: openclaw-task6
 task9_state: pending
 task2b_state: pending
 ---
-
 # ANR 监控体系
 
 <!-- outline-start -->
@@ -73,7 +77,7 @@ task2b_state: pending
 
 ANR 监控解决的是两个问题：用户遇到无响应时能不能被统计到，研发拿到一条记录后能不能还原现场。只看系统弹窗或 Play Console，通常只能知道“发生过 ANR”；只做主线程卡顿监控，又容易把长卡顿误判成系统 ANR。
 
-本节把 ANR 监控拆成四层：系统 ANR 记录、Play Vitals 指标、端侧卡顿预警、现场快照。系统 ANR 负责确认事件，端侧快照负责补足上下文，Play Vitals 负责给发布质量兜线。ANR 根因分析流程详见 9.3 节，治理策略详见 20.4 节，Crash / ANR 捕获底层实现详见 19.24 节。
+ANR 监控可以拆成四层：系统 ANR 记录、Play Vitals 指标、端侧卡顿预警、现场快照。系统 ANR 负责确认事件，端侧快照负责补足上下文，Play Vitals 负责提供发布质量红线。ANR 根因分析流程详见 9.3 节，治理策略详见 20.4 节，Crash / ANR 捕获底层实现详见 19.24 节。
 
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 1.md]
 [结构参考: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md]
