@@ -48,10 +48,17 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [background-power, doze, app-standby, bucket, workmanager, jobscheduler, foreground-service, location-power]
 related_chapters: ["25.1", "25.3", "25.4", "25.5", "5.8", "11.2"]
-pipeline_stage: task6_pending
-task6_state: pending
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: pending
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_reviewed_date: "2026-05-14"
+last_task6_at: "2026-05-14T15:12:00+08:00"
+last_task6_review_log: logs/review/2026-05-14-15-review.md
+task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过，无 Task6 回炉项，送 Task9 技术复审。"
 ---
 
 # 后台功耗治理
@@ -91,7 +98,7 @@ Clippings 的《Android 性能优化》没有单独展开 Doze 或 App Standby�
 [结构参考: Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md]
 [结构参考: Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md]
 
-## Android 后台执行限制演进
+## Android 后台执行限制演进（Doze / App Standby / Bucket）
 
 Android 后台限制可以按“设备状态、App 使用状态、任务 API”三层理解。设备进入 Doze 后，系统延后后台 CPU 和网络活动，把普通 Job、同步适配器、常规 Alarm 推迟到 maintenance window；App 长时间未被用户使用后，App Standby 会限制后台网络；Android 9 引入 App Standby Buckets 后，限制还会跟随用户使用频率变化。 [已验证: 官方文档, developer.android.com/training/monitoring-device-state/doze-standby] [已验证: AOSP android-16.0.0_r1, frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java]
 
@@ -177,15 +184,15 @@ Android 12 以后，targetSdk 31+ 的 App 从后台启动前台服务会被限�
 
 Android 14 对前台服务再加一层类型约束。targetSdk 34+ 的 App 必须在 manifest 中为每个前台服务声明合适的 `android:foregroundServiceType`，并声明对应的 `FOREGROUND_SERVICE_*` 权限；调用 `startForeground()` 时缺类型会触发 `MissingForegroundServiceTypeException`，类型不匹配会触发对应运行时异常。AOSP `ServiceInfo` 中的 `FOREGROUND_SERVICE_TYPE_*` 常量也能看到这些类型和部分超时说明。 [已验证: 官方文档, developer.android.com/about/versions/14/changes/fgs-types-required] [已验证: AOSP android-16.0.0_r1, frameworks/base/core/java/android/content/pm/ServiceInfo.java]
 
-下面的 manifest 片段展示位置型前台服务的最小声明方式。重点不是代码本身，而是“服务类型、基础前台服务权限、类型权限、运行时位置权限”必须同时满足。
+这段 manifest 片段用于检查位置型前台服务的最小声明：服务类型、基础前台服务权限、类型权限、运行时位置权限必须同时满足。
 
 ```xml
-<manifest ...>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <application ...>
+    <application>
         <service
             android:name=".TrackingForegroundService"
             android:exported="false"
@@ -262,6 +269,6 @@ fusedLocationClient.requestLocationUpdates(
 
 ## 小结
 
-后台功耗治理不是把所有后台工作关掉，而是把后台工作放到合适的系统 API、合适的用户可见度和合适的采样预算里。Doze、App Standby、Bucket、前台服务类型和位置限制负责给系统设边界；App 侧要做的是任务分层、约束声明、停止条件、观测字段和回归守门。
+后台功耗治理的目标，是把后台工作放到合适的系统 API、用户可见度和采样预算里。Doze、App Standby、Bucket、前台服务类型和位置限制负责给系统设边界；App 侧要做的是任务分层、约束声明、停止条件、观测字段和回归守门。
 
 读完本节后，再看 §25.3 的 WakeLock / Alarm 和 §25.4 的 WorkManager，就可以把 API 细节放回治理框架里判断：这次唤醒是否有用户价值、是否能延后、是否能合并、是否能被测试稳定复现。
