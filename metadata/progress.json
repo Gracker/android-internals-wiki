@@ -1,9 +1,9 @@
 {
   "total": 271,
   "draft": 7,
-  "ready-for-review": 81,
-  "finalized": 183,
-  "task9_result": "pass-tech-review",
+  "ready-for-review": 80,
+  "finalized": 184,
+  "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-15",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
@@ -112,7 +112,8 @@
     "25.9",
     "26.1",
     "26.3",
-    "26.4"
+    "26.4",
+    "19.23"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -220,9 +221,10 @@
     "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
     "src/part5-app/ch26-observability/01-observability-architecture.md",
     "src/part5-app/ch26-observability/03-performance-collection.md",
-    "src/part5-app/ch26-observability/04-anr-monitoring.md"
+    "src/part5-app/ch26-observability/04-anr-monitoring.md",
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
   ],
-  "review_summary": "Task6 2026-05-15 01:12：review 26.3 性能指标采集与上报、26.4 ANR 监控体系、19.13 androidx.tracing；L1/L2 小修 6 处，L3/L4 新增 0；26.3 自动晋升 finalized。",
+  "review_summary": "Task9 2026-05-15 01:36：review 26.4、19.13、19.23；P0 2 / P1 0 / P2 3；26.4 自动晋升 finalized。",
   "task6_review_summary": {
     "l1_l2_fixes": 539,
     "l3_issues": 29,
@@ -830,11 +832,11 @@
       "summary": "P2 3：Trace.beginSection sectionName 长度/高基数边界、P90/P99 样本量阈值口径、26.4/26.5 draft 交叉引用。"
     }
   },
-  "total_review_sections": 106,
+  "total_review_sections": 107,
   "next_review_candidates": [],
-  "ready_for_review": 81,
-  "last_updated": "2026-05-15T01:12:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "ready_for_review": 80,
+  "last_updated": "2026-05-15T01:36:05+08:00",
+  "last_updated_by": "task9-deep-tech-review",
   "task6_last_review": {
     "at": "2026-05-15T01:12:00+08:00",
     "log": "logs/review/2026-05-15-01-review.md",
@@ -847,8 +849,8 @@
     "l3_l4_issues": 0,
     "auto_promotions": 1
   },
-  "task9_last_review": "2026-05-15T00:20:00+08:00",
-  "ready_to_publish": 183,
+  "task9_last_review": "2026-05-15T01:36:05+08:00",
+  "ready_to_publish": 184,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1479,16 +1481,18 @@
     },
     "19.13": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
-      "last_task9_at": "2026-05-13T17:55:27+08:00",
+      "pipeline_stage": "task2b_pending",
+      "last_task9_at": "2026-05-15T01:36:05+08:00",
       "task9_result": "needs-rework",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-01-deep-review.md",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
       "last_task6_at": "2026-05-15T01:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-15-01-review.md"
+      "last_task6_review_log": "logs/review/2026-05-15-01-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending"
     },
     "19.26": {
       "status": "ready-for-review",
@@ -2033,13 +2037,29 @@
       "auto_promoted_by_task6": true
     },
     "26.4": {
-      "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
       "task6_state": "reviewed",
       "task6_result": "pass-light-edit",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "last_task6_at": "2026-05-15T01:12:00+08:00",
-      "last_task6_review_log": "logs/review/2026-05-15-01-review.md"
+      "last_task6_review_log": "logs/review/2026-05-15-01-review.md",
+      "task9_result": "pass-tech-review",
+      "last_task9_at": "2026-05-15T01:36:05+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-01-deep-review.md",
+      "task2b_state": "fixed",
+      "task2b_result": "fixed"
+    },
+    "19.23": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-15T01:36:05+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-15-01-deep-review.md",
+      "queue_priority": 95,
+      "task2b_state": "pending",
+      "task2b_result": "pending"
     }
   },
   "task2b_rounds": [
@@ -2061,45 +2081,61 @@
   "last_task2a_processed_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
   "last_task2a_processed_date": "2026-05-14",
   "task9_last_review_detail": {
-    "at": "2026-05-14T22:31:06+08:00",
-    "log": "logs/deep-review/2026-05-14-22-deep-review.md",
+    "at": "2026-05-15T01:36:05+08:00",
+    "log": "logs/deep-review/2026-05-15-01-deep-review.md",
     "sections": [
-      "25.9"
+      "26.4",
+      "19.13",
+      "19.23"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+      "src/part5-app/ch26-observability/04-anr-monitoring.md",
+      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
     ],
-    "p0": 1,
-    "p1": 1,
-    "p2": 1,
+    "p0": 2,
+    "p1": 0,
+    "p2": 3,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": []
+    "auto_promotions": [
+      "26.4"
+    ]
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-22-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-15-01-deep-review.md",
   "last_task9_sections": [
-    "25.9"
+    "26.4",
+    "19.13",
+    "19.23"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-14T22:31:06+08:00",
-    "log": "logs/deep-review/2026-05-14-22-deep-review.md",
+    "at": "2026-05-15T01:36:05+08:00",
+    "log": "logs/deep-review/2026-05-15-01-deep-review.md",
     "sections": [
-      "25.9"
+      "26.4",
+      "19.13",
+      "19.23"
     ],
     "files": [
-      "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+      "src/part5-app/ch26-observability/04-anr-monitoring.md",
+      "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+      "src/part3-tools/ch19-apm/23-network-apm-internals.md"
     ],
-    "p0": 1,
-    "p1": 1,
-    "p2": 1,
+    "p0": 2,
+    "p1": 0,
+    "p2": 3,
     "p3": 0,
     "result": "needs-rework",
-    "auto_promotions": []
+    "auto_promotions": [
+      "26.4"
+    ]
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+    "src/part5-app/ch26-observability/04-anr-monitoring.md",
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
   ],
-  "total_review_files": 106,
+  "total_review_files": 107,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
   "last_task2a_section": "25.6",
   "last_task2a_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -2134,7 +2170,9 @@
     "notes": "Task6 本轮审查 3 节：26.3 L1/L2 小修 5 处后满足 Task6+Task9+queue 三条件，自动晋升 finalized；26.4 写作层通过，转 Task9；19.13 revisiting 写作层通过，保留既有 async trace 技术回炉项。"
   },
   "last_task9_reviewed_files": [
-    "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
+    "src/part5-app/ch26-observability/04-anr-monitoring.md",
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md",
+    "src/part3-tools/ch19-apm/23-network-apm-internals.md"
   ],
-  "last_task9_at": "2026-05-14T22:31:06+08:00"
+  "last_task9_at": "2026-05-15T01:36:05+08:00"
 }

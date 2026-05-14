@@ -2,7 +2,7 @@
 title: "ANR 监控体系"
 chapter: "26.4"
 section: "26.4"
-status: ready-for-review
+status: "finalized"
 applicable_versions: "Android 10 (API 29) - Android 16 (API 36)"
 last_verified: "2026-05-15"
 last_verified_against: "AOSP android-16.0.0_r1 + Android Developers ANR / Android vitals docs + Clippings structure references"
@@ -38,15 +38,22 @@ sources:
     path: "frameworks/base/core/java/android/app/ApplicationExitInfo.java"
 tags: [anr-monitoring, sigquit, main-thread-monitor, play-vitals, application-exit-info]
 related_chapters: ["26.1", "20.4", "9.3", "19.24"]
-pipeline_stage: task9_pending
+pipeline_stage: "ready-to-publish"
 task6_state: reviewed
 task6_review_notes: '2026-05-15 task6 review: pass-light-edit。L1/L2 小修 1 处；无新增 L3/L4 回炉项，交 Task9 技术复审。'
 last_task6_at: "2026-05-15T01:12:00+08:00"
 task6_result: pass-light-edit
 reviewed_date: "2026-05-15"
 reviewed_by: openclaw-task6
-task9_state: pending
-task2b_state: pending
+task9_state: "reviewed"
+task2b_state: "fixed"
+task9_result: "pass-tech-review"
+task9_reviewed_date: "2026-05-15"
+task9_reviewed_by: "openclaw-task9"
+last_task9_at: "2026-05-15T01:36:05+08:00"
+last_task9_review_log: "logs/deep-review/2026-05-15-01-deep-review.md"
+task9_review_notes: "2026-05-15 Task9：pass-tech-review。P0 0 / P1 0 / P2 1；Task6 已通过且 queue 无 pending，自动晋升 finalized。"
+task2b_result: "fixed"
 ---
 # ANR 监控体系
 

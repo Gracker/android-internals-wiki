@@ -1080,3 +1080,21 @@
 - **位置**：L209
 - **问题**：小结指向 26.4、26.5，但这两个文件当前仍是 draft；如果 26.3 先通过 Task9，读者会被导向未完成章节。
 - **建议**：在 26.4、26.5 成稿前，把引用改成“后续章节计划处理”，或暂时指向已 finalized 的 15.3/15.9 作为可读延伸。
+
+## [Task9 Deep Review] 26.4 ANR 监控体系 — 2026-05-15
+- **类型**：数据缺失
+- **位置**：L149-L161 主线程卡顿监控阈值
+- **问题**：100ms / 300ms / 700ms / 2s / 5s 阈值是可用工程策略，但正文没有给设备、业务场景或采样开销依据。
+- **建议**：补一段“默认阈值是经验起点”的边界说明，给一组低端机 / 中高端机抓栈开销样例，或说明团队应按页面类型与设备分桶校准。
+
+## [Task9 Deep Review] 19.13 androidx.tracing（Tracing SDK） — 2026-05-15
+- **类型**：数据缺失
+- **位置**：L152-L168 trace 调用开销表
+- **问题**：表内“亚微秒级 / 百纳秒级 / 每帧 6-14μs”等数字缺少设备、Android 版本、trace enabled 配置、benchmark 方法和样本范围。
+- **建议**：补充 microbenchmark 条件，或把数字降级为待复测量级；至少给出 `androidx.benchmark` 测试方法、设备型号、系统版本与 trace 配置。
+
+## [Task9 Deep Review] 19.23 网络 APM 底层捕获原理 — 2026-05-15
+- **类型**：指标口径
+- **位置**：L432-L450 attempt / exchange 阶段表与 L281-L282 responseBodyEnd 示例
+- **问题**：正文使用 `responseHeadersStart → responseBodyEnd` 表示 Response 接收，示例也未记录 `responseBodyStart`。OkHttp EventListener 提供 `responseBodyStart/End`，如果看大包下载或弱网下行，应把 header 接收和 body 接收分开。
+- **建议**：增加 `responseBodyStartNs` 字段；`response_header_ms=responseHeadersStart→responseHeadersEnd`，`response_body_ms=responseBodyStart→responseBodyEnd`，看板上再按需要汇总为 response_receive_ms。
