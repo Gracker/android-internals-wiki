@@ -36,10 +36,18 @@ sources:
     path: "Clippings/Android 性能优化 - 任务调度优化：线程+CPU，提升任务调度优先级.md"
 tags: [workmanager, jobscheduler, expedited-work, background-task, power]
 related_chapters: ["25.2", "25.3", "5.10"]
-pipeline_stage: ready-for-review
+pipeline_stage: task2b_pending
 task6_state: pending
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
+task2b_result: pending
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: "2026-05-14"
+last_task9_at: "2026-05-14T17:20:00+08:00"
+last_task9_review_log: logs/deep-review/2026-05-14-17-deep-review.md
+task9_review_notes: "2026-05-14 Task9：needs-rework。P0 0 / P1 1 / P2 3；UIDT 选型缺少 Android 14+、权限、通知和低版本 fallback 边界。"
+
 ---
 
 # WorkManager 实战与后台任务调度
