@@ -1,7 +1,7 @@
 {
   "total": 269,
-  "draft": 11,
-  "ready-for-review": 80,
+  "draft": 10,
+  "ready-for-review": 81,
   "finalized": 178,
   "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
@@ -108,7 +108,8 @@
     "25.5",
     "25.6",
     "25.7",
-    "25.8"
+    "25.8",
+    "25.9"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -212,9 +213,10 @@
     "src/part5-app/ch25-power-size/05-location-sensor.md",
     "src/part5-app/ch25-power-size/06-apk-analysis.md",
     "src/part5-app/ch25-power-size/07-r8-resource-optimization.md",
-    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md"
+    "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
+    "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
   ],
-  "review_summary": "Task2A 2026-05-14 21:12：加工 25.8 App Bundle 与按需分发，status → ready-for-review，进入 Task6。",
+  "review_summary": "Task2A 2026-05-14 22:04：加工 25.9 功耗与包体积案例集，status → ready-for-review，进入 Task6。",
   "task6_review_summary": {
     "l1_l2_fixes": 514,
     "l3_issues": 29,
@@ -804,9 +806,9 @@
   },
   "total_review_sections": 102,
   "next_review_candidates": [],
-  "ready_for_review": 71,
-  "last_updated": "2026-05-14T21:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "ready_for_review": 72,
+  "last_updated": "2026-05-14T22:04:00+08:00",
+  "last_updated_by": "openclaw-task2a",
   "task6_last_review": {
     "at": "2026-05-14T19:10:00+08:00",
     "log": "logs/review/2026-05-14-19-review.md",
@@ -1952,6 +1954,16 @@
       "queue_priority": 95,
       "file": "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
       "title": "App Bundle 与按需分发"
+    },
+    "25.9": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task6_pending",
+      "task6_state": "pending",
+      "task9_state": "pending",
+      "task2b_state": "pending",
+      "file": "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
+      "title": "功耗与包体积案例集",
+      "last_task2a_at": "2026-05-14T22:04:00+08:00"
     }
   },
   "task2b_rounds": [
