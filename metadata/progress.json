@@ -352,14 +352,14 @@
       "p3": 2
     },
     "8.8": {
-      "p0": 2,
-      "p1": 3,
-      "p2": 2,
-      "p3": 0
+      "p0": 4,
+      "p1": 0,
+      "p2": 0,
+      "p3": 1
     },
     "9.5": {
-      "p0": 3,
-      "p1": 1,
+      "p0": 2,
+      "p1": 0,
       "p2": 0,
       "p3": 0
     },
@@ -770,13 +770,19 @@
       "task6_reviewed_at": "2026-05-14T18:15:00+08:00",
       "task6_log": "logs/review/2026-05-14-18-review.md",
       "task6_new_rework": false
+    },
+    "25.6": {
+      "p0": 1,
+      "p1": 0,
+      "p2": 0,
+      "p3": 1
     }
   },
   "total_review_sections": 100,
   "next_review_candidates": [],
   "ready_for_review": 71,
-  "last_updated": "2026-05-14T19:10:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T19:29:00+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-14T19:10:00+08:00",
     "log": "logs/review/2026-05-14-19-review.md",
@@ -788,7 +794,7 @@
     "l3_l4_issues": 0,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-14T18:30:00+08:00",
+  "task9_last_review": "2026-05-14T19:29:00+08:00",
   "ready_to_publish": 178,
   "rework_history": [
     {
@@ -1839,9 +1845,9 @@
     },
     "25.6": {
       "status": "ready-for-review",
-      "pipeline_stage": "task9_pending",
+      "pipeline_stage": "task2b_pending",
       "task6_state": "reviewed",
-      "task9_state": "pending",
+      "task9_state": "reviewed",
       "task2b_state": "pending",
       "last_task2a_at": "2026-05-14T19:04:00+08:00",
       "file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
@@ -1851,7 +1857,41 @@
       "reviewed_date": "2026-05-14",
       "last_task6_at": "2026-05-14T19:10:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-14-19-review.md",
-      "task2b_result": "pending"
+      "task2b_result": "pending",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-14T19:29:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-19-deep-review.md",
+      "queue_priority": 95
+    },
+    "8.8": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-14T19:29:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-19-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 95,
+      "file": "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
+      "title": "Android 多媒体管线性能"
+    },
+    "9.5": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task2b_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "needs-rework",
+      "last_task9_at": "2026-05-14T19:29:00+08:00",
+      "last_task9_review_log": "logs/deep-review/2026-05-14-19-deep-review.md",
+      "task2b_state": "pending",
+      "task2b_result": "pending",
+      "queue_priority": 95,
+      "file": "src/part2-performance/ch09-anr/05-case-studies.md",
+      "title": "案例集"
     }
   },
   "task2b_rounds": [
@@ -1873,53 +1913,55 @@
   "last_task2a_processed_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
   "last_task2a_processed_date": "2026-05-14",
   "task9_last_review_detail": {
-    "at": "2026-05-14T18:30:00+08:00",
-    "log": "logs/deep-review/2026-05-14-18-deep-review.md",
+    "at": "2026-05-14T19:29:00+08:00",
+    "log": "logs/deep-review/2026-05-14-19-deep-review.md",
     "sections": [
-      "1.0",
-      "25.5"
+      "8.8",
+      "9.5",
+      "25.6"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/README.md",
-      "src/part5-app/ch25-power-size/05-location-sensor.md"
+      "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
+      "src/part2-performance/ch09-anr/05-case-studies.md",
+      "src/part5-app/ch25-power-size/06-apk-analysis.md"
     ],
-    "p0": 0,
-    "p1": 2,
-    "p2": 6,
-    "p3": 1,
-    "auto_promotions": [
-      "1.0"
-    ],
-    "notes": "25.5 写入 1 条 P1 queue（2 个 issue）；1.0 无 P0/P1 且 Task6 pass、queue 无 pending，自动晋升 finalized。"
+    "p0": 7,
+    "p1": 0,
+    "p2": 0,
+    "p3": 2,
+    "result": "needs-rework",
+    "auto_promotions": []
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-18-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-14-19-deep-review.md",
   "last_task9_sections": [
-    "1.0",
-    "25.5"
+    "8.8",
+    "9.5",
+    "25.6"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-14T18:30:00+08:00",
-    "log": "logs/deep-review/2026-05-14-18-deep-review.md",
+    "at": "2026-05-14T19:29:00+08:00",
+    "log": "logs/deep-review/2026-05-14-19-deep-review.md",
     "sections": [
-      "1.0",
-      "25.5"
+      "8.8",
+      "9.5",
+      "25.6"
     ],
     "files": [
-      "src/part1-fundamentals/ch01-architecture/README.md",
-      "src/part5-app/ch25-power-size/05-location-sensor.md"
+      "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
+      "src/part2-performance/ch09-anr/05-case-studies.md",
+      "src/part5-app/ch25-power-size/06-apk-analysis.md"
     ],
-    "p0": 0,
-    "p1": 2,
-    "p2": 6,
-    "p3": 1,
-    "auto_promotions": [
-      "1.0"
-    ],
-    "notes": "25.5 写入 1 条 P1 queue（2 个 issue）；1.0 无 P0/P1 且 Task6 pass、queue 无 pending，自动晋升 finalized。"
+    "p0": 7,
+    "p1": 0,
+    "p2": 0,
+    "p3": 2,
+    "result": "needs-rework",
+    "auto_promotions": []
   },
   "task9_last_reviewed_files": [
-    "src/part1-fundamentals/ch01-architecture/README.md",
-    "src/part5-app/ch25-power-size/05-location-sensor.md"
+    "src/part2-performance/ch08-responsiveness/08-media-pipeline.md",
+    "src/part2-performance/ch09-anr/05-case-studies.md",
+    "src/part5-app/ch25-power-size/06-apk-analysis.md"
   ],
   "total_review_files": 100,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",

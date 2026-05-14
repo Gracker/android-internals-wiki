@@ -40,9 +40,9 @@ sources:
     path: "Clippings/Android 性能优化 - so 文件的体积优化实战.md"
 tags: [apk-size, apk-analyzer, r8, resource-shrink, abi-filter]
 related_chapters: ["25.7", "25.8", "12.1"]
-pipeline_stage: task9_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
+task9_state: reviewed
 task2b_state: pending
 reviewed_by: openclaw-task6
 reviewed_date: "2026-05-14"
@@ -51,6 +51,12 @@ last_task6_at: "2026-05-14T19:10:00+08:00"
 last_task6_review_log: logs/review/2026-05-14-19-review.md
 task6_review_notes: "2026-05-14 Task6：L1/L2 小修 3 处；写作层通过，等待 Task9 技术复核。"
 task2b_result: pending
+task9_result: needs-rework
+task9_reviewed_by: openclaw-task9
+task9_reviewed_date: '2026-05-14'
+last_task9_at: '2026-05-14T19:29:00+08:00'
+last_task9_review_log: logs/deep-review/2026-05-14-19-deep-review.md
+task9_review_notes: '2026-05-14 19:29 Task9 deep-review: needs-rework。P0 1 / P1 0 / P2 0；已写入 queue.json，等待 Task2B 回炉。'
 ---
 
 # APK 体积分析与瘦身
