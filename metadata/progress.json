@@ -96,7 +96,8 @@
     "24.3",
     "24.4",
     "24.5",
-    "24.6"
+    "24.6",
+    "24.7"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -188,9 +189,10 @@
     "src/part5-app/ch24-io-network/03-serialization-performance.md",
     "src/part5-app/ch24-io-network/04-network-architecture.md",
     "src/part5-app/ch24-io-network/05-protocol-optimization.md",
-    "src/part5-app/ch24-io-network/06-data-caching.md"
+    "src/part5-app/ch24-io-network/06-data-caching.md",
+    "src/part5-app/ch24-io-network/07-offline-first.md"
   ],
-  "review_summary": "Task6 2026-05-14 12: reviewed 20.1; L1/L2 fixes 3; L3/L4 1; auto-finalized 0; returned to Task2B for ANR boundary.",
+  "review_summary": "Task9 2026-05-14 12:37: reviewed 8.9, 24.7; P0 1, P1 2, P2 5; auto-finalized 0; 8.9 returned to Task2B, 24.7 waiting Task6.",
   "task6_review_summary": {
     "l1_l2_fixes": 433,
     "l3_issues": 29,
@@ -664,13 +666,25 @@
       "p1": 0,
       "p2": 1,
       "p3": 0
+    },
+    "8.9": {
+      "p0": 1,
+      "p1": 2,
+      "p2": 2,
+      "p3": 0
+    },
+    "24.7": {
+      "p0": 0,
+      "p1": 0,
+      "p2": 3,
+      "p3": 1
     }
   },
-  "total_review_sections": 89,
+  "total_review_sections": 91,
   "next_review_candidates": [],
   "ready_for_review": 71,
-  "last_updated": "2026-05-14T12:07:00+08:00",
-  "last_updated_by": "openclaw-task6",
+  "last_updated": "2026-05-14T12:37:27+08:00",
+  "last_updated_by": "openclaw-task9",
   "task6_last_review": {
     "at": "2026-05-14T12:07:00+08:00",
     "log": "logs/review/2026-05-14-12-review.md",
@@ -681,7 +695,7 @@
     "l3_l4_issues": 1,
     "auto_promotions": 0
   },
-  "task9_last_review": "2026-05-14T10:20:00+08:00",
+  "task9_last_review": "2026-05-14T12:37:27+08:00",
   "ready_to_publish": 176,
   "rework_history": [
     {
@@ -1580,57 +1594,49 @@
   "last_task2a_processed_file": "src/part5-app/ch24-io-network/04-network-architecture.md",
   "last_task2a_processed_date": "2026-05-14T09:21:00+08:00",
   "task9_last_review_detail": {
-    "at": "2026-05-14T10:20:00+08:00",
-    "log": "logs/deep-review/2026-05-14-10-deep-review.md",
+    "at": "2026-05-14T12:37:27+08:00",
+    "log": "logs/deep-review/2026-05-14-12-deep-review.md",
     "sections": [
-      "22.5",
-      "24.4",
-      "24.5"
+      "8.9",
+      "24.7"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
-      "src/part5-app/ch24-io-network/04-network-architecture.md",
-      "src/part5-app/ch24-io-network/05-protocol-optimization.md"
+      "src/part2-performance/ch08-responsiveness/09-game-performance.md",
+      "src/part5-app/ch24-io-network/07-offline-first.md"
     ],
-    "p0": 0,
+    "p0": 1,
     "p1": 2,
-    "p2": 4,
-    "auto_finalized": [
-      "24.5"
-    ]
+    "p2": 5,
+    "auto_promotions": 0,
+    "notes": "8.9 blocked by ADPF/GC fact error and Perfetto GPU counter/GC trace issues; 24.7 passed tech review with P2 suggestions only."
   },
-  "last_task9_review": "logs/deep-review/2026-05-14-10-deep-review.md",
+  "last_task9_review": "logs/deep-review/2026-05-14-12-deep-review.md",
   "last_task9_sections": [
-    "22.5",
-    "24.4",
-    "24.5"
+    "8.9",
+    "24.7"
   ],
   "last_task9_review_detail": {
-    "at": "2026-05-14T10:20:00+08:00",
-    "log": "logs/deep-review/2026-05-14-10-deep-review.md",
+    "at": "2026-05-14T12:37:27+08:00",
+    "log": "logs/deep-review/2026-05-14-12-deep-review.md",
     "sections": [
-      "22.5",
-      "24.4",
-      "24.5"
+      "8.9",
+      "24.7"
     ],
     "files": [
-      "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
-      "src/part5-app/ch24-io-network/04-network-architecture.md",
-      "src/part5-app/ch24-io-network/05-protocol-optimization.md"
+      "src/part2-performance/ch08-responsiveness/09-game-performance.md",
+      "src/part5-app/ch24-io-network/07-offline-first.md"
     ],
-    "p0": 0,
+    "p0": 1,
     "p1": 2,
-    "p2": 4,
-    "auto_finalized": [
-      "24.5"
-    ]
+    "p2": 5,
+    "auto_promotions": 0,
+    "notes": "8.9 blocked by ADPF/GC fact error and Perfetto GPU counter/GC trace issues; 24.7 passed tech review with P2 suggestions only."
   },
   "task9_last_reviewed_files": [
-    "src/part5-app/ch22-rendering-practice/05-animation-performance.md",
-    "src/part5-app/ch24-io-network/04-network-architecture.md",
-    "src/part5-app/ch24-io-network/05-protocol-optimization.md"
+    "src/part2-performance/ch08-responsiveness/09-game-performance.md",
+    "src/part5-app/ch24-io-network/07-offline-first.md"
   ],
-  "total_review_files": 89,
+  "total_review_files": 91,
   "last_task2a_at": "2026-05-14T09:21:00+08:00",
   "last_task2a_section": "24.4",
   "last_task2a_file": "src/part5-app/ch24-io-network/04-network-architecture.md",

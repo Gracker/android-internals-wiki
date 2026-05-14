@@ -897,3 +897,32 @@
 - **问题**：BroadcastReceiver timeout 仍写成固定前台 10 秒 / 后台 60 秒，缺少 Android 14+ CPU-starved 场景 10-20 秒 / 60-120 秒口径；“向用户弹出应用无响应对话框”表述也缺少前台可见、后台 / silent ANR 的边界。
 - **建议**：Task 2B 按 Task9 技术结论和官方文档补版本边界；无法确认时降级为“典型前台场景”，并标注设备 / 系统差异。
 - **review 日志**：logs/review/2026-05-14-12-review.md
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-05-14
+- **类型**：源码准确性
+- **位置**：L138-L149 Manifest 声明
+- **问题**：正文写 `android:appCategory="game"` 与 `game_mode_config.xml` “两者缺一不可”。`GameManager` reference 说明应用可用 `android:isGame="true"` 或 `android:appCategory="game"` 标识游戏；当前说法把 `appCategory` 写成唯一入口。
+- **建议**：改成“现代工程推荐 `android:appCategory="game"`；旧路径/兼容口径还存在 `android:isGame="true"`，Game Mode XML 只负责声明支持/退出的模式”。
+
+## [Task9 Deep Review] 8.9 Android 游戏性能与 Game Mode/State API — 2026-05-14
+- **类型**：数据缺失/技术断言过宽
+- **位置**：L368、L382 Swappy/ARR 与 Vulkan GPU 瓶颈判断
+- **问题**：`Swappy` 与 ARR 错位导致 16/33ms 周期跳变、以及“Vulkan 下 Draw Call 数量不再是 CPU 侧主要瓶颈”的判断都缺少设备、引擎、驱动、trace 片段或官方资料支撑；后者也过度绝对，Vulkan 仍可能在命令录制、提交、同步和资源管理上出现 CPU 瓶颈。
+- **建议**：补一段真实 Perfetto/AGI 样例和适用边界；将 Vulkan 判断改为“相比 OpenGL ES 降低部分 driver overhead，但 CPU/GPU 瓶颈仍需按 command recording、queue submit、barrier、render pass 与 shader/带宽分别验证”。
+
+## [Task9 Deep Review] 24.7 离线优先架构 — 2026-05-14
+- **类型**：代码准确性
+- **位置**：L100-L115、L126-L142、L177-L202 示例代码
+- **问题**：`SyncStatus` 作为 Room 字段需要 enum TypeConverter 或可直接持久化的基础类型；`CoroutineWorker` 构造函数注入 `OfflineRepository` 需要 HiltWorker/自定义 WorkerFactory/DelegatingWorker，默认 WorkManager 不能直接实例化该构造函数。
+- **建议**：在代码前标注“骨架代码”，并补一句生产接入边界：Room enum 用 TypeConverter，Worker 依赖通过 Hilt/WorkerFactory/DelegatingWorker 注入。
+
+## [Task9 Deep Review] 24.7 离线优先架构 — 2026-05-14
+- **类型**：知识盲区
+- **位置**：L91-L96、L146-L164 数据模型与冲突处理
+- **问题**：outbox/sync state 覆盖了新增和更新，但删除同步、tombstone、操作顺序、账号切换/登出后队列归属没有展开。这些是离线优先落地时最容易制造“幽灵数据”或跨账号污染的边界。
+- **建议**：补充 `deletedAt`/tombstone、单对象 op sequence/server revision、accountId/tenantId、登录态失效后的队列冻结或迁移规则。
+
+## [Task9 Deep Review] 24.7 离线优先架构 — 2026-05-14
+- **类型**：数据缺失
+- **位置**：L164 同步批量窗口 20-100 条
+- **问题**：“20-100 条作为初始窗口”是可用经验值，但缺少 payload 大小、Room 事务耗时、低端机 I/O、服务端限流和失败率基线。
+- **建议**：补最小验收指标：每批事务 P95、单批 payload 字节数、失败重试率、队列清空耗时；无法提供数据时改成“从小批量开始压测后调整”。

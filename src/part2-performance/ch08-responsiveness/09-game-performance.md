@@ -45,21 +45,22 @@ related_chapters: ["2.17", "5.9", "5.5", "7.1", "7.9", "14.10"]
 created_by: "task2a-knowledge-gap"
 created_date: "2026-04-08"
 gap_source: "官方文档+读者需求+研究素材"
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 task6_state: reviewed
-task9_state: pending
-task2b_state: fixed
+task9_state: reviewed
+task2b_state: pending
 task2b_result: fixed
 reviewed_by: "openclaw-task6"
 reviewed_date: 2026-05-11
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
-task9_reviewed_date: 2026-05-04
-last_task9_at: "2026-05-04T08:42:32+08:00"
+task9_reviewed_date: 2026-05-14
+last_task9_at: "2026-05-14T12:37:27+08:00"
 last_task2b_at: "2026-05-09T08:43:58+08:00"
 review_notes: "2026-05-11 task6 review (revisiting→reviewed): pass-light-edit。L1/L2 修正 4 处，L3/L4 问题 6 个写入 queue.json。"
-last_task6_at: "2026-05-11T13:05:00+08:00"---
+last_task6_at: "2026-05-11T13:05:00+08:00"
+---
 
 # 8.9 Android 游戏性能与 Game Mode/State API
 

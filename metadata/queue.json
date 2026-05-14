@@ -4842,19 +4842,68 @@
       "added_by": "task6-review",
       "added_at": "2026-05-14T12:07:00+08:00",
       "original_review_log": "logs/review/2026-05-14-12-review.md"
+    },
+    {
+      "id": "task9-8-9-game-performance-gc-perfetto-trace-20260514",
+      "section": "8.9",
+      "section_title": "Android 游戏性能与 Game Mode/State API",
+      "priority": 95,
+      "severity": "P0",
+      "issue_type": "source-code-accuracy-principle-chain",
+      "title": "游戏性能章节 ADPF/GC、Perfetto GPU counter 与 GC trace 判断存在技术错误",
+      "description": "章节中把 ADPF Thermal API 写成可放大 GC 堆的控制手段，并且游戏 Perfetto 配置未采集 gpu.counters 却要求分析 GPU busy/频率；GC 暂停识别也把 RUNNABLE 调度等待与 STW GC 混在一起。",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 3,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part2-performance/ch08-responsiveness/09-game-performance.md"
+      ],
+      "material_paths": [
+        "logs/deep-review/2026-05-14-12-deep-review.md",
+        "intake/suggestions.md"
+      ],
+      "review_issues": [
+        {
+          "severity": "P0",
+          "type": "事实错误",
+          "location": "L486-L489 GC 对游戏帧的影响 / ADPF Thermal API",
+          "detail": "正文写“利用 ADPF 的 Thermal API，在热状态安全时允许更大的 GC 堆”。ADPF Thermal/Headroom 只提供热状态与余量反馈，公开 API 不提供按热状态调大 ART Java heap 或控制 GC 堆上限的能力。",
+          "suggestion": "改为“根据 thermal/headroom 提前降 CPU/GPU 负载、降低画质或减少分配压力”；GC 侧建议写对象池、加载期预分配、避免每帧 Java/Kotlin 分配、复用 native buffers，并删除“允许更大的 GC 堆”。"
+        },
+        {
+          "severity": "P1",
+          "type": "原理断裂/Trace 配置缺失",
+          "location": "L310-L336 游戏 Trace 配置",
+          "detail": "示例配置只启用了 ftrace CPU frequency 和 `gpu.renderstages`，没有启用 Perfetto `gpu.counters` 数据源；正文随后要求观察 GPU busy、GPU 频率和带宽趋势，按当前配置拿不到这些关键指标。",
+          "suggestion": "在支持设备上补 `data_sources { config { name: \"gpu.counters\" gpu_counter_config { ... } } }`，并说明 GPU counters / render stages 的权限、SoC 支持和 userdebug/root 边界；如果不补配置，就把 GPU busy/频率分析降级为可选观察点。"
+        },
+        {
+          "severity": "P1",
+          "type": "Trace 解释错误",
+          "location": "L482-L484 GC 暂停识别",
+          "detail": "正文把“主线程 RUNNABLE 但没有执行 slice”判断为很可能被 GC 暂停。Perfetto 中 RUNNABLE 未运行通常表示调度等待/CPU 竞争；STW GC 需要结合 `art::gc` slice、线程状态、suspend/allocation stall 等信号判断，不能用 RUNNABLE 空洞直接归因。",
+          "suggestion": "改成分步判断：先查 `art::gc` / heap task / allocation stall，再看线程是否 sleeping/blocking/runnable；RUNNABLE 等待应优先按 sched latency 或 CPU contention 分析。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T12:37:27+08:00",
+      "last_reviewed_by": "task9-deep-tech-review",
+      "last_reviewed_at": "2026-05-14T12:37:27+08:00"
     }
   ],
   "metadata": {
-    "total_entries": 156,
-    "p0_count": 78,
-    "last_updated": "2026-05-14T12:07:00+08:00",
-    "updated_by": "task6-review",
-    "pending_entries": 92,
+    "total_entries": 157,
+    "p0_count": 79,
+    "last_updated": "2026-05-14T12:37:27+08:00",
+    "updated_by": "task9-deep-tech-review",
+    "pending_entries": 93,
     "updated_date": "2026-05-14",
-    "last_updated_by": "task6-review",
-    "pending": 92
+    "last_updated_by": "task9-deep-tech-review",
+    "pending": 93
   },
-  "last_updated": "2026-05-14T12:07:00+08:00",
-  "last_updated_by": "task6-review",
-  "pending": 92
+  "last_updated": "2026-05-14T12:37:27+08:00",
+  "last_updated_by": "task9-deep-tech-review",
+  "pending": 93
 }
