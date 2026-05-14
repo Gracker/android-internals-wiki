@@ -11,10 +11,10 @@ confidence: medium
 drafted_date: "2026-05-11"
 polish_count: 1
 task2b_result: fixed
-task6_result: pass-light-edit
-task6_state: revisiting
+task6_result: needs-rework
+task6_state: reviewed
 task9_state: pending
-pipeline_stage: task6_pending
+pipeline_stage: task2b_pending
 reviewed_date: "2026-05-14"
 reviewed_by: openclaw-task6
 sources:
@@ -28,16 +28,17 @@ sources:
     path: "Clippings/Android 应用稳定性剖析与优化 - 开篇词：欢迎加入 Android 优化之旅，你将走进稳定性优化的世界！.md"
 tags: [stability, crash, anr, oom, app-quality]
 related_chapters: ["20.2", "20.4", "20.5", "15.3", "9.1"]
-last_task6_at: "2026-05-13T09:12:00+08:00"
-last_task6_review_log: "logs/review/2026-05-13-09-review.md"
-task6_review_notes: "2026-05-13 Task6：revisiting 复审；L1/L2 小修后通过。已知 task9 技术回炉项继续交 Task9/Task2B，Task6 不做技术裁决。"
+last_task6_at: "2026-05-14T12:07:00+08:00"
+last_task6_review_log: "logs/review/2026-05-14-12-review.md"
+task6_review_notes: "2026-05-14 Task6：revisiting 复审；L1/L2 小修完成。ANR timeout/弹窗边界仍需 Task2B 补齐。"
 task9_result: needs-rework
 task9_reviewed_by: "openclaw-task9"
 task9_reviewed_date: "2026-05-14"
 last_task9_at: "2026-05-14T08:47:50+08:00"
-task9_review_notes: "2026-05-14 Task9：completed。ART 堆栈帧 kMaxSavedFrames 描述修正、ANR service 链路源码方法修正、ANR trace 路径修正、Crashlytics ANR 支持更新已落地。"
-task6_reviewed_date: "2026-05-13"
+task9_review_notes: "2026-05-14 Task9：completed。ART 堆栈帧 kMaxSavedFrames 描述修正、ANR service 链路源码方法修正、ANR trace 路径修正、Crashlytics ANR 支持更新已完成。"
+task6_reviewed_date: "2026-05-14"
 last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
+task2b_state: pending
 ---
 
 # 应用稳定性全景
@@ -59,7 +60,7 @@ last_task9_review_log: logs/deep-review/2026-05-14-08-deep-review.md
 
 <!-- outline-end -->
 
-本章是应用稳定性治理的入口。先建立分类框架，把 Crash、ANR、OOM 三类问题在 Android 运行时中的位置讲清楚；随后给出 Google Play 和行业通用的度量标准；再把稳定性治理拆成一个可循环的操作流程。
+应用稳定性治理要先分清故障类型、度量口径和处理流程。Crash、ANR、OOM 都会表现为退出或卡死，但触发链路、观测入口和治理方法不同；Google Play Vitals 给出外部底线，团队内部指标决定发版节奏；预防、发现、诊断、修复、验证构成日常治理循环。
 
 ## Crash / ANR / OOM：三类稳定性问题的分类体系
 
@@ -112,6 +113,8 @@ ANR 发生后，系统会：
 1. 向用户弹出"应用无响应"对话框
 2. 将进程的线程堆栈 dump 到 `/data/anr/` 目录（android-16 使用 `ANR_TRACE_DIR`，文件名前缀 `anr_`；旧版设备可能是 `traces.txt`）
 3. 记录到 `ApplicationExitInfo`（`REASON_ANR`）
+
+[需确认: Android 14+ CPU-starved 场景下 BroadcastReceiver timeout 可能是 10-20 秒 / 60-120 秒区间；前台可见 ANR、后台 ANR 和 silent ANR 也不一定都会弹出用户对话框。需 Task 9 / Task 2B 按官方文档与 AOSP 链路补齐版本和可见性边界。]
 
 ANR 的治理思路与 Crash 不同。Crash 是"代码逻辑出错，需要修复"；ANR 是"主线程执行耗时操作，需要拆分或异步化"。20.4 节展开 ANR 的治理策略。
 
@@ -267,9 +270,3 @@ Google Play 的阈值是底线。团队内部的稳定性度量通常更细：
 - 相同根因是否在其他堆栈簇中出现（表现不同、根因相同）
 
 验证通过后，回到预防阶段——把这个案例的根因加入编码规范或静态分析规则，防止同类问题再次出现。
-
-## 扩展：稳定性治理的组织保障
-
-[待补充]
-
-> 本扩展点待后续加工补充。内容方向：稳定性指标如何纳入发版门禁、团队内稳定性责任的划分（基础架构组 vs 业务组）、大型 App 的稳定性巡检机制。
