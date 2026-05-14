@@ -3,7 +3,7 @@
   "draft": 15,
   "ready-for-review": 76,
   "finalized": 178,
-  "task9_result": "pass-tech-review",
+  "task9_result": "needs-rework",
   "task9_reviewed_date": "2026-05-14",
   "task9_reviewed_by": "openclaw-task9",
   "review_sections": [
@@ -102,7 +102,8 @@
     "24.8",
     "25.1",
     "25.2",
-    "25.3"
+    "25.3",
+    "25.4"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -200,9 +201,10 @@
     "src/part5-app/ch24-io-network/08-io-network-case-studies.md",
     "src/part5-app/ch25-power-size/01-power-diagnosis.md",
     "src/part5-app/ch25-power-size/02-background-power.md",
-    "src/part5-app/ch25-power-size/03-wakelock-alarm.md"
+    "src/part5-app/ch25-power-size/03-wakelock-alarm.md",
+    "src/part5-app/ch25-power-size/04-workmanager-practice.md"
   ],
-  "review_summary": "Task9 2026-05-14 16:30：审查 25.3；P0 0 / P1 0 / P2 0 / P3 3；自动晋升 finalized。有效候选不足 3 节：1.0 正文过短，20.1 今日已审且仍有 pending 队列。",
+  "review_summary": "Task9 2026-05-14 17:20：审查 25.4；P0 0 / P1 1 / P2 3 / P3 1；UIDT 选型缺少 Android 14+、权限、通知和低版本 fallback，已写入 queue.json（P85）。有效候选不足 3 节：1.0 正文过短，20.1 今日已审且仍有 pending 队列。",
   "task6_review_summary": {
     "l1_l2_fixes": 483,
     "l3_issues": 29,

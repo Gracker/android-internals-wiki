@@ -5188,6 +5188,37 @@
       "added_at": "2026-05-14T15:33:00+08:00",
       "last_reviewed_by": "task9-deep-tech-review",
       "last_reviewed_at": "2026-05-14T15:33:00+08:00"
+    },
+    {
+      "id": "task9-25.4-uidt-api34-boundary",
+      "section": "25.4",
+      "priority": 85,
+      "title": "WorkManager/UIDT 选型缺少 Android 14+ 边界",
+      "description": "L179、L193 把 UIDT 与 Foreground Service 并列为长时间用户可见传输选项，但未说明 UIDT 只从 Android 14/API 34 起可用，以及权限、通知、网络约束和低版本 fallback。",
+      "issue_type": "version-differences",
+      "severity": "P1",
+      "created_date": "2026-05-14",
+      "assigned_to": "content-team",
+      "estimated_hours": 2,
+      "status": "pending",
+      "dependencies": [],
+      "related_files": [
+        "src/part5-app/ch25-power-size/04-workmanager-practice.md"
+      ],
+      "material_paths": [
+        "intake/suggestions.md",
+        "logs/deep-review/2026-05-14-17-deep-review.md"
+      ],
+      "review_issues": [
+        {
+          "type": "版本差异",
+          "location": "L179、L193 UIDT / Foreground Service / long-running Worker 选型",
+          "detail": "UIDT Job 的公开入口 JobInfo.Builder.setUserInitiated(true) 从 Android 14/API 34 开始提供，官方 UIDT 文档还要求 RUN_USER_INITIATED_JOBS 权限、network constraint、运行时 notification，并说明低版本没有 Jetpack UIDT 封装，需要用 WorkManager foreground-service path 或直接 Foreground Service fallback。正文把 UIDT 与 Foreground Service 并列推荐，但未写 Android 10-13 fallback 和 Android 14+ 接入条件。",
+          "suggestion": "在 L179 和 L193 的选型表补版本分支：API 34+ 且满足权限/通知/网络约束时评估 UIDT；API 29-33 使用 WorkManager long-running Worker/Foreground Service fallback；同时交叉引用 §5.10 的 UIDT 条件表，避免两个章节口径不一致。"
+        }
+      ],
+      "added_by": "task9-deep-tech-review",
+      "added_at": "2026-05-14T17:20:00+08:00"
     }
   ],
   "metadata": {

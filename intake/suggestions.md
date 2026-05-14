@@ -939,3 +939,20 @@
 - **问题**：正文把后台功耗、WakeLock/Alarm、定位治理交给 §25.2/§25.3/§25.5，但这些章节当前仍是 draft stub，只有 outline 和“待加工”。如果 25.1 先进入发布态，读者会跳到空章节。
 - **建议**：在 25.1 发布前确认 25.2/25.3/25.5 已完成，或把这些引用临时降级为“后续章节将展开”，避免形成无内容交叉引用。
 
+## [Task9 Deep Review] 25.4 WorkManager 实战与后台任务调度 — 2026-05-14（GreedyScheduler 约束路径）
+- **类型**：源码准确性 / 原理链
+- **位置**：L82-L84 `GreedyScheduler` 描述
+- **问题**：正文只强调 `GreedyScheduler` 处理 unconstrained、non-timed work。AndroidX `androidx-main` 当前实现里，`GreedyScheduler.schedule()` 对已到运行时间、非 idle、非 content-uri trigger 的 constrained work 会启动 `WorkConstraintsTracker`；约束满足时 `startWork()`，约束失效时 `stopWorkWithReason()`。只写 unconstrained 会让读者在排查“进程还活着但有约束任务也被拉起/停止”时漏掉进程内约束跟踪路径。
+- **建议**：保留源码注释口径，同时补实现分支：无约束 work 直接进程内启动；有普通约束的 work 由 `WorkConstraintsTracker` 跟踪；`requiresDeviceIdle()` 与 content-uri trigger 仍交给系统调度路径。
+
+## [Task9 Deep Review] 25.4 WorkManager 实战与后台任务调度 — 2026-05-14（停止原因版本边界）
+- **类型**：版本差异 / 观测口径
+- **位置**：L197-L201 `WorkInfo.getStopReason()` / `JobParameters.getStopReason()`
+- **问题**：正文把停止原因作为通用回归守门字段，但未写版本和库边界。WorkManager release notes 显示 `WorkInfo.getStopReason()` / Worker `getStopReason()` 是 WorkManager 2.9.0 起的重要变化；`JobParameters.getStopReason()` 在 Android 12/API 31 才成为公开 API。Android 10-11 设备或 WorkManager 低版本不能按同一方式采集。
+- **建议**：补采集矩阵：WorkManager 2.9+ 读取 `WorkInfo.getStopReason()`；直接 JobScheduler 在 API 31+ 读取 `JobParameters.getStopReason()`；低版本用 Worker 结果、取消原因、运行时长、约束状态和日志事件做替代字段。
+
+## [Task9 Deep Review] 25.4 WorkManager 实战与后台任务调度 — 2026-05-14（约束兼容性）
+- **类型**：源码准确性 / 知识盲区
+- **位置**：L86-L106 约束和退避策略说明
+- **问题**：正文列出 `DeviceIdle`、多约束叠加和 backoff，但未说明 `requiresDeviceIdle()` 与 `setBackoffCriteria()` 不能同时设置。AndroidX `OneTimeWorkRequest.Builder.buildInternal()` 与 `PeriodicWorkRequest.Builder.buildInternal()` 都会在 `backoffCriteriaSet && constraints.requiresDeviceIdle()` 时抛出 `IllegalArgumentException("Cannot set backoff criteria on an idle mode job")`。这会影响读者把“空闲 + 退避”组合到同一个请求的实战代码。
+- **建议**：在约束段补一条兼容性规则：idle 任务不要设置 backoff；如果需要失败退避，改用 charging/network/battery-not-low 等约束，或拆成 idle 触发的粗粒度任务与内部重试逻辑。
