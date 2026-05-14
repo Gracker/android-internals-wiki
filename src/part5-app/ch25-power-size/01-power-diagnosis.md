@@ -32,10 +32,10 @@ sources:
     path: "Clippings/Android 性能优化 - 如何才能做好 Android 性能优化？.md"
   - type: blog
     path: "Clippings/Android 性能优化 - CPU 优化（下）：减少 CPU 闲置时刻和等待，提升利用率.md"
-tags: [power-diagnosis, battery-historian, energy-profiler, batterystats]
+tags: [power-diagnosis, battery-historian, power-profiler, batterystats]
 related_chapters: ["25.2", "11.1", "11.2", "14.11"]
 pipeline_stage: "task2b_pending"
-task6_state: "pending"
+task6_state: reviewed
 task9_state: reviewed
 task2b_state: pending
 task9_result: needs-rework
@@ -43,6 +43,13 @@ task9_reviewed_date: "2026-05-14"
 task9_reviewed_by: openclaw-task9
 last_task9_at: "2026-05-14T14:20:00+08:00"
 last_task9_review_log: "logs/deep-review/2026-05-14-14-deep-review.md"
+task6_result: pass-light-edit
+reviewed_by: openclaw-task6
+reviewed_date: "2026-05-14"
+task6_reviewed_date: "2026-05-14"
+last_task6_at: "2026-05-14T15:12:00+08:00"
+last_task6_review_log: logs/review/2026-05-14-15-review.md
+task6_review_notes: "L1/L2 轻量修复 4 处；写作质量通过。Task9 已有 P0/P1 queue pending，保持 task2b_pending，不在 Task6 裁决技术问题。"
 ---
 
 # 功耗诊断与分析方法
@@ -52,7 +59,7 @@ last_task9_review_log: "logs/deep-review/2026-05-14-14-deep-review.md"
 
 ### 锚点（必须覆盖）
 
-- 🔹 Battery Historian 与 Energy Profiler 实战
+- 🔹 Battery Historian 与 Power Profiler 实战
 - 🔹 dumpsys batterystats 解读
 - 🔹 功耗归因：CPU / 网络 / GPS / WakeLock
 - 🔹 功耗异常检测与定位
@@ -74,7 +81,7 @@ last_task9_review_log: "logs/deep-review/2026-05-14-14-deep-review.md"
 
 本节讲 App 侧的功耗诊断，不再重复 Android 功耗模型的计算细节。模型、硬件电流表和 BatteryStats 归属算法见 §11.1；后台任务、定位、网络、Alarm 的省电策略见 §11.2；Battery Historian 的部署细节见 §14.11。
 
-App 实战里要解决的是另一件事：用户说耗电之后，怎么把“掉电快”拆成可复现的场景、可对比的数据和可修改的代码入口。功耗诊断的目标不是找到一个万能指标，而是把 CPU、网络、GNSS、WakeLock 这些信号放到同一个时间窗口里判断。
+App 实战里要解决的是另一件事：用户说耗电之后，怎么把“掉电快”拆成可复现的场景、可对比的数据和可修改的代码入口。功耗诊断的目标是把 CPU、网络、GNSS、WakeLock 这些信号放到同一个时间窗口里判断，而不是追一个万能指标。
 
 这也是 Part 5 和前面机制篇的区别。这里关注怎么抓数据、怎么读数据、怎么把异常归到业务动作上，而不是重新解释系统为什么这样计电。
 
@@ -162,7 +169,7 @@ CPU 功耗不能只看线程是否 busy。大核高频、持续唤醒、频繁�
 
 ### 网络：看传输量，也看唤醒形态
 
-网络功耗常见异常不是“流量很大”，而是“流量很碎”。十几 KB 的请求如果每分钟唤醒一次，modem 和 Wi-Fi 都要反复从低功耗状态切到活跃状态。`batterystats` 里看 UID 收发字节数和 radio active；Battery Historian 里看 `network` 行是否出现密集短脉冲；Perfetto 里进一步查 socket tag、线程和请求发起点。
+网络功耗常见异常常来自碎片流量。十几 KB 的请求如果每分钟唤醒一次，modem 和 Wi-Fi 都要反复从低功耗状态切到活跃状态。`batterystats` 里看 UID 收发字节数和 radio active；Battery Historian 里看 `network` 行是否出现密集短脉冲；Perfetto 里进一步查 socket tag、线程和请求发起点。
 
 网络优化策略不要在本节展开，详见 §24.4、§24.5。这里给出的诊断结论只到“是哪类请求在唤醒网络、频率是多少、是否能批量化”。
 
