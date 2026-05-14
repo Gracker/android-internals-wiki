@@ -1,8 +1,8 @@
 {
   "total": 271,
   "draft": 7,
-  "ready-for-review": 82,
-  "finalized": 182,
+  "ready-for-review": 81,
+  "finalized": 183,
   "task9_result": "pass-tech-review",
   "task9_reviewed_date": "2026-05-15",
   "task9_reviewed_by": "openclaw-task9",
@@ -111,7 +111,8 @@
     "25.8",
     "25.9",
     "26.1",
-    "26.3"
+    "26.3",
+    "26.4"
   ],
   "review_files": [
     "src/part1-fundamentals/ch01-architecture/06-version-evolution.md",
@@ -218,15 +219,16 @@
     "src/part5-app/ch25-power-size/08-app-bundle-delivery.md",
     "src/part5-app/ch25-power-size/09-power-size-case-studies.md",
     "src/part5-app/ch26-observability/01-observability-architecture.md",
-    "src/part5-app/ch26-observability/03-performance-collection.md"
+    "src/part5-app/ch26-observability/03-performance-collection.md",
+    "src/part5-app/ch26-observability/04-anr-monitoring.md"
   ],
-  "review_summary": "Task9 2026-05-15 00:20：review 26.1 App 可观测性架构设计、26.3 性能指标采集与上报；P0=0、P1=0、P2=4；26.1 自动晋升 finalized。",
+  "review_summary": "Task6 2026-05-15 01:12：review 26.3 性能指标采集与上报、26.4 ANR 监控体系、19.13 androidx.tracing；L1/L2 小修 6 处，L3/L4 新增 0；26.3 自动晋升 finalized。",
   "task6_review_summary": {
-    "l1_l2_fixes": 533,
+    "l1_l2_fixes": 539,
     "l3_issues": 29,
     "l4_issues": 5,
-    "total_issues": 558,
-    "auto_promotions": 10
+    "total_issues": 564,
+    "auto_promotions": 11
   },
   "issues_by_section": {
     "1.6": {
@@ -828,24 +830,25 @@
       "summary": "P2 3：Trace.beginSection sectionName 长度/高基数边界、P90/P99 样本量阈值口径、26.4/26.5 draft 交叉引用。"
     }
   },
-  "total_review_sections": 105,
+  "total_review_sections": 106,
   "next_review_candidates": [],
   "ready_for_review": 81,
-  "last_updated": "2026-05-15T00:20:00+08:00",
-  "last_updated_by": "openclaw-task9",
+  "last_updated": "2026-05-15T01:12:00+08:00",
+  "last_updated_by": "openclaw-task6",
   "task6_last_review": {
-    "at": "2026-05-14T19:10:00+08:00",
-    "log": "logs/review/2026-05-14-19-review.md",
+    "at": "2026-05-15T01:12:00+08:00",
+    "log": "logs/review/2026-05-15-01-review.md",
     "sections": [
-      "25.5",
-      "25.6"
+      "26.3",
+      "26.4",
+      "19.13"
     ],
-    "l1_l2_fixes": 5,
+    "l1_l2_fixes": 6,
     "l3_l4_issues": 0,
-    "auto_promotions": 0
+    "auto_promotions": 1
   },
   "task9_last_review": "2026-05-15T00:20:00+08:00",
-  "ready_to_publish": 182,
+  "ready_to_publish": 183,
   "rework_history": [
     {
       "date": "2026-05-11T15:15:00+08:00",
@@ -1476,12 +1479,16 @@
     },
     "19.13": {
       "status": "ready-for-review",
-      "pipeline_stage": "task2b_pending",
+      "pipeline_stage": "task9_pending",
       "last_task9_at": "2026-05-13T17:55:27+08:00",
       "task9_result": "needs-rework",
-      "task9_state": "reviewed",
+      "task9_state": "pending",
       "queue_priority": 95,
-      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md"
+      "last_task9_review_log": "logs/deep-review/2026-05-13-17-deep-review.md",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "last_task6_at": "2026-05-15T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-01-review.md"
     },
     "19.26": {
       "status": "ready-for-review",
@@ -2013,6 +2020,26 @@
       "title": "App 可观测性架构设计",
       "last_task6_at": "2026-05-14T23:13:00+08:00",
       "last_task6_review_log": "logs/review/2026-05-14-23-review.md"
+    },
+    "26.3": {
+      "status": "finalized",
+      "pipeline_stage": "ready-to-publish",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "reviewed",
+      "task9_result": "pass-tech-review",
+      "last_task6_at": "2026-05-15T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-01-review.md",
+      "auto_promoted_by_task6": true
+    },
+    "26.4": {
+      "status": "ready-for-review",
+      "pipeline_stage": "task9_pending",
+      "task6_state": "reviewed",
+      "task6_result": "pass-light-edit",
+      "task9_state": "pending",
+      "last_task6_at": "2026-05-15T01:12:00+08:00",
+      "last_task6_review_log": "logs/review/2026-05-15-01-review.md"
     }
   },
   "task2b_rounds": [
@@ -2072,31 +2099,39 @@
   "task9_last_reviewed_files": [
     "src/part5-app/ch25-power-size/09-power-size-case-studies.md"
   ],
-  "total_review_files": 103,
+  "total_review_files": 106,
   "last_task2a_at": "2026-05-14T19:04:00+08:00",
   "last_task2a_section": "25.6",
   "last_task2a_file": "src/part5-app/ch25-power-size/06-apk-analysis.md",
-  "last_task6_review": "logs/review/2026-05-14-23-review.md",
+  "last_task6_review": "logs/review/2026-05-15-01-review.md",
   "last_task6_sections": [
-    "26.1"
+    "26.3",
+    "26.4",
+    "19.13"
   ],
   "last_task6_reviewed_files": [
-    "src/part5-app/ch26-observability/01-observability-architecture.md"
+    "src/part5-app/ch26-observability/03-performance-collection.md",
+    "src/part5-app/ch26-observability/04-anr-monitoring.md",
+    "src/part3-tools/ch19-apm/13-tracing-sdk.md"
   ],
-  "last_task6_at": "2026-05-14T23:13:00+08:00",
+  "last_task6_at": "2026-05-15T01:12:00+08:00",
   "last_task6_review_detail": {
-    "at": "2026-05-14T23:13:00+08:00",
-    "log": "logs/review/2026-05-14-23-review.md",
+    "at": "2026-05-15T01:12:00+08:00",
+    "log": "logs/review/2026-05-15-01-review.md",
     "sections": [
-      "26.1"
+      "26.3",
+      "26.4",
+      "19.13"
     ],
     "files": [
-      "src/part5-app/ch26-observability/01-observability-architecture.md"
+      "src/part5-app/ch26-observability/03-performance-collection.md",
+      "src/part5-app/ch26-observability/04-anr-monitoring.md",
+      "src/part3-tools/ch19-apm/13-tracing-sdk.md"
     ],
-    "l1_l2_fixes": 12,
+    "l1_l2_fixes": 6,
     "l3_l4_issues": 0,
-    "auto_promotions": 0,
-    "notes": "本轮扫描后可审且内容充分的 Task6 pending 章节仅 1 节；26.1 写作层 L1/L2 小修 12 处后通过，Task9 尚未通过，未自动晋升。"
+    "auto_promotions": 1,
+    "notes": "Task6 本轮审查 3 节：26.3 L1/L2 小修 5 处后满足 Task6+Task9+queue 三条件，自动晋升 finalized；26.4 写作层通过，转 Task9；19.13 revisiting 写作层通过，保留既有 async trace 技术回炉项。"
   },
   "last_task9_reviewed_files": [
     "src/part5-app/ch25-power-size/09-power-size-case-studies.md"

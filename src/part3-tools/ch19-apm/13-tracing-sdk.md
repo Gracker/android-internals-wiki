@@ -27,12 +27,12 @@ sources:
   path: https://developer.android.com/ndk/reference/group/tracing
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/tracing
-pipeline_stage: task6_pending
-task6_state: revisiting
+pipeline_stage: task9_pending
+task6_state: reviewed
 task9_state: pending
 task2b_state: fixed
 reviewed_by: openclaw-task6
-reviewed_date: '2026-05-07'
+reviewed_date: "2026-05-15"
 task6_result: pass-light-edit
 task9_result: needs-rework
 task9_reviewed_date: '2026-05-13'
@@ -48,17 +48,10 @@ task9_review_notes: '2026-05-07 19:30 Task9 deep-review: needs-rework。P0 2 / P
   1 / P1 3 / P2 0。Top: API31+ tracing 内联/JNI 路径事实错误；协程修正示例仍可能跨挂起点或阻塞主线程；executor/mainHandler
   示例异常路径仍可能遗留 async span。 | 2026-05-08 00:28 Task9 deep-review: needs-rework。P0 0
   / P1 2 / P2 1。Top: AndroidX Tracing 版本表混淆平台 API 与 AndroidX compat，协程 async 示例仍有取消路径不闭合。'
-task6_review_notes: '2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task
-  2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean.
-  Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion.
-  | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由
-  Task9 复审。 | 2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知技术风险继续交
-  Task9 复审，未自动晋升。'
-last_task6_at: '2026-05-07T22:11:39+08:00'
+task6_review_notes: '2026-04-29 task6 review: pass-light-edit。无P0/P1；L3需补充性能开销和版本兼容性细节，已写入Task 2B。 | 2026-05-01 task6 re-review (revisiting→reviewed): pass-light-edit. L1/L2 clean. Excellent code examples and practical tables. task9 needs-rework blocks auto-promotion. | 2026-05-07 19:05 task6 revisiting-review: pass-light-edit。L1/L2 轻量修复；技术正确性仍交由 Task9 复审。 | 2026-05-07 22:10 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知技术风险继续交 Task9 复审，未自动晋升。 | 2026-05-15 task6 revisiting-review: pass-light-edit。L1/L2 clean；已知 async trace 技术项仍在 queue，等待 Task9/Task2B 复审，未自动晋升。'
+last_task6_at: "2026-05-15T01:12:00+08:00"
 last_task9_review_log: 'logs/deep-review/2026-05-13-17-deep-review.md'
 ---
-
-
 # androidx.tracing（Tracing SDK）
 
 <!-- outline-start -->
